@@ -241,8 +241,14 @@ value csl_thread_initialize(unit)   /* ML */
                   0, FALSE, DUPLICATE_SAME_ACCESS);
   if (thread_list->win32->thread == NULL ||
       thread_list->win32->wakeup_event == NULL) sys_error("Thread.init");
-  /* The stack-related fields will be filled in at the next
-     enter_blocking_section */
+  /* Fill the stack-related fields */
+  thread_list->stack_low = stack_low;
+  thread_list->stack_high = stack_high;
+  thread_list->stack_threshold = stack_threshold;
+  thread_list->sp = extern_sp;
+  thread_list->trapsp = trapsp;
+  thread_list->external_raise = external_raise;
+  thread_list->local_roots = local_roots;
   /* Associate the thread descriptor with the current thread */
   curr_thread = thread_list;
   /* Set up the hooks */

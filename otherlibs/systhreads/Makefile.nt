@@ -27,7 +27,6 @@ realclean:
 
 install:
 	cp libthreads.lib $(LIBDIR)/libthreads.lib
-	cd $(LIBDIR); $(RANLIB) libthreads.lib
 	cp *.cmi threads.cma $(LIBDIR)
 
 installopt:

@@ -45,7 +45,6 @@ let timed_write fd buff ofs len timeout =
 
 let pipe = Unix.pipe
 
-(*
 let open_process_in cmd =
   ThreadIO.add_input_lock(Unix.open_process_in cmd)
 let open_process_out cmd =
@@ -53,12 +52,10 @@ let open_process_out cmd =
 let open_process cmd =
   let (ic, oc) = Unix.open_process cmd in
   (ThreadIO.add_input_lock ic, ThreadIO.add_output_lock oc)
-*)
 
 external sleep : int -> unit = "unix_sleep"
 
 let socket = Unix.socket
-(*let socketpair = Unix.socketpair*)
 let accept = Unix.accept
 external connect : file_descr -> sockaddr -> unit = "unix_connect"
 let recv = Unix.recv
@@ -66,13 +63,6 @@ let recvfrom = Unix.recvfrom
 let send = Unix.send
 let sendto = Unix.sendto
 
-(*
 let open_connection addr =
   let (ic, oc) = Unix.open_connection addr in
   (ThreadIO.add_input_lock ic, ThreadIO.add_output_lock oc)
-let establish_server fn addr =
-  Unix.establish_server
-    (fun ic oc ->
-      fn (ThreadIO.add_input_lock ic) (ThreadIO.add_output_lock oc))
-    addr
-*)

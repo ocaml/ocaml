@@ -53,9 +53,8 @@ realclean:
 	rm -f io.h
 
 install:
-	cp libthreads.lib $(LIBDIR)/libthreads.lib
-	cd $(LIBDIR); $(RANLIB) libthreads.lib
-	cp *.cmi threads.cma $(LIBDIR)
+	cp libunix.lib $(LIBDIR)/libunix.lib
+	cp unix.cmi unix.cma $(LIBDIR)
 
 installopt:
 

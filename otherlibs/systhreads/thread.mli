@@ -57,16 +57,9 @@ val join : t -> unit
            until the thread [th] has terminated. *)
 val wait_read : Unix.file_descr -> unit
 val wait_write : Unix.file_descr -> unit
-        (* Does nothing in this Win32 implementation. *)
-external wait_timed_read : Unix.file_descr -> float -> bool = "csl_wait_file"
-external wait_timed_write : Unix.file_descr -> float -> bool = "csl_wait_file"
-        (* Suspend the calling thread until
-           one character is available for reading ([wait_read]) or
-           one character can be written without blocking ([wait_write])
-           on the given Unix file descriptor. Wait for at most the amount
-           of time given as second argument (in seconds).
-           Return [true] if the file descriptor is ready for input/output
-           and [false] if the timeout expired. *)
+val wait_timed_read : Unix.file_descr -> float -> bool
+val wait_timed_write : Unix.file_descr -> float -> bool
+        (* These functions do nothing in this Win32 implementation. *)
 val wait_pid : int -> int * Unix.process_status
         (* [wait_pid p] suspends the execution of the calling thread
            until the process specified by the process identifier [p]

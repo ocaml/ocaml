@@ -54,8 +54,7 @@ let _ =
 
 let wait_read fd = ()
 let wait_write fd = ()
-
-external wait_timed_read : Unix.file_descr -> float -> bool = "csl_wait_file"
-external wait_timed_write : Unix.file_descr -> float -> bool = "csl_wait_file"
+let wait_timed_read fd delay = true
+let wait_timed_write fd delay = true
 
 let wait_pid p = Unix.waitpid [] p

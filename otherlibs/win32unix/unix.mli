@@ -566,6 +566,18 @@ external setsockopt : file_descr -> socket_option -> bool -> unit
                                                           = "unix_setsockopt"
         (* Set or clear an option in the given socket. *)
 
+(*** High-level network connection functions *)
+
+val open_connection : sockaddr -> in_channel * out_channel
+        (* Connect to a server at the given address.
+           Return a pair of buffered channels connected to the server.
+           Remember to call [flush] on the output channel at the right times
+           to ensure correct synchronization. *)
+val shutdown_connection : in_channel -> unit
+        (* ``Shut down'' a connection established with [open_connection];
+           that is, transmit an end-of-file condition to the server reading
+           on the other side of the connection. *)
+
 (*** Host and protocol databases *)
 
 type host_entry =

@@ -52,11 +52,9 @@ val out_channel_of_descr : Unix.file_descr -> out_channel
 (*** Pipes and redirections *)
 
 val pipe : unit -> Unix.file_descr * Unix.file_descr
-(*
 val open_process_in: string -> in_channel
 val open_process_out: string -> out_channel
 val open_process: string -> in_channel * out_channel
-*)
 
 (*** Time *)
 
@@ -65,10 +63,6 @@ external sleep : int -> unit = "unix_sleep"
 (*** Sockets *)
 
 val socket : Unix.socket_domain -> Unix.socket_type -> int -> Unix.file_descr
-(*
-val socketpair : Unix.socket_domain -> Unix.socket_type -> int ->
-                 Unix.file_descr * Unix.file_descr
-*)
 val accept : Unix.file_descr -> Unix.file_descr * Unix.sockaddr
 external connect : Unix.file_descr -> Unix.sockaddr -> unit = "unix_connect"
 val recv : Unix.file_descr -> string -> int -> int -> Unix.msg_flag list -> int
@@ -78,8 +72,5 @@ val send : Unix.file_descr -> string -> int -> int ->
            Unix.msg_flag list -> int
 val sendto : Unix.file_descr -> string -> int -> int ->
              Unix.msg_flag list -> Unix.sockaddr -> int
-(*
+
 val open_connection : Unix.sockaddr -> in_channel * out_channel
-val establish_server :
-      (in_channel -> out_channel -> 'a) -> Unix.sockaddr -> unit
-*)
