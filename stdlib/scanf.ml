@@ -355,24 +355,9 @@ let scanf_fun ib (fmt : ('a, 'b, 'c) format) f =
        | '%' as fc when Scanning.peek_char ib = fc ->
            Scanning.next_char ib; scan f (i + 1)
        | '%' as fc -> bad_format fmt i fc
-       | 'd' ->
-           let x = read_optionally_signed_decimal_int max ib in
-           scan (Obj.magic f x) (i + 1)
-       | 'i' ->
-           let x = read_optionally_signed_int max ib in
-           scan (Obj.magic f x) (i + 1)
-       | 'o' ->
-           let x = read_unsigned_octal_int max ib in
-           scan (Obj.magic f x) (i + 1)
-       | 'u' ->
-           let x = read_unsigned_decimal_int max ib in
-           scan (Obj.magic f x) (i + 1)
-       | 'x' ->
-           let x = read_unsigned_hexadecimal_int max ib in
-           scan (Obj.magic f x) (i + 1)
-       | 'X' ->
-           let x = read_unsigned_Hexadecimal_int max ib in
-           scan (Obj.magic f x) (i + 1)
+       | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' ->
+           let x = scan_int c max ib in
+           scan (Obj.magic f (token_int ib)) (i + 1)
        | 'f' | 'g' | 'G' | 'e' | 'E' ->
            let x = read_float max ib in scan (Obj.magic f x) (i + 1)
        | 's' -> let x = read_string max ib in scan (Obj.magic f x) (i + 1)
