@@ -777,12 +777,12 @@ let fprintf_out out ppf format =
               doprn (succ j)
           | 's' ->
               Obj.magic(fun s ->
-                if j <= i+1 then
+                if j <= succ i then
                   pp_print_as_string ppf s
                 else begin
                   let p =
                     try
-                      int_of_string (String.sub format (i+1) (j-i-1))
+                      int_of_string (String.sub format (succ i) (j - i - 1))
                     with _ ->
                       invalid_arg ("fprintf: bad %s format, " ^ format) in
                   if p > 0 && String.length s < p then begin
@@ -804,12 +804,12 @@ let fprintf_out out ppf format =
           | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
               Obj.magic(fun n ->
                 pp_print_as_string ppf
-                                (format_int (String.sub format i (j-i+1)) n);
+                 (format_int (String.sub format i (j - i + 1)) n);
                 doprn (succ j))
           | 'f' | 'e' | 'E' | 'g' | 'G' ->
               Obj.magic(fun f ->
                 pp_print_as_string ppf
-                                (format_float (String.sub format i (j-i+1)) f);
+                 (format_float (String.sub format i (j - i + 1)) f);
                 doprn (succ j))
           | 'b' ->
               Obj.magic(fun b ->
@@ -836,7 +836,7 @@ let fprintf_out out ppf format =
   and get_int s1 s2 i =
    if i >= limit then invalid_arg (s1 ^ s2) else
    match format.[i] with
-   | ' ' -> get_int s1 s2 (i + 1)
+   | ' ' -> get_int s1 s2 (succ i)
    | c ->
       let rec get j =
        if j >= limit then invalid_arg (s1 ^ s2) else
@@ -897,10 +897,9 @@ let fprintf_out out ppf format =
   in doprn 0
 ;;
 
-
 let unit_out () = ();;
 
-let fprintf f = fprintf_out unit_out f;;
+let fprintf ppf = fprintf_out unit_out ppf;;
 let printf f = fprintf_out unit_out std_formatter f;;
 let eprintf f = fprintf_out unit_out err_formatter f;;
 let sprintf f = fprintf_out flush_str_formatter str_formatter f;;
