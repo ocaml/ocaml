@@ -28,6 +28,7 @@ output='a'
 output_c=''
 sharedldtype='%%SHAREDLDTYPE%%'
 dynlink='%%SUPPORTS_SHARED_LIBRARIES%%'
+custom_opt='-custom'
 
 while :; do
     case "$1" in
@@ -129,9 +130,10 @@ if test "$c_objs" != ""; then
 fi
 if $dynlink; then
     c_libs_caml=''
+    custom_opt=''
 fi
 if test "$bytecode_objs" != ""; then
-     $ocamlc -a -custom -o $output.cma $caml_opts $bytecode_objs \
+     $ocamlc -a $custom_opt -o $output.cma $caml_opts $bytecode_objs \
         -cclib -l$output_c $caml_libs $c_opts_caml $c_libs_caml \
         || exit 2
 fi
