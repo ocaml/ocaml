@@ -56,12 +56,15 @@ DRIVER=driver/errors.cmo driver/compile.cmo driver/main.cmo
 OPTDRIVER=driver/opterrors.cmo driver/optcompile.cmo driver/optmain.cmo
 
 TOPLEVEL=driver/errors.cmo driver/compile.cmo \
-  toplevel/printval.cmo toplevel/toploop.cmo toplevel/topdirs.cmo \
-  toplevel/topmain.cmo
+  toplevel/printval.cmo toplevel/toploop.cmo toplevel/topdirs.cmo
+
+TOPLEVELMAIN=toplevel/topmain.cmo
 
 COMPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(DRIVER)
 
-TOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
+TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
+
+TOPOBJS=$(TOPLIB) $(TOPLEVELMAIN)
 
 OPTOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
@@ -75,7 +78,7 @@ PERVASIVES=arg array char filename format hashtbl lexing list map \
   obj parsing pervasives printexc printf queue set sort stack string sys
 
 # Recompile the system using the bootstrap compiler
-all: runtime camlc camllex camlyacc tools library camltop
+all: runtime camlc camllex camlyacc camltools library camltop
 
 # The compilation of camltop will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -97,7 +100,7 @@ bootstrap:
 	$(MAKE) library-cross
 # Promote the new compiler and the new runtime
 	$(MAKE) promote
-# Rebuild everything, including camltop
+# Rebuild everything, including camltop and the tools
 	$(MAKE) clean
 	$(MAKE) all
 # Check if fixpoint reached
@@ -166,7 +169,9 @@ install:
 	cd stdlib; $(MAKE) install
 	cp lex/camllex $(BINDIR)/csllex
 	cp yacc/camlyacc $(BINDIR)/cslyacc
-	$(CAMLC) -a -o $(LIBDIR)/toplevellib.cma $(TOPOBJS)
+	$(CAMLC) -a -o $(LIBDIR)/toplevellib.cma $(TOPLIB)
+	cp toplevel/topmain.cmo $(LIBDIR)
+	cp toplevel/toploop.cmi toplevel/topdirs.cmi $(LIBDIR)
 	cp tools/camldep $(BINDIR)/csldep
 	cp tools/camlmktop $(BINDIR)/cslmktop
 
@@ -361,21 +366,21 @@ alldepend::
 # The lexer and parser generators
 
 camllex:
-	cd lex; $(MAKE)
+	cd lex; $(MAKE) all
 clean::
 	cd lex; $(MAKE) clean
 alldepend::
 	cd lex; $(MAKE) depend
 
 camlyacc:
-	cd yacc; $(MAKE)
+	cd yacc; $(MAKE) all
 realclean::
 	cd yacc; $(MAKE) clean
 
-# Utilities
+# Tools
 
-tools:
-	cd tools; $(MAKE)
+camltools:
+	cd tools; $(MAKE) all
 realclean::
 	cd tools; $(MAKE) clean
 alldepend::

@@ -1,3 +1,3 @@
 #!/bin/sh
 
-exec cslc -linkall $* toplevellib.cma
+exec cslc -linkall toplevellib.cma $* topmain.cmo
