@@ -92,6 +92,7 @@ type lambda =
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
   | Lassign of Ident.t * lambda
   | Lsend of lambda * lambda * lambda list
+  | Levent of lambda * lambda_event
 
 and lambda_switch =
   { sw_numconsts: int;
@@ -99,6 +100,15 @@ and lambda_switch =
     sw_numblocks: int;
     sw_blocks: (int * lambda) list;
     sw_checked: bool }
+
+and lambda_event =
+  { lev_loc: int;
+    lev_kind: lambda_event_kind;
+    lev_env: Env.summary }
+
+and lambda_event_kind =
+    Lev_before
+  | Lev_after of Types.type_expr
 
 let const_unit = Const_pointer 0
 
@@ -165,6 +175,8 @@ let free_variables l =
       fv := IdentSet.add id !fv; freevars e
   | Lsend (met, obj, args) ->
       List.iter freevars (met::obj::args)
+  | Levent (lam, evt) ->
+      freevars lam
   in freevars l; !fv
 
 (* Check if an action has a "when" guard *)

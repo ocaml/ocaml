@@ -209,9 +209,11 @@ let init_toplevel () =
 
 (* Find the value of a global identifier *)
 
+let get_global_position id = slot_for_getglobal id
+
 let get_global_value id =
   (Meta.global_data()).(slot_for_getglobal id)
-and assign_global_value id v =
+let assign_global_value id v =
   (Meta.global_data()).(slot_for_getglobal id) <- v
 
 (* Save and restore the current state *)

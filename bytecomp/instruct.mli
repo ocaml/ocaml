@@ -15,7 +15,36 @@
 
 open Lambda
 
-type label = int                     (* Symbolic code labels *)
+(* Structure of compilation environments *)
+
+type compilation_env =
+  { ce_stack: int Ident.tbl; (* Positions of variables in the stack *)
+    ce_heap: int Ident.tbl } (* Structure of the heap-allocated env *)
+
+(* The ce_stack component gives locations of variables residing 
+   in the stack. The locations are offsets w.r.t. the origin of the
+   stack frame.
+   The ce_heap component gives the positions of variables residing in the
+   heap-allocated environment. *)
+
+(* Debugging events *)
+
+type debug_event =
+  { mutable ev_pos: int;                (* Position in bytecode *)
+    ev_file: string;                    (* Source file name *)
+    ev_char: int;                       (* Location in source file *)
+    ev_kind: debug_event_kind;          (* Before/after event *)
+    ev_typenv: Env.summary;             (* Typing environment *)
+    ev_compenv: compilation_env;        (* Compilation environment *)
+    ev_stacksize: int }                 (* Size of stack frame *)
+
+and debug_event_kind =
+    Event_before
+  | Event_after of Types.type_expr
+
+(* Abstract machine instructions *)
+
+type label = int                        (* Symbolic code labels *)
 
 type instruction =
     Klabel of label
@@ -63,6 +92,7 @@ type instruction =
   | Koffsetint of int
   | Koffsetref of int
   | Kgetmethod
+  | Kevent of debug_event
   | Kstop
 
 val immed_min: int

@@ -60,6 +60,7 @@ let main () =
        "-ccopt", Arg.String(fun s -> ccopts := s :: !ccopts),
              "<opt>  Pass option <opt> to the C compiler and linker";
        "-custom", Arg.Set custom_runtime, " Link in custom mode";
+       "-g", Arg.Set debug, " Save debugging information";
        "-i", Arg.Set print_types, " Print the types";
        "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
              "<dir>  Add <dir> to the list of include directories";

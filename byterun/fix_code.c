@@ -11,14 +11,51 @@
 
 /* $Id$ */
 
-/* Translate a block of bytecode (endianness switch, threading). */
+/* Handling of blocks of bytecode (endianness switch, threading). */
 
 #include "config.h"
+#include "debugger.h"
 #include "fix_code.h"
+#include "memory.h"
 #include "misc.h"
 #include "mlvalues.h"
 #include "instruct.h"
 #include "reverse.h"
+#ifdef HAS_UNISTD
+#include <unistd.h>
+#endif
+
+code_t start_code;
+asize_t code_size;
+unsigned char * saved_code;
+
+/* Read the main bytecode block from a file */
+
+void load_code(fd, len)
+     int fd;
+     asize_t len;
+{
+  int i;
+
+  code_size = len;
+  start_code = (code_t) stat_alloc(code_size);
+  if (read(fd, (char *) start_code, code_size) != code_size)
+    fatal_error("Fatal error: truncated bytecode file.\n");
+#ifdef BIG_ENDIAN
+  fixup_endianness(start_code, code_size);
+#endif
+  if (debugger_in_use) {
+    len /= sizeof(opcode_t);
+    saved_code = (unsigned char *) stat_alloc(len);
+    for (i = 0; i < len; i++) saved_code[i] = start_code[i];
+  }
+#ifdef THREADED_CODE
+  /* Better to thread now than at the beginning of interprete(),
+     since the debugger interface needs to perform SET_EVENT requests
+     on the code. */
+  thread_code(start_code, code_size);
+#endif
+}
 
 /* This code is needed only if the processor is big endian */
 
@@ -86,4 +123,16 @@ void thread_code (code_t code, asize_t len)
   Assert(p == code + len);
 }
 
-#endif /* THREAD_CODE */
+#endif /* THREADED_CODE */
+
+void set_instruction(pos, instr)
+     code_t pos;
+     opcode_t instr;
+{
+#ifdef THREADED_CODE
+  *pos = (opcode_t)((unsigned long)(instr_table[instr]));
+#else
+  *pos = instr;
+#endif
+}
+

@@ -27,6 +27,7 @@
 #include <unistd.h>
 #endif
 #include "alloc.h"
+#include "debugger.h"
 #include "fail.h"
 #include "instruct.h"
 #include "mlvalues.h"
@@ -90,6 +91,7 @@ void sys_error(arg)
 value sys_exit(retcode)          /* ML */
      value retcode;
 {
+  debugger(PROGRAM_EXIT);
 #ifdef HAS_UI
   ui_exit(Int_val(retcode));
 #else

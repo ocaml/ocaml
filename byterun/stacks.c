@@ -25,6 +25,7 @@ value * stack_high;
 value * stack_threshold;
 value * extern_sp;
 value * trapsp;
+value * trap_barrier;
 value global_data;
 
 void init_stack()
@@ -34,6 +35,7 @@ void init_stack()
   stack_threshold = stack_low + Stack_threshold / sizeof (value);
   extern_sp = stack_high;
   trapsp = stack_high;
+  trap_barrier = stack_high + 1;
 }
 
 void realloc_stack()
@@ -61,6 +63,7 @@ void realloc_stack()
         (stack_high - extern_sp) * sizeof(value));
   stat_free((char *) stack_low);
   trapsp = (value *) shift(trapsp);
+  trap_barrier = (value *) shift(trap_barrier);
   for (p = trapsp; p < new_high; p = Trap_link(p))
     Trap_link(p) = (value *) shift(Trap_link(p));
   stack_low = new_low;

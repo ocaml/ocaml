@@ -95,6 +95,7 @@ let instruction = function
   | Koffsetref n -> print_string "\toffsetref "; print_int n
   | Kgetmethod -> print_string "\tgetmethod"
   | Kstop -> print_string "\tstop"
+  | Kevent ev -> print_string "\tevent "; print_int ev.ev_char
 
 let rec instruction_list = function
     [] -> ()

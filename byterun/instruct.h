@@ -43,5 +43,7 @@ enum instructions {
   EQ, NEQ, LTINT, LEINT, GTINT, GEINT,
   OFFSETINT, OFFSETREF,
   GETMETHOD,
-  STOP
+  STOP, EVENT, BREAK
 };
+
+#define Last_instruction BREAK

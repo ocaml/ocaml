@@ -29,6 +29,16 @@ type error =
 
 exception Error of error
 
+type summary =
+    Env_empty
+  | Env_value of summary * Ident.t * value_description
+  | Env_type of summary * Ident.t * type_declaration
+  | Env_exception of summary * Ident.t * exception_declaration
+  | Env_module of summary * Ident.t * module_type
+  | Env_modtype of summary * Ident.t * modtype_declaration
+  | Env_class of summary * Ident.t * class_type
+  | Env_open of summary * Path.t
+
 type t = {
   values: (Path.t * value_description) Ident.tbl;
   constrs: constructor_description Ident.tbl;
@@ -37,7 +47,8 @@ type t = {
   modules: (Path.t * module_type) Ident.tbl;
   modtypes: (Path.t * modtype_declaration) Ident.tbl;
   components: (Path.t * module_components) Ident.tbl;
-  classes: (Path.t * class_type) Ident.tbl
+  classes: (Path.t * class_type) Ident.tbl;
+  summary: summary
 }
 
 and module_components =
@@ -66,7 +77,8 @@ let empty = {
   values = Ident.empty; constrs = Ident.empty;
   labels = Ident.empty; types = Ident.empty;
   modules = Ident.empty; modtypes = Ident.empty;
-  components = Ident.empty; classes = Ident.empty }
+  components = Ident.empty; classes = Ident.empty;
+  summary = Env_empty }
 
 (* Persistent structure descriptions *)
 
@@ -173,6 +185,27 @@ let find_value = find (fun env -> env.values) (fun sc -> sc.comp_values)
 and find_type = find (fun env -> env.types) (fun sc -> sc.comp_types)
 and find_modtype = find (fun env -> env.modtypes) (fun sc -> sc.comp_modtypes)
 and find_class = find (fun env -> env.classes) (fun sc -> sc.comp_classes)
+
+let find_module path env =
+  match path with
+    Pident id ->
+      begin try
+        let (p, data) = Ident.find_same id env.modules
+        in data
+      with Not_found ->
+        if Ident.persistent id
+        then Tmty_signature((find_pers_struct (Ident.name id)).ps_sig)
+        else raise Not_found
+      end
+  | Pdot(p, s, pos) ->
+      begin match find_module_descr p env with
+        Structure_comps c ->
+          let (data, pos) = Tbl.find s c.comp_modules in data
+      | Functor_comps f ->
+          raise Not_found
+      end
+  | Papply(p1, p2) ->
+      raise Not_found (* not right *)
 
 (* Lookup by name *)
 
@@ -432,7 +465,8 @@ and store_value id path decl env =
     modules = env.modules;
     modtypes = env.modtypes;
     components = env.components;
-    classes = env.classes }
+    classes = env.classes;
+    summary = Env_value(env.summary, id, decl) }
 
 and store_type id path info env =
   { values = env.values;
@@ -452,7 +486,8 @@ and store_type id path info env =
     modules = env.modules;
     modtypes = env.modtypes;
     components = env.components;
-    classes = env.classes }
+    classes = env.classes;
+    summary = Env_type(env.summary, id, info) }
 
 and store_exception id path decl env =
   { values = env.values;
@@ -462,7 +497,8 @@ and store_exception id path decl env =
     modules = env.modules;
     modtypes = env.modtypes;
     components = env.components;
-    classes = env.classes }
+    classes = env.classes;
+    summary = Env_exception(env.summary, id, decl) }
 
 and store_module id path mty env =
   { values = env.values;
@@ -474,7 +510,8 @@ and store_module id path mty env =
     components =
       Ident.add id (path, components_of_module env Subst.identity path mty)
                    env.components;
-    classes = env.classes }
+    classes = env.classes;
+    summary = Env_module(env.summary, id, mty) }
 
 and store_modtype id path info env =
   { values = env.values;
@@ -484,7 +521,8 @@ and store_modtype id path info env =
     modules = env.modules;
     modtypes = Ident.add id (path, info) env.modtypes;
     components = env.components;
-    classes = env.classes }
+    classes = env.classes;
+    summary = Env_modtype(env.summary, id, info) }
 
 and store_components id path comps env =
   { values = env.values;
@@ -494,7 +532,8 @@ and store_components id path comps env =
     modules = env.modules;
     modtypes = env.modtypes;
     components = Ident.add id (path, comps) env.components;
-    classes = env.classes }
+    classes = env.classes;
+    summary = env.summary }
 
 and store_class id path desc env =
   { values = env.values;
@@ -504,7 +543,8 @@ and store_class id path desc env =
     modules = env.modules;
     modtypes = env.modtypes;
     components = env.components;
-    classes = Ident.add id (path, desc) env.classes }
+    classes = Ident.add id (path, desc) env.classes;
+    summary = Env_class(env.summary, id, desc) }
 
 (* Memoized function to compute the components of a functor application
    in a path. *)
@@ -580,28 +620,38 @@ let open_signature root sg env =
   (* First build the paths and substitution *)
   let (pl, sub) = prefix_idents root 0 Subst.identity sg in
   (* Then enter the components in the environment after substitution *)
-  List.fold_left2
-    (fun env item p ->
-      match item with
-        Tsig_value(id, decl) ->
-          store_value (Ident.hide id) p
-                      (Subst.value_description sub decl) env
-      | Tsig_type(id, decl) ->
-          store_type (Ident.hide id) p
-                     (Subst.type_declaration sub decl) env
-      | Tsig_exception(id, decl) ->
-          store_exception (Ident.hide id) p
-                          (Subst.exception_declaration sub decl) env
-      | Tsig_module(id, mty) ->
-          store_module (Ident.hide id) p (Subst.modtype sub mty) env
-      | Tsig_modtype(id, decl) ->
-          store_modtype (Ident.hide id) p
-                        (Subst.modtype_declaration sub decl) env
-      | Tsig_class(id, decl) ->
-      	  store_class (Ident.hide id) p
-                      (Subst.class_type sub decl) env)
-    env sg pl
-
+  let newenv =
+    List.fold_left2
+      (fun env item p ->
+        match item with
+          Tsig_value(id, decl) ->
+            store_value (Ident.hide id) p
+                        (Subst.value_description sub decl) env
+        | Tsig_type(id, decl) ->
+            store_type (Ident.hide id) p
+                       (Subst.type_declaration sub decl) env
+        | Tsig_exception(id, decl) ->
+            store_exception (Ident.hide id) p
+                            (Subst.exception_declaration sub decl) env
+        | Tsig_module(id, mty) ->
+            store_module (Ident.hide id) p (Subst.modtype sub mty) env
+        | Tsig_modtype(id, decl) ->
+            store_modtype (Ident.hide id) p
+                          (Subst.modtype_declaration sub decl) env
+        | Tsig_class(id, decl) ->
+            store_class (Ident.hide id) p
+                        (Subst.class_type sub decl) env)
+      env sg pl in
+  { values = newenv.values;
+    constrs = newenv.constrs;
+    labels = newenv.labels;
+    types = newenv.types;
+    modules = newenv.modules;
+    modtypes = newenv.modtypes;
+    components = newenv.components;
+    classes = newenv.classes;
+    summary = Env_open(env.summary, root) }
+  
 (* Open a signature from a file *)
 
 let open_pers_signature name env =
@@ -638,6 +688,10 @@ let initial = Predef.build_initial_env add_type add_exception empty
 (* Return the list of imported interfaces with their CRCs *)
 
 let imported_units() = !imported_units
+
+(* Return the environment summary *)
+
+let summary env = env.summary
 
 (* Error report *)
 

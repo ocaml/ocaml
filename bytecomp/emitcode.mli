@@ -20,8 +20,8 @@ open Instruct
 
 type reloc_info =
     Reloc_literal of structured_constant    (* structured constant *)
-  | Reloc_getglobal of Ident.t             (* reference to a global *)
-  | Reloc_setglobal of Ident.t             (* definition of a global *)
+  | Reloc_getglobal of Ident.t              (* reference to a global *)
+  | Reloc_setglobal of Ident.t              (* definition of a global *)
   | Reloc_primitive of string               (* C primitive number *)
 
 (* Descriptor for compilation units *)
@@ -34,7 +34,8 @@ type compilation_unit =
     cu_interface: Digest.t;             (* CRC of interface implemented *)
     cu_imports: (string * Digest.t) list; (* Names and CRC of intfs imported *)
     cu_primitives: string list;         (* Primitives declared inside *)
-    mutable cu_force_link: bool }       (* Must be linked even if unref'ed *)
+    mutable cu_force_link: bool;        (* Must be linked even if unref'ed *)
+    cu_events: debug_event list }       (* Debugging events *)
 
 (* Format of a .cmo file:
      magic number (Config.cmo_magic_number)

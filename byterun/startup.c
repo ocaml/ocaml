@@ -22,6 +22,7 @@
 #include <unistd.h>
 #endif
 #include "alloc.h"
+#include "debugger.h"
 #include "exec.h"
 #include "fail.h"
 #include "fix_code.h"
@@ -226,15 +227,14 @@ void caml_main(argv)
 	     verbose_init);
     init_stack();
     init_atoms();
+    /* Initialize the interpreter */
+    interprete(NULL, 0);
+    /* Initialize the debugger, if needed */
+    debugger_init();
     /* Load the code */
     lseek(fd, - (long) (TRAILER_SIZE + trail.code_size + trail.data_size
                         + trail.symbol_size + trail.debug_size), 2);
-    start_code = (code_t) stat_alloc(trail.code_size);
-    if (read(fd, (char *) start_code, trail.code_size) != trail.code_size)
-      fatal_error("Fatal error: truncated bytecode file.\n");
-#ifdef ARCH_BIG_ENDIAN
-    fixup_endianness(start_code, trail.code_size);
-#endif
+    load_code(fd, trail.code_size);
     /* Load the globals */
     { struct channel * chan;
       Push_roots(r, 1);
@@ -246,10 +246,13 @@ void caml_main(argv)
     }
     /* Ensure that the globals are in the major heap. */
     oldify(global_data, &global_data);
-    /* Run the code */
+    /* Record the command-line arguments */
     sys_init(argv + pos);
+    /* Execute the program */
+    debugger(PROGRAM_START);
     interprete(start_code, trail.code_size);
   } else {
+    debugger(UNCAUGHT_EXC);
     fatal_uncaught_exception(exn_bucket);
   }
 }

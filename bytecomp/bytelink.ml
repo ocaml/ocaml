@@ -16,6 +16,7 @@
 open Sys
 open Misc
 open Config
+open Instruct
 open Emitcode
 
 type error =
@@ -111,6 +112,8 @@ let scan_file obj_name tolink =
 
 (* Second pass: link in the required units *)
 
+let debug_info = ref ([] : debug_event list list)
+
 (* Consistency check between interfaces *)
 
 let crc_interfaces =
@@ -130,24 +133,35 @@ let check_consistency file_name cu =
     cu.cu_imports;
   Hashtbl.add crc_interfaces cu.cu_name (file_name, cu.cu_interface)
 
+(* Relocate and record compilation events *)
+
+let debug_info = ref ([] : debug_event list list)
+
+let record_events orig evl =
+  if evl <> [] then begin
+    List.iter (fun ev -> ev.ev_pos <- orig + ev.ev_pos) evl;
+    debug_info := evl :: !debug_info
+  end
+
 (* Link in a compilation unit *)
 
-let link_compunit output_fun inchan file_name compunit =
+let link_compunit output_fun currpos_fun inchan file_name compunit =
   check_consistency file_name compunit;
   seek_in inchan compunit.cu_pos;
   let code_block = String.create compunit.cu_codesize in
   really_input inchan code_block 0 compunit.cu_codesize;
   Symtable.patch_object code_block compunit.cu_reloc;
+  if !Clflags.debug then record_events (currpos_fun()) compunit.cu_events;
   output_fun code_block;
   if !Clflags.link_everything then
     List.iter Symtable.require_primitive compunit.cu_primitives
 
 (* Link in a .cmo file *)
 
-let link_object output_fun file_name compunit =
+let link_object output_fun currpos_fun file_name compunit =
   let inchan = open_in_bin file_name in
   try
-    link_compunit output_fun inchan file_name compunit;
+    link_compunit output_fun currpos_fun inchan file_name compunit;
     close_in inchan
   with
     Symtable.Error msg ->
@@ -157,10 +171,12 @@ let link_object output_fun file_name compunit =
 
 (* Link in a .cma file *)
 
-let link_archive output_fun file_name units_required =
+let link_archive output_fun currpos_fun file_name units_required =
   let inchan = open_in_bin file_name in
   try
-    List.iter (link_compunit output_fun inchan file_name) units_required;
+    List.iter
+      (link_compunit output_fun currpos_fun inchan file_name)
+      units_required;
     close_in inchan
   with
     Symtable.Error msg ->
@@ -170,9 +186,11 @@ let link_archive output_fun file_name units_required =
 
 (* Link in a .cmo or .cma file *)
 
-let link_file output_fun = function
-    Link_object(file_name, unit) -> link_object output_fun file_name unit
-  | Link_archive(file_name, units) -> link_archive output_fun file_name units
+let link_file output_fun currpos_fun = function
+    Link_object(file_name, unit) ->
+      link_object output_fun currpos_fun file_name unit
+  | Link_archive(file_name, units) ->
+      link_archive output_fun currpos_fun file_name units
 
 (* Create a bytecode executable file *)
 
@@ -198,7 +216,9 @@ let link_bytecode objfiles exec_name copy_header =
     let pos1 = pos_out outchan in
     Symtable.init();
     Hashtbl.clear crc_interfaces;
-    List.iter (link_file (output_string outchan)) tolink;
+    let output_fun = output_string outchan
+    and currpos_fun () = pos_out outchan - pos1 in
+    List.iter (link_file output_fun currpos_fun) tolink;
     (* The final STOP instruction *)
     output_byte outchan Opcodes.opSTOP;
     output_byte outchan 0; output_byte outchan 0; output_byte outchan 0;
@@ -208,12 +228,15 @@ let link_bytecode objfiles exec_name copy_header =
     (* The map of global identifiers *)
     let pos3 = pos_out outchan in
     Symtable.output_global_map outchan;
-    (* The trailer *)
+    (* Debug info *)
     let pos4 = pos_out outchan in
+    if !Clflags.debug then output_value outchan !debug_info;
+    (* The trailer *)
+    let pos5 = pos_out outchan in
     output_binary_int outchan (pos2 - pos1);
     output_binary_int outchan (pos3 - pos2);
     output_binary_int outchan (pos4 - pos3);
-    output_binary_int outchan 0;
+    output_binary_int outchan (pos5 - pos4);
     output_string outchan exec_magic_number;
     close_out outchan
   with x ->
@@ -267,7 +290,9 @@ let link_bytecode_as_c objfiles outfile =
     output_string outchan "static int caml_code[] = {\n";
     Symtable.init();
     Hashtbl.clear crc_interfaces;
-    List.iter (link_file (output_code_string outchan)) tolink;
+    let output_fun = output_code_string outchan
+    and currpos_fun () = fatal_error "Bytelink.link_bytecode_as_c" in
+    List.iter (link_file output_fun currpos_fun) tolink;
     (* The final STOP instruction *)
     Printf.fprintf outchan "\n0x%x};\n\n" Opcodes.opSTOP;
     (* The table of global data *)

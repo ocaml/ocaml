@@ -300,6 +300,22 @@ let rec name_pattern default = function
       | Tpat_alias(p, id) -> id
       | _ -> name_pattern default rem
 
+(* Insertion of debugging events *)
+
+let event_before exp lam =
+  if !Clflags.debug
+  then Levent(lam, {lev_loc = exp.exp_loc.Location.loc_start;
+                    lev_kind = Lev_before;
+                    lev_env = Env.summary exp.exp_env})
+  else lam
+
+let event_after exp lam =
+  if !Clflags.debug
+  then Levent(lam, {lev_loc = exp.exp_loc.Location.loc_end;
+                    lev_kind = Lev_after exp.exp_type;
+                    lev_env = Env.summary exp.exp_env})
+  else lam
+
 (* Translation of expressions *)
 
 let rec transl_exp e =
@@ -313,7 +329,7 @@ let rec transl_exp e =
   | Texp_constant cst ->
       Lconst(Const_base cst)
   | Texp_let(rec_flag, pat_expr_list, body) ->
-      transl_let rec_flag pat_expr_list (transl_exp body)
+      transl_let rec_flag pat_expr_list (event_before body (transl_exp body))
   | Texp_function pat_expr_list ->
       let (kind, params, body) = 
         transl_function e.exp_loc !Clflags.native_code pat_expr_list in
@@ -322,14 +338,15 @@ let rec transl_exp e =
     when List.length args = p.prim_arity ->
       Lprim(transl_prim p args, transl_list args)
   | Texp_apply(funct, args) ->
-      begin match transl_exp funct with
-        Lapply(lfunct, largs) ->
-          Lapply(lfunct, largs @ transl_list args)
-      | Lsend(lmet, lobj, largs) ->
-          Lsend(lmet, lobj, largs @ transl_list args)
-      | lexp ->
-          Lapply(lexp, transl_list args)
-      end
+      let lam =
+        match transl_exp funct with
+          Lsend(lmet, lobj, largs) ->
+            Lsend(lmet, lobj, largs @ transl_list args)
+        | Levent(Lsend(lmet, lobj, largs), _) ->
+            Lsend(lmet, lobj, largs @ transl_list args)
+        | lexp ->
+            Lapply(lexp, transl_list args) in
+      event_after e lam
   | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list) ->
       Matching.for_multiple_match e.exp_loc
         (transl_list argl) (transl_cases pat_expr_list)
@@ -419,19 +436,24 @@ let rec transl_exp e =
              fill_fields 1 (List.tl expr_list))
       end
   | Texp_ifthenelse(cond, ifso, Some ifnot) ->
-      Lifthenelse(transl_exp cond, transl_exp ifso, transl_exp ifnot)
+      Lifthenelse(transl_exp cond,
+                  event_before ifso (transl_exp ifso),
+                  event_before ifnot (transl_exp ifnot))
   | Texp_ifthenelse(cond, ifso, None) ->
-      Lifthenelse(transl_exp cond, transl_exp ifso, lambda_unit)
+      Lifthenelse(transl_exp cond,
+                  event_before ifso (transl_exp ifso),
+                  lambda_unit)
   | Texp_sequence(expr1, expr2) ->
-      Lsequence(transl_exp expr1, transl_exp expr2)
+      Lsequence(transl_exp expr1, event_before expr2 (transl_exp expr2))
   | Texp_while(cond, body) ->
-      Lwhile(transl_exp cond, transl_exp body)
+      Lwhile(transl_exp cond, event_before body (transl_exp body))
   | Texp_for(param, low, high, dir, body) ->
-      Lfor(param, transl_exp low, transl_exp high, dir, transl_exp body)
+      Lfor(param, transl_exp low, transl_exp high, dir,
+           event_before body (transl_exp body))
   | Texp_when(cond, body) ->
       Lifthenelse(transl_exp cond, transl_exp body, Lstaticfail)
   | Texp_send(expr, met) ->
-      Lsend(Lvar (meth met), transl_exp expr, [])
+      event_after e (Lsend(Lvar (meth met), transl_exp expr, []))
   | Texp_new cl ->
       Lprim(Pfield 0, [transl_path cl])
   | Texp_instvar(path_self, path) ->
@@ -454,7 +476,9 @@ and transl_list expr_list =
   List.map transl_exp expr_list
 
 and transl_cases pat_expr_list =
-  List.map (fun (pat, expr) -> (pat, transl_exp expr)) pat_expr_list
+  List.map
+    (fun (pat, expr) -> (pat, event_before expr (transl_exp expr)))
+    pat_expr_list
 
 and transl_tupled_cases patl_expr_list =
   List.map (fun (patl, expr) -> (patl, transl_exp expr)) patl_expr_list

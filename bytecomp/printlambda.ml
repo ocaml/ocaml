@@ -258,6 +258,17 @@ let rec lambda = function
       List.iter (fun l -> print_space(); lambda l) largs;
       print_string ")";
       close_box()
+  | Levent(lam, ev) ->
+      open_hovbox 2;
+      begin match ev.lev_kind with
+        Lev_before  -> print_string "(before "
+      | Lev_after _ -> print_string "(after "
+      end;
+      print_int ev.lev_loc;
+      print_space();
+      lambda lam;
+      print_string ")";
+      close_box()
 
 and sequence = function
     Lsequence(l1, l2) ->

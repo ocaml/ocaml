@@ -9,7 +9,7 @@ OBJS=interp.o misc.o stacks.o fix_code.o startup.o main.o \
   fail.o signals.o printexc.o \
   compare.o ints.o floats.o str.o array.o io.o extern.o intern.o \
   hash.o sys.o meta.o parsing.o gc_ctrl.o terminfo.o md5.o obj.o \
-  lexing.o callback.o
+  lexing.o callback.o debugger.o
 
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
 
@@ -63,6 +63,7 @@ prims.c : primitives
 
 opnames.h : instruct.h
 	sed -e '/\/\*/d' \
+	    -e '/^#/d' \
 	    -e 's/enum /char * names_of_/' \
 	    -e 's/{$$/[] = {/' \
 	    -e 's/\([A-Z][A-Z_0-9]*\)/"\1"/g' instruct.h > opnames.h

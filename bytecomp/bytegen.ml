@@ -27,17 +27,7 @@ let label_counter = ref 0
 let new_label () =
   incr label_counter; !label_counter
 
-(**** Structure of the compilation environment. ****)
-
-type compilation_env =
-  { ce_stack: int Ident.tbl; (* Positions of variables in the stack *)
-    ce_heap: int Ident.tbl } (* Structure of the heap-allocated env *)
-
-(* The ce_stack component gives locations of variables residing 
-   in the stack. The locations are offsets w.r.t. the origin of the
-   stack frame.
-   The ce_heap component gives the positions of variables residing in the
-   heap-allocated environment. *)
+(**** Operations on compilation environments. ****)
 
 let empty_env =
   { ce_stack = Ident.empty; ce_heap = Ident.empty }
@@ -402,7 +392,34 @@ let rec comp_expr env exp sz cont =
       with Not_found ->
         fatal_error "Bytegen.comp_expr: assign"
       end
-
+  | Levent(lam, lev) ->
+      let ev =
+        { ev_pos = 0;                   (* patched in emitcode *)
+          ev_file = !Location.input_name;
+          ev_char = lev.lev_loc;
+          ev_kind = begin match lev.lev_kind with
+                      Lev_before -> Event_before
+                    | Lev_after ty -> Event_after ty
+                    end;
+          ev_typenv = lev.lev_env;
+          ev_compenv = env;
+          ev_stacksize = sz } in
+      begin match lev.lev_kind with
+        Lev_before ->
+          let c = comp_expr env lam sz cont in
+          begin match c with
+            (* Keep following event, supposedly more informative *)
+            Kevent _ :: _ -> c
+          | _ -> Kevent ev :: c
+          end
+      | Lev_after ty ->
+          let cont1 =
+            (* Discard following events, supposedly less informative *)
+            match cont with
+              Kevent _ :: c -> c
+            | _ -> cont in
+          comp_expr env lam sz (Kevent ev :: cont1)
+      end
 
 (* Compile a list of arguments [e1; ...; eN] to a primitive operation.
    The values of eN ... e2 are pushed on the stack, e2 at top of stack,

@@ -92,6 +92,7 @@ type lambda =
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
   | Lassign of Ident.t * lambda
   | Lsend of lambda * lambda * lambda list
+  | Levent of lambda * lambda_event
 
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)
@@ -99,6 +100,15 @@ and lambda_switch =
     sw_numblocks: int;                  (* Number of tag block cases *)
     sw_blocks: (int * lambda) list;     (* Tag block cases *)
     sw_checked: bool }                  (* True if bound checks needed *)
+
+and lambda_event =
+  { lev_loc: int;
+    lev_kind: lambda_event_kind;
+    lev_env: Env.summary }
+
+and lambda_event_kind =
+    Lev_before
+  | Lev_after of Types.type_expr
 
 val const_unit: structured_constant
 val lambda_unit: lambda

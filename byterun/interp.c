@@ -15,6 +15,7 @@
 
 #include "alloc.h"
 #include "callback.h"
+#include "debugger.h"
 #include "fail.h"
 #include "fix_code.h"
 #include "instrtrace.h"
@@ -64,6 +65,24 @@ sp is a local copy of the global variable extern_sp. */
 #define Restore_after_gc { accu = sp[0]; env = sp[1]; sp += 2; }
 #define Setup_for_c_call { *--sp = env; extern_sp = sp; }
 #define Restore_after_c_call { sp = extern_sp; env = *sp++; }
+
+/* Debugger interface */
+
+#define Setup_for_debugger \
+   { sp -= 4; \
+     sp[0] = accu; sp[1] = (value)(pc - 1); \
+     sp[2] = env; sp[3] = Val_long(extra_args); \
+     extern_sp = sp; }
+#define Restore_after_debugger { sp += 4; }
+
+#ifdef THREADED_CODE
+#define Restart_curr_instr \
+  goto *(jumptable[saved_code[pc - 1 - start_code]])
+#else
+#define Restart_curr_instr \
+  curr_instr = saved_code[pc - 1 - start_code]; \
+  goto dispatch_instr
+#endif
 
 /* Register optimization.
    Many compilers underestimate the use of the local variables representing
@@ -133,6 +152,7 @@ value interprete(prog, prog_size)
   int initial_callback_depth;
   struct longjmp_buffer raise_buf;
   value * modify_dest, modify_newval;
+  opcode_t curr_instr;
 
 #ifdef THREADED_CODE
   static void * jumptable[] = {
@@ -140,11 +160,15 @@ value interprete(prog, prog_size)
   };
 #endif
 
+  if (prog == NULL) {           /* Interpreter is initializing */
 #ifdef THREADED_CODE
-  if (prog[0] <= STOP) {
     instr_table = jumptable; 
-    thread_code(prog, prog_size);
+#endif
+    return Val_unit;
   }
+
+#ifdef THREADED_CODE
+  if (prog[0] <= STOP) thread_code(prog, prog_size);
 #endif
 
   sp = extern_sp;
@@ -160,6 +184,7 @@ value interprete(prog, prog_size)
     local_roots = initial_local_roots;
     callback_depth = initial_callback_depth;
     accu = exn_bucket;
+    sp = extern_sp;
     goto raise_exception;
   }
   external_raise = &raise_buf;
@@ -182,7 +207,9 @@ value interprete(prog, prog_size)
     Assert(sp >= stack_low);
     Assert(sp <= stack_high);
 #endif
-    switch(*pc++) {
+    curr_instr = *pc++;
+  dispatch_instr:
+    switch(curr_instr) {
 #endif
 
 /* Basic stack operations */
@@ -657,8 +684,13 @@ value interprete(prog, prog_size)
       sp += 4;
       Next;
 
-    Instruct(RAISE):            /* arg */
+    Instruct(RAISE):
     raise_exception:
+      if (trapsp >= trap_barrier) {
+        Setup_for_debugger;
+        debugger(TRAP_BARRIER);
+        Restore_after_debugger;
+      }
       sp = trapsp;
       if (sp >= stack_high - initial_sp_offset) {
         exn_bucket = accu;
@@ -863,12 +895,26 @@ value interprete(prog, prog_size)
       accu = Lookup(sp[0], accu);
       Next;
 
-/* Machine control */
+/* Debugging and machine control */
 
     Instruct(STOP):
       external_raise = initial_external_raise;
       extern_sp = sp;
       return accu;
+
+    Instruct(EVENT):
+      if (--event_count == 0) {
+        Setup_for_debugger;
+        debugger(EVENT_COUNT);
+        Restore_after_debugger;
+      }
+      Restart_curr_instr;
+
+    Instruct(BREAK):
+      Setup_for_debugger;
+      debugger(BREAKPOINT);
+      Restore_after_debugger;
+      Restart_curr_instr;
 
 #ifndef THREADED_CODE
     default:

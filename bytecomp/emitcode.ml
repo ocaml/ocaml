@@ -39,7 +39,8 @@ type compilation_unit =
     cu_interface: Digest.t;             (* CRC of interface implemented *)
     cu_imports: (string * Digest.t) list; (* Names and CRC of intfs imported *)
     cu_primitives: string list;         (* Primitives declared inside *)
-    mutable cu_force_link: bool }       (* Must be linked even if unref'ed *)
+    mutable cu_force_link: bool;        (* Must be linked even if unref'ed *)
+    cu_events: debug_event list }       (* Debugging events *)
 
 (* Format of a .cmo file:
      magic number (Config.cmo_magic_number)
@@ -135,12 +136,21 @@ and slot_for_c_prim name =
   enter (Reloc_primitive name);
   out_int 0
 
+(* Debugging events *)
+
+let events = ref ([] : debug_event list)
+
+let record_event ev =
+  ev.ev_pos <- !out_position;
+  events := ev :: !events
+
 (* Initialization *)
 
 let init () =
   out_position := 0;
   label_table := Array.create 16 (Label_undefined []);
-  reloc_info := []
+  reloc_info := [];
+  events := []
 
 (* Emission of one instruction *)
 
@@ -235,6 +245,7 @@ let emit_instr = function
   | Koffsetint n -> out opOFFSETINT; out_int n
   | Koffsetref n -> out opOFFSETREF; out_int n
   | Kgetmethod -> out opGETMETHOD
+  | Kevent ev -> record_event ev
   | Kstop -> out opSTOP
 
 (* Emission of a list of instructions. Include some peephole optimization. *)
@@ -291,7 +302,8 @@ let to_file outchan unit_name crc_interface code =
       cu_interface = crc_interface;
       cu_imports = Env.imported_units();
       cu_primitives = !Translmod.primitive_declarations;
-      cu_force_link = false } in
+      cu_force_link = false;
+      cu_events = !events } in
   init();                               (* Free out_buffer and reloc_info *)
   let pos_compunit = pos_out outchan in
   output_value outchan compunit;
