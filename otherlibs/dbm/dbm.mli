@@ -12,7 +12,7 @@
 
 (* $Id$ *)
 
-(* Module [Dbm]: interface to the NDBM databases *)
+(* Module [Dbm]: interface to the NDBM database *)
 
 type t
         (* The type of file descriptors opened on NDBM databases. *)
