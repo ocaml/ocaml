@@ -19,13 +19,14 @@ comments are handled correctly.
 \subsubsection*{Identifiers}
 
 \begin{syntax}
-ident: letter { letter||"0"\ldots"9"||"_"||"'" } ;
+ident: (letter||"_") { letter||"0"\ldots"9"||"_"||"'" } ;
 letter: "A" \ldots "Z" || "a" \ldots "z"
 \end{syntax}
 
 Identifiers are sequences of letters, digits, "_" (the underscore
 character), and "'" (the single quote), starting with a
-letter. Letters contain at least the 52 lowercase and uppercase
+letter or an underscore.
+Letters contain at least the 52 lowercase and uppercase
 letters from the ASCII set. The current implementation also recognizes
 as letters all accented characters from the ISO 8859-1 (``ISO Latin
 1'') set, and also allows an underscore "_" as the first character of
@@ -154,15 +155,16 @@ expressions, but otherwise behave much as identifiers.
 The identifiers below are reserved as keywords, and cannot be employed
 otherwise:
 \begin{verbatim}
-    and         as          asr         begin       class       closed
-    constraint  do          done        downto      else        end
-    exception   external    false       for         fun         function
-    functor     if          in          include     inherit     land
-    let         lor         lsl         lsr         lxor        match
-    method      mod         module      mutable     new         of
-    open        or          parser      private     rec         sig
-    struct      then        to          true        try         type
-    val         virtual     when        while       with        
+      and         as          assert      asr         begin       class
+      closed      constraint  do          done        downto      else
+      end         exception   external    false       for         fun
+      function    functor     if          in          include     inherit
+      land        lazy        let         lor         lsl         lsr
+      lxor        match       method      mod         module      mutable
+      new         of          open        or          parser      private
+      rec         sig         struct      then        to          true
+      try         type        val         virtual     when        while
+      with        
 \end{verbatim}
 %
 The following character sequences are also keywords:

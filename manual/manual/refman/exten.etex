@@ -123,3 +123,35 @@ In patterns, Objective Caml recognizes the form
 where \nth{c}{1}, \nth{c}{2}, \ldots, \nth{c}{n} are the characters
 that occur between \var{c} and \var{d} in the ASCII character set. For
 instance, the pattern "'0'..'9'" matches all characters that are digits.
+
+\section{Assertion checking}
+\ikwd{assert\@\verb`assert`}
+
+Objective Caml supports the "assert" construct to check debugging assertions.
+The expression @"assert" expr@ evaluates the expression @expr@ and
+returns "()" if @expr@ evaluates to "true".  Otherwise, the exception
+"Assert_failure" is raised with the location of @expr@ in the source
+code as argument.  As a special case, "assert false" is reduced to
+"raise (Assert_failure ...)", which is polymorphic.  Assertion
+checking can be turned off with the "-noassert" compiler option.
+%
+\index{Assert_failure (exception)\@\verb`Assert_failure` (exception)}
+
+
+\section{Deferred computations}
+\ikwd{lazy\@\verb`lazy`}
+
+The expression @"lazy" expr@ returns a value \var{v} of type "Lazy.t" that
+encapsulates the computation of @expr@.  The argument @expr@ is not
+evaluated at this point in the program.  Instead, its evaluation will
+be performed the first time "Lazy.force" is applied to the value
+\var{v}, returning the actual value of @expr@. Subsequent applications
+of "Lazy.force" to \var{v} do not evaluate @expr@ again.
+
+The expression @"lazy" expr@ is equivalent to
+@"ref"("Lazy.Delayed"("fun" "()" "->" expr))@.
+For more information, see the description of module "Lazy" in the
+standard library (section~\ref{s:Lazy}).
+%
+\index{Lazy (module)\@\verb`Lazy` (module)}%
+\index{force@\verb`force`}%

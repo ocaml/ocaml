@@ -17,7 +17,8 @@ non-constant -- class @ncconstr-name@),
 These nine name spaces are distinguished both by the context and by the
 capitalization of the identifier: whether the first letter of the
 identifier is in lowercase (written @lowercase-ident@ below) or in
-uppercase (written @capitalized-ident@).
+uppercase (written @capitalized-ident@).  Underscore is considered a
+lowercase letter for this purpose.
 
 \ikwd{false\@\verb`false`}
 \ikwd{true\@\verb`true`}

@@ -59,7 +59,6 @@ expr:
   | '(' expr ':>' typexpr ')'
   | '(' expr ':' typexpr ':>' typexpr ')'
   | '{<' inst-var-name '=' expr { ';' inst-var-name '=' expr } '>}'
-  | 'assert' expr
 ;
 pattern-matching:
     pattern ['when' expr] '->' expr
@@ -93,7 +92,7 @@ precedence come first. For infix and prefix symbols, we write
 \begin{tableau}{|l|l|}{Construction or operator}{Associativity}
 \entree{prefix-symbol}{--}
 \entree{".   .(    .["}{--}
-\entree{function application, "assert"}{left}
+\entree{function application}{left}
 \entree{constructor application}{--}
 \entree{"-   -." (prefix)}{--}
 \entree{"**"\ldots}{right}
@@ -449,28 +448,6 @@ bindings performed during matching. If several patterns match the value of
 selected. If none of the patterns matches the value of @expr@, the
 exception value is raised again, thereby transparently ``passing
 through'' the @'try'@ construct.
-
-\subsubsection*{Assertion checking}
-\ikwd{assert\@\verb`assert`}
-
-The expression
-\begin{latexonly}
-$$\begin{array}{rlll}
-\token{assert~} & {\sl expr}
-\end{array}$$
-\end{latexonly}
-\begin{rawhtml}
-<pre>
-assert  <i>expr</i>
-</pre>
-\end{rawhtml}
-evaluates the expression @expr@ and returns "()" if @expr@ evaluates to
-"true".  Otherwise, the exception "Assert_failure" is raised.
-%
-\index{Assert_failure (exception)\@\verb`Assert_failure` (exception)}
-
-As a special case, "assert false" is reduced to
-"raise (Assert_failure ...)", which is polymorphic.
 
 \subsection{Operations on data structures}
 
