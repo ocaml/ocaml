@@ -492,9 +492,29 @@ val lockf : file_descr -> lock_command -> int -> unit
 val kill : int -> int -> unit
         (* [kill pid sig] sends signal number [sig] to the process
            with id [pid]. *)
-val pause : unit -> unit
-        (* Wait until a non-ignored signal is delivered. *)
 
+type sigprocmask_command = SIG_SETMASK | SIG_BLOCK | SIG_UNBLOCK
+
+val sigprocmask: sigprocmask_command -> int list -> int list
+        (* [sigprocmask cmd sigs] changes the set of blocked signals.
+           If [cmd] is [SIG_SETMASK], blocked signals are set to those in
+           the list [sigs].
+           If [cmd] is [SIG_BLOCK], the signals in [sigs] are added to
+           the set of blocked signals.
+           If [cmd] is [SIG_UNBLOCK], the signals in [sigs] are removed
+           from the set of blocked signals.
+           [sigprocmask] returns the set of previously blocked signals. *)
+
+val sigpending: unit -> int list
+        (* Return the set of blocked signals that are currently pending. *)
+
+val sigsuspend: int list -> unit
+        (* [sigsuspend sigs] atomically sets the blocked signals to [sig]
+           and waits for a non-ignored, non-blocked signal to be delivered.
+           On return, the blocked signals are reset to their initial value. *)
+
+val pause : unit -> unit
+        (* Wait until a non-ignored, non-blocked signal is delivered. *)
 
 (*** Time functions *)
 

@@ -346,6 +346,10 @@ type lock_command =
 
 let lockf fd cmd exten = invalid_arg "Unix.lockf not implemented"
 let kill pid signo = invalid_arg "Unix.kill not implemented"
+type sigprocmask_command = SIG_SETMASK | SIG_BLOCK | SIG_UNBLOCK
+let sigprocmask cmd sigs = invalid_arg "Unix.sigprocmask not implemented"
+let sigpending () = invalid_arg "Unix.sigpending not implemented"
+let sigsuspend sigs = invalid_arg "Unix.sigsuspend not implemented"
 let pause () = invalid_arg "Unix.pause not implemented"
 
 (* Time functions *)

@@ -55,7 +55,6 @@ mkfifo.o: mkfifo.c unixsupport.h
 nice.o: nice.c unixsupport.h
 open.o: open.c unixsupport.h
 opendir.o: opendir.c unixsupport.h
-pause.o: pause.c unixsupport.h
 pipe.o: pipe.c unixsupport.h
 putenv.o: putenv.c unixsupport.h
 read.o: read.c unixsupport.h
@@ -70,6 +69,7 @@ setgid.o: setgid.c unixsupport.h
 setsid.o: setsid.c unixsupport.h
 setuid.o: setuid.c unixsupport.h
 shutdown.o: shutdown.c unixsupport.h
+signals.o: signals.c unixsupport.h
 sleep.o: sleep.c unixsupport.h
 socket.o: socket.c unixsupport.h
 socketaddr.o: socketaddr.c unixsupport.h socketaddr.h

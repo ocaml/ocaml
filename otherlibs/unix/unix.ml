@@ -259,7 +259,14 @@ type lock_command =
 
 external lockf : file_descr -> lock_command -> int -> unit = "unix_lockf"
 external kill : int -> int -> unit = "unix_kill"
-external pause : unit -> unit = "unix_pause"
+type sigprocmask_command = SIG_SETMASK | SIG_BLOCK | SIG_UNBLOCK
+external sigprocmask: sigprocmask_command -> int list -> int list
+        = "unix_sigprocmask"
+external sigpending: unit -> int list = "unix_sigpending"
+external sigsuspend: int list -> unit = "unix_sigsuspend"
+
+let pause() =
+  let sigs = sigprocmask SIG_BLOCK [] in sigsuspend sigs
 
 type process_times =
   { tms_utime : float;
