@@ -209,6 +209,11 @@ let instr_cd ppf lexbuf =
       | Sys_error s ->
           error s
 
+let instr_shell ppf lexbuf =
+  let cmd = argument_eol argument lexbuf in
+  let err = Sys.command cmd in
+  if (err != 0) then eprintf "Shell ommand %S failed with exit code %d\n%!" cmd err
+
 let instr_pwd ppf lexbuf =
   eol lexbuf;
   ignore(system "/bin/pwd")
@@ -891,6 +896,9 @@ With no argument, reset the search path." };
      { instr_name = "quit"; instr_prio = false;
        instr_action = instr_quit; instr_repeat = false; instr_help =
 "exit the debugger." };
+     { instr_name = "shell"; instr_prio = false;
+       instr_action = instr_shell; instr_repeat = true; instr_help =
+"Execute a given COMMAND thru the usual shell (using system call)." };
       (* Displacements *)
      { instr_name = "run"; instr_prio = true;
        instr_action = instr_run; instr_repeat = true; instr_help =
