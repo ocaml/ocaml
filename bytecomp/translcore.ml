@@ -623,7 +623,7 @@ and transl_exp0 e =
       let ll = transl_list expr_list in
       begin try
         (* Deactivate constant optimization if array is small enough *)
-        if List.length ll <= 5 then raise Not_constant;
+        if List.length ll <= 4 then raise Not_constant;
         let cl = List.map extract_constant ll in
         let master =
           match kind with
@@ -632,7 +632,7 @@ and transl_exp0 e =
           | Pfloatarray ->
               Lconst(Const_float_array(List.map extract_float cl))
           | Pgenarray ->
-              assert false in
+              raise Not_constant in             (* can this really happen? *)
         Lprim(Pccall prim_obj_dup, [master])
       with Not_constant ->
         Lprim(Pmakearray kind, ll)
