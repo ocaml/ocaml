@@ -61,8 +61,14 @@ let dirname name =
   with Not_found ->
     "."
 
-
-
-
-
+let temp_file prefix suffix =
+  let temp_dir =
+    try
+      Sys.getenv "TMPDIR"
+    with Not_found ->
+      "/tmp" in
+  let rec try_name counter =
+    let name = concat temp_dir (prefix ^ string_of_int counter ^ suffix) in
+    if Sys.file_exists name then try_name (counter + 1) else name
+  in try_name 0
 

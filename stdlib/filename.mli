@@ -43,3 +43,10 @@ val dirname : string -> string
            current directory to [dirname name] (with [Sys.chdir]),
            references to [basename name] (which is a relative file name)
 	   designate the same file as [name] before the call to [chdir]. *)
+val temp_file: string -> string -> string
+        (* [temp_file prefix suffix] returns the name of a
+           non-existent temporary file in the temporary directory.
+           The temporary directory is [/tmp] by default; if set,
+           the value of the environment variable [TMPDIR] is used instead.
+           The base name of the temporary file is formed by concatenating
+           [prefix], then an integer code, then [suffix]. *)
