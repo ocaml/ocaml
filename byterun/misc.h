@@ -69,15 +69,15 @@ typedef char * addr;
 
 #ifdef DEBUG
 #define CAMLassert(x) ((x) ? 0 : caml_failed_assert ( #x , __FILE__, __LINE__))
-int caml_failed_assert (char *, char *, int);
+CAMLextern int caml_failed_assert (char *, char *, int);
 #else
 #define CAMLassert(x) 0
 #endif
 
-void caml_fatal_error (char *msg) Noreturn;
-void caml_fatal_error_arg (char *fmt, char *arg) Noreturn;
-void caml_fatal_error_arg2 (char *fmt1, char *arg1, 
-                            char *fmt2, char *arg2) Noreturn;
+CAMLextern void caml_fatal_error (char *msg) Noreturn;
+CAMLextern void caml_fatal_error_arg (char *fmt, char *arg) Noreturn;
+CAMLextern void caml_fatal_error_arg2 (char *fmt1, char *arg1, 
+				       char *fmt2, char *arg2) Noreturn;
 
 /* Data structures */
 
