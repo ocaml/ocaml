@@ -54,8 +54,8 @@ random.cmo: array.cmi char.cmi digest.cmi string.cmi random.cmi
 random.cmx: array.cmx char.cmx digest.cmx string.cmx random.cmi 
 set.cmo: set.cmi 
 set.cmx: set.cmi 
-sort.cmo: sort.cmi 
-sort.cmx: sort.cmi 
+sort.cmo: array.cmi sort.cmi 
+sort.cmx: array.cmx sort.cmi 
 stack.cmo: list.cmi stack.cmi 
 stack.cmx: list.cmx stack.cmi 
 stream.cmo: list.cmi obj.cmi string.cmi stream.cmi 

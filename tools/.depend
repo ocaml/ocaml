@@ -12,8 +12,12 @@ objinfo.cmo: ../utils/config.cmi ../bytecomp/emitcode.cmi
 objinfo.cmx: ../utils/config.cmx ../bytecomp/emitcode.cmx 
 ocamlcp.cmo: ../driver/main_args.cmi 
 ocamlcp.cmx: ../driver/main_args.cmx 
-ocamldep.cmo: ../utils/misc.cmi 
-ocamldep.cmx: ../utils/misc.cmx 
+ocamldep.cmo: ../parsing/lexer.cmi ../parsing/location.cmi \
+    ../parsing/longident.cmi ../utils/misc.cmi ../parsing/parse.cmi \
+    ../parsing/parsetree.cmi ../parsing/syntaxerr.cmi 
+ocamldep.cmx: ../parsing/lexer.cmx ../parsing/location.cmx \
+    ../parsing/longident.cmx ../utils/misc.cmx ../parsing/parse.cmx \
+    ../parsing/parsetree.cmi ../parsing/syntaxerr.cmx 
 ocamlprof.cmo: ../utils/clflags.cmo ../utils/config.cmi ../parsing/lexer.cmi \
     ../parsing/location.cmi ../utils/misc.cmi ../parsing/parse.cmi \
     ../parsing/parsetree.cmi ../parsing/syntaxerr.cmi 
