@@ -1,5 +1,62 @@
-Objective Caml 1.01:
+Objective Caml 1.02:
+--------------------
+* Typing: 
+  - fixed bug with type names escaping their scope via unification
+    with non-generalized type variables '_a;
+  - keep #class abbreviations longer;
+  - faster checking of well-formed object types in declarations;
+  - stricter checking of "with" constraints over signatures (arity
+    mismatch, overriding of an already manifest type).
 
+* Compilation (ocamlc and ocamlopt):
+  - fixed bug in compilation of recursive classes;
+  - [|...|] and let...rec... allowed inside definitions of recursive
+    data structures;
+
+* Bytecode compilation: fixed overflow in linker for programs with
+  more than 65535 globals and constants.
+
+* Native-code compilation:
+  - ocamlopt ported to HPPA under HP/UX, Intel x86 under Solaris 2,
+    PowerMacintosh under MkLinux;
+  - fixed two bugs related to floating-point arrays (one with "t array"
+    where t is an abstract type implemented as float, one with
+    comparison between two float arrays on 32 bit platforms);
+  - fixed reloading/spilling problem causing non-termination of
+    register allocation;
+  - fixed bugs in handling of () causing loss of tail recursion;
+  - fixed reloading bug in indirect calls.
+
+* Windows NT/95 port:
+  - complete port of the threads library (Pascal Cuoq);
+  - partial port of the Unix library (Pascal Cuoq);
+  - expansion of *, ? and @ on the command line.
+
+* Standard library:
+  - bug in in List.exists2 fixed;
+  - bug in "Random.int n" for very large n on 64-bit machines fixed;
+  - module Format: added a "general purpose" type of box (open_box);
+    can output on several formatters at the same time.
+
+* The "threads" library:
+  - implementation on top of native threads available for Win32 and
+    POSIX 1003.1c;
+  - added -thread option to select a thread-safe version of the
+    standard library, the ThreadIO module is no longer needed.
+
+* The "graph" library: avoid invalid pixmaps when doing 
+  open_graph/close_graph several times.
+
+* The "dynlink" library: support for "private" (no re-export) dynamic loading.
+
+* ocamlyacc: skip '...' character literals correctly.
+
+* C interface: C code linked with O'Caml code can provide its own main()
+  and call caml_main() later.
+
+
+Objective Caml 1.01:
+--------------------
 * Typing: better report of type incompatibilities; 
   non-generalizable type variables in a struct...end no longer flagged
   immediately as an error;
