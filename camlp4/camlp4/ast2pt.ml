@@ -177,7 +177,8 @@ value rec ctyp =
         | Some None -> (False, List.map (fun (c, _, _) -> c) catl)
         | Some (Some (clos, sl)) -> (clos, sl) ]
       in
-      mktyp loc (Ptyp_variant catl clos sl)
+      let catl = List.map (fun (c, a, t) -> Rtag c a t) catl in
+      mktyp loc (Ptyp_variant catl clos (Some sl))
   | TyXnd loc c _ ->
       error loc ("type \"" ^ c ^ "\" (extension) not allowed here") ]
 and meth_list loc fl v =

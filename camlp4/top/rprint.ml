@@ -147,22 +147,25 @@ and print_simple_out_type ppf =
         [ None | Some [] -> ()
         | Some l -> fprintf ppf "@;<1 -2>> @[<hov>%a@]" pr_present l ]
       in
+      let print_fields ppf =
+        fun
+        [ Ovar_fields fields ->
+            print_list print_row_field (fun ppf -> fprintf ppf "@;<1 -2>| ")
+              ppf fields
+        | Ovar_name id tyl ->
+            fprintf ppf "@[%a%a@]" print_typargs tyl print_ident id ]
+      in
       fprintf ppf "%s[|%s@[<hv>@[<hv>%a@]%a|]@]" (if non_gen then "_" else "")
         (if closed then if tags = None then " " else "< "
          else if tags = None then "> "
          else "? ")
-        (print_list print_row_field (fun ppf -> fprintf ppf "@;<1 -2>| "))
-        row_fields print_present tags
+        print_fields row_fields
+        print_present tags
   | Otyp_object fields rest ->
       fprintf ppf "@[<2>< %a >@]" (print_fields rest) fields
-  | Otyp_class ng id tyl tags ->
-      let print_present ppf =
-        fun
-        [ [] -> ()
-        | l -> fprintf ppf "@[<hov>[>%a@]" pr_present l ]
-      in
-      fprintf ppf "@[%a%s#%a%a@]" print_typargs tyl (if ng then "_" else "")
-        print_ident id print_present tags
+  | Otyp_class ng id tyl ->
+      fprintf ppf "@[%a%s#%a@]" print_typargs tyl (if ng then "_" else "")
+        print_ident id
   | Otyp_manifest ty1 ty2 ->
       fprintf ppf "@[<2>%a ==@ %a@]" print_out_type ty1 print_out_type ty2
   | Otyp_sum constrs ->
