@@ -211,9 +211,9 @@ rule token = parse
         comment_start_pos := Lexing.lexeme_start lexbuf;
         comment lexbuf;
         token lexbuf }
-  | "#" [' ' '\t']* ['0'-'9']+ [' ' '\t']* "\"" [^ '\n' '\r'] *
+  | "#" ("line")? [' ' '\t']* ['0'-'9']+ [^ '\n' '\r'] *
     ('\n' | '\r' | "\r\n")
-      (* # linenum "filename" flags \n *)
+      (* # linenum ... or #line linenum ... *)
       { token lexbuf }
   | "#"  { SHARP }
   | "&"  { AMPERSAND }
