@@ -64,7 +64,9 @@ static long parse_long(char * p)
   int sign, base, d;
 
   p = parse_sign_and_base(p, &base, &sign);
-  for (res = 0; /*nothing*/; p++) {
+  d = parse_digit(p);
+  if (d < 0) failwith("int_of_string");
+  for (p++, res = d; /*nothing*/; p++) {
     d = parse_digit(p);
     if (d < 0) break;
     res = base * res + d;
