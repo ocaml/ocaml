@@ -125,7 +125,7 @@ pattern_matching.cmx: ../typing/ctype.cmx debugcom.cmx debugger_config.cmx \
 primitives.cmo: ../otherlibs/unix/unix.cmi primitives.cmi 
 primitives.cmx: ../otherlibs/unix/unix.cmx primitives.cmi 
 printval.cmo: debugcom.cmi ../toplevel/genprintval.cmi ../utils/misc.cmi \
-    ../typing/oprint.cmo ../typing/outcometree.cmi parser_aux.cmi \
+    ../typing/oprint.cmi ../typing/outcometree.cmi parser_aux.cmi \
     ../typing/path.cmi ../typing/printtyp.cmi ../bytecomp/symtable.cmi \
     ../typing/types.cmi printval.cmi 
 printval.cmx: debugcom.cmx ../toplevel/genprintval.cmx ../utils/misc.cmx \

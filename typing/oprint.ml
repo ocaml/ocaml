@@ -104,12 +104,12 @@ let print_out_value ppf tree =
 
 let rec print_list_init pr sep ppf = function
   | [] -> ()
-  | a :: l -> sep ppf; pr ppf a; print_list_init pr sep ppf l;;
+  | a :: l -> sep ppf; pr ppf a; print_list_init pr sep ppf l
 
 let rec print_list pr sep ppf = function
   | [] -> ()
   | [a] -> pr ppf a
-  | a :: l -> pr ppf a; sep ppf; print_list pr sep ppf l;;
+  | a :: l -> pr ppf a; sep ppf; print_list pr sep ppf l
 
 let pr_present =
   print_list (fun ppf s -> fprintf ppf "`%s" s) (fun ppf -> fprintf ppf "@ ")
@@ -403,7 +403,7 @@ let rec print_items ppf =
           fprintf ppf "@[%a@]" print_out_sig_item tree
       end;
       if items <> [] then
-        fprintf ppf "@ %a" print_items items;;
+        fprintf ppf "@ %a" print_items items
 
 let print_out_phrase ppf =
   function

@@ -64,6 +64,7 @@ typing/includemod.cmi: typing/ctype.cmi typing/env.cmi typing/ident.cmi \
     typing/typedtree.cmi typing/types.cmi 
 typing/mtype.cmi: typing/env.cmi typing/ident.cmi typing/path.cmi \
     typing/types.cmi 
+typing/oprint.cmi: typing/outcometree.cmi 
 typing/parmatch.cmi: typing/env.cmi parsing/location.cmi typing/typedtree.cmi \
     typing/types.cmi 
 typing/path.cmi: typing/ident.cmi 
@@ -137,8 +138,8 @@ typing/mtype.cmo: typing/btype.cmi typing/ctype.cmi typing/env.cmi \
     typing/ident.cmi typing/path.cmi typing/types.cmi typing/mtype.cmi 
 typing/mtype.cmx: typing/btype.cmx typing/ctype.cmx typing/env.cmx \
     typing/ident.cmx typing/path.cmx typing/types.cmx typing/mtype.cmi 
-typing/oprint.cmo: typing/outcometree.cmi 
-typing/oprint.cmx: typing/outcometree.cmi 
+typing/oprint.cmo: typing/outcometree.cmi typing/oprint.cmi 
+typing/oprint.cmx: typing/outcometree.cmi typing/oprint.cmi 
 typing/parmatch.cmo: parsing/asttypes.cmi typing/btype.cmi typing/ctype.cmi \
     typing/datarepr.cmi typing/env.cmi typing/ident.cmi parsing/location.cmi \
     utils/misc.cmi typing/path.cmi typing/typedtree.cmi typing/types.cmi \
@@ -157,7 +158,7 @@ typing/primitive.cmo: utils/misc.cmi typing/primitive.cmi
 typing/primitive.cmx: utils/misc.cmx typing/primitive.cmi 
 typing/printtyp.cmo: parsing/asttypes.cmi typing/btype.cmi utils/clflags.cmo \
     typing/ctype.cmi typing/env.cmi typing/ident.cmi parsing/longident.cmi \
-    utils/misc.cmi typing/oprint.cmo typing/outcometree.cmi typing/path.cmi \
+    utils/misc.cmi typing/oprint.cmi typing/outcometree.cmi typing/path.cmi \
     typing/predef.cmi typing/primitive.cmi typing/types.cmi \
     typing/printtyp.cmi 
 typing/printtyp.cmx: parsing/asttypes.cmi typing/btype.cmx utils/clflags.cmx \
@@ -706,7 +707,7 @@ toplevel/toploop.cmo: bytecomp/bytegen.cmi utils/clflags.cmo \
     bytecomp/emitcode.cmi typing/env.cmi driver/errors.cmi \
     toplevel/genprintval.cmi typing/ident.cmi parsing/lexer.cmi \
     parsing/location.cmi parsing/longident.cmi bytecomp/meta.cmi \
-    utils/misc.cmi typing/oprint.cmo typing/outcometree.cmi parsing/parse.cmi \
+    utils/misc.cmi typing/oprint.cmi typing/outcometree.cmi parsing/parse.cmi \
     parsing/parsetree.cmi typing/path.cmi typing/predef.cmi \
     parsing/printast.cmi bytecomp/printinstr.cmi bytecomp/printlambda.cmi \
     typing/printtyp.cmi bytecomp/simplif.cmi bytecomp/symtable.cmi \
