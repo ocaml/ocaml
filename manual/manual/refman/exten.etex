@@ -11,106 +11,11 @@ future.
 \section{Streams and stream parsers}
 \label{s:streams}
 
-Objective Caml comprises a library type for {\it streams}
-(possibly infinite sequences of elements, that are evaluated on
-demand), and associated stream expressions, to build streams, and
-stream patterns, to destructure streams. Streams and stream patterns
-provide a natural approach to the writing of recursive-descent
-parsers.
-
-Streams are presented by the following extensions to the syntactic
-classes of expressions:
-
-\ikwd{parser\@\texttt{parser}}
-\ikwd{match\@\texttt{match}}
-\ikwd{match\@\texttt{when}}
-
-\begin{syntax}
-expr:
-          \ldots
-        | '[<' '>]'
-        | '[<' stream-component { ';' stream-component } '>]'
-        | 'parser' [pattern] stream-matching
-        | 'match' expr 'with' 'parser' [pattern] stream-matching
-;
-stream-component:
-          "'" expr
-        | expr
-;
-stream-matching:
-        stream-pattern [pattern] '->' expr
-          { '|' stream-pattern [pattern] '->' expr }
-;
-stream-pattern:
-          '[<' '>]'
-        | '[<' stream-pat-comp { ';' stream-pat-comp [ '??' expr ] }'>]'
-;
-stream-pat-comp:
-          "'" pattern [ 'when' expr ]
-        | pattern '=' expr
-        | ident
-;
-\end{syntax}
-
-Stream expressions are bracketed by \verb"[<" and \verb">]". They
-represent the concatenation of their components. The component
-@"'" expr@ represents the one-element stream whose element is the
-value of @expr@. The component @expr@ represents a
-sub-stream. For instance, if both "s" and "t" are streams of integers,
-then \verb"[<'1; s; t; '2>]" is a stream of integers containing the
-element "1", then the elements of "s", then those of "t", and finally
-"2". The empty stream is denoted by \verb"[< >]".
-
-Unlike any other kind of expressions in the language, stream
-expressions are submitted to lazy evaluation: the components are not
-evaluated when the stream is built, but only when they are accessed
-during stream matching. The components are evaluated once, the first
-time they are accessed; the following accesses reuse the value
-computed the first time.
-
-Stream patterns, also bracketed by \verb"[<" and \verb">]", describe
-initial segments of streams. In particular, the stream pattern
-\verb"[< >]" matches all streams. Stream pattern components are
-matched against the corresponding elements of a stream. The component
-@"'" pattern@ matches the corresponding stream element against the
-pattern; if followed by @when@, the match is accepted only if the
-result of the guard expression is "true". The component @pattern '='
-expr@ applies the function denoted by @expr@ to the current stream,
-then matches the result of the function against @pattern@. Finally,
-the component @ident@ simply binds the identifier to the stream being
-matched.
-
-Stream matching proceeds destructively: once a component has been
-matched, it is discarded from the stream (by in-place modification).
-
-Stream matching proceeds in two steps: first, a pattern is selected by
-matching the stream against the first components of the stream
-patterns; then, the following components of the selected pattern are
-checked against the stream. If the following components do not match,
-the exception "Stream.Error" is raised. There is no backtracking
-here: stream matching commits to the pattern selected according to the
-first element. If none of the first components of the stream patterns
-match, the exception "Stream.Failure" is raised. The
-"Stream.Failure" exception causes the next alternative to be
-tried, if it occurs during the matching of the first element of a
-stream, before matching has committed to one pattern.
-
-The streams hold the count of their elements discarded. The optional
-@pattern@ before the first stream pattern is bound to the stream
-count before the matching. The one after each stream pattern
-(optional, too) is bound to the stream count after the matching.
-
-The exception "Stream.Error" has a string parameter coming from the
-optional @'??' expr@ after the stream pattern components (its default
-is the empty string). This expression is evaluated only in case of
-error.
-
-See {\em Functional programming using Caml Light} for a more gentle
-introductions to streams, and for some examples of their use in
-writing parsers. A more formal presentation of streams, and a
-discussion of alternate semantics, can be found in {\em Parsers in ML}
-by Michel Mauny and Daniel de Rauglaudre, in the proceedings of the
-1992 ACM conference on Lisp and Functional Programming.
+Streams and stream parsers are no longer part of the Objective Caml
+language, but available through a CamlP4 syntax extension.  See the
+CamlP4 reference manual for more information.  Objective Caml programs
+that use streams and stream parsers can be compiled with the
+"-pp camlp4o" option to "ocamlc" and "ocamlopt".
 
 \section{Range patterns}
 
