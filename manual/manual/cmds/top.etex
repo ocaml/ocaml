@@ -78,6 +78,9 @@ its contents are read as a sequence of Objective Caml phrases
 and executed as per the "#use" directive
 described in section~\ref{s:toplevel-directives}.
 The evaluation outcode for each phrase are not displayed.
+If the current directory does not contain an ".ocamlinit" file, but
+the user's home directory (environment variable "HOME") does, the
+latter is read and executed as described below.
 
 The toplevel system does not perform line editing, but it can
 easily be used in conjunction with an external line editor such as
