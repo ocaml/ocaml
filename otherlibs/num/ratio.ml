@@ -370,40 +370,48 @@ let div_ratio_big_int r bi =
 (* Functions on type string                                 *)
 (* giving floating point approximations of rational numbers *)
 
-let only_zeros s i l =
- let res = ref true in
- for j = i to i + l - 1 do
-  if s.[j] <> '0' then res := false
- done;
- !res
+(* Compares strings that contains only digits, have the same length,
+   from index i to index i + l *)
+let rec compare_num_string s1 s2 i len =
+ if i >= len then 0 else
+ let c1 = int_of_char s1.[i]
+ and c2 = int_of_char s2.[i] in
+ match compare_int c1 c2 with
+ | 0 -> compare_num_string s1 s2 (succ i) len
+ | c -> c;;
 
 (* Position of the leading digit of the decimal expansion          *)
 (* of a strictly positive rational number                          *)
 (* if the decimal expansion of a non null rational r is equal to   *)
 (* sigma for k=-P to N of r_k*10^k then msd_ratio r = N            *)
 (* Nota : for a big_int we have msd_ratio = nums_digits_big_int -1 *)
+
+(* Tests if s has only zeros characters from index i to index lim *)
+let rec only_zeros s i lim =
+ i >= lim || s.[i] == '0' && only_zeros s (succ i) lim;;
+
+(* Nota : for a big_int we have msd_ratio = nums_digits_big_int -1 *)
 let msd_ratio r =
  cautious_normalize_ratio r;
  if null_denominator r then failwith_zero "msd_ratio"
- else if sign_big_int r.numerator = 0 then 0
+ else if sign_big_int r.numerator == 0 then 0
  else begin
          let str_num = string_of_big_int r.numerator
          and str_den = string_of_big_int r.denominator in
          let size_num = String.length str_num
          and size_den = String.length str_den in
-         let rec msd_rec str_num nnum str_den nden i m = 
-           if i > nnum then
-            if i > nden or only_zeros str_den i (nden - i)
-            then m else pred m
-           else if i > nden then m
-           else match compare_int (Char.code (String.get str_num i)) 
-                                  (Char.code (String.get str_den i)) with
-                    0 -> msd_rec str_num nnum str_den nden (succ i) m
-                  | 1 -> m
-                  |  _ -> pred m
-         in msd_rec str_num (pred size_num) str_den (pred size_den) 
-                     0 (size_num - size_den)
+         let size_min = min size_num size_den in
+         let m = size_num - size_den in
+         let cmp = compare_num_string str_num str_den 0 size_min in
+         match cmp with
+         | 1 -> m
+         | -1 -> pred m
+         | _ ->
+           if m >= 0 then m else
+           if only_zeros str_den size_min size_den then m
+           else pred m
       end
+;;
 
 (* Decimal approximations of rational numbers *)
 
@@ -494,7 +502,7 @@ let approx_ratio_exp n r =
                 (if k < 0
                   then 
                    div_big_int (abs_big_int r.numerator) 
-                               (base_power_big_int 10 (-k) 
+                               (base_power_big_int 10 (- k) 
                                                    r.denominator)
                  else 
                   div_big_int (base_power_big_int
