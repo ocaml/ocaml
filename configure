@@ -368,7 +368,7 @@ if sh ./hasgot socket socketpair bind listen accept connect; then
   echo "#define HAS_SOCKETS" >> s.h
   has_sockets=yes
 elif sh ./hasgot -lnsl -lsocket socket socketpair bind listen accept connect; then
-  echo "You have BSD sockets (with the additional libraries -lnsl -lsocket)"
+  echo "You have BSD sockets (with libraries '-lnsl -lsocket')"
   cclibs="$cclibs -lnsl -lsocket"
   echo "#define HAS_SOCKETS" >> s.h
   has_sockets=yes
