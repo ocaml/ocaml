@@ -312,8 +312,9 @@ seen as a colored point.
 (p : point :> colored_point);;
 \end{caml_example}
 Indeed, backward coercions are unsafe, and should be combined with a type case,
-possiblly raising a runtime error.  However, there is not such operation
+possibly raising a runtime error.  However, there is not such operation
 available in the language. 
+% XXX A-t-on besoin de le dire ?
 
 Be aware that subtyping and inheritance are not related.  Inheritance is a
 syntactic relation between classes while subtyping is a semantic relation
@@ -496,6 +497,7 @@ Indeed, there are situations when the two approaches are quite similar.
 
 % XXX stack example
 
+Implementing stacks is straightforward.
 \begin{caml_example}
 exception Empty;;
 class 'a stack () =
@@ -508,21 +510,22 @@ class 'a stack () =
 end;;
 \end{caml_example}
 
-However, the nice correspondence between the implementations of stacks as 
-modules or classes is a very particular case. 
-
-% XXX Maps
-
-% problem 
-
+However, writing a method for iterating over a stack is more
+problematic.  A method "fold" would have type
+"('b -> 'a -> 'b) -> 'b -> 'b". This adds another type variable in the
+class type. The class "set" must be parameterize over "'b" as well.
+But this is not enough, as method "fold" of a given object can only be
+applied to functions that all have the same type.
 \begin{caml_example}
-class 'a stack2 () =
+class ('a, 'b) stack2 () =
   inherit ('a) stack ()
-  method fold f x = List.fold_left f x l
+  method fold f (x : 'b) = List.fold_left f x l
 end;;
+let s = new stack2 ();;
+s#fold (+) 0;;
+s;;
 \end{caml_example}
 
-% solution
 The solution is to leave the function "fold" outside of the class.
 \begin{caml_example}
 class 'a stack3 () =
@@ -535,14 +538,24 @@ let stack_fold (s : 'a #stack3) f x =
   !accu;;
 \end{caml_example}
 
+% However, the nice correspondence between the implementations of stacks as 
+% modules or classes is a very particular case. 
 
-% XXX Sets
-
+% XXX Maps
 
 % problem 
-                                
+
 % solution
 
+
+Implementing sets leads to another difficulty.  Indeed, the method
+"union" needs to be able to access the internal representation of
+another object of the same class.  For that, a "set" class must have
+an additional method returning this representation.  However, this
+representation should not be public.  This result is obtained by
+making the type of the representation abstract via a module signature
+constraint. From outside, the additional method appears like a tag
+ensuring that an object belongs to class "set".
 \begin{caml_example}
 module type SET =
   sig
@@ -552,8 +565,8 @@ module type SET =
       method mem : 'a -> bool
       method add : 'a -> 'b
       method union : 'b -> 'b
-      method tag : 'a tag
       method iter : ('a -> unit) -> unit
+      method tag : 'a tag
     end
   end;;
 module Set : SET =
@@ -580,3 +593,6 @@ module Set : SET =
     end
   end;;
 \end{caml_example}
+% LocalWords:  Caml objectexamples bsection init caml val int Oo succ incr ref
+% LocalWords:  typecheck leq bool cp eval sig struct ABSPOINT Abspoint iter
+% LocalWords:  accu mem rec repr
