@@ -226,7 +226,7 @@ at a given sectioning level.  The default association is 1 for "section",
 Suppress header in generated documentation.
 
 \item["-notoc"]
-Do not generate a table of contents (\LaTeX\ only).
+Do not generate a table of contents.
 
 \item["-notrailer"]
 Suppress trailer in generated documentation.
@@ -244,8 +244,20 @@ The following options apply in conjunction with the "-texi" option:
 \item["-esc8"]
 Escape accented characters in Info files.
 
+\item["-info-entry"]
+Specify Info directory entry.
+
+\item["-info-section"]
+Specify section of Info directory.
+
+\item["-noheader"]
+Suppress header in generated documentation.
+
 \item["-noindex"]
 Do not build index for Info files.
+
+\item["-notrailer"]
+Suppress trailer in generated documentation.
 \end{options}
 
 \subsubsection*{Options for generating "dot" graphs}
