@@ -41,7 +41,8 @@ CAMLprim value caml_static_free(value blk)
    needed (before freeing it) - this might be useful for a JIT
    implementation */
 
-CAMLprim value caml_static_release_bytecode(value blk, value size) {
+CAMLprim value caml_static_release_bytecode(value blk, value size) 
+{
   caml_release_bytecode((code_t) blk, (asize_t) Long_val(size));
   return Val_unit;
 }
