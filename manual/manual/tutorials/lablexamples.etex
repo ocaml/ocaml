@@ -326,7 +326,7 @@ to prefix their names with a backquote character "`".
 [`On; `Off];;
 `Number 1;;
 let f = function `On -> 1 | `Off -> 0 | `Number n -> n;;
-List.map ~f [`On; `Off];;
+List.map f [`On; `Off];;
 \end{caml_example}
 "[>`Off|`On] list" means that to match this list, you should at
 least be able to match "`Off" and "`On", without argument.
@@ -347,9 +347,9 @@ also the case for type abbreviations. Such types do not contain "<" or
 just like in a normal datatype definition. 
 \begin{caml_example}
 type 'a vlist = [`Nil | `Cons of 'a * 'a vlist];;
-let rec map ~f : 'a vlist -> 'b vlist = function
+let rec map f : 'a vlist -> 'b vlist = function
   | `Nil -> `Nil
-  | `Cons(a, l) -> `Cons(f a, map ~f l)
+  | `Cons(a, l) -> `Cons(f a, map f l)
 ;;
 \end{caml_example}
 
