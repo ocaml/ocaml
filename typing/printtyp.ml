@@ -384,7 +384,7 @@ let exception_declaration id decl =
 let value_ident id =
   match (Ident.name id).[0] with
     'a'..'z'|'\223'..'\246'|'\248'..'\255'|'_' -> ident id
-  | _ -> print_string "("; ident id; print_string ")"
+  | _ -> print_string "( "; ident id; print_string " )"
 
 let value_description id decl =
   open_box 2;
