@@ -15,17 +15,23 @@
 #include <alloc.h>
 #include "unixsupport.h"
 
-#ifdef HAS_GETCWD
-
 #ifndef _WIN32
 #include <sys/param.h>
-#else
-#define MAXPATHLEN 512
 #endif
+
+#ifndef PATH_MAX
+#ifdef MAXPATHLEN
+#define PATH_MAN MAXPATHLEN
+#else
+#define PATH_MAX 512
+#endif
+#endif
+
+#ifdef HAS_GETCWD
 
 value unix_getcwd(value unit)     /* ML */
 {
-  char buff[MAXPATHLEN];
+  char buff[PATH_MAX];
   if (getcwd(buff, sizeof(buff)) == 0) uerror("getcwd", Nothing);
   return copy_string(buff);
 }
@@ -33,11 +39,9 @@ value unix_getcwd(value unit)     /* ML */
 #else
 #ifdef HAS_GETWD
 
-#include <sys/param.h>
-
 value unix_getcwd(value unit)
 {
-  char buff[MAXPATHLEN];
+  char buff[PATH_MAX];
   if (getwd(buff) == 0) uerror("getcwd", copy_string(buff));
   return copy_string(buff);
 }

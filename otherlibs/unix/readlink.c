@@ -19,9 +19,17 @@
 #include <sys/param.h>
 #include "unixsupport.h"
 
+#ifndef PATH_MAX
+#ifdef MAXPATHLEN
+#define PATH_MAN MAXPATHLEN
+#else
+#define PATH_MAX 512
+#endif
+#endif
+
 value unix_readlink(value path)        /* ML */
 {
-  char buffer[MAXPATHLEN];
+  char buffer[PATH_MAX];
   int len;
   len = readlink(String_val(path), buffer, sizeof(buffer) - 1);
   if (len == -1) uerror("readlink", path);
