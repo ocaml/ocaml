@@ -282,8 +282,9 @@ let bigarray_set arr arg newval =
 %right COLONEQUAL LESSMINUS             /* assignments */
 %left  AS                               /* as in patterns */
 %left  BAR                              /* | in patterns */
+%nonassoc p_comma_list                  /* must be lower than COMMA */
 %left  COMMA                            /* , in expressions, patterns, types */
-%right prec_type_arrow                  /* -> in type expressions */
+%right MINUSGREATER                     /* -> in type expressions */
 %right OR BARBAR                        /* or */
 %right AMPERSAND AMPERAMPER             /* & */
 %left  INFIXOP0 EQUAL LESS GREATER      /* = < > etc */
@@ -295,7 +296,7 @@ let bigarray_set arr arg newval =
 %right prec_unary_minus                 /* - unary */
 %left  prec_appl                        /* function application */
 %right prec_constr_appl                 /* constructor application */
-%left  SHARP                            /* method call */
+%right SHARP                            /* method call */
 %left  DOT                              /* record access, array access */
 %right PREFIXOP                         /* ! */
 
@@ -727,7 +728,7 @@ let_pattern:
       { mkpat(Ppat_constraint($1, $3)) }
 ;
 expr:
-    simple_expr
+    simple_expr %prec SHARP
       { $1 }
   | simple_expr simple_labeled_expr_list %prec prec_appl
       { mkexp(Pexp_apply($1, List.rev $2)) }
@@ -745,7 +746,7 @@ expr:
       { mkexp(Pexp_try($2, List.rev $5)) }
   | TRY seq_expr WITH error %prec prec_try
       { syntax_error() }
-  | expr_comma_list
+  | expr_comma_list %prec p_comma_list
       { mkexp(Pexp_tuple(List.rev $1)) }
   | constr_longident simple_expr %prec prec_constr_appl
       { mkexp(Pexp_construct($1, Some $2, false)) }
@@ -831,7 +832,7 @@ simple_expr:
       { mkexp(Pexp_ident $1) }
   | constant
       { mkexp(Pexp_constant $1) }
-  | constr_longident
+  | constr_longident        %prec prec_constr_appl
       { mkexp(Pexp_construct($1, None, false)) }
   | name_tag
       { mkexp(Pexp_variant($1, None)) }
@@ -897,19 +898,19 @@ simple_labeled_expr_list:
       { $2 :: $1 }
 ;
 labeled_simple_expr:
-    simple_expr
+    simple_expr %prec SHARP
       { ("", $1) }
   | label_expr
       { $1 }
 ;
 label_expr:
-    LABEL simple_expr
+    LABEL simple_expr %prec SHARP
       { ($1, $2) }
   | TILDE label_ident
       { $2 }
   | QUESTION label_ident
       { ("?" ^ fst $2, snd $2) }
-  | OPTLABEL simple_expr
+  | OPTLABEL simple_expr %prec SHARP
       { ("?" ^ $1, $2) }
 ;
 label_ident:
@@ -993,7 +994,7 @@ pattern:
       { $1 }
   | pattern AS val_ident
       { mkpat(Ppat_alias($1, $3)) }
-  | pattern_comma_list
+  | pattern_comma_list  %prec p_comma_list
       { mkpat(Ppat_tuple(List.rev $1)) }
   | constr_longident pattern %prec prec_constr_appl
       { mkpat(Ppat_construct($1, Some $2, false)) }
@@ -1006,7 +1007,7 @@ pattern:
       { mkpat(Ppat_or($1, $3)) }
 ;
 simple_pattern:
-    val_ident
+    val_ident %prec prec_let
       { mkpat(Ppat_var $1) }
   | UNDERSCORE
       { mkpat(Ppat_any) }
@@ -1171,24 +1172,23 @@ core_type2:
     simple_core_type_or_tuple
       { $1 }
   | QUESTION LIDENT COLON core_type2 MINUSGREATER core_type2
-      %prec prec_type_arrow
       { mktyp(Ptyp_arrow("?" ^ $2 ,
                {ptyp_desc = Ptyp_constr(Lident "option", [$4]);
                 ptyp_loc = $4.ptyp_loc}, $6)) }
-  | OPTLABEL core_type2 MINUSGREATER core_type2 %prec prec_type_arrow
+  | OPTLABEL core_type2 MINUSGREATER core_type2
       { mktyp(Ptyp_arrow("?" ^ $1 ,
                {ptyp_desc = Ptyp_constr(Lident "option", [$2]);
                 ptyp_loc = $2.ptyp_loc}, $4)) }
-  | LIDENT COLON core_type2 MINUSGREATER core_type2 %prec prec_type_arrow
+  | LIDENT COLON core_type2 MINUSGREATER core_type2
       { mktyp(Ptyp_arrow($1, $3, $5)) }
-  | core_type2 MINUSGREATER core_type2 %prec prec_type_arrow
+  | core_type2 MINUSGREATER core_type2
       { mktyp(Ptyp_arrow("", $1, $3)) }
 ;
 
 simple_core_type:
-    simple_core_type2
+    simple_core_type2  %prec SHARP
       { $1 }
-  | LPAREN core_type_comma_list RPAREN
+  | LPAREN core_type_comma_list RPAREN %prec SHARP      /* FIXME duh ?? */
       { match $2 with [sty] -> sty | _ -> raise Parse_error }
 ;
 simple_core_type2:
@@ -1347,7 +1347,7 @@ val_longident:
   | mod_longident DOT val_ident                 { Ldot($1, $3) }
 ;
 constr_longident:
-    mod_longident                               { $1 }
+    mod_longident     %prec prec_constr_appl    { $1 }
   | LBRACKET RBRACKET                           { Lident "[]" }
   | LPAREN RPAREN                               { Lident "()" }
   | FALSE                                       { Lident "false" }
