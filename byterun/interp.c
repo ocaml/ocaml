@@ -167,10 +167,6 @@ value interprete(prog, prog_size)
     return Val_unit;
   }
 
-#ifdef THREADED_CODE
-  if (prog[0] <= STOP) thread_code(prog, prog_size);
-#endif
-
   sp = extern_sp;
   pc = prog;
   extra_args = 0;

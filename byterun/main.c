@@ -12,7 +12,7 @@
 /* $Id$ */
 
 /* Main entry point (can be overriden by a user-provided main()
-   function that calls caml_main() later). */
+   function that calls caml_startup() later. */
 
 #include "misc.h"
 #include "mlvalues.h"
@@ -30,7 +30,6 @@ extern void expand_command_line P((int *, char ***));
 int volatile have_to_interact = 0;
 #endif
 
-
 int main(argc, argv)
      int argc;
      char ** argv;
@@ -45,3 +44,4 @@ int main(argc, argv)
   sys_exit(Val_int(0));
   return 0; /* not reached */
 }
+

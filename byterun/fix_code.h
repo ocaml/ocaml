@@ -24,14 +24,14 @@
 extern code_t start_code;
 extern asize_t code_size;
 extern unsigned char * saved_code;
-#ifdef THREADED_CODE
-extern void ** instr_table;
-#endif
 
 void load_code P((int fd, asize_t len));
 void fixup_endianness P((code_t code, asize_t len));
-void thread_code P((code_t code, asize_t len));
 void set_instruction P((code_t pos, opcode_t instr));
 
+#ifdef THREADED_CODE
+extern void ** instr_table;
+void thread_code P((code_t code, asize_t len));
+#endif
 
 #endif

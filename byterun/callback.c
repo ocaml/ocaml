@@ -18,12 +18,13 @@
 #include "memory.h"
 #include "mlvalues.h"
 
-/* Bytecode callbacks -- implemented in asm for the native code compiler */
+/* Bytecode callbacks (implemented in asm for the native code compiler) */
 
 #ifndef NATIVE_CODE
 
 #include "interp.h"
 #include "instruct.h"
+#include "fix_code.h"
 #include "stacks.h"
 
 int callback_depth = 0;
@@ -32,10 +33,31 @@ static opcode_t callback1_code[] = { ACC1, APPLY1, POP, 1, STOP };
 static opcode_t callback2_code[] = { ACC2, APPLY2, POP, 1, STOP };
 static opcode_t callback3_code[] = { ACC3, APPLY3, POP, 1, STOP };
 
+#ifdef THREADED_CODE
+
+static int callback_code_threaded = 0;
+
+static void thread_callback()
+{
+  thread_code(callback1_code, sizeof(callback1_code));
+  thread_code(callback2_code, sizeof(callback2_code));
+  thread_code(callback3_code, sizeof(callback3_code));
+  callback_code_threaded = 1;
+}
+
+#define Init_callback() if (!callback_code_threaded) thread_callback()
+
+#else
+
+#define Init_callback()
+
+#endif
+
 value callback(closure, arg)
      value closure, arg;
 {
   value res;
+  Init_callback();
   extern_sp -= 2;
   extern_sp[0] = arg;
   extern_sp[1] = closure;
@@ -49,6 +71,7 @@ value callback2(closure, arg1, arg2)
      value closure, arg1, arg2;
 {
   value res;
+  Init_callback();
   extern_sp -= 3;
   extern_sp[0] = arg1;
   extern_sp[1] = arg2;
@@ -63,6 +86,7 @@ value callback3(closure, arg1, arg2, arg3)
      value closure, arg1, arg2, arg3;
 {
   value res;
+  Init_callback();
   extern_sp -= 4;
   extern_sp[0] = arg1;
   extern_sp[1] = arg2;

@@ -279,8 +279,13 @@ void caml_startup_code(code, code_size, data, argv)
 	     verbose_init);
     init_stack();
     init_atoms();
+    /* Initialize the interpreter */
+    interprete(NULL, 0);
     /* Load the code */
     start_code = code;
+#ifdef THREADED_CODE
+    thread_code(start_code, code_size);
+#endif
     /* Load the globals */
     global_data = Field(input_value_from_string((value)data, Val_int(0)), 0);
     /* Ensure that the globals are in the major heap. */
