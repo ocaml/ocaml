@@ -30,8 +30,7 @@ static int sockopt[] = {
   SO_DEBUG, SO_BROADCAST, SO_REUSEADDR, SO_KEEPALIVE, 
   SO_DONTROUTE, SO_OOBINLINE };
 
-value unix_getsockopt(socket, option)
-     value socket, option;
+value unix_getsockopt(value socket, value option)
 {
   int optval, optsize;
   optsize = sizeof(optval);
@@ -41,8 +40,7 @@ value unix_getsockopt(socket, option)
   return Val_int(optval);
 }
 
-value unix_setsockopt(socket, option, status)
-     value socket, option, status;
+value unix_setsockopt(value socket, value option, value status)
 {
   int optval = Int_val(status);
   if (setsockopt(Int_val(socket), SOL_SOCKET, sockopt[Int_val(option)],
@@ -53,7 +51,10 @@ value unix_setsockopt(socket, option, status)
 
 #else
 
-value unix_getsockopt() { invalid_argument("getsockopt not implemented"); }
-value unix_setsockopt() { invalid_argument("setsockopt not implemented"); }
+value unix_getsockopt(value socket, value option)
+{ invalid_argument("getsockopt not implemented"); }
+
+value unix_setsockopt(value socket, value option, value status)
+{ invalid_argument("setsockopt not implemented"); }
 
 #endif

@@ -30,8 +30,7 @@
 union sock_addr_union sock_addr;
 int sock_addr_len;
 
-value alloc_inet_addr(a)
-     unsigned int a;
+value alloc_inet_addr(unsigned int a)
 {
   value res;
   res = alloc_string(sizeof(uint32));
@@ -39,8 +38,7 @@ value alloc_inet_addr(a)
   return res;
 }
 
-void get_sockaddr(a)
-     value a;
+void get_sockaddr(value a)
 {
   switch(Tag_val(a)) {
 #ifndef _WIN32
@@ -76,7 +74,7 @@ void get_sockaddr(a)
   }
 }
 
-value alloc_sockaddr()
+value alloc_sockaddr(void)
 {
   value res;
   switch(sock_addr.s_gen.sa_family) {

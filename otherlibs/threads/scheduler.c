@@ -118,10 +118,9 @@ static value next_ident = Val_int(0);
 
 /* Scan the stacks of the other threads */
 
-static void (*prev_scan_roots_hook) P((scanning_action));
+static void (*prev_scan_roots_hook) (scanning_action);
 
-static void thread_scan_roots(action)
-     scanning_action action;
+static void thread_scan_roots(scanning_action action)
 {
   thread_t th;
 
@@ -139,8 +138,7 @@ static void thread_scan_roots(action)
 
 /* Initialize the thread machinery */
 
-value thread_initialize(unit)       /* ML */
-     value unit;
+value thread_initialize(value unit)       /* ML */
 {
   struct itimerval timer;
   /* Create a descriptor for the current thread */
@@ -176,8 +174,7 @@ value thread_initialize(unit)       /* ML */
 
 /* Create a thread */
 
-value thread_new(clos)          /* ML */
-     value clos;
+value thread_new(value clos)          /* ML */
 {
   thread_t th;
   /* Allocate the thread and its stack */
@@ -222,15 +219,14 @@ value thread_new(clos)          /* ML */
 
 /* Return the thread identifier */
 
-value thread_id(th)             /* ML */
-     value th;
+value thread_id(value th)             /* ML */
 {
   return ((struct thread_struct *)th)->ident;
 }
 
 /* Return the current time as a floating-point number */
 
-static double timeofday()
+static double timeofday(void)
 {
   struct timeval tv;
   gettimeofday(&tv, NULL);
@@ -242,11 +238,11 @@ static double timeofday()
 #define FOREACH_THREAD(x) x = curr_thread; do { x = x->next;
 #define END_FOREACH(x) } while (x != curr_thread)
 
-static value alloc_process_status();
-static void add_fdlist_to_set();
-static value inter_fdlist_set();
+static value alloc_process_status(int pid, int status);
+static void add_fdlist_to_set(value fdl, fd_set *set);
+static value inter_fdlist_set(value fdl, fd_set *set);
 
-static value schedule_thread()
+static value schedule_thread(void)
 {
   thread_t run_thread, th;
   fd_set readfds, writefds, exceptfds;
@@ -401,7 +397,7 @@ try_again:
 /* Since context switching is not allowed in callbacks, a thread that
    blocks during a callback is a deadlock. */
 
-static void check_callback()
+static void check_callback(void)
 {
   if (callback_depth > 0)
     fatal_error("Thread: deadlock during callback");
@@ -409,8 +405,7 @@ static void check_callback()
 
 /* Reschedule without suspending the current thread */
 
-value thread_yield(unit)        /* ML */
-     value unit;
+value thread_yield(value unit)        /* ML */
 {
   Assert(curr_thread != NULL);
   curr_thread->retval = Val_unit;
@@ -419,8 +414,7 @@ value thread_yield(unit)        /* ML */
 
 /* Suspend the current thread */
 
-value thread_sleep(unit)        /* ML */
-     value unit;
+value thread_sleep(value unit)        /* ML */
 {
   Assert(curr_thread != NULL);
   check_callback();
@@ -430,8 +424,7 @@ value thread_sleep(unit)        /* ML */
 
 /* Suspend the current thread on a select() request */
 
-value thread_select(arg)        /* ML */
-     value arg;
+value thread_select(value arg)        /* ML */
 {
   double date;
   /* Don't do an error if we're not initialized yet
@@ -455,15 +448,13 @@ value thread_select(arg)        /* ML */
 
 /* Primitives to implement suspension on buffered channels */
 
-value thread_inchan_ready(vchan) /* ML */
-     value vchan;
+value thread_inchan_ready(value vchan) /* ML */
 {
   struct channel * chan = Channel(vchan);
   return Val_bool(chan->curr < chan->max);
 }
 
-value thread_outchan_ready(vchan, vsize) /* ML */
-     value vchan, vsize;
+value thread_outchan_ready(value vchan, value vsize) /* ML */
 {
   struct channel * chan = Channel(vchan);
   long size = Long_val(vsize);
@@ -481,8 +472,7 @@ value thread_outchan_ready(vchan, vsize) /* ML */
 
 /* Suspend the current thread for some time */
 
-value thread_delay(time)          /* ML */
-     value time;
+value thread_delay(value time)          /* ML */
 {
   double date = timeofday() + Double_val(time);
   Assert(curr_thread != NULL);
@@ -494,8 +484,7 @@ value thread_delay(time)          /* ML */
 
 /* Suspend the current thread until another thread terminates */
 
-value thread_join(th)          /* ML */
-     value th;
+value thread_join(value th)          /* ML */
 {
   check_callback();
   Assert(curr_thread != NULL);
@@ -507,8 +496,7 @@ value thread_join(th)          /* ML */
 
 /* Suspend the current thread until a Unix process exits */
 
-value thread_wait_pid(pid)          /* ML */
-     value pid;
+value thread_wait_pid(value pid)          /* ML */
 {
   Assert(curr_thread != NULL);
   check_callback();
@@ -519,8 +507,7 @@ value thread_wait_pid(pid)          /* ML */
 
 /* Reactivate another thread */
 
-value thread_wakeup(thread)     /* ML */
-     value thread;
+value thread_wakeup(value thread)     /* ML */
 {
   thread_t th = (thread_t) thread;
   switch (th->status) {
@@ -538,8 +525,7 @@ value thread_wakeup(thread)     /* ML */
 
 /* Return the current thread */
 
-value thread_self(unit)         /* ML */
-     value unit;
+value thread_self(value unit)         /* ML */
 {
   Assert(curr_thread != NULL);
   return (value) curr_thread;
@@ -547,8 +533,7 @@ value thread_self(unit)         /* ML */
 
 /* Kill a thread */
 
-value thread_kill(thread)       /* ML */
-     value thread;
+value thread_kill(value thread)       /* ML */
 {
   value retval = Val_unit;
   thread_t th = (thread_t) thread;
@@ -574,9 +559,7 @@ value thread_kill(thread)       /* ML */
 
 /* Set a list of file descriptors in a fdset */
 
-static void add_fdlist_to_set(fdl, set)
-     value fdl;
-     fd_set * set;
+static void add_fdlist_to_set(value fdl, fd_set *set)
 {
   for (/*nothing*/; fdl != NO_FDS; fdl = Field(fdl, 1)) {
     FD_SET(Int_val(Field(fdl, 0)), set);
@@ -586,9 +569,7 @@ static void add_fdlist_to_set(fdl, set)
 /* Build the intersection of a list and a fdset (the list of file descriptors
    which are both in the list and in the fdset). */
 
-static value inter_fdlist_set(fdl, set)
-     value fdl;
-     fd_set * set;
+static value inter_fdlist_set(value fdl, fd_set *set)
 {
   value res = Val_unit;
   value cons;
@@ -624,8 +605,7 @@ static value inter_fdlist_set(fdl, set)
 #define TAG_WSIGNALED 1
 #define TAG_WSTOPPED 2
 
-static value alloc_process_status(pid, status)
-     int pid, status;
+static value alloc_process_status(int pid, int status)
 {
   value st, res;
 

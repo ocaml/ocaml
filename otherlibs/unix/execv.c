@@ -17,8 +17,7 @@
 
 extern char ** cstringvect();
 
-value unix_execv(path, args)     /* ML */
-     value path, args;
+value unix_execv(value path, value args)     /* ML */
 {
   char ** argv;
   argv = cstringvect(args);

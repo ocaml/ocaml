@@ -23,8 +23,7 @@
 
 #ifdef ARCH_ALIGN_DOUBLE
 
-double Double_val(val)
-     value val;
+double Double_val(value val)
 {
   union { value v[2]; double d; } buffer;
 
@@ -34,9 +33,7 @@ double Double_val(val)
   return buffer.d;
 }
 
-void Store_double_val(val, dbl)
-     value val;
-     double dbl;
+void Store_double_val(value val, double dbl)
 {
   union { value v[2]; double d; } buffer;
 
@@ -48,8 +45,7 @@ void Store_double_val(val, dbl)
 
 #endif
 
-value copy_double(d)
-     double d;
+value copy_double(double d)
 {
   value res;
 
@@ -62,8 +58,7 @@ value copy_double(d)
   return res;
 }
 
-value format_float(fmt, arg)    /* ML */
-     value fmt, arg;
+value format_float(value fmt, value arg)    /* ML */
 {
 #define MAX_DIGITS 350
 /* Max number of decimal digits in a "natural" (not artificially padded)
@@ -104,81 +99,68 @@ value format_float(fmt, arg)    /* ML */
   return res;
 }
 
-value float_of_string(s)        /* ML */
-     value s;
+value float_of_string(value s)        /* ML */
 {
   return copy_double(atof(String_val(s)));
 }
 
-value int_of_float(f)           /* ML */
-     value f;
+value int_of_float(value f)           /* ML */
 {
   return Val_long((long) Double_val(f));
 }
 
-value float_of_int(n)           /* ML */
-     value n;
+value float_of_int(value n)           /* ML */
 {
   return copy_double((double) Long_val(n));
 }
 
-value neg_float(f)              /* ML */
-     value f;
+value neg_float(value f)              /* ML */
 {
   return copy_double(- Double_val(f));
 }
 
-value abs_float(f)              /* ML */
-     value f;
+value abs_float(value f)              /* ML */
 {
   return copy_double(fabs(Double_val(f)));
 }
 
-value add_float(f, g)         /* ML */
-     value f, g;
+value add_float(value f, value g)         /* ML */
 {
   return copy_double(Double_val(f) + Double_val(g));
 }
 
-value sub_float(f, g)         /* ML */
-     value f, g;
+value sub_float(value f, value g)         /* ML */
 {
   return copy_double(Double_val(f) - Double_val(g));
 }
 
-value mul_float(f, g)         /* ML */
-     value f, g;
+value mul_float(value f, value g)         /* ML */
 {
   return copy_double(Double_val(f) * Double_val(g));
 }
 
-value div_float(f, g)         /* ML */
-     value f, g;
+value div_float(value f, value g)         /* ML */
 {
   double dg = Double_val(g);
   return copy_double(Double_val(f) / dg);
 }
 
-value exp_float(f)              /* ML */
-     value f;
+value exp_float(value f)              /* ML */
 {
   return copy_double(exp(Double_val(f)));
 }
 
-value floor_float(f)              /* ML */
-     value f;
+value floor_float(value f)              /* ML */
 {
   return copy_double(floor(Double_val(f)));
 }
 
-value fmod_float(f1, f2)              /* ML */
-     value f1, f2;
+value fmod_float(value f1, value f2)              /* ML */
 {
   return copy_double(fmod(Double_val(f1), Double_val(f2)));
 }
 
-value frexp_float(f)              /* ML */
-     value f;
+value frexp_float(value f)              /* ML */
 {
   int exponent;
   value res;
@@ -192,26 +174,22 @@ value frexp_float(f)              /* ML */
   return res;
 }
 
-value ldexp_float(f, i)              /* ML */
-     value f, i;
+value ldexp_float(value f, value i)              /* ML */
 {
   return copy_double(ldexp(Double_val(f), Int_val(i)));
 }
 
-value log_float(f)              /* ML */
-     value f;
+value log_float(value f)              /* ML */
 {
   return copy_double(log(Double_val(f)));
 }
 
-value log10_float(f)              /* ML */
-     value f;
+value log10_float(value f)              /* ML */
 {
   return copy_double(log10(Double_val(f)));
 }
 
-value modf_float(f)              /* ML */
-     value f;
+value modf_float(value f)              /* ML */
 {
 #if macintosh
   _float_eval frem;
@@ -231,116 +209,97 @@ value modf_float(f)              /* ML */
   return res;
 }
 
-value sqrt_float(f)             /* ML */
-     value f;
+value sqrt_float(value f)             /* ML */
 {
   return copy_double(sqrt(Double_val(f)));
 }
 
-value power_float(f, g)         /* ML */
-     value f, g;
+value power_float(value f, value g)         /* ML */
 {
   return copy_double(pow(Double_val(f), Double_val(g)));
 }
 
-value sin_float(f)              /* ML */
-     value f;
+value sin_float(value f)              /* ML */
 {
   return copy_double(sin(Double_val(f)));
 }
 
-value sinh_float(f)              /* ML */
-     value f;
+value sinh_float(value f)              /* ML */
 {
   return copy_double(sinh(Double_val(f)));
 }
 
-value cos_float(f)              /* ML */
-     value f;
+value cos_float(value f)              /* ML */
 {
   return copy_double(cos(Double_val(f)));
 }
 
-value cosh_float(f)              /* ML */
-     value f;
+value cosh_float(value f)              /* ML */
 {
   return copy_double(cosh(Double_val(f)));
 }
 
-value tan_float(f)              /* ML */
-     value f;
+value tan_float(value f)              /* ML */
 {
   return copy_double(tan(Double_val(f)));
 }
 
-value tanh_float(f)              /* ML */
-     value f;
+value tanh_float(value f)              /* ML */
 {
   return copy_double(tanh(Double_val(f)));
 }
 
-value asin_float(f)             /* ML */
-     value f;
+value asin_float(value f)             /* ML */
 {
   return copy_double(asin(Double_val(f)));
 }
 
-value acos_float(f)             /* ML */
-     value f;
+value acos_float(value f)             /* ML */
 {
   return copy_double(acos(Double_val(f)));
 }
 
-value atan_float(f)             /* ML */
-     value f;
+value atan_float(value f)             /* ML */
 {
   return copy_double(atan(Double_val(f)));
 }
 
-value atan2_float(f, g)        /* ML */
-     value f, g;
+value atan2_float(value f, value g)        /* ML */
 {
   return copy_double(atan2(Double_val(f), Double_val(g)));
 }
 
-value ceil_float(f)              /* ML */
-     value f;
+value ceil_float(value f)              /* ML */
 {
   return copy_double(ceil(Double_val(f)));
 }
 
-value eq_float(f, g)        /* ML */
-     value f, g;
+value eq_float(value f, value g)        /* ML */
 {
   return Val_bool(Double_val(f) == Double_val(g));
 }
 
-value neq_float(f, g)        /* ML */
-     value f, g;
+value neq_float(value f, value g)        /* ML */
 {
   return Val_bool(Double_val(f) != Double_val(g));
 }
 
-value le_float(f, g)        /* ML */
-     value f, g;
+value le_float(value f, value g)        /* ML */
 {
   return Val_bool(Double_val(f) <= Double_val(g));
 }
 
-value lt_float(f, g)        /* ML */
-     value f, g;
+value lt_float(value f, value g)        /* ML */
 {
   return Val_bool(Double_val(f) < Double_val(g));
 }
 
-value ge_float(f, g)        /* ML */
-     value f, g;
+value ge_float(value f, value g)        /* ML */
 {
   return Val_bool(Double_val(f) >= Double_val(g));
 }
 
-value gt_float(f, g)        /* ML */
-     value f, g;
+value gt_float(value f, value g)        /* ML */
 {
   return Val_bool(Double_val(f) > Double_val(g));
 }
@@ -360,7 +319,7 @@ value gt_float(f, g)        /* ML */
 #endif
 #endif
 
-void init_ieee_floats()
+void init_ieee_floats(void)
 {
 #ifdef __i386__
 #ifdef __linux__

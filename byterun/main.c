@@ -18,10 +18,10 @@
 #include "mlvalues.h"
 #include "sys.h"
 
-extern void caml_main P((char **));
+extern void caml_main (char **);
 
 #ifdef _WIN32
-extern void expand_command_line P((int *, char ***));
+extern void expand_command_line (int *, char ***);
 #endif
 
 #if macintosh
@@ -30,9 +30,7 @@ extern void expand_command_line P((int *, char ***));
 int volatile have_to_interact = 0;
 #endif
 
-int main(argc, argv)
-     int argc;
-     char ** argv;
+int main(int argc, char **argv)
 {
 #ifdef _WIN32
   expand_command_line(&argc, &argv);

@@ -18,14 +18,14 @@
 
 #include "mlvalues.h"
 
-value callback P((value closure, value arg));
-value callback2 P((value closure, value arg1, value arg2));
-value callback3 P((value closure, value arg1, value arg2, value arg3));
+value callback (value closure, value arg);
+value callback2 (value closure, value arg1, value arg2);
+value callback3 (value closure, value arg1, value arg2, value arg3);
 extern int callback_depth;
 
-value * caml_named_value P((char * name));
+value * caml_named_value (char * name);
 
-void caml_main P((char ** argv));
-void caml_startup P((char ** argv));
+void caml_main (char ** argv);
+void caml_startup (char ** argv);
 
 #endif

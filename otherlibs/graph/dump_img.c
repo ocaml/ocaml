@@ -16,8 +16,7 @@
 #include <alloc.h>
 #include <memory.h>
 
-static value gr_alloc_int_vect(size)
-     mlsize_t size;
+static value gr_alloc_int_vect(mlsize_t size)
 {
   value res;
   mlsize_t i;
@@ -33,8 +32,7 @@ static value gr_alloc_int_vect(size)
   return res;
 }
 
-value gr_dump_image(image)
-     value image;
+value gr_dump_image(value image)
 {
   int width, height, i, j;
   XImage * idata, * imask;

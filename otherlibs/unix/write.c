@@ -25,8 +25,7 @@
 #define EWOULDBLOCK (-1)
 #endif
 
-value unix_write(fd, buf, vofs, vlen) /* ML */
-     value fd, buf, vofs, vlen;
+value unix_write(value fd, value buf, value vofs, value vlen) /* ML */
 {
   long ofs, len, written;
   int numbytes, ret;

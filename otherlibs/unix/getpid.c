@@ -14,7 +14,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_getpid()              /* ML */
+value unix_getpid(void)              /* ML */
 {
   return Val_int(getpid());
 }

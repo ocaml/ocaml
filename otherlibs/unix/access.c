@@ -38,8 +38,7 @@ static int access_permission_table[] = {
   R_OK, W_OK, X_OK, F_OK
 };
 
-value unix_access(path, perms)   /* ML */
-     value path, perms;
+value unix_access(value path, value perms)   /* ML */
 {
   int ret;
   ret = access(String_val(path),

@@ -20,8 +20,7 @@
 
 value weak_list_head = 0;
 
-value weak_create (len)        /* ML */
-     value len;
+value weak_create (value len)        /* ML */
 {
   mlsize_t size, i;
   value res;
@@ -38,8 +37,7 @@ value weak_create (len)        /* ML */
 #define None_val 1
 #define Some_tag 0
 
-value weak_set (ar, n, el)     /* ML */
-     value ar, n, el;
+value weak_set (value ar, value n, value el)     /* ML */
 {
   mlsize_t offset = Long_val (n) + 1;
                                                    Assert (Is_in_heap (ar));
@@ -54,8 +52,7 @@ value weak_set (ar, n, el)     /* ML */
 #define Setup_for_gc
 #define Restore_after_gc
 
-value weak_get (ar, n)        /* ML */
-     value ar, n;
+value weak_get (value ar, value n)        /* ML */
 {
   mlsize_t offset = Long_val (n) + 1;
   value res;

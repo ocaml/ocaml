@@ -52,19 +52,19 @@ struct channel {
    ? refill(channel)                                                        \
    : (unsigned char) *((channel))->curr++)
 
-struct channel * open_descriptor P((int));
-void close_channel P((struct channel *));
+struct channel * open_descriptor (int);
+void close_channel (struct channel *);
 
-int flush_partial P((struct channel *));
-void flush P((struct channel *));
-void putword P((struct channel *, uint32));
-int putblock P((struct channel *, char *, long));
-void really_putblock P((struct channel *, char *, long));
+int flush_partial (struct channel *);
+void flush (struct channel *);
+void putword (struct channel *, uint32);
+int putblock (struct channel *, char *, long);
+void really_putblock (struct channel *, char *, long);
 
-unsigned char refill P((struct channel *));
-uint32 getword P((struct channel *));
-int getblock P((struct channel *, char *, long));
-int really_getblock P((struct channel *, char *, long));
+unsigned char refill (struct channel *);
+uint32 getword (struct channel *);
+int getblock (struct channel *, char *, long);
+int really_getblock (struct channel *, char *, long);
 
 /* Extract a struct channel * from the heap object representing it */
 
@@ -72,10 +72,10 @@ int really_getblock P((struct channel *, char *, long));
 
 /* The locking machinery */
 
-extern void (*channel_mutex_free) P((struct channel *));
-extern void (*channel_mutex_lock) P((struct channel *));
-extern void (*channel_mutex_unlock) P((struct channel *));
-extern void (*channel_mutex_unlock_exn) P((void));
+extern void (*channel_mutex_free) (struct channel *);
+extern void (*channel_mutex_lock) (struct channel *);
+extern void (*channel_mutex_unlock) (struct channel *);
+extern void (*channel_mutex_unlock_exn) (void);
 
 #define Lock(channel) \
   if (channel_mutex_lock != NULL) (*channel_mutex_lock)(channel)

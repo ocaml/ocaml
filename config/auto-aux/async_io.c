@@ -19,13 +19,12 @@
 
 int signalled;
 
-void sigio_handler(arg)
-     int arg;
+void sigio_handler(int arg)
 {
   signalled = 1;
 }
 
-int main()
+int main(void)
 {
 #if defined(SIGIO) && defined(FASYNC) && defined(F_SETFL) && defined(F_SETOWN)
   int p[2];

@@ -14,9 +14,7 @@
 char runtime_name [] = RUNTIME_NAME;
 char errmsg [] = "Cannot exec ocamlrun.\n";
 
-int main(argc, argv)
-     int argc;
-     char ** argv;
+int main(int argc, char ** argv)
 {
   execv(runtime_name, argv);
   write(2, errmsg, sizeof(errmsg)-1);

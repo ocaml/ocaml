@@ -30,15 +30,13 @@ static int entry_h_length;
 
 extern int socket_domain_table[];
 
-static value alloc_one_addr(a)
-     char * a;
+static value alloc_one_addr(char *a)
 {
   bcopy(a, &sock_addr.s_inet.sin_addr, entry_h_length);
   return alloc_inet_addr(sock_addr.s_inet.sin_addr.s_addr);
 }
 
-static value alloc_host_entry(entry)
-     struct hostent * entry;
+static value alloc_host_entry(struct hostent *entry)
 {
   value res;
   value name = Val_unit, aliases = Val_unit;
@@ -64,8 +62,7 @@ static value alloc_host_entry(entry)
   return res;
 }
 
-value unix_gethostbyaddr(a)   /* ML */
-     value a;
+value unix_gethostbyaddr(value a)   /* ML */
 {
   uint32 addr;
   struct hostent * entry;
@@ -77,8 +74,7 @@ value unix_gethostbyaddr(a)   /* ML */
   return alloc_host_entry(entry);
 }
 
-value unix_gethostbyname(name)   /* ML */
-     value name;
+value unix_gethostbyname(value name)   /* ML */
 {
   char hostname[256];
   struct hostent * entry;
@@ -93,10 +89,10 @@ value unix_gethostbyname(name)   /* ML */
 
 #else
 
-value unix_gethostbyaddr()
+value unix_gethostbyaddr(value name)
 { invalid_argument("gethostbyaddr not implemented"); }
   
-value unix_gethostbyname()
+value unix_gethostbyname(value name)
 { invalid_argument("gethostbyname not implemented"); }
  
 #endif

@@ -24,8 +24,7 @@ typedef struct dirent directory_entry;
 typedef struct direct directory_entry;
 #endif
 
-value unix_readdir(d)            /* ML */
-     value d;
+value unix_readdir(value d)            /* ML */
 {
   directory_entry * e;
 

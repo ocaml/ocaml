@@ -22,8 +22,7 @@
 
 #ifdef HAS_REWINDDIR
 
-value unix_rewinddir(d)          /* ML */
-     value d;
+value unix_rewinddir(value d)          /* ML */
 {
   rewinddir((DIR *) d);
   return Val_unit;
@@ -31,6 +30,7 @@ value unix_rewinddir(d)          /* ML */
 
 #else
 
-value unix_rewinddir() { invalid_argument("rewinddir not implemented"); }
+value unix_rewinddir(value d)
+{ invalid_argument("rewinddir not implemented"); }
 
 #endif

@@ -26,17 +26,18 @@ static int argc;
 static char ** argv;
 static int argvsize;
 
-static void store_argument(), expand_argument();
-static void expand_pattern(), expand_diversion();
+static void store_argument(char * arg);
+static void expand_argument(char * arg);
+static void expand_pattern(char * arg);
+static void expand_diversion(char * filename);
 
-static void out_of_memory()
+static void out_of_memory(void)
 {
   fprintf(stderr, "Out of memory while expanding command line\n");
   exit(2);
 }
 
-static void store_argument(arg)
-     char * arg;
+static void store_argument(char * arg)
 {
   if (argc + 1 >= argvsize) {
     argvsize *= 2;
@@ -46,8 +47,7 @@ static void store_argument(arg)
   argv[argc++] = arg;
 }
 
-static void expand_argument(arg)
-     char * arg;
+static void expand_argument(char * arg)
 {
   char * p;
 
@@ -64,8 +64,7 @@ static void expand_argument(arg)
   store_argument(arg);
 }
 
-static void expand_pattern(pat)
-     char * pat;
+static void expand_pattern(char * pat)
 {
   int handle;
   struct _finddata_t ffblk;
@@ -81,8 +80,7 @@ static void expand_pattern(pat)
   _findclose(handle);
 }
 
-static void expand_diversion(filename)
-     char * filename;
+static void expand_diversion(char * filename)
 {
   struct _stat stat;
   int fd;
@@ -111,9 +109,7 @@ static void expand_diversion(filename)
   }
 }
 
-void expand_command_line(argcp, argvp)
-     int * argcp;
-     char *** argvp;
+void expand_command_line(int * argcp, char *** argvp)
 {
   int i;
   argc = 0;

@@ -17,29 +17,24 @@
 
 long foo;
 
-void access16(p)
-     short * p;
+void access16(short int *p)
 {
   foo = *p;
 }
 
-void access32(p)
-     long * p;
+void access32(long int *p)
 {
   foo = *p;
 }
 
 jmp_buf failure;
 
-void sig_handler(dummy)
-     int dummy;
+void sig_handler(int dummy)
 {
   longjmp(failure, 1);
 }
 
-int test(fct, p)
-     void (*fct)();
-     char * p;
+int test(void (*fct) (/* ??? */), char *p)
 {
   int res;
 
@@ -58,20 +53,17 @@ int test(fct, p)
 
 jmp_buf timer;
 
-void alarm_handler(dummy)
-     int dummy;
+void alarm_handler(int dummy)
 {
   longjmp(timer, 1);
 }
 
-void use(n)
-     int n;
+void use(int n)
 {
   return;
 }
 
-int speedtest(p)
-     char * p;
+int speedtest(char *p)
 {
   int * q;
   volatile int total;
@@ -94,7 +86,7 @@ int speedtest(p)
   return total;
 }
 
-main()
+main(void)
 {
   long n[1001];
   int speed_aligned, speed_unaligned;

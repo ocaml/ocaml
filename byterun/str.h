@@ -18,7 +18,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-mlsize_t string_length P((value));
+mlsize_t string_length (value);
 
 
 #endif /* _str_ */

@@ -19,8 +19,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-value make_vect(len, init)
-     value len, init;
+value make_vect(value len, value init)
 {
   value res;
   mlsize_t size, wsize, i;
@@ -66,8 +65,7 @@ value make_vect(len, init)
   return res;
 }
 
-value make_array(init)
-     value init;
+value make_array(value init)
 {
   mlsize_t wsize, size, i;
   value v, res;
@@ -98,7 +96,7 @@ value make_array(init)
   }
 }
 
-void array_bound_error()
+void array_bound_error(void)
 {
   fatal_error("Fatal error: out-of-bound access in array or string\n");
 }

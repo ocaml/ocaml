@@ -16,8 +16,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_mkdir(path, perm)     /* ML */
-     value path, perm;
+value unix_mkdir(value path, value perm)     /* ML */
 {
   if (mkdir(String_val(path), Int_val(perm)) == -1) uerror("mkdir", path);
   return Val_unit;

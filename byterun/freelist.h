@@ -22,11 +22,11 @@
 
 extern asize_t fl_cur_size;
 
-char *fl_allocate P((mlsize_t));
-void fl_init_merge P((void));
-void fl_reset P((void));
-char *fl_merge_block P((char *));
-void fl_add_block P((char *));
+char *fl_allocate (mlsize_t);
+void fl_init_merge (void);
+void fl_reset (void);
+char *fl_merge_block (char *);
+void fl_add_block (char *);
 
 
 #endif /* _freelist_ */

@@ -16,8 +16,7 @@
 
 #ifdef HAS_TRUNCATE
 
-value unix_ftruncate(fd, len)    /* ML */
-     value fd, len;
+value unix_ftruncate(value fd, value len)    /* ML */
 {
   if (ftruncate(Int_val(fd), Long_val(len)) == -1)
     uerror("ftruncate", Nothing);
@@ -26,6 +25,7 @@ value unix_ftruncate(fd, len)    /* ML */
 
 #else
 
-value unix_ftruncate() { invalid_argument("ftruncate not implemented"); }
+value unix_ftruncate(value fd, value len)
+{ invalid_argument("ftruncate not implemented"); }
 
 #endif

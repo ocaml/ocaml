@@ -13,7 +13,7 @@
 
 #include <stdio.h>
 
-void array_bound_error()
+void array_bound_error(void)
 {
   fprintf(stderr, "Fatal error: out-of-bound access in array or string\n");
   exit(2);
@@ -21,17 +21,14 @@ void array_bound_error()
 
 #ifdef SORT
 
-long cmpint(i, j)
-     long * i, * j;
+long cmpint(long * i, long * j)
 {
   return *i - *j;
 }
 
 #endif
 
-int main(argc, argv)
-     int argc;
-     char ** argv;
+int main(int argc, char **argv)
 {
 #ifdef UNIT_INT
   { extern int FUN();

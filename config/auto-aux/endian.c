@@ -23,7 +23,7 @@ char * bigendian = "ABCDEFGH";
 char * littleendian = "HGFEDCBA";
 #endif
 
-main()
+main(void)
 {
   long n[2];
   char * p;

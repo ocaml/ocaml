@@ -25,8 +25,7 @@
 struct longjmp_buffer * external_raise;
 value exn_bucket;
 
-void mlraise(v)
-     value v;
+void mlraise(value v)
 {
   Assert(! async_signal_mode);
   Unlock_exn();
@@ -34,8 +33,7 @@ void mlraise(v)
   siglongjmp(external_raise->buf, 1);
 }
 
-void raise_constant(tag)
-     value tag;
+void raise_constant(value tag)
 {
   value bucket;
   Begin_root (tag);
@@ -45,9 +43,7 @@ void raise_constant(tag)
   mlraise(bucket);
 }
 
-void raise_with_arg(tag, arg)
-     value tag;
-     value arg;
+void raise_with_arg(value tag, value arg)
 {
   value bucket;
   Begin_roots2 (tag, arg);
@@ -58,9 +54,7 @@ void raise_with_arg(tag, arg)
   mlraise(bucket);
 }
 
-void raise_with_string(tag, msg)
-     value tag;
-     char * msg;
+void raise_with_string(value tag, char *msg)
 {
   value vmsg;
   Begin_root(tag);
@@ -69,14 +63,12 @@ void raise_with_string(tag, msg)
   raise_with_arg(tag, vmsg);
 }
 
-void failwith (msg)
-     char * msg;
+void failwith (char *msg)
 {
   raise_with_string(Field(global_data, FAILURE_EXN), msg);
 }
 
-void invalid_argument (msg)
-     char * msg;
+void invalid_argument (char *msg)
 {
   raise_with_string(Field(global_data, INVALID_EXN), msg);
 }
@@ -92,35 +84,34 @@ static struct {
   value exn;
 } out_of_memory_bucket;
 
-void raise_out_of_memory()
+void raise_out_of_memory(void)
 {
   out_of_memory_bucket.hdr = Make_header(1, 0, White);
   out_of_memory_bucket.exn = Field(global_data, OUT_OF_MEMORY_EXN);
   mlraise((value) &(out_of_memory_bucket.exn));
 }
 
-void raise_stack_overflow()
+void raise_stack_overflow(void)
 {
   raise_constant(Field(global_data, STACK_OVERFLOW_EXN));
 }
 
-void raise_sys_error(msg)
-     value msg;
+void raise_sys_error(value msg)
 {
   raise_with_arg(Field(global_data, SYS_ERROR_EXN), msg);
 }
 
-void raise_end_of_file()
+void raise_end_of_file(void)
 {
   raise_constant(Field(global_data, END_OF_FILE_EXN));
 }
 
-void raise_zero_divide()
+void raise_zero_divide(void)
 {
   raise_constant(Field(global_data, ZERO_DIVIDE_EXN));
 }
 
-void raise_not_found()
+void raise_not_found(void)
 {
   raise_constant(Field(global_data, NOT_FOUND_EXN));
 }

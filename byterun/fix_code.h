@@ -26,14 +26,14 @@ extern asize_t code_size;
 extern unsigned char * saved_code;
 extern unsigned char code_md5[16];
 
-void load_code P((int fd, asize_t len));
-void fixup_endianness P((code_t code, asize_t len));
-void set_instruction P((code_t pos, opcode_t instr));
+void load_code (int fd, asize_t len);
+void fixup_endianness (code_t code, asize_t len);
+void set_instruction (code_t pos, opcode_t instr);
 
 #ifdef THREADED_CODE
 extern char ** instr_table;
 extern char * instr_base;
-void thread_code P((code_t code, asize_t len));
+void thread_code (code_t code, asize_t len);
 #endif
 
 #endif

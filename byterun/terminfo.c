@@ -21,21 +21,19 @@
 
 #ifdef HAS_TERMCAP
 
-extern int tgetent P((char * buffer, char * name));
-extern int tgetstr P((char * id, char ** area));
-extern int tgetnum P((char * id));
-extern int tputs P((char * str, int count, int (*outchar)(int c)));
+extern int tgetent (char * buffer, char * name);
+extern int tgetstr (char * id, char ** area);
+extern int tgetnum (char * id);
+extern int tputs (char * str, int count, int (*outchar)(int c));
 
-value terminfo_setup(unit)      /* ML */
-     value unit;
+value terminfo_setup(value unit)      /* ML */
 {
   static char buffer[1024];
   if (tgetent(buffer, getenv("TERM")) != 1) failwith("Terminfo.setupterm");
   return Val_unit;
 }
 
-value terminfo_getstr(capa)     /* ML */
-     value capa;
+value terminfo_getstr(value capa)     /* ML */
 {
   char buff[1024];
   char * p = buff;
@@ -43,8 +41,7 @@ value terminfo_getstr(capa)     /* ML */
   return copy_string(buff);
 }
 
-value terminfo_getnum(capa)     /* ML */
-     value capa;
+value terminfo_getnum(value capa)     /* ML */
 {
   int res = tgetnum(String_val(capa));
   if (res == -1) raise_not_found();
@@ -53,15 +50,13 @@ value terminfo_getnum(capa)     /* ML */
 
 static struct channel * terminfo_putc_channel;
 
-static int terminfo_putc(c)
-     int c;
+static int terminfo_putc(int c)
 {
   putch(terminfo_putc_channel, c);
   return c;
 }
 
-value terminfo_puts(vchan, str, count) /* ML */
-     value vchan, str, count;
+value terminfo_puts(value vchan, value str, value count) /* ML */
 {
   terminfo_putc_channel = Channel(vchan);
   tputs(String_val(str), Int_val(count), terminfo_putc);
@@ -70,29 +65,26 @@ value terminfo_puts(vchan, str, count) /* ML */
 
 #else
 
-value terminfo_setup(unit)
-     value unit;
+value terminfo_setup(value unit)
 {
   failwith("Terminfo.setupterm");
   return Val_unit;
 }
 
-value terminfo_getstr(capa)
+value terminfo_getstr(value capa)
+{
+  raise_not_found();
+  return Val_unit;
+}
+
+value terminfo_getnum(value capa)
      value capa;
 {
   raise_not_found();
   return Val_unit;
 }
 
-value terminfo_getnum(capa)
-     value capa;
-{
-  raise_not_found();
-  return Val_unit;
-}
-
-value terminfo_puts(vchan, str, count)
-     value vchan, str, count;
+value terminfo_puts(value vchan, value str, value count)
 {
   invalid_argument("Terminfo.puts");
   return Val_unit;

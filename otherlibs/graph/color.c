@@ -26,7 +26,7 @@ static struct color_cache_entry color_cache[Color_cache_size];
 #define Hash_rgb(r,g,b) \
   ((((r) & 0xC0) >> 2) + (((g) & 0xC0) >> 4) + (((b) & 0xC0) >> 6))
 
-void gr_init_color_cache()
+void gr_init_color_cache(void)
 {
   int i;
   for (i = 0; i < Color_cache_size; i++) color_cache[i].rgb = Empty;
@@ -38,9 +38,7 @@ void gr_init_color_cache()
   color_cache[i].pixel = grwhite;
 }
 
-unsigned long gr_pixel_rgb(rgb)
-     int rgb;
-
+unsigned long gr_pixel_rgb(int rgb)
 {
   unsigned int r, g, b;
   int h, i;
@@ -66,8 +64,7 @@ unsigned long gr_pixel_rgb(rgb)
   return color.pixel;
 }
 
-int gr_rgb_pixel(pixel)
-     unsigned long pixel;
+int gr_rgb_pixel(long unsigned int pixel)
 {
   XColor color;
   int i;
@@ -86,8 +83,7 @@ int gr_rgb_pixel(pixel)
     ((color.red >> 8) << 16) + ((color.green >> 8) << 8) + (color.blue >> 8);
 }
 
-value gr_set_color(vrgb)
-     value vrgb;
+value gr_set_color(value vrgb)
 {
   gr_check_open();
   grcolor = gr_pixel_rgb(Int_val(vrgb));

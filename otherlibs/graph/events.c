@@ -22,8 +22,7 @@ static int gr_tail = 0;       /* position of next write */
 #define QueueIsEmpty (gr_head == gr_tail)
 #define QueueIsFull  (gr_head == gr_tail + 1)
 
-void gr_enqueue_char(c)
-     unsigned char c;
+void gr_enqueue_char(unsigned char c)
 {
   if (QueueIsFull) return;
   gr_queue[gr_tail] = c;
@@ -31,8 +30,7 @@ void gr_enqueue_char(c)
   if (gr_tail >= SIZE_QUEUE) gr_tail = 0;
 }
 
-value gr_wait_event(eventlist)
-     value eventlist;
+value gr_wait_event(value eventlist)
 {
   value res;
   int mask;

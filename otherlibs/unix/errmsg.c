@@ -19,10 +19,9 @@ extern int error_table[];
 
 #ifdef HAS_STRERROR
 
-extern char * strerror();
+extern char * strerror(int);
 
-value unix_error_message(err)
-     value err;
+value unix_error_message(value err)
 {
   int errnum;
   errnum = error_table[Int_val(err)];
@@ -34,8 +33,7 @@ value unix_error_message(err)
 extern int sys_nerr;
 extern char *sys_errlist[];
 
-value unix_error_message(err)
-     value err;
+value unix_error_message(value err)
 {
   int errnum;
   errnum = error_table[Int_val(err)];

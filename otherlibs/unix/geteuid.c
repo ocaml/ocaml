@@ -14,7 +14,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_geteuid()             /* ML */
+value unix_geteuid(void)             /* ML */
 {
   return Val_int(geteuid());
 }

@@ -31,10 +31,10 @@ extern value * trap_barrier;
 #define Trap_pc(tp) (((code_t *)(tp))[0])
 #define Trap_link(tp) (((value **)(tp))[1])
 
-void reset_roots P((void));
-void init_stack P((unsigned long init_max_size));
-void realloc_stack P((void));
-void change_max_stack_size P((unsigned long new_max_size));
+void reset_roots (void);
+void init_stack (unsigned long init_max_size);
+void realloc_stack (void);
+void change_max_stack_size (unsigned long new_max_size);
 
 
 #endif /* _stacks_ */

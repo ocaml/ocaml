@@ -20,8 +20,7 @@
 /* Structural comparison on trees.
    May loop on cyclic structures. */
 
-static long compare_val(v1, v2)
-     value v1,v2;
+static long compare_val(value v1, value v2)
 {
   tag_t t1, t2;
 
@@ -102,8 +101,7 @@ static long compare_val(v1, v2)
   }
 }
 
-value compare(v1, v2)           /* ML */
-     value v1, v2;
+value compare(value v1, value v2)           /* ML */
 {
   long res = compare_val(v1, v2);
   if (res < 0) 
@@ -114,39 +112,32 @@ value compare(v1, v2)           /* ML */
     return Val_int(0);
 }
 
-value equal(v1, v2)            /* ML */
-     value v1, v2;
+value equal(value v1, value v2)            /* ML */
 {
   return Val_int(compare_val(v1, v2) == 0);
 }
 
-value notequal(v1, v2)            /* ML */
-     value v1, v2;
+value notequal(value v1, value v2)            /* ML */
 {
   return Val_int(compare_val(v1, v2) != 0);
 }
 
-value lessthan(v1, v2)            /* ML */
-     value v1, v2;
+value lessthan(value v1, value v2)            /* ML */
 {
   return Val_int(compare_val(v1, v2) < 0);
 }
 
-value lessequal(v1, v2)          /* ML */
-     value v1, v2;
+value lessequal(value v1, value v2)          /* ML */
 {
   return Val_int(compare_val(v1, v2) <= 0);
 }
 
-value greaterthan(v1, v2)        /* ML */
-     value v1, v2;
+value greaterthan(value v1, value v2)        /* ML */
 {
   return Val_int(compare_val(v1, v2) > 0);
 }
 
-value greaterequal(v1, v2)       /* ML */
-     value v1, v2;
+value greaterequal(value v1, value v2)       /* ML */
 {
   return Val_int(compare_val(v1, v2) >= 0);
 }
-

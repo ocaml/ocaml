@@ -14,8 +14,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_setuid(uid)           /* ML */
-     value uid;
+value unix_setuid(value uid)           /* ML */
 {
   if (setuid(Int_val(uid)) == -1) uerror("setuid", Nothing);
   return Val_unit;

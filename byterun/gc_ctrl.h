@@ -25,8 +25,8 @@ extern long
      stat_heap_size,
      stat_compactions;
 
-void init_gc P((unsigned long, unsigned long, unsigned long,
-		unsigned long, unsigned long, unsigned long));
+void init_gc (unsigned long, unsigned long, unsigned long,
+              unsigned long, unsigned long, unsigned long);
 
 
 #endif /* _gc_ctrl_ */

@@ -17,21 +17,19 @@
 
 double foo;
 
-void access_double(p)
-     double * p;
+void access_double(double *p)
 {
   foo = *p;
 }
 
 jmp_buf failure;
 
-void sig_handler(sig)
-     int sig;
+void sig_handler(int sig)
 {
   longjmp(failure, 1);
 }
 
-int main()
+int main(void)
 {
   long n[10];
   int res;

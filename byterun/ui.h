@@ -15,7 +15,7 @@
 
 #include "config.h"
 
-void ui_exit P((int return_code));
-int ui_read P((int file_desc, char *buf, unsigned int length));
-int ui_write P((int file_desc, char *buf, unsigned int length));
-void ui_print_stderr P((char *format, void *arg));
+void ui_exit (int return_code);
+int ui_read (int file_desc, char *buf, unsigned int length);
+int ui_write (int file_desc, char *buf, unsigned int length);
+void ui_print_stderr (char *format, void *arg);

@@ -20,8 +20,7 @@
 #include <sys/dir.h>
 #endif
 
-value unix_closedir(d)           /* ML */
-     value d;
+value unix_closedir(value d)           /* ML */
 {
   closedir((DIR *) d);
   return Val_unit;

@@ -26,12 +26,11 @@ Display * grdisplay = NULL;
 
 static Bool gr_initialized = False;
 
-static int gr_error_handler();
-static int gr_ioerror_handler();
-value gr_clear_graph();
+static int gr_error_handler(Display *display, XErrorEvent *error);
+static int gr_ioerror_handler(Display *display);
+value gr_clear_graph(void);
 
-value gr_open_graph(arg)
-     value arg;
+value gr_open_graph(value arg)
 {
   char display_name[64], geometry_spec[64];
   char * p, * q;
@@ -177,7 +176,7 @@ value gr_open_graph(arg)
   return Val_unit;
 }
 
-value gr_close_graph()
+value gr_close_graph(void)
 {
   if (gr_initialized) {
 #ifdef USE_INTERVAL_TIMER
@@ -197,7 +196,7 @@ value gr_close_graph()
   return Val_unit;
 }
 
-value gr_clear_graph()
+value gr_clear_graph(void)
 {
   gr_check_open();
   XSetForeground(grdisplay, grwindow.gc, grwhite);
@@ -212,13 +211,13 @@ value gr_clear_graph()
   return Val_unit;
 }
 
-value gr_size_x()
+value gr_size_x(void)
 {
   gr_check_open();
   return Val_int(grwindow.w);
 }
 
-value gr_size_y()
+value gr_size_y(void)
 {
   gr_check_open();
   return Val_int(grwindow.h);
@@ -231,15 +230,14 @@ value gr_size_y()
    (There is no blocking primitives in this library, not even
    wait_next_event, for various reasons.) */
 
-void gr_handle_simple_event();
+void gr_handle_simple_event(XEvent *e);
 
-value gr_sigio_signal(unit)
-     value unit;
+value gr_sigio_signal(value unit)
 {
   return Val_int(EVENT_SIGNAL);
 }
 
-value gr_sigio_handler()
+value gr_sigio_handler(void)
 {
   XEvent grevent;
 
@@ -253,8 +251,7 @@ value gr_sigio_handler()
   return Val_unit;
 }
 
-void gr_handle_simple_event(e)
-     XEvent * e;
+void gr_handle_simple_event(XEvent *e)
 {
   switch (e->type) {
 
@@ -320,8 +317,7 @@ void gr_handle_simple_event(e)
 
 static value * graphic_failure_exn = NULL;
 
-void gr_fail(fmt, arg)
-     char * fmt, * arg;
+void gr_fail(char *fmt, char *arg)
 {
   char buffer[1024];
 
@@ -334,14 +330,12 @@ void gr_fail(fmt, arg)
   raise_with_string(*graphic_failure_exn, buffer);
 }
 
-void gr_check_open()
+void gr_check_open(void)
 {
   if (!gr_initialized) gr_fail("graphic screen not opened", NULL);
 }
 
-static int gr_error_handler(display, error)
-     Display * display;
-     XErrorEvent * error;
+static int gr_error_handler(Display *display, XErrorEvent *error)
 {
   char errmsg[512];
   XGetErrorText(error->display, error->error_code, errmsg, sizeof(errmsg));
@@ -349,8 +343,7 @@ static int gr_error_handler(display, error)
   return 0;
 }
 
-static int gr_ioerror_handler(display)
-     Display * display;
+static int gr_ioerror_handler(Display *display)
 {
   gr_fail("fatal I/O error", NULL);
   return 0;

@@ -24,16 +24,16 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-value alloc_shr P((mlsize_t, tag_t));
-void adjust_gc_speed P((mlsize_t, mlsize_t));
-void modify P((value *, value));
-void initialize P((value *, value));
-value check_urgent_gc P((value));
-char * stat_alloc P((asize_t));              /* Size in bytes. */
-void stat_free P((char *));
-char * stat_resize P((char *, asize_t));     /* Size in bytes. */
+value alloc_shr (mlsize_t, tag_t);
+void adjust_gc_speed (mlsize_t, mlsize_t);
+void modify (value *, value);
+void initialize (value *, value);
+value check_urgent_gc (value);
+char * stat_alloc (asize_t);              /* Size in bytes. */
+void stat_free (char *);
+char * stat_resize (char *, asize_t);     /* Size in bytes. */
 
-/* void shrink_heap P((char *));       Only used in compact.c */
+/* void shrink_heap (char *);        Only used in compact.c */
 
 #ifdef NATIVE_CODE
 #define Garbage_collection_function garbage_collection
@@ -197,12 +197,12 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.h */
    for the duration of the program, or until [remove_global_root] is
    called. */
 
-void register_global_root P((value *));
+void register_global_root (value *);
 
 /* [remove_global_root] removes a memory root registered on a global C
    variable with [register_global_root]. */
 
-void remove_global_root P((value *));
+void remove_global_root (value *);
 
 
 #endif /* _memory_ */

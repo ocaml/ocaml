@@ -21,8 +21,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-value unix_nice(incr)
-     value incr;
+value unix_nice(value incr)
 {
   int prio;
   errno = 0;
@@ -37,8 +36,7 @@ value unix_nice(incr)
 
 #else
 
-value unix_nice(incr)
-     value incr;
+value unix_nice(value incr)
 {
   int ret;
   errno = 0;

@@ -11,12 +11,11 @@
 
 /* $Id$ */
 
+#include <time.h>
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-extern long time();
-
-value unix_time()                /* ML */
+value unix_time(void)                /* ML */
 {
-  return Val_long(time((long *) NULL));
+  return Val_long(time((time_t *) NULL));
 }

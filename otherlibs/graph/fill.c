@@ -14,8 +14,7 @@
 #include "libgraph.h"
 #include <memory.h>
 
-value gr_fill_rect(vx, vy, vw, vh)
-     value vx, vy, vw, vh;
+value gr_fill_rect(value vx, value vy, value vw, value vh)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
@@ -31,8 +30,7 @@ value gr_fill_rect(vx, vy, vw, vh)
   return Val_unit;
 }
 
-value gr_fill_poly(array)
-     value array;
+value gr_fill_poly(value array)
 {
   XPoint * points;
   int npoints, i;
@@ -56,8 +54,7 @@ value gr_fill_poly(array)
   return Val_unit;
 }
 
-value gr_fill_arc_nat(vx, vy, vrx, vry, va1, va2)
-     value vx, vy, vrx, vry, va1, va2;
+value gr_fill_arc_nat(value vx, value vy, value vrx, value vry, value va1, value va2)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
@@ -75,9 +72,7 @@ value gr_fill_arc_nat(vx, vy, vrx, vry, va1, va2)
   return Val_unit;
 }
 
-value gr_fill_arc(argv, argc)
-     int argc;
-     value * argv;
+value gr_fill_arc(value *argv, int argc)
 {
   return gr_fill_arc_nat(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }

@@ -62,10 +62,10 @@ extern XFontStruct * grfont;    /* Current font */
 #endif
 #endif
 
-void gr_fail();
-void gr_check_open();
-unsigned long gr_pixel_rgb();
-int gr_rgb_pixel();
-void gr_handle_simple_event();
-void gr_enqueue_char();
-void gr_init_color_cache();
+void gr_fail(char *fmt, char *arg);
+void gr_check_open(void);
+unsigned long gr_pixel_rgb(int rgb);
+int gr_rgb_pixel(long unsigned int pixel);
+void gr_handle_simple_event(XEvent *e);
+void gr_enqueue_char(unsigned char c);
+void gr_init_color_cache(void);

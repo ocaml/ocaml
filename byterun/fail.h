@@ -44,18 +44,18 @@ struct longjmp_buffer {
 extern struct longjmp_buffer * external_raise;
 extern value exn_bucket;
 
-void mlraise P((value bucket)) Noreturn;
-void raise_constant P((value tag)) Noreturn;
-void raise_with_arg P((value tag, value arg)) Noreturn;
-void raise_with_string P((value tag, char * msg)) Noreturn;
-void failwith P((char *)) Noreturn;
-void invalid_argument P((char *)) Noreturn;
-void raise_out_of_memory P((void)) Noreturn;
-void raise_stack_overflow P((void)) Noreturn;
-void raise_sys_error P((value)) Noreturn;
-void raise_end_of_file P((void)) Noreturn;
-void raise_zero_divide P((void)) Noreturn;
-void raise_not_found P((void)) Noreturn;
-void fatal_uncaught_exception P((value)) Noreturn;
+void mlraise (value bucket) Noreturn;
+void raise_constant (value tag) Noreturn;
+void raise_with_arg (value tag, value arg) Noreturn;
+void raise_with_string (value tag, char * msg) Noreturn;
+void failwith (char *) Noreturn;
+void invalid_argument (char *) Noreturn;
+void raise_out_of_memory (void) Noreturn;
+void raise_stack_overflow (void) Noreturn;
+void raise_sys_error (value) Noreturn;
+void raise_end_of_file (void) Noreturn;
+void raise_zero_divide (void) Noreturn;
+void raise_not_found (void) Noreturn;
+void fatal_uncaught_exception (value) Noreturn;
 
 #endif /* _fail_ */

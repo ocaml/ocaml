@@ -16,9 +16,7 @@
 char * runtime_name = "ocamlrun.exe";
 char * errmsg = "Cannot find ocamlrun.exe\n";
 
-int main(argc, argv)
-     int argc;
-     char ** argv;
+int main(int argc, char ** argv)
 {
   int retcode;
   retcode = spawnvp(P_WAIT, runtime_name, argv);

@@ -19,8 +19,7 @@
 #include <stdio.h>
 #include <grp.h>
 
-static value alloc_group_entry(entry)
-     struct group * entry;
+static value alloc_group_entry(struct group *entry)
 {
   value res;
   value name = Val_unit, pass = Val_unit, mem = Val_unit;
@@ -38,8 +37,7 @@ static value alloc_group_entry(entry)
   return res;
 }
 
-value unix_getgrnam(name)        /* ML */
-     value name;
+value unix_getgrnam(value name)        /* ML */
 {
   struct group * entry;
   entry = getgrnam(String_val(name));
@@ -47,8 +45,7 @@ value unix_getgrnam(name)        /* ML */
   return alloc_group_entry(entry);
 }
 
-value unix_getgrgid(gid)         /* ML */
-     value gid;
+value unix_getgrgid(value gid)         /* ML */
 {
   struct group * entry;
   entry = getgrgid(Int_val(gid));

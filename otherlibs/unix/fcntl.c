@@ -22,8 +22,7 @@
 #define O_NONBLOCK O_NDELAY
 #endif
 
-value unix_set_nonblock(fd)
-     value fd;
+value unix_set_nonblock(value fd)
 {
   int retcode;
   retcode = fcntl(Int_val(fd), F_GETFL, 0);
@@ -33,8 +32,7 @@ value unix_set_nonblock(fd)
   return Val_unit;
 }
 
-value unix_clear_nonblock(fd)
-     value fd;
+value unix_clear_nonblock(value fd)
 {
   int retcode;
   retcode = fcntl(Int_val(fd), F_GETFL, 0);
@@ -46,8 +44,7 @@ value unix_clear_nonblock(fd)
 
 #ifdef FD_CLOEXEC
 
-value unix_set_close_on_exec(fd)
-     value fd;
+value unix_set_close_on_exec(value fd)
 {
   int retcode;
   retcode = fcntl(Int_val(fd), F_GETFD, 0);
@@ -57,8 +54,7 @@ value unix_set_close_on_exec(fd)
   return Val_unit;
 }
 
-value unix_clear_close_on_exec(fd)
-     value fd;
+value unix_clear_close_on_exec(value fd)
 {
   int retcode;
   retcode = fcntl(Int_val(fd), F_GETFD, 0);
@@ -70,10 +66,10 @@ value unix_clear_close_on_exec(fd)
 
 #else
 
-value unix_set_close_on_exec()
+value unix_set_close_on_exec(value fd)
 { invalid_argument("set_close_on_exec not implemented"); }
 
-value unix_clear_close_on_exec()
+value unix_clear_close_on_exec(value fd)
 { invalid_argument("clear_close_on_exec not implemented"); }
 
 #endif

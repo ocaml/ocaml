@@ -26,8 +26,7 @@
   tv.tv_sec = (int)(d), \
   tv.tv_usec = (int) (1e6 * ((d) - tv.tv_sec))
 
-static value unix_convert_itimer(tp)
-     struct itimerval * tp;
+static value unix_convert_itimer(struct itimerval *tp)
 {
   value res;
   value interval = Val_unit, v = Val_unit;
@@ -42,8 +41,7 @@ static value unix_convert_itimer(tp)
   return res;
 }
 
-static value unix_convert_itimer_native(tp)
-     struct itimerval * tp;
+static value unix_convert_itimer_native(struct itimerval *tp)
 {
   value res = alloc(Double_wosize * 2, Double_array_tag);
   Store_double_field(res, 0, Get_timeval(tp->it_interval));
@@ -53,8 +51,7 @@ static value unix_convert_itimer_native(tp)
 
 static int itimers[3] = { ITIMER_REAL, ITIMER_VIRTUAL, ITIMER_PROF };
 
-value unix_setitimer(which, newval)
-     value which, newval;
+value unix_setitimer(value which, value newval)
 {
   struct itimerval new, old;
   Set_timeval(new.it_interval, Double_val(Field(newval, 0)));
@@ -64,8 +61,7 @@ value unix_setitimer(which, newval)
   return unix_convert_itimer(&old);
 }
      
-value unix_setitimer_native(which, newval)
-     value which, newval;
+value unix_setitimer_native(value which, value newval)
 {
   struct itimerval new, old;
   Set_timeval(new.it_interval, Double_field(newval, 0));
@@ -75,8 +71,7 @@ value unix_setitimer_native(which, newval)
   return unix_convert_itimer_native(&old);
 }
      
-value unix_getitimer(which)
-     value which;
+value unix_getitimer(value which)
 {
   struct itimerval val;
   if (getitimer(itimers[Int_val(which)], &val) == -1)
@@ -84,8 +79,7 @@ value unix_getitimer(which)
   return unix_convert_itimer(&val);
 }
 
-value unix_getitimer_native(which)
-     value which;
+value unix_getitimer_native(value which)
 {
   struct itimerval val;
   if (getitimer(itimers[Int_val(which)], &val) == -1)
@@ -95,13 +89,13 @@ value unix_getitimer_native(which)
 
 #else
 
-value unix_setitimer()
+value unix_setitimer(value which, value newval)
 { invalid_argument("setitimer not implemented"); }
-value unix_getitimer()
+value unix_getitimer(value which)
 { invalid_argument("getitimer not implemented"); }
-value unix_setitimer_native()
+value unix_setitimer_native(value which, value newval)
 { invalid_argument("setitimer not implemented"); }
-value unix_getitimer_native()
+value unix_getitimer_native(value which)
 { invalid_argument("getitimer not implemented"); }
 
 #endif

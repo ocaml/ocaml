@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <math.h>
 
-void array_bound_error()
+void array_bound_error(void)
 {
   fprintf(stderr, "Fatal error: out-of-bound access in array or string\n");
   exit(2);
@@ -53,7 +53,7 @@ double F, G;
 extern void call_gen_code();
 extern void testarith();
 
-void do_test()
+void do_test(void)
 {
       call_gen_code(testarith);
 
@@ -254,7 +254,7 @@ void do_test()
 #endif
 #endif
 
-void init_ieee_floats()
+void init_ieee_floats(void)
 {
 #ifdef __i386__
 #ifdef __linux__
@@ -266,9 +266,7 @@ void init_ieee_floats()
 #endif
 }
 
-int main(argc, argv)
-     int argc;
-     char ** argv;
+int main(int argc, char **argv)
 {
   double weird[4];
 

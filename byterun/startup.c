@@ -50,7 +50,7 @@ header_t atom_table[256];
 
 /* Initialize the atom table */
 
-static void init_atoms()
+static void init_atoms(void)
 {
   int i;
   for(i = 0; i < 256; i++) atom_table[i] = Make_header(0, i, White);
@@ -58,8 +58,7 @@ static void init_atoms()
 
 /* Read the trailer of a bytecode file */
 
-static unsigned long read_size(p)
-     unsigned char * p;
+static unsigned long read_size(unsigned char *p)
 {
   return ((unsigned long) p[0] << 24) + ((unsigned long) p[1] << 16) +
          ((unsigned long) p[2] << 8) + p[3];
@@ -69,9 +68,7 @@ static unsigned long read_size(p)
 #define TRUNCATED_FILE (-2)
 #define BAD_MAGIC_NUM (-3)
 
-static int read_trailer(fd, trail)
-     int fd;
-     struct exec_trailer * trail;
+static int read_trailer(int fd, struct exec_trailer *trail)
 {
   char buffer[TRAILER_SIZE];
 
@@ -88,10 +85,7 @@ static int read_trailer(fd, trail)
     return BAD_MAGIC_NUM;
 }
 
-static int attempt_open(name, trail, do_open_script)
-     char ** name;
-     struct exec_trailer * trail;
-     int do_open_script;
+static int attempt_open(char **name, struct exec_trailer *trail, int do_open_script)
 {
   char * truename;
   int fd;
@@ -115,9 +109,7 @@ static int attempt_open(name, trail, do_open_script)
 /* Check the primitives used by the bytecode file against the table of
    primitives linked in this interpreter */
 
-static void check_primitives(fd, prim_size)
-     int fd;
-     int prim_size;
+static void check_primitives(int fd, int prim_size)
 {
   char * prims = stat_alloc(prim_size);
   char * p;
@@ -174,8 +166,7 @@ extern int trace_flag;
 
 /* Parse options on the command line */
 
-static int parse_command_line(argv)
-     char ** argv;
+static int parse_command_line(char **argv)
 {
   int i;
 
@@ -202,9 +193,7 @@ static int parse_command_line(argv)
    Except for l (maximum stack size) and h (initial heap size).
 */
 
-static void scanmult (opt, var)
-     char *opt;
-     unsigned long *var;
+static void scanmult (char *opt, long unsigned int *var)
 {
   char mult = ' ';
   sscanf (opt, "=%lu%c", var, &mult);
@@ -213,7 +202,7 @@ static void scanmult (opt, var)
   if (mult == 'G') *var = *var * (1024 * 1024 * 1024);
 }
 
-static void parse_camlrunparam()
+static void parse_camlrunparam(void)
 {
   char *opt = getenv ("CAMLRUNPARAM");
   if (opt != NULL){
@@ -231,12 +220,11 @@ static void parse_camlrunparam()
   }
 }
 
-extern void init_ieee_floats P((void));
+extern void init_ieee_floats (void);
 
 /* Main entry point when loading code from a file */
 
-void caml_main(argv)
-     char ** argv;
+void caml_main(char **argv)
 {
   int fd;
   struct exec_trailer trail;
@@ -309,11 +297,7 @@ void caml_main(argv)
 
 /* Main entry point when code is linked in as initialized data */
 
-void caml_startup_code(code, code_size, data, argv)
-     code_t code;
-     asize_t code_size;
-     char * data;
-     char ** argv;
+void caml_startup_code(code_t code, asize_t code_size, char *data, char **argv)
 {
   struct longjmp_buffer raise_buf;
 

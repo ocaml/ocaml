@@ -28,8 +28,7 @@ static int lock_command_table[] = {
   F_ULOCK, F_LOCK, F_TLOCK, F_TEST
 };
 
-value unix_lockf(fd, cmd, span)  /* ML */
-     value fd, cmd, span;
+value unix_lockf(value fd, value cmd, value span)  /* ML */
 {
   if (lockf(Int_val(fd), lock_command_table[Int_val(cmd)], Long_val(span))
       == -1) uerror("lockf", Nothing);
@@ -43,8 +42,7 @@ value unix_lockf(fd, cmd, span)  /* ML */
 
 #ifdef F_SETLK
 
-value unix_lockf(fd, cmd, span)  /* ML */
-     value fd, cmd, span;
+value unix_lockf(value fd, value cmd, value span)  /* ML */
 {
   struct flock l;
   int ret;
@@ -96,7 +94,8 @@ value unix_lockf(fd, cmd, span)  /* ML */
 
 #else
 
-value unix_lockf() { invalid_argument("lockf not implemented"); }
+value unix_lockf(value fd, value cmd, value span)
+{ invalid_argument("lockf not implemented"); }
 
 #endif
 #endif

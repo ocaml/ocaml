@@ -14,8 +14,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_chroot(path)           /* ML */
-     value path;
+value unix_chroot(value path)           /* ML */
 {
   int ret;
   ret = chroot(String_val(path));

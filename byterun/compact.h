@@ -18,8 +18,8 @@
 #include "config.h"
 #include "misc.h"
 
-void compact_heap P((void));
-void compact_heap_maybe P((void));
+void compact_heap (void);
+void compact_heap_maybe (void);
 
 
 #endif /* _compact_ */

@@ -54,7 +54,7 @@ static value intern_block;
    (intern_src[-2] << 8) + intern_src[-1])
 
 #ifdef ARCH_SIXTYFOUR
-static long read64s()
+static long read64s(void)
 {
   long res;
   int i;
@@ -68,15 +68,14 @@ static long read64s()
 #define readblock(dest,len) \
   (bcopy(intern_src, dest, len), intern_src += len)
 
-static void intern_cleanup()
+static void intern_cleanup(void)
 {
   if (intern_input_malloced) stat_free((char *) intern_input);
   if (intern_obj_table != NULL) stat_free((char *) intern_obj_table);
   Hd_val(intern_block) = intern_header; /* Don't confuse the GC */
 }
 
-static void intern_rec(dest)
-     value * dest;
+static void intern_rec(value *dest)
 {
   unsigned int code;
   tag_t tag;
@@ -233,8 +232,7 @@ static void intern_rec(dest)
   *dest = v;
 }
 
-static void intern_alloc(whsize, num_objects)
-     mlsize_t whsize, num_objects;
+static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
 {
   mlsize_t wosize;
 
@@ -260,8 +258,7 @@ static void intern_alloc(whsize, num_objects)
   }
 }
 
-value input_val(chan)
-     struct channel * chan;
+value input_val(struct channel *chan)
 {
   uint32 magic;
   mlsize_t block_len, num_objects, size_32, size_64, whsize;
@@ -296,8 +293,7 @@ value input_val(chan)
   return res;
 }
 
-value input_value(vchan)        /* ML */
-     value vchan;
+value input_value(value vchan)        /* ML */
 {
   struct channel * chan = Channel(vchan);
   value res;
@@ -308,9 +304,7 @@ value input_value(vchan)        /* ML */
   return res;
 }
 
-value input_val_from_string(str, ofs)
-     value str;
-     long ofs;
+value input_val_from_string(value str, long int ofs)
 {
   mlsize_t num_objects, size_32, size_64, whsize;
   value obj;
@@ -337,14 +331,12 @@ value input_val_from_string(str, ofs)
   return obj;
 }
 
-value input_value_from_string(str, ofs) /* ML */
-     value str, ofs;
+value input_value_from_string(value str, value ofs) /* ML */
 {
   return input_val_from_string(str, Long_val(ofs));
 }
 
-value marshal_data_size(buff, ofs) /* ML */
-     value buff, ofs;
+value marshal_data_size(value buff, value ofs) /* ML */
 {
   uint32 magic;
   mlsize_t block_len;
@@ -384,7 +376,7 @@ unsigned char * code_checksum()
 
 #include "fix_code.h"
 
-unsigned char * code_checksum()
+unsigned char * code_checksum(void)
 {
   return code_md5;
 }

@@ -19,8 +19,7 @@
 
 #include "socketaddr.h"
 
-value unix_inet_addr_of_string(s) /* ML */
-     value s;
+value unix_inet_addr_of_string(value s) /* ML */
 {
   unsigned int address;
   address = inet_addr(String_val(s));
@@ -30,7 +29,7 @@ value unix_inet_addr_of_string(s) /* ML */
 
 #else
 
-value unix_inet_addr_of_string()
+value unix_inet_addr_of_string(value s)
 { invalid_argument("inet_addr_of_string not implemented"); }
   
 #endif

@@ -51,9 +51,9 @@ extern char *fl_merge;  /* Defined in freelist.c. */
 
 static char *markhp, *chunk, *limit;
 
-static void update_weak_pointers ();
+static void update_weak_pointers (void);
 
-static void realloc_gray_vals ()
+static void realloc_gray_vals (void)
 {
   value *new;
 
@@ -79,9 +79,9 @@ static void realloc_gray_vals ()
   }
 }
 
-void darken (v, p)
-     value v;
-     value *p;  /* not used */
+void darken (value v, value *p)
+             
+                /* not used */
 {
   if (Is_block (v) && Is_in_heap (v)) {
     if (Tag_val(v) == Infix_tag) v -= Infix_offset_val(v);
@@ -93,7 +93,7 @@ void darken (v, p)
   }
 }
 
-static void start_cycle ()
+static void start_cycle (void)
 {
   Assert (gc_phase == Phase_idle);
   Assert (gray_vals_cur == gray_vals);
@@ -102,8 +102,7 @@ static void start_cycle ()
   markhp = NULL;
 }
 
-static void mark_slice (work)
-     long work;
+static void mark_slice (long int work)
 {
   value *gray_vals_ptr;  /* Local copy of gray_vals_cur */
   value v, child;
@@ -184,7 +183,7 @@ static void mark_slice (work)
    Arrays that are white are removed from this list.
    For the other arrays, pointers to white objects are erased.
 */
-static void update_weak_pointers ()
+static void update_weak_pointers (void)
 {
   value *prev = &weak_list_head;
   value *cur = (value *) *prev;
@@ -210,8 +209,7 @@ static void update_weak_pointers ()
   }
 }
 
-static void sweep_slice (work)
-     long work;
+static void sweep_slice (long int work)
 {
   char *hp;
   header_t hd;
@@ -255,7 +253,7 @@ static void sweep_slice (work)
 }
 
 /* The main entry point for the GC.  Called at each minor GC. */
-void major_collection_slice ()
+void major_collection_slice (void)
 {
   /* 
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
@@ -312,7 +310,7 @@ void major_collection_slice ()
    free and live memory are only valid for a cycle done incrementally.
    Besides, this function is called by compact_heap_maybe.
 */
-void finish_major_cycle ()
+void finish_major_cycle (void)
 {
   if (gc_phase == Phase_idle) start_cycle ();
   if (gc_phase == Phase_mark) mark_slice (LONG_MAX);
@@ -323,8 +321,7 @@ void finish_major_cycle ()
   allocated_words = 0;
 }
 
-asize_t round_heap_chunk_size (request)
-     asize_t request;
+asize_t round_heap_chunk_size (asize_t request)
 {                            Assert (major_heap_increment >= Heap_chunk_min);
   if (request < major_heap_increment){
                               Assert (major_heap_increment % Page_size == 0);
@@ -337,8 +334,7 @@ asize_t round_heap_chunk_size (request)
   }
 }
 
-void init_major_heap (heap_size)
-     asize_t heap_size;
+void init_major_heap (asize_t heap_size)
 {
   asize_t i;
   void *block;

@@ -13,7 +13,7 @@
 
 #include <signal.h>
 
-main()
+int main(void)
 {
   SIGRETURN (*old)();
   old = signal(SIGQUIT, SIG_DFL);

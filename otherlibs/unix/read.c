@@ -17,8 +17,7 @@
 #include <signals.h>
 #include "unixsupport.h"
 
-value unix_read(fd, buf, ofs, len) /* ML */
-     value fd, buf, ofs, len;
+value unix_read(value fd, value buf, value ofs, value len) /* ML */
 {
   long numbytes;
   int ret;

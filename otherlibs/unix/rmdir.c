@@ -14,8 +14,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_rmdir(path)           /* ML */
-     value path;
+value unix_rmdir(value path)           /* ML */
 {
   if (rmdir(String_val(path)) == -1) uerror("rmdir", path);
   return Val_unit;

@@ -19,16 +19,14 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-value array_get(array, index)   /* ML */
-     value array, index;
+value array_get(value array, value index)   /* ML */
 {
   long idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array)) invalid_argument("Array.get");
   return Field(array, idx);
 }
 
-value array_set(array, index, newval)   /* ML */
-     value array, index, newval;
+value array_set(value array, value index, value newval)   /* ML */
 {
   long idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array)) invalid_argument("Array.set");
@@ -36,8 +34,7 @@ value array_set(array, index, newval)   /* ML */
   return Val_unit;
 }
 
-value make_vect(len, init)      /* ML */
-     value len, init;
+value make_vect(value len, value init)      /* ML */
 {
   value res;
   mlsize_t size, i;

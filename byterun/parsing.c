@@ -104,11 +104,7 @@ int parser_trace = 0;
 
 /* The pushdown automata */
 
-value parse_engine(tables, env, cmd, arg) /* ML */
-     struct parser_tables * tables;
-     struct parser_env * env;
-     value cmd;
-     value arg;
+value parse_engine(struct parser_tables *tables, struct parser_env *env, value cmd, value arg) /* ML */
 {
   int state;
   mlsize_t sp, asp;

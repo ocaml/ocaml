@@ -79,12 +79,12 @@
 
 /* The entry points */
 
-void output_val P((struct channel * chan, value v, value flags));
-value input_val P((struct channel * chan));
-value input_val_from_string P((value str, long ofs));
+void output_val (struct channel * chan, value v, value flags);
+value input_val (struct channel * chan);
+value input_val_from_string (value str, long ofs);
 
 /* Auxiliary stuff for sending code pointers */
-unsigned char * code_checksum P((void));
+unsigned char * code_checksum (void);
 
 #ifndef NATIVE_CODE
 #include "fix_code.h"

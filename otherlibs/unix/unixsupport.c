@@ -242,10 +242,7 @@ int error_table[] = {
 
 static value * unix_error_exn = NULL;
 
-void unix_error(errcode, cmdname, cmdarg)
-     int errcode;
-     char * cmdname;
-     value cmdarg;
+void unix_error(int errcode, char *cmdname, value cmdarg)
 {
   value res;
   value name = Val_unit, arg = Val_unit;
@@ -269,9 +266,7 @@ void unix_error(errcode, cmdname, cmdarg)
   mlraise(res);
 }
 
-void uerror(cmdname, cmdarg)
-     char * cmdname;
-     value cmdarg;
+void uerror(char *cmdname, value cmdarg)
 {
   unix_error(errno, cmdname, cmdarg);
 }

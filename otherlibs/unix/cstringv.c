@@ -15,8 +15,7 @@
 #include <memory.h>
 #include "unixsupport.h"
 
-char ** cstringvect(arg)
-     value arg;
+char ** cstringvect(value arg)
 {
   char ** res;
   mlsize_t size, i;

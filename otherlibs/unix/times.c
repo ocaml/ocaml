@@ -27,7 +27,7 @@
 #endif
 #endif
 
-value unix_times_bytecode()               /* ML */
+value unix_times_bytecode(void)               /* ML */
 {
   value res;
   struct tms buffer;
@@ -48,7 +48,7 @@ value unix_times_bytecode()               /* ML */
   return res;
 }
 
-value unix_times_native()               /* ML */
+value unix_times_native(void)               /* ML */
 {
   value res;
   struct tms buffer;

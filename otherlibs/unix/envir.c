@@ -16,7 +16,7 @@
 
 extern char ** environ;
 
-value unix_environment()
+value unix_environment(void)
 {
   return copy_string_array(environ);
 }

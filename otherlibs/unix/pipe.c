@@ -15,7 +15,7 @@
 #include <alloc.h>
 #include "unixsupport.h"
 
-value unix_pipe()                /* ML */
+value unix_pipe(void)                /* ML */
 {
   int fd[2];
   value res;

@@ -16,8 +16,7 @@
 
 #ifdef HAS_DUP2
 
-value unix_dup2(fd1, fd2)        /* ML */
-     value fd1, fd2;
+value unix_dup2(value fd1, value fd2)        /* ML */
 {
   if (dup2(Int_val(fd1), Int_val(fd2)) == -1) uerror("dup2", Nothing);
   return Val_unit;
@@ -25,8 +24,7 @@ value unix_dup2(fd1, fd2)        /* ML */
 
 #else
 
-static int do_dup2(fd1, fd2)
-     int fd1, fd2;
+static int do_dup2(int fd1, int fd2)
 {
   int fd;
   int res;
@@ -39,8 +37,7 @@ static int do_dup2(fd1, fd2)
   return res;
 }
 
-value unix_dup2(fd1, fd2)        /* ML */
-     value fd1, fd2;
+value unix_dup2(value fd1, value fd2)        /* ML */
 {
   close(Int_val(fd2));
   if (do_dup2(Int_val(fd1), Int_val(fd2)) == -1) uerror("dup2", Nothing);

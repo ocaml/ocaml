@@ -19,8 +19,7 @@
 
 #include "socketaddr.h"
 
-value unix_string_of_inet_addr(a) /* ML */
-     value a;
+value unix_string_of_inet_addr(value a) /* ML */
 {
   struct in_addr address;
   address.s_addr = GET_INET_ADDR(a);
@@ -29,7 +28,7 @@ value unix_string_of_inet_addr(a) /* ML */
 
 #else
 
-value unix_string_of_inet_addr()
+value unix_string_of_inet_addr(value a)
 { invalid_argument("string_of_inet_addr not implemented"); }
 
 #endif

@@ -17,8 +17,7 @@
 #include <unistd.h>
 #endif
 
-value unix_setsid(unit)              /* ML */
-     value unit;
+value unix_setsid(value unit)              /* ML */
 {
 #ifdef HAS_SETSID
   return Val_int(setsid());

@@ -25,9 +25,9 @@
 #include "fail.h"
 #include "signals.h"
 
-Volatile int async_signal_mode = 0;
-Volatile int pending_signal = 0;
-Volatile int force_major_slice = 0;
+volatile int async_signal_mode = 0;
+volatile int pending_signal = 0;
+volatile int force_major_slice = 0;
 value signal_handlers = 0;
 extern unsigned long caml_last_return_address;
 void (*enter_blocking_section_hook)() = NULL;
@@ -35,8 +35,7 @@ void (*leave_blocking_section_hook)() = NULL;
 
 /* Execute a signal handler immediately. */
 
-static void execute_signal(signal_number)
-     int signal_number;
+static void execute_signal(int signal_number)
 {
   Assert (!async_signal_mode);
   callback(Field(signal_handlers, signal_number), Val_int(signal_number));
@@ -45,7 +44,7 @@ static void execute_signal(signal_number)
 /* This routine is the common entry point for garbage collection
    and signal handling */
 
-void garbage_collection()
+void garbage_collection(void)
 {
   int sig;
 
@@ -60,7 +59,7 @@ void garbage_collection()
 
 /* Trigger a garbage collection as soon as possible */
 
-void urge_major_slice ()
+void urge_major_slice (void)
 {
   force_major_slice = 1;
   young_limit = young_end;
@@ -70,7 +69,7 @@ void urge_major_slice ()
      from young_limit. */
 }
 
-void enter_blocking_section()
+void enter_blocking_section(void)
 {
   int sig;
 
@@ -88,7 +87,7 @@ void enter_blocking_section()
   if (enter_blocking_section_hook != NULL) enter_blocking_section_hook();
 }
 
-void leave_blocking_section()
+void leave_blocking_section(void)
 {
   Assert(async_signal_mode);
   if (leave_blocking_section_hook != NULL) leave_blocking_section_hook();
@@ -97,16 +96,11 @@ void leave_blocking_section()
 
 #if defined(TARGET_alpha) || defined(TARGET_mips) || \
     (defined(TARGET_power) && defined(_AIX))
-void handle_signal(sig, code, context)
-     int sig, code;
-     struct sigcontext * context;
+void handle_signal(int sig, int code, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(__linux)
-void handle_signal(sig, context)
-     int sig;
-     struct pt_regs * context;
+void handle_signal(int sig, sutrct pt_regs * context)
 #else
-void handle_signal(sig)
-     int sig;
+void handle_signal(int sig)
 #endif
 {
 #ifndef POSIX_SIGNALS
@@ -227,8 +221,8 @@ int posix_signals[] = {
 #define NSIG 32
 #endif
 
-value install_signal_handler(signal_number, action) /* ML */
-     value signal_number, action;
+value install_signal_handler(value signal_number, value action) /* ML */
+                                 
 {
   int sig;
   void (*act)();
@@ -274,10 +268,8 @@ value install_signal_handler(signal_number, action) /* ML */
 /* Machine- and OS-dependent handling of bound check trap */
 
 #if defined(TARGET_sparc) && defined(SYS_sunos)
-static void trap_handler(sig, code, context, address)
-     int sig, code;
-     struct sigcontext * context;
-     char * address;
+static void trap_handler(int sig, int code, 
+                         struct sigcontext * context, char * address)
 {
   if (code == ILL_TRAP_FAULT(5)) {
     array_bound_error();
@@ -289,10 +281,7 @@ static void trap_handler(sig, code, context, address)
 #endif
 
 #if defined(TARGET_sparc) && defined(SYS_solaris)
-static void trap_handler(sig, info, context)
-     int sig;
-     siginfo_t * info;
-     struct ucontext_t * context;
+static void trap_handler(int sig, siginfo_t info, struct ucontext_t * context)
 {
   if (info->si_code == ILL_ILLTRP) {
     array_bound_error();
@@ -305,16 +294,14 @@ static void trap_handler(sig, info, context)
 #endif
 
 #if defined(TARGET_sparc) && defined(SYS_bsd)
-static void trap_handler(sig)
-     int sig;
+static void trap_handler(int sig)
 {
   array_bound_error();
 }
 #endif
 
 #if defined(TARGET_power)
-static void trap_handler(sig)
-     int sig;
+static void trap_handler(int sig)
 {
   array_bound_error();
 }
@@ -322,7 +309,7 @@ static void trap_handler(sig)
 
 /* Initialization of signal stuff */
 
-void init_signals()
+void init_signals(void)
 {
 #if defined(TARGET_sparc) && (defined(SYS_sunos) || defined(SYS_bsd))
   signal(SIGILL, trap_handler);

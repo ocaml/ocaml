@@ -18,8 +18,7 @@
 
 #include "socketaddr.h"
 
-value unix_getsockname(sock)          /* ML */
-     value sock;
+value unix_getsockname(value sock)          /* ML */
 {
   int retcode;
 
@@ -31,6 +30,7 @@ value unix_getsockname(sock)          /* ML */
 
 #else
 
-value unix_getsockname() { invalid_argument("getsockname not implemented"); }
+value unix_getsockname(value sock)
+{ invalid_argument("getsockname not implemented"); }
   
 #endif

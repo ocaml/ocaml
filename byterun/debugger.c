@@ -32,12 +32,11 @@ unsigned long event_count;
 
 #if !defined(HAS_SOCKETS) || defined(_WIN32)
 
-void debugger_init()
+void debugger_init(void)
 {
 }
 
-void debugger(event)
-     enum event_kind event;
+void debugger(enum event_kind event)
 {
 }
 
@@ -66,7 +65,7 @@ static int dbg_socket = -1;     /* The socket connected to the debugger */
 static struct channel * dbg_in; /* Input channel on the socket */
 static struct channel * dbg_out;/* Output channel on the socket */
 
-static void open_connection()
+static void open_connection(void)
 {
   dbg_socket = socket(sock_domain, SOCK_STREAM, 0);
   if (dbg_socket == -1 ||
@@ -79,14 +78,14 @@ static void open_connection()
   flush(dbg_out);
 }
 
-static void close_connection()
+static void close_connection(void)
 {
   close_channel(dbg_in);
   close_channel(dbg_out);
   dbg_socket = -1;              /* was closed by close_channel */
 }
 
-void debugger_init()
+void debugger_init(void)
 {
   char * address;
   char * port, * p;
@@ -131,8 +130,7 @@ void debugger_init()
   trap_barrier = stack_high;
 }
 
-static value getval(chan)
-     struct channel * chan;
+static value getval(struct channel *chan)
 {
   value res;
   if (really_getblock(chan, (char *) &res, sizeof(res)) == 0)
@@ -140,16 +138,12 @@ static value getval(chan)
   return res;
 }
 
-static void putval(chan, val)
-     struct channel * chan;
-     value val;
+static void putval(struct channel *chan, value val)
 {
   really_putblock(chan, (char *) &val, sizeof(val));
 }
 
-static void safe_output_value(chan, val)
-     struct channel * chan;
-     value val;
+static void safe_output_value(struct channel *chan, value val)
 {
   struct longjmp_buffer raise_buf, * saved_external_raise;
 
@@ -170,8 +164,7 @@ static void safe_output_value(chan, val)
 #define Extra_args(sp) (Long_val((sp[2])))
 #define Locals(sp) (sp + 3)
 
-void debugger(event)
-     enum event_kind event;
+void debugger(enum event_kind event)
 {
   int frame_number;
   value * frame;

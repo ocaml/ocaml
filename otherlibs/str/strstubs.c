@@ -18,15 +18,14 @@ struct regexp_struct {
 
 typedef struct regexp_struct * regexp;
 
-static void free_regexp(vexpr)
-     value vexpr;
+static void free_regexp(value vexpr)
 {
   regexp expr = (regexp) Bp_val(vexpr);
   expr->re.translate = NULL;
   regfree(&(expr->re));
 }
 
-static regexp alloc_regexp()
+static regexp alloc_regexp(void)
 {
   value res =
     alloc_final(sizeof(struct regexp_struct) / sizeof(value),
@@ -38,8 +37,7 @@ static regexp alloc_regexp()
 
 static char * case_fold_table = NULL;
 
-value str_compile_regexp(src, fold) /* ML */
-     value src, fold;
+value str_compile_regexp(value src, value fold) /* ML */
 {
   regexp expr;
   char * msg;
@@ -72,9 +70,7 @@ static regoff_t start_regs[10], end_regs[10];
 
 static struct re_registers match_regs = { 10, start_regs, end_regs };
 
-value str_string_match(expr, text, pos) /* ML */
-     regexp expr;
-     value text, pos;
+value str_string_match(regexp expr, value text, value pos) /* ML */
 {
   switch (re_match(&(expr->re), String_val(text), string_length(text),
                    Int_val(pos), &match_regs)) {
@@ -87,9 +83,7 @@ value str_string_match(expr, text, pos) /* ML */
   }
 }
 
-value str_search_forward(expr, text, pos) /* ML */
-     regexp expr;
-     value text, pos;
+value str_search_forward(regexp expr, value text, value pos) /* ML */
 {
   int len = string_length(text);
   int start = Int_val(pos);
@@ -105,9 +99,7 @@ value str_search_forward(expr, text, pos) /* ML */
   }
 }
 
-value str_search_backward(expr, text, pos) /* ML */
-     regexp expr;
-     value text, pos;
+value str_search_backward(regexp expr, value text, value pos) /* ML */
 {
   int len = string_length(text);
   int start = Int_val(pos);
@@ -123,20 +115,17 @@ value str_search_backward(expr, text, pos) /* ML */
   }
 }
 
-value str_beginning_group(ngroup) /* ML */
-     value ngroup;
+value str_beginning_group(value ngroup) /* ML */
 {
   return Val_int(start_regs[Int_val(ngroup)]);
 }
 
-value str_end_group(ngroup)     /* ML */
-     value ngroup;
+value str_end_group(value ngroup)     /* ML */
 {
   return Val_int(end_regs[Int_val(ngroup)]);
 }
 
-value str_replacement_text(repl, orig) /* ML */
-     value repl, orig;
+value str_replacement_text(value repl, value orig) /* ML */
 {
   value res;
   mlsize_t len, n;

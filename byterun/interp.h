@@ -20,7 +20,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-value interprete P((code_t prog, asize_t prog_size));
+value interprete (code_t prog, asize_t prog_size);
 
 
 #endif

@@ -138,9 +138,7 @@ sp is a local copy of the global variable extern_sp. */
 
 /* The interpreter itself */
 
-value interprete(prog, prog_size)
-     code_t prog;
-     asize_t prog_size;
+value interprete(code_t prog, asize_t prog_size)
 {
 #ifdef PC_REG
   register code_t pc PC_REG;

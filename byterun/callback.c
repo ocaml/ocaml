@@ -37,7 +37,7 @@ static opcode_t callback3_code[] = { ACC3, APPLY3, POP, 1, STOP };
 
 static int callback_code_threaded = 0;
 
-static void thread_callback()
+static void thread_callback(void)
 {
   thread_code(callback1_code, sizeof(callback1_code));
   thread_code(callback2_code, sizeof(callback2_code));
@@ -53,8 +53,7 @@ static void thread_callback()
 
 #endif
 
-value callback(closure, arg)
-     value closure, arg;
+value callback(value closure, value arg)
 {
   value res;
   Init_callback();
@@ -67,8 +66,7 @@ value callback(closure, arg)
   return res;
 }
 
-value callback2(closure, arg1, arg2)
-     value closure, arg1, arg2;
+value callback2(value closure, value arg1, value arg2)
 {
   value res;
   Init_callback();
@@ -82,8 +80,7 @@ value callback2(closure, arg1, arg2)
   return res;
 }
 
-value callback3(closure, arg1, arg2, arg3)
-     value closure, arg1, arg2, arg3;
+value callback3(value closure, value arg1, value arg2, value arg3)
 {
   value res;
   Init_callback();
@@ -112,16 +109,14 @@ struct named_value {
 
 static struct named_value * named_value_table[Named_value_size] = { NULL, };
 
-static unsigned int hash_value_name(name)
-     char * name;
+static unsigned int hash_value_name(char *name)
 {
   unsigned int h;
   for (h = 0; *name != 0; name++) h = h * 19 + *name;
   return h % Named_value_size;
 }
 
-value register_named_value(vname, val) /* ML */
-     value vname, val;
+value register_named_value(value vname, value val) /* ML */
 {
   struct named_value * nv;
   char * name = String_val(vname);
@@ -137,8 +132,7 @@ value register_named_value(vname, val) /* ML */
   return Val_unit;
 }
 
-value * caml_named_value(name)
-     char * name;
+value * caml_named_value(char *name)
 {
   struct named_value * nv;
   for (nv = named_value_table[hash_value_name(name)];

@@ -29,16 +29,12 @@ struct stringbuf {
   char data[256];
 };
 
-static void add_char(buf, c)
-     struct stringbuf * buf;
-     char c;
+static void add_char(struct stringbuf *buf, char c)
 {
   if (buf->ptr < buf->end) *(buf->ptr++) = c;
 }
 
-static void add_string(buf, s)
-     struct stringbuf * buf;
-     char * s;
+static void add_string(struct stringbuf *buf, char *s)
 {
   int len = strlen(s);
   if (buf->ptr + len > buf->end) len = buf->end - buf->ptr;
@@ -52,8 +48,7 @@ static void add_string(buf, s)
 #define errprintf(fmt,arg) fprintf(stderr, fmt, arg)
 #endif
 
-void fatal_uncaught_exception(exn)
-     value exn;
+void fatal_uncaught_exception(value exn)
 {
   mlsize_t start, i;
   value bucket, v;

@@ -30,12 +30,11 @@ struct global_root {
 
 static struct global_root * global_roots = NULL;
 
-void (*scan_roots_hook) P((scanning_action)) = NULL;
+void (*scan_roots_hook) (scanning_action f) = NULL;
 
 /* Register a global C root */
 
-void register_global_root(r)
-     value * r;
+void register_global_root(value *r)
 {
   struct global_root * gr;
   gr = (struct global_root *) stat_alloc(sizeof(struct global_root));
@@ -46,8 +45,7 @@ void register_global_root(r)
 
 /* Un-register a global C root */
 
-void remove_global_root(r)
-     value * r;
+void remove_global_root(value *r)
 {
   struct global_root ** gp, * gr;
   for (gp = &global_roots; *gp != NULL; gp = &(*gp)->next) {
@@ -62,7 +60,7 @@ void remove_global_root(r)
 
 /* Call [oldify] on all roots except [global_data] */
 
-void oldify_local_roots ()
+void oldify_local_roots (void)
 {
   register value * sp;
   struct global_root * gr;
@@ -92,13 +90,12 @@ void oldify_local_roots ()
 
 /* Call [darken] on all roots */
 
-void darken_all_roots ()
+void darken_all_roots (void)
 {
   do_roots (darken);
 }
 
-void do_roots (f)
-     scanning_action f;
+void do_roots (scanning_action f)
 {
   struct global_root * gr;
 
@@ -116,10 +113,7 @@ void do_roots (f)
   if (scan_roots_hook != NULL) (*scan_roots_hook)(f);
 }
 
-void do_local_roots (f, stack_low, stack_high, local_roots)
-     scanning_action f;
-     value * stack_low, * stack_high;
-     struct caml__roots_block * local_roots;
+void do_local_roots (scanning_action f, value *stack_low, value *stack_high, struct caml__roots_block *local_roots)
 {
   register value * sp;
   struct caml__roots_block *lr;

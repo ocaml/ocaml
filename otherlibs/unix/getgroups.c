@@ -20,7 +20,7 @@
 #include <sys/param.h>
 #include "unixsupport.h"
 
-value unix_getgroups()           /* ML */
+value unix_getgroups(value unit)           /* ML */
 {
   gid_t gidset[NGROUPS];
   int n;
@@ -37,6 +37,7 @@ value unix_getgroups()           /* ML */
 
 #else
 
-value unix_getgroups() { invalid_argument("getgroups not implemented"); }
+value unix_getgroups(value unit)
+{ invalid_argument("getgroups not implemented"); }
 
 #endif

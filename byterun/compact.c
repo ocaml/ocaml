@@ -24,7 +24,7 @@
 #include "weak.h"
 
 extern unsigned long percent_free;             /* major_gc.c */
-extern void shrink_heap P((char *));           /* memory.c */
+extern void shrink_heap (char *);              /* memory.c */
 
 /* Encoded headers: the color is stored in the 2 least significant bits.
    (For pointer inversion, we need to distinguish headers from pointers.)
@@ -44,8 +44,7 @@ extern void shrink_heap P((char *));           /* memory.c */
 
 typedef unsigned long word;
 
-static void invert_pointer_at (p)
-     word *p;
+static void invert_pointer_at (word *p)
 {
   word q = *p;
 
@@ -97,16 +96,14 @@ static void invert_pointer_at (p)
   }
 }
 
-static void invert_root (v, p)
-     value v;
-     value *p;
+static void invert_root (value v, value *p)
 {
   invert_pointer_at ((word *) p);
 }
 
 static char *compact_fl;
 
-static void init_compact_allocate ()
+static void init_compact_allocate (void)
 {
   char *ch = heap_start;
   while (ch != NULL){
@@ -116,8 +113,8 @@ static void init_compact_allocate ()
   compact_fl = heap_start;
 }
 
-static char *compact_allocate (size)
-     mlsize_t size;                   /* in bytes, including header */
+static char *compact_allocate (mlsize_t size)
+                                      /* in bytes, including header */
 {
   char *chunk, *adr;
 
@@ -379,7 +376,7 @@ void compact_heap (void)
 
 unsigned long percent_max;
 
-void compact_heap_maybe ()
+void compact_heap_maybe (void)
 {
   /* Estimated free words in the heap: FW = 1.5 * fl_cur_size
      Estimated live words: LW = stat_heap_size - FW

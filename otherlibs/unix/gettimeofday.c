@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
-value unix_gettimeofday()                /* ML */
+value unix_gettimeofday(value unit)                /* ML */
 {
   struct timeval tp;
   if (gettimeofday(&tp, NULL) == -1) uerror("gettimeofday", Nothing);
@@ -16,6 +16,7 @@ value unix_gettimeofday()                /* ML */
 
 #else
 
-value unix_gettimeofday() { invalid_argument("gettimeofday not implemented"); }
+value unix_gettimeofday(value unit)
+{ invalid_argument("gettimeofday not implemented"); }
 
 #endif

@@ -44,9 +44,9 @@ extern int errno;
 
 #ifdef HAS_STRERROR
 
-extern char * strerror();
+extern char * strerror(int);
 
-char * error_message()
+char * error_message(void)
 {
   return strerror(errno);
 }
@@ -56,7 +56,7 @@ char * error_message()
 extern int sys_nerr;
 extern char * sys_errlist [];
 
-char * error_message()
+char * error_message(void)
 {
   if (errno < 0 || errno >= sys_nerr)
     return "unknown error";
@@ -66,8 +66,7 @@ char * error_message()
 
 #endif /* HAS_STRERROR */
 
-void sys_error(arg)
-     value arg;
+void sys_error(value arg)
 {
   char * err = error_message();
   value str;
@@ -87,8 +86,7 @@ void sys_error(arg)
   raise_sys_error(str);
 }
 
-value sys_exit(retcode)          /* ML */
-     value retcode;
+value sys_exit(value retcode)          /* ML */
 {
 #ifndef NATIVE_CODE
   debugger(PROGRAM_EXIT);
@@ -120,8 +118,7 @@ static int sys_open_flags[] = {
   O_BINARY, O_TEXT, O_NONBLOCK
 };
 
-value sys_open(path, flags, perm) /* ML */
-     value path, flags, perm;
+value sys_open(value path, value flags, value perm) /* ML */
 {
   int ret;
   ret = open(String_val(path), convert_flag_list(flags, sys_open_flags)
@@ -133,15 +130,13 @@ value sys_open(path, flags, perm) /* ML */
   return Val_long(ret);
 }
 
-value sys_close(fd)             /* ML */
-     value fd;
+value sys_close(value fd)             /* ML */
 {
   close(Int_val(fd));
   return Val_unit;
 }
 
-value sys_file_exists(name)     /* ML */
-     value name;
+value sys_file_exists(value name)     /* ML */
 {
 #if macintosh
   int f;
@@ -155,8 +150,7 @@ value sys_file_exists(name)     /* ML */
 #endif
 }
 
-value sys_remove(name)          /* ML */
-     value name;
+value sys_remove(value name)          /* ML */
 {
   int ret;
   ret = unlink(String_val(name));
@@ -164,23 +158,20 @@ value sys_remove(name)          /* ML */
   return Val_unit;
 }
 
-value sys_rename(oldname, newname) /* ML */
-     value oldname, newname;
+value sys_rename(value oldname, value newname) /* ML */
 {
   if (rename(String_val(oldname), String_val(newname)) != 0)
     sys_error(oldname);
   return Val_unit;
 }
 
-value sys_chdir(dirname)        /* ML */
-     value dirname;
+value sys_chdir(value dirname)        /* ML */
 {
   if (chdir(String_val(dirname)) != 0) sys_error(dirname);
   return Val_unit;
 }
 
-value sys_getcwd(unit)          /* ML */
-     value unit;
+value sys_getcwd(value unit)          /* ML */
 {
   char buff[4096];
 #ifdef HAS_GETCWD
@@ -191,8 +182,7 @@ value sys_getcwd(unit)          /* ML */
   return copy_string(buff);
 }
 
-value sys_getenv(var)           /* ML */
-     value var;
+value sys_getenv(value var)           /* ML */
 {
   char * res;
 
@@ -203,28 +193,24 @@ value sys_getenv(var)           /* ML */
 
 static char ** main_argv;
 
-value sys_get_argv(unit)        /* ML */
-     value unit;
+value sys_get_argv(value unit)        /* ML */
 {
   return copy_string_array(main_argv);
 }
 
-void sys_init(argv)
-     char ** argv;
+void sys_init(char **argv)
 {
   main_argv = argv;
 }
 
-value sys_system_command(command)   /* ML */
-     value command;
+value sys_system_command(value command)   /* ML */
 {
   int retcode = system(String_val(command));
   if (retcode == -1) sys_error(command);
   return Val_int(retcode);
 }
 
-value sys_get_config(unit)  /* ML */
-     value unit;
+value sys_get_config(value unit)  /* ML */
 {
   value result;
   value ostype;
@@ -242,8 +228,7 @@ value sys_get_config(unit)  /* ML */
 
 #ifdef _WIN32
 
-char * searchpath(name)
-     char * name;
+char * searchpath(char * name)
 {
   char * fullname;
   char * path;
@@ -279,8 +264,7 @@ char * searchpath(name)
 
 /* We don't need searchpath on the Macintosh because there are no #! scripts */
 
-char *searchpath (name)
-     char *name;
+char *searchpath (char * name)
 {
   return name;
 }
@@ -291,8 +275,7 @@ char *searchpath (name)
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
 #endif
 
-char * searchpath(name)
-     char * name;
+char * searchpath(char * name)
 {
   char * fullname;
   char * path;

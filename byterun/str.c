@@ -19,8 +19,7 @@
 #include "mlvalues.h"
 #include "misc.h"
 
-mlsize_t string_length(s)
-     value s;
+mlsize_t string_length(value s)
 {
   mlsize_t temp;
   temp = Bosize_val(s) - 1;
@@ -28,8 +27,7 @@ mlsize_t string_length(s)
   return temp - Byte (s, temp);
 }
 
-value ml_string_length(s)     /* ML */
-     value s;
+value ml_string_length(value s)     /* ML */
 {
   mlsize_t temp;
   temp = Bosize_val(s) - 1;
@@ -37,24 +35,21 @@ value ml_string_length(s)     /* ML */
   return Val_long(temp - Byte (s, temp));
 }
 
-value create_string(len)        /* ML */
-     value len;
+value create_string(value len)        /* ML */
 {
   mlsize_t size = Long_val(len);
   if (size > Bsize_wsize (Max_wosize) - 1) invalid_argument("String.create");
   return alloc_string(size);
 }
 
-value string_get(str, index)    /* ML */
-     value str, index;
+value string_get(value str, value index)    /* ML */
 {
   long idx = Long_val(index);
   if (idx < 0 || idx >= string_length(str)) invalid_argument("String.get");
   return Val_int(Byte_u(str, idx));
 }
 
-value string_set(str, index, newval)    /* ML */
-     value str, index, newval;
+value string_set(value str, value index, value newval)    /* ML */
 {
   long idx = Long_val(index);
   if (idx < 0 || idx >= string_length(str)) invalid_argument("String.set");
@@ -62,8 +57,7 @@ value string_set(str, index, newval)    /* ML */
   return Val_unit;
 }
 
-value string_equal(s1, s2)      /* ML */
-     value s1, s2;
+value string_equal(value s1, value s2)      /* ML */
 {
   mlsize_t sz1 = Wosize_val(s1);
   mlsize_t sz2 = Wosize_val(s2);
@@ -74,21 +68,18 @@ value string_equal(s1, s2)      /* ML */
   return Val_true;
 }
 
-value string_notequal(s1, s2)   /* ML */
-     value s1, s2;
+value string_notequal(value s1, value s2)   /* ML */
 {
   return Val_not(string_equal(s1, s2));
 }
   
-value blit_string(s1, ofs1, s2, ofs2, n)   /* ML */
-     value s1, ofs1, s2, ofs2, n;
+value blit_string(value s1, value ofs1, value s2, value ofs2, value n)   /* ML */
 {
   bcopy(&Byte(s1, Long_val(ofs1)), &Byte(s2, Long_val(ofs2)), Int_val(n));
   return Val_unit;
 }
 
-value fill_string(s, offset, len, init) /* ML */
-     value s, offset, len, init;
+value fill_string(value s, value offset, value len, value init) /* ML */
 {
   register char * p;
   register mlsize_t n;
@@ -106,8 +97,7 @@ static unsigned char printable_chars_ascii[] = /* 0x20-0x7E */
 static unsigned char printable_chars_iso[] = /* 0x20-0x7E 0xA1-0xFF */
   "\000\000\000\000\377\377\377\377\377\377\377\377\377\377\377\177\000\000\000\000\376\377\377\377\377\377\377\377\377\377\377\377";
 
-value is_printable(chr) /* ML */
-     value chr;
+value is_printable(value chr) /* ML */
 {
   int c;
   unsigned char * printable_chars;
@@ -126,8 +116,7 @@ value is_printable(chr) /* ML */
   return Val_bool(printable_chars[c >> 3] & (1 << (c & 7)));
 }
 
-value bitvect_test(bv, n)       /* ML */
-     value bv, n;
+value bitvect_test(value bv, value n)       /* ML */
 {
   int pos = Int_val(n);
   return Val_int(Byte_u(bv, pos >> 3) & (1 << (pos & 7)));

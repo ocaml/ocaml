@@ -20,10 +20,9 @@
 static unsigned long hash_accu;
 static long hash_univ_limit, hash_univ_count;
 
-static void hash_aux();
+static void hash_aux(value obj);
 
-value hash_univ_param(count, limit, obj) /* ML */
-     value obj, count, limit;
+value hash_univ_param(value count, value limit, value obj) /* ML */
 {
   hash_univ_limit = Long_val(limit);
   hash_univ_count = Long_val(count);
@@ -39,8 +38,7 @@ value hash_univ_param(count, limit, obj) /* ML */
 #define Combine(new)  (hash_accu = hash_accu * Alpha + (new))
 #define Combine_small(new) (hash_accu = hash_accu * Beta + (new))
 
-static void hash_aux(obj)
-     value obj;
+static void hash_aux(value obj)
 {
   unsigned char * p;
   mlsize_t i, j;

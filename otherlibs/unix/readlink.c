@@ -19,8 +19,7 @@
 #include <sys/param.h>
 #include "unixsupport.h"
 
-value unix_readlink(path)        /* ML */
-     value path;
+value unix_readlink(value path)        /* ML */
 {
   char buffer[MAXPATHLEN];
   int len;
@@ -32,6 +31,7 @@ value unix_readlink(path)        /* ML */
 
 #else
 
-value unix_readlink() { invalid_argument("readlink not implemented"); }
+value unix_readlink(value path)
+{ invalid_argument("readlink not implemented"); }
 
 #endif

@@ -33,9 +33,7 @@ char * code_area_start, * code_area_end;
 
 struct segment { char * begin; char * end; };
 
-static void minmax_table(table, min, max)
-     struct segment table[];
-     char ** min, ** max;
+static void minmax_table(struct segment *table, char **min, char **max)
 {
   int i;
   *min = table[0].begin;
@@ -46,7 +44,7 @@ static void minmax_table(table, min, max)
   }
 }
   
-static void init_atoms()
+static void init_atoms(void)
 {
   int i;
   extern struct segment caml_data_segments[], caml_code_segments[];
@@ -73,9 +71,7 @@ static unsigned long max_stack_init = Max_stack_def;
 */
 /* Note: option l is irrelevant to the native-code runtime. */
 
-static void scanmult (opt, var)
-     char *opt;
-     unsigned long *var;
+static void scanmult (char *opt, long unsigned int *var)
 {
   char mult = ' ';
   sscanf (opt, "=%lu%c", var, &mult);
@@ -84,7 +80,7 @@ static void scanmult (opt, var)
   if (mult == 'G') *var = *var * (1024 * 1024 * 1024);
 }
 
-static void parse_camlrunparam()
+static void parse_camlrunparam(void)
 {
   char *opt = getenv ("CAMLRUNPARAM");
   if (opt != NULL){
@@ -102,12 +98,11 @@ static void parse_camlrunparam()
   }
 }
 
-extern void caml_start_program P((void));
-extern void init_ieee_floats P((void));
-extern void init_signals P((void));
+extern void caml_start_program (void);
+extern void init_ieee_floats (void);
+extern void init_signals (void);
 
-void caml_main(argv)
-     char ** argv;
+void caml_main(char **argv)
 {
   init_ieee_floats();
 #ifdef DEBUG
@@ -122,8 +117,7 @@ void caml_main(argv)
   caml_start_program();
 }
 
-void caml_startup(argv)
-     char ** argv;
+void caml_startup(char **argv)
 {
   caml_main(argv);
 }

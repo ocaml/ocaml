@@ -26,10 +26,9 @@ static int dbm_open_flags[] = {
   O_RDONLY, O_WRONLY, O_RDWR, O_CREAT
 };
 
-static void raise_dbm P((char *errmsg)) Noreturn;
+static void raise_dbm (char *errmsg) Noreturn;
 
-static void raise_dbm(errmsg)
-     char *errmsg;
+static void raise_dbm(char *errmsg)
 {
   static value * dbm_exn = NULL;
   if (dbm_exn == NULL)
@@ -38,10 +37,7 @@ static void raise_dbm(errmsg)
 }
 
 /* Dbm.open : string -> Sys.open_flag list -> int -> t */
-value caml_dbm_open(vfile, vflags, vmode) /* ML */
-     value vfile;
-     value vflags;
-     value vmode;
+value caml_dbm_open(value vfile, value vflags, value vmode) /* ML */
 {
   char *file = String_val(vfile);
   int flags = convert_flag_list(vflags, dbm_open_flags);
@@ -55,17 +51,14 @@ value caml_dbm_open(vfile, vflags, vmode) /* ML */
 }
 
 /* Dbm.close: t -> unit */
-value caml_dbm_close(vdb)       /* ML */
-     value vdb;
+value caml_dbm_close(value vdb)       /* ML */
 {
   dbm_close((DBM *)vdb);
   return Val_unit;
 }
 
 /* Dbm.fetch: t -> string -> string */
-value caml_dbm_fetch(vdb,vkey)  /* ML */
-     value vdb;
-     value vkey;
+value caml_dbm_fetch(value vdb, value vkey)  /* ML */
 {
   datum key,answer;
   key.dptr = String_val(vkey);
@@ -79,8 +72,7 @@ value caml_dbm_fetch(vdb,vkey)  /* ML */
   else raise_not_found();
 }
 
-value caml_dbm_insert(vdb,vkey,vcontent) /* ML */
-     value vdb,vkey,vcontent;
+value caml_dbm_insert(value vdb, value vkey, value vcontent) /* ML */
 {
   datum key, content;
   
@@ -99,9 +91,7 @@ value caml_dbm_insert(vdb,vkey,vcontent) /* ML */
   }
 }
 
-
-value caml_dbm_replace(vdb,vkey,vcontent) /* ML */
-     value vdb,vkey,vcontent;
+value caml_dbm_replace(value vdb, value vkey, value vcontent) /* ML */
 {
   datum key, content;
   
@@ -118,8 +108,7 @@ value caml_dbm_replace(vdb,vkey,vcontent) /* ML */
   }
 }
 
-value caml_dbm_delete(vdb,vkey)         /* ML */
-     value vdb, vkey;
+value caml_dbm_delete(value vdb, value vkey)         /* ML */
 {
   datum key;
   key.dptr = String_val(vkey);
@@ -130,8 +119,7 @@ value caml_dbm_delete(vdb,vkey)         /* ML */
   else return Val_unit;
 }
 
-value caml_dbm_firstkey(vdb)            /* ML */
-  value vdb;
+value caml_dbm_firstkey(value vdb)            /* ML */
 {
   datum key = dbm_firstkey((DBM *)vdb);
 
@@ -143,8 +131,7 @@ value caml_dbm_firstkey(vdb)            /* ML */
   else raise_not_found();
 }
 
-value caml_dbm_nextkey(vdb)             /* ML */
-  value vdb;
+value caml_dbm_nextkey(value vdb)             /* ML */
 {
   datum key = dbm_nextkey((DBM *)vdb);
 

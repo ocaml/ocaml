@@ -21,8 +21,7 @@
 
 #include "socketaddr.h"
 
-value unix_accept(sock)          /* ML */
-     value sock;
+value unix_accept(value sock)          /* ML */
 {
   int retcode;
   value res;
@@ -44,6 +43,6 @@ value unix_accept(sock)          /* ML */
 
 #else
 
-value unix_accept() { invalid_argument("accept not implemented"); }
+value unix_accept(value sock) { invalid_argument("accept not implemented"); }
   
 #endif

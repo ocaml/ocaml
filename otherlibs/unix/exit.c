@@ -14,8 +14,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_exit(n)               /* ML */
-     value n;
+value unix_exit(value n)               /* ML */
 {
   _exit(Int_val(n));
   return Val_unit;                  /* never reached, but suppress warnings */

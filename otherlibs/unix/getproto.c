@@ -25,8 +25,7 @@
 #include <winsock.h>
 #endif
 
-static value alloc_proto_entry(entry)
-     struct protoent * entry;
+static value alloc_proto_entry(struct protoent *entry)
 {
   value res;
   value name = Val_unit, aliases = Val_unit;
@@ -42,8 +41,7 @@ static value alloc_proto_entry(entry)
   return res;
 }
 
-value unix_getprotobyname(name)  /* ML */
-     value name;
+value unix_getprotobyname(value name)  /* ML */
 {
   struct protoent * entry;
   entry = getprotobyname(String_val(name));
@@ -51,8 +49,7 @@ value unix_getprotobyname(name)  /* ML */
   return alloc_proto_entry(entry);
 }
 
-value unix_getprotobynumber(proto) /* ML */
-     value proto;
+value unix_getprotobynumber(value proto) /* ML */
 {
   struct protoent * entry;
   entry = getprotobynumber(Int_val(proto));
@@ -62,10 +59,10 @@ value unix_getprotobynumber(proto) /* ML */
 
 #else
 
-value unix_getprotobynumber()
+value unix_getprotobynumber(value proto)
 { invalid_argument("getprotobynumber not implemented"); }
   
-value unix_getprotobyname()
+value unix_getprotobyname(value name)
 { invalid_argument("getprotobyname not implemented"); }
 
 #endif

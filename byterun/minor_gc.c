@@ -32,8 +32,7 @@ value **ref_table_ptr = NULL, **ref_table_limit;
 static asize_t ref_table_size, ref_table_reserve;
 int in_minor_collection = 0;
 
-void set_minor_heap_size (size)
-    asize_t size;
+void set_minor_heap_size (asize_t size)
 {
   char *new_heap;
   value **new_table;
@@ -65,9 +64,7 @@ void set_minor_heap_size (size)
   ref_table_end = ref_table + ref_table_size + ref_table_reserve;
 }
 
-void oldify (v, p)
-     value v;
-     value *p;
+void oldify (value v, value *p)
 {
   value result, field0;
   header_t hd;
@@ -120,7 +117,7 @@ void oldify (v, p)
   }
 }
 
-void minor_collection ()
+void minor_collection (void)
 {
   value **r;
   long prev_alloc_words = allocated_words;
@@ -142,8 +139,7 @@ void minor_collection ()
   force_major_slice = 0;
 }
 
-value check_urgent_gc (extra_root)
-     value extra_root;
+value check_urgent_gc (value extra_root)
 {
   if (force_major_slice) {
     Begin_root(extra_root);
@@ -153,7 +149,7 @@ value check_urgent_gc (extra_root)
   return extra_root;
 }
 
-void realloc_ref_table ()
+void realloc_ref_table (void)
 {                                 Assert (ref_table_ptr == ref_table_limit);
                                   Assert (ref_table_limit <= ref_table_end);
                             Assert (ref_table_limit >= ref_table_threshold);

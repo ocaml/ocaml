@@ -17,8 +17,7 @@
 
 XFontStruct * grfont = NULL;
 
-static void gr_font(fontname)
-     char * fontname;
+static void gr_font(char *fontname)
 {
   XFontStruct * font = XLoadQueryFont(grdisplay, fontname);
   if (font == NULL) gr_fail("cannot find font %s", fontname);
@@ -28,17 +27,14 @@ static void gr_font(fontname)
   XSetFont(grdisplay, grbstore.gc, grfont->fid);
 }
 
-value gr_set_font(fontname)
-     value fontname;
+value gr_set_font(value fontname)
 {
   gr_check_open();
   gr_font(String_val(fontname));
   return Val_unit;
 }
 
-static void gr_draw_text(txt, len)
-     char * txt;
-     int len;
+static void gr_draw_text(char *txt, int len)
 {
   if (grfont == NULL) gr_font(DEFAULT_FONT);
   XDrawString(grdisplay, grwindow.win, grwindow.gc,
@@ -49,8 +45,7 @@ static void gr_draw_text(txt, len)
   XFlush(grdisplay);
 }
 
-value gr_draw_char(chr)
-     value chr;
+value gr_draw_char(value chr)
 {
   char str[1];
   gr_check_open();
@@ -59,16 +54,14 @@ value gr_draw_char(chr)
   return Val_unit;
 }
   
-value gr_draw_string(str)
-     value str;
+value gr_draw_string(value str)
 {
   gr_check_open();
   gr_draw_text(String_val(str), string_length(str));
   return Val_unit;
 }
 
-value gr_text_size(str)
-     value str;
+value gr_text_size(value str)
 {
   int width;
   value res;

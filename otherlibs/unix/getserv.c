@@ -29,8 +29,7 @@
 #include <winsock.h>
 #endif
 
-static value alloc_service_entry(entry)
-     struct servent * entry;
+static value alloc_service_entry(struct servent *entry)
 {
   value res;
   value name = Val_unit, aliases = Val_unit, proto = Val_unit;
@@ -48,8 +47,7 @@ static value alloc_service_entry(entry)
   return res;
 }
 
-value unix_getservbyname(name, proto)  /* ML */
-     value name, proto;
+value unix_getservbyname(value name, value proto)  /* ML */
 {
   struct servent * entry;
   entry = getservbyname(String_val(name), String_val(proto));
@@ -57,8 +55,7 @@ value unix_getservbyname(name, proto)  /* ML */
   return alloc_service_entry(entry);
 }
 
-value unix_getservbyport(port, proto)  /* ML */
-     value port, proto;
+value unix_getservbyport(value port, value proto)  /* ML */
 {
   struct servent * entry;
   entry = getservbyport(Int_val(port), String_val(proto));
@@ -68,10 +65,10 @@ value unix_getservbyport(port, proto)  /* ML */
 
 #else
 
-value unix_getservbyport()
+value unix_getservbyport(value port, value proto)
 { invalid_argument("getservbyport not implemented"); }
   
-value unix_getservbyname()
+value unix_getservbyname(value name, value proto)
 { invalid_argument("getservbyname not implemented"); }
 
 #endif

@@ -30,8 +30,7 @@ value global_data;
 
 unsigned long max_stack_size;
 
-void init_stack (initial_max_size)
-     unsigned long initial_max_size;
+void init_stack (long unsigned int initial_max_size)
 {
   stack_low = (value *) stat_alloc(Stack_size);
   stack_high = stack_low + Stack_size / sizeof (value);
@@ -44,7 +43,7 @@ void init_stack (initial_max_size)
 	      max_stack_size / 1024 * sizeof (value));
 }
 
-void realloc_stack()
+void realloc_stack(void)
 {        
   asize_t size;
   value * new_low, * new_high, * new_sp;
@@ -79,8 +78,7 @@ void realloc_stack()
 #undef shift
 }
 
-void change_max_stack_size (new_max_size)
-     unsigned long new_max_size;
+void change_max_stack_size (long unsigned int new_max_size)
 {
   asize_t size = stack_high - extern_sp + Stack_threshold / sizeof (value);
 

@@ -16,8 +16,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_chmod(path, perm)     /* ML */
-     value path, perm;
+value unix_chmod(value path, value perm)     /* ML */
 {
   int ret;
   ret = chmod(String_val(path), Int_val(perm));

@@ -35,12 +35,11 @@ extern caml_generated_constant Out_of_memory, Sys_error, Failure,
 
 /* Exception raising */
 
-extern void raise_caml_exception P((value bucket)) Noreturn;
+extern void raise_caml_exception (value bucket) Noreturn;
 
 char * caml_exception_pointer = NULL;
 
-void mlraise(v)
-     value v;
+void mlraise(value v)
 {
 #ifdef POSIX_SIGNALS
   sigset_t mask;
@@ -68,8 +67,7 @@ void mlraise(v)
   raise_caml_exception(v);
 }
 
-void raise_constant(tag)
-     value tag;
+void raise_constant(value tag)
 {
   value bucket;
   Begin_root (tag);
@@ -79,9 +77,7 @@ void raise_constant(tag)
   mlraise(bucket);
 }
 
-void raise_with_arg(tag, arg)
-     value tag;
-     value arg;
+void raise_with_arg(value tag, value arg)
 {
   value bucket;
   Begin_roots2 (tag, arg);
@@ -92,15 +88,12 @@ void raise_with_arg(tag, arg)
   mlraise(bucket);
 }
 
-void raise_with_string(tag, msg)
-     value tag;
-     char * msg;
+void raise_with_string(value tag, char *msg)
 {
   raise_with_arg(tag, copy_string(msg));
 }
 
-void failwith (msg)
-     char * msg;
+void failwith (char *msg)
 {
   raise_with_string((value) Failure, msg);
 }
@@ -113,8 +106,7 @@ void failwith (msg)
    Finally, this allows a number of C primitives to be declared "noalloc",
    and this makes calling them much more efficient. */
    
-void invalid_argument (msg)
-     char * msg;
+void invalid_argument (char *msg)
 {
   fatal_error_arg("Fatal_error: Invalid_argument \"%s\"\n", msg);
 }
@@ -130,30 +122,29 @@ static struct {
   value exn;
 } out_of_memory_bucket;
 
-void raise_out_of_memory()
+void raise_out_of_memory(void)
 {
   out_of_memory_bucket.hdr = Make_header(1, 0, White);
   out_of_memory_bucket.exn = (value) Out_of_memory;
   mlraise((value) &(out_of_memory_bucket.exn));
 }
 
-void raise_sys_error(msg)
-     value msg;
+void raise_sys_error(value msg)
 {
   raise_with_arg((value) Sys_error, msg);
 }
 
-void raise_end_of_file()
+void raise_end_of_file(void)
 {
   raise_constant((value) End_of_file);
 }
 
-void raise_zero_divide()
+void raise_zero_divide(void)
 {
   raise_constant((value) Division_by_zero);
 }
 
-void raise_not_found()
+void raise_not_found(void)
 {
   raise_constant((value) Not_found);
 }

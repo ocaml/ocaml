@@ -49,7 +49,7 @@ asize_t fl_cur_size = 0;         /* How many free words were added since
 #define Next(b) (((block *) (b))->next_bp)
 
 #ifdef DEBUG
-void fl_check ()
+void fl_check (void)
 {
   char *cur, *prev;
   int prev_found = 0, merge_found = 0;
@@ -82,9 +82,7 @@ void fl_check ()
    it is located in the high-address words of the free block.  This way,
    the linking of the free-list does not change in case 2.
 */
-static char *allocate_block (wh_sz, prev, cur)
-    mlsize_t wh_sz;
-    char *prev, *cur;
+static char *allocate_block (mlsize_t wh_sz, char *prev, char *cur)
 {
   header_t h = Hd_bp (cur);
                                              Assert (Whsize_hd (h) >= wh_sz);
@@ -110,8 +108,7 @@ static char *allocate_block (wh_sz, prev, cur)
    The calling function must do it before any GC function gets called.
    [fl_allocate] returns a head pointer.
 */
-char *fl_allocate (wo_sz)
-     mlsize_t wo_sz;
+char *fl_allocate (mlsize_t wo_sz)
 {
   char *cur, *prev;
                                   Assert (sizeof (char *) == sizeof (value));
@@ -144,7 +141,7 @@ char *fl_allocate (wo_sz)
 
 static char *last_fragment;
 
-void fl_init_merge ()
+void fl_init_merge (void)
 {
   last_fragment = NULL;
   fl_merge = Fl_head;
@@ -155,7 +152,7 @@ void fl_init_merge ()
 }
 
 /* This is called by compact_heap. */
-void fl_reset ()
+void fl_reset (void)
 {
   Next (Fl_head) = 0;
   fl_prev = Fl_head;
@@ -164,8 +161,7 @@ void fl_reset ()
 
 /* [fl_merge_block] returns the head pointer of the next block after [bp],
    because merging blocks may change the size of [bp]. */
-char *fl_merge_block (bp)
-    char *bp;
+char *fl_merge_block (char *bp)
 {
   char *prev, *cur, *adj;
   header_t hd = Hd_bp (bp);
@@ -242,8 +238,7 @@ char *fl_merge_block (bp)
    Most of the heap extensions are expected to be at the end of the
    free list.  (This depends on the implementation of [malloc].)
 */
-void fl_add_block (bp)
-     char *bp;
+void fl_add_block (char *bp)
 {
                                                    Assert (fl_last != NULL);
                                             Assert (Next (fl_last) == NULL);

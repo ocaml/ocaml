@@ -27,8 +27,8 @@ enum event_kind {
   TRAP_BARRIER, UNCAUGHT_EXC
 };
 
-void debugger_init P((void));
-void debugger P((enum event_kind event));
+void debugger_init (void);
+void debugger (enum event_kind event);
 
 /* Communication protocol */
 

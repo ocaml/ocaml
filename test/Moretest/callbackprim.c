@@ -2,8 +2,7 @@
 #include "memory.h"
 #include "callback.h"
 
-value mycallback1(fun, arg)
-     value fun, arg;
+value mycallback1(value fun, value arg)
 {
   value res;
   Push_roots(r, 2);
@@ -14,8 +13,7 @@ value mycallback1(fun, arg)
   return res;
 }
 
-value mycallback2(fun, arg1, arg2)
-     value fun, arg1, arg2;
+value mycallback2(value fun, value arg1, value arg2)
 {
   value res;
   Push_roots(r, 3);
@@ -27,8 +25,7 @@ value mycallback2(fun, arg1, arg2)
   return res;
 }
 
-value mycallback3(fun, arg1, arg2, arg3)
-     value fun, arg1, arg2, arg3;
+value mycallback3(value fun, value arg1, value arg2, value arg3)
 {
   value res;
   Push_roots(r, 4);
@@ -41,8 +38,7 @@ value mycallback3(fun, arg1, arg2, arg3)
   return res;
 }
 
-value mypushroot(v, fun, arg)
-     value v, fun, arg;
+value mypushroot(value v, value fun, value arg)
 {
   Push_roots(r, 1);
   r[0] = v;

@@ -26,14 +26,6 @@
 #include <stdlib.h>
 #endif
 
-/* Function prototypes */
-
-#ifdef __STDC__
-#define P(x) x
-#else
-#define P(x) ()
-#endif
-
 /* Basic types and constants */
 
 #ifdef __STDC__
@@ -47,14 +39,6 @@ typedef int asize_t;
 #endif
 
 typedef char * addr;
-
-/* Volatile stuff */
-
-#ifdef __STDC__
-#define Volatile volatile
-#else
-#define Volatile
-#endif
 
 #ifdef __GNUC__
 /* Works only in GCC 2.5 and later */
@@ -81,22 +65,22 @@ typedef char * addr;
 #define Assert(x)
 #endif
 
-void failed_assert P((char *, char *, int)) Noreturn;
-void fatal_error P((char *)) Noreturn;
-void fatal_error_arg P((char *, char *)) Noreturn;
+void failed_assert (char *, char *, int) Noreturn;
+void fatal_error (char *) Noreturn;
+void fatal_error_arg (char *, char *) Noreturn;
 
 /* GC flags and messages */
 
 extern int verb_gc;
-void gc_message P((char *, unsigned long));
+void gc_message (char *, unsigned long);
 
 /* Memory routines */
 
-void memmov P((char *, char *, unsigned long));
-char *aligned_malloc P((asize_t, int, void **));
+void memmov (char *, char *, unsigned long);
+char *aligned_malloc (asize_t, int, void **);
 
 #ifdef DEBUG
-unsigned long not_random P((void));
+unsigned long not_random (void);
 #endif
 
 

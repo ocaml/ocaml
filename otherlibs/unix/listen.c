@@ -18,8 +18,7 @@
 
 #include <sys/socket.h>
 
-value unix_listen(sock, backlog)
-     value sock, backlog;
+value unix_listen(value sock, value backlog)
 {
   if (listen(Int_val(sock), Int_val(backlog)) == -1) uerror("listen", Nothing);
   return Val_unit;
@@ -27,6 +26,7 @@ value unix_listen(sock, backlog)
 
 #else
 
-value unix_listen() { invalid_argument("listen not implemented"); }
+value unix_listen(value sock, value backlog)
+{ invalid_argument("listen not implemented"); }
 
 #endif

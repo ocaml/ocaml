@@ -58,12 +58,12 @@ extern char *gc_sweep_hp;
   ((addr)(p) >= (addr)heap_start && (addr)(p) < (addr)heap_end \
    && page_table [Page (p)])
 
-void init_major_heap P((asize_t));
-asize_t round_heap_chunk_size P((asize_t));
-void darken P((value, value *));
-void major_collection_slice P((void));
-void major_collection P((void));
-void finish_major_cycle P((void));
+void init_major_heap (asize_t);
+asize_t round_heap_chunk_size (asize_t);
+void darken (value, value *);
+void major_collection_slice (void);
+void major_collection (void);
+void finish_major_cycle (void);
 
 
 #endif /* _major_gc_ */

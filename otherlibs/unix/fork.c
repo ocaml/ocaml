@@ -14,8 +14,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_fork(unit)               /* ML */
-     value unit;
+value unix_fork(value unit)               /* ML */
 {
   int ret;
   ret = fork();

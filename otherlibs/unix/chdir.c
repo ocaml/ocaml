@@ -14,8 +14,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_chdir(path)           /* ML */
-     value path;
+value unix_chdir(value path)           /* ML */
 {
   int ret;
   ret = chdir(String_val(path));

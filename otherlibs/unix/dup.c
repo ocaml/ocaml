@@ -14,8 +14,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_dup(fd)               /* ML */
-     value fd;
+value unix_dup(value fd)               /* ML */
 {
   int ret;
   ret = dup(Int_val(fd));

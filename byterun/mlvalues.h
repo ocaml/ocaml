@@ -202,8 +202,8 @@ typedef opcode_t * code_t;
 #define Double_val(v) (* (double *)(v))
 #define Store_double_val(v,d) (* (double *)(v) = (d))
 #else
-double Double_val P((value));
-void Store_double_val P((value,double));
+double Double_val (value);
+void Store_double_val (value,double);
 #endif
 
 /* Arrays of floating-point numbers. */
@@ -216,7 +216,7 @@ void Store_double_val P((value,double));
    [Final_fun] before deallocation.
 */
 #define Final_tag 255
-typedef void (*final_fun) P((value));
+typedef void (*final_fun) (value);
 #define Final_fun(val) (((final_fun *) (val)) [0]) /* Also an l-value. */
 
 

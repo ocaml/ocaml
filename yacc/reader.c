@@ -51,10 +51,9 @@ char line_format[] = "(* Line %d, file %s *)\n";
 
 
 
-void start_rule ();
+void start_rule (register bucket *bp, int s_lineno);
 
-void cachec(c)
-        int c;
+void cachec(int c)
 {
     assert(cinc >= 0);
     if (cinc >= cache_size)
@@ -68,7 +67,7 @@ void cachec(c)
 }
 
 
-void get_line()
+void get_line(void)
 {
     register FILE *f = input_file;
     register int c;
@@ -109,7 +108,7 @@ void get_line()
 
 
 char *
-dup_line()
+dup_line(void)
 {
     register char *p, *s, *t;
 
@@ -126,7 +125,7 @@ dup_line()
 }
 
 
-void skip_comment()
+void skip_comment(void)
 {
     register char *s;
 
@@ -157,7 +156,7 @@ void skip_comment()
 
 
 int
-nextc()
+nextc(void)
 {
     register char *s;
 
@@ -219,7 +218,7 @@ nextc()
 
 
 int
-keyword()
+keyword(void)
 {
     register int c;
     char *t_cptr = cptr;
@@ -282,7 +281,7 @@ keyword()
 }
 
 
-void copy_ident()
+void copy_ident(void)
 {
     register int c;
     register FILE *f = output_file;
@@ -311,7 +310,7 @@ void copy_ident()
 }
 
 
-void copy_text()
+void copy_text(void)
 {
     register int c;
     int quote;
@@ -443,7 +442,7 @@ loop:
 }
 
 
-void copy_union()
+void copy_union(void)
 {
     register int c;
     int quote;
@@ -564,8 +563,7 @@ loop:
 
 
 int
-hexval(c)
-        int c;
+hexval(int c)
 {
     if (c >= '0' && c <= '9')
 	return (c - '0');
@@ -578,7 +576,7 @@ hexval(c)
 
 
 bucket *
-get_literal()
+get_literal(void)
 {
     register int c, quote;
     register int i;
@@ -717,8 +715,7 @@ get_literal()
 
 
 int
-is_reserved(name)
-        char *name;
+is_reserved(char *name)
 {
     char *s;
 
@@ -739,7 +736,7 @@ is_reserved(name)
 
 
 bucket *
-get_name()
+get_name(void)
 {
     register int c;
 
@@ -755,7 +752,7 @@ get_name()
 
 
 int
-get_number()
+get_number(void)
 {
     register int c;
     register int n;
@@ -769,7 +766,7 @@ get_number()
 
 
 char *
-get_tag()
+get_tag(void)
 {
     register int c;
     register int i;
@@ -811,8 +808,7 @@ get_tag()
 }
 
 
-void declare_tokens(assoc)
-        int assoc;
+void declare_tokens(int assoc)
 {
     register int c;
     register bucket *bp;
@@ -878,7 +874,7 @@ void declare_tokens(assoc)
 }
 
 
-void declare_types()
+void declare_types(void)
 {
     register int c;
     register bucket *bp;
@@ -906,7 +902,7 @@ void declare_types()
 }
 
 
-void declare_start()
+void declare_start(void)
 {
     register int c;
     register bucket *bp;
@@ -926,7 +922,7 @@ void declare_start()
 }
 
 
-void read_declarations()
+void read_declarations(void)
 {
     register int c, k;
 
@@ -974,7 +970,7 @@ void read_declarations()
     }
 }
 
-void output_token_type()
+void output_token_type(void)
 {
   bucket * bp;
   int n;
@@ -1001,7 +997,7 @@ void output_token_type()
   fprintf(output_file, "\n");
 }
 
-void initialize_grammar()
+void initialize_grammar(void)
 {
     nitems = 4;
     maxitems = 300;
@@ -1032,7 +1028,7 @@ void initialize_grammar()
 }
 
 
-void expand_items()
+void expand_items(void)
 {
     maxitems += 300;
     pitem = (bucket **) REALLOC(pitem, maxitems*sizeof(bucket *));
@@ -1040,7 +1036,7 @@ void expand_items()
 }
 
 
-void expand_rules()
+void expand_rules(void)
 {
     maxrules += 100;
     plhs = (bucket **) REALLOC(plhs, maxrules*sizeof(bucket *));
@@ -1052,7 +1048,7 @@ void expand_rules()
 }
 
 
-void advance_to_start()
+void advance_to_start(void)
 {
     register int c;
     register bucket *bp;
@@ -1104,9 +1100,7 @@ void advance_to_start()
 
 int at_first;
 
-void start_rule(bp, s_lineno)
-        register bucket *bp;
-        int s_lineno;
+void start_rule(register bucket *bp, int s_lineno)
 {
     if (bp->class == TERM)
 	terminal_lhs(s_lineno);
@@ -1120,7 +1114,7 @@ void start_rule(bp, s_lineno)
 }
 
 
-void end_rule()
+void end_rule(void)
 {
     if (!last_was_action) default_action_error();
 
@@ -1132,7 +1126,7 @@ void end_rule()
 }
 
 
-void insert_empty_rule()
+void insert_empty_rule(void)
 {
     register bucket *bp, **bpp;
 
@@ -1161,7 +1155,7 @@ void insert_empty_rule()
 }
 
 
-void add_symbol()
+void add_symbol(void)
 {
     register int c;
     register bucket *bp;
@@ -1192,7 +1186,7 @@ void add_symbol()
 }
 
 
-void copy_action()
+void copy_action(void)
 {
     register int c;
     register int i, n;
@@ -1378,7 +1372,7 @@ loop:
 
 
 int
-mark_symbol()
+mark_symbol(void)
 {
     register int c;
     register bucket *bp;
@@ -1421,7 +1415,7 @@ mark_symbol()
 }
 
 
-void read_grammar()
+void read_grammar(void)
 {
     register int c;
 
@@ -1459,7 +1453,7 @@ void read_grammar()
 }
 
 
-void free_tags()
+void free_tags(void)
 {
     register int i;
 
@@ -1474,7 +1468,7 @@ void free_tags()
 }
 
 
-void pack_names()
+void pack_names(void)
 {
     register bucket *bp;
     register char *p, *s, *t;
@@ -1499,7 +1493,7 @@ void pack_names()
 }
 
 
-void check_symbols()
+void check_symbols(void)
 {
     register bucket *bp;
 
@@ -1517,7 +1511,7 @@ void check_symbols()
 }
 
 
-void pack_symbols()
+void pack_symbols(void)
 {
     register bucket *bp;
     register bucket **v;
@@ -1653,7 +1647,7 @@ void pack_symbols()
 }
 
 
-void make_goal()
+void make_goal(void)
 {
   static char name[7] = "'\\xxx'";
   bucket * bp;
@@ -1699,7 +1693,7 @@ void make_goal()
   }
 }
 
-void pack_grammar()
+void pack_grammar(void)
 {
     register int i, j;
     int assoc, prec;
@@ -1758,7 +1752,7 @@ void pack_grammar()
 }
 
 
-void print_grammar()
+void print_grammar(void)
 {
     register int i, j, k;
     int spacing = 0;
@@ -1794,7 +1788,7 @@ void print_grammar()
 }
 
 
-void reader()
+void reader(void)
 {
     create_symbol_table();
     read_declarations();

@@ -13,8 +13,7 @@
 
 #include "libgraph.h"
 
-value gr_point_color(vx, vy)
-     value vx, vy;
+value gr_point_color(value vx, value vy)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);

@@ -37,8 +37,7 @@ extern unsigned long percent_max;     /*        cf. compact.c */
 
 /* This will also thoroughly verify the heap if compiled in DEBUG mode. */
 
-value gc_stat(v) /* ML */
-    value v;
+value gc_stat(value v) /* ML */
 {
   value res;
   long live_words = 0, live_blocks = 0,
@@ -121,8 +120,7 @@ value gc_stat(v) /* ML */
   return res;
 }
 
-value gc_get(v) /* ML */
-    value v;
+value gc_get(value v) /* ML */
 {
   value res;
 
@@ -137,20 +135,17 @@ value gc_get(v) /* ML */
 
 #define Max(x,y) ((x) < (y) ? (y) : (x))
 
-static unsigned long norm_pfree (p)
-     unsigned long p;
+static unsigned long norm_pfree (long unsigned int p)
 {
   return Max (p, 1);
 }
 
-static unsigned long norm_pmax (p)
-     unsigned long p;
+static unsigned long norm_pmax (long unsigned int p)
 {
   return p;
 }
 
-static long norm_heapincr (i)
-     unsigned long i;
+static long norm_heapincr (long unsigned int i)
 {
 #define Psv (Wsize_bsize (Page_size))
   i = ((i + Psv - 1) / Psv) * Psv;
@@ -159,16 +154,14 @@ static long norm_heapincr (i)
   return i;
 }
 
-static long norm_minsize (s)
-     long s;
+static long norm_minsize (long int s)
 {
   if (s < Minor_heap_min) s = Minor_heap_min;
   if (s > Minor_heap_max) s = Minor_heap_max;
   return s;
 }
 
-value gc_set(v) /* ML */
-    value v;
+value gc_set(value v) /* ML */
 {
   unsigned long newpf, newpm;
   asize_t newheapincr;
@@ -209,23 +202,20 @@ value gc_set(v) /* ML */
   return Val_unit;
 }
 
-value gc_minor(v) /* ML */
-    value v;
+value gc_minor(value v) /* ML */
 {                                                    Assert (v == Val_unit);
   minor_collection ();
   return Val_unit;
 }
 
-value gc_major(v) /* ML */
-    value v;
+value gc_major(value v) /* ML */
 {                                                    Assert (v == Val_unit);
   minor_collection ();
   finish_major_cycle ();
   return Val_unit;
 }
 
-value gc_full_major(v) /* ML */
-    value v;
+value gc_full_major(value v) /* ML */
 {                                                    Assert (v == Val_unit);
   minor_collection ();
   finish_major_cycle ();
@@ -233,8 +223,7 @@ value gc_full_major(v) /* ML */
   return Val_unit;
 }
 
-value gc_compaction(v) /* ML */
-     value v;
+value gc_compaction(value v) /* ML */
 {                                                    Assert (v == Val_unit);
   minor_collection ();
   finish_major_cycle ();
@@ -243,9 +232,7 @@ value gc_compaction(v) /* ML */
   return Val_unit;
 }
 
-void init_gc (minor_size, major_size, major_incr, percent_fr, percent_m, verb)
-     unsigned long minor_size, major_size, major_incr;
-     unsigned long percent_fr, percent_m, verb;
+void init_gc (long unsigned int minor_size, long unsigned int major_size, long unsigned int major_incr, long unsigned int percent_fr, long unsigned int percent_m, long unsigned int verb)
 {
   unsigned long major_heap_size = Bsize_wsize (norm_heapincr (major_size));
 #ifdef DEBUG

@@ -32,7 +32,7 @@ struct global_root {
   
 static struct global_root * global_roots = NULL;
 
-void (*scan_roots_hook) P((scanning_action)) = NULL;
+void (*scan_roots_hook) (scanning_action) = NULL;
 
 /* Register a global C root */
 

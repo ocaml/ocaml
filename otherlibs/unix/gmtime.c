@@ -17,8 +17,7 @@
 #include "unixsupport.h"
 #include <time.h>
 
-static value alloc_tm(tm)
-     struct tm * tm;
+static value alloc_tm(struct tm *tm)
 {
   value res;
   res = alloc_tuple(9);
@@ -34,16 +33,14 @@ static value alloc_tm(tm)
   return res;
 }
 
-value unix_gmtime(t)             /* ML */
-     value t;
+value unix_gmtime(value t)             /* ML */
 {
   time_t clock;
   clock = Long_val(t);
   return alloc_tm(gmtime(&clock));
 }
 
-value unix_localtime(t)          /* ML */
-     value t;
+value unix_localtime(value t)          /* ML */
 {
   time_t clock;
   clock = Long_val(t);
@@ -52,8 +49,7 @@ value unix_localtime(t)          /* ML */
 
 #ifdef HAS_MKTIME
 
-value unix_mktime(t)            /* ML */
-     value t;
+value unix_mktime(value t)            /* ML */
 {
   struct tm tm;
   time_t clock;
@@ -81,6 +77,6 @@ value unix_mktime(t)            /* ML */
 
 #else
 
-value unix_mktime() { invalid_argument("mktime not implemented"); }
+value unix_mktime(value t) { invalid_argument("mktime not implemented"); }
 
 #endif

@@ -36,9 +36,7 @@ typedef int file_descr_set;
 #define FD_ZERO(fds) (*(fds) = 0)
 #endif
 
-static void fdlist_to_fdset(fdlist, fdset)
-     value fdlist;
-     file_descr_set * fdset;
+static void fdlist_to_fdset(value fdlist, file_descr_set *fdset)
 {
   value l;
   FD_ZERO(fdset);
@@ -47,8 +45,7 @@ static void fdlist_to_fdset(fdlist, fdset)
   }
 }
 
-static value fdset_to_fdlist(fdset)
-     file_descr_set * fdset;
+static value fdset_to_fdlist(file_descr_set *fdset)
 {
   int i;
   value res = Val_int(0);
@@ -66,8 +63,7 @@ static value fdset_to_fdlist(fdset)
   return res;
 }
 
-value unix_select(readfds, writefds, exceptfds, timeout) /* ML */
-     value readfds, writefds, exceptfds, timeout;
+value unix_select(value readfds, value writefds, value exceptfds, value timeout) /* ML */
 {
   file_descr_set read, write, except;
   double tm;
@@ -106,6 +102,7 @@ value unix_select(readfds, writefds, exceptfds, timeout) /* ML */
 
 #else
 
-value unix_select() { invalid_argument("select not implemented"); }
+value unix_select(value readfds, value writefds, value exceptfds, value timeout)
+{ invalid_argument("select not implemented"); }
 
 #endif

@@ -102,14 +102,13 @@ extern char * caml_exception_pointer;
 
 /* Forward declarations */
 
-static void caml_wthread_error P((char * msg));
+static void caml_wthread_error (char * msg);
 
 /* Hook for scanning the stacks of the other threads */
 
-static void (*prev_scan_roots_hook) P((scanning_action));
+static void (*prev_scan_roots_hook) (scanning_action);
 
-static void caml_thread_scan_roots(action)
-     scanning_action action;
+static void caml_thread_scan_roots(scanning_action action)
 {
   caml_thread_t th;
 
@@ -133,7 +132,7 @@ static void caml_thread_scan_roots(action)
 static void (*prev_enter_blocking_section_hook) () = NULL;
 static void (*prev_leave_blocking_section_hook) () = NULL;
 
-static void caml_thread_enter_blocking_section()
+static void caml_thread_enter_blocking_section(void)
 {
   if (prev_enter_blocking_section_hook != NULL)
     (*prev_enter_blocking_section_hook)();
@@ -157,7 +156,7 @@ static void caml_thread_enter_blocking_section()
   ReleaseMutex(caml_mutex);
 }
 
-static void caml_thread_leave_blocking_section()
+static void caml_thread_leave_blocking_section(void)
 {
   /* Re-acquire the global mutex */
   WaitForSingleObject(caml_mutex, INFINITE);
@@ -182,8 +181,7 @@ static void caml_thread_leave_blocking_section()
 
 /* Hooks for I/O locking */
 
-static void caml_io_mutex_free(chan)
-     struct channel * chan;
+static void caml_io_mutex_free(struct channel * chan)
 {
   HANDLE mutex = chan->mutex;
   if (mutex != NULL) {
@@ -192,8 +190,7 @@ static void caml_io_mutex_free(chan)
   }
 }
 
-static void caml_io_mutex_lock(chan)
-     struct channel * chan;
+static void caml_io_mutex_lock(struct channel * chan)
 {
   if (chan->mutex == NULL) {
     HANDLE mutex = CreateMutex(NULL, TRUE, NULL);
@@ -206,21 +203,20 @@ static void caml_io_mutex_lock(chan)
   last_channel_locked = chan;
 }
 
-static void caml_io_mutex_unlock(chan)
-     struct channel * chan;
+static void caml_io_mutex_unlock(struct channel * chan)
 {
   ReleaseMutex((HANDLE) chan->mutex);
   last_channel_locked = NULL;
 }
 
-static void caml_io_mutex_unlock_exn()
+static void caml_io_mutex_unlock_exn(void)
 {
   if (last_channel_locked != NULL) caml_io_mutex_unlock(last_channel_locked);
 }
 
 /* The "tick" thread fakes a SIGVTALRM signal at regular intervals. */
 
-static void * caml_thread_tick()
+static void * caml_thread_tick(void)
 {
   while(1) {
     Sleep(Thread_timeout);
@@ -236,8 +232,7 @@ static void * caml_thread_tick()
 /* Thread cleanup: remove the descriptor from the list and free
    the stack space. */
 
-static void caml_thread_cleanup(th)
-     caml_thread_t th;
+static void caml_thread_cleanup(caml_thread_t th)
 {
   /* Remove th from the doubly-linked list of threads */
   th->next->prev = th->prev;
@@ -250,16 +245,14 @@ static void caml_thread_cleanup(th)
   stat_free((char *) th);
 }
 
-static void caml_thread_finalize(vthread)
-     value vthread;
+static void caml_thread_finalize(value vthread)
 {
   CloseHandle(((struct caml_thread_handle *)vthread)->handle);
 }
 
 /* Initialize the thread machinery */
 
-value caml_thread_initialize(unit)   /* ML */
-     value unit;
+value caml_thread_initialize(value unit)   /* ML */
 {
   pthread_t tick_pthread;
   pthread_attr_t attr;
@@ -318,8 +311,7 @@ value caml_thread_initialize(unit)   /* ML */
 
 /* Create a thread */
 
-static void caml_thread_start(th)
-     caml_thread_t th;
+static void caml_thread_start(caml_thread_t th)
 {
   value clos;
 
@@ -335,8 +327,7 @@ static void caml_thread_start(th)
   ReleaseMutex(caml_mutex);
 }  
 
-value caml_thread_new(clos)          /* ML */
-     value clos;
+value caml_thread_new(value clos)          /* ML */
 {
   pthread_attr_t attr;
   caml_thread_t th;
@@ -387,8 +378,7 @@ value caml_thread_new(clos)          /* ML */
 
 /* Return the current thread */
 
-value caml_thread_self(unit)         /* ML */
-     value unit;
+value caml_thread_self(value unit)         /* ML */
 {
   if (curr_thread == NULL) invalid_argument("Thread.self: not initialized");
   return curr_thread->descr;
@@ -396,16 +386,14 @@ value caml_thread_self(unit)         /* ML */
 
 /* Return the identifier of a thread */
 
-value caml_thread_id(th)          /* ML */
-     value th;
+value caml_thread_id(value th)          /* ML */
 {
   return Ident(th);
 }
 
 /* Allow re-scheduling */
 
-value caml_thread_yield(unit)        /* ML */
-     value unit;
+value caml_thread_yield(value unit)        /* ML */
 {
   enter_blocking_section();
   Sleep(0);
@@ -415,8 +403,7 @@ value caml_thread_yield(unit)        /* ML */
 
 /* Suspend the current thread until another thread terminates */
 
-value caml_thread_join(th)          /* ML */
-     value th;
+value caml_thread_join(value th)          /* ML */
 {
   HANDLE h = Threadhandle(th)->handle;
   enter_blocking_section();
@@ -427,8 +414,7 @@ value caml_thread_join(th)          /* ML */
 
 /* Terminate the current thread */
 
-value caml_thread_exit(unit)       /* ML */
-     value unit;
+value caml_thread_exit(value unit)       /* ML */
 {
   caml_thread_cleanup(curr_thread);
   ReleaseMutex(caml_mutex);
@@ -438,8 +424,7 @@ value caml_thread_exit(unit)       /* ML */
 
 /* Kill another thread */
 
-value caml_thread_kill(target)       /* ML */
-     value target;
+value caml_thread_kill(value target)       /* ML */
 {
   caml_thread_t th;
 
@@ -457,14 +442,12 @@ value caml_thread_kill(target)       /* ML */
 #define Mutex_val(v) (*((HANDLE *)(&Field(v, 1))))
 #define Max_mutex_number 1000
 
-static void caml_mutex_finalize(mut)
-     value mut;
+static void caml_mutex_finalize(value mut)
 {
   CloseHandle(Mutex_val(mut));
 }
 
-value caml_mutex_new(unit)        /* ML */
-     value unit;
+value caml_mutex_new(value unit)        /* ML */
 {
   value mut;
   mut = alloc_final(1 + sizeof(HANDLE) / sizeof(value),
@@ -474,8 +457,7 @@ value caml_mutex_new(unit)        /* ML */
   return mut;
 }
 
-value caml_mutex_lock(mut)           /* ML */
-     value mut;
+value caml_mutex_lock(value mut)           /* ML */
 {
   int retcode;
   enter_blocking_section();
@@ -485,8 +467,7 @@ value caml_mutex_lock(mut)           /* ML */
   return Val_unit;
 }
 
-value caml_mutex_unlock(mut)           /* ML */
-     value mut;
+value caml_mutex_unlock(value mut)           /* ML */
 {
   BOOL retcode;
   enter_blocking_section();
@@ -496,8 +477,7 @@ value caml_mutex_unlock(mut)           /* ML */
   return Val_unit;
 }
 
-value caml_mutex_try_lock(mut)           /* ML */
-     value mut;
+value caml_mutex_try_lock(value mut)           /* ML */
 {
   int retcode;
   retcode = WaitForSingleObject(Mutex_val(mut), 0);
@@ -508,8 +488,7 @@ value caml_mutex_try_lock(mut)           /* ML */
 
 /* Delay */
 
-value caml_thread_delay(val)        /* ML */
-     value val;
+value caml_thread_delay(value val)        /* ML */
 {
   enter_blocking_section();
   Sleep((DWORD)(Double_val(val)*1000)); /* milliseconds */
@@ -528,14 +507,12 @@ struct caml_condvar {
 #define Condition_val(v) ((struct caml_condvar *)(v))
 #define Max_condition_number 1000
 
-static void caml_condition_finalize(cond)
-     value cond;
+static void caml_condition_finalize(value cond)
 {
   CloseHandle(Condition_val(cond)->event);
 }
 
-value caml_condition_new(unit)        /* ML */
-     value unit;
+value caml_condition_new(value unit)        /* ML */
 {
   value cond;
   cond = alloc_final(sizeof(struct caml_condvar) / sizeof(value),
@@ -547,8 +524,7 @@ value caml_condition_new(unit)        /* ML */
   return cond;
 }
 
-value caml_condition_wait(cond, mut)           /* ML */
-     value cond, mut;
+value caml_condition_wait(value cond, value mut)           /* ML */
 {
   int retcode1, retcode2;
   HANDLE m = Mutex_val(mut);
@@ -568,8 +544,7 @@ value caml_condition_wait(cond, mut)           /* ML */
   return Val_unit;
 }
 
-value caml_condition_signal(cond)           /* ML */
-     value cond;
+value caml_condition_signal(value cond)           /* ML */
 {
   HANDLE e = Condition_val(cond)->event;
 
@@ -583,8 +558,7 @@ value caml_condition_signal(cond)           /* ML */
   return Val_unit;
 }
 
-value caml_condition_broadcast(cond)           /* ML */
-     value cond;
+value caml_condition_broadcast(value cond)           /* ML */
 {
   HANDLE e = Condition_val(cond)->event;
   unsigned long c = Condition_val(cond)->count;
@@ -601,8 +575,7 @@ value caml_condition_broadcast(cond)           /* ML */
 
 /* Error report */
 
-static void caml_wthread_error(msg)
-     char * msg;
+static void caml_wthread_error(char * msg)
 {
   _dosmaperr(GetLastError());
   sys_error(msg, NO_ARG);

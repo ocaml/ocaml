@@ -22,8 +22,8 @@
 
 extern int trace_flag;
 extern long icount;
-void stop_here P((void));
-void disasm_instr P((code_t pc));
+void stop_here (void);
+void disasm_instr (code_t pc);
 
 
 #endif

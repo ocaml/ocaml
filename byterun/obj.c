@@ -21,39 +21,33 @@
 #include "mlvalues.h"
 #include "prims.h"
 
-value static_alloc(size)        /* ML */
-     value size;
+value static_alloc(value size)        /* ML */
 {
   return (value) stat_alloc((asize_t) Long_val(size));
 }
 
-value static_free(blk)          /* ML */
-     value blk;
+value static_free(value blk)          /* ML */
 {
   stat_free((char *) blk);
   return Val_unit;
 }
 
-value static_resize(blk, new_size) /* ML */
-     value blk, new_size;
+value static_resize(value blk, value new_size) /* ML */
 {
   return (value) stat_resize((char *) blk, (asize_t) Long_val(new_size));
 }
 
-value obj_is_block(arg)             /* ML */
-     value arg;
+value obj_is_block(value arg)             /* ML */
 {
   return Val_bool(Is_block(arg));
 }
 
-value obj_tag(arg)                 /* ML */
-     value arg;
+value obj_tag(value arg)                 /* ML */
 {
   return Val_int(Tag_val(arg));
 }
 
-value obj_block(tag, size) /* ML */
-     value tag, size;
+value obj_block(value tag, value size) /* ML */
 {
   value res;
   mlsize_t sz, i;

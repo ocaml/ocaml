@@ -18,8 +18,7 @@
 extern char ** cstringvect();
 extern char ** environ;
 
-value unix_execvp(path, args)     /* ML */
-     value path, args;
+value unix_execvp(value path, value args)     /* ML */
 {
   char ** argv;
   argv = cstringvect(args);
@@ -30,8 +29,7 @@ value unix_execvp(path, args)     /* ML */
                                 /* from smart compilers */
 }
 
-value unix_execvpe(path, args, env)     /* ML */
-     value path, args, env;
+value unix_execvpe(value path, value args, value env)     /* ML */
 {
   char ** argv;
   char ** saved_environ;

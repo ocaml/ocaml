@@ -15,11 +15,7 @@
 #include <fail.h>
 #include "cst2constr.h"
 
-value cst_to_constr(n, tbl, size, deflt)
-     int n;
-     int * tbl;
-     int size;
-     int deflt;
+value cst_to_constr(int n, int *tbl, int size, int deflt)
 {
   int i;
   for (i = 0; i < size; i++)

@@ -116,8 +116,7 @@ static struct {
 
 #define NSPEEDS (sizeof(speedtable) / sizeof(speedtable[0]))
 
-static void encode_terminal_status(dst)
-     value * dst;
+static void encode_terminal_status(value *dst)
 {
   long * pc;
   int i;
@@ -166,8 +165,7 @@ static void encode_terminal_status(dst)
   }
 }
 
-static void decode_terminal_status(src)
-     value * src;
+static void decode_terminal_status(value *src)
 {
   long * pc;
   int i;
@@ -222,8 +220,7 @@ static void decode_terminal_status(src)
   }
 }
 
-value unix_tcgetattr(fd)
-     value fd;
+value unix_tcgetattr(value fd)
 {
   value res;
 
@@ -238,8 +235,7 @@ static int when_flag_table[] = {
   TCSANOW, TCSADRAIN, TCSAFLUSH
 };
 
-value unix_tcsetattr(fd, when, arg)
-     value fd, when, arg;
+value unix_tcsetattr(value fd, value when, value arg)
 {
   if (tcgetattr(Int_val(fd), &terminal_status) == -1)
     uerror("tcsetattr", Nothing);
@@ -251,16 +247,14 @@ value unix_tcsetattr(fd, when, arg)
   return Val_unit;
 }
 
-value unix_tcsendbreak(fd, delay)
-     value fd, delay;
+value unix_tcsendbreak(value fd, value delay)
 {
   if (tcsendbreak(Int_val(fd), Int_val(delay)) == -1)
     uerror("tcsendbreak", Nothing);
   return Val_unit;
 }
 
-value unix_tcdrain(fd)
-     value fd;
+value unix_tcdrain(value fd)
 {
   if (tcdrain(Int_val(fd)) == -1) uerror("tcdrain", Nothing);
   return Val_unit;
@@ -270,8 +264,7 @@ static int queue_flag_table[] = {
   TCIFLUSH, TCOFLUSH, TCIOFLUSH
 };
 
-value unix_tcflush(fd, queue)
-     value fd, queue;
+value unix_tcflush(value fd, value queue)
 {
   if (tcflush(Int_val(fd), queue_flag_table[Int_val(queue)]) == -1)
     uerror("tcflush", Nothing);
@@ -282,8 +275,7 @@ static int action_flag_table[] = {
   TCOOFF, TCOON, TCIOFF, TCION
 };
 
-value unix_tcflow(fd, action)
-     value fd, action;
+value unix_tcflow(value fd, value action)
 {
   if (tcflow(Int_val(fd), action_flag_table[Int_val(action)]) == -1)
     uerror("tcflow", Nothing);
@@ -292,12 +284,23 @@ value unix_tcflow(fd, action)
 
 #else
 
-value unix_tcgetattr() { invalid_argument("tcgetattr not implemented"); }
-value unix_tcsetattr() { invalid_argument("tcsetattr not implemented"); }
-value unix_tcsendbreak() { invalid_argument("tcsendbreak not implemented"); }
-value unix_tcdrain() { invalid_argument("tcdrain not implemented"); }
-value unix_tcflush() { invalid_argument("tcflush not implemented"); }
-value unix_tcflow() { invalid_argument("tcflow not implemented"); }
+value unix_tcgetattr(value fd)
+{ invalid_argument("tcgetattr not implemented"); }
+
+value unix_tcsetattr(value fd, value when, value arg)
+{ invalid_argument("tcsetattr not implemented"); }
+
+value unix_tcsendbreak(value fd, value delay)
+{ invalid_argument("tcsendbreak not implemented"); }
+
+value unix_tcdrain(value fd)
+{ invalid_argument("tcdrain not implemented"); }
+
+value unix_tcflush(value fd, value queue)
+{ invalid_argument("tcflush not implemented"); }
+
+value unix_tcflow(value fd, value action)
+{ invalid_argument("tcflow not implemented"); }
 
 #endif
 

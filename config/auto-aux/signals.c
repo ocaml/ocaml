@@ -40,15 +40,12 @@
 
 int counter;
 
-void sig_handler(dummy)
-     int dummy;
+void sig_handler(int dummy)
 {
   counter++;
 }
 
-int main(argc, argv)
-     int argc;
-     char ** argv;
+int main(int argc, char **argv)
 {
   signal(IGNSIG, sig_handler);
   counter = 0;
@@ -61,9 +58,7 @@ int main(argc, argv)
 
 /* If no suitable signal was found, assume System V */
 
-int main(argc, argv)
-     int argc;
-     char ** argv;
+int main(int argc, char ** argv)
 {
   return 1;
 }

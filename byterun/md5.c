@@ -21,8 +21,7 @@
 
 /* MD5 message digest */
 
-value md5_string(str, ofs, len) /* ML */
-     value str, ofs, len;
+value md5_string(value str, value ofs, value len) /* ML */
 {
   struct MD5Context ctx;
   value res;
@@ -33,8 +32,7 @@ value md5_string(str, ofs, len) /* ML */
   return res;
 }
 
-value md5_chan(vchan, len)       /* ML */
-     value vchan, len;
+value md5_chan(value vchan, value len)       /* ML */
 {
   struct channel * chan = Channel(vchan);
   struct MD5Context ctx;
@@ -78,9 +76,7 @@ value md5_chan(vchan, len)       /* ML */
 #ifndef ARCH_BIG_ENDIAN
 #define byteReverse(buf, len)   /* Nothing */
 #else
-static void byteReverse(buf, longs)
-     unsigned char *buf;
-     unsigned longs;
+static void byteReverse(unsigned char * buf, unsigned longs)
 {
     uint32 t;
     do {
@@ -96,8 +92,7 @@ static void byteReverse(buf, longs)
  * Start MD5 accumulation.  Set bit count to 0 and buffer to mysterious
  * initialization constants.
  */
-void MD5Init(ctx)
-     struct MD5Context *ctx;
+void MD5Init(struct MD5Context *ctx)
 {
     ctx->buf[0] = 0x67452301;
     ctx->buf[1] = 0xefcdab89;
@@ -112,10 +107,7 @@ void MD5Init(ctx)
  * Update context to reflect the concatenation of another buffer full
  * of bytes.
  */
-void MD5Update(ctx, buf, len)
-     struct MD5Context *ctx;
-     unsigned char *buf;
-     unsigned len;
+void MD5Update(struct MD5Context *ctx, unsigned char *buf, unsigned int len)
 {
     uint32 t;
 
@@ -163,9 +155,7 @@ void MD5Update(ctx, buf, len)
  * Final wrapup - pad to 64-byte boundary with the bit pattern 
  * 1 0* (64-bit count of bits processed, MSB-first)
  */
-void MD5Final(digest, ctx)
-     unsigned char digest[16];
-     struct MD5Context *ctx;
+void MD5Final(unsigned char *digest, struct MD5Context *ctx)
 {
     unsigned count;
     unsigned char *p;
@@ -223,9 +213,7 @@ void MD5Final(digest, ctx)
  * reflect the addition of 16 longwords of new data.  MD5Update blocks
  * the data and converts bytes into longwords for this routine.
  */
-void MD5Transform(buf, in)
-     uint32 buf[4];
-     uint32 in[16];
+void MD5Transform(uint32 *buf, uint32 *in)
 {
     register uint32 a, b, c, d;
 

@@ -17,7 +17,7 @@
 
 #define Nothing ((value) 0)
 
-extern void unix_error P((int errcode, char * cmdname, value arg)) Noreturn;
-extern void uerror P((char * cmdname, value arg)) Noreturn;
+extern void unix_error (int errcode, char * cmdname, value arg) Noreturn;
+extern void uerror (char * cmdname, value arg) Noreturn;
 
 #define UNIX_BUFFER_SIZE 16384

@@ -20,8 +20,7 @@
 #include <sys/dir.h>
 #endif
 
-value unix_opendir(path)         /* ML */
-     value path;
+value unix_opendir(value path)         /* ML */
 {
   DIR * d;
   d = opendir(String_val(path));

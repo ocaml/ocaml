@@ -46,7 +46,7 @@ static byteoffset_t obj_counter;    /* Number of objects emitted so far */
 #endif
 
 /* Allocate a new extern table */
-static void alloc_extern_table()
+static void alloc_extern_table(void)
 {
   asize_t i;
   extern_table = (struct extern_obj *)
@@ -55,7 +55,7 @@ static void alloc_extern_table()
 }
 
 /* Grow the extern table */
-static void resize_extern_table()
+static void resize_extern_table(void)
 {
   asize_t oldsize;
   struct extern_obj * oldtable;
@@ -86,7 +86,7 @@ static void resize_extern_table()
 /* Free the extern table. We keep it around for next call if
    it's still small (we did not grow it) and the initial offset
    does not risk running over next time. */
-static void free_extern_table()
+static void free_extern_table(void)
 {
   if (extern_table_size > INITIAL_EXTERN_TABLE_SIZE ||
       initial_ofs >= INITIAL_OFFSET_MAX) {
@@ -100,7 +100,7 @@ static void free_extern_table()
 static char * extern_block, * extern_ptr, * extern_limit;
 static int extern_block_malloced;
 
-static void alloc_extern_block()
+static void alloc_extern_block(void)
 {
   extern_block = stat_alloc(INITIAL_EXTERN_BLOCK_SIZE);
   extern_limit = extern_block + INITIAL_EXTERN_BLOCK_SIZE;
@@ -108,8 +108,7 @@ static void alloc_extern_block()
   extern_block_malloced = 1;
 }
 
-static void resize_extern_block(required)
-     int required;
+static void resize_extern_block(int required)
 {
   long curr_pos, size, reqd_size;
 
@@ -133,18 +132,14 @@ static void resize_extern_block(required)
   if (extern_ptr >= extern_limit) resize_extern_block(1); \
   *extern_ptr++ = (c)
 
-static void writeblock(data, len)
-     char * data;
-     long len;
+static void writeblock(char *data, long int len)
 {
   if (extern_ptr + len > extern_limit) resize_extern_block(len);
   bcopy(data, extern_ptr, len);
   extern_ptr += len;
 }
 
-static void writecode8(code, val)
-     int code;
-     long val;
+static void writecode8(int code, long int val)
 {
   if (extern_ptr + 2 > extern_limit) resize_extern_block(2);
   extern_ptr[0] = code;
@@ -152,9 +147,7 @@ static void writecode8(code, val)
   extern_ptr += 2;
 }
 
-static void writecode16(code, val)
-     int code;
-     long val;
+static void writecode16(int code, long int val)
 {
   if (extern_ptr + 3 > extern_limit) resize_extern_block(3);
   extern_ptr[0] = code;
@@ -163,8 +156,7 @@ static void writecode16(code, val)
   extern_ptr += 3;
 }
 
-static void write32(val)
-     long val;
+static void write32(long int val)
 {
   if (extern_ptr + 4 > extern_limit) resize_extern_block(4);
   extern_ptr[0] = val >> 24;
@@ -174,9 +166,7 @@ static void write32(val)
   extern_ptr += 4;
 }
 
-static void writecode32(code, val)
-     int code;
-     long val;
+static void writecode32(int code, long int val)
 {
   if (extern_ptr + 5 > extern_limit) resize_extern_block(5);
   extern_ptr[0] = code;
@@ -188,9 +178,7 @@ static void writecode32(code, val)
 }
 
 #ifdef ARCH_SIXTYFOUR
-static void writecode64(code, val)
-     int code;
-     long val;
+static void writecode64(int code, long val)
 {
   int i;
   if (extern_ptr + 9 > extern_limit) resize_extern_block(9);
@@ -207,8 +195,7 @@ static unsigned long size_64;  /* Size in words of 64-bit block for struct. */
 static int extern_ignore_sharing; /* Flag to ignore sharing */
 static int extern_closures;     /* Flag to allow externing code pointers */
 
-static void extern_invalid_argument(msg)
-     char * msg;
+static void extern_invalid_argument(char *msg)
 {
   if (extern_block_malloced) stat_free(extern_block);
   initial_ofs += obj_counter;
@@ -216,8 +203,7 @@ static void extern_invalid_argument(msg)
   invalid_argument(msg);
 }
 
-static void extern_rec(v)
-     value v;
+static void extern_rec(value v)
 {
  tailcall:
   if (Is_long(v)) {
@@ -355,8 +341,7 @@ static void extern_rec(v)
 enum { NO_SHARING = 1, CLOSURES = 2 };
 static int extern_flags[] = { NO_SHARING, CLOSURES };
 
-static long extern_value(v, flags)
-     value v, flags;
+static long extern_value(value v, value flags)
 {
   long res_len;
   int fl;
@@ -403,9 +388,7 @@ static long extern_value(v, flags)
   return res_len;
 }
 
-void output_val(chan, v, flags)
-     struct channel * chan;
-     value v, flags;
+void output_val(struct channel *chan, value v, value flags)
 {
   long len;
   alloc_extern_block();
@@ -414,8 +397,7 @@ void output_val(chan, v, flags)
   stat_free(extern_block);
 }
 
-value output_value(vchan, v, flags) /* ML */
-     value vchan, v, flags;
+value output_value(value vchan, value v, value flags) /* ML */
 {
   struct channel * channel = Channel(vchan);
   Lock(channel);
@@ -424,8 +406,7 @@ value output_value(vchan, v, flags) /* ML */
   return Val_unit;
 }
 
-value output_value_to_string(v, flags) /* ML */
-     value v, flags;
+value output_value_to_string(value v, value flags) /* ML */
 {
   long len;
   value res;
@@ -437,8 +418,7 @@ value output_value_to_string(v, flags) /* ML */
   return res;
 }
 
-value output_value_to_buffer(buf, ofs, len, v, flags) /* ML */
-     value buf, ofs, len, v, flags;
+value output_value_to_buffer(value buf, value ofs, value len, value v, value flags) /* ML */
 {
   long len_res;
   extern_block = &Byte(buf, Long_val(ofs));

@@ -15,8 +15,7 @@
 #include "image.h"
 #include <memory.h>
 
-value gr_make_image(m)
-     value m;
+value gr_make_image(value m)
 {
   int width, height;
   value im;

@@ -25,14 +25,12 @@
 #include "prims.h"
 #include "stacks.h"
 
-value get_global_data(unit)     /* ML */
-     value unit;
+value get_global_data(value unit)     /* ML */
 {
   return global_data;
 }
 
-value reify_bytecode(prog, len) /* ML */
-     value prog, len;
+value reify_bytecode(value prog, value len) /* ML */
 {
   value clos;
 #ifdef ARCH_BIG_ENDIAN
@@ -46,8 +44,7 @@ value reify_bytecode(prog, len) /* ML */
   return clos;
 }
 
-value realloc_global(size)      /* ML */
-     value size;
+value realloc_global(value size)      /* ML */
 {
   mlsize_t requested_size, actual_size, i;
   value new_global_data;
@@ -68,12 +65,12 @@ value realloc_global(size)      /* ML */
   return Val_unit;
 }
     
-value available_primitives()    /* ML */
+value available_primitives(value unit)    /* ML */
 {
   return copy_string_array(names_of_cprim);
 }
 
-value get_current_environment() /* ML */
+value get_current_environment(value unit) /* ML */
 {
   return *extern_sp;
 }

@@ -18,8 +18,7 @@
 #include "unixsupport.h"
 #include <pwd.h>
 
-static value alloc_passwd_entry(entry)
-     struct passwd * entry;
+static value alloc_passwd_entry(struct passwd *entry)
 {
   value res;
   value name = Val_unit, passwd = Val_unit, gecos = Val_unit;
@@ -43,8 +42,7 @@ static value alloc_passwd_entry(entry)
   return res;
 }
 
-value unix_getpwnam(name)        /* ML */
-     value name;
+value unix_getpwnam(value name)        /* ML */
 {
   struct passwd * entry;
   entry = getpwnam(String_val(name));
@@ -52,8 +50,7 @@ value unix_getpwnam(name)        /* ML */
   return alloc_passwd_entry(entry);
 }
 
-value unix_getpwuid(uid)         /* ML */
-     value uid;
+value unix_getpwuid(value uid)         /* ML */
 {
   struct passwd * entry;
   entry = getpwuid(Int_val(uid));

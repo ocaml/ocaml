@@ -26,9 +26,7 @@
 #define Setup_for_gc
 #define Restore_after_gc
 
-value alloc (wosize, tag)
-     mlsize_t wosize;
-     tag_t tag;
+value alloc (mlsize_t wosize, tag_t tag)
 {
   value result;
   
@@ -37,14 +35,12 @@ value alloc (wosize, tag)
   return result;
 }
 
-value alloc_tuple(n)
-     mlsize_t n;
+value alloc_tuple(mlsize_t n)
 {
   return alloc(n, 0);
 }
 
-value alloc_string (len)
-     mlsize_t len;
+value alloc_string (mlsize_t len)
 {
   value result;
   mlsize_t offset_index;
@@ -62,10 +58,7 @@ value alloc_string (len)
   return result;
 }
 
-value alloc_final (len, fun, mem, max)
-     mlsize_t len;
-     final_fun fun;
-     mlsize_t mem, max;
+value alloc_final (mlsize_t len, final_fun fun, mlsize_t mem, mlsize_t max)
 {
   value result = alloc_shr (len, Final_tag);
 
@@ -75,8 +68,7 @@ value alloc_final (len, fun, mem, max)
   return result;
 }
 
-value copy_string(s)
-     char * s;
+value copy_string(char *s)
 {
   int len;
   value res;
@@ -87,9 +79,7 @@ value copy_string(s)
   return res;
 }
 
-value alloc_array(funct, arr)
-     value (*funct) P((char *));
-     char ** arr;
+value alloc_array(value (*funct)(char *), char ** arr)
 {
   mlsize_t nbr, n;
   value v, result;
@@ -113,15 +103,12 @@ value alloc_array(funct, arr)
   }
 }
 
-value copy_string_array(arr)
-     char ** arr;
+value copy_string_array(char **arr)
 {
   return alloc_array(copy_string, arr);
 }
 
-int convert_flag_list(list, flags)
-     value list;
-     int * flags;
+int convert_flag_list(value list, int *flags)
 {
   int res;
   res = 0;

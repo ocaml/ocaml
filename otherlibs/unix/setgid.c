@@ -14,8 +14,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_setgid(gid)           /* ML */
-     value gid;
+value unix_setgid(value gid)           /* ML */
 {
   if (setgid(Int_val(gid)) == -1) uerror("setgid", Nothing);
   return Val_unit;

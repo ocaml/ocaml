@@ -41,8 +41,7 @@ char *define_tables[] =
   0
 };
 
-void write_section(section)
-        char **section;
+void write_section(char **section)
 {
     register int i;
     register FILE *fp;

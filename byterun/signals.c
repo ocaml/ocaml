@@ -22,23 +22,21 @@
 #include "roots.h"
 #include "signals.h"
 
-Volatile int async_signal_mode = 0;
-Volatile int pending_signal = 0;
-Volatile int something_to_do = 0;
-Volatile int force_major_slice = 0;
+volatile int async_signal_mode = 0;
+volatile int pending_signal = 0;
+volatile int something_to_do = 0;
+volatile int force_major_slice = 0;
 value signal_handlers = 0;
 void (*enter_blocking_section_hook)() = NULL;
 void (*leave_blocking_section_hook)() = NULL;
 
-static void execute_signal(signal_number)
-     int signal_number;
+static void execute_signal(int signal_number)
 {
   Assert (!async_signal_mode);
   callback(Field(signal_handlers, signal_number), Val_int(signal_number));
 }
 
-void handle_signal(signal_number)
-     int signal_number;
+void handle_signal(int signal_number)
 {
 #ifndef POSIX_SIGNALS
 #ifndef BSD_SIGNALS
@@ -55,13 +53,13 @@ void handle_signal(signal_number)
   }
 }
 
-void urge_major_slice ()
+void urge_major_slice (void)
 {
   force_major_slice = 1;
   something_to_do = 1;
 }
 
-void enter_blocking_section()
+void enter_blocking_section(void)
 {
   int temp;
 
@@ -78,7 +76,7 @@ void enter_blocking_section()
   if (enter_blocking_section_hook != NULL) enter_blocking_section_hook();
 }
 
-void leave_blocking_section()
+void leave_blocking_section(void)
 {
   Assert(async_signal_mode);
   if (leave_blocking_section_hook != NULL) leave_blocking_section_hook();
@@ -159,8 +157,7 @@ int posix_signals[] = {
 #define NSIG 32
 #endif
 
-value install_signal_handler(signal_number, action) /* ML */
-     value signal_number, action;
+value install_signal_handler(value signal_number, value action) /* ML */
 {
   int sig;
   void (*act)();

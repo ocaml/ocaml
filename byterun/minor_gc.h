@@ -25,10 +25,10 @@ extern int in_minor_collection;
 #define Is_young(val) \
   ((addr)(val) > (addr)young_start && (addr)(val) < (addr)young_end)
 
-extern void set_minor_heap_size P((asize_t));
-extern void minor_collection P((void));
-extern void garbage_collection P((void)); /* for the native-code system */
-extern void realloc_ref_table P((void));
-extern void oldify P((value, value *));
+extern void set_minor_heap_size (asize_t);
+extern void minor_collection (void);
+extern void garbage_collection (void); /* for the native-code system */
+extern void realloc_ref_table (void);
+extern void oldify (value, value *);
 
 #endif /* _minor_gc_ */

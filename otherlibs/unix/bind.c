@@ -18,8 +18,7 @@
 
 #include "socketaddr.h"
   
-value unix_bind(socket, address)      /* ML */
-     value socket, address;
+value unix_bind(value socket, value address)      /* ML */
 {
   int ret;
   get_sockaddr(address);
@@ -30,6 +29,7 @@ value unix_bind(socket, address)      /* ML */
 
 #else
 
-value unix_bind() { invalid_argument("bind not implemented"); }
+value unix_bind(value socket, value address)
+{ invalid_argument("bind not implemented"); }
   
 #endif

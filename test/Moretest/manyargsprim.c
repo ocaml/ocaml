@@ -1,7 +1,7 @@
 #include "mlvalues.h"
 
-value manyargs(a,b,c,d,e,f,g,h,i,j,k)
-     value a,b,c,d,e,f,g,h,i,j,k;
+value manyargs(value a, value b, value c, value d, value e, value f,
+               value g, value h, value i, value j, value k)
 {
   printf("a = %d\n", Int_val(a));
   printf("b = %d\n", Int_val(b));
@@ -17,9 +17,7 @@ value manyargs(a,b,c,d,e,f,g,h,i,j,k)
   return Val_unit;
 }
 
-value manyargs_argv(argv, argc)
-     value * argv;
-     int argc;
+value manyargs_argv(value *argv, int argc)
 {
   return manyargs(argv[0], argv[1], argv[2], argv[3], argv[4],
                   argv[5], argv[6], argv[7], argv[8], argv[9], argv[10]);

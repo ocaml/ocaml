@@ -15,8 +15,7 @@
 #include <signals.h>
 #include "unixsupport.h"
 
-value unix_sleep(t)              /* ML */
-     value t;
+value unix_sleep(value t)              /* ML */
 {
   enter_blocking_section();
   sleep(Int_val(t));

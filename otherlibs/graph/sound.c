@@ -13,8 +13,7 @@
 
 #include "libgraph.h"
 
-value gr_sound(vfreq, vdur)
-     value vfreq, vdur;
+value gr_sound(value vfreq, value vdur)
 {
   XKeyboardControl kbdcontrol;
 

@@ -16,7 +16,7 @@
 
 #ifdef NGROUPS
 
-int main()
+int main(void)
 {
   int gidset[NGROUPS];
   if (getgroups(NGROUPS, gidset) == -1) return 1;
@@ -25,6 +25,6 @@ int main()
 
 #else
 
-int main() { return 1; }
+int main(void) { return 1; }
 
 #endif

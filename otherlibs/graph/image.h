@@ -28,4 +28,4 @@ struct grimage {
 
 #define Transparent (-1)
 
-value gr_new_image();
+value gr_new_image(int w, int h);

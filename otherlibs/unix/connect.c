@@ -19,8 +19,7 @@
 
 #include "socketaddr.h"
 
-value unix_connect(socket, address)   /* ML */
-     value socket, address;
+value unix_connect(value socket, value address)   /* ML */
 {
   int retcode;
   get_sockaddr(address);
@@ -33,6 +32,7 @@ value unix_connect(socket, address)   /* ML */
 
 #else
 
-value unix_connect() { invalid_argument("connect not implemented"); }
+value unix_connect(value socket, value address)
+{ invalid_argument("connect not implemented"); }
   
 #endif

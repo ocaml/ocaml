@@ -14,7 +14,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_pause()               /* ML */
+value unix_pause(void)               /* ML */
 {
   pause();
   return Val_unit;

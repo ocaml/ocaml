@@ -21,8 +21,7 @@
 
 extern int socket_domain_table[], socket_type_table[];
 
-value unix_socketpair(domain, type, proto) /* ML */
-     value domain, type, proto;
+value unix_socketpair(value domain, value type, value proto) /* ML */
 {
   int sv[2];
   value res;
@@ -38,6 +37,7 @@ value unix_socketpair(domain, type, proto) /* ML */
 
 #else
 
-value unix_socketpair() { invalid_argument("socketpair not implemented"); }
+value unix_socketpair(value domain, value type, value proto)
+{ invalid_argument("socketpair not implemented"); }
 
 #endif

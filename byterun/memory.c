@@ -30,8 +30,7 @@
    Faudrait nettoyer tout ca pour decoupler heap_start de heap_base
    et pour simplifier l'agrandissement de page_table.
 */
-static char *expand_heap (request)
-     mlsize_t request;
+static char *expand_heap (mlsize_t request)
 {
   char *mem;
   page_table_entry *new_page_table;
@@ -125,8 +124,7 @@ static char *expand_heap (request)
 /* Remove the heap chunk [chunk] from the heap and give the memory back
    to [malloc].
 */
-void shrink_heap (chunk)
-     char *chunk;
+void shrink_heap (char *chunk)
 {
   char **cp;
   int i;
@@ -165,9 +163,7 @@ void shrink_heap (chunk)
   free (Chunk_block (chunk));
 }
 
-value alloc_shr (wosize, tag)
-     mlsize_t wosize;
-     tag_t tag;
+value alloc_shr (mlsize_t wosize, tag_t tag)
 {
   char *hp, *new_block;
 
@@ -207,8 +203,7 @@ value alloc_shr (wosize, tag)
    (or kilobytes, ...) instead of words.  You can change units between
    calls to [adjust_collector_speed].
 */
-void adjust_gc_speed (mem, max)
-     mlsize_t mem, max;
+void adjust_gc_speed (mlsize_t mem, mlsize_t max)
 {
   if (max == 0) max = 1;
   if (mem > max) mem = max;
@@ -227,9 +222,7 @@ void adjust_gc_speed (mem, max)
 */
 /* [initialize] never calls the GC, so you may call it while an object is
    unfinished (i.e. just after a call to [alloc_shr].) */
-void initialize (fp, val)
-     value *fp;
-     value val;
+void initialize (value *fp, value val)
 {
   *fp = val;
   Assert (Is_in_heap (fp));
@@ -245,15 +238,12 @@ void initialize (fp, val)
    unless you are sure the value being overwritten is not a shared block and
    the value being written is not a young block. */
 /* [modify] never calls the GC. */
-void modify (fp, val)
-     value *fp;
-     value val;
+void modify (value *fp, value val)
 {
   Modify (fp, val);
 }
 
-char *stat_alloc (sz)
-     asize_t sz;
+char *stat_alloc (asize_t sz)
 {
   char *result = (char *) malloc (sz);
 
@@ -261,15 +251,12 @@ char *stat_alloc (sz)
   return result;
 }
 
-void stat_free (blk)
-     char * blk;
+void stat_free (char *blk)
 {
   free (blk);
 }
 
-char *stat_resize (blk, sz)
-     char *blk;
-     asize_t sz;
+char *stat_resize (char *blk, asize_t sz)
 {
   char *result = (char *) realloc (blk, sz);
 

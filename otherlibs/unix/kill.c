@@ -18,8 +18,7 @@
 
 extern int posix_signals[];     /* defined in byterun/signals.c */
 
-value unix_kill(pid, signal)     /* ML */
-     value pid, signal;
+value unix_kill(value pid, value signal)     /* ML */
 {
   int sig;
   sig = Int_val(signal);

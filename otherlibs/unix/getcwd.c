@@ -23,7 +23,7 @@
 #define MAXPATHLEN 512
 #endif
 
-value unix_getcwd()     /* ML */
+value unix_getcwd(value unit)     /* ML */
 {
   char buff[MAXPATHLEN];
   if (getcwd(buff, sizeof(buff)) == 0) uerror("getcwd", Nothing);
@@ -35,7 +35,7 @@ value unix_getcwd()     /* ML */
 
 #include <sys/param.h>
 
-value unix_getcwd()
+value unix_getcwd(value unit)
 {
   char buff[MAXPATHLEN];
   if (getwd(buff) == 0) uerror("getcwd", copy_string(buff));
@@ -44,7 +44,8 @@ value unix_getcwd()
 
 #else
 
-value unix_getcwd() { invalid_argument("getcwd not implemented"); }
+value unix_getcwd(value unit)
+{ invalid_argument("getcwd not implemented"); }
 
 #endif
 #endif

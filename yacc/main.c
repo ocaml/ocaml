@@ -88,12 +88,11 @@ char  *rassoc;
 short **derives;
 char *nullable;
 
-extern char *mktemp();
-extern char *getenv();
+extern char *mktemp(char *);
+extern char *getenv(const char *);
 
 
-void done(k)
-        int k;
+void done(int k)
 {
     if (action_file) { fclose(action_file); unlink(action_file_name); }
     if (entry_file) { fclose(entry_file); unlink(entry_file_name); }
@@ -109,14 +108,13 @@ void done(k)
 }
 
 
-void onintr(dummy)
-        int dummy;
+void onintr(int dummy)
 {
     done(1);
 }
 
 
-void set_signals()
+void set_signals(void)
 {
 #ifdef SIGINT
     if (signal(SIGINT, SIG_IGN) != SIG_IGN)
@@ -133,16 +131,14 @@ void set_signals()
 }
 
 
-void usage()
+void usage(void)
 {
     fprintf(stderr, "usage: %s [-v] [-b file_prefix] filename\n",
             myname);
     exit(1);
 }
 
-void getargs(argc, argv)
-        int argc;
-        char **argv;
+void getargs(int argc, char **argv)
 {
     register int i;
     register char *s;
@@ -219,8 +215,7 @@ no_more_options:;
 
 
 char *
-allocate(n)
-        unsigned int n;
+allocate(unsigned int n)
 {
     register char *p;
 
@@ -234,7 +229,7 @@ allocate(n)
 }
 
 
-void create_file_names()
+void create_file_names(void)
 {
     int i, len;
     char *tmpdir;
@@ -321,7 +316,7 @@ void create_file_names()
 }
 
 
-void open_files()
+void open_files(void)
 {
     create_file_names();
 
@@ -384,9 +379,7 @@ void open_files()
 int volatile have_to_interact;
 #endif
 
-void main(argc, argv)
-        int argc;
-        char **argv;
+void main(int argc, char **argv)
 {
 #if macintosh
     rotatecursor_init (&have_to_interact, NULL);

@@ -20,9 +20,7 @@
 
 #ifdef DEBUG
 
-void failed_assert (expr, file, line)
-     char *expr, *file;
-     int line;
+void failed_assert (char * expr, char * file, int line)
 {
   fprintf (stderr, "Assertion failed: %s; file %s; line %d\n",
            expr, file, line);
@@ -31,7 +29,7 @@ void failed_assert (expr, file, line)
 
 static unsigned long seed = 0x12345;
 
-unsigned long not_random ()
+unsigned long not_random (void)
 {
   seed = seed * 65537 + 12345;
   return seed;
@@ -41,9 +39,7 @@ unsigned long not_random ()
 
 int verb_gc;
 
-void gc_message (msg, arg)
-     char *msg;
-     unsigned long arg;
+void gc_message (char *msg, long unsigned int arg)
 {
   if (verb_gc){
 #ifdef HAS_UI
@@ -55,8 +51,7 @@ void gc_message (msg, arg)
   }
 }
 
-void fatal_error (msg)
-     char * msg;
+void fatal_error (char *msg)
 {
 #ifdef HAS_UI
   ui_print_stderr("%s", msg);
@@ -67,8 +62,7 @@ void fatal_error (msg)
 #endif
 }
 
-void fatal_error_arg (fmt, arg)
-     char * fmt, * arg;
+void fatal_error_arg (char *fmt, char *arg)
 {
 #ifdef HAS_UI
   ui_print_stderr(fmt, arg);
@@ -84,9 +78,7 @@ void fatal_error_arg (fmt, arg)
 /* This should work on 64-bit machines as well as 32-bit machines.
    It assumes a long is the natural size for memory reads and writes.
 */
-void memmov (dst, src, length)
-     char *dst, *src;
-     unsigned long length;
+void memmov (char * dst, char * src, unsigned long length)
 {
   unsigned long i;
 
@@ -158,10 +150,10 @@ void memmov (dst, src, length)
 
 #endif /* USING_MEMMOV */
 
-char *aligned_malloc (size, modulo, block)
-     asize_t size;
-     int modulo;
-     void **block;      /* output */
+char *aligned_malloc (asize_t size, int modulo, void **block)
+                  
+                
+                        /* output */
 {
   char *raw_mem;
   unsigned long aligned_mem;

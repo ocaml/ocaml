@@ -16,8 +16,7 @@
 
 #ifdef HAS_FCHMOD
 
-value unix_fchown(fd, uid, gid)  /* ML */
-     value fd, uid, gid;
+value unix_fchown(value fd, value uid, value gid)  /* ML */
 {
   if (fchown(Int_val(fd), Int_val(uid), Int_val(gid)) == -1)
     uerror("fchown", Nothing);
@@ -26,6 +25,7 @@ value unix_fchown(fd, uid, gid)  /* ML */
 
 #else
 
-value unix_fchown() { invalid_argument("fchown not implemented"); }
+value unix_fchown(value fd, value uid, value gid)
+{ invalid_argument("fchown not implemented"); }
   
 #endif

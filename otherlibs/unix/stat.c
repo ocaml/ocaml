@@ -35,8 +35,7 @@ static int file_kind_table[] = {
   S_IFREG, S_IFDIR, S_IFCHR, S_IFBLK, S_IFLNK, S_IFIFO, S_IFSOCK
 };
 
-static value stat_aux(buf)
-     struct stat * buf;
+static value stat_aux(struct stat *buf)
 {
   value v;
 
@@ -57,8 +56,7 @@ static value stat_aux(buf)
   return v;
 }
 
-value unix_stat(path)             /* ML */
-     value path;
+value unix_stat(value path)             /* ML */
 {
   int ret;
   struct stat buf;
@@ -67,8 +65,7 @@ value unix_stat(path)             /* ML */
   return stat_aux(&buf);
 }
 
-value unix_lstat(path)             /* ML */
-     value path;
+value unix_lstat(value path)             /* ML */
 {
   int ret;
   struct stat buf;
@@ -81,8 +78,7 @@ value unix_lstat(path)             /* ML */
   return stat_aux(&buf);
 }
 
-value unix_fstat(fd)             /* ML */
-     value fd;
+value unix_fstat(value fd)             /* ML */
 {
   int ret;
   struct stat buf;

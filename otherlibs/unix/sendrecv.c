@@ -28,8 +28,7 @@ static int msg_flag_table[] = {
   MSG_OOB, MSG_DONTROUTE, MSG_PEEK
 };
 
-value unix_recv(sock, buff, ofs, len, flags) /* ML */
-     value sock, buff, ofs, len, flags;
+value unix_recv(value sock, value buff, value ofs, value len, value flags) /* ML */
 {
   int ret;
   long numbytes;
@@ -48,8 +47,7 @@ value unix_recv(sock, buff, ofs, len, flags) /* ML */
   return Val_int(ret);
 }
 
-value unix_recvfrom(sock, buff, ofs, len, flags) /* ML */
-     value sock, buff, ofs, len, flags;
+value unix_recvfrom(value sock, value buff, value ofs, value len, value flags) /* ML */
 {
   int ret;
   long numbytes;
@@ -76,8 +74,7 @@ value unix_recvfrom(sock, buff, ofs, len, flags) /* ML */
   return res;
 }
 
-value unix_send(sock, buff, ofs, len, flags) /* ML */
-     value sock, buff, ofs, len, flags;
+value unix_send(value sock, value buff, value ofs, value len, value flags) /* ML */
 {
   int ret;
   long numbytes;
@@ -94,8 +91,7 @@ value unix_send(sock, buff, ofs, len, flags) /* ML */
   return Val_int(ret);
 }
 
-value unix_sendto_native(sock, buff, ofs, len, flags, dest)
-     value sock, buff, ofs, len, flags, dest;
+value unix_sendto_native(value sock, value buff, value ofs, value len, value flags, value dest)
 {
   int ret;
   long numbytes;
@@ -114,9 +110,7 @@ value unix_sendto_native(sock, buff, ofs, len, flags, dest)
   return Val_int(ret);
 }
 
-value unix_sendto(argv, argc)    /* ML */
-     value * argv;
-     int argc;
+value unix_sendto(value *argv, int argc)    /* ML */
 {
   return unix_sendto_native
            (argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
@@ -124,14 +118,19 @@ value unix_sendto(argv, argc)    /* ML */
 
 #else
 
-value unix_recv() { invalid_argument("recv not implemented"); }
+value unix_recv(value sock, value buff, value ofs, value len, value flags)
+{ invalid_argument("recv not implemented"); }
 
-value unix_recvfrom() { invalid_argument("recvfrom not implemented"); }
+value unix_recvfrom(value sock, value buff, value ofs, value len, value flags)
+{ invalid_argument("recvfrom not implemented"); }
 
-value unix_send() { invalid_argument("send not implemented"); }
+value unix_send(value sock, value buff, value ofs, value len, value flags)
+{ invalid_argument("send not implemented"); }
 
-value unix_sendto_native() { invalid_argument("sendto not implemented"); }
+value unix_sendto_native(value sock, value buff, value ofs, value len, value flags, value dest)
+{ invalid_argument("sendto not implemented"); }
 
-value unix_sendto() { invalid_argument("sendto not implemented"); }
+value unix_sendto(value *argv, int argc)
+{ invalid_argument("sendto not implemented"); }
 
 #endif

@@ -142,6 +142,19 @@ echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
 cc="$bytecc $bytecclinkopts"
 export cc cclibs
 
+# Check C compiler
+
+sh ./runtest ansi.c
+case $? in
+  0) echo "The C compiler is ANSI-compliant.";;
+  1) echo "The C compiler $cc is not ANSI-compliant."
+     echo "You need an ANSI C compiler to build Objective Caml."
+     exit 2;;
+  *) echo "Unable to compiler the test program."
+     echo "Make sure the C compiler $cc is properly installed."
+     exit 2;;
+esac
+
 # Check the sizes of data types
 
 echo "Checking the sizes of integers and pointers..."

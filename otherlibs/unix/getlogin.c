@@ -16,9 +16,9 @@
 #include "unixsupport.h"
 #include <errno.h>
 
-extern char * getlogin();
+extern char * getlogin(void);
 
-value unix_getlogin()            /* ML */
+value unix_getlogin(void)            /* ML */
 {
   char * name;
   name = getlogin();

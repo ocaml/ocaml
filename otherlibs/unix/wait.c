@@ -34,8 +34,7 @@
 #define TAG_WSIGNALED 1
 #define TAG_WSTOPPED 2
 
-static value alloc_process_status(pid, status)
-     int pid, status;
+static value alloc_process_status(int pid, int status)
 {
   value st, res;
 
@@ -59,7 +58,7 @@ static value alloc_process_status(pid, status)
   return res;
 }
 
-value unix_wait()                /* ML */
+value unix_wait(void)                /* ML */
 {
   int pid, status;
 
@@ -80,8 +79,7 @@ static int wait_flag_table[] = {
   WNOHANG, WUNTRACED
 };
 
-value unix_waitpid(flags, pid_req)
-     value flags, pid_req;
+value unix_waitpid(value flags, value pid_req)
 {
   int pid, status;
   
@@ -95,6 +93,7 @@ value unix_waitpid(flags, pid_req)
 
 #else
 
-value unix_waitpid() { invalid_argument("waitpid not implemented"); }
+value unix_waitpid(value flags, value pid_req)
+{ invalid_argument("waitpid not implemented"); }
 
 #endif

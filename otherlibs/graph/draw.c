@@ -14,8 +14,7 @@
 #include "libgraph.h"
 #include <alloc.h>
 
-value gr_plot(vx, vy)
-     value vx, vy;
+value gr_plot(value vx, value vy)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
@@ -26,15 +25,14 @@ value gr_plot(vx, vy)
   return Val_unit;
 }
 
-value gr_moveto(vx, vy)
-     value vx, vy;
+value gr_moveto(value vx, value vy)
 {
   grx = Int_val(vx);
   gry = Int_val(vy);
   return Val_unit;
 }
 
-value gr_current_point()
+value gr_current_point(void)
 {
   value res;
   res = alloc_tuple(2);
@@ -43,8 +41,7 @@ value gr_current_point()
   return res;
 }
 
-value gr_lineto(vx, vy)
-     value vx, vy;
+value gr_lineto(value vx, value vy)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
@@ -59,8 +56,7 @@ value gr_lineto(vx, vy)
   return Val_unit;
 }
 
-value gr_draw_arc_nat(vx, vy, vrx, vry, va1, va2)
-     value vx, vy, vrx, vry, va1, va2;
+value gr_draw_arc_nat(value vx, value vy, value vrx, value vry, value va1, value va2)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
@@ -78,15 +74,12 @@ value gr_draw_arc_nat(vx, vy, vrx, vry, va1, va2)
   return Val_unit;
 }
 
-value gr_draw_arc(argv, argc)
-     int argc;
-     value * argv;
+value gr_draw_arc(value *argv, int argc)
 {
   return gr_draw_arc_nat(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }
 
-value gr_set_line_width(vwidth)
-     value vwidth;
+value gr_set_line_width(value vwidth)
 {
   int width = Int_val(vwidth);
   gr_check_open();

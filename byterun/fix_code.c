@@ -33,9 +33,7 @@ unsigned char code_md5[16];
 
 /* Read the main bytecode block from a file */
 
-void load_code(fd, len)
-     int fd;
-     asize_t len;
+void load_code(int fd, asize_t len)
 {
   int i;
   struct MD5Context ctx;
@@ -67,9 +65,7 @@ void load_code(fd, len)
 
 #ifdef ARCH_BIG_ENDIAN
 
-void fixup_endianness(code, len)
-     code_t code;
-     asize_t len;
+void fixup_endianness(code_t code, asize_t len)
 {
   code_t p;
   len /= sizeof(opcode_t);
@@ -133,9 +129,7 @@ void thread_code (code_t code, asize_t len)
 
 #endif /* THREADED_CODE */
 
-void set_instruction(pos, instr)
-     code_t pos;
-     opcode_t instr;
+void set_instruction(code_t pos, opcode_t instr)
 {
 #ifdef THREADED_CODE
   *pos = (opcode_t)(instr_table[instr] - instr_base);

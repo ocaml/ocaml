@@ -20,8 +20,7 @@
 #include "mlvalues.h"
 #include "str.h"
 
-value int_of_string(s)          /* ML */
-     value s;
+value int_of_string(value s)          /* ML */
 {
   long res;
   int sign;
@@ -67,8 +66,7 @@ value int_of_string(s)          /* ML */
   return Val_long(sign < 0 ? -res : res);
 }
 
-value format_int(fmt, arg)      /* ML */
-     value fmt, arg;
+value format_int(value fmt, value arg)      /* ML */
 {
   char format_string[32], format_buffer[32];
   int prec;

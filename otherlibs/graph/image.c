@@ -15,8 +15,7 @@
 #include "image.h"
 #include <alloc.h>
 
-static void gr_free_image(im)
-     value im;
+static void gr_free_image(value im)
 {
   XFreePixmap(grdisplay, Data_im(im));
   if (Mask_im(im) != None) XFreePixmap(grdisplay, Mask_im(im));
@@ -24,8 +23,7 @@ static void gr_free_image(im)
 
 #define Max_image_mem 1000000
 
-value gr_new_image(w, h)
-     int w, h;
+value gr_new_image(int w, int h)
 {
   value res = alloc_final(Grimage_wosize, gr_free_image, w*h, Max_image_mem);
   Width_im(res) = w;
@@ -36,15 +34,13 @@ value gr_new_image(w, h)
   return res;
 }
 
-value gr_create_image(vw, vh)
-     value vw, vh;
+value gr_create_image(value vw, value vh)
 {
   gr_check_open();
   return gr_new_image(Int_val(vw), Int_val(vh));
 }
 
-value gr_blit_image(im, vx, vy)
-     value im, vx, vy;
+value gr_blit_image(value im, value vx, value vy)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
@@ -56,8 +52,7 @@ value gr_blit_image(im, vx, vy)
   return Val_unit;
 }
 
-value gr_draw_image(im, vx, vy)
-     value im, vx, vy;
+value gr_draw_image(value im, value vx, value vy)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);

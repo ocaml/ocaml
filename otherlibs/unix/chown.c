@@ -14,8 +14,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_chown(path, uid, gid) /* ML */
-     value path, uid, gid;
+value unix_chown(value path, value uid, value gid) /* ML */
 {
   int ret;
   ret = chown(String_val(path), Int_val(uid), Int_val(gid));
