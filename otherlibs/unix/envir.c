@@ -19,5 +19,5 @@ extern char ** environ;
 
 value unix_environment(void)   /* ML */
 {
-  return copy_string_array(environ);
+  return copy_string_array((const char**)environ);
 }

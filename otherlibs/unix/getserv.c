@@ -37,7 +37,7 @@ static value alloc_service_entry(struct servent *entry)
 
   Begin_roots3 (name, aliases, proto);
     name = copy_string(entry->s_name);
-    aliases = copy_string_array(entry->s_aliases);
+    aliases = copy_string_array((const char**)entry->s_aliases);
     proto = copy_string(entry->s_proto);
     res = alloc_small(4, 0);
     Field(res,0) = name;

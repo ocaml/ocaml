@@ -33,7 +33,7 @@ static value alloc_proto_entry(struct protoent *entry)
 
   Begin_roots2 (name, aliases);
     name = copy_string(entry->p_name);
-    aliases = copy_string_array(entry->p_aliases);
+    aliases = copy_string_array((const char**)entry->p_aliases);
     res = alloc_small(3, 0);
     Field(res,0) = name;
     Field(res,1) = aliases;

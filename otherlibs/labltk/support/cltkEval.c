@@ -219,7 +219,7 @@ value camltk_tcl_direct_eval(value v) /* ML */
           Tcl_DStringAppend(&buf, " ", -1);
           Tcl_DStringAppend(&buf, argv[i], -1);
         }
-        // fprintf(stderr,"80 compat: %s\n", argv[0]);
+        /* fprintf(stderr,"80 compat: %s\n", argv[0]); */
         result = Tcl_Eval(cltclinterp, Tcl_DStringValue(&buf));
         Tcl_DStringFree(&buf);
       }
