@@ -19,10 +19,10 @@
 
 #ifdef SYS_linux_elf
 #define G(x) x
-#define FUNCTION_ALIGN 16
+#define FUNCTION_ALIGN 4
 #else
 #define G(x) _##x
-#define FUNCTION_ALIGN 4
+#define FUNCTION_ALIGN 2
 #endif
 
         .comm   G(young_limit), 4
