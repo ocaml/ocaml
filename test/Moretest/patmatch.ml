@@ -54,7 +54,7 @@ let _ =
   for i = -5 to 10 do printf "f(%d) = %d\n" i (f i) done;
   List.iter (fun i -> printf "g(%d) = %d\n" i (g i))
             [0;300;303;305;400;401;402;999];
-  for i = -2 to 2 do printf "iszero(%d) = %b\n" i (iszero i) done;
+  for i = -2 to 2 do printf "iszero(%d) = %B\n" i (iszero i) done;
   for i = 97 to 126 do
     let c = Char.chr i in
     printf "h(%c) = %s\n" c (h c)
