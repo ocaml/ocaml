@@ -462,9 +462,14 @@ let compute_variance_decl env sharp decl (required, loc) =
 	  compute_variance env tvl true cn cn ty)
         ftl
   end;
+  let priv =
+    match decl.type_kind with
+      Type_abstract -> Public
+    | Type_variant (_, priv) | Type_record (_, _, priv) -> priv
+  in
   List.iter2
     (fun (ty, co, cn, ct) (c, n) ->
-      if ty.desc <> Tvar then begin
+      if ty.desc <> Tvar || priv = Private then begin
         let (c, n) = if c || n then (c, n) else (true, true) in
         co := c; cn := n; ct := n;
         compute_variance env tvl2 c n n ty
