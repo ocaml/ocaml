@@ -81,9 +81,10 @@ static void intern_rec(dest)
   unsigned int code;
   tag_t tag;
   mlsize_t size, len, ofs_ind;
-  value v;
+  value v, clos;
   asize_t ofs;
   header_t header;
+  char cksum[16];
 
  tailcall:
   code = read8u();
@@ -98,7 +99,7 @@ static void intern_rec(dest)
       } else {
         v = Val_hp(intern_dest);
         *dest = v;
-        intern_obj_table[obj_counter++] = v;
+        if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
         dest = (value *) (intern_dest + 1);
         *intern_dest = Make_header(size, tag, intern_color);
         intern_dest += 1 + size;
@@ -117,7 +118,7 @@ static void intern_rec(dest)
     read_string:
       size = (len + sizeof(value)) / sizeof(value);
       v = Val_hp(intern_dest);
-      intern_obj_table[obj_counter++] = v;
+      if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
       *intern_dest = Make_header(size, String_tag, intern_color);
       intern_dest += 1 + size;
       Field(v, size - 1) = 0;
@@ -147,7 +148,7 @@ static void intern_rec(dest)
       case CODE_SHARED8:
         ofs = read8u();
       read_shared:
-        Assert(ofs > 0 && ofs <= obj_counter); 
+        Assert(ofs > 0 && ofs <= obj_counter && intern_obj_table != NULL); 
         v = intern_obj_table[obj_counter - ofs];
         break;
       case CODE_SHARED16:
@@ -174,7 +175,7 @@ static void intern_rec(dest)
           invalid_argument("input_value: non-standard floats");
         }
         v = Val_hp(intern_dest);
-        intern_obj_table[obj_counter++] = v;
+        if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
         *intern_dest = Make_header(Double_wosize, Double_tag, intern_color);
         intern_dest += 1 + Double_wosize;
         readblock((char *) v, 8);
@@ -191,7 +192,7 @@ static void intern_rec(dest)
         }
         size = len * Double_wosize;
         v = Val_hp(intern_dest);
-        intern_obj_table[obj_counter++] = v;
+        if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
         *intern_dest = Make_header(size, Double_array_tag, intern_color);
         intern_dest += 1 + size;
         readblock((char *) v, len * 8);
@@ -209,8 +210,23 @@ static void intern_rec(dest)
       case CODE_DOUBLE_ARRAY32_BIG:
         len = read32u();
         goto read_double_array;
+      case CODE_CODEPOINTER:
+        ofs = read32u();
+        readblock(cksum, 16);
+        if (memcmp(cksum, code_checksum(), 16) != 0) {
+          intern_cleanup();
+          failwith("input_value: code mismatch");
+        }
+        v = (value) (code_area_start + ofs);
+        break;
+      case CODE_INFIXPOINTER:
+        ofs = read32u();
+        intern_rec(&clos);
+        v = clos + ofs;
+        break;
       default:
-        fatal_error("intern_rec");
+        intern_cleanup();
+        failwith("input_value: ill-formed message");
       }
     }
   }
@@ -237,7 +253,10 @@ static void intern_alloc(whsize, num_objects)
     Assert (intern_color == White || intern_color == Black);
     intern_dest = (header_t *) Hp_val(intern_block);
     obj_counter = 0;
-    intern_obj_table = (value *) stat_alloc(num_objects * sizeof(value));
+    if (num_objects > 0)
+      intern_obj_table = (value *) stat_alloc(num_objects * sizeof(value));
+    else
+      intern_obj_table = NULL;
   }
 }
 
@@ -280,36 +299,75 @@ value input_value(chan)         /* ML */
 value input_value_from_string(str, ofs) /* ML */
      value str, ofs;
 {
-  uint32 magic;
-  mlsize_t block_len, num_objects, size_32, size_64, whsize;
-  value res;
-  value obj = Val_unit;
+  mlsize_t num_objects, size_32, size_64, whsize;
+  value obj;
 
-  Begin_roots2(str, obj);
-    intern_src = &Byte_u(str, Long_val(ofs));
-    intern_input_malloced = 0;
-    magic = read32u();
-    if (magic != Intext_magic_number) failwith("input_value: bad object");
-    block_len = read32u();
-    num_objects = read32u();
-    size_32 = read32u();
-    size_64 = read32u();
-    /* Allocate result */
+  intern_src = &Byte_u(str, Long_val(ofs) + 2*4);
+  intern_input_malloced = 0;
+  num_objects = read32u();
+  size_32 = read32u();
+  size_64 = read32u();
+  /* Allocate result */
 #ifdef ARCH_SIXTYFOUR
-    whsize = size_64;
+  whsize = size_64;
 #else
-    whsize = size_32;
+  whsize = size_32;
 #endif
+  Begin_root(str);
     intern_alloc(whsize, num_objects);
-    intern_src = &Byte_u(str, Long_val(ofs) + 5*4); /* If a GC occurred */
-    /* Fill it in */
-    intern_rec(&obj);
-    /* Free everything */
-    if (intern_obj_table != NULL) stat_free((char *) intern_obj_table);
-    /* Build result */
-    res = alloc_tuple(2);
-    Field(res, 0) = obj;
-    Field(res, 1) = Val_long(Long_val(ofs) + 5*4 + block_len);
   End_roots();
-  return res;
+  intern_src = &Byte_u(str, Long_val(ofs) + 5*4); /* If a GC occurred */
+  /* Fill it in */
+  intern_rec(&obj);
+  /* Free everything */
+  if (intern_obj_table != NULL) stat_free((char *) intern_obj_table);
+  return obj;
 }
+
+value marshal_data_size(buff, ofs) /* ML */
+     value buff, ofs;
+{
+  uint32 magic;
+  mlsize_t block_len;
+
+  intern_src = &Byte_u(buff, Long_val(ofs));
+  intern_input_malloced = 0;
+  magic = read32u();
+  if (magic != Intext_magic_number) failwith("Marshal.data_size: bad object");
+  block_len = read32u();
+  return Val_long(block_len);
+}
+
+/* Return an MD5 checksum of the code area */
+
+#ifdef NATIVE_CODE
+
+#include "md5.h"
+
+char * code_checksum()
+{
+  static char checksum[16];
+  static int checksum_computed = 0;
+
+  if (! checksum_computed) {
+    struct MD5Context ctx;
+    MD5Init(&ctx);
+    MD5Update(&ctx,
+              (unsigned char *) code_area_start,
+              code_area_end - code_area_start);
+    MD5Final(checksum, &ctx);
+    checksum_computed = 1;
+  }
+  return checksum;
+}
+
+#else
+
+#include "fix_code.h"
+
+char * code_checksum()
+{
+  return code_md5;
+}
+
+#endif

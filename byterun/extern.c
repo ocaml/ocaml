@@ -34,9 +34,10 @@ struct extern_obj {
   value obj;
 };
 
-static byteoffset_t initial_ofs = 1;
+static byteoffset_t initial_ofs = 1; /* Initial value of object offsets */
 static struct extern_obj * extern_table = NULL;
 static unsigned long extern_table_size;
+static byteoffset_t obj_counter;    /* Number of objects emitted so far */
 
 #ifdef ARCH_SIXTYFOUR
 #define Hash(v) (((unsigned long) ((v) >> 3)) % extern_table_size)
@@ -97,12 +98,14 @@ static void free_extern_table()
 /* To buffer the output */
 
 static char * extern_block, * extern_ptr, * extern_limit;
+static int extern_block_malloced;
 
 static void alloc_extern_block()
 {
   extern_block = stat_alloc(INITIAL_EXTERN_BLOCK_SIZE);
   extern_limit = extern_block + INITIAL_EXTERN_BLOCK_SIZE;
   extern_ptr = extern_block;
+  extern_block_malloced = 1;
 }
 
 static void resize_extern_block(required)
@@ -110,6 +113,11 @@ static void resize_extern_block(required)
 {
   long curr_pos, size, reqd_size;
 
+  if (! extern_block_malloced) {
+    initial_ofs += obj_counter;
+    free_extern_table();
+    failwith("Marshal.to_buffer: buffer overflow");
+  }
   curr_pos = extern_ptr - extern_block;
   size = extern_limit - extern_block;
   reqd_size = curr_pos + required;
@@ -119,11 +127,11 @@ static void resize_extern_block(required)
   extern_ptr = extern_block + curr_pos;
 }
 
+/* Write characters, integers, and blocks in the output buffer */
+
 #define Write(c) \
   if (extern_ptr >= extern_limit) resize_extern_block(1); \
   *extern_ptr++ = (c)
-
-/* Write integers and blocks in the output buffer */
 
 static void writeblock(data, len)
      char * data;
@@ -193,14 +201,16 @@ static void writecode64(code, val)
 
 /* Marshal the given value in the output buffer */
 
-static byteoffset_t obj_counter;    /* Number of objects emitted so far */
 static unsigned long size_32;  /* Size in words of 32-bit block for struct. */
 static unsigned long size_64;  /* Size in words of 64-bit block for struct. */
+
+static int extern_ignore_sharing; /* Flag to ignore sharing */
+static int extern_closures;     /* Flag to allow externing code pointers */
 
 static void extern_invalid_argument(msg)
      char * msg;
 {
-  stat_free(extern_block);
+  if (extern_block_malloced) stat_free(extern_block);
   initial_ofs += obj_counter;
   free_extern_table();
   invalid_argument(msg);
@@ -224,9 +234,9 @@ static void extern_rec(v)
 #endif
     } else
       writecode32(CODE_INT32, n);
-  } else if (!Is_atom(v) && !Is_young(v) && !Is_in_heap(v)) {
-    extern_invalid_argument("output_value: abstract value");
-  } else {
+    return;
+  }
+  if (Is_young(v) || Is_in_heap(v) || Is_atom(v)) {
     header_t hd = Hd_val(v);
     tag_t tag = Tag_hd(hd);
     mlsize_t sz = Wosize_hd(hd);
@@ -239,8 +249,10 @@ static void extern_rec(v)
       } else {
         writecode32(CODE_BLOCK32, hd);
       }
-    } else {
-      /* Check if already seen */
+      return;
+    }
+    /* Check if already seen */
+    if (! extern_ignore_sharing) {
       if (2 * obj_counter >= extern_table_size) resize_extern_table();
       h = Hash(v);
       while (extern_table[h].ofs >= initial_ofs) {
@@ -258,85 +270,100 @@ static void extern_rec(v)
         h++;
         if (h >= extern_table_size) h = 0;
       }
-      /* Not seen yet. Record the object and output its contents. */
+      /* Not seen yet. Record the object */
       extern_table[h].ofs = initial_ofs + obj_counter;
       extern_table[h].obj = v;
       obj_counter++;
-      switch(tag) {
-      case String_tag: {
-        mlsize_t len = string_length(v);
-        if (len < 0x20) {
-          Write(PREFIX_SMALL_STRING + len);
-        } else if (len < 0x100) {
-          writecode8(CODE_STRING8, len);
-        } else {
-          writecode32(CODE_STRING32, len);
-        }
-        writeblock(String_val(v), len);
-        size_32 += 1 + (len + 4) / 4;
-        size_64 += 1 + (len + 8) / 8;
-        break;
+    }
+    /* Output the contents of the object */
+    switch(tag) {
+    case String_tag: {
+      mlsize_t len = string_length(v);
+      if (len < 0x20) {
+        Write(PREFIX_SMALL_STRING + len);
+      } else if (len < 0x100) {
+        writecode8(CODE_STRING8, len);
+      } else {
+        writecode32(CODE_STRING32, len);
       }
-      case Double_tag: {
-        if (sizeof(double) != 8)
-          extern_invalid_argument("output_value: non-standard floats");
-        Write(CODE_DOUBLE_NATIVE);
-        writeblock((char *) v, 8);
-        size_32 += 1 + 2;
-        size_64 += 1 + 1;
-        break;
+      writeblock(String_val(v), len);
+      size_32 += 1 + (len + 4) / 4;
+      size_64 += 1 + (len + 8) / 8;
+      break;
+    }
+    case Double_tag: {
+      if (sizeof(double) != 8)
+        extern_invalid_argument("output_value: non-standard floats");
+      Write(CODE_DOUBLE_NATIVE);
+      writeblock((char *) v, 8);
+      size_32 += 1 + 2;
+      size_64 += 1 + 1;
+      break;
+    }
+    case Double_array_tag: {
+      mlsize_t nfloats;
+      if (sizeof(double) != 8)
+        extern_invalid_argument("output_value: non-standard floats");
+      nfloats = Wosize_val(v) / Double_wosize;
+      if (nfloats < 0x100) {
+        writecode8(CODE_DOUBLE_ARRAY8_NATIVE, nfloats);
+      } else {
+        writecode32(CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
       }
-      case Double_array_tag: {
-        mlsize_t nfloats;
-        if (sizeof(double) != 8)
-          extern_invalid_argument("output_value: non-standard floats");
-        nfloats = Wosize_val(v) / Double_wosize;
-        if (nfloats < 0x100) {
-          writecode8(CODE_DOUBLE_ARRAY8_NATIVE, nfloats);
-        } else {
-          writecode32(CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
-        }
-        writeblock((char *) v, Bosize_val(v));
-        size_32 += 1 + nfloats * 2;
-        size_64 += 1 + nfloats;
-        break;
+      writeblock((char *) v, Bosize_val(v));
+      size_32 += 1 + nfloats * 2;
+      size_64 += 1 + nfloats;
+      break;
+    }
+    case Abstract_tag:
+    case Final_tag:
+      extern_invalid_argument("output_value: abstract value");
+      break;
+    case Infix_tag:
+      writecode32(CODE_INFIXPOINTER, Infix_offset_hd(hd));
+      extern_rec(v - Infix_offset_hd(hd));
+      break;
+    case Object_tag:
+      extern_invalid_argument("output_value: object value");
+      break;
+    default: {
+      mlsize_t i;
+      if (tag < 16 && sz < 8) {
+        Write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
+      } else {
+        writecode32(CODE_BLOCK32, hd & ~Black);
       }
-      case Abstract_tag:
-      case Final_tag:
-        extern_invalid_argument("output_value: abstract value");
-        break;
-      case Closure_tag:
-      case Infix_tag:
-        extern_invalid_argument("output_value: functional value");
-        break;
-      case Object_tag:
-        extern_invalid_argument("output_value: object value");
-        break;
-      default: {
-        mlsize_t i;
-        if (tag < 16 && sz < 8) {
-          Write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
-        } else {
-          writecode32(CODE_BLOCK32, hd & ~Black);
-        }
-        size_32 += 1 + sz;
-        size_64 += 1 + sz;
-        for (i = 0; i < sz - 1; i++) extern_rec(Field(v, i));
-        v = Field(v, i);
-        goto tailcall;
-      }
+      size_32 += 1 + sz;
+      size_64 += 1 + sz;
+      for (i = 0; i < sz - 1; i++) extern_rec(Field(v, i));
+      v = Field(v, i);
+      goto tailcall;
       }
     }
+    return;
   }
+  if ((char *) v >= code_area_start && (char *) v < code_area_end) {
+    if (!extern_closures)
+      extern_invalid_argument("output_value: functional value");
+    writecode32(CODE_CODEPOINTER, (char *) v - code_area_start);
+    writeblock(code_checksum(), 16);
+    return;
+  }
+  extern_invalid_argument("output_value: abstract value");
 }
 
-static long extern_value(v)
-     value v;
+enum { NO_SHARING = 1, CLOSURES = 2 };
+static int extern_flags[] = { NO_SHARING, CLOSURES };
+
+static long extern_value(v, flags)
+     value v, flags;
 {
   long res_len;
-
-  /* Allocate buffer for holding the result */
-  alloc_extern_block();
+  int fl;
+  /* Parse flag list */
+  fl = convert_flag_list(flags, extern_flags);
+  extern_ignore_sharing = fl & NO_SHARING;
+  extern_closures = fl & CLOSURES;
   /* Allocate hashtable of objects already seen, if needed */
   extern_table_size = INITIAL_EXTERN_TABLE_SIZE;
   if (extern_table == NULL) {
@@ -376,25 +403,40 @@ static long extern_value(v)
   return res_len;
 }
 
-value output_value(chan, v) /* ML */
+value output_value(chan, v, flags) /* ML */
      struct channel * chan;
-     value v;
+     value v, flags;
 {
   long len;
-  len = extern_value(v);
+  alloc_extern_block();
+  len = extern_value(v, flags);
   really_putblock(chan, extern_block, len);
   stat_free(extern_block);
   return Val_unit;
 }
 
-value output_value_to_string(v) /* ML */
-     value v;
+value output_value_to_string(v, flags) /* ML */
+     value v, flags;
 {
   long len;
   value res;
-  len = extern_value(v);
+  alloc_extern_block();
+  len = extern_value(v, flags);
   res = alloc_string(len);
   bcopy(extern_block, String_val(res), len);
   stat_free(extern_block);
   return res;
 }
+
+value output_value_to_buffer(buf, ofs, len, v, flags) /* ML */
+     value buf, ofs, len, v, flags;
+{
+  long len_res;
+  extern_block = &Byte(buf, Long_val(ofs));
+  extern_limit = extern_block + Long_val(len);
+  extern_ptr = extern_block;
+  extern_block_malloced = 0;
+  len_res = extern_value(v, flags);
+  return Val_long(len_res);
+}
+

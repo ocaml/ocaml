@@ -316,7 +316,7 @@ let link_bytecode_as_c objfiles outfile =
     (* The table of global data *)
     output_string outchan "static char * caml_data =\n";
     output_data_string outchan
-       (Obj.marshal(Obj.repr(Symtable.initial_global_table())));
+      (Marshal.to_string (Symtable.initial_global_table()) []);
     (* The table of primitives *)
     Symtable.output_primitive_table outchan;
     (* The entry point *)

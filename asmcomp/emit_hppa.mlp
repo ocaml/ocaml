@@ -1040,15 +1040,24 @@ let begin_assembly() =
   defined_symbols := StringSet.empty;
   called_symbols := StringSet.empty;
   Hashtbl.clear stub_label_table;
-  let lbl_begin = Compilenv.current_unit_name() ^ "_begin" in
+  let lbl_begin = Compilenv.current_unit_name() ^ "_data_begin" in
   `	.data\n`;
+  emit_global lbl_begin;
+  `{emit_symbol lbl_begin}:\n`;
+  let lbl_begin = Compilenv.current_unit_name() ^ "_code_begin" in
+  `	.code\n`;
   emit_global lbl_begin;
   `{emit_symbol lbl_begin}:\n`
 
+
 let end_assembly() =
   if not hpux then emit_stubs();
+  `	.code\n`;
+  let lbl_end = Compilenv.current_unit_name() ^ "_code_end" in
+  emit_global lbl_end;
+  `{emit_symbol lbl_end}:\n`;
   `	.data\n`;
-  let lbl_end = Compilenv.current_unit_name() ^ "_end" in
+  let lbl_end = Compilenv.current_unit_name() ^ "_data_end" in
   emit_global lbl_end;
   `{emit_symbol lbl_end}:\n`;
   `	.long	0\n`;

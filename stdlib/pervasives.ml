@@ -195,7 +195,10 @@ let output oc s ofs len =
 
 external output_byte : out_channel -> int -> unit = "output_char"
 external output_binary_int : out_channel -> int -> unit = "output_int"
-external output_value : out_channel -> 'a -> unit = "output_value"
+
+external marshal_to_channel : out_channel -> 'a -> unit list -> unit
+     = "output_value"
+let output_value chan v = marshal_to_channel chan v []
 
 external seek_out : out_channel -> int -> unit = "seek_out"
 external pos_out : out_channel -> int = "pos_out"

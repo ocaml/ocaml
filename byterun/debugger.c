@@ -159,7 +159,7 @@ static void safe_output_value(chan, val)
   saved_external_raise = external_raise;
   if (sigsetjmp(raise_buf.buf, 1) == 0) {
     external_raise = &raise_buf;
-    output_value(chan, val);
+    output_value(chan, val, Val_unit);
   } else {
     /* Send wrong magic number, will cause input_value to fail */
     really_putblock(chan, "\000\000\000\000", 4);

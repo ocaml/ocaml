@@ -17,6 +17,7 @@
 #include "debugger.h"
 #include "fix_code.h"
 #include "instruct.h"
+#include "md5.h"
 #include "memory.h"
 #include "misc.h"
 #include "mlvalues.h"
@@ -28,6 +29,7 @@
 code_t start_code;
 asize_t code_size;
 unsigned char * saved_code;
+char code_md5[16];
 
 /* Read the main bytecode block from a file */
 
@@ -36,11 +38,15 @@ void load_code(fd, len)
      asize_t len;
 {
   int i;
+  struct MD5Context ctx;
 
   code_size = len;
   start_code = (code_t) stat_alloc(code_size);
   if (read(fd, (char *) start_code, code_size) != code_size)
     fatal_error("Fatal error: truncated bytecode file.\n");
+  MD5Init(&ctx);
+  MD5Update(&ctx, (unsigned char *) start_code, code_size);
+  MD5Final(code_md5, &ctx);
 #ifdef ARCH_BIG_ENDIAN
   fixup_endianness(start_code, code_size);
 #endif

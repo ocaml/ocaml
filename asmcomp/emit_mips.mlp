@@ -606,12 +606,20 @@ let begin_assembly() =
   (* The following .file directive is intended to prevent the generation
      of line numbers for the debugger, since they make .o files larger. *)
   `	.file	1 \"{emit_string !Location.input_name}\"\n\n`;
-  let lbl_begin = Compilenv.current_unit_name() ^ "_begin" in
+  let lbl_begin = Compilenv.current_unit_name() ^ "_data_begin" in
   `	.data\n`;
+  `	.globl	{emit_symbol lbl_begin}\n`;
+  `{emit_symbol lbl_begin}:\n`;
+  let lbl_begin = Compilenv.current_unit_name() ^ "_code_begin" in
+  `	.text\n`;
   `	.globl	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`
 
 let end_assembly () =
+  let lbl_end = Compilenv.current_unit_name() ^ "_code_end" in
+  `	.text\n`;
+  `	.globl	{emit_symbol lbl_end}\n`;
+  `{emit_symbol lbl_end}:\n`;
   let lbl_end = Compilenv.current_unit_name() ^ "_end" in
   `	.data\n`;
   `	.globl	{emit_symbol lbl_end}\n`;

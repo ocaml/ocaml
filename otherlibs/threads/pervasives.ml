@@ -242,9 +242,8 @@ let output_binary_int oc n =
   output_byte oc (n asr 8);
   output_byte oc n
 
-external marshal : 'a -> string = "output_value_to_string"
-
-let output_value oc v = output_string oc (marshal v)
+external marshal_to_string : 'a -> unit list -> string = "output_value_to_string"
+let output_value oc v = output_string oc (marshal_to_string v [])
 
 external seek_out_blocking : out_channel -> int -> unit = "seek_out"
 
@@ -325,22 +324,17 @@ let input_binary_int ic =
   let b4 = input_byte ic in
   (n1 lsl 24) + (b2 lsl 16) + (b3 lsl 8) + b4
 
-external unmarshal : string -> int -> 'a * int = "input_value_from_string"
-external char_code: char -> int = "%identity"
+external unmarshal : string -> int -> 'a = "input_value_from_string"
+external marshal_data_size : string -> int -> int = "marshal_data_size"
 
 let input_value ic =
   let header = string_create 20 in
   really_input ic header 0 20;
-  let bsize =
-    (char_code header.[4] lsl 24) +
-    (char_code header.[5] lsl 16) +
-    (char_code header.[6] lsl 8) +
-    char_code header.[7] in
+  let bsize = marshal_data_size header 0 in
   let buffer = string_create (20 + bsize) in
   string_blit header 0 buffer 0 20;
   really_input ic buffer 20 bsize;
-  let (res, pos) = unmarshal buffer 0 in
-  res
+  unmarshal buffer 0
 
 external seek_in : in_channel -> int -> unit = "seek_in"
 external pos_in : in_channel -> int = "pos_in"

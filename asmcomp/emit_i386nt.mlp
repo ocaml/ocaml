@@ -769,14 +769,24 @@ let begin_assembly() =
   `	EXTERN _caml_alloc3: PROC\n`;
   `	EXTERN _array_bound_error: PROC\n`;
   `	.DATA\n`;
-  let lbl_begin = Compilenv.current_unit_name() ^ "_begin" in
+  let lbl_begin = Compilenv.current_unit_name() ^ "_data_begin" in
+  add_def_symbol lbl_begin;
+  `	PUBLIC	{emit_symbol lbl_begin}\n`;
+  `{emit_symbol lbl_begin}	LABEL	DWORD\n`
+  `	.CODE\n`;
+  let lbl_begin = Compilenv.current_unit_name() ^ "_code_begin" in
   add_def_symbol lbl_begin;
   `	PUBLIC	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}	LABEL	DWORD\n`
 
 let end_assembly() =
+  `	.CODE\n`;
+  let lbl_end = Compilenv.current_unit_name() ^ "_code_end" in
+  add_def_symbol lbl_end;
+  `	PUBLIC	{emit_symbol lbl_end}\n`;
+  `{emit_symbol lbl_end}	LABEL	DWORD\n`;
   `	.DATA\n`;
-  let lbl_end = Compilenv.current_unit_name() ^ "_end" in
+  let lbl_end = Compilenv.current_unit_name() ^ "_data_end" in
   add_def_symbol lbl_end;
   `	PUBLIC	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}	LABEL	DWORD\n`;

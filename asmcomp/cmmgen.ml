@@ -1127,16 +1127,22 @@ let frame_table namelist =
         List.map (fun name -> Csymbol_address(name ^ "_frametable")) namelist @
         [cint_zero])
 
-(* Generate the table of module data segments *)
+(* Generate the table of module data and code segments *)
 
-let data_segment_table namelist =
-  Cdata(Cdefine_symbol "caml_data_segments" ::
+let segment_table namelist symbol begname endname =
+  Cdata(Cdefine_symbol symbol ::
         List.fold_right
           (fun name lst ->
-            Csymbol_address(name ^ "_begin") ::
-            Csymbol_address(name ^ "_end") :: lst)
+            Csymbol_address(name ^ begname) ::
+            Csymbol_address(name ^ endname) :: lst)
           namelist
           [cint_zero])
+
+let data_segment_table namelist =
+  segment_table namelist "caml_data_segments" "_data_begin" "_data_end"
+
+let code_segment_table namelist =
+  segment_table namelist "caml_code_segments" "_code_begin" "_code_end"
 
 (* Initialize a predefined exception *)
 

@@ -27,23 +27,33 @@
 
 header_t atom_table[256];
 char * static_data_start, * static_data_end;
+char * code_area_start, * code_area_end;
 
-/* Initialize the atom table */
+/* Initialize the atom table and the static data and code area limits. */
 
+struct segment { char * begin; char * end; };
+
+static void minmax_table(table, min, max)
+     struct segment table[];
+     char ** min, ** max;
+{
+  int i;
+  *min = table[0].begin;
+  *max = table[0].end;
+  for (i = 1; table[i].begin != 0; i++) {
+    if (table[i].begin < *min) *min = table[i].begin;
+    if (table[i].end > *max)   *max = table[i].end;
+  }
+}
+  
 static void init_atoms()
 {
   int i;
-  extern struct { char * begin; char * end; } caml_data_segments[];
+  extern struct segment caml_data_segments[], caml_code_segments[];
 
   for (i = 0; i < 256; i++) atom_table[i] = Make_header(0, i, White);
-  static_data_start = caml_data_segments[0].begin;
-  static_data_end = caml_data_segments[0].end;
-  for (i = 1; caml_data_segments[i].begin != 0; i++) {
-    if (caml_data_segments[i].begin < static_data_start)
-      static_data_start = caml_data_segments[i].begin;
-    if (caml_data_segments[i].end > static_data_end)
-      static_data_end = caml_data_segments[i].end;
-  }
+  minmax_table(caml_data_segments, &static_data_start, &static_data_end);
+  minmax_table(caml_code_segments, &code_area_start, &code_area_end);
 }
 
 /* Configuration parameters and flags */

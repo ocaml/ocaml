@@ -164,6 +164,7 @@ let make_startup_file filename info_list =
     Runtimedef.builtin_exceptions;
   Asmgen.compile_phrase(Cmmgen.global_table name_list);
   Asmgen.compile_phrase(Cmmgen.data_segment_table name_list);
+  Asmgen.compile_phrase(Cmmgen.code_segment_table name_list);
   Asmgen.compile_phrase
     (Cmmgen.frame_table("startup" :: "system" :: name_list));
   Emit.end_assembly();

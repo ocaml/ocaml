@@ -14,22 +14,12 @@
 #include <string.h>
 #include "alloc.h"
 #include "fail.h"
+#include "md5.h"
 #include "mlvalues.h"
 #include "io.h"
+#include "reverse.h"
 
 /* MD5 message digest */
-
-struct MD5Context {
-        uint32 buf[4];
-        uint32 bits[2];
-        unsigned char in[64];
-};
-
-static void MD5Init P((struct MD5Context *context));
-static void MD5Update P((struct MD5Context *context, unsigned char *buf,
-               unsigned len));
-static void MD5Final P((unsigned char digest[16], struct MD5Context *ctx));
-static void MD5Transform P((uint32 buf[4], uint32 in[16]));
 
 value md5_string(str, ofs, len) /* ML */
      value str, ofs, len;
@@ -86,7 +76,7 @@ value md5_chan(chan, len)       /* ML */
 #ifndef ARCH_BIG_ENDIAN
 #define byteReverse(buf, len)   /* Nothing */
 #else
-void byteReverse(buf, longs)
+static void byteReverse(buf, longs)
      unsigned char *buf;
      unsigned longs;
 {
@@ -104,7 +94,7 @@ void byteReverse(buf, longs)
  * Start MD5 accumulation.  Set bit count to 0 and buffer to mysterious
  * initialization constants.
  */
-static void MD5Init(ctx)
+void MD5Init(ctx)
      struct MD5Context *ctx;
 {
     ctx->buf[0] = 0x67452301;
@@ -120,7 +110,7 @@ static void MD5Init(ctx)
  * Update context to reflect the concatenation of another buffer full
  * of bytes.
  */
-static void MD5Update(ctx, buf, len)
+void MD5Update(ctx, buf, len)
      struct MD5Context *ctx;
      unsigned char *buf;
      unsigned len;
@@ -171,7 +161,7 @@ static void MD5Update(ctx, buf, len)
  * Final wrapup - pad to 64-byte boundary with the bit pattern 
  * 1 0* (64-bit count of bits processed, MSB-first)
  */
-static void MD5Final(digest, ctx)
+void MD5Final(digest, ctx)
      unsigned char digest[16];
      struct MD5Context *ctx;
 {
@@ -231,7 +221,7 @@ static void MD5Final(digest, ctx)
  * reflect the addition of 16 longwords of new data.  MD5Update blocks
  * the data and converts bytes into longwords for this routine.
  */
-static void MD5Transform(buf, in)
+void MD5Transform(buf, in)
      uint32 buf[4];
      uint32 in[16];
 {

@@ -21,4 +21,5 @@ val entry_point: string list -> Cmm.phrase
 val global_table: string list -> Cmm.phrase
 val frame_table: string list -> Cmm.phrase
 val data_segment_table: string list -> Cmm.phrase
+val code_segment_table: string list -> Cmm.phrase
 val predef_exception: string -> Cmm.phrase

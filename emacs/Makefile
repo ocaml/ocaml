@@ -16,14 +16,14 @@ COMPILECMD=(progn \
 
 install:
 	@if test "$(EMACSDIR)" = ""; then \
-          dir=`($(EMACS) --batch --eval "(mapcar 'print load-path)") \
-                2>/dev/null | \
-                sed -n -e '/\/site-lisp/s/"//gp'`; \
-          if test "$$dir" = ""; then \
+          set xxx `($(EMACS) --batch --eval "(mapcar 'print load-path)") \
+                   2>/dev/null | \
+                   sed -n -e '/\/site-lisp/s/"//gp'`; \
+          if test "$$2" = ""; then \
             echo "Cannot determine Emacs site-lisp directory"; \
             exit 2; \
           fi; \
-          $(MAKE) EMACSDIR="$$dir" simple-install; \
+          $(MAKE) EMACSDIR="$$2" simple-install; \
         else \
           $(MAKE) simple-install; \
         fi

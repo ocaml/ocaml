@@ -45,6 +45,8 @@
 #define CODE_DOUBLE_ARRAY8_LITTLE 0xE
 #define CODE_DOUBLE_ARRAY32_BIG 0xF
 #define CODE_DOUBLE_ARRAY32_LITTLE 0x7
+#define CODE_CODEPOINTER 0x10
+#define CODE_INFIXPOINTER 0x11
 
 #ifdef ARCH_BIG_ENDIAN
 #define CODE_DOUBLE_NATIVE CODE_DOUBLE_BIG
@@ -77,9 +79,21 @@
 
 /* The entry points */
 
-value output_value P((struct channel *, value));
-value input_value P((struct channel *));
-value input_value_from_string P((value, value));
+value output_value P((struct channel * chan, value v, value flags));
+value input_value P((struct channel * chan));
+value input_value_from_string P((value str, value ofs));
+
+/* Auxiliary stuff for sending code pointers */
+char * code_checksum P((void));
+
+#ifndef NATIVE_CODE
+#include "fix_code.h"
+#define code_area_start ((char *) start_code)
+#define code_area_end ((char *) start_code + code_size)
+#else
+extern char * code_area_start, * code_area_end;
+#endif
+
 
 #endif
 

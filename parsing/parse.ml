@@ -34,7 +34,9 @@ let maybe_skip_phrase lexbuf =
 
 let wrap parsing_fun lexbuf =
   try
-    parsing_fun Lexer.token lexbuf
+    let ast = parsing_fun Lexer.token lexbuf in
+    Parsing.clear_parser();
+    ast
   with
     | Lexer.Error(Lexer.Unterminated_comment, _, _) as err -> raise err
     | Lexer.Error(Lexer.Unterminated_string, _, _) as err -> raise err

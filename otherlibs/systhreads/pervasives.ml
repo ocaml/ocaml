@@ -238,7 +238,8 @@ let output_byte = wrap2 output_byte_unlocked
 external output_binary_int_unlocked : out_channel -> int -> unit = "output_int"
 let output_binary_int = wrap2 output_binary_int_unlocked
 
-external output_value_unlocked : out_channel -> 'a -> unit = "output_value"
+external marshal_to_channel : out_channel -> 'a -> unit list -> unit = "output_value"
+let output_value_unlocked chan v = marshal_to_channel chan v []
 let output_value oc v = wrap2 output_value_unlocked oc v
 
 external seek_out_unlocked : out_channel -> int -> unit = "seek_out"

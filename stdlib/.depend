@@ -26,6 +26,8 @@ list.cmo: list.cmi
 list.cmx: list.cmi 
 map.cmo: map.cmi 
 map.cmx: map.cmi 
+marshal.cmo: string.cmi marshal.cmi 
+marshal.cmx: string.cmx marshal.cmi 
 obj.cmo: obj.cmi 
 obj.cmx: obj.cmi 
 oo.cmo: array.cmi hashtbl.cmi list.cmi map.cmi obj.cmi random.cmi sort.cmi \

@@ -437,8 +437,9 @@ val output_value : out_channel -> 'a -> unit
         (* Write the representation of a structured value of any type
            to a channel. Circularities and sharing inside the value
            are detected and preserved. The object can be read back,
-           by the function [input_value]. The format is compatible across
-           all machines for a given version of Objective Caml. *)
+           by the function [input_value]. See the description of module
+           [Marshal] for more information. [output_value] is equivalent
+           to [Marshal.to_channel] with an empty list of flags. *)
 val seek_out : out_channel -> int -> unit
         (* [seek_out chan pos] sets the current writing position to [pos]
            for channel [chan]. This works only for regular files. On
@@ -510,14 +511,9 @@ val input_binary_int : in_channel -> int
 val input_value : in_channel -> 'a
         (* Read the representation of a structured value, as produced
            by [output_value], and return the corresponding value.
-           This is not type-safe. The type of the returned object is
-           not ['a] properly speaking: the returned object has one
-           unique type, which cannot be determined at compile-time.
-           The programmer should explicitly give the expected type of the
-           returned value, using the following syntax:
-                     [(input_value chan : type)].
-           The behavior is unspecified if the object in the file does not
-           belong to the given type. *)
+           This function is identical to [Marshal.from_channel];
+           see the description of module [Marshal] for more information,
+           in particular concerning the lack of type safety. *)
 val seek_in : in_channel -> int -> unit
         (* [seek_in chan pos] sets the current reading position to [pos]
            for channel [chan]. This works only for regular files. On

@@ -92,6 +92,18 @@ let label_prefix = if toc then "L.." else ".L"
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl
 
+(* Section switching *)
+
+let data_space =
+  if toc
+  then "	.csect  .data[RW]\n"
+  else "	.section \".data\"\n"
+
+let code_space =
+  if toc
+  then "	.csect  .text[PR]\n"
+  else "	.section \".text\"\n"
+
 (* Output a pseudo-register *)
 
 let emit_reg r =
@@ -728,14 +740,12 @@ let fundecl fundecl =
     `	.globl	.{emit_symbol fundecl.fun_name}\n`;
     `	.csect	{emit_symbol fundecl.fun_name}[DS]\n`;
     `{emit_symbol fundecl.fun_name}:\n`;
-    `	.long	.{emit_symbol fundecl.fun_name}, TOC[tc0], 0\n`;
-    `	.csect	.text[PR]\n`;
-    `	.align	2\n`
+    `	.long	.{emit_symbol fundecl.fun_name}, TOC[tc0], 0\n`
   end else begin
-    `	.type	{emit_symbol fundecl.fun_name}, @function\n`;
-    `	.section \".text\"\n`;
-    `	.align	2\n`
+    `	.type	{emit_symbol fundecl.fun_name}, @function\n`
   end;
+  emit_string code_space;
+  `	.align	2\n`;
   `{emit_codesymbol fundecl.fun_name}:\n`;
   let n = frame_size() in
   if !contains_calls then begin
@@ -769,11 +779,6 @@ let fundecl fundecl =
   end
 
 (* Emission of data *)
-
-let data_space =
-  if toc
-  then "	.csect  .data[RW]\n"
-  else "	.section \".data\"\n"
 
 let declare_global_data s =
   `	.globl	{emit_symbol s}\n`;
@@ -817,9 +822,13 @@ let begin_assembly() =
   num_jumptbl_entries := 0;
   jumptbl_entries := [];
   lbl_jumptbl := 0;
-  (* Emit the beginning of the data segment *)
-  let lbl_begin = Compilenv.current_unit_name() ^ "_begin" in
+  (* Emit the beginning of the segments *)
+  let lbl_begin = Compilenv.current_unit_name() ^ "_data_begin" in
   emit_string data_space;
+  declare_global_data lbl_begin;
+  `{emit_symbol lbl_begin}:\n`;
+  let lbl_begin = Compilenv.current_unit_name() ^ "_code_begin" in
+  emit_string code_space;
   declare_global_data lbl_begin;
   `{emit_symbol lbl_begin}:\n`
 
@@ -849,9 +858,13 @@ let end_assembly() =
     Hashtbl.iter emit_symbol_constant symbol_constants;
     Hashtbl.iter emit_float_constant float_constants
   end;
+  (* Emit the end of the segments *)
+  emit_string code_space;
+  let lbl_end = Compilenv.current_unit_name() ^ "_code_end" in
+  declare_global_data lbl_end;
+  `{emit_symbol lbl_end}:\n`;
   emit_string data_space;
-  (* Emit the end of the data segment *)
-  let lbl_end = Compilenv.current_unit_name() ^ "_end" in
+  let lbl_end = Compilenv.current_unit_name() ^ "_data_end" in
   declare_global_data lbl_end;
   `{emit_symbol lbl_end}:\n`;
   `	.long	0\n`;

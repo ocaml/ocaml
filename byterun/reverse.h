@@ -11,20 +11,10 @@
 
 /* $Id$ */
 
-/* Swap byte-order in 16-bit, 32-bit and 64-bit words */
+/* Swap byte-order in 32-bit integers and in words */
 
 #ifndef _reverse_
 #define _reverse_
-
-
-#define Reverse_short(s) {                                                    \
-  char * _p;                                                                  \
-  int _a;                                                                     \
-  _p = (char *) (s);                                                          \
-  _a = _p[0];                                                                 \
-  _p[0] = _p[1];                                                              \
-  _p[1] = _a;                                                                 \
-}
 
 #define Reverse_int32(w) {                                                    \
   char * _p;                                                                  \
@@ -56,12 +46,7 @@
   _p[4] = _a;                                                                 \
 }
 
-#ifdef ARCH_SIXTYFOUR
-#define Reverse_word Reverse_int64
-#else
-#define Reverse_word Reverse_int32
-#endif
-
 #define Reverse_double Reverse_int64
+
 
 #endif /* _reverse_ */

@@ -703,14 +703,22 @@ let data l =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
-  let lbl_begin = Compilenv.current_unit_name() ^ "_begin" in
+  let lbl_begin = Compilenv.current_unit_name() ^ "_data_begin" in
   `	.data\n`;
+  `	.globl	{emit_symbol lbl_begin}\n`;
+  `{emit_symbol lbl_begin}:\n`;
+  let lbl_begin = Compilenv.current_unit_name() ^ "_code_begin" in
+  `	.text\n`;
   `	.globl	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`
 
 let end_assembly() =
+  `	.text\n`;
+  let lbl_end = Compilenv.current_unit_name() ^ "_code_end" in
+  `	.globl	{emit_symbol lbl_end}\n`;
+  `{emit_symbol lbl_end}:\n`;
   `	.data\n`;
-  let lbl_end = Compilenv.current_unit_name() ^ "_end" in
+  let lbl_end = Compilenv.current_unit_name() ^ "_data_end" in
   `	.globl	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
   `	.long	0\n`;
