@@ -1,5 +1,5 @@
 module Ident : sig
-  type t = string
+  type t = string * int
 end
 
 module Path : sig

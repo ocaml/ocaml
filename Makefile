@@ -62,7 +62,6 @@ TYPING=typing/ident.cmo typing/path.cmo \
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
-  bytecomp/transltype.cmo \
   bytecomp/translobj.cmo bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo
@@ -113,7 +112,7 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   typing/predef.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
   bytecomp/dll.cmo bytecomp/meta.cmo bytecomp/symtable.cmo toplevel/expunge.cmo
 
-PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
+PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop typertype
 
 # For users who don't read the INSTALL file
 defaultentry:

@@ -488,25 +488,9 @@ let rec type_pat env sp =
       let sp = Typertype.pattern_of_type 
 	  (fun lid -> fst (Env.lookup_type lid env)) sty
       in
-      type_pat env sp
-(*
-      (* FIXME: define globally? *)
-      let type_path, _ = 
-	Env.lookup_type (Longident.Ldot (Longident.Lident "Rtype", "type_expr")) env in 
-      let type_t = Ctype.newty (Tconstr (type_path, [], ref Mnil)) in
-      let f loc = function
-	| Longident.Lident name -> 
-	    let id = enter_variable loc name type_t in
-	    newty (Tpath (Path.Pident id))
-	| _ -> raise (Error(sty.ptyp_loc, Cannot_have_full_path))
-      in
-      let ty = Typetexp.transl_run_time_type f env sty in
-      rp {
-        pat_desc = Tpat_rtype ty;
-        pat_loc = sp.ppat_loc;
-        pat_type = type_t;
-        pat_env = env }
-*)
+      let pat = type_pat env sp in
+      unify_pat env pat (Typertype.get_rtype_type ());
+      pat
 
 let get_ref r =
   let v = !r in r := []; v
@@ -1417,35 +1401,7 @@ Format.fprintf Format.err_formatter "funct=%a@."
   | Pexp_rtype sty ->
       let sexp = Typertype.value_of_type 
 	  (fun lid -> fst (Env.lookup_type lid env)) sty in
-      type_exp env kset sexp
-(*
-      (* FIXME: define globally? *)
-      let type_path, _ = 
-	Env.lookup_type (Longident.Ldot (Longident.Lident "Rtype", "type_expr")) env in 
-      let type_t = Ctype.newty (Tconstr (type_path, [], ref Mnil)) in
-      let f loc lid =
-	try
-	  let (path, desc) = Env.lookup_value lid env in
-	  let ty = Kset.instance kset (instance desc.val_type) in
-	  try
-	    unify env ty type_t;
-	    newty (Tpath path)
-	  with
-	  | Unify trace ->
-	      raise(Error(loc, Expr_type_clash(trace)))
-	  | Tags(l1,l2) ->
-	      raise(Typetexp.Error(loc, Typetexp.Variant_tags (l1, l2)))
-	with
-	| Not_found -> raise (Error (loc, Unbound_value lid))
-      in
-      let ty = Typetexp.transl_run_time_type f env sty in
-      re {
-        exp_desc = Texp_rtype( ty );
-        exp_loc = sexp.pexp_loc;
-        exp_type = type_t;
-        exp_env = env
-      }
-*)
+      type_expect env kset sexp (Typertype.get_rtype_type ())
   | Pexp_poly _ ->
       assert false
       

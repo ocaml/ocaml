@@ -1,5 +1,5 @@
 module Ident = struct
-  type t = string
+  type t = string * int
 end
 
 module Path = struct
@@ -82,7 +82,7 @@ let name_of_type t =
     name
 
 let rec print_path ppf = function
-  | Path.Pident id -> fprintf ppf "%s" id
+  | Path.Pident (name,pos) -> fprintf ppf "%s_%d" name pos
   | Path.Pdot (p, name, n) -> fprintf ppf "%a.%s_%d" print_path p name n
   | Path.Papply (p1, p2) -> fprintf ppf "%a(%a)" print_path p1 print_path p2
 

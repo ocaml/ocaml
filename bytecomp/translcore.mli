@@ -22,12 +22,6 @@ open Lambda
 
 val name_pattern: string -> (pattern * 'a) list -> Ident.t
 
-val transl_generic_instance :
-  Env.t ->
-  Path.t -> Types.value_description -> Types.type_expr -> Lambda.lambda
-val transl_type_abstraction :
-  Types.type_expr -> ('a -> Lambda.lambda) -> 'a -> Lambda.lambda
-
 val transl_exp: expression -> lambda
 val transl_apply: lambda -> (expression option * optional) list -> lambda
 val transl_let:
@@ -35,6 +29,12 @@ val transl_let:
 val transl_primitive: Primitive.description -> lambda
 val transl_exception:
       Ident.t -> Path.t option -> exception_declaration -> lambda
+val transl_generic_instance :
+  Env.t ->
+  Path.t -> Types.value_description -> Types.type_expr -> Lambda.lambda
+val transl_type_abstraction :
+  Types.type_expr -> (expression -> Lambda.lambda) -> expression -> Lambda.lambda
+
 val transl_eval : expression -> lambda
   (** special version of transl_exp for Tstr_eval, with
      gcaml type abstraction *)

@@ -1,11 +1,8 @@
-open Rtype
-open Rtype.Path
-
-generic val typeof : {'a} => 'a -> type_expr =
+generic val typeof : {'a} => 'a -> Rtype.type_expr =
   fun ty v -> ty
 
-type dyn = type_expr * Obj.t
-exception Coercion_failure of type_expr * type_expr
+type dyn = Rtype.type_expr * Obj.t
+exception Coercion_failure of Rtype.type_expr * Rtype.type_expr
 
 generic val dyn : {'a} => 'a -> dyn =
   fun ty v -> ty, v

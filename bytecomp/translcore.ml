@@ -504,55 +504,6 @@ let assert_failed loc =
                Const_base(Const_int char)]))])])
 ;;
 
-(* Generic stuffs *)
-
-(* if the type variable of the generic instance is generalized, types should come from
-   the outer type abstraction. *)
-
-let transl_generic_instance env path vdesc etyp =
-  (* we must fix the type using correct_levels *)
-  let etyp = Etype.body (Ctype.correct_levels etyp) in
-  let vtyp = Ctype.correct_levels vdesc.val_type in
-(*
-Format.fprintf Format.err_formatter "tgi vtyp=%a etyp=%a@." 
-    Printtyp.type_scheme vtyp
-    Printtyp.type_scheme etyp
-;
-*)
-  (* We must know how the [tabsts] are instantiated in e.exp_type *)
-
-  let i_tabsts, i_val_type =  Etype.split (Ctype.instance vtyp) in
-  
-  (* Note: even after correct_levels, type level information may be
-     still wrong; etyp may have generalized type variable due to 
-     the external type generalizations. Therefore we instantiate it. *)
-  (* Note #2: by instantiating the etyp, outer-generalized type 
-     variables' identity is lost. We must keep track of these 
-     instantiation... *)
-  let gvars = Ctype.generalized_vars etyp in
-  let i_etyp, i_gvars = 
-    match Ctype.instance_list (etyp :: gvars) with
-    | i_etyp :: i_gvars -> i_etyp, i_gvars 
-    | _ -> assert false
-  in
-  Ctype.unify env i_etyp i_val_type; (* i_tabsts are unified too! *)
-  let i_gvars = List.map Btype.repr i_gvars in
-  Lapply(transl_path path, 
-	 Transltype.transl_type_exprs (List.combine i_gvars gvars) 
-	   i_tabsts)
-
-(* the body compilation must be delayed after the variables for 
-   type abstractions are created *)
-let transl_type_abstraction typ compfunc arg =
-  let typ = Ctype.correct_levels typ in
-  let konst, t = Etype.split typ in
-  let tabsts = Etype.type_abstraction konst t in
-  if tabsts = [] then compfunc arg
-  else begin
-    let absts = List.map Etype.ident_of_type_variable tabsts in
-    Lfunction (Curried, absts, compfunc arg)
-  end
-
 (* Translation of expressions *)
 
 let rec transl_exp e =
@@ -582,7 +533,7 @@ and transl_exp0 e =
 	  begin try
 	    transl_generic_instance e.exp_env path vdesc e.exp_type
 	  with
-	  | Transltype.Unsupported_type_constructor ->
+	  | Typertype.Error (_, Typertype.Unsupported) ->
 	      raise (Error (e.exp_loc, Unsupported_type_constructor))
 	  end
       end
@@ -756,10 +707,12 @@ and transl_exp0 e =
           cl_env = e.exp_env }
   | Texp_rtype ty -> 
       begin try
-	Transltype.transl_type_expr [] ty
+	match transl_type_exprs e.exp_env [] [ty] with
+	| [lam] -> lam
+	| _ -> assert false
       with
-      | Transltype.Unsupported_type_constructor ->
-	  raise (Error (e.exp_loc, Unsupported_type_constructor))
+      | Typertype.Error (loc, Typertype.Unsupported) ->
+	  raise (Error (loc, Unsupported_type_constructor))
       end
 
 and transl_list expr_list =
@@ -945,6 +898,75 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
              Lprim(Pccall prim_obj_dup, [transl_exp init_expr]),
              List.fold_right update_field lbl_expr_list (Lvar copy_id))
     end
+  end
+
+(* Generic stuffs *)
+
+and transl_type_exprs env vartbl tys = 
+  let stys, path_lid_tbl, tabst_ids = Typertype.to_core_types vartbl tys in
+  let lid_path_tbl = List.map (fun (p,lid) -> (lid,p)) path_lid_tbl in
+  let sexps = 
+    List.map (Typertype.value_of_type (fun lid -> 
+      try List.assoc lid lid_path_tbl with Not_found -> 
+	assert false)) stys
+  in
+  (* add identifiers of type abstractions to the typing env, so that
+     they can be typed correctly *)
+  let vdesc = { val_type= Typertype.get_rtype_type ();
+		val_kind= Val_reg } in
+  let env' = List.fold_left (fun env id -> 
+    Env.add_value id vdesc env) env tabst_ids
+  in
+  let exps = 
+    List.map (fun sexp -> 
+      Typecore.type_expect env' (Kset.empty ()) sexp 
+	(Typertype.get_rtype_type ())) 
+      sexps
+  in
+  List.map transl_exp exps
+
+and transl_generic_instance env path vdesc etyp =
+  (* we must fix the type using correct_levels *)
+  let etyp = Etype.body (Ctype.correct_levels etyp) in
+  let vtyp = Ctype.correct_levels vdesc.val_type in
+(*
+Format.fprintf Format.err_formatter "tgi vtyp=%a etyp=%a@." 
+    Printtyp.type_scheme vtyp
+    Printtyp.type_scheme etyp
+;
+*)
+  (* We must know how the [tabsts] are instantiated in e.exp_type *)
+
+  let i_tabsts, i_val_type =  Etype.split (Ctype.instance vtyp) in
+  
+  (* Note: even after correct_levels, type level information may be
+     still wrong; etyp may have generalized type variable due to 
+     the external type generalizations. Therefore we instantiate it. *)
+  (* Note #2: by instantiating the etyp, outer-generalized type 
+     variables' identity is lost. We must keep track of these 
+     instantiation... *)
+  let gvars = Ctype.generalized_vars etyp in
+  let i_etyp, i_gvars = 
+    match Ctype.instance_list (etyp :: gvars) with
+    | i_etyp :: i_gvars -> i_etyp, i_gvars 
+    | _ -> assert false
+  in
+  Ctype.unify env i_etyp i_val_type; (* i_tabsts are unified too! *)
+  let i_gvars = List.map Btype.repr i_gvars in
+  Lapply(transl_path path, 
+	 transl_type_exprs env (List.combine i_gvars gvars) 
+	   i_tabsts)
+
+and transl_type_abstraction typ compfunc arg =
+  (* the body compilation must be delayed after the variables for 
+     type abstractions are created *)
+  let typ = Ctype.correct_levels typ in
+  let konst, t = Etype.split typ in
+  let tabsts = Etype.type_abstraction konst t in
+  if tabsts = [] then compfunc arg
+  else begin
+    let absts = List.map Etype.ident_of_type_variable tabsts in
+    Lfunction (Curried, absts, compfunc arg)
   end
 
 let transl_eval e = transl_type_abstraction e.exp_type transl_exp e

@@ -18,13 +18,13 @@ include ../config/Makefile
 RUNTIME=../boot/ocamlrun
 COMPILER=../ocamlc
 CAMLC=$(RUNTIME) $(COMPILER)
-COMPFLAGS=-warn-error A -nostdlib -I ../stdlib
+COMPFLAGS=-warn-error A -nostdlib -I ../stdlib -I ../toplevel -I ../typing
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
-OPTCOMPFLAGS=-warn-error A -nostdlib -I ../stdlib
+OPTCOMPFLAGS=-warn-error A -nostdlib -I ../stdlib -I ../toplevel -I ../typing
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
-OBJS=gcaml.cmo
+OBJS=gcaml.cmo gcamltop.cmo
 ALLOBJS=$(OBJS)
 
 all: gcamllib.cma
