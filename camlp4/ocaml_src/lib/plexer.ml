@@ -174,8 +174,8 @@ let next_token_fun dfa find_kwd =
     | Some '\'' ->
         Stream.junk strm__;
         let s = strm__ in
-        begin match Stream.npeek 2 s with
-          [_; '\''] | ['\\'; _] ->
+        begin match Stream.npeek 3 s with
+          [_; '\''; _] | ['\\'; _; _] | ['\x0D'; '\x0A'; '\''] ->
             let tok = "CHAR", get_buff (char bp 0 s) in
             let loc = bp, Stream.count s in tok, loc
         | _ -> keyword_or_error (bp, Stream.count s) "'"

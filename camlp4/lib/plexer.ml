@@ -145,8 +145,8 @@ value next_token_fun dfa find_kwd =
         let loc = (bp, Stream.count s) in
         (tok, loc)
     | [: `'''; s :] ->
-        match Stream.npeek 2 s with
-        [ [_; '''] | ['\\'; _] ->
+        match Stream.npeek 3 s with
+        [ [_; '''; _] | ['\\'; _; _] | ['\x0D'; '\x0A'; '''] ->
             let tok = ("CHAR", get_buff (char bp 0 s)) in
             let loc = (bp, Stream.count s) in
             (tok, loc)
