@@ -125,6 +125,10 @@ table below:
 \entree{"\\b"}{backspace (BS)}
 \entree{"\\"\var{ddd}}{the character with ASCII code \var{ddd} in decimal}
 \end{tableau}
+To allow splitting long string literals across lines, the sequence
+"\\"\var{newline}~\var{blanks} (a "\\" at end-of-line followed by any
+number of blanks at the beginning of the next line) is ignored inside
+string literals.
 
 The current implementation places no restrictions on the length of
 string literals.
