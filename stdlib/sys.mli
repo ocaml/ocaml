@@ -19,6 +19,8 @@ val argv: string array
            The first element is the command name used to invoke the program.
            The following elements are the command-line arguments
            given to the program. *)
+val argc : int
+        (* The number of elements of "argv". *)
 external file_exists: string -> bool = "sys_file_exists"
         (* Test if a file with the given name exists. *)
 external remove: string -> unit = "sys_remove"
