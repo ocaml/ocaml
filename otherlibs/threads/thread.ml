@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -106,7 +106,7 @@ let wait_signal sigs =
   let oldhdlrs =
     List.map (fun s -> Sys.signal s (Sys.Signal_handle sighandler)) sigs in
   if !gotsig = 0 then sleep();
-  List.iter2 (fun s act -> Sys.signal s act; ()) sigs oldhdlrs;
+  List.iter2 Sys.set_signal sigs oldhdlrs;
   !gotsig
 
 (* For Thread.create, make sure the function passed to thread_new
@@ -128,5 +128,5 @@ let preempt signal =
 (* Initialization of the scheduler *)
 
 let _ =
-  Sys.signal Sys.sigvtalrm (Sys.Signal_handle preempt);
+  Sys.set_signal Sys.sigvtalrm (Sys.Signal_handle preempt);
   thread_initialize()

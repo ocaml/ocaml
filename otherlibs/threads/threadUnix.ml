@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -22,17 +22,17 @@ open Unix
    Make sure we're not preempted just after disabling the timer... *)
 let execv proc args =
   Thread.critical_section := true;
-  Unix.setitimer ITIMER_VIRTUAL {it_interval = 0.0; it_value = 0.0};
+  let _ = Unix.setitimer ITIMER_VIRTUAL {it_interval = 0.0; it_value = 0.0} in
   Unix.execv proc args
 
 let execve proc args env =
   Thread.critical_section := true;
-  Unix.setitimer ITIMER_VIRTUAL {it_interval = 0.0; it_value = 0.0};
+  let _ = Unix.setitimer ITIMER_VIRTUAL {it_interval = 0.0; it_value = 0.0} in
   Unix.execve proc args env
 
 let execvp proc args =
   Thread.critical_section := true;
-  Unix.setitimer ITIMER_VIRTUAL {it_interval = 0.0; it_value = 0.0};
+  let _ = Unix.setitimer ITIMER_VIRTUAL {it_interval = 0.0; it_value = 0.0} in
   Unix.execvp proc args
 
 let wait () =
@@ -116,7 +116,7 @@ let connect s addr =
   with Unix_error((EINPROGRESS | EWOULDBLOCK | EAGAIN), _, _) ->
     Thread.wait_write s;
     (* Check if it really worked *)
-    Unix.getpeername s;
+    let _ = Unix.getpeername s in
     ()
 
 let recv fd buf ofs len flags =

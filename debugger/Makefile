@@ -24,7 +24,8 @@ OTHEROBJS=\
   ../typing/datarepr.cmo ../typing/env.cmo \
   ../typing/ctype.cmo ../typing/printtyp.cmo ../typing/mtype.cmo \
   ../bytecomp/runtimedef.cmo ../bytecomp/symtable.cmo \
-  ../bytecomp/opcodes.cmo ../toplevel/genprintval.cmo \
+  ../bytecomp/opcodes.cmo ../bytecomp/meta.cmo \
+  ../toplevel/genprintval.cmo \
   ../otherlibs/dynlink/dynlink.cmo
 
 OBJS=\

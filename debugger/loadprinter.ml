@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -80,8 +80,7 @@ let loadfile name =
     Dynlink.add_interfaces stdlib_units [Config.standard_library];
     Dynlink.allow_unsafe_modules true
   end;
-  loadfiles name;
-  ()
+  let _ = loadfiles name in ()
 
 (* Return the value referred to by a path (as in toplevel/topdirs) *)
 (* Note: evaluation proceeds in the debugger memory space, not in

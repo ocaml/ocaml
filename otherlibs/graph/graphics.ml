@@ -24,11 +24,11 @@ external sigio_signal: unit -> int = "gr_sigio_signal"
 external sigio_handler: int -> unit = "gr_sigio_handler"
 
 let unix_open_graph arg =
-  Sys.signal (sigio_signal()) (Sys.Signal_handle sigio_handler);
+  Sys.set_signal (sigio_signal()) (Sys.Signal_handle sigio_handler);
   raw_open_graph arg
 
 let unix_close_graph () =
-  Sys.signal (sigio_signal()) Sys.Signal_ignore;
+  Sys.set_signal (sigio_signal()) Sys.Signal_ignore;
   raw_close_graph ()
 
 let (open_graph, close_graph) =

@@ -6,7 +6,7 @@
 (*          Objective Caml port by John Malecki and Xavier Leroy       *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -85,7 +85,7 @@ let remove_breakpoints pos =
          print_newline()
        end;
        reset_instr pos;
-       try Symbols.event_at_pc pos; set_event pos with Not_found -> ())
+       Symbols.set_event_at_pc pos)
     pos
 
 (* Set all breakpoints. *)
@@ -221,7 +221,7 @@ let exec_with_temporary_breakpoint pc funct =
         if !count = 0 then begin
           positions := assoc_remove !positions pc;
           reset_instr pc;
-          try Symbols.event_at_pc pc; set_event pc with Not_found -> ()
+          Symbols.set_event_at_pc pc
         end
 
     in

@@ -6,7 +6,7 @@
 (*          Objective Caml port by John Malecki and Xavier Leroy       *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -215,8 +215,7 @@ let instr_cd lexbuf =
 
 let instr_pwd lexbuf =
   eol lexbuf;
-  system "/bin/pwd";
-  ()
+  let _ = system "/bin/pwd" in ()
 
 let instr_dir lexbuf =
   let new_directory = argument_list_eol argument lexbuf in

@@ -413,20 +413,20 @@ let build_custom_runtime prim_name exec_name =
       and objs68k = extract ".o" (List.rev !Clflags.ccobjs)
       and objsppc = extract ".x" (List.rev !Clflags.ccobjs)
       in
-      Ccomp.command (Printf.sprintf "%s -i \"%s\" %s \"%s\" -o \"%s.o\""
+      Ccomp.run_command (Printf.sprintf "%s -i \"%s\" %s \"%s\" -o \"%s.o\""
         c68k
         Config.standard_library
         (String.concat " " (List.rev !Clflags.ccopts))
         prim_name
         prim_name);
-      Ccomp.command (Printf.sprintf "%s -i \"%s\" %s \"%s\" -o \"%s.x\""
+      Ccomp.run_command (Printf.sprintf "%s -i \"%s\" %s \"%s\" -o \"%s.x\""
         cppc
         Config.standard_library
         (String.concat " " (List.rev !Clflags.ccopts))
         prim_name
         prim_name);
-      Ccomp.command ("delete -i \""^exec_name^"\"");
-      Ccomp.command (Printf.sprintf
+      Ccomp.run_command ("delete -i \""^exec_name^"\"");
+      Ccomp.run_command (Printf.sprintf
         "%s -t MPST -c 'MPS ' -o \"%s\" \"%s.o\" \"%s\" \"%s\" %s"
         link68k
         exec_name
@@ -448,14 +448,13 @@ let build_custom_runtime prim_name exec_name =
 let append_bytecode_and_cleanup bytecode_name exec_name prim_name =
   match Sys.os_type with
     "MacOS" ->
-      Ccomp.command (Printf.sprintf
+      Ccomp.run_command (Printf.sprintf
           "mergefragment -c -t Caml \"%s\"" bytecode_name);
-      Ccomp.command (Printf.sprintf
+      Ccomp.run_command (Printf.sprintf
           "mergefragment \"%s\" \"%s\"" bytecode_name exec_name);
-      Ccomp.command (Printf.sprintf
+      Ccomp.run_command (Printf.sprintf
           "delete -i \"%s\" \"%s\" \"%s.o\" \"%s.x\""
-          bytecode_name prim_name prim_name prim_name);
-      ()
+          bytecode_name prim_name prim_name prim_name)
   | _ ->
       let oc =
         open_out_gen [Open_wronly; Open_append; Open_binary] 0
@@ -473,9 +472,7 @@ let append_bytecode_and_cleanup bytecode_name exec_name prim_name =
 let fix_exec_name name =
   match Sys.os_type with
     "Win32" ->
-      begin try String.rindex name '.'; name
-      with Not_found -> name ^ ".exe"
-      end
+      if String.contains name '.' then name else name ^ ".exe"
   | _ -> name
 
 (* Main entry point (build a custom runtime if needed) *)

@@ -6,7 +6,7 @@
 (*          Objective Caml port by John Malecki and Xavier Leroy       *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -58,7 +58,7 @@ let search_in_path name =
   let check name =
     try access name [X_OK]; name with Unix_error _ -> raise Not_found
   in
-    if (try string_pos name '/'; true with Not_found -> false) then
+    if String.contains name '/' then
       check name
     else
       let path = Sys.getenv "PATH" in

@@ -6,7 +6,7 @@
 (*          Objective Caml port by John Malecki and Xavier Leroy       *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -24,8 +24,8 @@ let break signum =
   else raise Sys.Break
 
 let _ =
-  Sys.signal Sys.sigint (Sys.Signal_handle break);
-  Sys.signal Sys.sigpipe (Sys.Signal_handle (fun _ -> raise End_of_file))
+  Sys.set_signal Sys.sigint (Sys.Signal_handle break);
+  Sys.set_signal Sys.sigpipe (Sys.Signal_handle (fun _ -> raise End_of_file))
 
 let protect f =
   if !is_protected then

@@ -6,7 +6,7 @@
 (*          Objective Caml port by John Malecki and Xavier Leroy       *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -523,9 +523,11 @@ let finish () =
         prerr_endline "`finish' not meaningful in outermost frame.";
         raise Toplevel
       end;
-      begin try Symbols.any_event_at_pc pc with Not_found ->
-        prerr_endline "Calling function has no debugging information.";
-        raise Toplevel
+      begin
+        try let _ = Symbols.any_event_at_pc pc in ()
+        with Not_found ->
+               prerr_endline "Calling function has no debugging information.";
+               raise Toplevel
       end;
       exec_with_trap_barrier
         frame

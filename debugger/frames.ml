@@ -6,7 +6,7 @@
 (*          Objective Caml port by John Malecki and Xavier Leroy       *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -114,7 +114,7 @@ let do_backtrace action =
           event := any_event_at_pc pc
         done
       with Exit -> ()
-         | Not_found -> action None; ()
+         | Not_found -> let _ = action None in ()
       end;
       set_frame initial_sp
 

@@ -6,7 +6,7 @@
 (*          Objective Caml port by John Malecki and Xavier Leroy       *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -39,4 +39,4 @@ let previous_time_1 () =
 let rec previous_time n =
   if n = 1
   then previous_time_1()
-  else begin previous_time_1(); previous_time(n-1) end
+  else begin let _ = previous_time_1() in previous_time(n-1) end

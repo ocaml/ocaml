@@ -6,7 +6,7 @@
 (*          Objective Caml port by John Malecki and Xavier Leroy       *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -61,7 +61,7 @@ let show_point mdle point before selected =
     begin try
       let buffer = get_buffer mdle in
       let (start, line_number) = line_of_pos buffer point in
-        print_line buffer line_number start point before; ()
+        let _ = print_line buffer line_number start point before in ()
     with
       Out_of_range -> (* line_of_pos *)
         prerr_endline "Position out of range."

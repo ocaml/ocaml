@@ -6,7 +6,7 @@
 (*          Objective Caml port by John Malecki and Xavier Leroy       *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -113,6 +113,10 @@ let event_at_pc pc =
   match ev.ev_kind with
     Event_pseudo -> raise Not_found
   | _            -> ev
+
+let set_event_at_pc pc =
+ try let _ = event_at_pc pc in Debugcom.set_event pc
+ with Not_found -> ()
 
 (* List all events in module *)
 let events_in_module mdle =

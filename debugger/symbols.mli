@@ -6,7 +6,7 @@
 (*          Objective Caml port by John Malecki and Xavier Leroy       *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -27,6 +27,8 @@ val any_event_at_pc : int -> Instruct.debug_event
 
 (* Return event at given PC, or raise Not_found *)
 val event_at_pc : int -> Instruct.debug_event
+(* Set event at given PC *)
+val set_event_at_pc : int -> unit
 
 (* List the events in `module'. *)
 val events_in_module : string -> Instruct.debug_event list

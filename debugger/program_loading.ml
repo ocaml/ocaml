@@ -6,7 +6,7 @@
 (*          Objective Caml port by John Malecki and Xavier Leroy       *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -51,7 +51,8 @@ let generic_exec cmdline = function () ->
          match fork () with
            0 -> (* Try to detach the process from the controlling terminal,
                    so that it does not receive SIGINT on ctrl-C. *)
-                begin try setsid() with Invalid_argument _ -> 0 end;
+                begin try let _ = setsid() in () 
+                      with Invalid_argument _ -> () end;
                 execv shell [| shell; "-c"; cmdline() |]
          | _ -> exit 0
        with x ->
