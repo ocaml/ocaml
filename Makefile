@@ -584,7 +584,7 @@ alldepend::
 	cd camlp4; $(MAKE) depend
 
 # Parser for jocaml
-jocp: ocamlc
+jocp: ocamlc camlp4out
 	set -e ; cd jocparsing ; $(MAKE) all
 
 alldepend::
