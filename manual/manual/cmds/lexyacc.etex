@@ -372,6 +372,33 @@ non-associative (\verb"%nonassoc"). The symbols are usually tokens.
 They can also be dummy nonterminals, for use with the \verb"%prec"
 directive inside the rules.
 
+The precedence declarations are used in the following way to
+resolve reduce/reduce and shift/reduce conflicts:
+\begin{itemize}
+\item Tokens and rules have precedences.  By default, the precedence
+  of a rule is the precedence of its rightmost terminal.  You
+  can override this default by using the @"%prec"@ directive in the rule.
+\item A reduce/reduce conflict
+  is resolved by comparing the precedences of the two rules to be
+  reduced, the
+  higher precedence rule will be reduced.  A shift/reduce conflict
+  is resolved by comparing the precedence of the rule to be
+  reduced with the precedence of the token to be shifted.  If the
+  precedence of the rule is higher, then the rule will be reduced;
+  if the precedence of the token is higher, then the token will
+  be shifted.
+\item A shift/reduce conflict between a rule and a token with the
+  same precedence will be resolved using the associativity: if the
+  token is left-associative, then the parser will reduce; if the
+  token is right-associative, then the parser will shift.  If the
+  token is non-associative, then the parser will declare a syntax
+  error.
+\item When a conflict cannot be resolved using the above method,
+  then "ocamlyacc" will output a warning.  In the case of a shift/reduce
+  conflict, it will always shift.  In the case of a reduce/reduce
+  conflict, it is not specified which rule will be reduced.
+\end{itemize}
+
 \end{options}
 
 \subsection{Rules}
