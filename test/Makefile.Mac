@@ -16,10 +16,10 @@ BYTE_KB = :KB:terms.cmo :KB:equations.cmo :KB:kb.cmo :KB:orderings.cmo ¶
           :KB:kbmain.cmo
 
 kb.byt Ä {BYTE_KB}
-	{CAMLC} {BYTE_KB} -o kb.byt
+        {CAMLC} {BYTE_KB} -o kb.byt
 
 clean ÄÄ
-	delete -i :KB:Å.cm[io] || set status 0
+        delete -i :KB:Å.cm[io] || set status 0
 
 # Genlex
 
@@ -27,43 +27,43 @@ BYTE_GENLEX = :Lex:syntax.cmo :Lex:scan_aux.cmo :Lex:scanner.cmo ¶
   :Lex:gram_aux.cmo :Lex:grammar.cmo :Lex:lexgen.cmo :Lex:output.cmo :Lex:main.cmo
 
 genlex.byt Ä {BYTE_GENLEX}
-	{CAMLC} {BYTE_GENLEX} -o genlex.byt
+        {CAMLC} {BYTE_GENLEX} -o genlex.byt
 
 clean ÄÄ
-	delete -i :Lex:Å.cm[io] || set status 0
+        delete -i :Lex:Å.cm[io] || set status 0
 
 :Lex:grammar.mli Ä :Lex:grammar.ml
-	echo -n
+        echo -n
 
 :Lex:grammar.ml Ä :Lex:grammar.mly ::yacc:ocamlyacc
-	{CAMLYACC} {YACCFLAGS} :Lex:grammar.mly
+        {CAMLYACC} {YACCFLAGS} :Lex:grammar.mly
 
 clean ÄÄ
-	delete -i :Lex:grammar.ml :Lex:grammar.mli
+        delete -i :Lex:grammar.ml :Lex:grammar.mli
 
 beforedepend ÄÄ :Lex:grammar.ml :Lex:grammar.mli
 
 :Lex:scanner.ml Ä :Lex:scanner.mll ::lex:ocamllex
-	{CAMLLEX} :Lex:scanner.mll
+        {CAMLLEX} :Lex:scanner.mll
 
 clean ÄÄ
-	delete -i :Lex:scanner.ml
+        delete -i :Lex:scanner.ml
 
 beforedepend ÄÄ :Lex:scanner.ml
 
 # Common rules
 
 .byt Ä .ml
-	{CAMLC} -o {targdir}{default}.byt {depdir}{default}.ml
+        {CAMLC} -o {targdir}{default}.byt {depdir}{default}.ml
 
 .fast.byt Ä .ml
-	{CAMLC} -unsafe -o {targdir}{default}.fast.byt {depdir}{default}.ml
+        {CAMLC} -unsafe -o {targdir}{default}.fast.byt {depdir}{default}.ml
 
 .cmi Ä .mli
-	{CAMLC} -c {depdir}{default}.mli
+        {CAMLC} -c {depdir}{default}.mli
 
 .cmo Ä .ml
-	{CAMLC} -c {depdir}{default}.ml
+        {CAMLC} -c {depdir}{default}.ml
 
 {BYTE_EXE} {BYTE_KB} {BYTE_GENLEX} Ä ::ocamlc
 {BYTE_EXE} Ä ::stdlib:stdlib.cma
@@ -76,33 +76,33 @@ clean ÄÄ
 # Regression test
 
 test Ä {BYTE_EXE}
-	for prog in `echo {BYTE_EXE} | streamedit -e '1 replace /.byt/ "" -c °'`
-	  echo {prog}
-	  if "`exists :Results:{prog}.runtest.Mac`"
-	    :Results:{prog}.runtest.Mac test {CAMLRUN} {prog}.byt
-	  else
-	    {CAMLRUN} {prog}.byt > "{tempfolder}ocaml-test"
-	    equal -d "{tempfolder}ocaml-test" :Results:{prog}.out
-	  end
-	end
+        for prog in `echo {BYTE_EXE} | streamedit -e '1 replace /.byt/ "" -c °'`
+          echo {prog}
+          if "`exists :Results:{prog}.runtest.Mac`"
+            :Results:{prog}.runtest.Mac test {CAMLRUN} {prog}.byt
+          else
+            {CAMLRUN} {prog}.byt > "{tempfolder}ocaml-test"
+            equal -d "{tempfolder}ocaml-test" :Results:{prog}.out
+          end
+        end
 
 clean ÄÄ
-	delete -i :Lex:testscanner.ml "{tempfolder}ocaml-test"
+        delete -i :Lex:testscanner.ml "{tempfolder}ocaml-test"
 
 # Benchmark
 
 bench Ä {BYTE_EXE}
-	for prog in `echo {BYTE_EXE} | streamedit -e '1 replace /.byt/ "" -c °'`
-	  echo {prog}
-	  if "`exists :Results:{prog}.runtest.Mac`"
-	    :Results:{prog}.runtest.Mac bench {CAMLRUN} {prog}.byt
-	  else
-	    time "{CAMLRUN} {prog}.byt ·dev:null"
-	  end
-	end
+        for prog in `echo {BYTE_EXE} | streamedit -e '1 replace /.byt/ "" -c °'`
+          echo {prog}
+          if "`exists :Results:{prog}.runtest.Mac`"
+            :Results:{prog}.runtest.Mac bench {CAMLRUN} {prog}.byt
+          else
+            time "{CAMLRUN} {prog}.byt ·dev:null"
+          end
+        end
 
 # Dependencies
 
 depend Ä beforedepend
-	{CAMLDEP} -I :KB: -I :Lex: Å.ml :KB:Å.mli :KB:Å.ml :Lex:Å.mli ¶
-	          :Lex:Å.ml > Makefile.Mac.depend
+        {CAMLDEP} -I :KB: -I :Lex: Å.ml :KB:Å.mli :KB:Å.ml :Lex:Å.mli ¶
+                  :Lex:Å.ml > Makefile.Mac.depend

@@ -44,7 +44,7 @@ static char *fl_last = NULL;     /* Last block in the list.  Only valid
 char *fl_merge = Fl_head;        /* Current insertion pointer.  Managed
                                     jointly with [sweep_slice]. */
 asize_t fl_cur_size = 0;         /* How many free words were added since
-				    the latest fl_init_merge. */
+                                    the latest fl_init_merge. */
 
 #define Next(b) (((block *) (b))->next_bp)
 

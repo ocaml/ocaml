@@ -60,7 +60,7 @@ static void realloc_gray_vals ()
   Assert (gray_vals_cur == gray_vals_end);
   if (gray_vals_size < stat_heap_size / 128){
     gc_message ("Growing gray_vals to %luk bytes\n",
-		(long) gray_vals_size * sizeof (value) / 512);
+                (long) gray_vals_size * sizeof (value) / 512);
     new = (value *) realloc ((char *) gray_vals,
                              2 * gray_vals_size * sizeof (value));
     if (new == NULL){
@@ -119,8 +119,8 @@ static void mark_slice (work)
       Hd_val (v) = Blackhd_hd (hd);
       size = Wosize_hd(hd);
       if (Tag_hd (hd) < No_scan_tag){
-	for (i = 0; i < size; i++){
-	  child = Field (v, i);
+        for (i = 0; i < size; i++){
+          child = Field (v, i);
           if (Is_block (child) && Is_in_heap (child)) {
             hd = Hd_val(child);
             if (Tag_hd(hd) == Infix_tag) {
@@ -142,19 +142,19 @@ static void mark_slice (work)
       work -= Whsize_wosize(size);
     }else if (markhp != NULL){
       if (markhp == limit){
-	chunk = Chunk_next (chunk);
-	if (chunk == NULL){
-	  markhp = NULL;
-	}else{
-	  markhp = chunk;
-	  limit = chunk + Chunk_size (chunk);
-	}
+        chunk = Chunk_next (chunk);
+        if (chunk == NULL){
+          markhp = NULL;
+        }else{
+          markhp = chunk;
+          limit = chunk + Chunk_size (chunk);
+        }
       }else{
-	if (Is_gray_val (Val_hp (markhp))){
-	  Assert (gray_vals_ptr == gray_vals);
-	  *gray_vals_ptr++ = Val_hp (markhp);
-	}
-	markhp += Bhsize_hp (markhp);
+        if (Is_gray_val (Val_hp (markhp))){
+          Assert (gray_vals_ptr == gray_vals);
+          *gray_vals_ptr++ = Val_hp (markhp);
+        }
+        markhp += Bhsize_hp (markhp);
       }
     }else if (!heap_is_pure){
       heap_is_pure = 1;
@@ -199,10 +199,10 @@ static void update_weak_pointers ()
 
       sz = Wosize_val (cur);
       for (i = 1; i < sz; i++){
-	curfield = Field (cur, i);
-	if (curfield != 0 && Is_block (curfield) && Is_white_val (curfield)){
-	  Field (cur, i) = 0;
-	}
+        curfield = Field (cur, i);
+        if (curfield != 0 && Is_block (curfield) && Is_white_val (curfield)){
+          Field (cur, i) = 0;
+        }
       }
       prev = &Field (cur, 0);
       cur = (value *) *prev;
@@ -224,31 +224,31 @@ static void sweep_slice (work)
       gc_sweep_hp += Bhsize_hd (hd);
       switch (Color_hd (hd)){
       case White:
-	if (Tag_hd (hd) == Final_tag){
-	  Final_fun (Val_hp (hp)) (Val_hp (hp));
-	}
-	gc_sweep_hp = fl_merge_block (Bp_hp (hp));
-	break;
+        if (Tag_hd (hd) == Final_tag){
+          Final_fun (Val_hp (hp)) (Val_hp (hp));
+        }
+        gc_sweep_hp = fl_merge_block (Bp_hp (hp));
+        break;
       case Blue:
-	/* Only the blocks of the free-list are blue.  See [freelist.c]. */
-	fl_merge = Bp_hp (hp);
-	break;
+        /* Only the blocks of the free-list are blue.  See [freelist.c]. */
+        fl_merge = Bp_hp (hp);
+        break;
       default:          /* Gray or Black */
         Assert(Color_hd(hd) == Black);
-	Hd_hp (hp) = Whitehd_hd (hd);
-	break;
+        Hd_hp (hp) = Whitehd_hd (hd);
+        break;
       }
       Assert (gc_sweep_hp <= limit);
     }else{
       chunk = Chunk_next (chunk);
       if (chunk == NULL){
-	/* Sweeping is done. */
+        /* Sweeping is done. */
         ++ stat_major_collections;
         work = 0;
         gc_phase = Phase_idle;
       }else{
-	gc_sweep_hp = chunk;
-	limit = chunk + Chunk_size (chunk);
+        gc_sweep_hp = chunk;
+        limit = chunk + Chunk_size (chunk);
       }
     }
   }
@@ -273,11 +273,11 @@ void major_collection_slice ()
                  MS = MW * P
                  MS = (100 - percent_free)
                       * (allocated_words * 3 / percent_free / 2
-		         + 100 * extra_heap_memory)
+                         + 100 * extra_heap_memory)
      Amount of sweeping work for this slice:
                  SS = SW * P
                  SS = 100 * (allocated_words * 3 / percent_free / 2
-		             + 100 * extra_heap_memory)
+                             + 100 * extra_heap_memory)
      This slice will either mark 2*MS words or sweep 2*SS words.
   */
 
@@ -287,15 +287,15 @@ void major_collection_slice ()
 
   if (gc_phase == Phase_mark){
     mark_slice (2 * (100 - percent_free)
-		* (allocated_words * 3 / percent_free / 2
+                * (allocated_words * 3 / percent_free / 2
                    + 100 * extra_heap_memory)
-		+ Margin);
+                + Margin);
     gc_message ("!", 0);
   }else{
     Assert (gc_phase == Phase_sweep);
     sweep_slice (200 * (allocated_words * 3 / percent_free / 2
-			+ 100 * extra_heap_memory)
-		 + Margin);
+                        + 100 * extra_heap_memory)
+                 + Margin);
     gc_message ("$", 0);
   }
 
@@ -345,7 +345,7 @@ void init_major_heap (heap_size)
   stat_heap_size = round_heap_chunk_size (heap_size);
   Assert (stat_heap_size % Page_size == 0);
   heap_start = aligned_malloc (stat_heap_size + sizeof (heap_chunk_head),
-			       sizeof (heap_chunk_head), &block);
+                               sizeof (heap_chunk_head), &block);
   if (heap_start == NULL)
     fatal_error ("Fatal error: not enough memory for the initial heap.\n");
   heap_start += sizeof (heap_chunk_head);

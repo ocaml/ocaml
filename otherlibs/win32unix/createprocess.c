@@ -47,8 +47,8 @@ value win_create_process_native(cmd, cmdline, env, fd1, fd2, fd3)
 }
 
 value win_create_process(argv, argn) /* ML */
-	value * argv;
-	int argn;
+     value * argv;
+     int argn;
 {
   return win_create_process_native(argv[0], argv[1], argv[2],
                                    argv[3], argv[4], argv[5]);

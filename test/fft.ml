@@ -50,35 +50,35 @@ let fft px py np =
       let ss3 = sin(a3) in
       let is = ref j in
       let id = ref(2 * !n2) in
-	  
+  
         while !is < n do
           let i0r = ref !is in
           while !i0r < n do
              let i0 = !i0r in
-	     let i1 = i0 + n4 in
-	     let i2 = i1 + n4 in
-	     let i3 = i2 + n4 in
-	     let r1 = px.(i0) -. px.(i2) in
-	     px.(i0) <- px.(i0) +. px.(i2);
-	     let r2 = px.(i1) -. px.(i3) in
-	     px.(i1) <- px.(i1) +. px.(i3);
-	     let s1 = py.(i0) -. py.(i2) in
-	     py.(i0) <- py.(i0) +. py.(i2);
-	     let s2 = py.(i1) -. py.(i3) in
-	     py.(i1) <- py.(i1) +. py.(i3);
-	     let s3 = r1 -. s2 in
+             let i1 = i0 + n4 in
+             let i2 = i1 + n4 in
+             let i3 = i2 + n4 in
+             let r1 = px.(i0) -. px.(i2) in
+             px.(i0) <- px.(i0) +. px.(i2);
+             let r2 = px.(i1) -. px.(i3) in
+             px.(i1) <- px.(i1) +. px.(i3);
+             let s1 = py.(i0) -. py.(i2) in
+             py.(i0) <- py.(i0) +. py.(i2);
+             let s2 = py.(i1) -. py.(i3) in
+             py.(i1) <- py.(i1) +. py.(i3);
+             let s3 = r1 -. s2 in
              let r1 = r1 +. s2 in
-	     let s2 = r2 -. s1 in
+             let s2 = r2 -. s1 in
              let r2 = r2 +. s1 in
-	     px.(i2) <- r1*.cc1 -. s2*.ss1; 
-	     py.(i2) <- -.s2*.cc1 -. r1*.ss1;
-	     px.(i3) <- s3*.cc3 +. r2*.ss3;
-	     py.(i3) <- r2*.cc3 -. s3*.ss3;
+             px.(i2) <- r1*.cc1 -. s2*.ss1; 
+             py.(i2) <- -.s2*.cc1 -. r1*.ss1;
+             px.(i3) <- s3*.cc3 +. r2*.ss3;
+             py.(i3) <- r2*.cc3 -. s3*.ss3;
              i0r := i0 + !id
           done;
-	  is := 2 * !id - !n2 + j; 
-	  id := 4 * !id
-	done
+          is := 2 * !id - !n2 + j; 
+          id := 4 * !id
+        done
     done
   done;
 

@@ -23,9 +23,9 @@ type dbm_flag =
 exception Dbm_error of string
 
 external install_exn : exn -> unit
-      	      = "caml_dbm_install_exn"
+              = "caml_dbm_install_exn"
 external opendbm : string -> open_flag list -> int -> t 
-      	      = "caml_dbm_open"
+              = "caml_dbm_open"
 external close : t -> unit = "caml_dbm_close"
 external find : t -> string -> string = "caml_dbm_fetch"
 external add : t -> string -> string -> unit = "caml_dbm_insert"
@@ -42,7 +42,7 @@ let iter f t =
     f k (find t k); 
     match try Some(nextkey t) with Not_found -> None
     with
-	 None -> ()
+         None -> ()
        | Some k -> walk k
   in
   walk (firstkey t)

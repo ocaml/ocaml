@@ -28,7 +28,7 @@ let rec print_term = function
       print_string head.name;
       List.iter (fun t -> print_string " "; print_term t) argl;
       print_string ")"
-			 
+ 
 let lemmas = ref ([] : head list)
 
 (* Replacement for property lists *)

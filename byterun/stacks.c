@@ -53,7 +53,7 @@ void realloc_stack()
   if (size >= max_stack_size) raise_stack_overflow();
   size *= 2;
   gc_message ("Growing stack to %luk bytes\n",
-	      (unsigned long) size * sizeof(value) / 1024);
+              (unsigned long) size * sizeof(value) / 1024);
   new_low = (value *) stat_alloc(size * sizeof(value));
   new_high = new_low + size;
 
@@ -84,6 +84,6 @@ void change_max_stack_size (new_max_size)
 
   if (new_max_size < size) new_max_size = size;
   gc_message ("Changing stack limit to %luk bytes\n",
-	      new_max_size * sizeof (value) / 1024);
+              new_max_size * sizeof (value) / 1024);
   max_stack_size = new_max_size;
 }

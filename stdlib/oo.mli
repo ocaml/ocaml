@@ -43,7 +43,7 @@ val create_class: class_info -> string list -> (table -> unit) -> unit
 (* Objects *)
 type t
 type object
-val send:	object -> label -> t
+val send:   object -> label -> t
 
 (* Parameters *)
 

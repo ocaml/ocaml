@@ -51,7 +51,7 @@ let execute_with_other_controller controller file funct =
     with
       x ->
         change_controller file old_controller;
-      	raise x
+        raise x
 
 (*** The "Main Loop" ***)
 
@@ -67,17 +67,17 @@ let main_loop () =
     try
       continue_main_loop := true;
       while !continue_main_loop do
-      	try
+        try
           let (input, _, _) =
             select (List.map fst !active_files) [] [] (-1.)
           in
             List.iter
               (function fd ->
                  let (funct, iochan) = (List.assoc fd !active_files) in
-      	       	   funct iochan)
+                   funct iochan)
               input
-	with
-      	  Unix_error (EINTR, _, _) -> ()
+        with
+          Unix_error (EINTR, _, _) -> ()
       done;
       continue_main_loop := old_state
     with
@@ -122,26 +122,26 @@ let yes_or_no message =
         let answer =
           let rec ask () =
             resume_user_input ();
-	    let line =
+            let line =
               string_trim (Lexer.line (Lexing.from_function read_user_input))
             in
-	      stop_user_input ();
+              stop_user_input ();
               match (if String.length line > 0 then line.[0] else ' ') with
-	        'y' -> true
-	      | 'n' -> false
-	      | _ ->
-	        print_string "Please answer y or n.";
-	        print_newline ();
-	        ask ()
+                'y' -> true
+              | 'n' -> false
+              | _ ->
+                print_string "Please answer y or n.";
+                print_newline ();
+                ask ()
           in
             ask ()
         in
-      	  current_prompt := old_prompt;
-	  answer
+          current_prompt := old_prompt;
+          answer
       with
-      	x ->
-      	  current_prompt := old_prompt;
-	  stop_user_input ();
-	  raise x
+        x ->
+          current_prompt := old_prompt;
+          stop_user_input ();
+          raise x
   else
     false

@@ -72,8 +72,8 @@
 
 caml_call_gc:
 #ifdef _PIC
-	.set	noreorder
-        .cpload	$25
+        .set    noreorder
+        .cpload $25
         .set    reorder
 #endif
     /* Record return address and adjust it to point back to
@@ -82,7 +82,7 @@ caml_call_gc:
         subu    $31, $31, 16
     /* Don't request any allocation, will be redone at return */
         li      $24, 0
-	b	$110
+        b       $110
 
 #ifndef _PIC
 
@@ -91,21 +91,21 @@ caml_call_gc:
 caml_alloc1:
         subu    $22, $22, 8
         bltu    $22, $23, $100
-        j	$31
+        j       $31
 $100:   li      $24, 8
         b       caml_call_gc_internal
 
 caml_alloc2:
         subu    $22, $22, 12
         bltu    $22, $23, $101
-        j	$31
+        j       $31
 $101:   li      $24, 12
         b       caml_call_gc_internal
 
 caml_alloc3:
         subu    $22, $22, 16
         bltu    $22, $23, $102
-        j	$31
+        j       $31
 $102:   li      $24, 16
         b       caml_call_gc_internal
 
@@ -219,7 +219,7 @@ $110:
     /* Say that we are back into Caml code */
         sw      $0, caml_last_return_address
     /* Return to caller */
-        lw	$31, 28($sp)
+        lw      $31, 28($sp)
         addu    $sp, $sp, 32
         j       $31
 
@@ -256,19 +256,19 @@ caml_c_call:
         .set    noreorder
         .cpload $25
         .set    reorder
-	la	$16, caml_last_return_address
-	la	$17, young_ptr
-	la	$18, young_limit
-        sw      $31, 0($16)	/* caml_last_return_address */
+        la      $16, caml_last_return_address
+        la      $17, young_ptr
+        la      $18, young_limit
+        sw      $31, 0($16)     /* caml_last_return_address */
         sw      $sp, caml_bottom_of_stack
-        sw      $22, 0($17)	/* young_ptr */
+        sw      $22, 0($17)     /* young_ptr */
         sw      $30, caml_exception_pointer
         move    $25, $24
         jal     $24
-        lw      $31, 0($16)	/* caml_last_return_address */
-        lw      $22, 0($17)	/* young_ptr */
-        lw      $23, 0($18)	/* young_limit */
-        sw      $0, 0($16)	/* caml_last_return_address */
+        lw      $31, 0($16)     /* caml_last_return_address */
+        lw      $22, 0($17)     /* young_ptr */
+        lw      $23, 0($18)     /* young_limit */
+        sw      $0, 0($16)      /* caml_last_return_address */
         j       $31
 #endif
         .end    caml_c_call
@@ -289,10 +289,10 @@ caml_start_program:
     /* Code shared with callback* */
 $103:
     /* Save return address */
-	subu    $sp, $sp, 96
+        subu    $sp, $sp, 96
         sw      $31, 88($sp)
     /* Save all callee-save registers */
-	SAVE_CALLEE_SAVE_REGS
+        SAVE_CALLEE_SAVE_REGS
     /* Set up a callback link on the stack. */
         subu    $sp, $sp, 8
         lw      $2, caml_bottom_of_stack
@@ -307,8 +307,8 @@ $103:
         sw      $2, 4($sp)
         move    $30, $sp
     /* Reload allocation pointers */
-	lw	$22, young_ptr
-	lw	$23, young_limit
+        lw      $22, young_ptr
+        lw      $23, young_limit
     /* Say that we are back into Caml code */
         sw      $0, caml_last_return_address
     /* Call the Caml code */
@@ -337,7 +337,7 @@ $104:   jal     $24
         sw      $22, young_ptr
     /* Reload callee-save registers and return */
         lw      $31, 88($sp)
-	RELOAD_CALLEE_SAVE_REGS
+        RELOAD_CALLEE_SAVE_REGS
         addu    $sp, $sp, 96
         j       $31
         

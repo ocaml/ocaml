@@ -39,20 +39,20 @@ let show_current_event () =
       show_no_point ()
   | Some {rep_type = (Event | Breakpoint); rep_program_pointer = pc} -> 
      let (mdle, point) = current_point () in
-	print_string (" - module " ^ mdle);
-      	print_newline ();
-	(match breakpoints_at_pc pc with
-	   [] ->
-      	     ()
-	 | [breakpoint] ->
-	     print_string "Breakpoint : "; print_int breakpoint;
+        print_string (" - module " ^ mdle);
+        print_newline ();
+        (match breakpoints_at_pc pc with
+           [] ->
+             ()
+         | [breakpoint] ->
+             print_string "Breakpoint : "; print_int breakpoint;
              print_newline ()
-	 | breakpoints ->
-	     print_string "Breakpoints : ";
-	     List.iter
+         | breakpoints ->
+             print_string "Breakpoints : ";
+             List.iter
                (function x -> print_int x; print_string " ")
                (Sort.list (<) breakpoints);
-      	     print_newline ());
+             print_newline ());
         show_point mdle point (current_event_is_before ()) true
   | Some {rep_type = Exited} ->
       print_newline (); print_string "Program exit."; print_newline ();
@@ -68,8 +68,8 @@ let show_current_event () =
       print_newline();
       show_no_point ()
   | Some {rep_type = Trap_barrier} ->
-					(* Trap_barrier not visible outside *)
-	       	       	       	       	(* of module `time_travel'. *)
+                                        (* Trap_barrier not visible outside *)
+                                        (* of module `time_travel'. *)
       Misc.fatal_error "Show_information.show_current_event"
 
 (* Display short information about one frame. *)

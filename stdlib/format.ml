@@ -83,10 +83,10 @@ type formatter =
  mutable pp_max_indent : int;
  mutable pp_space_left : int;    (* space remaining on the current line *)
  mutable pp_current_indent : int;(* current value of indentation *)
- mutable pp_left_total : int; 	 (* total width of tokens already printed *)
- mutable pp_right_total : int;	 (* total width of tokens ever put in queue *)
- mutable pp_curr_depth : int;	 (* current number of opened blocks *)
- mutable pp_max_boxes : int;	 (* maximum number of blocks which can be
+ mutable pp_left_total : int;    (* total width of tokens already printed *)
+ mutable pp_right_total : int;   (* total width of tokens ever put in queue *)
+ mutable pp_curr_depth : int;    (* current number of opened blocks *)
+ mutable pp_max_boxes : int;     (* maximum number of blocks which can be
                                     opened at the same time *)
  mutable pp_ellipsis : string;   (* ellipsis string *)
  mutable pp_output_function : string -> int -> int -> unit;

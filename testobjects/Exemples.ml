@@ -78,7 +78,7 @@ let c'' = new color_circle p;;
 let c'' = new color_circle p';;
 
 (c'' :> color_point circle);;
-(c'' :> point circle);;			(* Echec *)
+(c'' :> point circle);;                 (* Echec *)
 fun x -> (x : color_point color_circle :> point circle);;
 
 class printable_point y as s =
@@ -216,7 +216,7 @@ end;;
 
 let c3 = new int_comparable3 15;;
 l#add (c3 :> int_comparable);;
-(new sorted_list ())#add c3;;	(* Echec : leq n'est pas binaire *)
+(new sorted_list ())#add c3;;   (* Echec : leq n'est pas binaire *)
 
 let sort (l : #comparable list) = Sort.list (fun x -> x#leq) l;;
 let pr l =
@@ -248,9 +248,9 @@ class 'a link (x : 'a) as self : 'b =
   method  append l =
     match next with
       None ->
-      	self#set_next l
+        self#set_next l
     | Some l' ->
-      	l'#append l
+        l'#append l
 end;;
 
 class 'a double_link x as self =
@@ -259,7 +259,7 @@ class 'a double_link x as self =
   method prev = prev
   method  set_next l =
          next <- l;
-      	 match l with Some l -> l#set_prev (Some self) | None -> ()
+         match l with Some l -> l#set_prev (Some self) | None -> ()
   method  set_prev l = prev <- l
 end;;
 

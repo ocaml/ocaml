@@ -63,7 +63,7 @@ let matching term1 term2 =
         else
           (v, t2) :: subst
     | Term(op1,sons1), Term(op2,sons2) ->
-	if op1 = op2
+        if op1 = op2
         then List.fold_left2 match_rec subst sons1 sons2
         else failwith "matching"
     | _ -> failwith "matching" in
@@ -92,7 +92,7 @@ let rec unify term1 term2 =
       else [n2, term1]
   | Term(op1,sons1), Term(op2,sons2) ->
       if op1 = op2 then
-	List.fold_left2 (fun s t1 t2 -> compsubst (unify (substitute s t1)
+        List.fold_left2 (fun s t1 t2 -> compsubst (unify (substitute s t1)
                                                          (substitute s t2)) s)
                    [] sons1 sons2
       else failwith "unify"
@@ -117,7 +117,7 @@ let rec pretty_term = function
       end else begin
         print_string oper;
         match sons with
-	     []   -> ()
+             []   -> ()
           | t::lt -> print_string "(";
                      pretty_term t;
                      List.iter (fun t -> print_string ","; pretty_term t) lt;

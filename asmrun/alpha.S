@@ -259,7 +259,7 @@ caml_start_program:
 /* Code shared with callback* */
 $107:
     /* Save return address */
-	lda	$sp, -128($sp)
+        lda     $sp, -128($sp)
         stq     $26, 0($sp)
     /* Save all callee-save registers */
         stq     $9, 8($sp)

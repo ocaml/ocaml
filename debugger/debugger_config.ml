@@ -19,26 +19,26 @@ exception Toplevel
 (*** Miscellaneous parameters. ***)
 
 (*ISO 6429 color sequences
-00	to restore default color
-01	for brighter colors 
-04	for underlined text
-05	for flashing text
-30	for black foreground
-31	for red foreground
-32	for green foreground
-33	for yellow (or brown) foreground
-34	for blue foreground
-35	for purple foreground
-36	for cyan foreground
-37	for white (or gray) foreground
-40	for black background
-41	for red background
-42	for green background
-43	for yellow (or brown) background
-44	for blue background
-45	for purple background
-46	for cyan background
-47	for white (or gray) background
+00      to restore default color
+01      for brighter colors 
+04      for underlined text
+05      for flashing text
+30      for black foreground
+31      for red foreground
+32      for green foreground
+33      for yellow (or brown) foreground
+34      for blue foreground
+35      for purple foreground
+36      for cyan foreground
+37      for white (or gray) foreground
+40      for black background
+41      for red background
+42      for green background
+43      for yellow (or brown) background
+44      for blue background
+45      for purple background
+46      for cyan background
+47      for white (or gray) background
 let debugger_prompt   = "\027[1;04m(ocd)\027[0m "
 and event_mark_before = "\027[1;31m$\027[0m"
 and event_mark_after  = "\027[1;34m$\027[0m"

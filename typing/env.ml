@@ -152,18 +152,18 @@ let rec find_module_descr path env =
       end
   | Pdot(p, s, pos) ->
       begin match find_module_descr p env with
-      	Structure_comps c ->
-	  let (descr, pos) = Tbl.find s c.comp_components in
+        Structure_comps c ->
+          let (descr, pos) = Tbl.find s c.comp_components in
           descr
       | Functor_comps f ->
-      	 raise Not_found
+         raise Not_found
       end
   | Papply(p1, p2) ->
       begin match find_module_descr p1 env with
-      	Functor_comps f ->
+        Functor_comps f ->
           !components_of_functor_appl f p1 p2
       | Structure_comps c ->
-      	  raise Not_found
+          raise Not_found
       end
 
 let find proj1 proj2 path env =
@@ -237,21 +237,21 @@ let rec lookup_module_descr lid env =
   | Ldot(l, s) ->
       let (p, descr) = lookup_module_descr l env in
       begin match descr with
-      	Structure_comps c ->
-	  let (descr, pos) = Tbl.find s c.comp_components in
+        Structure_comps c ->
+          let (descr, pos) = Tbl.find s c.comp_components in
           (Pdot(p, s, pos), descr)
       | Functor_comps f ->
-      	  raise Not_found
+          raise Not_found
       end
   | Lapply(l1, l2) ->
       let (p1, desc1) = lookup_module_descr l1 env in
       let (p2, mty2) = lookup_module l2 env in
       begin match desc1 with
-      	Functor_comps f ->
+        Functor_comps f ->
           !check_modtype_inclusion env mty2 f.fcomp_arg;
           (Papply(p1, p2), !components_of_functor_appl f p1 p2)
       | Structure_comps c ->
-      	  raise Not_found
+          raise Not_found
       end
 
 and lookup_module lid env =
@@ -266,23 +266,23 @@ and lookup_module lid env =
   | Ldot(l, s) ->
       let (p, descr) = lookup_module_descr l env in
       begin match descr with
-      	Structure_comps c ->
+        Structure_comps c ->
           let (data, pos) = Tbl.find s c.comp_modules in
           (Pdot(p, s, pos), data)
       | Functor_comps f ->
-      	  raise Not_found
+          raise Not_found
       end
   | Lapply(l1, l2) ->
       let (p1, desc1) = lookup_module_descr l1 env in
       let (p2, mty2) = lookup_module l2 env in
       let p = Papply(p1, p2) in
       begin match desc1 with
-      	Functor_comps f ->
+        Functor_comps f ->
           !check_modtype_inclusion env mty2 f.fcomp_arg;
           (p, Subst.modtype (Subst.add_module f.fcomp_param p2 Subst.identity)
-      	                    f.fcomp_res)
+                            f.fcomp_res)
       | Structure_comps c ->
-      	  raise Not_found
+          raise Not_found
       end
 
 let lookup proj1 proj2 lid env =
@@ -291,11 +291,11 @@ let lookup proj1 proj2 lid env =
       Ident.find_name s (proj1 env)
   | Ldot(l, s) ->
       begin match lookup_module_descr l env with
-      	(p, Structure_comps c) ->
-	  let (data, pos) = Tbl.find s (proj2 c) in
+        (p, Structure_comps c) ->
+          let (data, pos) = Tbl.find s (proj2 c) in
           (Pdot(p, s, pos), data)
       | (p, Functor_comps f) ->
-      	  raise Not_found
+          raise Not_found
       end
   | Lapply(l1, l2) ->
       raise Not_found
@@ -306,11 +306,11 @@ let lookup_simple proj1 proj2 lid env =
       Ident.find_name s (proj1 env)
   | Ldot(l, s) ->
       begin match lookup_module_descr l env with
-      	(p, Structure_comps c) ->
-	  let (data, pos) = Tbl.find s (proj2 c) in
+        (p, Structure_comps c) ->
+          let (data, pos) = Tbl.find s (proj2 c) in
           data
       | (p, Functor_comps f) ->
-      	  raise Not_found
+          raise Not_found
       end
   | Lapply(l1, l2) ->
       raise Not_found
@@ -451,22 +451,22 @@ let rec components_of_module env sub path mty =
             c.comp_modtypes <-
               Tbl.add (Ident.name id) (decl', nopos) c.comp_modtypes;
             env := store_modtype id path decl' !env
-	| Tsig_class(id, decl) ->
-	    let decl' = Subst.class_type sub decl in
+        | Tsig_class(id, decl) ->
+            let decl' = Subst.class_type sub decl in
             c.comp_classes <-
               Tbl.add (Ident.name id) (decl', !pos) c.comp_classes;
-	    incr pos)
+            incr pos)
         sg pl;
-	Structure_comps c
+        Structure_comps c
   | Tmty_functor(param, ty_arg, ty_res) ->
-      	Functor_comps {
-	  fcomp_param = param;
-	  fcomp_arg = Subst.modtype sub ty_arg;
-	  fcomp_res = Subst.modtype sub ty_res;
-	  fcomp_env = env }
+        Functor_comps {
+          fcomp_param = param;
+          fcomp_arg = Subst.modtype sub ty_arg;
+          fcomp_res = Subst.modtype sub ty_res;
+          fcomp_env = env }
   | Tmty_ident p ->
-      	Structure_comps {
-      	  comp_values = Tbl.empty; comp_constrs = Tbl.empty;
+        Structure_comps {
+          comp_values = Tbl.empty; comp_constrs = Tbl.empty;
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty }

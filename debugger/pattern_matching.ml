@@ -82,19 +82,19 @@ let rec pattern_matching pattern obj ty =
   | _ ->
     match (Ctype.repr ty).desc with
       Tvar | Tarrow _ ->
-      	error_matching ()
+        error_matching ()
     | Ttuple(ty_list) ->
-      	(match pattern with
-      	   P_tuple pattern_list ->
+        (match pattern with
+           P_tuple pattern_list ->
              pattern_matching_list pattern_list obj ty_list
-	 | P_nth (n, patt) ->
-	     if n >= List.length ty_list then
-	       (prerr_endline "Out of range."; raise Toplevel);
-	     pattern_matching patt (Debugcom.get_field obj n) (List.nth ty_list n)
-	 | _ ->
-      	     error_matching ())
+         | P_nth (n, patt) ->
+             if n >= List.length ty_list then
+               (prerr_endline "Out of range."; raise Toplevel);
+             pattern_matching patt (Debugcom.get_field obj n) (List.nth ty_list n)
+         | _ ->
+             error_matching ())
     | Tconstr(cstr, [ty_arg],_) when same_type_constr cstr constr_type_list ->
-	(match pattern with
+        (match pattern with
            P_list pattern_list ->
              let (last, list) =
                it_list
@@ -126,7 +126,7 @@ let rec pattern_matching pattern obj ty =
          | _ ->
              error_matching ())
     | Tconstr(cstr, [ty_arg]) when same_type_constr cstr constr_type_vect ->
-	(match pattern with
+        (match pattern with
            P_nth (n, patt) ->
              if n >= value_size obj then
                (prerr_endline "Out of range."; raise Toplevel);
@@ -161,63 +161,63 @@ and match_concrete_type pattern obj cstr ty ty_list =
                filter (ty_res, ty);
                match constr.info.cs_kind with
                  Constr_constant ->
-		   error_matching ()
+                   error_matching ()
                | Constr_regular ->
-	           (match pattern with
-		      P_constr (constr2, patt) ->
-		        check_same_constr constr constr2;
+                   (match pattern with
+                      P_constr (constr2, patt) ->
+                        check_same_constr constr constr2;
                         pattern_matching patt (Debugcom.get_field obj 0) ty_arg
-      	       	    | _ ->
-      	       	        error_matching ())
+                    | _ ->
+                        error_matching ())
                | Constr_superfluous n ->
-	           (match pattern with
-		      P_constr (constr2, patt) ->
-		        check_same_constr constr constr2;
-			(match patt with
-		           P_tuple pattern_list ->
+                   (match pattern with
+                      P_constr (constr2, patt) ->
+                        check_same_constr constr constr2;
+                        (match patt with
+                           P_tuple pattern_list ->
                              pattern_matching_list
                                pattern_list
                                obj
                                (filter_product n ty_arg)
-	                 | P_nth (n2, patt) ->
-			     let ty_list = filter_product n ty_arg in
-	                       if n2 >= n then
-	                         (prerr_endline "Out of range.";
+                         | P_nth (n2, patt) ->
+                             let ty_list = filter_product n ty_arg in
+                               if n2 >= n then
+                                 (prerr_endline "Out of range.";
                                   raise Toplevel);
-	                       pattern_matching
+                               pattern_matching
                                  patt
                                  (Debugcom.get_field obj n2)
-      	       	       	       	 (List.nth ty_list n2)
-	                 | P_variable var ->
-		             [var,
-      	       	       	      obj,
-      	       	       	      {typ_desc = Tproduct (filter_product n ty_arg);
-      	       	       	       typ_level = generic}]
-	                 | P_dummy ->
-		             []
-      	       	         | _ ->
-      	       	             error_matching ())
-      	       	    | _ ->
-      	       	        error_matching ())
+                                 (List.nth ty_list n2)
+                         | P_variable var ->
+                             [var,
+                              obj,
+                              {typ_desc = Tproduct (filter_product n ty_arg);
+                               typ_level = generic}]
+                         | P_dummy ->
+                             []
+                         | _ ->
+                             error_matching ())
+                    | _ ->
+                        error_matching ())
          with
            Not_found ->
-	     error_matching ()
+             error_matching ()
          | Unify ->
              fatal_error "pattern_matching: types should match")
   | Record_type label_list ->
       let match_field (label, patt) =
         let lbl =
-	  try
-	    primitives__find
-	      (function l -> same_name l label)
-	      label_list
-	  with Not_found ->
-	      prerr_endline "Label not found.";
-      	      raise Toplevel
+          try
+            primitives__find
+              (function l -> same_name l label)
+              label_list
+          with Not_found ->
+              prerr_endline "Label not found.";
+              raise Toplevel
         in
           let (ty_res, ty_arg) =
             type_pair_instance (lbl.info.lbl_res, lbl.info.lbl_arg)
-      	  in
+          in
             (try
                filter (ty_res, ty)
              with Unify ->
@@ -225,10 +225,10 @@ and match_concrete_type pattern obj cstr ty ty_list =
             pattern_matching patt (Debugcom.get_field obj lbl.info.lbl_pos) ty_arg
       in
         (match pattern with
-	   P_record pattern_label_list ->
-	     flat_map match_field pattern_label_list
-	 | _ ->
-	     error_matching ())
+           P_record pattern_label_list ->
+             flat_map match_field pattern_label_list
+         | _ ->
+             error_matching ())
   | Abbrev_type(_,_) ->
       fatal_error "pattern_matching: abbrev type"
 
@@ -242,7 +242,7 @@ and pattern_matching_list pattern_list obj ty_list =
     flat_map
       (function (x, y, z) -> pattern_matching x y z)
       (rev
-      	 (snd
+         (snd
             (it_list
                (fun (num, list) (pattern, typ) ->
                   (num + 1, (pattern, Debugcom.get_field obj num, typ)::list))

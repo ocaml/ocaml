@@ -154,12 +154,12 @@ external wait : unit -> int * process_status = "unix_wait"
 external waitpid : wait_flag list -> int -> int * process_status
            = "unix_waitpid"
         (* Same as [wait], but waits for the process whose pid is given.
-	   A pid of [-1] means wait for any child.
+           A pid of [-1] means wait for any child.
            A pid of [0] means wait for any child in the same process group
            as the current process.
            Negative pid arguments represent process groups.
-	   The list of options indicates whether [waitpid] should return
-	   immediately without waiting, or also report stopped children. *)
+           The list of options indicates whether [waitpid] should return
+           immediately without waiting, or also report stopped children. *)
 val system : string -> process_status
         (* Execute the given command, wait until it terminates, and return
            its termination status. The string is interpreted by the shell

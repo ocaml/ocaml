@@ -25,4 +25,4 @@ val type_declarations:
 val exception_declarations:
         Env.t -> exception_declaration -> exception_declaration -> bool
 val class_types:
-      	Env.t -> class_type -> class_type -> bool
+        Env.t -> class_type -> class_type -> bool

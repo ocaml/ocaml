@@ -452,7 +452,7 @@ let rec transl = function
       bind "met" (lookup_label obj (transl met)) (fun clos ->
         Cop(Capply typ_addr,
             Cconst_symbol(apply_function arity) ::
-	    obj :: (List.map transl args) @ [clos])))
+            obj :: (List.map transl args) @ [clos])))
   | Ulet(id, exp, body) ->
       if is_unboxed_float exp then begin
         let unboxed_id = Ident.create (Ident.name id) in

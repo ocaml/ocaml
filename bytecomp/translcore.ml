@@ -488,11 +488,11 @@ let rec transl_exp e =
       let cpy = Ident.create "copy" in
       Llet(Strict, cpy, Lapply(oo_prim "copy", [transl_path path_self]),
       List.fold_right
-      	(fun (path, expr) rem ->
-	   Lsequence(transl_setinstvar (Lvar cpy) path expr,
-	             rem))
-	modifs
-	(Lvar cpy))
+        (fun (path, expr) rem ->
+           Lsequence(transl_setinstvar (Lvar cpy) path expr,
+                     rem))
+        modifs
+        (Lvar cpy))
   | _ ->
       fatal_error "Translcore.transl"
 

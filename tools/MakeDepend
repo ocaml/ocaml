@@ -13,6 +13,6 @@ clear Æ(°:\{tmp}\):/¶n¶n/:¥ {tmp}.make
 close -y {tmp}.make
 streamedit -e '1,$ replace /"{ObjDir¥"???"}"/ ""' ¶
            -e '1,$ replace /"{¥MondoBuild¥}"/ ""' ¶
-	   -e '/¥¶t/ delete' ¶
+           -e '/¥¶t/ delete' ¶
            {tmp}.make
 delete -i {tmp}.make

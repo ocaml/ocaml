@@ -60,36 +60,36 @@ value gc_stat(v) /* ML */
       cur_hd = Hd_hp (cur_hp);
       switch (Color_hd (cur_hd)){
       case White:
-	if (Wosize_hd (cur_hd) == 0){
-	  ++fragments;
-	  Assert (prev_hp == NULL
-		  || (Color_hp (prev_hp) != Blue
-		      && Wosize_hp (prev_hp) > 0));
-	  Assert (Next (cur_hp) == chunk_end
-		  || (Color_hp (Next (cur_hp)) != Blue
-		      && Wosize_hp (Next (cur_hp)) > 0));
-	  break;
-	}
-	/* FALLTHROUGH */
+        if (Wosize_hd (cur_hd) == 0){
+          ++fragments;
+          Assert (prev_hp == NULL
+                  || (Color_hp (prev_hp) != Blue
+                      && Wosize_hp (prev_hp) > 0));
+          Assert (Next (cur_hp) == chunk_end
+                  || (Color_hp (Next (cur_hp)) != Blue
+                      && Wosize_hp (Next (cur_hp)) > 0));
+          break;
+        }
+        /* FALLTHROUGH */
       case Gray: case Black:
-	Assert (Wosize_hd (cur_hd) > 0);
-	++ live_blocks;
-	live_words += Whsize_hd (cur_hd);
-	break;
+        Assert (Wosize_hd (cur_hd) > 0);
+        ++ live_blocks;
+        live_words += Whsize_hd (cur_hd);
+        break;
       case Blue:
-	Assert (Wosize_hd (cur_hd) > 0);
-	++ free_blocks;
-	free_words += Whsize_hd (cur_hd);
-	if (Whsize_hd (cur_hd) > largest_free){
-	  largest_free = Whsize_hd (cur_hd);
-	}
-	Assert (prev_hp == NULL
-		|| (Color_hp (prev_hp) != Blue
-		    && Wosize_hp (prev_hp) > 0));
-	Assert (Next (cur_hp) == chunk_end
-		|| (Color_hp (Next (cur_hp)) != Blue
-		    && Wosize_hp (Next (cur_hp)) > 0));
-	break;
+        Assert (Wosize_hd (cur_hd) > 0);
+        ++ free_blocks;
+        free_words += Whsize_hd (cur_hd);
+        if (Whsize_hd (cur_hd) > largest_free){
+          largest_free = Whsize_hd (cur_hd);
+        }
+        Assert (prev_hp == NULL
+                || (Color_hp (prev_hp) != Blue
+                    && Wosize_hp (prev_hp) > 0));
+        Assert (Next (cur_hp) == chunk_end
+                || (Color_hp (Next (cur_hp)) != Blue
+                    && Wosize_hp (Next (cur_hp)) > 0));
+        break;
       }
       prev_hp = cur_hp;
       cur_hp = Next (cur_hp);
@@ -192,7 +192,7 @@ value gc_set(v) /* ML */
   if (newheapincr != major_heap_increment){
     major_heap_increment = newheapincr;
     gc_message ("New heap increment size: %luk bytes\n",
-		major_heap_increment/1024);
+                major_heap_increment/1024);
   }
 
     /* Minor heap size comes last because it will trigger a minor collection
@@ -263,5 +263,5 @@ void init_gc (minor_size, major_size, major_incr, percent_fr, percent_m, verb)
   gc_message ("Initial space overhead: %d%%\n", percent_free);
   gc_message ("Initial max overhead: %d%%\n", percent_max);
   gc_message ("Initial heap increment: %ldk bytes\n",
-	      major_heap_increment / 1024);
+              major_heap_increment / 1024);
 }

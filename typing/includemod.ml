@@ -177,7 +177,7 @@ and signatures env subst sig1 sig2 =
           | Tsig_value(_,_)
           | Tsig_exception(_,_)
           | Tsig_module(_,_)
-	  | Tsig_class(_, _) -> pos+1 in
+          | Tsig_class(_, _) -> pos+1 in
         build_component_table nextpos
                               (Tbl.add name (id, item, pos) tbl) rem in
   let comps1 =

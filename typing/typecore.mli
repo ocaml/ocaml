@@ -33,7 +33,7 @@ val type_expect:
         Env.t -> Parsetree.expression -> type_expr ->
         Typedtree.expression
 val type_exp:
-      	Env.t -> Parsetree.expression -> Typedtree.expression
+        Env.t -> Parsetree.expression -> Typedtree.expression
 
 type error =
     Unbound_value of Longident.t

@@ -63,30 +63,30 @@ static void invert_pointer_at (p)
          the next infix header in this block.  The last of the last list
          contains the original block header. */
       {
-	/* This block as a value. */
-	value val = (value) q - Infix_offset_val (q);
-	/* Get the block header. */
-	word *hp = (word *) Hp_val (val);
-	while (Ecolor (*hp) == 0) hp = (word *) *hp;
+        /* This block as a value. */
+        value val = (value) q - Infix_offset_val (q);
+        /* Get the block header. */
+        word *hp = (word *) Hp_val (val);
+        while (Ecolor (*hp) == 0) hp = (word *) *hp;
                                                    Assert (Ecolor (*hp) == 3);
-	if (Tag_ehd (*hp) == Closure_tag){
-	  /* This is the first infix found in this block. */
+        if (Tag_ehd (*hp) == Closure_tag){
+          /* This is the first infix found in this block. */
           /* Save original header. */
-	  *p = *hp;
+          *p = *hp;
           /* Link inverted infix list. */
-	  Hd_val (q) = (header_t) ((word) p | 2);
-	  /* Change block header's tag to Infix_tag, and change its size
+          Hd_val (q) = (header_t) ((word) p | 2);
+          /* Change block header's tag to Infix_tag, and change its size
              to point to the infix list. */
-	  *hp = Make_ehd (Wosize_bhsize (q - val), Infix_tag, 3);
-	}else{                            Assert (Tag_ehd (*hp) == Infix_tag);
-	  /* Point the last of this infix list to the current first infix
+          *hp = Make_ehd (Wosize_bhsize (q - val), Infix_tag, 3);
+        }else{                            Assert (Tag_ehd (*hp) == Infix_tag);
+          /* Point the last of this infix list to the current first infix
              list of the block. */
           *p = (word) &Field (val, Wosize_ehd (*hp)) | 1;
-	  /* Point the head of this infix list to the above. */
-	  Hd_val (q) = (header_t) ((word) p | 2);
-	  /* Change block header's size to point to this infix list. */
-	  *hp = Make_ehd (Wosize_bhsize (q - val), Infix_tag, 3);
-	}
+          /* Point the head of this infix list to the above. */
+          Hd_val (q) = (header_t) ((word) p | 2);
+          /* Change block header's size to point to this infix list. */
+          *hp = Make_ehd (Wosize_bhsize (q - val), Infix_tag, 3);
+        }
       }
       break;
     case 2: /* Inverted infix list: insert. */
@@ -122,8 +122,8 @@ static char *compact_allocate (size)
   char *chunk, *adr;
 
   while (Chunk_size (compact_fl) - Chunk_alloc (compact_fl) <= Bhsize_wosize (3)
-	 && Chunk_size (Chunk_next (compact_fl))
-	    - Chunk_alloc (Chunk_next (compact_fl))
+         && Chunk_size (Chunk_next (compact_fl))
+            - Chunk_alloc (Chunk_next (compact_fl))
             <= Bhsize_wosize (3)){
     compact_fl = Chunk_next (compact_fl);
   }
@@ -149,17 +149,17 @@ void compact_heap (void)
 
       chend = ch + Chunk_size (ch);
       while ((char *) p < chend){
-	header_t hd = Hd_hp (p);
-	mlsize_t sz = Wosize_hd (hd);
+        header_t hd = Hd_hp (p);
+        mlsize_t sz = Wosize_hd (hd);
 
-	if (Is_blue_hd (hd)){
-	  /* Free object.  Give it a string tag. */
-	  Hd_hp (p) = Make_ehd (sz, String_tag, 3);
-	}else{                                      Assert (Is_white_hd (hd));
-	  /* Live object.  Keep its tag. */
+        if (Is_blue_hd (hd)){
+          /* Free object.  Give it a string tag. */
+          Hd_hp (p) = Make_ehd (sz, String_tag, 3);
+        }else{                                      Assert (Is_white_hd (hd));
+          /* Live object.  Keep its tag. */
           Hd_hp (p) = Make_ehd (sz, Tag_hd (hd), 3);
-	}
-	p += Whsize_wosize (sz);
+        }
+        p += Whsize_wosize (sz);
       }
       ch = Chunk_next (ch);
     }
@@ -176,28 +176,28 @@ void compact_heap (void)
       chend = ch + Chunk_size (ch);
 
       while ((char *) p < chend){
-	word q = *p;
-	size_t sz, i;
-	tag_t t;
-	word *infixes;
+        word q = *p;
+        size_t sz, i;
+        tag_t t;
+        word *infixes;
 
-	while (Ecolor (q) == 0) q = * (word *) q;
-	sz = Whsize_ehd (q);
-	t = Tag_ehd (q);
-	
-	if (t == Infix_tag){
-	  /* Get the original header of this block. */
-	  infixes = p + sz;
-	  q = *infixes;
-	  while (Ecolor (q) != 3) q = * (word *) (q & ~(unsigned long)3);
-	  sz = Whsize_ehd (q);
-	  t = Tag_ehd (q);
-	}
+        while (Ecolor (q) == 0) q = * (word *) q;
+        sz = Whsize_ehd (q);
+        t = Tag_ehd (q);
+        
+        if (t == Infix_tag){
+          /* Get the original header of this block. */
+          infixes = p + sz;
+          q = *infixes;
+          while (Ecolor (q) != 3) q = * (word *) (q & ~(unsigned long)3);
+          sz = Whsize_ehd (q);
+          t = Tag_ehd (q);
+        }
 
-	if (t < No_scan_tag){
-	  for (i = 1; i < sz; i++) invert_pointer_at (&(p[i]));
-	}
-	p += sz;
+        if (t < No_scan_tag){
+          for (i = 1; i < sz; i++) invert_pointer_at (&(p[i]));
+        }
+        p += sz;
       }
       ch = Chunk_next (ch);
     }
@@ -208,13 +208,13 @@ void compact_heap (void)
       size_t sz, i;
 
       while (p != (value) NULL){
-	q = Hd_val (p);
-	while (Ecolor (q) == 0) q = * (word *) q;
-	sz = Wosize_ehd (q);
-	for (i = 1; i < sz; i++){
-	  if (Field (p,i) != 0) invert_pointer_at (&(Field (p,i)));
-	}
-	p = Field (p, 0);
+        q = Hd_val (p);
+        while (Ecolor (q) == 0) q = * (word *) q;
+        sz = Wosize_ehd (q);
+        for (i = 1; i < sz; i++){
+          if (Field (p,i) != 0) invert_pointer_at (&(Field (p,i)));
+        }
+        p = Field (p, 0);
       }
     }
     /* Invert roots */
@@ -232,63 +232,63 @@ void compact_heap (void)
       
       chend = ch + Chunk_size (ch);
       while ((char *) p < chend){
-	word q = *p;
-	
-	if (Ecolor (q) == 0 || Tag_ehd (q) == Infix_tag){
-	  /* There were (normal or infix) pointers to this block. */
-	  size_t sz;
-	  tag_t t;
-	  char *newadr;
-	  word *infixes = NULL;
-	  
-	  while (Ecolor (q) == 0) q = * (word *) q;
-	  sz = Whsize_ehd (q);
-	  t = Tag_ehd (q);
+        word q = *p;
+        
+        if (Ecolor (q) == 0 || Tag_ehd (q) == Infix_tag){
+          /* There were (normal or infix) pointers to this block. */
+          size_t sz;
+          tag_t t;
+          char *newadr;
+          word *infixes = NULL;
+          
+          while (Ecolor (q) == 0) q = * (word *) q;
+          sz = Whsize_ehd (q);
+          t = Tag_ehd (q);
 
-	  if (t == Infix_tag){
-	    /* Get the original header of this block. */
-	    infixes = p + sz;
-	    q = *infixes;                             Assert (Ecolor (q) == 2);
-	    while (Ecolor (q) != 3) q = * (word *) (q & ~(unsigned long)3);
-	    sz = Whsize_ehd (q);
-	    t = Tag_ehd (q);
-	  }
+          if (t == Infix_tag){
+            /* Get the original header of this block. */
+            infixes = p + sz;
+            q = *infixes;                             Assert (Ecolor (q) == 2);
+            while (Ecolor (q) != 3) q = * (word *) (q & ~(unsigned long)3);
+            sz = Whsize_ehd (q);
+            t = Tag_ehd (q);
+          }
 
-	  newadr = compact_allocate (Bsize_wsize (sz));
-	  q = *p;
-	  while (Ecolor (q) == 0){
-	    word next = * (word *) q;
-	    * (word *) q = (word) Val_hp (newadr);
-	    q = next;
-	  }
-	  *p = Make_header (Wosize_whsize (sz), t, White);
+          newadr = compact_allocate (Bsize_wsize (sz));
+          q = *p;
+          while (Ecolor (q) == 0){
+            word next = * (word *) q;
+            * (word *) q = (word) Val_hp (newadr);
+            q = next;
+          }
+          *p = Make_header (Wosize_whsize (sz), t, White);
 
-	  if (infixes != NULL){
-	    /* Rebuild the infix headers and revert the infix pointers. */
-	    while (Ecolor ((word) infixes) != 3){
-	      infixes = (word *) ((word) infixes & ~(unsigned long) 3);
-	      q = *infixes;
-	      while (Ecolor (q) == 2){
-		word next;
-		q = (word) q & ~(unsigned long) 3;
-		next = * (word *) q;
-		* (word *) q = (word) Val_hp ((word *) newadr + (infixes - p));
-		q = next;
-	      }                    Assert (Ecolor (q) == 1 || Ecolor (q) == 3);
-	      *infixes = Make_header (infixes - p, Infix_tag, White);
-	      infixes = (word *) q;
-	    }
-	  }
-	  p += sz;
-	}else{	                                      Assert (Ecolor (q) == 3);
+          if (infixes != NULL){
+            /* Rebuild the infix headers and revert the infix pointers. */
+            while (Ecolor ((word) infixes) != 3){
+              infixes = (word *) ((word) infixes & ~(unsigned long) 3);
+              q = *infixes;
+              while (Ecolor (q) == 2){
+                word next;
+                q = (word) q & ~(unsigned long) 3;
+                next = * (word *) q;
+                * (word *) q = (word) Val_hp ((word *) newadr + (infixes - p));
+                q = next;
+              }                    Assert (Ecolor (q) == 1 || Ecolor (q) == 3);
+              *infixes = Make_header (infixes - p, Infix_tag, White);
+              infixes = (word *) q;
+            }
+          }
+          p += sz;
+        }else{                                        Assert (Ecolor (q) == 3);
           /* This is guaranteed only if compact_heap was called after a
              nonincremental major GC:       Assert (Tag_ehd (q) == String_tag);
           */
-	  /* No pointers to the header and no infix header:
-	     the object was free. */
-	  *p = Make_header (Wosize_ehd (q), Tag_ehd (q), Blue);
-	  p += Whsize_ehd (q);
-	}
+          /* No pointers to the header and no infix header:
+             the object was free. */
+          *p = Make_header (Wosize_ehd (q), Tag_ehd (q), Blue);
+          p += Whsize_ehd (q);
+        }
       }
       ch = Chunk_next (ch);
     }
@@ -305,17 +305,17 @@ void compact_heap (void)
 
       chend = ch + Chunk_size (ch);
       while ((char *) p < chend){
-	word q = *p;
-	if (Color_hd (q) == White){
-	  size_t sz = Bhsize_hd (q);
-	  char *newadr = compact_allocate (sz);  Assert (newadr <= (char *)p);
-	  /* bcopy (source, destination, length) */
-	  bcopy (p, newadr, sz);
-	  p += Wsize_bsize (sz);
-	}else{
-	  Assert (Color_hd (q) == Blue);
-	  p += Whsize_hd (q);
-	}
+        word q = *p;
+        if (Color_hd (q) == White){
+          size_t sz = Bhsize_hd (q);
+          char *newadr = compact_allocate (sz);  Assert (newadr <= (char *)p);
+          /* bcopy (source, destination, length) */
+          bcopy (p, newadr, sz);
+          p += Wsize_bsize (sz);
+        }else{
+          Assert (Color_hd (q) == Blue);
+          p += Whsize_hd (q);
+        }
       }
       ch = Chunk_next (ch);
     }
@@ -331,8 +331,8 @@ void compact_heap (void)
     ch = heap_start;
     while (ch != NULL){
       if (Chunk_alloc (ch) != 0){
-	live += Wsize_bsize (Chunk_alloc (ch));
-	free += Wsize_bsize (Chunk_size (ch) - Chunk_alloc (ch));
+        live += Wsize_bsize (Chunk_alloc (ch));
+        free += Wsize_bsize (Chunk_size (ch) - Chunk_alloc (ch));
       }
       ch = Chunk_next (ch);
     }
@@ -345,11 +345,11 @@ void compact_heap (void)
       char *next_chunk = Chunk_next (ch);  /* Chunk_next (ch) will be erased */
 
       if (Chunk_alloc (ch) == 0){
-	if (free < wanted){
-	  free += Chunk_size (ch);
-	}else{
-	  shrink_heap (ch);
-	}
+        if (free < wanted){
+          free += Chunk_size (ch);
+        }else{
+          shrink_heap (ch);
+        }
       }
       ch = next_chunk;
     }
@@ -361,10 +361,10 @@ void compact_heap (void)
     fl_reset ();
     while (ch != NULL){
       if (Chunk_size (ch) > Chunk_alloc (ch)){
-	header_t *p = (header_t *) (ch + Chunk_alloc (ch));
-	*p = Make_header (Wosize_bhsize (Chunk_size (ch) - Chunk_alloc (ch)),
-			  0, White);
-	fl_merge_block (Bp_hp (p));
+        header_t *p = (header_t *) (ch + Chunk_alloc (ch));
+        *p = Make_header (Wosize_bhsize (Chunk_size (ch) - Chunk_alloc (ch)),
+                          0, White);
+        fl_merge_block (Bp_hp (p));
       }
       ch = Chunk_next (ch);
     }

@@ -36,10 +36,10 @@
 #define Bluehd_hd(hd)  (((hd)  & ~Black)  | Blue)
 
 /* This depends on the layout of the header.  See [mlvalues.h]. */
-#define Make_header(wosize, tag, color)					      \
-       ((header_t) (((header_t) (wosize) << 10)				      \
-		    + (color)						      \
-		    + (tag_t) (tag)))
+#define Make_header(wosize, tag, color)                                       \
+       ((header_t) (((header_t) (wosize) << 10)                               \
+                    + (color)                                                 \
+                    + (tag_t) (tag)))
 
 #define Color_val(val) (Color_hd (Hd_val (val)))
 

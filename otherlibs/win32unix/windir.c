@@ -51,10 +51,10 @@ value win_findnext(valh)        /* ML */
   retcode = _findnext(Int_val(valh), &fileinfo);
   if (retcode != 0) raise_end_of_file();
   return copy_string(fileinfo.name);
-}	
+}
 
 value win_findclose(valh)       /* ML */
-	value valh;
+     value valh;
 {
   if (_findclose(Int_val(valh)) != 0) uerror("closedir", Nothing);
   return Val_unit;

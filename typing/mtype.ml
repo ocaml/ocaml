@@ -49,9 +49,9 @@ and strengthen_sig env sg p =
               type_arity = decl.type_arity;
               type_kind = decl.type_kind;
               type_manifest = Some(Ctype.newgenty(
-	       		           Tconstr(Pdot(p, Ident.name id, nopos),
+                                   Tconstr(Pdot(p, Ident.name id, nopos),
                                            decl.type_params,
-					   ref Mnil))) }
+                                           ref Mnil))) }
         | _ -> decl in
       Tsig_type(id, newdecl) :: strengthen_sig env rem p
   | (Tsig_exception(id, d) as sigelt) :: rem ->

@@ -30,7 +30,7 @@
 /* Allocation */
 
         .text
-	.globl  G(caml_call_gc)
+        .globl  G(caml_call_gc)
         .globl  G(caml_alloc1)
         .globl  G(caml_alloc2)
         .globl  G(caml_alloc3)
@@ -108,13 +108,13 @@ L102:   movl    0(%esp), %eax
 
         .align  FUNCTION_ALIGN
 G(caml_alloc):
-	subl	G(young_ptr), %eax      /* eax = size - young_ptr */
+        subl    G(young_ptr), %eax      /* eax = size - young_ptr */
         negl    %eax                    /* eax = young_ptr - size */
         cmpl    G(young_limit), %eax
         jb      L103
         movl    %eax, G(young_ptr)
         ret
-L103:   subl	G(young_ptr), %eax      /* eax = - size */
+L103:   subl    G(young_ptr), %eax      /* eax = - size */
         negl    %eax                    /* eax = size */
         pushl   %eax                    /* save desired size */
         subl    %eax, G(young_ptr)      /* must update young_ptr */

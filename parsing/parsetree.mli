@@ -129,7 +129,7 @@ type class_type =
 
 type class_field =
     Pcf_inher of (Longident.t * core_type list * expression list *
-      	       	  string option * Location.t)
+                  string option * Location.t)
   | Pcf_val of
       (string * private_flag * mutable_flag * expression option * Location.t)
   | Pcf_virt of (string * private_flag * core_type * Location.t)

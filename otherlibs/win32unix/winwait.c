@@ -43,6 +43,6 @@ value win_waitpid(flags, vpid_req) /* ML */
   int status, pid_req;
   pid_req = Int_val(vpid_req);
   if (_cwait(&status, pid_req, 0/* ignored by win32 */) == -1)
-	uerror("waitpid", Nothing);  
+    uerror("waitpid", Nothing);  
   return alloc_process_status(pid_req, status);
 }

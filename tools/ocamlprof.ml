@@ -26,9 +26,9 @@ exception Profiler of string
 (* Modes *)
 let instr_fun    = ref false
 and instr_match  = ref false
-and instr_if	 = ref false
+and instr_if     = ref false
 and instr_loops  = ref false
-and instr_try	 = ref false
+and instr_try    = ref false
 
 let cur_point = ref 0
 and inchan = ref stdin
@@ -311,8 +311,8 @@ let set_flags s =
     | 'l' -> instr_loops := true
     | 't' -> instr_try := true
     | 'a' -> instr_fun := true; instr_match := true;
-      	     instr_if := true; instr_loops := true;
-	     instr_try := true
+             instr_if := true; instr_loops := true;
+             instr_try := true
     | _ -> ()
     done
 

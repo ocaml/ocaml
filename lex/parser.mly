@@ -82,7 +82,7 @@ entry:
     Tparse case rest_of_entry
         { $2::List.rev $3 }
   | Tparse rest_of_entry
-	{ List.rev $2 }
+        { List.rev $2 }
 ;
 rest_of_entry:
     rest_of_entry Tor case

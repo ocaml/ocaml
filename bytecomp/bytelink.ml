@@ -372,51 +372,51 @@ let build_custom_runtime prim_name exec_name =
   | "MacOS" ->
       let c68k = "sc"
       and libs68k = "\"{libraries}IntEnv.far.o\" " ^
-		    "\"{libraries}MacRuntime.o\" " ^
-		    "\"{clibraries}StdCLib.far.o\" " ^
-		    "\"{libraries}MathLib.far.o\" " ^
-		    "\"{libraries}ToolLibs.o\" " ^
-		    "\"{libraries}Interface.o\""
+                    "\"{libraries}MacRuntime.o\" " ^
+                    "\"{clibraries}StdCLib.far.o\" " ^
+                    "\"{libraries}MathLib.far.o\" " ^
+                    "\"{libraries}ToolLibs.o\" " ^
+                    "\"{libraries}Interface.o\""
       and link68k = "ilink -compact -state nouse -model far -msg nodup"
       and cppc = "mrc"
       and libsppc = "\"{sharedlibraries}MathLib\" " ^
                     "\"{ppclibraries}PPCCRuntime.o\" " ^
                     "\"{ppclibraries}PPCToolLibs.o\" " ^
-		    "\"{sharedlibraries}StdCLib\" " ^
-		    "\"{ppclibraries}StdCRuntime.o\" " ^
-		    "\"{sharedlibraries}InterfaceLib\" "
+                    "\"{sharedlibraries}StdCLib\" " ^
+                    "\"{ppclibraries}StdCRuntime.o\" " ^
+                    "\"{sharedlibraries}InterfaceLib\" "
       and linkppc = "ppclink -d"
       and objs68k = extract ".o" (List.rev !Clflags.ccobjs)
       and objsppc = extract ".x" (List.rev !Clflags.ccobjs)
       in
       Ccomp.command (Printf.sprintf "%s -i \"%s\" %s \"%s\" -o \"%s.o\""
-	c68k
-	Config.standard_library
-	(String.concat " " (List.rev !Clflags.ccopts))
-	prim_name
-	prim_name);
+        c68k
+        Config.standard_library
+        (String.concat " " (List.rev !Clflags.ccopts))
+        prim_name
+        prim_name);
       Ccomp.command (Printf.sprintf "%s -i \"%s\" %s \"%s\" -o \"%s.x\""
-	cppc
-	Config.standard_library
-	(String.concat " " (List.rev !Clflags.ccopts))
-	prim_name
-	prim_name);
+        cppc
+        Config.standard_library
+        (String.concat " " (List.rev !Clflags.ccopts))
+        prim_name
+        prim_name);
       Ccomp.command ("delete -i \""^exec_name^"\"");
       Ccomp.command (Printf.sprintf
-	"%s -t MPST -c 'MPS ' -o \"%s\" \"%s.o\" \"%s\" \"%s\" %s"
-	link68k
-	exec_name
-	prim_name
-	(String.concat "\" \"" objs68k)
-	(Filename.concat Config.standard_library "libcamlrun.o")
+        "%s -t MPST -c 'MPS ' -o \"%s\" \"%s.o\" \"%s\" \"%s\" %s"
+        link68k
+        exec_name
+        prim_name
+        (String.concat "\" \"" objs68k)
+        (Filename.concat Config.standard_library "libcamlrun.o")
         libs68k);
       Ccomp.command (Printf.sprintf
-	"%s -t MPST -c 'MPS ' -o \"%s\" \"%s.x\" \"%s\" \"%s\" %s"
-	linkppc
-	exec_name
-	prim_name
-	(String.concat "\" \"" objsppc)
-	(Filename.concat Config.standard_library "libcamlrun.x")
+        "%s -t MPST -c 'MPS ' -o \"%s\" \"%s.x\" \"%s\" \"%s\" %s"
+        linkppc
+        exec_name
+        prim_name
+        (String.concat "\" \"" objsppc)
+        (Filename.concat Config.standard_library "libcamlrun.x")
         libsppc)
   | _ ->
     fatal_error "Bytelink.build_custom_runtime"

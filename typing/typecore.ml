@@ -255,11 +255,11 @@ let type_format loc fmt =
         | 'a' ->
             let ty_arg = newvar() in
             newty (Tarrow (newty (Tarrow(ty_input,
-      	       	       	       	       	 newty (Tarrow (ty_arg, ty_result)))),
+                                         newty (Tarrow (ty_arg, ty_result)))),
                            newty (Tarrow (ty_arg, scan_format (j+1)))))
         | 't' ->
             newty (Tarrow(newty (Tarrow(ty_input, ty_result)),
-      	       	       	  scan_format (j+1)))
+                          scan_format (j+1)))
         | c ->
             raise(Error(loc, Bad_format(String.sub fmt i (j-i))))
         end
@@ -282,14 +282,14 @@ let rec type_exp env sexp =
         let (path, desc) = Env.lookup_value lid env in
         { exp_desc =
             begin match (desc.val_kind, lid) with
-	      (Val_ivar _, Longident.Lident lab) ->
-      	        let (path_self, _) =
+              (Val_ivar _, Longident.Lident lab) ->
+                let (path_self, _) =
                   Env.lookup_value (Longident.Lident "*self*") env
                 in
                 Texp_instvar (path_self, path)
-	    | _ ->
-	        Texp_ident(path, desc)
-      	    end;
+            | _ ->
+                Texp_ident(path, desc)
+            end;
           exp_loc = sexp.pexp_loc;
           exp_type = instance desc.val_type;
           exp_env = env }
@@ -495,13 +495,13 @@ let rec type_exp env sexp =
   | Pexp_constraint(sarg, sty, sty') ->
       let (arg, ty') =
         match (sty, sty') with
-      	  (None, None) ->               (* Case actually unused *)
+          (None, None) ->               (* Case actually unused *)
             let arg = type_exp env sarg in
-	    (arg, arg.exp_type)
-	| (Some sty, None) ->
+            (arg, arg.exp_type)
+        | (Some sty, None) ->
             let ty = Typetexp.transl_simple_type env false sty in
             (type_expect env sarg ty, ty)
-	| (None, Some sty') ->
+        | (None, Some sty') ->
             let (ty', force) =
               Typetexp.transl_simple_type_delayed env sty'
             in
@@ -513,7 +513,7 @@ let rec type_exp env sexp =
                     Coercion_failure(ty', full_expand env ty', trace)))
             end;
             (arg, ty')
-	| (Some sty, Some sty') ->
+        | (Some sty, Some sty') ->
             let (ty, force) =
               Typetexp.transl_simple_type_delayed env sty
             and (ty', force') =
@@ -523,9 +523,9 @@ let rec type_exp env sexp =
               let force'' = subtype env ty ty' in
               force (); force' (); force'' ()
             with Subtype (tr1, tr2) ->
-	      raise(Error(sexp.pexp_loc, Not_subtype(tr1, tr2)))
+              raise(Error(sexp.pexp_loc, Not_subtype(tr1, tr2)))
             end;
-	    (type_expect env sarg ty, ty')
+            (type_expect env sarg ty, ty')
       in
       { exp_desc = arg.exp_desc;
         exp_loc = arg.exp_loc;
@@ -590,68 +590,68 @@ let rec type_exp env sexp =
         try Env.lookup_class cl env with Not_found ->
           raise(Error(sexp.pexp_loc, Unbound_class cl))
       in
-      	begin match cl_typ.cty_new with
-	  None ->
-	    raise(Error(sexp.pexp_loc, Virtual_class cl))
+        begin match cl_typ.cty_new with
+          None ->
+            raise(Error(sexp.pexp_loc, Virtual_class cl))
         | Some ty ->
             { exp_desc = Texp_new cl_path;
-      	      exp_loc = sexp.pexp_loc;
-	      exp_type = instance ty;
+              exp_loc = sexp.pexp_loc;
+              exp_type = instance ty;
               exp_env = env }
         end
   | Pexp_setinstvar (lab, snewval) ->
       begin try
         let (path, desc) = Env.lookup_value (Longident.Lident lab) env in
         match desc.val_kind with
-	  Val_ivar Mutable ->
-	    let newval = type_expect env snewval desc.val_type in
-      	    let (path_self, _) =
+          Val_ivar Mutable ->
+            let newval = type_expect env snewval desc.val_type in
+            let (path_self, _) =
               Env.lookup_value (Longident.Lident "*self*") env
             in
             { exp_desc = Texp_setinstvar(path_self, path, newval);
               exp_loc = sexp.pexp_loc;
               exp_type = instance Predef.type_unit;
               exp_env = env }
-	| Val_ivar _ ->
-      	    raise(Error(sexp.pexp_loc, Instance_variable_not_mutable lab))
-	| _ ->
+        | Val_ivar _ ->
+            raise(Error(sexp.pexp_loc, Instance_variable_not_mutable lab))
+        | _ ->
             raise(Error(sexp.pexp_loc, Unbound_instance_variable lab))
       with
-	Not_found ->
+        Not_found ->
           raise(Error(sexp.pexp_loc, Unbound_instance_variable lab))
       end        
   | Pexp_override lst ->
       List.fold_right
-      	(fun (lab, _) l ->
-	   if List.exists ((=) lab) l then
-	     raise(Error(sexp.pexp_loc,
-      	       	       	 Value_multiply_overridden lab));
-      	   lab::l)
-	lst
-	[];
+        (fun (lab, _) l ->
+           if List.exists ((=) lab) l then
+             raise(Error(sexp.pexp_loc,
+                         Value_multiply_overridden lab));
+           lab::l)
+        lst
+        [];
       let (path_self, {val_type = self_ty}) =
-      	try
+        try
           Env.lookup_value (Longident.Lident "*self*") env
-	with Not_found ->
-	  raise(Error(sexp.pexp_loc, Outside_class))
+        with Not_found ->
+          raise(Error(sexp.pexp_loc, Outside_class))
       in
       let type_override (lab, snewval) =
         begin try
           let (path, desc) = Env.lookup_value (Longident.Lident lab) env in
           match desc.val_kind with
-	    Val_ivar _ ->
+            Val_ivar _ ->
               (path, type_expect env snewval desc.val_type)
-	  | _ ->
+          | _ ->
               raise(Error(sexp.pexp_loc, Unbound_instance_variable lab))
         with
-	  Not_found ->
+          Not_found ->
             raise(Error(sexp.pexp_loc, Unbound_instance_variable lab))
         end
       in
       let modifs = List.map type_override lst in
       { exp_desc = Texp_override(path_self, modifs);
-      	exp_loc = sexp.pexp_loc;
-	exp_type = self_ty;
+        exp_loc = sexp.pexp_loc;
+        exp_type = self_ty;
         exp_env = env }
 
       (* let obj = Oo.copy self in obj.x <- e; obj *)
@@ -807,9 +807,9 @@ let type_method env self self_name meths sexp ty_expected =
           Env.enter_value name {val_type = self; val_kind = Val_self meths} env
         in
         ({ pat_desc = Tpat_alias (pattern, self_name);
-	   pat_loc = Location.none;
-	   pat_type = self },
-	 env)
+           pat_loc = Location.none;
+           pat_type = self },
+         env)
   in
   let exp = type_expect_fun env sexp ty_expected in
   { exp_desc = Texp_function [(pattern, exp)];

@@ -42,9 +42,9 @@ let mkoperator name pos =
 let mkassert e =
   let {loc_start = st; loc_end = en} = symbol_loc () in
   let triple = mkexp (Pexp_tuple
-	               [mkexp (Pexp_constant (Const_string !input_name));
-	                mkexp (Pexp_constant (Const_int st));
-	                mkexp (Pexp_constant (Const_int en))]) in
+                       [mkexp (Pexp_constant (Const_string !input_name));
+                        mkexp (Pexp_constant (Const_int st));
+                        mkexp (Pexp_constant (Const_int en))]) in
   let ex = Ldot (Lident "Pervasives", "Assert_failure") in
   let bucket = mkexp (Pexp_construct (ex, Some triple)) in
   let ra = Ldot (Lident "Pervasives", "raise") in

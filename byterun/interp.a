@@ -111,19 +111,19 @@ initial_callback_depth_  equ      $00
           Call_restore
 
           MOVE.L     local_var_size_+4*10+$4(A7), D0    ; code
-	  BNE.S      noinit                             ; == NULL => init
+          BNE.S      noinit                             ; == NULL => init
           LEA.L      table(PC), A0
           MOVE.L     A0, (instr_table).L
           CLR.L      (instr_base).L
-	  MOVEQ.L    #1, D0
+          MOVEQ.L    #1, D0
           Call_setup                                    ; 2eme copie: "lbl_1B88"
           LEA.L      local_var_size_(A7), A7
           MOVEM.L    (A7)+, D3-D7/A2-A6
           RTS        
 
 noinit:   MOVEA.L    local_var_size_+4*10+$4(A7), A0    ; code
-	  CMPI.L     #124, (A0)
-	  BHI.S      nothread                           ; deja tresse
+          CMPI.L     #124, (A0)
+          BHI.S      nothread                           ; deja tresse
 
           MOVE.L     local_var_size_+4*10+$8(A7), -(A7) ; argument 1 (size)
           MOVE.L     local_var_size_+4*10+$8(A7), -(A7) ; argument 0 (code)
@@ -156,7 +156,7 @@ nothread: LEA.L      i_start(PC), A6
           MOVE.L     initial_local_roots_(A7), (local_roots).L
           MOVE.L     initial_callback_depth_(A7), (callback_depth).L
           MOVEA.L    (exn_bucket).L, accu_
-	  MOVEA.L    (extern_sp).L, sp_
+          MOVEA.L    (extern_sp).L, sp_
           JMP        i_82-i_base(A6)             ; RAISE
 lbl_78:   LEA.L      raise_buf_(A7), A0
           MOVE.L     A0, (external_raise).L
@@ -1219,13 +1219,13 @@ lbl_mod:  MOVE.L     (A1), D5                 ; A1 = modify_dest; D5 = _old_
           BEQ        i_90
           TST.L      (gc_phase).L
           BNE.S      lbl_CC2
-	  MOVE.L     A1, D3                    ; A1 est caller-save
+          MOVE.L     A1, D3                    ; A1 est caller-save
           MOVE.L     D5, -(A7)
           Call_setup
           JSR        (darken).L
           Call_restore
           ADDQ.L     #4 ,A7
-	  MOVEA.L    D3, A1                    ; A1 est caller-save
+          MOVEA.L    D3, A1                    ; A1 est caller-save
 lbl_CC2:  BTST.L     #0, D4
           BNE        i_90
           CMP.L      (young_start).L, D4

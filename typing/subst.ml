@@ -169,9 +169,9 @@ let class_type s decl =
       cty_concr = decl.cty_concr;
       cty_new =
         begin match decl.cty_new with
-      	  None    -> None
+          None    -> None
         | Some ty -> Some (typexp s ty)
-      	end }
+        end }
   in
   cleanup_types ();
   List.iter unmark_type decl.cty_params;

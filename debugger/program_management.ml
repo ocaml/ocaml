@@ -64,18 +64,18 @@ let open_connection address continue =
     let (sock_domain, sock_address) = convert_address address in
       file_name :=
         (match sock_address with
-      	   ADDR_UNIX file ->
-	     Some file
+           ADDR_UNIX file ->
+             Some file
          | _ ->
-       	     None);
+             None);
       let sock = socket sock_domain SOCK_STREAM 0 in
-      	(try
+        (try
            bind sock sock_address;
            listen sock 3;
-	   connection := io_channel_of_descr sock;
+           connection := io_channel_of_descr sock;
            Input_handling.add_file !connection (accept_connection continue);
-	   connection_opened := true
-	 with x -> close sock; raise x)
+           connection_opened := true
+         with x -> close sock; raise x)
   with
     Failure _ -> raise Toplevel
   | (Unix_error _) as err -> report_error err; raise Toplevel
@@ -119,7 +119,7 @@ let initialize_loading () =
   Symbols.read_symbols
     (try search_in_path !program_name with
        Not_found ->
-      	 prerr_endline "Program not found.";
+         prerr_endline "Program not found.";
          raise Toplevel);
   if !debug_loading then
     prerr_endline "Opening a socket...";
@@ -148,6 +148,6 @@ let ensure_loaded () =
       prerr_endline "done."
     with
       x ->
-      	kill_program();
-      	raise x
+        kill_program();
+        raise x
   end

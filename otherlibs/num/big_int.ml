@@ -90,10 +90,10 @@ let pred_big_int bi =
             { sign = if is_zero_nat copy_bi 0 size_bi then 0 else 1;
               abs_value = copy_bi }
   | _ -> let size_bi = num_digits_big_int bi in
-	 let size_res = succ (size_bi) in
+         let size_res = succ (size_bi) in
          let copy_bi = create_nat (size_res) in
           blit_nat copy_bi 0 (bi.abs_value) 0 size_bi;
-	  set_digit_nat copy_bi size_bi 0;
+          set_digit_nat copy_bi size_bi 0;
           incr_nat copy_bi 0 size_res 1; 
           { sign = -1;
             abs_value = copy_bi }
@@ -107,11 +107,11 @@ let succ_big_int bi =
             { sign = if is_zero_nat copy_bi 0 size_bi then 0 else -1;
               abs_value = copy_bi }
   | _ -> let size_bi = num_digits_big_int bi in
-	 let size_res = succ (size_bi) in
+         let size_res = succ (size_bi) in
          let copy_bi = create_nat (size_res) in
           blit_nat copy_bi 0 (bi.abs_value) 0 size_bi;
           set_digit_nat copy_bi size_bi 0;
-	  incr_nat copy_bi 0 size_res 1;
+          incr_nat copy_bi 0 size_res 1;
           { sign = 1;
             abs_value = copy_bi }
 

@@ -58,7 +58,7 @@ value caml_dbm_open(vfile, vflags, vmode) /* ML */
 }
 
 /* Dbm.close: t -> unit */
-value caml_dbm_close(vdb)	/* ML */
+value caml_dbm_close(vdb)       /* ML */
      value vdb;
 {
   dbm_close((DBM *)vdb);
@@ -66,7 +66,7 @@ value caml_dbm_close(vdb)	/* ML */
 }
 
 /* Dbm.fetch: t -> string -> string */
-value caml_dbm_fetch(vdb,vkey)	/* ML */
+value caml_dbm_fetch(vdb,vkey)  /* ML */
      value vdb;
      value vkey;
 {
@@ -95,7 +95,7 @@ value caml_dbm_insert(vdb,vkey,vcontent) /* ML */
   switch(dbm_store((DBM *)vdb, key, content, DBM_INSERT)) {
   case 0:
     return Val_unit;
-  case 1:			/* DBM_INSERT and already existing */
+  case 1:                       /* DBM_INSERT and already existing */
     raise_dbm("Entry already exists");
   default:
     raise_dbm("dbm_store failed");
@@ -121,7 +121,7 @@ value caml_dbm_replace(vdb,vkey,vcontent) /* ML */
   }
 }
 
-value caml_dbm_delete(vdb,vkey)	/* ML */
+value caml_dbm_delete(vdb,vkey)         /* ML */
      value vdb, vkey;
 {
   datum key;
@@ -133,7 +133,7 @@ value caml_dbm_delete(vdb,vkey)	/* ML */
   else return Val_unit;
 }
 
-value caml_dbm_firstkey(vdb)		/* ML */
+value caml_dbm_firstkey(vdb)            /* ML */
   value vdb;
 {
   datum key = dbm_firstkey((DBM *)vdb);
@@ -146,7 +146,7 @@ value caml_dbm_firstkey(vdb)		/* ML */
   else raise_not_found();
 }
 
-value caml_dbm_nextkey(vdb)		/* ML */
+value caml_dbm_nextkey(vdb)             /* ML */
   value vdb;
 {
   datum key = dbm_nextkey((DBM *)vdb);

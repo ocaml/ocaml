@@ -16,36 +16,36 @@ PPCCOBJS = strstubs.c.x {REGEXLIB}regex.c.x
 all Ä libstr.o libstr.x str.cmi str.cma
 
 libstr.o Ä {COBJS}
-	lib -o libstr.o {COBJS}
+    lib -o libstr.o {COBJS}
 
 libstr.x Ä {PPCCOBJS}
-	ppclink -xm library -o libstr.x {PPCCOBJS}
+    ppclink -xm library -o libstr.x {PPCCOBJS}
 
 str.cma Ä str.cmo
-	{CAMLC} -a -o str.cma str.cmo
+    {CAMLC} -a -o str.cma str.cmo
 
 {REGEXLIB}regex.c.x Ä {REGEXLIB}regex.c.o
-	echo -n
+    echo -n
 
 {REGEXLIB}regex.c.o Ä {REGEXLIB}regex.c {REGEXLIB}regex.h
-	directory {REGEXLIB}; domake; directory ::
+    directory {REGEXLIB}; domake; directory ::
 
 partialclean Ä
-	delete -i Å.cm[aio] || set status 0
+    delete -i Å.cm[aio] || set status 0
 
 clean Ä partialclean
-	delete -i Å.[ox] || set status 0
-	directory {REGEXLIB}; domake distclean; directory ::
+    delete -i Å.[ox] || set status 0
+    directory {REGEXLIB}; domake distclean; directory ::
 
 install Ä
-	duplicate -y libstr.o libstr.x str.cma str.cmi "{LIBDIR}"
+    duplicate -y libstr.o libstr.x str.cma str.cmi "{LIBDIR}"
 
 .cmi Ä .mli
-	{CAMLC} -c {COMPFLAGS} {default}.mli
+    {CAMLC} -c {COMPFLAGS} {default}.mli
 
 .cmo Ä .ml
-	{CAMLC} -c {COMPFLAGS} {default}.ml
+    {CAMLC} -c {COMPFLAGS} {default}.ml
 
 depend Ä
-	MakeDepend Å.c > Makefile.Mac.depend
-	:::boot:ocamlrun :::tools:ocamldep Å.mli Å.ml >> Makefile.Mac.depend
+    MakeDepend Å.c > Makefile.Mac.depend
+    :::boot:ocamlrun :::tools:ocamldep Å.mli Å.ml >> Makefile.Mac.depend

@@ -156,11 +156,11 @@ let missing_method env ty ty' =
       Tfield(lab, k, _, met') ->
         begin try
           if Btype.field_kind_repr k = Fpresent then begin
-      	    Ctype.filter_method env lab Public ty; ()
+            Ctype.filter_method env lab Public ty; ()
           end;
-	  missing_method_rec met'
+          missing_method_rec met'
         with Ctype.Unify _ ->
-      	  lab
+          lab
         end
     | _ ->
         fatal_error "Typeclass.missing_method (1)"
@@ -195,28 +195,28 @@ let make_stub env (cl, obj_id, cl_id) =
   let concr_meths =
     List.fold_left
       (function meths ->
-      	 function
-	   Pcf_inher (nm, _, _, _, loc) ->
+         function
+           Pcf_inher (nm, _, _, _, loc) ->
              let (_, anc) =
-      	       try
-      	         Env.lookup_class nm env
-	       with Not_found ->
-	         raise(Error(loc, Unbound_class nm))
+               try
+                 Env.lookup_class nm env
+               with Not_found ->
+                 raise(Error(loc, Unbound_class nm))
              in
-      	       begin match (Ctype.expand_head env anc.cty_self).desc with
+               begin match (Ctype.expand_head env anc.cty_self).desc with
                  Tobject (ty, _) ->
                    add_methods env self ty;
-	           Concr.union anc.cty_concr meths
+                   Concr.union anc.cty_concr meths
                | _ -> fatal_error "Typeclass.make_stub"
                end
-	 | Pcf_val _ ->
-	     meths
-	 | Pcf_virt (lab, priv, _, _) ->
-	     Ctype.filter_method env lab priv self;
-	     meths
-	 | Pcf_meth (lab, priv, _, _) ->
-	     Ctype.filter_method env lab priv self;
-	     Concr.add lab meths)
+         | Pcf_val _ ->
+             meths
+         | Pcf_virt (lab, priv, _, _) ->
+             Ctype.filter_method env lab priv self;
+             meths
+         | Pcf_meth (lab, priv, _, _) ->
+             Ctype.filter_method env lab priv self;
+             Concr.add lab meths)
       Concr.empty cl.pcl_field
   in
 
@@ -397,10 +397,10 @@ let type_class_field env var_env self cl
               {val_type = exp.exp_type; val_kind = Val_ivar mut} met_env
           in
           (met_env, Cf_val (lab, id, priv, Some exp)::fields,
-      	   insert_value var_env lab priv mut exp.exp_type loc vars_sig,
+           insert_value var_env lab priv mut exp.exp_type loc vars_sig,
            meths)
       | None ->
-      	  let (vars_sig, ty) =
+          let (vars_sig, ty) =
             change_value_status lab priv mut loc vars_sig
           in
           let (id, met_env) =
@@ -499,9 +499,9 @@ let transl_class temp_env env
     List.iter2 (Ctype.unify temp_env) temp_cl_params cl_params
   with Ctype.Unify _ ->
     raise(Error(cl.pcl_loc,
-      	  Bad_parameters (cl_id, cl_abbrev,
-      	                  Ctype.newty (Tconstr (Path.Pident cl_id, cl_params,
-      	       	       	       	       	        ref Mnil)))))
+          Bad_parameters (cl_id, cl_abbrev,
+                          Ctype.newty (Tconstr (Path.Pident cl_id, cl_params,
+                                                ref Mnil)))))
   end;
 
   (* Object abbreviation and arguments for new *)
@@ -516,16 +516,16 @@ let transl_class temp_env env
   with Ctype.Unify _ ->
     raise(Error(cl.pcl_loc,
           Bad_parameters (obj_id, abbrev,
-       	       	          Ctype.newty (Tconstr (Path.Pident obj_id, obj_params,
-      	       	       	       	       	        ref Mnil)))))
+                          Ctype.newty (Tconstr (Path.Pident obj_id, obj_params,
+                                                ref Mnil)))))
   end;
   Ctype.close_object temp_obj;
   List.iter2
     (fun ty (exp, ty') ->
        begin try
-	 Ctype.unify temp_env ty' ty
+         Ctype.unify temp_env ty' ty
        with Ctype.Unify trace ->
-	 raise(Error(exp.pat_loc, Argument_type_mismatch trace))
+         raise(Error(exp.pat_loc, Argument_type_mismatch trace))
        end)
     new_args (List.combine args arg_sig');
 
@@ -557,7 +557,7 @@ let build_new_type temp_env env
   (* Modify constrainsts to ensure the object abbreviation is well-formed *)
   let (params, args, vars, meths, self) = Ctype.instance_class cl_sig in
   List.iter2 (Ctype.unify temp_env) params temp_obj_params;
-					(* Never fails *)
+                                        (* Never fails *)
 
   (* Hide private methods *)
   Ctype.hide_private_methods cl_sig.cty_self;
@@ -602,7 +602,7 @@ let build_new_type temp_env env
       cty_meths = meths;
       cty_self = exp_self;
       cty_concr = cl_sig.cty_concr;
-      cty_new = cl_sig.cty_new }	(* new is still monomorphic *)
+      cty_new = cl_sig.cty_new }        (* new is still monomorphic *)
   in let new_env = Env.add_class id cl_sig env in
 
   ((cl, id, cl_id, obj_id, cl_sig, cl_imp), new_env)
@@ -690,28 +690,28 @@ let make_stub env (cl, obj_id, cl_id) =
   let concr_meths =
     List.fold_left
       (function meths ->
-      	 function
-	   Pctf_inher (nm, _, loc) ->
+         function
+           Pctf_inher (nm, _, loc) ->
              let (_, anc) =
-      	       try
-      	         Env.lookup_class nm env
-	       with Not_found ->
-	         raise(Error(loc, Unbound_class nm))
+               try
+                 Env.lookup_class nm env
+               with Not_found ->
+                 raise(Error(loc, Unbound_class nm))
              in
-      	       begin match (Ctype.expand_head env anc.cty_self).desc with
+               begin match (Ctype.expand_head env anc.cty_self).desc with
                  Tobject (ty, _) ->
                    add_methods env self ty;
-	           Concr.union anc.cty_concr meths
+                   Concr.union anc.cty_concr meths
                | _ -> fatal_error "Typeclass.make_stub (type)"
                end
-	 | Pctf_val _ ->
-	     meths
-	 | Pctf_virt (lab, priv, _, _) ->
-	     Ctype.filter_method env lab priv self;
-	     meths
-	 | Pctf_meth (lab, priv, _, _) ->
-	     Ctype.filter_method env lab priv self;
-	     Concr.add lab meths)
+         | Pctf_val _ ->
+             meths
+         | Pctf_virt (lab, priv, _, _) ->
+             Ctype.filter_method env lab priv self;
+             meths
+         | Pctf_meth (lab, priv, _, _) ->
+             Ctype.filter_method env lab priv self;
+             Concr.add lab meths)
       Concr.empty cl.pcty_field
   in
 
@@ -836,11 +836,11 @@ let type_class_field env var_env self cl (vars_sig, meths_sig) =
 
   | Pctf_val (lab, priv, mut, sty, loc) ->
       begin match sty with
-      	Some sty ->
+        Some sty ->
           let ty = transl_simple_type var_env false sty in
           (insert_value var_env lab priv mut ty loc vars_sig, meths_sig)
       | None ->
-      	  (fst (change_value_status lab priv mut loc vars_sig), meths_sig)
+          (fst (change_value_status lab priv mut loc vars_sig), meths_sig)
       end
 
   | Pctf_virt (lab, priv, sty, loc) ->
@@ -930,9 +930,9 @@ let transl_class temp_env env
     List.iter2 (Ctype.unify temp_env) temp_cl_params cl_params
   with Ctype.Unify _ ->
     raise(Error(cl.pcty_loc,
-      	  Bad_parameters (cl_id, cl_abbrev,
-      	                  Ctype.newty (Tconstr (Path.Pident cl_id, cl_params,
-      	       	       	       	       	        ref Mnil)))))
+          Bad_parameters (cl_id, cl_abbrev,
+                          Ctype.newty (Tconstr (Path.Pident cl_id, cl_params,
+                                                ref Mnil)))))
   end;
 
   (* Object abbreviation and arguments for new *)
@@ -947,8 +947,8 @@ let transl_class temp_env env
   with Ctype.Unify _ ->
     raise(Error(cl.pcty_loc,
           Bad_parameters (obj_id, abbrev,
-       	       	          Ctype.newty (Tconstr (Path.Pident obj_id, obj_params,
-      	       	       	       	       	        ref Mnil)))))
+                          Ctype.newty (Tconstr (Path.Pident obj_id, obj_params,
+                                                ref Mnil)))))
   end;
   Ctype.close_object temp_obj;
 
@@ -975,7 +975,7 @@ let build_new_type temp_env env
   (* Modify constrainsts to ensure the object abbreviation is well-formed *)
   let (params, args, vars, meths, self) = Ctype.instance_class cl_sig in
   List.iter2 (Ctype.unify temp_env) params temp_obj_params;
-					(* Never fails *)
+                                        (* Never fails *)
 
   (* Hide private methods *)
   Ctype.hide_private_methods cl_sig.cty_self;
@@ -1037,12 +1037,12 @@ let make_abbrev env
       type_kind = Type_abstract;
       type_manifest = Some
         (if cl.pcty_closed = Closed then
-	  Ctype.newgenty (Tconstr(Path.Pident obj_id, cl_sig.cty_params,
+          Ctype.newgenty (Tconstr(Path.Pident obj_id, cl_sig.cty_params,
                                   ref Mnil))
         else begin
           Ctype.set_object_name cl_sig.cty_self cl_sig.cty_params obj_id;
           cl_sig.cty_self
-	end) }
+        end) }
   in let new_env = Env.add_type cl_id cl_abbrev env in
 
   (* Object type abbreviation *)

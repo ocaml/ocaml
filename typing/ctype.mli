@@ -47,11 +47,11 @@ val repr: type_expr -> type_expr
 
 val flatten_fields :
         type_expr -> (string * field_kind * type_expr) list * type_expr
-      	(* Transform a field type into a list of pairs label-type *)
+        (* Transform a field type into a list of pairs label-type *)
 val opened_object: type_expr -> bool
 val close_object: type_expr -> unit
 val set_object_name:
-      	type_expr -> type_expr list -> Ident.t -> unit
+        type_expr -> type_expr list -> Ident.t -> unit
 val remove_object_name: type_expr -> unit
 val hide_private_methods: type_expr -> unit
 
@@ -72,12 +72,12 @@ val instance_constructor:
 val instance_label: label_description -> type_expr * type_expr
         (* Same, for a label *)
 val instance_parameterized_type:
-      	type_expr list -> type_expr -> type_expr list * type_expr
+        type_expr list -> type_expr -> type_expr list * type_expr
 val instance_parameterized_type_2:
-      	type_expr list -> type_expr list -> type_expr ->
+        type_expr list -> type_expr list -> type_expr ->
         type_expr list * type_expr list * type_expr
 val instance_class:
-      	class_type ->
+        class_type ->
         type_expr list * type_expr list * (mutable_flag * type_expr) Vars.t *
         type_expr Meths.t * type_expr
 val apply:
@@ -88,8 +88,8 @@ val apply:
 
 val expand_abbrev:
         Env.t -> Path.t -> type_expr list -> Types.abbrev_memo ref ->
-	int -> type_expr
-	(* Expand an abbreviation *)
+        int -> type_expr
+        (* Expand an abbreviation *)
 val expand_head: Env.t -> type_expr -> type_expr
 val full_expand: Env.t -> type_expr -> type_expr
 
@@ -98,7 +98,7 @@ val unify: Env.t -> type_expr -> type_expr -> unit
 val filter_arrow: Env.t -> type_expr -> type_expr * type_expr
         (* A special case of unification (with 'a -> 'b). *)
 val filter_method: Env.t -> string -> private_flag -> type_expr -> type_expr
-      	(* A special case of unification (with {m : 'a; 'b}). *)
+        (* A special case of unification (with {m : 'a; 'b}). *)
 
 val moregeneral: Env.t -> bool -> type_expr -> type_expr -> bool
         (* Check if the first type scheme is more general than the second. *)
@@ -109,7 +109,7 @@ val equal: Env.t -> bool -> type_expr list -> type_expr list -> bool
            [/\x1.../\xn.tau] and [/\y1.../\yn.sigma] are equivalent. *)
 
 val enlarge_type: Env.t -> type_expr -> type_expr
-      	(* Make a type larger *)
+        (* Make a type larger *)
 val subtype : Env.t -> type_expr -> type_expr -> unit -> unit
         (* [subtype env t1 t2] checks that [t1] is a subtype of [t2].
            It accumulates the constraints the type variables must

@@ -56,7 +56,7 @@ module type S =
            [m], except for [x] which is unbound in the returned map. *)
     val iter: (key -> 'a -> 'b) -> 'a t -> unit
         (* [iter f m] applies [f] to all bindings in map [m],
-	   discarding the results.
+           discarding the results.
            [f] receives the key as first argument, and the associated value
            as second argument. The order in which the bindings are passed to
            [f] is unspecified. Only current bindings are presented to [f]:

@@ -95,9 +95,9 @@ let filter p =
         []
     | a::l ->
         if p a then
-	  a::(filter2 l)
+          a::(filter2 l)
         else
-      	  filter2 l
+          filter2 l
   in filter2
 
 (* Find the first element `element' of `list' *)
@@ -107,10 +107,10 @@ let find p =
   let rec find2 =
     function
       [] ->
-      	raise Not_found
+        raise Not_found
     | a::l ->
-      	if p a then a
-	else find2 l
+        if p a then a
+        else find2 l
   in find2
 
 (*** Operations on strings. ***)
@@ -183,8 +183,8 @@ let close_io io_channel =
      (try
         close_out io_channel.io_out
       with
-      	Sys_error _ -> ())
-   with End_of_file -> ());		(* SIGPIPE during flush. *)
+        Sys_error _ -> ())
+   with End_of_file -> ());             (* SIGPIPE during flush. *)
   close_in io_channel.io_in
 
 let std_io = {

@@ -96,7 +96,7 @@ let set_breakpoints pos =
     (function (pos, _) ->
        if !debug_breakpoints then begin
          print_int pos;
-      	 print_newline()
+         print_newline()
        end;
        set_breakpoint pos)
     pos
@@ -193,7 +193,7 @@ let remove_breakpoint number =
   try
     let pos = (List.assoc number !breakpoints).ev_pos in
       Exec.protected
-      	(function () ->
+        (function () ->
            breakpoints := assoc_remove !breakpoints number;
            remove_position pos)
   with
@@ -221,8 +221,8 @@ let exec_with_temporary_breakpoint pc funct =
         if !count = 0 then begin
           positions := assoc_remove !positions pc;
           reset_instr pc;
-      	  try Symbols.event_at_pc pc; set_event pc with Not_found -> ()
-	end
+          try Symbols.event_at_pc pc; set_event pc with Not_found -> ()
+        end
 
     in
       Exec.protected (function () -> insert_position pc);

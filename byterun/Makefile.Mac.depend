@@ -41,6 +41,20 @@
                              fix_code.h ¶
                              stacks.h
 
+"compact.c.x" Ä  compact.c ¶
+                            config.h ¶
+                            ::config:sm-Mac.h ¶
+                            freelist.h ¶
+                            misc.h ¶
+                            mlvalues.h ¶
+                            gc.h ¶
+                            gc_ctrl.h ¶
+                            major_gc.h ¶
+                            memory.h ¶
+                            minor_gc.h ¶
+                            roots.h ¶
+                            weak.h
+
 "compare.c.x" Ä  compare.c ¶
                             fail.h ¶
                             misc.h ¶
@@ -150,11 +164,14 @@
                             config.h ¶
                             ::config:sm-Mac.h ¶
                             mlvalues.h ¶
+                            compact.h ¶
                             gc.h ¶
                             gc_ctrl.h ¶
                             major_gc.h ¶
                             freelist.h ¶
-                            minor_gc.h
+                            minor_gc.h ¶
+                            stacks.h ¶
+                            memory.h
 
 "hash.c.x" Ä  hash.c ¶
                          mlvalues.h ¶
@@ -273,10 +290,11 @@
                          signals.h
 
 "major_gc.c.x" Ä  major_gc.c ¶
+                             compact.h ¶
                              config.h ¶
                              ::config:sm-Mac.h ¶
-                             fail.h ¶
                              misc.h ¶
+                             fail.h ¶
                              mlvalues.h ¶
                              freelist.h ¶
                              gc.h ¶
@@ -547,6 +565,20 @@
                              fix_code.h ¶
                              stacks.h
 
+"compact.c.o" Ä  compact.c ¶
+                            config.h ¶
+                            ::config:sm-Mac.h ¶
+                            freelist.h ¶
+                            misc.h ¶
+                            mlvalues.h ¶
+                            gc.h ¶
+                            gc_ctrl.h ¶
+                            major_gc.h ¶
+                            memory.h ¶
+                            minor_gc.h ¶
+                            roots.h ¶
+                            weak.h
+
 "compare.c.o" Ä  compare.c ¶
                             fail.h ¶
                             misc.h ¶
@@ -656,11 +688,14 @@
                             config.h ¶
                             ::config:sm-Mac.h ¶
                             mlvalues.h ¶
+                            compact.h ¶
                             gc.h ¶
                             gc_ctrl.h ¶
                             major_gc.h ¶
                             freelist.h ¶
-                            minor_gc.h
+                            minor_gc.h ¶
+                            stacks.h ¶
+                            memory.h
 
 "hash.c.o" Ä  hash.c ¶
                          mlvalues.h ¶
@@ -779,10 +814,11 @@
                          signals.h
 
 "major_gc.c.o" Ä  major_gc.c ¶
+                             compact.h ¶
                              config.h ¶
                              ::config:sm-Mac.h ¶
-                             fail.h ¶
                              misc.h ¶
+                             fail.h ¶
                              mlvalues.h ¶
                              freelist.h ¶
                              gc.h ¶

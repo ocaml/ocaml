@@ -141,14 +141,14 @@ and transl_structure fields cc = function
       transl_structure fields cc rem
   | Tstr_class cl_list :: rem ->
       List.fold_right
-      	(fun (id, cl) re ->
-	   Llet(Strict, id, class_stub, re))
-	cl_list
+        (fun (id, cl) re ->
+           Llet(Strict, id, class_stub, re))
+        cl_list
         (List.fold_right
            (fun (id, cl) re ->
               Lsequence(transl_class id cl, re))
            cl_list
-	 (transl_structure
+         (transl_structure
             ((List.rev (List.map fst cl_list)) @ fields) cc rem))
 
 (* Compile an implementation *)
@@ -197,14 +197,14 @@ let transl_store_structure glob map prims str =
       transl_store rem
   | Tstr_class cl_list :: rem ->
       List.fold_right
-      	(fun (id, cl) re ->
-	   Llet(Strict, id, class_stub, re))
-	cl_list
+        (fun (id, cl) re ->
+           Llet(Strict, id, class_stub, re))
+        cl_list
         (List.fold_right
            (fun (id, cl) re ->
-	      Lsequence(transl_class id cl, re))
-	   cl_list
-	   (store_idents glob map (List.map fst cl_list) (transl_store rem)))
+              Lsequence(transl_class id cl, re))
+           cl_list
+           (store_idents glob map (List.map fst cl_list) (transl_store rem)))
 
   and store_ident glob map id cont =
     try
@@ -322,13 +322,13 @@ let transl_toplevel_item = function
   | Tstr_class cl_list ->
       let lam =
         List.fold_right
-      	  (fun (id, cl) re ->
-	     Llet(Strict, id, class_stub, re))
+          (fun (id, cl) re ->
+             Llet(Strict, id, class_stub, re))
           cl_list
           (make_sequence
              (fun (id, cl) ->
                 Lsequence(Lprim(Psetglobal id, [Lvar id]), transl_class id cl))
-	     cl_list)
+             cl_list)
       in
       List.iter (fun (id, cl) -> Ident.make_global id) cl_list;
       lam

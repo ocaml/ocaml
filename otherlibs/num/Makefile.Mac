@@ -20,39 +20,39 @@ PPCCOBJS = nat_stubs.c.x
 all Ä libnums.o libnums.x nums.cma {CMIFILES}
 
 nums.cma Ä {CAMLOBJS}
-	{CAMLC} -a -o nums.cma {CAMLOBJS}
+    {CAMLC} -a -o nums.cma {CAMLOBJS}
 
 libnums.o Ä :bignum:libbignum.o {COBJS}
-	lib -o libnums.o :bignum:libbignum.o {COBJS}
+    lib -o libnums.o :bignum:libbignum.o {COBJS}
 
 libnums.x Ä :bignum:libbignum.x {PPCCOBJS}
-	ppclink -xm library -o libnums.x :bignum:libbignum.x {PPCCOBJS}
+    ppclink -xm library -o libnums.x :bignum:libbignum.x {PPCCOBJS}
 
 :bignum:libbignum.x Ä :bignum:libbignum.o
-	echo -n
+    echo -n
 
 :bignum:libbignum.o Ä
-	directory :bignum; domake C; directory ::
+    directory :bignum; domake C; directory ::
 
 install Ä
-	duplicate -y libnums.o libnums.x nums.cma {CMIFILES} "{LIBDIR}"
+    duplicate -y libnums.o libnums.x nums.cma {CMIFILES} "{LIBDIR}"
 
 partialclean Ä
-	delete -i Å.cm[aio] || set status 0
+    delete -i Å.cm[aio] || set status 0
 
 clean Ä partialclean
-	delete -i Å.[ox] || set status 0
-	directory :bignum; domake scratch; directory ::
-	directory :test; domake clean; directory ::
+    delete -i Å.[ox] || set status 0
+    directory :bignum; domake scratch; directory ::
+    directory :test; domake clean; directory ::
 
 .cmi Ä .mli
-	{CAMLC} -c {COMPFLAGS} {default}.mli
+    {CAMLC} -c {COMPFLAGS} {default}.mli
 
 .cmo Ä .ml
-	{CAMLC} -c {COMPFLAGS} {default}.ml
+    {CAMLC} -c {COMPFLAGS} {default}.ml
 
 nat_stubs.c.o Ä nat.h
 
 depend Ä
-	MakeDepend Å.c > Makefile.Mac.depend
-	:::boot:ocamlrun :::tools:ocamldep Å.mli Å.ml >> Makefile.Mac.depend
+    MakeDepend Å.c > Makefile.Mac.depend
+    :::boot:ocamlrun :::tools:ocamldep Å.mli Å.ml >> Makefile.Mac.depend

@@ -91,7 +91,7 @@
 
 /* Required size in %g4 */
 Caml_alloc:
-	ld	[%g7], %g1
+        ld      [%g7], %g1
         sub     %g6, %g4, %g6
         cmp     %g6, %g1
         blu     Caml_call_gc
@@ -278,9 +278,9 @@ Raise_caml_exception:
     /* Save exception bucket in a register outside the reg windows */
         mov     %o0, %g1
     /* Pop some frames until the trap pointer is in the current frame. */
-	cmp     %g5, %fp
+        cmp     %g5, %fp
         blt     L107                    /* if Trap_handler_reg < %fp, over */
-	nop
+        nop
 L106:   restore
         cmp     %fp, %g5                /* if %fp <= Trap_handler_reg, loop */
         ble     L106
@@ -290,7 +290,7 @@ L107:   mov     %g5, %sp
         add     %sp, 8, %sp
         jmp     %g4 + 8
     /* Restore bucket, in delay slot */
-	mov     %g1, %o0
+        mov     %g1, %o0
 
 /* Callbacks C -> ML */
 

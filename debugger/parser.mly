@@ -21,23 +21,23 @@ open Parser_aux
 
 %}
 
-%token <string>	ARGUMENT
-%token <string>	LIDENT
-%token <string>	UIDENT
-%token <string>	OPERATOR
-%token <int>	INTEGER
-%token		STAR			/* *  */
-%token		MINUS			/* -  */
-%token		DOT		        /* . */
-%token		SHARP			/* #  */
-%token		AT			/* @  */
-%token		DOLLAR		        /* $ */
-%token		BANG		        /* ! */
-%token		LPAREN			/* (  */
-%token		RPAREN			/* )  */
-%token		LBRACKET		/* [  */
-%token		RBRACKET		/* ]  */
-%token		EOL
+%token <string> ARGUMENT
+%token <string> LIDENT
+%token <string> UIDENT
+%token <string> OPERATOR
+%token <int>    INTEGER
+%token          STAR                    /* *  */
+%token          MINUS                   /* -  */
+%token          DOT                     /* . */
+%token          SHARP                   /* #  */
+%token          AT                      /* @  */
+%token          DOLLAR                  /* $ */
+%token          BANG                    /* ! */
+%token          LPAREN                  /* (  */
+%token          RPAREN                  /* )  */
+%token          LBRACKET                /* [  */
+%token          RBRACKET                /* ]  */
+%token          EOL
 
 %right DOT
 %right BANG

@@ -42,7 +42,7 @@ static char *expand_heap (request)
 
   malloc_request = round_heap_chunk_size (Bhsize_wosize (request));
   gc_message ("Growing heap to %luk bytes\n",
-	      (stat_heap_size + malloc_request) / 1024);
+              (stat_heap_size + malloc_request) / 1024);
   mem = aligned_malloc (malloc_request + sizeof (heap_chunk_head),
                         sizeof (heap_chunk_head), &block);
   if (mem == NULL){
@@ -191,7 +191,7 @@ value alloc_shr (wosize, tag)
     Hd_hp (hp) = Make_header (wosize, tag, Black);
   }else{
     Assert (gc_phase == Phase_idle
-	    || (gc_phase == Phase_sweep && (addr)hp < (addr)gc_sweep_hp));
+            || (gc_phase == Phase_sweep && (addr)hp < (addr)gc_sweep_hp));
     Hd_hp (hp) = Make_header (wosize, tag, White);
   }
   allocated_words += Whsize_wosize (wosize);

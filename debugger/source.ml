@@ -41,13 +41,13 @@ let get_buffer mdle =
   try List.assoc mdle !buffer_list with
     Not_found ->
       let inchan = open_in (source_of_module mdle) in
-      	let (content, _) as buffer =
-      	  (String.create (in_channel_length inchan), ref [])
+        let (content, _) as buffer =
+          (String.create (in_channel_length inchan), ref [])
         in
-	  unsafe_really_input inchan content 0 (in_channel_length inchan);
-      	  buffer_list :=
-      	    (list_truncate !buffer_max_count ((mdle, buffer)::!buffer_list));
-      	  buffer
+          unsafe_really_input inchan content 0 (in_channel_length inchan);
+          buffer_list :=
+            (list_truncate !buffer_max_count ((mdle, buffer)::!buffer_list));
+          buffer
 
 let buffer_content =
   (fst : buffer -> string)
@@ -64,14 +64,14 @@ let insert_pos buffer ((position, line) as pair) =
   let rec new_list =
     function
       [] ->
-      	[(position, line)]
+        [(position, line)]
     | ((pos, lin) as a::l) as l' ->
         if lin < line then
-	  pair::l'
-	else if lin = line then
-	  l'
-	else
-      	  a::(new_list l)
+          pair::l'
+        else if lin = line then
+          l'
+        else
+          a::(new_list l)
   in
     let buffer_cache = snd buffer in
       buffer_cache := new_list !buffer_cache
@@ -88,7 +88,7 @@ let next_linefeed (buffer, _) pos =
         if (p = len) or (String.get buffer p = '\n') then
           p
         else
-      	  search (succ p)
+          search (succ p)
       in
         search pos
 
@@ -101,21 +101,21 @@ let line_of_pos buffer position =
   let rec find =
     function
       [] ->
-      	if position < 0 then
-	  raise Out_of_range
-	else
-      	  (0, 1)
+        if position < 0 then
+          raise Out_of_range
+        else
+          (0, 1)
     | ((pos, line) as pair)::l ->
-      	if pos > position then
-	  find l
-	else
-	  pair
+        if pos > position then
+          find l
+        else
+          pair
   and find_line previous =
     let (pos, line) as next = next_line buffer previous in
       if pos <= position then
-      	find_line next
+        find_line next
       else
-      	previous
+        previous
   in
     let result = find_line (find !(snd buffer)) in
       insert_pos buffer result;
@@ -128,19 +128,19 @@ let pos_of_line buffer line =
       [] ->
         if line <= 0 then
           raise Out_of_range
-	else
+        else
           (0, 1)
     | ((pos, lin) as pair)::l ->
-    	if lin > line then
-	  find l
-	else
-	  pair
+        if lin > line then
+          find l
+        else
+          pair
   and find_pos previous =
     let (_, lin) as next = next_line buffer previous in
       if lin <= line then
-     	find_pos next
+        find_pos next
       else
-      	previous
+        previous
   in
     let result = find_pos (find !(snd buffer)) in
       insert_pos buffer result;

@@ -168,7 +168,7 @@ let kb_completion greater =
             let ek = (rk.lhs, rk.rhs) in
               process failures (k,l)
                       (mutual_critical_pairs el (rename rl.numvars ek))
-	  with Not_found -> next_criticals failures (k+1,l)
+          with Not_found -> next_criticals failures (k+1,l)
     with Not_found -> next_criticals failures (1,l+1)
   in process
   in kbrec

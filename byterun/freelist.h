@@ -20,7 +20,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-asize_t fl_cur_size;
+extern asize_t fl_cur_size;
 
 char *fl_allocate P((mlsize_t));
 void fl_init_merge P((void));

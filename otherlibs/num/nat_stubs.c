@@ -21,7 +21,7 @@
 
 /* Stub code for the BigNum package. */
 
-value create_nat(size)	/* ML */
+value create_nat(size)  /* ML */
      value size;
 {
   mlsize_t sz = Long_val(size);
@@ -33,14 +33,14 @@ value create_nat(size)	/* ML */
   }
 }
 
-value set_to_zero_nat(nat, ofs, len)	/* ML */
+value set_to_zero_nat(nat, ofs, len)    /* ML */
      value nat, ofs, len;
 {
   BnSetToZero(Bignum_val(nat), Long_val(ofs), Long_val(len));
   return Val_unit;
 }
 
-value blit_nat(nat1, ofs1, nat2, ofs2, len)	/* ML */
+value blit_nat(nat1, ofs1, nat2, ofs2, len)    /* ML */
      value nat1, ofs1, nat2, ofs2, len;
 {
   BnAssign(Bignum_val(nat1), Long_val(ofs1),
@@ -49,57 +49,57 @@ value blit_nat(nat1, ofs1, nat2, ofs2, len)	/* ML */
   return Val_unit;
 }
 
-value set_digit_nat(nat, ofs, digit)	/* ML */
+value set_digit_nat(nat, ofs, digit)    /* ML */
      value nat, ofs, digit;
 {
   BnSetDigit(Bignum_val(nat), Long_val(ofs), Long_val(digit));
   return Val_unit;
 }
 
-value nth_digit_nat(nat, ofs)	/* ML */
+value nth_digit_nat(nat, ofs)   /* ML */
      value nat, ofs;
 {
   return Val_long(BnGetDigit(Bignum_val(nat), Long_val(ofs)));
 }
 
-value num_digits_nat(nat, ofs, len)	/* ML */
+value num_digits_nat(nat, ofs, len)     /* ML */
      value nat, ofs, len;
 {
   return Val_long(BnNumDigits(Bignum_val(nat), Long_val(ofs), Long_val(len)));
 }
 
-value num_leading_zero_bits_in_digit(nat, ofs)	/* ML */
+value num_leading_zero_bits_in_digit(nat, ofs)  /* ML */
      value nat, ofs;
 {
   return
     Val_long(BnNumLeadingZeroBitsInDigit(Bignum_val(nat), Long_val(ofs)));
 }
 
-value is_digit_int(nat, ofs)	/* ML */
+value is_digit_int(nat, ofs)    /* ML */
      value nat, ofs;
 {
   return Val_bool(BnDoesDigitFitInWord(Bignum_val(nat), Long_val(ofs)));
 }
 
-value is_digit_zero(nat, ofs)	/* ML */
+value is_digit_zero(nat, ofs)   /* ML */
      value nat, ofs;
 {
   return Val_bool(BnIsDigitZero(Bignum_val(nat), Long_val(ofs)));
 }
 
-value is_digit_normalized(nat, ofs)	/* ML */
+value is_digit_normalized(nat, ofs)     /* ML */
      value nat, ofs;
 {
   return Val_bool(BnIsDigitNormalized(Bignum_val(nat), Long_val(ofs)));
 }
 
-value is_digit_odd(nat, ofs)	/* ML */
+value is_digit_odd(nat, ofs)    /* ML */
      value nat, ofs;
 {
   return Val_bool(BnIsDigitOdd(Bignum_val(nat), Long_val(ofs)));
 }
 
-value incr_nat(nat, ofs, len, carry_in)	/* ML */
+value incr_nat(nat, ofs, len, carry_in) /* ML */
      value nat, ofs, len, carry_in;
 {
   return Val_long(BnAddCarry(Bignum_val(nat), Long_val(ofs),
@@ -114,7 +114,7 @@ value add_nat_native(nat1, ofs1, len1, nat2, ofs2, len2, carry_in)
                         Long_val(carry_in)));
 }
 
-value add_nat(argv, argn)	/* ML */
+value add_nat(argv, argn)      /* ML */
      value * argv;
      int argn;
 {
@@ -122,14 +122,14 @@ value add_nat(argv, argn)	/* ML */
                         argv[4], argv[5], argv[6]);
 }
 
-value complement_nat(nat, ofs, len)	/* ML */
+value complement_nat(nat, ofs, len)     /* ML */
      value nat, ofs, len;
 {
   BnComplement(Bignum_val(nat), Long_val(ofs), Long_val(len));
   return Val_unit;
 }
 
-value decr_nat(nat, ofs, len, carry_in)	/* ML */
+value decr_nat(nat, ofs, len, carry_in) /* ML */
      value nat, ofs, len, carry_in;
 {
   return Val_long(BnSubtractBorrow(Bignum_val(nat), Long_val(ofs),
@@ -144,7 +144,7 @@ value sub_nat_native(nat1, ofs1, len1, nat2, ofs2, len2, carry_in)
                              Long_val(carry_in)));
 }
 
-value sub_nat(argv, argn)	/* ML */
+value sub_nat(argv, argn)       /* ML */
      value * argv;
      int argn;
 {
@@ -161,7 +161,7 @@ value mult_digit_nat_native(nat1, ofs1, len1, nat2, ofs2, len2, nat3, ofs3)
                              Bignum_val(nat3), Long_val(ofs3)));
 }
 
-value mult_digit_nat(argv, argn)	/* ML */
+value mult_digit_nat(argv, argn)        /* ML */
      value * argv;
      int argn;
 {
@@ -178,7 +178,7 @@ value mult_nat_native(nat1, ofs1, len1, nat2, ofs2, len2, nat3, ofs3, len3)
                         Bignum_val(nat3), Long_val(ofs3), Long_val(len3)));
 }
 
-value mult_nat(argv, argn)	/* ML */
+value mult_nat(argv, argn)      /* ML */
      value * argv;
      int argn;
 {
@@ -194,7 +194,7 @@ value shift_left_nat_native(nat1, ofs1, len1, nat2, ofs2, nbits)
   return Val_unit;
 }
 
-value shift_left_nat(argv, argn)	/* ML */
+value shift_left_nat(argv, argn)        /* ML */
      value * argv;
      int argn;
 {
@@ -212,7 +212,7 @@ value div_digit_nat_native(natq, ofsq, natr, ofsr, nat1, ofs1, len1, nat2, ofs2)
   return Val_unit;
 }
 
-value div_digit_nat(argv, argn)	/* ML */
+value div_digit_nat(argv, argn) /* ML */
      value * argv;
      int argn;
 {
@@ -228,7 +228,7 @@ value div_nat_native(nat1, ofs1, len1, nat2, ofs2, len2)
   return Val_unit;
 }
 
-value div_nat(argv, argn)	/* ML */
+value div_nat(argv, argn)        /* ML */
      value * argv;
      int argn;
 {
@@ -244,7 +244,7 @@ value shift_right_nat_native(nat1, ofs1, len1, nat2, ofs2, nbits)
   return Val_unit;
 }
 
-value shift_right_nat(argv, argn)	/* ML */
+value shift_right_nat(argv, argn)      /* ML */
      value * argv;
      int argn;
 {
@@ -252,7 +252,7 @@ value shift_right_nat(argv, argn)	/* ML */
                                argv[3], argv[4], argv[5]);
 }
 
-value compare_digits_nat(nat1, ofs1, nat2, ofs2)	/* ML */
+value compare_digits_nat(nat1, ofs1, nat2, ofs2)        /* ML */
      value nat1, ofs1, nat2, ofs2;
 {
   return Val_long(BnCompareDigits(Bignum_val(nat1), Long_val(ofs1),
@@ -266,7 +266,7 @@ value compare_nat_native(nat1, ofs1, len1, nat2, ofs2, len2)
                             Bignum_val(nat2), Long_val(ofs2), Long_val(len2)));
 }
 
-value compare_nat(argv, argn)	/* ML */
+value compare_nat(argv, argn)   /* ML */
      value * argv;
      int argn;
 {
@@ -274,7 +274,7 @@ value compare_nat(argv, argn)	/* ML */
                             argv[3], argv[4], argv[5]);
 }
 
-value land_digit_nat(nat1, ofs1, nat2, ofs2)	/* ML */
+value land_digit_nat(nat1, ofs1, nat2, ofs2)    /* ML */
      value nat1, ofs1, nat2, ofs2;
 {
   BnAndDigits(Bignum_val(nat1), Long_val(ofs1),
@@ -282,7 +282,7 @@ value land_digit_nat(nat1, ofs1, nat2, ofs2)	/* ML */
   return Val_unit;
 }
 
-value lor_digit_nat(nat1, ofs1, nat2, ofs2)	/* ML */
+value lor_digit_nat(nat1, ofs1, nat2, ofs2)     /* ML */
      value nat1, ofs1, nat2, ofs2;
 {
   BnOrDigits(Bignum_val(nat1), Long_val(ofs1),
@@ -290,7 +290,7 @@ value lor_digit_nat(nat1, ofs1, nat2, ofs2)	/* ML */
   return Val_unit;
 }
 
-value lxor_digit_nat(nat1, ofs1, nat2, ofs2)	/* ML */
+value lxor_digit_nat(nat1, ofs1, nat2, ofs2)    /* ML */
      value nat1, ofs1, nat2, ofs2;
 {
   BnXorDigits(Bignum_val(nat1), Long_val(ofs1),

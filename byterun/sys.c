@@ -129,7 +129,7 @@ value sys_open(path, flags, perm) /* ML */
 #if !macintosh
              ,Int_val(perm)
 #endif
-			               );
+                                       );
   if (ret == -1) sys_error(path);
   return Val_long(ret);
 }
@@ -180,7 +180,7 @@ value sys_chdir(dirname)        /* ML */
   return Val_unit;
 }
 
-value sys_getcwd(unit)		/* ML */
+value sys_getcwd(unit)          /* ML */
      value unit;
 {
   char buff[4096];
@@ -280,9 +280,9 @@ char * searchpath(name)
 /* We don't need searchpath on the Macintosh because there are no #! scripts */
 
 char *searchpath (name)
-	char *name;
+     char *name;
 {
-	return name;
+  return name;
 }
 
 #else

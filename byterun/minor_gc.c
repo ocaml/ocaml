@@ -56,7 +56,7 @@ void set_minor_heap_size (size)
   ref_table_size = minor_heap_size / sizeof (value) / 8;
   ref_table_reserve = 256;
   new_table = (value **) stat_alloc ((ref_table_size + ref_table_reserve)
-				     * sizeof (value *));
+                                     * sizeof (value *));
   if (ref_table != NULL) stat_free ((char *) ref_table);
   ref_table = new_table;
   ref_table_ptr = ref_table;

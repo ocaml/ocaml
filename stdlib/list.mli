@@ -36,7 +36,7 @@ val flatten : 'a list list -> 'a list
 val iter : ('a -> 'b) -> 'a list -> unit
         (* [List.iter f [a1; ...; an]] applies function [f] in turn to
            [a1; ...; an], discarding all the results. It is equivalent to
-	   [begin f a1; f a2; ...; f an; () end]. *)
+           [begin f a1; f a2; ...; f an; () end]. *)
 val map : ('a -> 'b) -> 'a list -> 'b list
         (* [List.map f [a1; ...; an]] applies function [f] to [a1, ..., an],
            and builds the list [[f a1; ...; f an]]
@@ -53,23 +53,23 @@ val fold_right : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
 val iter2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> unit
         (* [List.iter2 f [a1; ...; an] [b1; ...; bn]] calls in turn
            [f a1 b1; ...; f an bn], discarding the results.
-	   Raise [Invalid_argument] if the two lists have
-	   different lengths. *)
+           Raise [Invalid_argument] if the two lists have
+           different lengths. *)
 val map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
         (* [List.map2 f [a1; ...; an] [b1; ...; bn]] is
            [[f a1 b1; ...; f an bn]].
-	   Raise [Invalid_argument] if the two lists have
+           Raise [Invalid_argument] if the two lists have
            different lengths. *)
 val fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b list -> 'c list -> 'a
         (* [List.fold_left2 f a [b1; ...; bn] [c1; ...; cn]] is
            [f (... (f (f a b1 c1) b2 c2) ...) bn cn].
-	   Raise [Invalid_argument] if the two lists have
-	   different lengths. *)
+           Raise [Invalid_argument] if the two lists have
+           different lengths. *)
 val fold_right2 : ('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> 'c -> 'c
         (* [List.fold_right2 f [a1; ...; an] [b1; ...; bn] c] is
            [f a1 b1 (f a2 b2 (... (f an bn c) ...))].
-	   Raise [Invalid_argument] if the two lists have
-	   different lengths. *)
+           Raise [Invalid_argument] if the two lists have
+           different lengths. *)
 
 (** List scanning *)
 
@@ -85,7 +85,7 @@ val for_all2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val exists2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
         (* Same as [for_all] and [exists], but for a two-argument predicate.
            Raise [Invalid_argument] if the two lists have
-	   different lengths. *)
+           different lengths. *)
 val mem : 'a -> 'a list -> bool
         (* [mem a l] is true if and only if [a] is equal
            to an element of [l]. *)

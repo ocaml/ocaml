@@ -217,11 +217,11 @@ void debugger(event)
     case REQ_CHECKPOINT:
       i = fork();
       if (i == 0) {
-	close_connection();	/* Close parent connection. */
-	open_connection();      /* Open new connection with debugger */
+        close_connection();     /* Close parent connection. */
+        open_connection();      /* Open new connection with debugger */
       } else {
-	putword(dbg_out, i);
-	flush(dbg_out);
+        putword(dbg_out, i);
+        flush(dbg_out);
       }
       break;
     case REQ_GO:

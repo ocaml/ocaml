@@ -293,11 +293,11 @@ let rec type_module env smod =
             with Includemod.Error msg ->
               raise(Error(sarg.pmod_loc, Not_included msg)) in
           let mty_appl =
-	    try
-	      let path = path_of_module arg in
+            try
+              let path = path_of_module arg in
               Subst.modtype (Subst.add_module param path Subst.identity)
-      	       	       	    mty_res
-	    with Not_a_path ->
+                            mty_res
+            with Not_a_path ->
               try
                 Mtype.nondep_supertype
                   (Env.add_module param arg.mod_type env) param mty_res
@@ -394,7 +394,7 @@ and type_struct env sstr =
        :: str_rem,
        List.flatten
          (map_end
-      	    (fun (i, d, i', d', i'', d'', _) ->
+            (fun (i, d, i', d', i'', d'', _) ->
                [Tsig_class(i, d); Tsig_type(i', d'); Tsig_type(i'', d'')])
             classes [sig_rem]),
        final_env)

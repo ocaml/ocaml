@@ -44,7 +44,7 @@ let bucket_small_size = ref 16
 
 let step = Sys.word_size / 16
 let first_bucket = 0
-let bucket_size = 32			(* Must be 256 or less *)
+let bucket_size = 32                    (* Must be 256 or less *)
 let initial_object_size = 2
 
 (**** Version ****)
@@ -105,7 +105,7 @@ let new_filled_bucket pos methods =
     (fun (lab, met) ->
        let (buck, elem) = decode lab in
        if buck = pos then
-	 bucket.(elem) <- (magic met : item))
+         bucket.(elem) <- (magic met : item))
     (List.rev methods);
   bucket
 
@@ -165,7 +165,7 @@ let rec choose bucket i =
       remove_bucket n; choose bucket i
     end else
       try
-      	merge_buckets !small_buckets.(n) bucket
+        merge_buckets !small_buckets.(n) bucket
       with Failed ->
         choose bucket (i - 1)
   end else begin
@@ -300,7 +300,7 @@ let set_initializer table init =
       let i =
         List.fold_right
           (fun init2 init1 -> (magic init1 : obj_init -> obj_init) init2)
-	  l init
+          l init
       in
         table.init <- (i::l')::l''
   | _ ->
@@ -501,7 +501,7 @@ let show_buckets () =
   List.iter
     (function b ->
        for i = 0 to bucket_size - 1 do
-      	 print_char (if b.(i) == dummy_item then '.' else '*')
+         print_char (if b.(i) == dummy_item then '.' else '*')
        done;
        print_newline ())
     (sort_buck !bucket_list)

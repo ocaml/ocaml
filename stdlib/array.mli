@@ -31,7 +31,7 @@ external set: 'a array -> int -> 'a -> unit = "%array_safe_set"
 external create: int -> 'a -> 'a array = "make_vect"
         (* [Array.create n x] returns a fresh array of length [n],
            initialized with [x].
-	   All the elements of this new array are initially
+           All the elements of this new array are initially
            physically equal to [x] (in the sense of the [==] predicate).
            Consequently, if [x] is mutable, it is shared among all elements
            of the array, and modifying [x] through one of the array entries
@@ -40,7 +40,7 @@ val create_matrix: int -> int -> 'a -> 'a array array
         (* [Array.create_matrix dimx dimy e] returns a two-dimensional array
            (an array of arrays) with first dimension [dimx] and
            second dimension [dimy]. All the elements of this new matrix
-	   are initially physically equal to [e].
+           are initially physically equal to [e].
            The element ([x,y]) of a matrix [m] is accessed
            with the notation [m.(x).(y)]. *)
 val append: 'a array -> 'a array -> 'a array

@@ -13,27 +13,27 @@ all Ä dynlink.cma extract_crc
 allopt Ä
 
 dynlink.cma Ä {OBJS}
-	{CAMLC} {COMPFLAGS} -a -o dynlink.cma {COMPILEROBJS} {OBJS}
+    {CAMLC} {COMPFLAGS} -a -o dynlink.cma {COMPILEROBJS} {OBJS}
 
 extract_crc Ä dynlink.cma extract_crc.cmo
-	{CAMLC} {COMPFLAGS} -o extract_crc dynlink.cma extract_crc.cmo
+    {CAMLC} {COMPFLAGS} -o extract_crc dynlink.cma extract_crc.cmo
 
 install Ä
-	duplicate -y dynlink.cmi dynlink.cma extract_crc "{LIBDIR}"
+    duplicate -y dynlink.cmi dynlink.cma extract_crc "{LIBDIR}"
 
 installopt Ä
 
 partialclean Ä
-	delete -i extract_crc
-	delete -i Å.cm[aio] || set status 0
+    delete -i extract_crc
+    delete -i Å.cm[aio] || set status 0
 
 clean Ä partialclean
 
 .cmi Ä .mli
-	{CAMLC} -c {COMPFLAGS} {default}.mli
+    {CAMLC} -c {COMPFLAGS} {default}.mli
 
 .cmo Ä .ml
-	{CAMLC} -c {COMPFLAGS} {default}.ml
+    {CAMLC} -c {COMPFLAGS} {default}.ml
 
 depend Ä
-	:::boot:ocamlrun :::tools:ocamldep Å.mli Å.ml > Makefile.Mac.depend
+    :::boot:ocamlrun :::tools:ocamldep Å.mli Å.ml > Makefile.Mac.depend

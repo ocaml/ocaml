@@ -38,18 +38,18 @@ let transl_super tbl meths inh_methods rem =
   List.fold_right
     (fun (nm, id) rem ->
        Llet(StrictOpt, id, Lapply (oo_prim "get_method",
-		                   [Lvar tbl; Lvar (Meths.find nm meths)]),
+                                   [Lvar tbl; Lvar (Meths.find nm meths)]),
        rem))
     inh_methods rem
 
 let transl_val tbl name id rem =
   Llet(StrictOpt, id, Lapply (oo_prim "get_variable",
-		              [Lvar tbl; transl_label name]),
+                              [Lvar tbl; transl_label name]),
        rem)
 
 let transl_private_val tbl name id rem =
   Llet(StrictOpt, id, Lapply (oo_prim "get_private_variable",
-		              [Lvar tbl; transl_label name]),
+                              [Lvar tbl; transl_label name]),
        rem)
 
 let transl_vals tbl vals rem =
@@ -76,7 +76,7 @@ let transl_field_obj obj field (obj_init, anc_id) =
     Cf_inher (name, args, vals, inh_meths, meths') ->
       let init = Ident.create "init" in
       (Lsequence(Lapply(Lvar init, Lvar obj :: (List.map transl_exp args)),
-		 obj_init),
+                 obj_init),
        init::anc_id)
   | Cf_val (name, id, priv, Some exp) ->
       (Lsequence(set_inst_var obj name id exp, obj_init),
@@ -93,7 +93,7 @@ let transl_field_cl tbl meths field cl_init =
                         [Lvar tbl; transl_path name;
                          inherited_values vals;
                          inherited_meths meths']),
-      	       	transl_vals tbl vals (
+                transl_vals tbl vals (
                 transl_super tbl meths inh_meths cl_init))
   | Cf_val (name, id, priv, exp) ->
       if priv = Private then
@@ -103,7 +103,7 @@ let transl_field_cl tbl meths field cl_init =
   | Cf_meth (name, exp) ->
       Lsequence(Lapply (oo_prim "set_method",
                         [Lvar tbl; transl_label name; transl_exp exp]),
-		cl_init)
+                cl_init)
 
 let transl_val_hiding tbl cl_init =
   function
@@ -112,7 +112,7 @@ let transl_val_hiding tbl cl_init =
   | Cf_val (name, id, Private, exp) ->
       Lsequence(Lapply (oo_prim "hide_variable",
                         [Lvar tbl; transl_label name]),
-		cl_init)
+                cl_init)
 
 let bind_methods tbl public_methods lab id cl_init =
   if List.mem lab public_methods then
@@ -154,7 +154,7 @@ let transl_class cl_id cl =
     Lfunction (Curried, [table],
                List.fold_left (transl_val_hiding table)
                  (transl_fields table cl.cl_pub_meths cl.cl_meths cl.cl_field
-	            (Lapply (oo_prim "set_initializer",
+                    (Lapply (oo_prim "set_initializer",
                              [Lvar table; obj_init])))
                  cl.cl_field)
   in

@@ -119,7 +119,7 @@ caml_call_gc:
         mflr    0
         Storeglobal(0, caml_last_return_address, 11)
     /* Record lowest stack address */
-	addic	0, 1, 32
+        addic   0, 1, 32
         Storeglobal(0, caml_bottom_of_stack, 11)
     /* Save current allocation pointer for debugging purposes */
         Storeglobal(31, young_ptr, 11)
@@ -261,7 +261,7 @@ caml_call_gc:
         .type   caml_c_call, @function
 caml_c_call:
     /* Save return address */
-	mflr    25
+        mflr    25
     /* Get ready to call C function (address in 11) */
         mtlr    11
     /* Record lowest stack address and return address */
@@ -312,7 +312,7 @@ caml_start_program:
         stwu    1, -256(1)
     /* Save return address */
         mflr    0
-	stw 0,  256+4(1)
+        stw 0,  256+4(1)
     /* Save all callee-save registers */
         Save_callee_save
     /* Set up a callback link */

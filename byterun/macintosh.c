@@ -70,8 +70,8 @@ int chdir (char *dir)
   if (result != noErr) return -1;
   if (prevdir != 0){
     prevdir = 0;
-	pb.ioVRefNum = prevdir;
-	PBCloseWDSync (&pb);
+    pb.ioVRefNum = prevdir;
+    PBCloseWDSync (&pb);
   }
   return 0;
 }
@@ -97,12 +97,12 @@ static char *getfullpathpb (CInfoPBPtr pb)
   char *result;
 
   if (pb->hFileInfo.ioFlParID == fsRtParID){
-	result = malloc (1);
-	if (result == NULL) return NULL;
-	result [0] = '\0';
+    result = malloc (1);
+    if (result == NULL) return NULL;
+    result [0] = '\0';
   }else{
     result = getfullpathid (pb->hFileInfo.ioVRefNum, pb->hFileInfo.ioFlParID);
-	if (result == NULL) return NULL;
+    if (result == NULL) return NULL;
   }
   cat_cp_str (&result, pb->hFileInfo.ioNamePtr);
   if (pb->hFileInfo.ioFlAttrib & (1<<4)) cat_cp_str (&result, "\p:");

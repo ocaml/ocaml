@@ -18,7 +18,7 @@
 value unix_connect(socket, address)   /* ML */
      value socket, address;
 {
-	int retcode;
+  int retcode;
 
   get_sockaddr(address);
   enter_blocking_section();

@@ -72,8 +72,8 @@ static void expand_pattern(pat)
 
   handle = _findfirst(pat, &ffblk);
   if (handle == -1) {
-	store_argument(pat); /* a la Bourne shell */
-	return;
+    store_argument(pat); /* a la Bourne shell */
+    return;
   }
   do {
     store_argument(strdup(ffblk.name));
@@ -101,7 +101,7 @@ static void expand_diversion(filename)
   for (p = buf; p < endbuf; /*nothing*/) {
     /* Skip leading blanks */
     while (p < endbuf && isspace(*p)) p++;
-	if (p >= endbuf) break;
+    if (p >= endbuf) break;
     s = p;
     /* Skip to next blank or end of buffer */
     while (p < endbuf && !isspace(*p)) p++;

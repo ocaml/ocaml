@@ -37,7 +37,7 @@ value unix_setsockopt(socket, option, status) /* ML */
   int optval = Int_val(status);
   if (setsockopt(_get_osfhandle(Int_val(socket)), SOL_SOCKET,
                  sockopt[Int_val(option)],
-		 (char *) &optval, sizeof(optval)) == -1)
+                 (char *) &optval, sizeof(optval)) == -1)
     uerror("setsockopt", Nothing);
   return Val_unit;
 }

@@ -42,7 +42,7 @@ val dirname : string -> string
            which is equivalent to [name]. Moreover, after setting the
            current directory to [dirname name] (with [Sys.chdir]),
            references to [basename name] (which is a relative file name)
-	   designate the same file as [name] before the call to [chdir]. *)
+           designate the same file as [name] before the call to [chdir]. *)
 val temp_file: string -> string -> string
         (* [temp_file prefix suffix] returns the name of a
            non-existent temporary file in the temporary directory.

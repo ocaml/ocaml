@@ -19,7 +19,7 @@ open Parser
 
 }
 
-rule line =	(* Read a whole line *)
+rule line =     (* Read a whole line *)
   parse
     [ ^ '\n' ]* '\n'
       { let line = Lexing.lexeme lexbuf in
@@ -29,7 +29,7 @@ rule line =	(* Read a whole line *)
   | eof
       { raise Exit }
 
-and argument =	(* Read a raw argument *)
+and argument =  (* Read a raw argument *)
   parse
     [ ^ ' ' '\t' ]+
       { ARGUMENT (Lexing.lexeme lexbuf) }
@@ -47,7 +47,7 @@ and line_argument =
   | eof
       { EOL }
 
-and lexeme =	(* Read a lexeme *)
+and lexeme =    (* Read a lexeme *)
   parse
     [' ' '\t'] +
       { lexeme lexbuf }

@@ -62,8 +62,8 @@ let read_symbols bytecode_file =
     (fun evl ->
       List.iter
         (fun ev ->
-	  events := ev :: !events;
-      	  Hashtbl.add events_by_pc ev.ev_pos ev)
+          events := ev :: !events;
+          Hashtbl.add events_by_pc ev.ev_pos ev)
         evl)
     all_events;
 
@@ -71,10 +71,10 @@ let read_symbols bytecode_file =
     (function
         [] -> ()
       | ev :: _ as evl ->
-      	  let md = ev.ev_module in
+          let md = ev.ev_module in
           let sorted_evl =
             Sort.list (fun ev1 ev2 -> ev1.ev_char <= ev2.ev_char) evl in
-	  modules := md :: !modules;
+          modules := md :: !modules;
           Hashtbl.add all_events_by_module md sorted_evl;
           let real_evl =
             Primitives.filter

@@ -188,7 +188,7 @@ static void parse_camlrunparam()
   if (opt != NULL){
     while (*opt != '\0'){
       switch (*opt++){
-      case 's':	scanmult (opt, &minor_heap_init); break;
+      case 's': scanmult (opt, &minor_heap_init); break;
       case 'i': scanmult (opt, &heap_chunk_init); break;
       case 'h': scanmult (opt, &heap_size_init); break;
       case 'l': scanmult (opt, &max_stack_init); break;
@@ -297,7 +297,7 @@ void caml_startup_code(code, code_size, data, argv)
     external_raise = &raise_buf;
     /* Initialize the abstract machine */
     init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-	     percent_free_init, max_percent_free_init, verbose_init);
+             percent_free_init, max_percent_free_init, verbose_init);
     init_stack (max_stack_init);
     init_atoms();
     /* Initialize the interpreter */

@@ -19,7 +19,7 @@
 | Allocation
 
         .text
-	.globl  _caml_call_gc
+        .globl  _caml_call_gc
         .globl  _caml_alloc1
         .globl  _caml_alloc2
         .globl  _caml_alloc3

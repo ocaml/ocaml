@@ -12,7 +12,7 @@ PPCCOptions = -i :h: -d CAML_LIGHT -w 30
 PPCLinkOptions =
 PPCLibs = "{sharedlibraries}MathLib" "{ppclibraries}PPCCRuntime.o" ¶
           "{ppclibraries}PPCToolLibs.o" "{sharedlibraries}StdCLib" ¶
-	  "{ppclibraries}StdCRuntime.o" "{sharedlibraries}InterfaceLib"
+          "{ppclibraries}StdCRuntime.o" "{sharedlibraries}InterfaceLib"
 
 LIB = libbignum.o
 OBJECT = :o:KerN.o :o:bnInit.o :o:bnMult.o :o:bnDivide.o :o:bnCmp.o :o:bzf.o ¶
@@ -30,42 +30,42 @@ KERNH = :h:BigNum.h
 # scratch - start from scratch
 
 default Ä
-	echo "Usage: make <version>"
-	echo "see README for valid versions."
+    echo "Usage: make <version>"
+    echo "see README for valid versions."
 
 #all Ä testKerN bztest 
-#	echo All is done
+#   echo All is done
 
 all Ä {LIB} {PPCLIB}
-	echo All is done
+    echo All is done
 
 scratch Ä
-	delete -i :o:Å.[ox] || set status 0
-	delete -i libbignum.o libbignum.x
-	delete -i bztest testKerN
+    delete -i :o:Å.[ox] || set status 0
+    delete -i libbignum.o libbignum.x
+    delete -i bztest testKerN
 
 # build the BigNum library
 {LIB} Ä {OBJECT}
-	lib -o {LIB} {OBJECT}
+    lib -o {LIB} {OBJECT}
 
 {PPCLIB} Ä {PPCOBJECT}
-	ppclink -xm library -o {PPCLIB} {PPCOBJECT}
+    ppclink -xm library -o {PPCLIB} {PPCOBJECT}
 
 # How to choose the machine dependent version. All produce KerN.o
 :o:KerN.o Ä :c:KerN.c 
-	echo "The Default is KerN written in C with digits on long"
-	domake C -d C="{C}" -d COptions="{COptions}"
+    echo "The Default is KerN written in C with digits on long"
+    domake C -d C="{C}" -d COptions="{COptions}"
 
 C Ä scratch
-	{C} {COptions} :c:KerN.c -o :o:KerN.o
-	{PPCC} {PPCCOptions} :c:KerN.c -o :o:KerN.x
-	domake all
+    {C} {COptions} :c:KerN.c -o :o:KerN.o
+    {PPCC} {PPCCOptions} :c:KerN.c -o :o:KerN.x
+    domake all
 
 .o Ä .c {KERNH}
-	{C} {COptions} {depdir}{default}.c -o {targdir}{default}.o
+    {C} {COptions} {depdir}{default}.c -o {targdir}{default}.o
 
 .x Ä .c {KERNH}
-	{PPCC} {PPCCOptions} {depdir}{default}.c -o {targdir}{default}.x
+    {PPCC} {PPCCOptions} {depdir}{default}.c -o {targdir}{default}.x
 
 :o: Ä :c: :c:bn:
 
@@ -83,20 +83,20 @@ C Ä scratch
 
 # Tests Of KerN
 testKerN ÄÄ :o:testKerN.o {LIB}
-	ilink -c 'MPS ' -t MPST :o:testKerN.o {LIB} {LinkOptions} -o testKerN {Libs}
+    ilink -c 'MPS ' -t MPST :o:testKerN.o {LIB} {LinkOptions} -o testKerN {Libs}
 
 testKerN ÄÄ :o:testKerN.x {PPCLIB}
-	ppclink -c 'MPS ' -t MPST :o:testKerN.x {PPCLIB} {PPCLinkOptions} ¶
-	        -o testKerN {PPCLibs}
+    ppclink -c 'MPS ' -t MPST :o:testKerN.x {PPCLIB} {PPCLinkOptions} ¶
+            -o testKerN {PPCLibs}
 
 :o:testKerN.o :o:testKerN.x Ä {KERNH}
 
 # Tests Of BigZ
 bztest ÄÄ :o:bztest.o {LIB}
-	ilink -c 'MPS ' -t MPST :o:bztest.o {LIB} {LinkOptions} -o bztest {Libs}
+    ilink -c 'MPS ' -t MPST :o:bztest.o {LIB} {LinkOptions} -o bztest {Libs}
 
 bztest ÄÄ :o:bztest.x {PPCLIB}
-	ppclink -c 'MPS ' -t MPST :o:bztest.x {PPCLIB} {PPCLinkOptions} ¶
-	        -o bztest {PPCLibs}
+    ppclink -c 'MPS ' -t MPST :o:bztest.x {PPCLIB} {PPCLinkOptions} ¶
+            -o bztest {PPCLibs}
 
 :o:bztest.o :o:bztest.x Ä :h:BigZ.h {KERNH}

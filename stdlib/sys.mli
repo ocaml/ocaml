@@ -32,7 +32,7 @@ external command: string -> int = "sys_system_command"
 external chdir: string -> unit = "sys_chdir"
         (* Change the current working directory of the process. *)
 external getcwd: unit -> string = "sys_getcwd"
-	(* Return the current working directory of the process. *)
+        (* Return the current working directory of the process. *)
 val interactive: bool ref
         (* This reference is initially set to [false] in standalone
            programs and to [true] if the code is being executed under
@@ -92,4 +92,4 @@ val catch_break: bool -> unit
            terminates the program or raises the [Break] exception. 
            Call [catch_break true] to enable raising [Break],
            and [catch_break false] to let the system
-	   terminate the program on user interrupt. *)
+           terminate the program on user interrupt. *)

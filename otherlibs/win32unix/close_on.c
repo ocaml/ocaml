@@ -63,19 +63,19 @@ static int win_open_osfhandle2(handle, flags, reqd_fd)
   if (fd == -1)
     return -1;
   if (fd == reqd_fd)
-    return 0;			/* Got it! */
+    return 0;                   /* Got it! */
   /* Make a copy of the handle, since we're going to close "handle" when
      we close "fd". */
   if (! DuplicateHandle(GetCurrentProcess(), handle,
-			GetCurrentProcess(), &new_handle,
-			0L, FALSE, DUPLICATE_SAME_ACCESS)) {
+                        GetCurrentProcess(), &new_handle,
+                        0L, FALSE, DUPLICATE_SAME_ACCESS)) {
     _dosmaperr(GetLastError());
     return -1;
   }
   /* Keep fd open during the recursive call, thus forcing _open_osfhandle
      to return reqd_fd eventually. */
   retcode = win_open_osfhandle2(new_handle, flags, reqd_fd);
-  close(fd);		     /* Also closes "handle" */
+  close(fd);                 /* Also closes "handle" */
   return retcode;
 }
 
@@ -86,8 +86,8 @@ static int win_set_noninherit(fd)
   oldh = (HANDLE) _get_osfhandle(fd);
   if (oldh == (HANDLE) -1) return -1;
   if (! DuplicateHandle(GetCurrentProcess(), oldh,
-			GetCurrentProcess(), &newh,
-			0L, FALSE, DUPLICATE_SAME_ACCESS)) {
+                        GetCurrentProcess(), &newh,
+                        0L, FALSE, DUPLICATE_SAME_ACCESS)) {
     _dosmaperr(GetLastError());
     return -1;
   }

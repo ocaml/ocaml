@@ -36,11 +36,11 @@ extern int volatile have_to_interact;
 #endif
 
 /* Registers for the abstract machine:
-	pc         the code pointer
-	sp         the stack pointer (grows downward)
+        pc         the code pointer
+        sp         the stack pointer (grows downward)
         accu       the accumulator
         env        heap-allocated environment
-	trapsp     pointer to the current trap frame
+        trapsp     pointer to the current trap frame
         extra_args number of extra arguments provided by the caller
 
 sp is a local copy of the global variable extern_sp. */
@@ -419,7 +419,7 @@ value interprete(prog, prog_size)
         pc = (code_t)(sp[0]);
         env = sp[1];
         extra_args = Long_val(sp[2]);
-	sp += 3;
+        sp += 3;
       }
       Next;
     }
@@ -736,9 +736,9 @@ value interprete(prog, prog_size)
     process_signal:
       something_to_do = 0;
       if (force_major_slice){
-	Setup_for_gc;
-	minor_collection ();
-	Restore_after_gc;
+        Setup_for_gc;
+        minor_collection ();
+        Restore_after_gc;
       }
       /* If a signal arrives between the following two instructions,
          it will be lost. */
@@ -902,7 +902,7 @@ value interprete(prog, prog_size)
 
 #define Lookup(obj, lab) \
   Field (Field (Field (obj, 0), ((lab) >> 16) / sizeof (value)), \
-	 ((lab) / sizeof (value)) & 0xFF)
+         ((lab) / sizeof (value)) & 0xFF)
 
     Instruct(GETMETHOD):
       accu = Lookup(sp[0], accu);

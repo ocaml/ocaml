@@ -90,7 +90,7 @@ exception Assert_failure of (string * int * int)
            when their second argument is null. *)
 exception Exit
         (* This exception is not raised by any library function.  It is
-	   provided for use in your programs. *)
+           provided for use in your programs. *)
 
 val invalid_arg: string -> 'a
         (* Raise exception [Invalid_argument] with the given string. *)
@@ -355,7 +355,7 @@ val prerr_float : float -> unit
         (* Print a floating-point number, in decimal, on standard error. *)
 val prerr_endline : string -> unit
         (* Print a string, followed by a newline character on standard error
-	   and flush standard error. *)
+           and flush standard error. *)
 val prerr_newline : unit -> unit
         (* Print a newline character on standard error, and flush
            standard error. *)
@@ -364,7 +364,7 @@ val prerr_newline : unit -> unit
 
 val read_line : unit -> string
         (* Flush standard output, then read characters from standard input
-	   until a newline character is encountered. Return the string of
+           until a newline character is encountered. Return the string of
            all characters read, without the newline character at the end. *)
 val read_int : unit -> int
         (* Flush standard output, then read one line from standard input
@@ -432,18 +432,18 @@ val output_binary_int : out_channel -> int -> unit
         (* Write one integer in binary format on the given output channel.
            The only reliable way to read it back is through the
            [input_binary_int] function. The format is compatible across
-	   all machines for a given version of Caml Light. *)
+           all machines for a given version of Caml Light. *)
 val output_value : out_channel -> 'a -> unit
         (* Write the representation of a structured value of any type
            to a channel. Circularities and sharing inside the value
            are detected and preserved. The object can be read back,
            by the function [input_value]. The format is compatible across
-	   all machines for a given version of Caml Light. *)
+           all machines for a given version of Caml Light. *)
 val seek_out : out_channel -> int -> unit
         (* [seek_out chan pos] sets the current writing position to [pos]
            for channel [chan]. This works only for regular files. On
            files of other kinds (such as terminals, pipes and sockets),
-	   the behavior is unspecified. *)
+           the behavior is unspecified. *)
 val pos_out : out_channel -> int
         (* Return the current writing position for the given channel. *)
 val out_channel_length : out_channel -> int
@@ -452,8 +452,8 @@ val out_channel_length : out_channel -> int
            other kinds, the result is meaningless. *)
 val close_out : out_channel -> unit
         (* Close the given channel, flushing all buffered write operations.
-	   The behavior is unspecified if any of the functions above is
-	   called on a closed channel. *)
+           The behavior is unspecified if any of the functions above is
+           called on a closed channel. *)
 
 (** General input functions *)
 
@@ -506,7 +506,7 @@ val input_binary_int : in_channel -> int
         (* Read an integer encoded in binary format from the given input
            channel. See [output_binary_int].
            Raise [End_of_file] if an end of file was reached while reading the
-	   integer. *)
+           integer. *)
 val input_value : in_channel -> 'a
         (* Read the representation of a structured value, as produced
            by [output_value], and return the corresponding value.
@@ -516,8 +516,8 @@ val input_value : in_channel -> 'a
            The programmer should explicitly give the expected type of the
            returned value, using the following syntax:
                      [(input_value chan : type)].
-	   The behavior is unspecified if the object in the file does not
-	   belong to the given type. *)
+           The behavior is unspecified if the object in the file does not
+           belong to the given type. *)
 val seek_in : in_channel -> int -> unit
         (* [seek_in chan pos] sets the current reading position to [pos]
            for channel [chan]. This works only for regular files. On
@@ -557,7 +557,7 @@ external decr : int ref -> unit = "%decr"
 val exit : int -> 'a
         (* Flush all pending writes on [stdout] and [stderr],
            and terminate the process, returning the given status code
-	   to the operating system (usually 0 to indicate no errors,
+           to the operating system (usually 0 to indicate no errors,
            and a small positive integer to indicate failure.) 
            An implicit [exit 0] is performed each time a program
            terminates normally (but not if it terminates because of

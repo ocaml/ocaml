@@ -26,14 +26,14 @@ let convert_address address =
       and port = String.sub address (n + 1) (String.length address)
       in
         (PF_INET,
-	 ADDR_INET
-	   ((try inet_addr_of_string host with Failure _ ->
-	       try (gethostbyname host).h_addr_list.(0) with Not_found ->
-	         prerr_endline ("Unknown host : " ^ host);
-		 failwith "Can't convert address"),
-	    (try int_of_string port with Failure _ ->
-	       prerr_endline "The port number should be an integer";
-	       failwith "Can't convert address")))
+         ADDR_INET
+           ((try inet_addr_of_string host with Failure _ ->
+               try (gethostbyname host).h_addr_list.(0) with Not_found ->
+                 prerr_endline ("Unknown host : " ^ host);
+                 failwith "Can't convert address"),
+            (try int_of_string port with Failure _ ->
+               prerr_endline "The port number should be an integer";
+               failwith "Can't convert address")))
   with Not_found ->
       (PF_UNIX, ADDR_UNIX address)
 
@@ -72,18 +72,18 @@ let search_in_path name =
             let rec find pos =
               let pos2 = traverse pos in
                 let directory = (String.sub path pos (pos2 - pos)) in
-	          let fullname =
-	            if directory = "" then
-	              name
+                  let fullname =
+                    if directory = "" then
+                      name
                     else
-	              directory ^ "/" ^ name
+                      directory ^ "/" ^ name
                   in
                     try check fullname with
                       Not_found ->
                         if pos2 < length then
                           find (pos2 + 1)
                         else
-	                  raise Not_found
+                          raise Not_found
           in
             find 0
 
@@ -94,9 +94,9 @@ let rec expand_path ch =
     try
       let pos = string_pos ch '$' in
         if (pos + 1 < String.length ch) & (ch.[pos + 1] = '$') then
-      	  (String.sub ch 0 (pos + 1))
-	    ^ (subst_variable
-      	         (String.sub ch (pos + 2) (String.length ch - pos - 2)))
+          (String.sub ch 0 (pos + 1))
+            ^ (subst_variable
+                 (String.sub ch (pos + 2) (String.length ch - pos - 2)))
         else
           (String.sub ch 0 pos)
             ^ (subst2 (String.sub ch (pos + 1) (String.length ch - pos - 1)))
@@ -122,7 +122,7 @@ let rec expand_path ch =
           "~" ^ nom
       in
         if ch.[0] = '~' then
-	  try
+          try
             match string_pos ch '/' with
               1 ->
                 (let tail = String.sub ch 2 (String.length ch - 2)
@@ -134,6 +134,6 @@ let rec expand_path ch =
                       (String.sub ch 1 (n - 1))
                       (String.sub ch (n + 1) (String.length ch - n - 1))
           with
-	    Not_found ->
+            Not_found ->
               expand_path (ch ^ "/")
         else ch

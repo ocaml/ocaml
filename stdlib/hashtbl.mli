@@ -54,7 +54,7 @@ val remove : ('a, 'b) t -> 'a -> unit
 
 val iter : ('a -> 'b -> 'c) -> ('a, 'b) t -> unit
         (* [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl],
-	   discarding all the results.
+           discarding all the results.
            [f] receives the key as first argument, and the associated value
            as second argument. The order in which the bindings are passed to
            [f] is unspecified. Each binding is presented exactly once
