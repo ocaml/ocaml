@@ -414,18 +414,21 @@ let rec comp_expr env exp sz cont =
           begin match c with
             (* Keep following event, supposedly more informative *)
             Kevent _ :: _ -> c
-          | _ -> Kevent ev :: c
+          | _             -> Kevent ev :: c
           end
       | Lev_after ty ->
           if is_tailcall cont then      (* don't destroy tail call opt *)
             comp_expr env lam sz cont
           else begin
             let cont1 =
-              (* Discard following events, supposedly less informative *)
               match cont with
-                Kevent _ :: c -> c
-              | _ -> cont in
-            comp_expr env lam sz (Kevent ev :: cont1)
+              (* Discard following events, supposedly less informative *)
+                         Kevent _ :: c -> Kevent ev :: c
+              (* Keep following event, supposedly equivalent *)
+              | Kpush :: Kevent _ :: _ -> cont
+              | _                      -> Kevent ev :: cont
+            in
+            comp_expr env lam sz cont1
           end
       end
 
