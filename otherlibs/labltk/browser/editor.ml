@@ -39,7 +39,7 @@ let compiler_preferences () =
          ~f:(fun (text, ref, invert) -> mk_chkbutton ~text ~ref ~invert)
          [ "No pervasives", Clflags.nopervasives, false;
            "No warnings", Typecheck.nowarnings, false;
-           "Labels commute", Clflags.classic, true;
+           "No labels", Clflags.classic, false;
            "Recursive types", Clflags.recursive_types, false;
            "Lex on load", lex_on_load, false;
            "Type on load", type_on_load, false ])
