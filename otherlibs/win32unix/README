@@ -1,0 +1,93 @@
+This is a partial port of the Unix system interface to Win32.
+It was done as a summer project by Pascal Cuoq (ENS Lyon),
+supervised by Xavier Leroy and Francois Rouaix (INRIA).
+
+See the interface file unix.mli in this directory for more
+documentation on the functions implemented.
+
+Recompiling this library requires Microsoft Visual C++ 4.0.
+
+We've had to modify and recompile the Visual C++ standard C library to
+work around the following problems:
+
+- There's a bug in the library function _pipe() that can result in a
+deadlock (the library function attempts to lock the wrong file descriptor).
+
+- Windows 95 classifies socket handles as "unknown", while Windows NT
+  classifies them as "pipes". Thus, opening a file descriptor on a
+  socket handle fails under Windows 95. We've just removed the check
+  on the handle type in the library.
+
+The diffs are included at the end of this file. They must be applied
+against a local copy of the libc sources found on the Visual C++ CD-ROM
+(in \msdev\crt\src). Then, rebuild the libraries and install them.
+
+-----------------------------------------------------------------------
+diff -c -r d:/msdev/crt/src/osfinfo.c crt/src/osfinfo.c
+*** d:/msdev/crt/src/osfinfo.c	Fri Jul 21 17:05:06 1995
+--- crt/src/osfinfo.c	Mon Jul 22 15:56:40 1996
+***************
+*** 23,28 ****
+--- 23,29 ----
+  #include <stdlib.h>
+  #include <dbgint.h>
+  
++ #include <winsock.h>
+  
+  /***
+  *int _alloc_osfhnd() - get free _ioinfo struct
+***************
+*** 141,150 ****
+                       * The first element of the newly allocated array of ioinfo
+                       * structs, *(__pioinfo[i]), is our first free entry.
+                       */
+  #if defined (_MT) && !defined (DLL_FOR_WIN32S)
+!                     _lock_fhandle( i );
+  #endif  /* defined (_MT) && !defined (DLL_FOR_WIN32S) */
+-                     fh = i * IOINFO_ARRAY_ELTS;
+                  }
+  
+                  break;
+--- 142,151 ----
+                       * The first element of the newly allocated array of ioinfo
+                       * structs, *(__pioinfo[i]), is our first free entry.
+                       */
++                     fh = i * IOINFO_ARRAY_ELTS;
+  #if defined (_MT) && !defined (DLL_FOR_WIN32S)
+!                     _lock_fhandle( fh );
+  #endif  /* defined (_MT) && !defined (DLL_FOR_WIN32S) */
+                  }
+  
+                  break;
+***************
+*** 335,346 ****
+          /* find out what type of file (file/device/pipe) */
+  
+          isdev = GetFileType((HANDLE)osfhandle);
+          if (isdev == FILE_TYPE_UNKNOWN) {
+!                 /* OS error */
+!                 _dosmaperr( GetLastError() );   /* map error */
+!                 return -1;
+          }
+  
+          /* is isdev value to set flags */
+          if (isdev == FILE_TYPE_CHAR)
+                  fileflags |= FDEV;
+--- 336,352 ----
+          /* find out what type of file (file/device/pipe) */
+  
+          isdev = GetFileType((HANDLE)osfhandle);
++ #if 0
+          if (isdev == FILE_TYPE_UNKNOWN) {
+! 				/* OS error */
+! 				_dosmaperr( GetLastError() );   /* map error */
+! 				return -1;
+          }
++ #else
++ 		/* Windows 95 lossage */
++         if (isdev == FILE_TYPE_UNKNOWN) isdev = FILE_TYPE_PIPE;
+  
++ #endif
+          /* is isdev value to set flags */
+          if (isdev == FILE_TYPE_CHAR)
+                  fileflags |= FDEV;
