@@ -11,7 +11,7 @@ opt: support.cmx rawwidget.cmx widget.cmx protocol.cmx \
 COBJS=cltkCaml.o cltkUtf.o cltkEval.o cltkEvent.o cltkFile.o cltkMain.o \
       cltkMisc.o cltkTimer.o cltkVar.o cltkWait.o cltkImg.o
 
-CCFLAGS=-I../../../byterun $(TK_DEFS)$(SHAREDCCCOMPOPTS)
+CCFLAGS=-I../../../byterun $(TK_DEFS) $(SHAREDCCCOMPOPTS)
 
 COMPFLAGS=-I $(OTHERS)/unix
 
