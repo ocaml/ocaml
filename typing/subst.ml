@@ -169,8 +169,8 @@ let rec typexp s ty =
   end
 
 (*
-   Always make a copy of the type (Ctype.correct_levels relies on
-   this).
+   Always make a copy of the type. If this is not done, type levels
+   might not be correct.
 *)
 let type_expr s ty =
   let ty' = typexp s ty in
