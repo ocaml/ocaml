@@ -146,7 +146,7 @@ and lambda_switch =
     sw_failaction : lambda option}
 
 and lambda_event =
-  { lev_loc: int;
+  { lev_pos: Lexing.position;
     lev_kind: lambda_event_kind;
     lev_repr: int ref option;
     lev_env: Env.summary }

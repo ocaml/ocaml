@@ -14,14 +14,17 @@
 
 open Asttypes;;
 open Format;;
+open Lexing;;
 open Location;;
 open Parsetree;;
 
+let fmt_position f l =
+  fprintf f "%s[%d,%d-%d]" l.pos_fname l.pos_lnum l.pos_cnum l.pos_bol
+;;
+
 let fmt_location f loc =
-  if loc.loc_ghost then
-    fprintf f "(%d,%d) ghost" loc.loc_start loc.loc_end
-  else
-    fprintf f "(%d,%d)" loc.loc_start loc.loc_end
+  fprintf f "(%a..%a)" fmt_position loc.loc_start fmt_position loc.loc_end;
+  if loc.loc_ghost then fprintf f " ghost";
 ;;
 
 let rec fmt_longident_aux f x =

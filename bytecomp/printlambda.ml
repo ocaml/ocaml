@@ -284,7 +284,7 @@ let rec lam ppf = function
        | Lev_before -> "before"
        | Lev_after _  -> "after"
        | Lev_function -> "funct-body" in
-      fprintf ppf "@[<2>(%s %i@ %a)@]" kind ev.lev_loc lam expr
+      fprintf ppf "@[<2>(%s %i@ %a)@]" kind ev.lev_pos.Lexing.pos_cnum lam expr
   | Lifused(id, expr) ->
       fprintf ppf "@[<2>(ifused@ %a@ %a)@]" Ident.print id lam expr
 

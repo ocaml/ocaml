@@ -299,23 +299,19 @@ let transl_primitive p =
 
 let check_recursive_lambda idlist lam =
   let rec check_top idlist = function
-      Lfunction(kind, params, body) as funct -> true
-    | Lprim(Pmakeblock(tag, mut), args) ->
-        List.for_all (check idlist) args
-    | Lprim(Pmakearray(Paddrarray|Pintarray), args) ->
-        List.for_all (check idlist) args
+    | Lvar v -> not (List.mem v idlist)
     | Llet(str, id, arg, body) ->
         check idlist arg && check_top (add_let id arg idlist) body
     | Lletrec(bindings, body) ->
         let idlist' = add_letrec bindings idlist in
         List.for_all (fun (id, arg) -> check idlist' arg) bindings &&
         check_top idlist' body
+    | Lsequence (lam1, lam2) -> check idlist lam1 && check_top idlist lam2
     | Levent (lam, _) -> check_top idlist lam
-    | _ -> false
+    | lam -> check idlist lam
 
   and check idlist = function
-      Lvar _ -> true
-    | Lconst cst -> true
+    | Lvar _ -> true
     | Lfunction(kind, params, body) -> true
     | Llet(str, id, arg, body) ->
         check idlist arg && check (add_let id arg idlist) body
@@ -327,6 +323,7 @@ let check_recursive_lambda idlist lam =
         List.for_all (check idlist) args
     | Lprim(Pmakearray(Paddrarray|Pintarray), args) ->
         List.for_all (check idlist) args
+    | Lsequence (lam1, lam2) -> check idlist lam1 && check idlist lam2
     | Levent (lam, _) -> check idlist lam
     | lam ->
         let fv = free_variables lam in
@@ -406,7 +403,7 @@ let event_before exp lam = match lam with
 | Lstaticraise (_,_) -> lam
 | _ ->
   if !Clflags.debug
-  then Levent(lam, {lev_loc = exp.exp_loc.Location.loc_start;
+  then Levent(lam, {lev_pos = exp.exp_loc.Location.loc_start;
                     lev_kind = Lev_before;
                     lev_repr = None;
                     lev_env = Env.summary exp.exp_env})
@@ -414,7 +411,7 @@ let event_before exp lam = match lam with
 
 let event_after exp lam =
   if !Clflags.debug
-  then Levent(lam, {lev_loc = exp.exp_loc.Location.loc_end;
+  then Levent(lam, {lev_pos = exp.exp_loc.Location.loc_end;
                     lev_kind = Lev_after exp.exp_type;
                     lev_repr = None;
                     lev_env = Env.summary exp.exp_env})
@@ -425,7 +422,7 @@ let event_function exp lam =
     let repr = Some (ref 0) in
     let (info, body) = lam repr in
     (info,
-     Levent(body, {lev_loc = exp.exp_loc.Location.loc_start;
+     Levent(body, {lev_pos = exp.exp_loc.Location.loc_start;
                    lev_kind = Lev_function;
                    lev_repr = repr;
                    lev_env = Env.summary exp.exp_env}))
@@ -434,12 +431,19 @@ let event_function exp lam =
 
 
 let assert_failed loc =
+  let fname = match loc.Location.loc_start.Lexing.pos_fname with
+              | "" -> !Location.input_name
+              | x -> x
+  in
+  let pos = loc.Location.loc_start in
+  let line = pos.Lexing.pos_lnum in
+  let char = pos.Lexing.pos_cnum - pos.Lexing.pos_bol in
   Lprim(Praise, [Lprim(Pmakeblock(0, Immutable),
           [transl_path Predef.path_assert_failure;
            Lconst(Const_block(0,
-              [Const_base(Const_string !Location.input_name);
-               Const_base(Const_int loc.Location.loc_start);
-               Const_base(Const_int loc.Location.loc_end)]))])])
+              [Const_base(Const_string fname);
+               Const_base(Const_int line);
+               Const_base(Const_int char)]))])])
 ;;
 
 (* Translation of expressions *)

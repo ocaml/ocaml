@@ -210,7 +210,7 @@ let rec tree_of_typexp sch ty =
   let ty = repr ty in
   let px = proxy ty in
   if List.mem_assq px !names && not (List.memq px !delayed) then
-   let mark = is_non_gen sch px in
+   let mark = is_non_gen sch ty in
    Otyp_var (mark, name_of_type px) else
 
   let pr_typ () =

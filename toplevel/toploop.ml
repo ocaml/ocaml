@@ -277,6 +277,7 @@ let use_file ppf name =
     let filename = find_in_path !Config.load_path name in
     let ic = open_in_bin filename in
     let lb = Lexing.from_channel ic in
+    Location.init lb filename;
     (* Skip initial #! line if any *)
     Lexer.skip_sharp_bang lb;
     let success =

@@ -22,7 +22,6 @@ open Typedtree
 open Btype
 open Ctype
 
-
 type error =
     Unbound_value of Longident.t
   | Unbound_constructor of Longident.t
@@ -648,7 +647,7 @@ let type_format loc fmt =
         ty_arrow (ty_arrow ty_input (ty_arrow ty_arg ty_aresult))
           (ty_arrow ty_arg (scan_format (j+1)))
     | 't' ->
-        ty_arrow (ty_arrow ty_input ty_result) (scan_format (j+1))
+        ty_arrow (ty_arrow ty_input ty_aresult) (scan_format (j+1))
     | 'l' ->
         if j+1 >= len then incomplete i else begin
           match fmt.[j+1] with
@@ -1731,25 +1730,34 @@ and type_cases ?in_function ?(multi=false)
   let cases =
     List.map2
       (fun (pat, ext_env) (spat, sexp) ->
+        let add_variant_case lab row ty_res ty_res' =
+          let fi = List.assoc lab (row_repr row).row_fields in
+          begin match row_field_repr fi with
+            Reither (c, _, m, _, e) ->
+              let row' =
+                { row_fields =
+                  [lab, Reither(c,[],false,[ty_res,ty_res'], ref None)];
+                  row_more = newvar (); row_bound = [ty_res; ty_res'];
+                  row_closed = false; row_fixed = false; row_name = None }
+              in
+              unify_pat ext_env {pat with pat_type= newty (Tvariant row)}
+                (newty (Tvariant row'))
+          | _ ->
+              unify_exp ext_env
+                { exp_desc = Texp_tuple []; exp_type = ty_res;
+                  exp_env = ext_env; exp_loc = sexp.pexp_loc }
+                ty_res'
+          end
+        in
         pat,
         match pat.pat_desc with
-          Tpat_variant (lab, _, row) when multi ->
-            let fi = List.assoc lab (row_repr row).row_fields in
-            let ty_res' =
-              match row_field_repr fi with
-                Reither (c, _, m, _, e) ->
-                  let ty_res' = newvar () in
-                  let row' =
-                    { row_fields =
-                        [lab, Reither(c,[],false,[ty_res,ty_res'], ref None)];
-                      row_more = newvar (); row_bound = [ty_res; ty_res'];
-                      row_closed = false; row_fixed = false; row_name = None }
-                  in
-                  unify_pat ext_env {pat with pat_type= newty (Tvariant row)}
-                    (newty (Tvariant row'));
-                  ty_res'
-              | _ -> ty_res
-            in
+          _ when multi && all_variants pat ->
+            let ty_res' = newvar () in
+            List.iter
+              (function {pat_desc=Tpat_variant(lab,_,row)} ->
+                add_variant_case lab row ty_res ty_res'
+              | _ -> assert false)
+              (flatten_or_pat pat);
             type_expect ?in_function ext_env sexp ty_res'
         | Tpat_alias (p, id) when multi && all_variants p ->
             let vd = Env.find_value (Path.Pident id) ext_env in
@@ -1772,20 +1780,7 @@ and type_cases ?in_function ?(multi=false)
                   {row' with row_fields=[lab,fi']; row_more=newvar()} in
                 unify_pat ext_env {pat with pat_type=tv'}
                   (newty (Tvariant row'));
-                let fi = List.assoc lab (row_repr row).row_fields in
-                begin match row_field_repr fi with
-                  Reither (c, _, m, _, e) ->
-                    let row' =
-                      { row_fields =
-                        [lab, Reither(c,[],false,[ty_res,ty'], ref None)];
-                        row_more = newvar (); row_bound = [ty_res; ty'];
-                        row_closed = false; row_fixed = false; row_name = None}
-                    in
-                    unify_pat ext_env {pat with pat_type= newty (Tvariant row)}
-                      (newty (Tvariant row'))
-                | _ ->
-                    unify_exp ext_env {exp with exp_type=ty'} ty_res
-                end
+                add_variant_case lab row ty_res ty'
               | _ -> assert false)
               (List.map (fun p -> p, instance_list [tv; exp.exp_type])
                  (flatten_or_pat p));

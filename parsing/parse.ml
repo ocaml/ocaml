@@ -24,10 +24,10 @@ let rec skip_phrase lexbuf =
       Parser.SEMISEMI | Parser.EOF -> ()
     | _ -> skip_phrase lexbuf
   with
-    | Lexer.Error (Lexer.Unterminated_comment, _, _) -> ()
-    | Lexer.Error (Lexer.Unterminated_string, _, _) -> ()
-    | Lexer.Error (Lexer.Unterminated_string_in_comment, _, _) -> ()
-    | Lexer.Error (Lexer.Illegal_character _,_,_) -> skip_phrase lexbuf
+    | Lexer.Error (Lexer.Unterminated_comment, _) -> ()
+    | Lexer.Error (Lexer.Unterminated_string, _) -> ()
+    | Lexer.Error (Lexer.Unterminated_string_in_comment, _) -> ()
+    | Lexer.Error (Lexer.Illegal_character _, _) -> skip_phrase lexbuf
 ;;
 
 let maybe_skip_phrase lexbuf =
@@ -42,19 +42,17 @@ let wrap parsing_fun lexbuf =
     Parsing.clear_parser();
     ast
   with
-  | Lexer.Error(Lexer.Unterminated_comment, _, _) as err -> raise err
-  | Lexer.Error(Lexer.Unterminated_string, _, _) as err -> raise err
-  | Lexer.Error(Lexer.Unterminated_string_in_comment, _, _) as err -> raise err
-  | Lexer.Error(Lexer.Illegal_character _, _, _) as err ->
+  | Lexer.Error(Lexer.Unterminated_comment, _) as err -> raise err
+  | Lexer.Error(Lexer.Unterminated_string, _) as err -> raise err
+  | Lexer.Error(Lexer.Unterminated_string_in_comment, _) as err -> raise err
+  | Lexer.Error(Lexer.Illegal_character _, _) as err ->
       if !Location.input_name = "" then skip_phrase lexbuf;
       raise err
   | Syntaxerr.Error _ as err ->
       if !Location.input_name = "" then maybe_skip_phrase lexbuf;
       raise err
   | Parsing.Parse_error | Syntaxerr.Escape_error ->
-      let loc = { loc_start = Lexing.lexeme_start lexbuf;
-                  loc_end = Lexing.lexeme_end lexbuf;
-                  loc_ghost = false } in
+      let loc = Location.curr lexbuf in
       if !Location.input_name = "" 
       then maybe_skip_phrase lexbuf;
       raise(Syntaxerr.Error(Syntaxerr.Other loc))
