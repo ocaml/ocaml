@@ -115,7 +115,7 @@ let main () =
              " Compile and link with profiling support for \"gprof\"\n\
                \t(not supported on all platforms)";
        "-pack", Arg.Set make_package,
-              " Package the given .cmo files into one .cmo";
+              " Package the given .cmx files into one .cmx";
        "-pp", Arg.String(fun s -> preprocessor := Some s),
              "<command>  Pipe sources through preprocessor <command>";
        "-principal", Arg.Set principal,
