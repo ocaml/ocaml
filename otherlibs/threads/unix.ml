@@ -200,7 +200,7 @@ external unsafe_write : file_descr -> string -> int -> int -> int = "unix_write"
 
 let rec read fd buf ofs len =
   try
-    if len < 0 or ofs + len > String.length buf
+    if ofs < 0 || len < 0 || ofs > String.length buf - len
     then invalid_arg "Unix.read"
     else unsafe_read fd buf ofs len
   with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
@@ -208,7 +208,7 @@ let rec read fd buf ofs len =
 
 let rec write fd buf ofs len =
   try
-    if len < 0 or ofs + len > String.length buf
+    if ofs < 0 || len < 0 || ofs > String.length buf - len
     then invalid_arg "Unix.write"
     else unsafe_write fd buf ofs len
   with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
@@ -604,7 +604,7 @@ external unsafe_sendto :
 
 let rec recv fd buf ofs len flags =
   try
-    if len < 0 or ofs + len > String.length buf
+    if ofs < 0 || len < 0 || ofs > String.length buf - len
     then invalid_arg "Unix.recv"
     else unsafe_recv fd buf ofs len flags
   with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
@@ -612,7 +612,7 @@ let rec recv fd buf ofs len flags =
 
 let rec recvfrom fd buf ofs len flags =
   try
-    if len < 0 or ofs + len > String.length buf
+    if ofs < 0 || len < 0 || ofs > String.length buf - len
     then invalid_arg "Unix.recvfrom"
     else unsafe_recvfrom fd buf ofs len flags
   with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
@@ -621,7 +621,7 @@ let rec recvfrom fd buf ofs len flags =
 
 let rec send fd buf ofs len flags =
   try
-    if len < 0 or ofs + len > String.length buf
+    if ofs < 0 || len < 0 || ofs > String.length buf - len
     then invalid_arg "Unix.send"
     else unsafe_send fd buf ofs len flags
   with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
@@ -630,7 +630,7 @@ let rec send fd buf ofs len flags =
   
 let rec sendto fd buf ofs len flags addr =
   try
-    if len < 0 or ofs + len > String.length buf
+    if ofs < 0 || len < 0 || ofs > String.length buf - len
     then invalid_arg "Unix.sendto"
     else unsafe_sendto fd buf ofs len flags addr
   with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->

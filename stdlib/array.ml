@@ -85,7 +85,7 @@ let concat al =
   in find_init al
 
 let sub a ofs len =
-  if ofs < 0 || len < 0 || ofs + len > length a then invalid_arg "Array.sub"
+  if ofs < 0 || len < 0 || ofs > length a - len then invalid_arg "Array.sub"
   else if len = 0 then [||]
   else begin
     let r = create len (unsafe_get a ofs) in
@@ -94,13 +94,13 @@ let sub a ofs len =
   end
 
 let fill a ofs len v =
-  if ofs < 0 || len < 0 || ofs + len > length a
+  if ofs < 0 || len < 0 || ofs > length a - len
   then invalid_arg "Array.fill"
   else for i = ofs to ofs + len - 1 do unsafe_set a i v done
 
 let blit a1 ofs1 a2 ofs2 len =
-  if len < 0 || ofs1 < 0 || ofs1 + len > length a1
-             || ofs2 < 0 || ofs2 + len > length a2
+  if len < 0 || ofs1 < 0 || ofs1 > length a1 - len
+             || ofs2 < 0 || ofs2 > length a2 - len
   then invalid_arg "Array.blit"
   else if ofs1 < ofs2 then
     (* Top-down copy *)

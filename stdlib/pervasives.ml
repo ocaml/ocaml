@@ -153,7 +153,7 @@ let (^) s1 s2 =
 external int_of_char : char -> int = "%identity"
 external unsafe_char_of_int : int -> char = "%identity"
 let char_of_int n =
-  if n < 0 or n > 255 then invalid_arg "char_of_int" else unsafe_char_of_int n
+  if n < 0 || n > 255 then invalid_arg "char_of_int" else unsafe_char_of_int n
 
 (* Unit operations *)
 
@@ -255,7 +255,7 @@ let output_string oc s =
   unsafe_output oc s 0 (string_length s)
 
 let output oc s ofs len =
-  if ofs < 0 || len < 0 || ofs + len > string_length s
+  if ofs < 0 || len < 0 || ofs > string_length s - len
   then invalid_arg "output"
   else unsafe_output oc s ofs len
 
@@ -291,7 +291,7 @@ external unsafe_input : in_channel -> string -> int -> int -> int
                       = "caml_input"
 
 let input ic s ofs len =
-  if ofs < 0 || len < 0 || ofs + len > string_length s
+  if ofs < 0 || len < 0 || ofs > string_length s - len
   then invalid_arg "input"
   else unsafe_input ic s ofs len
 
@@ -304,7 +304,7 @@ let rec unsafe_really_input ic s ofs len =
   end
 
 let really_input ic s ofs len =
-  if ofs < 0 || len < 0 || ofs + len > string_length s
+  if ofs < 0 || len < 0 || ofs > string_length s - len
   then invalid_arg "really_input"
   else unsafe_really_input ic s ofs len
 

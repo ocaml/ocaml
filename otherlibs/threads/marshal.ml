@@ -39,17 +39,17 @@ external data_size_unsafe: string -> int -> int = "marshal_data_size"
 
 let header_size = 20
 let data_size buff ofs =
-  if ofs < 0 || ofs + header_size > String.length buff
+  if ofs < 0 || ofs > String.length buff - header_size
   then invalid_arg "Marshal.data_size"
   else data_size_unsafe buff ofs
 let total_size buff ofs = header_size + data_size buff ofs
 
 let from_string buff ofs =
-  if ofs < 0 || ofs + header_size > String.length buff
+  if ofs < 0 || ofs > String.length buff - header_size
   then invalid_arg "Marshal.from_size"
   else begin
     let len = data_size_unsafe buff ofs in
-    if ofs + header_size + len > String.length buff
+    if ofs > String.length buff - (header_size + len)
     then invalid_arg "Marshal.from_string"
     else from_string_unsafe buff ofs
   end  

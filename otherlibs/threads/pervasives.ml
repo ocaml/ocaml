@@ -308,7 +308,7 @@ let output_string oc s =
   unsafe_output oc s 0 (string_length s)
 
 let output oc s ofs len =
-  if ofs < 0 || len < 0 || ofs + len > string_length s
+  if ofs < 0 || len < 0 || ofs > string_length s - len 
   then invalid_arg "output"
   else unsafe_output oc s ofs len
 
@@ -373,7 +373,7 @@ let rec unsafe_input ic s ofs len =
     wait_inchan ic; unsafe_input ic s ofs len
 
 let input ic s ofs len =
-  if ofs < 0 || len < 0 || ofs + len > string_length s
+  if ofs < 0 || len < 0 || ofs > string_length s - len
   then invalid_arg "input"
   else unsafe_input ic s ofs len
 
@@ -388,7 +388,7 @@ let rec unsafe_really_input ic s ofs len =
   end
 
 let really_input ic s ofs len =
-  if ofs < 0 || len < 0 || ofs + len > string_length s
+  if ofs < 0 || len < 0 || ofs > string_length s - len
   then invalid_arg "really_input"
   else unsafe_really_input ic s ofs len
 
