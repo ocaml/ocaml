@@ -17,6 +17,9 @@ manyargs.byt: manyargs.cmo manyargsprim.o
 manyargs.out: manyargs.cmx manyargsprim.o
 	$(CAMLOPT) -o manyargs.out manyargs.cmx manyargsprim.o
 
+multdef.out: multdef.cmx usemultdef.cmx
+	$(CAMLOPT) -o multdef.out multdef.cmx usemultdef.cmx
+
 # Common rules
 
 .SUFFIXES:
