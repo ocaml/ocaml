@@ -408,7 +408,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
            it were of length [n].
 -          [@@]: print a plain [@] character.
 
-           Example: [printf "@\[%s@ %d@\]" "x =" 1] is equivalent to 
+           Example: [printf "@[%s@ %d@]" "x =" 1] is equivalent to 
            [open_box (); print_string "x ="; print_space (); print_int 1; close_box ()].
            It prints [x = 1] within a pretty-printing box. *)
 
