@@ -61,7 +61,7 @@ val create_auto :
   Ident.t option ->
     phase1 -> Lambda.lambda -> Lambda.lambda
 
-val build_matches : Typedtree.joinpattern Typedtree.joinautomaton -> phase1
+val build_matches : Typedtree.joinautomaton -> phase1
 
 val build_auto :
   comp_guard -> (* to compile guarded processes *)
@@ -71,5 +71,5 @@ val build_auto :
           Lambda.lambda
 
 val build_channels :
-  'a Typedtree.joinautomaton -> Lambda.lambda -> Lambda.lambda
+  Typedtree.joinautomaton -> Lambda.lambda -> Lambda.lambda
 

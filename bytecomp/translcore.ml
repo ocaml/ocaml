@@ -1078,6 +1078,24 @@ and  build_channels autos k =
   List.fold_right Transljoin.build_channels autos k
 
 and do_transl_def some_loc autos body =
+
+  let trivial_joinmatch auto =
+    let trivial_clause (pats, e) =
+      let new_pats =
+        List.map
+          (fun jp -> match jp.jpat_desc with
+            (chan, arg) ->
+              let x = Ident.create "jarg" in
+              let new_jpat = 
+                { jp with
+                  jpat_desc = (chan, { arg with pat_desc = Tpat_var x }) }
+              and to_match = x, arg in
+              (new_jpat, to_match))
+          pats in
+      Joinmatch.Reaction
+        ([List.map fst new_pats], (List.map snd new_pats, e)) in
+    () in
+
 (* let autos  = List.map Joinmatch.transform autos in*)
 (* Joinmatch.transform: joinpattern joinautomaton -> joinpattern list joinautomaton*)
 (* then the build_matches should be changed to take joinpattern list*)
