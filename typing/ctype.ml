@@ -1300,9 +1300,8 @@ let add_univars =
 let get_univar_family univar_pairs univars =
   if univars = [] then TypeSet.empty else
   let rec insert s = function
-      ((t1,_)::_ as cl1), ((t2,_)::_ as cl2) ->
-        let t1 = repr t1 and t2 = repr t2 in
-        if TypeSet.mem t1 s && not (TypeSet.mem  t2 s) then
+      cl1, (_::_ as cl2) ->
+        if List.exists (fun (t1,_) -> TypeSet.mem (repr t1) s) cl1 then
           add_univars s cl2
         else s
     | _ -> s
@@ -1320,7 +1319,9 @@ let univars_escape env univar_pairs vl ty =
     if TypeSet.mem t !visited then () else begin
       visited := TypeSet.add t !visited;
       match t.desc with
-        Tpoly (_, t::_) when TypeSet.mem (repr t) family -> ()
+        Tpoly (t, tl) ->
+          if List.exists (fun t -> TypeSet.mem (repr t) family) tl then ()
+          else occur t
       | Tunivar ->
           if TypeSet.mem t family then raise Occur
       | Tconstr (_, [], _) -> ()
@@ -1554,20 +1555,7 @@ and unify3 env t1 t1' t2 t2' =
     | (Tpoly (t1, []), Tpoly (t2, [])) ->
         unify env t1 t2
     | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-        if List.length tl1 <> List.length tl2 then raise (Unify []);
-        enter_poly env univar_pairs t1 tl1 t2 tl2
-          (fun t1 t2 ->
-            unify env t1 t2;
-            let tl1 = List.map repr tl1 and tl2 = List.map repr tl2 in
-            List.iter
-              (fun t1 ->
-                if List.memq t1 tl2 then () else
-                try
-                  let t2 =
-                    List.find (fun t2 -> not (List.memq (repr t2) tl1)) tl2 in
-                  link_type t2 t1
-                with Not_found -> assert false)
-              tl1)
+        enter_poly env univar_pairs t1 tl1 t2 tl2 (unify env)
     | (_, _) ->
         raise (Unify [])
     end;
