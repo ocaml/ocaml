@@ -18,7 +18,7 @@
 type error =
   (* Errors defined in the POSIX standard *)
     E2BIG               (* Argument list too long *)
-  | EACCESS             (* Permission denied *)
+  | EACCES              (* Permission denied *)
   | EAGAIN              (* Resource temporarily unavailable; try again *)
   | EBADF               (* Bad file descriptor *)
   | EBUSY               (* Resource unavailable *)

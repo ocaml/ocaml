@@ -13,7 +13,7 @@
 
 type error =
     E2BIG
-  | EACCESS
+  | EACCES
   | EAGAIN
   | EBADF
   | EBUSY
