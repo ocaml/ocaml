@@ -33,7 +33,7 @@ let next_char ib =
    ib.eof <- true;;
 
 let peek_char ib = ib.cur_char;;
-let end_of_input ib = ib.eof;;
+let end_of_input ib = ib.eof && (ib.eof <- false; next_char ib; ib.eof);;
 let char_count ib = ib.char_count;;
 let reset_token ib = Buffer.reset ib.tokbuf;;
 
@@ -53,14 +53,13 @@ let store_char ib c max =
 
 let create next =
   let ib = {
-    eof = false;
-    cur_char = ' ';
+    eof = true;
+    cur_char = '\000';
     char_count = 0;
     get_next_char = next;
     tokbuf = Buffer.create 10;
     token_count = 0;
     } in
-  next_char ib;
   ib;;
 
 let from_string s =
