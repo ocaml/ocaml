@@ -403,6 +403,18 @@ let scan_float max ib =
      scan_exp_part max ib
   | c -> scan_exp_part max ib;;
 
+let scan_Float max ib =
+  let bad_float () = bad_input "no dot found in float" in
+  let max = scan_optionally_signed_decimal_int max ib in
+  if max = 0 || Scanning.eof ib then bad_float () else
+  let c = Scanning.peek_char ib in
+  match c with
+  | '.' ->
+     let max = Scanning.store_char ib c max in
+     let max = scan_frac_part max ib in
+     scan_exp_part max ib
+  | c -> bad_float ();;
+
 (* Scan a regular string: it stops with a space or one of the
    characters in stp. It also stops when the maximum number of
    characters has been read.*)
@@ -671,8 +683,11 @@ let kscanf ib ef fmt f =
     | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
         let x = scan_int conv max ib in
         scan_fmt (stack f (token_int conv ib)) (i + 1)
-    | 'f' | 'g' | 'G' | 'e' | 'E' | 'F' ->
+    | 'f' | 'g' | 'G' | 'e' | 'E' ->
         let x = scan_float max ib in
+        scan_fmt (stack f (token_float ib)) (i + 1)
+    | 'F' ->
+        let x = scan_Float max ib in
         scan_fmt (stack f (token_float ib)) (i + 1)
     | 's' ->
         let i, stp = scan_fmt_stoppers (i + 1) in

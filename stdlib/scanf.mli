@@ -125,6 +125,8 @@ val bscanf :
    - [f], [e], [E], [g], [G], [F]: reads an optionally signed
      floating-point number in decimal notation, in the style [dddd.ddd
      e/E+-dd].
+   - [F]: reads a floating point number according to the lexical
+     conventions of Caml (hence the decimal point is mandatory).
    - [B]: reads a boolean argument ([true] or [false]).
    - [b]: reads a boolean argument (for backward compatibility; do not use
      in new programs).
