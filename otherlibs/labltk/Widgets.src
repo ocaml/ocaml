@@ -507,7 +507,7 @@ widget checkbutton {
    option SelectImage ["-selectimage"; Image]
 #   option SelectImageBitmap (SelectImageBitmap) ["-selectimage"; ImageBitmap]
 #   option SelectImagePhoto (SelectImagePhoto) ["-selectimage"; ImagePhoto]
-   option State    ["-state"; State]
+   option State
    option Variable ["-variable"; TextVariable]
    option Width
 
@@ -550,6 +550,10 @@ module Dialog {
 #    Number End Insert SelFirst SelLast At AnchorPoint
 # }
 
+type InputState { 
+   Normal ["normal"]
+   Disabled ["disabled"]
+}
 
 widget entry {
    # Standard options
@@ -578,7 +582,7 @@ widget entry {
 
    # Widget specific options
    option Show ["-show"; char]
-   option State
+   option EntryState ["-state"; InputState]
    option TextWidth (Textwidth) ["-width"; int]
 
    function () configure [widget(entry); "configure"; option(entry) list]
@@ -1509,7 +1513,7 @@ widget text {
    option Spacing1 ["-spacing1"; int]
    option Spacing2 ["-spacing2"; int]
    option Spacing3 ["-spacing3"; int]
-   option State
+   option EntryState
    option Tabs ["-tabs"; [TabType list]]
    option TextWidth
    option Wrap ["-wrap"; WrapMode]
