@@ -792,12 +792,12 @@ and class_expr cl_num val_env met_env scl =
        cl_type = cl.cl_type}
   | Pcl_constraint (scl', scty) ->
       Ctype.begin_class_def ();
-      Typetexp.narrow ();
+      let context = Typetexp.narrow () in
       let cl = class_expr cl_num val_env met_env scl' in
-      Typetexp.widen ();
-      Typetexp.narrow ();
+      Typetexp.widen context;
+      let context = Typetexp.narrow () in
       let clty = class_type val_env scty in
-      Typetexp.widen ();
+      Typetexp.widen context;
       Ctype.end_def ();
 
       limited_generalize (Ctype.row_variable (Ctype.self_type cl.cl_type))

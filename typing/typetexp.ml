@@ -42,10 +42,11 @@ type error =
 
 exception Error of Location.t * error
 
+type variable_context = int * (string, type_expr) Tbl.t
+
 (* Translation of type expressions *)
 
 let type_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
-let saved_type_variables = ref ([] : (string, type_expr) Tbl.t list)
 let univars        = ref ([] : (string * type_expr) list)
 let pre_univars    = ref ([] : type_expr list)
 
@@ -55,18 +56,14 @@ let bindings       = ref ([] : (Location.t * type_expr * type_expr) list)
 
 let reset_type_variables () =
   reset_global_level ();
-  type_variables := Tbl.empty;
-  saved_type_variables := []
+  type_variables := Tbl.empty
 
 let narrow () =
-  increase_global_level ();
-  saved_type_variables := !type_variables :: !saved_type_variables
+  (increase_global_level (), !type_variables)
 
-let widen () =
-  restore_global_level ();
-  match !saved_type_variables with
-    tv :: rem -> type_variables := tv; saved_type_variables := rem
-  | []        -> assert false
+let widen (gl, tv) =
+  restore_global_level gl;
+  type_variables := tv
 
 let enter_type_variable strict name =
   try

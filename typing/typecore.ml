@@ -1205,9 +1205,11 @@ let rec type_exp env sexp =
   | Pexp_letmodule(name, smodl, sbody) ->
       let ty = newvar() in
       Ident.set_current_time ty.level;
+      let context = Typetexp.narrow () in
       let modl = !type_module env smodl in
       let (id, new_env) = Env.enter_module name modl.mod_type env in
       Ctype.init_def(Ident.current_time());
+      Typetexp.widen context;
       let body = type_exp new_env sbody in
       (* Unification of body.exp_type with the fresh variable ty
          fails if and only if the prefix condition is violated,

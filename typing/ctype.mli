@@ -34,8 +34,10 @@ val end_def: unit -> unit
 val begin_class_def: unit -> unit
 val raise_nongen_level: unit -> unit
 val reset_global_level: unit -> unit
-val increase_global_level: unit -> unit
-val restore_global_level: unit -> unit
+        (* Reset the global level before typing an expression *)
+val increase_global_level: unit -> int
+val restore_global_level: int -> unit
+        (* This pair of functions is only used in Typetexp *)
 
 val newty: type_desc -> type_expr
 val newvar: unit -> type_expr
