@@ -189,7 +189,7 @@ void shrink_heap (char *chunk)
   {
     mlsize_t i;
     for (i = 0; i < Wsize_bsize (Chunk_size (chunk)); i++){
-      ((value *) chunk) [i] = not_random ();
+      ((value *) chunk) [i] = Debug_free_shrink;
     }
   }
 #endif
@@ -251,6 +251,14 @@ value alloc_shr (mlsize_t wosize, tag_t tag)
   Assert (Hd_hp (hp) == Make_header (wosize, tag, allocation_color (hp)));
   allocated_words += Whsize_wosize (wosize);
   if (allocated_words > Wsize_bsize (minor_heap_size)) urge_major_slice ();
+#ifdef DEBUG
+  {
+    unsigned long i;
+    for (i = 0; i < wosize; i++){
+      Field (Val_hp (hp), i) = Debug_uninit_major;
+    }
+  }
+#endif
   return Val_hp (hp);
 }
 
@@ -309,6 +317,14 @@ void * stat_alloc (asize_t sz)
   void * result = malloc (sz);
 
   if (result == NULL) raise_out_of_memory ();
+#ifdef DEBUG
+  {
+    value *p;
+    for (p = result; p < (value *) ((char *) result + sz); p++){
+      *p = Debug_uninit_stat;
+    }
+  }
+#endif
   return result;
 }
 
@@ -324,4 +340,3 @@ void * stat_resize (void * blk, asize_t sz)
   if (result == NULL) raise_out_of_memory ();
   return result;
 }
-

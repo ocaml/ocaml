@@ -46,7 +46,19 @@ color_t allocation_color (void *hp);
 #define Garbage_collection_function minor_collection
 #endif
 
+#ifdef DEBUG
+#define DEBUG_clear(result, wosize) { \
+  unsigned long __DEBUG_i; \
+  for (__DEBUG_i = 0; __DEBUG_i < wosize; ++ __DEBUG_i){ \
+    Field (result, __DEBUG_i) = Debug_uninit_minor; \
+  } \
+}
+#else
+#define DEBUG_clear(result, wosize)
+#endif
+
 #define Alloc_small(result, wosize, tag) {            Assert (wosize >= 1); \
+                                                Assert ((tag_t) tag < 256); \
   young_ptr -= Bhsize_wosize (wosize);                                      \
   if (young_ptr < young_limit){                                             \
     Setup_for_gc;                                                           \
@@ -56,6 +68,7 @@ color_t allocation_color (void *hp);
   }                                                                         \
   Hd_hp (young_ptr) = Make_header ((wosize), (tag), Caml_black);            \
   (result) = Val_hp (young_ptr);                                            \
+  DEBUG_clear (result, wosize);                                             \
 }
 
 /* You must use [Modify] to change a field of an existing shared block,

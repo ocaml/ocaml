@@ -139,7 +139,12 @@ void empty_minor_heap (void)
   }
   final_empty_young ();
 #ifdef DEBUG
-  memset(young_start, 0, young_end - young_start);
+  {
+    value *p;
+    for (p = (value *) young_start; p < (value *) young_end; ++p){
+      *p = Debug_free_minor;
+    }
+  }
 #endif
 }
 

@@ -29,14 +29,6 @@ void failed_assert (char * expr, char * file, int line)
   exit (100);
 }
 
-static unsigned long seed = 0x12345;
-
-unsigned long not_random (void)
-{
-  seed = seed * 65537 + 12345;
-  return seed;
-}
-
 #endif
 
 int verb_gc;
@@ -162,5 +154,18 @@ char *aligned_malloc (asize_t size, int modulo, void **block)
   *block = raw_mem;
   raw_mem += modulo;                /* Address to be aligned */
   aligned_mem = (((unsigned long) raw_mem / Page_size + 1) * Page_size);
+#ifdef DEBUG
+  {
+    unsigned long *p;
+    unsigned long *p0 = (void *) *block,
+                  *p1 = (void *) (aligned_mem - modulo),
+                  *p2 = (void *) (aligned_mem - modulo + size),
+                  *p3 = (void *) (*block + size + Page_size);
+
+    for (p = p0; p < p1; p++) *p = Debug_filler_align;
+    for (p = p1; p < p2; p++) *p = Debug_uninit_align;
+    for (p = p2; p < p3; p++) *p = Debug_filler_align;
+  }
+#endif
   return (char *) (aligned_mem - modulo);
 }

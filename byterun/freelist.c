@@ -173,7 +173,7 @@ char *fl_merge_block (char *bp)
   {
     mlsize_t i;
     for (i = 0; i < Wosize_hd (hd); i++){
-      Field (Val_bp (bp), i) = not_random ();
+      Field (Val_bp (bp), i) = Debug_free_major;
     }
   }
 #endif
@@ -206,17 +206,17 @@ char *fl_merge_block (char *bp)
     adj = bp + Bosize_hd (hd);
 #ifdef DEBUG
     fl_last = NULL;
-    Next (cur) = (char *) not_random ();
-    Hd_bp (cur) = not_random ();
+    Next (cur) = (char *) Debug_free_major;
+    Hd_bp (cur) = Debug_free_major;
 #endif
     cur = next_cur;
   }
   /* If [prev] and [bp] are adjacent merge them, else insert [bp] into
      the free-list if it is big enough. */
   if (prev + Bosize_bp (prev) == Hp_bp (bp)){
-    Hd_bp (prev) = Make_header (Wosize_bp (prev) + Whsize_hd (hd), 0, Caml_blue);
+    Hd_bp (prev) = Make_header (Wosize_bp (prev) + Whsize_hd (hd), 0,Caml_blue);
 #ifdef DEBUG
-    Hd_bp (bp) = not_random ();
+    Hd_bp (bp) = Debug_free_major;
 #endif
     Assert (fl_merge == prev);
   }else if (Wosize_hd (hd) != 0){
@@ -247,7 +247,7 @@ void fl_add_block (char *bp)
   {
     mlsize_t i;
     for (i = 0; i < Wosize_bp (bp); i++){
-      Field (Val_bp (bp), i) = not_random ();
+      Field (Val_bp (bp), i) = Debug_free_major;
     }
   }
 #endif

@@ -109,7 +109,12 @@ value obj_truncate (value v, value newsize)  /* ML */
      beyond new_wosize in v, erase them explicitly so that the GC
      can darken them as appropriate. */
   if (tag < No_scan_tag) {
-    for (i = new_wosize; i < wosize; i++) modify(&Field(v, i), Val_unit);
+    for (i = new_wosize; i < wosize; i++){
+      modify(&Field(v, i), Val_unit);
+#ifdef DEBUG
+      Field (v, i) = Debug_free_truncate;
+#endif
+    }
   }
   Field (v, new_wosize) =
     Make_header (Wosize_whsize (wosize-new_wosize), 0, Caml_white);

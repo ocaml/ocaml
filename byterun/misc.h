@@ -65,7 +65,34 @@ void memmov (char *, char *, unsigned long);
 char *aligned_malloc (asize_t, int, void **);
 
 #ifdef DEBUG
-unsigned long not_random (void);
+#ifdef ARCH_SIXTYFOUR
+#define Debug_tag(x) (0xD700D7D7D700D6D7ul \
+                      | ((unsigned long) (x) << 16) \
+                      | ((unsigned long) (x) << 48))
+#else
+#define Debug_tag(x) (0xD700D6D7ul | ((unsigned long) (x) << 16))
+#endif
+
+/*
+  00 -> free words in minor heap
+  01 -> fields of free list blocks in major heap
+  03 -> heap chunks deallocated by heap shrinking
+  04 -> fields deallocated by obj_truncate
+  10 -> uninitialised fields of minor objects
+  11 -> uninitialised fields of major objects
+  12 -> uninitialised words of stat_alloc blocks
+  15 -> uninitialised words of aligned_malloc blocks
+  85 -> filler bytes of aligned_malloc
+*/
+#define Debug_free_minor     Debug_tag (0x00)
+#define Debug_free_major     Debug_tag (0x01)
+#define Debug_free_shrink    Debug_tag (0x03)
+#define Debug_free_truncate  Debug_tag (0x04)
+#define Debug_uninit_minor   Debug_tag (0x10)
+#define Debug_uninit_major   Debug_tag (0x11)
+#define Debug_uninit_stat    Debug_tag (0x12)
+#define Debug_uninit_align   Debug_tag (0x15)
+#define Debug_filler_align   Debug_tag (0x85)
 #endif
 
 
