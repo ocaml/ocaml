@@ -744,11 +744,12 @@ class html =
     method constructor s = "<span class=\"constructor\">"^s^"</span>"
 
     (** Output the given ocaml code to the given file name. *)
-    method private output_code in_title file code =
+    method private output_code ?head in_title file code =
       try
         let chanout = open_out file in
         let html_code = self#html_of_code code in
         output_string chanout ("<html>"^(self#header (self#inner_title in_title))^"<body>\n");
+	(match head with None -> () | Some h -> output_string chanout h);
         output_string chanout html_code;
         output_string chanout "</body></html>";
         close_out chanout
@@ -864,7 +865,9 @@ class html =
         None -> Name.simple v.val_name
       | Some c -> 
           let file = Naming.file_code_value_complete_target v in
-          self#output_code v.val_name (Filename.concat !Args.target_dir file) c;
+          self#output_code 
+	    ~head: (self#html_of_info v.val_info)
+	    v.val_name (Filename.concat !Args.target_dir file) c;
           "<a href=\""^file^"\">"^(Name.simple v.val_name)^"</a>"
       )^" : "^
       (self#html_of_type_expr (Name.father v.val_name) v.val_type)^"</pre>"^

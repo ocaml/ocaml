@@ -40,7 +40,7 @@ OCAMLDOC_LIBCMXA=odoc_info.cmxa
 OCAMLDOC_LIBA=odoc_info.a
 INSTALL_LIBDIR=$(OCAMLLIB)/ocamldoc
 INSTALL_BINDIR=$(OCAMLBIN)
-INSTALL_MANODIR=$(MANDIR)/mano
+INSTALL_MANODIR=$(MANDIR)/man3
 
 INSTALL_MLIS=odoc_info.mli 
 INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
@@ -278,7 +278,7 @@ install: dummy
 	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
 	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
 	$(CP) $(OCAMLDOC) $(INSTALL_BINDIR)
-	$(CP) ocamldoc.sty ocamldoc.hva *.cmi $(GENERATORS) $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
+	$(CP) ocamldoc.hva *.cmi $(GENERATORS) $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
 	if test -d $(INSTALL_MANODIR); then : ; else $(MKDIR) $(INSTALL_MANODIR); fi
 	$(CP) stdlib_man/* $(INSTALL_MANODIR)
@@ -290,7 +290,7 @@ installopt_really:
 	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
 	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
 	$(CP) $(OCAMLDOC_OPT) $(INSTALL_BINDIR)
-	$(CP) ocamldoc.sty ocamldoc.hva $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) $(INSTALL_LIBDIR)
+	$(CP) ocamldoc.hva $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
 
 # Testing :
@@ -336,6 +336,7 @@ clean:: dummy
 	@rm -f odoc_parser.output odoc_text_parser.output
 	@rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
 	@rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli odoc_crc.ml
+	@rm -rf stdlib_man
 
 depend::
 	$(OCAMLYACC) odoc_text_parser.mly
