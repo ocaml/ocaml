@@ -13,8 +13,11 @@ runs without any additional tools.
 Linking Caml bytecode with C code (ocamlc -custom) requires the
 Microsoft Visual C++ compiler version 6.
 
-The native-code compiler (ocamlopt) requires Visual C++ and the
-Microsoft assembler MASM version 6.
+The native-code compiler (ocamlopt) requires Visual C++ version 6
+and the Microsoft assembler MASM version 6.11 or later.
+MASM can be downloaded for free from Microsoft's Web site;
+see the comp.lang.asm.x86 FAQ for directions, or
+http://www.cs.uu.nl/wais/html/na-dir/assembly-language/x86/microsoft.html
 
 The CamlTk GUI requires Tcl/Tk 8.0.  Windows binaries are
 available from ftp://ftp.scriptics.com/pub/tcl/tcl8_0/tcl804.exe
