@@ -368,11 +368,16 @@ let _ =
     crc_intfs
 
 let load_ocamlinit ppf =
-  let home_init = 
-    try Filename.concat (Sys.getenv "HOME") ".ocamlinit"
-    with Not_found -> ".ocamlinit" in
-  if Sys.file_exists ".ocamlinit" then ignore(use_silently ppf ".ocamlinit")
-  else if Sys.file_exists home_init then ignore(use_silently ppf home_init)
+  match !Clflags.init_file with
+  | Some f -> if Sys.file_exists f then ignore (use_silently ppf f)
+              else fprintf ppf "Init file not found: \"%s\".@." f
+  | None ->
+     if Sys.file_exists ".ocamlinit" then ignore (use_silently ppf ".ocamlinit")
+     else try
+       let home_init = Filename.concat (Sys.getenv "HOME") ".ocamlinit" in
+       if Sys.file_exists home_init then ignore (use_silently ppf home_init)
+     with Not_found -> ()
+;;
 
 let set_paths () =
   (* Add whatever -I options have been specified on the command line,

@@ -56,6 +56,8 @@ let main () =
        let dir = Misc.expand_directory Config.standard_library dir in
        include_dirs := dir :: !include_dirs),
            "<dir>  Add <dir> to the list of include directories";
+     "-init", Arg.String (fun s -> init_file := Some s),
+           "<file>  Load <file> instead of default init file";
      "-labels", Arg.Clear classic, " Labels commute (default)";
      "-noassert", Arg.Set noassert, " Do not compile assertion checks";
      "-nolabels", Arg.Set classic, " Ignore labels and do not commute";
