@@ -62,6 +62,8 @@ let compile_fundecl fd_cmm =
   fd_cmm
   ++ Selection.fundecl
   ++ pass_dump_if dump_selection "After instruction selection"
+  ++ Comballoc.fundecl
+  ++ pass_dump_if dump_combine "After allocation combining"
   ++ liveness
   ++ pass_dump_if dump_live "Liveness analysis"
   ++ Spill.fundecl
