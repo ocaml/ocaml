@@ -449,10 +449,8 @@ class_declaration:
 class_fun_binding:
     EQUAL class_expr
       { $2 }
-/*
   | COLON class_type EQUAL class_expr
       { mkclass(Pcl_constraint($4, $2)) }
-*/
   | simple_pattern class_fun_binding
       { mkclass(Pcl_fun($1, $2)) }
 ;
@@ -487,12 +485,10 @@ class_simple_expr:
       { mkclass(Pcl_structure($2)) }
   | OBJECT class_structure error
       { unclosed "class" 1 "end" 3 }
-/*
   | LPAREN class_expr COLON class_type RPAREN
       { mkclass(Pcl_constraint($2, $4)) }
   | LPAREN class_expr COLON class_type error
       { unclosed "(" 1 ")" 5 }
-*/
   | LPAREN class_expr RPAREN
       { $2 }
   | LPAREN class_expr error
