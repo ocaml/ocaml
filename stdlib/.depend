@@ -1,5 +1,6 @@
 format.cmi: buffer.cmi 
 genlex.cmi: stream.cmi 
+moreLabels.cmi: hashtbl.cmi 
 parsing.cmi: lexing.cmi obj.cmi 
 printf.cmi: buffer.cmi 
 arg.cmo: array.cmi list.cmi printf.cmi string.cmi sys.cmi arg.cmi 
@@ -42,6 +43,8 @@ map.cmo: map.cmi
 map.cmx: map.cmi 
 marshal.cmo: string.cmi marshal.cmi 
 marshal.cmx: string.cmx marshal.cmi 
+moreLabels.cmo: hashtbl.cmi map.cmi set.cmi moreLabels.cmi 
+moreLabels.cmx: hashtbl.cmx map.cmx set.cmx moreLabels.cmi 
 nativeint.cmo: sys.cmi nativeint.cmi 
 nativeint.cmx: sys.cmx nativeint.cmi 
 obj.cmo: marshal.cmi obj.cmi 
