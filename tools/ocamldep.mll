@@ -41,6 +41,12 @@ rule main = parse
       { string lexbuf; main lexbuf }
   | "(*"
       { comment_depth := 1; comment lexbuf; main lexbuf }
+  | "'" [^ '\\'] "'" 
+    { main lexbuf }
+  | "'" '\\' ['\\' '\'' 'n' 't' 'b' 'r'] "'" 
+    { main lexbuf }
+  | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'" 
+    { main lexbuf }
   | eof
       { () }
   | _
