@@ -338,15 +338,15 @@
     :bytecomp:translcore.cmx :bytecomp:translobj.cmx :typing:typedtree.cmx ¶
     :bytecomp:typeopt.cmx :typing:types.cmx :bytecomp:translclass.cmi 
 :bytecomp:translcore.cmoÄ :parsing:asttypes.cmi :utils:clflags.cmo ¶
-    :utils:config.cmi :typing:ctype.cmi :typing:env.cmi :typing:ident.cmi ¶
-    :bytecomp:lambda.cmi :parsing:location.cmi :bytecomp:matching.cmi ¶
-    :utils:misc.cmi :typing:path.cmi :typing:predef.cmi :typing:primitive.cmi ¶
+    :utils:config.cmi :typing:env.cmi :typing:ident.cmi :bytecomp:lambda.cmi ¶
+    :parsing:location.cmi :bytecomp:matching.cmi :utils:misc.cmi ¶
+    :typing:path.cmi :typing:predef.cmi :typing:primitive.cmi ¶
     :bytecomp:translobj.cmi :typing:typedtree.cmi :bytecomp:typeopt.cmi ¶
     :typing:types.cmi :bytecomp:translcore.cmi 
 :bytecomp:translcore.cmxÄ :parsing:asttypes.cmi :utils:clflags.cmx ¶
-    :utils:config.cmx :typing:ctype.cmx :typing:env.cmx :typing:ident.cmx ¶
-    :bytecomp:lambda.cmx :parsing:location.cmx :bytecomp:matching.cmx ¶
-    :utils:misc.cmx :typing:path.cmx :typing:predef.cmx :typing:primitive.cmx ¶
+    :utils:config.cmx :typing:env.cmx :typing:ident.cmx :bytecomp:lambda.cmx ¶
+    :parsing:location.cmx :bytecomp:matching.cmx :utils:misc.cmx ¶
+    :typing:path.cmx :typing:predef.cmx :typing:primitive.cmx ¶
     :bytecomp:translobj.cmx :typing:typedtree.cmx :bytecomp:typeopt.cmx ¶
     :typing:types.cmx :bytecomp:translcore.cmi 
 :bytecomp:translmod.cmoÄ :parsing:asttypes.cmi :typing:ident.cmi ¶
