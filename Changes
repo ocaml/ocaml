@@ -1,13 +1,97 @@
 Objective Caml 3.01:
 --------------------
 
-Standard library:
-- Added Weak.get_copy.
+New language features:
+- Variables are allowed in "or" patterns, e.g.
+     match l with [t] | [_;t] -> ... t ...
+- "include <structure expression>" to re-export all components of a
+  structure inside another structure.
+- Variance annotation on parameters of type declarations, e.g.
+    type (+'a,-'b,'c) t (covariant in 'a, contravariant in 'b, invariant in 'c)
+
+New ports:
+- Intel IA64/Itanium under Linux (including the native-code compiler).
+- Cygwin under MS Windows.  This port is an alternative to the earlier
+  Windows port of OCaml, which relied on MS compilers; the Cygwin
+  Windows port does not need MS Visual C++ nor MASM, runs faster
+  in bytecode, and has a better implementation of the Unix library, 
+  but currently lacks threads and COM component support.
+
+Type-checking:
+- Relaxed "monomorphic restriction" on type constructors in a 
+  mutually-recursive type definition, e.g. the following is again allowed
+    type u = C of int t | D of string t and 'a t = ...
+- Fixed name-capture bug in "include SIG" and "SIG with ..." constructs.
+- Several bug fixes in type-checking of variants.
 
 Both compilers:
+- Revised compilation of pattern matching.
+- Option -I +<subdir> to search a subdirectory <subdir> of the standard
+  library directory (i.e. write "ocamlc -I +labltk" instead of 
+  "ocamlc -I /usr/local/lib/ocaml/labltk").
 - Option -warn-error to turn warnings into errors.
+- Option -where to print the location of the standard library directory.
 - Assertions are now type-checked even if the -noassert option is given,
-  thus -noassert doesn't change the types of your modules anymore.
+  thus -noassert no longer changes the types of your modules.
+
+Native-code compiler:
+- Better unboxing optimizations on the int32, int64, and nativeint types.
+- Tail recursion preserved for functions with more parameters than
+  available registers (but tail calls to other functions are still
+  turned off if parameters do not fit entirely in registers).
+- Fixed name-capture bug in function inlining.
+- Improved spilling/reloading strategy for conditionals.
+- IA32, Alpha: better alignment of branch targets.
+- Removed spurious dependency on the -lcurses library.
+
+Toplevel environment:
+- Revised handling of top-level value definitions, allows reclaimation
+  of definitions that are shadowed by later definitions with the same names.
+
+Runtime system:
+- Fixed portability issue on bcopy() vs memmove(), affecting Linux RedHat 7.0
+  in particular.
+- Structural comparisons (=, <>, <, <=, >, >=, compare) reimplemented
+  so as to avoid overflowing the C stack.
+- Input/output functions: arrange so that all reads and writes on closed
+  in_channel or out_channel raise Sys_error immediately.
+
+Standard library:
+- Module Hashtbl: added Hashtbl.replace.
+- Module Int64: added bits_of_float, float_of_bits (access to IEEE 754
+    representation of floats)
+- Module List:  List.partition now tail-rec; 
+    improved memory behavior of List.stable_sort.
+- Module Nativeint: added Nativeint.size (number of bits in a nativeint).
+- Module Pervasives: added float constants "infinity", "neg_infinity", "nan";
+    added a "classify_float" function to test a float for NaN, infinity, etc.
+- Pervasives.input_value: fixed bug affecting shared custom objects.
+- Pervasives.output_value: fixed size bug affecting "int64" values.
+- Pervasives.int_of_string, {Int32,Int64,Nativeint}.of_string:
+  fixed bug causing illegal digits to be accepted without error.
+- Module Obj: fixed incorrect resizing of float arrays in Obj.resize.
+- Module Sys: signal handling functions are passed the system-independent
+  signal number rather than the raw system signal number whenever possible.
+- Module Random: added get_state and set_state to checkpoint the generator.
+- Module Weak: added Weak.get_copy.
+
+Other libraries:
+- Bigarray: added Bigarray.reshape to take a view of the elements of a
+  bigarray with different dimensions or number of dimensions;
+  fixed bug causing "get" operations to be unavailable in custom
+  toplevels including Bigarray.
+- Dynlink: raise an error instead of crashing when the loaded module
+  refers to the not-yet-initialized module performing a dynlink operation.
+- Bytecode threads: added a thread-safe version of the Marshal module.
+- POSIX threads: fixed compilation problem with threads.cmxa.
+- Both thread libraries: better tail-recursion in Event.sync.
+
+Tools:
+- ocamldep: fixed missing dependencies on labels of record patterns and
+    record construction operations
+
+Win32 port:
+- Unix.waitpid now implements the WNOHANG option.
 
 
 Objective Caml 3.00:
