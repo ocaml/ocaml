@@ -397,28 +397,32 @@ let rec is_nonexpansive exp =
     Texp_ident(_,_) -> true
   | Texp_constant _ -> true
   | Texp_let(rec_flag, pat_exp_list, body) ->
-      List.for_all (fun (pat, exp) -> is_nonexpansive exp) pat_exp_list &
+      List.for_all (fun (pat, exp) -> is_nonexpansive exp) pat_exp_list &&
       is_nonexpansive body
   | Texp_apply(e, None::el) ->
-      is_nonexpansive e &&
-      List.for_all (function None -> true | Some e -> is_nonexpansive e) el
+      is_nonexpansive e && List.for_all is_nonexpansive_opt el
   | Texp_function _ -> true
   | Texp_tuple el ->
       List.for_all is_nonexpansive el
   | Texp_construct(_, el) ->
       List.for_all is_nonexpansive el
-  | Texp_variant(_, Some e) -> is_nonexpansive e
-  | Texp_variant(_, None) -> true
+  | Texp_variant(_, arg) -> is_nonexpansive_opt arg
   | Texp_record(lbl_exp_list, opt_init_exp) ->
       List.for_all
-        (fun (lbl, exp) -> lbl.lbl_mut = Immutable & is_nonexpansive exp)
-        lbl_exp_list &&
-      (match opt_init_exp with None -> true | Some e -> is_nonexpansive e)
+        (fun (lbl, exp) -> lbl.lbl_mut = Immutable && is_nonexpansive exp)
+        lbl_exp_list 
+      && is_nonexpansive_opt opt_init_exp
   | Texp_field(exp, lbl) -> is_nonexpansive exp
   | Texp_array [] -> true
+  | Texp_ifthenelse(cond, ifso, ifnot) ->
+      is_nonexpansive ifso && is_nonexpansive_opt ifnot
   | Texp_new (_, cl_decl) when Ctype.class_type_arity cl_decl.cty_type > 0 ->
       true
   | _ -> false
+
+and is_nonexpansive_opt = function
+    None -> true
+  | Some e -> is_nonexpansive e
 
 (* Typing of printf formats *)
 
