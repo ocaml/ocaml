@@ -17,6 +17,9 @@
 val current_dir_name : string
         (* The conventional name for the current directory
            (e.g. [.] in Unix). *)
+val parent_dir_name : string
+        (* The conventional name for the parent of the current directory
+           (e.g. [..] in Unix). *)
 val concat : string -> string -> string
         (* [concat dir file] returns a file name that designates file
            [file] in directory [dir]. *)

@@ -12,12 +12,13 @@
 
 (* $Id$ *)
 
-let current_dir_name =
+let (current_dir_name, parent_dir_name) =
   match Sys.os_type with
-  | "Unix" -> "."
-  | "Win32" -> "."
-  | "MacOS" -> ":"
+  | "Unix" -> (".", "..")
+  | "Win32" -> (".", "..")
+  | "MacOS" -> (":", "::")
   | _ -> assert false
+;;
 
 let unix_concat dirname filename =
   let l = String.length dirname in
@@ -201,18 +202,14 @@ let temp_file prefix suffix =
   in try_name 0
 
 let quote s =
-  let quotechar = match Sys.os_type with "MacOS" -> '\182' | _ -> '\\' in
-  if Sys.os_type = "Win32" then s else         (* XXX *)
+  let quotequote = match Sys.os_type with "MacOS" -> "'\182''" | _ -> "'\\''" in
   let l = String.length s in
   let b = Buffer.create (l + 20) in
   Buffer.add_char b '\'';
   for i = 0 to l - 1 do
-    Buffer.add_char b s.[i];
-    if s.[i] = '\'' then begin
-      Buffer.add_char b s.[i];
-      Buffer.add_char b quotechar;
-      Buffer.add_char b s.[i];
-    end;
+    if s.[i] = '\''
+	then Buffer.add_string b quotequote
+	else Buffer.add_char b  s.[i]
   done;
   Buffer.add_char b '\'';
   Buffer.contents b
