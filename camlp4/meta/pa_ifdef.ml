@@ -9,7 +9,7 @@ value list_remove x l =
   List.fold_right (fun e l -> if e = x then l else [e :: l]) l []
 ;
 
-value defined = ref ["OCAML_305"; "NEWSEQ"];
+value defined = ref ["OCAML_305"; "CAMLP4_300"; "NEWSEQ"];
 value define x = defined.val := [x :: defined.val];
 value undef x = defined.val := list_remove x defined.val;
 
