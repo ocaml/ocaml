@@ -4,6 +4,14 @@ Objective Caml 3.08.3:
 New features:
 - support for ocamlopt -pack under Mac OS X
 
+Bug fixes:
+- typing: fix unsoundness in type declaration variance inference.
+    Type parameters which are constrained must now have an explicit variant
+    annotation, otherwise they are invariant. This is not backward
+    compatible, so this might break code which either uses subtyping or
+    uses the relaxed value restriction (i.e. was not typable before 3.07)
+- typing: erroneous partial match warning for polymorphic variants (PR#3424)
+
 
 Objective Caml 3.08.2:
 ----------------------
