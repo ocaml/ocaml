@@ -76,7 +76,8 @@ let string_of_module_type t =
   let s = Format.flush_str_formatter () in
   s
 
-let string_of_class_type t =
+let string_of_class_type t = 
+  (* A VOIR : ma propre version de Printtyp.class_type pour ne pas faire reset_names *)
   Printtyp.class_type Format.str_formatter t;
   let s = Format.flush_str_formatter () in
   s
@@ -340,3 +341,30 @@ let create_index_lists elements string_of_ele =
 		f current (acc0 @ [ele]) acc1 acc2 q
   in
   f '_' [] [] [] elements
+
+
+let remove_option typ =
+  let rec iter t =
+    match t with
+    | Types.Tconstr (p,tlist,_) ->
+	(
+	 match p with
+	   Path.Pident id when Ident.name id = "option" ->
+	     (
+	      match tlist with
+		[t2] -> t2.Types.desc
+	      | _ -> t
+	     )
+	 | _ -> t
+	)
+    | Types.Tvar
+    | Types.Tarrow _ 
+    | Types.Ttuple _ 
+    | Types.Tobject _
+    | Types.Tfield _
+    | Types.Tnil 
+    | Types.Tvariant _ -> t
+    | Types.Tlink t2
+    | Types.Tsubst t2 -> iter t2.Types.desc
+  in
+  { typ with Types.desc = iter typ.Types.desc }

@@ -136,7 +136,7 @@ module Parameter :
       | Tuple of param_info list * Types.type_expr
 
     (** A parameter is just a param_info value. *)
-    type parameter = param_info
+    type parameter = param_info * Asttypes.label
 
     (** A module parameter is just a name and a module type.*)
     type module_parameter = Odoc_parameter.module_parameter =
@@ -294,7 +294,8 @@ module Class :
     and class_constr = Odoc_class.class_constr = 
 	{
 	  cco_name : Name.t ; (** The complete name of the applied class. *)
-	  mutable cco_class : t_class option;  (** The associated t_class if we found it. *)
+	  mutable cco_class : cct option;  
+              (** The associated class or class type if we found it. *)
 	  cco_type_parameters : Types.type_expr list; (** The type parameters of the class, if needed. *)
 	} 
 
@@ -649,6 +650,11 @@ val first_sentence_and_rest_of_text :
    Since the original list is sorted, elements whose name does not
    begin with a letter should be in the first returned list.*)
 val create_index_lists : 'a list -> ('a -> string) -> 'a list list
+
+(** Take a type and remove the option top constructor. This is
+   useful when printing labels, we we then remove the top option contructor
+   for optional labels.*)
+val remove_option : Types.type_expr -> Types.type_expr
 
 (** Return the given name where the module name or 
    part of it was removed, according to the list of modules 

@@ -31,7 +31,7 @@ type param_info =
   | Tuple of param_info list * Types.type_expr
 
 (** A parameter is just a param_info value. *)
-type parameter = param_info
+type parameter = param_info * Asttypes.label
 
 (** A module parameter is just a name and a module type.*)
 type module_parameter = {
@@ -53,29 +53,29 @@ let complete_name p =
     | Tuple (pi_list, _) ->
 	"("^(String.concat "," (List.map iter pi_list))^")"
   in
-  iter p
+  iter (fst p)
 
 (** access to the complete type *)
-let typ p = 
-  match p with
+let typ (pi, label) = 
+  match pi with
     Simple_name sn -> sn.sn_type
   | Tuple (_, typ) -> typ
 
 (** Update the text of a parameter using a function returning
    the optional text associated to a parameter name.*)
 let update_parameter_text f p =
-  let rec iter p = 
-    match p with
+  let rec iter pi= 
+    match pi with
       Simple_name sn ->
 	sn.sn_text <- f sn.sn_name
     | Tuple (l, _) ->
 	List.iter iter l
   in
-  iter p
+  iter (fst p)
 
 (** access to the description of a specific name.
    @raise Not_found if no description is associated to the given name. *)
-let desc_by_name p name = 
+let desc_by_name (pi,label) name = 
   let rec iter acc pi =
     match pi with
       Simple_name sn ->
@@ -83,13 +83,13 @@ let desc_by_name p name =
     | Tuple (pi_list, _) ->
 	List.fold_left iter acc pi_list
       in
-  let l = iter [] p in
+  let l = iter [] pi in
   List.assoc name l
 
 
 (** acces to the list of names ; only one for a simple parameter, or
    a list for tuples. *)
-let names p =
+let names (pi,label) =
   let rec iter acc pi =
     match pi with
       Simple_name sn ->
@@ -97,11 +97,11 @@ let names p =
     | Tuple (pi_list, _) ->
 	    List.fold_left iter acc pi_list
   in
-  iter [] p
+  iter [] pi
 
 (** access to the type of a specific name. 
    @raise Not_found if no type is associated to the given name. *)
-let type_by_name p name = 
+let type_by_name (pi,label) name = 
   let rec iter acc pi =
     match pi with
       Simple_name sn ->
@@ -109,7 +109,7 @@ let type_by_name p name =
     | Tuple (pi_list, _) ->
 	List.fold_left iter acc pi_list
       in
-  let l = iter [] p in
+  let l = iter [] pi in
   List.assoc name l
 
 (** access to the optional description of a parameter name from an optional info structure.*)

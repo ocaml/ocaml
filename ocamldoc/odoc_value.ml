@@ -44,14 +44,14 @@ type t_method = {
 
 (** Functions *)
 
-(** Returns the text associated to the given parameter label
+(** Returns the text associated to the given parameter name
    in the given value, or None. *)
-let value_parameter_text_by_name v label =
+let value_parameter_text_by_name v name =
   match v.val_info with
     None -> None
   | Some i ->
       try
-	let t = List.assoc label i.Odoc_types.i_params in
+	let t = List.assoc name i.Odoc_types.i_params in
 	Some t
       with
 	Not_found ->
@@ -87,7 +87,7 @@ let dummy_parameter_list typ =
       "" -> s
     | _ -> 
 	match s.[0] with
-	  '?' -> String.sub s 1 ((String.length s) - 1) 
+	  '?' -> String.sub s 1 ((String.length s) - 1)
 	| _ -> s
   in
   Printtyp.mark_loops typ;
@@ -97,7 +97,7 @@ let dummy_parameter_list typ =
     | Types.Ttuple l -> 
 	if label = "" then
 	  Odoc_parameter.Tuple 
-	    ((List.map (fun t2 -> iter ("", t2)) l), t)
+	    (List.map (fun t2 -> iter ("", t2)) l, t)
 	else
 	  (* if there is a label, then we don't want to decompose the tuple *)
 	  Odoc_parameter.Simple_name 
@@ -106,15 +106,15 @@ let dummy_parameter_list typ =
 	      Odoc_parameter.sn_text = None }
     | Types.Tlink t2  
     | Types.Tsubst t2 ->
-	(iter (normal_name label, t2))
+	(iter (label, t2))
 
     | _ ->
 	Odoc_parameter.Simple_name 
 	  { Odoc_parameter.sn_name = normal_name label ;
-	    Odoc_parameter.sn_type = t ;
+	     Odoc_parameter.sn_type = t ;
 	    Odoc_parameter.sn_text = None }
   in 
-  List.map iter liste_param
+  List.map (fun (label,t) -> (iter (label, t), label)) liste_param
 
 (** Return true if the value is a function, i.e. has a functional type.*)
 let is_function v =

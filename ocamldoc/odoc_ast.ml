@@ -261,7 +261,7 @@ module Analyser =
     (** This function takes a parameter pattern and builds the 
        corresponding [parameter] structure. The f_desc function
        is used to retrieve a parameter description, if any, from
-       a prarameter name.
+       a parameter name.
     *)
     let tt_param_info_from_pattern env f_desc pat =
       let rec iter_pattern pat =
@@ -314,26 +314,35 @@ module Analyser =
 
       |	(pattern_param, exp) :: second_ele :: q ->
           (* implicit pattern matching -> anonymous parameter and no more parameter *)
-	  let parameter = Odoc_parameter.Tuple ([], Odoc_env.subst_type env pattern_param.pat_type) in
+	  (* A VOIR : le label ? *)
+	  let parameter = (Odoc_parameter.Tuple ([], Odoc_env.subst_type env pattern_param.pat_type), "") in
 	  [ parameter ]
 
       | (pattern_param, func_body) :: [] ->
-	  let parameter = tt_param_info_from_pattern env (Odoc_parameter.desc_from_info_opt current_comment_opt) pattern_param in
+	  let parameter = 
+	    (tt_param_info_from_pattern 
+	       env
+	       (Odoc_parameter.desc_from_info_opt current_comment_opt) 
+	       pattern_param,
+	     "") (* A VOIR : le label ? *)
+	  in
          (* For optional parameters with a default value, a special treatment is required *)
          (* we look if the name of the parameter we just add is "*opt*", which means
 	    that there is a let param_name = ... in ... just right now *)
 	  let (p, next_exp) = 
 	    match parameter with
-	      Simple_name { sn_name = "*opt*" } ->
+	      (Simple_name { sn_name = "*opt*" }, label) ->
 		(
 		 (
 		  match func_body.exp_desc with
 		    Typedtree.Texp_let (_, ({pat_desc = Typedtree.Tpat_var id } , exp) :: _, func_body2) ->
 		      let name = Name.from_ident id in
-		      let new_param = Simple_name { sn_name = name ;
-						    sn_text = Odoc_parameter.desc_from_info_opt current_comment_opt name ;
-						    sn_type = Odoc_env.subst_type env exp.exp_type
-						  } 
+		      let new_param = 
+			(Simple_name { sn_name = name ;
+				       sn_text = Odoc_parameter.desc_from_info_opt current_comment_opt name ;
+				       sn_type = Odoc_env.subst_type env exp.exp_type
+				     },
+			 label)
 		      in
 		      (new_param, func_body2)
 		  | _ ->
@@ -553,34 +562,45 @@ module Analyser =
 	       match l with
 		 [] ->
 		   (* cas impossible, on l'a filtré avant *)
-		   raise (Failure "")
+		   assert false
 	       | (pattern_param, exp) :: second_ele :: q ->
                    (* implicit pattern matching -> anonymous parameter *)
 		   (* Note : We can't match this pattern if it is the first call to the function. *)
-		   let new_param = Simple_name { sn_name = "??" ; sn_text =  None; 
-						 sn_type = Odoc_env.subst_type env pattern_param.Typedtree.pat_type } in
+		   let new_param = 
+		     (Simple_name { sn_name = "??" ; sn_text =  None; 
+				    sn_type = Odoc_env.subst_type env pattern_param.Typedtree.pat_type },
+		      "") (* A VOIR : le label ? *)
+		   in
 		   [ new_param ]
 		     
 	       | (pattern_param, body) :: [] ->
 		   (* if this is the first call to the function, this is the first parameter and we skip it *)
 		   if not first then
 		     (
-		      let parameter = tt_param_info_from_pattern env (Odoc_parameter.desc_from_info_opt comment_opt) pattern_param in
+		      let parameter = 
+			(tt_param_info_from_pattern
+			   env
+			   (Odoc_parameter.desc_from_info_opt comment_opt) 
+			   pattern_param ,
+			 "") (* A VOIR : le label ? *)
+		      in
                       (* For optional parameters with a default value, a special treatment is required. *)
                       (* We look if the name of the parameter we just add is "*opt*", which means
 			 that there is a let param_name = ... in ... just right now. *)
 		      let (current_param, next_exp) = 
 			match parameter with
-			  Simple_name { sn_name = "*opt*"} ->
+			  (Simple_name { sn_name = "*opt*"}, label) ->
 			    (
 			     (
 			      match body.exp_desc with
 				Typedtree.Texp_let (_, ({pat_desc = Typedtree.Tpat_var id } , exp) :: _, body2) ->
 				  let name = Name.from_ident id in
-				  let new_param = Simple_name { sn_name = name ;
-								sn_text = Odoc_parameter.desc_from_info_opt comment_opt name ;
-								sn_type = Odoc_env.subst_type env exp.Typedtree.exp_type ; 
-							      }
+				  let new_param = 
+				    (Simple_name { sn_name = name ;
+						   sn_text = Odoc_parameter.desc_from_info_opt comment_opt name ;
+						   sn_type = Odoc_env.subst_type env exp.Typedtree.exp_type ; 
+						 },
+				     label)
 				  in
 				  (new_param, body2)
 			      | _ ->
@@ -791,6 +811,7 @@ module Analyser =
 	 Typedtree.Tclass_fun (pat, ident_exp_list, tt_class_expr2, partial)) ->
 	   (* we check that this is not an optional parameter with
 	      a default value. In this case, we look for the good parameter pattern *)
+	   prerr_endline ("label="^label);
 	   let (parameter, next_tt_class_exp) =
 	     match pat.Typedtree.pat_desc with
 	       Typedtree.Tpat_var ident when Name.from_ident ident = "*opt*" ->
@@ -799,11 +820,13 @@ module Analyser =
 		  match tt_class_expr2.Typedtree.cl_desc with
 		    Typedtree.Tclass_let (_, ({pat_desc = Typedtree.Tpat_var id } , exp) :: _, _, tt_class_expr3) ->
 		      let name = Name.from_ident id in
-		      let new_param = Simple_name
-			  { sn_name = name ;
-			    sn_text = Odoc_parameter.desc_from_info_opt comment_opt name ;
-			    sn_type = Odoc_env.subst_type env exp.exp_type
-			  } 
+		      let new_param = 
+			(Simple_name
+			   { sn_name = name ;
+			     sn_text = Odoc_parameter.desc_from_info_opt comment_opt name ;
+			     sn_type = Odoc_env.subst_type env exp.exp_type
+			   }, 
+			 label)
 		      in
 		      (new_param, tt_class_expr3)
 		 | _ ->
@@ -813,7 +836,13 @@ module Analyser =
 		 )
              | _ ->
 		 (* no optional parameter with default value, we create the parameter *)
-		 let new_param = tt_param_info_from_pattern env (Odoc_parameter.desc_from_info_opt comment_opt) pat in
+		 let new_param = 
+		   (tt_param_info_from_pattern
+		      env
+		      (Odoc_parameter.desc_from_info_opt comment_opt)
+		      pat,
+		    label)
+		 in
 		 (new_param, tt_class_expr2)
 	   in
 	   let (params, k) = analyse_class_kind env current_class_name comment_opt last_pos p_class_expr2 next_tt_class_exp in

@@ -401,7 +401,8 @@ class virtual to_text =
 	  [Code (
 	    match cco.cco_class with
 	      None -> cco.cco_name
-	    | Some cl -> cl.cl_name
+	    | Some (Cl cl) -> cl.cl_name
+	    | Some (Cltype (clt,_)) -> clt.clt_name
 	   )
 	  ] 
 

@@ -88,3 +88,8 @@ val first_sentence_and_rest_of_text :
    Since the original list is sorted, elements whose name does not
    begin with a letter should be in the first returned list.*)
 val create_index_lists : 'a list -> ('a -> string) -> 'a list list
+
+(** Take a type and remove the option top constructor. This is
+   useful when printing labels, we we then remove the top option contructor
+   for optional labels.*)
+val remove_option : Types.type_expr -> Types.type_expr

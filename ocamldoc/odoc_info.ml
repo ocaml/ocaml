@@ -150,6 +150,8 @@ let first_sentence_and_rest_of_text = Odoc_misc.first_sentence_and_rest_of_text
 
 let create_index_lists = Odoc_misc.create_index_lists
 
+let remove_option = Odoc_misc.remove_option
+
 let use_hidden_modules n = 
   Odoc_name.hide_given_modules !Odoc_args.hidden_modules n
 

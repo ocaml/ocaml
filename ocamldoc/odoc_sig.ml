@@ -1071,10 +1071,12 @@ module Analyser =
 	(Parsetree.Pcty_constr (_, _) (*of Longident.t * core_type list *),
 	 Types.Tcty_constr (p, typ_list, _) (*of Path.t * type_expr list * class_type*)) ->
 	  print_DEBUG "Tcty_constr _";
+	   let path_name = Name.from_path p in
+	   let name = Odoc_env.full_class_or_class_type_name env path_name in
 	   let k = 
 	     Class_constr 
 	       {
-		 cco_name = Odoc_env.full_class_name env (Name.from_path p) ;
+		 cco_name = name ;
 		 cco_class = None ;
 		 cco_type_parameters = List.map (Odoc_env.subst_type env) typ_list
 	       } 
@@ -1098,16 +1100,17 @@ module Analyser =
 
       | (Parsetree.Pcty_fun (parse_label, _, pclass_type), Types.Tcty_fun (label, type_expr, class_type)) -> 
           (* label = string. Dans les signatures, pas de nom de paramètres à l'intérieur des tuples *)
-	  (* si label = "", pas de label. A VOIR : ici on a l'information pour savoir si on a un label explicite. *)
+	  (* si label = "", pas de label. ici on a l'information pour savoir si on a un label explicite. *)
 	  if parse_label = label then
 	    (
 	     let new_param = 
-		 Simple_name 
-		 {
-		   sn_name = label ;
-		   sn_type = Odoc_env.subst_type env type_expr ;
-		   sn_text = None ; (* will be updated when the class will be created *)
-		 } 
+	       (Simple_name 
+		  {
+		    sn_name = label ;
+		    sn_type = Odoc_env.subst_type env type_expr ;
+		    sn_text = None ; (* will be updated when the class will be created *)
+		  },
+		label)
 	     in
 	     let (l, k) = analyse_class_kind env current_class_name last_pos pclass_type class_type in
 	     ( (new_param :: l), k )

@@ -404,11 +404,23 @@ and associate_in_class module_list (acc_b_modif, acc_incomplete_top_module_names
 	       with Not_found -> None
 	     in
 	     match cl_opt with
-	       None -> (acc_b, (Name.head c.cl_name) :: acc_inc, 
+	       None -> 
+		 (
+		  let clt_opt =
+		    try Some (lookup_class_type module_list cco.cco_name)
+		    with Not_found -> None
+		  in
+		  match clt_opt with
+		    None ->
+		      (acc_b, (Name.head c.cl_name) :: acc_inc, 
 			(* we don't want to output warning messages for "object ... end" classes not found *)
-			(if cco.cco_name = Odoc_messages.object_end then acc_names else (NF_c cco.cco_name) :: acc_names))
+		       (if cco.cco_name = Odoc_messages.object_end then acc_names else (NF_cct cco.cco_name) :: acc_names))
+		  | Some ct ->
+		      cco.cco_class <- Some (Cltype (ct, [])) ;
+		      (true, acc_inc, acc_names)
+		 )
 	     | Some c ->
-		 cco.cco_class <- Some c ;
+		 cco.cco_class <- Some (Cl c) ;
 		 (true, acc_inc, acc_names)
 	)
     | Class_constraint (ckind, ctkind) ->
@@ -640,7 +652,7 @@ and assoc_comments_parameter module_list p =
       List.iter (assoc_comments_parameter module_list) l
 
 and assoc_comments_parameter_list module_list pl =
-  List.iter (assoc_comments_parameter module_list) pl
+  List.iter (fun (pi, label) -> assoc_comments_parameter module_list pi) pl
 
 and assoc_comments_value module_list v =
   v.val_info <- ao (assoc_comments_info module_list) v.val_info ;

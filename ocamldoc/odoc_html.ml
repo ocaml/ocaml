@@ -981,6 +981,23 @@ class html =
 	self#html_of_described_parameter_list module_name m.met_value.val_parameters
       )
 
+    (** Return HTML code to print the type of the given parameter,
+       and eventually its label. Note that we must remove
+       the option constructor if we print an optional argument.*)
+    method html_of_parameter m p =
+      let (pi,label) = p in
+      let (slabel, t) = 
+	let t = Parameter.typ p in
+	match label with
+	  "" -> ("", t)
+	| s -> 
+	    if s.[0] = '?' then 
+	      (s^":", Odoc_info.remove_option t)
+	    else
+	      (s^":", t)
+      in
+      slabel^(self#html_of_type_expr m t)
+
     (** Return html code for the description of a function parameter. *)
     method html_of_parameter_description p =
       match Parameter.names p with
@@ -1224,15 +1241,13 @@ class html =
       "</pre>\n"
 
     (** Return html code for the given [class_kind].*)
-    method html_of_class_kind father ?(with_def_syntax=true) ckind =
+    method html_of_class_kind father ckind =
       print_DEBUG "html#html_of_class_kind";
       match ckind with
 	Class_structure _ -> 
-	  (if with_def_syntax then " = " else "")^
 	  (self#html_of_code ~with_pre: false Odoc_messages.object_end)
 
       |	Class_apply capp ->
-	  (if with_def_syntax then " = " else "")^
 	  (
 	   match capp.capp_class with
 	     None -> capp.capp_name
@@ -1247,7 +1262,6 @@ class html =
 		capp.capp_params_code))
 	    
       |	Class_constr cco ->
-	  (if with_def_syntax then " = " else "")^
 	  (
 	   match cco.cco_type_parameters with
 	     [] -> ""
@@ -1256,24 +1270,23 @@ class html =
 	  (
 	   match cco.cco_class with
 	     None -> cco.cco_name
-	   | Some cl -> 
+	   | Some (Cl cl) -> 
 	       let (html_file, _) = Naming.html_files cl.cl_name in 
 	       "<a href=\""^html_file^"\">"^cl.cl_name^"</a> "
+	   | Some (Cltype (clt,_)) -> 
+	       let (html_file, _) = Naming.html_files clt.clt_name in 
+	       "<a href=\""^html_file^"\">"^clt.clt_name^"</a> "
 	  )
       |	Class_constraint (ck, ctk) ->
-	  (if with_def_syntax then " = " else "")^
-	  "( "^(self#html_of_class_kind father ~with_def_syntax: false ck)^
+	  "( "^(self#html_of_class_kind father ck)^
 	  " : "^
 	  (self#html_of_class_type_kind father ctk)^
 	  " )"
 
     (** Return html code for the given [class_type_kind].*)
-    method html_of_class_type_kind father ?def_syntax ctkind =
+    method html_of_class_type_kind father ctkind =
       match ctkind with
 	Class_type cta -> 
-	  (match def_syntax with
-	    None -> ""
-	  | Some s -> " "^s^" ")^
 	  (
 	   match cta.cta_type_parameters with
 	     [] -> ""
@@ -1294,73 +1307,88 @@ class html =
 	       "<a href=\""^html_file^"\">"^cl.cl_name^"</a>"
 	  )
       |	Class_signature _ ->
-	  (match def_syntax with
-	    None -> ""
-	  | Some s -> " "^s^" ")^
-	  (self#html_of_code ~with_pre: false Odoc_messages.object_end)
+	  self#html_of_code ~with_pre: false Odoc_messages.object_end
 
     (** Return html code for a class. *)
     method html_of_class ?(complete=true) ?(with_link=true) c =
       Odoc_info.reset_type_names ();
+      let buf = Buffer.create 32 in
       let (html_file, _) = Naming.html_files c.cl_name in
-      "<pre>"^(self#keyword "class")^" "^
+      let p = Printf.bprintf in
+      p buf "<pre>%s " (self#keyword "class");
       (* we add a html tag, the same as for a type so we can 
 	 go directly here when the class name is used as a type name *)
-      "<a name=\""^(Naming.type_target 
-		      { ty_name = c.cl_name ;
-			ty_info = None ; ty_parameters = [] ;
-			ty_kind = Type_abstract ; ty_manifest = None ; 
-			ty_loc = Odoc_info.dummy_loc })^
-      "\"></a>"^
-      (print_DEBUG "html#html_of_class : virtual or not" ; "")^
-      (if c.cl_virtual then (self#keyword "virtual")^" " else "")^
+      p buf "<a name=\"%s\"></a>"
+	(Naming.type_target 
+	   { ty_name = c.cl_name ;
+	     ty_info = None ; ty_parameters = [] ;
+	     ty_kind = Type_abstract ; ty_manifest = None ; 
+	     ty_loc = Odoc_info.dummy_loc });
+      print_DEBUG "html#html_of_class : virtual or not" ;
+      if c.cl_virtual then p buf "%s " (self#keyword "virtual") else ();
       (
        match c.cl_type_parameters with
-	[] -> ""
-      |	l -> "["^(self#html_of_type_expr_list (Name.father c.cl_name) ", " l)^"] "
-      )^
-      (print_DEBUG "html#html_of_class : with link or not" ; "")^
+	 [] -> ()
+       | l -> 
+	   p buf "[%s] "
+	     (self#html_of_type_expr_list (Name.father c.cl_name) ", " l)
+      );
+      print_DEBUG "html#html_of_class : with link or not" ;
       (
        if with_link then
-	 "<a href=\""^html_file^"\">"^(Name.simple c.cl_name)^"</a>"
+	 p buf "<a href=\"%s\">%s</a>" html_file (Name.simple c.cl_name)
        else
-	 Name.simple c.cl_name
-      )^
-      (match c.cl_parameters with [] -> "" | _ -> " ... ")^
-      (print_DEBUG "html#html_of_class : class kind" ; "")^
-      (self#html_of_class_kind (Name.father c.cl_name) c.cl_kind)^
-      "</pre>"^
-      (print_DEBUG "html#html_of_class : info" ; "")^
-      ((if complete then self#html_of_info else self#html_of_info_first_sentence) c.cl_info)
+	 p buf "%s" (Name.simple c.cl_name)
+      );
+
+      Buffer.add_string buf " : " ;
+
+      List.iter
+	(fun param -> 
+	  p buf "%s -> " (self#html_of_parameter (Name.father c.cl_name) param))
+	c.cl_parameters;
+
+      print_DEBUG "html#html_of_class : class kind" ; 
+      Buffer.add_string buf (self#html_of_class_kind (Name.father c.cl_name) c.cl_kind);
+      Buffer.add_string buf "</pre>" ;
+      print_DEBUG "html#html_of_class : info" ;
+      Buffer.add_string buf 
+	((if complete then self#html_of_info else self#html_of_info_first_sentence) c.cl_info);
+      Buffer.contents buf
 
     (** Return html code for a class type. *)
     method html_of_class_type ?(complete=true) ?(with_link=true) ct =
       Odoc_info.reset_type_names ();
+      let buf = Buffer.create 32 in
+      let p = Printf.bprintf in
       let (html_file, _) = Naming.html_files ct.clt_name in
-      "<pre>"^(self#keyword "class type")^" "^
+      p buf "<pre>%s " (self#keyword "class type");
       (* we add a html tag, the same as for a type so we can 
 	 go directly here when the class type name is used as a type name *)
-      "<a name=\""^(Naming.type_target 
-		      { ty_name = ct.clt_name ;
-			ty_info = None ; ty_parameters = [] ;
-			ty_kind = Type_abstract ; ty_manifest = None ;
-			ty_loc = Odoc_info.dummy_loc })^
-      "\"></a>"^
-      (if ct.clt_virtual then (self#keyword "virtual")^" " else "")^
+      p buf "<a name=\"%s\"></a>"
+	(Naming.type_target 
+	   { ty_name = ct.clt_name ;
+	     ty_info = None ; ty_parameters = [] ;
+	     ty_kind = Type_abstract ; ty_manifest = None ;
+	     ty_loc = Odoc_info.dummy_loc });
+      if ct.clt_virtual then p buf "%s "(self#keyword "virtual") else ();
       (
        match ct.clt_type_parameters with
-	[] -> ""
-      |	l -> "["^(self#html_of_type_expr_list (Name.father ct.clt_name) ", " l)^"] "
-      )^
-      (
-       if with_link then
-	 "<a href=\""^html_file^"\">"^(Name.simple ct.clt_name)^"</a>"
-       else
-	 Name.simple ct.clt_name
-      )^
-      (self#html_of_class_type_kind (Name.father ct.clt_name) ~def_syntax: ":" ct.clt_kind)^
-      "</pre>"^
-      ((if complete then self#html_of_info else self#html_of_info_first_sentence) ct.clt_info)
+	[] -> ()
+      |	l -> p buf "[%s] " (self#html_of_type_expr_list (Name.father ct.clt_name) ", " l)
+      );
+
+      if with_link then
+	p buf "<a href=\"%s\">%s</a>" html_file (Name.simple ct.clt_name)
+      else
+	p buf "%s" (Name.simple ct.clt_name);
+
+      Buffer.add_string buf " = ";
+      Buffer.add_string buf (self#html_of_class_type_kind (Name.father ct.clt_name) ct.clt_kind);
+      Buffer.add_string buf "</pre>";
+      Buffer.add_string buf ((if complete then self#html_of_info else self#html_of_info_first_sentence) ct.clt_info);
+
+      Buffer.contents buf
 
     (** Return html code to represent a dag, represented as in Odoc_dag2html. *)
     method html_of_dag dag =
@@ -1505,7 +1533,7 @@ class html =
 	    | Class_comment t ->
 		output_string chanout (self#html_of_class_comment t)
 	  )
-	  (Class.class_elements cl);
+	  (Class.class_elements ~trans:false cl);
 	output_string chanout "</html>";
 	close_out chanout;
 
@@ -1557,7 +1585,7 @@ class html =
 	    | Class_comment t ->
 		output_string chanout (self#html_of_class_comment t)
 	  )
-	  (Class.class_type_elements clt);
+	  (Class.class_type_elements ~trans: false clt);
 	output_string chanout "</html>";
 	close_out chanout;
 

@@ -77,7 +77,7 @@ class iso =
 	| Parameter.Tuple (l, _) ->
 	    List.for_all iter l
       in
-      List.for_all iter l
+      List.for_all (fun (pi,label) -> iter pi) l
 
     method check_type_fields l =
       List.for_all (fun f -> f.rf_text <> None) l

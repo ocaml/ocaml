@@ -40,7 +40,7 @@ and class_apply = {
 
 and class_constr = {
     cco_name : Name.t ; (** The complete name of the applied class *)
-    mutable cco_class : t_class option;  (** The associated t_class if we found it *)
+    mutable cco_class : cct option;  (** The associated class ot class type if we found it *)
     cco_type_parameters : Types.type_expr list; (** The type parameters of the class, if needed *)
   } 
 
@@ -131,7 +131,8 @@ let rec class_elements ?(trans=true) cl =
     | Class_constr cco ->
 	(
 	 match cco.cco_class with
-	   Some c when trans -> class_elements ~trans: trans c
+	   Some (Cl c) when trans -> class_elements ~trans: trans c
+	 | Some (Cltype (ct,_)) when trans -> class_type_elements ~trans: trans ct
 	 | _ -> []
 	)
   in
