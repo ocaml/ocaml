@@ -580,26 +580,6 @@ module Module :
     val module_type_comments : ?trans:bool-> t_module_type -> text list
   end
 
-(** Analysis of the given source files.
-   @param init is the list of modules already known from a previous analysis.
-   @return the list of analysed top modules. *)
-val analyse_files :
-    ?merge_options:Odoc_types.merge_option list ->
-      ?include_dirs:string list ->
-        ?labels:bool ->
-          ?sort_modules:bool ->
-            ?no_stop:bool ->
-              ?init: Odoc_module.t_module list ->
-                string list ->
-                  Module.t_module list
-
-(** Dump of a list of modules into a file. 
-   @raise Failure if an error occurs.*)
-val dump_modules : string -> Odoc_module.t_module list -> unit
-
-(** Load of a list of modules from a file. 
-   @raise Failure if an error occurs.*)
-val load_modules : string -> Odoc_module.t_module list
 
 (** {3 Getting strings from values} *)
     
@@ -935,6 +915,11 @@ module Dep :
 (**  You can use this module to create custom generators.*)
 module Args :
     sig
+      (** The kind of source file in arguments. *)
+      type source_file =
+	  Impl_file of string
+	| Intf_file of string
+
       (** The class type of documentation generators. *)
       class type doc_generator =
 	object method generate : Module.t_module list -> unit end
@@ -1046,7 +1031,7 @@ module Args :
       val man_mini : bool ref
 
       (** The files to be analysed. *)
-      val files : string list ref
+      val files : source_file list ref
     
       (** To set the documentation generator. *)
       val set_doc_generator : doc_generator option -> unit
@@ -1054,3 +1039,24 @@ module Args :
       (** Add an option specification. *)
       val add_option : string * Arg.spec * string -> unit
     end
+
+(** Analysis of the given source files.
+   @param init is the list of modules already known from a previous analysis.
+   @return the list of analysed top modules. *)
+val analyse_files :
+    ?merge_options:Odoc_types.merge_option list ->
+      ?include_dirs:string list ->
+        ?labels:bool ->
+          ?sort_modules:bool ->
+            ?no_stop:bool ->
+              ?init: Odoc_module.t_module list ->
+                Args.source_file list ->
+                  Module.t_module list
+
+(** Dump of a list of modules into a file. 
+   @raise Failure if an error occurs.*)
+val dump_modules : string -> Odoc_module.t_module list -> unit
+
+(** Load of a list of modules from a file. 
+   @raise Failure if an error occurs.*)
+val load_modules : string -> Odoc_module.t_module list

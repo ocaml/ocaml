@@ -5,8 +5,9 @@ TODO:
 
 =====
 Release 3.08.1:
- - fix: display of class parameters in HTML and LaTeX
- - fix: display of link to class page in html 
+ - add: new -intf and -impl options supported (PR#3036)
+ - fix: display of class parameters in HTML and LaTeX (PR#2994)
+ - fix: display of link to class page in html (PR#2994)
 
 =====
 Release 3.08.0:
