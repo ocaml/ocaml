@@ -61,6 +61,12 @@ let rec split_last = function
       let (lst, last) = split_last tl in
       (hd :: lst, last)
 
+let rec samelist pred l1 l2 =
+  match (l1, l2) with
+  | ([], []) -> true
+  | (hd1 :: tl1, hd2 :: tl2) -> pred hd1 hd2 && samelist pred tl1 tl2
+  | (_, _) -> false
+
 (* Options *)
 
 let may f = function

@@ -99,6 +99,7 @@ module List :
     val sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
     val stable_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
     val fast_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
+    val merge : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
   end
 
 module String :
@@ -128,6 +129,8 @@ module String :
     val lowercase : string -> string
     val capitalize : string -> string
     val uncapitalize : string -> string
+    type t = string
+    val compare: t -> t -> int
     external unsafe_get : string -> int -> char = "%string_unsafe_get"
     external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"
     external unsafe_blit :

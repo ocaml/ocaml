@@ -205,48 +205,55 @@ let included_modules l =
    @param trans indicates if, for aliased modules, we must perform a transitive search.*)
 let rec module_elements ?(trans=true) m =
   let rec iter_kind = function
-    Module_struct l -> l
-  | Module_alias ma -> 
-      if trans then
-        match ma.ma_module with
-          None -> []
-        | Some (Mod m) -> module_elements m
-        | Some (Modtype mt) -> module_type_elements mt
-      else
-        []
-  | Module_functor (_, k) 
-  | Module_apply (k, _) -> iter_kind k
-  | Module_with (tk,_) ->
-      module_type_elements ~trans: trans
-        { mt_name = "" ; mt_info = None ; mt_type = None ;
-          mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
-          mt_loc = Odoc_types.dummy_loc ;
-        }
-  | Module_constraint (k, tk) ->
+      Module_struct l -> 
+	print_DEBUG "Odoc_module.module_element: Module_struct";
+	l
+    | Module_alias ma -> 
+	print_DEBUG "Odoc_module.module_element: Module_alias";
+	if trans then
+          match ma.ma_module with
+            None -> []
+          | Some (Mod m) -> module_elements m
+          | Some (Modtype mt) -> module_type_elements mt
+	else
+          []
+    | Module_functor (_, k) 
+    | Module_apply (k, _) -> 
+	print_DEBUG "Odoc_module.module_element: Module_functor ou Module_apply";
+	iter_kind k
+    | Module_with (tk,_) ->
+	print_DEBUG "Odoc_module.module_element: Module_with";
+	module_type_elements ~trans: trans
+          { mt_name = "" ; mt_info = None ; mt_type = None ;
+            mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
+            mt_loc = Odoc_types.dummy_loc ;
+          }
+    | Module_constraint (k, tk) ->
+	print_DEBUG "Odoc_module.module_element: Module_constraint";
       (* A VOIR : utiliser k ou tk ? *)
-      module_elements ~trans: trans
-        { m_name = "" ; 
-	  m_info = None ; 
-	  m_type = Types.Tmty_signature [] ;
-          m_is_interface = false ; m_file = "" ; m_kind = k ;
-          m_loc = Odoc_types.dummy_loc ;
-          m_top_deps = [] ;
-	  m_code = None ;
-	  m_code_intf = None ;
-        }
+	module_elements ~trans: trans
+          { m_name = "" ; 
+	    m_info = None ; 
+	    m_type = Types.Tmty_signature [] ;
+            m_is_interface = false ; m_file = "" ; m_kind = k ;
+            m_loc = Odoc_types.dummy_loc ;
+            m_top_deps = [] ;
+	    m_code = None ;
+	    m_code_intf = None ;
+          }
 (*
-      module_type_elements ~trans: trans
-        { mt_name = "" ; mt_info = None ; mt_type = None ;
-          mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
-          mt_loc = Odoc_types.dummy_loc }
+   module_type_elements ~trans: trans
+   { mt_name = "" ; mt_info = None ; mt_type = None ;
+   mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
+   mt_loc = Odoc_types.dummy_loc }
 *)
   in
   iter_kind m.m_kind 
 
 (** Returns the list of elements of a module type. 
-  @param trans indicates if, for aliased modules, we must perform a transitive search.*)
+   @param trans indicates if, for aliased modules, we must perform a transitive search.*)
 and module_type_elements ?(trans=true) mt =
-   let rec iter_kind = function
+  let rec iter_kind = function
     | None -> []
     | Some (Module_type_struct l) -> l
     | Some (Module_type_functor (_, k)) -> iter_kind (Some k)
@@ -256,12 +263,12 @@ and module_type_elements ?(trans=true) mt =
         else
           []
     | Some (Module_type_alias mta) -> 
-       if trans then
-         match mta.mta_module with
-           None -> []
-         | Some mt -> module_type_elements mt
-       else
-        []
+	if trans then
+          match mta.mta_module with
+            None -> []
+          | Some mt -> module_type_elements mt
+	else
+          []
   in
   iter_kind mt.mt_kind
 

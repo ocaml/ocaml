@@ -316,6 +316,8 @@ let edit_source ~file ~path ~sign =
 (* List of windows to destroy by Close All *)
 let top_widgets = ref []
 
+let dummy_item = Tsig_modtype (Ident.create "dummy", Tmodtype_abstract)
+
 let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
   let env =
     match path with None -> env
@@ -451,7 +453,8 @@ and view_type_decl path ~env =
         {desc = Tobject _} ->
           let clt = find_cltype path env in
           view_signature_item ~path ~env
-            [Tsig_cltype(ident_of_path path ~default:"ct", clt, Trec_first)]
+            [Tsig_cltype(ident_of_path path ~default:"ct", clt, Trec_first);
+             dummy_item; dummy_item]
       | _ -> raise Not_found
   with Not_found ->
     view_signature_item ~path ~env
@@ -464,12 +467,14 @@ and view_type_id li ~env =
 and view_class_id li ~env =
   let path, cl = lookup_class li env in
   view_signature_item ~path ~env
-     [Tsig_class(ident_of_path path ~default:"c", cl, Trec_first)]
+     [Tsig_class(ident_of_path path ~default:"c", cl, Trec_first);
+      dummy_item; dummy_item; dummy_item]
 
 and view_cltype_id li ~env =
   let path, clt = lookup_cltype li env in
   view_signature_item ~path ~env
-     [Tsig_cltype(ident_of_path path ~default:"ct", clt, Trec_first)]
+     [Tsig_cltype(ident_of_path path ~default:"ct", clt, Trec_first);
+      dummy_item; dummy_item]
 
 and view_modtype_id li ~env =
   let path, td = lookup_modtype li env in

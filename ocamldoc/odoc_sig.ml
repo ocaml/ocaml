@@ -332,7 +332,6 @@ module Analyser =
         met.met_value.val_info <- merge_infos met.met_value.val_info info_after_opt ;
         (* update the parameter description *)
         Odoc_value.update_value_parameters_text met.met_value;
-
         (met, maybe_more)
       in
       let rec f last_pos class_type_field_list =
@@ -1121,15 +1120,9 @@ module Analyser =
     (** Analyse of a Parsetree.module_type and a Types.module_type.*)
     and analyse_module_kind env current_module_name module_type sig_module_type =
       match module_type.Parsetree.pmty_desc with
-        Parsetree.Pmty_ident longident (*of Longident.t*) -> 
-          let name = 
-            match sig_module_type with
-              Types.Tmty_ident path -> Name.from_path path
-            | _ -> 
-                Name.from_longident longident 
-          in
-          Module_alias { ma_name = Odoc_env.full_module_or_module_type_name env name ; 
-                         ma_module = None }
+        Parsetree.Pmty_ident longident ->
+	  let k = analyse_module_type_kind env current_module_name module_type sig_module_type in
+          Module_with ( k, "" )
 
       | Parsetree.Pmty_signature signature ->
           (

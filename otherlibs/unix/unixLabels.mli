@@ -263,7 +263,15 @@ val write : file_descr -> buf:string -> pos:int -> len:int -> int
 (** [write fd buff ofs len] writes [len] characters to descriptor
    [fd], taking them from string [buff], starting at position [ofs]
    in string [buff]. Return the number of characters actually
-   written. *)
+   written.
+
+   When an error is reported some characters might have already been
+   written.  Use [single_write] instead to ensure that this is not the
+   case. *)
+
+val single_write : file_descr -> buf:string -> pos:int -> len:int -> int
+(** Same as [write] but ensures that all errors are reported and
+   that no character has ever been written when an error is reported. *)
 
 
 (** {6 Interfacing with the standard input/output library} *)

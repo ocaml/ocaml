@@ -372,7 +372,7 @@ class text =
 
   end
 
-
+exception Aliased_node
 
 (** This class is used to create objects which can generate a simple
     Texinfo documentation. *)
@@ -391,7 +391,15 @@ class texi =
 
     val mutable indices_to_build = [ `Module ]
 
+    (** Keep a set of nodes we create. If we try to create one
+        a second time, that means it is some kind of alias, so
+        don't do it, just link to the previous one *)
+    val node_tbl = Hashtbl.create 37
+
     method node depth name = 
+      if Hashtbl.mem node_tbl name
+      then raise Aliased_node ;
+      Hashtbl.add node_tbl name () ;
       if depth <= maxdepth 
       then Verbatim ("@node " ^ (Texi.fix_nodename name) ^ ",\n")
       else nothing
@@ -414,7 +422,8 @@ class texi =
           (function
             | Newline -> Raw "\n"
             | Raw s -> Raw (Str.global_replace re "\n" s)
-            | List tel | Enum tel -> List (List.map self#fix_linebreaks tel)
+            | List tel -> List (List.map self#fix_linebreaks tel)
+            | Enum tel -> Enum (List.map self#fix_linebreaks tel)
             | te -> te) t
 
     method private soft_fix_linebreaks = 
@@ -863,6 +872,7 @@ class texi =
     (** Generate the Texinfo code for the given class, 
        in the given out channel. *)
     method generate_for_class chanout c =
+     try
       Odoc_info.reset_type_names () ;
       let depth = Name.depth c.cl_name in
       let title = [ 
@@ -888,11 +898,13 @@ class texi =
         (fun ele -> puts chanout
             (self#texi_of_class_element c.cl_name ele))
         (Class.class_elements ~trans:false c)
+     with Aliased_node -> ()
 
 
     (** Generate the Texinfo code for the given class type, 
        in the given out channel. *)
     method generate_for_class_type chanout ct =
+     try
       Odoc_info.reset_type_names () ;
       let depth = Name.depth ct.clt_name in
       let title = [ 
@@ -918,12 +930,13 @@ class texi =
         (fun ele -> puts chanout
             (self#texi_of_class_element ct.clt_name ele))
         (Class.class_type_elements ~trans:false ct)
-
+     with Aliased_node -> ()
 
 
     (** Generate the Texinfo code for the given module type, 
        in the given out channel. *)
     method generate_for_module_type chanout mt =
+     try
       let depth = Name.depth mt.mt_name in
       let title = [ 
         self#node depth mt.mt_name ;
@@ -966,11 +979,12 @@ class texi =
           | `Class c -> self#generate_for_class chanout c
           | `Class_type ct -> self#generate_for_class_type chanout ct)
         subparts
-
+     with Aliased_node -> ()
 
     (** Generate the Texinfo code for the given module, 
        in the given out channel. *)
     method generate_for_module chanout m =
+     try
       Odoc_info.verbose ("Generate for module " ^ m.m_name) ;
       let depth = Name.depth m.m_name in
       let title = [ 
@@ -1015,7 +1029,7 @@ class texi =
           | `Class c -> self#generate_for_class chanout c
           | `Class_type ct -> self#generate_for_class_type chanout ct )
         subparts
-
+     with Aliased_node -> ()
 
 
     (** Writes the header of the TeXinfo document. *)
@@ -1169,6 +1183,7 @@ class texi =
     (** Generate the Texinfo file from a module list, 
        in the {!Odoc_info.Args.out_file} file. *)
     method generate module_list =
+      Hashtbl.clear node_tbl ;
       let filename = 
 	if !Args.out_file = Odoc_messages.default_out_file
 	then "ocamldoc.texi"

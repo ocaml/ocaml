@@ -24,16 +24,6 @@ open Types
 open Btype
 open Outcometree
 
-(* Redefine it here since goal differs *)
-
-let rec opened_object ty =
-  match (repr ty).desc with
-    Tobject (t, _)     -> opened_object t
-  | Tfield(_, _, _, t) -> opened_object t
-  | Tvar               -> true
-  | Tunivar            -> true
-  | _                  -> false
-
 (* Print a long identifier *)
 
 let rec longident ppf = function

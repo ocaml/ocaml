@@ -560,7 +560,7 @@ class latex =
               e :: (iter q)
         in
         (iter defs2) @
-        [Latex ("\\index{"^(self#type_label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
+        [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
         (self#text_of_info t.ty_info)
       in
       self#latex_of_text fmt
@@ -700,16 +700,18 @@ class latex =
 	  self#latex_of_text fmt [Latex "\\end{ocamldocobjectend}\n"]
 
     method latex_for_module_index fmt m =
+      let s_name = Name.simple m.m_name in
       self#latex_of_text fmt 
-	[Latex ("\\index{"^(self#module_label m.m_name)^"@\\verb`"^
-		(self#label ~no_:false m.m_name)^"`}\n"
+	[Latex ("\\index{"^(self#label s_name)^"@\\verb`"^
+		(self#label ~no_:false s_name)^"`}\n"
 	       )
 	]
 
     method latex_for_module_type_index fmt mt =
+      let s_name = Name.simple mt.mt_name in
       self#latex_of_text fmt 
-	[Latex ("\\index{"^(self#module_type_label mt.mt_name)^"@\\verb`"^
-		(self#label ~no_:false mt.mt_name)^"`}\n"
+	[Latex ("\\index{"^(self#label s_name)^"@\\verb`"^
+		(self#label ~no_:false (Name.simple s_name))^"`}\n"
 	       )
 	]
 
@@ -721,16 +723,18 @@ class latex =
 
 
     method latex_for_class_index fmt c =
+      let s_name = Name.simple c.cl_name in
       self#latex_of_text fmt 
-	[Latex ("\\index{"^(self#class_label c.cl_name)^"@\\verb`"^
-		(self#label ~no_:false c.cl_name)^"`}\n"
+	[Latex ("\\index{"^(self#label s_name)^"@\\verb`"^
+		(self#label ~no_:false s_name)^"`}\n"
 	       )
 	]
 
     method latex_for_class_type_index fmt ct =
+      let s_name = Name.simple ct.clt_name in
       self#latex_of_text fmt 
-	[Latex ("\\index{"^(self#class_type_label ct.clt_name)^"@\\verb`"^
-		(self#label ~no_:false ct.clt_name)^"`}\n"
+	[Latex ("\\index{"^(self#label s_name)^"@\\verb`"^
+		(self#label ~no_:false s_name)^"`}\n"
 	       )
 	]
 

@@ -22,7 +22,7 @@
 #include <io.h>
 #include <direct.h>
 #include "inria.h"
-extern int _get_osfhandle(int);
+
 PROCESS_INFORMATION pi;
 #define BUFSIZE 4096
 STARTUPINFO startInfo;
@@ -222,8 +222,9 @@ Output:        None visible
 Errors:        If any system call for whatever reason fails, the
 thread will exit. No error message is shown.
 ------------------------------------------------------------------------*/
-int _stdcall DoStartOcaml(HWND hwndParent)
+DWORD WINAPI DoStartOcaml(LPVOID param)
 {
+        HWND hwndParent = (HWND) param;
 	char *cmdline;
 	int processStarted;
 	LPSECURITY_ATTRIBUTES lpsa=NULL;
@@ -364,7 +365,7 @@ void InterruptOcaml(void)
 {
 	if (!GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, pi.dwProcessId)) {
 		char message[1024];
-		sprintf(message, "GenerateConsole failed: %d\n", GetLastError());
+		sprintf(message, "GenerateConsole failed: %lu\n", GetLastError());
 		MessageBox(NULL, message, "Ocaml", MB_OK);
 	}
 	WriteToPipe(" ");

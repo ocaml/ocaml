@@ -143,7 +143,7 @@ Options are:
   -ocamlc <cmd>  Use <cmd> in place of \"ocamlc\"
   -ocamlopt <cmd> Use <cmd> in place of \"ocamlopt\"
   -o <name>      Generated Caml library is named <name>.cma or <name>.cmxa
-  -oc <name>     Generated C library is named lib<name>.so or lib<name>.a
+  -oc <name>     Generated C library is named dll<name>.so or lib<name>.a
   -rpath <dir>   Same as -dllpath <dir>
   -R<dir>        Same as -rpath
   -verbose       Print commands before executing them

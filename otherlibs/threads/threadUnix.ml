@@ -23,6 +23,7 @@ let waitpid = Unix.waitpid
 let system = Unix.system
 let read = Unix.read
 let write = Unix.write
+let single_write = Unix.single_write
 let select = Unix.select
 let pipe = Unix.pipe
 let open_process_in = Unix.open_process_in

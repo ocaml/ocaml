@@ -10,8 +10,8 @@ frames.cmi: ../bytecomp/instruct.cmi primitives.cmi
 input_handling.cmi: primitives.cmi 
 lexer.cmi: parser.cmi 
 loadprinter.cmi: ../otherlibs/dynlink/dynlink.cmi ../parsing/longident.cmi 
-parser_aux.cmi: ../parsing/longident.cmi primitives.cmi 
 parser.cmi: ../parsing/longident.cmi parser_aux.cmi 
+parser_aux.cmi: ../parsing/longident.cmi primitives.cmi 
 pattern_matching.cmi: debugcom.cmi parser_aux.cmi ../typing/typedtree.cmi 
 pos.cmi: ../bytecomp/instruct.cmi 
 primitives.cmi: ../otherlibs/unix/unix.cmi 

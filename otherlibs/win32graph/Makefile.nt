@@ -22,7 +22,7 @@ CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 COMPFLAGS=-warn-error A
 
-COBJS=open.$(O) draw.$(O) dib.$(O)
+COBJS=open.$(O) draw.$(O) events.$(O) dib.$(O)
 CAMLOBJS=graphics.cmo
 WIN32LIBS=$(call SYSLIB,kernel32) $(call SYSLIB,gdi32) $(call SYSLIB,user32)
 

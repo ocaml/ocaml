@@ -161,6 +161,7 @@ external openfile : string -> open_flag list -> file_perm -> file_descr
 external close : file_descr -> unit = "unix_close"
 external unsafe_read : file_descr -> string -> int -> int -> int = "unix_read"
 external unsafe_write : file_descr -> string -> int -> int -> int = "unix_write"
+external unsafe_single_write : file_descr -> string -> int -> int -> int = "unix_single_write"
 
 let read fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > String.length buf - len
@@ -170,6 +171,13 @@ let write fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > String.length buf - len
   then invalid_arg "Unix.write"
   else unsafe_write fd buf ofs len
+(* write misbehaves because it attempts to write all data by making repeated
+   calls to the Unix write function (see comment in write.c and unix.mli).
+   partial_write fixes this by never calling write twice. *)
+let single_write fd buf ofs len =
+  if ofs < 0 || len < 0 || ofs > String.length buf - len
+  then invalid_arg "Unix.single_write"
+  else unsafe_single_write fd buf ofs len
 
 external in_channel_of_descr : file_descr -> in_channel
                              = "caml_ml_open_descriptor_in"

@@ -62,3 +62,44 @@ CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
   End_roots();
   return Val_long(written);
 }
+
+CAMLprim value unix_single_write(value fd, value buf, value vofs, value vlen)
+{
+  long ofs, len, written;
+  DWORD numbytes, numwritten;
+  char iobuf[UNIX_BUFFER_SIZE];
+
+  Begin_root (buf);
+    ofs = Long_val(vofs);
+    len = Long_val(vlen);
+    written = 0;
+    if (len > 0) {
+      numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
+      memmove (iobuf, &Byte(buf, ofs), numbytes);
+      if (Descr_kind_val(fd) == KIND_SOCKET) {
+        int ret;
+        SOCKET s = Socket_val(fd);
+        enter_blocking_section();
+        ret = send(s, iobuf, numbytes, 0);
+        leave_blocking_section();
+        if (ret == SOCKET_ERROR) {
+          win32_maperr(WSAGetLastError());
+          uerror("single_write", Nothing);
+        }
+        numwritten = ret;
+      } else {
+        BOOL ret;
+        HANDLE h = Handle_val(fd);
+        enter_blocking_section();
+        ret = WriteFile(h, iobuf, numbytes, &numwritten, NULL);
+        leave_blocking_section();
+        if (! ret) {
+          win32_maperr(GetLastError());
+          uerror("single_write", Nothing);
+        }
+      }
+      written = numwritten;
+    }
+  End_roots();
+  return Val_long(written);
+}

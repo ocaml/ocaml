@@ -401,12 +401,20 @@ external decr: int ref -> unit = "%decr"
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
 external format_of_string :
  ('a, 'b, 'c, 'd) format4 -> ('a, 'b, 'c, 'd) format4 = "%identity"
-external string_of_format : ('a, 'b, 'c, 'd) format4 -> string = "%identity"
-
+external string_of_format_sys :
+ ('a, 'b, 'c, 'd) format4 -> string = "%identity"
 external string_to_format : string -> ('a, 'b, 'c, 'd) format4 = "%identity"
+
 let (( ^^ ) : ('a, 'b, 'c, 'd) format4 -> ('d, 'b, 'c, 'e) format4 ->
               ('a, 'b, 'c, 'e) format4) = fun fmt1 fmt2 ->
-  string_to_format (string_of_format fmt1 ^ string_of_format fmt2);;
+  string_to_format (string_of_format_sys fmt1 ^ string_of_format_sys fmt2);;
+
+let string_of_format f =
+  let s = string_of_format_sys f in
+  let l = string_length s in
+  let r = string_create l in
+  string_blit s 0 r 0 l;
+  r
 
 (* Miscellaneous *)
 

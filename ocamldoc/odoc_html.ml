@@ -2408,7 +2408,6 @@ class html =
 	  (fun acc mt -> StringSet.add mt.mt_name acc) 
 	  known_modules_names 
 	  module_types ;
-
       (* generate html for each module *)
       if not !Args.index_only then 
         self#generate_elements self#generate_for_module module_list ;

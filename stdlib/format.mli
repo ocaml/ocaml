@@ -162,8 +162,9 @@ val set_margin : int -> unit;;
 (** [set_margin d] sets the value of the right margin
    to [d] (in characters): this value is used to detect line
    overflows that leads to split lines.
-   Nothing happens if [d] is smaller than 2 or
-   bigger than 999999999. *)
+   Nothing happens if [d] is smaller than 2.
+   If [d] is too large, the right margin is set to the maximum
+   admissible value (which is greater than [10^10]). *)
 
 val get_margin : unit -> int;;
 (** Returns the position of the right margin. *)
@@ -176,12 +177,12 @@ val set_max_indent : int -> unit;;
    indentation limit to [d] (in characters):
    once this limit is reached, boxes are rejected to the left,
    if they do not fit on the current line.
-   Nothing happens if [d] is smaller than 2 or
-   bigger than 999999999. *)
+   Nothing happens if [d] is smaller than 2.
+   If [d] is too large, the limit is set to the maximum
+   admissible value (which is greater than [10^10]). *)
 
 val get_max_indent : unit -> int;;
 (** Return the value of the maximum indentation limit (in characters). *)
-
 
 (** {6 Formatting depth: maximum number of boxes allowed before ellipsis} *)
 
@@ -191,7 +192,7 @@ val set_max_boxes : int -> unit;;
    Material inside boxes nested deeper is printed as an
    ellipsis (more precisely as the text returned by
    [get_ellipsis_text ()]).
-   Nothing happens if [max] is not greater than 1. *)
+   Nothing happens if [max] is smaller than 2. *)
 
 val get_max_boxes : unit -> int;;
 (** Returns the maximum number of boxes allowed before ellipsis. *)

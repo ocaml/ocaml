@@ -27,6 +27,7 @@
 #include <sys/time.h>
 #ifdef __linux__
 #include <unistd.h>
+#include <sys/utsname.h>
 #endif
 #include "alloc.h"
 #include "backtrace.h"
@@ -96,12 +97,20 @@ struct caml_thread_struct {
 typedef struct caml_thread_struct * caml_thread_t;
 
 /* The descriptor for the currently executing thread */
-
 static caml_thread_t curr_thread = NULL;
 
-/* The global mutex used to ensure that at most one thread is running
-   Caml code */
-static pthread_mutex_t caml_mutex;
+/* Track whether one thread is running Caml code.  There can be
+   at most one such thread at any time. */
+static volatile int caml_runtime_busy = 1;
+
+/* Number of threads waiting to run Caml code. */
+static volatile int caml_runtime_waiters = 0;
+
+/* Mutex that protects the two variables above. */
+static pthread_mutex_t caml_runtime_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/* Condition signaled when caml_runtime_busy becomes 0 */
+static pthread_cond_t caml_runtime_is_free = PTHREAD_COND_INITIALIZER;
 
 /* The key used for storing the thread descriptor in the specific data
    of the corresponding Posix thread. */
@@ -113,11 +122,15 @@ static pthread_key_t last_channel_locked_key;
 /* Identifier for next thread creation */
 static long thread_next_ident = 0;
 
+/* Whether to use sched_yield() or not */
+static int broken_sched_yield = 0;
+
 /* Forward declarations */
 value caml_threadstatus_new (void);
 void caml_threadstatus_terminate (value);
 int caml_threadstatus_wait (value);
 static void caml_pthread_check (int, char *);
+static void caml_thread_sysdeps_initialize(void);
 
 /* Imports for the native-code compiler */
 extern struct longjmp_buffer caml_termination_jmpbuf;
@@ -182,14 +195,24 @@ static void caml_thread_enter_blocking_section(void)
   curr_thread->backtrace_buffer = backtrace_buffer;
   curr_thread->backtrace_last_exn = backtrace_last_exn;
 #endif
-  /* Release the global mutex */
-  pthread_mutex_unlock(&caml_mutex);
+  /* Tell other threads that the runtime is free */
+  pthread_mutex_lock(&caml_runtime_mutex);
+  caml_runtime_busy = 0;
+  pthread_mutex_unlock(&caml_runtime_mutex);
+  pthread_cond_signal(&caml_runtime_is_free);
 }
 
 static void caml_thread_leave_blocking_section(void)
 {
-  /* Re-acquire the global mutex */
-  pthread_mutex_lock(&caml_mutex);
+  /* Wait until the runtime is free */
+  pthread_mutex_lock(&caml_runtime_mutex);
+  while (caml_runtime_busy) {
+    caml_runtime_waiters++;
+    pthread_cond_wait(&caml_runtime_is_free, &caml_runtime_mutex);
+    caml_runtime_waiters--;
+  }
+  caml_runtime_busy = 1;
+  pthread_mutex_unlock(&caml_runtime_mutex);
   /* Update curr_thread to point to the thread descriptor corresponding
      to the thread currently executing */
   curr_thread = pthread_getspecific(thread_descriptor_key);
@@ -314,10 +337,8 @@ value caml_thread_initialize(value unit)   /* ML */
   /* Protect against repeated initialization (PR#1325) */
   if (curr_thread != NULL) return Val_unit;
   Begin_root (mu);
-    /* Initialize the main mutex */
-    caml_pthread_check(pthread_mutex_init(&caml_mutex, NULL),
-                       "Thread.init");
-    pthread_mutex_lock(&caml_mutex);
+    /* OS-specific initialization */
+    caml_thread_sysdeps_initialize();
     /* Initialize the keys */
     pthread_key_create(&thread_descriptor_key, NULL);
     pthread_key_create(&last_channel_locked_key, NULL);
@@ -378,9 +399,12 @@ static void caml_thread_stop(void)
   /* Remove th from the doubly-linked list of threads */
   th->next->prev = th->prev;
   th->prev->next = th->next;
-  /* Release the main mutex (forever) */
+  /* Release the runtime system */
   async_signal_mode = 1;
-  pthread_mutex_unlock(&caml_mutex);
+  pthread_mutex_lock(&caml_runtime_mutex);
+  caml_runtime_busy = 0;
+  pthread_mutex_unlock(&caml_runtime_mutex);
+  pthread_cond_signal(&caml_runtime_is_free);
 #ifndef NATIVE_CODE
   /* Free the memory resources */
   stat_free(th->stack_low);
@@ -539,8 +563,9 @@ value caml_thread_exit(value unit)   /* ML */
 
 value caml_thread_yield(value unit)        /* ML */
 {
+  if (caml_runtime_waiters == 0) return Val_unit;
   enter_blocking_section();
-  sched_yield();
+  if (! broken_sched_yield) sched_yield();
   leave_blocking_section();
   return Val_unit;
 }
@@ -820,3 +845,21 @@ static void caml_pthread_check(int retcode, char *msg)
   memmove (&Byte(str, msglen + 2), err, errlen);
   raise_sys_error(str);
 }
+
+/* OS-specific initialization */
+
+static void caml_thread_sysdeps_initialize(void)
+{
+#ifdef __linux__
+  /* sched_yield() doesn't do what we want in kernel 2.6 and up (PR#2663) */
+  struct utsname un;
+  if (uname(&un) == -1) return;
+  broken_sched_yield =
+    un.release[1] != '.' || un.release[0] >= '3'   /* version 3 and up */
+    || (un.release[0] == '2' &&
+        (un.release[3] != '.' || un.release[2] >= '6')); /* 2.6 and up */
+  caml_gc_message(0x100, "POSIX threads.  Avoid sched_yield: %d\n",
+                  broken_sched_yield);
+#endif
+}
+

@@ -45,9 +45,6 @@ extern int bits_per_pixel;
 #define BORDER_WIDTH 2
 #define WINDOW_NAME "Caml graphics"
 #define ICON_NAME "Caml graphics"
-#define DEFAULT_EVENT_MASK \
-          (ExposureMask | KeyPressMask | StructureNotifyMask)
-#define DEFAULT_FONT "fixed"
 #define SIZE_QUEUE 256
 
 void gr_fail(char *fmt, char *arg);
@@ -77,10 +74,5 @@ typedef struct tagWindow {
 
 extern GR_WINDOW grwindow;
 HFONT CreationFont(char *name);
-extern int MouseLbuttonDown,MouseMbuttonDown,MouseRbuttonDown;
-extern HANDLE EventHandle, EventProcessedHandle;
-extern MSG * InspectMessages;
-extern int MouseLbuttonDown,MouseMbuttonDown,MouseRbuttonDown;
-extern int MouseLastX, MouseLastY;
-extern int LastKey;
-
+extern void caml_gr_init_event_queue(void);
+extern void caml_gr_handle_event(UINT msg, WPARAM wParam, LPARAM lParam);

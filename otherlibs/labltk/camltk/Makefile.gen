@@ -3,7 +3,7 @@ include ../support/Makefile.common
 all: cTk.ml camltk.ml .depend
 
 _tkgen.ml: ../Widgets.src ../compiler/tkcompiler
-	cd ..; ../../boot/ocamlrun compiler/tkcompiler -camltk -outdir camltk
+	cd ..; $(CAMLRUNGEN) compiler/tkcompiler -camltk -outdir camltk
 
 cTk.ml camltk.ml .depend: _tkgen.ml ../builtin/report.ml ../compiler/pp #../builtin/builtin_*.ml
 	(echo '##define CAMLTK'; \
