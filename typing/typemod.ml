@@ -29,6 +29,7 @@ type error =
   | Structure_expected of module_type
   | With_not_abstract of string
   | With_arity_mismatch of string
+  | Repeated_name of string * string
 
 exception Error of Location.t * error
 
@@ -90,8 +91,8 @@ let rec transl_modtype env smty =
       with Not_found ->
         raise(Error(smty.pmty_loc, Unbound_modtype lid))
       end
-  | Pmty_signature sg ->
-      Tmty_signature (transl_signature env sg)
+  | Pmty_signature ssg ->
+      Tmty_signature(transl_signature env ssg)
   | Pmty_functor(param, sarg, sres) ->
       let arg = transl_modtype env sarg in
       let (id, newenv) = Env.enter_module param arg env in
@@ -161,6 +162,33 @@ let rec path_of_module mexp =
       Papply(path_of_module funct, path_of_module arg)
   | _ -> raise Not_a_path
 
+(* Check that all type and module identifiers in a structure have
+   distinct names (so that access by named paths is unambiguous). *)
+
+module StringSet = Set.Make(struct type t = string let compare = compare end)
+
+let check_unique_names sg =
+  let type_names = ref StringSet.empty
+  and module_names = ref StringSet.empty in
+  let check class loc set_ref name =
+    if StringSet.mem name !set_ref
+    then raise(Error(loc, Repeated_name(class, name)))
+    else set_ref := StringSet.add name !set_ref in
+  let check_item = function
+      Pstr_eval exp -> ()
+    | Pstr_value(rec_flag, exps) -> ()
+    | Pstr_primitive(name, desc) -> ()
+    | Pstr_type name_decl_list ->
+        List.iter
+          (fun (name, decl) -> check "type" decl.ptype_loc type_names name)
+          name_decl_list
+    | Pstr_exception(name, decl) -> ()
+    | Pstr_module(name, smod) ->
+        check "module" smod.pmod_loc module_names name
+    | Pstr_modtype(name, decl) -> ()
+    | Pstr_open(lid, loc) -> () in
+  List.iter check_item sg
+
 (* Type a module value expression *)
 
 let rec type_module env smod =
@@ -222,17 +250,21 @@ let rec type_module env smod =
         mod_type = mty;
         mod_loc = smod.pmod_loc }
 
-and type_structure env = function
+and type_structure env sstr =
+  check_unique_names sstr;
+  type_struct env sstr
+
+and type_struct env = function
     [] ->
       ([], [], env)
   | Pstr_eval sexpr :: srem ->
       let expr = Typecore.type_expression env sexpr in
-      let (str_rem, sig_rem, final_env) = type_structure env srem in
+      let (str_rem, sig_rem, final_env) = type_struct env srem in
       (Tstr_eval expr :: str_rem, sig_rem, final_env)
   | Pstr_value(rec_flag, sdefs) :: srem ->
       let (defs, newenv) =
         Typecore.type_binding env rec_flag sdefs in
-      let (str_rem, sig_rem, final_env) = type_structure newenv srem in
+      let (str_rem, sig_rem, final_env) = type_struct newenv srem in
       let bound_idents = List.rev(let_bound_idents defs) in
       let make_sig_value id =
         Tsig_value(id, Env.find_value (Pident id) newenv) in
@@ -242,41 +274,41 @@ and type_structure env = function
   | Pstr_primitive(name, sdesc) :: srem ->
       let desc = Typedecl.transl_value_decl env sdesc in
       let (id, newenv) = Env.enter_value name desc env in
-      let (str_rem, sig_rem, final_env) = type_structure newenv srem in
+      let (str_rem, sig_rem, final_env) = type_struct newenv srem in
       (Tstr_primitive(id, desc) :: str_rem,
        Tsig_value(id, desc) :: sig_rem,
        final_env)
   | Pstr_type sdecls :: srem ->
       let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
-      let (str_rem, sig_rem, final_env) = type_structure newenv srem in
+      let (str_rem, sig_rem, final_env) = type_struct newenv srem in
       (Tstr_type decls :: str_rem,
        map_end (fun (id, info) -> Tsig_type(id, info)) decls sig_rem,
        final_env)
   | Pstr_exception(name, sarg) :: srem ->
       let arg = Typedecl.transl_exception env sarg in
       let (id, newenv) = Env.enter_exception name arg env in
-      let (str_rem, sig_rem, final_env) = type_structure newenv srem in
+      let (str_rem, sig_rem, final_env) = type_struct newenv srem in
       (Tstr_exception(id, arg) :: str_rem,
        Tsig_exception(id, arg) :: sig_rem,
        final_env)
   | Pstr_module(name, smodl) :: srem ->
       let modl = type_module env smodl in
       let (id, newenv) = Env.enter_module name modl.mod_type env in
-      let (str_rem, sig_rem, final_env) = type_structure newenv srem in
+      let (str_rem, sig_rem, final_env) = type_struct newenv srem in
       (Tstr_module(id, modl) :: str_rem,
        Tsig_module(id, modl.mod_type) :: sig_rem,
        final_env)
   | Pstr_modtype(name, smty) :: srem ->
       let mty = transl_modtype env smty in
       let (id, newenv) = Env.enter_modtype name (Tmodtype_manifest mty) env in
-      let (str_rem, sig_rem, final_env) = type_structure newenv srem in
+      let (str_rem, sig_rem, final_env) = type_struct newenv srem in
       (Tstr_modtype(id, mty) :: str_rem,
        Tsig_modtype(id, Tmodtype_manifest mty) :: sig_rem,
        final_env)
   | Pstr_open(lid, loc) :: srem ->
       let (path, mty) = type_module_path env loc lid in
       let sg = extract_sig_open env loc mty in
-      type_structure (Env.open_signature path sg env) srem
+      type_struct (Env.open_signature path sg env) srem
 
 (* Error report *)
 
@@ -318,3 +350,10 @@ let report_error = function
   | With_arity_mismatch s ->
       print_string "Arity mismatch in `with' constraint over type ";
       print_string s
+  | Repeated_name(kind, name) ->
+      open_hovbox 0;
+      print_string "Multiple definition of the "; print_string kind;
+      print_string " name "; print_string name; print_string ".";
+      print_space();
+      print_string "Names must be unique in a given structure.";
+      close_box()

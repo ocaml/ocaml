@@ -30,6 +30,7 @@ type error =
   | Structure_expected of module_type
   | With_not_abstract of string
   | With_arity_mismatch of string
+  | Repeated_name of string * string
 
 exception Error of Location.t * error
 

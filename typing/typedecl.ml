@@ -110,10 +110,13 @@ let transl_type_decl env name_sdecl_list =
   (* Enter the types as abstract *)
   let (id_list, temp_env) = enter_types env name_sdecl_list in
   (* Translate each declaration *)
-  let decls = List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
+  let decls =
+    List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
   (* Build the final env *)
   let newenv =
-    List.fold_right (fun (id, decl) env -> Env.add_type id decl env) decls env in
+    List.fold_right
+      (fun (id, decl) env -> Env.add_type id decl env)
+      decls env in
   (* Check for recursive abbrevs *)
   List.iter2 (check_recursive_abbrev newenv) name_sdecl_list decls;
   (* Done *)
