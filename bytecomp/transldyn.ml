@@ -64,7 +64,7 @@ let extract_type_definitions whole_env ty0 =
   let rec all ty = Btype.iter_type_paths one ty
   and one path =
     if Predef.is_predef_type_path path then path else
-    let name = Path.name path in
+    let name = Path.unique_name path in
     let id = Ident.create_persistent name in
     let path' = Path.Pident id in
     begin try
