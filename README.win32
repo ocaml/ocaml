@@ -1,0 +1,111 @@
+        Release notes on the MS Windows port of Caml Special Light
+        ----------------------------------------------------------
+
+REQUIREMENTS:
+
+This port runs under Windows 95 and Windows NT on Intel-based machines.
+Windows 3.1 and Windows for Workgroups are not supported. Windows NT
+on non-Intel processors has not been tested.
+
+The base bytecode system (cslc, csltop, csllex, cslyacc, ...) runs without
+any additional tools.
+
+Linking Caml bytecode with C code (cslc -custom) requires the
+Microsoft Visual C++ compiler version 4.0.
+
+The native-code compiler (cslopt) requires Visual C++ version 4.0
+and the Microsoft assembler MASM version 5.
+
+The cslmktop and cslcp commands are Bourne shell scripts.
+They can be run with the Korn shell available at
+ftp://ftp.winsite.com/pub/pc/winnt/misc/ntsh01.zip.
+
+
+INSTALLATION:
+
+The binary  distribution consists of a .zip archive file. This .zip
+contains long filenames and cannot therefore be unpacked with pkunzip
+version 2. Use either Winzip (shareware) or the NT/95 version of unzip
+(freeware):
+        ftp://ftp.winsite.com/pub/pc/winnt/misc/wznt56.exe
+        ftp://ftp.uu.net/pub/archiving/zip/WIN32/unz512xN.exe
+
+Unzipping the distribution creates (among others) the following
+directories and files:
+
+        camlsl\cslwin.exe       The toplevel application
+        camlsl\cslwin.ini       Its configuration file
+        camlsl\bin\             The command-line compilers and tools
+        camlsl\lib\             The standard library files
+
+Installing the toplevel application:
+
+  Copy the file camlsl\cslwin.ini to the Windows system directory
+  (e.g. C:\windows). This file assumes that the standard library resides
+  in C:\camlsl\lib. If this is not the case, edit the file cslwin.ini
+  and change the line that says
+
+          CmdLine=cslrun C:\camlsl\lib\csltop -I C:\camlsl\lib
+  to
+          CmdLine=cslrun <caml_dir>\lib\csltop -I <caml_dir>\lib
+  e.g.
+          CmdLine=cslrun D:\lang\camlsl\lib\csltop -I D:\lang\camlsl\lib
+
+Installing the command-line tools:
+
+  You must add the camlsl\bin subdirectory to the PATH variable, e.g.
+
+          set PATH=%PATH%;D:\lang\camlsl\bin
+
+  Running directly the tools (e.g. typing D:\lang\camlsl\bin\cslc)
+  will not work if the camlsl\bin directory is not in PATH, because cslc
+  and the other tools will be unable to find the Caml runtime system
+  cslrun.exe.
+
+  The command-line tools assume that the standard library resides in
+  C:\camlsl\lib. If you have unpacked it elsehwere, define the CAMLLIB
+  environment variable to point to the standard library directory, e.g.
+
+          set CAMLLIB=D:\lang\camlsl\lib
+
+
+RECOMPILATION FROM THE SOURCES:
+
+The command-line tools can be recompiled from the Unix source
+distribution (csl-X.YZ.tar.gz), which also contains the files modified
+for Windows.
+
+In addition to Visual C++ 4.0 and MASM 5, you will also need a healthy
+set of Unix / GNU utilities that understands long file names
+(see e.g. ftp://ftp.cc.utexas.edu/microlib/nt/gnu/).
+
+The bootstrap compilers provided in the Unix distribution (boot/cslc
+and boot/csllex) must be replaced by those from the binary Windows
+distribution (camlsl\bin\cslc.exe and camlsl\bin\csllex.exe).
+
+The sources for the toplevel graphical user interface are not
+publically available.
+
+
+RANDOM NOTES:
+
+* The VC++ compiler does a poor job on byterun/interp.c. Consequently,
+the performance of bytecode programs is about half of that obtained
+under Unix/GCC on similar hardware. GCC would give much better
+performance, but none of the currently available ports of GCC for
+Win32 is sufficiently complete, robust and stable to compile Caml
+Special Light.
+
+* The "num" and "str" libraries are available under Win32. The other
+external libraries ("unix", "threads", "camltk4") make heavy use of
+Unix system calls and require considerable work to run under Win32.
+
+
+CREDITS:
+
+The initial port of Caml Special Light to Windows NT was done by Kevin
+Gallo at Microsoft Research, who kindly contributed its changes to the
+Caml Special Light project.
+
+The graphical user interface for the toplevel is due to Jean-Marie
+Geffroy at INRIA Rocquencourt.
