@@ -281,7 +281,7 @@ static void trap_handler(int sig, int code,
 #endif
 
 #if defined(TARGET_sparc) && defined(SYS_solaris)
-static void trap_handler(int sig, siginfo_t info, struct ucontext_t * context)
+static void trap_handler(int sig, siginfo_t * info, void * context)
 {
   if (info->si_code == ILL_ILLTRP) {
     array_bound_error();
