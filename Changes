@@ -1,3 +1,66 @@
+Objective Caml 3.02:
+--------------------
+
+Syntactic sugar:
+- Haskell-style infix identifiers `ident` supported, i.e. 
+  arg1 `ident` arg2 is equivalent to ident arg1 arg2.
+
+Both compilers:
+- Fixed embarrassing bug in pattern-matching compilation
+  (affected or-patterns containing variable bindings).
+- More optimizations in pattern-matching compilation.
+
+Byte-code compiler:
+- Protect against VM stack overflow caused by function with many local
+  variables.
+
+Native-code compiler:
+- Removed re-sharing of string literals, caused too many surprises with 
+  in-place string modifications.
+- Corrected wrong compilation of toplevel "include" statements.
+- Fixed bug in runtime function "callbackN_exn".
+- Signal handlers receive the conventional signal number as argument
+  instead of the system signal number (same behavior as with the
+  bytecode compiler).
+- ARM port: fixed issue with immediate operand overflow in large functions.
+
+Toplevel environment:
+- User-definer printers (for #install_printer) now receive as first argument
+  the pretty-printer formatter where to print their second argument.
+  Old printers (with only one argument) still supported for backward
+  compatibility.
+
+Standard library:
+- Module Hashtbl: added Hashtbl.fold
+
+Other libraries:
+- Dynlink: better error reporting in add_interfaces for missing .cmi files.
+- Graphics: added more drawing primitives (multiple points, polygons,
+    multiple lines, splines) and support for multiple windows.
+- Bytecode threads: the module Unix is now thread-safe, ThreadUnix is
+    deprecated.  Unix.exec* now reset standard descriptors to blocking mode.
+- Unix.inet_addr_of_string: call inet_aton() when available so as to
+    handle correctly the address 255.255.255.255.
+- Unix.getsockopt: added the SO_ERROR option.
+
+Tools:
+- ocamldep: fixed wrong dependency issue with nested modules.
+
+Run-time system:
+- Removed floating-point error at start-up on some non-IEEE platforms
+  (e.g. FreeBSD prior to 4.0R).
+- Stack backtrace mechanism now works for threads that terminate on
+  an uncaught exception.
+
+Auto-configuration:
+- Updated config.guess and config.sub scripts, should recognize a greater
+  number of recent platform.
+
+Windows port:
+- Fixed broken Unix.waitpid.
+- Toplevel application: issue with spaces in name of stdlib directory fixed.
+
+
 Objective Caml 3.01:
 --------------------
 
