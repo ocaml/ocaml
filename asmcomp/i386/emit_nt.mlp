@@ -267,18 +267,18 @@ let emit_float_test cmp neg arg lbl =
       cmp
     | (true, false) ->
       (* first arg on top of FP stack *)
-      `	fcompl	{emit_reg arg.(1)}\n`;
+      `	fcomp	{emit_reg arg.(1)}\n`;
       cmp
     | (false, true) ->
       (* second arg on top of FP stack *)
-      `	fcompl	{emit_reg arg.(0)}\n`;
+      `	fcomp	{emit_reg arg.(0)}\n`;
       Cmm.swap_comparison cmp
     | (false, false) ->
-      `	fldl	{emit_reg arg.(0)}\n`;
-      `	fcompl	{emit_reg arg.(1)}\n`;
+      `	fld	{emit_reg arg.(0)}\n`;
+      `	fcomp	{emit_reg arg.(1)}\n`;
       cmp
     in
-  `	fnstsw	%ax\n`;
+  `	fnstsw	ax\n`;
   begin match actual_cmp with
     Ceq ->
       if neg then begin
@@ -455,7 +455,7 @@ let emit_instr i =
                 `	fstp	REAL4 PTR {emit_addressing addr i.arg 1}\n`
               end
           | Double | Double_u ->
-              if is_tops i.arg.(0) then
+              if is_tos i.arg.(0) then
                 `	fst{pop_suffix i}	REAL8 PTR {emit_addressing addr i.arg 1}\n`
               else begin
                 `	fld	{emit_reg i.arg.(0)}\n`;
@@ -548,7 +548,7 @@ let emit_instr i =
         begin match (is_tos i.arg.(0), is_tos i.arg.(1)) with
           (true, true) ->
           (* both operands on top of FP stack *)
-          `	{emit_string(instr_for_floatop_pop floatop)}\n`
+          `	{emit_string(instr_for_floatop_reversed floatop)}\n`
         | (true, false) ->
           (* first operand on stack *)
           `	{emit_string(instr_for_floatop floatop)}	{emit_reg i.arg.(1)}\n`
