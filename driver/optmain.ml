@@ -82,7 +82,7 @@ let main () =
              "<file>  same as -intf-suffix";
        "-linkall", Arg.Set link_everything,
              " Link all modules, even unused ones";
-       "-modern", Arg.Unset classic, " Use strict label syntax";
+       "-modern", Arg.Clear classic, " Use strict label syntax";
        "-noassert", Arg.Set noassert, " Don't compile assertion checks";
        "-o", Arg.String(fun s -> exec_name := s;
                                  archive_name := s;
