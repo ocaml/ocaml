@@ -11,7 +11,7 @@
 
 ;; Whether you want the output buffer to be diplayed when you send a phrase
 
-(defvar caml-display-when-eval nil
+(defvar caml-display-when-eval t
   "*If true, display the inferior caml buffer when evaluating expressions.")
 
 
@@ -102,6 +102,7 @@ be sent from another buffer in Caml mode.
       (inferior-caml-mode)
       (display-buffer inferior-caml-buffer-name)
       t)
+    (setq caml-shell-active t)
     ))
 
 ;; patched to from original run-caml sharing code with
@@ -140,17 +141,17 @@ Input and output via buffer `*inferior-caml*'."
         (caml-buf  (get-buffer inferior-caml-buffer-name))
         (count 0))
     (while
-        (and (< count 4)
+        (and (< count 10)
              (not (equal (buffer-name (current-buffer))
                          inferior-caml-buffer-name)))
-      (goto-next-window)
+      (next-multiframe-window)
       (setq count (+ count 1)))
     (if  (equal (buffer-name (current-buffer))
                 inferior-caml-buffer-name)
         (end-of-buffer))
     (while
         (> count 0)
-      (goto-previous-window)
+      (previous-multiframe-window)
       (setq count (- count 1)))
     )
 )
@@ -164,7 +165,7 @@ Input and output via buffer `*inferior-caml*'."
   (save-excursion
     (comint-send-region inferior-caml-buffer-name start end)
     (goto-char end)
-    (skip-chars-backward " \t\n")
+    (caml-skip-comments-backward)
     ;; normally, ";;" are part of the region
     (if (not (and (>= (point) 2)
 		  (prog2 (backward-char 2) (looking-at ";;"))))
@@ -237,9 +238,9 @@ should lies."
   (if (< arg 1) (inferior-caml-just-eval-phrase (max 1 (- 0 arg)) min max)
     (let ((proc (get-buffer-process inferior-caml-buffer-name))
           (buf (current-buffer))
-          (previous-output) (orig) (beg) (end) (error))
+          previous-output orig beg end err)
       (save-window-excursion
-        (while (and (> arg 0) (not error))
+        (while (and (> arg 0) (not err))
           (setq previous-output (marker-position (process-mark proc)))
           (setq caml-previous-output previous-output)
           (setq inferior-caml-output nil)
@@ -250,11 +251,16 @@ should lies."
           (cond ((re-search-forward
                   " *Characters \\([01-9][01-9]*\\)-\\([1-9][01-9]*\\):\n[^W]"
                   (point-max) t)
-                 (setq beg (+ orig (string-to-int (caml-match-string 1))))
-                 (setq end (+ orig (string-to-int (caml-match-string 2))))
+		 (setq beg (string-to-int (caml-match-string 1)))
+                 (setq end (string-to-int (caml-match-string 2)))
                  (switch-to-buffer buf)
-                 (goto-char beg)
-                 (setq error beg)
+		 (goto-char orig)
+		 (forward-byte end)
+		 (setq end (point))
+		 (goto-char orig)
+		 (forward-byte beg)
+		 (setq beg (point))
+                 (setq err beg)
                  )
                 ((looking-at
                   "Toplevel input:\n[>]\\([^\n]*\\)\n[>]\\(\\( *\\)^*\\)\n")
@@ -269,7 +275,7 @@ should lies."
                     (- orig 10))
                    (goto-char (+ (match-beginning 0) column))
                    (setq end (+ (point) width)))
-                 (setq error beg))
+                 (setq err beg))
                 ((looking-at
                   "Toplevel input:\n>[.]*\\([^.].*\n\\)\\([>].*\n\\)*[>]\\(.*[^.]\\)[.]*\n")
                  (let* ((e1 (caml-match-string 1))
@@ -280,23 +286,23 @@ should lies."
                    (switch-to-buffer buf)
                    (re-search-backward expr orig 'move)
                    (setq end (match-end 0)))
-                 (setq error beg))
+                 (setq err beg))
                 (t
                  (switch-to-buffer buf)))
           (setq arg (- arg 1))
           )
         (pop-to-buffer inferior-caml-buffer-name)
-        (if error
+        (if err
             (goto-char (point-max))
           (goto-char previous-output)
           (goto-char (point-max)))
         (pop-to-buffer buf))
-      (if error (progn (beep) (caml-overlay-region (point) end))
+      (if err (progn (beep) (caml-overlay-region (point) end))
         (if inferior-caml-output
             (message "No error")
           (message "No output yet...")
           ))
-      error)))
+      err)))
 
 (defun caml-overlay-region (beg end &optional wait)
   (interactive "%r")
@@ -333,11 +339,11 @@ should lies."
 
 ;; additional bindings
   
-(let ((map (lookup-key caml-mode-map [menu-bar caml])))
-  (define-key map [indent-buffer] '("Indent buffer" . caml-indent-buffer))
-  (define-key map [eval-buffer] '("Eval buffer" . caml-eval-buffer))
-) 
-(define-key caml-mode-map "\C-c\C-b" 'caml-eval-buffer)
+;(let ((map (lookup-key caml-mode-map [menu-bar caml])))
+;  (define-key map [indent-buffer] '("Indent buffer" . caml-indent-buffer))
+;  (define-key map [eval-buffer] '("Eval buffer" . caml-eval-buffer))
+;) 
+;(define-key caml-mode-map "\C-c\C-b" 'caml-eval-buffer)
 
 
 (provide 'inf-caml)
