@@ -88,7 +88,7 @@ let _ =
         \032    V/v enable/disable hidden instance variable\n\
         \032    X/x enable/disable all other warnings\n\
         \032    default setting is \"Ale\"\n\
-        \032    (all warnings but labels and fragile match enabled)";
+        \032    (all warnings but labels and fragile match enabled)"; ]
   and errmsg = "Command line: ocamlbrowser <options>" in
   if not (check ~spec Sys.argv) then fatal_error (usage ~spec errmsg);
   Arg.parse spec
