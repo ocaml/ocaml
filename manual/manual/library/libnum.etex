@@ -23,9 +23,19 @@ For interactive use of the "nums" library, do:
 or (if dynamic linking of C libraries is supported on your platform),
 start "ocaml" and type "#load \"nums.cma\";;".
 
-\begin{library}
+
+\begin{rawhtml}
+<ul>
+<li><a HREF=libref/Num.html> Module <tt>Num</tt>: operation on arbitrary-precision numbers</a></li>
+<li><a HREF=libref/Big_int.html> Module <tt>Big_int</tt>: operations on arbitrary-precision integers</a></li>
+<li><a HREF=libref/Arith_status.html> Module <tt>Arith_status</tt>: flags that control rational arithmetic</a></li>
+</ul>
+\end{rawhtml}
+
+%BEGIN LATEX
 \input{Num.tex}
 \input{Bigint.tex}
 \input{Arithstatus.tex}
-\end{library}
+%END LATEX
+
 

@@ -50,10 +50,19 @@ the "-thread" option, which selects a special, thread-safe version of
 the standard library (see chapter~\ref{c:camlc}).
 \end{windows}
 
-\begin{library}
+\begin{rawhtml}
+<ul>
+<li><a HREF=libref/Thread.html> Module <tt>Thread</tt>: lightweight threads</a></li>
+<li><a HREF=libref/Mutex.html> Module <tt>Mutex</tt>: locks for mutual exclusion</a></li>
+<li><a HREF=libref/Condition.html> Module <tt>Condition</tt>: condition variables to synchronize between threads</a></li>
+<li><a HREF=libref/Event.html> Module <tt>Event</tt>: first-class synchronous communication</a></li>
+<li><a HREF=libref/ThreadUnix.html> Module <tt>ThreadUnix</tt>: thread-compatible system calls</a></li>
+</ul>
+\end{rawhtml}
+%BEGIN LATEX
 \input{Thread.tex}
 \input{Mutex.tex}
 \input{Condition.tex}
 \input{Event.tex}
 \input{ThreadUnix.tex}
-\end{library}
+%END LATEX

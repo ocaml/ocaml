@@ -91,6 +91,10 @@ Drawing is clipped to the screen.
 \end{htmlonly}
 %
 
-\begin{library}
+\begin{rawhtml}
+<a HREF=libref/Graphics.html> Module <tt>Graphics</tt>: machine-independent graphics primitives</a>
+<br>
+\end{rawhtml}
+%BEGIN LATEX
 \input{Graphics.tex}
-\end{library}
+%END LATEX

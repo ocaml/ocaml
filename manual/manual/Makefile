@@ -9,6 +9,21 @@ INFO=-info -w 79
 HTML=
 TEXT=-text -w 79
 
+CSLDIR2=../$(CSLDIR)
+MLIS=$(CSLDIR2)/stdlib/*.mli \
+	$(CSLDIR2)/otherlibs/bigarray/bigarray.mli \
+	$(CSLDIR2)/otherlibs/dbm/dbm.mli \
+	$(CSLDIR2)/otherlibs/dynlink/dynlink.mli \
+	$(CSLDIR2)/otherlibs/graph/graphics.mli \
+	$(CSLDIR2)/otherlibs/graph/graphicsX11.mli \
+	$(CSLDIR2)/otherlibs/num/num.mli \
+	$(CSLDIR2)/otherlibs/num/arith_status.mli \
+	$(CSLDIR2)/otherlibs/num/big_int.mli \
+	$(CSLDIR2)/otherlibs/str/*.mli \
+	$(CSLDIR2)/otherlibs/systhreads/*.mli \
+	$(CSLDIR2)/otherlibs/unix/*.mli \
+	../library/tk.mli
+
 manual: files
 	cd texstuff; \
 	TEXINPUTS=$(TEXINPUTS) latex manual.tex
@@ -27,8 +42,23 @@ index::
 
 html: files
 	cd htmlman; \
+	mkdir -p libref ; \
+	ocamldoc.opt -colorize-code -sort -html \
+	-d libref \
+	-I $(CSLDIR2)/stdlib  \
+	-I $(CSLDIR2)/otherlibs/bigarray \
+	-I $(CSLDIR2)/otherlibs/dbm \
+	-I $(CSLDIR2)/otherlibs/dynlink \
+	-I $(CSLDIR2)/otherlibs/graph \
+	-I $(CSLDIR2)/otherlibs/num \
+	-I $(CSLDIR2)/otherlibs/str \
+	-I $(CSLDIR2)/otherlibs/systhreads \
+	-I $(CSLDIR2)/otherlibs/unix \
+	-I +labltk \
+	$(MLIS) ; \
 	${HEVEA} ${HTML} -I .. -I ../refman -I ../library -I ../cmds -I ../tutorials -I ../../styles -I ../texstuff manual.hva -e macros.tex ../manual.tex ;\
-	${HACHA} manual.html
+	${HACHA} manual.html ;\
+
 
 info: files
 	cd infoman; rm -f ocaml.info*; \

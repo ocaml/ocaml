@@ -1,15 +1,18 @@
 CORE_INTF=Pervasives.tex
 
-STDLIB_INTF=Arg.tex Array.tex Char.tex Digest.tex Filename.tex Format.tex \
+STDLIB_INTF=Arg.tex Array.tex ArrayLabels.tex Char.tex Digest.tex Filename.tex Format.tex \
   Gc.tex Genlex.tex Hashtbl.tex Int32.tex Int64.tex \
-  Lazy.tex Lexing.tex List.tex Map.tex Marshal.tex Nativeint.tex Oo.tex \
+  Lazy.tex Lexing.tex List.tex ListLabels.tex Map.tex Marshal.tex MoreLabels.tex \
+  Nativeint.tex Obj.tex Oo.tex \
   Parsing.tex Printexc.tex Printf.tex Queue.tex Random.tex Set.tex Sort.tex \
-  Stack.tex Stream.tex String.tex Sys.tex Weak.tex Callback.tex \
+  Stack.tex Stream.tex String.tex StringLabels.tex Sys.tex Weak.tex Callback.tex \
   Buffer.tex StdLabels.tex
 
-OTHERLIB_INTF=Unix.tex Str.tex Num.tex Bigint.tex Arithstatus.tex \
-  Graphics.tex Thread.tex Mutex.tex Condition.tex Event.tex \
-  Dbm.tex Dynlink.tex Tk.tex Bigarray.tex
+OTHERLIB_INTF=Unix.tex UnixLabels.tex Str.tex \
+  Num.tex Arithstatus.tex Bigint.tex \
+  Graphics.tex GraphicsX11.tex Thread.tex Mutex.tex Condition.tex Event.tex ThreadUnix.tex \
+  Dbm.tex Dynlink.tex Bigarray.tex Tk.tex
+
 
 INTF=$(CORE_INTF) $(STDLIB_INTF) $(OTHERLIB_INTF)
 
@@ -24,7 +27,8 @@ MLIS=$(CSLDIR)/stdlib/*.mli \
 	$(CSLDIR)/otherlibs/num/big_int.mli \
 	$(CSLDIR)/otherlibs/str/*.mli \
 	$(CSLDIR)/otherlibs/systhreads/*.mli \
-	$(CSLDIR)/otherlibs/unix/*.mli
+	$(CSLDIR)/otherlibs/unix/*.mli\
+	tk.mli
 
 BLURB=core.tex stdlib.tex libunix.tex libstr.tex libnum.tex libgraph.tex \
   libthreads.tex libdbm.tex libdynlink.tex liblabltk.tex libbigarray.tex
@@ -52,6 +56,7 @@ $(INTF): $(MLIS)
 	-I $(CSLDIR)/otherlibs/str \
 	-I $(CSLDIR)/otherlibs/systhreads \
 	-I $(CSLDIR)/otherlibs/unix \
+	-I +labltk \
 	$(MLIS) \
 	-sepfiles
 	mv -f Arith_status.tex Arithstatus.tex
@@ -70,8 +75,3 @@ clean:
 .mli.tex: $(FORMAT)
 	$(FORMAT) $< > $*.tex < $<
 
-# TeX hates underscores in file names
-arithstatus.mli: $(CSLDIR)/otherlibs/num/arith_status.mli
-	cp $(CSLDIR)/otherlibs/num/arith_status.mli arithstatus.mli
-bigint.mli: $(CSLDIR)/otherlibs/num/big_int.mli
-	cp $(CSLDIR)/otherlibs/num/big_int.mli bigint.mli

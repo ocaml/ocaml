@@ -21,6 +21,10 @@ printed one by one in typewriter font, followed by a short comment.
 All modules and the identifiers they export are indexed at the end of
 this report.
 
-\begin{library}
+\begin{rawhtml}
+<a HREF=libref/Pervasives.html> Module <tt>Pervasives</tt>: the initially opened module</a>
+\end{rawhtml}
+%BEGIN LATEX
 \input{Pervasives.tex}
-\end{library}
+%END LATEX
+
