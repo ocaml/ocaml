@@ -1,3 +1,12 @@
+Objective Caml 1.04:
+--------------------
+
+* Macintosh port:
+  - The makefiles are provided for compiling and installing O'Caml on
+    a Macintosh with MPW 3.4.1.
+  - An application with the toplevel in a window is forthcoming.
+
+
 Objective Caml 1.03:
 --------------------
 

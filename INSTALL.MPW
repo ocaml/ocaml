@@ -1,0 +1,55 @@
+# PREREQUISITES
+#
+# You need MPW 3.4.1 (with SC and MrC).
+#
+#
+# INSTALLATION INSTRUCTIONS
+#
+# To install Objective Caml in your MPW environment, follow this script.
+# Read the comments and execute the commands.  If you run the commands
+# without changing anything, you'll get a reasonable default configuration.
+#
+# Set the shell's stack size to at least 128k because O'Caml uses a lot of
+# stack space.
+
+SetShellSize -s 128k
+
+# Go to the directory where you found this file.
+
+Directory "`echo "{active}" | streamedit -e '1 replace /[Â:]*°/ ""'`"
+
+# Copy some useful scripts to your Commands directory.
+#   DoMake is absolutely needed for installation
+#   Characters is only needed by the executable error messages
+#   MakeDepend is only needed if you rebuild the dependency makefiles
+
+Duplicate :tools:DoMake :tools:Characters :tools:MakeDepend "{MPW}User Commands:"
+
+# Edit ":config:config.Mac" to change the configuration.
+#   (mostly, the destination folders for installation)
+
+Open :config:config.Mac
+
+# Set the configuration variables.
+
+Execute :config:config.Mac
+
+# O'Caml needs an environment variable to find its library files.
+# (the value is taken from the configuration variables)
+
+Set -e CAMLLIB "{LIBDIR}"
+
+# Make it persistent.
+
+Echo "Set -e CAMLLIB `quote "{CAMLLIB}"`" >"{MPW}Startup Items:O'Caml"
+
+# Now you're all set.  Build the files and install everything.
+# For more explanations on these steps, see the file INSTALL.
+#
+# These commands produce a lot of output, so you may want to copy
+# them to the worksheet for execution.
+
+DoMake world
+DoMake bootstrap
+DoMake install
+DoMake realclean

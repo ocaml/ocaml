@@ -175,13 +175,17 @@ let link_file outchan = function
 
 (* Create a bytecode executable file *)
 
+let openflags =
+  match (Sys.get_config ()).Sys.os_type with
+  | "MacOS" -> [Open_wronly; Open_trunc; Open_creat]
+  | _ -> [Open_wronly; Open_trunc; Open_creat; Open_binary]
+;;
+
 let link_bytecode objfiles exec_name copy_header =
   let objfiles = "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
   let tolink =
     List.fold_right scan_file objfiles [] in
-  let outchan =
-    open_out_gen [Open_wronly; Open_trunc; Open_creat; Open_binary] 0o777
-                 exec_name in
+  let outchan = open_out_gen openflags 0o777 exec_name in
   try
     (* Copy the header *)
     if copy_header then begin
@@ -218,11 +222,20 @@ let link_bytecode objfiles exec_name copy_header =
     remove_file exec_name;
     raise x
 
+let os_type = (Sys.get_config ()).Sys.os_type;;
+
 (* Build a custom runtime *)
 
+let rec extract suffix l =
+  match l with
+  | [] -> []
+  | h::t when Filename.check_suffix h suffix -> h :: (extract suffix t)
+  | h::t -> extract suffix t
+;;
+
 let build_custom_runtime prim_name exec_name =
-  match Config.system with
-    "win32" ->
+  match os_type with
+  | "Win32" ->
       Sys.command
        (Printf.sprintf
           "%s /Fe%s -I%s %s %s %s %s\\libcamlrun.lib %s"
@@ -234,10 +247,59 @@ let build_custom_runtime prim_name exec_name =
           (String.concat " " (List.rev !Clflags.ccobjs))
           Config.standard_library
           Config.c_libraries)
+  | "MacOS" ->
+      let c68k = "sc"
+      and libs68k = "\"{libraries}IntEnv.far.o\" " ^
+		    "\"{libraries}MacRuntime.o\" " ^
+		    "\"{clibraries}StdCLib.far.o\" " ^
+		    "\"{libraries}MathLib.far.o\" " ^
+		    "\"{libraries}ToolLibs.o\" " ^
+		    "\"{libraries}Interface.o\""
+      and link68k = "ilink -compact -state nouse -model far -msg nodup"
+      and cppc = "mrc"
+      and libsppc = "\"{sharedlibraries}MathLib\" " ^
+                    "\"{ppclibraries}PPCCRuntime.o\" " ^
+                    "\"{ppclibraries}PPCToolLibs.o\" " ^
+		    "\"{sharedlibraries}StdCLib\" " ^
+		    "\"{ppclibraries}StdCRuntime.o\" " ^
+		    "\"{sharedlibraries}InterfaceLib\" "
+      and linkppc = "ppclink -d"
+      and objs68k = extract ".o" (List.rev !Clflags.ccobjs)
+      and objsppc = extract ".x" (List.rev !Clflags.ccobjs)
+      in
+      Sys.command (Printf.sprintf "%s -i \"%s\" %s \"%s\" -o \"%s.o\""
+	c68k
+	Config.standard_library
+	(String.concat " " (List.rev !Clflags.ccopts))
+	prim_name
+	prim_name);
+      Sys.command (Printf.sprintf "%s -i \"%s\" %s \"%s\" -o \"%s.x\""
+	cppc
+	Config.standard_library
+	(String.concat " " (List.rev !Clflags.ccopts))
+	prim_name
+	prim_name);
+      Sys.command ("delete -i \""^exec_name^"\"");
+      Sys.command (Printf.sprintf
+	"%s -t MPST -c 'MPS ' -o \"%s\" \"%s.o\" \"%s\" \"%s\" %s"
+	link68k
+	exec_name
+	prim_name
+	(String.concat "\" \"" objs68k)
+	(Filename.concat Config.standard_library "libcamlrun.o")
+        libs68k);
+      Sys.command (Printf.sprintf
+	"%s -t MPST -c 'MPS ' -o \"%s\" \"%s.x\" \"%s\" \"%s\" %s"
+	linkppc
+	exec_name
+	prim_name
+	(String.concat "\" \"" objsppc)
+	(Filename.concat Config.standard_library "libcamlrun.x")
+        libsppc)
   | _ ->
       Sys.command
        (Printf.sprintf
-          "%s -o %s -I%s %s %s -L%s %s -lcamlrun %s"
+          "%s -o %s -I%s %s %s -L%s -lcamlrun %s %s"
           Config.bytecomp_c_compiler
           exec_name
           Config.standard_library
@@ -253,26 +315,47 @@ let link objfiles =
   if not !Clflags.custom_runtime then
     link_bytecode objfiles !Clflags.exec_name true
   else begin
-    let bytecode_name = Filename.temp_file "camlcode" "" in
-    let prim_name = Filename.temp_file "camlprim" ".c" in
-    try
+    match os_type with
+    | "MacOS" ->
+	let bytecode_name = Filename.temp_file "camlcode" "" in
+	let prim_name = Filename.temp_file "camlprim" ".c" in
+	begin try
       link_bytecode objfiles bytecode_name false;
       Symtable.output_primitives prim_name;
       if build_custom_runtime prim_name !Clflags.exec_name <> 0
       then raise(Error Custom_runtime);
-      let oc =
-        open_out_gen [Open_wronly; Open_append; Open_binary] 0
-                     !Clflags.exec_name in
-      let ic = open_in_bin bytecode_name in
-      copy_file ic oc;
-      close_in ic;
-      close_out oc;
-      remove_file bytecode_name;
-      remove_file prim_name
+	  Sys.command ("mergefragment -c -t Caml \""^bytecode_name^"\"");
+	  Sys.command (Printf.sprintf
+	      "mergefragment \"%s\" \"%s\"" bytecode_name !Clflags.exec_name);
+	  Sys.command (Printf.sprintf
+	      "delete -i \"%s\" \"%s\" \"%s.o\" \"%s.x\""
+	      bytecode_name prim_name prim_name prim_name);
     with x ->
       remove_file bytecode_name;
       remove_file prim_name;
       raise x
+  end
+    | _ ->
+      let bytecode_name = Filename.temp_file "camlcode" "" in
+      let prim_name = Filename.temp_file "camlprim" ".c" in
+      try
+	link_bytecode objfiles bytecode_name false;
+	Symtable.output_primitives prim_name;
+	if build_custom_runtime prim_name !Clflags.exec_name <> 0
+	then raise(Error Custom_runtime);
+	let oc =
+	  open_out_gen [Open_wronly; Open_append; Open_binary] 0
+				   !Clflags.exec_name in
+	let ic = open_in_bin bytecode_name in
+	copy_file ic oc;
+	close_in ic;
+	close_out oc;
+	remove_file bytecode_name;
+	remove_file prim_name
+      with x ->
+	remove_file bytecode_name;
+	remove_file prim_name;
+	raise x
   end
 
 (* Error report *)
