@@ -115,6 +115,7 @@ let primitive = function
   | Parraysetu _ -> print_string "array.unsafe_set"
   | Parrayrefs _ -> print_string "array.get"
   | Parraysets _ -> print_string "array.set"
+  | Pisint -> print_string "isint"
   | Pbittest -> print_string "testbit"
 
 let rec lambda = function

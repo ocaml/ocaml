@@ -212,6 +212,7 @@ let simplif_prim_pure p (args, approxs) =
       begin match p with
         Pidentity -> make_const_ptr x
       | Pnot -> make_const_bool(x = 0)
+      | Pisint -> make_const_bool true
       | _ -> (Uprim(p, args), Value_unknown)
       end
   | [Value_constptr x; Value_constptr y] ->

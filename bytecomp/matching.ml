@@ -132,60 +132,38 @@ let divide_constructor {cases = cl; args = al} =
       ([], {cases = cl; args = al})
   in divide cl
 
-(* Making a constructor description from a variant pattern *)
+(* Matching against a variant *)
 
-let map_variant_matching row pm =
+let make_variant_matching_constant argl = 
+  { cases = []; args = argl }
+
+let make_variant_matching_nonconst = function
+    [] -> fatal_error "Matching.make_variant_matching_nonconst"
+  | ((arg, mut) :: argl) ->
+      {cases = []; args = (Lprim(Pfield 1, [arg]), Alias) :: argl}
+
+let divide_variant row {cases = cl; args = al} =
   let row = Btype.row_repr row in
-  let consts = ref 0 and nonconsts = ref 0 in
-  if row.row_closed then
-    List.iter
-      (fun (_, f) ->
-	match Btype.row_field_repr f with
-	  Rabsent | Reither(true, _::_, _) -> ()
-	| Reither(true, _, _) | Rpresent None -> incr consts
-	| Reither _ | Rpresent _ -> incr nonconsts)
-      row.row_fields
-  else (consts := 100000; nonconsts := 100000);
-  flush stderr;
-  let const_cstr =
-    { cstr_res = Ctype.newty (Tvariant row);
-      cstr_args = [];
-      cstr_arity = 0;
-      cstr_tag = Cstr_block 0;
-      cstr_consts = !consts;
-      cstr_nonconsts = if !nonconsts = 0 then 0 else 1 }
-  and nonconst_cstr =
-    { cstr_res = Predef.type_int;
-      cstr_args = [];
-      cstr_arity = 0;
-      cstr_tag = Cstr_block 0;
-      cstr_consts = !nonconsts;
-      cstr_nonconsts = 0 }
-  in
-  let pat_variant pat =
-    match pat.pat_desc with Tpat_variant (lab, pato, _) ->
-      if Btype.row_field_repr (List.assoc lab row.row_fields) = Rabsent
-      then raise Not_found;
-      let tag = Cstr_constant (Btype.hash_variant lab) in
-      { pat with pat_desc =
-	match pato with
-	  None -> Tpat_construct({const_cstr with cstr_tag = tag}, [])
-	| Some pat' -> Tpat_construct
-	      ({ const_cstr with cstr_arity = 2 },
-               [{ pat with pat_desc =
-		    Tpat_construct ({nonconst_cstr with cstr_tag = tag}, []);
-		  pat_type = Predef.type_int };
-		pat'])
-      }
-    | _ -> pat
-  in
-  { args = pm.args;
-    cases =
-      List.fold_right
-        (fun (patl, lam) l ->
-	  try (List.map pat_variant patl, lam) :: l with Not_found -> l)
-        pm.cases [] },
-  const_cstr
+  let rec divide = function
+      ({pat_desc = Tpat_variant(lab, pato, _)} :: patl, action) :: rem ->
+        let (variants, others) = divide rem in
+        if Btype.row_field_repr (List.assoc lab row.row_fields) = Rabsent then
+          (variants, others)
+        else begin
+          let tag = Btype.hash_variant lab in
+          match pato with
+            None ->
+              (add make_variant_matching_constant variants
+                   (Cstr_constant tag) (patl, action) al,
+               others)
+          | Some pat ->
+              (add make_variant_matching_nonconst variants
+                   (Cstr_block tag) (pat :: patl, action) al,
+               others)
+        end
+    | cl ->
+        ([], {cases = cl; args = al})
+  in divide cl
 
 
 (* Matching against a variable *)
@@ -342,8 +320,7 @@ let make_switch_or_test_sequence check arg const_lambda_list int_lambda_list =
   (* min_key and max_key can be arbitrarily large, so watch out for
      overflow in the following comparison *)
   if List.length int_lambda_list <= 1 + max_key / 4 - min_key / 4 then
-    (* Sparse matching -- use a sequence of tests
-       (4 bytecode instructions per test)  *)
+    (* Sparse matching -- use a sequence of tests *)
     make_test_sequence check (Pintcomp Ceq) (Pintcomp Clt)
        arg const_lambda_list
   else begin
@@ -358,6 +335,16 @@ let make_switch_or_test_sequence check arg const_lambda_list int_lambda_list =
             {sw_numconsts = numcases; sw_consts = cases;
              sw_numblocks = 0; sw_blocks = []; sw_checked = check})
   end
+
+let make_test_sequence_variant_constant check arg int_lambda_list =
+  make_test_sequence check (Pintcomp Ceq) (Pintcomp Clt) arg
+                (List.map (fun (n, l) -> (Const_int n, l)) int_lambda_list)
+
+let make_test_sequence_variant_constr check arg int_lambda_list =
+  let v = Ident.create "variant" in
+  Llet(Alias, v, Lprim(Pfield 0, [arg]),
+       make_test_sequence check (Pintcomp Ceq) (Pintcomp Clt) (Lvar v)
+                (List.map (fun (n, l) -> (Const_int n, l)) int_lambda_list))
 
 let make_bitvect_check arg int_lambda_list =
   let bv = String.make 32 '\000' in
@@ -398,8 +385,16 @@ let combine_constant arg cst (const_lambda_list, total1) (lambda2, total2) =
       	    arg const_lambda_list
   in (Lcatch(lambda1, lambda2), total2)
 
-let combine_constructor arg cstr partial
-	(tag_lambda_list, total1) (lambda2, total2) =
+let rec split_cases = function
+    [] -> ([], [])
+  | (cstr, act) :: rem ->
+      let (consts, nonconsts) = split_cases rem in
+      match cstr with
+        Cstr_constant n -> ((n, act) :: consts, nonconsts)
+      | Cstr_block n    -> (consts, (n, act) :: nonconsts)
+      | _ -> assert false
+
+let combine_constructor arg cstr (tag_lambda_list, total1) (lambda2, total2) =
   if cstr.cstr_consts < 0 then begin
     (* Special cases for exceptions *)
     let lambda1 =
@@ -415,66 +410,77 @@ let combine_constructor arg cstr partial
     in (Lcatch(lambda1, lambda2), total2)
   end else begin
     (* Regular concrete type *)
-    let rec split_cases = function
-      [] -> ([], [])
-    | (cstr, act) :: rem ->
-        let (consts, nonconsts) = split_cases rem in
-        match cstr with
-          Cstr_constant n -> ((n, act) :: consts, nonconsts)
-        | Cstr_block n    -> (consts, (n, act) :: nonconsts)
-        | _ -> assert false in
-    let (consts, nonconsts) = split_cases tag_lambda_list
-    and total = total1 &
-      (partial = Total or
-       List.length tag_lambda_list = cstr.cstr_consts + cstr.cstr_nonconsts) in
-    let mkifthenelse arg act2 n act1 =
-      if n = 0 then Lifthenelse(arg, act2, act1) else
-      Lifthenelse
-        (Lprim (Pandint, [arg; Lconst (Const_pointer 0)]), act2, act1) in
+    let (consts, nonconsts) = split_cases tag_lambda_list in
     let lambda1 =
-      if total &
-	List.for_all (fun (_, act) -> act = lambda_unit) tag_lambda_list
-      then
-	lambda_unit
-      else
       match (cstr.cstr_consts, cstr.cstr_nonconsts, consts, nonconsts) with
-        (_, _, [n, act], []) when total -> act
-      | (_, _, [], [n, act]) when total -> act
-      | (_, _, [n, act1], [m, act2]) when total ->
-          mkifthenelse arg act2 n act1
-      |	(1, 0, [n, act], []) -> act
+        (1, 0, [0, act], []) -> act
       | (0, 1, [], [0, act]) -> act
-      | (1, 1, [n, act1], [0, act2]) ->
-          mkifthenelse arg act2 n act1
-      | (1, 1, [n, act1], []) ->
-          mkifthenelse arg Lstaticfail n act1
-      | (n, 1, [], [0, act2]) ->
-          mkifthenelse arg act2 1 Lstaticfail
+      | (1, 1, [0, act1], [0, act2]) ->
+          Lifthenelse(arg, act2, act1)
+      | (1, 1, [0, act1], []) ->
+          Lifthenelse(arg, Lstaticfail, act1)
+      | (1, 1, [], [0, act2]) ->
+          Lifthenelse(arg, act2, Lstaticfail)
       | (_, _, _, _) ->
-	  if cstr.cstr_nonconsts > 1
-          || List.for_all (fun (n,_) -> n < cstr.cstr_consts & n >= 0) consts
-	  && List.for_all (fun (n,_) -> n < cstr.cstr_nonconsts & n >= 0)
-	       nonconsts
-	  && List.length consts > 1 + cstr.cstr_consts / 4
-	  then
-	    Lswitch(arg, {sw_numconsts = cstr.cstr_consts;
-			  sw_consts = consts;
-			  sw_numblocks = cstr.cstr_nonconsts;
-			  sw_blocks = nonconsts;
-			  sw_checked = false})
-	  else
-	  let cases = List.map (fun (n, act) -> Const_int n, act) consts in
-	  if cstr.cstr_nonconsts = 0 then
-      	    make_switch_or_test_sequence (not total) arg cases consts
-	  else
-	    let act =
-	      match nonconsts with [_, act] -> act | _ -> Lstaticfail in
-	    mkifthenelse arg act 1
-      	      (make_switch_or_test_sequence (not total) arg cases consts)
-    in
-    if total then (lambda1, true)
+          Lswitch(arg, {sw_numconsts = cstr.cstr_consts;
+                        sw_consts = consts;
+                        sw_numblocks = cstr.cstr_nonconsts;
+                        sw_blocks = nonconsts;
+                        sw_checked = false}) in
+    if total1
+    && List.length tag_lambda_list = cstr.cstr_consts + cstr.cstr_nonconsts
+    then (lambda1, true)
     else (Lcatch(lambda1, lambda2), total2)
   end
+
+let combine_variant row arg partial (tag_lambda_list, total1)
+                                    (lambda2, total2) =
+  let row = Btype.row_repr row in
+  let num_constr = ref 0 in
+  if row.row_closed then
+    List.iter
+      (fun (_, f) ->
+	match Btype.row_field_repr f with
+	  Rabsent | Reither(true, _::_, _) -> ()
+        | _ -> incr num_constr)
+      row.row_fields
+  else
+    num_constr := max_int;
+  let (consts, nonconsts) = split_cases tag_lambda_list in
+  let total =
+    total1 && (partial = Total || List.length tag_lambda_list = !num_constr) in
+  let test_int_or_block arg if_int if_block =
+    Lifthenelse(Lprim (Pisint, [arg]), if_int, if_block) in
+  let lambda1 =
+    if total &&
+       List.for_all (fun (_, act) -> act = lambda_unit) tag_lambda_list
+    then
+      lambda_unit
+    else
+      match (consts, nonconsts) with
+        ([n, act], []) when total -> act
+      | ([], [n, act]) when total -> act
+      | ([n, act1], [m, act2]) when total ->
+          test_int_or_block arg act1 act2
+      | ([n, act], []) ->
+          make_test_sequence_variant_constant (not total) arg consts
+      | (_, []) ->
+          let lam = make_test_sequence_variant_constant
+                       (not total) arg consts in
+          if total then lam else test_int_or_block arg lam Lstaticfail
+      | ([], _) ->
+          let lam = make_test_sequence_variant_constr
+                       (not total) arg nonconsts in
+          if total then lam else test_int_or_block arg Lstaticfail lam
+      | (_, _) ->
+          let lam_const = make_test_sequence_variant_constant
+                               (not total) arg consts in
+          let lam_nonconst = make_test_sequence_variant_constr
+                               (not total) arg nonconsts in
+          test_int_or_block arg lam_const lam_nonconst
+  in
+  if total then (lambda1, true)
+  else (Lcatch(lambda1, lambda2), total2)
 
 let combine_orpat (lambda1, total1) (lambda2, total2) (lambda3, total3) =
   if total1 & total2 then
@@ -579,15 +585,14 @@ let rec compile_match repr partial m =
                 let (constrs, others) = divide_constructor pm in
 		let partial' =
 		  if others.cases = [] then partial else Partial in
-                combine_constructor newarg cstr partial'
+                combine_constructor newarg cstr
                   (compile_list partial' constrs)
 		  (compile_match repr partial others)
             | Tpat_variant(lab, _, row) ->
-	        let pm, cstr = map_variant_matching row pm in
-                let (constrs, others) = divide_constructor pm in
+                let (constrs, others) = divide_variant row pm in
 		let partial' =
 		  if others.cases = [] then partial else Partial in
-                combine_constructor newarg cstr partial'
+                combine_variant row newarg partial'
                   (compile_list partial' constrs)
 		  (compile_match repr partial others)
             | Tpat_record((lbl, _) :: _) ->

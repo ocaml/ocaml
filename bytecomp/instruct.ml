@@ -94,6 +94,7 @@ type instruction =
   | Kintcomp of comparison
   | Koffsetint of int
   | Koffsetref of int
+  | Kisint
   | Kgetmethod
   | Kevent of debug_event
   | Kstop

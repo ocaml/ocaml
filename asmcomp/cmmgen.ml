@@ -753,6 +753,10 @@ let rec transl = function
                         float_array_set arr idx (transl_unbox_float arg3))))
       end)
 
+  (* Test block / immediate int *)
+  | Uprim(Pisint, [arg]) ->
+      tag_int(Cop(Cand, [transl_arg; Cconst_int 1]))
+
   (* Operations on bitvects *)
   | Uprim(Pbittest, [arg1; arg2]) ->
       bind "index" (untag_int(transl arg2)) (fun idx ->

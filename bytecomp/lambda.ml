@@ -55,6 +55,8 @@ type primitive =
   | Parraysetu of array_kind
   | Parrayrefs of array_kind
   | Parraysets of array_kind
+  (* Test if the argument is a block or an immediate integer *)
+  | Pisint
   (* Bitvect operations *)
   | Pbittest
 

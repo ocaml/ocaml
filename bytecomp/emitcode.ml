@@ -255,6 +255,7 @@ let emit_instr = function
   | Kintcomp Cgt -> out opGTINT      | Kintcomp Cge -> out opGEINT
   | Koffsetint n -> out opOFFSETINT; out_int n
   | Koffsetref n -> out opOFFSETREF; out_int n
+  | Kisint -> out opISINT
   | Kgetmethod -> out opGETMETHOD
   | Kevent ev -> record_event ev
   | Kstop -> out opSTOP

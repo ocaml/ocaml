@@ -941,6 +941,9 @@ value interprete(code_t prog, asize_t prog_size)
       accu = Val_unit;
       pc++;
       Next;
+    Instruct(ISINT):
+      accu = Val_long(accu & 1);
+      Next;
 
 /* Object-oriented operations */
 

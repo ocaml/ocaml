@@ -98,6 +98,7 @@ let instruction = function
   | Kintcomp Cge -> print_string "\tgeint"
   | Koffsetint n -> print_string "\toffsetint "; print_int n
   | Koffsetref n -> print_string "\toffsetref "; print_int n
+  | Kisint -> print_string "\tisint"
   | Kgetmethod -> print_string "\tgetmethod"
   | Kstop -> print_string "\tstop"
   | Kevent ev -> print_string "\tevent "; print_int ev.ev_char
