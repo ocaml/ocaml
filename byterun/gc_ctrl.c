@@ -15,6 +15,7 @@
 #include "alloc.h"
 #include "compact.h"
 #include "custom.h"
+#include "finalise.h"
 #include "gc.h"
 #include "gc_ctrl.h"
 #include "major_gc.h"
