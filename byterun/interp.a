@@ -33,6 +33,7 @@
   import (realloc_stack): code
   import (something_to_do, force_major_slice, pending_signal): data
   import (signal_handlers, have_to_interact): data
+  import (execute_signal): code
   import (rotatecursor_action): code
   import (cprim): data
   import (raise_zero_divide, fatal_error_arg): code
@@ -972,7 +973,11 @@ i_89:     MOVE.L     extra_args_, D0
           Dispatch
 
 ; POPTRAP
-i_90:     MOVE.L     4(sp_), (trapsp).L
+i_90:     TST.L      (something_to_do).L
+          BEQ.S      i_90a
+          SUBQ.L     #4, pc_
+          BRA.S      i_92a
+i_90a:    MOVE.L     4(sp_), (trapsp).L
           LEA.L      $10(sp_), sp_
           Dispatch
 
@@ -984,16 +989,12 @@ i_91:     MOVEA.L    (trapsp).L, sp_
           SUBA.L     D0, A0
           CMPA.L     sp_, A0
           BHI.S      lbl_1080
-          MOVE.L     accu_, (exn_bucket).L
           MOVE.L     initial_external_raise_(A7), D3
           MOVE.L     D3, (external_raise).L
           SUBQ.L     #1, (callback_depth).L
-          PEA.L      (1).W
-          MOVE.L     D3, -(A7)
-          Call_setup
-          JSR        (longjmp).L
-          Call_restore
-          ADDQ.L     #8, A7
+          MOVEQ      #2, D0                   ; Make_exception_result
+          OR.L       accu_, D0
+          BRA        lbl_1B88
 lbl_1080: MOVEA.L    (sp_)+, pc_
           MOVE.L     (sp_)+, (trapsp).L
           MOVEA.L    (sp_)+, env_
@@ -1006,7 +1007,7 @@ i_CHECK_SIGNALS:
 i_92:     TST.L      (something_to_do).L
           BNE.S      i_92a
           Udispatch
-i_92a:    CLR.L      (something_to_do).L
+i_92a:    CLR.L      (something_to_do).L        ; process_signal
           TST.L      (force_major_slice).L
           BEQ.S      lbl_1116
           Setup_for_gc
@@ -1018,20 +1019,14 @@ lbl_1116: MOVE.L     (pending_signal).L, D5
           CLR.L      (pending_signal).L
           TST.L      D5
           BEQ.S      lbl_1168
-          ASL.L      #1, extra_args_
-          ADDQ.L     #1, extra_args_
-          MOVE.L     extra_args_, -(sp_)
-          MOVE.L     env_, -(sp_)
-          MOVE.L     pc_, -(sp_)
-          ASL.L      #1, D5
-          ADDQ.L     #1, D5
-          MOVE.L     D5, -(sp_)
-          ASR.L      #1, D5
-          ASL.L      #2, D5
-          MOVEA.L    (signal_handlers).L, A0
-          MOVEA.L    (A0, D5.L), env_
-          MOVEA.L    (env_), pc_
-          CLR.L      extra_args_
+          PEA.L      (0).W
+          MOVE.L     D5, -(A7)
+          Setup_for_gc
+          Call_setup
+          JSR        (execute_signal).L
+          Call_restore
+          Restore_after_gc
+          ADDQ.L     #8, A7
 lbl_1168: TST.L      (have_to_interact).L
           BNE.S      interact
           Udispatch
