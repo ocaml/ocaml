@@ -13,6 +13,9 @@
 #include "mlvalues.h"
 #include "signals.h"
 #include "stacks.h"
+#ifdef HAS_UI
+#include "ui.h"
+#endif
 
 extern int errno;
 
@@ -64,7 +67,11 @@ void sys_error(arg)
 void sys_exit(retcode)          /* ML */
      value retcode;
 {
+#ifdef HAS_UI
+  ui_exit(Int_val(retcode));
+#else
   exit(Int_val(retcode));
+#endif
 }
 
 #ifndef O_BINARY

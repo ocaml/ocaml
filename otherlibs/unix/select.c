@@ -58,8 +58,11 @@ value unix_select(readfds, writefds, exceptfds, timeout) /* ML */
   struct timeval tv;
   struct timeval * tvp;
   int retcode;
-  Push_roots(roots, 1)
-#define res roots[0]
+  value res;
+  Push_roots(roots, 3)
+#define read_list roots[0]
+#define write_list roots[1]
+#define except_list roots[2]
 
   fdlist_to_fdset(readfds, &read);
   fdlist_to_fdset(writefds, &write);
@@ -74,13 +77,18 @@ value unix_select(readfds, writefds, exceptfds, timeout) /* ML */
   }
   retcode = select(FD_SETSIZE, &read, &write, &except, tvp);
   if (retcode == -1) uerror("select", Nothing);
+  read_list = fdset_to_fdlist(&read);
+  write_list = fdset_to_fdlist(&write);
+  except_list = fdset_to_fdlist(&except);
   res = alloc_tuple(3);
-  Field(res, 0) = fdset_to_fdlist(&read);
-  Field(res, 1) = fdset_to_fdlist(&write);
-  Field(res, 2) = fdset_to_fdlist(&except);
+  Field(res, 0) = read_list;
+  Field(res, 1) = write_list;
+  Field(res, 2) = except_list;
   Pop_roots();
   return res;
-#undef res
+#undef read_list
+#undef write_list
+#undef except_list
 }
 
 #else

@@ -303,10 +303,11 @@ char *name;
     done(1);
 }
 
-default_action_warning()
+default_action_error()
 {
-    fprintf(stderr, "%s: w - line %d of \"%s\", the default action assigns an \
-undefined value to $$\n", myname, lineno, input_file_name);
+    fprintf(stderr, "%s: e - line %d of \"%s\", no action specified for this production\n",
+            myname, lineno, input_file_name);
+    done(1);
 }
 
 

@@ -62,8 +62,10 @@ let implementation sourcefile =
     if !Clflags.print_types then (Printtyp.signature sg; print_flush());
     let (coercion, crc) =
       if Sys.file_exists (prefixname ^ ".mli") then begin
-        let (dclsig, crc) =
-          Env.read_signature modulename (prefixname ^ ".cmi") in
+        let intf_file =
+          try find_in_path !load_path (prefixname ^ ".cmi")
+          with Not_found -> prefixname ^ ".cmi" in
+        let (dclsig, crc) = Env.read_signature modulename intf_file in
         (Includemod.signatures Env.initial sg dclsig, crc)
       end else begin
         let crc = Env.save_signature sg modulename (prefixname ^ ".cmi") in

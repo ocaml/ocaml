@@ -6,7 +6,7 @@ type stat = {
   major_words : int;
   minor_collections : int;
   major_collections : int;
-  heap_size : int;
+  heap_words : int;
   heap_chunks : int;
   live_words : int;
   live_blocks : int;
@@ -26,7 +26,7 @@ type stat = {
 -     [minor_collections]  Number of minor collections.
 -     [major_collections]  Number of major collection cycles, not counting
              the current cycle.
--     [heap_size]  Total number of words in the major heap.
+-     [heap_words]  Total number of words in the major heap.
 -     [heap_chunks]  Number of times the major heap size was increased.
 -     [live_words]  Number of words of live data in the major heap, including
              the header words.

@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
-#ifdef ANSI
+#ifdef __STDC__
 #include <stdlib.h>
 #endif
 
@@ -299,7 +299,7 @@ extern int errno;
 
 /* system functions */
 
-#ifndef ANSI
+#ifndef __STDC__
 
 extern void free();
 extern char *calloc();

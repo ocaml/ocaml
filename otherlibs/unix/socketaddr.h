@@ -1,3 +1,4 @@
+#include <misc.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -11,14 +12,8 @@ union {
 
 int sock_addr_len;
 
-#ifdef __STDC__
-void get_sockaddr(value);
-value alloc_sockaddr(void);
-value alloc_inet_addr(unsigned long);
-#else
-void get_sockaddr();
-value alloc_sockaddr();
-value alloc_inet_addr();
-#endif
+void get_sockaddr P((value));
+value alloc_sockaddr P((void));
+value alloc_inet_addr P((unsigned int));
 
 #define GET_INET_ADDR(v) (*((unsigned long *) (v)))

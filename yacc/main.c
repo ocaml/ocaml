@@ -116,7 +116,7 @@ set_signals()
 
 usage()
 {
-    fprintf(stderr, "usage: %s [-vs] [-b file_prefix] [-el|-eb] filename\n",
+    fprintf(stderr, "usage: %s [-vs] [-b file_prefix] filename\n",
             myname);
     exit(1);
 }

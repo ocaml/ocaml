@@ -4,10 +4,12 @@ val fprintf: out_channel -> ('a, out_channel, unit) format -> 'a
         (* [fprintf outchan format arg1 ... argN] formats the arguments
            [arg1] to [argN] according to the format string [format],
            and outputs the resulting string on the channel [outchan].
+
            The format is a character string which contains two types of
            objects:  plain  characters, which are simply copied to the
            output channel, and conversion specifications, each of which
            causes  conversion and printing of one argument.
+
            Conversion specifications consist in the [%] character, followed
            by optional flags and field widths, followed by one conversion
            character. The conversion characters and their meanings are:
@@ -35,7 +37,10 @@ val fprintf: out_channel -> ('a, out_channel, unit) format -> 'a
 -          [t]: same as [%a], but takes only one argument (with type
                 [out_channel -> unit]) and apply it to [outchan].
 -          Refer to the C library [printf] function for the meaning of
-           flags and field width specifiers. *)
+           flags and field width specifiers.
+
+           If too few arguments are provided, printing stops just
+           before converting the first missing argument. *)
 
 val printf: ('a, out_channel, unit) format -> 'a
         (* Same as [fprintf], but output on [std_out]. *)

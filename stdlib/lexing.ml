@@ -2,8 +2,8 @@
 
 type lexbuf =
   { refill_buff : lexbuf -> unit;
-    lex_buffer : string;
-    lex_buffer_len : int;
+    mutable lex_buffer : string;
+    mutable lex_buffer_len : int;
     mutable lex_abs_pos : int;
     mutable lex_start_pos : int;
     mutable lex_curr_pos : int;
@@ -19,13 +19,28 @@ let lex_refill read_fun lexbuf =
     if read > 0
     then read
     else (String.unsafe_set lex_aux_buffer 0 '\000'; 1) in
-  String.unsafe_blit lexbuf.lex_buffer n lexbuf.lex_buffer 0 (2048 - n);
-  String.unsafe_blit lex_aux_buffer 0 lexbuf.lex_buffer (2048 - n) n;
+  if lexbuf.lex_start_pos < n then begin
+    let oldlen = lexbuf.lex_buffer_len in
+    let newlen = oldlen * 2 in
+    let newbuf = String.create newlen in
+    String.unsafe_blit lexbuf.lex_buffer 0 newbuf oldlen oldlen;
+    lexbuf.lex_buffer <- newbuf;
+    lexbuf.lex_buffer_len <- newlen;
+    lexbuf.lex_abs_pos <- lexbuf.lex_abs_pos - oldlen;
+    lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos + oldlen;
+    lexbuf.lex_start_pos <- lexbuf.lex_start_pos + oldlen;
+    lexbuf.lex_last_pos <- lexbuf.lex_last_pos + oldlen
+  end;
+  String.unsafe_blit lexbuf.lex_buffer n
+                     lexbuf.lex_buffer 0 
+                     (lexbuf.lex_buffer_len - n);
+  String.unsafe_blit lex_aux_buffer 0
+                     lexbuf.lex_buffer (lexbuf.lex_buffer_len - n)
+                     n;
   lexbuf.lex_abs_pos <- lexbuf.lex_abs_pos + n;
   lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos - n;
   lexbuf.lex_start_pos <- lexbuf.lex_start_pos - n;
-  lexbuf.lex_last_pos <- lexbuf.lex_last_pos - n;
-  if lexbuf.lex_start_pos < 0 then failwith "lexing: token too long"
+  lexbuf.lex_last_pos <- lexbuf.lex_last_pos - n
 
 let dummy_action x = failwith "lexing: empty token"
 

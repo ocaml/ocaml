@@ -291,9 +291,8 @@ void init_major_heap (heap_size)
   page_table_size = 4 * stat_heap_size / Page_size;
   page_table = 
     (page_table_entry *) malloc (page_table_size * sizeof(page_table_entry));
-  if (page_table == NULL){
+  if (page_table == NULL)
     fatal_error ("Fatal error: not enough memory for the initial heap.\n");
-  }
   for (i = 0; i < page_table_size; i++){
     page_table [i] = Not_in_heap;
   }
@@ -308,6 +307,8 @@ void init_major_heap (heap_size)
   gc_phase = Phase_mark;
   gray_vals_size = 2048;
   gray_vals = (value *) malloc (gray_vals_size * sizeof (value));
+  if (gray_vals == NULL)
+    fatal_error ("Fatal error: not enough memory for the initial heap.\n");
   gray_vals_cur = gray_vals;
   gray_vals_end = gray_vals + gray_vals_size;
   heap_is_pure = 1;

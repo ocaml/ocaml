@@ -10,7 +10,7 @@
 #include "socketaddr.h"
 
 value alloc_inet_addr(a)
-     unsigned long a;
+     unsigned int a;
 {
   value res;
   res = alloc(1, Abstract_tag);

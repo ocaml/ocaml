@@ -23,15 +23,15 @@ static value alloc_tm(tm)
 value unix_gmtime(t)             /* ML */
      value t;
 {
-  int clock;
-  clock = Int_val(t);
+  time_t clock;
+  clock = Long_val(t);
   return alloc_tm(gmtime(&clock));
 }
 
 value unix_localtime(t)          /* ML */
      value t;
 {
-  int clock;
-  clock = Int_val(t);
+  time_t clock;
+  clock = Long_val(t);
   return alloc_tm(localtime(&clock));
 }

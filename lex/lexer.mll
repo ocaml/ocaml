@@ -34,10 +34,10 @@ let get_stored_string () =
     s
 
 let char_for_backslash = function
-    'n' -> '\010' (* '\n' when bootstrapped *)
-  | 't' -> '\009' (* '\t' *)
-  | 'b' -> '\008' (* '\b' *)
-  | 'r' -> '\013' (* '\r' *)
+    'n' -> '\n'
+  | 't' -> '\t'
+  | 'b' -> '\b'
+  | 'r' -> '\r'
   | c   -> c
 
 let char_for_decimal_code lexbuf i =

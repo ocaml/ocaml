@@ -4,7 +4,7 @@ type stat = {
   major_words : int;
   minor_collections : int;
   major_collections : int;
-  heap_size : int;
+  heap_words : int;
   heap_chunks : int;
   live_words : int;
   live_blocks : int;
@@ -37,7 +37,7 @@ let print_stat c =
   fprintf c "major_words: %d\n" st.major_words;
   fprintf c "minor_collections: %d\n" st.minor_collections;
   fprintf c "major_collections: %d\n" st.major_collections;
-  fprintf c "heap_size: %d\n" st.heap_size;
+  fprintf c "heap_words: %d\n" st.heap_words;
   fprintf c "heap_chunks: %d\n" st.heap_chunks;
   fprintf c "live_words: %d\n" st.live_words;
   fprintf c "live_blocks: %d\n" st.live_blocks;

@@ -5,7 +5,7 @@ value unix_ioctl_int(fd, request, arg)
      value fd, request, arg;
 {
   int retcode;
-  retcode = ioctl(Int_val(fd), Int_val(request), (char *) Int_val(arg));
+  retcode = ioctl(Int_val(fd), Int_val(request), (char *) Long_val(arg));
   if (retcode == -1) uerror("ioctl_int", Nothing);
   return Val_int(retcode);
 }

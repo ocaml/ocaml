@@ -36,9 +36,9 @@ value gr_wait_event(eventlist)
   while (eventlist != Val_int(0)) {
     switch (Int_val(Field(eventlist, 0))) {
     case 0:                     /* Button_down */
-      mask |= ButtonPressMask; break;
+      mask |= ButtonPressMask | OwnerGrabButtonMask; break;
     case 1:                     /* Button_up */
-      mask |= ButtonReleaseMask; break;
+      mask |= ButtonReleaseMask | OwnerGrabButtonMask; break;
     case 2:                     /* Key_pressed */
       mask |= KeyPressMask; break;
     case 3:                     /* Mouse_motion */

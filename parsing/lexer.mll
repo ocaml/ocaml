@@ -100,9 +100,10 @@ let char_for_backslash = function
   | c   -> c
 
 let char_for_decimal_code lexbuf i =
-  Char.chr(100 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
-               10 * (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) +
-                    (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48))
+  let c = 100 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
+           10 * (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) +
+                (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48) in  
+  Char.chr(c land 0xFF)
 
 (* To store the position of the beginning of a string or comment *)
 
@@ -194,20 +195,20 @@ rule token = parse
   | "-"     { SUBTRACTIVE "-" }
   | "-."    { SUBTRACTIVE "-." }
 
-  | [ '!' '?' ]
-    [ '!' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~' ] *
+  | ['!' '?']
+    ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
             { PREFIXOP(Lexing.lexeme lexbuf) }
-  | [ '=' '<' '>' '@' '^' '|' '&' '~' ]
-    [ '!' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~' ] *
+  | ['=' '<' '>' '@' '^' '|' '&' '~']
+    ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
             { INFIXOP1(Lexing.lexeme lexbuf) }
-  | [ '+' '-' ]
-    [ '!' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~' ] *
+  | ['+' '-']
+    ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
             { INFIXOP2(Lexing.lexeme lexbuf) }
   | "**"
-    [ '!' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~' ] *
+    ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
             { INFIXOP4(Lexing.lexeme lexbuf) }
-  | [ '*' '/' '%' ]
-    [ '!' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~' ] *
+  | ['*' '/' '%']
+    ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
             { INFIXOP3(Lexing.lexeme lexbuf) }
   | eof { EOF }
   | _
@@ -220,6 +221,20 @@ and comment = parse
   | "*)"
       { comment_depth := pred !comment_depth;
         if !comment_depth > 0 then comment lexbuf }
+  | "\""
+      { reset_string_buffer();
+        start_pos := Lexing.lexeme_start lexbuf;
+        string lexbuf;
+        string_buff := initial_string_buffer;
+        comment lexbuf }
+  | "''"
+      { comment lexbuf }
+  | "'" [^ '\\' '\''] "'"
+      { comment lexbuf }
+  | "'\\" ['\\' '\'' 'n' 't' 'b' 'r'] "'"
+      { comment lexbuf }
+  | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
+      { comment lexbuf }
   | eof
       { raise (Error(Unterminated_comment, !start_pos, !start_pos+2)) }
   | _
@@ -228,7 +243,7 @@ and comment = parse
 and string = parse
     '"'
       { () }
-  | '\\' [' ' '\010' '\013' '\009' '\026' '\012'] +
+  | '\\' ("\010" | "\013" | "\010\013") [' ' '\009'] *
       { string lexbuf }
   | '\\' ['\\' '"' 'n' 't' 'b' 'r']
       { store_string_char(char_for_backslash(Lexing.lexeme_char lexbuf 1));

@@ -199,6 +199,7 @@ void init_gc (minor_size, major_incr, percent_fr, verb)
      int verb;
 {
 #ifdef DEBUG
+  verb_gc = 1;
   gc_message ("*** camlrun: debug mode ***\n", 0);
 #endif
   verb_gc = verb;

@@ -5,6 +5,7 @@ value gr_sound(vfreq, vdur)
 {
   XKeyboardControl kbdcontrol;
 
+  gr_check_open();
   kbdcontrol.bell_pitch = Int_val(vfreq);
   kbdcontrol.bell_duration = Int_val(vdur);
   XChangeKeyboardControl(grdisplay, KBBellPitch | KBBellDuration,

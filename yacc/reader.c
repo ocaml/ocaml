@@ -886,17 +886,17 @@ declare_start()
     register bucket *bp;
     static int entry_counter = 0;
 
-    c = nextc();
-    if (c == EOF) unexpected_EOF();
-    if (!isalpha(c) && c != '_' && c != '.' && c != '$')
-	syntax_error(lineno, line, cptr);
-    bp = get_name();
+    for (;;) {
+      c = nextc();
+      if (!isalpha(c) && c != '_' && c != '.' && c != '$') return;
+      bp = get_name();
 
-    if (bp->class == TERM)
+      if (bp->class == TERM)
 	terminal_start(bp->name);
-    bp->entry = ++entry_counter;
-    if (entry_counter == 256)
-      too_many_entries();
+      bp->entry = ++entry_counter;
+      if (entry_counter == 256)
+        too_many_entries();
+    }
 }
 
 
@@ -1093,14 +1093,7 @@ int s_lineno;
 
 end_rule()
 {
-    register int i;
-
-    if (!last_was_action && plhs[nrules]->tag)
-    {
-	for (i = nitems - 1; pitem[i]; --i) continue;
-	if (pitem[i+1] == 0 || pitem[i+1]->tag != plhs[nrules]->tag)
-	    default_action_warning();
-    }
+    if (!last_was_action) default_action_error();
 
     last_was_action = 0;
     if (nitems >= maxitems) expand_items();

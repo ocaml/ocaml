@@ -323,9 +323,7 @@ external fcntl_int : file_descr -> int -> int -> int = "unix_fcntl_int"
 external fcntl_ptr : file_descr -> int -> string -> int = "unix_fcntl_ptr"
         (* Interface to [fcntl] in the case where the argument is a pointer.
            The integer argument is the command code. A pointer to the string
-           argument is passed as argument to the command. The string argument
-           is usually set up with the functions from modules [peek] and
-           [poke]. *)
+           argument is passed as argument to the command. *)
 
 
 (*** Directories *)
@@ -411,9 +409,7 @@ external ioctl_int : file_descr -> int -> int -> int = "unix_ioctl_int"
 external ioctl_ptr : file_descr -> int -> string -> int = "unix_ioctl_ptr"
         (* Interface to [ioctl] in the case where the argument is a pointer.
            The integer argument is the command code. A pointer to the string
-           argument is passed as argument to the command. The string argument
-           is usually set up with the functions from modules [peek] and
-           [poke]. *)
+           argument is passed as argument to the command. *)
 
 
 (*** Polling *)
@@ -637,6 +633,10 @@ external shutdown : file_descr -> shutdown_command -> unit = "unix_shutdown"
            an end-of-file condition.
            [SHUTDOWN_RECEIVE] causes writes on the other end of the connection
            to return a closed pipe condition ([SIGPIPE] signal). *)
+external getsockname : file_descr -> sockaddr = "unix_getsockname"
+        (* Return the address of the given socket. *)
+external getpeername : file_descr -> sockaddr = "unix_getpeername"
+        (* Return the address of the host connected to the given socket. *)
 external recv : file_descr -> string -> int -> int -> msg_flag list -> int
                                   = "unix_recv"
 external recvfrom :

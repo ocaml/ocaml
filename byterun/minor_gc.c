@@ -123,7 +123,7 @@ void minor_collection ()
   stat_promoted_words += allocated_words - prev_alloc_words;
   ++ stat_minor_collections;
   major_collection_slice ();
-  force_minor_flag = 0;
+  force_major_slice = 0;
 }
 
 void realloc_ref_table ()
@@ -134,11 +134,11 @@ void realloc_ref_table ()
   if (ref_table_limit == ref_table_threshold){
     gc_message ("ref_table threshold crossed\n", 0);
     ref_table_limit = ref_table_end;
-    force_minor_gc ();
+    urge_major_slice ();
   }else{ /* This will almost never happen with the bytecode interpreter. */
     asize_t sz;
     asize_t cur_ptr = ref_table_ptr - ref_table;
-                                                  Assert (force_minor_flag);
+                                                  Assert (force_major_slice);
                                                    Assert (something_to_do);
     ref_table_size *= 2;
     sz = (ref_table_size + ref_table_reserve) * sizeof (value *);
