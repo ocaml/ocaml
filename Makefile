@@ -13,12 +13,13 @@ CAMLDEP=tools/camldep
 DEPFLAGS=$(INCLUDES)
 CAMLRUN=byterun/camlrun
 
-INCLUDES=-I utils -I parsing -I typing -I bytecomp -I driver -I toplevel
+INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver -I toplevel
 
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
   utils/clflags.cmo utils/meta.cmo utils/terminfo.cmo utils/crc.cmo
 
-PARSING=parsing/location.cmo parsing/parser.cmo parsing/lexer.cmo parsing/parse.cmo
+PARSING=parsing/location.cmo parsing/parser.cmo parsing/lexer.cmo \
+  parsing/parse.cmo
 
 TYPING=typing/ident.cmo typing/path.cmo typing/typedtree.cmo \
   typing/subst.cmo typing/printtyp.cmo \
@@ -28,23 +29,38 @@ TYPING=typing/ident.cmo typing/path.cmo typing/typedtree.cmo \
   typing/typetexp.cmo typing/typecore.cmo \
   typing/typedecl.cmo typing/typemod.cmo
 
-BYTECOMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
+COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/dectree.cmo bytecomp/matching.cmo \
-  bytecomp/translcore.cmo bytecomp/translmod.cmo \
-  bytecomp/instruct.cmo bytecomp/codegen.cmo \
+  bytecomp/translcore.cmo bytecomp/translmod.cmo
+
+BYTECOMP=bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/printinstr.cmo bytecomp/opcodes.cmo bytecomp/emitcode.cmo \
   bytecomp/runtimedef.cmo bytecomp/symtable.cmo \
-  bytecomp/librarian.cmo bytecomp/linker.cmo
+  bytecomp/librarian.cmo bytecomp/bytelink.cmo
+
+ASMCOMP=asmcomp/arch.cmo asmcomp/cmm.cmo asmcomp/printcmm.cmo \
+  asmcomp/clambda.cmo asmcomp/compilenv.cmo \
+  asmcomp/closure.cmo asmcomp/cmmgen.cmo \
+  asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
+  asmcomp/printmach.cmo asmcomp/selection.cmo \
+  asmcomp/liveness.cmo asmcomp/spill.cmo asmcomp/split.cmo \
+  asmcomp/interf.cmo asmcomp/coloring.cmo asmcomp/reload.cmo \
+  asmcomp/linearize.cmo asmcomp/printlinear.cmo asmcomp/emitaux.cmo \
+  asmcomp/emit.cmo asmcomp/asmgen.cmo asmcomp/asmlink.cmo
 
 DRIVER=driver/errors.cmo driver/compile.cmo driver/main.cmo
+
+OPTDRIVER=driver/opterrors.cmo driver/optcompile.cmo driver/optmain.cmo
 
 TOPLEVEL=driver/errors.cmo driver/compile.cmo \
   toplevel/printval.cmo toplevel/toploop.cmo toplevel/topdirs.cmo \
   toplevel/topmain.cmo
 
-COMPOBJS=$(UTILS) $(PARSING) $(TYPING) $(BYTECOMP) $(DRIVER)
+COMPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(DRIVER)
 
-TOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(BYTECOMP) $(TOPLEVEL)
+TOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
+
+OPTOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
 EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   utils/config.cmo utils/clflags.cmo \
@@ -65,7 +81,17 @@ all: runtime camlc camllex camlyacc library camltop
 world: coldstart all
 
 # Complete bootstrapping cycle
-bootstrap: backup promote-cross clean camlc camllex library-cross promote clean all compare
+bootstrap:
+	$(MAKE) backup
+	$(MAKE) promote-cross
+	$(MAKE) clean
+	$(MAKE) camlc camllex
+	$(MAKE) library-cross
+	$(MAKE) promote
+	$(MAKE) clean
+	$(MAKE) all
+	$(MAKE) compare
+
 # backup        save the bootstrap compiler
 # promote-cross promote the new compiler but keep the old runtime
 #               (runs on boot/camlrun, produces code for byterun/camlrun)
@@ -150,6 +176,14 @@ camlc: $(COMPOBJS)
 clean::
 	rm -f camlc
 
+# The native-code compiler
+
+camlopt: $(OPTOBJS)
+	$(CAMLC) $(LINKFLAGS) -o camlopt $(OPTOBJS)
+
+clean::
+	rm -f camlopt
+
 # The toplevel
 
 camltop: $(TOPOBJS) expunge
@@ -163,13 +197,17 @@ clean::
 # The configuration file
 
 utils/config.ml: utils/config.mlp Makefile.config
+	@rm -f utils/config.ml
 	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
             -e 's|%%CC%%|$(CC) $(CCLINKFLAGS) $(LOWADDRESSES)|' \
             -e 's|%%CCLIBS%%|$(CCLIBS)|' \
             utils/config.mlp > utils/config.ml
+	@chmod -w utils/config.ml
 
 clean::
 	rm -f utils/config.ml
+
+beforedepend:: utils/config.ml
 
 # The parser
 
@@ -220,6 +258,35 @@ clean::
 	rm -f bytecomp/runtimedef.ml
 
 beforedepend:: bytecomp/runtimedef.ml
+
+# Choose the right arch, emit and proc files
+
+asmcomp/arch.ml: asmcomp/arch_$(ARCH).ml
+	ln -s arch_$(ARCH).ml asmcomp/arch.ml
+
+clean::
+	rm -f asmcomp/arch.ml
+
+beforedepend:: asmcomp/arch.ml
+
+asmcomp/proc.ml: asmcomp/proc_$(ARCH).ml
+	ln -s proc_$(ARCH).ml asmcomp/proc.ml
+
+clean::
+	rm -f asmcomp/proc.ml
+
+beforedepend:: asmcomp/proc.ml
+
+# Preprocess the code emitters
+
+asmcomp/emit.ml: asmcomp/emit_$(ARCH).mlp tools/cvt_emit
+	tools/cvt_emit asmcomp/emit_$(ARCH).mlp > asmcomp/emit.ml \
+        || rm -f asmcomp/emit.ml
+
+clean::
+	rm -f asmcomp/emit.ml
+
+beforedepend:: asmcomp/emit.ml
 
 # The "expunge" utility
 
@@ -285,6 +352,7 @@ clean::
 	rm -f parsing/*.cm[io] parsing/*~
 	rm -f typing/*.cm[io] typing/*~
 	rm -f bytecomp/*.cm[io] bytecomp/*~
+	rm -f asmcomp/*.cm[io] asmcomp/*~
 	rm -f driver/*.cm[io] driver/*~
 	rm -f toplevel/*.cm[io] toplevel/*~
 	rm -f *~
