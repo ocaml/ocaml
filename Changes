@@ -8,8 +8,9 @@ Language features:
   through a class.  (Syntax is "object <field and methods> end".)
 
 Type-checking:
-- When typing records, the module path annotation of the first path
-  annotated label now stands for all of the labels of the record.
+* When typing records, the module path annotation of the first path
+  annotated label now stands for all of the un-annotated labels of
+  the record.
 
 Both compilers:
 - More compact compilation of classes.
@@ -59,7 +60,7 @@ Standard library:
 - Module Int32: new functions Int32.bits_of_float, Int32.float_of_bits.
 - Module Map: new functions is_empty, compare, equal.
 - Module Set: new function split.
-- Module Gc: in-order finalisation.
+* Module Gc: in-order finalisation, new function finalise_release.
 
 Other libraries:
 - The Num library: complete reimplementation of the C/asm lowest
@@ -72,8 +73,9 @@ Other libraries:
    . Allow thread switching on Unix.lockf.
 
 Runtime System:
-- Name space depollution: all global C identifiers are now prefixed
-  with "caml" to avoid name clashes with other libraries.
+* Name space depollution: all global C identifiers are now prefixed
+  with "caml" to avoid name clashes with other libraries.  This
+  includes the "external" primitives of the standard runtime.
 
 Ports:
 - Windows ports: many improvements in the OCamlWin toplevel application
