@@ -1,3 +1,50 @@
+Objective Caml 1.01:
+
+* Typing: better report of type incompatibilities; 
+  non-generalizable type variables in a struct...end no longer flagged
+  immediately as an error;
+  name clashes during "open" avoided.
+
+* Fixed bug in output_value where identical data structures
+  could have different external representations; this bug caused wrong
+  "inconsistent assumptions" errors when checking compatibility of
+  interfaces at link-time.
+
+* Standard library: fixed bug in Array.blit on overlapping array sections
+
+* Unmarshaling from strings now working.
+
+* ocamlc, ocamlopt: new flags -intf and -impl to force compilation as
+  an implementation/an interface, regardless of file extension;
+  overflow bug on wide-range integer pattern-matchings fixed.
+
+* ocamlc: fixed bytecode generation bug causing problems with compilation
+  units defining more than 256 values
+
+* ocamlopt, all platforms:
+  fixed GC bug in "let rec" over data structures;
+  link startup file first, fixes "undefined symbol" errors with some
+  libraries.
+
+* ocamlopt, Intel x86:
+  more efficient calling sequence for calling C functions;
+  floating-point wars, chapter 5: don't use float stack for holding
+  float pseudo-registers, stack-allocating them is just as efficient.
+
+* ocamlopt, Alpha and Intel x86: more compact calling sequence for garbage
+  collection.
+
+* ocamllex: generated automata no longer use callbacks for refilling
+  the input buffer (works better with threads); character literals
+  correctly skipped inside actions.
+
+* ocamldep: "-I" directories now searched in the right order
+
+* Thread library: incompatibilities with callbacks, signals, and
+  dynamic linking removed; scheduling bug with Thread.wait fixed.
+
+* New "dbm" library, interfaces with NDBM.
+
 Objective Caml 1.00:
 --------------------
 
