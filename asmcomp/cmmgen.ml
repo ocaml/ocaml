@@ -313,7 +313,11 @@ let rec expr_size_and_tag = function
       (fundecls_size fundecls + List.length clos_vars, 250)
   | Uprim(Pmakeblock(tag, mut), args) ->
       (List.length args, tag)
+  | Uprim(Pmakearray(Paddrarray | Pintarray), args) ->
+      (List.length args, 0)
   | Ulet(id, exp, body) ->
+      expr_size_and_tag body
+  | Uletrec(bindings, body) ->
       expr_size_and_tag body
   | _ ->
       fatal_error "Cmmgen.expr_size_and_tag"
