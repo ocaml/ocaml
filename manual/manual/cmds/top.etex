@@ -58,7 +58,7 @@ section~\ref{s:toplevel-directives}.
 The toplevel system is started by the command "ocaml", as follows:
 \begin{alltt}
         ocaml \var{options}               # interactive mode
-        ocaml \var{options} \var{scriptfile} # script mode
+        ocaml \var{options} \var{scriptfile}        # script mode
 \end{alltt}
 If no filename is given on the command line, the toplevel system
 enters interactive mode: phrases are read on standard input, results

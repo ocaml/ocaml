@@ -42,6 +42,7 @@ Here is a short listing, by theme, of the standard library modules.
 "Oo" & p.~\pageref{s:Oo} & useful functions on objects \\
 "Stack" & p.~\pageref{s:Stack} & last-in first-out stacks \\
 "Queue" & p.~\pageref{s:Queue} & first-in first-out queues \\
+"Lazy"  & p.~\pageref{s:Lazy} & delayed evaluation \\
 "Weak" & p.~\pageref{s:Weak} & references that don't prevent objects from being garbage-collected \\
 \end{tabular}
 \subsubsection{Input/output:}
@@ -81,6 +82,7 @@ be called from C \\
 \input gc.tex
 \input genlex.tex
 \input hashtbl.tex
+\input lazy.tex
 \input lexing.tex
 \input list.tex
 \input map.tex

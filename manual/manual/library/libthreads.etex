@@ -31,9 +31,9 @@ programs.  Programs that use this alternate implementation of the
 "threads" library must be linked as follows:
 \begin{alltt}
         ocamlc -thread -custom \var{other options} threads.cma \var{other files} \char92
-                -cclib -lthreads -cclib -lpthread
+                 -cclib -lthreads -cclib -lunix -cclib -lpthread
         ocamlopt -thread \var{other options} threads.cmxa \var{other files} \char92
-                -cclib -lthreadsnat -cclib -lpthread
+                -cclib -lthreadsnat -cclib -lunix -cclib -lpthread
 \end{alltt}
 Depending on the operating system, extra system libraries can be
 necessary.  For instance, under Solaris 2.5, add "-cclib -lposix4"
@@ -44,9 +44,9 @@ at the end of the command line.
 Programs that use the "threads" library must be linked as follows:
 \begin{alltt}
         ocamlc -thread -custom \var{other options} threads.cma \var{other files} \char92
-                \%CAMLLIB\%/libthreads.lib
+                \%CAMLLIB\%/libthreads.lib \%CAMLLIB\%/libunix.lib
         ocamlopt -thread -custom \var{other options} threads.cmxa \var{other files} \char92
-                \%CAMLLIB\%/libthreadsnat.lib
+                \%CAMLLIB\%/libthreadsnat.lib \%CAMLLIB\%/libunix.lib
 \end{alltt}
 All object files on the command line must also have been compiled with
 the "-thread" option, which selects a special, thread-safe version of

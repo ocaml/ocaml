@@ -72,10 +72,11 @@ functions; use threads instead of non-blocking I/O}
 \entree{"rewinddir"}{not implemented; re-open the directory instead}
 \entree{"mkfifo"}{not implemented}
 \entree{"ioctl_int", "ioctl_ptr"}{not implemented (no "ioctl" in Windows)}
-\entree{"select"}{not implemented; use threads instead}
+\entree{"select"}{implemented, but works only for sockets; use threads
+                  if you need to wait on other kinds of file descriptors}
 \entree{"lockf"}{not implemented}
 \entree{"kill", "pause"}{not implemented (no inter-process signals in Windows)}
-\entree{"gettimeofday", "alarm", "times"}{not implemented}
+\entree{"alarm", "times"}{not implemented}
 \entree{"getitimer", "setitimer"}{not implemented}
 \entree{"getuid", "getgid"}{always return 1}
 \entree{"getgid", "getegid", "getgroups"}{not implemented}

@@ -1,6 +1,10 @@
-\chapter{Objects in Caml} \label{c:objectexamples}
+\chapter{Objects in Caml}
+\label{c:objectexamples}
+{\it (Chapter written by Jérôme Vouillon and Didier Rémy)}
 
-This chapter gives an overview of the object-oriented features of
+\bigskip
+
+\noindent This chapter gives an overview of the object-oriented features of
 Objective Caml.
 
 \subsection*{Classes and objects}
