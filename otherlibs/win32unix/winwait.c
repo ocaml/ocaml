@@ -37,11 +37,12 @@ static value alloc_process_status(pid, status)
   return res;
 }
 
-value win_waitpid(flags, pid_req)
-     value flags, pid_req;
+value win_waitpid(flags, vpid_req)
+     value flags, vpid_req;
 {
-  int status;
-  if (_cwait(&status,Int_val(pid_req), 0/* ignored by win32 */) == -1)
+  int status, pid_req;
+  pid_req = Int_val(vpid_req);
+  if (_cwait(&status, pid_req, 0/* ignored by win32 */) == -1)
 	uerror("waitpid", Nothing);  
   return alloc_process_status(pid_req, status);
 }

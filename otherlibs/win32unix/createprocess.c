@@ -15,13 +15,18 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value win_create_process_native(exe, cmdline, env, fd1, fd2, fd3)
-     value exe, cmdline, env, fd1, fd2, fd3;
+/* From the Caml runtime */
+extern char * searchpath(char * name);
+
+value win_create_process_native(cmd, cmdline, env, fd1, fd2, fd3)
+     value cmd, cmdline, env, fd1, fd2, fd3;
 {
   PROCESS_INFORMATION pi;
   STARTUPINFO si;
-  char * envp;
+  char * exefile, * envp;
 
+  exefile = searchpath(String_val(cmd));
+  if (exefile == NULL) exefile = String_val(cmd);
   if (env != Val_int(0)) {
     envp = String_val(Field(env, 0));
   } else {
@@ -33,10 +38,10 @@ value win_create_process_native(exe, cmdline, env, fd1, fd2, fd3)
   si.hStdInput = (HANDLE) _get_osfhandle(Int_val(fd1));
   si.hStdOutput = (HANDLE) _get_osfhandle(Int_val(fd2));
   si.hStdError = (HANDLE) _get_osfhandle(Int_val(fd3));
-  if (! CreateProcess(String_val(exe), String_val(cmdline), NULL, NULL,
+  if (! CreateProcess(exefile, String_val(cmdline), NULL, NULL,
                       TRUE, 0, envp, NULL, &si, &pi)) {
     _dosmaperr(GetLastError());
-    uerror("create_process", exe);
+    uerror("create_process", exefile);
   }
   return Val_int(pi.hProcess);
 }
