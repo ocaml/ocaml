@@ -41,7 +41,7 @@ libthreadsnat.a: $(NATIVECODE_C_OBJS)
 	$(MKLIB) -o threadsnat $(NATIVECODE_C_OBJS) $(PTHREAD_LINK)
 
 posix_n.o: posix.c
-	$(NATIVECC) -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -c posix.c
+	$(NATIVECC) -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -c posix.c
 	mv posix.o posix_n.o
 
 threads.cma: $(THREAD_OBJS)
