@@ -483,7 +483,8 @@ let instr_source lexbuf =
           (openfile (find_in_path !Config.load_path (expand_path file))
              [O_RDONLY] 0)
       with
-        (Unix_error _) as x  -> Unix_tools.report_error x; raise Toplevel
+        Not_found -> prerr_endline "Source file not found."; raise Toplevel
+      | (Unix_error _) as x  -> Unix_tools.report_error x; raise Toplevel
     in
       try
         interactif := false;
