@@ -271,7 +271,9 @@ external seek_out : out_channel -> int -> unit = "caml_seek_out"
 external pos_out : out_channel -> int = "caml_pos_out"
 external out_channel_length : out_channel -> int = "caml_channel_size"
 external close_out_channel : out_channel -> unit = "caml_close_channel"
-let close_out oc = flush oc; close_out_channel oc
+let close_out oc =
+  begin try flush oc with _ -> () end;
+  close_out_channel oc
 external set_binary_mode_out : out_channel -> bool -> unit
                              = "caml_set_binary_mode"
 
