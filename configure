@@ -181,6 +181,7 @@ case "$host" in
   sparc-*-sunos4.*)             arch=sparc; system=sunos;;
   sparc-*-solaris2.*)           arch=sparc; system=solaris;;
   i[3456]86-*-linuxaout)        arch=i386; system=linux;;
+  i[3456]86-*-linuxoldld)       arch=i386; system=linux;;
   i[3456]86-*-linux)            arch=i386; system=linux_elf;;
   i[3456]86-*-*bsd*)            arch=i386; system=bsd;;
   i[3456]86-*-nextstep*)        arch=i386; system=nextstep;;
@@ -489,16 +490,24 @@ echo "BIGNUM_ARCH=$bignum_arch" >> Makefile
 x11_include="not found"
 x11_lib="not found"
 
-for dir in /usr/include /usr/openwin/include; do
-  if test -f $dir/X11/X.h; then
-    x11_include=$dir
+xdirs="/usr /usr/local /usr/unsupported /usr/athena \
+/usr/openwin /usr/openwin/share \
+/usr/X386 /usr/x386 \
+/usr/X11R6 /usr/X11R5 /usr/X11R4 \
+/usr/local/X11R6 /usr/local/X11R5 /usr/local/X11R4"
+
+for dir in $xdirs; do
+  if test -f $dir/include/X11/X.h; then
+    x11_include=$dir/include
     break
   fi
 done
 
-for dir in /usr/lib /usr/openwin/lib; do
-  if test -f $dir/libX11.a; then
-    x11_lib=$dir
+for dir in $xdirs; do
+  if test -f $dir/lib/libX11.a || \
+     test -f $dir/lib/libX11.so || \
+     test -f $dir/lib/libX11.sa; then
+    x11_lib=$dir/lib
     break
   fi
 done
