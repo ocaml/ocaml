@@ -21,6 +21,7 @@
 #include "mlvalues.h"
 #include "roots.h"
 #include "signals.h"
+#include "sys.h"
 
 volatile int async_signal_mode = 0;
 volatile int pending_signal = 0;
@@ -160,10 +161,11 @@ int posix_signals[] = {
 value install_signal_handler(value signal_number, value action) /* ML */
 {
   int sig;
-  void (*act)(int signo);
+  void (*act)(int signo), (*oldact)(int signo);
 #ifdef POSIX_SIGNALS
-  struct sigaction sigact;
+  struct sigaction sigact, oldsigact;
 #endif
+  value res;
 
   sig = Int_val(signal_number);
   if (sig < 0) sig = posix_signals[-sig-1];
@@ -193,9 +195,19 @@ value install_signal_handler(value signal_number, value action) /* ML */
   sigact.sa_handler = act;
   sigemptyset(&sigact.sa_mask);
   sigact.sa_flags = 0;
-  sigaction(sig, &sigact, NULL);
+  if (sigaction(sig, &sigact, &oldsigact) == -1) sys_error(NO_ARG);
+  oldact = oldsigact.sa_handler;
 #else
-  signal(sig, act);
+  oldact = signal(sig, act);
+  if (oldact == SIG_ERR) sys_error(NO_ARG);
 #endif
-  return Val_unit;
+  if (oldact == handle_signal) {
+    res = alloc(1, 0);          /* Signal_handle */
+    Field(res, 0) = Field(signal_handlers, sig);
+  }
+  else if (oldact == SIG_IGN)
+    res = Val_int(1);           /* Signal_ignore */
+  else
+    res = Val_int(0);           /* Signal_default */
+  return res;
 }

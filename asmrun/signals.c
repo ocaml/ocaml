@@ -25,6 +25,7 @@
 #include "fail.h"
 #include "signals.h"
 #include "stack.h"
+#include "sys.h"
 
 volatile int async_signal_mode = 0;
 volatile int pending_signal = 0;
@@ -226,10 +227,11 @@ value install_signal_handler(value signal_number, value action) /* ML */
                                  
 {
   int sig;
-  void (*act)();
+  void (*act)(int signo), (*oldact)(int signo);
 #ifdef POSIX_SIGNALS
-  struct sigaction sigact;
+  struct sigaction sigact, oldsigact;
 #endif
+  value res;
 
   sig = Int_val(signal_number);
   if (sig < 0) sig = posix_signals[-sig-1];
@@ -255,15 +257,25 @@ value install_signal_handler(value signal_number, value action) /* ML */
     act = handle_signal;
     break;
   }
-#ifndef POSIX_SIGNALS
-  signal(sig, act);
-#else
+#ifdef POSIX_SIGNALS
   sigact.sa_handler = act;
-  sigact.sa_flags = 0;
   sigemptyset(&sigact.sa_mask);
-  sigaction(sig, &sigact, NULL);
+  sigact.sa_flags = 0;
+  if (sigaction(sig, &sigact, &oldsigact) == -1) sys_error(NO_ARG);
+  oldact = oldsigact.sa_handler;
+#else
+  oldact = signal(sig, act);
+  if (oldact == SIG_ERR) sys_error(NO_ARG);
 #endif
-  return Val_unit;
+  if (oldact == handle_signal) {
+    res = alloc(1, 0);          /* Signal_handle */
+    Field(res, 0) = Field(signal_handlers, sig);
+  }
+  else if (oldact == SIG_IGN)
+    res = Val_int(1);           /* Signal_ignore */
+  else
+    res = Val_int(0);           /* Signal_default */
+  return res;
 }
 
 /* Machine- and OS-dependent handling of bound check trap */

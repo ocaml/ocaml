@@ -37,7 +37,8 @@ type signal_behavior =
   | Signal_ignore
   | Signal_handle of (int -> unit)
 
-external signal: int -> signal_behavior -> unit = "install_signal_handler"
+external signal: int -> signal_behavior -> signal_behavior
+        = "install_signal_handler"
 
 let sigabrt = -1
 let sigalrm = -2
@@ -67,4 +68,5 @@ let catch_break on =
   if on then
     signal sigint (Signal_handle(fun _ -> raise Break))
   else
-    signal sigint Signal_default
+    signal sigint Signal_default;
+  ()

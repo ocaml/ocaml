@@ -65,9 +65,11 @@ type signal_behavior =
 -          [Signal_handle f]: call function [f], giving it the signal
              number as argument. *)
 
-external signal: int -> signal_behavior -> unit = "install_signal_handler"
+external signal: int -> signal_behavior -> signal_behavior
+      = "install_signal_handler"
         (* Set the behavior of the system on receipt of a given signal.
-           The first argument is the signal number. *)
+           The first argument is the signal number.  Return the behavior
+           previously associated with the signal. *)
 
 val sigabrt: int   (* Abnormal termination *)
 val sigalrm: int   (* Timeout *)
