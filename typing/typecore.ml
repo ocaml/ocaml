@@ -1420,7 +1420,7 @@ and type_expect ?in_function env sexp ty_expected =
           (Some sexp.pexp_loc) caselist in
       let all_labeled ty =
         let ls, tvar = list_labels env ty in
-        tvar || List.exists (fun l -> l = "" || l.[0] = '?') ls
+        not (tvar || List.exists (fun l -> l = "" || l.[0] = '?') ls)
       in
       if is_optional l && all_labeled ty_res then
         Location.prerr_warning (fst (List.hd cases)).pat_loc
