@@ -1,6 +1,6 @@
 #include <string.h>
-#include <mlvalues.h>
-#include <callback.h>
+#include <caml/mlvalues.h>
+#include <caml/callback.h>
 
 /* Functions callable directly from C */
 
