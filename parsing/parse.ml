@@ -27,7 +27,7 @@ let rec skip_phrase lexbuf =
     | Lexer.Error (Lexer.Unterminated_comment, _, _) -> ()
     | Lexer.Error (Lexer.Unterminated_string, _, _) -> ()
     | Lexer.Error (Lexer.Unterminated_string_in_comment, _, _) -> ()
-    | Lexer.Error (Lexer.Illegal_character,_,_) -> skip_phrase lexbuf
+    | Lexer.Error (Lexer.Illegal_character _,_,_) -> skip_phrase lexbuf
 ;;
 
 let maybe_skip_phrase lexbuf =
@@ -45,7 +45,7 @@ let wrap parsing_fun lexbuf =
   | Lexer.Error(Lexer.Unterminated_comment, _, _) as err -> raise err
   | Lexer.Error(Lexer.Unterminated_string, _, _) as err -> raise err
   | Lexer.Error(Lexer.Unterminated_string_in_comment, _, _) as err -> raise err
-  | Lexer.Error(Lexer.Illegal_character, _, _) as err ->
+  | Lexer.Error(Lexer.Illegal_character _, _, _) as err ->
       if !Location.input_name = "" then skip_phrase lexbuf;
       raise err
   | Syntaxerr.Error _ as err ->

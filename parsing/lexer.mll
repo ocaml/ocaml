@@ -19,7 +19,7 @@ open Misc
 open Parser
 
 type error =
-  | Illegal_character
+  | Illegal_character of char
   | Unterminated_comment
   | Unterminated_string
   | Unterminated_string_in_comment
@@ -151,8 +151,8 @@ let comment_start_pos = ref [];;
 open Formatmsg
 
 let report_error = function
-    Illegal_character ->
-      print_string "Illegal character"
+    Illegal_character c ->
+      printf "Illegal character (%s)" (Char.escaped c)
   | Unterminated_comment ->
       print_string "Comment not terminated"
   | Unterminated_string ->
@@ -304,7 +304,7 @@ rule token = parse
             { INFIXOP3(Lexing.lexeme lexbuf) }
   | eof { EOF }
   | _
-      { raise (Error(Illegal_character,
+      { raise (Error(Illegal_character ((Lexing.lexeme lexbuf).[0]),
                      Lexing.lexeme_start lexbuf, Lexing.lexeme_end lexbuf)) }
 
 and comment = parse

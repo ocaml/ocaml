@@ -17,7 +17,7 @@
 val token: Lexing.lexbuf -> Parser.token
 
 type error =
-  | Illegal_character
+  | Illegal_character of char
   | Unterminated_comment
   | Unterminated_string
   | Unterminated_string_in_comment
