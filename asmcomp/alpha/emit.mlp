@@ -25,6 +25,14 @@ open Mach
 open Linearize
 open Emitaux
 
+(* Determine if a function label is defined in the current compilation
+   unit *)
+
+let is_local s =
+  let cu = Compilenv.current_unit_name() in
+  let lcu = String.length cu in
+  String.length s >= lcu + 1 && String.sub s 0 lcu = cu && s.[lcu] = '.'
+
 (* First pass: insert Iloadgp instructions where needed *)
 
 let instr_copy i next =
@@ -57,17 +65,16 @@ let insert_load_gp f =
     | Lop(Iconst_float s) -> true       (* turned into ldq ($gp) *)
     | Lop(Iconst_symbol s) -> true      (* turned into ldq ($gp) *)
     | Lop(Icall_ind) -> false           (* does ldgp if needed afterwards *)
-    | Lop(Icall_imm s) -> true          (* loads $27 from ($gp) *)
-    | Lop(Itailcall_ind) -> false       (* loads $27 from ($gp) *)
-    | Lop(Itailcall_imm s) -> true      (* loads $27 from ($gp) *)
+    | Lop(Icall_imm s) ->               (* loads $27 from ($gp) if external *)
+        not (is_local s)
+    | Lop(Itailcall_ind) -> false
+    | Lop(Itailcall_imm s) ->           (* loads $27 from ($gp) *)
+        s <> f.fun_name && not(is_local s)
     | Lop(Iextcall(_, _)) -> true       (* loads $27 from ($gp) *)
     | Lop(Iload(_, Ibased(_, _))) -> true (* loads address from ($gp) *)
     | Lop(Istore(_, Ibased(_, _))) -> true (* loads address from ($gp) *)
-    | Lop(Ialloc _) -> true             (* for calling caml_call_gc *)
     | Lop(Iintop(Idiv | Imod)) -> true  (* divq and remq can be turned into *)
     | Lop(Iintop_imm((Idiv | Imod), _)) -> true (* a function call *)
-    | Lop(Iintop(Icheckbound)) -> true  (* for calling array_bound_error *)
-    | Lop(Iintop_imm(Icheckbound, _)) -> true
     | Lop(Iintop_imm(_, n)) ->     (* for large n, turned into ldq ($gp) *)
         next || n < -0x80000000 || n > 0x7FFFFFFF
     | Lop _ -> next
@@ -248,10 +255,10 @@ let record_frame_label live =
   lbl
 
 let record_frame live =
-  let lbl = record_frame_label live in `{emit_label lbl}:\n`
+  let lbl = record_frame_label live in `{emit_label lbl}:`
 
 let emit_frame fd =
-  `	.quad	{emit_label fd.fd_lbl}\n`;
+  `	.quad	{emit_label fd.fd_lbl} + 4\n`;
   `	.word	{emit_int fd.fd_frame_size}\n`;
   `	.word	{emit_int (List.length fd.fd_live_offset)}\n`;
   List.iter
@@ -273,9 +280,9 @@ let call_gc_sites = ref ([] : gc_call list)
 let emit_call_gc gc =
   `{emit_label gc.gc_lbl}:`;
   liveregs gc.gc_instr 0;
-  `	jsr	caml_call_gc\n`;
+  `{emit_label gc.gc_frame}:	bsr	$26, caml_call_gc\n`;
   (* caml_call_gc preserves $gp *)
-  `{emit_label gc.gc_frame}:	br	{emit_label gc.gc_return_lbl}\n`
+  `	br	{emit_label gc.gc_return_lbl}\n`
 
 (* Names of various instructions *)
 
@@ -340,13 +347,10 @@ let local_entry_points = (Hashtbl.create 19 : (string, label) Hashtbl.t)
 exception External_function
 
 let local_entry_point s =
-  let cu = Compilenv.current_unit_name() in
-  let lcu = String.length cu in
   try
     Hashtbl.find local_entry_points s
   with Not_found ->
-    if String.length s >= lcu + 1 && String.sub s 0 lcu = cu && s.[lcu] = '.'
-    then begin
+    if is_local s then begin
       let lbl = new_label() in
       Hashtbl.add local_entry_points s lbl;
       lbl
@@ -399,17 +403,15 @@ let emit_instr i =
     | Lop(Icall_ind) ->
         `	mov	{emit_reg i.arg.(0)}, $27\n`;
         liveregs i live_27;
-        `	jsr	({emit_reg i.arg.(0)})\n`;
-        record_frame i.live
+        `{record_frame i.live}	jsr	({emit_reg i.arg.(0)})\n`
     | Lop(Icall_imm s) ->
         liveregs i 0;
         begin try
           let lbl = local_entry_point s in
-          `	bsr	{emit_label lbl} # {emit_symbol s}\n`;
-          record_frame i.live
+          `{record_frame i.live}	bsr	$26, {emit_label lbl} # {emit_symbol s}\n`
         with External_function ->
-          `	jsr	{emit_symbol s}\n`;
-          record_frame i.live
+          `	lda	$27, {emit_symbol s}\n`;
+          `{record_frame i.live}	bsr	$26, {emit_symbol s}\n`
         end
     | Lop(Itailcall_ind) ->
         `	mov	{emit_reg i.arg.(0)}, $27\n`;
@@ -441,8 +443,8 @@ let emit_instr i =
         if alloc then begin
           `	lda	$25, {emit_symbol s}\n`;
           liveregs i live_25;
-          `	jsr	caml_c_call\n`;
-          record_frame i.live
+          `	lda	$27, caml_c_call\n`;
+          `{record_frame i.live}	bsr	$26, caml_c_call\n`
         end else begin
           `	jsr	{emit_symbol s}\n`
         end
@@ -468,31 +470,30 @@ let emit_instr i =
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
           let lbl_redo = new_label() in
-          `{emit_label lbl_redo}:	subq	$13, {emit_int n}, $13\n`;
-          `	cmpult	$13, $14, $25\n`;
           let lbl_call_gc = new_label() in
           let lbl_frame = record_frame_label i.live in
-          `	bne	$25, {emit_label lbl_call_gc}\n`;
           call_gc_sites :=
             { gc_lbl = lbl_call_gc;
               gc_return_lbl = lbl_redo;
               gc_frame = lbl_frame;
               gc_instr = i } :: !call_gc_sites;
+          `{emit_label lbl_redo}:	subq	$13, {emit_int n}, $13\n`;
+          `	cmpult	$13, $14, $25\n`;
+          `	bne	$25, {emit_label lbl_call_gc}\n`;
           `	addq	$13, 8, {emit_reg i.res.(0)}\n`
         end else begin
           begin match n with
             16 -> liveregs i 0;
-                  `	jsr	caml_alloc1\n`
+                  `{record_frame i.live}	bsr	$26, caml_alloc1\n`
           | 24 -> liveregs i 0;
-                  `	jsr	caml_alloc2\n`
+                  `{record_frame i.live}	bsr	$26, caml_alloc2\n`
           | 32 -> liveregs i 0;
-                  `	jsr	caml_alloc3\n`
+                  `{record_frame i.live}	bsr	$26, caml_alloc3\n`
           | _  -> `	ldiq	$25, {emit_int n}\n`;
                   liveregs i live_25;
-                  `	jsr	caml_alloc\n`
+                  `{record_frame i.live}	bsr	$26, caml_alloc\n`
           end;
           (* $gp preserved by caml_alloc* *)
-          record_frame i.live;
           `	addq	$13, 8, {emit_reg i.res.(0)}\n`
         end
     | Lop(Iintop(Icomp cmp)) ->
@@ -711,7 +712,8 @@ let emit_fundecl (fundecl, needs_gp) =
   List.iter emit_call_gc !call_gc_sites;
   if !range_check_trap > 0 then begin
     `{emit_label !range_check_trap}:\n`;
-    `	jsr	array_bound_error\n`
+    `	br	$25, call_array_bound_error\n`
+    (* Keep retaddr in $25 for debugging *)
   end;
   `	.end	{emit_symbol fundecl.fun_name}\n`
 

@@ -304,8 +304,7 @@ $107:
         stq     $31, caml_last_return_address
     /* Call the Caml code */
         mov     $25, $27
-        jsr     ($25)
-$108:
+$108:   jsr     ($25)
     /* Reload $gp, masking off low bit in retaddr (might have been marked) */
         bic     $26, 1, $26
         ldgp    $gp, 4($26)
@@ -343,7 +342,7 @@ $108:
         ret     ($26)
 
     /* The trap handler */
-$109:   ldgp    $gp, 0($27)
+$109:   ldgp    $gp, 0($26)
     /* Restore the global variables used by caml_c_call */
         ldq     $24, 0($sp)
         stq     $24, caml_bottom_of_stack
@@ -419,11 +418,22 @@ callback3:
         br      $107
         .end    callback3
 
+/* Glue code to call array_bound_error after reinitializing $gp */
+
+        .globl  call_array_bound_error
+        .ent    call_array_bound_error
+        .align  3
+call_array_bound_error:
+        br      $27, $109
+$109:   ldgp    $gp, 0($27)
+        jsr     array_bound_error       /* never returns */
+        .end    call_array_bound_error
+
         .rdata
         .globl  system_frametable
 system_frametable:
         .quad   1               /* one descriptor */
-        .quad   $108            /* return address into callback */
+        .quad   $108 + 4        /* return address into callback */
         .word   -1              /* negative frame size => use callback link */
         .word   0               /* no roots here */
         .align  3
