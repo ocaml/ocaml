@@ -76,11 +76,46 @@ let make_checkpoints = ref true
 
 (* List of standard library modules *)
 let stdlib_units = [
-  "Pervasives"; "List"; "Char"; "String"; "Array"; "Sys";
-  "Hashtbl"; "Sort"; "Marshal"; "Obj"; "Lexing"; "Parsing";
-  "Set"; "Map"; "Stack"; "Queue"; "Stream";
-  "Buffer"; "Printf"; "Format"; "Arg"; "Printexc"; "Gc";
-  "Digest"; "Random"; "Oo"; "Genlex"; "Callback"; "Weak";
-  "Lazy"; "Filename"; "Int32"; "Int64"; "Nativeint";
-  "Unix"
+  "Arg";
+  "Array";
+  "ArrayLabels";
+  "Buffer";
+  "Callback";
+  "CamlinternalOO";
+  "Char";
+  "Complex";
+  "Digest";
+  "Filename";
+  "Format";
+  "Gc";
+  "Genlex";
+  "Hashtbl";
+  "Int32";
+  "Int64";
+  "Lazy";
+  "Lexing";
+  "List";
+  "ListLabels";
+  "Map";
+  "Marshal";
+  "MoreLabels";
+  "Nativeint";
+  "Obj";
+  "Oo";
+  "Parsing";
+  "Pervasives";
+  "Printexc";
+  "Printf";
+  "Queue";
+  "Random";
+  "Scanf";
+  "Set";
+  "Sort";
+  "Stack";
+  "StdLabels";
+  "Stream";
+  "String";
+  "StringLabels";
+  "Sys";
+  "Weak"
 ]
