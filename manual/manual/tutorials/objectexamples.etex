@@ -26,16 +26,17 @@ Objective Caml.
 \ref{ss:functional-objects} Functional objects \\
 \ref{ss:cloning-objects} Cloning objects \\
 \ref{ss:recursive-classes} Recursive classes \\
-\ref{ss:binary-methods} Binary methods 
+\ref{ss:binary-methods} Binary methods \\
+\ref{ss:friends} Friends \\
 
 \ref{s:advanced-examples} {\bf Advanced examples} 
 
 \ref{ss:bank-accounts} An extended example of bank accounts \\
-\ref{ss:modules-as-classes} Simple modules as classes \\
-  \ref{module:string} Strings \\
-  \ref{module:stack} Stacks \\
-  \ref{module:hashtbl} Hash tables \\
-  \ref{module:set} Sets and friend functions \\
+\ref{ss:modules-as-classes} Simple modules as classes:
+  \ref{module:string} Strings 
+  \ref{module:stack} Stacks 
+  \ref{module:hashtbl} Hash tables 
+  \ref{module:set} Sets \\
 \ref{ss:subject-observer} The subject/observer pattern \\
 
 \end{htmlonly}
@@ -249,6 +250,34 @@ p#bump;;
 \end{caml_example}
 Private methods are inherited (they are by default visible in subclasses), 
 unless they are hidden by signature matching, as described below.
+
+Private methods can be made public in a subclass. 
+\begin{caml_example} 
+class point_again x =
+  object (self)
+    inherit restricted_point x
+    method virtual move : _
+  end;;
+\end{caml_example}
+The annotation "virtual" here is only used to mentioned a method without
+providing its definition. An alternative definition is
+\begin{caml_example} 
+class point_again x =
+  object (self : < move : _; ..> )
+    inherit restricted_point x
+  end;;
+\end{caml_example}
+One could think that a private method should remain private in a subclass. 
+However, it since the method is visible in a subclass, it is always possible
+pick it's code and define a method of the same name that run that code, so
+yet another (heavier) solution would be:
+\begin{caml_example} 
+class point_again x =
+  object (self : < move : _; ..> )
+    inherit restricted_point x as super
+    method move = super#move 
+  end;;
+\end{caml_example}
 
 %XXX Parler de private virtual ?
 
@@ -770,39 +799,42 @@ class virtual comparable =
     method virtual leq : 'a -> bool
   end;;
 \end{caml_example}
-We then define a subclass of "comparable"  that wraps integers as
-comparable objects. There is a type constraint on the class parameter "x"
+We then define a subclass "money" of "comparable". The class money 
+simply wraps floats as comparable objects. We will extend it below with
+more operations. There is a type constraint on the class parameter "x"
 as the primitive "<=" is a polymorphic comparison function in
 Objective Caml.  The "inherit" clause ensures that the type of objects
 of this class is an instance of "#comparable".
 \begin{caml_example}
-class int_comparable (x : int) =
+class money (x : float) =
   object
     inherit comparable
-    val mutable x = x
-    method x = x
-    method leq p = x <= p#x
+    val repr = x
+    method value = repr
+    method leq p = repr <= p#value
   end;;
 \end{caml_example}
 % pas expliqué: la mutabilite peut être cachée
-Objects of class "int_comparable2" below also modify the integer
-they hold. Note that the type "int_comparable2" is not a subtype of type
-"int_comparable", as the self type appears in contravariant position
+Note that the type "money1" is not a subtype of type
+"comparable", as the self type appears in contravariant position
 in the type of method "leq".
-Indeed, an object "p" of class "int_comparable" has a method "leq"
-that expects an argument of type "int_comparable" since it accesses
-its "x" method.  Considering "p" of type "comparable" would allow to
-call method "leq" on "p" with an argument that does not have a method
-"x", which would be an error.
+Indeed, an object "m" of class "money" has a method "leq"
+that expects an argument of type "money" since it accesses
+its "value" method.  Considering "m" of type "comparable" would allow to
+call method "leq" on "m" with an argument that does not have a method
+"value", which would be an error.
+
+Objects of class "money2" below also print the value they hold. Similarly
+the type "money2" is not a subtype of type "money".
 \begin{caml_example}
-class int_comparable2 x =
+class money2 x =
   object   
-    inherit int_comparable x
-    method set_x y = x <- y
+    inherit money x
+    method times k = {< repr = k *. repr >}
   end;;
 \end{caml_example}
 It is however possible to define functions that manipulate objects of
-type either "int_comparable" or "int_comparable2": the function "min"
+type either "money" or "money2": the function "min"
 will return the minimum of any two objects whose type unifies with
 "#comparable". The type of "min" is not the same as "#comparable ->
 #comparable -> #comparable", as the abbreviation "#comparable" hides a
@@ -812,15 +844,94 @@ generates a new variable.
 let min (x : #comparable) y =
   if x#leq y then x else y;;
 \end{caml_example}
-This function can be applied to objects of type "int_comparable"
-or "int_comparable2".
+This function can be applied to objects of type "money"
+or "money2".
 \begin{caml_example}
-(min (new int_comparable  7) (new int_comparable 11))#x;;
-(min (new int_comparable2 5) (new int_comparable2 3))#x;;
+(min (new money  1.3) (new money 3.1))#value;;
+(min (new money2 5.0) (new money2 3.14))#value;;
 \end{caml_example}
 
 More examples of binary methods can be found in section
 \ref{module:string} and \ref{module:set}.
+
+Note the use of functional update for method "times". 
+Writing  "new money2 (k *. repr) >}" instead of  "{< repr = k *. repr >}"
+would not behave well with inheritance: in a subclass "money3" of "money2"
+the "times" method would return an object of class "money2" but not of class
+"money3" as would be expected. 
+
+The class "money" could naturally cary another binary method. Here is a
+fool, direct definition:
+\begin{caml_example}
+class money x =
+  object (self : 'a)
+    val repr = x
+    method value = repr
+    method print = print_float repr
+    method times k = {< repr = k *. x >}
+    method leq (p : 'a) = repr <= p#value
+    method plus (p : 'a) = {< repr = x +. p#value >}
+  end;;
+\end{caml_example}
+
+\subsection{Friends}
+\label{ss:friends}
+
+The above class "money" reveals a problem that often occurs with binary
+methods.  In order to interact with other objects of the same class, the 
+representaion of the money had to be reveal as a method "value". 
+Note that if we removed the two binary methods "plus" and "leq", the
+representation of the money could be hidden inside objects by 
+removing the method "value" as well. 
+\begin{caml_example}
+class safe_money x =
+  object (self : 'a)
+    val repr = x
+    method print = print_float repr
+    method times k = {< repr = k *. x >}
+  end;;
+\end{caml_example}
+Here the representation of the object is known only to a particular object.
+To make it available to other objects of the same class, one is force to
+make it available to the whole world. However one can easily restrict the
+world using the module system and hide the representation to the rest of the
+universe.
+\begin{caml_example}
+module type MONEY = 
+  sig 
+    type t
+    class c : float -> 
+      object ('a)
+        val repr : t
+        method value : t
+        method print : unit
+        method times : float -> 'a
+        method leq : 'a -> bool
+        method plus : 'a -> 'a 
+      end
+  end;;
+module Euro : MONEY = 
+  struct
+    type t = float
+    class c x =
+      object (self : 'a)
+        val repr = x
+        method value = repr
+        method print = print_float repr
+        method times k = {< repr = k *. x >}
+        method leq (p : 'a) = repr <= p#value
+        method plus (p : 'a) = {< repr = x +. p#value >}
+      end
+  end;;
+\end{caml_example}
+Another example of friend functions may be found in section
+\ref{module:set}.  These examples occur when a group of objects (here
+objects of the same class) and function should see each others internal
+representation, while their representation should be hidden from the
+outside. The solution is always to define all friends in the same module,
+give access to the representation and use a signature constraint to make the
+representation abstract outside of the module.
+
 
 
 \section{Advanced examples}
@@ -841,22 +952,25 @@ In this section, we illustrate most aspects of Object and inheritance
 by refinining, debuging, and specilazing the following 
 initial naive definition of a simple bank account. 
 \begin{caml_example}
+let euro = new Euro.c;;
+let zero = euro 0.;;
+let neg x = x#times (-1.);;
 class account =
   object 
-    val mutable balance = 0.0
+    val mutable balance = zero
     method balance = balance
-    method deposit x = balance <- balance +. x
+    method deposit x = balance <- balance # plus x
     method retrieve x =
-      if x <= balance then (balance <- balance -. x; x) else 0.0
+      if x#leq balance then (balance <- balance # plus (neg x); x) else zero
   end;;
-let c = new account in c # deposit 100.0; c # retrieve 50.0;;
+let c = new account in c # deposit (euro 100.); c # retrieve (euro 50.);;
 \end{caml_example}
 One may refined this definition with a method to compute interests
 \begin{caml_example}
 class account_with_interests =
   object (self)
     inherit account
-    method private interests = self # deposit (0.03 *. self # balance)
+    method private interests = self # deposit (self # balance # times 0.03)
   end;;
 \end{caml_example}
 We made the interest method private, since clearly the method interest
@@ -870,7 +984,7 @@ directly:
 class safe_account =
   object
     inherit account
-    method safe_account x = if x > 0.0 then balance <- balance +. x
+    method deposit x = if zero#leq x then balance <- balance#plus x
   end;;
 \end{caml_example}
 However, the bug might be fixed more safely by  the following definition:
@@ -879,7 +993,7 @@ class safe_account =
   object
     inherit account as unsafe
     method deposit x =
-      if x > 0.0 then unsafe # deposit x
+      if zero#leq x then unsafe # deposit x
       else raise (Invalid_argument "deposit")
   end;;
 \end{caml_example}
@@ -890,7 +1004,7 @@ To keep of trace of operations, extend the class with a mutable field
 "history" and a private method "trace" to add an operation in the
 register. Then each method to be traced is redefined.
 \begin{caml_example}
-type operation = Deposit of float | Retrieval of float;;
+type 'a operation = Deposit of 'a | Retrieval of 'a;;
 class account_with_history =
   object (self) 
     inherit safe_account as super  
@@ -931,8 +1045,8 @@ class account_with_deposit x =
 \end{caml_example}
 Here is an example
 \begin{caml_example}
-let ccp = new account_with_deposit 100.0 in 
-ccp # retrieve 50.0; ccp # history;;
+let ccp = new account_with_deposit (euro 100.) in 
+ccp # retrieve (euro 50.); ccp # history;;
 \end{caml_example}
 Closing an account can be done with the following polyrmorphic function:
 \begin{caml_example}
@@ -940,48 +1054,73 @@ let close c = c # retrieve (c # balance);;
 \end{caml_example}
 Of course, this applies to all sorts of accounts. 
 
-Finally, we gather several version of the account into a module "Account":
+Finally, we gather several version of the account into a module "Account"
+abstracted other some currency.
 \begin{caml_example}
-let today () = (01,01,2000) ;;
-module Account =
+let today () = (01,01,2000)
+module Account (M:MONEY) =
   struct
-    class bank = object inherit account_with_history end
-
+    type m = M.c
+    let m = new M.c
+    let zero = m 0. 
+        
+    class bank =
+      object (self) 
+        val mutable balance = zero
+        method balance = balance
+        val mutable history = []
+        method private trace x = history <- x::history
+        method deposit x =
+          self#trace (Deposit x);
+          if zero#leq x then balance <- balance # plus x
+          else raise (Invalid_argument "deposit")
+        method retrieve x =
+          if x#leq balance then
+            (balance <- balance # plus (neg x); self#trace (Retrieval x); x)
+          else zero
+        method history = List.rev history
+      end
+        
     class type client_view = 
       object
-        method deposit : float -> unit
-        method history : operation list
-        method retrieve : float -> float
-        method balance : float
+        method deposit : m -> unit
+        method history : m operation list
+        method retrieve : m -> m
+        method balance : m
       end
-
+          
     class virtual check_client x = 
-       let y = if x > 1000.0 then x
-               else raise (Failure "Insuffisant initial deposit") in
-       object (self) initializer self#deposit y end
- 
-    module Client (A : sig class bank : client_view end) =
+      let y = if (m 100.)#leq x then x
+      else raise (Failure "Insuffisant initial deposit") in
+      object (self) initializer self#deposit y end
+        
+    module Client (B : sig class bank : client_view end) =
       struct
         class account x : client_view =
-           object
-             inherit bank
-             inherit check_client x
+          object
+            inherit B.bank
+            inherit check_client x
           end
-        
+            
         let discount x =
-           let c = new account x in
-           if today() < (1998,10,30) then c # deposit 100.0; c
+          let c = new account x in
+          if today() < (1998,10,30) then c # deposit (m 100.); c
       end
   end;;
 \end{caml_example}
 This shows the use of modules to group several class definitions that can in
-fact be thought of as a sigle unit.  This unit would be provided by a bank
-for both internal and external use.  The class "bank" is the {\em real}
-implementation of the bank account (it could have been inlined). This is the
-one that will be used for further extensions, refinement, etc.  The client
-will only be given the client view. 
+fact be thought of as a single unit.  This unit would be provided by a bank
+for both internal and external use.  
+This is implementated as a functor that asbtracts over the currency so that
+the same code can be used to provide accounts in different currency. 
+
+The class "bank" is the {\em real} implementation of the bank account (it
+could have been inlined). This is the one that will be used for further
+extensions, refinement, etc.  The client will only be given the client view.
 \begin{caml_example}
-module Client = Account.Client (Account);;
+module Euro_account = Account(Euro);;
+module Client = Euro_account.Client (Euro_account);;
+new Client.account (new Euro.c 100.);;
 \end{caml_example}
 Hence, the client does not have direct access to the "balance", nor the
 "history" if his account. His only way to change his balance is to make a
@@ -998,73 +1137,84 @@ It is important that the client's view has been defined as a functor
 refining the "bank". The functor "Client" may remain unchanged and be passed
 the new definition to intiliazed a client's view of the extended account.
 \begin{caml_example}
-module Internet_account = 
+module Investment_account (M : MONEY) = 
   struct
+    type m = M.c
+    module A = Account(M)
+        
     class bank =
       object
-        inherit Account.bank as super
+        inherit A.bank as super
         method deposit x =
-          if x > 1000.0 then print_string "Would you like to invest?";
+          if (new M.c 1000.)#leq x then
+            print_string "Would you like to invest?";
           super # deposit x
       end
-
-    module Client = Account.Client
+        
+    module Client = A.Client
   end;;
-module Client = Internet_account.Client (Internet_account);;
+module Euro_account = Investment_account (Euro);;
+module Client = Euro_account.Client (Euro_account);;
+new Client.account (new Euro.c 1.);;
 \end{caml_example}
-The functor Client may also be redefined if some new features can be
-directly made accessible to to the client.
+The functor "Client" may also be redefined when some new features of the
+account can be given to the client. For instance,
 \begin{caml_example}
-module Internet_account = 
+module Internet_account (M : MONEY) = 
   struct
+    type m = M.c
+    module A = Account(M)
+
     class bank =
       object
-        inherit Account.bank 
+        inherit A.bank 
         method mail s = print_string s
       end
-
+        
     class type client_view = 
       object
-        method deposit : float -> unit
-        method history : operation list
-        method retrieve : float -> float
-        method balance : float
+        method deposit : m -> unit
+        method history : m operation list
+        method retrieve : m -> m
+        method balance : m
         method mail : string -> unit
       end
-
-    module Client (A : sig class bank : client_view end) =
+          
+    module Client (B : sig class bank : client_view end) =
       struct
         class account x : client_view =
-           object
-             inherit bank
-             inherit Account.check_client x
+          object
+            inherit B.bank
+            inherit A.check_client x
           end
       end
   end;;
+module Euro_account = Internet_account (Euro);;
+module Client = Euro_account.Client (Euro_account);;
+new Client.account (new Euro.c 100.);;
 \end{caml_example}
-
 
 
 \subsection{Simple modules as classes}
 \label{ss:modules-as-classes}
 
 One may wonder whether it is possible to treat primitive types such as
-intergers and strings as objects. Although this is probably useless and 
-not recommended, there maybe be situations when it becomes meaningful,
-especially for user define data types.
-As an example, we consider a class of strings.
+intergers and strings as objects. Although this usually uninteresting
+for intergers or strings, there maybe be a few situations when
+this is meaningful. The "money" class above is an example. 
+We show here how to do it for strings. 
 
 \subsubsection{Strings}
 \label{module:string}
 
 A naive definition of strings could be:
 \begin{caml_example}
-class string s =
+class ostring s =
   object
      method get n = String.get n
      method set n c = String.set n c
      method print = print_string s
-     method copy = new string (String.copy s)
+     method copy = new ostring (String.copy s)
   end;;
 \end{caml_example}
 However, the method "copy" returns an object of the class string, and not an
@@ -1077,9 +1227,9 @@ class sub_string s =
      method sub start len = new sub_string (String.sub s  start len)
   end;;
 \end{caml_example}
-The solution is to use functional update instead. One need to make 
-an explicit instance variable containing the representation "s" of the
-string. 
+As seen in section \ref{ss:binary-methods}, the solution is to use
+functional update instead. One need to make an explicit instance variable
+containing the representation "s" of the string.
 \begin{caml_example}
 class better_string s =
   object
@@ -1095,11 +1245,11 @@ As shown in the inferred type, the "copy" and "sub" now return objects of
 the same type as the type of the class.
 
 Another difficulty is the implementation of the method "concat". 
-In order to concatenate a string with another string of the same class. 
-One must be able to access the instance variable externally. Thus, a method
+In order to concatenate a string with another string of the same class, 
+one must be able to access the instance variable externally. Thus, a method
 "repr" returning s must be defined. Here is the new definition
 \begin{caml_example}
-class string s =
+class ostring s =
   object (self : 'mytype)
      val repr = s
      method repr = repr
@@ -1114,8 +1264,11 @@ class string s =
 Another constructor of the class string can be defined to return an
 uninitialized string of a given length
 \begin{caml_example}
-class string_create n = string (String.create n);;
+class cstring n = ostring (String.create n);;
 \end{caml_example}
+Here, exposing the representation of strings is probably harmless, and we do
+not need to hide as we did for the class money in section \ref{ss:friends}
+
 
 \subsubsection{Stacks}
 \label{module:stack}
@@ -1182,7 +1335,8 @@ let stack_fold (s : 'a #stack3) f x =
 \subsubsection{Hashtbl}
 \label{module:hashtbl}
 
-A simplified object-oriented hash table should have the following class type. 
+A simplified version of an object-oriented hash table should have the
+following class type.
 \begin{caml_example}
 class type ['a, 'b] hash_table =
   object 
@@ -1217,21 +1371,16 @@ class ['a, 'b] hashtbl size : ['a, 'b] hash_table =
 
 % solution
 
-\subsubsection{Sets -- an example of friend functions}
+\subsubsection{Sets}
 \label{module:set}
 
 Implementing sets leads to another difficulty.  Indeed, the method
 "union" needs to be able to access the internal representation of
 another object of the same class.  
 
-This  is known as the problem of ``friend objects or functions''. 
-It occurs when a group of objects (here objects of the same class) and
-function should see each others internal representation, while their
-representation should be hidden from outside. The solution to this problem
-is to define all friends in the same module and with access to the
-representation and use a signature constraint to make the representation
-abstract outside of the module. Indeed, this is the same mechanism used 
-in the module "Set" in the absence of objects. 
+This is another instance of friend functions as seen in section
+\ref{ss:friends}. Indeed, this is the same mechanism used in the module
+"Set" in the absence of objects.
 
 In the object-oriented version of set, we only need to add an aditional 
 method "tag" to return the representation of a set. Since "set" are
