@@ -17,10 +17,7 @@
    cf. Compiling Pattern Matching in Join-Patterns
 *)
 
-type match_automaton = 
-    matchclause Typedtree.joinautomaton_gen
-
-and match_clause =
+type match_clause =
     Reaction of Typedtree.joinpattern list list * guard
   | Dispatcher of dispatcher
 
@@ -37,3 +34,4 @@ and guard =
 and dispatcher =
     Ident.t * Ident.t * (Typedtree.pattern * Ident.t) list * Typedtree.partial
 
+type automaton = match_clause Typedtree.joinautomaton_gen
