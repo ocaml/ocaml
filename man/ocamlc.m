@@ -228,6 +228,12 @@ option is given, specify the name of the library produced.
 Print the version number of the compiler.
 
 .TP
+.B \-modern
+Switch to the modern semantics for application. Arguments should be
+explicitly labeled by labels appearing in types. Arguments with different
+labels may commute freely.
+
+.TP
 .B \-unsafe
 Turn bound checking off on array and string accesses (the 
 .B v.(i)
