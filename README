@@ -15,13 +15,12 @@ standalone programs, or as an interactive, toplevel-based system.
 
 The other compiler generates high-performance native code for a number
 of processors. Compilation takes longer and generates bigger code, but
-the generated programs deliver excellent performance (better than
-Standard ML of New Jersey 1.09 on our tests), while retaining the
-moderate memory requirements of the bytecode compiler. The native-code
-compiler currently runs on the following platforms:
+the generated programs deliver excellent performance, while retaining
+the moderate memory requirements of the bytecode compiler. The
+native-code compiler currently runs on the following platforms:
 
     Intel Pentium processors: PCs under Linux, FreeBSD, NetBSD, OpenBSD,
-      NextStep, Solaris 2, BeOS.
+      Windows, NextStep, Solaris 2, BeOS.
     Alpha processors: Digital/Compaq Alpha machines under
       Digital Unix/Compaq Tru64, Linux, NetBSD and OpenBSD.
     Sparc processors: Sun Sparc under SunOS 4.1, Solaris 2, NetBSD, Linux
@@ -47,7 +46,7 @@ CONTENTS:
   LICENSE               license and copyright notice
   Makefile              main Makefile
   README                this file
-  README.win32          infos on the MS Windows NT/Windows 95 port of O.Caml
+  README.win32          infos on the MS Windows 98/ME/NT/2000 ports of O.Caml
   asmcomp/              native-code compiler and linker
   asmrun/               native-code runtime library
   boot/                 bootstrap compiler
@@ -71,7 +70,7 @@ CONTENTS:
 COPYRIGHT:
 
 All files marked "Copyright INRIA" in this distribution are copyright
-1996, 1997, 1998, 1999, 2000 Institut National de Recherche en
+1996, 1997, 1998, 1999, 2000, 2001 Institut National de Recherche en
 Informatique et en Automatique (INRIA) and distributed under the
 conditions stated in file LICENSE.
 
@@ -92,13 +91,14 @@ Wide Web, at
 AVAILABILITY:
 
 The complete Objective Caml distribution resides on ftp.inria.fr,
-and can be accessed by anonymous FTP:
+and can be accessed through a Web browser at
+
+        http://caml.inria.fr/
+
+or directly by anonymous FTP:
 
         host:       ftp.inria.fr (192.93.2.54)
         directory:  lang/caml-light
-
-or through a Web browser at ftp://ftp.inria.fr/lang/caml-light/
-                         or http://caml.inria.fr/
 
 KEEPING IN TOUCH WITH THE CAML COMMUNITY:
 
@@ -131,7 +131,7 @@ Send your bug reports by E-mail to:
               caml-bugs@inria.fr
 
 or report them using the Web interface to the bug-tracking system
-at http://caml.inria.fr/.
+at http://caml.inria.fr/caml-bugs
 
 To be effective, bug reports should include a complete program
 (preferably small) that exhibits the unexpected behavior, and the

@@ -1,11 +1,74 @@
-        Release notes on the MS Windows port of Objective Caml
-        ----------------------------------------------------------
+       Release notes on the MS Windows ports of Objective Caml
+       -------------------------------------------------------
+
+Starting with OCaml 3.01, there are now two ports of Objective Caml
+for MS Windows available:
+  - a native Win32 port, built with the Microsoft development tools;
+  - a port consisting of the Unix sources compiled under the Cygwin
+    Unix-like environment for Windows.
+
+The Cygwin port requires only free software, runs faster in bytecode
+mode, and provides a more thorough emulation of the Unix library.
+It currently lacks the threads library and the ability to interface
+with COM components via CamlIDL.  No graphical user interface to the
+OCaml toplevel is provided.
+
+The native Win32 port has threads and COM support, but is slower in
+bytecode, does not implement some of the functionality of the Unix library, 
+and requires MS Visual C++ version 6 for compilation in -custom mode
+and in native-code mode.  A simple graphical user interface to the
+OCaml toplevel is provided.
+
+The remainder of this document provides more information on both ports.
+
+------------------------------------------------------------------------------
+
+                  The Cygwin port of Objective Caml
+                  ---------------------------------
 
 REQUIREMENTS:
 
-This port runs under Windows 95 and Windows NT on Intel-based machines.
-Windows 3.1 and Windows for Workgroups are not supported. Windows NT
-on non-Intel processors has not been tested.
+This port requires the Cygwin environment from Cygnus/RedHat, which
+is freely available at:
+          http://sources.redhat.com/cygwin/
+Version 1.1 or the upcoming version 1.2 are recommended.
+
+This port runs under all versions of MS Windows supported by Cygwin,
+i.e. Windows 95, 98, ME, NT and 2000 on Intel IA32 machines.
+
+
+INSTALLATION:
+
+The binary distribution is a .tar.gz archive that unpacks in
+usr/local/bin and usr/local/lib/ocaml/.  To install, just open
+a "bash" windows and type:
+         cd /
+         tar xvzf /full/path/to/ocaml-X.XX-cygwin.tar.gz
+
+Make sure that /usr/local/bin is in the PATH environment variable.
+
+
+RECOMPILATION FROM THE SOURCES:
+
+Just follow the instructions for Unix machines given in the file INSTALL.
+
+
+NOTES:
+
+The libraries available in this port are "num", "str", "unix" and "labltk".
+"graph" and "threads" are not available yet.
+
+
+------------------------------------------------------------------------------
+
+               The native Win32 port of Objective Caml
+               ---------------------------------------
+
+REQUIREMENTS:
+
+This port runs under MS Windows 95, 98, ME, NT and 2000 on Intel IA32
+machines.  Windows 3.1 and Windows for Workgroups are not
+supported. Windows NT on non-Intel processors has not been tested.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
@@ -46,10 +109,11 @@ Installing the command-line tools:
 
           set CAMLLIB=D:\lang\ocaml\lib
 
-  For Windows 95 and 98, the OCaml installer is able to perform the
+  For Windows 95, 98 and ME, the OCaml installer is able to perform the
   corresponding modifications to AUTOEXEC.BAT (define CAMLLIB and
-  append to the PATH variable).  For Windows NT, you'll have to
+  append to the PATH variable).  For Windows NT and 2000, you'll have to
   edit the environment variables yourself.
+
 
 RECOMPILATION FROM THE SOURCES:
 
@@ -76,13 +140,11 @@ available to the general public.  Contact us if you think you need them.
 RANDOM NOTES:
 
 * The VC++ compiler does a poor job on byterun/interp.c. Consequently,
-the performance of bytecode programs is about half of that obtained
-under Unix/GCC on similar hardware. GCC would give much better
-performance, but the currently available ports of GCC for
-Win32 lack crucial features such as thread support.
+the performance of bytecode programs is 50-70% of that obtained under
+Unix/GCC or Cygwin on similar hardware.
 
-* Libraries available under Win32: "num", "str", "threads", "graph",
-"camltk41", and large parts of "unix". 
+* Libraries available in this port: "num", "str", "threads", "graph",
+"labltk", and large parts of "unix". 
 "graph" works only under the toplevel application.
 
 
