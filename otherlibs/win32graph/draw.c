@@ -438,7 +438,7 @@ struct image {
 #define Height(i) (((struct image *)Data_custom_val(i))->h)
 #define Data(i) (((struct image *)Data_custom_val(i))->data)
 #define Mask(i) (((struct image *)Data_custom_val(i))->mask)
-#define Max_image_mem 53000000 
+#define Max_image_mem 500000 
 
 static void finalize_image (value i)
 {
@@ -466,6 +466,8 @@ CAMLprim value caml_gr_create_image(value vw, value vh)
                 gr_fail("create_image: width and height must be positive",0);
 
         cbm = CreateCompatibleBitmap(grwindow.gc, w, h);
+	if (cbm == NULL)
+	        gr_fail("create_image: cannot create bitmap", 0);
         res = alloc_custom(&image_ops, sizeof(struct image),
                 w * h, Max_image_mem);
         if (res) {
