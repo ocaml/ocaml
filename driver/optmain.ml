@@ -109,7 +109,7 @@ let main () =
              " No bounds checking on array and string access";
        "-v", Arg.Unit print_version_number, " Print compiler version number";
        "-verbose", Arg.Set verbose, " Print calls to external commands";
-       "-w", Arg.String Warnings.parse_options,
+       "-w", Arg.String (Warnings.parse_options false),
              "<flags>  Enable or disable warnings according to <flags>:\n\
          \032    A/a enable/disable all warnings\n\
          \032    C/c enable/disable suspicious comment\n\
@@ -121,6 +121,10 @@ let main () =
          \032    V/v enable/disable hidden instance variables\n\
          \032    X/x enable/disable all other warnings\n\
          \032    default setting is A (all warnings enabled)";
+       "-warn-error" , Arg.String (Warnings.parse_options true),
+         "<flags>  Enable or disable fatal warnings according to <flags>\n\
+           \032    (see option -w for the list of flags)\n\
+           \032    default setting is a (all warnings are non-fatal)";
 
        "-nopervasives", Arg.Set nopervasives, " (undocumented)";
        "-dparsetree", Arg.Set dump_parsetree, " (undocumented)";

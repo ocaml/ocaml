@@ -91,7 +91,8 @@ module Options = Main_args.Make_options (struct
   let _use_prims s = use_prims := s
   let _use_runtime s = use_runtime := s
   let _v = print_version_number
-  let _w = Warnings.parse_options
+  let _w = (Warnings.parse_options false)
+  let _warn_error = (Warnings.parse_options true)
   let _verbose = set verbose
   let _nopervasives = set nopervasives
   let _dparsetree = set dump_parsetree

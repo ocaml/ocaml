@@ -42,6 +42,8 @@ module Make_options (F :
      val _v : unit -> unit
      val _verbose : unit -> unit
      val _w : string -> unit
+     val _warn_error : string -> unit
+
      val _nopervasives : unit -> unit
      val _dparsetree : unit -> unit
      val _drawlambda : unit -> unit
@@ -105,7 +107,11 @@ struct
       \032    U/u enable/disable unused match case\n\
       \032    V/v enable/disable hidden instance variable\n\
       \032    X/x enable/disable all other warnings\n\
-      \032    default setting is A (all warnings enabled)";
+      \032    default setting is \"A\" (all warnings enabled)";
+    "-warn-error" , Arg.String F._warn_error,
+      "<flags>  Treat the warnings enabled by <flags> as errors.\n\
+        \032    See option -w for the list of flags.\n\
+        \032    Default setting is \"a\" (warnings are not errors)";
 
     "-nopervasives", Arg.Unit F._nopervasives, " (undocumented)";
     "-dparsetree", Arg.Unit F._dparsetree, " (undocumented)";

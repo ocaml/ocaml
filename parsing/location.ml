@@ -116,7 +116,7 @@ let print ppf loc =
 
 let print_warning loc ppf w =
  if Warnings.is_active w then begin
-  fprintf ppf "%aWarning: %s@." print loc (Warnings.message w);
+  fprintf ppf "%aWarning: %a@." print loc Warnings.print w;
   incr num_loc_lines;
  end
 ;;

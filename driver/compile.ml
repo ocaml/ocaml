@@ -108,6 +108,7 @@ let interface ppf sourcefile =
   let sg = Typemod.transl_signature (initial_env()) ast in
   if !Clflags.print_types
     then fprintf std_formatter "%a@." Printtyp.signature sg;
+  Warnings.check_fatal ();
   Env.save_signature sg modulename (prefixname ^ ".cmi");
   remove_preprocessed inputfile
 
@@ -138,8 +139,9 @@ let implementation ppf sourcefile =
     ++ Bytegen.compile_implementation modulename
     ++ print_if ppf Clflags.dump_instr Printinstr.instrlist
     ++ Emitcode.to_file oc modulename;
+    Warnings.check_fatal ();
     remove_preprocessed inputfile;
-    close_out oc
+    close_out oc;
   with x ->
     close_out oc;
     remove_file objfile;
