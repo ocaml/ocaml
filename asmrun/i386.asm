@@ -126,6 +126,8 @@ _caml_c_call:
         movl    %edx, _caml_last_return_address
         leal    4(%esp), %edx
         movl    %edx, _caml_bottom_of_stack
+    # Free the floating-point register stack
+        finit
     # Call the function (address in %eax)
         jmp     *%eax
 
