@@ -4,8 +4,8 @@ parsing.cmi: lexing.cmi obj.cmi
 printf.cmi: buffer.cmi 
 arg.cmo: array.cmi list.cmi printf.cmi string.cmi sys.cmi arg.cmi 
 arg.cmx: array.cmx list.cmx printf.cmx string.cmx sys.cmx arg.cmi 
-array.cmo: array.cmi pervasives.cmi array.cmi 
-array.cmx: array.cmx pervasives.cmx array.cmi 
+array.cmo: pervasives.cmi array.cmi 
+array.cmx: pervasives.cmx array.cmi 
 buffer.cmo: string.cmi sys.cmi buffer.cmi 
 buffer.cmx: string.cmx sys.cmx buffer.cmi 
 callback.cmo: obj.cmi callback.cmi 
