@@ -61,12 +61,12 @@ let symbol_prefix =
   match Config.system with
     "sunos" -> "_"
   | "solaris" -> ""
-  | _ -> fatal_error "Emit_sparc.symbol_prefix"
+  | _ -> fatal_error "wrong $(SYSTEM)"
 
 let emit_symbol s =
   if String.length s >= 1 & s.[0] = '.'
   then emit_string s
-  else begin emit_string symbol_prefix; Emitaux.emit_symbol s end
+  else begin emit_string symbol_prefix; Emitaux.emit_symbol '$' s end
 
 (* Output a label *)
 
@@ -74,7 +74,7 @@ let label_prefix =
   match Config.system with
     "sunos" -> "L"
   | "solaris" -> ".L"
-  | _ -> fatal_error "Emit_sparc.label_prefix"
+  | _ -> fatal_error "wrong $(SYSTEM)"
 
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl

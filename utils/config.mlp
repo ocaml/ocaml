@@ -35,4 +35,6 @@ let max_young_wosize = 256
 
 let architecture = "%%ARCH%%"
 
+let model = "%%MODEL%%"
+
 let system = "%%SYSTEM%%"

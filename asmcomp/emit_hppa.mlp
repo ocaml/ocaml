@@ -62,7 +62,7 @@ let emit_label lbl =
 (* Output a symbol *)
 
 let emit_symbol s =
-  emit_string "_"; Emitaux.emit_symbol s
+  emit_string "_"; Emitaux.emit_symbol '$' s
 
 (* Output a pseudo-register *)
 

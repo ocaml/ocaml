@@ -19,6 +19,12 @@ open Reg
 open Arch
 open Mach
 
+let powerpc =
+  match Config.model with
+    "ppc" -> true
+  | "rs6000" -> false
+  | _ -> fatal_error "wrong $(MODEL)"
+
 (* Exceptions raised to signal cases not handled here *)
 
 exception Use_default
@@ -78,9 +84,8 @@ let select_oper op args =
   | (Cand, _) -> select_logical Iand args
   | (Cor, _) -> select_logical Ior args
   | (Cxor, _) -> select_logical Ixor args
-  (* intoffloat goes through a library function for compatibility with
-     the RS/6000 architecture *)
-  | (Cintoffloat, _) ->
+  (* intoffloat goes through a library function on the RS6000 *)
+  | (Cintoffloat, _) when not powerpc ->
       (Iextcall("itrunc", false), args)
   (* Recognize mult-add and mult-sub instructions *)
   | (Caddf, [Cop(Cmulf, [arg1; arg2]); arg3]) ->
@@ -306,7 +311,8 @@ let contains_calls = ref false
 (* Calling the assembler and the archiver *)
 
 let assemble_file infile outfile =
-  Sys.command ("as -u -m 601 -w -o " ^ outfile ^ " " ^ infile)
+  let proc = if powerpc then "ppc" else "pwr" in
+  Sys.command ("as -u -m " ^ proc ^ " -o " ^ outfile ^ " " ^ infile)
 
 let create_archive archive file_list =
   Misc.remove_file archive;

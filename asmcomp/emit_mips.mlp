@@ -31,6 +31,11 @@ let fastcode_flag = ref true
 let emit_label lbl =
   emit_string "$"; emit_int lbl
 
+(* Output a symbol *)
+
+let emit_symbol s =
+  Emitaux.emit_symbol '$' s
+
 (* Output a pseudo-register *)
 
 let emit_reg r =

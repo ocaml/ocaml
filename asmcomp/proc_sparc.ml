@@ -64,16 +64,10 @@ let select_oper op args =
   match (op, args) with
   (* Multiplication, division and modulus are turned into
      calls to C library routines, except if the dividend is a power of 2. *)
-    (Cmuli, [arg; Cconst_int n]) ->
-      let l = Misc.log2 n in
-      if n = 1 lsl l
-      then (Iintop_imm(Ilsl, l), [arg])
-      else (Iextcall(".umul", false), args)
-  | (Cmuli, [Cconst_int n; arg]) ->
-      let l = Misc.log2 n in
-      if n = 1 lsl l
-      then (Iintop_imm(Ilsl, l), [arg])
-      else (Iextcall(".umul", false), args)
+    (Cmuli, [arg; Cconst_int n]) when n = 1 lsl (Misc.log2 n) ->
+      (Iintop_imm(Ilsl, Misc.log2 n), [arg])
+  | (Cmuli, [Cconst_int n; arg]) when n = 1 lsl (Misc.log2 n) ->
+      (Iintop_imm(Ilsl, Misc.log2 n), [arg])
   | (Cmuli, _) -> 
       (Iextcall(".umul", false), args)
   | (Cdivi, [arg; Cconst_int n])

@@ -24,9 +24,13 @@ open Mach
 open Linearize
 open Emitaux
 
-(* Tradeoff between code size and code speed *)
+(* Distinguish between the PowerPC and the Power/RS6000 submodels *)
 
-let fastcode_flag = ref true
+let powerpc =
+  match Config.model with
+    "ppc" -> true
+  | "rs6000" -> false
+  | _ -> fatal_error "wrong $(MODEL)"
 
 (* Layout of the stack *)
 
@@ -106,9 +110,10 @@ let emit_load_store instr addressing_mode addr n arg =
         `	addic	0, {emit_reg addr.(n+1)}, {emit_int ofs}\n`;
         `	{emit_string instr}x	{emit_reg arg}, {emit_reg addr.(n)}, 0\n`
       end else begin
-        `	addis	0, {emit_reg addr.(n+1)}, {emit_int(high ofs)}\n`;
+        `	lis	0, {emit_int(high ofs)}\n`;
         if low ofs <> 0 then
-          `	addic	0, 0, {emit_int(low ofs)}\n`;
+          `	ori	0, 0, {emit_int(low ofs)}\n`;
+        `	add	0, {emit_reg addr.(n+1)}, 0\n`;
         `	{emit_string instr}x	{emit_reg arg}, {emit_reg addr.(n)}, 0\n`
       end
 
@@ -224,8 +229,6 @@ let tailrec_entry_point = ref 0
 let defined_functions = ref StringSet.empty
 (* Label of glue code for calling the GC *)
 let call_gc_label = ref 0
-(* Label of trap for out-of-range accesses *)
-let range_check_trap = ref 0
 
 let rec emit_instr i dslot =
     match i.desc with
@@ -308,21 +311,22 @@ let rec emit_instr i dslot =
              is difficult, because the callee's TOC must be loaded in r2,
              but ours must not be stored in 20(r1), which would overwrite
              our caller's saved TOC. Hence we can't go through the
-             standard glue code. Here, we load r2 ourselves and hope
-             the linker will not modify the "b" instruction. *)
+             standard glue code. Here, we just proceed as in tailcall_ind. *)
           let lbl = label_symbol s in
           let n = frame_size() in
           `	lwz	28, {emit_label lbl}(2) # {emit_symbol s}\n`;
+          `	lwz	0, 0(28)\n`;
+          `	lwz	2, 4(28)\n`;
           if !contains_calls then begin
-            `	lwz	0, {emit_int(n - 4)}(1)\n`;
+            `	lwz	28, {emit_int(n - 4)}(1)\n`;
+            `	mtctr	0\n`;
             `	addi	1, 1, {emit_int n}\n`;
-            `	lwz	2, 4(28)\n`;
-            `	mtlr	0\n`;
-            `	b	.{emit_symbol s}\n`
+            `	mtlr	28\n`
           end else begin
-            `	addi	1, 1, {emit_int n}\n`;
-            `	lwz	2, 4(28)\n`;
-            `	b	.{emit_symbol s}\n`
+            `	mtctr	0\n`;
+            `	addi	1, 1, {emit_int n}\n`
+          end;
+          `	bctr\n`
           end
         end
     | Lop(Iextcall(s, alloc)) ->
@@ -368,9 +372,14 @@ let rec emit_instr i dslot =
         `	subfc	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
         (* Use subfc instead of subf for RS6000 compatibility. *)
     | Lop(Iintop Imod) ->
-        `	divs	0, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-        `	mullw	0, 0, {emit_reg i.arg.(1)}\n`;
-        `	subfc	{emit_reg i.res.(0)}, 0, {emit_reg i.arg.(0)}\n`
+        if powerpc then begin
+          `	divw	0, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
+          `	mullw	0, 0, {emit_reg i.arg.(1)}\n`;
+          `	subfc	{emit_reg i.res.(0)}, 0, {emit_reg i.arg.(0)}\n`
+        end else begin
+          `	divs	0, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
+          `	mfmq	{emit_reg i.res.(0)}\n`
+        end
     | Lop(Iintop(Icomp cmp)) ->
         begin match cmp with
           Isigned c ->
@@ -382,18 +391,12 @@ let rec emit_instr i dslot =
         end
     | Lop(Iintop Icheckbound) ->
         `	twlle   {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
-        (***
-        if !range_check_trap = 0 then range_check_trap := new_label();
-        `	cmplw	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-        `	ble	{emit_label !range_check_trap}\n`
-        (* forward branch, predicted not taken? *)
-        ***)
     | Lop(Iintop op) ->
         let instr =
           match op with
             Iadd -> "add"
           | Imul -> "mullw"
-          | Idiv -> "divs"              (* Should be divw for PowerPC *)
+          | Idiv -> if powerpc then "divw" else "divs"
           | Iand -> "and"
           | Ior  -> "or"
           | Ixor -> "xor"
@@ -425,12 +428,6 @@ let rec emit_instr i dslot =
         end
     | Lop(Iintop_imm(Icheckbound, n)) ->
         `	twllei   {emit_reg i.arg.(0)}, {emit_int n}\n`
-        (***
-        if !range_check_trap = 0 then range_check_trap := new_label();
-        `	cmpli	{emit_reg i.arg.(0)}, {emit_int n}\n`;
-        `	ble	{emit_label !range_check_trap}\n`
-        (* forward branch, predicted not taken? *)
-        ***)
     | Lop(Iintop_imm(op, n)) ->
         let instr =
           match op with
@@ -636,11 +633,9 @@ let rec emit_all i =
 let fundecl fundecl =
   function_name := fundecl.fun_name;
   defined_functions := StringSet.add fundecl.fun_name !defined_functions;
-  fastcode_flag := fundecl.fun_fast;
   tailrec_entry_point := new_label();
   stack_offset := 0;
   call_gc_label := 0;
-  range_check_trap := 0;
   `	.align	2\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `	.globl	.{emit_symbol fundecl.fun_name}\n`;
@@ -666,13 +661,6 @@ let fundecl fundecl =
     `	cror	31, 31, 31\n`;         (* nop *)
     `	blr\n`                         (* Will re-execute the allocation *)
   end
-  (* Emit the trap *)
-  (***
-  if !range_check_trap > 0 then begin
-    `{emit_label !range_check_trap}:\n`;
-    `	b	.array_bound_error\n`
-  end
-  ***)
 
 (* Emission of data *)
 

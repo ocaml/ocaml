@@ -49,5 +49,7 @@ val max_young_wosize: int
            minor heap *)
 val architecture: string
         (* Name of processor type for the native-code compiler *)
+val model: string
+        (* Name of processor submodel for the native-code compiler *)
 val system: string
         (* Name of operating system for the native-code compiler *)

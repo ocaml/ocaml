@@ -51,7 +51,7 @@ let symbol_prefix =
   | _ -> "_"
 
 let emit_symbol s =
-  emit_string symbol_prefix; Emitaux.emit_symbol s
+  emit_string symbol_prefix; Emitaux.emit_symbol '$' s
 
 (* Output a label *)
 
