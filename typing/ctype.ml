@@ -1019,11 +1019,18 @@ let subtypes = ref [];;
 let known_subtype t1 t2 =
   List.exists (fun (t1', t2') -> t1 == t1' & t2 == t2') !subtypes
 
+let unify_failure trace =
+  match trace with
+    (t1, t1')::(t2, t2')::rem ->
+      raise (Subtype ([], rem))
+  | _ ->
+      fatal_error "Ctype.unify_failure"
+
 let rec subtype_rec env vars t1 t2 =
   if t1 == t2 then () else
   if List.memq t1 vars or List.memq t2 vars then begin
     try unify env t1 t2 with Unify trace ->
-      raise (Subtype ([List.hd trace], List.tl trace))
+      unify_failure trace
   end else
   try
     match (t1.desc, t2.desc) with
@@ -1037,7 +1044,7 @@ let rec subtype_rec env vars t1 t2 =
         end
     | (Tvar, _) | (_, Tvar) ->
         begin try unify env t1 t2 with Unify trace ->
-          raise (Subtype ([List.hd trace], List.tl trace))
+          unify_failure trace
         end
     | (Tarrow(t1, u1), Tarrow(t2, u2)) ->
         subtype_rec env vars t2 t1; subtype_rec env vars u1 u2
@@ -1056,7 +1063,7 @@ let rec subtype_rec env vars t1 t2 =
             raise (Subtype (List.tl tr1, tr2))
         end else begin
           try unify env t1 t2 with Unify trace ->
-            raise (Subtype ([List.hd trace], List.tl trace))
+            unify_failure trace
         end
     | (Tconstr(p1, tl1, abbrev1), _) ->
         if generic_abbrev env p1 then begin
@@ -1066,7 +1073,7 @@ let rec subtype_rec env vars t1 t2 =
             raise (Subtype (List.tl tr1, tr2))
         end else begin
           try unify env t1 t2 with Unify trace ->
-            raise (Subtype ([List.hd trace], List.tl trace))
+            unify_failure trace
         end
     | (_, Tconstr(p2, tl2, abbrev2)) ->
         if generic_abbrev env p2 then begin
@@ -1076,13 +1083,13 @@ let rec subtype_rec env vars t1 t2 =
             raise (Subtype (List.tl tr1, tr2))
        end else begin
           try unify env t1 t2 with Unify trace ->
-            raise (Subtype ([List.hd trace], List.tl trace))
+            unify_failure trace
         end
     | (Tobject (f1, _), Tobject (f2, _)) ->
         if not (known_subtype t1 t2) then begin
           if opened f1 & opened f2 then begin
             try unify env t1 t2 with Unify trace ->
-              raise (Subtype ([List.hd trace], List.tl trace))
+              unify_failure trace
           end else begin
             subtypes := (t1, t2) :: !subtypes;
             subtype_fields env vars f1 f2
@@ -1126,7 +1133,7 @@ let subtype env vars ty1 ty2 =
   begin try
     subtype_rec env vars ty1 ty2
   with Subtype (tr1, tr2) ->
-    raise (Subtype (expand_trace env tr1, filter_trace (expand_trace env tr2)))
+    raise (Subtype (expand_trace env tr1, tr2))
   end;
   subtypes := []
 
