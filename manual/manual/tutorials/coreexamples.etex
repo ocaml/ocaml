@@ -91,9 +91,11 @@ sort l;;
 
 The type inferred for "sort", "'a list -> 'a list", means that "sort"
 can actually apply to lists of any type, and returns a list of the
-same type. This is because the comparisons ("=", "<=", etc.) are {\em
-polymorphic} in Caml: they operate between any two values of the same
-type. This makes "sort" itself polymorphic over all list types.
+same type. The type "'a" is a {\em type variable}, and stands for any
+given type. The reason why "sort" can apply to lists of any type is
+that the comparisons ("=", "<=", etc.) are {\em polymorphic} in Caml:
+they operate between any two values of the same type. This makes
+"sort" itself polymorphic over all list types.
 \begin{caml_example}
 sort [6;2;5;3];;
 sort [3.14; 2.718];;
@@ -269,7 +271,7 @@ let insertion_sort a =
   for i = 1 to Array.length a - 1 do
     let val_i = a.(i) in
     let j = ref i in
-    while !j > 0 && val_i < a.(!j) do
+    while !j > 0 && val_i < a.(!j - 1) do
       a.(!j) <- a.(!j - 1);
       j := !j - 1
     done;
@@ -300,7 +302,7 @@ let (:=) r newval = r.contents <- newval;;
 
 Caml provides exceptions for signalling and handling exceptional
 conditions. Exceptions can also be used as a general-purpose non-local
-control structures. Exceptions are declared with the "exception"
+control structure. Exceptions are declared with the "exception"
 construct, and signalled with the "raise" operator. For instance, the
 function below for taking the head of a list uses an exception  to
 signal the case where an empty list is given.
