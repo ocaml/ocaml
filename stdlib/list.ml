@@ -134,7 +134,7 @@ let rec exists2 p l1 l2 =
 
 let rec mem x = function
     [] -> false
-  | a::l -> a = x || mem x l
+  | a::l -> compare a x = 0 || mem x l
 
 let rec memq x = function
     [] -> false
@@ -142,7 +142,7 @@ let rec memq x = function
 
 let rec assoc x = function
     [] -> raise Not_found
-  | (a,b)::l -> if a = x then b else assoc x l
+  | (a,b)::l -> if compare a x = 0 then b else assoc x l
 
 let rec assq x = function
     [] -> raise Not_found
@@ -150,7 +150,7 @@ let rec assq x = function
 
 let rec mem_assoc x = function
   | [] -> false
-  | (a, b) :: l -> a = x || mem_assoc x l
+  | (a, b) :: l -> compare a x = 0 || mem_assoc x l
 
 let rec mem_assq x = function
   | [] -> false
@@ -158,7 +158,7 @@ let rec mem_assq x = function
 
 let rec remove_assoc x = function
   | [] -> []
-  | (a, b as pair) :: l -> if a = x then l else pair :: remove_assoc x l
+  | (a, b as pair) :: l -> if compare a x = 0 then l else pair :: remove_assoc x l
 
 let rec remove_assq x = function
   | [] -> []
