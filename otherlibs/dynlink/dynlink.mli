@@ -83,6 +83,6 @@ val error_message : error -> string
 
 (**/**)
 
-(** {2  } *)
+(** {6  } *)
 
 val digest_interface : string -> string list -> Digest.t
