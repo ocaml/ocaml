@@ -365,6 +365,7 @@ shared_libraries_supported=false
 sharedcccompopts=''
 mksharedlib=''
 byteccrpath=''
+sharedldtype='cc'
 
 if test $withsharedlibs = "yes"; then
   case "$host" in
@@ -381,6 +382,7 @@ if test $withsharedlibs = "yes"; then
       esac
       mksharedlib="ld -shared -expect_unresolved '*' -o"
       byteccrpath="-Wl,-rpath,"
+      sharedldtype="ld"
       shared_libraries_supported=true;;
     *-*-solaris2*)
       case "$bytecc" in
@@ -399,6 +401,7 @@ if test $withsharedlibs = "yes"; then
           sharedcccompopts="-KPIC"
           byteccrpath="-Wl,-R"
 	  mksharedlib="/usr/ccs/bin/ld -G -o"
+          sharedldtype="ld"
 	  shared_libraries_supported=true;;
       esac;;
     mips-sgi-irix[56]*)
@@ -408,6 +411,7 @@ if test $withsharedlibs = "yes"; then
       esac
       mksharedlib="ld -shared -rdata_shared -o"
       byteccrpath="-Wl,-rpath,"
+      sharedldtype="ld"
       shared_libraries_supported=true;;
   esac
 fi
@@ -1113,6 +1117,7 @@ echo "EXE=$exe" >> Makefile
 echo "SUPPORTS_SHARED_LIBRARIES=$shared_libraries_supported" >> Makefile
 echo "SHAREDCCCOMPOPTS=$sharedcccompopts" >> Makefile
 echo "MKSHAREDLIB=$mksharedlib" >> Makefile
+echo "SHAREDLDTYPE=$sharedldtype" >> Makefile
 
 echo "ARCH=$arch" >> Makefile
 echo "MODEL=$model" >> Makefile

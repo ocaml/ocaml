@@ -79,6 +79,7 @@ ocamlmklib: ocamlmklib.tpl ../config/Makefile
 	sed -e "s|%%BINDIR%%|$(BINDIR)|" \
             -e "s|%%SUPPORTS_SHARED_LIBRARIES%%|$(SUPPORTS_SHARED_LIBRARIES)|" \
             -e "s|%%MKSHAREDLIB%%|$(MKSHAREDLIB)|" \
+	    -e "s|%%SHAREDLDTYPE%%|$(SHAREDLDTYPE)|" \
             -e "s|%%RANLIB%%|$(RANLIB)|" \
           ocamlmklib.tpl > ocamlmklib
 	chmod +x ocamlmklib

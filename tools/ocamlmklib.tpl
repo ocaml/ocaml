@@ -26,6 +26,8 @@ ocamlc='%%BINDIR%%/ocamlc'
 ocamlopt='%%BINDIR%%/ocamlopt'
 output='a'
 output_c=''
+sharedldtype='%%SHAREDLDTYPE%%'
+dynlink='%%SUPPORTS_SHARED_LIBRARIES%%'
 
 while :; do
     case "$1" in
@@ -46,6 +48,8 @@ while :; do
     -ccopt|-dllpath)
         caml_opts="$caml_opts $1 $2"
         shift;;
+    -custom)
+        dynlink=false;;
     -l*)
         c_libs="$c_libs $1"
         c_libs_caml="$c_libs_caml -cclib $1";;
@@ -72,6 +76,36 @@ while :; do
         shift;;
     -pthread)
         c_opts_caml="$c_opts_caml -ccopt $1";;
+    -Wl,-rpath)
+        case $2 in
+        -Wl,*)
+            rpatharg=`echo $2 | sed "s/-Wl,//"`
+            if test "$sharedldtype" = "ld"; then
+                c_opts="$c_opts -rpath $rpatharg"
+            else
+                c_opts="$c_opts $1,$rpatharg"
+            fi
+            c_opts_caml="$c_opts_caml -ccopt $1,$rpatharg"
+            shift;;
+        *)
+            echo "No argument to '$1', ignored" 1>&2;;
+        esac;;
+    -Wl,-rpath,*)
+        if test "$sharedldtype" = "ld"; then
+            rpatharg=`echo $1 | sed "s/-Wl,-rpath,//"`
+            c_opts="$c_opts -rpath $rpatharg"
+        else
+            c_opts="$c_opts $1"
+        fi
+        c_opts_caml="$c_opts_caml -ccopt $1";;
+    -Wl,-R*)
+        if test "$sharedldtype" = "ld"; then
+            rpatharg=`echo $1 | sed "s/-Wl,-R//"`
+            c_opts="$c_opts -R$rpatharg"
+        else
+            c_opts="$c_opts $1"
+        fi
+        c_opts_caml="$c_opts_caml -ccopt $1";;
     -*)
         echo "Unknown option '$1', ignored" 1>&2;;
     *)
@@ -84,33 +118,26 @@ if test "$output_c" = ""; then output_c="$output"; fi
 
 set -e
 
-if %%SUPPORTS_SHARED_LIBRARIES%%; then
-    if test "$bytecode_objs" != ""; then
-        $ocamlc -a -o $output.cma $caml_opts $bytecode_objs \
-            -cclib -l$output_c $caml_libs $c_opts_caml
+if test "$c_objs" != ""; then
+    if $dynlink; then
+        %%MKSHAREDLIB%% lib$output_c.so $c_objs $c_opts $c_libs \
+            || dynlink=false
     fi
-    if test "$native_objs" != ""; then
-        $ocamlopt -a -o $output.cmxa $caml_opts $native_objs \
-            -cclib -l$output_c $caml_libs $c_opts_caml
-    fi
-    if test "$c_objs" != ""; then
-        %%MKSHAREDLIB%% lib$output_c.so $c_objs $c_opts $c_libs
-        rm -f lib$output_c.a
-        ar rc lib$output_c.a $c_objs
-        %%RANLIB%% lib$output_c.a
-    fi
-else
-    if test "$bytecode_objs" != ""; then
-        $ocamlc -a -custom -o $output.cma $caml_opts $bytecode_objs \
-            -cclib -l$output_c $caml_libs $c_opts_caml $c_libs_caml
-    fi
-    if test "$native_objs" != ""; then
-        $ocamlopt -a -o $output.cmxa $caml_opts $native_objs \
-            -cclib -l$output_c $caml_libs $c_opts_caml $c_libs_caml
-    fi
-    if test "$c_objs" != ""; then
-        rm -f lib$output_c.a
-        ar rc lib$output_c.a $c_objs
-        %%RANLIB%% lib$output_c.a
-    fi
+    rm -f lib$output_c.a
+    ar rc lib$output_c.a $c_objs ||
+    %%RANLIB%% lib$output_c.a
 fi
+if $dynlink; then :; else
+    c_libs_caml=''
+fi
+if test "$bytecode_objs" != ""; then
+     $ocamlc -a -custom -o $output.cma $caml_opts $bytecode_objs \
+        -cclib -l$output_c $caml_libs $c_opts_caml $c_libs_caml \
+        || exit 2
+fi
+if test "$native_objs" != ""; then
+    $ocamlopt -a -o $output.cmxa $caml_opts $native_objs \
+        -cclib -l$output_c $caml_libs $c_opts_caml $c_libs_caml \
+        || exit 2
+fi
+
