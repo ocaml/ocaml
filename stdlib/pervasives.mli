@@ -412,7 +412,7 @@ external out_channel_length : out_channel -> int = "channel_size"
         (* Return the total length (number of characters) of the
            given channel.  This works only for regular files. On files of
            other kinds, the result is meaningless. *)
-external close_out : out_channel -> unit = "close_out"
+val close_out : out_channel -> unit
         (* Close the given channel, flushing all buffered write operations.
 	   The behavior is unspecified if any of the functions above is
 	   called on a closed channel. *)
@@ -491,7 +491,7 @@ external in_channel_length : in_channel -> int = "channel_size"
         (* Return the total length (number of characters) of the
            given channel. This works only for regular files. On files of
            other kinds, the result is meaningless. *)
-external close_in : in_channel -> unit = "close_in"
+external close_in : in_channel -> unit = "close_channel"
         (* Close the given channel. Anything can happen if any of the
            functions above is called on a closed channel. *)
 

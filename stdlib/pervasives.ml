@@ -189,7 +189,8 @@ external output_value : out_channel -> 'a -> unit = "output_value"
 external seek_out : out_channel -> int -> unit = "seek_out"
 external pos_out : out_channel -> int = "pos_out"
 external out_channel_length : out_channel -> int = "channel_size"
-external close_out : out_channel -> unit = "close_out"
+external close_out_channel : out_channel -> unit = "close_channel"
+let close_out oc = flush oc; close_out_channel oc
 
 (* General input functions *)
 
@@ -250,7 +251,7 @@ external input_value : in_channel -> 'a = "input_value"
 external seek_in : in_channel -> int -> unit = "seek_in"
 external pos_in : in_channel -> int = "pos_in"
 external in_channel_length : in_channel -> int = "channel_size"
-external close_in : in_channel -> unit = "close_in"
+external close_in : in_channel -> unit = "close_channel"
 
 (* Output functions on standard output *)
 
