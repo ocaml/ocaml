@@ -707,7 +707,7 @@ let emit_fundecl (fundecl, needs_gp) =
     `	.section .rodata\n`;
     `	.align	3\n`;
     List.iter
-      (fun (lbl, n) -> `{emit_label lbl}:	.quad	0x{emit_string(Nativeint.to_hexa_string n)}\n`)
+      (fun (lbl, n) -> `{emit_label lbl}:	.quad	{emit_string(Nativeint.to_hexa_string n)}\n`)
       !bigint_constants
   end;
   if !float_constants <> [] then begin
@@ -739,7 +739,7 @@ let emit_item = function
       else
         (* Work around a bug in gas regarding the parsing of
            long decimal constants *)
-        `	.quad	0x{emit_string(Nativeint.to_hexa_string n)}\n`
+        `	.quad	{emit_string(Nativeint.to_hexa_string n)}\n`
   | Cfloat f ->
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->
