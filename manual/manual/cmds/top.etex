@@ -58,10 +58,15 @@ section~\ref{s:toplevel-directives}.
 \begin{unix}
 The toplevel system is started by the command "ocaml", as follows:
 \begin{alltt}
-        ocaml \var{options}               # interactive mode
-        ocaml \var{options} \var{scriptfile}        # script mode
+        ocaml \var{options} \var{objects}                # interactive mode
+        ocaml \var{options} \var{objects} \var{scriptfile}        # script mode
 \end{alltt}
-If no filename is given on the command line, the toplevel system
+\var{options} are described below.
+\var{objects} are filenames ending in ".cmo" or ".cma"; they are
+loaded into the interpreter immediately after \var{options} are set.
+\var{scriptfile} is any file name not ending in ".cmo" or ".cma".
+
+If no \var{scriptfile} is given on the command line, the toplevel system
 enters interactive mode: phrases are read on standard input, results
 are printed on standard output, errors on standard error. End-of-file
 on standard input terminates "ocaml" (see also the "#quit" directive
@@ -86,7 +91,7 @@ phrase can be interrupted by pressing "ctrl-C" (or, more precisely,
 by sending the "sigintr" signal to the "ocaml" process). The toplevel
 then immediately returns to the "#" prompt.
 
-If a filename is given on the command-line to "ocaml", the toplevel
+If \var{scriptfile} is given on the command-line to "ocaml", the toplevel
 system enters script mode: the contents of the file are read as a
 sequence of Objective Caml phrases and executed, as per the "#use"
 directive (section~\ref{s:toplevel-directives}). The outcome of the
