@@ -720,7 +720,7 @@ let type_format loc fmt =
           | _ ->
              if c = 'l' || c = 'n'
              then conversion (j - 1) Predef.type_int
-             else invalid i (j - i)
+             else invalid i (j - 1)
           end
       | c -> invalid i j in
     scan_width i j in
