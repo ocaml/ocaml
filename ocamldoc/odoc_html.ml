@@ -501,6 +501,9 @@ class html =
         ".title4 { font-size : 20pt ; background-color : #90EDFF }" ;
         ".title5 { font-size : 20pt ; background-color : #90FDFF }" ;
         ".title6 { font-size : 20pt ; background-color : #C0FFFF }" ;
+	".typetable { border-style : hidden }" ;
+	".indextable { border-style : hidden }" ;
+	".paramstable { border-style : hidden ; padding: 5pt 5pt}" ;
         "body { background-color : White }" ;
         "tr { background-color : White }" ;
       ] 
@@ -906,7 +909,7 @@ class html =
         Type_abstract -> "</code>"
       | Type_variant l ->
           "=<br>"^
-          "</code><table border=\"0\" cellpadding=\"1\">\n"^
+          "</code><table class=\"typetable\">\n"^ 
           (String.concat "\n"
              (List.map 
                 (fun constr ->
@@ -950,7 +953,7 @@ class html =
 
       | Type_record l ->
           "= {<br>"^
-          "</code><table border=\"0\" cellpadding=\"1\">\n"^
+          "</code><table class=\"typetable\">\n"^ 
           (String.concat "\n"
              (List.map 
                 (fun r ->
@@ -1065,7 +1068,8 @@ class html =
           "<tr>\n"^
           "<td align=\"left\" valign=\"top\" width=\"1%\"><b>"^Odoc_messages.parameters^": </b></td>\n"^
           "<td>\n"^
-          "<table border=\"0\" cellpadding=\"5\" cellspacing=\"0\">\n"^
+          "<table class=\"paramstable\">\n"^ 
+             (*border=\"0\" cellpadding=\"5\" cellspacing=\"0\">\n"^*)
           (String.concat ""
              (List.map
                 (fun p ->
@@ -1115,7 +1119,8 @@ class html =
           "<tr>\n"^
           "<td align=\"left\" valign=\"top\" width=\"1%\"><b>"^Odoc_messages.parameters^": </b></td>\n"^
           "<td>\n"^
-          "<table border=\"0\" cellpadding=\"5\" cellspacing=\"0\">\n"^
+          "<table class=\"paramstable\">\n"^
+             (*border=\"0\" cellpadding=\"5\" cellspacing=\"0\">\n"^*)
           (String.concat ""
              (List.map
                 (fun (p, desc_opt) ->
@@ -1736,7 +1741,7 @@ class html =
            (index_if_not_empty list_modules index_modules Odoc_messages.index_of_modules)^
            (index_if_not_empty list_module_types index_module_types Odoc_messages.index_of_module_types)^
            "<br>\n"^
-           "<table border=\"0\">\n"^
+           "<table class=\"indextable\">\n"^
            (String.concat ""
               (List.map
                  (fun m ->
