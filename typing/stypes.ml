@@ -76,6 +76,7 @@ let print_info pp ti =
       fprintf pp " ";
       print_position pp loc.loc_end;
       fprintf pp "@.type(@.  ";
+      Printtyp.reset_and_mark_loops typ;
       Printtyp.type_expr pp typ;
       fprintf pp "@.)@.";
 ;;
