@@ -2662,3 +2662,8 @@ let nondep_cltype_declaration env id decl =
   List.iter unmark_type decl.clty_params;
   unmark_class_type decl.clty_type;
   decl
+
+
+(**** Reified types ****)
+
+type reified_type_data = Env.t * Types.type_expr
