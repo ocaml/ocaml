@@ -37,13 +37,34 @@ and outchan = ref stdout
 (* In case we forgot something *)
 exception Inversion of int * int
 
+(* To copy source fragments *)
+let copy_buffer = String.create 256
+
+let copy_chars_unix nchars =
+  let n = ref nchars in
+  while !n > 0 do
+    let m = input !inchan copy_buffer 0 (min !n 256) in
+    if m = 0 then raise End_of_file;
+    output !outchan copy_buffer 0 m;
+    n := !n - m
+  done
+
+let copy_chars_win32 nchars =
+  for i = 1 to nchars do
+    let c = input_char !inchan in
+    if c <> '\r' then output_char !outchan c
+  done
+
+let copy_chars =
+  match Sys.os_type with
+    "Win32" -> copy_chars_win32
+  | _       -> copy_chars_unix
+
 let copy next =
+  if next < !cur_point then raise (Inversion(!cur_point, next));
   seek_in !inchan !cur_point;
-  let buf = try String.create (next - !cur_point)
-            with Invalid_argument _ -> raise (Inversion (!cur_point,next))
-  in really_input !inchan buf 0 (next - !cur_point);
-     output_string !outchan buf; 
-     cur_point := next
+  copy_chars (next - !cur_point);
+  cur_point := next
 
 let profile_counter = ref 0
 
