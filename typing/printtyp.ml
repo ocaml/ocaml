@@ -854,11 +854,6 @@ let rec trace fst txt ppf = function
        (trace false txt) rem
   | _ -> ()
 
-let rec mismatch = function
-  | [(_, t); (_, t')] -> (t, t')
-  | _ :: _ :: rem -> mismatch rem
-  | _ -> assert false
-
 let rec filter_trace = function
   | (t1, t1') :: (t2, t2') :: rem ->
       let rem' = filter_trace rem in
@@ -881,11 +876,36 @@ let prepare_expansion (t, t') =
   mark_loops t; if t != t' then mark_loops t';
   (t, t')
 
+let may_prepare_expansion compact (t, t') =
+  match (repr t').desc with
+    Tvariant _ | Tobject _ when compact ->
+      mark_loops t; (t, t)
+  | _ -> prepare_expansion (t, t')
+
 let print_tags ppf fields =
   match fields with [] -> ()
   | (t, _) :: fields ->
       fprintf ppf "`%s" t;
       List.iter (fun (t, _) -> fprintf ppf ",@ `%s" t) fields
+
+let has_explanation unif t3 t4 =
+  match t3.desc, t4.desc with
+    Tfield _, _ | _, Tfield _
+  | Tunivar, Tvar | Tvar, Tunivar
+  | Tvariant _, Tvariant _ -> true
+  | Tconstr (p, _, _), Tvar | Tvar, Tconstr (p, _, _) ->
+      unif && min t3.level t4.level < Path.binding_time p
+  | _ -> false
+
+let rec mismatch unif = function
+    (_, t) :: (_, t') :: rem ->
+      begin match mismatch unif rem with
+        Some _ as m -> m
+      | None ->
+          if has_explanation unif t t' then Some(t,t') else None
+      end
+  | [] -> None
+  | _ -> assert false
 
 let explanation unif t3 t4 ppf =
   match t3.desc, t4.desc with
@@ -908,6 +928,8 @@ let explanation unif t3 t4 ppf =
   | _, Tfield (lab, _, _, _) when lab = dummy_method ->
       fprintf ppf
         "@,Self type cannot be unified with a closed object type"
+  | Tfield (l, _, _, _), Tfield (l', _, _, _) when l = l' ->
+      fprintf ppf "@,Types for method %s are incompatible" l
   | Tfield (l, _, _, _), _ ->
       fprintf ppf
         "@,@[Only the first object type has a method %s@]" l
@@ -928,22 +950,29 @@ let explanation unif t3 t4 ppf =
           fprintf ppf
             "@,@[The second variant type does not allow tag(s)@ @[<hov>%a@]@]"
             print_tags fields
+      | [l1,_], true, [l2,_], true when l1 = l2 ->
+          fprintf ppf "@,Types for tag `%s are incompatible" l1
       | _ -> ()
       end
   | _ -> ()
 
+let explanation unif mis ppf =
+  match mis with
+    None -> ()
+  | Some (t3, t4) -> explanation unif t3 t4 ppf
+
 let unification_error unif tr txt1 ppf txt2 =
   reset ();
   let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in
-  let (t3, t4) = mismatch tr in
+  let mis = mismatch unif tr in
   match tr with
   | [] | _ :: [] -> assert false
   | t1 :: t2 :: tr ->
     try
-      let t1, t1' = prepare_expansion t1
-      and t2, t2' = prepare_expansion t2 in
-      print_labels := not !Clflags.classic;
       let tr = filter_trace tr in
+      let t1, t1' = may_prepare_expansion (tr = []) t1
+      and t2, t2' = may_prepare_expansion (tr = []) t2 in
+      print_labels := not !Clflags.classic;
       let tr = List.map prepare_expansion tr in
       fprintf ppf
         "@[<v>\
@@ -954,7 +983,7 @@ let unification_error unif tr txt1 ppf txt2 =
         txt1 (type_expansion t1) t1'
         txt2 (type_expansion t2) t2'
         (trace false "is not compatible with type") tr
-        (explanation unif t3 t4);
+        (explanation unif mis);
       print_labels := true
     with exn ->
       print_labels := true;
@@ -981,6 +1010,6 @@ let report_subtyping_error ppf tr1 txt1 tr2 =
   and tr2 = List.map prepare_expansion tr2 in
   trace true txt1 ppf tr1;
   if tr2 = [] then () else
-  let t3, t4 = mismatch tr2 in
+  let mis = mismatch true tr2 in
   trace false "is not compatible with type" ppf tr2;
-  explanation true t3 t4 ppf
+  explanation true mis ppf

@@ -1299,6 +1299,13 @@ let expand_trace env trace =
        (repr t1, full_expand env t1)::(repr t2, full_expand env t2)::rem)
     trace []
 
+(* build a dummy variant type *)
+let mkvariant fields closed =
+  newgenty
+    (Tvariant
+       {row_fields = fields; row_closed = closed; row_more = newvar();
+        row_bound = []; row_fixed = false; row_name = None })
+
 (**** Unification ****)
 
 (* Return whether [t0] occurs in [ty]. Objects are also traversed. *)
@@ -1600,11 +1607,6 @@ and unify_row env row1 row2 =
         row_field_repr f1 = Rabsent || row_field_repr f2 <> Rabsent)
       pairs
   in
-  let mkvariant fields closed =
-    newgenty
-      (Tvariant
-         {row_fields = fields; row_closed = closed; row_more = newvar();
-          row_bound = []; row_fixed = false; row_name = None }) in
   let empty fields =
     List.for_all (fun (_,f) -> row_field_repr f = Rabsent) fields in
   (* Check whether we are going to build an empty type *)
@@ -1653,7 +1655,10 @@ and unify_row env row1 row2 =
     let undo = ref [] in
     List.iter
       (fun (l,f1,f2) ->
-        unify_row_field env row1.row_fixed row2.row_fixed undo l f1 f2)
+        try unify_row_field env row1.row_fixed row2.row_fixed undo l f1 f2
+        with Unify trace ->
+          raise (Unify ((mkvariant [l,f1] true,
+                         mkvariant [l,f2] true) :: trace)))
       pairs;
     (* Special case when there is only one field left *)
     if row0.row_closed then begin
@@ -1724,6 +1729,7 @@ and unify_row_field env fixed1 fixed2 undo l f1 f2 =
   | Rpresent None, Reither(true, [], _, e2) when not fixed2 ->
       set_row_field e2 f1
   | _ -> raise (Unify [])
+    
 
 let unify env ty1 ty2 =
   try
