@@ -45,7 +45,7 @@ and ident2 len (strm__ : _ Stream.t) =
   match Stream.peek strm__ with
     Some
       ('!' | '?' | '~' | '=' | '@' | '^' | '&' | '+' | '-' | '*' | '/' | '%' |
-       '.' | ':' | '<' | '>' | '|' as c) ->
+       '.' | ':' | '<' | '>' | '|' | '$' as c) ->
       Stream.junk strm__; ident2 (store len c) strm__
   | _ -> len
 and ident3 len (strm__ : _ Stream.t) =
