@@ -18,9 +18,9 @@
 #include "memory.h"
 #include "mlvalues.h"
 
-/* Bytecode callbacks (implemented in asm for the native code compiler) */
-
 #ifndef NATIVE_CODE
+
+/* Bytecode callbacks */
 
 #include "interp.h"
 #include "instruct.h"
@@ -29,9 +29,7 @@
 
 int callback_depth = 0;
 
-static opcode_t callback1_code[] = { ACC1, APPLY1, POP, 1, STOP };
-static opcode_t callback2_code[] = { ACC2, APPLY2, POP, 1, STOP };
-static opcode_t callback3_code[] = { ACC3, APPLY3, POP, 1, STOP };
+static opcode_t callback_code[] = { ACC, 0, APPLY, 0, POP, 1, STOP };
 
 #ifdef THREADED_CODE
 
@@ -39,9 +37,7 @@ static int callback_code_threaded = 0;
 
 static void thread_callback(void)
 {
-  thread_code(callback1_code, sizeof(callback1_code));
-  thread_code(callback2_code, sizeof(callback2_code));
-  thread_code(callback3_code, sizeof(callback3_code));
+  thread_code(callback_code, sizeof(callback_code));
   callback_code_threaded = 1;
 }
 
@@ -53,39 +49,80 @@ static void thread_callback(void)
 
 #endif
 
-value callback(value closure, value arg)
+value callbackN(value closure, int narg, value args[])
 {
   value res;
+  int i;
+
+  Assert(narg + 4 <= 256);
   Init_callback();
-  extern_sp -= 2;
-  extern_sp[0] = arg;
-  extern_sp[1] = closure;
-  res = interprete(callback1_code, sizeof(callback1_code));
+  extern_sp -= narg + 4;
+  for (i = 0; i < narg; i++) extern_sp[i] = args[i]; /* arguments */
+  extern_sp[narg] = (value) (callback_code + 4); /* return address */
+  extern_sp[narg + 1] = Val_unit;    /* environment */
+  extern_sp[narg + 2] = Val_long(0); /* extra args */
+  extern_sp[narg + 3] = closure;
+  callback_code[1] = narg + 3;
+  callback_code[3] = narg;
+  res = interprete(callback_code, sizeof(callback_code));
   return res;
+}
+
+value callback(value closure, value arg1)
+{
+  value arg[1];
+  arg[0] = arg1;
+  return callbackN(closure, 1, arg);
 }
 
 value callback2(value closure, value arg1, value arg2)
 {
-  value res;
-  Init_callback();
-  extern_sp -= 3;
-  extern_sp[0] = arg1;
-  extern_sp[1] = arg2;
-  extern_sp[2] = closure;
-  res = interprete(callback2_code, sizeof(callback2_code));
-  return res;
+  value arg[2];
+  arg[0] = arg1;
+  arg[1] = arg2;
+  return callbackN(closure, 2, arg);
 }
 
 value callback3(value closure, value arg1, value arg2, value arg3)
 {
+  value arg[3];
+  arg[0] = arg1;
+  arg[1] = arg2;
+  arg[2] = arg3;
+  return callbackN(closure, 3, arg);
+}
+
+#else
+
+/* Native-code callbacks.  callback[123] are implemented in asm. */
+
+value callbackN(value closure, int narg, value args[])
+{
   value res;
-  Init_callback();
-  extern_sp -= 4;
-  extern_sp[0] = arg1;
-  extern_sp[1] = arg2;
-  extern_sp[2] = arg3;
-  extern_sp[3] = closure;
-  res = interprete(callback3_code, sizeof(callback3_code));
+  int i;
+
+  res = closure;
+  Begin_roots1(res)
+    Begin_roots_block(args, narg)
+      for (i = 0; i < narg; /*nothing*/) {
+        /* Pass as many arguments as possible */
+        switch (narg - i) {
+        case 1:
+          res = callback(res, args[i]);
+          i += 1;
+          break;
+        case 2:
+          res = callback2(res, args[i], args[i + 1]);
+          i += 2;
+          break;
+        default:
+          res = callback3(res, args[i], args[i + 1], args[i + 2]);
+          i += 3;
+          break;
+        }
+      }
+    End_roots();
+  End_roots();
   return res;
 }
 
