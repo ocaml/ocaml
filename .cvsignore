@@ -1,3 +1,7 @@
+.cvsignore
+.depend
+configure
+configure_latour
 ocamlc
 ocamlc.opt
 expunge
