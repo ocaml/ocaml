@@ -26,6 +26,8 @@ module-expr:
         | '(' module-expr ')'
         | '(' module-expr ':' module-type ')'
 ;
+\end{syntax}
+\begin{syntax}
 definition:
           'let' ['rec'] let-binding  { 'and' let-binding }
         | 'external' value-name ':' typexpr '=' external-declaration

@@ -21,7 +21,7 @@ specify the general shape and type properties of classes.
 
 \begin{syntax}
 class-type:
-   |  class-body-type
+      class-body-type
    |  [['?']label-name':'] typexpr '->' class-type
 ;
 class-body-type:
@@ -29,6 +29,8 @@ class-body-type:
    |  class-path
    |  '[' typexpr {',' typexpr} ']' class-path
 ;
+\end{syntax}
+\begin{syntax}
 class-field-spec:
       'inherit' class-type
    |  'val' ['mutable'] inst-var-name ':' typexpr

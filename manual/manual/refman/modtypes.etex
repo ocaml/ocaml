@@ -25,6 +25,12 @@ module-type:
         | module-type 'with' mod-constraint { 'and' mod-constraint }
         | '(' module-type ')'
 ;
+mod-constraint:
+          'type' [type-parameters] typeconstr '=' typexpr
+        | 'module' module-path '=' extended-module-path
+;
+\end{syntax}
+\begin{syntax}
 specification:
           'val' value-name ':' typexpr
         | 'external' value-name ':' typexpr '=' external-declaration
@@ -40,9 +46,6 @@ specification:
         | 'open' module-path
         | 'include' module-type
 ;
-mod-constraint:
-          'type' [type-parameters] typeconstr '=' typexpr
-        | 'module' module-path '=' extended-module-path
 \end{syntax}
 
 \subsection{Simple module types}

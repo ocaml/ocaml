@@ -200,6 +200,11 @@ pattern-matching outside the defining module.  For example:
 Here, the "private" declaration ensures that in any value of type
 "M.t", the argument to the "B" constructor is always a positive integer.
 
+With respect to the variance of their parameters, private types are
+handled like abstract types. That is, if a private type has
+parameters, their variance is the one explicitly given by prefixing
+the parameter by a `"+"' or a `"-"', it is invariant otherwise.
+
 \section{Recursive modules} \label{s-recursive-modules}
 \ikwd{module\@\texttt{module}}
 \ikwd{rec\@\texttt{rec}}
