@@ -11,4 +11,4 @@ value interprete P((code_t prog, asize_t prog_size));
 value callback P((value closure, value argument));
 
 
-#endif _interp_
+#endif
