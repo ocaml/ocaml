@@ -178,9 +178,10 @@ alternative is to use initializers, as decribed below in section
 \pdfsection{Reference to self}
 \label{ss:reference-to-self}
 
-A method can also send messages to self (that is, the current object).  For
-that, self must be explicitly bound, here to the variable "s" ("s" could be
-any identifier, even though we will often choose the name "self".)
+A method or an initializer can send messages to self (that is,
+the current object).  For that, self must be explicitly bound, here to
+the variable "s" ("s" could be any identifier, even though we will
+often choose the name "self".)
 \begin{caml_example}
 class printable_point x_init =
   object (s)
@@ -279,20 +280,27 @@ class point_again x =
   end;;
 \end{caml_example}
 The annotation "virtual" here is only used to mention a method without
-providing its definition. An alternative definition is
+providing its definition. Since we didn't add the "private"
+annotation, this makes the method public, keeping the original
+definition.
+
+An alternative definition is
 \begin{caml_example} 
 class point_again x =
   object (self : < move : _; ..> )
     inherit restricted_point x
   end;;
 \end{caml_example}
+The constraint on self's type is requiring a public "move" method, and
+this is sufficient to override "private".
+
 One could think that a private method should remain private in a subclass. 
 However, since the method is visible in a subclass, it is always possible
-pick its code and define a method of the same name that run that code, so
-yet another (heavier) solution would be:
+to pick its code and define a method of the same name that runs that
+code, so yet another (heavier) solution would be:
 \begin{caml_example} 
 class point_again x =
-  object (self : < move : _; ..> )
+  object
     inherit restricted_point x as super
     method move = super#move 
   end;;
@@ -414,7 +422,7 @@ in the order they are introduced.
 \pdfsection{Parameterized classes}
 \label{ss:parameterized-classes}
 
-Reference cells can also be implemented as objects.
+Reference cells can be implemented as objects.
 The naive definition fails to typecheck:
 \begin{caml_example}
 class ref x_init =
@@ -426,7 +434,7 @@ class ref x_init =
 \end{caml_example}
 The reason is that at least one of the methods has a polymorphic type
 (here, the type of the value stored in the reference cell), thus 
-eother the class should be parametric, or the method type should be
+either the class should be parametric, or the method type should be
 constrained to a monomorphic type.  A monomorphic instance of the class could
 be defined by:
 \begin{caml_example}
@@ -461,7 +469,8 @@ class ['a] ref_succ (x_init:'a) =
     method set y = x <- y
   end;;
 \end{caml_example}
-Let us consider a more realistic example.  We put an additional type
+Let us consider a more complex example: define a circle, whose center
+may be any kind of point.  We put an additional type
 constraint in method "move", since no free variables must remain 
 unaccounted for by the class type parameters.
 \begin{caml_example}
@@ -505,6 +514,131 @@ class ['a] colored_circle c =
     method color = center#color
   end;;
 \end{caml_example}
+
+\section{Polymorphic methods}
+\pdfsection{Polymorphic methods}
+\label{ss:polymorphic-methods}
+
+While parameterized classes may be polymorphic in their contents, they
+are not enough to allow polymorphism of method use.
+
+A classical example is defining an iterator.
+\begin{caml_example}
+List.fold_left;;
+class ['a] intlist (l : int list) =
+  object
+    method empty = (l = [])
+    method fold f (accu : 'a) = List.fold_left f accu l
+  end;;
+\end{caml_example}
+At first look, we seem to have a polymorphic iterator, however this
+does not work in practice.
+\begin{caml_example}
+let l = new intlist [1; 2; 3];;
+l#fold (fun x y -> x+y) 0;;
+l;;
+l#fold (fun s x -> s ^ string_of_int x ^ " ") "";;
+\end{caml_example}
+Our iterator works, as shows its first use for summation. However,
+since objects themselves are not polymorphic (only their constructors
+are), using the "fold" method fixes its type for this individual object.
+Our next attempt to use it as a string iterator fails.
+
+The problem here is that quantification was wrongly located: this is
+not the class we want to be polymorphic, but the "fold" method.
+This can be achieved by giving an explicitly polymorphic type in the
+method definition.
+\begin{caml_example}
+class intlist (l : int list) =
+  object
+    method empty = (l = [])
+    method fold : 'a. ('a -> int -> 'a) -> 'a -> 'a =
+      fun f accu -> List.fold_left f accu l
+  end;;
+let l = new intlist [1; 2; 3];;
+l#fold (fun x y -> x+y) 0;;
+l#fold (fun s x -> s ^ string_of_int x ^ " ") "";;
+\end{caml_example}
+As you can see in the class type shown by the compiler, while
+polymorphic method types must be fully explicit in class definitions
+(appearing immediately after the method name), they can be left
+implicit in class descriptions.
+
+However, the type can be completely omitted in the class definition if
+it is already known, through inheritance or type constraints on self.
+Here is an example of method overriding.
+\begin{caml_example*}
+class intlist_rev l =
+  object
+    inherit intlist l
+    method fold f accu = List.fold_left f accu (List.rev l)
+  end;;
+\end{caml_example*}
+The following idiom separates description and definition.
+\begin{caml_example*}
+class type ['a] iterator =
+  object method fold : ('b -> 'a -> 'b) -> 'b -> 'b end;;
+class intlist l =
+  object (self : int #iterator)
+    method empty = (l = [])
+    method fold f accu = List.fold_left f accu l
+  end;;
+\end{caml_example*}
+Note here the "(self : int #iterator)" idiom, which ensures that this
+object implements the interface "iterator".
+
+Polymorphic methods are called in exactly the same way as normal
+methods, but you should be aware of some limitations of type
+inference.  Namely, a polymorphic method can only be called if its
+type is known at the call site.  Otherwise, the method will be assumed
+to be monomorphic, and given an incompatible type.
+\begin{caml_example}
+let sum lst = lst#fold (fun x y -> x+y) 0;;
+sum l;;
+\end{caml_example}
+The workaround is easy: you should put a type constraint on the
+parameter.
+\begin{caml_example}
+let sum (lst : _ #iterator) = lst#fold (fun x y -> x+y) 0;;
+\end{caml_example}
+Of course the constraint may also be an explicit method type.
+Only occurences of quantified variables are required.
+\begin{caml_example}
+let sum lst =
+  (lst : < fold : 'a. ('a -> _ -> 'a) -> 'a -> 'a; .. >)#fold (+) 0;;
+\end{caml_example}
+
+Another use of polymorphic methods is to allow some form of implicit
+subtyping in method arguments. We have already seen in section
+\ref{ss:inheritance} how some functions may be polymorphic in the
+class of their argument. This can be extended to methods.
+\begin{caml_example}
+class type point0 = object method get_x : int end;;
+class distance_point x =
+  object
+    inherit point x
+    method distance : 'a. (#point0 as 'a) -> int =
+      fun other -> abs (other#get_x - x)
+  end;;
+let p = new distance_point 3 in
+(p#distance (new point 8), p#distance (new colored_point 1 "blue"));;
+\end{caml_example}
+Note here the special syntax "(#point0 as 'a)" we have to use to
+quantify the extensible part of "#point0". As for the variable binder,
+it can be omitted in class specifications. If you want polymorphism
+inside object field it must be quantified independently.
+\begin{caml_example}
+class multi_poly =
+  object
+    method m1 : 'a. (< n1 : 'b. 'b -> 'b; .. > as 'a) -> _ =
+      fun o -> o#n1 true, o#n1 "hello"
+    method m2 : 'a 'b. (< n2 : 'b -> bool; .. > as 'a) -> 'b -> _ =
+      fun o x -> o#n2 x
+  end;;
+\end{caml_example}
+In method "m1", "o" must be an object with at least a method "n1",
+itself polymorphic.  In method "m2", the argument of "n2" and "x" must
+have the same type, which is quantified at the same level as "'a".
 
 \section{Using coercions}
 \pdfsection{Using coercions}
