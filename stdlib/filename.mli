@@ -49,4 +49,4 @@ val temp_file: string -> string -> string
            The temporary directory is [/tmp] by default; if set,
            the value of the environment variable [TMPDIR] is used instead.
            The base name of the temporary file is formed by concatenating
-           [prefix], then an integer code, then [suffix]. *)
+           [prefix], then a suitably chosen integer number, then [suffix]. *)
