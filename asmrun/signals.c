@@ -54,6 +54,8 @@ value signal_handlers = 0;
 void (*enter_blocking_section_hook)() = NULL;
 void (*leave_blocking_section_hook)() = NULL;
 
+static int rev_convert_signal_number(int signo);
+
 /* Execute a signal handler immediately. */
 
 void execute_signal(int signal_number, int in_signal_handler)
@@ -68,7 +70,7 @@ void execute_signal(int signal_number, int in_signal_handler)
   sigprocmask(SIG_BLOCK, &sigs, &sigs);
 #endif
   res = callback_exn(Field(signal_handlers, signal_number),
-                     Val_int(signal_number));
+                     Val_int(rev_convert_signal_number(signal_number)));
 #ifdef POSIX_SIGNALS
   if (! in_signal_handler) {
     /* Restore the original signal mask */
@@ -269,18 +271,27 @@ int convert_signal_number(int signo)
     return signo;
 }
 
+static int rev_convert_signal_number(int signo)
+{
+  int i;
+  for (i = 0; i < sizeof(posix_signals) / sizeof(int); i++)
+    if (signo == posix_signals[i]) return -i - 1;
+  return signo;
+}
+
 #ifndef NSIG
 #define NSIG 32
 #endif
 
 value install_signal_handler(value signal_number, value action) /* ML */
 {
+  CAMLparam2 (signal_number, action);
   int sig;
   void (*act)(int signo), (*oldact)(int signo);
 #ifdef POSIX_SIGNALS
   struct sigaction sigact, oldsigact;
 #endif
-  value res;
+  CAMLlocal1 (res);
 
   sig = convert_signal_number(Int_val(signal_number));
   if (sig < 0 || sig >= NSIG) 
@@ -293,16 +304,7 @@ value install_signal_handler(value signal_number, value action) /* ML */
     act = SIG_IGN;
     break;
   default:                      /* Signal_handle */
-    if (signal_handlers == 0) {
-      int i;
-      Begin_root (action);
-        signal_handlers = alloc_tuple(NSIG);
-      End_roots();
-      for (i = 0; i < NSIG; i++) Field(signal_handlers, i) = Val_int(0);
-      register_global_root(&signal_handlers);
-    }
-    modify(&Field(signal_handlers, sig), Field(action, 0));
-    act = (void (*)(int)) handle_signal;
+    act = handle_signal;
     break;
   }
 #ifdef POSIX_SIGNALS
@@ -323,6 +325,13 @@ value install_signal_handler(value signal_number, value action) /* ML */
     res = Val_int(1);           /* Signal_ignore */
   else
     res = Val_int(0);           /* Signal_default */
+  if (Is_block(action)) {
+    if (signal_handlers == 0) {
+      signal_handlers = alloc(NSIG, 0);
+      register_global_root(&signal_handlers);
+    }
+    modify(&Field(signal_handlers, sig), Field(action, 0));
+  }
   return res;
 }
 
