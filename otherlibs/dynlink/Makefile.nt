@@ -22,7 +22,7 @@ INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp
 COMPFLAGS=-warn-error A -I ../../stdlib $(INCLUDES)
 
 OBJS=dynlink.cmo
-COMPILEROBJS=misc.cmo config.cmo tbl.cmo clflags.cmo \
+COMPILEROBJS=misc.cmo config.cmo tbl.cmo clflags.cmo consistbl.cmo \
   ident.cmo path.cmo \
   types.cmo btype.cmo predef.cmo runtimedef.cmo \
   bytesections.cmo dll.cmo symtable.cmo opcodes.cmo meta.cmo
