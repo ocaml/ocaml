@@ -2,7 +2,7 @@
 (*                                                                     *)
 (*                           Objective Caml                            *)
 (*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*            Pierre Weis, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
@@ -58,6 +58,7 @@ type pp_scan_elem = Scan_elem of int * pp_queue_elem;;
    The formatting stack contains the description of
    the currently active blocks. *)
 type pp_format_elem = Format_elem of block_type * int;;
+
 (* General purpose queues, used in the formatter *)
 type 'a queue_elem = | Nil | Cons of 'a queue_cell
 and 'a queue_cell = {mutable head : 'a; mutable tail : 'a queue_elem};;
@@ -104,7 +105,6 @@ let clear_queue q = q.insert <- Nil; q.body <- Nil;;
 let add_queue x q =
  let c = Cons {head = x; tail = Nil} in
  match q with
-   (* Was {insert = Cons cell; _ *)
  | {insert = Cons cell} -> q.insert <- c; cell.tail <- c
  (* Invariant: when insert is Nil body should be Nil *)
  | _ -> q.insert <- c; q.body <- c;;
@@ -128,7 +128,7 @@ let take_queue = function
 let pp_infinity = 999999999;;
 
 (* Output functions for the formatter *)
- let pp_output_string state s = state.pp_output_function s 0 (String.length s)
+let pp_output_string state s = state.pp_output_function s 0 (String.length s)
 and pp_output_newline state = state.pp_output_function "\n" 0 1;;
 
 let pp_clear_queue state =
@@ -170,10 +170,10 @@ let break_same_line state width =
    by simulating a break. *)
 let pp_force_break_line state =
     match state.pp_format_stack with
-      Format_elem (bl_ty, width) :: _ ->
+    | Format_elem (bl_ty, width) :: _ ->
         if width > state.pp_space_left then
          (match bl_ty with
-           Pp_fits -> () | Pp_hbox -> () | _ -> break_line state width)
+          | Pp_fits -> () | Pp_hbox -> () | _ -> break_line state width)
     | _ -> pp_output_newline state;;
 
 (* To skip a token, if the previous line has been broken *)
@@ -187,7 +187,7 @@ let pp_skip_token state =
 (* To format a token *)
 let format_pp_token state size = function
 
-    Pp_text s ->
+  | Pp_text s ->
       state.pp_space_left <- state.pp_space_left - size;
       pp_output_string state s
 
@@ -199,7 +199,7 @@ let format_pp_token state size = function
       let offset = state.pp_space_left - off in
       let bl_type =
        begin match ty with
-          Pp_vbox -> Pp_vbox
+        | Pp_vbox -> Pp_vbox
         | _ -> if size > state.pp_space_left then ty else Pp_fits
        end in
        state.pp_format_stack <-
@@ -207,7 +207,7 @@ let format_pp_token state size = function
 
   | Pp_end ->
       begin match state.pp_format_stack with
-          x :: (y :: l as ls) -> state.pp_format_stack <- ls
+        | x :: (y :: l as ls) -> state.pp_format_stack <- ls
         | _ -> () (* No more block to close *)
       end
 
@@ -216,15 +216,15 @@ let format_pp_token state size = function
 
   | Pp_tend ->
       begin match state.pp_tbox_stack with
-          x :: ls -> state.pp_tbox_stack <- ls
+        | x :: ls -> state.pp_tbox_stack <- ls
         | _ -> () (* No more tabulation block to close *)
       end
 
   | Pp_stab ->
      begin match state.pp_tbox_stack with
-       Pp_tbox tabs :: _ -> 
+     | Pp_tbox tabs :: _ -> 
         let rec add_tab n = function
-            [] -> [n]
+          | [] -> [n]
           | x :: l as ls -> if n < x then n :: ls else x :: add_tab n l in
         tabs := add_tab (state.pp_margin - state.pp_space_left) !tabs
      | _ -> () (* No opened tabulation block *)
@@ -233,24 +233,24 @@ let format_pp_token state size = function
   | Pp_tbreak (n, off) ->
       let insertion_point = state.pp_margin - state.pp_space_left in
       begin match state.pp_tbox_stack with
-         Pp_tbox tabs :: _ -> 
-          let rec find n = function
-              x :: l -> if x >= n then x else find n l
-            | [] -> raise Not_found in
-          let tab =
-              match !tabs with
-                x :: l ->
-                 begin try find insertion_point !tabs with Not_found -> x end
-              | _ -> insertion_point in
-          let offset = tab - insertion_point in
-          if offset >= 0 then break_same_line state (offset + n) else
-           break_new_line state (tab + off) state.pp_margin
-       | _ -> () (* No opened tabulation block *)
+      | Pp_tbox tabs :: _ -> 
+         let rec find n = function
+           | x :: l -> if x >= n then x else find n l
+           | [] -> raise Not_found in
+         let tab =
+             match !tabs with
+             | x :: l ->
+                begin try find insertion_point !tabs with Not_found -> x end
+             | _ -> insertion_point in
+         let offset = tab - insertion_point in
+         if offset >= 0 then break_same_line state (offset + n) else
+          break_new_line state (tab + off) state.pp_margin
+      | _ -> () (* No opened tabulation block *)
       end
 
   | Pp_newline ->
      begin match state.pp_format_stack with
-       Format_elem (_,width) :: _ -> break_line state width
+     | Format_elem (_,width) :: _ -> break_line state width
      | _ -> pp_output_newline state
      end
 
@@ -260,9 +260,9 @@ let format_pp_token state size = function
 
   | Pp_break (n, off) ->
      begin match state.pp_format_stack with
-       Format_elem (ty,width) :: _ ->
+     | Format_elem (ty,width) :: _ ->
         begin match ty with
-          Pp_hovbox ->
+        | Pp_hovbox ->
            if size > state.pp_space_left 
            then break_new_line state off width
            else break_same_line state n
@@ -289,7 +289,7 @@ let rec advance_left state =
      match peek_queue state.pp_queue with
       {elem_size = size; token = tok; length = len} ->
        if not
-        (size < 0 &
+        (size < 0 &&
          (state.pp_right_total - state.pp_left_total < state.pp_space_left))
         then begin
          take_queue state.pp_queue;
@@ -325,24 +325,24 @@ let clear_scan_stack state = state.pp_scan_stack <- scan_stack_bottom;;
    since scan_push is used on breaks and opening of boxes *)
 let set_size state ty =
     match state.pp_scan_stack with
-      Scan_elem (left_tot,
+    | Scan_elem (left_tot,
                  ({elem_size = size; token = tok} as queue_elem)) :: t ->
        (* test if scan stack contains any data that is not obsolete *)
        if left_tot < state.pp_left_total then clear_scan_stack state else
         begin match tok with
-           Pp_break (_, _) | Pp_tbreak (_, _) ->
-            if ty then
-             begin
-              queue_elem.elem_size <- state.pp_right_total + size;
-              state.pp_scan_stack <- t
-             end
-         | Pp_begin (_, _) ->
-            if not ty then
-             begin
-              queue_elem.elem_size <- state.pp_right_total + size;
-              state.pp_scan_stack <- t
-             end
-         | _ -> () (* scan_push is only used for breaks and boxes *)
+        | Pp_break (_, _) | Pp_tbreak (_, _) ->
+           if ty then
+            begin
+             queue_elem.elem_size <- state.pp_right_total + size;
+             state.pp_scan_stack <- t
+            end
+        | Pp_begin (_, _) ->
+           if not ty then
+            begin
+             queue_elem.elem_size <- state.pp_right_total + size;
+             state.pp_scan_stack <- t
+            end
+        | _ -> () (* scan_push is only used for breaks and boxes *)
         end
     | _ -> () (* scan_stack is never empty *);;
 
@@ -480,9 +480,9 @@ let pp_open_tbox state () =
 (* Close a tabulation block *)
 let pp_close_tbox state () =
   if state.pp_curr_depth > 1 then begin
-  if state.pp_curr_depth < state.pp_max_boxes then
-   enqueue_advance state {elem_size = 0; token = Pp_tend; length = 0};
-  state.pp_curr_depth <- state.pp_curr_depth - 1 end;;
+   if state.pp_curr_depth < state.pp_max_boxes then
+    enqueue_advance state {elem_size = 0; token = Pp_tend; length = 0};
+   state.pp_curr_depth <- state.pp_curr_depth - 1 end;;
 
 (* Print a tabulation break *)
 let pp_print_tbreak state width offset =
@@ -623,6 +623,5 @@ and set_formatter_output_functions =
 and get_formatter_output_functions =
     pp_get_formatter_output_functions std_formatter;;
 
-(* Initialize the formatter *)
 let _ = at_exit print_flush;;
 
