@@ -236,7 +236,7 @@ val get_formatter_output_functions :
         unit -> (string -> int -> int -> unit) * (unit -> unit);;
         (* Return the current output functions of the pretty-printer. *)
 
-(*** Changing the meaning of indentation and line breaking ***)
+(*** Changing the meaning of indentation and line breaking *)
 val set_all_formatter_output_functions :
       (string -> int -> int -> unit) -> (unit -> unit) ->
       (unit -> unit) -> (int -> unit) -> unit;;
