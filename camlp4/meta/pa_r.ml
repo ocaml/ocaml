@@ -138,6 +138,15 @@ value mklistpat loc last =
         <:patt< [$p1$ :: $loop False pl$] >> ]
 ;
 
+value mkexprident loc i j =
+  let rec loop m =
+    fun
+    [ <:expr< $x$ . $y$ >> -> loop <:expr< $m$ . $x$ >> y
+    | e -> <:expr< $m$ . $e$ >> ]
+  in
+  loop <:expr< $uid:i$ >> j
+;
+
 value mkassert loc e =
   let f = <:expr< $str:input_file.val$ >> in
   let bp = <:expr< $int:string_of_int (fst loc)$ >> in
@@ -454,13 +463,7 @@ EXTEND
     [ RIGHTA
       [ i = LIDENT -> <:expr< $lid:i$ >>
       | i = UIDENT -> <:expr< $uid:i$ >>
-      | i = UIDENT; "."; j = SELF ->
-          let rec loop m =
-            fun
-            [ <:expr< $x$ . $y$ >> -> loop <:expr< $m$ . $x$ >> y
-            | e -> <:expr< $m$ . $e$ >> ]
-          in
-          loop <:expr< $uid:i$ >> j ] ]
+      | i = UIDENT; "."; j = SELF -> mkexprident loc i j ] ]
   ;
   fun_def:
     [ RIGHTA

@@ -129,6 +129,15 @@ value mklistpat _ last =
     | a -> a ]
 ;
 
+value mkexprident loc i j =
+  let rec loop m =
+    fun
+    [ Node "ExAcc" [_; x; y] -> loop (Node "ExAcc" [Loc; m; x]) y
+    | e -> Node "ExAcc" [Loc; m; e] ]
+  in
+  loop (Node "ExUid" [Loc; i]) j
+;
+
 value mkassert loc e =
   let f = Node "ExStr" [Loc; Str Pcaml.input_file.val] in
   let bp = Node "ExInt" [Loc; Str (string_of_int (fst loc))] in
@@ -424,8 +433,7 @@ EXTEND
       | "("; e = SELF; ","; el = SLIST1 expr SEP ","; ")" ->
           Node "ExTup" [Loc; Cons e el]
       | "("; e = SELF; ")" -> e
-      | "("; el = anti_list; ")" -> Node "ExTup" [Loc; el]
-      | a = anti_anti -> Node "ExAnt" [Loc; a] ] ]
+      | "("; el = anti_list; ")" -> Node "ExTup" [Loc; el] ] ]
   ;
   dummy:
     [ [ -> () ] ]
@@ -435,10 +443,7 @@ EXTEND
       | "let"; o = SOPT "rec"; l = SLIST1 let_binding SEP "and";
         [ "in" | ";" ]; el = SELF ->
           List [Node "ExLet" [Loc; o2b o; l; mksequence loc el]]
-      | e = expr; ";"; el = SELF ->
-          match el with
-          [ List el -> List [e :: el]
-          | _ -> Cons e el ]
+      | e = expr; ";"; el = SELF -> Cons e el
       | e = expr; ";" -> List [e]
       | e = expr -> List [e] ] ]
   ;
@@ -465,13 +470,7 @@ EXTEND
       [ a = anti_ -> a
       | i = a_LIDENT -> Node "ExLid" [Loc; i]
       | i = a_UIDENT -> Node "ExUid" [Loc; i]
-      | i = a_UIDENT; "."; j = SELF ->
-          let rec loop m =
-            fun
-            [ Node "ExAcc" [_; x; y] -> loop (Node "ExAcc" [Loc; m; x]) y
-            | e -> Node "ExAcc" [Loc; m; e] ]
-          in
-          loop (Node "ExUid" [Loc; i]) j ] ]
+      | i = a_UIDENT; "."; j = SELF -> mkexprident loc i j ] ]
   ;
   fun_def:
     [ RIGHTA
@@ -511,8 +510,7 @@ EXTEND
       | "("; p = SELF; ","; pl = SLIST1 patt SEP ","; ")" ->
           Node "PaTup" [Loc; Cons p pl]
       | "("; pl = anti_list; ")" -> Node "PaTup" [Loc; pl]
-      | "_" -> Node "PaAny" [Loc]
-      | a = anti_anti -> Node "PaAnt" [Loc; a] ] ]
+      | "_" -> Node "PaAny" [Loc] ] ]
   ;
   label_patt:
     [ [ i = patt_label_ident; "="; p = patt -> Tuple [i; p] ] ]
@@ -536,8 +534,7 @@ EXTEND
           Node "PaTup" [Loc; Cons p pl]
       | "("; pl = anti_list; ")" -> Node "PaTup" [Loc; pl]
       | s = a_LIDENT -> Node "PaLid" [Loc; s]
-      | "_" -> Node "PaAny" [Loc]
-      | a = anti_anti -> Node "PaAnt" [Loc; a] ] ]
+      | "_" -> Node "PaAny" [Loc] ] ]
   ;
   label_ipatt:
     [ [ i = patt_label_ident; "="; p = ipatt -> Tuple [i; p] ] ]
@@ -599,15 +596,15 @@ EXTEND
   ;
   mod_ident:
     [ RIGHTA
-      [ i = anti_ -> i
+      [ a = a_mod_ident -> a
       | i = a_UIDENT -> List [i]
       | i = a_LIDENT -> List [i]
       | i = a_UIDENT; "."; j = SELF -> Cons i j ] ]
   ;
   direction_flag:
-    [ [ "to" -> Bool True
-      | "downto" -> Bool False
-      | a = anti_to -> a ] ]
+    [ [ a = a_direction_flag -> a
+      | "to" -> Bool True
+      | "downto" -> Bool False ] ]
   ;
   (* Objects and Classes *)
   str_item:
@@ -893,19 +890,28 @@ EXTEND
   ;
   a_expr:
     [ [ a = ANTIQUOT "exp" -> antiquot "exp" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a ] ]
+      | a = ANTIQUOT "" -> antiquot "" loc a
+      | a = ANTIQUOT "anti" -> Node "ExAnt" [Loc; antiquot "anti" loc a] ] ]
   ;
   a_patt:
     [ [ a = ANTIQUOT "pat" -> antiquot "pat" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a ] ]
+      | a = ANTIQUOT "" -> antiquot "" loc a
+      | a = ANTIQUOT "anti" -> Node "PaAnt" [Loc; antiquot "anti" loc a] ] ]
   ;
   a_ipatt:
     [ [ a = ANTIQUOT "pat" -> antiquot "pat" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a ] ]
+      | a = ANTIQUOT "" -> antiquot "" loc a
+      | a = ANTIQUOT "anti" -> Node "PaAnt" [Loc; antiquot "anti" loc a] ] ]
   ;
   a_ctyp:
     [ [ a = ANTIQUOT "typ" -> antiquot "typ" loc a
       | a = ANTIQUOT "" -> antiquot "" loc a ] ]
+  ;
+  a_mod_ident:
+    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
+  ;
+  a_direction_flag:
+    [ [ a = ANTIQUOT "to" -> antiquot "to" loc a ] ]
   ;
   a_class_str_item:
     [ [ a = ANTIQUOT "" -> antiquot "" loc a ] ]
@@ -949,9 +955,6 @@ EXTEND
   anti_:
     [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
   ;
-  anti_anti:
-    [ [ a = ANTIQUOT "anti" -> antiquot "anti" loc a ] ]
-  ;
   anti_list:
     [ [ a = ANTIQUOT "list" -> antiquot "list" loc a ] ]
   ;
@@ -960,9 +963,6 @@ EXTEND
   ;
   anti_opt:
     [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a ] ]
-  ;
-  anti_to:
-    [ [ a = ANTIQUOT "to" -> antiquot "to" loc a ] ]
   ;
   (* Compatibility old syntax of sequences *)
   expr: LEVEL "top"

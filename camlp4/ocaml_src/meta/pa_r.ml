@@ -130,6 +130,15 @@ let mklistpat loc last =
   loop true
 ;;
 
+let mkexprident loc i j =
+  let rec loop m =
+    function
+      MLast.ExAcc (_, x, y) -> loop (MLast.ExAcc (loc, m, x)) y
+    | e -> MLast.ExAcc (loc, m, e)
+  in
+  loop (MLast.ExUid (loc, i)) j
+;;
+
 let mkassert loc e =
   let f = MLast.ExStr (loc, !input_file) in
   let bp = MLast.ExInt (loc, string_of_int (fst loc)) in
@@ -1208,13 +1217,7 @@ Grammar.extend
        Gramext.Sself],
       Gramext.action
         (fun (j : 'expr_ident) _ (i : string) (loc : int * int) ->
-           (let rec loop m =
-              function
-                MLast.ExAcc (_, x, y) -> loop (MLast.ExAcc (loc, m, x)) y
-              | e -> MLast.ExAcc (loc, m, e)
-            in
-            loop (MLast.ExUid (loc, i)) j :
-            'expr_ident));
+           (mkexprident loc i j : 'expr_ident));
       [Gramext.Stoken ("UIDENT", "")],
       Gramext.action
         (fun (i : string) (loc : int * int) ->
