@@ -203,18 +203,22 @@ void compact_heap (void)
     }
     /* Invert weak pointers. */
     {
-      value p = weak_list_head;
+      value *pp = &weak_list_head;
+      value p;
       word q;
       size_t sz, i;
 
-      while (p != (value) NULL){
+      while (1){
+        p = *pp;
+        if (p == (value) NULL) break;
         q = Hd_val (p);
         while (Ecolor (q) == 0) q = * (word *) q;
         sz = Wosize_ehd (q);
         for (i = 1; i < sz; i++){
           if (Field (p,i) != 0) invert_pointer_at (&(Field (p,i)));
         }
-        p = Field (p, 0);
+        invert_pointer_at (pp);
+        pp = &Field (p, 0);
       }
     }
     /* Invert roots */

@@ -65,7 +65,6 @@ void remove_global_root(r)
 void oldify_local_roots ()
 {
   register value * sp;
-  value * block;
   struct global_root * gr;
   struct caml__roots_block *lr;
   long i, j;
@@ -102,7 +101,6 @@ void do_roots (f)
      scanning_action f;
 {
   register value * sp;
-  value * block;
   struct global_root * gr;
   struct caml__roots_block *lr;
   long i, j;

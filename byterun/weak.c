@@ -66,7 +66,7 @@ value weak_get (ar, n)        /* ML */
     res = None_val;
   }else{
     elt = Field (ar, offset);
-    darken (elt, NULL);
+    if (gc_phase == Phase_mark) darken (elt, NULL);
     Begin_root(elt);
       res = alloc (1, Some_tag);
     End_roots ();
