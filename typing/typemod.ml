@@ -708,23 +708,26 @@ let type_implementation sourcefile prefixname modulename initial_env ast =
                      (fun () -> Stypes.dump (prefixname ^ ".annot"))
   in
   Typecore.force_delayed_checks ();
-  if !Clflags.print_types then
+  if !Clflags.print_types then begin
     fprintf std_formatter "%a@." Printtyp.signature (simplify_signature sg);
-  let coercion =
-    if Sys.file_exists (prefixname ^ !Config.interface_suffix) then begin
-      let intf_file =
-        try find_in_path !Config.load_path (prefixname ^ ".cmi")
-        with Not_found -> prefixname ^ ".cmi" in
-      let dclsig = Env.read_signature modulename intf_file in
-      Includemod.compunit sourcefile sg intf_file dclsig
-    end else begin
-      check_nongen_schemes finalenv str;
-      normalize_signature finalenv sg;
-      if not !Clflags.dont_write_files && not !Clflags.print_types then
-        Env.save_signature sg modulename (prefixname ^ ".cmi");
-      Tcoerce_none
-    end in
-  (str, coercion)
+    (str, Tcoerce_none)
+  end else begin
+    let coercion =
+      if Sys.file_exists (prefixname ^ !Config.interface_suffix) then begin
+        let intf_file =
+          try find_in_path !Config.load_path (prefixname ^ ".cmi")
+          with Not_found -> prefixname ^ ".cmi" in
+        let dclsig = Env.read_signature modulename intf_file in
+        Includemod.compunit sourcefile sg intf_file dclsig
+      end else begin
+        check_nongen_schemes finalenv str;
+        normalize_signature finalenv sg;
+        if not !Clflags.dont_write_files then
+          Env.save_signature sg modulename (prefixname ^ ".cmi");
+        Tcoerce_none
+      end in
+    (str, coercion)
+  end
 
 (* "Packaging" of several compilation units into one unit
    having them as sub-modules.  *)
