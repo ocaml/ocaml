@@ -151,6 +151,7 @@ let yyparse tables start lexer lexbuf =
   and init_errflag = env.errflag in
   env.stackbase <- env.sp + 1;
   env.curr_char <- start;
+  env.symb_end <- lexbuf.lex_curr_p;
   try
     loop Start (Obj.repr ())
   with exn ->
