@@ -362,7 +362,7 @@ let rec emit_instr i dslot =
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
           let lbl_cont = new_label() in
-          `     ld      [%l7], %g1\n`;
+          `	ld	[%l7], %g1\n`;
           `	sub	%l6, {emit_int n}, %l6\n`;
           `	cmp	%l6, %g1\n`;
           `	bgeu	{emit_label lbl_cont}\n`;
