@@ -82,8 +82,8 @@ MASM can be downloaded for free from Microsoft's Web site;
 see the comp.lang.asm.x86 FAQ for directions, or
 http://www.cs.uu.nl/wais/html/na-dir/assembly-language/x86/microsoft.html
 
-The LablTk GUI requires Tcl/Tk 8.0.  Windows binaries are
-available from ftp://ftp.scriptics.com/pub/tcl/tcl8_0/tcl805.exe
+The LablTk GUI requires Tcl/Tk 8.3.  Windows binaries are
+available from ftp://ftp.scriptics.com/pub/tcl/tcl8_3/.
 
 
 INSTALLATION:
@@ -114,6 +114,12 @@ Installing the command-line tools:
   append to the PATH variable).  For Windows NT and 2000, you'll have to
   edit the environment variables yourself.
 
+  To use the LablTK GUI, the directory where the libraries tk83.lib
+  and tcl83.lib were installed (by the Tcl/Tk installer)
+  must be added to the library search path in the LIB environment variable.
+  E.g. if Tcl/Tk was installed in C:\tcl, add "C:\tcl\lib" to the LIB
+  environment variable.
+
 
 RECOMPILATION FROM THE SOURCES:
 
@@ -140,7 +146,7 @@ available to the general public.  Contact us if you think you need them.
 RANDOM NOTES:
 
 * The VC++ compiler does a poor job on byterun/interp.c. Consequently,
-the performance of bytecode programs is 50-70% of that obtained under
+the performance of bytecode programs is about 2/3 of that obtained under
 Unix/GCC or Cygwin on similar hardware.
 
 * Libraries available in this port: "num", "str", "threads", "graph",

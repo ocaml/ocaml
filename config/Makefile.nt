@@ -42,7 +42,8 @@ BYTECCCOMPOPTS=/Ox /MT
 BYTECCLINKOPTS=/MT
 
 ### Libraries needed
-CCLIBS=wsock32.lib
+BYTECCLIBS=wsock32.lib
+NATIVECCLIBS=wsock32.lib
 
 ### How to invoke the C preprocessor
 CPP=cl /nologo /EP
@@ -83,7 +84,7 @@ BIGNUM_ARCH=C
 
 ### Configuration for LablTk
 TK_DEFS=-Ic:\Tcl\include
-TK_LINK=c:\Tcl\lib\tk83.lib c:\Tcl\lib\tcl83.lib
+TK_LINK=tk83.lib tcl83.lib
 
 ############# Aliases for common commands
 
