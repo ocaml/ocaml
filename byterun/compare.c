@@ -80,6 +80,8 @@ static long compare_val(v1, v2)
   case Closure_tag:
   case Infix_tag:
     invalid_argument("equal: functional value");
+  case Object_tag:
+    return (Oid_val(v1) - Oid_val(v2));
   default: {
     mlsize_t sz1 = Wosize_val(v1);
     mlsize_t sz2 = Wosize_val(v2);

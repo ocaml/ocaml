@@ -13,7 +13,24 @@
 
 open Obj
 
-let copy o = (magic Array.copy : (< .. > as 'a) -> 'a) o
+(**** Object representation ****)
+
+let object_tag = 248
+
+let last_id = ref 0
+let new_id () =
+  let id = !last_id in incr last_id; id
+
+(**** Object copy ****)
+
+let copy (o : < .. >) : 'a =
+  let o = Obj.repr (o : 'a) in
+  let s = Obj.size o in
+  let r = Obj.new_block object_tag s in
+  Obj.set_field r 0 (Obj.field o 0);
+  Obj.set_field r 1 (Obj.repr !last_id); incr last_id;
+  for i = 2 to s - 1 do Obj.set_field r i (Obj.field o i) done;
+  Obj.obj r
 
 (**** Compression options ****)
 
@@ -26,10 +43,9 @@ let bucket_small_size = ref 16
 (**** Parameters ****)
 
 let step = Sys.word_size / 16
-
 let first_bucket = 0
-
 let bucket_size = 32			(* Must be 256 or less *)
+let initial_object_size = 2
 
 (**** Version ****)
 
@@ -215,8 +231,6 @@ type table =
 
 let table_count = ref 0
 
-let initial_size = 1
-
 let new_table () =
   incr table_count;
   { buckets = [| |];
@@ -226,7 +240,7 @@ let new_table () =
     vars = Vars.empty;
     saved_vars = [];
     saved_var_lst = [];
-    size = initial_size;
+    size = initial_object_size;
     init = [[]; []]}
 
 let copy_table array1 array2 =
@@ -295,7 +309,7 @@ let set_initializer table init =
 let inheritance table cl vars meths =
   if
     !copy_parent
-    && (table.methods = Meths.empty) && (table.size = initial_size)
+    && (table.methods = Meths.empty) && (table.size = initial_object_size)
     && (table.init = [[]; []])
   then begin
     copy_table table cl.table;
@@ -431,11 +445,14 @@ let create_class class_info public_methods class_init =
   inst_var_count := !inst_var_count + table.size - 1;
   class_info.class_init <- class_init;
   class_info.table <- table;
+  let buckets = table.buckets in
+  let initialization = Obj.magic (List.hd (List.hd table.init)) in
   class_info.obj_init <-
       (function x -> 
-         let obj = Array.create table.size (magic () : t) in
-         obj.(0) <- (magic table.buckets : t);
-         (magic (List.hd (List.hd table.init))) obj x)
+         let obj = Obj.new_block object_tag table.size in
+         Obj.set_field obj 0 (Obj.repr table.buckets);
+         Obj.set_field obj 1 (Obj.repr (new_id ()));
+         initialization obj x)
 
 (**** Objects ****)
 

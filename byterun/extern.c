@@ -309,6 +309,9 @@ static void extern_rec(v)
       case Infix_tag:
         extern_invalid_argument("output_value: functional value");
         break;
+      case Object_tag:
+        extern_invalid_argument("output_value: object value");
+        break;
       default: {
         mlsize_t i;
         if (tag < 16 && sz < 8) {

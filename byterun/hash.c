@@ -105,6 +105,10 @@ static void hash_aux(obj)
     case Infix_tag:
       hash_aux(obj - Infix_offset_val(obj));
       break;
+    case Object_tag:
+      hash_univ_count--;
+      Combine(Oid_val(obj));
+      break;
     default:
       hash_univ_count--;
       Combine_small(tag);

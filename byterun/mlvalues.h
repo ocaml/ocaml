@@ -170,6 +170,11 @@ typedef opcode_t * code_t;
 #define Infix_offset_hd(hd) (Bosize_hd(hd))
 #define Infix_offset_val(v) Infix_offset_hd(Hd_val(v))
 
+/* Another special case: objects */
+#define Object_tag 248
+#define Class_val(val) Field(val, 0)
+#define Oid_val(val) Long_val(Field(val, 1))
+
 /* 2- If tag > No_scan_tag : a sequence of bytes. */
 
 /* Pointer to the first byte */
