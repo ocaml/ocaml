@@ -251,7 +251,7 @@ let make_package_object ppf unit_names objfiles
        (Ident.create_persistent targetname) coercion);
   let ld_cmd =
     sprintf "%s -o %s %s %s"
-            Config.native_partial_linker 
+            Config.native_pack_linker 
             (Filename.quote targetobj)
             (Filename.quote objtemp)
             (Ccomp.quote_files objfiles) in
