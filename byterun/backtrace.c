@@ -140,15 +140,17 @@ static value read_debug_info(void)
 static value event_for_location(value events, code_t pc)
 {
   mlsize_t i;
-  value pos, l, ev;
+  value pos, l, ev, ev_pos;
 
   Assert(pc >= start_code && pc < start_code + code_size);
   pos = Val_long((char *) pc - (char *) start_code);
   for (i = 0; i < Wosize_val(events); i++) {
     for (l = Field(events, i); l != Val_int(0); l = Field(l, 1)) {
       ev = Field(l, 0);
-      if (Field(ev, EV_POS) == pos /* && Is_block(Field(ev, EV_KIND)) */)
-        return ev;
+      ev_pos = Field(ev, EV_POS);
+      /* ocamlc sometimes moves an event past a following PUSH instruction;
+         allow mismatch by 1 instruction. */
+      if (ev_pos == pos || ev_pos == pos + 8) return ev;
     }
   }
   return Val_false;
@@ -162,10 +164,6 @@ static void print_location(value events, int index)
   char * info;
   value ev;
 
-  if (pc == NULL) {
-    fprintf(stderr, "Raised from a C function\n");
-    return;
-  }
   ev = event_for_location(events, pc);
   if (is_instruction(*pc, RAISE)) {
     /* Ignore compiler-inserted raise */
@@ -176,7 +174,10 @@ static void print_location(value events, int index)
     else
       info = "Re-raised at";
   } else {
-    info = "Called from";
+    if (index == 0)
+      info = "Raised by primitive operation at";
+    else
+      info = "Called from";
   }
   if (ev == Val_false) {
     fprintf(stderr, "%s unknown location\n", info);

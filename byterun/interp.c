@@ -70,7 +70,7 @@ sp is a local copy of the global variable extern_sp. */
 
 #define Setup_for_gc { sp -= 2; sp[0] = accu; sp[1] = env; extern_sp = sp; }
 #define Restore_after_gc { accu = sp[0]; env = sp[1]; sp += 2; }
-#define Setup_for_c_call { *--sp = env; extern_sp = sp; }
+#define Setup_for_c_call { saved_pc = pc; *--sp = env; extern_sp = sp; }
 #define Restore_after_c_call { sp = extern_sp; env = *sp++; }
 
 /* An event frame must look like accu + a C_CALL frame + a RETURN 1 frame */
@@ -209,6 +209,7 @@ value interprete(code_t prog, asize_t prog_size)
 #ifndef THREADED_CODE
   opcode_t curr_instr;
 #endif
+  code_t saved_pc;
 
 #ifdef THREADED_CODE
   static void * jumptable[] = {
@@ -231,12 +232,13 @@ value interprete(code_t prog, asize_t prog_size)
   initial_sp_offset = (char *) stack_high - (char *) extern_sp;
   initial_external_raise = external_raise;
   callback_depth++;
+  saved_pc = NULL;
 
   if (sigsetjmp(raise_buf.buf, 0)) {
     local_roots = initial_local_roots;
     sp = extern_sp;
     accu = exn_bucket;
-    pc = NULL;
+    pc = saved_pc + 2; /* +2 adjustement for the sole purpose of backtraces */
     goto raise_exception;
   }
   external_raise = &raise_buf;
