@@ -7,12 +7,11 @@ Objective Caml.
 
 \subsection*{Classes and objects}
 
-The class "point" has one instance variable "x" and two
-methods "get_x" and "move". The initial value of the instance variable
-is given by the class parameter "y".  The variable "x" is declared
-mutable, so the method "move" can change its value.
-\begin{caml_example}
-class point x_init =
+The class "point" has one instance variable "x" and two methods
+"get_x" and "move". The initial value of the instance variable is
+given here by the class parameter "x_init".  The variable "x" is
+declared mutable, so the method "move" can change its value.
+\begin{caml_example} class point x_init =
   val mutable x = x_init
   method get_x = x
   method move d = x <- x + d
@@ -94,11 +93,10 @@ class ref x =
   method set y = x <- y
 end;;
 \end{caml_example}
-The reason for this definition not to typecheck is that (at least) one of
-the method   has a polymorphic types ---the type of the
-value stored in the reference cell, thus the class should be pamametric.  A
-monormophic instance of the class 
-could be defined by:
+The reason for this definition not to typecheck is that (at least) one
+of the methods has a polymorphic type (here, the type of the value
+stored in the reference cell), thus the class should be parametric.  A
+monomorphic instance of the class could be defined by:
 \begin{caml_example}
 class ref (x:int) = 
   val mutable x = x 
@@ -115,7 +113,6 @@ class 'a ref x =
   method get = x
   method set y = x <- y
 end;;
-
 let r = new ref 1 in r#set 2; (r#get);;
 \end{caml_example}
 The type parameter in the declaration may actually be constrained in the
@@ -228,7 +225,7 @@ p#get_x;;
 The class "comparable" below is a template for classes with a binary
 method "leq" of type "'a -> bool" where the type variable
 "'a" is bound to self type. As this class has a method declared
-but not defined, it must be flagged virtual and cannot be instanciated
+but not defined, it must be flagged virtual and cannot be instantiated
 (that is, no object of this class can be created). It still
 defines abbreviations. In particular,
 "#comparable" expands to "< leq : 'a -> bool; .. > as 'a".
@@ -273,7 +270,7 @@ The function "min" will return the minimum of any two objects
 whose type unify with "#comparable". The type of "min" is
 not the same as "#comparable -> #comparable -> #comparable", as
 the abbreviation "#comparable" hides a type variable (an
-ellipsis). Each occurence of this abbreviation generates a new
+ellipsis). Each occurrence of this abbreviation generates a new
 variable.
 \begin{caml_example}
 let min (x : #comparable) y =
