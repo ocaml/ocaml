@@ -8,10 +8,10 @@ pa_lisp.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi
 pa_lisp.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
 pa_lispr.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
 pa_lispr.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
-pa_ocamllex.cmo: ../../lex/compact.cmi ../../lex/lexgen.cmi \
-    ../camlp4/mLast.cmi ../camlp4/pcaml.cmi ../../lex/syntax.cmi 
-pa_ocamllex.cmx: ../../lex/compact.cmx ../../lex/lexgen.cmx \
-    ../camlp4/mLast.cmi ../camlp4/pcaml.cmx ../../lex/syntax.cmx 
+pa_ocamllex.cmo: $(OTOP)/lex/compact.cmi $(OTOP)/lex/lexgen.cmi \
+    ../camlp4/mLast.cmi ../camlp4/pcaml.cmi $(OTOP)/lex/syntax.cmi 
+pa_ocamllex.cmx: $(OTOP)/lex/compact.cmx $(OTOP)/lex/lexgen.cmx \
+    ../camlp4/mLast.cmi ../camlp4/pcaml.cmx $(OTOP)/lex/syntax.cmx 
 pa_olabl.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
 pa_olabl.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
 pa_o.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 

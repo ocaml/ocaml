@@ -41,7 +41,8 @@ depend:
 	cp .depend .depend.bak
 	> .depend
 	@for i in *.mli *.ml; do \
-	  ../tools/apply.sh pr_depend.cmo -- $$i >> .depend; \
+	  ../tools/apply.sh pr_depend.cmo -- $(INCLUDES) $$i | \
+	  sed -e 's| \.\./\.\.| $$(OTOP)|g' >> .depend; \
 	done
 
 promote:
