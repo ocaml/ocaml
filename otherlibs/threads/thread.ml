@@ -31,6 +31,7 @@ external thread_yield : unit -> unit = "thread_yield"
 external thread_sleep : unit -> unit = "thread_sleep"
 external thread_wait_descr : Unix.file_descr -> unit = "thread_wait_descr"
 external thread_wait_inchan : in_channel -> unit = "thread_wait_inchan"
+external thread_join : t -> unit = "thread_join"
 external thread_delay : float -> unit = "thread_wait_for"
 external thread_wakeup : t -> unit = "thread_wakeup"
 external thread_self : unit -> t = "thread_self"
@@ -44,6 +45,7 @@ let sleep () = critical_section := false; thread_sleep()
 let wait_descr fd = thread_wait_descr fd
 let wait_inchan ic = thread_wait_inchan ic
 let delay duration = thread_delay duration
+let join th = thread_join th
 let wakeup pid = thread_wakeup pid
 let self () = thread_self()
 let kill pid = thread_kill pid

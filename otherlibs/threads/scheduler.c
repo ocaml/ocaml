@@ -9,6 +9,8 @@
 #include "fail.h"
 #include "io.h"
 #include "roots.h"
+#include "alloc.h"
+#include "memory.h"
 
 #if defined(HAS_SELECT) && defined(HAS_SETITIMER) && defined(HAS_GETTIMEOFDAY)
 #else
@@ -26,6 +28,7 @@
 /* The thread descriptors */
 
 struct thread_struct {
+  value ident;                  /* Unique id (for equality comparisons) */
   struct thread_struct * next;  /* Double linking of threads */
   struct thread_struct * prev;
   value * stack_low;            /* The execution stack for this thread */
@@ -33,20 +36,35 @@ struct thread_struct {
   value * stack_threshold;
   value * sp;
   value * trapsp;
-  int runnable;                 /* 1 if runnable, 0 if stopped */
-  int fd;               /* File descriptor on which this thread is waiting */
-  double delay;                 /* Time until which this thread is blocked */
+  value runnable;               /* RUNNABLE, STOPPED or KILLED */
+  value fd;               /* File descriptor on which this thread is waiting */
+  value delay;                  /* Time until which this thread is blocked */
+  value joining;                /* Thread we're trying to join */
 };
 
 typedef struct thread_struct * thread_t;
 
-#define NO_FD (-1)
-#define NO_DELAY (-1.0)
+#define STOPPED Val_int(0)
+#define RUNNABLE Val_int(1)
+#define KILLED Val_int(2)
+#define NO_FD Val_int(-1)
+#define NO_DELAY Val_int(0)
+#define NO_JOINING Val_int(0)
+
 #define DELAY_INFTY 1E30        /* +infty, for this purpose */
 
-thread_t curr_thread = NULL;    /* The thread currently active */
-int num_waiting_on_fd;          /* Number of threads waiting on file descrs. */
-int num_waiting_on_timer;       /* Number of threads waiting on the timer */
+/* The thread currently active */
+static thread_t curr_thread = NULL;
+/* Number of threads waiting on file descrs. */
+static int num_waiting_on_fd;
+/* Number of threads waiting on the timer */
+static int num_waiting_on_timer;
+/* Number of threads waiting on a join op. */
+static int num_waiting_on_join;
+/* Identifier for next thread creation */
+static value next_ident = Val_int(0);
+
+#define Assign(dst,src) modify((value *)&(dst), (value)(src))
 
 /* Scan the stacks of the other threads */
 
@@ -57,8 +75,7 @@ static void thread_scan_roots(action)
 {
   thread_t th;
   register value * sp;
-  /* Thread descriptors are allocated in the major heap so that
-     they stay at fixed addresses. */
+  /* Scan all active descriptors */
   (*action)((value) curr_thread, (value *) &curr_thread);
   /* Don't scan curr_thread->sp, this has already been done */
   for (th = curr_thread->next; th != curr_thread; th = th->next) {
@@ -78,8 +95,10 @@ value thread_initialize(unit)       /* ML */
 {
   struct itimerval timer;
   /* Create a descriptor for the current thread */
-  curr_thread = (thread_t)
-    alloc_shr(sizeof(struct thread_struct) / sizeof(value), Abstract_tag);
+  curr_thread =
+    (thread_t) alloc_shr(sizeof(struct thread_struct) / sizeof(value), 0);
+  curr_thread->ident = next_ident;
+  next_ident = Val_int(Int_val(next_ident) + 1);
   curr_thread->next = curr_thread;
   curr_thread->prev = curr_thread;
   curr_thread->stack_low = stack_low;
@@ -87,12 +106,14 @@ value thread_initialize(unit)       /* ML */
   curr_thread->stack_threshold = stack_threshold;
   curr_thread->sp = extern_sp;
   curr_thread->trapsp = trapsp;
-  curr_thread->runnable = 1;
+  curr_thread->runnable = RUNNABLE;
   curr_thread->fd = NO_FD;
   curr_thread->delay = NO_DELAY;
+  curr_thread->joining = NO_JOINING;
   /* Initialize scheduling */
   num_waiting_on_fd = 0;
   num_waiting_on_timer = 0;
+  num_waiting_on_join = 0;
   /* Initialize GC */
   prev_scan_roots_hook = scan_roots_hook;
   scan_roots_hook = thread_scan_roots;
@@ -113,10 +134,11 @@ value thread_new(clos)          /* ML */
   /* Allocate the thread and its stack */
   Push_roots(r, 1);
   r[0] = clos;
-  th = (thread_t)
-    alloc_shr(sizeof(struct thread_struct) / sizeof(value), Abstract_tag);
+  th = (thread_t) alloc_shr(sizeof(struct thread_struct) / sizeof(value), 0);
   clos = r[0];
   Pop_roots();
+  th->ident = next_ident;
+  next_ident = Val_int(Int_val(next_ident) + 1);
   th->stack_low = (value *) stat_alloc(Thread_stack_size);
   th->stack_high = th->stack_low + Thread_stack_size / sizeof(value);
   th->stack_threshold = th->stack_low + Stack_threshold / sizeof(value);
@@ -134,14 +156,15 @@ value thread_new(clos)          /* ML */
   th->sp--;
   th->sp[0] = Val_unit;         /* a dummy environment */
   /* The thread is initially runnable */
-  th->runnable = 1;
+  th->runnable = RUNNABLE;
   th->fd = NO_FD;
   th->delay = NO_DELAY;
+  th->joining = NO_JOINING;
   /* Insert thread in doubly linked list of threads */
-  th->prev = curr_thread->prev;
-  curr_thread->prev->next = th;
-  th->next = curr_thread;
-  curr_thread->prev = th;
+  Assign(th->prev, curr_thread->prev);
+  Assign(curr_thread->prev->next, th);
+  Assign(th->next, curr_thread);
+  Assign(curr_thread->prev, th);
   /* Return thread */
   return (value) th;
 }
@@ -171,10 +194,21 @@ void schedule_thread()
   curr_thread->sp = extern_sp;
   curr_thread->trapsp = trapsp;
 
+  /* See if some join operations succeeded */
+  if (num_waiting_on_join > 0) {
+    FOREACH_THREAD(th)
+      if (th->joining != NO_JOINING &&
+          ((thread_t)(th->joining))->runnable == KILLED) {
+        th->runnable = RUNNABLE;
+        th->joining = NO_JOINING;
+        num_waiting_on_join--;
+      }
+    END_FOREACH(th);
+  }
   /* Find the next runnable thread */
   run_thread = NULL;
   FOREACH_THREAD(th)
-    if (th->runnable) { run_thread = th; break; }
+    if (th->runnable == RUNNABLE) { run_thread = th; break; }
   END_FOREACH(th);
 
   if (num_waiting_on_fd > 0 || num_waiting_on_timer > 0) {
@@ -189,7 +223,7 @@ void schedule_thread()
       FD_ZERO(&readfds);
       if (num_waiting_on_fd > 0) {
         FOREACH_THREAD(th)
-          if (th->fd != NO_FD) FD_SET(th->fd, &readfds);
+          if (th->fd != NO_FD) FD_SET(Int_val(th->fd), &readfds);
         END_FOREACH(th);
       }
       /* If some threads are blocked on the timer, activate those for which the
@@ -200,13 +234,14 @@ void schedule_thread()
         now = timeofday();
         FOREACH_THREAD(th)
           if (th->delay != NO_DELAY) {
-            if (th->delay <= now) {
+            double th_delay = Double_val(th->delay);
+            if (th_delay <= now) {
               th->runnable = 1;
               th->delay = NO_DELAY;
               num_waiting_on_timer--;
               if (run_thread == NULL) run_thread = th; /* Found one. */
             } else {
-              if (th->delay < delay) delay = th->delay;
+              if (th_delay < delay) delay = th_delay;
             }
           }
         END_FOREACH(th);
@@ -221,7 +256,7 @@ void schedule_thread()
           delay_tv.tv_usec = 0;
           delay_ptr = &delay_tv;
         }
-        else if (delay == NO_DELAY) {
+        else if (delay == DELAY_INFTY) {
           delay_ptr = NULL;
         } else {
           delay_tv.tv_sec = (unsigned int) delay;
@@ -233,9 +268,10 @@ void schedule_thread()
           /* Some descriptors are ready. 
              Make the corresponding threads runnable. */
           FOREACH_THREAD(th)
-            if (th->fd != NO_FD && FD_ISSET(th->fd, &readfds)) {
-              FD_CLR(th->fd, &readfds); /* Wake up only one thread per fd. */
-              th->runnable = 1;
+            if (th->fd != NO_FD && FD_ISSET(Int_val(th->fd), &readfds)) {
+              /* Wake up only one thread per fd. */
+              FD_CLR(Int_val(th->fd), &readfds);
+              th->runnable = RUNNABLE;
               th->fd = NO_FD;
               num_waiting_on_fd--;
               if (run_thread == NULL) run_thread = th; /* Found one. */
@@ -273,7 +309,7 @@ value thread_yield(unit)        /* ML */
 value thread_sleep(unit)        /* ML */
      value unit;
 {
-  curr_thread->runnable = 0;
+  curr_thread->runnable = STOPPED;
   schedule_thread();
   return Val_unit;
 }
@@ -283,8 +319,8 @@ value thread_sleep(unit)        /* ML */
 value thread_wait_descr(fd)        /* ML */
      value fd;
 {
-  curr_thread->runnable = 0;
-  curr_thread->fd = Int_val(fd);
+  curr_thread->runnable = STOPPED;
+  curr_thread->fd = fd;
   num_waiting_on_fd++;
   schedule_thread();
   return Val_unit;
@@ -297,8 +333,8 @@ value thread_wait_inchan(vchan)       /* ML */
 {
   struct channel * chan = (struct channel *) vchan;
   if (chan->curr < chan->max) return Val_unit;
-  curr_thread->runnable = 0;
-  curr_thread->fd = chan->fd;
+  curr_thread->runnable = STOPPED;
+  curr_thread->fd = Val_int(chan->fd);
   num_waiting_on_fd++;
   schedule_thread();
   return Val_unit;
@@ -309,10 +345,23 @@ value thread_wait_inchan(vchan)       /* ML */
 value thread_wait_for(time)          /* ML */
      value time;
 {
-  double now = timeofday();
-  curr_thread->runnable = 0;
-  curr_thread->delay = now + Double_val(time);
+  double date = timeofday() + Double_val(time);
+  curr_thread->runnable = STOPPED;
+  Assign(curr_thread->delay, copy_double(date));
   num_waiting_on_timer++;
+  schedule_thread();
+  return Val_unit;
+}
+
+/* Suspend the current thread until another thread terminates */
+
+value thread_join(th)          /* ML */
+     value th;
+{
+  if (((thread_t)th)->runnable == KILLED) return Val_unit;
+  curr_thread->runnable = STOPPED;
+  Assign(curr_thread->joining, th);
+  num_waiting_on_join++;
   schedule_thread();
   return Val_unit;
 }
@@ -323,10 +372,18 @@ value thread_wakeup(thread)     /* ML */
      value thread;
 {
   thread_t th = (thread_t) thread;
-  /* The thread is no longer waiting on I/O or timer. */
-  if (th->fd != NO_FD) { th->fd = NO_FD; num_waiting_on_fd--; }
-  if (th->delay != NO_DELAY) { th->delay = NO_DELAY; num_waiting_on_timer--; }
-  th->runnable = 1;
+  if (th->runnable == KILLED) failwith("Thread.wakeup: killed thread");
+  /* The thread is no longer waiting on anything */
+  if (th->fd != NO_FD) {
+    th->fd = NO_FD; num_waiting_on_fd--;
+  }
+  if (th->delay != NO_DELAY) {
+    th->delay = NO_DELAY; num_waiting_on_timer--;
+  }
+  if (th->joining != NO_JOINING) {
+    th->joining = NO_JOINING; num_waiting_on_join--;
+  }
+  th->runnable = RUNNABLE;
   return Val_unit;
 }
 
@@ -347,14 +404,15 @@ value thread_kill(thread)       /* ML */
   /* Don't paint ourselves in a corner */
   if (th == th->next) failwith("Thread.kill: cannot kill the last thread");
   /* This thread is no longer waiting on anything */
-  if (th->fd != NO_FD) { th->fd = NO_FD; num_waiting_on_fd--; }
-  if (th->delay != NO_DELAY) { th->delay = NO_DELAY; num_waiting_on_timer--; }
-  th->runnable = 0;
+  if (th->fd != NO_FD) { num_waiting_on_fd--; }
+  if (th->delay != NO_DELAY) { num_waiting_on_timer--; }
+  if (th->joining != NO_JOINING) { num_waiting_on_join--; }
+  th->runnable = KILLED;
   /* If this is the current thread, activate another one */
   if (th == curr_thread) schedule_thread();
   /* Remove thread from the doubly-linked list */
-  th->prev->next = th->next;
-  th->next->prev = th->prev;
+  Assign(th->prev->next, th->next);
+  Assign(th->next->prev, th->prev);
   /* Free its resources */
   stat_free((char *) th->stack_low);
   return Val_unit;

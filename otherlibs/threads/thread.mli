@@ -53,6 +53,9 @@ val wait_inchan : in_channel -> unit
 val wait_descr : Unix.file_descr -> unit
         (* Similar to [wait_inchan], but operates on a file descriptor
            from the [Unix] library instead of an input channel. *)
+val join : t -> unit
+        (* [join th] suspends the execution of the calling thread
+           until the thread [th] has terminated. *)
 
 (** Low-level thread synchronization primitives *)
 
