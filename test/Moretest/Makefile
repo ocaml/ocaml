@@ -45,6 +45,18 @@ cm.out: cmcaml.ml cmstub.c cmmain.c
 	$(CAMLOPT) -output-obj -o cm.o cmcaml.ml
 	$(NATIVECC) -g -o cm.out cm.o -I$(LIBDIR) -DNO_BYTECODE_FILE cmstub.c cmmain.c ../../asmrun/libasmrun.a $(CCLIBS)
 
+bigarrays.byt: ../../otherlibs/bigarray/bigarray.cma \
+               ../../otherlibs/bigarray/libbigarray.a bigarrays.ml
+	$(CAMLC) -custom -I ../../otherlibs/bigarray -o bigarrays.byt \
+                bigarray.cma bigarrays.ml \
+                ../../otherlibs/bigarray/libbigarray.a
+
+bigarrays.out: ../../otherlibs/bigarray/bigarray.cmxa \
+               ../../otherlibs/bigarray/libbigarray.a bigarrays.ml
+	$(CAMLOPT) -I ../../otherlibs/bigarray -o bigarrays.out \
+                bigarray.cmxa bigarrays.ml \
+                ../../otherlibs/bigarray/libbigarray.a
+
 # Common rules
 
 .SUFFIXES:
