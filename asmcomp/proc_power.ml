@@ -19,11 +19,21 @@ open Reg
 open Arch
 open Mach
 
+(* Distinguish between the PowerPC and the Power/RS6000 submodels *)
+
 let powerpc =
   match Config.model with
     "ppc" -> true
   | "rs6000" -> false
   | _ -> fatal_error "wrong $(MODEL)"
+
+(* Distinguish between the AIX/MacOS TOC-based model 
+   and the ELF/SVR4 absolute-address based model. *)
+
+let elf =
+  match Config.system with
+    "elf" -> false
+  | _     -> true
 
 (* Exceptions raised to signal cases not handled here *)
 
@@ -32,11 +42,14 @@ exception Use_default
 (* Recognition of addressing modes *)
 
 type addressing_expr =
-    Alinear of expression
+    Asymbol of string
+  | Alinear of expression
   | Aadd of expression * expression
 
 let rec select_addr = function
-    Cop((Caddi | Cadda), [arg; Cconst_int m]) ->
+    Cconst_symbol s when elf -> (* don't recognize this mode in the TOC-based model *)
+      (Asymbol s, 0)
+  | Cop((Caddi | Cadda), [arg; Cconst_int m]) ->
       let (a, n) = select_addr arg in (a, n + m)
   | Cop((Caddi | Cadda), [Cconst_int m; arg]) ->
       let (a, n) = select_addr arg in (a, n + m)
@@ -52,10 +65,14 @@ let rec select_addr = function
 
 let select_addressing exp =
   match select_addr exp with
-    (Alinear e, d) ->
+    (Asymbol s, d) ->
+      (Ibased(s, d), Ctuple [])
+  | (Alinear e, d) ->
       (Iindexed d, e)
   | (Aadd(e1, e2), d) ->
-      (Iindexed2 d, Ctuple[e1; e2])
+      if d = 0
+      then (Iindexed2, Ctuple[e1; e2])
+      else (Iindexed d, Cop(Cadda, [e1; e2]))
 
 (* Instruction selection *)
 
@@ -114,9 +131,9 @@ let word_addressed = false
     1                   stack pointer
     2                   pointer to table of constants
     3 - 10              function arguments and results
-    11 - 12             general purpose
-    13 - 27             general purpose, preserved by C
-    28                  temporary
+    11 - 12             temporaries
+    13                  pointer to small data area
+    14 - 28             general purpose, preserved by C
     29                  trap pointer
     30                  allocation limit
     31                  allocation pointer
@@ -128,8 +145,8 @@ let word_addressed = false
 
 let int_reg_name = [|
   "3"; "4"; "5"; "6"; "7"; "8"; "9"; "10"; 
-  "11"; "12"; "13"; "14"; "15"; "16"; "17"; "18"; "19"; "20";
-  "21"; "22"; "23"; "24"; "25"; "26"; "27"
+  "14"; "15"; "16"; "17"; "18"; "19"; "20"; "21";
+  "22"; "23"; "24"; "25"; "26"; "27"; "28"
 |]
   
 let float_reg_name = [|
@@ -146,7 +163,7 @@ let register_class r =
   | Addr -> 0
   | Float -> 1
 
-let num_available_registers = [| 25; 31 |]
+let num_available_registers = [| 23; 31 |]
 
 let first_available_register = [| 0; 100 |]
 
@@ -158,8 +175,8 @@ let rotate_registers = true
 (* Representation of hard registers by pseudo-registers *)
 
 let hard_int_reg =
-  let v = Array.create 25 Reg.dummy in
-  for i = 0 to 24 do v.(i) <- Reg.at_location Int (Reg i) done; v
+  let v = Array.create 24 Reg.dummy in
+  for i = 0 to 23 do v.(i) <- Reg.at_location Int (Reg i) done; v
 
 let hard_float_reg =
   let v = Array.create 31 Reg.dummy in
@@ -176,12 +193,12 @@ let stack_slot slot ty =
 
 (* Calling conventions *)
 
-let calling_conventions first_int last_int first_float last_float make_stack
-                        arg =
+let calling_conventions
+    first_int last_int first_float last_float make_stack stack_ofs arg =
   let loc = Array.create (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
-  let ofs = ref 24 in
+  let ofs = ref stack_ofs in
   for i = 0 to Array.length arg - 1 do
     match arg.(i).typ with
       Int | Addr as ty ->
@@ -201,25 +218,35 @@ let calling_conventions first_int last_int first_float last_float make_stack
           ofs := !ofs + size_float
         end
   done;
-  (loc, (if !ofs > 24 then Misc.align !ofs 8 else 0))
-  (* Keep stack 8-aligned and with a free 24 byte linkage area at the bottom *)
+  let final_ofs = if not elf && !ofs > 0 then !ofs + 24 else !ofs in
+  (loc, Misc.align final_ofs 8)
+  (* Keep stack 8-aligned. 
+     Under AIX/MacOS, keep a free 24 byte linkage area at the bottom
+     if we need to stack-allocate some arguments. *)
 
 let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
 let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
 
 let loc_arguments arg =
-  calling_conventions 0 7 100 112 outgoing arg
+  calling_conventions 0 7 100 112 outgoing 0 arg
 let loc_parameters arg =
-  let (loc, ofs) = calling_conventions 0 7 100 112 incoming arg in loc
+  let (loc, ofs) = calling_conventions 0 7 100 112 incoming 0 arg in loc
 let loc_results res =
-  let (loc, ofs) = calling_conventions 0 7 100 112 not_supported res in loc
+  let (loc, ofs) = calling_conventions 0 7 100 112 not_supported 0 res in loc
 
-(* For C calling conventions: use GPR 3-10 and FPR 1-13 just like ML calling
-   conventions, but always reserve stack space for all arguments.
-   Also, using a float register automatically reserves two int registers. *)
+(* C calling conventions under AIX/MacOS:
+     use GPR 3-10 and FPR 1-13 just like ML calling
+     conventions, but always reserve stack space for all arguments.
+     Also, using a float register automatically reserves two int registers.
 
-let external_conventions first_int last_int first_float last_float arg =
+   C calling conventions under SVR4/Solaris/Mklinux:
+     use GPR 3-10 and FPR 1-8 just like ML calling conventions.
+     Using a float register does not affect the int registers.
+     Always reserve 8 bytes at bottom of stack, plus whatever is needed
+     to hold the overflow arguments. *)
+
+let aix_external_conventions first_int last_int first_float last_float arg =
   let loc = Array.create (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
@@ -246,14 +273,17 @@ let external_conventions first_int last_int first_float last_float arg =
   done;
   (loc, Misc.align !ofs 8) (* Keep stack 8-aligned *)
 
-let loc_external_arguments arg = external_conventions 0 7 100 112 arg
+let loc_external_arguments arg =
+  if elf
+  then calling_conventions 0 7 100 107 outgoing 8 arg
+  else aix_external_conventions 0 7 100 112 arg
 
 let extcall_use_push = false
 
 (* Results are in GPR 3 and FPR 1 *)
 
 let loc_external_results res =
-  let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
+  let (loc, ofs) = calling_conventions 0 0 100 100 not_supported 0 res in loc
 
 (* Exceptions are in GPR 3 *)
 
@@ -263,7 +293,7 @@ let loc_exn_bucket = phys_reg 0
 
 let destroyed_at_c_call =
   Array.of_list(List.map phys_reg
-    [0; 1; 2; 3; 4; 5; 6; 7; 8; 9;
+    [0; 1; 2; 3; 4; 5; 6; 7;
      100; 101; 102; 103; 104; 105; 106; 107; 108; 109; 110; 111; 112])
 
 let destroyed_at_oper = function
@@ -277,11 +307,11 @@ let destroyed_at_raise = all_phys_regs
 
 let safe_register_pressure = function
     Iextcall(_, _) -> 15
-  | _ -> 25
+  | _ -> 23
 
 let max_register_pressure = function
     Iextcall(_, _) -> [| 15; 18 |]
-  | _ -> [| 25; 30 |]
+  | _ -> [| 23; 30 |]
 
 (* Reloading *)
 
@@ -297,7 +327,7 @@ let oper_latency = function
     Ireload -> 2
   | Iload(_, _) -> 2
   | Iconst_float _ -> 2 (* turned into a load *)
-  | Iconst_symbol _ -> 2 (* turned into a load *)
+  | Iconst_symbol _ -> if elf then 1 else 2 (* turned into a load *)
   | Iintop Imul -> 9
   | Iintop_imm(Imul, _) -> 5
   | Iintop(Idiv | Imod) -> 36
@@ -316,7 +346,7 @@ let contains_calls = ref false
 
 let assemble_file infile outfile =
   let proc = if powerpc then "ppc" else "pwr" in
-  Sys.command ("as -u -m " ^ proc ^ " -o " ^ outfile ^ " " ^ infile)
+  Sys.command ("gas-ppc -u -m " ^ proc ^ " -o " ^ outfile ^ " " ^ infile)
 
 let create_archive archive file_list =
   Misc.remove_file archive;

@@ -22,8 +22,9 @@ type specific_operation =
 (* Addressing modes *)
 
 type addressing_mode =
-    Iindexed of int                     (* reg + displ *)
-  | Iindexed2 of int                    (* reg + reg + displ *)
+    Ibased of string * int              (* symbol + displ *)
+  | Iindexed of int                     (* reg + displ *)
+  | Iindexed2                           (* reg + reg *)
 
 (* Sizes, endianness *)
 
@@ -39,23 +40,27 @@ let identity_addressing = Iindexed 0
 
 let offset_addressing addr delta =
   match addr with
-    Iindexed n -> Iindexed(n + delta)
-  | Iindexed2 n -> Iindexed2(n + delta)
+    Ibased(s, n) -> Ibased(s, n + delta)
+  | Iindexed n -> Iindexed(n + delta)
+  | Iindexed2 -> Misc.fatal_error "Arch_power.offset_addressing"
 
 let num_args_addressing = function
-    Iindexed n -> 1
-  | Iindexed2 n -> 2
+    Ibased(s, n) -> 0
+  | Iindexed n -> 1
+  | Iindexed2 -> 2
 
 (* Printing operations and addressing modes *)
 
 let print_addressing printreg addr arg =
   match addr with
-    Iindexed n ->
+    Ibased(s, n) ->
+      print_string "\""; print_string s; print_string "\"";
+      if n <> 0 then begin print_string " + "; print_int n end
+  | Iindexed n ->
       printreg arg.(0);
       if n <> 0 then begin print_string " + "; print_int n end
-  | Iindexed2 n ->
-      printreg arg.(0); print_string " + "; printreg arg.(1);
-      if n <> 0 then begin print_string " + "; print_int n end
+  | Iindexed2 ->
+      printreg arg.(0); print_string " + "; printreg arg.(1)
 
 let print_specific_operation printreg op arg =
   match op with

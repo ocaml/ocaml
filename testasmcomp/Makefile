@@ -106,6 +106,11 @@ arith.out: mainarith.c arith.o $(ARCH).o
 checkbound.out: main.c checkbound.o $(ARCH).o
 	$(CC) $(CFLAGS) -o checkbound.out -DCHECKBOUND main.c checkbound.o $(ARCH).o
 
+# The runtime environment
+
+power.o: power-$(SYS).o
+	ln -s power-$(SYS).o power.o
+
 .SUFFIXES:
 .SUFFIXES: .cmm .c .o .asm .S .ml .mli .cmo .cmi
 

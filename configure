@@ -191,8 +191,8 @@ case "$host" in
   mips-*-ultrix*)               arch=mips;;
   hppa1.1-*-hpux*)              arch=hppa; system=hpux;;
   hppa1.1-*-nextstep*)          arch=hppa; system=nextstep;;
-  rs6000-*-aix*)                arch=power; model=rs6000;;
-  powerpc-*-aix*)               arch=power; model=ppc;;
+  rs6000-*-aix*)                arch=power; model=rs6000; system=aix;;
+  powerpc-*-aix*)               arch=power; model=ppc; system=aix;;
 esac
 
 case "$arch" in

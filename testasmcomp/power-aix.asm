@@ -11,16 +11,6 @@
 
 # $Id$
 
-        .globl  call_gen_code
-        .csect  call_gen_code[DS]
-call_gen_code:
-        .long   .call_gen_code, TOC[tc0], 0
-
-        .globl  caml_c_call
-        .csect  caml_c_call[DS]
-caml_c_call:
-        .long   .caml_c_call, TOC[tc0], 0
-
         .csect  .text[PR]
 
         .globl  .call_gen_code
@@ -137,9 +127,9 @@ caml_c_call:
 # Return address is in 25, RTOC is in 26
 	mflr    25
         mr      26, 2
-# Call desired function (descriptor in r28)
-        lwz     0, 0(28)
-        lwz     2, 4(28)
+# Call desired function (descriptor in r11)
+        lwz     0, 0(11)
+        lwz     2, 4(11)
         mtlr    0
         blrl
 # Restore return address and RTOC
@@ -147,4 +137,16 @@ caml_c_call:
         mr      2, 26
 # Return to caller
         blr
+
+# Function closures
+
+        .globl  call_gen_code
+        .csect  call_gen_code[DS]
+call_gen_code:
+        .long   .call_gen_code, TOC[tc0], 0
+
+        .globl  caml_c_call
+        .csect  caml_c_call[DS]
+caml_c_call:
+        .long   .caml_c_call, TOC[tc0], 0
 
