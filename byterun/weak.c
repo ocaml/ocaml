@@ -74,3 +74,11 @@ value weak_get (value ar, value n)        /* ML */
 
 #undef Setup_for_gc
 #undef Restore_after_gc
+
+value weak_check (value ar, value n)        /* ML */
+{
+  mlsize_t offset = Long_val (n) + 1;
+                                                    Assert (Is_in_heap (ar));
+  if (offset < 1 || offset >= Wosize_val (ar)) invalid_argument ("Weak.get");
+  return Val_bool (Field (ar, offset) != 0);
+}
