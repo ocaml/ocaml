@@ -152,15 +152,22 @@ let scommand cmd =
 let safe_remove s =
   try Sys.remove s with Sys_error _ -> ()
 
+let make_set l =
+  let rec merge l = function
+    []     -> List.rev l
+  | p :: r -> if List.mem p l then merge l r else merge (p::l) r
+  in
+  merge [] l
+
 let make_rpath flag =
   if !rpath = [] || flag = ""
   then ""
-  else flag ^ String.concat ":" !rpath
+  else flag ^ String.concat ":" (make_set !rpath)
 
 let make_rpath_ccopt flag =
   if !rpath = [] || flag = "" 
   then ""
-  else "-ccopt " ^ flag ^ String.concat ":" !rpath
+  else "-ccopt " ^ flag ^ String.concat ":" (make_set !rpath)
 
 let prefix_list pref l =
   List.map (fun s -> pref ^ s) l
