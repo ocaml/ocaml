@@ -20,4 +20,5 @@ val copy : (< .. > as 'a) -> 'a
    object with the same methods and instance variables as [o]  *)
 
 external oid : < .. > -> int = "%field1"
-(** Return a unique integer identifying this object. *)
+(** Return an integer identifying this object, unique for
+    the current execution of the program. *)
