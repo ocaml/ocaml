@@ -15,8 +15,8 @@
 
 open Tk
 
-let tpos x : textIndex = `Linechar (1,0), [`Char x]
-and tposend x : textIndex = `End, [`Char (-x)]
+let tpos ?(modi=[]) x : textIndex = `Linechar (1,0), `Char x :: modi
+and tposend ?(modi=[]) x : textIndex = `End, `Char (-x) :: modi
 let tstart : textIndex = `Linechar (1,0), []
 and tend : textIndex = `End, []
 

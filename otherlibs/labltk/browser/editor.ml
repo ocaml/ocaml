@@ -504,10 +504,23 @@ class editor ~top ~menus = object (self)
     if not (Winfo.ismapped top) then Wm.deiconify top;
     match file with None -> ()
     | Some file ->
-        self#load_text [file]; 
+        self#load_text [file];
         Text.mark_set current_tw ~mark:"insert" ~index:(tpos pos);
-        Text.yview_index current_tw
-          ~index:(`Linechar(1,0),[`Char pos; `Line (-2)])
+        try
+          let index =
+            Text.search current_tw ~switches:[`Backwards] ~pattern:"*)"
+              ~start:(tpos pos) ~stop:(tpos pos ~modi:[`Line(-1)]) in
+          let index =
+            Text.search current_tw ~switches:[`Backwards] ~pattern:"(*"
+              ~start:(index,[]) ~stop:(tpos pos ~modi:[`Line(-20)]) in
+          let s = Text.get current_tw ~start:(index,[`Line(-1);`Linestart])
+              ~stop:(index,[`Line(-1);`Lineend]) in
+          for i = 0 to String.length s - 1 do
+            match s.[i] with '\t'|' ' -> () | _ -> raise Not_found
+          done;
+          Text.yview_index current_tw ~index:(index,[`Line(-1)])
+        with _ ->
+          Text.yview_index current_tw ~index:(tpos pos ~modi:[`Line(-2)])
 
   initializer
     (* Create a first window *)
