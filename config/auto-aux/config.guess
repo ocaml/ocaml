@@ -450,7 +450,7 @@ EOF
 		echo ns32k-sni-sysv
 	fi
 	exit 0 ;;
-    "Power Macintosh":Rhapsody:*:*)
+    "Power Macintosh":*:*:*)
         echo powerpc-apple-rhapsody
         exit 0;;
     BePC:BeOS:*:*)
