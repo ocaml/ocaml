@@ -95,6 +95,16 @@ value channel_size(channel)      /* ML */
 
 /* Output */
 
+#ifndef EINTR
+#define EINTR (-1)
+#endif
+#ifndef EAGAIN
+#define EAGAIN (-1)
+#endif
+#ifndef EWOULDBLOCK
+#define EWOULDBLOCK (-1)
+#endif
+
 static int do_write(fd, p, n)
      int fd;
      char * p;
@@ -107,11 +117,18 @@ static int do_write(fd, p, n)
 #ifdef HAS_UI
   retcode = ui_write(fd, p, n);
 #else
-#ifdef EINTR
-  do { retcode = write(fd, p, n); } while (retcode == -1 && errno == EINTR);
-#else
+again:
   retcode = write(fd, p, n);
-#endif
+  if (retcode == -1) {
+    if (errno == EINTR) goto again;
+    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+      /* POSIX says that a write on a pipe in non-blocking mode may return
+         EAGAIN if it attempts to write more than PIPE_BUF characters,
+         PIPE_BUF being at least 512. In this case, we try again with
+         strictly less than PIPE_BUF characters. */
+      if (n >= 512) { n = 256; goto again; }
+    }
+  }
 #endif
   leave_blocking_section();
   if (retcode == -1) sys_error(NULL);

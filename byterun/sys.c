@@ -98,9 +98,17 @@ value sys_exit(retcode)          /* ML */
 #ifndef O_TEXT
 #define O_TEXT 0
 #endif
+#ifndef O_NONBLOCK
+#ifdef O_NDELAY
+#define O_NONBLOCK O_NDELAY
+#else
+#define O_NONBLOCK 0
+#endif
+#endif
 
 static int sys_open_flags[] = {
-  O_RDONLY, O_WRONLY, O_APPEND, O_CREAT, O_TRUNC, O_EXCL, O_BINARY, O_TEXT
+  O_RDONLY, O_WRONLY, O_APPEND, O_CREAT, O_TRUNC, O_EXCL,
+  O_BINARY, O_TEXT, O_NONBLOCK
 };
 
 value sys_open(path, flags, perm) /* ML */
