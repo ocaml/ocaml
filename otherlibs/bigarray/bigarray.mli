@@ -369,14 +369,14 @@ module Array1: sig
   val dim: ('a, 'b, 'c) t -> int
         (* Return the size (dimension) of the given one-dimensional 
            big array. *)
-  external get: ('a, 'b, 'c) t -> int -> 'a = "bigarray_get_1"
+  external get: ('a, 'b, 'c) t -> int -> 'a = "%bigarray_ref_1"
         (* [Array1.get a x], or alternatively [a.{x}], 
            returns the element of [a] at index [x].
            [x] must be greater or equal than [0] and strictly less than
            [Array1.dim a] if [a] has C layout.  If [a] has Fortran layout,
            [x] must be greater or equal than [1] and less or equal than
            [Array1.dim a].  Otherwise, [Invalid_arg] is raised. *)
-  external set: ('a, 'b, 'c) t -> int -> 'a -> unit = "bigarray_set_1"
+  external set: ('a, 'b, 'c) t -> int -> 'a -> unit = "%bigarray_set_1"
         (* [Array1.set a x v], also written [a.{x} <- v],
            stores the value [v] at index [x] in [a].
            [x] must be inside the bounds of [a] as described in [Array1.get];
@@ -425,13 +425,13 @@ module Array2: sig
   val dim2: ('a, 'b, 'c) t -> int
         (* Return the second dimension of the given two-dimensional 
            big array. *)
-  external get: ('a, 'b, 'c) t -> int -> int -> 'a = "bigarray_get_2"
+  external get: ('a, 'b, 'c) t -> int -> int -> 'a = "%bigarray_ref_2"
         (* [Array2.get a x y], also written [a.{x,y}],
            returns the element of [a] at coordinates ([x], [y]).
            [x] and [y] must be within the bounds
            of [a], as described for [Genarray.get]; otherwise, [Invalid_arg]
            is raised. *)
-  external set: ('a, 'b, 'c) t -> int -> int -> 'a -> unit = "bigarray_set_2"
+  external set: ('a, 'b, 'c) t -> int -> int -> 'a -> unit = "%bigarray_set_2"
         (* [Array2.set a x y v], or alternatively [a.{x,y} <- v],
            stores the value [v] at coordinates ([x], [y]) in [a].
            [x] and [y] must be within the bounds of [a],
@@ -507,13 +507,13 @@ module Array3: sig
   val dim3: ('a, 'b, 'c) t -> int
         (* Return the third dimension of the given three-dimensional 
            big array. *)
-  external get: ('a, 'b, 'c) t -> int -> int -> int -> 'a = "bigarray_get_3"
+  external get: ('a, 'b, 'c) t -> int -> int -> int -> 'a = "%bigarray_ref_3"
         (* [Array3.get a x y z], also written [a.{x,y,z}],
            returns the element of [a] at coordinates ([x], [y], [z]).
            [x], [y] and [z] must be within the bounds of [a],
            as described for [Genarray.get]; otherwise, [Invalid_arg]
            is raised. *)
-  external set: ('a, 'b, 'c) t -> int -> int -> int -> 'a -> unit = "bigarray_set_3"
+  external set: ('a, 'b, 'c) t -> int -> int -> int -> 'a -> unit = "%bigarray_set_3"
         (* [Array3.set a x y v], or alternatively [a.{x,y,z} <- v],
            stores the value [v] at coordinates ([x], [y], [z]) in [a].
            [x], [y] and [z] must be within the bounds of [a],

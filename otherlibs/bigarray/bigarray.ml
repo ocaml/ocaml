@@ -90,8 +90,8 @@ module Array1 = struct
   type ('a, 'b, 'c) t = ('a, 'b, 'c) Genarray.t
   let create kind layout dim =
     Genarray.create kind layout [|dim|]
-  external get: ('a, 'b, 'c) t -> int -> 'a = "bigarray_get_1"
-  external set: ('a, 'b, 'c) t -> int -> 'a -> unit = "bigarray_set_1"
+  external get: ('a, 'b, 'c) t -> int -> 'a = "%bigarray_ref_1"
+  external set: ('a, 'b, 'c) t -> int -> 'a -> unit = "%bigarray_set_1"
   let dim a = Genarray.nth_dim a 0
   external sub: ('a, 'b, 'c) t -> int -> int -> ('a, 'b, 'c) t = "bigarray_sub"
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit = "bigarray_blit"
@@ -109,8 +109,8 @@ module Array2 = struct
   type ('a, 'b, 'c) t = ('a, 'b, 'c) Genarray.t
   let create kind layout dim1 dim2 =
     Genarray.create kind layout [|dim1; dim2|]
-  external get: ('a, 'b, 'c) t -> int -> int -> 'a = "bigarray_get_2"
-  external set: ('a, 'b, 'c) t -> int -> int -> 'a -> unit = "bigarray_set_2"
+  external get: ('a, 'b, 'c) t -> int -> int -> 'a = "%bigarray_ref_2"
+  external set: ('a, 'b, 'c) t -> int -> int -> 'a -> unit = "%bigarray_set_2"
   let dim1 a = Genarray.nth_dim a 0
   let dim2 a = Genarray.nth_dim a 1
   external sub_left: ('a, 'b, c_layout) t -> int -> int -> ('a, 'b, c_layout) t = "bigarray_sub"
@@ -141,8 +141,8 @@ module Array3 = struct
   type ('a, 'b, 'c) t = ('a, 'b, 'c) Genarray.t
   let create kind layout dim1 dim2 dim3 =
     Genarray.create kind layout [|dim1; dim2; dim3|]
-  external get: ('a, 'b, 'c) t -> int -> int -> int -> 'a = "bigarray_get_3"
-  external set: ('a, 'b, 'c) t -> int -> int -> int -> 'a -> unit = "bigarray_set_3"
+  external get: ('a, 'b, 'c) t -> int -> int -> int -> 'a = "%bigarray_ref_3"
+  external set: ('a, 'b, 'c) t -> int -> int -> int -> 'a -> unit = "%bigarray_set_3"
   let dim1 a = Genarray.nth_dim a 0
   let dim2 a = Genarray.nth_dim a 1
   let dim3 a = Genarray.nth_dim a 2
