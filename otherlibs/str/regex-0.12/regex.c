@@ -17,7 +17,10 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+   Modified by Xavier.Leroy@inria.fr for integration in Objective Caml
+*/
 
 /* AIX requires this to be the first thing in the file. */
 #if defined (_AIX) && !defined (REGEX_MALLOC)
@@ -2263,7 +2266,7 @@ compile_range (p_ptr, pend, translate, syntax, b)
    change it ourselves.  */
 /* Xavier Leroy 14/10/1998: bumped from 2000 to 8000 because 2000
    causes failures even with relatively simple patterns */
-int re_max_failures = 8000;
+static int re_max_failures = 8000;
 
 typedef const unsigned char *fail_stack_elt_t;
 
@@ -4648,7 +4651,37 @@ re_compile_pattern (pattern, length, bufp)
 
   return re_error_msg[(int) ret];
 }     
+
+/* Free dynamically allocated space used by PREG.  */
+
+void
+re_free (preg)
+    struct re_pattern_buffer *preg;
+{
+  if (preg->buffer != NULL)
+    free (preg->buffer);
+  preg->buffer = NULL;
+  
+  preg->allocated = 0;
+  preg->used = 0;
+
+  if (preg->fastmap != NULL)
+    free (preg->fastmap);
+  preg->fastmap = NULL;
+  preg->fastmap_accurate = 0;
+
+  if (preg->translate != NULL)
+    free (preg->translate);
+  preg->translate = NULL;
+}
+
 
+
+/* XL: we don't need the BSD/POSIX emulation, and it causes name conflicts
+   with some C libraries. */
+
+#if 0
+
 /* Entry points compatible with 4.2 BSD regex library.  We don't define
    them if this is an Emacs or POSIX compilation.  */
 
@@ -4707,7 +4740,7 @@ re_exec (s)
 
 /* POSIX.2 functions.  Don't define these for Emacs.  */
 
-#ifndef emacs
+#if !defined(emacs) && !defined(CAML)
 
 /* regcomp takes a regular expression as a string and compiles it.
 
@@ -4931,24 +4964,12 @@ void
 regfree (preg)
     regex_t *preg;
 {
-  if (preg->buffer != NULL)
-    free (preg->buffer);
-  preg->buffer = NULL;
-  
-  preg->allocated = 0;
-  preg->used = 0;
-
-  if (preg->fastmap != NULL)
-    free (preg->fastmap);
-  preg->fastmap = NULL;
-  preg->fastmap_accurate = 0;
-
-  if (preg->translate != NULL)
-    free (preg->translate);
-  preg->translate = NULL;
+  re_free(preg);
 }
 
 #endif /* not emacs  */
+
+#endif /* 0 */
 
 /*
 Local variables:

@@ -15,7 +15,10 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+   Modified by Xavier.Leroy@inria.fr for integration in Objective Caml
+*/
 
 #ifndef __REGEXP_LIBRARY_H__
 #define __REGEXP_LIBRARY_H__
@@ -470,6 +473,12 @@ extern void re_set_registers
   _RE_ARGS ((struct re_pattern_buffer *buffer, struct re_registers *regs,
              unsigned num_regs, regoff_t *starts, regoff_t *ends));
 
+/* XL: free the given BUFFER */
+extern void re_free _RE_ARGS ((struct re_pattern_buffer *buffer));
+
+#if 0
+/* XL: we don't need BSD/POSIX compatibility */
+
 /* 4.2 bsd compatibility.  */
 extern char *re_comp _RE_ARGS ((const char *));
 extern int re_exec _RE_ARGS ((const char *));
@@ -483,6 +492,8 @@ extern size_t regerror
   _RE_ARGS ((int errcode, const regex_t *preg, char *errbuf,
              size_t errbuf_size));
 extern void regfree _RE_ARGS ((regex_t *preg));
+
+#endif
 
 #endif /* not __REGEXP_LIBRARY_H__ */
 
