@@ -4,7 +4,10 @@ let rec fib n =
   if n < 2 then 1 else fib(n-1) + fib(n-2)
 
 let format_result n =
-  "Result = " ^ string_of_int n
+  let r = "Result = " ^ string_of_int n in
+  (* Allocate gratuitously to test GC *)
+  for i = 1 to 1500 do String.create 256 done;
+  r
 
 (* Registration *)
 

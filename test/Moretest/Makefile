@@ -20,14 +20,14 @@ manyargs.out: manyargs.cmx manyargsprim.o
 multdef.out: multdef.cmx usemultdef.cmx
 	$(CAMLOPT) -o multdef.out multdef.cmx usemultdef.cmx
 
-cm.byt:
+cm.byt: cmcaml.ml cmstub.c cmmain.c
 	$(CAMLC) -custom -o cm.byt cmcaml.ml cmstub.c cmmain.c
 
-cmlinked.out: cmcaml.cmo
+cmlinked.out: cmcaml.ml cmstub.c cmmain.c
 	$(CAMLC) -output-obj -o cm.o cmcaml.ml
 	$(BYTECC) -g -o cmlinked.out cm.o -I$(LIBDIR) -DNO_BYTECODE_FILE cmstub.c cmmain.c ../../byterun/libcamlrun.a $(CCLIBS)
 
-cm.out:
+cm.out: cmcaml.ml cmstub.c cmmain.c
 	$(CAMLOPT) -output-obj -o cm.o cmcaml.ml
 	$(NATIVECC) -g -o cm.out cm.o -I$(LIBDIR) -DNO_BYTECODE_FILE cmstub.c cmmain.c ../../asmrun/libasmrun.a $(CCLIBS)
 

@@ -1,5 +1,6 @@
 #include "mlvalues.h"
 #include "memory.h"
+#include "callback.h"
 
 value mycallback1(fun, arg)
      value fun, arg;
