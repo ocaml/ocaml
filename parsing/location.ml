@@ -135,6 +135,12 @@ open Format
 let reset () =
   num_loc_lines := 0
 
+let (msg_file, msg_line, msg_chars, msg_to, msg_colon, warn_head) =
+  match (Sys.get_config ()).Sys.os_type with
+  | "MacOS" -> ("File \"", "\"; line ", "; characters ", " to ", "", "### ")
+  | _ -> ("File \"", "\", line ", ", characters ", "-", ":", "")
+;;
+
 let print loc =
   if String.length !input_name = 0 then
     if highlight_location loc then () else begin
@@ -145,16 +151,17 @@ let print loc =
     end
   else begin
     let (linenum, linebeg) = line_pos_file !input_name loc.loc_start in
-    print_string "File \""; print_string !input_name;
-    print_string "\", line "; print_int linenum;
-    print_string ", characters "; print_int (loc.loc_start - linebeg);
-    print_string "-"; print_int (loc.loc_end - linebeg);
-    print_string ":";
+	print_string msg_file; print_string !input_name;
+	print_string msg_line; print_int linenum;
+	print_string msg_chars; print_int (loc.loc_start - linebeg);
+	print_string msg_to; print_int (loc.loc_end - linebeg);
+	print_string msg_colon;
     force_newline()
   end
 
 let print_warning loc msg =
   print loc;
+  print_string warn_head;
   print_string "Warning: "; print_string msg; print_newline();
   incr num_loc_lines
 
