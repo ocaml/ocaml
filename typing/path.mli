@@ -26,3 +26,7 @@ val binding_time: t -> int
 val nopos: int
 
 val name: t -> string
+    (* Return the print name, e.g., "F(X).M.foo" *)
+val unique_name : t -> string
+    (* Return a name with head components appearing as unique names,
+       e.g., "F_42(X_84).M.foo" *)
