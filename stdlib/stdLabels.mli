@@ -50,6 +50,7 @@ module Array :
     val fold_right : f:('a -> 'b -> 'b) -> 'a array -> init:'b -> 'b
     val sort : cmp:('a -> 'a -> int) -> 'a array -> unit
     val stable_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
+    val fast_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
     external unsafe_get : 'a array -> int -> 'a = "%array_unsafe_get"
     external unsafe_set : 'a array -> int -> 'a -> unit = "%array_unsafe_set"
   end
@@ -97,6 +98,7 @@ module List :
     val combine : 'a list -> 'b list -> ('a * 'b) list
     val sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
     val stable_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
+    val fast_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
   end
 
 module String :
