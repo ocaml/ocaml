@@ -283,6 +283,8 @@ have caml-electric-indent on, which see.")
 
   ;; caml-types
   (define-key caml-mode-map [?\C-c?\C-t] 'caml-types-show-type)
+  ;; to prevent misbehavior in case of error during exploration.
+  (define-key caml-mode-map [mouse-2] 'caml-types-mouse-ignore)
   (define-key caml-mode-map [down-mouse-2] 'caml-types-explore)
   ;; caml-help
   (define-key caml-mode-map [?\C-c?i] 'ocaml-add-path)

@@ -21,6 +21,8 @@
       (require 'caml-xemacs)
     (require 'caml-emacs)))
 
+
+
 (defvar caml-types-location-re nil "Regexp to parse *.annot files.
 
 Annotation files *.annot may be generated with the \"-dtypes\" option 
@@ -161,7 +163,7 @@ See `caml-types-location-re' for annotation file format.
          (target-date (nth 5 (file-attributes target-file))))
     (unless (and caml-types-annotation-tree
                  (not (caml-types-date< caml-types-annotation-date type-date)))
-      (if (caml-types-date< type-date target-date)
+      (if (and type-date target-date (caml-types-date< type-date target-date))
           (error (format "%s is more recent than %s" target-file type-file)))
       (message "Reading annotation file...")
       (let* ((type-buf (caml-types-find-file type-file))
@@ -380,6 +382,9 @@ See `caml-types-location-re' for annotation file format.
     )
   buf))
 
+(defun caml-types-mouse-ignore (event)
+  (interactive "e")
+  nil)
 
 (defun caml-types-explore (event)
   "Explore type annotations by mouse dragging.
@@ -395,59 +400,81 @@ and its type is displayed in the minibuffer, until the move is released."
          (target-line) (target-bol)
          target-pos
          Left Right limits cnum node mes type
-         (tree caml-types-annotation-tree)
          region
          )
-    (caml-types-preprocess type-file)
-    (unless caml-types-buffer 
-      (setq caml-types-buffer (get-buffer-create caml-types-buffer-name)))
-      ;; (message "Drag the mouse to explore types")
     (unwind-protect
-        (caml-track-mouse
-         (setq region
-               (caml-types-typed-make-overlay target-buf
-                                        (caml-event-point-start event)))
-         (while (and event
-                     (integer-or-marker-p
-                      (setq cnum (caml-event-point-end event))))
-           (if (and region (<= (car region) cnum) (<= cnum (cdr region)))
-               (if (and limits (>= cnum (car limits)) (< cnum (cdr limits)))
-                   (message mes)
-                 (setq target-bol
-                       (save-excursion (goto-char cnum)
-                                       (caml-line-beginning-position)))
-                 (setq target-line
-                       (1+ (count-lines (point-min) target-bol)))
-                 (setq target-pos (vector target-file target-line target-bol cnum))
-                 (save-excursion
-                   (setq node (caml-types-find-location target-pos () tree))
-                   (set-buffer caml-types-buffer)
-                   (erase-buffer)
-                   (cond
-                    (node
-                     (setq Left (caml-types-get-pos target-buf (elt node 0)))
-                     (setq Right (caml-types-get-pos target-buf (elt node 1)))
-                     (move-overlay caml-types-expr-ovl Left Right target-buf)
-                     (setq limits (caml-types-find-interval target-buf target-pos
-                                                            node))
-                     (setq type (elt node 2))
-                     )
-                    (t
-                     (delete-overlay caml-types-expr-ovl)
-                     (setq type "*no type information*")
-                     (setq limits (caml-types-find-interval target-buf target-pos
-                                                            tree))
-                     ))
-                   (message (setq mes (format "type: %s" type)))
-                   (insert type)
-                   )))
-             (setq event (caml-read-event))
-             (unless (mouse-movement-p event) (setq event nil))
-             )
-         )
-      (delete-overlay caml-types-expr-ovl)
-      (delete-overlay caml-types-typed-ovl)
-      )))
+        (progn
+          (if type-file (caml-types-preprocess type-file)
+            (error
+             "No annotation file. You may compile with \"-dtypes\" option"))
+          (unless caml-types-buffer 
+            (setq caml-types-buffer
+                  (get-buffer-create caml-types-buffer-name)))
+          ;; (message "Drag the mouse to explore types")
+          (unwind-protect
+              (caml-track-mouse
+               (setq region
+                     (caml-types-typed-make-overlay
+                      target-buf (caml-event-point-start event)))
+               (while (and event
+                           (integer-or-marker-p
+                            (setq cnum (caml-event-point-end event))))
+                 (if (and region (<= (car region) cnum) (<= cnum (cdr region)))
+                     (if (and limits
+                              (>= cnum (car limits)) (< cnum (cdr limits)))
+                         (message mes)
+                       (setq target-bol
+                             (save-excursion
+                               (goto-char cnum) (caml-line-beginning-position))
+                             target-line (1+ (count-lines (point-min)
+                                                          target-bol))
+                             target-pos
+                             (vector target-file target-line target-bol cnum))
+                       (save-excursion
+                         (setq node (caml-types-find-location
+                                     target-pos () caml-types-annotation-tree))
+                         (set-buffer caml-types-buffer)
+                         (erase-buffer)
+                         (cond
+                          (node
+                           (setq Left
+                                 (caml-types-get-pos target-buf (elt node 0))
+                                 Right
+                                 (caml-types-get-pos target-buf (elt node 1)))
+                           (move-overlay
+                            caml-types-expr-ovl Left Right target-buf)
+                           (setq limits
+                                 (caml-types-find-interval target-buf
+                                                           target-pos node)
+                                 type (elt node 2))
+                           )
+                          (t
+                           (delete-overlay caml-types-expr-ovl)
+                           (setq type "*no type information*")
+                           (setq limits
+                                 (caml-types-find-interval
+                                  target-buf target-pos
+                                  caml-types-annotation-tree))
+                           ))
+                         (message (setq mes (format "type: %s" type)))
+                         (insert type)
+                         )))
+                 (setq event (caml-read-event))
+                 (unless (mouse-movement-p event) (setq event nil))
+                 )
+               )
+            (delete-overlay caml-types-expr-ovl)
+            (delete-overlay caml-types-typed-ovl)
+            ))
+      ;; the mouse is down. One should prevent against mouse release,
+      ;; which could do something undesirable.
+      ;; In most common cases, next event will be mouse release.
+      ;; However, it could also be a character stroke before mourse release.
+      ;; Will then execute the action for mouse release (if bound).
+      ;; Emacs does not allow to test whether mouse is up or down.
+      ;; Same problem may happen abouve while exploring
+      (if (and event (caml-read-event)))
+      ))
 
 (defun caml-types-typed-make-overlay (target-buf pos)
   (interactive "p")
