@@ -460,7 +460,7 @@ class latex =
 	      e :: (iter q)
 	in
 	(iter defs2) @
-	[Latex ("\\index{"^(self#type_label s_name)^"@\\verb`"^(self#type_label ~no_:false s_name)^"`}\n")] @
+	[Latex ("\\index{"^(self#type_label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
 	(self#text_of_info t.ty_info)
       in
       self#latex_of_text 
@@ -693,7 +693,7 @@ class latex =
       output_string chanout ((self#latex_of_class ~with_link: false c)^"\n\n") ;
       let s_name = Name.simple c.cl_name in
       output_string chanout
-	(self#latex_of_text [Latex ("\\index{"^(self#class_label s_name)^"@\\verb`"^(self#class_label ~no_:false s_name)^"`}\n")]);
+	(self#latex_of_text [Latex ("\\index{"^(self#class_label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]);
       output_string chanout (self#latex_of_text rest_t) ;
       (* parameters *)
       output_string chanout 
@@ -724,7 +724,7 @@ class latex =
       output_string chanout ((self#latex_of_class_type ~with_link: false ct)^"\n\n") ;
       let s_name = Name.simple ct.clt_name in
       output_string chanout
-	(self#latex_of_text [Latex ("\\index{"^(self#class_type_label s_name)^"@\\verb`"^(self#class_type_label ~no_:false s_name)^"`}\n")]);
+	(self#latex_of_text [Latex ("\\index{"^(self#class_type_label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]);
       output_string chanout ((self#latex_of_text rest_t)) ;
       output_string chanout (self#latex_of_text [ Newline]) ;
       output_string chanout ("\\vspace{0.5cm}\n\n");
@@ -751,7 +751,7 @@ class latex =
 	output_string chanout ((self#latex_of_module_type ~with_link: false mt)^"\n\n");
       let s_name = Name.simple mt.mt_name in
       output_string chanout
-	(self#latex_of_text [Latex ("\\index{"^(self#module_type_label s_name)^"@\\verb`"^(self#module_type_label ~no_:false s_name)^"`}\n")]);
+	(self#latex_of_text [Latex ("\\index{"^(self#module_type_label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]);
       output_string chanout (self#latex_of_text rest_t) ;
       (* parameters *)
       output_string chanout 
@@ -792,7 +792,7 @@ class latex =
 	output_string chanout ((self#latex_of_module ~with_link: false m)^"\n\n");
       let s_name = Name.simple m.m_name in
       output_string chanout
-	(self#latex_of_text [Latex ("\\index{"^(self#module_label s_name)^"@\\verb`"^(self#module_label ~no_:false s_name)^"`}\n")]);
+	(self#latex_of_text [Latex ("\\index{"^(self#module_label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]);
       output_string chanout (self#latex_of_text rest_t) ;
       (* parameters *)
       output_string chanout 
