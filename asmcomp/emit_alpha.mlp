@@ -588,7 +588,7 @@ let fundecl fundecl =
   emit_all fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   if !range_check_trap > 0 then
-    `{emit_label !range_check_trap}:	call_pal PAL_gentrap\n`;
+    `{emit_label !range_check_trap}:	br	call_array_bound_error\n`;
   `	.end	{emit_symbol fundecl.fun_name}\n`
 
 (* Emission of data *)
@@ -638,7 +638,6 @@ let data l =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
-  `#include <alpha/pal.h>\n`;
   (* There are really two groups of registers:
       $sp and $15 always point to stack locations
       $0 - $14, $16-$23 never point to stack locations. *)

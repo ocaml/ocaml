@@ -466,7 +466,7 @@ let fundecl fundecl =
   if !call_gc_label > 0 then
     `{emit_label !call_gc_label}:	j	caml_call_gc\n`;
   if !range_check_trap > 0 then
-    `{emit_label !range_check_trap}:	break	BRK_RANGE\n`;
+    `{emit_label !range_check_trap}:	j	array_bound_error\n`;
   `	.end	{emit_symbol fundecl.fun_name}\n`
 
 (* Emission of data *)
