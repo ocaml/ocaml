@@ -1,3 +1,29 @@
+Objective Caml 3.06:
+--------------------
+
+Type-checking:
+- Apply value restriction to polymorphic record fields.
+
+Run-time system:
+- Fixed GC bug affecting lazy values.
+
+Both compilers:
+- Added option "-version" to print just the version number.
+- Fixed wrong dependencies in .cmi generated with the -pack option.
+
+Native-code compiler:
+- Fixed wrong return value for inline bigarray assignments.
+
+Libraries:
+- Unix.getsockopt: make sure result is a valid boolean.
+
+Tools:
+- ocamlbrowser: improved error reporting; small Win32 fixes.
+
+Windows ports:
+- Fixed two problems with the Mingw port under Cygwin 1.3.
+
+
 Objective Caml 3.05:
 --------------------
 
