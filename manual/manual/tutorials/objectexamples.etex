@@ -759,7 +759,8 @@ class backup =
     method restore = match copy with Some x -> x | None -> self
   end;;
 \end{caml_example}
-The above will only save one level. 
+The above definition will only backup one level. 
+Backuping can be added to any class using multiple inheritance.
 \begin{caml_example}
 class ['a] backup_ref x = object inherit ['a] ref x inherit backup end;;
 let rec get p n = if n = 0 then p # get else get (p # restore) (n-1);;
@@ -767,8 +768,8 @@ let p = new backup_ref 0  in
 p # save; p # set 1; p # save; p # set 2; 
 [get p 0; get p 1; get p 2; get p 3; get p 4];;
 \end{caml_example}
-A variant can retain all copies. (We add a method clear to manually erase
-all copies so that old version can be garbage collected.)
+A variant of backups could retain all copies. (We then add a method clear to
+manually erase all copies.)
 \begin{caml_example}
 class backup = 
   object (self : 'mytype)
@@ -905,11 +906,13 @@ class money x =
 \label{ss:friends}
 
 The above class "money" reveals a problem that often occurs with binary
-methods.  In order to interact with other objects of the same class, the 
-representation of "money" objects must be revealed as a method "value". 
-Note that if we remove the two binary methods "plus" and "leq", the
-representation could be hidden inside objects by 
-removing the method "value" as well. 
+methods.  In order to interact with other objects of the same class, the
+representation of "money" objects must be revealed, using a method such as
+"value". If we remove all binary methods (here "plus" and "leq"),
+the representation can easily be hidden inside objects by removing the method
+"value" as well. However, this is not possible as long as some binary
+requires access to the representation on object of the same class but
+different from self.
 \begin{caml_example}
 class safe_money x =
   object (self : 'a)
@@ -952,7 +955,7 @@ module Euro : MONEY =
 \end{caml_example*}
 Another example of friend functions may be found in section
 \ref{module:set}.  These examples occur when a group of objects (here
-objects of the same class) and function should see each others internal
+objects of the same class) and functions should see each others internal
 representation, while their representation should be hidden from the
 outside. The solution is always to define all friends in the same module,
 give access to the representation and use a signature constraint to make the
