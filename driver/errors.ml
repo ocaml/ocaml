@@ -30,8 +30,8 @@ let report_error exn =
       Location.print loc; Translcore.report_error err
   | Symtable.Error code ->
       Symtable.report_error code
-  | Linker.Error code ->
-      Linker.report_error code
+  | Bytelink.Error code ->
+      Bytelink.report_error code
   | Librarian.Error code ->
       Librarian.report_error code
   | Sys_error msg ->

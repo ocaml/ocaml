@@ -11,7 +11,8 @@ open Typedtree
    then the standard library directory. *)
 
 let init_path () =
-  load_path := "" :: List.rev (Config.standard_library :: !Clflags.include_dirs);
+  load_path :=
+    "" :: List.rev (Config.standard_library :: !Clflags.include_dirs);
   Env.reset_cache()
 
 (* Return the initial environment in which compilation proceeds. *)
@@ -25,12 +26,6 @@ let initial_env () =
   with Not_found ->
     fatal_error "cannot open Pervasives.cmi"
 
-(* Compute the CRC of a file *)
-
-let file_crc ic =
-  seek_in ic 0;
-  Crc.for_channel ic (in_channel_length ic)
-
 (* Compile a .mli file *)
 
 let interface sourcefile =
@@ -41,33 +36,27 @@ let interface sourcefile =
   Location.input_name := sourcefile;
   try
     let sg = Typemod.transl_signature (initial_env()) (Parse.interface lb) in
-    let crc = file_crc ic in
     close_in ic;
     if !Clflags.print_types then (Printtyp.signature sg; print_flush());
-    Env.save_signature sg modulename crc (prefixname ^ ".cmi")
+    Env.save_signature sg modulename (prefixname ^ ".cmi");
+    ()
   with x ->
     close_in ic;
     raise x
 
+(* Compile a .ml file *)
+
 let print_if flag printer arg =
   if !flag then begin printer arg; print_newline() end;
   arg
-
-let write_lambda prefixname lam =
-  if !Clflags.write_lambda then begin
-    let oc = open_out_bin (prefixname ^ ".cmx") in
-    output_value oc lam;
-    close_out oc
-  end;
-  lam
 
 let implementation sourcefile =
   let prefixname = Filename.chop_suffix sourcefile ".ml" in
   let modulename = capitalize(Filename.basename prefixname) in
   let objfile = prefixname ^ ".cmo" in
   let ic = open_in_bin sourcefile in
-  let lb = Lexing.from_channel ic in
   let oc = open_out_bin objfile in
+  let lb = Lexing.from_channel ic in
   Location.input_name := sourcefile;
   try
     let (str, sg, finalenv) =
@@ -79,16 +68,14 @@ let implementation sourcefile =
           Env.read_signature modulename (prefixname ^ ".cmi") in
         (Includemod.signatures Env.initial sg dclsig, crc)
       end else begin
-        let crc = file_crc ic in
-        Env.save_signature sg modulename crc (prefixname ^ ".cmi");
+        let crc = Env.save_signature sg modulename (prefixname ^ ".cmi") in
         (Tcoerce_none, crc)
       end in
     Emitcode.to_file oc modulename crc
       (print_if Clflags.dump_instr Printinstr.instrlist
-        (Codegen.compile_implementation
-          (write_lambda prefixname
-            (print_if Clflags.dump_lambda Printlambda.lambda
-              (Translmod.transl_implementation modulename str coercion)))));
+        (Bytegen.compile_implementation
+          (print_if Clflags.dump_lambda Printlambda.lambda
+            (Translmod.transl_implementation modulename str coercion))));
     close_in ic;
     close_out oc
   with x ->

@@ -44,7 +44,6 @@ let main () =
        "-dlambda", Arg.Unit(fun () -> dump_lambda := true);
        "-dinstr", Arg.Unit(fun () -> dump_instr := true);
        "-v", Arg.Unit print_version_number;
-       "-wlambda", Arg.Unit(fun () -> write_lambda := true);
        "-", Arg.String process_file]
       process_file;
     if !make_archive then begin
@@ -53,7 +52,7 @@ let main () =
     end
     else if not !compile_only & !objfiles <> [] then begin
       Compile.init_path();
-      Linker.link (List.rev !objfiles)
+      Bytelink.link (List.rev !objfiles)
     end;
     exit 0
   with x ->
