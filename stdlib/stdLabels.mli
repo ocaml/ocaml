@@ -113,6 +113,7 @@ module String :
       src:string -> src_pos:int -> dst:string -> dst_pos:int -> len:int ->
         unit
     val concat : sep:string -> string list -> string
+    val iter : f:(char -> unit) -> string -> unit
     val escaped : string -> string
     val index : string -> char -> int
     val rindex : string -> char -> int
