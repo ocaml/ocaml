@@ -16,11 +16,12 @@ struct regexp_struct {
 
 typedef struct regexp_struct * regexp;
 
-static void free_regexp(expr)
-     value expr;
+static void free_regexp(vexpr)
+     value vexpr;
 {
-  ((regexp)Bp_val(expr))->re.translate = NULL;
-  regfree(&(((regexp)Bp_val(expr))->re));
+  regexp expr = (regexp) Bp_val(vexpr);
+  expr->re.translate = NULL;
+  regfree(&(expr->re));
 }
 
 static regexp alloc_regexp()
@@ -33,12 +34,13 @@ static regexp alloc_regexp()
 
 #define RE_SYNTAX RE_SYNTAX_EMACS
 
+static char * case_fold_table = NULL;
+
 value str_compile_regexp(src, fold) /* ML */
      value src, fold;
 {
   regexp expr;
   char * msg;
-  char * case_fold_table;
 
   Push_roots(root, 1);
   root[0] = src;
@@ -46,17 +48,15 @@ value str_compile_regexp(src, fold) /* ML */
   src = root[0];
   Pop_roots();
   re_syntax_options = RE_SYNTAX;
-  if (Bool_val(fold)) {
+  if (Bool_val(fold) && case_fold_table == NULL) {
     int i;
     case_fold_table = stat_alloc(256);
     for (i = 0; i <= 255; i++) case_fold_table[i] = i;
     for (i = 'A'; i <= 'Z'; i++) case_fold_table[i] = i + 32;
     for (i = 192; i <= 214; i++) case_fold_table[i] = i + 32;
     for (i = 216; i <= 222; i++) case_fold_table[i] = i + 32;
-  } else {
-    case_fold_table = NULL;
   }
-  expr->re.translate = case_fold_table;
+  expr->re.translate = Bool_val(fold) ? case_fold_table : NULL;
   expr->re.fastmap = stat_alloc(256);
   expr->re.buffer = NULL;
   expr->re.allocated = 0;
