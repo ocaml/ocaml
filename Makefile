@@ -102,7 +102,8 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   utils/config.cmo utils/clflags.cmo \
   typing/ident.cmo typing/path.cmo typing/types.cmo typing/btype.cmo \
   typing/predef.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
-  bytecomp/dll.cmo bytecomp/symtable.cmo toplevel/expunge.cmo
+  bytecomp/dllpath.cmo bytecomp/dll.cmo \
+  bytecomp/symtable.cmo toplevel/expunge.cmo
 
 PERVASIVES=arg array buffer callback char digest filename format gc hashtbl \
   lexing list map obj parsing pervasives printexc printf queue random \
