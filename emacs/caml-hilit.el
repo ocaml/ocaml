@@ -30,8 +30,7 @@
           "\\|v\\(al\\(ue\\)?\\|irtual\\)\\)\\>")
          nil 'ForestGreen)
 ;blocking
-   '("\\(\\<\\|:\\)\\(object\\|struct\\|sig\\|begin\\|end\\)\\>"
-     2 include)
+   '("\\<\\(object\\|struct\\|sig\\|begin\\|end\\)\\>" 2 include)
 ;control
    (list (concat
           "\\<\\(do\\(ne\\|wnto\\)?\\|else\\|for\\|if"

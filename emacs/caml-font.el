@@ -54,7 +54,8 @@
           "\\|v\\(al\\(ue\\)?\\|irtual\\)\\)\\>")
          'font-lock-type-face)
 ;blocking
-   '("\\<begin\\|end\\|object\\|s\\(ig\\|truct\\)\\>" . font-lock-keyword-face)
+   '("\\<\\(begin\\|end\\|object\\|s\\(ig\\|truct\\)\\)\\>"
+     . font-lock-keyword-face)
 ;control
    (cons (concat
           "\\<\\(do\\(ne\\|wnto\\)?\\|else\\|for\\|if"
