@@ -127,7 +127,10 @@ type control =
        relevant to the byte-code runtime, as the native code runtime
        uses the operating system's stack.  Default: 256k. *) 
 }
-(** The GC parameters are given as a [control] record. *)
+(** The GC parameters are given as a [control] record.  Note that
+    these parameters can also be initialised by setting the
+    OCAMLRUNPARAM environment variable.  See the documentation of
+    ocamlrun. *)
 
 external stat : unit -> stat = "caml_gc_stat"
 (** Return the current values of the memory management counters in a
