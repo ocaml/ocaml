@@ -15,8 +15,6 @@
 
 #include <mlvalues.h>
 #include "unixsupport.h"
-#include <winsock.h>
-#include <sys/types.h>
 
 static int sockopt_bool[] = {
   SO_DEBUG, SO_BROADCAST, SO_REUSEADDR, SO_KEEPALIVE,
@@ -36,7 +34,7 @@ CAMLprim value getsockopt_int(int *sockopt, value socket,
   int optsize;
 
   optsize = sizeof(optval);
-  if (getsockopt((SOCKET) Handle_val(socket),
+  if (getsockopt(Socket_val(socket),
                  level, sockopt[Int_val(option)],
 		 (void *) &optval, &optsize) == -1)
     uerror("getsockopt", Nothing);
@@ -47,7 +45,7 @@ CAMLprim value setsockopt_int(int *sockopt, value socket, int level,
                               value option, value status)
 {
   int optval = Int_val(status);
-  if (setsockopt((SOCKET) Handle_val(socket),
+  if (setsockopt(Socket_val(socket),
                  level, sockopt[Int_val(option)],
 		 (void *) &optval, sizeof(optval)) == -1)
     uerror("setsockopt", Nothing);
@@ -80,7 +78,7 @@ CAMLprim value getsockopt_optint(int *sockopt, value socket,
   value res = Val_int(0);			/* None */
 
   optsize = sizeof(optval);
-  if (getsockopt((SOCKET) Handle_val(socket),
+  if (getsockopt(Socket_val(socket),
                  level, sockopt[Int_val(option)],
 		 (void *) &optval, &optsize) == -1)
     uerror("getsockopt_optint", Nothing);
@@ -99,7 +97,7 @@ CAMLprim value setsockopt_optint(int *sockopt, value socket, int level,
   optval.l_onoff = Is_block (status);
   if (optval.l_onoff)
     optval.l_linger = Int_val (Field (status, 0));
-  if (setsockopt((SOCKET) Handle_val(socket),
+  if (setsockopt(Socket_val(socket),
                  level, sockopt[Int_val(option)],
 		 (void *) &optval, sizeof(optval)) == -1)
     uerror("setsockopt_optint", Nothing);
@@ -123,7 +121,7 @@ CAMLprim value getsockopt_float(int *sockopt, value socket,
   int optsize;
 
   optsize = sizeof(tv);
-  if (getsockopt((SOCKET) Handle_val(socket),
+  if (getsockopt(Socket_val(socket),
                  level, sockopt[Int_val(option)],
 		 (void *) &tv, &optsize) == -1)
     uerror("getsockopt_float", Nothing);
@@ -139,7 +137,7 @@ CAMLprim value setsockopt_float(int *sockopt, value socket, int level,
   tv_f = Double_val(status);
   tv.tv_sec = (int)tv_f;
   tv.tv_usec = (int) (1e6 * (tv_f - tv.tv_sec));
-  if (setsockopt((SOCKET) Handle_val(socket),
+  if (setsockopt(Socket_val(socket),
                  level, sockopt[Int_val(option)],
 		 (void *) &tv, sizeof(tv)) == -1)
     uerror("setsockopt_float", Nothing);

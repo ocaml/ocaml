@@ -14,8 +14,6 @@
 /* $Id$ */
 
 #include <misc.h>
-#include <sys/types.h>
-#include <winsock.h>
 
 union sock_addr_union {
   struct sockaddr s_gen;

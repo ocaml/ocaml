@@ -28,6 +28,10 @@ CAMLprim value unix_dup2(value fd1, value fd2)
     return -1;
   }
   Handle_val(fd2) = newh;
-  CloseHandle(oldh);
+  if (Descr_kind_val(fd2) == KIND_SOCKET)
+    closesocket((SOCKET) oldh);
+  else
+    CloseHandle(oldh);
+  Descr_kind_val(fd2) = Descr_kind_val(fd1);
   return Val_unit;
 }

@@ -2,9 +2,9 @@
 /*                                                                     */
 /*                           Objective Caml                            */
 /*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
+/*  Contributed by Tracy Camp, PolyServe Inc., <campt@polyserve.com>   */
 /*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
+/*  Copyright 2002 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
 /*  under the terms of the GNU Library General Public License, with    */
 /*  the special exception on linking described in file ../../LICENSE.  */
@@ -13,22 +13,17 @@
 
 /* $Id$ */
 
+#include <stdio.h>
 #include <mlvalues.h>
 #include "unixsupport.h"
-#include "socketaddr.h"
-  
-CAMLprim value unix_bind(socket, address)
-     value socket, address;
-{
-  int ret;
-  union sock_addr_union addr;
-  socklen_param_type addr_len;
 
-  get_sockaddr(address, &addr, &addr_len);
-  ret = bind(Socket_val(socket), &addr.s_gen, addr_len);
-  if (ret == -1) {
-    win32_maperr(WSAGetLastError());
-    uerror("bind", Nothing);
-  }
+CAMLprim value unix_rename(value path1, value path2)
+{
+  if (MoveFileEx(String_val(path1), String_val(path2),
+		 MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
+		 MOVEFILE_COPY_ALLOWED) == 0) {
+    win32_maperr(GetLastError());
+    uerror("rename", path1);
+  }	
   return Val_unit;
 }

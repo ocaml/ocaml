@@ -26,8 +26,9 @@ COMPFLAGS=-warn-error A
 WIN_OBJS = accept.obj bind.obj channels.obj close.obj \
   close_on.obj connect.obj createprocess.obj dup.obj dup2.obj errmsg.obj \
   getpeername.obj getpid.obj getsockname.obj gettimeofday.obj \
-  link.obj listen.obj lseek.obj \
-  mkdir.obj open.obj pipe.obj read.obj select.obj sendrecv.obj \
+  link.obj listen.obj lockf.obj lseek.obj \
+  mkdir.obj open.obj pipe.obj read.obj rename.obj \
+  select.obj sendrecv.obj \
   shutdown.obj sleep.obj socket.obj sockopt.obj startup.obj stat.obj \
   system.obj unixsupport.obj windir.obj winwait.obj write.obj
 
@@ -35,7 +36,7 @@ WIN_OBJS = accept.obj bind.obj channels.obj close.obj \
 UNIX_FILES = access.c addrofstr.c chdir.c chmod.c cst2constr.c \
   cstringv.c envir.c execv.c execve.c execvp.c \
   exit.c getcwd.c gethost.c gethostname.c getproto.c \
-  getserv.c gmtime.c putenv.c rename.c rmdir.c \
+  getserv.c gmtime.c putenv.c rmdir.c \
   socketaddr.c strofaddr.c time.c unlink.c utimes.c
 
 UNIX_OBJS = $(UNIX_FILES:.c=.obj)
@@ -65,6 +66,8 @@ copy_unix_files:
 
 io.h: "$(SYSTEM_INCLUDES)\io.h"
 	copy "$(SYSTEM_INCLUDES)\io.h" io.h
+
+$(C_OBJS:.obj=.dobj) $(C_OBJS:.obj=.sobj): unixsupport.h
 
 unix.cma: $(CAML_OBJS)
 	$(CAMLC) -a -linkall -o unix.cma $(CAML_OBJS) \

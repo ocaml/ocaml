@@ -376,7 +376,7 @@ type lock_command =
   | F_RLOCK
   | F_TRLOCK
 
-let lockf fd cmd exten = invalid_arg "Unix.lockf not implemented"
+external lockf : file_descr -> lock_command -> int -> unit = "unix_lockf"
 let kill pid signo = invalid_arg "Unix.kill not implemented"
 type sigprocmask_command = SIG_SETMASK | SIG_BLOCK | SIG_UNBLOCK
 let sigprocmask cmd sigs = invalid_arg "Unix.sigprocmask not implemented"

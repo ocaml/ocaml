@@ -22,7 +22,7 @@
 CAMLprim value unix_accept(sock)
      value sock;
 {
-  SOCKET sconn = (SOCKET) Handle_val(sock);
+  SOCKET sconn = Socket_val(sock);
   SOCKET snew;
   value fd = Val_unit, adr = Val_unit, res;
   int oldvalue, oldvaluelen, newvalue, retcode;
@@ -52,7 +52,7 @@ CAMLprim value unix_accept(sock)
     uerror("accept", Nothing);
   }
   Begin_roots2 (fd, adr)
-    fd = win_alloc_handle((HANDLE) snew);
+    fd = win_alloc_socket(snew);
     adr = alloc_sockaddr(&addr, addr_len);
     res = alloc_small(2, 0);
     Field(res, 0) = fd;

@@ -18,14 +18,13 @@
 #include <memory.h>
 #include <signals.h>
 #include "unixsupport.h"
-#include <winsock.h>
 
 static void fdlist_to_fdset(value fdlist, fd_set *fdset)
 {
   value l;
   FD_ZERO(fdset);
   for (l = fdlist; l != Val_int(0); l = Field(l, 1)) {
-    FD_SET((SOCKET) Handle_val(Field(l, 0)), fdset);
+    FD_SET(Socket_val(Field(l, 0)), fdset);
   }
 }
 
@@ -35,7 +34,7 @@ static value fdset_to_fdlist(value fdlist, fd_set *fdset)
   Begin_roots2(fdlist, res)
     for (/*nothing*/; fdlist != Val_int(0); fdlist = Field(fdlist, 1)) {
       value s = Field(fdlist, 0);
-      if (FD_ISSET((SOCKET) Handle_val(s), fdset)) {
+      if (FD_ISSET(Socket_val(s), fdset)) {
         value newres = alloc_small(2, 0);
         Field(newres, 0) = s;
         Field(newres, 1) = res;

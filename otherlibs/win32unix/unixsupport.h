@@ -21,10 +21,24 @@
 #include "io.h"
 #include <direct.h>
 #include <process.h>
+#include <sys/types.h>
+#include <winsock.h>
 
-#define Handle_val(v) (*((HANDLE *) Data_custom_val(v)))
+struct filedescr {
+  union {
+    HANDLE handle;
+    SOCKET socket;
+  } fd;
+  enum { KIND_HANDLE, KIND_SOCKET } kind;
+};
 
+#define Handle_val(v) (((struct filedescr *) Data_custom_val(v))->fd.handle)
+#define Socket_val(v) (((struct filedescr *) Data_custom_val(v))->fd.socket)
+#define Descr_kind_val(v) (((struct filedescr *) Data_custom_val(v))->kind)
+
+extern value win_alloc_handle_or_socket(HANDLE);
 extern value win_alloc_handle(HANDLE);
+extern value win_alloc_socket(SOCKET);
 
 #define Nothing ((value) 0)
 

@@ -15,7 +15,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <mlvalues.h>
-#include <winsock.h>
+#include "unixsupport.h"
 
 value val_process_id;
 
@@ -48,5 +48,5 @@ static int std_handles[3] = {
 
 CAMLprim value win_stdhandle(value nhandle)
 {
-  return win_alloc_handle(GetStdHandle(std_handles[Int_val(nhandle)]));
+  return win_alloc_handle_or_socket(GetStdHandle(std_handles[Int_val(nhandle)]));
 }

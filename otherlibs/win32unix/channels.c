@@ -27,5 +27,5 @@ CAMLprim value win_fd_handle(value handle)
 
 CAMLprim value win_handle_fd(value fd)
 {
-  return win_alloc_handle((HANDLE) _get_osfhandle(Int_val(fd)));
+  return win_alloc_handle_or_socket((HANDLE) _get_osfhandle(Int_val(fd)));
 }

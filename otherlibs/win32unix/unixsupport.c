@@ -22,7 +22,6 @@
 #include "unixsupport.h"
 #include "cst2constr.h"
 #include <errno.h>
-#include <winsock.h>
 
 /* Heap-allocation of Windows file handles */
 
@@ -49,9 +48,27 @@ static struct custom_operations win_handle_ops = {
 
 value win_alloc_handle(HANDLE h)
 {
-  value res = 
-    alloc_custom(&win_handle_ops, sizeof(HANDLE), 0, 1);
+  value res = alloc_custom(&win_handle_ops, sizeof(struct filedescr), 0, 1);
   Handle_val(res) = h;
+  Descr_kind_val(res) = KIND_HANDLE;
+  return res;
+}
+
+value win_alloc_socket(SOCKET s)
+{
+  value res = alloc_custom(&win_handle_ops, sizeof(struct filedescr), 0, 1);
+  Socket_val(res) = s;
+  Descr_kind_val(res) = KIND_SOCKET;
+  return res;
+}
+
+value win_alloc_handle_or_socket(HANDLE h)
+{
+  value res = win_alloc_handle(h);
+  int opt;
+  int optlen = sizeof(opt);
+  if (getsockopt((SOCKET) h, SOL_SOCKET, SO_TYPE, (char *)&opt, &optlen) == 0)
+    Descr_kind_val(res) = KIND_SOCKET;
   return res;
 }
 
