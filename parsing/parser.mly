@@ -595,7 +595,7 @@ class_simple_expr:
   | OBJECT class_structure END
       { mkclass(Pcl_structure($2)) }
   | OBJECT class_structure error
-      { unclosed "class" 1 "end" 3 }
+      { unclosed "object" 1 "end" 3 }
   | LPAREN class_expr COLON class_type RPAREN
       { mkclass(Pcl_constraint($2, $4)) }
   | LPAREN class_expr COLON class_type error
@@ -689,7 +689,7 @@ class_signature:
   | OBJECT class_sig_body END
       { mkcty(Pcty_signature $2) }
   | OBJECT class_sig_body error
-      { unclosed "sig" 1 "end" 3 }
+      { unclosed "object" 1 "end" 3 }
 ;
 class_sig_body:
     class_self_type class_sig_fields
@@ -879,6 +879,10 @@ expr:
       { mkassert $2 }
   | LAZY simple_expr %prec below_SHARP
       { mkexp (Pexp_lazy ($2)) }
+  | OBJECT class_structure END
+      { mkexp (Pexp_object($2)) }
+  | OBJECT class_structure error
+      { unclosed "object" 1 "end" 3 }
 ;
 simple_expr:
     val_longident
