@@ -178,12 +178,6 @@ value interprete(prog, prog_size)
     Assert(sp >= stack_low);
     Assert(sp <= stack_high);
 #endif
-#if BC_PROFILE
-    {
-      extern unsigned long bc_counts [];
-      ++ bc_counts [*pc];
-    }
-#endif /* BC_PROFILE */
     switch(*pc++) {
 #endif
 
