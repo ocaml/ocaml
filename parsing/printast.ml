@@ -169,6 +169,9 @@ and pattern i x =
       line i "Ppat_constraint";
       pattern i p;
       core_type i ct;
+  | Ppat_type li ->
+      line i "PPat_type";
+      longident i li
 
 and expression i x =
   line i "expression %a\n" fmt_location x.pexp_loc;

@@ -1027,6 +1027,8 @@ simple_pattern:
       { mkpat(Ppat_construct($1, None, false)) }
   | name_tag
       { mkpat(Ppat_variant($1, None)) }
+  | SHARP type_longident
+      { mkpat(Ppat_type $2) }
   | LBRACE lbl_pattern_list opt_semi RBRACE
       { mkpat(Ppat_record(List.rev $2)) }
   | LBRACE lbl_pattern_list opt_semi error

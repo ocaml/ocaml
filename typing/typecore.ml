@@ -53,6 +53,7 @@ type error =
   | Abstract_wrong_label of label * type_expr
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
+  | Not_a_variant_type of Longident.t
 
 exception Error of Location.t * error
 
@@ -117,6 +118,57 @@ let rec extract_row_fields p =
       [l, Rpresent(Some ty)]
   | _ ->
       raise Not_found
+
+let build_or_pat env loc lid =
+  let path, decl =
+    try Env.lookup_type lid env
+    with Not_found ->
+      raise(Typetexp.Error(loc, Typetexp.Unbound_type_constructor lid))
+  in
+  let tyl, ty =
+    match decl.type_manifest with
+      None -> raise(Error(loc, Not_a_variant_type lid))
+    | Some ty -> instance_parameterized_type decl.type_params ty
+  in
+  let fields =
+    match (repr ty).desc with
+      Tvariant row when static_row row ->
+        (row_repr row).row_fields
+    | _ -> raise(Error(loc, Not_a_variant_type lid))
+  in
+  let bound = ref [] in
+  let pats, fields =
+    List.fold_left
+      (fun (pats,fields) (l,f) ->
+        match row_field_repr f with
+          Rpresent None ->
+            (l,None) :: pats,
+            (l, Reither(true,[], ref None)) :: fields
+        | Rpresent (Some ty) ->
+            bound := ty :: !bound;
+            (l, Some{pat_desc=Tpat_any; pat_loc=Location.none; pat_env=env;
+                     pat_type=ty})
+            :: pats,
+            (l, Reither(false, [ty], ref None)) :: fields
+        | _ -> pats, fields)
+      ([],[]) fields in
+  let row =
+    { row_fields = fields; row_more = newvar(); row_bound = !bound;
+      row_closed = false; row_name = Some (path, tyl) }
+  in
+  let ty = newty (Tvariant row) in
+  let pats =
+    List.map (fun (l,p) -> {pat_desc=Tpat_variant(l,p,row); pat_loc=loc;
+                            pat_env=env; pat_type=ty})
+      pats
+  in
+  match pats with
+    [] -> raise(Error(loc, Not_a_variant_type lid))
+  | pat :: pats ->
+      List.fold_left
+        (fun pat pat0 -> {pat_desc=Tpat_or(pat,pat0); pat_loc=loc;
+                          pat_env=env; pat_type=ty})
+        pat pats
 
 let rec type_pat env sp =
   match sp.ppat_desc with
@@ -247,6 +299,8 @@ let rec type_pat env sp =
       let ty = Typetexp.transl_simple_type env false sty in
       unify_pat env p ty;
       p
+  | Ppat_type lid ->
+      build_or_pat env sp.ppat_loc lid
 
 let add_pattern_variables env =
   let pv = !pattern_variables in
@@ -1316,3 +1370,6 @@ let report_error = function
       print_string "The instance variable "; longident lid; print_space ();
       print_string
         "cannot be accessed from the definition of another instance variable"
+  | Not_a_variant_type lid ->
+      print_string "The type "; longident lid; print_space ();
+      print_string "is not a variant type"
