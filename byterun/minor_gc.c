@@ -69,7 +69,7 @@ void oldify (value v, value *p)
   value result, field0;
   header_t hd;
   mlsize_t sz, i;
-  int tag;
+  tag_t tag;
 
  tail_call:
   if (Is_block (v) && Is_young (v)){
