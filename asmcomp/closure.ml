@@ -59,7 +59,8 @@ let occurs_var var u =
     | Uwhile(cond, body) -> occurs cond or occurs body
     | Ufor(id, lo, hi, dir, body) -> occurs lo or occurs hi or occurs body
     | Uassign(id, u) -> id = var or occurs u
-    | Usend(met, obj, args) -> List.exists occurs (met::obj::args)
+    | Usend(met, obj, args) -> 
+        occurs met or occurs obj or List.exists occurs args
   and occurs_array a =
     try
       for i = 0 to Array.length a - 1 do

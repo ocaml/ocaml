@@ -371,7 +371,8 @@ let new_const_symbol () =
   incr const_label;
   Compilenv.current_unit_name () ^ "_" ^ string_of_int !const_label
 
-let structured_constants = ref ([] : (string * structured_constant) list)
+let structured_constants =
+  (Hashtbl.create 19 : (structured_constant, string) Hashtbl.t)
 
 let transl_constant = function
     Const_base(Const_int n) ->
@@ -381,9 +382,14 @@ let transl_constant = function
   | Const_pointer n ->
       Cconst_pointer((n lsl 1) + 1)
   | cst ->
-      let lbl = new_const_symbol() in
-      structured_constants := (lbl, cst) :: !structured_constants;
-      Cconst_symbol lbl
+      let lbl =
+        try
+          Hashtbl.find structured_constants cst
+        with Not_found ->
+          let lbl = new_const_symbol() in
+          Hashtbl.add structured_constants cst lbl;
+          lbl
+      in Cconst_symbol lbl
 
 (* Translate an expression *)
 
@@ -927,12 +933,13 @@ and emit_string_constant s cont =
 
 (* Emit all structured constants *)
 
-let rec emit_all_constants cont =
-  match !structured_constants with
-    [] -> cont
-  | (lbl, cst) :: rem ->
-      structured_constants := rem;
-      emit_all_constants (Cdata(emit_constant lbl cst []) :: cont)
+let emit_all_constants cont =
+  let c = ref cont in
+  Hashtbl.iter
+    (fun cst lbl -> c := Cdata(emit_constant lbl cst []) :: !c)
+    structured_constants;
+  Hashtbl.clear structured_constants;
+  !c
 
 (* Translate a compilation unit *)
 
