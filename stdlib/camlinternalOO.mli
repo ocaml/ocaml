@@ -41,17 +41,17 @@ val narrow : table -> string array -> string array -> string array -> unit
 val widen : table -> unit
 val add_initializer : table -> (obj -> unit) -> unit
 val dummy_table : table
-val create_table : int -> string array -> table
+val create_table : string array -> table
 val init_class : table -> unit
 val inherits :
     table -> string array -> string array -> string array ->
     (t * (table -> obj -> Obj.t) * t * obj) -> bool -> Obj.t
 val make_class :
-    int -> string array -> (table -> Obj.t -> t) ->
+    string array -> (table -> Obj.t -> t) ->
     (t * (table -> Obj.t -> t) * (Obj.t -> t) * Obj.t)
 type init_table
 val make_class_store :
-    int -> string array -> (table -> t) -> init_table -> unit
+    string array -> (table -> t) -> init_table -> unit
 
 (** {6 Objects} *)
 
@@ -135,6 +135,5 @@ val params : params
 type stats =
   { classes : int; 
     methods : int; 
-    inst_vars : int;
-    buckets : int }
+    inst_vars : int }
 val stats : unit -> stats

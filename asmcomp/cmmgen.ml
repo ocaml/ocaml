@@ -312,81 +312,8 @@ let string_length exp =
 
 (* Message sending *)
 
-(*
-let lookup_tag obj tag =
-  bind "tag" tag (fun tag ->
-    let table = Ident.create "table" in
-    let n = untag_int (Cop(Cload Word, [Cvar table])) in
-    let tag =
-      match tag with
-        Cconst_int tag ->
-          Cconst_natint
-            (Nativeint.logand (Nativeint.of_int (tag lsr 1)) 0x7fffffffn)
-      | Cconst_natint tag ->
-          Cconst_natint
-            (Nativeint.logand (Nativeint.shift_right tag 1) 0x7fffffffn)
-      | _ ->
-          let tag = Cop(Clsr, [tag; Cconst_int 1]) in
-          if log2_size_addr = 4 then tag else
-          Cop(Cand, [tag; Cconst_natint 0x7fffffffn])
-    in
-    let lab = Cop(Caddi, [Cop(Cmodi, [tag; n]); Cconst_int 1]) in
-    Clet(table, Cop (Cload Word, [obj]),
-         Cop(Cload Word,
-             [Cop (Cadda, [Cvar table; lsl_const lab log2_size_addr])])))
-
-let lookup_tag obj tag =
-  bind "tag" tag (fun tag ->
-    let table = Ident.create "table" in
-    let index = Cop (Cload Word, [Cop (Cload Word, [Cvar table])]) in
-    let lab = Cop(Capply typ_addr, [index; tag; Cconst_pointer 0]) in
-    Clet(table, Cop (Cload Word, [obj]),
-         addr_array_ref (Cvar table) lab))
-*)
-
-let decode_tag tag =
-  let n = Nativeint.logand (Nativeint.shift_right tag 1) 0x7fffffffn in
-  let lab3 = Nativeint.to_int (Nativeint.rem n 1291n)
-  and n' = Nativeint.to_int (Nativeint.div n 1291n) in
-  let lab2 = n' mod 1291 and lab1 = n' / 1291 in
-  (* Printf.eprintf "%nd = (%d, %d, %d)\n" n lab1 lab2 lab3; flush stderr; *)
-  let shift ofs = ofs lsl log2_size_addr in
-  (Cconst_int (shift lab1), Cconst_int (shift lab2), Cconst_int (shift lab3))
-
-let id x = x
-
-let get_var_field ofs ptr =
-  match ofs with
-    Cconst_int 0 -> Cop (Cload Word, [ptr])
-  | _ -> Cop (Cload Word, [Cop (Cadda, [ptr; ofs])])
-
-let lookup_tag obj tag =
-  bind "tag" tag (fun tag ->
-    let table = Ident.create "table" in
-    let (wrap, (lab1, lab2, lab3)) =
-      match tag with
-        Cconst_int tag -> id, decode_tag (Nativeint.of_int tag)
-      | Cconst_natint tag -> id, decode_tag tag
-      | _ ->
-          let itag = Ident.create "tag" in
-          let tag' = Cop(Clsr, [tag; Cconst_int 1]) in
-          let tag' =
-            if log2_size_addr = 4 then tag else
-            Cop(Cand, [tag; Cconst_natint 0x7fffffffn]) in
-          let shift ofs = lsl_const ofs log2_size_addr in
-          (fun cmm -> Clet(itag, tag', cmm)),
-          (shift (Cop (Cdivi, [Cvar itag; Cconst_int 1666681])),
-           shift (Cop (Cmodi, [Cop (Cdivi, [Cvar itag; Cconst_int 1291]);
-                               Cconst_int 1291])),
-           shift (Cop (Cmodi, [Cvar itag; Cconst_int 1291])))
-    in
-    wrap
-      (get_var_field lab3
-         (get_var_field lab2
-            (get_var_field lab1 (Cop (Cload Word, [obj]))))))
-
 let lookup_label kind obj lab =
-  if kind = Public then lookup_tag obj lab else
+  if kind = Public then assert false else
   bind "lab" lab (fun lab ->
     let table = Cop (Cload Word, [obj]) in
     addr_array_ref table lab)
