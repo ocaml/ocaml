@@ -429,10 +429,10 @@ let build_custom_runtime prim_name exec_name =
     "Unix" | "Cygwin" ->
       Ccomp.command
        (Printf.sprintf
-          "%s -o %s -I%s %s %s %s %s -lcamlrun %s"
+          "%s -o %s %s %s %s %s %s -lcamlrun %s"
           !Clflags.c_linker
           exec_name
-          Config.standard_library
+          (Clflags.std_include_flag "-I")
           (String.concat " " (List.rev !Clflags.ccopts))
           prim_name
           (String.concat " "
@@ -444,10 +444,10 @@ let build_custom_runtime prim_name exec_name =
       let retcode =
       Ccomp.command
        (Printf.sprintf
-          "%s /Fe%s -I%s %s %s %s %s %s"
+          "%s /Fe%s %s %s %s %s %s %s"
           !Clflags.c_linker
           exec_name
-          Config.standard_library
+          (Clflags.std_include_flag "-I")
           (String.concat " " (List.rev !Clflags.ccopts))
           prim_name
           (String.concat " "
@@ -470,12 +470,11 @@ let build_custom_runtime prim_name exec_name =
       and linkppc = "ppclink -d"
       and objsppc = extract ".x" (List.rev !Clflags.ccobjs)
       and q_prim_name = Filename.quote prim_name
-      and q_stdlib = Filename.quote Config.standard_library
       and q_exec_name = Filename.quote exec_name
       in
-      Ccomp.run_command (Printf.sprintf "%s -i %s %s %s -o %s.x"
+      Ccomp.run_command (Printf.sprintf "%s %s %s %s -o %s.x"
         cppc
-        q_stdlib
+        (Clflags.std_include_flag "-i ")
         (String.concat " " (List.rev_map Filename.quote !Clflags.ccopts))
         q_prim_name
         q_prim_name);

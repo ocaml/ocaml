@@ -90,6 +90,7 @@ module Options = Main_args.Make_options (struct
   let _noassert = set noassert
   let _nolabels = set classic
   let _noautolink = set no_auto_link
+  let _nostdlib = set no_std_include
   let _o s = exec_name := s; archive_name := s; object_name := s
   let _output_obj () = output_c_object := true; custom_runtime := true
   let _pack = set make_package

@@ -53,6 +53,7 @@ module Options = Main_args.Make_options (struct
   let _noassert = option "-noassert"
   let _nolabels = option "-nolabels"
   let _noautolink = option "-noautolink"
+  let _nostdlib = option "-nostdlib"
   let _o s = option_with_arg "-o" s
   let _output_obj = option "-output-obj"
   let _pack = option "-pack"

@@ -95,6 +95,8 @@ let main () =
        "-noautolink", Arg.Set no_auto_link,
              " Don't automatically link C libraries specified in .cma files";
        "-nolabels", Arg.Set classic, " Ignore non-optional labels in types";
+       "-nostdlib", Arg.Set no_std_include,
+           " do not add standard directory to the list of include directories";
        "-o", Arg.String(fun s -> exec_name := s;
                                  archive_name := s;
                                  object_name := s),

@@ -34,6 +34,7 @@ module Make_options (F :
       val _noassert : unit -> unit
       val _noautolink : unit -> unit
       val _nolabels : unit -> unit
+      val _nostdlib : unit -> unit
       val _o : string -> unit
       val _output_obj : unit -> unit
       val _pack : unit -> unit

@@ -34,6 +34,7 @@ module Make_options (F :
      val _noassert : unit -> unit
      val _noautolink : unit -> unit
      val _nolabels : unit -> unit
+     val _nostdlib : unit -> unit
      val _o : string -> unit
      val _output_obj : unit -> unit
      val _pack : unit -> unit
@@ -91,6 +92,8 @@ struct
     "-noautolink", Arg.Unit F._noautolink,
            " Don't automatically link C libraries specified in .cma files";
     "-nolabels", Arg.Unit F._nolabels, " Ignore non-optional labels in types";
+    "-nostdlib", Arg.Unit F._nostdlib,
+           " do not add default directory to the list of include directories";
     "-o", Arg.String F._o, "<file>  Set output file name to <file>";
     "-output-obj", Arg.Unit F._output_obj,
            " Output a C object file instead of an executable";

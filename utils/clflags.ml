@@ -23,6 +23,7 @@ and exec_name = ref "a.out"             (* -o *)
 and archive_name = ref "library.cma"    (* -o *)
 and object_name = ref ("camlprog" ^ Config.ext_obj) (* -o *)
 and include_dirs = ref ([] : string list)(* -I *)
+and no_std_include = ref false          (* -nostdlib *)
 and print_types = ref false             (* -i *)
 and make_archive = ref false            (* -a *)
 and debug = ref false                   (* -g *)
@@ -37,10 +38,10 @@ and preprocessor = ref(None : string option) (* -pp *)
 and thread_safe = ref false             (* -thread *)
 and noassert = ref false                (* -noassert *)
 and verbose = ref false                 (* -verbose *)
-and use_prims = ref ""                  (* -use_prims ... *)
-and use_runtime = ref ""                (* -use_runtime ... *)
+and use_prims = ref ""                  (* -use-prims ... *)
+and use_runtime = ref ""                (* -use-runtime ... *)
 and recursive_types = ref false         (* -rectypes *)
-and make_runtime = ref false            (* -make_runtime *)
+and make_runtime = ref false            (* -make-runtime *)
 and gprofile = ref false                (* -p *)
 and c_compiler = ref Config.bytecomp_c_compiler (* -cc *)
 and c_linker = ref Config.bytecomp_c_linker (* -cc *)
@@ -74,3 +75,12 @@ let native_code = ref false             (* set to true under ocamlopt *)
 
 let inline_threshold = ref 10
 
+
+let std_include_flag prefix =
+  if !no_std_include then ""
+  else (prefix ^ (Filename.quote Config.standard_library))
+;;
+
+let std_include_dir () =
+  if !no_std_include then [] else [Config.standard_library]
+;;

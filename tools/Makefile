@@ -19,7 +19,7 @@ CAMLC=$(CAMLRUN) ../boot/ocamlc -I ../boot
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
          -I ../driver
-COMPFLAGS= -warn-error A $(INCLUDES)
+COMPFLAGS= -warn-error A $(INCLUDES) -nostdlib
 LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib scrapelabels addlabels

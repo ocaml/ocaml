@@ -24,17 +24,16 @@ let command cmdline =
 
 let run_command cmdline = ignore(command cmdline)
 
-let quote = Filename.quote;;
-
 let compile_file name =
   match Sys.os_type with
   | "MacOS" ->
-     let qname = quote name in
-     let includes = Config.standard_library :: !Clflags.include_dirs in
+     let qname = Filename.quote name in
+     let includes = (Clflags.std_include_dir ()) @ !Clflags.include_dirs
+     in
      let args =
        Printf.sprintf " %s %s -i %s"
-         (String.concat " " (List.rev_map quote !Clflags.ccopts))
-         (String.concat "," (List.rev_map quote includes))
+         (String.concat " " (List.rev_map Filename.quote !Clflags.ccopts))
+         (String.concat "," (List.rev_map Filename.quote includes))
          qname
      in
      run_command ("sc " ^ args ^ " -o " ^ qname ^ ".o");
@@ -42,12 +41,12 @@ let compile_file name =
   | _ ->
      command
        (Printf.sprintf
-         "%s -c %s %s -I%s %s"
+         "%s -c %s %s %s %s"
          !Clflags.c_compiler
          (String.concat " " (List.rev !Clflags.ccopts))
          (String.concat " "
            (List.rev_map (fun dir -> "-I" ^ dir) !Clflags.include_dirs))
-         Config.standard_library
+         (Clflags.std_include_flag "-I")
          name)
 ;;
 

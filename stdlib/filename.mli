@@ -55,14 +55,14 @@ val chop_extension : string -> string
 
 val basename : string -> string
 (** Split a file name into directory name / base file name.
-   {!Filename.concat} [(]{!Filename.dirname}[ name) (]{!Filename.basename}[ name)]
-   returns a file name which is equivalent to [name]. Moreover, after setting the
-   current directory to {!Filename.dirname}[ name] (with {!Sys.chdir}),
-   references to {!Filename.basename}[ name] (which is a relative file name)
+   [concat (dirname name) (basename name)] returns a file name
+   which is equivalent to [name]. Moreover, after setting the
+   current directory to [dirname name] (with {!Sys.chdir}),
+   references to [basename name] (which is a relative file name)
    designate the same file as [name] before the call to {!Sys.chdir}. *)
 
 val dirname : string -> string
-(** See {!Filename.dirname}. *)
+(** See {!Filename.basename}. *)
 
 val temp_file : string -> string -> string
 (** [temp_file prefix suffix] returns the name of a
@@ -83,6 +83,6 @@ val temp_file : string -> string -> string
 
 val quote : string -> string
 (** Return a quoted version of a file name, suitable for use as
-   one argument in a shell command line, escaping any shell
+   one argument in a shell command line, escaping all shell
    meta-characters. *)
 
