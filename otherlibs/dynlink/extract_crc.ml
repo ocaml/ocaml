@@ -14,12 +14,12 @@
 
 (* Print the digests of unit interfaces *)
 
-let load_path = ref ["."]
+let load_path = ref []
 let first = ref true
 
 let print_crc unit =
   try
-    let crc = Dynlink.digest_interface unit !load_path in
+    let crc = Dynlink.digest_interface unit (!load_path @ ["."]) in
     if !first then first := false else print_string ";\n";
     print_string "  \""; print_string (String.capitalize unit);
     print_string "\",\n    \"";
