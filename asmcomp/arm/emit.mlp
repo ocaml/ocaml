@@ -216,16 +216,17 @@ let emit_complex_intconst r n =
 (* Adjust sp (up or down) by the given byte amount *)
 
 let emit_stack_adjustment instr n =
-  decompose_intconst (Nativeint.of_int n)
-    (fun bits ->
-       `	{emit_string instr}	sp, sp, #{emit_nativeint !bits}\n`)
+  if n <= 0 then 0 else
+    decompose_intconst (Nativeint.of_int n)
+      (fun bits ->
+        `	{emit_string instr}	sp, sp, #{emit_nativeint bits}\n`)
 
 (* Adjust alloc_ptr down by the given byte amount *)
 
 let emit_alloc_decrement n =
   decompose_intconst (Nativeint.of_int n)
     (fun bits ->
-       `	sub	alloc_ptr, alloc_ptr, #{emit_nativeint !bits}\n`)
+       `	sub	alloc_ptr, alloc_ptr, #{emit_nativeint bits}\n`)
 
 (* Name of current function *)
 let function_name = ref ""
@@ -323,8 +324,7 @@ let emit_instr i =
         let n = frame_size() in
         if !contains_calls then
           `	ldr	lr, [sp, #{emit_int (n-4)}]\n`;
-        if n > 0 then
-          `	add	sp, sp, #{emit_int n}\n`;
+        ignore (emit_stack_adjustment "add" n);
         `	mov	pc, {emit_reg i.arg.(0)}\n`; 3
     | Lop(Itailcall_imm s) ->
         if s = !function_name then begin
@@ -333,8 +333,7 @@ let emit_instr i =
           let n = frame_size() in
           if !contains_calls then
             `	ldr	lr, [sp, #{emit_int (n-4)}]\n`;
-          if n > 0 then
-            `	add	sp, sp, #{emit_int n}\n`;
+          ignore (emit_stack_adjustment "add" n);
           `	b	{emit_symbol s}\n`; 3
         end
     | Lop(Iextcall(s, alloc)) ->
@@ -480,8 +479,7 @@ let emit_instr i =
         `	ldr	lr, [sp, #{emit_int(n-4)}]\n`; 1
     | Lreturn ->
         let n = frame_size() in
-        if n > 0 then
-          `	add	sp, sp, #{emit_int n}\n`;
+        ignore(emit_stack_adjustment "add" n);
         `	mov	pc, lr\n`; 2
     | Llabel lbl ->
         `{emit_label lbl}:\n`; 0
@@ -598,8 +596,7 @@ let fundecl fundecl =
   `	.global	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   let n = frame_size() in
-  if n > 0 then
-    `	sub	sp, sp, #{emit_int n}\n`;
+  ignore(emit_stack_adjustment "sub" n);
   if !contains_calls then
     `	str	lr, [sp, #{emit_int(n - 4)}]\n`;
   `{emit_label !tailrec_entry_point}:\n`;
