@@ -518,6 +518,15 @@ clean::
 alldepend::
 	-for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) depend & cd ..\..)
 
+# Camlp4
+
+camlp4out:
+	cd camlp4\config & cat Makefile.tpl Makefile-nt.cnf > Makefile
+	cd camlp4 & make
+
+camlp4opt:
+	cd camlp4 & make opt
+
 # Default rules
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
