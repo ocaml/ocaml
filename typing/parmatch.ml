@@ -108,22 +108,23 @@ and compats ps qs = match ps,qs with
 
 exception Empty (* Empty pattern *)
 
-let get_type_descr ty tenv =
-  let ty = Ctype.repr (Ctype.expand_head tenv ty) in
-  match ty.desc with
-  | Tconstr (path,_,_) -> Env.find_type path tenv
-  | _ -> fatal_error "Parmatch.get_type_descr"
-
 let get_type_path ty tenv =
   let ty = Ctype.repr (Ctype.expand_head tenv ty) in
   match ty.desc with
   | Tconstr (path,_,_) -> path
   | _ -> fatal_error "Parmatch.get_type_path"
 
-let get_constr tag ty tenv =
+let get_type_descr ty tenv =
+  match (Ctype.repr ty).desc with
+  | Tconstr (path,_,_) -> Env.find_type path tenv
+  | _ -> fatal_error "Parmatch.get_type_descr"
+
+let rec get_constr tag ty tenv =
   match get_type_descr ty tenv with
   | {type_kind=Type_variant constr_list} ->
       Datarepr.find_constr_by_tag tag constr_list
+  | {type_manifest = Some _} ->
+      get_constr tag (Ctype.expand_head_once tenv ty) tenv
   | _ -> fatal_error "Parmatch.get_constr"
 
 let find_label lbl lbls =
@@ -132,9 +133,11 @@ let find_label lbl lbls =
     name
   with Failure "nth" -> "*Unkown label*"
 
-let get_record_labels ty tenv =
+let rec get_record_labels ty tenv =
   match get_type_descr ty tenv with
   | {type_kind = Type_record(lbls, rep)} -> lbls
+  | {type_manifest = Some _} ->
+      get_record_labels (Ctype.expand_head_once tenv ty) tenv
   | _ -> fatal_error "Parmatch.get_record_labels"
 
 

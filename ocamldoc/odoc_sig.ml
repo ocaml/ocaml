@@ -707,6 +707,9 @@ module Analyser =
             in
             (maybe_more, new_env2, [ Element_module new_module ])
 
+        | Parsetree.Psig_recmodule decls ->
+            assert false (* to be fixed *)
+
         | Parsetree.Psig_modtype (name, Parsetree.Pmodtype_abstract) ->
             let sig_mtype = 
               try Signature_search.search_module_type table name 

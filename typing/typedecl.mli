@@ -32,6 +32,11 @@ val transl_value_decl:
 val transl_with_constraint:
         Env.t -> Parsetree.type_declaration -> type_declaration
 
+val abstract_type_decl: int -> type_declaration
+val approx_type_decl:
+        Env.t -> (string * Parsetree.type_declaration) list ->
+                                  (Ident.t * type_declaration) list
+
 (* for typeclass.ml *)
 val compute_variance_decls:
     Env.t ->

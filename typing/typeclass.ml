@@ -15,6 +15,7 @@
 open Misc
 open Parsetree
 open Asttypes
+open Path
 open Types
 open Typedtree
 open Typecore
@@ -1231,6 +1232,29 @@ let class_type_declarations env cls =
         (ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr))
      decl,
    env)
+
+(*******************************)
+
+let approx_class env sdecl =
+  let (params, _) = sdecl.pci_params in
+  Ctype.begin_def();
+  let ty_params = List.map (fun _ -> Ctype.newvar()) params in
+  let cl_cty =
+    Tcty_signature { cty_self = Ctype.newvar();
+                     cty_vars = Vars.empty;
+                     cty_concr = Concr.empty } in
+  Ctype.end_def();
+  List.iter Ctype.generalize ty_params;
+  generalize_class_type cl_cty;
+  (Ident.create sdecl.pci_name,
+   { clty_params = ty_params; clty_type = cl_cty; clty_path = unbound_class },
+   Ident.create sdecl.pci_name,
+   Typedecl.abstract_type_decl (List.length params),
+   Ident.create ("#" ^ sdecl.pci_name),
+   Typedecl.abstract_type_decl (List.length params))
+
+let approx_class_declarations env sdecls =
+  List.map (approx_class env) sdecls
 
 (*******************************)
 

@@ -135,6 +135,7 @@ and structure_item =
   | Tstr_exception of Ident.t * exception_declaration
   | Tstr_exn_rebind of Ident.t * Path.t
   | Tstr_module of Ident.t * module_expr
+  | Tstr_recmodule of (Ident.t * module_expr) list
   | Tstr_modtype of Ident.t * module_type
   | Tstr_open of Path.t
   | Tstr_class of (Ident.t * int * string list * class_expr) list

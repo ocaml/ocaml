@@ -34,6 +34,7 @@
 #define STACK_OVERFLOW_EXN 8    /* "Stack_overflow" */
 #define SYS_BLOCKED_IO 9        /* "Sys_blocked_io" */
 #define ASSERT_FAILURE_EXN 10   /* "Assert_failure" */
+#define UNDEFINED_RECURSIVE_MODULE_EXN 11 /* "Undefined_recursive_module" */
 
 #ifdef POSIX_SIGNALS
 struct longjmp_buffer {

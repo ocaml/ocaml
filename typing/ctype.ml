@@ -1106,6 +1106,10 @@ let rec try_expand_head env ty =
 
 let _ = try_expand_head' := try_expand_head
 
+(* Expand once the head of a type *)
+let expand_head_once env ty =
+  try expand_abbrev env (repr ty) with Cannot_expand -> assert false
+
 (* Fully expand the head of a type. *)
 let rec expand_head env ty =
   try try_expand_head env ty with Cannot_expand -> repr ty
@@ -2888,20 +2892,20 @@ let rec arity ty =
   | _ -> 0
 
 (* Check whether an abbreviation expands to itself. *)
-let rec cyclic_abbrev env id ty =
-  let ty = repr ty in
-  match ty.desc with
-    Tconstr (Path.Pident id', _, _) when Ident.same id id' ->
-      true
-  | Tconstr (p, tl, abbrev) ->
-      begin try
-        cyclic_abbrev env id (try_expand_head env ty)
-      with Cannot_expand ->
+let cyclic_abbrev env id ty =
+  let rec check_cycle seen ty =
+    let ty = repr ty in
+    match ty.desc with
+      Tconstr (p, tl, abbrev) ->
+        if List.exists (Path.same p) seen then true else begin
+          try
+            check_cycle (p :: seen) (expand_abbrev env ty)
+          with Cannot_expand ->
+            false
+        end
+    | _ ->
         false
-      end
-  | _ ->
-      false
-
+  in check_cycle [Path.Pident id] ty
 
 (* Normalize a type before printing, saving... *)
 let rec normalize_type_rec env ty =

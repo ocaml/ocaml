@@ -126,3 +126,30 @@ let nondep_supertype env mid mty =
 
   in
     nondep_mty Co mty
+
+let enrich_typedecl env p decl =
+  match decl.type_manifest with
+    Some ty -> decl
+  | None ->
+      try
+        let orig_decl = Env.find_type p env in
+        if orig_decl.type_arity <> decl.type_arity 
+        then decl
+        else {decl with type_manifest =
+                Some(Btype.newgenty(Tconstr(p, decl.type_params, ref Mnil)))}
+      with Not_found ->
+        decl
+
+let rec enrich_modtype env p mty =
+  match mty with
+    Tmty_signature sg ->
+      Tmty_signature(List.map (enrich_item env p) sg)
+  | _ ->
+      mty
+
+and enrich_item env p = function
+    Tsig_type(id, decl) ->
+      Tsig_type(id, enrich_typedecl env (Pdot(p, Ident.name id, nopos)) decl)
+  | Tsig_module(id, mty) ->
+      Tsig_module(id, enrich_modtype env (Pdot(p, Ident.name id, nopos)) mty)
+  | item -> item

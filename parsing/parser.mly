@@ -326,7 +326,8 @@ The precedences must be listed from low to high.
 %nonassoc IN
 %nonassoc below_SEMI
 %nonassoc SEMI                          /* below EQUAL ({lbl=...; lbl=...}) */
-%nonassoc LET                           /* above SEMI ( ...; let ... in ...) */
+%nonassoc LET AND                      /* above SEMI ( ...; let ... in ...) */
+                         /* below WITH (module rec A: SIG with ... and ...) */
 %nonassoc below_WITH
 %nonassoc FUNCTION WITH                 /* below BAR  (match ... with ...) */
 %nonassoc THEN                          /* below ELSE (if ... then ...) */
@@ -455,6 +456,8 @@ structure_item:
       { mkstr(Pstr_exn_rebind($2, $4)) }
   | MODULE UIDENT module_binding
       { mkstr(Pstr_module($2, $3)) }
+  | MODULE REC module_rec_bindings
+      { mkstr(Pstr_recmodule(List.rev $3)) }
   | MODULE TYPE ident EQUAL module_type
       { mkstr(Pstr_modtype($3, $5)) }
   | OPEN mod_longident
@@ -473,6 +476,13 @@ module_binding:
       { mkmod(Pmod_constraint($4, $2)) }
   | LPAREN UIDENT COLON module_type RPAREN module_binding
       { mkmod(Pmod_functor($2, $4, $6)) }
+;
+module_rec_bindings:
+    module_rec_binding                            { [$1] }
+  | module_rec_bindings AND module_rec_binding    { $3 :: $1 }
+;
+module_rec_binding:
+    UIDENT COLON module_type EQUAL module_expr    { ($1, $3, $5) }
 ;
 
 /* Module types */
@@ -510,6 +520,8 @@ signature_item:
       { mksig(Psig_exception($2, $3)) }
   | MODULE UIDENT module_declaration
       { mksig(Psig_module($2, $3)) }
+  | MODULE REC module_rec_declarations
+      { mksig(Psig_recmodule(List.rev $3)) }
   | MODULE TYPE ident
       { mksig(Psig_modtype($3, Pmodtype_abstract)) }
   | MODULE TYPE ident EQUAL module_type
@@ -529,6 +541,13 @@ module_declaration:
       { $2 }
   | LPAREN UIDENT COLON module_type RPAREN module_declaration
       { mkmty(Pmty_functor($2, $4, $6)) }
+;
+module_rec_declarations:
+    module_rec_declaration                              { [$1] }
+  | module_rec_declarations AND module_rec_declaration  { $3 :: $1 }
+;
+module_rec_declaration:
+    UIDENT COLON module_type                            { ($1, $3) }
 ;
 
 /* Class expressions */

@@ -257,6 +257,16 @@ type table =
    mutable vars: vars;
    mutable initializers: (obj -> unit) list }
 
+let dummy_table =
+  { buckets = [| |];
+    methods_by_name = Meths.empty;
+    methods_by_label = Labs.empty;
+    previous_states = [];
+    hidden_meths = [];
+    vars = Vars.empty;
+    initializers = [];
+    size = initial_object_size }
+
 let table_count = ref 0
 
 let new_table () =

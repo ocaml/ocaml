@@ -83,7 +83,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
     let outval_of_untyped_exception bucket =
       let name = (O.obj(O.field(O.field bucket 0) 0) : string) in
       let args =
-        if (name = "Match_failure" || name = "Assert_failure")
+        if (name = "Match_failure"
+            || name = "Assert_failure"
+            || name = "Undefined_recursive_module")
         && O.size bucket = 2
         && O.tag(O.field bucket 1) = 0
         then outval_of_untyped_exception_args (O.field bucket 1) 0

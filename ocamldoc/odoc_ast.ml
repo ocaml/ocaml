@@ -66,6 +66,8 @@ module Typedtree_search =
       match tt with
       | Typedtree.Tstr_module (ident, _) -> 
           Hashtbl.add table (M (Name.from_ident ident)) tt
+      | Typedtree.Tstr_recmodule bindings ->
+          assert false (* to be fixed *)
       | Typedtree.Tstr_modtype (ident, _) -> 
           Hashtbl.add table (MT (Name.from_ident ident)) tt
       | Typedtree.Tstr_exception (ident, _) ->
@@ -1103,6 +1105,9 @@ module Analyser =
                let complete_name = Name.concat current_module_name name in
                raise (Failure (Odoc_messages.module_not_found_in_typedtree complete_name))
           )
+
+      | Parsetree.Pstr_recmodule bindings ->
+          assert false (* to be fixed *)
 
       | Parsetree.Pstr_modtype (name, modtype) ->
           let complete_name = Name.concat current_module_name name in

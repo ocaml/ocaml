@@ -37,6 +37,7 @@ val set_method : table -> label -> meth -> unit
 val narrow : table -> string list -> string list -> string list -> unit
 val widen : table -> unit
 val add_initializer : table -> (obj -> unit) -> unit
+val dummy_table : table
 val create_table : string list -> table
 val init_class : table -> unit
 

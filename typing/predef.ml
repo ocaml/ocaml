@@ -76,9 +76,11 @@ and ident_division_by_zero = Ident.create "Division_by_zero"
 and ident_stack_overflow = Ident.create "Stack_overflow"
 and ident_sys_blocked_io = Ident.create "Sys_blocked_io"
 and ident_assert_failure = Ident.create "Assert_failure"
+and ident_undefined_recursive_module = Ident.create "Undefined_recursive_module"
 
 let path_match_failure = Pident ident_match_failure
 and path_assert_failure = Pident ident_assert_failure
+and path_undefined_recursive_module = Pident ident_undefined_recursive_module
 
 let build_initial_env add_type add_exception empty_env =
   let decl_abstr =
@@ -155,6 +157,8 @@ let build_initial_env add_type add_exception empty_env =
   add_exception ident_division_by_zero [] (
   add_exception ident_assert_failure
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
+  add_exception ident_undefined_recursive_module
+                         [newgenty (Ttuple[type_string; type_int; type_int])] (
   add_type ident_int64 decl_abstr (
   add_type ident_int32 decl_abstr (
   add_type ident_nativeint decl_abstr (
@@ -170,7 +174,7 @@ let build_initial_env add_type add_exception empty_env =
   add_type ident_string decl_abstr (
   add_type ident_char decl_abstr (
   add_type ident_int decl_abstr (
-    empty_env))))))))))))))))))))))))))
+    empty_env)))))))))))))))))))))))))))
 
 let builtin_values =
   List.map (fun id -> Ident.make_global id; (Ident.name id, id))
@@ -178,4 +182,4 @@ let builtin_values =
        ident_invalid_argument;
        ident_failure; ident_not_found; ident_sys_error; ident_end_of_file;
        ident_division_by_zero; ident_sys_blocked_io;
-       ident_assert_failure ]
+       ident_assert_failure; ident_undefined_recursive_module ]

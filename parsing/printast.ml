@@ -494,6 +494,9 @@ and signature_item i ppf x =
   | Psig_module (s, mt) ->
       line i ppf "Psig_module \"%s\"\n" s;
       module_type i ppf mt;
+  | Psig_recmodule decls ->
+      line i ppf "Psig_recmodule\n";
+      list i string_x_module_type ppf decls;
   | Psig_modtype (s, md) ->
       line i ppf "Psig_modtype \"%s\"\n" s;
       modtype_declaration i ppf md;
@@ -569,6 +572,9 @@ and structure_item i ppf x =
   | Pstr_module (s, me) ->
       line i ppf "Pstr_module \"%s\"\n" s;
       module_expr i ppf me;
+  | Pstr_recmodule bindings ->
+      line i ppf "Pstr_type\n";
+      list i string_x_modtype_x_module ppf bindings;
   | Pstr_modtype (s, mt) ->
       line i ppf "Pstr_modtype \"%s\"\n" s;
       module_type i ppf mt;
@@ -586,6 +592,15 @@ and structure_item i ppf x =
 and string_x_type_declaration i ppf (s, td) =
   string i ppf s;
   type_declaration (i+1) ppf td;
+
+and string_x_module_type i ppf (s, mty) =
+  string i ppf s;
+  module_type (i+1) ppf mty;
+
+and string_x_modtype_x_module i ppf (s, mty, modl) =
+  string i ppf s;
+  module_type (i+1) ppf mty;
+  module_expr (i+1) ppf modl;
 
 and longident_x_with_constraint i ppf (li, wc) =
   line i ppf "%a\n" fmt_longident li;

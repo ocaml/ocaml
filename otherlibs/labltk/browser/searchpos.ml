@@ -207,6 +207,8 @@ let rec search_pos_signature l ~pos ~env =
           add_found_sig (`Type, Lident "exn") ~env ~loc:pt.psig_loc
       | Psig_module (_, t) -> 
           search_pos_module t ~pos ~env
+      | Psig_recmodule decls -> 
+          assert false (* to be fixed *)
       | Psig_modtype (_, Pmodtype_manifest t) ->
           search_pos_module t ~pos ~env
       | Psig_modtype _ -> ()
@@ -664,6 +666,7 @@ let rec search_pos_structure ~pos str =
   | Tstr_exception _ -> ()
   | Tstr_exn_rebind(_, _) -> ()
   | Tstr_module (_, m) -> search_pos_module_expr m ~pos
+  | Tstr_recmodule bindings -> assert false (* to be fixed *)
   | Tstr_modtype _ -> ()
   | Tstr_open _ -> ()
   | Tstr_class l ->

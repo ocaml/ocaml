@@ -627,6 +627,29 @@ let transl_with_constraint env sdecl =
   generalize_decl decl;
   decl
 
+(* Approximate a type declaration: just make all types abstract *)
+
+let abstract_type_decl arity =
+  let rec make_params n =
+    if n <= 0 then [] else Ctype.newvar() :: make_params (n-1) in
+  Ctype.begin_def();
+  let decl =
+    { type_params = make_params arity;
+      type_arity = arity;
+      type_kind = Type_abstract;
+      type_manifest = None;
+      type_variance = replicate_list (true, true, true) arity } in
+  Ctype.end_def();
+  generalize_decl decl;
+  decl
+
+let approx_type_decl env name_sdecl_list =
+  List.map
+    (fun (name, sdecl) -> 
+      (Ident.create name,
+       abstract_type_decl (List.length sdecl.ptype_params)))
+    name_sdecl_list
+
 (**** Error report ****)
 
 open Format

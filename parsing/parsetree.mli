@@ -209,6 +209,7 @@ and signature_item_desc =
   | Psig_type of (string * type_declaration) list
   | Psig_exception of string * exception_declaration
   | Psig_module of string * module_type
+  | Psig_recmodule of (string * module_type) list
   | Psig_modtype of string * modtype_declaration
   | Psig_open of Longident.t
   | Psig_include of module_type
@@ -250,6 +251,7 @@ and structure_item_desc =
   | Pstr_exception of string * exception_declaration
   | Pstr_exn_rebind of string * Longident.t
   | Pstr_module of string * module_expr
+  | Pstr_recmodule of (string * module_type * module_expr) list
   | Pstr_modtype of string * module_type
   | Pstr_open of Longident.t
   | Pstr_class of class_declaration list

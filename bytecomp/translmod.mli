@@ -29,3 +29,10 @@ val transl_store_package:
 val toplevel_name: Ident.t -> string
 
 val primitive_declarations: string list ref
+
+type error =
+  Circular_dependency of Ident.t
+
+exception Error of Location.t * error
+
+val report_error: Format.formatter -> error -> unit

@@ -33,19 +33,25 @@ let report_error ppf exn =
       Env.report_error ppf err
   | Ctype.Tags(l, l') -> fprintf ppf
       "In this program,@ variant constructors@ `%s and `%s@ \
-       have the same hash value." l l'
+       have the same hash value.@ Change one of them." l l'
   | Typecore.Error(loc, err) ->
       Location.print ppf loc; Typecore.report_error ppf err
   | Typetexp.Error(loc, err) ->
       Location.print ppf loc; Typetexp.report_error ppf err
   | Typedecl.Error(loc, err) ->
       Location.print ppf loc; Typedecl.report_error ppf err
+  | Typeclass.Error(loc, err) ->
+      Location.print ppf loc; Typeclass.report_error ppf err
   | Includemod.Error err ->
       Includemod.report_error ppf err
   | Typemod.Error(loc, err) ->
       Location.print ppf loc; Typemod.report_error ppf err
   | Translcore.Error(loc, err) ->
       Location.print ppf loc; Translcore.report_error ppf err
+  | Translclass.Error(loc, err) ->
+      Location.print ppf loc; Translclass.report_error ppf err
+  | Translmod.Error(loc, err) ->
+      Location.print ppf loc; Translmod.report_error ppf err
   | Compilenv.Error code ->
       Compilenv.report_error ppf code
   | Asmgen.Error code ->
@@ -58,10 +64,6 @@ let report_error ppf exn =
       Asmpackager.report_error ppf code
   | Sys_error msg ->
       fprintf ppf "I/O error: %s" msg
-  | Typeclass.Error(loc, err) ->
-      Location.print ppf loc; Typeclass.report_error ppf err
-  | Translclass.Error(loc, err) ->
-      Location.print ppf loc; Translclass.report_error ppf err
   | Warnings.Errors (n) ->
       fprintf ppf "@.Error: %d error-enabled warnings occurred." n
   | x -> fprintf ppf "@]"; raise x in

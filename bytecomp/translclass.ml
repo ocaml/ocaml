@@ -322,6 +322,9 @@ let transl_class ids cl_id arity pub_meths cl =
 let class_stub =
   Lprim(Pmakeblock(0, Mutable), [lambda_unit; lambda_unit; lambda_unit])
 
+let dummy_class undef_fn =
+  Lprim(Pmakeblock(0, Mutable), [undef_fn; undef_fn; oo_prim "dummy_table"])
+
 (* Error report *)
 
 open Format

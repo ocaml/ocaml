@@ -186,6 +186,10 @@ and add_sig_item bv item =
       List.iter (add_type bv) args; bv
   | Psig_module(id, mty) ->
       add_modtype bv mty; StringSet.add id bv
+  | Psig_recmodule decls ->
+      let bv' = List.fold_right StringSet.add (List.map fst decls) bv in
+      List.iter (fun (id, mty) -> add_modtype bv' mty) decls;
+      bv'
   | Psig_modtype(id, mtyd) ->
       begin match mtyd with
         Pmodtype_abstract -> ()
@@ -232,6 +236,14 @@ and add_struct_item bv item =
       add bv l; bv
   | Pstr_module(id, modl) ->
       add_module bv modl; StringSet.add id bv
+  | Pstr_recmodule bindings ->
+      let bv' =
+        List.fold_right StringSet.add
+          (List.map (fun (id,_,_) -> id) bindings) bv in
+      List.iter
+        (fun (id, mty, modl) -> add_modtype bv' mty; add_module bv' modl) 
+        bindings;
+      bv'
   | Pstr_modtype(id, mty) ->
       add_modtype bv mty; bv
   | Pstr_open l ->

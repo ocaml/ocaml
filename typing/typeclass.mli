@@ -39,6 +39,12 @@ val class_type_declarations:
    Ident.t * type_declaration *
    Ident.t * type_declaration) list * Env.t
 
+val approx_class_declarations:
+  Env.t -> Parsetree.class_description list ->
+  (Ident.t * cltype_declaration *
+   Ident.t * type_declaration *
+   Ident.t * type_declaration) list
+
 type error =
     Unconsistent_constraint of (type_expr * type_expr) list
   | Method_type_mismatch of string * (type_expr * type_expr) list
