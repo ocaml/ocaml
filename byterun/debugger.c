@@ -76,6 +76,7 @@ static void open_connection()
   if (!debugger_in_use) register_global_root((value *) &dbg_in);
   dbg_out = open_descr(dbg_socket);
   if (!debugger_in_use) register_global_root((value *) &dbg_out);
+  if (!debugger_in_use) putword(dbg_out, -1); /* first connection */
   putword(dbg_out, getpid());
   flush(dbg_out);
 }
