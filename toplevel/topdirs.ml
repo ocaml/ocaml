@@ -14,7 +14,7 @@
 
 (* Toplevel directives *)
 
-open Formatmsg
+open Format
 open Misc
 open Longident
 open Path
@@ -24,16 +24,19 @@ open Printval
 open Trace
 open Toploop
 
+(* The standard error formatter *)
+let std_err = err_formatter
+
 (* Return the value referred to by a path *)
 
 let rec eval_path = function
-    Pident id -> Symtable.get_global_value id
+  | Pident id -> Symtable.get_global_value id
   | Pdot(p, s, pos) -> Obj.field (eval_path p) pos
   | Papply(p1, p2) -> fatal_error "Topdirs.eval_path"
 
 (* To quit *)
 
-let dir_quit () = exit 0; ()
+let dir_quit () = exit 0
 
 let _ = Hashtbl.add directive_table "quit" (Directive_none dir_quit)
 
@@ -47,8 +50,7 @@ let _ = Hashtbl.add directive_table "directory" (Directive_string dir_directory)
 
 (* To change the current directory *)
 
-let dir_cd s =
-  Sys.chdir s
+let dir_cd s = Sys.chdir s
 
 let _ = Hashtbl.add directive_table "cd" (Directive_string dir_cd)
 
@@ -56,7 +58,7 @@ let _ = Hashtbl.add directive_table "cd" (Directive_string dir_cd)
 
 exception Load_failed
 
-let load_compunit ic filename compunit =
+let load_compunit ic filename ppf compunit =
   Bytelink.check_consistency filename compunit;
   seek_in ic compunit.cu_pos;
   let code_size = compunit.cu_codesize + 8 in
@@ -72,11 +74,11 @@ let load_compunit ic filename compunit =
     ignore((Meta.reify_bytecode code code_size) ())
   with exn ->
     Symtable.restore_state initial_symtable;
-    print_exception_outcome exn;
+    print_exception_outcome ppf exn;
     raise Load_failed
   end
 
-let dir_load name =
+let dir_load ppf name =
   try
     let filename = find_in_path !Config.load_path name in
     let ic = open_in_bin filename in
@@ -86,34 +88,30 @@ let dir_load name =
       if buffer = Config.cmo_magic_number then begin
         let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
         seek_in ic compunit_pos;
-        load_compunit ic filename (input_value ic : compilation_unit)
+        load_compunit ic filename ppf (input_value ic : compilation_unit)
       end else
       if buffer = Config.cma_magic_number then begin
         let toc_pos = input_binary_int ic in  (* Go to table of contents *)
         seek_in ic toc_pos;
-        List.iter (load_compunit ic filename)
+        List.iter (load_compunit ic filename ppf)
                   (input_value ic : compilation_unit list)
-      end else begin
-        print_string "File "; print_string name;
-        print_string " is not a bytecode object file."; print_newline()
-      end
+      end else fprintf ppf "File %s is not a bytecode object file.@." name
     with Load_failed -> ()
     end;
     close_in ic
-  with Not_found ->
-         print_string "Cannot find file "; print_string name; print_newline()
+  with Not_found -> fprintf ppf "Cannot find file %s.@." name
 
-let _ = Hashtbl.add directive_table "load" (Directive_string dir_load)
+let _ = Hashtbl.add directive_table "load" (Directive_string (dir_load std_err))
 
 (* Load commands from a file *)
 
-let dir_use name = ignore(Toploop.use_file name)
+let dir_use ppf name = ignore(Toploop.use_file ppf name)
 
-let _ = Hashtbl.add directive_table "use" (Directive_string dir_use)
+let _ = Hashtbl.add directive_table "use" (Directive_string (dir_use std_err))
 
 (* Install, remove a printer *)
 
-let find_printer_type lid =
+let find_printer_type ppf lid =
   try
     let (path, desc) = Env.lookup_value lid !toplevel_env in
     Ctype.init_def(Ident.current_time());
@@ -126,38 +124,35 @@ let find_printer_type lid =
     Ctype.generalize ty_arg;
     (ty_arg, path)
   with 
-    Not_found ->
-      print_string "Unbound value "; Printtyp.longident lid;
-      print_newline(); raise Exit
+  | Not_found ->
+      fprintf ppf "Unbound value %a.@." Printtyp.longident lid;
+      raise Exit
   | Ctype.Unify _ ->
+      fprintf ppf "%a has a wrong type for a printing function.@."
       Printtyp.longident lid;
-      print_string " has the wrong type for a printing function";
-      print_newline(); raise Exit
+      raise Exit
     
-let dir_install_printer lid =
+let dir_install_printer ppf lid =
   try
-    let (ty_arg, path) = find_printer_type lid in
+    let (ty_arg, path) = find_printer_type ppf lid in
     let v = (Obj.obj (eval_path path) : 'a -> unit) in
     Printval.install_printer path ty_arg (fun repr -> v (Obj.obj repr))
-  with Exit ->
-    ()
+  with Exit -> ()
 
-let dir_remove_printer lid =
+let dir_remove_printer ppf lid =
   try
-    let (ty_arg, path) = find_printer_type lid in
+    let (ty_arg, path) = find_printer_type ppf lid in
     begin try
       Printval.remove_printer path
     with Not_found ->
-      print_string "No printer named "; Printtyp.longident lid;
-      print_newline()
+      fprintf ppf "No printer named %a.@." Printtyp.longident lid
     end
-  with Exit ->
-    ()
+  with Exit -> ()
 
 let _ = Hashtbl.add directive_table "install_printer"
-             (Directive_ident dir_install_printer)
+             (Directive_ident (dir_install_printer std_err))
 let _ = Hashtbl.add directive_table "remove_printer"
-             (Directive_ident dir_remove_printer)
+             (Directive_ident (dir_remove_printer std_err))
 
 (* The trace *)
 
@@ -167,26 +162,24 @@ let tracing_function_ptr =
   get_code_pointer
     (Obj.repr (fun arg -> Trace.print_trace (current_environment()) arg))
 
-let dir_trace lid =
+let dir_trace ppf lid =
   try
     let (path, desc) = Env.lookup_value lid !toplevel_env in
     (* Check if this is a primitive *)
     match desc.val_kind with
-      Val_prim p ->
-        Printtyp.longident lid;
-        print_string " is an external function and cannot be traced.";
-        print_newline()
+    | Val_prim p ->
+        fprintf ppf "%a is an external function and cannot be traced.@."
+        Printtyp.longident lid
     | _ ->
         let clos = eval_path path in
         (* Nothing to do if it's not a closure *)
         if Obj.is_block clos &&
            (Obj.tag clos = 250 || Obj.tag clos = 249) then begin
         match is_traced clos with
-          Some opath ->
-            Printtyp.path path;
-            print_string " is already traced (under the name ";
-            Printtyp.path opath; print_string ")";
-            print_newline()
+        | Some opath ->
+            fprintf ppf "%a is already traced (under the name %a).@."
+            Printtyp.path path
+            Printtyp.path opath
         | None ->
             (* Instrument the old closure *)
             traced_functions :=
@@ -194,69 +187,62 @@ let dir_trace lid =
                 closure = clos;
                 actual_code = get_code_pointer clos;
                 instrumented_fun =
-                  instrument_closure !toplevel_env lid desc.val_type }
+                  instrument_closure !toplevel_env lid ppf desc.val_type }
               :: !traced_functions;
             (* Redirect the code field of the closure to point
                to the instrumentation function *)
             set_code_pointer clos tracing_function_ptr;
-            Printtyp.longident lid; print_string " is now traced.";
-            print_newline()
-        end else begin
-          Printtyp.longident lid; print_string " is not a function.";
-          print_newline()
-        end      
-  with Not_found ->
-    print_string "Unbound value "; Printtyp.longident lid;
-    print_newline()
+            fprintf ppf "%a is now traced.@." Printtyp.longident lid
+        end else fprintf ppf "%a is not a function.@." Printtyp.longident lid
+  with
+  | Not_found -> fprintf ppf "Unbound value %a.@." Printtyp.longident lid
 
-let dir_untrace lid =
+let dir_untrace ppf lid =
   try
     let (path, desc) = Env.lookup_value lid !toplevel_env in
     let rec remove = function
-      [] ->
-        Printtyp.longident lid; print_string " was not traced.";
-        print_newline();
+    | [] ->
+        fprintf ppf "%a was not traced.@." Printtyp.longident lid;
         []
     | f :: rem ->
         if Path.same f.path path then begin
           set_code_pointer (eval_path path) f.actual_code;
-          Printtyp.longident lid; print_string " is no longer traced.";
-          print_newline();
+          fprintf ppf "%a is no longer traced.@." Printtyp.longident lid;
           rem
         end else f :: remove rem in
     traced_functions := remove !traced_functions
-  with Not_found ->
-    print_string "Unbound value "; Printtyp.longident lid;
-    print_newline()
+  with
+  | Not_found -> fprintf ppf "Unbound value %a.@." Printtyp.longident lid
 
-let dir_untrace_all () =
+let dir_untrace_all ppf () =
   List.iter
     (fun f ->
       set_code_pointer (eval_path f.path) f.actual_code;
-      Printtyp.path f.path; print_string " is no longer traced.";
-      print_newline())
+      fprintf ppf "%a is no longer traced.@." Printtyp.path f.path)
     !traced_functions;
   traced_functions := []
 
-let _ = Hashtbl.add directive_table "trace" (Directive_ident dir_trace)
-let _ = Hashtbl.add directive_table "untrace" (Directive_ident dir_untrace)
-let _ = Hashtbl.add directive_table "untrace_all" (Directive_none dir_untrace_all)
+let parse_warnings ppf s =
+  try Warnings.parse_options s
+  with Arg.Bad err -> fprintf ppf "%s.@." err
+
+let _ =
+  Hashtbl.add directive_table "trace" (Directive_ident (dir_trace std_err));
+  Hashtbl.add directive_table "untrace" (Directive_ident (dir_untrace std_err));
+  Hashtbl.add directive_table
+    "untrace_all" (Directive_none (dir_untrace_all std_err));
 
 (* Control the printing of values *)
 
-let _ = Hashtbl.add directive_table "print_depth"
-             (Directive_int(fun n -> max_printer_depth := n))
-let _ = Hashtbl.add directive_table "print_length"
-             (Directive_int(fun n -> max_printer_steps := n))
+  Hashtbl.add directive_table "print_depth"
+             (Directive_int(fun n -> max_printer_depth := n));
+  Hashtbl.add directive_table "print_length"
+             (Directive_int(fun n -> max_printer_steps := n));
 
 (* Set various compiler flags *)
 
-let _ = Hashtbl.add directive_table "modern"
-             (Directive_bool(fun b -> Clflags.classic := not b))
+  Hashtbl.add directive_table "modern"
+             (Directive_bool(fun b -> Clflags.classic := not b));
 
-let parse_warnings s =
-  try Warnings.parse_options s
-  with Arg.Bad err -> printf "%s." err
-
-let _ = Hashtbl.add directive_table "warnings"
-             (Directive_string parse_warnings)
+  Hashtbl.add directive_table "warnings"
+             (Directive_string (parse_warnings std_err))

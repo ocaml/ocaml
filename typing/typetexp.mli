@@ -14,6 +14,8 @@
 
 (* Typechecking of type expressions for the core language *)
 
+open Format;;
+
 val transl_simple_type:
         Env.t -> bool -> Parsetree.core_type -> Types.type_expr
 val transl_simple_type_delayed:
@@ -46,4 +48,4 @@ type error =
 
 exception Error of Location.t * error
 
-val report_error: error -> unit
+val report_error: formatter -> error -> unit

@@ -15,9 +15,10 @@
 (* Printing of values *)
 
 open Types
+open Format
 
-val print_exception: Obj.t -> unit
-val print_value: Env.t -> Obj.t -> type_expr -> unit
+val print_exception: formatter -> Obj.t -> unit
+val print_value: Env.t -> Obj.t -> formatter -> type_expr -> unit
 
 val install_printer : Path.t -> Types.type_expr -> (Obj.t -> unit) -> unit
 val remove_printer : Path.t -> unit

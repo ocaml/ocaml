@@ -315,88 +315,64 @@ let type_declarations env id decl1 decl2 =
 
 (* Error report *)
 
-open Formatmsg
+open Format
 open Printtyp
 
-let include_err = function
-    Missing_field id ->
-      print_string "The field `"; ident id; 
-      print_string "' is required but not provided"
+let include_err ppf = function
+  | Missing_field id ->
+      fprintf ppf "The field `%a' is required but not provided" ident id
   | Value_descriptions(id, d1, d2) ->
-      open_hvbox 2;
-      print_string "Values do not match:"; print_space();
-      value_description id d1; 
-      print_break 1 (-2);
-      print_string "is not included in"; print_space();
-      value_description id d2;
-      close_box()
+      fprintf ppf
+       "@[<hv 2>Values do not match:@ \
+        %a@;<1 -2>is not included in@ %a@]"
+       (value_description id) d1 (value_description id) d2
   | Type_declarations(id, d1, d2) ->
-      open_hvbox 2;
-      print_string "Type declarations do not match:"; print_space();
-      type_declaration id d1; 
-      print_break 1 (-2);
-      print_string "is not included in"; print_space();
-      type_declaration id d2;
-      close_box()
+      fprintf ppf
+       "@[<hv 2>Type declarations do not match:@ \
+        %a@;<1 -2>is not included in@ %a@]"
+       (type_declaration id) d1
+       (type_declaration id) d2
   | Exception_declarations(id, d1, d2) ->
-      open_hvbox 2;
-      print_string "Exception declarations do not match:"; print_space();
-      exception_declaration id d1; 
-      print_break 1 (-2);
-      print_string "is not included in"; print_space();
-      exception_declaration id d2;
-      close_box()
+      fprintf ppf
+       "@[<hv 2>Exception declarations do not match:@ \
+        %a@;<1 -2>is not included in@ %a@]"
+      (exception_declaration id) d1
+      (exception_declaration id) d2
   | Module_types(mty1, mty2)->
-      open_hvbox 2;
-      print_string "Modules do not match:"; print_space();
-      modtype mty1;
-      print_break 1 (-2);
-      print_string "is not included in"; print_space();
-      modtype mty2;
-      close_box()
+      fprintf ppf
+       "@[<hv 2>Modules do not match:@ \
+        %a@;<1 -2>is not included in@ %a@]"
+      modtype mty1
+      modtype mty2
   | Modtype_infos(id, d1, d2) ->
-      open_hvbox 2;
-      print_string "Module type declarations do not match:"; print_space();
-      modtype_declaration id d1; 
-      print_break 1 (-2);
-      print_string "is not included in"; print_space();
-      modtype_declaration id d2;
-      close_box()
+      fprintf ppf
+       "@[<hv 2>Module type declarations do not match:@ \
+        %a@;<1 -2>is not included in@ %a@]"
+      (modtype_declaration id) d1
+      (modtype_declaration id) d2
   | Modtype_permutation ->
-      print_string "Illegal permutation of structure fields"
+      fprintf ppf "Illegal permutation of structure fields"
   | Interface_mismatch(impl_name, intf_name) ->
-      open_box 0;
-      print_string "The implementation "; print_string impl_name;
-      print_space(); print_string "does not match the interface ";
-      print_string intf_name;
-      print_string ":";
-      close_box()
+      fprintf ppf "@[The implementation %s@ does not match the interface %s:" 
+       impl_name intf_name
   | Class_type_declarations(id, d1, d2, reason) ->
-      open_hvbox 2;
-      print_string "Class type declarations do not match:"; print_space();
-      Printtyp.cltype_declaration id d1; 
-      print_break 1 (-2);
-      print_string "is not included in"; print_space();
-      Printtyp.cltype_declaration id d2;
-      close_box();
-      print_space ();
+      fprintf ppf
+       "@[<hv 2>Class type declarations do not match:@ \
+        %a@;<1 -2>is not included in@ %a@]@ %a"
+      (Printtyp.cltype_declaration id) d1
+      (Printtyp.cltype_declaration id) d2
       Includeclass.report_error reason
   | Class_declarations(id, d1, d2, reason) ->
-      open_hvbox 2;
-      print_string "Class declarations do not match:"; print_space();
-      Printtyp.class_declaration id d1; 
-      print_break 1 (-2);
-      print_string "is not included in"; print_space();
-      Printtyp.class_declaration id d2;
-      close_box();
-      print_space ();
+      fprintf ppf
+       "@[<hv 2>Class declarations do not match:@ \
+        %a@;<1 -2>is not included in@ %a@]@ %a"
+      (Printtyp.class_declaration id) d1
+      (Printtyp.class_declaration id) d2
       Includeclass.report_error reason
 
-let report_error errlist =
-  match errlist with
-    [] -> ()
-  | err :: rem ->
-      open_vbox 0;
-      include_err err;
-      List.iter (fun err -> print_space(); include_err err) rem;
-      close_box()
+let report_error ppf = function
+  |  [] -> ()
+  | err :: errs ->
+      let print_errs ppf errs =
+         List.iter (fun err -> fprintf ppf "@ %a" include_err err) errs in
+      fprintf ppf "@[<v>%a%a@]" include_err err print_errs errs

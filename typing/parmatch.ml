@@ -811,7 +811,7 @@ let check_partial tdefs loc casel =
   match r with
   | Rnone -> Total
   | Rok ->
-      Location.print_warning loc (Warnings.Partial_match "");
+      Location.prerr_warning loc (Warnings.Partial_match "");
       Partial
   | Rsome [v] ->
       let errmsg =
@@ -822,7 +822,7 @@ let check_partial tdefs loc casel =
           Buffer.contents buf
         with _ ->
           "" in
-      Location.print_warning loc (Warnings.Partial_match errmsg);
+      Location.prerr_warning loc (Warnings.Partial_match errmsg);
       Partial
   | _ ->
       fatal_error "Parmatch.check_partial"
@@ -849,9 +849,9 @@ let check_unused tdefs casel =
         | Rok -> false
         | _ -> assert false)
       then
-        Location.print_warning (location_of_clause qs) Warnings.Unused_match
+        Location.prerr_warning (location_of_clause qs) Warnings.Unused_match
       with e ->
-        Location.print_warning (location_of_clause qs)
+        Location.prerr_warning (location_of_clause qs)
           (Warnings.Other "Fatal Error") ;
         raise e)
     prefs

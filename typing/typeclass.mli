@@ -15,6 +15,7 @@
 open Asttypes
 open Types
 open Typedtree
+open Format
 
 val class_declarations:
   Env.t -> Parsetree.class_declaration list ->
@@ -58,10 +59,10 @@ type error =
   | Bad_parameters of Ident.t * type_expr * type_expr
   | Class_match_failure of Ctype.class_match_failure list
   | Unbound_val of string
-  | Unbound_type_var of (unit -> unit) * Ctype.closed_class_failure
+  | Unbound_type_var of (formatter -> unit) * Ctype.closed_class_failure
   | Make_nongen_seltype of type_expr
   | Non_generalizable_class of Ident.t * Types.class_declaration
 
 exception Error of Location.t * error
 
-val report_error : error -> unit
+val report_error : formatter -> error -> unit

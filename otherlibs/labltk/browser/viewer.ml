@@ -212,7 +212,7 @@ let view_defined modlid :env =
   with Not_found -> ()
   | Env.Error err ->
       let tl, tw, finish = Jg_message.formatted title:"Error!" () in
-      Env.report_error err;
+      Env.report_error Format.std_formatter err;
       finish ()
 
 let close_all_views () =

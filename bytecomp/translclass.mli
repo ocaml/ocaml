@@ -23,4 +23,6 @@ type error = Illegal_class_expr
 
 exception Error of Location.t * error
 
-val report_error: error -> unit
+open Format
+
+val report_error: formatter -> error -> unit

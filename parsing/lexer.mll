@@ -148,17 +148,17 @@ let comment_start_pos = ref [];;
 
 (* Error report *)
 
-open Formatmsg
+open Format
 
-let report_error = function
-    Illegal_character c ->
-      printf "Illegal character (%s)" (Char.escaped c)
+let report_error ppf = function
+  | Illegal_character c ->
+      fprintf ppf "Illegal character (%s)" (Char.escaped c)
   | Unterminated_comment ->
-      print_string "Comment not terminated"
+      fprintf ppf "Comment not terminated"
   | Unterminated_string ->
-      print_string "String literal not terminated"
+      fprintf ppf "String literal not terminated"
   | Unterminated_string_in_comment ->
-      print_string "This comment contains an unterminated string literal"
+      fprintf ppf "This comment contains an unterminated string literal"
 ;;
 
 }
@@ -229,7 +229,7 @@ rule token = parse
                     Location.loc_ghost = false }
         and warn = Warnings.Comment "the start of a comment"
         in
-        Location.print_warning loc warn;
+        Location.prerr_warning loc warn;
         comment_start_pos := [Lexing.lexeme_start lexbuf];
         comment lexbuf;
         token lexbuf
@@ -240,7 +240,7 @@ rule token = parse
                     Location.loc_ghost = false }
         and warn = Warnings.Comment "not the end of a comment"
         in
-        Location.print_warning loc warn;
+        Location.prerr_warning loc warn;
         lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
         STAR
       }

@@ -14,7 +14,7 @@
 
 (* The "trace" facility *)
 
-open Formatmsg
+open Format
 open Misc
 open Longident
 open Types
@@ -55,78 +55,66 @@ let set_code_pointer cls ptr = Obj.set_field cls 0 ptr
 let invoke_traced_function codeptr env arg =
   Meta.invoke_traced_function codeptr env arg
 
-let print_label l =
-  if l <> "" then begin
-    print_string l;
-    print_char ':'
-  end
+let print_label ppf l = if l <> "" then fprintf ppf "%s:" l
 
 (* If a function returns a functional value, wrap it into a trace code *)
 
-let rec instrument_result env name clos_typ =
+let rec instrument_result env name ppf clos_typ =
   match (Ctype.repr(Ctype.expand_head env clos_typ)).desc with
-    Tarrow(l, t1, t2) ->
+  | Tarrow(l, t1, t2) ->
       let starred_name =
         match name with
-          Lident s -> Lident(s ^ "*")
+        | Lident s -> Lident(s ^ "*")
         | Ldot(lid, s) -> Ldot(lid, s ^ "*")
         | Lapply(l1, l2) -> fatal_error "Trace.instrument_result" in
-      let trace_res = instrument_result env starred_name t2 in
+      let trace_res = instrument_result env starred_name ppf t2 in
       (fun clos_val ->
         Obj.repr (fun arg ->
-          open_box 2;
-          Printtyp.longident starred_name;
-          print_string " <--"; print_space();
-          print_label l;
-          print_value !toplevel_env arg t1;
-          close_box(); print_newline();
+          fprintf ppf "@[<2>%a <--@ %a%a@]@."
+          Printtyp.longident starred_name
+          print_label l
+          (print_value !toplevel_env arg) t1;
           try
             let res = (Obj.magic clos_val : Obj.t -> Obj.t) arg in
-            open_box 2;
-            Printtyp.longident starred_name;
-            print_string " -->"; print_space();
-            print_value !toplevel_env res t2;
-            close_box(); print_newline();
+            fprintf ppf "@[<2>%a -->@ %a@]@."
+            Printtyp.longident starred_name
+            (print_value !toplevel_env res) t2;
             trace_res res
           with exn ->
-            open_box 2;
-            Printtyp.longident starred_name; print_string " raises";
-            print_space(); print_exception (Obj.repr exn); close_box();
-            print_newline();
+            fprintf ppf "@[<2>%a raises@ %a@]@."
+            Printtyp.longident starred_name
+            print_exception (Obj.repr exn);
             raise exn))
   | _ -> (fun v -> v)
 
 (* Same as instrument_result, but for a toplevel closure (modified in place) *)
 
-let instrument_closure env name clos_typ =
+let instrument_closure env name ppf clos_typ =
   match (Ctype.repr(Ctype.expand_head env clos_typ)).desc with
-    Tarrow(l, t1, t2) ->
-      let trace_res = instrument_result env name t2 in
+  | Tarrow(l, t1, t2) ->
+      let trace_res = instrument_result env name ppf t2 in
       (fun actual_code closure arg ->
-        open_box 2;
-        Printtyp.longident name; print_string " <--"; print_space();
-        print_label l;
-        print_value !toplevel_env arg t1;
-        close_box(); print_newline();
+        fprintf ppf "@[<2>%a <--@ %a%a@]@."
+        Printtyp.longident name
+        print_label l
+        (print_value !toplevel_env arg) t1;
         try
           let res = invoke_traced_function actual_code closure arg in
-          open_box 2;
-          Printtyp.longident name; print_string " -->"; print_space();
-          print_value !toplevel_env res t2;
-          close_box(); print_newline();
+          fprintf ppf "@[<2>%a -->@ %a@]@."
+          Printtyp.longident name
+          (print_value !toplevel_env res) t2;
           trace_res res
         with exn ->
-          open_box 2;
-          Printtyp.longident name; print_string " raises";
-          print_space(); print_exception (Obj.repr exn); close_box();
-          print_newline();
+          fprintf ppf "@[<2>%a raises@ %a@]@."
+          Printtyp.longident name
+          print_exception (Obj.repr exn);
           raise exn)
   | _ -> assert false
 
 (* Given the address of a closure, find its tracing info *)
 
 let rec find_traced_closure clos = function
-    [] -> fatal_error "Trace.find_traced_closure"
+  | [] -> fatal_error "Trace.find_traced_closure"
   | f :: rem -> if f.closure == clos then f else find_traced_closure clos rem
 
 (* Trace the application of an (instrumented) closure to an argument *)

@@ -13,7 +13,8 @@
 (* $Id$ *)
 
 open Parsetree;;
+open Format;;
 
-val interface : signature_item list -> unit;;
-val implementation : structure_item list -> unit;;
-val top_phrase : toplevel_phrase -> unit;;
+val interface : formatter -> signature_item list -> unit;;
+val implementation : formatter -> structure_item list -> unit;;
+val top_phrase : formatter -> toplevel_phrase -> unit;;

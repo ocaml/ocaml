@@ -171,7 +171,7 @@ module Remote_value =
     type t = Remote of string | Local of Obj.t
     
     let obj = function
-      Local obj -> Obj.obj obj
+    | Local obj -> Obj.obj obj
     | Remote v ->
         output_char !conn.io_out 'M';
         output_remote_value !conn.io_out v;
@@ -182,11 +182,11 @@ module Remote_value =
           raise Marshalling_error
 
     let is_block = function
-      Local obj -> Obj.is_block obj
+    | Local obj -> Obj.is_block obj
     | Remote v -> Obj.is_block (Array.unsafe_get (Obj.magic v : Obj.t array) 0)
 
     let tag = function
-      Local obj -> Obj.tag obj
+    | Local obj -> Obj.tag obj
     | Remote v ->
         output_char !conn.io_out 'H';
         output_remote_value !conn.io_out v;
@@ -195,7 +195,7 @@ module Remote_value =
         header land 0xFF
 
     let size = function
-      Local obj -> Obj.size obj
+    | Local obj -> Obj.size obj
     | Remote v ->
         output_char !conn.io_out 'H';
         output_remote_value !conn.io_out v;
@@ -205,7 +205,7 @@ module Remote_value =
 
     let field v n =
       match v with
-        Local obj -> Local(Obj.field obj n)
+      | Local obj -> Local(Obj.field obj n)
       | Remote v ->
           output_char !conn.io_out 'F';
           output_remote_value !conn.io_out v;
@@ -248,7 +248,7 @@ module Remote_value =
       Remote(input_remote_value !conn.io_in)
 
     let closure_code = function
-      Local obj -> assert false
+    | Local obj -> assert false
     | Remote v ->
         output_char !conn.io_out 'C';
         output_remote_value !conn.io_out v;

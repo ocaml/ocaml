@@ -15,6 +15,7 @@
 (* Type-checking of the module language *)
 
 open Types
+open Format
 
 val type_module:
         Env.t -> Parsetree.module_expr -> Typedtree.module_expr
@@ -45,4 +46,4 @@ type error =
 
 exception Error of Location.t * error
 
-val report_error: error -> unit
+val report_error: formatter -> error -> unit

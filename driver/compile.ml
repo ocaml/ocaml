@@ -16,7 +16,7 @@
 
 open Misc
 open Config
-open Formatmsg
+open Format
 open Typedtree
 
 (* Initialize the search path.
@@ -98,27 +98,27 @@ let parse_file inputfile parse_fun ast_magic =
 
 (* Compile a .mli file *)
 
-let interface sourcefile =
+let interface ppf sourcefile =
   init_path();
   let prefixname = Filename.chop_extension sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
   let inputfile = preprocess sourcefile (prefixname ^ ".ppi") in
   let ast = parse_file inputfile Parse.interface ast_intf_magic_number in
-  if !Clflags.dump_parsetree then (Printast.interface ast; print_newline ());
+  if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
   let sg = Typemod.transl_signature (initial_env()) ast in
-  if !Clflags.print_types then (Printtyp.signature sg; print_newline());
+  if !Clflags.print_types then fprintf ppf "%a@." Printtyp.signature sg;
   Env.save_signature sg modulename (prefixname ^ ".cmi");
   remove_preprocessed inputfile
 
 (* Compile a .ml file *)
 
-let print_if flag printer arg =
-  if !flag then begin printer arg; print_newline() end;
+let print_if ppf flag printer arg =
+  if !flag then fprintf ppf "%a@." printer arg;
   arg
 
 let (++) x f = f x
 
-let implementation sourcefile =
+let implementation ppf sourcefile =
   init_path();
   let prefixname = Filename.chop_extension sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
@@ -128,14 +128,14 @@ let implementation sourcefile =
   let env = initial_env() in
   try
     parse_file inputfile Parse.implementation ast_impl_magic_number
-    ++ print_if Clflags.dump_parsetree Printast.implementation
+    ++ print_if ppf Clflags.dump_parsetree Printast.implementation
     ++ Typemod.type_implementation sourcefile prefixname modulename env
     ++ Translmod.transl_implementation modulename
-    ++ print_if Clflags.dump_rawlambda Printlambda.lambda
+    ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
     ++ Simplif.simplify_lambda
-    ++ print_if Clflags.dump_lambda Printlambda.lambda
+    ++ print_if ppf Clflags.dump_lambda Printlambda.lambda
     ++ Bytegen.compile_implementation modulename
-    ++ print_if Clflags.dump_instr Printinstr.instrlist
+    ++ print_if ppf Clflags.dump_instr Printinstr.instrlist
     ++ Emitcode.to_file oc modulename;
     remove_preprocessed inputfile;
     close_out oc

@@ -14,7 +14,7 @@
 
 (* Auxiliary type for reporting syntax errors *)
 
-open Formatmsg
+open Format
 
 type error =
     Unclosed of Location.t * string * Location.t * string
@@ -23,20 +23,19 @@ type error =
 exception Error of error
 exception Escape_error
 
-let report_error = function
-    Unclosed(opening_loc, opening, closing_loc, closing) ->
+let report_error ppf = function
+  | Unclosed(opening_loc, opening, closing_loc, closing) ->
       if String.length !Location.input_name = 0
       && Location.highlight_locations opening_loc closing_loc
-      then printf "Syntax error: '%s' expected, \
+      then fprintf ppf "Syntax error: '%s' expected, \
                    the highlighted '%s' might be unmatched" closing opening
       else begin
-        Location.print closing_loc;
-        printf "Syntax error: '%s' expected@?" closing;
-        Location.print opening_loc;
-        printf "This '%s' might be unmatched" opening
+        fprintf ppf "%aSyntax error: '%s' expected@?"
+          Location.print closing_loc closing;
+        fprintf ppf "%aThis '%s' might be unmatched"
+          Location.print opening_loc opening 
       end
   | Other loc ->
-      Location.print loc;
-      print_string "Syntax error"
+      fprintf ppf "%aSyntax error" Location.print loc
 
 

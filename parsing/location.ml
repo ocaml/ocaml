@@ -91,7 +91,7 @@ let rec highlight_locations loc1 loc2 =
 
 (* Print the location in some way or another *)
 
-open Formatmsg
+open Format
 
 let reset () =
   num_loc_lines := 0
@@ -101,29 +101,27 @@ let (msg_file, msg_line, msg_chars, msg_to, msg_colon, msg_head) =
   | "MacOS" -> ("File \"", "\"; line ", "; characters ", " to ", "", "### ")
   | _ -> ("File \"", "\", line ", ", characters ", "-", ":", "")
 
-let print loc =
+let print ppf loc =
   if String.length !input_name = 0 then
     if highlight_locations loc none then () else
-      printf "Characters %i-%i:@." loc.loc_start loc.loc_end
+      fprintf ppf "Characters %i-%i:@." loc.loc_start loc.loc_end
   else begin
     let (filename, linenum, linebeg) =
             Linenum.for_position !input_name loc.loc_start in
-    print_string msg_file; print_string filename;
-    print_string msg_line; print_int linenum;
-    print_string msg_chars; print_int (loc.loc_start - linebeg);
-    print_string msg_to; print_int (loc.loc_end - linebeg);
-    print_string msg_colon;
-    force_newline();
-    print_string msg_head;
+    fprintf ppf "%s%s%s%i" msg_file filename msg_line linenum;
+    fprintf ppf "%s%i" msg_chars (loc.loc_start - linebeg);
+    fprintf ppf "%s%i%s@.%s"
+     msg_to (loc.loc_end - linebeg) msg_colon msg_head;
   end
 
-let print_warning loc w =
+let print_warning loc ppf w =
  if Warnings.is_active w then begin
-  print loc;
-  printf "Warning: %s@." (Warnings.message w);
+  fprintf ppf "%aWarning: %s@." print loc (Warnings.message w);
   incr num_loc_lines;
  end
 ;;
+
+let prerr_warning loc w = print_warning loc err_formatter w;;
 
 let echo_eof () =
   print_newline ();

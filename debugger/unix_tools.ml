@@ -40,7 +40,7 @@ let convert_address address =
 
 (*** Report an unix error. ***)
 let report_error = function
-    Unix_error (err, fun_name, arg) ->
+  | Unix_error (err, fun_name, arg) ->
      prerr_string "Unix error : '";
      prerr_string fun_name;
      prerr_string "' failed";

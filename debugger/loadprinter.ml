@@ -22,7 +22,7 @@ open Types
 (* Error report *)
 
 type error =
-    Load_failure of Dynlink.error
+  | Load_failure of Dynlink.error
   | Unbound_identifier of Longident.t
   | Unavailable_module of string * Longident.t
   | Wrong_type of Longident.t
@@ -39,7 +39,7 @@ let debugger_symtable = ref (None: Symtable.global_map option)
 let use_debugger_symtable fn arg =
   let old_symtable = Symtable.current_state() in
   begin match !debugger_symtable with
-    None ->
+  | None ->
       Symtable.init_toplevel();
       debugger_symtable := Some(Symtable.current_state())
   | Some st ->
@@ -56,21 +56,21 @@ let use_debugger_symtable fn arg =
 
 (* Load a .cmo or .cma file *)
 
-open Formatmsg
+open Format
 
-let rec loadfiles name =
+let rec loadfiles ppf name =
   try
     let filename = find_in_path !Config.load_path name in
     use_debugger_symtable Dynlink.loadfile filename;
-    printf "File %s loaded@." filename;
+    fprintf ppf "File %s loaded@." filename;
     true
   with
-    Dynlink.Error (Dynlink.Unavailable_unit unit) ->
+  | Dynlink.Error (Dynlink.Unavailable_unit unit) ->
       loadfiles (String.uncapitalize unit ^ ".cmo")
         &&
       loadfiles name
   | Not_found ->
-      printf "Cannot find file %s@." name;
+      fprintf ppf "Cannot find file %s@." name;
       false
   | Dynlink.Error e ->
       raise(Error(Load_failure e))
@@ -106,17 +106,17 @@ let find_printer_type lid =
     Ctype.generalize ty_arg;
     (ty_arg, path)
   with 
-    Not_found -> raise(Error(Unbound_identifier lid))
+  | Not_found -> raise(Error(Unbound_identifier lid))
   | Ctype.Unify _ -> raise(Error(Wrong_type lid))
     
-let install_printer lid =
+let install_printer ppf lid =
   let (ty_arg, path) = find_printer_type lid in
   let v =
     try
       use_debugger_symtable eval_path path
     with Symtable.Error(Symtable.Undefined_global s) ->
       raise(Error(Unavailable_module(s, lid))) in
-  Printval.install_printer path ty_arg (Obj.magic v : Obj.t -> unit)
+  Printval.install_printer path ty_arg ppf (Obj.magic v : Obj.t -> unit)
 
 let remove_printer lid =
   let (ty_arg, path) = find_printer_type lid in
@@ -127,27 +127,25 @@ let remove_printer lid =
 
 (* Error report *)
 
-open Formatmsg
+open Format
 
-let report_error error =
-  open_box 0;
-  begin match error with
-    Load_failure e ->
-      printf "Error during code loading: %s" (Dynlink.error_message e)
+let report_error ppf = function
+  | Load_failure e ->
+      fprintf ppf "@[Error during code loading: %s@]@."
+        (Dynlink.error_message e)
   | Unbound_identifier lid ->
-      print_string "Unbound identifier ";
+      fprintf ppf "@[Unbound identifier %a@]@."
       Printtyp.longident lid
   | Unavailable_module(md, lid) ->
-      printf "The debugger does not contain the code for@ ";
-      Printtyp.longident lid; printf ".@ ";
-      printf "Please load an implementation of %s first." md
+      fprintf ppf
+        "@[The debugger does not contain the code for@ %a.@ \
+           Please load an implementation of %s first.@]@."
+        Printtyp.longident lid md
   | Wrong_type lid ->
-      Printtyp.longident lid;
-      print_string " has the wrong type for a printing function."
+      fprintf ppf "@[%a has the wrong type for a printing function.@]@."
+      Printtyp.longident lid
   | No_active_printer lid ->
-      Printtyp.longident lid;
-      print_string " is not currently active as a printing function."
-  end;
-  close_box(); print_newline()
+      fprintf ppf "@[%a is not currently active as a printing function.@]@."
+      Printtyp.longident lid
 
       

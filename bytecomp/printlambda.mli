@@ -14,5 +14,7 @@
 
 open Lambda
 
-val structured_constant: structured_constant -> unit
-val lambda: lambda -> unit
+open Format
+
+val structured_constant: formatter -> structured_constant -> unit
+val lambda: formatter -> lambda -> unit

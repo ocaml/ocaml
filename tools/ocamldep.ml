@@ -12,7 +12,7 @@
 
 (* $Id$ *)
 
-open Formatmsg
+open Format
 open Location
 open Longident
 open Parsetree
@@ -338,22 +338,19 @@ let file_dependencies source_file =
       with x ->
         close_in ic; raise x
     with x ->
-      set_output Format.err_formatter;
-      open_box 0;
-      begin match x with
-        Lexer.Error(err, start, stop) ->
-          Location.print {loc_start = start; loc_end = stop; loc_ghost = false};
+      let report_err = function
+      | Lexer.Error(err, start, stop) ->
+          fprintf Format.err_formatter "@[%a%a@]@."
+          Location.print {loc_start = start; loc_end = stop; loc_ghost = false}
           Lexer.report_error err
       | Syntaxerr.Error err ->
+          fprintf Format.err_formatter "@[%a@]@."
           Syntaxerr.report_error err
       | Sys_error msg ->
-          print_string "I/O error: "; print_string msg
-      | _ ->
-          close_box(); raise x
-      end;
-      close_box(); print_newline();
-      set_output Format.std_formatter;
-      error_occurred := true
+          fprintf Format.err_formatter "@[I/O error:@ %s@]@." msg
+      | x -> raise x in
+      error_occurred := true;
+      report_err x
   end
 
 (* Entry point *)

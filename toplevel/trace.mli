@@ -14,6 +14,8 @@
 
 (* The "trace" facility *)
 
+open Format
+
 type codeptr
 
 type traced_function =
@@ -28,6 +30,6 @@ val is_traced: Obj.t -> Path.t option
 val get_code_pointer: Obj.t -> codeptr
 val set_code_pointer: Obj.t -> codeptr -> unit
 val instrument_closure:
-        Env.t -> Longident.t -> Types.type_expr -> 
+        Env.t -> Longident.t -> formatter -> Types.type_expr -> 
         codeptr -> Obj.t -> Obj.t -> Obj.t
 val print_trace: Obj.t -> Obj.t -> Obj.t

@@ -14,7 +14,7 @@
 (* $Id$ *)
 
 open Instruct
-open Formatmsg
+open Format
 open Primitives
 open Debugcom
 open Checkpoints
@@ -25,44 +25,41 @@ open Show_source
 open Breakpoints
 
 (* Display information about the current event. *)
-let show_current_event () =
-  print_string "Time : "; print_int (current_time ());
+let show_current_event ppf =
+  fprintf ppf "Time : %i" (current_time ());
   (match current_pc () with
-     Some pc ->
-       print_string " - pc : "; print_int pc
+   | Some pc ->
+       fprintf ppf " - pc : %i" pc
    | _ -> ());
   update_current_event ();
   reset_frame ();
   match current_report ()  with
-    None ->
-      print_newline ();
-      print_string "Beginning of program."; print_newline ();
+  | None ->
+      fprintf ppf "@.Beginning of program.@.";
       show_no_point ()
   | Some {rep_type = (Event | Breakpoint); rep_program_pointer = pc} -> 
      let (mdle, point) = current_point () in
-        print_string (" - module " ^ mdle);
-        print_newline ();
+        fprintf ppf " - module %s@." mdle;
         (match breakpoints_at_pc pc with
-           [] ->
+         | [] ->
              ()
          | [breakpoint] ->
-             print_string "Breakpoint : "; print_int breakpoint;
-             print_newline ()
+             fprintf ppf "Breakpoint : %i@." breakpoint
          | breakpoints ->
-             print_string "Breakpoints : ";
-             List.iter
-               (function x -> print_int x; print_string " ")
-               (Sort.list (<) breakpoints);
-             print_newline ());
+             fprintf ppf "Breakpoints : %a@."
+             (fun ppf l ->
+               List.iter
+                (function x -> fprintf ppf "%i " x) l)
+             (Sort.list (<) breakpoints));
         show_point mdle point (current_event_is_before ()) true
   | Some {rep_type = Exited} ->
-      print_newline (); print_string "Program exit."; print_newline ();
+      fprintf ppf "@.Program exit.@.";
       show_no_point ()
   | Some {rep_type = Uncaught_exc} ->
-      printf "@.Program end.@.";
-      printf "@[Uncaught exception:@ ";
+      fprintf ppf
+        "@.Program end.@.\
+         @[Uncaught exception:@ %a@]@."
       Printval.print_exception (Debugcom.Remote_value.accu ());
-      printf"@]@.";
       show_no_point ()
   | Some {rep_type = Trap_barrier} ->
                                         (* Trap_barrier not visible outside *)
@@ -71,27 +68,27 @@ let show_current_event () =
 
 (* Display short information about one frame. *)
 
-let show_one_frame framenum event =
-  printf "#%i  Pc : %i  %s char %i@."
+let show_one_frame framenum ppf event =
+  fprintf ppf "#%i  Pc : %i  %s char %i@."
          framenum event.ev_pos event.ev_module event.ev_char
 
 (* Display information about the current frame. *)
 (* --- `select frame' must have succeded before calling this function. *)
-let show_current_frame selected =
+let show_current_frame ppf selected =
   match !selected_event with
-    None ->
-      printf "@.No frame selected.@."
+  | None ->
+      fprintf ppf "@.No frame selected.@."
   | Some sel_ev ->
-      show_one_frame !current_frame sel_ev;
+      show_one_frame !current_frame ppf sel_ev;
       begin match breakpoints_at_pc sel_ev.ev_pos with
-        [] ->
-          ()
+      | [] -> ()
       | [breakpoint] ->
-          printf "Breakpoint : %i@." breakpoint
+          fprintf ppf "Breakpoint : %i@." breakpoint
       | breakpoints ->
-          printf "Breakpoints : ";
-          List.iter (function x -> printf "%i " x) (Sort.list (<) breakpoints);
-          print_newline ()
+          fprintf ppf "Breakpoints : %a@."
+          (fun ppf l ->
+            List.iter (function x -> fprintf ppf "%i " x) l)
+          (Sort.list (<) breakpoints);
       end;
       show_point sel_ev.ev_module sel_ev.ev_char
                  (selected_event_is_before ()) selected

@@ -14,6 +14,8 @@
 
 (* Auxiliary type for reporting syntax errors *)
 
+open Format
+
 type error =
     Unclosed of Location.t * string * Location.t * string
   | Other of Location.t
@@ -21,4 +23,4 @@ type error =
 exception Error of error
 exception Escape_error
 
-val report_error: error -> unit
+val report_error: formatter -> error -> unit

@@ -16,6 +16,7 @@
 
 open Types
 open Typedtree
+open Format
 
 val modtypes: Env.t -> module_type -> module_type -> module_coercion
 val signatures: Env.t -> signature -> signature -> module_coercion
@@ -42,4 +43,4 @@ type error =
 
 exception Error of error list
 
-val report_error: error list -> unit
+val report_error: formatter -> error list -> unit

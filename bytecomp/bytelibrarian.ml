@@ -83,11 +83,11 @@ let create_archive file_list lib_name =
     remove_file lib_name;
     raise x
 
-open Formatmsg
+open Format
 
-let report_error = function
-    File_not_found name ->
-      printf "Cannot find file %s" name
+let report_error ppf = function
+  | File_not_found name ->
+      fprintf ppf "Cannot find file %s" name
   | Not_an_object_file name ->
-      printf "The file %s is not a bytecode object file" name
+      fprintf ppf "The file %s is not a bytecode object file" name
 

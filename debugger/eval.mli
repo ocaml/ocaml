@@ -15,13 +15,14 @@
 
 open Types
 open Parser_aux
+open Format
 
 val expression :
     Instruct.debug_event option -> Env.t -> expression ->
     Debugcom.Remote_value.t * type_expr
 
 type error =
-    Unbound_identifier of Ident.t
+  | Unbound_identifier of Ident.t
   | Not_initialized_yet of Path.t
   | Unbound_long_identifier of Longident.t
   | Unknown_name of int
@@ -36,4 +37,4 @@ type error =
 
 exception Error of error
 
-val report_error: error -> unit
+val report_error: formatter -> error -> unit

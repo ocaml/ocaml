@@ -321,36 +321,34 @@ let transl_with_constraint env sdecl =
 
 (**** Error report ****)
 
-open Formatmsg
+open Format
 
-let report_error = function
-    Repeated_parameter ->
-      print_string "A type parameter occurs several times"
+let report_error ppf = function
+  | Repeated_parameter ->
+      fprintf ppf "A type parameter occurs several times"
   | Duplicate_constructor s ->
-      print_string "Two constructors are named "; print_string s
+      fprintf ppf "Two constructors are named %s" s
   | Too_many_constructors ->
-      print_string "Too many constructors -- maximum is ";
-      print_int Config.max_tag; print_string " constructors"
+      fprintf ppf "Too many constructors -- maximum is %i constructors"
+        Config.max_tag
   | Duplicate_label s ->
-      print_string "Two labels are named "; print_string s
+      fprintf ppf "Two labels are named %s" s
   | Recursive_abbrev s ->
-      print_string "The type abbreviation "; print_string s;
-      print_string " is cyclic" (* " expands to itself" *)
+      fprintf ppf "The type abbreviation %s is cyclic" s
   | Definition_mismatch ty ->
-      Printtyp.reset ();
-      Printtyp.mark_loops ty;
-      print_string
-        "The variant or record definition does not match that of type";
-      print_space(); Printtyp.type_expr ty
+      Printtyp.reset_and_mark_loops ty;
+      fprintf ppf
+        "The variant or record definition does not match that of type@ %a"
+        Printtyp.type_expr ty
   | Unconsistent_constraint ->
-      print_string "The type constraints are not consistent"
+      fprintf ppf "The type constraints are not consistent"
   | Type_clash trace ->
-      Printtyp.unification_error true trace
-        (function () ->
-           print_string "This type constructor expands to type")
-        (function () ->
-           print_string "but is here used with type")
+      Printtyp.report_unification_error ppf trace
+        (function ppf ->
+           fprintf ppf "This type constructor expands to type")
+        (function ppf ->
+           fprintf ppf "but is here used with type")
   | Null_arity_external ->
-      print_string "External identifiers must be functions"
+      fprintf ppf "External identifiers must be functions"
   | Unbound_type_var ->
-      print_string "A type variable is unbound in this type declaration";
+      fprintf ppf "A type variable is unbound in this type declaration";;

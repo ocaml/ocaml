@@ -326,7 +326,7 @@ let rec view_signature ?:title ?:path ?(:env = !start_env) sign =
       tl, tw, finish
   in
   Format.set_max_boxes 100;
-  Printtyp.signature sign;
+  Printtyp.signature Format.std_formatter sign;
   finish ();
   Lexical.init_tags tw;
   Lexical.tag tw;
@@ -466,10 +466,12 @@ and view_decl_menu lid :kind :env :parent =
     if kind = `Type then
       Printtyp.type_declaration
         (ident_of_path path default:"t")
+        Format.std_formatter
         (find_type path env)
     else
       Printtyp.modtype_declaration
         (ident_of_path path default:"S")
+        Format.std_formatter
         (find_modtype path env);
     Format.close_box (); Format.print_flush ();
     Format.set_formatter_output_functions out:fo flush:ff;
@@ -560,7 +562,7 @@ let view_type_menu kind :env :parent =
       Format.open_hbox ();
       Printtyp.reset ();
       Printtyp.mark_loops ty;
-      Printtyp.type_expr ty;
+      Printtyp.type_expr Format.std_formatter ty;
       Format.close_box (); Format.print_flush ();
       Format.set_formatter_output_functions out:fo flush:ff;
       Format.set_margin margin;

@@ -19,6 +19,7 @@ open Types
 open Typedtree
 open Typecore
 open Typetexp
+open Format
 
 type error =
     Unconsistent_constraint of (type_expr * type_expr) list
@@ -40,7 +41,7 @@ type error =
   | Bad_parameters of Ident.t * type_expr * type_expr
   | Class_match_failure of Ctype.class_match_failure list
   | Unbound_val of string
-  | Unbound_type_var of (unit -> unit) * Ctype.closed_class_failure
+  | Unbound_type_var of (formatter -> unit) * Ctype.closed_class_failure
   | Make_nongen_seltype of type_expr
   | Non_generalizable_class of Ident.t * Types.class_declaration
 
@@ -212,7 +213,7 @@ let inheritance impl self_type env concr_meths loc parent =
       if impl then begin
         let overridings = Concr.inter cl_sig.cty_concr concr_meths in
         if not (Concr.is_empty overridings) then begin
-          Location.print_warning loc
+          Location.prerr_warning loc
             (Warnings.Method_override (Concr.elements overridings))
         end
       end;
@@ -367,7 +368,7 @@ let rec class_field cl_num self_type meths vars
                enter_val cl_num vars lab mut ty val_env met_env par_env
              in
              if StringSet.mem lab inh_vals then
-               Location.print_warning sparent.pcl_loc
+               Location.prerr_warning sparent.pcl_loc
                  (Warnings.Hide_instance_variable lab);
              (val_env, met_env, par_env, (lab, id) :: inh_vars,
               StringSet.add lab inh_vals))
@@ -396,7 +397,7 @@ let rec class_field cl_num self_type meths vars
 
   | Pcf_val (lab, mut, sexp, loc) ->
       if StringSet.mem lab inh_vals then
-        Location.print_warning loc (Warnings.Hide_instance_variable lab);
+        Location.prerr_warning loc (Warnings.Hide_instance_variable lab);
       let exp =
         try type_exp val_env sexp with Ctype.Unify [(ty, _)] ->
           raise(Error(loc, Make_nongen_seltype ty))
@@ -611,7 +612,7 @@ and class_expr cl_num val_env met_env scl =
       let cl = class_expr cl_num val_env met_env scl' in
       Ctype.end_def ();
       if Btype.is_optional l && all_labeled cl.cl_type then
-        Location.print_warning pat.pat_loc
+        Location.prerr_warning pat.pat_loc
           (Warnings.Other "This optional argument cannot be erased");
       {cl_desc = Tclass_fun (pat, pv, cl, partial);
        cl_loc = scl.pcl_loc;
@@ -980,8 +981,9 @@ let final_env define_class
     None        -> ()
   | Some reason ->
       let printer =
-        if define_class then fun () -> Printtyp.class_declaration id clty
-        else fun () -> Printtyp.cltype_declaration id cltydef
+        if define_class
+        then function ppf -> Printtyp.class_declaration id ppf clty
+        else function ppf -> Printtyp.cltype_declaration id ppf cltydef
       in
       raise(Error(cl.pci_loc, Unbound_type_var(printer, reason)))
   end;
@@ -1052,182 +1054,126 @@ let class_type_declarations env cls =
 
 (* Error report *)
 
-open Formatmsg
+open Format
 
-let report_error = function
+let report_error ppf = function
   | Repeated_parameter ->
-      print_string "A type parameter occurs several times"
+      fprintf ppf "A type parameter occurs several times"
   | Unconsistent_constraint trace ->
-      Printtyp.unification_error true trace
-        (function () ->
-           print_string "The class constraints are not consistent : type")
-        (function () ->
-           print_string "is not compatible with type")
+      Printtyp.report_unification_error ppf trace
+        (function ppf ->
+           fprintf ppf "The class constraints are not consistent : type")
+        (function ppf ->
+           fprintf ppf "is not compatible with type")
   | Method_type_mismatch (m, trace) ->
-      Printtyp.unification_error true trace
-        (function () ->
-           print_string "The method ";
-           print_string m; print_space ();
-           print_string "has type")
-        (function () ->
-           print_string "but is expected to have type")
+      Printtyp.report_unification_error ppf trace
+        (function ppf ->
+           fprintf ppf "The method %s@ has type" m)
+        (function ppf ->
+           fprintf ppf "but is expected to have type")
   | Structure_expected clty ->
-      open_box 0;
-      print_string
-        "This class expression is not a class structure; it has type";
-      print_space();
-      Printtyp.class_type clty;
-      close_box()
+      fprintf ppf
+        "@[This class expression is not a class structure; it has type@ %a@]"
+        Printtyp.class_type clty
   | Cannot_apply clty ->
-      print_string
+      fprintf ppf
         "This class expression is not a class function, it cannot be applied"
   | Apply_wrong_label l ->
-      if l = "" then
-        print_string "This argument cannot be applied without label"
-      else
-        printf "This argument cannot be applied with label %s:" l
+      let mark_label = function
+        | "" -> "out label"
+        |  l -> sprintf " label %s:" l in
+      fprintf ppf "This argument cannot be applied with%s" (mark_label l)
   | Pattern_type_clash ty ->
       (* XXX Trace *)
       (* XXX Revoir message d'erreur *)
-      open_box 0;
-      print_string "This pattern cannot match self: \
-                    it only matches values of type";
-      print_space ();
-      Printtyp.type_expr ty;
-      close_box ()
+      fprintf ppf "@[This pattern cannot match self: \
+                    it only matches values of type@ %a@]"
+      Printtyp.type_expr ty
   | Unbound_class cl ->
-      print_string "Unbound class"; print_space ();
+      fprintf ppf "Unbound class@ %a"
       Printtyp.longident cl
   | Unbound_class_2 cl ->
-      print_string "The class"; print_space ();
-      Printtyp.longident cl; print_space ();
-      print_string "is not yet completely defined"
+      fprintf ppf "The class@ %a@ is not yet completely defined"
+      Printtyp.longident cl
   | Unbound_class_type cl ->
-      print_string "Unbound class type"; print_space ();
+      fprintf ppf "Unbound class type@ %a"
       Printtyp.longident cl
   | Unbound_class_type_2 cl ->
-      print_string "The class type"; print_space ();
-      Printtyp.longident cl; print_space ();
-      print_string "is not yet completely defined"
+      fprintf ppf "The class type@ %a@ is not yet completely defined"
+      Printtyp.longident cl
   | Abbrev_type_clash (abbrev, actual, expected) ->
       (* XXX Afficher une trace ? *)
-      open_box 0;
-      Printtyp.reset ();
-      Printtyp.mark_loops abbrev; Printtyp.mark_loops actual;
-      Printtyp.mark_loops expected;
-      print_string "The abbreviation"; print_space ();
-      Printtyp.type_expr abbrev; print_space ();
-      print_string "expands to type"; print_space ();
-      Printtyp.type_expr actual; print_space ();
-      print_string "but is used with type"; print_space ();
-      Printtyp.type_expr expected;
-      close_box ()
+      Printtyp.reset_and_mark_loops_list [abbrev; actual; expected];
+      fprintf ppf "@[The abbreviation@ %a@ expands to type@ %a@ \
+       but is used with type@ %a@]"
+       Printtyp.type_expr abbrev
+       Printtyp.type_expr actual
+       Printtyp.type_expr expected
   | Constructor_type_mismatch (c, trace) ->
-      Printtyp.unification_error true trace
-        (function () ->
-           print_string "The expression \"new ";
-           print_string c;
-           print_string "\" has type")
-        (function () ->
-           print_string "but is used with type")
+      Printtyp.report_unification_error ppf trace
+        (function ppf ->
+           fprintf ppf "The expression \"new %s\" has type" c)
+        (function ppf ->
+           fprintf ppf "but is used with type")
   | Virtual_class (cl, mets) ->
-      open_vbox 0;
-      if cl then
-        print_string "This class should be virtual"
-      else
-        print_string "This class type should be virtual";
-      print_space ();
-      open_box 2;
-      print_string "The following methods are undefined :";
-      List.iter
-        (function met ->
-          print_space (); print_string met)
-        mets;
-      close_box (); close_box()
+      let print_mets ppf mets =
+        List.iter (function met -> fprintf ppf "@ %s" met) mets in
+      let cl_mark = if cl then " type" else "" in
+      fprintf ppf
+        "@[This class %s should be virtual@ \
+           @[<2>The following methods are undefined :%a@]
+         @]"
+        cl_mark print_mets mets
   | Parameter_arity_mismatch(lid, expected, provided) ->
-      open_box 0;
-      print_string "The class constructor "; Printtyp.longident lid;
-      print_space(); print_string "expects "; print_int expected;
-      print_string " type argument(s),"; print_space();
-      print_string "but is here applied to "; print_int provided;
-      print_string " type argument(s)";
-      close_box()
+      fprintf ppf
+        "@[The class constructor %a@ expects %i type argument(s),@ \
+           but is here applied to %i type argument(s)@]"
+        Printtyp.longident lid expected provided
   | Parameter_mismatch trace ->
-      Printtyp.unification_error true trace
-        (function () ->
-           print_string "The type parameter")
-        (function () ->
-           print_string "does not meet its constraint: it should be")
+      Printtyp.report_unification_error ppf trace
+        (function ppf ->
+           fprintf ppf "The type parameter")
+        (function ppf ->
+           fprintf ppf "does not meet its constraint: it should be")
   | Bad_parameters (id, params, cstrs) ->
-      open_box 0;
-      Printtyp.reset ();
-      Printtyp.mark_loops params; Printtyp.mark_loops cstrs;
-      print_string "The abbreviation"; print_space ();
-      Printtyp.ident id; print_space ();
-      print_string "is used with parameters"; print_space ();
-      Printtyp.type_expr params; print_space ();
-      print_string "wich are incompatible with constraints"; print_space ();
-      Printtyp.type_expr cstrs; print_space ();
-      close_box ()
+      Printtyp.reset_and_mark_loops_list [params; cstrs];
+      fprintf ppf
+        "@[The abbreviation %a@ is used with parameters@ %a@ \
+           wich are incompatible with constraints@ %a@]"
+        Printtyp.ident id Printtyp.type_expr params Printtyp.type_expr cstrs
   | Class_match_failure error ->
-      Includeclass.report_error error
+      Includeclass.report_error ppf error
   | Unbound_val lab ->
-      print_string "Unbound instance variable "; print_string lab
+      fprintf ppf "Unbound instance variable %s" lab
   | Unbound_type_var (printer, reason) ->
-      Printtyp.reset ();
-      open_vbox 0;
-      open_box 0;
-      print_string "Some type variables are unbound in this type:";
-      print_break 1 2;
-      printer ();
-      close_box ();
-      print_space ();
-      open_box 0;
-      begin match reason with
-        Ctype.CC_Method (ty0, real, lab, ty) ->
-          Printtyp.reset ();
-          Printtyp.mark_loops ty; Printtyp.mark_loops ty0;
-          print_string "The method"; print_space ();
-          print_string lab; print_space ();
-          print_string "has type"; print_break 1 2;
-          Printtyp.type_expr ty; print_space ();
-          print_string "where"; print_space ();
-          if real then begin
-            Printtyp.type_expr ty0; print_space ()
-          end else begin
-            print_string ".."; print_space ()
-          end;
-          print_string "is unbound"
+      let print_labty real ppf ty =
+        if real then Printtyp.type_expr ppf ty else fprintf ppf ".." in
+      let print_reason ppf = function
+      | Ctype.CC_Method (ty0, real, lab, ty) ->
+          Printtyp.reset_and_mark_loops_list [ty; ty0];
+          fprintf ppf
+            "The method %s@ has type@;<1 2>%a@ where@ %a@ is unbound"
+            lab Printtyp.type_expr ty (print_labty real) ty0
       | Ctype.CC_Value (ty0, real, lab, ty) ->
-          Printtyp.reset ();
-          Printtyp.mark_loops ty; Printtyp.mark_loops ty0;
-          print_string "The instance variable"; print_space ();
-          print_string lab; print_space ();
-          print_string "has type"; print_break 1 2;
-          Printtyp.type_expr ty; print_space ();
-          print_string "where"; print_space ();
-          if real then begin
-            Printtyp.type_expr ty0; print_space ()
-          end else begin
-            print_string ".."; print_space ()
-          end;
-          print_string "is unbound"
-      end;
-      close_box ();
-      close_box ()
+          Printtyp.reset_and_mark_loops_list [ty; ty0];
+          fprintf ppf
+            "The instance variable %s@ has type@;<1 2>%a@ \
+             where@ %a@ is unbound"
+            lab Printtyp.type_expr ty (print_labty real) ty0
+      in
+      Printtyp.reset ();
+      fprintf ppf
+        "@[<v>@[Some type variables are unbound in this type:@;<1 2>%t@]@ \
+              @[%a@]@]"
+       printer print_reason reason
   | Make_nongen_seltype ty ->
-      open_vbox 0;
-      open_box 0;
-      print_string "Self type should not occur in the non-generic type";
-      print_break 1 2;
-      Printtyp.type_scheme ty;
-      close_box ();
-      print_cut ();
-      print_string "It would escape the scope of its class";
-      close_box ()
+      fprintf ppf
+        "@[<v>@[Self type should not occur in the non-generic type@;<1 2>\
+                %a@]@,\
+           It would escape the scope of its class@]"
+        Printtyp.type_scheme ty
   | Non_generalizable_class (id, clty) ->
-      open_box 0;
-      print_string "The type of this class,"; print_space();
-      Printtyp.class_declaration id clty; print_string ","; print_space();
-      print_string "contains type variables that cannot be generalized";
-      close_box()
+      fprintf ppf
+        "@[The type of this class,@ %a,@ \
+           contains type variables that cannot be generalized@]"
+        (Printtyp.class_declaration id) clty

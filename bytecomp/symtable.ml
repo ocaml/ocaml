@@ -289,12 +289,12 @@ let filter_global_map p gmap =
 
 (* Error report *)
 
-open Formatmsg
+open Format
 
-let report_error = function
-    Undefined_global s ->
-      printf "Reference to undefined global `%s'" s
+let report_error ppf = function
+  | Undefined_global s ->
+      fprintf ppf "Reference to undefined global `%s'" s
   | Unavailable_primitive s ->
-      printf "The external function `%s' is not available" s
+      fprintf ppf "The external function `%s' is not available" s
   | Wrong_vm s ->
-      printf "Cannot find or execute the runtime system %s" s
+      fprintf ppf "Cannot find or execute the runtime system %s" s

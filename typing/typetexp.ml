@@ -305,45 +305,44 @@ let transl_type_scheme env styp =
 
 (* Error report *)
 
-open Formatmsg
+open Format
 open Printtyp
 
-let report_error = function
-    Unbound_type_variable name ->
-      print_string "Unbound type parameter "; print_string name
+let report_error ppf = function
+  | Unbound_type_variable name ->
+      fprintf ppf "Unbound type parameter %s" name
   | Unbound_type_constructor lid ->
-      print_string "Unbound type constructor "; longident lid
+      fprintf ppf "Unbound type constructor %a" longident lid
   | Type_arity_mismatch(lid, expected, provided) ->
-      open_box 0;
-      print_string "The type constructor "; longident lid;
-      print_space(); print_string "expects "; print_int expected;
-      print_string " argument(s),"; print_space();
-      print_string "but is here applied to "; print_int provided;
-      print_string " argument(s)";
-      close_box()
+      fprintf ppf
+       "@[The type constructor %a@ expects %i argument(s),@ \
+        but is here applied to %i argument(s)@]"
+       longident lid expected provided
   | Bound_type_variable name ->
-      print_string "Already bound type parameter "; print_string name
+      fprintf ppf "Already bound type parameter %s" name
   | Recursive_type ->
-      print_string "This type is recursive"
+      fprintf ppf "This type is recursive"
   | Unbound_class lid ->
-      print_string "Unbound class "; longident lid
+      fprintf ppf "Unbound class %a" longident lid
   | Unbound_row_variable lid ->
-      print_string "Unbound row variable in #"; longident lid
+      fprintf ppf "Unbound row variable in #%a" longident lid
   | Type_mismatch trace ->
       Printtyp.unification_error true trace
-        (function () ->
-           print_string "This type")
-        (function () ->
-           print_string "should be an instance of type")
+        (function ppf ->
+           fprintf ppf "This type")
+        ppf
+        (function ppf ->
+           fprintf ppf "should be an instance of type")
   | Alias_type_mismatch trace ->
       Printtyp.unification_error true trace
-        (function () ->
-           print_string "This alias is bound to type")
-        (function () ->
-           print_string "but is used as an instance of type")
+        (function ppf ->
+           fprintf ppf "This alias is bound to type")
+        ppf
+        (function ppf ->
+           fprintf ppf "but is used as an instance of type")
   | Present_has_conjunction l ->
-      printf "The present constructor %s has a conjunctive type" l
+      fprintf ppf "The present constructor %s has a conjunctive type" l
   | Present_has_no_type l ->
-      printf "The present constructor %s has no type" l
+      fprintf ppf "The present constructor %s has no type" l
   | Multiple_constructor l ->
-      printf "The variant constructor %s is multiply defined" l
+      fprintf ppf "The variant constructor %s is multiply defined" l

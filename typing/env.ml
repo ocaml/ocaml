@@ -14,7 +14,6 @@
 
 (* Environment handling *)
 
-open Formatmsg
 open Config
 open Misc
 open Asttypes
@@ -816,16 +815,17 @@ let initial = Predef.build_initial_env add_type add_exception empty
 let summary env = env.summary
 
 (* Error report *)
+open Format
 
-let report_error = function
-  | Not_an_interface filename ->
-      printf "%s@ is not a compiled interface" filename
-  | Corrupted_interface filename ->
-      printf "Corrupted compiled interface@ %s" filename
-  | Illegal_renaming(modname, filename) ->
-      printf "Wrong file naming: %s@ contains the compiled interface for@ %s"
-        filename modname
-  | Inconsistent_import(name, source1, source2) ->
-      printf "@[<hv>The compiled interfaces for %s@ and %s@ " source1 source2;
-      printf "make inconsistent assumptions over interface %s@]" name
-;;
+let report_error ppf = function
+  | Not_an_interface filename -> fprintf ppf
+      "%s@ is not a compiled interface" filename
+  | Corrupted_interface filename -> fprintf ppf
+      "Corrupted compiled interface@ %s" filename
+  | Illegal_renaming(modname, filename) -> fprintf ppf
+      "Wrong file naming: %s@ contains the compiled interface for@ %s"
+      filename modname
+  | Inconsistent_import(name, source1, source2) -> fprintf ppf
+      "@[<hv>The compiled interfaces for %s@ and %s@ \
+              make inconsistent assumptions over interface %s@]"
+      source1 source2  name;;

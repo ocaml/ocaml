@@ -160,44 +160,48 @@ and find_label lbl env ty path tydesc pos = function
 
 (* Error report *)
 
-open Formatmsg
+open Format
 
-let report_error error =
-  open_box 0;
-  begin match error with
-    Unbound_identifier id ->
-      printf "Unbound identifier %s" (Ident.name id)
+let report_error ppf = function
+  | Unbound_identifier id ->
+      fprintf ppf "@[Unbound identifier %s@]@." (Ident.name id)
   | Not_initialized_yet path ->
-      print_string "The module path "; Printtyp.path path;
-      printf " is not yet initialized.@ ";
-      print_string "Please run program forward until its initialization code is executed."
+      fprintf ppf
+        "@[The module path %a is not yet initialized.@ \
+           Please run program forward@ \
+           until its initialization code is executed.@]@."
+      Printtyp.path path
   | Unbound_long_identifier lid ->
-      print_string "Unbound identifier "; Printtyp.longident lid
+      fprintf ppf "@[Unbound identifier %a@]@." Printtyp.longident lid
   | Unknown_name n ->
-      printf "Unknown value name $%i" n
+      fprintf ppf "@[Unknown value name $%i@]@." n
   | Tuple_index(ty, len, pos) ->
-      printf "Cannot extract field number %i from a %i" pos len;
-      print_string "-components tuple of type ";
-      Printtyp.reset (); Printtyp.mark_loops ty;
-      print_space(); Printtyp.type_expr ty
+      Printtyp.reset_and_mark_loops ty;
+      fprintf ppf
+        "@[Cannot extract field number %i from a %i-components \
+           tuple of type@ %a@]@."
+        pos len Printtyp.type_expr ty
   | Array_index(len, pos) ->
-      printf "Cannot extract element number %i from array of length %i" pos len
+      fprintf ppf
+        "@[Cannot extract element number %i from array of length %i@]@." pos len
   | List_index(len, pos) ->
-      printf "Cannot extract element number %i from list of length %i" pos len
+      fprintf ppf
+        "@[Cannot extract element number %i from list of length %i@]@." pos len
   | String_index(s, len, pos) ->
-      printf "Cannot extract character number %i" pos;
-      printf " from the following string of length %i:@ \"%s\""
-        len (String.escaped s)
+      fprintf ppf
+        "@[Cannot extract character number %i@ \
+           from the following string of length %i:@ \"%s\"@]@."
+        pos len (String.escaped s)
   | Wrong_item_type(ty, pos) ->
-      printf "Cannot extract item number %i from a value of type@ " pos;
-      Printtyp.type_expr ty
+      fprintf ppf
+        "@[Cannot extract item number %i from a value of type@ %a@]@."
+        pos Printtyp.type_expr ty
   | Wrong_label(ty, lbl) ->
-      printf "The record type@ "; Printtyp.type_expr ty;
-      printf "@ has no label named %s" lbl
+      fprintf ppf 
+        "@[The record type@ %a@ has no label named %s@]@."
+        Printtyp.type_expr ty lbl
   | Not_a_record ty ->
-      printf "The type@ "; Printtyp.type_expr ty;
-      print_string "@ is not a record type"
+      fprintf ppf
+        "@[The type@ %a@ is not a record type@]@." Printtyp.type_expr ty
   | No_result ->
-      print_string "No result available at current program event"
-  end;
-  close_box(); print_newline()
+      fprintf ppf "@[No result available at current program event@]@."

@@ -14,100 +14,97 @@
 
 (* Pretty-print lists of instructions *)
 
-open Formatmsg
+open Format
 open Lambda
 open Instruct
 
 
-let instruct ppf = function
-    Klabel lbl -> printf "L%i:" lbl
-  | Kacc n -> printf "\tacc %i" n
-  | Kenvacc n -> printf "\tenvacc %i" n
-  | Kpush -> print_string "\tpush"
-  | Kpop n -> printf "\tpop %i" n
-  | Kassign n -> printf "\tassign %i" n
-  | Kpush_retaddr lbl -> printf "\tpush_retaddr L%i" lbl
-  | Kapply n -> printf "\tapply %i" n
+let instruction ppf = function
+  | Klabel lbl -> fprintf ppf "L%i:" lbl
+  | Kacc n -> fprintf ppf "\tacc %i" n
+  | Kenvacc n -> fprintf ppf "\tenvacc %i" n
+  | Kpush -> fprintf ppf "\tpush"
+  | Kpop n -> fprintf ppf "\tpop %i" n
+  | Kassign n -> fprintf ppf "\tassign %i" n
+  | Kpush_retaddr lbl -> fprintf ppf "\tpush_retaddr L%i" lbl
+  | Kapply n -> fprintf ppf "\tapply %i" n
   | Kappterm(n, m) ->
-      printf "\tappterm %i, %i" n m
-  | Kreturn n -> printf "\treturn %i" n
-  | Krestart -> print_string "\trestart"
-  | Kgrab n -> printf "\tgrab %i" n
+      fprintf ppf "\tappterm %i, %i" n m
+  | Kreturn n -> fprintf ppf "\treturn %i" n
+  | Krestart -> fprintf ppf "\trestart"
+  | Kgrab n -> fprintf ppf "\tgrab %i" n
   | Kclosure(lbl, n) ->
-      printf "\tclosure L%i, %i" lbl n
+      fprintf ppf "\tclosure L%i, %i" lbl n
   | Kclosurerec(lbls, n) ->
-      print_string "\tclosurerec";
-      List.iter (fun lbl -> printf " %i" lbl) lbls;
-      printf ", %i" n
-  | Koffsetclosure n -> printf "\toffsetclosure %i" n
-  | Kgetglobal id -> print_string "\tgetglobal "; Ident.print id
-  | Ksetglobal id -> print_string "\tsetglobal "; Ident.print id
+      fprintf ppf "\tclosurerec";
+      List.iter (fun lbl -> fprintf ppf " %i" lbl) lbls;
+      fprintf ppf ", %i" n
+  | Koffsetclosure n -> fprintf ppf "\toffsetclosure %i" n
+  | Kgetglobal id -> fprintf ppf "\tgetglobal "; Ident.print id
+  | Ksetglobal id -> fprintf ppf "\tsetglobal "; Ident.print id
   | Kconst cst ->
-      let pr_constant ppf cst = Printlambda.structured_constant cst in
-      printf "@[<10>\tconst@ %a@]" pr_constant cst
+      fprintf ppf "@[<10>\tconst@ %a@]" Printlambda.structured_constant cst
   | Kmakeblock(n, m) ->
-      printf "\tmakeblock %i, %i" n m
+      fprintf ppf "\tmakeblock %i, %i" n m
   | Kmakefloatblock(n) ->
-      printf "\tmakefloatblock %i" n
-  | Kgetfield n -> printf "\tgetfield %i" n
-  | Ksetfield n -> printf "\tsetfield %i" n
-  | Kgetfloatfield n -> printf "\tgetfloatfield %i" n
-  | Ksetfloatfield n -> printf "\tsetfloatfield %i" n
-  | Kvectlength -> print_string "\tvectlength"
-  | Kgetvectitem -> print_string "\tgetvectitem"
-  | Ksetvectitem -> print_string "\tsetvectitem"
-  | Kgetstringchar -> print_string "\tgetstringchar"
-  | Ksetstringchar -> print_string "\tsetstringchar"
-  | Kbranch lbl -> printf "\tbranch L%i" lbl
-  | Kbranchif lbl -> printf "\tbranchif L%i" lbl
-  | Kbranchifnot lbl -> printf "\tbranchifnot L%i" lbl
-  | Kstrictbranchif lbl -> printf "\tstrictbranchif L%i" lbl
+      fprintf ppf "\tmakefloatblock %i" n
+  | Kgetfield n -> fprintf ppf "\tgetfield %i" n
+  | Ksetfield n -> fprintf ppf "\tsetfield %i" n
+  | Kgetfloatfield n -> fprintf ppf "\tgetfloatfield %i" n
+  | Ksetfloatfield n -> fprintf ppf "\tsetfloatfield %i" n
+  | Kvectlength -> fprintf ppf "\tvectlength"
+  | Kgetvectitem -> fprintf ppf "\tgetvectitem"
+  | Ksetvectitem -> fprintf ppf "\tsetvectitem"
+  | Kgetstringchar -> fprintf ppf "\tgetstringchar"
+  | Ksetstringchar -> fprintf ppf "\tsetstringchar"
+  | Kbranch lbl -> fprintf ppf "\tbranch L%i" lbl
+  | Kbranchif lbl -> fprintf ppf "\tbranchif L%i" lbl
+  | Kbranchifnot lbl -> fprintf ppf "\tbranchifnot L%i" lbl
+  | Kstrictbranchif lbl -> fprintf ppf "\tstrictbranchif L%i" lbl
   | Kstrictbranchifnot lbl ->
-      printf "\tstrictbranchifnot L%i" lbl
+      fprintf ppf "\tstrictbranchifnot L%i" lbl
   | Kswitch(consts, blocks) ->
       let labels ppf labs =
-        Array.iter (fun lbl -> printf "@ %i" lbl) labs in
-      printf "@[<10>\tswitch%a/%a@]" labels consts labels blocks
-  | Kboolnot -> print_string "\tboolnot"
-  | Kpushtrap lbl -> printf "\tpushtrap L%i" lbl
-  | Kpoptrap -> print_string "\tpoptrap"
-  | Kraise -> print_string "\traise"
-  | Kcheck_signals -> print_string "\tcheck_signals"
+        Array.iter (fun lbl -> fprintf ppf "@ %i" lbl) labs in
+      fprintf ppf "@[<10>\tswitch%a/%a@]" labels consts labels blocks
+  | Kboolnot -> fprintf ppf "\tboolnot"
+  | Kpushtrap lbl -> fprintf ppf "\tpushtrap L%i" lbl
+  | Kpoptrap -> fprintf ppf "\tpoptrap"
+  | Kraise -> fprintf ppf "\traise"
+  | Kcheck_signals -> fprintf ppf "\tcheck_signals"
   | Kccall(s, n) ->
-      printf "\tccall %s, %i" s n
-  | Knegint -> print_string "\tnegint"
-  | Kaddint -> print_string "\taddint"
-  | Ksubint -> print_string "\tsubint"
-  | Kmulint -> print_string "\tmulint"
-  | Kdivint -> print_string "\tdivint"
-  | Kmodint -> print_string "\tmodint"
-  | Kandint -> print_string "\tandint"
-  | Korint -> print_string "\torint"
-  | Kxorint -> print_string "\txorint"
-  | Klslint -> print_string "\tlslint"
-  | Klsrint -> print_string "\tlsrint"
-  | Kasrint -> print_string "\tasrint"
-  | Kintcomp Ceq -> print_string "\teqint"
-  | Kintcomp Cneq -> print_string "\tneqint"
-  | Kintcomp Clt -> print_string "\tltint"
-  | Kintcomp Cgt -> print_string "\tgtint"
-  | Kintcomp Cle -> print_string "\tleint"
-  | Kintcomp Cge -> print_string "\tgeint"
-  | Koffsetint n -> printf "\toffsetint %i" n
-  | Koffsetref n -> printf "\toffsetref %i" n
-  | Kisint -> print_string "\tisint"
-  | Kgetmethod -> print_string "\tgetmethod"
-  | Kstop -> print_string "\tstop"
-  | Kevent ev -> printf "\tevent %i" ev.ev_char
+      fprintf ppf "\tccall %s, %i" s n
+  | Knegint -> fprintf ppf "\tnegint"
+  | Kaddint -> fprintf ppf "\taddint"
+  | Ksubint -> fprintf ppf "\tsubint"
+  | Kmulint -> fprintf ppf "\tmulint"
+  | Kdivint -> fprintf ppf "\tdivint"
+  | Kmodint -> fprintf ppf "\tmodint"
+  | Kandint -> fprintf ppf "\tandint"
+  | Korint -> fprintf ppf "\torint"
+  | Kxorint -> fprintf ppf "\txorint"
+  | Klslint -> fprintf ppf "\tlslint"
+  | Klsrint -> fprintf ppf "\tlsrint"
+  | Kasrint -> fprintf ppf "\tasrint"
+  | Kintcomp Ceq -> fprintf ppf "\teqint"
+  | Kintcomp Cneq -> fprintf ppf "\tneqint"
+  | Kintcomp Clt -> fprintf ppf "\tltint"
+  | Kintcomp Cgt -> fprintf ppf "\tgtint"
+  | Kintcomp Cle -> fprintf ppf "\tleint"
+  | Kintcomp Cge -> fprintf ppf "\tgeint"
+  | Koffsetint n -> fprintf ppf "\toffsetint %i" n
+  | Koffsetref n -> fprintf ppf "\toffsetref %i" n
+  | Kisint -> fprintf ppf "\tisint"
+  | Kgetmethod -> fprintf ppf "\tgetmethod"
+  | Kstop -> fprintf ppf "\tstop"
+  | Kevent ev -> fprintf ppf "\tevent %i" ev.ev_char
 
 let rec instruction_list ppf = function
     [] -> ()
   | Klabel lbl :: il ->
-      printf "L%i:%a" lbl instruction_list il
+      fprintf ppf "L%i:%a" lbl instruction_list il
   | instr :: il ->
-      printf "%a@ %a" instruct instr instruction_list il
+      fprintf ppf "%a@ %a" instruction instr instruction_list il
  
-let instrlist il =
-  printf "@[<v 0>%a@]" instruction_list il
-
-let instruction i = printf "%a" instruct i
+let instrlist ppf il =
+  fprintf ppf "@[<v 0>%a@]" instruction_list il

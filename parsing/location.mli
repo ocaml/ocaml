@@ -13,6 +13,7 @@
 (* $Id$ *)
 
 (* Source code locations, used in parsetree *)
+open Format
 
 type t =
   { loc_start: int; loc_end: int; loc_ghost: bool }
@@ -25,8 +26,9 @@ val rhs_loc: int -> t
 val input_name: string ref
 val input_lexbuf: Lexing.lexbuf option ref
 
-val print: t -> unit
-val print_warning: t -> Warnings.t -> unit
+val print: formatter -> t -> unit
+val print_warning: t -> formatter -> Warnings.t -> unit
+val prerr_warning: t -> Warnings.t -> unit
 val echo_eof: unit -> unit
 val reset: unit -> unit
 

@@ -16,6 +16,7 @@
 
 open Asttypes
 open Types
+open Format
 
 val is_nonexpansive: Typedtree.expression -> bool
 
@@ -86,7 +87,7 @@ type error =
 
 exception Error of Location.t * error
 
-val report_error: error -> unit
+val report_error: formatter -> error -> unit
 
 (* Forward declaration, to be filled in by Typemod.type_module *)
 val type_module: (Env.t -> Parsetree.module_expr -> Typedtree.module_expr) ref

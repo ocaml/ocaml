@@ -1023,7 +1023,7 @@ and type_application env funct sargs =
       let exp = type_expect env sarg ty_arg in
       begin match expand_head env exp.exp_type with
       | {desc=Tarrow(_, _, _)} ->
-          Location.print_warning exp.exp_loc Warnings.Partial_application
+          Location.prerr_warning exp.exp_loc Warnings.Partial_application
       | _ -> ()
       end;
       ([Some exp], ty_res)
@@ -1139,7 +1139,7 @@ and type_expect env sexp ty_expected =
         | _ -> true
       in
       if is_optional l && all_labeled ty_res then
-        Location.print_warning (fst (List.hd cases)).pat_loc
+        Location.prerr_warning (fst (List.hd cases)).pat_loc
           (Warnings.Other "This optional argument cannot be erased");
       Parmatch.check_unused env cases;
       let partial = Parmatch.check_partial env sexp.pexp_loc cases in
@@ -1158,12 +1158,12 @@ and type_statement env sexp =
     let exp = type_exp env sexp in
     match (expand_head env exp.exp_type).desc with
     | Tarrow(_, _, _) ->
-        Location.print_warning sexp.pexp_loc Warnings.Partial_application;
+        Location.prerr_warning sexp.pexp_loc Warnings.Partial_application;
         exp
     | Tconstr (p, _, _) when Path.same p Predef.path_unit -> exp
     | Tvar -> exp
     | _ ->
-        Location.print_warning sexp.pexp_loc Warnings.Statement_type;
+        Location.prerr_warning sexp.pexp_loc Warnings.Statement_type;
         exp
 
 (* Typing of match cases *)
@@ -1227,154 +1227,124 @@ let type_expression env sexp =
 
 (* Error report *)
 
-open Formatmsg
+open Format
 open Printtyp
 
-let report_error = function
-    Unbound_value lid ->
-      print_string "Unbound value "; longident lid
+let report_error ppf = function
+  | Unbound_value lid ->
+      fprintf ppf "Unbound value %a" longident lid
   | Unbound_constructor lid ->
-      print_string "Unbound constructor "; longident lid
+      fprintf ppf "Unbound constructor %a" longident lid
   | Unbound_label lid ->
-      print_string "Unbound label "; longident lid
+      fprintf ppf "Unbound label %a" longident lid
   | Constructor_arity_mismatch(lid, expected, provided) ->
-      open_box 0;
-      print_string "The constructor "; longident lid;
-      print_space(); print_string "expects "; print_int expected;
-      print_string " argument(s),"; print_space();
-      print_string "but is here applied to "; print_int provided;
-      print_string " argument(s)";
-      close_box()
+      fprintf ppf
+       "@[The constructor %a@ expects %i argument(s),@ \
+        but is here applied to %i argument(s)@]"
+       longident lid expected provided
   | Label_mismatch(lid, trace) ->
-      unification_error true trace
-        (function () ->
-           print_string "The label "; longident lid;
-           print_space(); print_string "belongs to the type")
-        (function () ->
-           print_string "but is here mixed with labels of type")
+      report_unification_error ppf trace
+        (function ppf ->
+           fprintf ppf "The label %a@ belongs to the type" longident lid)
+        (function ppf ->
+           fprintf ppf "but is here mixed with labels of type")
   | Pattern_type_clash trace ->
-      unification_error true trace
-        (function () ->
-           print_string "This pattern matches values of type")
-        (function () ->
-           print_string "but is here used to match values of type")
+      report_unification_error ppf trace
+        (function ppf ->
+           fprintf ppf "This pattern matches values of type")
+        (function ppf ->
+           fprintf ppf "but is here used to match values of type")
   | Multiply_bound_variable ->
-      print_string "This variable is bound several times in this matching"
+      fprintf ppf "This variable is bound several times in this matching"
   | Orpat_not_closed ->
-      print_string "A pattern with | must not bind variables"
+      fprintf ppf "A pattern with | must not bind variables"
   | Expr_type_clash trace ->
-      unification_error true trace
-        (function () ->
-           print_string "This expression has type")
-        (function () ->
-           print_string "but is here used with type")
+      report_unification_error ppf trace
+        (function ppf ->
+           fprintf ppf "This expression has type")
+        (function ppf ->
+           fprintf ppf "but is here used with type")
   | Apply_non_function typ ->
       begin match (repr typ).desc with
         Tarrow _ ->
-          print_string "This function is applied to too many arguments"
+          fprintf ppf "This function is applied to too many arguments"
       | _ ->
-          print_string
+          fprintf ppf
             "This expression is not a function, it cannot be applied"
       end
   | Apply_wrong_label (l, ty) ->
-      reset (); mark_loops ty;
-      open_vbox 0;
-      open_box 2;
-      print_string "Expecting function has type";
-      print_space ();
-      type_expr ty;
-      close_box ();
-      print_cut ();
-      if l = "" then
-        print_string "This argument cannot be applied without label"
-      else
-        printf "This argument cannot be applied with label %s:" l;
-      close_box ()
+      let print_label ppf = function
+        | "" -> fprintf ppf "out label"
+        | l -> fprintf ppf " label %s:" l in
+      reset_and_mark_loops ty;
+      fprintf ppf
+        "@[<v>@[<2>Expecting function has type@ %a@]@,\
+          This argument cannot be applied with%a@]"
+        type_expr ty print_label l
   | Label_multiply_defined lid ->
-      print_string "The label "; longident lid;
-      print_string " is defined several times"
+      fprintf ppf "The label %a is defined several times" longident lid
   | Label_missing ->
-      print_string "Some labels are undefined"
+      fprintf ppf "Some labels are undefined"
   | Label_not_mutable lid ->
-      print_string "The label "; longident lid;
-      print_string " is not mutable"
+      fprintf ppf "The label %a is not mutable" longident lid
   | Bad_format s ->
-      print_string "Bad format `"; print_string s; print_string "'"
+      fprintf ppf "Bad format `%s'" s
   | Undefined_method (ty, me) ->
-      reset (); mark_loops ty;
-      open_vbox 0;
-      open_box 0;
-      print_string "This expression has type";
-      print_break 1 2;
-      type_expr ty;
-      close_box ();
-      print_cut ();
-      print_string "It has no method ";
-      print_string me;
-      close_box ()
+      reset_and_mark_loops ty;
+      fprintf ppf
+        "@[<v>@[This expression has type@;<1 2>%a@]@,\
+         It has no method %s@]" type_expr ty me
   | Undefined_inherited_method me ->
-      print_string "This expression has no method ";
-      print_string me
+      fprintf ppf "This expression has no method %s" me
   | Unbound_class cl ->
-      print_string "Unbound class "; longident cl
+      fprintf ppf "Unbound class %a" longident cl
   | Virtual_class cl ->
-      print_string "One cannot create instances of the virtual class ";
+      fprintf ppf "One cannot create instances of the virtual class %a"
       longident cl
   | Unbound_instance_variable v ->
-      print_string "Unbound instance variable ";
-      print_string v
+      fprintf ppf "Unbound instance variable %s" v
   | Instance_variable_not_mutable v ->
-      print_string " The instance variable "; print_string v;
-      print_string " is not mutable"
+      fprintf ppf " The instance variable %s is not mutable" v
   | Not_subtype(tr1, tr2) ->
       reset ();
       let tr1 = List.map prepare_expansion tr1
       and tr2 = List.map prepare_expansion tr2 in
-      trace true (fun _ -> print_string "is not a subtype of type") tr1;
-      trace false (fun _ -> print_string "is not compatible with type") tr2
+      trace true "is not a subtype of type" ppf tr1;
+      trace false "is not compatible with type" ppf tr2
   | Outside_class ->
-      print_string "This object duplication occurs outside a method definition"
+      fprintf ppf "This object duplication occurs outside a method definition"
   | Value_multiply_overridden v ->
-      print_string "The instance variable "; print_string v;
-      print_string " is overridden several times"
+      fprintf ppf "The instance variable %s is overridden several times" v
   | Coercion_failure (ty, ty', trace) ->
-      unification_error true trace
-        (function () ->
+      report_unification_error ppf trace
+        (function ppf ->
            let ty, ty' = prepare_expansion (ty, ty') in
-           print_string "This expression cannot be coerced to type";
-           print_break 1 2;
-           type_expansion ty ty';
-           print_string ";";
-           print_space ();
-           print_string "it has type")
-        (function () ->
-           print_string "but is here used with type")
+           fprintf ppf
+             "This expression cannot be coerced to type@;<1 2>%a;@ it has type"
+           (type_expansion ty) ty')
+        (function ppf ->
+           fprintf ppf "but is here used with type")
   | Too_many_arguments ->
-      print_string "This function expects too many arguments"
+      fprintf ppf "This function expects too many arguments"
   | Abstract_wrong_label (l, ty) ->
-      reset (); mark_loops ty;
+      let label_mark = function
+        | "" -> "but its argument is not labeled"
+        |  l -> sprintf "but its argument is labeled %s:" l in
+      reset_and_mark_loops ty;
       open_vbox 0;
       open_box 2;
-      print_string "This function should have type";
-      print_space ();
-      type_expr ty;
-      close_box ();
-      print_cut ();
-      if l = "" then
-        print_string "but its argument is not labeled"
-      else
-        printf "but its argument is labeled %s:" l;
-      close_box ()
+      fprintf ppf "@[<v>@[<2>This function should have type@ %a@]@,%s@]"
+      type_expr ty (label_mark l)
   | Scoping_let_module(id, ty) ->
-      reset (); mark_loops ty;
-      print_string "This `let module' expression has type";
-      print_space(); type_expr ty; print_space();
-      print_string "In this type, the locally bound module name ";
-      print_string id; print_string " escapes its scope"
+      reset_and_mark_loops ty;
+      fprintf ppf
+       "This `let module' expression has type@ %a@ " type_expr ty;
+      fprintf ppf
+       "In this type, the locally bound module name %s escapes its scope" id
   | Masked_instance_variable lid ->
-      print_string "The instance variable "; longident lid; print_space ();
-      print_string
-        "cannot be accessed from the definition of another instance variable"
+      fprintf ppf
+        "The instance variable %a@ \
+         cannot be accessed from the definition of another instance variable"
+        longident lid
   | Not_a_variant_type lid ->
-      print_string "The type "; longident lid; print_space ();
-      print_string "is not a variant type"
+      fprintf ppf "The type %a@ is not a variant type" longident lid

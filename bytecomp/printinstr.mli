@@ -16,5 +16,7 @@
 
 open Instruct
 
-val instruction: instruction -> unit
-val instrlist: instruction list -> unit
+open Format
+
+val instruction: formatter -> instruction -> unit
+val instrlist: formatter -> instruction list -> unit

@@ -17,7 +17,7 @@ open Clflags
 let usage = "Usage: ocaml <options> [script-file]\noptions are:"
 
 let file_argument name =
-  exit (if Toploop.run_script name Sys.argv then 0 else 2)
+  exit (if Toploop.run_script Format.err_formatter name Sys.argv then 0 else 2)
 
 let main () =
   Arg.parse [
@@ -45,6 +45,6 @@ let main () =
      "-dlambda", Arg.Set dump_lambda, " (undocumented)";
      "-dinstr", Arg.Set dump_instr, " (undocumented)"
     ] file_argument usage;
-  Toploop.loop()
+  Toploop.loop Format.err_formatter
 
 let _ = Printexc.catch main ()

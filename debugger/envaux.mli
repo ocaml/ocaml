@@ -13,6 +13,8 @@
 
 (* $Id$ *)
 
+open Format
+
 (* Convert environment summaries to environments *)
 
 val env_of_event: Instruct.debug_event option -> Env.t
@@ -28,4 +30,4 @@ type error =
 
 exception Error of error
 
-val report_error: error -> unit
+val report_error: formatter -> error -> unit

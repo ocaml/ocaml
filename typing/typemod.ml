@@ -20,7 +20,7 @@ open Path
 open Parsetree
 open Types
 open Typedtree
-
+open Format
 
 type error =
     Unbound_module of Longident.t
@@ -480,10 +480,8 @@ and normalize_signature_item env = function
 
 let type_implementation sourcefile prefixname modulename initial_env ast =
   let (str, sg, finalenv) = type_structure initial_env ast in
-  if !Clflags.print_types then begin
-    Formatmsg.with_output_to Format.std_formatter
-      (fun () -> Printtyp.signature sg; Format.print_newline())
-  end;
+  if !Clflags.print_types then
+    fprintf err_formatter "%a@." Printtyp.signature sg;
   let coercion =
     if Sys.file_exists (prefixname ^ !Config.interface_suffix) then begin
       let intf_file =
@@ -501,77 +499,42 @@ let type_implementation sourcefile prefixname modulename initial_env ast =
 
 (* Error report *)
 
-open Formatmsg
 open Printtyp
 
-let report_error = function
-    Unbound_module lid ->
-      print_string "Unbound module "; longident lid
-  | Unbound_modtype lid ->
-      print_string "Unbound module type "; longident lid
-  | Cannot_apply mty ->
-      open_box 0;
-      print_string "This module is not a functor; it has type";
-      print_space(); modtype mty;
-      close_box()
-  | Not_included errs ->
-      open_vbox 0;
-      print_string "Signature mismatch:"; print_space();
-      Includemod.report_error errs;
-      close_box()
-  | Cannot_eliminate_dependency mty ->
-      open_box 0;
-      print_string "This functor has type";
-      print_space(); modtype mty; print_space();
-      print_string "The parameter cannot be eliminated in the result type.";
-      print_space();
-      print_string "Please bind the argument to a module identifier.";
-      close_box()
-  | Signature_expected ->
-      print_string "This module type is not a signature"
-  | Structure_expected mty ->
-      open_box 0;
-      print_string "This module is not a structure; it has type";
-      print_space(); modtype mty;
-      close_box()
-  | With_no_component lid ->
-      open_box 0;
-      print_string "The signature constrained by `with' has no component named";
-      print_space(); longident lid;
-      close_box()
-  | With_mismatch(lid, explanation) ->
-      open_vbox 0;
-      open_box 0;
-      print_string "In this `with' constraint, the new definition of";
-      print_space(); longident lid; print_space();
-      print_string "does not match its original definition";
-      print_space(); print_string "in the constrained signature:";
-      close_box();
-      print_space();
-      Includemod.report_error explanation;
-      close_box()
-  | Repeated_name(kind, name) ->
-      open_box 0;
-      print_string "Multiple definition of the "; print_string kind;
-      print_string " name "; print_string name; print_string ".";
-      print_space();
-      print_string "Names must be unique in a given structure or signature.";
-      close_box()
-  | Non_generalizable typ ->
-      open_box 0;
-      print_string "The type of this expression,"; print_space();
-      type_scheme typ; print_string ","; print_space();
-      print_string "contains type variables that cannot be generalized";
-      close_box()
-  | Non_generalizable_class (id, desc) ->
-      open_box 0;
-      print_string "The type of this class,"; print_space();
-      class_declaration id desc; print_string ","; print_space();
-      print_string "contains type variables that cannot be generalized";
-      close_box()
-  | Non_generalizable_module mty ->
-      open_box 0;
-      print_string "The type of this module,"; print_space();
-      modtype mty; print_string ","; print_space();
-      print_string "contains type variables that cannot be generalized";
-      close_box()
+let report_error ppf = function
+  | Unbound_module lid -> fprintf ppf "Unbound module %a" longident lid
+  | Unbound_modtype lid -> fprintf ppf "Unbound module type %a" longident lid
+  | Cannot_apply mty -> fprintf ppf
+      "@[This module is not a functor; it has type@ %a@]" modtype mty
+  | Not_included errs -> fprintf ppf
+      "@[<v>Signature mismatch:@ %a]" Includemod.report_error errs
+  | Cannot_eliminate_dependency mty -> fprintf ppf
+      "@[This functor has type@ %a@ \
+         The parameter cannot be eliminated in the result type.@  \
+         Please bind the argument to a module identifier.@]" modtype mty
+  | Signature_expected -> fprintf ppf "This module type is not a signature"
+  | Structure_expected mty -> fprintf ppf
+      "@[This module is not a structure; it has type@ %a" modtype mty
+  | With_no_component lid -> fprintf ppf
+      "@[The signature constrained by `with' has no component named %a@]"
+      longident lid
+  | With_mismatch(lid, explanation) -> fprintf ppf
+      "@[<v>
+         @[In this `with' constraint, the new definition of %a@ \
+           does not match its original definition@ \
+           in the constrained signature:@]@ \
+         %a@]"
+      longident lid Includemod.report_error explanation
+  | Repeated_name(kind, name) -> fprintf ppf
+      "@[Multiple definition of the %s name %s.@ \
+         Names must be unique in a given structure or signature.@]" kind name
+  | Non_generalizable typ -> fprintf ppf
+      "@[The type of this expression,@ %a,@ \
+         contains type variables that cannot be generalized@]" type_scheme typ
+  | Non_generalizable_class (id, desc) -> fprintf ppf
+      "@[The type of this class,@ %a,@ \
+         contains type variables that cannot be generalized@]"
+      (class_declaration id) desc
+  | Non_generalizable_module mty -> fprintf ppf
+      "@[The type of this module,@ %a,@ \
+         contains type variables that cannot be generalized@]" modtype mty

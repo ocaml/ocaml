@@ -17,7 +17,7 @@
 
 open Misc
 open Obj
-open Formatmsg
+open Format
 open Parser_aux
 open Path
 open Types
@@ -41,23 +41,23 @@ let name_value v ty =
 let find_named_value name =
   Hashtbl.find named_values name
 
-let check_depth depth obj ty =
+let check_depth ppf depth obj ty =
   if depth <= 0 then begin
     let n = name_value obj ty in
-    print_char '$'; print_int n;
+    fprintf ppf "$%i" n;
     false
   end else true
 
 module Printer = Genprintval.Make(Debugcom.Remote_value)
 
-let install_printer path ty fn =
+let install_printer path ty ppf fn =
   Printer.install_printer path ty
     (function remote_val ->
        try
          fn (Obj.repr (Debugcom.Remote_value.obj remote_val))
        with
          Debugcom.Marshalling_error ->
-           print_string "<cannot fetch remote object>")
+           fprintf ppf "<cannot fetch remote object>")
 
 let remove_printer = Printer.remove_printer
 
@@ -66,23 +66,22 @@ let max_printer_steps = ref 300
 
 let print_exception = Printer.print_exception
 
-let print_value max_depth obj ty env =
+let print_value max_depth env obj (ppf : Format.formatter) ty =
   Printer.print_value !max_printer_steps max_depth
-    check_depth env obj ty
+   (check_depth ppf) env obj ppf ty
 
-let print_named_value max_depth exp obj ty env =
-  printf "@[<2>";
-  begin match exp with
-    E_ident lid ->
-      Printtyp.longident lid
+let print_named_value max_depth exp env obj ppf ty =
+  let print_value_name ppf = function
+  | E_ident lid ->
+      Printtyp.longident ppf lid
   | E_name n ->
-      print_char '$'; print_int n
+      fprintf ppf "$%i" n
   | _ ->
       let n = name_value obj ty in
-      print_char '$'; print_int n
-  end;
-  Printtyp.reset (); Printtyp.mark_loops ty;
-  printf " :@ "; Printtyp.type_expr ty;
-  printf "@ =@ ";
-  print_value max_depth obj ty env;
-  printf "@]@."
+      fprintf ppf "$%i" n in
+  Printtyp.reset_and_mark_loops ty;
+  fprintf ppf "@[<2>%a :@ %a@ =@ %a@]@."
+  print_value_name exp
+  Printtyp.type_expr ty
+  (print_value max_depth env obj) ty
+

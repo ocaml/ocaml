@@ -33,113 +33,72 @@ let class_declarations env cty1 cty2 =
         cty1.cty_params cty1.cty_type
         cty2.cty_params cty2.cty_type
 
-open Formatmsg
+open Format
 open Ctype
 
-let include_err =
+let include_err ppf =
   function
-    CM_Virtual_class ->
-      print_string "A class cannot be changed from virtual to concrete"
+  | CM_Virtual_class ->
+      fprintf ppf "A class cannot be changed from virtual to concrete"
   | CM_Parameter_arity_mismatch (ls, lp) ->
-      print_string
+      fprintf ppf
         "The classes do not have the same number of type parameters"     
   | CM_Type_parameter_mismatch trace ->
-      open_box 0;
-      Printtyp.unification_error false trace
-        (function () ->
-          print_string "One type parameter has type")
-        (function () ->
-          print_string "but is expected to have type");
-      close_box ()
+      fprintf ppf "@[%a@]"
+      (Printtyp.unification_error false trace
+        (function ppf ->
+          fprintf ppf "One type parameter has type"))
+        (function ppf ->
+          fprintf ppf "but is expected to have type")
   | CM_Class_type_mismatch (cty1, cty2) ->
-      open_box 0;
-      print_string "The class type";  print_break 1 2;
-      Printtyp.class_type cty1;
-      print_space ();
-      print_string "is not matched by the class type";
-      print_break 1 2;
-      Printtyp.class_type cty2;
-      close_box ()
+      fprintf ppf
+       "@[The class type@;<1 2>%a@ is not matched by the class type@;<1 2>%a@]"
+       Printtyp.class_type cty1 Printtyp.class_type cty2
   | CM_Parameter_mismatch trace ->
-      open_box 0;
-      Printtyp.unification_error false trace
-        (function () ->
-          print_string "One parameter has type")
-        (function () ->
-          print_string "but is expected to have type");
-      close_box ()
+      fprintf ppf "@[%a@]"
+      (Printtyp.unification_error false trace
+        (function ppf ->
+          fprintf ppf "One parameter has type"))
+        (function ppf ->
+          fprintf ppf "but is expected to have type")
   | CM_Val_type_mismatch (lab, trace) ->
-      open_box 0;
-      Printtyp.unification_error false trace
-        (function () ->
-          print_string "The instance variable ";
-          print_string lab; print_space ();
-          print_string "has type")
-        (function () ->
-          print_string "but is expected to have type");
-      close_box ()
+      fprintf ppf "@[%a@]"
+      (Printtyp.unification_error false trace
+        (function ppf ->
+          fprintf ppf "The instance variable %s@ has type" lab))
+        (function ppf ->
+          fprintf ppf "but is expected to have type")
   | CM_Meth_type_mismatch (lab, trace) ->
-      open_box 0;
-      Printtyp.unification_error false trace
-        (function () ->
-          print_string "The method ";
-          print_string lab; print_space ();
-          print_string "has type")
-        (function () ->
-          print_string "but is expected to have type");
-      close_box ()
+      fprintf ppf "@[%a@]"
+      (Printtyp.unification_error false trace
+        (function ppf ->
+          fprintf ppf "The method %s@ has type" lab))
+        (function ppf ->
+          fprintf ppf "but is expected to have type")
   | CM_Non_mutable_value lab ->
-      open_box 0;
-      print_string "The non-mutable instance variable ";
-      print_string lab;
-      print_string " cannot become mutable";
-      close_box ()
+      fprintf ppf
+       "@[The non-mutable instance variable %s cannot become mutable@]" lab
   | CM_Missing_value lab ->
-      open_box 0;
-      print_string "The first class type has no instance variable ";
-      print_string lab;
-      close_box ()
+      fprintf ppf "@[The first class type has no instance variable %s@]" lab
   | CM_Missing_method lab ->
-      open_box 0;
-      print_string "The first class type has no method ";
-      print_string lab;
-      close_box ()
+      fprintf ppf "@[The first class type has no method %s@]" lab
   | CM_Hide_public lab ->
-      open_box 0;
-      print_string "The public method ";
-      print_string lab;
-      print_string " cannot be hidden";
-      close_box ()
+     fprintf ppf "@[The public method %s cannot be hidden@]" lab
   | CM_Hide_virtual lab ->
-      open_box 0;
-      print_string "The virtual method ";
-      print_string lab;
-      print_string " cannot be hidden";
-      close_box ()
+      fprintf ppf "@[The virtual method %s cannot be hidden@]" lab
   | CM_Public_method lab ->
-      open_box 0;
-      print_string "The public method ";
-      print_string lab;
-      print_string " cannot become private";
-      close_box ()
+      fprintf ppf "@[The public method %s cannot become private" lab
   | CM_Virtual_method lab ->
-      open_box 0;
-      print_string "The virtual method ";
-      print_string lab;
-      print_string " cannot become concrete";
-      close_box ()
+      fprintf ppf "@[The virtual method %s  cannot become concrete" lab
   | CM_Private_method lab ->
-      open_box 0;
-      print_string "The private method ";
-      print_string lab;
-      print_string " cannot become public";
-      close_box ()
+      fprintf ppf "The private method %s cannot become public" lab
 
-let report_error errlist =
-  match errlist with
-    [] -> ()
-  | err :: rem ->
-      open_vbox 0;
-      include_err err;
-      List.iter (fun err -> print_space(); include_err err) rem;
-      close_box()
+let report_error ppf = function
+  |  [] -> ()
+  | err :: errs ->
+      let print_errs ppf errs =
+         List.iter (fun err -> fprintf ppf "@ %a" include_err err) errs in
+      fprintf ppf "@[<v>%a%a@]" include_err err print_errs errs
+
+
+

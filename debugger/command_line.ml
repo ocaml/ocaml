@@ -15,7 +15,7 @@
 
 (************************ Reading and executing commands ***************)
 
-open Formatmsg
+open Format
 open Misc
 open Instruct
 open Unix
@@ -228,12 +228,10 @@ let instr_dir lexbuf =
         end
       end
     else
-      List.iter (function x -> add_path (expand_path x)) (List.rev new_directory);
-    open_box 2;
-    print_string "Directories :";
-    List.iter (function x -> print_space(); print_string x) !Config.load_path;
-    close_box();
-    print_newline ()
+      List.iter (function x -> add_path (expand_path x))
+                (List.rev new_directory);
+    let print_dirs ppf l = List.iter (function x -> fprintf ppf "@ %s" x) l in
+    fprintf ppf "@[<2>Directories :%a@]@." print_dirs !Config.load_path
 
 let instr_kill lexbuf =
   eol lexbuf;
@@ -326,26 +324,25 @@ let instr_goto lexbuf =
 let instr_quit _ =
   raise Exit
 
-let print_variable_list () =
-  print_endline "List of variables :";
-  List.iter (fun v -> print_string v.var_name; print_space()) !variable_list;
-  print_newline ()
+let print_variable_list ppf =
+  let pr_vars ppf = List.iter (fun v -> fprintf ppf "%s@ " v.var_name) in
+  fprintf ppf "List of variables :%a@." pr_vars !variable_list
 
-let print_info_list () =
-  print_endline "List of info commands :";
-  List.iter (fun i -> print_string i.info_name; print_space()) !info_list;
-  print_newline ()
+let print_info_list ppf =
+  let pr_infos ppf = List.iter (fun i -> fprintf ppf "%s@ " i.info_name)  in
+  print_endline "List of info commands :%a@." pr_infos !info_list
 
 let instr_complete lexbuf =
+  let ppf = Format.err_formatter in
   let rec print_list l = 
     try 
       eol lexbuf;
-      List.iter (function i -> print_string i; print_newline ()) l
+      List.iter (function i -> fprintf ppf "%s@." i) l
     with _ ->
       remove_file !user_channel
   and match_list lexbuf =
     match identifier_or_eol Lexer.lexeme lexbuf with
-      None ->
+    | None ->
         List.map (fun i -> i.instr_name) !instruction_list
     | Some x ->
         match matching_instructions x with
@@ -382,87 +379,77 @@ let instr_complete lexbuf =
   in
     print_list(match_list lexbuf)
 
-let instr_help lexbuf =
+let instr_help ppf lexbuf =
+  let pr_instrs ppf =
+      List.iter (fun i -> fprintf ppf "%s@ " i.instr_name) in
   match identifier_or_eol Lexer.lexeme lexbuf with
-    Some x ->
+  | Some x ->
       let print_help nm hlp =
         eol lexbuf;
-        print_string nm;
-        print_string " : ";
-        print_string hlp;
-        print_newline ()
-      in
-        begin match matching_instructions x with
-          [] ->
-            eol lexbuf;
-            print_string "No matching command.";
-            print_newline ()
-        | [ {instr_name = "set"} ] ->
-            find_variable
-              (fun v _ ->
-                 print_help ("set " ^ v.var_name) ("set " ^ v.var_help))
-              (fun () ->
-                 print_help "set" "set debugger variable.";
-                 print_variable_list ())
-              lexbuf
-        | [ {instr_name = "show"} ] ->
-            find_variable
-              (fun v _ ->
-                 print_help ("show " ^ v.var_name) ("show " ^ v.var_help))
-              (fun () ->
-                 print_help "show" "display debugger variable.";
-                 print_variable_list ())
-              lexbuf
-        | [ {instr_name = "info"} ] ->
-            find_info
-              (fun i _ -> print_help ("info " ^ i.info_name) i.info_help)
-              (fun () ->
-                 print_help "info" "display infos about the program being debugged.";
-                 print_info_list ())
-              lexbuf
-        | [i] ->
-            print_help i.instr_name i.instr_help
-        | l ->
-            eol lexbuf;
-            print_string ("Ambiguous command \"" ^ x ^ "\" : ");
-            List.iter
-              (fun i -> print_string i.instr_name; print_space())
-              l;
-            print_newline ()
-        end
+        fprintf ppf "%s : %s@." nm hlp in
+      begin match matching_instructions x with
+      | [] ->
+          eol lexbuf;
+          fprintf ppf "No matching command.@."
+      | [ {instr_name = "set"} ] ->
+          find_variable
+            (fun v _ ->
+               print_help ("set " ^ v.var_name) ("set " ^ v.var_help))
+            (fun () ->
+               print_help "set" "set debugger variable.";
+               print_variable_list ppf)
+            lexbuf
+      | [ {instr_name = "show"} ] ->
+          find_variable
+            (fun v _ ->
+               print_help ("show " ^ v.var_name) ("show " ^ v.var_help))
+            (fun () ->
+               print_help "show" "display debugger variable.";
+               print_variable_list ppf)
+            lexbuf
+      | [ {instr_name = "info"} ] ->
+          find_info
+            (fun i _ -> print_help ("info " ^ i.info_name) i.info_help)
+            (fun () ->
+               print_help "info"
+                 "display infos about the program being debugged.";
+               print_info_list ppf)
+            lexbuf
+      | [i] ->
+          print_help i.instr_name i.instr_help
+      | l ->
+          eol lexbuf;
+          fprintf ppf "Ambiguous command \"%s\" : @." x pr_instrs l
+      end
   | None ->
-      print_endline "List of commands :";
-      List.iter
-        (fun i -> print_string i.instr_name; print_space()) 
-        !instruction_list;
-      print_newline ()
+      print_endline "List of commands :%a@." pr_instrs !instruction_list
 
 (* Printing values *)
 
-let print_expr depth ev env expr =
+let print_expr depth ev env ppf expr =
   try
     let (v, ty) = Eval.expression ev env expr in
-    print_named_value depth expr v ty env
+    print_named_value depth expr v ty ppf env
   with Eval.Error msg ->
-    Eval.report_error msg;
+    Eval.report_error ppf msg;
     raise Toplevel
 
-let print_command depth lexbuf =
-  let exprs = expression_list_eol Lexer.lexeme lexbuf in
+let print_command depth ppf lexbuf =
+  let exprs = expression_list_eol Lexer.lexeme ppf lexbuf in
   ensure_loaded ();
   let env =
     try
       Envaux.env_of_event !selected_event
     with
       Envaux.Error msg ->
-        Envaux.report_error msg;
+        Envaux.report_error ppf msg;
         raise Toplevel
   in
-  List.iter (print_expr depth !selected_event env) exprs
+  List.iter (print_expr depth !selected_event env ppf) exprs
 
-let instr_print lexbuf = print_command !max_printer_depth lexbuf
+let instr_print ppf lexbuf = print_command !max_printer_depth ppf lexbuf
 
-let instr_display lexbuf = print_command 1 lexbuf
+let instr_display ppf lexbuf = print_command 1 ppf lexbuf
 
 (* Loading of command files *)
 
@@ -483,7 +470,7 @@ let instr_source lexbuf =
           (openfile (find_in_path !Config.load_path (expand_path file))
              [O_RDONLY] 0)
       with
-        Not_found -> prerr_endline "Source file not found."; raise Toplevel
+      | Not_found -> prerr_endline "Source file not found."; raise Toplevel
       | (Unix_error _) as x  -> Unix_tools.report_error x; raise Toplevel
     in
       try

@@ -76,12 +76,8 @@ let env_of_event =
 
 (* Error report *)
 
-open Formatmsg
+open Format
 
-let report_error error =
-  open_box 0;
-  begin match error with
-    Module_not_found p ->
-      print_string "Cannot find module "; Printtyp.path p
-  end;
-  close_box(); print_newline()
+let report_error ppf = function
+  | Module_not_found p ->
+      fprintf ppf "@[Cannot find module %a@].@." Printtyp.path p

@@ -315,9 +315,8 @@ let class_stub =
 
 (* Error report *)
 
-open Formatmsg
+open Format
 
-let report_error = function
-  Illegal_class_expr ->
-    print_string
-      "This kind of class expression is not allowed"
+let report_error ppf = function
+  | Illegal_class_expr ->
+      fprintf ppf "This kind of class expression is not allowed"

@@ -803,15 +803,15 @@ let transl_exception id path decl =
 
 (* Error report *)
 
-open Formatmsg
+open Format
 
-let report_error = function
-    Illegal_letrec_pat ->
-      print_string
+let report_error ppf = function
+  | Illegal_letrec_pat ->
+      fprintf ppf
         "Only variables are allowed as left-hand side of `let rec'"
   | Illegal_letrec_expr ->
-      print_string
+      fprintf ppf
         "This kind of expression is not allowed as right-hand side of `let rec'"
   | Free_super_var ->
-      print_string
+      fprintf ppf
         "Ancestor names can only be used to select inherited methods"

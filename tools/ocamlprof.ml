@@ -430,7 +430,7 @@ let process_file filename =
 
 (* Main function *)
 
-open Formatmsg
+open Format
 
 let usage = "Usage: ocamlprof <options> <files>\noptions are:"
 
@@ -446,26 +446,25 @@ let main () =
       ] process_file usage;
     exit 0
   with x ->
-    set_output Format.err_formatter;
-    open_box 0;
-    begin match x with
-      Lexer.Error(err, start, stop) ->
-        Location.print {loc_start = start; loc_end = stop; loc_ghost = false};
+    let report_error ppf = function
+    | Lexer.Error(err, start, stop) ->
+        fprintf ppf "@[%a%a@]@."
+        Location.print {loc_start = start; loc_end = stop; loc_ghost = false}
         Lexer.report_error err
     | Syntaxerr.Error err ->
+        fprintf ppf "@[%a@]@."
         Syntaxerr.report_error err
     | Profiler msg ->
-        print_string msg
+        fprintf ppf "@[%s@]@." msg
 (*
     | Inversion(pos, next) ->
         print_string "Internal error: inversion at char "; print_int pos;
         print_string ", "; print_int next
 *)
     | Sys_error msg ->
-        print_string "I/O error: "; print_string msg
-    | _ ->
-        close_box(); raise x
-    end;
-    close_box(); print_newline(); exit 2
+        fprintf ppf "@[I/O error:@ %s@]@." msg
+    | x -> raise x in
+    report_error Format.err_formatter x;
+    exit 2
 
 let _ = main ()

@@ -508,22 +508,22 @@ let link objfiles =
 
 (* Error report *)
 
-open Formatmsg
+open Format
 
-let report_error = function
-    File_not_found name ->
-      printf "Cannot find file %s" name
+let report_error ppf = function
+  | File_not_found name ->
+      fprintf ppf "Cannot find file %s" name
   | Not_an_object_file name ->
-      printf "The file %s is not a bytecode object file" name
+      fprintf ppf "The file %s is not a bytecode object file" name
   | Symbol_error(name, err) ->
-      printf "Error while linking %s:@ " name;
+      fprintf ppf "Error while linking %s:@ %a" name
       Symtable.report_error err
   | Inconsistent_import(intf, file1, file2) ->
-      printf
+      fprintf ppf
         "@[<hv 0>Files %s and %s@ \
                  make inconsistent assumptions over interface %s@]"
         file1 file2 intf
   | Custom_runtime ->
-      print_string "Error while building custom runtime system"
+      fprintf ppf "Error while building custom runtime system"
   | File_exists file ->
-      printf "Cannot overwrite existing file %s" file
+      fprintf ppf "Cannot overwrite existing file %s" file

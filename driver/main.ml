@@ -15,21 +15,21 @@
 open Config
 open Clflags
 
-let process_interface_file name =
-  Compile.interface name
+let process_interface_file ppf name =
+  Compile.interface ppf name
 
-let process_implementation_file name =
-  Compile.implementation name;
+let process_implementation_file ppf name =
+  Compile.implementation ppf name;
   objfiles := (Filename.chop_extension name ^ ".cmo") :: !objfiles
 
-let process_file name =
+let process_file ppf name =
   if Filename.check_suffix name ".ml"
   or Filename.check_suffix name ".mlt" then begin
-    Compile.implementation name;
+    Compile.implementation ppf name;
     objfiles := (Filename.chop_extension name ^ ".cmo") :: !objfiles
   end
   else if Filename.check_suffix name !Config.interface_suffix then
-    Compile.interface name
+    Compile.interface ppf name
   else if Filename.check_suffix name ".cmo"
        or Filename.check_suffix name ".cma" then
     objfiles := name :: !objfiles
@@ -56,6 +56,11 @@ let print_version_number () =
 
 let usage = "Usage: ocamlc <options> <files>\nOptions are:"
 
+(* Error messages to standard error formatter *)
+let anonymous = process_file Format.err_formatter;;
+let impl = process_implementation_file Format.err_formatter;;
+let intf = process_interface_file Format.err_formatter;;
+
 module Options = Main_args.Make_options (struct
   let set r () = r := true
   let unset r () = r := false
@@ -68,8 +73,8 @@ module Options = Main_args.Make_options (struct
   let _g = set debug
   let _i = set print_types
   let _I s = include_dirs := s :: !include_dirs
-  let _impl = process_implementation_file
-  let _intf = process_interface_file
+  let _impl = impl
+  let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
   let _linkall = set link_everything
   let _make_runtime () =
@@ -92,24 +97,24 @@ module Options = Main_args.Make_options (struct
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
   let _dinstr = set dump_instr
-  let anonymous = process_file
+  let anonymous = anonymous
 end)
 
 let main () =
-  Formatmsg.set_output Format.err_formatter;
+(* A supprimer   Formatmsg.set_output Format.err_formatter;*)
   try
-    Arg.parse Options.list process_file usage;
+    Arg.parse Options.list anonymous usage;
     if !make_archive then begin
       Compile.init_path();
       Bytelibrarian.create_archive (List.rev !objfiles) !archive_name
     end
-    else if not !compile_only & !objfiles <> [] then begin
+    else if not !compile_only && !objfiles <> [] then begin
       Compile.init_path();
       Bytelink.link (List.rev !objfiles)
     end;
     exit 0
   with x ->
-    Errors.report_error x;
+    Errors.report_error Format.err_formatter x;
     exit 2
 
 let _ = Printexc.catch main ()

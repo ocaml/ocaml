@@ -16,7 +16,8 @@
 
 open Misc
 open Ctype
-open Formatmsg
+open Format
+(*open Formatmsg*)
 open Longident
 open Path
 open Asttypes
@@ -25,30 +26,28 @@ open Btype
 
 (* Print a long identifier *)
 
-let rec longident = function
-    Lident s -> print_string s
-  | Ldot(p, s) -> longident p; print_string "."; print_string s
-  | Lapply(p1, p2) ->
-      longident p1; print_string "("; longident p2; print_string ")"
+let rec longident ppf = function
+  | Lident s -> fprintf ppf "%s" s
+  | Ldot(p, s) -> fprintf ppf "%a.%s" longident p s
+  | Lapply(p1, p2) -> fprintf ppf "%a(%a)" longident p1 longident p2
 
 (* Print an identifier *)
 
-let ident id =
-  print_string(Ident.name id)
+let ident ppf id = fprintf ppf "%s" (Ident.name id)
 
 (* Print a path *)
 
 let ident_pervasive = Ident.create_persistent "Pervasives"
 
-let rec path = function
-    Pident id ->
-      ident id
+let rec path ppf = function
+  | Pident id ->
+      ident ppf id
   | Pdot(Pident id, s, pos) when Ident.same id ident_pervasive ->
-      print_string s
+      fprintf ppf "%s" s
   | Pdot(p, s, pos) ->
-      path p; print_string "."; print_string s
+      fprintf ppf "%a.%s" path p s
   | Papply(p1, p2) ->
-      path p1; print_string "("; path p2; print_string ")"
+      fprintf ppf "%a(%a)" path p1 path p2
 
 (* Print a type expression *)
 
@@ -62,10 +61,9 @@ let new_name () =
     if !name_counter < 26
     then String.make 1 (Char.chr(97 + !name_counter)) 
     else String.make 1 (Char.chr(97 + !name_counter mod 26)) ^
-           string_of_int(!name_counter / 26)
-  in
-    incr name_counter;
-    name
+           string_of_int(!name_counter / 26) in
+  incr name_counter;
+  name
 
 let name_of_type t =
   try List.assq t !names with Not_found ->
@@ -73,85 +71,80 @@ let name_of_type t =
     names := (t, name) :: !names;
     name
 
-let print_name_of_type t =
-  print_string (name_of_type t)
-
-let check_name_of_type t =
-  ignore(name_of_type t)
+let check_name_of_type t = ignore(name_of_type t)
 
 (*
 let remove_name_of_type t =
   names := List.remove_assq t !names
 *)
 
+let print_name_of_type ppf t = fprintf ppf "%s" (name_of_type t)
+
 let visited_objects = ref ([] : type_expr list)
 let aliased = ref ([] : type_expr list)
+
+let add_alias px =
+  if not (List.memq px !aliased) then aliased := px :: !aliased
 
 let proxy ty =
   let ty = repr ty in
   match ty.desc with
-    Tvariant row -> Btype.row_more row
+  | Tvariant row -> Btype.row_more row
   | _ -> ty
 
 let namable_row row =
   row.row_name <> None && row.row_closed &&
   List.for_all
-    (fun (_,f) -> match row_field_repr f with
-      Reither(c,l,_) -> if c then l = [] else List.length l = 1
-    | _ -> true)
+    (fun (_, f) ->
+       match row_field_repr f with
+       | Reither(c, l, _) -> if c then l = [] else List.length l = 1
+       | _ -> true)
     row.row_fields
 
 let rec mark_loops_rec visited ty =
   let ty = repr ty in
   let px = proxy ty in
-  if List.memq px visited then begin
-    if not (List.memq px !aliased) then
-      aliased := px :: !aliased
-  end else
+  if List.memq px visited then add_alias px else
     let visited = px :: visited in
     match ty.desc with
-      Tvar                -> ()
+    | Tvar -> ()
     | Tarrow(_, ty1, ty2) ->
         mark_loops_rec visited ty1; mark_loops_rec visited ty2
-    | Ttuple tyl          -> List.iter (mark_loops_rec visited) tyl
-    | Tconstr(_, tyl, _)  ->
+    | Ttuple tyl -> List.iter (mark_loops_rec visited) tyl
+    | Tconstr(_, tyl, _) ->
         List.iter (mark_loops_rec visited) tyl
-    | Tvariant row        ->
+    | Tvariant row ->
         let row = row_repr row in
-        if List.memq px !visited_objects then begin
-          if not (List.memq px !aliased) then
-            aliased := px :: !aliased
-        end else begin
+        if List.memq px !visited_objects then add_alias px else
+         begin
           if not (static_row row) then
             visited_objects := px :: !visited_objects;
           match row.row_name with
-            Some(p, tyl) when namable_row row ->
+          | Some(p, tyl) when namable_row row ->
               List.iter (mark_loops_rec visited) tyl
           | _ ->
               iter_row (mark_loops_rec visited) row
-        end
-    | Tobject (fi, nm)    ->
-        if List.memq px !visited_objects then begin
-          if not (List.memq px !aliased) then
-            aliased := px :: !aliased
-        end else begin
+         end
+    | Tobject (fi, nm) ->
+        if List.memq px !visited_objects then add_alias px else
+         begin
           if opened_object ty then
             visited_objects := px :: !visited_objects;
           let name =
             match !nm with
-              None -> None
-            | Some (n, v::l) ->
+            | None -> None
+            | Some (n, v :: l) ->
                 let v' = repr v in
                 begin match v'.desc with
-                  Tvar -> Some (n, v'::l)
-                | _    -> None
+                | Tvar -> Some (n, v' :: l)
+                | _ -> None
                 end
             | _ ->
                 fatal_error "Printtyp.mark_loops_rec"
           in
           nm := name;
           begin match !nm with
-            None ->
+          | None ->
               mark_loops_rec visited fi
           | Some (_, l) ->
               List.iter (mark_loops_rec visited) l
@@ -161,13 +154,13 @@ let rec mark_loops_rec visited ty =
         mark_loops_rec visited ty1; mark_loops_rec visited ty2
     | Tfield(_, _, _, ty2) ->
         mark_loops_rec visited ty2
-    | Tnil                -> ()
-    | Tsubst ty           ->  mark_loops_rec visited ty
-    | Tlink _             -> fatal_error "Printtyp.mark_loops_rec (2)"
+    | Tnil -> ()
+    | Tsubst ty -> mark_loops_rec visited ty
+    | Tlink _ -> fatal_error "Printtyp.mark_loops_rec (2)"
 
 let mark_loops ty =
   normalize_type Env.empty ty;
-  mark_loops_rec [] ty
+  mark_loops_rec [] ty;;
 
 let reset_loop_marks () =
   visited_objects := []; aliased := []
@@ -175,273 +168,203 @@ let reset_loop_marks () =
 let reset () =
   reset_names (); reset_loop_marks ()
 
-(* disabled in classic mode when printing an unification error *)
+let reset_and_mark_loops ty =
+  reset (); mark_loops ty;;
+
+let reset_and_mark_loops_list tyl =
+ reset (); List.iter mark_loops tyl;;
+
+(* Disabled in classic mode when printing an unification error *)
 let print_labels = ref true
-let print_label l =
-  if !print_labels && l <> "" || is_optional l then begin
-    print_string l;
-    print_char ':'
-  end
+let print_label ppf l =
+  if !print_labels && l <> "" || is_optional l then fprintf ppf "%s:" l
 
-let rec print_list pr sep = function
-    [] -> ()
-  | [a] -> pr a
-  | a::l -> pr a; sep (); print_list pr sep l
+let rec print_list pr sep ppf = function
+  | [] -> ()
+  | [a] -> pr ppf a
+  | a :: l -> pr ppf a; sep (); print_list pr sep ppf l;;
 
-let rec typexp sch prio0 ty =
+let rec typexp sch prio0 ppf ty =
   let ty = repr ty in
   let px = proxy ty in
-  if List.mem_assq px !names then begin
-    if (px.desc = Tvar) && sch && (px.level <> generic_level)
-    then print_string "'_"
-    else print_string "'";
-    print_name_of_type px
-  end else begin
-    let alias = List.memq px !aliased in
-    if alias then begin
-      check_name_of_type px;
-      if prio0 >= 1 then begin open_box 1; print_string "(" end
-      else open_box 0
-    end;
-    let prio = if alias then 0 else prio0 in
-    begin match ty.desc with
-      Tvar ->
-        if (not sch) or ty.level = generic_level
-        then print_string "'"
-        else print_string "'_";
-        print_name_of_type ty
+  if List.mem_assq px !names then
+   let mark = if px.desc = Tvar then non_gen_mark sch px else "" in
+   fprintf ppf "'%s%a" mark print_name_of_type px else
+
+  let pr_typ ppf prio =
+   (match ty.desc with
+    | Tvar ->
+        fprintf ppf "'%s%a" (non_gen_mark sch ty) print_name_of_type ty
     | Tarrow(l, ty1, ty2) ->
-        if prio >= 2 then begin open_box 1; print_string "(" end
-                     else open_box 0;
-        print_label l;
-        if is_optional l then
-          match (repr ty1).desc with
-            Tconstr(path, [ty], _) when path = Predef.path_option ->
-              typexp sch 2 ty
-          | _ -> assert false
-        else
-          typexp sch 2 ty1;
-        print_string " ->"; print_space();
-        typexp sch 1 ty2;
-        if prio >= 2 then print_string ")";
-        close_box()
+        let pr_arrow l ty1 ppf ty2 =
+          print_label ppf l;
+          if is_optional l then
+            match (repr ty1).desc with
+            | Tconstr(path, [ty], _) when path = Predef.path_option ->
+                typexp sch 2 ppf ty
+            | _ -> assert false
+          else typexp sch 2 ppf ty1;
+          fprintf ppf " ->@ %a" (typexp sch 1) ty2 in
+        if prio >= 2
+        then fprintf ppf "@[<1>(%a)@]" (pr_arrow l ty1) ty2
+        else fprintf ppf "@[<0>%a@]" (pr_arrow l ty1) ty2
     | Ttuple tyl ->
-        if prio >= 3 then begin open_box 1; print_string "(" end
-                     else open_box 0;
-        typlist sch 3 " *" tyl;
-        if prio >= 3 then print_string ")";
-        close_box()
+        if prio >= 3
+        then fprintf ppf "@[<1>(%a)@]" (typlist sch 3 " *") tyl
+        else fprintf ppf "@[<0>%a@]" (typlist sch 3 " *") tyl
     | Tconstr(p, tyl, abbrev) ->
-        open_box 0;
-        begin match tyl with
-          [] -> ()
-        | [ty1] ->
-            typexp sch 3 ty1; print_space()
-        | tyl ->
-            open_box 1; print_string "("; typlist sch 0 "," tyl;
-            print_string ")"; close_box(); print_space()
-        end;
-        path p;
-        close_box()
+        fprintf ppf "@[%a%a@]" (typargs sch) tyl path p
     | Tvariant row ->
         let row = row_repr row in
         let fields =
           if row.row_closed then
-            List.filter (fun (_,f) -> row_field_repr f <> Rabsent)
+            List.filter (fun (_, f) -> row_field_repr f <> Rabsent)
               row.row_fields
-          else row.row_fields
-        in
+          else row.row_fields in
         let present =
           List.filter
-            (fun (_,f) -> match row_field_repr f with
-            | Rpresent _ -> true
-            | _ -> false)
+            (fun (_, f) ->
+               match row_field_repr f with
+               | Rpresent _ -> true
+               | _ -> false)
             fields in
         let all_present = List.length present = List.length fields in
+        let pr_present ppf l =
+          fprintf ppf "@[%a@]"
+            (print_list (fun ppf (s, _) -> fprintf ppf "@ | `%s" s) ignore)
+            l in
         begin match row.row_name with
-        | Some(p,tyl) when namable_row row ->
-            open_box 0;
-            begin match tyl with
-              [] -> ()
-            | [ty1] ->
-                typexp sch 3 ty1; print_space()
-            | tyl ->
-                open_box 1; print_string "("; typlist sch 0 "," tyl;
-                print_string ")"; close_box(); print_space()
-            end;
-            if not all_present then
-              if sch && px.level <> generic_level then print_string "_#"
-              else print_char '#';
-            path p;
-            if not all_present && present <> [] then begin
-              open_box 1;
-              print_string "[>";
-              print_list (fun (s,_) -> print_char '`'; print_string s)
-                print_space present;
-              print_char ']';
-              close_box ()
-            end;
-            close_box ()
+        | Some(p, tyl) when namable_row row ->
+            let sharp_mark =
+              if not all_present then non_gen_mark sch px ^ "#" else "" in
+            let print_present ppf = function
+              | [] -> ()
+              | l ->
+                 if not all_present then fprintf ppf "[>%a]" pr_present l in
+            fprintf ppf "@[%a%s%a%a@]"
+              (typargs sch) tyl sharp_mark path p print_present present
         | _ ->
-            open_hovbox 0;
-            if not (row.row_closed && all_present) && sch &&
-              px.level <> generic_level then print_string "_["
-            else print_char '[';
-            if all_present then begin
-              if row.row_closed then () else
-              if fields = [] then print_string "< .." else
-              print_char '>'
-            end else
-              print_char '<';
-            print_list (row_field sch) (fun () -> printf "@,|") fields;
-            if not (row.row_closed || all_present) then printf "@,| ..";
-            if present <> [] && not all_present then begin
-              print_space ();
-              open_hovbox 2;
-              print_string ">";
-              print_list (fun (s,_) -> print_char '`'; print_string s)
-                print_space present;
-              close_box ()
-            end;
-            print_char ']';
-            close_box ()
+            let gen_mark =
+              if not (row.row_closed && all_present)
+              then non_gen_mark sch px
+              else "" in
+            let close_mark =
+              if not all_present then "<" else
+              if row.row_closed then "" else
+              if fields = [] then "< .." else ">" in
+            let pr_ellipsis ppf =
+              if not (row.row_closed || all_present)
+              then fprintf ppf "@ | .." in
+            let print_present ppf = function
+              | [] -> ()
+              | l ->
+                 if not all_present then fprintf ppf "@ >%a" pr_present l in
+            let print_fields ppf fields =
+              print_list (row_field sch)
+                         (fun () -> fprintf ppf "@ | ") ppf fields in
+              
+            fprintf ppf "@[<hov>%s[%s%a%t%a]@]"
+              gen_mark close_mark print_fields fields
+              pr_ellipsis print_present present
         end
     | Tobject (fi, nm) ->
-        typobject sch ty fi nm
-(*
-| Tfield _ -> typobject sch ty ty (ref None)
-| Tnil -> typobject sch ty ty (ref None)
-*)
+        typobject sch ty fi ppf nm
     | Tsubst ty ->
-        typexp sch prio ty
+        typexp sch prio ppf ty
     | _ ->
         fatal_error "Printtyp.typexp"
-    end;
-    if alias then begin
-      print_string " as ";
-      print_string "'";
-      print_name_of_type px;
-      (* if not (opened_object ty) then
-        remove_name_of_type px; *)
-      if prio0 >= 1 then print_string ")";
-      close_box()
-    end
-  end
-(*; print_string "["; print_int ty.level; print_string "]"*)
+   ) in
+  if List.memq px !aliased then begin
+    check_name_of_type px;
+    if prio0 >= 1
+    then printf "@[<1>(%a as '%a)@]" pr_typ 0 print_name_of_type px
+    else printf "@[%a as '%a@]" pr_typ prio0 print_name_of_type px end
+  else pr_typ ppf prio0
 
-and row_field sch (l,f) =
-  open_box 2;
-  print_char '`';
-  print_string l;
-  begin match row_field_repr f with
-    Rpresent None | Reither(true, [], _) -> ()
-  | Rpresent(Some ty) -> print_space (); typexp sch 0 ty
-  | Reither(c, tyl,_) ->
-      print_space ();
-      if c then printf "&@ ";
-      typlist sch 0 " &" tyl
-  | Rabsent -> print_space (); print_string "[]"
-  end;
-  close_box ()
+and row_field sch ppf (l, f) =
+  let pr_field ppf f =
+    match row_field_repr f with
+    | Rpresent None | Reither(true, [], _) -> ()
+    | Rpresent(Some ty) -> fprintf ppf "@ %a" (typexp sch 0) ty
+    | Reither(c, tyl,_) ->
+        if c
+        then fprintf ppf "@ &@ %a" (typlist sch 0 " &") tyl
+        else fprintf ppf "@ %a" (typlist sch 0 " &") tyl
+    | Rabsent -> fprintf ppf "@ []" in
+  fprintf ppf "@[<2>`%s%a@]" l pr_field f
 
-and typlist sch prio sep = function
-    [] -> ()
-  | [ty] -> typexp sch prio ty
-  | ty::tyl ->
-      typexp sch prio ty; print_string sep; print_space();
-      typlist sch prio sep tyl
+(* typlist is simply 
+   print_list (typexp sch prio) (fun () -> fprintf ppf "%s@ " sep) *)
+and typlist sch prio sep ppf = function
+  | [] -> ()
+  | [ty] -> typexp sch prio ppf ty
+  | ty :: tyl ->
+      fprintf ppf "%a%s@ %a"
+       (typexp sch prio) ty sep (typlist sch prio sep) tyl
 
-and typobject sch ty fi nm =
+and typargs sch ppf = function
+  | [] -> ()
+  | [ty1] -> fprintf ppf "%a@ " (typexp sch 3) ty1
+  | tyl -> fprintf ppf "@[<1>(%a)@]@ " (typlist sch 0 ",") tyl
+
+and typobject sch ty fi ppf nm =
   begin match !nm with
-    None ->
-      open_box 2;
-      print_string "< ";
-      (let (fields, rest) = flatten_fields fi in
-       let present_fields =
-         List.fold_right
-           (fun (n, k, t) l ->
-              match field_kind_repr k with
-                Fpresent ->
-                  (n, t)::l
-              | _ ->
-                  l)
-           fields []
-       in
-       typfields sch rest
-         (Sort.list (fun (n, _) (n', _) -> n <= n') present_fields));
-      print_string " >";
-      close_box ()
-  | Some (p, {desc = Tvar}::tyl) ->
-      open_box 0;
-      begin match tyl with
-        [] -> ()
-      | [ty1] ->
-          typexp sch 3 ty1; print_space()
-      | tyl ->
-          open_box 1; print_string "("; typlist sch 0 "," tyl;
-          print_string ")"; close_box(); print_space()
-      end;
-      if sch & ty.level <> generic_level then
-        print_string "_";
-      print_string "#";
-      path p;
-      close_box()
+  | None ->
+      let pr_fields ppf fi =
+        let (fields, rest) = flatten_fields fi in
+        let present_fields =
+          List.fold_right
+            (fun (n, k, t) l ->
+               match field_kind_repr k with
+               | Fpresent -> (n, t) :: l
+               | _ -> l)
+            fields [] in
+        let sorted_fields =
+          Sort.list (fun (n, _) (n', _) -> n <= n') present_fields in
+        typfields sch rest ppf sorted_fields in
+      fprintf ppf "@[<2>< %a >@]" pr_fields fi
+  | Some (p, {desc = Tvar} :: tyl) ->
+      fprintf ppf "@[%a%s#%a@]" (typargs sch) tyl (non_gen_mark sch ty) path p
   | _ ->
         fatal_error "Printtyp.typobject"
   end
 
-and typfields sch rest =
-  function
-    [] ->
+and non_gen_mark sch ty =
+    if sch && ty.level <> generic_level then "_" else "" 
+
+and typfields sch rest ppf = function
+  | [] ->
       begin match rest.desc with
-        Tvar -> if sch & rest.level <> generic_level then
-                  print_string "_";
-                print_string ".."
+      | Tvar -> fprintf ppf "%s.." (non_gen_mark sch rest)
       | Tnil -> ()
-      | _    -> fatal_error "typfields (1)"
+      | _ -> fatal_error "typfields (1)"
       end
   | [(s, t)] ->
-      print_string s;
-      print_string " : ";
-      typexp sch 0 t;
+      fprintf ppf "%s : %a" s (typexp sch 0) t;
       begin match rest.desc with
-        Tvar -> print_string ";"; print_space ()
+      | Tvar -> fprintf ppf ";@ "
       | Tnil -> ()
-      | _    -> fatal_error "typfields (2)"
+      | _ -> fatal_error "typfields (2)"
       end;
-      typfields sch rest []
-  | (s, t)::l ->
-      print_string s;
-      print_string " : ";
-      typexp sch 0 t;
-      print_string ";"; print_space ();
-      typfields sch rest l
+      typfields sch rest ppf []
+  | (s, t) :: l ->
+      fprintf ppf "%s : %a;@ %a" s (typexp sch 0) t (typfields sch rest) l
 
-let type_expr ty =
-  typexp false 0 ty
+let type_expr ppf ty = typexp false 0 ppf ty
 
-and type_sch ty =
-  typexp true 0 ty
+and type_sch ppf ty = typexp true 0 ppf ty
 
-and type_scheme ty =
-  reset(); mark_loops ty; typexp true 0 ty
+and type_scheme ppf ty = reset_and_mark_loops ty; typexp true 0 ppf ty
 
 (* Print one type declaration *)
 
-let constrain ty =
+let constrain ppf ty =
   let ty' = unalias ty in
-  if ty != ty' then begin
-    print_space ();
-    open_box 2;
-    print_string "constraint ";
-    type_sch ty;
-    print_string " =";
-    print_space();
-    type_sch ty';
-    close_box()
-  end
+  if ty != ty'
+  then fprintf ppf "@ @[<2>constraint %a =@ %a@]" type_sch ty type_sch ty'
 
-let rec type_decl kwd id decl =
+let rec type_decl kwd id ppf decl =
+
   reset();
 
   let params = List.map repr decl.type_params in
@@ -450,127 +373,101 @@ let rec type_decl kwd id decl =
   List.iter mark_loops params;
   List.iter check_name_of_type params;
   begin match decl.type_manifest with
-    None    -> ()
+  | None -> ()
   | Some ty -> mark_loops ty
   end;
   begin match decl.type_kind with
-    Type_abstract -> ()
+  | Type_abstract -> ()
   | Type_variant [] -> ()
   | Type_variant cstrs ->
       List.iter (fun (_, args) -> List.iter mark_loops args) cstrs
-  | Type_record (lbl1 :: lbls as l) ->
+  | Type_record l ->
       List.iter (fun (_, _, ty) -> mark_loops ty) l
-  | _ -> assert false
   end;
 
-  open_hvbox 2;
-  print_string kwd;
-  type_expr (Btype.newgenty (Tconstr(Pident id, params, ref Mnil)));
+  fprintf ppf "@[<hv 2>%s%a"
+    kwd type_expr (Btype.newgenty (Tconstr(Pident id, params, ref Mnil)));
   begin match decl.type_manifest with
-    None -> ()
-  | Some ty ->
-      print_string " ="; print_space(); type_expr ty
+  | None -> ()
+  | Some ty -> fprintf ppf " =@ %a" type_expr ty
   end;
   begin match decl.type_kind with
-    Type_abstract -> ()
+  | Type_abstract -> ()
   | Type_variant [] -> ()
       (* A fatal error actually, except when printing type exn... *)
   | Type_variant cstrs ->
-      printf " ="; print_break 1 2;
-      print_list constructor (fun () -> printf "@ | ") cstrs
+      fprintf ppf " =@;<1 2>%a"
+       (print_list constructor (fun () -> fprintf ppf "@ | "))
+       cstrs
   | Type_record (lbl1 :: lbls as l) ->
-      print_string " ="; print_space();
-      print_string "{ "; label lbl1;
-      List.iter
-        (fun lbl -> print_string ";"; print_break 1 2; label lbl)
-        lbls;
-      print_string " }"
+      let pr_labels ppf lbls =
+        List.iter
+         (fun lbl -> fprintf ppf ";@;<1 2>%a" label lbl)
+         lbls in
+      fprintf ppf " =@ { %a%a }" label lbl1 pr_labels lbls
   | _ -> assert false
   end;
-  List.iter constrain params;
-  close_box()
+  fprintf ppf "%a@]" (fun ppf l -> List.iter (constrain ppf) l) params
 
-and constructor (name, args) =
-  print_string name;
+and constructor ppf (name, args) =
   match args with
-    [] -> ()
-  | _  -> print_string " of ";
-          open_box 2; typlist false 3 " *" args; close_box()
+  | [] -> print_string name
+  | _ -> fprintf ppf "%s of @[<2>%a@]" name (typlist false 3 " *") args
 
-and label (name, mut, arg) =
-  begin match mut with
-      Immutable -> ()
-    | Mutable -> print_string "mutable "
-  end;
-  print_string name;
-  print_string ": ";
-  type_expr arg
+and label ppf (name, mut, arg) =
+  fprintf ppf "%s%s: %a" (string_of_mutable mut) name type_expr arg
+
+and string_of_mutable = function
+  | Immutable -> ""
+  | Mutable -> "mutable "
 
 let type_declaration id decl = type_decl "type " id decl
 
 (* Print an exception declaration *)
 
-let exception_declaration id decl =
-  print_string "exception "; constructor (Ident.name id, decl)
+let exception_declaration id ppf decl =
+  fprintf ppf "exception %a" constructor (Ident.name id, decl)
 
 (* Print a value declaration *)
 
-let value_ident id =
+let value_ident ppf id =
   let name = Ident.name id in
-  if List.mem name ["or";"mod";"land";"lor";"lxor";"lsl";"lsr";"asr"] then
-    printf "( %s )" name
+  if List.mem name
+      ["or"; "mod"; "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr"]
+  then fprintf ppf "( %s )" name
   else match name.[0] with
-    'a'..'z'|'\223'..'\246'|'\248'..'\255'|'_' -> ident id
-  | _ -> printf "( %s )" name
+  | 'a' .. 'z' | '\223' .. '\246' | '\248' .. '\255' | '_' -> ident ppf id
+  | _ -> fprintf ppf "( %s )" name
 
-let value_description id decl =
-  open_box 2;
-  print_string (if decl.val_kind = Val_reg then "val " else "external ");
-  value_ident id; print_string " :"; print_space();
-  type_scheme decl.val_type;
-  begin match decl.val_kind with
-    Val_prim p ->
-      print_space(); print_string "= "; Primitive.print_description p
-  | _ -> ()
-  end;
-  close_box()
+let value_description id ppf decl =
+  let kwd = if decl.val_kind = Val_reg then "val " else "external " in
+  let pr_val ppf =
+    match decl.val_kind with
+    | Val_prim p ->
+        fprintf ppf "@ = "; Primitive.print_description p
+    | _ -> () in
+  fprintf ppf "@[<2>%s%a :@ %a%t@]"
+    kwd value_ident id type_scheme decl.val_type pr_val
 
 (* Print a class type *)
 
-let class_var sch l (m, t) =
-  print_space ();
-  open_box 2;
-  print_string "val ";
-  begin match m with
-    Immutable -> ()
-  | Mutable -> print_string "mutable "
-  end;
-  print_string l;
-  print_string " :";
-  print_space();
-  typexp sch 0 t;
-  close_box()
+let class_var sch ppf l (m, t) =
+  fprintf ppf
+    "@ @[<2>val %s%s :@ %a@]" (string_of_mutable m) l (typexp sch 0) t
 
-let metho sch concrete (lab, kind, ty) =
+let metho sch concrete ppf (lab, kind, ty) =
   if lab <> "*dummy method*" then begin
-    print_space ();
-    open_box 2;
-    print_string "method ";
-    begin match field_kind_repr kind with
-      Fvar _ (* {contents = None} *) -> print_string "private "
-    | _ (* Fpresent *)               -> ()
-    end;
-    if not (Concr.mem lab concrete) then print_string "virtual ";
-    print_string lab;
-    print_string " :";
-    print_space ();
-    typexp sch 0 ty;
-    close_box ()
+    let priv =
+      match field_kind_repr kind with
+      | Fvar _ (* {contents = None} *) -> "private "
+      | _ (* Fpresent *) -> "" in
+    let virt =
+      if Concr.mem lab concrete then "" else "virtual " in
+    fprintf ppf "@ @[<2>method %s%s%s :@ %a@]" priv virt lab (typexp sch 0) ty
   end
 
-let rec prepare_class_type =
-  function
-    Tcty_constr (p, tyl, cty) ->
+let rec prepare_class_type = function
+  | Tcty_constr (p, tyl, cty) ->
       let sty = Ctype.self_type cty in
       begin try
         if List.memq sty !visited_objects then raise (Unify []);
@@ -591,80 +488,55 @@ let rec prepare_class_type =
         Ctype.flatten_fields (Ctype.object_fields sign.cty_self)
       in
       List.iter (fun (_, _, ty) -> mark_loops ty) fields;
-(*
-      begin match sty.desc with
-        Tobject (fi, _) -> mark_loops fi
-      | _               -> assert false
-      end;
-*)
       Vars.iter (fun _ (_, ty) -> mark_loops ty) sign.cty_vars
   | Tcty_fun (_, ty, cty) ->
       mark_loops ty;
       prepare_class_type cty
 
-let rec perform_class_type sch params =
-  function
-    Tcty_constr (p', tyl, cty) ->
+let rec perform_class_type sch params ppf = function
+  | Tcty_constr (p', tyl, cty) ->
       let sty = Ctype.self_type cty in
       if List.memq sty !visited_objects then
-        perform_class_type sch params cty
-      else begin
-        open_box 0;
-        if tyl <> [] then begin
-          open_box 1;
-          print_string "[";
-          typlist true 0 "," tyl;
-          print_string "]";
-          close_box ();
-          print_space ()
-        end;
-        path p';
-        close_box ()
-      end
+        perform_class_type sch params ppf cty
+      else
+        let pr_tyl ppf = function
+          | [] -> ()
+          | tyl -> fprintf ppf "@[<1>[%a]@]@ " (typlist true 0 ",") tyl in
+        fprintf ppf "@[%a%a@]" pr_tyl tyl path p'
   | Tcty_signature sign ->
       let sty = repr sign.cty_self in
-      open_hvbox 2;
-      open_box 2;
-      print_string "object";
-      if List.memq sty !aliased then begin
-        print_space ();
-        open_box 0;
-        print_string "('";
-        print_name_of_type sty;
-        print_string ")";
-        close_box ()
-      end;
-      close_box ();
-      List.iter constrain params;
-      Vars.iter (class_var sch) sign.cty_vars;
-      let (fields, _) =
-        Ctype.flatten_fields (Ctype.object_fields sign.cty_self)
-      in
-      List.iter (metho sch sign.cty_concr) fields;
-      print_break 1 (-2);
-      print_string "end";
-      close_box()
-  | Tcty_fun (l, ty, cty) ->
-      open_box 0;
-      print_label l;
-      if is_optional l then
-        match (repr ty).desc with
-          Tconstr(path, [ty], _) when path = Predef.path_option ->
-            typexp sch 2 ty
-        | _ -> assert false
-      else
-        typexp sch 2 ty;
-      print_string " ->";
-      print_space ();
-      perform_class_type sch params cty;
-      close_box ()
+      let pr_param ppf sty =
+       if List.memq sty !aliased then
+        fprintf ppf "@ @[('%a)@]" print_name_of_type sty in
 
-let class_type cty =
+      fprintf ppf "@[<hv 2>@[<2>object%a@]%a"
+              pr_param sty
+              (fun ppf l -> List.iter (constrain ppf) l) params;
+      Vars.iter (class_var sch ppf) sign.cty_vars;
+      let (fields, _) =
+        Ctype.flatten_fields (Ctype.object_fields sign.cty_self) in
+      List.iter (metho sch sign.cty_concr ppf) fields;
+      fprintf ppf "@;<1 -2>end@]"
+  | Tcty_fun (l, ty, cty) ->
+      let ty =
+       if is_optional l then
+         match (repr ty).desc with
+         | Tconstr(path, [ty], _) when path = Predef.path_option -> ty
+         | _ -> assert false
+       else ty in
+      fprintf ppf "@[%a%a ->@ %a@]"
+       print_label l (typexp sch 2) ty (perform_class_type sch params) cty
+
+let class_type ppf cty =
   reset ();
   prepare_class_type cty;
-  perform_class_type false [] cty
+  perform_class_type false [] ppf cty
 
-let class_declaration id cl =
+let class_params ppf = function
+  | [] -> ()
+  | params -> fprintf ppf "@[<1>[%a]@]@ " (typlist true 0 ",") params
+
+let class_declaration id ppf cl =
   let params = List.map repr cl.cty_params in
 
   reset ();
@@ -677,28 +549,11 @@ let class_declaration id cl =
   if List.memq sty !aliased then
     check_name_of_type sty;
 
-  open_box 2;
-  print_string "class";
-  print_space ();
-  if cl.cty_new = None then begin
-    print_string "virtual";
-    print_space ()
-  end;
-  if params <> [] then begin
-    open_box 1;
-    print_string "[";
-    typlist true 0 "," params;
-    print_string "]";
-    close_box ();
-    print_space ()
-  end;
-  ident id;
-  print_space ();
-  print_string ":"; print_space ();
-  perform_class_type true params cl.cty_type;
-  close_box ()
+  let vir_mark = if cl.cty_new = None then " virtual" else "" in
+  fprintf ppf "@[<2>class%s@ %a%a@ :@ %a@]" vir_mark
+    class_params params ident id (perform_class_type true params) cl.cty_type
 
-let cltype_declaration id cl =
+let cltype_declaration id ppf cl =
   let params = List.map repr cl.clty_params in
 
   reset ();
@@ -712,236 +567,176 @@ let cltype_declaration id cl =
     check_name_of_type sty;
 
   let sign = Ctype.signature_of_class_type cl.clty_type in
+
   let virt =
     let (fields, _) =
-      Ctype.flatten_fields (Ctype.object_fields sign.cty_self)
-    in
+      Ctype.flatten_fields (Ctype.object_fields sign.cty_self) in
     List.exists
       (fun (lab, _, ty) ->
-         not ((lab = "*dummy method*")
-                         ||
-              (Concr.mem lab sign.cty_concr)))
-      fields
-  in
+         not (lab = "*dummy method*" || Concr.mem lab sign.cty_concr))
+      fields in
 
-  open_box 2;
-  print_string "class type";
-  print_space ();
-  if virt then begin
-    print_string "virtual";
-    print_space ()
-  end;
-  if params <> [] then begin
-    open_box 1;
-    print_string "[";
-    typlist true 0 "," params;
-    print_string "]";
-    close_box ();
-    print_space ()
-  end;
-  ident id;
-  print_space ();
-  print_string "=";
-  print_space ();
-  perform_class_type true params cl.clty_type;
-  close_box ()
+  let vir_mark = if virt then " virtual" else "" in
+  fprintf ppf "@[<2>class type%s@ %a%a@ =@ %a@]"
+   vir_mark class_params params 
+   ident id
+   (perform_class_type true params) cl.clty_type
 
 (* Print a module type *)
 
-let rec modtype = function
-    Tmty_ident p ->
-      path p
+let rec modtype ppf = function
+  | Tmty_ident p ->
+      path ppf p
   | Tmty_signature sg ->
-      open_hvbox 2;
-      print_string "sig"; signature_body true sg; 
-      print_break 1 (-2); print_string "end";
-      close_box()
+      fprintf ppf "@[<hv 2>sig%a@;<1 -2>end@]" (signature_body true) sg
   | Tmty_functor(param, ty_arg, ty_res) ->
-      open_box 2;
-      print_string "functor"; print_cut();
-      print_string "("; ident param; print_string " : ";
-      modtype ty_arg;
-      print_string ") ->"; print_space();
-      modtype ty_res;
-      close_box()
+      fprintf ppf "@[<2>functor@ (%a : %a) ->@ %a@]"
+       ident param modtype ty_arg modtype ty_res
 
-and signature_body spc = function
-    [] -> ()
+and signature_body spc ppf = function
+  | [] -> ()
   | item :: rem ->
       if spc then print_space();
       let cont =
         match item with
-          Tsig_value(id, decl) ->
-            value_description id decl; rem
+        | Tsig_value(id, decl) ->
+            value_description id ppf decl; rem
         | Tsig_type(id, decl)  ->
-            type_declaration id decl;
+            type_declaration id ppf decl;
             let rec more_type_declarations = function
-              Tsig_type(id, decl) :: rem ->
-                print_space();
-                type_decl "and " id decl;
+            | Tsig_type(id, decl) :: rem ->
+                fprintf ppf "@ %a" (type_decl "and " id) decl;
                 more_type_declarations rem
             | rem -> rem in
             more_type_declarations rem
         | Tsig_exception(id, decl)  ->
-            exception_declaration id decl; rem
+            exception_declaration id ppf decl; rem
         | Tsig_module(id, mty)  ->
-            open_box 2; print_string "module "; ident id; print_string " :";
-            print_space(); modtype mty; close_box(); rem
+            fprintf ppf "@[<2>module %a :@ %a@]" ident id modtype mty; rem
         | Tsig_modtype(id, decl)  ->
-            modtype_declaration id decl; rem
+            modtype_declaration id ppf decl; rem
         | Tsig_class(id, decl) ->
-            class_declaration id decl;
+            class_declaration id ppf decl;
             begin match rem with
-              ctydecl::tydecl1::tydecl2::rem -> rem | _ -> []
+            | ctydecl :: tydecl1 :: tydecl2 :: rem -> rem
+            | _ -> []
             end
         | Tsig_cltype(id, decl) ->
-            cltype_declaration id decl;
-            match rem with tydecl1::tydecl2::rem -> rem | _ -> []
-      in signature_body true cont
+            cltype_declaration id ppf decl;
+            match rem with tydecl1 :: tydecl2 :: rem -> rem | _ -> []
+      in signature_body true ppf cont
 
-and modtype_declaration id decl =
-  open_box 2; print_string "module type "; ident id;
-  begin match decl with
-    Tmodtype_abstract -> ()
-  | Tmodtype_manifest mty ->
-      print_string " ="; print_space(); modtype mty
-  end;
-  close_box()
+and modtype_declaration id ppf decl =
+  let pr_decl ppf = function
+    | Tmodtype_abstract -> ()
+    | Tmodtype_manifest mty -> fprintf ppf " =@ %a" modtype mty in
+  fprintf ppf "@[<2>module type %a%a" ident id pr_decl decl
 
 (* Print a signature body (used by -i when compiling a .ml) *)
 
-let signature sg =
-  open_vbox 0;
-  signature_body false sg;
-  close_box()
+let signature ppf sg = fprintf ppf "@[<v>%a@]" (signature_body false) sg
 
 (* Print an unification error *)
 
-let type_expansion t t' =
-  if t == t' then
-    type_expr t
-  else begin
-    open_box 2;
-    type_expr t;
-    print_space (); print_string "="; print_space ();
-    type_expr t';
-    close_box ()
-  end
+let type_expansion t ppf t' =
+  if t == t' then type_expr ppf t
+  else fprintf ppf "@[<2>%a@ =@ %a@]" type_expr t type_expr t'
 
-let rec trace fst txt =
-  function
-    (t1, t1')::(t2, t2')::rem ->
-      if not fst then
-        print_cut ();
-      open_box 0;
-      print_string "Type"; print_break 1 2;
-      type_expansion t1 t1'; print_space ();
-      txt (); print_break 1 2;
-      type_expansion t2 t2';
-      close_box ();
-      trace false txt rem
-  | _ ->
-      ()
+let rec trace fst txt ppf = function
+  | (t1, t1') :: (t2, t2') :: rem ->
+      if not fst then fprintf ppf "@,";
+      fprintf ppf "@[Type@;<1 2>%a@ %s@;<1 2>%a@] %a"
+       (type_expansion t1) t1' txt (type_expansion t2) t2'
+       (trace false txt) rem
+  | _ -> ()
 
-let rec mismatch =
-  function
-    [(_, t); (_, t')] -> (t, t')
-  | _ :: _ :: rem     -> mismatch rem
-  | _                 -> assert false
+let rec mismatch = function
+  | [(_, t); (_, t')] -> (t, t')
+  | _ :: _ :: rem -> mismatch rem
+  | _ -> assert false
 
-let rec filter_trace =
-  function
-    (t1, t1')::(t2, t2')::rem ->
+let rec filter_trace = function
+  | (t1, t1') :: (t2, t2') :: rem ->
       let rem' = filter_trace rem in
-      if (t1 == t1') & (t2 == t2')
+      if t1 == t1' && t2 == t2'
       then rem'
-      else (t1, t1')::(t2, t2')::rem'
-  | _ ->
-      []
+      else (t1, t1') :: (t2, t2') :: rem'
+  | _ -> []
 
 (* Hide variant name, to force printing the expanded type *)
 let hide_variant_name t =
   match repr t with
-    {desc = Tvariant row} as t when (row_repr row).row_name <> None ->
+  | {desc = Tvariant row} as t when (row_repr row).row_name <> None ->
       newty2 t.level (Tvariant {(row_repr row) with row_name = None})
-  | _ ->
-      t
+  | _ -> t
 
 let prepare_expansion (t, t') =
   let t' = hide_variant_name t' in
   mark_loops t; if t != t' then mark_loops t';
   (t, t')
 
-let unification_error unif tr txt1 txt2 =
+let unification_error unif tr txt1 ppf txt2 =
   reset ();
   let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in
   let (t3, t4) = mismatch tr in
   match tr with
-    [] | _::[] ->
-      assert false
-  | t1::t2::tr ->
+  | [] | _ :: [] -> assert false
+  | t1 :: t2 :: tr ->
     try
       let t1, t1' = prepare_expansion t1
       and t2, t2' = prepare_expansion t2 in
       print_labels := not !Clflags.classic;
-      open_vbox 0;
       let tr = filter_trace tr in
       let tr = List.map prepare_expansion tr in
-      open_box 0;
-      txt1 (); print_break 1 2;
-      type_expansion t1 t1'; print_space();
-      txt2 (); print_break 1 2;
-      type_expansion t2 t2';
-      close_box();
-      trace false (fun _ -> print_string "is not compatible with type") tr;
-      begin match t3.desc, t4.desc with
-        Tfield _, Tvar | Tvar, Tfield _ ->
-          print_cut ();
-          print_string "Self type cannot escape its class"
-      | Tconstr (p, _, _), Tvar when unif && t4.level < Path.binding_time p ->
-          print_cut ();
-          open_box 0;
-          print_string "The type constructor"; print_break 1 2;
-          path p;
-          print_space (); print_string "would escape its scope";
-          close_box()
-      | Tvar, Tconstr (p, _, _) when unif && t3.level < Path.binding_time p ->
-          print_cut ();
-          open_box 0;
-          print_string "The type constructor"; print_break 1 2;
-          path p;
-          print_space (); print_string "would escape its scope";
-          close_box()
-      | Tfield ("*dummy method*", _, _, _), _
-      | _, Tfield ("*dummy method*", _, _, _) ->
-          print_cut ();
-          print_string "Self type cannot be unified with a closed object type"
-      | Tfield (l, _, _, _), _ ->
-          print_cut ();
-          open_box 0;
-          print_string "Only the first object type has a method ";
-          print_string l;
-          close_box()
-      | _, Tfield (l, _, _, _) ->
-          print_cut ();
-          open_box 0;
-          print_string "Only the second object type has a method ";
-          print_string l;
-          close_box()
-      | _ ->
-          ()
-      end;
-      close_box ();
+      let explanation ppf =
+        match t3.desc, t4.desc with
+        | Tfield _, Tvar | Tvar, Tfield _ ->
+            fprintf ppf "@,Self type cannot escape its class"
+        | Tconstr (p, _, _), Tvar
+            when unif && t4.level < Path.binding_time p ->
+            fprintf ppf
+              "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
+              path p
+        | Tvar, Tconstr (p, _, _)
+            when unif && t3.level < Path.binding_time p ->
+            fprintf ppf
+              "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
+              path p
+        | Tfield ("*dummy method*", _, _, _), _
+        | _, Tfield ("*dummy method*", _, _, _) ->
+            fprintf ppf
+              "@,Self type cannot be unified with a closed object type"
+        | Tfield (l, _, _, _), _ ->
+            fprintf ppf
+              "@,@[Only the first object type has a method %s@]" l
+        | _, Tfield (l, _, _, _) ->
+            fprintf ppf
+              "@,@[Only the second object type has a method %s@]" l
+        | _ -> () in
+      fprintf ppf
+        "@[<v>\
+          @[%t@;<1 2>%a@ \
+            %t@;<1 2>%a\
+          @]%a%t\
+         @]"
+        txt1 (type_expansion t1) t1'
+        txt2 (type_expansion t2) t2'
+        (trace false "is not compatible with type") tr
+        explanation;
       print_labels := true
     with exn ->
       print_labels := true;
       raise exn
 
-let trace fst txt tr =
+let report_unification_error ppf tr txt1 txt2 =
+  unification_error true tr txt1 ppf txt2;;
+
+let trace fst txt ppf tr =
   print_labels := not !Clflags.classic;
   try
-    trace fst txt (filter_trace tr);
+    trace fst txt ppf (filter_trace tr);
     print_labels := true
   with exn ->
     print_labels := true;
     raise exn
+

@@ -15,6 +15,7 @@
 (* Printing of values *)
 
 open Types
+open Format
 
 module type OBJ =
   sig
@@ -34,10 +35,10 @@ module type S =
     val install_printer : Path.t -> Types.type_expr -> (t -> unit) -> unit
     val remove_printer : Path.t -> unit
 
-    val print_exception : t -> unit
+    val print_exception : formatter -> t -> unit
     val print_value :
           int -> int -> (int -> t -> Types.type_expr -> bool) ->
-          Env.t -> t -> type_expr -> unit
+          Env.t -> t -> formatter -> type_expr -> unit
   end
 
 module Make(O : OBJ) : (S with type t = O.t)
