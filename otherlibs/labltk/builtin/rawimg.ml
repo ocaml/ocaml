@@ -3,6 +3,7 @@ external rawget : string -> string
 external rawset : string -> string -> int -> int -> int -> int -> unit
     = "camltk_setimgdata_bytecode"  (* all int parameters MUST be positive *)
       "camltk_setimgdata_native"
+
 type t = {
   pixmap_width : int;
   pixmap_height: int;
@@ -25,35 +26,6 @@ let create w h =
     pixmap_height = h;
     pixmap_data = String.create (w * h * 3);
   }
-
-(* create pixmap from an existing image *)
-let get photo =
-  match photo with
-  | PhotoImage s -> {
-      pixmap_width = CImagephoto.width photo;
-      pixmap_height = CImagephoto.height photo;
-      pixmap_data = rawget s;
-    }
-
-(* copy a full pixmap into an image *)
-let set photo pix =
-  match photo with
-  | PhotoImage s ->
-      rawset s pix.pixmap_data 0 0 pix.pixmap_width pix.pixmap_height
-
-(* general blit of pixmap into image *)
-let blit photo pix x y w h =
-  if x < 0 || y < 0 || w < 0 || h < 0 then invalid_arg "negative argument"
-  else match photo with
-  | PhotoImage s ->
-      rawset s pix.pixmap_data x y w h
-
-(* get from a file *)
-let from_file filename =
-  let img = CImagephoto.create [File filename] in
-  let pix = get img in
-  CImagephoto.delete img;
-  pix
 
 (*
  * operations on pixmaps
@@ -106,3 +78,65 @@ let pixel r g b =
   s.[1] <- Char.chr g;
   s.[2] <- Char.chr b;
   s
+
+##ifdef CAMLTK
+
+(* create pixmap from an existing image *)
+let get photo =
+  match photo with
+  | PhotoImage s -> {
+      pixmap_width = CImagephoto.width photo;
+      pixmap_height = CImagephoto.height photo;
+      pixmap_data = rawget s;
+    }
+
+(* copy a full pixmap into an image *)
+let set photo pix =
+  match photo with
+  | PhotoImage s ->
+      rawset s pix.pixmap_data 0 0 pix.pixmap_width pix.pixmap_height
+
+(* general blit of pixmap into image *)
+let blit photo pix x y w h =
+  if x < 0 || y < 0 || w < 0 || h < 0 then invalid_arg "negative argument"
+  else match photo with
+  | PhotoImage s ->
+      rawset s pix.pixmap_data x y w h
+
+(* get from a file *)
+let from_file filename =
+  let img = CImagephoto.create [File filename] in
+  let pix = get img in
+  CImagephoto.delete img;
+  pix
+
+##else
+
+(* create pixmap from an existing image *)
+let get photo =
+  match photo with
+  | `Photo s -> {
+      pixmap_width = Imagephoto.width photo;
+      pixmap_height = Imagephoto.height photo;
+      pixmap_data = rawget s;
+    }
+
+(* copy a full pixmap into an image *)
+let set photo pix =
+  match photo with
+  | `Photo s -> rawset s pix.pixmap_data 0 0 pix.pixmap_width pix.pixmap_height
+
+(* general blit of pixmap into image *)
+let blit photo pix x y w h =
+  if x < 0 || y < 0 || w < 0 || h < 0 then invalid_arg "negative argument"
+  else match photo with
+  | `Photo s -> rawset s pix.pixmap_data x y w h
+
+(* get from a file *)
+let from_file filename =
+  let img = Imagephoto.create ~file: filename () in
+  let pix = get img in
+  Imagephoto.delete img;
+  pix
+
+##endif
