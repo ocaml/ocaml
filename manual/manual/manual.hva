@@ -120,7 +120,7 @@
 \newcommand{\jobname}{manual}
 \newcommand{\vfill}{}
 \def\number{}
-\def\year{1999}
+\def\year{2000}
 
 % Pour alltt
 

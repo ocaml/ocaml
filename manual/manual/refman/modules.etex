@@ -102,7 +102,8 @@ of mutually recursive definitions of type names.
 
 \ikwd{exception\@\texttt{exception}}
 
-Exceptions are defined with the syntax @'exception' constr-decl@.
+Exceptions are defined with the syntax @'exception' constr-decl@
+or @'exception' constr-name '=' constr@.
 
 \subsubsection*{Class definitions}
 

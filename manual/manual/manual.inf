@@ -3,7 +3,8 @@
 \newcounter{secnumdepth}
 \newcounter{tocdepth}
 \newcommand{\machine}{\tt}
-\newcommand{\caml}{\begin{alltt}\activebracefalse}
+\newenvironment{camlunder}{\@style{U}}{}
+\newcommand{\caml}{\begin{alltt}\renewcommand{\\}{\char92}\def\<{\begin{camlunder}}\renewcommand{\>}{\end{camlunder}}\activebracefalse}
 \newcommand{\endcaml}{\activebracetrue\end{alltt}}
 \newcommand{\?}{\black\#\blue }
 \renewcommand{\:}{\maroon}
@@ -44,8 +45,8 @@
 
 \def\unix{\versionspecific{Unix}}
 \def\endunix{\end{quote}}
-\def\mac{\versionspecific{Mac}}
-\def\endmac{\end{quote}}
+\def\macos{\versionspecific{MacOS}}
+\def\endmacos{\end{quote}}
 \def\windows{\versionspecific{Windows}}
 \def\endwindows{\end{quote}}
 
@@ -123,7 +124,7 @@
 \newcommand{\vfill}{}
 
 \def\number{}
-\def\year{1999}
+\def\year{2000}
 
 % Pour alltt
 

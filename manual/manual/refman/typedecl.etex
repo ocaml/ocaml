@@ -141,8 +141,15 @@ appear in the type equation and the type declaration.
 \begin{syntax}
 exception-definition:
         'exception' constr-decl
+      | 'exception' cconstr-name '=' cconstr
+      | 'exception' ncconstr-name '=' ncconstr
 \end{syntax}
 
 Exception definitions add new constructors to the built-in variant
 type \verb"exn" of exception values. The constructors are declared as
 for a definition of a variant type.
+
+The form @'exception' constr-decl@ generates a new exception, distinct
+from all other exceptions in the system.  The form
+@'exception' name '=' constr@ gives an alternate name to an existing
+exception.
