@@ -28,14 +28,13 @@ odyl_main.cmx: odyl_main.ml
 	$(OCAMLOPT) -c -impl odyl_main.ppo
 	rm -f odyl_main.ppo
 
-odyl_config.cmo:
+odyl_config.ml:
 	echo "let standard_library =" > odyl_config.ml
 	echo "  try Sys.getenv \"CAMLP4LIB\" with" >> odyl_config.ml
 	echo "    Not_found -> \"$(LIBDIR)\"" >> odyl_config.ml
-	$(OCAMLC) $(OCAMLCFLAGS) -c odyl_config.ml
 
 clean::
-	rm -f *.cm* *.pp[io] *.o *.bak .*.bak *.out *.opt
+	rm -f *.cm* *.pp[io] *.o *.bak .*.bak *.out *.opt *.a
 	rm -f odyl_config.ml odyl$(EXE)
 
 depend:
