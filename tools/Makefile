@@ -97,6 +97,7 @@ clean::
 	rm -f ocamlmklib
 
 ocamlmklib.ml: ocamlmklib.mlp ../config/Makefile
+	echo '(* THIS FILE IS GENERATED FROM ocamlmklib.mlp *)' >ocamlmklib.ml
 	sed -e "s|%%BINDIR%%|$(BINDIR)|" \
             -e "s|%%SUPPORTS_SHARED_LIBRARIES%%|$(SUPPORTS_SHARED_LIBRARIES)|" \
             -e "s|%%MKSHAREDLIB%%|$(MKSHAREDLIB)|" \
@@ -104,7 +105,7 @@ ocamlmklib.ml: ocamlmklib.mlp ../config/Makefile
             -e "s|%%NATIVECCRPATH%%|$(NATIVECCRPATH)|" \
             -e "s|%%MKSHAREDLIBRPATH%%|$(MKSHAREDLIBRPATH)|" \
             -e "s|%%RANLIB%%|$(RANLIB)|" \
-          ocamlmklib.mlp > ocamlmklib.ml
+          ocamlmklib.mlp >> ocamlmklib.ml
 
 beforedepend:: ocamlmklib.ml
 

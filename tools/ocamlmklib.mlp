@@ -184,13 +184,19 @@ let make_rpath_ccopt flag =
 let prefix_list pref l =
   List.map (fun s -> pref ^ s) l
 
+let prepostfix pre name post =
+  let base = Filename.basename name in
+  let dir = Filename.dirname name in
+  Filename.concat dir (pre ^ base ^ post)
+;;
+
 let build_libs () =
   if !c_objs <> [] then begin
     if !dynlink then begin
       let retcode = command
-        (sprintf "%s dll%s.so %s %s %s %s %s"
+        (sprintf "%s %s %s %s %s %s %s"
                     mksharedlib
-                    !output_c
+                    (prepostfix "dll" !output_c ".so")
                     (String.concat " " !c_objs)
                     (String.concat " " !c_opts)
                     (String.concat " " !ld_opts)
@@ -198,15 +204,15 @@ let build_libs () =
                     (String.concat " " !c_libs)) in
       if retcode <> 0 then if !failsafe then dynlink := false else exit 2
     end;
-    safe_remove ("lib" ^ !output_c ^ ".a");
+    safe_remove (prepostfix "lib" !output_c ".a");
     scommand
-      (sprintf "ar rc lib%s.a %s"
-                  !output_c
+      (sprintf "ar rc %s %s"
+                  (prepostfix "lib" !output_c ".a")
                   (String.concat " " !c_objs));
     scommand
-      (sprintf "%s lib%s.a"
+      (sprintf "%s %s"
                   ranlib
-                  !output_c)
+                  (prepostfix "lib" !output_c ".a"))
   end;
   if !bytecode_objs <> [] then
     scommand
