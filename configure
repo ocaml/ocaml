@@ -205,10 +205,7 @@ case "$arch,$nativecc" in
   *)        nativecccompopts='';;
 esac
 
-case "$host" in
-  *-*-nextstep*) nativecclinkopts="-Xlinker -preload";;
-  *)             nativecclinkopts='';;
-esac
+nativecclinkopts=''
 
 case "$arch" in
   alpha|mips)   asflags='-O2';;
