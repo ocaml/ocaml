@@ -39,6 +39,7 @@ type error =
   | Variant_tags of string * string
   | No_row_variable of string
   | Bad_alias of string
+  | Invalid_variable_name of string
 
 exception Error of Location.t * error
 
@@ -65,8 +66,10 @@ let widen (gl, tv) =
   restore_global_level gl;
   type_variables := tv
 
-let enter_type_variable strict name =
+let enter_type_variable strict loc name =
   try
+    if name <> "" && name.[0] = '_' then
+      raise (Error (loc, Invalid_variable_name ("'" ^ name)));
     let v = Tbl.find name !type_variables in
     if strict then raise Already_bound;
     v
@@ -105,6 +108,8 @@ let rec transl_type env policy rowvar styp =
     Ptyp_any ->
       if policy = Univars then new_pre_univar () else newvar ()
   | Ptyp_var name ->
+      if name <> "" && name.[0] = '_' then
+        raise (Error (styp.ptyp_loc, Invalid_variable_name ("'" ^ name)));
       begin try
         instance (fst (List.assoc name !univars))
       with Not_found ->
@@ -163,7 +168,7 @@ let rec transl_type env policy rowvar styp =
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                            List.length stl)));
       let args = List.map (transl_type env policy None) stl in
-      let params = List.map (fun _ -> Ctype.newvar ()) args in
+      let params = Ctype.instance_list decl.type_params in
       let cstr = newty (Tconstr(path, params, ref Mnil)) in
       begin try
         Ctype.enforce_constraints env cstr
@@ -225,8 +230,8 @@ let rec transl_type env policy rowvar styp =
       in
       let params = Ctype.instance_list decl.type_params in
       List.iter2
-        (fun (sty, ty') ty ->
-           try unify_var env ty ty' with Unify trace ->
+        (fun (sty, ty) ty' ->
+           try unify_var env ty' ty with Unify trace ->
              raise (Error(sty.ptyp_loc, Type_mismatch (swap_list trace))))
         (List.combine stl args) params;
       begin match ty.desc with
@@ -580,3 +585,5 @@ let report_error ppf = function
       fprintf ppf
         "The alias %s cannot be used here. It captures universal variables."
         name
+  | Invalid_variable_name name ->
+      fprintf ppf "The type variable name %s is not allowed in programs" name

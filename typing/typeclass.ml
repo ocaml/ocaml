@@ -917,7 +917,8 @@ let class_infos define_class kind
   (* Introduce class parameters *)
   let params =
     try
-      List.map (enter_type_variable true) (fst cl.pci_params)
+      let params, loc = cl.pci_params in
+      List.map (enter_type_variable true loc) params
     with Already_bound ->
       raise(Error(snd cl.pci_params, Repeated_parameter))
   in

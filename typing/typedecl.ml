@@ -89,7 +89,7 @@ let transl_declaration env (name, sdecl) id =
   reset_type_variables();
   Ctype.begin_def ();
   let params =
-    try List.map (enter_type_variable true) sdecl.ptype_params
+    try List.map (enter_type_variable true sdecl.ptype_loc) sdecl.ptype_params
     with Already_bound ->
       raise(Error(sdecl.ptype_loc, Repeated_parameter))
   in
@@ -576,7 +576,7 @@ let transl_with_constraint env sdecl =
   Ctype.begin_def();
   let params =
     try
-      List.map (enter_type_variable true) sdecl.ptype_params
+      List.map (enter_type_variable true sdecl.ptype_loc) sdecl.ptype_params
     with Already_bound ->
       raise(Error(sdecl.ptype_loc, Repeated_parameter)) in
   List.iter

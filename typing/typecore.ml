@@ -1851,7 +1851,8 @@ let report_error ppf = function
   | Apply_non_function typ ->
       begin match (repr typ).desc with
         Tarrow _ ->
-          fprintf ppf "This function is applied to too many arguments"
+          fprintf ppf "This function is applied to too many arguments,@ ";
+          fprintf ppf "maybe you forgot a `;'"
       | _ ->
           fprintf ppf
             "This expression is not a function, it cannot be applied"
