@@ -48,6 +48,11 @@ let rec mem_assq x = function
 let rec replicate_list elem n =
   if n <= 0 then [] else elem :: replicate_list elem (n-1)
 
+let rec list_remove x = function
+    [] -> []
+  | hd :: tl ->
+      if hd = x then tl else hd :: list_remove x tl
+
 (* File functions *)
 
 let find_in_path path name =
