@@ -128,7 +128,7 @@ Random.init 14142136; init_diff2 100; chisquare diff2 100000 100;;
 Random.init 299792643; init_diff2 100; chisquare diff2 100000 100;;
 - : float * float * float = 936.754446797, 948.8, 1063.2455532
 #- : float * float * float = 80, 80.076, 120
-#- : float * float * float = 4858.57864376, 4767.5, 5141.42135624 <==
+#- : float * float * float = 4858.57864376, 4767.5, 5141.42135624 *********
 #- : float * float * float = 936.754446797, 951.2, 1063.2455532
 #- : float * float * float = 960, 1028.31104, 1088
 #- : float * float * float = 960, 1012.64384, 1088
