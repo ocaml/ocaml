@@ -258,6 +258,37 @@ val print_tab : unit -> unit;;
 (** [print_tab ()] is equivalent to [print_tbreak (0,0)]. *)
 
 
+(** {6 Tags} *)
+
+
+(** Tags are are used to mark printed entities for user's defined
+   purposes, e.g. setting font and giving size indications for a
+   display device, or marking delimitations of semantics entities
+   (e.g. HTML or TeX elements or terminal escape sequences). When
+   printed, tags are not considered as part of the printing material
+   that drive line breaking (the length of the strings corresponding
+   to tag names is considered as zero). In addition, if
+   [set_print_tags] is set to [false], the pretty printer engine omits
+   tags.  *)
+
+type tag = string;;
+
+val open_tag : string -> unit;;
+val close_tag : unit -> unit;;
+
+(** [open_tag s] opens the tag name [s] that is printed as a zero
+    length token between [<] and [>]; then, next [close_tag ()] call
+    will output [</s>] as a zero length token.  *)
+
+val set_print_tags : bool -> unit;;
+
+(** [set_print_tags b] turns on or off the output of tags.  This way a
+    single pretty printing routine can output both simple ``verbatim''
+    material or richer decorated output depending on the treatment of
+    tags.. Default behavior of the pretty printer is to print the
+    tags. *)
+
+
 (** {6 Ellipsis} *)
 
 val set_ellipsis_text : string -> unit;;
@@ -291,6 +322,20 @@ val get_formatter_output_functions :
   unit -> (string -> int -> int -> unit) * (unit -> unit);;
 (** Return the current output functions of the pretty-printer. *)
 
+val set_formatter_tag_functions :
+  (string -> tag) -> (tag -> unit) -> unit;;
+
+(** [set_formatter_tag_functions open close] changes the meaning of
+   opening and closing tags to use the functions [open] and [close].
+
+   When opening a tag name [s], the string [s] is passed to the [open]
+   function that must return the tag corresponding to that name; this
+   tag is sent back to the tag closing function [close], when the
+   next call to [close_tag ()] happens.
+*)
+val get_formatter_tag_functions :
+  unit -> (string -> tag) * (tag -> unit);;
+(** Return the current tag functions of the pretty-printer. *)
 
 (** {6 Changing the meaning of pretty printing (indentation, line breaking, and printing material)} *)
 
@@ -380,7 +425,6 @@ val make_formatter :
    function [flush]. Hence, a formatter to the out channel [oc]
    is returned by [make_formatter (output oc) (fun () -> flush oc)]. *)
 
-
 (** {6 Basic functions to use with formatters} *)
 
 val pp_open_hbox : formatter -> unit -> unit;;
@@ -389,6 +433,8 @@ val pp_open_hvbox : formatter -> int -> unit;;
 val pp_open_hovbox : formatter -> int -> unit;;
 val pp_open_box : formatter -> int -> unit;;
 val pp_close_box : formatter -> unit -> unit;;
+val pp_open_tag : formatter -> string -> unit;;
+val pp_close_tag : formatter -> unit -> unit;;
 val pp_print_string : formatter -> string -> unit;;
 val pp_print_as : formatter -> int -> string -> unit;;
 val pp_print_int : formatter -> int -> unit;;
@@ -407,6 +453,7 @@ val pp_close_tbox : formatter -> unit -> unit;;
 val pp_print_tbreak : formatter -> int -> int -> unit;;
 val pp_set_tab : formatter -> unit -> unit;;
 val pp_print_tab : formatter -> unit -> unit;;
+val pp_set_print_tags : formatter -> bool -> unit;;
 val pp_set_margin : formatter -> int -> unit;;
 val pp_get_margin : formatter -> unit -> int;;
 val pp_set_max_indent : formatter -> int -> unit;;
@@ -428,6 +475,12 @@ val pp_get_all_formatter_output_functions :
   formatter -> unit ->
   (string -> int -> int -> unit) * (unit -> unit) * (unit -> unit) *
   (int -> unit);;
+val pp_set_formatter_tag_functions :
+  formatter ->
+  (formatter -> string -> tag) -> (formatter -> tag -> unit) -> unit;;
+val pp_get_formatter_tag_functions :
+  formatter -> unit ->
+  (formatter -> string -> tag) * (formatter -> tag -> unit);;
 (** These functions are the basic ones: usual functions
    operating on the standard formatter are defined via partial
    evaluation of these primitives. For instance,
@@ -477,11 +530,23 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
      If [@<n>] is not followed by a conversion specification,
      then the following character of the format is printed as if
      it were of length [n].
+   - [@\{]: open a tag. The name of the tag may be optionally
+     specified with the following syntax:
+     the [<] character, followed by an optional string
+     specification, and the closing [>] character. The string
+     specification is any character string that does not contain the
+     closing character ['>']. If omitted, the tag name defaults to the
+     empty string.
+     For more details about tags, see the functions [open_tag] and
+     [close_tag].
+   - [@\}]: close the most recently opened tag.
    - [@@]: print a plain [@] character.
 
    Example: [printf "@[%s@ %d@]" "x =" 1] is equivalent to 
    [open_box (); print_string "x ="; print_space (); print_int 1; close_box ()].
-   It prints [x = 1] within a pretty-printing box. *)
+   It prints [x = 1] within a pretty-printing box.
+
+*)
 
 val printf : ('a, formatter, unit) format -> 'a;;
 (** Same as [fprintf] above, but output on [std_formatter]. *)
