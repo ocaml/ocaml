@@ -195,16 +195,12 @@ let scan_string stp max ib =
       | ' ' | '\t' | '\n' | '\r' -> max
       | c -> loop (Scanning.store_char ib c max) else
     if List.mem c stp then max else loop (Scanning.store_char ib c max) in 
-   loop max;;
+  loop max;;
 
 let scan_char max ib =
   if max = 0 || Scanning.end_of_input ib then bad_input ib "a char" else
   let c = Scanning.peek_char ib in
   Scanning.store_char ib c max;;
-
-let read_char max ib =
-  let max = scan_char max ib in
-  token_char ib;;
 
 let scan_bool max ib =
   let m =
@@ -213,10 +209,6 @@ let scan_bool max ib =
     | 'f' -> 5
     | _ -> 0 in
   scan_string [] (min max m) ib;;
-
-let read_bool max ib =
-  let max = scan_bool max ib in
-  token_bool ib;;
 
 type char_set = Pos_set of string | Neg_set of string;;
 
@@ -338,8 +330,8 @@ let scanf_fun ib (fmt : ('a, 'b, 'c) format) f =
     if i > lim then bad_format fmt i fmt.[lim - 1] else
     match fmt.[i] with
     | 'c' ->
-        let x = read_char max ib in
-        scan true (stack f x) (i + 1)
+        let x = scan_char max ib in
+        scan true (stack f (token_char ib)) (i + 1)
     | c ->
        if spc then skip_whites ib;
        match c with
@@ -358,8 +350,8 @@ let scanf_fun ib (fmt : ('a, 'b, 'c) format) f =
            let x = scan_string stp max ib in
            scan true (stack f (token_string ib)) (i + 1)
        | 'b' ->
-           let x = read_bool 4 ib in
-           scan true (stack f x) (i + 1)
+           let x = scan_bool 5 ib in
+           scan true (stack f (token_bool ib)) (i + 1)
        | '[' ->
            let i, char_set = read_char_set fmt (i + 1) in
            let i, stp = scan_stoppers (i + 1) in
