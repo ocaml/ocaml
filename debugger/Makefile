@@ -54,7 +54,7 @@ OBJS=\
 	show_information.cmo \
         loadprinter.cmo \
 	parser.cmo \
-	command_line_interpreter.cmo \
+	command_line.cmo \
 	main.cmo
 
 all: ocamldebug

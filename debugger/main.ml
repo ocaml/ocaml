@@ -15,7 +15,7 @@
 open Primitives
 open Misc
 open Input_handling
-open Command_line_interpreter
+open Command_line
 open Debugger_config
 open Checkpoints
 open Time_travel
