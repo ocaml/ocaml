@@ -35,12 +35,15 @@ and type_desc =
   | Tlink of type_expr
   | Tsubst of type_expr
   | Tvariant of row_desc
+  | Tunivar
+  | Tpoly of type_expr * type_expr list
 
 and row_desc =
     { row_fields: (label * row_field) list;
       row_more: type_expr;
       row_bound: type_expr list;
       row_closed: bool;
+      row_fixed: bool;
       row_name: (Path.t * type_expr list) option }
 
 and row_field =
@@ -63,6 +66,13 @@ and commutable =
   | Cunknown
   | Clink of commutable ref
 
+module TypeOps = struct
+  type t = type_expr
+  let compare t1 t2 = t1.id - t2.id
+  let hash t = t.id
+  let equal t1 t2 = t1 == t2
+end
+
 (* Maps of methods and instance variables *)
 
 module OrderedString = struct type t = string let compare = compare end
@@ -81,7 +91,7 @@ and value_kind =
   | Val_ivar of mutable_flag * string   (* Instance variable (mutable ?) *)
   | Val_self of (Ident.t * type_expr) Meths.t ref *
                 (Ident.t * Asttypes.mutable_flag * type_expr) Vars.t ref *
-                string
+                string * type_expr
                                         (* Self *)
   | Val_anc of (string * Ident.t) list * string
                                         (* Ancestor *)
@@ -98,7 +108,8 @@ type constructor_description =
     cstr_arity: int;                    (* Number of arguments *)
     cstr_tag: constructor_tag;          (* Tag for heap blocks *)
     cstr_consts: int;                   (* Number of constant constructors *)
-    cstr_nonconsts: int }               (* Number of non-const constructors *)
+    cstr_nonconsts: int;                (* Number of non-const constructors *)
+    cstr_private: private_flag }        (* Read-only constructor? *)
 
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
@@ -113,7 +124,8 @@ type label_description =
     lbl_mut: mutable_flag;              (* Is this a mutable field? *)
     lbl_pos: int;                       (* Position in block *)
     lbl_all: label_description array;   (* All the labels in this type *)
-    lbl_repres: record_representation } (* Representation for this record *)
+    lbl_repres: record_representation;  (* Representation for this record *)
+    lbl_private: private_flag }         (* Read-only field? *)
 
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
@@ -132,13 +144,13 @@ type type_declaration =
     type_arity: int;
     type_kind: type_kind;
     type_manifest: type_expr option;
-    type_variance: (bool * bool) list }
+    type_variance: (bool * bool * bool) list }
 
 and type_kind =
     Type_abstract
-  | Type_variant of (string * type_expr list) list
+  | Type_variant of (string * type_expr list) list * private_flag
   | Type_record of (string * mutable_flag * type_expr) list
-                 * record_representation
+                 * record_representation * private_flag
 
 type exception_declaration = type_expr list
 
@@ -154,7 +166,8 @@ type class_type =
 and class_signature =
   { cty_self: type_expr;
     cty_vars: (Asttypes.mutable_flag * type_expr) Vars.t;
-    cty_concr: Concr.t }
+    cty_concr: Concr.t;
+    cty_inher: (Path.t * type_expr list) list }
 
 type class_declaration =
   { cty_params: type_expr list;

@@ -26,21 +26,23 @@
 #include "stacks.h"
 
 #ifndef NATIVE_CODE
-extern unsigned long max_stack_size;    /* defined in stacks.c */
+extern unsigned long caml_max_stack_size;    /* defined in stacks.c */
 #endif
 
-double stat_minor_words = 0.0,
-       stat_promoted_words = 0.0,
-       stat_major_words = 0.0;
+double caml_stat_minor_words = 0.0,
+       caml_stat_promoted_words = 0.0,
+       caml_stat_major_words = 0.0;
 
-long stat_minor_collections = 0,
-     stat_major_collections = 0,
-     stat_heap_size = 0,              /* bytes */
-     stat_compactions = 0;
+long caml_stat_minor_collections = 0,
+     caml_stat_major_collections = 0,
+     caml_stat_heap_size = 0,              /* bytes */
+     caml_stat_top_heap_size = 0,          /* bytes */
+     caml_stat_compactions = 0,
+     caml_stat_heap_chunks = 0;
 
-extern asize_t major_heap_increment;  /* bytes; see major_gc.c */
-extern unsigned long percent_free;    /*        see major_gc.c */
-extern unsigned long percent_max;     /*        see compact.c */
+extern asize_t caml_major_heap_increment;  /* bytes; see major_gc.c */
+extern unsigned long caml_percent_free;    /*        see major_gc.c */
+extern unsigned long caml_percent_max;     /*        see compact.c */
 
 #define Next(hp) ((hp) + Bhsize_hp (hp))
 
@@ -83,7 +85,8 @@ static void check_block (char *hp)
   switch (Tag_hp (hp)){
   case Abstract_tag: break;
   case String_tag:
-    /* not true when check_urgent_gc is called by alloc or alloc_string:
+    /* not true when [caml_check_urgent_gc] is called by [caml_alloc]
+       or caml_alloc_string:
        lastbyte = Bosize_val (v) - 1;
        i = Byte (v, lastbyte);
        Assert (i >= 0);
@@ -126,12 +129,12 @@ static value heap_stats (int returnstats)
   long live_words = 0, live_blocks = 0,
        free_words = 0, free_blocks = 0, largest_free = 0,
        fragments = 0, heap_chunks = 0;
-  char *chunk = heap_start, *chunk_end;
+  char *chunk = caml_heap_start, *chunk_end;
   char *cur_hp, *prev_hp;
   header_t cur_hd;
 
 #ifdef DEBUG
-  gc_message (-1, "### O'Caml runtime: heap check ###\n", 0);
+  caml_gc_message (-1, "### O'Caml runtime: heap check ###\n", 0);
 #endif
 
   while (chunk != NULL){
@@ -145,17 +148,12 @@ static value heap_stats (int returnstats)
       switch (Color_hd (cur_hd)){
       case Caml_white:
         if (Wosize_hd (cur_hd) == 0){
-          ++fragments;
+          ++ fragments;
           Assert (prev_hp == NULL
-                  || (Color_hp (prev_hp) != Caml_blue
-                      && Wosize_hp (prev_hp) > 0)
-                  || cur_hp == gc_sweep_hp);
-          Assert (Next (cur_hp) == chunk_end
-                  || (Color_hp (Next (cur_hp)) != Caml_blue
-                      && Wosize_hp (Next (cur_hp)) > 0)
-                  || Next (cur_hp) == gc_sweep_hp);
+                  || Color_hp (prev_hp) != Caml_blue
+                  || cur_hp == caml_gc_sweep_hp);
         }else{
-          if (gc_phase == Phase_sweep && cur_hp >= gc_sweep_hp){
+          if (caml_gc_phase == Phase_sweep && cur_hp >= caml_gc_sweep_hp){
             ++ free_blocks;
             free_words += Whsize_hd (cur_hd);
             if (Whsize_hd (cur_hd) > largest_free){
@@ -185,13 +183,16 @@ static value heap_stats (int returnstats)
         if (Whsize_hd (cur_hd) > largest_free){
           largest_free = Whsize_hd (cur_hd);
         }
+        /* not true any more with big heap chunks
         Assert (prev_hp == NULL
                 || (Color_hp (prev_hp) != Caml_blue && Wosize_hp (prev_hp) > 0)
-                || cur_hp == gc_sweep_hp);
+                || cur_hp == caml_gc_sweep_hp);
         Assert (Next (cur_hp) == chunk_end
                 || (Color_hp (Next (cur_hp)) != Caml_blue
                     && Wosize_hp (Next (cur_hp)) > 0)
-                || Next (cur_hp) == gc_sweep_hp);
+                || (Whsize_hd (cur_hd) + Wosize_hp (Next (cur_hp)) > Max_wosize)
+                || Next (cur_hp) == caml_gc_sweep_hp);
+        */
         break;
       }
       prev_hp = cur_hp;
@@ -200,28 +201,31 @@ static value heap_stats (int returnstats)
     chunk = Chunk_next (chunk);
   }
 
-  Assert (live_words + free_words + fragments == Wsize_bsize (stat_heap_size));
+  Assert (heap_chunks == caml_stat_heap_chunks);
+  Assert (live_words + free_words + fragments
+          == Wsize_bsize (caml_stat_heap_size));
 
   if (returnstats){
     CAMLlocal1 (res);
 
     /* get a copy of these before allocating anything... */
-    double minwords = stat_minor_words
-                      + (double) Wsize_bsize (young_end - young_ptr);
-    double prowords = stat_promoted_words;
-    double majwords = stat_major_words + (double) allocated_words;
-    long mincoll = stat_major_collections;
-    long majcoll = stat_minor_collections;
-    long heapsz = stat_heap_size;
-    long cpct = stat_compactions;
+    double minwords = caml_stat_minor_words
+                      + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
+    double prowords = caml_stat_promoted_words;
+    double majwords = caml_stat_major_words + (double) caml_allocated_words;
+    long mincoll = caml_stat_minor_collections;
+    long majcoll = caml_stat_major_collections;
+    long heap_words = Wsize_bsize (caml_stat_heap_size);
+    long cpct = caml_stat_compactions;
+    long top_heap_words = Wsize_bsize (caml_stat_top_heap_size);
 
-    res = alloc_tuple (14);
-    Store_field (res, 0, copy_double (minwords));
-    Store_field (res, 1, copy_double (prowords));
-    Store_field (res, 2, copy_double (majwords));
+    res = caml_alloc_tuple (15);
+    Store_field (res, 0, caml_copy_double (minwords));
+    Store_field (res, 1, caml_copy_double (prowords));
+    Store_field (res, 2, caml_copy_double (majwords));
     Store_field (res, 3, Val_long (mincoll));
     Store_field (res, 4, Val_long (majcoll));
-    Store_field (res, 5, Val_long (heapsz));
+    Store_field (res, 5, Val_long (heap_words));
     Store_field (res, 6, Val_long (heap_chunks));
     Store_field (res, 7, Val_long (live_words));
     Store_field (res, 8, Val_long (live_blocks));
@@ -230,6 +234,7 @@ static value heap_stats (int returnstats)
     Store_field (res, 11, Val_long (largest_free));
     Store_field (res, 12, Val_long (fragments));
     Store_field (res, 13, Val_long (cpct));
+    Store_field (res, 14, Val_long (top_heap_words));
     CAMLreturn (res);
   }else{
     CAMLreturn (Val_unit);
@@ -237,49 +242,85 @@ static value heap_stats (int returnstats)
 }
 
 #ifdef DEBUG
-void heap_check (void)
+void caml_heap_check (void)
 {
   heap_stats (0);
 }
 #endif
 
-CAMLprim value gc_stat(value v)
+CAMLprim value caml_gc_stat(value v)
 {
   Assert (v == Val_unit);
   return heap_stats (1);
 }
 
-CAMLprim value gc_counters(value v)
+CAMLprim value caml_gc_quick_stat(value v)
+{
+  CAMLparam0 ();
+  CAMLlocal1 (res);
+
+  /* get a copy of these before allocating anything... */
+  double minwords = caml_stat_minor_words
+                    + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
+  double prowords = caml_stat_promoted_words;
+  double majwords = caml_stat_major_words + (double) caml_allocated_words;
+  long mincoll = caml_stat_minor_collections;
+  long majcoll = caml_stat_major_collections;
+  long heap_words = caml_stat_heap_size / sizeof (value);
+  long top_heap_words = caml_stat_top_heap_size / sizeof (value);
+  long cpct = caml_stat_compactions;
+  long heap_chunks = caml_stat_heap_chunks;
+
+  res = caml_alloc_tuple (15);
+  Store_field (res, 0, caml_copy_double (minwords));
+  Store_field (res, 1, caml_copy_double (prowords));
+  Store_field (res, 2, caml_copy_double (majwords));
+  Store_field (res, 3, Val_long (mincoll));
+  Store_field (res, 4, Val_long (majcoll));
+  Store_field (res, 5, Val_long (heap_words));
+  Store_field (res, 6, Val_long (heap_chunks));
+  Store_field (res, 7, Val_long (0));
+  Store_field (res, 8, Val_long (0));
+  Store_field (res, 9, Val_long (0));
+  Store_field (res, 10, Val_long (0));
+  Store_field (res, 11, Val_long (0));
+  Store_field (res, 12, Val_long (0));
+  Store_field (res, 13, Val_long (cpct));
+  Store_field (res, 14, Val_long (top_heap_words));
+  CAMLreturn (res);
+}
+
+CAMLprim value caml_gc_counters(value v)
 {
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
 
   /* get a copy of these before allocating anything... */
-  double minwords = stat_minor_words
-                    + (double) Wsize_bsize (young_end - young_ptr);
-  double prowords = stat_promoted_words;
-  double majwords = stat_major_words + (double) allocated_words;
+  double minwords = caml_stat_minor_words
+                    + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
+  double prowords = caml_stat_promoted_words;
+  double majwords = caml_stat_major_words + (double) caml_allocated_words;
 
-  res = alloc_tuple (3);
-  Store_field (res, 0, copy_double (minwords));
-  Store_field (res, 1, copy_double (prowords));
-  Store_field (res, 2, copy_double (majwords));
+  res = caml_alloc_tuple (3);
+  Store_field (res, 0, caml_copy_double (minwords));
+  Store_field (res, 1, caml_copy_double (prowords));
+  Store_field (res, 2, caml_copy_double (majwords));
   CAMLreturn (res);
 }
 
-CAMLprim value gc_get(value v)
+CAMLprim value caml_gc_get(value v)
 {
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
 
-  res = alloc_tuple (6);
-  Store_field (res, 0, Wsize_bsize (Val_long (minor_heap_size)));       /* s */
-  Store_field (res, 1, Wsize_bsize (Val_long (major_heap_increment)));  /* i */
-  Store_field (res, 2, Val_long (percent_free));                        /* o */
-  Store_field (res, 3, Val_long (verb_gc));                             /* v */
-  Store_field (res, 4, Val_long (percent_max));                         /* O */
+  res = caml_alloc_tuple (6);
+  Store_field (res, 0, Val_long (Wsize_bsize (caml_minor_heap_size)));  /* s */
+  Store_field (res, 1,Val_long(Wsize_bsize(caml_major_heap_increment)));/* i */
+  Store_field (res, 2, Val_long (caml_percent_free));                   /* o */
+  Store_field (res, 3, Val_long (caml_verb_gc));                        /* v */
+  Store_field (res, 4, Val_long (caml_percent_max));                    /* O */
 #ifndef NATIVE_CODE
-  Store_field (res, 5, Val_long (max_stack_size));                      /* l */
+  Store_field (res, 5, Val_long (caml_max_stack_size));                 /* l */
 #else
   Store_field (res, 5, Val_long (0));
 #endif
@@ -303,7 +344,6 @@ static long norm_heapincr (long unsigned int i)
 #define Psv (Wsize_bsize (Page_size))
   i = ((i + Psv - 1) / Psv) * Psv;
   if (i < Heap_chunk_min) i = Heap_chunk_min;
-  if (i > Heap_chunk_max) i = Heap_chunk_max;
   return i;
 }
 
@@ -314,106 +354,111 @@ static long norm_minsize (long int s)
   return s;
 }
 
-CAMLprim value gc_set(value v)
+CAMLprim value caml_gc_set(value v)
 {
   unsigned long newpf, newpm;
   asize_t newheapincr;
   asize_t newminsize;
 
-  verb_gc = Long_val (Field (v, 3));
+  caml_verb_gc = Long_val (Field (v, 3));
 
 #ifndef NATIVE_CODE
-  change_max_stack_size (Long_val (Field (v, 5)));
+  caml_change_max_stack_size (Long_val (Field (v, 5)));
 #endif
 
   newpf = norm_pfree (Long_val (Field (v, 2)));
-  if (newpf != percent_free){
-    percent_free = newpf;
-    gc_message (0x20, "New space overhead: %d%%\n", percent_free);
+  if (newpf != caml_percent_free){
+    caml_percent_free = newpf;
+    caml_gc_message (0x20, "New space overhead: %d%%\n", caml_percent_free);
   }
 
   newpm = norm_pmax (Long_val (Field (v, 4)));
-  if (newpm != percent_max){
-    percent_max = newpm;
-    gc_message (0x20, "New max overhead: %d%%\n", percent_max);
+  if (newpm != caml_percent_max){
+    caml_percent_max = newpm;
+    caml_gc_message (0x20, "New max overhead: %d%%\n", caml_percent_max);
   }
 
-  newheapincr = norm_heapincr (Bsize_wsize (Long_val (Field (v, 1))));
-  if (newheapincr != major_heap_increment){
-    major_heap_increment = newheapincr;
-    gc_message (0x20, "New heap increment size: %luk bytes\n",
-                major_heap_increment/1024);
+  newheapincr = Bsize_wsize (norm_heapincr (Long_val (Field (v, 1))));
+  if (newheapincr != caml_major_heap_increment){
+    caml_major_heap_increment = newheapincr;
+    caml_gc_message (0x20, "New heap increment size: %luk bytes\n",
+                     caml_major_heap_increment/1024);
   }
 
     /* Minor heap size comes last because it will trigger a minor collection
        (thus invalidating [v]) and it can raise [Out_of_memory]. */
   newminsize = norm_minsize (Bsize_wsize (Long_val (Field (v, 0))));
-  if (newminsize != minor_heap_size){
-    gc_message (0x20, "New minor heap size: %luk bytes\n", newminsize/1024);
-    set_minor_heap_size (newminsize);
+  if (newminsize != caml_minor_heap_size){
+    caml_gc_message (0x20, "New minor heap size: %luk bytes\n",
+                     newminsize/1024);
+    caml_set_minor_heap_size (newminsize);
   }
   return Val_unit;
 }
 
-CAMLprim value gc_minor(value v)
+CAMLprim value caml_gc_minor(value v)
 {                                                    Assert (v == Val_unit);
-  minor_collection ();
+  caml_minor_collection ();
   return Val_unit;
 }
 
-CAMLprim value gc_major(value v)
+CAMLprim value caml_gc_major(value v)
 {                                                    Assert (v == Val_unit);
-  empty_minor_heap ();
-  finish_major_cycle ();
-  final_do_calls ();
+  caml_empty_minor_heap ();
+  caml_finish_major_cycle ();
+  caml_final_do_calls ();
   return Val_unit;
 }
 
-CAMLprim value gc_full_major(value v)
+CAMLprim value caml_gc_full_major(value v)
 {                                                    Assert (v == Val_unit);
-  empty_minor_heap ();
-  finish_major_cycle ();
-  final_do_calls ();
-  empty_minor_heap ();
-  finish_major_cycle ();
-  final_do_calls ();
+  caml_empty_minor_heap ();
+  caml_finish_major_cycle ();
+  caml_final_do_calls ();
+  caml_empty_minor_heap ();
+  caml_finish_major_cycle ();
+  caml_final_do_calls ();
   return Val_unit;
 }
 
-CAMLprim value gc_compaction(value v)
+CAMLprim value caml_gc_major_slice (value v)
+{
+  Assert (Is_long (v));
+  caml_empty_minor_heap ();
+  return Val_long (caml_major_collection_slice (Long_val (v)));
+}
+
+CAMLprim value caml_gc_compaction(value v)
 {                                                    Assert (v == Val_unit);
-  empty_minor_heap ();
-  finish_major_cycle ();
-  finish_major_cycle ();
-  compact_heap ();
+  caml_empty_minor_heap ();
+  caml_finish_major_cycle ();
+  caml_finish_major_cycle ();
+  caml_compact_heap ();
+  caml_final_do_calls ();
   return Val_unit;
 }
 
-void init_gc (unsigned long minor_size, unsigned long major_size,
-              unsigned long major_incr, unsigned long percent_fr,
-              unsigned long percent_m)
+void caml_init_gc (unsigned long minor_size, unsigned long major_size,
+                   unsigned long major_incr, unsigned long percent_fr,
+                   unsigned long percent_m)
 {
   unsigned long major_heap_size = Bsize_wsize (norm_heapincr (major_size));
 
 #ifdef DEBUG
-  gc_message (-1, "### O'Caml runtime: debug mode "
-#ifdef CPU_TYPE_STRING
-                               "(" CPU_TYPE_STRING ") "
-#endif
-                                                       "###\n", 0);
+  caml_gc_message (-1, "### O'Caml runtime: debug mode ###\n", 0);
 #endif
 
-  set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));
-  major_heap_increment = Bsize_wsize (norm_heapincr (major_incr));
-  percent_free = norm_pfree (percent_fr);
-  percent_max = norm_pmax (percent_m);
-  init_major_heap (major_heap_size);
-  gc_message (0x20, "Initial minor heap size: %luk bytes\n",
-              minor_heap_size / 1024);
-  gc_message (0x20, "Initial major heap size: %luk bytes\n",
-              major_heap_size / 1024);
-  gc_message (0x20, "Initial space overhead: %lu%%\n", percent_free);
-  gc_message (0x20, "Initial max overhead: %lu%%\n", percent_max);
-  gc_message (0x20, "Initial heap increment: %luk bytes\n",
-              major_heap_increment / 1024);
+  caml_set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));
+  caml_major_heap_increment = Bsize_wsize (norm_heapincr (major_incr));
+  caml_percent_free = norm_pfree (percent_fr);
+  caml_percent_max = norm_pmax (percent_m);
+  caml_init_major_heap (major_heap_size);
+  caml_gc_message (0x20, "Initial minor heap size: %luk bytes\n",
+                   caml_minor_heap_size / 1024);
+  caml_gc_message (0x20, "Initial major heap size: %luk bytes\n",
+                   major_heap_size / 1024);
+  caml_gc_message (0x20, "Initial space overhead: %lu%%\n", caml_percent_free);
+  caml_gc_message (0x20, "Initial max overhead: %lu%%\n", caml_percent_max);
+  caml_gc_message (0x20, "Initial heap increment: %luk bytes\n",
+                   caml_major_heap_increment / 1024);
 }

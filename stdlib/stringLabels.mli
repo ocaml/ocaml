@@ -33,7 +33,7 @@ external set : string -> int -> char -> unit = "%string_safe_set"
    0 to [(String.length s - 1)].
    You can also write [s.[n] <- c] instead of [String.set s n c]. *)
 
-external create : int -> string = "create_string"
+external create : int -> string = "caml_create_string"
 (** [String.create n] returns a fresh string of length [n].
    The string initially contains arbitrary characters.
    Raise [Invalid_argument] if [n < 0] or [n > Sys.max_string_length].
@@ -149,6 +149,6 @@ external unsafe_get : string -> int -> char = "%string_unsafe_get"
 external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"
 external unsafe_blit :
   src:string -> src_pos:int -> dst:string -> dst_pos:int -> len:int ->
-    unit = "blit_string" "noalloc"
+    unit = "caml_blit_string" "noalloc"
 external unsafe_fill :
-  string -> pos:int -> len:int -> char -> unit = "fill_string" "noalloc"
+  string -> pos:int -> len:int -> char -> unit = "caml_fill_string" "noalloc"

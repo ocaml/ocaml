@@ -53,16 +53,15 @@ external mul : nativeint -> nativeint -> nativeint = "%nativeint_mul"
 
 external div : nativeint -> nativeint -> nativeint = "%nativeint_div"
 (** Integer division.  Raise [Division_by_zero] if the second 
-   argument is zero. *)
+   argument is zero.  This division rounds the real quotient of
+   its arguments towards zero, as specified for {!Pervasives.(/)}. *)
 
 external rem : nativeint -> nativeint -> nativeint = "%nativeint_mod"
-(** Integer remainder.  If [x >= 0] and [y > 0], the result
+(** Integer remainder.  If [y] is not zero, the result
    of [Nativeint.rem x y] satisfies the following properties:
-   [0 <= Nativeint.rem x y < y] and
+   [Nativeint.zero <= Nativeint.rem x y < Nativeint.abs y] and
    [x = Nativeint.add (Nativeint.mul (Nativeint.div x y) y) (Nativeint.rem x y)].
-   If [y = 0], [Nativeint.rem x y] raises [Division_by_zero].
-   If [x < 0] or [y < 0], the result of [Nativeint.rem x y] is
-   not specified and depends on the platform. *)
+   If [y = 0], [Nativeint.rem x y] raises [Division_by_zero]. *)
 
 val succ : nativeint -> nativeint
 (** Successor.
@@ -131,14 +130,14 @@ external to_int : nativeint -> int = "%nativeint_to_int"
    integer (type [int]).  The high-order bit is lost during
    the conversion. *)
 
-external of_float : float -> nativeint = "nativeint_of_float"
+external of_float : float -> nativeint = "caml_nativeint_of_float"
 (** Convert the given floating-point number to a native integer,
    discarding the fractional part (truncate towards 0).
    The result of the conversion is undefined if, after truncation,
    the number is outside the range
    \[{!Nativeint.min_int}, {!Nativeint.max_int}\]. *)
        
-external to_float : nativeint -> float = "nativeint_to_float"
+external to_float : nativeint -> float = "caml_nativeint_to_float"
 (** Convert the given native integer to a floating-point number. *)
 
 external of_int32 : int32 -> nativeint = "%nativeint_of_int32"
@@ -152,23 +151,36 @@ external to_int32 : nativeint -> int32 = "%nativeint_to_int32"
    i.e. the top 32 bits are lost.  On 32-bit platforms,
    the conversion is exact. *)
 
-external of_string : string -> nativeint = "nativeint_of_string"
+external of_string : string -> nativeint = "caml_nativeint_of_string"
 (** Convert the given string to a native integer.
    The string is read in decimal (by default) or in hexadecimal,
    octal or binary if the string begins with [0x], [0o] or [0b]
    respectively.
    Raise [Failure "int_of_string"] if the given string is not
-   a valid representation of an integer. *)
+   a valid representation of an integer, or if the integer represented
+   exceeds the range of integers representable in type [nativeint]. *)
 
 val to_string : nativeint -> string
 (** Return the string representation of its argument, in decimal. *)
 
-external format : string -> nativeint -> string = "nativeint_format"
+type t = nativeint
+(** An alias for the type of native integers. *)
+
+val compare: t -> t -> int
+(** The comparison function for native integers, with the same specification as
+    {!Pervasives.compare}.  Along with the type [t], this function [compare]
+    allows the module [Nativeint] to be passed as argument to the functors
+    {!Set.Make} and {!Map.Make}. *)
+
+(**/**)
+
+(** {6 Deprecated functions} *)
+
+external format : string -> nativeint -> string = "caml_nativeint_format"
 (** [Nativeint.format fmt n] return the string representation of the
    native integer [n] in the format specified by [fmt].
-   [fmt] is a [Printf]-style format containing exactly
+   [fmt] is a [Printf]-style format consisting of exactly
    one [%d], [%i], [%u], [%x], [%X] or [%o] conversion specification.
    This function is deprecated; use {!Printf.sprintf} with a [%nx] format
    instead. *)
-
 

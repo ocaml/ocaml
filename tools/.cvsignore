@@ -1,4 +1,5 @@
 ocamldep
+ocamldep.opt
 ocamlprof
 opnames.ml
 dumpobj

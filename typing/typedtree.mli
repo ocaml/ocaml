@@ -75,6 +75,8 @@ and expression_desc =
   | Texp_letmodule of Ident.t * module_expr * expression
   | Texp_assert of expression
   | Texp_assertfalse
+  | Texp_lazy of expression
+  | Texp_object of class_structure * class_signature * string list
 (*> JOCAML *)
   | Texp_asyncsend of expression * expression
   | Texp_spawn of expression (* insert processes in expressions *)
@@ -117,7 +119,6 @@ and joinident =
       jident_loc  : Location.t;
       jident_type : type_expr;
       jident_env : Env.t;}
-
 (*< JOCAML *)
 
 and meth =
@@ -129,7 +130,8 @@ and meth =
 and class_expr =
   { cl_desc: class_expr_desc;
     cl_loc: Location.t;
-    cl_type: class_type }
+    cl_type: class_type;
+    cl_env: Env.t }
 
 and class_expr_desc =
     Tclass_ident of Path.t
@@ -182,6 +184,7 @@ and structure_item =
   | Tstr_exception of Ident.t * exception_declaration
   | Tstr_exn_rebind of Ident.t * Path.t
   | Tstr_module of Ident.t * module_expr
+  | Tstr_recmodule of (Ident.t * module_expr) list
   | Tstr_modtype of Ident.t * module_type
   | Tstr_open of Path.t
   | Tstr_class of (Ident.t * int * string list * class_expr) list
@@ -199,6 +202,9 @@ and module_coercion =
   | Tcoerce_primitive of Primitive.description
 
 (* Auxiliary functions over the a.s.t. *)
+
+val iter_pattern_desc : (pattern -> unit) -> pattern_desc -> unit
+val map_pattern_desc : (pattern -> pattern) -> pattern_desc -> pattern_desc
 
 val let_bound_idents: (pattern * expression) list -> Ident.t list
 val rev_let_bound_idents: (pattern * expression) list -> Ident.t list

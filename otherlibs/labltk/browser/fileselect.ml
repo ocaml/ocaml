@@ -17,11 +17,11 @@
 (* file selection box *)
 
 open StdLabels
-open Useunix
 open Str
 open Filename
-
 open Tk
+
+open Useunix
 
 (**** Memoized rexgexp *)
 
@@ -40,16 +40,16 @@ let parse_filter s =
   (* replace // by / *)
   let s = global_replace ~!"/+" "/" s in
   (* replace /./ by / *)
-  let s = global_replace ~!"/\./" "/" s in
+  let s = global_replace ~!"/\\./" "/" s in
   (* replace hoge/../ by "" *)
-  let s = global_replace ~!"\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\./"
-                         "" s in
+  let s = global_replace
+          ~!"\\([^/]\\|[^\\./][^/]\\|[^/][^\\./]\\|[^/][^/]+\\)/\\.\\./" "" s in
   (* replace hoge/..$ by *)
-  let s = global_replace ~!"\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\.$"
-                         "" s in
+  let s = global_replace
+          ~!"\\([^/]\\|[^\\./][^/]\\|[^/][^\\./]\\|[^/][^/]+\\)/\\.\\.$" "" s in
   (* replace ^/hoge/../ by / *)
-  let s = global_replace ~!"^\(/\.\.\)+/" "/" s in
-  if string_match ~!"^\([^\*?[]*[/:]\)\(.*\)" s 0 then 
+  let s = global_replace ~!"^\\(/\\.\\.\\)+/" "/" s in
+  if string_match ~!"^\\([^\\*?[]*[/:]\\)\\(.*\\)" s 0 then 
     let dirs = matched_group 1 s
     and ptrn = matched_group 2 s
     in
@@ -90,6 +90,9 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
 
   let current_pattern = ref ""
   and current_dir = ref (caml_dir dir) in
+
+  let may_prefix name =
+    if Filename.is_relative name then concat !current_dir name else name in
   
   let tl = Jg_toplevel.titled title in
   Focus.set tl;
@@ -113,11 +116,7 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
   let cfrm = Frame.create tl ~borderwidth:1 ~relief:`Raised in
 
   let configure ~filter =
-    let filter =
-      if Filename.is_relative filter
-      then !current_dir ^ "/" ^ filter
-      else filter
-    in
+    let filter = may_prefix filter in
     let dir, pattern = parse_filter filter in
     let dir = if !load_in_path && usepath then "" else
               (current_dir := Filename.dirname dir; dir)
@@ -165,18 +164,11 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
         List.fold_right l ~init:[] ~f:
         begin fun name acc ->
           if not (Filename.is_implicit name) then
-            if Filename.is_relative name
-            then (!current_dir ^ "/" ^ name) :: acc
-            else name :: acc
+            may_prefix name :: acc
           else try search_in_path ~name :: acc with Not_found -> acc
         end
       else
-        List.map l ~f:
-        begin fun x ->
-          if Filename.is_relative x
-          then !current_dir ^ "/" ^ x
-          else x
-        end
+        List.map l ~f:may_prefix
     in
     if sync then 
       begin
@@ -241,13 +233,12 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
       if !load_in_path && usepath then
         try Textvariable.set selection_var (search_in_path ~name)
         with Not_found -> ()
-      else Textvariable.set selection_var (!current_dir ^ "/" ^ name));
+      else Textvariable.set selection_var (may_prefix name));
 
   Jg_box.add_completion directory_listbox ~action:
     begin fun index ->
       let filter =
-        !current_dir ^ "/" ^
-        (Listbox.get directory_listbox ~index) ^
+        may_prefix (Listbox.get directory_listbox ~index) ^
         "/" ^ !current_pattern
       in configure ~filter
     end;

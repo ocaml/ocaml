@@ -27,7 +27,7 @@
           "\\|ex\\(ception\\|ternal\\)\\|fun\\(ct\\(ion\\|or\\)\\)?"
           "\\|in\\(herit\\)?\\|let\\|m\\(ethod\\|utable\\|odule\\)"
           "\\|of\\|p\\(arser\\|rivate\\)\\|rec\\|type"
-          "\\|v\\(al\\(ue\\)?\\|irtual\\)\\)\\>")
+          "\\|v\\(al\\|irtual\\)\\)\\>")
          nil 'ForestGreen)
 ;blocking
    '("\\<\\(object\\|struct\\|sig\\|begin\\|end\\)\\>" 2 include)

@@ -16,9 +16,10 @@ include ../config/Makefile
 
 CAMLC=../boot/ocamlrun ../ocamlc
 CAMLOPT=../boot/ocamlrun ../ocamlopt
-COMPFLAGS=-I ../stdlib -I KB -I Lex
+COMPFLAGS=-nostdlib -I ../stdlib -I KB -I Lex
 OPTFLAGS=-S
 CAMLYACC=../yacc/ocamlyacc
+YACCFLAGS=-v
 CAMLLEX=../boot/ocamlrun ../lex/ocamllex
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 CAMLRUN=../byterun/ocamlrun
@@ -26,7 +27,8 @@ CODERUNPARAMS=OCAMLRUNPARAM='o=100'
 
 BYTE_EXE=fib.byt takc.byt taku.byt sieve.byt quicksort.byt quicksort.fast.byt \
   fft.byt fft.fast.byt soli.byt soli.fast.byt boyer.byt kb.byt \
-  nucleic.byt genlex.byt bdd.byt
+  nucleic.byt genlex.byt bdd.byt hamming.byt sorts.byt \
+  almabench.byt almabench.fast.byt
 
 CODE_EXE=$(BYTE_EXE:.byt=.out)
 
@@ -40,9 +42,9 @@ nucleic.out: nucleic.ml
 	case $(ARCH) in \
           i386) sed -e '/<HAND_CSE>/,/<\/HAND_CSE>/d' -e '/NO_CSE>/d' \
                 nucleic.ml > nucleic.mlt; \
-	        $(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o nucleic.out nucleic.mlt; \
+	        $(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o nucleic.out nucleic.mlt;\
 	        rm -f nucleic.mlt;; \
-             *) $(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o nucleic.out nucleic.ml;; \
+             *) $(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o nucleic.out nucleic.ml; \
         esac
 
 # KB
@@ -73,8 +75,9 @@ genlex.out: $(CODE_GENLEX)
 clean::
 	rm -f Lex/*.cm[iox] Lex/*.[os]
 	rm -f Lex/*~
+	rm -f Lex/grammar.output
 
-Lex/grammar.ml Lex/grammar.mli: Lex/grammar.mly ../yacc/ocamlyacc
+Lex/grammar.ml Lex/grammar.mli: Lex/grammar.mly ../yacc/ocamlyacc$(EXE)
 	$(CAMLYACC) $(YACCFLAGS) Lex/grammar.mly
 
 clean::
@@ -164,7 +167,7 @@ bench: codebench
 bytebench:
 	set -e; \
         for prog in $(BYTE_EXE:.byt=); do \
-          echo "$$prog		" | tr -d '\012'; \
+          echo "$$prog                " | cut -c 1-16 | tr -d '\012'; \
           if test -f Results/$$prog.runtest; then \
             sh Results/$$prog.runtest bench $(CAMLRUN) $$prog.byt; \
           else \
@@ -175,7 +178,7 @@ bytebench:
 codebench:
 	set -e; \
         for prog in $(CODE_EXE:.out=); do \
-          echo "$$prog		" | tr -d '\012'; \
+          echo "$$prog                " | cut -c 1-16 | tr -d '\012'; \
           if test -f Results/$$prog.runtest; then \
             $(CODERUNPARAMS) sh Results/$$prog.runtest bench ./$$prog.out; \
           else \

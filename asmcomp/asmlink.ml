@@ -27,44 +27,56 @@ type error =
   | Inconsistent_implementation of string * string * string
   | Assembler_error of string
   | Linking_error
+  | Multiple_definition of string * string * string
 
 exception Error of error
 
 (* Consistency check between interfaces and implementations *)
 
-let crc_interfaces =
-      (Hashtbl.create 17 : (string, string * Digest.t) Hashtbl.t)
-let crc_implementations =
-      (Hashtbl.create 17 : (string, string * Digest.t) Hashtbl.t)
+let crc_interfaces = Consistbl.create ()
+let crc_implementations = Consistbl.create ()
+let extra_implementations = ref ([] : string list)
+let implementations_defined = ref ([] : (string * string) list)
 
 let check_consistency file_name unit crc =
-  List.iter
-    (fun (name, crc) ->
-      if name = unit.ui_name then begin
-        Hashtbl.add crc_interfaces name (file_name, crc)
-      end else begin
-        try
-          let (auth_name, auth_crc) = Hashtbl.find crc_interfaces name in
-          if crc <> auth_crc then
-            raise(Error(Inconsistent_interface(name, file_name, auth_name)))
-        with Not_found ->
-          (* Can only happen for unit for which only a .cmi file was used,
-             but no .cmo is provided *)
-          Hashtbl.add crc_interfaces name (file_name, crc)
-      end)
-    unit.ui_imports_cmi;
-  List.iter
-    (fun (name, crc) ->
-      if crc <> cmx_not_found_crc then begin
-      try
-        let (auth_name, auth_crc) = Hashtbl.find crc_implementations name in
-        if crc <> auth_crc then
-          raise(Error(Inconsistent_implementation(name, file_name, auth_name)))
-      with Not_found ->
-        Hashtbl.add crc_implementations name (file_name, crc)
-      end)
-    unit.ui_imports_cmx;
-  Hashtbl.add crc_implementations unit.ui_name (file_name, crc)
+  begin try
+    List.iter
+      (fun (name, crc) ->
+        if name = unit.ui_name
+        then Consistbl.set crc_interfaces name crc file_name
+        else Consistbl.check crc_interfaces name crc file_name)
+      unit.ui_imports_cmi
+  with Consistbl.Inconsistency(name, user, auth) ->
+    raise(Error(Inconsistent_interface(name, user, auth)))
+  end;
+  begin try
+    List.iter
+      (fun (name, crc) ->
+        if crc = cmx_not_found_crc then
+          extra_implementations := name :: !extra_implementations
+        else
+          Consistbl.check crc_implementations name crc file_name)
+      unit.ui_imports_cmx
+  with Consistbl.Inconsistency(name, user, auth) ->
+    raise(Error(Inconsistent_implementation(name, user, auth)))
+  end;
+  begin try
+    let source = List.assoc unit.ui_name !implementations_defined in
+    raise (Error(Multiple_definition(unit.ui_name, file_name, source)))
+  with Not_found -> ()
+  end;
+  Consistbl.set crc_implementations unit.ui_name crc file_name;
+  implementations_defined := 
+    (unit.ui_name, file_name) :: !implementations_defined
+
+let extract_crc_interfaces () =
+  Consistbl.extract crc_interfaces
+let extract_crc_implementations () = 
+  List.fold_left
+    (fun ncl n ->
+      if List.mem_assoc n ncl then ncl else (n, cmx_not_found_crc) :: ncl)
+    (Consistbl.extract crc_implementations)
+    !extra_implementations
 
 (* Add C objects and options and "custom" info from a library descriptor.
    See bytecomp/bytelink.ml for comments on the order of C objects. *)
@@ -155,10 +167,11 @@ let make_startup_file ppf filename units_list =
   let compile_phrase p = Asmgen.compile_phrase ppf p in
   let oc = open_out filename in
   Emitaux.output_channel := oc;
-  Location.input_name := "startup"; (* set the name of the "current" input *)
-  Compilenv.reset "startup"; (* set the name of the "current" compunit *)
+  Location.input_name := "caml_startup"; (* set name of "current" input *)
+  Compilenv.reset "_startup"; (* set the name of the "current" compunit *)
   Emit.begin_assembly();
-  let name_list = List.map (fun (info,_,_) -> info.ui_name) units_list in
+  let name_list =
+    List.flatten (List.map (fun (info,_,_) -> info.ui_defines) units_list) in
   compile_phrase (Cmmgen.entry_point name_list);
   let apply_functions = ref (IntSet.add 2 (IntSet.add 3 IntSet.empty)) in
   (* The callback functions always reference caml_apply[23] *)
@@ -186,17 +199,18 @@ let make_startup_file ppf filename units_list =
   compile_phrase
     (Cmmgen.globals_map
       (List.map
-        (fun name ->
-          let (auth_name,crc) = Hashtbl.find crc_interfaces name in (name,crc))
-        name_list));
-  compile_phrase(Cmmgen.data_segment_table ("startup" :: name_list));
-  compile_phrase(Cmmgen.code_segment_table ("startup" :: name_list));
+        (fun (unit,_,_) ->
+          try (unit.ui_name, List.assoc unit.ui_name unit.ui_imports_cmi)
+          with Not_found -> assert false)
+        units_list));
+  compile_phrase(Cmmgen.data_segment_table ("_startup" :: name_list));
+  compile_phrase(Cmmgen.code_segment_table ("_startup" :: name_list));
   compile_phrase
-    (Cmmgen.frame_table("startup" :: "system" :: name_list));
+    (Cmmgen.frame_table("_startup" :: "_system" :: name_list));
   Emit.end_assembly();
   close_out oc
 
-let call_linker file_list startup_file =
+let call_linker file_list startup_file output_name =
   let libname =
     if !Clflags.gprofile
     then "libasmrunp" ^ ext_lib
@@ -207,50 +221,52 @@ let call_linker file_list startup_file =
       else find_in_path !load_path libname
     with Not_found ->
       raise(Error(File_not_found libname)) in
-  let c_lib = if !Clflags.nopervasives then "" else Config.native_c_libraries in
+  let c_lib =
+    if !Clflags.nopervasives then "" else Config.native_c_libraries in
   let cmd =
-    match Config.system with
-      "win32" ->
+    match Config.ccomp_type with
+      "cc" ->
         if not !Clflags.output_c_object then
-          Printf.sprintf "%s /Fe%s -I%s %s %s %s %s %s %s"
+          Printf.sprintf "%s %s -o %s %s %s %s %s %s %s %s %s"
             !Clflags.c_linker
-            !Clflags.exec_name
-            Config.standard_library
+            (if !Clflags.gprofile then Config.cc_profile else "")
+            (Filename.quote output_name)
+            (Clflags.std_include_flag "-I")
             (String.concat " " (List.rev !Clflags.ccopts))
-            startup_file
-            (String.concat " " (List.rev file_list))
-            (String.concat " "
-                           (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
-            runtime_lib
-            c_lib
-        else
-          Printf.sprintf "%s /out:%s %s %s"
-            Config.native_partial_linker
-            !Clflags.object_name
-            startup_file
-            (String.concat " " (List.rev file_list))
-    | _ ->
-        if not !Clflags.output_c_object then
-          Printf.sprintf "%s %s -o %s -I%s %s %s %s %s %s %s %s"
-            !Clflags.c_linker
-            (if !Clflags.gprofile then "-pg" else "")
-            !Clflags.exec_name
-            Config.standard_library
-            (String.concat " " (List.rev !Clflags.ccopts))
-            startup_file
-            (String.concat " " (List.rev file_list))
-            (String.concat " "
+            (Filename.quote startup_file)
+            (Ccomp.quote_files (List.rev file_list))
+            (Ccomp.quote_files
               (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
                         !load_path))
-            (String.concat " " (List.rev !Clflags.ccobjs))
-            runtime_lib
+            (Ccomp.quote_files (List.rev !Clflags.ccobjs))
+            (Filename.quote runtime_lib)
             c_lib
         else
           Printf.sprintf "%s -o %s %s %s"
             Config.native_partial_linker
-            !Clflags.object_name
-            startup_file
-            (String.concat " " (List.rev file_list))
+            (Filename.quote output_name)
+            (Filename.quote startup_file)
+            (Ccomp.quote_files (List.rev file_list))
+    | "msvc" ->
+        if not !Clflags.output_c_object then
+          Printf.sprintf "%s /Fe%s %s %s %s %s %s %s %s"
+            !Clflags.c_linker
+            (Filename.quote output_name)
+            (Clflags.std_include_flag "-I")
+            (Filename.quote startup_file)
+            (Ccomp.quote_files (List.rev file_list))
+            (Ccomp.quote_files 
+              (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
+            (Filename.quote runtime_lib)
+            c_lib
+            (String.concat " " (List.rev !Clflags.ccopts))
+        else
+          Printf.sprintf "%s /out:%s %s %s"
+            Config.native_partial_linker
+            (Filename.quote output_name)
+            (Filename.quote startup_file)
+            (Ccomp.quote_files (List.rev file_list))
+    | _ -> assert false
   in if Ccomp.command cmd <> 0 then raise(Error Linking_error)
 
 let object_file_name name =
@@ -268,7 +284,7 @@ let object_file_name name =
 
 (* Main entry point *)
 
-let link ppf objfiles =
+let link ppf objfiles output_name =
   let stdlib =
     if !Clflags.gprofile then "stdlib.p.cmxa" else "stdlib.cmxa" in
   let stdexit =
@@ -294,7 +310,7 @@ let link ppf objfiles =
   if Proc.assemble_file startup startup_obj <> 0 then
     raise(Error(Assembler_error startup));
   try
-    call_linker (List.map object_file_name objfiles) startup_obj;
+    call_linker (List.map object_file_name objfiles) startup_obj output_name;
     if not !Clflags.keep_startup_file then remove_file startup;
     remove_file startup_obj
   with x ->
@@ -338,3 +354,7 @@ let report_error ppf = function
       fprintf ppf "Error while assembling %s" file
   | Linking_error ->
       fprintf ppf "Error during linking"
+  | Multiple_definition(modname, file1, file2) ->
+      fprintf ppf
+        "@[<hov>Files %s@ and %s@ both define a module named %s@]"
+        file1 file2 modname

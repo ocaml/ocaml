@@ -15,6 +15,8 @@
 
 (**************************** Configuration file ***********************)
 
+open Int64ops
+
 exception Toplevel
 
 (*** Miscellaneous parameters. ***)
@@ -52,8 +54,7 @@ let event_mark_after  = "<|a|>"
 let shell = "/bin/sh"
 
 (* Name of the Objective Caml runtime. *)
-(* let runtime_program = "ocamlrun" *)
-let runtime_program = "/home/mouton/xleroy/csl-debugger/byterun/ocamlrun"
+let runtime_program = "ocamlrun"
 
 (* Time history size (for `last') *)
 let history_size = ref 30
@@ -61,10 +62,10 @@ let history_size = ref 30
 (*** Time travel parameters. ***)
 
 (* Step between checkpoints for long displacements.*)
-let checkpoint_big_step = ref 10000
+let checkpoint_big_step = ref (~~ "10000")
 
 (* Idem for small ones. *)
-let checkpoint_small_step = ref 1000
+let checkpoint_small_step = ref (~~ "1000")
 
 (* Maximum number of checkpoints. *)
 let checkpoint_max_count = ref 15
@@ -72,15 +73,3 @@ let checkpoint_max_count = ref 15
 (* Whether to keep checkpoints or not. *)
 let make_checkpoints = ref true
 
-(*** Dynamic loader ***)
-
-(* List of standard library modules *)
-let stdlib_units = [
-  "Pervasives"; "List"; "Char"; "String"; "Array"; "Sys";
-  "Hashtbl"; "Sort"; "Marshal"; "Obj"; "Lexing"; "Parsing";
-  "Set"; "Map"; "Stack"; "Queue"; "Stream";
-  "Buffer"; "Printf"; "Format"; "Arg"; "Printexc"; "Gc";
-  "Digest"; "Random"; "Oo"; "Genlex"; "Callback"; "Weak";
-  "Lazy"; "Filename"; "Int32"; "Int64"; "Nativeint";
-  "Unix"
-]

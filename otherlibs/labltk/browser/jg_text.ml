@@ -48,7 +48,7 @@ let goto_tag tw ~tag =
 
 let search_string tw =
   let tl = Jg_toplevel.titled "Search" in
-  Wm.transient_set tl ~master:Widget.default_toplevel;
+  Wm.transient_set tl ~master:(Winfo.toplevel tw);
   let fi = Frame.create tl
   and fd = Frame.create tl
   and fm = Frame.create tl

@@ -1,14 +1,20 @@
-!include ..\support\Makefile.common.nt
+include ../support/Makefile.common.nt
 
-LABLTKLIB=-I ../lib -I ../support
+LABLTKLIB=-I ../labltk -I ../lib -I ../support
 OTHERSLIB=-I $(OTHERS)/win32unix -I $(OTHERS)/str -I $(OTHERS)/systhreads
 OCAMLTOPLIB=-I $(TOPDIR)/parsing -I $(TOPDIR)/utils -I $(TOPDIR)/typing
 INCLUDES=$(OTHERSLIB) $(LABLTKLIB) $(OCAMLTOPLIB)
-CCFLAGS=-I..\..\..\byterun /Zi $(TK_DEFS)
+CCFLAGS=-I../../../byterun $(TK_DEFS)
 
-OBJ =	list2.cmo	useunix.cmo	setpath.cmo	lexical.cmo	\
+ifeq ($(CCOMPTYPE),cc)
+WINDOWS_APP=
+else
+WINDOWS_APP=-cclib "/link /subsystem:windows"
+endif
+
+OBJS =	list2.cmo	useunix.cmo	setpath.cmo	lexical.cmo	\
 	fileselect.cmo	searchid.cmo	searchpos.cmo	shell.cmo	\
-        help.cmo        \
+	help.cmo	\
 	viewer.cmo	typecheck.cmo	editor.cmo	main.cmo
 
 JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
@@ -18,39 +24,47 @@ JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
 
 # Default rules
 
-.SUFFIXES: .ml .mli .cmo .cmi .cmx
+.SUFFIXES: .ml .mli .cmo .cmi .cmx .c .$(O)
 
 .ml.cmo:
-	$(LABLCOMP) $(INCLUDES) $<
+	$(CAMLCOMP) $(INCLUDES) $<
 
 .mli.cmi:
-	$(LABLCOMP) $(INCLUDES) $<
+	$(CAMLCOMP) $(INCLUDES) $<
 
-.c.obj:
+.c.$(O):
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CCFLAGS) -c $<
 
-all: ocamlbrowser
+all: ocamlbrowser.exe
 
-ocamlbrowser: $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ) winmain.obj
-	$(LABLC) -o ocamlbrowser -custom $(INCLUDES) \
+ocamlbrowser.exe: $(TOPDIR)/toplevel/toplevellib.cma \
+	../support/lib$(LIBNAME).$(A)
+ocamlbrowser.exe: jglib.cma $(OBJS) winmain.$(O)
+	$(CAMLC) -o ocamlbrowser.exe -custom $(INCLUDES) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
-		unix.cma threads.cma str.cma labltk.cma jglib.cma $(OBJ) \
-		$(TK_LINK) winmain.obj
+		unix.cma threads.cma str.cma $(LIBNAME).cma jglib.cma $(OBJS) \
+		winmain.$(O) $(WINDOWS_APP)
 
 jglib.cma: $(JG)
-	$(LABLCOMP) -a -o jglib.cma $(JG) 
+	$(CAMLCOMP) -a -o jglib.cma $(JG) 
+
+help.ml:
+	echo 'let text = "\\' > $@
+	sed -e 's/^ /\\032/' -e 's/$$/\\n\\/' help.txt >> $@
+	echo '";;' >> $@
 
 install:
-	if exist ocamlbrowser.exe cp ocamlbrowser.exe $(BINDIR)
+	if test -f ocamlbrowser.exe; then cp ocamlbrowser.exe $(BINDIR); fi
 
 clean:
-	rm -f *.cm? ocamlbrowser dummy.mli *~ *.orig
+	rm -f *.cm? ocamlbrowser.exe dummy.mli *~ *.orig *.$(O)
 
 depend:
-	$(LABLDEP) *.ml *.mli > .depend
+	$(CAMLDEP) *.ml *.mli > .depend
 
 dummy.mli:
 	cp dummyWin.mli dummy.mli
 shell.cmo: dummy.cmi
+setpath.cmo fileselect.cmo lexical.cmi searchid.cmi typecheck.cmi: $(TOPDIR)/toplevel/toplevellib.cma
 
-!include	.depend
+include	.depend

@@ -25,35 +25,40 @@ let named_regexps =
 let regexp_for_string s =
   let rec re_string n =
     if n >= String.length s then Epsilon
-    else if succ n = String.length s then Characters([Char.code (s.[n])])
-    else Sequence(Characters([Char.code (s.[n])]), re_string (succ n))
+    else if succ n = String.length s then
+      Characters (Cset.singleton (Char.code s.[n]))
+    else
+      Sequence
+        (Characters(Cset.singleton (Char.code s.[n])),
+         re_string (succ n))
   in re_string 0
 
-let char_class c1 c2 =
-  let rec cl n =
-    if n > c2 then [] else n :: cl(succ n)
-  in cl c1
+let rec remove_as = function
+  | Bind (e,_) -> remove_as e
+  | Epsilon|Eof|Characters _ as e -> e
+  | Sequence (e1, e2) -> Sequence (remove_as e1, remove_as e2)
+  | Alternative (e1, e2) -> Alternative (remove_as e1, remove_as e2)
+  | Repetition e -> Repetition (remove_as e)
 
-let all_chars = char_class 0 255
+let as_cset = function
+  | Characters s -> s
+  | _ -> raise Cset.Bad
 
-let rec subtract l1 l2 =
-  match l1 with
-    [] -> []
-  | a::r -> if List.mem a l2 then subtract r l2 else a :: subtract r l2
 %}
 
 %token <string> Tident
 %token <int> Tchar
 %token <string> Tstring
 %token <Syntax.location> Taction
-%token Trule Tparse Tand Tequal Tend Tor Tunderscore Teof Tlbracket Trbracket
-%token Tstar Tmaybe Tplus Tlparen Trparen Tcaret Tdash Tlet
+%token Trule Tparse Tparse_shortest Tand Tequal Tend Tor Tunderscore Teof Tlbracket Trbracket
+%token Tstar Tmaybe Tplus Tlparen Trparen Tcaret Tdash Tlet Tas Tsharp
 
+%right Tas
+%left Tsharp
 %left Tor
-%left CONCAT
-%nonassoc Tmaybe
-%left Tstar
-%left Tplus
+%nonassoc CONCAT
+%nonassoc Tmaybe Tstar Tplus
+          Tident Tchar Tstring Tunderscore Teof Tlbracket Tlparen
 
 %start lexer_definition
 %type <Syntax.lexer_definition> lexer_definition
@@ -85,15 +90,25 @@ other_definitions:
         { [] }
 ;
 definition:
-    Tident Tequal entry
-        { ($1,$3) }
+    Tident arguments Tequal Tparse entry
+        { {name=$1 ; shortest=false ; args=$2 ; clauses=$5} }
+  |  Tident arguments Tequal Tparse_shortest entry
+        { {name=$1 ; shortest=true ; args=$2 ; clauses=$5} }
 ;
+
+arguments:
+    Tident arguments        { $1::$2 }
+|     /*epsilon*/           { [] }
+;
+
+
 entry:
-    Tparse case rest_of_entry
+    case rest_of_entry
+        { $1::List.rev $2 }
+|   Tor case rest_of_entry
         { $2::List.rev $3 }
-  | Tparse rest_of_entry
-        { List.rev $2 }
 ;
+
 rest_of_entry:
     rest_of_entry Tor case
         { $3::$1 }
@@ -106,11 +121,11 @@ case:
 ;
 regexp:
     Tunderscore
-        { Characters all_chars }
+        { Characters Cset.all_chars }
   | Teof
-        { Characters [256] }
+        { Eof }
   | Tchar
-        { Characters [$1] }
+        { Characters (Cset.singleton $1) }
   | Tstring
         { regexp_for_string $1 }
   | Tlbracket char_class Trbracket
@@ -118,9 +133,15 @@ regexp:
   | regexp Tstar
         { Repetition $1 }
   | regexp Tmaybe
-        { Alternative($1, Epsilon) }
+        { Alternative(Epsilon, $1) }
   | regexp Tplus
-        { Sequence($1, Repetition $1) }
+        { Sequence(Repetition (remove_as $1), $1) }
+  | regexp Tsharp regexp
+        {
+          let s1 = as_cset $1
+          and s2 = as_cset $3 in
+          Characters (Cset.diff s1 s2)
+        } 
   | regexp Tor regexp
         { Alternative($1,$3) }
   | regexp regexp %prec CONCAT
@@ -137,20 +158,27 @@ regexp:
             prerr_int (Parsing.symbol_start());
             prerr_newline();
             exit 2 }
+  | regexp Tas ident
+        {Bind ($1, $3)}
 ;
+
+ident:
+  Tident {$1}
+;
+
 char_class:
     Tcaret char_class1
-        { subtract all_chars $2 }
+        { Cset.complement $2 }
   | char_class1
         { $1 }
 ;
 char_class1:
     Tchar Tdash Tchar
-        { char_class $1 $3 }
+        { Cset.interval $1 $3 }
   | Tchar
-        { [$1] }
+        { Cset.singleton $1 }
   | char_class1 char_class1 %prec CONCAT
-        { $1 @ $2 }
+        { Cset.union $1 $2 }
 ;
 
 %%

@@ -38,7 +38,7 @@ let convert_address address =
   with Not_found ->
       (PF_UNIX, ADDR_UNIX address)
 
-(*** Report an unix error. ***)
+(*** Report a unix error. ***)
 let report_error = function
   | Unix_error (err, fun_name, arg) ->
      prerr_string "Unix error : '";
@@ -50,7 +50,7 @@ let report_error = function
         prerr_string "'");
      prerr_string " : ";
      prerr_endline (error_message err)
-  | _ -> fatal_error "report_error: not an Unix error"
+  | _ -> fatal_error "report_error: not a Unix error"
 
 (* Find program `name' in `PATH'. *)
 (* Return the full path if found. *)
@@ -59,7 +59,7 @@ let search_in_path name =
   let check name =
     try access name [X_OK]; name with Unix_error _ -> raise Not_found
   in
-    if String.contains name '/' then
+    if not (Filename.is_implicit name) then
       check name
     else
       let path = Sys.getenv "PATH" in
@@ -133,3 +133,9 @@ let rec expand_path ch =
             Not_found ->
               expand_path (ch ^ "/")
         else ch
+
+let make_absolute name =
+  if Filename.is_relative name
+  then Filename.concat (getcwd ()) name
+  else name
+;;

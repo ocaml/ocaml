@@ -24,46 +24,67 @@ let command cmdline =
 
 let run_command cmdline = ignore(command cmdline)
 
-let quote = Filename.quote;;
+(* Build @responsefile to work around Windows limitations on 
+   command-length line *)
+let build_diversion lst =
+  let (responsefile, oc) = Filename.open_temp_file "camlresp" "" in
+  List.iter
+    (fun f ->
+      if f <> "" then begin
+        output_string oc (Filename.quote f); output_char oc '\n'
+      end)
+    lst;
+  close_out oc;
+  at_exit (fun () -> Misc.remove_file responsefile);
+  "@" ^ responsefile
+
+let quote_files lst =
+  let s =
+    String.concat " "
+      (List.map (fun f -> if f = "" then f else Filename.quote f) lst) in
+  if Sys.os_type = "Win32" && String.length s >= 256
+  then build_diversion lst
+  else s
 
 let compile_file name =
-  match Sys.os_type with
-  | "MacOS" ->
-     let qname = quote name in
-     let includes = Config.standard_library :: !Clflags.include_dirs in
+  match Config.ccomp_type with
+  | "mrc" ->
+     let qname = Filename.quote name in
+     let includes = (Clflags.std_include_dir ()) @ !Clflags.include_dirs
+     in
      let args =
        Printf.sprintf " %s %s -i %s"
-         (String.concat " " (List.rev_map quote !Clflags.ccopts))
-         (String.concat "," (List.rev_map quote includes))
+         (String.concat " " (List.rev_map Filename.quote !Clflags.ccopts))
+         (String.concat "," (List.rev_map Filename.quote includes))
          qname
      in
-     run_command ("sc " ^ args ^ " -o " ^ qname ^ ".o");
      command ("mrc " ^ args ^ " -o " ^ qname ^ ".x")
-  | _ ->
+  | "cc" | "msvc" ->
      command
        (Printf.sprintf
-         "%s -c %s %s -I%s %s"
+         "%s -c %s %s %s %s"
          !Clflags.c_compiler
          (String.concat " " (List.rev !Clflags.ccopts))
-         (String.concat " "
-           (List.rev_map (fun dir -> "-I" ^ dir) !Clflags.include_dirs))
-         Config.standard_library
-         name)
-;;
+         (quote_files
+             (List.rev_map (fun dir -> "-I" ^ dir) !Clflags.include_dirs))
+         (Clflags.std_include_flag "-I")
+         (Filename.quote name))
+  | _ -> assert false
 
 let create_archive archive file_list =
   Misc.remove_file archive;
-  match Config.system with
-    "win32" ->
+  let quoted_archive = Filename.quote archive in
+  match Config.ccomp_type with
+    "msvc" ->
       command(Printf.sprintf "lib /nologo /debugtype:cv /out:%s %s"
-                                 archive (String.concat " " file_list))
+                             quoted_archive (quote_files file_list))
   | _ ->
       let r1 =
         command(Printf.sprintf "ar rc %s %s"
-                                   archive (String.concat " " file_list)) in
+                quoted_archive (quote_files file_list)) in
       if r1 <> 0 || String.length Config.ranlib = 0
       then r1
-      else command(Config.ranlib ^ " " ^ archive)
+      else command(Config.ranlib ^ " " ^ quoted_archive)
 
 let expand_libname name =
   if String.length name < 2 || String.sub name 0 2 <> "-l"

@@ -15,30 +15,42 @@
 include ../config/Makefile
 
 CAMLRUN=../boot/ocamlrun
-CAMLC=$(CAMLRUN) ../boot/ocamlc -I ../boot
+CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot
+CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
          -I ../driver
-COMPFLAGS=$(INCLUDES)
+COMPFLAGS= -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib scrapelabels addlabels
+all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib scrapelabels addlabels dumpobj
+
+opt.opt: ocamldep.opt
 
 # The dependency generator
 
-CAMLDEP_OBJ=ocamldep.cmo
+CAMLDEP_OBJ=depend.cmo ocamldep.cmo
 CAMLDEP_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   linenum.cmo warnings.cmo location.cmo longident.cmo \
   syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
 
-ocamldep: $(CAMLDEP_OBJ)
+ocamldep: depend.cmi $(CAMLDEP_OBJ)
 	$(CAMLC) $(LINKFLAGS) -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
 
+ocamldep.opt: depend.cmi $(CAMLDEP_OBJ:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) -o ocamldep.opt $(CAMLDEP_IMPORTS:.cmo=.cmx) \
+	           $(CAMLDEP_OBJ:.cmo=.cmx)
+
+# ocamldep is precious: sometimes we are stuck in the middle of a
+# bootstrap and we need to remake the dependencies
 clean::
-	rm -f ocamldep
+	if test -f ocamldep; then mv -f ocamldep ocamldep.bak; else :; fi
+	rm -f ocamldep.opt
 
 install::
 	cp ocamldep $(BINDIR)/ocamldep$(EXE)
+	if test -f ocamldep.opt; \
+	  then cp ocamldep.opt $(BINDIR)/ocamldep.opt$(EXE); else :; fi
 
 # The profiler
 
@@ -85,6 +97,7 @@ clean::
 	rm -f ocamlmklib
 
 ocamlmklib.ml: ocamlmklib.mlp ../config/Makefile
+	echo '(* THIS FILE IS GENERATED FROM ocamlmklib.mlp *)' >ocamlmklib.ml
 	sed -e "s|%%BINDIR%%|$(BINDIR)|" \
             -e "s|%%SUPPORTS_SHARED_LIBRARIES%%|$(SUPPORTS_SHARED_LIBRARIES)|" \
             -e "s|%%MKSHAREDLIB%%|$(MKSHAREDLIB)|" \
@@ -92,7 +105,7 @@ ocamlmklib.ml: ocamlmklib.mlp ../config/Makefile
             -e "s|%%NATIVECCRPATH%%|$(NATIVECCRPATH)|" \
             -e "s|%%MKSHAREDLIBRPATH%%|$(MKSHAREDLIBRPATH)|" \
             -e "s|%%RANLIB%%|$(RANLIB)|" \
-          ocamlmklib.mlp > ocamlmklib.ml
+          ocamlmklib.mlp >> ocamlmklib.ml
 
 beforedepend:: ocamlmklib.ml
 
@@ -155,8 +168,10 @@ CVT_EMIT=cvt_emit.cmo
 cvt_emit: $(CVT_EMIT)
 	$(CAMLC) $(LINKFLAGS) -o cvt_emit $(CVT_EMIT)
 
+# cvt_emit is precious: sometimes we are stuck in the middle of a
+# bootstrap and we need to remake the dependencies
 clean::
-	rm -f cvt_emit
+	if test -f cvt_emit; then mv -f cvt_emit cvt_emit.bak; else :; fi
 
 cvt_emit.ml: cvt_emit.mll
 	$(CAMLLEX) cvt_emit.mll
@@ -209,6 +224,14 @@ objinfo: objinfo.cmo
 clean::
 	rm -f objinfo
 
+# Print imported interfaces for .cmi files
+
+intfinfo: intfinfo.cmo
+	$(CAMLC) $(LINKFLAGS) -o intfinfo config.cmo intfinfo.cmo
+
+clean::
+	rm -f intfinfo
+
 # Scan object files for required primitives
 
 PRIMREQ=primreq.cmo
@@ -222,13 +245,16 @@ clean::
 # Common stuff
 
 .SUFFIXES:
-.SUFFIXES: .ml .cmo .mli .cmi
+.SUFFIXES: .ml .cmo .mli .cmi .cmx
 
 .ml.cmo:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmx:
+	$(CAMLOPT) $(COMPFLAGS) -c $<
 
 clean::
 	rm -f *.cmo *.cmi

@@ -14,6 +14,7 @@
 
 (* Predefined type constructors (with special typing rules in typecore) *)
 
+open Asttypes
 open Path
 open Types
 open Btype
@@ -27,19 +28,18 @@ and ident_unit = Ident.create "unit"
 and ident_exn = Ident.create "exn"
 and ident_array = Ident.create "array"
 and ident_list = Ident.create "list"
-and ident_format = Ident.create "format"
+and ident_format4 = Ident.create "format4"
 and ident_option = Ident.create "option"
 and ident_nativeint = Ident.create "nativeint"
 and ident_int32 = Ident.create "int32"
 and ident_int64 = Ident.create "int64"
+and ident_lazy_t = Ident.create "lazy_t"
 (*> JOCAML *)
 and ident_channel = Ident.create "channel"
 and ident_process = Ident.create "process"
 and ident_location = Ident.create "location"
 and ident_dyn = Ident.create "dyn"
 and ident_dtm = Ident.create "dynamically_typed_module"
-(*< JOCAML *)
-(*> JOCAML *)
 let first_predef_type_stamp = Ident.stamp ident_int
 let last_predef_type_stamp =
   Ident.stamp (Ident.create "unused") - 1
@@ -54,20 +54,19 @@ and path_unit = Pident ident_unit
 and path_exn = Pident ident_exn
 and path_array = Pident ident_array
 and path_list = Pident ident_list
-and path_format = Pident ident_format
+and path_format4 = Pident ident_format4
 and path_option = Pident ident_option
 and path_nativeint = Pident ident_nativeint
 and path_int32 = Pident ident_int32
 and path_int64 = Pident ident_int64
+and path_lazy_t = Pident ident_lazy_t
 (*> JOCAML *)
 and path_channel = Pident ident_channel
 and path_process = Pident ident_process
 and path_location = Pident ident_location
 and path_dyn = Pident ident_dyn
 and path_dtm = Pident ident_dtm
-(*< JOCAML *)
 
-(*> JOCAML *)
 let is_predef_type_path = function
   | Pident ident ->
       let stamp = Ident.stamp ident in
@@ -88,6 +87,7 @@ and type_option t = newgenty (Tconstr(path_option, [t], ref Mnil))
 and type_nativeint = newgenty (Tconstr(path_nativeint, [], ref Mnil))
 and type_int32 = newgenty (Tconstr(path_int32, [], ref Mnil))
 and type_int64 = newgenty (Tconstr(path_int64, [], ref Mnil))
+and type_lazy_t t = newgenty (Tconstr(path_lazy_t, [t], ref Mnil))
 (*> JOCAML *)
 and type_process = newgenty (Tconstr(path_process, [], ref Mnil))
 and type_location = newgenty (Tconstr(path_location, [], ref Mnil))
@@ -106,9 +106,12 @@ and ident_division_by_zero = Ident.create "Division_by_zero"
 and ident_stack_overflow = Ident.create "Stack_overflow"
 and ident_sys_blocked_io = Ident.create "Sys_blocked_io"
 and ident_assert_failure = Ident.create "Assert_failure"
+and ident_undefined_recursive_module =
+        Ident.create_predef_exn "Undefined_recursive_module"
 
 let path_match_failure = Pident ident_match_failure
 and path_assert_failure = Pident ident_assert_failure
+and path_undefined_recursive_module = Pident ident_undefined_recursive_module
 
 let build_initial_env add_type add_exception empty_env =
   let decl_abstr =
@@ -120,19 +123,19 @@ let build_initial_env add_type add_exception empty_env =
   and decl_bool =
     {type_params = [];
      type_arity = 0;
-     type_kind = Type_variant["false",[]; "true",[]];
+     type_kind = Type_variant(["false",[]; "true",[]], Public);
      type_manifest = None;
      type_variance = []}
   and decl_unit =
     {type_params = []; 
      type_arity = 0;
-     type_kind = Type_variant["()",[]];
+     type_kind = Type_variant(["()",[]], Public);
      type_manifest = None;
      type_variance = []}
   and decl_exn =
     {type_params = [];
      type_arity = 0;
-     type_kind = Type_variant [];
+     type_kind = Type_variant([], Public);
      type_manifest = None;
      type_variance = []}
   and decl_array =
@@ -141,27 +144,36 @@ let build_initial_env add_type add_exception empty_env =
      type_arity = 1;
      type_kind = Type_abstract;
      type_manifest = None;
-     type_variance = [true, true]}
+     type_variance = [true, true, true]}
   and decl_list =
     let tvar = newgenvar() in
     {type_params = [tvar];
      type_arity = 1;
-     type_kind = Type_variant["[]", []; "::", [tvar; type_list tvar]];
+     type_kind =
+       Type_variant(["[]", []; "::", [tvar; type_list tvar]], Public);
      type_manifest = None;
-     type_variance = [true, false]}
-  and decl_format =
-    {type_params = [newgenvar(); newgenvar(); newgenvar()];
-     type_arity = 3;
+     type_variance = [true, false, false]}
+  and decl_format4 =
+    {type_params = [newgenvar(); newgenvar(); newgenvar(); newgenvar()];
+     type_arity = 4;
      type_kind = Type_abstract;
      type_manifest = None;
-     type_variance = [true, true; true, true; true, true]}
+     type_variance = [true, true, true; true, true, true;
+		      true, true, true; true, true, true]}
   and decl_option =
     let tvar = newgenvar() in
     {type_params = [tvar];
      type_arity = 1;
-     type_kind = Type_variant["None", []; "Some", [tvar]];
+     type_kind = Type_variant(["None", []; "Some", [tvar]], Public);
      type_manifest = None;
-     type_variance = [true, false]}
+     type_variance = [true, false, false]}
+  and decl_lazy_t =
+    let tvar = newgenvar() in
+    {type_params = [tvar];
+     type_arity = 1;
+     type_kind = Type_abstract;
+     type_manifest = None;
+     type_variance = [true, false, false]}
 (*> JOCAML *)
   and decl_channel =
     let tvar = newgenvar() in
@@ -169,7 +181,7 @@ let build_initial_env add_type add_exception empty_env =
     type_arity = 1;
     type_kind = Type_abstract;
     type_manifest = None;
-    type_variance = [false, true]} (* Channels are contravariant *)
+    type_variance = [false, true, true]} (* Channels are contravariant *)
 (*< JOCAML *)
   in
 
@@ -186,6 +198,8 @@ let build_initial_env add_type add_exception empty_env =
   add_exception ident_division_by_zero [] (
   add_exception ident_assert_failure
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
+  add_exception ident_undefined_recursive_module
+                         [newgenty (Ttuple[type_string; type_int; type_int])] (
 (*> JOCAML *)
   add_type ident_channel decl_channel (
   add_type ident_process decl_abstr (
@@ -196,8 +210,9 @@ let build_initial_env add_type add_exception empty_env =
   add_type ident_int64 decl_abstr (
   add_type ident_int32 decl_abstr (
   add_type ident_nativeint decl_abstr (
+  add_type ident_lazy_t decl_lazy_t (
   add_type ident_option decl_option (
-  add_type ident_format decl_format (
+  add_type ident_format4 decl_format4 (
   add_type ident_list decl_list (
   add_type ident_array decl_array (
   add_type ident_exn decl_exn (
@@ -209,8 +224,9 @@ let build_initial_env add_type add_exception empty_env =
   add_type ident_int decl_abstr (
     empty_env)))))))))))))))))))))))))
 (*> JOCAML *)
-    )))))
+    )))))))
 (*< JOCAML *)
+
 
 let builtin_values =
   List.map (fun id -> Ident.make_global id; (Ident.name id, id))
@@ -218,4 +234,4 @@ let builtin_values =
        ident_invalid_argument;
        ident_failure; ident_not_found; ident_sys_error; ident_end_of_file;
        ident_division_by_zero; ident_sys_blocked_io;
-       ident_assert_failure ]
+       ident_assert_failure; ident_undefined_recursive_module ]

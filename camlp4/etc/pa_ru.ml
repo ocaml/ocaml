@@ -29,14 +29,14 @@ EXTEND
           | _ -> <:expr< do { $list:seq$ } >> ] ] ]
   ;
   sequence:
-    [ [ "let"; o = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
+    [ [ "let"; o = OPT "rec"; l = LIST1 let_binding SEP "and"; [ "in" | ";" ];
         el = SELF ->
           let e =
             match el with
             [ [e] -> e
             | _ -> <:expr< do { $list:el$ } >> ]
           in
-          [<:expr< let $rec:o2b o$ $list:l$ in $e$ >>]
+          [<:expr< let $opt:o2b o$ $list:l$ in $e$ >>]
       | e = expr; ";"; el = SELF ->
           let e = let loc = MLast.loc_of_expr e in <:expr< ($e$ : unit) >> in
           [e :: el]

@@ -17,12 +17,14 @@
 type t =                             (* A is all *)
   | Comment of string                (* C *)
   | Deprecated                       (* D *)
+  | Fragile_pat of string            (* E *)
   | Partial_application              (* F *)
-  | Labels_omitted		     (* L *)
+  | Labels_omitted                   (* L *)
   | Method_override of string list   (* M *)
   | Partial_match of string          (* P *)
   | Statement_type                   (* S *)
   | Unused_match                     (* U *)
+  | Unused_pat                       (* U *)
   | Hide_instance_variable of string (* V *)
   | Other of string                  (* X *)
 ;;
@@ -30,18 +32,19 @@ type t =                             (* A is all *)
 let letter = function        (* 'a' is all *)
   | Comment _ ->                'c'
   | Deprecated ->               'd'
+  | Fragile_pat _ ->              'e'
   | Partial_application ->      'f'
   | Labels_omitted ->           'l'
   | Method_override _ ->        'm'
   | Partial_match _ ->          'p'
   | Statement_type ->           's'
-  | Unused_match ->             'u'
+  | Unused_match|Unused_pat ->  'u'
   | Hide_instance_variable _ -> 'v'
   | Other _ ->                  'x'
 ;;
 
 let check c =
-  try ignore (String.index "acdflmpsuvxACDFLMPSUVX" c)
+  try ignore (String.index "acdeflmpsuvxACDEFLMPSUVX" c)
   with _ -> raise (Arg.Bad (Printf.sprintf "unknown warning option %c" c))
 ;;    
 
@@ -78,7 +81,7 @@ let parse_options iserr s =
   done
 ;;
 
-let () = parse_options false "l";;
+let () = parse_options false "el";;
 
 let message = function
   | Partial_match "" -> "this pattern-matching is not exhaustive."
@@ -86,6 +89,14 @@ let message = function
       "this pattern-matching is not exhaustive.\n\
        Here is an example of a value that is not matched:\n" ^ s
   | Unused_match -> "this match case is unused."
+  | Unused_pat   -> "this pattern is unused."
+  | Fragile_pat "" ->
+      "this pattern is fragile. It would hide\n\
+       the addition of new constructors to the data types it matches."
+  | Fragile_pat s ->
+      "this pattern is fragile. It would hide\n\
+       the addition of new constructors to the data types it matches.\n\
+       Here is an example of a more robust pattern:\n" ^ s
   | Labels_omitted ->
       "labels were omitted in the application of this function."
   | Method_override slist ->

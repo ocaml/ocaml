@@ -34,8 +34,10 @@ val end_def: unit -> unit
 val begin_class_def: unit -> unit
 val raise_nongen_level: unit -> unit
 val reset_global_level: unit -> unit
-val increase_global_level: unit -> unit
-val restore_global_level: unit -> unit
+        (* Reset the global level before typing an expression *)
+val increase_global_level: unit -> int
+val restore_global_level: int -> unit
+        (* This pair of functions is only used in Typetexp *)
 
 val newty: type_desc -> type_expr
 val newvar: unit -> type_expr
@@ -51,6 +53,7 @@ val none: type_expr
 val repr: type_expr -> type_expr
         (* Return the canonical representative of a type. *)
 
+val dummy_method: label
 val object_fields: type_expr -> type_expr
 val flatten_fields:
         type_expr -> (string * field_kind * type_expr) list * type_expr
@@ -70,6 +73,7 @@ val set_object_name:
         Ident.t -> type_expr -> type_expr list -> type_expr -> unit
 val remove_object_name: type_expr -> unit
 val hide_private_methods: type_expr -> unit
+val find_cltype_for_path: Env.t -> Path.t -> type_declaration * type_expr
 
 val sort_row_fields: (label * row_field) list -> (label * row_field) list
 val merge_row_fields:
@@ -83,8 +87,16 @@ val generalize: type_expr -> unit
         (* Generalize in-place the given type *)
 val iterative_generalization: int -> type_expr list -> type_expr list
         (* Efficient repeated generalization of a type *)
-val make_nongen: type_expr -> unit
-        (* Make non-generalizable the given type *)
+val generalize_expansive: Env.t -> type_expr -> unit
+        (* Generalize the covariant part of a type, making
+           contravariant branches non-generalizable *)
+val generalize_global: type_expr -> unit
+        (* Generalize the structure of a type, lowering variables
+           to !global_level *)
+val generalize_structure: type_expr -> unit
+        (* Same, but variables are only lowered to !current_level *)
+val generalize_spine: type_expr -> unit
+        (* Special function to generalize a method during inference *)
 val correct_levels: type_expr -> type_expr
         (* Returns a copy with decreasing levels *)
 val limited_generalize: type_expr -> type_expr -> unit
@@ -98,8 +110,6 @@ val instance_list: type_expr list -> type_expr list
 val instance_constructor:
         constructor_description -> type_expr list * type_expr
         (* Same, for a constructor *)
-val instance_label: label_description -> type_expr * type_expr
-        (* Same, for a label *)
 val instance_parameterized_type:
         type_expr list -> type_expr -> type_expr list * type_expr
 val instance_parameterized_type_2:
@@ -107,12 +117,19 @@ val instance_parameterized_type_2:
         type_expr list * type_expr list * type_expr
 val instance_class:
         type_expr list -> class_type -> type_expr list * class_type
+val instance_poly:
+        bool -> type_expr list -> type_expr -> type_expr list * type_expr
+        (* Take an instance of a type scheme containing free univars *)
+val instance_label:
+        bool -> label_description -> type_expr list * type_expr * type_expr
+        (* Same, for a label *)
 val apply:
         Env.t -> type_expr list -> type_expr -> type_expr list -> type_expr
         (* [apply [p1...pN] t [a1...aN]] match the arguments [ai] to
         the parameters [pi] and returns the corresponding instance of
         [t]. Exception [Cannot_apply] is raised in case of failure. *)
 
+val expand_head_once: Env.t -> type_expr -> type_expr
 val expand_head: Env.t -> type_expr -> type_expr
 val full_expand: Env.t -> type_expr -> type_expr
 
@@ -120,6 +137,9 @@ val enforce_constraints: Env.t -> type_expr -> unit
 
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
+val unify_var: Env.t -> type_expr -> type_expr -> unit
+        (* Same as [unify], but allow free univars when first type
+           is a variable. *)
 val filter_arrow: Env.t -> type_expr -> label -> type_expr * type_expr
         (* A special case of unification (with l:'a -> 'b). *)
 val make_channel : type_expr -> type_expr
@@ -130,12 +150,21 @@ val filter_method: Env.t -> string -> private_flag -> type_expr -> type_expr
         (* A special case of unification (with {m : 'a; 'b}). *)
 val check_filter_method: Env.t -> string -> private_flag -> type_expr -> unit
         (* A special case of unification (with {m : 'a; 'b}), returning unit. *)
-val occur: Env.t -> type_expr -> type_expr -> unit
+val deep_occur: type_expr -> type_expr -> bool
 val filter_self_method:
         Env.t -> string -> private_flag -> (Ident.t * type_expr) Meths.t ref ->
         type_expr -> Ident.t * type_expr
 val moregeneral: Env.t -> bool -> type_expr -> type_expr -> bool
         (* Check if the first type scheme is more general than the second. *)
+
+val rigidify: type_expr -> type_expr list
+        (* "Rigidify" a type and return its type variable *)
+val all_distinct_vars: Env.t -> type_expr list -> bool
+        (* Check those types are all distinct type variables *)
+val matches : Env.t -> type_expr -> type_expr -> bool
+        (* Same as [moregeneral false], implemented using the two above
+           functions and backtracking. Ignore levels *)
+
 type class_match_failure =
     CM_Virtual_class
   | CM_Parameter_arity_mismatch of int * int
@@ -164,9 +193,9 @@ val match_class_declarations:
         class_type -> class_match_failure list
         (* Check if the first class type is more general than the second. *)
 
-val enlarge_type: Env.t -> type_expr -> type_expr
-        (* Make a type larger *)
-val subtype : Env.t -> type_expr -> type_expr -> unit -> unit
+val enlarge_type: Env.t -> type_expr -> type_expr * bool
+        (* Make a type larger, flag is true if some pruning had to be done *)
+val subtype: Env.t -> type_expr -> type_expr -> unit -> unit
         (* [subtype env t1 t2] checks that [t1] is a subtype of [t2].
            It accumulates the constraints the type variables must
            enforce and returns a function that inforce this
@@ -186,7 +215,7 @@ val nondep_class_declaration:
 val nondep_cltype_declaration:
         Env.t -> Ident.t -> cltype_declaration -> cltype_declaration
         (* Same for class type declarations. *)
-val correct_abbrev: Env.t -> Ident.t -> type_expr list -> type_expr -> unit
+val correct_abbrev: Env.t -> Path.t -> type_expr list -> type_expr -> unit
 val cyclic_abbrev: Env.t -> Ident.t -> type_expr -> bool
 val normalize_type: Env.t -> type_expr -> unit
 
@@ -209,3 +238,6 @@ val self_type: class_type -> type_expr
 val class_type_arity: class_type -> int
 val arity: type_expr -> int
         (* Return the arity (as for curried functions) of the given type. *)
+
+val collapse_conj_params: Env.t -> type_expr list -> unit
+        (* Collapse conjunctive types in class parameters *)

@@ -39,11 +39,12 @@ let lines_to_chars n ~text:s =
   in ltc n ~pos:0
 
 let in_loc loc ~pos =
-  loc.loc_ghost || pos >= loc.loc_start && pos < loc.loc_end
+  loc.loc_ghost || pos >= loc.loc_start.Lexing.pos_cnum
+                   && pos < loc.loc_end.Lexing.pos_cnum
 
 let le_loc loc1 loc2 =
-  loc1.loc_start <= loc2.loc_start
-  && loc1.loc_end >= loc2.loc_end
+  loc1.loc_start.Lexing.pos_cnum <= loc2.loc_start.Lexing.pos_cnum
+  && loc1.loc_end.Lexing.pos_cnum >= loc2.loc_end.Lexing.pos_cnum
 
 let add_found ~found sol ~env ~loc =
   if loc.loc_ghost then () else
@@ -127,7 +128,8 @@ let rec search_pos_type t ~pos ~env =
   | Ptyp_class (lid, tl, _) ->
       List.iter tl ~f:(search_pos_type ~pos ~env);
       add_found_sig (`Type, lid) ~env ~loc:t.ptyp_loc
-  | Ptyp_alias (t, _) -> search_pos_type ~pos ~env t
+  | Ptyp_alias (t, _)
+  | Ptyp_poly (_, t) -> search_pos_type ~pos ~env t
   end
 
 let rec search_pos_class_type cl ~pos ~env =
@@ -163,14 +165,19 @@ let search_pos_type_decl td ~pos ~env =
       Some t -> search_pos_type t ~pos ~env
     | None -> ()
     end;
-    begin match td.ptype_kind with
+    let rec search_tkind = function
       Ptype_abstract -> ()
-    | Ptype_variant dl ->
+    | Ptype_variant (dl, _) ->
         List.iter dl
           ~f:(fun (_, tl) -> List.iter tl ~f:(search_pos_type ~pos ~env))
-    | Ptype_record dl ->
-        List.iter dl ~f:(fun (_, _, t) -> search_pos_type t ~pos ~env)
-    end
+    | Ptype_record (dl, _) ->
+        List.iter dl ~f:(fun (_, _, t) -> search_pos_type t ~pos ~env) in
+    search_tkind td.ptype_kind;
+    List.iter td.ptype_cstrs ~f:
+      begin fun (t1, t2, _) ->
+        search_pos_type t1 ~pos ~env;
+        search_pos_type t2 ~pos ~env
+      end
   end
   
 let rec search_pos_signature l ~pos ~env =
@@ -199,6 +206,8 @@ let rec search_pos_signature l ~pos ~env =
           add_found_sig (`Type, Lident "exn") ~env ~loc:pt.psig_loc
       | Psig_module (_, t) -> 
           search_pos_module t ~pos ~env
+      | Psig_recmodule decls ->
+          List.iter decls ~f:(fun (_, t) -> search_pos_module t ~pos ~env)
       | Psig_modtype (_, Pmodtype_manifest t) ->
           search_pos_module t ~pos ~env
       | Psig_modtype _ -> ()
@@ -247,6 +256,7 @@ type module_widgets =
 
 let shown_modules = Hashtbl.create 17
 let default_frame = ref None
+let set_path = ref (fun _ ~sign -> assert false)
 let filter_modules () =
   Hashtbl.iter
     (fun key data ->
@@ -254,7 +264,7 @@ let filter_modules () =
         Hashtbl.remove shown_modules key)
     shown_modules
 let add_shown_module path ~widgets =
-  Hashtbl'.add shown_modules ~key:path ~data:widgets
+  Hashtbl.add shown_modules path widgets
 let find_shown_module path =
   try
     filter_modules ();
@@ -319,7 +329,7 @@ let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
     try match path, !default_frame with
       None, Some ({mw_title=Some label} as mw) when not detach ->
         Button.configure mw.mw_detach
-          ~command:(fun () -> view_signature sign ~title ~env);
+          ~command:(fun () -> view_signature sign ~title ~env ~detach:true);
         pack [mw.mw_detach] ~side:`Left;
         Pack.forget [mw.mw_edit; mw.mw_intf];
         List.iter ~f:destroy (Winfo.children mw.mw_frame);
@@ -334,6 +344,7 @@ let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
             view_module path ~env;
             find_shown_module path
         in
+        (try !set_path path ~sign with _ -> ());
         begin match mw.mw_title with None -> ()
         | Some label ->
             Label.configure label ~text:title;
@@ -348,8 +359,8 @@ let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
             try
               let id = head_id path in
               let file =
-                Misc.find_in_path !Config.load_path
-                  (String.uncapitalize (Ident.name id) ^ ext) in
+                Misc.find_in_path_uncap !Config.load_path
+                  ((Ident.name id) ^ ext) in
               Button.configure button
                 ~command:(fun () -> edit_source ~file ~path ~sign);
               if !repack then Pack.forget [button] else
@@ -382,9 +393,11 @@ let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
             Syntaxerr.Unclosed(l,_,_,_) -> l
           | Syntaxerr.Other l -> l
         in
-        Jg_text.tag_and_see  tw ~start:(tpos l.loc_start)
-          ~stop:(tpos l.loc_end) ~tag:"error"; []
-      | Lexer.Error (_, s, e) ->
+        Jg_text.tag_and_see  tw ~start:(tpos l.loc_start.Lexing.pos_cnum)
+          ~stop:(tpos l.loc_end.Lexing.pos_cnum) ~tag:"error"; []
+      | Lexer.Error (_, l) ->
+         let s = l.loc_start.Lexing.pos_cnum in
+         let e = l.loc_end.Lexing.pos_cnum in
          Jg_text.tag_and_see tw ~start:(tpos s) ~stop:(tpos e) ~tag:"error"; []
   in
   Jg_bind.enter_focus tw;
@@ -652,13 +665,33 @@ let rec search_pos_structure ~pos str =
   | Tstr_exception _ -> ()
   | Tstr_exn_rebind(_, _) -> ()
   | Tstr_module (_, m) -> search_pos_module_expr m ~pos
+  | Tstr_recmodule bindings ->
+      List.iter bindings ~f:(fun (_, m) -> search_pos_module_expr m ~pos)
   | Tstr_modtype _ -> ()
   | Tstr_open _ -> ()
   | Tstr_class l ->
       List.iter l ~f:(fun (id, _, _, cl) -> search_pos_class_expr cl ~pos)
   | Tstr_cltype _ -> ()
   | Tstr_include (m, _) -> search_pos_module_expr m ~pos
+  | Tstr_loc _|Tstr_def _ -> assert false (* No browser for jocaml *)
   end
+
+and search_pos_class_structure ~pos cls =
+  List.iter cls.cl_field ~f:
+    begin function
+        Cf_inher (cl, _, _) ->
+          search_pos_class_expr cl ~pos
+      | Cf_val (_, _, exp) -> search_pos_expr exp ~pos
+      | Cf_meth (_, exp) -> search_pos_expr exp ~pos
+      | Cf_let (_, pel, iel) ->
+          List.iter pel ~f:
+            begin fun (pat, exp) ->
+              search_pos_pat pat ~pos ~env:exp.exp_env;
+              search_pos_expr exp ~pos
+            end;
+          List.iter iel ~f:(fun (_,exp) -> search_pos_expr exp ~pos)
+      | Cf_init exp -> search_pos_expr exp ~pos
+    end
 
 and search_pos_class_expr ~pos cl =
   if in_loc cl.cl_loc ~pos then begin
@@ -667,21 +700,7 @@ and search_pos_class_expr ~pos cl =
         add_found_str (`Class (path, cl.cl_type))
           ~env:!start_env ~loc:cl.cl_loc
     | Tclass_structure cls ->
-        List.iter cls.cl_field ~f:
-          begin function
-              Cf_inher (cl, _, _) ->
-                search_pos_class_expr cl ~pos
-            | Cf_val (_, _, exp) -> search_pos_expr exp ~pos
-            | Cf_meth (_, exp) -> search_pos_expr exp ~pos
-            | Cf_let (_, pel, iel) ->
-                List.iter pel ~f:
-                  begin fun (pat, exp) ->
-                    search_pos_pat pat ~pos ~env:exp.exp_env;
-                    search_pos_expr exp ~pos
-                  end;
-                List.iter iel ~f:(fun (_,exp) -> search_pos_expr exp ~pos)
-            | Cf_init exp -> search_pos_expr exp ~pos
-          end
+	search_pos_class_structure ~pos cls
     | Tclass_fun (pat, iel, cl, _) ->
         search_pos_pat pat ~pos ~env:pat.pat_env;
         List.iter iel ~f:(fun (_,exp) -> search_pos_expr exp ~pos);
@@ -786,6 +805,14 @@ and search_pos_expr ~pos exp =
   | Texp_assertfalse -> ()
   | Texp_assert exp ->
       search_pos_expr exp ~pos
+  | Texp_lazy exp ->
+      search_pos_expr exp ~pos
+  | Texp_object (cls, _, _) ->
+      	search_pos_class_structure ~pos cls
+  | Texp_dyntype _|Texp_coerce (_, _)|Texp_dynamic _|Texp_loc (_, _)
+  | Texp_def (_, _)|Texp_reply (_, _)|Texp_par (_, _)|Texp_exec _|Texp_spawn _
+  | Texp_asyncsend (_, _)|Texp_null
+    -> assert false (* no browser for jocaml *)
   end;
   add_found_str (`Exp(`Expr, exp.exp_type)) ~env:exp.exp_env ~loc:exp.exp_loc
   end
@@ -829,6 +856,7 @@ and search_pos_module_expr ~pos m =
     | Tmod_apply (a, b, _) ->
         search_pos_module_expr a ~pos; search_pos_module_expr b ~pos
     | Tmod_constraint (m, _, _) -> search_pos_module_expr m ~pos
+    | Tmod_dyntype _ -> assert false (* no browser for jocaml *)
     end;
     add_found_str (`Module (Pident (Ident.create "M"), m.mod_type))
       ~env:m.mod_env ~loc:m.mod_loc
@@ -836,3 +864,18 @@ and search_pos_module_expr ~pos m =
 
 let search_pos_structure ~pos str =
   observe ~ref:found_str (search_pos_structure ~pos) str
+
+open Stypes
+
+let search_pos_ti ~pos = function
+    Ti_pat p   -> search_pos_pat ~pos ~env:p.pat_env p
+  | Ti_expr e  -> search_pos_expr ~pos e
+  | Ti_class c -> search_pos_class_expr ~pos c
+  | Ti_mod m   -> search_pos_module_expr ~pos m
+
+let rec search_pos_info ~pos = function
+    [] -> []
+  | ti :: l ->
+      if in_loc ~pos (get_location ti)
+      then observe ~ref:found_str (search_pos_ti ~pos) ti
+      else  search_pos_info ~pos l

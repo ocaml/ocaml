@@ -25,14 +25,17 @@ val initial_global_table: unit -> Obj.t array
 val output_global_map: out_channel -> unit
 val output_primitive_names: out_channel -> unit
 val output_primitive_table: out_channel -> unit
+val data_global_map: unit -> Obj.t
+val data_primitive_names: unit -> string
 
 (* Functions for the toplevel *)
 
-val init_toplevel: unit -> unit
+val init_toplevel: unit -> (string * Digest.t) list
 val update_global_table: unit -> unit
 val get_global_value: Ident.t -> Obj.t
 val assign_global_value: Ident.t -> Obj.t -> unit
 val get_global_position: Ident.t -> int
+val check_global_initialized: (reloc_info * int) list -> unit
 
 type global_map
 
@@ -47,6 +50,7 @@ type error =
     Undefined_global of string
   | Unavailable_primitive of string
   | Wrong_vm of string
+  | Uninitialized_global of string
 
 exception Error of error
 

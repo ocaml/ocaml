@@ -14,8 +14,8 @@
 
 include ../config/Makefile
 
-CAMLC=../boot/ocamlrun ../ocamlc -I ../boot
-COMPFLAGS=$(INCLUDES)
+CAMLC=../ocamlcomp.sh
+COMPFLAGS=-warn-error A $(INCLUDES)
 LINKFLAGS=-linkall -I ../otherlibs/unix
 CAMLYACC=../boot/ocamlyacc
 YACCFLAGS=
@@ -30,20 +30,21 @@ INCLUDES=\
 OTHEROBJS=\
   ../otherlibs/unix/unix.cma \
   ../utils/misc.cmo ../utils/config.cmo \
-  ../utils/tbl.cmo ../utils/clflags.cmo \
+  ../utils/tbl.cmo ../utils/clflags.cmo ../utils/consistbl.cmo \
   ../parsing/longident.cmo \
   ../typing/ident.cmo ../typing/path.cmo ../typing/types.cmo \
   ../typing/btype.cmo ../typing/primitive.cmo ../typing/typedtree.cmo \
   ../typing/subst.cmo ../typing/predef.cmo \
-  ../typing/datarepr.cmo ../typing/env.cmo \
+  ../typing/datarepr.cmo ../typing/env.cmo ../typing/oprint.cmo \
   ../typing/ctype.cmo ../typing/printtyp.cmo ../typing/mtype.cmo \
   ../bytecomp/runtimedef.cmo ../bytecomp/bytesections.cmo \
-  ../bytecomp/dll.cmo ../bytecomp/symtable.cmo \
-  ../bytecomp/opcodes.cmo ../bytecomp/meta.cmo \
+  ../bytecomp/dll.cmo ../bytecomp/meta.cmo ../bytecomp/symtable.cmo \
+  ../bytecomp/opcodes.cmo \
   ../toplevel/genprintval.cmo \
   ../otherlibs/dynlink/dynlink.cmo
 
 OBJS=\
+	int64ops.cmo \
 	primitives.cmo \
 	unix_tools.cmo \
 	debugger_config.cmo \
@@ -54,6 +55,7 @@ OBJS=\
 	debugcom.cmo \
 	exec.cmo \
 	source.cmo \
+	pos.cmo \
 	checkpoints.cmo \
 	symbols.cmo \
 	events.cmo \
@@ -76,7 +78,7 @@ OBJS=\
 all: ocamldebug$(EXE)
 
 ocamldebug$(EXE): $(OBJS) $(OTHEROBJS)
-	$(CAMLC) $(LINKFLAGS) -o ocamldebug$(EXE) $(OTHEROBJS) $(OBJS)
+	$(CAMLC) $(LINKFLAGS) -o ocamldebug$(EXE) -linkall $(OTHEROBJS) $(OBJS)
 
 install:
 	cp ocamldebug$(EXE) $(BINDIR)/ocamldebug$(EXE)

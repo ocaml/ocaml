@@ -31,6 +31,7 @@ and dynlink = ref supports_shared_libraries
 and failsafe = ref false    (* whether to fall back on static build only *)
 and c_libs = ref []         (* libs to pass to mksharedlib and ocamlc -cclib *)
 and c_opts = ref []      (* options to pass to mksharedlib and ocamlc -ccopt *)
+and ld_opts = ref []        (* options to pass only to the linker *)
 and ocamlc = ref (Filename.concat bindir "ocamlc")
 and ocamlopt = ref (Filename.concat bindir "ocamlopt")
 and output = ref "a"        (* Output name for Caml part of library *)
@@ -75,6 +76,10 @@ let parse_arguments argv =
       caml_opts := next_arg () :: "-I" :: !caml_opts
     else if s = "-failsafe" then
       failsafe := true
+    else if s = "-h" || s = "-help" then
+      raise (Bad_argument "")
+    else if s = "-ldopt" then
+      ld_opts := next_arg () :: !ld_opts
     else if s = "-linkall" then
       caml_opts := s :: !caml_opts
     else if starts_with s "-l" then
@@ -106,6 +111,10 @@ let parse_arguments argv =
       rpath := chop_prefix s "-Wl,-R" :: !rpath
     else if s = "-v" || s = "-verbose" then
       verbose := true
+    else if starts_with s "-F" then
+      c_opts := s :: !c_opts
+    else if s = "-framework" then
+      (let a = next_arg() in c_opts := a :: s :: !c_opts)
     else if starts_with s "-" then
       prerr_endline ("Unknown option " ^ s)
     else
@@ -115,7 +124,7 @@ let parse_arguments argv =
   List.iter
     (fun r -> r := List.rev !r)
     [ bytecode_objs; native_objs; c_objs; caml_libs; caml_opts; 
-      c_libs; c_objs; rpath ];
+      c_libs; c_objs; c_opts; ld_opts; rpath ];
   if !output_c = "" then output_c := !output
 
 let usage = "\
@@ -127,6 +136,7 @@ Options are:
   -dllpath <dir> Add <dir> to the run-time search path for DLLs
   -I <dir>       Add <dir> to the path searched for Caml object files
   -failsafe      fall back to static linking if DLL construction failed
+  -ldopt <opt>   C option passed to the shared linker only
   -linkall       Build Caml archive with link-all behavior
   -l<lib>        Specify a dependent C library
   -L<dir>        Add <dir> to the path searched for C libraries
@@ -140,6 +150,8 @@ Options are:
   -Wl,-rpath,<dir>     Same as -dllpath <dir>
   -Wl,-rpath -Wl,<dir> Same as -dllpath <dir>
   -Wl,-R<dir>          Same as -dllpath <dir>
+  -F<dir>        Specify a framework directory (MacOSX)
+  -framework <name>    Use framework <name> (MacOSX)
 "
 
 let command cmd =
@@ -152,45 +164,59 @@ let scommand cmd =
 let safe_remove s =
   try Sys.remove s with Sys_error _ -> ()
 
+let make_set l =
+  let rec merge l = function
+    []     -> List.rev l
+  | p :: r -> if List.mem p l then merge l r else merge (p::l) r
+  in
+  merge [] l
+
 let make_rpath flag =
   if !rpath = [] || flag = ""
   then ""
-  else flag ^ String.concat ":" !rpath
+  else flag ^ String.concat ":" (make_set !rpath)
 
 let make_rpath_ccopt flag =
   if !rpath = [] || flag = "" 
   then ""
-  else "-ccopt " ^ flag ^ String.concat ":" !rpath
+  else "-ccopt " ^ flag ^ String.concat ":" (make_set !rpath)
 
 let prefix_list pref l =
   List.map (fun s -> pref ^ s) l
+
+let prepostfix pre name post =
+  let base = Filename.basename name in
+  let dir = Filename.dirname name in
+  Filename.concat dir (pre ^ base ^ post)
+;;
 
 let build_libs () =
   if !c_objs <> [] then begin
     if !dynlink then begin
       let retcode = command
-        (sprintf "%s dll%s.so %s %s %s %s"
+        (sprintf "%s %s %s %s %s %s %s"
                     mksharedlib
-                    !output_c
+                    (prepostfix "dll" !output_c ".so")
                     (String.concat " " !c_objs)
                     (String.concat " " !c_opts)
+                    (String.concat " " !ld_opts)
                     (make_rpath mksharedlib_rpath)
                     (String.concat " " !c_libs)) in
       if retcode <> 0 then if !failsafe then dynlink := false else exit 2
     end;
-    safe_remove ("lib" ^ !output_c ^ ".a");
+    safe_remove (prepostfix "lib" !output_c ".a");
     scommand
-      (sprintf "ar rc lib%s.a %s"
-                  !output_c
+      (sprintf "ar rc %s %s"
+                  (prepostfix "lib" !output_c ".a")
                   (String.concat " " !c_objs));
     scommand
-      (sprintf "%s lib%s.a"
+      (sprintf "%s %s"
                   ranlib
-                  !output_c)
+                  (prepostfix "lib" !output_c ".a"))
   end;
   if !bytecode_objs <> [] then
     scommand
-      (sprintf "%s -a %s -o %s.cma %s %s -dllib -l%s -cclib -l%s %s %s %s"
+      (sprintf "%s -a %s -o %s.cma %s %s -dllib -l%s -cclib -l%s %s %s %s %s"
                   !ocamlc
                   (if !dynlink then "" else "-custom")
                   !output
@@ -200,10 +226,11 @@ let build_libs () =
                   !output_c
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
                   (make_rpath_ccopt bytecc_rpath)
-                  (String.concat " " (prefix_list "-cclib " !c_libs)));
+                  (String.concat " " (prefix_list "-cclib " !c_libs))
+                  (String.concat " " !caml_libs));
   if !native_objs <> [] then
     scommand
-      (sprintf "%s -a -o %s.cmxa %s %s -cclib -l%s %s %s %s"
+      (sprintf "%s -a -o %s.cmxa %s %s -cclib -l%s %s %s %s %s"
                   !ocamlopt
                   !output
                   (String.concat " " !caml_opts)
@@ -211,13 +238,16 @@ let build_libs () =
                   !output_c
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
                   (make_rpath_ccopt nativecc_rpath)
-                  (String.concat " " (prefix_list "-cclib " !c_libs)))
+                  (String.concat " " (prefix_list "-cclib " !c_libs))
+                  (String.concat " " !caml_libs))
 
 let _ =
   try
     parse_arguments Sys.argv;
     build_libs()
   with
+  | Bad_argument "" ->
+      prerr_string usage; exit 0
   | Bad_argument s ->
       prerr_endline s; prerr_string usage; exit 4
   | Sys_error s ->

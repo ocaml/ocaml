@@ -13,18 +13,16 @@
 # $Id$
 
 # The lexer generator
-
-CAMLC=../boot/ocamlrun ../boot/ocamlc -I ../boot
-CAMLOPT=../boot/ocamlrun ../ocamlopt -I ../stdlib
-COMPFLAGS=
-LINKFLAGS=
+CAMLC=../boot/ocamlrun ../boot/ocamlc -nostdlib -I ../boot
+CAMLOPT=../boot/ocamlrun ../ocamlopt -nostdlib -I ../stdlib
+COMPFLAGS=-warn-error A
 CAMLYACC=../boot/ocamlyacc
-YACCFLAGS=
+YACCFLAGS=-v
 CAMLLEX=../boot/ocamlrun ../boot/ocamllex
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
-DEPFLAGS=
 
-OBJS=parser.cmo lexer.cmo lexgen.cmo compact.cmo output.cmo main.cmo
+
+OBJS=cset.cmo syntax.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo compact.cmo common.cmo output.cmo outputbis.cmo main.cmo
 
 all: ocamllex
 allopt: ocamllex.opt
@@ -37,13 +35,13 @@ ocamllex.opt: $(OBJS:.cmo=.cmx)
 
 clean::
 	rm -f ocamllex ocamllex.opt
-	rm -f *.cmo *.cmi *.cmx *.o
+	rm -f *.cmo *.cmi *.cmx *.o *~
 
 parser.ml parser.mli: parser.mly
 	$(CAMLYACC) $(YACCFLAGS) parser.mly
 
 clean::
-	rm -f parser.ml parser.mli
+	rm -f parser.ml parser.mli parser.output
 
 beforedepend:: parser.ml parser.mli
 

@@ -54,7 +54,7 @@ value weakset_add(value ar,value el) /* ML */
     if(Wosize_val(ar) > WEAKSET_TRIGGER_GC){
       Begin_roots2(ar,el); /* (ar,el) */
       minor_collection();      
-      finish_major_cycle();
+      caml_finish_major_cycle();
       End_roots(); /* (ar,el) */
       free = Int_val(Field(ar,1));
     }
@@ -104,8 +104,8 @@ value weakset_array (value ar) /* ML */
       End_roots();
       for(i=2;i<len;i++){
 	elt = Field (ar, i);
-	if (gc_phase == Phase_mark)  {
-	  darken (elt, NULL);
+	if (caml_gc_phase == Phase_mark)  {
+	  caml_darken (elt, NULL);
 	}
 	Field(res,i-2) = elt;
       }
@@ -116,8 +116,8 @@ value weakset_array (value ar) /* ML */
       
       for(i=2;i<len;i++){
 	elt = Field (ar, i);
-	if (gc_phase == Phase_mark){
-	  darken (elt, NULL);
+	if (caml_gc_phase == Phase_mark){
+	  caml_darken (elt, NULL);
 	}
 	initialize(&Field(res,i-2),elt);
       }
@@ -133,8 +133,8 @@ value weakset_remove (value ar, value el) /* ML */
   len = Int_val(Field(ar,1));
   for(i=2;i<len;i++){
     elt=Field (ar, i);
-    if (gc_phase == Phase_mark) {
-    darken (elt, NULL);}
+    if (caml_gc_phase == Phase_mark) {
+    caml_darken (elt, NULL);}
     if(elt == el){
       Modify(&Field (ar, i),Field (ar, len-1));
       Field(ar,1) = Val_int(len-1);

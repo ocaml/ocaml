@@ -44,7 +44,7 @@ val type_class_arg_pattern:
         Typedtree.pattern * (Ident.t * Ident.t * type_expr) list *
         Env.t * Env.t
 val type_self_pattern:
-        string -> Env.t -> Env.t -> Env.t -> Parsetree.pattern ->
+        string -> type_expr -> Env.t -> Env.t -> Env.t -> Parsetree.pattern ->
         Typedtree.pattern *
         (Ident.t * type_expr) Meths.t ref *
         (Ident.t * Asttypes.mutable_flag * type_expr) Vars.t ref *
@@ -62,6 +62,9 @@ val type_argument:
 val option_some: Typedtree.expression -> Typedtree.expression
 val option_none: type_expr -> Location.t -> Typedtree.expression
 val extract_option_type: Env.t -> type_expr -> type_expr
+val iter_pattern: (Typedtree.pattern -> unit) -> Typedtree.pattern -> unit
+val reset_delayed_checks: unit -> unit
+val force_delayed_checks: unit -> unit
 
 val self_coercion : (Path.t * Location.t list ref) list ref
 
@@ -85,18 +88,22 @@ type error =
   | Undefined_inherited_method of string
   | Unbound_class of Longident.t
   | Virtual_class of Longident.t
+  | Private_type of type_expr
+  | Private_label of Longident.t * type_expr
   | Unbound_instance_variable of string
   | Instance_variable_not_mutable of string
   | Not_subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
   | Outside_class
   | Value_multiply_overridden of string
-  | Coercion_failure of type_expr * type_expr * (type_expr * type_expr) list
+  | Coercion_failure of
+      type_expr * type_expr * (type_expr * type_expr) list * bool
   | Too_many_arguments of bool * type_expr
   | Abstract_wrong_label of label * type_expr
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
+  | Less_general of string * (type_expr * type_expr) list
 (*> JOCAML *)
   | Expr_as_proc
   | Proc_as_expr
@@ -113,3 +120,7 @@ val report_error: formatter -> error -> unit
 
 (* Forward declaration, to be filled in by Typemod.type_module *)
 val type_module: (Env.t -> Parsetree.module_expr -> Typedtree.module_expr) ref
+(* Forward declaration, to be filled in by Typeclass.class_structure *)
+val type_object:
+  (Env.t -> Location.t -> Parsetree.class_structure ->
+   Typedtree.class_structure * class_signature * string list) ref

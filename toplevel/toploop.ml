@@ -52,7 +52,7 @@ let rec eval_path = function
       if Ident.persistent id || Ident.global id then
         Symtable.get_global_value id
       else begin
-        let name = Ident.name id in
+        let name = Translmod.toplevel_name id in
         try
           Hashtbl.find toplevel_value_bindings name
         with Not_found ->
@@ -77,9 +77,13 @@ module Printer = Genprintval.Make(Obj)(EvalPath)
 let max_printer_depth = ref 100
 let max_printer_steps = ref 300
 
-let print_out_value = ref Printer.print_outval
-let print_out_type = Printtyp.outcome_type
-let print_out_sig_item = Printtyp.outcome_sig_item
+let print_out_value = Oprint.out_value
+let print_out_type = Oprint.out_type
+let print_out_class_type = Oprint.out_class_type
+let print_out_module_type = Oprint.out_module_type
+let print_out_sig_item = Oprint.out_sig_item
+let print_out_signature = Oprint.out_signature
+let print_out_phrase = Oprint.out_phrase
 
 let print_untyped_exception ppf obj =
   !print_out_value ppf (Printer.outval_of_untyped_exception obj)
@@ -100,6 +104,10 @@ let print_location = Location.print
 let print_warning = Location.print_warning
 let input_name = Location.input_name
 
+(* Hooks for initialization *)
+
+let toplevel_startup_hook = ref (fun () -> ())
+
 (* Load in-core and execute a lambda term *)
 
 let may_trace = ref false (* Global lock on tracing *)
@@ -118,16 +126,23 @@ let load_lambda ppf lam =
   let can_free = (fun_code = []) in
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code reloc;
+  Symtable.check_global_initialized reloc;
   Symtable.update_global_table();
   try
     may_trace := true;
     let retval = (Meta.reify_bytecode code code_size) () in
     may_trace := false;
-    if can_free then Meta.static_free code;
+    if can_free then begin 
+      Meta.static_release_bytecode code code_size;
+      Meta.static_free code;
+    end;
     Result retval
   with x ->
     may_trace := false;
-    if can_free then Meta.static_free code;
+    if can_free then begin 
+      Meta.static_release_bytecode code code_size;
+      Meta.static_free code;
+    end;
     Symtable.restore_state initial_symtable;
     Exception x
 
@@ -174,20 +189,6 @@ let rec item_list env = function
      | None -> []
      | Some (tree, valopt, items) -> (tree, valopt) :: item_list env items
 
-let rec print_items ppf =
-  function
-  | [] -> ()
-  | (tree, valopt) :: items ->
-      begin match valopt with
-      | Some v ->
-          fprintf ppf "@[<2>%a =@ %a@]" !print_out_sig_item tree
-            !print_out_value v
-      | None ->
-          fprintf ppf "@[%a@]" !print_out_sig_item tree
-      end;
-      if items <> [] then
-        fprintf ppf "@ %a" print_items items;;
-
 (* The current typing environment for the toplevel *)
 
 let toplevel_env = ref Env.empty
@@ -195,15 +196,7 @@ let toplevel_env = ref Env.empty
 (* Print an exception produced by an evaluation *)
 
 let print_out_exception ppf exn outv =
-  match exn with
-  | Sys.Break ->
-      fprintf ppf "Interrupted.@."
-  | Out_of_memory ->
-      fprintf ppf "Out of memory during evaluation.@."
-  | Stack_overflow ->
-      fprintf ppf "Stack overflow during evaluation (looping recursion?).@."
-  | _ ->
-      fprintf ppf "@[Exception:@ %a.@]@." !print_out_value outv
+  !print_out_phrase ppf (Ophr_exception (exn, outv))
 
 let print_exception_outcome ppf exn =
   if exn = Out_of_memory then Gc.full_major ();
@@ -217,22 +210,13 @@ let directive_table = (Hashtbl.create 13 : (string, directive_fun) Hashtbl.t)
 
 (* Execute a toplevel phrase *)
 
-let print_phrase ppf =
-  function
-  | Ophr_eval (outv, ty) ->
-      fprintf ppf "@[- : %a@ =@ %a@]@."
-        !print_out_type ty !print_out_value outv
-  | Ophr_signature [] -> ()
-  | Ophr_signature items -> fprintf ppf "@[<v>%a@]@." print_items items
-  | Ophr_exception (exn, outv) -> print_out_exception ppf exn outv
-
-let print_out_phrase = ref print_phrase
-
 let execute_phrase print_outcome ppf phr =
   match phr with
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
+      Typecore.reset_delayed_checks ();
       let (str, sg, newenv) = Typemod.type_structure oldenv sstr in
+      Typecore.force_delayed_checks ();
       let lam = Translmod.transl_toplevel_definition str in
       Warnings.check_fatal ();
       begin try
@@ -248,7 +232,8 @@ let execute_phrase print_outcome ppf phr =
                     let ty = Printtyp.tree_of_type_scheme exp.exp_type in
                     Ophr_eval (outv, ty)
                 | [] -> Ophr_signature []
-                | _ -> Ophr_signature (item_list newenv sg)
+                | _ -> Ophr_signature (item_list newenv
+                                             (Typemod.simplify_signature sg))
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;
@@ -303,6 +288,7 @@ let use_file ppf name =
     let filename = find_in_path !Config.load_path name in
     let ic = open_in_bin filename in
     let lb = Lexing.from_channel ic in
+    Location.init lb filename;
     (* Skip initial #! line if any *)
     Lexer.skip_sharp_bang lb;
     let success =
@@ -330,6 +316,26 @@ let use_silently ppf name =
 let first_line = ref true
 let got_eof = ref false;;
 
+let read_input_default prompt buffer len =
+  output_string stdout prompt; flush stdout;
+  let i = ref 0 in
+  try
+    while true do
+      if !i >= len then raise Exit;
+      let c = input_char stdin in
+      buffer.[!i] <- c;
+      incr i;
+      if c = '\n' then raise Exit;
+    done;
+    (!i, false)
+  with
+  | End_of_file ->
+      (!i, true)
+  | Exit ->
+      (!i, false)
+
+let read_interactive_input = ref read_input_default
+
 let refill_lexbuf buffer len =
   if !got_eof then (got_eof := false; 0) else begin
     let prompt =
@@ -337,31 +343,15 @@ let refill_lexbuf buffer len =
       else if Lexer.in_comment () then "* "
       else "  "
     in
-    output_string stdout prompt; flush stdout;
     first_line := false;
-    let i = ref 0 in
-    try
-      while true do
-        if !i >= len then raise Exit;
-        let c = input_char stdin in
-        buffer.[!i] <- c;
-        incr i;
-        if c = '\n' then raise Exit;
-      done;
-      !i
-    with
-    | End_of_file ->
-        Location.echo_eof ();
-        if !i > 0 then (got_eof := true; !i) else 0
-    | Exit -> !i
+    let (len, eof) = !read_interactive_input prompt buffer len in
+    if eof then begin
+      Location.echo_eof ();
+      if len > 0 then got_eof := true;
+      len
+    end else
+      len
   end
-
-(* Discard everything already in a lexer buffer *)
-
-let empty_lexbuf lb =
-  let l = String.length lb.lex_buffer in
-  lb.lex_abs_pos <- (-l);
-  lb.lex_curr_pos <- l
 
 (* Toplevel initialization. Performed here instead of at the
    beginning of loop() so that user code linked in with ocamlmktop
@@ -369,11 +359,30 @@ let empty_lexbuf lb =
 
 let _ =
   Sys.interactive := true;
-  Symtable.init_toplevel();
-  Compile.init_path()
+  let crc_intfs = Symtable.init_toplevel() in
+  Compile.init_path();
+  List.iter
+    (fun (name, crc) ->
+      Consistbl.set Env.crc_units name crc Sys.executable_name)
+    crc_intfs
 
 let load_ocamlinit ppf =
+  let home_init = 
+    try Filename.concat (Sys.getenv "HOME") ".ocamlinit"
+    with Not_found -> ".ocamlinit" in
   if Sys.file_exists ".ocamlinit" then ignore(use_silently ppf ".ocamlinit")
+  else if Sys.file_exists home_init then ignore(use_silently ppf home_init)
+
+let set_paths () =
+  (* Add whatever -I options have been specified on the command line,
+     but keep the directories that user code linked in with ocamlmktop
+     may have added to load_path. *)
+  load_path := !load_path @ [Filename.concat Config.standard_library "camlp4"];
+  load_path := "" :: (List.rev !Clflags.include_dirs @ !load_path);
+  Dll.add_path !load_path
+
+let initialize_toplevel_env () =
+  toplevel_env := Compile.initial_env()
 
 (* The interactive loop *)
 
@@ -381,21 +390,16 @@ exception PPerror
 
 let loop ppf =
   fprintf ppf "        Objective Caml version %s@.@." Config.version;
-  (* Add whatever -I options have been specified on the command line,
-     but keep the directories that user code linked in with ocamlmktop
-     may have added to load_path. *)
-  load_path := !load_path @ [Filename.concat Config.standard_library "camlp4"];
-  load_path := "" :: (List.rev !Clflags.include_dirs @ !load_path);
-  Dll.add_path !load_path;
-  toplevel_env := Compile.initial_env();
+  initialize_toplevel_env ();
   let lb = Lexing.from_function refill_lexbuf in
   Location.input_name := "";
   Location.input_lexbuf := Some lb;
   Sys.catch_break true;
   load_ocamlinit ppf;
   while true do
+    let snap = Btype.snapshot () in
     try
-      empty_lexbuf lb;
+      Lexing.flush_input lb;
       Location.reset();
       first_line := true;
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
@@ -403,22 +407,17 @@ let loop ppf =
       ignore(execute_phrase true ppf phr)
     with
     | End_of_file -> exit 0
-    | Sys.Break -> fprintf ppf "Interrupted.@."
+    | Sys.Break -> fprintf ppf "Interrupted.@."; Btype.backtrack snap
     | PPerror -> ()
-    | x -> Errors.report_error ppf x
+    | x -> Errors.report_error ppf x; Btype.backtrack snap
   done
 
 (* Execute a script *)
 
 let run_script ppf name args =
-  let rec find n =
-    if n >= Array.length args then invalid_arg "Toploop.run_script";
-    if args.(n) = name then n else find (n+1) 
-  in
-  let pos = find 0 in
-  let len = Array.length args - pos in
+  let len = Array.length args in
   if Array.length Sys.argv < len then invalid_arg "Toploop.run_script";
-  Array.blit args pos Sys.argv 0 len;
+  Array.blit args 0 Sys.argv 0 len;
   Obj.truncate (Obj.repr Sys.argv) len;
   Arg.current := 0;
   Compile.init_path();

@@ -24,6 +24,7 @@ module type S =
     type key
     type +'a t
     val empty: 'a t
+    val is_empty: 'a t -> bool
     val add: key -> 'a -> 'a t -> 'a t
     val find: key -> 'a t -> 'a
     val remove: key -> 'a t -> 'a t
@@ -32,6 +33,8 @@ module type S =
     val map: ('a -> 'b) -> 'a t -> 'b t
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
     val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val compare: ('a -> 'a -> int) -> 'a t -> 'a t -> int
+    val equal: ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
   end
 
 module Make(Ord: OrderedType) = struct
@@ -41,8 +44,6 @@ module Make(Ord: OrderedType) = struct
     type 'a t =
         Empty
       | Node of 'a t * key * 'a * 'a t * int
-
-    let empty = Empty
 
     let height = function
         Empty -> 0
@@ -82,6 +83,10 @@ module Make(Ord: OrderedType) = struct
       end else
         Node(l, x, d, r, (if hl >= hr then hl + 1 else hr + 1))
 
+    let empty = Empty
+
+    let is_empty = function Empty -> true | _ -> false
+
     let rec add x data = function
         Empty ->
           Node(Empty, x, data, Empty, 1)
@@ -109,12 +114,23 @@ module Make(Ord: OrderedType) = struct
           let c = Ord.compare x v in
           c = 0 || mem x (if c < 0 then l else r)
 
-    let rec merge t1 t2 =
+    let rec min_binding = function
+        Empty -> raise Not_found
+      | Node(Empty, x, d, r, _) -> (x, d)
+      | Node(l, x, d, r, _) -> min_binding l
+
+    let rec remove_min_binding = function
+        Empty -> invalid_arg "Map.remove_min_elt"
+      | Node(Empty, x, d, r, _) -> r
+      | Node(l, x, d, r, _) -> bal (remove_min_binding l) x d r
+
+    let merge t1 t2 =
       match (t1, t2) with
         (Empty, t) -> t
       | (t, Empty) -> t
-      | (Node(l1, v1, d1, r1, h1), Node(l2, v2, d2, r2, h2)) ->
-          bal l1 v1 d1 (bal (merge r1 l2) v2 d2 r2)
+      | (_, _) ->
+          let (x, d) = min_binding t2 in
+          bal t1 x d (remove_min_binding t2)
 
     let rec remove x = function
         Empty ->
@@ -146,5 +162,37 @@ module Make(Ord: OrderedType) = struct
         Empty -> accu
       | Node(l, v, d, r, _) ->
           fold f l (f v d (fold f r accu))
+
+    type 'a enumeration = End | More of key * 'a * 'a t * 'a enumeration
+
+    let rec cons_enum m e =
+      match m with
+        Empty -> e
+      | Node(l, v, d, r, _) -> cons_enum l (More(v, d, r, e))
+
+    let compare cmp m1 m2 =
+      let rec compare_aux e1 e2 =
+          match (e1, e2) with
+          (End, End) -> 0
+        | (End, _)  -> -1
+        | (_, End) -> 1
+        | (More(v1, d1, r1, e1), More(v2, d2, r2, e2)) ->
+            let c = Ord.compare v1 v2 in
+            if c <> 0 then c else
+            let c = cmp d1 d2 in
+            if c <> 0 then c else
+            compare_aux (cons_enum r1 e1) (cons_enum r2 e2)
+      in compare_aux (cons_enum m1 End) (cons_enum m2 End)
+
+    let equal cmp m1 m2 =
+      let rec equal_aux e1 e2 =
+          match (e1, e2) with
+          (End, End) -> true
+        | (End, _)  -> false
+        | (_, End) -> false
+        | (More(v1, d1, r1, e1), More(v2, d2, r2, e2)) ->
+            Ord.compare v1 v2 = 0 && cmp d1 d2 &&
+            equal_aux (cons_enum r1 e1) (cons_enum r2 e2)
+      in equal_aux (cons_enum m1 End) (cons_enum m2 End)
 
 end

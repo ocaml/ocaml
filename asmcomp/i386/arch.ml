@@ -12,8 +12,17 @@
 
 (* $Id$ *)
 
+(* Machine-specific command-line options *)
+
+let fast_math = ref false
+
+let command_line_options =
+  [ "-ffast-math", Arg.Set fast_math,
+      " Inline trigonometric and exponential functions" ]
+
 (* Specific operations for the Intel 386 processor *)
 
+open Misc
 open Format
 
 type addressing_mode =
@@ -37,6 +46,8 @@ type specific_operation =
   | Ifloatarithmem of bool * float_operation * addressing_mode
                                         (* Float arith operation with memory *)
                                         (* bool: true=64 bits, false=32 *)
+  | Ifloatspecial of string
+
 and float_operation =
     Ifloatadd | Ifloatsub | Ifloatsubrev | Ifloatmul | Ifloatdiv | Ifloatdivrev
 
@@ -127,3 +138,10 @@ let print_specific_operation printreg op ppf arg =
       let long = if double then "float64" else "float32" in
       fprintf ppf "%a %s %s[%a]" printreg arg.(0) (op_name op) long
        (print_addressing printreg addr) (Array.sub arg 1 (Array.length arg - 1))
+  | Ifloatspecial name ->
+      fprintf ppf "%s " name;
+      for i = 0 to Array.length arg - 1 do
+        if i > 0 then fprintf ppf ", ";
+        printreg ppf arg.(i)
+      done
+      

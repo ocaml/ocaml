@@ -83,7 +83,7 @@ value weakarray_add(value ar,value el) /* ML */
     if(Wosize_val(ar) > WEAKSET_TRIGGER_GC){
       Begin_roots2(ar,el); /* (ar,el) */
       minor_collection();
-      finish_major_cycle();
+      caml_finish_major_cycle();
       End_roots(); /* (ar,el) */
       free = Int_val(Field(ar,1));
     }
@@ -159,7 +159,7 @@ value weakarray_get (value ar, value n)        /* ML */
   if (Is_long(elt) || elt==0){
     res = None_val;
   }else{
-    if (gc_phase == Phase_mark) darken (elt, NULL);
+    if (caml_gc_phase == Phase_mark) caml_darken (elt, NULL);
     Begin_root(elt);
       res = alloc (1, Some_tag);
     End_roots ();

@@ -98,6 +98,7 @@ and bigarray_kind =
   | Pbigarray_sint16 | Pbigarray_uint16
   | Pbigarray_int32 | Pbigarray_int64 
   | Pbigarray_caml_int | Pbigarray_native_int
+  | Pbigarray_complex32 | Pbigarray_complex64
 
 and bigarray_layout =
     Pbigarray_unknown_layout
@@ -153,7 +154,7 @@ and lambda_switch =
     sw_blocks: (int * lambda) list;     (* Tag block cases *)
     sw_failaction : lambda option}      (* Action to take if failure *)
 and lambda_event =
-  { lev_loc: int;
+  { lev_pos: Lexing.position;
     lev_kind: lambda_event_kind;
     lev_repr: int ref option;
     lev_env: Env.summary }

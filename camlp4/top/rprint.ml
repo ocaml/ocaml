@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -53,6 +53,9 @@ value print_out_value ppf tree =
   and print_simple_tree ppf =
     fun
     [ Oval_int i -> fprintf ppf "%i" i
+    | Oval_int32 i -> fprintf ppf "%ldl" i
+    | Oval_int64 i -> fprintf ppf "%LdL" i
+    | Oval_nativeint i -> fprintf ppf "%ndn" i
     | Oval_float f -> fprintf ppf "%.12g" f
     | Oval_char c -> fprintf ppf "'%s'" (Char.escaped c)
     | Oval_string s ->
@@ -112,6 +115,10 @@ value rec print_list pr sep ppf =
   | [a :: l] -> do { pr ppf a; sep ppf; print_list pr sep ppf l } ]
 ;
 
+value pr_vars =
+  print_list (fun ppf s -> fprintf ppf "'%s" s) (fun ppf -> fprintf ppf "@ ")
+;
+
 value pr_present =
   print_list (fun ppf s -> fprintf ppf "`%s" s) (fun ppf -> fprintf ppf "@ ")
 ;
@@ -127,6 +134,10 @@ and print_out_type_1 ppf =
   [ Otyp_arrow lab ty1 ty2 ->
       fprintf ppf "@[%s%a ->@ %a@]" (if lab <> "" then lab ^ ":" else "")
         print_out_type_2 ty1 print_out_type_1 ty2
+  | Otyp_poly sl ty ->
+      fprintf ppf "@[<hov 2>%a.@ %a@]"
+        pr_vars sl
+        print_out_type ty
   | ty -> print_out_type_2 ppf ty ]
 and print_out_type_2 ppf =
   fun
@@ -135,6 +146,7 @@ and print_out_type_2 ppf =
         (print_typlist print_simple_out_type "") tyl
   | ty -> print_simple_out_type ppf ty ]
 and print_simple_out_type ppf =
+  let rec print_tkind ppf =
   fun
   [ Otyp_var ng s -> fprintf ppf "'%s%s" (if ng then "_" else "") s
   | Otyp_constr id [] -> fprintf ppf "@[%a@]" print_ident id
@@ -155,8 +167,8 @@ and print_simple_out_type ppf =
         | Ovar_name id tyl ->
             fprintf ppf "@[%a%a@]" print_typargs tyl print_ident id ]
       in
-      fprintf ppf "%s[|%s@[<hv>@[<hv>%a@]%a|]@]" (if non_gen then "_" else "")
-        (if closed then if tags = None then " " else "< "
+      fprintf ppf "%s[%s@[<hv>@[<hv>%a@]%a ]@]" (if non_gen then "_" else "")
+        (if closed then if tags = None then "= " else "< "
          else if tags = None then "> "
          else "? ")
         print_fields row_fields
@@ -168,15 +180,23 @@ and print_simple_out_type ppf =
         print_ident id
   | Otyp_manifest ty1 ty2 ->
       fprintf ppf "@[<2>%a ==@ %a@]" print_out_type ty1 print_out_type ty2
-  | Otyp_sum constrs ->
-      fprintf ppf "@[<hv>[ %a ]@]"
+  | Otyp_sum constrs priv ->
+      fprintf ppf "@[<hv>%a[ %a ]@]" print_private priv
         (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
-  | Otyp_record lbls ->
-      fprintf ppf "@[<hv 2>{ %a }@]"
+  | Otyp_record lbls priv ->
+      fprintf ppf "@[<hv 2>%a{ %a }@]" print_private priv
         (print_list print_out_label (fun ppf -> fprintf ppf ";@ ")) lbls
   | Otyp_abstract -> fprintf ppf "'abstract"
-  | Otyp_alias _ _ | Otyp_arrow _ _ _ | Otyp_constr _ [_ :: _] as ty ->
+  | Otyp_alias _ _ | Otyp_poly _ _
+  | Otyp_arrow _ _ _ | Otyp_constr _ [_ :: _] as ty ->
       fprintf ppf "@[<1>(%a)@]" print_out_type ty ]
+  and print_private ppf =
+  fun
+  [ Asttypes.Public -> ()
+  | Asttypes.Private -> fprintf ppf "private "
+  ]
+  in
+  print_tkind ppf
 and print_out_constr ppf (name, tyl) =
   match tyl with
   [ [] -> fprintf ppf "%s" name
@@ -278,36 +298,39 @@ value rec print_out_module_type ppf =
   fun
   [ Omty_ident id -> fprintf ppf "%a" print_ident id
   | Omty_signature sg ->
-      fprintf ppf "@[<hv 2>sig@ %a@;<1 -2>end@]" print_signature_body sg
+      fprintf ppf "@[<hv 2>sig@ %a@;<1 -2>end@]"
+        Toploop.print_out_signature.val sg
   | Omty_functor name mty_arg mty_res ->
       fprintf ppf "@[<2>functor@ (%s : %a) ->@ %a@]" name
         print_out_module_type mty_arg print_out_module_type mty_res
   | Omty_abstract -> () ]
-and print_signature_body ppf =
+and print_out_signature ppf =
   fun
   [ [] -> ()
   | [item] -> fprintf ppf "%a;" Toploop.print_out_sig_item.val item
   | [item :: items] ->
       fprintf ppf "%a;@ %a" Toploop.print_out_sig_item.val item
-        print_signature_body items ]
+        print_out_signature items ]
 and print_out_sig_item ppf =
   fun
   [ Osig_class vir_flag name params clt ->
       fprintf ppf "@[<2>class%s@ %a%s@ :@ %a@]"
         (if vir_flag then " virtual" else "") print_out_class_params params
-        name print_out_class_type clt
+        name Toploop.print_out_class_type.val clt
   | Osig_class_type vir_flag name params clt ->
       fprintf ppf "@[<2>class type%s@ %a%s@ =@ %a@]"
         (if vir_flag then " virtual" else "") print_out_class_params params
-        name print_out_class_type clt
+        name Toploop.print_out_class_type.val clt
   | Osig_exception id tyl ->
       fprintf ppf "@[<2>exception %a@]" print_out_constr (id, tyl)
   | Osig_modtype name Omty_abstract ->
       fprintf ppf "@[<2>module type %s@]" name
   | Osig_modtype name mty ->
-      fprintf ppf "@[<2>module type %s =@ %a@]" name print_out_module_type mty
+      fprintf ppf "@[<2>module type %s =@ %a@]" name
+        Toploop.print_out_module_type.val mty
   | Osig_module name mty ->
-      fprintf ppf "@[<2>module %s :@ %a@]" name print_out_module_type mty
+      fprintf ppf "@[<2>module %s :@ %a@]" name
+        Toploop.print_out_module_type.val mty
   | Osig_type tdl -> print_out_type_decl_list ppf tdl
   | Osig_value name ty prims ->
       let kwd = if prims = [] then "value" else "external" in
@@ -350,7 +373,7 @@ and print_out_type_decl kwd ppf (name, args, ty, constraints) =
         fprintf ppf "%s@ %a" name
           (print_list type_parameter (fun ppf -> fprintf ppf "@ ")) args ]
   in
-  fprintf ppf "@[<2>@[<hv 2>%s %t =@ %a@]%a@]" kwd type_defined
+  fprintf ppf "@[<2>@[<hv 2>@[%s %t@] =@ %a@]%a@]" kwd type_defined
     Toploop.print_out_type.val ty print_constraints constraints
 ;
 
@@ -363,8 +386,7 @@ value print_out_exception ppf exn outv =
   | Stack_overflow ->
       fprintf ppf "Stack overflow during evaluation (looping recursion?).@."
   | _ ->
-      fprintf ppf "@[Uncaught exception:@ %a.@]@." Toploop.print_out_value.val
-        outv ]
+      fprintf ppf "@[Exception:@ %a.@]@." Toploop.print_out_value.val outv ]
 ;
 
 value rec print_items ppf =
@@ -393,5 +415,8 @@ value print_out_phrase ppf =
 
 Toploop.print_out_value.val := print_out_value;
 Toploop.print_out_type.val := print_out_type;
+Toploop.print_out_class_type.val := print_out_class_type;
+Toploop.print_out_module_type.val := print_out_module_type;
 Toploop.print_out_sig_item.val := print_out_sig_item;
+Toploop.print_out_signature.val := print_out_signature;
 Toploop.print_out_phrase.val := print_out_phrase;

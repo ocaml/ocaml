@@ -48,7 +48,7 @@ bucket **plhs;
 int name_pool_size;
 char *name_pool;
 
-char line_format[] = "(* Line %d, file %s *)\n";
+char line_format[] = "# %d \"%s\"\n";
 
 
 
@@ -155,6 +155,51 @@ void skip_comment(void)
     }
 }
 
+char *substring (char *str, int start, int len)
+{
+  int i;
+  char *buf = MALLOC (len+1);
+  if (buf == NULL) return NULL;
+  for (i = 0; i < len; i++){
+    buf[i] = str[start+i];
+  }
+  return buf;
+}
+
+void parse_line_directive (void)
+{
+  int i = 0, j = 0;
+  int line_number = 0;
+  char *file_name = NULL;
+
+ again:
+  if (line == 0) return;
+  if (line[i] != '#') return;
+  ++ i;
+  while (line[i] == ' ' || line[i] == '\t') ++ i;
+  if (line[i] < '0' || line[i] > '9') return;
+  while (line[i] >= '0' && line[i] <= '9'){
+    line_number = line_number * 10 + line[i] - '0';
+    ++ i;
+  }
+  while (line[i] == ' ' || line[i] == '\t') ++ i;
+  if (line[i] == '"'){
+    ++ i;
+    j = i;
+    while (line[j] != '"' && line[j] != '\0') ++j;
+    if (line[j] == '"'){
+      file_name = substring (line, i, j - i);
+      if (file_name == NULL) no_space ();
+    }
+  }
+  lineno = line_number - 1;
+  if (file_name != NULL){
+    if (virtual_input_file_name != NULL) FREE (virtual_input_file_name);
+    virtual_input_file_name = file_name;
+  }
+  get_line ();
+  goto again;
+}
 
 int
 nextc(void)
@@ -164,6 +209,7 @@ nextc(void)
     if (line == 0)
     {
         get_line();
+        parse_line_directive ();
         if (line == 0)
             return (EOF);
     }
@@ -175,6 +221,7 @@ nextc(void)
         {
         case '\n':
             get_line();
+            parse_line_directive ();
             if (line == 0) return (EOF);
             s = cptr;
             break;
@@ -204,6 +251,7 @@ nextc(void)
             else if (s[1] == '/')
             {
                 get_line();
+                parse_line_directive ();
                 if (line == 0) return (EOF);
                 s = cptr;
                 break;
@@ -327,7 +375,7 @@ void copy_text(void)
         if (line == 0)
             unterminated_text(t_lineno, t_line, t_cptr);
     }
-    fprintf(f, "# %d \"%s\"\n", lineno, input_file_name);
+    fprintf(f, line_format, lineno, input_file_name);
 
 loop:
     c = *cptr++;
@@ -981,12 +1029,13 @@ void output_token_type(void)
   int n;
 
   fprintf(interface_file, "type token =\n");
+  if (!rflag) ++outline;
   fprintf(output_file, "type token =\n");
   n = 0;
   for (bp = first_symbol; bp; bp = bp->next) {
     if (bp->class == TERM && bp->true_token) {
-      fprintf(interface_file, "  %c %s", n == 0 ? ' ' : '|', bp->name);
-      fprintf(output_file, "  %c %s", n == 0 ? ' ' : '|', bp->name);
+      fprintf(interface_file, "  | %s", bp->name);
+      fprintf(output_file, "  | %s", bp->name);
       if (bp->tag) {
         /* Print the type expression in parentheses to make sure
            that the constructor is unary */
@@ -994,11 +1043,13 @@ void output_token_type(void)
         fprintf(output_file, " of (%s)", bp->tag);
       }
       fprintf(interface_file, "\n");
+      if (!rflag) ++outline;
       fprintf(output_file, "\n");
       n++;
     }
   }
   fprintf(interface_file, "\n");
+  if (!rflag) ++outline;
   fprintf(output_file, "\n");
 }
 
@@ -1230,9 +1281,10 @@ void copy_action(void)
       else
         fprintf(f, "(peek_val parser_env %d : '%s) in\n", n - i, item->name);
     }
-    fprintf(f, "    Obj.repr((\n");
-    fprintf(f, "# %d \"%s\"\n", lineno, input_file_name);
-    for (i = cptr - line; i >= 0; i--) fputc(' ', f);
+    fprintf(f, "    Obj.repr(\n");
+    fprintf(f, line_format, lineno, input_file_name);
+    for (i = 0; i < cptr - line; i++) fputc(' ', f);
+    fputc ('(', f);
 
     depth = 1;
     cptr++;
@@ -1265,14 +1317,15 @@ loop:
         goto loop;
     }
     if (c == '}' && depth == 1) {
+      fprintf(f, ")\n# 0\n              ");
       cptr++;
       tagres = plhs[nrules]->tag;
       if (tagres)
-        fprintf(f, ") : %s))\n", tagres);
+        fprintf(f, " : %s))\n", tagres);
       else if (sflag)
-        fprintf(f, ")))\n");
+        fprintf(f, "))\n");
       else
-        fprintf(f, ") : '%s))\n", plhs[nrules]->name);
+        fprintf(f, " : '%s))\n", plhs[nrules]->name);
       if (sflag)
         fprintf(f, "\n");
       return;
@@ -1512,7 +1565,7 @@ void check_symbols(void)
     {
         if (bp->class == UNKNOWN)
         {
-            undefined_symbol_warning(bp->name);
+            undefined_symbol(bp->name);
             bp->class = TERM;
         }
     }
@@ -1654,6 +1707,24 @@ void pack_symbols(void)
     FREE(v);
 }
 
+static unsigned char caml_ident_start[32] =
+"\000\000\000\000\000\000\000\000\376\377\377\207\376\377\377\007\000\000\000\000\000\000\000\000\377\377\177\377\377\377\177\377";
+static unsigned char caml_ident_body[32] =
+"\000\000\000\000\200\000\377\003\376\377\377\207\376\377\377\007\000\000\000\000\000\000\000\000\377\377\177\377\377\377\177\377";
+
+#define In_bitmap(bm,c) (bm[(unsigned char)(c) >> 3] & (1 << ((c) & 7)))
+
+static int is_polymorphic(char * s)
+{
+  while (*s != 0) {
+    char c = *s++;
+    if (c == '\'') return 1;
+    if (In_bitmap(caml_ident_start, c)) {
+      while (In_bitmap(caml_ident_body, *s)) s++;
+    }
+  }
+  return 0;
+}
 
 void make_goal(void)
 {
@@ -1678,6 +1749,8 @@ void make_goal(void)
       pitem[nitems++] = bp;
       if (bp->tag == NULL)
         entry_without_type(bp->name);
+      if (is_polymorphic(bp->tag))
+        polymorphic_entry_point(bp->name);
       fprintf(entry_file,
               "let %s (lexfun : Lexing.lexbuf -> token) (lexbuf : Lexing.lexbuf) =\n   (yyparse yytables %d lexfun lexbuf : %s)\n",
               bp->name, bp->entry, bp->tag);
@@ -1798,6 +1871,8 @@ void print_grammar(void)
 
 void reader(void)
 {
+    virtual_input_file_name = substring (input_file_name, 0,
+                                         strlen (input_file_name));
     create_symbol_table();
     read_declarations();
     output_token_type();

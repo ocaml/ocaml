@@ -24,9 +24,9 @@ open Mytypes
 let lex_on_load = ref true
 and type_on_load = ref false
 
-let compiler_preferences () =
+let compiler_preferences master =
   let tl = Jg_toplevel.titled "Compiler" in
-  Wm.transient_set tl ~master:Widget.default_toplevel;
+  Wm.transient_set tl ~master;
   let mk_chkbutton ~text ~ref ~invert =
     let variable = Textvariable.create ~on:tl () in
     if (if invert then not !ref else !ref) then
@@ -72,7 +72,7 @@ let rec exclude txt = function
 
 let goto_line tw =
   let tl = Jg_toplevel.titled "Go to" in
-  Wm.transient_set tl ~master:Widget.default_toplevel;
+  Wm.transient_set tl ~master:(Winfo.toplevel tw);
   Jg_bind.escape_destroy tl;
   let ef = Frame.create tl in
   let fl = Frame.create ef
@@ -211,12 +211,12 @@ let send_phrase txt =
         sh#send ";;\n"
 
 let search_pos_window txt ~x ~y =
-  if txt.structure = [] && txt.psignature = [] then () else
+  if txt.type_info = [] && txt.psignature = [] then () else
   let `Linechar (l, c) = Text.index txt.tw ~index:(`Atxy(x,y), []) in
   let text = Jg_text.get_all txt.tw in
   let pos = Searchpos.lines_to_chars l ~text + c in
-  try if txt.structure <> [] then begin match
-    Searchpos.search_pos_structure txt.structure ~pos
+  try if txt.type_info <> [] then begin match
+    Searchpos.search_pos_info txt.type_info ~pos
   with [] -> ()
   | (kind, env, loc) :: _ -> Searchpos.view_type kind ~env
   end else begin match
@@ -228,12 +228,12 @@ let search_pos_window txt ~x ~y =
   with Not_found -> ()
 
 let search_pos_menu txt ~x ~y =
-  if txt.structure = [] && txt.psignature = [] then () else
+  if txt.type_info = [] && txt.psignature = [] then () else
   let `Linechar (l, c) = Text.index txt.tw ~index:(`Atxy(x,y), []) in
   let text = Jg_text.get_all txt.tw in
   let pos = Searchpos.lines_to_chars l ~text + c in
-  try if txt.structure <> [] then begin match
-    Searchpos.search_pos_structure txt.structure ~pos
+  try if txt.type_info <> [] then begin match
+    Searchpos.search_pos_info txt.type_info ~pos
   with [] -> ()
   | (kind, env, loc) :: _ ->
       let menu = Searchpos.view_type_menu kind ~env ~parent:txt.tw in
@@ -297,6 +297,9 @@ class editor ~top ~menus = object (self)
   val vwindow = Textvariable.create ~on:top ()
   val mutable window_counter = 0
 
+  method has_window name =
+    List.exists windows ~f:(fun x -> x.name = name)
+
   method reset_window_menu =
     Menu.delete window_menu#menu ~first:(`Num 0) ~last:`End;
     List.iter
@@ -333,7 +336,7 @@ class editor ~top ~menus = object (self)
         number = string_of_int window_counter;
         modified = Textvariable.create ~on:tw ();
         shell = None;
-        structure = []; signature = []; psignature = [] }
+        structure = []; type_info = []; signature = []; psignature = [] }
     in
     let control c = Char.chr (Char.code c - 96) in
     bind tw ~events:[`Modified([`Alt], `KeyPress)] ~action:ignore;
@@ -392,8 +395,17 @@ class editor ~top ~menus = object (self)
     error_messages <- Typecheck.f (List.hd windows)
 
   method lex () =
-    Text.tag_remove current_tw ~tag:"error" ~start:tstart ~stop:tend;
-    Lexical.tag current_tw
+    List.iter [ Widget.default_toplevel; top ]
+      ~f:(Toplevel.configure ~cursor:(`Xcursor "watch"));
+    Text.configure current_tw ~cursor:(`Xcursor "watch");
+    ignore (Timer.add ~ms:1 ~callback:
+      begin fun () ->
+        Text.tag_remove current_tw ~tag:"error" ~start:tstart ~stop:tend;
+        Lexical.tag current_tw;
+        Text.configure current_tw ~cursor:(`Xcursor "xterm");
+        List.iter [ Widget.default_toplevel; top ]
+          ~f:(Toplevel.configure ~cursor:(`Xcursor ""))
+      end)
 
   method save_text ?name:l txt =
     let l = match l with None -> [txt.name] | Some l -> l in
@@ -402,12 +414,16 @@ class editor ~top ~menus = object (self)
     if txt.name <> name then current_dir <- Filename.dirname name;
     try
       if Sys.file_exists name then
-        if txt.name = name then
-          Sys.rename name (name ^ "~")
-        else begin match
-          Jg_message.ask ~master:top ~title:"Save"
-            ("File `" ^ name ^ "' exists. Overwrite it?")
-        with `yes -> () | `no | `cancel -> raise Exit
+        if txt.name = name then begin
+          let backup = name ^ "~" in
+          if Sys.file_exists backup then Sys.remove backup;
+          try Sys.rename name backup with Sys_error _ -> ()
+        end else begin
+          match Jg_message.ask ~master:top ~title:"Save"
+              ("File `" ^ name ^ "' exists. Overwrite it?")
+          with `Yes -> Sys.remove name
+          | `No -> raise (Sys_error "")
+          | `Cancel -> raise Exit
         end;
       let file = open_out name in
       let text = Text.get txt.tw ~start:tstart ~stop:(tposend 1) in
@@ -417,7 +433,10 @@ class editor ~top ~menus = object (self)
       Checkbutton.deselect label;
       txt.name <- name
     with
-      Sys_error _ | Exit -> ()
+      Sys_error _ ->
+        Jg_message.info ~master:top ~title:"Error"
+          ("Could not save `" ^ name ^ "'.")
+    | Exit -> ()
 
   method load_text l =
     if l = [] then () else
@@ -430,9 +449,9 @@ class editor ~top ~menus = object (self)
           if Textvariable.get txt.modified = "modified" then
             begin match Jg_message.ask ~master:top ~title:"Open"
                 ("`" ^ Filename.basename txt.name ^ "' modified. Save it?")
-            with `yes -> self#save_text txt
-            | `no -> ()
-            | `cancel -> raise Exit
+            with `Yes -> self#save_text txt
+            | `No -> ()
+            | `Cancel -> raise Exit
             end;
           Checkbutton.deselect label;
           (Text.index current_tw ~index:(`Mark"insert", []), [])
@@ -467,9 +486,9 @@ class editor ~top ~menus = object (self)
       if Textvariable.get txt.modified = "modified" then
         begin match Jg_message.ask ~master:top ~title:"Close"
             ("`" ^ Filename.basename txt.name ^ "' modified. Save it?")
-        with `yes -> self#save_text txt
-        | `no -> ()
-        | `cancel -> raise Exit
+        with `Yes -> self#save_text txt
+        | `No -> ()
+        | `Cancel -> raise Exit
         end;
       windows <- exclude txt windows;
       if windows = [] then
@@ -493,9 +512,9 @@ class editor ~top ~menus = object (self)
           if Textvariable.get txt.modified = "modified" then
             match Jg_message.ask ~master:top ~title:"Quit" ~cancel
                 ("`" ^ Filename.basename txt.name ^ "' modified. Save it?")
-            with `yes -> self#save_text txt
-            | `no -> ()
-            | `cancel -> raise Exit
+            with `Yes -> self#save_text txt
+            | `No -> ()
+            | `Cancel -> raise Exit
         end;
       bind top ~events:[`Destroy];
       destroy top
@@ -581,7 +600,7 @@ class editor ~top ~menus = object (self)
 
     (* Compiler menu *)
     compiler_menu#add_command "Preferences..."
-      ~command:compiler_preferences;
+      ~command:(fun () -> compiler_preferences top);
     compiler_menu#add_command "Lex" ~accelerator:"M-l"
       ~command:self#lex;
     compiler_menu#add_command "Typecheck" ~accelerator:"M-t"
@@ -598,7 +617,7 @@ class editor ~top ~menus = object (self)
             Env.add_module (Ident.create modname)
               (Types.Tmty_signature txt.signature)
               Env.initial
-          in Viewer.view_defined (Longident.Lident modname) ~env
+          in Viewer.view_defined (Longident.Lident modname) ~env ~show_all:true
       end;
 
     (* Modules *)
@@ -621,19 +640,27 @@ end
 
 (* The main function starts here ! *)
 
-let already_open : editor option ref = ref None
+let already_open : editor list ref = ref []
 
-let editor ?file ?(pos=0) () =
+let editor ?file ?(pos=0) ?(reuse=false) () =
 
-  if match !already_open with None -> false
-  | Some ed ->
-      try ed#reopen ~file ~pos; true
-      with Protocol.TkError _ -> already_open := None; false
+  if !already_open <> [] &&
+    let ed = List.hd !already_open
+    (*  try
+        let name = match file with Some f -> f | None -> raise Not_found in
+        List.find !already_open ~f:(fun ed -> ed#has_window name)
+      with Not_found -> List.hd !already_open *)
+    in try
+      ed#reopen ~file ~pos;
+      true
+    with Protocol.TkError _ ->
+      already_open := [] (* List.filter !already_open ~f:((<>) ed) *);
+      false
   then () else
-    let top = Jg_toplevel.titled "Editor" in
+    let top = Jg_toplevel.titled "OCamlBrowser Editor" in
     let menus = Frame.create top ~name:"menubar" in
     let ed = new editor ~top ~menus in
-    already_open := Some ed;
+    already_open := !already_open @ [ed];
     if file <> None then ed#reopen ~file ~pos
 
 let f ?file ?pos ?(opendialog=false) () =
@@ -641,4 +668,4 @@ let f ?file ?pos ?(opendialog=false) () =
     Fileselect.f ~title:"Open File"
       ~action:(function [file] -> editor ~file () | _ -> ())
       ~filter:("*.{ml,mli}") ~sync:true ()
-  else editor ?file ?pos ()
+  else editor ?file ?pos ~reuse:(file <> None) ()

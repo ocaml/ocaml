@@ -21,11 +21,6 @@
    platforms.  All arithmetic operations over [int64] are taken
    modulo 2{^64} 
 
-   The type [int64] is supported on all 64-bit platforms, as well as
-   on all 32-bit platforms for which the C compiler supports 64-bit
-   arithmetic.  On 32-bit platforms without support for 64-bit arithmetic,
-   all functions in this module raise an [Invalid_argument] exception.
-
    Performance notice: values of type [int64] occupy more memory
    space than values of type [int], and arithmetic operations on
    [int64] are generally slower than those on [int].  Use [int64]
@@ -55,16 +50,15 @@ external mul : int64 -> int64 -> int64 = "%int64_mul"
 
 external div : int64 -> int64 -> int64 = "%int64_div"
 (** Integer division.  Raise [Division_by_zero] if the second 
-   argument is zero. *)
+   argument is zero.  This division rounds the real quotient of
+   its arguments towards zero, as specified for {!Pervasives.(/)}. *)
 
 external rem : int64 -> int64 -> int64 = "%int64_mod"
-(** Integer remainder.  If [x >= 0] and [y > 0], the result
+(** Integer remainder.  If [y] is not zero, the result
    of [Int64.rem x y] satisfies the following properties:
-   [0 <= Int64.rem x y < y] and
+   [Int64.zero <= Int64.rem x y < Int64.abs y] and
    [x = Int64.add (Int64.mul (Int64.div x y) y) (Int64.rem x y)].
-   If [y = 0], [Int64.rem x y] raises [Division_by_zero].
-   If [x < 0] or [y < 0], the result of [Int64.rem x y] is
-   not specified and depends on the platform. *)
+   If [y = 0], [Int64.rem x y] raises [Division_by_zero]. *)
 
 val succ : int64 -> int64
 (** Successor.  [Int64.succ x] is [Int64.add x Int64.one]. *)
@@ -120,13 +114,13 @@ external to_int : int64 -> int = "%int64_to_int"
    is taken modulo 2{^31}, i.e. the top 33 bits are lost
    during the conversion. *)
 
-external of_float : float -> int64 = "int64_of_float"
+external of_float : float -> int64 = "caml_int64_of_float"
 (** Convert the given floating-point number to a 64-bit integer,
    discarding the fractional part (truncate towards 0).
    The result of the conversion is undefined if, after truncation,
    the number is outside the range \[{!Int64.min_int}, {!Int64.max_int}\]. *)
 
-external to_float : int64 -> float = "int64_to_float"
+external to_float : int64 -> float = "caml_int64_to_float"
 (** Convert the given 64-bit integer to a floating-point number. *)
 
 
@@ -150,34 +144,48 @@ external to_nativeint : int64 -> nativeint = "%int64_to_nativeint"
    is taken modulo 2{^32}.  On 64-bit platforms,
    the conversion is exact. *)
 
-external of_string : string -> int64 = "int64_of_string"
+external of_string : string -> int64 = "caml_int64_of_string"
 (** Convert the given string to a 64-bit integer.
    The string is read in decimal (by default) or in hexadecimal,
    octal or binary if the string begins with [0x], [0o] or [0b]
    respectively.
    Raise [Failure "int_of_string"] if the given string is not
-   a valid representation of an integer. *)
+   a valid representation of an integer, or if the integer represented
+   exceeds the range of integers representable in type [int64]. *)
 
 val to_string : int64 -> string
 (** Return the string representation of its argument, in decimal. *)
 
-external format : string -> int64 -> string = "int64_format"
-(** [Int64.format fmt n] return the string representation of the
-   64-bit integer [n] in the format specified by [fmt].
-   [fmt] is a {!Printf}-style format containing exactly
-   one [%d], [%i], [%u], [%x], [%X] or [%o] conversion specification.
-   This function is deprecated; use {!Printf.sprintf} with a [%Lx] format
-   instead. *)
-
-external bits_of_float : float -> int64 = "int64_bits_of_float"
+external bits_of_float : float -> int64 = "caml_int64_bits_of_float"
 (** Return the internal representation of the given float according
    to the IEEE 754 floating-point ``double format'' bit layout.
    Bit 63 of the result represents the sign of the float;
    bits 62 to 52 represent the (biased) exponent; bits 51 to 0
    represent the mantissa. *)
 
-external float_of_bits : int64 -> float = "int64_float_of_bits"
+external float_of_bits : int64 -> float = "caml_int64_float_of_bits"
 (** Return the floating-point number whose internal representation,
    according to the IEEE 754 floating-point ``double format'' bit layout,
    is the given [int64]. *)
+
+type t = int64
+(** An alias for the type of 64-bit integers. *)
+
+val compare: t -> t -> int
+(** The comparison function for 64-bit integers, with the same specification as
+    {!Pervasives.compare}.  Along with the type [t], this function [compare]
+    allows the module [Int64] to be passed as argument to the functors
+    {!Set.Make} and {!Map.Make}. *)
+
+(**/**)
+
+(** {6 Deprecated functions} *)
+
+external format : string -> int64 -> string = "caml_int64_format"
+(** [Int64.format fmt n] return the string representation of the
+   64-bit integer [n] in the format specified by [fmt].
+   [fmt] is a {!Printf}-style format consisting of exactly one
+   [%d], [%i], [%u], [%x], [%X] or [%o] conversion specification.
+   This function is deprecated; use {!Printf.sprintf} with a [%Lx] format
+   instead. *)
 

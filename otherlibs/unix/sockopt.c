@@ -1,14 +1,14 @@
 /***********************************************************************/
-/*								       */
-/*			     Objective Caml			       */
-/*								       */
-/*	      Xavier Leroy, projet Cristal, INRIA Rocquencourt	       */
-/*								       */
+/*                                                                     */
+/*                           Objective Caml                            */
+/*                                                                     */
+/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
+/*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
 /*  under the terms of the GNU Library General Public License, with   */
 /*  the special exception on linking described in file ../../LICENSE. */
-/*								       */
+/*                                                                     */
 /***********************************************************************/
 
 /* $Id$ */
@@ -93,7 +93,7 @@ CAMLprim value getsockopt_int(int *sockopt, value socket,
 
   optsize = sizeof(optval);
   if (getsockopt(Int_val(socket), level, sockopt[Int_val(option)],
-		 (void *) &optval, &optsize) == -1)
+                 (void *) &optval, &optsize) == -1)
     uerror("getsockopt", Nothing);
   return Val_int(optval);
 }
@@ -103,13 +103,14 @@ CAMLprim value setsockopt_int(int *sockopt, value socket, int level,
 {
   int optval = Int_val(status);
   if (setsockopt(Int_val(socket), level, sockopt[Int_val(option)],
-		 (void *) &optval, sizeof(optval)) == -1)
+                 (void *) &optval, sizeof(optval)) == -1)
     uerror("setsockopt", Nothing);
   return Val_unit;
 }
 
 CAMLprim value unix_getsockopt_bool(value socket, value option) {
-  return getsockopt_int(sockopt_bool, socket, SOL_SOCKET, option);
+  value res = getsockopt_int(sockopt_bool, socket, SOL_SOCKET, option);
+  return Val_bool(Int_val(res));
 }
 
 CAMLprim value unix_setsockopt_bool(value socket, value option, value status)
@@ -131,11 +132,11 @@ CAMLprim value getsockopt_optint(int *sockopt, value socket,
 {
   struct linger optval;
   socklen_param_type optsize;
-  value res = Val_int(0);			/* None */
+  value res = Val_int(0);                       /* None */
 
   optsize = sizeof(optval);
   if (getsockopt(Int_val(socket), level, sockopt[Int_val(option)],
-		 (void *) &optval, &optsize) == -1)
+                 (void *) &optval, &optsize) == -1)
     uerror("getsockopt_optint", Nothing);
   if (optval.l_onoff != 0) {
     res = alloc_small(1, 0);
@@ -153,7 +154,7 @@ CAMLprim value setsockopt_optint(int *sockopt, value socket, int level,
   if (optval.l_onoff)
     optval.l_linger = Int_val (Field (status, 0));
   if (setsockopt(Int_val(socket), level, sockopt[Int_val(option)],
-		 (void *) &optval, sizeof(optval)) == -1)
+                 (void *) &optval, sizeof(optval)) == -1)
     uerror("setsockopt_optint", Nothing);
   return Val_unit;
 }
@@ -176,7 +177,7 @@ CAMLprim value getsockopt_float(int *sockopt, value socket,
 
   optsize = sizeof(tv);
   if (getsockopt(Int_val(socket), level, sockopt[Int_val(option)],
-		 (void *) &tv, &optsize) == -1)
+                 (void *) &tv, &optsize) == -1)
     uerror("getsockopt_float", Nothing);
   return copy_double((double) tv.tv_sec + (double) tv.tv_usec / 1e6);
 }
@@ -191,7 +192,7 @@ CAMLprim value setsockopt_float(int *sockopt, value socket, int level,
   tv.tv_sec = (int)tv_f;
   tv.tv_usec = (int) (1e6 * (tv_f - tv.tv_sec));
   if (setsockopt(Int_val(socket), level, sockopt[Int_val(option)],
-		 (void *) &tv, sizeof(tv)) == -1)
+                 (void *) &tv, sizeof(tv)) == -1)
     uerror("setsockopt_float", Nothing);
   return Val_unit;
 }
@@ -208,10 +209,10 @@ CAMLprim value unix_setsockopt_float(value socket, value option, value status)
 
 #else
 
-CAMLprim value unix_getsockopt(value socket, value option)
+CAMLprim value unix_getsockopt_bool(value socket, value option)
 { invalid_argument("getsockopt not implemented"); }
 
-CAMLprim value unix_setsockopt(value socket, value option, value status)
+CAMLprim value unix_setsockopt_bool(value socket, value option, value status)
 { invalid_argument("setsockopt not implemented"); }
 
 CAMLprim value unix_getsockopt_int(value socket, value option)

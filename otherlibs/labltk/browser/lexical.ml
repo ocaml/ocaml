@@ -140,4 +140,4 @@ let tag ?(start=tstart) ?(stop=tend) tw =
     done
   with
     End_of_file -> ()
-  | Lexer.Error (err, s, e) -> ()
+  | Lexer.Error (err, loc) -> ()

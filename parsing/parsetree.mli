@@ -32,6 +32,7 @@ and core_type_desc =
   | Ptyp_class of Longident.t * core_type list * label list
   | Ptyp_alias of core_type * string
   | Ptyp_variant of row_field list * bool * label list option
+  | Ptyp_poly of string list * core_type
 
 and core_field_type =
   { pfield_desc: core_field_desc;
@@ -107,6 +108,9 @@ and expression_desc =
   | Pexp_letmodule of string * module_expr * expression
   | Pexp_assert of expression
   | Pexp_assertfalse
+  | Pexp_lazy of expression
+  | Pexp_poly of expression * core_type option
+  | Pexp_object of class_structure
 (*> JOCAML *)
   | Pexp_spawn of expression
   | Pexp_par of expression * expression
@@ -158,8 +162,8 @@ and type_declaration =
 
 and type_kind =
     Ptype_abstract
-  | Ptype_variant of (string * core_type list) list
-  | Ptype_record of (string * mutable_flag * core_type) list
+  | Ptype_variant of (string * core_type list) list * private_flag
+  | Ptype_record of (string * mutable_flag * core_type) list * private_flag
 
 and exception_declaration = core_type list
 
@@ -237,6 +241,7 @@ and signature_item_desc =
   | Psig_type of (string * type_declaration) list
   | Psig_exception of string * exception_declaration
   | Psig_module of string * module_type
+  | Psig_recmodule of (string * module_type) list
   | Psig_modtype of string * modtype_declaration
   | Psig_open of Longident.t
   | Psig_include of module_type
@@ -279,6 +284,7 @@ and structure_item_desc =
   | Pstr_exception of string * exception_declaration
   | Pstr_exn_rebind of string * Longident.t
   | Pstr_module of string * module_expr
+  | Pstr_recmodule of (string * module_type * module_expr) list
   | Pstr_modtype of string * module_type
   | Pstr_open of Longident.t
   | Pstr_class of class_declaration list

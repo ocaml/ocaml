@@ -14,7 +14,22 @@
 
 (* Specific operations for the Sparc processor *)
 
+open Misc
 open Format
+
+(* SPARC V8 adds multiply and divide.
+   SPARC V9 adds double precision float operations, conditional
+   move, and more instructions that are only useful in 64 bit mode.
+   Sun calls 32 bit V9 "V8+". *)
+type arch_version = SPARC_V7 | SPARC_V8 | SPARC_V9
+
+let arch_version = ref SPARC_V7
+
+let command_line_options =
+  [ "-march=v8", Arg.Unit (fun () -> arch_version := SPARC_V8),
+        " Generate code for SPARC V8 processors";
+    "-march=v9", Arg.Unit (fun () -> arch_version := SPARC_V9),
+        " Generate code for SPARC V9 processors" ]
 
 type specific_operation = unit          (* None worth mentioning *)
 

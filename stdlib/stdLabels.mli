@@ -27,8 +27,8 @@ module Array :
     external length : 'a array -> int = "%array_length"
     external get : 'a array -> int -> 'a = "%array_safe_get"
     external set : 'a array -> int -> 'a -> unit = "%array_safe_set"
-    external make : int -> 'a -> 'a array = "make_vect"
-    external create : int -> 'a -> 'a array = "make_vect"
+    external make : int -> 'a -> 'a array = "caml_make_vect"
+    external create : int -> 'a -> 'a array = "caml_make_vect"
     val init : int -> f:(int -> 'a) -> 'a array
     val make_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
     val create_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
@@ -104,7 +104,7 @@ module String :
     external length : string -> int = "%string_length"
     external get : string -> int -> char = "%string_safe_get"
     external set : string -> int -> char -> unit = "%string_safe_set"
-    external create : int -> string = "create_string"
+    external create : int -> string = "caml_create_string"
     val make : int -> char -> string
     val copy : string -> string
     val sub : string -> pos:int -> len:int -> string
@@ -113,6 +113,7 @@ module String :
       src:string -> src_pos:int -> dst:string -> dst_pos:int -> len:int ->
         unit
     val concat : sep:string -> string list -> string
+    val iter : f:(char -> unit) -> string -> unit
     val escaped : string -> string
     val index : string -> char -> int
     val rindex : string -> char -> int
@@ -129,7 +130,7 @@ module String :
     external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"
     external unsafe_blit :
       src:string -> src_pos:int -> dst:string -> dst_pos:int -> len:int ->
-        unit = "blit_string" "noalloc"
-    external unsafe_fill :
-      string -> pos:int -> len:int -> char -> unit = "fill_string" "noalloc"
+        unit = "caml_blit_string" "noalloc"
+    external unsafe_fill : string -> pos:int -> len:int -> char -> unit
+      = "caml_fill_string" "noalloc"
   end

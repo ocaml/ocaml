@@ -37,8 +37,14 @@ val find_primitive: string -> dll_address
    in the VM table of primitives.  *)
 val synchronize_primitive: int -> dll_address -> unit
 
-(* Add the given directories to the search path for DLLs. *)
+(* Add the given directories at the head of the search path for DLLs *)
 val add_path: string list -> unit
+
+(* Initialization for separate compilation.
+   Initialize the DLL search path to the directories given in the
+   environment variable CAML_LD_LIBRARY_PATH, plus contents of ld.conf file
+   if argument is [false].  If argument is [true], ignore ld.conf. *)
+val init_compile: bool -> unit
 
 (* Initialization for linking in core (dynlink or toplevel).
    Initialize the search path to the same path that was used to start

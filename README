@@ -19,17 +19,18 @@ the generated programs deliver excellent performance, while retaining
 the moderate memory requirements of the bytecode compiler. The
 native-code compiler currently runs on the following platforms:
 
-    Intel Pentium processors: PCs under Linux, FreeBSD, NetBSD, OpenBSD,
-      Windows, NextStep, Solaris 2, BeOS.
-    Alpha processors: Digital/Compaq Alpha machines under
+    Intel/AMD Pentium processors: PCs under Linux, FreeBSD, NetBSD, 
+      OpenBSD, Windows, NextStep, Solaris 2, BeOS.
+    PowerPC processors: PowerMacintosh under MacOS X and LinuxPPC,
+      IBM RS6000 and PowerPC workstations under AIX 4.3
+    AMD64 (Opteron) processors: PCs under Linux.
+    Alpha processors: Digital/Compaq/HP Alpha machines under
       Digital Unix/Compaq Tru64, Linux, NetBSD and OpenBSD.
-    Sparc processors: Sun Sparc under SunOS 4.1, Solaris 2, NetBSD, Linux
+    Sparc processors: Sun Sparc machines under Solaris 2, NetBSD, Linux
     Mips processors: SGI workstations and mainframes under IRIX 6
+    Intel IA64 processors: HP stations under Linux
     HP PA-RISC processors: HP 9000/700 under HPUX 10
-    PowerPC processors: IBM RS6000 and PowerPC workstations under AIX 4.3,
-                        PowerMacintosh under MkLinux, LinuxPPC, MacOS X
     Strong ARM processors: Corel Netwinder under Linux
-    Intel IA64 processors: prototypes under Linux
 
 Other operating systems for the processors above have not been tested,
 but the compiler may work under other operating systems with little work.
@@ -37,7 +38,7 @@ but the compiler may work under other operating systems with little work.
 Before the introduction of objects, Objective Caml was known as Caml
 Special Light. Objective Caml is almost upwards compatible with Caml
 Special Light, except for a few additional reserved keywords that have
-forced some renamings of standard library functions.
+forced some renaming of standard library functions.
 
 CONTENTS:
 
@@ -59,6 +60,7 @@ CONTENTS:
   emacs/                Caml editing mode and debugger interface for GNU Emacs
   lex/                  lexer generator
   maccaml/              the Macintosh GUI
+  ocamldoc/             documentation generator
   otherlibs/            several external libraries
   parsing/              syntax analysis
   stdlib/               standard library
@@ -71,35 +73,34 @@ CONTENTS:
 COPYRIGHT:
 
 All files marked "Copyright INRIA" in this distribution are copyright
-1996, 1997, 1998, 1999, 2000, 2001 Institut National de Recherche en
-Informatique et en Automatique (INRIA) and distributed under the
-conditions stated in file LICENSE.
+1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003 Institut National de
+Recherche en Informatique et en Automatique (INRIA) and distributed
+under the conditions stated in file LICENSE.
 
 INSTALLATION:
 
-See the file INSTALL for installation instructions on Unix machines. 
-For MS Windows, see README.win32.  For the Macintosh, see INSTALL.MPW.
+See the file INSTALL for installation instructions on Unix, Linux and 
+MacOS X machines.  For MS Windows, see README.win32.
+For the MacOS 7, 8, 9, see INSTALL.MPW.
 
 DOCUMENTATION:
 
 The Objective Caml manual is distributed in HTML, PDF, Postscript,
-DVI, and Emacs Info files.  It can be obtained by anonymous FTP from
-ftp.inria.fr as described below. It is also available on the World
-Wide Web, at
+DVI, and Emacs Info files.  It is available on the World Wide Web, at
 
         http://caml.inria.fr/
 
 AVAILABILITY:
 
-The complete Objective Caml distribution resides on ftp.inria.fr,
-and can be accessed through a Web browser at
+The complete Objective Caml distribution can be accessed through a Web
+browser at
 
         http://caml.inria.fr/
 
-or directly by anonymous FTP:
+or by anonymous FTP:
 
-        host:       ftp.inria.fr (192.93.2.54)
-        directory:  lang/caml-light
+        host:       ftp.inria.fr
+        directory:  INRIA/caml-light
 
 KEEPING IN TOUCH WITH THE CAML COMMUNITY:
 

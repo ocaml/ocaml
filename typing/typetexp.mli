@@ -18,6 +18,8 @@ open Format;;
 
 val transl_simple_type:
         Env.t -> bool -> Parsetree.core_type -> Types.type_expr
+val transl_simple_type_univars:
+        Env.t -> Parsetree.core_type -> Types.type_expr
 val transl_simple_type_delayed:
         Env.t -> Parsetree.core_type -> Types.type_expr * (unit -> unit)
         (* Translate a type, but leave type variables unbound. Returns
@@ -25,10 +27,12 @@ val transl_simple_type_delayed:
 val transl_type_scheme:
         Env.t -> Parsetree.core_type -> Types.type_expr
 val reset_type_variables: unit -> unit
-val enter_type_variable: bool -> string -> Types.type_expr
-val type_variable : Location.t -> string -> Types.type_expr
-val narrow: unit -> unit
-val widen: unit -> unit
+val enter_type_variable: bool -> Location.t -> string -> Types.type_expr
+val type_variable: Location.t -> string -> Types.type_expr
+
+type variable_context
+val narrow: unit -> variable_context
+val widen: variable_context -> unit
 
 exception Already_bound
 
@@ -47,6 +51,9 @@ type error =
   | Present_has_no_type of string
   | Constructor_mismatch of Types.type_expr * Types.type_expr
   | Not_a_variant of Types.type_expr
+  | Variant_tags of string * string
+  | Invalid_variable_name of string
+  | Cannot_quantify of string * Types.type_expr
 
 exception Error of Location.t * error
 

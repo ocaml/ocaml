@@ -62,6 +62,6 @@ class virtual selector_generic : object
   method insert_move_results : Reg.t array -> Reg.t array -> int -> unit
   method insert_moves : Reg.t array -> Reg.t array -> unit
   method emit_expr :
-    (Ident.t, Reg.t array) Tbl.t -> Cmm.expression -> Reg.t array
+    (Ident.t, Reg.t array) Tbl.t -> Cmm.expression -> Reg.t array option
   method emit_tail : (Ident.t, Reg.t array) Tbl.t -> Cmm.expression -> unit
 end

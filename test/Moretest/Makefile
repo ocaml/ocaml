@@ -47,7 +47,7 @@ cm.out: cmcaml.ml cmstub.c cmmain.c
 
 bigarrays.byt: ../../otherlibs/bigarray/bigarray.cma \
                ../../otherlibs/bigarray/libbigarray.a bigarrays.ml
-	$(CAMLC) -o bigarrays.byt \
+	$(CAMLC) -custom -o bigarrays.byt \
                 -I ../../otherlibs/bigarray \
                 -I ../../otherlibs/unix \
                 unix.cma bigarray.cma bigarrays.ml
@@ -111,6 +111,23 @@ intext.byt: intext.cmo intextaux.o
 	${CAMLC} -o intext.byt -custom intext.cmo intextaux.o
 intext.out: intext.cmx intextaux.o
 	${CAMLOPT} -o intext.out intext.cmx intextaux.o
+
+tscanf.byt: tscanf.cmo
+	${CAMLC} -o tscanf.byt tscanf.cmo
+tscanf.out: tscanf.cmx
+	${CAMLOPT} -o tscanf.out tscanf.cmx
+
+scanf: tscanf.byt tscanf.out
+	./tscanf.byt
+	./tscanf.out
+
+regexp.byt: ../../otherlibs/str/str.cma regexp.ml
+	$(CAMLC) -custom -I ../../otherlibs/str -o regexp.byt str.cma regexp.ml
+regexp.opt: ../../otherlibs/str/str.cmxa regexp.ml
+	$(CAMLOPT) -I ../../otherlibs/str -o regexp.opt str.cmxa regexp.ml
+
+md5.out: md5.ml
+	$(CAMLOPT) -unsafe -inline 100 -o md5.out md5.ml
 
 # Common rules
 

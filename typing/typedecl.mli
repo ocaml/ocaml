@@ -32,6 +32,13 @@ val transl_value_decl:
 val transl_with_constraint:
         Env.t -> Parsetree.type_declaration -> type_declaration
 
+val abstract_type_decl: int -> type_declaration
+val approx_type_decl:
+        Env.t -> (string * Parsetree.type_declaration) list ->
+                                  (Ident.t * type_declaration) list
+val check_recmod_typedecl:
+    Env.t -> Location.t -> Ident.t list -> Path.t -> type_declaration -> unit
+
 (* for typeclass.ml *)
 val compute_variance_decls:
     Env.t ->
@@ -46,9 +53,9 @@ type error =
   | Recursive_abbrev of string
   | Definition_mismatch of type_expr
   | Constraint_failed of type_expr * type_expr
-  | Unconsistent_constraint
+  | Unconsistent_constraint of (type_expr * type_expr) list
   | Type_clash of (type_expr * type_expr) list
-  | Parameters_differ of type_expr * type_expr
+  | Parameters_differ of Path.t * type_expr * type_expr
   | Null_arity_external
   | Missing_native_external
   | Unbound_type_var

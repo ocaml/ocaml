@@ -39,9 +39,6 @@ let cur_point = ref 0
 and inchan = ref stdin
 and outchan = ref stdout
 
-(* In case we forgot something *)
-(*exception Inversion of int * int*)
-
 (* To copy source fragments *)
 let copy_buffer = String.create 256
 
@@ -66,15 +63,11 @@ let copy_chars =
   | _       -> copy_chars_unix
 
 let copy next =
-  if next < !cur_point then begin
-    (*raise (Inversion(!cur_point, next));*)
-    (*fprintf stderr "warning: inversion at %d, %d\n" !cur_point next;*)
-    assert false
-  end else begin
-    seek_in !inchan !cur_point;
-    copy_chars (next - !cur_point);
-    cur_point := next;
-  end
+  assert (next >= !cur_point);
+  seek_in !inchan !cur_point;
+  copy_chars (next - !cur_point);
+  cur_point := next;
+;;
 
 let prof_counter = ref 0;;
 
@@ -116,8 +109,8 @@ let add_val_counter (kind,pos) =
 (* ************* rewrite ************* *)
 
 let insert_profile rw_exp ex =
-  let st = ex.pexp_loc.loc_start
-  and en = ex.pexp_loc.loc_end
+  let st = ex.pexp_loc.loc_start.Lexing.pos_cnum
+  and en = ex.pexp_loc.loc_end.Lexing.pos_cnum
   and gh = ex.pexp_loc.loc_ghost
   in
   if gh || st = en then
@@ -285,10 +278,19 @@ and rw_exp iflag sexp =
   | Pexp_assert (cond) -> rewrite_exp iflag cond
   | Pexp_assertfalse -> ()
 (*> JOCAML *)
-  | (Pexp_loc (_, _)|Pexp_def (_, _)|Pexp_reply (_, _)|Pexp_par (_, _)|
-    Pexp_spawn _|Pexp_null) ->
+  | Pexp_loc (_, _)|Pexp_def (_, _)|Pexp_reply (_, _)|Pexp_par (_, _)
+  | Pexp_spawn _|Pexp_null
+  | Pexp_dyntype _|Pexp_coerce (_, _)|Pexp_dynamic _
+    ->
       assert false (* No profiling in jocaml *)
 (*< JOCAML *)
+
+  | Pexp_lazy (expr) -> rewrite_exp iflag expr
+
+  | Pexp_poly (sexp, _) -> rewrite_exp iflag sexp
+
+  | Pexp_object (_, fieldl) ->
+      List.iter (rewrite_class_field iflag) fieldl
 
 and rewrite_ifbody iflag ghost sifbody =
   if !instr_if && not ghost then
@@ -363,6 +365,7 @@ and rewrite_mod iflag smod =
   | Pmod_functor(param, smty, sbody) -> rewrite_mod iflag sbody
   | Pmod_apply(smod1, smod2) -> rewrite_mod iflag smod1; rewrite_mod iflag smod2
   | Pmod_constraint(smod, smty) -> rewrite_mod iflag smod
+  | Pmod_dyntype (_, _) -> assert false
 
 and rewrite_str_item iflag item =
   match item.pstr_desc with
@@ -378,6 +381,7 @@ let rewrite_file srcfile add_function =
   inchan := open_in_bin srcfile;
   let lb = Lexing.from_channel !inchan in
   Location.input_name := srcfile;
+  Location.init lb srcfile;
   List.iter (rewrite_str_item false) (Parse.implementation lb);
   final_rewrite add_function;
   close_in !inchan
@@ -411,11 +415,11 @@ let dumpfile = ref "ocamlprof.dump"
 
 (* Process a file *)
 
-let process_file filename =
-  if not (Filename.check_suffix filename ".ml") then
-    null_rewrite filename
-  else
-   let modname = Filename.basename(Filename.chop_suffix filename ".ml") in
+let process_intf_file filename = null_rewrite filename;;
+
+let process_impl_file filename =
+   let modname = Filename.basename(Filename.chop_extension filename) in
+       (* FIXME should let modname = String.capitalize modname *)
    if !instr_mode then begin
      (* Instrumentation mode *)
      set_flags !modes;
@@ -438,6 +442,14 @@ let process_file filename =
      init_rewrite modes modname;
      rewrite_file filename add_val_counter;
    end
+;;
+
+let process_anon_file filename =
+  if Filename.check_suffix filename ".ml" then
+    process_impl_file filename
+  else
+    process_intf_file filename
+;;
 
 (* Main function *)
 
@@ -449,29 +461,27 @@ let main () =
   try
     Arg.parse [
        "-f", Arg.String (fun s -> dumpfile := s),
-             "<file>  Use <file> as dump file (default ocamlprof.dump)";
+             "<file>     Use <file> as dump file (default ocamlprof.dump)";
        "-F", Arg.String (fun s -> special_id := s),
-             "<s>  Insert string <s> with the counts";
-       "-instrument", Arg.Set instr_mode, " (undocumented)";
-       "-m", Arg.String (fun s -> modes := s), "<flags>  (undocumented)"
-      ] process_file usage;
+             "<s>        Insert string <s> with the counts";
+       "-impl", Arg.String process_impl_file,
+                "<file>  Process <file> as a .ml file";
+       "-instrument", Arg.Set instr_mode, "  (undocumented)";
+       "-intf", Arg.String process_intf_file,
+                "<file>  Process <file> as a .mli file";
+       "-m", Arg.String (fun s -> modes := s), "<flags>    (undocumented)"
+      ] process_anon_file usage;
     exit 0
   with x ->
     let report_error ppf = function
-    | Lexer.Error(err, start, stop) ->
+    | Lexer.Error(err, range) ->
         fprintf ppf "@[%a%a@]@."
-        Location.print {loc_start = start; loc_end = stop; loc_ghost = false}
-        Lexer.report_error err
+        Location.print range  Lexer.report_error err
     | Syntaxerr.Error err ->
         fprintf ppf "@[%a@]@."
         Syntaxerr.report_error err
     | Profiler msg ->
         fprintf ppf "@[%s@]@." msg
-(*
-    | Inversion(pos, next) ->
-        print_string "Internal error: inversion at char "; print_int pos;
-        print_string ", "; print_int next
-*)
     | Sys_error msg ->
         fprintf ppf "@[I/O error:@ %s@]@." msg
     | x -> raise x in

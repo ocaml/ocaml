@@ -36,70 +36,101 @@ let transl_module =
   ref((fun cc rootpath modl -> assert false) :
       module_coercion -> Path.t option -> module_expr -> lambda)
 
+let transl_object =
+  ref (fun id s cl -> assert false :
+       Ident.t -> string list -> class_expr -> lambda)
+
 (* Translation of primitives *)
 
 let comparisons_table = create_hashtable 11 [
   "%equal",
-      (Pccall{prim_name = "equal"; prim_arity = 2; prim_alloc = true;
+      (Pccall{prim_name = "caml_equal"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
        Pintcomp Ceq,
        Pfloatcomp Ceq,
-       Pccall{prim_name = "string_equal"; prim_arity = 2; prim_alloc = false;
+       Pccall{prim_name = "caml_string_equal"; prim_arity = 2;
+              prim_alloc = false;
               prim_native_name = ""; prim_native_float = false},
        Pbintcomp(Pnativeint, Ceq),
        Pbintcomp(Pint32, Ceq),
        Pbintcomp(Pint64, Ceq));
   "%notequal",
-      (Pccall{prim_name = "notequal"; prim_arity = 2; prim_alloc = true;
+      (Pccall{prim_name = "caml_notequal"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
        Pintcomp Cneq,
        Pfloatcomp Cneq,
-       Pccall{prim_name = "string_notequal"; prim_arity = 2;
+       Pccall{prim_name = "caml_string_notequal"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
               prim_native_float = false},
        Pbintcomp(Pnativeint, Cneq),
        Pbintcomp(Pint32, Cneq),
        Pbintcomp(Pint64, Cneq));
   "%lessthan",
-      (Pccall{prim_name = "lessthan"; prim_arity = 2; prim_alloc = true;
+      (Pccall{prim_name = "caml_lessthan"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
        Pintcomp Clt,
        Pfloatcomp Clt,
-       Pccall{prim_name = "lessthan"; prim_arity = 2; prim_alloc = false;
-              prim_native_name = ""; prim_native_float = false},
+       Pccall{prim_name = "caml_string_lessthan"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false},
        Pbintcomp(Pnativeint, Clt),
        Pbintcomp(Pint32, Clt),
        Pbintcomp(Pint64, Clt));
   "%greaterthan",
-      (Pccall{prim_name = "greaterthan"; prim_arity = 2; prim_alloc = true;
+      (Pccall{prim_name = "caml_greaterthan"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
        Pintcomp Cgt,
        Pfloatcomp Cgt,
-       Pccall{prim_name = "greaterthan"; prim_arity = 2; prim_alloc = false;
-              prim_native_name = ""; prim_native_float = false},
+       Pccall{prim_name = "caml_string_greaterthan"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false},
        Pbintcomp(Pnativeint, Cgt),
        Pbintcomp(Pint32, Cgt),
        Pbintcomp(Pint64, Cgt));
   "%lessequal",
-      (Pccall{prim_name = "lessequal"; prim_arity = 2; prim_alloc = true;
+      (Pccall{prim_name = "caml_lessequal"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
        Pintcomp Cle,
        Pfloatcomp Cle,
-       Pccall{prim_name = "lessequal"; prim_arity = 2; prim_alloc = false;
-              prim_native_name = ""; prim_native_float = false},
+       Pccall{prim_name = "caml_string_lessequal"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false},
        Pbintcomp(Pnativeint, Cle),
        Pbintcomp(Pint32, Cle),
        Pbintcomp(Pint64, Cle));
   "%greaterequal",
-      (Pccall{prim_name = "greaterequal"; prim_arity = 2; prim_alloc = true;
+      (Pccall{prim_name = "caml_greaterequal"; prim_arity = 2;
+              prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
        Pintcomp Cge,
        Pfloatcomp Cge,
-       Pccall{prim_name = "greaterequal"; prim_arity = 2; prim_alloc = false;
-              prim_native_name = ""; prim_native_float = false},
+       Pccall{prim_name = "caml_string_greaterequal"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false},
        Pbintcomp(Pnativeint, Cge),
        Pbintcomp(Pint32, Cge),
-       Pbintcomp(Pint64, Cge))
+       Pbintcomp(Pint64, Cge));
+  "%compare",
+      (Pccall{prim_name = "caml_compare"; prim_arity = 2; prim_alloc = true;
+              prim_native_name = ""; prim_native_float = false},
+       Pccall{prim_name = "caml_int_compare"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false},
+       Pccall{prim_name = "caml_float_compare"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false},
+       Pccall{prim_name = "caml_string_compare"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false},
+       Pccall{prim_name = "caml_nativeint_compare"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false},
+       Pccall{prim_name = "caml_int32_compare"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false},
+       Pccall{prim_name = "caml_int64_compare"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false})
 ]
 
 let raise_name = "%raise"
@@ -223,11 +254,11 @@ let primitives_table = create_hashtable 57 [
 ]
 
 let prim_makearray =
-  { prim_name = "make_vect"; prim_arity = 2; prim_alloc = true;
+  { prim_name = "caml_make_vect"; prim_arity = 2; prim_alloc = true;
     prim_native_name = ""; prim_native_float = false }
 
 let prim_obj_dup =
-  { prim_name = "obj_dup"; prim_arity = 1; prim_alloc = true;
+  { prim_name = "caml_obj_dup"; prim_arity = 1; prim_alloc = true;
     prim_native_name = ""; prim_native_float = false }
 
 let transl_prim prim args =
@@ -314,24 +345,24 @@ let transl_primitive p =
 
 let check_recursive_lambda idlist lam =
   let rec check_top idlist = function
-      Lfunction(kind, params, body) as funct -> true
-    | Lprim(Pmakeblock(tag, mut), args) ->
-        List.for_all (check idlist) args
-    | Lprim(Pmakearray(Paddrarray|Pintarray), args) ->
-        List.for_all (check idlist) args
+    | Lvar v -> not (List.mem v idlist)
+    | Llet (_, _, _, _) as lam when check_recursive_recordwith idlist lam ->
+        true
     | Llet(str, id, arg, body) ->
         check idlist arg && check_top (add_let id arg idlist) body
     | Lletrec(bindings, body) ->
         let idlist' = add_letrec bindings idlist in
         List.for_all (fun (id, arg) -> check idlist' arg) bindings &&
         check_top idlist' body
+    | Lsequence (lam1, lam2) -> check idlist lam1 && check_top idlist lam2
     | Levent (lam, _) -> check_top idlist lam
-    | _ -> false
+    | lam -> check idlist lam
 
   and check idlist = function
-      Lvar _ -> true
-    | Lconst cst -> true
+    | Lvar _ -> true
     | Lfunction(kind, params, body) -> true
+    | Llet (_, _, _, _) as lam when check_recursive_recordwith idlist lam ->
+        true
     | Llet(str, id, arg, body) ->
         check idlist arg && check (add_let id arg idlist) body
     | Lletrec(bindings, body) ->
@@ -342,21 +373,35 @@ let check_recursive_lambda idlist lam =
         List.for_all (check idlist) args
     | Lprim(Pmakearray(Paddrarray|Pintarray), args) ->
         List.for_all (check idlist) args
+    | Lsequence (lam1, lam2) -> check idlist lam1 && check idlist lam2
     | Levent (lam, _) -> check idlist lam
     | lam ->
         let fv = free_variables lam in
-        List.for_all (fun id -> not(IdentSet.mem id fv)) idlist
+        not (List.exists (fun id -> IdentSet.mem id fv) idlist)
 
   and add_let id arg idlist =
-    match arg with
-      Lvar id' -> if List.mem id' idlist then id :: idlist else idlist
-    | Llet(_, _, _, body) -> add_let id body idlist
-    | Lletrec(_, body) -> add_let id body idlist
-    | _ -> idlist
+    let fv = free_variables arg in
+    if List.exists (fun id -> IdentSet.mem id fv) idlist
+    then id :: idlist
+    else idlist
 
   and add_letrec bindings idlist =
     List.fold_right (fun (id, arg) idl -> add_let id arg idl)
                     bindings idlist
+
+  (* reverse-engineering the code generated by transl_record case 2 *)
+  and check_recursive_recordwith idlist = function
+    | Llet (Strict, id1, Lprim (Pccall prim, [e1]), body) ->
+       prim = prim_obj_dup && check_top idlist e1
+       && check_recordwith_updates idlist id1 body
+    | _ -> false
+
+  and check_recordwith_updates idlist id1 = function
+    | Lsequence (Lprim ((Psetfield _ | Psetfloatfield _), [Lvar id2; e1]), cont)
+        -> id2 = id1 && check idlist e1
+           && check_recordwith_updates idlist id1 cont
+    | Lvar id2 -> id2 = id1
+    | _ -> false
 
   in check_top idlist lam
 
@@ -427,7 +472,7 @@ let event_before exp lam = match lam with
 | Lstaticraise (_,_) -> lam
 | _ ->
   if !Clflags.debug
-  then Levent(lam, {lev_loc = exp.exp_loc.Location.loc_start;
+  then Levent(lam, {lev_pos = exp.exp_loc.Location.loc_start;
                     lev_kind = Lev_before;
                     lev_repr = None;
                     lev_env = Env.summary exp.exp_env})
@@ -435,7 +480,7 @@ let event_before exp lam = match lam with
 
 let event_after exp lam =
   if !Clflags.debug
-  then Levent(lam, {lev_loc = exp.exp_loc.Location.loc_end;
+  then Levent(lam, {lev_pos = exp.exp_loc.Location.loc_end;
                     lev_kind = Lev_after exp.exp_type;
                     lev_repr = None;
                     lev_env = Env.summary exp.exp_env})
@@ -448,33 +493,64 @@ let event_function exp lam =
     let repr = Some (ref 0) in
     let (info, body) = lam repr in
     (info,
-     Levent(body, {lev_loc = exp.exp_loc.Location.loc_start;
+     Levent(body, {lev_pos = exp.exp_loc.Location.loc_start;
                    lev_kind = Lev_function;
                    lev_repr = repr;
                    lev_env = Env.summary exp.exp_env}))
   else
     lam None
 
+let primitive_is_ccall = function
+  (* Determine if a primitive is a Pccall or will be turned later into
+     a C function call that may raise an exception *)
+  | Pccall _ | Pstringrefs | Pstringsets | Parrayrefs _ | Parraysets _ |
+    Pbigarrayref _ | Pbigarrayset _ -> true
+  | _ -> false
+
+(* Assertions *)
 
 let assert_failed loc =
+  (* [Location.get_pos_info] is too expensive *)
+  let fname = match loc.Location.loc_start.Lexing.pos_fname with
+              | "" -> !Location.input_name
+              | x -> x
+  in
+  let pos = loc.Location.loc_start in
+  let line = pos.Lexing.pos_lnum in
+  let char = pos.Lexing.pos_cnum - pos.Lexing.pos_bol in
   Lprim(Praise, [Lprim(Pmakeblock(0, Immutable),
           [transl_path Predef.path_assert_failure;
            Lconst(Const_block(0,
-              [Const_base(Const_string !Location.input_name);
-               Const_base(Const_int loc.Location.loc_start);
-               Const_base(Const_int loc.Location.loc_end)]))])])
+              [Const_base(Const_string fname);
+               Const_base(Const_int line);
+               Const_base(Const_int char)]))])])
 ;;
 
 (* Translation of expressions *)
 
 let rec transl_exp e =
+  let eval_once =
+    (* Whether classes for immediate objects must be cached *)
+    match e.exp_desc with
+      Texp_function _ | Texp_for _ | Texp_while _ -> false
+    | _ -> true
+  in
+  if eval_once then transl_exp0 e else
+  Translobj.oo_wrap e.exp_env true transl_exp0 e
+
+and transl_exp0 e =
   match e.exp_desc with
     Texp_ident(path, {val_kind = Val_prim p}) ->
-      transl_primitive p
+      if p.prim_name = "%send" then
+	let obj = Ident.create "obj" and meth = Ident.create "meth" in
+	Lfunction(Curried, [obj; meth], Lsend(Lvar meth, Lvar obj, []))
+      else
+	transl_primitive p
   | Texp_ident(path, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident(path, {val_kind = Val_reg | Val_self _ | Val_channel (_,_)}) ->
       transl_path path
+  | Texp_ident _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
   | Texp_constant cst ->
       Lconst(Const_base cst)
   | Texp_let(rec_flag, pat_expr_list, body) ->
@@ -497,14 +573,17 @@ let rec transl_exp e =
     when List.length args = p.prim_arity
     && List.for_all (fun (arg,_) -> arg <> None) args ->
       let args = List.map (function Some x, _ -> x | _ -> assert false) args in
-      let prim = transl_prim p args in
+      if p.prim_name = "%send" then
+	let obj = transl_exp (List.hd args) in
+	event_after e (Lsend (transl_exp (List.nth args 1), obj, []))
+      else let prim = transl_prim p args in
       begin match (prim, args) with
         (Praise, [arg1]) ->
           Lprim(Praise, [event_after arg1 (transl_exp arg1)])
-      | (Pccall _, _) ->
-          event_after e (Lprim(prim, transl_list args))
       | (_, _) ->
-          Lprim(prim, transl_list args)
+          if primitive_is_ccall prim
+          then event_after e (Lprim(prim, transl_list args))
+          else Lprim(prim, transl_list args)
       end
   | Texp_apply
       ({exp_desc =
@@ -557,7 +636,7 @@ let rec transl_exp e =
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
-        None -> Lconst(Const_base(Const_int tag))
+        None -> Lconst(Const_pointer tag)
       | Some arg ->
           let lam = transl_exp arg in
           try
@@ -569,6 +648,8 @@ let rec transl_exp e =
       end
   | Texp_record ((lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
       transl_record lbl1.lbl_all lbl1.lbl_repres lbl_expr_list opt_init_expr
+  | Texp_record ([], _) ->
+      fatal_error "Translcore.transl_exp: bad Texp_record"
   | Texp_field(arg, lbl) ->
       let access =
         match lbl.lbl_repres with
@@ -583,25 +664,22 @@ let rec transl_exp e =
       Lprim(access, [transl_exp arg; transl_exp newval])
   | Texp_array expr_list ->
       let kind = array_kind e in
-      let len = List.length expr_list in
-      if len <= Config.max_young_wosize then
-        Lprim(Pmakearray kind, transl_list expr_list)
-      else begin
-        let v = Ident.create "makearray" in
-        let rec fill_fields pos = function
-          [] ->
-            Lvar v
-        | arg :: rem ->
-            Lsequence(Lprim(Parraysetu kind,
-                            [Lvar v;
-                             Lconst(Const_base(Const_int pos));
-                             transl_exp arg]),
-                      fill_fields (pos+1) rem) in
-        Llet(Strict, v,
-             Lprim(Pccall prim_makearray,
-                   [Lconst(Const_base(Const_int len));
-                    transl_exp (List.hd expr_list)]),
-             fill_fields 1 (List.tl expr_list))
+      let ll = transl_list expr_list in
+      begin try
+        (* Deactivate constant optimization if array is small enough *)
+        if List.length ll <= 4 then raise Not_constant;
+        let cl = List.map extract_constant ll in
+        let master =
+          match kind with
+          | Paddrarray | Pintarray ->        
+              Lconst(Const_block(0, cl))
+          | Pfloatarray ->
+              Lconst(Const_float_array(List.map extract_float cl))
+          | Pgenarray ->
+              raise Not_constant in             (* can this really happen? *)
+        Lprim(Pccall prim_obj_dup, [master])
+      with Not_constant ->
+        Lprim(Pmakearray kind, ll)
       end
 (*> JOCAML *)
   | Texp_dynamic d ->
@@ -672,6 +750,16 @@ let rec transl_exp e =
       then lambda_unit
       else Lifthenelse (transl_exp cond, lambda_unit, assert_failed e.exp_loc)
   | Texp_assertfalse -> assert_failed e.exp_loc
+| Texp_lazy e ->
+    let fn = Lfunction (Curried, [Ident.create "param"], transl_exp e) in
+    Lprim(Pmakeblock(Config.lazy_tag, Immutable), [fn])
+| Texp_object (cs, cty, meths) ->
+    let cl = Ident.create "class" in
+    !transl_object cl meths
+      { cl_desc = Tclass_structure cs;
+        cl_loc = e.exp_loc;
+        cl_type = Tcty_signature cty;
+        cl_env = e.exp_env }
 (*> JOCAML *)
   | Texp_spawn (e) -> transl_spawn None None e
 (*< JOCAML *)
@@ -1040,6 +1128,8 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
   end else begin
     (* Take a shallow copy of the init record, then mutate the fields
        of the copy *)
+    (* If you change anything here, you will likely have to change
+       [check_recursive_recordwith] in this file. *)
     let copy_id = Ident.create "newrecord" in
     let rec update_field (lbl, expr) cont =
       let upd =
@@ -1060,6 +1150,19 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
 (* For external usage *)
 let transl_def d k = do_transl_def None d k
 (*< JOCAML *)
+
+(* Wrapper for class compilation *)
+
+(*
+let transl_exp = transl_exp_wrap
+
+let transl_let rec_flag pat_expr_list body =
+  match pat_expr_list with
+    [] -> body
+  | (_, expr) :: _ ->
+      Translobj.oo_wrap expr.exp_env false
+        (transl_let rec_flag pat_expr_list) body
+*)
 
 (* Compile an exception definition *)
 

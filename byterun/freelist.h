@@ -15,20 +15,21 @@
 
 /* Free lists of heap blocks. */
 
-#ifndef _freelist_
-#define _freelist_
+#ifndef CAML_FREELIST_H
+#define CAML_FREELIST_H
 
 
 #include "misc.h"
 #include "mlvalues.h"
 
-extern asize_t fl_cur_size;
+extern asize_t caml_fl_cur_size;     /* size in words */
 
-char *fl_allocate (mlsize_t);
-void fl_init_merge (void);
-void fl_reset (void);
-char *fl_merge_block (char *);
-void fl_add_block (char *);
+char *caml_fl_allocate (mlsize_t);
+void caml_fl_init_merge (void);
+void caml_fl_reset (void);
+char *caml_fl_merge_block (char *);
+void caml_fl_add_block (char *);
+void caml_make_free_blocks (value *, mlsize_t, int);
 
 
-#endif /* _freelist_ */
+#endif /* CAML_FREELIST_H */

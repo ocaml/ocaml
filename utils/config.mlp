@@ -12,7 +12,8 @@
 
 (* $Id$ *)
 
-let version = "3.04"
+(* The main OCaml version string has moved to stdlib/sys.ml *)
+let version = Sys.ocaml_version
 
 let standard_library =
   try
@@ -24,6 +25,7 @@ let standard_library =
     "%%LIBDIR%%"
 
 let standard_runtime = "%%BYTERUN%%"
+let ccomp_type = "%%CCOMPTYPE%%"
 let bytecomp_c_compiler = "%%BYTECC%%"
 let bytecomp_c_linker = "%%BYTELINK%%"
 let bytecomp_c_libraries = "%%BYTECCLIBS%%"
@@ -31,22 +33,31 @@ let native_c_compiler = "%%NATIVECC%%"
 let native_c_linker = "%%NATIVELINK%%"
 let native_c_libraries = "%%NATIVECCLIBS%%"
 let native_partial_linker = "%%PARTIALLD%%"
+let native_pack_linker = "%%PACKLD%%"
 let ranlib = "%%RANLIBCMD%%"
+let binutils_nm = "%%BINUTILS_NM%%"
+let binutils_objcopy = "%%BINUTILS_OBJCOPY%%"
+let cc_profile = "%%CC_PROFILE%%"
 
 let exec_magic_number = "Caml1999X007"
-and cmi_magic_number = "Caml1999I008"
-and cmo_magic_number = "Caml1999O004"
+and cmi_magic_number = "Caml1999I009"
+and cmo_magic_number = "Caml1999O005"
 and cma_magic_number = "Caml1999A006"
-and cmx_magic_number = "Caml1999Y006"
-and cmxa_magic_number = "Caml1999Z008"
-and ast_impl_magic_number = "Caml1999M008"
-and ast_intf_magic_number = "Caml1999N007"
+and cmx_magic_number = "Caml1999Y008"
+and cmxa_magic_number = "Caml1999Z009"
+and ast_impl_magic_number = "Caml1999M010"
+and ast_intf_magic_number = "Caml1999N009"
 
 let load_path = ref ([] : string list)
 
 let interface_suffix = ref ".mli"
 
-let max_tag = 248
+let max_tag = 245
+(* This is normally the same as in obj.ml, but we have to define it
+   separately because it can differ when we're in the middle of a
+   bootstrapping phase. *)
+let lazy_tag = 246
+
 let max_young_wosize = 256
 let stack_threshold = 256 (* see byterun/config.h *)
 
@@ -62,3 +73,10 @@ let ext_dll = "%%EXT_DLL%%"
 (*> JOCAML *)
 let standard_joinparser = "%%JOINPARSER%%"
 (*< JOCAML *)
+
+let default_executable_name =
+  match Sys.os_type with
+    "Unix" -> "a.out"
+  | "Win32" | "Cygwin" -> "camlprog.exe"
+  | _ -> "camlprog"
+

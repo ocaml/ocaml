@@ -19,9 +19,10 @@ include ../../config/Makefile
 
 CC=$(BYTECC)
 CFLAGS=-I../../byterun $(X11_INCLUDES) -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
-CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
-CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
+CAMLC=../../ocamlcomp.sh
+CAMLOPT=../../ocamlcompopt.sh
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
+COMPFLAGS=-warn-error A
 
 OBJS=open.o draw.o fill.o color.o text.o \
   image.o make_img.o dump_img.o point_col.o sound.o events.o \
@@ -49,21 +50,21 @@ clean: partialclean
 	rm -f *.a *.so *.o
 
 install:
-	if test -f dllgraphics.so; then cp dllgraphics.so $(LIBDIR)/dllgraphics.so; fi
+	if test -f dllgraphics.so; then cp dllgraphics.so $(STUBLIBDIR)/dllgraphics.so; fi
 	cp libgraphics.a $(LIBDIR)/libgraphics.a
 	cd $(LIBDIR); $(RANLIB) libgraphics.a
 	cp graphics.cm[ia] graphicsX11.cmi graphics.mli graphicsX11.mli $(LIBDIR)
 
 installopt:
-	cp graphics.cmxa graphics.a $(LIBDIR)
+	cp graphics.cmx graphics.cmxa graphics.a $(LIBDIR)
 	cd $(LIBDIR); $(RANLIB) graphics.a
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .mli.cmi:
-	$(CAMLC) -c $<
+	$(CAMLC) -c $(COMPFLAGS) $<
 .ml.cmo:
-	$(CAMLC) -c $<
+	$(CAMLC) -c $(COMPFLAGS) $<
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 

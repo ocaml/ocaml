@@ -92,6 +92,7 @@ type error =
   | EHOSTDOWN           (* Host is down *)
   | EHOSTUNREACH        (* No route to host *)
   | ELOOP               (* Too many levels of symbolic links *)
+  | EOVERFLOW
   (* All other errors are mapped to EUNKNOWNERR *)
   | EUNKNOWNERR of int  (* Unknown error *)
 
@@ -120,7 +121,7 @@ let handle_unix_error f arg =
     exit 2
 
 external environment : unit -> string array = "unix_environment"
-external getenv: string -> string = "sys_getenv"
+external getenv: string -> string = "caml_sys_getenv"
 external putenv: string -> string -> unit = "unix_putenv"
 
 type process_status =
@@ -134,10 +135,10 @@ type wait_flag =
 
 type file_descr
 
-external execv : string -> string array -> unit = "unix_execv"
-external execve : string -> string array -> string array -> unit = "unix_execve"
-external execvp : string -> string array -> unit = "unix_execvp"
-external execvpe : string -> string array -> string array -> unit = "unix_execvpe"
+external execv : string -> string array -> 'a = "unix_execv"
+external execve : string -> string array -> string array -> 'a = "unix_execve"
+external execvp : string -> string array -> 'a = "unix_execvp"
+external execvpe : string -> string array -> string array -> 'a = "unix_execvpe"
 
 external waitpid : wait_flag list -> int -> int * process_status
                  = "win_waitpid"
@@ -150,13 +151,11 @@ let nice prio = invalid_arg "Unix.nice not implemented"
 
 (* Basic file input/output *)
 
-type standard_handle = STD_INPUT | STD_OUTPUT | STD_ERROR
+external filedescr_of_fd : int -> file_descr = "win_handle_fd"
 
-external stdhandle : standard_handle -> file_descr = "win_stdhandle"
-
-let stdin = stdhandle STD_INPUT
-let stdout = stdhandle STD_OUTPUT
-let stderr = stdhandle STD_ERROR
+let stdin = filedescr_of_fd 0
+let stdout = filedescr_of_fd 1
+let stderr = filedescr_of_fd 2
 
 type open_flag =
     O_RDONLY
@@ -167,6 +166,10 @@ type open_flag =
   | O_CREAT
   | O_TRUNC
   | O_EXCL
+  | O_NOCTTY
+  | O_DSYNC
+  | O_SYNC
+  | O_RSYNC
 
 type file_perm = int
 
@@ -179,23 +182,23 @@ external unsafe_write : file_descr -> string -> int -> int -> int
                       = "unix_write"
 
 let read fd buf ofs len =
-  if len < 0 || ofs + len > String.length buf
+  if ofs < 0 || len < 0 || ofs > String.length buf - len
   then invalid_arg "Unix.read"
   else unsafe_read fd buf ofs len
 let write fd buf ofs len =
-  if len < 0 || ofs + len > String.length buf
+  if ofs < 0 || len < 0 || ofs > String.length buf - len
   then invalid_arg "Unix.write"
   else unsafe_write fd buf ofs len
 
 (* Interfacing with the standard input/output library *)
 
-external open_read_descriptor : int -> in_channel = "caml_open_descriptor_in"
-external open_write_descriptor : int -> out_channel = "caml_open_descriptor_out"
-external fd_of_in_channel : in_channel -> int = "channel_descriptor"
-external fd_of_out_channel : out_channel -> int = "channel_descriptor"
+external open_read_descriptor : int -> in_channel = "caml_ml_open_descriptor_in"
+external open_write_descriptor : int -> out_channel
+                               = "caml_ml_open_descriptor_out"
+external fd_of_in_channel : in_channel -> int = "caml_channel_descriptor"
+external fd_of_out_channel : out_channel -> int = "caml_channel_descriptor"
 
 external open_handle : file_descr -> int = "win_fd_handle"
-external filedescr_of_fd : int -> file_descr = "win_handle_fd"
 
 let in_channel_of_descr handle =
   open_read_descriptor(open_handle handle)
@@ -254,6 +257,32 @@ external unlink : string -> unit = "unix_unlink"
 external rename : string -> string -> unit = "unix_rename"
 external link : string -> string -> unit = "unix_link"
 
+(* Operations on large files *)
+
+module LargeFile =
+  struct
+    external lseek : file_descr -> int64 -> seek_command -> int64 = "unix_lseek_64"
+    let truncate name len = invalid_arg "Unix.LargeFile.truncate not implemented"
+    let ftruncate name len = invalid_arg "Unix.LargeFile.ftruncate not implemented"
+    type stats =
+      { st_dev : int;
+        st_ino : int;
+        st_kind : file_kind;
+        st_perm : file_perm;
+        st_nlink : int;
+        st_uid : int;
+        st_gid : int;
+        st_rdev : int;
+        st_size : int64;
+        st_atime : float;
+        st_mtime : float;
+        st_ctime : float;
+      }
+    external stat : string -> stats = "unix_stat_64"
+    let lstat = stat
+    let fstat fd = invalid_arg "Unix.LargeFile.fstat not implemented"
+  end
+
 (* File permissions and ownership *)
 
 type access_permission =
@@ -275,8 +304,8 @@ external access : string -> access_permission list -> unit = "unix_access"
 external dup : file_descr -> file_descr = "unix_dup"
 external dup2 : file_descr -> file_descr -> unit = "unix_dup2"
 
-let set_nonblock fd = ()
-let clear_nonblock fd = ()
+external set_nonblock : file_descr -> unit = "unix_set_nonblock"
+external clear_nonblock : file_descr -> unit = "unix_clear_nonblock"
 
 external set_close_on_exec : file_descr -> unit = "win_set_close_on_exec"
 external clear_close_on_exec : file_descr -> unit = "win_clear_close_on_exec"
@@ -349,7 +378,7 @@ type lock_command =
   | F_RLOCK
   | F_TRLOCK
 
-let lockf fd cmd exten = invalid_arg "Unix.lockf not implemented"
+external lockf : file_descr -> lock_command -> int -> unit = "unix_lockf"
 let kill pid signo = invalid_arg "Unix.kill not implemented"
 type sigprocmask_command = SIG_SETMASK | SIG_BLOCK | SIG_UNBLOCK
 let sigprocmask cmd sigs = invalid_arg "Unix.sigprocmask not implemented"
@@ -435,7 +464,9 @@ let getgrgid = getpwnam
 
 (* Internet addresses *)
 
-type inet_addr
+type inet_addr = string
+
+let is_inet6_addr s = String.length s = 16
 
 external inet_addr_of_string : string -> inet_addr
                                     = "unix_inet_addr_of_string"
@@ -443,12 +474,18 @@ external string_of_inet_addr : inet_addr -> string
                                     = "unix_string_of_inet_addr"
 
 let inet_addr_any = inet_addr_of_string "0.0.0.0"
+let inet_addr_loopback = inet_addr_of_string "127.0.0.1"
+let inet6_addr_any =
+  try inet_addr_of_string "::" with Failure _ -> inet_addr_any
+let inet6_addr_loopback =
+  try inet_addr_of_string "::1" with Failure _ -> inet_addr_loopback
 
 (* Sockets *)
 
 type socket_domain =
     PF_UNIX
   | PF_INET
+  | PF_INET6
 
 type socket_type =
     SOCK_STREAM
@@ -459,6 +496,10 @@ type socket_type =
 type sockaddr =
     ADDR_UNIX of string
   | ADDR_INET of inet_addr * int
+
+let domain_of_sockaddr = function
+    ADDR_UNIX _ -> PF_UNIX
+  | ADDR_INET(a, _) -> if is_inet6_addr a then PF_INET6 else PF_INET
 
 type shutdown_command =
     SHUTDOWN_RECEIVE
@@ -518,19 +559,19 @@ external unsafe_sendto :
                                   = "unix_sendto" "unix_sendto_native"
 
 let recv fd buf ofs len flags =
-  if len < 0 || ofs + len > String.length buf
+  if ofs < 0 || len < 0 || ofs > String.length buf - len
   then invalid_arg "Unix.recv"
   else unsafe_recv fd buf ofs len flags
 let recvfrom fd buf ofs len flags =
-  if len < 0 || ofs + len > String.length buf
+  if ofs < 0 || len < 0 || ofs > String.length buf - len
   then invalid_arg "Unix.recvfrom"
   else unsafe_recvfrom fd buf ofs len flags
 let send fd buf ofs len flags =
-  if len < 0 || ofs + len > String.length buf
+  if ofs < 0 || len < 0 || ofs > String.length buf - len
   then invalid_arg "Unix.send"
   else unsafe_send fd buf ofs len flags
 let sendto fd buf ofs len flags addr =
-  if len < 0 || ofs + len > String.length buf
+  if ofs < 0 || len < 0 || ofs > String.length buf - len
   then invalid_arg "Unix.sendto"
   else unsafe_sendto fd buf ofs len flags addr
 
@@ -582,6 +623,115 @@ external getservbyname : string -> string -> service_entry
                                          = "unix_getservbyname"
 external getservbyport : int -> string -> service_entry
                                          = "unix_getservbyport"
+
+type addr_info =
+  { ai_family : socket_domain;
+    ai_socktype : socket_type;
+    ai_protocol : int;
+    ai_addr : sockaddr;
+    ai_canonname : string }
+
+type getaddrinfo_option =
+    AI_FAMILY of socket_domain
+  | AI_SOCKTYPE of socket_type
+  | AI_PROTOCOL of int
+  | AI_NUMERICHOST
+  | AI_CANONNAME
+  | AI_PASSIVE
+
+let getaddrinfo node service opts =
+  (* Parse options *)
+  let opt_socktype = ref None
+  and opt_protocol = ref 0
+  and opt_passive = ref false in
+  List.iter
+    (function AI_SOCKTYPE s -> opt_socktype := Some s
+            | AI_PROTOCOL p -> opt_protocol := p
+            | AI_PASSIVE -> opt_passive := true
+            | _ -> ())
+    opts;
+  (* Determine socket types and port numbers *)
+  let get_port ty kind =
+    if service = "" then [ty, 0] else
+      try
+        [ty, int_of_string service]
+      with Failure _ ->
+      try
+        [ty, (getservbyname service kind).s_port]
+      with Not_found -> [] 
+  in
+  let ports =
+    match !opt_socktype with
+    | None ->
+        get_port SOCK_STREAM "tcp" @ get_port SOCK_DGRAM "udp"
+    | Some SOCK_STREAM ->
+        get_port SOCK_STREAM "tcp"
+    | Some SOCK_DGRAM ->
+        get_port SOCK_DGRAM "udp"
+    | Some ty ->
+        if service = "" then [ty, 0] else [] in
+  (* Determine IP addresses *)
+  let addresses =
+    if node = "" then
+      if List.mem AI_PASSIVE opts
+      then [inet_addr_any, "0.0.0.0"]
+      else [inet_addr_loopback, "127.0.0.1"]
+    else
+      try
+        [inet_addr_of_string node, node]
+      with Failure _ ->
+      try
+        let he = gethostbyname node in
+        List.map
+          (fun a -> (a, he.h_name))
+          (Array.to_list he.h_addr_list)
+      with Not_found ->
+        [] in
+  (* Cross-product of addresses and ports *)
+  List.flatten
+    (List.map 
+      (fun (ty, port) ->
+        List.map
+          (fun (addr, name) ->
+            { ai_family = PF_INET;
+              ai_socktype = ty;
+              ai_protocol = !opt_protocol;
+              ai_addr = ADDR_INET(addr, port);
+              ai_canonname = name })
+          addresses)
+      ports)
+
+type name_info =
+  { ni_hostname : string;
+    ni_service : string }
+
+type getnameinfo_option =
+    NI_NOFQDN
+  | NI_NUMERICHOST
+  | NI_NAMEREQD
+  | NI_NUMERICSERV
+  | NI_DGRAM
+
+let getnameinfo addr opts =
+  match addr with
+  | ADDR_UNIX f ->
+      { ni_hostname = ""; ni_service = f } (* why not? *)
+  | ADDR_INET(a, p) ->
+      let hostname =
+        try
+          if List.mem NI_NUMERICHOST opts then raise Not_found;
+          (gethostbyaddr a).h_name
+        with Not_found ->
+          if List.mem NI_NAMEREQD opts then raise Not_found;
+          string_of_inet_addr a in
+      let service =
+        try
+          if List.mem NI_NUMERICSERV opts then raise Not_found;
+          let kind = if List.mem NI_DGRAM opts then "udp" else "tcp" in
+          (getservbyport p kind).s_name
+        with Not_found ->
+          string_of_int p in
+      { ni_hostname = hostname; ni_service = service }
 
 (* High-level process management (system, popen) *)
 

@@ -93,7 +93,7 @@ let extract_type_definitions whole_env ty0 =
                     raise (Unimplemented
                              ("Dynamicisation involving an abstract type: " ^
                               name))
-                | Type_variant cases ->
+                | Type_variant (cases,_) ->
                     let constructor_names = List.map fst cases in
                     let prefix = String.concat "+" constructor_names ^ "-" in
                     let row = {
@@ -102,9 +102,10 @@ let extract_type_definitions whole_env ty0 =
                       row_bound = [];
                       row_closed = true;
                       row_name = None;
+                      row_fixed = true;
                     } in
                     Some (Btype.newgenty (Tvariant row))
-                | Type_record (record_fields, _) ->
+                | Type_record (record_fields, _, _) ->
                     let get_name (name, mutabl, _) =
                       match mutabl with
                       | Asttypes.Mutable -> "!" ^ name
@@ -154,7 +155,7 @@ let extract_type_definitions whole_env ty0 =
       type_arity = if clean then 0 else List.length vars;
       type_kind = Type_abstract;
       type_manifest = Some ty1;
-      type_variance = if clean then List.map (fun _ -> true, true) vars (*??*) else [] }
+      type_variance = if clean then List.map (fun _ -> true, true, true ) vars (*??*) else [] }
   in
   Tsig_type (interesting_ident, decl) :: !r_sig
 

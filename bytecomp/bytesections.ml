@@ -80,11 +80,17 @@ let seek_section ic name =
 
 (* Return the contents of a section, as a string *)
 
-let read_section ic name =
+let read_section_string ic name =
   let len = seek_section ic name in
   let res = String.create len in
   really_input ic res 0 len;
   res
+
+(* Return the contents of a section, as marshalled data *)
+
+let read_section_struct ic name =
+  ignore (seek_section ic name);
+  input_value ic
 
 (* Return the position of the beginning of the first section *)
 

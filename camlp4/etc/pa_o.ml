@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -15,12 +15,13 @@
 open Stdpp;
 open Pcaml;
 
+Pcaml.syntax_name.val := "OCaml";
 Pcaml.no_constructors_arity.val := True;
 
 do {
   let odfa = Plexer.dollar_for_antiquotation.val in
   Plexer.dollar_for_antiquotation.val := False;
-  Grammar.Unsafe.reinit_gram gram (Plexer.make ());
+  Grammar.Unsafe.gram_reinit gram (Plexer.gmake ());
   Plexer.dollar_for_antiquotation.val := odfa;
   Grammar.Unsafe.clear_entry interf;
   Grammar.Unsafe.clear_entry implem;
@@ -34,6 +35,7 @@ do {
   Grammar.Unsafe.clear_entry patt;
   Grammar.Unsafe.clear_entry ctyp;
   Grammar.Unsafe.clear_entry let_binding;
+  Grammar.Unsafe.clear_entry type_declaration;
   Grammar.Unsafe.clear_entry class_type;
   Grammar.Unsafe.clear_entry class_expr;
   Grammar.Unsafe.clear_entry class_sig_item;
@@ -50,11 +52,17 @@ value o2b =
 ;
 
 value mkumin loc f arg =
-  match arg with
-  [ <:expr< $int:n$ >> when int_of_string n > 0 ->
+  match (f, arg) with
+  [ ("-", <:expr< $int:n$ >>) when int_of_string n > 0 ->
       let n = "-" ^ n in
       <:expr< $int:n$ >>
-  | <:expr< $flo:n$ >> when float_of_string n > 0.0 ->
+  | ("-", MLast.ExInt32 loc n) when (Int32.of_string n) > 0l ->
+      MLast.ExInt32 loc ("-" ^ n)
+  | ("-", MLast.ExInt64 loc n) when (Int64.of_string n) > 0L ->
+      MLast.ExInt64 loc ("-" ^ n)
+  | ("-", MLast.ExNativeInt loc n) when (Nativeint.of_string n) > 0n ->
+      MLast.ExNativeInt loc ("-" ^ n)
+  | (_, <:expr< $flo:n$ >>) when float_of_string n > 0.0 ->
       let n = "-" ^ n in
       <:expr< $flo:n$ >>
   | _ ->
@@ -62,7 +70,6 @@ value mkumin loc f arg =
       <:expr< $lid:f$ $arg$ >> ]
 ;
 
-external loc_of_node : 'a -> (int * int) = "%field0";
 
 value mklistexp loc last =
   loop True where rec loop top =
@@ -72,7 +79,7 @@ value mklistexp loc last =
         [ Some e -> e
         | None -> <:expr< [] >> ]
     | [e1 :: el] ->
-        let loc = if top then loc else (fst (loc_of_node e1), snd loc) in
+        let loc = if top then loc else (fst (MLast.loc_of_expr e1), snd loc) in
         <:expr< [$e1$ :: $loop False el$] >> ]
 ;
 
@@ -84,7 +91,7 @@ value mklistpat loc last =
         [ Some p -> p
         | None -> <:patt< [] >> ]
     | [p1 :: pl] ->
-        let loc = if top then loc else (fst (loc_of_node p1), snd loc) in
+        let loc = if top then loc else (fst (MLast.loc_of_patt p1), snd loc) in
         <:patt< [$p1$ :: $loop False pl$] >> ]
 ;
 
@@ -102,13 +109,6 @@ value is_operator =
       [ Not_found -> try Hashtbl.find ct x.[0] with _ -> False ]
   }
 ;
-
-(*
-value operator =
-  Grammar.Entry.of_parser gram "operator"
-    (parser [: `("", x) when is_operator x :] -> x)
-;
-*)
 
 value operator_rparen =
   Grammar.Entry.of_parser gram "operator_rparen"
@@ -230,21 +230,38 @@ value stream_peek_nth n strm =
     | [_ :: l] -> loop (n - 1) l ]
 ;
 
-value test_not_class_signature =
-  Grammar.Entry.of_parser gram "test_not_class_signature"
+(* horrible hack to be able to parse class_types *)
+
+value test_ctyp_minusgreater =
+  Grammar.Entry.of_parser gram "test_ctyp_minusgreater"
     (fun strm ->
-       match Stream.npeek 1 strm with
-       [ [("", "object")] -> raise Stream.Failure
-       | [("", "[")] ->
-           test 2 where rec test lev =
-             match stream_peek_nth lev strm with
-             [ Some ("", "]") ->
-                 match stream_peek_nth (lev + 1) strm with
-                 [ Some ("UIDENT" | "LIDENT", _) -> raise Stream.Failure
-                 | _ -> () ]
-             | Some _ -> test (lev + 1)
-             | None -> raise Stream.Failure ]
-       | _ -> () ])
+       let rec skip_simple_ctyp n =
+         match stream_peek_nth n strm with
+         [ Some ("", "->") -> n
+         | Some ("", "[" | "[<") ->
+             skip_simple_ctyp (ignore_upto "]" (n + 1) + 1)
+         | Some ("", "(") -> skip_simple_ctyp (ignore_upto ")" (n + 1) + 1)
+         | Some
+             ("",
+              "as" | "'" | ":" | "*" | "." | "#" | "<" | ">" | ".." | ";" |
+              "_") ->
+             skip_simple_ctyp (n + 1)
+         | Some ("QUESTIONIDENT" | "LIDENT" | "UIDENT", _) ->
+             skip_simple_ctyp (n + 1)
+         | Some _ | None -> raise Stream.Failure ]
+       and ignore_upto end_kwd n =
+         match stream_peek_nth n strm with
+         [ Some ("", prm) when prm = end_kwd -> n
+         | Some ("", "[" | "[<") ->
+             ignore_upto end_kwd (ignore_upto "]" (n + 1) + 1)
+         | Some ("", "(") -> ignore_upto end_kwd (ignore_upto ")" (n + 1) + 1)
+         | Some _ -> ignore_upto end_kwd (n + 1)
+         | None -> raise Stream.Failure ]
+       in
+       match Stream.peek strm with
+       [ Some (("", "[") | ("LIDENT" | "UIDENT", _)) -> skip_simple_ctyp 1
+       | Some ("", "object") -> raise Stream.Failure
+       | _ -> 1 ])
 ;
 
 value test_label_eq =
@@ -257,21 +274,60 @@ value test_label_eq =
        | _ -> raise Stream.Failure ])
 ;
 
+value test_typevar_list_dot =
+  Grammar.Entry.of_parser gram "test_typevar_list_dot"
+    (let rec test lev strm =
+       match stream_peek_nth lev strm with
+       [ Some ("", "'") -> test2 (lev + 1) strm
+       | Some ("", ".") -> ()
+       | _ -> raise Stream.Failure ]
+    and test2 lev strm =
+       match stream_peek_nth lev strm with
+       [ Some ("UIDENT" | "LIDENT", _) -> test (lev + 1) strm
+       | _ -> raise Stream.Failure ]
+    in
+    test 1)
+;
+
 value constr_arity = ref [("Some", 1); ("Match_Failure", 1)];
 
-value rec constr_expr_arity =
+value rec is_expr_constr_call =
+  fun
+  [ <:expr< $uid:_$ >> -> True
+  | <:expr< $uid:_$.$e$ >> -> is_expr_constr_call e
+  | <:expr< $e$ $_$ >> -> is_expr_constr_call e
+  | _ -> False ]
+;
+
+value rec constr_expr_arity loc =
   fun
   [ <:expr< $uid:c$ >> ->
       try List.assoc c constr_arity.val with [ Not_found -> 0 ]
-  | <:expr< $uid:_$.$e$ >> -> constr_expr_arity e
+  | <:expr< $uid:_$.$e$ >> -> constr_expr_arity loc e
+  | <:expr< $e$ $_$ >> ->
+      if is_expr_constr_call e then
+        Stdpp.raise_with_loc loc (Stream.Error "currified constructor")
+      else 1
   | _ -> 1 ]
 ;
 
-value rec constr_patt_arity =
+value rec is_patt_constr_call =
+  fun
+  [ <:patt< $uid:_$ >> -> True
+  | <:patt< $uid:_$.$p$ >> -> is_patt_constr_call p
+  | <:patt< $p$ $_$ >> -> is_patt_constr_call p
+  | _ -> False ]
+;
+
+value rec constr_patt_arity loc =
   fun
   [ <:patt< $uid:c$ >> ->
       try List.assoc c constr_arity.val with [ Not_found -> 0 ]
-  | <:patt< $uid:_$.$p$ >> -> constr_patt_arity p
+  | <:patt< $uid:_$.$p$ >> -> constr_patt_arity loc p
+  | <:patt< $p$ $_$ >> ->
+      if is_patt_constr_call p then
+        Stdpp.raise_with_loc loc (Stream.Error "currified constructor")
+      else 1
   | _ -> 1 ]
 ;
 
@@ -299,11 +355,13 @@ value choose_tvar tpl =
 
 value rec patt_lid =
   fun
-  [ <:patt< $lid:i$ $p$ >> -> Some (i, [p])
-  | <:patt< $p1$ $p2$ >> ->
-      match patt_lid p1 with
-      [ Some (i, pl) -> Some (i, [p2 :: pl])
-      | None -> None ]
+  [ <:patt< $p1$ $p2$ >> ->
+      match p1 with
+      [ <:patt< $lid:i$ >> -> Some (MLast.loc_of_patt p1, i, [p2])
+      | _ ->
+          match patt_lid p1 with
+          [ Some (loc, i, pl) -> Some (loc, i, [p2 :: pl])
+          | None -> None ] ]
   | _ -> None ]
 ;
 
@@ -350,50 +408,10 @@ and sync_semisemi cs =
 Pcaml.sync.val := sync;
 *)
 
-value type_parameter = Grammar.Entry.create gram "type_parameter";
-value fun_def = Grammar.Entry.create gram "fun_def";
-value fun_binding = Grammar.Entry.create gram "fun_binding";
-value mod_ident = Grammar.Entry.create gram "mod_ident";
 
 EXTEND
-  GLOBAL: interf implem top_phrase use_file sig_item str_item ctyp patt expr
-    module_type module_expr let_binding type_parameter fun_def fun_binding
-    mod_ident;
-  (* Main entry points *)
-  interf:
-    [ [ si = sig_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
-      | "#"; n = LIDENT; dp = OPT expr; ";;" ->
-          ([(<:sig_item< # $n$ $opt:dp$ >>, loc)], True)
-      | EOI -> ([], False) ] ]
-  ;
-  sig_item_semi:
-    [ [ si = sig_item; OPT ";;" -> (si, loc) ] ]
-  ;
-  implem:
-    [ [ si = str_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
-      | "#"; n = LIDENT; dp = OPT expr; ";;" ->
-          ([(<:str_item< # $n$ $opt:dp$ >>, loc)], True)
-      | EOI -> ([], False) ] ]
-  ;
-  str_item_semi:
-    [ [ si = str_item; OPT ";;" -> (si, loc) ] ]
-  ;
-  top_phrase:
-    [ [ ph = phrase; ";;" -> Some ph
-      | EOI -> None ] ]
-  ;
-  use_file:
-    [ [ si = str_item; OPT ";;"; (sil, stopped) = SELF ->
-          ([si :: sil], stopped)
-      | "#"; n = LIDENT; dp = OPT expr; ";;" ->
-          ([<:str_item< # $n$ $opt:dp$ >>], True)
-      | EOI -> ([], False) ] ]
-  ;
-  phrase:
-    [ [ sti = str_item -> sti
-      | "#"; n = LIDENT; dp = OPT expr -> <:str_item< # $n$ $opt:dp$ >> ] ]
-  ;
-  (* Module expressions *)
+  GLOBAL: sig_item str_item ctyp patt expr module_type module_expr class_type
+    class_expr class_sig_item class_str_item let_binding type_declaration;
   module_expr:
     [ [ "functor"; "("; i = UIDENT; ":"; t = module_type; ")"; "->";
         me = SELF ->
@@ -406,11 +424,13 @@ EXTEND
           <:module_expr< ( $me$ : $mt$ ) >>
       | "("; me = SELF; ")" -> <:module_expr< $me$ >> ] ]
   ;
+
   mod_expr_ident:
     [ LEFTA
       [ i = SELF; "."; j = SELF -> <:module_expr< $i$ . $j$ >> ]
     | [ i = UIDENT -> <:module_expr< $uid:i$ >> ] ]
   ;
+
   str_item:
     [ "top"
       [ "exception"; (_, c, tl) = constructor_declaration; b = rebind_exn ->
@@ -423,6 +443,8 @@ EXTEND
       | "include"; me = module_expr -> <:str_item< include $me$ >>
       | "module"; i = UIDENT; mb = module_binding ->
           <:str_item< module $i$ = $mb$ >>
+      | "module"; "rec"; nmtmes = LIST1 module_rec_binding SEP "and" ->
+          MLast.StRecMod loc nmtmes
       | "module"; "type"; i = UIDENT; "="; mt = module_type ->
           <:str_item< module type $i$ = $mt$ >>
       | "open"; i = mod_ident -> <:str_item< open $i$ >>
@@ -430,16 +452,17 @@ EXTEND
           <:str_item< type $list:tdl$ >>
       | "let"; r = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
         x = expr ->
-          let e = <:expr< let $rec:o2b r$ $list:l$ in $x$ >> in
+          let e = <:expr< let $opt:o2b r$ $list:l$ in $x$ >> in
           <:str_item< $exp:e$ >>
       | "let"; r = OPT "rec"; l = LIST1 let_binding SEP "and" ->
           match l with
           [ [(<:patt< _ >>, e)] -> <:str_item< $exp:e$ >>
-          | _ -> <:str_item< value $rec:o2b r$ $list:l$ >> ]
+          | _ -> <:str_item< value $opt:o2b r$ $list:l$ >> ]
       | "let"; "module"; m = UIDENT; mb = module_binding; "in"; e = expr ->
           <:str_item< let module $m$ = $mb$ in $e$ >>
       | e = expr -> <:str_item< $exp:e$ >> ] ]
   ;
+
   rebind_exn:
     [ [ "="; sl = mod_ident -> sl
       | -> [] ] ]
@@ -451,6 +474,10 @@ EXTEND
       | ":"; mt = module_type; "="; me = module_expr ->
           <:module_expr< ( $me$ : $mt$ ) >>
       | "="; me = module_expr -> <:module_expr< $me$ >> ] ]
+  ;
+  module_rec_binding:
+    [ [ m = UIDENT; ":"; mt = module_type; "="; me = module_expr ->
+          (m, mt, me) ] ]
   ;
   (* Module types *)
   module_type:
@@ -482,8 +509,12 @@ EXTEND
       | "include"; mt = module_type -> <:sig_item< include $mt$ >>
       | "module"; i = UIDENT; mt = module_declaration ->
           <:sig_item< module $i$ : $mt$ >>
+      | "module"; "rec"; mds = LIST1 module_rec_declaration SEP "and" ->
+          MLast.SgRecMod loc mds
       | "module"; "type"; i = UIDENT; "="; mt = module_type ->
           <:sig_item< module type $i$ = $mt$ >>
+      | "module"; "type"; i = UIDENT ->
+          <:sig_item< module type $i$ = 'abstract >>
       | "open"; i = mod_ident -> <:sig_item< open $i$ >>
       | "type"; tdl = LIST1 type_declaration SEP "and" ->
           <:sig_item< type $list:tdl$ >>
@@ -497,13 +528,16 @@ EXTEND
       | "("; i = UIDENT; ":"; t = module_type; ")"; mt = SELF ->
           <:module_type< functor ( $i$ : $t$ ) -> $mt$ >> ] ]
   ;
+  module_rec_declaration:
+    [ [ m = UIDENT; ":"; mt = module_type -> (m, mt)] ]
+  ;
   (* "with" constraints (additional type equations over signature
      components) *)
   with_constr:
     [ [ "type"; tpl = type_parameters; i = mod_ident; "="; t = ctyp ->
           MLast.WcTyp loc i tpl t
-      | "module"; i = mod_ident; "="; mt = module_type ->
-          MLast.WcMod loc i mt ] ]
+      | "module"; i = mod_ident; "="; me = module_expr ->
+          MLast.WcMod loc i me ] ]
   ;
   (* Core expressions *)
   expr:
@@ -514,7 +548,7 @@ EXTEND
     | "expr1"
       [ "let"; o = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
         x = expr LEVEL "top" ->
-          <:expr< let $rec:o2b o$ $list:l$ in $x$ >>
+          <:expr< let $opt:o2b o$ $list:l$ in $x$ >>
       | "let"; "module"; m = UIDENT; mb = module_binding; "in";
         e = expr LEVEL "top" ->
           <:expr< let module $m$ = $mb$ in $e$ >>
@@ -535,7 +569,10 @@ EXTEND
         "do"; e = SELF; "done" ->
           <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $list:get_seq e$ } >>
       | "while"; e1 = SELF; "do"; e2 = SELF; "done" ->
-          <:expr< while $e1$ do { $list:get_seq e2$ } >> ]
+          <:expr< while $e1$ do { $list:get_seq e2$ } >>
+      | "object"; cspo = OPT class_self_patt; cf = class_structure; "end" ->
+          (* <:expr< object $opt:cspo$ $list:cf$ end >> *)
+          MLast.ExObj loc cspo cf ]
     | [ e = SELF; ","; el = LIST1 NEXT SEP "," ->
           <:expr< ( $list:[e :: el]$ ) >> ]
     | ":=" NONA
@@ -571,14 +608,11 @@ EXTEND
     | "+" LEFTA
       [ e1 = SELF; "+"; e2 = SELF -> <:expr< $e1$ + $e2$ >>
       | e1 = SELF; "-"; e2 = SELF -> <:expr< $e1$ - $e2$ >>
-      | e1 = SELF; "+."; e2 = SELF -> <:expr< $e1$ +. $e2$ >>
-      | e1 = SELF; "-."; e2 = SELF -> <:expr< $e1$ -. $e2$ >>
       | e1 = SELF; op = infixop2; e2 = SELF -> <:expr< $lid:op$ $e1$ $e2$ >> ]
     | "*" LEFTA
       [ e1 = SELF; "*"; e2 = SELF -> <:expr< $e1$ * $e2$ >>
       | e1 = SELF; "/"; e2 = SELF -> <:expr< $e1$ / $e2$ >>
-      | e1 = SELF; "*."; e2 = SELF -> <:expr< $e1$ *. $e2$ >>
-      | e1 = SELF; "/."; e2 = SELF -> <:expr< $e1$ /. $e2$ >>
+      | e1 = SELF; "%"; e2 = SELF -> <:expr< $lid:"%"$ $e1$ $e2$ >>
       | e1 = SELF; "land"; e2 = SELF -> <:expr< $e1$ land $e2$ >>
       | e1 = SELF; "lor"; e2 = SELF -> <:expr< $e1$ lor $e2$ >>
       | e1 = SELF; "lxor"; e2 = SELF -> <:expr< $e1$ lxor $e2$ >>
@@ -595,7 +629,7 @@ EXTEND
       | "-."; e = SELF -> <:expr< $mkumin loc "-." e$ >> ]
     | "apply" LEFTA
       [ e1 = SELF; e2 = SELF ->
-          match constr_expr_arity e1 with
+          match constr_expr_arity loc e1 with
           [ 1 -> <:expr< $e1$ $e2$ >>
           | _ ->
               match e2 with
@@ -603,17 +637,11 @@ EXTEND
                   List.fold_left (fun e1 e2 -> <:expr< $e1$ $e2$ >>) e1 el
               | _ -> <:expr< $e1$ $e2$ >> ] ]
       | "assert"; e = SELF ->
-          let f = <:expr< $str:input_file.val$ >> in
-          let bp = <:expr< $int:string_of_int (fst loc)$ >> in
-          let ep = <:expr< $int:string_of_int (snd loc)$ >> in
-          let raiser = <:expr< raise (Assert_failure ($f$, $bp$, $ep$)) >> in
           match e with
-          [ <:expr< False >> -> raiser
-          | _ ->
-              if no_assert.val then <:expr< () >>
-              else <:expr< if $e$ then () else $raiser$ >> ]
+          [ <:expr< False >> -> <:expr< assert False >>
+          | _ -> <:expr< assert ($e$) >> ]
       | "lazy"; e = SELF ->
-          <:expr< Pervasives.ref (Lazy.Delayed (fun () -> $e$)) >> ]
+          <:expr< lazy ($e$) >> ]
     | "." LEFTA
       [ e1 = SELF; "."; "("; e2 = SELF; ")" -> <:expr< $e1$ .( $e2$ ) >>
       | e1 = SELF; "."; "["; e2 = SELF; "]" -> <:expr< $e1$ .[ $e2$ ] >>
@@ -626,6 +654,9 @@ EXTEND
       | f = prefixop; e = SELF -> <:expr< $lid:f$ $e$ >> ]
     | "simple" LEFTA
       [ s = INT -> <:expr< $int:s$ >>
+      | s = INT32 -> MLast.ExInt32 loc s
+      | s = INT64 -> MLast.ExInt64 loc s
+      | s = NATIVEINT -> MLast.ExNativeInt loc s
       | s = FLOAT -> <:expr< $flo:s$ >>
       | s = STRING -> <:expr< $str:s$ >>
       | c = CHAR -> <:expr< $chr:c$ >>
@@ -647,14 +678,18 @@ EXTEND
       | "("; e = SELF; ":"; t = ctyp; ")" -> <:expr< ($e$ : $t$) >>
       | "("; e = SELF; ")" -> <:expr< $e$ >>
       | "begin"; e = SELF; "end" -> <:expr< $e$ >>
+      | "begin"; "end" -> <:expr< () >>
       | x = LOCATE ->
           let x =
             try
               let i = String.index x ':' in
-              (int_of_string (String.sub x 0 i),
+              ({Lexing.pos_fname = "";
+                Lexing.pos_lnum = 0;
+                Lexing.pos_bol = 0;
+                Lexing.pos_cnum = int_of_string (String.sub x 0 i)},
                String.sub x (i + 1) (String.length x - i - 1))
             with
-            [ Not_found | Failure _ -> (0, x) ]
+            [ Not_found | Failure _ -> (Token.nowhere, x) ]
           in
           Pcaml.handle_expr_locate loc x
       | x = QUOTATION ->
@@ -671,7 +706,7 @@ EXTEND
   let_binding:
     [ [ p = patt; e = fun_binding ->
           match patt_lid p with
-          [ Some (i, pl) ->
+          [ Some (loc, i, pl) ->
               let e =
                 List.fold_left (fun e p -> <:expr< fun $p$ -> $e$ >>) e pl
               in
@@ -734,7 +769,7 @@ EXTEND
       [ p1 = SELF; "::"; p2 = SELF -> <:patt< [$p1$ :: $p2$] >> ]
     | LEFTA
       [ p1 = SELF; p2 = SELF ->
-          match constr_patt_arity p1 with
+          match constr_patt_arity loc p1 with
           [ 1 -> <:patt< $p1$ $p2$ >>
           | n ->
               let p2 =
@@ -757,7 +792,13 @@ EXTEND
       [ s = LIDENT -> <:patt< $lid:s$ >>
       | s = UIDENT -> <:patt< $uid:s$ >>
       | s = INT -> <:patt< $int:s$ >>
+      | s = INT32 -> MLast.PaInt32 loc s
+      | s = INT64 -> MLast.PaInt64 loc s
+      | s = NATIVEINT -> MLast.PaNativeInt loc s
       | "-"; s = INT -> <:patt< $int:"-" ^ s$ >>
+      | "-"; s = INT32 -> MLast.PaInt32 loc ("-" ^ s)
+      | "-"; s = INT64 -> MLast.PaInt64 loc ("-" ^ s)
+      | "-"; s = NATIVEINT -> MLast.PaNativeInt loc ("-" ^ s)
       | "-"; s = FLOAT -> <:patt< $flo:"-" ^ s$ >>
       | s = FLOAT -> <:patt< $flo:s$ >>
       | s = STRING -> <:patt< $str:s$ >>
@@ -780,10 +821,13 @@ EXTEND
           let x =
             try
               let i = String.index x ':' in
-              (int_of_string (String.sub x 0 i),
+              ({Lexing.pos_fname = "";
+                Lexing.pos_lnum = 0;
+                Lexing.pos_bol = 0;
+                Lexing.pos_cnum = int_of_string (String.sub x 0 i)},
                String.sub x (i + 1) (String.length x - i - 1))
             with
-            [ Not_found | Failure _ -> (0, x) ]
+            [ Not_found | Failure _ -> (Token.nowhere, x) ]
           in
           Pcaml.handle_patt_locate loc x
       | x = QUOTATION ->
@@ -832,15 +876,23 @@ EXTEND
     [ [ "constraint"; t1 = ctyp; "="; t2 = ctyp -> (t1, t2) ] ]
   ;
   type_kind:
-    [ [ test_constr_decl; OPT "|";
-        cdl = LIST1 constructor_declaration SEP "|" ->
-          <:ctyp< [ $list:cdl$ ] >>
+    [ [ "private"; "{"; ldl = label_declarations; "}" ->
+          <:ctyp< private { $list:ldl$ } >>
+      | "private"; OPT "|"; 
+        cdl = LIST1 constructor_declaration SEP "|" -> <:ctyp< private [ $list:cdl$ ] >>
+      | test_constr_decl; OPT "|";
+        cdl = LIST1 constructor_declaration SEP "|" -> <:ctyp< [ $list:cdl$ ] >>
       | t = ctyp -> <:ctyp< $t$ >>
+      | t = ctyp; "="; "private"; "{"; ldl = label_declarations; "}" ->
+          <:ctyp< $t$ == private { $list:ldl$ } >>
       | t = ctyp; "="; "{"; ldl = label_declarations; "}" ->
           <:ctyp< $t$ == { $list:ldl$ } >>
+      | t = ctyp; "="; "private"; OPT "|"; cdl = LIST1 constructor_declaration SEP "|" ->
+          <:ctyp< $t$ == private [ $list:cdl$ ] >>
       | t = ctyp; "="; OPT "|"; cdl = LIST1 constructor_declaration SEP "|" ->
           <:ctyp< $t$ == [ $list:cdl$ ] >>
-      | "{"; ldl = label_declarations; "}" -> <:ctyp< { $list:ldl$ } >> ] ]
+      | "{"; ldl = label_declarations; "}" ->
+          <:ctyp< { $list:ldl$ } >> ] ]
   ;
   type_parameters:
     [ [ -> (* empty *) []
@@ -863,15 +915,16 @@ EXTEND
       | ld = label_declaration -> [ld] ] ]
   ;
   label_declaration:
-    [ [ i = LIDENT; ":"; t = ctyp -> (loc, i, False, t)
-      | "mutable"; i = LIDENT; ":"; t = ctyp -> (loc, i, True, t) ] ]
+    [ [ i = LIDENT; ":"; t = poly_type -> (loc, i, False, t)
+      | "mutable"; i = LIDENT; ":"; t = poly_type -> (loc, i, True, t) ] ]
   ;
   (* Core types *)
   ctyp:
     [ [ t1 = SELF; "as"; "'"; i = ident -> <:ctyp< $t1$ as '$i$ >> ]
     | "arrow" RIGHTA
       [ t1 = SELF; "->"; t2 = SELF -> <:ctyp< $t1$ -> $t2$ >> ]
-    | [ t = SELF; "*"; tl = LIST1 (ctyp LEVEL "ctyp1") SEP "*" ->
+    | "star"
+      [ t = SELF; "*"; tl = LIST1 (ctyp LEVEL "ctyp1") SEP "*" ->
           <:ctyp< ( $list:[t :: tl]$ ) >> ]
     | "ctyp1"
       [ t1 = SELF; t2 = SELF -> <:ctyp< $t2$ $t1$ >> ]
@@ -904,29 +957,7 @@ EXTEND
     [ [ "to" -> True
       | "downto" -> False ] ]
   ;
-END;
-
-(* Objects and Classes *)
-
-value rec class_type_of_ctyp loc t =
-  match t with
-  [ <:ctyp< $lid:i$ >> -> <:class_type< $list:[i]$ >>
-  | <:ctyp< $uid:m$.$t$ >> -> <:class_type< $list:[m :: type_id_list t]$ >>
-  | _ -> raise_with_loc loc (Stream.Error "lowercase identifier expected") ]
-and type_id_list =
-  fun
-  [ <:ctyp< $uid:m$.$t$ >> -> [m :: type_id_list t]
-  | <:ctyp< $lid:i$ >> -> [i]
-  | t ->
-      raise_with_loc (loc_of_node t)
-        (Stream.Error "lowercase identifier expected") ]
-;
-
-value class_fun_binding = Grammar.Entry.create gram "class_fun_binding";
-
-EXTEND
-  GLOBAL: str_item sig_item expr ctyp class_sig_item class_str_item class_type
-    class_expr class_fun_binding mod_ident;
+  (* Objects and Classes *)
   str_item:
     [ [ "class"; cd = LIST1 class_declaration SEP "and" ->
           <:str_item< class $list:cd$ >>
@@ -960,7 +991,11 @@ EXTEND
   class_fun_def:
     [ [ p = patt LEVEL "simple"; "->"; ce = class_expr ->
           <:class_expr< fun $p$ -> $ce$ >>
+      | p = labeled_patt; "->"; ce = class_expr ->
+          <:class_expr< fun $p$ -> $ce$ >>
       | p = patt LEVEL "simple"; cfd = SELF ->
+          <:class_expr< fun $p$ -> $cfd$ >>
+      | p = labeled_patt; cfd = SELF ->
           <:class_expr< fun $p$ -> $cfd$ >> ] ]
   ;
   class_expr:
@@ -968,7 +1003,7 @@ EXTEND
       [ "fun"; cfd = class_fun_def -> cfd
       | "let"; rf = OPT "rec"; lb = LIST1 let_binding SEP "and"; "in";
         ce = SELF ->
-          <:class_expr< let $rec:o2b rf$ $list:lb$ in $ce$ >> ]
+          <:class_expr< let $opt:o2b rf$ $list:lb$ in $ce$ >> ]
     | "apply" LEFTA
       [ ce = SELF; e = expr LEVEL "label" ->
           <:class_expr< $ce$ $e$ >> ]
@@ -980,7 +1015,7 @@ EXTEND
           <:class_expr< $list:ci$ [ $ct$ ] >>
       | ci = class_longident -> <:class_expr< $list:ci$ >>
       | "object"; cspo = OPT class_self_patt; cf = class_structure; "end" ->
-          <:class_expr< object $cspo$ $list:cf$ end >>
+          <:class_expr< object $opt:cspo$ $list:cf$ end >>
       | "("; ce = SELF; ":"; ct = class_type; ")" ->
           <:class_expr< ($ce$ : $ct$) >>
       | "("; ce = SELF; ")" -> ce ] ]
@@ -994,45 +1029,42 @@ EXTEND
   ;
   class_str_item:
     [ [ "inherit"; ce = class_expr; pb = OPT [ "as"; i = LIDENT -> i ] ->
-          <:class_str_item< inherit $ce$ $as:pb$ >>
-      | "val"; (lab, mf, e) = cvalue ->
-          <:class_str_item< value $mut:mf$ $lab$ = $e$ >>
-      | "method"; "private"; "virtual"; l = label; ":"; t = ctyp ->
+          <:class_str_item< inherit $ce$ $opt:pb$ >>
+      | "val"; mf = OPT "mutable"; lab = label; e = cvalue_binding ->
+          <:class_str_item< value $opt:o2b mf$ $lab$ = $e$ >>
+      | "method"; "private"; "virtual"; l = label; ":"; t = poly_type ->
           <:class_str_item< method virtual private $l$ : $t$ >>
-      | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
+      | "method"; "virtual"; "private"; l = label; ":"; t = poly_type ->
           <:class_str_item< method virtual private $l$ : $t$ >>
-      | "method"; "virtual"; l = label; ":"; t = ctyp ->
+      | "method"; "virtual"; l = label; ":"; t = poly_type ->
           <:class_str_item< method virtual $l$ : $t$ >>
-      | "method"; "private"; l = label; fb = fun_binding ->
-          <:class_str_item< method private $l$ = $fb$ >>
-      | "method"; l = label; fb = fun_binding ->
-          <:class_str_item< method $l$ = $fb$ >>
+      | "method"; "private"; l = label; ":"; t = poly_type; "="; e = expr ->
+          MLast.CrMth loc l True e (Some t)
+      | "method"; "private"; l = label; sb = fun_binding ->
+          MLast.CrMth loc l True sb None
+      | "method"; l = label; ":"; t = poly_type; "="; e = expr ->
+          MLast.CrMth loc l False e (Some t)
+      | "method"; l = label; sb = fun_binding ->
+          MLast.CrMth loc l False sb None
       | "constraint"; t1 = ctyp; "="; t2 = ctyp ->
           <:class_str_item< type $t1$ = $t2$ >>
       | "initializer"; se = expr -> <:class_str_item< initializer $se$ >> ] ]
   ;
-  cvalue:
-    [ [ mf = OPT "mutable"; l = label; "="; e = expr -> (l, o2b mf, e)
-      | mf = OPT "mutable"; l = label; ":"; t = ctyp; "="; e = expr ->
-          (l, o2b mf, <:expr< ($e$ : $t$) >>)
-      | mf = OPT "mutable"; l = label; ":"; t = ctyp; ":>"; t2 = ctyp; "=";
-        e = expr ->
-          (l, o2b mf, <:expr< ($e$ : $t$ :> $t2$) >>)
-      | mf = OPT "mutable"; l = label; ":>"; t = ctyp; "="; e = expr ->
-          (l, o2b mf, <:expr< ($e$ :> $t$) >>) ] ]
+  cvalue_binding:
+    [ [ "="; e = expr -> e
+      | ":"; t = ctyp; "="; e = expr -> <:expr< ($e$ : $t$) >>
+      | ":"; t = ctyp; ":>"; t2 = ctyp; "="; e = expr ->
+          <:expr< ($e$ : $t$ :> $t2$) >>
+      | ":>"; t = ctyp; "="; e = expr ->
+          <:expr< ($e$ :> $t$) >> ] ]
   ;
   label:
     [ [ i = LIDENT -> i ] ]
   ;
   (* Class types *)
   class_type:
-    [ [ test_not_class_signature; t = ctyp LEVEL "ctyp1" ->
-          class_type_of_ctyp loc t
-      | test_not_class_signature; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
+    [ [ test_ctyp_minusgreater; t = ctyp LEVEL "star"; "->"; ct = SELF ->
           <:class_type< [ $t$ ] -> $ct$ >>
-      | test_not_class_signature; t = ctyp LEVEL "ctyp1"; "*";
-        tl = LIST1 ctyp LEVEL "simple" SEP "*"; "->"; ct = SELF ->
-          <:class_type< [ ($t$ * $list:tl$) ] -> $ct$ >>
       | cs = class_signature -> cs ] ]
   ;
   class_signature:
@@ -1041,7 +1073,7 @@ EXTEND
       | id = clty_longident -> <:class_type< $list:id$ >>
       | "object"; cst = OPT class_self_type; csf = LIST0 class_sig_item;
         "end" ->
-          <:class_type< object $cst$ $list:csf$ end >> ] ]
+          <:class_type< object $opt:cst$ $list:csf$ end >> ] ]
   ;
   class_self_type:
     [ [ "("; t = ctyp; ")" -> t ] ]
@@ -1049,16 +1081,16 @@ EXTEND
   class_sig_item:
     [ [ "inherit"; cs = class_signature -> <:class_sig_item< inherit $cs$ >>
       | "val"; mf = OPT "mutable"; l = label; ":"; t = ctyp ->
-          <:class_sig_item< value $mut:o2b mf$ $l$ : $t$ >>
-      | "method"; "private"; "virtual"; l = label; ":"; t = ctyp ->
+          <:class_sig_item< value $opt:o2b mf$ $l$ : $t$ >>
+      | "method"; "private"; "virtual"; l = label; ":"; t = poly_type ->
           <:class_sig_item< method virtual private $l$ : $t$ >>
-      | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
+      | "method"; "virtual"; "private"; l = label; ":"; t = poly_type ->
           <:class_sig_item< method virtual private $l$ : $t$ >>
-      | "method"; "virtual"; l = label; ":"; t = ctyp ->
+      | "method"; "virtual"; l = label; ":"; t = poly_type ->
           <:class_sig_item< method virtual $l$ : $t$ >>
-      | "method"; "private"; l = label; ":"; t = ctyp ->
+      | "method"; "private"; l = label; ":"; t = poly_type ->
           <:class_sig_item< method private $l$ : $t$ >>
-      | "method"; l = label; ":"; t = ctyp ->
+      | "method"; l = label; ":"; t = poly_type ->
           <:class_sig_item< method $l$ : $t$ >>
       | "constraint"; t1 = ctyp; "="; t2 = ctyp ->
           <:class_sig_item< type $t1$ = $t2$ >> ] ]
@@ -1076,7 +1108,7 @@ EXTEND
            MLast.ciNam = n; MLast.ciExp = cs} ] ]
   ;
   (* Expressions *)
-  expr: LEVEL "apply"
+  expr: LEVEL "simple"
     [ LEFTA
       [ "new"; i = class_longident -> <:expr< new $list:i$ >> ] ]
   ;
@@ -1099,7 +1131,7 @@ EXTEND
   (* Core types *)
   ctyp: LEVEL "simple"
     [ [ "#"; id = class_longident -> <:ctyp< # $list:id$ >>
-      | "<"; (ml, v) = meth_list; ">" -> <:ctyp< < $list:ml$ $v$ > >>
+      | "<"; (ml, v) = meth_list; ">" -> <:ctyp< < $list:ml$ $opt:v$ > >>
       | "<"; ">" -> <:ctyp< < > >> ] ]
   ;
   meth_list:
@@ -1109,7 +1141,16 @@ EXTEND
       | ".." -> ([], True) ] ]
   ;
   field:
-    [ [ lab = LIDENT; ":"; t = ctyp -> (lab, t) ] ]
+    [ [ lab = LIDENT; ":"; t = poly_type -> (lab, t) ] ]
+  ;
+  (* Polymorphic types *)
+  typevar:
+    [ [ "'"; i = ident -> i ] ]
+  ;
+  poly_type:
+    [ [ test_typevar_list_dot; tpl = LIST1 typevar; "."; t2 = ctyp ->
+          <:ctyp< ! $list:tpl$ . $t2$ >>
+      | t = ctyp -> t ] ]
   ;
   (* Identifiers *)
   clty_longident:
@@ -1120,27 +1161,29 @@ EXTEND
     [ [ m = UIDENT; "."; l = SELF -> [m :: l]
       | i = LIDENT -> [i] ] ]
   ;
-END;
-
-(* Labels *)
-
-EXTEND
-  GLOBAL: ctyp expr patt fun_def fun_binding class_type class_fun_binding;
-  ctyp: AFTER "arrow"
-    [ NONA
-      [ i = lident_colon; t = SELF -> <:ctyp< ~ $i$ : $t$ >>
-      | i = QUESTIONIDENTCOLON; t = SELF -> <:ctyp< ? $i$ : $t$ >> ] ]
+  (* Labels *)
+  ctyp: LEVEL "arrow"
+    [ RIGHTA
+      [ i = lident_colon; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
+          <:ctyp< ( ~ $i$ : $t1$ ) -> $t2$ >>
+      | i = OPTLABEL; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
+          <:ctyp< ( ? $i$ : $t1$ ) -> $t2$ >>
+      | i = QUESTIONIDENT; ":"; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
+          <:ctyp< ( ? $i$ : $t1$ ) -> $t2$ >>
+      | "?"; i=lident_colon;t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
+          <:ctyp< ( ? $i$ : $t1$ ) -> $t2$ >> ] ]
   ;
   ctyp: LEVEL "simple"
-    [ [ "["; OPT "|"; rfl = LIST0 row_field SEP "|"; "]" ->
-          <:ctyp< [| $list:rfl$ |] >>
+    [ [ "["; OPT "|"; rfl = LIST1 row_field SEP "|"; "]" ->
+          <:ctyp< [ = $list:rfl$ ] >>
+      | "["; ">"; "]" -> <:ctyp< [ > $list:[]$ ] >>
       | "["; ">"; OPT "|"; rfl = LIST1 row_field SEP "|"; "]" ->
-          <:ctyp< [| > $list:rfl$ |] >>
+          <:ctyp< [ > $list:rfl$ ] >>
       | "[<"; OPT "|"; rfl = LIST1 row_field SEP "|"; "]" ->
-          <:ctyp< [| < $list:rfl$ |] >>
+          <:ctyp< [ < $list:rfl$ ] >>
       | "[<"; OPT "|"; rfl = LIST1 row_field SEP "|"; ">";
         ntl = LIST1 name_tag; "]" ->
-          <:ctyp< [| < $list:rfl$ > $list:ntl$ |] >> ] ]
+          <:ctyp< [ < $list:rfl$ > $list:ntl$ ] >> ] ]
   ;
   row_field:
     [ [ "`"; i = ident -> MLast.RfTag i True []
@@ -1156,10 +1199,12 @@ EXTEND
   ;
   expr: AFTER "apply"
     [ "label"
-      [ i = TILDEIDENTCOLON; e = SELF -> <:expr< ~ $i$ : $e$ >>
+      [ i = LABEL; e = SELF -> <:expr< ~ $i$ : $e$ >>
       | i = TILDEIDENT -> <:expr< ~ $i$ >>
-      | i = QUESTIONIDENTCOLON; e = SELF -> <:expr< ? $i$ : $e$ >>
-      | i = QUESTIONIDENT -> <:expr< ? $i$ >> ] ]
+      | "~"; i = LIDENT -> <:expr< ~ $i$ >>
+      | i = OPTLABEL; e = SELF -> <:expr< ? $i$ : $e$ >>
+      | i = QUESTIONIDENT -> <:expr< ? $i$ >> 
+      | "?"; i = LIDENT -> <:expr< ? $i$ >> ] ]
   ;
   expr: LEVEL "simple"
     [ [ "`"; s = ident -> <:expr< ` $s$ >> ] ]
@@ -1175,44 +1220,88 @@ EXTEND
       | "#"; t = mod_ident -> <:patt< # $list:t$ >> ] ]
   ;
   labeled_patt:
-    [ [ i = TILDEIDENTCOLON; p = patt LEVEL "simple" ->
+    [ [ i = LABEL; p = patt LEVEL "simple" ->
            <:patt< ~ $i$ : $p$ >>
       | i = TILDEIDENT ->
            <:patt< ~ $i$ >>
+      | "~"; i=LIDENT -> <:patt< ~ $i$ >>
       | "~"; "("; i = LIDENT; ")" ->
            <:patt< ~ $i$ >>
       | "~"; "("; i = LIDENT; ":"; t = ctyp; ")" ->
            <:patt< ~ $i$ : ($lid:i$ : $t$) >>
-      | i = QUESTIONIDENTCOLON; j = LIDENT ->
+      | i = OPTLABEL; j = LIDENT ->
            <:patt< ? $i$ : ($lid:j$) >>
-      | i = QUESTIONIDENTCOLON; "("; p = patt; "="; e = expr; ")" ->
+      | i = OPTLABEL; "("; p = patt; "="; e = expr; ")" ->
           <:patt< ? $i$ : ( $p$ = $e$ ) >>
-      | i = QUESTIONIDENTCOLON; "("; p = patt; ":"; t = ctyp; ")" ->
+      | i = OPTLABEL; "("; p = patt; ":"; t = ctyp; ")" ->
           <:patt< ? $i$ : ( $p$ : $t$ ) >>
-      | i = QUESTIONIDENTCOLON; "("; p = patt; ":"; t = ctyp; "=";
+      | i = OPTLABEL; "("; p = patt; ":"; t = ctyp; "=";
         e = expr; ")" ->
           <:patt< ? $i$ : ( $p$ : $t$ = $e$ ) >>
-      | i = QUESTIONIDENT -> <:patt< ? $i$ : ($lid:i$) >>
+      | i = QUESTIONIDENT -> <:patt< ? $i$ >>
+      | "?"; i = LIDENT -> <:patt< ? $i$ >>
       | "?"; "("; i = LIDENT; "="; e = expr; ")" ->
-          <:patt< ? $i$ : ( $lid:i$ = $e$ ) >>
+          <:patt< ? ( $lid:i$ = $e$ ) >>
       | "?"; "("; i = LIDENT; ":"; t = ctyp; "="; e = expr; ")" ->
-          <:patt< ? $i$ : ( $lid:i$ : $t$ = $e$ ) >>
+          <:patt< ? ( $lid:i$ : $t$ = $e$ ) >>
       | "?"; "("; i = LIDENT; ")" ->
           <:patt< ? $i$ >>
       | "?"; "("; i = LIDENT; ":"; t = ctyp; ")" ->
-          <:patt< ? $i$ : ( $lid:i$ : $t$ ) >> ] ]
+          <:patt< ? ( $lid:i$ : $t$ ) >> ] ]
   ;
   class_type:
-    [ [ i = lident_colon; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
+    [ [ i = lident_colon; t = ctyp LEVEL "star"; "->"; ct = SELF ->
           <:class_type< [ ~ $i$ : $t$ ] -> $ct$ >>
-      | i = QUESTIONIDENTCOLON; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
+      | i = OPTLABEL; t = ctyp LEVEL "star"; "->"; ct = SELF ->
+          <:class_type< [ ? $i$ : $t$ ] -> $ct$ >> 
+      | i = QUESTIONIDENT; ":"; t = ctyp LEVEL "star"; "->"; ct = SELF ->
+          <:class_type< [ ? $i$ : $t$ ] -> $ct$ >> 
+      | "?"; i = LIDENT; ":"; t = ctyp LEVEL "star"; "->"; ct = SELF ->
           <:class_type< [ ? $i$ : $t$ ] -> $ct$ >> ] ]
   ;
   class_fun_binding:
     [ [ p = labeled_patt; cfb = SELF -> <:class_expr< fun $p$ -> $cfb$ >> ] ]
   ;
-  ident:
-    [ [ i = LIDENT -> i
-      | i = UIDENT -> i ] ]
+END;
+
+(* Main entry points *)
+
+EXTEND
+  GLOBAL: interf implem use_file top_phrase expr patt;
+  interf:
+    [ [ si = sig_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
+      | "#"; n = LIDENT; dp = OPT expr; ";;" ->
+          ([(<:sig_item< # $n$ $opt:dp$ >>, loc)], True)
+      | EOI -> ([], False) ] ]
+  ;
+  sig_item_semi:
+    [ [ si = sig_item; OPT ";;" -> (si, loc) ] ]
+  ;
+  implem:
+    [ [ si = str_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
+      | "#"; n = LIDENT; dp = OPT expr; ";;" ->
+          ([(<:str_item< # $n$ $opt:dp$ >>, loc)], True)
+      | EOI -> ([], False) ] ]
+  ;
+  str_item_semi:
+    [ [ si = str_item; OPT ";;" -> (si, loc) ] ]
+  ;
+  top_phrase:
+    [ [ ph = phrase; ";;" -> Some ph
+      | EOI -> None ] ]
+  ;
+  use_file:
+    [ [ si = str_item; OPT ";;"; (sil, stopped) = SELF ->
+          ([si :: sil], stopped)
+      | "#"; n = LIDENT; dp = OPT expr; ";;" ->
+          ([<:str_item< # $n$ $opt:dp$ >>], True)
+      | EOI -> ([], False) ] ]
+  ;
+  phrase:
+    [ [ sti = str_item -> sti
+      | "#"; n = LIDENT; dp = OPT expr -> <:str_item< # $n$ $opt:dp$ >> ] ]
   ;
 END;
+
+Pcaml.add_option "-no_quot" (Arg.Set Plexer.no_quotations)
+  "Don't parse quotations, allowing to use, e.g. \"<:>\" as token";

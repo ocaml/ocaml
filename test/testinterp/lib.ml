@@ -1,3 +1,5 @@
+(* file $Id$ *)
+
 external raise : exn -> 'a = "%raise"
 
 external not : bool -> bool = "%boolnot"
@@ -35,8 +37,10 @@ external decr : int ref -> unit = "%decr"
 type 'a option = None | Some of 'a
 
 type 'a weak_t;;
-external weak_create: int -> 'a weak_t = "weak_create";;
-external weak_set : 'a weak_t -> int -> 'a option -> unit = "weak_set";;
-external weak_get: 'a weak_t -> int -> 'a option = "weak_get";;
+external weak_create: int -> 'a weak_t = "caml_weak_create";;
+external weak_set : 'a weak_t -> int -> 'a option -> unit = "caml_weak_set";;
+external weak_get: 'a weak_t -> int -> 'a option = "caml_weak_get";;
 
 let x = 42;;
+
+(* eof $Id$ *)

@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
 foreach $f (@ARGV) {
     open(FILE, $f) || die("Cannot open $f");

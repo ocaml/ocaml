@@ -1,56 +1,60 @@
 include ../support/Makefile.common
 
-COMPFLAGS=-I ../lib -I ../support -I $(OTHERS)/unix -I $(OTHERS)/str
+COMPFLAGS=-I ../labltk -I ../support -I $(OTHERS)/unix -I $(OTHERS)/str
 
-OBJS= fileselect.cmo balloon.cmo
+OBJS= fileselect.cmo balloon.cmo shell.cmo jpf_font.cmo
 
 OBJSX = $(OBJS:.cmo=.cmx)
 
-all: libjpf.cma
+all: jpflib.cma
 
-opt: libjpf.cmxa
+opt: jpflib.cmxa
 
 test: balloontest
 
 testopt: balloontest.opt
 
-libjpf.cma: $(OBJS)
-	$(LABLLIBR) -o libjpf.cma $(OBJS)
+jpflib.cma: $(OBJS)
+	$(CAMLLIBR) -o jpflib.cma $(OBJS)
 
-libjpf.cmxa: $(OBJSX)
-	$(CAMLOPTLIBR) -o libjpf.cmxa $(OBJSX)
+jpflib.cmxa: $(OBJSX)
+	$(CAMLOPTLIBR) -o jpflib.cmxa $(OBJSX)
 
-install: libjpf.cma
-	cp $(OBJS:.cmo=.cmi) $(OBJS:.cmo=.mli) libjpf.cma $(LABLTKDIR)
+install: jpflib.cma
+	cp $(OBJS:.cmo=.cmi) $(OBJS:.cmo=.mli) jpflib.cma $(INSTALLDIR)
 
-installopt: libjpf.cmxa
-	cp libjpf.cmxa libjpf.a $(OBJS:.cmo=.cmx) $(LABLTKDIR)
+installopt: jpflib.cmxa
+	cp jpflib.cmxa jpflib.a $(OBJS:.cmo=.cmx) $(INSTALLDIR)
 
 clean:
 	rm -f *.cm* *.o *.a *~ *test
 
+$(OBJS) $(OBJS:.cmo=.cmi): ../lib/$(LIBNAME).cma
+
+$(OBJSX): ../lib/$(LIBNAME).cmxa
+
 ### Tests
 
 balloontest: balloontest.cmo 
-	$(LABLC) -o balloontest -I ../support -I ../lib \
-	        -custom labltk.cma libjpf.cma balloontest.cmo
+	$(CAMLC) -o balloontest -I ../support -I ../lib \
+	        -custom $(LIBNAME).cma jpflib.cma balloontest.cmo
 
 balloontest.opt: balloontest.cmx
 	$(CAMLOPT) -o balloontest.opt -I ../support -I ../lib \
-	        labltk.cmxa libjpf.cmxa balloontest.cmx
+	        $(LIBNAME).cmxa jpflib.cmxa balloontest.cmx
 
-balloontest.cmo : balloon.cmo libjpf.cma
+balloontest.cmo : balloon.cmo jpflib.cma
 
-balloontest.cmx : balloon.cmx libjpf.cmxa
+balloontest.cmx : balloon.cmx jpflib.cmxa
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmx .cmo
 
 .mli.cmi:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmo:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
@@ -58,14 +62,16 @@ balloontest.cmx : balloon.cmx libjpf.cmxa
 depend: 
 	mv Makefile Makefile.bak
 	(sed -n -e '1,/^### DO NOT DELETE THIS LINE/p' Makefile.bak; \
-	 $(LABLDEP) *.mli *.ml) > Makefile
+	 $(CAMLDEP) *.mli *.ml) > Makefile
 
 
 ### EVERYTHING THAT GOES BEYOND THIS COMMENT IS GENERATED
 ### DO NOT DELETE THIS LINE
 balloon.cmo: balloon.cmi 
 balloon.cmx: balloon.cmi 
-balloontest.cmo: balloon.cmi 
-balloontest.cmx: balloon.cmx 
 fileselect.cmo: fileselect.cmi 
 fileselect.cmx: fileselect.cmi 
+jpf_font.cmo: shell.cmi jpf_font.cmi 
+jpf_font.cmx: shell.cmx jpf_font.cmi 
+shell.cmo: shell.cmi 
+shell.cmx: shell.cmi 

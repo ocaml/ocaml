@@ -87,11 +87,14 @@ let f txt =
   let tl, ew, end_message =
     Jg_message.formatted ~title:"Warnings" ~ppf:Format.err_formatter () in
   Text.tag_remove txt.tw ~tag:"error" ~start:tstart ~stop:tend;
-  begin
   txt.structure <- [];
+  txt.type_info <- [];
   txt.signature <- [];
   txt.psignature <- [];
-  try
+  ignore (Stypes.get_info ());
+  Clflags.save_types := true;
+
+  begin try
 
     if Filename.check_suffix txt.name ".mli" then
     let psign = parse_pp text ~ext:".mli"
@@ -111,7 +114,8 @@ let f txt =
         txt.signature <- txt.signature @ sign;
         env := env'
     | Ptop_dir _ -> ()
-    end
+    end;
+    txt.type_info <- Stypes.get_info ();
 
   with
     Lexer.Error _ | Syntaxerr.Error _
@@ -119,42 +123,42 @@ let f txt =
   | Typeclass.Error _ | Typedecl.Error _
   | Typetexp.Error _ | Includemod.Error _
   | Env.Error _ | Ctype.Tags _ | Failure _ as exn ->
+      txt.type_info <- Stypes.get_info ();
       let et, ew, end_message = Jg_message.formatted ~title:"Error !" () in
       error_messages := et :: !error_messages;
-      let s, e = match exn with
-        Lexer.Error (err, s, e) ->
-          Lexer.report_error Format.std_formatter err; s,e
+      let range = match exn with
+        Lexer.Error (err, l) ->
+          Lexer.report_error Format.std_formatter err; l
       | Syntaxerr.Error err ->
           Syntaxerr.report_error Format.std_formatter err;
-          let l =
-            match err with
-              Syntaxerr.Unclosed(l,_,_,_) -> l
-            | Syntaxerr.Other l -> l
-          in l.loc_start, l.loc_end
+          begin match err with
+            Syntaxerr.Unclosed(l,_,_,_) -> l
+          | Syntaxerr.Other l -> l
+          end
       | Typecore.Error (l,err) ->
-          Typecore.report_error Format.std_formatter err;
-          l.loc_start, l.loc_end
+          Typecore.report_error Format.std_formatter err; l
       | Typeclass.Error (l,err) ->
-          Typeclass.report_error Format.std_formatter err;
-          l.loc_start, l.loc_end
+          Typeclass.report_error Format.std_formatter err; l
       | Typedecl.Error (l, err) ->
-          Typedecl.report_error Format.std_formatter err;
-          l.loc_start, l.loc_end
+          Typedecl.report_error Format.std_formatter err; l
       | Typemod.Error (l,err) ->
-          Typemod.report_error Format.std_formatter err; l.loc_start, l.loc_end
+          Typemod.report_error Format.std_formatter err; l
       | Typetexp.Error (l,err) ->
-          Typetexp.report_error Format.std_formatter err; l.loc_start, l.loc_end
+          Typetexp.report_error Format.std_formatter err; l
       | Includemod.Error errl ->
-          Includemod.report_error Format.std_formatter errl; 0, 0
+          Includemod.report_error Format.std_formatter errl; Location.none
       | Env.Error err ->
-          Env.report_error Format.std_formatter err; 0, 0
+          Env.report_error Format.std_formatter err; Location.none
       | Ctype.Tags(l, l') ->
-          Format.printf "In this program,@ variant constructors@ `%s and `%s@ have same hash value.@." l l'; 0, 0
+          Format.printf "In this program,@ variant constructors@ `%s and `%s@ have same hash value.@." l l';
+          Location.none
       | Failure s ->
-          Format.printf "%s.@." s; 0, 0
+          Format.printf "%s.@." s; Location.none
       | _ -> assert false
       in
       end_message ();
+      let s = range.loc_start.Lexing.pos_cnum in
+      let e = range.loc_end.Lexing.pos_cnum in
       if s < e then
         Jg_text.tag_and_see txt.tw ~start:(tpos s) ~stop:(tpos e) ~tag:"error"
   end;

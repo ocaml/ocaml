@@ -21,6 +21,11 @@ val standard_library: string
         (* The directory containing the standard libraries *)
 val standard_runtime: string
         (* The full path to the standard bytecode interpreter ocamlrun *)
+val ccomp_type: string
+        (* The "kind" of the C compiler: one of
+               "cc" (for Unix-style C compilers)
+               "msvc" (Microsoft Visual C++)
+               "mrc" (Macintosh MPW) *)
 val bytecomp_c_compiler: string
         (* The C compiler to use for compiling C files 
            with the bytecode compiler *)
@@ -38,9 +43,17 @@ val native_c_linker: string
 val native_c_libraries: string
         (* The C libraries to link with native-code programs *)
 val native_partial_linker: string
-        (* The linker to use for partial links (-output-obj option) *)
+        (* The linker to use for partial links (ocamlopt -output-obj) *)
+val native_pack_linker: string
+        (* The linker to use for packaging (ocamlopt -pack) *)
 val ranlib: string
         (* Command to randomize a library, or "" if not needed *)
+val binutils_nm: string
+        (* The "nm" command from GNU binutils, or "" if not available *)
+val binutils_objcopy: string
+        (* The "objcopy" command from GNU binutils, or "" if not available *)
+val cc_profile : string
+        (* The command line option to the C compiler to enable profiling. *)
 
 val load_path: string list ref
         (* Directories in the search path for .cmi and .cmo files *)
@@ -66,7 +79,10 @@ val ast_impl_magic_number: string
         (* Magic number for file holding an implementation syntax tree *)
 
 val max_tag: int
-        (* Biggest tag that can be stored in the header of a block. *)
+        (* Biggest tag that can be stored in the header of a regular block. *)
+val lazy_tag : int
+        (* Normally the same as Obj.lazy_tag.  Separate definition because
+           of technical reasons for bootstrapping. *)
 val max_young_wosize: int
         (* Maximal size of arrays that are directly allocated in the
            minor heap *)
@@ -92,3 +108,7 @@ val ext_dll: string
 (*> JOCAML *)
 val standard_joinparser : string
 (*< JOCAML *)
+val default_executable_name: string
+        (* Name of executable produced by linking if none is given with -o,
+           e.g. [a.out] under Unix. *)
+

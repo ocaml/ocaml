@@ -53,7 +53,7 @@ module type TESTSIG = sig
     val to_string: t -> string
     val of_string: string -> t 
   end
-  val testcomp: t -> t -> bool*bool*bool*bool*bool*bool
+  val testcomp: t -> t -> bool*bool*bool*bool*bool*bool*int
 end
 
 module Test32(M: TESTSIG) =
@@ -264,19 +264,19 @@ struct
 
     testing_function "Comparisons";
     test 1 (testcomp (of_int 0) (of_int 0))
-           (true,false,false,false,true,true);
+           (true,false,false,false,true,true,0);
     test 2 (testcomp (of_int 1234567) (of_int 1234567))
-           (true,false,false,false,true,true);
+           (true,false,false,false,true,true,0);
     test 3 (testcomp (of_int 0) (of_int 1))
-           (false,true,true,false,true,false);
+           (false,true,true,false,true,false,-1);
     test 4 (testcomp (of_int (-1)) (of_int 0))
-           (false,true,true,false,true,false);
+           (false,true,true,false,true,false,-1);
     test 5 (testcomp (of_int 1) (of_int 0))
-           (false,true,false,true,false,true);
+           (false,true,false,true,false,true,1);
     test 6 (testcomp (of_int 0) (of_int (-1)))
-           (false,true,false,true,false,true);
+           (false,true,false,true,false,true,1);
     test 7 (testcomp max_int min_int)
-           (false,true,false,true,false,true);
+           (false,true,false,true,false,true,1);
 
     ()
 end
@@ -316,7 +316,7 @@ struct
        5, "1234567890123456789";
        6, "9223372036854775807";
        7, "-9223372036854775808"];
-    List.iter (fun (n, s) -> test n (format "0x%X" (of_string s)) s)
+    List.iter (fun (n, s) -> test n ("0x" ^ format "%X" (of_string s)) s)
       [7, "0x0"; 8, "0x123"; 9, "0xABCDEF"; 10, "0x1234567812345678";
        11, "0x7FFFFFFFFFFFFFFF"; 12, "0x8000000000000000";
        13, "0xFFFFFFFFFFFFFFFF"];
@@ -480,19 +480,19 @@ struct
 
     testing_function "Comparisons";
     test 1 (testcomp (of_int 0) (of_int 0))
-           (true,false,false,false,true,true);
+           (true,false,false,false,true,true,0);
     test 2 (testcomp (of_int 1234567) (of_int 1234567))
-           (true,false,false,false,true,true);
+           (true,false,false,false,true,true,0);
     test 3 (testcomp (of_int 0) (of_int 1))
-           (false,true,true,false,true,false);
+           (false,true,true,false,true,false,-1);
     test 4 (testcomp (of_int (-1)) (of_int 0))
-           (false,true,true,false,true,false);
+           (false,true,true,false,true,false,-1);
     test 5 (testcomp (of_int 1) (of_int 0))
-           (false,true,false,true,false,true);
+           (false,true,false,true,false,true,1);
     test 6 (testcomp (of_int 0) (of_int (-1)))
-           (false,true,false,true,false,true);
+           (false,true,false,true,false,true,1);
     test 7 (testcomp max_int min_int)
-           (false,true,false,true,false,true);
+           (false,true,false,true,false,true,1);
 
     ()
 end
@@ -500,11 +500,11 @@ end
 (******** The test proper **********)
 
 let testcomp_int32 (a : int32) (b : int32) =
-  (a = b, a <> b, a < b, a > b, a <= b, a >= b)
+  (a = b, a <> b, a < b, a > b, a <= b, a >= b, compare a b)
 let testcomp_int64 (a : int64) (b : int64) =
-  (a = b, a <> b, a < b, a > b, a <= b, a >= b)
+  (a = b, a <> b, a < b, a > b, a <= b, a >= b, compare a b)
 let testcomp_nativeint (a : nativeint) (b : nativeint) =
-  (a = b, a <> b, a < b, a > b, a <= b, a >= b)
+  (a = b, a <> b, a < b, a > b, a <= b, a >= b, compare a b)
 
 let _ =
   testing_function "-------- Int32 --------";

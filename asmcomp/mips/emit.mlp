@@ -14,6 +14,7 @@
 
 (* Emission of Mips assembly code *)
 
+open Location
 open Misc
 open Cmm
 open Arch
@@ -240,7 +241,7 @@ let emit_instr i =
               fatal_error "Emit_mips: Imove"
         end
     | Lop(Iconst_int n) ->
-        if n = Nativeint.zero then
+        if n = 0n then
           `	move	{emit_reg i.res.(0)}, $0\n`
         else
           `	li	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
@@ -503,7 +504,7 @@ let fundecl fundecl =
   end;
   if !range_check_trap > 0 then begin
     `{emit_label !range_check_trap}:\n`;
-    `	la	$25, caml_array_bound_error\n`;
+    `	la	$25, caml_ml_array_bound_error\n`;
     `	j	$25\n`
   end;
   `	.end	{emit_symbol fundecl.fun_name}\n`
@@ -511,8 +512,9 @@ let fundecl fundecl =
 (* Emission of data *)
 
 let emit_item = function
-    Cdefine_symbol s ->
+    Cglobal_symbol s ->
       `	.globl	{emit_symbol s}\n`;
+  | Cdefine_symbol s ->
       `{emit_symbol s}:\n`
   | Cdefine_label lbl ->
       `{emit_label (100000 + lbl)}:\n`
@@ -560,11 +562,11 @@ let begin_assembly() =
   `	.noalias $16,$sp; .noalias $16,$30; .noalias $17,$sp; .noalias $17,$30\n`;
   `	.noalias $18,$sp; .noalias $18,$30; .noalias $19,$sp; .noalias $19,$30\n`;
   `	.noalias $20,$sp; .noalias $20,$30; .noalias $21,$sp; .noalias $21,$30\n\n`;
-  let lbl_begin = Compilenv.current_unit_name() ^ "_data_begin" in
+  let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
   `	.globl	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`;
-  let lbl_begin = Compilenv.current_unit_name() ^ "_code_begin" in
+  let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
   `	.text\n`;
   `	.globl	{emit_symbol lbl_begin}\n`;
   `	.ent	{emit_symbol lbl_begin}\n`;
@@ -572,18 +574,18 @@ let begin_assembly() =
   `	.end	{emit_symbol lbl_begin}\n`
 
 let end_assembly () =
-  let lbl_end = Compilenv.current_unit_name() ^ "_code_end" in
+  let lbl_end = Compilenv.make_symbol (Some "code_end") in
   `	.text\n`;
   `	.globl	{emit_symbol lbl_end}\n`;
   `	.ent	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
   `	.end	{emit_symbol lbl_end}\n`;
-  let lbl_end = Compilenv.current_unit_name() ^ "_data_end" in
+  let lbl_end = Compilenv.make_symbol (Some "data_end") in
   `	.data\n`;
   `	.globl	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
   `	.word	0\n`;
-  let lbl = Compilenv.current_unit_name() ^ "_frametable" in
+  let lbl = Compilenv.make_symbol (Some "frametable") in
   `	.rdata\n`;
   `	.globl	{emit_symbol lbl}\n`;
   `{emit_symbol lbl}:\n`;

@@ -18,13 +18,13 @@
 external length : string -> int = "%string_length"
 external get : string -> int -> char = "%string_safe_get"
 external set : string -> int -> char -> unit = "%string_safe_set"
-external create : int -> string = "create_string"
+external create : int -> string = "caml_create_string"
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
 external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"
 external unsafe_blit : string -> int -> string -> int -> int -> unit
-                     = "blit_string" "noalloc"
+                     = "caml_blit_string" "noalloc"
 external unsafe_fill : string -> int -> int -> char -> unit
-                     = "fill_string" "noalloc"
+                     = "caml_fill_string" "noalloc"
 
 let make n c =
   let s = create n in
@@ -38,7 +38,7 @@ let copy s =
   r
 
 let sub s ofs len =
-  if ofs < 0 || len < 0 || ofs + len > length s
+  if ofs < 0 || len < 0 || ofs > length s - len
   then invalid_arg "String.sub"
   else begin
     let r = create len in
@@ -47,13 +47,13 @@ let sub s ofs len =
   end
 
 let fill s ofs len c =
-  if ofs < 0 || len < 0 || ofs + len > length s
+  if ofs < 0 || len < 0 || ofs > length s - len
   then invalid_arg "String.fill"
   else unsafe_fill s ofs len c
 
 let blit s1 ofs1 s2 ofs2 len =
-  if len < 0 || ofs1 < 0 || ofs1 + len > length s1
-             || ofs2 < 0 || ofs2 + len > length s2
+  if len < 0 || ofs1 < 0 || ofs1 > length s1 - len
+             || ofs2 < 0 || ofs2 > length s2 - len
   then invalid_arg "String.blit"
   else unsafe_blit s1 ofs1 s2 ofs2 len
 
@@ -78,7 +78,7 @@ let concat sep l =
         tl;
       r
 
-external is_printable: char -> bool = "is_printable"
+external is_printable: char -> bool = "caml_is_printable"
 external char_code: char -> int = "%identity"
 external char_chr: int -> char = "%identity"
 
@@ -171,3 +171,7 @@ let rcontains_from s i c =
   try ignore(rindex_rec s i c); true with Not_found -> false;;
 
 let contains s c = contains_from s 0 c;;
+
+type t = string
+
+let compare = (Pervasives.compare: t -> t -> int)

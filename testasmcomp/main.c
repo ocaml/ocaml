@@ -22,6 +22,16 @@ void caml_array_bound_error(void)
   exit(2);
 }
 
+void print_string(char * s)
+{
+  fputs(s, stdout);
+}
+
+void printf_int(char * fmt, int arg)
+{
+  printf(fmt, arg);
+}
+
 #ifdef SORT
 
 int cmpint(const void * i, const void * j)

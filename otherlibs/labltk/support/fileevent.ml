@@ -1,18 +1,18 @@
-(*************************************************************************)
-(*                                                                       *)
-(*                Objective Caml LablTk library                          *)
-(*                                                                       *)
-(*         Francois Rouaix, Francois Pessaux and Jun Furuse              *)
-(*               projet Cristal, INRIA Rocquencourt                      *)
-(*            Jacques Garrigue, Kyoto University RIMS                    *)
-(*                                                                       *)
-(*   Copyright 1999 Institut National de Recherche en Informatique et    *)
-(*   en Automatique and Kyoto University.  All rights reserved.          *)
-(*   This file is distributed under the terms of the GNU Library         *)
-(*   General Public License, with the special exception on linking       *)
-(*   described in file ../../../LICENSE.                                 *)
-(*                                                                       *)
-(*************************************************************************)
+(***********************************************************************)
+(*                                                                     *)
+(*                 MLTk, Tcl/Tk interface of Objective Caml            *)
+(*                                                                     *)
+(*    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    *)
+(*               projet Cristal, INRIA Rocquencourt                    *)
+(*            Jacques Garrigue, Kyoto University RIMS                  *)
+(*                                                                     *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
+(*  en Automatique and Kyoto University.  All rights reserved.         *)
+(*  This file is distributed under the terms of the GNU Library        *)
+(*  General Public License, with the special exception on linking      *)
+(*  described in file LICENSE found in the Objective Caml source tree. *)
+(*                                                                     *)
+(***********************************************************************)
 
 (* $Id$ *)
 
@@ -22,11 +22,11 @@ open Protocol
 
 external add_file_input : file_descr -> cbid -> unit
         =  "camltk_add_file_input"
-external rem_file_input : file_descr -> unit
+external rem_file_input : file_descr -> cbid -> unit
         =  "camltk_rem_file_input"
 external add_file_output : file_descr -> cbid -> unit
         =  "camltk_add_file_output"
-external rem_file_output : file_descr -> unit
+external rem_file_output : file_descr -> cbid -> unit
         =  "camltk_rem_file_output"
 
 (* File input handlers *)
@@ -35,8 +35,8 @@ let fd_table = Hashtbl.create 37 (* Avoid space leak in callback table *)
 
 let add_fileinput ~fd ~callback:f =
   let id = new_function_id () in
-  Hashtbl'.add callback_naming_table ~key:id ~data:(fun _ -> f());
-  Hashtbl'.add fd_table ~key:(fd, 'r') ~data:id;
+  Hashtbl.add callback_naming_table id (fun _ -> f());
+  Hashtbl.add fd_table (fd, 'r') id;
   if !Protocol.debug then begin
     Protocol.prerr_cbid id; prerr_endline " for fileinput"
   end;
@@ -52,14 +52,14 @@ let remove_fileinput ~fd =
       Protocol.prerr_cbid id;
       prerr_endline " for fileinput"
     end;
-    rem_file_input fd
+    rem_file_input fd id
   with
     Not_found -> ()
 
 let add_fileoutput ~fd ~callback:f =
   let id = new_function_id () in
-  Hashtbl'.add callback_naming_table ~key:id ~data:(fun _ -> f());
-  Hashtbl'.add fd_table ~key:(fd, 'w') ~data:id;
+  Hashtbl.add callback_naming_table id (fun _ -> f());
+  Hashtbl.add fd_table (fd, 'w') id;
   if !Protocol.debug then begin
     Protocol.prerr_cbid id; prerr_endline " for fileoutput"
   end;
@@ -75,7 +75,7 @@ let remove_fileoutput ~fd =
       Protocol.prerr_cbid id;
       prerr_endline " for fileoutput"
     end;
-    rem_file_output fd
+    rem_file_output fd id
   with
     Not_found -> ()
 

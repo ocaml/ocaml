@@ -20,6 +20,10 @@ open Format
 val getvalue : string -> Obj.t
 val setvalue : string -> Obj.t -> unit
 
+(* Set the load paths, before running anything *)
+
+val set_paths : unit -> unit
+
 (* The interactive toplevel loop *)
 
 val loop : formatter -> unit
@@ -42,6 +46,8 @@ val directive_table : (string, directive_fun) Hashtbl.t
         (* Table of known directives, with their execution function *)
 val toplevel_env : Env.t ref
         (* Typing environment for the toplevel *)
+val initialize_toplevel_env : unit -> unit
+        (* Initialize the typing environment for the toplevel *)
 val print_exception_outcome : formatter -> exn -> unit
         (* Print an exception resulting from the evaluation of user code. *)
 val execute_phrase : bool -> formatter -> Parsetree.toplevel_phrase -> bool
@@ -77,10 +83,28 @@ val print_location : formatter -> Location.t -> unit
 val print_warning : Location.t -> formatter -> Warnings.t -> unit
 val input_name : string ref
 
-val print_out_value : (formatter -> Outcometree.out_value -> unit) ref
-val print_out_type : (formatter -> Outcometree.out_type -> unit) ref
-val print_out_sig_item : (formatter -> Outcometree.out_sig_item -> unit) ref
-val print_out_phrase : (formatter -> Outcometree.out_phrase -> unit) ref
+val print_out_value :
+  (formatter -> Outcometree.out_value -> unit) ref
+val print_out_type :
+  (formatter -> Outcometree.out_type -> unit) ref
+val print_out_class_type :
+  (formatter -> Outcometree.out_class_type -> unit) ref
+val print_out_module_type :
+  (formatter -> Outcometree.out_module_type -> unit) ref
+val print_out_sig_item :
+  (formatter -> Outcometree.out_sig_item -> unit) ref
+val print_out_signature :
+  (formatter -> Outcometree.out_sig_item list -> unit) ref
+val print_out_phrase :
+  (formatter -> Outcometree.out_phrase -> unit) ref
+
+(* Hooks for external line editor *)
+
+val read_interactive_input : (string -> string -> int -> int * bool) ref
+
+(* Hooks for initialization *)
+
+val toplevel_startup_hook : (unit -> unit) ref
 
 (* Used by Trace module *)
 

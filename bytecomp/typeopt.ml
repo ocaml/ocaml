@@ -38,7 +38,8 @@ let maybe_pointer exp =
       not (Path.same p Predef.path_char) &&
       begin try
         match Env.find_type p exp.exp_env with
-          {type_kind = Type_variant cstrs} ->
+          {type_kind = Type_variant([], _)} -> true (* type exn *)
+        | {type_kind = Type_variant(cstrs, _)} ->
             List.exists (fun (name, args) -> args <> []) cstrs
         | _ -> true
       with Not_found -> true
@@ -69,7 +70,7 @@ let array_element_kind env ty =
           match Env.find_type p env with
             {type_kind = Type_abstract} ->
               Pgenarray
-          | {type_kind = Type_variant cstrs}
+          | {type_kind = Type_variant(cstrs, _)}
             when List.for_all (fun (name, args) -> args = []) cstrs ->
               Pintarray
           | {type_kind = _} ->
@@ -86,7 +87,8 @@ let array_element_kind env ty =
 let array_kind_gen ty env =
   let array_ty = Ctype.expand_head env (Ctype.correct_levels ty) in
   match (Ctype.repr array_ty).desc with
-    Tconstr(p, [elt_ty], _) when Path.same p Predef.path_array ->
+    Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
+    when Path.same p Predef.path_array ->
       array_element_kind env elt_ty
   | _ ->
       (* This can happen with e.g. Obj.field *)
@@ -114,7 +116,9 @@ let kind_table =
    "int32_elt", Pbigarray_int32;
    "int64_elt", Pbigarray_int64;
    "int_elt", Pbigarray_caml_int;
-   "nativeint_elt", Pbigarray_native_int]
+   "nativeint_elt", Pbigarray_native_int;
+   "complex32_elt", Pbigarray_complex32;
+   "complex64_elt", Pbigarray_complex64]
 
 let layout_table =
   ["c_layout", Pbigarray_c_layout;

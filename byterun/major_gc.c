@@ -29,38 +29,44 @@
 #include "roots.h"
 #include "weak.h"
 
-unsigned long percent_free;
-long major_heap_increment;
-char *heap_start, *heap_end;
-page_table_entry *page_table;
-asize_t page_low, page_high;
-char *gc_sweep_hp;
-int gc_phase;
+unsigned long caml_percent_free;
+long caml_major_heap_increment;
+CAMLexport char *caml_heap_start, *caml_heap_end;
+CAMLexport page_table_entry *caml_page_table;
+asize_t caml_page_low, caml_page_high;
+char *caml_gc_sweep_hp;
+int caml_gc_phase;        /* always Phase_mark, Phase_sweep, or Phase_idle */
 static value *gray_vals;
-value *gray_vals_cur, *gray_vals_end;
+static value *gray_vals_cur, *gray_vals_end;
 static asize_t gray_vals_size;
 static int heap_is_pure;   /* The heap is pure if the only gray objects
                               below [markhp] are also in [gray_vals]. */
-unsigned long allocated_words;
-double extra_heap_memory;
-extern char *fl_merge;  /* Defined in freelist.c. */
+unsigned long caml_allocated_words;
+double caml_extra_heap_memory;
+unsigned long caml_fl_size_at_phase_change = 0;
+
+extern char *caml_fl_merge;  /* Defined in freelist.c. */
 
 static char *markhp, *chunk, *limit;
 
-static void update_weak_pointers (void);
+static int gc_subphase;     /* Subphase_main, Subphase_weak, Subphase_final */
+#define Subphase_main 10
+#define Subphase_weak 11
+#define Subphase_final 12
+static value *weak_prev;
 
 static void realloc_gray_vals (void)
 {
   value *new;
 
   Assert (gray_vals_cur == gray_vals_end);
-  if (gray_vals_size < stat_heap_size / 128){
-    gc_message (0x08, "Growing gray_vals to %luk bytes\n",
-                (long) gray_vals_size * sizeof (value) / 512);
+  if (gray_vals_size < caml_stat_heap_size / 128){
+    caml_gc_message (0x08, "Growing gray_vals to %luk bytes\n",
+                     (long) gray_vals_size * sizeof (value) / 512);
     new = (value *) realloc ((char *) gray_vals,
                              2 * gray_vals_size * sizeof (value));
     if (new == NULL){
-      gc_message (0x08, "No room for growing gray_vals\n", 0);
+      caml_gc_message (0x08, "No room for growing gray_vals\n", 0);
       gray_vals_cur = gray_vals;
       heap_is_pure = 0;
     }else{
@@ -75,7 +81,7 @@ static void realloc_gray_vals (void)
   }
 }
 
-void darken (value v, value *p /* not used */)
+void caml_darken (value v, value *p /* not used */)
 {
   if (Is_block (v) && Is_in_heap (v)) {
     if (Tag_val(v) == Infix_tag) v -= Infix_offset_val(v);
@@ -89,14 +95,15 @@ void darken (value v, value *p /* not used */)
 
 static void start_cycle (void)
 {
-  Assert (gc_phase == Phase_idle);
+  Assert (caml_gc_phase == Phase_idle);
   Assert (gray_vals_cur == gray_vals);
-  gc_message (0x01, "Starting new major GC cycle\n", 0);
-  darken_all_roots();
-  gc_phase = Phase_mark;
+  caml_gc_message (0x01, "Starting new major GC cycle\n", 0);
+  caml_darken_all_roots();
+  caml_gc_phase = Phase_mark;
+  gc_subphase = Subphase_main;
   markhp = NULL;
 #ifdef DEBUG
-  heap_check ();
+  caml_heap_check ();
 #endif
 }
 
@@ -107,7 +114,7 @@ static void mark_slice (long work)
   header_t hd;
   mlsize_t size, i;
 
-  gc_message (0x40, "Marking %lu words\n", work);
+  caml_gc_message (0x40, "Marking %ld words\n", work);
   gray_vals_ptr = gray_vals_cur;
   while (work > 0){
     if (gray_vals_ptr > gray_vals){
@@ -115,13 +122,23 @@ static void mark_slice (long work)
       hd = Hd_val(v);
       Assert (Is_gray_hd (hd));
       Hd_val (v) = Blackhd_hd (hd);
-      size = Wosize_hd(hd);
+      size = Wosize_hd (hd);
       if (Tag_hd (hd) < No_scan_tag){
         for (i = 0; i < size; i++){
           child = Field (v, i);
           if (Is_block (child) && Is_in_heap (child)) {
-            hd = Hd_val(child);
-            if (Tag_hd(hd) == Infix_tag) {
+            hd = Hd_val (child);
+            if (Tag_hd (hd) == Forward_tag){
+              value f = Forward_val (child);
+              if (Is_block (f) && (Is_young (f) || Is_in_heap (f))
+                  && (Tag_val (f) == Forward_tag || Tag_val (f) == Lazy_tag
+                      || Tag_val (f) == Double_tag)){
+                /* Do not short-circuit the pointer. */
+              }else{
+                Field (v, i) = f;
+              }
+            }
+            else if (Tag_hd(hd) == Infix_tag) {
               child -= Infix_offset_val(child);
               hd = Hd_val(child);
             }
@@ -156,249 +173,290 @@ static void mark_slice (long work)
       }
     }else if (!heap_is_pure){
       heap_is_pure = 1;
-      chunk = heap_start;
+      chunk = caml_heap_start;
       markhp = chunk;
       limit = chunk + Chunk_size (chunk);
-    }else if (gc_phase == Phase_mark){
-      /* The main marking phase is over.  Handle finalised values. */
-      gray_vals_cur = gray_vals_ptr;
-      final_update ();
-      gray_vals_ptr = gray_vals_cur;
-      gc_phase = Phase_mark_final;
+    }else if (gc_subphase == Subphase_main){
+      /* The main marking phase is over.  Start removing weak pointers to
+         dead values. */
+      gc_subphase = Subphase_weak;
+      weak_prev = &caml_weak_list_head;
+    }else if (gc_subphase == Subphase_weak){
+      value cur, curfield;
+      mlsize_t sz, i;
+      header_t hd;
+
+      cur = *weak_prev;
+      if (cur != (value) NULL){
+        hd = Hd_val (cur);
+        if (Color_hd (hd) == Caml_white){
+          /* The whole array is dead, remove it from the list. */
+          *weak_prev = Field (cur, 0);
+        }else{
+          sz = Wosize_hd (hd);
+          for (i = 1; i < sz; i++){
+            curfield = Field (cur, i);
+           weak_again:
+            if (curfield != caml_weak_none
+                && Is_block (curfield) && Is_in_heap (curfield)){
+              if (Tag_val (curfield) == Forward_tag){
+                value f = Forward_val (curfield);
+                if (Is_block (f) && (Is_young (f) || Is_in_heap (f))){
+                  if (Tag_val (f) == Forward_tag || Tag_val (f) == Lazy_tag
+                      || Tag_val (f) == Double_tag){
+                    /* Do not short-circuit the pointer. */
+                  }else{
+                    Field (cur, i) = curfield = f;
+                    goto weak_again;
+                  }
+                }
+              }
+              if (Is_white_val (curfield)){
+                Field (cur, i) = caml_weak_none;
+              }
+            }
+          }
+          weak_prev = &Field (cur, 0);
+        }
+        work -= Whsize_hd (hd);
+      }else{
+        /* Subphase_weak is done.  Handle finalised values. */
+        gray_vals_cur = gray_vals_ptr;
+        caml_final_update ();
+        gray_vals_ptr = gray_vals_cur;
+        gc_subphase = Subphase_final;
+      }
     }else{
-      /* Marking is done. */
-
-      update_weak_pointers ();
-
+      Assert (gc_subphase == Subphase_final);
       /* Initialise the sweep phase. */
       gray_vals_cur = gray_vals_ptr;
-      gc_sweep_hp = heap_start;
-      fl_init_merge ();
-      gc_phase = Phase_sweep;
-      chunk = heap_start;
-      gc_sweep_hp = chunk;
+      caml_gc_sweep_hp = caml_heap_start;
+      caml_fl_init_merge ();
+      caml_gc_phase = Phase_sweep;
+      chunk = caml_heap_start;
+      caml_gc_sweep_hp = chunk;
       limit = chunk + Chunk_size (chunk);
       work = 0;
+      caml_fl_size_at_phase_change = caml_fl_cur_size;
     }
   }
   gray_vals_cur = gray_vals_ptr;
 }
 
-/* Walk through the linked list of weak arrays.
-   Arrays that are white are removed from this list.
-   For the other arrays, pointers to white objects are erased.
-*/
-static void update_weak_pointers (void)
-{
-  value *prev = &weak_list_head;
-  value *cur = (value *) *prev;
-  mlsize_t sz, i;
-
-  while (cur != NULL){
-    if (Color_val (cur) == Caml_white){
-      *prev = Field (cur, 0);
-      cur = (value *) *prev;
-    }else{
-      value curfield;
-
-      sz = Wosize_val (cur);
-      for (i = 1; i < sz; i++){
-        curfield = Field (cur, i);
-        if (curfield != 0 && Is_block (curfield) && Is_in_heap (curfield)
-            && Is_white_val (curfield)){
-          Field (cur, i) = 0;
-        }
-      }
-      prev = &Field (cur, 0);
-      cur = (value *) *prev;
-    }
-  }
-}
-
-static void sweep_slice (long int work)
+static void sweep_slice (long work)
 {
   char *hp;
   header_t hd;
 
-  gc_message (0x40, "Sweeping %lu words\n", work);
+  caml_gc_message (0x40, "Sweeping %ld words\n", work);
   while (work > 0){
-    if (gc_sweep_hp < limit){
-      hp = gc_sweep_hp;
+    if (caml_gc_sweep_hp < limit){
+      hp = caml_gc_sweep_hp;
       hd = Hd_hp (hp);
       work -= Whsize_hd (hd);
-      gc_sweep_hp += Bhsize_hd (hd);
+      caml_gc_sweep_hp += Bhsize_hd (hd);
       switch (Color_hd (hd)){
       case Caml_white:
         if (Tag_hd (hd) == Custom_tag){
           void (*final_fun)(value) = Custom_ops_val(Val_hp(hp))->finalize;
           if (final_fun != NULL) final_fun(Val_hp(hp));
         }
-        gc_sweep_hp = fl_merge_block (Bp_hp (hp));
+        caml_gc_sweep_hp = caml_fl_merge_block (Bp_hp (hp));
         break;
       case Caml_blue:
         /* Only the blocks of the free-list are blue.  See [freelist.c]. */
-        fl_merge = Bp_hp (hp);
+        caml_fl_merge = Bp_hp (hp);
         break;
       default:          /* gray or black */
         Assert (Color_hd (hd) == Caml_black);
         Hd_hp (hp) = Whitehd_hd (hd);
         break;
       }
-      Assert (gc_sweep_hp <= limit);
+      Assert (caml_gc_sweep_hp <= limit);
     }else{
       chunk = Chunk_next (chunk);
       if (chunk == NULL){
         /* Sweeping is done. */
-        ++ stat_major_collections;
+        ++ caml_stat_major_collections;
         work = 0;
-        gc_phase = Phase_idle;
+        caml_gc_phase = Phase_idle;
       }else{
-        gc_sweep_hp = chunk;
+        caml_gc_sweep_hp = chunk;
         limit = chunk + Chunk_size (chunk);
       }
     }
   }
 }
 
-/* The main entry point for the GC.  Called after each minor GC. */
-void major_collection_slice (void)
+/* The main entry point for the GC.  Called after each minor GC.
+   [howmuch] is the amount of work to do, 0 to let the GC compute it.
+   Return the computed amount of work to do.
+ */
+long caml_major_collection_slice (long howmuch)
 {
   double p;
+  long computed_work;
   /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
-                 FM = stat_heap_size * percent_free / (100 + percent_free)
-     Garbage at the start of the GC cycle:
-                 G = FM * 2/3
-     Proportion of free memory consumed since the previous slice:
-                 PH = allocated_words / G
-                    = 3 * allocated_words * (100 + percent_free)
-                      / (2 * stat_heap_size * percent_free)
+                 FM = caml_stat_heap_size * caml_percent_free
+                      / (100 + caml_percent_free)
+
+     Assuming steady state and enforcing a constant allocation rate, then
+     FM is divided in 2/3 for garbage and 1/3 for free list.
+                 G = 2 * FM / 3
+     G is also the amount of memory that will be used during this slice
+     (still assuming steady state).
+
+     Proportion of G consumed since the previous slice:
+                 PH = caml_allocated_words / G
+                    = caml_allocated_words * 3 * (100 + caml_percent_free)
+                      / (2 * caml_stat_heap_size * caml_percent_free)
      Proportion of extra-heap memory consumed since the previous slice:
-                 PE = extra_heap_memory
+                 PE = caml_extra_heap_memory
      Proportion of total work to do in this slice:
                  P  = max (PH, PE)
      Amount of marking work for the GC cycle:
-                 MW = stat_heap_size * 100 / (100 + percent_free)
+                 MW = caml_stat_heap_size * 100 / (100 + caml_percent_free)
      Amount of sweeping work for the GC cycle:
-                 SW = stat_heap_size
+                 SW = caml_stat_heap_size
      Amount of marking work for this slice:
                  MS = P * MW
-                 MS = P * stat_heap_size * 100 / (100 + percent_free)
+                 MS = P * caml_stat_heap_size * 100 / (100 + caml_percent_free)
      Amount of sweeping work for this slice:
                  SS = P * SW
-                 SS = P * stat_heap_size
+                 SS = P * caml_stat_heap_size
      This slice will either mark 2*MS words or sweep 2*SS words.
   */
 
-#define Margin 100  /* Make it a little faster to be on the safe side. */
+  if (caml_gc_phase == Phase_idle) start_cycle ();
 
-  if (gc_phase == Phase_idle) start_cycle ();
+  p = (double) caml_allocated_words * 3.0 * (100 + caml_percent_free)
+      / Wsize_bsize (caml_stat_heap_size) / caml_percent_free / 2.0;
+  if (p < caml_extra_heap_memory) p = caml_extra_heap_memory;
 
-  p = 1.5 * allocated_words * (100 + percent_free)
-      / stat_heap_size / percent_free;
-  if (p < extra_heap_memory) p = extra_heap_memory;
+  caml_gc_message (0x40, "allocated_words = %lu\n", caml_allocated_words);
+  caml_gc_message (0x40, "extra_heap_memory = %luu\n",
+                   (unsigned long) (caml_extra_heap_memory * 1000000));
+  caml_gc_message (0x40, "amount of work to do = %luu\n",
+                   (unsigned long) (p * 1000000));
 
-  gc_message (0x40, "allocated_words = %lu\n", allocated_words);
-  gc_message (0x40, "extra_heap_memory = %luu\n",
-              (unsigned long) (extra_heap_memory * 1000000));
-  gc_message (0x40, "amount of work to do = %luu\n",
-              (unsigned long) (p * 1000000));
-
-  if (gc_phase == Phase_mark || gc_phase == Phase_mark_final){
-    long work = (long) (p * stat_heap_size * 100 / (100+percent_free)) + Margin;
-    mark_slice (work);
-    gc_message (0x02, "!", 0);
+  if (caml_gc_phase == Phase_mark){
+    computed_work = 2 * (long) (p * Wsize_bsize (caml_stat_heap_size) * 100
+                                / (100 + caml_percent_free));
   }else{
-    long work = (long) (p * stat_heap_size) + Margin;
-    Assert (gc_phase == Phase_sweep);
-    sweep_slice (work);
-    gc_message (0x02, "$", 0);
+    computed_work = 2 * (long) (p * Wsize_bsize (caml_stat_heap_size));
+  }
+  caml_gc_message (0x40, "ordered work = %ld words\n", howmuch);
+  caml_gc_message (0x40, "computed work = %ld words\n", computed_work);
+  if (howmuch == 0) howmuch = computed_work;
+  if (caml_gc_phase == Phase_mark){
+    mark_slice (howmuch);
+    caml_gc_message (0x02, "!", 0);
+  }else{
+    Assert (caml_gc_phase == Phase_sweep);
+    sweep_slice (howmuch);
+    caml_gc_message (0x02, "$", 0);
   }
 
-  if (gc_phase == Phase_idle) compact_heap_maybe ();
+  if (caml_gc_phase == Phase_idle) caml_compact_heap_maybe ();
 
-  stat_major_words += allocated_words;
-  allocated_words = 0;
-  extra_heap_memory = 0.0;
+  caml_stat_major_words += caml_allocated_words;
+  caml_allocated_words = 0;
+  caml_extra_heap_memory = 0.0;
+  return computed_work;
 }
 
 /* The minor heap must be empty when this function is called;
    the minor heap is empty when this function returns.
 */
-/* This does not call compact_heap_maybe because the estimations of
+/* This does not call caml_compact_heap_maybe because the estimations of
    free and live memory are only valid for a cycle done incrementally.
-   Besides, this function is called by compact_heap_maybe.
+   Besides, this function is called by caml_compact_heap_maybe.
 */
-void finish_major_cycle (void)
+void caml_finish_major_cycle (void)
 {
-  if (gc_phase == Phase_idle) start_cycle ();
-  if (gc_phase == Phase_mark) mark_slice (LONG_MAX);
-  Assert (gc_phase == Phase_sweep);
-  sweep_slice (LONG_MAX);
-  Assert (gc_phase == Phase_idle);
-  stat_major_words += allocated_words;
-  allocated_words = 0;
+  if (caml_gc_phase == Phase_idle) start_cycle ();
+  while (caml_gc_phase == Phase_mark) mark_slice (LONG_MAX);
+  Assert (caml_gc_phase == Phase_sweep);
+  while (caml_gc_phase == Phase_sweep) sweep_slice (LONG_MAX);
+  Assert (caml_gc_phase == Phase_idle);
+  caml_stat_major_words += caml_allocated_words;
+  caml_allocated_words = 0;
 }
 
-asize_t round_heap_chunk_size (asize_t request)
-{                            Assert (major_heap_increment >= Heap_chunk_min);
-  if (request < major_heap_increment){
-                              Assert (major_heap_increment % Page_size == 0);
-    return major_heap_increment;
-  }else if (request <= Heap_chunk_max){
-    return ((request + Page_size - 1) >> Page_log) << Page_log;
-  }else{
-    raise_out_of_memory ();
-    /* not reached */ return 0;
+/* Make sure the request is at least Heap_chunk_min and round it up
+   to a multiple of the page size.
+*/
+static asize_t clip_heap_chunk_size (asize_t request)
+{
+  if (request < Bsize_wsize (Heap_chunk_min)){
+    request = Bsize_wsize (Heap_chunk_min);
   }
+  return ((request + Page_size - 1) >> Page_log) << Page_log;
 }
 
-void init_major_heap (asize_t heap_size)
+/* Make sure the request is >= caml_major_heap_increment, then call
+   clip_heap_chunk_size, then make sure the result is >= request.
+*/
+asize_t caml_round_heap_chunk_size (asize_t request)
+{
+  asize_t result = request;
+
+  if (result < caml_major_heap_increment){
+    result = caml_major_heap_increment;
+  }
+  result = clip_heap_chunk_size (result);
+
+  if (result < request){
+    caml_raise_out_of_memory ();
+    return 0; /* not reached */
+  }
+  return result;
+}
+
+void caml_init_major_heap (asize_t heap_size)
 {
   asize_t i;
-  void *block;
   asize_t page_table_size;
   page_table_entry *page_table_block;
 
-  stat_heap_size = round_heap_chunk_size (heap_size);
-  Assert (stat_heap_size % Page_size == 0);
-  heap_start = aligned_malloc (stat_heap_size + sizeof (heap_chunk_head),
-                               sizeof (heap_chunk_head), &block);
-  if (heap_start == NULL)
-    fatal_error ("Fatal error: not enough memory for the initial heap.\n");
-  heap_start += sizeof (heap_chunk_head);
-  Assert ((unsigned long) heap_start % Page_size == 0);
-  Chunk_size (heap_start) = stat_heap_size;
-  Chunk_next (heap_start) = NULL;
-  Chunk_block (heap_start) = block;
-  heap_end = heap_start + stat_heap_size;
-  Assert ((unsigned long) heap_end % Page_size == 0);
+  caml_stat_heap_size = clip_heap_chunk_size (heap_size);
+  caml_stat_top_heap_size = caml_stat_heap_size;
+  Assert (caml_stat_heap_size % Page_size == 0);
+  caml_heap_start = (char *) caml_alloc_for_heap (caml_stat_heap_size);
+  if (caml_heap_start == NULL)
+    caml_fatal_error ("Fatal error: not enough memory for the initial heap.\n");
+  Chunk_next (caml_heap_start) = NULL;
+  caml_heap_end = caml_heap_start + caml_stat_heap_size;
+  Assert ((unsigned long) caml_heap_end % Page_size == 0);
 
-  page_low = Page (heap_start);
-  page_high = Page (heap_end);
+  caml_stat_heap_chunks = 1;
 
-  page_table_size = page_high - page_low;
+  caml_page_low = Page (caml_heap_start);
+  caml_page_high = Page (caml_heap_end);
+
+  page_table_size = caml_page_high - caml_page_low;
   page_table_block =
     (page_table_entry *) malloc (page_table_size * sizeof (page_table_entry));
   if (page_table_block == NULL){
-    fatal_error ("Fatal error: not enough memory for the initial heap.\n");
+    caml_fatal_error ("Fatal error: not enough memory for the initial heap.\n");
   }
-  page_table = page_table_block - page_low;
-  for (i = Page (heap_start); i < Page (heap_end); i++){
-    page_table [i] = In_heap;
+  caml_page_table = page_table_block - caml_page_low;
+  for (i = Page (caml_heap_start); i < Page (caml_heap_end); i++){
+    caml_page_table [i] = In_heap;
   }
 
-  Hd_hp (heap_start) = Make_header (Wosize_bhsize(stat_heap_size),0,Caml_blue);
-  fl_init_merge ();
-  fl_merge_block (Bp_hp (heap_start));
-  gc_phase = Phase_idle;
+  caml_fl_init_merge ();
+  caml_make_free_blocks ((value *) caml_heap_start,
+                         Wsize_bsize (caml_stat_heap_size), 1);
+  caml_gc_phase = Phase_idle;
   gray_vals_size = 2048;
   gray_vals = (value *) malloc (gray_vals_size * sizeof (value));
   if (gray_vals == NULL)
-    fatal_error ("Fatal error: not enough memory for the initial heap.\n");
+    caml_fatal_error ("Fatal error: not enough memory for the initial heap.\n");
   gray_vals_cur = gray_vals;
   gray_vals_end = gray_vals + gray_vals_size;
   heap_is_pure = 1;
-  allocated_words = 0;
-  extra_heap_memory = 0.0;
+  caml_allocated_words = 0;
+  caml_extra_heap_memory = 0.0;
 }

@@ -11,7 +11,7 @@ let engine number address =
       print_int number; print_string ">"; print_string s; print_newline()
     done
   with End_of_file ->
-    close_in ic; close_out oc
+    close_out oc
 
 let main() =
   let addresses = Array.create (Array.length Sys.argv - 1) inet_addr_any in

@@ -18,13 +18,12 @@
 #include <windows.h>
 #include <stdlib.h>
 #include <stdio.h>
-#ifndef HAS_UI
 #include <io.h>
-#endif
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <ctype.h>
+#include <errno.h>
 #include <string.h>
 #include <signal.h>
 #include "memory.h"
@@ -36,18 +35,18 @@
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
 #endif
 
-char * decompose_path(struct ext_table * tbl, char * path)
+char * caml_decompose_path(struct ext_table * tbl, char * path)
 {
   char * p, * q;
   int n;
 
   if (path == NULL) return NULL;
-  p = stat_alloc(strlen(path) + 1);
+  p = caml_stat_alloc(strlen(path) + 1);
   strcpy(p, path);
   q = p;
   while (1) {
     for (n = 0; q[n] != 0 && q[n] != ';'; n++) /*nothing*/;
-    ext_table_add(tbl, q);
+    caml_ext_table_add(tbl, q);
     q = q + n;
     if (*q == 0) break;
     *q = 0;
@@ -56,7 +55,7 @@ char * decompose_path(struct ext_table * tbl, char * path)
   return p;
 }
 
-char * search_in_path(struct ext_table * path, char * name)
+char * caml_search_in_path(struct ext_table * path, char * name)
 {
   char * p, * fullname;
   int i;
@@ -66,26 +65,26 @@ char * search_in_path(struct ext_table * path, char * name)
     if (*p == '/' || *p == '\\') goto not_found;
   }
   for (i = 0; i < path->size; i++) {
-    fullname = stat_alloc(strlen((char *)(path->contents[i])) +
-                          strlen(name) + 2);
+    fullname = caml_stat_alloc(strlen((char *)(path->contents[i])) +
+                               strlen(name) + 2);
     strcpy(fullname, (char *)(path->contents[i]));
     strcat(fullname, "\\");
     strcat(fullname, name);
-    gc_message(0x100, "Searching %s\n", (unsigned long) fullname);
+    caml_gc_message(0x100, "Searching %s\n", (unsigned long) fullname);
     if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) return fullname;
-    stat_free(fullname);
+    caml_stat_free(fullname);
   }
  not_found:
-  gc_message(0x100, "%s not found in search path\n", (unsigned long) name);
-  fullname = stat_alloc(strlen(name) + 1);
+  caml_gc_message(0x100, "%s not found in search path\n", (unsigned long) name);
+  fullname = caml_stat_alloc(strlen(name) + 1);
   strcpy(fullname, name);
   return fullname;
 }
   
-CAMLexport char * search_exe_in_path(char * name)
+CAMLexport char * caml_search_exe_in_path(char * name)
 {
 #define MAX_PATH_LENGTH 512
-  char * fullname = stat_alloc(512);
+  char * fullname = caml_stat_alloc(512);
   char * filepart;
 
   if (! SearchPath(NULL,              /* use system search path */
@@ -98,14 +97,14 @@ CAMLexport char * search_exe_in_path(char * name)
   return fullname;
 }
 
-char * search_dll_in_path(struct ext_table * path, char * name)
+char * caml_search_dll_in_path(struct ext_table * path, char * name)
 {
-  char * dllname = stat_alloc(strlen(name) + 5);
+  char * dllname = caml_stat_alloc(strlen(name) + 5);
   char * res;
   strcpy(dllname, name);
   strcat(dllname, ".dll");
-  res = search_in_path(path, dllname);
-  stat_free(dllname);
+  res = caml_search_in_path(path, dllname);
+  caml_stat_free(dllname);
   return res;
 }
 
@@ -166,15 +165,15 @@ static BOOL WINAPI ctrl_handler(DWORD event)
      we do a longjmp() at this point (it looks like we're running in
      a different thread than the main program!).  So, pretend we are not in
      async signal mode, so that the handler simply records the signal. */
-  saved_mode = async_signal_mode;
-  async_signal_mode = 0;
+  saved_mode = caml_async_signal_mode;
+  caml_async_signal_mode = 0;
   action(SIGINT);
-  async_signal_mode = saved_mode;
+  caml_async_signal_mode = saved_mode;
   /* We have handled the event */
   return TRUE;
 }
 
-sighandler win32_signal(int sig, sighandler action)
+sighandler caml_win32_signal(int sig, sighandler action)
 {
   sighandler oldaction;
 
@@ -189,8 +188,6 @@ sighandler win32_signal(int sig, sighandler action)
 }
 
 /* Expansion of @responsefile and *? file patterns in the command line */
-
-#ifndef HAS_UI
 
 static int argc;
 static char ** argv;
@@ -263,7 +260,8 @@ static void expand_diversion(char * filename)
 {
   struct _stat stat;
   int fd;
-  char * buf, * endbuf, * p, * s;
+  char * buf, * endbuf, * p, * q, * s;
+  int inquote;
 
   if (_stat(filename, &stat) == -1 ||
       (fd = _open(filename, O_RDONLY | O_BINARY, 0)) == -1) {
@@ -280,15 +278,42 @@ static void expand_diversion(char * filename)
     while (p < endbuf && isspace(*p)) p++;
     if (p >= endbuf) break;
     s = p;
-    /* Skip to next blank or end of buffer */
-    while (p < endbuf && !isspace(*p)) p++;
+    /* Skip to end of argument, taking quotes into account */
+    q = s;
+    inquote = 0;
+    while (p < endbuf) {
+      if (! inquote) {
+        if (isspace(*p)) break;
+        if (*p == '"') { inquote = 1; p++; continue; }
+        *q++ = *p++;
+      } else {
+        switch (*p) {
+          case '"':
+            inquote = 0; p++; continue;
+          case '\\':
+            if (p + 4 <= endbuf && strncmp(p, "\\\\\\\"", 4) == 0) {
+              p += 4; *q++ = '\\'; *q++ = '"'; continue;
+            }
+            if (p + 3 <= endbuf && strncmp(p, "\\\\\"", 3) == 0) {
+              p += 3; *q++ = '\\'; inquote = 0; continue;
+            }
+            if (p + 2 <= endbuf && p[1] == '"') {
+              p += 2; *q++ = '"'; continue;
+            }
+            /* fallthrough */
+        default:
+          *q++ = *p++;
+        }
+      }
+    }
     /* Delimit argument and expand it */
-    *p++ = 0;
+    *q++ = 0;
     expand_argument(s);
+    p++;
   }
 }
 
-CAMLexport void expand_command_line(int * argcp, char *** argvp)
+CAMLexport void caml_expand_command_line(int * argcp, char *** argvp)
 {
   int i;
   argc = 0;
@@ -301,51 +326,37 @@ CAMLexport void expand_command_line(int * argcp, char *** argvp)
   *argvp = argv;
 }
 
-#endif
+/* Add to [contents] the (short) names of the files contained in
+   the directory named [dirname].  No entries are added for [.] and [..].
+   Return 0 on success, -1 on error; set errno in the case of error. */
 
-/* Wrapper around "system" for Win32.  Create a diversion file if
-   command line is too long. */
-
-int win32_system(char * cmdline)
+int caml_read_directory(char * dirname, struct ext_table * contents)
 {
-#define MAX_CMD_LENGTH 256
-  char cmd[MAX_CMD_LENGTH + 16];
-  char template[9];
-  char * tempfile;
-  FILE * fd;
-  int len, i, j, k, retcode;
+  char * template;
+  long h;
+  struct _finddata_t fileinfo;
+  char * p;
 
-  len = strlen(cmdline);
-  if (len < 1000) {
-    return system(cmdline);
-  } else {
-    /* Skip initial blanks, if any */
-    for (i = 0; cmdline[i] != 0 && isspace(cmdline[i]); i++) /*nothing*/;
-    /* Copy command name to buffer, stop at first blank */
-    for (j = 0; cmdline[i] != 0 && ! isspace(cmdline[i]); i++) {
-      if (j < MAX_CMD_LENGTH) cmd[j++] = cmdline[i];
+  template = caml_stat_alloc(strlen(dirname) + 5);
+  strcpy(template, dirname);
+  strcat(template, "\\*.*");
+  h = _findfirst(template, &fileinfo);
+  caml_stat_free(template);
+  if (h == -1) return errno == ENOENT ? 0 : -1;
+  do {
+    if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0) {
+      p = caml_stat_alloc(strlen(fileinfo.name) + 1);
+      strcpy(p, fileinfo.name);
+      caml_ext_table_add(contents, p);
     }
-    /* Save remainder of command line to temp file */
-    strcpy(template, "cmXXXXXX");
-    tempfile = mktemp(template);
-    fd = fopen(tempfile, "w");
-    if (fd == NULL) return -1;
-    for (k = i; k < len; k++)
-      fputc((isspace(cmdline[k]) ? '\n' : cmdline[k]), fd);
-    fclose(fd);
-    /* Add " @tempfile" to the command line */
-    sprintf(cmd + j, " @%s", tempfile);
-    /* Run command */
-    retcode = system(cmd);
-    /* Remove temp file and exit */
-    unlink(tempfile);
-    return retcode;
-  }
+  } while (_findnext(h, &fileinfo) == 0);
+  _findclose(h);
+  return 0;
 }
 
 #ifndef NATIVE_CODE
 
-/* Set up a new thread for control-C emulation */
+/* Set up a new thread for control-C emulation and termination */
 
 void caml_signal_thread(void * lpParam)
 {
@@ -359,17 +370,17 @@ void caml_signal_thread(void * lpParam)
     char iobuf[2];
     /* This shall always return a single character */
     ret = ReadFile(h, iobuf, 1, &numread, NULL);
-    if (!ret || numread != 1) sys_exit(Val_int(0));
+    if (!ret || numread != 1) caml_sys_exit(Val_int(2));
     switch (iobuf[0]) {
     case 'C':
-      pending_signal = SIGINT;
-      something_to_do = 1;
+      caml_pending_signal = SIGINT;
+      caml_something_to_do = 1;
       break;
     case 'T':
-      exit(0);
-      break;
+      raise(SIGTERM);
+      return;
     }
   }
 }
 
-#endif
+#endif /* NATIVE_CODE */

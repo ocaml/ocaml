@@ -28,6 +28,9 @@ let rec scrape env mty =
       end
   | _ -> mty
 
+let freshen mty =
+  Subst.modtype Subst.identity mty
+
 let rec strengthen env mty p =
   match scrape env mty with
     Tmty_signature sg ->
@@ -126,3 +129,76 @@ let nondep_supertype env mid mty =
 
   in
     nondep_mty Co mty
+
+let enrich_typedecl env p decl =
+  match decl.type_manifest with
+    Some ty -> decl
+  | None ->
+      try
+        let orig_decl = Env.find_type p env in
+        if orig_decl.type_arity <> decl.type_arity 
+        then decl
+        else {decl with type_manifest =
+                Some(Btype.newgenty(Tconstr(p, decl.type_params, ref Mnil)))}
+      with Not_found ->
+        decl
+
+let rec enrich_modtype env p mty =
+  match mty with
+    Tmty_signature sg ->
+      Tmty_signature(List.map (enrich_item env p) sg)
+  | _ ->
+      mty
+
+and enrich_item env p = function
+    Tsig_type(id, decl) ->
+      Tsig_type(id, enrich_typedecl env (Pdot(p, Ident.name id, nopos)) decl)
+  | Tsig_module(id, mty) ->
+      Tsig_module(id, enrich_modtype env (Pdot(p, Ident.name id, nopos)) mty)
+  | item -> item
+
+let rec type_paths env p mty =
+  match scrape env mty with
+    Tmty_ident p -> []
+  | Tmty_signature sg -> type_paths_sig env p 0 sg
+  | Tmty_functor(param, arg, res) -> []
+
+and type_paths_sig env p pos sg =
+  match sg with
+    [] -> []
+  | Tsig_value(id, decl) :: rem ->
+      let pos' = match decl.val_kind with Val_prim _ -> pos | _ -> pos + 1 in
+      type_paths_sig env p pos' rem
+  | Tsig_type(id, decl) :: rem ->
+      Pdot(p, Ident.name id, nopos) :: type_paths_sig env p pos rem
+  | Tsig_module(id, mty) :: rem ->
+      type_paths env (Pdot(p, Ident.name id, pos)) mty @
+      type_paths_sig (Env.add_module id mty env) p (pos+1) rem
+  | Tsig_modtype(id, decl) :: rem ->
+      type_paths_sig (Env.add_modtype id decl env) p pos rem
+  | (Tsig_exception _ | Tsig_class _) :: rem ->
+      type_paths_sig env p (pos+1) rem
+  | (Tsig_cltype _) :: rem ->
+      type_paths_sig env p pos rem
+
+let rec no_code_needed env mty =
+  match scrape env mty with
+    Tmty_ident p -> false
+  | Tmty_signature sg -> no_code_needed_sig env sg
+  | Tmty_functor(_, _, _) -> false  
+
+and no_code_needed_sig env sg =
+  match sg with
+    [] -> true
+  | Tsig_value(id, decl) :: rem ->
+      begin match decl.val_kind with
+      | Val_prim _ -> no_code_needed_sig env rem
+      | _ -> false
+      end
+  | Tsig_module(id, mty) :: rem ->
+      no_code_needed env mty &&
+      no_code_needed_sig (Env.add_module id mty env) rem
+  | (Tsig_type _ | Tsig_modtype _ | Tsig_cltype _) :: rem ->
+      no_code_needed_sig env rem
+  | (Tsig_exception _ | Tsig_class _) :: rem ->
+      false

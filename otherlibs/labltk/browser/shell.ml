@@ -43,13 +43,17 @@ end
 
 let dump_handle (h : Unix.file_descr) =
   let obj = Obj.repr h in
-  if Obj.is_int obj || Obj.tag obj <> Obj.final_tag then
+  if Obj.is_int obj || Obj.tag obj <> Obj.custom_tag then
     invalid_arg "Shell.dump_handle";
   Nativeint.format "%x" (Obj.obj obj)
 
 (* The shell class. Now encapsulated *)
 
 let protect f x = try f x with _ -> ()
+
+let is_win32 = Sys.os_type = "Win32"
+let use_threads = is_win32
+let use_sigpipe = is_win32
 
 class shell ~textw ~prog ~args ~env ~history =
   let (in2,out1) = Unix.pipe ()
@@ -59,7 +63,7 @@ class shell ~textw ~prog ~args ~env ~history =
 object (self)
   val pid =
     let env =
-      if Sys.os_type = "Win32" then
+      if use_sigpipe then
         let sigdef = "CAMLSIGPIPE=" ^ dump_handle sig2 in
         Array.append env [|sigdef|]
       else env
@@ -80,13 +84,13 @@ object (self)
       alive <- false;
       protect close_out out;
       try
-        if Sys.os_type = "Win32" then begin
-          ignore (Unix.write sig1 ~buf:"T" ~pos:0 ~len:1);
-          List.iter ~f:(protect Unix.close) [sig1; sig2]
-        end else begin
-          List.iter ~f:(protect Unix.close) [in1; err1; sig1; sig2];
+        if use_sigpipe then ignore (Unix.write sig1 ~buf:"T" ~pos:0 ~len:1);
+        List.iter ~f:(protect Unix.close) [in1; err1; sig1; sig2];
+        if not use_threads then begin
           Fileevent.remove_fileinput ~fd:in1;
           Fileevent.remove_fileinput ~fd:err1;
+        end;
+        if not use_sigpipe then begin
           Unix.kill ~pid ~signal:Sys.sigkill;
           ignore (Unix.waitpid ~mode:[] pid)
         end
@@ -95,7 +99,7 @@ object (self)
   method interrupt =
     if alive then try
       reading <- false;
-      if Sys.os_type = "Win32" then begin
+      if use_sigpipe then begin
         ignore (Unix.write sig1 ~buf:"C" ~pos:0 ~len:1);
         self#send " "
       end else
@@ -117,7 +121,7 @@ object (self)
       len
     with Unix.Unix_error _ -> 0
     end;
-  method history (dir : [`next|`previous]) =
+  method history (dir : [`Next|`Previous]) =
     if not h#empty then begin
       if reading then begin
         Text.delete textw ~start:(`Mark"input",[`Char 1])
@@ -127,7 +131,7 @@ object (self)
         Text.mark_set textw ~mark:"input"
           ~index:(`Mark"insert",[`Char(-1)])
       end;
-      self#insert (if dir = `previous then h#previous else h#next)
+      self#insert (if dir = `Previous then h#previous else h#next)
     end
   method private lex ?(start = `Mark"insert",[`Linestart])
       ?(stop = `Mark"insert",[`Lineend]) () =
@@ -172,10 +176,10 @@ object (self)
         ([], `KeyRelease, [`Char], fun ev -> self#keyrelease ev.ev_Char);
         (* [], `KeyPressDetail"Return", [], fun _ -> self#return; *)
         ([], `ButtonPressDetail 2, [`MouseX; `MouseY],  self#paste);
-        ([`Alt], `KeyPressDetail"p", [], fun _ -> self#history `previous);
-        ([`Alt], `KeyPressDetail"n", [], fun _ -> self#history `next);
-        ([`Meta], `KeyPressDetail"p", [], fun _ -> self#history `previous);
-        ([`Meta], `KeyPressDetail"n", [], fun _ -> self#history `next);
+        ([`Alt], `KeyPressDetail"p", [], fun _ -> self#history `Previous);
+        ([`Alt], `KeyPressDetail"n", [], fun _ -> self#history `Next);
+        ([`Meta], `KeyPressDetail"p", [], fun _ -> self#history `Previous);
+        ([`Meta], `KeyPressDetail"n", [], fun _ -> self#history `Next);
         ([`Control], `KeyPressDetail"c", [], fun _ -> self#interrupt);
         ([], `Destroy, [], fun _ -> self#kill) ]
     in
@@ -186,7 +190,7 @@ object (self)
     bind textw ~events:[`KeyPressDetail"Return"] ~breakable:true
       ~action:(fun _ -> self#return; break());
     List.iter ~f:Unix.close [in2;out2;err2];
-    if Sys.os_type = "Win32" then begin
+    if use_threads then begin
       let fileinput_thread fd =
         let buf = String.create 1024 in
         let len = ref 0 in
@@ -235,24 +239,29 @@ let get_all () =
   all
 
 let may_exec_unix prog =
-  try Unix.access prog ~perm:[Unix.X_OK]; true
-  with Unix.Unix_error _ -> false
+  try Unix.access prog ~perm:[Unix.X_OK]; prog
+  with Unix.Unix_error _ -> ""
 
 let may_exec_win prog =
-  List.exists ~f:may_exec_unix [prog; prog^".exe"; prog^".cmo"; prog^".bat"]
+  let has_ext =
+    List.exists ~f:(Filename.check_suffix prog) ["exe"; "com"; "bat"] in
+  if has_ext then may_exec_unix prog else
+  List.fold_left [prog^".bat"; prog^".exe"; prog^".com"] ~init:""
+    ~f:(fun res prog -> if res = "" then may_exec_unix prog else res)
 
 let may_exec =
-  if Sys.os_type = "Win32" then may_exec_win else may_exec_unix
+  if is_win32 then may_exec_win else may_exec_unix
 
-let path_sep = if Sys.os_type = "Win32" then ";" else ":"
+let path_sep = if is_win32 then ";" else ":"
 
 let warnings = ref "Al"
 
 let program_not_found prog =
-  ignore begin
-    Jg_message.ask ~cancel:false ~no:false ~title:"Error"
-      ("Program \"" ^ String.escaped prog ^ "\"\nwas not found in path")
-  end
+  Jg_message.info ~title:"Error"
+    ("Program \"" ^ prog ^ "\"\nwas not found in path")
+
+let protect_arg s =
+  if String.contains s ' ' then "\"" ^ s ^ "\"" else s
 
 let f ~prog ~title =
   let progargs =
@@ -262,13 +271,13 @@ let f ~prog ~title =
   let path =
     try Sys.getenv "PATH" with Not_found -> "/bin" ^ path_sep ^ "/usr/bin" in
   let exec_path = Str.split ~!path_sep path in
-  let exec_path =
-    if Sys.os_type = "Win32" then "."::exec_path else exec_path in
-  let exists =
+  let exec_path = if is_win32 then "."::exec_path else exec_path in
+  let progpath =
     if not (Filename.is_implicit prog) then may_exec prog else
-    List.exists exec_path
-      ~f:(fun dir -> may_exec (Filename.concat dir prog)) in
-  if not exists then program_not_found prog else
+    List.fold_left exec_path ~init:"" ~f:
+      (fun res dir ->
+        if res = "" then may_exec (Filename.concat dir prog) else res) in
+  if progpath = "" then program_not_found prog else
   let tl = Jg_toplevel.titled title in
   let menus = Frame.create tl ~name:"menubar" in
   let file_menu = new Jg_menu.c "File" ~parent:menus
@@ -288,6 +297,8 @@ let f ~prog ~title =
       end in
   let load_path =
     List2.flat_map !Config.load_path ~f:(fun dir -> ["-I"; dir]) in
+  let load_path =
+    if is_win32 then List.map ~f:protect_arg load_path else load_path in
   let labels = if !Clflags.classic then ["-nolabels"] else [] in
   let rectypes = if !Clflags.recursive_types then ["-rectypes"] else [] in
   let warnings =
@@ -298,7 +309,7 @@ let f ~prog ~title =
     Array.of_list (progargs @ labels @ warnings @ rectypes @ load_path) in
   let history = new history () in
   let start_shell () =
-    let sh = new shell ~textw:tw ~prog ~env ~args ~history in
+    let sh = new shell ~textw:tw ~prog:progpath ~env ~args ~history in
     shells := (title, sh) :: !shells;
     sh
   in
@@ -319,11 +330,11 @@ let f ~prog ~title =
         ~sync:true ~dir:!current_dir ()
         ~action:(fun l ->
           if l = [] then () else
-          let name = List.hd l in
+          let name = Fileselect.caml_dir (List.hd l) in
           current_dir := Filename.dirname name;
           if Filename.check_suffix name ".ml"
           then
-            let cmd = "#use \"" ^ name ^ "\";;\n" in
+            let cmd = "#use \"" ^ String.escaped name ^ "\";;\n" in
             (!sh)#insert cmd; (!sh)#send cmd)
     end;
   file_menu#add_command "Load..." ~command:
@@ -332,24 +343,25 @@ let f ~prog ~title =
         ~dir:!current_dir
         ~action:(fun l ->
           if l = [] then () else
-          let name = List.hd l in
+          let name = Fileselect.caml_dir (List.hd l) in
           current_dir := Filename.dirname name;
           if Filename.check_suffix name ".cmo" ||
             Filename.check_suffix name ".cma"
           then
-            let cmd = "#load \"" ^ name ^ "\";;\n" in
+            let cmd = "#load \"" ^ String.escaped name ^ "\";;\n" in
             (!sh)#insert cmd; (!sh)#send cmd)
     end;
   file_menu#add_command "Import path" ~command:
     begin fun () ->
-      List.iter (List.rev !Config.load_path)
-        ~f:(fun dir -> (!sh)#send ("#directory \"" ^ dir ^ "\";;\n"))
+      List.iter (List.rev !Config.load_path) ~f:
+        (fun dir ->
+          (!sh)#send ("#directory \"" ^ String.escaped dir ^ "\";;\n"))
     end;
   file_menu#add_command "Close" ~command:(fun () -> destroy tl);
   history_menu#add_command "Previous  " ~accelerator:"M-p"
-    ~command:(fun () -> (!sh)#history `previous);
+    ~command:(fun () -> (!sh)#history `Previous);
   history_menu#add_command "Next" ~accelerator:"M-n"
-    ~command:(fun () -> (!sh)#history `next);
+    ~command:(fun () -> (!sh)#history `Next);
   signal_menu#add_command "Interrupt  " ~accelerator:"C-c"
     ~command:(fun () -> (!sh)#interrupt);
   signal_menu#add_command "Kill" ~command:(fun () -> (!sh)#kill)

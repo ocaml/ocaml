@@ -5,16 +5,21 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
 
 (* $Id$ *)
 
-(* Module [MLast]: abstract syntax tree *)
+(* Module [MLast]: abstract syntax tree
 
-type loc = (int * int);
+   This is undocumented because the AST is not supposed to be used
+   directly; the good usage is to use the quotations representing
+   these values in concrete syntax (see the Camlp4 documentation).
+   See also the file q_MLast.ml in Camlp4 sources. *)
+
+type loc = (Lexing.position * Lexing.position);
 
 type ctyp =
   [ TyAcc of loc and ctyp and ctyp
@@ -28,9 +33,10 @@ type ctyp =
   | TyMan of loc and ctyp and ctyp
   | TyObj of loc and list (string * ctyp) and bool
   | TyOlb of loc and string and ctyp
+  | TyPol of loc and list string and ctyp
   | TyQuo of loc and string
-  | TyRec of loc and list (loc * string * bool * ctyp)
-  | TySum of loc and list (loc * string * list ctyp)
+  | TyRec of loc and bool and list (loc * string * bool * ctyp)
+  | TySum of loc and bool and list (loc * string * list ctyp)
   | TyTup of loc and list ctyp
   | TyUid of loc and string
   | TyVrn of loc and list row_field and option (option (list string)) ]
@@ -56,10 +62,13 @@ type patt =
   | PaArr of loc and list patt
   | PaChr of loc and string
   | PaInt of loc and string
+  | PaInt32 of loc and string
+  | PaInt64 of loc and string
+  | PaNativeInt of loc and string
   | PaFlo of loc and string
-  | PaLab of loc and string and patt
+  | PaLab of loc and string and option patt
   | PaLid of loc and string
-  | PaOlb of loc and string and patt and option expr
+  | PaOlb of loc and string and option (patt * option expr)
   | PaOrp of loc and patt and patt
   | PaRng of loc and patt and patt
   | PaRec of loc and list (patt * patt)
@@ -75,7 +84,9 @@ and expr =
   | ExApp of loc and expr and expr
   | ExAre of loc and expr and expr
   | ExArr of loc and list expr
-  | ExAss of loc and expr and expr
+  | ExAsf of loc                       (* assert False *)
+  | ExAsr of loc and expr              (* assert *)
+  | ExAss of loc and expr and expr     (* assignment *)
   | ExChr of loc and string
   | ExCoe of loc and expr and option ctyp and ctyp
   | ExFlo of loc and string
@@ -83,13 +94,18 @@ and expr =
   | ExFun of loc and list (patt * option expr * expr)
   | ExIfe of loc and expr and expr and expr
   | ExInt of loc and string
-  | ExLab of loc and string and expr
+  | ExInt32 of loc and string
+  | ExInt64 of loc and string
+  | ExNativeInt of loc and string
+  | ExLab of loc and string and option expr
+  | ExLaz of loc and expr
   | ExLet of loc and bool and list (patt * expr) and expr
   | ExLid of loc and string
   | ExLmd of loc and string and module_expr and expr
   | ExMat of loc and expr and list (patt * option expr * expr)
   | ExNew of loc and list string
-  | ExOlb of loc and string and expr
+  | ExObj of loc and option patt and list class_str_item
+  | ExOlb of loc and string and option expr
   | ExOvr of loc and list (string * expr)
   | ExRec of loc and list (patt * expr) and option expr
   | ExSeq of loc and list expr
@@ -132,6 +148,7 @@ and module_type =
   | MtApp of loc and module_type and module_type
   | MtFun of loc and string and module_type and module_type
   | MtLid of loc and string
+  | MtQuo of loc and string
   | MtSig of loc and list sig_item
   | MtUid of loc and string
   | MtWit of loc and module_type and list with_constr ]
@@ -144,13 +161,15 @@ and sig_item =
   | SgExt of loc and string and ctyp and list string
   | SgInc of loc and module_type
   | SgMod of loc and string and module_type
+  | SgRecMod of loc and list (string * module_type)
   | SgMty of loc and string and module_type
   | SgOpn of loc and list string
   | SgTyp of loc and list type_decl
+  | SgUse of loc and string and list (sig_item * loc)
   | SgVal of loc and string and ctyp ]
 and with_constr =
   [ WcTyp of loc and list string and list (string * (bool * bool)) and ctyp
-  | WcMod of loc and list string and module_type ]
+  | WcMod of loc and list string and module_expr ]
 and module_expr =
   [ MeAcc of loc and module_expr and module_expr
   | MeApp of loc and module_expr and module_expr
@@ -169,15 +188,18 @@ and str_item =
   | StExt of loc and string and ctyp and list string
   | StInc of loc and module_expr
   | StMod of loc and string and module_expr
+  | StRecMod of loc and list (string * module_type * module_expr)
   | StMty of loc and string and module_type
   | StOpn of loc and list string
   | StTyp of loc and list type_decl
+  | StUse of loc and string and list (str_item * loc)
   | StVal of loc and bool and list (patt * expr)
 (*> JOCAML *)
   | StDef of loc and list joinautomaton
   | StLoc of loc and list joinlocation
 (*< JOCAML *)
 ] 
+
 and type_decl =
   ((loc * string) * list (string * (bool * bool)) * ctyp * list (ctyp * ctyp))
 and class_type =
@@ -203,7 +225,7 @@ and class_str_item =
   | CrDcl of loc and list class_str_item
   | CrInh of loc and class_expr and option string
   | CrIni of loc and expr
-  | CrMth of loc and string and bool and expr
+  | CrMth of loc and string and bool and expr and option ctyp
   | CrVal of loc and string and bool and expr
   | CrVir of loc and string and bool and ctyp ]
 ;

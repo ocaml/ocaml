@@ -17,8 +17,9 @@ include ../../config/Makefile
 
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -g
-CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../unix
+CAMLC=../../ocamlcomp.sh -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
+COMPFLAGS=-warn-error A
 
 C_OBJS=scheduler.o
 
@@ -29,31 +30,33 @@ LIB=../../stdlib
 LIB_OBJS=pervasives.cmo \
   $(LIB)/array.cmo $(LIB)/list.cmo $(LIB)/char.cmo $(LIB)/string.cmo \
   $(LIB)/sys.cmo $(LIB)/hashtbl.cmo $(LIB)/sort.cmo \
-  marshal.cmo $(LIB)/obj.cmo \
+  marshal.cmo $(LIB)/obj.cmo $(LIB)/int32.cmo $(LIB)/int64.cmo \
+  $(LIB)/nativeint.cmo \
   $(LIB)/lexing.cmo $(LIB)/parsing.cmo \
   $(LIB)/set.cmo $(LIB)/map.cmo $(LIB)/stack.cmo $(LIB)/queue.cmo \
   $(LIB)/stream.cmo $(LIB)/buffer.cmo \
-  $(LIB)/printf.cmo $(LIB)/format.cmo $(LIB)/arg.cmo \
+  $(LIB)/printf.cmo $(LIB)/format.cmo \
+  $(LIB)/scanf.cmo $(LIB)/arg.cmo \
   $(LIB)/printexc.cmo $(LIB)/gc.cmo $(LIB)/digest.cmo $(LIB)/random.cmo \
+  $(LIB)/camlinternalOO.cmo \
   $(LIB)/oo.cmo $(LIB)/genlex.cmo $(LIB)/callback.cmo $(LIB)/weak.cmo \
-  $(LIB)/lazy.cmo $(LIB)/filename.cmo $(LIB)/int32.cmo $(LIB)/int64.cmo \
-  $(LIB)/nativeint.cmo \
+  $(LIB)/lazy.cmo $(LIB)/filename.cmo $(LIB)/complex.cmo \
   $(LIB)/arrayLabels.cmo $(LIB)/listLabels.cmo $(LIB)/stringLabels.cmo \
-  $(LIB)/stdLabels.cmo
+  $(LIB)/stdLabels.cmo $(LIB)/moreLabels.cmo
 
 UNIXLIB=../unix
 
 UNIXLIB_OBJS=unix.cmo $(UNIXLIB)/unixLabels.cmo
 
-all: libthreads.a threads.cma stdlib.cma unix.cma
+all: libvmthreads.a threads.cma stdlib.cma unix.cma
 
 allopt:
 
-libthreads.a: $(C_OBJS)
-	$(MKLIB) -o threads $(C_OBJS)
+libvmthreads.a: $(C_OBJS)
+	$(MKLIB) -o threads -oc vmthreads $(C_OBJS)
 
 threads.cma: $(CAML_OBJS)
-	$(MKLIB) -ocamlc '$(CAMLC)' -o threads $(CAML_OBJS)
+	$(MKLIB) -ocamlc '$(CAMLC)' -o threads -oc vmthreads $(CAML_OBJS)
 
 stdlib.cma: $(LIB_OBJS)
 	$(CAMLC) -a -o stdlib.cma $(LIB_OBJS)
@@ -62,7 +65,7 @@ unix.cma: $(UNIXLIB_OBJS)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o unix -linkall $(UNIXLIB_OBJS)
 
 pervasives.cmo: pervasives.mli pervasives.cmi pervasives.ml
-	$(CAMLC) -nopervasives -c pervasives.ml
+	$(CAMLC) ${COMPFLAGS} -nopervasives -c pervasives.ml
 
 pervasives.mli: $(LIB)/pervasives.mli
 	ln -s $(LIB)/pervasives.mli pervasives.mli
@@ -71,7 +74,7 @@ pervasives.cmi: $(LIB)/pervasives.cmi
 	ln -s $(LIB)/pervasives.cmi pervasives.cmi
 
 marshal.cmo: marshal.mli marshal.cmi marshal.ml
-	$(CAMLC) -c marshal.ml
+	$(CAMLC) ${COMPFLAGS} -c marshal.ml
 
 marshal.mli: $(LIB)/marshal.mli
 	ln -s $(LIB)/marshal.mli marshal.mli
@@ -80,7 +83,7 @@ marshal.cmi: $(LIB)/marshal.cmi
 	ln -s $(LIB)/marshal.cmi marshal.cmi
 
 unix.cmo: unix.mli unix.cmi unix.ml
-	$(CAMLC) -c unix.ml
+	$(CAMLC) ${COMPFLAGS} -c unix.ml
 
 unix.mli: $(UNIXLIB)/unix.mli
 	ln -s $(UNIXLIB)/unix.mli unix.mli
@@ -92,16 +95,16 @@ partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f libthreads.a dllthreads.so *.o
+	rm -f libvmthreads.a dllvmthreads.so *.o
 	rm -f pervasives.mli marshal.mli unix.mli
 
 install:
-	if test -f dllthreads.so; then cp dllthreads.so $(LIBDIR)/dllthreads.so; fi
-	cp libthreads.a $(LIBDIR)/libthreads.a
-	cd $(LIBDIR); $(RANLIB) libthreads.a
-	if test -d $(LIBDIR)/threads; then : ; else mkdir $(LIBDIR)/threads; fi
-	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi threads.cma stdlib.cma unix.cma $(LIBDIR)/threads
-	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)
+	if test -f dllvmthreads.so; then cp dllvmthreads.so $(STUBLIBDIR)/.; fi
+	mkdir -p $(LIBDIR)/vmthreads
+	cp libvmthreads.a $(LIBDIR)/vmthreads/libvmthreads.a
+	cd $(LIBDIR)/vmthreads; $(RANLIB) libvmthreads.a
+	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi threads.cma stdlib.cma unix.cma $(LIBDIR)/vmthreads
+	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)/vmthreads
 
 installopt:
 

@@ -28,6 +28,7 @@ open Clambda
 
 type unit_infos =
   { mutable ui_name: string;                    (* Name of unit implemented *)
+    mutable ui_defines: string list;      (* Unit and sub-units implemented *)
     mutable ui_imports_cmi: (string * Digest.t) list; (* Interfaces imported *)
     mutable ui_imports_cmx: (string * Digest.t) list; (* Infos imported *)
     mutable ui_approx: value_approximation;     (* Approx of the structure *)
@@ -50,6 +51,13 @@ val reset: string -> unit
 val current_unit_name: unit -> string
         (* Return the name of the unit being compiled *)
 
+val make_symbol: ?unitname:string -> string option -> string
+        (* [make_symbol ~unitname:u None] returns the asm symbol that
+           corresponds to the compilation unit [u] (default: the current unit).
+           [make_symbol ~unitname:u (Some id)] returns the asm symbol that
+           corresponds to symbol [id] in the compilation unit [u]
+           (or the current unit). *)
+
 val global_approx: Ident.t -> Clambda.value_approximation
         (* Return the approximation for the given global identifier *)
 val set_global_approx: Clambda.value_approximation -> unit
@@ -62,6 +70,8 @@ val need_apply_fun: int -> unit
 
 val read_unit_info: string -> unit_infos * Digest.t
         (* Read infos and CRC from a [.cmx] file. *)
+val write_unit_info: unit_infos -> string -> unit
+        (* Save the given infos in the given file *)
 val save_unit_info: string -> unit
         (* Save the infos for the current unit in the given file *)
 

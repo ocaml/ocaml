@@ -57,14 +57,14 @@
 /* Allocation */
 	.text
 
-        .global caml_alloc#
-        .proc   caml_alloc#
+        .global caml_allocN#
+        .proc   caml_allocN#
         .align 16
 
-/* caml_alloc: all code generator registers preserved,
+/* caml_allocN: all code generator registers preserved,
    gp preserved, r2 = requested size */
 
-caml_alloc:
+caml_allocN:
         sub     r4 = r4, r2 ;;
         cmp.ltu p0, p6 = r4, r5
         (p6) br.ret.sptk b0 ;;
@@ -78,7 +78,7 @@ caml_alloc:
         mov     b0 = r3 ;;
         br.ret.sptk b0
 
-        .endp   caml_alloc#
+        .endp   caml_allocN#
 
 /* caml_call_gc: all code generator registers preserved,
    gp preserved, r2 = requested size */
@@ -126,13 +126,13 @@ caml_call_gc:
         FSAVE8(f56,f57,f58,f59,f60,f61,f62,f63) ;;
 
         /* Save current allocation pointer for debugging purposes */
-        STOREGLOBAL(r4, young_ptr#)
+        STOREGLOBAL(r4, caml_young_ptr#)
 
         /* Save trap pointer in case an exception is raised */
         STOREGLOBAL(r6, caml_exception_pointer#)
 
         /* Call the garbage collector */
-        br.call.sptk    b0 = garbage_collection# ;;
+        br.call.sptk    b0 = caml_garbage_collection# ;;
 
         /* Restore gp */
         add     r3 = 24, sp ;;
@@ -162,8 +162,8 @@ caml_call_gc:
         FLOAD8(f56,f57,f58,f59,f60,f61,f62,f63) ;;
 
         /* Reload new allocation pointer and allocation limit */
-        LOADGLOBAL(r4, young_ptr#)
-        LOADGLOBAL(r5, young_limit#)
+        LOADGLOBAL(r4, caml_young_ptr#)
+        LOADGLOBAL(r5, caml_young_limit#)
 
         /* Allocate space for the block */
         add     r3 = 16, sp ;;
@@ -208,7 +208,7 @@ caml_c_call:
         STOREGLOBAL(r14, caml_last_return_address#)
 
         /* Make the exception handler and alloc ptr available to the C code */
-        STOREGLOBAL(r4, young_ptr#)
+        STOREGLOBAL(r4, caml_young_ptr#)
         STOREGLOBAL(r6, caml_exception_pointer#)
 
         /* Recover gp from the function pointer in r2 */
@@ -221,8 +221,8 @@ caml_c_call:
         mov     gp = r7 ;;
 
         /* Reload alloc ptr and alloc limit */
-        LOADGLOBAL(r4, young_ptr#)
-        LOADGLOBAL(r5, young_limit#)
+        LOADGLOBAL(r4, caml_young_ptr#)
+        LOADGLOBAL(r5, caml_young_limit#)
 
         /* Reload return address and say that we are back into Caml code */
         ADDRGLOBAL(r3, caml_last_return_address#) ;;
@@ -245,7 +245,7 @@ caml_start_program:
         ADDRGLOBAL(r2, caml_program#) ;;
         mov     b6 = r2
 
-        /* Code shared with callback* */
+        /* Code shared with caml_callback* */
 .L103:        
         /* Allocate 64 "out" registers (for the Caml code) and no locals */
         alloc	r3 = ar.pfs, 0, 0, 64, 0
@@ -310,7 +310,7 @@ caml_start_program:
         ST8OFF(r2, r3, 8)
 .L110:	mov	r3 = ip ;;
 	add	r3 = .L101 - .L110, r3 ;;
-        ST8OFF(r2, r3, 8)
+        ST8OFF(r2, r3, 8) ;;
 
         /* Save ar.bsp, flush register window, and save ar.rnat */
         mov     r2 = ar.bsp ;;
@@ -324,8 +324,8 @@ caml_start_program:
 	mov	ar.rsc = r14		/* restore original RSE mode */
 
         /* Reload allocation pointers */
-        LOADGLOBAL(r4, young_ptr#)
-        LOADGLOBAL(r5, young_limit#)
+        LOADGLOBAL(r4, caml_young_ptr#)
+        LOADGLOBAL(r5, caml_young_limit#)
 
         /* We are back into Caml code */
         STOREGLOBAL(r0, caml_last_return_address#)
@@ -355,7 +355,7 @@ caml_start_program:
         add     sp = 48, sp
 
         /* Update allocation pointer */
-        STOREGLOBAL(r4, young_ptr#)
+        STOREGLOBAL(r4, caml_young_ptr#)
 
         /* Restore all callee-save registers from stack */
         add     r2 = 16, sp ;;
@@ -410,10 +410,10 @@ caml_start_program:
 
 /* Raise an exception from C */
 
-        .global raise_caml_exception#
-        .proc   raise_caml_exception#
+        .global caml_raise_exception#
+        .proc   caml_raise_exception#
         .align  16
-raise_caml_exception:
+caml_raise_exception:
         /* Allocate 64 "out" registers (for the Caml code) and no locals */
         /* Since we don't return, don't bother saving the PFS */
         alloc	r2 = ar.pfs, 0, 0, 64, 0
@@ -436,8 +436,8 @@ raise_caml_exception:
         mov     ar.rsc = r14 ;;         /* Restore original RSE mode */
 
         /* Reload allocation pointers and exception pointer */
-        LOADGLOBAL(r4, young_ptr#)
-        LOADGLOBAL(r5, young_limit#)
+        LOADGLOBAL(r4, caml_young_ptr#)
+        LOADGLOBAL(r5, caml_young_limit#)
         LOADGLOBAL(r6, caml_exception_pointer#)
 
         /* Say that we're back into Caml */
@@ -454,14 +454,14 @@ raise_caml_exception:
 	   CFM and PFS correctly. */
         br.call.sptk.many b0 = b6
 
-        .endp   raise_caml_exception
+        .endp   caml_raise_exception
 
 /* Callbacks from C to Caml */
 
-        .global callback_exn#
-        .proc   callback_exn#
+        .global caml_callback_exn#
+        .proc   caml_callback_exn#
         .align  16
-callback_exn:
+caml_callback_exn:
         /* Initial shuffling of arguments */
         ld8     r3 = [r32]              /* code pointer */
         mov     r2 = r32
@@ -470,12 +470,12 @@ callback_exn:
         mov     b6 = r3
         br.sptk .L103 ;;
 
-        .endp   callback_exn#
+        .endp   caml_callback_exn#
 
-        .global callback2_exn#
-        .proc   callback2_exn#
+        .global caml_callback2_exn#
+        .proc   caml_callback2_exn#
         .align  16
-callback2_exn:
+caml_callback2_exn:
         /* Initial shuffling of arguments */
         ADDRGLOBAL(r3, caml_apply2)    /* code pointer */
         mov     r2 = r32
@@ -485,12 +485,12 @@ callback2_exn:
         mov     b6 = r3
         br.sptk .L103 ;;
 
-        .endp   callback2_exn#
+        .endp   caml_callback2_exn#
 
-        .global callback3_exn#
-        .proc   callback3_exn#
+        .global caml_callback3_exn#
+        .proc   caml_callback3_exn#
         .align  16
-callback3_exn:
+caml_callback3_exn:
         /* Initial shuffling of arguments */
         ADDRGLOBAL(r3, caml_apply3)    /* code pointer */
         mov     r2 = r32
@@ -501,30 +501,30 @@ callback3_exn:
         mov     b6 = r3
         br.sptk .L103 ;;
 
-        .endp   callback3_exn#
+        .endp   caml_callback3_exn#
 
-/* Glue code to call array_bound_error */
+/* Glue code to call [caml_array_bound_error] */
 
-        .global caml_array_bound_error#
-        .proc   caml_array_bound_error#
+        .global caml_ml_array_bound_error#
+        .proc   caml_ml_array_bound_error#
         .align  16
-caml_array_bound_error:
-        ADDRGLOBAL(r2, @fptr(array_bound_error#))
+caml_ml_array_bound_error:
+        ADDRGLOBAL(r2, @fptr(caml_array_bound_error#))
         br.sptk caml_c_call             /* never returns */        
 
         .rodata
 
-        .global system_frametable#
-        .type   system_frametable#, @object
-        .size   system_frametable#, 8
-system_frametable:
+        .global caml_system__frametable#
+        .type   caml_system__frametable#, @object
+        .size   caml_system__frametable#, 8
+caml_system__frametable:
         data8   1               /* one descriptor */
         data8   .L102           /* return address into callback */
         data2   -1              /* negative frame size => use callback link */
         data2   0               /* no roots here */
         .align  8
 
-/* Global variables used by raise_caml_exception */
+/* Global variables used by caml_raise_exception */
 
         .common caml_saved_bsp#, 8, 8
         .common caml_saved_rnat#, 8, 8

@@ -25,7 +25,7 @@ CAMLprim value unix_getsockname(sock)
   socklen_param_type addr_len;
 
   addr_len = sizeof(sock_addr);
-  retcode = getsockname((SOCKET) Handle_val(sock),
+  retcode = getsockname(Socket_val(sock),
                         &addr.s_gen, &addr_len);
   if (retcode == -1) uerror("getsockname", Nothing);
   return alloc_sockaddr(&addr, addr_len);

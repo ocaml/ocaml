@@ -15,6 +15,7 @@
 
 (* Manage the loading of the program *)
 
+open Int64ops
 open Unix
 open Unix_tools
 open Debugger_config
@@ -118,9 +119,6 @@ let ask_kill_program () =
 let initialize_loading () =
   if !debug_loading then
     prerr_endline "Loading debugging informations...";
-  if Filename.is_relative !program_name then begin
-    program_name := Filename.concat (getcwd ()) !program_name;
-  end;
   begin try access !program_name [F_OK]
   with Unix_error _ ->
     prerr_endline "Program not found.";
@@ -131,7 +129,7 @@ let initialize_loading () =
     prerr_endline "Opening a socket...";
   open_connection !socket_name
     (function () ->
-      go_to 0;
+      go_to _0;
       Symbols.set_all_events();
       exit_main_loop ())
 

@@ -35,6 +35,7 @@ external decr_nat: nat -> int -> int -> int -> int = "decr_nat"
 external sub_nat: nat -> int -> int -> nat -> int -> int -> int -> int = "sub_nat" "sub_nat_native"
 external mult_digit_nat: nat -> int -> int -> nat -> int -> int -> nat -> int -> int = "mult_digit_nat" "mult_digit_nat_native"
 external mult_nat: nat -> int -> int -> nat -> int -> int -> nat -> int -> int -> int = "mult_nat" "mult_nat_native"
+external square_nat: nat -> int -> int -> nat -> int -> int -> int = "square_nat" "square_nat_native"
 external shift_left_nat: nat -> int -> int -> nat -> int -> int -> unit = "shift_left_nat" "shift_left_nat_native"
 external div_digit_nat: nat -> int -> nat -> int -> nat -> int -> int -> nat -> int -> unit = "div_digit_nat" "div_digit_nat_native"
 external div_nat: nat -> int -> int -> nat -> int -> int -> unit = "div_nat" "div_nat_native"
@@ -101,6 +102,10 @@ and gt_nat nat1 off1 len1 nat2 off2 len2 =
   compare_nat nat1 off1 (num_digits_nat nat1 off1 len1)
               nat2 off2 (num_digits_nat nat2 off2 len2) > 0
 
+(* XL: now implemented in C for better performance.
+   The code below doesn't handle carries correctly.
+   Fortunately, the carry is never used. *)
+(***
 let square_nat nat1 off1 len1 nat2 off2 len2 =
   let c = ref 0 
   and trash = make_nat 1 in
@@ -130,6 +135,7 @@ let square_nat nat1 off1 len1 nat2 off2 len2 =
                          (off2 + i)
     done;
   !c
+***)
 
 let gcd_int_nat i nat off len = 
   if i = 0 then 1 else
@@ -238,32 +244,32 @@ let power_base_max = make_nat 2;;
 
 match length_of_digit with
   | 64 -> 
-      set_digit_nat power_base_max 0 1000000000000000000;
+      set_digit_nat power_base_max 0 (Int64.to_int 1000000000000000000L);
       mult_digit_nat power_base_max 0 2 
                      power_base_max 0 1 (nat_of_int 9) 0;
       ()
   | 32 -> set_digit_nat power_base_max 0 1000000000
-  | _ -> failwith "Nat.power_base_max: unknown word size"
+  | _ -> assert false
 ;;
 
 let pmax =
   match length_of_digit with
   | 64 -> 19
   | 32 -> 9
-  | _ -> failwith "Nat.pmax: unknown word size"
+  | _ -> assert false
 ;;
 
 let max_superscript_10_power_in_int =
   match length_of_digit with
   | 64 -> 18
   | 32 -> 9
-  | _ -> failwith "Nat.max_superscript_10_power_in_int: unknown word size"
+  | _ -> assert false
 ;;
 let max_power_10_power_in_int =
   match length_of_digit with
-  | 64 -> nat_of_int 1000000000000000000
+  | 64 -> nat_of_int (Int64.to_int 1000000000000000000L)
   | 32 -> nat_of_int 1000000000
-  | _ -> failwith "Nat.max_power_10_power_in_int: unknown word size"
+  | _ -> assert false
 ;;
 
 let raw_string_of_digit nat off =

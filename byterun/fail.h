@@ -13,14 +13,20 @@
 
 /* $Id$ */
 
-#ifndef _fail_
-#define _fail_
+#ifndef CAML_FAIL_H
+#define CAML_FAIL_H
 
-
+/* <private> */
 #include <setjmp.h>
+/* </private> */
+
+#ifndef CAML_NAME_SPACE
+#include "compatibility.h"
+#endif
 #include "misc.h"
 #include "mlvalues.h"
 
+/* <private> */
 #define OUT_OF_MEMORY_EXN 0     /* "Out_of_memory" */
 #define SYS_ERROR_EXN 1         /* "Sys_error" */
 #define FAILURE_EXN 2           /* "Failure" */
@@ -32,6 +38,7 @@
 #define STACK_OVERFLOW_EXN 8    /* "Stack_overflow" */
 #define SYS_BLOCKED_IO 9        /* "Sys_blocked_io" */
 #define ASSERT_FAILURE_EXN 10   /* "Assert_failure" */
+#define UNDEFINED_RECURSIVE_MODULE_EXN 11 /* "Undefined_recursive_module" */
 
 #ifdef POSIX_SIGNALS
 struct longjmp_buffer {
@@ -45,25 +52,25 @@ struct longjmp_buffer {
 #define siglongjmp(buf,val) longjmp(buf,val)
 #endif
 
-CAMLextern struct longjmp_buffer * external_raise;
-extern value exn_bucket;
+CAMLextern struct longjmp_buffer * caml_external_raise;
+extern value caml_exn_bucket;
 
-CAMLextern void mlraise (value bucket) Noreturn;
-CAMLextern void raise_constant (value tag) Noreturn;
-CAMLextern void raise_with_arg (value tag, value arg) Noreturn;
-CAMLextern void raise_with_string (value tag, char * msg) Noreturn;
-CAMLextern void failwith (char *) Noreturn;
-CAMLextern void invalid_argument (char *) Noreturn;
-CAMLextern void raise_out_of_memory (void) Noreturn;
-CAMLextern void raise_stack_overflow (void) Noreturn;
-CAMLextern void raise_sys_error (value) Noreturn;
-CAMLextern void raise_end_of_file (void) Noreturn;
-CAMLextern void raise_zero_divide (void) Noreturn;
-CAMLextern void raise_not_found (void) Noreturn;
-CAMLextern void init_exceptions (void);
-CAMLextern void array_bound_error (void) Noreturn;
-CAMLextern void raise_sys_blocked_io (void) Noreturn;
+/* </private> */
 
-CAMLextern void (*caml_reset_sigmask)(void);
+CAMLextern void caml_raise (value bucket) Noreturn;
+CAMLextern void caml_raise_constant (value tag) Noreturn;
+CAMLextern void caml_raise_with_arg (value tag, value arg) Noreturn;
+CAMLextern void caml_raise_with_string (value tag, char * msg) Noreturn;
+CAMLextern void caml_failwith (char *) Noreturn;
+CAMLextern void caml_invalid_argument (char *) Noreturn;
+CAMLextern void caml_raise_out_of_memory (void) Noreturn;
+CAMLextern void caml_raise_stack_overflow (void) Noreturn;
+CAMLextern void caml_raise_sys_error (value) Noreturn;
+CAMLextern void caml_raise_end_of_file (void) Noreturn;
+CAMLextern void caml_raise_zero_divide (void) Noreturn;
+CAMLextern void caml_raise_not_found (void) Noreturn;
+CAMLextern void caml_init_exceptions (void);
+CAMLextern void caml_array_bound_error (void) Noreturn;
+CAMLextern void caml_raise_sys_blocked_io (void) Noreturn;
 
-#endif /* _fail_ */
+#endif /* CAML_FAIL_H */

@@ -19,9 +19,6 @@ ocamlopt \- The Objective Caml native-code compiler
 .B \-compact
 ]
 [
-.B \-labels
-]
-[
 .B \-unsafe
 ]
 [
@@ -70,7 +67,7 @@ names exported by the unit, and also contain expressions to be
 evaluated for their side-effects.  From the file 
 .IR x \&.ml,
 the 
-.BR ocamlc (1)
+.BR ocamlopt (1)
 compiler produces two files: 
 .IR x \&.o,
 containing native object code, and 
@@ -218,12 +215,6 @@ is saved in the file
 .TP
 .B \-v
 Print the version number of the compiler.
-
-.TP
-.B \-labels
-Switch to ``commuting label mode''. Arguments must be
-explicitly labeled by labels appearing in types. Arguments with different
-labels may commute freely.
 
 .TP
 .B \-unsafe

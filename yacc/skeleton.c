@@ -18,7 +18,7 @@
 
 char *header[] =
 {
-  "open Parsing",
+  "open Parsing;;",
   0
 };
 

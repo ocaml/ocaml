@@ -1,4 +1,4 @@
-(* camlp4r pa_ifdef.cmo *)
+(* camlp4r pa_macro.cmo *)
 (***********************************************************************)
 (*                                                                     *)
 (*                             Camlp4                                  *)
@@ -55,12 +55,13 @@ value initialized = ref False;
 value path = ref ([] : list string);
 
 value loadfile file =
-  ifdef OPT then
+  IFDEF OPT THEN
     raise (Error file "native-code program cannot do a dynamic load")
-  else do {
+  ELSE do {
     if not initialized.val then do {
-      ifdef OPT then ()
-      else do { Dynlink.init (); Dynlink.allow_unsafe_modules True };
+      IFDEF OPT THEN ()
+      ELSE do { Dynlink.init (); Dynlink.allow_unsafe_modules True }
+      END;
       initialized.val := True
     }
     else ();
@@ -75,6 +76,7 @@ value loadfile file =
     try Dynlink.loadfile fname with
     [ Dynlink.Error e -> raise (Error fname (Dynlink.error_message e)) ]
   }
+  END
 ;
 
 value directory d = path.val := [d :: path.val];

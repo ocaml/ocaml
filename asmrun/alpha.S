@@ -20,7 +20,7 @@
         .text
         .globl  caml_alloc2
         .globl  caml_alloc3
-        .globl  caml_alloc
+        .globl  caml_allocN
         .globl  caml_call_gc
 
 /* Note: the profiling code sets $27 to the address of the "normal" entrypoint.
@@ -68,10 +68,10 @@ $102:   ldiq    $25, 32
         br      $110
         .end    caml_alloc3
 
-        .globl  caml_alloc
-        .ent    caml_alloc
+        .globl  caml_allocN
+        .ent    caml_allocN
         .align  3
-caml_alloc:
+caml_allocN:
         .prologue 0
         subq    $13, $25, $13
         .set    noat
@@ -79,7 +79,7 @@ caml_alloc:
         bne     $at, $110
         .set    at
         ret     ($26)
-        .end    caml_alloc
+        .end    caml_allocN
         
         .globl  caml_call_gc
         .ent    caml_call_gc
@@ -102,7 +102,7 @@ $103:   ldgp    $gp, 0($27)
         lda     $24, 0x100($sp)
         stq     $24, caml_gc_regs
     /* Save current allocation pointer for debugging purposes */
-$113:   stq     $13, young_ptr
+$113:   stq     $13, caml_young_ptr
     /* Save trap pointer in case an exception is raised (e.g. sighandler) */
         stq     $15, caml_exception_pointer
     /* Save all integer regs used by the code generator in the context */
@@ -150,7 +150,7 @@ $113:   stq     $13, young_ptr
         stt     $f29, 29 * 8 ($sp)
         stt     $f30, 30 * 8 ($sp)
     /* Call the garbage collector */
-        jsr     garbage_collection
+        jsr     caml_garbage_collection
         ldgp    $gp, 0($26)
     /* Restore all regs used by the code generator */
         lda     $24, 0x100($sp)
@@ -197,8 +197,8 @@ $113:   stq     $13, young_ptr
         ldt     $f29, 29 * 8 ($sp)
         ldt     $f30, 30 * 8 ($sp)
     /* Reload new allocation pointer and allocation limit */
-        ldq     $13, young_ptr
-        ldq     $14, young_limit
+        ldq     $13, caml_young_ptr
+        ldq     $14, caml_young_limit
     /* Allocate space for the block */
         ldq     $25, 0x1E8($sp)
         subq    $13, $25, $13
@@ -233,16 +233,16 @@ $104:   ldgp    $gp, 0($27)
         stq     $26, 0($11)
         stq     $sp, caml_bottom_of_stack
     /* Make the exception handler and alloc ptr available to the C code */
-        lda     $12, young_ptr
+        lda     $12, caml_young_ptr
         stq     $13, 0($12)
-        lda     $14, young_limit
+        lda     $14, caml_young_limit
         stq     $15, caml_exception_pointer
     /* Call the function */
         mov     $25, $27
         jsr     ($25)
     /* Reload alloc ptr and alloc limit */
-        ldq     $13, 0($12)  /* $12 still points to young_ptr */
-        ldq     $14, 0($14)  /* $14 still points to young_limit */
+        ldq     $13, 0($12)  /* $12 still points to caml_young_ptr */
+        ldq     $14, 0($14)  /* $14 still points to caml_young_limit */
     /* Say that we are back into Caml code */
         stq     $31, 0($11)  /* $11 still points to caml_last_return_address */
     /* Restore $gp */
@@ -261,7 +261,7 @@ caml_start_program:
         ldgp    $gp, 0($27)
         lda     $25, caml_program
 
-/* Code shared with callback* */
+/* Code shared with caml_callback* */
 $107:
     /* Save return address */
         lda     $sp, -128($sp)
@@ -298,8 +298,8 @@ $107:
         stq     $0, 8($sp)
         mov     $sp, $15
     /* Reload allocation pointers */
-        ldq     $13, young_ptr
-        ldq     $14, young_limit
+        ldq     $13, caml_young_ptr
+        ldq     $14, caml_young_limit
     /* We are back into Caml code */
         stq     $31, caml_last_return_address
     /* Call the Caml code */
@@ -321,7 +321,7 @@ $112:   ldq     $24, 0($sp)
         stq     $24, caml_gc_regs
         lda     $sp, 32($sp)
     /* Update allocation pointer */
-        stq     $13, young_ptr
+        stq     $13, caml_young_ptr
     /* Reload callee-save registers */
         ldq     $9, 8($sp)
         ldq     $10, 16($sp)
@@ -356,28 +356,28 @@ $109:   ldgp    $gp, 0($26)
 
 /* Raise an exception from C */
 
-        .globl  raise_caml_exception
-        .ent    raise_caml_exception
+        .globl  caml_raise_exception
+        .ent    caml_raise_exception
         .align  3
-raise_caml_exception:
+caml_raise_exception:
         ldgp    $gp, 0($27)
         mov     $16, $0                         /* Move exn bucket */
-        ldq     $13, young_ptr
-        ldq     $14, young_limit
+        ldq     $13, caml_young_ptr
+        ldq     $14, caml_young_limit
         stq     $31, caml_last_return_address   /* We're back into Caml */
         ldq     $sp, caml_exception_pointer
         ldq     $15, 0($sp)
         ldq     $26, 8($sp)
         lda     $sp, 16($sp)
         jmp     $25, ($26)      /* Keep retaddr in $25 to help debugging */
-        .end    raise_caml_exception
+        .end    caml_raise_exception
 
 /* Callback from C to Caml */
 
-        .globl  callback_exn
-        .ent    callback_exn
+        .globl  caml_callback_exn
+        .ent    caml_callback_exn
         .align  3
-callback_exn:
+caml_callback_exn:
     /* Initial shuffling of arguments */
         ldgp    $gp, 0($27)
         mov     $16, $25
@@ -385,12 +385,12 @@ callback_exn:
         mov     $25, $17        /* environment */
         ldq     $25, 0($25)     /* code pointer */
         br      $107
-        .end    callback_exn
+        .end    caml_callback_exn
 
-        .globl  callback2_exn
-        .ent    callback2_exn
+        .globl  caml_callback2_exn
+        .ent    caml_callback2_exn
         .align  3
-callback2_exn:
+caml_callback2_exn:
         ldgp    $gp, 0($27)
         mov     $16, $25
         mov     $17, $16        /* first arg */
@@ -398,12 +398,12 @@ callback2_exn:
         mov     $25, $18        /* environment */
         lda     $25, caml_apply2
         br      $107
-        .end    callback2_exn
+        .end    caml_callback2_exn
 
-        .globl  callback3_exn
-        .ent    callback3_exn
+        .globl  caml_callback3_exn
+        .ent    caml_callback3_exn
         .align  3
-callback3_exn:
+caml_callback3_exn:
         ldgp    $gp, 0($27)
         mov     $16, $25
         mov     $17, $16        /* first arg */
@@ -412,27 +412,27 @@ callback3_exn:
         mov     $25, $19        /* environment */
         lda     $25, caml_apply3
         br      $107
-        .end    callback3_exn
+        .end    caml_callback3_exn
 
-/* Glue code to call array_bound_error */
+/* Glue code to call [caml_array_bound_error] */
 
-        .globl  caml_array_bound_error
-        .ent    caml_array_bound_error
+        .globl  caml_ml_array_bound_error
+        .ent    caml_ml_array_bound_error
         .align  3
-caml_array_bound_error:
+caml_ml_array_bound_error:
         br      $27, $111
 $111:   ldgp    $gp, 0($27)
-        lda     $25, array_bound_error
+        lda     $25, caml_array_bound_error
         br      caml_c_call             /* never returns */
-        .end    caml_array_bound_error
+        .end    caml_ml_array_bound_error
 
-#if defined(SYS_digital) || defined(SYS_openbsd)
+#if defined(SYS_digital)
         .rdata
 #else
         .section .rodata
 #endif
-        .globl  system_frametable
-system_frametable:
+        .globl  caml_system__frametable
+caml_system__frametable:
         .quad   1               /* one descriptor */
         .quad   $108 + 4        /* return address into callback */
         .word   -1              /* negative frame size => use callback link */

@@ -1,16 +1,18 @@
-(*************************************************************************)
-(*                                                                       *)
-(*                Objective Caml LablTk library                          *)
-(*                                                                       *)
-(*         Jun Furuse, projet Cristal, INRIA Rocquencourt                *)
-(*                                                                       *)
-(*   Copyright 1999 Institut National de Recherche en Informatique et    *)
-(*   en Automatique and Kyoto University.  All rights reserved.          *)
-(*   This file is distributed under the terms of the GNU Library         *)
-(*   General Public License, with the special exception on linking       *)
-(*   described in file ../../../LICENSE.                                 *)
-(*                                                                       *)
-(*************************************************************************)
+(***********************************************************************)
+(*                                                                     *)
+(*                 MLTk, Tcl/Tk interface of Objective Caml            *)
+(*                                                                     *)
+(*    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    *)
+(*               projet Cristal, INRIA Rocquencourt                    *)
+(*            Jacques Garrigue, Kyoto University RIMS                  *)
+(*                                                                     *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
+(*  en Automatique and Kyoto University.  All rights reserved.         *)
+(*  This file is distributed under the terms of the GNU Library        *)
+(*  General Public License, with the special exception on linking      *)
+(*  described in file LICENSE found in the Objective Caml source tree. *)
+(*                                                                     *)
+(***********************************************************************)
 
 (* $Id$ *)
 
@@ -94,7 +96,7 @@ let init () =
     begin fun w ->
       try Hashtbl.find t w.ev_Widget
       with Not_found ->
-        Hashtbl'.add t ~key:w.ev_Widget ~data: ();
+        Hashtbl.add t w.ev_Widget ();
         let x = Option.get w.ev_Widget ~name: "balloon" ~clas: "Balloon" in
         if x <> "" then put ~on: w.ev_Widget ~ms: 1000 x
     end

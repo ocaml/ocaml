@@ -1,17 +1,32 @@
+common.cmi: lexgen.cmi syntax.cmi 
 compact.cmi: lexgen.cmi 
 lexer.cmi: parser.cmi 
 lexgen.cmi: syntax.cmi 
-output.cmi: compact.cmi lexgen.cmi syntax.cmi 
+output.cmi: common.cmi compact.cmi lexgen.cmi syntax.cmi 
+outputbis.cmi: common.cmi lexgen.cmi syntax.cmi 
 parser.cmi: syntax.cmi 
-compact.cmo: lexgen.cmi compact.cmi 
-compact.cmx: lexgen.cmx compact.cmi 
+syntax.cmi: cset.cmi 
+common.cmo: lexgen.cmi syntax.cmi common.cmi 
+common.cmx: lexgen.cmx syntax.cmx common.cmi 
+compact.cmo: lexgen.cmi table.cmi compact.cmi 
+compact.cmx: lexgen.cmx table.cmx compact.cmi 
+cset.cmo: cset.cmi 
+cset.cmx: cset.cmi 
 lexer.cmo: parser.cmi syntax.cmi lexer.cmi 
-lexer.cmx: parser.cmx syntax.cmi lexer.cmi 
-lexgen.cmo: syntax.cmi lexgen.cmi 
-lexgen.cmx: syntax.cmi lexgen.cmi 
-main.cmo: compact.cmi lexer.cmi lexgen.cmi output.cmi parser.cmi syntax.cmi 
-main.cmx: compact.cmx lexer.cmx lexgen.cmx output.cmx parser.cmx syntax.cmi 
-output.cmo: compact.cmi lexgen.cmi syntax.cmi output.cmi 
-output.cmx: compact.cmx lexgen.cmx syntax.cmi output.cmi 
-parser.cmo: syntax.cmi parser.cmi 
-parser.cmx: syntax.cmi parser.cmi 
+lexer.cmx: parser.cmx syntax.cmx lexer.cmi 
+lexgen.cmo: cset.cmi syntax.cmi table.cmi lexgen.cmi 
+lexgen.cmx: cset.cmx syntax.cmx table.cmx lexgen.cmi 
+main.cmo: common.cmi compact.cmi lexer.cmi lexgen.cmi output.cmi \
+    outputbis.cmi parser.cmi syntax.cmi 
+main.cmx: common.cmx compact.cmx lexer.cmx lexgen.cmx output.cmx \
+    outputbis.cmx parser.cmx syntax.cmx 
+output.cmo: common.cmi compact.cmi lexgen.cmi syntax.cmi output.cmi 
+output.cmx: common.cmx compact.cmx lexgen.cmx syntax.cmx output.cmi 
+outputbis.cmo: common.cmi lexgen.cmi syntax.cmi outputbis.cmi 
+outputbis.cmx: common.cmx lexgen.cmx syntax.cmx outputbis.cmi 
+parser.cmo: cset.cmi syntax.cmi parser.cmi 
+parser.cmx: cset.cmx syntax.cmx parser.cmi 
+syntax.cmo: cset.cmi syntax.cmi 
+syntax.cmx: cset.cmx syntax.cmi 
+table.cmo: table.cmi 
+table.cmx: table.cmi 

@@ -46,6 +46,10 @@ let create_archive file_list lib_name =
     output_string outchan cmxa_magic_number;
     let (objfile_list, descr_list) =
       List.split (List.map read_info file_list) in
+    List.iter2
+      (fun file_name (unit, crc) ->
+        Asmlink.check_consistency file_name unit crc)
+      file_list descr_list;
     let infos =
       { lib_units = descr_list;
         lib_ccobjs = !Clflags.ccobjs;

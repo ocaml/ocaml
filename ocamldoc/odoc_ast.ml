@@ -112,6 +112,8 @@ module Typedtree_search =
       | Typedtree.Tstr_open _ -> ()
       | Typedtree.Tstr_include _ -> ()
       | Typedtree.Tstr_eval _ -> ()
+      | Typedtree.Tstr_loc _|Typedtree.Tstr_def _ ->
+          Misc.fatal_error "No ocamldoc for jocaml"
 
     let tables typedtree =
       let t = Hashtbl.create 13 in
@@ -815,7 +817,8 @@ module Analyser =
       | Typedtree.Tmod_functor _ 
       | Typedtree.Tmod_apply _ ->
           Odoc_messages.struct_end
-
+      | Typedtree.Tmod_dyntype _ ->
+          Misc.fatal_error "ocamldoc/jocaml"
     (** Get the list of included modules in a module structure of a typed tree. *)
     let tt_get_included_module_list tt_structure =
       let f acc item =
@@ -1379,7 +1382,8 @@ module Analyser =
             } 
           in
           (0, env, [ Element_included_module im ]) (* A VOIR : étendre l'environnement ? avec quoi ? *)
-
+      | Parsetree.Pstr_loc _|Parsetree.Pstr_def _ ->
+          fatal_error "ocamldoc/jocaml"
      (** Analysis of a [Parsetree.module_expr] and a name to return a [t_module].*)
      and analyse_module env current_module_name module_name comment_opt p_module_expr tt_module_expr =
       let complete_name = Name.concat current_module_name module_name in
@@ -1539,6 +1543,7 @@ module Analyser =
 	    | Parsetree.Pmod_functor _ -> "Pmod_functor"
 	    | Parsetree.Pmod_apply _ -> "Pmod_apply"
 	    | Parsetree.Pmod_constraint _ -> "Pmod_constraint"
+            | Parsetree.Pmod_dyntype (_, _) -> "Pmod_dyntype"
 	  in
 	  let s_typed = 
             match typedtree with
@@ -1547,6 +1552,7 @@ module Analyser =
 	    | Typedtree.Tmod_functor _ -> "Tmod_functor"
 	    | Typedtree.Tmod_apply _ -> "Tmod_apply"
 	    | Typedtree.Tmod_constraint _ -> "Tmod_constraint"
+            | Typedtree.Tmod_dyntype _ -> "Tmod_dyntype"
 	  in
 	  let code = get_string_of_file pos_start pos_end in
 	  print_DEBUG (Printf.sprintf "code=%s\ns_parse=%s\ns_typed=%s\n" code s_parse s_typed);

@@ -19,10 +19,9 @@ and ccobjs = ref ([] : string list)     (* .o, .a, .so and -cclib -lxxx *)
 and dllibs = ref ([] : string list)     (* .so and -dllib -lxxx *)
 
 let compile_only = ref false            (* -c *)
-and exec_name = ref "a.out"             (* -o *)
-and archive_name = ref "library.cma"    (* -o *)
-and object_name = ref ("camlprog" ^ Config.ext_obj) (* -o *)
+and output_name = ref (None : string option) (* -o *)
 and include_dirs = ref ([] : string list)(* -I *)
+and no_std_include = ref false          (* -nostdlib *)
 and print_types = ref false             (* -i *)
 and make_archive = ref false            (* -a *)
 and debug = ref false                   (* -g *)
@@ -34,14 +33,17 @@ and ccopts = ref ([] : string list)     (* -ccopt *)
 and classic = ref false                 (* -nolabels *)
 and nopervasives = ref false            (* -nopervasives *)
 and preprocessor = ref(None : string option) (* -pp *)
-and thread_safe = ref false             (* -thread *)
 (*> JOCAML *)
 and join = ref false                    (* -join *)
 (*< JOCAML *)
+let save_types = ref false              (* -stypes *)
+and use_threads = ref false             (* -thread *)
+and use_vmthreads = ref false           (* -vmthread *)
 and noassert = ref false                (* -noassert *)
 and verbose = ref false                 (* -verbose *)
-and use_prims = ref ""                  (* -use_prims ... *)
-and use_runtime = ref ""                (* -use_runtime ... *)
+and use_prims = ref ""                  (* -use-prims ... *)
+and use_runtime = ref ""                (* -use-runtime ... *)
+and principal = ref false               (* -principal *)
 and recursive_types = ref false         (* -rectypes *)
 and make_runtime = ref false            (* -make_runtime *)
 and gprofile = ref false                (* -p *)
@@ -49,6 +51,7 @@ and c_compiler = ref Config.bytecomp_c_compiler (* -cc *)
 and c_linker = ref Config.bytecomp_c_linker (* -cc *)
 and no_auto_link = ref false            (* -noautolink *)
 and dllpaths = ref ([] : string list)   (* -dllpath *)
+and make_package = ref false            (* -pack *)
 let dump_parsetree = ref false          (* -dparsetree *)
 and dump_rawlambda = ref false          (* -drawlambda *)
 and dump_lambda = ref false             (* -dlambda *)
@@ -73,6 +76,15 @@ let keep_startup_file = ref false       (* -dstartup *)
 let dump_combine = ref false            (* -dcombine *)
 
 let native_code = ref false             (* set to true under ocamlopt *)
-
 let inline_threshold = ref 10
 
+let dont_write_files = ref false        (* set to true under ocamldoc *)
+
+let std_include_flag prefix =
+  if !no_std_include then ""
+  else (prefix ^ (Filename.quote Config.standard_library))
+;;
+
+let std_include_dir () =
+  if !no_std_include then [] else [Config.standard_library]
+;;

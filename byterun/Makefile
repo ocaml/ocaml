@@ -16,8 +16,8 @@
 include ../config/Makefile
 
 CC=$(BYTECC)
-CFLAGS=-O $(BYTECCCOMPOPTS)
-DFLAGS=-g -DDEBUG $(BYTECCCOMPOPTS)
+CFLAGS=-DCAML_NAME_SPACE -O $(BYTECCCOMPOPTS)
+DFLAGS=-DCAML_NAME_SPACE -g -DDEBUG $(BYTECCCOMPOPTS)
 
 OBJS=interp.o misc.o stacks.o fix_code.o startup.o main.o \
   freelist.o major_gc.o minor_gc.o memory.o alloc.o roots.o globroots.o \
@@ -34,7 +34,8 @@ PRIMS=alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c \
   dynlink.c
 
-PUBLIC_INCLUDES=mlvalues.h alloc.h misc.h callback.h fail.h custom.h intext.h
+PUBLIC_INCLUDES=alloc.h callback.h config.h custom.h fail.h intext.h \
+  memory.h misc.h mlvalues.h signals.h compatibility.h
 
 all: ocamlrun$(EXE)
 
@@ -51,13 +52,9 @@ install:
 	cp libcamlrun.a $(LIBDIR)/libcamlrun.a
 	cd $(LIBDIR); $(RANLIB) libcamlrun.a
 	if test -d $(LIBDIR)/caml; then : ; else mkdir $(LIBDIR)/caml; fi
-	cp $(PUBLIC_INCLUDES) $(LIBDIR)/caml
-	sed -e '/#include ".*\/m.h/r ../config/m.h' \
-            -e '/#include ".*\/s.h/r ../config/s.h' \
-            -e '/#include "/d' config.h > $(LIBDIR)/caml/config.h
-	sed -e '/#include ".*gc\.h"/d' \
-	    -e '/#define Alloc_small/,/^}/d' \
-	    -e '/Modify/,/^}/d' memory.h > $(LIBDIR)/caml/memory.h
+	for i in $(PUBLIC_INCLUDES); do \
+          sed -f ../tools/cleanup-header $$i > $(LIBDIR)/caml/$$i; \
+        done
 
 libcamlrun.a: $(OBJS)
 	ar rc libcamlrun.a $(OBJS)
@@ -79,14 +76,15 @@ prims.c : primitives
 	(echo '#include "mlvalues.h"'; \
 	 echo '#include "prims.h"'; \
 	 sed -e 's/.*/extern value &();/' primitives; \
-	 echo 'c_primitive builtin_cprim[] = {'; \
+	 echo 'c_primitive caml_builtin_cprim[] = {'; \
 	 sed -e 's/.*/	&,/' primitives; \
 	 echo '	 0 };'; \
-	 echo 'char * names_of_builtin_cprim[] = {'; \
+	 echo 'char * caml_names_of_builtin_cprim[] = {'; \
 	 sed -e 's/.*/	"&",/' primitives; \
 	 echo '	 0 };') > prims.c
 
 opnames.h : instruct.h
+	LANG=C; \
 	sed -e '/\/\*/d' \
 	    -e '/^#/d' \
 	    -e 's/enum /char * names_of_/' \
@@ -107,7 +105,7 @@ jumptbl.h : instruct.h
 	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
 
 depend : prims.c opnames.h jumptbl.h
-	gcc -MM *.c > .depend
-	gcc -MM -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
+	gcc -MM $(BYTECCCOMPOPTS) *.c > .depend
+	gcc -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
 
 include .depend

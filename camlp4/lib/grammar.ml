@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -14,7 +14,6 @@
 
 open Stdpp;
 open Gramext;
-
 open Format;
 
 value rec flatten_tree =
@@ -25,84 +24,78 @@ value rec flatten_tree =
       List.map (fun l -> [n :: l]) (flatten_tree s) @ flatten_tree b ]
 ;
 
-value print_str s = print_string ("\"" ^ String.escaped s ^ "\"");
+value print_str ppf s = fprintf ppf "\"%s\"" (String.escaped s);
 
-value rec print_symbol =
+value rec print_symbol ppf =
   fun
-  [ Slist0 s -> do { print_string "LIST0"; print_string " "; print_symbol1 s }
+  [ Smeta n sl _ -> print_meta ppf n sl
+  | Slist0 s -> fprintf ppf "LIST0 %a" print_symbol1 s
   | Slist0sep s t ->
-      do {
-        print_string "LIST0";
-        print_string " ";
-        print_symbol1 s;
-        print_string " SEP ";
-        print_symbol1 t
-      }
-  | Slist1 s -> do { print_string "LIST1"; print_string " "; print_symbol1 s }
+      fprintf ppf "LIST0 %a SEP %a" print_symbol1 s print_symbol1 t
+  | Slist1 s -> fprintf ppf "LIST1 %a" print_symbol1 s
   | Slist1sep s t ->
-      do {
-        print_string "LIST1";
-        print_string " ";
-        print_symbol1 s;
-        print_string " SEP ";
-        print_symbol1 t
-      }
-  | Sopt s -> do { print_string "OPT "; print_symbol1 s }
+      fprintf ppf "LIST1 %a SEP %a" print_symbol1 s print_symbol1 t
+  | Sopt s -> fprintf ppf "OPT %a" print_symbol1 s
   | Stoken (con, prm) when con <> "" && prm <> "" ->
-      do { print_string con; print_space (); print_str prm }
-  | Snterml e l ->
-      do {
-        print_string e.ename;
-        print_space ();
-        print_string "LEVEL";
-        print_space ();
-        print_str l
-      }
-  | s -> print_symbol1 s ]
-and print_symbol1 =
+      fprintf ppf "%s@ %a" con print_str prm
+  | Snterml e l -> fprintf ppf "%s@ LEVEL@ %a" e.ename print_str l
+  | Snterm _ | Snext | Sself | Stoken _ | Stree _ as s ->
+      print_symbol1 ppf s ]
+and print_meta ppf n sl =
+  loop 0 sl where rec loop i =
+    fun
+    [ [] -> ()
+    | [s :: sl] ->
+        let j =
+          try String.index_from n i ' ' with [ Not_found -> String.length n ]
+        in
+        do {
+          fprintf ppf "%s %a" (String.sub n i (j - i)) print_symbol1 s;
+          if sl = [] then ()
+          else do { fprintf ppf " "; loop (min (j + 1) (String.length n)) sl }
+        } ]
+and print_symbol1 ppf =
   fun
-  [ Stoken ("", s) -> print_str s
-  | Snterm e -> print_string e.ename
-  | Sself -> print_string "SELF"
-  | Snext -> print_string "NEXT"
-  | Stoken (con, "") -> print_string con
-  | Stree t -> print_level print_space (flatten_tree t)
-  | s -> do { print_string "("; print_symbol s; print_string ")" } ]
-and print_rule symbols =
+  [ Snterm e -> pp_print_string ppf e.ename
+  | Sself -> pp_print_string ppf "SELF"
+  | Snext -> pp_print_string ppf "NEXT"
+  | Stoken ("", s) -> print_str ppf s
+  | Stoken (con, "") -> pp_print_string ppf con
+  | Stree t -> print_level ppf pp_print_space (flatten_tree t)
+  | Smeta _ _ _ | Snterml _ _ | Slist0 _ | Slist0sep _ _ | Slist1 _ |
+    Slist1sep _ _ | Sopt _ | Stoken _ as s ->
+      fprintf ppf "(%a)" print_symbol s ]
+and print_rule ppf symbols =
   do {
-    open_hovbox 0;
+    fprintf ppf "@[<hov 0>";
     let _ =
       List.fold_left
         (fun sep symbol ->
            do {
-             sep ();
-             print_symbol symbol;
-             fun () -> do { print_string ";"; print_space () }
+             fprintf ppf "%t%a" sep print_symbol symbol;
+             fun ppf -> fprintf ppf ";@ "
            })
-        (fun () -> ()) symbols
+        (fun ppf -> ()) symbols
     in
-    close_box ()
+    fprintf ppf "@]"
   }
-and print_level print_space rules =
+and print_level ppf pp_print_space rules =
   do {
-    open_hovbox 0;
-    print_string "[ ";
+    fprintf ppf "@[<hov 0>[ ";
     let _ =
       List.fold_left
         (fun sep rule ->
            do {
-             sep ();
-             print_rule rule;
-             fun () -> do { print_space (); print_string "| " }
+             fprintf ppf "%t%a" sep print_rule rule;
+             fun ppf -> fprintf ppf "%a| " pp_print_space ()
            })
-        (fun () -> ()) rules
+        (fun ppf -> ()) rules
     in
-    print_string " ]";
-    close_box ()
+    fprintf ppf " ]@]"
   }
 ;
 
-value print_levels elev =
+value print_levels ppf elev =
   let _ =
     List.fold_left
       (fun sep lev ->
@@ -111,57 +104,113 @@ value print_levels elev =
              flatten_tree lev.lprefix
          in
          do {
-           sep ();
-           open_hovbox 2;
+           fprintf ppf "%t@[<hov 2>" sep;
            match lev.lname with
-           [ Some n ->
-               do {
-                 print_string ("\"" ^ String.escaped n ^ "\"");
-                 print_break 1 2
-               }
-           | _ -> () ];
+           [ Some n -> fprintf ppf "%a@;<1 2>" print_str n
+           | None -> () ];
            match lev.assoc with
-           [ LeftA -> print_string "LEFTA"
-           | RightA -> print_string "RIGHTA"
-           | NonA -> print_string "NONA" ];
-           close_box ();
-           print_break 1 2;
-           print_level force_newline rules;
-           fun () -> do { print_cut (); print_string "| " }
+           [ LeftA -> fprintf ppf "LEFTA"
+           | RightA -> fprintf ppf "RIGHTA"
+           | NonA -> fprintf ppf "NONA" ];
+           fprintf ppf "@]@;<1 2>";
+           print_level ppf pp_force_newline rules;
+           fun ppf -> fprintf ppf "@,| "
          })
-      (fun () -> ()) elev
+      (fun ppf -> ()) elev
   in
   ()
 ;
 
-value print_entry e =
+value print_entry ppf e =
   do {
-    open_vbox 0;
-    print_string "[ ";
+    fprintf ppf "@[<v 0>[ ";
     match e.edesc with
-    [ Dlevels elev -> print_levels elev
-    | Dparser _ -> print_string "<parser>" ];
-    print_string " ]";
-    close_box ();
-    print_newline ()
+    [ Dlevels elev -> print_levels ppf elev
+    | Dparser _ -> fprintf ppf "<parser>" ];
+    fprintf ppf " ]@]"
   }
 ;
 
-type g = Gramext.grammar;
+value iter_entry f e =
+  let treated = ref [] in
+  let rec do_entry e =
+    if List.memq e treated.val then ()
+    else do {
+      treated.val := [e :: treated.val];
+      f e;
+      match e.edesc with
+      [ Dlevels ll -> List.iter do_level ll
+      | Dparser _ -> () ]
+    }
+  and do_level lev = do { do_tree lev.lsuffix; do_tree lev.lprefix }
+  and do_tree =
+    fun
+    [ Node n -> do_node n
+    | LocAct _ _ | DeadEnd -> () ]
+  and do_node n = do { do_symbol n.node; do_tree n.son; do_tree n.brother }
+  and do_symbol =
+    fun
+    [ Smeta _ sl _ -> List.iter do_symbol sl
+    | Snterm e | Snterml e _ -> do_entry e
+    | Slist0 s | Slist1 s | Sopt s -> do_symbol s
+    | Slist0sep s1 s2 | Slist1sep s1 s2 -> do { do_symbol s1; do_symbol s2 }
+    | Stree t -> do_tree t
+    | Sself | Snext | Stoken _ -> () ]
+  in
+  do_entry e
+;
 
-external grammar_obj : g -> grammar = "%identity";
+value fold_entry f e init =
+  let treated = ref [] in
+  let rec do_entry accu e =
+    if List.memq e treated.val then accu
+    else do {
+      treated.val := [e :: treated.val];
+      let accu = f e accu in
+      match e.edesc with
+      [ Dlevels ll -> List.fold_left do_level accu ll
+      | Dparser _ -> accu ]
+    }
+  and do_level accu lev =
+    let accu = do_tree accu lev.lsuffix in
+    do_tree accu lev.lprefix
+  and do_tree accu =
+    fun
+    [ Node n -> do_node accu n
+    | LocAct _ _ | DeadEnd -> accu ]
+  and do_node accu n =
+    let accu = do_symbol accu n.node in
+    let accu = do_tree accu n.son in
+    do_tree accu n.brother
+  and do_symbol accu =
+    fun
+    [ Smeta _ sl _ -> List.fold_left do_symbol accu sl
+    | Snterm e | Snterml e _ -> do_entry accu e
+    | Slist0 s | Slist1 s | Sopt s -> do_symbol accu s
+    | Slist0sep s1 s2 | Slist1sep s1 s2 ->
+        let accu = do_symbol accu s1 in
+        do_symbol accu s2
+    | Stree t -> do_tree accu t
+    | Sself | Snext | Stoken _ -> accu ]
+  in
+  do_entry init e
+;
+
+type g = Gramext.grammar Token.t;
+
+external grammar_obj : g -> grammar Token.t = "%identity";
 
 value floc = ref (fun _ -> failwith "internal error when computing location");
 value loc_of_token_interval bp ep =
   if bp == ep then
-    if bp == 0 then (0, 1)
+    if bp == 0 then (Token.nowhere, Token.succ_pos Token.nowhere)
     else
       let a = snd (floc.val (bp - 1)) in
-      (a, a + 1)
+      (a, Token.succ_pos a)
   else
     let (bp1, bp2) = floc.val bp in
     let (ep1, ep2) = floc.val (pred ep) in
-    (if bp1 < ep1 then bp1 else ep1, if bp2 > ep2 then bp2 else ep2)
+    (if Token.lt_pos bp1 ep1 then bp1 else ep1, if Token.lt_pos ep2 bp2 then bp2 else ep2)
 ;
 
 value rec name_of_symbol entry =
@@ -169,18 +218,14 @@ value rec name_of_symbol entry =
   [ Snterm e -> "[" ^ e.ename ^ "]"
   | Snterml e l -> "[" ^ e.ename ^ " level " ^ l ^ "]"
   | Sself | Snext -> "[" ^ entry.ename ^ "]"
-  | Stoken tok -> entry.egram.glexer.Token.text tok
+  | Stoken tok -> entry.egram.glexer.Token.tok_text tok
   | _ -> "???" ]
 ;
 
 value rec get_token_list entry tokl last_tok tree =
   match tree with
   [ Node {node = (Stoken tok as s); son = son; brother = DeadEnd} ->
-      match entry.egram.glexer.Token.tparse tok with
-      [ Some _ ->
-          if tokl = [] then None
-          else Some (List.rev [last_tok :: tokl], last_tok, tree)
-      | None -> get_token_list entry [last_tok :: tokl] tok son ]
+      get_token_list entry [last_tok :: tokl] tok son
   | _ ->
       if tokl = [] then None
       else Some (List.rev [last_tok :: tokl], last_tok, tree) ]
@@ -200,8 +245,7 @@ and name_of_tree_failed entry =
   [ Node {node = s; brother = bro; son = son} ->
       let tokl =
         match s with
-        [ Stoken tok when entry.egram.glexer.Token.tparse tok = None ->
-            get_token_list entry [] tok son
+        [ Stoken tok -> get_token_list entry [] tok son
         | _ -> None ]
       in
       match tokl with
@@ -215,14 +259,14 @@ and name_of_tree_failed entry =
           let txt =
             match bro with
             [ DeadEnd | LocAct _ _ -> txt
-            | _ -> txt ^ " or " ^ name_of_tree_failed entry bro ]
+            | Node _ -> txt ^ " or " ^ name_of_tree_failed entry bro ]
           in
           txt
       | Some (tokl, last_tok, son) ->
           List.fold_left
             (fun s tok ->
                (if s = "" then "" else s ^ " ") ^
-                 entry.egram.glexer.Token.text tok)
+                 entry.egram.glexer.Token.tok_text tok)
             "" tokl ]
   | DeadEnd | LocAct _ _ -> "???" ]
 ;
@@ -254,7 +298,7 @@ value search_tree_in_entry prev_symb tree =
                   [ Some t ->
                       Some (Node {node = n.node; son = t; brother = DeadEnd})
                   | None -> search_tree n.brother ] ]
-          | _ -> None ]
+          | LocAct _ _ | DeadEnd -> None ]
       and search_symbol symb =
         match symb with
         [ Snterm _ | Snterml _ _ | Slist0 _ | Slist0sep _ _ | Slist1 _ |
@@ -294,7 +338,7 @@ value search_tree_in_entry prev_symb tree =
         | _ -> None ]
       in
       search_levels levels
-  | _ -> tree ]
+  | Dparser _ -> tree ]
 ;
 
 value error_verbose = ref False;
@@ -331,21 +375,15 @@ value tree_failed entry prev_symb_result prev_symb tree =
   do {
     if error_verbose.val then do {
       let tree = search_tree_in_entry prev_symb tree entry.edesc in
-      set_formatter_out_channel stderr;
-      open_vbox 0;
-      print_newline ();
-      print_string "----------------------------------";
-      print_newline ();
-      printf "Parse error in entry [%s], rule:" entry.ename;
-      print_break 0 2;
-      open_vbox 0;
-      print_level force_newline (flatten_tree tree);
-      close_box ();
-      print_newline ();
-      print_string "----------------------------------";
-      print_newline ();
-      close_box ();
-      print_newline ()
+      let ppf = err_formatter in
+      fprintf ppf "@[<v 0>@,";
+      fprintf ppf "----------------------------------@,";
+      fprintf ppf "Parse error in entry [%s], rule:@;<0 2>" entry.ename;
+      fprintf ppf "@[";
+      print_level ppf pp_force_newline (flatten_tree tree);
+      fprintf ppf "@]@,";
+      fprintf ppf "----------------------------------@,";
+      fprintf ppf "@]@."
     }
     else ();
     txt ^ " (in [" ^ entry.ename ^ "])"
@@ -397,7 +435,7 @@ value top_tree entry =
   fun
   [ Node {node = s; brother = bro; son = son} ->
       Node {node = top_symb entry s; brother = bro; son = son}
-  | _ -> raise Stream.Failure ]
+  | LocAct _ _ | DeadEnd -> raise Stream.Failure ]
 ;
 
 value skip_if_empty bp p strm =
@@ -429,22 +467,20 @@ value recover parser_of_tree entry nlevn alevn bp a s son strm =
   else do_recover parser_of_tree entry nlevn alevn bp a s son strm
 ;
 
-value std_token_parse =
-  fun
-  [ (p_con, "") -> parser [: `(con, prm) when con = p_con :] -> prm
-  | (p_con, p_prm) ->
-      parser [: `(con, prm) when con = p_con && prm = p_prm :] -> prm ]
-;
+value token_count = ref 0;
 
 value peek_nth n strm =
   let list = Stream.npeek n strm in
-  let rec loop list n =
-    match (list, n) with
-    [ ([x :: _], 1) -> Some x
-    | ([_ :: l], n) -> loop l (n - 1)
-    | ([], _) -> None ]
-  in
-  loop list n
+  do {
+    token_count.val := Stream.count strm + n;
+    let rec loop list n =
+      match (list, n) with
+      [ ([x :: _], 1) -> Some x
+      | ([_ :: l], n) -> loop l (n - 1)
+      | ([], _) -> None ]
+    in
+    loop list n
+  }
 ;
 
 value rec parser_of_tree entry nlevn alevn =
@@ -461,8 +497,7 @@ value rec parser_of_tree entry nlevn alevn =
   | Node {node = s; son = son; brother = DeadEnd} ->
       let tokl =
         match s with
-        [ Stoken tok when entry.egram.glexer.Token.tparse tok = None ->
-            get_token_list entry [] tok son
+        [ Stoken tok -> get_token_list entry [] tok son
         | _ -> None ]
       in
       match tokl with
@@ -474,12 +509,11 @@ value rec parser_of_tree entry nlevn alevn =
       | Some (tokl, last_tok, son) ->
           let p1 = parser_of_tree entry nlevn alevn son in
           let p1 = parser_cont p1 entry nlevn alevn (Stoken last_tok) son in
-          parser_of_token_list p1 tokl ]
+          parser_of_token_list entry.egram p1 tokl ]
   | Node {node = s; son = son; brother = bro} ->
       let tokl =
         match s with
-        [ Stoken tok when entry.egram.glexer.Token.tparse tok = None ->
-            get_token_list entry [] tok son
+        [ Stoken tok -> get_token_list entry [] tok son
         | _ -> None ]
       in
       match tokl with
@@ -494,7 +528,7 @@ value rec parser_of_tree entry nlevn alevn =
       | Some (tokl, last_tok, son) ->
           let p1 = parser_of_tree entry nlevn alevn son in
           let p1 = parser_cont p1 entry nlevn alevn (Stoken last_tok) son in
-          let p1 = parser_of_token_list p1 tokl in
+          let p1 = parser_of_token_list entry.egram p1 tokl in
           let p2 = parser_of_tree entry nlevn alevn bro in
           parser
           [ [: a = p1 :] -> a
@@ -504,54 +538,42 @@ and parser_cont p1 entry nlevn alevn s son bp a =
   [ [: a = p1 :] -> a
   | [: a = recover parser_of_tree entry nlevn alevn bp a s son :] -> a
   | [: :] -> raise (Stream.Error (tree_failed entry a s son)) ]
-and parser_of_token_list p1 tokl =
+and parser_of_token_list gram p1 tokl =
   loop 1 tokl where rec loop n =
     fun
-    [ [(p_con, "")] ->
-        let ps strm =
-          match peek_nth n strm with
-          [ Some (con, prm) when p_con = "ANY" || con = p_con ->
-              do { for i = 1 to n do { Stream.junk strm }; Obj.repr prm }
-          | _ -> raise Stream.Failure ]
-        in
-        parser bp [: a = ps; act = p1 bp a :] -> app act a
-    | [(p_con, p_prm)] ->
-        let ps strm =
-          match peek_nth n strm with
-          [ Some (con, prm)
-            when (p_con = "ANY" || con = p_con) && prm = p_prm ->
-              do { for i = 1 to n do { Stream.junk strm }; Obj.repr prm }
-          | _ -> raise Stream.Failure ]
-        in
-        parser bp [: a = ps; act = p1 bp a :] -> app act a
-    | [(p_con, "") :: tokl] ->
-        let ps strm =
-          match peek_nth n strm with
-          [ Some (con, prm) when p_con = "ANY" || con = p_con -> prm
-          | _ -> raise Stream.Failure ]
-        in
-        let p1 = loop (n + 1) tokl in
-        parser
-          [: a = ps; s :] ->
-            let act = p1 s in
-            app act a
-    | [(p_con, p_prm) :: tokl] ->
-        let ps strm =
-          match peek_nth n strm with
-          [ Some (con, prm)
-            when (p_con = "ANY" || con = p_con) && prm = p_prm ->
-              prm
-          | _ -> raise Stream.Failure ]
-        in
-        let p1 = loop (n + 1) tokl in
-        parser
-          [: a = ps; s :] ->
-            let act = p1 s in
-            app act a
-    | [] -> assert False ]
+    [ [tok :: tokl] ->
+        let tematch = gram.glexer.Token.tok_match tok in
+        match tokl with
+        [ [] ->
+            let ps strm =
+              match peek_nth n strm with
+              [ Some tok ->
+                  let r = tematch tok in
+                  do { for i = 1 to n do { Stream.junk strm }; Obj.repr r }
+              | None -> raise Stream.Failure ]
+            in
+            parser bp [: a = ps; act = p1 bp a :] -> app act a
+        | _ ->
+            let ps strm =
+              match peek_nth n strm with
+              [ Some tok -> tematch tok
+              | None -> raise Stream.Failure ]
+            in
+            let p1 = loop (n + 1) tokl in
+            parser
+              [: a = ps; s :] ->
+                let act = p1 s in
+                app act a ]
+    | [] -> invalid_arg "parser_of_token_list" ]
 and parser_of_symbol entry nlevn =
   fun
-  [ Slist0 s ->
+  [ Smeta _ symbl act ->
+      let act = Obj.magic act entry symbl in
+      Obj.magic
+        (List.fold_left
+           (fun act symb -> Obj.magic act (parser_of_symbol entry nlevn symb))
+           act symbl)
+  | Slist0 s ->
       let ps = parser_of_symbol entry nlevn s in
       let rec loop al =
         parser
@@ -588,9 +610,7 @@ and parser_of_symbol entry nlevn =
              a =
                parser
                [ [: a = ps :] -> a
-               | [: a =
-                      parser_of_symbol entry nlevn (top_symb entry symb) :] ->
-                   a
+               | [: a = parse_top_symb entry symb :] -> a
                | [: :] ->
                    raise (Stream.Error (symb_failed entry v sep symb)) ];
              s :] ->
@@ -613,15 +633,19 @@ and parser_of_symbol entry nlevn =
   | Snterml e l -> parser [: a = e.estart (level_number e l) :] -> a
   | Sself -> parser [: a = entry.estart 0 :] -> a
   | Snext -> parser [: a = entry.estart nlevn :] -> a
-  | Stoken ("ANY", v) ->
-      if v = "" then parser [: `(_, x) :] -> Obj.repr x
-      else parser [: `(_, x) when x = v :] -> Obj.repr x
   | Stoken tok ->
-      match entry.egram.glexer.Token.tparse tok with
-      [ Some f -> (Obj.magic f : Stream.t Token.t -> Obj.t)
-      | None ->
-          (Obj.magic (std_token_parse tok) : Stream.t Token.t -> Obj.t) ] ]
+      let f = entry.egram.glexer.Token.tok_match tok in
+      fun strm ->
+        match Stream.peek strm with
+        [ Some tok ->
+            let r = f tok in
+            do { Stream.junk strm; Obj.repr r }
+        | None -> raise Stream.Failure ] ]
+and parse_top_symb entry symb =
+  parser_of_symbol entry 0 (top_symb entry symb)
 ;
+
+value symb_failed_txt e s1 s2 = symb_failed e 0 s1 s2;
 
 value rec continue_parser_of_levels entry clevn =
   fun
@@ -704,43 +728,60 @@ value start_parser_of_entry entry =
 value parse_parsable entry efun (cs, (ts, fun_loc)) =
   let restore =
     let old_floc = floc.val in
-    fun () -> floc.val := old_floc
+    let old_tc = token_count.val in
+    fun () -> do { floc.val := old_floc; token_count.val := old_tc }
+  in
+  let get_loc () =
+    try
+      let cnt = Stream.count ts in
+      let loc = fun_loc cnt in
+      if token_count.val - 1 <= cnt then loc
+      else (fst loc, snd (fun_loc (token_count.val - 1)))
+    with _ -> (Token.nowhere, Token.succ_pos Token.nowhere)
   in
   do {
     floc.val := fun_loc;
+    token_count.val := 0;
     try
       let r = efun ts in
       do { restore (); r }
     with
     [ Stream.Failure ->
-        let loc =
-          try fun_loc (Stream.count ts) with _ ->
-            (Stream.count cs, Stream.count cs + 1)
-        in
+        let loc = get_loc () in
         do {
           restore ();
           raise_with_loc loc
             (Stream.Error ("illegal begin of " ^ entry.ename))
         }
     | Stream.Error _ as exc ->
-        let loc =
-          try fun_loc (Stream.count ts) with _ ->
-            (Stream.count cs, Stream.count cs + 1)
-        in
+        let loc = get_loc () in
         do { restore (); raise_with_loc loc exc }
     | exc ->
-        let loc = (Stream.count cs, Stream.count cs + 1) in
+        let loc = (Token.nowhere, Token.succ_pos Token.nowhere) in
         do { restore (); raise_with_loc loc exc } ]
   }
 ;
 
 value wrap_parse entry efun cs =
-  let parsable = (cs, entry.egram.glexer.Token.func cs) in
+  let parsable = (cs, entry.egram.glexer.Token.tok_func cs) in
   parse_parsable entry efun parsable
 ;
 
 value create_toktab () = Hashtbl.create 301;
-value create lexer = {gtokens = create_toktab (); glexer = lexer};
+value gcreate glexer = {gtokens = create_toktab (); glexer = glexer};
+
+value tematch tparse tok =
+  match tparse tok with
+  [ Some p -> fun x -> p [: `x :]
+  | None -> Token.default_match tok ]
+;
+value glexer_of_lexer lexer =
+  {Token.tok_func = lexer.Token.func; Token.tok_using = lexer.Token.using;
+   Token.tok_removing = lexer.Token.removing;
+   Token.tok_match = tematch lexer.Token.tparse;
+   Token.tok_text = lexer.Token.text; Token.tok_comm = None}
+;
+value create lexer = gcreate (glexer_of_lexer lexer);
 
 (* Extend syntax *)
 
@@ -761,7 +802,7 @@ value extend_entry entry position rules =
   with
   [ Token.Error s ->
       do {
-        Printf.eprintf "Lexer initialization error.\n%s\n" s;
+        Printf.eprintf "Lexer initialization error:\n- %s\n" s;
         flush stderr;
         failwith "Grammar.extend"
       } ]
@@ -803,7 +844,7 @@ value delete_rule entry sl =
             let f = continue_parser_of_entry entry in
             do { entry.econtinue := f; f lev bp a strm }
       }
-  | _ -> () ]
+  | Dparser _ -> () ]
 ;
 
 (* Unsafe *)
@@ -818,44 +859,66 @@ value clear_entry e =
   }
 ;
 
-value reinit_gram g lexer = do { Hashtbl.clear g.gtokens; g.glexer := lexer };
-
-module Unsafe =
-  struct value clear_entry = clear_entry; value reinit_gram = reinit_gram; end
+value gram_reinit g glexer =
+  do { Hashtbl.clear g.gtokens; g.glexer := glexer }
 ;
 
-exception EntryFound of g_entry;
+value reinit_gram g lexer = gram_reinit g (glexer_of_lexer lexer);
+
+module Unsafe =
+  struct
+    value gram_reinit = gram_reinit;
+    value clear_entry = clear_entry;
+    value reinit_gram = reinit_gram;
+  end
+;
+
 value find_entry e s =
-  let rec find_levels levs =
-    try
-      do {
-        List.iter
-          (fun lev -> do { find_tree lev.lsuffix; find_tree lev.lprefix })
-          levs;
-        raise Not_found
-      }
-    with
-    [ EntryFound e -> e
-    | _ -> raise Not_found ]
+  let rec find_levels =
+    fun
+    [ [] -> None
+    | [lev :: levs] ->
+        match find_tree lev.lsuffix with
+        [ None ->
+            match find_tree lev.lprefix with
+            [ None -> find_levels levs
+            | x -> x ]
+        | x -> x ] ]
   and find_symbol =
     fun
-    [ Snterm e -> if e.ename = s then raise (EntryFound e) else ()
-    | Snterml e _ -> if e.ename = s then raise (EntryFound e) else ()
+    [ Snterm e -> if e.ename = s then Some e else None
+    | Snterml e _ -> if e.ename = s then Some e else None
+    | Smeta _ sl _ -> find_symbol_list sl
     | Slist0 s -> find_symbol s
     | Slist0sep s _ -> find_symbol s
     | Slist1 s -> find_symbol s
     | Slist1sep s _ -> find_symbol s
     | Sopt s -> find_symbol s
     | Stree t -> find_tree t
-    | _ -> () ]
+    | Sself | Snext | Stoken _ -> None ]
+  and find_symbol_list =
+    fun
+    [ [s :: sl] ->
+        match find_symbol s with
+        [ None -> find_symbol_list sl
+        | x -> x ]
+    | [] -> None ]
   and find_tree =
     fun
     [ Node {node = s; brother = bro; son = son} ->
-        do { find_symbol s; find_tree bro; find_tree son }
-    | _ -> () ]
+        match find_symbol s with
+        [ None ->
+            match find_tree bro with
+            [ None -> find_tree son
+            | x -> x ]
+        | x -> x ]
+    | LocAct _ _ | DeadEnd -> None ]
   in
   match e.edesc with
-  [ Dlevels levs -> find_levels levs
+  [ Dlevels levs ->
+      match find_levels levs with
+      [ Some e -> e
+      | None -> raise Not_found ]
   | Dparser _ -> raise Not_found ]
 ;
 
@@ -863,7 +926,8 @@ value of_entry e = e.egram;
 
 module Entry =
   struct
-    type e 'a = g_entry;
+    type te = Token.t;
+    type e 'a = g_entry te;
     value create g n =
       {egram = g; ename = n; estart = empty_entry n;
        econtinue _ _ _ = parser []; edesc = Dlevels []}
@@ -873,18 +937,17 @@ module Entry =
     ;
     value parse_token (entry : e 'a) ts : 'a = Obj.magic (entry.estart 0 ts);
     value name e = e.ename;
-    value of_parser g n (p : Stream.t Token.t -> 'a) : e 'a =
+    value of_parser g n (p : Stream.t te -> 'a) : e 'a =
       {egram = g; ename = n; estart _ = Obj.magic p;
        econtinue _ _ _ = parser []; edesc = Dparser (Obj.magic p)}
     ;
-    external obj : e 'a -> Gramext.g_entry = "%identity";
-    value print e = print_entry (obj e);
-    value find e = Obj.magic (find_entry (obj e));
+    external obj : e 'a -> Gramext.g_entry te = "%identity";
+    value print e = printf "%a@." print_entry (obj e);
+    value find e s = find_entry (obj e) s;
   end
 ;
 
 value tokens g con =
-  let g = grammar_obj g in
   let list = ref [] in
   do {
     Hashtbl.iter
@@ -895,80 +958,106 @@ value tokens g con =
   }
 ;
 
+value glexer g = g.glexer;
+
 value warning_verbose = Gramext.warning_verbose;
 
 (* Functorial interface *)
 
-module type LexerType = sig value lexer : Token.lexer; end;
+module type GLexerType = sig type te = 'x; value lexer : Token.glexer te; end;
 
 module type S =
   sig
+    type te = 'x;
     type parsable = 'x;
     value parsable : Stream.t char -> parsable;
     value tokens : string -> list (string * int);
+    value glexer : Token.glexer te;
     module Entry :
       sig
         type e 'a = 'x;
         value create : string -> e 'a;
         value parse : e 'a -> parsable -> 'a;
-        value parse_token : e 'a -> Stream.t Token.t -> 'a;
+        value parse_token : e 'a -> Stream.t te -> 'a;
         value name : e 'a -> string;
-        value of_parser : string -> (Stream.t Token.t -> 'a) -> e 'a;
+        value of_parser : string -> (Stream.t te -> 'a) -> e 'a;
         value print : e 'a -> unit;
-        external obj : e 'a -> Gramext.g_entry = "%identity";
+        external obj : e 'a -> Gramext.g_entry te = "%identity";
       end
     ;
     module Unsafe :
       sig
-        value reinit_gram : Token.lexer -> unit;
+        value gram_reinit : Token.glexer te -> unit;
         value clear_entry : Entry.e 'a -> unit;
+        value reinit_gram : Token.lexer -> unit;
       end
     ;
     value extend :
       Entry.e 'a -> option Gramext.position ->
         list
           (option string * option Gramext.g_assoc *
-           list (list Gramext.g_symbol * Gramext.g_action)) ->
+           list (list (Gramext.g_symbol te) * Gramext.g_action)) ->
         unit;
-    value delete_rule : Entry.e 'a -> list Gramext.g_symbol -> unit;
+    value delete_rule : Entry.e 'a -> list (Gramext.g_symbol te) -> unit;
   end
 ;
 
-module Make (L : LexerType) : S =
+module type ReinitType = sig value reinit_gram : g -> Token.lexer -> unit; end
+;
+
+module GGMake (R : ReinitType) (L : GLexerType) =
   struct
-    type parsable =
-      (Stream.t char * (Stream.t Token.t * Token.location_function))
-    ;
-    value gram = create L.lexer;
-    value parsable cs = (cs, L.lexer.Token.func cs);
+    type te = L.te;
+    type parsable = (Stream.t char * (Stream.t te * Token.flocation_function));
+    value gram = gcreate L.lexer;
+    value parsable cs = (cs, L.lexer.Token.tok_func cs);
     value tokens = tokens gram;
+    value glexer = glexer gram;
     module Entry =
       struct
-        type e 'a = g_entry;
+        type e 'a = g_entry te;
         value create n =
           {egram = gram; ename = n; estart = empty_entry n;
            econtinue _ _ _ = parser []; edesc = Dlevels []}
         ;
+        external obj : e 'a -> Gramext.g_entry te = "%identity";
         value parse (e : e 'a) p : 'a =
           Obj.magic (parse_parsable e (e.estart 0) p)
         ;
         value parse_token (e : e 'a) ts : 'a = Obj.magic (e.estart 0 ts);
         value name e = e.ename;
-        value of_parser n (p : Stream.t Token.t -> 'a) : e 'a =
+        value of_parser n (p : Stream.t te -> 'a) : e 'a =
           {egram = gram; ename = n; estart _ = Obj.magic p;
            econtinue _ _ _ = parser []; edesc = Dparser (Obj.magic p)}
         ;
-        external obj : e 'a -> Gramext.g_entry = "%identity";
-        value print e = print_entry (obj e);
+        value print e = printf "%a@." print_entry (obj e);
       end
     ;
     module Unsafe =
       struct
-        value reinit_gram = Unsafe.reinit_gram gram;
+        value gram_reinit = gram_reinit gram;
         value clear_entry = Unsafe.clear_entry;
+        value reinit_gram = R.reinit_gram (Obj.magic gram);
       end
     ;
     value extend = extend_entry;
     value delete_rule e r = delete_rule (Entry.obj e) r;
   end
+;
+
+module GMake (L : GLexerType) =
+  GGMake
+    (struct
+       value reinit_gram _ _ =
+         failwith "call of deprecated reinit_gram in grammar built by GMake"
+       ;
+     end)
+    L
+;
+
+module type LexerType = sig value lexer : Token.lexer; end;
+
+module Make (L : LexerType) =
+  GGMake (struct value reinit_gram = reinit_gram; end)
+    (struct type te = Token.t; value lexer = glexer_of_lexer L.lexer; end)
 ;

@@ -1,3 +1,5 @@
 camlheader
 camlheader_ur
 labelled-*
+caml
+*.annot

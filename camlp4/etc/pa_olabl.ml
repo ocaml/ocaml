@@ -186,13 +186,18 @@ module Plexer =
       | [: :] -> () ]
     ;
     value error_on_unknown_keywords = ref False;
-    value next_token_fun find_id_kwd find_spe_kwd =
-      let err bp ep msg = raise_with_loc (bp, ep) (Token.Error msg) in
-      let keyword_or_error (bp, ep) s =
+    value next_token_fun find_id_kwd find_spe_kwd fname lnum bolpos =
+      let make_pos p =
+        {Lexing.pos_fname = fname.val; Lexing.pos_lnum = lnum.val;
+         Lexing.pos_bol = bolpos.val; Lexing.pos_cnum = p} in
+      let mkloc (bp, ep) = (make_pos bp, make_pos ep) in
+
+      let err loc msg = raise_with_loc loc (Token.Error msg) in
+      let keyword_or_error (bp,ep) s =
         try ("", find_spe_kwd s) with
         [ Not_found ->
             if error_on_unknown_keywords.val then
-              err bp ep ("illegal token: " ^ s)
+              err (mkloc (bp, ep)) ("illegal token: " ^ s)
             else ("", s) ]
       in
       let rec next_token =
@@ -280,14 +285,14 @@ module Plexer =
         [ [: `'"' :] -> get_buff len
         | [: `'\\'; `c; s :] -> string bp (store (store len '\\') c) s
         | [: `c; s :] -> string bp (store len c) s
-        | [: :] ep -> err bp ep "string not terminated" ]
+        | [: :] ep -> err (mkloc (bp, ep)) "string not terminated" ]
       and char bp len =
         parser
         [ [: `'''; s :] ->
             if len = 0 then char bp (store len ''') s else get_buff len
         | [: `'\\'; `c; s :] -> char bp (store (store len '\\') c) s
         | [: `c; s :] -> char bp (store len c) s
-        | [: :] ep -> err bp ep "char not terminated" ]
+        | [: :] ep -> err (mkloc(bp,ep)) "char not terminated" ]
       and locate_or_antiquot bp len =
         parser
         [ [: `'$' :] -> ("ANTIQUOT", ":" ^ get_buff len)
@@ -300,7 +305,7 @@ module Plexer =
             ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
         | [: `c; s :] ->
             ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
-        | [: :] ep -> err bp ep "antiquotation not terminated" ]
+        | [: :] ep -> err (mkloc(bp,ep)) "antiquotation not terminated" ]
       and maybe_locate bp len =
         parser
         [ [: `'$' :] -> ("ANTIQUOT", ":" ^ get_buff len)
@@ -311,7 +316,7 @@ module Plexer =
             ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
         | [: `c; s :] ->
             ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
-        | [: :] ep -> err bp ep "antiquotation not terminated" ]
+        | [: :] ep -> err (mkloc(bp,ep)) "antiquotation not terminated" ]
       and antiquot bp len =
         parser
         [ [: `'$' :] -> ("ANTIQUOT", ":" ^ get_buff len)
@@ -324,13 +329,13 @@ module Plexer =
             ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
         | [: `c; s :] ->
             ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
-        | [: :] ep -> err bp ep "antiquotation not terminated" ]
+        | [: :] ep -> err (mkloc(bp,ep)) "antiquotation not terminated" ]
       and locate_or_antiquot_rest bp len =
         parser
         [ [: `'$' :] -> get_buff len
         | [: `'\\'; `c; s :] -> locate_or_antiquot_rest bp (store len c) s
         | [: `c; s :] -> locate_or_antiquot_rest bp (store len c) s
-        | [: :] ep -> err bp ep "antiquotation not terminated" ]
+        | [: :] ep -> err (mkloc(bp,ep)) "antiquotation not terminated" ]
       and quotation bp len =
         parser
         [ [: `'>'; s :] -> maybe_end_quotation bp len s
@@ -344,7 +349,7 @@ module Plexer =
              s :] ->
             quotation bp len s
         | [: `c; s :] -> quotation bp (store len c) s
-        | [: :] ep -> err bp ep "quotation not terminated" ]
+        | [: :] ep -> err (mkloc(bp,ep)) "quotation not terminated" ]
       and maybe_nested_quotation bp len =
         parser
         [ [: `'<'; s :] -> mstore (quotation bp (store len '<') s) ">>"
@@ -366,20 +371,20 @@ module Plexer =
             next_token_loc s
         | [: `'('; s :] -> maybe_comment bp s
         | [: `'#'; _ = spaces_tabs; a = linenum bp :] -> a
-        | [: tok = next_token :] ep -> (tok, (bp, ep))
-        | [: _ = Stream.empty :] -> (("EOI", ""), (bp, succ bp)) ]
+        | [: tok = next_token :] ep -> (tok, mkloc(bp, ep))
+        | [: _ = Stream.empty :] -> (("EOI", ""), mkloc(bp, succ bp)) ]
       and maybe_comment bp =
         parser
         [ [: `'*'; s :] -> do { comment bp s; next_token_loc s }
         | [: :] ep ->
             let tok = keyword_or_error (bp, ep) "(" in
-            (tok, (bp, ep)) ]
+            (tok, mkloc(bp, ep)) ]
       and comment bp =
         parser
         [ [: `'('; s :] -> maybe_nested_comment bp s
         | [: `'*'; s :] -> maybe_end_comment bp s
         | [: `c; s :] -> comment bp s
-        | [: :] ep -> err bp ep "comment not terminated" ]
+        | [: :] ep -> err (mkloc(bp,ep)) "comment not terminated" ]
       and maybe_nested_comment bp =
         parser
         [ [: `'*'; s :] -> do { comment bp s; comment bp s }
@@ -391,7 +396,7 @@ module Plexer =
         [ [: `'0'..'9'; _ = digits; _ = spaces_tabs; `'"'; _ = any_to_nl;
              s :] ->
             next_token_loc s
-        | [: :] -> (keyword_or_error (bp, bp + 1) "#", (bp, bp + 1)) ]
+        | [: :] -> (keyword_or_error (bp, bp + 1) "#", mkloc(bp, bp + 1)) ]
       and spaces_tabs =
         parser [ [: `' ' | '\t'; s :] -> spaces_tabs s | [: :] -> () ]
       and digits = parser [ [: `'0'..'9'; s :] -> digits s | [: :] -> () ]
@@ -404,7 +409,7 @@ module Plexer =
       fun cstrm ->
         try next_token_loc cstrm with
         [ Stream.Error str ->
-            err (Stream.count cstrm) (Stream.count cstrm + 1) str ]
+            err (mkloc(Stream.count cstrm, Stream.count cstrm + 1)) str ]
     ;
     value locerr () = invalid_arg "Lexer: location function";
     value loct_create () = ref (Array.create 1024 None);
@@ -429,9 +434,12 @@ module Plexer =
       }
     ;
     value func kwd_table =
+      let bolpos = ref 0 in
+      let lnum = ref 0 in
+      let fname = ref "" in
       let find = Hashtbl.find kwd_table in
       let lex cstrm =
-        let next_token_loc = next_token_fun find find in
+        let next_token_loc = next_token_fun find find fname lnum bolpos in
         let loct = loct_create () in
         let ts =
           Stream.from
@@ -564,21 +572,11 @@ module Plexer =
       with
       [ Not_found -> "" ]
     ;
-    value tparse =
-      fun
-      [ ("ANTIQUOT", p_prm) ->
-          let p =
-            parser
-              [: `("ANTIQUOT", prm) when eq_before_colon p_prm prm :] ->
-                after_colon prm
-          in
-          Some p
-      | _ -> None ]
-    ;
-    value make () =
+    value gmake () =
       let kwd_table = Hashtbl.create 301 in
-      {func = func kwd_table; using = using_token kwd_table;
-       removing = removing_token kwd_table; tparse = tparse; text = text}
+      {tok_func = func kwd_table; tok_using = using_token kwd_table;
+       tok_removing = removing_token kwd_table;
+       tok_match = Token.default_match; tok_text = text; tok_comm = None}
     ;
   end
 ;
@@ -589,7 +587,7 @@ open Pcaml;
 Pcaml.no_constructors_arity.val := True;
 
 do {
-  Grammar.Unsafe.reinit_gram gram (Plexer.make ());
+  Grammar.Unsafe.gram_reinit gram (Plexer.gmake ());
   Grammar.Unsafe.clear_entry interf;
   Grammar.Unsafe.clear_entry implem;
   Grammar.Unsafe.clear_entry top_phrase;
@@ -630,7 +628,7 @@ value mkumin loc f arg =
       <:expr< $lid:f$ $arg$ >> ]
 ;
 
-external loc_of_node : 'a -> (int * int) = "%field0";
+external loc_of_node : 'a -> MLast.loc = "%field0";
 
 value mklistexp loc last =
   loop True where rec loop top =
@@ -923,12 +921,12 @@ EXTEND
           <:str_item< type $list:tdl$ >>
       | "let"; r = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
         x = expr ->
-          let e = <:expr< let $rec:o2b r$ $list:l$ in $x$ >> in
+          let e = <:expr< let $opt:o2b r$ $list:l$ in $x$ >> in
           <:str_item< $exp:e$ >>
       | "let"; r = OPT "rec"; l = LIST1 let_binding SEP "and" ->
           match l with
           [ [(<:patt< _ >>, e)] -> <:str_item< $exp:e$ >>
-          | _ -> <:str_item< value $rec:o2b r$ $list:l$ >> ]
+          | _ -> <:str_item< value $opt:o2b r$ $list:l$ >> ]
       | "let"; "module"; m = UIDENT; mb = module_binding; "in"; e = expr ->
           <:str_item< let module $m$ = $mb$ in $e$ >>
       | e = expr -> <:str_item< $exp:e$ >> ] ]
@@ -994,8 +992,8 @@ EXTEND
   with_constr:
     [ [ "type"; tp = type_parameters; i = mod_ident; "="; t = ctyp ->
           MLast.WcTyp loc i tp t
-      | "module"; i = mod_ident; "="; mt = module_type ->
-          MLast.WcMod loc i mt ] ]
+      | "module"; i = mod_ident; "="; me = module_expr ->
+          MLast.WcMod loc i me ] ]
   ;
   (* Core expressions *)
   expr:
@@ -1006,7 +1004,7 @@ EXTEND
     | "expr1"
       [ "let"; o = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
         x = expr LEVEL "top" ->
-          <:expr< let $rec:o2b o$ $list:l$ in $x$ >>
+          <:expr< let $opt:o2b o$ $list:l$ in $x$ >>
       | "let"; "module"; m = UIDENT; mb = module_binding; "in";
         e = expr LEVEL "top" ->
           <:expr< let module $m$ = $mb$ in $e$ >>
@@ -1106,17 +1104,11 @@ EXTEND
                   List.fold_left (fun e1 e2 -> <:expr< $e1$ $e2$ >>) e1 el
               | _ -> <:expr< $e1$ $e2$ >> ] ]
       | "assert"; e = expr LEVEL "simple" ->
-          let f = <:expr< $str:input_file.val$ >> in
-          let bp = <:expr< $int:string_of_int (fst loc)$ >> in
-          let ep = <:expr< $int:string_of_int (snd loc)$ >> in
-          let raiser = <:expr< raise (Assert_failure ($f$, $bp$, $ep$)) >> in
           match e with
-          [ <:expr< False >> -> raiser
-          | _ ->
-              if no_assert.val then <:expr< () >>
-              else <:expr< if $e$ then () else $raiser$ >> ]
+          [ <:expr< False >> -> MLast.ExAsf loc
+          | _ -> MLast.ExAsr loc e ]
       | "lazy"; e = SELF ->
-          <:expr< Pervasives.ref (Lazy.Delayed (fun () -> $e$)) >> ]
+          <:expr< lazy ($e$) >> ]
     | "simple" LEFTA
       [ e1 = SELF; "."; "("; e2 = SELF; ")" -> <:expr< $e1$ .( $e2$ ) >>
       | e1 = SELF; "."; "["; e2 = SELF; "]" -> <:expr< $e1$ .[ $e2$ ] >>
@@ -1155,10 +1147,13 @@ EXTEND
           let x =
             try
               let i = String.index x ':' in
-              (int_of_string (String.sub x 0 i),
+              ({Lexing.pos_fname = "";
+                Lexing.pos_lnum = 0;
+                Lexing.pos_bol = 0;
+                Lexing.pos_cnum = int_of_string (String.sub x 0 i)},
                String.sub x (i + 1) (String.length x - i - 1))
             with
-            [ Not_found | Failure _ -> (0, x) ]
+            [ Not_found | Failure _ -> (Token.nowhere, x) ]
           in
           Pcaml.handle_expr_locate loc x
       | x = QUOTATION ->
@@ -1281,10 +1276,13 @@ EXTEND
           let x =
             try
               let i = String.index x ':' in
-              (int_of_string (String.sub x 0 i),
+              ({Lexing.pos_fname = "";
+                Lexing.pos_lnum = 0;
+                Lexing.pos_bol = 0;
+                Lexing.pos_cnum =  int_of_string (String.sub x 0 i)},
                String.sub x (i + 1) (String.length x - i - 1))
             with
-            [ Not_found | Failure _ -> (0, x) ]
+            [ Not_found | Failure _ -> (Token.nowhere, x) ]
           in
           Pcaml.handle_patt_locate loc x
       | x = QUOTATION ->
@@ -1468,7 +1466,7 @@ EXTEND
       [ "fun"; cfd = class_fun_def -> cfd
       | "let"; rf = OPT "rec"; lb = LIST1 let_binding SEP "and"; "in";
         ce = SELF ->
-          <:class_expr< let $rec:o2b rf$ $list:lb$ in $ce$ >> ]
+          <:class_expr< let $opt:o2b rf$ $list:lb$ in $ce$ >> ]
     | "apply" NONA
       [ ce = SELF; e = expr LEVEL "label" ->
           <:class_expr< $ce$ $e$ >> ]
@@ -1480,7 +1478,7 @@ EXTEND
           <:class_expr< $list:ci$ [ $ct$ ] >>
       | ci = class_longident -> <:class_expr< $list:ci$ >>
       | "object"; cspo = OPT class_self_patt; cf = class_structure; "end" ->
-          <:class_expr< object $cspo$ $list:cf$ end >>
+          <:class_expr< object $opt:cspo$ $list:cf$ end >>
       | "("; ce = SELF; ":"; ct = class_type; ")" ->
           <:class_expr< ($ce$ : $ct$) >>
       | "("; ce = SELF; ")" -> ce ] ]
@@ -1494,9 +1492,9 @@ EXTEND
   ;
   class_str_item:
     [ [ "inherit"; ce = class_expr; pb = OPT [ "as"; i = LIDENT -> i ] ->
-          <:class_str_item< inherit $ce$ $as:pb$ >>
+          <:class_str_item< inherit $ce$ $opt:pb$ >>
       | "val"; (lab, mf, e) = cvalue ->
-          <:class_str_item< value $mut:mf$ $lab$ = $e$ >>
+          <:class_str_item< value $opt:mf$ $lab$ = $e$ >>
       | "method"; "private"; "virtual"; l = label; ":"; t = ctyp ->
           <:class_str_item< method virtual private $l$ : $t$ >>
       | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
@@ -1540,7 +1538,7 @@ EXTEND
       | id = clty_longident -> <:class_type< $list:id$ >>
       | "object"; cst = OPT class_self_type; csf = LIST0 class_sig_item;
         "end" ->
-          <:class_type< object $cst$ $list:csf$ end >> ] ]
+          <:class_type< object $opt:cst$ $list:csf$ end >> ] ]
   ;
   class_self_type:
     [ [ "("; t = ctyp; ")" -> t ] ]
@@ -1548,7 +1546,7 @@ EXTEND
   class_sig_item:
     [ [ "inherit"; cs = class_signature -> <:class_sig_item< inherit $cs$ >>
       | "val"; mf = OPT "mutable"; l = label; ":"; t = ctyp ->
-          <:class_sig_item< value $mut:o2b mf$ $l$ : $t$ >>
+          <:class_sig_item< value $opt:o2b mf$ $l$ : $t$ >>
       | "method"; "private"; "virtual"; l = label; ":"; t = ctyp ->
           <:class_sig_item< method virtual private $l$ : $t$ >>
       | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
@@ -1602,7 +1600,7 @@ EXTEND
   (* Core types *)
   ctyp: LEVEL "simple"
     [ [ "#"; id = class_longident -> <:ctyp< # $list:id$ >>
-      | "<"; (ml, v) = meth_list; ">" -> <:ctyp< < $list:ml$ $v$ > >>
+      | "<"; (ml, v) = meth_list; ">" -> <:ctyp< < $list:ml$ $opt:v$ > >>
       | "<"; ">" -> <:ctyp< < > >> ] ]
   ;
   meth_list:
@@ -1637,14 +1635,14 @@ EXTEND
   ;
   ctyp: LEVEL "simple"
     [ [ "["; OPT "|"; rfl = LIST0 row_field SEP "|"; "]" ->
-          <:ctyp< [| $list:rfl$ |] >>
+          <:ctyp< [ = $list:rfl$ ] >>
       | "["; ">"; OPT "|"; rfl = LIST1 row_field SEP "|"; "]" ->
-          <:ctyp< [| > $list:rfl$ |] >>
+          <:ctyp< [ > $list:rfl$ ] >>
       | "[<"; OPT "|"; rfl = LIST1 row_field SEP "|"; "]" ->
-          <:ctyp< [| < $list:rfl$ |] >>
+          <:ctyp< [ < $list:rfl$ ] >>
       | "[<"; OPT "|"; rfl = LIST1 row_field SEP "|"; ">";
         ntl = LIST1 name_tag; "]" ->
-          <:ctyp< [| < $list:rfl$ > $list:ntl$ |] >> ] ]
+          <:ctyp< [ < $list:rfl$ > $list:ntl$ ] >> ] ]
   ;
   row_field:
     [ [ "`"; i = ident -> MLast.RfTag i False []
@@ -1782,8 +1780,8 @@ value rec subst v e =
   | <:expr< $chr:_$ >> -> e
   | <:expr< $str:_$ >> -> e
   | <:expr< $_$ . $_$ >> -> e
-  | <:expr< let $rec:rf$ $list:pel$ in $e$ >> ->
-      <:expr< let $rec:rf$ $list:List.map (subst_pe v) pel$ in $subst v e$ >>
+  | <:expr< let $opt:rf$ $list:pel$ in $e$ >> ->
+      <:expr< let $opt:rf$ $list:List.map (subst_pe v) pel$ in $subst v e$ >>
   | <:expr< $e1$ $e2$ >> -> <:expr< $subst v e1$ $subst v e2$ >>
   | <:expr< ( $list:el$ ) >> -> <:expr< ( $list:List.map (subst v) el$ ) >>
   | _ -> raise Not_found ]

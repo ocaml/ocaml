@@ -17,6 +17,8 @@ include ../../../config/Makefile
 
 CAMLC=../../../boot/ocamlrun ../../../ocamlc -I ../../../stdlib
 CAMLOPT=../../../boot/ocamlrun ../../../ocamlopt -I ../../../stdlib
+CC=$(BYTECC)
+CFLAGS=-I.. $(BYTECCCOMPOPTS)
 
 test: test.byt test.opt
 	if $(SUPPORTS_SHARED_LIBRARIES); then ../../../byterun/ocamlrun -I .. ./test.byt; else ./test.byt; fi
@@ -34,6 +36,9 @@ test.byt: $(TESTFILES) ../nums.cma ../libnums.a
 test.opt: $(TESTOPTFILES) ../nums.cmxa ../libnums.a
 	$(CAMLOPT) -ccopt -L.. -o test.opt ../nums.cmxa $(TESTOPTFILES)
 
+test_bng: test_bng.o
+	$(CC) $(CFLAGS) -o test_bng ../bng.o test_bng.o -lbignum
+
 $(TESTOPTFILES): ../../../ocamlopt
 
 .SUFFIXES: .ml .cmo .cmx
@@ -48,7 +53,7 @@ ocamlnum:
 	ocamlmktop -o ocamlnum -custom ../nums.cma ../libnums.a
 
 clean:
-	rm -f test.byt test.opt *.o *.cm? ocamlnum
+	rm -f test.byt test.opt test_bng *.o *.cm? ocamlnum
 
 depend:
 	ocamldep *.ml > .depend

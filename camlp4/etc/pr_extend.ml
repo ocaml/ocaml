@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -14,6 +14,8 @@
 
 open Pcaml;
 open Spretty;
+
+value no_slist = ref False;
 
 value expr e dg k = pr_expr.pr_fun "top" e dg k;
 value patt e dg k = pr_patt.pr_fun "top" e dg k;
@@ -51,9 +53,11 @@ value rec listwbws elem b sep el dg k =
 
 value rec get_globals =
   fun
-  [ [(<:patt< _ >>, <:expr< ($lid:s$ : Grammar.Entry.e '$_$) >>) :: pel] ->
-      [s :: get_globals pel]
-  | [] -> []
+  [ [(<:patt< _ >>, <:expr< ($e$ : $uid:gmod1$.Entry.e '$_$) >>) :: pel] ->
+      let (gmod, gl) = get_globals pel in
+      if gmod = "" || gmod = gmod1 then (gmod1, [e :: gl])
+      else raise Not_found
+  | [] -> ("", [])
   | _ -> raise Not_found ]
 ;
 
@@ -95,7 +99,7 @@ value unassoc =
 
 value rec unaction =
   fun
-  [ <:expr< fun ($lid:locp$ : (int * int)) -> ($a$ : $_$) >>
+  [ <:expr< fun ($lid:locp$ : (Lexing.position * Lexing.position)) -> ($a$ : $_$) >>
     when locp = Stdpp.loc_name.val ->
       let ao =
         match a with
@@ -107,7 +111,7 @@ value rec unaction =
       let (pl, a) = unaction e in ([p :: pl], a)
   | <:expr< fun _ -> $e$ >> ->
       let (pl, a) = unaction e in
-      (let loc = (0, 0) in [<:patt< _ >> :: pl], a)
+      (let loc = (Token.nowhere, Token.nowhere) in [<:patt< _ >> :: pl], a)
   | _ -> raise Not_found ]
 ;
 
@@ -133,10 +137,10 @@ type symbol =
 
 value rec unsymbol =
   fun
-  [ <:expr< Gramext.Snterm (Grammar.Entry.obj ($e$ : $_$)) >> -> Snterm e
-  | <:expr< Gramext.Snterml (Grammar.Entry.obj ($e$ : $_$)) $str:s$ >> ->
+  [ <:expr< Gramext.Snterm ($uid:_$.Entry.obj ($e$ : $_$)) >> -> Snterm e
+  | <:expr< Gramext.Snterml ($uid:_$.Entry.obj ($e$ : $_$)) $str:s$ >> ->
       Snterml e s
-  | <:expr< Gramext.Snterml (Grammar.Entry.obj ($e$ : $_$), $str:s$) >> ->
+  | <:expr< Gramext.Snterml ($uid:_$.Entry.obj ($e$ : $_$), $str:s$) >> ->
       Snterml e s
   | <:expr< Gramext.Slist0 $e$ >> -> Slist0 (unsymbol e)
   | <:expr< Gramext.Slist0sep $e1$ $e2$ >> ->
@@ -170,7 +174,7 @@ and unrule =
   [ <:expr< ($e1$, Gramext.action $e2$) >> ->
       let (pl, a) =
         match unaction e2 with
-        [ ([], None) -> let loc = (0, 0) in ([], Some <:expr< () >>)
+        [ ([], None) -> let loc = (Token.nowhere, Token.nowhere) in ([], Some <:expr< () >>)
         | x -> x ]
       in
       let sl = unpsymbol_list (List.rev pl) e1 in
@@ -212,12 +216,12 @@ value rec unentry_list =
 ;
 
 value unextend_body e =
-  let (globals, e) =
+  let ((_, globals), e) =
     match e with
     [ <:expr< let $list:pel$ in $e1$ >> ->
         try (get_globals pel, e1) with
-        [ Not_found -> ([], e) ]
-    | _ -> ([], e) ]
+        [ Not_found -> (("", []), e) ]
+    | _ -> (("", []), e) ]
   in
   let e =
     match e with
@@ -238,6 +242,27 @@ value unextend_body e =
   in
   let el = unentry_list e in
   (globals, el)
+;
+
+value ungextend_body e =
+  let e =
+    match e with
+    [ <:expr<
+        let grammar_entry_create = Gram.Entry.create in
+        let $list:ll$ in $e$
+      >> ->
+        let _ = get_locals ll in e
+    | _ -> e ]
+  in
+  match e with
+  [ <:expr< do { $list:el$ } >> ->
+      List.map
+        (fun
+         [ <:expr< $uid:_$.extend ($e$ : $uid:_$.Entry.e '$_$) $pos$ $ll$ >> ->
+             (e, unposition pos, unlevel_list ll)
+         | _ -> raise Not_found ])
+        el
+  | _ -> raise Not_found ]
 ;
 
 (* Printing *)
@@ -296,12 +321,12 @@ value rec symbol s k =
   | Sself -> HVbox [: `S LR "SELF"; k :]
   | Snext -> HVbox [: `S LR "NEXT"; k :]
   | Stoken tok -> token tok k
-(**)
   | Srules
-      [([(Some <:patt< a >>, Snterm <:expr< anti_list >>)], Some <:expr< a >>);
-       ([(Some <:patt< l >>,
+      [([(Some <:patt< a >>, Snterm <:expr< a_list >>)], Some <:expr< a >>);
+       ([(Some <:patt< a >>,
           ((Slist0 _ | Slist1 _ | Slist0sep _ _ | Slist1sep _ _) as s))],
-          Some <:expr< list l >>)]
+          Some <:expr< Qast.List a >>)]
+    when not no_slist.val
     ->
       match s with
       [ Slist0 s -> HVbox [: `S LR "SLIST0"; `simple_symbol s k :]
@@ -315,7 +340,20 @@ value rec symbol s k =
             [: `S LR "SLIST1"; `simple_symbol s [: :]; `S LR "SEP";
                `simple_symbol sep k :]
       | _ -> assert False ]
-(**)
+  | Srules
+      [([(Some <:patt< a >>, Snterm <:expr< a_opt >>)], Some <:expr< a >>);
+       ([(Some <:patt< a >>, Sopt s)], Some <:expr< Qast.Option a >>)]
+    when not no_slist.val
+    ->
+      let s =
+        match s with
+        [ Srules
+            [([(Some <:patt< x >>, Stoken ("", str))],
+              Some <:expr< Qast.Str x >>)] ->
+            Stoken ("", str)
+        | s -> s ]
+      in
+      HVbox [: `S LR "SOPT"; `simple_symbol s k :]
   | Srules rl ->
       let rl = simplify_rules rl in
       HVbox [: `HVbox [: :]; rule_list  rl k :] ]
@@ -351,6 +389,8 @@ value label =
   | None -> [: :] ]
 ;
 
+value intloc loc = ((fst loc).Lexing.pos_cnum, (snd loc).Lexing.pos_cnum);
+
 value assoc =
   fun
   [ Some Gramext.NonA -> [: `S LR "NONA" :]
@@ -379,9 +419,10 @@ value level_list ll k =
          [: `S LR "]"; k :] :]
 ;
 
-value entry  (e, pos, ll) k =
+value entry (e, pos, ll) k =
   BEbox
-    [: `HVbox [: `expr e "" [: `S RO ":" :]; position pos :];
+    [: `LocInfo (intloc(MLast.loc_of_expr e))
+          (HVbox [: `expr e "" [: `S RO ":" :]; position pos :]);
        `level_list  ll [: :];
        `HVbox [: `S RO ";"; k :] :]
 ;
@@ -398,7 +439,9 @@ value extend_body (globals, e) k =
       HVbox
         [: `HVbox [: :];
            `HOVbox
-             [: `S LR "GLOBAL"; `S RO ":"; list ident sl [: `S RO ";" :] :];
+             [: `S LR "GLOBAL"; `S RO ":";
+                list (fun e k -> HVbox [: `expr e "" k :]) sl
+                  [: `S RO ";" :] :];
            `s :] ]
 ;
 
@@ -420,7 +463,40 @@ value extend e dg k =
   | _ -> expr e "" k ]
 ;
 
+value get_gextend =
+  fun
+  [ <:expr< let $list:gl$ in $e$ >> ->
+      try
+        let (gmod, gl) = get_globals gl in
+        let el = ungextend_body e in
+        Some (gmod, gl, el)
+      with
+      [ Not_found -> None ]
+  | _ -> None ]
+;
+
+value gextend e dg k =
+  match get_gextend e with
+  [ Some (gmod, gl, el) ->
+      BEbox
+        [: `HVbox [: `S LR "GEXTEND"; `S LR gmod :];
+           `extend_body (gl, el) [: :];
+           `HVbox [: `S LR "END"; k :] :]
+  | None -> expr e "" k ]
+;
+
+value is_gextend e = get_gextend e <> None;
+
 (* Printer extensions *)
+
+let lev =
+  try find_pr_level "expr1" pr_expr.pr_levels with
+  [ Failure _ -> find_pr_level "top" pr_expr.pr_levels ]
+in
+lev.pr_rules :=
+  extfun lev.pr_rules with
+  [ <:expr< let $list:_$ in $_$ >> as e when is_gextend e ->
+      fun curr next _ k -> [: `next e "" k :] ];
 
 let lev = find_pr_level "apply" pr_expr.pr_levels in
 lev.pr_rules :=
@@ -432,4 +508,9 @@ let lev = find_pr_level "simple" pr_expr.pr_levels in
 lev.pr_rules :=
   extfun lev.pr_rules with
   [ <:expr< Grammar.extend $_$ >> as e ->
-      fun curr next _ k -> [: `extend e "" k :] ];
+      fun curr next _ k -> [: `extend e "" k :]
+  | <:expr< let $list:_$ in $_$ >> as e when is_gextend e ->
+      fun curr next _ k -> [: `gextend e "" k :] ];
+
+Pcaml.add_option "-no_slist" (Arg.Set no_slist)
+  "Don't reconstruct SLIST and SOPT";

@@ -25,7 +25,7 @@ val f : ?dir:string -> ?on:toplevel widget -> unit -> unit
 val st_viewer : ?dir:string -> ?on:toplevel widget -> unit -> unit
         (* one-box viewer *)
 
-val view_defined : Longident.t -> env:Env.t -> unit
+val view_defined : env:Env.t -> ?show_all:bool -> Longident.t -> unit
         (* displays a signature, found in environment *)
 
 val close_all_views : unit -> unit

@@ -13,6 +13,5 @@
 (* $Id$ *)
 
 let _ =
-  let args =
-    String.concat " " (List.tl (Array.to_list Sys.argv)) in
-  exit(Sys.command("ocamlc -linkall toplevellib.cma " ^ args ^ " topmain.cmo"))
+  let args = Ccomp.quote_files (List.tl (Array.to_list Sys.argv)) in
+  exit(Sys.command("ocamlc -linkall toplevellib.cma " ^ args ^ " topstart.cmo"))

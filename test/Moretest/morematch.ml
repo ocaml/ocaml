@@ -5,7 +5,7 @@
 (**************************************************************)
 
 (*
-File "morematch.ml", line 21, characters 10-93:
+File "morematch.ml", line 38, characters 10-93:
 Warning: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 0
@@ -216,8 +216,8 @@ let f = function
 | (x,(0 as y)) | (y,x) -> y-x
 ;;
 
-test "foo" f (1,0) (-1);
-test "foo" f (1,2) (-1)
+test "foo1" f (1,0) (-1);
+test "foo1" f (1,2) (-1)
 ;;
 
 
@@ -378,9 +378,9 @@ let foo (k1, k2) = match k1,k2 with
 | _, (A|B|C) -> 4
 ;;
 
-test "foo" foo (D A,A) 1 ;
-test "foo" foo (D A,B) 4 ;
-test "foo" foo (A,A) 4 ; ()
+test "foo2" foo (D A,A) 1 ;
+test "foo2" foo (D A,B) 4 ;
+test "foo2" foo (A,A) 4 ; ()
 ;;
 
 type yaya = A | B
@@ -1026,3 +1026,112 @@ test "maf" maf (`TConstr []) 5 ;
 test "maf" maf (`TVariant []) 6
 ;;
 
+(* PR#1310
+  Using ``get_args'' in place or an ad-hoc ``matcher'' function for tuples.
+  Has made the compiler [3.05] to fail.
+*)
+type t_seb = Uin | Uout
+;;
+
+let rec seb = function
+  | ((i, Uin) | (i, Uout)), Uout -> 1
+  | ((j, Uin) | (j, Uout)), Uin ->  2
+;;
+
+test "seb" seb ((0,Uin),Uout) 1 ;
+test "seb" seb ((0,Uout),Uin) 2 ;
+()
+;;
+
+(* Talk with Jacques
+     - type 'b is still open ??
+     - better case generation, accept intervals of size 1 when ok_inter is
+       false (in Switch)
+*)
+
+(*
+File "morematch.ml", line 1060, characters 8-65:
+Warning: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+A `D
+*)
+type ('a, 'b) t_j = A of 'a | B of 'b * 'a | C
+
+let f = function
+  | A (`A|`C) -> 0
+  | B (`B,`D) -> 1
+  | C -> 2
+
+let g x = try f x with Match_failure _ -> 3
+
+let _ =
+  test "jacques" g (A `A) 0 ;
+  test "jacques" g (A `C) 0 ;
+  test "jacques" g (B (`B,`D)) 1 ;
+  test "jacaues" g C 2 ;
+(*  test "jacques" g (B (`A,`D)) 3 ; (* type incorrect expected behavior ? *)*)
+  ()
+
+(*
+  Compilation bug, segfault, because of incorrect compilation
+  of unused match case .. -> "11"
+*)
+
+type t_l = A | B
+
+let f = function
+  |  _, _, _, _, _, _, _, _, _, _, _, _, _, B, _, _ -> "0"
+  |  _, _, _, B, A, _, _, _, _, _, _, _, _, _, _, _ -> "1"
+  |  _, _, _, B, _, A, _, _, A, _, _, _, _, _, _, _ -> "2"
+  |  _, _, _, _, _, _, _, _, _, _, B, A, _, A, _, _ -> "3"
+  |  _, _, _, _, _, _, _, B, _, _, _, _, B, _, A, A -> "4"
+  |  A, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> "5"
+  |  _, _, _, _, _, _, _, B, _, B, _, _, _, _, _, _ -> "6"
+  |  _, B, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> "7"
+  |  _, A, A, _, A, _, B, _, _, _, _, _, _, _, _, B -> "8"
+  |  _, _, _, _, B, _, _, _, _, _, _, _, _, _, B, _ -> "9"
+  |  _, _, _, _, _, _, _, _, _, _, _, B, _, _, _, _ -> "10"
+  |  _, _, _, _, _, A, _, _, _, _, B, _, _, _, _, _ -> "11"
+  |  B, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> "12"
+  |  _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> "13"
+
+(*
+File "morematch.ml", line 1094, characters 5-51:
+Warning: this match case is unused.
+File "morematch.ml", line 1096, characters 5-51:
+Warning: this match case is unused.
+*)
+let _  =
+  test "luc"  f (B, A, A, A, A, A, A, A, A, A, A, B, A, A, A, A) "10" ;
+  test "luc"  f (B, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A) "12" ;
+ ()
+
+(*
+  By Gilles Peskine, compilation raised some assert false i make_failactionneg
+*)
+
+type bg = [
+  | `False
+  | `True
+  ]
+  
+type vg = [
+  | `A
+  | `B
+  | `U of int
+  | `V of int
+  ]
+
+type tg = {
+    v : vg;
+    x : bg;
+  }
+
+let predg x = true 
+
+let rec gilles o = match o with
+  | {v = (`U data | `V data); x = `False} when predg o -> 1
+  | {v = (`A|`B) ; x = `False}
+  | {v = (`U _ | `V _); x = `False}
+  | {v = _ ; x = `True}
+    -> 2

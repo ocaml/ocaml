@@ -17,6 +17,7 @@ module LabelSet =
 
 (* Emission of Alpha assembly code *)
 
+open Location
 open Misc
 open Cmm
 open Arch
@@ -279,8 +280,8 @@ let emit_call_gc gc =
 
 let rdata_section =
   match Config.system with
-    "digital" | "openbsd" -> ".rdata"
-  | "linux" | "netbsd" | "freebsd" -> ".section .rodata"
+    "digital" -> ".rdata"
+  | "linux" | "openbsd" | "netbsd" | "freebsd" -> ".section .rodata"
   | _ -> assert false
 
 (* Names of various instructions *)
@@ -378,7 +379,7 @@ let emit_instr fallthrough i =
               fatal_error "Emit_alpha: Imove"
         end
     | Lop(Iconst_int n) ->
-        if n = Nativeint.zero then
+        if n = 0n then
           `	clr	{emit_reg i.res.(0)}\n`
         else if digital_asm || 
                 (n >= Nativeint.of_int (-0x80000000) &&
@@ -394,7 +395,7 @@ let emit_instr fallthrough i =
     | Lop(Iconst_float s) ->
         if digital_asm then
           `	ldit	{emit_reg i.res.(0)}, {emit_string s}\n`
-        else if float_of_string s = 0.0 then
+        else if Int64.bits_of_float (float_of_string s) = 0L then
           `	fmov	$f31, {emit_reg i.res.(0)}\n`
         else begin
           let lbl = new_label() in
@@ -499,7 +500,7 @@ let emit_instr fallthrough i =
                   `	bsr	$26, caml_alloc3\n`
           | _  -> `	ldiq	$25, {emit_int n}\n`;
                   liveregs i live_25;
-                  `	bsr	$26, caml_alloc\n`
+                  `	bsr	$26, caml_allocN\n`
           end;
           (* $gp preserved by caml_alloc* *)
           `{record_frame i.live}	addq	$13, 8, {emit_reg i.res.(0)}\n`
@@ -747,7 +748,7 @@ let emit_fundecl (fundecl, needs_gp) =
   List.iter emit_call_gc !call_gc_sites;
   if !range_check_trap > 0 then begin
     `{emit_label !range_check_trap}:\n`;
-    `	br	$26, caml_array_bound_error\n`
+    `	br	$26, caml_ml_array_bound_error\n`
     (* Keep retaddr in $26 for debugging *)
   end;
   `	.end	{emit_symbol fundecl.fun_name}\n`;
@@ -772,8 +773,9 @@ let fundecl f =
 (* Emission of data *)
 
 let emit_item = function
-    Cdefine_symbol s ->
+    Cglobal_symbol s ->
       `	.globl	{emit_symbol s}\n`;
+  | Cdefine_symbol s ->
       `{emit_symbol s}:\n`
   | Cdefine_label lbl ->
       `{emit_label (100000 + lbl)}:\n`
@@ -832,26 +834,26 @@ let begin_assembly() =
      of line numbers for the debugger, 'cos they make .o files larger
      and slow down linking. *)
   `	.file	1 \"{emit_string !Location.input_name}\"\n\n`;
-  let lbl_begin = Compilenv.current_unit_name() ^ "_data_begin" in
+  let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
   `	.globl	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`;
-  let lbl_begin = Compilenv.current_unit_name() ^ "_code_begin" in
+  let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
   `	.text\n`;
   `	.globl	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`
 
 let end_assembly () =
-  let lbl_end = Compilenv.current_unit_name() ^ "_code_end" in
+  let lbl_end = Compilenv.make_symbol (Some "code_end") in
   `	.text\n`;
   `	.globl	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
-  let lbl_end = Compilenv.current_unit_name() ^ "_data_end" in
+  let lbl_end = Compilenv.make_symbol (Some "data_end") in
   `	.data\n`;
   `	.globl	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
   `	.quad	0\n`;
-  let lbl_frame = Compilenv.current_unit_name() ^ "_frametable" in
+  let lbl_frame = Compilenv.make_symbol (Some "frametable") in
   `	{emit_string rdata_section}\n`;
   `	.globl	{emit_symbol lbl_frame}\n`;
   `{emit_symbol lbl_frame}:\n`;

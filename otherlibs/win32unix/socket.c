@@ -15,8 +15,6 @@
 
 #include <mlvalues.h>
 #include "unixsupport.h"
-#include <sys/types.h>
-#include <winsock.h>
 
 int socket_domain_table[] = {
   PF_UNIX, PF_INET
@@ -53,5 +51,5 @@ CAMLprim value unix_socket(domain, type, proto)
     win32_maperr(WSAGetLastError());
     uerror("socket", Nothing);
   }
-  return win_alloc_handle((HANDLE) s);
+  return win_alloc_socket(s);
 }

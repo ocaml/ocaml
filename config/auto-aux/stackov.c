@@ -41,15 +41,10 @@ static void segv_handler(int signo, siginfo_t * info, void * context)
   }
 }
 
-void f(char * c);
-void g(char * c) { char d[1024]; f(d); }
-void f(char * c) { char d[1024]; g(d); }
-
 int main(int argc, char ** argv)
 {
   struct sigaltstack stk;
   struct sigaction act;
-  struct rlimit limit;
 
   stk.ss_sp = sig_alt_stack;
   stk.ss_size = SIGSTKSZ;
@@ -63,10 +58,11 @@ int main(int argc, char ** argv)
 #endif  
   sigemptyset(&act.sa_mask);
   system_stack_top = (char *) &act;
-  limit.rlim_max = limit.rlim_cur = 0x20000;
   if (sigaltstack(&stk, NULL) != 0) { perror("sigaltstack"); return 2; }
   if (sigaction(SIGSEGV, &act, NULL) != 0) { perror("sigaction"); return 2; }
-  if (setrlimit(RLIMIT_STACK, &limit) != 0) { perror("setrlimit"); return 2; }
-  f(NULL);
-  return 2;
+  /* We used to trigger a stack overflow at this point to test whether
+     the code above works, but this causes problems with POSIX threads
+     on some BSD systems.  So, instead, we just test that all this
+     code compiles, indicating that the required syscalls are there. */
+  return 0;
 }

@@ -15,9 +15,10 @@
 
 include ../../config/Makefile
 
-CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../unix
-CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../unix
+CAMLC=../../ocamlcomp.sh -I ../unix
+CAMLOPT=../../ocamlcompopt.sh -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
+COMPFLAGS=-warn-error A
 
 BYTECODE_C_OBJS=posix_b.o
 NATIVECODE_C_OBJS=posix_n.o
@@ -65,11 +66,11 @@ partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f libthreads*.a *.o threads.a
+	rm -f *.o *.a *.so
 	rm -f $(GENFILES)
 
 install:
-	if test -f dllthreads.so; then cp dllthreads.so $(LIBDIR)/dllthreads.so; fi
+	if test -f dllthreads.so; then cp dllthreads.so $(STUBLIBDIR)/dllthreads.so; fi
 	cp libthreads.a $(LIBDIR)/libthreads.a
 	cd $(LIBDIR); $(RANLIB) libthreads.a
 	if test -d $(LIBDIR)/threads; then :; else mkdir $(LIBDIR)/threads; fi

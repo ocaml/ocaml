@@ -53,7 +53,7 @@ value count_unfrozen : t 'a -> int;
 
 (*--*)
 
-value nil : unit -> t 'a;
+value nil : t 'a;
 type data 'a = 'x;
 value cons : 'a -> t 'a -> data 'a;
 value app : t 'a -> t 'a -> data 'a;

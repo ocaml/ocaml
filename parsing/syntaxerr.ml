@@ -26,7 +26,7 @@ exception Escape_error
 let report_error ppf = function
   | Unclosed(opening_loc, opening, closing_loc, closing) ->
       if String.length !Location.input_name = 0
-      && Location.highlight_locations opening_loc closing_loc
+      && Location.highlight_locations ppf opening_loc closing_loc
       then fprintf ppf "Syntax error: '%s' expected, \
                    the highlighted '%s' might be unmatched" closing opening
       else begin

@@ -24,7 +24,7 @@
         .globl  _caml_alloc1
         .globl  _caml_alloc2
         .globl  _caml_alloc3
-        .globl  _caml_alloc
+        .globl  _caml_allocN
 
 _caml_call_gc:
     | Save desired size
@@ -35,7 +35,7 @@ _caml_call_gc:
         addql   #4, d5
         movel   d5, _caml_bottom_of_stack
     | Record current allocation pointer (for debugging)
-        movel   d6, _young_ptr
+        movel   d6, _caml_young_ptr
     | Save all regs used by the code generator
         movel   d4, a7@-
         movel   d3, a7@-
@@ -52,7 +52,7 @@ _caml_call_gc:
         movel   a7, _caml_gc_regs
         fmovem  fp0-fp7, a7@-
     | Call the garbage collector
-        jbsr    _garbage_collection
+        jbsr    _caml_garbage_collection
     | Restore all regs used by the code generator
         fmovem  a7@+, fp0-fp7
         movel   a7@+, a0
@@ -68,14 +68,14 @@ _caml_call_gc:
         movel   a7@+, d3
         movel   a7@+, d4
     | Reload allocation pointer and allocate block
-        movel   _young_ptr, d6
+        movel   _caml_young_ptr, d6
         subl    _caml_requested_size, d6
     | Return to caller
         rts
 
 _caml_alloc1:
         subql   #8, d6
-        cmpl    _young_limit, d6
+        cmpl    _caml_young_limit, d6
         bcs     L100
         rts
 L100:   moveq   #8, d5
@@ -83,7 +83,7 @@ L100:   moveq   #8, d5
 
 _caml_alloc2:
         subl    #12, d6
-        cmpl    _young_limit, d6
+        cmpl    _caml_young_limit, d6
         bcs     L101
         rts
 L101:   moveq   #12, d5
@@ -91,15 +91,15 @@ L101:   moveq   #12, d5
 
 _caml_alloc3:
         subl    #16, d6
-        cmpl    _young_limit, d6
+        cmpl    _caml_young_limit, d6
         bcs     L102
         rts
 L102:   moveq   #16, d5
         bra     _caml_call_gc
 
-_caml_alloc:
+_caml_allocN:
         subl    d5, d6
-        cmpl    _young_limit, d6
+        cmpl    _caml_young_limit, d6
         bcs     _caml_call_gc
         rts
 
@@ -112,12 +112,12 @@ _caml_c_call:
         movel   a7@+, _caml_last_return_address
         movel   a7, _caml_bottom_of_stack
     | Save allocation pointer and exception pointer
-        movel   d6, _young_ptr
+        movel   d6, _caml_young_ptr
         movel   d7, _caml_exception_pointer
     | Call the function (address in a0)
         jbsr    a0@
     | Reload allocation pointer
-        movel   _young_ptr, d6
+        movel   _caml_young_ptr, d6
     | Return to caller
         movel   _caml_last_return_address, a1
         jmp     a1@
@@ -133,7 +133,7 @@ _caml_start_program:
     | Initial code point is caml_program
         lea     _caml_program, a5
 
-| Code shared between caml_start_program and callback*
+| Code shared between caml_start_program and caml_callback*
 
 L106:
     | Build a callback link
@@ -145,14 +145,14 @@ L106:
         movel   _caml_exception_pointer, a7@-
         movel   a7, d7
     | Load allocation pointer
-        movel   _young_ptr, d6
+        movel   _caml_young_ptr, d6
     | Call the Caml code
         jbsr    a5@
 L107:
     | Move result where C code expects it
         movel   a0, d0
     | Save allocation pointer
-        movel   d6, _young_ptr
+        movel   d6, _caml_young_ptr
     | Pop the exception handler
         movel   a7@+, _caml_exception_pointer
         addql   #4, a7
@@ -170,7 +170,7 @@ L109:
 L108:
     | Exception handler
     | Save allocation pointer and exception pointer
-        movel   d6, _young_ptr
+        movel   d6, _caml_young_ptr
         movel   d7, _caml_exception_pointer
     | Encode exception bucket as an exception result
         movel   a0, d0
@@ -180,18 +180,18 @@ L108:
 
 | Raise an exception from C
 
-        .globl  _raise_caml_exception
-_raise_caml_exception:
+        .globl  _caml_raise_exception
+_caml_raise_exception:
         movel   a7@(4), a0     | exception bucket
-        movel   _young_ptr, d6
+        movel   _caml_young_ptr, d6
         movel   _caml_exception_pointer, a7
         movel   a7@+, d7
         rts
 
 | Callback from C to Caml
 
-        .globl  _callback_exn
-_callback_exn:
+        .globl  _caml_callback_exn
+_caml_callback_exn:
         link    a6, #0
     | Save callee-save registers
         moveml  a2-a6/d2-d7, a7@-
@@ -202,8 +202,8 @@ _callback_exn:
         movel   a1@(0), a5     | code pointer
         bra     L106
 
-        .globl  _callback2_exn
-_callback2_exn:
+        .globl  _caml_callback2_exn
+_caml_callback2_exn:
         link    a6, #0
     | Save callee-save registers
         moveml  a2-a6/d2-d7, a7@-
@@ -215,8 +215,8 @@ _callback2_exn:
         lea     _caml_apply2, a5 | code pointer
         bra     L106
 
-        .globl  _callback3_exn
-_callback3_exn:
+        .globl  _caml_callback3_exn
+_caml_callback3_exn:
         link    a6, #0
     | Save callee-save registers
         moveml  a2-a6/d2-d7, a7@-
@@ -229,15 +229,15 @@ _callback3_exn:
         lea     _caml_apply3, a5 | code pointer
         bra     L106
 
-        .globl  _caml_array_bound_error
-_caml_array_bound_error:
-    | Load address of array_bound_error in a0 and call it
-        lea     _array_bound_error, a0
+        .globl  _caml_ml_array_bound_error
+_caml_ml_array_bound_error:
+    | Load address of [caml_array_bound_error] in a0 and call it
+        lea     _caml_array_bound_error, a0
         bra     _caml_c_call
 
         .data
-        .globl  _system_frametable
-_system_frametable:
+        .globl  _caml_system__frametable
+_caml_system__frametable:
         .long   1               | one descriptor
         .long   L107            | return address into callback
         .word   -1              | negative frame size => use callback link

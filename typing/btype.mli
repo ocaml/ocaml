@@ -46,6 +46,7 @@ val commu_repr: commutable -> commutable
 val row_repr: row_desc -> row_desc
         (* Return the canonical representative of a row description *)
 val row_field_repr: row_field -> row_field
+val row_field: label -> row_desc -> row_field
         (* Return the canonical representative of a row field *)
 val row_more: row_desc -> type_expr
         (* Return the extension variable of the row *)
@@ -53,6 +54,10 @@ val static_row: row_desc -> bool
         (* Return whether the row is static or not *)
 val hash_variant: label -> int
         (* Hash function for variant tags *)
+
+val proxy: type_expr -> type_expr
+        (* Return the proxy representative of the type: either itself
+           or a row variable *)
 
 (**** Utilities for type traversal ****)
 
@@ -64,10 +69,14 @@ val iter_row: (type_expr -> unit) -> row_desc -> unit
 val iter_type_paths : (Path.t -> Path.t) -> type_expr -> unit
         (* Map the paths in a type. Modify the type in place. *)
 
+val iter_abbrev: (type_expr -> unit) -> abbrev_memo -> unit
+        (* Iteration on types in an abbreviation list *)
+
 val copy_type_desc: (type_expr -> type_expr) -> type_desc -> type_desc
         (* Copy on types *)
 val copy_row:
-    (type_expr -> type_expr) -> row_desc -> bool -> type_expr -> row_desc
+    (type_expr -> type_expr) ->
+    bool -> row_desc -> bool -> type_expr -> row_desc
 val copy_kind: field_kind -> field_kind
 
 val save_desc: type_expr -> type_desc -> unit
@@ -93,6 +102,8 @@ val unmark_class_signature: class_signature -> unit
 
 (**** Memorization of abbreviation expansion ****)
 
+val find_expans: Path.t -> abbrev_memo -> type_expr option
+        (* Look up a memorized abbreviation *)
 val cleanup_abbrev: unit -> unit
         (* Flush the cache of abbreviation expansions.
            When some types are saved (using [output_value]), this
@@ -112,3 +123,30 @@ val extract_label :
     label -> (label * 'a) list ->
     label * 'a * (label * 'a) list * (label * 'a) list
     (* actual label, value, before list, after list *)
+
+(**** Utilities for backtracking ****)
+
+type snapshot
+        (* A snapshot for backtracking *)
+val snapshot: unit -> snapshot
+        (* Make a snapshot for later backtracking. Costs nothing *)
+val backtrack: snapshot -> unit
+        (* Backtrack to a given snapshot. Only possible if you have
+           not already backtracked to a previous snapshot.
+           Calls [cleanup_abbrev] internally *)
+
+(* Functions to use when modifying a type (only Ctype?) *)
+val link_type: type_expr -> type_expr -> unit
+        (* Set the desc field of [t1] to [Tlink t2], logging the old
+           value if there is an active snapshot *)
+val set_level: type_expr -> int -> unit
+val set_name:
+    (Path.t * type_expr list) option ref ->
+    (Path.t * type_expr list) option -> unit
+val set_row_field: row_field option ref -> row_field -> unit
+val set_univar: type_expr option ref -> type_expr -> unit
+val set_kind: field_kind option ref -> field_kind -> unit
+val set_commu: commutable ref -> commutable -> unit
+        (* Set references, logging the old value *)
+val log_type: type_expr -> unit
+        (* Log the old value of a type, before modifying it by hand *)

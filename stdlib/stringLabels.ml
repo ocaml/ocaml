@@ -13,6 +13,6 @@
 
 (* $Id$ *)
 
-(* Module [SringLabels]: labelled String module *)
+(* Module [StringLabels]: labelled String module *)
 
 include String

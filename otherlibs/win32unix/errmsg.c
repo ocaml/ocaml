@@ -13,6 +13,7 @@
 
 /* $Id$ */
 
+#include <stdio.h>
 #include <errno.h>
 #include <string.h>
 #include <mlvalues.h>
@@ -37,6 +38,7 @@ CAMLprim value unix_error_message(value err)
                     sizeof(buffer),
                     NULL))
     return copy_string(buffer);
-  return copy_string("unknown error");
+  sprintf(buffer, "unknown error #%d", errnum);  
+  return copy_string(buffer);
 }
 

@@ -19,12 +19,16 @@
 CAMLprim value unix_dup(value fd)
 {
   HANDLE newh;
+  value newfd;
+  int kind = Descr_kind_val(fd);
   if (! DuplicateHandle(GetCurrentProcess(), Handle_val(fd),
                         GetCurrentProcess(), &newh,
                         0L, TRUE, DUPLICATE_SAME_ACCESS)) {
     win32_maperr(GetLastError());
     return -1;
   }
-  return win_alloc_handle(newh);
+  newfd = win_alloc_handle(newh);
+  Descr_kind_val(newfd) = kind;
+  return newfd;
 }
 

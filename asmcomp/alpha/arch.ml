@@ -14,7 +14,12 @@
 
 (* Specific operations for the Alpha processor *)
 
+open Misc
 open Format
+
+(* Machine-specific command-line options *)
+
+let command_line_options = []
 
 (* Addressing modes *)
 

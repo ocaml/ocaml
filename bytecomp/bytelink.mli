@@ -14,9 +14,11 @@
 
 (* Link .cmo files and produce a bytecode executable. *)
 
-val link: string list -> unit
+val link: string list -> string -> unit
 
 val check_consistency: string -> Emitcode.compilation_unit -> unit
+
+val extract_crc_interfaces: unit -> (string * Digest.t) list
 
 type error =
     File_not_found of string

@@ -20,18 +20,22 @@ let process_interface_file ppf name =
 
 let process_implementation_file ppf name =
   Compile.implementation ppf name;
-  objfiles := (Filename.chop_extension name ^ ".cmo") :: !objfiles
+  objfiles := (Misc.chop_extension_if_any name ^ ".cmo") :: !objfiles
 
 let process_file ppf name =
   if Filename.check_suffix name ".ml"
   || Filename.check_suffix name ".mlt" then begin
     Compile.implementation ppf name;
-    objfiles := (Filename.chop_extension name ^ ".cmo") :: !objfiles
+    objfiles := (Misc.chop_extension_if_any name ^ ".cmo") :: !objfiles
   end
-  else if Filename.check_suffix name !Config.interface_suffix then
-    Compile.interface ppf name
+  else if Filename.check_suffix name !Config.interface_suffix then begin
+    Compile.interface ppf name;
+    if !make_package then objfiles := name :: !objfiles
+  end
   else if Filename.check_suffix name ".cmo"
        || Filename.check_suffix name ".cma" then
+    objfiles := name :: !objfiles
+  else if Filename.check_suffix name ".cmi" && !make_package then
     objfiles := name :: !objfiles
   else if Filename.check_suffix name ext_obj
        || Filename.check_suffix name ext_lib then
@@ -40,21 +44,21 @@ let process_file ppf name =
     dllibs := name :: !dllibs
   else if Filename.check_suffix name ".c" then begin
     Compile.c_file name;
-    match Sys.os_type with
-    | "MacOS" -> ccobjs := (name ^ ".o") :: (name ^ ".x") :: !ccobjs
-    | _ ->
-       ccobjs := (Filename.chop_suffix (Filename.basename name) ".c" ^ ext_obj)
-                 :: !ccobjs
+    ccobjs := (Filename.chop_suffix (Filename.basename name) ".c" ^ ext_obj)
+              :: !ccobjs
   end
   else
     raise(Arg.Bad("don't know what to do with " ^ name))
 
-let print_version_number () =
+let print_version_and_library () =
   print_string "The Objective Caml compiler, version ";
   print_string Config.version; print_newline();
   print_string "Standard library directory: ";
   print_string Config.standard_library; print_newline();
   exit 0
+
+let print_version_string () =
+  print_string Config.version; print_newline(); exit 0
 
 let print_standard_library () =
   print_string Config.standard_library; print_newline(); exit 0
@@ -72,13 +76,14 @@ module Options = Main_args.Make_options (struct
   let _a = set make_archive
   let _c = set compile_only
   let _cc s = c_compiler := s; c_linker := s
-  let _cclib s = ccobjs := s :: !ccobjs
+  let _cclib s = ccobjs := Misc.rev_split_words s @ !ccobjs
   let _ccopt s = ccopts := s :: !ccopts
   let _custom = set custom_runtime
-  let _dllib s = dllibs := s :: !dllibs
+  let _dllib s = dllibs := Misc.rev_split_words s @ !dllibs
   let _dllpath s = dllpaths := !dllpaths @ [s]
+  let _dtypes = set save_types
   let _g = set debug
-  let _i = set print_types
+  let _i () = print_types := true; compile_only := true
   let _I s = include_dirs := s :: !include_dirs
   let _impl = impl
   let _intf = intf
@@ -90,18 +95,23 @@ module Options = Main_args.Make_options (struct
   let _noassert = set noassert
   let _nolabels = set classic
   let _noautolink = set no_auto_link
-  let _o s = exec_name := s; archive_name := s; object_name := s
+  let _nostdlib = set no_std_include
+  let _o s = output_name := Some s
   let _output_obj () = output_c_object := true; custom_runtime := true
+  let _pack = set make_package
   let _pp s = preprocessor := Some s
+  let _principal = set principal
   let _rectypes = set recursive_types
-  let _thread = set thread_safe
 (*> JOCAML *)
   let _join = set join
 (*< JOCAML *)
+  let _thread = set use_threads
+  let _vmthread = set use_vmthreads
   let _unsafe = set fast
   let _use_prims s = use_prims := s
   let _use_runtime s = use_runtime := s
-  let _v = print_version_number
+  let _v = print_version_and_library
+  let _version = print_version_string
   let _w = (Warnings.parse_options false)
   let _warn_error = (Warnings.parse_options true)
   let _where = print_standard_library
@@ -114,20 +124,37 @@ module Options = Main_args.Make_options (struct
   let anonymous = anonymous
 end)
 
+let extract_output = function
+  | Some s -> s
+  | None ->
+      prerr_endline
+        "Please specify the name of the output file, using option -o";
+      exit 2
+
+let default_output = function
+  | Some s -> s
+  | None -> Config.default_executable_name
+
 let main () =
   try
     Arg.parse Options.list anonymous usage;
     if !make_archive then begin
       Compile.init_path();
-      Bytelibrarian.create_archive (List.rev !objfiles) !archive_name
+      Bytelibrarian.create_archive (List.rev !objfiles)
+                                   (extract_output !output_name)
+    end
+    else if !make_package then begin
+      Compile.init_path();
+      Bytepackager.package_files (List.rev !objfiles)
+                                 (extract_output !output_name)
     end
     else if not !compile_only && !objfiles <> [] then begin
       Compile.init_path();
-      Bytelink.link (List.rev !objfiles)
+      Bytelink.link (List.rev !objfiles) (default_output !output_name)
     end;
     exit 0
   with x ->
     Errors.report_error Format.err_formatter x;
     exit 2
 
-let _ = Printexc.catch main ()
+let _ = main ()

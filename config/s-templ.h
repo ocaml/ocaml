@@ -47,10 +47,6 @@
    Also add the required libraries (e.g. -lcurses -ltermcap) to $(CCLIBS)
    in ../Makefile.config */
 
-#define HAS_STRERROR
-
-/* Define HAS_STRERROR if you have strerror(). */
-
 #define SUPPORT_DYNAMIC_LINKING
 
 /* Define SUPPORT_DYNAMIC_LINKING if dynamic loading of C stub code
@@ -191,3 +187,17 @@
 
 /* Define HAS_MMAP if you have the include file <sys/mman.h> and the
    functions mmap() and munmap(). */
+
+#define HAS_GETHOSTBYNAME_R 6
+
+/* Define HAS_GETHOSTBYNAME_R if gethostbyname_r() is available.
+   The value of this symbol is the number of arguments of 
+   gethostbyname_r(): either 5 or 6 depending on prototype.
+   (5 is the Solaris version, 6 is the Linux version). */
+
+#define HAS_GETHOSTBYADDR_R 8
+
+/* Define HAS_GETHOSTBYADDR_R if gethostbyname_r() is available.
+   The value of this symbol is the number of arguments of 
+   gethostbyaddr_r(): either 7 or 8 depending on prototype.
+   (7 is the Solaris version, 8 is the Linux version). */

@@ -9,7 +9,7 @@ value list_remove x l =
   List.fold_right (fun e l -> if e = x then l else [e :: l]) l []
 ;
 
-value defined = ref ["CAMLP4_300"; "NEWSEQ"];
+value defined = ref ["OCAML_305"; "CAMLP4_300"; "NEWSEQ"];
 value define x = defined.val := [x :: defined.val];
 value undef x = defined.val := list_remove x defined.val;
 
@@ -78,8 +78,8 @@ EXTEND
 END;
 
 Pcaml.add_option "-D" (Arg.String define)
-  "<string>   Define for ifdef instruction."
+  "<string> Define for ifdef instruction."
 ;
 Pcaml.add_option "-U" (Arg.String undef)
-  "<string>   Undefine for ifdef instruction."
+  "<string> Undefine for ifdef instruction."
 ;

@@ -21,7 +21,7 @@
    (block the calling thread, if required, but do not block all threads
    in the process).  *)
 
-(** {2 Process handling} *)
+(** {6 Process handling} *)
 
 val execv : string -> string array -> unit
 val execve : string -> string array -> string array -> unit
@@ -30,12 +30,12 @@ val wait : unit -> int * Unix.process_status
 val waitpid : Unix.wait_flag list -> int -> int * Unix.process_status
 val system : string -> Unix.process_status
 
-(** {2 Basic input/output} *)
+(** {6 Basic input/output} *)
 
 val read : Unix.file_descr -> string -> int -> int -> int
 val write : Unix.file_descr -> string -> int -> int -> int
 
-(** {2 Input/output with timeout} *)
+(** {6 Input/output with timeout} *)
 
 val timed_read : Unix.file_descr -> string -> int -> int -> float -> int
 (** See {!ThreadUnix.timed_write}. *)
@@ -46,14 +46,14 @@ val timed_write : Unix.file_descr -> string -> int -> int -> float -> int
    available for reading or ready for writing after [d] seconds.
    The delay [d] is given in the fifth argument, in seconds. *)
 
-(** {2 Polling} *)
+(** {6 Polling} *)
 
 val select :
   Unix.file_descr list -> Unix.file_descr list -> Unix.file_descr list ->
     float ->
     Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
 
-(** {2 Pipes and redirections} *)
+(** {6 Pipes and redirections} *)
 
 val pipe : unit -> Unix.file_descr * Unix.file_descr
 val open_process_in : string -> in_channel
@@ -62,11 +62,11 @@ val open_process : string -> in_channel * out_channel
 val open_process_full :
   string -> string array -> in_channel * out_channel * in_channel
 
-(** {2 Time} *)
+(** {6 Time} *)
 
 val sleep : int -> unit
 
-(** {2 Sockets} *)
+(** {6 Sockets} *)
 
 val socket : Unix.socket_domain -> Unix.socket_type -> int -> Unix.file_descr
 val socketpair :

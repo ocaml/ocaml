@@ -19,12 +19,26 @@ exception Fatal_error
 let fatal_error msg =
   prerr_string ">> Fatal error: "; prerr_endline msg; raise Fatal_error
 
+(* Exceptions *)
+
+let try_finally f1 f2 =
+  try
+    let result = f1 () in
+    f2 ();
+    result
+  with x -> f2 (); raise x
+;;
+
 (* List functions *)
 
 let rec map_end f l1 l2 =
   match l1 with
     [] -> l2
   | hd::tl -> f hd :: map_end f tl l2
+
+let rec map_left_right f = function
+    [] -> []
+  | hd::tl -> let res = f hd in res :: map_left_right f tl
 
 let rec for_all2 pred l1 l2 =
   match (l1, l2) with
@@ -70,6 +84,18 @@ let find_in_path path name =
         if Sys.file_exists fullname then fullname else try_dir rem
     in try_dir path
   end
+
+let find_in_path_uncap path name =
+  let uname = String.uncapitalize name in
+  let rec try_dir = function
+    [] -> raise Not_found
+  | dir::rem ->
+      let fullname = Filename.concat dir name
+      and ufullname = Filename.concat dir uname in
+      if Sys.file_exists ufullname then ufullname
+      else if Sys.file_exists fullname then fullname
+      else try_dir rem
+  in try_dir path
 
 let remove_file filename =
   try
@@ -123,3 +149,35 @@ let no_overflow_add a b = (a lxor b) lor (a lxor (lnot (a+b))) < 0
 
 let no_overflow_sub a b = (a lxor (lnot b)) lor (b lxor (a-b)) < 0
 
+let no_overflow_lsl a = min_int asr 1 <= a && a <= max_int asr 1
+
+(* String operations *)
+
+let chop_extension_if_any fname =
+  try
+    ignore(String.index (Filename.basename fname) '.');
+    Filename.chop_extension fname
+  with Not_found -> fname
+
+let search_substring pat str start =
+  let rec search i j =
+    if j >= String.length pat then i
+    else if i + j >= String.length str then raise Not_found
+    else if str.[i + j] = pat.[j] then search i (j+1)
+    else search (i+1) 0
+  in search start 0
+
+let rev_split_words s =
+  let rec split1 res i =
+    if i >= String.length s then res else begin
+      match s.[i] with
+        ' ' | '\t' | '\r' | '\n' -> split1 res (i+1)
+      | _ -> split2 res i (i+1)
+    end
+  and split2 res i j =
+    if j >= String.length s then String.sub s i (j-i) :: res else begin
+      match s.[j] with
+        ' ' | '\t' | '\r' | '\n' -> split1 (String.sub s i (j-i) :: res) (j+1)
+      | _ -> split2 res i (j+1)
+    end
+  in split1 [] 0

@@ -18,6 +18,7 @@
 #include <string.h>
 #include "alloc.h"
 #include "bigarray.h"
+#include "compare.h"
 #include "custom.h"
 #include "fail.h"
 #include "intext.h"
@@ -45,7 +46,8 @@ int bigarray_element_size[] =
   1 /*SINT8*/, 1 /*UINT8*/,
   2 /*SINT16*/, 2 /*UINT16*/,
   4 /*INT32*/, 8 /*INT64*/,
-  sizeof(value) /*CAML_INT*/, sizeof(value) /*NATIVE_INT*/
+  sizeof(value) /*CAML_INT*/, sizeof(value) /*NATIVE_INT*/,
+  8 /*COMPLEX32*/, 16 /*COMPLEX64*/
 };
 
 /* Compute the number of bytes for the elements of a big array */
@@ -72,26 +74,81 @@ static struct custom_operations bigarray_ops = {
   bigarray_deserialize
 };
 
+/* Multiplication of unsigned longs with overflow detection */
+
+static unsigned long
+bigarray_multov(unsigned long a, unsigned long b, int * overflow)
+{
+#define HALF_SIZE (sizeof(unsigned long) * 4)
+#define LOW_HALF(x) ((x) & ((1UL << HALF_SIZE) - 1))
+#define HIGH_HALF(x) ((x) >> HALF_SIZE)
+  /* Cut in half words */
+  unsigned long al = LOW_HALF(a);
+  unsigned long ah = HIGH_HALF(a);
+  unsigned long bl = LOW_HALF(b);
+  unsigned long bh = HIGH_HALF(b);
+  /* Exact product is:
+              al * bl
+           +  ah * bl  << HALF_SIZE
+           +  al * bh  << HALF_SIZE
+           +  ah * bh  << 2*HALF_SIZE
+     Overflow occurs if:
+        ah * bh is not 0, i.e. ah != 0 and bh != 0
+     OR ah * bl has high half != 0
+     OR ah * bl has high half != 0
+     OR the sum al * bl + LOW_HALF(ah * bl) << HALF_SIZE
+                        + LOW_HALF(al * bh) << HALF_SIZE overflows.
+     This sum is equal to p = (a * b) modulo word size. */
+  unsigned long p1 = al * bh;
+  unsigned long p2 = ah * bl;
+  unsigned long p = a * b;
+  if (ah != 0 && bh != 0) *overflow = 1;
+  if (p1 >= (1UL << HALF_SIZE) || p2 >= (1UL << HALF_SIZE)) *overflow = 1;
+  p1 <<= HALF_SIZE;
+  p2 <<= HALF_SIZE;
+  p1 += p2;
+  if (p < p1 || p1 < p2) *overflow = 1; /* overflow in sums */
+  return p;
+#undef HALF_SIZE
+#undef LOW_HALF
+#undef HIGH_HALF
+}
+
 /* Allocation of a big array */
 
 #define MAX_BIGARRAY_MEMORY 256*1024*1024
 /* 256 Mb -- after allocating that much, it's probably worth speeding
    up the major GC */
 
-value alloc_bigarray(int flags, int num_dims, void * data, long * dim)
+/* [alloc_bigarray] will allocate a new bigarray object in the heap.
+   If [data] is NULL, the memory for the contents is also allocated
+   (with [malloc]) by [alloc_bigarray].
+   [data] cannot point into the Caml heap.
+   [dim] may point into an object in the Caml heap.
+*/
+CAMLexport value
+alloc_bigarray(int flags, int num_dims, void * data, long * dim)
 {
-  long num_elts, size;
-  int i;
+  unsigned long num_elts, size;
+  int overflow, i;
   value res;
   struct caml_bigarray * b;
+  long dimcopy[MAX_NUM_DIMS];
 
   Assert(num_dims >= 1 && num_dims <= MAX_NUM_DIMS);
-  Assert((flags & BIGARRAY_KIND_MASK) <= BIGARRAY_NATIVE_INT);
+  Assert((flags & BIGARRAY_KIND_MASK) <= BIGARRAY_COMPLEX64);
+  for (i = 0; i < num_dims; i++) dimcopy[i] = dim[i];
   size = 0;
   if (data == NULL) {
+    overflow = 0;
     num_elts = 1;
-    for (i = 0; i < num_dims; i++) num_elts = num_elts * dim[i];
-    size = num_elts * bigarray_element_size[flags & BIGARRAY_KIND_MASK];
+    for (i = 0; i < num_dims; i++) {
+      num_elts = bigarray_multov(num_elts, dimcopy[i], &overflow);
+    }
+    size = bigarray_multov(num_elts, 
+                           bigarray_element_size[flags & BIGARRAY_KIND_MASK],
+                           &overflow);
+    if (overflow) raise_out_of_memory();
     data = malloc(size);
     if (data == NULL && size != 0) raise_out_of_memory();
     flags |= BIGARRAY_MANAGED;
@@ -105,14 +162,14 @@ value alloc_bigarray(int flags, int num_dims, void * data, long * dim)
   b->num_dims = num_dims;
   b->flags = flags;
   b->proxy = NULL;
-  for (i = 0; i < num_dims; i++) b->dim[i] = dim[i];
+  for (i = 0; i < num_dims; i++) b->dim[i] = dimcopy[i];
   return res;
 }
 
 /* Same as alloc_bigarray, but dimensions are passed as a list of
    arguments */
 
-value alloc_bigarray_dims(int flags, int num_dims, void * data, ...)
+CAMLexport value alloc_bigarray_dims(int flags, int num_dims, void * data, ...)
 {
   va_list ap;
   long dim[MAX_NUM_DIMS];
@@ -160,18 +217,28 @@ static long bigarray_offset(struct caml_bigarray * b, long * index)
     /* C-style layout: row major, indices start at 0 */
     for (i = 0; i < b->num_dims; i++) {
       if ((unsigned long) index[i] >= (unsigned long) b->dim[i])
-        invalid_argument("Bigarray: out-of-bound access");
+        array_bound_error();
       offset = offset * b->dim[i] + index[i];
     }
   } else {
     /* Fortran-style layout: column major, indices start at 1 */
     for (i = b->num_dims - 1; i >= 0; i--) {
       if ((unsigned long) (index[i] - 1) >= (unsigned long) b->dim[i])
-        invalid_argument("Bigarray: out-of-bound access");
+        array_bound_error();
       offset = offset * b->dim[i] + (index[i] - 1);
     }
   }
   return offset;
+}
+
+/* Helper function to allocate a record of two double floats */
+
+static value copy_two_doubles(double d0, double d1)
+{
+  value res = alloc_small(2 * Double_wosize, Double_array_tag);
+  Store_double_field(res, 0, d0);
+  Store_double_field(res, 1, d1);
+  return res;
 }
 
 /* Generic code to read from a big array */
@@ -192,6 +259,8 @@ value bigarray_get_N(value vb, value * vind, int nind)
   offset = bigarray_offset(b, index);
   /* Perform read */
   switch ((b->flags) & BIGARRAY_KIND_MASK) {
+  default:
+    Assert(0);
   case BIGARRAY_FLOAT32:
     return copy_double(((float *) b->data)[offset]);
   case BIGARRAY_FLOAT64:
@@ -210,10 +279,14 @@ value bigarray_get_N(value vb, value * vind, int nind)
     return copy_int64(((int64 *) b->data)[offset]);
   case BIGARRAY_NATIVE_INT:
     return copy_nativeint(((long *) b->data)[offset]);
-  default:
-    Assert(0);
   case BIGARRAY_CAML_INT:
     return Val_long(((long *) b->data)[offset]);
+  case BIGARRAY_COMPLEX32:
+    { float * p = ((float *) b->data) + offset * 2;
+      return copy_two_doubles(p[0], p[1]); }
+  case BIGARRAY_COMPLEX64:
+    { double * p = ((double *) b->data) + offset * 2;
+      return copy_two_doubles(p[0], p[1]); }
   }
 }
 
@@ -287,6 +360,8 @@ static value bigarray_set_aux(value vb, value * vind, long nind, value newval)
   offset = bigarray_offset(b, index);
   /* Perform write */
   switch (b->flags & BIGARRAY_KIND_MASK) {
+  default:
+    Assert(0);
   case BIGARRAY_FLOAT32:
     ((float *) b->data)[offset] = Double_val(newval); break;
   case BIGARRAY_FLOAT64:
@@ -303,10 +378,18 @@ static value bigarray_set_aux(value vb, value * vind, long nind, value newval)
     ((int64 *) b->data)[offset] = Int64_val(newval); break;
   case BIGARRAY_NATIVE_INT:
     ((long *) b->data)[offset] = Nativeint_val(newval); break;
-  default:
-    Assert(0);
   case BIGARRAY_CAML_INT:
     ((long *) b->data)[offset] = Long_val(newval); break;
+  case BIGARRAY_COMPLEX32:
+    { float * p = ((float *) b->data) + offset * 2;
+      p[0] = Double_field(newval, 0);
+      p[1] = Double_field(newval, 1);
+      break; }
+  case BIGARRAY_COMPLEX64:
+    { double * p = ((double *) b->data) + offset * 2;
+      p[0] = Double_field(newval, 0);
+      p[1] = Double_field(newval, 1);
+      break; }
   }
   return Val_unit;
 }
@@ -388,6 +471,20 @@ CAMLprim value bigarray_dim(value vb, value vn)
   return Val_long(b->dim[n]);
 }
 
+/* Return the kind of a big array */
+
+CAMLprim value bigarray_kind(value vb)
+{
+  return Val_int(Bigarray_val(vb)->flags & BIGARRAY_KIND_MASK);
+}
+
+/* Return the layout of a big array */
+
+CAMLprim value bigarray_layout(value vb)
+{
+  return Val_int(Bigarray_val(vb)->flags & BIGARRAY_LAYOUT_MASK);
+}
+
 /* Finalization of a big array */
 
 static void bigarray_finalize(value v)
@@ -440,7 +537,7 @@ static int bigarray_compare(value v1, value v2)
   /* Same dimensions: compare contents lexicographically */
   num_elts = bigarray_num_elts(b1);
 
-#define DO_COMPARISON(type) \
+#define DO_INTEGER_COMPARISON(type) \
   { type * p1 = b1->data; type * p2 = b2->data; \
     for (n = 0; n < num_elts; n++) { \
       type e1 = *p1++; type e2 = *p2++; \
@@ -449,36 +546,64 @@ static int bigarray_compare(value v1, value v2)
     } \
     return 0; \
   }
+#define DO_FLOAT_COMPARISON(type) \
+  { type * p1 = b1->data; type * p2 = b2->data; \
+    for (n = 0; n < num_elts; n++) { \
+      type e1 = *p1++; type e2 = *p2++; \
+      if (e1 < e2) return -1; \
+      if (e1 > e2) return 1; \
+      if (e1 != e2) { \
+        compare_unordered = 1; \
+        if (e1 == e1) return 1; \
+        if (e2 == e2) return -1; \
+      } \
+    } \
+    return 0; \
+  }
 
   switch (b1->flags & BIGARRAY_KIND_MASK) {
+  case BIGARRAY_COMPLEX32:
+    num_elts *= 2; /*fallthrough*/
   case BIGARRAY_FLOAT32:
-    DO_COMPARISON(float);
+    DO_FLOAT_COMPARISON(float);
+  case BIGARRAY_COMPLEX64:
+    num_elts *= 2; /*fallthrough*/
   case BIGARRAY_FLOAT64:
-    DO_COMPARISON(double);
+    DO_FLOAT_COMPARISON(double);
   case BIGARRAY_SINT8:
-    DO_COMPARISON(schar);
+    DO_INTEGER_COMPARISON(schar);
   case BIGARRAY_UINT8:
-    DO_COMPARISON(unsigned char);
+    DO_INTEGER_COMPARISON(unsigned char);
   case BIGARRAY_SINT16:
-    DO_COMPARISON(int16);
+    DO_INTEGER_COMPARISON(int16);
   case BIGARRAY_UINT16:
-    DO_COMPARISON(uint16);
+    DO_INTEGER_COMPARISON(uint16);
   case BIGARRAY_INT32:
-    DO_COMPARISON(int32);
+    DO_INTEGER_COMPARISON(int32);
   case BIGARRAY_INT64:
 #ifdef ARCH_INT64_TYPE
-    DO_COMPARISON(int64);
+    DO_INTEGER_COMPARISON(int64);
 #else
-    invalid_argument("Bigarray.compare: 64-bit int arrays not supported");
+    { int64 * p1 = b1->data; int64 * p2 = b2->data;
+      for (n = 0; n < num_elts; n++) {
+        int64 e1 = *p1++; int64 e2 = *p2++;
+        if ((int32)e1.h > (int32)e2.h) return 1;
+        if ((int32)e1.h < (int32)e2.h) return -1;
+        if (e1.l > e2.l) return 1;
+        if (e1.l < e2.l) return -1;
+      }
+      return 0;
+    }
 #endif
   case BIGARRAY_CAML_INT:
   case BIGARRAY_NATIVE_INT:
-    DO_COMPARISON(long);
+    DO_INTEGER_COMPARISON(long);
   default:
     Assert(0);
     return 0;                   /* should not happen */
   }
-#undef DO_COMPARISON
+#undef DO_INTEGER_COMPARISON
+#undef DO_FLOAT_COMPARISON
 }
 
 /* Hashing of a bigarray */
@@ -510,6 +635,7 @@ static long bigarray_hash(value v)
     break;
   }
   case BIGARRAY_FLOAT32:
+  case BIGARRAY_COMPLEX32:
   case BIGARRAY_INT32:
 #ifndef ARCH_SIXTYFOUR
   case BIGARRAY_CAML_INT:
@@ -521,6 +647,7 @@ static long bigarray_hash(value v)
     break;
   }
   case BIGARRAY_FLOAT64:
+  case BIGARRAY_COMPLEX64:
   case BIGARRAY_INT64:
 #ifdef ARCH_SIXTYFOUR
   case BIGARRAY_CAML_INT:
@@ -599,9 +726,13 @@ static void bigarray_serialize(value v,
   case BIGARRAY_FLOAT32:
   case BIGARRAY_INT32:
     serialize_block_4(b->data, num_elts); break;
+  case BIGARRAY_COMPLEX32:
+    serialize_block_4(b->data, num_elts * 2); break;
   case BIGARRAY_FLOAT64:
   case BIGARRAY_INT64:
     serialize_block_8(b->data, num_elts); break;
+  case BIGARRAY_COMPLEX64:
+    serialize_block_8(b->data, num_elts * 2); break;
   case BIGARRAY_CAML_INT:
     bigarray_serialize_longarray(b->data, num_elts, -0x40000000, 0x3FFFFFFF);
     break;
@@ -648,7 +779,7 @@ unsigned long bigarray_deserialize(void * dst)
   /* Compute total number of elements */
   num_elts = bigarray_num_elts(b);
   /* Determine element size in bytes */
-  if ((b->flags & BIGARRAY_KIND_MASK) > BIGARRAY_NATIVE_INT)
+  if ((b->flags & BIGARRAY_KIND_MASK) > BIGARRAY_COMPLEX64)
     deserialize_error("input_value: bad bigarray kind");
   elt_size = bigarray_element_size[b->flags & BIGARRAY_KIND_MASK];
   /* Allocate room for data */
@@ -666,9 +797,13 @@ unsigned long bigarray_deserialize(void * dst)
   case BIGARRAY_FLOAT32:
   case BIGARRAY_INT32:
     deserialize_block_4(b->data, num_elts); break;
+  case BIGARRAY_COMPLEX32:
+    deserialize_block_4(b->data, num_elts * 2); break;
   case BIGARRAY_FLOAT64:
   case BIGARRAY_INT64:
     deserialize_block_8(b->data, num_elts); break;
+  case BIGARRAY_COMPLEX64:
+    deserialize_block_8(b->data, num_elts * 2); break;
   case BIGARRAY_CAML_INT:
   case BIGARRAY_NATIVE_INT:
     bigarray_deserialize_longarray(b->data, num_elts); break;
@@ -705,13 +840,14 @@ static void bigarray_update_proxy(struct caml_bigarray * b1,
 
 CAMLprim value bigarray_slice(value vb, value vind)
 {
-  struct caml_bigarray * b = Bigarray_val(vb);
+  CAMLparam2 (vb, vind);
+  #define b ((struct caml_bigarray *) Bigarray_val(vb))
+  CAMLlocal1 (res);
   long index[MAX_NUM_DIMS];
   int num_inds, i;
   long offset;
   long * sub_dims;
   char * sub_data;
-  value res;
 
   /* Check number of indices < number of dimensions of array */
   num_inds = Wosize_val(vind);
@@ -740,20 +876,23 @@ CAMLprim value bigarray_slice(value vb, value vind)
   /* Create or update proxy in case of managed bigarray */
   bigarray_update_proxy(b, Bigarray_val(res));
   /* Return result */
-  return res;
+  CAMLreturn (res);
+
+  #undef b
 }
 
 /* Extracting a sub-array of same number of dimensions */
 
 CAMLprim value bigarray_sub(value vb, value vofs, value vlen)
 {
-  struct caml_bigarray * b = Bigarray_val(vb);
+  CAMLparam3 (vb, vofs, vlen);
+  CAMLlocal1 (res);
+  #define b ((struct caml_bigarray *) Bigarray_val(vb))
   long ofs = Long_val(vofs);
   long len = Long_val(vlen);
   int i, changed_dim;
   long mul;
   char * sub_data;
-  value res;
 
   /* Compute offset and check bounds */
   if ((b->flags & BIGARRAY_LAYOUT_MASK) == BIGARRAY_C_LAYOUT) {
@@ -780,7 +919,9 @@ CAMLprim value bigarray_sub(value vb, value vofs, value vlen)
   /* Create or update proxy in case of managed bigarray */
   bigarray_update_proxy(b, Bigarray_val(res));
   /* Return result */
-  return res;
+  CAMLreturn (res);
+
+  #undef b
 }
 
 /* Copying a big array into another one */
@@ -816,6 +957,8 @@ CAMLprim value bigarray_fill(value vb, value vinit)
   long num_elts = bigarray_num_elts(b);
 
   switch (b->flags & BIGARRAY_KIND_MASK) {
+  default:
+    Assert(0);
   case BIGARRAY_FLOAT32: {
     float init = Double_val(vinit);
     float * p;
@@ -860,12 +1003,24 @@ CAMLprim value bigarray_fill(value vb, value vinit)
     for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
     break;
   }
-  default:
-    Assert(0);
   case BIGARRAY_CAML_INT: {
     long init = Long_val(vinit);
     long * p;
     for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
+    break;
+  }
+  case BIGARRAY_COMPLEX32: {
+    float init0 = Double_field(vinit, 0);
+    float init1 = Double_field(vinit, 1);
+    float * p;
+    for (p = b->data; num_elts > 0; num_elts--) { *p++ = init0; *p++ = init1; }
+    break;
+  }
+  case BIGARRAY_COMPLEX64: {
+    double init0 = Double_field(vinit, 0);
+    double init1 = Double_field(vinit, 1);
+    double * p;
+    for (p = b->data; num_elts > 0; num_elts--) { *p++ = init0; *p++ = init1; }
     break;
   }
   }
@@ -877,12 +1032,13 @@ CAMLprim value bigarray_fill(value vb, value vinit)
 
 CAMLprim value bigarray_reshape(value vb, value vdim)
 {
-  struct caml_bigarray * b = Bigarray_val(vb);
+  CAMLparam2 (vb, vdim);
+  CAMLlocal1 (res);
+  #define b ((struct caml_bigarray *) Bigarray_val(vb))
   long dim[MAX_NUM_DIMS];
   mlsize_t num_dims;
   unsigned long num_elts;
   int i;
-  value res;
 
   num_dims = Wosize_val(vdim);
   if (num_dims < 1 || num_dims > MAX_NUM_DIMS)
@@ -902,7 +1058,9 @@ CAMLprim value bigarray_reshape(value vb, value vdim)
   /* Create or update proxy in case of managed bigarray */
   bigarray_update_proxy(b, Bigarray_val(res));
   /* Return result */
-  return res;
+  CAMLreturn (res);
+
+  #undef b
 }
 
 /* Initialization */

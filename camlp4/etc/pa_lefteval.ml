@@ -196,7 +196,7 @@ and module_expr x =
   | <:module_expr< struct $list:sil$ end >> ->
       <:module_expr< struct $list:List.map str_item sil$ end >>
   | <:module_expr< $_$ . $_$ >> | <:module_expr< $_$ $_$ >> |
-    <:module_expr< $uid:_$ >> ->
+    <:module_expr< $uid:_$ >> | MLast.MeDtm _ _ _ ->
       x ]
 and str_item x =
   let loc = MLast.loc_of_str_item x in

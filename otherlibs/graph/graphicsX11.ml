@@ -17,14 +17,14 @@
 
 type window_id = string
 
-external window_id : unit -> window_id = "gr_window_id"
+external window_id : unit -> window_id = "caml_gr_window_id"
 
 let subwindows = Hashtbl.create 13
 
 external open_subwindow : int -> int -> int -> int -> window_id 
-    = "gr_open_subwindow"
+    = "caml_gr_open_subwindow"
 external close_subwindow : window_id -> unit
-    = "gr_close_subwindow"
+    = "caml_gr_close_subwindow"
 
 let open_subwindow ~x ~y ~width ~height =
   let wid = open_subwindow x y width height in

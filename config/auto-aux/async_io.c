@@ -17,6 +17,8 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include "s.h"
 
 int signalled;
@@ -33,7 +35,7 @@ int main(void)
   int ret;
 #define OUT 0
 #define IN 1
-  if (pipe(p) == -1) return 1;
+  if (socketpair(PF_UNIX, SOCK_STREAM, 0, p) == -1) return 1;
   signalled = 0;
   signal(SIGIO, sigio_handler);
   ret = fcntl(p[OUT], F_GETFL, 0);

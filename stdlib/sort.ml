@@ -48,6 +48,9 @@ let swap arr i j =
   unsafe_set arr i (unsafe_get arr j);
   unsafe_set arr j tmp
 
+(* There is a known performance bug in the code below.  If you find
+   it, don't bother reporting it.  You're not supposed to use this
+   module anyway. *)
 let array cmp arr =
   let rec qsort lo hi =
     if hi - lo >= 6 then begin

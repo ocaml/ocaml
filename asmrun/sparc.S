@@ -16,60 +16,64 @@
 /* Asm part of the runtime system for the Sparc processor.  */
 /* Must be preprocessed by cpp */
 
-/* SunOS 4 and BSD prefix identifiers with _, Solaris and Linux do not */
+/* SunOS 4 prefixes identifiers with _ */
 
-#if defined(SYS_sunos) || defined(SYS_bsd)
+#if defined(SYS_sunos)
 
         .common _caml_required_size, 4, "bss"
 
-#define Young_limit _young_limit
-#define Young_ptr _young_ptr
+#define Caml_young_limit _caml_young_limit
+#define Caml_young_ptr _caml_young_ptr
 #define Caml_bottom_of_stack _caml_bottom_of_stack
 #define Caml_last_return_address _caml_last_return_address
 #define Caml_gc_regs _caml_gc_regs
 #define Caml_exception_pointer _caml_exception_pointer
 #define Caml_required_size _caml_required_size
-#define Caml_alloc _caml_alloc
+#define Caml_allocN _caml_allocN
 #define Caml_call_gc _caml_call_gc
-#define Garbage_collection _garbage_collection
+#define Caml_garbage_collection _caml_garbage_collection
 #define Caml_c_call _caml_c_call
 #define Caml_start_program _caml_start_program
 #define Caml_program _caml_program
-#define Raise_caml_exception _raise_caml_exception
-#define Callback_exn _callback_exn
-#define Callback2_exn _callback2_exn
-#define Callback3_exn _callback3_exn
+#define Caml_raise_exception _caml_raise_exception
+#define Caml_callback_exn _caml_callback_exn
+#define Caml_callback2_exn _caml_callback2_exn
+#define Caml_callback3_exn _caml_callback3_exn
 #define Caml_apply2 _caml_apply2
 #define Caml_apply3 _caml_apply3
-#define Mlraise _mlraise
-#define System_frametable _system_frametable
+#define Caml_raise _caml_raise
+#define Caml_system__frametable _caml_system__frametable
 
 #else
 
         .common caml_required_size, 4, 4
 
-#define Young_limit young_limit
-#define Young_ptr young_ptr
+#define Caml_young_limit caml_young_limit
+#define Caml_young_ptr caml_young_ptr
 #define Caml_bottom_of_stack caml_bottom_of_stack
 #define Caml_last_return_address caml_last_return_address
 #define Caml_gc_regs caml_gc_regs
 #define Caml_exception_pointer caml_exception_pointer
 #define Caml_required_size caml_required_size
-#define Caml_alloc caml_alloc
+#define Caml_allocN caml_allocN
 #define Caml_call_gc caml_call_gc
-#define Garbage_collection garbage_collection
+#define Caml_garbage_collection caml_garbage_collection
 #define Caml_c_call caml_c_call
 #define Caml_start_program caml_start_program
 #define Caml_program caml_program
-#define Raise_caml_exception raise_caml_exception
-#define Callback_exn callback_exn
-#define Callback2_exn callback2_exn
-#define Callback3_exn callback3_exn
+#define Caml_raise_exception caml_raise_exception
+#define Caml_callback_exn caml_callback_exn
+#define Caml_callback2_exn caml_callback2_exn
+#define Caml_callback3_exn caml_callback3_exn
 #define Caml_apply2 caml_apply2
 #define Caml_apply3 caml_apply3
-#define Mlraise mlraise
-#define System_frametable system_frametable
+#define Caml_raise caml_raise
+#define Caml_system__frametable caml_system__frametable
 
+#endif
+
+#ifndef SYS_solaris
+#define INDIRECT_LIMIT
 #endif
 
 #define Exn_ptr %l5
@@ -83,14 +87,20 @@
 /* Allocation functions */
 
         .text
-        .global Caml_alloc
+        .global Caml_allocN
         .global Caml_call_gc
 
 /* Required size in %g2 */
-Caml_alloc:
+Caml_allocN:
+#ifdef INDIRECT_LIMIT
         ld      [Alloc_limit], %g1
         sub     Alloc_ptr, %g2, Alloc_ptr
         cmp     Alloc_ptr, %g1
+#else
+        sub     Alloc_ptr, %g2, Alloc_ptr
+        cmp     Alloc_ptr, Alloc_limit
+#endif
+        /*blu,pt  %icc, Caml_call_gc*/
         blu     Caml_call_gc
         nop
         retl
@@ -103,7 +113,7 @@ Caml_call_gc:
     /* Save exception pointer if GC raises */
         Store(Exn_ptr, Caml_exception_pointer)
     /* Save current allocation pointer for debugging purposes */
-        Store(Alloc_ptr, Young_ptr)
+        Store(Alloc_ptr, Caml_young_ptr)
     /* Record lowest stack address */
         Store(%sp, Caml_bottom_of_stack)
     /* Record last return address */
@@ -112,14 +122,22 @@ Caml_call_gc:
         sub     %sp, 20*4 + 15*8, %sp
     /* Save int regs on stack and save it into caml_gc_regs */
 L100:   add     %sp, 96 + 15*8, %g2
-        std     %o0, [%g2]
-        std     %o2, [%g2 + 0x8]
-        std     %o4, [%g2 + 0x10]
-        std     %i0, [%g2 + 0x18]
-        std     %i2, [%g2 + 0x20]
-        std     %i4, [%g2 + 0x28]
-        std     %l0, [%g2 + 0x30]
-        std     %l2, [%g2 + 0x38]
+        st      %o0, [%g2]
+        st      %o1, [%g2 + 0x4]
+        st      %o2, [%g2 + 0x8]
+        st      %o3, [%g2 + 0xc]
+        st      %o4, [%g2 + 0x10]
+        st      %o5, [%g2 + 0x14]
+        st      %i0, [%g2 + 0x18]
+        st      %i1, [%g2 + 0x1c]
+        st      %i2, [%g2 + 0x20]
+        st      %i3, [%g2 + 0x24]
+        st      %i4, [%g2 + 0x28]
+        st      %i5, [%g2 + 0x2c]
+        st      %l0, [%g2 + 0x30]
+        st      %l1, [%g2 + 0x34]
+        st      %l2, [%g2 + 0x38]
+        st      %l3, [%g2 + 0x3c]
         st      %l4, [%g2 + 0x40]
         st      %g3, [%g2 + 0x44]
         st      %g4, [%g2 + 0x48]
@@ -142,18 +160,26 @@ L100:   add     %sp, 96 + 15*8, %g2
         std     %f26, [%g1 + 0x68]
         std     %f28, [%g1 + 0x70]
     /* Call the garbage collector */
-        call    Garbage_collection
+        call    Caml_garbage_collection
         nop
     /* Restore all regs used by the code generator */
         add     %sp, 96 + 15*8, %g2
-        ldd     [%g2], %o0
-        ldd     [%g2 + 0x8], %o2
-        ldd     [%g2 + 0x10], %o4
-        ldd     [%g2 + 0x18], %i0
-        ldd     [%g2 + 0x20], %i2
-        ldd     [%g2 + 0x28], %i4
-        ldd     [%g2 + 0x30], %l0
-        ldd     [%g2 + 0x38], %l2
+        ld      [%g2], %o0
+        ld      [%g2 + 0x4], %o1
+        ld      [%g2 + 0x8], %o2
+        ld      [%g2 + 0xc], %o3
+        ld      [%g2 + 0x10], %o4
+        ld      [%g2 + 0x14], %o5
+        ld      [%g2 + 0x18], %i0
+        ld      [%g2 + 0x1c], %i1
+        ld      [%g2 + 0x20], %i2
+        ld      [%g2 + 0x24], %i3
+        ld      [%g2 + 0x28], %i4
+        ld      [%g2 + 0x2c], %i5
+        ld      [%g2 + 0x30], %l0
+        ld      [%g2 + 0x34], %l1
+        ld      [%g2 + 0x38], %l2
+        ld      [%g2 + 0x3c], %l3
         ld      [%g2 + 0x40], %l4
         ld      [%g2 + 0x44], %g3
         ld      [%g2 + 0x48], %g4
@@ -174,12 +200,18 @@ L100:   add     %sp, 96 + 15*8, %g2
         ldd     [%g1 + 0x68], %f26
         ldd     [%g1 + 0x70], %f28
     /* Reload alloc ptr */
-        Load(Young_ptr, Alloc_ptr)
+        Load(Caml_young_ptr, Alloc_ptr)
     /* Allocate space for block */
         Load(Caml_required_size, %g2)
+#ifdef INDIRECT_LIMIT
         ld      [Alloc_limit], %g1
         sub     Alloc_ptr, %g2, Alloc_ptr
         cmp     Alloc_ptr, %g1      /* Check that we have enough free space */
+#else
+        Load(Caml_young_limit,Alloc_limit)
+        sub     Alloc_ptr, %g2, Alloc_ptr
+        cmp     Alloc_ptr, Alloc_limit
+#endif
         blu     L100                /* If not, call GC again */
         nop
     /* Return to caller */
@@ -197,17 +229,17 @@ Caml_c_call:
         Store(%o7, Caml_last_return_address)
     /* Save the exception handler and alloc pointer */
         Store(Exn_ptr, Caml_exception_pointer)
-        sethi   %hi(Young_ptr), %g1
+        sethi   %hi(Caml_young_ptr), %g1
     /* Call the C function */
         call    %g2
-        st      Alloc_ptr, [%g1 + %lo(Young_ptr)]        /* in delay slot */
+        st      Alloc_ptr, [%g1 + %lo(Caml_young_ptr)]   /* in delay slot */
     /* Reload return address */
         Load(Caml_last_return_address, %o7)
     /* Reload alloc pointer */
-        sethi   %hi(Young_ptr), %g1
+        sethi   %hi(Caml_young_ptr), %g1
     /* Return to caller */
         retl
-        ld      [%g1 + %lo(Young_ptr)], Alloc_ptr        /* in delay slot */
+        ld      [%g1 + %lo(Caml_young_ptr)], Alloc_ptr   /* in delay slot */
 
 /* Start the Caml program */
 
@@ -218,18 +250,18 @@ Caml_start_program:
     /* Address of code to call */
         Address(Caml_program, %l2)
 
-    /* Code shared with callback* */
+    /* Code shared with caml_callback* */
 L108:
     /* Set up a callback link on the stack. */
         sub     %sp, 16, %sp
         Load(Caml_bottom_of_stack, %l0)
         Load(Caml_last_return_address, %l1)
         Load(Caml_gc_regs, %l3)
-        std     %l0, [%sp + 96]
-        st      %l3, [%sp + 104]
+        st      %l0, [%sp + 96]
+        st      %l1, [%sp + 100]
     /* Set up a trap frame to catch exceptions escaping the Caml code */
         call    L111
-        nop
+        st      %l3, [%sp + 104]
         b       L110
         nop
 L111:   sub     %sp, 8, %sp
@@ -238,8 +270,12 @@ L111:   sub     %sp, 8, %sp
         st      Exn_ptr, [%sp + 100]
         mov     %sp, Exn_ptr
     /* Reload allocation pointers */
-        Load(Young_ptr, Alloc_ptr)
-        Address(Young_limit, Alloc_limit)
+        Load(Caml_young_ptr, Alloc_ptr)
+#ifdef INDIRECT_LIMIT
+        Address(Caml_young_limit, Alloc_limit)
+#else
+        Load(Caml_young_limit, Alloc_limit)
+#endif
     /* Call the Caml code */
 L109:   call    %l2
         nop
@@ -248,31 +284,29 @@ L109:   call    %l2
         add     %sp, 8, %sp
         Store(Exn_ptr, Caml_exception_pointer)
     /* Pop callback link, restoring the global variables */
-L112:   ldd     [%sp + 96], %l0
+L112:   ld      [%sp + 96], %l0
+        ld      [%sp + 100], %l1
         ld      [%sp + 104], %l2
         Store(%l0, Caml_bottom_of_stack)
         Store(%l1, Caml_last_return_address)
         Store(%l2, Caml_gc_regs)
         add     %sp, 16, %sp
     /* Save allocation pointer */
-        Store(Alloc_ptr, Young_ptr)
-    /* Move result where the C function expects it */
-        mov     %o0, %i0        /* %i0 will become %o0 after restore */
+        Store(Alloc_ptr, Caml_young_ptr)
     /* Reload callee-save registers and return */
         ret
-        restore
+        restore %o0, 0, %o0     /* copy %o0 in this window to caller's %o0 */
 L110:
     /* The trap handler */
         Store(Exn_ptr, Caml_exception_pointer)
     /* Encode exception bucket as an exception result */
-        or      %o0, 2, %o0
         b       L112
-        nop
+        or      %o0, 2, %o0
 
 /* Raise an exception from C */
 
-        .global Raise_caml_exception
-Raise_caml_exception:
+        .global Caml_raise_exception
+Caml_raise_exception:
     /* Save exception bucket in a register outside the reg windows */
         mov     %o0, %g2
     /* Load exception pointer in a register outside the reg windows */
@@ -287,8 +321,12 @@ L106:   restore
         nop
 L107:
     /* Reload allocation registers */
-        Load(Young_ptr, Alloc_ptr)
-        Address(Young_limit, Alloc_limit)
+        Load(Caml_young_ptr, Alloc_ptr)
+#ifdef INDIRECT_LIMIT
+        Address(Caml_young_limit, Alloc_limit)
+#else
+        Load(Caml_young_limit, Alloc_limit)
+#endif
     /* Branch to exception handler */
         mov     %g3, %sp
         ld      [%sp + 96], %g1
@@ -300,8 +338,8 @@ L107:
 
 /* Callbacks C -> ML */
 
-        .global Callback_exn
-Callback_exn:
+        .global Caml_callback_exn
+Caml_callback_exn:
     /* Save callee-save registers and return address */
         save    %sp, -96, %sp
     /* Initial shuffling of arguments */
@@ -311,8 +349,8 @@ Callback_exn:
         b       L108
         ld      [%g1], %l2      /* code pointer */
 
-        .global Callback2_exn
-Callback2_exn:
+        .global Caml_callback2_exn
+Caml_callback2_exn:
     /* Save callee-save registers and return address */
         save    %sp, -104, %sp
     /* Initial shuffling of arguments */
@@ -324,8 +362,8 @@ Callback2_exn:
         b       L108
         or      %l2, %lo(Caml_apply2), %l2
 
-        .global Callback3_exn
-Callback3_exn:
+        .global Caml_callback3_exn
+Caml_callback3_exn:
     /* Save callee-save registers and return address */
         save    %sp, -104, %sp
     /* Initial shuffling of arguments */
@@ -338,10 +376,23 @@ Callback3_exn:
         b       L108
         or      %l2, %lo(Caml_apply3), %l2
 
+#ifdef SYS_solaris
+        .section ".rodata"
+#else
         .data
-        .global System_frametable
-System_frametable:
+#endif
+        .global Caml_system__frametable
+Caml_system__frametable:
         .word   1               /* one descriptor */
         .word   L109            /* return address into callback */
         .half   -1              /* negative frame size => use callback link */
         .half   0               /* no roots */
+
+#ifdef SYS_solaris
+	.type Caml_allocN, #function
+	.type Caml_call_gc, #function
+        .type Caml_c_call, #function
+        .type Caml_start_program, #function
+        .type Caml_raise_exception, #function
+	.type Caml_system__frametable, #object
+#endif

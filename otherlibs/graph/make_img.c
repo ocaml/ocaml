@@ -17,7 +17,7 @@
 #include "image.h"
 #include <memory.h>
 
-value gr_make_image(value m)
+value caml_gr_make_image(value m)
 {
   int width, height;
   value im;
@@ -28,20 +28,20 @@ value gr_make_image(value m)
   value line;
   GC gc;
 
-  gr_check_open();
+  caml_gr_check_open();
   height = Wosize_val(m);
-  if (height == 0) return gr_new_image(0, 0);
+  if (height == 0) return caml_gr_new_image(0, 0);
   width = Wosize_val(Field(m, 0));
   for (i = 1; i < height; i++)
     if (Wosize_val(Field(m, i)) != width)
-      gr_fail("make_image: lines of different lengths", NULL);
+      caml_gr_fail("make_image: lines of different lengths", NULL);
 
   /* Build an XImage for the data part of the image */
   idata =
-    XCreateImage(grdisplay, DefaultVisual(grdisplay, grscreen),
-                 XDefaultDepth(grdisplay, grscreen),
+    XCreateImage(caml_gr_display, DefaultVisual(caml_gr_display, caml_gr_screen),
+                 XDefaultDepth(caml_gr_display, caml_gr_screen),
                  ZPixmap, 0, NULL, width, height,
-                 BitmapPad(grdisplay), 0);
+                 BitmapPad(caml_gr_display), 0);
 
   bdata = (char *) stat_alloc(height * idata->bytes_per_line);
   idata->data = bdata;
@@ -52,7 +52,7 @@ value gr_make_image(value m)
     for (j = 0; j < width; j++) {
       rgb = Int_val(Field(line, j));
       if (rgb == Transparent) { has_transp = True; rgb = 0; }
-      XPutPixel(idata, j, i, gr_pixel_rgb(rgb));
+      XPutPixel(idata, j, i, caml_gr_pixel_rgb(rgb));
     }
   }
 
@@ -60,9 +60,9 @@ value gr_make_image(value m)
      build an XImage for the mask part of the image */
   if (has_transp) {
     imask =
-      XCreateImage(grdisplay, DefaultVisual(grdisplay, grscreen),
+      XCreateImage(caml_gr_display, DefaultVisual(caml_gr_display, caml_gr_screen),
                    1, ZPixmap, 0, NULL, width, height,
-                   BitmapPad(grdisplay), 0);
+                   BitmapPad(caml_gr_display), 0);
     bmask = (char *) stat_alloc(height * imask->bytes_per_line);
     imask->data = bmask;
 
@@ -78,18 +78,18 @@ value gr_make_image(value m)
   }
 
   /* Allocate the image and store the XImages into the Pixmaps */
-  im = gr_new_image(width, height);
-  gc = XCreateGC(grdisplay, Data_im(im), 0, NULL);
-  XPutImage(grdisplay, Data_im(im), gc, idata, 0, 0, 0, 0, width, height);
+  im = caml_gr_new_image(width, height);
+  gc = XCreateGC(caml_gr_display, Data_im(im), 0, NULL);
+  XPutImage(caml_gr_display, Data_im(im), gc, idata, 0, 0, 0, 0, width, height);
   XDestroyImage(idata);
-  XFreeGC(grdisplay, gc);
+  XFreeGC(caml_gr_display, gc);
   if (has_transp) {
-    Mask_im(im) = XCreatePixmap(grdisplay, grwindow.win, width, height, 1);
-    gc = XCreateGC(grdisplay, Mask_im(im), 0, NULL);
-    XPutImage(grdisplay, Mask_im(im), gc, imask, 0, 0, 0, 0, width, height);
+    Mask_im(im) = XCreatePixmap(caml_gr_display, caml_gr_window.win, width, height, 1);
+    gc = XCreateGC(caml_gr_display, Mask_im(im), 0, NULL);
+    XPutImage(caml_gr_display, Mask_im(im), gc, imask, 0, 0, 0, 0, width, height);
     XDestroyImage(imask);
-    XFreeGC(grdisplay, gc);
+    XFreeGC(caml_gr_display, gc);
   }
-  XFlush(grdisplay);
+  XFlush(caml_gr_display);
   return im;
 }

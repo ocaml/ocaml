@@ -14,33 +14,36 @@
 
 # Makefile for the parser generator.
 
-!include ..\config\Makefile.nt
+include ../config/Makefile
 
-CC=$(BYTECC)
-CFLAGS=-DNDEBUG -DNO_UNIX $(BYTECCCOMPOPTS)
-
-OBJS= closure.obj error.obj lalr.obj lr0.obj main.obj mkpar.obj output.obj reader.obj \
-  skeleton.obj symtab.obj verbose.obj warshall.obj
+OBJS= closure.$(O) error.$(O) lalr.$(O) lr0.$(O) main.$(O) \
+  mkpar.$(O) output.$(O) reader.$(O) \
+  skeleton.$(O) symtab.$(O) verbose.$(O) warshall.$(O)
 
 all: ocamlyacc.exe
 
 ocamlyacc.exe: $(OBJS)
-	$(CC) $(CFLAGS) $(CCLINKFLAGS) -o ocamlyacc.exe $(OBJS)
+	$(BYTECC) $(BYTECCCOMPOPTS) -o ocamlyacc.exe $(OBJS)
 
 clean:
-	rm -f *.obj ocamlyacc.exe *~
+	rm -f *.$(O) ocamlyacc.exe *~
+
+.SUFFIXES: .c .$(O)
+
+.c.$(O):
+	$(BYTECC) -DNDEBUG -DNO_UNIX $(BYTECCCOMPOPTS) -c $<
 
 depend:
 
-closure.obj: defs.h
-error.obj: defs.h
-lalr.obj: defs.h
-lr0.obj: defs.h
-main.obj: defs.h
-mkpar.obj: defs.h
-output.obj: defs.h
-reader.obj: defs.h
-skeleton.obj: defs.h
-symtab.obj: defs.h
-verbose.obj: defs.h
-warshall.obj: defs.h
+closure.$(O): defs.h
+error.$(O): defs.h
+lalr.$(O): defs.h
+lr0.$(O): defs.h
+main.$(O): defs.h
+mkpar.$(O): defs.h
+output.$(O): defs.h
+reader.$(O): defs.h
+skeleton.$(O): defs.h
+symtab.$(O): defs.h
+verbose.$(O): defs.h
+warshall.$(O): defs.h

@@ -30,3 +30,6 @@ val name: t -> string
 val unique_name : t -> string
     (* Return a name with head components appearing as unique names,
        e.g., "F_42(X_84).M.foo" *)
+
+val head: t -> Ident.t
+

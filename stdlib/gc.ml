@@ -27,7 +27,8 @@ type stat = {
   free_blocks : int;
   largest_free : int;
   fragments : int;
-  compactions : int
+  compactions : int;
+  top_heap_words : int;
 };;
 
 type control = {
@@ -36,17 +37,19 @@ type control = {
   mutable space_overhead : int;
   mutable verbose : int;
   mutable max_overhead : int;
-  mutable stack_limit : int
+  mutable stack_limit : int;
 };;
 
-external stat : unit -> stat = "gc_stat";;
-external counters : unit -> (float * float * float) = "gc_counters";;
-external get : unit -> control = "gc_get";;
-external set : control -> unit = "gc_set";;
-external minor : unit -> unit = "gc_minor";;
-external major : unit -> unit = "gc_major";;
-external full_major : unit -> unit = "gc_full_major";;
-external compact : unit -> unit = "gc_compaction";;
+external stat : unit -> stat = "caml_gc_stat";;
+external quick_stat : unit -> stat = "caml_gc_quick_stat";;
+external counters : unit -> (float * float * float) = "caml_gc_counters";;
+external get : unit -> control = "caml_gc_get";;
+external set : control -> unit = "caml_gc_set";;
+external minor : unit -> unit = "caml_gc_minor";;
+external major_slice : int -> int = "caml_gc_major_slice";;
+external major : unit -> unit = "caml_gc_major";;
+external full_major : unit -> unit = "caml_gc_full_major";;
+external compact : unit -> unit = "caml_gc_compaction";;
 
 open Printf;;
 
@@ -59,6 +62,7 @@ let print_stat c =
   fprintf c "major_collections: %d\n" st.major_collections;
   fprintf c "heap_words: %d\n" st.heap_words;
   fprintf c "heap_chunks: %d\n" st.heap_chunks;
+  fprintf c "top_heap_words: %d\n" st.top_heap_words;
   fprintf c "live_words: %d\n" st.live_words;
   fprintf c "live_blocks: %d\n" st.live_blocks;
   fprintf c "free_words: %d\n" st.free_words;
@@ -73,12 +77,11 @@ let allocated_bytes () =
   (mi +. ma -. pro) *. float_of_int (Sys.word_size / 8)
 ;;
 
-external finalise : ('a -> unit) -> 'a -> unit = "final_register";;
+external finalise : ('a -> unit) -> 'a -> unit = "caml_final_register";;
 
 
-type alarm_rec = {active : alarm; f : unit -> unit}
-and alarm = bool ref
-;;
+type alarm = bool ref;;
+type alarm_rec = {active : alarm; f : unit -> unit};;
 
 let rec call_alarm arec =
   if !(arec.active) then begin
@@ -88,10 +91,9 @@ let rec call_alarm arec =
 ;;
 
 let create_alarm f =
-  let a = ref true in
   let arec = { active = ref true; f = f } in
   finalise call_alarm arec;
-  a
+  arec.active
 ;;
 
 let delete_alarm a = a := false;;

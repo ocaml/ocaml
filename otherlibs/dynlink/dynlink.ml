@@ -34,49 +34,76 @@ type error =
 
 exception Error of error
 
-(* Initialize the linker tables and everything *)
+(* Management of interface CRCs *)
 
-let init () =
-  Symtable.init_toplevel()  
+let crc_interfaces = ref (Consistbl.create ())
+let allow_extension = ref true
 
 (* Check that the object file being loaded has been compiled against
    the same interfaces as the program itself. In addition, check that
    only authorized compilation units are referenced. *)
 
-let crc_interfaces = (Hashtbl.create 17 : (string, Digest.t) Hashtbl.t)
-
 let check_consistency file_name cu =
-  List.iter
-    (fun (name, crc) ->
-      if name = cu.cu_name then begin
-        Hashtbl.add crc_interfaces name crc
-      end else begin
-        try
-          let auth_crc = Hashtbl.find crc_interfaces name in
-          if crc <> auth_crc then
-            raise(Error(Inconsistent_import name))
-        with Not_found ->
-          raise(Error(Unavailable_unit name))
-      end)
-    cu.cu_imports
+  try
+    List.iter
+      (fun (name, crc) ->
+        if name = cu.cu_name then
+          Consistbl.set !crc_interfaces name crc file_name
+        else if !allow_extension then
+          Consistbl.check !crc_interfaces name crc file_name
+        else
+          Consistbl.check_noadd !crc_interfaces name crc file_name)
+      cu.cu_imports
+  with Consistbl.Inconsistency(name, user, auth) ->
+         raise(Error(Inconsistent_import name))
+     | Consistbl.Not_available(name) ->
+         raise(Error(Unavailable_unit name))
 
-(* Reset the crc_interfaces table *)
+(* Empty the crc_interfaces table *)
 
 let clear_available_units () =
-  Hashtbl.clear crc_interfaces
+  Consistbl.clear !crc_interfaces;
+  allow_extension := false
+
+(* Allow only access to the units with the given names *)
+
+let allow_only names =
+  Consistbl.filter (fun name -> List.mem name names) !crc_interfaces;
+  allow_extension := false
+
+(* Prohibit access to the units with the given names *)
+
+let prohibit names =
+  Consistbl.filter (fun name -> not (List.mem name names)) !crc_interfaces;
+  allow_extension := false
 
 (* Initialize the crc_interfaces table with a list of units with fixed CRCs *)
 
 let add_available_units units =
-  List.iter (fun (unit, crc) -> Hashtbl.add crc_interfaces unit crc) units
+  List.iter (fun (unit, crc) -> Consistbl.set !crc_interfaces unit crc "")
+            units
+
+(* Default interface CRCs: those found in the current executable *)
+let default_crcs = ref []
+
+let default_available_units () =
+  clear_available_units();
+  add_available_units !default_crcs;
+  allow_extension := true
+
+(* Initialize the linker tables and everything *)
+
+let init () =
+  default_crcs := Symtable.init_toplevel();
+  default_available_units ()
 
 (* Read the CRC of an interface from its .cmi file *)
 
 let digest_interface unit loadpath =
   let filename =
-    let shortname = String.uncapitalize unit ^ ".cmi" in
+    let shortname = unit ^ ".cmi" in
     try
-      Misc.find_in_path loadpath shortname
+      Misc.find_in_path_uncap loadpath shortname
     with Not_found ->
       raise (Error(File_not_found shortname)) in
   let ic = open_in_bin filename in
@@ -117,19 +144,6 @@ let check_unsafe_module cu =
   if (not !unsafe_allowed) && cu.cu_primitives <> []
   then raise(Error(Unsafe_file))
 
-(* Check that all globals referenced in the object file have been 
-   initialized already *)
-
-let check_global_references file_name patchlist =
-  List.iter
-    (function
-      (Reloc_getglobal id, pos) ->
-        if Obj.is_int (Symtable.get_global_value id) then
-          raise(Error(Linking_error(file_name,
-                                    Uninitialized_global(Ident.name id))))
-    | _ -> ())
-    patchlist
-
 (* Load in-core and execute a bytecode object file *)
 
 let load_compunit ic file_name compunit =
@@ -150,13 +164,14 @@ let load_compunit ic file_name compunit =
   let initial_symtable = Symtable.current_state() in
   begin try
     Symtable.patch_object code compunit.cu_reloc;
-    check_global_references file_name compunit.cu_reloc;
+    Symtable.check_global_initialized compunit.cu_reloc;
     Symtable.update_global_table()
   with Symtable.Error error ->
     let new_error =
       match error with
         Symtable.Undefined_global s -> Undefined_global s
       | Symtable.Unavailable_primitive s -> Unavailable_primitive s
+      | Symtable.Uninitialized_global s -> Uninitialized_global s
       | _ -> assert false in
     raise(Error(Linking_error (file_name, new_error)))
   end;
@@ -182,7 +197,7 @@ let loadfile file_name =
       seek_in ic toc_pos;
       let lib = (input_value ic : library) in
       begin try 
-        Dll.open_dlls lib.lib_dllibs
+        Dll.open_dlls (List.map Dll.extract_dll_name lib.lib_dllibs)
       with Failure reason ->
         raise(Error(Cannot_open_dll reason))
       end;
@@ -194,12 +209,15 @@ let loadfile file_name =
     close_in ic; raise exc
 
 let loadfile_private file_name =
-  let initial_symtable = Symtable.current_state() in
+  let initial_symtable = Symtable.current_state()
+  and initial_crc = !crc_interfaces in
   try
     loadfile file_name;
-    Symtable.hide_additions initial_symtable
+    Symtable.hide_additions initial_symtable;
+    crc_interfaces := initial_crc
   with exn ->
     Symtable.hide_additions initial_symtable;
+    crc_interfaces := initial_crc;
     raise exn
 
 (* Error report *)

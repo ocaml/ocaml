@@ -15,19 +15,14 @@
 
 open Printf;;
 
-let locfmt =
-  match Sys.os_type with
-  | "MacOS" -> ("File \"%s\"; line %d; characters %d to %d ### %s"
-                : ('a, 'b, 'c) format)
-  | _ -> ("File \"%s\", line %d, characters %d-%d: %s" : ('a, 'b, 'c) format)
-;;
+let locfmt = format_of_string "File \"%s\", line %d, characters %d-%d: %s";;
 
 let field x i =
   let f = Obj.field x i in
   if not (Obj.is_block f) then
     sprintf "%d" (Obj.magic f : int)           (* can also be a char *)
   else if Obj.tag f = Obj.string_tag then
-    sprintf "\"%s\"" (String.escaped (Obj.magic f : string))
+    sprintf "%S" (Obj.magic f : string)
   else if Obj.tag f = Obj.double_tag then
     string_of_float (Obj.magic f : float)
   else
@@ -46,12 +41,12 @@ let fields x =
 ;;
 
 let to_string = function
-  | Out_of_memory -> "Out of memory";
-  | Stack_overflow -> "Stack overflow";
-  | Match_failure(file, first_char, last_char) ->
-      sprintf locfmt file 0 first_char last_char "Pattern matching failed";
-  | Assert_failure(file, first_char, last_char) ->
-      sprintf locfmt file 0 first_char last_char "Assertion failed";
+  | Out_of_memory -> "Out of memory"
+  | Stack_overflow -> "Stack overflow"
+  | Match_failure(file, line, char) ->
+      sprintf locfmt file line char (char+5) "Pattern matching failed"
+  | Assert_failure(file, line, char) ->
+      sprintf locfmt file line char (char+6) "Assertion failed"
   | x ->
       let x = Obj.repr x in
       let constructor = (Obj.magic(Obj.field (Obj.field x 0) 0) : string) in

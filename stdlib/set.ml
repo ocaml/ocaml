@@ -48,6 +48,7 @@ module type S =
     val min_elt: t -> elt
     val max_elt: t -> elt
     val choose: t -> elt
+    val split: elt -> t -> t * bool * t
   end
 
 module Make(Ord: OrderedType) =
@@ -62,21 +63,22 @@ module Make(Ord: OrderedType) =
         Empty -> 0
       | Node(_, _, _, h) -> h
 
-    (* Creates a new node with left son l, value x and right son r.
+    (* Creates a new node with left son l, value v and right son r.
+       We must have all elements of l < v < all elements of r.
        l and r must be balanced and | height l - height r | <= 2.
        Inline expansion of height for better speed. *)
 
-    let create l x r =
+    let create l v r =
       let hl = match l with Empty -> 0 | Node(_,_,_,h) -> h in
       let hr = match r with Empty -> 0 | Node(_,_,_,h) -> h in
-      Node(l, x, r, (if hl >= hr then hl + 1 else hr + 1))
+      Node(l, v, r, (if hl >= hr then hl + 1 else hr + 1))
 
     (* Same as create, but performs one step of rebalancing if necessary.
-       Assumes l and r balanced.
+       Assumes l and r balanced and | height l - height r | <= 3.
        Inline expansion of create for better speed in the most frequent case
        where no rebalancing is required. *)
 
-    let bal l x r =
+    let bal l v r =
       let hl = match l with Empty -> 0 | Node(_,_,_,h) -> h in
       let hr = match r with Empty -> 0 | Node(_,_,_,h) -> h in
       if hl > hr + 2 then begin
@@ -84,70 +86,104 @@ module Make(Ord: OrderedType) =
           Empty -> invalid_arg "Set.bal"
         | Node(ll, lv, lr, _) ->
             if height ll >= height lr then
-              create ll lv (create lr x r)
+              create ll lv (create lr v r)
             else begin
               match lr with
                 Empty -> invalid_arg "Set.bal"
               | Node(lrl, lrv, lrr, _)->
-                  create (create ll lv lrl) lrv (create lrr x r)
+                  create (create ll lv lrl) lrv (create lrr v r)
             end
       end else if hr > hl + 2 then begin
         match r with
           Empty -> invalid_arg "Set.bal"
         | Node(rl, rv, rr, _) ->
             if height rr >= height rl then
-              create (create l x rl) rv rr
+              create (create l v rl) rv rr
             else begin
               match rl with
                 Empty -> invalid_arg "Set.bal"
               | Node(rll, rlv, rlr, _) ->
-                  create (create l x rll) rlv (create rlr rv rr)
+                  create (create l v rll) rlv (create rlr rv rr)
             end
       end else
-        Node(l, x, r, (if hl >= hr then hl + 1 else hr + 1))
+        Node(l, v, r, (if hl >= hr then hl + 1 else hr + 1))
 
-    (* Same as bal, but repeat rebalancing until the final result
-       is balanced. *)
+    (* Insertion of one element *)
 
-    let rec join l x r =
-      match bal l x r with
-        Empty -> invalid_arg "Set.join"
-      | Node(l', x', r', _) as t' ->
-          let d = height l' - height r' in
-          if d < -2 || d > 2 then join l' x' r' else t'
+    let rec add x = function
+        Empty -> Node(Empty, x, Empty, 1)
+      | Node(l, v, r, _) as t ->
+          let c = Ord.compare x v in
+          if c = 0 then t else
+          if c < 0 then bal (add x l) v r else bal l v (add x r)
+
+    (* Same as create and bal, but no assumptions are made on the
+       relative heights of l and r. *)
+
+    let rec join l v r =
+      match (l, r) with
+        (Empty, _) -> add v r
+      | (_, Empty) -> add v l
+      | (Node(ll, lv, lr, lh), Node(rl, rv, rr, rh)) ->
+          if lh > rh + 2 then bal ll lv (join lr v r) else
+          if rh > lh + 2 then bal (join l v rl) rv rr else
+          create l v r
+
+    (* Smallest and greatest element of a set *)
+
+    let rec min_elt = function
+        Empty -> raise Not_found
+      | Node(Empty, v, r, _) -> v
+      | Node(l, v, r, _) -> min_elt l
+
+    let rec max_elt = function
+        Empty -> raise Not_found
+      | Node(l, v, Empty, _) -> v
+      | Node(l, v, r, _) -> max_elt r
+
+    (* Remove the smallest element of the given set *)
+
+    let rec remove_min_elt = function
+        Empty -> invalid_arg "Set.remove_min_elt"
+      | Node(Empty, v, r, _) -> r
+      | Node(l, v, r, _) -> bal (remove_min_elt l) v r
 
     (* Merge two trees l and r into one.
        All elements of l must precede the elements of r.
-       Assumes | height l - height r | <= 2. *)
+       Assume | height l - height r | <= 2. *)
 
-    let rec merge t1 t2 =
+    let merge t1 t2 =
       match (t1, t2) with
         (Empty, t) -> t
       | (t, Empty) -> t
-      | (Node(l1, v1, r1, h1), Node(l2, v2, r2, h2)) ->
-          bal l1 v1 (bal (merge r1 l2) v2 r2)
+      | (_, _) -> bal t1 (min_elt t2) (remove_min_elt t2)
 
-    (* Same as merge, but does not assume anything about l and r. *)
+    (* Merge two trees l and r into one.
+       All elements of l must precede the elements of r.
+       No assumption on the heights of l and r. *)
 
-    let rec concat t1 t2 =
+    let concat t1 t2 =
       match (t1, t2) with
         (Empty, t) -> t
       | (t, Empty) -> t
-      | (Node(l1, v1, r1, h1), Node(l2, v2, r2, h2)) ->
-          join l1 v1 (join (concat r1 l2) v2 r2)
+      | (_, _) -> join t1 (min_elt t2) (remove_min_elt t2)
 
-    (* Splitting *)
+    (* Splitting.  split x s returns a triple (l, present, r) where
+        - l is the set of elements of s that are < x
+        - r is the set of elements of s that are > x
+        - present is false if s contains no element equal to x,
+          or true if s contains an element equal to x. *)
 
     let rec split x = function
         Empty ->
-          (Empty, None, Empty)
+          (Empty, false, Empty)
       | Node(l, v, r, _) ->
           let c = Ord.compare x v in
-          if c = 0 then (l, Some v, r)
+          if c = 0 then (l, true, r)
           else if c < 0 then
-            let (ll, vl, rl) = split x l in (ll, vl, join rl v r)
+            let (ll, pres, rl) = split x l in (ll, pres, join rl v r)
           else
-            let (lr, vr, rr) = split x r in (join l v lr, vr, rr)
+            let (lr, pres, rr) = split x r in (join l v lr, pres, rr)
 
     (* Implementation of the set operations *)
 
@@ -160,13 +196,6 @@ module Make(Ord: OrderedType) =
       | Node(l, v, r, _) ->
           let c = Ord.compare x v in
           c = 0 || mem x (if c < 0 then l else r)
-
-    let rec add x = function
-        Empty -> Node(Empty, x, Empty, 1)
-      | Node(l, v, r, _) as t ->
-          let c = Ord.compare x v in
-          if c = 0 then t else
-          if c < 0 then bal (add x l) v r else bal l v (add x r)
 
     let singleton x = Node(Empty, x, Empty, 1)
 
@@ -199,9 +228,9 @@ module Make(Ord: OrderedType) =
       | (t1, Empty) -> Empty
       | (Node(l1, v1, r1, _), t2) ->
           match split v1 t2 with
-            (l2, None, r2) ->
+            (l2, false, r2) ->
               concat (inter l1 l2) (inter r1 r2)
-          | (l2, Some _, r2) ->
+          | (l2, true, r2) ->
               join (inter l1 l2) v1 (inter r1 r2)
 
     let rec diff s1 s2 =
@@ -210,28 +239,31 @@ module Make(Ord: OrderedType) =
       | (t1, Empty) -> t1
       | (Node(l1, v1, r1, _), t2) ->
           match split v1 t2 with
-            (l2, None, r2) ->
+            (l2, false, r2) ->
               join (diff l1 l2) v1 (diff r1 r2)
-          | (l2, Some _, r2) ->
+          | (l2, true, r2) ->
               concat (diff l1 l2) (diff r1 r2)
 
-    let rec compare_aux l1 l2 =
-        match (l1, l2) with
-        ([], []) -> 0
-      | ([], _)  -> -1
-      | (_, []) -> 1
-      | (Empty :: t1, Empty :: t2) ->
-          compare_aux t1 t2
-      | (Node(Empty, v1, r1, _) :: t1, Node(Empty, v2, r2, _) :: t2) ->
+    type enumeration = End | More of elt * t * enumeration
+
+    let rec cons_enum s e =
+      match s with
+        Empty -> e
+      | Node(l, v, r, _) -> cons_enum l (More(v, r, e))
+
+    let rec compare_aux e1 e2 =
+        match (e1, e2) with
+        (End, End) -> 0
+      | (End, _)  -> -1
+      | (_, End) -> 1
+      | (More(v1, r1, e1), More(v2, r2, e2)) ->
           let c = Ord.compare v1 v2 in
-          if c <> 0 then c else compare_aux (r1::t1) (r2::t2)
-      | (Node(l1, v1, r1, _) :: t1, t2) ->
-          compare_aux (l1 :: Node(Empty, v1, r1, 0) :: t1) t2
-      | (t1, Node(l2, v2, r2, _) :: t2) ->
-          compare_aux t1 (l2 :: Node(Empty, v2, r2, 0) :: t2)
+          if c <> 0
+          then c
+          else compare_aux (cons_enum r1 e1) (cons_enum r2 e2)
 
     let compare s1 s2 =
-      compare_aux [s1] [s2]
+      compare_aux (cons_enum s1 End) (cons_enum s2 End)
 
     let equal s1 s2 =
       compare s1 s2 = 0
@@ -292,16 +324,6 @@ module Make(Ord: OrderedType) =
 
     let elements s =
       elements_aux [] s
-
-    let rec min_elt = function
-        Empty -> raise Not_found
-      | Node(Empty, v, r, _) -> v
-      | Node(l, v, r, _) -> min_elt l
-
-    let rec max_elt = function
-        Empty -> raise Not_found
-      | Node(l, v, Empty, _) -> v
-      | Node(l, v, r, _) -> max_elt r
 
     let choose = min_elt
 

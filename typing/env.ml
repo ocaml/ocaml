@@ -92,12 +92,26 @@ let empty = {
   continuations = Ident.empty;
   summary = Env_empty }
 
+let diff_keys tbl1 tbl2 =
+  let keys2 = Ident.keys tbl2 in
+  List.filter
+    (fun id ->
+      match Ident.find_same id tbl2 with Pident _, _ ->
+        (try ignore (Ident.find_same id tbl1); false with Not_found -> true)
+      | _ -> false)
+    keys2
+
+let diff env1 env2 =
+  diff_keys env1.values env2.values @
+  diff_keys env1.modules env2.modules @
+  diff_keys env1.classes env2.classes
+
 (* Forward declarations *)
 
 let components_of_module' =
   ref ((fun env sub path mty -> assert false) :
           t -> Subst.t -> Path.t -> module_type -> module_components)
-let components_of_functor_appl =
+let components_of_functor_appl' =
   ref ((fun f p1 p2 -> assert false) :
           functor_components -> Path.t -> Path.t -> module_components)
 let check_modtype_inclusion =
@@ -116,6 +130,20 @@ type pers_struct =
 
 let persistent_structures =
   (Hashtbl.create 17 : (string, pers_struct) Hashtbl.t)
+
+(* Consistency between persistent structures *)
+
+let crc_units = Consistbl.create()
+
+let check_consistency filename crcs =
+  try
+    List.iter
+      (fun (name, crc) -> Consistbl.check crc_units name crc filename)
+      crcs
+  with Consistbl.Inconsistency(name, source, auth) ->
+    raise(Error(Inconsistent_import(name, auth, source)))
+
+(* Reading persistent structures from .cmi files *)
 
 let read_pers_struct modname filename =
   let ic = open_in_bin filename in
@@ -140,6 +168,7 @@ let read_pers_struct modname filename =
                ps_filename = filename } in
     if ps.ps_name <> modname then
       raise(Error(Illegal_renaming(ps.ps_name, filename)));
+    check_consistency filename ps.ps_crcs;
     Hashtbl.add persistent_structures modname ps;
     ps
   with End_of_file | Failure _ ->
@@ -150,11 +179,11 @@ let find_pers_struct name =
   try
     Hashtbl.find persistent_structures name
   with Not_found ->
-    read_pers_struct name
-      (find_in_path !load_path (String.uncapitalize name ^ ".cmi"))
+    read_pers_struct name (find_in_path_uncap !load_path (name ^ ".cmi"))
 
 let reset_cache() =
-  Hashtbl.clear persistent_structures
+  Hashtbl.clear persistent_structures;
+  Consistbl.clear crc_units
 
 (* Lookup by identifier *)
 
@@ -180,7 +209,7 @@ let rec find_module_descr path env =
   | Papply(p1, p2) ->
       begin match Lazy.force(find_module_descr p1 env) with
         Functor_comps f ->
-          !components_of_functor_appl f p1 p2
+          !components_of_functor_appl' f p1 p2
       | Structure_comps c ->
           raise Not_found
       end
@@ -270,7 +299,7 @@ let rec lookup_module_descr lid env =
       begin match Lazy.force desc1 with
         Functor_comps f ->
           !check_modtype_inclusion env mty2 f.fcomp_arg;
-          (Papply(p1, p2), !components_of_functor_appl f p1 p2)
+          (Papply(p1, p2), !components_of_functor_appl' f p1 p2)
       | Structure_comps c ->
           raise Not_found
       end
@@ -352,12 +381,12 @@ and lookup_class =
   lookup (fun env -> env.classes) (fun sc -> sc.comp_classes)
 and lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
-
 (*> JOCAML *)
-let lookup_continuation lid env = match lid with
+and lookup_continuation lid env = match lid with
 | Lident name -> Ident.find_name name env.continuations
 | _           -> raise Not_found
 (*< JOCAML *)  
+
 
 (* Expand manifest module type names at the top of the given module type *)
 
@@ -375,21 +404,21 @@ let rec scrape_modtype mty env =
 
 let constructors_of_type ty_path decl =
   match decl.type_kind with
-    Type_variant cstrs ->
+    Type_variant(cstrs, priv) ->
       Datarepr.constructor_descrs
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
-        cstrs
-  | _ -> []
+        cstrs priv
+  | Type_record _ | Type_abstract -> []
 
 (* Compute label descriptions *)
 
 let labels_of_type ty_path decl =
   match decl.type_kind with
-    Type_record(labels, rep) ->
+    Type_record(labels, rep, priv) ->
       Datarepr.label_descrs
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
-        labels rep
-  | _ -> []
+        labels rep priv
+  | Type_variant _ | Type_abstract -> []
 
 (* Given a signature and a root path, prefix all idents in the signature
    by the root path and build the corresponding substitution. *)
@@ -577,32 +606,23 @@ and store_cltype id path desc env =
     cltypes = Ident.add id (path, desc) env.cltypes;
     summary = Env_cltype(env.summary, id, desc) }
 
-let _ = components_of_module' := components_of_module
+(* Compute the components of a functor application in a path. *)
 
-(* Memoized function to compute the components of a functor application
-   in a path. *)
+let components_of_functor_appl f p1 p2 =
+  let p = Papply(p1, p2) in
+  let mty = 
+    Subst.modtype (Subst.add_module f.fcomp_param p2 Subst.identity)
+                  f.fcomp_res in
+  components_of_module f.fcomp_env f.fcomp_subst p mty
 
-let funappl_memo =
-  (Hashtbl.create 17 : (Path.t, module_components) Hashtbl.t)
+(* Define forward functions *)
 
 let _ =
-  components_of_functor_appl :=
-    (fun f p1 p2 ->
-      let p = Papply(p1, p2) in
-      try
-        Hashtbl.find funappl_memo p
-      with Not_found ->
-        let mty = 
-          Subst.modtype (Subst.add_module f.fcomp_param p2 Subst.identity)
-                        f.fcomp_res in
-        let comps = components_of_module f.fcomp_env f.fcomp_subst p mty in
-        Hashtbl.add funappl_memo p comps;
-        comps)
+  components_of_module' := components_of_module;
+  components_of_functor_appl' := components_of_functor_appl
 
 (* Insertion of bindings by identifier *)
-(*> JOCAML *)
-  
-(*< JOCAML *)
+
 let add_value id desc env =
   store_value id (Pident id) desc env
 
@@ -627,8 +647,7 @@ and add_cltype id ty env =
 (*> JOCAML *)
 and add_continuation id desc env  =
   let cont_id = Ident.create (Ident.name id) in
-  let new_conts = 
-    Ident.add id (Pident cont_id, desc) env.continuations in
+  let new_conts =  Ident.add cont_id (Pident cont_id, desc) env.continuations in
   {env with continuations = new_conts}
 
 and remove_continuations t =
@@ -724,40 +743,28 @@ let crc_of_unit name =
 (* Return the list of imported interfaces with their CRCs *)
 
 let imported_units() =
-  let imported_units =
-    ref ([] : (string * Digest.t) list) in
-  let units_xref =
-    (Hashtbl.create 13 : (string, Digest.t * string) Hashtbl.t) in
-  let add_unit source (name, crc) =
-    try
-      let (oldcrc, oldsource) = Hashtbl.find units_xref name in
-      if oldcrc <> crc then
-        raise(Error(Inconsistent_import(name, oldsource, source)))
-    with Not_found ->
-      Hashtbl.add units_xref name (crc, source);
-      imported_units := (name, crc) :: !imported_units in
-  Hashtbl.iter
-    (fun name ps -> List.iter (add_unit ps.ps_filename) ps.ps_crcs)
-    persistent_structures;
-  !imported_units
+  Consistbl.extract crc_units
 
 (* Save a signature to a file *)
 
-let save_signature sg modname filename =
+let save_signature_with_imports sg modname filename imports =
   Btype.cleanup_abbrev ();
-  let comps =
-    components_of_module empty Subst.identity
-      (Pident(Ident.create_persistent modname)) (Tmty_signature sg) in
+  Subst.reset_for_saving ();
+  let sg = Subst.signature (Subst.for_saving Subst.identity) sg in
   let oc = open_out_bin filename in
   try
     output_string oc cmi_magic_number;
     output_value oc (modname, sg);
     flush oc;
     let crc = Digest.file filename in
-    let crcs = (modname, crc) :: imported_units() in
+    let crcs = (modname, crc) :: imports in
     output_value oc crcs;
+    close_out oc;
     (* Enter signature in persistent table so that imported_unit()
        will also return its crc *)
+    let comps =
+      components_of_module empty Subst.identity
+        (Pident(Ident.create_persistent modname)) (Tmty_signature sg) in
     let ps =
       { ps_name = modname;
         ps_sig = sg;
@@ -765,11 +772,14 @@ let save_signature sg modname filename =
         ps_crcs = crcs;
         ps_filename = filename } in
     Hashtbl.add persistent_structures modname ps;
-    close_out oc
+    Consistbl.set crc_units modname crc filename
   with exn ->
     close_out oc;
     remove_file filename;
     raise exn
+
+let save_signature sg modname filename =
+  save_signature_with_imports sg modname filename (imported_units())
 
 (* Make the initial environment *)
 
@@ -792,6 +802,6 @@ let report_error ppf = function
       "Wrong file naming: %s@ contains the compiled interface for@ %s"
       filename modname
   | Inconsistent_import(name, source1, source2) -> fprintf ppf
-      "@[<hov>The compiled interfaces %s@ and %s@ \
-              make inconsistent assumptions over interface %s@]"
-      source1 source2  name;;
+      "@[<hov>The files %s@ and %s@ \
+              make inconsistent assumptions@ over interface %s@]"
+      source1 source2 name

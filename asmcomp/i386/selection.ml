@@ -73,14 +73,28 @@ let rec select_addr exp =
   | arg ->
       (Alinear arg, 0)
     
+(* C functions to be turned into Ifloatspecial instructions if -ffast-math *)
+
+let inline_float_ops =
+  ["atan"; "atan2"; "cos"; "log"; "log10"; "sin"; "sqrt"; "tan"]
+
 (* Estimate number of float temporaries needed to evaluate expression
    (Ershov's algorithm) *)
 
 let rec float_needs = function
-    Cop((Caddf | Csubf | Cmulf | Cdivf), [arg1; arg2]) ->
+    Cop((Cnegf | Cabsf), [arg]) ->
+      float_needs arg
+  | Cop((Caddf | Csubf | Cmulf | Cdivf), [arg1; arg2]) ->
       let n1 = float_needs arg1 in
       let n2 = float_needs arg2 in
       if n1 = n2 then 1 + n1 else if n1 > n2 then n1 else n2
+  | Cop(Cextcall(fn, ty_res, alloc), args)
+    when !fast_math && List.mem fn inline_float_ops ->
+      begin match args with
+        [arg] -> float_needs arg
+      | [arg1; arg2] -> max (float_needs arg2 + 1) (float_needs arg1)
+      | _ -> assert false
+      end
   | _ ->
       1
 
@@ -119,7 +133,7 @@ let pseudoregs_for_operation op arg res =
      the result is always left at the top of the floating-point stack *)
   | Iconst_float _ | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iload((Single | Double | Double_u), _)
-  | Ispecific(Isubfrev | Idivfrev | Ifloatarithmem(_, _, _)) ->
+  | Ispecific(Isubfrev | Idivfrev | Ifloatarithmem(_, _, _) | Ifloatspecial _) ->
       (arg, [| tos |], false)           (* don't move it immediately *)
   (* For storing a byte, the argument must be in eax...edx.
      (But for a short, any reg will do!)
@@ -215,6 +229,11 @@ method select_operation op args =
       | _ ->
           super#select_operation op args
       end
+  (* Recognize inlined floating point operations *)
+  | Cextcall(fn, ty_res, false)
+    when !fast_math && List.mem fn inline_float_ops ->
+      (Ispecific(Ifloatspecial fn), args)
+  (* Default *)
   | _ -> super#select_operation op args
 
 (* Recognize float arithmetic with mem *)
@@ -277,9 +296,12 @@ method emit_extcall_args env args =
   | e :: el ->
       let ofs = emit_pushes el in
       let (op, arg) = self#select_push e in
-      let r = self#emit_expr env arg in
-      self#insert (Iop op) r [||];
-      ofs + Selectgen.size_expr env e
+      begin match self#emit_expr env arg with
+        None -> ofs
+      | Some r ->
+          self#insert (Iop op) r [||];
+          ofs + Selectgen.size_expr env e
+      end
   in ([||], emit_pushes args)
 
 end

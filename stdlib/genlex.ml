@@ -60,7 +60,7 @@ let make_lexer keywords =
     match Stream.peek strm__ with
       Some (' ' | '\010' | '\013' | '\009' | '\026' | '\012') ->
         Stream.junk strm__; next_token strm__
-    | Some ('A'..'Z' | 'a'..'z' | '\192'..'\255' as c) ->
+    | Some ('A'..'Z' | 'a'..'z' | '_' | '\192'..'\255' as c) ->
         Stream.junk strm__;
         let s = strm__ in reset_buffer (); store c; ident s
     | Some

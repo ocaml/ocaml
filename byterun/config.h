@@ -13,16 +13,18 @@
 
 /* $Id$ */
 
-#ifndef _config_
-#define _config_
+#ifndef CAML_CONFIG_H
+#define CAML_CONFIG_H
 
-
-#if !macintosh
+/* <include ../config/m.h> */
+/* <include ../config/s.h> */
+/* <private> */
 #include "../config/m.h"
 #include "../config/s.h"
-#else
-#include <m.h>
-#include <s.h>
+/* </private> */
+
+#ifndef CAML_NAME_SPACE
+#include "compatibility.h"
 #endif
 
 /* Types for signed chars, 16-bit integers, 32-bit integers, 64-bit integers */
@@ -43,26 +45,36 @@ typedef short int32;
 typedef unsigned short uint32;
 #endif
 
-#if defined(ARCH_INT64_TYPE) && defined(ARCH_UINT64_TYPE)
+#if defined(ARCH_INT64_TYPE)
 typedef ARCH_INT64_TYPE int64;
 typedef ARCH_UINT64_TYPE uint64;
 #else
-/* Int64.t will not be supported, and operations over it are not defined,
-   but we must define the types int64 and uint64 as 64-bit placeholders. */
-typedef struct { uint32 a, b; } uint64;
-typedef uint64 int64;
+#  if ARCH_BIG_ENDIAN
+typedef struct { uint32 h, l; } uint64, int64;
+#  else
+typedef struct { uint32 l, h; } uint64, int64;
+#  endif
 #endif
 
+/* Endianness of floats */
 
-/* Library dependencies */
+/* ARCH_FLOAT_ENDIANNESS encodes the byte order of doubles as follows:
+   the value [0xabcdefgh] means that the least significant byte of the
+   float is at byte offset [a], the next lsb at [b], ..., and the
+   most significant byte at [h]. */
+
+#if defined(__arm__)
+#define ARCH_FLOAT_ENDIANNESS 0x45670123
+#elif defined(ARCH_BIG_ENDIAN)
+#define ARCH_FLOAT_ENDIANNESS 0x76543210
+#else
+#define ARCH_FLOAT_ENDIANNESS 0x01234567
+#endif
 
 /* We use threaded code interpretation if the compiler provides labels
-   as first-class values (GCC 2.x).
-   Macintosh 68k also uses threaded code, with the assembly-language
-   bytecode interpreter (THREADED_CODE defined in config/sm-Mac.h).
-*/
+   as first-class values (GCC 2.x). */
 
-#if defined(__GNUC__) && __GNUC__ >= 2 && !defined(DEBUG) && !defined (SHRINKED_GNUC)
+#if defined(__GNUC__) && __GNUC__ >= 2 && !defined(DEBUG) && !defined (SHRINKED_GNUC) && !defined(CAML_JIT)
 #define THREADED_CODE
 #endif
 
@@ -108,27 +120,26 @@ typedef uint64 int64;
    Must be a multiple of [Page_size / sizeof (value)]. */
 #define Heap_chunk_min (2 * Page_size / sizeof (value))
 
-/* Maximum size of a contiguous piece of the heap (words).
-   Must be greater than or equal to [Heap_chunk_min].
-   Must be greater than or equal to [Bhsize_wosize (Max_wosize)]. */
-#define Heap_chunk_max (Bhsize_wosize (Max_wosize))
-
 /* Default size increment when growing the heap. (words)
    Must be a multiple of [Page_size / sizeof (value)]. */
-#define Heap_chunk_def (62 * 1024)
+#define Heap_chunk_def (15 * Page_size)
 
 /* Default initial size of the major heap (words);
    same constraints as for Heap_chunk_def. */
-#define Init_heap_def (62 * 1024)
+#define Init_heap_def (15 * Page_size)
 
 
 /* Default speed setting for the major GC.  The heap will grow until
    the dead objects and the free list represent this percentage of the
-   heap size.  The rest of the heap is live objects. */
-#define Percent_free_def 42
+   total size of live objects. */
+#define Percent_free_def 80
 
-/* Default setting for the compacter: off */
-#define Max_percent_free_def 1000000
+/* Default setting for the compacter: 500%
+   (i.e. trigger the compacter when 5/6 of the heap is free or garbage)
+   This can be set quite high because the overhead is over-estimated
+   when fragmentation occurs.
+ */
+#define Max_percent_free_def 500
 
 
-#endif /* _config_ */
+#endif /* CAML_CONFIG_H */

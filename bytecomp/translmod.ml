@@ -20,10 +20,16 @@ open Asttypes
 open Path
 open Types
 open Typedtree
+open Primitive
 open Lambda
 open Translobj
 open Translcore
 open Translclass
+
+type error =
+  Circular_dependency of Ident.t
+
+exception Error of Location.t * error
 
 (* Compile a coercion *)
 
@@ -87,6 +93,151 @@ let field_path path field =
     None -> None
   | Some p -> Some(Pdot(p, Ident.name field, Path.nopos))
 
+(* Utilities for compiling "module rec" definitions *)
+
+let undefined_exception loc =
+  (* Confer Translcore.assert_failed *)
+  let fname = match loc.Location.loc_start.Lexing.pos_fname with
+              | "" -> !Location.input_name
+              | x -> x in
+  let pos = loc.Location.loc_start in
+  let line = pos.Lexing.pos_lnum in
+  let char = pos.Lexing.pos_cnum - pos.Lexing.pos_bol in
+  Lprim(Pmakeblock(0, Immutable),
+        [transl_path Predef.path_undefined_recursive_module;
+         Lconst(Const_block(0,
+                   [Const_base(Const_string fname);
+                    Const_base(Const_int line);
+                    Const_base(Const_int char)]))])
+
+let undefined_function loc =
+  Lfunction(Curried, [Ident.create "undef"],
+            Lprim(Praise, [undefined_exception loc]))
+
+let init_value modl =
+  let undef_exn_id = Ident.create "undef_exception" in
+  let undef_function_id = Ident.create "undef_function" in
+  let rec init_value_mod env mty =
+    match Mtype.scrape env mty with
+      Tmty_ident _ ->
+        raise Not_found
+    | Tmty_signature sg ->
+        Lprim(Pmakeblock(0, Mutable), init_value_struct env sg)
+    | Tmty_functor(id, arg, res) ->
+        raise Not_found (* to be fixed? *)
+  and init_value_struct env sg =
+    match sg with
+      [] -> []
+    | Tsig_value(id, vdesc) :: rem ->
+        let init_v =
+          match Ctype.expand_head env vdesc.val_type with
+            {desc = Tarrow(_,_,_,_)} ->
+              Lvar undef_function_id
+          | {desc = Tconstr(p, _, _)} when Path.same p Predef.path_lazy_t ->
+              Lprim(Pmakeblock(Config.lazy_tag, Immutable),
+                    [Lvar undef_function_id])
+          | _ -> raise Not_found in
+        init_v :: init_value_struct env rem
+    | Tsig_type(id, tdecl) :: rem ->
+        init_value_struct (Env.add_type id tdecl env) rem
+    | Tsig_exception(id, edecl) :: rem ->
+        transl_exception
+          id (Some Predef.path_undefined_recursive_module) edecl ::
+        init_value_struct env rem
+    | Tsig_module(id, mty) :: rem ->
+        init_value_mod env mty ::
+        init_value_struct (Env.add_module id mty env) rem
+    | Tsig_modtype(id, minfo) :: rem ->
+        init_value_struct (Env.add_modtype id minfo env) rem
+    | Tsig_class(id, cdecl) :: rem ->
+        Translclass.dummy_class (Lvar undef_function_id) ::
+        init_value_struct env rem
+    | Tsig_cltype(id, ctyp) :: rem ->
+        init_value_struct env rem
+  in
+  try
+    Some(Llet(Alias, undef_function_id, undefined_function modl.mod_loc,
+              init_value_mod modl.mod_env modl.mod_type))
+  with Not_found ->
+    None
+
+(* Reorder bindings to honor dependencies.  *)
+
+type binding_status = Undefined | Inprogress | Defined
+
+let reorder_rec_bindings bindings =
+  let id = Array.of_list (List.map (fun (id,_,_,_) -> id) bindings)
+  and loc = Array.of_list (List.map (fun (_,loc,_,_) -> loc) bindings)
+  and init = Array.of_list (List.map (fun (_,_,init,_) -> init) bindings)
+  and rhs = Array.of_list (List.map (fun (_,_,_,rhs) -> rhs) bindings) in
+  let fv = Array.map Lambda.free_variables rhs in
+  let num_bindings = Array.length id in
+  let status = Array.create num_bindings Undefined in
+  let res = ref [] in
+  let rec emit_binding i =
+    match status.(i) with
+      Defined -> ()
+    | Inprogress -> raise(Error(loc.(i), Circular_dependency id.(i)))
+    | Undefined ->
+        if init.(i) = None then begin
+          status.(i) <- Inprogress;
+          for j = 0 to num_bindings - 1 do
+            if IdentSet.mem id.(j) fv.(i) then emit_binding j
+          done
+        end;
+        res := (id.(i), init.(i), rhs.(i)) :: !res;
+        status.(i) <- Defined in
+  for i = 0 to num_bindings - 1 do
+    match status.(i) with
+      Undefined -> emit_binding i
+    | Inprogress -> assert false
+    | Defined -> ()
+  done;
+  List.rev !res
+
+(* Generate lambda-code for a reordered list of bindings *)
+
+let prim_update =
+  { prim_name = "caml_update_dummy";
+    prim_arity = 2;
+    prim_alloc = true;
+    prim_native_name = "";
+    prim_native_float = false }
+
+let eval_rec_bindings bindings cont =
+  let rec bind_inits = function
+    [] ->
+      bind_strict bindings
+  | (id, None, rhs) :: rem ->
+      bind_inits rem
+  | (id, Some init, rhs) :: rem ->
+      Llet(Strict, id, init, bind_inits rem)
+  and bind_strict = function
+    [] ->
+      patch_forwards bindings
+  | (id, None, rhs) :: rem ->
+      Llet(Strict, id, rhs, bind_strict rem)
+  | (id, Some init, rhs) :: rem ->
+      bind_strict rem
+  and patch_forwards = function
+    [] ->
+      cont
+  | (id, None, rhs) :: rem ->
+      patch_forwards rem
+  | (id, Some init, rhs) :: rem ->
+      Lsequence(Lprim(Pccall prim_update, [Lvar id; rhs]), patch_forwards rem)
+  in
+    bind_inits bindings
+
+let compile_recmodule compile_rhs bindings cont =
+  eval_rec_bindings
+    (reorder_rec_bindings
+      (List.map
+        (fun (id, modl) ->
+                  (id, modl.mod_loc, init_value modl, compile_rhs id modl))
+        bindings))
+    cont
+
 (* Compile a module expression *)
 
 let rec transl_module cc rootpath mexp =
@@ -97,19 +248,22 @@ let rec transl_module cc rootpath mexp =
       transl_structure [] cc rootpath str
   | Tmod_functor(param, mty, body) ->
       let bodypath = functor_path rootpath param in
-      begin match cc with
-        Tcoerce_none ->
-          Lfunction(Curried, [param], transl_module Tcoerce_none bodypath body)
-      | Tcoerce_functor(ccarg, ccres) ->
-          let param' = Ident.create "funarg" in
-          Lfunction(Curried, [param'],
-            Llet(Alias, param, apply_coercion ccarg (Lvar param'),
-              transl_module ccres bodypath body))
-      | _ ->
-          fatal_error "Translmod.transl_module"
-      end
+      oo_wrap mexp.mod_env true
+        (function
+        | Tcoerce_none ->
+            Lfunction(Curried, [param],
+                      transl_module Tcoerce_none bodypath body)
+        | Tcoerce_functor(ccarg, ccres) ->
+            let param' = Ident.create "funarg" in
+            Lfunction(Curried, [param'],
+                      Llet(Alias, param, apply_coercion ccarg (Lvar param'),
+                           transl_module ccres bodypath body))
+        | _ ->
+            fatal_error "Translmod.transl_module")
+        cc
   | Tmod_apply(funct, arg, ccarg) ->
-      apply_coercion cc
+      oo_wrap mexp.mod_env true
+        (apply_coercion cc)
         (Lapply(transl_module Tcoerce_none None funct,
                 [transl_module ccarg None arg]))
   | Tmod_constraint(arg, mty, ccarg) ->
@@ -170,6 +324,13 @@ and transl_structure fields cc rootpath = function
       Llet(Strict, id,
            transl_module Tcoerce_none (field_path rootpath id) modl,
            transl_structure (id :: fields) cc rootpath rem)
+  | Tstr_recmodule bindings :: rem ->
+      let ext_fields = List.rev_append (List.map fst bindings) fields in
+      compile_recmodule
+        (fun id modl ->
+          transl_module Tcoerce_none (field_path rootpath id) modl)
+        bindings
+        (transl_structure ext_fields cc rootpath rem)
   | Tstr_modtype(id, decl) :: rem ->
       transl_structure fields cc rootpath rem
   | Tstr_open path :: rem ->
@@ -191,7 +352,7 @@ and transl_structure fields cc rootpath = function
       | id :: ids ->
           Llet(Alias, id, Lprim(Pfield pos, [Lvar mid]),
                rebind_idents (pos + 1) (id :: newfields) ids) in
-      Llet(Strict, mid, transl_module Tcoerce_none None modl,
+      Llet(Alias, mid, transl_module Tcoerce_none None modl,
            rebind_idents 0 fields ids)
 
 (* Update forward declaration in Translcore *)
@@ -260,6 +421,16 @@ let transl_store_structure glob map prims str =
          (add_ident true adds id -> Pgetglobal... to subst). *)
       Llet(Strict, id, subst_lambda subst lam,
         Lsequence(store_ident id, transl_store(add_ident true id subst) rem))
+  | Tstr_recmodule bindings :: rem ->
+      let ids = List.map fst bindings in
+      compile_recmodule
+        (fun id modl ->
+          subst_lambda subst
+            (transl_module Tcoerce_none
+                           (field_path (global_path glob) id) modl))
+        bindings
+        (Lsequence(store_idents ids,
+                   transl_store (add_idents true ids subst) rem))
   | Tstr_modtype(id, decl) :: rem ->
       transl_store subst rem
   | Tstr_open path :: rem ->
@@ -283,7 +454,8 @@ let transl_store_structure glob map prims str =
       | id :: idl ->
           Llet(Alias, id, Lprim(Pfield pos, [Lvar mid]),
                Lsequence(store_ident id, store_idents (pos + 1) idl)) in
-      Llet(Strict, mid, transl_module Tcoerce_none None modl,
+      Llet(Strict, mid,
+           subst_lambda subst (transl_module Tcoerce_none None modl),
            store_idents 0 ids)
 
   and store_ident id =
@@ -335,6 +507,7 @@ let rec defined_idents = function
   | Tstr_exception(id, decl) :: rem -> id :: defined_idents rem
   | Tstr_exn_rebind(id, path) :: rem -> id :: defined_idents rem
   | Tstr_module(id, modl) :: rem -> id :: defined_idents rem
+  | Tstr_recmodule decls :: rem -> List.map fst decls @ defined_idents rem
   | Tstr_modtype(id, decl) :: rem -> defined_idents rem
   | Tstr_open path :: rem -> defined_idents rem
   | Tstr_class cl_list :: rem ->
@@ -396,8 +569,9 @@ let toploop_setvalue_pos = 1 (* position of setvalue in module Toploop *)
 
 let aliased_idents = ref Ident.empty
 
-let set_toplevel_name id name =
-  aliased_idents := Ident.add id name !aliased_idents
+let set_toplevel_unique_name id =
+  aliased_idents :=
+    Ident.add id (Ident.unique_toplevel_name id) !aliased_idents
 
 let toplevel_name id =
   try Ident.find_same id !aliased_idents
@@ -441,17 +615,26 @@ let transl_toplevel_item = function
   | Tstr_exn_rebind(id, path) ->
       toploop_setvalue id (transl_path path)
   | Tstr_module(id, modl) ->
+      (* we need to use the unique name for the module because of issues
+         with "open" (PR#1672) *)
+      set_toplevel_unique_name id;
       toploop_setvalue id
                         (transl_module Tcoerce_none (Some(Pident id)) modl)
+  | Tstr_recmodule bindings ->
+      let idents = List.map fst bindings in
+      compile_recmodule
+        (fun id modl -> transl_module Tcoerce_none (Some(Pident id)) modl)
+        bindings
+        (make_sequence toploop_setvalue_id idents)
   | Tstr_modtype(id, decl) ->
       lambda_unit
   | Tstr_open path ->
       lambda_unit
   | Tstr_class cl_list ->
+      (* we need to use unique names for the classes because there might
+         be a value named identically *)
       let ids = List.map (fun (i, _, _, _) -> i) cl_list in
-      List.iter
-        (fun id -> set_toplevel_name id (Ident.name id ^ "(c)"))
-        ids;
+      List.iter set_toplevel_unique_name ids;
       Lletrec(List.map
                 (fun (id, arity, meths, cl) ->
                    (id, transl_class ids id arity meths cl))
@@ -477,3 +660,58 @@ let transl_toplevel_item_and_close itm =
 let transl_toplevel_definition str =
   reset_labels ();
   make_sequence transl_toplevel_item_and_close str
+
+(* Compile the initialization code for a packed library *)
+
+let get_component = function
+    None -> Lconst const_unit
+  | Some id -> Lprim(Pgetglobal id, []) 
+
+let transl_package component_names target_name coercion =
+  let components =
+    match coercion with
+      Tcoerce_none ->
+        List.map get_component component_names
+    | Tcoerce_structure pos_cc_list ->
+        let g = Array.of_list component_names in
+        List.map
+          (fun (pos, cc) -> apply_coercion cc (get_component g.(pos)))
+          pos_cc_list
+    | _ ->
+        assert false in
+  Lprim(Psetglobal target_name, [Lprim(Pmakeblock(0, Immutable), components)])
+
+let transl_store_package component_names target_name coercion =
+  let rec make_sequence fn pos arg =
+    match arg with
+      [] -> lambda_unit
+    | hd :: tl -> Lsequence(fn pos hd, make_sequence fn (pos + 1) tl) in
+  match coercion with
+    Tcoerce_none ->
+      (List.length component_names,
+       make_sequence
+         (fun pos id ->
+           Lprim(Psetfield(pos, false),
+                 [Lprim(Pgetglobal target_name, []);
+                  get_component id]))
+         0 component_names)
+  | Tcoerce_structure pos_cc_list ->
+      let id = Array.of_list component_names in
+      (List.length pos_cc_list,
+       make_sequence
+         (fun dst (src, cc) ->
+           Lprim(Psetfield(dst, false),
+                 [Lprim(Pgetglobal target_name, []);
+                  apply_coercion cc (get_component id.(src))]))
+         0 pos_cc_list)
+  | _ -> assert false
+
+(* Error report *)
+
+open Format
+
+let report_error ppf = function
+    Circular_dependency id ->
+      fprintf ppf
+        "@[Cannot safely evaluate the definition@ of the recursively-defined module %a@]"
+        Printtyp.ident id

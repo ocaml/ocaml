@@ -108,7 +108,7 @@ method select_operation op args =
       (Iintop_imm(Idiv, n), [arg])
   | (Cdivi, _) -> 
       (Iextcall("__divdi3", false), args)
-  | (Cmodi, [arg; Cconst_int n]) when n = 1 lsl (Misc.log2 n) ->
+  | (Cmodi, [arg; Cconst_int n]) when n = 1 lsl (Misc.log2 n) && n <> 1 ->
       (Iintop_imm(Imod, n), [arg])
   | (Cmodi, _) ->
       (Iextcall("__moddi3", false), args)
@@ -161,7 +161,10 @@ method emit_stores env data regs_addr =
         self#insert (Iop(Ispecific(Istoreincr 16))) [| t2; r  |] [| t2 |];
         backlog := None in
   List.iter
-    (fun exp -> Array.iter do_store (self#emit_expr env exp))
+    (fun exp ->
+      match self#emit_expr env exp with
+        None -> assert false
+      | Some regs -> Array.iter do_store regs)
     data;
   (* Store the backlog if any *)
   begin match !backlog with

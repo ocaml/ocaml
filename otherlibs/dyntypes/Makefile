@@ -26,9 +26,9 @@ CAMLOPT = $(CAMLRUN) $(ROOT)/ocamlopt -pp "$(JOCPARSER)" -I $(ROOT)/stdlib
 MKLIB = $(CAMLRUN) $(ROOT)/tools/ocamlmklib
 
 LOCAL_MODULES = dynamics
-UTILS_MODULES = config misc tbl clflags
+UTILS_MODULES = config misc tbl clflags consistbl
 PARSING_MODULES = asttypes longident
-TYPING_MODULES = outcometree ident path primitive types typedynt btype subst predef datarepr env ctype printtyp
+TYPING_MODULES = outcometree ident path primitive types typedynt btype subst predef datarepr env ctype oprint printtyp
 IMPORTED_MODULES = $(UTILS_MODULES) $(PARSING_MODULES) $(TYPING_MODULES)
 CAMLOBJS = dyntypes_compiler_bits.cmo $(LOCAL_MODULES:=.cmo)
 CMIFILES = $(CAMLOBJS:.cmo=.cmi)

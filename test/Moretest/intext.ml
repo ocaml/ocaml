@@ -15,6 +15,8 @@ let verylongstring =
  0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\
  0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
+let bigint = Int64.to_int 0x123456789ABCDEF0L
+
 let rec fib n =
   if n < 2 then 1 else fib(n-1) + fib(n-2)
 
@@ -25,7 +27,7 @@ let test_out filename =
   output_value oc 258;
   output_value oc 20000;
   output_value oc 0x12345678;
-  output_value oc 0x123456789ABCDEF0;
+  output_value oc bigint;
   output_value oc "foobargeebuz";
   output_value oc longstring;
   output_value oc verylongstring;
@@ -76,7 +78,7 @@ let test_in filename =
   test 3 (input_value ic = 258);
   test 4 (input_value ic = 20000);
   test 5 (input_value ic = 0x12345678);
-  test 6 (input_value ic = 0x123456789ABCDEF0);
+  test 6 (input_value ic = bigint);
   test 7 (input_value ic = "foobargeebuz");
   test 8 (input_value ic = longstring);
   test 9 (input_value ic = verylongstring);
@@ -157,8 +159,8 @@ let test_string () =
   test 104 (Marshal.from_string s 0 = 20000);
   let s = Marshal.to_string 0x12345678 [] in
   test 105 (Marshal.from_string s 0 = 0x12345678);
-  let s = Marshal.to_string 0x123456789ABCDEF0 [] in
-  test 106 (Marshal.from_string s 0 = 0x123456789ABCDEF0);
+  let s = Marshal.to_string bigint [] in
+  test 106 (Marshal.from_string s 0 = bigint);
   let s = Marshal.to_string "foobargeebuz" [] in
   test 107 (Marshal.from_string s 0 = "foobargeebuz");
   let s = Marshal.to_string longstring [] in
@@ -239,8 +241,8 @@ let test_buffer () =
   test 204 (Marshal.from_string s 0 = 20000);
   Marshal.to_buffer s 0 512 0x12345678 [];
   test 205 (Marshal.from_string s 0 = 0x12345678);
-  Marshal.to_buffer s 0 512 0x123456789ABCDEF0 [];
-  test 206 (Marshal.from_string s 0 = 0x123456789ABCDEF0);
+  Marshal.to_buffer s 0 512 bigint [];
+  test 206 (Marshal.from_string s 0 = bigint);
   Marshal.to_buffer s 0 512 "foobargeebuz" [];
   test 207 (Marshal.from_string s 0 = "foobargeebuz");
   Marshal.to_buffer s 0 512 longstring [];
@@ -325,8 +327,8 @@ let test_block () =
   test 404 (marshal_from_block s 512 = 20000);
   marshal_to_block s 512 0x12345678 [];
   test 405 (marshal_from_block s 512 = 0x12345678);
-  marshal_to_block s 512 0x123456789ABCDEF0 [];
-  test 406 (marshal_from_block s 512 = 0x123456789ABCDEF0);
+  marshal_to_block s 512 bigint [];
+  test 406 (marshal_from_block s 512 = bigint);
   marshal_to_block s 512 "foobargeebuz" [];
   test 407 (marshal_from_block s 512 = "foobargeebuz");
   marshal_to_block s 512 longstring [];

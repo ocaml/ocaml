@@ -33,8 +33,8 @@ module type OrderedType =
           [f e1 e2] is zero if the elements [e1] and [e2] are equal,
           [f e1 e2] is strictly negative if [e1] is smaller than [e2],
           and [f e1 e2] is strictly positive if [e1] is greater than [e2].
-          Example: a suitable ordering function is
-          the generic structural comparison function {!Pervasives.compare}. *)
+          Example: a suitable ordering function is the generic structural
+          comparison function {!Pervasives.compare}. *)
   end
 (** Input signature of the functor {!Set.Make}. *)
 
@@ -70,7 +70,7 @@ module type S =
     (** Set union. *)
 
     val inter: t -> t -> t
-    (** Set interseection. *)
+    (** Set intersection. *)
 
     (** Set difference. *)
     val diff: t -> t -> t
@@ -89,14 +89,12 @@ module type S =
 
     val iter: (elt -> unit) -> t -> unit
     (** [iter f s] applies [f] in turn to all elements of [s].
-       The order in which the elements of [s] are presented to [f]
-       is unspecified. *)
+       The elements of [s] are presented to [f] in increasing order
+       with respect to the ordering over the type of the elements. *)
 
     val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
     (** [fold f s a] computes [(f xN ... (f x2 (f x1 a))...)],
-       where [x1 ... xN] are the elements of [s].
-       The order in which elements of [s] are presented to [f] is
-       unspecified. *)
+       where [x1 ... xN] are the elements of [s], in increasing order. *)
 
     val for_all: (elt -> bool) -> t -> bool
     (** [for_all p s] checks if all elements of the set
@@ -138,6 +136,15 @@ module type S =
     (** Return one element of the given set, or raise [Not_found] if
        the set is empty. Which element is chosen is unspecified,
        but equal elements will be chosen for equal sets. *)
+
+    val split: elt -> t -> t * bool * t
+    (** [split x s] returns a triple [(l, present, r)], where
+          [l] is the set of elements of [s] that are
+          strictly less than [x];
+          [r] is the set of elements of [s] that are
+          strictly greater than [x];
+          [present] is [false] if [s] contains no element equal to [x],
+          or [true] if [s] contains an element equal to [x]. *)
   end
 (** Output signature of the functor {!Set.Make}. *)
 

@@ -23,6 +23,7 @@ type edit_window =
     modified: Textvariable.textVariable;
     mutable shell: (string * Shell.shell) option;
     mutable structure: Typedtree.structure;
+    mutable type_info: Stypes.type_info list;
     mutable signature: Types.signature;
     mutable psignature: Parsetree.signature;
     number: string }

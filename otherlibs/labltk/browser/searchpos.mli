@@ -29,6 +29,7 @@ val add_shown_module : Path.t -> widgets:module_widgets -> unit
 val find_shown_module : Path.t -> module_widgets
 val is_shown_module : Path.t -> bool
 val default_frame : module_widgets option ref
+val set_path : (Path.t -> sign:Types.signature -> unit) ref
 
 val view_defined_ref : (Longident.t -> env:Env.t -> unit) ref
 val editor_ref :
@@ -65,6 +66,8 @@ type fkind = [
 val search_pos_structure :
     pos:int -> Typedtree.structure_item list ->
     (fkind * Env.t * Location.t) list
+val search_pos_info :
+    pos:int -> Stypes.type_info list -> (fkind * Env.t * Location.t) list
 val view_type : fkind -> env:Env.t -> unit
 val view_type_menu : fkind -> env:Env.t -> parent:'a widget -> menu widget
 

@@ -22,6 +22,7 @@ val longident: formatter -> Longident.t -> unit
 val ident: formatter -> Ident.t -> unit
 val tree_of_path: Path.t -> out_ident
 val path: formatter -> Path.t -> unit
+val raw_type_expr: formatter -> type_expr -> unit
 val reset: unit -> unit
 val mark_loops: type_expr -> unit
 val reset_and_mark_loops: type_expr -> unit
@@ -32,7 +33,7 @@ val type_scheme: formatter -> type_expr -> unit
 (* Maxence *)
 val reset_names: unit -> unit
 val type_scheme_max: ?b_reset_names: bool ->
-	formatter -> type_expr -> unit
+        formatter -> type_expr -> unit
 (* Fin Maxence *)
 val tree_of_value_description: Ident.t -> value_description -> out_sig_item
 val value_description: Ident.t -> formatter -> value_description -> unit
@@ -64,7 +65,3 @@ val report_unification_error:
 val report_subtyping_error:
     formatter -> (type_expr * type_expr) list ->
     string -> (type_expr * type_expr) list -> unit
-
-val outcome_type: (formatter -> out_type -> unit) ref
-val outcome_sig_item: (formatter -> out_sig_item -> unit) ref
-val outcome_signature: (formatter -> out_sig_item list -> unit) ref

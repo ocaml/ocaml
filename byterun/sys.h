@@ -13,17 +13,17 @@
 
 /* $Id$ */
 
-#ifndef _sys_
-#define _sys_
+#ifndef CAML_SYS_H
+#define CAML_SYS_H
 
 #include "misc.h"
 
 #define NO_ARG Val_int(0)
 
-CAMLextern void sys_error (value);
-extern void sys_init (char **);
-CAMLextern value sys_exit (value);
+CAMLextern void caml_sys_error (value);
+extern void caml_sys_init (char * exe_name, char ** argv);
+CAMLextern value caml_sys_exit (value);
 
-extern char ** caml_main_argv;
+extern char * caml_exe_name;
 
-#endif /* _sys_ */
+#endif /* CAML_SYS_H */

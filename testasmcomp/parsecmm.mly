@@ -28,7 +28,7 @@ let rec make_letdef def body =
 let make_switch n selector caselist =
   let index = Array.create n 0 in
   let casev = Array.of_list caselist in
-  let actv = Array.create (Array.length casev) Cexit in
+  let actv = Array.create (Array.length casev) (Cexit(0,[])) in
   for i = 0 to Array.length casev - 1 do
     let (posl, e) = casev.(i) in
     List.iter (fun pos -> index.(pos) <- i) posl;
@@ -193,10 +193,10 @@ expr:
       { let body =
           match $3 with
             Cconst_int x when x <> 0 -> $4
-          | _ -> Cifthenelse($3, $4, Cexit) in
-        Ccatch(Cloop body, Ctuple []) }
-  | LPAREN CATCH sequence WITH sequence RPAREN { Ccatch($3, $5) }
-  | EXIT        { Cexit }
+          | _ -> Cifthenelse($3, $4, (Cexit(0,[]))) in
+        Ccatch(0, [], Cloop body, Ctuple []) }
+  | LPAREN CATCH sequence WITH sequence RPAREN { Ccatch(0, [], $3, $5) }
+  | EXIT        { Cexit(0,[]) }
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN
                 { unbind_ident $5; Ctrywith($3, $5, $6) }
   | LPAREN ADDRAREF expr expr RPAREN

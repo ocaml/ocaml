@@ -1,5 +1,8 @@
 (* $Id$ *)
 
+open StdLabels
+open MoreLabels
+
 (* Use maps for substitutions and sets for free variables *)
 
 module Subst = Map.Make(struct type t = string let compare = compare end)

@@ -15,7 +15,7 @@
 
 PROGS=test1.byt test2.byt test3.byt test4.byt test5.byt test6.byt \
   test7.byt test8.byt test9.byt testA.byt sieve.byt \
-  testio.byt testsocket.byt testwait.byt testsignal.byt testsignal2.byt \
+  testio.byt testsocket.byt testsignal.byt testsignal2.byt \
   torture.byt
 
 include ../../../config/Makefile
@@ -41,3 +41,4 @@ clean:
 	$(CAMLOPT) -o $*.out unix.cmxa threads.cmxa $*.ml ../libthreadsnat.a ../../unix/libunix.a -cclib -lpthread
 
 $(PROGS): ../threads.cma ../libthreads.a
+$(PROGS:.byt=.out): ../threads.cmxa ../libthreadsnat.a

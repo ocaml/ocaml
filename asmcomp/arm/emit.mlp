@@ -14,6 +14,7 @@
 
 (* Emission of ARM assembly code *)
 
+open Location
 open Misc
 open Cmm
 open Arch
@@ -188,11 +189,11 @@ let decompose_intconst n fn =
   let i = ref n in
   let shift = ref 0 in
   let ninstr = ref 0 in
-  while !i <> Nativeint.zero do
+  while !i <> 0n do
     if Nativeint.to_int (Nativeint.shift_right !i !shift) land 3 = 0 then
       shift := !shift + 2
     else begin
-      let mask = Nativeint.shift_left (Nativeint.of_int 0xFF) !shift in
+      let mask = Nativeint.shift_left 0xFFn !shift in
       let bits = Nativeint.logand !i mask in
       fn bits;
       shift := !shift + 8;
@@ -304,9 +305,10 @@ let emit_instr i =
         end else
           emit_complex_intconst r n
     | Lop(Iconst_float s) ->
-        if float_of_string s = 0.0 then
+        begin match Int64.bits_of_float (float_of_string s) with
+        | 0x0000_0000_0000_0000L ->       (* +0.0 *)
           `	mvfd	{emit_reg i.res.(0)}, #0.0\n`
-        else begin
+        | _ ->
           let lbl = label_constant float_constants s 2 in
           pending_float := true;
           `	ldfd	{emit_reg i.res.(0)}, {emit_label lbl} @ {emit_string s}\n`
@@ -401,7 +403,7 @@ let emit_instr i =
                 `	mov	r10, #{emit_int n}\n`; 1
               end else
                 emit_complex_intconst (phys_reg 8 (*r10*)) nn in
-            `{record_frame i.live}      bl      caml_alloc\n`;
+            `{record_frame i.live}      bl      caml_allocN\n`;
             `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`;
             2 + ni
         end
@@ -415,7 +417,7 @@ let emit_instr i =
         `	mov{emit_string	comp}   {emit_reg i.res.(0)}, #1\n`; 3
     | Lop(Iintop(Icheckbound)) ->
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-        `	blls	caml_array_bound_error\n`; 2
+        `	blls	caml_ml_array_bound_error\n`; 2
     | Lop(Iintop op) ->
         let instr = name_for_int_operation op in
         `	{emit_string	instr}     {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`; 1
@@ -452,7 +454,7 @@ let emit_instr i =
         `	mov{emit_string	comp}   {emit_reg i.res.(0)}, #1\n`; 3
     | Lop(Iintop_imm(Icheckbound, n)) ->
         `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
-        `	blls	caml_array_bound_error\n`; 2
+        `	blls	caml_ml_array_bound_error\n`; 2
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op in
         `	{emit_string	instr}     {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #{emit_int n}\n`; 1
@@ -471,7 +473,7 @@ let emit_instr i =
         1
     | Lop(Ispecific(Ishiftcheckbound shift)) ->
         `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, lsr #{emit_int shift}\n`;
-        `	blcs	caml_array_bound_error\n`; 2
+        `	blcs	caml_ml_array_bound_error\n`; 2
     | Lop(Ispecific(Irevsubimm n)) ->
         `	rsb	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #{emit_int n}\n`; 1
     | Lreloadretaddr ->
@@ -606,8 +608,9 @@ let fundecl fundecl =
 (* Emission of data *)
 
 let emit_item = function
-    Cdefine_symbol s ->
+    Cglobal_symbol s ->
       `	.global	{emit_symbol s}\n`;
+  | Cdefine_symbol s ->
       `{emit_symbol s}:\n`
   | Cdefine_label lbl ->
       `{emit_label (10000 + lbl)}:\n`
@@ -648,26 +651,26 @@ let begin_assembly() =
   `sp           .req    r13\n`;
   `lr           .req    r14\n`;
   `pc           .req    r15\n`;
-  let lbl_begin = Compilenv.current_unit_name() ^ "_data_begin" in
+  let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
   `	.global	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`;
-  let lbl_begin = Compilenv.current_unit_name() ^ "_code_begin" in
+  let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
   `	.text\n`;
   `	.global	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`
 
 let end_assembly () =
-  let lbl_end = Compilenv.current_unit_name() ^ "_code_end" in
+  let lbl_end = Compilenv.make_symbol (Some "code_end") in
   `	.text\n`;
   `	.global	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
-  let lbl_end = Compilenv.current_unit_name() ^ "_data_end" in
+  let lbl_end = Compilenv.make_symbol (Some "data_end") in
   `	.data\n`;
   `	.global	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
   `	.word	0\n`;
-  let lbl = Compilenv.current_unit_name() ^ "_frametable" in
+  let lbl = Compilenv.make_symbol (Some "frametable") in
   `	.data\n`;
   `	.global	{emit_symbol lbl}\n`;
   `{emit_symbol lbl}:\n`;

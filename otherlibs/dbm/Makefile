@@ -19,9 +19,10 @@ include ../../config/Makefile
 
 # Compilation optiosn
 CC=$(BYTECC) -g
-CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
-CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
+CAMLC=../../ocamlcomp.sh
+CAMLOPT=../../ocamlcompopt.sh
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
+COMPFLAGS=-warn-error A
 
 CFLAGS=$(DBM_INCLUDES) -I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 COBJS=cldbm.o
@@ -46,7 +47,7 @@ clean: partialclean
 	rm -f *.a *.o *.so
 
 install:
-	if test -f dllmldbm.so; then cp dllmldbm.so $(LIBDIR)/dllmldbm.so; fi
+	if test -f dllmldbm.so; then cp dllmldbm.so $(STUBLIBDIR)/dllmldbm.so; fi
 	cp libmldbm.a $(LIBDIR)/libmldbm.a
 	cd $(LIBDIR); $(RANLIB) libmldbm.a
 	cp dbm.cma dbm.cmi dbm.mli $(LIBDIR)

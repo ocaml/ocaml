@@ -3,5 +3,5 @@ OPT=
 OTOP=../..
 OLIBDIR=$(OTOP)/boot
 BINDIR=C:/ocaml/bin
-LIBDIR=C:/ocaml/lib/camlp4
+LIBDIR=C:/ocaml/lib
 MANDIR=C:/ocaml/man

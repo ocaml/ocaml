@@ -28,10 +28,8 @@ val history_size : int ref
 
 (*** Time travel paramaters. ***)
 
-val checkpoint_big_step : int ref
-val checkpoint_small_step : int ref
+val checkpoint_big_step : int64 ref
+val checkpoint_small_step : int64 ref
 val checkpoint_max_count : int ref
 val make_checkpoints : bool ref
 
-(*** Dynamic loader ***)
-val stdlib_units : string list

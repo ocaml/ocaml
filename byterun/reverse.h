@@ -15,8 +15,8 @@
 
 /* Swap byte-order in 16, 32, and 64-bit integers or floats */
 
-#ifndef _reverse_
-#define _reverse_
+#ifndef CAML_REVERSE_H
+#define CAML_REVERSE_H
 
 #define Reverse_16(dst,src) {                                               \
   char * _p, * _q;                                                          \
@@ -60,5 +60,29 @@
   _q[4] = _b;                                                               \
 }
 
+#define Perm_index(perm,i) ((perm >> (i * 4)) & 0xF)
 
-#endif /* _reverse_ */
+#define Permute_64(dst,perm_dst,src,perm_src) {                             \
+  char * _p;                                                                \
+  char _a, _b, _c, _d, _e, _f, _g, _h;                                      \
+  _p = (char *) (src);                                                      \
+  _a = _p[Perm_index(perm_src, 0)];                                         \
+  _b = _p[Perm_index(perm_src, 1)];                                         \
+  _c = _p[Perm_index(perm_src, 2)];                                         \
+  _d = _p[Perm_index(perm_src, 3)];                                         \
+  _e = _p[Perm_index(perm_src, 4)];                                         \
+  _f = _p[Perm_index(perm_src, 5)];                                         \
+  _g = _p[Perm_index(perm_src, 6)];                                         \
+  _h = _p[Perm_index(perm_src, 7)];                                         \
+  _p = (char *) (dst);                                                      \
+  _p[Perm_index(perm_dst, 0)] = _a;                                         \
+  _p[Perm_index(perm_dst, 1)] = _b;                                         \
+  _p[Perm_index(perm_dst, 2)] = _c;                                         \
+  _p[Perm_index(perm_dst, 3)] = _d;                                         \
+  _p[Perm_index(perm_dst, 4)] = _e;                                         \
+  _p[Perm_index(perm_dst, 5)] = _f;                                         \
+  _p[Perm_index(perm_dst, 6)] = _g;                                         \
+  _p[Perm_index(perm_dst, 7)] = _h;                                         \
+}
+
+#endif /* CAML_REVERSE_H */

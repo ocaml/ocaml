@@ -42,7 +42,7 @@
       (== (intaref (addraref "board" 4) 4) 2)
     (try
      (if (== (mod (load int "counter") 500) 0)
-          (extcall "printf" "format" (load int "counter") unit)
+          (extcall "printf_int" "format" (load int "counter") unit)
        [])
      (let i 1
        (while (<= i 7)
@@ -92,13 +92,13 @@
         (while (< j 9)
           (switch 3 (intaref (addraref "board" i) j)
             case 0:
-              (extcall "printf" "format_out" unit)
+              (extcall "print_string" "format_out" unit)
             case 1:
-              (extcall "printf" "format_empty" unit)
+              (extcall "print_string" "format_empty" unit)
             case 2:
-              (extcall "printf" "format_peg" unit))
+              (extcall "print_string" "format_peg" unit))
           (assign j (+ j 1))))
-      (extcall "printf" "format_newline" unit)
+      (extcall "print_string" "format_newline" unit)
       (assign i (+ i 1)))))
 
 (function "solitaire" ()

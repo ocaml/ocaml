@@ -48,8 +48,8 @@ value rec ctyp =
   | TyMan _ t1 t2 -> do { ctyp t1; ctyp t2; }
   | TyOlb _ _ t -> ctyp t
   | TyQuo _ _ -> ()
-  | TyRec _ ldl -> list label_decl ldl
-  | TySum _ cdl -> list constr_decl cdl
+  | TyRec _ _ ldl -> list label_decl ldl
+  | TySum _ _ cdl -> list constr_decl cdl
   | TyTup _ tl -> list ctyp tl
   | TyVrn _ sbtll _ -> list variant sbtll
   | x -> not_impl "ctyp" x ]
@@ -76,9 +76,10 @@ value rec patt =
   | PaArr _ pl -> list patt pl
   | PaChr _ _ -> ()
   | PaInt _ _ -> ()
-  | PaLab _ _ p -> patt p
+  | PaLab _ _ po -> option patt po
   | PaLid _ _ -> ()
-  | PaOlb _ _ p eo -> patt p
+  | PaOlb _ _ peoo ->
+      option (fun (p, eo) -> do { patt p; option expr eo }) peoo
   | PaOrp _ p1 p2 -> do { patt p1; patt p2; }
   | PaRec _ lpl -> list label_patt lpl
   | PaRng _ p1 p2 -> do { patt p1; patt p2; }
@@ -93,14 +94,15 @@ and patt_module =
   [ PaUid _ m -> addmodule m
   | PaAcc _ p _ -> patt_module p
   | x -> not_impl "patt_module" x ]
-and label_patt (p1, p2) = do { patt p1; patt p2; };
-
-value rec expr =
+and label_patt (p1, p2) = do { patt p1; patt p2; }
+and expr =
   fun
   [ ExAcc _ e1 e2 -> do { expr_module e1; expr e2; }
   | ExApp _ e1 e2 -> do { expr e1; expr e2; }
   | ExAre _ e1 e2 -> do { expr e1; expr e2; }
   | ExArr _ el -> list expr el
+  | ExAsf _ -> ()
+  | ExAsr _ e -> do { expr e; }
   | ExAss _ e1 e2 -> do { expr e1; expr e2; }
   | ExChr _ _ -> ()
   | ExCoe _ e t1 t2 -> do { expr e; option ctyp t1; ctyp t2 }
@@ -108,14 +110,18 @@ value rec expr =
   | ExFun _ pwel -> list match_case pwel
   | ExIfe _ e1 e2 e3 -> do { expr e1; expr e2; expr e3; }
   | ExInt _ _ -> ()
+  | ExInt32 _ _ -> ()
+  | ExInt64 _ _ -> ()
+  | ExNativeInt _ _ -> ()
   | ExFlo _ _ -> ()
-  | ExLab _ _ e -> expr e
+  | ExLab _ _ eo -> option expr eo
+  | ExLaz _ e -> expr e
   | ExLet _ _ pel e -> do { list let_binding pel; expr e; }
   | ExLid _ _ -> ()
   | ExLmd _ _ me e -> do { module_expr me; expr e; }
   | ExMat _ e pwel -> do { expr e; list match_case pwel; }
   | ExNew _ li -> longident li
-  | ExOlb _ _ e -> expr e
+  | ExOlb _ _ eo -> option expr eo
   | ExRec _ lel w -> do { list label_expr lel; option expr w; }
   | ExSeq _ el -> list expr el
   | ExSnd _ e _ -> expr e
@@ -153,6 +159,7 @@ and sig_item =
   | SgExc _ _ tl -> list ctyp tl
   | SgExt _ _ t _ -> ctyp t
   | SgMod _ _ mt -> module_type mt
+  | SgRecMod _ mts -> list (fun (_, mt) -> module_type mt) mts
   | SgMty _ _ mt -> module_type mt
   | SgOpn _ [s :: _] -> addmodule s
   | SgTyp _ tdl -> list type_decl tdl
@@ -176,6 +183,7 @@ and str_item =
   | StExp _ e -> expr e
   | StExt _ _ t _ -> ctyp t
   | StMod _ _ me -> module_expr me
+  | StRecMod _ nmtmes -> list (fun (_, mt, me) -> do { module_expr me; module_type mt; }) nmtmes
   | StMty _ _ mt -> module_type mt
   | StOpn _ [s :: _] -> addmodule s
   | StTyp _ tdl -> list type_decl tdl
@@ -194,7 +202,8 @@ and class_str_item =
   fun
   [ CrInh _ ce _ -> class_expr ce
   | CrIni _ e -> expr e
-  | CrMth _ _ _ e -> expr e
+  | CrMth _ _ _ e None -> expr e
+  | CrMth _ _ _ e (Some t) -> do { expr e; ctyp t }
   | CrVal _ _ _ e -> expr e
   | CrVir _ _ _ t -> ctyp t
   | x -> not_impl "class_str_item" x ]
@@ -315,4 +324,4 @@ Pcaml.print_implem.val := depend_str;
 
 Pcaml.add_option "-I"
   (Arg.String (fun dir -> load_path.val := load_path.val @ [dir]))
-  "<dir>      Add <dir> to the list of include directories.";
+  "<dir> Add <dir> to the list of include directories.";

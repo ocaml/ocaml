@@ -1,6 +1,7 @@
 include ../support/Makefile.common
 
-LABLTKLIB=-I ../lib -I ../support
+LABLTKLIB=-I ../labltk -I ../lib -I ../support
+#OTHERSLIB=-I $(OTHERS)/win32unix -I $(OTHERS)/systhreads -I $(OTHERS)/str
 OTHERSLIB=-I $(OTHERS)/unix -I $(OTHERS)/str
 OCAMLTOPLIB=-I $(TOPDIR)/parsing -I $(TOPDIR)/utils -I $(TOPDIR)/typing
 INCLUDES=$(OTHERSLIB) $(LABLTKLIB) $(OCAMLTOPLIB)
@@ -20,27 +21,29 @@ JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(LABLCOMP) $(INCLUDES) $<
+	$(CAMLCOMP) $(INCLUDES) $<
 
 .mli.cmi:
-	$(LABLCOMP) $(INCLUDES) $<
+	$(CAMLCOMP) $(INCLUDES) $<
 
 all: ocamlbrowser$(EXE)
 
 ocamlbrowser$(EXE): $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ) \
-			../support/liblabltk41.a
-	$(LABLC) -o ocamlbrowser$(EXE) $(INCLUDES) \
-		$(DLLPATH) \
+			../support/lib$(LIBNAME).a
+	$(CAMLC) -o ocamlbrowser$(EXE) $(INCLUDES) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
-		unix.cma str.cma labltk.cma jglib.cma $(OBJ)
+		unix.cma str.cma $(LIBNAME).cma jglib.cma $(OBJ)
+
+ocamlbrowser.cma: jglib.cma $(OBJ)
+	$(CAMLC) -a -o $@ -linkall jglib.cma $(OBJ)
 
 jglib.cma: $(JG)
-	$(LABLCOMP) -a -o jglib.cma $(JG)
+	$(CAMLCOMP) -a -o jglib.cma $(JG)
 
-#help.ml: help.txt
-#	printf 'let text = "' > $@
-#	cat help.txt >> $@
-#	printf '";;\n' >> $@
+help.ml:
+	echo 'let text = "\\' > $@
+	sed -e 's/^ /\\032/' -e 's/$$/\\n\\/' help.txt >> $@
+	echo '";;' >> $@
 
 install:
 	if test -f ocamlbrowser$(EXE); then : ; \
@@ -50,12 +53,12 @@ clean:
 	rm -f *.cm? ocamlbrowser$(EXE) dummy.mli *~ *.orig
 
 depend:
-	$(LABLDEP) *.ml *.mli > .depend
+	$(CAMLDEP) *.ml *.mli > .depend
 
 dummy.mli:
 	rm -f $@
 	ln -s dummyUnix.mli $@
 shell.cmo: dummy.cmi
-lexical.cmi searchid.cmi typecheck.cmi: $(TOPDIR)/toplevel/toplevellib.cma
+setpath.cmo fileselect.cmo lexical.cmi searchid.cmi typecheck.cmi: $(TOPDIR)/toplevel/toplevellib.cma
 
 include	.depend

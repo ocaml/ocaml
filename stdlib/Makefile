@@ -18,19 +18,22 @@ include ../config/Makefile
 RUNTIME=../boot/ocamlrun
 COMPILER=../ocamlc
 CAMLC=$(RUNTIME) $(COMPILER)
-COMPFLAGS=-g
+COMPFLAGS=-warn-error A -nostdlib
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
-OPTCOMPFLAGS=
+OPTCOMPFLAGS=-warn-error A -nostdlib
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
 BASIC=pervasives.cmo array.cmo list.cmo char.cmo string.cmo sys.cmo \
   hashtbl.cmo sort.cmo marshal.cmo obj.cmo \
+  int32.cmo int64.cmo nativeint.cmo \
   lexing.cmo parsing.cmo \
-  set.cmo map.cmo stack.cmo queue.cmo stream.cmo \
-  buffer.cmo printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo \
-  digest.cmo random.cmo oo.cmo genlex.cmo callback.cmo weak.cmo \
-  lazy.cmo filename.cmo int32.cmo int64.cmo nativeint.cmo
+  set.cmo map.cmo stack.cmo queue.cmo stream.cmo buffer.cmo \
+  printf.cmo format.cmo scanf.cmo \
+  arg.cmo printexc.cmo gc.cmo \
+  digest.cmo random.cmo callback.cmo camlinternalOO.cmo oo.cmo \
+  genlex.cmo weak.cmo \
+  lazy.cmo filename.cmo complex.cmo
 LABELLED=arrayLabels.ml listLabels.ml stringLabels.ml moreLabels.ml
 
 OBJS=$(BASIC) labelled.cmo stdLabels.cmo
@@ -45,7 +48,8 @@ allopt-noprof:
 allopt-prof: stdlib.p.cmxa std_exit.p.cmx
 
 install:
-	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader camlheader_ur $(LIBDIR)
+	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader camlheader_ur \
+           $(LIBDIR)
 
 installopt: installopt-default installopt-$(PROFILING)
 
@@ -56,7 +60,8 @@ installopt-default:
 installopt-noprof:
 	rm -f $(LIBDIR)/stdlib.p.cmxa; ln -s stdlib.cmxa $(LIBDIR)/stdlib.p.cmxa
 	rm -f $(LIBDIR)/stdlib.p.a; ln -s stdlib.a $(LIBDIR)/stdlib.p.a
-	rm -f $(LIBDIR)/std_exit.p.cmx; ln -s std_exit.cmx $(LIBDIR)/std_exit.p.cmx
+	rm -f $(LIBDIR)/std_exit.p.cmx; \
+          ln -s std_exit.cmx $(LIBDIR)/std_exit.p.cmx
 	rm -f $(LIBDIR)/std_exit.p.o; ln -s std_exit.o $(LIBDIR)/std_exit.p.o
 
 installopt-prof:
@@ -77,7 +82,9 @@ camlheader camlheader_ur: header.c ../config/Makefile
           echo '#!$(BINDIR)/ocamlrun' > camlheader && \
           echo '#!' | tr -d '\012' > camlheader_ur; \
         else \
-	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -DRUNTIME_NAME='"$(BINDIR)/ocamlrun"' header.c -o tmpheader$(EXE) && \
+	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
+                    -DRUNTIME_NAME='"$(BINDIR)/ocamlrun"' \
+                    header.c -o tmpheader$(EXE) && \
           strip tmpheader$(EXE) && \
 	  mv tmpheader$(EXE) camlheader && \
           cp camlheader camlheader_ur; \
@@ -96,21 +103,30 @@ pervasives.cmx: pervasives.ml
 	$(CAMLOPT) $(OPTCOMPFLAGS) -nopervasives -c pervasives.ml
 
 pervasives.p.cmx: pervasives.ml
-	@if test -f pervasives.cmx; then mv pervasives.cmx pervasives.n.cmx; else :; fi
-	@if test -f pervasives.o; then mv pervasives.o pervasives.n.o; else :; fi
+	@if test -f pervasives.cmx; \
+           then mv pervasives.cmx pervasives.n.cmx; else :; fi
+	@if test -f pervasives.o; \
+           then mv pervasives.o pervasives.n.o; else :; fi
 	$(CAMLOPT) $(OPTCOMPFLAGS) -p -nopervasives -c pervasives.ml
 	mv pervasives.cmx pervasives.p.cmx
 	mv pervasives.o pervasives.p.o
-	@if test -f pervasives.n.cmx; then mv pervasives.n.cmx pervasives.cmx; else :; fi
-	@if test -f pervasives.n.o; then mv pervasives.n.o pervasives.o; else :; fi
+	@if test -f pervasives.n.cmx; \
+           then mv pervasives.n.cmx pervasives.cmx; else :; fi
+	@if test -f pervasives.n.o; \
+           then mv pervasives.n.o pervasives.o; else :; fi
 
-# oo.cmi must be compiled with -nopervasives for applets
-oo.cmi: oo.mli
-	$(CAMLC) $(COMPFLAGS) -nopervasives -c oo.mli
+# camlinternalOO.cmi must be compiled with -nopervasives for applets
+camlinternalOO.cmi: camlinternalOO.mli
+	$(CAMLC) $(COMPFLAGS) -nopervasives -c camlinternalOO.mli
+
+CIOO=camlinternalOO
+$(CIOO).cmx $(CIOO).p.cmx: $(CIOO).ml
+	$(MAKE) EXTRAFLAGS="-inline 0" CIOO=dummy $@
 
 # labelled modules require the -nolabels flag
 labelled.cmo:
-	$(MAKE) EXTRAFLAGS=-nolabels RUNTIME=$(RUNTIME) COMPILER=$(COMPILER) $(LABELLED:.ml=.cmo)
+	$(MAKE) EXTRAFLAGS=-nolabels RUNTIME=$(RUNTIME) \
+                COMPILER=$(COMPILER) $(LABELLED:.ml=.cmo)
 	touch $@
 labelled.cmx:
 	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.cmx)

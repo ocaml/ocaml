@@ -29,23 +29,27 @@ external shift_right: nativeint -> int -> nativeint = "%nativeint_asr"
 external shift_right_logical: nativeint -> int -> nativeint = "%nativeint_lsr"
 external of_int: int -> nativeint = "%nativeint_of_int"
 external to_int: nativeint -> int = "%nativeint_to_int"
-external of_float : float -> nativeint = "nativeint_of_float"
-external to_float : nativeint -> float = "nativeint_to_float"
+external of_float : float -> nativeint = "caml_nativeint_of_float"
+external to_float : nativeint -> float = "caml_nativeint_to_float"
 external of_int32: int32 -> nativeint = "%nativeint_of_int32"
 external to_int32: nativeint -> int32 = "%nativeint_to_int32"
 
-let zero = of_int 0
-let one = of_int 1
-let minus_one = of_int (-1)
-let succ n = add n one
-let pred n = sub n one
-let abs n = if n >= zero then n else neg n
+let zero = 0n
+let one = 1n
+let minus_one = -1n
+let succ n = add n 1n
+let pred n = sub n 1n
+let abs n = if n >= 0n then n else neg n
 let size = Sys.word_size
-let min_int = shift_left one (size - 1)
-let max_int = sub min_int one
-let lognot n = logxor n minus_one
+let min_int = shift_left 1n (size - 1)
+let max_int = sub min_int 1n
+let lognot n = logxor n (-1n)
 
-external format : string -> nativeint -> string = "nativeint_format"
+external format : string -> nativeint -> string = "caml_nativeint_format"
 let to_string n = format "%d" n
 
-external of_string: string -> nativeint = "nativeint_of_string"
+external of_string: string -> nativeint = "caml_nativeint_of_string"
+
+type t = nativeint
+
+let compare = (Pervasives.compare: t -> t -> int)

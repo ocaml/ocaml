@@ -15,6 +15,8 @@
 
 /* The generic hashing primitive */
 
+/* The interface of this file is in "mlvalues.h" */
+
 #include "mlvalues.h"
 #include "custom.h"
 #include "memory.h"
@@ -24,7 +26,7 @@ static long hash_univ_limit, hash_univ_count;
 
 static void hash_aux(value obj);
 
-CAMLprim value hash_univ_param(value count, value limit, value obj)
+CAMLprim value caml_hash_univ_param(value count, value limit, value obj)
 {
   hash_univ_limit = Long_val(limit);
   hash_univ_count = Long_val(count);
@@ -49,6 +51,7 @@ static void hash_aux(value obj)
   hash_univ_limit--;
   if (hash_univ_count < 0 || hash_univ_limit < 0) return;
 
+ again:
   if (Is_long(obj)) {
     hash_univ_count--;
     Combine(Long_val(obj));
@@ -57,13 +60,14 @@ static void hash_aux(value obj)
 
   /* Pointers into the heap are well-structured blocks. So are atoms.
      We can inspect the block contents. */
-  
+
+  Assert (Is_block (obj));  
   if (Is_atom(obj) || Is_young(obj) || Is_in_heap(obj)) {
     tag = Tag_val(obj);
     switch (tag) {
     case String_tag:
       hash_univ_count--;
-      i = string_length(obj);
+      i = caml_string_length(obj);
       for (p = &Byte_u(obj, 0); i > 0; i--, p++)
         Combine_small(*p);
       break;
@@ -104,6 +108,9 @@ static void hash_aux(value obj)
     case Infix_tag:
       hash_aux(obj - Infix_offset_val(obj));
       break;
+    case Forward_tag:
+      obj = Forward_val (obj);
+      goto again;
     case Object_tag:
       hash_univ_count--;
       Combine(Oid_val(obj));
@@ -135,7 +142,7 @@ static void hash_aux(value obj)
 
 /* Hashing variant tags */
 
-CAMLexport value hash_variant(char * tag)
+CAMLexport value caml_hash_variant(char * tag)
 {
   value accu;
   /* Same hashing algorithm as in ../typing/btype.ml, function hash_variant */
@@ -148,4 +155,3 @@ CAMLexport value hash_variant(char * tag)
      platforms */
   return (int32) accu;
 }
-

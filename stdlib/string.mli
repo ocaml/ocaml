@@ -22,18 +22,20 @@ external get : string -> int -> char = "%string_safe_get"
 (** [String.get s n] returns character number [n] in string [s].
    The first character is character number 0.
    The last character is character number [String.length s - 1].
-   Raise [Invalid_argument] if [n] is outside the range
-   0 to [(String.length s - 1)].
-   You can also write [s.[n]] instead of [String.get s n]. *)
+   You can also write [s.[n]] instead of [String.get s n].
+
+   Raise [Invalid_argument "index out of bounds"]
+   if [n] is outside the range 0 to [(String.length s - 1)]. *)
+
 
 external set : string -> int -> char -> unit = "%string_safe_set"
 (** [String.set s n c] modifies string [s] in place,
    replacing the character number [n] by [c].
-   Raise [Invalid_argument] if [n] is outside the range
-   0 to [(String.length s - 1)].
-   You can also write [s.[n] <- c] instead of [String.set s n c]. *)
+   You can also write [s.[n] <- c] instead of [String.set s n c].
+   Raise [Invalid_argument "index out of bounds"]
+   if [n] is outside the range 0 to [(String.length s - 1)]. *)
 
-external create : int -> string = "create_string"
+external create : int -> string = "caml_create_string"
 (** [String.create n] returns a fresh string of length [n].
    The string initially contains arbitrary characters.
    Raise [Invalid_argument] if [n < 0] or [n > Sys.max_string_length].
@@ -136,17 +138,25 @@ val lowercase : string -> string
    Latin-1 (8859-1) character set. *)
 
 val capitalize : string -> string
-(** Return a copy of the argument, with the first letter set to uppercase. *)
+(** Return a copy of the argument, with the first character set to uppercase. *)
 
 val uncapitalize : string -> string
-(** Return a copy of the argument, with the first letter set to lowercase. *)
+(** Return a copy of the argument, with the first character set to lowercase. *)
 
+type t = string
+(** An alias for the type of strings. *)
+
+val compare: t -> t -> int
+(** The comparison function for strings, with the same specification as
+    {!Pervasives.compare}.  Along with the type [t], this function [compare]
+    allows the module [String] to be passed as argument to the functors
+    {!Set.Make} and {!Map.Make}. *)
 
 (**/**)
 
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
 external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"
 external unsafe_blit :
-  string -> int -> string -> int -> int -> unit = "blit_string" "noalloc"
+  string -> int -> string -> int -> int -> unit = "caml_blit_string" "noalloc"
 external unsafe_fill :
-  string -> int -> int -> char -> unit = "fill_string" "noalloc"
+  string -> int -> int -> char -> unit = "caml_fill_string" "noalloc"

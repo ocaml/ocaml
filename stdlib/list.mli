@@ -56,15 +56,17 @@ val rev_append : 'a list -> 'a list -> 'a list
    tail-recursive and more efficient. *)
 
 val concat : 'a list list -> 'a list
-(** Concatenate a list of lists.  Not tail-recursive
+(** Concatenate a list of lists.  The elements of the argument are all
+   concatenated together (in the same order) to give the result.
+   Not tail-recursive
    (length of the argument + length of the longest sub-list). *)
 
 val flatten : 'a list list -> 'a list
-(** Flatten a list of lists.  Not tail-recursive
+(** Same as [concat].  Not tail-recursive
    (length of the argument + length of the longest sub-list). *)
 
 
-(** {2 Iterators} *)
+(** {6 Iterators} *)
 
 
 val iter : ('a -> unit) -> 'a list -> unit
@@ -91,7 +93,7 @@ val fold_right : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
    [f a1 (f a2 (... (f an b) ...))].  Not tail-recursive. *)
 
 
-(** {2 Iterators on two lists} *)
+(** {6 Iterators on two lists} *)
 
 
 val iter2 : ('a -> 'b -> unit) -> 'a list -> 'b list -> unit
@@ -124,7 +126,7 @@ val fold_right2 : ('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> 'c -> 'c
    different lengths.  Not tail-recursive. *)
 
 
-(** {2 List scanning} *)
+(** {6 List scanning} *)
 
 
 val for_all : ('a -> bool) -> 'a list -> bool
@@ -156,7 +158,7 @@ val memq : 'a -> 'a list -> bool
    equality to compare list elements. *)
 
 
-(** {2 List searching} *)
+(** {6 List searching} *)
 
 
 val find : ('a -> bool) -> 'a list -> 'a
@@ -181,7 +183,7 @@ val partition : ('a -> bool) -> 'a list -> 'a list * 'a list
    The order of the elements in the input list is preserved. *)
 
 
-(** {2 Association lists} *)
+(** {6 Association lists} *)
 
 
 val assoc : 'a -> ('a * 'b) list -> 'b
@@ -214,7 +216,7 @@ val remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
    of structural equality to compare keys.  Not tail-recursive. *)
 
 
-(** {2 Lists of pairs} *)
+(** {6 Lists of pairs} *)
 
 
 val split : ('a * 'b) list -> 'a list * 'b list
@@ -231,28 +233,44 @@ val combine : 'a list -> 'b list -> ('a * 'b) list
    have different lengths.  Not tail-recursive. *)
 
 
-(** {2 Sorting} *)
+(** {6 Sorting} *)
 
 
 val sort : ('a -> 'a -> int) -> 'a list -> 'a list
 (** Sort a list in increasing order according to a comparison
-   function.  The comparison function must return 0 if it arguments
+   function.  The comparison function must return 0 if its arguments
    compare as equal, a positive integer if the first is greater,
-   and a negative integer if the first is smaller.  For example,
-   the [compare] function is a suitable comparison function.
+   and a negative integer if the first is smaller (see Array.sort for
+   a complete specification).  For example,
+   {!Pervasives.compare} is a suitable comparison function.
    The resulting list is sorted in increasing order.
    [List.sort] is guaranteed to run in constant heap space
    (in addition to the size of the result list) and logarithmic
    stack space.
    
-   The current implementation uses Merge Sort and is the same as
-   {!List.stable_sort}.
-*)
-
-val stable_sort : ('a -> 'a -> int) -> 'a list -> 'a list
-(** Same as {!List.sort}, but the sorting algorithm is stable.
-   
-   The current implementation is Merge Sort. It runs in constant
+   The current implementation uses Merge Sort. It runs in constant
    heap space and logarithmic stack space.
 *)
 
+val stable_sort : ('a -> 'a -> int) -> 'a list -> 'a list
+(** Same as {!List.sort}, but the sorting algorithm is guaranteed to
+   be stable (i.e. elements that compare equal are kept in their
+   original order) .
+   
+   The current implementation uses Merge Sort. It runs in constant
+   heap space and logarithmic stack space.
+*)
+
+val fast_sort : ('a -> 'a -> int) -> 'a list -> 'a list
+(** Same as {!List.sort} or {!List.stable_sort}, whichever is faster
+    on typical input. *)
+
+val merge : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
+(** Merge two lists:
+    Assuming that [l1] and [l2] are sorted according to the
+    comparison function [cmp], [merge cmp l1 l2] will return a
+    sorted list containting all the elements of [l1] and [l2].
+    If several elements compare equal, the elements of [l1] will be
+    before the elements of [l2].
+    Not tail-recursive (sum of the lengths of the arguments).
+*)

@@ -22,6 +22,7 @@ module Make_options (F :
       val _custom : unit -> unit
       val _dllib : string -> unit
       val _dllpath : string -> unit
+      val _dtypes : unit -> unit
       val _g : unit -> unit
       val _i : unit -> unit
       val _I : string -> unit
@@ -34,18 +35,23 @@ module Make_options (F :
       val _noassert : unit -> unit
       val _noautolink : unit -> unit
       val _nolabels : unit -> unit
+      val _nostdlib : unit -> unit
       val _o : string -> unit
       val _output_obj : unit -> unit
+      val _pack : unit -> unit
       val _pp : string -> unit
+      val _principal : unit -> unit
       val _rectypes : unit -> unit
       val _thread : unit -> unit
 (*> JOCAML *)
       val _join : unit -> unit
 (*< JOCAML *)
+      val _vmthread : unit -> unit
       val _unsafe : unit -> unit
       val _use_prims : string -> unit
       val _use_runtime : string -> unit
       val _v : unit -> unit
+      val _version : unit -> unit
       val _verbose : unit -> unit
       val _w : string -> unit
       val _warn_error : string -> unit

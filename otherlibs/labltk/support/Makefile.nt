@@ -1,68 +1,69 @@
-!include Makefile.common.nt
+include Makefile.common.nt
 
-all: support.cmo widget.cmo protocol.cmo \
-     textvariable.cmo timer.cmo fileevent.cmo \
-     dlllabltk41.dll liblabltk41.lib
+all: support.cmo rawwidget.cmo widget.cmo protocol.cmo \
+     textvariable.cmo timer.cmo fileevent.cmo camltkwrap.cmo \
+     dll$(LIBNAME).dll lib$(LIBNAME).$(A)
 
-opt: support.cmx widget.cmx protocol.cmx \
-     textvariable.cmx timer.cmx fileevent.cmx \
-     liblabltk41.lib
+opt: support.cmx rawwidget.cmx widget.cmx protocol.cmx \
+     textvariable.cmx timer.cmx fileevent.cmx camltkwrap.cmx \
+     lib$(LIBNAME).$(A)
 
-COBJS=cltkCaml.obj cltkEval.obj cltkEvent.obj cltkFile.obj cltkMain.obj \
-      cltkMisc.obj cltkTimer.obj cltkVar.obj cltkWait.obj
+COBJS=cltkCaml.o cltkUtf.o cltkEval.o cltkEvent.o cltkFile.o \
+   cltkMain.o cltkMisc.o cltkTimer.o cltkVar.o cltkWait.o cltkImg.o
+DCOBJS=$(COBJS:.o=.$(DO))
+SCOBJS=$(COBJS:.o=.$(SO))
 
-CCFLAGS=-I..\..\..\byterun $(TK_DEFS)
+CCFLAGS=-I../../../byterun -I../../win32unix $(TK_DEFS) -DIN_CAMLTKSUPPORT
 
 COMPFLAGS=-I $(OTHERS)/win32unix
 
-dlllabltk41.dll : $(COBJS:.obj=.dobj)
-	link /nologo /dll /out:dlllabltk41.dll /implib:tmp.lib \
-	  $(COBJS:.obj=.dobj) ..\..\..\byterun\ocamlrun.lib \
-          $(TK_LINK) wsock32.lib
-	rm tmp.*
+dll$(LIBNAME).dll : $(DCOBJS)
+	$(call MKDLL,dll$(LIBNAME).dll,dll$(LIBNAME).$(A),\
+	  $(DCOBJS) ../../../byterun/ocamlrun.$(A) \
+          $(TK_LINK) $(call SYSLIB,wsock32))
 
-liblabltk41.lib : $(COBJS:.obj=.sobj)
-	rm -f liblabltk41.lib
-	$(MKLIB)liblabltk41.lib $(COBJS:.obj=.sobj)
+lib$(LIBNAME).$(A) : $(SCOBJS)
+	$(call MKLIB,lib$(LIBNAME).$(A), $(SCOBJS))
 
 PUB=fileevent.cmi fileevent.mli \
     protocol.cmi protocol.mli \
     textvariable.cmi textvariable.mli \
     timer.cmi timer.mli \
+    rawwidget.cmi rawwidget.mli \
     widget.cmi widget.mli
 
-install: dlllabltk41.dll liblabltk41.lib $(PUB)
-	@if not exist $(LABLTKDIR) mkdir $(LABLTKDIR)
-	cp $(PUB) $(LABLTKDIR)
-	cp dlllabltk41.dll liblabltk41.lib $(LABLTKDIR)
-	echo $(LABLTKDIR)>> $(LIBDIR)\ld.conf
+install:
+	mkdir -p $(INSTALLDIR)
+	cp $(PUB) $(INSTALLDIR)
+	cp dll$(LIBNAME).dll $(STUBLIBDIR)/dll$(LIBNAME).dll 
+	cp dll$(LIBNAME).$(A) lib$(LIBNAME).$(A) $(INSTALLDIR)
 
 clean : 
-	rm -f *.cm* *.dobj *.sobj *.dll *.lib
+	rm -f *.cm* *.$(O) *.dll *.$(A) *.exp
 
 .SUFFIXES :
-.SUFFIXES : .mli .ml .cmi .cmo .cmx .mlp .c .dobj .sobj
+.SUFFIXES : .mli .ml .cmi .cmo .cmx .mlp .c .$(DO) .$(SO)
 
 .mli.cmi:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmo:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
-.c.dobj:
+.c.$(DO):
 	$(BYTECC) $(DLLCCCOMPOPTS) $(CCFLAGS) -c $<
-	mv $*.obj $*.dobj
+	mv $*.$(O) $*.$(DO)
 
-.c.sobj:
+.c.$(SO):
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CCFLAGS) -c $<
-	mv $*.obj $*.sobj
+	mv $*.$(O) $*.$(SO)
 
 depend:
-	$(LABLDEP) *.mli *.ml > .depend
+	$(CAMLDEP) *.mli *.ml > .depend
 
-$(COBJS): camltk.h
+$(DCOBJS) $(SCOBJS): camltk.h
 
-!include .depend
+include .depend

@@ -56,4 +56,16 @@ let _ =
   test 29 0 (compare (mkleftlist 1000) (mkleftlist 1000));
   test 30 0 (compare (mktree 12) (mktree 12));
   test 31 true (x = f []);
-  test 32 true (stdout <> stderr)
+  test 32 true (stdout <> stderr);
+  test 33 (-1) (compare nan 0.0);
+  test 34 (-1) (compare nan neg_infinity);
+  test 35 0 (compare nan nan);
+  test 36 (-1) (compare (0.0, nan) (0.0, 0.0));
+  test 37 (-1) (compare (0.0, nan) (0.0, neg_infinity));
+  test 38 0 (compare (nan, 0.0) (nan, 0.0));
+  let cmpgen x y = (x=y, x<>y, x<y, x<=y, x>y, x>=y) in
+  let cmpfloat (x:float) (y:float) = (x=y, x<>y, x<y, x<=y, x>y, x>=y) in
+  test 39 (false,true,false,false,false,false) (cmpgen nan nan);
+  test 40 (false,true,false,false,false,false) (cmpgen nan 0.0);
+  test 41 (false,true,false,false,false,false) (cmpfloat nan nan);
+  test 42 (false,true,false,false,false,false) (cmpfloat nan 0.0)

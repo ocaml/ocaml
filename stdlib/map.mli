@@ -33,8 +33,8 @@ module type OrderedType =
           [f e1 e2] is zero if the keys [e1] and [e2] are equal,
           [f e1 e2] is strictly negative if [e1] is smaller than [e2],
           and [f e1 e2] is strictly positive if [e1] is greater than [e2].
-          Example: a suitable ordering function is
-          the generic structural comparison function {!Pervasives.compare}. *)
+          Example: a suitable ordering function is the generic structural
+          comparison function {!Pervasives.compare}. *)
   end
 (** Input signature of the functor {!Map.Make}. *)
 
@@ -48,6 +48,9 @@ module type S =
 
     val empty: 'a t
     (** The empty map. *)
+
+    val is_empty: 'a t -> bool
+    (** Test whether a map is empty or not. *)
 
     val add: key -> 'a -> 'a t -> 'a t
     (** [add x y m] returns a map containing the same bindings as
@@ -69,16 +72,17 @@ module type S =
     val iter: (key -> 'a -> unit) -> 'a t -> unit
     (** [iter f m] applies [f] to all bindings in map [m].
        [f] receives the key as first argument, and the associated value
-       as second argument. The order in which the bindings are passed to
-       [f] is unspecified. Only current bindings are presented to [f]:
+       as second argument.  The bindings are passed to [f] in increasing
+       order with respect to the ordering over the type of the keys.
+       Only current bindings are presented to [f]:
        bindings hidden by more recent bindings are not passed to [f]. *)
 
     val map: ('a -> 'b) -> 'a t -> 'b t
     (** [map f m] returns a map with same domain as [m], where the
        associated value [a] of all bindings of [m] has been
        replaced by the result of the application of [f] to [a].
-       The order in which the associated values are passed to [f]
-       is unspecified. *)
+       The bindings are passed to [f] in increasing order
+       with respect to the ordering over the type of the keys. *)
 
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
     (** Same as {!Map.S.map}, but the function receives as arguments both the
@@ -86,10 +90,19 @@ module type S =
 
     val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     (** [fold f m a] computes [(f kN dN ... (f k1 d1 a)...)],
-       where [k1 ... kN] are the keys of all bindings in [m],
-       and [d1 ... dN] are the associated data.
-       The order in which the bindings are presented to [f] is
-       unspecified. *)
+       where [k1 ... kN] are the keys of all bindings in [m]
+       (in increasing order), and [d1 ... dN] are the associated data. *)
+
+    val compare: ('a -> 'a -> int) -> 'a t -> 'a t -> int
+    (** Total ordering between maps.  The first argument is a total ordering
+        used to compare data associated with equal keys in the two maps. *)
+
+    val equal: ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+    (** [equal cmp m1 m2] tests whether the maps [m1] and [m2] are
+       equal, that is, contain equal keys and associate them with
+       equal data.  [cmp] is the equality predicate used to compare
+       the data associated with the keys. *)
+
   end
 (** Output signature of the functor {!Map.Make}. *)
 

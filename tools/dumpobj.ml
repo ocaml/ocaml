@@ -80,16 +80,14 @@ let print_float f =
 ;;
 
 let rec print_struct_const = function
-    Const_base(Const_int i) ->
-      printf "%d" i
-  | Const_base(Const_float f) ->
-      print_float f
-  | Const_base(Const_string s) ->
-      printf "\"%s\"" (String.escaped s)
-  | Const_base(Const_char c) ->
-      printf "'%s'" (Char.escaped c)
-  | Const_pointer n ->
-      printf "%da" n
+    Const_base(Const_int i) -> printf "%d" i
+  | Const_base(Const_float f) -> print_float f
+  | Const_base(Const_string s) -> printf "%S" s
+  | Const_base(Const_char c) -> printf "%C" c
+  | Const_base(Const_int32 i) -> printf "%ldl" i
+  | Const_base(Const_nativeint i) -> printf "%ndn" i
+  | Const_base(Const_int64 i) -> printf "%LdL" i
+  | Const_pointer n -> printf "%da" n
   | Const_block(tag, args) ->
       printf "<%d>" tag;
       begin match args with
@@ -110,12 +108,12 @@ let rec print_struct_const = function
 
 let rec print_obj x =
   if Obj.is_block x then begin
-    match Obj.tag x with
-      252 ->                            (* string *)
-        printf "\"%s\"" (String.escaped (Obj.magic x : string))
-    | 253 ->                            (* float *)
+    let tag = Obj.tag x in
+    if tag = Obj.string_tag then
+        printf "%S" (Obj.magic x : string)
+    else if tag = Obj.double_tag then
         printf "%.12g" (Obj.magic x : float)
-    | 254 ->                            (* float array *)
+    else if tag = Obj.double_array_tag then begin
         let a = (Obj.magic x : float array) in
         printf "[|";
         for i = 0 to Array.length a - 1 do
@@ -123,9 +121,9 @@ let rec print_obj x =
           printf "%.12g" a.(i)
         done;
         printf "|]"
-    | _ ->
+    end else if tag < Obj.no_scan_tag then begin
         printf "<%d>" (Obj.tag x);
-        begin match Obj.size x with
+        match Obj.size x with
           0 -> ()
         | 1 ->
             printf "("; print_obj (Obj.field x 0); printf ")"
@@ -135,7 +133,8 @@ let rec print_obj x =
               printf ", "; print_obj (Obj.field x i)
             done;
             printf ")"
-        end
+    end else
+        printf "<tag %d>" tag
   end else
     printf "%d" (Obj.magic x : int)
 
@@ -379,14 +378,15 @@ let op_shapes = [
   opUGEINT, Nothing;
   opBULTINT, Uint_Disp;
   opBUGEINT, Uint_Disp;
-  opRERAISE, Nothing;
   opSTOP, Nothing;
   opEVENT, Nothing;
   opBREAK, Nothing;
 ];;
 
 let print_event ev =
-  printf "%s, char %d:\n" ev.ev_module ev.ev_char
+  printf "File \"%s\", line %d, character %d:\n" ev.ev_char.Lexing.pos_fname
+         ev.ev_char.Lexing.pos_lnum
+         (ev.ev_char.Lexing.pos_cnum - ev.ev_char.Lexing.pos_bol)
 
 let print_instr ic =
   let pos = currpos ic in
@@ -522,13 +522,17 @@ let dump_exe ic =
 
 let main() =
   for i = 1 to Array.length Sys.argv - 1 do
-    let ic = open_in_bin Sys.argv.(i) in
+    let filnam = Sys.argv.(i) in
+    let ic = open_in_bin filnam in
+    if i>1 then print_newline ();
+    printf "## start of ocaml dump of %S\n%!" filnam;
     begin try
       objfile := false; dump_exe ic
     with Bytesections.Bad_magic_number ->
       objfile := true; seek_in ic 0; dump_obj (Sys.argv.(i)) ic
     end;
-    close_in ic
+    close_in ic;
+    printf "## end of ocaml dump of %S\n%!" filnam;
   done;
   exit 0
 

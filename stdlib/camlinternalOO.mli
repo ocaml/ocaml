@@ -17,23 +17,22 @@
     All functions in this module are for system use only, not for the
     casual user. *)
 
+(** {6 Methods} *)
+
+type label
+val new_method : string -> label
+val public_method_label : string -> label
+
 (** {6 Classes} *)
 
-type tag
-type label
 type table
 type meth
 type t
 type obj
-type closure
-val public_method_label : string -> tag
-val new_method : table -> label
 val new_variable : table -> string -> int
 val new_variables : table -> string array -> int
 val get_variable : table -> string -> int
-val get_variables : table -> string array -> int array
 val get_method_label : table -> string -> label
-val get_method_labels : table -> string array -> label array
 val get_method : table -> label -> meth
 val set_method : table -> label -> meth -> unit
 val set_methods : table -> label array -> unit
@@ -61,19 +60,17 @@ val create_object_opt : obj -> table -> obj
 val run_initializers : obj -> table -> unit
 val run_initializers_opt : obj -> obj -> table -> obj
 val create_object_and_run_initializers : obj -> table -> obj
-external send : obj -> tag -> t = "%send"
-external sendcache : obj -> tag -> t -> int -> t = "%sendcache"
-external sendself : obj -> label -> t = "%sendself"
-external get_public_method : obj -> tag -> closure
-    = "caml_get_public_method" "noalloc"
+external send : obj -> label -> t = "%send"
 
 (** {6 Table cache} *)
 
 type tables
-val lookup_tables : tables -> closure array -> tables
+val lookup_tables : tables -> table array -> tables
 
 (** {6 Builtins to reduce code size} *)
 
+open Obj
+type closure
 val get_const : t -> closure
 val get_var : int -> closure
 val get_env : int -> int -> closure
@@ -94,10 +91,10 @@ val meth_app_const : label -> t -> closure
 val meth_app_var : label -> int -> closure
 val meth_app_env : label -> int -> int -> closure
 val meth_app_meth : label -> label -> closure
-val send_const : tag -> obj -> int -> closure
-val send_var : tag -> int -> int -> closure
-val send_env : tag -> int -> int -> int -> closure
-val send_meth : tag -> label -> int -> closure
+val send_const : label -> obj -> closure
+val send_var : label -> int -> closure
+val send_env : label -> int -> int -> closure
+val send_meth : label -> label -> closure
 
 type impl =
     GetConst
@@ -124,11 +121,10 @@ type impl =
   | SendVar
   | SendEnv
   | SendMeth
-  | Closure of closure
+  | Closure of t
 
 (** {6 Parameters} *)
 
-(* currently disabled *)
 type params =
   { mutable compact_table : bool;
     mutable copy_parent : bool;
@@ -142,6 +138,12 @@ val params : params
 
 type stats =
   { classes : int; 
+    labels : int; 
     methods : int; 
-    inst_vars : int }
+    inst_vars : int; 
+    buckets : int;
+    distrib : int array; 
+    small_bucket_count : int; 
+    small_bucket_max : int }
 val stats : unit -> stats
+val show_buckets : unit -> unit

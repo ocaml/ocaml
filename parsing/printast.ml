@@ -14,14 +14,22 @@
 
 open Asttypes;;
 open Format;;
+open Lexing;;
 open Location;;
 open Parsetree;;
 
+let fmt_position f l =
+  if l.pos_fname = "" && l.pos_lnum = 1
+  then fprintf f "%d" l.pos_cnum
+  else if l.pos_lnum = -1
+  then fprintf f "%s[%d]" l.pos_fname l.pos_cnum
+  else fprintf f "%s[%d,%d+%d]" l.pos_fname l.pos_lnum l.pos_bol
+               (l.pos_cnum - l.pos_bol)
+;;
+
 let fmt_location f loc =
-  if loc.loc_ghost then
-    fprintf f "(%d,%d) ghost" loc.loc_start loc.loc_end
-  else
-    fprintf f "(%d,%d)" loc.loc_start loc.loc_end
+  fprintf f "(%a..%a)" fmt_position loc.loc_start fmt_position loc.loc_end;
+  if loc.loc_ghost then fprintf f " ghost";
 ;;
 
 let rec fmt_longident_aux f x =
@@ -45,9 +53,11 @@ let fmt_constant f x =
   match x with
   | Const_int (i) -> fprintf f "Const_int %d" i;
   | Const_char (c) -> fprintf f "Const_char %02x" (Char.code c);
-  | Const_string (s) ->
-      fprintf f "Const_string \"%s\"" (String.escaped s);
+  | Const_string (s) -> fprintf f "Const_string %S" s;
   | Const_float (s) -> fprintf f "Const_float %s" s;
+  | Const_int32 (i) -> fprintf f "Const_int32 %ld" i;
+  | Const_int64 (i) -> fprintf f "Const_int64 %Ld" i;
+  | Const_nativeint (i) -> fprintf f "Const_nativeint %nd" i;
 ;;
 
 let fmt_mutable_flag f x =
@@ -140,6 +150,10 @@ let rec core_type i ppf x =
       list i string ppf low
   | Ptyp_alias (ct, s) ->
       line i ppf "Ptyp_alias \"%s\"\n" s;
+      core_type i ppf ct;
+  | Ptyp_poly (sl, ct) ->
+      line i ppf "Ptyp_poly%a\n"
+        (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x)) sl;
       core_type i ppf ct;
 
 and core_field_type i ppf x =
@@ -287,6 +301,16 @@ and expression i ppf x =
       expression i ppf e;
   | Pexp_assertfalse ->
       line i ppf "Pexp_assertfalse";
+  | Pexp_lazy (e) ->
+      line i ppf "Pexp_lazy";
+      expression i ppf e;
+  | Pexp_poly (e, cto) ->
+      line i ppf "Pexp_poly\n";
+      expression i ppf e;
+      option i core_type ppf cto;
+  | Pexp_object s ->
+      line i ppf "Pexp_object";
+      class_structure i ppf s
 (*> JOCAML *)
   | Pexp_spawn (e) ->
       line i ppf "Pexp_spawn\n" ;
@@ -373,11 +397,11 @@ and type_kind i ppf x =
   match x with
   | Ptype_abstract ->
       line i ppf "Ptype_abstract\n"
-  | Ptype_variant (l) ->
-      line i ppf "Ptype_variant\n";
+  | Ptype_variant (l, priv) ->
+      line i ppf "Ptype_variant %a\n" fmt_private_flag priv;
       list (i+1) string_x_core_type_list ppf l;
-  | Ptype_record (l) ->
-      line i ppf "Ptype_record\n";
+  | Ptype_record (l, priv) ->
+      line i ppf "Ptype_record %a\n" fmt_private_flag priv;
       list (i+1) string_x_mutable_flag_x_core_type ppf l;
 
 and exception_declaration i ppf x = list i core_type ppf x
@@ -550,6 +574,9 @@ and signature_item i ppf x =
   | Psig_module (s, mt) ->
       line i ppf "Psig_module \"%s\"\n" s;
       module_type i ppf mt;
+  | Psig_recmodule decls ->
+      line i ppf "Psig_recmodule\n";
+      list i string_x_module_type ppf decls;
   | Psig_modtype (s, md) ->
       line i ppf "Psig_modtype \"%s\"\n" s;
       modtype_declaration i ppf md;
@@ -637,6 +664,9 @@ and structure_item i ppf x =
   | Pstr_module (s, me) ->
       line i ppf "Pstr_module \"%s\"\n" s;
       module_expr i ppf me;
+  | Pstr_recmodule bindings ->
+      line i ppf "Pstr_recmodule\n";
+      list i string_x_modtype_x_module ppf bindings;
   | Pstr_modtype (s, mt) ->
       line i ppf "Pstr_modtype \"%s\"\n" s;
       module_type i ppf mt;
@@ -654,6 +684,15 @@ and structure_item i ppf x =
 and string_x_type_declaration i ppf (s, td) =
   string i ppf s;
   type_declaration (i+1) ppf td;
+
+and string_x_module_type i ppf (s, mty) =
+  string i ppf s;
+  module_type (i+1) ppf mty;
+
+and string_x_modtype_x_module i ppf (s, mty, modl) =
+  string i ppf s;
+  module_type (i+1) ppf mty;
+  module_expr (i+1) ppf modl;
 
 and longident_x_with_constraint i ppf (li, wc) =
   line i ppf "%a\n" fmt_longident li;

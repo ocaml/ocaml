@@ -3,6 +3,7 @@
 include ../config/Makefile
 
 TARGET=camlp4.1
+ALIASES=camlp4o.1 camlp4r.1 mkcamlp4.1 ocpp.1 camlp4o.opt.1 camlp4r.opt.1
 
 all: $(TARGET)
 
@@ -14,14 +15,14 @@ depend:
 get_promote:
 
 install:
-	-$(MKDIR) $(MANDIR)
-	-cp $(TARGET) $(MANDIR)/.
-	-cd $(MANDIR); rm -f camlp4o.1; ln -s $(TARGET) camlp4o.1
-	-cd $(MANDIR); rm -f camlp4r.1; ln -s $(TARGET) camlp4r.1
-	-cd $(MANDIR); rm -f mkcamlp4.1; ln -s $(TARGET) mkcamlp4.1
-	-cd $(MANDIR); rm -f ocpp.1; ln -s $(TARGET) ocpp.1
-	-cd $(MANDIR); rm -f camlp4o.opt.1; ln -s $(TARGET) camlp4o.opt.1
-	-cd $(MANDIR); rm -f camlp4r.opt.1; ln -s $(TARGET) camlp4r.opt.1
+	if test -n '$(MANDIR)'; then \
+	  $(MKDIR) $(MANDIR)/man1 ; \
+	  cp $(TARGET) $(MANDIR)/man1/. ; \
+	  for i in $(ALIASES); do \
+            rm -f $(MANDIR)/man1/$$i; \
+            echo '.so man1/$(TARGET)' > $(MANDIR)/man1/$$i; \
+          done; \
+	fi
 
 camlp4.1: camlp4.1.tpl
 	sed -e "s'LIBDIR'$(LIBDIR)'g" camlp4.1.tpl > camlp4.1

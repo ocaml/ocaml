@@ -27,9 +27,9 @@
 
 /* Roots registered from C functions */
 
-struct caml__roots_block *local_roots = NULL;
+struct caml__roots_block *caml_local_roots = NULL;
 
-void (*scan_roots_hook) (scanning_action) = NULL;
+void (*caml_scan_roots_hook) (scanning_action) = NULL;
 
 /* The hashtable of frame descriptors */
 
@@ -65,7 +65,7 @@ static void init_frame_descriptors(void)
 
   /* Allocate the hash table */
   frame_descriptors =
-    (frame_descr **) stat_alloc(tblsize * sizeof(frame_descr *));
+    (frame_descr **) caml_stat_alloc(tblsize * sizeof(frame_descr *));
   for (i = 0; i < tblsize; i++) frame_descriptors[i] = NULL;
   frame_descriptors_mask = tblsize - 1;
 
@@ -97,8 +97,9 @@ value * caml_gc_regs;
 long caml_globals_inited = 0;
 static long caml_globals_scanned = 0;
 
-/* Call [oldify] on (at least) all the roots that point to the minor heap. */
-void oldify_local_roots (void)
+/* Call [caml_oldify_one] on (at least) all the roots that point to the minor
+   heap. */
+void caml_oldify_local_roots (void)
 {
   char * sp;
   unsigned long retaddr;
@@ -118,7 +119,7 @@ void oldify_local_roots (void)
        i++) {
     glob = caml_globals[i];
     for (j = 0; j < Wosize_val(glob); j++){
-      oldify(Field(glob, j), &Field(glob, j));
+      Oldify (&Field (glob, j));
     }
   }
   caml_globals_scanned = caml_globals_inited;
@@ -146,7 +147,7 @@ void oldify_local_roots (void)
           } else {
             root = (value *)(sp + ofs);
           }
-          oldify(*root, root);
+          Oldify (root);
         }
         /* Move to next frame */
 #ifndef Stack_grows_upwards
@@ -174,32 +175,32 @@ void oldify_local_roots (void)
     }
   }
   /* Local C roots */
-  for (lr = local_roots; lr != NULL; lr = lr->next) {
+  for (lr = caml_local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         root = &(lr->tables[i][j]);
-        oldify (*root, root);
+        Oldify (root);
       }
     }
   }
   /* Global C roots */
   for (gr = caml_global_roots.forward[0]; gr != NULL; gr = gr->forward[0]) {
-    oldify(*(gr->root), gr->root);
+    Oldify (gr->root);
   }
   /* Finalised values */
-  final_do_young_roots (&oldify);
+  caml_final_do_young_roots (&caml_oldify_one);
   /* Hook */
-  if (scan_roots_hook != NULL) (*scan_roots_hook)(oldify);
+  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(caml_oldify_one);
 }
 
 /* Call [darken] on all roots */
 
-void darken_all_roots (void)
+void caml_darken_all_roots (void)
 {
-  do_roots (darken);
+  caml_do_roots (caml_darken);
 }
 
-void do_roots (scanning_action f)
+void caml_do_roots (scanning_action f)
 {
   int i, j;
   value glob;
@@ -213,21 +214,21 @@ void do_roots (scanning_action f)
   }
   /* The stack and local roots */
   if (frame_descriptors == NULL) init_frame_descriptors();
-  do_local_roots(f, caml_bottom_of_stack, caml_last_return_address,
-                 caml_gc_regs, local_roots);
+  caml_do_local_roots(f, caml_bottom_of_stack, caml_last_return_address,
+                      caml_gc_regs, caml_local_roots);
   /* Global C roots */
   for (gr = caml_global_roots.forward[0]; gr != NULL; gr = gr->forward[0]) {
     f(*(gr->root), gr->root);
   }
   /* Finalised values */
-  final_do_strong_roots (f);
+  caml_final_do_strong_roots (f);
   /* Hook */
-  if (scan_roots_hook != NULL) (*scan_roots_hook)(f);
+  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
 }
 
-void do_local_roots(scanning_action f, char * bottom_of_stack,
-                    unsigned long last_retaddr, value * gc_regs,
-                    struct caml__roots_block * local_roots)
+void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
+                         unsigned long last_retaddr, value * gc_regs,
+                         struct caml__roots_block * local_roots)
 {
   char * sp;
   unsigned long retaddr;

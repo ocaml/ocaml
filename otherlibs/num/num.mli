@@ -30,7 +30,7 @@ type num =
   | Ratio of ratio
 
 
-(** {2 Arithmetic operations} *)
+(** {6 Arithmetic operations} *)
 
 
 val ( +/ ) : num -> num -> num
@@ -113,7 +113,7 @@ val ceiling_num : num -> num
 val sign_num : num -> int
 (** Return [-1], [0] or [1] according to the sign of the argument. *)
 
-(** {3 Comparisons between numbers} *)
+(** {7 Comparisons between numbers} *)
 
 val ( =/ ) : num -> num -> bool
 val ( </ ) : num -> num -> bool
@@ -138,7 +138,7 @@ val min_num : num -> num -> num
 (** Return the smaller of the two arguments. *)
 
 
-(** {2 Coercions with strings} *)
+(** {6 Coercions with strings} *)
 
 val string_of_num : num -> string
 (** Convert a number to a string, using fractional notation. *)
@@ -157,7 +157,7 @@ val approx_num_exp : int -> num -> string
 val num_of_string : string -> num
 (** Convert a string to a number. *)
 
-(** {2 Coercions between numerical types} *)
+(** {6 Coercions between numerical types} *)
 
 val int_of_num : num -> int
 val num_of_int : int -> num

@@ -15,68 +15,31 @@
 (* Construction of the interference graph.
    Annotate pseudoregs with interference lists and preference lists. *)
 
+module IntPairSet =
+  Set.Make(struct type t = int * int let compare = compare end)
+
 open Misc
 open Reg
 open Mach
-
-module BitMatrix =
-  struct
-    type bucket = Nil | Cons of int * int * bucket
-    type t = {
-      mutable tbl: bucket array;
-      mutable capacity: int;
-      mutable numelts: int
-    }
-    let create log2_sz =
-      let sz = 1 lsl log2_sz in
-      { tbl = Array.create sz Nil; capacity = 4 * sz; numelts = 0 }
-
-    let resize mat =
-      let len = Array.length mat.tbl in
-      let newtbl = Array.make (len * 2) mat.tbl.(0) in
-      Array.blit mat.tbl 0 newtbl 0 len;
-      Array.blit mat.tbl 0 newtbl len len;
-      mat.tbl <- newtbl;
-      mat.capacity <- mat.capacity * 4
-
-    let rec find_in_bucket i j = function
-        Nil -> false
-      | Cons(x, y, rem) -> (x = i && y = j) || find_in_bucket i j rem
-
-    let rec testandset mat i j =
-      if j > i then testandset mat j i else begin
-        let hash = (i lxor j) land (Array.length mat.tbl - 1) in
-        let bucket = mat.tbl.(hash) in
-        find_in_bucket i j bucket ||
-        begin
-          mat.tbl.(hash) <- Cons(i, j, bucket);
-          mat.numelts <- mat.numelts + 1;
-          if mat.numelts >= mat.capacity then resize mat;
-          false
-        end
-      end
-
-    let rec isset mat i j =
-      if j > i then
-        isset mat j i
-      else
-        find_in_bucket i j mat.tbl.((i lxor j) land (Array.length mat.tbl - 1))
-  end
 
 let build_graph fundecl =
 
   (* The interference graph is represented in two ways:
      - by adjacency lists for each register
-     - by a (triangular) bit matrix *)
+     - by a sparse bit matrix (a set of pairs of register stamps) *)
 
-  let mat = BitMatrix.create 6 in
+  let mat = ref IntPairSet.empty in
 
   (* Record an interference between two registers *)
   let add_interf ri rj =
     let i = ri.stamp and j = rj.stamp in
-    if i = j || BitMatrix.testandset mat i j then () else begin
-      if ri.loc = Unknown then ri.interf <- rj :: ri.interf;
-      if rj.loc = Unknown then rj.interf <- ri :: rj.interf
+    if i <> j then begin
+      let p = if i < j then (i, j) else (j, i) in
+      if not(IntPairSet.mem p !mat) then begin
+        mat := IntPairSet.add p !mat;
+        if ri.loc = Unknown then ri.interf <- rj :: ri.interf;
+        if rj.loc = Unknown then rj.interf <- ri :: rj.interf
+      end
     end in
 
   (* Record interferences between a register array and a set of registers *)
@@ -148,7 +111,8 @@ let build_graph fundecl =
       let i = r1.stamp and j = r2.stamp in
       if i <> j
       && r1.loc = Unknown
-      && not (BitMatrix.isset mat i j)
+      && (let p = if i < j then (i, j) else (j, i) in
+          not (IntPairSet.mem p !mat))
       then r1.prefer <- (r2, weight) :: r1.prefer
     end in
 

@@ -27,7 +27,7 @@ exception Error of string
    accepted, but one of the following components is rejected. *)
 
 
-(** {2 Stream builders}
+(** {6 Stream builders}
 
    Warning: these functions create streams with fast access; it is illegal
    to mix them with streams built with [[< >]]; would raise [Failure]
@@ -52,14 +52,14 @@ val of_channel : in_channel -> char t
 (** Return the stream of the characters read from the input channel. *)
 
 
-(** {2 Stream iterator} *)
+(** {6 Stream iterator} *)
 
 val iter : ('a -> unit) -> 'a t -> unit
 (** [Stream.iter f s] scans the whole stream s, applying function [f]
    in turn to each stream element encountered. *)
 
 
-(** {2 Predefined parsers} *)
+(** {6 Predefined parsers} *)
 
 val next : 'a t -> 'a
 (** Return the first element of the stream and remove it from the
@@ -69,7 +69,7 @@ val empty : 'a t -> unit
 (** Return [()] if the stream is empty, else raise [Stream.Failure]. *)
 
 
-(** {2 Useful functions} *)
+(** {6 Useful functions} *)
 
 val peek : 'a t -> 'a option
 (** Return [Some] of "the first element" of the stream, or [None] if
@@ -90,7 +90,7 @@ val npeek : int -> 'a t -> 'a list
 
 (**/**)
 
-(** {2 For system use only, not for the casual user} *)
+(** {6 For system use only, not for the casual user} *)
 
 val iapp : 'a t -> 'a t -> 'a t
 val icons : 'a -> 'a t -> 'a t

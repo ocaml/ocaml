@@ -15,23 +15,43 @@
 
 #include <mlvalues.h>
 #include <alloc.h>
+#include <memory.h>
+#include <signals.h>
 #include "unixsupport.h"
+#include <string.h>
 #include <fcntl.h>
 
 #ifndef O_NONBLOCK
 #define O_NONBLOCK O_NDELAY
 #endif
+#ifndef O_DSYNC
+#define O_DSYNC 0
+#endif
+#ifndef O_SYNC
+#define O_SYNC 0
+#endif
+#ifndef O_RSYNC
+#define O_RSYNC 0
+#endif
 
 static int open_flag_table[] = {
-  O_RDONLY, O_WRONLY, O_RDWR, O_NONBLOCK, O_APPEND, O_CREAT, O_TRUNC, O_EXCL
+  O_RDONLY, O_WRONLY, O_RDWR, O_NONBLOCK, O_APPEND, O_CREAT, O_TRUNC, O_EXCL, 
+  O_NOCTTY, O_DSYNC, O_SYNC, O_RSYNC
 };
 
 CAMLprim value unix_open(value path, value flags, value perm)
 {
+  CAMLparam3(path, flags, perm);
   int ret;
+  char * p;
 
-  ret = open(String_val(path), convert_flag_list(flags, open_flag_table),
-             Int_val(perm));
+  p = stat_alloc(string_length(path) + 1);
+  strcpy(p, String_val(path));
+  /* open on a named FIFO can block (PR#1533) */
+  enter_blocking_section();
+  ret = open(p, convert_flag_list(flags, open_flag_table), Int_val(perm));
+  leave_blocking_section();
+  stat_free(p);
   if (ret == -1) uerror("open", path);
-  return Val_int(ret);
+  CAMLreturn (Val_int(ret));
 }

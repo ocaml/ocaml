@@ -19,7 +19,7 @@
 *)
 
 
-(** {2 Generic interface} *)
+(** {6 Generic interface} *)
 
 
 type ('a, 'b) t
@@ -34,6 +34,7 @@ val create : int -> ('a, 'b) t
 
 val clear : ('a, 'b) t -> unit
 (** Empty a hash table. *)
+
 
 val add : ('a, 'b) t -> 'a -> 'b -> unit
 (** [Hashtbl.add tbl x y] adds a binding of [x] to [y] in table [tbl].
@@ -73,21 +74,31 @@ val replace : ('a, 'b) t -> 'a -> 'b -> unit
 val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
 (** [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl].
    [f] receives the key as first argument, and the associated value
-   as second argument. The order in which the bindings are passed to
-   [f] is unspecified. Each binding is presented exactly once
-   to [f]. *)
+   as second argument. Each binding is presented exactly once to [f].
+   The order in which the bindings are passed to [f] is unspecified.
+   However, if the table contains several bindings for the same key,
+   they are passed to [f] in reverse order of introduction, that is,
+   the most recent binding is passed first. *)
 
 val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
 (** [Hashtbl.fold f tbl init] computes
    [(f kN dN ... (f k1 d1 init)...)],
    where [k1 ... kN] are the keys of all bindings in [tbl],
    and [d1 ... dN] are the associated values.
-   The order in which the bindings are passed to
-   [f] is unspecified. Each binding is presented exactly once
-   to [f]. *)
+   Each binding is presented exactly once to [f].
+   The order in which the bindings are passed to [f] is unspecified.
+   However, if the table contains several bindings for the same key,
+   they are passed to [f] in reverse order of introduction, that is,
+   the most recent binding is passed first. *)
 
 
-(** {2 Functorial interface} *)
+val length : ('a, 'b) t -> int
+(** [Hashtbl.length tbl] returns the number of bindings in [tbl]. 
+   Multiple bindings are counted multiply, so [Hashtbl.length] 
+   gives the number of times [Hashtbl.iter] calls it first argument. *)
+
+
+(** {6 Functorial interface} *)
 
 
 module type HashedType =
@@ -97,13 +108,15 @@ module type HashedType =
     val equal : t -> t -> bool
       (** The equality predicate used to compare keys. *)
     val hash : t -> int
-      (** A hashing function on keys, returning a non-negative
-          integer. It must be such that if two keys are equal according
-          to [equal], then they must have identical hash values as computed
-          by [hash].
+      (** A hashing function on keys. It must be such that if two keys are
+          equal according to [equal], then they have identical hash values
+          as computed by [hash].
           Examples: suitable ([equal], [hash]) pairs for arbitrary key
           types include
-          ([(=)], {!Hashtbl.hash}) for comparing objects by structure, and
+          ([(=)], {!Hashtbl.hash}) for comparing objects by structure,
+          ([(fun x y -> compare x y = 0)], {!Hashtbl.hash})
+          for comparing objects by structure and handling {!Pervasives.nan}
+          correctly, and
           ([(==)], {!Hashtbl.hash}) for comparing objects by addresses
           (e.g. for mutable or cyclic keys). *)
    end
@@ -124,6 +137,7 @@ module type S =
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val length : 'a t -> int
   end
 (** The output signature of the functor {!Hashtbl.Make}. *)
 
@@ -138,17 +152,17 @@ module Make (H : HashedType) : S with type key = H.t
     equality and hashing. *)
 
 
-(** {2 The polymorphic hash primitive} *)
+(** {6 The polymorphic hash primitive} *)
 
 
 val hash : 'a -> int
 (** [Hashtbl.hash x] associates a positive integer to any value of
    any type. It is guaranteed that
-   if [x = y], then [hash x = hash y]. 
+   if [x = y] or [Pervasives.compare x y = 0], then [hash x = hash y]. 
    Moreover, [hash] always terminates, even on cyclic
    structures. *)
 
-external hash_param : int -> int -> 'a -> int = "hash_univ_param" "noalloc"
+external hash_param : int -> int -> 'a -> int = "caml_hash_univ_param" "noalloc"
 (** [Hashtbl.hash_param n m x] computes a hash value for [x], with the
    same properties as for [hash]. The two extra parameters [n] and
    [m] give more precise control over hashing. Hashing performs a

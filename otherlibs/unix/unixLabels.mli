@@ -18,7 +18,7 @@
    add [module Unix = UnixLabels] in your implementation.
 *)
 
-(** {2 Error report} *)
+(** {6 Error report} *)
 
 type error =
   Unix.error =
@@ -90,6 +90,7 @@ type error =
     | EHOSTDOWN           (** Host is down *)
     | EHOSTUNREACH        (** No route to host *)
     | ELOOP               (** Too many levels of symbolic links *)
+    | EOVERFLOW           (** File size or position not representable *)
 
     | EUNKNOWNERR of int  (** Unknown error *)
 (** The type of error codes. 
@@ -114,7 +115,7 @@ val handle_unix_error : ('a -> 'b) -> 'a -> 'b
    describing the error and exits with code 2. *)
 
 
-(** {2 Access to the process environment} *)
+(** {6 Access to the process environment} *)
 
 
 val environment : unit -> string array
@@ -132,42 +133,45 @@ val putenv : string -> string -> unit
    [name] is the name of the environment variable,
    and [value] its new associated value. *)
 
-(** {2 Process handling} *)
+(** {6 Process handling} *)
 
 type process_status =
   Unix.process_status =
       WEXITED of int
-	(** The process terminated normally by [exit]; 
-	   the argument is the return code. *)
+        (** The process terminated normally by [exit]; 
+           the argument is the return code. *)
     | WSIGNALED of int
-	(** The process was killed by a signal;
-	   the argument is the signal number. *)
+        (** The process was killed by a signal;
+           the argument is the signal number. *)
     | WSTOPPED of int
-	(** The process was stopped by a signal; the argument is the
-	   signal number. *)
+        (** The process was stopped by a signal; the argument is the
+           signal number. *)
 (** The termination status of a process. *)
 
 type wait_flag =
   Unix.wait_flag =
       WNOHANG   (** do not block if no child has
-		   died yet, but immediately return with a pid equal to 0.*)
+                    died yet, but immediately return with a pid equal to 0.*)
     | WUNTRACED (** report also the children that receive stop signals. *)
 (** Flags for {!UnixLabels.waitpid}. *)
 
 
-val execv : prog:string -> args:string array -> unit
+val execv : prog:string -> args:string array -> 'a
 (** [execv prog args] execute the program in file [prog], with
-   the arguments [args], and the current process environment. *)
+   the arguments [args], and the current process environment. 
+   These [execv*] functions never return: on success, the current 
+   program is replaced by the new one; 
+   on failure, a {!UnixLabels.Unix_error} exception is raised. *)
 
-val execve : prog:string -> args:string array -> env:string array -> unit
+val execve : prog:string -> args:string array -> env:string array -> 'a
 (** Same as {!UnixLabels.execv}, except that the third argument provides the
    environment to the program executed. *)
 
-val execvp : prog:string -> args:string array -> unit
+val execvp : prog:string -> args:string array -> 'a
 (** Same as {!UnixLabels.execv} respectively, except that
    the program is searched in the path. *)
 
-val execvpe : prog:string -> args:string array -> env:string array -> unit
+val execvpe : prog:string -> args:string array -> env:string array -> 'a
 (** Same as {!UnixLabels.execvp} respectively, except that
    the program is searched in the path. *)
 
@@ -207,7 +211,7 @@ val nice : int -> int
    lower priorities.) Return the new nice value. *)
 
 
-(** {2 Basic file input/output} *)
+(** {6 Basic file input/output} *)
 
 
 type file_descr = Unix.file_descr
@@ -232,6 +236,10 @@ type open_flag =
     | O_CREAT                             (** Create if nonexistent *)
     | O_TRUNC                             (** Truncate to 0 length if existing *)
     | O_EXCL                              (** Fail if existing *)
+    | O_NOCTTY                            (** Don't make this dev a controlling tty *)
+    | O_DSYNC                             (** Writes complete as `Synchronised I/O data integrity completion' *)
+    | O_SYNC                              (** Writes complete as `Synchronised I/O file integrity completion' *)
+    | O_RSYNC                             (** Reads complete as writes (depending on O_SYNC/O_DSYNC) *)
 (** The flags to {!UnixLabels.openfile}. *)
 
 
@@ -258,7 +266,7 @@ val write : file_descr -> buf:string -> pos:int -> len:int -> int
    written. *)
 
 
-(** {2 Interfacing with the standard input/output library} *)
+(** {6 Interfacing with the standard input/output library} *)
 
 
 val in_channel_of_descr : file_descr -> in_channel
@@ -279,7 +287,7 @@ val descr_of_out_channel : out_channel -> file_descr
 
 
 
-(** {2 Seeking and truncating} *)
+(** {6 Seeking and truncating} *)
 
 type seek_command =
   Unix.seek_command =
@@ -300,7 +308,7 @@ val ftruncate : file_descr -> len:int -> unit
 
 
 
-(** {2 File statistics} *)
+(** {6 File statistics} *)
 
 type file_kind =
   Unix.file_kind =
@@ -341,9 +349,44 @@ val fstat : file_descr -> stats
 (** Return the information for the file associated with the given
    descriptor. *)
 
+(** {6 Seeking, truncating and statistics on large files} *)
 
 
-(** {2 Operations on file names} *)
+module LargeFile :
+  sig
+    val lseek : file_descr -> int64 -> mode:seek_command -> int64
+    val truncate : string -> len:int64 -> unit
+    val ftruncate : file_descr -> len:int64 -> unit
+    type stats = Unix.LargeFile.stats =
+      { st_dev : int;               (** Device number *)
+        st_ino : int;               (** Inode number *)
+        st_kind : file_kind;        (** Kind of the file *)
+        st_perm : file_perm;        (** Access rights *)
+        st_nlink : int;             (** Number of links *)
+        st_uid : int;               (** User id of the owner *)
+        st_gid : int;               (** Group ID of the file's group *)
+        st_rdev : int;              (** Device minor number *)
+        st_size : int64;            (** Size in bytes *)
+        st_atime : float;           (** Last access time *)
+        st_mtime : float;           (** Last modification time *)
+        st_ctime : float;           (** Last status change time *) 
+      }
+    val stat : string -> stats
+    val lstat : string -> stats
+    val fstat : file_descr -> stats
+  end
+(** This sub-module provides 64-bit variants of the functions
+  {!UnixLabels.lseek} (for positioning a file descriptor),
+  {!UnixLabels.truncate} and {!UnixLabels.ftruncate} 
+  (for changing the size of a file),
+  and {!UnixLabels.stat}, {!UnixLabels.lstat} and {!UnixLabels.fstat}
+  (for obtaining information on files).  These alternate functions represent
+  positions and sizes by 64-bit integers (type [int64]) instead of
+  regular integers (type [int]), thus allowing operating on files
+  whose sizes are greater than [max_int]. *)
+
+
+(** {6 Operations on file names} *)
 
 
 val unlink : string -> unit
@@ -358,7 +401,7 @@ val link : src:string -> dst:string -> unit
 
 
 
-(** {2 File permissions and ownership} *)
+(** {6 File permissions and ownership} *)
 
 
 type access_permission =
@@ -391,7 +434,7 @@ val access : string -> perm:access_permission list -> unit
 
 
 
-(** {2 Operations on file descriptors} *)
+(** {6 Operations on file descriptors} *)
 
 
 val dup : file_descr -> file_descr
@@ -426,7 +469,7 @@ val clear_close_on_exec : file_descr -> unit
 
 
 
-(** {2 Directories} *)
+(** {6 Directories} *)
 
 
 val mkdir : string -> perm:file_perm -> unit
@@ -462,7 +505,7 @@ val closedir : dir_handle -> unit
 
 
 
-(** {2 Pipes and redirections} *)
+(** {6 Pipes and redirections} *)
 
 
 val pipe : unit -> file_descr * file_descr
@@ -474,7 +517,7 @@ val mkfifo : string -> perm:file_perm -> unit
 (** Create a named pipe with the given permissions. *)
 
 
-(** {2 High-level process and redirection management} *)
+(** {6 High-level process and redirection management} *)
 
 
 val create_process :
@@ -548,7 +591,7 @@ val close_process_full :
    and return its termination status. *)
 
 
-(** {2 Symbolic links} *)
+(** {6 Symbolic links} *)
 
 
 val symlink : src:string -> dst:string -> unit
@@ -560,7 +603,7 @@ val readlink : string -> string
 
 
 
-(** {2 Polling} *)
+(** {6 Polling} *)
 
 
 val select :
@@ -578,7 +621,7 @@ val select :
    component). *)
 
 
-(** {2 Locking} *)
+(** {6 Locking} *)
 
 type lock_command =
   Unix.lock_command =
@@ -603,7 +646,7 @@ val lockf : file_descr -> mode:lock_command -> len:int -> unit
    other processes acquire read locks on it. *)
 
 
-(** {2 Signals}
+(** {6 Signals}
    Note: installation of signal handlers is performed via
    the functions {!Sys.signal} and {!Sys.set_signal}. 
 *)
@@ -642,7 +685,7 @@ val pause : unit -> unit
 (** Wait until a non-ignored, non-blocked signal is delivered. *)
 
 
-(** {2 Time functions} *)
+(** {6 Time functions} *)
 
 type process_times =
   Unix.process_times =
@@ -738,7 +781,7 @@ val setitimer :
    after its next expiration. *)
 
 
-(** {2 User id, group id} *)
+(** {6 User id, group id} *)
 
 
 val getuid : unit -> int
@@ -806,32 +849,48 @@ val getgrgid : int -> group_entry
 
 
 
-(** {2 Internet addresses} *)
+(** {6 Internet addresses} *)
 
 
 type inet_addr = Unix.inet_addr
 (** The abstract type of Internet addresses. *)
 
 val inet_addr_of_string : string -> inet_addr
-(** Conversions between string with the format [XXX.YYY.ZZZ.TTT]
-   and Internet addresses. [inet_addr_of_string] raises [Failure]
-   when given a string that does not match this format. *)
+(** Conversion from the printable representation of an Internet
+    address to its internal representation.  The argument string
+    consists of 4 numbers separated by periods ([XXX.YYY.ZZZ.TTT])
+    for IPv4 addresses, and up to 8 numbers separated by colons
+    for IPv6 addresses.  Raise [Failure] when given a string that
+    does not match these formats. *)
 
 val string_of_inet_addr : inet_addr -> string
-(** See {!UnixLabels.inet_addr_of_string}. *)
+(** Return the printable representation of the given Internet address.
+    See {!Unix.inet_addr_of_string} for a description of the
+    printable representation. *)
 
 val inet_addr_any : inet_addr
-(** A special Internet address, for use only with [bind], representing
+(** A special IPv4 address, for use only with [bind], representing
    all the Internet addresses that the host machine possesses. *)
 
+val inet_addr_loopback : inet_addr
+(** A special IPv4 address representing the host machine ([127.0.0.1]). *)
 
-(** {2 Sockets} *)
+val inet6_addr_any : inet_addr
+(** A special IPv6 address, for use only with [bind], representing
+   all the Internet addresses that the host machine possesses. *)
+
+val inet6_addr_loopback : inet_addr
+(** A special IPv6 address representing the host machine ([::1]). *)
+
+
+(** {6 Sockets} *)
 
 
 type socket_domain =
   Unix.socket_domain =
       PF_UNIX                             (** Unix domain *)
     | PF_INET                             (** Internet domain *)
+    | PF_INET6                            (** Internet domain (IPv6) *)
 (** The type of socket domains. *)
 
 type socket_type =
@@ -852,6 +911,9 @@ type sockaddr =
    system. [ADDR_INET(addr,port)] is a socket address in the Internet
    domain; [addr] is the Internet address of the machine, and
    [port] is the port number. *)
+
+val domain_of_sockaddr: sockaddr -> socket_domain
+(** Return the socket domain adequate for the given socket address. *)
 
 val socket :
   domain:socket_domain -> kind:socket_type -> protocol:int -> file_descr
@@ -926,7 +988,7 @@ val sendto :
 (** Send data over an unconnected socket. *)
 
 
-(** {2 Socket options} *)
+(** {6 Socket options} *)
 
 
 type socket_bool_option =
@@ -1002,7 +1064,7 @@ external setsockopt_float :
 (** Same as {!UnixLabels.setsockopt} for a socket option whose value is a floating-point number. *)
 
 
-(** {2 High-level network connection functions} *)
+(** {6 High-level network connection functions} *)
 
 
 val open_connection : sockaddr -> in_channel * out_channel
@@ -1025,7 +1087,7 @@ val establish_server :
    never returns normally. *)
 
 
-(** {2 Host and protocol databases} *)
+(** {6 Host and protocol databases} *)
 
 
 type host_entry =
@@ -1082,9 +1144,67 @@ val getservbyport : int -> protocol:string -> service_entry
 (** Find an entry in [services] with the given service number,
    or raise [Not_found]. *)
 
+type addr_info =
+  { ai_family : socket_domain;          (** Socket domain *)
+    ai_socktype : socket_type;          (** Socket type *)
+    ai_protocol : int;                  (** Socket protocol number *)
+    ai_addr : sockaddr;                 (** Address *)
+    ai_canonname : string               (** Canonical host name  *)
+  }
+(** Address information returned by {!Unix.getaddrinfo}. *)
 
+type getaddrinfo_option =
+    AI_FAMILY of socket_domain          (** Impose the given socket domain *)
+  | AI_SOCKTYPE of socket_type          (** Impose the given socket type *)
+  | AI_PROTOCOL of int                  (** Impose the given protocol  *)
+  | AI_NUMERICHOST                      (** Do not call name resolver, 
+                                            expect numeric IP address *)
+  | AI_CANONNAME                        (** Fill the [ai_canonname] field
+                                            of the result *)
+  | AI_PASSIVE                          (** Set address to ``any'' address
+                                            for use with {!Unix.bind} *)
+(** Options to {!Unix.getaddrinfo}. *)
 
-(** {2 Terminal interface} *)
+val getaddrinfo: 
+  string -> string -> getaddrinfo_option list -> addr_info list
+(** [getaddrinfo host service opts] returns a list of {!Unix.addr_info}
+    records describing socket parameters and addresses suitable for
+    communicating with the given host and service.  The empty list is
+    returned if the host or service names are unknown, or the constraints
+    expressed in [opts] cannot be satisfied.
+
+    [host] is either a host name or the string representation of an IP
+    address.  [host] can be given as the empty string; in this case,
+    the ``any'' address or the ``loopback'' address are used,
+    depending whether [opts] contains [AI_PASSIVE].
+    [service] is either a service name or the string representation of
+    a port number.  [service] can be given as the empty string;
+    in this case, the port field of the returned addresses is set to 0.
+    [opts] is a possibly empty list of options that allows the caller
+    to force a particular socket domain (e.g. IPv6 only, or IPv4 only)
+    or a particular socket type (e.g. TCP only or UDP only). *)
+
+type name_info =
+  { ni_hostname : string;               (** Name or IP address of host *)
+    ni_service : string }               (** Name of service or port number *)
+(** Host and service information returned by {!Unix.getnameinfo}. *)
+
+type getnameinfo_option =
+    NI_NOFQDN            (** Do not qualify local host names *)
+  | NI_NUMERICHOST       (** Always return host as IP address *)
+  | NI_NAMEREQD          (** Fail if host name cannot be determined *)
+  | NI_NUMERICSERV       (** Always return service as port number *)
+  | NI_DGRAM             (** Consider the service as UDP-based
+                             instead of the default TCP *)
+(** Options to {!Unix.getnameinfo}. *)
+
+val getnameinfo : sockaddr -> getnameinfo_option list -> name_info
+(** [getnameinfo addr opts] returns the host name and service name
+    corresponding to the socket address [addr].  [opts] is a possibly
+    empty list of options that governs how these names are obtained.
+    Raise [Not_found] if an error occurs. *)
+
+(** {6 Terminal interface} *)
 
 (** The following functions implement the POSIX standard terminal
    interface. They provide control over asynchronous communication ports

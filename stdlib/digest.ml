@@ -17,20 +17,20 @@
 
 type t = string
 
-external unsafe_string: string -> int -> int -> t = "md5_string"
-external channel: in_channel -> int -> t = "md5_chan"
+external unsafe_string: string -> int -> int -> t = "caml_md5_string"
+external channel: in_channel -> int -> t = "caml_md5_chan"
 
 let string str =
   unsafe_string str 0 (String.length str)
 
 let substring str ofs len =
-  if ofs < 0 || len < 0 || ofs + len > String.length str
+  if ofs < 0 || len < 0 || ofs > String.length str - len
   then invalid_arg "Digest.substring"
   else unsafe_string str ofs len
 
 let file filename =
   let ic = open_in_bin filename in
-  let d = channel ic (in_channel_length ic) in
+  let d = channel ic (-1) in
   close_in ic;
   d
 
@@ -41,3 +41,11 @@ let input chan =
   let digest = String.create 16 in
   really_input chan digest 0 16;
   digest
+
+let to_hex d =
+  let result = String.create 32 in
+  for i = 0 to 15 do
+    String.blit (Printf.sprintf "%02x" (int_of_char d.[i])) 0 result (2*i) 2;
+  done;
+  result
+;;

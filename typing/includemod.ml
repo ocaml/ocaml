@@ -147,13 +147,11 @@ and try_modtypes env subst mty1 mty2 =
   | (Tmty_signature sig1, Tmty_signature sig2) ->
       signatures env subst sig1 sig2
   | (Tmty_functor(param1, arg1, res1), Tmty_functor(param2, arg2, res2)) ->
-      let cc_arg =
-        modtypes env Subst.identity (Subst.modtype subst arg2) arg1
-      in
+      let arg2' = Subst.modtype subst arg2 in
+      let cc_arg = modtypes env Subst.identity arg2' arg1 in
       let cc_res =
-        modtypes (Env.add_module param1 arg1 env)
-          (Subst.add_module param2 (Pident param1) subst) res1 res2
-      in
+        modtypes (Env.add_module param1 arg2' env)
+          (Subst.add_module param2 (Pident param1) subst) res1 res2 in
       begin match (cc_arg, cc_res) with
           (Tcoerce_none, Tcoerce_none) -> Tcoerce_none
         | _ -> Tcoerce_functor(cc_arg, cc_res)
@@ -347,7 +345,7 @@ let include_err ppf = function
   | Modtype_infos(id, d1, d2) ->
       fprintf ppf
        "@[<hv 2>Module type declarations do not match:@ \
-        %a@;<1 -2>is not included in@ %a@]"
+        %a@;<1 -2>does not match@ %a@]"
       (modtype_declaration id) d1
       (modtype_declaration id) d2
   | Modtype_permutation ->
@@ -358,14 +356,14 @@ let include_err ppf = function
   | Class_type_declarations(id, d1, d2, reason) ->
       fprintf ppf
        "@[<hv 2>Class type declarations do not match:@ \
-        %a@;<1 -2>is not included in@ %a@]@ %a"
+        %a@;<1 -2>does not match@ %a@]@ %a"
       (Printtyp.cltype_declaration id) d1
       (Printtyp.cltype_declaration id) d2
       Includeclass.report_error reason
   | Class_declarations(id, d1, d2, reason) ->
       fprintf ppf
        "@[<hv 2>Class declarations do not match:@ \
-        %a@;<1 -2>is not included in@ %a@]@ %a"
+        %a@;<1 -2>does not match@ %a@]@ %a"
       (Printtyp.class_declaration id) d1
       (Printtyp.class_declaration id) d2
       Includeclass.report_error reason

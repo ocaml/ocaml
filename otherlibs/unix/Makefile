@@ -20,16 +20,18 @@ include ../../config/Makefile
 # Compilation options
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
-CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
-CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
+CAMLC=../../ocamlcomp.sh
+CAMLOPT=../../ocamlcompopt.sh
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
+COMPFLAGS=-warn-error A
 
 OBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
   chown.o chroot.o close.o closedir.o connect.o cst2constr.o cstringv.o \
   dup.o dup2.o envir.o errmsg.o execv.o execve.o execvp.o exit.o \
-  fchmod.o fchown.o fcntl.o fork.o ftruncate.o getcwd.o getegid.o \
-  geteuid.o getgid.o getgr.o getgroups.o gethost.o gethostname.o \
-  getlogin.o getpeername.o getpid.o getppid.o getproto.o getpw.o \
+  fchmod.o fchown.o fcntl.o fork.o ftruncate.o \
+  getaddrinfo.o getcwd.o getegid.o geteuid.o getgid.o \
+  getgr.o getgroups.o gethost.o gethostname.o getlogin.o \
+  getnameinfo.o getpeername.o getpid.o getppid.o getproto.o getpw.o \
   gettimeofday.o getserv.o getsockname.o getuid.o \
   gmtime.o itimer.o kill.o link.o listen.o lockf.o lseek.o mkdir.o \
   mkfifo.o nice.o open.o opendir.o pipe.o putenv.o read.o \
@@ -64,7 +66,7 @@ clean: partialclean
 	rm -f *.a *.o *.so
 
 install:
-	if test -f dllunix.so; then cp dllunix.so $(LIBDIR)/dllunix.so; fi
+	if test -f dllunix.so; then cp dllunix.so $(STUBLIBDIR)/dllunix.so; fi
 	cp libunix.a $(LIBDIR)/libunix.a
 	cd $(LIBDIR); $(RANLIB) libunix.a
 	cp unix.cma $(MLOBJS:.cmo=.cmi) $(MLOBJS:.cmo=.mli) $(LIBDIR)

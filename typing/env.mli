@@ -20,6 +20,7 @@ type t
 
 val empty: t
 val initial: t
+val diff: t -> t -> Ident.t list
 
 (* Lookup by paths *)
 
@@ -95,6 +96,10 @@ val read_signature: string -> string -> signature
         (* Arguments: module name, file name. Results: signature. *)
 val save_signature: signature -> string -> string -> unit
         (* Arguments: signature, module name, file name. *)
+val save_signature_with_imports:
+            signature -> string -> string -> (string * Digest.t) list -> unit
+        (* Arguments: signature, module name, file name, 
+           imported units with their CRCs. *)
 
 (* Return the CRC of the interface of the given compilation unit *)
 
@@ -103,6 +108,10 @@ val crc_of_unit: string -> Digest.t
 (* Return the set of compilation units imported, with their CRC *)
 
 val imported_units: unit -> (string * Digest.t) list
+
+(* Direct access to the table of imported compilation units with their CRC *)
+
+val crc_units: Consistbl.t
 
 (* Summaries -- compact representation of an environment, to be
    exported in debugging information. *)

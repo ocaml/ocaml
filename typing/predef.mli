@@ -29,6 +29,7 @@ val type_option: type_expr -> type_expr
 val type_nativeint: type_expr
 val type_int32: type_expr
 val type_int64: type_expr
+val type_lazy_t: type_expr -> type_expr
 (*> JOCAML *)
 val type_location : type_expr
 val type_process : type_expr
@@ -45,22 +46,23 @@ val path_unit: Path.t
 val path_exn: Path.t
 val path_array: Path.t
 val path_list: Path.t
-val path_format: Path.t
+val path_format4: Path.t
 val path_option: Path.t
 val path_nativeint: Path.t
 val path_int32: Path.t
 val path_int64: Path.t
+val path_lazy_t: Path.t
 (*> JOCAML *)
 val path_process : Path.t
 val path_channel : Path.t
 val path_dyn : Path.t
 val path_dtm : Path.t
-(*< JOCAML *)
-(*> JOCAML *)
 val is_predef_type_path : Path.t -> bool
 (*< JOCAML *)
+
 val path_match_failure: Path.t
 val path_assert_failure : Path.t
+val path_undefined_recursive_module : Path.t
 
 (* To build the initial environment. Since there is a nasty mutual
    recursion between predef and env, we break it by parameterizing

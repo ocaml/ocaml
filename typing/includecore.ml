@@ -15,6 +15,7 @@
 (* Inclusion checks for the core language *)
 
 open Misc
+open Asttypes
 open Path
 open Types
 open Typedtree
@@ -34,13 +35,19 @@ let value_descriptions env vd1 vd2 =
   end else
     raise Dont_match
 
+(* Inclusion between "private" annotations *)
+
+let private_flags priv1 priv2 =
+  match (priv1, priv2) with (Private, Public) -> false | (_, _) -> true
+
 (* Inclusion between type declarations *)
 
 let type_declarations env id decl1 decl2 =
   decl1.type_arity = decl2.type_arity &&
   begin match (decl1.type_kind, decl2.type_kind) with
       (_, Type_abstract) -> true
-    | (Type_variant cstrs1, Type_variant cstrs2) ->
+    | (Type_variant (cstrs1, priv1), Type_variant (cstrs2, priv2)) ->
+        private_flags priv1 priv2 &&
         Misc.for_all2
           (fun (cstr1, arg1) (cstr2, arg2) ->
             cstr1 = cstr2 &&
@@ -50,7 +57,8 @@ let type_declarations env id decl1 decl2 =
                                      (ty2::decl2.type_params))
               arg1 arg2)
           cstrs1 cstrs2
-    | (Type_record(labels1, rep1), Type_record(labels2, rep2)) ->
+    | (Type_record(labels1,rep1,priv1), Type_record(labels2,rep2,priv2)) ->
+        private_flags priv1 priv2 &&
         rep1 = rep2 &&
         Misc.for_all2
           (fun (lbl1, mut1, ty1) (lbl2, mut2, ty2) ->
@@ -75,7 +83,7 @@ let type_declarations env id decl1 decl2 =
   end &&
   begin decl2.type_kind <> Type_abstract || decl2.type_manifest <> None ||
   List.for_all2
-    (fun (co1,cn1) (co2,cn2) -> (not co1 || co2) && (not cn1 || cn2))
+    (fun (co1,cn1,ct1) (co2,cn2,ct2) -> (not co1 || co2) && (not cn1 || cn2))
     decl1.type_variance decl2.type_variance
   end
 

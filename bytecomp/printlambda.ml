@@ -21,12 +21,12 @@ open Lambda
 
 let rec struct_const ppf = function
   | Const_base(Const_int n) -> fprintf ppf "%i" n
-  | Const_base(Const_char c) ->
-      fprintf ppf "'%s'" (Char.escaped c)
-  | Const_base(Const_string s) ->
-      fprintf ppf "\"%s\"" (String.escaped s)
-  | Const_base(Const_float s) ->
-      fprintf ppf "%s" s
+  | Const_base(Const_char c) -> fprintf ppf "%C" c
+  | Const_base(Const_string s) -> fprintf ppf "%S" s
+  | Const_base(Const_float f) -> fprintf ppf "%s" f
+  | Const_base(Const_int32 n) -> fprintf ppf "%lil" n
+  | Const_base(Const_int64 n) -> fprintf ppf "%LiL" n
+  | Const_base(Const_nativeint n) -> fprintf ppf "%nin" n
   | Const_pointer n -> fprintf ppf "%ia" n
   | Const_block(tag, []) ->
       fprintf ppf "[%i]" tag
@@ -74,7 +74,9 @@ let print_bigarray name kind ppf layout =
      | Pbigarray_int32 -> "int32"
      | Pbigarray_int64 -> "int64"
      | Pbigarray_caml_int -> "camlint"
-     | Pbigarray_native_int -> "nativeint")
+     | Pbigarray_native_int -> "nativeint"
+     | Pbigarray_complex32 -> "complex32"
+     | Pbigarray_complex64 -> "complex64")
     (match layout with
     |  Pbigarray_unknown_layout -> "unknown"
      | Pbigarray_c_layout -> "C"
@@ -282,15 +284,13 @@ let rec lam ppf = function
        | Lev_before -> "before"
        | Lev_after _  -> "after"
        | Lev_function -> "funct-body" in
-      fprintf ppf "@[<2>(%s %i@ %a)@]" kind ev.lev_loc lam expr
+      fprintf ppf "@[<2>(%s %i@ %a)@]" kind ev.lev_pos.Lexing.pos_cnum lam expr
   | Lifused(id, expr) ->
       fprintf ppf "@[<2>(ifused@ %a@ %a)@]" Ident.print id lam expr
 
 and sequence ppf = function
   | Lsequence(l1, l2) ->
       fprintf ppf "%a@ %a" sequence l1 sequence l2
-  | Llet(str, id, arg, body) ->
-      fprintf ppf "@[<2>let@ %a@ %a@]@ %a" Ident.print id lam arg sequence body
   | l ->
       lam ppf l
 

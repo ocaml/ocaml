@@ -11,6 +11,8 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* $Id$ *)
+
 (* Extensible buffers *)
 
 type t =
@@ -27,6 +29,22 @@ let create n =
 
 let contents b = String.sub b.buffer 0 b.position
 
+let sub b ofs len =
+  if ofs < 0 || len < 0 || ofs > b.position - len 
+  then invalid_arg "Buffer.sub"
+  else begin
+    let r = String.create len in
+    String.blit b.buffer ofs r 0 len;
+    r
+  end
+;;
+
+let nth b ofs = 
+  if ofs < 0 || ofs >= b.position then 
+   invalid_arg "Buffer.nth"
+  else String.get b.buffer ofs
+;;
+
 let length b = b.position
 
 let clear b = b.position <- 0
@@ -39,6 +57,11 @@ let resize b more =
   let len = b.length in
   let new_len = ref len in
   while b.position + more > !new_len do new_len := 2 * !new_len done;
+  if !new_len > Sys.max_string_length then begin
+    if b.position + more <= Sys.max_string_length
+    then new_len := Sys.max_string_length
+    else failwith "Buffer.add: cannot grow buffer"
+  end;
   let new_buffer = String.create !new_len in
   String.blit b.buffer 0 new_buffer 0 b.position;
   b.buffer <- new_buffer;
@@ -51,7 +74,7 @@ let add_char b c =
   b.position <- pos + 1
 
 let add_substring b s offset len =
-  if offset < 0 || len < 0 || offset + len > String.length s
+  if offset < 0 || len < 0 || offset > String.length s - len
   then invalid_arg "Buffer.add_substring";
   let new_position = b.position + len in
   if new_position > b.length then resize b len;
@@ -75,3 +98,71 @@ let add_channel b ic len =
 
 let output_buffer oc b =
   output oc b.buffer 0 b.position
+
+let closing = function
+  | '(' -> ')'
+  | '{' -> '}'
+  | _ -> assert false;;
+
+(* opening and closing: open and close characters, typically ( and )
+   k balance of opening and closing chars
+   s the string where we are searching
+   start the index where we start the search *)
+let advance_to_closing opening closing k s start =
+  let rec advance k i lim =
+    if i >= lim then raise Not_found else
+    if s.[i] = opening then advance (k + 1) (i + 1) lim else
+    if s.[i] = closing then
+      if k = 0 then i else advance (k - 1) (i + 1) lim
+    else advance k (i + 1) lim in
+  advance k start (String.length s);;
+
+let advance_to_non_alpha s start =
+  let rec advance i lim =
+    if i >= lim then lim else
+    match s.[i] with
+    | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' |
+      'é'|'à'|'á'|'è'|'ù'|'â'|'ê'|'î'|'ô'|'û'|'ë'|'ï'|'ü'|'ç'|
+      'É'|'À'|'Á'|'È'|'Ù'|'Â'|'Ê'|'Î'|'Ô'|'Û'|'Ë'|'Ï'|'Ü'|'Ç' ->
+        advance (i + 1) lim
+    | _ -> i in
+  advance start (String.length s);;
+
+(* We are just at the beginning of an ident in s, starting at start *)
+let find_ident s start =
+  match s.[start] with
+  (* Parenthesized ident ? *)
+  | '(' | '{' as c ->
+     let new_start = start + 1 in
+     let stop = advance_to_closing c (closing c) 0 s new_start in
+     String.sub s new_start (stop - start - 1), stop + 1
+  (* Regular ident *)
+  | _ ->
+     let stop = advance_to_non_alpha s (start + 1) in
+     String.sub s start (stop - start), stop;;
+
+(* Substitute $ident, $(ident), or ${ident} in s,
+    according to the function mapping f. *)
+let add_substitute b f s =
+  let lim = String.length s in
+  let rec subst previous i =
+    if i < lim then begin
+      match s.[i] with
+      | '$' as current when previous = '\\' ->
+         add_char b current;
+         subst current (i + 1)
+      | '$' ->
+         let ident, next_i = find_ident s (i + 1) in
+         add_string b (f ident);
+         subst ' ' next_i
+      | current when previous == '\\' ->
+         add_char b '\\';
+         add_char b current;
+         subst current (i + 1)
+      | '\\' as current ->
+         subst current (i + 1)
+      | current ->
+         add_char b current;
+         subst current (i + 1)
+    end in
+  subst ' ' 0;;

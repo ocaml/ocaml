@@ -19,7 +19,7 @@ open Misc
 open Asttypes
 open Types
 
-let constructor_descrs ty_res cstrs =
+let constructor_descrs ty_res cstrs priv =
   let num_consts = ref 0 and num_nonconsts = ref 0 in
   List.iter
     (function (name, []) -> incr num_consts
@@ -40,7 +40,8 @@ let constructor_descrs ty_res cstrs =
             cstr_arity = List.length ty_args;
             cstr_tag = tag;
             cstr_consts = !num_consts;
-            cstr_nonconsts = !num_nonconsts } in
+            cstr_nonconsts = !num_nonconsts;
+            cstr_private = priv } in
         (name, cstr) :: descr_rem in
   describe_constructors 0 0 cstrs
 
@@ -50,15 +51,17 @@ let exception_descr path_exc decl =
     cstr_arity = List.length decl;
     cstr_tag = Cstr_exception path_exc;
     cstr_consts = -1;
-    cstr_nonconsts = -1 }
+    cstr_nonconsts = -1;
+    cstr_private = Public }
 
 let none = {desc = Ttuple []; level = -1; id = -1}
                                         (* Clearly ill-formed type *)
 let dummy_label =
   { lbl_res = none; lbl_arg = none; lbl_mut = Immutable;
-    lbl_pos = (-1); lbl_all = [||]; lbl_repres = Record_regular }
+    lbl_pos = (-1); lbl_all = [||]; lbl_repres = Record_regular;
+    lbl_private = Public }
 
-let label_descrs ty_res lbls repres =
+let label_descrs ty_res lbls repres priv =
   let all_labels = Array.create (List.length lbls) dummy_label in
   let rec describe_labels num = function
       [] -> []
@@ -69,7 +72,8 @@ let label_descrs ty_res lbls repres =
             lbl_mut = mut_flag;
             lbl_pos = num;
             lbl_all = all_labels;
-            lbl_repres = repres } in
+            lbl_repres = repres;
+            lbl_private = priv } in
         all_labels.(num) <- lbl;
         (name, lbl) :: describe_labels (num+1) rest in
   describe_labels 0 lbls

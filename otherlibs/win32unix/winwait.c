@@ -40,7 +40,8 @@ static int wait_flag_table[] = { CAML_WNOHANG, CAML_WUNTRACED };
 
 CAMLprim value win_waitpid(value vflags, value vpid_req)
 {
-  int status, flags;
+  int flags;
+  DWORD status;
   HANDLE pid_req = (HANDLE) Long_val(vpid_req);
 
   flags = convert_flag_list(vflags, wait_flag_table);

@@ -31,6 +31,9 @@ let expunge_map tbl =
     (fun id -> StringSet.mem (Ident.name id) !to_keep)
     tbl
 
+let expunge_crcs tbl =
+  List.filter (fun (unit, crc) -> StringSet.mem unit !to_keep) tbl
+
 let main () =
   let input_name = Sys.argv.(1) in
   let output_name = Sys.argv.(2) in
@@ -44,11 +47,6 @@ let main () =
   Bytesections.read_toc ic;
   let toc = Bytesections.toc() in
   let pos_first_section = Bytesections.pos_first_section ic in
-  if Sys.os_type = "MacOS" then begin
-    (* Create output as a text file for bytecode scripts *)
-    let c = open_out_gen [Open_wronly; Open_creat] 0o777 output_name in
-    close_out c
-  end;
   let oc =
     open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o777
                  output_name in
@@ -59,11 +57,15 @@ let main () =
   Bytesections.init_record oc;
   List.iter
     (fun (name, len) ->
-      if name = "SYMB" then begin
-        let global_map = (input_value ic : Symtable.global_map) in
-        output_value oc (expunge_map global_map)
-      end else begin
-        copy_file_chunk ic oc len
+      begin match name with
+        "SYMB" ->
+          let global_map = (input_value ic : Symtable.global_map) in
+          output_value oc (expunge_map global_map)
+      | "CRCS" ->
+          let crcs = (input_value ic : (string * Digest.t) list) in
+          output_value oc (expunge_crcs crcs)
+      | _ ->
+          copy_file_chunk ic oc len
       end;
       Bytesections.record oc name)
     toc;

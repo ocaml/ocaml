@@ -14,8 +14,8 @@
 /* $Id$ */
 
 #include <mlvalues.h>
+#include <signals.h>
 #include "unixsupport.h"
-#include <windows.h>
 
 CAMLprim value unix_sleep(t)
      value t;

@@ -20,7 +20,7 @@ let odd = List.fold_right IntSet.add [9; -7; 5; 1; -3] IntSet.empty
 
 let _ =
   for i = -10 to 10 do
-    Printf.printf "%d  %b  %b\n" i (IntSet.mem i even) (IntSet.mem i odd)
+    Printf.printf "%d  %B  %B\n" i (IntSet.mem i even) (IntSet.mem i odd)
   done
 
 module PowerSet(BaseSet: Set.S)
@@ -33,7 +33,7 @@ let setofset = List.fold_right IntSetSet.add [even; odd] IntSetSet.empty
 
 let _ =
   List.iter
-    (fun s -> Printf.printf "%b\n" (IntSetSet.mem s setofset))
+    (fun s -> Printf.printf "%B\n" (IntSetSet.mem s setofset))
     [IntSet.empty; even; odd; IntSet.union even odd]
 
 let _ = exit 0

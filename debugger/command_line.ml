@@ -15,6 +15,7 @@
 
 (************************ Reading and executing commands ***************)
 
+open Int64ops
 open Format
 open Misc
 open Instruct
@@ -208,6 +209,14 @@ let instr_cd ppf lexbuf =
       | Sys_error s ->
           error s
 
+let instr_shell ppf lexbuf =
+  let cmdarg = argument_list_eol argument lexbuf in
+  let cmd = String.concat " " cmdarg in
+  (* perhaps we should use $SHELL -c ? *)
+  let err = Sys.command cmd in
+  if (err != 0) then 
+    eprintf "Shell command %S failed with exit code %d\n%!" cmd err
+
 let instr_pwd ppf lexbuf =
   eol lexbuf;
   ignore(system "/bin/pwd")
@@ -251,8 +260,8 @@ let instr_reverse ppf lexbuf =
 
 let instr_step ppf lexbuf =
   let step_count =
-    match opt_signed_integer_eol Lexer.lexeme lexbuf with
-    | None -> 1
+    match opt_signed_int64_eol Lexer.lexeme lexbuf with
+    | None -> _1
     | Some x -> x
   in
     ensure_loaded ();
@@ -262,13 +271,13 @@ let instr_step ppf lexbuf =
 
 let instr_back ppf lexbuf =
   let step_count =
-    match opt_signed_integer_eol Lexer.lexeme lexbuf with
-    | None -> 1
+    match opt_signed_int64_eol Lexer.lexeme lexbuf with
+    | None -> _1
     | Some x -> x
   in
     ensure_loaded ();
     reset_named_values();
-    step (-step_count);
+    step (_0 -- step_count);
     show_current_event ppf
 
 let instr_finish ppf lexbuf =
@@ -308,7 +317,7 @@ let instr_previous ppf lexbuf =
     show_current_event ppf
 
 let instr_goto ppf lexbuf =
-  let time = integer_eol Lexer.lexeme lexbuf in
+  let time = int64_eol Lexer.lexeme lexbuf in
     ensure_loaded ();
     reset_named_values();
     go_to time;
@@ -658,8 +667,8 @@ let instr_down ppf lexbuf =
 
 let instr_last ppf lexbuf =
   let count =
-    match opt_signed_integer_eol Lexer.lexeme lexbuf with
-    | None -> 1
+    match opt_signed_int64_eol Lexer.lexeme lexbuf with
+    | None -> _1
     | Some x -> x
   in
     reset_named_values();
@@ -723,6 +732,13 @@ let integer_variable kill min msg name =
        else if (not kill) || ask_kill_program () then name := argument),
   function ppf -> fprintf ppf "%i@." !name
 
+let int64_variable kill min msg name =
+  (function lexbuf ->
+     let argument = int64_eol Lexer.lexeme lexbuf in
+       if argument < min then print_endline msg
+       else if (not kill) || ask_kill_program () then name := argument),
+  function ppf -> fprintf ppf "%Li@." !name
+
 let boolean_variable kill name =
   (function lexbuf ->
      let argument =
@@ -738,7 +754,7 @@ let path_variable kill name =
   (function lexbuf ->
        let argument = argument_eol argument lexbuf in
          if (not kill) || ask_kill_program () then
-           name := (expand_path argument)),
+           name := make_absolute (expand_path argument)),
   function ppf -> fprintf ppf "%s@." !name
 
 let loading_mode_variable ppf =
@@ -782,29 +798,32 @@ let info_checkpoints ppf lexbuf =
   if !checkpoints = [] then fprintf ppf "No checkpoint.@."
   else
     (if !debug_breakpoints then
-       (prerr_endline "      Time   Pid Version";
+       (prerr_endline "               Time   Pid Version";
         List.iter
           (function
              {c_time = time; c_pid = pid; c_breakpoint_version = version} ->
-               Printf.printf "%10d %5d %d\n" time pid version)
+               Printf.printf "%19Ld %5d %d\n" time pid version)
           !checkpoints)
      else
-       (print_endline "      Time   Pid";
+       (print_endline "               Time   Pid";
         List.iter
           (function
              {c_time = time; c_pid = pid} ->
-               Printf.printf "%10d %5d\n" time pid)
+               Printf.printf "%19Ld %5d\n" time pid)
           !checkpoints))
+
+let info_one_breakpoint ppf (num, ev) =
+  fprintf ppf "%3d %10d  %s@." num ev.ev_pos (Pos.get_desc ev);
+;;
 
 let info_breakpoints ppf lexbuf =
   eol lexbuf;
-  if !breakpoints = [] then fprintf ppf "No breakpoint.@."
-  else
-    (fprintf ppf "Num    Address  Where@.";
-     List.iter
-       (function (num, {ev_pos = pc; ev_module = md; ev_char = char}) ->
-          fprintf ppf "%3d %10d  in %s, character %d\n" num pc md char)
-       (List.rev !breakpoints))
+  if !breakpoints = [] then fprintf ppf "No breakpoints.@."
+  else begin
+    fprintf ppf "Num    Address  Where@.";
+    List.iter (info_one_breakpoint ppf) (List.rev !breakpoints);
+  end
+;;
 
 let info_events ppf lexbuf =
   ensure_loaded ();
@@ -816,7 +835,7 @@ let info_events ppf lexbuf =
          Printf.printf
            "%10d %10d  %10s %10s\n"
            ev.ev_pos
-           ev.ev_char
+           ev.ev_char.Lexing.pos_cnum
            ((match ev.ev_kind with
                Event_before   -> "before"
              | Event_after _  -> "after"
@@ -882,6 +901,9 @@ With no argument, reset the search path." };
      { instr_name = "quit"; instr_prio = false;
        instr_action = instr_quit; instr_repeat = false; instr_help =
 "exit the debugger." };
+     { instr_name = "shell"; instr_prio = false;
+       instr_action = instr_shell; instr_repeat = true; instr_help =
+"Execute a given COMMAND thru the system shell." };
       (* Displacements *)
      { instr_name = "run"; instr_prio = true;
        instr_action = instr_run; instr_repeat = true; instr_help =
@@ -1003,11 +1025,11 @@ using \"load_printer\"." };
 "mode of loading.\n\
 It can be either :
   direct : the program is directly called by the debugger.\n\
-  runtime : the debugger execute `camlrun -D socket programname arguments'.\n\
+  runtime : the debugger execute `ocamlrun programname arguments'.\n\
   manual : the program is not launched by the debugger,\n\
     but manually by the user." };
      { var_name = "processcount";
-       var_action = integer_variable false 1 "Must be > 1."
+       var_action = integer_variable false 1 "Must be >= 1."
                                      checkpoint_max_count;
        var_help =
 "maximum number of process to keep." };
@@ -1016,12 +1038,12 @@ It can be either :
        var_help =
 "whether to make checkpoints or not." };
      { var_name = "bigstep";
-       var_action = integer_variable false 1 "Must be > 1."
+       var_action = int64_variable false _1 "Must be >= 1."
                                      checkpoint_big_step;
        var_help =
 "step between checkpoints during long displacements." };
      { var_name = "smallstep";
-       var_action = integer_variable false 1 "Must be > 1."
+       var_action = int64_variable false _1 "Must be >= 1."
                                      checkpoint_small_step;
        var_help =
 "step between checkpoints during small displacements." };

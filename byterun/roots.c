@@ -25,13 +25,15 @@
 #include "roots.h"
 #include "stacks.h"
 
-CAMLexport struct caml__roots_block *local_roots = NULL;
+CAMLexport struct caml__roots_block *caml_local_roots = NULL;
 
-void (*scan_roots_hook) (scanning_action f) = NULL;
+CAMLexport void (*caml_scan_roots_hook) (scanning_action f) = NULL;
 
-/* FIXME rename to [oldify_young_roots] and synchronise with asmrun/roots.c */
-/* Call [oldify] on (at least) all the roots that point to the minor heap. */
-void oldify_local_roots (void)
+/* FIXME should rename to [caml_oldify_young_roots] and synchronise with
+   asmrun/roots.c */
+/* Call [caml_oldify_one] on (at least) all the roots that point to the minor
+   heap. */
+void caml_oldify_local_roots (void)
 {
   register value * sp;
   struct global_root * gr;
@@ -39,57 +41,58 @@ void oldify_local_roots (void)
   long i, j;
 
   /* The stack */
-  for (sp = extern_sp; sp < stack_high; sp++) {
-    oldify (*sp, sp);
+  for (sp = caml_extern_sp; sp < caml_stack_high; sp++) {
+    caml_oldify_one (*sp, sp);
   }
   /* Local C roots */  /* FIXME do the old-frame trick ? */
-  for (lr = local_roots; lr != NULL; lr = lr->next) {
+  for (lr = caml_local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         sp = &(lr->tables[i][j]);
-        oldify (*sp, sp);
+        caml_oldify_one (*sp, sp);
       }
     }
   }
   /* Global C roots */
   for (gr = caml_global_roots.forward[0]; gr != NULL; gr = gr->forward[0]) {
-    oldify(*(gr->root), gr->root);
+    caml_oldify_one(*(gr->root), gr->root);
   }
   /* Finalised values */
-  final_do_young_roots (&oldify);
+  caml_final_do_young_roots (&caml_oldify_one);
   /* Hook */
-  if (scan_roots_hook != NULL) (*scan_roots_hook)(&oldify);
+  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(&caml_oldify_one);
 }
 
-/* Call [darken] on all roots */
+/* Call [caml_darken] on all roots */
 
-void darken_all_roots (void)
+void caml_darken_all_roots (void)
 {
-  do_roots (darken);
+  caml_do_roots (caml_darken);
 }
 
-void do_roots (scanning_action f)
+void caml_do_roots (scanning_action f)
 {
   struct global_root * gr;
 
   /* Global variables */
-  f(global_data, &global_data);
+  f(caml_global_data, &caml_global_data);
 
   /* The stack and the local C roots */
-  do_local_roots(f, extern_sp, stack_high, local_roots);
+  caml_do_local_roots(f, caml_extern_sp, caml_stack_high, caml_local_roots);
 
   /* Global C roots */
   for (gr = caml_global_roots.forward[0]; gr != NULL; gr = gr->forward[0]) {
     f(*(gr->root), gr->root);
   }
   /* Finalised values */
-  final_do_strong_roots (f);
+  caml_final_do_strong_roots (f);
   /* Hook */
-  if (scan_roots_hook != NULL) (*scan_roots_hook)(f);
+  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);
 }
 
-void do_local_roots (scanning_action f, value *stack_low, value *stack_high,
-                     struct caml__roots_block *local_roots)
+CAMLexport void caml_do_local_roots (scanning_action f, value *stack_low,
+                                     value *stack_high,
+                                     struct caml__roots_block *local_roots)
 {
   register value * sp;
   struct caml__roots_block *lr;

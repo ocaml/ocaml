@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -46,7 +46,16 @@ and inside_locate cs =
   | [: :] -> raise (Stream.Error "end of file in locate directive") ]
 ;
 
+value nowhere = {
+  Lexing.pos_fname = "";
+  Lexing.pos_lnum = 0;
+  Lexing.pos_bol = 0;
+  Lexing.pos_cnum = 0
+}
+;
+
 value quot name pos str =
+  let pos = Reloc.shift_pos pos nowhere in
   let exp =
     try
       match Quotation.find name with
@@ -54,13 +63,13 @@ value quot name pos str =
       | _ -> raise Not_found ]
     with
     [ Not_found ->
-        Stdpp.raise_with_loc (pos, pos + String.length str) Not_found ]
+        Stdpp.raise_with_loc (pos, Reloc.shift_pos  (String.length str) pos) Not_found ]
   in
   let new_str =
     try exp True str with
     [ Stdpp.Exc_located (p1, p2) exc ->
-        Stdpp.raise_with_loc (pos + p1, pos + p2) exc
-    | exc -> Stdpp.raise_with_loc (pos, pos + String.length str) exc ]
+        Stdpp.raise_with_loc (Reloc.adjust_loc pos (p1, p2)) exc
+    | exc -> Stdpp.raise_with_loc (pos, Reloc.shift_pos (String.length str) pos) exc ]
   in
   let cs = Stream.of_string new_str in copy_strip_locate cs
 ;
@@ -102,27 +111,17 @@ and inside_string cs =
 
 value copy_quot cs = do { copy cs; flush stdout; };
 
-value find_line (bp, ep) ic =
-  find 0 1 0 where rec find i line col =
-    match try Some (input_char ic) with [ End_of_file -> None ] with
-    [ Some x ->
-        if i == bp then (line, col, col + ep - bp)
-        else if x == '\n' then find (succ i) (succ line) 0
-        else find (succ i) line (succ col)
-    | None -> (line, 0, col) ]
-;
-
 value loc_fmt =
   match Sys.os_type with
   [ "MacOS" ->
-      ("File \"%s\"; line %d; characters %d to %d\n### " : format 'a 'b 'c)
-  | _ -> ("File \"%s\", line %d, characters %d-%d:\n" : format 'a 'b 'c) ]
+      format_of_string "File \"%s\"; line %d; characters %d to %d\n### "
+  | _ ->
+      format_of_string "File \"%s\", line %d, characters %d-%d:\n" ]
 ;
 
 value print_location loc file =
-  let ic = open_in_bin file in
-  let (line, c1, c2) = find_line loc ic in
-  do { close_in ic; Printf.eprintf loc_fmt file line c1 c2; flush stderr; }
+  let (fname, line, c1, c2) = Stdpp.line_of_loc file loc in
+  do { Printf.eprintf loc_fmt file line c1 c2; flush stderr; }
 ;
 
 value file = ref "";

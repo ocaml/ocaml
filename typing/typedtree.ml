@@ -76,6 +76,8 @@ and expression_desc =
   | Texp_letmodule of Ident.t * module_expr * expression
   | Texp_assert of expression
   | Texp_assertfalse
+  | Texp_lazy of expression
+  | Texp_object of class_structure * class_signature * string list
 (*> JOCAML *)
   | Texp_asyncsend of expression * expression
   | Texp_spawn of expression
@@ -135,7 +137,8 @@ and meth =
 and class_expr =
   { cl_desc: class_expr_desc;
     cl_loc: Location.t;
-    cl_type: class_type }
+    cl_type: class_type;
+    cl_env: Env.t }
 
 and class_expr_desc =
     Tclass_ident of Path.t
@@ -186,6 +189,7 @@ and structure_item =
   | Tstr_exception of Ident.t * exception_declaration
   | Tstr_exn_rebind of Ident.t * Path.t
   | Tstr_module of Ident.t * module_expr
+  | Tstr_recmodule of (Ident.t * module_expr) list
   | Tstr_modtype of Ident.t * module_type
   | Tstr_open of Path.t
   | Tstr_class of (Ident.t * int * string list * class_expr) list
@@ -204,25 +208,52 @@ and module_coercion =
 
 (* Auxiliary functions over the a.s.t. *)
 
+let iter_pattern_desc f = function
+  | Tpat_alias(p, id) -> f p
+  | Tpat_tuple patl -> List.iter f patl
+  | Tpat_construct(cstr, patl) -> List.iter f patl
+  | Tpat_variant(_, pat, _) -> may f pat
+  | Tpat_record lbl_pat_list ->
+      List.iter (fun (lbl, pat) -> f pat) lbl_pat_list
+  | Tpat_array patl -> List.iter f patl
+  | Tpat_or(p1, p2, _) -> f p1; f p2
+  | Tpat_any
+  | Tpat_var _
+  | Tpat_constant _ -> ()
+
+let map_pattern_desc f d =
+  match d with
+  | Tpat_alias (p1, id) ->
+      Tpat_alias (f p1, id)
+  | Tpat_tuple pats ->
+      Tpat_tuple (List.map f pats)
+  | Tpat_record lpats ->
+      Tpat_record (List.map (fun (l,p) -> l, f p) lpats)
+  | Tpat_construct (c,pats) ->
+      Tpat_construct (c, List.map f pats)
+  | Tpat_array pats ->
+      Tpat_array (List.map f pats)
+  | Tpat_variant (x1, Some p1, x2) ->
+      Tpat_variant (x1, Some (f p1), x2)
+  | Tpat_or (p1,p2,path) ->
+      Tpat_or (f p1, f p2, path)
+  | Tpat_var _
+  | Tpat_constant _
+  | Tpat_any
+  | Tpat_variant (_,None,_) -> d
+
 (* List the identifiers bound by a pattern or a let *)
 
 let idents = ref([]: Ident.t list)
 
 let rec bound_idents pat =
   match pat.pat_desc with
-    Tpat_any -> ()
   | Tpat_var id -> idents := id :: !idents
   | Tpat_alias(p, id) -> bound_idents p; idents := id :: !idents
-  | Tpat_constant cst -> ()
-  | Tpat_tuple patl -> List.iter bound_idents patl
-  | Tpat_construct(cstr, patl) -> List.iter bound_idents patl
-  | Tpat_variant(_, pat, _) -> may bound_idents pat
-  | Tpat_record lbl_pat_list ->
-      List.iter (fun (lbl, pat) -> bound_idents pat) lbl_pat_list
-  | Tpat_array patl -> List.iter bound_idents patl
   | Tpat_or(p1, _, _) ->
       (* Invariant : both arguments binds the same variables *)
       bound_idents p1
+  | d -> iter_pattern_desc bound_idents d
 
 let pat_bound_idents pat =
   idents := []; bound_idents pat; let res = !idents in idents := []; res
@@ -266,30 +297,12 @@ let rec alpha_pat env p = match p.pat_desc with
     {p with pat_desc =
      try Tpat_var (alpha_var env id) with
      | Not_found -> Tpat_any}
-| Tpat_alias (p, id) ->
-    let new_p =  alpha_pat env p in
+| Tpat_alias (p1, id) ->
+    let new_p =  alpha_pat env p1 in
     begin try
       {p with pat_desc = Tpat_alias (new_p, alpha_var env id)}
     with
     | Not_found -> new_p
     end
-| Tpat_tuple pats ->
-    {p with pat_desc =
-    Tpat_tuple (List.map (alpha_pat env) pats)}
-| Tpat_record lpats ->
-    {p with pat_desc =
-    Tpat_record (List.map (fun (l,p) -> l,alpha_pat env p) lpats)}
-| Tpat_construct (c,pats) ->
-    {p with pat_desc =
-    Tpat_construct (c,List.map (alpha_pat env) pats)}
-| Tpat_array pats ->
-    {p with pat_desc =
-    Tpat_array (List.map (alpha_pat env) pats)}
-| Tpat_variant (x1, Some p, x2) ->
-    {p with pat_desc =
-    Tpat_variant (x1, Some (alpha_pat env p), x2)}
-| Tpat_or (p1,p2,path) ->
-    {p with pat_desc =
-    Tpat_or (alpha_pat env p1, alpha_pat env p2, path)}
-| Tpat_constant _|Tpat_any|Tpat_variant (_,None,_) -> p
-
+| d ->
+    {p with pat_desc = map_pattern_desc (alpha_pat env) d}

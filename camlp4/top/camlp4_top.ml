@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -16,31 +16,6 @@ open Parsetree;
 open Lexing;
 open Stdpp;
 
-value ast2pt_directive loc =
-  fun
-  [ None -> Pdir_none
-  | Some <:expr< $str:s$ >> -> Pdir_string s
-  | Some <:expr< $int:i$ >> -> Pdir_int (int_of_string i)
-  | Some <:expr< True >> -> Pdir_bool True
-  | Some <:expr< False >> -> Pdir_bool False
-  | Some e ->
-      let sl =
-        loop e where rec loop =
-          fun
-          [ <:expr< $lid:i$ >> | <:expr< $uid:i$ >> -> [i]
-          | <:expr< $e$ . $lid:i$ >> | <:expr< $e$ . $uid:i$ >> ->
-              loop e @ [i]
-          | e -> raise_with_loc (MLast.loc_of_expr e) (Failure "bad ast") ]
-      in
-      Pdir_ident (Ast2pt.long_id_of_string_list loc sl) ]
-;
-
-value ast2pt_phrase =
-  fun
-  [ MLast.StDir loc d dp -> Ptop_dir d (ast2pt_directive loc dp)
-  | si -> Ptop_def (Ast2pt.str_item si []) ]
-;
-
 value highlight_locations lb loc1 loc2 =
   try
     let pos0 = - lb.lex_abs_pos in
@@ -48,7 +23,7 @@ value highlight_locations lb loc1 loc2 =
       if pos0 < 0 then raise Exit else ();
       let pos_at_bol = ref 0 in
       print_string "Toplevel input:\n# ";
-      for pos = 0 to String.length lb.lex_buffer - pos0 - 1 do {
+      for pos = 0 to lb.lex_buffer_len - pos0 - 1 do {
         let c = lb.lex_buffer.[pos + pos0] in
         if c = '\n' then do {
           if pos_at_bol.val <= fst loc1 && snd loc1 <= pos then do {
@@ -70,7 +45,7 @@ value highlight_locations lb loc1 loc2 =
           }
           else print_char '\n';
           pos_at_bol.val := pos + 1;
-          if pos < String.length lb.lex_buffer - pos0 - 1 then
+          if pos < lb.lex_buffer_len - pos0 - 1 then
             print_string "  "
           else ()
         }
@@ -84,8 +59,9 @@ value highlight_locations lb loc1 loc2 =
 
 value print_location lb loc =
   if String.length Toploop.input_name.val = 0 then
-    highlight_locations lb loc (-1, -1)
-  else Toploop.print_location Format.err_formatter (Ast2pt.mkloc loc)
+    highlight_locations lb ((fst loc).Lexing.pos_cnum, (snd loc).Lexing.pos_cnum) (-1, -1)
+  else Toploop.print_location Format.err_formatter
+    (Ast2pt.mkloc loc)
 ;
 
 value wrap f shfn lb =
@@ -96,12 +72,12 @@ value wrap f shfn lb =
          if i < shift then Some ' '
          else do {
            while
-             lb.lex_curr_pos >= String.length lb.lex_buffer &&
+             lb.lex_curr_pos >= lb.lex_buffer_len &&
              not lb.lex_eof_reached
            do {
              lb.refill_buff lb
            };
-           if lb.lex_eof_reached then None
+           if lb.lex_curr_pos >= lb.lex_buffer_len then None
            else do {
              let c = lb.lex_buffer.[lb.lex_curr_pos] in
              lb.lex_curr_pos := lb.lex_curr_pos + 1;
@@ -130,10 +106,20 @@ value wrap f shfn lb =
       } ]
 ;
 
+value first_phrase = ref True;
+
 value toplevel_phrase cs =
-  match Grammar.Entry.parse Pcaml.top_phrase cs with
-  [ Some phr -> ast2pt_phrase phr
-  | None -> raise End_of_file ]
+  do {
+    if Sys.interactive.val && first_phrase.val then do {
+      first_phrase.val := False;
+      Printf.eprintf "\tCamlp4 Parsing version %s\n\n" Pcaml.version;
+      flush stderr;
+    }
+    else ();
+    match Grammar.Entry.parse Pcaml.top_phrase cs with
+    [ Some phr -> Ast2pt.phrase phr
+    | None -> raise End_of_file ];
+  }
 ;
 
 value use_file cs =
@@ -156,16 +142,17 @@ value use_file cs =
             | _ -> (pl, False) ]
           else (pl, True)
       in
-      let r =
-        if eoi then pl0
+      let pl =
+        if eoi then []
         else
           loop () where rec loop () =
             let (pl, stopped_at_directive) =
               Grammar.Entry.parse Pcaml.use_file cs
             in
-            if stopped_at_directive then pl @ loop () else pl0 @ pl
+            if stopped_at_directive then pl @ loop () else pl
       in
-      let r = List.map ast2pt_phrase r in
+      let r = pl0 @ pl in
+      let r = List.map Ast2pt.phrase r in
       do { restore (); r }
     with e ->
       do { restore (); raise e }
@@ -173,13 +160,8 @@ value use_file cs =
 ;
 
 Toploop.parse_toplevel_phrase.val :=
-  fun lb ->
-    do {
-      Printf.eprintf "\tCamlp4 Parsing version %s\n\n" Pcaml.version;
-      flush stderr;
-      Toploop.parse_toplevel_phrase.val := wrap toplevel_phrase (fun _ -> 0);
-      Toploop.parse_toplevel_phrase.val lb
-    };
+  wrap toplevel_phrase (fun _ -> 0)
+;
 
 Toploop.parse_use_file.val :=
   wrap use_file (fun lb -> lb.lex_curr_pos - lb.lex_start_pos)

@@ -32,6 +32,8 @@ enum caml_bigarray_kind {
   BIGARRAY_INT64,               /* Signed 64-bit integers */
   BIGARRAY_CAML_INT,            /* Caml-style integers (signed 31 or 63 bits) */
   BIGARRAY_NATIVE_INT,      /* Platform-native long integers (32 or 64 bits) */
+  BIGARRAY_COMPLEX32,           /* Single-precision complex */
+  BIGARRAY_COMPLEX64,           /* Double-precision complex */
   BIGARRAY_KIND_MASK = 0xFF     /* Mask for kind in flags field */
 };
 
@@ -66,8 +68,14 @@ struct caml_bigarray {
 
 #define Data_bigarray_val(v) (Bigarray_val(v)->data)
 
-extern value alloc_bigarray(int flags, int num_dims, void * data, long * dim);
-extern value alloc_bigarray_dims(int flags, int num_dims, void * data,
+#if defined(IN_OCAML_BIGARRAY)
+#define CAMLBAextern CAMLexport
+#else
+#define CAMLBAextern CAMLextern
+#endif
+
+CAMLBAextern value alloc_bigarray(int flags, int num_dims, void * data, long * dim);
+CAMLBAextern value alloc_bigarray_dims(int flags, int num_dims, void * data,
                                  ... /*dimensions, with type long */);
 
 #endif

@@ -49,16 +49,15 @@ external mul : int32 -> int32 -> int32 = "%int32_mul"
 
 external div : int32 -> int32 -> int32 = "%int32_div"
 (** Integer division.  Raise [Division_by_zero] if the second 
-   argument is zero. *)
+   argument is zero.  This division rounds the real quotient of
+   its arguments towards zero, as specified for {!Pervasives.(/)}. *)
 
 external rem : int32 -> int32 -> int32 = "%int32_mod"
-(** Integer remainder.  If [x >= 0] and [y > 0], the result
+(** Integer remainder.  If [y] is not zero, the result
    of [Int32.rem x y] satisfies the following properties:
-   [0 <= Int32.rem x y < y] and
+   [Int32.zero <= Int32.rem x y < Int32.abs y] and
    [x = Int32.add (Int32.mul (Int32.div x y) y) (Int32.rem x y)].
-   If [y = 0], [Int32.rem x y] raises [Division_by_zero].
-   If [x < 0] or [y < 0], the result of [Int32.rem x y] is
-   not specified and depends on the platform. *)
+   If [y = 0], [Int32.rem x y] raises [Division_by_zero]. *)
 
 val succ : int32 -> int32
 (** Successor.  [Int32.succ x] is [Int32.add x Int32.one]. *)
@@ -114,30 +113,56 @@ external to_int : int32 -> int = "%int32_to_int"
    during the conversion.  On 64-bit platforms, the conversion
    is exact. *)
 
-external of_float : float -> int32 = "int32_of_float"
+external of_float : float -> int32 = "caml_int32_of_float"
 (** Convert the given floating-point number to a 32-bit integer,
    discarding the fractional part (truncate towards 0).
    The result of the conversion is undefined if, after truncation,
    the number is outside the range \[{!Int32.min_int}, {!Int32.max_int}\]. *)
 
-external to_float : int32 -> float = "int32_to_float"
+external to_float : int32 -> float = "caml_int32_to_float"
 (** Convert the given 32-bit integer to a floating-point number. *)
 
-external of_string : string -> int32 = "int32_of_string"
+external of_string : string -> int32 = "caml_int32_of_string"
 (** Convert the given string to a 32-bit integer.
    The string is read in decimal (by default) or in hexadecimal,
    octal or binary if the string begins with [0x], [0o] or [0b]
    respectively.
    Raise [Failure "int_of_string"] if the given string is not
-   a valid representation of an integer. *)
+   a valid representation of an integer, or if the integer represented
+   exceeds the range of integers representable in type [int32]. *)
 
 val to_string : int32 -> string
 (** Return the string representation of its argument, in signed decimal. *)
 
-external format : string -> int32 -> string = "int32_format"
+external bits_of_float : float -> int32 = "caml_int32_bits_of_float"
+(** Return the internal representation of the given float according
+   to the IEEE 754 floating-point ``single format'' bit layout.
+   Bit 31 of the result represents the sign of the float;
+   bits 30 to 23 represent the (biased) exponent; bits 22 to 0
+   represent the mantissa. *)
+
+external float_of_bits : int32 -> float = "caml_int32_float_of_bits"
+(** Return the floating-point number whose internal representation,
+   according to the IEEE 754 floating-point ``single format'' bit layout,
+   is the given [int32]. *)
+
+type t = int32
+(** An alias for the type of 32-bit integers. *)
+
+val compare: t -> t -> int
+(** The comparison function for 32-bit integers, with the same specification as
+    {!Pervasives.compare}.  Along with the type [t], this function [compare]
+    allows the module [Int32] to be passed as argument to the functors
+    {!Set.Make} and {!Map.Make}. *)
+
+(**/**)
+
+(** {6 Deprecated functions} *)
+
+external format : string -> int32 -> string = "caml_int32_format"
 (** [Int32.format fmt n] return the string representation of the
    32-bit integer [n] in the format specified by [fmt].
-   [fmt] is a [Printf]-style format containing exactly
+   [fmt] is a [Printf]-style format consisting of exactly
    one [%d], [%i], [%u], [%x], [%X] or [%o] conversion specification.
    This function is deprecated; use {!Printf.sprintf} with a [%lx] format
    instead. *)

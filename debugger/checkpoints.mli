@@ -22,7 +22,7 @@ open Debugcom
 
 type checkpoint_state =
     C_stopped
-  | C_running of int
+  | C_running of int64
 
 (* `c_valid' is true if and only if the corresponding
  * process is connected to the debugger.
@@ -33,7 +33,7 @@ type checkpoint_state =
  * c_pid = -1 for kill checkpoints.
  *)
 type checkpoint =
-  {mutable c_time : int;
+  {mutable c_time : int64;
    mutable c_pid : int;
    mutable c_fd : io_channel;
    mutable c_valid : bool;
@@ -52,7 +52,7 @@ val root : checkpoint
 val checkpoints : checkpoint list ref
 val current_checkpoint : checkpoint ref
 
-val current_time : unit -> int
+val current_time : unit -> int64
 val current_report : unit -> report option
 val current_pc : unit -> int option
 val current_pc_sp : unit -> (int * int) option

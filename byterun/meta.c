@@ -20,6 +20,7 @@
 #include "fail.h"
 #include "fix_code.h"
 #include "interp.h"
+#include "intext.h"
 #include "major_gc.h"
 #include "memory.h"
 #include "minor_gc.h"
@@ -30,52 +31,64 @@
 
 #ifndef NATIVE_CODE
 
-CAMLprim value get_global_data(value unit)
+CAMLprim value caml_get_global_data(value unit)
 {
-  return global_data;
+  return caml_global_data;
 }
 
-CAMLprim value reify_bytecode(value prog, value len)
+char * caml_section_table = NULL;
+asize_t caml_section_table_size;
+
+CAMLprim value caml_get_section_table(value unit)
+{
+  if (caml_section_table == NULL) caml_raise_not_found();
+  return caml_input_value_from_block(caml_section_table,
+                                     caml_section_table_size);
+}
+
+CAMLprim value caml_reify_bytecode(value prog, value len)
 {
   value clos;
 #ifdef ARCH_BIG_ENDIAN
-  fixup_endianness((code_t) prog, (asize_t) Long_val(len));
+  caml_fixup_endianness((code_t) prog, (asize_t) Long_val(len));
 #endif
 #ifdef THREADED_CODE
-  thread_code((code_t) prog, (asize_t) Long_val(len));
+  caml_thread_code((code_t) prog, (asize_t) Long_val(len));
 #endif
-  clos = alloc_small (1, Closure_tag);
+  caml_prepare_bytecode((code_t) prog, (asize_t) Long_val(len));
+  clos = caml_alloc_small (1, Closure_tag);
   Code_val(clos) = (code_t) prog;
   return clos;
 }
 
-CAMLprim value realloc_global(value size)
+CAMLprim value caml_realloc_global(value size)
 {
   mlsize_t requested_size, actual_size, i;
   value new_global_data;
 
   requested_size = Long_val(size);
-  actual_size = Wosize_val(global_data);
+  actual_size = Wosize_val(caml_global_data);
   if (requested_size >= actual_size) {
     requested_size = (requested_size + 0x100) & 0xFFFFFF00;
-    gc_message (0x08, "Growing global data to %lu entries\n", requested_size);
-    new_global_data = alloc_shr(requested_size, 0);
+    caml_gc_message (0x08, "Growing global data to %lu entries\n",
+                     requested_size);
+    new_global_data = caml_alloc_shr(requested_size, 0);
     for (i = 0; i < actual_size; i++)
-      initialize(&Field(new_global_data, i), Field(global_data, i));
+      caml_initialize(&Field(new_global_data, i), Field(caml_global_data, i));
     for (i = actual_size; i < requested_size; i++){
       Field (new_global_data, i) = Val_long (0);
     }
-    global_data = new_global_data;
+    caml_global_data = new_global_data;
   }
   return Val_unit;
 }
     
-CAMLprim value get_current_environment(value unit)
+CAMLprim value caml_get_current_environment(value unit)
 {
-  return *extern_sp;
+  return *caml_extern_sp;
 }
 
-CAMLprim value invoke_traced_function(value codeptr, value env, value arg)
+CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
 {
   /* Stack layout on entry:
        return frame into instrument_closure function
@@ -103,9 +116,9 @@ CAMLprim value invoke_traced_function(value codeptr, value env, value arg)
   value * osp, * nsp;
   int i;
 
-  osp = extern_sp;
-  extern_sp -= 4;
-  nsp = extern_sp;
+  osp = caml_extern_sp;
+  caml_extern_sp -= 4;
+  nsp = caml_extern_sp;
   for (i = 0; i < 6; i++) nsp[i] = osp[i];
   nsp[6] = codeptr;
   nsp[7] = env;
@@ -118,28 +131,43 @@ CAMLprim value invoke_traced_function(value codeptr, value env, value arg)
 
 /* Dummy definitions to support compilation of ocamlc.opt */
 
-value get_global_data(value unit)
+value caml_get_global_data(value unit)
 {
-  invalid_argument("Meta.get_global_data");
+  caml_invalid_argument("Meta.get_global_data");
   return Val_unit; /* not reached */
 }
 
-value realloc_global(value size)
+value caml_get_section_table(value unit)
 {
-  invalid_argument("Meta.realloc_global");
+  caml_invalid_argument("Meta.get_section_table");
+  return Val_unit; /* not reached */
+}
+
+value caml_realloc_global(value size)
+{
+  caml_invalid_argument("Meta.realloc_global");
   return Val_unit; /* not reached */
 }
     
-value available_primitives(value unit)
+value caml_invoke_traced_function(value codeptr, value env, value arg)
 {
-  invalid_argument("Meta.available_primitives");
+  caml_invalid_argument("Meta.invoke_traced_function");
   return Val_unit; /* not reached */
 }
 
-value invoke_traced_function(value codeptr, value env, value arg)
-{
-  invalid_argument("Meta.invoke_traced_function");
-  return Val_unit; /* not reached */
-}
+value * caml_stack_low;
+value * caml_stack_high;
+value * caml_stack_threshold;
+value * caml_extern_sp;
+value * caml_trapsp;
+int caml_backtrace_active;
+int caml_backtrace_pos;
+code_t * caml_backtrace_buffer;
+value caml_backtrace_last_exn;
+int caml_callback_depth;
+int volatile caml_something_to_do;
+void (* volatile caml_async_action_hook)(void);
+void caml_print_exception_backtrace(void) { }
+struct longjmp_buffer * caml_external_raise;
 
 #endif

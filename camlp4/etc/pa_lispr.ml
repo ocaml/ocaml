@@ -76,16 +76,20 @@ value quote =
   | [: `x; s :] -> char_or_quote_id x s ]
 ;
 
-value rec lexer kwt =
+value rec lexer kwt fname lnum bolpos =
+  let make_pos p =
+    {Lexing.pos_fname = fname.val; Lexing.pos_lnum = lnum.val;
+     Lexing.pos_bol = bolpos.val; Lexing.pos_cnum = p} in
+  let mkloc (bp, ep) = (make_pos bp, make_pos ep) in
   parser bp
-  [ [: `' ' | '\t' | '\n' | '\r'; s :] -> lexer kwt s
-  | [: `';'; a = semi kwt bp :] -> a
-  | [: `'(' :] -> (("", "("), (bp, bp + 1))
-  | [: `')' :] -> (("", ")"), (bp, bp + 1))
-  | [: `'"'; s = string 0 :] ep -> (("STRING", s), (bp, ep))
-  | [: `'''; tok = quote :] ep -> (tok, (bp, ep))
-  | [: `'<'; tok = less :] ep -> (tok, (bp, ep))
-  | [: `('0'..'9' as c); n = number (Buff.store 0 c) :] ep -> (n, (bp, ep))
+  [ [: `' ' | '\t' | '\n' | '\r'; s :] -> lexer kwt fname lnum bolpos s
+  | [: `';'; a = semi kwt mkloc fname lnum bolpos bp :] -> a
+  | [: `'(' :] -> (("", "("), mkloc(bp, bp + 1))
+  | [: `')' :] -> (("", ")"), mkloc(bp, bp + 1))
+  | [: `'"'; s = string 0 :] ep -> (("STRING", s), mkloc(bp, ep))
+  | [: `'''; tok = quote :] ep -> (tok, mkloc(bp, ep))
+  | [: `'<'; tok = less :] ep -> (tok, mkloc(bp, ep))
+  | [: `('0'..'9' as c); n = number (Buff.store 0 c) :] ep -> (n, mkloc(bp, ep))
   | [: `x; s = ident (Buff.store 0 x) :] ep ->
       let con =
         try do { (Hashtbl.find kwt s : unit); "" } with
@@ -94,12 +98,12 @@ value rec lexer kwt =
             [ 'A'..'Z' -> "UIDENT"
             | _ -> "LIDENT" ] ]
       in
-      ((con, s), (bp, ep))
-  | [: :] -> (("EOI", ""), (bp, bp + 1)) ]
-and semi kwt bp =
+      ((con, s), mkloc(bp, ep))
+  | [: :] -> (("EOI", ""), mkloc(bp, bp + 1)) ]
+and semi kwt mkloc fname lnum bolpos bp =
   parser
-  [ [: `';'; _ = skip_to_eol; s :] -> lexer kwt s
-  | [: :] ep -> (("", ";"), (bp, ep)) ]
+  [ [: `';'; _ = skip_to_eol; s :] -> lexer kwt fname lnum bolpos s
+  | [: :] ep -> (("", ";"), mkloc(bp, ep)) ]
 and less =
   parser
   [ [: `':'; lab = label 0; `'<' ? "'<' expected"; q = quotation 0 :] ->
@@ -138,11 +142,15 @@ value lexer_text (con, prm) =
   else con ^ " \"" ^ prm ^ "\""
 ;
 
-value lexer_make () =
+value lexer_gmake () =
+  let bolpos = ref 0 in
+  let lnum = ref 0 in
+  let fname = ref "" in
   let kwt = Hashtbl.create 89 in
-  {Token.func = Token.lexer_func_of_parser (lexer kwt);
-   Token.using = lexer_using kwt; Token.removing = fun [];
-   Token.tparse _ = None; Token.text = lexer_text}
+  {Token.tok_func = Token.lexer_func_of_parser (lexer kwt fname lnum bolpos);
+   Token.tok_using = lexer_using kwt; Token.tok_removing = fun [];
+   Token.tok_match = Token.default_match; Token.tok_text = lexer_text;
+   Token.tok_comm = None}
 ;
 
 (* Building AST *)
@@ -222,7 +230,7 @@ and str_item_se se =
         | _ -> (False, sel) ]
       in
       let lbs = value_binding_se sel in
-      <:str_item< value $rec:r$ $list:lbs$ >>
+      <:str_item< value $opt:r$ $list:lbs$ >>
   | Sexpr loc _ ->
       let e = expr_se se in
       <:str_item< $exp:e$ >> ]
@@ -272,7 +280,7 @@ and expr_se =
       [ [Sexpr _ sel1 :: sel2] ->
           let lbs = List.map let_binding_se sel1 in
           let e = progn_se loc sel2 in
-          <:expr< let $rec:r$ $list:lbs$ in $e$ >>
+          <:expr< let $opt:r$ $list:lbs$ in $e$ >>
       | [se :: _] -> error se "let_binding"
       | _ -> error_loc loc "let_binding" ]
   | Sexpr loc [Satom _ Alid "let*" :: sel] ->
@@ -377,7 +385,8 @@ and expr_ident_se loc s =
       if i = String.length s then
         if i > ibeg then expr_id loc (String.sub s ibeg (i - ibeg))
         else
-          raise_with_loc (fst loc + i - 1, fst loc + i)
+          raise_with_loc
+            (Reloc.shift_pos "pa_lisp:expr_ident_se1" (i-1) (fst loc), Reloc.shift_pos "pa_lisp:expr_ident_se2"  i (fst loc))
             (Stream.Error "expr expected")
       else if s.[i] = '.' then
         if i > ibeg then
@@ -385,7 +394,8 @@ and expr_ident_se loc s =
           let e2 = loop (i + 1) (i + 1) in
           <:expr< $e1$ . $e2$ >>
         else
-          raise_with_loc (fst loc + i - 1, fst loc + i + 1)
+          raise_with_loc
+            (Reloc.shift_pos "pa_lisp:expr_ident_se3" (i-1) (fst loc), Reloc.shift_pos "pa_lisp:expr_ident_se4" (i+1) (fst loc))
             (Stream.Error "expr expected")
       else loop ibeg (i + 1)
     in
@@ -492,7 +502,8 @@ and patt_ident_se loc s =
     if i = String.length s then
       if i > ibeg then patt_id loc (String.sub s ibeg (i - ibeg))
       else
-        raise_with_loc (fst loc + i - 1, fst loc + i)
+        raise_with_loc
+          (Reloc.shift_pos "" (i-1) (fst loc), Reloc.shift_pos "" i (fst loc))
           (Stream.Error "patt expected")
     else if s.[i] = '.' then
       if i > ibeg then
@@ -500,7 +511,8 @@ and patt_ident_se loc s =
         let p2 = loop (i + 1) (i + 1) in
         <:patt< $p1$ . $p2$ >>
       else
-        raise_with_loc (fst loc + i - 1, fst loc + i + 1)
+        raise_with_loc
+          (Reloc.shift_pos "" (i-1) (fst loc), Reloc.shift_pos "" (i+1) (fst loc))
           (Stream.Error "patt expected")
     else loop ibeg (i + 1)
 and ipatt_se se =
@@ -553,7 +565,8 @@ and ctyp_ident_se loc s =
     if i = String.length s then
       if i > ibeg then ctyp_id loc (String.sub s ibeg (i - ibeg))
       else
-        raise_with_loc (fst loc + i - 1, fst loc + i)
+        raise_with_loc
+          (Reloc.shift_pos "" (i-1) (fst loc), Reloc.shift_pos "" i (fst loc))
           (Stream.Error "ctyp expected")
     else if s.[i] = '.' then
       if i > ibeg then
@@ -561,7 +574,8 @@ and ctyp_ident_se loc s =
         let t2 = loop (i + 1) (i + 1) in
         <:ctyp< $t1$ . $t2$ >>
       else
-        raise_with_loc (fst loc + i - 1, fst loc + i + 1)
+        raise_with_loc
+          (Reloc.shift_pos "" (i-1) (fst loc), Reloc.shift_pos "" (i+1) (fst loc))
           (Stream.Error "ctyp expected")
     else loop ibeg (i + 1)
 and constructor_declaration_se =
@@ -591,7 +605,7 @@ Pcaml.add_option "-phony_quot" (Arg.Set phony_quot) "phony quotations";
 Pcaml.no_constructors_arity.val := False;
 
 do {
-  Grammar.Unsafe.reinit_gram gram (lexer_make ());
+  Grammar.Unsafe.gram_reinit gram (lexer_gmake ());
   Grammar.Unsafe.clear_entry interf;
   Grammar.Unsafe.clear_entry implem;
   Grammar.Unsafe.clear_entry top_phrase;
@@ -615,6 +629,7 @@ Pcaml.parse_implem.val := Grammar.Entry.parse implem;
 
 value sexpr = Grammar.Entry.create gram "sexpr";
 value atom = Grammar.Entry.create gram "atom";
+
 
 EXTEND
   implem:

@@ -46,7 +46,6 @@ module type S =
           int -> int ->
           (int -> t -> Types.type_expr -> Outcometree.out_value option) ->
           Env.t -> t -> type_expr -> Outcometree.out_value
-    val print_outval : formatter -> Outcometree.out_value -> unit
   end
 
 module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) :

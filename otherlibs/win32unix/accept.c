@@ -16,18 +16,20 @@
 #include <mlvalues.h>
 #include <alloc.h>
 #include <memory.h>
+#include <signals.h>
 #include "unixsupport.h"
 #include "socketaddr.h"
 
 CAMLprim value unix_accept(sock)
      value sock;
 {
-  SOCKET sconn = (SOCKET) Handle_val(sock);
+  SOCKET sconn = Socket_val(sock);
   SOCKET snew;
   value fd = Val_unit, adr = Val_unit, res;
   int oldvalue, oldvaluelen, newvalue, retcode;
   union sock_addr_union addr;
   socklen_param_type addr_len;
+  int errcode = 0;
 
   oldvaluelen = sizeof(oldvalue);
   retcode = getsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
@@ -42,17 +44,19 @@ CAMLprim value unix_accept(sock)
   enter_blocking_section();
   snew = accept(sconn, &addr.s_gen, &addr_len);
   leave_blocking_section();
+  if( snew == INVALID_SOCKET )
+    errcode = WSAGetLastError ();
   if (retcode == 0) {
     /* Restore initial mode */
     setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, 
                (char *) &oldvalue, oldvaluelen);
   }
   if (snew == INVALID_SOCKET) {
-    win32_maperr(WSAGetLastError());
+    win32_maperr(errcode);
     uerror("accept", Nothing);
   }
   Begin_roots2 (fd, adr)
-    fd = win_alloc_handle((HANDLE) snew);
+    fd = win_alloc_socket(snew);
     adr = alloc_sockaddr(&addr, addr_len);
     res = alloc_small(2, 0);
     Field(res, 0) = fd;

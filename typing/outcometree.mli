@@ -33,6 +33,9 @@ type out_value =
   | Oval_ellipsis
   | Oval_float of float
   | Oval_int of int
+  | Oval_int32 of int32
+  | Oval_int64 of int64
+  | Oval_nativeint of nativeint
   | Oval_list of out_value list
   | Oval_printer of (Format.formatter -> unit)
   | Oval_record of (out_ident * out_value) list
@@ -49,13 +52,14 @@ type out_type =
   | Otyp_constr of out_ident * out_type list
   | Otyp_manifest of out_type * out_type
   | Otyp_object of (string * out_type) list * bool option
-  | Otyp_record of (string * bool * out_type) list
+  | Otyp_record of (string * bool * out_type) list * Asttypes.private_flag
   | Otyp_stuff of string
-  | Otyp_sum of (string * out_type list) list
+  | Otyp_sum of (string * out_type list) list * Asttypes.private_flag
   | Otyp_tuple of out_type list
   | Otyp_var of bool * string
   | Otyp_variant of
       bool * out_variant * bool * (string list) option
+  | Otyp_poly of string list * out_type
 and out_variant =
   | Ovar_fields of (string * bool * out_type list) list
   | Ovar_name of out_ident * out_type list

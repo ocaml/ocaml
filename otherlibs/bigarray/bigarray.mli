@@ -32,13 +32,17 @@
      {!Marshal} module). 
 *)
 
-(** {2 Element kinds} *)
+(** {6 Element kinds} *)
 
 (** Big arrays can contain elements of the following kinds:
 - IEEE single precision (32 bits) floating-point numbers
    ({!Bigarray.float32_elt}),
 - IEEE double precision (64 bits) floating-point numbers
    ({!Bigarray.float64_elt}),
+- IEEE single precision (2 * 32 bits) floating-point complex numbers
+   ({!Bigarray.complex32_elt}),
+- IEEE double precision (2 * 64 bits) floating-point complex numbers
+   ({!Bigarray.complex64_elt}),
 - 8-bit integers (signed or unsigned)
    ({!Bigarray.int8_signed_elt} or {!Bigarray.int8_unsigned_elt}),
 - 16-bit integers (signed or unsigned)
@@ -56,6 +60,8 @@
 
 type float32_elt
 type float64_elt
+type complex32_elt
+type complex64_elt
 type int8_signed_elt
 type int8_unsigned_elt
 type int16_signed_elt
@@ -88,6 +94,12 @@ val float32 : (float, float32_elt) kind
 val float64 : (float, float64_elt) kind
 (** See {!Bigarray.char}. *)
 
+val complex32 : (Complex.t, complex32_elt) kind
+(** See {!Bigarray.char}. *)
+
+val complex64 : (Complex.t, complex64_elt) kind
+(** See {!Bigarray.char}. *)
+
 val int8_signed : (int, int8_signed_elt) kind
 (** See {!Bigarray.char}. *)
 
@@ -115,7 +127,9 @@ val nativeint : (nativeint, nativeint_elt) kind
 val char : (char, int8_unsigned_elt) kind
 (** As shown by the types of the values above,
    big arrays of kind [float32_elt] and [float64_elt] are
-   accessed using the Caml type [float].  Big arrays of
+   accessed using the Caml type [float].  Big arrays of complex kinds
+   [complex32_elt], [complex64_elt] are accessed with the Caml type
+   {!Complex.t}.  Big arrays of
    integer kinds are accessed using the smallest Caml integer
    type large enough to represent the array elements:
    [int] for 8- and 16-bit integer bigarrays, as well as Caml-integer
@@ -126,7 +140,7 @@ val char : (char, int8_unsigned_elt) kind
    characters instead of arrays of small integers, by using
    the kind value [char] instead of [int8_unsigned]. *)
 
-(** {2 Array layouts} *)
+(** {6 Array layouts} *)
 
 type c_layout
 (** See {!Bigarray.fortran_layout}.*)
@@ -160,7 +174,7 @@ type 'a layout
    if ['a] is {!Bigarray.fortran_layout}. *)
 
 
-(** {3 Supported layouts}
+(** {7 Supported layouts}
 
    The abstract values [c_layout] and [fortran_layout] represent
    the two supported layouts at the level of values.  
@@ -170,7 +184,7 @@ val c_layout : c_layout layout
 val fortran_layout : fortran_layout layout
 
 
-(** {2 Generic arrays (of arbitrarily many dimensions)} *)
+(** {6 Generic arrays (of arbitrarily many dimensions)} *)
 
 module Genarray :
   sig
@@ -220,6 +234,10 @@ module Genarray :
   external num_dims: ('a, 'b, 'c) t -> int = "bigarray_num_dims"
   (** Return the number of dimensions of the given big array. *)
 
+  val dims : ('a, 'b, 'c) t -> int array
+  (** [Genarray.dims a] returns all dimensions of the big array [a],
+     as an array of integers of length [Genarray.num_dims a]. *)
+
   external nth_dim: ('a, 'b, 'c) t -> int -> int = "bigarray_dim"
   (** [Genarray.nth_dim a n] returns the [n]-th dimension of the
      big array [a].  The first dimension corresponds to [n = 0];
@@ -228,11 +246,17 @@ module Genarray :
      Raise [Invalid_arg] if [n] is less than 0 or greater or equal than
      [Genarray.num_dims a]. *)
 
+  external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "bigarray_kind"
+  (** Return the kind of the given big array. *)
+
+  external layout: ('a, 'b, 'c) t -> 'c layout = "bigarray_layout"
+  (** Return the layout of the given big array. *)
+
   external get: ('a, 'b, 'c) t -> int array -> 'a = "bigarray_get_generic"
   (** Read an element of a generic big array.
      [Genarray.get a [|i1; ...; iN|]] returns the element of [a]
      whose coordinates are [i1] in the first dimension, [i2] in
-     the second dimension, \ldots, [iN] in the [N]-th dimension.
+     the second dimension, ..., [iN] in the [N]-th dimension.
      
      If [a] has C layout, the coordinates must be greater or equal than 0
      and strictly less than the corresponding dimensions of [a].
@@ -252,7 +276,7 @@ module Genarray :
   (** Assign an element of a generic big array.
      [Genarray.set a [|i1; ...; iN|] v] stores the value [v] in the
      element of [a] whose coordinates are [i1] in the first dimension,
-     [i2] in the second dimension, \ldots, [iN] in the [N]-th dimension.
+     [i2] in the second dimension, ..., [iN] in the [N]-th dimension.
      
      The array [a] must have exactly [N] dimensions, and all coordinates
      must lie inside the array bounds, as described for [Genarray.get];
@@ -311,7 +335,7 @@ module Genarray :
      by fixing one or several of the first (left-most) coordinates.
      [Genarray.slice_left a [|i1; ... ; iM|]] returns the ``slice''
      of [a] obtained by setting the first [M] coordinates to
-     [i1], \ldots, [iM].  If [a] has [N] dimensions, the slice has
+     [i1], ..., [iM].  If [a] has [N] dimensions, the slice has
      dimension [N - M], and the element at coordinates
      [[|j1; ...; j(N-M)|]] in the slice is identical to the element
      at coordinates [[|i1; ...; iM; j1; ...; j(N-M)|]] in the original
@@ -329,7 +353,7 @@ module Genarray :
      by fixing one or several of the last (right-most) coordinates.
      [Genarray.slice_right a [|i1; ... ; iM|]] returns the ``slice''
      of [a] obtained by setting the last [M] coordinates to
-     [i1], \ldots, [iM].  If [a] has [N] dimensions, the slice has
+     [i1], ..., [iM].  If [a] has [N] dimensions, the slice has
      dimension [N - M], and the element at coordinates
      [[|j1; ...; j(N-M)|]] in the slice is identical to the element
      at coordinates [[|j1; ...; j(N-M); i1; ...; iM|]] in the original
@@ -394,7 +418,7 @@ module Genarray :
 
   end
 
-(** {2 One-dimensional arrays} *)
+(** {6 One-dimensional arrays} *)
 
 (** One-dimensional arrays. The [Array1] structure provides operations similar to those of
    {!Bigarray.Genarray}, but specialized to the case of one-dimensional arrays.
@@ -416,6 +440,12 @@ module Array1 : sig
   val dim: ('a, 'b, 'c) t -> int
   (** Return the size (dimension) of the given one-dimensional 
      big array. *)
+
+  external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "bigarray_kind"
+  (** Return the kind of the given big array. *)
+
+  external layout: ('a, 'b, 'c) t -> 'c layout = "bigarray_layout"
+  (** Return the layout of the given big array. *)
 
   external get: ('a, 'b, 'c) t -> int -> 'a = "%bigarray_ref_1"
   (** [Array1.get a x], or alternatively [a.{x}], 
@@ -457,7 +487,7 @@ module Array1 : sig
 end
 
 
-(** {2 Two-dimensional arrays} *)
+(** {6 Two-dimensional arrays} *)
 
 (** Two-dimensional arrays. The [Array2] structure provides operations similar to those of
    {!Bigarray.Genarray}, but specialized to the case of two-dimensional arrays. *)
@@ -479,6 +509,12 @@ module Array2 :
 
   val dim2: ('a, 'b, 'c) t -> int
   (** Return the second dimension of the given two-dimensional big array. *)
+
+  external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "bigarray_kind"
+  (** Return the kind of the given big array. *)
+
+  external layout: ('a, 'b, 'c) t -> 'c layout = "bigarray_layout"
+  (** Return the layout of the given big array. *)
 
   external get: ('a, 'b, 'c) t -> int -> int -> 'a = "%bigarray_ref_2"
   (** [Array2.get a x y], also written [a.{x,y}],
@@ -543,7 +579,7 @@ module Array2 :
 
   end
 
-(** {2 Three-dimensional arrays} *)
+(** {6 Three-dimensional arrays} *)
 
 (** Three-dimensional arrays. The [Array3] structure provides operations similar to those of
    {!Bigarray.Genarray}, but specialized to the case of three-dimensional arrays. *)
@@ -569,6 +605,12 @@ module Array3 :
   val dim3: ('a, 'b, 'c) t -> int
   (** Return the third dimension of the given three-dimensional big array. *)
  
+  external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "bigarray_kind"
+  (** Return the kind of the given big array. *)
+
+  external layout: ('a, 'b, 'c) t -> 'c layout = "bigarray_layout"
+  (** Return the layout of the given big array. *)
+
   external get: ('a, 'b, 'c) t -> int -> int -> int -> 'a = "%bigarray_ref_3"
   (** [Array3.get a x y z], also written [a.{x,y,z}],
      returns the element of [a] at coordinates ([x], [y], [z]).
@@ -654,7 +696,7 @@ module Array3 :
 
   end
 
-(** {2 Coercions between generic big arrays and fixed-dimension big arrays} *)
+(** {6 Coercions between generic big arrays and fixed-dimension big arrays} *)
 
 external genarray_of_array1 :
   ('a, 'b, 'c) Array1.t -> ('a, 'b, 'c) Genarray.t = "%identity"
@@ -684,7 +726,7 @@ val array3_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array3.t
    does not have exactly three dimensions. *)
 
 
-(** {2 Re-shaping big arrays} *)
+(** {6 Re-shaping big arrays} *)
 
 val reshape : ('a, 'b, 'c) Genarray.t -> int array -> ('a, 'b, 'c) Genarray.t
 (** [reshape b [|d1;...;dN|]] converts the big array [b] to a

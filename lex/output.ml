@@ -18,37 +18,7 @@ open Printf
 open Syntax
 open Lexgen
 open Compact
-
-(* To copy the ML code fragments *)
-
-let copy_buffer = String.create 1024
-
-let copy_chars_unix ic oc start stop =
-  let n = ref (stop - start) in
-  while !n > 0 do
-    let m = input ic copy_buffer 0 (min !n 1024) in
-    output oc copy_buffer 0 m;
-    n := !n - m
-  done
-
-let copy_chars_win32 ic oc start stop =
-  for i = start to stop - 1 do
-    let c = input_char ic in
-    if c <> '\r' then output_char oc c
-  done
-
-let copy_chars =
-  match Sys.os_type with
-    "Win32" | "Cygwin" -> copy_chars_win32
-  | _       -> copy_chars_unix
-
-let copy_chunk sourcefile ic oc loc =
-  if loc.start_pos < loc.end_pos then begin
-    fprintf oc "# %d \"%s\"\n" loc.start_line sourcefile;
-    for i = 1 to loc.start_col do output_char oc ' ' done;
-    seek_in ic loc.start_pos;
-    copy_chars ic oc loc.start_pos loc.end_pos
-  end
+open Common
 
 (* To output an array of short ints, encoded as a string *)
 
@@ -67,58 +37,104 @@ let output_array oc v =
   done;
   output_string oc "\""
 
+let output_byte_array oc v =
+  output_string oc "   \"";
+  for i = 0 to Array.length v - 1 do
+    output_byte oc (v.(i) land 0xFF);
+    if i land 15 = 15 then output_string oc "\\\n    "
+  done;
+  output_string oc "\""
+
 (* Output the tables *)
 
 let output_tables oc tbl =
-  output_string oc "let lex_tables = {\n";
+  output_string oc "let __ocaml_lex_tables = {\n";
+
   fprintf oc "  Lexing.lex_base = \n%a;\n" output_array tbl.tbl_base;
   fprintf oc "  Lexing.lex_backtrk = \n%a;\n" output_array tbl.tbl_backtrk;
   fprintf oc "  Lexing.lex_default = \n%a;\n" output_array tbl.tbl_default;
   fprintf oc "  Lexing.lex_trans = \n%a;\n" output_array tbl.tbl_trans;
-  fprintf oc "  Lexing.lex_check = \n%a\n" output_array tbl.tbl_check;
+  fprintf oc "  Lexing.lex_check = \n%a;\n" output_array tbl.tbl_check;
+  fprintf oc "  Lexing.lex_base_code = \n%a;\n" output_array tbl.tbl_base_code;
+
+  fprintf oc "  Lexing.lex_backtrk_code = \n%a;\n"
+    output_array tbl.tbl_backtrk_code;
+  fprintf oc "  Lexing.lex_default_code = \n%a;\n"
+    output_array tbl.tbl_default_code;
+  fprintf oc "  Lexing.lex_trans_code = \n%a;\n"
+    output_array tbl.tbl_trans_code;
+  fprintf oc "  Lexing.lex_check_code = \n%a;\n"
+    output_array tbl.tbl_check_code;
+  fprintf oc "  Lexing.lex_code = \n%a;\n" output_byte_array tbl.tbl_code;
+
   output_string oc "}\n\n"
+
 
 (* Output the entries *)
 
-let output_entry sourcefile ic oc e =
-  fprintf oc "%s lexbuf = __ocaml_lex_%s_rec lexbuf %d\n"
-          e.auto_name e.auto_name e.auto_initial_state;
-  fprintf oc "and __ocaml_lex_%s_rec lexbuf state =\n" e.auto_name;
-  fprintf oc "  match Lexing.engine lex_tables state lexbuf with\n    ";
-  let first = ref true in
+let output_entry sourcefile ic oc oci e =
+  let init_num, init_moves = e.auto_initial_state in
+  fprintf oc "%s %alexbuf =
+  %a%a  __ocaml_lex_%s_rec %alexbuf %d\n"
+    e.auto_name
+    output_args  e.auto_args 
+    (fun oc x ->
+      if x > 0 then
+        fprintf oc "lexbuf.Lexing.lex_mem <- Array.create %d (-1) ; " x)
+    e.auto_mem_size
+    (output_memory_actions "  ") init_moves
+    e.auto_name
+    output_args e.auto_args
+    init_num;
+  fprintf oc "and __ocaml_lex_%s_rec %alexbuf __ocaml_lex_state =\n"
+    e.auto_name output_args e.auto_args ;
+  fprintf oc "  match Lexing.%sengine"
+          (if e.auto_mem_size == 0 then "" else "new_");
+  fprintf oc " __ocaml_lex_tables __ocaml_lex_state lexbuf with\n    ";
   List.iter
-    (fun (num, loc) ->
-      if !first then first := false else fprintf oc "  | ";
-      fprintf oc "%d -> (\n" num;
-      copy_chunk sourcefile ic oc loc;
-      fprintf oc ")\n")
+    (fun (num, env, loc) ->
+      fprintf oc "  | ";
+      fprintf oc "%d ->\n" num;
+      output_env oc env;
+      copy_chunk sourcefile ic oc oci loc true;
+      fprintf oc "\n")
     e.auto_actions;
-  fprintf oc "  | n -> lexbuf.Lexing.refill_buff lexbuf; \
-                                __ocaml_lex_%s_rec lexbuf n\n\n"
-          e.auto_name
+  fprintf oc "  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; \
+                                __ocaml_lex_%s_rec %alexbuf __ocaml_lex_state\n\n"
+          e.auto_name output_args e.auto_args
 
 (* Main output function *)
 
 exception Table_overflow
 
-let output_lexdef sourcefile ic oc header tables entry_points trailer =
-  Printf.printf "%d states, %d transitions, table size %d bytes\n"
-    (Array.length tables.tbl_base)
-    (Array.length tables.tbl_trans)
-    (2 * (Array.length tables.tbl_base + Array.length tables.tbl_backtrk +
-          Array.length tables.tbl_default + Array.length tables.tbl_trans +
-          Array.length tables.tbl_check));
+let output_lexdef sourcefile ic oc oci header tables entry_points trailer =
+  if not !Common.quiet_mode then
+    Printf.printf "%d states, %d transitions, table size %d bytes\n"
+      (Array.length tables.tbl_base)
+      (Array.length tables.tbl_trans)
+      (2 * (Array.length tables.tbl_base + Array.length tables.tbl_backtrk +
+            Array.length tables.tbl_default + Array.length tables.tbl_trans +
+            Array.length tables.tbl_check));
+  let size_groups =
+    (2 * (Array.length tables.tbl_base_code +
+          Array.length tables.tbl_backtrk_code +
+          Array.length tables.tbl_default_code +
+          Array.length tables.tbl_trans_code +
+          Array.length tables.tbl_check_code) +
+    Array.length tables.tbl_code) in
+  if size_groups > 0 && not !Common.quiet_mode then
+    Printf.printf "%d additional bytes used for bindings\n" size_groups ;
   flush stdout;
   if Array.length tables.tbl_trans > 0x8000 then raise Table_overflow;
-  copy_chunk sourcefile ic oc header;
+  copy_chunk sourcefile ic oc oci header false;
   output_tables oc tables;
   begin match entry_points with
     [] -> ()
   | entry1 :: entries ->
-      output_string oc "let rec "; output_entry sourcefile ic oc entry1;
+      output_string oc "let rec "; output_entry sourcefile ic oc oci entry1;
       List.iter
-        (fun e -> output_string oc "and "; output_entry sourcefile ic oc e)
+        (fun e -> output_string oc "and "; output_entry sourcefile ic oc oci e)
         entries;
       output_string oc ";;\n\n";
   end;
-  copy_chunk sourcefile ic oc trailer
+  copy_chunk sourcefile ic oc oci trailer false

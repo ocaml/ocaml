@@ -15,7 +15,6 @@
 
 #include <mlvalues.h>
 #include "unixsupport.h"
-#include <winsock.h>
 
 static int shutdown_command_table[] = {
   0, 1, 2
@@ -24,7 +23,7 @@ static int shutdown_command_table[] = {
 CAMLprim value unix_shutdown(sock, cmd)
      value sock, cmd;
 {
-  if (shutdown((SOCKET) Handle_val(sock),
+  if (shutdown(Socket_val(sock),
                shutdown_command_table[Int_val(cmd)]) == -1) {
     win32_maperr(WSAGetLastError());
     uerror("shutdown", Nothing);

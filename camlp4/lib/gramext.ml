@@ -5,54 +5,58 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
 
 (* $Id$ *)
 
-type grammar =
+open Printf;
+
+type grammar 'te =
   { gtokens : Hashtbl.t Token.pattern (ref int);
-    glexer : mutable Token.lexer }
+    glexer : mutable Token.glexer 'te }
 ;
 
-type g_entry =
-  { egram : grammar;
+type g_entry 'te =
+  { egram : grammar 'te;
     ename : string;
-    estart : mutable int -> Stream.t Token.t -> Obj.t;
-    econtinue : mutable int -> int -> Obj.t -> Stream.t Token.t -> Obj.t;
-    edesc : mutable g_desc }
-and g_desc =
-  [ Dlevels of list g_level
-  | Dparser of Stream.t Token.t -> Obj.t ]
-and g_level =
+    estart : mutable int -> Stream.t 'te -> Obj.t;
+    econtinue : mutable int -> int -> Obj.t -> Stream.t 'te -> Obj.t;
+    edesc : mutable g_desc 'te }
+and g_desc 'te =
+  [ Dlevels of list (g_level 'te)
+  | Dparser of Stream.t 'te -> Obj.t ]
+and g_level 'te =
   { assoc : g_assoc;
     lname : option string;
-    lsuffix : g_tree;
-    lprefix : g_tree }
+    lsuffix : g_tree 'te;
+    lprefix : g_tree 'te }
 and g_assoc =
   [ NonA
   | RightA
   | LeftA ]
-and g_symbol =
-  [ Snterm of g_entry
-  | Snterml of g_entry and string
-  | Slist0 of g_symbol
-  | Slist0sep of g_symbol and g_symbol
-  | Slist1 of g_symbol
-  | Slist1sep of g_symbol and g_symbol
-  | Sopt of g_symbol
+and g_symbol 'te =
+  [ Smeta of string and list (g_symbol 'te) and Obj.t
+  | Snterm of g_entry 'te
+  | Snterml of g_entry 'te and string
+  | Slist0 of g_symbol 'te
+  | Slist0sep of g_symbol 'te and g_symbol 'te
+  | Slist1 of g_symbol 'te
+  | Slist1sep of g_symbol 'te and g_symbol 'te
+  | Sopt of g_symbol 'te
   | Sself
   | Snext
   | Stoken of Token.pattern
-  | Stree of g_tree ]
+  | Stree of g_tree 'te ]
 and g_action = Obj.t
-and g_tree =
-  [ Node of g_node
+and g_tree 'te =
+  [ Node of g_node 'te
   | LocAct of g_action and list g_action
   | DeadEnd ]
-and g_node = { node : g_symbol; son : g_tree; brother : g_tree }
+and g_node 'te =
+  { node : g_symbol 'te; son : g_tree 'te; brother : g_tree 'te }
 ;
 
 type position =
@@ -71,13 +75,15 @@ value rec derive_eps =
   | Slist0sep _ _ -> True
   | Sopt _ -> True
   | Stree t -> tree_derive_eps t
-  | _ -> False ]
+  | Smeta _ _ _ | Slist1 _ | Slist1sep _ _ | Snterm _ | Snterml _ _ | Snext |
+    Sself | Stoken _ ->
+      False ]
 and tree_derive_eps =
   fun
   [ LocAct _ _ -> True
   | Node {node = s; brother = bro; son = son} ->
       derive_eps s && tree_derive_eps son || tree_derive_eps bro
-  | _ -> False ]
+  | DeadEnd -> False ]
 ;
 
 value rec eq_symbol s1 s2 =
@@ -105,7 +111,7 @@ value is_before s1 s2 =
   | _ -> False ]
 ;
 
-value insert_tree gsymbols action tree =
+value insert_tree entry_name gsymbols action tree =
   let rec insert symbols tree =
     match symbols with
     [ [s :: sl] -> insert_in_tree s sl tree
@@ -116,8 +122,10 @@ value insert_tree gsymbols action tree =
         | LocAct old_action action_list ->
             do {
               if warning_verbose.val then do {
-                Printf.eprintf
-                  "<W> Grammar extension: some rule has been masked\n";
+                eprintf "<W> Grammar extension: ";
+                if entry_name <> "" then eprintf "in [%s], " entry_name
+                else ();
+                eprintf "some rule has been masked\n";
                 flush stderr
               }
               else ();
@@ -149,7 +157,7 @@ value insert_tree gsymbols action tree =
               let t = Node {node = s1; son = son; brother = bro} in
               Some t
           | None -> None ]
-    | _ -> None ]
+    | LocAct _ _ | DeadEnd -> None ]
   and insert_new =
     fun
     [ [s :: sl] -> Node {node = s; son = insert_new sl; brother = DeadEnd}
@@ -161,8 +169,8 @@ value insert_tree gsymbols action tree =
 value srules rl =
   let t =
     List.fold_left
-      (fun tree (symbols, action) -> insert_tree symbols action tree) DeadEnd
-      rl
+      (fun tree (symbols, action) -> insert_tree "" symbols action tree)
+      DeadEnd rl
   in
   Stree t
 ;
@@ -175,15 +183,15 @@ value is_level_labelled n lev =
   | None -> False ]
 ;
 
-value insert_level e1 symbols action slev =
+value insert_level entry_name e1 symbols action slev =
   match e1 with
   [ True ->
       {assoc = slev.assoc; lname = slev.lname;
-       lsuffix = insert_tree symbols action slev.lsuffix;
+       lsuffix = insert_tree entry_name symbols action slev.lsuffix;
        lprefix = slev.lprefix}
   | False ->
       {assoc = slev.assoc; lname = slev.lname; lsuffix = slev.lsuffix;
-       lprefix = insert_tree symbols action slev.lprefix} ]
+       lprefix = insert_tree entry_name symbols action slev.lprefix} ]
 ;
 
 value empty_lev lname assoc =
@@ -202,7 +210,7 @@ value change_lev lev n lname assoc =
     | Some a ->
         do {
           if a <> lev.assoc && warning_verbose.val then do {
-            Printf.eprintf "<W> Changing associativity of level \"%s\"\n" n;
+            eprintf "<W> Changing associativity of level \"%s\"\n" n;
             flush stderr
           }
           else ();
@@ -213,10 +221,10 @@ value change_lev lev n lname assoc =
     match lname with
     [ Some n ->
         if lname <> lev.lname && warning_verbose.val then do {
-          Printf.eprintf "<W> Level label \"%s\" ignored\n" n; flush stderr
+          eprintf "<W> Level label \"%s\" ignored\n" n; flush stderr
         }
         else ()
-    | _ -> () ];
+    | None -> () ];
     {assoc = a; lname = lev.lname; lsuffix = lev.lsuffix;
      lprefix = lev.lprefix}
   }
@@ -231,7 +239,7 @@ value get_level entry position levs =
         fun
         [ [] ->
             do {
-              Printf.eprintf "No level labelled \"%s\" in entry \"%s\"\n" n
+              eprintf "No level labelled \"%s\" in entry \"%s\"\n" n
                 entry.ename;
               flush stderr;
               failwith "Grammar.extend"
@@ -248,7 +256,7 @@ value get_level entry position levs =
         fun
         [ [] ->
             do {
-              Printf.eprintf "No level labelled \"%s\" in entry \"%s\"\n" n
+              eprintf "No level labelled \"%s\" in entry \"%s\"\n" n
                 entry.ename;
               flush stderr;
               failwith "Grammar.extend"
@@ -265,7 +273,7 @@ value get_level entry position levs =
         fun
         [ [] ->
             do {
-              Printf.eprintf "No level labelled \"%s\" in entry \"%s\"\n" n
+              eprintf "No level labelled \"%s\" in entry \"%s\"\n" n
                 entry.ename;
               flush stderr;
               failwith "Grammar.extend"
@@ -287,7 +295,7 @@ value rec check_gram entry =
   fun
   [ Snterm e ->
       if e.egram != entry.egram then do {
-        Printf.eprintf "\
+        eprintf "\
 Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
           entry.ename e.ename;
         flush stderr;
@@ -296,20 +304,21 @@ Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
       else ()
   | Snterml e _ ->
       if e.egram != entry.egram then do {
-        Printf.eprintf "\
+        eprintf "\
 Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
           entry.ename e.ename;
         flush stderr;
         failwith "Grammar.extend error"
       }
       else ()
+  | Smeta _ sl _ -> List.iter (check_gram entry) sl
   | Slist0sep s t -> do { check_gram entry t; check_gram entry s }
   | Slist1sep s t -> do { check_gram entry t; check_gram entry s }
   | Slist0 s -> check_gram entry s
   | Slist1 s -> check_gram entry s
   | Sopt s -> check_gram entry s
   | Stree t -> tree_check_gram entry t
-  | _ -> () ]
+  | Snext | Sself | Stoken _ -> () ]
 and tree_check_gram entry =
   fun
   [ Node {node = n; brother = bro; son = son} ->
@@ -318,7 +327,7 @@ and tree_check_gram entry =
         tree_check_gram entry bro;
         tree_check_gram entry son
       }
-  | _ -> () ]
+  | LocAct _ _ | DeadEnd -> () ]
 ;
 
 value change_to_self entry =
@@ -336,7 +345,8 @@ value get_initial entry =
 value insert_tokens gram symbols =
   let rec insert =
     fun
-    [ Slist0 s -> insert s
+    [ Smeta _ sl _ -> List.iter insert sl
+    | Slist0 s -> insert s
     | Slist1 s -> insert s
     | Slist0sep s t -> do { insert s; insert t }
     | Slist1sep s t -> do { insert s; insert t }
@@ -345,7 +355,7 @@ value insert_tokens gram symbols =
     | Stoken ("ANY", _) -> ()
     | Stoken tok ->
         do {
-          gram.glexer.Token.using tok;
+          gram.glexer.Token.tok_using tok;
           let r =
             try Hashtbl.find gram.gtokens tok with
             [ Not_found ->
@@ -354,12 +364,12 @@ value insert_tokens gram symbols =
           in
           incr r
         }
-    | _ -> () ]
+    | Snterm _ | Snterml _ _ | Snext | Sself -> () ]
   and tinsert =
     fun
     [ Node {node = s; brother = bro; son = son} ->
         do { insert s; tinsert bro; tinsert son }
-    | _ -> () ]
+    | LocAct _ _ | DeadEnd -> () ]
   in
   List.iter insert symbols
 ;
@@ -370,7 +380,7 @@ value levels_of_rules entry position rules =
     [ Dlevels elev -> elev
     | Dparser _ ->
         do {
-          Printf.eprintf "Error: entry not extensible: \"%s\"\n" entry.ename;
+          eprintf "Error: entry not extensible: \"%s\"\n" entry.ename;
           flush stderr;
           failwith "Grammar.extend"
         } ]
@@ -390,7 +400,7 @@ value levels_of_rules entry position rules =
                     List.iter (check_gram entry) symbols;
                     let (e1, symbols) = get_initial entry symbols in
                     insert_tokens entry.egram symbols;
-                    insert_level e1 symbols action lev
+                    insert_level entry.ename e1 symbols action lev
                   })
                lev level
            in
@@ -475,17 +485,18 @@ value rec decr_keyw_use gram =
       do {
         decr r;
         if r.val == 0 then do {
-          Hashtbl.remove gram.gtokens tok; gram.glexer.Token.removing tok
+          Hashtbl.remove gram.gtokens tok; gram.glexer.Token.tok_removing tok
         }
         else ()
       }
+  | Smeta _ sl _ -> List.iter (decr_keyw_use gram) sl
   | Slist0 s -> decr_keyw_use gram s
   | Slist1 s -> decr_keyw_use gram s
   | Slist0sep s1 s2 -> do { decr_keyw_use gram s1; decr_keyw_use gram s2 }
   | Slist1sep s1 s2 -> do { decr_keyw_use gram s1; decr_keyw_use gram s2 }
   | Sopt s -> decr_keyw_use gram s
   | Stree t -> decr_keyw_use_in_tree gram t
-  | _ -> () ]
+  | Sself | Snext | Snterm _ | Snterml _ _ -> () ]
 and decr_keyw_use_in_tree gram =
   fun
   [ DeadEnd | LocAct _ _ -> ()

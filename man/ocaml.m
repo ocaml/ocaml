@@ -7,13 +7,13 @@ ocaml \- The Objective Caml interactive toplevel
 .SH SYNOPSIS
 .B ocaml
 [
-.B \-labels
-]
-[
 .B \-unsafe
 ]
 [
 .BI \-I \ lib-dir
+]
+[
+.I object-files
 ]
 [
 .I script-file
@@ -39,6 +39,14 @@ output, errors on standard error. End-of-file on standard input
 terminates
 .BR ocaml (1).
 
+If one or more
+.I object-files
+(ending in
+.B .cmo
+or
+.B .cma
+ ) are given, they are loaded silently before starting the toplevel.
+
 If a
 .I script-file
 is given, phrases are read silently from the file, errors printed on
@@ -61,13 +69,6 @@ with
 are searched after the current directory, in the order in which they
 were given on the command line, but before the standard library
 directory.
-
-.TP
-.B \-labels
-Switch to ``commuting label mode''. Arguments must be
-explicitly labeled by labels appearing in types. Arguments with different
-labels may commute freely.
-
 
 .TP
 .B \-unsafe

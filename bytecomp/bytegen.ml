@@ -126,16 +126,20 @@ let rec push_dummies n k = match n with
 
 (**** Auxiliary for compiling "let rec" ****)
 
+type rhs_kind =
+  | RHS_block of int
+  | RHS_nonrec
+;;
 let rec size_of_lambda = function
   | Lfunction(kind, params, body) as funct ->
-      1 + IdentSet.cardinal(free_variables funct)
-  | Lprim(Pmakeblock(tag, mut), args) -> List.length args
-  | Lprim(Pmakearray kind, args) -> List.length args
+      RHS_block (1 + IdentSet.cardinal(free_variables funct))
   | Llet(str, id, arg, body) -> size_of_lambda body
   | Lletrec(bindings, body) -> size_of_lambda body
+  | Lprim(Pmakeblock(tag, mut), args) -> RHS_block (List.length args)
+  | Lprim(Pmakearray kind, args) -> RHS_block (List.length args)
   | Levent (lam, _) -> size_of_lambda lam
   | Lsequence (lam, lam') -> size_of_lambda lam'
-  | _ -> fatal_error "Bytegen.size_of_lambda"
+  | _ -> RHS_nonrec
 
 (**** Merging consecutive events ****)
 
@@ -256,9 +260,9 @@ let max_stack_used = ref 0
 
 let comp_bint_primitive bi suff args =
   let pref =
-    match bi with Pnativeint -> "nativeint_"
-                | Pint32 -> "int32_"
-                | Pint64 -> "int64_" in
+    match bi with Pnativeint -> "caml_nativeint_"
+                | Pint32 -> "caml_int32_"
+                | Pint64 -> "caml_int64_" in
   Kccall(pref ^ suff, List.length args)
 
 let comp_primitive p args =
@@ -286,49 +290,49 @@ let comp_primitive p args =
   | Pasrint -> Kasrint
   | Poffsetint n -> Koffsetint n
   | Poffsetref n -> Koffsetref n
-  | Pintoffloat -> Kccall("int_of_float", 1)
-  | Pfloatofint -> Kccall("float_of_int", 1)
-  | Pnegfloat -> Kccall("neg_float", 1)
-  | Pabsfloat -> Kccall("abs_float", 1)
-  | Paddfloat -> Kccall("add_float", 2)
-  | Psubfloat -> Kccall("sub_float", 2)
-  | Pmulfloat -> Kccall("mul_float", 2)
-  | Pdivfloat -> Kccall("div_float", 2)
-  | Pfloatcomp Ceq -> Kccall("eq_float", 2)
-  | Pfloatcomp Cneq -> Kccall("neq_float", 2)
-  | Pfloatcomp Clt -> Kccall("lt_float", 2)
-  | Pfloatcomp Cgt -> Kccall("gt_float", 2)
-  | Pfloatcomp Cle -> Kccall("le_float", 2)
-  | Pfloatcomp Cge -> Kccall("ge_float", 2)
-  | Pstringlength -> Kccall("ml_string_length", 1)
-  | Pstringrefs -> Kccall("string_get", 2)
-  | Pstringsets -> Kccall("string_set", 3)
+  | Pintoffloat -> Kccall("caml_int_of_float", 1)
+  | Pfloatofint -> Kccall("caml_float_of_int", 1)
+  | Pnegfloat -> Kccall("caml_neg_float", 1)
+  | Pabsfloat -> Kccall("caml_abs_float", 1)
+  | Paddfloat -> Kccall("caml_add_float", 2)
+  | Psubfloat -> Kccall("caml_sub_float", 2)
+  | Pmulfloat -> Kccall("caml_mul_float", 2)
+  | Pdivfloat -> Kccall("caml_div_float", 2)
+  | Pfloatcomp Ceq -> Kccall("caml_eq_float", 2)
+  | Pfloatcomp Cneq -> Kccall("caml_neq_float", 2)
+  | Pfloatcomp Clt -> Kccall("caml_lt_float", 2)
+  | Pfloatcomp Cgt -> Kccall("caml_gt_float", 2)
+  | Pfloatcomp Cle -> Kccall("caml_le_float", 2)
+  | Pfloatcomp Cge -> Kccall("caml_ge_float", 2)
+  | Pstringlength -> Kccall("caml_ml_string_length", 1)
+  | Pstringrefs -> Kccall("caml_string_get", 2)
+  | Pstringsets -> Kccall("caml_string_set", 3)
   | Pstringrefu -> Kgetstringchar
   | Pstringsetu -> Ksetstringchar
   | Parraylength kind -> Kvectlength
-  | Parrayrefs Pgenarray -> Kccall("array_get", 2)
-  | Parrayrefs Pfloatarray -> Kccall("array_get_float", 2)
-  | Parrayrefs _ -> Kccall("array_get_addr", 2)
-  | Parraysets Pgenarray -> Kccall("array_set", 3)
-  | Parraysets Pfloatarray -> Kccall("array_set_float", 3)
-  | Parraysets _ -> Kccall("array_set_addr", 3)
-  | Parrayrefu Pgenarray -> Kccall("array_unsafe_get", 2)
-  | Parrayrefu Pfloatarray -> Kccall("array_unsafe_get_float", 2)
+  | Parrayrefs Pgenarray -> Kccall("caml_array_get", 2)
+  | Parrayrefs Pfloatarray -> Kccall("caml_array_get_float", 2)
+  | Parrayrefs _ -> Kccall("caml_array_get_addr", 2)
+  | Parraysets Pgenarray -> Kccall("caml_array_set", 3)
+  | Parraysets Pfloatarray -> Kccall("caml_array_set_float", 3)
+  | Parraysets _ -> Kccall("caml_array_set_addr", 3)
+  | Parrayrefu Pgenarray -> Kccall("caml_array_unsafe_get", 2)
+  | Parrayrefu Pfloatarray -> Kccall("caml_array_unsafe_get_float", 2)
   | Parrayrefu _ -> Kgetvectitem
-  | Parraysetu Pgenarray -> Kccall("array_unsafe_set", 3)
-  | Parraysetu Pfloatarray -> Kccall("array_unsafe_set_float", 3)
+  | Parraysetu Pgenarray -> Kccall("caml_array_unsafe_set", 3)
+  | Parraysetu Pfloatarray -> Kccall("caml_array_unsafe_set_float", 3)
   | Parraysetu _ -> Ksetvectitem
   | Pisint -> Kisint
   | Pisout -> Kisout
-  | Pbittest -> Kccall("bitvect_test", 2)
+  | Pbittest -> Kccall("caml_bitvect_test", 2)
   | Pbintofint bi -> comp_bint_primitive bi "of_int" args
   | Pintofbint bi -> comp_bint_primitive bi "to_int" args
-  | Pcvtbint(Pint32, Pnativeint) -> Kccall("nativeint_of_int32", 1)
-  | Pcvtbint(Pnativeint, Pint32) -> Kccall("nativeint_to_int32", 1)
-  | Pcvtbint(Pint32, Pint64) -> Kccall("int64_of_int32", 1)
-  | Pcvtbint(Pint64, Pint32) -> Kccall("int64_to_int32", 1)
-  | Pcvtbint(Pnativeint, Pint64) -> Kccall("int64_of_nativeint", 1)
-  | Pcvtbint(Pint64, Pnativeint) -> Kccall("int64_to_nativeint", 1)
+  | Pcvtbint(Pint32, Pnativeint) -> Kccall("caml_nativeint_of_int32", 1)
+  | Pcvtbint(Pnativeint, Pint32) -> Kccall("caml_nativeint_to_int32", 1)
+  | Pcvtbint(Pint32, Pint64) -> Kccall("caml_int64_of_int32", 1)
+  | Pcvtbint(Pint64, Pint32) -> Kccall("caml_int64_to_int32", 1)
+  | Pcvtbint(Pnativeint, Pint64) -> Kccall("caml_int64_of_nativeint", 1)
+  | Pcvtbint(Pint64, Pnativeint) -> Kccall("caml_int64_to_nativeint", 1)
   | Pnegbint bi -> comp_bint_primitive bi "neg" args
   | Paddbint bi -> comp_bint_primitive bi "add" args
   | Psubbint bi -> comp_bint_primitive bi "sub" args
@@ -341,12 +345,12 @@ let comp_primitive p args =
   | Plslbint bi -> comp_bint_primitive bi "shift_left" args
   | Plsrbint bi -> comp_bint_primitive bi "shift_right_unsigned" args
   | Pasrbint bi -> comp_bint_primitive bi "shift_right" args
-  | Pbintcomp(bi, Ceq) -> Kccall("equal", 2)
-  | Pbintcomp(bi, Cneq) -> Kccall("notequal", 2)
-  | Pbintcomp(bi, Clt) -> Kccall("lessthan", 2)
-  | Pbintcomp(bi, Cgt) -> Kccall("greaterthan", 2)
-  | Pbintcomp(bi, Cle) -> Kccall("lessequal", 2)
-  | Pbintcomp(bi, Cge) -> Kccall("greaterequal", 2)
+  | Pbintcomp(bi, Ceq) -> Kccall("caml_equal", 2)
+  | Pbintcomp(bi, Cneq) -> Kccall("caml_notequal", 2)
+  | Pbintcomp(bi, Clt) -> Kccall("caml_lessthan", 2)
+  | Pbintcomp(bi, Cgt) -> Kccall("caml_greaterthan", 2)
+  | Pbintcomp(bi, Cle) -> Kccall("caml_lessequal", 2)
+  | Pbintcomp(bi, Cge) -> Kccall("caml_greaterequal", 2)
   | Pbigarrayref(n, _, _) -> Kccall("bigarray_get_" ^ string_of_int n, n + 1)
   | Pbigarrayset(n, _, _) -> Kccall("bigarray_set_" ^ string_of_int n, n + 2)
   | _ -> fatal_error "Bytegen.comp_primitive"
@@ -459,20 +463,31 @@ let rec comp_expr env exp sz cont =
       end else begin
         let decl_size =
           List.map (fun (id, exp) -> (id, exp, size_of_lambda exp)) decl in
-        let rec comp_decl new_env sz i = function
-            [] ->
-              comp_expr new_env body sz (add_pop ndecl cont)
-          | (id, exp, blocksize) :: rem ->
-              comp_expr new_env exp sz
-                (Kpush :: Kacc i :: Kccall("update_dummy", 2) ::
-                 comp_decl new_env sz (i-1) rem) in
         let rec comp_init new_env sz = function
-            [] ->
-              comp_decl new_env sz ndecl decl_size
-          | (id, exp, blocksize) :: rem ->
+          | [] -> comp_nonrec new_env sz ndecl decl_size
+          | (id, exp, RHS_block blocksize) :: rem ->
               Kconst(Const_base(Const_int blocksize)) ::
-              Kccall("alloc_dummy", 1) :: Kpush ::
-              comp_init (add_var id (sz+1) new_env) (sz+1) rem in
+              Kccall("caml_alloc_dummy", 1) :: Kpush ::
+              comp_init (add_var id (sz+1) new_env) (sz+1) rem
+          | (id, exp, RHS_nonrec) :: rem ->
+              Kconst(Const_base(Const_int 0)) :: Kpush ::
+              comp_init (add_var id (sz+1) new_env) (sz+1) rem
+        and comp_nonrec new_env sz i = function
+          | [] -> comp_rec new_env sz ndecl decl_size
+          | (id, exp, RHS_block blocksize) :: rem ->
+              comp_nonrec new_env sz (i-1) rem
+          | (id, exp, RHS_nonrec) :: rem ->
+              comp_expr new_env exp sz
+                (Kassign (i-1) :: comp_nonrec new_env sz (i-1) rem)
+        and comp_rec new_env sz i = function
+          | [] -> comp_expr new_env body sz (add_pop ndecl cont)
+          | (id, exp, RHS_block blocksize) :: rem ->
+              comp_expr new_env exp sz
+                (Kpush :: Kacc i :: Kccall("caml_update_dummy", 2) ::
+                 comp_rec new_env sz (i-1) rem)
+          | (id, exp, RHS_nonrec) :: rem ->
+              comp_rec new_env sz (i-1) rem
+        in
         comp_init env sz decl_size
       end
   | Lprim(Pidentity, [arg]) ->
@@ -539,7 +554,7 @@ let rec comp_expr env exp sz cont =
           then Kmakeblock(0, 0) :: cont
           else comp_args env args sz
                  (Kmakeblock(List.length args, 0) ::
-                  Kccall("make_array", 1) :: cont)
+                  Kccall("caml_make_array", 1) :: cont)
       end
 (* Integer first for enabling futher optimization (cf. emitcode.ml)  *)
   | Lprim (Pintcomp c, [arg ; (Lconst _ as k)]) ->
@@ -607,19 +622,17 @@ let rec comp_expr env exp sz cont =
             comp_expr env cond sz (Kbranchif lbl_loop :: add_const_unit cont))
   | Lfor(param, start, stop, dir, body) ->
       let lbl_loop = new_label() in
-      let lbl_test = new_label() in
+      let lbl_exit = new_label() in
       let offset = match dir with Upto -> 1 | Downto -> -1 in
-      let comp = match dir with Upto -> Cle | Downto -> Cge in
+      let comp = match dir with Upto -> Cgt | Downto -> Clt in
       comp_expr env start sz
         (Kpush :: comp_expr env stop (sz+1)
-          (Kpush :: Kbranch lbl_test ::
+          (Kpush :: Kpush :: Kacc 2 :: Kintcomp comp :: Kbranchif lbl_exit ::
            Klabel lbl_loop :: Kcheck_signals ::
            comp_expr (add_var param (sz+1) env) body (sz+2)
-             (Kacc 1 :: Koffsetint offset :: Kassign 1 ::
-              Klabel lbl_test ::
-              Kacc 0 :: Kpush :: Kacc 2 :: Kintcomp comp ::
-              Kbranchif lbl_loop ::
-              add_const_unit (add_pop 2 cont))))
+             (Kacc 1 :: Kpush :: Koffsetint offset :: Kassign 2 ::
+              Kacc 1 :: Kintcomp Cneq :: Kbranchif lbl_loop ::
+              Klabel lbl_exit :: add_const_unit (add_pop 2 cont))))
   | Lswitch(arg, sw) ->
       let (branch, cont1) = make_branch cont in
       let c = ref (discard_dead_code cont1) in
@@ -666,7 +679,7 @@ let rec comp_expr env exp sz cont =
       let event kind info =
         { ev_pos = 0;                   (* patched in emitcode *)
           ev_module = !compunit_name;
-          ev_char = lev.lev_loc;
+          ev_char = lev.lev_pos;
           ev_kind = kind;
           ev_info = info;
           ev_typenv = lev.lev_env;
@@ -766,7 +779,7 @@ let comp_block env exp sz cont =
   (* +1 because comp_expr may have pushed one more word *)
   if !max_stack_used + 1 > Config.stack_threshold then
     Kconst(Const_base(Const_int(!max_stack_used + 1))) ::
-    Kccall("ensure_stack_capacity", 1) ::
+    Kccall("caml_ensure_stack_capacity", 1) ::
     code
   else
     code

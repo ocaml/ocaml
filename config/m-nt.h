@@ -13,7 +13,8 @@
 
 /* $Id$ */
 
-/* Machine configuration, Intel x86 processors, Win32, Visual C++ compiler */
+/* Machine configuration, Intel x86 processors, Win32,
+   Visual C++ or Mingw compiler */
 
 #undef ARCH_SIXTYFOUR
 #undef ARCH_BIG_ENDIAN
@@ -21,8 +22,13 @@
 #define SIZEOF_INT 4
 #define SIZEOF_LONG 4
 #define SIZEOF_SHORT 2
+#ifdef __MINGW32__
+#define ARCH_INT64_TYPE long long
+#define ARCH_UINT64_TYPE unsigned long long
+#else
 #define ARCH_INT64_TYPE __int64
 #define ARCH_UINT64_TYPE unsigned __int64
+#endif
 #define ARCH_INT64_PRINTF_FORMAT "I64"
 #undef NONSTANDARD_DIV_MOD
 

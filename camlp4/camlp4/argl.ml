@@ -1,9 +1,21 @@
 (* camlp4r q_MLast.cmo *)
 (* $Id$ *)
 
-value action_arg s sl =
+open Printf;
+
+value rec action_arg s sl =
   fun
   [ Arg.Unit f -> if s = "" then do { f (); Some sl } else None
+  | Arg.Bool f ->
+      if s = "" then
+        match sl with
+        [ [s :: sl] ->
+            try do { f (bool_of_string s); Some sl } with
+            [ Invalid_argument "bool_of_string" -> None ]
+        | [] -> None ]
+      else
+        try do { f (bool_of_string s); Some sl } with
+        [ Invalid_argument "bool_of_string" -> None ]
   | Arg.Set r -> if s = "" then do { r.val := True; Some sl } else None
   | Arg.Clear r -> if s = "" then do { r.val := False; Some sl } else None
   | Arg.Rest f -> do { List.iter f [s :: sl]; Some [] }
@@ -13,6 +25,12 @@ value action_arg s sl =
         [ [s :: sl] -> do { f s; Some sl }
         | [] -> None ]
       else do { f s; Some sl }
+  | Arg.Set_string r ->
+      if s = "" then
+        match sl with
+        [ [s :: sl] -> do { r.val := s; Some sl }
+        | [] -> None ]
+      else do { r.val := s; Some sl }
   | Arg.Int f ->
       if s = "" then
         match sl with
@@ -23,12 +41,45 @@ value action_arg s sl =
       else
         try do { f (int_of_string s); Some sl } with
         [ Failure "int_of_string" -> None ]
+  | Arg.Set_int r ->
+      if s = "" then
+        match sl with
+        [ [s :: sl] ->
+            try do { r.val := (int_of_string s); Some sl } with
+            [ Failure "int_of_string" -> None ]
+        | [] -> None ]
+      else
+        try do { r.val := (int_of_string s); Some sl } with
+        [ Failure "int_of_string" -> None ]
   | Arg.Float f ->
       if s = "" then
         match sl with
         [ [s :: sl] -> do { f (float_of_string s); Some sl }
         | [] -> None ]
-      else do { f (float_of_string s); Some sl } ]
+      else do { f (float_of_string s); Some sl }
+  | Arg.Set_float r ->
+      if s = "" then
+        match sl with
+        [ [s :: sl] -> do { r.val := (float_of_string s); Some sl }
+        | [] -> None ]
+      else do { r.val := (float_of_string s); Some sl }
+  | Arg.Tuple specs ->
+      let rec action_args s sl =
+        fun
+        [ [] -> Some sl
+        | [spec :: spec_list] ->
+             match action_arg s sl spec with
+             [ None -> action_args "" [] spec_list
+             | Some [s :: sl] -> action_args s sl spec_list
+             | Some sl -> action_args "" sl spec_list
+             ]
+        ] in
+      action_args s sl specs
+  | Arg.Symbol syms f ->
+      match (if s = "" then sl else [s :: sl]) with
+      [ [s :: sl] when List.mem s syms -> do { f s; Some sl }
+      | _ -> None ]
+  ]
 ;
 
 value common_start s1 s2 =
@@ -60,43 +111,26 @@ value rec parse_aux spec_list anon_fun =
       else do { (anon_fun s : unit); parse_aux spec_list anon_fun sl } ]
 ;
 
-value line_of_loc fname (bp, ep) =
-  let ic = open_in_bin fname in
-  let rec loop lin col cnt =
-    if cnt < bp then
-      let (lin, col) =
-        match input_char ic with
-        [ '\n' -> (lin + 1, 0)
-        | _ -> (lin, col + 1) ]
-      in
-      loop lin col (cnt + 1)
-    else (lin, col, col + ep - bp)
-  in
-  let r =
-    try loop 1 0 0 with e -> do { try close_in ic with _ -> (); raise e }
-  in
-  do { try close_in ic with _ -> (); r }
-;
-
 value loc_fmt =
   match Sys.os_type with
   [ "MacOS" ->
-      ("File \"%s\"; line %d; characters %d to %d\n### " : format 'a 'b 'c)
-  | _ -> ("File \"%s\", line %d, characters %d-%d:\n" : format 'a 'b 'c) ]
+     format_of_string "File \"%s\"; line %d; characters %d to %d\n### "
+  | _ ->
+     format_of_string "File \"%s\", line %d, characters %d-%d:\n" ]
 ;
 
 value print_location loc =
   if Pcaml.input_file.val <> "-" then
-    let (line, bp, ep) = line_of_loc Pcaml.input_file.val loc in
-    Printf.eprintf loc_fmt Pcaml.input_file.val line bp ep
-  else Printf.eprintf "At location %d-%d\n" (fst loc) (snd loc)
+    let (fname, line, bp, ep) = Stdpp.line_of_loc Pcaml.input_file.val loc in
+    eprintf loc_fmt Pcaml.input_file.val line bp ep
+  else eprintf "At location %d-%d\n" (fst loc).Lexing.pos_cnum (snd loc).Lexing.pos_cnum
 ;
 
 value print_warning loc s =
-  do { print_location loc; Printf.eprintf "%s\n" s }
+  do { print_location loc; eprintf "%s\n" s }
 ;
 
-value process pa pr getdir =
+value rec parse_file pa getdir useast =
   let name = Pcaml.input_file.val in
   do {
     Pcaml.warning.val := print_warning;
@@ -107,28 +141,49 @@ value process pa pr getdir =
       try
         loop () where rec loop () =
           let (pl, stopped_at_directive) = pa cs in
-          if stopped_at_directive then do {
-            match getdir (List.rev pl) with
-            [ Some x ->
-                match x with
-                [ (loc, "load", Some <:expr< $str:s$ >>) ->
-                    Odyl_main.loadfile s
-                | (loc, "directory", Some <:expr< $str:s$ >>) ->
-                    Odyl_main.directory s
-                | (loc, _, _) ->
-                    Stdpp.raise_with_loc loc
-                      (Stream.Error "bad directive") ]
-            | None -> () ];
+          if stopped_at_directive then
+            let pl =
+              let rpl = List.rev pl in
+              match getdir rpl with
+              [ Some x ->
+                  match x with
+                  [ (loc, "load", Some <:expr< $str:s$ >>) ->
+                      do { Odyl_main.loadfile s; pl }
+                  | (loc, "directory", Some <:expr< $str:s$ >>) ->
+                      do { Odyl_main.directory s; pl }
+                  | (loc, "use", Some <:expr< $str:s$ >>) ->
+                      List.rev_append rpl
+                        [(useast loc s (use_file pa getdir useast s), loc)]
+                  | (loc, _, _) ->
+                      Stdpp.raise_with_loc loc (Stream.Error "bad directive") ]
+              | None -> pl ]
+            in
             pl @ loop ()
-          }
           else pl
       with x ->
         do { clear (); raise x }
     in
     clear ();
-    pr phr
+    phr
+  }
+and use_file pa getdir useast s =
+  let clear =
+    let v_input_file = Pcaml.input_file.val in
+    fun () -> Pcaml.input_file.val := v_input_file
+  in
+  do {
+    Pcaml.input_file.val := s;
+    try
+      let r = parse_file pa getdir useast in
+      do { clear (); r }
+    with e ->
+      do { clear (); raise e }
   }
 ;
+
+value process pa pr getdir useast =
+   pr (parse_file pa getdir useast);
+
 
 value gind =
   fun
@@ -142,10 +197,13 @@ value gimd =
   | _ -> None ]
 ;
 
+value usesig loc fname ast = MLast.SgUse loc fname ast;
+value usestr loc fname ast = MLast.StUse loc fname ast;
+
 value process_intf () =
-  process Pcaml.parse_interf.val Pcaml.print_interf.val gind;
+  process Pcaml.parse_interf.val Pcaml.print_interf.val gind usesig;
 value process_impl () =
-  process Pcaml.parse_implem.val Pcaml.print_implem.val gimd;
+  process Pcaml.parse_implem.val Pcaml.print_implem.val gimd usestr;
 
 type file_kind =
   [ Intf
@@ -158,22 +216,114 @@ value file_kind_of_name name =
   else raise (Arg.Bad ("don't know what to do with " ^ name))
 ;
 
-value print_version () =
+value print_version_string () =
   do {
-    Printf.eprintf "Camlp4 version %s\n" Pcaml.version; flush stderr; exit 0
+    print_string Pcaml.version; print_newline(); exit 0
   }
 ;
 
-value usage =
-  "\
+value print_version () =
+  do {
+    eprintf "Camlp4 version %s\n" Pcaml.version; flush stderr; exit 0
+  }
+;
+
+value align_doc key s =
+  let s =
+    loop 0 where rec loop i =
+      if i = String.length s then ""
+      else if s.[i] = ' ' then loop (i + 1)
+     else String.sub s i (String.length s - i)
+  in
+  let (p, s) =
+    if String.length s > 0 then
+      if s.[0] = '<' then
+        loop 0 where rec loop i =
+          if i = String.length s then ("", s)
+          else if s.[i] <> '>' then loop (i + 1)
+          else
+            let p = String.sub s 0 (i + 1) in
+            loop (i + 1) where rec loop i =
+              if i >= String.length s then (p, "")
+              else if s.[i] = ' ' then loop (i + 1)
+              else (p, String.sub s i (String.length s - i))
+      else ("", s)
+    else ("", "")
+  in
+  let tab =
+    String.make (max 1 (13 - String.length key - String.length p)) ' '
+  in
+  p ^ tab  ^ s
+;
+
+value make_symlist l =
+  match l with
+  [ [] -> "<none>"
+  | [h::t] -> (List.fold_left (fun x y -> x ^ "|" ^ y) ("{" ^ h) t) ^ "}" ]
+;
+
+value print_usage_list l =
+  List.iter
+    (fun (key, spec, doc) ->
+      match spec with
+      [ Arg.Symbol symbs _ ->
+          let s = make_symlist symbs in
+          let synt = key ^ " " ^ s in
+          eprintf "  %s %s\n" synt (align_doc synt doc)
+      | _ -> eprintf "  %s %s\n" key (align_doc key doc) ] )
+    l
+;
+
+value make_symlist l =
+  match l with
+  [ [] -> "<none>"
+  | [h :: t] -> (List.fold_left (fun x y -> x ^ "|" ^ y) ("{" ^ h) t) ^ "}" ]
+;
+
+value print_usage_list l =
+  List.iter
+    (fun (key, spec, doc) ->
+      match spec with
+      [ Arg.Symbol symbs _ ->
+          let s = make_symlist symbs in
+          let synt = key ^ " " ^ s in
+          eprintf "  %s %s\n" synt (align_doc synt doc)
+      | _ -> eprintf "  %s %s\n" key (align_doc key doc) ] )
+    l
+;
+
+value usage ini_sl ext_sl =
+  do {
+    eprintf "\
 Usage: camlp4 [load-options] [--] [other-options]
-Load-options are:
+Load options:
   -I directory  Add directory in search patch for object files.
   -where        Print camlp4 library directory and exit.
   -nolib        No automatic search for object files in library directory.
   <object-file> Load this file in Camlp4 core.
-Other-options are:
-  <file>        Parse this file."
+Other options:
+  <file>        Parse this file.\n";
+    print_usage_list ini_sl;
+    loop (ini_sl @ ext_sl) where rec loop =
+      fun
+      [ [(y, _, _) :: _] when y = "-help" -> ()
+      | [_ :: sl] -> loop sl
+      | [] -> eprintf "  -help         Display this list of options.\n" ];
+    if ext_sl <> [] then do {
+      eprintf "Options added by loaded object files:\n";
+      print_usage_list ext_sl;
+    }
+    else ();
+  }
+;
+
+value warn_noassert () =
+  do {
+    eprintf "\
+camlp4 warning: option -noassert is obsolete
+You should give the -noassert option to the ocaml compiler instead.
+";
+  }
 ;
 
 value initial_spec_list =
@@ -186,20 +336,23 @@ value initial_spec_list =
       (fun x -> do { file_kind.val := Impl; Pcaml.input_file.val := x }),
     "<file>  Parse <file> as an implementation, whatever its extension.");
    ("-unsafe", Arg.Set Ast2pt.fast,
-    "      Generate unsafe accesses to array and strings.");
-   ("-noassert", Arg.Set Pcaml.no_assert,
-    "    Don't compile assertion checks.");
+    "Generate unsafe accesses to array and strings.");
+   ("-noassert", Arg.Unit warn_noassert,
+    "Obsolete, do not use this option.");
    ("-verbose", Arg.Set Grammar.error_verbose,
-    "     More verbose in parsing errors.");
+    "More verbose in parsing errors.");
    ("-loc", Arg.String (fun x -> Stdpp.loc_name.val := x),
     "<name>   Name of the location variable (default: " ^ Stdpp.loc_name.val ^
       ")");
    ("-QD", Arg.String (fun x -> Pcaml.quotation_dump_file.val := Some x),
-    "<file>    Dump quotation expander result in case of syntax error.");
+    "<file> Dump quotation expander result in case of syntax error.");
    ("-o", Arg.String (fun x -> Pcaml.output_file.val := Some x),
-    "<file>     Output on <file> instead of standard output.");
+    "<file> Output on <file> instead of standard output.");
    ("-v", Arg.Unit print_version,
-    "           Print Camlp4 version and exit.")]
+    "Print Camlp4 version and exit.");
+   ("-version", Arg.Unit print_version_string,
+    "Print Camlp4 version number and exit.")
+ ]
 ;
 
 value anon_fun x =
@@ -213,8 +366,8 @@ value parse spec_list anon_fun remaining_args =
   try parse_aux spec_list anon_fun remaining_args with
   [ Arg.Bad s ->
       do {
-        Printf.eprintf "Error: %s\n" s;
-        Printf.eprintf "Use option -help for usage\n";
+        eprintf "Error: %s\n" s;
+        eprintf "Use option -help for usage\n";
         flush stderr;
         exit 2
       } ]
@@ -240,15 +393,16 @@ value report_error =
 ;
 
 value go () =
-  let arg_spec_list = initial_spec_list @ Pcaml.arg_spec_list () in
+  let ext_spec_list = Pcaml.arg_spec_list () in
+  let arg_spec_list = initial_spec_list @ ext_spec_list in
   do {
     match parse arg_spec_list anon_fun remaining_args with
     [ [] -> ()
-    | ["-help" :: sl] -> do { Arg.usage arg_spec_list usage; exit 0 }
+    | ["-help" :: sl] -> do { usage initial_spec_list ext_spec_list; exit 0 }
     | [s :: sl] ->
         do {
-          Printf.eprintf "%s: unknown or misused option\n" s;
-          Printf.eprintf "Use option -help for usage\n";
+          eprintf "%s: unknown or misused option\n" s;
+          eprintf "Use option -help for usage\n";
           exit 2
         } ];
     try

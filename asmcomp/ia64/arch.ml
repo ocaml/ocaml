@@ -14,7 +14,12 @@
 
 (* Specific operations for the IA64 processor *)
 
+open Misc
 open Format
+
+(* Machine-specific command-line options *)
+
+let command_line_options = []
 
 (* Addressing modes -- only one! (register with no displacement) *)
 

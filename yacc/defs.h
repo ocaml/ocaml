@@ -22,10 +22,6 @@
 #include <stdlib.h>
 #include "../config/s.h"
 
-#if macintosh
-#include "../byterun/rotatecursor.h"
-#endif
-
 /*  machine-dependent definitions                              */
 /*  the following definitions are for the Tahoe                */
 /*  they might have to be changed for other machines           */
@@ -107,9 +103,9 @@
 
 /*  character macros  */
 
-#define IS_IDENT(c)        (isalnum(c) || (c) == '_' || (c) == '.' || (c) == '$')
-#define        IS_OCTAL(c)        ((c) >= '0' && (c) <= '7')
-#define        NUMERIC_VALUE(c)        ((c) - '0')
+#define IS_IDENT(c)       (isalnum(c) || (c) == '_' || (c) == '.' || (c) == '$')
+#define IS_OCTAL(c)       ((c) >= '0' && (c) <= '7')
+#define NUMERIC_VALUE(c)  ((c) - '0')
 
 
 /*  symbol macros  */
@@ -120,27 +116,12 @@
 
 /*  storage allocation macros  */
 
-#if macintosh
-
-#define INTERACT() ROTATECURSOR_MAGIC ()
-
-#define CALLOC(k,n)         (INTERACT (), calloc((unsigned)(k),(unsigned)(n)))
-#define FREE(x)      (INTERACT (), free((char*)(x)))
-#define MALLOC(n)    (INTERACT (), malloc((unsigned)(n)))
-#define        NEW(t)       (INTERACT (), (t*)allocate(sizeof(t)))
-#define        NEW2(n,t)    (INTERACT (), (t*)allocate((unsigned)((n)*sizeof(t))))
-#define REALLOC(p,n) (INTERACT (), realloc((char*)(p),(unsigned)(n)))
-
-#else
-
-#define CALLOC(k,n)        (calloc((unsigned)(k),(unsigned)(n)))
-#define        FREE(x)                (free((char*)(x)))
+#define CALLOC(k,n)      (calloc((unsigned)(k),(unsigned)(n)))
+#define FREE(x)          (free((char*)(x)))
 #define MALLOC(n)        (malloc((unsigned)(n)))
-#define        NEW(t)                ((t*)allocate(sizeof(t)))
-#define        NEW2(n,t)        ((t*)allocate((unsigned)((n)*sizeof(t))))
-#define REALLOC(p,n)        (realloc((char*)(p),(unsigned)(n)))
-
-#endif /* macintosh */
+#define NEW(t)           ((t*)allocate(sizeof(t)))
+#define NEW2(n,t)        ((t*)allocate((unsigned)((n)*sizeof(t))))
+#define REALLOC(p,n)     (realloc((char*)(p),(unsigned)(n)))
 
 
 /*  the structure of a symbol table entry  */
@@ -226,6 +207,7 @@ extern char lflag;
 extern char rflag;
 extern char tflag;
 extern char vflag;
+extern char qflag;
 extern char sflag;
 extern char big_endian;
 
@@ -233,6 +215,7 @@ extern char *myname;
 extern char *cptr;
 extern char *line;
 extern int lineno;
+extern char *virtual_input_file_name;
 extern int outline;
 
 extern char *action_file_name;
@@ -350,6 +333,7 @@ extern void open_error (char *filename);
 extern void output (void);
 extern void over_unionized (char *u_cptr);
 extern void prec_redeclared (void);
+extern void polymorphic_entry_point(char *s);
 extern void reader (void);
 extern void reflexive_transitive_closure (unsigned int *R, int n);
 extern void reprec_warning (char *s);
@@ -361,7 +345,7 @@ extern void terminal_start (char *s);
 extern void tokenized_start (char *s);
 extern void too_many_entries (void);
 extern void undefined_goal (char *s);
-extern void undefined_symbol_warning (char *s);
+extern void undefined_symbol (char *s);
 extern void unexpected_EOF (void);
 extern void unknown_rhs (int i);
 extern void unterminated_action (int a_lineno, char *a_line, char *a_cptr);

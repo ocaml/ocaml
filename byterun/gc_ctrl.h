@@ -13,28 +13,30 @@
 
 /* $Id$ */
 
-#ifndef _gc_ctrl_
-#define _gc_ctrl_
+#ifndef CAML_GC_CTRL_H
+#define CAML_GC_CTRL_H
 
 #include "misc.h"
 
 extern double
-     stat_minor_words,
-     stat_promoted_words,
-     stat_major_words;
+     caml_stat_minor_words,
+     caml_stat_promoted_words,
+     caml_stat_major_words;
 
 extern long
-     stat_minor_collections,
-     stat_major_collections,
-     stat_heap_size,
-     stat_compactions;
+     caml_stat_minor_collections,
+     caml_stat_major_collections,
+     caml_stat_heap_size,
+     caml_stat_top_heap_size,
+     caml_stat_compactions,
+     caml_stat_heap_chunks;
 
-void init_gc (unsigned long, unsigned long, unsigned long,
-              unsigned long, unsigned long);
+void caml_init_gc (unsigned long, unsigned long, unsigned long,
+                   unsigned long, unsigned long);
 
 
 #ifdef DEBUG
-void heap_check (void);
+void caml_heap_check (void);
 #endif
 
-#endif /* _gc_ctrl_ */
+#endif /* CAML_GC_CTRL_H */

@@ -10,8 +10,8 @@ let test n =
       trail := n :: !trail; a.(n); "doesn't fail"
     with Invalid_argument s ->
            (* Check well-formedness of s *)
-           if String.length s = 35
-           && s = "out-of-bound array or string access"
+           if String.length s = 19
+           && s = "index out of bounds"
            then "fails"
            else "bad Invalid_argument"
        | _ -> "bad exception"

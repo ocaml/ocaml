@@ -15,8 +15,8 @@
 
 /* Machine-dependent interface with the asm code */
 
-#ifndef _stack_
-#define _stack_
+#ifndef CAML_STACK_H
+#define CAML_STACK_H
 
 /* Macros to access the stack frame */
 #ifdef TARGET_alpha
@@ -54,9 +54,9 @@
 #define Mark_scanned(sp, retaddr) (*((long *)((sp) - 4)) = (retaddr) | 1)
 #define Mask_already_scanned(retaddr) ((retaddr) & ~1)
 #ifdef SYS_aix
-#define Trap_frame_size 24
+#define Trap_frame_size 32
 #else
-#define Trap_frame_size 8
+#define Trap_frame_size 16
 #endif
 #define Callback_link(sp) ((struct caml_context *)((sp) + Trap_frame_size))
 #endif
@@ -79,6 +79,11 @@
 #define Callback_link(sp) ((struct caml_context *)((sp) + 32))
 #endif
 
+#ifdef TARGET_amd64
+#define Saved_return_address(sp) *((long *)((sp) - 8))
+#define Callback_link(sp) ((struct caml_context *)((sp) + 16))
+#endif
+
 /* Structure of Caml callback contexts */
 
 struct caml_context {
@@ -97,4 +102,4 @@ extern long caml_globals_inited;
 extern long * caml_frametable[];
 
 
-#endif /* _stack_ */
+#endif /* CAML_STACK_H */

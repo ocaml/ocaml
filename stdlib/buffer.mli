@@ -11,6 +11,8 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(* $Id$ *)
+
 (** Extensible string buffers.
 
    This module implements string buffers that automatically expand
@@ -25,20 +27,30 @@ type t
 val create : int -> t
 (** [create n] returns a fresh buffer, initially empty.
    The [n] parameter is the initial size of the internal string
-   that holds the buffer contents.  That string is automatically
+   that holds the buffer contents. That string is automatically
    reallocated when more than [n] characters are stored in the buffer,
    but shrinks back to [n] characters when [reset] is called.
    For best performance, [n] should be of the same order of magnitude
    as the number of characters that are expected to be stored in
    the buffer (for instance, 80 for a buffer that holds one output
    line).  Nothing bad will happen if the buffer grows beyond that
-   limit, however.  In doubt, take [n = 16] for instance.
+   limit, however. In doubt, take [n = 16] for instance.
    If [n] is not between 1 and {!Sys.max_string_length}, it will
    be clipped to that interval. *)
 
 val contents : t -> string
 (** Return a copy of the current contents of the buffer.
    The buffer itself is unchanged. *)
+
+val sub : t -> int -> int -> string
+(** [Buffer.sub b off len] returns (a copy of) the substring of the
+current contents of the buffer [b] starting at offset [off] of length
+[len] bytes. May raise [Invalid_argument] if out of bounds request. The
+buffer itself is unaffected. *)
+
+val nth : t -> int -> char
+(** get the n-th character of the buffer. Raise [Invalid_argument] if
+index out of bounds *)
 
 val length : t -> int
 (** Return the number of characters currently contained in the buffer. *)
@@ -51,7 +63,7 @@ val reset : t -> unit
    buffer contents, replacing it with the initial internal string
    of length [n] that was allocated by {!Buffer.create} [n].
    For long-lived buffers that may have grown a lot, [reset] allows
-   faster reclaimation of the space used by the buffer. *)
+   faster reclamation of the space used by the buffer. *)
 
 val add_char : t -> char -> unit
 (** [add_char b c] appends the character [c] at the end of the buffer [b]. *)
@@ -62,6 +74,22 @@ val add_string : t -> string -> unit
 val add_substring : t -> string -> int -> int -> unit
 (** [add_substring b s ofs len] takes [len] characters from offset
    [ofs] in string [s] and appends them at the end of the buffer [b]. *)
+
+val add_substitute : t -> (string -> string) -> string -> unit
+(** [add_substitute b f s] appends the string pattern [s] at the end
+   of the buffer [b] with substitution.
+   The substitution process looks for variables into
+   the pattern and substitutes each variable name by its value, as
+   obtained by applying the mapping [f] to the variable name. Inside the
+   string pattern, a variable name immediately follows a non-escaped
+   [$] character and is one of the following:
+   - a non empty sequence of alphanumeric or [_] characters,
+   - an arbitrary sequence of characters enclosed by a pair of
+   matching parentheses or curly brackets.
+   An escaped [$] character is a [$] that immediately follows a backslash
+   character; it then stands for a plain [$].
+   Raise [Not_found] if the closing character of a parenthesized variable
+   cannot be found. *)
 
 val add_buffer : t -> t -> unit
 (** [add_buffer b1 b2] appends the current contents of buffer [b2]

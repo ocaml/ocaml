@@ -20,18 +20,22 @@ let process_interface_file ppf name =
 
 let process_implementation_file ppf name =
   Optcompile.implementation ppf name;
-  objfiles := (Filename.chop_extension name ^ ".cmx") :: !objfiles
+  objfiles := (Misc.chop_extension_if_any name ^ ".cmx") :: !objfiles
 
 let process_file ppf name =
   if Filename.check_suffix name ".ml"
   || Filename.check_suffix name ".mlt" then begin
     Optcompile.implementation ppf name;
-    objfiles := (Filename.chop_extension name ^ ".cmx") :: !objfiles
+    objfiles := (Misc.chop_extension_if_any name ^ ".cmx") :: !objfiles
   end
-  else if Filename.check_suffix name !Config.interface_suffix then
-    Optcompile.interface ppf name
+  else if Filename.check_suffix name !Config.interface_suffix then begin
+    Optcompile.interface ppf name;
+    if !make_package then objfiles := name :: !objfiles
+  end
   else if Filename.check_suffix name ".cmx" 
        || Filename.check_suffix name ".cmxa" then
+    objfiles := name :: !objfiles
+  else if Filename.check_suffix name ".cmi" && !make_package then
     objfiles := name :: !objfiles
   else if Filename.check_suffix name ext_obj
        || Filename.check_suffix name ext_lib then
@@ -44,15 +48,29 @@ let process_file ppf name =
   else
     raise(Arg.Bad("don't know what to do with " ^ name))
 
-let print_version_number () =
+let print_version_and_library () =
   print_string "The Objective Caml native-code compiler, version ";
   print_string Config.version; print_newline();
   print_string "Standard library directory: ";
   print_string Config.standard_library; print_newline();
   exit 0
 
+let print_version_string () =
+  print_string Config.version; print_newline(); exit 0
+
 let print_standard_library () =
   print_string Config.standard_library; print_newline(); exit 0
+
+let extract_output = function
+  | Some s -> s
+  | None ->
+      prerr_endline
+        "Please specify the name of the output file, using option -o";
+      exit 2
+
+let default_output = function
+  | Some s -> s
+  | None -> Config.default_executable_name
 
 let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
 
@@ -62,20 +80,22 @@ let main () =
   c_linker := Config.native_c_linker;
   let ppf = Format.err_formatter in
   try
-    Arg.parse [
+    Arg.parse (Arch.command_line_options @ [
        "-a", Arg.Set make_archive, " Build a library";
        "-c", Arg.Set compile_only, " Compile only (do not link)";
        "-cc", Arg.String(fun s -> c_compiler := s; c_linker := s),
              "<comp>  Use <comp> as the C compiler and linker";
-       "-cclib", Arg.String(fun s -> ccobjs := s :: !ccobjs),
+       "-cclib", Arg.String(fun s ->
+                              ccobjs := Misc.rev_split_words s @ !ccobjs),
              "<opt>  Pass option <opt> to the C linker";
        "-ccopt", Arg.String(fun s -> ccopts := s :: !ccopts),
              "<opt>  Pass option <opt> to the C compiler and linker";
        "-compact", Arg.Clear optimize_for_speed,
              " Optimize code size rather than speed";
-       "-dllpath", Arg.String (fun s -> dllpaths := !dllpaths @ [s]),
-             "<dir>  Add <dir> to the run-time search path for shared libraries";
-       "-i", Arg.Set print_types, " Print the types";
+       "-dtypes", Arg.Set save_types,
+             " Save type information in <filename>.annot";
+       "-i", Arg.Unit (fun () -> print_types := true; compile_only := true),
+             " Print inferred interface";
        "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
              "<dir>  Add <dir> to the list of include directories";
        "-impl", Arg.String (process_implementation_file ppf),
@@ -95,30 +115,38 @@ let main () =
        "-noautolink", Arg.Set no_auto_link,
              " Don't automatically link C libraries specified in .cma files";
        "-nolabels", Arg.Set classic, " Ignore non-optional labels in types";
-       "-o", Arg.String(fun s -> exec_name := s;
-                                 archive_name := s;
-                                 object_name := s),
+       "-nostdlib", Arg.Set no_std_include,
+           " do not add standard directory to the list of include directories";
+       "-o", Arg.String(fun s -> output_name := Some s),
              "<file>  Set output file name to <file>";
        "-output-obj", Arg.Unit(fun () -> output_c_object := true),
              " Output a C object file instead of an executable";
        "-p", Arg.Set gprofile,
              " Compile and link with profiling support for \"gprof\"\n\
                \t(not supported on all platforms)";
+       "-pack", Arg.Set make_package,
+              " Package the given .cmx files into one .cmx";
        "-pp", Arg.String(fun s -> preprocessor := Some s),
              "<command>  Pipe sources through preprocessor <command>";
+       "-principal", Arg.Set principal,
+             " Check principality of type inference";
        "-rectypes", Arg.Set recursive_types,
              " Allow arbitrary recursive types";
        "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";
-       "-thread", Arg.Set thread_safe, " Use thread-safe standard library";
+       "-thread", Arg.Set use_threads, " Generate code that supports the system threads library";
        "-unsafe", Arg.Set fast,
              " No bounds checking on array and string access";
-       "-v", Arg.Unit print_version_number, " Print compiler version number";
+       "-v", Arg.Unit print_version_and_library,
+             " Print compiler version and standard library location and exit";
+       "-version", Arg.Unit print_version_string,
+             " Print compiler version and exit";
        "-verbose", Arg.Set verbose, " Print calls to external commands";
        "-w", Arg.String (Warnings.parse_options false),
              "<flags>  Enable or disable warnings according to <flags>:\n\
          \032    A/a enable/disable all warnings\n\
          \032    C/c enable/disable suspicious comment\n\
          \032    D/d enable/disable deprecated features\n\
+         \032    E/e enable/disable fragile match\n\
          \032    F/f enable/disable partially applied function\n\
          \032    L/l enable/disable labels omitted in application\n\
          \032    M/m enable/disable overriden methods\n\
@@ -127,13 +155,14 @@ let main () =
          \032    U/u enable/disable unused match case\n\
          \032    V/v enable/disable hidden instance variables\n\
          \032    X/x enable/disable all other warnings\n\
-         \032    default setting is \"Al\" (all warnings but labels enabled)";
+         \032    default setting is \"Ale\"\n\
+         \032    (all warnings but labels and fragile match enabled)";
        "-warn-error" , Arg.String (Warnings.parse_options true),
-         "<flags>  Enable or disable fatal warnings according to <flags>\n\
-           \032    (see option -w for the list of flags)\n\
-           \032    default setting is a (all warnings are non-fatal)";
-    "-where", Arg.Unit print_standard_library,
-      " Print location of standard library and exit";
+         "<flags>  Treat the warnings enabled by <flags> as errors.\n\
+         \032    See option -w for the list of flags.\n\
+         \032    Default setting is \"a\" (warnings are not errors)";
+       "-where", Arg.Unit print_standard_library,
+         " Print location of standard library and exit";
 
        "-nopervasives", Arg.Set nopervasives, " (undocumented)";
        "-dparsetree", Arg.Set dump_parsetree, " (undocumented)";
@@ -156,18 +185,24 @@ let main () =
        "-dstartup", Arg.Set keep_startup_file, " (undocumented)";
        "-", Arg.String (process_file ppf),
             "<file>  Treat <file> as a file name (even if it starts with `-')"
-      ] (process_file ppf) usage;
+      ]) (process_file ppf) usage;
     if !make_archive then begin
       Optcompile.init_path();
-      Asmlibrarian.create_archive (List.rev !objfiles) !archive_name
+      Asmlibrarian.create_archive (List.rev !objfiles)
+                                  (extract_output !output_name)
+    end
+    else if !make_package then begin
+      Optcompile.init_path();
+      Asmpackager.package_files ppf (List.rev !objfiles)
+                                    (extract_output !output_name)
     end
     else if not !compile_only && !objfiles <> [] then begin
       Optcompile.init_path();
-      Asmlink.link ppf (List.rev !objfiles)
+      Asmlink.link ppf (List.rev !objfiles) (default_output !output_name)
     end;
     exit 0
   with x ->
     Opterrors.report_error ppf x;
     exit 2
 
-let _ = Printexc.catch main ()
+let _ = main ()

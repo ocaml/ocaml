@@ -223,25 +223,12 @@ let get_stored_string () =
 
 (* To translate escape sequences *)
 
-let char_for_backslash =
-  match Sys.os_type with
-  | "Unix" | "Win32" | "Cygwin" ->
-      begin function
-      | 'n' -> '\010'
-      | 'r' -> '\013'
-      | 'b' -> '\008'
-      | 't' -> '\009'
-      | c   -> c
-      end
-  | "MacOS" ->
-      begin function
-      | 'n' -> '\013'
-      | 'r' -> '\010'
-      | 'b' -> '\008'
-      | 't' -> '\009'
-      | c   -> c
-      end
-  | x -> fatal_error "Lexer: unknown system type"
+let char_for_backslash = function
+  | 'n' -> '\010'
+  | 'r' -> '\013'
+  | 'b' -> '\008'
+  | 't' -> '\009'
+  | c   -> c
 
 let char_for_decimal_code lexbuf i =
   let c = 100 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
@@ -339,9 +326,7 @@ rule token = parse
         comment lexbuf;
         token lexbuf }
   | "(*)"
-      { let loc = { Location.loc_start = Lexing.lexeme_start lexbuf;
-                    Location.loc_end = Lexing.lexeme_end lexbuf - 1;
-                    Location.loc_ghost = false }
+      { let loc = Location.curr lexbuf
         and warn = Warnings.Comment "the start of a comment"
         in
         Location.prerr_warning loc warn;
@@ -350,9 +335,7 @@ rule token = parse
         token lexbuf
       }
   | "*)"
-      { let loc = { Location.loc_start = Lexing.lexeme_start lexbuf;
-                    Location.loc_end = Lexing.lexeme_end lexbuf;
-                    Location.loc_ghost = false }
+      { let loc = Location.curr lexbuf
         and warn = Warnings.Comment "not the end of a comment"
         in
         Location.prerr_warning loc warn;

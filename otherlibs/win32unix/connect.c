@@ -14,13 +14,14 @@
 /* $Id$ */
 
 #include <mlvalues.h>
+#include <signals.h>
 #include "unixsupport.h"
 #include "socketaddr.h"
 
 CAMLprim value unix_connect(socket, address)
      value socket, address;
 {
-  SOCKET s = (SOCKET) Handle_val(socket);
+  SOCKET s = Socket_val(socket);
   int retcode;
   union sock_addr_union addr;
   socklen_param_type addr_len;

@@ -14,6 +14,7 @@
 /* $Id$ */
 
 #include <mlvalues.h>
+#include <alloc.h>
 #include "unixsupport.h"
 #include <sys/types.h>
 #ifdef HAS_DIRENT
@@ -25,7 +26,10 @@
 CAMLprim value unix_opendir(value path)
 {
   DIR * d;
+  value res;
   d = opendir(String_val(path));
   if (d == (DIR *) NULL) uerror("opendir", path);
-  return (value) d;
+  res = alloc_small(1, Abstract_tag);
+  DIR_Val(res) = d;
+  return res;
 }

@@ -63,9 +63,9 @@
 
 (value rec char
        (lambda len
-	 (parser
-	  (((` ''')) len)
-	  (((` x) s) (char (Buff.store len x) s)))))
+         (parser
+          (((` ''')) len)
+          (((` x) s) (char (Buff.store len x) s)))))
 
 (value quote
        (parser
@@ -140,15 +140,16 @@
            (if (= prm "") con
              (^ con (^ " \"" (^ prm "\"")))))))
 
-(value lexer_make
+(value lexer_gmake
        (lambda ()
          (let ((kwt (Hashtbl.create 89)))
            ({}
-            (Token.func (Token.lexer_func_of_parser (lexer kwt)))
-            (Token.using (lexer_using kwt))
-            (Token.removing (lambda))
-            (Token.tparse (lambda _ None))
-            (Token.text lexer_text)))))
+            (Token.tok_func (Token.lexer_func_of_parser (lexer kwt)))
+            (Token.tok_using (lexer_using kwt))
+            (Token.tok_removing (lambda))
+            (Token.tok_match Token.default_match)
+            (Token.tok_text lexer_text)
+            (Token.tok_comm None)))))
 
 ;; Building AST
 
@@ -222,7 +223,7 @@
                           ((list (Satom _ Alid "rec") :: sel) (, True sel))
                           ((_) (, False sel))))
                   (lbs (value_binding_se sel)))
-             <:str_item< value $rec:r$ $list:lbs$ >>))
+             <:str_item< value $opt:r$ $list:lbs$ >>))
           ((Sexpr loc _)
            (let ((e (expr_se se)))
              <:str_item< $exp:e$ >>))))
@@ -277,7 +278,7 @@
             ((list (Sexpr _ sel1) :: sel2)
              (let* ((lbs (List.map let_binding_se sel1))
                     (e (progn_se loc sel2)))
-               <:expr< let $rec:r$ $list:lbs$ in $e$ >>))
+               <:expr< let $opt:r$ $list:lbs$ in $e$ >>))
             ((list se :: _) (error se "let_binding"))
             ((_) (error_loc loc "let_binding")))))
   ((Sexpr loc (list (Satom _ Alid "let*") :: sel))
@@ -611,7 +612,7 @@
 (:= Pcaml.no_constructors_arity.val False)
 
 (progn
- (Grammar.Unsafe.reinit_gram gram (lexer_make ()))
+ (Grammar.Unsafe.gram_reinit gram (lexer_gmake ()))
  (Grammar.Unsafe.clear_entry interf)
  (Grammar.Unsafe.clear_entry implem)
  (Grammar.Unsafe.clear_entry top_phrase)

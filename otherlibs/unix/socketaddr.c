@@ -28,16 +28,28 @@
 #define EAFNOSUPPORT WSAEAFNOSUPPORT
 #endif
 
-value alloc_inet_addr(uint32 a)
+CAMLprim value alloc_inet_addr(struct in_addr * a)
 {
   value res;
   /* Use a string rather than an abstract block so that it can be
      marshaled safely.  Remember that a is in network byte order,
-     hence can be marshaled safely. */
-  res = alloc_string(sizeof(uint32));
-  GET_INET_ADDR(res) = a;
+     hence is marshaled in an endian-independent manner. */
+  res = alloc_string(4);
+  memcpy(String_val(res), a, 4);
   return res;
 }
+
+#ifdef HAS_IPV6
+
+CAMLprim value alloc_inet6_addr(struct in6_addr * a)
+{
+  value res;
+  res = alloc_string(16);
+  memcpy(String_val(res), a, 16);
+  return res;
+}
+
+#endif
 
 void get_sockaddr(value mladr,
                   union sock_addr_union * adr /*out*/,
@@ -62,18 +74,22 @@ void get_sockaddr(value mladr,
     }
 #endif
   case 1:                       /* ADDR_INET */
-    {
-      char * p;
-      int n;
-      for (p = (char *) &adr->s_inet, n = sizeof(adr->s_inet);
-           n > 0; p++, n--)
-        *p = 0;
-      adr->s_inet.sin_family = AF_INET;
-      adr->s_inet.sin_addr.s_addr = GET_INET_ADDR(Field(mladr, 0));
-      adr->s_inet.sin_port = htons(Int_val(Field(mladr, 1)));
-      *adr_len = sizeof(struct sockaddr_in);
+#ifdef HAS_IPV6
+    if (string_length(Field(mladr, 0)) == 16) {
+      memset(&adr->s_inet6, 0, sizeof(struct sockaddr_in6));
+      adr->s_inet6.sin6_family = AF_INET6;
+      adr->s_inet6.sin6_addr = GET_INET6_ADDR(Field(mladr, 0));
+      adr->s_inet6.sin6_port = htons(Int_val(Field(mladr, 1)));
+      *adr_len = sizeof(struct sockaddr_in6);
       break;
     }
+#endif
+    memset(&adr->s_inet, 0, sizeof(struct sockaddr_in));
+    adr->s_inet.sin_family = AF_INET;
+    adr->s_inet.sin_addr = GET_INET_ADDR(Field(mladr, 0));
+    adr->s_inet.sin_port = htons(Int_val(Field(mladr, 1)));
+    *adr_len = sizeof(struct sockaddr_in);
+    break;
   }
 }
 
@@ -93,7 +109,7 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
     }
 #endif
   case AF_INET:
-    { value a = alloc_inet_addr(adr->s_inet.sin_addr.s_addr);
+    { value a = alloc_inet_addr(&adr->s_inet.sin_addr);
       Begin_root (a);
         res = alloc_small(2, 1);
         Field(res,0) = a;
@@ -101,6 +117,17 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
       End_roots();
       break;
     }
+#ifdef HAS_IPV6
+  case AF_INET6:
+    { value a = alloc_inet6_addr(&adr->s_inet6.sin6_addr);
+      Begin_root (a);
+        res = alloc_small(2, 1);
+        Field(res,0) = a;
+        Field(res,1) = Val_int(ntohs(adr->s_inet6.sin6_port));
+      End_roots();
+      break;
+    }
+#endif
   default:
     unix_error(EAFNOSUPPORT, "", Nothing);
   }

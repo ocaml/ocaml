@@ -5,12 +5,12 @@ include ../config/Makefile
 SHELL=/bin/sh
 
 INCLUDES=-I ../odyl -I ../boot -I $(OTOP)/utils -I $(OTOP)/parsing -I $(OTOP)/otherlibs/dynlink
-OCAMLCFLAGS=$(INCLUDES)
+OCAMLCFLAGS= $(INCLUDES) -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
-INTERFACES=-I $(OLIBDIR) Arg Array Buffer Callback Char Digest Filename Format Gc Genlex Hashtbl Lazy Lexing List Map Marshal Obj Oo Parsing Pervasives Printexc Printf Queue Random Set Sort Stack Stream String Sys Weak -I ../boot Extfun Fstream Gramext Grammar Plexer Stdpp Token -I $(OTOP)/utils Config Warnings -I $(OTOP)/parsing Asttypes Location Longident Parsetree -I . Ast2pt MLast Pcaml Quotation Spretty
-CAMLP4_INTF=$(OTOP)/utils/config.cmi $(OTOP)/utils/warnings.cmi $(OTOP)/parsing/asttypes.cmi $(OTOP)/parsing/location.cmi $(OTOP)/parsing/longident.cmi $(OTOP)/parsing/parsetree.cmi ast2pt.cmo mLast.cmi pcaml.cmi spretty.cmi quotation.cmi
-CAMLP4_OBJS=../boot/stdpp.cmo ../boot/token.cmo ../boot/plexer.cmo ../boot/gramext.cmo ../boot/grammar.cmo ../boot/extfun.cmo ../boot/fstream.cmo $(OTOP)/utils/config.cmo quotation.cmo ast2pt.cmo spretty.cmo reloc.cmo pcaml.cmo argl.cmo crc.cmo
-CAMLP4_XOBJS=../lib/stdpp.cmx ../lib/token.cmx ../lib/plexer.cmx ../lib/gramext.cmx ../lib/grammar.cmx ../lib/extfun.cmx ../lib/fstream.cmx $(OTOP)/utils/config.cmx quotation.cmx ast2pt.cmx spretty.cmx reloc.cmx pcaml.cmx argl.cmx
+INTERFACES=-I $(OLIBDIR) Arg Array ArrayLabels Buffer Callback CamlinternalOO Char Complex Digest Filename Format Gc Genlex Hashtbl Int32 Int64 Lazy Lexing List ListLabels Map Marshal MoreLabels Nativeint Obj Oo Parsing Pervasives Printexc Printf Queue Random Scanf Set Sort Stack StdLabels Stream String StringLabels Sys Weak -I ../boot Extfold Extfun Fstream Gramext Grammar Plexer Stdpp Token -I $(OTOP)/utils Config Warnings -I $(OTOP)/parsing Asttypes Location Longident Parsetree -I . Ast2pt MLast Pcaml Quotation Spretty
+CAMLP4_INTF=$(OTOP)/utils/config.cmi $(OTOP)/utils/warnings.cmi $(OTOP)/parsing/asttypes.cmi $(OTOP)/parsing/location.cmi $(OTOP)/parsing/longident.cmi $(OTOP)/parsing/parsetree.cmi ast2pt.cmi mLast.cmi pcaml.cmi spretty.cmi quotation.cmi
+CAMLP4_OBJS=../boot/stdpp.cmo ../boot/token.cmo ../boot/plexer.cmo ../boot/gramext.cmo ../boot/grammar.cmo ../boot/extfold.cmo ../boot/extfun.cmo ../boot/fstream.cmo $(OTOP)/utils/config.cmo quotation.cmo spretty.cmo reloc.cmo pcaml.cmo ast2pt.cmo argl.cmo
+CAMLP4_XOBJS=../lib/stdpp.cmx ../lib/token.cmx ../lib/plexer.cmx ../lib/gramext.cmx ../lib/grammar.cmx ../lib/extfold.cmx ../lib/extfun.cmx ../lib/fstream.cmx $(OTOP)/utils/config.cmx quotation.cmx spretty.cmx reloc.cmx pcaml.cmx ast2pt.cmx argl.cmx
 OBJS=../odyl/odyl.cma camlp4.cma
 CAMLP4M=
 
@@ -22,7 +22,7 @@ opt: $(OBJS:.cma=.cmxa)
 optp4: $(CAMLP4OPT)
 
 $(CAMLP4): $(OBJS) ../odyl/odyl.cmo
-	$(OCAMLC) $(OBJS) $(CAMLP4M) ../odyl/odyl.cmo -linkall -o $(CAMLP4)
+	$(OCAMLC) -g $(OBJS) $(CAMLP4M) ../odyl/odyl.cmo -linkall -o $(CAMLP4)
 
 $(CAMLP4OPT): $(OBJS:.cma=.cmxa) ../odyl/odyl.cmx
 	$(OCAMLOPT) $(OBJS:.cma=.cmxa) $(CAMLP4M) ../odyl/odyl.cmx -linkall -o $(CAMLP4OPT)
@@ -36,20 +36,16 @@ camlp4.cma: $(CAMLP4_OBJS)
 camlp4.cmxa: $(CAMLP4_XOBJS)
 	$(OCAMLOPT) $(LINKFLAGS) $(CAMLP4_XOBJS) -a -o camlp4.cmxa
 
-crc.cmo: $(CAMLP4_INTF)
-	@OTOP=$(OTOP) EXE=$(EXE) ../tools/extract_crc.sh $(INTERFACES) > crc.ml
-	echo "let _ = Dynlink.add_available_units crc_unit_list" >> crc.ml
-	$(OCAMLC) $(OCAMLCFLAGS) -c crc.ml
-
 clean::
-	rm -f *.cm* *.pp[io] *.o *.bak .*.bak *.out *.opt
-	rm -f $(CAMLP4) crc.ml
+	rm -f *.cm* *.pp[io] *.$(O) *.$(A) *.bak .*.bak *.out *.opt
+	rm -f $(CAMLP4)
 
 depend:
 	cp .depend .depend.bak
 	> .depend
 	@for i in *.mli *.ml; do \
-	  ../tools/apply.sh pr_depend.cmo -- $$i >> .depend; \
+	  ../tools/apply.sh pr_depend.cmo -- $(INCLUDES) $$i | \
+	  sed -e 's| \.\./\.\.| $$(OTOP)|g' >> .depend; \
 	done
 
 promote:
@@ -61,10 +57,15 @@ compare:
 	done
 
 install:
-	-$(MKDIR) $(BINDIR)
-	cp $(CAMLP4) $(BINDIR)/.
-	cp mLast.mli quotation.mli pcaml.mli spretty.mli $(LIBDIR)/.
-	cp mLast.cmi quotation.cmi ast2pt.cmi pcaml.cmi spretty.cmi $(LIBDIR)/.
-	cp camlp4.cma $(LIBDIR)/.
+	-$(MKDIR) "$(BINDIR)"
+	-$(MKDIR) "$(LIBDIR)/camlp4"
+	cp $(CAMLP4) "$(BINDIR)/."
+	cp mLast.mli quotation.mli ast2pt.mli pcaml.mli spretty.mli "$(LIBDIR)/camlp4/."
+	cp mLast.cmi quotation.cmi ast2pt.cmi pcaml.cmi spretty.cmi "$(LIBDIR)/camlp4/."
+	cp camlp4.cma $(LIBDIR)/camlp4/.
+	if [ -f camlp4.cmxa ]; \
+	  then cp camlp4.cmxa camlp4.$(A) $(LIBDIR)/camlp4/.; \
+	  else : ; \
+	fi
 
 include .depend

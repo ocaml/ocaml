@@ -53,7 +53,7 @@ let current_point () =
     None ->
       raise Not_found
   | Some {ev_char = point; ev_module = mdle} ->
-      (mdle, point)
+      (mdle, point.Lexing.pos_cnum)
 
 let current_event_is_before () =
   match !current_event with

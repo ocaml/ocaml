@@ -19,3 +19,4 @@ val run_command: string -> unit
 val compile_file: string -> int
 val create_archive: string -> string list -> int
 val expand_libname: string -> string
+val quote_files: string list -> string

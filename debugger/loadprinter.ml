@@ -41,7 +41,8 @@ let use_debugger_symtable fn arg =
   let old_symtable = Symtable.current_state() in
   begin match !debugger_symtable with
   | None ->
-      Symtable.init_toplevel();
+      Dynlink.init();
+      Dynlink.allow_unsafe_modules true;
       debugger_symtable := Some(Symtable.current_state())
   | Some st ->
       Symtable.restore_state st
@@ -63,6 +64,11 @@ let rec loadfiles ppf name =
   try
     let filename = find_in_path !Config.load_path name in
     use_debugger_symtable Dynlink.loadfile filename;
+    let d = Filename.dirname name in
+    if d <> Filename.current_dir_name then begin
+      if not (List.mem d !Config.load_path) then
+        Config.load_path := d :: !Config.load_path;
+    end;
     fprintf ppf "File %s loaded@." filename;
     true
   with
@@ -77,10 +83,6 @@ let rec loadfiles ppf name =
       raise(Error(Load_failure e))
 
 let loadfile ppf name =
-  if !debugger_symtable = None then begin
-    Dynlink.add_interfaces stdlib_units [Config.standard_library];
-    Dynlink.allow_unsafe_modules true
-  end;
   ignore(loadfiles ppf name)
 
 (* Return the value referred to by a path (as in toplevel/topdirs) *)

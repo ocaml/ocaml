@@ -110,7 +110,8 @@ let lambda_smaller lam threshold =
     if !size > threshold then raise Exit;
     match lam with
       Uvar v -> ()
-    | Uconst(Const_base(Const_int _ | Const_char _ | Const_float _) |
+    | Uconst(Const_base(Const_int _ | Const_char _ | Const_float _ |
+                        Const_int32 _ | Const_int64 _ | Const_nativeint _) |
              Const_pointer _) -> incr size
     | Uconst _ ->
         raise Exit (* avoid duplication of structured constants *)
@@ -312,7 +313,9 @@ let rec substitute sb ulam =
 
 let is_simple_argument = function
     Uvar _ -> true
-  | Uconst(Const_base(Const_int _ | Const_char _ | Const_float _)) -> true
+  | Uconst(Const_base(Const_int _ | Const_char _ | Const_float _ |
+                      Const_int32 _ | Const_int64 _ | Const_nativeint _)) ->
+      true
   | Uconst(Const_pointer _) -> true
   | _ -> false
 
@@ -613,8 +616,7 @@ and close_functions fenv cenv fun_defs =
     List.map
       (function
           (id, (Lfunction(kind, params, body) as def)) ->
-            let label =
-              Compilenv.current_unit_name() ^ "_" ^ Ident.unique_name id in
+            let label = Compilenv.make_symbol (Some (Ident.unique_name id)) in
             let arity = List.length params in
             let fundesc =
               {fun_label = label;

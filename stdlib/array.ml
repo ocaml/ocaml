@@ -20,8 +20,8 @@ external get: 'a array -> int -> 'a = "%array_safe_get"
 external set: 'a array -> int -> 'a -> unit = "%array_safe_set"
 external unsafe_get: 'a array -> int -> 'a = "%array_unsafe_get"
 external unsafe_set: 'a array -> int -> 'a -> unit = "%array_unsafe_set"
-external make: int -> 'a -> 'a array = "make_vect"
-external create: int -> 'a -> 'a array = "make_vect"
+external make: int -> 'a -> 'a array = "caml_make_vect"
+external create: int -> 'a -> 'a array = "caml_make_vect"
 
 let init l f =
   if l = 0 then [||] else
@@ -85,7 +85,7 @@ let concat al =
   in find_init al
 
 let sub a ofs len =
-  if ofs < 0 || len < 0 || ofs + len > length a then invalid_arg "Array.sub"
+  if ofs < 0 || len < 0 || ofs > length a - len then invalid_arg "Array.sub"
   else if len = 0 then [||]
   else begin
     let r = create len (unsafe_get a ofs) in
@@ -94,13 +94,13 @@ let sub a ofs len =
   end
 
 let fill a ofs len v =
-  if ofs < 0 || len < 0 || ofs + len > length a
+  if ofs < 0 || len < 0 || ofs > length a - len
   then invalid_arg "Array.fill"
   else for i = ofs to ofs + len - 1 do unsafe_set a i v done
 
 let blit a1 ofs1 a2 ofs2 len =
-  if len < 0 || ofs1 < 0 || ofs1 + len > length a1
-             || ofs2 < 0 || ofs2 + len > length a2
+  if len < 0 || ofs1 < 0 || ofs1 > length a1 - len
+             || ofs2 < 0 || ofs2 > length a2 - len
   then invalid_arg "Array.blit"
   else if ofs1 < ofs2 then
     (* Top-down copy *)
@@ -144,6 +144,7 @@ let to_list a =
     if i < 0 then res else tolist (i - 1) (unsafe_get a i :: res) in
   tolist (length a - 1) []
 
+(* Cannot use List.length here because the List module depends on Array. *)
 let rec list_length accu = function
   | [] -> accu
   | h::t -> list_length (succ accu) t
@@ -199,7 +200,7 @@ let sort cmp a =
   let rec bubbledown l i =
     let j = maxson l i in
     set a i (get a j);
-    bubbledown l j;
+    bubbledown l j
   in
   let bubble l i = try bubbledown l i with Bottom i -> i in
   let rec trickleup i e =
@@ -274,3 +275,5 @@ let stable_sort cmp a =
     merge l2 l1 t 0 l2 a 0;
   end;
 ;;
+
+let fast_sort = stable_sort;;

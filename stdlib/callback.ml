@@ -15,7 +15,8 @@
 
 (* Registering Caml values with the C runtime for later callbacks *)
 
-external register_named_value: string -> Obj.t -> unit = "register_named_value"
+external register_named_value : string -> Obj.t -> unit
+                              = "caml_register_named_value"
 
 let register name v =
   register_named_value name (Obj.repr v)

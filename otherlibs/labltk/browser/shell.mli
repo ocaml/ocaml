@@ -36,7 +36,7 @@ class shell :
     method interrupt : unit
     method insert : string -> unit
     method send : string -> unit
-    method history : [`next|`previous] -> unit
+    method history : [`Next|`Previous] -> unit
   end
 
 val kill_all : unit -> unit

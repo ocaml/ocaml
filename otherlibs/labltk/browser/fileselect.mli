@@ -34,3 +34,6 @@ val f :
 
 (* usepath
       Enables/disables load path search. Defaults to true *)
+
+val caml_dir : string -> string
+(* Convert Windows-style directory separator '\' to caml-style '/' *)

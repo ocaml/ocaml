@@ -30,3 +30,5 @@ val search_in_path : string -> string
 
 (* Path expansion. *)
 val expand_path : string -> string
+
+val make_absolute : string -> string

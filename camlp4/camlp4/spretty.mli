@@ -39,11 +39,11 @@ type pretty =
   | BEVbox of Stream.t pretty
   | LocInfo of (int * int) and pretty ]
 ;
-type warnloc = (int * int) -> unit;
+type getcomm = int -> int -> (string * int * int * int);
 
 value print_pretty :
   (char -> unit) -> (string -> unit) -> (unit -> unit) ->
-     string -> string -> int -> warnloc -> pretty -> unit;
+     string -> string -> int -> getcomm -> int -> pretty -> unit;
 value quiet : ref bool;
 
 value dt : ref int;

@@ -13,14 +13,11 @@
 
 /* $Id$ */
 
-/* This avoids "overflow" errors when reading from very large directories
-   (PR#609) */
-#define _FILE_OFFSET_BITS 64
-
 #include <mlvalues.h>
 #include <fail.h>
 #include <alloc.h>
 #include "unixsupport.h"
+#include <errno.h>
 #include <sys/types.h>
 #ifdef HAS_DIRENT
 #include <dirent.h>
@@ -30,10 +27,12 @@ typedef struct dirent directory_entry;
 typedef struct direct directory_entry;
 #endif
 
-CAMLprim value unix_readdir(value d)
+CAMLprim value unix_readdir(value vd)
 {
+  DIR * d;
   directory_entry * e;
-
+  d = DIR_Val(vd);
+  if (d == (DIR *) NULL) unix_error(EBADF, "readdir", Nothing);
   e = readdir((DIR *) d);
   if (e == (directory_entry *) NULL) raise_end_of_file();
   return copy_string(e->d_name);

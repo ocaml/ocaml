@@ -97,7 +97,8 @@ let instruction ppf = function
   | Kisout -> fprintf ppf "\tisout"
   | Kgetmethod -> fprintf ppf "\tgetmethod"
   | Kstop -> fprintf ppf "\tstop"
-  | Kevent ev -> fprintf ppf "\tevent %i" ev.ev_char
+  | Kevent ev -> fprintf ppf "\tevent \"%s\" %i" ev.ev_char.Lexing.pos_fname
+                                                 ev.ev_char.Lexing.pos_cnum
 
 let rec instruction_list ppf = function
     [] -> ()

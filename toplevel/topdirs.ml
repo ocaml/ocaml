@@ -37,8 +37,7 @@ let _ = Hashtbl.add directive_table "quit" (Directive_none dir_quit)
 let dir_directory s =
   let d = expand_directory Config.standard_library s in
   Config.load_path := d :: !Config.load_path;
-  Dll.add_path [d];
-  Env.reset_cache()
+  Dll.add_path [d]
 
 let _ = Hashtbl.add directive_table "directory" (Directive_string dir_directory)
 
@@ -52,23 +51,16 @@ let _ = Hashtbl.add directive_table "cd" (Directive_string dir_cd)
 
 exception Load_failed
 
-let check_consistency ppf filename compunit =
-  Bytelink.check_consistency filename compunit;
-  (* Check consistency of unit against its .cmi, if it can be found *)
+let check_consistency ppf filename cu =
   try
-    let crc_intf = Env.crc_of_unit compunit.cu_name in
-    let crc_impl =
-      try List.assoc compunit.cu_name compunit.cu_imports
-      with Not_found -> assert false in
-    if crc_intf <> crc_impl then begin
-      fprintf ppf "@[<hv 0>File %s is not up-to-date with respect to@ \
-                           interface %s@]@."
-              filename compunit.cu_name;
-        raise Load_failed
-      end
-  with Not_found ->
-    (* Couldn't find .cmi, ignore it (or should we print a warning?) *)
-    ()
+    List.iter
+      (fun (name, crc) -> Consistbl.check Env.crc_units name crc filename)
+      cu.cu_imports
+  with Consistbl.Inconsistency(name, user, auth) ->
+    fprintf ppf "@[<hv 0>The files %s@ and %s@ \
+                 disagree over interface %s@]@."
+            user auth name;
+    raise Load_failed
 
 let load_compunit ic filename ppf compunit =
   check_consistency ppf filename compunit;
@@ -93,17 +85,18 @@ let load_compunit ic filename ppf compunit =
     raise Load_failed
   end
 
-let dir_load ppf name =
+let load_file ppf name =
   try
     let filename = find_in_path !Config.load_path name in
     let ic = open_in_bin filename in
     let buffer = String.create (String.length Config.cmo_magic_number) in
     really_input ic buffer 0 (String.length Config.cmo_magic_number);
-    begin try
+    let success = try
       if buffer = Config.cmo_magic_number then begin
         let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
         seek_in ic compunit_pos;
-        load_compunit ic filename ppf (input_value ic : compilation_unit)
+        load_compunit ic filename ppf (input_value ic : compilation_unit);
+        true
       end else
       if buffer = Config.cma_magic_number then begin
         let toc_pos = input_binary_int ic in  (* Go to table of contents *)
@@ -115,12 +108,18 @@ let dir_load ppf name =
           fprintf ppf "Cannot load required shared library: %s.@." reason;
           raise Load_failed
         end;
-        List.iter (load_compunit ic filename ppf) lib.lib_units
-      end else fprintf ppf "File %s is not a bytecode object file.@." name
-    with Load_failed -> ()
-    end;
-    close_in ic
-  with Not_found -> fprintf ppf "Cannot find file %s.@." name
+        List.iter (load_compunit ic filename ppf) lib.lib_units;
+        true
+      end else begin
+        fprintf ppf "File %s is not a bytecode object file.@." name;
+        false
+      end
+    with Load_failed -> false in
+    close_in ic;
+    success
+  with Not_found -> fprintf ppf "Cannot find file %s.@." name; false
+
+let dir_load ppf name = ignore (load_file ppf name)
 
 let _ = Hashtbl.add directive_table "load" (Directive_string (dir_load std_out))
 
@@ -199,7 +198,7 @@ let _ = Hashtbl.add directive_table "remove_printer"
 
 (* The trace *)
 
-external current_environment: unit -> Obj.t = "get_current_environment"
+external current_environment: unit -> Obj.t = "caml_get_current_environment"
 
 let tracing_function_ptr =
   get_code_pointer
@@ -216,8 +215,9 @@ let dir_trace ppf lid =
     | _ ->
         let clos = eval_path path in
         (* Nothing to do if it's not a closure *)
-        if Obj.is_block clos &&
-           (Obj.tag clos = 250 || Obj.tag clos = 249) then begin
+        if Obj.is_block clos
+        && (Obj.tag clos = Obj.closure_tag || Obj.tag clos = Obj.infix_tag)
+        then begin
         match is_traced clos with
         | Some opath ->
             fprintf ppf "%a is already traced (under the name %a).@."
@@ -249,7 +249,7 @@ let dir_untrace ppf lid =
         []
     | f :: rem ->
         if Path.same f.path path then begin
-          set_code_pointer (eval_path path) f.actual_code;
+          set_code_pointer f.closure f.actual_code;
           fprintf ppf "%a is no longer traced.@." Printtyp.longident lid;
           rem
         end else f :: remove rem in
@@ -260,7 +260,7 @@ let dir_untrace ppf lid =
 let dir_untrace_all ppf () =
   List.iter
     (fun f ->
-      set_code_pointer (eval_path f.path) f.actual_code;
+      set_code_pointer f.closure f.actual_code;
       fprintf ppf "%a is no longer traced.@." Printtyp.path f.path)
     !traced_functions;
   traced_functions := []
@@ -287,8 +287,11 @@ let _ =
   Hashtbl.add directive_table "labels"
              (Directive_bool(fun b -> Clflags.classic := not b));
 
+  Hashtbl.add directive_table "principal"
+             (Directive_bool(fun b -> Clflags.principal := b));
+
   Hashtbl.add directive_table "warnings"
              (Directive_string (parse_warnings std_out false));
 
   Hashtbl.add directive_table "warn_error"
-             (Directive_string (parse_warnings std_out true));
+             (Directive_string (parse_warnings std_out true))

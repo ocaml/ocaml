@@ -14,7 +14,10 @@
 
 open Format
 
-type t = { stamp: int; name: string; mutable global: bool }
+type t = { stamp: int; name: string; mutable flags: int }
+
+let global_flag = 1
+let predef_exn_flag = 2
 
 (* A stamp of 0 denotes a persistent identifier *)
 
@@ -22,10 +25,14 @@ let currentstamp = ref 0
 
 let create s =
   incr currentstamp;
-  { name = s; stamp = !currentstamp; global = false }
+  { name = s; stamp = !currentstamp; flags = 0 }
+
+let create_predef_exn s =
+  incr currentstamp;
+  { name = s; stamp = !currentstamp; flags = predef_exn_flag }
 
 let create_persistent s =
-  { name = s; stamp = 0; global = true }
+  { name = s; stamp = 0; flags = global_flag }
 
 let rename i =
   incr currentstamp;
@@ -33,11 +40,11 @@ let rename i =
 
 let name i = i.name
 
-(*> JOCAML *)
 let stamp i = i.stamp
-(*< JOCAML *)
 
 let unique_name i = i.name ^ "_" ^ string_of_int i.stamp
+
+let unique_toplevel_name i = i.name ^ "/" ^ string_of_int i.stamp
 
 let persistent i = (i.stamp = 0)
 
@@ -54,20 +61,30 @@ let binding_time i = i.stamp
 let current_time() = !currentstamp
 let set_current_time t = currentstamp := max !currentstamp t
 
+let reinit_level = ref (-1)
+
+let reinit () = 
+  if !reinit_level < 0
+  then reinit_level := !currentstamp
+  else currentstamp := !reinit_level
+
 let hide i =
   { i with stamp = -1 }
 
 let make_global i =
-  i.global <- true
+  i.flags <- i.flags lor global_flag
 
 let global i =
-  i.global
+  (i.flags land global_flag) <> 0
+
+let is_predef_exn i =
+  (i.flags land predef_exn_flag) <> 0
 
 let print ppf i =
   match i.stamp with
   | 0 -> fprintf ppf "%s!" i.name
   | -1 -> fprintf ppf "%s#" i.name
-  | n -> fprintf ppf "%s/%i%s" i.name n (if i.global then "g" else "")
+  | n -> fprintf ppf "%s/%i%s" i.name n (if global i then "g" else "")
 
 type 'a tbl =
     Empty
@@ -84,6 +101,10 @@ let empty = Empty
 and is_empty = function
   | Empty -> true
   | _     -> false
+
+let rec card = function
+  | Empty -> 0
+  | Node (t1, _, t2, _) -> card t1 + 1 + card t2
 (*< JOCAML *)
 
 (* Inline expansion of height for better speed
@@ -160,3 +181,14 @@ let rec find_name name = function
         k.data
       else
         find_name name (if c < 0 then l else r)
+
+let rec keys_aux stack accu = function
+    Empty ->
+      begin match stack with
+        [] -> accu
+      | a :: l -> keys_aux l accu a
+      end
+  | Node(l, k, r, _) ->
+      keys_aux (l :: stack) (k.ident :: accu) r
+
+let keys tbl = keys_aux [] [] tbl

@@ -19,9 +19,6 @@ ocamlc \- The Objective Caml bytecode compiler
 .B \-custom
 ]
 [
-.B \-labels
-]
-[
 .B \-unsafe
 ]
 [
@@ -229,12 +226,6 @@ option is given, specify the name of the library produced.
 .TP
 .B \-v
 Print the version number of the compiler.
-
-.TP
-.B \-labels
-Switch to ``commuting label mode''. Arguments must be
-explicitly labeled by labels appearing in types. Arguments with different
-labels may commute freely.
 
 .TP
 .B \-unsafe

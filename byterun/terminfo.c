@@ -41,14 +41,17 @@ static char *down = NULL;
 static char *standout = NULL;
 static char *standend = NULL;
 
-CAMLprim value terminfo_setup (value vchan)
+CAMLprim value caml_terminfo_setup (value vchan)
 {
   value result;
   static char buffer[1024];
+  char *term;
 
   chan = Channel (vchan);
 
-  if (tgetent(buffer, getenv("TERM")) != 1) return Bad_term;
+  term = getenv ("TERM");
+  if (term == NULL) return Bad_term;
+  if (tgetent(buffer, term) != 1) return Bad_term;
 
   num_lines = tgetnum ("li");
   up = tgetstr ("up", &area_p);
@@ -64,7 +67,7 @@ CAMLprim value terminfo_setup (value vchan)
       || standout == NULL || standend == NULL){
     return Bad_term;
   }
-  result = alloc_small (1, Good_term_tag);
+  result = caml_alloc_small (1, Good_term_tag);
   Field (result, 0) = Val_int (num_lines);
   return result;
 }
@@ -75,7 +78,7 @@ static int terminfo_putc (int c)
   return c;
 }
 
-CAMLprim value terminfo_backup (value lines)
+CAMLprim value caml_terminfo_backup (value lines)
 {
   int i;
 
@@ -85,13 +88,13 @@ CAMLprim value terminfo_backup (value lines)
   return Val_unit;
 }
 
-CAMLprim value terminfo_standout (value start)
+CAMLprim value caml_terminfo_standout (value start)
 {
   tputs (Bool_val (start) ? standout : standend, 1, terminfo_putc);
   return Val_unit;
 }
 
-CAMLprim value terminfo_resume (value lines)
+CAMLprim value caml_terminfo_resume (value lines)
 {
   int i;
 
@@ -103,26 +106,26 @@ CAMLprim value terminfo_resume (value lines)
 
 #else /* defined (HAS_TERMCAP) && !defined (NATIVE_CODE) */
 
-CAMLexport value terminfo_setup (value vchan)
+CAMLexport value caml_terminfo_setup (value vchan)
 {
   return Bad_term;
 }
 
-CAMLexport value terminfo_backup (value lines)
+CAMLexport value caml_terminfo_backup (value lines)
 {
-  invalid_argument("Terminfo.backup");
+  caml_invalid_argument("Terminfo.backup");
   return Val_unit;
 }
 
-CAMLexport value terminfo_standout (value start)
+CAMLexport value caml_terminfo_standout (value start)
 {
-  invalid_argument("Terminfo.standout");
+  caml_invalid_argument("Terminfo.standout");
   return Val_unit;
 }
 
-CAMLexport value terminfo_resume (value lines)
+CAMLexport value caml_terminfo_resume (value lines)
 {
-  invalid_argument("Terminfo.resume");
+  caml_invalid_argument("Terminfo.resume");
   return Val_unit;
 }
 

@@ -29,6 +29,11 @@ val transl_signature:
 val check_nongen_schemes:
         Env.t -> Typedtree.structure -> unit
 
+val simplify_signature: signature -> signature
+
+val package_units:
+        string list -> string -> string -> Typedtree.module_coercion
+
 type error =
     Unbound_module of Longident.t
   | Unbound_modtype of Longident.t
@@ -43,6 +48,7 @@ type error =
   | Non_generalizable of type_expr
   | Non_generalizable_class of Ident.t * class_declaration
   | Non_generalizable_module of module_type
+  | Implementation_is_required of string
 
 exception Error of Location.t * error
 

@@ -55,34 +55,42 @@ val chop_extension : string -> string
 
 val basename : string -> string
 (** Split a file name into directory name / base file name.
-   {!Filename.concat} [(]{!Filename.dirname}[ name) (]{!Filename.basename}[ name)]
-   returns a file name which is equivalent to [name]. Moreover, after setting the
-   current directory to {!Filename.dirname}[ name] (with {!Sys.chdir}),
-   references to {!Filename.basename}[ name] (which is a relative file name)
+   [concat (dirname name) (basename name)] returns a file name
+   which is equivalent to [name]. Moreover, after setting the
+   current directory to [dirname name] (with {!Sys.chdir}),
+   references to [basename name] (which is a relative file name)
    designate the same file as [name] before the call to {!Sys.chdir}. *)
 
 val dirname : string -> string
-(** See {!Filename.dirname}. *)
+(** See {!Filename.basename}. *)
 
 val temp_file : string -> string -> string
 (** [temp_file prefix suffix] returns the name of a
    fresh temporary file in the temporary directory.
    The base name of the temporary file is formed by concatenating
    [prefix], then a suitably chosen integer number, then [suffix].
-   The temporary file is created empty, and is guaranteed to be
-   different from any other file that existed when [temp_file]
-   was called.
+   The temporary file is created empty, with permissions [0o600]
+   (readable and writable only by the file owner).  The file is
+   guaranteed to be different from any other file that existed when
+   [temp_file] was called.
    Under Unix, the temporary directory is [/tmp] by default; if set,
    the value of the environment variable [TMPDIR] is used instead.
    Under Windows, the name of the temporary directory is the
-   value of the environment variable [TEMP],
-   or [C:\temp] by default.
-   Under MacOS, the name of the temporary directory is given
-   by the environment variable [TempFolder]; if not set,
-   temporary files are created in the current directory. *)
+   value of the environment variable [TEMP], or [C:\temp] by default. *)
+
+val open_temp_file :
+      ?mode: open_flag list -> string -> string -> string * out_channel
+(** Same as {!Filename.temp_file}, but returns both the name of a fresh
+   temporary file, and an output channel opened (atomically) on
+   this file.  This function is more secure than [temp_file]: there
+   is no risk that the temporary file will be modified (e.g. replaced
+   by a symbolic link) before the program opens it.  The optional argument
+   [mode] is a list of additional flags to control the opening of the file.
+   It can contain one or several of [Open_append], [Open_binary],
+   and [Open_text].  The default is [[Open_text]] (open in text mode). *)
 
 val quote : string -> string
 (** Return a quoted version of a file name, suitable for use as
-   one argument in a shell command line, escaping any shell
+   one argument in a shell command line, escaping all shell
    meta-characters. *)
 

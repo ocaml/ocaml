@@ -39,6 +39,14 @@ val class_type_declarations:
    Ident.t * type_declaration *
    Ident.t * type_declaration) list * Env.t
 
+val approx_class_declarations:
+  Env.t -> Parsetree.class_description list ->
+  (Ident.t * cltype_declaration *
+   Ident.t * type_declaration *
+   Ident.t * type_declaration) list
+
+val virtual_methods: Types.class_signature -> label list
+
 type error =
     Unconsistent_constraint of (type_expr * type_expr) list
   | Method_type_mismatch of string * (type_expr * type_expr) list
@@ -63,6 +71,9 @@ type error =
   | Make_nongen_seltype of type_expr
   | Non_generalizable_class of Ident.t * Types.class_declaration
   | Cannot_coerce_self of type_expr
+  | Non_collapsable_conjunction of
+      Ident.t * Types.class_declaration * (type_expr * type_expr) list
+  | Final_self_clash of (type_expr * type_expr) list
 
 exception Error of Location.t * error
 

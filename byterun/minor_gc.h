@@ -13,25 +13,35 @@
 
 /* $Id$ */
 
-#ifndef _minor_gc_
-#define _minor_gc_
+#ifndef CAML_MINOR_GC_H
+#define CAML_MINOR_GC_H
 
 
 #include "misc.h"
 
-CAMLextern char *young_start, *young_ptr, *young_end, *young_limit;
-CAMLextern value **ref_table_ptr, **ref_table_limit;
-extern asize_t minor_heap_size;
-extern int in_minor_collection;
+CAMLextern char *caml_young_start, *caml_young_ptr;
+CAMLextern char *caml_young_end, *caml_young_limit;
+CAMLextern value **caml_ref_table_ptr, **caml_ref_table_limit;
+extern asize_t caml_minor_heap_size;
+extern int caml_in_minor_collection;
 
 #define Is_young(val) \
-  ((addr)(val) < (addr)young_end && (addr)(val) > (addr)young_start)
+  (Assert (Is_block (val)), \
+   (addr)(val) < (addr)caml_young_end && (addr)(val) > (addr)caml_young_start)
 
-extern void set_minor_heap_size (asize_t);
-extern void empty_minor_heap (void);
-CAMLextern void minor_collection (void);
-CAMLextern void garbage_collection (void); /* for the native-code system */
-extern void realloc_ref_table (void);
-extern void oldify (value, value *);
+extern void caml_set_minor_heap_size (asize_t);
+extern void caml_empty_minor_heap (void);
+CAMLextern void caml_minor_collection (void);
+CAMLextern void garbage_collection (void); /* def in asmrun/signals.c */
+extern void caml_realloc_ref_table (void);
+extern void caml_oldify_one (value, value *);
+extern void caml_oldify_mopup (void);
 
-#endif /* _minor_gc_ */
+#define Oldify(p) do{ \
+    value __oldify__v__ = *p; \
+    if (Is_block (__oldify__v__) && Is_young (__oldify__v__)){ \
+      caml_oldify_one (__oldify__v__, (p)); \
+    } \
+  }while(0)
+
+#endif /* CAML_MINOR_GC_H */

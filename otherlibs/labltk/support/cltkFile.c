@@ -1,18 +1,18 @@
-/*************************************************************************/
-/*                                                                       */
-/*                Objective Caml LablTk library                          */
-/*                                                                       */
-/*         Francois Rouaix, Francois Pessaux and Jun Furuse              */
-/*               projet Cristal, INRIA Rocquencourt                      */
-/*            Jacques Garrigue, Kyoto University RIMS                    */
-/*                                                                       */
-/*   Copyright 1999 Institut National de Recherche en Informatique et    */
-/*   en Automatique and Kyoto University.  All rights reserved.          */
-/*   This file is distributed under the terms of the GNU Library         */
-/*   General Public License, with the special exception on linking       */
-/*   described in file ../../../LICENSE.                                 */
-/*                                                                       */
-/*************************************************************************/
+/***********************************************************************/
+/*                                                                     */
+/*                 MLTk, Tcl/Tk interface of Objective Caml            */
+/*                                                                     */
+/*    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    */
+/*               projet Cristal, INRIA Rocquencourt                    */
+/*            Jacques Garrigue, Kyoto University RIMS                  */
+/*                                                                     */
+/*  Copyright 2002 Institut National de Recherche en Informatique et   */
+/*  en Automatique and Kyoto University.  All rights reserved.         */
+/*  This file is distributed under the terms of the GNU Library        */
+/*  General Public License, with the special exception on linking      */
+/*  described in file LICENSE found in the Objective Caml source tree. */
+/*                                                                     */
+/***********************************************************************/
 
 /* $Id$ */
 
@@ -106,9 +106,9 @@ CAMLprim value camltk_rem_file_output(value fd, value cbid)
 
 /* Under Win32, we go through the generic channel abstraction */
 
-/* Map Unix.file_descr values to Tcl channels */
+#define Handle_val(v) (*((HANDLE *) Data_custom_val(v)))
 
-#define Handle_val(v) (*((HANDLE *)(v)))
+/* Map Unix.file_descr values to Tcl channels */
 
 static Tcl_Channel tcl_channel(value fd, int flags)
 {

@@ -12,6 +12,7 @@
 
 (* $Id$ *)
 
+open Cmm
 open Mach
 
 (* Instruction scheduling for the Sparc *)
@@ -20,14 +21,23 @@ class scheduler = object
 
 inherit Schedgen.scheduler_generic
 
-(* Latencies (in cycles). Wild guesses. *)
+(* Latencies (in cycles). *)
+
+(* UltraSPARC issues two integer operations, plus a single load or store,
+   per cycle.  At most one of the integer instructions may be a shift.
+   Most integer operations have one cycle latency.  Unsigned loads take
+   two cycles.  Signed loads take three cycles.  Conditional moves have
+   two cycle latency and may not issue in the same cycle as any other
+   instruction.  Floating point issue rules are complicated, but in
+   general independent add and multiply can dual issue with four cycle
+   latency.  *)
 
 method oper_latency = function
-    Ireload -> 3
-  | Iload(_, _) -> 3
-  | Iconst_float _ -> 3 (* turned into a load *)
-  | Iaddf | Isubf -> 3
-  | Imulf -> 5
+    Ireload -> 2
+  | Iload((Byte_signed|Sixteen_signed|Thirtytwo_signed), _) -> 3
+  | Iload(_, _) -> 2
+  | Iconst_float _ -> 2 (* turned into a load *)
+  | Inegf | Iabsf | Iaddf | Isubf | Imulf -> 4
   | Idivf -> 15
   | _ -> 1
 

@@ -2,36 +2,37 @@
 
 (cond
  ((x-display-color-p)
-;
-;       (not (memq 'font-lock-type-face (face-list))))
-  ; make the necessary faces
-  (make-face 'Firebrick)
-  (set-face-foreground 'Firebrick "Firebrick")
-  (make-face 'RosyBrown)
-  (set-face-foreground 'RosyBrown "RosyBrown")
-  (make-face 'Purple)
-  (set-face-foreground 'Purple "Purple")
-  (make-face 'MidnightBlue)
-  (set-face-foreground 'MidnightBlue "MidnightBlue")
-  (make-face 'DarkGoldenRod)
-  (set-face-foreground 'DarkGoldenRod "DarkGoldenRod")
-  (make-face 'DarkOliveGreen)
-  (set-face-foreground 'DarkOliveGreen "DarkOliveGreen4")
-  (make-face 'CadetBlue)
-  (set-face-foreground 'CadetBlue "CadetBlue")
+  (cond
+   ((not (memq 'font-lock-type-face (face-list)))
+    ; make the necessary faces
+    (make-face 'Firebrick)
+    (set-face-foreground 'Firebrick "Firebrick")
+    (make-face 'RosyBrown)
+    (set-face-foreground 'RosyBrown "RosyBrown")
+    (make-face 'Purple)
+    (set-face-foreground 'Purple "Purple")
+    (make-face 'MidnightBlue)
+    (set-face-foreground 'MidnightBlue "MidnightBlue")
+    (make-face 'DarkGoldenRod)
+    (set-face-foreground 'DarkGoldenRod "DarkGoldenRod")
+    (make-face 'DarkOliveGreen)
+    (set-face-foreground 'DarkOliveGreen "DarkOliveGreen4")
+    (make-face 'CadetBlue)
+    (set-face-foreground 'CadetBlue "CadetBlue")
+    ; assign them as standard faces
+    (setq font-lock-comment-face 'Firebrick)
+    (setq font-lock-string-face 'RosyBrown)
+    (setq font-lock-keyword-face 'Purple)
+    (setq font-lock-function-name-face 'MidnightBlue)
+    (setq font-lock-variable-name-face 'DarkGoldenRod)
+    (setq font-lock-type-face 'DarkOliveGreen)
+    (setq font-lock-reference-face 'CadetBlue)))
+  ; extra faces for documention
   (make-face 'Stop)
   (set-face-foreground 'Stop "White")
   (set-face-background 'Stop "Red")
   (make-face 'Doc)
   (set-face-foreground 'Doc "Red")
-  ; assign them as standard faces
-  (setq font-lock-comment-face 'Firebrick)
-  (setq font-lock-string-face 'RosyBrown)
-  (setq font-lock-keyword-face 'Purple)
-  (setq font-lock-function-name-face 'MidnightBlue)
-  (setq font-lock-variable-name-face 'DarkGoldenRod)
-  (setq font-lock-type-face 'DarkOliveGreen)
-  (setq font-lock-reference-face 'CadetBlue)
   (setq font-lock-stop-face 'Stop)
   (setq font-lock-doccomment-face 'Doc)
 ))
@@ -66,7 +67,7 @@
           "\\|in\\(herit\\|itializer\\)?\\|let"
           "\\|m\\(ethod\\|utable\\|odule\\)"
           "\\|of\\|p\\(arser\\|rivate\\)\\|rec\\|type"
-          "\\|v\\(al\\(ue\\)?\\|irtual\\)\\)\\>")
+          "\\|v\\(al\\|irtual\\)\\)\\>")
          'font-lock-type-face)
 ;blocking
    '("\\<\\(begin\\|end\\|object\\|s\\(ig\\|truct\\)\\)\\>"
@@ -93,7 +94,7 @@
    caml-font-lock-keywords))
 
 ;; font-lock commands are similar for caml-mode and inferior-caml-mode
-(setq caml-mode-hook
+(add-hook 'caml-mode-hook
       '(lambda ()
          (cond
           ((fboundp 'global-font-lock-mode)

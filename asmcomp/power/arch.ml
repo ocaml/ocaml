@@ -14,11 +14,19 @@
 
 (* Specific operations for the PowerPC processor *)
 
+open Misc
 open Format
+
+(* Machine-specific command-line options *)
+
+let command_line_options = []
+
+(* Specific operations *)
 
 type specific_operation =
     Imultaddf                           (* multiply and add *)
   | Imultsubf                           (* multiply and subtract *)
+  | Ialloc_far of int                   (* allocation in large functions *)
 
 (* Addressing modes *)
 
@@ -71,6 +79,8 @@ let print_specific_operation printreg op ppf arg =
   | Imultsubf ->
       fprintf ppf "%a *f %a -f %a"
         printreg arg.(0) printreg arg.(1) printreg arg.(2)
+  | Ialloc_far n ->
+      fprintf ppf "alloc_far %d" n
 
 (* Distinguish between the PowerPC and the Power/RS6000 submodels *)
 
@@ -87,7 +97,5 @@ let powerpc =
 let toc =
   match Config.system with
   | "aix" -> true
-  | "elf" -> false
-  | "rhapsody" -> false
+  | "elf" | "rhapsody" | "bsd" -> false
   | _ -> Misc.fatal_error "wrong $(SYSTEM)"
-

@@ -17,8 +17,12 @@
 val fatal_error: string -> 'a
 exception Fatal_error
 
+val try_finally : (unit -> 'a) -> (unit -> unit) -> 'a;;
+
 val map_end: ('a -> 'b) -> 'a list -> 'b list -> 'b list
         (* [map_end f l t] is [map f l @ t], just more efficient. *)
+val map_left_right: ('a -> 'b) -> 'a list -> 'b list
+        (* Like [List.map], with guaranteed left-to-right evaluation order *)
 val for_all2: ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
         (* Same as [List.for_all] but for a binary predicate.
            In addition, this [for_all2] never fails: given two lists
@@ -37,6 +41,10 @@ val may_map: ('a -> 'b) -> 'a option -> 'b option
 
 val find_in_path: string list -> string -> string
         (* Search a file in a list of directories. *)
+val find_in_path_uncap: string list -> string -> string
+        (* Same, but search also for uncapitalized name, i.e.
+           if name is Foo.ml, allow /path/Foo.ml and /path/foo.ml
+           to match. *)
 val remove_file: string -> unit
         (* Delete the given file if it exists. Never raise an error. *)
 val expand_directory: string -> string -> string
@@ -67,3 +75,20 @@ val no_overflow_add: int -> int -> bool
 val no_overflow_sub: int -> int -> bool
         (* [no_overflow_add n1 n2] returns [true] if the computation of
            [n1 - n2] does not overflow. *)
+val no_overflow_lsl: int -> bool
+        (* [no_overflow_add n] returns [true] if the computation of
+           [n lsl 1] does not overflow. *)
+
+val chop_extension_if_any: string -> string
+        (* Like Filename.chop_extension but returns the initial file
+           name if it has no extension *)
+
+val search_substring: string -> string -> int -> int
+        (* [search_substring pat str start] returns the position of the first
+           occurrence of string [pat] in string [str].  Search starts
+           at offset [start] in [str].  Raise [Not_found] if [pat]
+           does not occur. *)
+
+val rev_split_words: string -> string list
+        (* [rev_split_words s] splits [s] in blank-separated words, and return
+           the list of words in reverse order. *)

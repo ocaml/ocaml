@@ -76,6 +76,13 @@ let size_expr env exp =
         fatal_error "Selection.size_expr"
   in size Tbl.empty exp
 
+(* These are C library functions that are known to be pure
+   (no side effects at all) and worth not pre-computing. *)
+
+let pure_external_functions =
+  ["acos"; "asin"; "atan"; "atan2"; "cos"; "exp"; "log";
+   "log10"; "sin"; "sqrt"; "tan"]
+
 (* Says if an expression is "simple". A "simple" expression has no
    side-effects and its execution can be delayed until its value
    is really needed. In the case of e.g. an [alloc] instruction,
@@ -97,9 +104,15 @@ let rec is_simple_expr = function
   | Cop(op, args) ->
       begin match op with
         (* The following may have side effects *)
-        Capply _ | Cextcall(_, _, _) | Calloc | Cstore _ | Craise -> false
+      | Capply _ | Calloc | Cstore _ | Craise -> false
+        (* External C functions normally have side effects, unless known *)
+      | Cextcall(fn, _, alloc) ->
+          not alloc &&
+          List.mem fn pure_external_functions &&
+          List.for_all is_simple_expr args
         (* The remaining operations are simple if their args are *)
-      | _ -> List.for_all is_simple_expr args
+      | _ ->
+          List.for_all is_simple_expr args
       end
   | _ -> false
 
@@ -131,48 +144,52 @@ let name_regs id rv =
 (* "Join" two instruction sequences, making sure they return their results
    in the same registers. *)
 
-let join r1 seq1 r2 seq2 =
-  let l1 = Array.length r1 and l2 = Array.length r2 in
-  if l1 = 0 then r2
-  else if l2 = 0 then r1
-  else begin
-    let r = Array.create l1 Reg.dummy in
-    for i = 0 to l1-1 do
-      if String.length r1.(i).name = 0 then begin
-        r.(i) <- r1.(i);
-        seq2#insert_move r2.(i) r1.(i)
-      end else if String.length r2.(i).name = 0 then begin
-        r.(i) <- r2.(i);
-        seq1#insert_move r1.(i) r2.(i)
-      end else begin
-        r.(i) <- Reg.create r1.(i).typ;
-        seq1#insert_move r1.(i) r.(i);
-        seq2#insert_move r2.(i) r.(i)
-      end
-    done;
-    r
-  end
+let join opt_r1 seq1 opt_r2 seq2 =
+  match (opt_r1, opt_r2) with
+    (None, _) -> opt_r2
+  | (_, None) -> opt_r1
+  | (Some r1, Some r2) ->
+      let l1 = Array.length r1 in
+      assert (l1 = Array.length r2);
+      let r = Array.create l1 Reg.dummy in
+      for i = 0 to l1-1 do
+        if String.length r1.(i).name = 0 then begin
+          r.(i) <- r1.(i);
+          seq2#insert_move r2.(i) r1.(i)
+        end else if String.length r2.(i).name = 0 then begin
+          r.(i) <- r2.(i);
+          seq1#insert_move r1.(i) r2.(i)
+        end else begin
+          r.(i) <- Reg.create r1.(i).typ;
+          seq1#insert_move r1.(i) r.(i);
+          seq2#insert_move r2.(i) r.(i)
+        end
+      done;
+      Some r
 
 (* Same, for N branches *)
 
 let join_array rs =
-  let some_res = ref [||] in
+  let some_res = ref None in
   for i = 0 to Array.length rs - 1 do
     let (r, s) = rs.(i) in
-    if Array.length r > 0 then some_res := r
+    if r <> None then some_res := r
   done;
-  let size_res = Array.length !some_res in
-  if size_res = 0 then [||] else begin
-    let res = Array.create size_res Reg.dummy in
-    for i = 0 to size_res - 1 do
-      res.(i) <- Reg.create (!some_res).(i).typ
-    done;
-    for i = 0 to Array.length rs - 1 do
-      let (r, s) = rs.(i) in
-      if Array.length r > 0 then s#insert_moves r res
-    done;
-    res
-  end
+  match !some_res with
+    None -> None
+  | Some template ->
+      let size_res = Array.length template in
+      let res = Array.create size_res Reg.dummy in
+      for i = 0 to size_res - 1 do
+        res.(i) <- Reg.create template.(i).typ
+      done;
+      for i = 0 to Array.length rs - 1 do
+        let (r, s) = rs.(i) in
+        match r with
+          None -> ()
+        | Some r -> s#insert_moves r res
+      done;
+      Some res
 
 (* Registers for catch constructs *)
 let catch_regs = ref []
@@ -372,128 +389,149 @@ method emit_expr env exp =
   match exp with
     Cconst_int n ->
       let r = Reg.createv typ_int in
-      self#insert_op (Iconst_int(Nativeint.of_int n)) [||] r
+      Some(self#insert_op (Iconst_int(Nativeint.of_int n)) [||] r)
   | Cconst_natint n ->
       let r = Reg.createv typ_int in
-      self#insert_op (Iconst_int n) [||] r
+      Some(self#insert_op (Iconst_int n) [||] r)
   | Cconst_float n ->
       let r = Reg.createv typ_float in
-      self#insert_op (Iconst_float n) [||] r
+      Some(self#insert_op (Iconst_float n) [||] r)
   | Cconst_symbol n ->
       let r = Reg.createv typ_addr in
-      self#insert_op (Iconst_symbol n) [||] r
+      Some(self#insert_op (Iconst_symbol n) [||] r)
   | Cconst_pointer n ->
       let r = Reg.createv typ_addr in
-      self#insert_op (Iconst_int(Nativeint.of_int n)) [||] r
+      Some(self#insert_op (Iconst_int(Nativeint.of_int n)) [||] r)
   | Cconst_natpointer n ->
       let r = Reg.createv typ_addr in
-      self#insert_op (Iconst_int n) [||] r
+      Some(self#insert_op (Iconst_int n) [||] r)
   | Cvar v ->
       begin try
-        Tbl.find v env
+        Some(Tbl.find v env)
       with Not_found ->
         fatal_error("Selection.emit_expr: unbound var " ^ Ident.unique_name v)
       end
   | Clet(v, e1, e2) ->
-      self#emit_expr (self#emit_let env v e1) e2
+      begin match self#emit_expr env e1 with
+        None -> None
+      | Some r1 -> self#emit_expr (self#bind_let env v r1) e2
+      end
   | Cassign(v, e1) ->
       let rv =
         try
           Tbl.find v env
         with Not_found ->
           fatal_error ("Selection.emit_expr: unbound var " ^ Ident.name v) in
-      let r1 = self#emit_expr env e1 in
-      self#insert_moves r1 rv;
-      [||]
+      begin match self#emit_expr env e1 with
+        None -> None
+      | Some r1 -> self#insert_moves r1 rv; Some [||]
+      end
   | Ctuple [] ->
-      [||]
+      Some [||]
   | Ctuple exp_list ->
-      let (simple_list, ext_env) = self#emit_parts_list env exp_list in
-      self#emit_tuple ext_env simple_list
+      begin match self#emit_parts_list env exp_list with
+        None -> None
+      | Some(simple_list, ext_env) ->
+          Some(self#emit_tuple ext_env simple_list)
+      end
   | Cop(Craise, [arg]) ->
-      let r1 = self#emit_expr env arg in
-      let rd = [|Proc.loc_exn_bucket|] in
-      self#insert (Iop Imove) r1 rd;
-      self#insert Iraise rd [||];
-      [||]
+      begin match self#emit_expr env arg with
+        None -> None
+      | Some r1 ->
+          let rd = [|Proc.loc_exn_bucket|] in
+          self#insert (Iop Imove) r1 rd;
+          self#insert Iraise rd [||];
+          None
+      end
   | Cop(Ccmpf comp, args) ->
       self#emit_expr env (Cifthenelse(exp, Cconst_int 1, Cconst_int 0))
   | Cop(op, args) ->
-      let (simple_args, env) = self#emit_parts_list env args in
-      let ty = oper_result_type op in
-      let (new_op, new_args) = self#select_operation op simple_args in
-      begin match new_op with
-        Icall_ind ->
-          Proc.contains_calls := true;
-          let r1 = self#emit_tuple env new_args in
-          let rarg = Array.sub r1 1 (Array.length r1 - 1) in
-          let rd = Reg.createv ty in
-          let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
-          let loc_res = Proc.loc_results rd in
-          self#insert_move_args rarg loc_arg stack_ofs;
-          self#insert (Iop Icall_ind)
-                      (Array.append [|r1.(0)|] loc_arg) loc_res;
-          self#insert_move_results loc_res rd stack_ofs;
-          rd
-      | Icall_imm lbl ->
-          Proc.contains_calls := true;
-          let r1 = self#emit_tuple env new_args in
-          let rd = Reg.createv ty in
-          let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
-          let loc_res = Proc.loc_results rd in
-          self#insert_move_args r1 loc_arg stack_ofs;
-          self#insert (Iop(Icall_imm lbl)) loc_arg loc_res;
-          self#insert_move_results loc_res rd stack_ofs;
-          rd
-      | Iextcall(lbl, alloc) ->
-          Proc.contains_calls := true;
-          let (loc_arg, stack_ofs) = self#emit_extcall_args env new_args in
-          let rd = Reg.createv ty in
-          let loc_res = Proc.loc_external_results rd in
-          self#insert (Iop(Iextcall(lbl, alloc))) loc_arg loc_res;
-          self#insert_move_results loc_res rd stack_ofs;
-          rd
-      | Ialloc _ ->
-          Proc.contains_calls := true;
-          let rd = Reg.createv typ_addr in
-          let size = size_expr env (Ctuple new_args) in
-          self#insert (Iop(Ialloc size)) [||] rd;
-          self#emit_stores env new_args rd;
-          rd
-      | op ->
-          let r1 = self#emit_tuple env new_args in
-          let rd = Reg.createv ty in
-          self#insert_op op r1 rd
+      begin match self#emit_parts_list env args with
+        None -> None
+      | Some(simple_args, env) ->
+          let ty = oper_result_type op in
+          let (new_op, new_args) = self#select_operation op simple_args in
+          match new_op with
+            Icall_ind ->
+              Proc.contains_calls := true;
+              let r1 = self#emit_tuple env new_args in
+              let rarg = Array.sub r1 1 (Array.length r1 - 1) in
+              let rd = Reg.createv ty in
+              let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
+              let loc_res = Proc.loc_results rd in
+              self#insert_move_args rarg loc_arg stack_ofs;
+              self#insert (Iop Icall_ind)
+                          (Array.append [|r1.(0)|] loc_arg) loc_res;
+              self#insert_move_results loc_res rd stack_ofs;
+              Some rd
+          | Icall_imm lbl ->
+              Proc.contains_calls := true;
+              let r1 = self#emit_tuple env new_args in
+              let rd = Reg.createv ty in
+              let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
+              let loc_res = Proc.loc_results rd in
+              self#insert_move_args r1 loc_arg stack_ofs;
+              self#insert (Iop(Icall_imm lbl)) loc_arg loc_res;
+              self#insert_move_results loc_res rd stack_ofs;
+              Some rd
+          | Iextcall(lbl, alloc) ->
+              Proc.contains_calls := true;
+              let (loc_arg, stack_ofs) =
+                self#emit_extcall_args env new_args in
+              let rd = Reg.createv ty in
+              let loc_res = Proc.loc_external_results rd in
+              self#insert (Iop(Iextcall(lbl, alloc))) loc_arg loc_res;
+              self#insert_move_results loc_res rd stack_ofs;
+              Some rd
+          | Ialloc _ ->
+              Proc.contains_calls := true;
+              let rd = Reg.createv typ_addr in
+              let size = size_expr env (Ctuple new_args) in
+              self#insert (Iop(Ialloc size)) [||] rd;
+              self#emit_stores env new_args rd;
+              Some rd
+          | op ->
+              let r1 = self#emit_tuple env new_args in
+              let rd = Reg.createv ty in
+              Some (self#insert_op op r1 rd)
       end        
   | Csequence(e1, e2) ->
-      let _ = self#emit_expr env e1 in
-      self#emit_expr env e2
+      begin match self#emit_expr env e1 with
+        None -> None
+      | Some r1 -> self#emit_expr env e2
+      end
   | Cifthenelse(econd, eif, eelse) ->
       let (cond, earg) = self#select_condition econd in
-      let rarg = self#emit_expr env earg in
-      let (rif, sif) = self#emit_sequence env eif in
-      let (relse, selse) = self#emit_sequence env eelse in
-      let r = join rif sif relse selse in
-      self#insert (Iifthenelse(cond, sif#extract, selse#extract)) rarg [||];
-      r
+      begin match self#emit_expr env earg with
+        None -> None
+      | Some rarg ->
+          let (rif, sif) = self#emit_sequence env eif in
+          let (relse, selse) = self#emit_sequence env eelse in
+          let r = join rif sif relse selse in
+          self#insert (Iifthenelse(cond, sif#extract, selse#extract))
+                      rarg [||];
+          r
+      end
   | Cswitch(esel, index, ecases) ->
-      let rsel = self#emit_expr env esel in
-      let rscases = Array.map (self#emit_sequence env) ecases in
-      let r = join_array rscases in
-      self#insert (Iswitch(index, Array.map (fun (r, s) -> s#extract) rscases))
-                  rsel [||];
-      r
+      begin match self#emit_expr env esel with
+        None -> None
+      | Some rsel ->
+          let rscases = Array.map (self#emit_sequence env) ecases in
+          let r = join_array rscases in
+          self#insert (Iswitch(index,
+                               Array.map (fun (r, s) -> s#extract) rscases))
+                      rsel [||];
+          r
+      end
   | Cloop(ebody) ->
       let (rarg, sbody) = self#emit_sequence env ebody in
       self#insert (Iloop(sbody#extract)) [||] [||];
-      [||]
+      Some [||]
   | Ccatch(nfail, ids, e1, e2) ->
       let rs =
         List.map
           (fun id ->
-            let r = Reg.createv typ_addr in
-            name_regs id r  ;
-            r)
+            let r = Reg.createv typ_addr in name_regs id r; r)
           ids in
       catch_regs := (nfail, Array.concat rs) :: !catch_regs ; 
       let (r1, s1) = self#emit_sequence env e1 in
@@ -507,16 +545,19 @@ method emit_expr env exp =
       self#insert (Icatch(nfail, s1#extract, s2#extract)) [||] [||];
       r
   | Cexit (nfail,args) ->
-      let (simple_list, ext_env) = self#emit_parts_list env args in
-      let src = self#emit_tuple ext_env simple_list in
-      let dest =
-        try List.assoc nfail !catch_regs with
-        | Not_found ->
-            Misc.fatal_error
-              ("Selectgen.emit_expr, on exit("^string_of_int nfail^")") in
-      self#insert_moves src dest ;
-      self#insert (Iexit nfail) [||] [||];
-      [||]
+      begin match self#emit_parts_list env args with
+        None -> None
+      | Some (simple_list, ext_env) ->
+          let src = self#emit_tuple ext_env simple_list in
+          let dest =
+            try List.assoc nfail !catch_regs
+            with Not_found ->
+              Misc.fatal_error
+                ("Selectgen.emit_expr, on exit("^string_of_int nfail^")") in
+          self#insert_moves src dest ;
+          self#insert (Iexit nfail) [||] [||];
+          None
+      end
   | Ctrywith(e1, v, e2) ->
       Proc.contains_calls := true;
       let (r1, s1) = self#emit_sequence env e1 in
@@ -535,14 +576,15 @@ method private emit_sequence env exp =
   let r = s#emit_expr env exp in
   (r, s)
 
-method private emit_let env v e1 =
-  let r1 = self#emit_expr env e1 in
+method private bind_let env v r1 =
   if all_regs_anonymous r1 then begin
     name_regs v r1;
     Tbl.add v r1 env
   end else begin
     let rv = Array.create (Array.length r1) Reg.dummy in
-    for i = 0 to Array.length r1 - 1 do rv.(i) <- Reg.create r1.(i).typ done;
+    for i = 0 to Array.length r1 - 1 do
+      rv.(i) <- Reg.create r1.(i).typ
+    done;
     name_regs v rv;
     self#insert_moves r1 rv;
     Tbl.add v rv env
@@ -550,41 +592,44 @@ method private emit_let env v e1 =
 
 method private emit_parts env exp =
   if is_simple_expr exp then
-    (exp, env)
+    Some (exp, env)
   else begin
-    let r = self#emit_expr env exp in
-    match Array.length r with
-      0 ->
-        (* Corresponds to a raise or exit instruction; make up some dummy
-           value, this is unreachable code! *)
-        (Cconst_int 0, env)
-    | 1 ->
-        (* The normal case *)
-        let id = Ident.create "bind" in
-        let r0 = r.(0) in
-        if String.length r0.name = 0 then
-          (* r0 is an anonymous, unshared register; can use it directly *)
-          (Cvar id, Tbl.add id r env)
-        else begin
-          (* Introduce a fresh temp reg to hold the result *)
-          let v0 = Reg.create r0.typ in
-          self#insert_move r0 v0;
-          (Cvar id, Tbl.add id [|v0|] env)
-        end
-    | _ ->
-        (* Must not happen, we no longer support nested tuples *)
-        assert false
+    match self#emit_expr env exp with
+      None -> None
+    | Some r ->
+        match Array.length r with
+          0 ->
+            Some (Ctuple [], env)
+        | 1 ->
+            (* The normal case *)
+            let id = Ident.create "bind" in
+            let r0 = r.(0) in
+            if String.length r0.name = 0 then
+              (* r0 is an anonymous, unshared register; use it directly *)
+              Some (Cvar id, Tbl.add id r env)
+            else begin
+              (* Introduce a fresh temp reg to hold the result *)
+              let v0 = Reg.create r0.typ in
+              self#insert_move r0 v0;
+              Some (Cvar id, Tbl.add id [|v0|] env)
+            end
+        | _ ->
+            (* Must not happen, we no longer support nested tuples *)
+            assert false
   end
 
 method private emit_parts_list env exp_list =
   match exp_list with
-    [] -> ([], env)
+    [] -> Some ([], env)
   | exp :: rem ->
       (* This ensures right-to-left evaluation, consistent with the
          bytecode compiler *)
-      let (new_rem, new_env) = self#emit_parts_list env rem in
-      let (new_exp, fin_env) = self#emit_parts new_env exp in
-      (new_exp :: new_rem, fin_env)
+      match self#emit_parts_list env rem with
+        None -> None
+      | Some(new_rem, new_env) ->
+          match self#emit_parts new_env exp with
+            None -> None
+          | Some(new_exp, fin_env) -> Some(new_exp :: new_rem, fin_env)
 
 method private emit_tuple env exp_list =
   let rec emit_list = function
@@ -592,8 +637,9 @@ method private emit_tuple env exp_list =
   | exp :: rem ->
       (* Again, force right-to-left evaluation *)
       let loc_rem = emit_list rem in
-      let loc_exp = self#emit_expr env exp in
-      loc_exp :: loc_rem in
+      match self#emit_expr env exp with
+        None -> assert false  (* should have been caught in emit_parts *)
+      | Some loc_exp -> loc_exp :: loc_rem in
   Array.concat(emit_list exp_list)
 
 method emit_extcall_args env args =
@@ -608,96 +654,107 @@ method emit_stores env data regs_addr =
   List.iter
     (fun e ->
       let (op, arg) = self#select_store !a e in
-      let regs = self#emit_expr env arg in
-      match op with
-        Istore(_, _) ->
-          for i = 0 to Array.length regs - 1 do
-            let r = regs.(i) in
-            let kind = if r.typ = Float then Double_u else Word in
-            self#insert (Iop(Istore(kind, !a)))
-                        (Array.append [|r|] regs_addr) [||];
-            a := Arch.offset_addressing !a (size_component r.typ)
-          done
-      | _ ->
-          self#insert (Iop op) (Array.append regs regs_addr) [||];
-          a := Arch.offset_addressing !a (size_expr env e))
+      match self#emit_expr env arg with
+        None -> assert false
+      | Some regs ->
+          match op with
+            Istore(_, _) ->
+              for i = 0 to Array.length regs - 1 do
+                let r = regs.(i) in
+                let kind = if r.typ = Float then Double_u else Word in
+                self#insert (Iop(Istore(kind, !a)))
+                            (Array.append [|r|] regs_addr) [||];
+                a := Arch.offset_addressing !a (size_component r.typ)
+              done
+          | _ ->
+              self#insert (Iop op) (Array.append regs regs_addr) [||];
+              a := Arch.offset_addressing !a (size_expr env e))
     data
 
 (* Same, but in tail position *)
 
 method private emit_return env exp =
-  let r = self#emit_expr env exp in
-  let loc = Proc.loc_results r in
-  self#insert_moves r loc;
-  self#insert Ireturn loc [||]
+  match self#emit_expr env exp with
+    None -> ()
+  | Some r ->
+      let loc = Proc.loc_results r in
+      self#insert_moves r loc;
+      self#insert Ireturn loc [||]
 
 method emit_tail env exp =
   match exp with
     Clet(v, e1, e2) ->
-      self#emit_tail (self#emit_let env v e1) e2
-  | Cop(Capply ty as op, args) ->
-      let (simple_args, env) = self#emit_parts_list env args in
-      let (new_op, new_args) = self#select_operation op simple_args in
-      begin match new_op with
-        Icall_ind ->
-          let r1 = self#emit_tuple env new_args in
-          let rarg = Array.sub r1 1 (Array.length r1 - 1) in
-          let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
-          if stack_ofs = 0 then begin
-            self#insert_moves rarg loc_arg;
-            self#insert (Iop Itailcall_ind)
-                        (Array.append [|r1.(0)|] loc_arg) [||]
-          end else begin
-            Proc.contains_calls := true;
-            let rd = Reg.createv ty in
-            let loc_res = Proc.loc_results rd in
-            self#insert_move_args rarg loc_arg stack_ofs;
-            self#insert (Iop Icall_ind)
-                        (Array.append [|r1.(0)|] loc_arg) loc_res;
-            self#insert(Iop(Istackoffset(-stack_ofs))) [||] [||];
-            self#insert Ireturn loc_res [||]
-          end
-      | Icall_imm lbl ->
-          let r1 = self#emit_tuple env new_args in
-          let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
-          if stack_ofs = 0 then begin
-            self#insert_moves r1 loc_arg;
-            self#insert (Iop(Itailcall_imm lbl)) loc_arg [||]
-          end else if lbl = !current_function_name then begin
-            let loc_arg' = Proc.loc_parameters r1 in
-            self#insert_moves r1 loc_arg';
-            self#insert (Iop(Itailcall_imm lbl)) loc_arg' [||]
-          end else begin
-            Proc.contains_calls := true;
-            let rd = Reg.createv ty in
-            let loc_res = Proc.loc_results rd in
-            self#insert_move_args r1 loc_arg stack_ofs;
-            self#insert (Iop(Icall_imm lbl)) loc_arg loc_res;
-            self#insert(Iop(Istackoffset(-stack_ofs))) [||] [||];
-            self#insert Ireturn loc_res [||]
-          end
-      | _ -> fatal_error "Selection.emit_tail"
+      begin match self#emit_expr env e1 with
+        None -> ()
+      | Some r1 -> self#emit_tail (self#bind_let env v r1) e2
       end
-  | Cop(Craise, [e1]) ->
-      let r1 = self#emit_expr env e1 in
-      let rd = [|Proc.loc_exn_bucket|] in
-      self#insert (Iop Imove) r1 rd;
-      self#insert Iraise rd [||]
-  | Cexit (_,_) -> ignore (self#emit_expr env exp)
+  | Cop(Capply ty as op, args) ->
+      begin match self#emit_parts_list env args with
+        None -> ()
+      | Some(simple_args, env) ->
+          let (new_op, new_args) = self#select_operation op simple_args in
+          match new_op with
+            Icall_ind ->
+              let r1 = self#emit_tuple env new_args in
+              let rarg = Array.sub r1 1 (Array.length r1 - 1) in
+              let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
+              if stack_ofs = 0 then begin
+                self#insert_moves rarg loc_arg;
+                self#insert (Iop Itailcall_ind)
+                            (Array.append [|r1.(0)|] loc_arg) [||]
+              end else begin
+                Proc.contains_calls := true;
+                let rd = Reg.createv ty in
+                let loc_res = Proc.loc_results rd in
+                self#insert_move_args rarg loc_arg stack_ofs;
+                self#insert (Iop Icall_ind)
+                            (Array.append [|r1.(0)|] loc_arg) loc_res;
+                self#insert(Iop(Istackoffset(-stack_ofs))) [||] [||];
+                self#insert Ireturn loc_res [||]
+              end
+          | Icall_imm lbl ->
+              let r1 = self#emit_tuple env new_args in
+              let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
+              if stack_ofs = 0 then begin
+                self#insert_moves r1 loc_arg;
+                self#insert (Iop(Itailcall_imm lbl)) loc_arg [||]
+              end else if lbl = !current_function_name then begin
+                let loc_arg' = Proc.loc_parameters r1 in
+                self#insert_moves r1 loc_arg';
+                self#insert (Iop(Itailcall_imm lbl)) loc_arg' [||]
+              end else begin
+                Proc.contains_calls := true;
+                let rd = Reg.createv ty in
+                let loc_res = Proc.loc_results rd in
+                self#insert_move_args r1 loc_arg stack_ofs;
+                self#insert (Iop(Icall_imm lbl)) loc_arg loc_res;
+                self#insert(Iop(Istackoffset(-stack_ofs))) [||] [||];
+                self#insert Ireturn loc_res [||]
+              end
+          | _ -> fatal_error "Selection.emit_tail"
+      end
   | Csequence(e1, e2) ->
-      let _ = self#emit_expr env e1 in
-      self#emit_tail env e2
+      begin match self#emit_expr env e1 with
+        None -> ()
+      | Some r1 -> self#emit_tail env e2
+      end
   | Cifthenelse(econd, eif, eelse) ->
       let (cond, earg) = self#select_condition econd in
-      let rarg = self#emit_expr env earg in
-      self#insert (Iifthenelse(cond, self#emit_tail_sequence env eif,
-                                     self#emit_tail_sequence env eelse))
-                  rarg [||]
+      begin match self#emit_expr env earg with
+        None -> ()
+      | Some rarg ->
+          self#insert (Iifthenelse(cond, self#emit_tail_sequence env eif,
+                                         self#emit_tail_sequence env eelse))
+                      rarg [||]
+      end
   | Cswitch(esel, index, ecases) ->
-      let rsel = self#emit_expr env esel in
-      self#insert
-        (Iswitch(index, Array.map (self#emit_tail_sequence env) ecases))
-        rsel [||]
+      begin match self#emit_expr env esel with
+        None -> ()
+      | Some rsel ->
+          self#insert
+            (Iswitch(index, Array.map (self#emit_tail_sequence env) ecases))
+            rsel [||]
+      end
   | Ccatch(nfail, ids, e1, e2) ->
        let rs =
         List.map
@@ -717,16 +774,20 @@ method emit_tail env exp =
       self#insert (Icatch(nfail, s1, s2)) [||] [||]
   | Ctrywith(e1, v, e2) ->
       Proc.contains_calls := true;
-      let (r1, s1) = self#emit_sequence env e1 in
+      let (opt_r1, s1) = self#emit_sequence env e1 in
       let rv = Reg.createv typ_addr in
       let s2 = self#emit_tail_sequence (Tbl.add v rv env) e2 in
-      let loc = Proc.loc_results r1 in
       self#insert
         (Itrywith(s1#extract,
                   instr_cons (Iop Imove) [|Proc.loc_exn_bucket|] rv s2))
         [||] [||];
-      self#insert_moves r1 loc;
-      self#insert Ireturn loc [||]
+      begin match opt_r1 with
+        None -> ()
+      | Some r1 ->
+          let loc = Proc.loc_results r1 in
+          self#insert_moves r1 loc;
+          self#insert Ireturn loc [||]
+      end
   | _ ->
       self#emit_return env exp
 

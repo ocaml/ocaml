@@ -20,9 +20,11 @@
 #include "../byterun/mlvalues.h"
 #include "../byterun/exec.h"
 
+#ifndef __MINGW32__
 #pragma comment(linker , "/entry:headerentry")
 #pragma comment(linker , "/subsystem:console")
 #pragma comment(lib , "kernel32")
+#endif
 
 char * default_runtime_name = "ocamlrun";
 
@@ -75,7 +77,7 @@ static __inline char * read_runtime_path(HANDLE h)
 static BOOL WINAPI ctrl_handler(DWORD event)
 {
   if (event == CTRL_C_EVENT || event == CTRL_BREAK_EVENT)
-    return TRUE;		/* pretend we've handled them */
+    return TRUE;                /* pretend we've handled them */
   else
     return FALSE;
 }
@@ -135,7 +137,11 @@ static __inline void __declspec(noreturn) run_runtime(char * runtime,
 #endif
 }
 
+#ifdef __MINGW32__
+int main()
+#else
 void __declspec(noreturn) __cdecl headerentry()
+#endif
 {
   char truename[MAX_PATH];
   char * cmdline = GetCommandLine();
@@ -162,5 +168,8 @@ void __declspec(noreturn) __cdecl headerentry()
   run_runtime(runtime_path , cmdline);
 #if _MSC_VER >= 1200
     __assume(0); /* Not reached */
+#endif
+#ifdef __MINGW32__
+    return 0;
 #endif
 }

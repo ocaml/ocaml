@@ -35,6 +35,8 @@ let top s =
     hd::_ -> hd
   | []     -> raise Empty
 
+let is_empty s = (s.c = [])
+
 let length s = List.length s.c
 
 let iter f s = List.iter f s.c

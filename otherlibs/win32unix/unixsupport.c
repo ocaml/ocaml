@@ -13,6 +13,7 @@
 
 /* $Id$ */
 
+#include <stddef.h>
 #include <mlvalues.h>
 #include <callback.h>
 #include <alloc.h>
@@ -22,7 +23,6 @@
 #include "unixsupport.h"
 #include "cst2constr.h"
 #include <errno.h>
-#include <winsock.h>
 
 /* Heap-allocation of Windows file handles */
 
@@ -49,9 +49,29 @@ static struct custom_operations win_handle_ops = {
 
 value win_alloc_handle(HANDLE h)
 {
-  value res = 
-    alloc_custom(&win_handle_ops, sizeof(HANDLE), 0, 1);
+  value res = alloc_custom(&win_handle_ops, sizeof(struct filedescr), 0, 1);
   Handle_val(res) = h;
+  Descr_kind_val(res) = KIND_HANDLE;
+  CRT_fd_val(res) = NO_CRT_FD;
+  return res;
+}
+
+value win_alloc_socket(SOCKET s)
+{
+  value res = alloc_custom(&win_handle_ops, sizeof(struct filedescr), 0, 1);
+  Socket_val(res) = s;
+  Descr_kind_val(res) = KIND_SOCKET;
+  CRT_fd_val(res) = NO_CRT_FD;
+  return res;
+}
+
+value win_alloc_handle_or_socket(HANDLE h)
+{
+  value res = win_alloc_handle(h);
+  int opt;
+  int optlen = sizeof(opt);
+  if (getsockopt((SOCKET) h, SOL_SOCKET, SO_TYPE, (char *)&opt, &optlen) == 0)
+    Descr_kind_val(res) = KIND_SOCKET;
   return res;
 }
 
@@ -182,6 +202,7 @@ void win32_maperr(unsigned long errcode)
 #define ESTALE                  -WSAESTALE
 #define EREMOTE                 -WSAEREMOTE
 
+#define EOVERFLOW -ERROR_ARITHMETIC_OVERFLOW
 #define EACCESS EACCES
 
 int error_table[] = {
@@ -195,7 +216,7 @@ int error_table[] = {
   EAFNOSUPPORT, EADDRINUSE, EADDRNOTAVAIL, ENETDOWN, ENETUNREACH,
   ENETRESET, ECONNABORTED, ECONNRESET, ENOBUFS, EISCONN, ENOTCONN,
   ESHUTDOWN, ETOOMANYREFS, ETIMEDOUT, ECONNREFUSED, EHOSTDOWN,
-  EHOSTUNREACH, ELOOP /*, EUNKNOWNERR */
+  EHOSTUNREACH, ELOOP, EOVERFLOW /*, EUNKNOWNERR */
 };
 
 static value * unix_error_exn = NULL;

@@ -15,12 +15,17 @@
 
 #include <string.h>
 #include <fcntl.h>
-#include <ndbm.h>
 #include <mlvalues.h>
 #include <alloc.h>
 #include <memory.h>
 #include <fail.h>
 #include <callback.h>
+
+#ifdef DBM_USES_GDBM_NDBM
+#include <gdbm-ndbm.h>
+#else
+#include <ndbm.h>
+#endif
 
 /* Quite close to sys_open_flags, but we need RDWR */
 static int dbm_open_flags[] = {

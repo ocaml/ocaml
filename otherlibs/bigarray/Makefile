@@ -17,9 +17,10 @@ include ../../config/Makefile
 
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -g -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
-CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../unix
-CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../unix
+CAMLC=../../ocamlcomp.sh -I ../unix
+CAMLOPT=../../ocamlcompopt.sh -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
+COMPFLAGS=-warn-error A
 
 C_OBJS=bigarray_stubs.o mmap_unix.o
 
@@ -40,7 +41,7 @@ bigarray.cmxa: $(CAML_OBJS:.cmo=.cmx)
           $(CAML_OBJS:.cmo=.cmx)
 
 install:
-	if test -f dllbigarray.so; then cp dllbigarray.so $(LIBDIR)/dllbigarray.so; fi
+	if test -f dllbigarray.so; then cp dllbigarray.so $(STUBLIBDIR)/dllbigarray.so; fi
 	cp bigarray.cmi bigarray.mli libbigarray.a bigarray.cma $(LIBDIR)
 	cd $(LIBDIR); $(RANLIB) libbigarray.a
 	cp bigarray.h $(LIBDIR)/caml/bigarray.h

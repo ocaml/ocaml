@@ -57,7 +57,7 @@ let add_to_path ~dirs ?(base="") box =
       begin function
           "." -> base 
         | ".." -> Filename.dirname base
-        | x -> base ^ "/" ^ x
+        | x -> Filename.concat base x
       end
   in
   set_load_path

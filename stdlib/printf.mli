@@ -28,22 +28,28 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    Conversion specifications consist in the [%] character, followed
    by optional flags and field widths, followed by one or two conversion
    character. The conversion characters and their meanings are:
-   - [d] or [i]: convert an integer argument to signed decimal
-   - [u]: convert an integer argument to unsigned decimal
+   - [d], [i], [n], or [N]: convert an integer argument to signed decimal.
+   - [u]: convert an integer argument to unsigned decimal.
    - [x]: convert an integer argument to unsigned hexadecimal,
      using lowercase letters.
    - [X]: convert an integer argument to unsigned hexadecimal,
      using uppercase letters.
    - [o]: convert an integer argument to unsigned octal.
-   - [s]: insert a string argument
-   - [c]: insert a character argument
+   - [s]: insert a string argument.
+   - [S]: insert a string argument in Caml syntax (double quotes, escapes).
+   - [c]: insert a character argument.
+   - [C]: insert a character argument in Caml syntax (single quotes, escapes).
    - [f]: convert a floating-point argument to decimal notation,
-     in the style [dddd.ddd]
+     in the style [dddd.ddd].
+   - [F]: convert a floating-point argument in Caml syntax ([dddd.ddd]
+     with a mandatory [.]).
    - [e] or [E]: convert a floating-point argument to decimal notation,
-     in the style [d.ddd e+-dd] (mantissa and exponent)
+     in the style [d.ddd e+-dd] (mantissa and exponent).
    - [g] or [G]: convert a floating-point argument to decimal notation,
-     in style [f] or [e], [E] (whichever is more compact)
-   - [b]: convert a boolean argument to the string [true] or [false]
+     in style [f] or [e], [E] (whichever is more compact).
+   - [B]: convert a boolean argument to the string [true] or [false]
+   - [b]: convert a boolean argument (for backward compatibility; do not
+     use in new programs).
    - [ld], [li], [lu], [lx], [lX], [lo]: convert an [int32] argument to
      the format specified by the second letter (decimal, hexadecimal, etc).
    - [nd], [ni], [nu], [nx], [nX], [no]: convert a [nativeint] argument to
@@ -58,10 +64,12 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
      in the output of [fprintf] at the current point.
    - [t]: same as [%a], but takes only one argument (with type
      [out_channel -> unit]) and apply it to [outchan].
+   - [!]: take no argument and flush the output.
    - [%]: take no argument and output one [%] character.
 
    The optional flags include:
    - [-]: left-justify the output (default is right justification).
+   - [0]: for numerical conversions, pad with zeroes instead of spaces.
    - [+]: for numerical conversions, prefix number with a [+] sign if positive.
    - space: for numerical conversions, prefix number with a space if positive.
    - [#]: request an alternate formatting style for numbers.
@@ -102,10 +110,15 @@ val bprintf : Buffer.t -> ('a, Buffer.t, unit) format -> 'a
    append the formatted arguments to the given extensible buffer
    (see module {!Buffer}). *)
 
+val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b
+(** [kprintf k format arguments] is the same as [sprintf format arguments],
+    except that the resulting string is passed as argument to [k]; the
+    result of [k] is then returned as the result of [kprintf]. *)
+
 (**/**)
 
 (* For system use only.  Don't call directly. *)
 
 val scan_format :
   string -> int -> (string -> int -> 'a) -> ('b -> 'c -> int -> 'a) ->
-    ('e -> int -> 'a) -> 'a
+    ('e -> int -> 'a) -> (int -> 'a) -> 'a

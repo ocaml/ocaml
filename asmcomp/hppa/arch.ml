@@ -14,7 +14,14 @@
 
 (* Specific operations for the HP PA-RISC processor *)
 
+open Misc
 open Format
+
+(* Machine-specific command-line options *)
+
+let command_line_options = []
+
+(* Specific operations *)
 
 type specific_operation =
     Ishift1add

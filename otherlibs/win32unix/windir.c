@@ -2,7 +2,7 @@
 /*                                                                     */
 /*                           Objective Caml                            */
 /*                                                                     */
-/*             Pascal Cuoq, projet Cristal, INRIA Rocquencourt         */
+/*   Pascal Cuoq and Xavier Leroy, projet Cristal, INRIA Rocquencourt  */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
@@ -17,28 +17,34 @@
 #include <memory.h>
 #include <errno.h>
 #include <alloc.h>
+#include <fail.h>
 #include "unixsupport.h"
 
 CAMLprim value win_findfirst(name)
      value name;
 {
-  int h;
+  HANDLE h;
   value v;
-  struct _finddata_t fileinfo;
+  WIN32_FIND_DATA fileinfo;
   value valname = Val_unit;
+  value valh = Val_unit;
 
-  Begin_root (valname);
-    h = _findfirst(String_val(name),&fileinfo);
-    if (h == -1) {
-      if (errno == ENOENT)
+  Begin_roots2 (valname,valh);
+    h = FindFirstFile(String_val(name),&fileinfo);
+    if (h == INVALID_HANDLE_VALUE) {
+      DWORD err = GetLastError();
+      if (err == ERROR_NO_MORE_FILES)
         raise_end_of_file();
-      else
+      else {
+        win32_maperr(err);
         uerror("opendir", Nothing);
+      }
     }
-    valname = copy_string(fileinfo.name);
+    valname = copy_string(fileinfo.cFileName);
+    valh = win_alloc_handle(h);
     v = alloc_small(2, 0);
     Field(v,0) = valname;
-    Field(v,1) = Val_int(h);
+    Field(v,1) = valh;
   End_roots();
   return v;
 }
@@ -46,18 +52,29 @@ CAMLprim value win_findfirst(name)
 CAMLprim value win_findnext(valh)
      value valh;
 {
-  int retcode;
-  struct _finddata_t fileinfo;
+  WIN32_FIND_DATA fileinfo;
+  BOOL retcode;
 
-  retcode = _findnext(Int_val(valh), &fileinfo);
-  if (retcode != 0) raise_end_of_file();
-  return copy_string(fileinfo.name);
+  retcode = FindNextFile(Handle_val(valh), &fileinfo);
+  if (!retcode) {
+    DWORD err = GetLastError();
+    if (err == ERROR_NO_MORE_FILES)
+      raise_end_of_file();
+    else {
+      win32_maperr(err);
+      uerror("readdir", Nothing);
+    }
+  }
+  return copy_string(fileinfo.cFileName);
 }
 
 CAMLprim value win_findclose(valh)
      value valh;
 {
-  if (_findclose(Int_val(valh)) != 0) uerror("closedir", Nothing);
+  if (! FindClose(Handle_val(valh))) {
+    win32_maperr(GetLastError());
+    uerror("closedir", Nothing);
+  }
   return Val_unit;
 }
 

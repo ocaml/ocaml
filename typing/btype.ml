@@ -77,12 +77,31 @@ let rec row_field_repr_aux tl = function
 
 let row_field_repr fi = row_field_repr_aux [] fi
 
-let rec row_repr row =
+let rec rev_concat l ll =
+  match ll with
+    [] -> l
+  | l'::ll -> rev_concat (l'@l) ll
+
+let rec row_repr_aux ll row =
   match (repr row.row_more).desc with
   | Tvariant row' ->
-      let row' = row_repr row' in
-      {row' with row_fields = row.row_fields @ row'.row_fields}
-  | _ -> row
+      let f = row.row_fields in
+      row_repr_aux (if f = [] then ll else f::ll) row'
+  | _ ->
+      if ll = [] then row else
+      {row with row_fields = rev_concat row.row_fields ll}
+
+let row_repr row = row_repr_aux [] row
+
+let rec row_field tag row =
+  let rec find = function
+    | (tag',f) :: fields ->
+	if tag = tag' then row_field_repr f else find fields
+    | [] ->
+	match repr row.row_more with
+	| {desc=Tvariant row'} -> row_field tag row'
+	| _ -> Rabsent
+  in find row.row_fields
 
 let rec row_more row =
   match repr row.row_more with
@@ -106,6 +125,19 @@ let hash_variant s =
   (* make it signed for 64 bits architectures *)
   if !accu > 0x3FFFFFFF then !accu - (1 lsl 31) else !accu
 
+let proxy ty =
+  let ty = repr ty in
+  match ty.desc with
+  | Tvariant row -> row_more row
+  | Tobject (ty, _) ->
+      let rec proxy_obj ty =
+        match ty.desc with
+          Tfield (_, _, _, ty) | Tlink ty -> proxy_obj ty
+        | Tvar | Tnil | Tunivar -> ty
+        | _ -> assert false
+      in proxy_obj ty
+  | _ -> ty
+
 
                   (**********************************)
                   (*  Utilities for type traversal  *)
@@ -121,7 +153,7 @@ let rec iter_row f row =
     row.row_fields;
   match (repr row.row_more).desc with
     Tvariant row -> iter_row f row
-  | Tvar | Tnil ->
+  | Tvar | Tnil | Tunivar | Tsubst _ ->
       Misc.may (fun (_,l) -> List.iter f l) row.row_name;
       List.iter f row.row_bound
   | _ -> assert false
@@ -140,22 +172,36 @@ let iter_type_expr f ty =
   | Tnil                -> ()
   | Tlink ty            -> f ty
   | Tsubst ty           -> f ty
+  | Tunivar             -> ()
+  | Tpoly (ty, tyl)     -> f ty; List.iter f tyl
 
-let copy_row f row keep more =
+let rec iter_abbrev f = function
+    Mnil                   -> ()
+  | Mcons(_, ty, ty', rem) -> f ty; f ty'; iter_abbrev f rem
+  | Mlink rem              -> iter_abbrev f !rem
+
+let copy_row f fixed row keep more =
+  let bound = ref [] in
   let fields = List.map
       (fun (l, fi) -> l,
         match row_field_repr fi with
         | Rpresent(Some ty) -> Rpresent(Some(f ty))
         | Reither(c, tl, m, e) ->
             let e = if keep then e else ref None in
-            Reither(c, List.map f tl, m, e)
+            let m = if row.row_fixed then fixed else m in
+            let tl = List.map f tl in
+            bound := List.filter
+                (function {desc=Tconstr(_,[],_)} -> false | _ -> true)
+                (List.map repr tl)
+              @ !bound;
+            Reither(c, tl, m, e)
         | _ -> fi)
       row.row_fields in
   let name =
     match row.row_name with None -> None
     | Some (path, tl) -> Some (path, List.map f tl) in
   { row_fields = fields; row_more = more;
-    row_bound = List.map f row.row_bound;
+    row_bound = !bound; row_fixed = row.row_fixed && fixed;
     row_closed = row.row_closed; row_name = name; }
 
 let rec copy_kind = function
@@ -167,6 +213,15 @@ let rec copy_kind = function
 let copy_commu c =
   if commu_repr c = Cok then Cok else Clink (ref Cunknown)
 
+(* Since univars may be used as row variables, we need to do some
+   encoding during substitution *)
+let rec norm_univar ty =
+  match ty.desc with
+    Tunivar | Tsubst _ -> ty
+  | Tlink ty           -> norm_univar ty
+  | Ttuple (ty :: _)   -> norm_univar ty
+  | _                  -> assert false
+
 let rec copy_type_desc f = function
     Tvar                -> Tvar
   | Tarrow (p, ty1, ty2, c)-> Tarrow (p, f ty1, f ty2, copy_commu c)
@@ -177,11 +232,18 @@ let rec copy_type_desc f = function
   | Tobject (ty, _)     -> Tobject (f ty, ref None)
   | Tvariant row        ->
       let row = row_repr row in
-      Tvariant (copy_row f row false (f row.row_more))
+      Tvariant (copy_row f true row false (f row.row_more))
   | Tfield (p, k, ty1, ty2) -> Tfield (p, copy_kind k, f ty1, f ty2)
   | Tnil                -> Tnil
   | Tlink ty            -> copy_type_desc f ty.desc
   | Tsubst ty           -> assert false
+  | Tunivar             -> Tunivar
+  | Tpoly (ty, tyl)     ->
+      let tyl = List.map (fun x -> norm_univar (f x)) tyl in
+      Tpoly (f ty, tyl)
+
+
+(* Utilities for copying *)
 
 let saved_desc = ref []
   (* Saved association of generic nodes with their description. *)
@@ -227,9 +289,9 @@ let unmark_type_decl decl =
   List.iter unmark_type decl.type_params;
   begin match decl.type_kind with
     Type_abstract -> ()
-  | Type_variant cstrs ->
+  | Type_variant (cstrs, priv) ->
       List.iter (fun (c, tl) -> List.iter unmark_type tl) cstrs
-  | Type_record(lbls, rep) ->
+  | Type_record(lbls, rep, priv) ->
       List.iter (fun (c, mut, t) -> unmark_type t) lbls
   end;
   begin match decl.type_manifest with
@@ -284,6 +346,10 @@ let rec iter_ty_paths f ty =
     | Tvariant row ->
         let row' = iter_row_paths f row in
         if row != row' then ty.desc <- Tvariant row'
+    | Tunivar -> ()
+    | Tpoly (ty, tyl) ->
+        iter_ty_paths f ty ;
+        List.iter (iter_ty_paths f) tyl
   end
 
 and iter_row_paths f row =
@@ -321,6 +387,26 @@ let iter_type_paths f ty =
                   (*  Memorization of abbreviation expansion *)
                   (*******************************************)
 
+(* Search whether the expansion has been memorized. *)
+let rec find_expans p1 = function
+    Mnil -> None
+  | Mcons (p2, ty0, ty, _) when Path.same p1 p2 -> Some ty
+  | Mcons (_, _, _, rem)   -> find_expans p1 rem
+  | Mlink {contents = rem} -> find_expans p1 rem
+
+(* debug: check for cycles in abbreviation. only works with -principal
+let rec check_expans visited ty =
+  let ty = repr ty in
+  assert (not (List.memq ty visited));
+  match ty.desc with
+    Tconstr (path, args, abbrev) ->
+      begin match find_expans path !abbrev with
+        Some ty' -> check_expans (ty :: visited) ty'
+      | None -> ()
+      end
+  | _ -> ()
+*)
+
 let memo = ref []
         (* Contains the list of saved abbreviation expansions. *)
 
@@ -331,12 +417,8 @@ let cleanup_abbrev () =
 
 let memorize_abbrev mem path v v' =
         (* Memorize the expansion of an abbreviation. *)
-  (* assert
-    begin match (repr v').desc with
-      Tconstr (path', _, _) when Path.same path path'-> false
-    | _ -> true
-    end; *)
   mem := Mcons (path, v, v', !mem);
+  (* check_expans [] v; *)
   memo := mem :: !memo
 
 let rec forget_abbrev_rec mem path =
@@ -345,8 +427,8 @@ let rec forget_abbrev_rec mem path =
       assert false
   | Mcons (path', _, _, rem) when Path.same path path' ->
       rem 
-  | Mcons (path, v, v', rem) ->
-      Mcons (path, v, v', forget_abbrev_rec rem path)
+  | Mcons (path', v, v', rem) ->
+      Mcons (path', v, v', forget_abbrev_rec rem path)
   | Mlink mem' ->
       mem' := forget_abbrev_rec !mem' path;
       raise Exit
@@ -354,6 +436,17 @@ let rec forget_abbrev_rec mem path =
 let forget_abbrev mem path =
   try mem := forget_abbrev_rec !mem path with Exit -> ()
 
+(* debug: check for invalid abbreviations
+let rec check_abbrev_rec = function
+    Mnil -> true
+  | Mcons (_, ty1, ty2, rem) ->
+      repr ty1 != repr ty2
+  | Mlink mem' ->
+      check_abbrev_rec !mem'
+
+let check_memorized_abbrevs () =
+  List.for_all (fun mem -> check_abbrev_rec !mem) !memo
+*)
 
                   (**********************************)
                   (*  Utilities for labels          *)
@@ -373,3 +466,92 @@ let rec extract_label_aux hd l = function
       else extract_label_aux (p::hd) l ls
 
 let extract_label l ls = extract_label_aux [] l ls
+
+
+                  (**********************************)
+                  (*  Utilities for backtracking    *)
+                  (**********************************)
+
+type change =
+    Ctype of type_expr * type_desc
+  | Clevel of type_expr * int
+  | Cname of
+      (Path.t * type_expr list) option ref * (Path.t * type_expr list) option
+  | Crow of row_field option ref * row_field option
+  | Ckind of field_kind option ref * field_kind option
+  | Ccommu of commutable ref * commutable
+  | Cuniv of type_expr option ref * type_expr option
+
+let undo_change = function
+    Ctype  (ty, desc)  -> ty.desc <- desc
+  | Clevel (ty, level) -> ty.level <- level
+  | Cname  (r, v) -> r := v
+  | Crow   (r, v) -> r := v
+  | Ckind  (r, v) -> r := v
+  | Ccommu (r, v) -> r := v
+  | Cuniv  (r, v) -> r := v
+
+type changes = 
+    Change of change * changes ref
+  | Unchanged
+  | Invalid
+
+type snapshot = changes ref * int
+
+let trail = Weak.create 1
+let last_snapshot = ref 0
+
+let log_change ch =
+  match Weak.get trail 0 with None -> ()
+  | Some r ->
+      let r' = ref Unchanged in
+      r := Change (ch, r');
+      Weak.set trail 0 (Some r')
+
+let log_type ty =
+  if ty.id <= !last_snapshot then log_change (Ctype (ty, ty.desc))
+let link_type ty ty' = log_type ty; ty.desc <- Tlink ty'
+  (* ; assert (check_memorized_abbrevs ()) *)
+  (*  ; check_expans [] ty' *)
+let set_level ty level =
+  if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));
+  ty.level <- level
+let set_univar rty ty =
+  log_change (Cuniv (rty, !rty)); rty := Some ty
+let set_name nm v =
+  log_change (Cname (nm, !nm)); nm := v
+let set_row_field e v =
+  log_change (Crow (e, !e)); e := Some v
+let set_kind rk k =
+  log_change (Ckind (rk, !rk)); rk := Some k
+let set_commu rc c =
+  log_change (Ccommu (rc, !rc)); rc := c
+
+let snapshot () =
+  let old = !last_snapshot in
+  last_snapshot := !new_id;
+  match Weak.get trail 0 with Some r -> (r, old)
+  | None ->
+      let r = ref Unchanged in
+      Weak.set trail 0 (Some r);
+      (r, old)
+
+let rec rev_log accu = function
+    Unchanged -> accu
+  | Invalid -> assert false
+  | Change (ch, next) ->
+      let d = !next in
+      next := Invalid;
+      rev_log (ch::accu) d
+
+let backtrack (changes, old) =
+  match !changes with
+    Unchanged -> last_snapshot := old
+  | Invalid -> failwith "Btype.backtrack"
+  | Change _ as change ->
+      cleanup_abbrev ();
+      let backlog = rev_log [] change in
+      List.iter undo_change backlog;
+      changes := Unchanged;
+      last_snapshot := old;
+      Weak.set trail 0 (Some changes)

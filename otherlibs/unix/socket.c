@@ -22,7 +22,14 @@
 #include <sys/socket.h>
 
 int socket_domain_table[] = {
-  PF_UNIX, PF_INET
+  PF_UNIX, PF_INET,
+#if defined(HAS_IPV6)
+  PF_INET6
+#elif defined(PF_UNDEF)
+  PF_UNDEF
+#else
+  0
+#endif
 };
 
 int socket_type_table[] = {
