@@ -20,7 +20,7 @@ void array_bound_error()
 }
 
 long r[200];
-double d[20];
+double d[40];
 long x, y;
 double f, g;
 
@@ -218,6 +218,27 @@ void do_test()
       INTFLOATTEST(r[112], (f + 1.0 > g));
       INTFLOATTEST(r[113], (f + 1.0 <= g));
       INTFLOATTEST(r[114], (f + 1.0 >= g));
+
+      FLOATINTTEST(d[20], ((double) x) + 1.0);
+      INTFLOATTEST(r[115], (long)(f + 1.0));
+
+      FLOATTEST(d[21], f + g);
+      FLOATTEST(d[22], g + f);
+      FLOATTEST(d[23], f - g);
+      FLOATTEST(d[24], g - f);
+      FLOATTEST(d[25], f * g);
+      FLOATTEST(d[26], g * f);
+      FLOATTEST(d[27], f / g);
+      FLOATTEST(d[28], g / f);
+
+      FLOATTEST(d[29], (f * 2.0) + g);
+      FLOATTEST(d[30], g + (f * 2.0));
+      FLOATTEST(d[31], (f * 2.0) - g);
+      FLOATTEST(d[32], g - (f * 2.0));
+      FLOATTEST(d[33], (f + 2.0) * g);
+      FLOATTEST(d[34], g * (f + 2.0));
+      FLOATTEST(d[35], (f * 2.0) / g);
+      FLOATTEST(d[36], g / (f * 2.0));
 }
 
 #ifdef __i386__

@@ -191,6 +191,27 @@
       (addraset r 113 (<=f (+f f 1.0) g))
       (addraset r 114 (>=f (+f f 1.0) g))
 
+      (floataset d 20 (+f (floatofint x) 1.0))
+      (addraset r 115 (intoffloat (+f f 1.0)))
+
+      (floataset d 21 (+f f (load "g" float)))
+      (floataset d 22 (+f (load "g" float) f))
+      (floataset d 23 (-f f (load "g" float)))
+      (floataset d 24 (-f (load "g" float) f))
+      (floataset d 25 ( *f f (load "g" float)))
+      (floataset d 26 ( *f (load "g" float) f))
+      (floataset d 27 (/f f (load "g" float)))
+      (floataset d 28 (/f (load "g" float) f))
+
+      (floataset d 29 (+f ( *f f 2.0) (load "g" float)))
+      (floataset d 30 (+f (load "g" float) ( *f f 2.0)))
+      (floataset d 31 (-f ( *f f 2.0) (load "g" float)))
+      (floataset d 32 (-f (load "g" float) ( *f f 2.0)))
+      (floataset d 33 ( *f ( +f f 2.0) (load "g" float)))
+      (floataset d 34 ( *f (load "g" float) ( +f f 2.0)))
+      (floataset d 35 (/f ( *f f 2.0) (load "g" float)))
+      (floataset d 36 (/f (load "g" float) ( *f f 2.0)))
+
 )))))))
 
 
