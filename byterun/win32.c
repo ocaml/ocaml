@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <ctype.h>
+#include <errno.h>
 #include <string.h>
 #include <signal.h>
 #include "memory.h"
@@ -331,60 +332,26 @@ CAMLexport void expand_command_line(int * argcp, char *** argvp)
 
 #endif
 
-/* Wrapper around "system" for Win32.  Create a diversion file if
-   command line is too long. */
-
-int win32_system(char * cmdline)
-{
-#define MAX_CMD_LENGTH 256
-  char cmd[MAX_CMD_LENGTH + 16];
-  char template[9];
-  char * tempfile;
-  FILE * fd;
-  int len, i, j, k, retcode;
-
-  len = strlen(cmdline);
-  if (len < 4000) {
-    return system(cmdline);
-  } else {
-    /* Skip initial blanks, if any */
-    for (i = 0; cmdline[i] != 0 && isspace(cmdline[i]); i++) /*nothing*/;
-    /* Copy command name to buffer, stop at first blank */
-    for (j = 0; cmdline[i] != 0 && ! isspace(cmdline[i]); i++) {
-      if (j < MAX_CMD_LENGTH) cmd[j++] = cmdline[i];
-    }
-    /* Save remainder of command line to temp file */
-    strcpy(template, "cmXXXXXX");
-    tempfile = mktemp(template);
-    fd = fopen(tempfile, "w");
-    if (fd == NULL) return -1;
-    for (k = i; k < len; k++)
-      fputc((isspace(cmdline[k]) ? '\n' : cmdline[k]), fd);
-    fclose(fd);
-    /* Add " @tempfile" to the command line */
-    sprintf(cmd + j, " @%s", tempfile);
-    /* Run command */
-    retcode = system(cmd);
-    /* Remove temp file and exit */
-    unlink(tempfile);
-    return retcode;
-  }
-}
-
 /* Add to [contents] the (short) names of the files contained in
    the directory named [dirname].  No entries are added for [.] and [..].
    Return 0 on success, -1 on error; set errno in the case of error. */
 
 int caml_read_directory(char * dirname, struct ext_table * contents)
 {
-  int d;
+  char * template;
+  long h;
   struct _finddata_t fileinfo;
   char * p;
 
-  h = _findfirst(dirname, &fileinfo);
+  template = stat_alloc(strlen(dirname) + 5);
+  strcpy(template, dirname);
+  strcat(template, "\\*.*");
+  h = _findfirst(template, &fileinfo);
+  stat_free(template);
   if (h == -1) return errno == ENOENT ? 0 : -1;
   do {
     if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0) {
+      printf("Adding %s\n", fileinfo.name);
       p = stat_alloc(strlen(fileinfo.name) + 1);
       strcpy(p, fileinfo.name);
       ext_table_add(contents, p);
