@@ -254,7 +254,7 @@ static value schedule_thread(void)
   int need_select, need_wait;
 
   /* Don't allow preemption during a callback */
-  if (callback_depth > 0) return curr_thread->retval;
+  if (callback_depth > 1) return curr_thread->retval;
 
   /* Save the status of the current thread */
   curr_thread->stack_low = stack_low;
@@ -403,7 +403,7 @@ try_again:
 
 static void check_callback(void)
 {
-  if (callback_depth > 0)
+  if (callback_depth > 1)
     fatal_error("Thread: deadlock during callback");
 }
 
@@ -547,7 +547,12 @@ value thread_kill(value thread)       /* ML */
   /* This thread is no longer waiting on anything */
   th->status = KILLED;
   /* If this is the current thread, activate another one */
-  if (th == curr_thread) retval = schedule_thread();
+  if (th == curr_thread) {
+    Begin_root(thread);
+    retval = schedule_thread();
+    th = (thread_t) thread;
+    End_roots();
+  }
   /* Remove thread from the doubly-linked list */
   Assign(th->prev->next, th->next);
   Assign(th->next->prev, th->prev);
