@@ -167,7 +167,9 @@ let build_graph fundecl =
         done;
         prefer weight i.next
     | Iloop body ->
-        prefer (8 * weight) body; prefer weight i.next
+        (* Avoid overflow of weight and spill_cost *)
+        prefer (if weight < 1000 then 8 * weight else weight) body;
+        prefer weight i.next
     | Icatch(body, handler) ->
         prefer weight body; prefer weight handler; prefer weight i.next
     | Iexit ->

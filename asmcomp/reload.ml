@@ -36,7 +36,13 @@ let makereg r =
   | Stack _ ->
       if Proc.num_available_registers.(Proc.register_class r) = 0
       then r
-      else begin redo_regalloc := true; Reg.clone r end
+      else begin
+        redo_regalloc := true;
+        let newr = Reg.clone r in
+        (* Strongly discourage spilling this register *)
+        newr.spill_cost <- 100000;
+        newr
+      end
 
 let makeregs rv =
   let n = Array.length rv in

@@ -79,7 +79,10 @@ let reinit_reg r =
   r.interf <- [];
   r.prefer <- [];
   r.degree <- 0;
-  r.spill_cost <- 0
+  (* Preserve the very high spill costs introduced by the reloading pass *)
+  if r.spill_cost >= 100000
+  then r.spill_cost <- 100000
+  else r.spill_cost <- 0
 
 let reinit() =
   List.iter reinit_reg !reg_list

@@ -186,8 +186,6 @@ let select_floatarith regular_op reversed_op mem_op mem_rev_op args =
 
 (* Main instruction selection functions *)
 
-exception Use_default
-
 let select_oper op args =
   match op with
   (* Recognize the LEA instruction *)

@@ -271,24 +271,8 @@ let emit_instr i =
               `	fld	{emit_reg src}\n`;
               `	fstp	{emit_reg dst}\n`
             end
-          else begin
-            match (src.loc, dst.loc) with
-              (Stack _, Stack(Outgoing _)) ->
-                fatal_error "Emit_i386nt: stack to outgoing stack"
-            | (Stack _, Stack _) ->
-                (* Stack-to-stack moves are sometimes necessary because
-                   of the lack of available registers. This can be done
-                   with "pushl [src]; popl [dst]", but the form below
-                   is more efficient on the Pentium and Pentium Pro. *)
-                stack_offset := !stack_offset + 4;
-                `	push	eax\n`;
-                `	mov	eax, {emit_reg src}\n`;
-                `	mov	{emit_reg dst}, eax\n`;
-                `	pop	eax\n`;
-                stack_offset := !stack_offset - 4
-            | (_, _) ->
-                `	mov	{emit_reg dst}, {emit_reg src}\n`
-          end
+          else
+            `	mov	{emit_reg dst}, {emit_reg src}\n`
         end
     | Lop(Iconst_int 0) ->
         begin match i.res.(0).loc with
