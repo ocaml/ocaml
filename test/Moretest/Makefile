@@ -47,7 +47,7 @@ cm.out: cmcaml.ml cmstub.c cmmain.c
 
 bigarrays.byt: ../../otherlibs/bigarray/bigarray.cma \
                ../../otherlibs/bigarray/libbigarray.a bigarrays.ml
-	$(CAMLC) -o bigarrays.byt \
+	$(CAMLC) -custom -o bigarrays.byt \
                 -I ../../otherlibs/bigarray \
                 -I ../../otherlibs/unix \
                 unix.cma bigarray.cma bigarrays.ml
@@ -120,6 +120,11 @@ tscanf.out: tscanf.cmx
 scanf: tscanf.byt tscanf.out
 	./tscanf.byt
 	./tscanf.out
+
+regexp.byt: ../../otherlibs/str/str.cma regexp.ml
+	$(CAMLC) -custom -I ../../otherlibs/str -o regexp.byt str.cma regexp.ml
+regexp.opt: ../../otherlibs/str/str.cmxa regexp.ml
+	$(CAMLOPT) -I ../../otherlibs/str -o regexp.opt str.cmxa regexp.ml
 
 # Common rules
 
