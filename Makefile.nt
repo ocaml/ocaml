@@ -116,7 +116,7 @@ bootstrap:
 # Check if fixpoint reached
 	$(MAKEREC) compare
 
-LIBFILES=stdlib.cma std_exit.cmo *.cmi ocamlheader
+LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
 
 # Start up the system from the distribution compiler
 coldstart:
