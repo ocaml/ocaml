@@ -989,7 +989,7 @@ let report_error = function
       print_string "which has no method"; print_space ();
       print_string met
   | Non_closed (id, args, typ, var) ->
-      open_hovbox 0;
+      open_box 0;
       Printtyp.reset ();
       Printtyp.mark_loops typ;
       begin match var with
@@ -1001,7 +1001,7 @@ let report_error = function
           print_string "Unbound row variable in implicit type definition"
       end;
       print_break 1 2;
-      open_hovbox 0;
+      open_box 0;
       Printtyp.type_expr (Ctype.newty (Tconstr(Path.Pident id, args, ref [])));
       print_space (); print_string "="; print_space ();
       Printtyp.type_expr typ;
@@ -1045,7 +1045,7 @@ let report_error = function
         (function () ->
            print_string "but is expected to have type")
   | Abbrev_type_clash (abbrev, actual, expected) ->
-      open_hovbox 0;
+      open_box 0;
       Printtyp.reset ();
       Printtyp.mark_loops abbrev; Printtyp.mark_loops actual;
       Printtyp.mark_loops expected;
@@ -1057,7 +1057,7 @@ let report_error = function
       Printtyp.type_expr expected;
       close_box ()
   | Bad_parameters (id, params, cstrs) ->
-      open_hovbox 0;
+      open_box 0;
       Printtyp.reset ();
       Printtyp.mark_loops params; Printtyp.mark_loops cstrs;
       print_string "The abbreviation"; print_space ();
@@ -1077,7 +1077,7 @@ let report_error = function
         (function () ->
            print_string "does not meet its constraint: it should be")
   | Argument_arity_mismatch(p, expected, provided) ->
-      open_hovbox 0;
+      open_box 0;
       print_string "The class "; Printtyp.path p;
       print_space(); print_string "expects "; print_int expected;
       print_string " argument(s),"; print_space();
@@ -1085,7 +1085,7 @@ let report_error = function
       print_string " argument(s)";
       close_box()
   | Parameter_arity_mismatch(p, expected, provided) ->
-      open_hovbox 0;
+      open_box 0;
       print_string "The class "; Printtyp.path p;
       print_space(); print_string "expects "; print_int expected;
       print_string " type parameter(s),"; print_space();
