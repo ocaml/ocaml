@@ -310,9 +310,12 @@ type interval_timer =
   | ITIMER_VIRTUAL
   | ITIMER_PROF
 
+type time_value = float
+
 type interval_timer_status =
-  { it_interval: float;                 (* Period *)
-    it_value: float }                   (* Current value of the timer *)
+  { it_interval: time_value;                 (* Period *)
+    it_value: time_value }                   (* Current value of the timer *)
+        (* The type describing the status of an interval timer *)
 
 external getitimer: interval_timer -> interval_timer_status = "unix_getitimer"
 external setitimer:
