@@ -51,7 +51,7 @@ static void finalize_channel(vchan)
      value vchan;
 {
   struct channel * chan = (struct channel *) vchan;
-  close(chan->fd);
+  if (chan->fd != -1) close(chan->fd);
 }
 
 struct channel * open_descr(fd)
