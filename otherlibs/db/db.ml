@@ -106,14 +106,10 @@ let find_all db x =
 let remove db x = del db x []
 
 let iter f db =
-  let rec walk k =
-    let k, v = seq db k [R_NEXT] in
-    f k v;
-    walk k
+  let rec walk = function
+      None -> ()
+    | Some(k, v) ->
+        f k v;
+        walk (try Some(seq db k [R_NEXT]) with Not_found -> None)
   in
-  try
-    let k, v = seq db "" [R_FIRST] in
-    f k v;
-    walk k
-  with
-    Not_found -> ()
+  walk (try Some(seq db "" [R_FIRST]) with Not_found -> None)

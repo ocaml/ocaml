@@ -48,12 +48,10 @@ let _ = Callback.register_exception "dbmerror" (Dbm_error "")
 
 (* Usual iterator *)
 let iter f t =
-  let rec walk k = 
-    f k (find t k); 
-    match try Some(nextkey t) with Not_found -> None
-    with
-         None -> ()
-       | Some k -> walk k
+  let rec walk = function
+      None -> ()
+    | Some k ->
+        f k (find t k); 
+        walk (try Some(nextkey t) with Not_found -> None)
   in
-  walk (firstkey t)
-
+  walk (try Some(firstkey t) with Not_found -> None)
