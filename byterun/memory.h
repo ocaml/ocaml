@@ -40,12 +40,6 @@ color_t allocation_color (void *hp);
 
 /* void shrink_heap (char *);        Only used in compact.c */
 
-#ifdef NATIVE_CODE
-#define Garbage_collection_function garbage_collection
-#else
-#define Garbage_collection_function minor_collection
-#endif
-
 #ifdef DEBUG
 #define DEBUG_clear(result, wosize) { \
   unsigned long __DEBUG_i; \
@@ -62,7 +56,7 @@ color_t allocation_color (void *hp);
   young_ptr -= Bhsize_wosize (wosize);                                      \
   if (young_ptr < young_limit){                                             \
     Setup_for_gc;                                                           \
-    Garbage_collection_function ();                                         \
+    minor_collection ();                                                    \
     Restore_after_gc;                                                       \
     young_ptr -= Bhsize_wosize (wosize);                                    \
   }                                                                         \
