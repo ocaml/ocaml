@@ -493,31 +493,28 @@ value sstoken loc s =
   TXnterm loc n None
 ;
 
+value mk_psymbol p s t =
+  let symb = {used = []; text = s; styp = t} in
+  {pattern = Some p; symbol = symb}
+;
+
 value sslist_aux loc min sep s =
-  let psymbol p s t =
-    let symb = {used = []; text = s; styp = t} in
-    {pattern = Some p; symbol = symb}
-  in
   let rl =
     let r1 =
       let prod =
         let n = mk_name loc <:expr< a_list >> in
-        [psymbol <:patt< a >> (TXnterm loc n None) (STquo loc "a_list")]
+        [mk_psymbol <:patt< a >> (TXnterm loc n None) (STquo loc "a_list")]
       in
       let act = <:expr< a >> in
       {prod = prod; action = Some act}
     in
     let r2 =
-      let psymb =
-        let symb =
-          {used = []; text = slist loc min sep s;
-           styp = STapp loc "list" s.styp}
-        in
-        let patt = <:patt< a >> in
-        {pattern = Some patt; symbol = symb}
+      let prod =
+        [mk_psymbol <:patt< a >> (slist loc min sep s)
+           (STapp loc "list" s.styp)]
       in
       let act = <:expr< Qast.List a >> in
-      {prod = [psymb]; action = Some act}
+      {prod = prod; action = Some act}
     in
     [r1; r2]
   in
@@ -531,30 +528,22 @@ value sslist loc min sep s =
 ;
 
 value ssopt loc s =
-  let psymbol p s t =
-    let symb = {used = []; text = s; styp = t} in
-    {pattern = Some p; symbol = symb}
-  in
   let rl =
     let r1 =
       let prod =
         let n = mk_name loc <:expr< a_opt >> in
-        [psymbol <:patt< a >> (TXnterm loc n None) (STquo loc "a_opt")]
+        [mk_psymbol <:patt< a >> (TXnterm loc n None) (STquo loc "a_opt")]
       in
       let act = <:expr< a >> in
       {prod = prod; action = Some act}
     in
     let r2 =
-      let psymb =
-        let symb =
-          {used = []; text = TXopt loc s.text;
-           styp = STapp loc "option" s.styp}
-        in
-        let patt = <:patt< a >> in
-        {pattern = Some patt; symbol = symb}
+      let prod =
+        [mk_psymbol <:patt< a >> (TXopt loc s.text)
+           (STapp loc "option" s.styp)]
       in
       let act = <:expr< Qast.Option a >> in
-      {prod = [psymb]; action = Some act}
+      {prod = prod; action = Some act}
     in
     [r1; r2]
   in

@@ -1041,28 +1041,25 @@ let sstoken loc s =
   TXnterm (loc, n, None)
 ;;
 
+let mk_psymbol p s t =
+  let symb = {used = []; text = s; styp = t} in
+  {pattern = Some p; symbol = symb}
+;;
+
 let sslist_aux loc min sep s =
-  let psymbol p s t =
-    let symb = {used = []; text = s; styp = t} in
-    {pattern = Some p; symbol = symb}
-  in
   let rl =
     let r1 =
       let prod =
         let n = mk_name loc (MLast.ExLid (loc, "a_list")) in
-        [psymbol (MLast.PaLid (loc, "a")) (TXnterm (loc, n, None))
+        [mk_psymbol (MLast.PaLid (loc, "a")) (TXnterm (loc, n, None))
            (STquo (loc, "a_list"))]
       in
       let act = MLast.ExLid (loc, "a") in {prod = prod; action = Some act}
     in
     let r2 =
-      let psymb =
-        let symb =
-          {used = []; text = slist loc min sep s;
-           styp = STapp (loc, "list", s.styp)}
-        in
-        let patt = MLast.PaLid (loc, "a") in
-        {pattern = Some patt; symbol = symb}
+      let prod =
+        [mk_psymbol (MLast.PaLid (loc, "a")) (slist loc min sep s)
+           (STapp (loc, "list", s.styp))]
       in
       let act =
         MLast.ExApp
@@ -1071,7 +1068,7 @@ let sslist_aux loc min sep s =
              (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "List")),
            MLast.ExLid (loc, "a"))
       in
-      {prod = [psymb]; action = Some act}
+      {prod = prod; action = Some act}
     in
     [r1; r2]
   in
@@ -1085,27 +1082,19 @@ let sslist loc min sep s =
 ;;
 
 let ssopt loc s =
-  let psymbol p s t =
-    let symb = {used = []; text = s; styp = t} in
-    {pattern = Some p; symbol = symb}
-  in
   let rl =
     let r1 =
       let prod =
         let n = mk_name loc (MLast.ExLid (loc, "a_opt")) in
-        [psymbol (MLast.PaLid (loc, "a")) (TXnterm (loc, n, None))
+        [mk_psymbol (MLast.PaLid (loc, "a")) (TXnterm (loc, n, None))
            (STquo (loc, "a_opt"))]
       in
       let act = MLast.ExLid (loc, "a") in {prod = prod; action = Some act}
     in
     let r2 =
-      let psymb =
-        let symb =
-          {used = []; text = TXopt (loc, s.text);
-           styp = STapp (loc, "option", s.styp)}
-        in
-        let patt = MLast.PaLid (loc, "a") in
-        {pattern = Some patt; symbol = symb}
+      let prod =
+        [mk_psymbol (MLast.PaLid (loc, "a")) (TXopt (loc, s.text))
+           (STapp (loc, "option", s.styp))]
       in
       let act =
         MLast.ExApp
@@ -1114,17 +1103,11 @@ let ssopt loc s =
              (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Option")),
            MLast.ExLid (loc, "a"))
       in
-      {prod = [psymb]; action = Some act}
+      {prod = prod; action = Some act}
     in
     [r1; r2]
   in
   TXrules (loc, srules loc "a_opt" rl "")
-;;
-
-let is_global e =
-  function
-    None -> true
-  | Some gl -> List.exists (fun n -> n.tvar = e.name.tvar) gl
 ;;
 
 let text_of_entry loc gmod e =
