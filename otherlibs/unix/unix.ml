@@ -171,7 +171,7 @@ let write fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > String.length buf - len
   then invalid_arg "Unix.write"
   else unsafe_write fd buf ofs len
-(* write missbehaves because it attempts to write all data by making repeated
+(* write misbehaves because it attempts to write all data by making repeated
    calls to the Unix write function (see comment in write.c and unix.mli).
    partial_write fixes this by never calling write twice. *)
 let single_write fd buf ofs len =

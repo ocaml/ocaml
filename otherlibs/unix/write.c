@@ -55,8 +55,8 @@ CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
   return Val_long(written);
 }
 
-/* When an error occurs after the first loop, it unix_write repports the
-   error and discard the number of already written caracters. 
+/* When an error occurs after the first loop, unix_write reports the
+   error and discards the number of already written characters.
    In this case, it would be better to discard the error and return the
    number of bytes written, since most likely, unix_write will be call again,
    and the error will be reproduced and this time will be reported.

@@ -257,7 +257,7 @@ value rec execute_macro = fun
 
 and execute_macro_list = fun
 [ [] -> []
-| [hd::tl] -> (* The eveluation order is important here *)
+| [hd::tl] -> (* The evaluation order is important here *)
   let il1 = execute_macro hd in
   let il2 = execute_macro_list tl in
     il1 @ il2 ]

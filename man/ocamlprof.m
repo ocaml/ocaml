@@ -41,7 +41,7 @@ The default is the file ocamlprof.dump in the current directory.
 Specifies an additional string to be output with profiling information.
 By default,
 .B ocamlprof
-will annotate progams with comments of the form
+will annotate programs with comments of the form
 .BI (* \ n \ *)
 where
 .I n

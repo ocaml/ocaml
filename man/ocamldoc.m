@@ -490,7 +490,7 @@ option:
 
 .TP
 .B \-man-mini
-Generate man pages only for modules, module types, clases and class types,
+Generate man pages only for modules, module types, classes and class types,
 instead of pages for all elements.
 
 .TP

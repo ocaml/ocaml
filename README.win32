@@ -103,8 +103,7 @@ You will need the following software components to perform the recompilation:
 - Windows NT, 2000, or XP (we advise against compiling under Windows 95/98/ME)
 - Visual C++ version 6 or 7
 - MASM version 6.11 (see above)
-- The CygWin port of GNU tools, available from
-      http://sourceware.cygnus.com/cygwin/
+- The Cygwin port of GNU tools, available from http://cygwin.com/
 - TCL/TK version 8.3 (for the LablTK GUI) (see above).
 
 Remember to add the directory where the libraries tk83.lib and

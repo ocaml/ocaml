@@ -16,7 +16,7 @@ Both compilers:
 - More compact compilation of classes.
 - Much more efficient handling of class definitions inside functors
   or local modules.
-- Simpler represention for method tables. Objects can now be marshalled
+- Simpler representation for method tables. Objects can now be marshaled
   between identical programs with the flag Marshal.Closures.
 - Improved error messages for objects and variants.
 - Improved printing of inferred module signatures (toplevel and ocamlc -i).
@@ -131,7 +131,7 @@ Type-checking:
   type of any subexpression in the source file.  Works even in the case
   of a type error (all the types computed up to the error are available).
   This new feature is also supported by ocamlbrowser.
-- Disable "method is overriden" warning when the method was explicitely
+- Disable "method is overriden" warning when the method was explicitly
   redefined as virtual beforehand (i.e. not through inheritance). Typing
   and semantics are unchanged.
 
