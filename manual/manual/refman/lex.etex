@@ -81,8 +81,11 @@ range of representable floating-point values is undefined.
 \begin{syntax}
 char-literal:
           "'" regular-char "'"
-        | "'" "\" ("\" || "'" || "n" || "t" || "b" || "r") "'"
-        | "'" "\" ("0"\ldots"9") ("0"\ldots"9") ("0"\ldots"9") "'"
+        | "'" escape-sequence "'"
+;
+escape-sequence:
+          "\" ("\" || '"' || "'" || "n" || "t" || "b" || "r")
+        | "\" ("0"\ldots"9") ("0"\ldots"9") ("0"\ldots"9")
 \end{syntax}
 
 Character literals are delimited by "'" (single quote) characters.
@@ -90,9 +93,10 @@ The two single quotes enclose either one character different from
 "'" and "\\", or one of the escape sequences below:
 \begin{tableau}{|l|l|}{Sequence}{Character denoted}
 \entree{"\\\\"}{backslash ("\\")}
+\entree{"\\\""}{double quote ("\"")}
 \entree{"\\'"}{single quote ("'")}
 \entree{"\\n"}{linefeed (LF)}
-\entree{"\\r"}{return (CR)}
+\entree{"\\r"}{carriage return (CR)}
 \entree{"\\t"}{horizontal tabulation (TAB)}
 \entree{"\\b"}{backspace (BS)}
 \entree{"\\"\var{ddd}}{the character with ASCII code \var{ddd} in decimal}
@@ -106,31 +110,22 @@ string-literal:
           '"' { string-character } '"'
 ;
 string-character:
-          regular-char
-        | "\" ("\" || '"' || "n" || "t" || "b" || "r")
-        | "\" ("0"\ldots"9") ("0"\ldots"9") ("0"\ldots"9")
+          regular-char-str
+        | escape-sequence
 \end{syntax}
 
 String literals are delimited by "\"" (double quote) characters.
 The two double quotes enclose a sequence of either characters
 different from "\"" and "\\", or escape sequences from the
-table below:
-\begin{tableau}{|l|l|}{Sequence}{Character denoted}
-\entree{"\\\\"}{backslash ("\\")}
-\entree{"\\\""}{double quote ("\"")}
-\entree{"\\n"}{linefeed (LF)}
-\entree{"\\r"}{return (CR)}
-\entree{"\\t"}{horizontal tabulation (TAB)}
-\entree{"\\b"}{backspace (BS)}
-\entree{"\\"\var{ddd}}{the character with ASCII code \var{ddd} in decimal}
-\end{tableau}
+table given above for character literals.
+
 To allow splitting long string literals across lines, the sequence
 "\\"\var{newline}~\var{blanks} (a "\\" at end-of-line followed by any
 number of blanks at the beginning of the next line) is ignored inside
 string literals.
 
-The current implementation places no restrictions on the length of
-string literals.
+The current implementation places practically no restrictions on the
+length of string literals.
 
 \subsubsection*{Naming labels}
 

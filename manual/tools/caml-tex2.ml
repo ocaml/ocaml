@@ -120,8 +120,8 @@ let process_file file =
                escape_backslash rest]
           end else
             escape_backslash phrase in
-        let phrase = global_replace ~!"^\(.\)" camlin phrase
-        and output = global_replace ~!"^\(.\)" camlout output in
+        let phrase = global_replace ~!"^\\(.\\)" camlin phrase
+        and output = global_replace ~!"^\\(.\\)" camlout output in
         if not !first then output_string oc "\\;\n";
         fprintf oc "%s\n" phrase;
         if not omit_answer then fprintf oc "%s" output;

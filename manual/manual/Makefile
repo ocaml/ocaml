@@ -43,7 +43,7 @@ index::
 html: files
 	cd htmlman; \
 	mkdir -p libref ; \
-	ocamldoc.opt -colorize-code -sort -html \
+	ocamldoc -colorize-code -sort -html \
 	-d libref \
 	-I $(CSLDIR2)/stdlib  \
 	-I $(CSLDIR2)/otherlibs/bigarray \
