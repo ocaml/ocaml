@@ -108,6 +108,7 @@ The two single quotes enclose either one character different from
 \entree{"\\r"}{carriage return (CR)}
 \entree{"\\t"}{horizontal tabulation (TAB)}
 \entree{"\\b"}{backspace (BS)}
+\entree{"\\"\var{space}}{space (SPC)}
 \entree{"\\"\var{ddd}}{the character with ASCII code \var{ddd} in decimal}
 \entree{"\\x"\var{hh}}{the character with ASCII code \var{hh} in hexadecimal}
 \end{tableau}
