@@ -529,8 +529,8 @@ G(caml_array_bound_error):
         STARTPROC
 ; Load address of array_bound_error in %r22
 #ifdef SYS_hpux
-        ldil    LP%array_bound_error, %r22
-        ldo     RP%array_bound_error(%r22), %r22
+        ldil    LR%array_bound_error, %r22
+        ldo     RR%array_bound_error(%r22), %r22
 #else
         ldil    L`_array_bound_error, %r22
         ldo     R`_array_bound_error(%r22), %r22

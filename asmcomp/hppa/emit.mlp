@@ -510,10 +510,10 @@ let rec emit_instr i dslot =
         if alloc then begin
           call_symbol s;
           if hpux then begin
-            `	ldil	LP'{emit_symbol s}, %r22\n`;
+            `	ldil	LR'{emit_symbol s}, %r22\n`;
             describe_call i.arg;
             emit_call "caml_c_call" "%r2";
-            `	ldo	RP'{emit_symbol s}(%r22), %r22\n`  (* in delay slot *)
+            `	ldo	RR'{emit_symbol s}(%r22), %r22\n`  (* in delay slot *)
           end else begin
             `	ldil	L\`{emit_symbol s}, %r22\n`;
             emit_call "caml_c_call" "%r2";

@@ -373,9 +373,6 @@ case "$arch,$nativecc,$system,$host_type" in
   alpha,cc*,digital,*) nativecccompopts=-std1;;
   mips,cc*,irix,*)     nativecccompopts=-n32
                        nativecclinkopts="-n32 -Wl,-woff,84";;
-  hppa,gcc*,hpux,*hpux10*)
-                       nativecccompopts="$gcc_warnings"
-                       nativecclinkopts="-Wl,+vnocompatwarnings";;
   power,gcc*,aix,*aix4.3*)
                        nativecccompopts="$gcc_warnings -D_XOPEN_SOURCE=500";;
   power,*,aix,*aix4.3*)
