@@ -24,6 +24,8 @@ external command: string -> int = "sys_system_command"
 external chdir: string -> unit = "sys_chdir"
 external getcwd: unit -> string = "sys_getcwd"
 
+let interactive = ref false
+
 type signal_behavior =
     Signal_default
   | Signal_ignore

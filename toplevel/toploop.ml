@@ -181,6 +181,7 @@ let loop() =
   Symtable.init_toplevel();
   toplevel_env := Compile.initial_env ();
   Sys.catch_break true;
+  Sys.interactive := true;
   while true do
     try
       empty_lexbuf lb;

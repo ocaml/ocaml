@@ -30,6 +30,10 @@ external chdir: string -> unit = "sys_chdir"
         (* Change the current working directory of the process. *)
 external getcwd: unit -> string = "sys_getcwd"
 	(* Return the current working directory of the process. *)
+val interactive: bool ref
+        (* This reference is initially set to [false] in standalone
+           programs and to [true] if the code is being executed under
+           the interactive toplevel [csltop]. *)
 
 (*** Signal handling *)
 

@@ -21,7 +21,7 @@ install:
 	cp stdlib.cma std_exit.cmo *.cmi *.mli cslheader $(LIBDIR)
 
 installopt:
-	cp stdlib.cmxa stdlib.a std_exit.cmx *.cmx $(LIBDIR)
+	cp stdlib.cmxa stdlib.a std_exit.o *.cmx $(LIBDIR)
 	cd $(LIBDIR); $(RANLIB) stdlib.a
 
 stdlib.cma: $(OBJS)
