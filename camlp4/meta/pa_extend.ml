@@ -326,6 +326,9 @@ value rec quot_expr e =
   | <:expr< ($list:el$) >> ->
       let el = List.map quot_expr el in
       <:expr< Qast.Tuple $mklistexp loc el$ >>
+  | <:expr< let $rec:r$ $list:pel$ in $e$ >> ->
+      let pel = List.map (fun (p, e) -> (p, quot_expr e)) pel in
+      <:expr< let $rec:r$ $list:pel$ in $quot_expr e$ >>
   | _ -> e ]
 ;
 

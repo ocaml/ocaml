@@ -761,6 +761,9 @@ let rec quot_expr e =
          MLast.ExAcc
            (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Tuple")),
          mklistexp loc el)
+  | MLast.ExLet (_, r, pel, e) ->
+      let pel = List.map (fun (p, e) -> p, quot_expr e) pel in
+      MLast.ExLet (loc, r, pel, quot_expr e)
   | _ -> e
 ;;
 
