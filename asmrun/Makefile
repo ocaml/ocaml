@@ -19,7 +19,7 @@ CC=$(NATIVECC)
 FLAGS=-I../byterun -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) 
 CFLAGS=$(FLAGS) -O $(NATIVECCCOMPOPTS)
 DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
-PFLAGS=$(FLAGS) -pg -O -DPROFILING $(NATIVECCCOMPOPTS)
+PFLAGS=$(FLAGS) -pg -O -DPROFILING $(NATIVECCPROFOPTS)
 
 COBJS=startup.o main.o fail.o roots.o globroots.o signals.o \
   misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \

@@ -171,6 +171,8 @@ fi
 
 # Check for buggy versions of GCC
 
+buggycc="no"
+
 case "$host,$cc" in
   i[3456]86-*-*,gcc*)
     case `$cc --version` in
@@ -184,12 +186,28 @@ In particular, the version of gcc 2.7.2.1 that comes with
 Linux RedHat 4.x / Intel is affected by this problem.
 Other Linux distributions might also be affected.
 If you are using one of these configurations, you are strongly advised
-to use another version of gcc, such as 2.7.2.3 or 2.95, which are
+to use another version of gcc, such as 2.95, which are
 known to work well with Objective Caml.
 
 Press <enter> to proceed or <interrupt> to stop.
 EOF
         read reply;;
+      2.96*) cat <<'EOF'
+
+WARNING: you are using gcc version 2.96 on an Intel x86 processor.
+Certain patched versions of gcc 2.96 are known to generate incorrect
+code for the Objective Caml runtime system.  (The symptom is a segmentation
+violation of boot/ocamlc.)  Those incorrectly patched versions can be found
+in RedHat 7.2 and Mandrake 8.0 and 8.1; other Linux distributions
+might also be affected.  (See bug #57760 on bugzilla.redhat.com)
+
+Auto-configuration will now select gcc compiler flags that (we believe)
+work around the problem.  Still, if you observe segmentation faults
+while running ocamlc or ocamlopt, you are advised to try another version
+of gcc, such as 2.95.3 or 3.0.4.
+
+EOF
+        buggycc="gcc.2.96";;
     esac;;
 esac
 
@@ -1250,6 +1268,15 @@ cd ../../camlp4/config
 EXE=$exe ./configure_batch -bindir "$bindir" -libdir "$libdir" -mandir "$mandir" -ocaml-top ../.. > /dev/null
 )
 
+# Final twiddling of compiler options to work around known bugs
+
+nativeccprofopts="$nativecccompopts"
+case "$buggycc" in
+  gcc.2.96)
+    bytecccompopts="$bytecccompopts -fomit-frame-pointer"
+    nativecccompopts="$nativecccompopts -fomit-frame-pointer";;
+esac
+
 # Finish generated files
 
 cclibs="$cclibs $mathlib"
@@ -1269,6 +1296,7 @@ echo "MODEL=$model" >> Makefile
 echo "SYSTEM=$system" >> Makefile
 echo "NATIVECC=$nativecc" >> Makefile
 echo "NATIVECCCOMPOPTS=$nativecccompopts" >> Makefile
+echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
 echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
 echo "NATIVECCRPATH=$nativeccrpath" >> Makefile
 echo "NATIVECCLIBS=$cclibs" >> Makefile
