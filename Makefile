@@ -215,7 +215,7 @@ install: FORCE
 	if test -d $(LIBDIR); then : ; else $(MKDIR) $(LIBDIR); fi
 	if test -d $(MANDIR); then : ; else $(MKDIR) $(MANDIR); fi
 	cd byterun; $(MAKE) install
-	echo "$(LIBDIR)" > $(LIBDIR)/ld.conf
+	if test -r $(LIBDIR)/ld.conf; then :; else echo "$(LIBDIR)" > $(LIBDIR)/ld.conf; fi
 	cp ocamlc $(BINDIR)/ocamlc$(EXE)
 	cp ocaml $(BINDIR)/ocaml$(EXE)
 	cd stdlib; $(MAKE) install
