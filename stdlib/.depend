@@ -3,6 +3,7 @@ genlex.cmi: stream.cmi
 moreLabels.cmi: hashtbl.cmi map.cmi set.cmi 
 parsing.cmi: lexing.cmi obj.cmi 
 printf.cmi: buffer.cmi 
+scanf.cmi: scanning.cmi 
 weak.cmi: hashtbl.cmi 
 arg.cmo: array.cmi list.cmi printf.cmi string.cmi sys.cmi arg.cmi 
 arg.cmx: array.cmx list.cmx printf.cmx string.cmx sys.cmx arg.cmi 
@@ -26,8 +27,12 @@ digest.cmo: printf.cmi string.cmi digest.cmi
 digest.cmx: printf.cmx string.cmx digest.cmi 
 filename.cmo: buffer.cmi printf.cmi string.cmi sys.cmi filename.cmi 
 filename.cmx: buffer.cmx printf.cmx string.cmx sys.cmx filename.cmi 
+foo.cmo: format.cmi 
+foo.cmx: format.cmx 
 format.cmo: buffer.cmi list.cmi obj.cmi printf.cmi string.cmi format.cmi 
 format.cmx: buffer.cmx list.cmx obj.cmx printf.cmx string.cmx format.cmi 
+format.tmp.cmo: buffer.cmi obj.cmi printf.cmi string.cmi 
+format.tmp.cmx: buffer.cmx obj.cmx printf.cmx string.cmx 
 gc.cmo: printf.cmi sys.cmi gc.cmi 
 gc.cmx: printf.cmx sys.cmx gc.cmi 
 genlex.cmo: char.cmi hashtbl.cmi list.cmi stream.cmi string.cmi genlex.cmi 
@@ -66,10 +71,16 @@ printexc.cmo: obj.cmi printf.cmi string.cmi sys.cmi printexc.cmi
 printexc.cmx: obj.cmx printf.cmx string.cmx sys.cmx printexc.cmi 
 printf.cmo: buffer.cmi list.cmi obj.cmi string.cmi printf.cmi 
 printf.cmx: buffer.cmx list.cmx obj.cmx string.cmx printf.cmi 
-queue.cmo: queue.cmi 
-queue.cmx: queue.cmi 
+queue.cmo: obj.cmi queue.cmi 
+queue.cmx: obj.cmx queue.cmi 
 random.cmo: array.cmi char.cmi digest.cmi string.cmi random.cmi 
 random.cmx: array.cmx char.cmx digest.cmx string.cmx random.cmi 
+scanf.cmo: array.cmi obj.cmi pervasives.cmi printf.cmi scanning.cmi \
+    string.cmi scanf.cmi 
+scanf.cmx: array.cmx obj.cmx pervasives.cmx printf.cmx scanning.cmx \
+    string.cmx scanf.cmi 
+scanning.cmo: buffer.cmi string.cmi scanning.cmi 
+scanning.cmx: buffer.cmx string.cmx scanning.cmi 
 set.cmo: set.cmi 
 set.cmx: set.cmi 
 sort.cmo: array.cmi sort.cmi 
