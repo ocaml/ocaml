@@ -16,6 +16,7 @@
 
 open Misc
 open Parsetree
+open Primitive
 open Types
 open Typedtree
 open Typetexp
@@ -32,6 +33,7 @@ type error =
   | Type_clash of (type_expr * type_expr) list
   | Parameters_differ of type_expr * type_expr
   | Null_arity_external
+  | Missing_native_external
   | Unbound_type_var
   | Unbound_exception of Longident.t
   | Not_an_exception of Longident.t
@@ -384,6 +386,10 @@ let transl_value_decl env valdecl =
       if arity = 0 then
         raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
       let prim = Primitive.parse_declaration arity decl in
+      if !Clflags.native_code
+      && prim.prim_arity > 5
+      && prim.prim_native_name = ""
+      then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
       { val_type = ty; val_kind = Val_prim prim }
 
 (* Translate a "with" constraint -- much simplified version of
@@ -462,6 +468,10 @@ let report_error ppf = function
            fprintf ppf "but is here used with type")
   | Null_arity_external ->
       fprintf ppf "External identifiers must be functions"
+  | Missing_native_external ->
+      fprintf ppf "@[<hv>An external function with more than 5 arguments \
+                   requires second stub function@ \
+                   for native-code compilation@]"
   | Unbound_type_var ->
       fprintf ppf "A type variable is unbound in this type declaration"
   | Unbound_exception lid ->

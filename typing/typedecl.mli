@@ -44,6 +44,7 @@ type error =
   | Type_clash of (type_expr * type_expr) list
   | Parameters_differ of type_expr * type_expr
   | Null_arity_external
+  | Missing_native_external
   | Unbound_type_var
   | Unbound_exception of Longident.t
   | Not_an_exception of Longident.t
