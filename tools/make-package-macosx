@@ -29,7 +29,12 @@ cat >ocaml.info <<EOF
   DisableStop no
 EOF
 
-package root ocaml.info
+# Worked in 10.2:
+#package root ocaml.info
+
+# Works in 10.3:
+/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker \
+  -build -p "`pwd`/ocaml.pkg" -f "`pwd`/root" -i "`pwd`/ocaml.info"
 
 size=`du -s ocaml.pkg | cut -f 1`
 size=`expr $size + 8192`
