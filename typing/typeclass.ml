@@ -29,17 +29,17 @@ type error =
   | Non_closed of Ident.t * type_expr list * type_expr
   | Mutable_var of string
   | Undefined_var of string
-  | Variable_type_mismatch of string * type_expr * type_expr
-  | Method_type_mismatch of string * type_expr * type_expr
+  | Variable_type_mismatch of string * (type_expr * type_expr) list
+  | Method_type_mismatch of string * (type_expr * type_expr) list
   | Unconsistent_constraint
   | Unbound_class of Longident.t
-  | Argument_type_mismatch of type_expr * type_expr
+  | Argument_type_mismatch of (type_expr * type_expr) list
   | Abbrev_type_clash of type_expr * type_expr * type_expr
   | Bad_parameters of Ident.t * type_expr * type_expr
   | Illdefined_class of string
   | Argument_arity_mismatch of Path.t * int * int
   | Parameter_arity_mismatch of Path.t * int * int
-  | Parameter_mismatch of type_expr * type_expr
+  | Parameter_mismatch of (type_expr * type_expr) list
 
 exception Error of Location.t * error
 
@@ -59,6 +59,21 @@ let rec add_methods env self concr concr_lst t =
       add_methods env self concr concr_lst t'
   | _ ->
       ()
+
+let equalize_methods env self obj =
+  match (Ctype.expand_root env obj).desc with
+    Tobject (ty, _) ->
+      let rec equalize_methods_rec t =
+        match (Ctype.repr t).desc with
+          Tfield (lab, _, t') ->
+            Ctype.filter_method env lab self;
+            equalize_methods_rec t'
+        | _ ->
+            ()
+      in
+        equalize_methods_rec ty
+  | _ ->
+      fatal_error "Typeclass.equalize_methods"
 
 let make_stub env cl =
   Ctype.begin_def ();
@@ -163,9 +178,9 @@ let rec type_meth env loc self ty =
     Tfield (lab, ty, ty') ->
       let ty0 = Ctype.filter_method env lab self in
       begin try
-        Ctype.unify env ty0 ty
-      with Ctype.Unify ->
-        raise(Error(loc, Method_type_mismatch (lab, ty, ty0)))
+        Ctype.unify env ty ty0
+      with Ctype.Unify trace ->
+        raise(Error(loc, Method_type_mismatch (lab, trace)))
       end;
       type_meth env loc self ty'
   | _ ->
@@ -178,7 +193,7 @@ let missing_method env ty ty' =
         begin try
       	  Ctype.filter_method env lab ty;
 	  missing_method_rec met'
-        with Ctype.Unify ->
+        with Ctype.Unify _ ->
       	  lab
         end
     | _ ->
@@ -207,8 +222,8 @@ let insert_value env lab priv mut ty loc vals =
   begin try
     let (mut', ty') = Vars.find lab vals in
     check_mutable loc lab mut mut';
-    try Ctype.unify env ty ty' with Ctype.Unify ->
-      raise(Error(loc, Variable_type_mismatch(lab, ty, ty')))
+    try Ctype.unify env ty ty' with Ctype.Unify trace ->
+      raise(Error(loc, Variable_type_mismatch(lab, trace)))
   with Not_found -> () end;
   if priv = Private then
     vals_remove lab vals
@@ -245,8 +260,8 @@ let type_class_field env var_env self cl (met_env, fields, vars_sig) =
       List.iter2
         (fun sty ty ->
            let ty' = Typetexp.transl_simple_type var_env false sty in
-           try Ctype.unify var_env ty ty' with Ctype.Unify ->
-             raise(Error(sty.ptyp_loc, Parameter_mismatch(ty', ty))))
+           try Ctype.unify var_env ty' ty with Ctype.Unify trace ->
+             raise(Error(sty.ptyp_loc, Parameter_mismatch trace)))
         params params';
 
       (* Type arguments *)
@@ -278,7 +293,7 @@ let type_class_field env var_env self cl (met_env, fields, vars_sig) =
               begin try
                 Ctype.unify var_env self
                   (Ctype.newobj (closed_scheme fi))
-              with Ctype.Unify ->
+              with Ctype.Unify _ ->
                 let lab = missing_method var_env self' self in
                 raise(Error(loc, Closed_ancestor
                                    (cl.pcl_name, path, lab)))
@@ -338,16 +353,16 @@ let type_class_field env var_env self cl (met_env, fields, vars_sig) =
   | Pcf_virt (lab, ty, loc) ->
       let ty = transl_simple_type met_env false ty in
       let ty' = Ctype.filter_method met_env lab self in
-      begin try Ctype.unify met_env ty ty' with Ctype.Unify ->
-        raise(Error(loc, Method_type_mismatch (lab, ty, ty')))
+      begin try Ctype.unify met_env ty ty' with Ctype.Unify trace ->
+        raise(Error(loc, Method_type_mismatch (lab, trace)))
       end;
       (met_env, fields, vars_sig)
 
   | Pcf_meth (lab, expr, loc)  ->
       let (texp, ty) = type_method met_env self cl.pcl_self expr in
       let ty' = Ctype.filter_method met_env lab self in
-        begin try Ctype.unify met_env ty ty' with Ctype.Unify ->
-          raise(Error(loc, Method_type_mismatch (lab, ty, ty')))
+        begin try Ctype.unify met_env ty ty' with Ctype.Unify trace ->
+          raise(Error(loc, Method_type_mismatch (lab, trace)))
         end;
       (met_env, Cf_meth (lab, texp)::fields, vars_sig)
   
@@ -381,7 +396,7 @@ let transl_class temp_env env
        try
          Ctype.unify temp_env
            (type_variable loc v) (transl_simple_type temp_env false ty)
-       with Ctype.Unify ->
+       with Ctype.Unify _ ->
          raise(Error(loc, Unconsistent_constraint)))
     cl.pcl_cstr;
 
@@ -407,13 +422,13 @@ let transl_class temp_env env
 
   (* Temporary class abbreviation *)
   let (cl_params, cl_ty) = Ctype.instance_parameterized_type params self in
-  begin try Ctype.unify temp_env temp_cl cl_ty with Ctype.Unify ->
+  begin try Ctype.unify temp_env temp_cl cl_ty with Ctype.Unify _ ->
     Ctype.remove_object_name temp_cl;
     raise(Error(cl.pcl_loc, Abbrev_type_clash (cl_abbrev, cl_ty, temp_cl)))
   end;
   begin try
     List.iter2 (Ctype.unify temp_env) temp_cl_params cl_params
-  with Ctype.Unify ->
+  with Ctype.Unify _ ->
     raise(Error(cl.pcl_loc,
       	  Bad_parameters (cl_id, cl_abbrev,
       	                  Ctype.newty (Tconstr (Path.Pident cl_id, cl_params,
@@ -424,12 +439,12 @@ let transl_class temp_env env
   let (obj_params, arg_sig', obj_ty) =
     Ctype.instance_parameterized_type_2 params arg_sig self
   in
-  begin try Ctype.unify temp_env abbrev obj_ty with Ctype.Unify ->
+  begin try Ctype.unify temp_env abbrev obj_ty with Ctype.Unify _ ->
     raise(Error(cl.pcl_loc, Abbrev_type_clash (abbrev, obj_ty, temp_obj)))
   end;
   begin try
     List.iter2 (Ctype.unify temp_env) temp_obj_params obj_params
-  with Ctype.Unify ->
+  with Ctype.Unify _ ->
     raise(Error(cl.pcl_loc,
           Bad_parameters (obj_id, abbrev,
        	       	          Ctype.newty (Tconstr (Path.Pident obj_id, obj_params,
@@ -439,9 +454,9 @@ let transl_class temp_env env
   List.iter2
     (fun ty (exp, ty') ->
        begin try
-	 Ctype.unify temp_env ty ty'
-       with Ctype.Unify ->
-	 raise(Error(exp.pat_loc, Argument_type_mismatch(ty', ty)))
+	 Ctype.unify temp_env ty' ty
+       with Ctype.Unify trace ->
+	 raise(Error(exp.pat_loc, Argument_type_mismatch trace))
        end)
     new_args (List.combine args arg_sig');
 
@@ -480,11 +495,13 @@ let build_new_type temp_env env
     let concr = Ctype.instance concr in
     try
       Ctype.unify temp_env concr temp_obj
-    with Ctype.Unify ->
-    	let lab = missing_method temp_env concr temp_obj in
+    with Ctype.Unify _ ->
+      let lab = missing_method temp_env concr temp_obj in
       raise(Error(cl.pcl_loc,
     	       	    Virtual_class (cl.pcl_name, lab)))
   end;
+
+  equalize_methods temp_env self temp_obj;
 
   (* self should not be an abbreviation (printtyp) *)
   let exp_self = Ctype.expand_root temp_env self in
@@ -654,7 +671,7 @@ let type_class_type_field env temp_env cl self
 	    if not (Ctype.opened_object super) then
 	      begin try
 		Ctype.unify temp_env self (Ctype.newobj (closed_scheme fi))
-	      with Ctype.Unify ->
+	      with Ctype.Unify _ ->
 		let lab = missing_method temp_env super self in
 		raise(Error(loc,
 			    Closed_ancestor (cl.pcty_name, path, lab)))
@@ -840,10 +857,12 @@ let build_class_type env
 
   (* Check variable and method redefining *)
   List.iter
-    (check_field_redef env (fun l t t' -> Variable_type_mismatch(l, t', t)))
+    (check_field_redef env
+       (fun l t t' -> Variable_type_mismatch(l, [(t', t'); (t, t)])))
     val_redef;
   List.iter
-    (check_field_redef env (fun l t t' -> Method_type_mismatch(l, t', t)))
+    (check_field_redef env
+       (fun l t t' -> Method_type_mismatch(l, [(t', t'); (t, t)])))
     meth_redef;
 
   (* Class type skeleton *)
@@ -866,7 +885,7 @@ let build_class_type env
        try
          Ctype.unify env
            (type_variable loc v) (transl_simple_type env false ty)
-       with Ctype.Unify ->
+       with Ctype.Unify _ ->
        	 raise(Error(loc, Unconsistent_constraint)))
     cl.pcty_cstr;
 
@@ -893,7 +912,7 @@ let build_class_type env
       let temp_obj = Ctype.instance obj_ty in
       begin try
         Ctype.unify env concr temp_obj
-      with Ctype.Unify ->
+      with Ctype.Unify _ ->
       	let lab = missing_method env concr temp_obj in
 	raise(Error(cl.pcty_loc,
       	       	    Virtual_class (cl.pcty_name, lab)))
@@ -963,13 +982,15 @@ let report_error = function
       Printtyp.mark_loops typ;
       print_string
         "Some type variables are not bound in implicit type definition";
-      print_space ();
+      print_break 1 2;
       open_hovbox 0;
       Printtyp.type_expr (Ctype.newty (Tconstr(Path.Pident id, args, ref [])));
       print_space (); print_string "="; print_space ();
       Printtyp.type_expr typ;
       close_box ();
-      close_box ()
+      close_box ();
+      print_space ();
+      print_string "They should all be captured by a class type parameter."
   | Mutable_var v ->
       print_string "The variable"; print_space ();
       print_string v; print_space ();
@@ -978,45 +999,33 @@ let report_error = function
       print_string "The variable"; print_space ();
       print_string v; print_space ();
       print_string "is undefined"
-  | Variable_type_mismatch (v, actual, expected) ->
-      open_hovbox 0;
-      Printtyp.reset ();
-      Printtyp.mark_loops actual; Printtyp.mark_loops expected;
-      print_string "The variable ";
-      print_string v; print_space ();
-      print_string "has type"; print_space ();
-      Printtyp.type_expr actual;
-      print_space ();
-      print_string "but is expected to have type"; print_space ();
-      Printtyp.type_expr expected;
-      close_box ()
-  | Method_type_mismatch (m, actual, expected) ->
-      open_hovbox 0;
-      Printtyp.reset ();
-      Printtyp.mark_loops actual; Printtyp.mark_loops expected;
-      print_string "The method ";
-      print_string m; print_space ();
-      print_string "has type"; print_space ();
-      Printtyp.type_expr actual;
-      print_space ();
-      print_string "but is expected to have type"; print_space ();
-      Printtyp.type_expr expected;
-      close_box ()
+  | Variable_type_mismatch (v, trace) ->
+      Printtyp.unification_error trace
+        (function () ->
+           print_string "The variable ";
+           print_string v; print_space ();
+           print_string "has type")
+        (function () ->
+           print_string "but is expected to have type")
+  | Method_type_mismatch (m, trace) ->
+      Printtyp.unification_error trace
+        (function () ->
+           print_string "The method ";
+           print_string m; print_space ();
+           print_string "has type")
+        (function () ->
+           print_string "but is expected to have type")
   | Unconsistent_constraint ->
       print_string "The class constraints are not consistent"
   | Unbound_class cl ->
       print_string "Unbound class"; print_space ();
       Printtyp.longident cl
-  | Argument_type_mismatch (actual, expected) ->
-      open_hovbox 0;
-      Printtyp.reset ();
-      Printtyp.mark_loops actual; Printtyp.mark_loops expected;
-      print_string "This argument has type"; print_space ();
-      Printtyp.type_expr actual;
-      print_space ();
-      print_string "but is expected to have type"; print_space ();
-      Printtyp.type_expr expected;
-      close_box ()
+  | Argument_type_mismatch trace ->
+      Printtyp.unification_error trace
+        (function () ->
+           print_string "This argument has type")
+        (function () ->
+           print_string "but is expected to have type")
   | Abbrev_type_clash (abbrev, actual, expected) ->
       open_hovbox 0;
       Printtyp.reset ();
@@ -1043,15 +1052,12 @@ let report_error = function
   | Illdefined_class s ->
       print_string "The class "; print_string s;
       print_string " is ill-defined"
-  | Parameter_mismatch(actual, expected) ->
-      Printtyp.reset ();
-      Printtyp.mark_loops actual; Printtyp.mark_loops expected;
-      open_hovbox 0;
-      print_string "The type parameter"; print_space ();
-      Printtyp.type_expr actual; print_space ();
-      print_string "does not meet its constraint: it should be";
-      print_space ();
-      Printtyp.type_expr expected
+  | Parameter_mismatch trace ->
+      Printtyp.unification_error trace
+        (function () ->
+           print_string "The type parameter")
+        (function () ->
+           print_string "does not meet its constraint: it should be")
   | Argument_arity_mismatch(p, expected, provided) ->
       open_hovbox 0;
       print_string "The class "; Printtyp.path p;

@@ -158,7 +158,7 @@ let find_printer_type lid =
     Not_found ->
       print_string "Unbound value "; Printtyp.longident lid;
       print_newline(); raise Exit
-  | Ctype.Unify ->
+  | Ctype.Unify _ ->
       Printtyp.longident lid;
       print_string " has the wrong type for a printing function";
       print_newline(); raise Exit

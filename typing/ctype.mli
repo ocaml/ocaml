@@ -113,7 +113,7 @@ val arity: type_expr -> int
 val none: type_expr
         (* A dummy type expression *)
 
-exception Unify
+exception Unify of (type_expr * type_expr) list
 exception Cannot_expand
 exception Nonlinear_abbrev
 exception Recursive_abbrev

@@ -25,11 +25,11 @@ type error =
   | Unbound_constructor of Longident.t
   | Unbound_label of Longident.t
   | Constructor_arity_mismatch of Longident.t * int * int
-  | Label_mismatch of Longident.t * type_expr * type_expr
-  | Pattern_type_clash of type_expr * type_expr
+  | Label_mismatch of Longident.t * (type_expr * type_expr) list
+  | Pattern_type_clash of (type_expr * type_expr) list
   | Multiply_bound_variable
   | Orpat_not_closed
-  | Expr_type_clash of type_expr * type_expr
+  | Expr_type_clash of (type_expr * type_expr) list
   | Apply_non_function of type_expr
   | Label_multiply_defined of Longident.t
   | Label_missing
@@ -59,8 +59,8 @@ let type_constant = function
 let unify_pat env pat expected_ty =
   try
     unify env pat.pat_type expected_ty
-  with Unify ->
-    raise(Error(pat.pat_loc, Pattern_type_clash(pat.pat_type, expected_ty)))
+  with Unify trace ->
+    raise(Error(pat.pat_loc, Pattern_type_clash(trace)))
 
 let pattern_variables = ref ([]: (Ident.t * type_expr) list)
 
@@ -131,8 +131,8 @@ let rec type_pat env sp =
         let (ty_arg, ty_res) = instance_label label in
         begin try
           unify env ty_res ty
-        with Unify ->
-          raise(Error(sp.ppat_loc, Label_mismatch(lid, ty_res, ty)))
+        with Unify trace ->
+          raise(Error(sp.ppat_loc, Label_mismatch(lid, trace)))
         end;
         let arg = type_pat env sarg in
         unify_pat env arg ty_arg;
@@ -250,8 +250,8 @@ let type_format loc fmt =
 let unify_exp env exp expected_ty =
   try
     unify env exp.exp_type expected_ty
-  with Unify ->
-    raise(Error(exp.exp_loc, Expr_type_clash(exp.exp_type, expected_ty)))
+  with Unify trace ->
+    raise(Error(exp.exp_loc, Expr_type_clash(trace)))
 
 let rec type_exp env sexp =
   match sexp.pexp_desc with
@@ -300,7 +300,7 @@ let rec type_exp env sexp =
           let (ty1, ty2) =
             try
               filter_arrow env ty_fun
-            with Unify ->
+            with Unify _ ->
               raise(Error(sfunct.pexp_loc,
                           Apply_non_function funct.exp_type)) in
           let arg1 = type_expect env sarg1 ty1 in
@@ -363,8 +363,8 @@ let rec type_exp env sexp =
         let (ty_arg, ty_res) = instance_label label in
         begin try
           unify env ty_res ty
-        with Unify ->
-          raise(Error(sexp.pexp_loc, Label_mismatch(lid, ty_res, ty)))
+        with Unify trace ->
+          raise(Error(sexp.pexp_loc, Label_mismatch(lid, trace)))
         end;
         let arg = type_expect env sarg ty_arg in
         num_fields := Array.length label.lbl_all;
@@ -467,7 +467,7 @@ let rec type_exp env sexp =
             let ty = Typetexp.transl_simple_type env false sty in
             let ty' = Typetexp.transl_simple_type env false sty' in
 	    begin try subtype env (Typetexp.type_variable_list ()) ty ty' with
-	      Unify ->
+	      Unify _ ->
 	        raise(Error(sexp.pexp_loc, Not_subtype(ty, ty')))
 	    end;
 	    (ty, ty')
@@ -508,7 +508,7 @@ let rec type_exp env sexp =
 	      Texp_send(object, met)
         in
           { exp_desc = exp; exp_loc = sexp.pexp_loc; exp_type = typ}
-      with Unify ->
+      with Unify _ ->
       	raise(Error(e.pexp_loc,	Undefined_method_err met))
       end
   | Pexp_new cl ->
@@ -727,44 +727,36 @@ let report_error = function
       print_string "but is here applied to "; print_int provided;
       print_string " argument(s)";
       close_box()
-  | Label_mismatch(lid, actual, expected) ->
-      reset ();
-      mark_loops actual; mark_loops expected;
-      open_hovbox 0;
-      print_string "The label "; longident lid;
-      print_space(); print_string "belongs to the type"; print_space();
-      type_expr actual; print_space();
-      print_string "but is here mixed with labels of type"; print_space();
-      type_expr expected;
-      close_box()
-  | Pattern_type_clash(inferred, expected) ->
-      reset ();
-      mark_loops inferred; mark_loops expected;
-      open_hovbox 0;
-      print_string "This pattern matches values of type"; print_space();
-      type_expr inferred; print_space();
-      print_string "but is here used to match values of type"; print_space();
-      type_expr expected;
-      close_box()
+  | Label_mismatch(lid, trace) ->
+      unification_error trace
+        (function () ->
+           print_string "The label "; longident lid;
+           print_space(); print_string "belongs to the type")
+        (function () ->
+           print_string "but is here mixed with labels of type")
+  | Pattern_type_clash trace ->
+      unification_error trace
+        (function () ->
+           print_string "This pattern matches values of type")
+        (function () ->
+           print_string "but is here used to match values of type")
   | Multiply_bound_variable ->
       print_string "This variable is bound several times in this matching"
   | Orpat_not_closed ->
       print_string "A pattern with | must not bind variables"
-  | Expr_type_clash(inferred, expected) ->
-      reset ();
-      mark_loops inferred; mark_loops expected;
-      open_hovbox 0;
-      print_string "This expression has type"; print_space();
-      type_expr inferred; print_space();
-      print_string "but is here used with type"; print_space();
-      type_expr expected;
-      close_box()
+  | Expr_type_clash trace ->
+      unification_error trace
+        (function () ->
+           print_string "This expression has type")
+        (function () ->
+           print_string "but is here used with type")
   | Apply_non_function typ ->
       begin match (repr typ).desc with
         Tarrow(_, _) ->
           print_string "This function is applied to too many arguments"
       | _ ->
-          print_string "This expression is not a function, it cannot be applied"
+          print_string
+            "This expression is not a function, it cannot be applied"
       end
   | Label_multiply_defined lid ->
       print_string "The label "; longident lid;

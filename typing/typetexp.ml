@@ -106,7 +106,7 @@ let rec transl_simple_type env fixed styp =
               occur env cstr
       	       	(Ctype.expand_abbrev env path tl (ref []) cstr.level)
             with
-	      Unify         -> raise(Error(styp.ptyp_loc, Recursive_type))
+	      Unify _       -> raise(Error(styp.ptyp_loc, Recursive_type))
 	    | Cannot_expand -> ()
 	    end;
 	    cstr.desc <- Tconstr(path, tl, ref []);
@@ -118,7 +118,7 @@ let rec transl_simple_type env fixed styp =
 	  List.iter2
            (fun ty (sty, ty') ->
 	      try Ctype.unify env (Ctype.instance ty) ty' with
-		Unify ->
+		Unify _ ->
 		  raise (Error(sty.ptyp_loc, Type_mismatch(ty, ty'))))
            decl.type_params (List.combine stl params)
       | _ ->
@@ -178,7 +178,7 @@ let rec transl_simple_type env fixed styp =
 	  List.iter2
            (fun ty (sty, ty') ->
 	      try Ctype.unify env (Ctype.instance ty) ty' with
-		Unify ->
+		Unify _ ->
 		  raise (Error(sty.ptyp_loc, Type_mismatch(ty, ty'))))
            decl.type_params (List.combine stl params)
       | _ ->

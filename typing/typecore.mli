@@ -38,11 +38,11 @@ type error =
   | Unbound_constructor of Longident.t
   | Unbound_label of Longident.t
   | Constructor_arity_mismatch of Longident.t * int * int
-  | Label_mismatch of Longident.t * type_expr * type_expr
-  | Pattern_type_clash of type_expr * type_expr
+  | Label_mismatch of Longident.t * (type_expr * type_expr) list
+  | Pattern_type_clash of (type_expr * type_expr) list
   | Multiply_bound_variable
   | Orpat_not_closed
-  | Expr_type_clash of type_expr * type_expr
+  | Expr_type_clash of (type_expr * type_expr) list
   | Apply_non_function of type_expr
   | Label_multiply_defined of Longident.t
   | Label_missing

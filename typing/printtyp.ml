@@ -522,3 +522,45 @@ let signature sg =
   open_vbox 0;
   signature_body false sg;
   close_box()
+
+(* Print an unification error *)
+
+let type_expansion t t' =
+  if t == t' then
+    type_expr t
+  else begin
+    open_hovbox 2;
+    type_expr t;
+    print_space (); print_string "="; print_space ();
+    type_expr t';
+    close_box ()
+  end
+
+let rec unification_trace =
+  function
+    (t1, t1')::(t2, t2')::rem ->
+      print_cut ();
+      open_hovbox 0;
+      print_string "Type"; print_break 1 2;
+      type_expansion t1 t1'; print_space ();
+      print_string "is not compatible with type"; print_break 1 2;
+      type_expansion t2 t2';
+      close_box ();
+      unification_trace rem
+  | _ ->
+      ()
+
+let unification_error trace txt1 txt2 =
+  reset ();
+  List.iter
+    (function (t, t') -> mark_loops t; if t != t' then mark_loops t')
+    trace;
+  open_hovbox 0;
+  let (t1, t1') = List.hd trace in
+  let (t2, t2') = List.hd (List.tl trace) in
+  txt1 (); print_break 1 2;
+  type_expansion t1 t1'; print_space();
+  txt2 (); print_break 1 2;
+  type_expansion t2 t2';
+  close_box();
+  unification_trace (List.tl (List.tl trace))

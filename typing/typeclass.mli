@@ -36,17 +36,17 @@ type error =
   | Non_closed of Ident.t * type_expr list * type_expr
   | Mutable_var of string
   | Undefined_var of string
-  | Variable_type_mismatch of string * type_expr * type_expr
-  | Method_type_mismatch of string * type_expr * type_expr
+  | Variable_type_mismatch of string * (type_expr * type_expr) list
+  | Method_type_mismatch of string * (type_expr * type_expr) list
   | Unconsistent_constraint
   | Unbound_class of Longident.t
-  | Argument_type_mismatch of type_expr * type_expr
+  | Argument_type_mismatch of (type_expr * type_expr) list
   | Abbrev_type_clash of type_expr * type_expr * type_expr
   | Bad_parameters of Ident.t * type_expr * type_expr
   | Illdefined_class of string
   | Argument_arity_mismatch of Path.t * int * int
   | Parameter_arity_mismatch of Path.t * int * int
-  | Parameter_mismatch of type_expr * type_expr
+  | Parameter_mismatch of (type_expr * type_expr) list
 
 exception Error of Location.t * error
 
