@@ -88,7 +88,7 @@ CAMLprim value format_float(value fmt, value arg)
       break;
     }
   }
-  if (prec <= sizeof(format_buffer)) {
+  if (prec < sizeof(format_buffer)) {
     dest = format_buffer;
   } else {
     dest = stat_alloc(prec);
