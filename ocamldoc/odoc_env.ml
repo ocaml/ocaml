@@ -171,9 +171,14 @@ let full_class_or_class_type_name env n =
   try List.assoc n env.env_classes
   with Not_found -> full_class_type_name env n
 
+let print_env_types env =
+  List.iter (fun (s1,s2) -> Printf.printf "%s = %s\n" s1 s2) env.env_types
+
 let subst_type env t =
-(**  print_string "Odoc_env.subst_type";
-   print_newline ();
+(*
+  print_string "Odoc_env.subst_type\n";
+  print_env_types env ;
+  print_newline ();
 *)
   Printtyp.mark_loops t;
   let deja_vu = ref [] in

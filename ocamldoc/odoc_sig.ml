@@ -708,7 +708,86 @@ module Analyser =
             (maybe_more, new_env2, [ Element_module new_module ])
 
         | Parsetree.Psig_recmodule decls ->
-            assert false (* to be fixed *)
+	    (* we start by extending the environment *)
+            let new_env =
+              List.fold_left 
+                (fun acc_env -> fun (name, _) ->
+                  let complete_name = Name.concat current_module_name name in
+                  let e = Odoc_env.add_module acc_env complete_name in
+                  (* get the information for the module in the signature *)
+                  let sig_module_type = 
+                    try Signature_search.search_module table name 
+                    with Not_found ->
+                      raise (Failure (Odoc_messages.module_not_found current_module_name name))
+                  in
+		  match sig_module_type with
+                    (* A VOIR : cela peut-il être Tmty_ident ? dans ce cas, on aurait pas la signature *)
+                    Types.Tmty_signature s -> 
+		      Odoc_env.add_signature e complete_name ~rel: name s
+		  | _ -> 
+		      print_DEBUG "not a Tmty_signature";
+		      e
+                )
+                env
+                decls
+            in
+            let rec f ?(first=false) acc_maybe_more last_pos name_mtype_list =
+              match name_mtype_list with
+                [] -> 
+                  (acc_maybe_more, [])
+              | (name, modtype) :: q ->
+		  let complete_name = Name.concat current_module_name name in
+		  let loc_start = modtype.Parsetree.pmty_loc.Location.loc_start.Lexing.pos_cnum in
+                  let loc_end = modtype.Parsetree.pmty_loc.Location.loc_end.Lexing.pos_cnum in
+                  let (assoc_com, ele_comments) =
+                    if first then
+                      (comment_opt, [])
+                    else
+                      get_comments_in_module
+                        last_pos
+			loc_start
+                  in
+                  let pos_limit2 =
+                    match q with
+                      [] -> pos_limit
+                    | (_, mty) :: _ -> mty.Parsetree.pmty_loc.Location.loc_start.Lexing.pos_cnum
+                  in
+                  (* get the information for the module in the signature *)
+                  let sig_module_type = 
+                    try Signature_search.search_module table name 
+                    with Not_found ->
+                      raise (Failure (Odoc_messages.module_not_found current_module_name name))
+                  in
+                  (* associate the comments to each constructor and build the [Type.t_type] *)
+		  let module_kind = analyse_module_kind new_env complete_name modtype sig_module_type in
+		  let new_module = 
+		    {
+                      m_name = complete_name ;
+                      m_type = sig_module_type;
+                      m_info = assoc_com ;
+                      m_is_interface = true ;
+                      m_file = !file_name ;
+                      m_kind = module_kind ;
+                      m_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
+                      m_top_deps = [] ;
+		    } 
+		  in
+		  let (maybe_more, info_after_opt) = 
+		    My_ir.just_after_special
+                      !file_name
+                      (get_string_of_file loc_end pos_limit2)
+		  in
+		  new_module.m_info <- merge_infos new_module.m_info info_after_opt ;
+
+                  let (maybe_more2, eles) = f 
+                      maybe_more
+                      (loc_end + maybe_more)
+                      q
+                  in
+                  (maybe_more2, (ele_comments @ [Element_module new_module]) @ eles)
+            in
+            let (maybe_more, mods) = f ~first: true 0 pos_start_ele decls in
+            (maybe_more, new_env, mods)              
 
         | Parsetree.Psig_modtype (name, Parsetree.Pmodtype_abstract) ->
             let sig_mtype = 

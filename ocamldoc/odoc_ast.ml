@@ -66,8 +66,13 @@ module Typedtree_search =
       match tt with
       | Typedtree.Tstr_module (ident, _) -> 
           Hashtbl.add table (M (Name.from_ident ident)) tt
-      | Typedtree.Tstr_recmodule bindings ->
-          assert false (* to be fixed *)
+      | Typedtree.Tstr_recmodule mods ->
+	  List.iter
+	    (fun (ident,mod_expr) -> 
+	      Hashtbl.add table (M (Name.from_ident ident))
+		(Typedtree.Tstr_module (ident,mod_expr))
+	    )
+	    mods
       | Typedtree.Tstr_modtype (ident, _) -> 
           Hashtbl.add table (MT (Name.from_ident ident)) tt
       | Typedtree.Tstr_exception (ident, _) ->
@@ -1106,8 +1111,69 @@ module Analyser =
                raise (Failure (Odoc_messages.module_not_found_in_typedtree complete_name))
           )
 
-      | Parsetree.Pstr_recmodule bindings ->
-          assert false (* to be fixed *)
+      | Parsetree.Pstr_recmodule mods ->
+	  let new_env =
+            List.fold_left 
+              (fun acc_env (name, _, mod_exp) ->
+                let complete_name = Name.concat current_module_name name in
+		let e = Odoc_env.add_module acc_env complete_name in
+		let tt_mod_exp = 
+                  try Typedtree_search.search_module table name 
+                  with Not_found -> raise (Failure (Odoc_messages.module_not_found_in_typedtree complete_name))
+                in
+                let new_module = analyse_module 
+                    e
+                    current_module_name
+                    name
+                    None
+                    mod_exp
+                    tt_mod_exp
+		in
+		match new_module.m_type with
+                  Types.Tmty_signature s -> 
+                    Odoc_env.add_signature e new_module.m_name
+		      ~rel: (Name.simple new_module.m_name) s
+		  | _ -> 
+                      e
+              )
+              env
+              mods
+          in
+          let rec f ?(first=false) last_pos name_mod_exp_list =
+            match name_mod_exp_list with
+              [] -> []
+            | (name, _, mod_exp) :: q ->
+                let complete_name = Name.concat current_module_name name in
+                let loc_start = mod_exp.Parsetree.pmod_loc.Location.loc_start.Lexing.pos_cnum in
+                let loc_end =  mod_exp.Parsetree.pmod_loc.Location.loc_end.Lexing.pos_cnum in
+                let pos_limit2 = 
+                  match q with 
+                    [] -> pos_limit
+                  | (_, _, me) :: _ -> me.Parsetree.pmod_loc.Location.loc_start.Lexing.pos_cnum
+                in
+                let tt_mod_exp = 
+                  try Typedtree_search.search_module table name 
+                  with Not_found -> raise (Failure (Odoc_messages.module_not_found_in_typedtree complete_name))
+                in
+                let (com_opt, ele_comments) = (* the comment for the first type was already retrieved *)
+                  if first then
+                    (comment_opt, [])
+                  else
+                    get_comments_in_module last_pos loc_start
+                in
+		let new_module = analyse_module 
+                    new_env
+                    current_module_name
+                    name
+                    com_opt
+                    mod_exp
+                    tt_mod_exp
+		in
+                let eles = f loc_end q in
+                ele_comments @ ((Element_module new_module) :: eles)
+          in
+          let eles = f ~first: true loc.Location.loc_start.Lexing.pos_cnum mods in
+          (0, new_env, eles)
 
       | Parsetree.Pstr_modtype (name, modtype) ->
           let complete_name = Name.concat current_module_name name in
@@ -1367,6 +1433,18 @@ module Analyser =
 *)
           }
  
+      | (Parsetree.Pmod_structure p_structure,
+         Typedtree.Tmod_constraint 
+	   ({ Typedtree.mod_desc = Typedtree.Tmod_structure tt_structure}, 
+	    tt_modtype, _)
+	) ->
+	  (* needed for recursive modules *)
+	  let elements = analyse_structure env complete_name pos_start pos_end p_structure tt_structure in
+          (* we must complete the included modules *)
+          let included_modules_from_tt = tt_get_included_module_list tt_structure in
+          let elements2 = replace_dummy_included_modules elements included_modules_from_tt in
+          { m_base with m_kind = Module_struct elements2 }
+
       | _ ->
           raise (Failure "analyse_module: parsetree and typedtree don't match.")
 
