@@ -1,0 +1,158 @@
+breakpoints.cmi: ../bytecomp/instruct.cmi primitives.cmi 
+checkpoints.cmi: debugcom.cmi primitives.cmi 
+debugcom.cmi: primitives.cmi 
+envaux.cmi: ../typing/env.cmi 
+eval.cmi: debugcom.cmi ../bytecomp/instruct.cmi ../typing/path.cmi 
+events.cmi: ../bytecomp/instruct.cmi 
+frames.cmi: ../bytecomp/instruct.cmi primitives.cmi 
+input_handling.cmi: primitives.cmi 
+parser.cmi: parser_aux.cmi 
+parser_aux.cmi: primitives.cmi 
+pattern_matching.cmi: debugcom.cmi parser_aux.cmi ../typing/typedtree.cmi 
+primitives.cmi: ../otherlibs/unix/unix.cmi 
+printval.cmi: debugcom.cmi ../typing/env.cmi ../typing/types.cmi 
+program_loading.cmi: primitives.cmi 
+show_information.cmi: ../bytecomp/instruct.cmi 
+symbols.cmi: ../bytecomp/instruct.cmi 
+time_travel.cmi: primitives.cmi 
+unix_tools.cmi: ../otherlibs/unix/unix.cmi 
+breakpoints.cmo: checkpoints.cmi debugcom.cmi exec.cmi \
+    ../bytecomp/instruct.cmi primitives.cmi source.cmi breakpoints.cmi 
+breakpoints.cmx: checkpoints.cmx debugcom.cmx exec.cmx \
+    ../bytecomp/instruct.cmx primitives.cmx source.cmx breakpoints.cmi 
+checkpoints.cmo: debugcom.cmi primitives.cmi checkpoints.cmi 
+checkpoints.cmx: debugcom.cmx primitives.cmx checkpoints.cmi 
+command_line_interpreter.cmo: breakpoints.cmi checkpoints.cmi \
+    ../utils/config.cmi ../typing/ctype.cmi debugcom.cmi debugger_config.cmi \
+    ../typing/env.cmi envaux.cmi eval.cmi events.cmi frames.cmi history.cmi \
+    input_handling.cmi ../bytecomp/instruct.cmi ../parsing/lexer.cmi \
+    ../parsing/longident.cmi ../utils/misc.cmi parameters.cmi parser.cmi \
+    parser_aux.cmi primitives.cmi ../typing/printtyp.cmi printval.cmi \
+    program_loading.cmi program_management.cmi show_information.cmi \
+    show_source.cmi source.cmi symbols.cmi time_travel.cmi \
+    ../typing/types.cmi ../otherlibs/unix/unix.cmi unix_tools.cmi \
+    command_line_interpreter.cmi 
+command_line_interpreter.cmx: breakpoints.cmx checkpoints.cmx \
+    ../utils/config.cmx ../typing/ctype.cmx debugcom.cmx debugger_config.cmx \
+    ../typing/env.cmx envaux.cmx eval.cmx events.cmx frames.cmx history.cmx \
+    input_handling.cmx ../bytecomp/instruct.cmx ../parsing/lexer.cmx \
+    ../parsing/longident.cmx ../utils/misc.cmx parameters.cmx parser.cmx \
+    parser_aux.cmi primitives.cmx ../typing/printtyp.cmx printval.cmx \
+    program_loading.cmx program_management.cmx show_information.cmx \
+    show_source.cmx source.cmx symbols.cmx time_travel.cmx \
+    ../typing/types.cmx ../otherlibs/unix/unix.cmx unix_tools.cmx \
+    command_line_interpreter.cmi 
+debugcom.cmo: ../utils/misc.cmi primitives.cmi debugcom.cmi 
+debugcom.cmx: ../utils/misc.cmx primitives.cmx debugcom.cmi 
+debugger_config.cmo: debugger_config.cmi 
+debugger_config.cmx: debugger_config.cmi 
+envaux.cmo: ../typing/env.cmi ../utils/misc.cmi ../typing/mtype.cmi \
+    ../typing/types.cmi envaux.cmi 
+envaux.cmx: ../typing/env.cmx ../utils/misc.cmx ../typing/mtype.cmx \
+    ../typing/types.cmx envaux.cmi 
+eval.cmo: debugcom.cmi debugger_config.cmi ../typing/ident.cmi \
+    ../bytecomp/instruct.cmi ../utils/misc.cmi ../typing/path.cmi \
+    ../typing/printtyp.cmi ../bytecomp/symtable.cmi eval.cmi 
+eval.cmx: debugcom.cmx debugger_config.cmx ../typing/ident.cmx \
+    ../bytecomp/instruct.cmx ../utils/misc.cmx ../typing/path.cmx \
+    ../typing/printtyp.cmx ../bytecomp/symtable.cmx eval.cmi 
+events.cmo: checkpoints.cmi ../bytecomp/instruct.cmi primitives.cmi \
+    symbols.cmi events.cmi 
+events.cmx: checkpoints.cmx ../bytecomp/instruct.cmx primitives.cmx \
+    symbols.cmx events.cmi 
+exec.cmo: exec.cmi 
+exec.cmx: exec.cmi 
+frames.cmo: checkpoints.cmi debugcom.cmi events.cmi ../bytecomp/instruct.cmi \
+    ../utils/misc.cmi primitives.cmi symbols.cmi frames.cmi 
+frames.cmx: checkpoints.cmx debugcom.cmx events.cmx ../bytecomp/instruct.cmx \
+    ../utils/misc.cmx primitives.cmx symbols.cmx frames.cmi 
+history.cmo: checkpoints.cmi debugger_config.cmi ../utils/misc.cmi \
+    primitives.cmi history.cmi 
+history.cmx: checkpoints.cmx debugger_config.cmx ../utils/misc.cmx \
+    primitives.cmx history.cmi 
+input_handling.cmo: ../parsing/lexer.cmi primitives.cmi \
+    ../otherlibs/unix/unix.cmi input_handling.cmi 
+input_handling.cmx: ../parsing/lexer.cmx primitives.cmx \
+    ../otherlibs/unix/unix.cmx input_handling.cmi 
+lexer.cmo: parser.cmi primitives.cmi 
+lexer.cmx: parser.cmx primitives.cmx 
+main.cmo: checkpoints.cmi command_line_interpreter.cmi ../utils/config.cmi \
+    debugger_config.cmi exec.cmi frames.cmi input_handling.cmi \
+    ../utils/misc.cmi parameters.cmi primitives.cmi program_management.cmi \
+    show_information.cmi time_travel.cmi ../otherlibs/unix/unix.cmi 
+main.cmx: checkpoints.cmx command_line_interpreter.cmx ../utils/config.cmx \
+    debugger_config.cmx exec.cmx frames.cmx input_handling.cmx \
+    ../utils/misc.cmx parameters.cmx primitives.cmx program_management.cmx \
+    show_information.cmx time_travel.cmx ../otherlibs/unix/unix.cmx 
+parameters.cmo: ../utils/config.cmi envaux.cmi ../utils/misc.cmi \
+    primitives.cmi parameters.cmi 
+parameters.cmx: ../utils/config.cmx envaux.cmx ../utils/misc.cmx \
+    primitives.cmx parameters.cmi 
+parser.cmo: input_handling.cmi parser_aux.cmi primitives.cmi parser.cmi 
+parser.cmx: input_handling.cmx parser_aux.cmi primitives.cmx parser.cmi 
+pattern_matching.cmo: ../typing/ctype.cmi debugcom.cmi debugger_config.cmi \
+    ../utils/misc.cmi parser_aux.cmi ../typing/typedtree.cmi \
+    pattern_matching.cmi 
+pattern_matching.cmx: ../typing/ctype.cmx debugcom.cmx debugger_config.cmx \
+    ../utils/misc.cmx parser_aux.cmi ../typing/typedtree.cmx \
+    pattern_matching.cmi 
+primitives.cmo: ../otherlibs/unix/unix.cmi primitives.cmi 
+primitives.cmx: ../otherlibs/unix/unix.cmx primitives.cmi 
+printval.cmo: ../typing/ctype.cmi debugcom.cmi ../typing/env.cmi \
+    ../typing/ident.cmi ../parsing/longident.cmi ../utils/misc.cmi \
+    ../typing/path.cmi ../typing/predef.cmi ../typing/printtyp.cmi \
+    ../typing/types.cmi printval.cmi 
+printval.cmx: ../typing/ctype.cmx debugcom.cmx ../typing/env.cmx \
+    ../typing/ident.cmx ../parsing/longident.cmx ../utils/misc.cmx \
+    ../typing/path.cmx ../typing/predef.cmx ../typing/printtyp.cmx \
+    ../typing/types.cmx printval.cmi 
+program_loading.cmo: debugger_config.cmi input_handling.cmi ../utils/misc.cmi \
+    parameters.cmi primitives.cmi ../otherlibs/unix/unix.cmi unix_tools.cmi \
+    program_loading.cmi 
+program_loading.cmx: debugger_config.cmx input_handling.cmx ../utils/misc.cmx \
+    parameters.cmx primitives.cmx ../otherlibs/unix/unix.cmx unix_tools.cmx \
+    program_loading.cmi 
+program_management.cmo: debugcom.cmi debugger_config.cmi history.cmi \
+    input_handling.cmi ../bytecomp/instruct.cmi ../utils/misc.cmi \
+    parameters.cmi primitives.cmi program_loading.cmi symbols.cmi \
+    time_travel.cmi ../otherlibs/unix/unix.cmi unix_tools.cmi \
+    program_management.cmi 
+program_management.cmx: debugcom.cmx debugger_config.cmx history.cmx \
+    input_handling.cmx ../bytecomp/instruct.cmx ../utils/misc.cmx \
+    parameters.cmx primitives.cmx program_loading.cmx symbols.cmx \
+    time_travel.cmx ../otherlibs/unix/unix.cmx unix_tools.cmx \
+    program_management.cmi 
+show_information.cmo: breakpoints.cmi checkpoints.cmi debugcom.cmi events.cmi \
+    frames.cmi ../bytecomp/instruct.cmi ../utils/misc.cmi primitives.cmi \
+    show_source.cmi symbols.cmi show_information.cmi 
+show_information.cmx: breakpoints.cmx checkpoints.cmx debugcom.cmx events.cmx \
+    frames.cmx ../bytecomp/instruct.cmx ../utils/misc.cmx primitives.cmx \
+    show_source.cmx symbols.cmx show_information.cmi 
+show_source.cmo: debugger_config.cmi ../utils/misc.cmi parameters.cmi \
+    primitives.cmi source.cmi show_source.cmi 
+show_source.cmx: debugger_config.cmx ../utils/misc.cmx parameters.cmx \
+    primitives.cmx source.cmx show_source.cmi 
+source.cmo: ../utils/config.cmi ../utils/misc.cmi primitives.cmi source.cmi 
+source.cmx: ../utils/config.cmx ../utils/misc.cmx primitives.cmx source.cmi 
+symbols.cmo: ../utils/config.cmi debugcom.cmi debugger_config.cmi \
+    ../bytecomp/instruct.cmi ../bytecomp/symtable.cmi symbols.cmi 
+symbols.cmx: ../utils/config.cmx debugcom.cmx debugger_config.cmx \
+    ../bytecomp/instruct.cmx ../bytecomp/symtable.cmx symbols.cmi 
+test3.cmo: ../otherlibs/unix/unix.cmi 
+test3.cmx: ../otherlibs/unix/unix.cmx 
+test9.cmo: ../otherlibs/unix/unix.cmi 
+test9.cmx: ../otherlibs/unix/unix.cmx 
+time_travel.cmo: breakpoints.cmi checkpoints.cmi debugcom.cmi \
+    debugger_config.cmi events.cmi exec.cmi input_handling.cmi \
+    ../bytecomp/instruct.cmi primitives.cmi program_loading.cmi \
+    trap_barrier.cmi time_travel.cmi 
+time_travel.cmx: breakpoints.cmx checkpoints.cmx debugcom.cmx \
+    debugger_config.cmx events.cmx exec.cmx input_handling.cmx \
+    ../bytecomp/instruct.cmx primitives.cmx program_loading.cmx \
+    trap_barrier.cmx time_travel.cmi 
+trap_barrier.cmo: checkpoints.cmi debugcom.cmi exec.cmi trap_barrier.cmi 
+trap_barrier.cmx: checkpoints.cmx debugcom.cmx exec.cmx trap_barrier.cmi 
+unix_tools.cmo: ../utils/misc.cmi primitives.cmi ../otherlibs/unix/unix.cmi \
+    unix_tools.cmi 
+unix_tools.cmx: ../utils/misc.cmx primitives.cmx ../otherlibs/unix/unix.cmx \
+    unix_tools.cmi 
