@@ -326,10 +326,10 @@ The precedences must be listed from low to high.
 %nonassoc IN
 %nonassoc below_SEMI
 %nonassoc SEMI                          /* below EQUAL ({lbl=...; lbl=...}) */
-%nonassoc LET AND                      /* above SEMI ( ...; let ... in ...) */
-                         /* below WITH (module rec A: SIG with ... and ...) */
+%nonassoc LET                           /* above SEMI ( ...; let ... in ...) */
 %nonassoc below_WITH
 %nonassoc FUNCTION WITH                 /* below BAR  (match ... with ...) */
+%nonassoc AND             /* above WITH (module rec A: SIG with ... and ...) */
 %nonassoc THEN                          /* below ELSE (if ... then ...) */
 %nonassoc ELSE                          /* (if ... then ... else ...) */
 %nonassoc LESSMINUS                     /* below COLONEQUAL (lbl <- x := e) */
