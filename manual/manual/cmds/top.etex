@@ -70,7 +70,7 @@ On start-up (before the first phrase is read), if the file
 ".ocamlinit" exists in the current directory,
 its contents are read as a sequence of Objective Caml phrases
 and executed as per the "#use" directive
-described in section~\label{s:toplevel-directives}.
+described in section~\ref{s:toplevel-directives}.
 The evaluation outcode for each phrase are not displayed.
 
 The toplevel system does not perform line editing, but it can
@@ -88,7 +88,7 @@ then immediately returns to the "#" prompt.
 If a filename is given on the command-line to "ocaml", the toplevel
 system enters script mode: the contents of the file are read as a
 sequence of Objective Caml phrases and executed, as per the "#use"
-directive (section~\label{s:toplevel-directives}). The outcome of the
+directive (section~\ref{s:toplevel-directives}). The outcome of the
 evaluation is not printed.  On reaching the end of file, the "ocaml"
 command exits immediately.  No commands are read from standard input.
 
