@@ -46,7 +46,7 @@ static pascal OSErr HandleQuitApplication (const AppleEvent *ae,
   while (w != NULL){
     WinUpdateStatus (w);
     st = WinGetStatus (w);
-    if (st != NULL && (*st)->dirty){
+    if (st != NULL && (*st)->menuflags.save){
       request_interaction = 1;
     }
     w = GetNextWindow (w);

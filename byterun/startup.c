@@ -47,7 +47,6 @@
 #endif
 
 header_t atom_table[256];
-long debug_i_counter = 0; /*XXX*/
 
 /* Initialize the atom table */
 
@@ -248,7 +247,7 @@ void caml_main(char **argv)
     external_raise = &raise_buf;
     /* Determine options and position of bytecode file */
 #ifdef DEBUG
-    verbose_init = 1;
+    verbose_init = 63;
 #endif
     parse_camlrunparam();
     pos = 0;
@@ -313,7 +312,7 @@ void caml_startup_code(code_t code, asize_t code_size, char *data, char **argv)
 
   init_ieee_floats();
 #ifdef DEBUG
-  verbose_init = 1;
+  verbose_init = 63;
 #endif
   parse_camlrunparam();
   /* Set up a catch-all exception handler */

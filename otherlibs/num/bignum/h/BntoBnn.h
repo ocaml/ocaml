@@ -5,13 +5,7 @@
 /* BntoBnn.h: allowing to use the new interfaces of KerN */
 
 
-#ifdef __STDC__
 #include <stdlib.h>
-#else
-#ifndef VMS
-extern char *malloc();
-#endif
-#endif
 
 		/* old types of Bn */
 

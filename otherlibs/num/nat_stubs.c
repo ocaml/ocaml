@@ -12,12 +12,13 @@
 /* $Id$ */
 
 #define CAML_LIGHT
-#include "BigNum.h"
-#include "BntoBnn.h"
-#include "mlvalues.h"
 #include "alloc.h"
 #include "memory.h"
+#include "mlvalues.h"
 #include "nat.h"
+
+#include "BigNum.h"
+#include "BntoBnn.h"
 
 /* Stub code for the BigNum package. */
 

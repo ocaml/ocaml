@@ -45,6 +45,11 @@
 #define charBackspace 0x08
 #define charReturn 0x0D
 #define charEscape 0x1B
+#define charArrowLeft 0x1C
+#define charArrowRight 0x1D
+#define charArrowUp 0x1E
+#define charArrowDown 0x1F
+#define charDelete 0x7F
 
 #define kWinUnknown 0
 #define kWinUninitialised 1

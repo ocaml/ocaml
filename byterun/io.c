@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -15,13 +15,11 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <string.h>
 #include "config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
-#endif
-#ifdef __STDC__
-#include <limits.h>
 #endif
 #include "alloc.h"
 #include "fail.h"
@@ -33,10 +31,6 @@
 #include "sys.h"
 #ifdef HAS_UI
 #include "ui.h"
-#endif
-
-#ifndef INT_MAX
-#define INT_MAX 0x7FFFFFFF
 #endif
 
 #ifndef SEEK_SET

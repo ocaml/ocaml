@@ -103,6 +103,11 @@ static void DoEditChoice (short item, EventModifiers mods)
     if (w == winToplevel){
       long selstart, selend;
       WEGetSelection (&selstart, &selend, we);
+      if (selstart < wintopfrontier){
+        selstart = selend = WEGetTextLength (we);
+        WESetSelection (selstart, selend, we);
+        WEFeatureFlag (weFReadOnly, weBitClear, we);
+      }
       if (selstart == wintopfrontier && selend == selstart){
         WESetStyle (weDoFont + weDoSize + weDoColor + weDoFace+weDoReplaceFace,
                     &prefs.unread, we);
@@ -273,24 +278,25 @@ void UpdateMenus (void)
   WEHandle we;
   MenuHandle m;
   Str255 text;
+  struct menuflags flags = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
   w = FrontWindow ();
   st = WinGetStatus (w);
   we = WinGetWE (w);
 
   WinUpdateStatus (w);
+  
+  if (st != NULL) flags = (*st)->menuflags;
 
   m = GetMenuHandle (kMenuFile);
   /* New is always enabled. */
   /* Open is always enabled. */
   EnableDisableItem (m, kItemClose, w != NULL && GetWindowGoAwayFlag (w));
-  EnableDisableItem (m, kItemSave, st != NULL && (*st)->dirty
-                                   && (*st)->datarefnum != -1);
-  EnableDisableItem (m, kItemSaveAs, w != NULL && (*st)->hascontents);
-  EnableDisableItem (m, kItemRevert, st != NULL && (*st)->dirty
-                                     && (*st)->datarefnum != -1);
-  EnableDisableItem (m, kItemPageSetup, w != NULL && (*st)->hascontents);
-  EnableDisableItem (m, kItemPrint, w != NULL && (*st)->hascontents);
+  EnableDisableItem (m, kItemSave, flags.save);
+  EnableDisableItem (m, kItemSaveAs, flags.save_as);
+  EnableDisableItem (m, kItemRevert, flags.revert);
+  EnableDisableItem (m, kItemPageSetup, flags.page_setup);
+  EnableDisableItem (m, kItemPrint, flags.print);
   /* Quit is always enabled. */
 
   m = GetMenuHandle (kMenuEdit);
@@ -300,41 +306,26 @@ void UpdateMenus (void)
   if (we != NULL){
     Boolean temp;
     WEActionKind ak;
-    long selstart, selend;
 
     Assert (st != NULL);
 
     ak = WEGetUndoInfo (&temp, we);
     if (ak != weAKNone){
-      EnableItem (m, kItemUndo);
       GetIndString (text, kUndoStrings, 2*ak + temp);
       SetMenuItemText (m, kItemUndo, text);
+      EnableItem (m, kItemUndo);
     }
-
-    WEGetSelection (&selstart, &selend, we);
-    EnableDisableItem (m, kItemCut, (*st)->canwritesel && selstart != selend);
-    EnableDisableItem (m, kItemCopy, selstart != selend);
-    EnableDisableItem (m, kItemPaste, WECanPaste (we));
-    EnableDisableItem (m, kItemClear,
-                       (*st)->canwritesel && selstart != selend);
-    EnableDisableItem (m, kItemSelectAll,
-                       (*st)->hascontents && WEGetTextLength (we) > 0);
-    /* Show Clipboard is always enabled. */
-    EnableDisableItem (m, kItemFind, (*st)->hascontents);
-    EnableDisableItem (m, kItemReplace, (*st)->kind == kWinDocument);
-    /* Preferences… is always enabled. */
-  }else{
-    /* Graphics window: no editing operations. */
-    DisableItem (m, kItemCut);
-    DisableItem (m, kItemCopy);
-    DisableItem (m, kItemPaste);
-    DisableItem (m, kItemClear);
-    DisableItem (m, kItemSelectAll);
-    /* Show Clipboard is always enabled. */
-    DisableItem (m, kItemFind);
-    DisableItem (m, kItemReplace);
-    /* Preferences… is always enabled. */
   }
+  EnableDisableItem (m, kItemCut, flags.cut);
+  EnableDisableItem (m, kItemCopy, flags.copy);
+  EnableDisableItem (m, kItemPaste, flags.paste);
+  EnableDisableItem (m, kItemClear, flags.clear);
+  EnableDisableItem (m, kItemSelectAll, flags.select_all);
+  /* Show Clipboard is always enabled. */
+  EnableDisableItem (m, kItemFind, flags.find);
+  EnableDisableItem (m, kItemReplace, flags.replace);
+  /* Preferences… is always enabled. */
+
   MenuWinUpdate ();
   m = GetMenuHandle (kMenuWindows);
   EnableDisableItem (m, kItemGraphics, winGraphics != NULL);

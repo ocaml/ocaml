@@ -5,7 +5,7 @@
 /*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -21,18 +21,12 @@
 
 /* Standard definitions */
 
-#ifdef __STDC__
 #include <stddef.h>
 #include <stdlib.h>
-#endif
 
 /* Basic types and constants */
 
-#ifdef __STDC__
 typedef size_t asize_t;
-#else
-typedef int asize_t;
-#endif
 
 #ifndef NULL
 #define NULL 0
@@ -50,17 +44,7 @@ typedef char * addr;
 /* Assertions */
 
 #ifdef DEBUG
-#ifdef __STDC__
 #define Assert(x) if (!(x)) failed_assert ( #x , __FILE__, __LINE__)
-#else
-#ifndef __LINE__
-#define __LINE__ 0
-#endif
-#ifndef __FILE__
-#define __FILE__ "(?)"
-#endif
-#define Assert(x) if (!(x)) failed_assert ("(?)" , __FILE__, __LINE__)
-#endif
 #else
 #define Assert(x)
 #endif

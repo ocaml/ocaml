@@ -6,3 +6,4 @@ ocamlrun
 ocamlrund
 libcamlrun.x
 *.c.x
+ocamlrun.xcoff

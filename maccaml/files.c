@@ -56,7 +56,7 @@ OSErr FileDoClose (WindowPtr w, ClosingOption close)
   st = WinGetStatus (w);  Assert (st != NULL);
   we = WinGetWE (w);      Assert (we != NULL);
   GetWTitle (w, filename);
-  if ((*st)->dirty){
+  if ((*st)->menuflags.save){
     GetIndString (savingprompt, kMiscStrings, kClosingIdx + close);
     ParamText (filename, savingprompt, NULL, NULL);
     InitCursor ();

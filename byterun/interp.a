@@ -13,34 +13,6 @@
 
 * The bytecode interpreter in 68000 assembly language */
 
-           GBLA &debugging
-&debugging SETA 1
-
-  IF &debugging THEN
-     print push,off
-     include 'Types.a'
-     print pop
-
-     macro
-          Debug_count
-          SUBQ.L     #1, (debug_i_counter).L
-          BNE.S      @nobreak
-          _Debugger
-@nobreak:
-     endm
-     macro
-          Debug_stop
-          _Debugger
-     endm
-  ELSE
-     macro
-          Debug_count
-     endm
-     macro
-          Debug_stop
-     endm
-  ENDIF
-
   string asis
   print nopage
   case obj
@@ -67,7 +39,18 @@
   import (thread_code): code
   import (instr_table, instr_base): data
   import (callback_depth): data
-  import (debug_i_counter): data ;XXX
+
+  import (disasm_instr): code                     ; debug
+
+  GBLA &DEBUG
+&DEBUG SETA &FINDSYM(&SYSGLOBAL, 'DEBUG')
+
+ IF &DEBUG THEN
+     machine mc68020
+     print push,off
+     include 'Types.a'
+     print pop
+ ENDIF
 
 msg       record
           dc.b       'Fatal error in interp: bad opcode (%lx)', $0D, $00
@@ -122,17 +105,23 @@ initial_local_roots_     equ      $04
           EXG.L      D6, A5
      endm
 
+ IF &DEBUG THEN
+     macro
+          Udispatch
+          BRA.L      camldispatch
+     endm
+ ELSE
      macro
           Udispatch                        ; Dispatch, no spacer
-          Debug_count
           MOVE.L     (pc_)+, D0
           JMP        (jtbl_, D0.W)
      endm
+ ENDIF
 
 
 ; L'interprete commence ici.
 
-          Debug_stop
+        ; _Debugger
           MOVEM.L    D3-D7/A2-A6,-(A7)                  ; 10 registres
           LEA.L      -local_var_size_(A7), A7
           Call_restore
@@ -176,7 +165,7 @@ nothread: LEA.L      i_start(PC), jtbl_
           BEQ.S      lbl_78                      ; endif
           MOVE.L     initial_local_roots_(A7), (local_roots).L
           MOVEA.L    (exn_bucket).L, accu_
-          JMP        i_91-i_base(jtbl_)          ; RAISE
+          JMP        i_RAISE-i_base(jtbl_)
 lbl_78:   LEA.L      raise_buf_(A7), A0
           MOVE.L     A0, (external_raise).L
           MOVEA.L    (extern_sp).L, sp_
@@ -449,8 +438,7 @@ i_38:     APPTERM 2
 i_39:     APPTERM 3
 
 ; RETURN
-i_40:     Debug_stop
-          MOVE.L     (pc_), D0
+i_40:     MOVE.L     (pc_), D0
           ASL.L      #2, D0
           ADD.L      D0, sp_
           TST.L      extra_args_
@@ -612,16 +600,18 @@ lbl_800:  SUBQ.L     #1, D0
           MOVE.L     accu_, -(sp_)
           MOVEQ.L    #1, D0
           BRA.S      lbl_838
-lbl_818:  MOVE.L     D0, D1
-          ASL.L      #8, D1
-          ASL.L      #3, D1
-          ADD.W      #$3F9, D1
-          MOVE.L     D1, (A0)+
-          MOVE.L     D0, D1
-          ASL.L      #2, D1
-          MOVE.L     (pc_, D1), D1
-          ADD.L      pc_, D1
-          MOVE.L     D1, (A0)+
+lbl_818:  MOVE.L     D0, D3
+          ASL.L      #8, D3
+          ASL.L      #3, D3
+          ADD.W      #$3F9, D3
+          MOVE.L     D3, (A0)+
+          MOVE.L     A0, -(sp_)
+          MOVE.L     D0, D3
+          ASL.L      #2, D3
+          MOVE.L     (pc_, D3), D3
+          ASL.L      #2, D3
+          ADD.L      pc_, D3
+          MOVE.L     D3, (A0)+
           ADDQ.L     #1, D0
 lbl_838:  CMP.L      D4, D0
           BMI.S      lbl_818
@@ -630,33 +620,28 @@ lbl_838:  CMP.L      D4, D0
           Dispatch
 
 ; OFFSETCLOSUREM2
-i_45:     Debug_stop
-          MOVE.L     env_, accu_
+i_45:     MOVE.L     env_, accu_
           SUBQ.L     #8, accu_
           Dispatch
 
 ; OFFSETCLOSURE0
-i_46:     Debug_stop
-          MOVE.L     env_, accu_
+i_46:     MOVE.L     env_, accu_
           Dispatch
 
 ; OFFSETCLOSURE2
-i_47:     Debug_stop
-          MOVE.L     env_, accu_
+i_47:     MOVE.L     env_, accu_
           ADDQ.L     #8, accu_
           Dispatch
 
 ; OFFSETCLOSURE
-i_48:     Debug_stop
-          MOVE.L     (pc_)+, D0
+i_48:     MOVE.L     (pc_)+, D0
           ASL.L      #2, D0
           ADD.L      env_, D0
           MOVE.L     D0, accu_
           Dispatch
 
 ; PUSHOFFSETCLOSUREM2
-i_49:     Debug_stop
-          MOVE.L     accu_, -(sp_)
+i_49:     MOVE.L     accu_, -(sp_)
           MOVE.L     env_, accu_
           SUBQ.L     #8, accu_
           Dispatch
@@ -667,15 +652,13 @@ i_50:     MOVE.L     accu_, -(sp_)
           Dispatch
 
 ; PUSHOFFSETCLOSURE2
-i_51:     Debug_stop
-          MOVE.L     accu_, -(sp_)
+i_51:     MOVE.L     accu_, -(sp_)
           MOVE.L     env_, accu_
           ADDQ.L     #8, accu_
           Dispatch
 
 ; PUSHOFFSETCLOSURE
-i_52:     Debug_stop
-          MOVE.L     accu_, -(sp_)
+i_52:     MOVE.L     accu_, -(sp_)
           MOVE.L     (pc_)+, D0
           ASL.L      #2, D0
           ADD.L      env_, D0
@@ -796,18 +779,18 @@ i_65:     MAKEBLOCK 3
 i_66:     MOVE.L     (pc_)+, D5
           MOVE.L     D5, D0
           ASL.L      #3, D0
+          ADDQ.L     #4, D0
           Alloc_small ,D0, #,$3FE, A0
           MOVE.L     A0, A1
           MOVE.L     (accu_)+, (A1)+
-          MOVE.L     (accu_)+, (A1)+
-          MOVEQ.L    #1, D0
-          BRA.S      lbl_66a
-lbl_66b:  MOVE.L     (sp_)+, (A1)+
-          MOVE.L     (sp_)+, (A1)+
-          ADDQ.L     #1, D0
-lbl_66a:  CMP.L      D5, D0
-          BMI.S      lbl_66b
+          MOVE.L     (accu_), (A1)+
           MOVEA.L    A0, accu_
+          BRA.S      lbl_66a
+lbl_66b:  MOVE.L     (sp_)+, A0
+          MOVE.L     (A0)+, (A1)+
+          MOVE.L     (A0), (A1)+
+lbl_66a:  SUBQ.L     #1, D5
+          BNE.S      lbl_66b
           Dispatch
 
      macro
@@ -828,8 +811,7 @@ i_71:     MOVE.L     (pc_)+, D0
           Dispatch
 
 ; GETFLOATFIELD
-i_72:     Debug_stop
-          Alloc_small #,8, #,$3FD, A0
+i_72:     Alloc_small #,$C, #,$3FD, A0
           MOVE.L     (pc_)+, D0
           ASL.L      #3, D0
           MOVE.L     (accu_, D0), (A0)
@@ -864,19 +846,17 @@ i_77:     MOVE.L     (pc_)+, D0
           Nodispatch
 
 ; SETFLOATFIELD
-i_78:     Debug_stop
-          MOVEA.L    (sp_)+, A0
+i_78:     MOVEA.L    (sp_)+, A0
           MOVE.L     (pc_)+, D0
           ASL.L      #3, D0
           ADDA.L     D0, accu_
           MOVE.L     (A0)+, (accu_)+
-          MOVE.L     (A0)+, (accu_)+
-          MOVEA.W    #1, accu_
+          MOVE.L     (A0), (accu_)
+          MOVEA.W    #1, accu_                    ; i_CONST0
           Dispatch
 
 ; VECTLENGTH
-i_79:     Debug_stop
-          MOVE.L     -4(accu_), D0
+i_79:     MOVE.L     -4(accu_), D0
           LSR.L      #8, D0
           LSR.L      #1, D0
           CMP.B      #$FE, -1(accu_)
@@ -997,8 +977,8 @@ i_90:     MOVE.L     4(sp_), (trapsp).L
           Dispatch
 
 ; RAISE                                  XXX debugger stuff not implemented
-i_91:     Debug_stop
-          MOVEA.L    (trapsp).L, sp_
+i_RAISE
+i_91:     MOVEA.L    (trapsp).L, sp_
           MOVEA.L    (stack_high).L, A0
           MOVE.L     initial_sp_offset_(A7), D0
           SUBA.L     D0, A0
@@ -1300,8 +1280,7 @@ i_129:    MOVEA.L    (sp_), A0         ; sp[0]
           Dispatch
 
 ; STOP
-i_130:    Debug_stop
-          MOVE.L     initial_external_raise_(A7), (external_raise).L
+i_130:    MOVE.L     initial_external_raise_(A7), (external_raise).L
           MOVE.L     sp_, (extern_sp).L
           SUBQ.L     #1, (callback_depth).L
           MOVE.L     accu_, D0
@@ -1314,8 +1293,8 @@ i_131:    Dispatch
 ; BREAK                                    XXX pas implemente
 i_132:    Dispatch
 
-     IF NOT &debugging THEN
-          Spacer     11762                    ; complete a 64k ;XXX
+     IF NOT &DEBUG THEN
+          Spacer     11486                 ; complete a 64k
      ENDIF
           BRA        fatal
 
@@ -1323,25 +1302,24 @@ lbl_mod:  MOVE.L     (A1), D5                 ; A1 = modify_dest; D5 = _old_
           MOVE.L     (sp_)+, D4               ; D4 = modify_newval
           MOVE.L     D4, (A1)
           CMPA.L     (heap_start).L, A1
-          BCS        i_CONST0
-          CMPA.L     (heap_end).L, A1
+          BCS        i_CONST0                 ; A1 < heap_start
+          CMPA.L     (heap_end).L, A1         ; A1 >= heap_end
           BCC        i_CONST0
           MOVE.L     A1, D3
-          SUB.L      (heap_start).L, D3
           ASR.L      #8, D3
           ASR.L      #4, D3
           MOVEA.L    (page_table).L, A0
           TST.B      (A0, D3.L)
-          BEQ        i_CONST0
+          BEQ        i_CONST0                 ; page_table[Page(A1)] = 0
           TST.L      (gc_phase).L
           BNE.S      lbl_CC2
-          MOVE.L     A1, D3                    ; A1 est caller-save
+          MOVE.L     A1, D3                   ; A1 est caller-save
           MOVE.L     D5, -(A7)
           Call_setup
           JSR        (darken).L
           Call_restore
           ADDQ.L     #4 ,A7
-          MOVEA.L    D3, A1                    ; A1 est caller-save
+          MOVEA.L    D3, A1                   ; A1 est caller-save
 lbl_CC2:  BTST.L     #0, D4
           BNE        i_CONST0
           CMP.L      (young_start).L, D4
@@ -1379,6 +1357,33 @@ lbl_1B88: Call_setup                                    ; 2eme copie: "init"
           RTS
           dc.b       $80 + 10, 'interprete', 0
           dc.w       0
-     endproc
+
+
+ IF &DEBUG THEN
+
+camldispatch:
+          ADDQ.L     #1, (dcounter).L
+          BNE.S      nobreak
+          _Debugger
+nobreak:  BRA.S      notrace
+          Call_setup
+          MOVE.L     pc_, -(A7)
+          JSR        (disasm_instr).L
+          ADDQ.L     #4, A7
+          Call_restore
+notrace:  MOVE.L     (pc_)+, D0
+          JMP        (jtbl_, D0.W)
+
+          RTS
+          dc.b       $80 + 12, 'camldispatch', 0
+          dc.w       0
+
+          DATA
+dcounter: dc.l       0
+
+ ENDIF
+
+
+     endproc ; interprete
 
           end

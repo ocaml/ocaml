@@ -64,10 +64,21 @@ typedef struct WStatus {
   int kind;
   short datarefnum;         /* window's file (data fork) */
   short resrefnum;          /* window's file (resource fork) or -1 */
-  int canwritesel;          /* selection is writable */
-  int dirty;                /* has something to revert */
   unsigned long basemodcount;
-  int hascontents;          /* has something to save */
+  struct menuflags {
+    unsigned int save : 1;
+    unsigned int save_as : 1;
+    unsigned int revert : 1;
+    unsigned int page_setup : 1;
+    unsigned int print : 1;
+    unsigned int cut : 1;
+    unsigned int copy : 1;
+    unsigned int paste : 1;
+    unsigned int clear : 1;
+    unsigned int select_all : 1;
+    unsigned int find : 1;
+    unsigned int replace : 1;
+  } menuflags;
   long line_height;
   ControlHandle scrollbars [2];
   LongRect viewrect, destrect;     /* view and dest for the graphics window */
@@ -220,6 +231,7 @@ WindowPtr WinOpenDocument (StringPtr title);
 OSErr WinOpenGraphics (long width, long height);
 OSErr WinOpenToplevel (void);
 void WinClipboardStdState (Rect *r);
+void WinGraphicsStdState (Rect *r);
 void WinToplevelStdState (Rect *r);
 void WinUpdate (WindowPtr w);
 void WinUpdateStatus (WindowPtr w);

@@ -605,8 +605,10 @@ value interprete(code_t prog, asize_t prog_size)
       value block;
       Alloc_small(block, size * Double_wosize, Double_array_tag);
       Store_double_field(block, 0, Double_val(accu));
-      for (i = 1; i < size; i++)
-        Store_double_field(block, i, Double_val(*sp++));
+      for (i = 1; i < size; i++){
+        Store_double_field(block, i, Double_val(*sp));
+        ++ sp;
+      }
       accu = block;
       Next;
     }

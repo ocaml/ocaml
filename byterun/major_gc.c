@@ -5,11 +5,13 @@
 /*             Damien Doligez, projet Para, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
 /* $Id$ */
+
+#include <limits.h>
 
 #include "compact.h"
 #include "config.h"
@@ -22,16 +24,6 @@
 #include "mlvalues.h"
 #include "roots.h"
 #include "weak.h"
-
-#ifdef __STDC__
-#include <limits.h>
-#else
-#ifdef ARCH_SIXTYFOUR
-#define LONG_MAX 0x7FFFFFFFFFFFFFFF
-#else
-#define LONG_MAX 0x7FFFFFFF
-#endif
-#endif
 
 unsigned long percent_free;
 long major_heap_increment;

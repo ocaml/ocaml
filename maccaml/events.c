@@ -47,7 +47,9 @@ static void DoDiskEvent (EventRecord *evt)
   if (evt->message >> 16 != noErr){
     DILoad ();
     err = DIBadMount (pt, evt->message);         /* [pt] is ignored */
-    if (err != noErr) ErrorAlertGeneric (err);  /* XXX or nothing ? */
+    if (err != noErr && err != 1 && err != 2){
+      ErrorAlertGeneric (err);  /* XXX or nothing ? */
+    }
     DIUnload ();
   }
 }

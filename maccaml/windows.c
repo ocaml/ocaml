@@ -131,16 +131,18 @@ OSErr WinAllocStatus (WindowPtr w)
 {
   WStatusH st = NULL;
   OSErr err;
+  struct menuflags f;
 
   err = AllocHandle (sizeof (struct WStatus), (Handle *) &st);
   if (err != noErr) return err;
   HLock ((Handle) st);
   (*st)->kind = kWinUninitialised;
-  (*st)->datarefnum = (*st)->resrefnum = -1;
-  (*st)->canwritesel = 0;
-  (*st)->dirty = 0;
+  (*st)->datarefnum = -1;
+  (*st)->resrefnum = -1;
   (*st)->basemodcount = 0;
-  (*st)->hascontents = 0;
+  f.save = f.save_as = f.revert = f.page_setup = f.print = f.cut = f.copy =
+      f.paste = f.clear = f.select_all = f.find = f.replace = 0;
+  (*st)->menuflags = f;
   (*st)->scrollbars [V] = NULL;
   (*st)->scrollbars [H] = NULL;
   /* XXX initialiser les rectangles */
@@ -443,13 +445,20 @@ void WinDoKey (WindowPtr w, short chr, EventRecord *e)
   case kWinToplevel:
     we = WinGetWE (w);   Assert (we != NULL);
     WEGetSelection (&selstart, &selend, we);
-    if (chr == charBackspace){
+    if (chr == charBackspace || chr == charDelete){
       if (selstart < wintopfrontier || selend == wintopfrontier) break;
     }
     if (chr == charEnter){
       long sel = WEGetTextLength (we);
       WESetSelection (sel, sel, we);
       chr = charReturn;
+    }
+    if (chr != charArrowLeft && chr != charArrowRight
+        && chr != charArrowUp && chr != charArrowDown
+        && selstart < wintopfrontier){
+      selstart = selend = WEGetTextLength (we);
+      WESetSelection (selstart, selend, we);
+      WEFeatureFlag (weFReadOnly, weBitClear, we);
     }
     if (selstart == selend){
       WESetStyle (weDoFont + weDoFace + weDoSize + weDoColor + weDoReplaceFace,
@@ -617,8 +626,9 @@ WindowPtr WinOpenDocument (StringPtr name)
 
   st = WinGetStatus (w);  Assert (st != NULL);
   (*st)->kind = kWinDocument;
-  (*st)->hascontents = 1;
-  (*st)->canwritesel = 1;
+  (*st)->menuflags.save_as = (*st)->menuflags.page_setup =
+      (*st)->menuflags.print = (*st)->menuflags.paste = (*st)->menuflags.find =
+      (*st)->menuflags.replace = 1;
 
   err = MenuWinAdd (w);
   if (err != noErr) goto failed;
@@ -648,7 +658,9 @@ OSErr WinOpenGraphics (long width, long height)
   MoveWindow (w, prefs.graphpos.left, prefs.graphpos.top, false);
   ww = prefs.graphpos.right - prefs.graphpos.left;
   hh = prefs.graphpos.bottom - prefs.graphpos.top;
+  if (ww < kMinWindowWidth) ww = kMinWindowWidth;
   if (ww > width + kScrollBarWidth) ww = width + kScrollBarWidth;
+  if (hh < kMinWindowHeight) hh = kMinWindowHeight;
   if (hh > height + kScrollBarWidth) hh = height + kScrollBarWidth;
   SizeWindow (w, ww, hh, false);
   ShowWindow (w);
@@ -667,7 +679,8 @@ OSErr WinOpenGraphics (long width, long height)
   WERectToLongRect (&r, &(*st)->destrect);
   st = WinGetStatus (w);  Assert (st != NULL);
   (*st)->kind = kWinGraphics;
-  (*st)->hascontents = 1;
+  (*st)->menuflags.save_as = (*st)->menuflags.page_setup =
+      (*st)->menuflags.print = 1;
 
   (*st)->scrollbars [H] = (*st)->scrollbars [V] = NULL;
   for (i = V; i <= H; i++){
@@ -718,7 +731,8 @@ OSErr WinOpenToplevel (void)
 
   st = WinGetStatus (w);  Assert (st != NULL);
   (*st)->kind = kWinToplevel;
-  (*st)->hascontents = 1;
+  (*st)->menuflags.save_as = (*st)->menuflags.page_setup =
+      (*st)->menuflags.print = (*st)->menuflags.find = 1;
 
   we = WinGetWE (w);  Assert (we != NULL);
   WEFeatureFlag (weFUndo, weBitClear, we);
@@ -741,6 +755,20 @@ void WinClipboardStdState (Rect *r)
   r->top = r->bottom - kMinWindowHeight;
   r->left += kWinBorderSpace;
   r->right -= 100;
+}
+
+void WinGraphicsStdState (Rect *r)
+{
+  if (winGraphics == NULL){
+    *r = (*GetGrayRgn ())->rgnBBox;
+    r->top += kTitleBarSpace;
+    r->left += kWinBorderSpace;
+    r->bottom -= kWinBorderSpace;
+    r->right -= kWinBorderSpace;
+  }else{
+    /* XXX To do for zoom */
+    Assert (0);
+  }
 }
 
 void WinToplevelStdState (Rect *r)
@@ -778,14 +806,14 @@ void WinUpdate (WindowPtr w)
 
 void WinUpdateStatus (WindowPtr w)
 {
-  long selstart, selend, len;
+  long selstart, selend;
   WStatusH st = WinGetStatus (w);
   WEHandle we = WinGetWE (w);
+  int readonly;
 
   if (st == NULL) return;
   switch ((*st)->kind){
   case kWinUnknown:
-  case kWinUninitialised:
   case kWinAbout:
   case kWinPrefs:
   case kWinClipboard:
@@ -794,13 +822,34 @@ void WinUpdateStatus (WindowPtr w)
   case kWinToplevel:
     Assert (we != NULL);
     WEGetSelection (&selstart, &selend, we);
-    len = WEGetTextLength (we);
-    (*st)->canwritesel = (selstart >= wintopfrontier);
+    if (selend == selstart){
+      (*st)->menuflags.cut = 0;
+      (*st)->menuflags.copy = 0;
+      (*st)->menuflags.clear = 0;
+    }else{
+      (*st)->menuflags.copy = 1;
+      (*st)->menuflags.cut = (*st)->menuflags.clear =
+          selstart >= wintopfrontier;
+    }
+    (*st)->menuflags.select_all = WEGetTextLength (we) != 0;
+    readonly = WEFeatureFlag (weFReadOnly, weBitTest, we);
+    WEFeatureFlag (weFReadOnly, weBitClear, we);
+    (*st)->menuflags.paste = WECanPaste (we);
+    if (readonly) WEFeatureFlag (weFReadOnly, weBitSet, we);
     break;
   case kWinDocument:
     Assert (we != NULL);
-    (*st)->dirty = ((*st)->basemodcount != WEGetModCount (we));
+    WEGetSelection (&selstart, &selend, we);
+    (*st)->menuflags.save = (*st)->menuflags.revert =
+        (*st)->basemodcount != WEGetModCount (we);
+    (*st)->menuflags.cut = (*st)->menuflags.copy = (*st)->menuflags.clear =
+        selstart != selend;
+    (*st)->menuflags.paste = WECanPaste (we);
+    (*st)->menuflags.select_all = WEGetTextLength (we) != 0;
     break;
-  default: Assert (0);
+  case kWinUninitialised:
+  default:
+    Assert (0);
+    break;
   }
 }

@@ -25,6 +25,7 @@ static void InitPrefs (void)
   defpref.version = PREF_VERSION;
   defpref.asksavetop = 0;
   WinToplevelStdState (&defpref.toppos);
+  WinGraphicsStdState (&defpref.graphpos);
   WinClipboardStdState (&defpref.clippos);
   GetFNum ("\pmonaco", &defstyle.tsFont);
   defstyle.tsSize = 9;

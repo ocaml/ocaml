@@ -46,6 +46,7 @@ int ui_write (int file_desc, char *buf, unsigned int length)
 void ui_print_stderr (char *format, void *arg)
 {
   fprintf (stderr, format, arg);
+  fflush (stderr);
 }
 
 

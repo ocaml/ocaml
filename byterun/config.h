@@ -5,7 +5,7 @@
 /*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -49,11 +49,7 @@
 
 /* Signed char type */
 
-#if defined(__STDC__) || defined(SIGNED_CHAR_WORKS)
 typedef signed char schar;
-#else
-typedef char schar;
-#endif
 
 /* Do not change this definition. */
 #define Page_size (1 << Page_log)
