@@ -13,13 +13,6 @@
 
 (* Module [Dynlink]: dynamic loading of bytecode object files *)
 
-(* This library supports type-safe dynamic loading and linking of bytecode
-   object files ([.cmo] files) in a running bytecode program.
-   Type safety is ensured by limiting the set of modules from the running
-   program that the loaded object file can access, and checking that the
-   running program and the loaded object file have been compiled against
-   the same interfaces for these modules. *)
-
 val init : unit -> unit
         (* Initialize the library. Must be called before [loadfile]. *)
 val loadfile : string -> unit
