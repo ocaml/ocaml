@@ -79,7 +79,7 @@ let module_subparts =
     (* skip aliases *)	  
     | Element_module { m_kind = Module_alias _ } :: n -> 
 	iter acc n
-    | Element_module_type { mt_kind = Some Module_type_alias _ } :: n -> 
+    | Element_module_type { mt_kind = Some (Module_type_alias _) } :: n -> 
 	iter acc n
     (* keep modules, module types, classes and class types *)
     | Element_module m :: n -> 
@@ -633,13 +633,13 @@ class texi =
     (** Return the Texinfo code for the given module type. *)
     method texi_of_module_type mt =
       let is_alias = function
-	| { mt_kind = Some Module_type_alias _ } -> true
+	| { mt_kind = Some (Module_type_alias _) } -> true
 	| _ -> false in
       let is_alias_there = function
-	| { mt_kind = Some Module_type_alias { mta_module = None } } -> false
+	| { mt_kind = Some (Module_type_alias { mta_module = None }) } -> false
 	| _ -> true in
       let resolve_alias_name = function
-	| { mt_kind = Some Module_type_alias { mta_name = name } } -> name
+	| { mt_kind = Some (Module_type_alias { mta_name = name }) } -> name
 	| { mt_name = name } -> name in
       let t = 
 	[ [ self#fixedblock 
