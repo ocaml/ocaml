@@ -293,8 +293,11 @@ let _ =
   Hashtbl.add directive_table "labels"
              (Directive_bool(fun b -> Clflags.classic := not b));
 
+  Hashtbl.add directive_table "principal"
+             (Directive_bool(fun b -> Clflags.principal := b));
+
   Hashtbl.add directive_table "warnings"
              (Directive_string (parse_warnings std_out false));
 
   Hashtbl.add directive_table "warn_error"
-             (Directive_string (parse_warnings std_out true));
+             (Directive_string (parse_warnings std_out true))
