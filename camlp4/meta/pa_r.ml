@@ -772,13 +772,15 @@ EXTEND
   ctyp: LEVEL "simple"
     [ [ "[|"; rfl = LIST0 row_field SEP "|"; "|]" ->
           <:ctyp< [| $list:rfl$ |] >>
-      | "[|"; ">"; rfl = LIST1 row_field SEP "|"; "|]" ->
+      | "[|"; ">"; rfl = row_field_list; "|]" ->
           <:ctyp< [| > $list:rfl$ |] >>
-      | "[|"; "<"; rfl = LIST1 row_field SEP "|"; "|]" ->
+      | "[|"; "<"; rfl = row_field_list; "|]" ->
           <:ctyp< [| < $list:rfl$ |] >>
-      | "[|"; "<"; rfl = LIST1 row_field SEP "|"; ">";
-        ntl = LIST1 name_tag; "|]" ->
+      | "[|"; "<"; rfl = row_field_list; ">"; ntl = LIST1 name_tag; "|]" ->
           <:ctyp< [| < $list:rfl$ > $list:ntl$ |] >> ] ]
+  ;
+  row_field_list:
+    [ [ rfl = LIST1 row_field SEP "|" -> rfl ] ]
   ;
   row_field:
     [ [ "`"; i = ident -> MLast.RfTag i True []

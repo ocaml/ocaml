@@ -812,8 +812,7 @@ EXTEND
           Node "TyVrn" [Loc; rfl; Option (Some (Option None))]
       | "[|"; "<"; rfl = row_field_list; "|]" ->
           Node "TyVrn" [Loc; rfl; Option (Some (Option (Some (List []))))]
-      | "[|"; "<"; rfl = row_field_list; ">"; ntl = SLIST1 name_tag;
-        "|]" ->
+      | "[|"; "<"; rfl = row_field_list; ">"; ntl = SLIST1 name_tag; "|]" ->
           Node "TyVrn" [Loc; rfl; Option (Some (Option (Some ntl)))] ] ]
   ;
   row_field_list:
@@ -829,28 +828,30 @@ EXTEND
     [ [ "`"; i = ident -> i ] ]
   ;
   patt: LEVEL "simple"
-    [ [ "#"; a = anti_list -> Node "PaTyp" [Loc; a]
-      | "#"; s = mod_ident -> Node "PaTyp" [Loc; s] ] ]
-  ;
-  patt: BEFORE "simple"
-    [ NONA
-      [ "~"; i = a_LIDENT; ":"; p = SELF -> Node "PaLab" [Loc; i; p]
-      | "~"; i = a_LIDENT -> Node "PaLab" [Loc; i; Node "PaLid" [Loc; i]]
-      | "?"; i = a_LIDENT; ":"; "("; p = SELF; e = OPT [ "="; e = expr -> e ];
+    [ [ "`"; s = ident -> Node "PaVrn" [Loc; s]
+      | "#"; sl = mod_ident -> Node "PaTyp" [Loc; sl]
+      | i = a_TILDEIDENT; ":"; p = SELF -> Node "PaLab" [Loc; i; p]
+      | i = a_TILDEIDENT -> Node "PaLab" [Loc; i; Node "PaLid" [Loc; i]]
+      | i = a_QUESTIONIDENT; ":"; "("; p = SELF; ")" ->
+          Node "PaOlb" [Loc; i; p; Option None]
+      | i = a_QUESTIONIDENT; ":"; "("; p = SELF; "="; e = expr; ")" ->
+          Node "PaOlb" [Loc; i; p; Option (Some e)]
+      | i = a_QUESTIONIDENT; ":"; "("; p = SELF; ":"; t = ctyp; ")" ->
+          Node "PaOlb" [Loc; i; Node "PaTyc" [Loc; p; t]; Option None]
+      | i = a_QUESTIONIDENT; ":"; "("; p = SELF; ":"; t = ctyp; "="; e = expr;
         ")" ->
-          Node "PaOlb" [Loc; i; p; Option e]
-      | "?"; i = a_LIDENT; ":"; "("; p = SELF; ":"; t = ctyp;
-        e = OPT [ "="; e = expr -> e ]; ")" ->
-          let p = Node "PaTyc" [Loc; p; t] in
-          Node "PaOlb" [Loc; i; p; Option e]
-      | "?"; i = a_LIDENT ->
+          Node "PaOlb" [Loc; i; Node "PaTyc" [Loc; p; t]; Option (Some e)]
+      | i = a_QUESTIONIDENT ->
           Node "PaOlb" [Loc; i; Node "PaLid" [Loc; i]; Option None]
       | "?"; "("; i = a_LIDENT; "="; e = expr; ")" ->
           Node "PaOlb" [Loc; i; Node "PaLid" [Loc; i]; Option (Some e)]
       | "?"; "("; i = a_LIDENT; ":"; t = ctyp; "="; e = expr; ")" ->
-          let p = Node "PaTyc" [Loc; Node "PaLid" [Loc; i]; t] in
-          Node "PaOlb" [Loc; i; p; Option (Some e)]
-      | "`"; s = ident -> Node "PaVrn" [Loc; s] ] ]
+          Node "PaOlb"
+            [Loc; i; Node "PaTyc" [Loc; Node "PaLid" [Loc; i]; t];
+             Option (Some e)] ] ]
+  ;
+  patt: LEVEL "simple"
+    [ [ "#"; a = anti_list -> Node "PaTyp" [Loc; a] ] ]
   ;
   expr: AFTER "apply"
     [ "label" NONA
@@ -993,9 +994,17 @@ EXTEND
     [ [ "~"; a = ANTIQUOT ""; ":" -> antiquot "" loc a
       | s = TILDEIDENTCOLON -> Str s ] ]
   ;
+  a_TILDEIDENT:
+    [ [ "~"; a = ANTIQUOT "" -> antiquot "" loc a
+      | s = TILDEIDENT -> Str s ] ]
+  ;
   a_QUESTIONIDENTCOLON:
     [ [ "?"; a = ANTIQUOT ""; ":" -> antiquot "" loc a
       | s = QUESTIONIDENTCOLON -> Str s ] ]
+  ;
+  a_QUESTIONIDENT:
+    [ [ "?"; a = ANTIQUOT "" -> antiquot "" loc a
+      | s = QUESTIONIDENT -> Str s ] ]
   ;
   rec_flag:
     [ [ a = ANTIQUOT "rec" -> antiquot "rec" loc a ] ]
