@@ -463,7 +463,7 @@ around point."
 
 ;;;###autoload
 (defvar camldebug-command-name "ocamldebug"
-  "Pathname for executing camldebug.")
+  "*Pathname for executing camldebug.")
 
 ;;;###autoload
 (defun camldebug (path)
