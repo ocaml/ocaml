@@ -123,7 +123,7 @@ defaultentry:
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries camlp4out $(DEBUGGER)
+  otherlibraries camlp4out $(DEBUGGER) ocamldoc
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -217,7 +217,7 @@ opt-core:runtimeopt ocamlopt libraryopt
 opt: runtimeopt ocamlopt libraryopt otherlibrariesopt camlp4opt
 
 # Native-code versions of the tools
-opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt camlp4optopt ocamltoolsopt.opt
+opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt camlp4optopt ocamltoolsopt.opt ocamldoc.opt
 
 # Installation
 install: FORCE
@@ -244,6 +244,7 @@ install: FORCE
 	for i in $(OTHERLIBRARIES); do \
           (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
         done
+	cd ocamldoc; $(MAKE) install
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
 	cd camlp4; $(MAKE) install LIBDIR=$(LIBDIR)
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); \
@@ -254,6 +255,7 @@ installopt:
 	cd asmrun; $(MAKE) install
 	cp ocamlopt $(BINDIR)/ocamlopt$(EXE)
 	cd stdlib; $(MAKE) installopt
+	cd ocamldoc; $(MAKE) installopt
 	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
 	if test -f ocamlc.opt; then cp ocamlc.opt $(BINDIR)/ocamlc.opt$(EXE); else :; fi
 	if test -f ocamlopt.opt; then cp ocamlopt.opt $(BINDIR)/ocamlopt.opt$(EXE); else :; fi
@@ -530,6 +532,17 @@ partialclean::
 	cd tools; $(MAKE) clean
 alldepend::
 	cd tools; $(MAKE) depend
+
+# OCamldoc
+
+ocamldoc: ocamlc ocamlyacc ocamllex
+	cd ocamldoc ; $(MAKE) all
+ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
+	cd ocamldoc ; $(MAKE) opt.opt
+partialclean::
+	cd ocamldoc; $(MAKE) clean
+alldepend::
+	cd ocamldoc; $(MAKE) depend
 
 # The extra libraries
 
