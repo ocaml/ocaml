@@ -14,6 +14,7 @@
 
 (* The interactive toplevel loop *)
 
+open Path
 open Lexing
 open Format
 open Config
@@ -21,7 +22,6 @@ open Misc
 open Parsetree
 open Types
 open Typedtree
-open Printval
 
 type directive_fun =
    | Directive_none of (unit -> unit)
@@ -43,6 +43,40 @@ let getvalue name =
 
 let setvalue name v =
   Hashtbl.replace toplevel_value_bindings name v
+
+(* Return the value referred to by a path *)
+
+let rec eval_path = function
+  | Pident id ->
+      if Ident.persistent id
+      then Symtable.get_global_value id
+      else getvalue (Ident.name id)
+  | Pdot(p, s, pos) ->
+      Obj.field (eval_path p) pos
+  | Papply(p1, p2) ->
+      fatal_error "Toploop.eval_path"
+
+(* To print values *)
+
+module EvalPath = struct
+  type value = Obj.t
+  exception Error
+  let eval_path p = try eval_path p with Symtable.Error _ -> raise Error
+  let same_value v1 v2 = (v1 == v2)
+end
+
+module Printer = Genprintval.Make(Obj)(EvalPath)
+
+let max_printer_depth = ref 100
+let max_printer_steps = ref 300
+
+let print_untyped_exception = Printer.print_untyped_exception
+let print_value env obj ty =
+  Printer.print_value !max_printer_steps !max_printer_depth
+    (fun _ _ _ -> true) env obj ty
+
+let install_printer = Printer.install_printer
+let remove_printer = Printer.remove_printer
 
 (* Hooks for parsing functions *)
 

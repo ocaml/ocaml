@@ -54,6 +54,19 @@ val use_silently : formatter -> string -> bool
         (* Read and execute commands from a file.
            [use_file] prints the types and values of the results.
            [use_silently] does not print them. *)
+val eval_path: Path.t -> Obj.t
+        (* Return the toplevel object referred to by the given path *)
+
+(* Printing of values *)
+
+val print_value: Env.t -> Obj.t -> formatter -> Types.type_expr -> unit
+val print_untyped_exception: formatter -> Obj.t -> unit
+
+val install_printer : Path.t -> Types.type_expr -> (Obj.t -> unit) -> unit
+val remove_printer : Path.t -> unit
+
+val max_printer_depth: int ref
+val max_printer_steps: int ref
 
 (* Hooks for an external parser *)
 

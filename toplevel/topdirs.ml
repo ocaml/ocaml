@@ -20,7 +20,6 @@ open Longident
 open Path
 open Types
 open Emitcode
-open Printval
 open Trace
 open Toploop
 
@@ -147,14 +146,14 @@ let dir_install_printer ppf lid =
   try
     let (ty_arg, path) = find_printer_type ppf lid in
     let v = (Obj.obj (eval_path path) : 'a -> unit) in
-    Printval.install_printer path ty_arg (fun repr -> v (Obj.obj repr))
+    install_printer path ty_arg (fun repr -> v (Obj.obj repr))
   with Exit -> ()
 
 let dir_remove_printer ppf lid =
   try
     let (ty_arg, path) = find_printer_type ppf lid in
     begin try
-      Printval.remove_printer path
+      remove_printer path
     with Not_found ->
       fprintf ppf "No printer named %a.@." Printtyp.longident lid
     end

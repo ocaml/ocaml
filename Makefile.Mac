@@ -66,8 +66,7 @@ DRIVER = :driver:errors.cmo :driver:compile.cmo :driver:main_args.cmo ¶
          :driver:main.cmo
 
 TOPLEVEL = :driver:errors.cmo :driver:compile.cmo ¶
-  :toplevel:genprintval.cmo ¶
-  :toplevel:printval.cmo :toplevel:toploop.cmo ¶
+  :toplevel:genprintval.cmo :toplevel:toploop.cmo ¶
   :toplevel:trace.cmo :toplevel:topdirs.cmo
 
 TOPLEVELMAIN = :toplevel:topmain.cmo
