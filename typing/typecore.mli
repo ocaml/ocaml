@@ -37,7 +37,7 @@ type error =
   | Label_multiply_defined of Longident.t
   | Label_missing
   | Label_not_mutable of Longident.t
-  | Bad_format_letter of char
+  | Bad_format of string
 
 exception Error of Location.t * error
 

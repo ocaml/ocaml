@@ -33,7 +33,7 @@ type error =
   | Label_multiply_defined of Longident.t
   | Label_missing
   | Label_not_mutable of Longident.t
-  | Bad_format_letter of char
+  | Bad_format of string
 
 exception Error of Location.t * error
 
@@ -203,7 +203,9 @@ let type_format loc fmt =
     match fmt.[i] with
       '%' ->
         let j = skip_args(i+1) in
-        begin match fmt.[j] with
+        begin match String.unsafe_get fmt j with
+        (* We're using unsafe_get here so that if j = String.length fmt,
+           we'll fall in the catch-all case of the match *)
           '%' ->
             scan_format (j+1)
         | 's' ->
@@ -223,7 +225,7 @@ let type_format loc fmt =
         | 't' ->
             Tarrow(Tarrow(ty_input, ty_result), scan_format (j+1))
         | c ->
-            raise(Error(loc, Bad_format_letter c))
+            raise(Error(loc, Bad_format(String.sub fmt i (j-i))))
         end
     | _ -> scan_format (i+1) in
   Tconstr(Predef.path_format, [scan_format 0; ty_input; ty_result])
@@ -597,5 +599,5 @@ let report_error = function
   | Label_not_mutable lid ->
       print_string "The label "; longident lid;
       print_string " is not mutable"
-  | Bad_format_letter c ->
-      print_string "Bad format letter `%"; print_char c; print_string "'"
+  | Bad_format s ->
+      print_string "Bad format `"; print_string s; print_string "'"

@@ -13,7 +13,7 @@
 
 open Format
 
-type t = { mutable stamp: int; name: string; mutable global: bool }
+type t = { mutable stamp: int; mutable name: string; mutable global: bool }
 
 (* A stamp of 0 denotes a persistent identifier *)
 
@@ -41,13 +41,16 @@ let same i1 i2 = i1 = i2
        else i2.stamp = 0 & i1.name = i2.name *)
 
 let identify i1 i2 f =
-  let stamp1 = i1.stamp in
+  let name1 = i1.name and stamp1 = i1.stamp in
   try
+    i1.name <- i2.name;
     i1.stamp <- i2.stamp;
     let res = f () in
+    i1.name <- name1;
     i1.stamp <- stamp1;
     res
   with x ->
+    i1.name <- name1;
     i1.stamp <- stamp1;
     raise x
 
