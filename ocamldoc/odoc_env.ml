@@ -176,80 +176,34 @@ let subst_type env t =
    print_newline ();
 *)
   Printtyp.mark_loops t;
-  let rec iter deja_vu t =
-    let (new_desc, new_deja_vu) = 
-      if List.memq t deja_vu then
-	(t.Types.desc, deja_vu)
-      else
-	let dv = t :: deja_vu in
-	match t.Types.desc with
-	| Types.Tvar -> 
-	    (Types.Tvar, dv)
-
-	| Types.Tarrow (l, t1, t2, c) ->
-	    let (t1', dv1) = iter dv t1 in
-	    let (t2', dv2) = iter dv1 t2 in
-	    (Types.Tarrow (l, t1', t2', c), dv2)
-
-	| Types.Ttuple l -> 
-	    let (l', dv') =
-	      List.fold_left 
-		(fun (acc_t, acc_dv) -> fun t ->
-		  let (new_t, new_dv) = iter acc_dv t in
-		  (acc_t @ [new_t], new_dv)
-		)
-		([], dv)
-		l
-	    in
-	    (Types.Ttuple l', dv')
-
-	| Types.Tconstr (p, [ty], a) when Path.same p Predef.path_option ->
-	    let (ty', dv') = iter dv ty in
-	    (Types.Tconstr (p, [ty'], a), dv')
-
-	| Types.Tconstr (p, l, a) ->
-	    let new_p = Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
-	    let (l', dv') =
-	      List.fold_left 
-		(fun (acc_t, acc_dv) -> fun t ->
-		  let (new_t, new_dv) = iter acc_dv t in
-		  (acc_t @ [new_t], new_dv)
-		)
-		([], dv)
-		l
-	    in
-	    (Types.Tconstr (new_p, l', a), dv')
-
-	| Types.Tobject (t2, r) ->
-	    (* A VOIR : descendre dans r ? *)
-	    let (t2', dv') = iter dv t2 in
-	    (Types.Tobject (t2', r), dv')
-
-	| Types.Tfield (s, fk, t1, t2) ->
-	    let (t1', dv1) = iter dv t1 in
-	    let (t2', dv2) = iter dv1 t2 in
-	    (Types.Tfield (s, fk, t1', t2'), dv2)
-
-	| Types.Tnil ->
-	    (Types.Tnil, dv)
-
-	| Types.Tlink t2 -> 
-	    let (t2', dv') = iter dv t2 in
-	    (Types.Tlink t2', dv')
-
-	| Types.Tsubst t2 ->
-	    let (t2', dv') = iter dv t2 in
-	    (Types.Tsubst t2', dv')
-
-	| Types.Tvariant rd ->
-	    (* A VOIR : est-ce la peine de descendre dans rd ? *)
-	    (Types.Tvariant rd, dv)
-    in
-    t.Types.desc <- new_desc;
-    (t, new_deja_vu)
+  let deja_vu = ref [] in
+  let rec iter t =
+    if List.memq t !deja_vu then () else begin
+      deja_vu := t :: !deja_vu;
+      Btype.iter_type_expr iter t;
+      match t.Types.desc with
+      | Types.Tconstr (p, [ty], a) when Path.same p Predef.path_option ->
+	  ()
+      | Types.Tconstr (p, l, a) ->
+	  let new_p =
+            Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
+	  t.Types.desc <- Types.Tconstr (new_p, l, a)
+      | Types.Tobject (_, ({contents=Some(p,tyl)} as r)) ->
+	  let new_p =
+            Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
+          r := Some (new_p, tyl)
+      | Types.Tvariant ({Types.row_name=Some(p, tyl)} as row) ->
+	  let new_p =
+            Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
+	  t.Types.desc <-
+            Types.Tvariant {row with Types.row_name=Some(new_p, tyl)}
+      | _ ->
+          ()
+    end
   in
-  let (res, _) = iter [] t in
-  res
+  iter t;
+  t
+    
 
 let subst_module_type env t =
   let rec iter t =

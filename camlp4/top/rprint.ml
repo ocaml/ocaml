@@ -175,7 +175,8 @@ and print_simple_out_type ppf =
       fprintf ppf "@[<hv 2>{ %a }@]"
         (print_list print_out_label (fun ppf -> fprintf ppf ";@ ")) lbls
   | Otyp_abstract -> fprintf ppf "'abstract"
-  | Otyp_alias _ _ | Otyp_arrow _ _ _ | Otyp_constr _ [_ :: _] as ty ->
+  | Otyp_alias _ _ | Otyp_poly _ _
+  | Otyp_arrow _ _ _ | Otyp_constr _ [_ :: _] as ty ->
       fprintf ppf "@[<1>(%a)@]" print_out_type ty ]
 and print_out_constr ppf (name, tyl) =
   match tyl with

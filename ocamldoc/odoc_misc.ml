@@ -44,7 +44,7 @@ let string_of_type_list sep type_list =
     | Types.Tlink t2 | Types.Tsubst t2 -> need_parent t2
     | Types.Tconstr _ ->
 	false
-    | Types.Tvar | Types.Tobject _ 
+    | Types.Tvar | Types.Tunivar | Types.Tobject _ | Types.Tpoly _
     | Types.Tfield _ | Types.Tnil | Types.Tvariant _ -> false
   in
   let print_one_type t =
@@ -399,6 +399,8 @@ let remove_option typ =
 	 | _ -> t
 	)
     | Types.Tvar
+    | Types.Tunivar
+    | Types.Tpoly _
     | Types.Tarrow _ 
     | Types.Ttuple _ 
     | Types.Tobject _
