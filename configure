@@ -218,6 +218,10 @@ case "$bytecc,$host" in
     echo "#define ARCH_CODE32" >> m.h;;
   cc,alpha*-*-osf*)
     bytecccompopts="-std1 -ieee";;
+  gcc,alpha*-*-linux*)
+    if cc="$bytecc" sh ./hasgot -mieee; then
+      bytecccompopts="-mieee $bytecccompopts";
+    fi;;
   cc,mips-*-irix6*)
     # Add -n32 flag to ensure compatibility with native-code compiler
     bytecccompopts="-n32"
