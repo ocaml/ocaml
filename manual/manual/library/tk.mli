@@ -22,11 +22,13 @@ val destroy : 'a Widget.widget -> unit
 
 val update : unit -> unit
        (** Synchronize display with internal state. *)
+
 val appname_get : unit -> string
 val appname_set : string -> unit
        (** Get or set the application name. *)
 
 (** {2 Dimensions} *)
+
 type units = [`Pix of int | `Cm of float | `In of float | `Mm of float | `Pt of float]
 val pixels : units -> int
        (** Converts various on-screen units to pixels,
@@ -34,6 +36,7 @@ val pixels : units -> int
           pixels, centimeters, inches, millimeters and points *)
 
 (** {2 Widget layout commands} *)
+
 type anchor = [`Center|`E|`N|`Ne|`Nw|`S|`Se|`Sw|`W]
 type fillMode = [`Both|`None|`X|`Y]
 type side = [`Bottom|`Left|`Right|`Top]
@@ -64,6 +67,7 @@ val grid :
   ?rowspan:int ->
   ?sticky:string -> 'b Widget.widget list -> unit
         (** Pack a widget inside its parent, using the grid layout engine. *)
+
 type borderMode = [`Ignore|`Inside|`Outside]
 val place :
   ?anchor:anchor ->
@@ -77,6 +81,7 @@ val place :
   ?width:int ->
   ?x:int -> ?y:int -> 'b Widget.widget -> unit
         (** Pack a widget inside its parent, at absolute coordinates. *)
+
 val raise_window :
   ?above:'a Widget.widget -> 'b Widget.widget -> unit
 val lower_window :
@@ -160,6 +165,7 @@ val bind :
            [action] is called with the [fields] required set in
            an [eventInfo] structure. Other fields should not be accessed.
            If [action] is omitted then existing bindings are removed. *)
+
 val bind_class :
   events:event list ->
   ?extend:bool ->
@@ -180,6 +186,7 @@ val bind_tag :
   ?on:'a Widget.widget ->
   string -> unit
         (** Same thing for all widgets having a given tag *)
+
 val break : unit -> unit
         (** Used inside a bound action, do not call other actions
            after this one. This is only possible if this action
