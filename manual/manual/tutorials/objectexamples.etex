@@ -168,9 +168,9 @@ inherited.
 
 This ability provides class constructors as can be found in other
 languages. Several constructors can be defined this way to build objects of
-the same class but with different initialization patterns (an alternative to
-the use of initializers decribed below \ref{ss:initializers}).
-
+the same class but with different initialization patterns; an
+alternative is to use initializers, as decribed below in section
+\ref{ss:initializers}.
 
 \section{Reference to self}
 \pdfsection{Reference to self}
@@ -758,7 +758,8 @@ class copy =
 Only the override can be used to actually override fields, and 
 only the "Oo.copy" primitive can be used externally. 
 
-Cloning can also be used to provide facilities.
+Cloning can also be used to provide facilities for saving and
+restoring the state of objects.
 \begin{caml_example}
 class backup = 
   object (self : 'mytype)
@@ -768,7 +769,7 @@ class backup =
   end;;
 \end{caml_example}
 The above definition will only backup one level. 
-Backuping can be added to any class using multiple inheritance.
+The backup facility can be added to any class using multiple inheritance.
 \begin{caml_example}
 class ['a] backup_ref x = object inherit ['a] ref x inherit backup end;;
 let rec get p n = if n = 0 then p # get else get (p # restore) (n-1);;
@@ -776,7 +777,7 @@ let p = new backup_ref 0  in
 p # save; p # set 1; p # save; p # set 2; 
 [get p 0; get p 1; get p 2; get p 3; get p 4];;
 \end{caml_example}
-A variant of backups could retain all copies. (We then add a method clear to
+A variant of backup could retain all copies. (We then add a method clear to
 manually erase all copies.)
 \begin{caml_example}
 class backup = 
@@ -859,8 +860,7 @@ its "value" method.  Considering "m" of type "comparable" would allow to
 call method "leq" on "m" with an argument that does not have a method
 "value", which would be an error.
 
-Objects of class "money2" below also print the value they hold. Similarly
-the type "money2" is not a subtype of type "money".
+Similarly, the type "money2" below is not a subtype of type "money".
 \begin{caml_example}
 class money2 x =
   object   
@@ -890,7 +890,7 @@ More examples of binary methods can be found in sections
 \ref{module:string} and \ref{module:set}.
 
 Notice the use of functional update for method "times". 
-Writing  "new money2 (k *. repr) >}" instead of  "{< repr = k *. repr >}"
+Writing  "new money2 (k *. repr)" instead of  "{< repr = k *. repr >}"
 would not behave well with inheritance: in a subclass "money3" of "money2"
 the "times" method would return an object of class "money2" but not of class
 "money3" as would be expected. 

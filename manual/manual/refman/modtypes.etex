@@ -20,7 +20,7 @@ module-type:
           modtype-path
         | 'sig' { specification [';;'] } 'end'
         | 'functor' '(' module-name ':' module-type ')' '->' module-type
-        | module-type 'with' constraint { 'and' constraint }
+        | module-type 'with' mod-constraint { 'and' mod-constraint }
         | '(' module-type ')'
 ;
 specification:
@@ -38,7 +38,7 @@ specification:
         | 'open' module-path
         | 'include' modtype-path
 ;
-constraint:
+mod-constraint:
           'type' [type-parameters] typeconstr '=' typexp
         | 'module' module-path '=' extended-module-path
 \end{syntax}
@@ -241,7 +241,7 @@ argument (``higher-order'' functor).
 \ikwd{with\@\texttt{with}}
 
 Assuming @module-type@ denotes a signature, the expression
-@module-type 'with' constraint { 'and' constraint }@ denotes the same
+@module-type 'with' mod-constraint { 'and' mod-constraint }@ denotes the same
 signature where type equations have been added to some of the type
 specifications, as described by the constraints following the "with"
 keyword. The constraint @'type' [type-parameters] typeconstr '=' typexp@ 

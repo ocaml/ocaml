@@ -334,28 +334,29 @@ exception @'Match_failure'@ is raised.
 
 \subsubsection*{Boolean operators}
 
-The expression @expr_1 '&' expr_2@ evaluates to @'true'@ if both
+The expression @expr_1 '&&' expr_2@ evaluates to @'true'@ if both
 @expr_1@ and @expr_2@ evaluate to @'true'@; otherwise, it evaluates to
 @'false'@. The first component, @expr_1@, is evaluated first. The
 second component, @expr_2@, is not evaluated if the first component
-evaluates to @'false'@. Hence, the expression @expr_1 '&' expr_2@ behaves 
+evaluates to @'false'@. Hence, the expression @expr_1 '&&' expr_2@ behaves 
 exactly as
 \begin{center}
 @'if' expr_1 'then' expr_2 'else' 'false'@.
 \end{center}
 
-\ikwd{or\@\texttt{or}}
-The expression @expr_1 'or' expr_2@ evaluates to @'true'@ if one of
+The expression @expr_1 '||' expr_2@ evaluates to @'true'@ if one of
 @expr_1@ and @expr_2@ evaluates to @'true'@; otherwise, it evaluates to
 @'false'@. The first component, @expr_1@, is evaluated first. The
 second component, @expr_2@, is not evaluated if the first component
-evaluates to @'true'@. Hence, the expression @expr_1 'or' expr_2@ behaves 
+evaluates to @'true'@. Hence, the expression @expr_1 '||' expr_2@ behaves 
 exactly as
 \begin{center}
 @'if' expr_1 'then' 'true' 'else' expr_2@.
 \end{center}
 
-The boolean operators @'&&'@ and @'||'@ are synonyms for @'&'@ and @'or'@.
+\ikwd{or\@\texttt{or}}
+The boolean operator @'&'@ is synonymous for @'&&'@.  The boolean operator
+@'or'@ is synonymous for @'||'@.
 
 \subsubsection*{Loops}
 
@@ -542,7 +543,7 @@ details). Their meaning may be changed at any time using
 \entree{"<" }{Test ``less than''.}
 \entree{"<=" }{Test ``less than or equal''.}
 \entree{">" }{Test ``greater than''.}
-\entree{">=" }{Test ``greater than or equal''}
+\entree{">=" }{Test ``greater than or equal''.}
 \end{tableau}
 
 \subsection{Objects}

@@ -485,10 +485,10 @@ This is another instance of friend functions as seen in section
 
 In the object-oriented version of sets, we only need to add an additional 
 method "tag" to return the representation of a set. Since sets are
-parametric in the type of elemets, the method "tag" has a parametric type
+parametric in the type of elements, the method "tag" has a parametric type
 "'a tag", concrete within 
 the module definition but abstract in its signature.
-From outside, it will them be guaranteed that two objects with a method "tag" 
+From outside, it will then be guaranteed that two objects with a method "tag" 
 of the same type will share the same representation.
 \begin{caml_example*}
 module type SET =

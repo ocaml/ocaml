@@ -16,7 +16,7 @@
                 \today
 \vfill
 \normalsize     Copyright \copyright\ \number\year\ Institut National de
-                Recherche en Informatique et Automatique
+                Recherche en Informatique et en Automatique
 \end{center}
 \cleardoublepage
 \setcounter{page}{1}
@@ -30,8 +30,10 @@ This manual is also available in
 \url{ftp://ftp.inria.fr/lang/caml-light/ocaml-\ocamlversion-refman.pdf}{PDF}.
 \url{ftp://ftp.inria.fr/lang/caml-light/ocaml-\ocamlversion-refman.ps.gz}{Postscript},
 \url{ftp://ftp.inria.fr/lang/caml-light/ocaml-\ocamlversion-refman.dvi.gz}{DVI},
+as a
+\url{ftp://ftp.inria.fr/lang/caml-light/ocaml-\ocamlversion-refman.html.tar.gz}{bundle of HTML files},
 and as a
-\url{ftp://ftp.inria.fr/lang/caml-light/ocaml-\ocamlversion-refman.html.tar.gz}{bundle of HTML files}.
+\url{ftp://ftp.inria.fr/lang/caml-light/ocaml-\ocamlversion-refman.info.tar.gz}{bundle of Emacs Info files}.
 \rule{}{}
 \end{quote}
 \end{htmlonly}

@@ -99,10 +99,8 @@ The type @'<' method-type { ';' method-type } ';' '..'  '>'@ is the
 type of an object with methods and their associated types are described by
 @method-type_1, \ldots, method-type_n@, and possibly some other
 methods represented by the ellipsis.  This ellipsis actually is
-a special kind of type variable that stands for any number of extra
-fields. 
-
-% named row variable.
+a special kind of type variable (also called {\em row variable} in the
+literature) that stands for any number of extra method types.
 
 \subsubsection*{\#-types}
 \label{s:sharp-types}
@@ -119,3 +117,9 @@ Each type expression @'#' class-path@ defines a new type variable, so
 type @'#' class-path '->' '#' class-path@ is usually not the same as
 type @'#' class-path 'as' "'" ident '->' "'" ident@.
 %
+
+\subsubsection*{Variant and record types}
+
+There are no type expressions describing variant types nor record types,
+since those are always named, i.e. defined before use and referred to
+by name.  Type definitions are described in section~\ref{s:type-defs}.

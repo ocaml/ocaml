@@ -2,6 +2,7 @@
 \pdfsection{Type and exception definitions}
 
 \subsection{Type definitions}
+\label{s:type-defs}
 
 Type definitions bind type constructors to data types: either
 variant types, record types, type abbreviations, or abstract data

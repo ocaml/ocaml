@@ -188,4 +188,21 @@ rule: when a character sequence can be decomposed into two tokens in
 several different ways, the decomposition retained is the one with the
 longest first token.
 
+\subsubsection*{Line number directives}
 
+\begin{syntax}
+linenum-directive:
+        '#' {{"0" \ldots "9"}}
+      | '#' {{"0" \ldots "9"}} '"' { string-character } '"'
+;
+\end{syntax}
+
+Preprocessors that generate Caml source code can insert line number
+directives in their output so that error messages produced by the
+compiler contain line numbers and file names referring to the source
+file before preprocessing, instead of after preprocessing.
+A line number directive is composed of a "#" (sharp sign), followed by
+a positive integer (the source line number), optionally followed by a
+character string (the source file name).
+Line number directives are treated as blank characters during lexical
+analysis.

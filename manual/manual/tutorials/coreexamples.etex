@@ -122,8 +122,8 @@ float function as argument and returns an approximation of its
 derivative function:
 \begin{caml_example}
 let deriv f dx = function x -> (f(x +. dx) -. f(x)) /. dx;;
-let cos' = deriv sin 1e-6;;
-cos' pi;;
+let sin' = deriv sin 1e-6;;
+sin' pi;;
 \end{caml_example}
 Even function composition is definable:
 \begin{caml_example}
