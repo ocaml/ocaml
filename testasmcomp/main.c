@@ -77,5 +77,27 @@ int main(argc, argv)
   }
 #endif
 #endif
+#ifdef CHECKBOUND
+  { extern void checkbound1(), checkbound2();
+    extern void call_gen_code();
+    long x, y;
+    x = atoi(argv[1]);
+    if (argc >= 3) {
+      y = atoi(argv[2]);
+      if ((unsigned long) x < (unsigned long) y)
+        printf("Should not trap\n");
+      else
+        printf("Should trap\n");
+      call_gen_code(checkbound2, y, x);
+    } else {
+      if (2 < (unsigned long) x)
+        printf("Should not trap\n");
+      else
+        printf("Should trap\n");
+      call_gen_code(checkbound1, x);
+    }
+    printf("OK\n");
+  }
+#endif
   return 0;
 }

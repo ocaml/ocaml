@@ -103,6 +103,9 @@ tagged-integr.out: main.c tagged-integr.o $(ARCH).o
 arith.out: mainarith.c arith.o $(ARCH).o
 	$(CC) $(CFLAGS) -o arith.out mainarith.c arith.o $(ARCH).o
 
+checkbound.out: main.c checkbound.o $(ARCH).o
+	$(CC) $(CFLAGS) -o checkbound.out -DCHECKBOUND main.c checkbound.o $(ARCH).o
+
 .SUFFIXES:
 .SUFFIXES: .cmm .c .o .asm .S .ml .mli .cmo .cmi
 
