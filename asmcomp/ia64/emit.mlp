@@ -792,20 +792,27 @@ let tailrec_entry_point = ref 0
 let emit_instr i =
     match i.desc with
       Lend -> ()
-    | Lop(Imove) ->
-        insert "mov" (regs i.arg) (regs i.res)
-    | Lop(Ispill) ->
-        let offset = string_of_int (slot_offset_reg i.res.(0)) in
-        let r = new_temp_reg() in
-        insimm "addi" [| "sp" |] offset [| r |];
-        insert (if i.res.(0).typ = Float then "stfd" else "st8")
-               [| r; reg i.arg.(0) |] [| "stk" ^ offset |]
-    | Lop(Ireload) ->
-        let offset = string_of_int (slot_offset_reg i.arg.(0)) in
-        let r = new_temp_reg() in
-        insimm "addi" [| "sp" |] offset [| r |];
-        insert (if i.arg.(0).typ = Float then "ldfd" else "ld8")
-               [| r; "stk" ^ offset |] (regs i.res)
+    | Lop(Imove | Ispill | Ireload) ->
+        let src = i.arg.(0) and dst = i.res.(0) in
+        if src.loc <> dst.loc then begin        
+          match (src.loc, dst.loc) with
+            (Reg _, Reg _) ->
+              insert "mov" (regs i.arg) (regs i.res)
+          | (Reg _, Stack _) ->
+              let offset = string_of_int (slot_offset_reg dst) in
+              let r = new_temp_reg() in
+              insimm "addi" [| "sp" |] offset [| r |];
+              insert (if i.res.(0).typ = Float then "stfd" else "st8")
+                     [| r; reg src |] [| "stk" ^ offset |]
+          | (Stack _, Reg _) ->
+              let offset = string_of_int (slot_offset_reg src) in
+              let r = new_temp_reg() in
+              insimm "addi" [| "sp" |] offset [| r |];
+              insert (if i.arg.(0).typ = Float then "ldfd" else "ld8")
+                     [| r; "stk" ^ offset |] (regs i.res)
+          | (_, _) ->
+              assert false
+        end
     | Lop(Iconst_int n) ->
         let instr =
           if is_immediate_addl_nat n then "movi" else "movil" in
@@ -912,7 +919,7 @@ let emit_instr i =
           | Thirtytwo_unsigned -> "st4"
           | Thirtytwo_signed -> "st4"
           | Word -> "st8"
-          | Single -> "stf4"
+          | Single -> "stfs"
           | Double -> "stfd"
           | Double_u -> "stfd" in
         insert store_instr [| reg i.arg.(1); reg i.arg.(0) |] [| "heap" |]
@@ -955,7 +962,7 @@ let emit_instr i =
         let src = reg i.arg.(0) and dst = reg i.res.(0) in
         begin match ones_pos n with
           [] ->
-            insert "mov" [|src|] [|dst|]
+            insimm "movi" [||] "0" [|dst|]
         | [n] ->
             insimm "shli" [|src|] (string_of_int n) [|dst|]
         | [n; 0] when n <= 4 ->
@@ -1168,7 +1175,7 @@ let emit_instr i =
           `	ld4	r3 = [r3] ;;\n`;
           `	sxt4	r3 = r3 ;;\n`;
           `	add	r2 = r2, r3 ;;\n`;
-          `	mov	br6 = r2 ;;\n`;
+          `	mov	b6 = r2 ;;\n`;
           `	br	b6 ;;\n`;
           `	.align 4\n`;
           `{emit_label lbl_jumptbl}:\n`;
@@ -1280,7 +1287,7 @@ let emit_item = function
   | Clabel_address lbl ->
       `	data8	{emit_label (100000 + lbl)}\n`
   | Cstring s ->
-      emit_string_directive "	stringz	" s
+      emit_string_directive "	string	" s
   | Cskip n ->
       if n > 0 then `	.skip	{emit_int n}\n`
   | Calign n ->
