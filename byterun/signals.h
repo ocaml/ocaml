@@ -19,14 +19,18 @@
 #include "misc.h"
 #include "mlvalues.h"
 
+/* <private> */
 extern value signal_handlers;
 CAMLextern int volatile pending_signal;
 CAMLextern int volatile something_to_do;
 extern int volatile force_major_slice;
 CAMLextern int volatile async_signal_mode;
+/* </private> */
 
 CAMLextern void enter_blocking_section (void);
 CAMLextern void leave_blocking_section (void);
+
+/* <private> */
 void urge_major_slice (void);
 CAMLextern int convert_signal_number (int);
 void execute_signal(int signal_number, int in_signal_handler);
@@ -35,6 +39,7 @@ void process_event(void);
 CAMLextern void (*enter_blocking_section_hook)(void);
 CAMLextern void (*leave_blocking_section_hook)(void);
 CAMLextern void (* volatile async_action_hook)(void);
+/* </private> */
 
 #endif /* _signals_ */
 
