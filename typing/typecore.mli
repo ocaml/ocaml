@@ -95,3 +95,12 @@ val report_error: formatter -> error -> unit
 
 (* Forward declaration, to be filled in by Typemod.type_module *)
 val type_module: (Env.t -> Parsetree.module_expr -> Typedtree.module_expr) ref
+
+(* DYN *)
+(* Dangerous dynamizations must be checked their closedness after
+   the typing of whole the compilation unit. (The second 
+   Typemod.type_structure) *)
+val dangerous_dynamizations : 
+    (Location.t * type_expr * type_expr list) list ref 
+val is_mono_dynamization : type_expr list -> bool
+(* /DYN *)

@@ -39,9 +39,11 @@ let keyword_table =
     "begin", BEGIN;
     "class", CLASS;
     "constraint", CONSTRAINT;
+    "coerce", COERCE; (* DYN *)
     "do", DO;
     "done", DONE;
     "downto", DOWNTO;
+    "dynamic", DYNAMIC; (* DYN *) 
     "else", ELSE;
     "end", END;
     "exception", EXCEPTION;
@@ -285,6 +287,7 @@ rule token = parse
   | "<"  { LESS }
   | "<-" { LESSMINUS }
   | "="  { EQUAL }
+  | "=>"  { EQUALGREATER } (* DYN *)
   | "["  { LBRACKET }
   | "[|" { LBRACKETBAR }
   | "[<" { LBRACKETLESS }

@@ -20,6 +20,9 @@ val create: string -> t
 val create_persistent: string -> t
 val rename: t -> t
 val name: t -> string
+(* DYN *)
+val stamp: t -> int
+(* /DYN *)
 val unique_name: t -> string
 val persistent: t -> bool
 val equal: t -> t -> bool

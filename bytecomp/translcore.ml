@@ -357,6 +357,15 @@ let extract_float = function
     Const_base(Const_float f) -> f
   | _ -> fatal_error "Translcore.extract_float"
 
+(* DYN *)
+let make_block tag ll =
+  try
+    Lconst (Const_block (tag, List.map extract_constant ll))
+  with
+    _ -> Lprim (Pmakeblock (tag, Immutable), ll)
+;;
+(* /DYN *)
+
 (* To find reasonable names for let-bound and lambda-bound idents *)
 
 let rec name_pattern default = function
@@ -607,6 +616,14 @@ let rec transl_exp e =
       then lambda_unit
       else Lifthenelse (transl_exp cond, lambda_unit, assert_failed e.exp_loc)
   | Texp_assertfalse -> assert_failed e.exp_loc
+(* DYN *)
+  | Texp_dynamic (exp) ->
+      Lapply(Transltype.rtype_prim "dynamic_comp", 
+	     [ make_block 0 [ Transltype.transl_rtype_of_type exp.exp_type ];
+	       transl_exp exp ])
+  | Texp_coerce (arg, pat_typ_expr_list) ->
+      transl_coerce e arg pat_typ_expr_list
+(* /DYN *)
   | _ ->
       fatal_error "Translcore.transl"
 
@@ -818,6 +835,67 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
              List.fold_right update_field lbl_expr_list (Lvar copy_id))
     end
   end
+
+(* DYN *)
+and transl_coerce e arg pat_typ_expr_list =
+  (* It is really look alike with Texp_match, but its compilation
+     cannot be done with match compiler *)
+  (* Current implementation have no optimization *)
+  let id_dyn = Ident.create "dyn" 
+  and id_val = Ident.create "val" 
+  and id_rtyp = Ident.create "rtyp"
+  in
+
+  let action_compiler loc untuplify_fn repr pat expr =
+      Matching.for_function loc None (Lvar id_val) (transl_cases [pat,expr]) 
+	Partial (* I do not know it is partial or total... *)
+  in
+  let raise_num = next_raise_count () in
+  let rec case_compiler = function
+    | (vpat,tpat,action) :: xs ->
+(*
+	Transltype.inside_coerce_typecase := true; 
+*)
+	let rtpat = 
+	  try
+	    let result = Transltype.transl_rtype_of_type tpat in
+(*
+	    Transltype.inside_coerce_typecase := false;
+*)
+	    result
+	  with
+	    e -> 
+(*
+	      Transltype.inside_coerce_typecase := false;
+*)
+	      raise e
+	in
+	let r_num = next_raise_count () in
+	Lstaticcatch (
+	  Lifthenelse (Lapply( Transltype.rtype_prim "is_instance",
+			      [ Lvar id_rtyp; rtpat ]),
+	               (* like fun vpat -> action, but we exit, instead of
+			  raise *)
+		       action_compiler e.exp_loc (* incorrect *)
+			 !Clflags.native_code None vpat action,
+		       Lstaticraise (r_num,[])),
+	  (r_num, []),
+	  case_compiler xs )
+    | [] -> Lstaticraise(raise_num,[])
+  in
+  Llet(Strict, id_dyn, transl_exp arg,
+    Llet(Strict, id_val, Lprim(Pfield 0, [Lvar id_dyn]),
+      Llet(Strict, id_rtyp, Lprim(Pfield 1, [Lvar id_dyn]),
+        Lstaticcatch (case_compiler pat_typ_expr_list,
+                (raise_num, []),		      
+                (* JPF: stupid. I don't know how to raise it directly *)
+		Lapply( Transltype.rtype_prim "fail",
+		       [ Lvar id_rtyp;
+			 Lconst (Const_base(Const_string !Location.input_name));
+			 Lconst (Const_base(Const_int e.exp_loc.Location.loc_start));
+			 Lconst (Const_base(Const_int e.exp_loc.Location.loc_end)) ])))))
+;;
+(* /DYN *)
 
 (* Compile an exception definition *)
 

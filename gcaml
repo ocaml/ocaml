@@ -1,0 +1,3 @@
+#!/bin/sh
+
+boot/ocamlrun ./ocaml -I stdlib -I toplevel $*

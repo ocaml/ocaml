@@ -107,6 +107,10 @@ and expression_desc =
   | Pexp_letmodule of string * module_expr * expression
   | Pexp_assert of expression
   | Pexp_assertfalse
+(* DYN *)  
+  | Pexp_dynamic of expression 
+  | Pexp_coerce of expression * (pattern * expression) list
+(* /DYN *)  
 
 (* Value descriptions *)
 

@@ -29,6 +29,9 @@ val type_option: type_expr -> type_expr
 val type_nativeint: type_expr
 val type_int32: type_expr
 val type_int64: type_expr
+(* DYN *)
+val type_dyn: type_expr
+(* /DYN *)
 
 val path_int: Path.t
 val path_char: Path.t
@@ -44,6 +47,9 @@ val path_option: Path.t
 val path_nativeint: Path.t
 val path_int32: Path.t
 val path_int64: Path.t
+(* DYN *)
+val path_dyn: Path.t 
+(* /DYN *)
 
 val path_match_failure: Path.t
 val path_assert_failure : Path.t

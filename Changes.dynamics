@@ -1,0 +1,150 @@
+* design choice: dynamic and coerce as primitive
+
+  At this moment, we do not think about export/import. If dynamic/coerce
+  are done, they are straightforward (except type hash stuffs).
+
+************************************************************************ syntax
+
+	* add them into Lexer.keyword_table
+	* add COERCE and DYNAMIC to Parser.token and parser.mly
+	  - side effect: we cannot use the shorter name "dyn", since
+	    if we add "dyn" to the lexer.mll, we can no longer use it
+            for the name of dyn type.
+
+	* dynamic e (must take one argument)
+
+	* coerce e with
+	  | (pattern : type) => e
+	  ...
+	  | (pattern : type) => e
+
+	* added new symbol =>:
+		EQUALGREATER to Parser.token and %token list of parser.mly
+		"=>" case in lexer.mll
+	* added these rules in expr: in parser.mly
+	  added coerce_cases and coerce_action rules
+
+	* added Pexp_dynamic and Pexp_coerce to Parsetree.expression_desc
+
+----------------------------------------------------------------------- compile
+
+File "parsing/printast.ml", line 179, characters 2-3172:
+Warning: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+(Pexp_coerce (_, _)|Pexp_dynamic _)
+
+File "typing/typecore.ml", line 672, characters 2-17336:
+Warning: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+(Pexp_coerce (_, _)|Pexp_dynamic _)
+
+(we have problems around ocamldep and the other tools, but at this moment,
+we ignore them.)
+ 
+---------------------------------------------------------------------- /compile
+
+* ast printer
+	* added cases for them
+
+	  I used pattern_x_expression_case for the case of Pexp_coerce.
+	  Is it right ?
+
+Ok, syntax is done.
+
+******************************************************************* type system
+
+* predefined type "dyn"
+
+	* added predefined type "dyn" to Predef
+	
+* typed ast
+	* added Texp_dynamic and Texp_coerce to Typedtree.expression_desc
+	* added their cases in Typecore.type_exp
+	* added type_coerce_cases to Typecore
+
+* polymorphic dynamization
+	* dynamic (fun x -> x) creates ( fun x -> x : 'a -> 'a )
+	* typing problem
+
+		(fun x -> dynamic x) 1
+
+		- when typing the function (it is earlier than 1),
+		  dynamic : 'a -> dyn, where 'a is not generalizable.
+		  We cannot reject this here, since this 'a will be
+		  unified with int, because the fuction (fun x ->...)
+		  is applied to 1.
+		- we memorize these "must-be-closed-free-type-variables"
+		  and check they are really closed after the typing of
+		  the whole compilation module.
+		- closed checking must be done carefully, because
+		  type levels are unreliable once after we go out of
+		  let polymorphism:
+		
+			let f = fun x -> dynamic x in
+			...
+
+		  Here the level of the dynamic's dangerous type variable
+                  is modified to generic level by the generalization of f,
+		  but of course, we have to ban it.
+
+	* New exception Dynamic_not_closed added to Typemod.error
+	* Printer for Dynamic_not_closed added to Typemod.report_error
+
+	* Added Ctype.free_type_variables
+
+	* Typecore.dangerous_dynamizations is added to Typecore
+	* Wrapped version of Typemode.type_structure is added
+
+********************************************************************** run time
+
+* run time types
+
+  * dynamic values are tuples of values and the run time representation of
+    their types.
+
+  * These "run time types" are almost isomorphic to the Types.type_expr
+    except:
+
+      - id's are not necessary
+
+      - levels are not necessary; all the type variables are regarded
+	as quantified 
+
+      - Tconstr should be much simpler. We do not need abbrev_memo.
+
+	--> The type equality relationship introduced by type aliases is
+            lost at run time. 
+
+      - ???
+		- Function labels --> just string.
+		- Object types
+		- Poly variant types
+
+      - well, currently, I do not think about obj. and variants
+	(Outcometree.out_type may give some hint?)
+	
+  * we newly create stdlib/rtype.ml which contains:
+
+	* definition of run time types, rtype
+
+        * Rtype.is_instance is defined
+
+	* Rtype is added to stdlib/Makefile
+
+  * new exception Type_match_failure added to Rtype
+
+  * dynamic and coerce run time codes are added to Rtype
+
+----------------------------------------------------------- compile + bootstrap
+
+*********************************************************************** compile
+
+* type -> rtype
+
+	* added new file bytecom/transltype.ml 
+	  (added transltype.cmo to COMP in Makefile)
+	 
+	  - added Ident.stamp to retrieve stamp
+		(for conversion from ident to rident)
+
+	* added Translcore.make_block

@@ -54,6 +54,7 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/typemod.cmo
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
+  bytecomp/transltype.cmo \
   bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
   bytecomp/translobj.cmo bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
@@ -108,11 +109,15 @@ PERVASIVES=arg array buffer callback char digest filename format gc hashtbl \
   lexing list map obj parsing pervasives printexc printf queue random \
   set sort stack string stream sys oo genlex topdirs toploop weak lazy \
   marshal int32 int64 nativeint outcometree \
-  arrayLabels listLabels stringLabels stdLabels
+  arrayLabels listLabels stringLabels stdLabels \
+  rtype
 
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries camlp4out $(DEBUGGER)
+#JPF# I am not intrested in otherlibraries, camlp4 and debugger...
+#JPF# all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
+#JPF# 	otherlibraries camlp4out $(DEBUGGER)
+all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml
+
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -232,7 +237,7 @@ install: FORCE
           (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
         done
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
-	cd camlp4; $(MAKE) install
+	if test -d camlp4; then cd camlp4; $(MAKE) install; fi
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); else :; fi
 
 # Installation of the native-code compiler
@@ -525,34 +530,34 @@ otherlibrariesopt:
         done
 partialclean::
 	for i in $(OTHERLIBRARIES); do \
-          (cd otherlibs/$$i; $(MAKE) partialclean); \
+          (if test -d otherlibs/$$i; then cd otherlibs/$$i; $(MAKE) partialclean; fi); \
         done
 clean::
-	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) clean); done
+	for i in $(OTHERLIBRARIES); do (if test -d otherlibs/$$i; then cd otherlibs/$$i; $(MAKE) clean; fi); done
 alldepend::
-	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) depend); done
+	for i in $(OTHERLIBRARIES); do (if test -d otherlibs/$$i; then cd otherlibs/$$i; $(MAKE) depend; fi); done
 
 # The replay debugger
 
 ocamldebugger: ocamlc ocamlyacc ocamllex
-	cd debugger; $(MAKE) all
+	if test -d debugger; then cd debugger; $(MAKE) all; fi
 partialclean::
-	cd debugger; $(MAKE) clean
+	if test -d debugger; then cd debugger; $(MAKE) clean; fi
 alldepend::
-	cd debugger; $(MAKE) depend
+	if test -d debugger; then cd debugger; $(MAKE) depend; fi
 
 # Camlp4
 
 camlp4out: ocamlc
-	cd camlp4; $(MAKE) all
+	if test -d camlp4; then cd camlp4; $(MAKE) all; fi
 camlp4opt: ocamlopt
-	cd camlp4; $(MAKE) opt
+	if test -d camlp4; then cd camlp4; $(MAKE) opt; fi
 camlp4optopt: ocamlopt
-	cd camlp4; $(MAKE) optp4
+	if test -d camlp4; then cd camlp4; $(MAKE) optp4; fi
 partialclean::
-	cd camlp4; $(MAKE) clean
+	if test -d camlp4; then cd camlp4; $(MAKE) clean; fi
 alldepend::
-	cd camlp4; $(MAKE) depend
+	if test -d camlp4; then cd camlp4; $(MAKE) depend; fi
 
 # Default rules
 

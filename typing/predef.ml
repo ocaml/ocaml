@@ -32,6 +32,9 @@ and ident_option = Ident.create "option"
 and ident_nativeint = Ident.create "nativeint"
 and ident_int32 = Ident.create "int32"
 and ident_int64 = Ident.create "int64"
+(* DYN *)
+and ident_dyn = Ident.create "dyn"
+(* /DYN *)
 
 let path_int = Pident ident_int
 and path_char = Pident ident_char
@@ -47,6 +50,9 @@ and path_option = Pident ident_option
 and path_nativeint = Pident ident_nativeint
 and path_int32 = Pident ident_int32
 and path_int64 = Pident ident_int64
+(* DYN *)
+and path_dyn = Pident ident_dyn
+(* /DYN *)
 
 let type_int = newgenty (Tconstr(path_int, [], ref Mnil))
 and type_char = newgenty (Tconstr(path_char, [], ref Mnil))
@@ -61,6 +67,9 @@ and type_option t = newgenty (Tconstr(path_option, [t], ref Mnil))
 and type_nativeint = newgenty (Tconstr(path_nativeint, [], ref Mnil))
 and type_int32 = newgenty (Tconstr(path_int32, [], ref Mnil))
 and type_int64 = newgenty (Tconstr(path_int64, [], ref Mnil))
+(* DYN *)
+and type_dyn = newgenty (Tconstr(path_dyn, [], ref Mnil))
+(* /DYN *)
 
 let ident_match_failure = Ident.create "Match_failure"
 and ident_out_of_memory = Ident.create "Out_of_memory"
@@ -144,6 +153,9 @@ let build_initial_env add_type add_exception empty_env =
   add_exception ident_division_by_zero [] (
   add_exception ident_assert_failure
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
+(* DYN *)
+  add_type ident_dyn decl_abstr (
+(* /DYN *)
   add_type ident_int64 decl_abstr (
   add_type ident_int32 decl_abstr (
   add_type ident_nativeint decl_abstr (
@@ -158,7 +170,7 @@ let build_initial_env add_type add_exception empty_env =
   add_type ident_string decl_abstr (
   add_type ident_char decl_abstr (
   add_type ident_int decl_abstr (
-    empty_env)))))))))))))))))))))))))
+    empty_env)))))))))))))))))))))))))) (* DYN : added one closing *)
 
 let builtin_values =
   List.map (fun id -> Ident.make_global id; (Ident.name id, id))

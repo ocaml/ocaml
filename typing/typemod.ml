@@ -36,6 +36,9 @@ type error =
   | Non_generalizable of type_expr
   | Non_generalizable_class of Ident.t * class_declaration
   | Non_generalizable_module of module_type
+(* DYN *)
+  | Dynamic_not_closed of type_expr
+(* /DYN *)
 
 exception Error of Location.t * error
 
@@ -470,6 +473,32 @@ and type_structure env sstr =
          final_env)
   in type_struct env sstr
 
+(* DYN *)
+(* Wrapping type_structure with the type closedness check against 
+   possibly dangerous dynamizations *)
+let type_structure env sstr =
+  Typecore.dangerous_dynamizations := [];
+  let str = type_structure env sstr in
+  List.iter (fun (loc,typ,vars) ->
+    if not (Typecore.is_mono_dynamization vars) then begin
+      (* The levels of type variables may be generalized by 
+	 outer polymorphisms. We make it ungeneralized 
+	 just for error printing. (We do not consider a lot
+	 about the level consistency.) *)
+      List.iter (fun var -> 
+	let rec ungeneralize ty =
+	  let ty = Ctype.repr ty in
+	  if ty.level >= Btype.lowest_level then begin (* not visited *)
+	    ty.level <- Btype.pivot_level - Btype.lowest_level; (* marked and lowered *)
+	    Btype.iter_type_expr ungeneralize ty
+	  end
+	in
+	ungeneralize var) vars;
+      raise (Error (loc, Dynamic_not_closed typ))
+    end) (List.rev !Typecore.dangerous_dynamizations);
+  str
+(* /DYN *)
+
 (* Fill in the forward declaration *)
 let _ =
   Typecore.type_module := type_module
@@ -560,3 +589,9 @@ let report_error ppf = function
       fprintf ppf
         "@[The type of this module,@ %a,@ \
            contains type variables that cannot be generalized@]" modtype mty
+(* DYN *)
+  | Dynamic_not_closed typ ->
+      reset_and_mark_loops typ;
+      fprintf ppf "This expression cannot be dynamized \
+	because of its non closed type@ %a@ " type_scheme typ;
+(* /DYN *)

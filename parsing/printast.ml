@@ -271,6 +271,15 @@ and expression i ppf x =
       expression i ppf e;
   | Pexp_assertfalse ->
       line i ppf "Pexp_assertfalse";
+(* DYN *)
+  | Pexp_dynamic (e) ->
+      line i ppf "Pexp_dynamic";
+      expression i ppf e;
+  | Pexp_coerce (e, pexps) ->
+      line i ppf "Pexp_coerce";
+      expression i ppf e;
+      list i pattern_x_expression_case ppf pexps;
+(* /DYN *)
 
 and value_description i ppf x =
   line i ppf "value_description\n";

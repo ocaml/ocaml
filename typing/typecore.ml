@@ -668,6 +668,34 @@ let unify_exp env exp expected_ty =
   with Unify trace ->
     raise(Error(exp.exp_loc, Expr_type_clash(trace)))
 
+(* DYN *)
+(* Dangerous dynamizations must be checked their closedness after
+   the typing of whole the compilation unit. (The second 
+   Typemod.type_structure) *)
+let dangerous_dynamizations = ref ([] : (Location.t * type_expr * type_expr list) list) 
+;;
+
+let get_dangerous_dynamizations typ =
+  Ctype.free_type_variables typ
+;;
+
+let is_mono_dynamization typs =
+  let rec has_type_variable ty =
+    let ty = repr ty in
+    begin match ty.desc with
+    | Tvar -> raise Exit
+    | _ -> ()
+    end;
+    Btype.iter_type_expr has_type_variable ty
+  in
+  try 
+    List.iter has_type_variable typs; true
+  with
+  | Exit -> false
+;;
+
+(* /DYN *)
+
 let rec type_exp env sexp =
   match sexp.pexp_desc with
     Pexp_ident lid ->
@@ -1109,6 +1137,38 @@ let rec type_exp env sexp =
          exp_type = newvar ();
          exp_env = env;
        }
+(* DYN *)
+  | Pexp_dynamic (se) ->
+      begin_def ();
+      let e = type_exp env se in
+      end_def ();
+      if is_nonexpansive e then generalize e.exp_type 
+      else make_nongen e.exp_type;
+      if not (Ctype.closed_schema e.exp_type) then begin
+	(* We do not immediately raise an error here, since these
+	   dangerous variables may be unified with something closed *)
+	dangerous_dynamizations :=
+	  (se.pexp_loc, e.exp_type, get_dangerous_dynamizations e.exp_type) 
+	    :: !dangerous_dynamizations
+      end;
+      { exp_desc= Texp_dynamic e;
+	exp_loc= sexp.pexp_loc;
+	exp_type= Predef.type_dyn;
+	exp_env= env;
+      }	
+  | Pexp_coerce(sarg, caselist) ->
+      let arg = type_expect env sarg Predef.type_dyn in
+      let ty_res = newvar () in
+      let cases = type_coerce_cases env ty_res caselist in
+(* Usually it is partial ! We do not check its exhaustiveness like match.
+      Parmatch.check_unused cases;
+      Parmatch.check_partial sexp.pexp_loc cases;
+*)
+      { exp_desc = Texp_coerce (arg, cases);
+        exp_loc = sexp.pexp_loc;
+        exp_type = ty_res;
+        exp_env = env }
+(* /DYN *)
 
 and type_argument env sarg ty_expected =
   let rec no_labels ty =
@@ -1487,6 +1547,45 @@ and type_cases ?(in_function=false) env ty_arg ty_res partial_loc caselist =
   List.iter (fun (pat, _) -> iter_pattern check_unused_variant pat) cases;
   Parmatch.check_unused env cases;
   cases, partial
+
+(* DYN *)
+(* Typing of coerce match cases *)
+and type_coerce_cases env ty_res caselist =
+  List.map (fun (spat, sexp) ->
+    (* pattern variables are polymorphic! *)
+    begin_def ();
+(* At this moment we have no _ type pattern *)
+(*
+    Ctype.inside_coerce_typecase := true;
+*)
+    let (pat, ext_env) = 
+      try 
+	let result = type_pattern env spat in
+(*
+        Ctype.inside_coerce_typecase := false;
+*)
+	result
+      with
+	e -> 
+(*
+          Ctype.inside_coerce_typecase := false;
+*)
+	  raise e
+    in
+    end_def ();
+    generalize pat.pat_type;
+    Format.print_string "Pattern: "; 
+    Printtyp.type_scheme Format.std_formatter pat.pat_type;
+    Format.print_newline ();
+
+(* Why need this ???
+    let typ' = Ctype.instance typ in
+    if not (moregeneral env true pat.pat_type typ') then
+      raise (Error (pat.pat_loc, Generic_type_case_mismatch (pat.pat_type, typ)));
+*)
+    let exp = type_expect ext_env sexp ty_res in
+    (pat, pat.pat_type, exp)) caselist
+(* /DYN *)
 
 (* Typing of let bindings *)
 

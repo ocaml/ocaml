@@ -76,6 +76,10 @@ and expression_desc =
   | Texp_letmodule of Ident.t * module_expr * expression
   | Texp_assert of expression
   | Texp_assertfalse
+(* DYN *)
+  | Texp_dynamic of expression
+  | Texp_coerce of expression * (pattern * Types.type_expr * expression) list
+(* /DYN *)
 
 and meth =
     Tmeth_name of string

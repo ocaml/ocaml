@@ -400,6 +400,14 @@ let rec closed_type ty =
       []           -> ()
   | (v, real) :: _ -> raise (Non_closed (v, real))
 
+(* DYN *)
+let free_type_variables ty =
+  let res = free_vars ty in
+  unmark_type ty;
+  List.map fst res (* I do not mind about real or not *)
+;;
+(* /DYN *)
+
 let closed_parameterized_type params ty =
   List.iter mark_type params;
   try

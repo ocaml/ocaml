@@ -192,6 +192,7 @@ let bigarray_set arr arg newval =
 %token COLONCOLON
 %token COLONEQUAL
 %token COLONGREATER
+%token COERCE /* DYN */
 %token COMMA
 %token CONSTRAINT
 %token DO
@@ -199,10 +200,12 @@ let bigarray_set arr arg newval =
 %token DOT
 %token DOTDOT
 %token DOWNTO
+%token DYNAMIC /* DYN */
 %token ELSE
 %token END
 %token EOF
 %token EQUAL
+%token EQUALGREATER /* DYN */
 %token EXCEPTION
 %token EXTERNAL
 %token FALSE
@@ -834,6 +837,12 @@ expr:
       { mkassert $2 }
   | LAZY simple_expr %prec prec_appl
       { mklazy $2 }
+/* DYN */
+ | DYNAMIC expr
+      { mkexp(Pexp_dynamic($2)) }
+ | COERCE seq_expr WITH opt_bar coerce_cases %prec prec_match
+      { mkexp(Pexp_coerce($2, List.rev $5)) }
+/* /DYN */
 ;
 simple_expr:
     val_longident
@@ -942,6 +951,15 @@ let_binding:
   | pattern EQUAL seq_expr %prec prec_let
       { ($1, $3) }
 ;
+/* DYN */
+coerce_cases:
+    pattern coerce_action                         { [$1, $2] }
+  | coerce_cases BAR pattern coerce_action        { ($3, $4) :: $1 }
+;
+coerce_action:
+    EQUALGREATER seq_expr                       { $2 }
+;
+/* /DYN */
 fun_binding:
     EQUAL seq_expr %prec prec_let
       { $2 }
