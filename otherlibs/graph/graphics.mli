@@ -19,7 +19,7 @@ exception Graphic_failure of string
 (** Raised by the functions below when they encounter an error. *)
 
 
-(** {2 Initializations} *)
+(** {6 Initializations} *)
 
 val open_graph : string -> unit
 (** Show the graphics window or switch the screen to graphic mode.
@@ -47,7 +47,7 @@ external size_y : unit -> int = "gr_size_y"
    Drawings outside of this rectangle are clipped, without causing
    an error. The origin (0,0) is at the lower left corner. *)
 
-(** {2 Colors} *)
+(** {6 Colors} *)
 
 type color = int
 (** A color is specified by its R, G, B components. Each component
@@ -75,7 +75,7 @@ val foreground : color
    The initial drawing color is [foreground]. *)
 
 
-(** {3 Some predefined colors} *)
+(** {7 Some predefined colors} *)
 
 val black : color
 val white : color
@@ -87,7 +87,7 @@ val cyan : color
 val magenta : color
 
 
-(** {2 Point and line drawing} *)
+(** {6 Point and line drawing} *)
 
 external plot : int -> int -> unit = "gr_plot"
 (** Plot the given point with the current drawing color. *)
@@ -175,7 +175,7 @@ external set_line_width : int -> unit = "gr_set_line_width"
    and a faster, but less precise drawing algorithm than the one
    used when [set_line_width 1] is specified. *)
 
-(** {2 Text drawing} *)
+(** {6 Text drawing} *)
 
 external draw_char : char -> unit = "gr_draw_char"
 (** See {!Graphics.draw_string}.*)
@@ -200,7 +200,7 @@ external text_size : string -> int * int = "gr_text_size"
    the current font and size. *)
 
 
-(** {2 Filling} *)
+(** {6 Filling} *)
 
 external fill_rect : int -> int -> int -> int -> unit = "gr_fill_rect"
 (** [fill_rect x y w h] fills the rectangle with lower left corner
@@ -225,7 +225,7 @@ val fill_circle : int -> int -> int -> unit
    parameters are the same as for {!Graphics.draw_circle}. *)
 
 
-(** {2 Images} *)
+(** {6 Images} *)
 
 type image
 (** The abstract type for images, in internal representation.
@@ -269,7 +269,7 @@ external blit_image : image -> int -> int -> unit = "gr_blit_image"
    [img] are left unchanged. *)
 
 
-(** {2 Mouse and keyboard events} *)
+(** {6 Mouse and keyboard events} *)
 
 type status =
   { mouse_x : int;              (** X coordinate of the mouse *)
@@ -300,7 +300,7 @@ external wait_next_event : event list -> status = "gr_wait_event"
    are queued, and dequeued one by one when the [Key_pressed]
    event is specified. *)
 
-(** {2 Mouse and keyboard polling} *)
+(** {6 Mouse and keyboard polling} *)
 
 val mouse_pos : unit -> int * int
 (** Return the position of the mouse cursor, relative to the
@@ -320,13 +320,13 @@ val key_pressed : unit -> bool
    would not block. *)
 
 
-(** {2 Sound} *)
+(** {6 Sound} *)
 
 external sound : int -> int -> unit = "gr_sound"
 (** [sound freq dur] plays a sound at frequency [freq] (in hertz)
    for a duration [dur] (in milliseconds). *)
 
-(** {2 Double buffering} *)
+(** {6 Double buffering} *)
 
 val auto_synchronize : bool -> unit
 (** By default, drawing takes place both on the window displayed

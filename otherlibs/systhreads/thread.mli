@@ -18,7 +18,7 @@
 type t
 (** The type of thread handles. *)
 
-(** {2 Thread creation and termination} *)
+(** {6 Thread creation and termination} *)
 
 val create : ('a -> 'b) -> 'a -> t
 (** [Thread.create funct arg] creates a new thread of control,
@@ -47,7 +47,7 @@ val exit : unit -> unit
 val kill : t -> unit
 (** Terminate prematurely the thread whose handle is given. *)
 
-(** {2 Suspending threads} *)
+(** {6 Suspending threads} *)
 
 val delay: float -> unit
 (** [delay d] suspends the execution of the calling thread for
