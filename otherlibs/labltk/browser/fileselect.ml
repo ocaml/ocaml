@@ -119,11 +119,11 @@ let f :title action:proc ?:dir{=Unix.getcwd ()}
         let files = ls :dir :pattern in
         Sort.merge order:(<) files
           (List.fold_left files :acc
-           fun:(fun :acc name -> List2.exclude elt:name acc))
+           fun:(fun :acc name -> List2.exclude item:name acc))
       end
       else
         List.fold_left directories acc:(ls :dir :pattern)
-          fun:(fun :acc dir -> List2.exclude elt:dir acc)
+          fun:(fun :acc dir -> List2.exclude item:dir acc)
     in
       Textvariable.set filter_var to:filter;
       Textvariable.set selection_var to:(dir ^ deffile); 

@@ -1,6 +1,6 @@
 (* $Id$ *)
 
-let exclude elt:x l = List.filter l pred:((<>) x)
+let exclude item:x l = List.filter l pred:((<>) x)
 
 let rec flat_map fun:f = function
     [] -> []

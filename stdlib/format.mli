@@ -313,7 +313,8 @@ val flush_str_formatter : unit -> string;;
            [str_formatter] is defined as [formatter_of_buffer stdbuf]. *)
 
 val make_formatter :
-        (string -> int -> int -> unit) -> (unit -> unit) -> formatter;;
+        out:(buffer:string -> pos:int -> len:int -> unit) ->
+        flush:(unit -> unit) -> formatter;;
         (* [make_formatter out flush] returns a new formatter that
            writes according to the output function [out], and the flushing
            function [flush]. Hence, a formatter to out channel [oc]
@@ -354,14 +355,16 @@ val pp_set_ellipsis_text : formatter -> string -> unit;;
 val pp_get_ellipsis_text : formatter -> unit -> string;;
 val pp_set_formatter_out_channel : formatter -> out_channel -> unit;;
 val pp_set_formatter_output_functions : formatter ->
-        (string -> int -> int -> unit) -> (unit -> unit) -> unit;;
-val pp_get_formatter_output_functions :
-        formatter -> unit -> (string -> int -> int -> unit) * (unit -> unit);;
+      out:(buffer:string -> pos:int -> len:int -> unit) ->
+      flush:(unit -> unit) -> unit;;
+val pp_get_formatter_output_functions : formatter -> unit ->
+      (buffer:string -> pos:int -> len:int -> unit) * (unit -> unit);;
 val pp_set_all_formatter_output_functions : formatter ->
-      (string -> int -> int -> unit) -> (unit -> unit) ->
-      (unit -> unit) -> (int -> unit) -> unit;;
+      out:(buffer:string -> pos:int -> len:int -> unit) ->
+      flush:(unit -> unit) ->
+      newline:(unit -> unit) -> space:(int -> unit) -> unit;;
 val pp_get_all_formatter_output_functions : formatter -> unit ->
-      (string -> int -> int -> unit) * (unit -> unit) *
+      (buffer:string -> pos:int -> len:int -> unit) * (unit -> unit) *
       (unit -> unit) * (int -> unit);;
         (* The basic functions to use with formatters.
            These functions are the basic ones: usual functions

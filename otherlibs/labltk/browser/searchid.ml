@@ -154,7 +154,7 @@ let rec included :prefix t1 t2 =
       let l2 = if arr len1 in:len2 < 100 then l2 else
           let ll1 = get_options (fst (List.split l1)) in
           List.filter l2
-          pred:(fun (l,_) -> not (is_opt l) or List.mem elt:l ll1)
+          pred:(fun (l,_) -> not (is_opt l) or List.mem item:l ll1)
       in
       len1 <= len2 &
       List.exists (List2.flat_map fun:permutations (choose len1 in:l2)) pred:
@@ -416,7 +416,7 @@ let search_structure str :name :kind :prefix =
         Pstr_value (_, l) when kind = Pvalue ->
           List.iter l fun:
             begin fun (pat,_) ->
-              if List.mem elt:name (bound_variables pat)
+              if List.mem item:name (bound_variables pat)
               then loc := pat.ppat_loc.loc_start
             end;
           false

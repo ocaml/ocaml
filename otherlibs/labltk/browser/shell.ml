@@ -152,12 +152,7 @@ let get_all () =
   all
 
 let may_exec prog =
-  try
-    let stats = Unix.stat prog in
-    stats.Unix.st_perm land 1 <> 0 or
-    stats.Unix.st_perm land 8 <> 0
-      & List.mem elt:stats.Unix.st_gid (Array.to_list (Unix.getgroups ())) or
-    stats.Unix.st_perm land 64 <> 0 & stats.Unix.st_uid = Unix.getuid ()
+  try Unix.access file:prog perm:[Unix.X_OK]; true
   with Unix.Unix_error _ -> false
 
 let f :prog :title =

@@ -29,7 +29,7 @@ let cCAMLtoTKtext_index = (cCAMLtoTKindex : text_index -> tkArgs)
 
 let cTKtoCAMLindex s =
   try
-   let p = String.index elt:'.' s in
+   let p = String.index char:'.' s in
     `Linechar (int_of_string (String.sub s pos:0 len:p), 
              int_of_string (String.sub s pos:(p+1) 
                                          len:(String.length s - p - 1)))
@@ -40,7 +40,7 @@ let cTKtoCAMLindex s =
 
 let cTKtoCAMLtext_index s = 
   try
-   let p = String.index elt:'.' s in
+   let p = String.index char:'.' s in
     `Linechar (int_of_string (String.sub s pos:0 len:p), 
              int_of_string (String.sub s pos:(p+1) 
                                          len:(String.length s - p - 1)))

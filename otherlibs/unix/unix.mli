@@ -292,9 +292,9 @@ type stats =
 
         (* The informations returned by the [stat] calls. *)
 
-val stat : string -> stats
+val stat : file:string -> stats
         (* Return the information for the named file. *)
-val lstat : string -> stats
+val lstat : file:string -> stats
         (* Same as [stat], but in case the file is a symbolic link,
            return the information for the link itself. *)
 val fstat : file_descr -> stats
@@ -304,11 +304,11 @@ val fstat : file_descr -> stats
 
 (*** Operations on file names *)
 
-val unlink : string -> unit
+val unlink : file:string -> unit
         (* Removes the named file *)
 val rename : old:string -> new:string -> unit
         (* [rename old new] changes the name of a file from [old] to [new]. *)
-val link : string -> as:string -> unit
+val link : source:string -> dest:string -> unit
         (* [link source dest] creates a hard link named [dest] to the file
            named [new]. *)
 
@@ -399,7 +399,7 @@ val pipe : unit -> file_descr * file_descr
            for reading, that's the exit to the pipe. The second component is
            opened for writing, that's the entrance to the pipe. *) 
 
-val mkfifo : string -> file_perm -> unit
+val mkfifo : string -> perm:file_perm -> unit
         (* Create a named pipe with the given permissions. *)
 
 
@@ -458,7 +458,7 @@ val close_process_full: in_channel * out_channel * in_channel -> process_status
 
 (*** Symbolic links *)
 
-val symlink : string -> as:string -> unit
+val symlink : source:string -> dest:string -> unit
         (* [symlink source dest] creates the file [dest] as a symbolic link
            to the file [source]. *)
 val readlink : string -> string

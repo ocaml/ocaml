@@ -21,7 +21,7 @@ let list_modules :path =
       String.capitalize (Filename.chop_suffix x suff:".cmi")
     end in
     List.fold_left l :acc
-     fun:(fun :acc elt -> if List.mem acc :elt then acc else elt :: acc)
+     fun:(fun :acc item -> if List.mem acc :item then acc else item :: acc)
   end
 
 let reset_modules box =
@@ -227,12 +227,12 @@ let start_shell () =
     Jg_entry.create entries command:(fun _ -> Button.invoke ok)
   and names = List.map fun:fst (Shell.get_all ()) in
   Entry.insert e1 index:`End text:!default_shell;
-  while List.mem names elt:("Shell #" ^ string_of_int !shell_counter) do
+  while List.mem names item:("Shell #" ^ string_of_int !shell_counter) do
     incr shell_counter
   done;
   Entry.insert e2 index:`End text:("Shell #" ^ string_of_int !shell_counter);
   Button.configure ok command:(fun () ->
-      if not (List.mem names elt:(Entry.get e2)) then begin
+      if not (List.mem names item:(Entry.get e2)) then begin
         default_shell := Entry.get e1;
         Shell.f prog:!default_shell title:(Entry.get e2);
         destroy tl

@@ -47,12 +47,12 @@ let add_to_path :dirs ?:base{=""} box =
   in
   set_load_path
     (dirs @ List.fold_left dirs acc:(get_load_path ())
-              fun:(fun :acc x -> List2.exclude elt:x acc))
+              fun:(fun :acc x -> List2.exclude item:x acc))
 
 let remove_path box :dirs =
   set_load_path
     (List.fold_left dirs acc:(get_load_path ())
-       fun:(fun :acc x -> List2.exclude elt:x acc))
+       fun:(fun :acc x -> List2.exclude item:x acc))
 
 (* main function *)
 

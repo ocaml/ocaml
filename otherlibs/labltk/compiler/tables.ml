@@ -235,7 +235,7 @@ let rec has_callback = function
 
 (*** Returned types ***)
 let really_add ty = 
-  if List.mem elt:ty !types_returned then ()
+  if List.mem item:ty !types_returned then ()
   else types_returned := ty :: !types_returned
 
 let rec add_return_type = function

@@ -75,28 +75,28 @@ val foreground: color
 
 (*** Point and line drawing *)
 
-external plot : int -> int -> unit = "gr_plot"
+external plot : x:int -> y:int -> unit = "gr_plot"
         (* Plot the given point with the current drawing color. *)
-external point_color : int -> int -> color = "gr_point_color"
+external point_color : x:int -> y:int -> color = "gr_point_color"
         (* Return the color of the given point. *)
-external moveto : int -> int -> unit = "gr_moveto"
+external moveto : x:int -> y:int -> unit = "gr_moveto"
         (* Position the current point. *)
 external current_point : unit -> int * int = "gr_current_point"
         (* Return the position of the current point. *)
-external lineto : int -> int -> unit = "gr_lineto"
+external lineto : x:int -> y:int -> unit = "gr_lineto"
         (* Draw a line with endpoints the current point and the given point,
            and move the current point to the given point. *)
 external draw_arc :
-	int -> int -> rx:int -> ry:int -> start:int -> stop:int -> unit
+	x:int -> y:int -> rx:int -> ry:int -> start:int -> stop:int -> unit
                = "gr_draw_arc" "gr_draw_arc_nat"
         (* [draw_arc x y rx ry a1 a2] draws an elliptical arc with center
            [x,y], horizontal radius [rx], vertical radius [ry], from angle
            [a1] to angle [a2] (in degrees). The current point is unchanged. *)
-val draw_ellipse : int -> int -> rx:int -> ry:int -> unit
+val draw_ellipse : x:int -> y:int -> rx:int -> ry:int -> unit
         (* [draw_ellipse x y rx ry] draws an ellipse with center
            [x,y], horizontal radius [rx] and vertical radius [ry].
            The current point is unchanged.  *)
-val draw_circle : int -> int -> r:int -> unit
+val draw_circle : x:int -> y:int -> r:int -> unit
         (* [draw_circle x y r] draws a circle with center [x,y] and
            radius [r]. The current point is unchanged. *)
 external set_line_width : int -> unit = "gr_set_line_width"
@@ -123,21 +123,21 @@ external text_size : string -> int * int = "gr_text_size"
 
 (*** Filling *)
 
-external fill_rect : int -> int -> w:int -> h:int -> unit = "gr_fill_rect"
+external fill_rect : x:int -> y:int -> w:int -> h:int -> unit = "gr_fill_rect"
         (* [fill_rect x y w h] fills the rectangle with lower left corner
            at [x,y], width [w] and height [h], with the current color. *)
 external fill_poly : (int * int) array -> unit = "gr_fill_poly"
         (* Fill the given polygon with the current color. The array
            contains the coordinates of the vertices of the polygon. *)
 external fill_arc :
-        int -> int -> rx:int -> ry:int -> start:int -> stop:int -> unit
+        x:int -> y:int -> rx:int -> ry:int -> start:int -> stop:int -> unit
                = "gr_fill_arc" "gr_fill_arc_nat"
         (* Fill an elliptical pie slice with the current color. The
            parameters are the same as for [draw_arc]. *)
-val fill_ellipse : int -> int -> rx:int -> ry:int -> unit
+val fill_ellipse : x:int -> y:int -> rx:int -> ry:int -> unit
         (* Fill an ellipse with the current color. The
            parameters are the same as for [draw_ellipse]. *)
-val fill_circle : int -> int -> r:int -> unit
+val fill_circle : x:int -> y:int -> r:int -> unit
         (* Fill a circle with the current color. The
            parameters are the same as for [draw_circle]. *)
 
@@ -164,7 +164,7 @@ external dump_image : image -> color array array = "gr_dump_image"
         (* Convert an image to a color matrix. *)
 external draw_image : image -> x:int -> y:int -> unit = "gr_draw_image"
         (* Draw the given image with lower left corner at the given point. *)
-val get_image : int -> int -> w:int -> h:int -> image
+val get_image : x:int -> y:int -> w:int -> h:int -> image
         (* Capture the contents of a rectangle on the screen as an image.
            The parameters are the same as for [fill_rect]. *)
 external create_image : w:int -> h:int -> image = "gr_create_image"

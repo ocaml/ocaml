@@ -38,9 +38,9 @@ let compiler_preferences () =
   pack [ok;cancel] side:`Left fill:`X expand:true;
   pack [buttons] side:`Bottom fill:`X
 
-let rec exclude elt:txt = function
+let rec exclude item:txt = function
     [] -> []
-  | x :: l -> if txt.number = x.number then l else x :: exclude elt:txt l
+  | x :: l -> if txt.number = x.number then l else x :: exclude item:txt l
 
 let goto_line tw =
   let tl = Jg_toplevel.titled "Go to" in
@@ -228,7 +228,7 @@ class editor :top :menus = object (self)
   method set_edit txt  =
     if windows <> [] then
       Pack.forget [(List.hd windows).frame];
-    windows <- txt :: exclude elt:txt windows;
+    windows <- txt :: exclude item:txt windows;
     self#reset_window_menu;
     current_tw <- txt.tw;
     Checkbutton.configure label text:(Filename.basename txt.name)
@@ -255,7 +255,7 @@ class editor :top :menus = object (self)
       action:(`Set ([`Char], fun ev ->
         if ev.ev_Char <> "" &
           (ev.ev_Char.[0] >= ' ' or
-           List.mem elt:ev.ev_Char.[0]
+           List.mem item:ev.ev_Char.[0]
              (List.map fun:control ['d'; 'h'; 'i'; 'k'; 'o'; 't'; 'w'; 'y']))
         then Textvariable.set txt.modified to:"modified"));
     bind tw events:[[],`KeyPressDetail"Tab"]
@@ -386,7 +386,7 @@ class editor :top :menus = object (self)
         | `no -> ()
         | `cancel -> raise Exit
         end;
-      windows <- exclude elt:txt windows;
+      windows <- exclude item:txt windows;
       if windows = [] then
         self#new_window (current_dir ^ "/untitled")
       else self#set_edit (List.hd windows);

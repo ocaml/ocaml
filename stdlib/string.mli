@@ -75,31 +75,31 @@ val escaped: string -> string
            by escape sequences, following the lexical conventions of
            Objective Caml. *)
 
-val index: string -> elt:char -> int
+val index: string -> char:char -> int
         (* [String.index s c] returns the position of the leftmost
            occurrence of character [c] in string [s].
            Raise [Not_found] if [c] does not occur in [s]. *)
-val rindex: string -> elt:char -> int
+val rindex: string -> char:char -> int
         (* [String.rindex s c] returns the position of the rightmost
            occurrence of character [c] in string [s].
            Raise [Not_found] if [c] does not occur in [s]. *)
-val index_from: string -> pos:int -> elt:char -> int
-val rindex_from: string -> pos:int -> elt:char -> int
+val index_from: string -> pos:int -> char:char -> int
+val rindex_from: string -> pos:int -> char:char -> int
         (* Same as [String.index] and [String.rindex], but start
            searching at the character position given as second argument.
            [String.index s c] is equivalent to [String.index_from s 0 c],
            and [String.rindex s c] to
            [String.rindex_from s (String.length s - 1) c]. *)
 
-val contains : string -> elt:char -> bool
+val contains : string -> char:char -> bool
         (* [String.contains s c] tests if character [c]
            appears in the string [s]. *)
-val contains_from : string -> pos:int -> elt:char -> bool
+val contains_from : string -> pos:int -> char:char -> bool
         (* [String.contains_from s start c] tests if character [c]
            appears in the substring of [s] starting from [start] to the end
            of [s].
            Raise [Invalid_argument] if [start] is not a valid index of [s]. *)
-val rcontains_from : string -> pos:int -> elt:char -> bool
+val rcontains_from : string -> pos:int -> char:char -> bool
         (* [String.rcontains_from s stop c] tests if character [c]
            appears in the substring of [s] starting from the beginning
            of [s] to index [stop].
