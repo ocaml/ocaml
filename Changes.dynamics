@@ -13,6 +13,8 @@
 
 	* dynamic e (must take one argument)
 
+	====> dynamic is now "dyn"
+
 	* coerce e with
 	  | (pattern : type) => e
 	  ...
@@ -159,3 +161,27 @@ Ok, syntax is done.
 	* Genprintval
 		* O.magic is added 
 		* added printer for dyn
+
+*************************************************************** Syntax change
+
+	* dynamic -> dyn
+		- lexer.mll is changed
+		- added a special parsing rule for "dyn" type in parser.mly
+		- dynamic value printer in genprintval is modified
+
+
+	* pattern Ppat_dynamic is added to parsetree.mli
+		- added pattern parsing rule for dynamic (p, t) 
+
+	* added Tpat_dynamic to Typedtree.pattern_desc
+	* adding pattern typing rule in Typecore.type_pat
+
+	* new mode DynamicPatten is added to Typetexpp.policy
+	* Typetexp.transl_type_scheme_pattern added
+	
+================================ etype ========================================
+
+* The definition of Rtype.rtype is generalized as 'a vtype.
+  Now rtype is defined = rpath vtype. 
+
+* Rtype.etype is defined for export values

@@ -382,12 +382,14 @@ bytecomp/translobj.cmo: parsing/asttypes.cmi typing/env.cmi typing/ident.cmi \
 bytecomp/translobj.cmx: parsing/asttypes.cmi typing/env.cmx typing/ident.cmx \
     bytecomp/lambda.cmx parsing/longident.cmx utils/misc.cmx \
     bytecomp/translobj.cmi 
-bytecomp/transltype.cmo: parsing/asttypes.cmi typing/ctype.cmi typing/env.cmi \
-    typing/ident.cmi bytecomp/lambda.cmi parsing/longident.cmi utils/misc.cmi \
+bytecomp/transltype.cmo: parsing/asttypes.cmi typing/btype.cmi \
+    typing/ctype.cmi typing/env.cmi typing/ident.cmi bytecomp/lambda.cmi \
+    parsing/longident.cmi utils/misc.cmi typing/outcometree.cmi \
     typing/path.cmi typing/printtyp.cmi typing/types.cmi \
     bytecomp/transltype.cmi 
-bytecomp/transltype.cmx: parsing/asttypes.cmi typing/ctype.cmx typing/env.cmx \
-    typing/ident.cmx bytecomp/lambda.cmx parsing/longident.cmx utils/misc.cmx \
+bytecomp/transltype.cmx: parsing/asttypes.cmi typing/btype.cmx \
+    typing/ctype.cmx typing/env.cmx typing/ident.cmx bytecomp/lambda.cmx \
+    parsing/longident.cmx utils/misc.cmx typing/outcometree.cmi \
     typing/path.cmx typing/printtyp.cmx typing/types.cmx \
     bytecomp/transltype.cmi 
 bytecomp/typeopt.cmo: parsing/asttypes.cmi typing/ctype.cmi typing/env.cmi \
@@ -661,11 +663,13 @@ toplevel/expunge.cmx: bytecomp/bytesections.cmx typing/ident.cmx \
 toplevel/genprintval.cmo: typing/btype.cmi typing/ctype.cmi \
     typing/datarepr.cmi typing/env.cmi typing/ident.cmi parsing/longident.cmi \
     utils/misc.cmi typing/outcometree.cmi typing/path.cmi typing/predef.cmi \
-    typing/printtyp.cmi typing/types.cmi toplevel/genprintval.cmi 
+    typing/printtyp.cmi bytecomp/transltype.cmi typing/types.cmi \
+    toplevel/genprintval.cmi 
 toplevel/genprintval.cmx: typing/btype.cmx typing/ctype.cmx \
     typing/datarepr.cmx typing/env.cmx typing/ident.cmx parsing/longident.cmx \
     utils/misc.cmx typing/outcometree.cmi typing/path.cmx typing/predef.cmx \
-    typing/printtyp.cmx typing/types.cmx toplevel/genprintval.cmi 
+    typing/printtyp.cmx bytecomp/transltype.cmx typing/types.cmx \
+    toplevel/genprintval.cmi 
 toplevel/topdirs.cmo: bytecomp/bytelink.cmi utils/clflags.cmo \
     utils/config.cmi typing/ctype.cmi bytecomp/dll.cmi bytecomp/emitcode.cmi \
     typing/env.cmi typing/ident.cmi parsing/longident.cmi bytecomp/meta.cmi \
