@@ -40,6 +40,15 @@ let print_info cu =
             l
   end
 
+let print_intf_info name sign comps crcs =
+  print_string "  Module name: "; print_string name; print_newline();
+  print_string "  Interfaces imported:"; print_newline();
+  List.iter
+    (fun (name, digest) ->
+      print_string "\t"; print_digest digest; print_string "\t";
+      print_string name; print_newline())
+    crcs
+
 let dump_obj filename =
   print_string "File "; print_string filename; print_newline();
   let ic = open_in_bin filename in
@@ -58,6 +67,12 @@ let dump_obj filename =
     let toc = (input_value ic : compilation_unit list) in
     close_in ic;
     List.iter print_info toc
+  end else
+  if buffer = cmi_magic_number then begin
+    let (name, sign, comps) = input_value ic in
+    let crcs = input_value ic in
+    close_in ic;
+    print_intf_info name sign comps crcs
   end else begin
     prerr_endline "Not an object file"; exit 2
   end
