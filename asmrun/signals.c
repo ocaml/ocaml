@@ -53,8 +53,8 @@ void garbage_collection(void)
      it will be lost. */
   sig = pending_signal;
   pending_signal = 0;
-  if (sig) execute_signal(sig);
   young_limit = young_start;
+  if (sig) execute_signal(sig);
 }
 
 /* Trigger a garbage collection as soon as possible */
@@ -89,8 +89,8 @@ void enter_blocking_section(void)
 
 void leave_blocking_section(void)
 {
-  Assert(async_signal_mode);
   if (leave_blocking_section_hook != NULL) leave_blocking_section_hook();
+  Assert(async_signal_mode);
   async_signal_mode = 0;
 }
 
