@@ -1158,11 +1158,17 @@ let rec non_recursive_abbrev env ty0 ty =
 let correct_abbrev env ident params ty =
   let ty0 = newgenvar () in
   visited := [];
-  non_recursive_abbrev env ty0
-    (subst env generic_level
-       (ref (Mcons (Path.Pident ident, ty0, ty0, Mnil))) None
-       [] [] ty);
-  visited := []
+  let abbrev = Mcons (Path.Pident ident, ty0, ty0, Mnil) in
+  simple_abbrevs := abbrev;
+  try
+    non_recursive_abbrev env ty0
+      (subst env generic_level (ref abbrev) None [] [] ty);
+    simple_abbrevs := Mnil;
+    visited := []
+  with exn ->
+    simple_abbrevs := Mnil;
+    visited := [];
+    raise exn
 
 let rec occur_rec env visited ty0 ty =
   if ty == ty0  then raise Occur;
@@ -2459,8 +2465,7 @@ let rec build_subtype env visited loops posi level t =
         (t, Unchanged)
   | Tarrow(l, t1, t2, _) ->
       if List.memq t visited then (t, Unchanged) else
-      let visited =
-        if !Clflags.recursive_types then t :: visited else visited in
+      let visited = t :: visited in
       let (t1', c1) = build_subtype env visited loops (not posi) level t1 in
       let (t2', c2) = build_subtype env visited loops posi level t2 in
       let c = max c1 c2 in
@@ -2468,8 +2473,7 @@ let rec build_subtype env visited loops posi level t =
       else (t, Unchanged)
   | Ttuple tlist ->
       if List.memq t visited then (t, Unchanged) else
-      let visited =
-        if !Clflags.recursive_types then t :: visited else visited in
+      let visited = t :: visited in
       let tlist' =
         List.map (build_subtype env visited loops posi level) tlist
       in
