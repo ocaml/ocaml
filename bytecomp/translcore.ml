@@ -118,11 +118,11 @@ let primitives_table = create_hashtable 31 [
   "%geint", Pcomp Cge;
   "%incr", Poffsetref(1);
   "%decr", Poffsetref(-1);
-  "%string_get", Pgetstringchar;
-  "%string_set", Psetstringchar;
+  "%string_unsafe_get", Pgetstringchar;
+  "%string_unsafe_set", Psetstringchar;
   "%array_length", Pvectlength;
-  "%array_get", Pgetvectitem;
-  "%array_set", Psetvectitem
+  "%array_unsafe_get", Pgetvectitem;
+  "%array_unsafe_set", Psetvectitem
 ]
 
 let same_base_type ty1 ty2 =
