@@ -18,7 +18,7 @@ include ../config/Makefile
 RUNTIME=../boot/ocamlrun
 COMPILER=../ocamlc
 CAMLC=$(RUNTIME) $(COMPILER)
-COMPFLAGS=-g -warn-error A -nostdlib
+COMPFLAGS=-warn-error A -nostdlib
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 OPTCOMPFLAGS=-warn-error A -nostdlib
@@ -121,6 +121,10 @@ camlinternalOO.cmi: camlinternalOO.mli
 
 camlinternalOO.cmx: camlinternalOO.ml
 	$(CAMLOPT) $(OPTCOMPFLAGS) -inline 0 camlinternalOO.ml
+
+OO_P_CMX=camlinternalOO.p.cmx
+$(OO_P_CMX): camlinternalOO.ml
+	$(MAKE) EXTRAFLAGS="-inline 0" OO_P_CMX=dummy camlinternalOO.p.cmx
 
 # labelled modules require the -nolabels flag
 labelled.cmo:
