@@ -1,3 +1,5 @@
+*.cm[oia]
 camlp4
 crc.ml
 extract_crc
+phony

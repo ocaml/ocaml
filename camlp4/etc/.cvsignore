@@ -1,0 +1,4 @@
+*.cm[oia]
+camlp4o
+camlp4o.opt
+mkcamlp4.sh

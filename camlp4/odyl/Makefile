@@ -1,0 +1,57 @@
+# $Id$
+
+include ../config/Makefile
+
+SHELL=/bin/sh
+
+INCLUDES=-I $(OTOP)/otherlibs/dynlink
+OCAMLCFLAGS=$(INCLUDES)
+LINKFLAGS=$(INCLUDES)
+
+OBJS=odyl_config.cmo odyl_main.cmo
+
+all: odyl$(EXE)
+
+opt: odyl.cmxa odyl.cmx
+
+odyl$(EXE): odyl.cma odyl.cmo
+	$(OCAMLC) odyl.cma odyl.cmo -o odyl$(EXE)
+
+odyl.cma: $(OBJS)
+	$(OCAMLC) $(LINKFLAGS) dynlink.cma $(OBJS) -a -o odyl.cma
+
+odyl.cmxa: $(OBJS:.cmo=.cmx)
+	$(OCAMLOPT) $(LINKFLAGS) $(OBJS:.cmo=.cmx) -a -o odyl.cmxa
+
+odyl.cmx: odyl.ml
+	../boot/camlp4r -nolib -I ../boot pa_ifdef.cmo -DOPT -o odyl.ppo odyl.ml
+	$(OCAMLOPT) -c -impl odyl.ppo
+	rm -f odyl.ppo
+
+odyl_config.cmo:
+	echo "let standard_library =" > odyl_config.ml
+	echo "  try Sys.getenv \"CAMLP4LIB\" with" >> odyl_config.ml
+	echo "    Not_found -> \"$(LIBDIR)\"" >> odyl_config.ml
+	$(OCAMLC) $(OCAMLCFLAGS) -c odyl_config.ml
+
+clean::
+	rm -f *.cm* *.pp[io] *.o *.bak .*.bak *.out *.opt
+	rm -f odyl_config.ml odyl$(EXE)
+
+depend:
+	cp .depend .depend.bak
+	> .depend
+	@for i in *.mli *.ml; do \
+	  ../tools/apply.sh pr_depend.cmo -- $(INCLUDES) $$i >> .depend; \
+	done
+
+promote:
+
+compare:
+
+install:
+	-$(MKDIR) $(LIBDIR) $(BINDIR)
+	cp odyl.cmo odyl.cma $(LIBDIR)
+	cp odyl$(EXE) $(BINDIR)/.
+
+include .depend
