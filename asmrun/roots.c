@@ -48,6 +48,14 @@
 #define Saved_return_address(sp) *((long *)(sp - 4))
 #endif
 
+#ifdef TARGET_hppa
+#define Stack_grows_upwards
+#define Saved_return_address(sp) *((long *)sp)
+#define Already_scanned(sp, retaddr) (retaddr & 0x80000000)
+#define Mark_scanned(sp, retaddr) (*((long *)sp) = retaddr | 0x80000000)
+#define Mask_already_scanned(retaddr) (retaddr & ~0x80000000)
+#endif
+
 /* Roots registered from C functions */
 
 value * local_roots = NULL;
@@ -165,7 +173,11 @@ void oldify_local_roots ()
   if (frame_descriptors == NULL) init_frame_descriptors();
   sp = caml_bottom_of_stack;
   retaddr = caml_last_return_address;
+#ifndef Stack_grows_upwards
   while (sp < caml_top_of_stack) {
+#else
+  while (sp > caml_top_of_stack) {
+#endif
     /* Find the descriptor corresponding to the return address */
     h = Hash_retaddr(retaddr);
     while(1) {
@@ -176,15 +188,19 @@ void oldify_local_roots ()
     /* Scan the roots in this frame */
     for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
       ofs = *p;
-      if (ofs >= 0) {
-        root = (value *)(sp + ofs);
+      if (ofs & 1) {
+        root = &gc_entry_regs[ofs >> 1];
       } else {
-        root = &gc_entry_regs[-ofs-1];
+        root = (value *)(sp + ofs);
       }
       oldify(*root, root);
     }
     /* Move to next frame */
+#ifndef Stack_grows_upwards
     sp += d->frame_size;
+#else
+    sp -= d->frame_size;
+#endif
     retaddr = Saved_return_address(sp);
 #ifdef Already_scanned
     /* Stop here if the frame has already been scanned during earlier GCs  */
@@ -232,7 +248,11 @@ void darken_all_roots ()
   if (frame_descriptors == NULL) init_frame_descriptors();
   sp = caml_bottom_of_stack;
   retaddr = caml_last_return_address;
+#ifndef Stack_grows_upwards
   while (sp < caml_top_of_stack) {
+#else
+  while (sp > caml_top_of_stack) {
+#endif
     /* Find the descriptor corresponding to the return address */
     h = Hash_retaddr(retaddr);
     while(1) {
@@ -243,14 +263,18 @@ void darken_all_roots ()
     /* Scan the roots in this frame */
     for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
       ofs = *p;
-      if (ofs >= 0) {
-        darken(*((value *)(sp + ofs)));
+      if (ofs & 1) {
+        darken(gc_entry_regs[ofs >> 1]);
       } else {
-        darken(gc_entry_regs[-ofs-1]);
+        darken(*((value *)(sp + ofs)));
       }
     }
     /* Move to next frame */
+#ifndef Stack_grows_upwards
     sp += d->frame_size;
+#else
+    sp -= d->frame_size;
+#endif
     retaddr = Saved_return_address(sp);
 #ifdef Mask_already_scanned
     retaddr = Mask_already_scanned(retaddr);

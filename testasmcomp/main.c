@@ -56,10 +56,10 @@ int main(argc, argv)
     long * a, * b;
     long i;
 
-    srandom(argc >= 3 ? atoi(argv[2]) : time((char *) 0));
+    srand(argc >= 3 ? atoi(argv[2]) : time((char *) 0));
     n = atoi(argv[1]);
     a = (long *) malloc(n * sizeof(long));
-    for (i = 0 ; i < n; i++) a[i] = random() & 0xFFF;
+    for (i = 0 ; i < n; i++) a[i] = rand() & 0xFFF;
 #ifdef DEBUG
     for (i = 0; i < n; i++) printf("%d ", a[i]); printf("\n");
 #endif
