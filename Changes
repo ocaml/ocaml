@@ -1,3 +1,24 @@
+Objective Caml 1.03:
+--------------------
+* Typing:
+  - bug with type names escaping their scope via unification with
+    non-generalized type variables '_a completely fixed;
+  - fixed bug in occur check : it was too restrictive;
+  - fixed bug of coercion operators;
+  - check that no two types of the same name are generated in a module
+    (there was no check for classes);
+  - "#install_printer" works again;
+  - fixed bug in printing of subtyping errors;
+  - in class interfaces, construct "method m" (without type) change
+    the status of method m from abstract to concrete;
+  - in a recursive definition of class interfaces, a class can now
+    inherit from a previous class;
+  - typing of a method make use of an eventual previously given type
+    of this method, yielding clearer type errors.
+
+* Compilation (ocamlc and ocamlopt):
+  - fixed bug in compilation of classes.
+
 Objective Caml 1.02:
 --------------------
 * Typing: 
