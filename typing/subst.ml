@@ -95,11 +95,13 @@ let rec typexp s ty =
               ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
               Tlink ty2
           | _ ->
+              let static = static_row row in
               (* Register new type first for recursion *)
               save_desc more more.desc;
               more.desc <- ty.desc;
+              let more' = if static then newgenvar () else more in
               (* Return a new copy *)
-              let row = copy_row (typexp s) row (newgenvar()) in
+              let row = copy_row (typexp s) row true more' in
               match row.row_name with
                 Some (p, tl) ->
                   Tvariant {row with row_name = Some (type_path s p, tl)}

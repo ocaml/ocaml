@@ -66,9 +66,16 @@ let rec commu_repr = function
     Clink r when !r <> Cunknown -> commu_repr !r
   | c -> c
 
-let rec row_field_repr = function
-    Reither(_, _, _, {contents = Some fi}) -> row_field_repr fi
+let rec row_field_repr_aux tl = function
+    Reither(_, tl', _, {contents = Some fi}) ->
+      row_field_repr_aux (tl@tl') fi
+  | Reither(true, tl', m, r) ->
+      Reither(true, tl@tl', m, r)
+  | Rpresent (Some _) when tl <> [] ->
+      Rpresent (Some (List.hd tl))
   | fi -> fi
+
+let row_field_repr fi = row_field_repr_aux [] fi
 
 let rec row_repr row =
   match (repr row.row_more).desc with
@@ -134,12 +141,14 @@ let iter_type_expr f ty =
   | Tlink ty            -> f ty
   | Tsubst ty           -> f ty
 
-let copy_row f row more =
+let copy_row f row keep more =
   let fields = List.map
       (fun (l, fi) -> l,
         match row_field_repr fi with
         | Rpresent(Some ty) -> Rpresent(Some(f ty))
-        | Reither(c, tl, m, _) -> Reither(c, List.map f tl, m, ref None)
+        | Reither(c, tl, m, e) ->
+            let e = if keep then e else ref None in
+            Reither(c, List.map f tl, m, e)
         | _ -> fi)
       row.row_fields in
   let name =
@@ -167,7 +176,8 @@ let rec copy_type_desc f = function
                         -> Tobject (f ty, ref (Some(p, List.map f tl)))
   | Tobject (ty, _)     -> Tobject (f ty, ref None)
   | Tvariant row        ->
-      Tvariant (copy_row f (row_repr row) (f (row_more row)))
+      let row = row_repr row in
+      Tvariant (copy_row f row false (f row.row_more))
   | Tfield (p, k, ty1, ty2) -> Tfield (p, copy_kind k, f ty1, f ty2)
   | Tnil                -> Tnil
   | Tlink ty            -> copy_type_desc f ty.desc

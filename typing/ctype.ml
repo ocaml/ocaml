@@ -702,7 +702,7 @@ let rec copy ty =
               save_desc more more.desc;
               more.desc <- ty.desc;
               (* Return a new copy *)
-              Tvariant (copy_row copy row (newvar ()))
+              Tvariant (copy_row copy row false (newvar ()))
           end
       | _ -> copy_type_desc copy desc
       end;
@@ -1327,22 +1327,22 @@ and unify_row_field env f1 f2 =
   | Rpresent None, Rpresent None -> ()
   | Reither(c1, tl1, m1, e1), Reither(c2, tl2, m2, e2) ->
       if e1 == e2 then () else
-      let tl = tl1 @ tl2 in
-      let tl =
-        if not (m1 || m2) then
-          List.fold_right
-            (fun t tl ->
-              let t = repr t in if List.memq t tl then tl else t::tl)
-            tl []
-        else match tl with
-        | [] -> []
+      if m1 || m2 then begin
+        match tl1 @ tl2 with [] -> ()
         | t1 :: tl ->
             if c1 || c2 then raise (Unify []);
-            List.iter (unify env t1) tl;
-            [t1]
+            List.iter (unify env t1) tl
+      end;
+      let tl1 = List.map repr tl1 and tl2 = List.map repr tl2 in
+      let rec remq tl = function [] -> []
+        | ty :: tl' ->
+            if List.memq ty tl then remq tl tl' else ty :: remq tl tl'
       in
-      let f = Reither(c1 || c2, tl, m1 || m2, ref None) in
-      e1 := Some f; e2 := Some f
+      let tl2' = remq tl2 tl1 and tl1' = remq tl1 tl2 in
+      let e = ref None in
+      let f1 = Reither(c1 || c2, tl1', m1 || m2, e)
+      and f2 = Reither(c1 || c2, tl2', m1 || m2, e) in
+      e1 := Some f1; e2 := Some f2
   | Reither(false, tl, _, e1), Rpresent(Some t2) ->
       e1 := Some f2;
       (try List.iter (fun t1 -> unify env t1 t2) tl
@@ -2516,11 +2516,13 @@ let rec nondep_type_rec env id ty =
               ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
               Tlink ty2
           | _ ->
+              let static = static_row row in
               (* Register new type first for recursion *)
               save_desc more more.desc;
               more.desc <- ty.desc;
+              let more' = if static then newgenvar () else more in
               (* Return a new copy *)
-              let row = copy_row (nondep_type_rec env id) row (newgenvar()) in
+              let row = copy_row (nondep_type_rec env id) row true more' in
               match row.row_name with
                 Some (p, tl) when Path.isfree id p ->
                   Tvariant {row with row_name = None}

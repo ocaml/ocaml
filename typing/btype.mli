@@ -63,7 +63,8 @@ val iter_row: (type_expr -> unit) -> row_desc -> unit
 
 val copy_type_desc: (type_expr -> type_expr) -> type_desc -> type_desc
         (* Copy on types *)
-val copy_row: (type_expr -> type_expr) -> row_desc -> type_expr -> row_desc
+val copy_row:
+    (type_expr -> type_expr) -> row_desc -> bool -> type_expr -> row_desc
 val copy_kind: field_kind -> field_kind
 
 val save_desc: type_expr -> type_desc -> unit
