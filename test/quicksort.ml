@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-(* Good test for loops. Best compiled with unsafe libraries. *)
+(* Good test for loops. Best compiled with -unsafe. *)
 
 let rec qsort lo hi (a : int array) =
   if lo < hi then begin
