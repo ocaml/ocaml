@@ -336,6 +336,7 @@ let refill_lexbuf buffer len =
 let empty_lexbuf lb =
   lb.lex_curr_pos <- 0;
   lb.lex_abs_pos <- 0;
+  lb.lex_curr_p <- {lb.lex_curr_p with pos_cnum = 0};
   lb.lex_buffer_len <- 0
 
 (* Toplevel initialization. Performed here instead of at the
