@@ -75,8 +75,8 @@ let word_addressed = true
     $13                     allocation pointer
     $14                     allocation limit
     $15                     trap pointer
-    $16 - $23   13 - 20     function arguments
-    $24, $25                temporaries
+    $16 - $22   13 - 19     function arguments
+    $23 - $25               temporaries (for the code gen and for the asm)
     $26 - $30               stack ptr, global ptr, etc
     $31                     always zero
 
@@ -90,7 +90,7 @@ let word_addressed = true
 let int_reg_name = [|
   (* 0-7 *)    "$0"; "$1"; "$2"; "$3"; "$4"; "$5"; "$6"; "$7";
   (* 8-12 *)   "$8"; "$9"; "$10"; "$11"; "$12";
-  (* 13-20 *)  "$16"; "$17"; "$18"; "$19"; "$20"; "$21"; "$22"; "$23"
+  (* 13-19 *)  "$16"; "$17"; "$18"; "$19"; "$20"; "$21"; "$22"
 |]
   
 let float_reg_name = [|
@@ -108,7 +108,7 @@ let register_class r =
   | Addr -> 0
   | Float -> 1
 
-let num_available_registers = [| 21; 30 |]
+let num_available_registers = [| 20; 30 |]
 
 let first_available_register = [| 0; 100 |]
 
@@ -118,8 +118,8 @@ let register_name r =
 (* Representation of hard registers by pseudo-registers *)
 
 let hard_int_reg =
-  let v = Array.new 21 Reg.dummy in
-  for i = 0 to 20 do v.(i) <- Reg.at_location Int (Reg i) done;
+  let v = Array.new 20 Reg.dummy in
+  for i = 0 to 19 do v.(i) <- Reg.at_location Int (Reg i) done;
   v
 
 let hard_float_reg =
@@ -212,7 +212,7 @@ let loc_exn_bucket = phys_reg 0         (* $0 *)
 
 let destroyed_at_c_call =               (* $9 - $12, $f2 - $f9 preserved *)
   Array.of_list(List.map phys_reg
-    [0;1;2;3;4;5;6;7;8;13;14;15;16;17;18;19;20;
+    [0;1;2;3;4;5;6;7;8;13;14;15;16;17;18;19;
      100;101;110;111;112;113;114;115;116;117;118;119;120;121;122;123;124;
      125;126;127;128;129])
 
@@ -227,35 +227,21 @@ let destroyed_at_raise = all_phys_regs
 
 let safe_register_pressure = function
     Iextcall(_, _) -> 4
-  | _ -> 20
+  | _ -> 19
 let max_register_pressure = function
     Iextcall(_, _) -> [| 4; 8 |]
-  | _ -> [| 20; 29 |]
+  | _ -> [| 19; 29 |]
 
 (* Reloading *)
 
 let reload_test makereg tst args = raise Use_default
 let reload_operation makereg op args res = raise Use_default
 
-(* Latencies (in cycles). 
-   Cf. Appendix A of the Alpha architecture handbook *)
+(* No scheduling is needed, the assembler does it better than us. *)
 
-let need_scheduling = true
+let need_scheduling = false
 
-let oper_latency = function
-    Ireload -> 3
-  | Iload(Word, _) -> 3
-  | Iload(_, _) -> 5                    (* 3 for load, 2 for extension *)
-  | Iconst_symbol _ -> 3                (* turned into a load *)
-  | Iconst_float _ -> 3                 (* turned into a load *)
-  | Iintop Imul -> 10
-  | Iintop_imm(Imul, _) -> 10
-  | Iintop(Ilsl | Ilsr | Iasr) -> 2
-  | Iintop_imm((Ilsl | Ilsr | Iasr), _) -> 2
-  | Iaddf | Isubf -> 4
-  | Imulf -> 5
-  | Idivf -> 10
-  | _ -> 1
+let oper_latency _ = 1
 
 (* Layout of the stack *)
 

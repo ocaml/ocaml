@@ -327,11 +327,12 @@ let reload_operation makereg op arg res =
   | _ -> (* Other operations: all args and results in registers *)
       raise Use_default
 
-(* Instruction scheduling. Only effective on the Pentium. *)
+(* Scheduling is turned off because it's useless on the 386/486.
+   Might be effective on the Pentium and on the P6, though. *)
 
-let need_scheduling = true
+let need_scheduling = false
 
-(* Wild guesses *)
+(* Wild guesses for doing experiments with the Pentium *)
 
 let oper_latency = function
     Ireload -> 2

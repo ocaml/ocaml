@@ -215,21 +215,11 @@ let max_register_pressure = function
 let reload_test makereg tst args = raise Use_default
 let reload_operation makereg op args res = raise Use_default
 
-(* Latencies (in cycles). Use R3000 timings. *)
+(* No scheduling is needed, the assembler does it better than us. *)
 
-let need_scheduling = true
+let need_scheduling = false
 
-let oper_latency = function
-    Ireload -> 2
-  | Iload(_, _) -> 2
-  | Iintop Imul -> 10                   (* wild guess *)
-  | Iintop_imm(Imul, _) -> 10
-  | Iintop(Idiv | Imod) -> 20           (* wild guess *)
-  | Iintop_imm(Idiv | Imod, _) -> 20
-  | Iaddf | Isubf -> 2
-  | Imulf -> 5
-  | Idivf -> 19
-  | _ -> 1
+let oper_latency _ = 1
 
 (* Layout of the stack *)
 

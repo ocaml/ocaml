@@ -236,7 +236,7 @@ let need_scheduling = true
 
 let oper_latency = function
     Ireload -> 3
-  | Iload(_, _) -> 3                    (* 3 for load, 2 for extension *)
+  | Iload(_, _) -> 3
   | Iconst_float -> 3                   (* turned into a load *)
   | Iintop Imul -> 10
   | Iintop_imm(Imul, _) -> 10
@@ -255,12 +255,14 @@ let contains_calls = ref false
 (* Calling the assembler and the archiver *)
 
 let assemble_file infile outfile =
+  (****
   try
     let sched = find_in_path !Config.load_path "scheduler_sparc" in
     Sys.command
       (sched ^ " -dli " ^ infile ^ " && as -o " ^ outfile ^ " " ^ infile)
   with Not_found ->
-    Sys.command ("as -o " ^ outfile ^ " " ^ infile)
+  ****)
+  Sys.command ("as -o " ^ outfile ^ " " ^ infile)
 
 let create_archive archive file_list =
   Misc.remove_file archive;

@@ -242,10 +242,8 @@ let emit_instr i =
         `{record_frame i.live}	jal	{emit_symbol s}\n`
     | Lop(Itailcall_ind) ->
         let n = frame_size() in
-        if !contains_calls then begin
+        if !contains_calls then
           `	lw	$31, {emit_int(n - 4)}($sp)\n`;
-          `	and	$31, $31, -2\n`
-        end;
         if n > 0 then
           `	addu	$sp, $sp, {emit_int n}\n`;
         liveregs i 0;
@@ -255,10 +253,8 @@ let emit_instr i =
           `	b	{emit_label !tailrec_entry_point}\n`
         end else begin
           let n = frame_size() in
-          if !contains_calls then begin
+          if !contains_calls then
             `	lw	$31, {emit_int(n - 4)}($sp)\n`;
-            `	and	$31, $31, -2\n`
-          end;
           if n > 0 then
             `	addu	$sp, $sp, {emit_int n}\n`;
           liveregs i 0;

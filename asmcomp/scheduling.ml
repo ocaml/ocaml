@@ -27,9 +27,9 @@ let in_basic_block = function
   | Istore(_, _) -> false
   | Ialloc _ -> false
   | op -> Proc.oper_latency op >= 0
-      (* The processor description can return a latency of -1 to signal
-         a specific instruction that terminates a basic block, e.g.
-         Istore_symbol for the I386. *)
+    (* The processor description can return a latency of -1 to signal
+       a specific instruction that terminates a basic block, e.g.
+       Istore_symbol for the I386. *)
 
 (* Estimate the delay needed to evaluate an instruction. *)
 
@@ -238,8 +238,8 @@ let rec schedule i =
   | Lop op when in_basic_block op ->
       clear_code_dag();
       schedule_block [] i
-  | _ ->
-      { desc = i.desc; arg = i.arg; res = i.res; live = i.live;
+  | op ->
+      { desc = op; arg = i.arg; res = i.res; live = i.live;
         next = schedule i.next }
 
 and schedule_block ready_queue i =

@@ -236,7 +236,7 @@ let name_for_float_comparison = function
 let function_name = ref ""
 let tailrec_entry_point = ref 0
 
-let emit_instr i =
+let rec emit_instr i dslot =
     match i.desc with
       Lend -> ()
     | Lop(Imove | Ispill | Ireload) ->
@@ -286,45 +286,28 @@ let emit_instr i =
         `	or	%g1, %lo({emit_symbol s}), {emit_reg i.res.(0)}\n`
     | Lop(Icall_ind) ->
         `{record_frame i.live}	call	{emit_reg i.arg.(0)}\n`;
-        `	nop\n`
+        fill_delay_slot dslot
     | Lop(Icall_imm s) ->
         `{record_frame i.live}	call	{emit_symbol s}\n`;
-        `	nop\n`
+        fill_delay_slot dslot
     | Lop(Itailcall_ind) ->
         let n = frame_size() in
-        if !contains_calls then begin
+        if !contains_calls then
           `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`;
-          `	add	%sp, {emit_int n}, %sp\n`;
-          `	jmp	{emit_reg i.arg.(0)}\n`;
-          `	andn	%o7, 1, %o7\n`  (* in delay slot *)
-        end else begin
-          `	jmp	{emit_reg i.arg.(0)}\n`;
-          `	add	%sp, {emit_int n}, %sp\n` (* in delay slot *)
-        end
+        `	jmp	{emit_reg i.arg.(0)}\n`;
+        `	add	%sp, {emit_int n}, %sp\n` (* in delay slot *)
     | Lop(Itailcall_imm s) ->
         let n = frame_size() in
-        if s = !function_name then
-          if !contains_calls then begin
-            `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`;
-            `	andn	%o7, 1, %o7\n`;
+        if s = !function_name then begin
             `	b	{emit_label !tailrec_entry_point}\n`;
-            `	st	%o7, [%sp + {emit_int(n - 4 + 96)}]\n`
-          end else
-            `	b	{emit_label !tailrec_entry_point}\n`;
-            `	nop\n`
-          end
-        else
-          if !contains_calls then begin
+            fill_delay_slot dslot
+        end else begin
+          if !contains_calls then
             `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`;
-            `	add	%sp, {emit_int n}, %sp\n`;
-            `	sethi	%hi({emit_symbol s}), %g1\n`;
-            `	jmp	%g1 + %lo({emit_symbol s})\n`;
-            `	andn	%o7, 1, %o7\n`  (* in delay slot *)
-          end else begin
-            `	sethi	%hi({emit_symbol s}), %g1\n`;
-            `	jmp	%g1 + %lo({emit_symbol s})\n`;
-            `	add	%sp, {emit_int n}, %sp\n` (* in delay slot *)
-          end
+          `	sethi	%hi({emit_symbol s}), %g1\n`;
+          `	jmp	%g1 + %lo({emit_symbol s})\n`;
+          `	add	%sp, {emit_int n}, %sp\n` (* in delay slot *)
+        end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
           `	sethi	%hi({emit_symbol s}), %g4\n`;
@@ -332,7 +315,7 @@ let emit_instr i =
           `	or	%g4, %lo({emit_symbol s}), %g4\n` (* in delay slot *)
         end else begin
           `	call	{emit_symbol s}\n`;
-          `	nop\n`
+          fill_delay_slot dslot
         end
     | Lop(Istackoffset n) ->
         `	add	%sp, {emit_int (-n)}, %sp\n`;
@@ -485,8 +468,10 @@ let emit_instr i =
         let n = frame_size() in
         if !contains_calls then begin
           `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`;
-          `	andn	%o7, 1, %o7\n`  (* poor scheduling *)
-        end;
+          emit_delay_slot dslot;
+          `	andn	%o7, 1, %o7\n`
+        end else
+          emit_delay_slot dslot;
         `	retl\n`;
         `	add	%sp, {emit_int n}, %sp\n`
     | Llabel lbl ->
@@ -499,35 +484,35 @@ let emit_instr i =
           Itruetest ->
             `	tst	{emit_reg i.arg.(0)}\n`;
             `	bne	{emit_label lbl}\n`;
-            `	nop\n`
+            fill_delay_slot dslot
         | Ifalsetest ->
             `	tst	{emit_reg i.arg.(0)}\n`;
             `	be	{emit_label lbl}\n`;
-            `	nop\n`
+            fill_delay_slot dslot
         | Iinttest cmp ->
             let comp = name_for_int_comparison cmp in
             `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
             `	{emit_string comp}	{emit_label lbl}\n`;
-            `	nop\n`
+            fill_delay_slot dslot
         | Iinttest_imm(cmp, n) ->
             let comp = name_for_int_comparison cmp in
             `	cmp	{emit_reg i.arg.(0)}, {emit_int n}\n`;
             `	{emit_string comp}	{emit_label lbl}\n`;
-            `	nop\n`
+            fill_delay_slot dslot
         | Ifloattest cmp ->
             let comp = name_for_float_comparison cmp in
             `	fcmpd	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
             `	nop\n`;
             `	{emit_string comp}	{emit_label lbl}\n`;
-            `	nop\n`
+            fill_delay_slot dslot
         | Ioddtest ->
             `	andcc	{emit_reg i.arg.(0)}, 1, %g0\n`;
             `	bne	{emit_label lbl}\n`;
-            `	nop\n`
+            fill_delay_slot dslot
         | Ieventest ->
             `	andcc	{emit_reg i.arg.(0)}, 1, %g0\n`;
             `	be	{emit_label lbl}\n`;
-            `	nop\n`
+            fill_delay_slot dslot
         end
   | Lcondbranch3(lbl0, lbl1, lbl2) ->
         `	cmp	{emit_reg i.arg.(0)}, 1\n`;
@@ -572,8 +557,57 @@ let emit_instr i =
         `	jmp	%g4 + 8\n`;         (* poor scheduling *)
         `	add	%sp, 8, %sp\n`
 
+and emit_delay_slot = function
+    None -> ()
+  | Some i -> emit i None
+
+and fill_delay_slot = function
+    None -> `	nop\n`
+  | Some i -> emit i None
+
+(* Checks if a pseudo-instruction expands to exactly one machine instruction *)
+
+let is_one_instr_op = function
+    Idiv | Imod | Icomp _ | Icheckbound -> false
+  | _ -> true
+
+let is_one_instr = function
+    Imove | Ispill | Ireload -> i.arg.(0).typ = i.res.(0).typ
+  | Iconst_int n -> is_immediate n
+  | Istackoffset _ -> true
+  | Iload(_, Iindexed n) -> is_immediate n
+  | Iload(_, Iindexed2 n) -> n = 0
+  | Istore(_, Iindexed n) -> is_immediate n
+  | Istore(_, Iindexed2 n) -> n = 0
+  | Iintop(op) -> is_one_instr_op op
+  | Iintop_imm(op, _) -> is_one_instr_op op
+  | Iaddf | Isubf | Imulf | Idivf -> true
+  | _ -> false
+
+(* Emit a sequence of instructions, trying to fill delay slots for branches *)
+
 let rec emit_all i =
-  match i.desc with Lend -> () | _ -> emit_instr i; emit_all i.next
+  match i with
+    {desc = Lend} -> ()
+  | {next = {desc = Lop(Icall_imm _) | Lop(Iextcall(_, false)) | Lbranch _}}
+    when is_one_instr i.desc ->
+      emit_instr i.next (Some i);
+      emit_all i.next.next
+  | {next = {desc = Lop(Itailcall_imm s)}}
+    when s = !function_name & is_one_instr i.desc ->
+      emit_instr i.next (Some i);
+      emit_all i.next.next
+  | {next = {desc = Lop(Icall_ind)}}
+    when is_one_instr i.desc & i.res.(0).loc <> i.next.arg.(0).loc ->
+      emit_instr i.next (Some i);
+      emit_all i.next.next
+  | {next = {desc = Lcondbranch _ | Lreturn}}
+    when is_one_instr i.desc & no_interference i.res.(0).loc i.next.arg ->
+      emit_instr i.next (Some i);
+      emit_all i.next.next
+  | _ ->
+      emit_instr i None;
+      emit_all i.next
 
 (* Emission of a function declaration *)
 
