@@ -15,7 +15,7 @@
 
 (** Formatted input functions. *)
 
-(** {6 Scanning buffers} *)
+(** Scanning buffers *)
 module Scanning : sig
 
 type scanbuf;;
@@ -69,10 +69,10 @@ val bscanf :
    - scanning indications to specify boundaries of tokens and the
    amount of space to skip between tokens.
 
-   Among plain characters the white space character (ASCII code 32) has a
-   special meaning: it matches a ``space'', that is any number of tab,
-   white space, newline and return. Hence, a space in the format
-   matches any number of white spaces in the input.
+   Among plain characters the space character (ASCII code 32) has a
+   special meaning: it matches ``whitespace'', that is any number of tab,
+   space, newline and carriage return characters. Hence, a space in the format
+   matches any amount of whitespace in the input.
 
    Conversion specifications consist in the [%] character, followed
    by optional field width, followed by one or two conversion
@@ -121,17 +121,20 @@ val bscanf :
    character.
 
    Note: the [scanf] facility is not intended for heavy duty
-   lexing and parsing; if you need efficient language syntactic analysis,
-   use the corresponding devoted libraries. *)
+   lexical anaysis and parsing.  If it appears too slow or not expressive
+   enough for your needs, several alternative exists: regular expressions
+   (module [Str]), stream parsers, [ocamllex]-generated lexers,
+   [ocamlyacc]-generated parsers. *)
 
 val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
-(** Same as {!Scanf.bscanf}, but inputs from the channel argument. *)
+(** Same as {!Scanf.bscanf}, but inputs from the given channel. *)
 
 val sscanf : string -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
-(** Same as {!Scanf.bscanf}, but inputs from the string argument. *)
+(** Same as {!Scanf.bscanf}, but inputs from the given string. *)
 
 val scanf : ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
-(** Same as {!Scanf.bscanf}, but inputs from [stdin]. *)
+(** Same as {!Scanf.bscanf}, but inputs from [stdin]
+    (the standard input channel). *)
 
 val kscanf :
   Scanning.scanbuf -> ('a, 'b, 'c) format -> 'a ->
@@ -139,5 +142,5 @@ val kscanf :
 (** Same as {!Scanf.bscanf}, but takes an additional function argument
   [ef] that is called in case of error: if the scanning process or
   some convertion fails, the scanning function aborts and applies the
-  scanning buffer and the exception that aborted evaluation to the error
-  continuation [ef]. *)
+  error handling function [ef] to the scanning buffer and the
+  exception that aborted evaluation. *)
