@@ -50,7 +50,7 @@ to signal garbage collections and heap extensions.
 \end{options}
 
 \noindent
-The following environment variable are also consulted:
+The following environment variables are also consulted:
 
 \begin{options}
 \item["CAMLRUNPARAM"] Set the garbage collection parameters.
