@@ -77,8 +77,6 @@ extern void init_signals P((void));
 void caml_main(argv)
      char ** argv;
 {
-  value retcode;
-
   init_ieee_floats();
 #ifdef DEBUG
   verbose_init = 1;
