@@ -150,11 +150,11 @@ let rec build_object_init cl_table obj params inh_init cl =
          Lfunction (Curried, params, rem) -> build params rem
        | rem                              -> build [] rem
        end)
-  | Tclass_apply (cl, exprs) ->
+  | Tclass_apply (cl, oexprs) ->
       let (inh_init, obj_init) =
         build_object_init cl_table obj params inh_init cl
       in
-      (inh_init, lapply obj_init (List.map transl_exp exprs))
+      (inh_init, transl_apply obj_init oexprs)
   | Tclass_let (rec_flag, defs, vals, cl) ->
       let (inh_init, obj_init) =
         build_object_init cl_table obj (vals @ params) inh_init cl

@@ -309,6 +309,7 @@ let event_function exp lam =
   else
     lam None
 
+
 (* Translation of expressions *)
 
 let rec transl_exp e =
@@ -327,26 +328,18 @@ let rec transl_exp e =
       let ((kind, params), body) =
         event_function e
           (function repr ->
-             transl_function e.exp_loc !Clflags.native_code repr pat_expr_list)
+             transl_function e.exp_loc !Clflags.native_code repr []
+	      pat_expr_list)
       in
       Lfunction(kind, params, body)
   | Texp_apply({exp_desc = Texp_ident(path, {val_kind = Val_prim p})}, args)
-    when List.length args = p.prim_arity ->
+    when List.length args = p.prim_arity && List.for_all ((<>) None) args ->
+      let args = List.map (function Some x -> x | None -> assert false) args in
       let prim = transl_prim p args in
       let lam = Lprim(prim, transl_list args) in
       begin match prim with Pccall _ -> event_after e lam | _ -> lam end
-  | Texp_apply(funct, args) ->
-      let lam =
-        match transl_exp funct with
-          Lsend(lmet, lobj, largs) ->
-            Lsend(lmet, lobj, largs @ transl_list args)
-        | Levent(Lsend(lmet, lobj, largs), _) ->
-            Lsend(lmet, lobj, largs @ transl_list args)
-        | Lapply(lexp, largs) ->
-            Lapply(lexp, largs @ transl_list args)
-        | lexp ->
-            Lapply(lexp, transl_list args) in
-      event_after e lam
+  | Texp_apply(funct, oargs) ->
+      event_after e (transl_apply (transl_exp funct) oargs)
   | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list) ->
       Matching.for_multiple_match e.exp_loc
         (transl_list argl) (transl_cases pat_expr_list)
@@ -471,13 +464,69 @@ and transl_cases pat_expr_list =
 and transl_tupled_cases patl_expr_list =
   List.map (fun (patl, expr) -> (patl, transl_exp expr)) patl_expr_list
 
-and transl_function loc untuplify_fn repr pat_expr_list =
+and transl_apply lam sargs =
+  let lapply funct args =
+    match funct with
+      Lsend(lmet, lobj, largs) ->
+        Lsend(lmet, lobj, largs @ args)
+    | Levent(Lsend(lmet, lobj, largs), _) ->
+        Lsend(lmet, lobj, largs @ args)
+    | Lapply(lexp, largs) ->
+        Lapply(lexp, largs @ args)
+    | lexp ->
+        Lapply(lexp, args)
+  in
+  let rec build_apply lam args = function
+      None :: l ->
+	let lam =
+	  if args = [] then lam else lapply lam (List.rev args) in
+	let (var, handle) =
+	  match lam with
+	    Lvar _ -> (None, lam)
+	  | _ ->
+	      let id = Ident.create "app" in (Some id, Lvar id)
+	and id_arg = Ident.create "arg" in
+	let body =
+	  match build_apply handle [Lvar id_arg] l with
+	    Lfunction(Curried, ids, lam) ->
+	      Lfunction(Curried, id_arg::ids, lam)
+	  | Levent(Lfunction(Curried, ids, lam), _) ->
+	      Lfunction(Curried, id_arg::ids, lam)
+	  | lam ->
+	      Lfunction(Curried, [id_arg], lam)
+	in
+	begin match var with
+	  None -> body
+	| Some id -> Llet(Strict, id, lam, body)
+	end
+    | Some arg :: l ->
+	build_apply lam (transl_exp arg :: args) l
+    | [] ->
+	lapply lam (List.rev args)
+  in
+  build_apply lam [] sargs
+
+and transl_function loc untuplify_fn repr bindings pat_expr_list =
   match pat_expr_list with
     [pat, ({exp_desc = Texp_function pl} as exp)] ->
       let param = name_pattern "param" pat_expr_list in
-      let ((_, params), body) = transl_function exp.exp_loc false repr pl in
+      let ((_, params), body) =
+	transl_function exp.exp_loc false repr bindings pl in
       ((Curried, param :: params),
        Matching.for_function loc None (Lvar param) [pat, body])
+  | [({pat_desc = Tpat_var id} as pat),
+     ({exp_desc = Texp_let(Nonrecursive, cases,
+			  ({exp_desc = Texp_function _} as e2))} as e1)]
+    when Ident.name id = "*opt*" ->
+      transl_function loc untuplify_fn repr (cases::bindings) [pat, e2]
+  | [pat, exp] when bindings <> [] ->
+      let exp =
+	List.fold_left
+	  (fun exp cases ->
+	    {exp with exp_desc = Texp_let(Nonrecursive, cases, exp)})
+	  exp bindings
+      in
+      transl_function loc untuplify_fn repr [] [pat, exp]
   | ({pat_desc = Tpat_tuple pl}, _) :: _ when untuplify_fn ->
       begin try
         let size = List.length pl in
