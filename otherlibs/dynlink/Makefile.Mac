@@ -19,7 +19,7 @@ INCLUDES = -I :::utils: -I :::typing: -I :::bytecomp:
 COMPFLAGS = -I :::stdlib: {INCLUDES}
 
 OBJS = dynlink.cmo
-COMPILEROBJS = misc.cmo config.cmo formatmsg.cmo tbl.cmo ¶
+COMPILEROBJS = misc.cmo config.cmo tbl.cmo ¶
   clflags.cmo ident.cmo path.cmo ¶
   types.cmo btype.cmo predef.cmo runtimedef.cmo ¶
   bytesections.cmo symtable.cmo opcodes.cmo

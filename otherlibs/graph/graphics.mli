@@ -38,38 +38,6 @@ external size_y : unit -> int = "gr_size_y"
            Drawings outside of this rectangle are clipped, without causing
            an error. The origin (0,0) is at the lower left corner. *)
 
-(*** Double buffering *)
-
-external display_mode : bool -> unit = "gr_display_mode"
-        (* Set display mode on or off. When turned on, drawings are done
-           in the graphics window. This occurs independently of
-           drawings into the backing store (see the function [remember_mode]
-           below). Default display mode is on. *)
-
-external remember_mode : bool -> unit = "gr_remember_mode"
-        (* Set remember mode on or off. When turned on, drawings are done
-           in the backing store window (that is in the memory). This
-           occurs independently of drawings onto the graphics window
-           (see the function [display_mode] above).
-           Default remember mode is on. *)
-
-external synchronize : unit -> unit = "gr_synchronize"
-        (* Synchronizes the backing store and the display, by copying
-           the contents of the backing store onto the graphics
-           window. *)
-
-val auto_synchronize : bool -> unit
-        (* Set automatic synchronization of backing store and display
-           on or off. When turned on, drawings are done simultaneously
-           in the backing store and the graphics window (this is equivalent to
-           setting display and remember modes on, and then calling
-           [synchronize]).
-
-           When automatic synchronization is turned off, drawings are
-           done in the backing store only.
-
-           Default automatic synchronization mode is on. *)
-
 (*** Colors *)
 
 type color = int
@@ -274,3 +242,47 @@ val key_pressed : unit -> bool
 external sound : freq:int -> ms:int -> unit = "gr_sound"
         (* [sound freq dur] plays a sound at frequency [freq] (in hertz)
            for a duration [dur] (in milliseconds). *)
+
+(*** Double buffering *)
+
+val auto_synchronize : bool -> unit
+        (* By default, drawings takes place both on the window displayed
+           on screen, and in a memory area (the ``backing store'').
+           The backing store image is used to re-paint the on-screen
+           window when necessary.
+
+           To avoid flicker during animations, it is possible to turn
+           off on-screen drawing, perform a number of drawing operations
+           in the backing store only, then refresh the on-screen window
+           explicitly.
+
+           [auto_synchronize false] turns on-screen drawing off.  All
+           subsequent drawing commands are performed on the backing store
+           only.
+
+           [auto_synchronize true] refreshes the on-screen window from
+           the backing store (as per [synchronize]), then turns on-screen
+           drawing back on.  All subsequent drawing commands are performed
+           both on screen and in the backing store.
+
+           The default drawing mode corresponds to [auto_synchronize true]. *)
+
+external synchronize : unit -> unit = "gr_synchronize"
+        (* Synchronize the backing store and the on-screen window, by
+           copying the contents of the backing store onto the graphics
+           window. *)
+
+external display_mode : bool -> unit = "gr_display_mode"
+        (* Set display mode on or off. When turned on, drawings are done
+           in the graphics window; when turned off, drawings do not affect
+           the graphics window.  This occurs independently of
+           drawings into the backing store (see the function [remember_mode]
+           below). Default display mode is on. *)
+
+external remember_mode : bool -> unit = "gr_remember_mode"
+        (* Set remember mode on or off. When turned on, drawings are done
+           in the backing store; when turned off, the backing store is
+           unaffected by drawings.  This
+           occurs independently of drawings onto the graphics window
+           (see the function [display_mode] above).
+           Default remember mode is on.  *)

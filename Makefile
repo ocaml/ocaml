@@ -99,7 +99,7 @@ TOPOBJS=toplevel/toplevellib.cma $(TOPLEVELMAIN)
 
 OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
-EXPUNGEOBJS=utils/misc.cmo utils/formatmsg.cmo utils/tbl.cmo \
+EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   utils/config.cmo utils/clflags.cmo \
   typing/ident.cmo typing/path.cmo typing/types.cmo typing/btype.cmo \
   typing/predef.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
