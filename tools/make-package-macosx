@@ -17,6 +17,18 @@
 cd package-macosx
 rm -rf ocaml.pkg ocaml-rw.dmg ocaml.dmg
 
+cat >ocaml.info <<EOF
+  Title Objective Caml
+  Version 3.06
+  Description This package installs Objective Caml version 3.06
+  DefaultLocation /
+  Relocatable no
+  NeedsAuthorization yes
+  Application no
+  InstallOnly no
+  DisableStop no
+EOF
+
 package root ocaml.info
 
 size=`du -s ocaml.pkg | cut -f 1`
