@@ -182,8 +182,8 @@ let call_linker file_list startup_file =
           !Clflags.exec_name
           Config.standard_library
           (String.concat " " (List.rev !Clflags.ccopts))
-          (String.concat " " (List.rev file_list))
           startup_file
+          (String.concat " " (List.rev file_list))
           (String.concat " " (List.rev !Clflags.ccobjs))
           runtime_lib
           Config.c_libraries
@@ -194,8 +194,8 @@ let call_linker file_list startup_file =
           !Clflags.exec_name
           Config.standard_library
           (String.concat " " (List.rev !Clflags.ccopts))
-          (String.concat " " (List.rev file_list))
           startup_file
+          (String.concat " " (List.rev file_list))
           Config.standard_library
           (String.concat " " (List.rev !Clflags.ccobjs))
           runtime_lib
