@@ -26,10 +26,11 @@ UNIX_OBJS = $(UNIX_FILES:.c=.obj)
 C_OBJS=$(WIN_OBJS) $(UNIX_OBJS)
 
 CAML_OBJS=unix.cmo
+CAMLOPT_OBJS=unix.cmx
 
 all: libunix.lib unix.cma
 
-allopt:
+allopt: libunix.lib unix.cmxa
 
 libunix.lib: copy_unix_files io.h $(C_OBJS)
 	rm -f libthreads.lib
@@ -45,8 +46,11 @@ io.h: $(SYSTEM_INCLUDES)\io.h
 unix.cma: $(CAML_OBJS)
 	$(CAMLC) -a -linkall -o unix.cma $(CAML_OBJS)
 
+unix.cmxa: $(CAMLOPT_OBJS)
+	$(CAMLOPT) -a -linkall -o unix.cmxa $(CAMLOPT_OBJS)
+
 clean:
-	rm -f libthreads.lib *.obj *.cm*
+	rm -f *.lib *.obj *.cm*
 
 realclean:
 	rm -f $(UNIX_FILES)
@@ -57,6 +61,7 @@ install:
 	cp unix.cmi unix.cma $(LIBDIR)
 
 installopt:
+	cp unix.cmxa unix.cmx unix.lib $(LIBDIR)
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
