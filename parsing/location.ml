@@ -104,7 +104,7 @@ let (msg_file, msg_line, msg_chars, msg_to, msg_colon, msg_head) =
 let print loc =
   if String.length !input_name = 0 then
     if highlight_locations loc none then () else
-      printf "Characters %i-%i:@?" loc.loc_start loc.loc_end
+      printf "Characters %i-%i:@." loc.loc_start loc.loc_end
   else begin
     let (filename, linenum, linebeg) =
             Linenum.for_position !input_name loc.loc_start in
