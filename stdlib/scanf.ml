@@ -179,9 +179,15 @@ let bad_format fmt i fc =
     (Printf.sprintf
        "scanf: bad format %c, at char number %i of format %s" fc i fmt);;
 
-(* Checking that [c] is in the input. *)
+(* Checking that the current char is indeed one of range, then skip it. *)
+let check_char_in ib range =
+  let ci = Scanning.checked_peek_char ib in
+  if List.mem ci range then Scanning.next_char ib
+  else bad_input
+        (Printf.sprintf "looking for one of %s, found %c" "a range" ci);;
+
+(* Checking that [c] is indeed in the input, then skip it. *)
 let check_char ib c =
-(*  if Scanning.end_of_input ib then raise End_of_file else*)
   let ci = Scanning.checked_peek_char ib in
   if ci = c then Scanning.next_char ib
   else bad_input (Printf.sprintf "looking for %c, found %c" c ci);;
@@ -360,8 +366,12 @@ let scan_string stp max ib =
       match c with
       | ' ' | '\t' | '\n' | '\r' -> max
       | c -> loop (Scanning.store_char ib c max) else
-    if List.mem c stp then max else loop (Scanning.store_char ib c max) in
-  loop max;;
+    if List.mem c stp then max else
+    loop (Scanning.store_char ib c max) in
+  let max = loop max in
+  if stp <> [] then check_char_in ib stp;
+  max
+;;
 
 (* Scan a char: peek strictly one character in the input, whatsoever. *)
 let scan_char max ib =
@@ -490,13 +500,13 @@ let make_setp stp char_set =
       match set.[i] with
       | '-' when b ->
          (* if i = 0 then b is false (since the initial call is loop false 0)
-          hence i >= 1 and the following is safe. *)
-          let c1 = set.[i - 1] in
-          let i = i + 1 in
-          if i > lim then loop false (i - 1) else
-          let c2 = set.[i] in
-          for j = int_of_char c1 to int_of_char c2 do v.(j) <- true done;
-          loop false (i + 1)
+            hence i >= 1 and the following is safe. *)
+         let c1 = set.[i - 1] in
+         let i = i + 1 in
+         if i > lim then loop false (i - 1) else
+         let c2 = set.[i] in
+         for j = int_of_char c1 to int_of_char c2 do v.(j) <- true done;
+         loop false (i + 1)
       | c -> v.(int_of_char set.[i]) <- true; loop true (i + 1) in
     loop false 0;
     v in
@@ -515,12 +525,16 @@ let scan_chars_in_char_set stp char_set max ib =
   let rec loop max =
     if max = 0 || Scanning.end_of_input ib then max else
     let c = Scanning.checked_peek_char ib in
-    if setp c then loop (Scanning.store_char ib c max) else max in
-  loop max;;
+    if setp c then loop (Scanning.store_char ib c max) else
+    max in
+  let max = loop max in
+  if stp <> [] then check_char_in ib stp;
+  max
+;;
 
 let skip_whites ib =
   let rec loop = function
-  | ' ' | '\r' | '\t' | '\n' ->
+  | ' ' | '\t' | '\n' | '\r' ->
      Scanning.next_char ib;
      if not (Scanning.end_of_input ib) then loop (Scanning.peek_char ib)
   | _ -> () in
@@ -554,7 +568,7 @@ let kscanf ib ef fmt f =
   let rec scan_fmt f i =
     if i > lim then f else
     match fmt.[i] with
-    | ' ' | '\t' | '\r' | '\n' -> skip_whites ib; scan_fmt f (i + 1)
+    | ' ' | '\t' | '\n' | '\r' -> skip_whites ib; scan_fmt f (i + 1)
     | '%' -> scan_fmt_width f (i + 1)
     | '@' as t ->
         let i = i + 1 in

@@ -122,12 +122,12 @@ val bscanf :
    [\[ range \]] to delimit the end of the token. A scanning
    indication is introduced by a [@] character, followed by some
    constant character [c]. It means that the string token should end
-   just before the next matching [c]. If no [c] character is
-   encountered, the string token spreads as much as possible.
-   For instance, ["%s@\t"] reads a string up to the next tabulation
-   character. If a scanning indication [\@c] does not follow a
-   string conversion, it is ignored and treated as a plain [c]
-   character.
+   just before the next matching [c] (which is skipped). If no [c]
+   character is encountered, the string token spreads as much as
+   possible.  For instance, ["%s@\t"] reads a string up to the next
+   tabulation character. If a scanning indication [\@c] does not
+   follow a string conversion, it is ignored and treated as a plain
+   [c] character.
 
    Note: the [scanf] facility is not intended for heavy duty
    lexical analysis and parsing. If it appears not expressive
