@@ -1304,9 +1304,9 @@ let rec do_type_exp ctx env sexp =
         exp_env = env;
       } 
   | Pexp_par (se1, se2) ->
-      check_process ctx sexp ;
       let e1 = do_type_exp P env se1
       and e2 = do_type_exp P env se2 in
+      check_process ctx sexp ;
       {
         exp_desc = Texp_par (e1, e2);
         exp_loc = sexp.pexp_loc;
@@ -1830,6 +1830,7 @@ and type_clause env names jpats scl =
   
 
 and type_auto env (def_names, auto_lhs) sauto =
+  let env = Env.remove_continuations env in
   let cls =
     List.map2 (type_clause env def_names) auto_lhs sauto.pjauto_desc in
   let def_names =
@@ -1842,7 +1843,7 @@ and type_auto env (def_names, auto_lhs) sauto =
       | _ -> assert false)
       def_names in
   {jauto_desc = cls;
-   jauto_names = def_names;
+   jauto_names = List.rev def_names;
    jauto_loc = sauto.pjauto_loc}
 
 and generalize_auto auto =

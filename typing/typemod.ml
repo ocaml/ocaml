@@ -387,9 +387,10 @@ and type_structure env sstr =
           List.fold_right
             (fun loc_def r ->
               let location,autos,_ = loc_def.jloc_desc in
+              location.jident_desc::
               List.fold_right
                 (fun auto r -> map_end (fun (id,_) -> id) auto.jauto_names r)
-                autos (location.jident_desc :: r))
+                autos r)
             defs [] in
         let make_sig_value id =
           Tsig_value(id, Env.find_value (Pident id) newenv) in

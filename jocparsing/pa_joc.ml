@@ -74,7 +74,8 @@ EXTEND
 
  expr: LEVEL "expr1"
     [[
-      "reply" ; e = SELF ; "to" ; id = joinident -> ExRep (loc, e, id)
+        "reply" ; "to" ; id = joinident -> ExRep (loc, ExUid (loc, "()"), id)
+     |  "reply" ; e = SELF ; "to" ; id = joinident -> ExRep (loc, e, id)
      | "spawn" ; e = SELF -> ExSpa (loc, e)
      | "let" ; "def" ; d = LIST1 joinautomaton SEP "and" ;
         "in" ; e=expr LEVEL "top" ->

@@ -509,6 +509,8 @@ value rec expr =
       mkexp loc
         (Pexp_function ("?" ^ lab) (option expr eo) [(patt p, when_expr e w)])
   | ExFun loc pel -> mkexp loc (Pexp_function "" None (List.map mkpwe pel))
+  | ExIfe loc e1 e2 (ExUid _ "()") ->
+      mkexp loc (Pexp_ifthenelse (expr e1) (expr e2) None)
   | ExIfe loc e1 e2 e3 ->
       mkexp loc (Pexp_ifthenelse (expr e1) (expr e2) (Some (expr e3)))
   | ExInt loc s -> mkexp loc (Pexp_constant (Const_int (int_of_string s)))
