@@ -274,7 +274,7 @@ void handle_signal(int sig)
     }
 #endif
 #if defined(TARGET_mips)
-    if (caml_last_return_address == 0) {
+    if (In_code_area(context->sc_pc)) {
       /* Cached in register $23 */
       context->sc_regs[23] = (int) young_limit;
     }
