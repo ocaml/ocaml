@@ -158,25 +158,35 @@ let remove_position pos =
     end
 
 (* Insert a new breakpoint in lists. *)
-let new_breakpoint event =
-  Exec.protected
-    (function () ->
-       incr breakpoint_number;
-       insert_position event.ev_pos;
-       breakpoints := (!breakpoint_number, event) :: !breakpoints);
-  print_string "Breakpoint ";
-  print_int !breakpoint_number;
-  print_string " at ";
-  print_int event.ev_pos;
-  print_string " : file ";
-  print_string event.ev_module;
-  print_string ", line ";
-(* XXX Que faire si fichier non trouve ? *)
-  let (start, line) = line_of_pos (get_buffer event.ev_module) event.ev_char in
-  print_int line;
-  print_string " column ";
-  print_int (event.ev_char - start + 1);
-  print_newline ()
+let rec new_breakpoint =
+  function
+    {ev_repr = Event_child pc} ->
+      new_breakpoint (Symbols.any_event_at_pc !pc)
+  | event ->
+      Exec.protected
+        (function () ->
+           incr breakpoint_number;
+           insert_position event.ev_pos;
+           breakpoints := (!breakpoint_number, event) :: !breakpoints);
+      print_string "Breakpoint ";
+      print_int !breakpoint_number;
+      print_string " at ";
+      print_int event.ev_pos;
+      print_string " : file ";
+      print_string event.ev_module;
+      begin try
+        let (start, line) =
+          line_of_pos (get_buffer event.ev_module) event.ev_char
+        in
+        print_string ", line ";
+        print_int line;
+        print_string " column ";
+        print_int (event.ev_char - start + 1)
+      with Not_found | Out_of_range ->
+        print_string ", character ";
+        print_int event.ev_char
+      end;
+      print_newline ()
 
 (* Remove a breakpoint from lists. *)
 let remove_breakpoint number =
