@@ -109,10 +109,9 @@ let map f a =
   end
 
 let to_list a =
-  let len = length a in
-  let rec tolist i =
-    if i >= len then [] else unsafe_get a i :: tolist(i+1) in
-  tolist 0
+  let rec tolist i res =
+    if i < 0 then res else tolist (i - 1) (unsafe_get a i :: res) in
+  tolist (length a - 1) []
 
 let of_list = function
     [] -> [||]
