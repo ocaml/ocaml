@@ -29,8 +29,13 @@ type-representation:
         | '=' '{' field-decl { ';' field-decl } '}'
 ;
 type-params:
+          type-param
+        | '(' type-param { "," type-param } ')'
+;
+type-param:
           "'" ident
-        | '(' "'" ident { "," "'" ident } ')'
+        | "+" "'" ident
+        | "-" "'" ident
 ;
 constr-decl:
           cconstr-name
@@ -61,8 +66,15 @@ constructor being defined.
 The optional type parameters are either one type variable @"'" ident@,
 for type constructors with one parameter, or a list of type variables
 @("'"ident_1,\ldots,"'"ident_n)@, for type constructors with several
-parameters. These type parameters can appear in the type expressions
-of the right-hand side of the definition.
+parameters. Each type parameter may be prefixed by a variance
+constraint @"+"@ (resp. @"-"@) indicating that the parameter is
+covariant (resp. contravariant).  These type parameters can appear in
+the type expressions of the right-hand side of the definition,
+restricted eventually by a variance constraint ; {\em i.e.\/} a
+covariant parameter may only appear on the right side of a functional
+arrow (more precisely, follow the left branch of an even number of
+arrows), and a convariant parameter only the left side (left branch of
+an odd number of arrows).
 
 The optional type equation @'=' typexpr@ makes the defined type
 equivalent to the type expression @typexpr@ on the right of the @'='@
@@ -96,6 +108,8 @@ The field declaration @'mutable' field-name ':' typexpr@
 \ikwd{mutable\@\texttt{mutable}}
 behaves similarly; in addition, it allows physical modification over
 the argument to this field.
+Immutable fields are covariant, but mutable fields are neither
+covariant nor contravariant.
 
 The two components of a type definition, the optional equation and the
 optional representation, can be combined independently, giving
@@ -128,10 +142,17 @@ must agree with the representation: it must be of the same kind
 in the same order, with the same arguments. 
 \end{description}
 
+For abstract types only, the parameters of the generated type have the
+variance indicated by the constraints. In all other cases each
+parameter's variance is defined by the variances of its occurences in
+the definition, and variance constraints are only checked for
+conformance. Such variance information is used to check the validity
+of coercions (see section \ref{s:coercion}).
+
 \ikwd{constraint\@\texttt{constraint}}
 The construct @ 'constraint' "'" ident '=' typexpr @ allows to specify
 type parameters.  Any actual type argument corresponding to the type
-parameter @ident@ have to be an instance of @typexpr@ (more precisely,
+parameter @ident@ has to be an instance of @typexpr@ (more precisely,
 @ident@ and @typexpr@ are unified). Type variables of @typexpr@ can
 appear in the type equation and the type declaration.
 
