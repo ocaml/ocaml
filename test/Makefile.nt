@@ -137,10 +137,10 @@ clean::
 
 .byt.btst:
 	$(CAMLRUN) $*.byt > %temp%\test.out
-	fc /l %temp%\test.out Results\$*.out
+	cmp %temp%\test.out Results\$*.out
 .exe.etst:
 	$*.exe > %temp%\test.out
-	fc /l %temp%\test.out Results\$*.out
+	cmp %temp%\test.out Results\$*.out
 
 clean::
 	rm -f %temp%\test.out
