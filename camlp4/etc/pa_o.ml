@@ -912,9 +912,9 @@ EXTEND
       | "["; tpl = LIST1 type_parameter SEP ","; "]" -> (loc, tpl) ] ]
   ;
   class_fun_def:
-    [ [ p = patt LEVEL "simple"; "->"; ce = class_expr ->
+    [ [ p = labeled_patt; "->"; ce = class_expr ->
           <:class_expr< fun $p$ -> $ce$ >>
-      | p = patt LEVEL "simple"; cfd = SELF ->
+      | p = labeled_patt; cfd = SELF ->
           <:class_expr< fun $p$ -> $cfd$ >> ] ]
   ;
   class_expr:
