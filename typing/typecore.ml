@@ -993,7 +993,7 @@ let report_error = function
       trace true (fun _ -> print_string "is not a subtype of type") tr1;
       trace false (fun _ -> print_string "is not compatible with type") tr2
   | Outside_class ->
-      print_string "This object duplication occurs outside a class definition."
+      print_string "This object duplication occurs outside a method definition."
   | Value_multiply_overridden v ->
       print_string "The instance variable "; print_string v;
       print_string " is overridden several times"
