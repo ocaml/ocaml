@@ -106,6 +106,23 @@ external float : int -> float = "%floatofint"
 external float_of_int : int -> float = "%floatofint"
 external truncate : float -> int = "%intoffloat"
 external int_of_float : float -> int = "%intoffloat"
+external float_of_bytes : string -> float = "float_of_bytes"
+let infinity =
+  float_of_bytes "\127\240\000\000\000\000\000\000"
+              (* 0x7F F0 00 00 00 00 00 00 *)
+let neg_infinity =
+  float_of_bytes "\255\240\000\000\000\000\000\000"
+              (* 0xFF F0 00 00 00 00 00 00 *)
+let nan =
+  float_of_bytes "\127\240\000\000\000\000\000\001"
+              (* 0x7F F0 00 00 00 00 00 01 *)
+type fpclass =
+    FP_normal
+  | FP_subnormal
+  | FP_zero
+  | FP_infinite
+  | FP_nan
+external classify_float: float -> fpclass = "classify_float"
 
 (* String operations -- more in module String *)
 

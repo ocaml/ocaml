@@ -206,21 +206,32 @@ external (lxor) : int -> int -> int = "%xorint"
 val lnot: int -> int
         (* Bitwise logical negation. *)
 external (lsl) : int -> int -> int = "%lslint"
-        (* [n lsl m] shifts [n] to the left by [m] bits. *)
+        (* [n lsl m] shifts [n] to the left by [m] bits.
+           The result is unspecified if [m < 0] or [m >= bitsize],
+           where [bitsize] is [32] on a 32-bit platform and
+           [64] on a 64-bit platform. *)
 external (lsr) : int -> int -> int = "%lsrint"
         (* [n lsr m] shifts [n] to the right by [m] bits.
            This is a logical shift: zeroes are inserted regardless of
-           the sign of [n].*)
+           the sign of [n].
+           The result is unspecified if [m < 0] or [m >= bitsize]. *)
 external (asr) : int -> int -> int = "%asrint"
         (* [n asr m] shifts [n] to the right by [m] bits.
-           This is an arithmetic shift: the sign bit of [n] is replicated. *)
+           This is an arithmetic shift: the sign bit of [n] is replicated.
+           The result is unspecified if [m < 0] or [m >= bitsize]. *)
 
 (*** Floating-point arithmetic *)
 
-(* On most platforms, Caml's floating-point numbers follow the
+(* Caml's floating-point numbers follow the
    IEEE 754 standard, using double precision (64 bits) numbers.
-   Floating-point operations do not fail on overflow or underflow,
-   but return denormal numbers. *)
+   Floating-point operations never raise an exception on overflow,
+   underflow, division by zero, etc.  Instead, special IEEE numbers
+   are returned as appropriate, such as [infinity] for [1.0 /. 0.0],
+   [neg_infinity] for [-1.0 /. 0.0], and [nan] (``not a number'')
+   for [0.0 /. 0.0].  These special numbers then propagate through
+   floating-point computations as expected: for instance,
+   [1.0 /. infinity] is [0.0], and any operation with [nan] as 
+   argument returns [nan] as result. *)
 
 external (~-.) : float -> float = "%negfloat"
         (* Unary negation. You can also write [-.e] instead of [~-.e]. *)
@@ -284,6 +295,25 @@ external int_of_float : float -> int = "%intoffloat"
         (* Truncate the given floating-point number to an integer.
            The result is unspecified if it falls outside the
            range of representable integers. *)
+val infinity: float
+        (* Positive infinity. *)
+val neg_infinity: float
+        (* Negative infinity. *)
+val nan: float
+        (* A special floating-point value denoting the result of an
+           undefined operation such as [0.0 /. 0.0].  Stands for
+           ``not a number''. *)
+type fpclass =
+    FP_normal           (* Normal number, none of the below *)
+  | FP_subnormal        (* Number very close to 0.0, has reduced precision *)
+  | FP_zero             (* Number is 0.0 or -0.0 *)
+  | FP_infinite         (* Number is positive or negative infinity *)
+  | FP_nan              (* Not a number: result of an undefined operation *)
+        (* The five classes of floating-point numbers, as determined by
+           the [classify_float] function. *)
+external classify_float: float -> fpclass = "classify_float"
+        (* Return the class of the given floating-point number:
+           normal, subnormal, zero, infinite, or not a number. *)
 
 (*** String operations *)
 
@@ -309,8 +339,9 @@ external ignore : 'a -> unit = "%ignore"
         (* Discard the value of its argument and return [()].
            For instance, [ignore(f x)] discards the result of
            the side-effecting function [f].  It is equivalent to
-           [f x; ()], except that only a partial application warning
-           may be generated. *)
+           [f x; ()], except that the latter may generate a
+           compiler warning; writing [ignore(f x)] instead
+           avoids the warning. *)
 
 (*** String conversion functions *)
 
@@ -489,8 +520,8 @@ val out_channel_length : out_channel -> int
            other kinds, the result is meaningless. *)
 val close_out : out_channel -> unit
         (* Close the given channel, flushing all buffered write operations.
-           The behavior is unspecified if any of the functions above is
-           called on a closed channel. *)
+           A [Sys_error] exception is raised if any of the functions above
+           is called on a closed channel. *)
 val set_binary_mode_out : out_channel -> bool -> unit
         (* [set_binary_mode_out oc true] sets the channel [oc] to binary
            mode: no translations take place during output.
@@ -573,8 +604,8 @@ val in_channel_length : in_channel -> int
            given channel. This works only for regular files. On files of
            other kinds, the result is meaningless. *)
 val close_in : in_channel -> unit
-        (* Close the given channel. Anything can happen if any of the
-           functions above is called on a closed channel. *)
+        (* Close the given channel.  A [Sys_error] exception is raised
+           if any of the functions above is called on a closed channel. *)
 val set_binary_mode_in : in_channel -> bool -> unit
         (* [set_binary_mode_in ic true] sets the channel [ic] to binary
            mode: no translations take place during input.
