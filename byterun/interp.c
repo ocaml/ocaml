@@ -183,6 +183,11 @@ extern long caml_safe_div(long p, long q);
 extern long caml_safe_mod(long p, long q);
 #endif
 
+
+#ifdef DEBUG
+static long caml_bcodcount;
+#endif
+
 /* The interpreter itself */
 
 value caml_interprete(code_t prog, asize_t prog_size)
@@ -266,7 +271,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #else
   while(1) {
 #ifdef DEBUG
+    caml_bcodcount++;
     if (caml_icount-- == 0) caml_stop_here ();
+    if (caml_trace_flag>1) printf("\n##%ld\n", caml_bcodcount);
     if (caml_trace_flag) caml_disasm_instr(pc);
     if (caml_trace_flag>1) {
       printf("env=");
