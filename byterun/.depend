@@ -75,8 +75,8 @@ prims.o: prims.c mlvalues.h config.h ../config/m.h ../config/s.h \
  misc.h prims.h
 printexc.o: printexc.c fail.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h
-roots.o: roots.c memory.h config.h ../config/m.h ../config/s.h gc.h \
- mlvalues.h misc.h major_gc.h freelist.h minor_gc.h roots.h stacks.h
+roots.o: roots.c major_gc.h freelist.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h memory.h gc.h minor_gc.h roots.h stacks.h
 rotatecursor.o: rotatecursor.c rotatecursor.h
 signals.o: signals.c alloc.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h callback.h fail.h memory.h gc.h major_gc.h \
@@ -175,8 +175,8 @@ prims.d.o: prims.c mlvalues.h config.h ../config/m.h ../config/s.h \
  misc.h prims.h
 printexc.d.o: printexc.c fail.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h
-roots.d.o: roots.c memory.h config.h ../config/m.h ../config/s.h gc.h \
- mlvalues.h misc.h major_gc.h freelist.h minor_gc.h roots.h stacks.h
+roots.d.o: roots.c major_gc.h freelist.h misc.h config.h ../config/m.h \
+ ../config/s.h mlvalues.h memory.h gc.h minor_gc.h roots.h stacks.h
 rotatecursor.d.o: rotatecursor.c rotatecursor.h
 signals.d.o: signals.c alloc.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h callback.h fail.h memory.h gc.h major_gc.h \
