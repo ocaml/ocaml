@@ -129,25 +129,25 @@ let rec backslash s i =
     | 'x' -> backslash1h s (i + 1)
     | _ -> raise Not_found
 and backslash1 cod s i =
-  if i = String.length s then '\\', i - 1
+  if i = String.length s then raise Not_found
   else
     match s.[i] with
       '0'..'9' as c -> backslash2 (10 * cod + valch c) s (i + 1)
-    | _ -> '\\', i - 1
+    | _ -> raise Not_found
 and backslash2 cod s i =
-  if i = String.length s then '\\', i - 2
+  if i = String.length s then raise Not_found
   else
     match s.[i] with
       '0'..'9' as c -> Char.chr (10 * cod + valch c), i + 1
-    | _ -> '\\', i - 2
+    | _ -> raise Not_found
 and backslash1h s i =
-  if i = String.length s then '\\', i - 1
+  if i = String.length s then raise Not_found
   else
     match s.[i] with
       '0'..'9' as c -> backslash2h (valch c) s (i + 1)
     | 'a'..'f' as c -> backslash2h (valch_a c) s (i + 1)
     | 'A'..'F' as c -> backslash2h (valch_A c) s (i + 1)
-    | _ -> '\\', i - 1
+    | _ -> raise Not_found
 and backslash2h cod s i =
   if i = String.length s then '\\', i - 2
   else
@@ -155,7 +155,7 @@ and backslash2h cod s i =
       '0'..'9' as c -> Char.chr (16 * cod + valch c), i + 1
     | 'a'..'f' as c -> Char.chr (16 * cod + valch_a c), i + 1
     | 'A'..'F' as c -> Char.chr (16 * cod + valch_A c), i + 1
-    | _ -> '\\', i - 2
+    | _ -> raise Not_found
 ;;
 
 let rec skip_indent s i =
@@ -184,7 +184,7 @@ let eval_char s =
   else failwith "invalid char token"
 ;;
 
-let eval_string s =
+let eval_string (bp, ep) s =
   let rec loop len i =
     if i = String.length s then get_buff len
     else
@@ -199,7 +199,10 @@ let eval_string s =
             | '\013' -> len, skip_indent s (skip_opt_linefeed s (i + 1))
             | c ->
                 try let (c, i) = backslash s i in store len c, i with
-                  Not_found -> store (store len '\\') c, i + 1
+                  Not_found ->
+                    Printf.eprintf "Warning: char %d, Invalid backslash escape in string\n%!"
+                      (bp + i + 1);
+                    store (store len '\\') c, i + 1
         else store len s.[i], i + 1
       in
       loop len i

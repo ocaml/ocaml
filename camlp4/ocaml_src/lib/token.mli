@@ -109,11 +109,16 @@ val make_stream_and_location :
 (** {6 Useful functions} *)
 
 val eval_char : string -> char;;
-val eval_string : string -> string;;
-   (** Convert a char or a string token, where the backslashes had not
-       been interpreted into a real char or string; raise [Failure] if
-       bad backslash sequence found; [Token.eval_char (Char.escaped c)]
-       returns [c] and [Token.eval_string (String.escaped s)] returns [s] *)
+   (** Convert a char token, where the escape sequences (backslashes)
+       remain to be interpreted; raise [Failure] if an
+       incorrect backslash sequence is found; [Token.eval_char (Char.escaped c)]
+       returns [c] *)
+
+val eval_string : location -> string -> string;;
+   (** Convert a string token, where the escape sequences (backslashes)
+       remain to be interpreted; issue a warning if an incorrect
+       backslash sequence is found;
+       [Token.eval_string loc (String.escaped s)] returns [s] *)
 
 (**/**)
 

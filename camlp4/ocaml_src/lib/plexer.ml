@@ -722,7 +722,9 @@ let next_token_fun dfa ssd find_kwd bolpos glexr =
         Stream.junk strm__;
         begin match Stream.peek strm__ with
           Some c ->
-            Stream.junk strm__; string bp (store (store len '\\') c) strm__
+            Stream.junk strm__;
+            let ep = Stream.count strm__ in
+            string bp (store (store len '\\') c) strm__
         | _ -> raise (Stream.Error "")
         end
     | Some c -> Stream.junk strm__; string bp (store len c) strm__

@@ -1,6 +1,9 @@
 Internal, very small, undocumented, or invisible changes
 ********************************************************
 
+- [20 nov 03], token.mli: eval_string takes a location as a extra
+  argument (needed to issue a warning).
+
 Camlp4s Version 3.06+19
 -----------------------
 

@@ -1,3 +1,5 @@
+- [20 nov 03] Illegal escape sequences in strings now issue a warning.
+
 Camlp4 Version 3.07
 ___________________
 

@@ -599,7 +599,7 @@ value next_token_fun dfa ssd find_kwd bolpos glexr =
   and string bp len =
     parser
     [ [: `'"' :] -> len
-    | [: `'\\'; `c; s :] -> string bp (store (store len '\\') c) s
+    | [: `'\\'; `c; s :] ep  -> string bp (store (store len '\\') c) s
     | [: `c; s :] -> string bp (store len c) s
     | [: :] ep -> err (bp, ep) "string not terminated" ]
   and char bp len =

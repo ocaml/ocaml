@@ -33,7 +33,7 @@ let char_of_char_token loc s =
 ;;
 
 let string_of_string_token loc s =
-  try Token.eval_string s with
+  try Token.eval_string loc s with
     Failure _ as exn -> raise_with_loc loc exn
 ;;
 

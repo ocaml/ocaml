@@ -32,7 +32,8 @@ value char_of_char_token loc s =
 ;
 
 value string_of_string_token loc s =
-  try Token.eval_string s with [ Failure _ as exn -> raise_with_loc loc exn ]
+  try Token.eval_string loc s
+  with [ Failure _ as exn -> raise_with_loc loc exn ]
 ;
 
 value glob_fname = ref "";
