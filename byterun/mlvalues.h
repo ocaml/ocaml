@@ -176,6 +176,9 @@ typedef opcode_t * code_t;
 #define Class_val(val) Field(val, 0)
 #define Oid_val(val) Long_val(Field(val, 1))
 
+/* Another special case: variants */
+extern value hash_variant(char * tag);
+
 /* 2- If tag >= No_scan_tag : a sequence of bytes. */
 
 /* Pointer to the first byte */

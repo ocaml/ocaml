@@ -131,3 +131,18 @@ static void hash_aux(value obj)
      a priori unknown structure. Use its physical address as hash key. */
   Combine((long) obj);
 }
+
+/* Hashing variant tags */
+
+value hash_variant(char * tag)
+{
+  value accu;
+  /* Same hashing algorithm as in ../typing/btype.ml, function hash_variant */
+  for (accu = Val_int(0); *tag != 0; tag++) 
+    accu = Val_int(223 * Int_val(accu) + *((unsigned char *) tag));
+  accu = accu & Val_int((1 << 31) - 1);
+  /* Force sign extension of bit 31 for compatibility between 32 and 64-bit
+     platforms */
+  return (int32) accu;
+}
+
