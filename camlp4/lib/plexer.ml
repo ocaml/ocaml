@@ -166,9 +166,8 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
    let make_pos p =
      {Lexing.pos_fname = fname.val; Lexing.pos_lnum = lnum.val;
       Lexing.pos_bol = bolpos.val; Lexing.pos_cnum = p} in
-   let mkloc (bp, ep) = let (_, loc) =
-     check_location "mkloc@Plexer" (make_pos bp, make_pos ep) in loc in
-  let keyword_or_error (bp,ep) s =
+   let mkloc (bp, ep) = (make_pos bp, make_pos ep) in
+   let keyword_or_error (bp,ep) s =
     let loc = mkloc (bp, ep) in
       try (("", find_kwd s), loc) with
       [ Not_found ->
