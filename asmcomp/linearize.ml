@@ -146,22 +146,24 @@ let rec linear i n =
       else n1
   | Iifthenelse(test, ifso, ifnot) ->
       let n1 = linear i.Mach.next n in
-      begin match (ifso.Mach.desc, ifnot.Mach.desc) with
-        Iexit, _ ->
-          copy_instr (Lcondbranch(test, !exit_label)) i
-            (linear ifnot n1)
-      | _,  Iexit ->
+      begin match (ifso.Mach.desc, ifnot.Mach.desc, n1.desc) with
+        Iend, _, Lbranch lbl ->
+          copy_instr (Lcondbranch(test, lbl)) i (linear ifnot n1)
+      | _, Iend, Lbranch lbl ->
+          copy_instr (Lcondbranch(invert_test test, lbl)) i (linear ifso n1)
+      | Iexit, _, _ ->
+          copy_instr (Lcondbranch(test, !exit_label)) i (linear ifnot n1)
+      | _,  Iexit, _ ->
           copy_instr (Lcondbranch(invert_test test, !exit_label)) i
-            (linear ifso n1)
-      | Iend, _ ->
+                     (linear ifso n1)
+      | Iend, _, _ ->
           let (lbl_end, n2) = get_label n1 in
-          copy_instr (Lcondbranch(test, lbl_end)) i
-            (linear ifnot n2)
-      | _,  Iend ->
+          copy_instr (Lcondbranch(test, lbl_end)) i (linear ifnot n2)
+      | _,  Iend, _ ->
           let (lbl_end, n2) = get_label n1 in
           copy_instr (Lcondbranch(invert_test test, lbl_end)) i
-            (linear ifso n2)
-      | _, _ ->
+                     (linear ifso n2)
+      | _, _, _ ->
         (* Should attempt branch prediction here *)
           let (lbl_end, n2) = get_label n1 in
           let (lbl_else, nelse) = get_label (linear ifnot n2) in

@@ -31,9 +31,9 @@ let oper_result_type = function
   | Calloc -> typ_addr
   | Cstore -> typ_void
   | Cstorechunk c -> typ_void
-  | Caddi | Csubi | Cmuli | Cdivi | Cmodi
-  | Cand | Cor | Cxor | Clsl | Clsr | Casr
-  | Ccmpi _ | Ccmpa _ | Ccmpf _ -> typ_int
+  | Caddi | Csubi | Cmuli | Cdivi | Cmodi |
+    Cand | Cor | Cxor | Clsl | Clsr | Casr |
+    Ccmpi _ | Ccmpa _ | Ccmpf _ -> typ_int
   | Cadda | Csuba -> typ_addr
   | Cnegf | Cabsf | Caddf | Csubf | Cmulf | Cdivf -> typ_float
   | Cfloatofint -> typ_float
