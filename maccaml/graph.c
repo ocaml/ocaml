@@ -439,6 +439,7 @@ value gr_synchronize (value unit)
 #pragma unused (unit)
   GrafPtr saveport;
   
+  gr_check_open ();
   PushWindowPort (winGraphics);
   GraphUpdate ();
   PopPort;
@@ -1066,7 +1067,7 @@ value gr_wait_event (value veventlist)
                 || askmouseup && what == mouseUp){
         mouse_x = graphQ[i].where.h;
         mouse_y = graphQ[i].where.v;
-        button = graphQ[i].what = mouseDown;
+        button = graphQ[i].what == mouseDown;
         keypressed = 0;
         DequeueEvent (i);
         goto gotevent;
