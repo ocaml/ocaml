@@ -315,6 +315,7 @@ let string_length exp =
 
 (* Message sending *)
 
+(*
 let lookup_tag_cache obj tag cache n =
   bind "tag" tag (fun tag -> bind "cache" cache (fun cache ->
     let cache n =
@@ -335,6 +336,7 @@ let lookup_tag_cache obj tag cache n =
 		    [Cvar meths; tag; cache n]),
                 Cop(Cload Word, [meth_pos]))
 	))))
+*)
 
 (*
 let lookup_tag_cache obj tag cache n =
@@ -346,7 +348,6 @@ let lookup_tag_cache obj tag cache n =
 	[Cop(Cload Word, [obj]); tag; cache n]))
 *)
 
-(*
 let lookup_tag_cache obj tag cache n =
   Compilenv.need_apply_fun 1;
   let cargs =
@@ -354,7 +355,6 @@ let lookup_tag_cache obj tag cache n =
       Cop(Cadda, [cache; Cconst_int (n * size_addr)]) ]
   in
   Cop(Capply typ_addr, cargs)
-*)
 
 let lookup_tag obj tag =
   bind "tag" tag (fun tag ->
@@ -364,6 +364,15 @@ let lookup_label obj lab =
   bind "lab" lab (fun lab ->
     let table = Cop (Cload Word, [obj]) in
     addr_array_ref table lab)
+
+let call_cached_method obj tag cache n args =
+  let arity = List.length args in
+  let cache =
+    if n = 0 then cache else Cop(Cadda, [cache; Cconst_int (n * size_addr)]) in
+  Compilenv.need_apply_fun (-arity);
+  Cop(Capply typ_addr,
+      Cconst_symbol("caml_cached_method" ^ string_of_int arity) ::
+      obj :: tag :: cache :: args)
 
 (* Allocation *)
 
@@ -858,6 +867,15 @@ let rec transl = function
         Cop(Capply typ_addr, cargs)
       in
       bind "obj" (transl obj) (fun obj ->
+	match kind, args with
+	  Self, _ ->
+            bind "met" (lookup_label obj (transl met)) (call_met obj args)
+	| Cached, Uprim(Pfield n, [cache]) :: args ->
+            call_cached_method obj (transl met) (transl cache) n
+              (List.map transl args)
+	| _ ->
+            bind "met" (lookup_tag obj (transl met)) (call_met obj args))
+      (* bind "obj" (transl obj) (fun obj ->
 	let met, args =
 	  match kind, args with
 	    Self, args -> lookup_label obj (transl met), args
@@ -865,7 +883,7 @@ let rec transl = function
 	      lookup_tag_cache obj (transl met) (transl cache) n, args
 	  | _ -> lookup_tag obj (transl met), args
 	in
-        bind "met" met (call_met obj args))
+        bind "met" met (call_met obj args)) *)
   | Ulet(id, exp, body) ->
       begin match is_unboxed_number exp with
         No_unboxing ->
@@ -1746,8 +1764,7 @@ let get_cached_method () =
    {fun_name = "caml_get_cached_method";
     fun_args = [obj, typ_addr; tag, typ_int; cache, typ_addr];
     fun_body = body;
-    fun_fast = true}
-  
+    fun_fast = true}  
 
 (* Generate an application function:
      (defun caml_applyN (a1 ... aN clos)
@@ -1760,8 +1777,7 @@ let get_cached_method () =
            (app closN-1.code aN closN-1))))
 *)
 
-let apply_function arity =
-  if arity = 1 then get_cached_method () else
+let apply_function_body arity =
   let arg = Array.create arity (Ident.create "arg") in
   for i = 1 to arity - 1 do arg.(i) <- Ident.create "arg" done;
   let clos = Ident.create "clos" in
@@ -1776,13 +1792,54 @@ let apply_function arity =
                [get_field (Cvar clos) 0; Cvar arg.(n); Cvar clos]),
            app_fun newclos (n+1))
     end in
-  let all_args = Array.to_list arg @ [clos] in
-  let body =
-    Cifthenelse(
-      Cop(Ccmpi Ceq, [get_field (Cvar clos) 1; int_const arity]),
-      Cop(Capply typ_addr,
-          get_field (Cvar clos) 2 :: List.map (fun s -> Cvar s) all_args),
-      app_fun clos 0) in
+  let args = Array.to_list arg in
+  let all_args = args @ [clos] in
+  (args, clos,
+   if arity = 1 then app_fun clos 0 else
+   Cifthenelse(
+   Cop(Ccmpi Ceq, [get_field (Cvar clos) 1; int_const arity]),
+   Cop(Capply typ_addr,
+       get_field (Cvar clos) 2 :: List.map (fun s -> Cvar s) all_args),
+   app_fun clos 0))
+
+let call_cached_method arity =
+  let (args, clos', body) = apply_function_body (1+arity) in
+  let cache = Ident.create "cache"
+  and obj = List.hd args
+  and tag = Ident.create "tag" in
+  let clos =
+    let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag in
+    let meths = Ident.create "meths" and cached = Ident.create "cached" in
+    let mask = get_field (Cvar meths) 1 in
+    let cached_pos = Cvar cached in
+    let tag_pos = Cop(Cadda, [cached_pos; Cconst_int(2*size_addr-1)]) in
+    let tag' = Cop(Cload Word, [tag_pos]) in
+    let meth_pos = Cop(Cadda, [cached_pos; Cconst_int(size_addr-1)]) in
+    Clet(meths, Cop(Cload Word, [obj]),
+    Clet(cached,
+	 Cop(Cadda,
+	     [Cop(Cand, [Cop(Cload Word, [cache]); mask]); Cvar meths]),
+    Cifthenelse(Cop(Ccmpa Cne, [tag'; tag]),
+		Cop(Cextcall("oo_cache_public_method", typ_addr, false),
+		    [Cvar meths; tag; cache]),
+                Cop(Cload Word, [meth_pos]))
+        ))
+  in
+  let body = Clet(clos', clos, body) in
+  let fun_args =
+    [obj, typ_addr; tag, typ_int; cache, typ_addr]
+    @ List.map (fun id -> (id, typ_addr)) (List.tl args) in
+  Cfunction
+   {fun_name = "caml_cached_method" ^ string_of_int arity;
+    fun_args = fun_args;
+    fun_body = body;
+    fun_fast = true}
+
+let apply_function arity =
+  if arity = 1 then get_cached_method () else
+  if arity < 1 then call_cached_method (-arity) else
+  let (args, clos, body) = apply_function_body arity in
+  let all_args = args @ [clos] in
   Cfunction
    {fun_name = "caml_apply" ^ string_of_int arity;
     fun_args = List.map (fun id -> (id, typ_addr)) all_args;
