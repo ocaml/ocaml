@@ -1,16 +1,21 @@
 Language features:
 - Introduction of a new kind of data types: the virtual data types.
   Virtual types are intended to modelize non free algebraic types that
-  must verified semantic relations that were not enforceable in
+  must verify semantic relations that were not enforceable in
   previously available Caml data types.
   Values from virtual types can be freely used in pattern matching but
   the creation of values is reserved to special purpose functions
   provided in the type definition module.
-  That way, the construction functions can enforced any required invariant for
+  That way, the construction functions can enforce any required invariant for
   the datatype.
 
 Type-checking:
 - Allow polymorphic generalization of covariant parts of expansive expressions
+- Added a new "-dtypes" option to ocamlc/ocamlopt, and an emacs extension
+  "emacs/caml-types.el".  The compiler option saves inferred type information
+  to file *.types, and the emacs extension allows the user to look at the
+  type of any subexpression in the source file.  Works even in the case
+  of a type error (only the types computed up to the error are available).
 
 Both compilers:
 - The sources for a module, say "Mod", can be placed either in Mod.ml or
