@@ -50,5 +50,10 @@ extern void * caml_dlsym(void * handle, char * name);
 /* Return an error message describing the most recent dynlink failure. */
 extern char * caml_dlerror(void);
 
+#ifdef __linux__
+/* Recover executable name from /proc/self/exe if possible */
+extern int executable_name(char * name, int name_len);
+#endif
+
 #endif
 

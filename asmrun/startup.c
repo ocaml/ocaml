@@ -24,6 +24,7 @@
 #include "gc_ctrl.h"
 #include "misc.h"
 #include "mlvalues.h"
+#include "osdeps.h"
 #include "printexc.h"
 #include "sys.h"
 #ifdef HAS_UI
@@ -119,7 +120,6 @@ void caml_main(char **argv)
   char * exe_name;
 #ifdef __linux__
   static char proc_self_exe[256];
-  int retcode;
 #endif
   value res;
 
@@ -135,12 +135,8 @@ void caml_main(char **argv)
   init_signals();
   exe_name = argv[0];
 #ifdef __linux__
-  /* Recover executable name from /proc/self/exe, much more reliable */
-  retcode = readlink("/proc/self/exe", proc_self_exe, sizeof(proc_self_exe));
-  if (retcode != -1 && retcode < sizeof(proc_self_exe)) {
-    proc_self_exe[retcode] = 0;
+  if (executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
     exe_name = proc_self_exe;
-  }
 #endif
   sys_init(exe_name, argv);
   res = caml_start_program();

@@ -254,3 +254,24 @@ void aligned_munmap (char * addr, asize_t size)
 }
 
 #endif
+
+/* Recover executable name from /proc/self/exe if possible */
+
+#ifdef __linux__
+
+int executable_name(char * name, int name_len)
+{
+  int retcode;
+  struct stat st;
+
+  retcode = readlink("/proc/self/exe", name, name_len);
+  if (retcode == -1 || retcode >= name_len) return -1;
+  name[retcode] = 0;
+  /* Make sure that the contents of /proc/self/exe is a regular file.
+     (Old Linux kernels return an inode number instead.) */
+  if (stat(name, &st) != 0) return -1;
+  if (! S_ISREG(st.st_mode)) return -1;
+  return 0;
+}
+
+#endif
