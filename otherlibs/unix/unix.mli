@@ -181,7 +181,7 @@ val wait : unit -> int * process_status
    and termination status. *)
 
 val waitpid : wait_flag list -> int -> int * process_status
-(** Same as {!Unix.wait}, but waits for the process whose pid is given.
+(** Same as {!Unix.wait}, but waits for the child process whose pid is given.
    A pid of [-1] means wait for any child.
    A pid of [0] means wait for any child in the same process group
    as the current process.
@@ -666,7 +666,7 @@ val sigpending : unit -> int list
 (** Return the set of blocked signals that are currently pending. *)
 
 val sigsuspend : int list -> unit
-(** [sigsuspend sigs] atomically sets the blocked signals to [sig]
+(** [sigsuspend sigs] atomically sets the blocked signals to [sigs]
    and waits for a non-ignored, non-blocked signal to be delivered.
    On return, the blocked signals are reset to their initial value. *)
 
