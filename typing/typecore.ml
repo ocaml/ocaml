@@ -506,10 +506,9 @@ and type_let env rec_flag spat_sexp_list =
   let exp_env =
     match rec_flag with Nonrecursive -> env | Recursive -> new_env in
   let exp_list =
-    List.map (fun (spat, sexp) -> type_exp exp_env sexp) spat_sexp_list in
-  List.iter2
-    (fun pat exp -> unify_pat env pat exp.exp_type)
-    pat_list exp_list;
+    List.map2
+      (fun (spat, sexp) pat -> type_expect exp_env sexp pat.pat_type)
+      spat_sexp_list pat_list in
   List.iter2
     (fun pat exp -> Parmatch.check_partial pat.pat_loc [pat, exp])
     pat_list exp_list;
