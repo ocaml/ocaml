@@ -7,6 +7,9 @@ ocaml \- The Objective Caml interactive toplevel
 .SH SYNOPSIS
 .B ocaml
 [
+.B \-modern
+]
+[
 .B \-unsafe
 ]
 [
@@ -49,6 +52,12 @@ with
 are searched after the current directory, in the order in which they
 were given on the command line, but before the standard library
 directory.
+
+.TP
+.B \-modern
+Switch to the modern semantics for application. Arguments should be
+explicitly labeled by labels appearing in types. Arguments with different
+labels may commute freely.
 
 .TP
 .B \-unsafe

@@ -126,7 +126,7 @@ let add_branch lbl n =
 
 (* Current label for exit handler *)
 
-let exit_label = ref 99
+let exit_label = ref None
 
 (* Linearize an instruction [i]: add it in front of the continuation [n] *)
 
@@ -153,10 +153,15 @@ let rec linear i n =
       | _, Iend, Lbranch lbl ->
           copy_instr (Lcondbranch(invert_test test, lbl)) i (linear ifso n1)
       | Iexit, _, _ ->
-          copy_instr (Lcondbranch(test, !exit_label)) i (linear ifnot n1)
+	  let n2 = linear ifnot n1 in
+	  begin match !exit_label with None -> n2
+	  | Some lbl -> copy_instr (Lcondbranch(test, lbl)) i n2
+	  end
       | _,  Iexit, _ ->
-          copy_instr (Lcondbranch(invert_test test, !exit_label)) i
-                     (linear ifso n1)
+	  let n2 = linear ifso n1 in
+	  begin match !exit_label with None -> n2
+	  | Some lbl -> copy_instr (Lcondbranch(invert_test test, lbl)) i n2
+	  end
       | Iend, _, _ ->
           let (lbl_end, n2) = get_label n1 in
           copy_instr (Lcondbranch(test, lbl_end)) i (linear ifnot n2)
@@ -202,12 +207,15 @@ let rec linear i n =
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in
       let (lbl_handler, n2) = get_label(linear handler n1) in
       let saved_exit_label = !exit_label in
-      exit_label := lbl_handler;
+      exit_label := Some lbl_handler;
       let n3 = linear body (add_branch lbl_end n2) in
       exit_label := saved_exit_label;
       n3
   | Iexit ->
-      add_branch !exit_label (linear i.Mach.next n)
+      let n1 = linear i.Mach.next n in
+      begin match !exit_label with None -> n1
+      |	Some lbl -> add_branch lbl n1
+      end
   | Itrywith(body, handler) ->
       let (lbl_join, n1) = get_label (linear i.Mach.next n) in
       let (lbl_body, n2) =

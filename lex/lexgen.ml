@@ -169,7 +169,7 @@ let split_trans_set trans_set =
 module StateMap =
   Map.Make(struct type t = TransSet.t let compare = TransSet.compare end)
 
-let state_map = ref (StateMap.empty: int StateMap.t)
+let state_map = ref (StateMap.empty : int StateMap.t)
 let todo = (Stack.create() : (TransSet.t * int) Stack.t)
 let next_state_num = ref 0
 

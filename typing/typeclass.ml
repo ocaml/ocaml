@@ -25,6 +25,7 @@ type error =
   | Method_type_mismatch of string * (type_expr * type_expr) list
   | Structure_expected of class_type
   | Cannot_apply of class_type
+  | Apply_wrong_label of label
   | Pattern_type_clash of type_expr
   | Repeated_parameter
   | Unbound_class of Longident.t
@@ -84,7 +85,7 @@ let rec generalize_class_type =
   | Tcty_signature {cty_self = sty; cty_vars = vars } ->
       Ctype.generalize sty;
       Vars.iter (fun _ (_, ty) -> Ctype.generalize ty) vars
-  | Tcty_fun (ty, cty) ->
+  | Tcty_fun (_, ty, cty) ->
       Ctype.generalize ty;
       generalize_class_type cty
 
@@ -106,8 +107,8 @@ let rec constructor_type constr cty =
       constructor_type constr cty
   | Tcty_signature sign ->
       constr
-  | Tcty_fun (ty, cty) ->
-      Ctype.newty (Tarrow (ty, constructor_type constr cty))
+  | Tcty_fun (l, ty, cty) ->
+      Ctype.newty (Tarrow (l, ty, constructor_type constr cty))
 
 let rec class_body cty =
   match cty with
@@ -115,7 +116,7 @@ let rec class_body cty =
       cty (* Only class bodies can be abbreviated *)
   | Tcty_signature sign ->
       cty
-  | Tcty_fun (ty, cty) ->
+  | Tcty_fun (_, ty, cty) ->
       class_body cty
 
 let rec extract_constraints cty =
@@ -135,8 +136,8 @@ let rec abbreviate_class_type path params cty =
   match cty with
     Tcty_constr (_, _, _) | Tcty_signature _ ->
       Tcty_constr (path, params, cty)
-  | Tcty_fun (ty, cty) ->
-      Tcty_fun (ty, abbreviate_class_type path params cty)
+  | Tcty_fun (l, ty, cty) ->
+      Tcty_fun (l, ty, abbreviate_class_type path params cty)
 
 let rec closed_class_type =
   function
@@ -148,7 +149,7 @@ let rec closed_class_type =
       Vars.fold (fun _ (_, ty) cc -> Ctype.closed_schema ty && cc)
         sign.cty_vars
         true
-  | Tcty_fun (ty, cty) ->
+  | Tcty_fun (_, ty, cty) ->
       Ctype.closed_schema ty
         &&
       closed_class_type cty
@@ -167,7 +168,7 @@ let rec limited_generalize rv =
       Ctype.limited_generalize rv sign.cty_self;
       Vars.iter (fun _ (_, ty) -> Ctype.limited_generalize rv ty)
         sign.cty_vars
-  | Tcty_fun (ty, cty) ->
+  | Tcty_fun (_, ty, cty) ->
       Ctype.limited_generalize rv ty;
       limited_generalize rv cty
 
@@ -239,10 +240,11 @@ let type_constraint val_env sty sty' loc =
 let mkpat d = { ppat_desc = d; ppat_loc = Location.none }
 let make_method cl_num expr =
   { pexp_desc =
-      Pexp_function [mkpat (Ppat_alias (mkpat(Ppat_var "self-*"),
-                                        "self-" ^ cl_num)),
-                     expr];
-    pexp_loc = Location.none }
+      Pexp_function ("", None,
+                     [mkpat (Ppat_alias (mkpat(Ppat_var "self-*"),
+                                         "self-" ^ cl_num)),
+                      expr]);
+    pexp_loc = expr.pexp_loc }
 
 (*******************************)
 
@@ -339,10 +341,10 @@ and class_type env scty =
   | Pcty_signature (sty, sign) ->
       Tcty_signature (class_signature env sty sign)
       
-  | Pcty_fun (sty, scty) ->
+  | Pcty_fun (l, sty, scty) ->
       let ty = transl_simple_type env false sty in
       let cty = class_type env scty in
-      Tcty_fun (ty, cty)
+      Tcty_fun (l, ty, cty)
 
 (*******************************)
 
@@ -389,7 +391,7 @@ let rec class_field cl_num self_type meths vars
             (val_env, met_env, par_env)
       in
       (val_env, met_env, par_env,
-       Cf_inher (parent, inh_vars, inh_meths)::fields,
+       lazy(Cf_inher (parent, inh_vars, inh_meths))::fields,
        concr_meths, inh_vals)
 
   | Pcf_val (lab, mut, sexp, loc) ->
@@ -402,7 +404,7 @@ let rec class_field cl_num self_type meths vars
       let (id, val_env, met_env, par_env) =
         enter_val cl_num vars lab mut exp.exp_type val_env met_env par_env
       in
-      (val_env, met_env, par_env, Cf_val (lab, id, exp) :: fields,
+      (val_env, met_env, par_env, lazy(Cf_val (lab, id, exp)) :: fields,
        concr_meths, inh_vals)
 
   | Pcf_virt (lab, priv, sty, loc) ->
@@ -410,18 +412,28 @@ let rec class_field cl_num self_type meths vars
       (val_env, met_env, par_env, fields, concr_meths, inh_vals)
 
   | Pcf_meth (lab, priv, expr, loc)  ->
-      let expr = make_method cl_num expr in
+      let meth_expr = make_method cl_num expr in
       Ctype.raise_nongen_level ();
       let (_, ty) =
         Ctype.filter_self_method val_env lab priv meths self_type
       in
       let meth_type = Ctype.newvar () in
-      let (obj_ty, res_ty) = Ctype.filter_arrow val_env meth_type in
+      let (obj_ty, res_ty) = Ctype.filter_arrow val_env meth_type "" in
       Ctype.unify val_env obj_ty self_type;
       Ctype.unify val_env res_ty ty;
-      let texp = type_expect met_env expr meth_type in
+      let ty' = type_approx met_env expr in
+      begin try Ctype.unify met_env ty' res_ty with Ctype.Unify trace ->
+        raise(Typecore.Error(expr.pexp_loc, Expr_type_clash(trace)))
+      end;
       Ctype.end_def ();
-      (val_env, met_env, par_env, Cf_meth (lab, texp)::fields,
+      let field =
+        lazy begin
+          Ctype.raise_nongen_level ();
+          let texp = type_expect met_env meth_expr meth_type in
+          Ctype.end_def ();
+          Cf_meth (lab, texp)
+        end in
+      (val_env, met_env, par_env, field::fields,
        Concr.add lab concr_meths, inh_vals)
 
   | Pcf_cstr (sty, sty', loc) ->
@@ -455,19 +467,23 @@ let rec class_field cl_num self_type meths vars
           (let_bound_idents defs)
           ([], met_env, par_env)
       in
-      (val_env, met_env, par_env, Cf_let (rec_flag, defs, vals)::fields,
+      (val_env, met_env, par_env, lazy(Cf_let(rec_flag, defs, vals))::fields,
        concr_meths, inh_vals)
 
   | Pcf_init expr ->
       let expr = make_method cl_num expr in
-      Ctype.raise_nongen_level ();
-      let meth_type = Ctype.newvar () in
-      let (obj_ty, res_ty) = Ctype.filter_arrow val_env meth_type in
-      Ctype.unify val_env obj_ty self_type;
-      Ctype.unify val_env res_ty (Ctype.instance Predef.type_unit);
-      let texp = type_expect met_env expr meth_type in
-      Ctype.end_def ();
-      (val_env, met_env, par_env, Cf_init texp::fields, concr_meths, inh_vals)
+      let field =
+        lazy begin
+          Ctype.raise_nongen_level ();
+          let meth_type = Ctype.newvar () in
+          let (obj_ty, res_ty) = Ctype.filter_arrow val_env meth_type "" in
+          Ctype.unify val_env obj_ty self_type;
+          Ctype.unify val_env res_ty (Ctype.instance Predef.type_unit);
+          let texp = type_expect met_env expr meth_type in
+          Ctype.end_def ();
+          Cf_init texp
+        end in
+      (val_env, met_env, par_env, field::fields, concr_meths, inh_vals)
 
 and class_structure cl_num val_env met_env (spat, str) =
   (* Environment for substructures *)
@@ -496,8 +512,9 @@ and class_structure cl_num val_env met_env (spat, str) =
       (val_env, meth_env, par_env, [], Concr.empty, StringSet.empty)
       str
   in
+  let fields = List.map Lazy.force (List.rev fields) in
 
-  {cl_field = List.rev fields;
+  {cl_field = fields;
    cl_meths = Meths.map (function (id, ty) -> id) !meths},
 
   {cty_self = self_type;
@@ -542,9 +559,32 @@ and class_expr cl_num val_env met_env scl =
       {cl_desc = Tclass_structure desc;
        cl_loc = scl.pcl_loc;
        cl_type = Tcty_signature ty}
-  | Pcl_fun (spat, scl') ->
+  | Pcl_fun (l, Some default, spat, sbody) ->
+      let loc = default.pexp_loc in
+      let scases =
+        [{ppat_loc = loc; ppat_desc =
+          Ppat_construct(Longident.Lident"Some",
+                         Some{ppat_loc = loc; ppat_desc = Ppat_var"*sth*"},
+                         false)},
+         {pexp_loc = loc; pexp_desc = Pexp_ident(Longident.Lident"*sth*")};
+         {ppat_loc = loc; ppat_desc =
+          Ppat_construct(Longident.Lident"None", None, false)},
+         default] in
+      let smatch =
+        {pexp_loc = loc; pexp_desc =
+         Pexp_match({pexp_loc = loc; pexp_desc =
+                     Pexp_ident(Longident.Lident"*opt*")},
+                    scases)} in
+      let sfun =
+        {pcl_loc = scl.pcl_loc; pcl_desc =
+         Pcl_fun(l, None, {ppat_loc = loc; ppat_desc = Ppat_var"*opt*"},
+                 {pcl_loc = scl.pcl_loc; pcl_desc =
+                  Pcl_let(Nonrecursive, [spat, smatch], sbody)})}
+      in
+      class_expr cl_num val_env met_env sfun
+  | Pcl_fun (l, _, spat, scl') ->
       let (pat, pv, val_env, met_env) =
-        Typecore.type_class_arg_pattern cl_num val_env met_env spat
+        Typecore.type_class_arg_pattern cl_num val_env met_env l spat
       in
       let pv =
         List.map
@@ -555,35 +595,91 @@ and class_expr cl_num val_env met_env scl =
                 pexp_loc = Location.none}))
           pv
       in
-      Parmatch.check_partial pat.pat_loc
-        [pat, (* Dummy expression *)
-              {exp_desc = Texp_constant (Asttypes.Const_int 1);
-               exp_loc = Location.none;
-               exp_type = Ctype.none;
-               exp_env = Env.empty }];
+      let rec all_labeled = function
+          Tcty_fun ("", _, _) -> false
+        | Tcty_fun (l, _, ty_fun) -> l.[0] <> '?' && all_labeled ty_fun
+        | _ -> true
+      in
+      let partial =
+        Parmatch.check_partial val_env pat.pat_loc
+          [pat, (* Dummy expression *)
+           {exp_desc = Texp_constant (Asttypes.Const_int 1);
+            exp_loc = Location.none;
+            exp_type = Ctype.none;
+            exp_env = Env.empty }] in
       Ctype.raise_nongen_level ();
       let cl = class_expr cl_num val_env met_env scl' in
       Ctype.end_def ();
-      {cl_desc = Tclass_fun (pat, pv, cl);
+      if Btype.is_optional l && all_labeled cl.cl_type then
+        Location.print_warning pat.pat_loc
+          (Warnings.Other "This optional argument cannot be erased");
+      {cl_desc = Tclass_fun (pat, pv, cl, partial);
        cl_loc = scl.pcl_loc;
-       cl_type = Tcty_fun (pat.pat_type, cl.cl_type)}
+       cl_type = Tcty_fun (l, pat.pat_type, cl.cl_type)}
   | Pcl_apply (scl', sargs) ->
       let cl = class_expr cl_num val_env met_env scl' in
-      let rec type_args ty_fun =
-        function
-          [] ->
-            ([], ty_fun)
-        | sarg1 :: sargl ->
-            begin match ty_fun with
-              Tcty_fun (ty, cty) ->
-                let arg1 = type_expect val_env sarg1 ty in
-                let (argl, ty_res) = type_args cty sargl in
-                (arg1 :: argl, ty_res)
-            | _ ->
-                raise(Error(cl.cl_loc, Cannot_apply cl.cl_type))
-            end
+      let rec type_args args omitted ty_fun sargs more_sargs =
+        match ty_fun with
+        | Tcty_fun (l, ty, ty_fun) when sargs <> [] || more_sargs <> [] ->
+            let name = Btype.label_name l in
+            let sargs, more_sargs, arg =
+              if !Clflags.classic && not (Btype.is_optional l) then begin
+                match sargs, more_sargs with
+                  (l', sarg0)::_, _ ->
+                    raise(Error(sarg0.pexp_loc, Apply_wrong_label(l')))
+                | _, (l', sarg0)::more_sargs ->
+                    if l <> l' && l' <> "" then
+                      raise(Error(sarg0.pexp_loc, Apply_wrong_label l'))
+                    else ([], more_sargs, Some(type_argument val_env sarg0 ty))
+                | _ ->
+                    assert false
+              end else try
+                let (l', sarg0, sargs, more_sargs) =
+                  try
+                    let (l', sarg0, sargs1, sargs2) =
+                      Btype.extract_label name sargs
+                    in (l', sarg0, sargs1 @ sargs2, more_sargs)
+                  with Not_found ->
+                    let (l', sarg0, sargs1, sargs2) =
+                      Btype.extract_label name more_sargs
+                    in (l', sarg0, sargs @ sargs1, sargs2)
+                in
+                sargs, more_sargs,
+                if Btype.is_optional l' || not (Btype.is_optional l) then
+                  Some (type_argument val_env sarg0 ty)
+                else
+                  let arg = type_argument val_env
+                      sarg0 (extract_option_type val_env ty) in
+                  Some (option_some arg)
+              with Not_found ->
+                sargs, more_sargs,
+                if Btype.is_optional l &&
+                  (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
+                then
+                  Some (option_none ty Location.none)
+                else None
+            in
+            let omitted = if arg = None then (l,ty) :: omitted else omitted in
+            type_args (arg::args) omitted ty_fun sargs more_sargs
+        | _ ->
+            match sargs @ more_sargs with
+              (l, sarg0)::_ ->
+                if omitted <> [] then
+                  raise(Error(sarg0.pexp_loc, Apply_wrong_label l))
+                else
+                  raise(Error(cl.cl_loc, Cannot_apply cl.cl_type))
+            | [] ->
+                (List.rev args,
+                 List.fold_left
+                   (fun ty_fun (l,ty) -> Tcty_fun(l,ty,ty_fun))
+                   ty_fun omitted)
       in
-      let (args, cty) = type_args cl.cl_type sargs in
+      let (args, cty) =
+        if !Clflags.classic then
+          type_args [] [] cl.cl_type [] sargs
+        else
+          type_args [] [] cl.cl_type sargs []
+      in
       {cl_desc = Tclass_apply (cl, args);
        cl_loc = scl.pcl_loc;
        cl_type = cty}
@@ -985,6 +1081,11 @@ let report_error = function
   | Cannot_apply clty ->
       print_string
         "This class expression is not a class function, it cannot be applied"
+  | Apply_wrong_label l ->
+      if l = "" then
+        print_string "This argument cannot be applied without label"
+      else
+        printf "This argument cannot be applied with label %s:" l
   | Pattern_type_clash ty ->
       (* XXX Trace *)
       (* XXX Revoir message d'erreur *)

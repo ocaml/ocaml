@@ -53,8 +53,8 @@ external join : t -> unit = "caml_thread_join"
 val wait_read : Unix.file_descr -> unit
 val wait_write : Unix.file_descr -> unit
         (* These functions do nothing in this implementation. *)
-val wait_timed_read : Unix.file_descr -> float -> bool
-val wait_timed_write : Unix.file_descr -> float -> bool
+val wait_timed_read : Unix.file_descr -> timeout:float -> bool
+val wait_timed_write : Unix.file_descr -> timeout:float -> bool
         (* Suspend the execution of the calling thread until at least
            one character is available for reading ([wait_read]) or
            one character can be written without blocking ([wait_write])
@@ -65,8 +65,8 @@ val wait_timed_write : Unix.file_descr -> float -> bool
         (* These functions return immediately [true] in the Win32
            implementation. *)
 val select :
-  Unix.file_descr list -> Unix.file_descr list ->
-  Unix.file_descr list -> float ->
+  read:Unix.file_descr list -> write:Unix.file_descr list ->
+  exn:Unix.file_descr list -> timeout:float ->
     Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
         (* Suspend the execution of the calling thead until input/output
            becomes possible on the given Unix file descriptors.

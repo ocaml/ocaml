@@ -32,9 +32,12 @@ and pattern_desc =
   | Tpat_constant of constant
   | Tpat_tuple of pattern list
   | Tpat_construct of constructor_description * pattern list
+  | Tpat_variant of label * pattern option * row_desc
   | Tpat_record of (label_description * pattern) list
   | Tpat_array of pattern list
   | Tpat_or of pattern * pattern
+
+type partial = Partial | Total
 
 type expression =
   { exp_desc: expression_desc;
@@ -46,12 +49,13 @@ and expression_desc =
     Texp_ident of Path.t * value_description
   | Texp_constant of constant
   | Texp_let of rec_flag * (pattern * expression) list * expression
-  | Texp_function of (pattern * expression) list
-  | Texp_apply of expression * expression list
-  | Texp_match of expression * (pattern * expression) list
+  | Texp_function of (pattern * expression) list * partial
+  | Texp_apply of expression * expression option list
+  | Texp_match of expression * (pattern * expression) list * partial
   | Texp_try of expression * (pattern * expression) list
   | Texp_tuple of expression list
   | Texp_construct of constructor_description * expression list
+  | Texp_variant of label * expression option
   | Texp_record of (label_description * expression) list * expression option
   | Texp_field of expression * label_description
   | Texp_setfield of expression * label_description * expression
@@ -83,8 +87,8 @@ and class_expr =
 and class_expr_desc =
     Tclass_ident of Path.t
   | Tclass_structure of class_structure
-  | Tclass_fun of pattern * (Ident.t * expression) list * class_expr
-  | Tclass_apply of class_expr * expression list
+  | Tclass_fun of pattern * (Ident.t * expression) list * class_expr * partial
+  | Tclass_apply of class_expr * expression option list
   | Tclass_let of rec_flag *  (pattern * expression) list *
                   (Ident.t * expression) list * class_expr
   | Tclass_constraint of class_expr * string list * string list * Concr.t

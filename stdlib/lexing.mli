@@ -40,7 +40,7 @@ val from_string : string -> lexbuf
            the given string. Reading starts from the first character in
            the string. An end-of-input condition is generated when the
            end of the string is reached. *)
-val from_function : (string -> int -> int) -> lexbuf
+val from_function : (buffer:string -> len:int -> int) -> lexbuf
         (* Create a lexer buffer with the given function as its reading method.
            When the scanner needs more characters, it will call the given
            function, giving it a character string [s] and a character
@@ -62,7 +62,7 @@ val from_function : (string -> int -> int) -> lexbuf
 val lexeme : lexbuf -> string
         (* [Lexing.lexeme lexbuf] returns the string matched by
            the regular expression. *)
-val lexeme_char : lexbuf -> int -> char
+val lexeme_char : lexbuf -> pos:int -> char
         (* [Lexing.lexeme_char lexbuf i] returns character number [i] in
            the matched string. *)
 val lexeme_start : lexbuf -> int

@@ -170,6 +170,8 @@ let identchar =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
+let symbolchar2 =
+  ['!' '$' '%' '&' '*' '+' '-' '.' '/' '<' '=' '>' '?' '@' '^' '|' '~']
 let decimal_literal = ['0'-'9']+
 let hex_literal = '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
 let oct_literal = '0' ['o' 'O'] ['0'-'7']+
@@ -182,6 +184,15 @@ rule token = parse
       { token lexbuf }
   | "_"
       { UNDERSCORE }
+  | lowercase identchar * ':' [ ^ ':' '=' '>']
+      { let s = Lexing.lexeme lexbuf in
+      	lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
+      	LABEL (String.sub s 0 (String.length s - 2)) }
+  | ':' lowercase identchar *
+      { let s = Lexing.lexeme lexbuf in
+      	let l = String.length s - 1 in
+      	(* lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - l; *)
+	LABELID (String.sub s 1 l) }
   | lowercase identchar *
       { let s = Lexing.lexeme lexbuf in
           try
@@ -239,12 +250,14 @@ rule token = parse
   | "#"  { SHARP }
   | "&"  { AMPERSAND }
   | "&&" { AMPERAMPER }
+  | "`"  { BACKQUOTE }
   | "'"  { QUOTE }
   | "("  { LPAREN }
   | ")"  { RPAREN }
   | "*"  { STAR }
   | ","  { COMMA }
   | "?"  { QUESTION }
+  | "??" { QUESTION2 }
   | "->" { MINUSGREATER }
   | "."  { DOT }
   | ".." { DOTDOT }
@@ -262,6 +275,7 @@ rule token = parse
   | "[<" { LBRACKETLESS }
   | "]"  { RBRACKET }
   | "{"  { LBRACE }
+  | "{=" { LBRACEEQUAL }
   | "{<" { LBRACELESS }
   | "|"  { BAR }
   | "||" { BARBAR }
@@ -275,7 +289,9 @@ rule token = parse
   | "-"  { SUBTRACTIVE "-" }
   | "-." { SUBTRACTIVE "-." }
 
-  | ['!' '?' '~'] symbolchar *
+  | ['!' '~'] symbolchar *
+            { PREFIXOP(Lexing.lexeme lexbuf) }
+  | '?' symbolchar2 *
             { PREFIXOP(Lexing.lexeme lexbuf) }
   | ['=' '<' '>' '|' '&' '$'] symbolchar *
             { INFIXOP0(Lexing.lexeme lexbuf) }

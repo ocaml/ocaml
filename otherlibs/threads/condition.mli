@@ -35,7 +35,7 @@ type t
         (* The type of condition variables. *)
 val create: unit -> t
         (* Return a new condition variable. *)
-val wait: t -> Mutex.t -> unit
+val wait: t -> locking:Mutex.t -> unit
         (* [wait c m] atomically unlocks the mutex [m] and suspends the
            calling process on the condition variable [c]. The process will
            restart after the condition variable [c] has been signalled.

@@ -71,6 +71,8 @@ let simple_match p1 p2 =
   match p1.pat_desc, p2.pat_desc with
   | Tpat_construct(c1, _), Tpat_construct(c2, _) ->
       c1.cstr_tag = c2.cstr_tag
+  | Tpat_variant(l1, _, _), Tpat_variant(l2, _, _) ->
+      l1 = l2
   | Tpat_constant(Const_float s1), Tpat_constant(Const_float s2) ->
       float_of_string s1 = float_of_string s2
   | Tpat_constant(c1), Tpat_constant(c2) -> c1 = c2
@@ -118,12 +120,14 @@ let sort_record p = match p.pat_desc with
 let simple_match_args p1 p2 =
   match p2.pat_desc with
     Tpat_construct(cstr, args) -> args
+  | Tpat_variant(lab, Some arg, _) -> [arg]
   | Tpat_tuple(args)  -> args
   | Tpat_record(args) ->  extract_fields (record_arg p1) args
   | Tpat_array(args) -> args
   | (Tpat_any | Tpat_var(_)) ->
       begin match p1.pat_desc with
         Tpat_construct(_, args) -> omega_list args
+      | Tpat_variant(_, Some _, _) -> [omega]
       | Tpat_tuple(args) -> omega_list args
       | Tpat_record(args) ->  omega_list args
       | Tpat_array(args) ->  omega_list args
@@ -144,6 +148,9 @@ let rec normalize_pat q = match q.pat_desc with
       make_pat (Tpat_tuple (omega_list args)) q.pat_type q.pat_env
   | Tpat_construct  (c,args) ->
       make_pat (Tpat_construct (c,omega_list args)) q.pat_type q.pat_env
+  | Tpat_variant (l, arg, row) ->
+      make_pat (Tpat_variant (l, may_map (fun _ -> omega) arg, row))
+        q.pat_type q.pat_env
   | Tpat_array (args) ->
       make_pat (Tpat_array (omega_list args))  q.pat_type q.pat_env
   | Tpat_record (largs) ->
@@ -216,6 +223,16 @@ let set_args q r = match q with
     let args,rest = read_args omegas r in
     make_pat
       (Tpat_construct (c,args)) q.pat_type q.pat_env::
+    rest
+| {pat_desc = Tpat_variant (l, omega, row)} ->
+    let arg, rest =
+      match omega, r with
+        Some _, a::r -> Some a, r
+      | None, r -> None, r
+      | _ -> assert false
+    in
+    make_pat
+      (Tpat_variant (l, arg, row)) q.pat_type q.pat_env::
     rest
 | {pat_desc = Tpat_array omegas} ->
     let args,rest = read_args omegas r in
@@ -317,11 +334,53 @@ let filter_all pat0 pss =
   not.
 *)      
 
-let full_match env =  match env with
+let full_match tdefs force env =  match env with
 | ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _},_)},_)::_ ->
     false
 | ({pat_desc = Tpat_construct(c,_)},_) :: _ ->
     List.length env = c.cstr_consts + c.cstr_nonconsts
+| ({pat_desc = Tpat_variant(c,_,row); pat_type = ty},_) :: _ ->
+    let fields =
+      List.map
+        (function ({pat_desc = Tpat_variant (tag, _, row)}, _) ->
+            (* You must get a tag's type inside its own row *)
+            tag, List.assoc tag (Btype.row_repr row).row_fields
+          | _ -> assert false)
+        env
+    in
+    let row = Btype.row_repr row in
+    if force then begin
+      if not row.row_closed then begin
+        let more_fields =
+          List.fold_left
+            (fun acc (tag, f) ->
+              if List.mem_assoc tag acc || List.mem_assoc tag row.row_fields
+              then acc
+              else (tag, f)::acc)
+            [] fields
+        in
+        let closed = { row_fields = more_fields; row_more = Ctype.newvar();
+                       row_bound = row.row_bound; row_closed = true;
+                       row_name = None }
+         (* Cannot fail *)
+        in Ctype.unify tdefs row.row_more (Btype.newgenty (Tvariant closed))
+      end;
+      List.fold_left
+        (fun ok (tag,f) ->
+          match Btype.row_field_repr f with
+            Rabsent -> ok
+          | Reither(_, _, e) ->
+              if not (List.mem_assoc tag fields) then e := Some Rabsent;
+              ok
+          | Rpresent _ ->
+              ok && List.mem_assoc tag fields)
+        true row.row_fields
+    end else
+      row.row_closed &&
+      List.for_all
+        (fun (tag,f) ->
+          Btype.row_field_repr f = Rabsent || List.mem_assoc tag fields)
+        row.row_fields
 | ({pat_desc = Tpat_constant(Const_char _)},_) :: _ ->
     List.length env = 256
 | ({pat_desc = Tpat_constant(_)},_) :: _ -> false
@@ -399,6 +458,30 @@ let build_other env =  match env with
       end
     with
     | Datarepr.Constr_not_found -> omega
+    end
+| ({pat_desc = Tpat_variant(_,_,row)} as p,_) :: _ ->
+    let tags =
+      List.map
+        (function ({pat_desc = Tpat_variant (tag, _, _)}, _) -> tag
+                | _ -> assert false)
+        env
+    in
+    let row = Btype.row_repr row in
+    let make_other_pat tag const =
+      let arg = if const then None else Some omega in
+      make_pat (Tpat_variant(tag, arg, row)) p.pat_type p.pat_env in
+    begin match
+      List.fold_left
+        (fun others (tag,f) -> match Btype.row_field_repr f with
+          Rabsent | Reither _ -> others
+        | Rpresent arg -> make_other_pat tag (arg = None) :: others)
+        [] row.row_fields
+    with [] -> assert false
+    | pat::other_pats ->
+        List.fold_left
+          (fun p_res pat ->
+            make_pat (Tpat_or (pat, p_res)) p.pat_type p.pat_env)
+          pat other_pats
     end
 | ({pat_desc = Tpat_constant(Const_char _)} as p,_) :: _ ->
     let all_chars =
@@ -506,36 +589,38 @@ let rec try_many f = function
       | r -> r
       end
   
-let rec satisfiable build pss qs =
+let rec satisfiable tdefs build pss qs =
   match pss with
     [] -> if build then Rsome qs else Rok (* qs is a matching vector *)
   | _ ->
     match qs with
       [] -> Rnone
     | {pat_desc = Tpat_or(q1,q2)}::qs ->
-        begin match satisfiable build pss (q1::qs) with
-        | Rnone -> satisfiable build pss (q2::qs)
+        begin match satisfiable tdefs build pss (q1::qs) with
+        | Rnone -> satisfiable tdefs build pss (q2::qs)
         | r -> r
         end
     | {pat_desc = Tpat_alias(q,_)}::qs ->
-        satisfiable build pss (q::qs)
+        satisfiable tdefs build pss (q::qs)
     | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
         let q0 = discr_pat omega pss in     
         begin match filter_all q0 pss with
           (* first column of pss is made of variables only *)
-          [] -> begin match satisfiable build (filter_extra pss) qs with
+          [] -> begin match satisfiable tdefs build (filter_extra pss) qs with
           | Rsome r -> Rsome (q0::r)
           | r -> r
           end
         | constrs ->          
             let try_non_omega (p,pss) =
-              match satisfiable build pss (simple_match_args p omega @ qs) with
+              match
+                satisfiable tdefs build pss (simple_match_args p omega @ qs)
+              with
               | Rsome r -> Rsome (set_args p r)
               | r -> r in
-            if full_match constrs
+            if full_match tdefs build constrs
             then try_many try_non_omega constrs
             else
-              match satisfiable build (filter_extra pss) qs with
+              match satisfiable tdefs build (filter_extra pss) qs with
               | Rnone -> try_many try_non_omega constrs
               | Rok -> Rok
               | Rsome r ->  Rsome (build_other constrs::r)
@@ -543,7 +628,8 @@ let rec satisfiable build pss qs =
     | q::qs ->
         let q0 = discr_pat q pss in
         match
-          satisfiable build (filter_one q0 pss) (simple_match_args q0 q @ qs)
+          satisfiable tdefs build (filter_one q0 pss)
+            (simple_match_args q0 q @ qs)
         with
         | Rsome r -> Rsome (set_args q0 r)
         | r -> r
@@ -577,6 +663,9 @@ let rec le_pat p q =
   | Tpat_constant(c1), Tpat_constant(c2) -> c1 = c2
   | Tpat_construct(c1,ps), Tpat_construct(c2,qs) ->
       c1.cstr_tag = c2.cstr_tag && le_pats ps qs
+  | Tpat_variant(l1,Some p1,_), Tpat_variant(l2,Some p2,_) ->
+      l1 = l2 & le_pat p1 p2
+  | Tpat_variant(l1,None,_), Tpat_variant(l2,None,_) -> l1 = l2
   | Tpat_tuple(ps), Tpat_tuple(qs) -> le_pats ps qs
   | Tpat_record l1, Tpat_record l2 ->
       let ps = List.map (fun (_,p) -> p) l1
@@ -647,6 +736,10 @@ let rec pretty_val ppf v = match v.pat_desc with
       |  _ ->
           fprintf ppf "@[<2>%s@ @[(%a)@]@]" name (pretty_vals ",") vs
       end
+  | Tpat_variant (l, None, _) ->
+      fprintf ppf "`%s" l
+  | Tpat_variant (l, Some w, _) ->
+      fprintf ppf "@[<2`%s@ %a@]" l pretty_arg w
   | Tpat_record lvs ->
       fprintf ppf "@[{%a}@]"
         (pretty_lvals (get_record_labels v.pat_type v.pat_env))
@@ -706,18 +799,19 @@ let top_pretty ppf v =
 (*    - Unused match case     *)
 (******************************)
 
-let check_partial loc casel =
+let check_partial tdefs loc casel =
   let pss = get_mins (initial_matrix casel) in
   let r = match pss with
   | []     -> begin match casel with
     | [] -> Rnone
     | (p,_) :: _ -> Rsome [p]
   end
-  | ps::_  -> satisfiable true pss (omega_list ps) in
+  | ps::_  -> satisfiable tdefs true pss (omega_list ps) in
   match r with
-  | Rnone -> ()
+  | Rnone -> Total
   | Rok ->
-      Location.print_warning loc (Warnings.Partial_match "")
+      Location.print_warning loc (Warnings.Partial_match "");
+      Partial
   | Rsome [v] ->
       let errmsg =
         try
@@ -727,7 +821,8 @@ let check_partial loc casel =
           Buffer.contents buf
         with _ ->
           "" in
-      Location.print_warning loc (Warnings.Partial_match errmsg)
+      Location.print_warning loc (Warnings.Partial_match errmsg);
+      Partial
   | _ ->
       fatal_error "Parmatch.check_partial"
 
@@ -735,7 +830,7 @@ let location_of_clause = function
     pat :: _ -> pat.pat_loc
   | _ -> fatal_error "Parmatch.location_of_clause"
 
-let check_unused casel =
+let check_unused tdefs casel =
   let prefs =   
     List.fold_right
       (fun (pat,act as clause) r ->
@@ -748,7 +843,7 @@ let check_unused casel =
     (fun (pss, ((qs, _) as clause)) ->
       try
       if
-        (match satisfiable false pss qs with
+        (match satisfiable tdefs false pss qs with
         | Rnone -> true
         | Rok -> false
         | _ -> assert false)

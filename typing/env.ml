@@ -97,6 +97,8 @@ type pers_struct =
 let persistent_structures =
   (Hashtbl.create 17 : (string, pers_struct) Hashtbl.t)
 
+let components_of_module' = ref (fun _ _ _ _ -> assert false)
+
 let read_pers_struct modname filename =
   let ic = open_in_bin filename in
   try
@@ -106,9 +108,12 @@ let read_pers_struct modname filename =
       close_in ic;
       raise(Error(Not_an_interface filename))
     end;
-    let (name, sign, comps) = input_value ic in
+    let (name, sign) = input_value ic in
     let crcs = input_value ic in
     close_in ic;
+    let comps =
+      !components_of_module' empty Subst.identity
+        (Pident(Ident.create_persistent name)) (Tmty_signature sign) in
     let ps = { ps_name = name;
                ps_sig = sign;
                ps_comps = comps;
@@ -463,7 +468,7 @@ let rec components_of_module env sub path mty =
             let decl' = Subst.modtype_declaration sub decl in
             c.comp_modtypes <-
               Tbl.add (Ident.name id) (decl', nopos) c.comp_modtypes;
-            env := store_modtype id path decl' !env
+            env := store_modtype id path decl !env
         | Tsig_class(id, decl) ->
             let decl' = Subst.class_declaration sub decl in
             c.comp_classes <-
@@ -598,6 +603,8 @@ and store_cltype id path desc env =
     classes = env.classes;
     cltypes = Ident.add id (path, desc) env.cltypes;
     summary = Env_cltype(env.summary, id, desc) }
+
+let _ = components_of_module' := components_of_module
 
 (* Memoized function to compute the components of a functor application
    in a path. *)
@@ -751,10 +758,10 @@ let save_signature sg modname filename =
   Btype.cleanup_abbrev ();
   let comps =
     components_of_module empty Subst.identity
-       (Pident(Ident.create_persistent modname)) (Tmty_signature sg) in
+      (Pident(Ident.create_persistent modname)) (Tmty_signature sg) in
   let oc = open_out_bin filename in
   output_string oc cmi_magic_number;
-  output_value oc (modname, sg, comps);
+  output_value oc (modname, sg);
   flush oc;
   let crc = Digest.file filename in
   let crcs = (modname, crc) :: imported_units() in

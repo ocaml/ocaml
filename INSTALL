@@ -69,6 +69,18 @@ The "configure" script accepts the following options:
         It will *not* work under Digital Unix 3.2 or earlier, SunOS 4,
         HPUX, AIX, nor Linux without LinuxThreads.
 
+-tkdefs <cpp flags>		(default: none)
+-tklibs <flags and libraries>	(default: determined automatically)
+	These options specify where to find the Tcl/Tk libraries for
+	LablTk. "-tkdefs" helps to find the headers, and "-tklibs"
+	the C libraries. "-tklibs" may contain either only -L/path flags,
+	in which case the library names are determined automatically,
+	or the actual libraries, which are used as given.
+	Example: for a Japanese tcl/tk whose headers are in specific
+	directories and libraries in /usr/local/lib, you can use
+	./configure -tklibs "-L/usr/local/lib -ltk8.0jp -ltcl8.0jp"
+	  -tkdefs "-I/usr/local/include/tcl8.0jp -I/usr/local/include/tk8.0jp"
+
 Examples:
     ./configure -prefix /usr/bin
     ./configure -bindir /usr/bin -libdir /usr/lib/ocaml -mandir /usr/man/manl

@@ -29,6 +29,8 @@ let report_error exn =
       Syntaxerr.report_error err
   | Env.Error err ->
       Env.report_error err
+  | Ctype.Tags(l, l') ->
+      printf "In this program,@ variant constructors@ `%s and `%s@ have same hash value." l l'
   | Typecore.Error(loc, err) ->
       Location.print loc; Typecore.report_error err
   | Typetexp.Error(loc, err) ->

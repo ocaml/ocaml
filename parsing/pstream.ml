@@ -40,9 +40,10 @@ let sexp = Pexp_ident (Lident "%strm")
 let econ c x = ghexp (Pexp_construct (Ldot (Lident "Stream", c), x, false))
 let pcon c x = ghpat (Ppat_construct (Ldot (Lident "Stream", c), x, false))
 let afun f x =
-  ghexp (Pexp_apply (ghexp (Pexp_ident (Ldot (Lident "Stream", f))), x))
+  ghexp (Pexp_apply (ghexp (Pexp_ident (Ldot (Lident "Stream", f))),
+		     List.map (fun a -> "", a) x))
 let araise c x =
-  ghexp (Pexp_apply (ghexp (Pexp_ident (Lident "raise")), [econ c x]))
+  ghexp (Pexp_apply (ghexp (Pexp_ident (Lident "raise")), ["", econ c x]))
 let esome x = ghexp (Pexp_construct (Lident "Some", Some x, false))
 
 
@@ -62,7 +63,7 @@ let stream_pattern_component skont =
   | Spat_nterm (p, e) ->
       (ghexp
          (Pexp_try
-            (esome (ghexp (Pexp_apply (e, [ghexp sexp]))),
+            (esome (ghexp (Pexp_apply (e, ["", ghexp sexp]))),
              [(pcon "Failure" None,
                ghexp (Pexp_construct (Lident "None", None, false)))])),
        p, skont)
@@ -113,12 +114,12 @@ let cparser (bpo, pc) =
     in
     ghpat (Ppat_constraint (ghpat spat, t))
   in
-  mkexp (Pexp_function [(p, e)])
+  mkexp (Pexp_function ("", None, [p, e]))
 
 
 (* streams *)
 
-let clazy e = ghexp (Pexp_function [(ghpat Ppat_any, e)])
+let clazy e = ghexp (Pexp_function ("", None, [ghpat Ppat_any, e]))
 
 let rec cstream_aux =
   function 

@@ -97,8 +97,9 @@ let rec core_type i x =
   match x.ptyp_desc with
   | Ptyp_any -> line i "Ptyp_any\n";
   | Ptyp_var (s) -> line i "Ptyp_var %s\n" s;
-  | Ptyp_arrow (ct1, ct2) ->
+  | Ptyp_arrow (l, ct1, ct2) ->
       line i "Ptyp_arrow\n";
+      string i l;
       core_type i ct1;
       core_type i ct2;
   | Ptyp_tuple l ->
@@ -107,12 +108,18 @@ let rec core_type i x =
   | Ptyp_constr (li, l) ->
       line i "Ptyp_constr %a\n" fmt_longident li;
       list i core_type l;
+  | Ptyp_variant (l, closed, low) ->
+      line i "Ptyp_variant\n";
+      list i row_field l;
+      bool i closed;
+      list i string low
   | Ptyp_object (l) ->
       line i "Ptyp_object\n";
       list i core_field_type l;
-  | Ptyp_class (li, l) ->
+  | Ptyp_class (li, l, low) ->
       line i "Ptyp_class %a\n" fmt_longident li;
       list i core_type l;
+      list i string low
   | Ptyp_alias (ct, s) ->
       line i "Ptyp_alias \"%s\"\n" s;
       core_type i ct;
@@ -126,12 +133,17 @@ and core_field_type i x =
       core_type i ct;
   | Pfield_var -> line i "Pfield_var\n";
 
+and row_field i (l, pre, tyl) =
+  string i l;
+  bool i pre;
+  list i core_type tyl
+
 and pattern i x =
   line i "pattern %a\n" fmt_location x.ppat_loc;
   let i = i+1 in
   match x.ppat_desc with
   | Ppat_any -> line i "Ppat_any\n";
-  | Ppat_var (s) -> line i "PPat_var \"%s\"\n" s;
+  | Ppat_var (s) -> line i "Ppat_var \"%s\"\n" s;
   | Ppat_alias (p, s) ->
       line i "Ppat_alias \"%s\"\n" s;
       pattern i p;
@@ -143,6 +155,9 @@ and pattern i x =
       line i "Ppat_construct %a\n" fmt_longident li;
       option i pattern po;
       bool i b;
+  | Ppat_variant (l, po) ->
+      line i "Ppat_variant `%s\n" l;
+      option i pattern po;
   | Ppat_record (l) ->
       line i "Ppat_record\n";
       list i longident_x_pattern l;
@@ -168,13 +183,14 @@ and expression i x =
       line i "Pexp_let %a\n" fmt_rec_flag rf;
       list i pattern_x_expression_def l;
       expression i e;
-  | Pexp_function (l) ->
-      line i "Pexp_function\n";
+  | Pexp_function (p, eo, l) ->
+      line i "Pexp_function \"%s\"\n" p;
+      option i expression eo;
       list i pattern_x_expression_case l;
   | Pexp_apply (e, l) ->
       line i "Pexp_apply\n";
       expression i e;
-      list i expression l;
+      list i argument l;
   | Pexp_match (e, l) ->
       line i "Pexp_match\n";
       expression i e;
@@ -190,6 +206,9 @@ and expression i x =
       line i "Pexp_construct %a\n" fmt_longident li;
       option i expression eo;
       bool i b;
+  | Pexp_variant (l, eo) ->
+      line i "Pexp_variant `%s\n" l;
+      option i expression eo;
   | Pexp_record (l, eo) ->
       line i "Pexp_record\n";
       list i longident_x_expression l;
@@ -248,6 +267,10 @@ and expression i x =
       module_expr i me;
       expression i e;
 
+and argument i (l,e) =
+  string i l;
+  expression i e;
+
 and value_description i x =
   line i "value_description\n";
   core_type (i+1) x.pval_type;
@@ -287,8 +310,8 @@ and class_type i x =
   | Pcty_signature (cs) ->
       line i "Pcty_signature\n";
       class_signature i cs;
-  | Pcty_fun (co, cl) ->
-      line i "Pcty_fun\n";
+  | Pcty_fun (l, co, cl) ->
+      line i "Pcty_fun \"%s\"\n" l;
       core_type i co;
       class_type i cl;
 

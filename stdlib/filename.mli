@@ -29,10 +29,10 @@ val is_implicit : string -> bool
            with an explicit reference to the current directory ([./] or
            [../] in Unix), [false] if it starts with an explicit reference
            to the root directory or the current directory. *)
-val check_suffix : string -> string -> bool
+val check_suffix : string -> suff:string -> bool
         (* [check_suffix name suff] returns [true] if the filename [name]
            ends with the suffix [suff]. *)
-val chop_suffix : string -> string -> string
+val chop_suffix : string -> suff:string -> string
         (* [chop_suffix name suff] removes the suffix [suff] from 
            the filename [name]. The behavior is undefined if [name] does not
            end with the suffix [suff]. *)
@@ -49,7 +49,7 @@ val dirname : string -> string
            current directory to [dirname name] (with [Sys.chdir]),
            references to [basename name] (which is a relative file name)
            designate the same file as [name] before the call to [Sys.chdir]. *)
-val temp_file: string -> string -> string
+val temp_file: prefix:string -> suffix:string -> string
         (* [temp_file prefix suffix] returns the name of a
            non-existent temporary file in the temporary directory.
            The base name of the temporary file is formed by concatenating

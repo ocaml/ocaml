@@ -40,6 +40,9 @@ type error =
   | Unbound_row_variable of Longident.t
   | Type_mismatch of (Types.type_expr * Types.type_expr) list
   | Alias_type_mismatch of (Types.type_expr * Types.type_expr) list
+  | Present_has_conjunction of string
+  | Present_has_no_type of string
+  | Multiple_constructor of string
 
 exception Error of Location.t * error
 

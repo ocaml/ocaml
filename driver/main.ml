@@ -57,6 +57,7 @@ let usage = "Usage: ocamlc <options> <files>\nOptions are:"
 
 module Options = Main_args.Make_options (struct
   let set r () = r := true
+  let unset r () = r := false
   let _a = set make_archive
   let _c = set compile_only
   let _cc s = c_compiler := s
@@ -72,6 +73,7 @@ module Options = Main_args.Make_options (struct
   let _linkall = set link_everything
   let _make_runtime () =
     custom_runtime := true; make_runtime := true; link_everything := true
+  let _modern = unset classic
   let _noassert = set noassert
   let _o s = exec_name := s; archive_name := s; object_name := s
   let _output_obj () = output_c_object := true; custom_runtime := true

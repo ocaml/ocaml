@@ -120,7 +120,7 @@ let find_printer_type lid =
     Ctype.begin_def();
     let ty_arg = Ctype.newvar() in
     Ctype.unify !toplevel_env
-      (Ctype.newty (Tarrow(ty_arg, Ctype.instance Predef.type_unit)))
+      (Ctype.newty (Tarrow("", ty_arg, Ctype.instance Predef.type_unit)))
       (Ctype.instance desc.val_type);
     Ctype.end_def();
     Ctype.generalize ty_arg;

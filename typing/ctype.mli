@@ -18,6 +18,7 @@ open Asttypes
 open Types
 
 exception Unify of (type_expr * type_expr) list
+exception Tags of label * label
 exception Subtype of
         (type_expr * type_expr) list * (type_expr * type_expr) list
 exception Cannot_expand
@@ -70,6 +71,14 @@ val set_object_name:
 val remove_object_name: type_expr -> unit
 val hide_private_methods: type_expr -> unit
 
+val sort_row_fields: (label * row_field) list -> (label * row_field) list
+val merge_row_fields:
+        (label * row_field) list -> (label * row_field) list ->
+        (label * row_field) list * (label * row_field) list *
+        (label * row_field * row_field) list
+val filter_row_fields:
+        bool -> (label * row_field) list -> (label * row_field) list
+
 val generalize: type_expr -> unit
         (* Generalize in-place the given type *)
 val iterative_generalization: int -> type_expr list -> type_expr list
@@ -111,8 +120,8 @@ val enforce_constraints: Env.t -> type_expr -> unit
 
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
-val filter_arrow: Env.t -> type_expr -> type_expr * type_expr
-        (* A special case of unification (with 'a -> 'b). *)
+val filter_arrow: Env.t -> type_expr -> label -> type_expr * type_expr
+        (* A special case of unification (with l:'a -> 'b). *)
 val filter_method: Env.t -> string -> private_flag -> type_expr -> type_expr
         (* A special case of unification (with {m : 'a; 'b}). *)
 val check_filter_method: Env.t -> string -> private_flag -> type_expr -> unit

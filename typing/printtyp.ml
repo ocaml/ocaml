@@ -79,33 +79,64 @@ let print_name_of_type t =
 let check_name_of_type t =
   ignore(name_of_type t)
 
+(*
 let remove_name_of_type t =
   names := List.remove_assq t !names
+*)
 
 let visited_objects = ref ([] : type_expr list)
 let aliased = ref ([] : type_expr list)
 
+let proxy ty =
+  let ty = repr ty in
+  match ty.desc with
+    Tvariant row -> Btype.row_more row
+  | _ -> ty
+
+let namable_row row =
+  row.row_name <> None &&
+  List.for_all
+    (fun (_,f) -> match row_field_repr f with
+      Reither(c,l,_) -> if c then l = [] else List.length l = 1
+    | _ -> true)
+    row.row_fields
+
 let rec mark_loops_rec visited ty =
   let ty = repr ty in
-  if List.memq ty visited then begin
-    if not (List.memq ty !aliased) then
-      aliased := ty :: !aliased
+  let px = proxy ty in
+  if List.memq px visited then begin
+    if not (List.memq px !aliased) then
+      aliased := px :: !aliased
   end else
     let visited = ty :: visited in
     match ty.desc with
       Tvar                -> ()
-    | Tarrow(ty1, ty2)    ->
+    | Tarrow(_, ty1, ty2) ->
         mark_loops_rec visited ty1; mark_loops_rec visited ty2
     | Ttuple tyl          -> List.iter (mark_loops_rec visited) tyl
     | Tconstr(_, tyl, _)  ->
         List.iter (mark_loops_rec visited) tyl
+    | Tvariant row        ->
+        let row = row_repr row in
+        if List.memq px !visited_objects then begin
+          if not (List.memq px !aliased) then
+            aliased := px :: !aliased
+        end else begin
+          if not (static_row row) then
+            visited_objects := px :: !visited_objects;
+          match row.row_name with
+            Some(p, tyl) when namable_row row ->
+              List.iter (mark_loops_rec visited) tyl
+          | _ ->
+              iter_row (mark_loops_rec visited) row
+        end
     | Tobject (fi, nm)    ->
-        if List.memq ty !visited_objects then begin
-          if not (List.memq ty !aliased) then
-            aliased := ty :: !aliased
+        if List.memq px !visited_objects then begin
+          if not (List.memq px !aliased) then
+            aliased := px :: !aliased
         end else begin
           if opened_object ty then
-            visited_objects := ty :: !visited_objects;
+            visited_objects := px :: !visited_objects;
           let name =
             match !nm with
               None -> None
@@ -131,6 +162,7 @@ let rec mark_loops_rec visited ty =
     | Tfield(_, _, _, ty2) ->
         mark_loops_rec visited ty2
     | Tnil                -> ()
+    | Tsubst ty           ->  mark_loops_rec visited ty
     | Tlink _             -> fatal_error "Printtyp.mark_loops_rec (2)"
 
 let mark_loops ty = mark_loops_rec [] ty
@@ -141,17 +173,31 @@ let reset_loop_marks () =
 let reset () =
   reset_names (); reset_loop_marks ()
 
+(* disabled in classic mode when printing an unification error *)
+let print_labels = ref true
+let print_label l =
+  if !print_labels && l <> "" || is_optional l then begin
+    print_string l;
+    print_char ':'
+  end
+
+let rec print_list pr sep = function
+    [] -> ()
+  | [a] -> pr a
+  | a::l -> pr a; sep (); print_list pr sep l
+
 let rec typexp sch prio0 ty =
   let ty = repr ty in
-  if List.mem_assq ty !names then begin
-    if (ty.desc = Tvar) && sch && (ty.level <> generic_level)
+  let px = proxy ty in
+  if List.mem_assq px !names then begin
+    if (px.desc = Tvar) && sch && (px.level <> generic_level)
     then print_string "'_"
     else print_string "'";
-    print_name_of_type ty
+    print_name_of_type px
   end else begin
-    let alias = List.memq ty !aliased in
+    let alias = List.memq px !aliased in
     if alias then begin
-      check_name_of_type ty;
+      check_name_of_type px;
       if prio0 >= 1 then begin open_box 1; print_string "(" end
       else open_box 0
     end;
@@ -162,10 +208,17 @@ let rec typexp sch prio0 ty =
         then print_string "'"
         else print_string "'_";
         print_name_of_type ty
-    | Tarrow(ty1, ty2) ->
+    | Tarrow(l, ty1, ty2) ->
         if prio >= 2 then begin open_box 1; print_string "(" end
                      else open_box 0;
-        typexp sch 2 ty1;
+        print_label l;
+        if is_optional l then
+          match (repr ty1).desc with
+            Tconstr(path, [ty], _) when path = Predef.path_option ->
+              typexp sch 2 ty
+          | _ -> assert false
+        else
+          typexp sch 2 ty1;
         print_string " ->"; print_space();
         typexp sch 1 ty2;
         if prio >= 2 then print_string ")";
@@ -188,26 +241,102 @@ let rec typexp sch prio0 ty =
         end;
         path p;
         close_box()
+    | Tvariant row ->
+        let row = row_repr row in
+        let fields =
+          if row.row_closed then
+            List.filter (fun (_,f) -> row_field_repr f <> Rabsent)
+              row.row_fields
+          else row.row_fields
+        in
+        let present =
+          List.filter
+            (fun (_,f) -> match row_field_repr f with
+            | Rpresent _ -> true
+            | _ -> false)
+            fields in
+        let all_present = List.length present = List.length fields in
+        begin match row.row_name with
+        | Some(p,tyl) when namable_row row ->
+            open_box 0;
+            begin match tyl with
+              [] -> ()
+            | [ty1] ->
+                typexp sch 3 ty1; print_space()
+            | tyl ->
+                open_box 1; print_string "("; typlist sch 0 "," tyl;
+                print_string ")"; close_box(); print_space()
+            end;
+            if not all_present then
+              if sch && px.level <> generic_level then print_string "_#"
+              else print_char '#';
+            path p;
+            if not all_present && present <> [] then begin
+              open_box 1;
+              print_string "[>";
+              print_list (fun (s,_) -> print_char '`'; print_string s)
+                print_space present;
+              print_char ']';
+              close_box ()
+            end;
+            close_box ()
+        | _ ->
+            open_hovbox 0;
+            if not (row.row_closed && all_present) && sch &&
+              px.level <> generic_level then print_string "_["
+            else print_char '[';
+            if row.row_closed && all_present then () else
+            if all_present then print_char '>' else print_char '<';
+            print_list (row_field sch) (fun () -> printf "@,|") fields;
+            if not (row.row_closed || all_present) then printf "@,| ..";
+            if present <> [] && not all_present then begin
+              print_space ();
+              open_hovbox 2;
+              print_string "|>";
+              print_list (fun (s,_) -> print_char '`'; print_string s)
+                print_space present;
+              close_box ()
+            end;
+            print_char ']';
+            close_box ()
+        end
     | Tobject (fi, nm) ->
         typobject sch ty fi nm
 (*
 | Tfield _ -> typobject sch ty ty (ref None)
 | Tnil -> typobject sch ty ty (ref None)
 *)
+    | Tsubst ty ->
+        typexp sch prio ty
     | _ ->
         fatal_error "Printtyp.typexp"
     end;
     if alias then begin
       print_string " as ";
       print_string "'";
-      print_name_of_type ty;
-      if not (opened_object ty) then
-        remove_name_of_type ty;
+      print_name_of_type px;
+      (* if not (opened_object ty) then
+        remove_name_of_type px; *)
       if prio0 >= 1 then print_string ")";
       close_box()
     end
   end
 (*; print_string "["; print_int ty.level; print_string "]"*)
+
+and row_field sch (l,f) =
+  open_box 2;
+  print_char '`';
+  print_string l;
+  begin match row_field_repr f with
+    Rpresent None | Reither(true, [], _) -> ()
+  | Rpresent(Some ty) -> print_space (); typexp sch 0 ty
+  | Reither(c, tyl,_) ->
+      print_space ();
+      if c then printf "&@ ";
+      typlist sch 0 " &" tyl
+  | Rabsent -> print_space (); print_string "[]"
+  end;
+  close_box ()
 
 and typlist sch prio sep = function
     [] -> ()
@@ -462,7 +591,7 @@ let rec prepare_class_type =
       end;
 *)
       Vars.iter (fun _ (_, ty) -> mark_loops ty) sign.cty_vars
-  | Tcty_fun (ty, cty) ->
+  | Tcty_fun (_, ty, cty) ->
       mark_loops ty;
       prepare_class_type cty
 
@@ -508,9 +637,17 @@ let rec perform_class_type sch params =
       print_break 1 (-2);
       print_string "end";
       close_box()
-  | Tcty_fun (ty, cty) ->
+  | Tcty_fun (l, ty, cty) ->
       open_box 0;
-      typexp sch 2 ty; print_string " ->";
+      print_label l;
+      if is_optional l then
+        match (repr ty).desc with
+          Tconstr(path, [ty], _) when path = Predef.path_option ->
+            typexp sch 2 ty
+        | _ -> assert false
+      else
+        typexp sch 2 ty;
+      print_string " ->";
       print_space ();
       perform_class_type sch params cty;
       close_box ()
@@ -715,18 +852,34 @@ let rec filter_trace =
   | _ ->
       []
 
+(* Hide variant name, to force printing the expanded type *)
+let hide_variant_name t =
+  match repr t with
+    {desc = Tvariant row} as t when (row_repr row).row_name <> None ->
+      newty2 t.level (Tvariant {(row_repr row) with row_name = None})
+  | _ ->
+      t
+
+let prepare_expansion (t, t') =
+  let t' = hide_variant_name t' in
+  mark_loops t; if t != t' then mark_loops t';
+  (t, t')
+
 let unification_error unif tr txt1 txt2 =
   reset ();
+  let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in
   let (t3, t4) = mismatch tr in
   match tr with
     [] | _::[] ->
       assert false
-  | (t1, t1')::(t2, t2')::tr ->
+  | t1::t2::tr ->
+    try
+      let t1, t1' = prepare_expansion t1
+      and t2, t2' = prepare_expansion t2 in
+      print_labels := not !Clflags.classic;
       open_vbox 0;
       let tr = filter_trace tr in
-      let mark (t, t') = mark_loops t; if t != t' then mark_loops t' in
-      mark (t1, t1'); mark (t2, t2');
-      List.iter mark tr;
+      let tr = List.map prepare_expansion tr in
       open_box 0;
       txt1 (); print_break 1 2;
       type_expansion t1 t1'; print_space();
@@ -771,12 +924,17 @@ let unification_error unif tr txt1 txt2 =
       | _ ->
           ()
       end;
-      close_box ()
+      close_box ();
+      print_labels := true
+    with exn ->
+      print_labels := true;
+      raise exn
 
 let trace fst txt tr =
-(*  match tr with
-    (t1, t1')::(t2, t2')::tr -> *)
-      trace fst txt (filter_trace tr)
-(*  | _ ->
-      ()*)
-
+  print_labels := not !Clflags.classic;
+  try
+    trace fst txt (filter_trace tr);
+    print_labels := true
+  with exn ->
+    print_labels := true;
+    raise exn

@@ -19,6 +19,9 @@ ocamlopt \- The Objective Caml native-code compiler
 .B \-compact
 ]
 [
+.B \-modern
+]
+[
 .B \-unsafe
 ]
 [
@@ -215,6 +218,12 @@ is saved in the file
 .TP
 .B \-v
 Print the version number of the compiler.
+
+.TP
+.B \-modern
+Switch to the modern semantics for application. Arguments should be
+explicitly labeled by labels appearing in types. Arguments with different
+labels may commute freely.
 
 .TP
 .B \-unsafe

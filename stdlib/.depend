@@ -34,6 +34,8 @@ map.cmo: map.cmi
 map.cmx: map.cmi 
 marshal.cmo: string.cmi marshal.cmi 
 marshal.cmx: string.cmx marshal.cmi 
+morelabel.cmo: buffer.cmi hashtbl.cmi map.cmi set.cmi morelabel.cmi 
+morelabel.cmx: buffer.cmx hashtbl.cmx map.cmx set.cmx morelabel.cmi 
 obj.cmo: marshal.cmi obj.cmi 
 obj.cmx: marshal.cmx obj.cmi 
 oo.cmo: array.cmi hashtbl.cmi list.cmi map.cmi obj.cmi random.cmi sort.cmi \
@@ -58,6 +60,8 @@ sort.cmo: array.cmi sort.cmi
 sort.cmx: array.cmx sort.cmi 
 stack.cmo: list.cmi stack.cmi 
 stack.cmx: list.cmx stack.cmi 
+stdlabel.cmo: array.cmi list.cmi string.cmi stdlabel.cmi 
+stdlabel.cmx: array.cmx list.cmx string.cmx stdlabel.cmi 
 stream.cmo: list.cmi obj.cmi string.cmi stream.cmi 
 stream.cmx: list.cmx obj.cmx string.cmx stream.cmi 
 string.cmo: char.cmi list.cmi string.cmi 

@@ -14,6 +14,7 @@
 
 (* Basic operations on core types *)
 
+open Asttypes
 open Types
 
 val generic_level: int
@@ -24,10 +25,13 @@ val newgenty: type_desc -> type_expr
         (* Create a generic type *)
 val newgenvar: unit -> type_expr
         (* Return a fresh generic variable *)
+
+(* Use Tsubst instead
 val newmarkedvar: int -> type_expr
         (* Return a fresh marked variable *)
 val newmarkedgenvar: unit -> type_expr
         (* Return a fresh marked generic variable *)
+*)
 
 val repr: type_expr -> type_expr
         (* Return the canonical representative of a type. *)
@@ -36,10 +40,23 @@ val field_kind_repr: field_kind -> field_kind
         (* Return the canonical representative of an object field
            kind. *)
 
+val row_repr: row_desc -> row_desc
+        (* Return the canonical representative of a row description *)
+val row_field_repr: row_field -> row_field
+        (* Return the canonical representative of a row field *)
+val row_more: row_desc -> type_expr
+        (* Return the extension variable of the row *)
+val static_row: row_desc -> bool
+        (* Return whether the row is static or not *)
+val hash_variant: label -> int
+        (* Hash function for variant tags *)
+
 (**** Utilities for type traversal ****)
 
 val iter_type_expr: (type_expr -> unit) -> type_expr -> unit
         (* Iteration on types *)
+val iter_row: (type_expr -> unit) -> row_desc -> unit
+        (* Iteration on types in a row *)
 
 val save_desc: type_expr -> type_desc -> unit
         (* Save a type description *)
@@ -74,3 +91,12 @@ val memorize_abbrev:
 val forget_abbrev:
         abbrev_memo ref -> Path.t -> unit
         (* Remove an abbreviation from the cache *)
+
+(**** Utilities for labels ****)
+
+val is_optional : label -> bool
+val label_name : label -> label
+val extract_label :
+    label -> (label * 'a) list ->
+    label * 'a * (label * 'a) list * (label * 'a) list
+    (* actual label, value, before list, after list *)

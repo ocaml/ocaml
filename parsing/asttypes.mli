@@ -29,3 +29,5 @@ type private_flag = Private | Public
 type mutable_flag = Immutable | Mutable
 
 type virtual_flag = Virtual | Concrete
+
+type label = string

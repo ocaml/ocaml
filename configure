@@ -25,7 +25,10 @@ cclibs=''
 mathlib='-lm'
 x11_include_dir=''
 x11_lib_dir=''
+tk_defs=''
+tk_libs=''
 posix_threads=no
+verbose=no
 
 # Parse command-line arguments
 
@@ -54,6 +57,12 @@ while : ; do
         x11_lib_dir=$2; shift;;
     -with-pthread*|--with-pthread*)
         posix_threads=yes;;
+    -tkdefs*|--tkdefs*)
+        tk_defs=$2; shift;;
+    -tklibs*|--tklibs*)
+        tk_libs=$2; shift;;
+    -verbose|--verbose)
+	verbose=yes; shift;;
     *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
   esac
   shift
@@ -199,7 +208,7 @@ esac
 # Configure compiler to use in further tests
 
 cc="$bytecc $bytecclinkopts"
-export cc cclibs
+export cc cclibs verbose
 
 # Check C compiler
 
@@ -632,6 +641,11 @@ if sh ./hasgot -i locale.h && sh ./hasgot setlocale; then
   echo "#define HAS_LOCALE" >> s.h
 fi
 
+if sh ./hasgot -ldl dlopen; then
+  echo "dlopen() found."
+  dllib=-ldl
+fi
+
 # Determine if the debugger is supported
 
 if test "$has_sockets" = "yes"; then
@@ -713,7 +727,12 @@ do
   if test -f $dir/libX11.a || \
      test -f $dir/libX11.so || \
      test -f $dir/libX11.sa; then
-    x11_link="-cclib -L$dir -cclib -lX11"
+    if test $dir = /usr/lib; then
+      x11_link="-cclib -lX11"
+    else
+      x11_link="-cclib -L$dir -cclib -lX11"
+      x11_libs="-L$dir"
+    fi
     break
   fi
 done
@@ -745,6 +764,90 @@ else
   echo "NDBM not found, the \"dbm\" library will not be supported."
 fi
 
+# Look for tcl/tk
+
+echo "Configuring LablTk..."
+if test "$x11_include" = "not found" || test "$x11_link" = "not found"
+then
+  echo "X11 not found."
+  has_tk=false
+else
+  has_tk=true
+  tcl_version=''
+  tcl_version=`sh ./runtest $tk_defs tclversion.c 2> /dev/null`
+  if test -z "$tcl_version" && test -z "$tk_defs"; then
+    tk_defs=-I/usr/local/include
+    tcl_version=`sh ./runtest $tk_defs tclversion.c 2> /dev/null`
+  fi
+  if test -n "$tcl_version"; then
+    echo "tcl.h version $tcl_version found."
+    case $tcl_version in
+    7.5) tclmaj=7 tclmin=5 tkmaj=4 tkmin=1 ;;
+    7.6) tclmaj=7 tclmin=6 tkmaj=4 tkmin=2 ;;
+    8.0) tclmaj=8 tclmin=0 tkmaj=8 tkmin=0 ;;
+    8.1) tclmaj=8 tclmin=1 tkmaj=8 tkmin=1 ;;
+    8.2) tclmaj=8 tclmin=2 tkmaj=8 tkmin=2 ;;
+    *) echo "This version is not known."; has_tk=false ;;
+    esac
+  else
+    echo "tcl.h not found."
+    has_tk=false
+  fi
+fi
+
+if test $has_tk = true; then
+  if sh ./hasgot $x11_include $tk_defs -i tk.h; then
+    echo "tk.h found."
+  else
+    echo "tk.h not found."
+    has_tk=false
+  fi
+fi
+
+tkauxlibs="$mathlib $dllib"
+tcllib=''
+tklib=''
+if test $has_tk = true; then
+  if sh ./hasgot $tk_libs $tkauxlibs Tcl_DoOneEvent
+  then tk_libs="$tk_libs $dllib"
+  elif sh ./hasgot $tk_libs -ltcl$tclmaj.$tclmin $tkauxlibs Tcl_DoOneEvent
+  then
+    tk_libs="$tk_libs -ltcl$tclmaj.$tclmin -ltk$tkmaj.$tkmin $dllib"
+  elif sh ./hasgot $tk_libs -ltcl$tclmaj$tclmin $tkauxlibs Tcl_DoOneEvent
+  then
+    tk_libs="$tk_libs -ltcl$tclmaj$tclmin -ltk$tkmaj$tkmin $dllib"
+  elif test -z "$tk_libs" && tk_libs=-L/usr/local/lib && \
+    sh ./hasgot $tk_libs -ltcl$tclmaj.$tclmin $tkauxlibs Tcl_DoOneEvent
+  then
+    tk_libs="$tk_libs -ltcl$tclmaj.$tclmin -ltk$tkmaj.$tkmin $dllib"
+  elif sh ./hasgot $tk_libs -ltcl$tclmaj$tclmin $tkauxlibs Tcl_DoOneEvent
+  then
+    tk_libs="$tk_libs -ltcl$tclmaj$tclmin -ltk$tkmaj$tkmin $dllib"
+# elif sh ./hasgot $tk_libs -ltcl $tkauxlibs Tcl_DoOneEvent; then
+#   tk_libs="$tk_libs -ltcl -ltk"
+  else
+    echo "Tcl library not found."
+    has_tk=false
+  fi
+fi
+if test $has_tk = true; then
+  if sh ./hasgot $tk_libs $x11_libs -lX11 $tkauxlibs Tk_SetGrid; then
+    echo "Tcl/Tk libraries found."
+  else
+    echo "Tcl library found."
+    echo "Tk library not found."
+    has_tk=false
+  fi
+fi
+
+if test $has_tk = true; then
+  echo "TK_DEFS=$tk_defs" >> Makefile
+  echo "TK_LINK=$tk_libs" >> Makefile
+  otherlibraries="$otherlibraries labltk"
+else
+  echo "Configuration failed, LablTk will not be built."
+fi
+
 # Finish generated files
 
 cclibs="$cclibs $mathlib"
@@ -766,6 +869,7 @@ echo "ASPPPROFFLAGS=$asppprofflags" >> Makefile
 echo "PROFILING=$profiling" >> Makefile
 
 echo "CCLIBS=$cclibs" >> Makefile
+echo "DYNLINKOPTS=$dllib" >> Makefile
 echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
 echo "DEBUGGER=$debugger" >> Makefile
 
@@ -830,3 +934,11 @@ echo "	options for compiling .... $x11_include"
 echo "	options for linking ...... $x11_link"
 fi
 
+if test $has_tk = true; then
+echo "The \"labltk\" library:"
+echo "	use tcl/tk version ....... $tcl_version"
+echo "	options for compiling .... $tk_defs"
+echo "	options for linking ...... $tk_libs"
+else
+echo "The \"labltk\" library: configuration failed"
+fi

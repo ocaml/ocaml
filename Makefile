@@ -87,13 +87,14 @@ TOPLEVEL=driver/errors.cmo driver/compile.cmo \
   toplevel/printval.cmo toplevel/toploop.cmo \
   toplevel/trace.cmo toplevel/topdirs.cmo
 
+TOPLEVELLIB=toplevel/toplevellib.cma
 TOPLEVELMAIN=toplevel/topmain.cmo
 
 COMPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(DRIVER)
 
 TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
 
-TOPOBJS=$(TOPLIB) $(TOPLEVELMAIN)
+TOPOBJS=toplevel/toplevellib.cma $(TOPLEVELMAIN)
 
 OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
@@ -151,6 +152,8 @@ coldstart:
 	cd stdlib; cp $(LIBFILES) ../boot
 	if test -f boot/libcamlrun.a; then :; else \
           ln -s ../byterun/libcamlrun.a boot/libcamlrun.a; fi
+	if test -d boot/caml; then :; else \
+          ln -s ../byterun boot/caml; fi
 
 # Save the current bootstrap compiler
 MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
@@ -208,7 +211,7 @@ install:
 	cd stdlib; $(MAKE) install
 	cp lex/ocamllex $(BINDIR)/ocamllex
 	cp yacc/ocamlyacc $(BINDIR)/ocamlyacc
-	$(CAMLC) -a -o $(LIBDIR)/toplevellib.cma $(TOPLIB)
+	cp toplevel/toplevellib.cma $(LIBDIR)/toplevellib.cma
 	cp expunge $(LIBDIR)
 	cp toplevel/topmain.cmo $(LIBDIR)
 	cp toplevel/toploop.cmi toplevel/topdirs.cmi $(LIBDIR)
@@ -252,8 +255,11 @@ ocaml: $(TOPOBJS) expunge
 	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(PERVASIVES)
 	rm -f ocaml.tmp
 
+toplevel/toplevellib.cma: $(TOPLIB)
+	$(CAMLC) -a -o $@ $(TOPLIB)
+
 partialclean::
-	rm -f ocaml
+	rm -f ocaml toplevel/toplevellib.cma
 
 # The configuration file
 

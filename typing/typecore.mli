@@ -30,7 +30,7 @@ val type_let:
 val type_expression:
         Env.t -> Parsetree.expression -> Typedtree.expression
 val type_class_arg_pattern:
-        string -> Env.t -> Env.t -> Parsetree.pattern ->
+        string -> Env.t -> Env.t -> label -> Parsetree.pattern ->
         Typedtree.pattern * (Ident.t * Ident.t * type_expr) list *
         Env.t * Env.t
 val type_self_pattern:
@@ -40,10 +40,17 @@ val type_self_pattern:
         (Ident.t * Asttypes.mutable_flag * type_expr) Vars.t ref *
         Env.t * Env.t * Env.t
 val type_expect:
-        Env.t -> Parsetree.expression -> type_expr ->
-        Typedtree.expression
+        Env.t -> Parsetree.expression -> type_expr -> Typedtree.expression
 val type_exp:
         Env.t -> Parsetree.expression -> Typedtree.expression
+val type_approx:
+        Env.t -> Parsetree.expression -> type_expr
+val type_argument:
+        Env.t -> Parsetree.expression -> type_expr -> Typedtree.expression
+
+val option_some: Typedtree.expression -> Typedtree.expression
+val option_none: type_expr -> Location.t -> Typedtree.expression
+val extract_option_type: Env.t -> type_expr -> type_expr
 
 type error =
     Unbound_value of Longident.t
@@ -56,6 +63,7 @@ type error =
   | Orpat_not_closed
   | Expr_type_clash of (type_expr * type_expr) list
   | Apply_non_function of type_expr
+  | Apply_wrong_label of label * type_expr
   | Label_multiply_defined of Longident.t
   | Label_missing
   | Label_not_mutable of Longident.t
@@ -71,6 +79,7 @@ type error =
   | Value_multiply_overridden of string
   | Coercion_failure of type_expr * type_expr * (type_expr * type_expr) list
   | Too_many_arguments
+  | Abstract_wrong_label of label * type_expr
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
 

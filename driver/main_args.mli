@@ -28,6 +28,7 @@ module Make_options (F :
       val _intf_suffix : string -> unit
       val _linkall : unit -> unit
       val _make_runtime : unit -> unit
+      val _modern : unit -> unit
       val _noassert : unit -> unit
       val _o : string -> unit
       val _output_obj : unit -> unit

@@ -34,6 +34,7 @@ type error =
   | Orpat_not_closed
   | Expr_type_clash of (type_expr * type_expr) list
   | Apply_non_function of type_expr
+  | Apply_wrong_label of label * type_expr
   | Label_multiply_defined of Longident.t
   | Label_missing
   | Label_not_mutable of Longident.t
@@ -49,6 +50,7 @@ type error =
   | Value_multiply_overridden of string
   | Coercion_failure of type_expr * type_expr * (type_expr * type_expr) list
   | Too_many_arguments
+  | Abstract_wrong_label of label * type_expr
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
 
@@ -68,6 +70,26 @@ let type_constant = function
   | Const_string _ -> instance Predef.type_string
   | Const_float _ -> instance Predef.type_float
 
+(* Specific version of type_option, using newty rather than newgenty *)
+
+let type_option ty =
+  newty (Tconstr(Predef.path_option,[ty], ref Mnil))
+
+let option_none ty loc =
+  let cnone = Env.lookup_constructor (Longident.Lident "None") Env.initial in
+  { exp_desc = Texp_construct(cnone, []);
+    exp_type = ty; exp_loc = loc; exp_env = Env.initial }
+
+let option_some texp =
+  let csome = Env.lookup_constructor (Longident.Lident "Some") Env.initial in
+  { exp_desc = Texp_construct(csome, [texp]); exp_loc = texp.exp_loc;
+    exp_type = type_option texp.exp_type; exp_env = texp.exp_env }
+
+let extract_option_type env ty =
+  match expand_head env ty with {desc = Tconstr(path, [ty], _)}
+    when Path.same path Predef.path_option -> ty
+  | _ -> assert false
+
 (* Typing of patterns *)
 
 let unify_pat env pat expected_ty =
@@ -85,6 +107,17 @@ let enter_variable loc name ty =
   pattern_variables := (id, ty) :: !pattern_variables;
   id
 
+let rec extract_row_fields p =
+  match p.pat_desc with
+    Tpat_or(p1, p2) ->
+      extract_row_fields p1 @ extract_row_fields p2
+  | Tpat_variant(l, None, _) ->
+      [l, Rpresent None]
+  | Tpat_variant(l, Some{pat_desc = Tpat_any; pat_type = ty}, _) ->
+      [l, Rpresent(Some ty)]
+  | _ ->
+      raise Not_found
+
 let rec type_pat env sp =
   match sp.ppat_desc with
     Ppat_any ->
@@ -101,7 +134,15 @@ let rec type_pat env sp =
         pat_env = env }
   | Ppat_alias(sp, name) ->
       let p = type_pat env sp in
-      let id = enter_variable sp.ppat_loc name p.pat_type in
+      let ty_var =
+        try
+          let fields = extract_row_fields p in
+          newty (Tvariant { row_fields = fields; row_more = newvar();
+                            row_closed = false; row_name = None;
+                            row_bound = [] })
+        with Not_found -> p.pat_type
+      in
+      let id = enter_variable sp.ppat_loc name ty_var in
       { pat_desc = Tpat_alias(p, id);
         pat_loc = sp.ppat_loc;
         pat_type = p.pat_type;
@@ -140,6 +181,18 @@ let rec type_pat env sp =
       { pat_desc = Tpat_construct(constr, args);
         pat_loc = sp.ppat_loc;
         pat_type = ty_res;
+        pat_env = env }
+  | Ppat_variant(l, sarg) ->
+      let arg = may_map (type_pat env) sarg in
+      let arg_type = match arg with None -> [] | Some arg -> [arg.pat_type]  in
+      let row = { row_fields = [l, Reither(arg = None, arg_type,ref None)];
+                  row_bound = arg_type;
+                  row_closed = false;
+                  row_more = newvar ();
+                  row_name = None } in
+      { pat_desc = Tpat_variant(l, arg, row);
+        pat_loc = sp.ppat_loc;
+        pat_type = newty (Tvariant row);
         pat_env = env }
   | Ppat_record lid_sp_list ->
       let rec check_duplicates = function
@@ -215,9 +268,10 @@ let type_pattern_list env spatl =
   let new_env = add_pattern_variables env in
   (patl, new_env)
 
-let type_class_arg_pattern cl_num val_env met_env spat =
+let type_class_arg_pattern cl_num val_env met_env l spat =
   pattern_variables := [];
   let pat = type_pat val_env spat in
+  if is_optional l then unify_pat val_env pat (type_option (newvar ()));
   let (pv, met_env) =
     List.fold_right
       (fun (id, ty) (pv, env) ->
@@ -266,6 +320,8 @@ let rec iter_pattern f p =
       List.iter (iter_pattern f) pl
   | Tpat_construct (_, pl) ->
       List.iter (iter_pattern f) pl
+  | Tpat_variant (_, p, _) ->
+      may (iter_pattern f) p
   | Tpat_record fl ->
       List.iter (fun (_, p) -> iter_pattern f p) fl
   | Tpat_or (p, p') ->
@@ -283,11 +339,16 @@ let rec is_nonexpansive exp =
   | Texp_let(rec_flag, pat_exp_list, body) ->
       List.for_all (fun (pat, exp) -> is_nonexpansive exp) pat_exp_list &
       is_nonexpansive body
+  | Texp_apply(e, None::el) ->
+      is_nonexpansive e &&
+      List.for_all (function None -> true | Some exp -> is_nonexpansive e) el
   | Texp_function _ -> true
   | Texp_tuple el ->
       List.for_all is_nonexpansive el
   | Texp_construct(_, el) ->
       List.for_all is_nonexpansive el
+  | Texp_variant(_, Some e) -> is_nonexpansive e
+  | Texp_variant(_, None) -> true
   | Texp_record(lbl_exp_list, opt_init_exp) ->
       List.for_all
         (fun (lbl, exp) -> lbl.lbl_mut = Immutable & is_nonexpansive exp)
@@ -320,22 +381,24 @@ let type_format loc fmt =
           '%' ->
             scan_format (j+1)
         | 's' ->
-            newty (Tarrow(instance Predef.type_string, scan_format (j+1)))
+            newty (Tarrow("",instance Predef.type_string, scan_format (j+1)))
         | 'c' ->
-            newty (Tarrow(instance Predef.type_char, scan_format (j+1)))
+            newty (Tarrow("",instance Predef.type_char, scan_format (j+1)))
         | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
-            newty (Tarrow(instance Predef.type_int, scan_format (j+1)))
+            newty (Tarrow("",instance Predef.type_int, scan_format (j+1)))
         | 'f' | 'e' | 'E' | 'g' | 'G' ->
-            newty (Tarrow(instance Predef.type_float, scan_format (j+1)))
+            newty (Tarrow("",instance Predef.type_float, scan_format (j+1)))
         | 'b' ->
-            newty (Tarrow(instance Predef.type_bool, scan_format (j+1)))
+            newty (Tarrow("",instance Predef.type_bool, scan_format (j+1)))
         | 'a' ->
             let ty_arg = newvar() in
-            newty (Tarrow (newty (Tarrow(ty_input,
-                                         newty (Tarrow (ty_arg, ty_result)))),
-                           newty (Tarrow (ty_arg, scan_format (j+1)))))
+            newty (Tarrow ("",
+                           newty (Tarrow("", ty_input,
+                                         newty (Tarrow ("", ty_arg,
+                                                        ty_result)))),
+                           newty (Tarrow ("", ty_arg, scan_format (j+1)))))
         | 't' ->
-            newty (Tarrow(newty (Tarrow(ty_input, ty_result)),
+            newty (Tarrow("", newty (Tarrow("", ty_input, ty_result)),
                           scan_format (j+1)))
         | c ->
             raise(Error(loc, Bad_format(String.sub fmt i (j-i+1))))
@@ -343,6 +406,37 @@ let type_format loc fmt =
     | _ -> scan_format (i+1) in
   newty
     (Tconstr(Predef.path_format, [scan_format 0; ty_input; ty_result], ref Mnil))
+
+(* Approximate the type of an expression, for better recursion *)
+
+let rec approx_type sty =
+  match sty.ptyp_desc with
+    Ptyp_arrow (p, _, sty) ->
+      let ty1 = if is_optional p then type_option (newvar ()) else newvar () in
+      newty (Tarrow (p, ty1, approx_type sty))
+  | _ -> newvar ()
+
+let rec type_approx env sexp =
+  match sexp.pexp_desc with
+    Pexp_let (_, _, e) -> type_approx env e
+  | Pexp_function (p,_,(_,e)::_) when is_optional p ->
+       newty (Tarrow(p, type_option (newvar ()), type_approx env e))
+  | Pexp_function (p,_,(_,e)::_) ->
+       newty (Tarrow(p, newvar (), type_approx env e))
+  | Pexp_match (_, (_,e)::_) -> type_approx env e
+  | Pexp_try (e, _) -> type_approx env e
+  | Pexp_tuple l -> newty (Ttuple(List.map (type_approx env) l))
+  | Pexp_ifthenelse (_,e,_) -> type_approx env e
+  | Pexp_sequence (_,e) -> type_approx env e
+  | Pexp_constraint (e, Some sty, _) ->
+      let ty = type_approx env e
+      and ty' = Typetexp.transl_simple_type env false sty in
+      (try unify env ty ty'; ty' with Unify trace ->
+       raise(Error(sexp.pexp_loc, Expr_type_clash trace)))
+  | Pexp_constraint (_, _, Some sty) ->
+      Typetexp.transl_simple_type env false sty
+  | Pexp_constraint (e, _, _) -> type_approx env e
+  | _ -> newvar ()
 
 (* Typing of expressions *)
 
@@ -392,31 +486,22 @@ let rec type_exp env sexp =
         exp_loc = sexp.pexp_loc;
         exp_type = body.exp_type;
         exp_env = env }
-  | Pexp_function caselist ->
-      let ty_arg = newvar() and ty_res = newvar() in
+  | Pexp_function (_, Some _, _) ->     (* defined in type_expect *)
+      type_expect env sexp (newvar())
+  | Pexp_function (l, None, caselist) ->
+      let ty_arg =
+        if is_optional l then type_option(newvar()) else newvar()
+      and ty_res = newvar() in
       let cases = type_cases env ty_arg ty_res caselist in
-      Parmatch.check_unused cases;
-      Parmatch.check_partial sexp.pexp_loc cases;
-      { exp_desc = Texp_function cases;
+      Parmatch.check_unused env cases;
+      let partial = Parmatch.check_partial env sexp.pexp_loc cases in
+      { exp_desc = Texp_function(cases, partial);
         exp_loc = sexp.pexp_loc;
-        exp_type = newty (Tarrow(ty_arg, ty_res));
+        exp_type = newty (Tarrow(l, ty_arg, ty_res));
         exp_env = env }
   | Pexp_apply(sfunct, sargs) ->
       let funct = type_exp env sfunct in
-      let rec type_args ty_fun = function
-        [] ->
-          ([], ty_fun)
-      | sarg1 :: sargl ->
-          let (ty1, ty2) =
-            try
-              filter_arrow env ty_fun
-            with Unify _ ->
-              raise(Error(sfunct.pexp_loc,
-                          Apply_non_function funct.exp_type)) in
-          let arg1 = type_expect env sarg1 ty1 in
-          let (argl, ty_res) = type_args ty2 sargl in
-          (arg1 :: argl, ty_res) in
-      let (args, ty_res) = type_args funct.exp_type sargs in
+      let (args, ty_res) = type_application env funct sargs in
       { exp_desc = Texp_apply(funct, args);
         exp_loc = sexp.pexp_loc;
         exp_type = ty_res;
@@ -425,9 +510,9 @@ let rec type_exp env sexp =
       let arg = type_exp env sarg in
       let ty_res = newvar() in
       let cases = type_cases env arg.exp_type ty_res caselist in
-      Parmatch.check_unused cases;
-      Parmatch.check_partial sexp.pexp_loc cases;
-      { exp_desc = Texp_match(arg, cases);
+      Parmatch.check_unused env cases;
+      let partial = Parmatch.check_partial env sexp.pexp_loc cases in
+      { exp_desc = Texp_match(arg, cases, partial);
         exp_loc = sexp.pexp_loc;
         exp_type = ty_res;
         exp_env = env }
@@ -435,7 +520,7 @@ let rec type_exp env sexp =
       let body = type_exp env sbody in
       let cases =
         type_cases env (instance Predef.type_exn) body.exp_type caselist in
-      Parmatch.check_unused cases;
+      Parmatch.check_unused env cases;
       { exp_desc = Texp_try(body, cases);
         exp_loc = sexp.pexp_loc;
         exp_type = body.exp_type;
@@ -447,25 +532,17 @@ let rec type_exp env sexp =
         exp_type = newty (Ttuple(List.map (fun exp -> exp.exp_type) expl));
         exp_env = env }
   | Pexp_construct(lid, sarg, explicit_arity) ->
-      let constr =
-        try
-          Env.lookup_constructor lid env
-        with Not_found ->
-          raise(Error(sexp.pexp_loc, Unbound_constructor lid)) in
-      let sargs =
-        match sarg with
-          None -> []
-        | Some {pexp_desc = Pexp_tuple sel} when explicit_arity -> sel
-        | Some {pexp_desc = Pexp_tuple sel} when constr.cstr_arity > 1 -> sel
-        | Some se -> [se] in
-      if List.length sargs <> constr.cstr_arity then
-        raise(Error(sexp.pexp_loc, Constructor_arity_mismatch(lid,
-                                       constr.cstr_arity, List.length sargs)));
-      let (ty_args, ty_res) = instance_constructor constr in
-      let args = List.map2 (type_expect env) sargs ty_args in
-      { exp_desc = Texp_construct(constr, args);
+      type_construct env sexp.pexp_loc lid sarg explicit_arity (newvar ())
+  | Pexp_variant(l, sarg) ->
+      let arg = may_map (type_exp env) sarg in
+      let arg_type = may_map (fun arg -> arg.exp_type) arg in
+      { exp_desc = Texp_variant(l, arg);
         exp_loc = sexp.pexp_loc;
-        exp_type = ty_res;
+        exp_type= newty (Tvariant{row_fields = [l, Rpresent arg_type];
+                                  row_more = newvar ();
+                                  row_bound = [];
+                                  row_closed = false;
+                                  row_name = None});
         exp_env = env }
   | Pexp_record(lid_sexp_list, opt_sexp) ->
       let ty = newvar() in
@@ -653,7 +730,7 @@ let rec type_exp env sexp =
                     filter_self_method env met Private meths obj.exp_type
                   in
                   let method_type = newvar () in
-                  let (obj_ty, res_ty) = filter_arrow env method_type in
+                  let (obj_ty, res_ty) = filter_arrow env method_type "" in
                   unify env obj_ty desc.val_type;
                   unify env res_ty typ;
                   (Texp_apply({exp_desc = Texp_ident(Path.Pident method_id,
@@ -662,10 +739,10 @@ let rec type_exp env sexp =
                                 exp_loc = sexp.pexp_loc;
                                 exp_type = method_type;
                                 exp_env = env },
-                              [{exp_desc = Texp_ident(path, desc);
-                                 exp_loc = obj.exp_loc;
-                                 exp_type = desc.val_type;
-                                 exp_env = env }]),
+                              [Some {exp_desc = Texp_ident(path, desc);
+                                     exp_loc = obj.exp_loc;
+                                     exp_type = desc.val_type;
+                                     exp_env = env }]),
                    typ)
               |  _ ->
                   assert false
@@ -774,6 +851,165 @@ let rec type_exp env sexp =
         exp_type = ty;
         exp_env = env }
 
+and type_argument env sarg ty_expected =
+  match expand_head env ty_expected, sarg with
+  | _, {pexp_desc = Pexp_function(l,_,_)} when not (is_optional l) ->
+      type_expect env sarg ty_expected
+  | {desc = Tarrow("",ty_arg,ty_res)}, _ ->
+      (* apply optional arguments when expected type is "" *)
+      let texp = type_exp env sarg in
+      let rec make_args args ty_fun =
+        match (expand_head env ty_fun).desc with
+        | Tarrow (l,ty_arg,ty_fun) when is_optional l ->
+            make_args (Some(option_none ty_arg sarg.pexp_loc) :: args) ty_fun
+        | Tarrow (l,_,_) when l = "" || !Clflags.classic ->
+            args, ty_fun
+        | Tvar ->  args, ty_fun
+        |  _ -> [], texp.exp_type
+      in
+      let args, ty_fun = make_args [] texp.exp_type in
+      unify_exp env {texp with exp_type = ty_fun} ty_expected;
+      if args = [] then texp else
+      (* eta-expand to avoid side effects *)
+      let var_pair name ty =
+        let id = Ident.create name in
+        {pat_desc = Tpat_var id; pat_type = ty_arg;
+         pat_loc = Location.none; pat_env = env},
+        {exp_type = ty_arg; exp_loc = Location.none; exp_env = env; exp_desc =
+         Texp_ident(Path.Pident id,{val_type = ty_arg; val_kind = Val_reg})}
+      in
+      let eta_pat, eta_var = var_pair "eta" ty_arg in
+      let func texp =
+        { texp with exp_type = ty_fun; exp_desc =
+          Texp_function([eta_pat, {texp with exp_type = ty_res; exp_desc =
+                                   Texp_apply (texp, args@[Some eta_var])}],
+                        Total) } in
+      if is_nonexpansive texp then func texp else
+      (* let-expand to have side effects *)
+      let let_pat, let_var = var_pair "let" texp.exp_type in
+      { texp with exp_type = ty_fun; exp_desc =
+        Texp_let (Nonrecursive, [let_pat, texp], func let_var) }
+  | _ ->
+      type_expect env sarg ty_expected
+
+and type_application env funct sargs =
+  let result_type omitted ty_fun =
+    List.fold_left
+      (fun ty_fun (l,ty,lv) -> newty2 lv (Tarrow(l,ty,ty_fun)))
+      ty_fun omitted
+  in
+  let rec type_unknown_args args omitted ty_fun = function
+      [] ->
+        (List.rev args, result_type omitted ty_fun)
+    | (l1, sarg1) :: sargl ->
+        let (ty1, ty2) =
+          try
+            filter_arrow env ty_fun l1
+          with Unify _ ->
+            let ty_res = result_type omitted (expand_head env ty_fun) in
+            match ty_res with
+              {desc=Tarrow _} ->
+                raise(Error(sarg1.pexp_loc, Apply_wrong_label(l1, ty_res)))
+            | _ ->
+                raise(Error(funct.exp_loc,
+                            Apply_non_function funct.exp_type)) in
+        let arg1 = type_expect env sarg1 ty1 in
+        type_unknown_args (Some arg1 :: args) omitted ty2 sargl
+  in
+  let rec type_args args omitted ty_fun ty_old sargs more_sargs =
+    match expand_head env ty_fun with
+      {desc=Tarrow (l, ty, ty_fun); level=lv} as ty_fun'
+      when sargs <> [] || more_sargs <> [] ->
+        let name = label_name l in
+        let sargs, more_sargs, arg =
+          if !Clflags.classic && not (is_optional l) then begin
+            (* In classic mode, omitted = [] *)
+            match sargs, more_sargs with
+              (l', sarg0) :: _, _ ->
+                raise(Error(sarg0.pexp_loc, Apply_wrong_label(l', ty_old)))
+            | _, (l', sarg0) :: more_sargs ->
+                if l <> l' && l' <> "" then
+                  raise(Error(sarg0.pexp_loc, Apply_wrong_label(l', ty_fun')))
+                else ([], more_sargs, Some (type_argument env sarg0 ty))
+            | _ ->
+                assert false
+          end else try
+            let (l', sarg0, sargs, more_sargs) =
+              try
+                let (l', sarg0, sargs1, sargs2) = extract_label name sargs
+                in (l', sarg0, sargs1 @ sargs2, more_sargs)
+              with Not_found ->
+                let (l', sarg0, sargs1, sargs2) = extract_label name more_sargs
+                in (l', sarg0, sargs @ sargs1, sargs2)
+            in
+            sargs, more_sargs,
+            if is_optional l' || not (is_optional l) then
+              Some (type_argument env sarg0 ty)
+            else
+              let arg = type_argument env sarg0 (extract_option_type env ty) in
+              Some (option_some arg)
+          with Not_found ->
+            sargs, more_sargs,
+            if is_optional l &&
+              (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
+            then
+              Some (option_none ty Location.none)
+            else None
+        in
+        let omitted = if arg = None then (l,ty,lv) :: omitted else omitted in
+        let ty_old = if sargs = [] then ty_fun else ty_old in
+        type_args (arg::args) omitted ty_fun ty_old sargs more_sargs
+    | _ ->
+        match sargs with
+          (l, sarg0) :: _ when !Clflags.classic ->
+            raise(Error(sarg0.pexp_loc, Apply_wrong_label(l, ty_old)));
+        | _ ->
+            type_unknown_args args omitted ty_fun (sargs @ more_sargs)
+  in
+  match funct.exp_desc, sargs with
+    (* Special case for ignore: avoid discarding warning *)
+    Texp_ident (_, {val_kind=Val_prim{Primitive.prim_name="%ignore"}}),
+    ["", sarg] ->
+      let ty_arg, ty_res = filter_arrow env funct.exp_type "" in
+      let exp = type_expect env sarg ty_arg in
+      begin match expand_head env exp.exp_type with
+      | {desc=Tarrow(_, _, _)} ->
+          Location.print_warning exp.exp_loc Warnings.Partial_application
+      | _ -> ()
+      end;
+      ([Some exp], ty_res)
+  | _ ->
+      let ty = funct.exp_type in
+      if !Clflags.classic then
+        type_args [] [] ty ty [] sargs
+      else
+        type_args [] [] ty ty sargs []
+
+and type_construct env loc lid sarg explicit_arity ty_expected =
+  let constr =
+    try
+      Env.lookup_constructor lid env
+    with Not_found ->
+      raise(Error(loc, Unbound_constructor lid)) in
+  let sargs =
+    match sarg with
+      None -> []
+    | Some {pexp_desc = Pexp_tuple sel} when explicit_arity -> sel
+    | Some {pexp_desc = Pexp_tuple sel} when constr.cstr_arity > 1 -> sel
+    | Some se -> [se] in
+  if List.length sargs <> constr.cstr_arity then
+    raise(Error(loc, Constructor_arity_mismatch
+                  (lid, constr.cstr_arity, List.length sargs)));
+  let (ty_args, ty_res) = instance_constructor constr in
+  let texp =
+    { exp_desc = Texp_construct(constr, []);
+      exp_loc = loc;
+      exp_type = ty_res;
+      exp_env = env } in
+  unify_exp env texp ty_expected;
+  let args = List.map2 (type_expect env) sargs ty_args in
+  { texp with exp_desc = Texp_construct(constr, args) }
+
 (* Typing of an expression with an expected type.
    Some constructs are treated specially to provide better error messages. *)
 
@@ -793,6 +1029,8 @@ and type_expect env sexp ty_expected =
           exp_env = env } in
       unify_exp env exp ty_expected;
       exp
+  | Pexp_construct(lid, sarg, explicit_arity) ->
+      type_construct env sexp.pexp_loc lid sarg explicit_arity ty_expected
   | Pexp_let(rec_flag, spat_sexp_list, sbody) ->
       let (pat_exp_list, new_env) = type_let env rec_flag spat_sexp_list in
       let body = type_expect new_env sbody ty_expected in
@@ -807,11 +1045,43 @@ and type_expect env sexp ty_expected =
         exp_loc = sexp.pexp_loc;
         exp_type = exp2.exp_type;
         exp_env = env }
-  | Pexp_function caselist ->
-      let (ty_arg, ty_res) =
-        try filter_arrow env ty_expected with Unify _ ->
-          raise(Error(sexp.pexp_loc, Too_many_arguments))
+  | Pexp_function (l, Some default, [spat, sbody]) ->
+      let loc = default.pexp_loc in
+      let scases =
+        [{ppat_loc = loc; ppat_desc =
+          Ppat_construct(Longident.Lident"Some",
+                         Some{ppat_loc = loc; ppat_desc = Ppat_var"*sth*"},
+                         false)},
+         {pexp_loc = loc; pexp_desc = Pexp_ident(Longident.Lident"*sth*")};
+         {ppat_loc = loc; ppat_desc =
+          Ppat_construct(Longident.Lident"None", None, false)},
+         default] in
+      let smatch =
+        {pexp_loc = loc; pexp_desc =
+         Pexp_match({pexp_loc = loc; pexp_desc =
+                     Pexp_ident(Longident.Lident"*opt*")},
+                    scases)} in
+      let sfun =
+        {pexp_loc = sexp.pexp_loc; pexp_desc =
+         Pexp_function(l, None,[{ppat_loc = loc; ppat_desc = Ppat_var"*opt*"},
+                                {pexp_loc = sexp.pexp_loc; pexp_desc =
+                                 Pexp_let(Nonrecursive,[spat,smatch],sbody)}])}
       in
+      type_expect env sfun ty_expected
+  | Pexp_function (l, _, caselist) ->
+      let (ty_arg, ty_res) =
+        try filter_arrow env ty_expected l
+        with Unify _ ->
+          match expand_head env ty_expected with
+            {desc = Tarrow _} as ty ->
+              raise(Error(sexp.pexp_loc, Abstract_wrong_label(l, ty)))
+          | _ ->
+              raise(Error(sexp.pexp_loc, Too_many_arguments))
+      in
+      if is_optional l then begin
+        try unify env ty_arg (type_option(newvar()))
+        with Unify _ -> assert false
+      end;
       let cases =
         List.map
           (fun (spat, sexp) ->
@@ -821,11 +1091,20 @@ and type_expect env sexp ty_expected =
              (pat, exp))
           caselist
       in
-      Parmatch.check_unused cases;
-      Parmatch.check_partial sexp.pexp_loc cases;
-      { exp_desc = Texp_function cases;
+      let rec all_labeled ty =
+        match (repr ty).desc with
+          Tarrow ("", _, _) | Tvar -> false
+        | Tarrow (l, _, ty) -> l.[0] <> '?' && all_labeled ty
+        | _ -> true
+      in
+      if is_optional l && all_labeled ty_res then
+        Location.print_warning (fst (List.hd cases)).pat_loc
+          (Warnings.Other "This optional argument cannot be erased");
+      Parmatch.check_unused env cases;
+      let partial = Parmatch.check_partial env sexp.pexp_loc cases in
+      { exp_desc = Texp_function(cases, partial);
         exp_loc = sexp.pexp_loc;
-        exp_type = newty (Tarrow(ty_arg, ty_res));
+        exp_type = newty (Tarrow(l, ty_arg, ty_res));
         exp_env = env }
   | _ ->
       let exp = type_exp env sexp in
@@ -837,7 +1116,7 @@ and type_expect env sexp ty_expected =
 and type_statement env sexp =
     let exp = type_exp env sexp in
     match (expand_head env exp.exp_type).desc with
-    | Tarrow(_, _) ->
+    | Tarrow(_, _, _) ->
         Location.print_warning sexp.pexp_loc Warnings.Partial_application;
         exp
     | Tconstr (p, _, _) when Path.same p Predef.path_unit -> exp
@@ -864,6 +1143,10 @@ and type_let env rec_flag spat_sexp_list =
   let (pat_list, new_env) =
     type_pattern_list env (List.map (fun (spat, sexp) -> spat) spat_sexp_list)
   in
+  if rec_flag = Recursive then
+    List.iter2
+      (fun pat (_, sexp) -> unify_pat env pat (type_approx env sexp))
+      pat_list spat_sexp_list;
   let exp_env =
     match rec_flag with Nonrecursive -> env | Recursive -> new_env in
   let exp_list =
@@ -871,7 +1154,7 @@ and type_let env rec_flag spat_sexp_list =
       (fun (spat, sexp) pat -> type_expect exp_env sexp pat.pat_type)
       spat_sexp_list pat_list in
   List.iter2
-    (fun pat exp -> Parmatch.check_partial pat.pat_loc [pat, exp])
+    (fun pat exp -> ignore(Parmatch.check_partial env pat.pat_loc [pat, exp]))
     pat_list exp_list;
   end_def();
   List.iter2
@@ -946,12 +1229,26 @@ let report_error = function
            print_string "but is here used with type")
   | Apply_non_function typ ->
       begin match (repr typ).desc with
-        Tarrow(_, _) ->
+        Tarrow _ ->
           print_string "This function is applied to too many arguments"
       | _ ->
           print_string
             "This expression is not a function, it cannot be applied"
       end
+  | Apply_wrong_label (l, ty) ->
+      reset (); mark_loops ty;
+      open_vbox 0;
+      open_box 2;
+      print_string "Expecting function has type";
+      print_space ();
+      type_expr ty;
+      close_box ();
+      print_cut ();
+      if l = "" then
+        print_string "This argument cannot be applied without label"
+      else
+        printf "This argument cannot be applied with label %s:" l;
+      close_box ()
   | Label_multiply_defined lid ->
       print_string "The label "; longident lid;
       print_string " is defined several times"
@@ -990,23 +1287,19 @@ let report_error = function
       print_string " is not mutable"
   | Not_subtype(tr1, tr2) ->
       reset ();
-      List.iter
-        (function (t, t') -> mark_loops t; if t != t' then mark_loops t')
-        tr1;
-      List.iter
-        (function (t, t') -> mark_loops t; if t != t' then mark_loops t')
-        tr2;
+      let tr1 = List.map prepare_expansion tr1
+      and tr2 = List.map prepare_expansion tr2 in
       trace true (fun _ -> print_string "is not a subtype of type") tr1;
       trace false (fun _ -> print_string "is not compatible with type") tr2
   | Outside_class ->
-      print_string "This object duplication occurs outside a method definition."
+      print_string "This object duplication occurs outside a method definition"
   | Value_multiply_overridden v ->
       print_string "The instance variable "; print_string v;
       print_string " is overridden several times"
   | Coercion_failure (ty, ty', trace) ->
       unification_error true trace
         (function () ->
-           mark_loops ty; if ty' != ty then mark_loops ty';
+           let ty, ty' = prepare_expansion (ty, ty') in
            print_string "This expression cannot be coerced to type";
            print_break 1 2;
            type_expansion ty ty';
@@ -1017,6 +1310,20 @@ let report_error = function
            print_string "but is here used with type")
   | Too_many_arguments ->
       print_string "This function expects too many arguments"
+  | Abstract_wrong_label (l, ty) ->
+      reset (); mark_loops ty;
+      open_vbox 0;
+      open_box 2;
+      print_string "This function should have type";
+      print_space ();
+      type_expr ty;
+      close_box ();
+      print_cut ();
+      if l = "" then
+        print_string "but its argument is not labeled"
+      else
+        printf "but its argument is labeled %s:" l;
+      close_box ()
   | Scoping_let_module(id, ty) ->
       reset (); mark_loops ty;
       print_string "This `let module' expression has type";

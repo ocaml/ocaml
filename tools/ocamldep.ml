@@ -40,12 +40,14 @@ let rec add_type bv ty =
   match ty.ptyp_desc with
     Ptyp_any -> ()
   | Ptyp_var v -> ()
-  | Ptyp_arrow(t1, t2) -> add_type bv t1; add_type bv t2
+  | Ptyp_arrow(_, t1, t2) -> add_type bv t1; add_type bv t2
   | Ptyp_tuple tl -> List.iter (add_type bv) tl
   | Ptyp_constr(c, tl) -> add bv c; List.iter (add_type bv) tl
   | Ptyp_object fl -> List.iter (add_field_type bv) fl
-  | Ptyp_class(c, tl) -> add bv c; List.iter (add_type bv) tl
+  | Ptyp_class(c, tl, _) -> add bv c; List.iter (add_type bv) tl
   | Ptyp_alias(t, s) -> add_type bv t
+  | Ptyp_variant(fl, _, _) ->
+      List.iter (fun (_,_,stl) -> List.iter (add_type bv) stl) fl
 
 and add_field_type bv ft =
   match ft.pfield_desc with
@@ -75,7 +77,7 @@ let rec add_class_type bv cty =
   | Pcty_signature (ty, fieldl) ->
       add_type bv ty;
       List.iter (add_class_type_field bv) fieldl
-  | Pcty_fun(ty1, cty2) ->
+  | Pcty_fun(_, ty1, cty2) ->
       add_type bv ty1; add_class_type bv cty2
 
 and add_class_type_field bv = function
@@ -102,18 +104,21 @@ let rec add_pattern bv pat =
   | Ppat_array pl -> List.iter (add_pattern bv) pl
   | Ppat_or(p1, p2) -> add_pattern bv p1; add_pattern bv p2
   | Ppat_constraint(p, ty) -> add_pattern bv p; add_type bv ty
+  | Ppat_variant(_, op) -> add_opt add_pattern bv op
 
 let rec add_expr bv exp =
   match exp.pexp_desc with
     Pexp_ident l -> add bv l
   | Pexp_constant _ -> ()
   | Pexp_let(_, pel, e) -> add_pat_expr_list bv pel; add_expr bv e
-  | Pexp_function pel -> add_pat_expr_list bv pel
-  | Pexp_apply(e, el) -> add_expr bv e; List.iter (add_expr bv) el
+  | Pexp_function (_, _, pel) -> add_pat_expr_list bv pel
+  | Pexp_apply(e, el) ->
+      add_expr bv e; List.iter (fun (_,e) -> add_expr bv e) el
   | Pexp_match(e, pel) -> add_expr bv e; add_pat_expr_list bv pel
   | Pexp_try(e, pel) -> add_expr bv e; add_pat_expr_list bv pel
   | Pexp_tuple el -> List.iter (add_expr bv) el
   | Pexp_construct(c, opte, _) -> add bv c; add_opt add_expr bv opte
+  | Pexp_variant(_, opte) -> add_opt add_expr bv opte
   | Pexp_record(lblel, opte) ->
       List.iter (fun (lbl, e) -> add_expr bv e) lblel;
       add_opt add_expr bv opte
@@ -228,10 +233,10 @@ and add_class_expr bv ce =
       add bv l; List.iter (add_type bv) tyl
   | Pcl_structure(pat, fieldl) ->
       add_pattern bv pat; List.iter (add_class_field bv) fieldl
-  | Pcl_fun(pat, ce) ->
+  | Pcl_fun(_, _, pat, ce) ->
       add_pattern bv pat; add_class_expr bv ce
   | Pcl_apply(ce, exprl) ->
-      add_class_expr bv ce; List.iter (add_expr bv) exprl
+      add_class_expr bv ce; List.iter (fun (_,e) -> add_expr bv e) exprl
   | Pcl_let(_, pel, ce) ->
       add_pat_expr_list bv pel; add_class_expr bv ce
   | Pcl_constraint(ce, ct) ->

@@ -76,19 +76,22 @@ let type_path s = function
 (* Similar to [Ctype.nondep_type_rec]. *)
 let rec typexp s ty =
   let ty = repr ty in
-  if (ty.desc = Tvar) || (ty.level < lowest_level) then
-    ty
-  else begin
+  match ty.desc with
+    Tvar ->
+      ty
+  | Tsubst ty ->
+      ty
+  | _ ->
     let desc = ty.desc in
     save_desc ty desc;
-    let ty' = newmarkedgenvar () in     (* Stub *)
-    ty.desc <- Tlink ty';
+    let ty' = newgenvar () in     (* Stub *)
+    ty.desc <- Tsubst ty';
     ty'.desc <-
       begin match desc with
         Tvar | Tlink _ ->
           fatal_error "Subst.typexp"
-      | Tarrow(t1, t2) ->
-          Tarrow(typexp s t1, typexp s t2)
+      | Tarrow(l, t1, t2) ->
+          Tarrow(l, typexp s t1, typexp s t2)
       | Ttuple tl ->
           Ttuple(List.map (typexp s) tl)
       | Tconstr(p, tl, abbrev) ->
@@ -99,6 +102,41 @@ let rec typexp s ty =
                         None -> None
                       | Some (p, tl) ->
                           Some (type_path s p, List.map (typexp s) tl)))
+      | Tvariant row ->
+          let row = row_repr row in
+          let more = repr row.row_more in
+          (* We must substitute in a subtle way *)
+          begin match more.desc with
+            Tsubst ty2 ->
+              (* This variant type has been already copied *)
+              ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
+              Tlink ty2
+          | _ ->
+              (* We create a new copy *)
+              let bound = ref [] in
+              let fields =
+                List.map
+                  (fun (l,fi) -> l,
+                    match row_field_repr fi with
+                      Rpresent (Some ty) -> Rpresent(Some (typexp s ty))
+                    | Reither(c, l, _) ->
+                        let l = List.map (typexp s) l in
+                        bound := l @ !bound;
+                        Reither(c, l, ref None)
+                    | fi -> fi)
+                  row.row_fields
+              and name =
+                may_map (fun (p,l) -> p, List.map (typexp s) l) row.row_name in
+              let var =
+                Tvariant { row_fields = fields; row_more = newgenvar();
+                           row_bound = !bound;
+                           row_closed = row.row_closed; row_name = name }
+              in
+              (* Remember it for other occurences *)
+              save_desc more more.desc;
+              more.desc <- ty.desc;
+              var
+          end
       | Tfield(label, kind, t1, t2) ->
           begin match field_kind_repr kind with
             Fpresent ->
@@ -110,9 +148,10 @@ let rec typexp s ty =
           end
       | Tnil ->
           Tnil
+      | Tsubst _ ->
+          assert false
       end;
     ty'
-  end
 
 (*
    Always make a copy of the type. If this is not done, type levels
@@ -121,7 +160,6 @@ let rec typexp s ty =
 let type_expr s ty =
   let ty' = typexp s ty in
   cleanup_types ();
-  unmark_type ty';
   ty'
 
 let type_declaration s decl =
@@ -148,7 +186,6 @@ let type_declaration s decl =
     }
   in
   cleanup_types ();
-  unmark_type_decl decl;
   decl
 
 let class_signature s sign =
@@ -162,8 +199,8 @@ let rec class_type s =
       Tcty_constr (type_path s p, List.map (typexp s) tyl, class_type s cty)
   | Tcty_signature sign ->
       Tcty_signature (class_signature s sign)
-  | Tcty_fun (ty, cty) ->
-      Tcty_fun (typexp s ty, class_type s cty)
+  | Tcty_fun (l, ty, cty) ->
+      Tcty_fun (l, typexp s ty, class_type s cty)
 
 let class_declaration s decl =
   let decl =
@@ -177,12 +214,6 @@ let class_declaration s decl =
         end }
   in
   cleanup_types ();
-  List.iter unmark_type decl.cty_params;
-  unmark_class_type decl.cty_type;
-  begin match decl.cty_new with
-    None    -> ()
-  | Some ty -> unmark_type ty
-  end;
   decl
 
 let cltype_declaration s decl =
@@ -192,14 +223,11 @@ let cltype_declaration s decl =
       clty_path = type_path s decl.clty_path }
   in
   cleanup_types ();
-  List.iter unmark_type decl.clty_params;
-  unmark_class_type decl.clty_type;
   decl
 
 let class_type s cty =
   let cty = class_type s cty in
   cleanup_types ();
-  unmark_class_type cty;
   cty
 
 let value_description s descr =

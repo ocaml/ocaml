@@ -26,13 +26,27 @@ type type_expr =
 
 and type_desc =
     Tvar
-  | Tarrow of type_expr * type_expr
+  | Tarrow of label * type_expr * type_expr
   | Ttuple of type_expr list
   | Tconstr of Path.t * type_expr list * abbrev_memo ref
   | Tobject of type_expr * (Path.t * type_expr list) option ref
   | Tfield of string * field_kind * type_expr * type_expr
   | Tnil
   | Tlink of type_expr
+  | Tsubst of type_expr
+  | Tvariant of row_desc
+
+and row_desc =
+    { row_fields: (label * row_field) list;
+      row_more: type_expr;
+      row_bound: type_expr list;
+      row_closed: bool;
+      row_name: (Path.t * type_expr list) option }
+
+and row_field =
+    Rpresent of type_expr option
+  | Reither of bool * type_expr list * row_field option ref
+  | Rabsent
 
 and abbrev_memo =
     Mnil
@@ -119,7 +133,7 @@ module Concr = Set.Make(OrderedString)
 type class_type =
     Tcty_constr of Path.t * type_expr list * class_type
   | Tcty_signature of class_signature
-  | Tcty_fun of type_expr * class_type
+  | Tcty_fun of label * type_expr * class_type
 
 and class_signature =
   { cty_self: type_expr;
