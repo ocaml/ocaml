@@ -186,6 +186,7 @@ type State {
    Normal ["normal"]
    Active ["active"]
    Disabled ["disabled"]
+   Hidden ["hidden"]                           % introduced in tk8.3, requested for Syndex
 }
 
 widget button {
@@ -374,9 +375,24 @@ subtype option(rectangle) {
    }
 
 % Text item configuration
+
+##ifndef CAMLTK
+% Only for Labltk. CanvasTextState is unified as State in Camltk
+type CanvasTextState { 
+   Normal ["normal"]
+   Disabled ["disabled"]
+   Hidden ["hidden"]
+}
+##endif
+
 subtype option(canvastext) {
    Anchor FillColor Font Justify
    Stipple Tags Text Width
+##ifdef CAMLTK
+   State                                       % introduced in tk8.3, requested for Syndex
+##else
+   CanvasTextState ["-state"; CanvasTextState] % introduced in tk8.3, requested for Syndex
+##endif
    }
 
 % Window item configuration
