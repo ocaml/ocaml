@@ -44,11 +44,18 @@ val from_function : (unit -> char) -> scanbuf;;
 
 end;;
 
-val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
-(** [fscanf inchan format f] reads tokens from the channel [inchan] according
+exception Scan_failure of string;;
+(** The exception that formatted input functions raise when the input
+   cannot be read according to the given format. *)
+
+val bscanf :
+  Scanning.scanbuf -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
+(** [bscanf ib format f] reads tokens from the scanning buffer [ib] according
    to the format string [format], converts these tokens to values, and
    applies the function [f] to these values.
    The result of this application of [f] is the result of the whole construct.
+
+   Raise [Scanf.Scan_failure] if the given input does not match the format.
 
    The format is a character string which contains three types of
    objects:
@@ -114,12 +121,11 @@ val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
    lexing and parsing; if you need efficient language syntactic analysis,
    use the corresponding devoted libraries. *)
 
-val scanf : ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
-(** Same as {!Scanf.fscanf}, but inputs from [stdin]. *)
-
-val bscanf :
-  Scanning.scanbuf -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
-(** Same as {!Scanf.fscanf}, but inputs from the buffer argument. *)
+val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
+(** Same as {!Scanf.bscanf}, but inputs from the channel argument. *)
 
 val sscanf : string -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
-(** Same as {!Scanf.fscanf}, but inputs from the string argument. *)
+(** Same as {!Scanf.bscanf}, but inputs from the string argument. *)
+
+val scanf : ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
+(** Same as {!Scanf.bscanf}, but inputs from [stdin]. *)

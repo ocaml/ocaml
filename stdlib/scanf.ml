@@ -130,12 +130,14 @@ let from_function f = create f;;
 end;;
 
 (** Formatted input functions. *)
+exception Scan_failure of string;;
 
 let bad_input ib s =
   let i = Scanning.char_count ib in
-  failwith
-    (Printf.sprintf "scanf: bad input at char number %i%s"
-       i (if s = "" then s else Printf.sprintf ", while scanning %s" s));;
+  raise
+    (Scan_failure
+       (Printf.sprintf "scanf: bad input at char number %i%s"
+          i (if s = "" then s else Printf.sprintf ", while scanning %s" s)));;
 
 let bad_input_buff ib = bad_input ib (Scanning.token ib);;
 
