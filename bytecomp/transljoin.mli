@@ -23,6 +23,8 @@ val create_location : unit -> Lambda.lambda
 val create_process : Lambda.lambda -> Lambda.lambda
 val create_process_location : Ident.t -> Lambda.lambda -> Lambda.lambda
 val send_async : Ident.t -> int -> int option -> Lambda.lambda -> Lambda.lambda
+val tail_send_async :
+    Ident.t -> int -> int option -> Lambda.lambda -> Lambda.lambda
 val send_sync : Ident.t -> int -> int option -> Lambda.lambda -> Lambda.lambda
 val create_automaton : Ident.t option -> int -> int -> Lambda.lambda
 val patch_match : Ident.t -> int -> int list -> Lambda.lambda

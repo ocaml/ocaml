@@ -53,8 +53,10 @@ let lambda_create_process_location =
   mk_lambda env_jprims "create_process_location"
 let lambda_send_sync = mk_lambda env_join "send_sync"
 let lambda_send_async = mk_lambda env_join "send_async"
+let lambda_tail_send_async = mk_lambda env_join "tail_send_async"
 let lambda_send_sync_alone = mk_lambda env_join "send_sync_alone"
 let lambda_send_async_alone = mk_lambda env_join "send_async_alone"
+let lambda_tail_send_async_alone = mk_lambda env_join "tail_send_async_alone"
 let lambda_create_automaton = mk_lambda env_join "create_automaton"
 let lambda_create_automaton_location = mk_lambda env_jprims "create_automaton_location"
 let lambda_patch_table = mk_lambda env_join "patch_table"
@@ -83,6 +85,12 @@ let send_async auto num alone arg = match alone with
       do_send lambda_send_async auto num  arg
   | Some g ->
       do_send lambda_send_async_alone auto g arg
+
+and tail_send_async auto num alone arg = match alone with
+  | None ->
+      do_send lambda_tail_send_async auto num  arg
+  | Some g ->
+      do_send lambda_tail_send_async_alone auto g arg
 
 and send_sync auto num alone arg = match alone with
   | None ->
