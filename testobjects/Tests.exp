@@ -1,0 +1,209 @@
+	Objective Caml version 1.02+4
+
+#   - : < x : int > ->
+    < x : int > -> < x : int > -> < x : int > * < x : int > * < x : int > =
+<fun>
+#               class 'a c (unit) = constraint 'a = int method f : 'a c end
+class 'a d (unit) = method f : int c end
+#                 Characters 185-212:
+The type variable 'a is not bound in implicit type definition
+  d = < f : 'a -> unit >
+It should be captured by a class type parameter
+#             class virtual closed c (< f : int >) = virtual f : int end
+class virtual closed d (< f : int >) = virtual f : int end
+#     class virtual closed e (< f : int >) = virtual f : int end
+#           class virtual closed c (c) = end
+#             class virtual c (unit) = end
+class 'a d (unit) = constraint 'a = < x : int; .. > method f : 'a -> int end
+#               class 'a c (unit) = constraint 'a = int end
+class 'a d (unit) = constraint 'a = int #c end
+#               class closed 'a c ('a) = constraint 'a = 'a c method f : 'a end
+# - : ('a c as 'a) -> 'b c as 'b = <fun>
+#           Characters 118-143:
+The class x should be virtual: its method f is undefined
+#               Characters 184-187:
+The class d inherits from the closed class c which has no method g
+#           Characters 37-97:
+The abbreviation c is used with parameters bool c
+wich are incompatible with constraints int c 
+#             class ('a, 'b) c (unit) =
+  constraint 'a = int -> 'c
+  constraint 'b = 'a * < x : 'b > * 'c * 'd
+  method f : 'a -> 'b -> unit
+end
+#     class ('a, 'b) d (unit) =
+  constraint 'a = int -> 'c
+  constraint 'b = 'a * < x : 'b > * 'c * 'd
+  method f : 'a -> 'b -> unit
+end
+#     val x : '_a list ref = {contents=[]}
+#     class 'a c (unit) = constraint 'a = '_b list ref method f : 'a end
+# - : unit -> '_a list ref c = <fun>
+#       Characters 25-52:
+The type abbreviation c is ill-defined
+#   type 'a c = < f : 'a c; g : 'a d >
+type 'a d = < f : 'a c >
+#   type 'a c = < f : 'a c >
+type 'a d = < f : int c >
+#   type 'a u = < x : 'a >
+type 'a t = 'a t u
+#   Characters 19-32:
+The type abbreviation t is cyclic
+#   type t = < x : t >
+# type 'a u = 'a
+# - : t -> t u -> bool = <fun>
+# - : t -> t u -> bool = <fun>
+#                         module M :
+  sig
+    class ('a, 'b) c ('c) ('b) =
+      constraint 'a = int -> 'd
+      val x : 'e list
+      val y : 'b
+      method f : 'a -> unit
+      method g : 'b
+    end
+  end
+#                   module M' :
+  sig
+    class virtual ('a, 'b) c (int) ('b) =
+      constraint 'a = int -> bool
+      val x : float list
+      val y : 'b
+      method f : 'a -> unit
+      method g : 'b
+    end
+  end
+# class ('a, 'b) d (unit) ('b) =
+  constraint 'a = int -> 'c
+  val x : 'd list
+  val y : 'b
+  method f : 'a -> unit
+  method g : 'b
+end
+# class ('a, 'b) e (unit) ('b) =
+  constraint 'a = int -> bool
+  val x : float list
+  val y : 'b
+  method f : 'a -> unit
+  method g : 'b
+end
+# - : string = "a"
+# Characters 1-9:
+One cannot create instances of the virtual class M'.c
+# - : int = 10
+# - : float = 7.1
+# # - : bool = true
+#     module M : sig class closed 'a c (unit) = method f : 'a -> unit end end
+#   module M' : sig class closed 'a c (unit) = method f : 'a -> unit end end
+# - : < f : 'a -> unit; .. > -> 'a M.c = <fun>
+# - : < f : 'a -> unit; .. > -> 'a M'.c = <fun>
+# class 'a c ('b #c) = end
+# class closed 'a c ('a c) = end
+#     class c (unit) = method f : int end
+class d (unit) = method f : int end
+# class e (unit) = method f : int end
+# - : int = 2
+# Characters 23-27:
+This expression has type bool but is here used with type int
+#   class c (unit) = method f : int method g : int method h : int end
+# class d (unit) = method h : int method i : int method j : int end
+#               class e (unit) =
+  method f : int
+  method g : int
+  method h : int
+  method i : int
+  method j : int
+end
+# val e : e = <obj>
+# - : int * int * int * int * int = 1, 3, 2, 2, 3
+#   class c ('a) = val a : 'a val x : int val y : int val z : int end
+# class d ('a) = val b : 'a val t : int val u : int val z : int end
+#                             class e (unit) =
+  val a : int
+  val b : int
+  val t : int
+  val u : int
+  val x : int
+  val y : int
+  val z : int
+  method x : int
+  method y : int
+  method z : int
+  method t : int
+  method u : int
+  method a : int
+  method b : int
+end
+# val e : e = <obj>
+# - : int * int * int * int * int * int * int = 1, 3, 2, 2, 3, 5, 7
+#             class c (int) (int) =
+  val x : int
+  val y : int
+  method x : int
+  method y : int
+end
+# class d (int) (int) =
+  val x : int
+  val y : int
+  method x : int
+  method y : int
+end
+# - : int * int = 1, 2
+# - : int * int = 1, 2
+#     class 'a c ('a) = end
+# - : 'a -> 'a c = <fun>
+#           module type M =
+  sig class c (unit) = val x : int end class d (unit) = val x : bool end end
+#         class c (int) = method get : int method set : int -> unit end
+# val c : c = <obj>
+# - : int = 5
+# - : int = 7
+#   class c (unit) = val x : int val y : int method c : int end
+# class d (unit) = val y : int method c : int method d : int end
+#     class e (unit) =
+  val x : int
+  val y : int
+  method c : int
+  method d : int
+  method x : int
+  method y : int
+end
+# - : int * int * int * int = 2, 1, 1, 1
+#                           module M : sig class c (unit) = method xc : int end end
+#         class d (unit) = val x : int method xd : int method xc : int end
+# - : int * int = 1, 2
+#         Characters 7-143:
+The type variable 'a is not bound in implicit type definition
+  'b matrix = < add : 'b matrix -> 'b; m : 'a >
+It should be captured by a class type parameter
+#   class c (unit) = method m : c end
+# - : c = <obj>
+# module M : sig class c (unit) = method m : c end end
+# - : M.c = <obj>
+#   type uu = A of int | B of (< leq : 'a > as 'a)
+#   class virtual c (unit) : 'a = virtual m : 'a end
+#         module S : sig val f : (#c as 'a) -> 'a end
+#         Characters 12-43:
+Signature mismatch:
+Modules do not match:
+  sig val f : (#c as 'a) -> 'a end
+is not included in
+  sig val f : #c -> #c end
+Values do not match:
+  val f : (#c as 'a) -> 'a
+is not included in
+  val f : #c -> #c
+#   Characters 32-48:
+Multiple definition of the type name t.
+Names must be unique in a given structure.
+#   - : (< m : (< m : 'b -> 'b > as 'b) -> 'a; .. > as 'a) ->
+    < m : 'c -> 'c > as 'c = <fun>
+#   Characters 10-39:
+Type int -> bool is not a subtype of type int -> int
+Type bool is not a subtype of type int
+# Characters 9-40:
+Type int -> bool is not a subtype of type int -> int
+Type bool is not a subtype of type int
+# - : <  > -> <  > = <fun>
+# - : < .. > -> <  > = <fun>
+# 
