@@ -51,8 +51,8 @@ value rec listwbws elem b sep el dg k =
 
 value rec get_globals =
   fun
-  [ [(<:patt< _ >>, <:expr< ($lid:s$ : Grammar.Entry.e '$_$) >>) :: pel] ->
-      [s :: get_globals pel]
+  [ [(<:patt< _ >>, <:expr< ($e$ : Grammar.Entry.e '$_$) >>) :: pel] ->
+      [e :: get_globals pel]
   | [] -> []
   | _ -> raise Not_found ]
 ;
@@ -398,7 +398,9 @@ value extend_body (globals, e) k =
       HVbox
         [: `HVbox [: :];
            `HOVbox
-             [: `S LR "GLOBAL"; `S RO ":"; list ident sl [: `S RO ";" :] :];
+             [: `S LR "GLOBAL"; `S RO ":";
+                list (fun e k -> HVbox [: `expr e "" k :]) sl
+                  [: `S RO ";" :] :];
            `s :] ]
 ;
 
