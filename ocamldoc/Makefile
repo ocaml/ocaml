@@ -297,29 +297,29 @@ installopt_really:
 ###########
 test: dummy
 	$(MKDIR) $@ 
-	$(OCAMLDOC_RUN) -html -colorize-code -d $@ $(INCLUDES) -dump $@/ocamldoc.odoc odoc*.ml odoc*.mli
+	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/ocamldoc.odoc odoc*.ml odoc*.mli
 
 test_stdlib: dummy
 	$(MKDIR) $@ 
-	$(OCAMLDOC_RUN) -html -colorize-code -d $@ $(INCLUDES) -dump $@/stdlib.odoc ../stdlib/*.mli \
+	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc ../stdlib/*.mli \
 	../otherlibs/unix/unix.mli \
 	../otherlibs/str/str.mli
 
 test_framed: dummy
 	$(MKDIR) $@ 
-	$(OCAMLDOC_RUN) -g odoc_fhtml.cmo -colorize-code -d $@ $(INCLUDES) odoc*.ml odoc*.mli
+	$(OCAMLDOC_RUN) -g odoc_fhtml.cmo -sort -colorize-code -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
 test_latex: dummy
 	$(MKDIR) $@ 
-	$(OCAMLDOC_RUN) -latex -d $@ $(INCLUDES) odoc*.ml odoc*.mli ../stdlib/*.mli ../otherlibs/unix/unix.mli
+	$(OCAMLDOC_RUN) -latex -sort -d $@ $(INCLUDES) odoc*.ml odoc*.mli ../stdlib/*.mli ../otherlibs/unix/unix.mli
 
 test_man: dummy
 	$(MKDIR) $@ 
-	$(OCAMLDOC_RUN) -man -d $@ $(INCLUDES) odoc*.ml odoc*.mli
+	$(OCAMLDOC_RUN) -man -sort -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
 test_texi: dummy
 	$(MKDIR) $@ 
-	$(OCAMLDOC_RUN) -texi -d $@ $(INCLUDES) odoc*.ml odoc*.mli
+	$(OCAMLDOC_RUN) -texi -sort -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
 stdlib_man/Pervasives.o: $(STDLIB_MLIS)
 	$(MKDIR) stdlib_man
