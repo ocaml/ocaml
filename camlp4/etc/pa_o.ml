@@ -633,7 +633,7 @@ EXTEND
       | "[|"; el = expr1_semi_list; "|]" -> <:expr< [| $list:el$ |] >>
       | "{"; test_label_eq; lel = lbl_expr_list; "}" ->
           <:expr< { $list:lel$ } >>
-      | "{"; e = expr LEVEL "simple"; "with"; lel = lbl_expr_list; "}" ->
+      | "{"; e = expr LEVEL "."; "with"; lel = lbl_expr_list; "}" ->
           <:expr< { ($e$) with $list:lel$ } >>
       | "("; ")" -> <:expr< () >>
       | "("; op = operator_rparen -> <:expr< $lid:op$ >>
@@ -959,7 +959,7 @@ EXTEND
       | "let"; rf = OPT "rec"; lb = LIST1 let_binding SEP "and"; "in";
         ce = SELF ->
           <:class_expr< let $rec:o2b rf$ $list:lb$ in $ce$ >> ]
-    | "apply" NONA
+    | "apply" LEFTA
       [ ce = SELF; e = expr LEVEL "label" ->
           <:class_expr< $ce$ $e$ >> ]
     | "simple"
@@ -1193,7 +1193,7 @@ EXTEND
           <:patt< ? $i$ : ( $lid:i$ : $t$ ) >> ] ]
   ;
   class_type:
-    [ [ i = LIDENT; ":"; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
+    [ [ i = lident_colon; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
           <:class_type< [ ~ $i$ : $t$ ] -> $ct$ >>
       | i = QUESTIONIDENTCOLON; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
           <:class_type< [ ? $i$ : $t$ ] -> $ct$ >> ] ]
