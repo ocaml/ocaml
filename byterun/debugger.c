@@ -258,7 +258,11 @@ void debugger(enum event_kind event)
       /* Fall through */
     case REQ_GET_FRAME:
       putword(dbg_out, stack_high - frame);
-      putword(dbg_out, (Pc(frame) - start_code) * sizeof(opcode_t));
+      if (frame < stack_high){
+        putword(dbg_out, (Pc(frame) - start_code) * sizeof(opcode_t));
+      }else{
+        putword (dbg_out, 0);
+      }
       flush(dbg_out);
       break;
     case REQ_SET_FRAME:
