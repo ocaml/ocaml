@@ -228,7 +228,9 @@ install: FORCE
 	cp toplevel/toploop.cmi toplevel/topdirs.cmi $(LIBDIR)
 	cd tools; $(MAKE) install
 	-cd man; $(MAKE) install
-	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) install); done
+	for i in $(OTHERLIBRARIES); do \
+          (cd otherlibs/$$i; $(MAKE) install) || exit $?; \
+        done
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
 	cd camlp4; $(MAKE) install
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); else :; fi
@@ -238,7 +240,7 @@ installopt:
 	cd asmrun; $(MAKE) install
 	cp ocamlopt $(BINDIR)/ocamlopt$(EXE)
 	cd stdlib; $(MAKE) installopt
-	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) installopt); done
+	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) installopt) || exit $?; done
 	if test -f ocamlc.opt; then cp ocamlc.opt $(BINDIR)/ocamlc.opt$(EXE); else :; fi
 	if test -f ocamlopt.opt; then cp ocamlopt.opt $(BINDIR)/ocamlopt.opt$(EXE); else :; fi
 	if test -f lex/ocamllex.opt; then cp lex/ocamllex.opt $(BINDIR)/ocamllex.opt$(EXE); else :; fi
@@ -516,11 +518,17 @@ alldepend::
 # The extra libraries
 
 otherlibraries:
-	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) RUNTIME=$(RUNTIME) all); done
+	for i in $(OTHERLIBRARIES); do \
+          (cd otherlibs/$$i; $(MAKE) RUNTIME=$(RUNTIME) all) || exit $?; \
+        done
 otherlibrariesopt:
-	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) allopt); done
+	for i in $(OTHERLIBRARIES); do \
+          (cd otherlibs/$$i; $(MAKE) allopt) || exit $?; \
+        done
 partialclean::
-	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) partialclean); done
+	for i in $(OTHERLIBRARIES); do \
+          (cd otherlibs/$$i; $(MAKE) partialclean); \
+        done
 clean::
 	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) clean); done
 alldepend::
@@ -538,15 +546,15 @@ alldepend::
 # Camlp4
 
 camlp4out: ocamlc
-	set -e; cd camlp4; $(MAKE) all
+	cd camlp4; $(MAKE) all
 camlp4opt: ocamlopt
-	set -e; cd camlp4; $(MAKE) opt
+	cd camlp4; $(MAKE) opt
 camlp4optopt: ocamlopt
-	set -e; cd camlp4; $(MAKE) optp4
+	cd camlp4; $(MAKE) optp4
 partialclean::
-	set -e; cd camlp4; $(MAKE) clean
+	cd camlp4; $(MAKE) clean
 alldepend::
-	set -e; cd camlp4; $(MAKE) depend
+	cd camlp4; $(MAKE) depend
 
 # Default rules
 
