@@ -1,7 +1,7 @@
 !include ..\support\Makefile.common.nt
 
 OBJS=tsort.cmo tables.cmo lexer.cmo parser.cmo  compile.cmo intf.cmo \
-     maincompile.cmo
+     printer.cmo maincompile.cmo
 
 tkcompiler : $(OBJS)
 	$(LABLC) $(LINKFLAGS) -o tkcompiler $(OBJS)
