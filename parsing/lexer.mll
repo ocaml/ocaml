@@ -193,19 +193,19 @@ rule token = parse
   | ":" { COLON }
   | "::" { COLONCOLON }
   | ":=" { COLONEQUAL }
-  | ":]" { COLONRBRACKET }
   | ";" { SEMI }
   | ";;" { SEMISEMI }
   | "<-" { LESSMINUS }
   | "=" { EQUAL }
   | "[" { LBRACKET }
   | "[|" { LBRACKETBAR }
-  | "[:" { LBRACKETCOLON }
+  | "[<" { LBRACKETLESS }
   | "]" { RBRACKET }
   | "_" { UNDERSCORE }
   | "{" { LBRACE }
   | "|" { BAR }
   | "|]" { BARRBRACKET }
+  | ">]" { GREATERRBRACKET }
   | "}" { RBRACE }
 
   | "!="    { INFIXOP1 "!=" }

@@ -87,7 +87,6 @@ let rec mkrangepat c1 c2 =
 %token COLON
 %token COLONCOLON
 %token COLONEQUAL
-%token COLONRBRACKET
 %token COMMA
 %token DO
 %token DONE
@@ -108,6 +107,7 @@ let rec mkrangepat c1 c2 =
 %token FUN
 %token FUNCTION
 %token FUNCTOR
+%token GREATERRBRACKET
 %token IF
 %token IN
 %token INCLUDE
@@ -119,7 +119,7 @@ let rec mkrangepat c1 c2 =
 %token LBRACE
 %token LBRACKET
 %token LBRACKETBAR
-%token LBRACKETCOLON
+%token LBRACKETLESS
 %token LESSMINUS
 %token LET
 %token <string> LIDENT
@@ -420,9 +420,9 @@ simple_expr:
                          [$1; $3])) }
   | LBRACE lbl_expr_list RBRACE
       { mkexp(Pexp_record(List.rev $2)) }
-  | LBRACKETCOLON stream_expr COLONRBRACKET
+  | LBRACKETLESS stream_expr GREATERRBRACKET
       { Pstream.cstream (List.rev $2) }
-  | LBRACKETCOLON COLONRBRACKET
+  | LBRACKETLESS GREATERRBRACKET
       { Pstream.cstream [] }
   | LBRACKETBAR expr_semi_list BARRBRACKET
       { mkexp(Pexp_array(List.rev $2)) }
@@ -462,9 +462,9 @@ parser_cases:
   | parser_cases BAR parser_case                { $3 :: $1 }
 ;
 parser_case:
-    LBRACKETCOLON stream_pattern COLONRBRACKET opt_pat MINUSGREATER expr
+    LBRACKETLESS stream_pattern GREATERRBRACKET opt_pat MINUSGREATER expr
       { (List.rev $2, $4, $6) }
-  | LBRACKETCOLON COLONRBRACKET opt_pat MINUSGREATER expr
+  | LBRACKETLESS GREATERRBRACKET opt_pat MINUSGREATER expr
       { ([], $3, $5) }
 ;
 stream_pattern:
