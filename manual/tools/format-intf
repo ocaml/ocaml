@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-$sep = "|";
+$sep = "\246";
 
 $html = 0;
 if ($ARGV[0] eq "-html") {
@@ -21,7 +21,7 @@ s/\]/}/g;
 print "\\section{$_}\n\n";
 $label = $modname; $label =~ s/[^A-Za-z0-9]//g;
 print "\\label{s:$label}\n";
-print "\\index{$modname (module)@\\verb$sep$modname$sep (module)}%\n\n";
+print "\\index{$modname (module)@\\verb~$modname~ (module)}%\n\n";
 s/{\\tt //g;
 s/}//g;
 s/_//g;
@@ -131,7 +131,16 @@ sub indexentry {
   local ($_, $comment) = @_;
   return if m/^$/ || m/^[a-zA-Z]$/;
   s/([@|!])/"$1/g;
-  push (@index, "\\index{$_$comment@\\verb$sep$_$sep$comment}");
+  if (! m|`|) {
+    $s = "`";
+  } elsif (! m|~|) {
+    $s = "~";
+  } elsif (! m/\|/) {
+    $s = "|";
+  } else {
+    die("Can't find quote character for $_");
+  }
+  push (@index, "\\index{$_$comment@\\verb$s$_$s$comment}");
 }
 
 sub end_verbatim {
