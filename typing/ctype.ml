@@ -1364,7 +1364,7 @@ let _ = unify' := unify
 
 (*
    Unify [t] and [l:'a -> 'b]. Return ['a] and ['b].
-   In modern mode, label mismatch is accepted when
+   In label mode, label mismatch is accepted when
    (1) the requested label is ""
    (2) the original label is not optional
 *)

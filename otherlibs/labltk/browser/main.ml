@@ -20,8 +20,10 @@ let _ =
   Arg.parse
     keywords:[ "-I", Arg.String (fun s -> path := s :: !path),
                "<dir>  Add <dir> to the list of include directories";
-               "-modern", Arg.Unit (fun () -> Clflags.classic := false),
+               "-label", Arg.Unit (fun () -> Clflags.classic := false),
                "Use strict label syntax";
+               "-modern", Arg.Unit (fun () -> Clflags.classic := false),
+               "same as -label";
                "-w", Arg.String (fun s -> Shell.warnings := s),
                "<flags>  Enable or disable warnings according to <flags>:\n\
                 \032    A/a enable/disable all warnings\n\

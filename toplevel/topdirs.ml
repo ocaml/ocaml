@@ -241,7 +241,7 @@ let _ =
 
 (* Set various compiler flags *)
 
-  Hashtbl.add directive_table "modern"
+  Hashtbl.add directive_table "label"
              (Directive_bool(fun b -> Clflags.classic := not b));
 
   Hashtbl.add directive_table "warnings"

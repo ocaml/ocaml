@@ -284,7 +284,7 @@ let f :prog :title =
       end in
   let load_path =
     List2.flat_map !Config.load_path fun:(fun dir -> ["-I"; dir]) in
-  let modern = if !Clflags.classic then [] else ["-modern"] in
+  let modern = if !Clflags.classic then [] else ["-label"] in
   let warnings =
     if List.mem item:"-w" progargs || !warnings = "A" then []
     else ["-w"; !warnings]
