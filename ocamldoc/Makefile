@@ -39,6 +39,7 @@ OCAMLDOC_LIBCMI=odoc_info.cmi
 OCAMLDOC_LIBCMXA=odoc_info.cmxa 
 OCAMLDOC_LIBA=odoc_info.a
 INSTALL_LIBDIR=$(OCAMLLIB)/ocamldoc
+INSTALL_CUSTOMDIR=$(INSTALL_LIBDIR)/custom
 INSTALL_BINDIR=$(OCAMLBIN)
 INSTALL_MANODIR=$(MANDIR)/man3
 
@@ -278,6 +279,7 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 install: dummy
 	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
 	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
+	if test -d $(INSTALL_CUSTOMDIR); then : ; else $(MKDIR) $(INSTALL_CUSTOMDIR); fi
 	$(CP) $(OCAMLDOC)$(EXE) $(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)
 	$(CP) ocamldoc.hva *.cmi $(GENERATORS) $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
