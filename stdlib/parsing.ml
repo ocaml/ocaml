@@ -153,7 +153,7 @@ let yyparse tables start lexer lexbuf =
     let curr_char = env.curr_char in
     env.asp <- init_asp;
     env.sp <- init_sp;
-    env.stackbase < init_stackbase;
+    env.stackbase <- init_stackbase;
     env.state <- init_state;
     env.curr_char <- init_curr_char;
     env.errflag <- init_errflag;
