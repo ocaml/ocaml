@@ -10,10 +10,13 @@
 }
 \newcounter{tocdepth}
 \newcommand{\machine}{\tt}
+\newcommand{\firstline}{\black\#\blue }
+\newcommand{\nextline}{\ }
+\newcommand{\@zyva}{\firstline\renewcommand{\?}{\nextline}}
 \newcommand{\caml}{\begin{alltt}\renewcommand{\\}{\char92}\activebracefalse}
+\let\?=\@zyva
 \newcommand{\endcaml}{\activebracetrue\end{alltt}}
-\newcommand{\?}{\black\#\blue }
-\renewcommand{\:}{\maroon}
+\renewcommand{\:}{\renewcommand{\?}{\@zyva}\maroon}
 \newcommand{\var}[1]{\textit{#1}}
 \newif\ifspace
 \def\addspace{\ifspace\;\spacefalse\fi}
@@ -123,7 +126,3 @@
 \def\goodbreak{\ \\}
 
 \def\@savedlistI{}
-
-
-
-
