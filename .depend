@@ -15,7 +15,7 @@ utils/tbl.cmx: utils/tbl.cmi
 utils/terminfo.cmo: utils/terminfo.cmi 
 utils/terminfo.cmx: utils/terminfo.cmi 
 parsing/lexer.cmi: parsing/parser.cmi 
-parsing/parse.cmi: parsing/parsetree.cmi parsing/syntaxerr.cmi 
+parsing/parse.cmi: parsing/parsetree.cmi 
 parsing/parser.cmi: parsing/parsetree.cmi 
 parsing/parsetree.cmi: parsing/asttypes.cmi parsing/location.cmi \
     parsing/longident.cmi 
@@ -37,10 +37,10 @@ parsing/parse.cmx: parsing/lexer.cmx parsing/location.cmx parsing/parser.cmx \
     parsing/syntaxerr.cmx parsing/parse.cmi 
 parsing/parser.cmo: parsing/asttypes.cmi utils/clflags.cmo \
     parsing/location.cmi parsing/longident.cmi parsing/parsetree.cmi \
-    parsing/pstream.cmi parsing/parser.cmi 
+    parsing/pstream.cmi parsing/syntaxerr.cmi parsing/parser.cmi 
 parsing/parser.cmx: parsing/asttypes.cmi utils/clflags.cmx \
     parsing/location.cmx parsing/longident.cmx parsing/parsetree.cmi \
-    parsing/pstream.cmx parsing/parser.cmi 
+    parsing/pstream.cmx parsing/syntaxerr.cmx parsing/parser.cmi 
 parsing/pstream.cmo: parsing/asttypes.cmi parsing/location.cmi \
     parsing/longident.cmi parsing/parsetree.cmi parsing/pstream.cmi 
 parsing/pstream.cmx: parsing/asttypes.cmi parsing/location.cmx \
@@ -364,6 +364,8 @@ asmcomp/selectgen.cmi: asmcomp/arch.cmo asmcomp/cmm.cmi typing/ident.cmi \
 asmcomp/selection.cmi: asmcomp/cmm.cmi asmcomp/mach.cmi 
 asmcomp/spill.cmi: asmcomp/mach.cmi 
 asmcomp/split.cmi: asmcomp/mach.cmi 
+asmcomp/arch.cmo: utils/config.cmi 
+asmcomp/arch.cmx: utils/config.cmx 
 asmcomp/asmgen.cmo: utils/clflags.cmo asmcomp/closure.cmi asmcomp/cmm.cmi \
     asmcomp/cmmgen.cmi asmcomp/coloring.cmi utils/config.cmi asmcomp/emit.cmi \
     asmcomp/emitaux.cmi asmcomp/interf.cmi asmcomp/linearize.cmi \
@@ -436,12 +438,12 @@ asmcomp/compilenv.cmx: asmcomp/clambda.cmx utils/config.cmx typing/env.cmx \
     typing/ident.cmx utils/misc.cmx asmcomp/compilenv.cmi 
 asmcomp/emit.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/compilenv.cmi \
     utils/config.cmi asmcomp/emitaux.cmi asmcomp/linearize.cmi \
-    asmcomp/mach.cmi utils/misc.cmi utils/nativeint.cmi asmcomp/proc.cmi \
-    asmcomp/reg.cmi asmcomp/emit.cmi 
+    parsing/location.cmi asmcomp/mach.cmi utils/misc.cmi utils/nativeint.cmi \
+    asmcomp/proc.cmi asmcomp/reg.cmi asmcomp/emit.cmi 
 asmcomp/emit.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/compilenv.cmx \
     utils/config.cmx asmcomp/emitaux.cmx asmcomp/linearize.cmx \
-    asmcomp/mach.cmx utils/misc.cmx utils/nativeint.cmx asmcomp/proc.cmx \
-    asmcomp/reg.cmx asmcomp/emit.cmi 
+    parsing/location.cmx asmcomp/mach.cmx utils/misc.cmx utils/nativeint.cmx \
+    asmcomp/proc.cmx asmcomp/reg.cmx asmcomp/emit.cmi 
 asmcomp/emitaux.cmo: utils/nativeint.cmi asmcomp/emitaux.cmi 
 asmcomp/emitaux.cmx: utils/nativeint.cmx asmcomp/emitaux.cmi 
 asmcomp/interf.cmo: asmcomp/mach.cmi asmcomp/proc.cmi asmcomp/reg.cmi \
@@ -480,10 +482,8 @@ asmcomp/proc.cmx: asmcomp/arch.cmx utils/ccomp.cmx asmcomp/cmm.cmx \
     asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx asmcomp/proc.cmi 
 asmcomp/reg.cmo: asmcomp/cmm.cmi asmcomp/reg.cmi 
 asmcomp/reg.cmx: asmcomp/cmm.cmx asmcomp/reg.cmi 
-asmcomp/reload.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
-    asmcomp/reg.cmi asmcomp/reloadgen.cmi asmcomp/reload.cmi 
-asmcomp/reload.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
-    asmcomp/reg.cmx asmcomp/reloadgen.cmx asmcomp/reload.cmi 
+asmcomp/reload.cmo: asmcomp/reloadgen.cmi asmcomp/reload.cmi 
+asmcomp/reload.cmx: asmcomp/reloadgen.cmx asmcomp/reload.cmi 
 asmcomp/reloadgen.cmo: asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi \
     asmcomp/reloadgen.cmi 
 asmcomp/reloadgen.cmx: asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx \
@@ -492,8 +492,10 @@ asmcomp/schedgen.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/linearize.cmi \
     asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi asmcomp/schedgen.cmi 
 asmcomp/schedgen.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/linearize.cmx \
     asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx asmcomp/schedgen.cmi 
-asmcomp/scheduling.cmo: asmcomp/schedgen.cmi asmcomp/scheduling.cmi 
-asmcomp/scheduling.cmx: asmcomp/schedgen.cmx asmcomp/scheduling.cmi 
+asmcomp/scheduling.cmo: asmcomp/arch.cmo asmcomp/mach.cmi \
+    asmcomp/schedgen.cmi asmcomp/scheduling.cmi 
+asmcomp/scheduling.cmx: asmcomp/arch.cmx asmcomp/mach.cmx \
+    asmcomp/schedgen.cmx asmcomp/scheduling.cmi 
 asmcomp/selectgen.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi typing/ident.cmi \
     asmcomp/mach.cmi utils/misc.cmi utils/nativeint.cmi asmcomp/proc.cmi \
     asmcomp/reg.cmi utils/tbl.cmi asmcomp/selectgen.cmi 
@@ -501,10 +503,10 @@ asmcomp/selectgen.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx typing/ident.cmx \
     asmcomp/mach.cmx utils/misc.cmx utils/nativeint.cmx asmcomp/proc.cmx \
     asmcomp/reg.cmx utils/tbl.cmx asmcomp/selectgen.cmi 
 asmcomp/selection.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
-    utils/misc.cmi asmcomp/proc.cmi asmcomp/reg.cmi asmcomp/selectgen.cmi \
+    utils/misc.cmi asmcomp/reg.cmi asmcomp/selectgen.cmi \
     asmcomp/selection.cmi 
 asmcomp/selection.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
-    utils/misc.cmx asmcomp/proc.cmx asmcomp/reg.cmx asmcomp/selectgen.cmx \
+    utils/misc.cmx asmcomp/reg.cmx asmcomp/selectgen.cmx \
     asmcomp/selection.cmi 
 asmcomp/spill.cmo: asmcomp/mach.cmi asmcomp/proc.cmi asmcomp/reg.cmi \
     asmcomp/spill.cmi 

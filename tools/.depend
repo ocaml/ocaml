@@ -14,9 +14,9 @@ ocamldep.cmo: ../utils/misc.cmi
 ocamldep.cmx: ../utils/misc.cmx 
 ocamlprof.cmo: ../utils/clflags.cmo ../utils/config.cmi ../parsing/lexer.cmi \
     ../parsing/location.cmi ../utils/misc.cmi ../parsing/parse.cmi \
-    ../parsing/parsetree.cmi 
+    ../parsing/parsetree.cmi ../parsing/syntaxerr.cmi 
 ocamlprof.cmx: ../utils/clflags.cmx ../utils/config.cmx ../parsing/lexer.cmx \
     ../parsing/location.cmx ../utils/misc.cmx ../parsing/parse.cmx \
-    ../parsing/parsetree.cmi 
+    ../parsing/parsetree.cmi ../parsing/syntaxerr.cmx 
 profiling.cmo: profiling.cmi 
 profiling.cmx: profiling.cmi 

@@ -30,9 +30,10 @@ extern.o: extern.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/reverse.h ../byterun/str.h
 fail.o: fail.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
- ../byterun/mlvalues.h ../byterun/fail.h ../byterun/gc.h \
- ../byterun/memory.h ../byterun/major_gc.h ../byterun/freelist.h \
- ../byterun/minor_gc.h ../byterun/roots.h ../byterun/signals.h stack.h
+ ../byterun/mlvalues.h ../byterun/fail.h ../byterun/io.h \
+ ../byterun/gc.h ../byterun/memory.h ../byterun/major_gc.h \
+ ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/roots.h \
+ ../byterun/signals.h stack.h
 floats.o: floats.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/fail.h ../byterun/memory.h \
@@ -80,7 +81,8 @@ major_gc.o: major_gc.c ../byterun/compact.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/misc.h \
  ../byterun/fail.h ../byterun/mlvalues.h ../byterun/freelist.h \
  ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/major_gc.h \
- ../byterun/roots.h ../byterun/weak.h
+ ../byterun/roots.h ../byterun/memory.h ../byterun/minor_gc.h \
+ ../byterun/weak.h
 md5.o: md5.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/fail.h ../byterun/md5.h \
@@ -173,9 +175,10 @@ extern.d.o: extern.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/reverse.h ../byterun/str.h
 fail.d.o: fail.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
- ../byterun/mlvalues.h ../byterun/fail.h ../byterun/gc.h \
- ../byterun/memory.h ../byterun/major_gc.h ../byterun/freelist.h \
- ../byterun/minor_gc.h ../byterun/roots.h ../byterun/signals.h stack.h
+ ../byterun/mlvalues.h ../byterun/fail.h ../byterun/io.h \
+ ../byterun/gc.h ../byterun/memory.h ../byterun/major_gc.h \
+ ../byterun/freelist.h ../byterun/minor_gc.h ../byterun/roots.h \
+ ../byterun/signals.h stack.h
 floats.d.o: floats.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/fail.h ../byterun/memory.h \
@@ -223,7 +226,8 @@ major_gc.d.o: major_gc.c ../byterun/compact.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/misc.h \
  ../byterun/fail.h ../byterun/mlvalues.h ../byterun/freelist.h \
  ../byterun/gc.h ../byterun/gc_ctrl.h ../byterun/major_gc.h \
- ../byterun/roots.h ../byterun/weak.h
+ ../byterun/roots.h ../byterun/memory.h ../byterun/minor_gc.h \
+ ../byterun/weak.h
 md5.d.o: md5.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
  ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/fail.h ../byterun/md5.h \
