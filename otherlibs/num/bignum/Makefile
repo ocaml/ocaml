@@ -73,7 +73,7 @@ mips: scratch
 	$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" all
 
 alpha: scratch
-	as -O s/alphaKerN.s -o o/KerN.o
+	as s/alphaKerN.s -o o/KerN.o
 	$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" all
 
 pyramid: scratch
