@@ -1,3 +1,16 @@
+/***********************************************************************/
+/*                                                                     */
+/*                         Caml Special Light                          */
+/*                                                                     */
+/*             Damien Doligez, projet Para, INRIA Rocquencourt         */
+/*                                                                     */
+/*  Copyright 1995 Institut National de Recherche en Informatique et   */
+/*  Automatique.  Distributed only by permission.                      */
+/*                                                                     */
+/***********************************************************************/
+
+/* $Id$ */
+
 /* Allocation macros and functions */
 
 #ifndef _memory_

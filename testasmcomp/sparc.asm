@@ -1,3 +1,16 @@
+/***********************************************************************/
+/*                                                                     */
+/*                         Caml Special Light                          */
+/*                                                                     */
+/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
+/*                                                                     */
+/*  Copyright 1995 Institut National de Recherche en Informatique et   */
+/*  Automatique.  Distributed only by permission.                      */
+/*                                                                     */
+/***********************************************************************/
+
+/* $Id$ */
+
         .global _call_gen_code
 _call_gen_code:
         save    %sp, -96, %sp

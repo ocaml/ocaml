@@ -1,3 +1,16 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                         Caml Special Light                          *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Automatique.  Distributed only by permission.                      *)
+(*                                                                     *)
+(***********************************************************************)
+
+(* $Id$ *)
+
 {
 open Parsecmm
 
@@ -39,7 +52,6 @@ let keyword_table =
     "let", LET;
     "load", LOAD;
     "mod", MODI;
-    "modify", MODIFY;
     "or", OR;
     "proj", PROJ;
     "raise", RAISE;

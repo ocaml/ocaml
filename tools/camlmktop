@@ -1,5 +1,3 @@
 #!/bin/sh
-# Simple and elegant.
-# Does not expunge compiler modules, but what the heck.
 
 exec cslc -linkall $* toplevellib.cma

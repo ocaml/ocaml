@@ -1,3 +1,16 @@
+/***********************************************************************/
+/*                                                                     */
+/*                         Caml Special Light                          */
+/*                                                                     */
+/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
+/*                                                                     */
+/*  Copyright 1995 Institut National de Recherche en Informatique et   */
+/*  Automatique.  Distributed only by permission.                      */
+/*                                                                     */
+/***********************************************************************/
+
+/* $Id$ */
+
 /* To determine the semantics of signal handlers
    (System V: signal is reset to default behavior on entrance to the handler
     BSD: signal handler remains active). */

@@ -1,3 +1,16 @@
+/***********************************************************************/
+/*                                                                     */
+/*                         Caml Special Light                          */
+/*                                                                     */
+/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
+/*                                                                     */
+/*  Copyright 1995 Institut National de Recherche en Informatique et   */
+/*  Automatique.  Distributed only by permission.                      */
+/*                                                                     */
+/***********************************************************************/
+
+/* $Id$ */
+
 /* Swap byte-order in 16-bit, 32-bit and 64-bit words */
 
 #ifndef _reverse_

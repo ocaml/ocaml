@@ -1,3 +1,16 @@
+/***********************************************************************/
+/*                                                                     */
+/*                         Caml Special Light                          */
+/*                                                                     */
+/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
+/*                                                                     */
+/*  Copyright 1995 Institut National de Recherche en Informatique et   */
+/*  Automatique.  Distributed only by permission.                      */
+/*                                                                     */
+/***********************************************************************/
+
+/* $Id$ */
+
 /* A simple parser for C-- */
 
 %{
@@ -84,7 +97,6 @@ let access_array base numelt size =
 %token LTF
 %token LTI
 %token MODI
-%token MODIFY
 %token MULF
 %token MULI
 %token NEA
@@ -216,7 +228,6 @@ unaryop:
   | PROJ INTCONST SUBI INTCONST { Cproj($2, $4 - $2 - 1) }
   | LOAD chunk                  { Cloadchunk $2 }
   | ALLOC                       { Calloc }
-  | MODIFY                      { Cmodify }
   | FLOATOFINT                  { Cfloatofint }
   | INTOFFLOAT                  { Cintoffloat }
   | RAISE                       { Craise }
