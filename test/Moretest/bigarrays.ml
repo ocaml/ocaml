@@ -24,6 +24,13 @@ let test test_number answer correct_answer =
    printf " %d..." test_number
  end
 
+(* External C and Fortran functions *)
+
+external c_filltab : unit -> (float, float64_elt, c_layout) Array2.t = "c_filltab"
+external c_printtab : (float, float64_elt, c_layout) Array2.t -> unit = "c_printtab"
+external fortran_filltab : unit -> (float, float32_elt, fortran_layout) Array2.t = "fortran_filltab"
+external fortran_printtab : (float, float32_elt, fortran_layout) Array2.t -> unit = "fortran_printtab"
+
 (* One-dimensional arrays *)
 
 let _ =
@@ -593,6 +600,27 @@ let _ =
   done;
   test 2 !ok true;
   Sys.remove mapped_file;
+
+(* I/O *)
+
+  print_newline();
+  testing_function "------ Foreign function interface --------";
+  testing_function "Passing an array to C";
+  c_printtab (make_array2 float64 c_layout 0 6 8 float);
+  testing_function "Accessing a C array";
+  let a = c_filltab () in
+  test 1 a.{0,0} 0.0;
+  test 2 a.{1,0} 100.0;
+  test 3 a.{0,1} 1.0;
+  test 4 a.{5,4} 504.0;
+  testing_function "Passing an array to Fortran";
+  fortran_printtab (make_array2 float32 fortran_layout 1 5 4 float);
+  testing_function "Accessing a Fortran array";
+  let a = fortran_filltab () in
+  test 1 a.{1,1} 101.0;
+  test 2 a.{2,1} 201.0;
+  test 3 a.{1,2} 102.0;
+  test 4 a.{5,4} 504.0;
 
   ()
                   
