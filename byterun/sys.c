@@ -91,7 +91,9 @@ void sys_error(arg)
 value sys_exit(retcode)          /* ML */
      value retcode;
 {
+#ifndef NATIVE_CODE
   debugger(PROGRAM_EXIT);
+#endif
 #ifdef HAS_UI
   ui_exit(Int_val(retcode));
 #else
