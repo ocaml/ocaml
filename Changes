@@ -18,8 +18,6 @@ Type-checking:
   as before.
 - Lots of bug fixes in the handling of polymorphism and recursion inside
   types.
-- Format types now have 4 parameters instead of 3 (type ('a,'b,'c,'d) format)
-  in order to support format concatenation and kprintf.
 - Added a new "-dtypes" option to ocamlc/ocamlopt, and an emacs extension
   "emacs/caml-types.el".  The compiler option saves inferred type information
   to file *.types, and the emacs extension allows the user to look at the
@@ -88,6 +86,7 @@ Standard library:
 - Module Scanf: %n and %N formats to count characters / items read so far;
     assorted bug fixes.
 - Modules Set and Map: fixed bugs causing trees to become unbalanced.
+- Module Printf: less restrictive typing of kprintf.
 - Module Random: better seeding; functions to generate random int32, int64,
     nativeint; added support for explicit state management.
 - Module Sys: added Sys.readdir for reading the contents of a directory.
@@ -130,17 +129,21 @@ Emacs mode:
 - Added file caml-types.el to interactively display the type information
   saved by option -dtypes.
 
+Win32 ports:
+- Cygwin port: recognize \ as directory separator in addition to /
+- MSVC port: ocamlopt -pack works provided GNU binutils are installed.
+- Graphics library: fixed bug in Graphics.blit_image; improved event handling.
+
 OCamldoc:
 - new ty_code field for types, to keep code of a type (with option -keep-code)
-- new ex_code field for types, to keep code of an exception (with option -keep-code)
-- handling recursive modules
-- handling private types
+- new ex_code field for types, to keep code of an exception
+    (with option -keep-code)
 - some fixes in html generation
 - don't overwrite existing style.css file when generating HTML
-- create the ocamldoc.sty file when generating LaTeX (if it does not already exists)
-- do not install ocamldoc.sty any more
+- create the ocamldoc.sty file when generating LaTeX (if nonexistent)
 - man pages are now installed in man/man3 rather than man/mano
 - fix: empty [] in generated HTML indexes
+
 
 Objective Caml 3.06:
 --------------------
