@@ -139,28 +139,13 @@ G(caml_c_call):
     /* (Pairing is expected on the Pentium.) */
         movl    (%esp), %edx
         ffree   %st(0)
-        ffree   %st(1)
-        ffree   %st(2)
         movl    %edx, G(caml_last_return_address)
-        ffree   %st(3)
-        leal    4(%esp), %edx
-        ffree   %st(4)
-        movl    %edx, G(caml_bottom_of_stack)
-        ffree   %st(5)
-    /* Call the function (address in %eax) */
-        jmp     *%eax
-
-        .globl  G(caml_c_call_noalloc)
-
-        .align  FUNCTION_ALIGN
-G(caml_c_call_noalloc):
-    /* Just free the floating point registers */
-        ffree   %st(0)
         ffree   %st(1)
+        leal    4(%esp), %edx
         ffree   %st(2)
+        movl    %edx, G(caml_bottom_of_stack)
         ffree   %st(3)
-        ffree   %st(4)
-        ffree   %st(5)
+    /* Call the function (address in %eax) */
         jmp     *%eax
 
 /* Start the Caml program */
