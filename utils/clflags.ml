@@ -17,3 +17,5 @@ and nopervasives = ref false            (* -nopervasives *)
 
 let dump_lambda = ref false             (* -dlambda *)
 and dump_instr = ref false              (* -dinstr *)
+
+let write_lambda = ref false            (* -wlambda *)
