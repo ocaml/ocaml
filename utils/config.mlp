@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-let version = "1.06-1/5"
+let version = "1.06-1/6"
 
 let standard_library =
   try
@@ -26,11 +26,11 @@ let c_libraries = "%%CCLIBS%%"
 let ranlib = "%%RANLIBCMD%%"
 
 let exec_magic_number = "Caml1999X001"
-and cmi_magic_number = "Caml1999I002"
-and cmo_magic_number = "Caml1999O003"
-and cma_magic_number = "Caml1999A003"
-and cmx_magic_number = "Caml1999Y004"
-and cmxa_magic_number = "Caml1999Z004"
+and cmi_magic_number = "Caml1999I003"
+and cmo_magic_number = "Caml1999O004"
+and cma_magic_number = "Caml1999A004"
+and cmx_magic_number = "Caml1999Y005"
+and cmxa_magic_number = "Caml1999Z005"
 and ast_impl_magic_number = "Caml1999M003"
 and ast_intf_magic_number = "Caml1999N003"
 

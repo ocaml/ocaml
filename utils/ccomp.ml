@@ -13,8 +13,16 @@
 
 (* Compiling C files and building C libraries *)
 
+let command cmdline =
+  if !Clflags.verbose then begin
+    prerr_string "+ ";
+    prerr_string cmdline;
+    prerr_newline()
+  end;
+  Sys.command cmdline
+
 let compile_file name =
-  Sys.command
+  command
    (Printf.sprintf
      "%s -c %s %s -I%s %s"
      Config.bytecomp_c_compiler
@@ -29,12 +37,12 @@ let create_archive archive file_list =
   Misc.remove_file archive;
   match Config.system with
     "win32" ->
-      Sys.command(Printf.sprintf "lib /nologo /debugtype:cv /out:%s %s"
+      command(Printf.sprintf "lib /nologo /debugtype:cv /out:%s %s"
                                  archive (String.concat " " file_list))
   | _ ->
       let r1 =
-        Sys.command(Printf.sprintf "ar rc %s %s"
+        command(Printf.sprintf "ar rc %s %s"
                                    archive (String.concat " " file_list)) in
       if r1 <> 0 or String.length Config.ranlib = 0
       then r1
-      else Sys.command(Config.ranlib ^ " " ^ archive)
+      else command(Config.ranlib ^ " " ^ archive)

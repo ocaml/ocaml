@@ -13,5 +13,6 @@
 
 (* Compiling C files and building C libraries *)
 
+val command: string -> int
 val compile_file: string -> int
 val create_archive: string -> string list -> int
