@@ -34,7 +34,7 @@ implementation proceeds in the initial environment
 @name_1 ':' 'sig' interface_1 'end' \ldots
  name_n ':' 'sig' interface_n 'end'@
 \end{center}
-where @name_1 \ldots name_N@ are the names of the other
+where @name_1 \ldots name_n@ are the names of the other
 compilation units available in the search path (see
 chapter~\ref{c:camlc} for more details) and @interface_1 \ldots
 interface_n@ are their respective interfaces.
