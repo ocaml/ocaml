@@ -222,7 +222,9 @@ let make_switch_or_test_sequence arg const_lambda_list int_lambda_list =
     List.fold_right (fun (k, l) m -> min k m) int_lambda_list max_int in
   let max_key =
     List.fold_right (fun (k, l) m -> max k m) int_lambda_list min_int in
-  if 4 * List.length int_lambda_list <= 4 + max_key - min_key then
+  (* min_key and max_key can be arbitrarily large, so watch out for
+     overflow in the following comparison *)
+  if List.length int_lambda_list <= 1 + max_key / 4 - min_key / 4 then
     (* Sparse matching -- use a sequence of tests
        (4 bytecode instructions per test)  *)
     make_test_sequence (Pintcomp Ceq) arg const_lambda_list
