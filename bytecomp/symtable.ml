@@ -102,6 +102,10 @@ open Printf
 
 let output_primitive_table outchan =
   let prim = all_primitives() in
+  fprintf outchan "\
+    #ifdef __cplusplus\n\
+    extern \"C\" {\n\
+    #endif\n";
   for i = 0 to Array.length prim - 1 do
     fprintf outchan "extern long %s();\n" prim.(i)
   done;
@@ -115,7 +119,11 @@ let output_primitive_table outchan =
   for i = 0 to Array.length prim - 1 do
     fprintf outchan "  \"%s\",\n" prim.(i)
   done;
-  fprintf outchan "  (char *) 0 };\n"
+  fprintf outchan "  (char *) 0 };\n";
+  fprintf outchan "\
+    #ifdef __cplusplus\n\
+    }\n\
+    #endif\n"
 
 (* Initialization for batch linking *)
 
