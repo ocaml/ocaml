@@ -97,12 +97,8 @@ let nondep_supertype env mid mty =
       let rem' = nondep_sig var rem in
       match item with
         Tsig_value(id, d) ->
-          begin try
-            Tsig_value(id, {val_type = Ctype.nondep_type env mid d.val_type;
-                            val_prim = d.val_prim}) :: rem'
-          with Not_found ->
-            match var with Co -> rem' | _ -> raise Not_found
-          end
+          Tsig_value(id, {val_type = Ctype.nondep_type env mid d.val_type;
+                          val_prim = d.val_prim}) :: rem'
       | Tsig_type(id, d) ->
           begin try
             Tsig_type(id, nondep_type_decl d) :: rem'
@@ -112,17 +108,9 @@ let nondep_supertype env mid mty =
             | _  -> raise Not_found
           end
       | Tsig_exception(id, d) ->
-          begin try
-            Tsig_exception(id, List.map (Ctype.nondep_type env mid) d) :: rem'
-          with Not_found ->
-            match var with Co -> rem' | _ -> raise Not_found
-          end
+          Tsig_exception(id, List.map (Ctype.nondep_type env mid) d) :: rem'
       | Tsig_module(id, mty) ->
-          begin try
-            Tsig_module(id, nondep_mty var mty) :: rem'
-          with Not_found ->
-            match var with Co -> rem' | _ -> raise Not_found
-          end
+          Tsig_module(id, nondep_mty var mty) :: rem'
       | Tsig_modtype(id, d) ->
           begin try
             Tsig_modtype(id, nondep_modtype_decl d) :: rem'
