@@ -119,9 +119,9 @@ void fatal_uncaught_exception(value exn)
 #endif
   /* Display the uncaught exception */
 #ifdef HAS_UI
-  ui_print_stderr("Fatal error: uncaught exception %s\n", msg);
+  ui_print_stderr("Fatal error: exception %s\n", msg);
 #else
-  fprintf(stderr, "Fatal error: uncaught exception %s\n", msg);
+  fprintf(stderr, "Fatal error: exception %s\n", msg);
 #endif
   free(msg);
   /* Display the backtrace if available */
