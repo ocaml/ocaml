@@ -37,7 +37,7 @@ val set_method: table -> label -> item -> unit
 val get_variable: table -> string -> int
 val hide_variable: table -> string -> unit
 val get_private_variable: table -> string -> int
-val create_class: (table -> unit) -> class_info
+val create_class: class_info -> (table -> unit) -> unit
 
 (* Objects *)
 type t

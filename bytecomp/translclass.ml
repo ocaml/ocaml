@@ -98,7 +98,7 @@ let transl_val_hiding tbl cl_init =
                         [Lvar tbl; transl_label name]),
 		cl_init)
 
-let transl_class cl =
+let transl_class cl_id cl =
   let obj = Ident.create "obj" in
   let (field_init, anc_id) =
     List.fold_right (transl_field_obj obj) cl.cl_field (Lvar obj, [])
@@ -122,4 +122,7 @@ let transl_class cl =
                              [Lvar table; obj_init])))
                  cl.cl_field)
   in
-    Lapply (oo_prim "create_class", [cl_init])
+    Lapply (oo_prim "create_class", [Lvar cl_id; cl_init])
+
+let class_stub =
+  Lconst (Const_block (0, [const_unit; const_unit; const_unit]))

@@ -262,9 +262,9 @@ let put array label element =
 
 type t
 type class_info =
-  {obj_init: t -> t;
-   class_init: table -> unit;
-   table: table}
+  {mutable obj_init: t -> t;
+   mutable class_init: table -> unit;
+   mutable table: table}
 
 let set_initializer table init =
   match table.init with
@@ -363,19 +363,20 @@ let new_object table =
   obj.(0) <- (magic table.buckets : t);
   obj
 
-let create_class class_init =
+let create_class class_info class_init =
   let table = new_table () in
   class_init table;
   method_count := !method_count + List.length table.methods;
   if !compact_table then
     compact_buckets table.buckets;
   inst_var_count := !inst_var_count + table.size - 1;
-  { class_init = class_init; table = table;
-    obj_init =
+  class_info.class_init <- class_init;
+  class_info.table <- table;
+  class_info.obj_init <-
       (function x -> 
          let obj = Array.create table.size (magic () : t) in
          obj.(0) <- (magic table.buckets : t);
-         (magic (List.hd (List.hd table.init))) obj x) }
+         (magic (List.hd (List.hd table.init))) obj x)
 
 (**** Objects ****)
 
