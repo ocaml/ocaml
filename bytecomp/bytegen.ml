@@ -471,7 +471,6 @@ let rec comp_expr env exp sz cont =
               lbl :: comp_fun (pos + 1) rem
           | _ -> assert false in
         let lbls = comp_fun 0 decl in
-        let num_funcs = List.length lbls in
         comp_args env (List.map (fun n -> Lvar n) fv) sz
           (Kclosurerec(lbls, List.length fv) ::
             (comp_expr (add_vars rec_idents (sz+1) env) body (sz + ndecl)
