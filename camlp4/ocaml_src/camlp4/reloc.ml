@@ -160,6 +160,8 @@ and expr floc sh =
         ExDef (floc loc, List.map (joinautomaton floc sh) x1, self x2)
     | ExLoc (loc, x1, x2) ->
         ExLoc (floc loc, List.map (joinlocation floc sh) x1, self x2)
+    | ExDyn (loc, x1) -> ExDyn (floc loc, self x1)
+    | ExDco (loc, x1, t1) -> ExDco (loc, self x1, ctyp floc sh t1)
   in
   self
 and joinlocation floc sh (loc, id, autos, e) =
@@ -172,6 +174,7 @@ and joinclause floc sh (loc, jpats, e) =
 and joinpattern floc sh (loc, id, args) =
   floc loc, joinident floc sh id, patt floc sh args
 and joinident floc sh (loc, id) = floc loc, id
+and joinarg floc sh (loc, idopt) = floc loc, idopt
 and module_type floc sh =
   let rec self =
     function

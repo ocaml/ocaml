@@ -563,6 +563,10 @@ value rec expr =
       mkexp loc (Pexp_def (List.map joinautomaton d) (expr e))
   | ExLoc loc d e ->
       mkexp loc (Pexp_loc (List.map joinlocation d) (expr e))
+  | ExDyn loc e ->
+      mkexp loc (Pexp_dynamic (expr e))
+  | ExDco loc e t ->
+      mkexp loc (Pexp_coerce (expr e) (ctyp t))
 (*< JOCAML *)
   ]
 (*> JOCAML *)

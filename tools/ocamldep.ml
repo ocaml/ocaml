@@ -158,6 +158,8 @@ let rec add_expr bv exp =
       List.iter (add_joinautomaton bv) d ; add_expr bv e
   | Pexp_loc (d, e) ->
       List.iter (add_joinlocation bv) d ; add_expr bv e
+  | Pexp_dynamic e -> add_expr bv e
+  | Pexp_coerce (e,t) -> add_expr bv e ; add_type bv t
 
 and add_joinlocation bv jloc =
   let (_, autos, e) = jloc.pjloc_desc in

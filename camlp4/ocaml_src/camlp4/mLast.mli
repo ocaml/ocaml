@@ -106,6 +106,8 @@ and expr =
   | ExRep of loc * expr * joinident
   | ExDef of loc * joinautomaton list * expr
   | ExLoc of loc * joinlocation list * expr
+  | ExDyn of loc * expr
+  | ExDco of loc * expr * ctyp
 and joinlocation = loc * joinident * joinautomaton list * expr
 and joinautomaton = loc * joinclause list
 and joinclause = loc * joinpattern list * expr

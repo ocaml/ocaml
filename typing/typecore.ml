@@ -1343,6 +1343,7 @@ let rec do_type_exp ctx env sexp =
         exp_type = body.exp_type;
         exp_env  = env
       } 
+  | Pexp_dynamic (_) | Pexp_coerce (_,_) -> assert false
 (*< JOCAML *)
 
 and type_argument env sarg ty_expected =

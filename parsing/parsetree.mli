@@ -114,6 +114,8 @@ and expression_desc =
   | Pexp_reply of expression * joinident
   | Pexp_def of joinautomaton list * expression
   | Pexp_loc of joinlocation list * expression
+  | Pexp_dynamic of expression
+  | Pexp_coerce of expression * core_type
 
 and joinlocation =
   {pjloc_desc : joinident * joinautomaton list * expression ;

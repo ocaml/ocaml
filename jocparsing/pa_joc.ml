@@ -107,6 +107,7 @@ EXTEND
       e1 = SELF ; ";"; e2 = SELF ->  ExSeq (loc,e1::get_seq e2)
       | e1 = SELF; ";" -> e1
     ]];
+
  expr: AFTER "top"
     [RIGHTA[
        e1 = SELF; "&"; e2 = SELF -> ExPar (loc, e1, e2)
@@ -116,14 +117,20 @@ EXTEND
     [[
         "reply" ; "to" ; id = joinident -> ExRep (loc, ExUid (loc, "()"), id)
      |  "reply" ; e = SELF ; "to" ; id = joinident -> ExRep (loc, e, id)
-     | "spawn" ;  e = bracedproc -> ExSpa (loc, e)
-     | "exec" ; "{" ;  e = expr LEVEL "top" ; "}" -> ExSpa (loc, e)
-     | "let" ; "def" ; d = LIST1 joinautomaton SEP "and" ;
+     |  "spawn" ;  e = bracedproc -> ExSpa (loc, e)
+     |  "exec" ; "{" ;  e = expr LEVEL "top" ; "}" -> ExSpa (loc, e)
+     |  "let" ; "def" ; d = LIST1 joinautomaton SEP "and" ;
         "in" ; e=expr LEVEL "top" ->
         ExDef (loc, d, e)
      | "let" ; "loc" ; d = LIST1 joinlocation SEP "and" ;
         "in" ; e=expr LEVEL "top" ->
         ExLoc (loc, d, e)
+    ]];
+
+ expr: LEVEL "apply"
+    [[
+      "dynamic" ; e = SELF -> ExDyn (loc,e)
+     | "coerce" ; "(" ; e = SELF ; ":" ; t=ctyp ; ")" -> ExDco (loc, e, t)
     ]];
 
  str_item: LEVEL "top"

@@ -109,6 +109,8 @@ and expr =
   | ExRep of loc and expr and joinident
   | ExDef of loc and list joinautomaton  and expr
   | ExLoc of loc and list joinlocation  and expr
+  | ExDyn of loc and expr
+  | ExDco of loc and expr and ctyp (* coerce for dynamics *)
 (*< JOCAML *)
 ]
 (*> JOCAML *)

@@ -517,6 +517,8 @@ let rec expr =
         (Pexp_function (("?" ^ lab), option expr eo, [patt p, when_expr e w]))
   | ExFun (loc, pel) ->
       mkexp loc (Pexp_function ("", None, List.map mkpwe pel))
+  | ExIfe (loc, e1, e2, ExUid (_, "()")) ->
+      mkexp loc (Pexp_ifthenelse (expr e1, expr e2, None))
   | ExIfe (loc, e1, e2, e3) ->
       mkexp loc (Pexp_ifthenelse (expr e1, expr e2, Some (expr e3)))
   | ExInt (loc, s) -> mkexp loc (Pexp_constant (Const_int (int_of_string s)))
@@ -571,6 +573,8 @@ let rec expr =
       mkexp loc (Pexp_def (List.map joinautomaton d, expr e))
   | ExLoc (loc, d, e) ->
       mkexp loc (Pexp_loc (List.map joinlocation d, expr e))
+  | ExDyn (loc, e) -> mkexp loc (Pexp_dynamic (expr e))
+  | ExDco (loc, e, t) -> mkexp loc (Pexp_coerce (expr e, ctyp t))
 and joinlocation (loc, id, autos, e) =
   {pjloc_loc = mkloc loc;
    pjloc_desc = joinident id, List.map joinautomaton autos, expr e}
@@ -582,7 +586,6 @@ and joinclause (loc, jpats, e) =
 and joinpattern (loc, id, args) =
   {pjpat_loc = mkloc loc; pjpat_desc = joinident id, patt args}
 and joinident (loc, id) = {pjident_loc = mkloc loc; pjident_desc = id}
-
 and label_expr =
   function
     ExLab (loc, lab, e) -> lab, expr e

@@ -34,7 +34,7 @@ let main () =
   ic := open_in source_name;
   oc := open_out dest_name;
   let lexbuf = Lexing.from_channel !ic in
-  let (Lexdef(header,_) as def) =
+  let (Lexdef(header,_) as default) =
     try
       Grammar.lexer_definition Scanner.main lexbuf
     with
@@ -50,7 +50,7 @@ let main () =
         prerr_string s;
         prerr_endline ".";
         exit 2 in
-  let ((init, states, acts) as dfa) = make_dfa def in
+  let ((init, states, acts) as dfa) = make_dfa default in
   output_lexdef header dfa;
   close_in !ic;
   close_out !oc

@@ -147,6 +147,7 @@ and expr floc sh =
     | ExUid loc x1 -> ExUid (floc loc) x1
     | ExVrn loc x1 -> ExVrn (floc loc) x1
     | ExWhi loc x1 x2 -> ExWhi (floc loc) (self x1) (List.map self x2)
+(*> JOCAML *)
     | ExSpa loc x1 -> ExSpa (floc loc) (self x1)
     | ExPar loc x1 x2 -> ExPar (floc loc) (self x1) (self x2)
     | ExNul loc -> ExNul (floc loc)
@@ -159,6 +160,10 @@ and expr floc sh =
         ExLoc (floc loc)
           (List.map (joinlocation floc sh) x1)
           (self x2)
+    | ExDyn loc x1 ->
+        ExDyn (floc loc) (self x1)
+    | ExDco loc x1 t1 ->
+        ExDco loc (self x1) (ctyp floc sh t1)
 (*< JOCAML *)
 ]
 (*> JOCAML *)
