@@ -25,10 +25,10 @@
 
 (** {2 Predefined types} 
 These are predefined types :
-{ul
-{- [type int ]
-
-   The type of integer numbers.}
+{[ type int ]}   The type of integer numbers.
+{[ type char]}   The type of characters.
+*)
+(*
 {- [type char ]
 
    The type of characters. }
