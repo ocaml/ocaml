@@ -24,7 +24,7 @@ type open_flag =
 exception Dbm_error of string
         (* Raised by the following functions when an error is encountered. *)
 
-val opendbm : string -> flags:open_flag list -> perm:int -> t 
+val opendbm : string -> mode:open_flag list -> perm:int -> t 
         (* Open a descriptor on an NDBM database. The first argument is
            the name of the database (without the [.dir] and [.pag] suffixes).
            The second argument is a list of flags: [Dbm_rdonly] opens

@@ -53,7 +53,8 @@ val fill: 'a t -> pos:int -> len:int -> 'a option -> unit;;
            [ofs] to [ofs + len - 1].  Raise [Invalid_argument "Weak.fill"]
            if [ofs] and [len] do not designate a valid subarray of [a].
         *)
-val blit : 'a t -> pos:int -> to:'a t -> to_pos:int -> len:int -> unit;;
+val blit : src:'a t -> src_pos:int ->
+           dst:'a t -> dst_pos:int -> len:int -> unit;;
         (* [Weak.blit ar1 off1 ar2 off2 len] copies [len] weak pointers
            from [ar1] (starting at [off1]) to [ar2] (starting at [off2]).
            It works correctly even if [ar1] and [ar2] are the same.

@@ -224,7 +224,7 @@ val set_formatter_out_channel : out_channel -> unit;;
         (* Redirect the pretty-printer output to the given channel. *)
 
 val set_formatter_output_functions :
-      out:(buffer:string -> pos:int -> len:int -> unit) ->
+      out:(buf:string -> pos:int -> len:int -> unit) ->
       flush:(unit -> unit) -> unit;;
         (* [set_formatter_output_functions out flush] redirects the
            pretty-printer output to the functions [out] and [flush].
@@ -235,12 +235,12 @@ val set_formatter_output_functions :
            called whenever the pretty-printer is flushed using
            [print_flush] or [print_newline]. *)
 val get_formatter_output_functions :
-      unit -> (buffer:string -> pos:int -> len:int -> unit) * (unit -> unit);;
+      unit -> (buf:string -> pos:int -> len:int -> unit) * (unit -> unit);;
         (* Return the current output functions of the pretty-printer. *)
 
 (*** Changing the meaning of indentation and line breaking *)
 val set_all_formatter_output_functions :
-      out:(buffer:string -> pos:int -> len:int -> unit) ->
+      out:(buf:string -> pos:int -> len:int -> unit) ->
       flush:(unit -> unit) ->
       newline:(unit -> unit) -> space:(int -> unit) -> unit;;
         (* [set_all_formatter_output_functions out flush outnewline outspace]
@@ -259,7 +259,7 @@ val set_all_formatter_output_functions :
            [outspace] and [outnewline] are [out (String.make n ' ') 0 n]
            and [out "\n" 0 1]. *)
 val get_all_formatter_output_functions : unit ->
-        (buffer:string -> pos:int -> len:int -> unit) * (unit -> unit) *
+        (buf:string -> pos:int -> len:int -> unit) * (unit -> unit) *
         (unit -> unit) * (int -> unit);;
         (* Return the current output functions of the pretty-printer,
            including line breaking and indentation functions. *)
@@ -313,7 +313,7 @@ val flush_str_formatter : unit -> string;;
            [str_formatter] is defined as [formatter_of_buffer stdbuf]. *)
 
 val make_formatter :
-        out:(buffer:string -> pos:int -> len:int -> unit) ->
+        out:(buf:string -> pos:int -> len:int -> unit) ->
         flush:(unit -> unit) -> formatter;;
         (* [make_formatter out flush] returns a new formatter that
            writes according to the output function [out], and the flushing
@@ -355,16 +355,16 @@ val pp_set_ellipsis_text : formatter -> string -> unit;;
 val pp_get_ellipsis_text : formatter -> unit -> string;;
 val pp_set_formatter_out_channel : formatter -> out_channel -> unit;;
 val pp_set_formatter_output_functions : formatter ->
-      out:(buffer:string -> pos:int -> len:int -> unit) ->
+      out:(buf:string -> pos:int -> len:int -> unit) ->
       flush:(unit -> unit) -> unit;;
 val pp_get_formatter_output_functions : formatter -> unit ->
-      (buffer:string -> pos:int -> len:int -> unit) * (unit -> unit);;
+      (buf:string -> pos:int -> len:int -> unit) * (unit -> unit);;
 val pp_set_all_formatter_output_functions : formatter ->
-      out:(buffer:string -> pos:int -> len:int -> unit) ->
+      out:(buf:string -> pos:int -> len:int -> unit) ->
       flush:(unit -> unit) ->
       newline:(unit -> unit) -> space:(int -> unit) -> unit;;
 val pp_get_all_formatter_output_functions : formatter -> unit ->
-      (buffer:string -> pos:int -> len:int -> unit) * (unit -> unit) *
+      (buf:string -> pos:int -> len:int -> unit) * (unit -> unit) *
       (unit -> unit) * (int -> unit);;
         (* The basic functions to use with formatters.
            These functions are the basic ones: usual functions

@@ -56,7 +56,8 @@ val fill : string -> pos:int -> len:int -> char -> unit
            by [c].
            Raise [Invalid_argument] if [start] and [len] do not
            designate a valid substring of [s]. *)
-val blit : string -> pos:int -> to:string -> to_pos:int -> len:int -> unit
+val blit : src:string -> src_pos:int ->
+           dst:string -> dst_pos:int -> len:int -> unit
         (* [String.blit src srcoff dst dstoff len] copies [len] characters
            from string [src], starting at character number [srcoff], to
            string [dst], starting at character number [dstoff]. It works
@@ -125,7 +126,8 @@ val uncapitalize: string -> string
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
 external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"
 external unsafe_blit :
-	string -> pos:int -> to:string -> to_pos:int -> len:int -> unit
+	src:string -> src_pos:int ->
+        dst:string -> dst_pos:int -> len:int -> unit
         = "blit_string" "noalloc"
 external unsafe_fill : string -> pos:int -> len:int -> char -> unit
         = "fill_string" "noalloc"

@@ -46,14 +46,14 @@ module type S =
           (* The empty set. *)
     val is_empty: t -> bool
         (* Test whether a set is empty or not. *)
-    val mem: elt:elt -> t -> bool
+    val mem: key:elt -> t -> bool
         (* [mem x s] tests whether [x] belongs to the set [s]. *)
-    val add: elt:elt -> t -> t
+    val add: key:elt -> t -> t
         (* [add x s] returns a set containing all elements of [s],
            plus [x]. If [x] was already in [s], [s] is returned unchanged. *)
     val singleton: elt -> t
         (* [singleton x] returns the one-element set containing only [x]. *)
-    val remove: elt:elt -> t -> t
+    val remove: key:elt -> t -> t
         (* [remove x s] returns a set containing all elements of [s],
            except [x]. If [x] was not in [s], [s] is returned unchanged. *)
     val union: t -> t -> t

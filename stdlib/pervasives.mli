@@ -455,7 +455,7 @@ val output_char : to:out_channel -> char -> unit
         (* Write the character on the given output channel. *)
 val output_string : to:out_channel -> string -> unit
         (* Write the string on the given output channel. *)
-val output : out_channel -> buffer:string -> pos:int -> len:int -> unit
+val output : out_channel -> buf:string -> pos:int -> len:int -> unit
         (* [output chan buff ofs len] writes [len] characters from string 
            [buff], starting at offset [ofs], to the output channel [chan].
            Raise [Invalid_argument "output"] if [ofs] and [len] do not
@@ -526,7 +526,7 @@ val input_line : in_channel -> string
            all characters read, without the newline character at the end.
            Raise [End_of_file] if the end of the file is reached
            at the beginning of line. *)
-val input : in_channel -> buffer:string -> pos:int -> len:int -> int
+val input : in_channel -> buf:string -> pos:int -> len:int -> int
         (* [input chan buff ofs len] attempts to read [len] characters
            from channel [chan], storing them in string [buff], starting at
            character number [ofs]. It returns the actual number of characters
@@ -537,7 +537,7 @@ val input : in_channel -> buffer:string -> pos:int -> len:int -> int
            called again to read the remaining characters, if desired.
            Exception [Invalid_argument "input"] is raised if [ofs] and [len]
            do not designate a valid substring of [buff]. *)          
-val really_input : in_channel -> buffer:string -> pos:int -> len:int -> unit
+val really_input : in_channel -> buf:string -> pos:int -> len:int -> unit
         (* [really_input chan buff ofs len] reads [len] characters
            from channel [chan], storing them in string [buff], starting at
            character number [ofs]. Raise [End_of_file] if

@@ -81,7 +81,8 @@ val fill: 'a array -> pos:int -> len:int -> 'a -> unit
            storing [x] in elements number [ofs] to [ofs + len - 1].
            Raise [Invalid_argument "Array.fill"] if [ofs] and [len] do not
            designate a valid subarray of [a]. *)
-val blit: 'a array -> pos:int -> to:'a array -> to_pos:int -> len:int -> unit
+val blit: src:'a array -> src_pos:int ->
+          dst:'a array -> dst_pos:int -> len:int -> unit
         (* [Array.blit v1 o1 v2 o2 len] copies [len] elements
            from array [v1], starting at element number [o1], to array [v2],
            starting at element number [o2]. It works correctly even if

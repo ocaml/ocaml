@@ -55,7 +55,7 @@ val add_string : t -> string -> unit
 val add_substring : t -> string -> pos:int -> len:int -> unit
      (* [add_substring b s ofs len] takes [len] characters from offset
         [ofs] in string [s] and appends them at the end of the buffer [b]. *)
-val add_buffer : t -> t -> unit
+val add_buffer : t -> src:t -> unit
      (* [add_buffer b1 b2] appends the current contents of buffer [b2]
         at the end of buffer [b1].  [b2] is not modified. *)
 val add_channel : t -> in_channel -> len:int -> unit

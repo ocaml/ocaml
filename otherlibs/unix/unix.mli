@@ -145,14 +145,14 @@ type wait_flag =
            [WUNTRACED] means report also the children that receive stop
            signals. *)
 
-val execv : prog:string -> args:string array -> unit
+val execv : name:string -> args:string array -> unit
         (* [execv prog args] execute the program in file [prog], with
            the arguments [args], and the current process environment. *)
-val execve : prog:string -> args:string array -> env:string array -> unit
+val execve : name:string -> args:string array -> env:string array -> unit
         (* Same as [execv], except that the third argument provides the
            environment to the program executed. *)
-val execvp : prog:string -> args:string array -> unit
-val execvpe : prog:string -> args:string array -> env:string array -> unit
+val execvp : name:string -> args:string array -> unit
+val execvpe : name:string -> args:string array -> env:string array -> unit
         (* Same as [execv] and [execvp] respectively, except that
            the program is searched in the path. *)
 val fork : unit -> int
@@ -161,7 +161,7 @@ val fork : unit -> int
 val wait : unit -> int * process_status
         (* Wait until one of the children processes die, and return its pid
            and termination status. *)
-val waitpid : flags:wait_flag list -> int -> int * process_status
+val waitpid : mode:wait_flag list -> int -> int * process_status
         (* Same as [wait], but waits for the process whose pid is given.
            A pid of [-1] means wait for any child.
            A pid of [0] means wait for any child in the same process group
@@ -211,17 +211,17 @@ type open_flag =
 type file_perm = int
         (* The type of file access rights. *)
 
-val openfile : string -> flags:open_flag list -> perm:file_perm -> file_descr
+val openfile : string -> mode:open_flag list -> perm:file_perm -> file_descr
         (* Open the named file with the given flags. Third argument is
            the permissions to give to the file if it is created. Return
            a file descriptor on the named file. *)
 val close : file_descr -> unit
         (* Close a file descriptor. *)
-val read : file_descr -> buffer:string -> pos:int -> len:int -> int
+val read : file_descr -> buf:string -> pos:int -> len:int -> int
         (* [read fd buff ofs len] reads [len] characters from descriptor
            [fd], storing them in string [buff], starting at position [ofs]
            in string [buff]. Return the number of characters actually read. *)
-val write : file_descr -> buffer:string -> pos:int -> len:int -> int
+val write : file_descr -> buf:string -> pos:int -> len:int -> int
         (* [write fd buff ofs len] writes [len] characters to descriptor
            [fd], taking them from string [buff], starting at position [ofs]
            in string [buff]. Return the number of characters actually
@@ -256,9 +256,9 @@ type seek_command =
            the current position, [SEEK_END] relative to the end of the
            file. *)
 
-val lseek : file_descr -> pos:int -> cmd:seek_command -> int
+val lseek : file_descr -> pos:int -> mode:seek_command -> int
         (* Set the current position for a file descriptor *)
-val truncate : file:string -> len:int -> unit
+val truncate : name:string -> len:int -> unit
         (* Truncates the named file to the given size. *)
 val ftruncate : file_descr -> len:int -> unit
         (* Truncates the file corresponding to the given descriptor
@@ -292,9 +292,9 @@ type stats =
 
         (* The informations returned by the [stat] calls. *)
 
-val stat : file:string -> stats
+val stat : name:string -> stats
         (* Return the information for the named file. *)
-val lstat : file:string -> stats
+val lstat : name:string -> stats
         (* Same as [stat], but in case the file is a symbolic link,
            return the information for the link itself. *)
 val fstat : file_descr -> stats
@@ -304,11 +304,11 @@ val fstat : file_descr -> stats
 
 (*** Operations on file names *)
 
-val unlink : file:string -> unit
+val unlink : name:string -> unit
         (* Removes the named file *)
 val rename : old:string -> new:string -> unit
         (* [rename old new] changes the name of a file from [old] to [new]. *)
-val link : source:string -> dest:string -> unit
+val link : src:string -> dst:string -> unit
         (* [link source dest] creates a hard link named [dest] to the file
            named [new]. *)
 
@@ -323,17 +323,17 @@ type access_permission =
 
         (* Flags for the [access] call. *)
 
-val chmod : file:string -> perm:file_perm -> unit
+val chmod : name:string -> perm:file_perm -> unit
         (* Change the permissions of the named file. *) 
 val fchmod : file_descr -> perm:file_perm -> unit
         (* Change the permissions of an opened file. *) 
-val chown : file:string -> uid:int -> gid:int -> unit
+val chown : name:string -> uid:int -> gid:int -> unit
         (* Change the owner uid and owner gid of the named file. *) 
 val fchown : file_descr -> uid:int -> gid:int -> unit
         (* Change the owner uid and owner gid of an opened file. *) 
 val umask : int -> int
         (* Set the process creation mask, and return the previous mask. *)
-val access : file:string -> perm:access_permission list -> unit
+val access : name:string -> perm:access_permission list -> unit
         (* Check that the process has the given permissions over the named
            file. Raise [Unix_error] otherwise. *)
 
@@ -343,7 +343,7 @@ val access : file:string -> perm:access_permission list -> unit
 val dup : file_descr -> file_descr
         (* Return a new file descriptor referencing the same file as
            the given descriptor. *)
-val dup2 : file_descr -> file_descr -> unit
+val dup2 : src:file_descr -> dst:file_descr -> unit
         (* [dup2 fd1 fd2] duplicates [fd1] to [fd2], closing [fd2] if already
            opened. *)
 val set_nonblock : file_descr -> unit
@@ -406,8 +406,8 @@ val mkfifo : string -> perm:file_perm -> unit
 (*** High-level process and redirection management *)
 
 val create_process :
-  prog:string -> args:string array ->
-  in:file_descr -> out:file_descr -> err:file_descr -> int
+  name:string -> args:string array ->
+  stdin:file_descr -> stdout:file_descr -> stderr:file_descr -> int
         (* [create_process prog args new_stdin new_stdout new_stderr]
            forks a new process that executes the program
            in file [prog], with arguments [args]. The pid of the new 
@@ -425,8 +425,8 @@ val create_process :
            outputs. *)
 
 val create_process_env :
-  prog:string -> args:string array -> env:string array -> 
-  in:file_descr -> out:file_descr -> err:file_descr -> int
+  name:string -> args:string array -> env:string array -> 
+  stdin:file_descr -> stdout:file_descr -> stderr:file_descr -> int
         (* [create_process_env prog args env new_stdin new_stdout new_stderr]
            works as [create_process], except that the extra argument
            [env] specifies the environment passed to the program. *)
@@ -458,10 +458,10 @@ val close_process_full: in_channel * out_channel * in_channel -> process_status
 
 (*** Symbolic links *)
 
-val symlink : source:string -> dest:string -> unit
+val symlink : src:string -> dst:string -> unit
         (* [symlink source dest] creates the file [dest] as a symbolic link
            to the file [source]. *)
-val readlink : string -> string
+val readlink : name:string -> string
         (* Read the contents of a link. *)
 
 
@@ -494,7 +494,7 @@ type lock_command =
 
         (* Commands for [lockf]. *)
 
-val lockf : file_descr -> cmd:lock_command -> len:int -> unit
+val lockf : file_descr -> mode:lock_command -> len:int -> unit
 
         (* [lockf fd cmd size] puts a lock on a region of the file opened
            as [fd]. The region starts at the current read/write position for
@@ -515,7 +515,7 @@ val kill : pid:int -> signal:int -> unit
 
 type sigprocmask_command = SIG_SETMASK | SIG_BLOCK | SIG_UNBLOCK
 
-val sigprocmask: sigprocmask_command -> int list -> int list
+val sigprocmask: mode:sigprocmask_command -> int list -> int list
         (* [sigprocmask cmd sigs] changes the set of blocked signals.
            If [cmd] is [SIG_SETMASK], blocked signals are set to those in
            the list [sigs].
@@ -582,7 +582,7 @@ val sleep : int -> unit
         (* Stop execution for the given number of seconds. *)
 val times : unit -> process_times
         (* Return the execution times of the process. *)
-val utimes : file:string -> access:float -> modif:float -> unit
+val utimes : name:string -> access:float -> modif:float -> unit
         (* Set the last access time (second arg) and last modification time
            (third arg) for a file. Times are expressed in seconds from
            00:00:00 GMT, Jan. 1, 1970. *)
@@ -713,21 +713,21 @@ type sockaddr =
            [port] is the port number. *)
 
 val socket :
-  domain:socket_domain -> type:socket_type -> proto:int -> file_descr
+  domain:socket_domain -> type:socket_type -> protocol:int -> file_descr
         (* Create a new socket in the given domain, and with the
            given kind. The third argument is the protocol type; 0 selects
            the default protocol for that kind of sockets. *)
 val socketpair :
-  domain:socket_domain -> type:socket_type -> proto:int ->
+  domain:socket_domain -> type:socket_type -> protocol:int ->
     file_descr * file_descr
         (* Create a pair of unnamed sockets, connected together. *)
 val accept : file_descr -> file_descr * sockaddr
         (* Accept connections on the given socket. The returned descriptor
            is a socket connected to the client; the returned address is
            the address of the connecting client. *)
-val bind : file_descr -> sockaddr -> unit
+val bind : file_descr -> addr:sockaddr -> unit
         (* Bind a socket to an address. *)
-val connect : file_descr -> sockaddr -> unit
+val connect : file_descr -> addr:sockaddr -> unit
         (* Connect a socket to an address. *)
 val listen : file_descr -> max:int -> unit
         (* Set up a socket for receiving connection requests. The integer
@@ -739,7 +739,7 @@ type shutdown_command =
   | SHUTDOWN_ALL                        (* Close both *)
         (* The type of commands for [shutdown]. *)
 
-val shutdown : file_descr -> cmd:shutdown_command -> unit
+val shutdown : file_descr -> mode:shutdown_command -> unit
         (* Shutdown a socket connection. [SHUTDOWN_SEND] as second argument
            causes reads on the other end of the connection to return
            an end-of-file condition.
@@ -758,17 +758,17 @@ type msg_flag =
         (* The flags for [recv], [recvfrom], [send] and [sendto]. *)
 
 val recv :
-        file_descr -> buffer:string -> pos:int -> len:int
-      	  -> flags:msg_flag list -> int
+        file_descr -> buf:string -> pos:int -> len:int
+      	  -> mode:msg_flag list -> int
 val recvfrom :
-        file_descr -> buffer:string -> pos:int -> len:int
-      	  -> flags:msg_flag list -> int * sockaddr
+        file_descr -> buf:string -> pos:int -> len:int
+      	  -> mode:msg_flag list -> int * sockaddr
         (* Receive data from an unconnected socket. *)
-val send : file_descr -> buffer:string -> pos:int -> len:int
-      	  -> flags:msg_flag list -> int
+val send : file_descr -> buf:string -> pos:int -> len:int
+      	  -> mode:msg_flag list -> int
 val sendto :
-        file_descr -> buffer:string -> pos:int -> len:int
-      	  -> flags:msg_flag list -> addr:sockaddr -> int
+        file_descr -> buf:string -> pos:int -> len:int
+      	  -> mode:msg_flag list -> addr:sockaddr -> int
         (* Send data over an unconnected socket. *)
 
 type socket_option =
@@ -780,9 +780,9 @@ type socket_option =
   | SO_OOBINLINE           (* Leave out-of-band data in line *)
         (* The socket options settable with [setsockopt]. *)
 
-val getsockopt : file_descr -> opt:socket_option -> bool
+val getsockopt : file_descr -> key:socket_option -> bool
         (* Return the current status of an option in the given socket. *)
-val setsockopt : file_descr -> opt:socket_option -> bool -> unit
+val setsockopt : file_descr -> key:socket_option -> bool -> unit
         (* Set or clear an option in the given socket. *)
 
 (*** High-level network connection functions *)
@@ -796,7 +796,7 @@ val shutdown_connection : in_channel -> unit
         (* ``Shut down'' a connection established with [open_connection];
            that is, transmit an end-of-file condition to the server reading
            on the other side of the connection. *)
-val establish_server : fun:(in:in_channel -> out:out_channel -> 'a) ->
+val establish_server : fun:(in:in_channel -> out:out_channel -> unit) ->
               	       addr:sockaddr -> unit
         (* Establish a server on the given address.
            The function given as first argument is called for each connection
@@ -841,10 +841,10 @@ val getprotobyname : string -> protocol_entry
 val getprotobynumber : int -> protocol_entry
         (* Find an entry in [protocols] with the given protocol number,
            or raise [Not_found]. *)
-val getservbyname : string -> proto:string -> service_entry
+val getservbyname : string -> protocol:string -> service_entry
         (* Find an entry in [services] with the given name, or raise
            [Not_found]. *)
-val getservbyport : int -> proto:string -> service_entry
+val getservbyport : int -> protocol:string -> service_entry
         (* Find an entry in [services] with the given service number,
            or raise [Not_found]. *)
 
@@ -910,7 +910,7 @@ val tcgetattr: file_descr -> terminal_io
 
 type setattr_when = TCSANOW | TCSADRAIN | TCSAFLUSH
 
-val tcsetattr: file_descr -> when:setattr_when -> terminal_io -> unit
+val tcsetattr: file_descr -> mode:setattr_when -> terminal_io -> unit
         (* Set the status of the terminal referred to by the given
            file descriptor. The second argument indicates when the
            status change takes place: immediately ([TCSANOW]),
@@ -931,7 +931,7 @@ val tcdrain: file_descr -> unit
 
 type flush_queue = TCIFLUSH | TCOFLUSH | TCIOFLUSH
 
-val tcflush: file_descr -> cmd:flush_queue -> unit
+val tcflush: file_descr -> mode:flush_queue -> unit
         (* Discard data written on the given file descriptor but not yet
            transmitted, or data received but not yet read, depending on the
            second argument: [TCIFLUSH] flushes data received but not read,
@@ -940,7 +940,7 @@ val tcflush: file_descr -> cmd:flush_queue -> unit
 
 type flow_action = TCOOFF | TCOON | TCIOFF | TCION
 
-val tcflow: file_descr -> cmd:flow_action -> unit
+val tcflow: file_descr -> mode:flow_action -> unit
         (* Suspend or restart reception or transmission of data on
            the given file descriptor, depending on the second argument:
            [TCOOFF] suspends output, [TCOON] restarts output,
