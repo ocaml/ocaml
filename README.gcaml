@@ -1,0 +1,97 @@
+Run time types
+==============
+
+	G'Caml has run time types, values which represent ML types.
+	Definition of the run time types is given in stdlib/rtype.mli.
+	It is almost identical to the representation of G'Caml's types,
+	but the completely internal informations which are usually
+	unvisible to the users are removed.
+
+	Addition to the original contents of G'Caml's types, data type
+	declaration information is attached to variant types. Using
+	this type declaration values, we can define generic functions
+	which works for various data types, for example. Type declaration
+	information of data type t is obtained by the following typedecl
+	expression:
+
+		typedecl t
+
+	*NOTE*	Type declaration contains recursive reference to itself, 
+		when it is defined recursively. So be careful if you write
+		a function which traverses type declaration values. You
+		will be fallen into an infinite loop, unless you note
+		alrady visited type declarations.
+	
+	*LIMITATION*	Only the basic part of types are supported
+			at this moment, no fancy, modern class, object,
+			polymorphic variant types! But they will be
+			supported gradually.
+		
+
+Run time type construction syntax
+=================================
+
+	You can build a value of run time type t using the notation
+	[: t :]. For example,
+
+		[: int -> int :]
+
+	is the run time type representation of the type int -> int.
+
+	At this momemnt, the scope of type variables inside [: :] notation
+	is independent from the outside context. For instance, in the
+	following expression,
+
+		fun (x:'a) -> [: int -> 'a :]
+
+	the first and second occurrences of the type variable 'a have
+	no relationship each other. Even if the first 'a is instantiated
+	to some other type, the second remains as a type variable.
+
+	You can use ^x notation inside [: :], to substitute a run time type
+	bound to a variable x. Ex:
+
+		let x = [: int :] in
+		[: ^x -> ^x :]
+
+	will return [: int -> int :]. This ^ notation can only take
+	identifiers. For simplicity, you cannot write any other expressions, 
+	though they might be useful. For example, the following is 
+	NOT permitted: 
+
+		[: ^(List.assoc "type" type_table) -> unit :]
+
+	You can use this [: :] notation also as patterns. For example:
+
+		match t	with
+		| [: int :] -> ...
+		| [: float :]] -> ...
+		| [: ^x -> ^y :] -> ...
+
+	As always, you cannot use one pattern variable ^x more than once.
+	
+	*BUG* 	At this moment, identification of type variables inside 
+		run time type patterns do not work correctly. For example,
+		a pattern [: 'a -> 'a :] works as [: 'a -> 'b :], as if 
+		the two occurrences of 'a were different from each other.
+
+Generic primitives
+==================
+	
+	You can define "generic primitives". Ex:
+
+		generic val dyn : {'a} => 'a -> dyn =
+		  fun ty v -> (ty,v)
+
+	generic val x : t = e defines a generic primitive x whose
+	type scheme is t, whose semantics is given by the expression e.
+	The expression e will first take run time type arguments, which
+	inform the type instantiations of generalized type variables,
+	specially listed in the constraint { } => of the type scheme t.
+	In the above example, the expression (fun ty v -> (ty,v)) will
+	takes a run time type of the instantiation of the generalized
+	type variable 'a of the value dyn, then create a tuple of the
+	type and the value.
+
+	Note that the type annotation t is not a type constraint,
+	but the true type scheme of the defined value.
