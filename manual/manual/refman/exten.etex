@@ -131,10 +131,13 @@ instance, the pattern "'0'..'9'" matches all characters that are digits.
 Objective Caml supports the "assert" construct to check debugging assertions.
 The expression @"assert" expr@ evaluates the expression @expr@ and
 returns "()" if @expr@ evaluates to "true".  Otherwise, the exception
-"Assert_failure" is raised with the location of @expr@ in the source
-code as argument.  As a special case, "assert false" is reduced to
-"raise (Assert_failure ...)", which is polymorphic.  Assertion
+"Assert_failure" is raised with the source file name and the
+location of @expr@ as arguments.  Assertion
 checking can be turned off with the "-noassert" compiler option.
+
+As a special case, "assert false" is reduced to
+"raise (Assert_failure ...)", which is polymorphic (and
+is not turned off by the "-noassert" option).
 %
 \index{Assert_failure (exception)\@\verb`Assert_failure` (exception)}
 
