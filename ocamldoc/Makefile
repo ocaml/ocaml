@@ -16,8 +16,8 @@ include ../config/Makefile
 # Various commands and dir
 ##########################
 CAMLRUN=../boot/ocamlrun
-OCAMLC   = $(CAMLRUN) ../ocamlc #-warn-error A
-OCAMLOPT = $(CAMLRUN) ../ocamlopt
+OCAMLC   = ../ocamlcomp.sh
+OCAMLOPT = ../ocamlcompopt.sh
 OCAMLDEP = $(CAMLRUN) ../tools/ocamldep
 OCAMLLEX = $(CAMLRUN) ../boot/ocamllex
 OCAMLYACC= ../boot/ocamlyacc
@@ -170,7 +170,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 
 OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
 
-all: exe lib manpages
+all: exe lib #manpages
 exe: $(OCAMLDOC)
 lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) 
 

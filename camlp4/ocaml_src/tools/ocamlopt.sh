@@ -1,6 +1,6 @@
 #!/bin/sh -e
 if test "`basename $OTOP`" != "ocaml_stuff"; then
-    COMM="$OTOP/boot/ocamlrun$EXE $OTOP/ocamlopt -I $OTOP/stdlib"
+    COMM=$OTOP/ocamlcompopt.sh
 else
     COMM=ocamlopt$OPT
 fi

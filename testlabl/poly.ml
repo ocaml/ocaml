@@ -325,3 +325,9 @@ class o = object method x : 'a. ([> `A] as 'a) t -> unit = fun _ -> () end
 
 class c = object method m = new d () end and d ?(x=0) () = object end;;
 class d ?(x=0) () = object end and c = object method m = new d () end;;
+
+class type numeral = object method fold : ('a -> 'a) -> 'a -> 'a end
+class zero = object (_ : #numeral) method fold f x = x end
+class next (n : #numeral) =
+  object (_ : #numeral) method fold f x = n#fold f (f x) end
+;;

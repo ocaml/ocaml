@@ -20,8 +20,8 @@ include ../../config/Makefile
 # Compilation options
 CC=$(BYTECC)
 CFLAGS=-O -I$(REGEXLIB) -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
-CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
-CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
+CAMLC=../../ocamlcomp.sh
+CAMLOPT=../../ocamlcompopt.sh
 COMPFLAGS=-warn-error A
 REGEXLIB=regex-0.12
 COBJS=strstubs.o $(REGEXLIB)/regex.o

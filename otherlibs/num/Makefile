@@ -20,8 +20,8 @@ include ../../config/Makefile
 # Compilation options
 CC=$(BYTECC)
 CFLAGS=-O -I./bignum/h -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
-CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -w s
-CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -w s
+CAMLC=../../ocamlcomp.sh -w s
+CAMLOPT=../../ocamlcompopt.sh -w s
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-warn-error A
 

@@ -13,7 +13,8 @@ INSTALLDIR=$(LIBDIR)/$(LIBNAME)
 ## Tools from the Objective Caml distribution
 
 CAMLRUN=$(TOPDIR)/boot/ocamlrun
-CAMLC=$(CAMLRUN) $(TOPDIR)/ocamlc -I $(TOPDIR)/stdlib
+CAMLC=$(TOPDIR)/ocamlcomp.sh
+CAMLOPT=$(TOPDIR)/ocamlcompopt.sh
 CAMLCOMP=$(CAMLC) -c -warn-error A
 CAMLYACC=$(TOPDIR)/boot/ocamlyacc -v
 CAMLLEX=$(CAMLRUN) $(TOPDIR)/boot/ocamllex
@@ -22,7 +23,5 @@ CAMLDEP=$(CAMLRUN) $(TOPDIR)/tools/ocamldep
 COMPFLAGS=
 LINKFLAGS=
 DLLPATH=`if $(SUPPORTS_SHARED_LIBRARIES); then echo -dllpath $(INSTALLDIR); fi`
-
-CAMLOPT=$(CAMLRUN) $(TOPDIR)/ocamlopt -I $(TOPDIR)/stdlib
 CAMLOPTLIBR=$(CAMLOPT) -a
 MKLIB=$(CAMLRUN) $(TOPDIR)/tools/ocamlmklib

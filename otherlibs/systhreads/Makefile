@@ -15,8 +15,8 @@
 
 include ../../config/Makefile
 
-CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../unix
-CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../unix
+CAMLC=../../ocamlcomp.sh -I ../unix
+CAMLOPT=../../ocamlcompopt.sh -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-warn-error A
 
