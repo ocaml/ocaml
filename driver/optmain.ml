@@ -84,6 +84,7 @@ let main () =
        "-pp", Arg.String(fun s -> preprocessor := Some s),
              "<command>  Pipe sources through preprocessor <command>";
        "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";
+       "-thread", Arg.Set thread_safe, " Use thread-safe standard library";
        "-unsafe", Arg.Set fast,
              " No bounds checking on array and string access";
        "-v", Arg.Unit print_version_number, " Print compiler version number";
