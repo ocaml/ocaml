@@ -40,6 +40,8 @@ rule main = parse
           command lexbuf;
           print_char ')';
           main lexbuf }
+  | "\\`"
+        { print_string "`"; main lexbuf }
   | eof { () }
   | _   { print_char(Lexing.lexeme_char lexbuf 0); main lexbuf }
 
