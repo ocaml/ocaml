@@ -248,7 +248,8 @@ and signature_components env subst = function
       exception_declarations env subst id1 excdecl1 excdecl2;
       (pos, Tcoerce_none) :: signature_components env subst rem
   | (Tsig_module(id1, mty1), Tsig_module(id2, mty2), pos) :: rem ->
-      let cc = modtypes env subst mty1 mty2 in
+      let cc =
+        modtypes env subst (Mtype.strengthen env mty1 (Pident id1)) mty2 in
       (pos, cc) :: signature_components env subst rem
   | (Tsig_modtype(id1, info1), Tsig_modtype(id2, info2), pos) :: rem ->
       modtype_infos env subst id1 info1 info2;
