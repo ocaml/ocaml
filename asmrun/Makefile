@@ -151,7 +151,8 @@ hppa.o: hppa.S
 .SUFFIXES: .S .d.o .p.o
 
 .S.o:
-	$(ASPP) $(ASPPFLAGS) -o $*.o $*.S
+	$(ASPP) $(ASPPFLAGS) -o $*.o $*.S || \
+	{ echo "If your assembler produced syntax errors, it is probably unhappy with the"; echo "preprocessor. Check your assembler, or try producing $*.o by hand."; exit 2; }
 
 .S.p.o:
 	$(ASPP) $(ASPPFLAGS) $(ASPPPROFFLAGS) -o $*.p.o $*.S
