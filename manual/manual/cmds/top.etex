@@ -207,9 +207,8 @@ will result in an ``unbound value "quit"'' error.
 Exit the toplevel loop and terminate the "ocaml" command.
 
 \item["#labels "\var{bool}";;"]
-Switch to {\em commuting label} style if argument is "true", or back to 
-{\em classic} (non-commuting) style if argument is "false". 
-(See section~\ref{s:commuting-mode}.)
+Ignore labels in function types if argument is "false", or switch back
+to default behaviour (commuting style) if argument is "true".
 
 \item["#warnings \""\var{warning-list}"\";;"]
 Enable or disable warnings according to the argument.
