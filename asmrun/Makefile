@@ -150,7 +150,7 @@ clean::
 	$(ASPP) $(ASPPFLAGS) $(ASPPPROFFLAGS) -o $*.p.o $*.s
 
 clean::
-	rm -f *.o *.s *.a *~
+	rm -f *.o *.a *~
 
 depend: $(COBJS:.o=.c)
 	gcc -MM $(FLAGS) *.c > .depend
