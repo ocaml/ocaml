@@ -725,6 +725,13 @@ value interprete(prog, prog_size)
       sp += 3;
       pc++;
       Next;
+    Instruct(C_CALL5):
+      Setup_for_c_call;
+      accu = cprim[*pc](accu, sp[1], sp[2], sp[3], sp[4]);
+      Restore_after_c_call;
+      sp += 4;
+      pc++;
+      Next;
     Instruct(C_CALLN): {
       int nargs = *pc++;
       *--sp = accu;

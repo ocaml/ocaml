@@ -48,7 +48,7 @@ void thread_code(code, len, instr_table)
     case PUSHATOM: case ATOM: case MAKEBLOCK1: case MAKEBLOCK2:
     case MAKEBLOCK3: case GETFIELD: case SETFIELD: case DUMMY:
     case BRANCH: case BRANCHIF: case BRANCHIFNOT: case PUSHTRAP:
-    case C_CALL1: case C_CALL2: case C_CALL3: case C_CALL4:
+    case C_CALL1: case C_CALL2: case C_CALL3: case C_CALL4: case C_CALL5:
     case CONSTINT: case PUSHCONSTINT: case OFFSETINT: case OFFSETREF:
       p += 1; break;
       /* Instructions with two operands */

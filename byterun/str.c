@@ -67,13 +67,10 @@ value string_notequal(s1, s2)   /* ML */
   return Val_not(string_equal(s1, s2));
 }
   
-value blit_string(argv, argc)   /* ML */
-     value * argv;
-     int argc;
+value blit_string(s1, ofs1, s2, ofs2, n)   /* ML */
+     value s1, ofs1, s2, ofs2, n;
 {
-  bcopy(&Byte(argv[0], Long_val(argv[1])),
-        &Byte(argv[2], Long_val(argv[3])),
-        Int_val(argv[4]));
+  bcopy(&Byte(s1, Long_val(ofs1)), &Byte(s2, Long_val(ofs2)), Int_val(n));
   return Val_unit;
 }
 

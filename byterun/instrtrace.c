@@ -40,7 +40,7 @@ void disasm_instr(pc)
     case GETGLOBALFIELD: case MAKEBLOCK:
       printf(" %d, %d\n", pc[0], pc[1]); break;
       /* Instructions with a C primitive as operand */
-    case C_CALL1: case C_CALL2: case C_CALL3: case C_CALL4:
+    case C_CALL1: case C_CALL2: case C_CALL3: case C_CALL4: case C_CALL5:
       printf(" %s\n", names_of_cprim[pc[0]]); break;
     case C_CALLN:
       printf(" %d, %s\n", pc[0], names_of_cprim[pc[1]]); break;
