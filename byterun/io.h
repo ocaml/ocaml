@@ -25,7 +25,6 @@
 #endif
 
 struct channel {
-  value final_fun;              /* Finalization function */
   int fd;                       /* Unix file descriptor */
   long offset;                  /* Absolute position of fd in the file */
   char * end;                   /* Physical end of the buffer */

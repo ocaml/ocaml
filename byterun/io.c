@@ -47,21 +47,13 @@
 
 /* Common functions. */
 
-static void finalize_channel(vchan)
-     value vchan;
-{
-  struct channel * chan = (struct channel *) vchan;
-  if (chan->fd != -1) close(chan->fd);
-}
-
 struct channel * open_descr(fd)
      int fd;
 {
   struct channel * channel;
 
   channel = (struct channel *)
-              alloc_final(sizeof(struct channel) / sizeof(value), 
-                          finalize_channel, 0, 1);
+              alloc_shr(sizeof(struct channel) / sizeof(value), Abstract_tag);
   channel->fd = fd;
   channel->offset = 0;
   channel->end = channel->buff + IO_BUFFER_SIZE;
