@@ -41,7 +41,7 @@ static int intern_input_malloced;
 static header_t * intern_dest;
 /* Writing pointer in destination block */
 
-static header_t * intern_extra_block;
+static char * intern_extra_block;
 /* If non-NULL, point to new heap chunk allocated with alloc_for_heap. */
 
 static asize_t obj_counter;
@@ -329,7 +329,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     intern_extra_block = alloc_for_heap(request);
     if (intern_extra_block == NULL) raise_out_of_memory();
     intern_color = allocation_color(intern_extra_block);
-    intern_dest = intern_extra_block;
+    intern_dest = (header_t *) intern_extra_block;
   } else {
     /* this is a specialised version of alloc from alloc.c */
     if (wosize == 0){
@@ -361,7 +361,8 @@ static void intern_add_to_heap(mlsize_t whsize)
     /* If heap chunk not filled totally, build free block at end */
     asize_t request =
       ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log;
-    header_t * end_extra_block = intern_extra_block + Wsize_bsize(request);
+    header_t * end_extra_block = 
+      (header_t *) intern_extra_block + Wsize_bsize(request);
     Assert(intern_dest <= end_extra_block);
     if (intern_dest < end_extra_block)
       *intern_dest =

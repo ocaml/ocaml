@@ -406,15 +406,10 @@ void init_major_heap (asize_t heap_size)
   stat_heap_size = clip_heap_chunk_size (heap_size);
   stat_top_heap_size = stat_heap_size;
   Assert (stat_heap_size % Page_size == 0);
-  heap_start = aligned_malloc (stat_heap_size + sizeof (heap_chunk_head),
-                               sizeof (heap_chunk_head), &block);
+  heap_start = (char *) alloc_for_heap (stat_heap_size);
   if (heap_start == NULL)
     fatal_error ("Fatal error: not enough memory for the initial heap.\n");
-  heap_start += sizeof (heap_chunk_head);
-  Assert ((unsigned long) heap_start % Page_size == 0);
-  Chunk_size (heap_start) = stat_heap_size;
   Chunk_next (heap_start) = NULL;
-  Chunk_block (heap_start) = block;
   heap_end = heap_start + stat_heap_size;
   Assert ((unsigned long) heap_end % Page_size == 0);
 

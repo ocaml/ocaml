@@ -26,6 +26,11 @@
 #include "mlvalues.h"
 #include "signals.h"
 
+#ifdef USE_MMAP_INSTEAD_OF_MALLOC
+extern char * aligned_mmap (asize_t size, int modulo, void ** block);
+extern void aligned_munmap (char * addr, asize_t size);
+#endif
+
 /* Allocate a block of the requested size, to be passed to
    [add_to_heap] later.
    [request] must be a multiple of [Page_size].
@@ -33,26 +38,36 @@
    The returned pointer is a hp, but the header must be initialized by
    the caller.
 */
-header_t *alloc_for_heap (asize_t request)
+char *alloc_for_heap (asize_t request)
 {
   char *mem;
   void *block;
                                               Assert (request % Page_size == 0);
+#ifdef USE_MMAP_INSTEAD_OF_MALLOC
+  mem = aligned_mmap (request + sizeof (heap_chunk_head),
+                      sizeof (heap_chunk_head), &block);
+#else
   mem = aligned_malloc (request + sizeof (heap_chunk_head),
                         sizeof (heap_chunk_head), &block);
+#endif
   if (mem == NULL) return NULL;
   mem += sizeof (heap_chunk_head);
   Chunk_size (mem) = request;
   Chunk_block (mem) = block;
-  return (header_t *) mem;
+  return mem;
 }
 
 /* Use this function to free a block allocated with [alloc_for_heap]
    if you don't add it with [add_to_heap].
 */
-void free_for_heap (header_t *mem)
+void free_for_heap (char *mem)
 {
+#ifdef USE_MMAP_INSTEAD_OF_MALLOC
+  aligned_munmap (Chunk_block (mem),
+                  Chunk_size (mem) + sizeof (heap_chunk_head));
+#else
   free (Chunk_block (mem));
+#endif
 }
 
 /* Take a chunk of memory as argument, which must be the result of a
@@ -64,10 +79,9 @@ void free_for_heap (header_t *mem)
    The caller must update [allocated_words] if applicable.
    Return value: 0 if no error; -1 in case of error.
 */
-int add_to_heap (header_t *mem)
+int add_to_heap (char *m)
 {
   asize_t i;
-  char *m = (char *) mem;
                                      Assert (Chunk_size (m) % Page_size == 0);
 #ifdef DEBUG
   /* Should check the contents of the block. */
@@ -149,7 +163,7 @@ int add_to_heap (header_t *mem)
 */
 static char *expand_heap (mlsize_t request)
 {
-  header_t *mem;
+  char *mem;
   asize_t malloc_request;
 
   malloc_request = round_heap_chunk_size (Bhsize_wosize (request));
@@ -164,7 +178,7 @@ static char *expand_heap (mlsize_t request)
   Hd_hp (mem) = Make_header (Wosize_bhsize (malloc_request), 0, Caml_blue);
 
   if (add_to_heap (mem) != 0){
-    free (mem);
+    free_for_heap (mem);
     return NULL;
   }
   return Bp_hp (mem);
@@ -176,7 +190,7 @@ static char *expand_heap (mlsize_t request)
 void shrink_heap (char *chunk)
 {
   char **cp;
-  int i;
+  asize_t i;
 
   /* Never deallocate the first block, because heap_start is both the
      first block and the base address for page numbers, and we don't
@@ -211,7 +225,7 @@ void shrink_heap (char *chunk)
   }
 
   /* Free the [malloc] block that contains [chunk]. */
-  free (Chunk_block (chunk));
+  free_for_heap (chunk);
 }
 
 color_t allocation_color (void *hp)
