@@ -55,8 +55,7 @@ while :; do
         caml_opts="$caml_opts $1 $2"
         shift;;
     -linkall)
-        caml_opts="$caml_opts $1"
-        shift;;
+        caml_opts="$caml_opts $1";;
     -l*)
         c_libs="$c_libs $1"
         c_libs_caml="$c_libs_caml -cclib $1";;
