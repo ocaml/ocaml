@@ -333,6 +333,9 @@ EOF
     *:OpenBSD:*:*)
         echo ${UNAME_MACHINE}-unknown-openbsd`echo ${UNAME_RELEASE}|sed -e 's/[-_].*/\./'`
         exit 0 ;;
+    *:CYGWIN*:*:*)
+        echo ${UNAME_MACHINE}-unknown-cygwin`echo ${UNAME_RELEASE}|sed -e 's/[(].*//'`
+        exit 0 ;;
     *:GNU:*:*)
         echo `echo ${UNAME_MACHINE}|sed -e 's,/.*$,,'`-unknown-gnu`echo ${UNAME_RELEASE}|sed -e 's,/.*$,,'`
         exit 0 ;;

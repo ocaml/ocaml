@@ -119,7 +119,7 @@ let get_stored_string () =
 
 let char_for_backslash =
   match Sys.os_type with
-  | "Unix" | "Win32" ->
+  | "Unix" | "Win32" | "Cygwin" ->
       begin function
       | 'n' -> '\010'
       | 'r' -> '\013'

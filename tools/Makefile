@@ -22,7 +22,7 @@ INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: ocamldep ocamlprof ocamlcp ocamlmktop ocaml299to3
+all: ocamldep ocamlprof ocamlcp ocamlmktop
 
 # The dependency generator
 
@@ -38,7 +38,7 @@ clean::
 	rm -f ocamldep
 
 install::
-	cp ocamldep $(BINDIR)/ocamldep
+	cp ocamldep $(BINDIR)/ocamldep$(EXE)
 
 # The profiler
 
@@ -54,8 +54,8 @@ ocamlcp: ocamlcp.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlcp main_args.cmo ocamlcp.cmo
 
 install::
-	cp ocamlprof $(BINDIR)/ocamlprof
-	cp ocamlcp $(BINDIR)/ocamlcp
+	cp ocamlprof $(BINDIR)/ocamlprof$(EXE)
+	cp ocamlcp $(BINDIR)/ocamlcp$(EXE)
 	cp profiling.cmi profiling.cmo $(LIBDIR)
 
 clean::
@@ -84,8 +84,8 @@ ocaml299to3: $(OCAML299TO3)
 lexer299.ml: lexer299.mll
 	$(CAMLLEX) lexer299.mll
 
-install::
-	cp ocaml299to3 $(BINDIR)/ocaml299to3
+#install::
+#	cp ocaml299to3 $(BINDIR)/ocaml299to3$(EXE)
 
 clean::
 	rm -f ocaml299to3 lexer299.ml

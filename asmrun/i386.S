@@ -28,10 +28,15 @@
  || defined(SYS_solaris) || defined(SYS_beos)
 #define G(x) x
 #define LBL(x) CONCAT(.L,x)
-#define FUNCTION_ALIGN 4
 #else
 #define G(x) CONCAT(_,x)
 #define LBL(x) CONCAT(L,x)
+#endif
+
+#if defined(SYS_linux_elf) || defined(SYS_bsd_elf) \
+ || defined(SYS_solaris) || defined(SYS_beos) || defined(SYS_cygwin)
+#define FUNCTION_ALIGN 4
+#else
 #define FUNCTION_ALIGN 2
 #endif
 

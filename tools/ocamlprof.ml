@@ -62,7 +62,7 @@ let copy_chars_win32 nchars =
 
 let copy_chars =
   match Sys.os_type with
-    "Win32" -> copy_chars_win32
+    "Win32" | "Cygwin" -> copy_chars_win32
   | _       -> copy_chars_unix
 
 let copy next =

@@ -396,7 +396,7 @@ let rec extract suffix l =
 
 let build_custom_runtime prim_name exec_name =
   match Sys.os_type with
-    "Unix" ->
+    "Unix" | "Cygwin" ->
       Ccomp.command
        (Printf.sprintf
           "%s -o %s -I%s %s %s %s %s -lcamlrun %s"
@@ -497,7 +497,7 @@ let append_bytecode_and_cleanup bytecode_name exec_name prim_name =
 
 let fix_exec_name name =
   match Sys.os_type with
-    "Win32" ->
+    "Win32" | "Cygwin" ->
       if String.contains name '.' then name else name ^ ".exe"
   | _ -> name
 

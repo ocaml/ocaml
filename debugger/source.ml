@@ -41,7 +41,7 @@ let flush_buffer_list () =
 let get_buffer mdle =
   try List.assoc mdle !buffer_list with
     Not_found ->
-      let inchan = open_in (source_of_module mdle) in
+      let inchan = open_in_bin (source_of_module mdle) in
         let (content, _) as buffer =
           (String.create (in_channel_length inchan), ref [])
         in

@@ -72,13 +72,13 @@ OBJS=\
 	command_line.cmo \
 	main.cmo
 
-all: ocamldebug
+all: ocamldebug$(EXE)
 
-ocamldebug: $(OBJS) $(OTHEROBJS)
-	$(CAMLC) $(LINKFLAGS) -o ocamldebug $(OTHEROBJS) $(OBJS)
+ocamldebug$(EXE): $(OBJS) $(OTHEROBJS)
+	$(CAMLC) $(LINKFLAGS) -o ocamldebug$(EXE) $(OTHEROBJS) $(OBJS)
 
 install:
-	cp ocamldebug $(BINDIR)/ocamldebug
+	cp ocamldebug$(EXE) $(BINDIR)/ocamldebug$(EXE)
 
 clean::
 	rm -f ocamldebug

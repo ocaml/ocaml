@@ -92,6 +92,7 @@ void sys_error(value arg)
   char * err;
   CAMLlocal1 (str);
   
+  printf("System error %d (%s)\n", errno, strerror(errno)); fflush(stdout);
   if (errno == EAGAIN || errno == EWOULDBLOCK) {
     raise_sys_blocked_io();
   } else {
@@ -308,6 +309,8 @@ value sys_get_config(value unit)  /* ML */
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
 #endif
 
+#ifndef __CYGWIN32__
+
 char * searchpath(char * name)
 {
   char * fullname;
@@ -333,6 +336,56 @@ char * searchpath(char * name)
   }
   return fullname;
 }
+
+#else
+
+/* Cygwin needs special treatment because of the implicit ".exe" at the
+   end of executable file names */
+
+static int searchpath_file_ok(char * name)
+{
+  int fd;
+  /* Cannot use stat() here because it adds ".exe" implicitly */
+  fd = open(name, O_RDONLY);
+  if (fd == -1) return 0;
+  close(fd);
+  return 1;
+}
+
+char * searchpath(char * name)
+{
+  char * path, * fullname, * p;
+
+  path = getenv("PATH");
+  fullname = malloc(strlen(name) + (path == NULL ? 0 : strlen(path)) + 6);
+  /* 6 = "/" plus ".exe" plus final "\0" */
+  if (fullname == NULL) return name;
+  /* Check for absolute path name */
+  for (p = name; *p != 0; p++) {
+    if (*p == '/' || *p == '\\') {
+      if (searchpath_file_ok(name)) return name;
+      strcpy(fullname, name);
+      strcat(fullname, ".exe");
+      if (searchpath_file_ok(name)) return fullname;
+      return name;
+    }
+  }
+  /* Search in path */
+  if (path == NULL) return 0;
+  while(1) {
+    for (p = fullname; *path != 0 && *path != ':'; p++, path++) *p = *path;
+    if (p != fullname) *p++ = '/';
+    strcpy(p, name);
+    if (searchpath_file_ok(fullname)) return fullname;
+    strcat(fullname, ".exe");
+    if (searchpath_file_ok(fullname)) return fullname;
+    if (*path == 0) break;
+    path++;
+  }
+  return 0;
+}
+
+#endif /* __CYGWIN32__ */
 
 #endif /* _WIN32, macintosh, ... */
 

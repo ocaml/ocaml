@@ -90,7 +90,7 @@ let use_ascii_dir =
 
 let emit_align =
   match Config.system with
-    "linux_elf" | "bsd_elf" | "solaris" | "beos" ->
+    "linux_elf" | "bsd_elf" | "solaris" | "beos" | "cygwin" ->
       (fun n -> `	.align	{emit_int n}\n`)
   | _ ->
       (fun n -> `	.align	{emit_int(Misc.log2 n)}\n`)

@@ -39,7 +39,7 @@ let copy_chars_win32 ic oc start stop =
 
 let copy_chars =
   match Sys.os_type with
-    "Win32" -> copy_chars_win32
+    "Win32" | "Cygwin" -> copy_chars_win32
   | _       -> copy_chars_unix
 
 let copy_chunk sourcefile ic oc loc =

@@ -22,13 +22,13 @@ CFLAGS=-O -DNDEBUG $(BYTECCCOMPOPTS)
 OBJS= closure.o error.o lalr.o lr0.o main.o mkpar.o output.o reader.o \
   skeleton.o symtab.o verbose.o warshall.o
 
-all: ocamlyacc
+all: ocamlyacc$(EXE)
 
-ocamlyacc: $(OBJS)
+ocamlyacc$(EXE): $(OBJS)
 	$(CC) $(CFLAGS) $(CCLINKFLAGS) -o ocamlyacc $(OBJS)
 
 clean:
-	rm -f *.o ocamlyacc *~
+	rm -f *.o ocamlyacc$(EXE) *~
 
 depend:
 

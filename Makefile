@@ -146,9 +146,9 @@ LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
 # Start up the system from the distribution compiler
 coldstart:
 	cd byterun; $(MAKE) all
-	cp byterun/ocamlrun boot/ocamlrun
+	cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)
 	cd yacc; $(MAKE) all
-	cp yacc/ocamlyacc boot/ocamlyacc
+	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
 	cd stdlib; $(MAKE) COMPILER=../boot/ocamlc all
 	cd stdlib; cp $(LIBFILES) ../boot
 	if test -f boot/libcamlrun.a; then :; else \
@@ -167,8 +167,8 @@ backup:
 	mv boot/Saved boot/Saved.prev
 	mkdir boot/Saved
 	mv boot/Saved.prev boot/Saved/Saved.prev
-	cp boot/ocamlrun boot/Saved
-	mv boot/ocamlc boot/ocamllex boot/ocamlyacc boot/Saved
+	cp boot/ocamlrun$(EXE) boot/Saved
+	mv boot/ocamlc boot/ocamllex boot/ocamlyacc$(EXE) boot/Saved
 	cd boot; cp $(LIBFILES) Saved
 
 # Promote the newly compiled system to the rank of cross compiler
@@ -176,13 +176,13 @@ backup:
 promote-cross:
 	cp ocamlc boot/ocamlc
 	cp lex/ocamllex boot/ocamllex
-	cp yacc/ocamlyacc boot/ocamlyacc
+	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
 	cd stdlib; cp $(LIBFILES) ../boot
 
 # Promote the newly compiled system to the rank of bootstrap compiler
 # (Runs on the new runtime, produces code for the new runtime)
 promote: promote-cross
-	cp byterun/ocamlrun boot/ocamlrun
+	cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)
 
 # Restore the saved bootstrap compiler if a problem arises
 restore:
@@ -205,18 +205,18 @@ cleanboot:
 opt: runtimeopt ocamlopt libraryopt otherlibrariesopt
 
 # Installation
-install:
+install: FORCE
 	if test -d $(BINDIR); then : ; else $(MKDIR) $(BINDIR); fi
 	if test -d $(LIBDIR); then : ; else $(MKDIR) $(LIBDIR); fi
 	if test -d $(MANDIR); then : ; else $(MKDIR) $(MANDIR); fi
 	cd byterun; $(MAKE) install
-	cp ocamlc $(BINDIR)/ocamlc
-	cp ocaml $(BINDIR)/ocaml
+	cp ocamlc $(BINDIR)/ocamlc$(EXE)
+	cp ocaml $(BINDIR)/ocaml$(EXE)
 	cd stdlib; $(MAKE) install
-	cp lex/ocamllex $(BINDIR)/ocamllex
-	cp yacc/ocamlyacc $(BINDIR)/ocamlyacc
+	cp lex/ocamllex $(BINDIR)/ocamllex$(EXE)
+	cp yacc/ocamlyacc$(EXE) $(BINDIR)/ocamlyacc$(EXE)
 	cp toplevel/toplevellib.cma $(LIBDIR)/toplevellib.cma
-	cp expunge $(LIBDIR)
+	cp expunge $(LIBDIR)/expunge$(EXE)
 	cp toplevel/topmain.cmo $(LIBDIR)
 	cp toplevel/toploop.cmi toplevel/topdirs.cmi $(LIBDIR)
 	cd tools; $(MAKE) install
@@ -228,11 +228,11 @@ install:
 # Installation of the native-code compiler
 installopt:
 	cd asmrun; $(MAKE) install
-	cp ocamlopt $(BINDIR)/ocamlopt
+	cp ocamlopt $(BINDIR)/ocamlopt$(EXE)
 	cd stdlib; $(MAKE) installopt
 	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) installopt); done
-	if test -f ocamlc.opt; then cp ocamlc.opt $(BINDIR)/ocamlc.opt; else :; fi
-	if test -f ocamlopt.opt; then cp ocamlopt.opt $(BINDIR)/ocamlopt.opt; else :; fi
+	if test -f ocamlc.opt; then cp ocamlc.opt $(BINDIR)/ocamlc.opt$(EXE); else :; fi
+	if test -f ocamlopt.opt; then cp ocamlopt.opt $(BINDIR)/ocamlopt.opt$(EXE); else :; fi
 
 clean:: partialclean
 
@@ -547,5 +547,7 @@ depend: beforedepend
          done) > .depend
 
 alldepend:: depend
+
+FORCE:
 
 include .depend

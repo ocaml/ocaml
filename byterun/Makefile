@@ -33,16 +33,16 @@ PRIMS=alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
 
 PUBLIC_INCLUDES=mlvalues.h alloc.h misc.h callback.h fail.h custom.h
 
-all: ocamlrun
+all: ocamlrun$(EXE)
 
-ocamlrun: libcamlrun.a prims.o
+ocamlrun$(EXE): libcamlrun.a prims.o
 	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrun prims.o libcamlrun.a $(CCLIBS)
 
-ocamlrund: libcamlrund.a prims.o
+ocamlrund$(EXE): libcamlrund.a prims.o
 	$(BYTECC) -g $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrund prims.o libcamlrund.a $(CCLIBS)
 
 install:
-	cp ocamlrun $(BINDIR)/ocamlrun
+	cp ocamlrun$(EXE) $(BINDIR)/ocamlrun$(EXE)
 	cp libcamlrun.a $(LIBDIR)/libcamlrun.a
 	cd $(LIBDIR); $(RANLIB) libcamlrun.a
 	if test -d $(LIBDIR)/caml; then : ; else mkdir $(LIBDIR)/caml; fi

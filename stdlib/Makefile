@@ -72,8 +72,9 @@ camlheader camlheader_ur: header.c ../config/Makefile
           echo '#!$(BINDIR)/ocamlrun' > camlheader && \
           echo '#!' | tr -d '\012' > camlheader_ur; \
         else \
-	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -DRUNTIME_NAME='"$(BINDIR)/ocamlrun"' header.c -o camlheader && \
-          strip camlheader && \
+	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -DRUNTIME_NAME='"$(BINDIR)/ocamlrun"' header.c -o tmpheader$(EXE) && \
+          strip tmpheader$(EXE) && \
+	  mv tmpheader$(EXE) camlheader && \
           cp camlheader camlheader_ur; \
         fi
 

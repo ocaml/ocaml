@@ -23,8 +23,8 @@ open Primitives
 let convert_address address =
   try
     let n = string_pos address ':' in
-      let host = String.sub address 0 (n - 1)
-      and port = String.sub address (n + 1) (String.length address)
+      let host = String.sub address 0 n
+      and port = String.sub address (n + 1) (String.length address - n - 1)
       in
         (PF_INET,
          ADDR_INET
