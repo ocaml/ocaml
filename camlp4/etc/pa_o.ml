@@ -228,21 +228,35 @@ value stream_peek_nth n strm =
     | [_ :: l] -> loop (n - 1) l ]
 ;
 
-value test_not_class_signature =
-  Grammar.Entry.of_parser gram "test_not_class_signature"
+(* horrible hack to be able to parse class_types *)
+
+value test_ctyp_minusgreater =
+  Grammar.Entry.of_parser gram "test_ctyp_minusgreater"
     (fun strm ->
-       match Stream.npeek 1 strm with
-       [ [("", "object")] -> raise Stream.Failure
-       | [("", "[")] ->
-           test 2 where rec test lev =
-             match stream_peek_nth lev strm with
-             [ Some ("", "]") ->
-                 match stream_peek_nth (lev + 1) strm with
-                 [ Some ("UIDENT" | "LIDENT", _) -> raise Stream.Failure
-                 | _ -> () ]
-             | Some _ -> test (lev + 1)
-             | None -> raise Stream.Failure ]
-       | _ -> () ])
+       let rec skip_simple_ctyp n =
+         match stream_peek_nth n strm with
+         [ Some ("", "->") -> n
+         | Some ("", "[" | "[<") ->
+             skip_simple_ctyp (ignore_upto "]" (n + 1) + 1)
+         | Some ("", "(") -> skip_simple_ctyp (ignore_upto ")" (n + 1) + 1)
+         | Some
+             ("",
+              "as" | "'" | ":" | "*" | "." | "#" | "<" | ">" | ".." | ";" |
+              "_") ->
+             skip_simple_ctyp (n + 1)
+         | Some ("QUESTIONIDENT" | "LIDENT" | "UIDENT", _) ->
+             skip_simple_ctyp (n + 1)
+         | Some _ | None -> raise Stream.Failure ]
+       and ignore_upto end_kwd n =
+         match stream_peek_nth n strm with
+         [ Some ("", prm) when prm = end_kwd -> n
+         | Some ("", "[" | "[<") ->
+             ignore_upto end_kwd (ignore_upto "]" (n + 1) + 1)
+         | Some ("", "(") -> ignore_upto end_kwd (ignore_upto ")" (n + 1) + 1)
+         | Some _ -> ignore_upto end_kwd (n + 1)
+         | None -> raise Stream.Failure ]
+       in
+       skip_simple_ctyp 1)
 ;
 
 value test_label_eq =
@@ -906,20 +920,6 @@ END;
 
 (* Objects and Classes *)
 
-value rec class_type_of_ctyp loc t =
-  match t with
-  [ <:ctyp< $lid:i$ >> -> <:class_type< $list:[i]$ >>
-  | <:ctyp< $uid:m$.$t$ >> -> <:class_type< $list:[m :: type_id_list t]$ >>
-  | _ -> raise_with_loc loc (Stream.Error "lowercase identifier expected") ]
-and type_id_list =
-  fun
-  [ <:ctyp< $uid:m$.$t$ >> -> [m :: type_id_list t]
-  | <:ctyp< $lid:i$ >> -> [i]
-  | t ->
-      raise_with_loc (MLast.loc_of_ctyp t)
-        (Stream.Error "lowercase identifier expected") ]
-;
-
 value class_fun_binding = Grammar.Entry.create gram "class_fun_binding";
 
 EXTEND
@@ -1024,11 +1024,9 @@ EXTEND
   ;
   (* Class types *)
   class_type:
-    [ [ test_not_class_signature; t = ctyp LEVEL "ctyp1" ->
-          class_type_of_ctyp loc t
-      | test_not_class_signature; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
+    [ [ test_ctyp_minusgreater; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
           <:class_type< [ $t$ ] -> $ct$ >>
-      | test_not_class_signature; t = ctyp LEVEL "ctyp1"; "*";
+      | test_ctyp_minusgreater; t = ctyp LEVEL "ctyp1"; "*";
         tl = LIST1 ctyp LEVEL "simple" SEP "*"; "->"; ct = SELF ->
           <:class_type< [ ($t$ * $list:tl$) ] -> $ct$ >>
       | cs = class_signature -> cs ] ]

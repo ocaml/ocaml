@@ -14,7 +14,7 @@ all: boot/camlp4$(EXE)
 opt:
 	cd lib; $(MAKE) opt
 
-optp4:
+opt.opt:
 	set -e; for i in $(OPTDIRS); do cd $$i; $(MAKE) opt; cd ..; done
 
 boot/camlp4$(EXE): $(COLD_FILES)

@@ -1,6 +1,8 @@
 Camlp4 Version 3.04+1
 ---------------------
 
+- [28 Jan 02] Fixed bug in pa_o when parsing class_types. A horrible hack
+  had to be programmed to be able to treat them correctly.
 - [28 Jan 02] Fixed bug in OCaml toplevel when loading camlp4: the directives
   were not applied in the good order.
 - [26 Jan 02] The printer pr_extend.cmo try now also to rebuild GEXTEND
