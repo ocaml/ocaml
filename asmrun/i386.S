@@ -80,7 +80,7 @@ L100:   movl    0(%esp), %eax
         leal    4(%esp), %eax
         movl    %eax, G(caml_bottom_of_stack)
         call    L105
-        jmp     caml_alloc1
+        jmp     G(caml_alloc1)
 
         .align  FUNCTION_ALIGN
 G(caml_alloc2):
@@ -95,7 +95,7 @@ L101:   movl    0(%esp), %eax
         leal    4(%esp), %eax
         movl    %eax, G(caml_bottom_of_stack)
         call    L105
-        jmp     caml_alloc2
+        jmp     G(caml_alloc2)
 
         .align  FUNCTION_ALIGN
 G(caml_alloc3):
@@ -110,7 +110,7 @@ L102:   movl    0(%esp), %eax
         leal    4(%esp), %eax
         movl    %eax, G(caml_bottom_of_stack)
         call    L105
-        jmp     caml_alloc3
+        jmp     G(caml_alloc3)
 
         .align  FUNCTION_ALIGN
 G(caml_alloc):
@@ -129,7 +129,7 @@ L103:   subl	G(young_ptr), %eax      /* eax = - size */
         movl    %eax, G(caml_bottom_of_stack)
         call    L105
         popl    %eax                    /* recover desired size */
-        jmp     caml_alloc
+        jmp     G(caml_alloc)
 
 /* Call a C function from Caml */
 
