@@ -377,8 +377,8 @@ let rec emit_instr i dslot =
             `	addi	1, 1, {emit_int n}\n`;
             `	mtlr	11\n`
           end else begin
-            `	lwz	0, 0(11)\n`;
-            `	lwz	2, 4(11)\n`;
+            `	lwz	0, 0(12)\n`;
+            `	lwz	2, 4(12)\n`;
             `	mtctr	0\n`;
             `	addi	1, 1, {emit_int n}\n`
           end;
