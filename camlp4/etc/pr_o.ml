@@ -1734,9 +1734,9 @@ value copy_after oc s =
   }
 ;
 
-value input_from_next_bol ic bol len =
+value input_source ic dont_skip_to_next_bol len =
   let buff = Buffer.create 20 in
-  loop bol 0 where rec loop bol_found i =
+  loop dont_skip_to_next_bol 0 where rec loop bol_found i =
     if i = len then Buffer.contents buff
     else
       let c = input_char ic in
@@ -1756,7 +1756,7 @@ value copy_source ic oc first bp ep =
   | None ->
       do {
         seek_in ic bp;
-        let s = input_from_next_bol ic first (ep - bp) in
+        let s = input_source ic (first || not type_comm.val) (ep - bp) in
         if not comm_after.val then output_string oc s
         else copy_after oc s
       } ]
