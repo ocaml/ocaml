@@ -40,13 +40,6 @@ val synchronize_primitive: int -> dll_address -> unit
 (* Add the given directories to the search path for DLLs. *)
 val add_path: string list -> unit
 
-(* Read the [ld.conf] file and return the corresponding list of directories *)
-val ld_conf_contents: unit -> string list
-
-(* Split the CAML_LD_LIBRARY_PATH environment variable and return
-   the corresponding list of directories *)
-val ld_library_path_contents: unit -> string list
-
 (* Initialization for linking in core (dynlink or toplevel).
    Initialize the search path to the same path that was used to start
    the running program (CAML_LD_LIBRARY_PATH + directories in executable +

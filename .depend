@@ -280,17 +280,21 @@ bytecomp/bytelibrarian.cmo: utils/clflags.cmo utils/config.cmi \
 bytecomp/bytelibrarian.cmx: utils/clflags.cmx utils/config.cmx \
     bytecomp/emitcode.cmx utils/misc.cmx bytecomp/bytelibrarian.cmi 
 bytecomp/bytelink.cmo: bytecomp/bytesections.cmi utils/ccomp.cmi \
-    utils/clflags.cmo utils/config.cmi bytecomp/dll.cmi bytecomp/emitcode.cmi \
-    typing/ident.cmi bytecomp/instruct.cmi utils/misc.cmi \
-    bytecomp/opcodes.cmo bytecomp/symtable.cmi bytecomp/bytelink.cmi 
+    utils/clflags.cmo utils/config.cmi bytecomp/dll.cmi bytecomp/dllpath.cmi \
+    bytecomp/emitcode.cmi typing/ident.cmi bytecomp/instruct.cmi \
+    utils/misc.cmi bytecomp/opcodes.cmo bytecomp/symtable.cmi \
+    bytecomp/bytelink.cmi 
 bytecomp/bytelink.cmx: bytecomp/bytesections.cmx utils/ccomp.cmx \
-    utils/clflags.cmx utils/config.cmx bytecomp/dll.cmx bytecomp/emitcode.cmx \
-    typing/ident.cmx bytecomp/instruct.cmx utils/misc.cmx \
-    bytecomp/opcodes.cmx bytecomp/symtable.cmx bytecomp/bytelink.cmi 
+    utils/clflags.cmx utils/config.cmx bytecomp/dll.cmx bytecomp/dllpath.cmx \
+    bytecomp/emitcode.cmx typing/ident.cmx bytecomp/instruct.cmx \
+    utils/misc.cmx bytecomp/opcodes.cmx bytecomp/symtable.cmx \
+    bytecomp/bytelink.cmi 
 bytecomp/bytesections.cmo: utils/config.cmi bytecomp/bytesections.cmi 
 bytecomp/bytesections.cmx: utils/config.cmx bytecomp/bytesections.cmi 
 bytecomp/dll.cmo: utils/config.cmi utils/misc.cmi bytecomp/dll.cmi 
 bytecomp/dll.cmx: utils/config.cmx utils/misc.cmx bytecomp/dll.cmi 
+bytecomp/dllpath.cmo: utils/config.cmi bytecomp/dllpath.cmi 
+bytecomp/dllpath.cmx: utils/config.cmx bytecomp/dllpath.cmi 
 bytecomp/emitcode.cmo: parsing/asttypes.cmi typing/btype.cmi \
     utils/clflags.cmo utils/config.cmi typing/env.cmi typing/ident.cmi \
     bytecomp/instruct.cmi bytecomp/lambda.cmi bytecomp/meta.cmi \
@@ -445,12 +449,12 @@ asmcomp/asmlibrarian.cmx: utils/ccomp.cmx asmcomp/clambda.cmx \
     asmcomp/asmlibrarian.cmi 
 asmcomp/asmlink.cmo: asmcomp/asmgen.cmi utils/ccomp.cmi utils/clflags.cmo \
     asmcomp/cmmgen.cmi asmcomp/compilenv.cmi utils/config.cmi \
-    bytecomp/dll.cmi asmcomp/emit.cmi asmcomp/emitaux.cmi \
+    bytecomp/dllpath.cmi asmcomp/emit.cmi asmcomp/emitaux.cmi \
     parsing/location.cmi utils/misc.cmi asmcomp/proc.cmi \
     bytecomp/runtimedef.cmi asmcomp/asmlink.cmi 
 asmcomp/asmlink.cmx: asmcomp/asmgen.cmx utils/ccomp.cmx utils/clflags.cmx \
     asmcomp/cmmgen.cmx asmcomp/compilenv.cmx utils/config.cmx \
-    bytecomp/dll.cmx asmcomp/emit.cmx asmcomp/emitaux.cmx \
+    bytecomp/dllpath.cmx asmcomp/emit.cmx asmcomp/emitaux.cmx \
     parsing/location.cmx utils/misc.cmx asmcomp/proc.cmx \
     bytecomp/runtimedef.cmx asmcomp/asmlink.cmi 
 asmcomp/clambda.cmo: parsing/asttypes.cmi typing/ident.cmi \

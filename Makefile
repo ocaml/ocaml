@@ -57,11 +57,11 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
   bytecomp/translobj.cmo bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
-  bytecomp/simplif.cmo bytecomp/runtimedef.cmo bytecomp/dll.cmo
+  bytecomp/simplif.cmo bytecomp/runtimedef.cmo bytecomp/dllpath.cmo
 
 BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/printinstr.cmo bytecomp/opcodes.cmo bytecomp/emitcode.cmo \
-  bytecomp/bytesections.cmo bytecomp/symtable.cmo \
+  bytecomp/bytesections.cmo bytecomp/dll.cmo bytecomp/symtable.cmo \
   bytecomp/bytelibrarian.cmo bytecomp/bytelink.cmo
 
 ASMCOMP=asmcomp/arch.cmo asmcomp/cmm.cmo asmcomp/printcmm.cmo \
@@ -334,8 +334,10 @@ beforedepend:: parsing/linenum.ml
 # The bytecode compiler compiled with the native-code compiler
 
 ocamlc.opt: $(COMPOBJS:.cmo=.cmx)
-	cd asmrun; $(MAKE) meta.o
-	$(CAMLOPT) $(LINKFLAGS) -o ocamlc.opt $(COMPOBJS:.cmo=.cmx) asmrun/meta.o
+	cd asmrun; $(MAKE) meta.o dynlink.o
+	$(CAMLOPT) $(LINKFLAGS) -ccopt "$(BYTECCLINKOPTS)" -o ocamlc.opt \
+          $(COMPOBJS:.cmo=.cmx) \
+          asmrun/meta.o asmrun/dynlink.o -cclib "$(DYNLINKOPTS)"
 
 partialclean::
 	rm -f ocamlc.opt
