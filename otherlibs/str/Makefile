@@ -59,6 +59,6 @@ installopt:
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend
-	../../tools/ocamldep *.mli *.ml >> .depend
+	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend

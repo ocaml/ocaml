@@ -39,6 +39,6 @@ clean: partialclean
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 depend:
-	../../tools/ocamldep $(INCLUDES) *.mli *.ml > .depend
+	../../boot/ocamlrun ../../tools/ocamldep $(INCLUDES) *.mli *.ml >.depend
 
 include .depend
