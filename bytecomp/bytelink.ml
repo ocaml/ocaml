@@ -176,16 +176,15 @@ let link_file output_fun = function
 
 (* Create a bytecode executable file *)
 
-let openflags =
-  match Sys.os_type with
-  | "MacOS" -> [Open_wronly; Open_trunc; Open_creat]
-  | _ -> [Open_wronly; Open_trunc; Open_creat; Open_binary]
-;;
-
 let link_bytecode objfiles exec_name copy_header =
-  let tolink =
-    List.fold_right scan_file objfiles [] in
-  let outchan = open_out_gen openflags 0o777 exec_name in
+  let tolink = List.fold_right scan_file objfiles [] in
+  if Sys.os_type = "MacOS" then begin
+    (* Create it as a text file for bytecode scripts *)
+    let c = open_out_gen [Open_wronly; Open_creat] 0o777 exec_name in
+    close_out c
+  end;
+  let outchan = open_out_gen [Open_wronly; Open_trunc; Open_creat; Open_binary]
+                             0o777 exec_name in
   try
     (* Copy the header *)
     if copy_header then begin
