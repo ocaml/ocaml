@@ -104,14 +104,20 @@ let transl_declaration env (name, sdecl) id =
      need to check that the equation refers to a type of the same kind
      with the same constructors and labels *)
   begin match decl with
-      {type_kind = Type_variant _ | Type_record _; type_manifest = Some ty} ->
-        if not (match ty with
-          Tconstr(path, args) ->
-            args = params &
-            Includecore.type_declarations env id decl (Env.find_type path env)
-        | _ -> false)
-        then raise(Error(sdecl.ptype_loc, Definition_mismatch ty))
-    | _ -> ()
+    {type_kind = (Type_variant _ | Type_record _); type_manifest = Some ty} ->
+      begin match ty with
+        Tconstr(path, args) ->
+          begin try
+            let decl' = Env.find_type path env in
+            if args = params & Includecore.type_declarations env id decl decl'
+            then ()
+            else raise(Error(sdecl.ptype_loc, Definition_mismatch ty))
+          with Not_found ->
+            raise(Error(sdecl.ptype_loc, Definition_mismatch ty))
+          end
+      | _ -> raise(Error(sdecl.ptype_loc, Definition_mismatch ty))
+      end
+  | _ -> ()
   end;
   (id, decl)
 

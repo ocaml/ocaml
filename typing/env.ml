@@ -23,8 +23,7 @@ open Typedtree
 
 
 type error =
-    Cannot_find_path of Path.t
-  | Not_an_interface of string
+    Not_an_interface of string
   | Corrupted_interface of string
   | Illegal_renaming of string * string
 
@@ -154,22 +153,19 @@ let rec find_module_descr path env =
       end
 
 let find proj1 proj2 path env =
-  try
-    match path with
-      Pident id ->
-        let (p, data) = Ident.find_same id (proj1 env)
-        in data
-    | Pdot(p, s, pos) ->
-        begin match find_module_descr p env with
-      	  Structure_comps c ->
-      	    let (data, pos) = Tbl.find s (proj2 c) in data
-        | Functor_comps f ->
-      	    raise Not_found
-	end
-    | Papply(p1, p2) ->
-      	raise Not_found
-  with Not_found ->
-    raise(Error(Cannot_find_path path))
+  match path with
+    Pident id ->
+      let (p, data) = Ident.find_same id (proj1 env)
+      in data
+  | Pdot(p, s, pos) ->
+      begin match find_module_descr p env with
+        Structure_comps c ->
+          let (data, pos) = Tbl.find s (proj2 c) in data
+      | Functor_comps f ->
+          raise Not_found
+      end
+  | Papply(p1, p2) ->
+      raise Not_found
 
 let find_value = find (fun env -> env.values) (fun sc -> sc.comp_values)
 and find_type = find (fun env -> env.types) (fun sc -> sc.comp_types)
@@ -598,9 +594,7 @@ let imported_units() = !imported_units
 (* Error report *)
 
 let report_error = function
-    Cannot_find_path p ->
-      print_string "Unbound identifier "; Printtyp.path p
-  | Not_an_interface filename ->
+    Not_an_interface filename ->
       print_string filename; print_space();
       print_string "is not a compiled interface."
   | Corrupted_interface filename ->

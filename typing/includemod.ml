@@ -61,9 +61,12 @@ let exception_declarations env id decl1 decl2 =
 exception Dont_match
 
 let expand_module_path env path =
-  match Env.find_modtype path env with
-    Tmodtype_abstract -> raise Dont_match
-  | Tmodtype_manifest mty -> mty
+  try
+    match Env.find_modtype path env with
+      Tmodtype_abstract -> raise Dont_match
+    | Tmodtype_manifest mty -> mty
+  with Not_found ->
+    raise Dont_match
 
 (* Extract name, kind and ident from a signature item *)
 

@@ -20,9 +20,12 @@ open Typedtree
 let rec scrape env mty =
   match mty with
     Tmty_ident p ->
-      begin match Env.find_modtype p env with
-        Tmodtype_abstract -> mty
-      | Tmodtype_manifest mty' -> scrape env mty'
+      begin try
+        match Env.find_modtype p env with
+          Tmodtype_abstract -> mty
+        | Tmodtype_manifest mty' -> scrape env mty'
+      with Not_found ->
+        mty
       end
   | _ -> mty
 

@@ -179,15 +179,15 @@ let print_value env obj ty =
           print_string "|]";
           close_box()
       | Tconstr(path, ty_list) ->
-          let decl = Env.find_type path env in
-          match (decl.type_kind, decl.type_manifest) with
-            (Type_abstract, None) ->
-              print_string "<abstr>"
-          | (Type_abstract, Some body) ->
-              print_val prio depth obj
-                        (Ctype.substitute decl.type_params ty_list body)
-          | (Type_variant constr_list, _) ->
-              begin try
+          begin try
+            let decl = Env.find_type path env in
+            match decl with
+              {type_kind = Type_abstract; type_manifest = None} ->
+                print_string "<abstr>"
+            | {type_kind = Type_abstract; type_manifest = Some body} ->
+                print_val prio depth obj
+                          (Ctype.substitute decl.type_params ty_list body)
+            | {type_kind = Type_variant constr_list} ->
                 let tag =
                   if Obj.is_block obj
                   then Cstr_block(Obj.tag obj)
@@ -197,7 +197,7 @@ let print_value env obj ty =
                 let ty_args =
                   List.map (Ctype.substitute decl.type_params ty_list)
                       constr_args in
-                match ty_args with
+                begin match ty_args with
                   [] ->
                     print_constr env path constr_name
                 | [ty1] ->
@@ -222,29 +222,32 @@ let print_value env obj ty =
                     close_box();
                     if prio > 1 then print_string ")";
                     close_box()
-              with
-                Constr_not_found ->
-                  print_string "<unknown constructor>"
-              end
-          | (Type_record lbl_list, _) ->
-              let rec print_fields depth pos = function
-                [] -> ()
-              | (lbl_name, _, lbl_arg) :: remainder ->
-                  if pos > 0 then begin print_string ";"; print_space() end;
-                  open_hovbox 1;
-                  print_label env path lbl_name;
-                  print_string "="; print_cut();
-                  let ty_arg =
-                    Ctype.substitute decl.type_params ty_list lbl_arg in
-                  cautious (print_val 0 (depth - 1) (Obj.field obj pos))
-                           ty_arg;
-                  close_box();
-                  print_fields (depth - 1) (pos + 1) remainder in
-              open_hovbox 1;
-              print_string "{";
-              cautious (print_fields depth 0) lbl_list;
-              print_string "}";
-              close_box()
+                end
+            | {type_kind = Type_record lbl_list} ->
+                let rec print_fields depth pos = function
+                  [] -> ()
+                | (lbl_name, _, lbl_arg) :: remainder ->
+                    if pos > 0 then begin print_string ";"; print_space() end;
+                    open_hovbox 1;
+                    print_label env path lbl_name;
+                    print_string "="; print_cut();
+                    let ty_arg =
+                      Ctype.substitute decl.type_params ty_list lbl_arg in
+                    cautious (print_val 0 (depth - 1) (Obj.field obj pos))
+                             ty_arg;
+                    close_box();
+                    print_fields (depth - 1) (pos + 1) remainder in
+                open_hovbox 1;
+                print_string "{";
+                cautious (print_fields depth 0) lbl_list;
+                print_string "}";
+                close_box()
+          with
+            Not_found ->                (* raised by Env.find_type *)
+              print_string "<abstr>"
+          | Constr_not_found ->         (* raised by find_constr *)
+              print_string "<unknown constructor>"
+          end
 
   and print_val_list prio depth obj ty_list =
     let rec print_list depth i = function

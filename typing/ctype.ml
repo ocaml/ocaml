@@ -116,10 +116,13 @@ let substitute params args body =
 exception Cannot_expand
 
 let expand_abbrev env path args =
-  let decl = Env.find_type path env in
-  match decl.type_manifest with
-    Some body -> substitute decl.type_params args body
-  | None -> raise Cannot_expand
+  try
+    let decl = Env.find_type path env in
+    match decl.type_manifest with
+      Some body -> substitute decl.type_params args body
+    | None -> raise Cannot_expand
+  with Not_found ->
+    raise Cannot_expand
 
 let rec occur tvar ty =
   match repr ty with
