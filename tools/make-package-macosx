@@ -17,24 +17,92 @@
 cd package-macosx
 rm -rf ocaml.pkg ocaml-rw.dmg ocaml.dmg
 
-cat >ocaml.info <<EOF
-  Title Objective Caml
-  Version 3.06
-  Description This package installs Objective Caml version 3.06
-  DefaultLocation /
-  Relocatable no
-  NeedsAuthorization yes
-  Application no
-  InstallOnly no
-  DisableStop no
-EOF
-
 # Worked in 10.2:
+
+# cat >ocaml.info <<EOF
+#   Title Objective Caml
+#   Version 3.06
+#   Description This package installs Objective Caml version 3.06
+#   DefaultLocation /
+#   Relocatable no
+#   NeedsAuthorization yes
+#   Application no
+#   InstallOnly no
+#   DisableStop no
+# EOF
 #package root ocaml.info
 
-# Works in 10.3:
+VERSION=`sed -n -e '/ocaml_version/s/.*"\([^"]*\)".*/\1/p' ../stdlib/sys.ml`
+VERSION_MAJOR=`sed -n -e '/ocaml_version/s/.*"\([0-9]*\)\..*/\1/p' \
+                   ../stdlib/sys.ml`
+VERSION_MINOR=`sed -n -e '/ocaml_version/s/.*"[0-9]*\.\([0-9]*\)[.+].*/\1/p' \
+                   ../stdlib/sys.ml`
+
+cat >Description.plist <<EOF
+  <?xml version="1.0" encoding="UTF-8"?>
+  <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN"
+            "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+  <plist version="1.0">
+  <dict>
+          <key>IFPkgDescriptionDeleteWarning</key>
+          <string></string>
+          <key>IFPkgDescriptionDescription</key>
+          <string>The Objective Caml compiler and tools</string>
+          <key>IFPkgDescriptionTitle</key>
+          <string>Objective Caml</string>
+          <key>IFPkgDescriptionVersion</key>
+          <string>${VERSION}</string>
+  </dict>
+  </plist>
+EOF
+
+cat >Info.plist <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN"
+          "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+        <key>CFBundleGetInfoString</key>
+        <string>Objective Caml ${VERSION}</string>
+        <key>CFBundleIdentifier</key>
+        <string>fr.inria.ocaml</string>
+        <key>CFBundleName</key>
+        <string>Objective Caml</string>
+        <key>CFBundleShortVersionString</key>
+        <string>${VERSION}</string>
+        <key>IFMajorVersion</key>
+        <integer>${VERSION_MAJOR}</integer>
+        <key>IFMinorVersion</key>
+        <integer>${VERSION_MINOR}</integer>
+        <key>IFPkgFlagAllowBackRev</key>
+        <true/>
+        <key>IFPkgFlagAuthorizationAction</key>
+        <string>AdminAuthorization</string>
+        <key>IFPkgFlagDefaultLocation</key>
+        <string>/</string>
+        <key>IFPkgFlagInstallFat</key>
+        <false/>
+        <key>IFPkgFlagIsRequired</key>
+        <false/>
+        <key>IFPkgFlagRelocatable</key>
+        <false/>
+        <key>IFPkgFlagRestartAction</key>
+        <string>NoRestart</string>
+        <key>IFPkgFlagRootVolumeOnly</key>
+        <true/>
+        <key>IFPkgFlagUpdateInstalledLanguages</key>
+        <false/>
+        <key>IFPkgFormatVersion</key>
+        <real>0.10000000149011612</real>
+</dict>
+</plist>
+EOF
+
+mkdir -p resources
+
 /Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker \
-  -build -p "`pwd`/ocaml.pkg" -f "`pwd`/root" -i "`pwd`/ocaml.info"
+  -build -p "`pwd`/ocaml.pkg" -f "`pwd`/root" -i "`pwd`/Info.plist" \
+  -d "`pwd`/Description.plist" -r "`pwd`/resources"
 
 size=`du -s ocaml.pkg | cut -f 1`
 size=`expr $size + 8192`
@@ -54,4 +122,4 @@ fi
 open "/Volumes/Objective Caml"
 hdiutil detach $name
 
-hdiutil convert ocaml-rw.dmg -format UDZO -o ocaml.dmg
+hdiutil convert ocaml-rw.dmg -format UDZO -o "ocaml${VERSION}.dmg"
