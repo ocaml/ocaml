@@ -113,20 +113,20 @@ let rec mark_loops_rec visited ty =
     | Ttuple tyl          -> List.iter (mark_loops_rec visited) tyl
     | Tconstr(_, tyl, _)  ->
         List.iter (mark_loops_rec visited) tyl
-    | Tvariant row	  ->
-	let row = row_repr row in
+    | Tvariant row        ->
+        let row = row_repr row in
         if List.memq px !visited_objects then begin
           if not (List.memq px !aliased) then
             aliased := px :: !aliased
         end else begin
           if not (static_row row) then
             visited_objects := px :: !visited_objects;
-	  match row.row_name with
-	    Some(p, tyl) when namable_row row ->
-	      List.iter (mark_loops_rec visited) tyl
-	  | _ ->
-	      iter_row (mark_loops_rec visited) row
-	end
+          match row.row_name with
+            Some(p, tyl) when namable_row row ->
+              List.iter (mark_loops_rec visited) tyl
+          | _ ->
+              iter_row (mark_loops_rec visited) row
+        end
     | Tobject (fi, nm)    ->
         if List.memq px !visited_objects then begin
           if not (List.memq px !aliased) then
@@ -159,8 +159,8 @@ let rec mark_loops_rec visited ty =
     | Tfield(_, _, _, ty2) ->
         mark_loops_rec visited ty2
     | Tnil                -> ()
-    | Tsubst ty		  ->  mark_loops_rec visited ty
-    | Tlink _		  -> fatal_error "Printtyp.mark_loops_rec (2)"
+    | Tsubst ty           ->  mark_loops_rec visited ty
+    | Tlink _             -> fatal_error "Printtyp.mark_loops_rec (2)"
 
 let mark_loops ty = mark_loops_rec [] ty
 
@@ -206,13 +206,13 @@ let rec typexp sch prio0 ty =
     | Tarrow(l, ty1, ty2) ->
         if prio >= 2 then begin open_box 1; print_string "(" end
                      else open_box 0;
-	print_label l;
-	if is_optional l then
-	  match (repr ty1).desc with
-	    Tconstr(path, [ty], _) when path = Predef.path_option ->
-	      typexp sch 2 ty
-	  | _ -> assert false
-	else
+        print_label l;
+        if is_optional l then
+          match (repr ty1).desc with
+            Tconstr(path, [ty], _) when path = Predef.path_option ->
+              typexp sch 2 ty
+          | _ -> assert false
+        else
           typexp sch 2 ty1;
         print_string " ->"; print_space();
         typexp sch 1 ty2;
@@ -237,64 +237,64 @@ let rec typexp sch prio0 ty =
         path p;
         close_box()
     | Tvariant row ->
-	let row = row_repr row in
-	let fields =
-	  if row.row_closed then
-	    List.filter (fun (_,f) -> row_field_repr f <> Rabsent)
-	      row.row_fields
-	  else row.row_fields
-	in
-	let present =
-	  List.filter
-	    (fun (_,f) -> match row_field_repr f with
-	    | Rpresent _ -> true
-	    | _ -> false)
-	    fields in
-	let all_present = List.length present = List.length fields in
-	begin match row.row_name with
-	| Some(p,tyl) when namable_row row ->
+        let row = row_repr row in
+        let fields =
+          if row.row_closed then
+            List.filter (fun (_,f) -> row_field_repr f <> Rabsent)
+              row.row_fields
+          else row.row_fields
+        in
+        let present =
+          List.filter
+            (fun (_,f) -> match row_field_repr f with
+            | Rpresent _ -> true
+            | _ -> false)
+            fields in
+        let all_present = List.length present = List.length fields in
+        begin match row.row_name with
+        | Some(p,tyl) when namable_row row ->
             open_box 0;
             begin match tyl with
               [] -> ()
             | [ty1] ->
-		typexp sch 3 ty1; print_space()
+                typexp sch 3 ty1; print_space()
             | tyl ->
-		open_box 1; print_string "("; typlist sch 0 "," tyl;
-		print_string ")"; close_box(); print_space()
+                open_box 1; print_string "("; typlist sch 0 "," tyl;
+                print_string ")"; close_box(); print_space()
             end;
-	    if not all_present then
-	      if sch && px.level <> generic_level then print_string "_#"
-	      else print_char '#';
+            if not all_present then
+              if sch && px.level <> generic_level then print_string "_#"
+              else print_char '#';
             path p;
-	    if not all_present && present <> [] then begin
-	      open_box 1;
-	      print_string "[>";
-	      print_list (fun (s,_) -> print_char '`'; print_string s)
-		print_space present;
-	      print_char ']';
-	      close_box ()
-	    end;
-	    close_box ()
-	| _ ->
-	    open_hovbox 0;
-	    if not (row.row_closed && all_present) && sch &&
-	      px.level <> generic_level then print_string "_["
-	    else print_char '[';
-	    if row.row_closed && all_present then () else
-	    if all_present then print_char '>' else print_char '<';
-	    print_list (row_field sch) (fun () -> printf "@,|") fields;
-	    if not (row.row_closed || all_present) then printf "@,| ..";
-	    if present <> [] && not all_present then begin
-	      print_space ();
-	      open_hovbox 2;
-	      print_string "|>";
-	      print_list (fun (s,_) -> print_char '`'; print_string s)
-		print_space present;
-	      close_box ()
-	    end;
-	    print_char ']';
-	    close_box ()
-	end
+            if not all_present && present <> [] then begin
+              open_box 1;
+              print_string "[>";
+              print_list (fun (s,_) -> print_char '`'; print_string s)
+                print_space present;
+              print_char ']';
+              close_box ()
+            end;
+            close_box ()
+        | _ ->
+            open_hovbox 0;
+            if not (row.row_closed && all_present) && sch &&
+              px.level <> generic_level then print_string "_["
+            else print_char '[';
+            if row.row_closed && all_present then () else
+            if all_present then print_char '>' else print_char '<';
+            print_list (row_field sch) (fun () -> printf "@,|") fields;
+            if not (row.row_closed || all_present) then printf "@,| ..";
+            if present <> [] && not all_present then begin
+              print_space ();
+              open_hovbox 2;
+              print_string "|>";
+              print_list (fun (s,_) -> print_char '`'; print_string s)
+                print_space present;
+              close_box ()
+            end;
+            print_char ']';
+            close_box ()
+        end
     | Tobject (fi, nm) ->
         typobject sch ty fi nm
 (*
@@ -302,7 +302,7 @@ let rec typexp sch prio0 ty =
 | Tnil -> typobject sch ty ty (ref None)
 *)
     | Tsubst ty ->
-	typexp sch prio ty
+        typexp sch prio ty
     | _ ->
         fatal_error "Printtyp.typexp"
     end;
@@ -636,10 +636,10 @@ let rec perform_class_type sch params =
       open_box 0;
       print_label l;
       if is_optional l then
-	match (repr ty).desc with
-	  Tconstr(path, [ty], _) when path = Predef.path_option ->
-	    typexp sch 2 ty
-	| _ -> assert false
+        match (repr ty).desc with
+          Tconstr(path, [ty], _) when path = Predef.path_option ->
+            typexp sch 2 ty
+        | _ -> assert false
       else
         typexp sch 2 ty;
       print_string " ->";
@@ -847,8 +847,18 @@ let rec filter_trace =
   | _ ->
       []
 
+(* Hide variant name, to force printing the expanded type *)
+let hide_variant_name (t,t') =
+  if t == t' then (t,t') else
+  match repr t' with
+    {desc = Tvariant row} as t' when (row_repr row).row_name <> None ->
+      (t, newty2 t'.level (Tvariant {(row_repr row) with row_name = None}))
+  | _ ->
+      (t, t')
+
 let unification_error unif tr txt1 txt2 =
   reset ();
+  let tr = List.map hide_variant_name tr in
   let (t3, t4) = mismatch tr in
   match tr with
     [] | _::[] ->

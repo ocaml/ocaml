@@ -40,22 +40,22 @@ val field_kind_repr: field_kind -> field_kind
            kind. *)
 
 val row_repr: row_desc -> row_desc
-	(* Return the canonical representative of a row description *)
+        (* Return the canonical representative of a row description *)
 val row_field_repr: row_field -> row_field
-	(* Return the canonical representative of a row field *)
+        (* Return the canonical representative of a row field *)
 val row_more: row_desc -> type_expr
-	(* Return the extension variable of the row *)
+        (* Return the extension variable of the row *)
 val static_row: row_desc -> bool
-	(* Return whether the row is static or not *)
+        (* Return whether the row is static or not *)
 val hash_variant: label -> int
-	(* Hash function for variant tags *)
+        (* Hash function for variant tags *)
 
 (**** Utilities for type traversal ****)
 
 val iter_type_expr: (type_expr -> unit) -> type_expr -> unit
         (* Iteration on types *)
 val iter_row: (type_expr -> unit) -> row_desc -> unit
-	(* Iteration on types in a row *)
+        (* Iteration on types in a row *)
 
 val save_desc: type_expr -> type_desc -> unit
         (* Save a type description *)

@@ -72,11 +72,11 @@ val hide_private_methods: type_expr -> unit
 
 val sort_row_fields: (label * row_field) list -> (label * row_field) list
 val merge_row_fields:
-	(label * row_field) list -> (label * row_field) list ->
-	(label * row_field) list * (label * row_field) list *
-	(label * row_field * row_field) list
+        (label * row_field) list -> (label * row_field) list ->
+        (label * row_field) list * (label * row_field) list *
+        (label * row_field * row_field) list
 val filter_row_fields:
-	bool -> (label * row_field) list -> (label * row_field) list
+        bool -> (label * row_field) list -> (label * row_field) list
 
 val generalize: type_expr -> unit
         (* Generalize in-place the given type *)

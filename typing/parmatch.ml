@@ -149,7 +149,7 @@ let rec normalize_pat q = match q.pat_desc with
       make_pat (Tpat_construct (c,omega_list args)) q.pat_type q.pat_env
   | Tpat_variant (l, arg, row) ->
       make_pat (Tpat_variant (l, may_map (fun _ -> omega) arg, row))
-	q.pat_type q.pat_env
+        q.pat_type q.pat_env
   | Tpat_array (args) ->
       make_pat (Tpat_array (omega_list args))  q.pat_type q.pat_env
   | Tpat_record (largs) ->
@@ -226,9 +226,9 @@ let set_args q r = match q with
 | {pat_desc = Tpat_variant (l, omega, row)} ->
     let arg, rest =
       match omega, r with
-	Some _, a::r -> Some a, r
-      |	None, r -> None, r
-      |	_ -> assert false
+        Some _, a::r -> Some a, r
+      | None, r -> None, r
+      | _ -> assert false
     in
     make_pat
       (Tpat_variant (l, arg, row)) q.pat_type q.pat_env::
@@ -339,37 +339,47 @@ let full_match tdefs force env =  match env with
 | ({pat_desc = Tpat_construct(c,_)},_) :: _ ->
     List.length env = c.cstr_consts + c.cstr_nonconsts
 | ({pat_desc = Tpat_variant(c,_,row); pat_type = ty},_) :: _ ->
-      let fields =
-	List.map
-          (fun (pat,_) -> match pat.pat_desc with
-	    Tpat_variant (tag, _, row) ->
-	      let row = Btype.row_repr row in
-	      begin try
-		(tag, Btype.row_field_repr (List.assoc tag row.row_fields))
-	      with Not_found ->
-		(tag, Rabsent)
-	      end
-          | _ -> fatal_error "Parmatch.full_match")
-	  env
-      in
-      let bound =
-	List.fold_left
-	  (fun bound (tag,f) ->
-	    match f with Reither(_,tl,_) -> tl @ bound | _ -> bound)
-	[] fields in
-      if force then
-	let row = { row_fields = fields; row_more = Ctype.newvar();
-		    row_bound = bound;
-		    row_closed = true; row_name = None }
-	in
-	try  Ctype.unify tdefs ty (Ctype.newty (Tvariant row)); true
-        with Ctype.Unify _ -> false
-      else
-	let row = Btype.row_repr row in
-	row.row_closed &&
-	List.for_all
-	  (fun (tag,pr) -> pr = Rabsent || List.mem_assoc tag fields)
-	  row.row_fields
+    let fields =
+      List.map
+        (function ({pat_desc = Tpat_variant (tag, _, row)}, _) ->
+            (* You must get a tag's type inside its own row *)
+            tag, List.assoc tag (Btype.row_repr row).row_fields
+          | _ -> assert false)
+        env
+    in
+    let row = Btype.row_repr row in
+    if force then begin
+      if not row.row_closed then begin
+        let more_fields =
+          List.fold_left
+            (fun acc (tag, f) ->
+              if List.mem_assoc tag acc || List.mem_assoc tag row.row_fields
+              then acc
+              else (tag, f)::acc)
+            [] fields
+        in
+        let closed = { row_fields = more_fields; row_more = Ctype.newvar();
+                       row_bound = row.row_bound; row_closed = true;
+                       row_name = None }
+         (* Cannot fail *)
+        in Ctype.unify tdefs row.row_more (Btype.newgenty (Tvariant closed))
+      end;
+      List.fold_left
+        (fun ok (tag,f) ->
+          match Btype.row_field_repr f with
+            Rabsent -> ok
+          | Reither(_, _, e) ->
+              if not (List.mem_assoc tag fields) then e := Some Rabsent;
+              ok
+          | Rpresent _ ->
+              ok && List.mem_assoc tag fields)
+        true row.row_fields
+    end else
+      row.row_closed &&
+      List.for_all
+        (fun (tag,f) ->
+          Btype.row_field_repr f = Rabsent || List.mem_assoc tag fields)
+        row.row_fields
 | ({pat_desc = Tpat_constant(Const_char _)},_) :: _ ->
     List.length env = 256
 | ({pat_desc = Tpat_constant(_)},_) :: _ -> false
@@ -447,6 +457,30 @@ let build_other env =  match env with
       end
     with
     | Datarepr.Constr_not_found -> omega
+    end
+| ({pat_desc = Tpat_variant(_,_,row)} as p,_) :: _ ->
+    let tags =
+      List.map
+        (function ({pat_desc = Tpat_variant (tag, _, _)}, _) -> tag
+                | _ -> assert false)
+        env
+    in
+    let row = Btype.row_repr row in
+    let make_other_pat tag const =
+      let arg = if const then None else Some omega in
+      make_pat (Tpat_variant(tag, arg, row)) p.pat_type p.pat_env in
+    begin match
+      List.fold_left
+        (fun others (tag,f) -> match Btype.row_field_repr f with
+          Rabsent | Reither _ -> others
+        | Rpresent arg -> make_other_pat tag (arg = None) :: others)
+        [] row.row_fields
+    with [] -> assert false
+    | pat::other_pats ->
+        List.fold_left
+          (fun p_res pat ->
+            make_pat (Tpat_or (pat, p_res)) p.pat_type p.pat_env)
+          pat other_pats
     end
 | ({pat_desc = Tpat_constant(Const_char _)} as p,_) :: _ ->
     let all_chars =
@@ -578,8 +612,8 @@ let rec satisfiable tdefs build pss qs =
         | constrs ->          
             let try_non_omega (p,pss) =
               match
-		satisfiable tdefs build pss (simple_match_args p omega @ qs)
-	      with
+                satisfiable tdefs build pss (simple_match_args p omega @ qs)
+              with
               | Rsome r -> Rsome (set_args p r)
               | r -> r in
             if full_match tdefs build constrs
@@ -594,7 +628,7 @@ let rec satisfiable tdefs build pss qs =
         let q0 = discr_pat q pss in
         match
           satisfiable tdefs build (filter_one q0 pss)
-	    (simple_match_args q0 q @ qs)
+            (simple_match_args q0 q @ qs)
         with
         | Rsome r -> Rsome (set_args q0 r)
         | r -> r

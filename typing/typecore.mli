@@ -57,7 +57,7 @@ type error =
   | Orpat_not_closed
   | Expr_type_clash of (type_expr * type_expr) list
   | Apply_non_function of type_expr
-  | Apply_wrong_label of label
+  | Apply_wrong_label of label * type_expr
   | Label_multiply_defined of Longident.t
   | Label_missing
   | Label_not_mutable of Longident.t

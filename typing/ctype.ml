@@ -306,9 +306,9 @@ let merge_row_fields fi1 fi2 =
   let rec merge r1 r2 pairs fi1 fi2 =
     match fi1, fi2 with
       (l1,f1 as p1)::fi1', (l2,f2 as p2)::fi2' ->
-	if l1 = l2 then merge r1 r2 ((l1,f1,f2)::pairs) fi1' fi2' else
-	if l1 < l2 then merge (p1::r1) r2 pairs fi1' fi2 else
-	merge r1 (p2::r2) pairs fi1 fi2'
+        if l1 = l2 then merge r1 r2 ((l1,f1,f2)::pairs) fi1' fi2' else
+        if l1 < l2 then merge (p1::r1) r2 pairs fi1' fi2 else
+        merge r1 (p2::r2) pairs fi1 fi2'
     | [], _ -> (List.rev r1, List.rev_append r2 fi2, pairs)
     | _, [] -> (List.rev_append r1 fi1, List.rev r2, pairs)
   in
@@ -319,9 +319,9 @@ let rec filter_row_fields erase = function
   | (l,f as p)::fi ->
       let fi = filter_row_fields erase fi in
       match row_field_repr f with
-	Rabsent -> fi
+        Rabsent -> fi
       | Reither(_,_,e) when erase -> e := Some Rabsent; fi
-      |	_ -> p :: fi
+      | _ -> p :: fi
 
                     (**************************************)
                     (*  Check genericity of type schemes  *)
@@ -494,14 +494,14 @@ let rec iter_generalize tyl ty =
         generalize_expans tyl !abbrev
     | Tvariant row
       when (repr row.row_more).level > !current_level || static_row row ->
-	let row = row_repr row in
-	let bound =
-	  List.fold_left
-	    (fun acc (_,f) ->
-	      match row_field_repr f with Reither(_,l,_) -> l@acc | _ -> acc)
-	    [] row.row_fields in
-	let row = {row with row_bound = bound} in
-	ty.desc <- Tvariant row;
+        let row = row_repr row in
+        let bound =
+          List.fold_left
+            (fun acc (_,f) ->
+              match row_field_repr f with Reither(_,l,_) -> l@acc | _ -> acc)
+            [] row.row_fields in
+        let row = {row with row_bound = bound} in
+        ty.desc <- Tvariant row;
     | _ -> ()
     end;
     iter_type_expr (iter_generalize tyl) ty
@@ -699,39 +699,39 @@ let rec copy ty =
                 Some (p, List.map copy tl)
           in
           Tobject (copy t1, ref name')
-      |	Tvariant row0 ->
-	  let row = row_repr row0 in
-	  let more = repr row.row_more in
-	  (* We must substitute in a subtle way *)
-	  begin match more.desc with
-	    Tsubst ty2 ->
-	      (* This variant type has been already copied *)
-	      ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
-	      Tlink ty2
-	  | _ ->
-	      (* We shall really check the level on the row variable *)
-	      if more.level <> generic_level then Tvariant row0 else
-	      (* We create a new copy *)
-	      let fields =
-		List.map
-		  (fun (l,fi) -> l,
-		    match row_field_repr fi with
-		      Rpresent (Some ty) -> Rpresent(Some(copy ty))
-		    | Reither(c, l, _) -> Reither(c, List.map copy l, ref None)
-		    | fi -> fi)
-		  row.row_fields
-	      and name =
-		may_map (fun (p,l) -> p, List.map copy l) row.row_name in
-	      let var =
-		Tvariant { row_fields = fields; row_more = newvar();
-			   row_bound = List.map copy row.row_bound;
-			   row_closed = row.row_closed; row_name = name }
-	      in
-	      (* Remember it for other occurences *)
-	      save_desc more more.desc;
-	      more.desc <- ty.desc;
-	      var
-	  end
+      | Tvariant row0 ->
+          let row = row_repr row0 in
+          let more = repr row.row_more in
+          (* We must substitute in a subtle way *)
+          begin match more.desc with
+            Tsubst ty2 ->
+              (* This variant type has been already copied *)
+              ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
+              Tlink ty2
+          | _ ->
+              (* We shall really check the level on the row variable *)
+              if more.level <> generic_level then Tvariant row0 else
+              (* We create a new copy *)
+              let fields =
+                List.map
+                  (fun (l,fi) -> l,
+                    match row_field_repr fi with
+                      Rpresent (Some ty) -> Rpresent(Some(copy ty))
+                    | Reither(c, l, _) -> Reither(c, List.map copy l, ref None)
+                    | fi -> fi)
+                  row.row_fields
+              and name =
+                may_map (fun (p,l) -> p, List.map copy l) row.row_name in
+              let var =
+                Tvariant { row_fields = fields; row_more = newvar();
+                           row_bound = List.map copy row.row_bound;
+                           row_closed = row.row_closed; row_name = name }
+              in
+              (* Remember it for other occurences *)
+              save_desc more more.desc;
+              more.desc <- ty.desc;
+              var
+          end
       | Tfield (label, kind, t1, t2) ->
           begin match field_kind_repr kind with
             Fpresent ->
@@ -745,8 +745,8 @@ let rec copy ty =
           Tnil
       | Tlink t -> (* Actually unused *)
           Tlink (copy t)
-      |	Tsubst _ ->
-	  assert false
+      | Tsubst _ ->
+          assert false
       end;
     t
 
@@ -915,13 +915,13 @@ let expand_abbrev env ty =
               raise Cannot_expand
           in
           let ty' = subst env level abbrev (Some ty) params args body in
-	  (* Hack to name the variant type *)
-	  begin match repr ty' with
-	    {desc=Tvariant row} as ty when static_row row ->
-	      ty.desc <- Tvariant { row with row_name = Some (path, args) }
-	  | _ -> ()
-	  end;
-	  ty'
+          (* Hack to name the variant type *)
+          begin match repr ty' with
+            {desc=Tvariant row} as ty when static_row row ->
+              ty.desc <- Tvariant { row with row_name = Some (path, args) }
+          | _ -> ()
+          end;
+          ty'
       end
   | _ ->
       assert false
@@ -1190,7 +1190,7 @@ and unify3 env t1 t1' t2 t2' =
             ()
         end
     | (Tvariant row1, Tvariant row2) ->
-	unify_row env row1 row2
+        unify_row env row1 row2
     | (Tfield _, Tfield _) ->           (* Actually unused *)
         unify_fields env t1' t2'
     | (Tnil, Tnil) ->
@@ -1274,19 +1274,19 @@ and unify_row env row1 row2 =
   if rm1 == rm2 then () else
   let r1, r2, pairs = merge_row_fields row1.row_fields row2.row_fields in
   ignore (List.fold_left
-	    (fun hl l ->
-	      let h = hash_variant l in
-	      try raise(Tags(l,List.assoc h hl))
-	      with Not_found -> (h,l)::hl)
-	    (List.map (fun (l,_) -> (hash_variant l, l)) row1.row_fields)
-	    (List.map fst r2));
+            (fun hl l ->
+              let h = hash_variant l in
+              try raise(Tags(l,List.assoc h hl))
+              with Not_found -> (h,l)::hl)
+            (List.map (fun (l,_) -> (hash_variant l, l)) row1.row_fields)
+            (List.map fst r2));
   let more = newty2 (min rm1.level rm2.level) Tvar
   and closed = row1.row_closed || row2.row_closed in
   let keep switch =
     List.for_all
       (fun (_,f1,f2) ->
-	let f1, f2 = switch f1 f2 in
-	row_field_repr f1 = Rabsent || row_field_repr f2 <> Rabsent)
+        let f1, f2 = switch f1 f2 in
+        row_field_repr f1 = Rabsent || row_field_repr f2 <> Rabsent)
       pairs
   in
   let name =
@@ -1297,7 +1297,7 @@ and unify_row env row1 row2 =
   in
   let bound = row1.row_bound @ row2.row_bound in
   let row0 = {row_fields = []; row_more = more; row_bound = bound;
-	      row_closed = closed; row_name = name} in
+              row_closed = closed; row_name = name} in
   let more row rest =
     let rest =
       if closed then filter_row_fields row.row_closed rest else rest in
@@ -1313,32 +1313,35 @@ and unify_row env row1 row2 =
     rm2.desc <- Tlink (more row2 r1);
     List.iter
       (fun (l,f1,f2) ->
-	let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
-	if f1 == f2 then () else
-	match f1, f2 with
-	  Rpresent(Some t1), Rpresent(Some t2) -> unify env t1 t2
-	| Rpresent None, Rpresent None -> ()
-	| Reither(c1, tl1, e1), Reither(c2, tl2, e2) ->
-	    if e1 == e2 then () else
-	    let tl = tl1 @ tl2 in
-	    let tl =
-	      List.fold_right
-		(fun t tl ->
-		  let t = repr t in if List.memq t tl then tl else t::tl)
-		tl [] in
-	    let f = Reither(c1 or c2, tl, ref None) in
-	    e1 := Some f; e2 := Some f
-	| Reither(false, tl, e1), Rpresent(Some t2) ->
-	    e1 := Some f2; List.iter (fun t1 -> unify env t1 t2) tl
-	| Rpresent(Some t), Reither(false, tl, e2) ->
-	    e2 := Some f1;
-	    (try List.iter (unify env t) tl with exn -> e2 := None; raise exn)
-	| Reither(true, [], e1), Rpresent None -> e1 := Some f2
-	| Rpresent None, Reither(true, [], e2) -> e2 := Some f1
-	| Reither(_, _, e1), Rabsent -> e1 := Some f2
-	| Rabsent, Reither(_, _, e2) -> e2 := Some f1
-	| Rabsent, Rabsent -> ()
-	| _ -> raise (Unify []))
+        let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
+        if f1 == f2 then () else
+        match f1, f2 with
+          Rpresent(Some t1), Rpresent(Some t2) -> unify env t1 t2
+        | Rpresent None, Rpresent None -> ()
+        | Reither(c1, tl1, e1), Reither(c2, tl2, e2) ->
+            if e1 == e2 then () else
+            let tl = tl1 @ tl2 in
+            let tl =
+              List.fold_right
+                (fun t tl ->
+                  let t = repr t in if List.memq t tl then tl else t::tl)
+                tl [] in
+            let f = Reither(c1 or c2, tl, ref None) in
+            e1 := Some f; e2 := Some f
+        | Reither(false, tl, e1), Rpresent(Some t2) ->
+            e1 := Some f2;
+            (try List.iter (fun t1 -> unify env t1 t2) tl
+             with exn -> e1 := None; raise exn)
+        | Rpresent(Some t1), Reither(false, tl, e2) ->
+            e2 := Some f1;
+            (try List.iter (unify env t1) tl
+             with exn -> e2 := None; raise exn)
+        | Reither(true, [], e1), Rpresent None -> e1 := Some f2
+        | Rpresent None, Reither(true, [], e2) -> e2 := Some f1
+        | Reither(_, _, e1), Rabsent -> e1 := Some f2
+        | Rabsent, Reither(_, _, e2) -> e2 := Some f1
+        | Rabsent, Rabsent -> ()
+        | _ -> raise (Unify []))
       pairs
   with exn ->
     rm1.desc <- md1; rm2.desc <- md2; raise exn
@@ -1440,10 +1443,10 @@ let moregen_occur env level ty =
       if ty.desc = Tvar && ty.level >= generic_level - 1 then raise Occur;
       ty.level <- pivot_level - ty.level;
       match ty.desc with
-	Tvariant row when static_row row ->
-	  iter_row occur row
-      |	_ ->
-	  iter_type_expr occur ty
+        Tvariant row when static_row row ->
+          iter_row occur row
+      | _ ->
+          iter_type_expr occur ty
     end
   in
   begin try
@@ -1483,7 +1486,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
               moregen_occur env t1'.level t2;
               t1'.desc <- Tlink t2
           | (Tarrow (l1, t1, u1), Tarrow (l2, t2, u2)) when l1 = l2
-	    or !Clflags.classic && not (is_optional l1 or is_optional l2) ->
+            or !Clflags.classic && not (is_optional l1 or is_optional l2) ->
               moregen inst_nongen type_pairs env t1 t2;
               moregen inst_nongen type_pairs env u1 u2
           | (Ttuple tl1, Ttuple tl2) ->
@@ -1491,8 +1494,8 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
                 when Path.same p1 p2 ->
               moregen_list inst_nongen type_pairs env tl1 tl2
-	  | (Tvariant row1, Tvariant row2) ->
-	      moregen_row inst_nongen type_pairs env row1 row2
+          | (Tvariant row1, Tvariant row2) ->
+              moregen_row inst_nongen type_pairs env row1 row2
           | (Tobject (fi1, nm1), Tobject (fi2, nm2)) ->
               moregen_fields inst_nongen type_pairs env fi1 fi2
           | (Tfield _, Tfield _) ->           (* Actually unused *)
@@ -1563,26 +1566,26 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
       let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
       if f1 == f2 then () else
       match f1, f2 with
-	Rpresent(Some t1), Rpresent(Some t2) ->
-	  moregen inst_nongen type_pairs env t1 t2
-      |	Rpresent None, Rpresent None -> ()
-      |	Reither(false, tl1, e1), Rpresent(Some t2) ->
-	  e1 := Some f2;
-	  List.iter (fun t1 -> moregen inst_nongen type_pairs env t1 t2) tl1
-      |	Reither(c1, tl1, e1), Reither(c2, tl2, e2) ->
-	  if c1 && not c2 then raise(Unify []);
-	  e1 := Some f2;
-	  begin match tl2 with
-	    [t2] when tl1 <> [] -> List.iter
-		(fun t1 -> moregen inst_nongen type_pairs env t1 t2) tl1
-	  | _ ->
-	      if List.length tl1 <> List.length tl2 then raise (Unify []);
-	      List.iter2 (moregen inst_nongen type_pairs env) tl1 tl2
-	  end
-      |	Reither(true, [], e1), Rpresent None -> e1 := Some f2
-      |	Reither(_, _, e1), Rabsent -> e1 := Some f2
-      |	Rabsent, Rabsent -> ()
-      |	_ -> raise (Unify []))
+        Rpresent(Some t1), Rpresent(Some t2) ->
+          moregen inst_nongen type_pairs env t1 t2
+      | Rpresent None, Rpresent None -> ()
+      | Reither(false, tl1, e1), Rpresent(Some t2) ->
+          e1 := Some f2;
+          List.iter (fun t1 -> moregen inst_nongen type_pairs env t1 t2) tl1
+      | Reither(c1, tl1, e1), Reither(c2, tl2, e2) ->
+          if c1 && not c2 then raise(Unify []);
+          e1 := Some f2;
+          begin match tl2 with
+            [t2] when tl1 <> [] -> List.iter
+                (fun t1 -> moregen inst_nongen type_pairs env t1 t2) tl1
+          | _ ->
+              if List.length tl1 <> List.length tl2 then raise (Unify []);
+              List.iter2 (moregen inst_nongen type_pairs env) tl1 tl2
+          end
+      | Reither(true, [], e1), Rpresent None -> e1 := Some f2
+      | Reither(_, _, e1), Rabsent -> e1 := Some f2
+      | Rabsent, Rabsent -> ()
+      | _ -> raise (Unify []))
     pairs
 
 (*
@@ -1653,7 +1656,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
                 subst := (t1', t2') :: !subst
               end
           | (Tarrow (l1, t1, u1), Tarrow (l2, t2, u2)) when l1 = l2
-	    or !Clflags.classic && not (is_optional l1 or is_optional l2) ->
+            or !Clflags.classic && not (is_optional l1 or is_optional l2) ->
               eqtype rename type_pairs subst env t1 t2;
               eqtype rename type_pairs subst env u1 u2;
           | (Ttuple tl1, Ttuple tl2) ->
@@ -1661,8 +1664,8 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
                 when Path.same p1 p2 ->
               eqtype_list rename type_pairs subst env tl1 tl2
-	  | (Tvariant row1, Tvariant row2) ->
-	      eqtype_row rename type_pairs subst env row1 row2
+          | (Tvariant row1, Tvariant row2) ->
+              eqtype_row rename type_pairs subst env row1 row2
           | (Tobject (fi1, nm1), Tobject (fi2, nm2)) ->
               eqtype_fields rename type_pairs subst env fi1 fi2
           | (Tfield _, Tfield _) ->       (* Actually unused *)
@@ -1719,14 +1722,14 @@ and eqtype_row rename type_pairs subst env row1 row2 =
   List.iter
     (fun (_,f1,f2) ->
       match row_field_repr f1, row_field_repr f2 with
-	Rpresent(Some t1), Rpresent(Some t2) ->
-	  eqtype rename type_pairs subst env t1 t2
-      |	Reither(c1, tl1,_), Reither(c2, tl2,_)
-	when c1 = c2 && List.length tl1 = List.length tl2 ->
-	  List.iter2 (eqtype rename type_pairs subst env) tl1 tl2
-      |	Rpresent None, Rpresent None -> ()
+        Rpresent(Some t1), Rpresent(Some t2) ->
+          eqtype rename type_pairs subst env t1 t2
+      | Reither(c1, tl1,_), Reither(c2, tl2,_)
+        when c1 = c2 && List.length tl1 = List.length tl2 ->
+          List.iter2 (eqtype rename type_pairs subst env) tl1 tl2
+      | Rpresent None, Rpresent None -> ()
       | Rabsent, Rabsent -> ()
-      |	_ -> raise (Unify []))
+      | _ -> raise (Unify []))
     pairs
      
 
@@ -2055,19 +2058,19 @@ let rec build_subtype env t =
       if not (static_row row) then (t, false) else
       let bound = ref row.row_bound in
       let fields =
-	List.map
-	  (fun (l,f) -> l, match row_field_repr f with
-	    Rpresent None ->
-	      Reither(true, [], ref None)
-	  | Rpresent(Some t) ->
-	      bound := t :: !bound;
-	      Reither(false, [t], ref None)
-	  | _ -> assert false)
-	  (filter_row_fields false row.row_fields)
+        List.map
+          (fun (l,f) -> l, match row_field_repr f with
+            Rpresent None ->
+              Reither(true, [], ref None)
+          | Rpresent(Some t) ->
+              bound := t :: !bound;
+              Reither(false, [t], ref None)
+          | _ -> assert false)
+          (filter_row_fields false row.row_fields)
       in
       if fields = [] then (t, false) else
       let row =
-	{row with row_fields = fields; row_more = newvar(); row_bound = !bound}
+        {row with row_fields = fields; row_more = newvar(); row_bound = !bound}
       in
       (newty (Tvariant row), true)
   | Tobject (t1, _) when opened_object t1 ->
@@ -2152,27 +2155,27 @@ let rec subtype_rec env trace t1 t2 cstrs =
     | (Tobject (f1, _), Tobject (f2, _)) ->
         subtype_fields env trace f1 f2 cstrs
     | (Tvariant row1, Tvariant row2) ->
-	let row1 = row_repr row1 and row2 = row_repr row2 in
-	begin try
-	  if not row1.row_closed then raise Exit;
-	  let r1, r2, pairs =
-	    merge_row_fields row1.row_fields row2.row_fields in
-	  if filter_row_fields false r1 <> [] then raise Exit;
-	  List.fold_left
-	    (fun cstrs (_,f1,f2) ->
-	      match row_field_repr f1, row_field_repr f2 with
-		(Rpresent None|Reither(true,_,_)), Rpresent None ->
-		  cstrs
-	      | Rpresent(Some t1), Rpresent(Some t2) ->
-		  subtype_rec env ((t1, t2)::trace) t1 t2 cstrs
-	      | Reither(false, t1::_, _), Rpresent(Some t2) ->
-		  subtype_rec env ((t1, t2)::trace) t1 t2 cstrs
-	      | Rabsent, _ -> cstrs
-	      | _ -> raise Exit)
-	    cstrs pairs
-	with Exit ->
-	  (trace, t1, t2)::cstrs
-	end
+        let row1 = row_repr row1 and row2 = row_repr row2 in
+        begin try
+          if not row1.row_closed then raise Exit;
+          let r1, r2, pairs =
+            merge_row_fields row1.row_fields row2.row_fields in
+          if filter_row_fields false r1 <> [] then raise Exit;
+          List.fold_left
+            (fun cstrs (_,f1,f2) ->
+              match row_field_repr f1, row_field_repr f2 with
+                (Rpresent None|Reither(true,_,_)), Rpresent None ->
+                  cstrs
+              | Rpresent(Some t1), Rpresent(Some t2) ->
+                  subtype_rec env ((t1, t2)::trace) t1 t2 cstrs
+              | Reither(false, t1::_, _), Rpresent(Some t2) ->
+                  subtype_rec env ((t1, t2)::trace) t1 t2 cstrs
+              | Rabsent, _ -> cstrs
+              | _ -> raise Exit)
+            cstrs pairs
+        with Exit ->
+          (trace, t1, t2)::cstrs
+        end
     | (_, _) ->
         (trace, t1, t2)::cstrs
   end
@@ -2317,46 +2320,46 @@ let rec nondep_type_rec env id ty =
                       | Some (p, tl) ->
                           if Path.isfree id p then None
                           else Some (p, List.map (nondep_type_rec env id) tl)))
-      |	Tvariant row ->
-	  let row = row_repr row in
-	  let more = repr row.row_more in
-	  (* We must substitute in a subtle way *)
-	  begin match more.desc with
-	    Tsubst ty2 ->
-	      (* This variant type has been already copied *)
-	      ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
-	      Tlink ty2
-	  | _ ->
-	      (* We create a new copy *)
-	      let bound = ref [] in
-	      let fields =
-		List.map
-		  (fun (l,fi) -> l,
-		    match row_field_repr fi with
-		      Rpresent (Some ty) ->
-			Rpresent(Some (nondep_type_rec env id ty))
-		    | Reither(c, l, _) ->
-			let l = List.map (nondep_type_rec env id) l in
-			bound := l @ !bound;
-			Reither(c, l, ref None)
-		    | fi -> fi)
-		  row.row_fields
-	      and name =
-		match row.row_name with
-		  Some (p,l) when Path.isfree id p ->
-		    Some (p, List.map (nondep_type_rec env id) l)
-		| _ -> None
-	      in
-	      let var =
-		Tvariant { row_fields = fields; row_more = newgenvar();
-			   row_bound = !bound;
-			   row_closed = row.row_closed; row_name = name }
-	      in
-	      (* Remember it for other occurences *)
-	      save_desc more more.desc;
-	      more.desc <- ty.desc;
-	      var
-	  end
+      | Tvariant row ->
+          let row = row_repr row in
+          let more = repr row.row_more in
+          (* We must substitute in a subtle way *)
+          begin match more.desc with
+            Tsubst ty2 ->
+              (* This variant type has been already copied *)
+              ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
+              Tlink ty2
+          | _ ->
+              (* We create a new copy *)
+              let bound = ref [] in
+              let fields =
+                List.map
+                  (fun (l,fi) -> l,
+                    match row_field_repr fi with
+                      Rpresent (Some ty) ->
+                        Rpresent(Some (nondep_type_rec env id ty))
+                    | Reither(c, l, _) ->
+                        let l = List.map (nondep_type_rec env id) l in
+                        bound := l @ !bound;
+                        Reither(c, l, ref None)
+                    | fi -> fi)
+                  row.row_fields
+              and name =
+                match row.row_name with
+                  Some (p,l) when Path.isfree id p ->
+                    Some (p, List.map (nondep_type_rec env id) l)
+                | _ -> None
+              in
+              let var =
+                Tvariant { row_fields = fields; row_more = newgenvar();
+                           row_bound = !bound;
+                           row_closed = row.row_closed; row_name = name }
+              in
+              (* Remember it for other occurences *)
+              save_desc more more.desc;
+              more.desc <- ty.desc;
+              var
+          end
       | Tfield(label, kind, t1, t2) ->
           begin match field_kind_repr kind with
             Fpresent ->
@@ -2372,8 +2375,8 @@ let rec nondep_type_rec env id ty =
           Tnil
       | Tlink ty ->                    (* Actually unused *)
           Tlink(nondep_type_rec env id ty)
-      |	Tsubst _ ->
-	  assert false
+      | Tsubst _ ->
+          assert false
       end;
     ty'
 
