@@ -62,7 +62,8 @@ $(INTF): $(MLIS)
 	$(MLIS) \
 	-sepfiles \
 	-latextitle "6,subsection*" \
-	-latextitle "7,subsubsection*"
+	-latextitle "7,subsubsection*" \
+	-latex-type-prefix "TYP"
 	mv -f Arith_status.tex Arithstatus.tex
 	mv -f Big_int.tex Bigint.tex
 
