@@ -2518,20 +2518,11 @@ Grammar.extend
            (cfd : 'class_expr))];
      Some "apply", Some Gramext.NonA,
      [[Gramext.Sself;
-       Gramext.srules
-         [[Gramext.Slist1
-             (Gramext.Snterml
-                (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
-                 "simple"))],
-          Gramext.action
-            (fun (l : 'expr list) (loc : int * int) -> (list l : 'anti));
-          [Gramext.Snterm
-             (Grammar.Entry.obj (anti_list : 'anti_list Grammar.Entry.e))],
-          Gramext.action
-            (fun (a : 'anti_list) (loc : int * int) -> (a : 'anti))]],
+       Gramext.Snterml
+         (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e), "simple")],
       Gramext.action
-        (fun (sel : ast) (ce : 'class_expr) (loc : int * int) ->
-           (Node ("CeApp", [ce; sel]) : 'class_expr))];
+        (fun (e : 'expr) (ce : 'class_expr) (loc : int * int) ->
+           (Node ("CeApp", [ce; e]) : 'class_expr))];
      Some "simple", None,
      [[Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ")")],
       Gramext.action

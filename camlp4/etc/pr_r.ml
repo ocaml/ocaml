@@ -680,8 +680,8 @@ and class_expr ce k =
   | ce -> class_expr1 ce k ]
 and class_expr1 ce k =
   match ce with
-  [ MLast.CeApp _ ce sel ->
-      HVbox [: `class_expr1 ce [: :]; list simple_expr sel k :]
+  [ MLast.CeApp _ ce e ->
+      HVbox [: `class_expr1 ce [: :]; `simple_expr e k :]
   | ce -> class_expr2 ce k ]
 and class_expr2 ce k =
   match ce with

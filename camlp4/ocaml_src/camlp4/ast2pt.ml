@@ -391,6 +391,12 @@ let rec expr_fa al =
   | f -> f, al
 ;;
 
+let rec class_expr_fa al =
+  function
+    CeApp (_, ce, a) -> class_expr_fa (a :: al) ce
+  | ce -> ce, al
+;;
+
 let rec sep_expr_acc l =
   function
     ExAcc (_, e1, e2) -> sep_expr_acc (sep_expr_acc l e2) e1
@@ -674,7 +680,8 @@ and class_sig_item c l =
   | CgVir (loc, s, b, t) -> Pctf_virt (s, mkprivate b, ctyp t, mkloc loc) :: l
 and class_expr =
   function
-    CeApp (loc, ce, el) ->
+    CeApp (loc, _, _) as c ->
+      let (ce, el) = class_expr_fa [] c in
       let el = List.map label_expr el in
       mkpcl loc (Pcl_apply (class_expr ce, el))
   | CeCon (loc, id, tl) ->

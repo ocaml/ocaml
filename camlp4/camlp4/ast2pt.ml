@@ -388,6 +388,12 @@ value rec expr_fa al =
   | f -> (f, al) ]
 ;
 
+value rec class_expr_fa al =
+  fun
+  [ CeApp _ ce a -> class_expr_fa [a :: al] ce
+  | ce -> (ce, al) ]
+;
+
 value rec sep_expr_acc l =
   fun
   [ ExAcc _ e1 e2 -> sep_expr_acc (sep_expr_acc l e2) e1
@@ -665,7 +671,8 @@ and class_sig_item c l =
       [Pctf_virt (s, mkprivate b, ctyp t, mkloc loc) :: l] ]
 and class_expr =
   fun
-  [ CeApp loc ce el ->
+  [ CeApp loc _ _ as c ->
+      let (ce, el) = class_expr_fa [] c in
       let el = List.map label_expr el in
       mkpcl loc (Pcl_apply (class_expr ce) el)
   | CeCon loc id tl ->

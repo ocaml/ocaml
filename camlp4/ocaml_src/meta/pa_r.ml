@@ -1724,12 +1724,11 @@ Grammar.extend
            (cfd : 'class_expr))];
      Some "apply", Some Gramext.NonA,
      [[Gramext.Sself;
-       Gramext.Slist1
-         (Gramext.Snterml
-            (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e), "simple"))],
+       Gramext.Snterml
+         (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e), "simple")],
       Gramext.action
-        (fun (sel : 'expr list) (ce : 'class_expr) (loc : int * int) ->
-           (MLast.CeApp (loc, ce, sel) : 'class_expr))];
+        (fun (e : 'expr) (ce : 'class_expr) (loc : int * int) ->
+           (MLast.CeApp (loc, ce, e) : 'class_expr))];
      Some "simple", None,
      [[Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ")")],
       Gramext.action

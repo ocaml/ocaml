@@ -184,7 +184,7 @@ and str_item =
 and type_decl (_, _, t, _) = ctyp t
 and class_expr =
   fun
-  [ CeApp _ ce el -> do { class_expr ce; list expr el; }
+  [ CeApp _ ce e -> do { class_expr ce; expr e; }
   | CeCon _ li tl -> do { longident li; list ctyp tl; }
   | CeFun _ p ce -> do { patt p; class_expr ce; }
   | CeLet _ _ pel ce -> do { list let_binding pel; class_expr ce; }

@@ -244,8 +244,7 @@ and class_sig_item floc sh =
 and class_expr floc sh =
   self where rec self =
     fun
-    [ CeApp loc x1 x2 ->
-        CeApp (floc loc) (self x1) (List.map (expr floc sh) x2)
+    [ CeApp loc x1 x2 -> CeApp (floc loc) (self x1) (expr floc sh x2)
     | CeCon loc x1 x2 -> CeCon (floc loc) x1 (List.map (ctyp floc sh) x2)
     | CeFun loc x1 x2 -> CeFun (floc loc) (patt floc sh x1) (self x2)
     | CeLet loc x1 x2 x3 ->

@@ -161,7 +161,7 @@ and class_sig_item =
   | CgVal of loc and string and bool and ctyp
   | CgVir of loc and string and bool and ctyp ]
 and class_expr =
-  [ CeApp of loc and class_expr and list expr
+  [ CeApp of loc and class_expr and expr
   | CeCon of loc and list string and list ctyp
   | CeFun of loc and patt and class_expr
   | CeLet of loc and bool and list (patt * expr) and class_expr

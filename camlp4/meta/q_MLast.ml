@@ -664,8 +664,8 @@ EXTEND
         ce = SELF ->
           Node "CeLet" [rf; lb; ce] ]
     | "apply" NONA
-      [ ce = SELF; sel = SLIST1 (expr LEVEL "simple") ->
-          Node "CeApp" [ce; sel] ]
+      [ ce = SELF; e = expr LEVEL "simple" ->
+          Node "CeApp" [ce; e] ]
     | "simple"
       [ a = anti_ -> a
       | ci = class_longident; "["; ctcl = SLIST1 ctyp SEP ","; "]" ->

@@ -928,8 +928,8 @@ EXTEND
         ce = SELF ->
           <:class_expr< let $rec:o2b rf$ $list:lb$ in $ce$ >> ]
     | "apply" NONA
-      [ ce = SELF; sel = LIST1 expr LEVEL "label" ->
-          <:class_expr< $ce$ $list:sel$ >> ]
+      [ ce = SELF; e = expr LEVEL "label" ->
+          <:class_expr< $ce$ $e$ >> ]
     | "simple"
       [ "["; ct = ctyp; ","; ctcl = LIST1 ctyp SEP ","; "]";
         ci = class_longident ->
