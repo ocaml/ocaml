@@ -52,6 +52,7 @@ and syntax = parse
   | ":" { print_string "\\is{}"; syntax lexbuf }
   | "|" { print_string "\\alt{}"; syntax lexbuf }
   | ";" { print_string "\\sep{}"; syntax lexbuf }
+  | "\\\\" { print_string "\\cutline{}"; syntax lexbuf }
   | _ {
       print_char (lexeme_char lexbuf 0);
       syntax lexbuf }

@@ -90,6 +90,34 @@ type 'a option = None | Some of 'a
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
+type int32
+\end{ocamldoccode}
+\index{int32@\verb`int32`}
+\begin{ocamldocdescription}
+ The type of signed 32-bit integers.  
+ See the "Int32"[\moduleref{Int32}] module.
+\end{ocamldocdescription}
+
+\begin{ocamldoccode}
+type int64
+\end{ocamldoccode}
+\index{int64@\verb`int64`}
+\begin{ocamldocdescription}
+ The type of signed 64-bit integers.  
+ See the "Int64"[\moduleref{Int64}] module.
+\end{ocamldocdescription}
+
+\begin{ocamldoccode}
+type nativeint
+\end{ocamldoccode}
+\index{nativeint@\verb`nativeint`}
+\begin{ocamldocdescription}
+ The type of signed, platform-native integers (32 bits on 32-bit
+ processors, 64 bits on 64-bit processors).
+ See the "Nativeint"[\moduleref{Nativeint}] module.
+\end{ocamldocdescription}
+
+\begin{ocamldoccode}
 type ('a, 'b, 'c, 'd) format
 \end{ocamldoccode}
 \index{format@\verb`format`}
@@ -219,3 +247,15 @@ exception Sys_blocked_io
    A special case of "Sys_error" raised when no I/O is possible
    on a non-blocking I/O channel.
 \end{ocamldocdescription}
+
+\begin{ocamldoccode}
+exception Undefined_recursive_module of (string * int * int)
+\end{ocamldoccode}
+\index{Undefinedrecursivemodule@\verb`Undefined_recursive_module`}
+\begin{ocamldocdescription}
+   Exception raised when an ill-founded recursive module definition
+   is evaluated.  (See section~\ref{s-recursive-modules}.)
+   The arguments are the location of the definition in the source code
+   (file name, line number, column number).
+\end{ocamldocdescription}
+

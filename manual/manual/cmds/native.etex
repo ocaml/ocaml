@@ -130,7 +130,8 @@ optimize for speed.
 \item["-i"]
 Cause the compiler to print all defined names (with their inferred
 types or their definitions) when compiling an implementation (".ml"
-file). This can be useful to check the types inferred by the
+file).  No compiled files (".cmo" and ".cmi" files) are produced.
+This can be useful to check the types inferred by the
 compiler. Also, since the output follows the syntax of interfaces, it
 can help in writing an explicit interface (".mli" file) for a file:
 just redirect the standard output of the compiler to a ".mli" file,
@@ -233,7 +234,7 @@ corresponding to the contents of the object files "a.cmx", "b.cmx" and
 in the remainder of the program.
 
 \begin{unix} The "-pack" option is available only under platforms that
-provide the GNU "binutils" tools "nm" and "objcopy".
+provide the GNU Binutils tools "nm" and "objcopy".
 \end{unix}
 
 \item["-pp" \var{command}]
@@ -322,6 +323,30 @@ Print the location of the standard library.
 %
 \end{options}
 
+\paragraph{Options for the IA32 architecture}
+The IA32 code generator (Intel Pentium, AMD Athlon) supports the
+following additional option:
+
+\begin{options}
+\item["-ffast-math"] Use the IA32 instructions to compute
+trigonometric and exponential functions, instead of calling the
+corresponding library routines.  The functions affected are:
+"atan", "atan2", "cos", "log", "log10", "sin", "sqrt", and "tan".
+The resulting code runs faster, but the range of supported arguments
+and the precision of the result can be reduced.  In particular,
+trigonometric operations "cos", "sin", "tan" have their range reduced to
+$[-2^{64}, 2^{64}]$.
+\end{options}
+
+\paragraph{Options for the Sparc architecture}
+The Sparc code generator supports the following additional options:
+\begin{options}
+\item["-march=v8"] Generate SPARC version 8 code.
+\item["-march=v9"] Generate SPARC version 9 code.
+\end{options}
+The default is to generate code for SPARC version 7, which runs on all
+SPARC processors.
+
 \section{Common errors}
 
 The error messages are almost identical to those of "ocamlc".
@@ -340,7 +365,7 @@ compilers should generate code that behave identically.
 or fatal Unix signal) instead of raising an exception:
 \begin{itemize}
 \item integer division by zero, modulus by zero;
-\item stack overflow;
+\item stack overflow (except on the IA32 architecture);
 \item on the Alpha processor only, floating-point operations involving
 infinite or denormalized numbers (all other processors supported by
 "ocamlopt" treat these numbers correctly, as per the IEEE 754 standard).
@@ -357,14 +382,15 @@ until the next heap allocation.
 \item The exception raised by an out-of-bounds array or string
 access is not the same.  Currently, in bytecode it is
 "Invalid_argument(\"Array.get\")"
-or "Invalid_argument(\"String.get\")", while in native code it
+or "Invalid_argument(\"String.set\")", while in native code it
 is "Invalid_argument(\"out-of-bound array or string access\")".
 
 \end{itemize}
 
 The best way to avoid running into those incompatibilities is to {\em
-never} trap the "Division_by_zero" and
-"Stack_overflow" exceptions, thus also treating them as fatal errors
-with the bytecode compiler as well as with the native-code compiler.
-Often, it is feasible to test the divisor before performing
-the operation, instead of trapping the exception afterwards.
+never} trap the "Division_by_zero", "Stack_overflow" and
+"Invalid_argument(\"Array.get\")" exceptions, thus treating them
+as fatal errors both with the bytecode compiler and with the
+native-code compiler. Often, it is easy to test the divisor or the
+array bounds before performing the operation, instead of trapping the
+exception afterwards.

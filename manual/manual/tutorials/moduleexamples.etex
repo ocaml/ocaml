@@ -279,26 +279,26 @@ extension ".cmi") and compiled object code files (with extension
 ".cmo"). When all units have been compiled, their ".cmo" files are
 linked together using the "ocaml" command. For instance, the following
 commands compile and link a program composed of two compilation units
-"aux" and "main":
+"Aux" and "Main":
 \begin{verbatim}
-$ ocamlc -c aux.mli                     # produces aux.cmi
-$ ocamlc -c aux.ml                      # produces aux.cmo
-$ ocamlc -c main.mli                    # produces main.cmi
-$ ocamlc -c main.ml                     # produces main.cmo
-$ ocamlc -o theprogram aux.cmo main.cmo
+$ ocamlc -c Aux.mli                     # produces aux.cmi
+$ ocamlc -c Aux.ml                      # produces aux.cmo
+$ ocamlc -c Main.mli                    # produces main.cmi
+$ ocamlc -c Main.ml                     # produces main.cmo
+$ ocamlc -o theprogram Aux.cmo Main.cmo
 \end{verbatim}
 The program behaves exactly as if the following phrases were entered
 at top-level:
 \begin{alltt}
-module Aux: sig (* \rminalltt{contents of} aux.mli *) end
-          = struct (* \rminalltt{contents of} aux.ml *) end;;
-module Main: sig (* \rminalltt{contents of} main.mli *) end
-           = struct (* \rminalltt{contents of} main.ml *) end;;
+module Aux: sig (* \rminalltt{contents of} Aux.mli *) end
+          = struct (* \rminalltt{contents of} Aux.ml *) end;;
+module Main: sig (* \rminalltt{contents of} Main.mli *) end
+           = struct (* \rminalltt{contents of} Main.ml *) end;;
 \end{alltt}
 In particular, "Main" can refer to "Aux": the definitions and
-declarations contained in "main.ml" and "main.mli" can refer to
-definition in "aux.ml", using the "Aux."\var{ident} notation, provided
-these definitions are exported in "aux.mli".
+declarations contained in "Main.ml" and "Main.mli" can refer to
+definition in "Aux.ml", using the "Aux."\var{ident} notation, provided
+these definitions are exported in "Aux.mli".
 
 The order in which the ".cmo" files are given to "ocaml" during the
 linking phase determines the order in which the module definitions

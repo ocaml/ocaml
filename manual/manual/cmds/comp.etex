@@ -173,7 +173,8 @@ required in order to be able to debug the program with "ocamldebug"
 \item["-i"]
 Cause the compiler to print all defined names (with their inferred
 types or their definitions) when compiling an implementation (".ml"
-file). This can be useful to check the types inferred by the
+file).  No compiled files (".cmo" and ".cmi" files) are produced.
+This can be useful to check the types inferred by the
 compiler. Also, since the output follows the syntax of interfaces, it
 can help in writing an explicit interface (".mli" file) for a file:
 just redirect the standard output of the compiler to a ".mli" file,
@@ -325,6 +326,9 @@ characters, with the following meaning for each character:
 \item["A"/"a"] enable/disable all warnings.
 \item["C"/"c"] enable/disable warnings for suspicious comments.
 \item["D"/"d"] enable/disable warnings for deprecated features.
+\item["E"/"e"] enable/disable warnings for fragile pattern matchings
+(matchings that would remain complete if additional constructors are
+ added to a variant type involved).
 \item["F"/"f"] enable/disable warnings for partially applied functions
 (i.e. "f x; "\var{expr} where the application "f x" has a function type).
 \item["L"/"l"] enable/disable warnings for labels omitted in application.
@@ -338,7 +342,8 @@ have type "unit").
 \item["V"/"v"] enable/disable warnings for hidden instance variables.
 \item["X"/"x"] enable/disable all other warnings.
 \end{options}
-The default setting is "-w Al" (all warnings but labels enabled).
+The default setting is "-w Ael" (all warnings enabled except fragile
+matchings and omitted labels).
 
 \item["-warn-error" \var{warning-list}]
 Turn the warnings indicated in the argument \var{warning-list} into
@@ -548,7 +553,6 @@ mod1.ml:    let forward_g =
 mod2.ml:    let g y = ... Mod1.f ...
             let _ = Mod1.forward_g := g
 \end{verbatim}
-This will not work if "g" is a polymorphic function, however.
 \end{itemize}
 
 \item[The external function \var{f} is not available]

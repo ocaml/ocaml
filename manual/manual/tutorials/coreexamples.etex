@@ -490,6 +490,7 @@ preprocessor, which can be loaded into the interactive toplevel via
 the "#load" directive below.
 
 \begin{caml_example}
+#directory "+camlp4";;
 #load "camlp4o.cma";;
 open Genlex;;
 let lexer = make_lexer ["("; ")"; "+"; "-"; "*"; "/"];;

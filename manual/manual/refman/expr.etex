@@ -227,7 +227,7 @@ If several patterns match the argument \var{v}, the one that occurs
 first in the function definition is selected. If none of the patterns
 matches the argument, the exception "Match_failure" is raised.
 %
-\index{Match_failure (exception)\@\verb`Match_failure` (exception)}
+\index{Matchfailure\@\verb`Match_failure`}
 
 \medskip
 
@@ -308,7 +308,7 @@ the bindings performed during matching, and the value of @expr@ is
 returned as the value of the whole {\tt let} expression. If one of the
 matchings fails, the exception "Match_failure" is raised.
 %
-\index{Match_failure (exception)\@\verb`Match_failure` (exception)}
+\index{Matchfailure\@\verb`Match_failure`}
 
 An alternate syntax is provided to bind variables to functional
 values: instead of writing
@@ -449,7 +449,7 @@ performed during matching. If several patterns match the value of
 selected. If none of the patterns match the value of @expr@, the
 exception @'Match_failure'@ is raised.
 %
-\index{Match_failure (exception)\@\verb`Match_failure` (exception)}
+\index{Matchfailure\@\verb`Match_failure`}
 
 \subsubsection*{Boolean operators}
 
@@ -648,11 +648,9 @@ details). Their meaning may be changed at any time using
 \entree{"-" (prefix)}{Integer negation.}
 \entree{"*"}{Integer multiplication.}
 \entree{"/"}{Integer division.
-        Raise "Division_by_zero" if second argument is zero. The result is
-        unspecified if either argument is negative.}
+        Raise "Division_by_zero" if second argument is zero.}
 \entree{"mod"}{Integer modulus. Raise
-        "Division_by_zero" if second argument is zero. The result is
-        unspecified if either argument is negative.}
+        "Division_by_zero" if second argument is zero.}
 \entree{"land"}{Bitwise logical ``and'' on integers.}
 \entree{"lor"}{Bitwise logical ``or'' on integers.}
 \entree{"lxor"}{Bitwise logical ``exclusive or'' on integers.}

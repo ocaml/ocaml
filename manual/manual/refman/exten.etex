@@ -1,9 +1,28 @@
 \chapter{Language extensions} \label{c:extensions}
 \pdfchapter{Language extensions}
 
-This chapter describes syntactic extensions and convenience features
+This chapter describes language extensions and convenience features
 that are implemented in Objective Caml, but not described in the
 Objective Caml reference manual.
+
+\section{Integer literals for types "int32", "int64" and "nativeint"}
+
+\begin{syntax}
+int32-literal: integer-literal 'l'
+;
+int64-literal: integer-literal 'L'
+;
+nativeint-literal: integer-literal 'n'
+\end{syntax}
+An integer literal can be followed by one of the letters "l", "L" or "n"
+to indicate that this integer has type "int32", "int64" or "nativeint"
+respectively, instead of the default type "int" for integer literals.
+\index{int32\@\verb`int32`}
+\index{int64\@\verb`int64`}
+\index{nativeint\@\verb`nativeint`}
+The library modules "Int32"[\moduleref{Int32}],
+"Int64"[\moduleref{Int64}] and "Nativeint"[\moduleref{Nativeint}]
+provide operations on these integer types.
 
 \section{Streams and stream parsers}
 \label{s:streams}
@@ -42,10 +61,10 @@ As a special case, "assert false" is reduced to
 "raise (Assert_failure ...)", which is polymorphic (and
 is not turned off by the "-noassert" option).
 %
-\index{Assert_failure (exception)\@\verb`Assert_failure` (exception)}
+\index{Assertfailure\@\verb`Assert_failure`}
 
 
-\section{Deferred computations}
+\section{Lazy evaluation}
 \ikwd{lazy\@\texttt{lazy}}
 
 The expression @"lazy" expr@ returns a value \var{v} of type "Lazy.t" that
@@ -80,9 +99,103 @@ It then returns the value of @expr@.  For example:
             (List.fold_right StringSet.add string_list StringSet.empty)
 \end{verbatim}
 
-\section{Grouping in integer and floating-point literals}
+\section{Private types}
+\ikwd{private\@\texttt{private}}
 
-In integer and floating-point literals, the character "_" (underscore)
-can be used to separate groups of digits, as in "1_000_000",
-"0x45_FF",  or "1_234.567_89".  The underscore characters are simply
-ignored when reading the literal.
+\begin{syntax}
+type-representation:
+          ...
+        | '=' 'private' constr-decl { '|' constr-decl }
+        | '=' 'private' '{' field-decl { ';' field-decl } '}'
+\end{syntax}
+Private types are variant or record types. Values of
+these types can be de-structured normally in pattern-matching or via
+the @expr '.' field@ notation for record accesses.  However, values of
+these types cannot be constructed directly by constructor application
+or record construction.  Moreover, assignment on a mutable field of a
+private record type is not allowed.
+
+The typical use of private types is in the export signature of a
+module, to ensure that construction of values of the private type always
+go through the functions provided by the module, while still allowing
+pattern-matching outside the defining module.  For example:
+\begin{verbatim}
+        module M : sig
+                     type t = private A | B of int
+                     val a : t
+                     val b : int -> t
+                   end
+                 = struct
+                     type t = A | B of int
+                     let a = A
+                     let b n = assert (n > 0); B n
+                   end
+\end{verbatim}
+Here, the "private" declaration ensures that in any value of type
+"M.t", the argument to the "B" constructor is always a positive integer.
+
+\section{Recursive modules} \label{s-recursive-modules}
+\ikwd{module\@\texttt{module}}
+\ikwd{rec\@\texttt{rec}}
+
+\begin{syntax}
+definition:
+        ...
+      | 'module' 'rec' module-name ':' module-type '=' module-expr \\
+        { 'and' module-name':' module-type '=' module-expr }
+;
+specification:
+        ...
+      | 'module' 'rec' module-name ':' module-type
+                 { 'and' module-name':' module-type }
+\end{syntax}
+
+Recursive module definitions, introduced by the 'module rec' \ldots
+'and' \ldots\ construction, generalize regular module definitions
+@'module' module-name '=' module-expr@ and module specifications
+@'module' module-name ':' module-type@ by allowing the defining
+@module-expr@ and the @module-type@ to refer recursively to the module
+identifiers being defined.  A typical example of a recursive module
+definition is:
+\begin{verbatim}
+        module A : sig
+                     type t = Leaf of string | Node of ASet.t
+                     val compare: t -> t -> int
+                   end
+                 = struct
+                     type t = Leaf of string | Node of ASet.t
+                     let compare t1 t2 =
+                       match (t1, t2) with
+                         (Leaf s1, Leaf s2) -> Pervasives.compare s1 s2
+                       | (Leaf _, Node _) -> 1
+                       | (Node _, Leaf _) -> -1
+                       | (Node n1, Node n2) -> ASet.compare n1 n2
+                   end
+        and ASet : Set.S with type elt = A.t
+                 = Set.Make(A)
+\end{verbatim}
+It can be given the following specification:
+\begin{verbatim}
+        module A : sig
+                     type t = Leaf of string | Node of ASet.t
+                     val compare: t -> t -> int
+                   end
+        and ASet : Set.S with type elt = A.t
+\end{verbatim}
+
+This is an experimental extension of Objective Caml: the class of
+recursive definitions accepted, as well as its dynamic semantics are
+not final and subject to change in future releases.
+
+Currently, the compiler requires that all dependency cycles between
+the recursively-defined module identifiers go through at least one
+``safe'' module.  A module is ``safe'' if all value definitions that
+it contains have function types @ty_1 '->' ty_2@.  Evaluation of a
+recursive module definition proceeds by building initial values for
+the safe modules involved, binding all (functional) values to
+@'fun' x '->' 'raise' 'Undefined_recursive_module'@.  The defining
+module expressions are then evaluated, and the initial values
+for the safe modules are replaced by the values thus computed.  If a
+function component of a safe module is applied during this computation
+(which corresponds to an ill-founded recursive definition), the
+"Undefined_recursive_module" exception is raised.
