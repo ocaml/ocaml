@@ -13,6 +13,9 @@
 
 (* Emission of Alpha assembly code *)
 
+module LabelSet =
+  Set.Make(struct type t = Linearize.label let compare = compare end)
+
 open Misc
 open Cmm
 open Arch
@@ -21,6 +24,105 @@ open Reg
 open Mach
 open Linearize
 open Emitaux
+
+(* First pass: insert Iloadgp instructions where needed *)
+
+let instr_copy i next =
+  { desc = i.desc; next = next; arg = i.arg; res = i.res; live = i.live }
+
+let insert_load_gp i =
+
+  let labels_needing_gp = ref LabelSet.empty in
+  let fixpoint_reached = ref false in
+
+  let label_needs_gp lbl =
+    LabelSet.mem lbl !labels_needing_gp in
+  let opt_label_needs_gp default = function
+      None -> default
+    | Some lbl -> label_needs_gp lbl in
+  let set_label_needs_gp lbl =
+    if not (label_needs_gp lbl) then begin
+      fixpoint_reached := false;
+      labels_needing_gp := LabelSet.add lbl !labels_needing_gp
+    end in
+
+  (* Determine if $gp is needed before an instruction.
+     [next] says whether $gp is needed just after (i.e. by the following
+     instruction). *)
+  let instr_needs_gp next = function
+      Lend -> false
+    | Lop(Iconst_int n) ->         (* for large n, turned into ldq ($gp) *)
+        next || Nativeint.cmp n (-0x80000000) < 0
+             || Nativeint.cmp n 0x7FFFFFFF > 0
+    | Lop(Iconst_float s) -> true       (* turned into ldq ($gp) *)
+    | Lop(Iconst_symbol s) -> true      (* turned into ldq ($gp) *)
+    | Lop(Icall_ind) -> false           (* does ldgp if needed afterwards *)
+    | Lop(Icall_imm s) -> true          (* loads $27 from ($gp) *)
+    | Lop(Itailcall_ind) -> false       (* loads $27 from ($gp) *)
+    | Lop(Itailcall_imm s) -> true      (* loads $27 from ($gp) *)
+    | Lop(Iextcall(_, _)) -> true       (* loads $27 from ($gp) *)
+    | Lop(Iload(_, Ibased(_, _))) -> true (* loads address from ($gp) *)
+    | Lop(Istore(_, Ibased(_, _))) -> true (* loads address from ($gp) *)
+    | Lop(Ialloc _) -> true             (* for calling caml_call_gc *)
+    | Lop(Iintop(Idiv | Imod)) -> true  (* divq and remq can be turned into *)
+    | Lop(Iintop_imm((Idiv | Imod), _)) -> true (* a function call *)
+    | Lop(Iintop(Icheckbound)) -> true  (* for calling array_bound_error *)
+    | Lop(Iintop_imm(Icheckbound, _)) -> true
+    | Lop(Iintop_imm(_, n)) ->     (* for large n, turned into ldq ($gp) *)
+        next || n < -0x80000000 || n > 0x7FFFFFFF
+    | Lop _ -> next
+    | Lreloadretaddr -> next
+    | Lreturn -> false
+    | Llabel lbl -> if next then set_label_needs_gp lbl; next
+    | Lbranch lbl -> label_needs_gp lbl
+    | Lcondbranch(tst, lbl) -> next || label_needs_gp lbl
+    | Lcondbranch3(lbl1, lbl2, lbl3) ->
+        opt_label_needs_gp next lbl1 ||
+        opt_label_needs_gp next lbl2 ||
+        opt_label_needs_gp next lbl3
+    | Lswitch lblv ->
+        let n = ref false in
+        for i = 0 to Array.length lblv - 1 do
+          n := !n || label_needs_gp lblv.(i)
+        done;
+        !n
+    | Lsetuptrap lbl -> label_needs_gp lbl
+    | Lpushtrap -> next
+    | Lpoptrap -> next
+    | Lraise -> false in
+
+  let rec needs_gp i =
+    if i.desc = Lend
+    then false
+    else instr_needs_gp (needs_gp i.next) i.desc in
+
+  while not !fixpoint_reached do
+    fixpoint_reached := true;
+    needs_gp i
+  done;
+
+  (* Insert Ireloadgp instructions after calls where needed *)
+  let rec insert_reload_gp i =
+    if i.desc = Lend then (i, false) else begin
+      let (new_next, needs_next) = insert_reload_gp i.next in
+      let new_instr =
+        match i.desc with
+          (* If the instruction destroys $gp and $gp is needed afterwards,
+             insert a ldgp after the instructions. *)
+          Lop(Icall_ind | Icall_imm _) when needs_next ->
+            instr_copy i
+              (instr_cons (Lop(Ispecific(Ireloadgp true))) [||] [||] new_next)
+        | Lop(Iextcall(_, false)) | Lsetuptrap _ when needs_next ->
+            instr_copy i
+              (instr_cons (Lop(Ispecific(Ireloadgp false))) [||] [||] new_next)
+        | _ ->
+            instr_copy i new_next in
+      (new_instr, instr_needs_gp needs_next i.desc)
+    end in
+
+  insert_reload_gp i
+
+(* Second pass: code generation proper *)
 
 (* Tradeoff between code size and code speed *)
 
@@ -46,7 +148,6 @@ let emit_reg r =
 (* Layout of the stack frame *)
 
 let stack_offset = ref 0
-let uses_gp = ref false
 
 let frame_size () =
   let size =
@@ -170,29 +271,6 @@ let emit_call_gc gc =
   (* caml_call_gc preserves $gp *)
   `{emit_label gc.gc_frame}:	br	{emit_label gc.gc_return_lbl}\n`
 
-(* Determine if $gp is used in the function *)
-
-let rec instr_uses_gp i =
-  match i.desc with
-    Lend -> false
-  | Lop(Iconst_int n) ->
-      if Nativeint.cmp n (-0x8000000) < 0 || Nativeint.cmp n 0x7FFFFFFF > 0
-      then true else instr_uses_gp i.next
-  | Lop(Iconst_float s) -> true
-  | Lop(Iconst_symbol s) -> true
-  | Lop(Icall_imm s) -> true
-  | Lop(Itailcall_imm s) -> true
-  | Lop(Iextcall(_, _)) -> true
-  | Lop(Iload(_, Ibased(_, _))) -> true
-  | Lop(Istore(_, Ibased(_, _))) -> true
-  | Lop(Ialloc _) -> true
-  | Lop(Iintop(Idiv | Imod)) -> true    (* divq and remq can be turned into *)
-  | Lop(Iintop_imm((Idiv | Imod), _)) -> true (* a function call *)
-  | Lop(Iintop_imm(_, n)) ->
-      if n < -0x80000000 || n > 0x7FFFFFFF then true else instr_uses_gp i.next
-  | _ ->
-      instr_uses_gp i.next
-
 (* Names of various instructions *)
 
 let name_for_int_operation = function
@@ -223,6 +301,7 @@ let name_for_specific_operation = function
   | Iadd8 -> "s8addq"
   | Isub4 -> "s4subq"
   | Isub8 -> "s8subq"
+  | _ -> Misc.fatal_error "Emit.name_for_specific_operation"
 
 let name_for_int_comparison = function
     Isigned Ceq -> "cmpeq", true     | Isigned Cne -> "cmpeq", false
@@ -312,14 +391,10 @@ let emit_instr i =
     | Lop(Iconst_symbol s) ->
         `	lda	{emit_reg i.res.(0)}, {emit_symbol s}\n`
     | Lop(Icall_ind) ->
-        `       mov     {emit_reg i.arg.(0)}, $27\n`;
+        `	mov	{emit_reg i.arg.(0)}, $27\n`;
         liveregs i live_27;
         `	jsr	({emit_reg i.arg.(0)})\n`;
-        record_frame i.live;
-        if !uses_gp then begin
-          `	bic	$26, 1, $26\n`;
-          `	ldgp	$gp, 4($26)\n`
-        end
+        record_frame i.live
     | Lop(Icall_imm s) ->
         liveregs i 0;
         begin try
@@ -328,9 +403,7 @@ let emit_instr i =
           record_frame i.live
         with External_function ->
           `	jsr	{emit_symbol s}\n`;
-          record_frame i.live;
-          `	bic	$26, 1, $26\n`;
-          `	ldgp	$gp, 4($26)\n`
+          record_frame i.live
         end
     | Lop(Itailcall_ind) ->
         `	mov	{emit_reg i.arg.(0)}, $27\n`;
@@ -364,10 +437,8 @@ let emit_instr i =
           liveregs i live_25;
           `	jsr	caml_c_call\n`;
           record_frame i.live
-          (* $gp preserved by caml_c_call *)
         end else begin
-          `	jsr	{emit_symbol s}\n`;
-          `	ldgp	$gp, 0($26)\n`
+          `	jsr	{emit_symbol s}\n`
         end
     | Lop(Istackoffset n) ->
         `	lda	$sp, {emit_int (-n)}($sp)\n`;
@@ -473,6 +544,13 @@ let emit_instr i =
         `	stt	$f30, 0($sp)\n`;
         `	ldq	{emit_reg i.res.(0)}, 0($sp)\n`;
         `	lda	$sp, 8($sp)\n`
+    | Lop(Ispecific(Ireloadgp marked_r26)) ->
+        if marked_r26 then begin
+          `	bic	$26, 1, $26\n`;
+          `	ldgp	$gp, 4($26)\n`
+        end else begin
+          `	ldgp	$gp, 0($26)\n`
+        end
     | Lop(Ispecific sop) ->
         let instr = name_for_specific_operation sop in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
@@ -556,9 +634,7 @@ let emit_instr i =
         `{emit_label lbl_jump}:	s4addq	{emit_reg i.arg.(0)}, $25, $25\n`;
         `	jmp	($25)\n`
     | Lsetuptrap lbl ->
-        `	br	$25, {emit_label lbl}\n`;
-        if !uses_gp then
-          `	ldgp	$gp, 0($27)\n`
+        `	br	$25, {emit_label lbl}\n`
     | Lpushtrap ->
         stack_offset := !stack_offset + 16;
         `	lda	$sp, -16($sp)\n`;
@@ -570,12 +646,12 @@ let emit_instr i =
         `	lda	$sp, 16($sp)\n`;
         stack_offset := !stack_offset - 16
     | Lraise ->
+        `	ldq	$26, 8($15)\n`;
         `	mov	$15, $sp\n`;
         `	ldq	$15, 0($sp)\n`;
-        `	ldq	$27, 8($sp)\n`;
         `	lda	$sp, 16($sp)\n`;
-        liveregs i live_27;
-        `	jmp	$25, ($27)\n`   (* Keep retaddr in $25 for debugging *)
+        liveregs i live_26;
+        `	jmp	$25, ($26)\n`   (* Keep retaddr in $25 for debugging *)
 
 let rec emit_all i =
   match i.desc with Lend -> () | _ -> emit_instr i; emit_all i.next
@@ -583,22 +659,26 @@ let rec emit_all i =
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
+  let (body, needs_gp) = insert_load_gp fundecl.fun_body in
   function_name := fundecl.fun_name;
   fastcode_flag := fundecl.fun_fast;
   stack_offset := 0;
   call_gc_sites := [];
-  uses_gp := instr_uses_gp fundecl.fun_body;
-  if !uses_gp then contains_calls := true;
   range_check_trap := 0;
   `	.text\n`;
   `	.align	4\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `	.ent	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
-  if !uses_gp then
+  if needs_gp then
     `	ldgp	$gp, 0($27)\n`;
-  let local_entry = new_label() in
-  Hashtbl.add local_entry_points fundecl.fun_name local_entry;
+  let local_entry =
+    try
+      local_entry_point fundecl.fun_name
+    with External_function -> (* should not happen except with testasmcomp *)
+      let lbl = new_label() in
+      Hashtbl.add local_entry_points fundecl.fun_name lbl;
+      lbl in
   `{emit_label local_entry}:\n`;
   let n = frame_size() in
   if n > 0 then
@@ -609,18 +689,13 @@ let fundecl fundecl =
     `	.fmask	0x0, 0\n`
   end;
   `	.frame	$sp, {emit_int n}, $26\n`;
-  `	.prologue {emit_int(if !uses_gp then 1 else 0)}\n`;
+  `	.prologue {emit_int(if needs_gp then 1 else 0)}\n`;
   tailrec_entry_point := new_label();
   `{emit_label !tailrec_entry_point}:\n`;
-  emit_all fundecl.fun_body;
+  emit_all body;
   List.iter emit_call_gc !call_gc_sites;
   if !range_check_trap > 0 then begin
     `{emit_label !range_check_trap}:\n`;
-    if not !uses_gp then begin
-      let lbl = new_label() in
-      `	br	$27, {emit_label lbl}\n`;
-      `{emit_label lbl}:	ldgp	$gp, 0($27)\n`
-    end;
     `	jsr	array_bound_error\n`
   end;
   `	.end	{emit_symbol fundecl.fun_name}\n`

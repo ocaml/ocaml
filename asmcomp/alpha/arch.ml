@@ -25,6 +25,7 @@ type addressing_mode =
 
 type specific_operation =
     Iadd4 | Iadd8 | Isub4 | Isub8       (* Scaled adds and subs *)
+  | Ireloadgp of bool                   (* The ldgp instruction *)
 
 (* Sizes, endianness *)
 
@@ -64,3 +65,4 @@ let print_specific_operation printreg op arg =
   | Iadd8 -> printreg arg.(0); print_string " * 8 + "; printreg arg.(1)
   | Isub4 -> printreg arg.(0); print_string " * 4 - "; printreg arg.(1)
   | Isub8 -> printreg arg.(0); print_string " * 8 - "; printreg arg.(1)
+  | Ireloadgp _ -> print_string "ldgp"
