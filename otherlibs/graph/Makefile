@@ -11,20 +11,17 @@ CAMLOPT=../../boot/cslrun ../../cslopt -I ../../stdlib
 OBJS=open.o draw.o fill.o color.o text.o \
   image.o make_img.o dump_img.o point_col.o sound.o events.o
 
-all: libgraph.a graphics.cmi graphics.cma
+all: libgraphics.a graphics.cmi graphics.cma
 
-allopt: libgraph.a graphics.cmi graphics.cmxa
+allopt:
 
-libgraph.a: $(OBJS)
-	rm -f libgraph.a
-	ar rc libgraph.a $(OBJS)
-	$(RANLIB) libgraph.a
+libgraphics.a: $(OBJS)
+	rm -f libgraphics.a
+	ar rc libgraphics.a $(OBJS)
+	$(RANLIB) libgraphics.a
 
 graphics.cma: graphics.cmo
 	$(CAMLC) -a -o graphics.cma graphics.cmo
-
-graphics.cmxa: graphics.cmx
-	$(CAMLOPT) -a -o graphics.cmxa graphics.cmx
 
 clean:
 	rm -f *.cm*
@@ -33,14 +30,11 @@ realclean: clean
 	rm -f *.a *.o $(GENFILES)
 
 install:
-	cp libgraph.a $(LIBDIR)/libgraph.a
-	cd $(LIBDIR); $(RANLIB) libgraph.a
+	cp libgraphics.a $(LIBDIR)/libgraphics.a
+	cd $(LIBDIR); $(RANLIB) libgraphics.a
 	cp graphics.cm[ia] $(LIBDIR)
 
 installopt:
-	cp graphics.a $(LIBDIR)/graphics.a
-	cd $(LIBDIR); $(RANLIB) graphics.a
-	cp graphics.cmxa $(LIBDIR)
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
