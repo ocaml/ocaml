@@ -790,13 +790,13 @@ value interprete(code_t prog, asize_t prog_size)
     raise_exception:
       if (trapsp >= trap_barrier) debugger(TRAP_BARRIER);
       if (backtrace_active) stash_backtrace(accu, pc, sp);
-      sp = trapsp;
-      if ((char *) sp >= (char *) stack_high - initial_sp_offset) {
+      if ((char *) trapsp >= (char *) stack_high - initial_sp_offset) {
         external_raise = initial_external_raise;
-        extern_sp = sp;
+        extern_sp = (value *) ((char *) stack_high - initial_sp_offset);
         callback_depth--;
         return Make_exception_result(accu);
       }
+      sp = trapsp;
       pc = Trap_pc(sp);
       trapsp = Trap_link(sp);
       env = sp[2];
