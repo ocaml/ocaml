@@ -1034,6 +1034,10 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
 #define Lookup(obj, lab) Field (Field (obj, 0), Int_val(lab))
 
+      /* please don't forget to keep below code in sync with the
+	 functions caml_cache_public_method and
+	 caml_cache_public_method2 in obj.c */
+
     Instruct(GETMETHOD):
       accu = Lookup(sp[0], accu);
       Next;
