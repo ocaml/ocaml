@@ -277,7 +277,7 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 install: dummy
 	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
 	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
-	$(CP) $(OCAMLDOC) $(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)
+	$(CP) $(OCAMLDOC)$(EXE) $(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)
 	$(CP) ocamldoc.hva *.cmi $(GENERATORS) $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
 	if test -d $(INSTALL_MANODIR); then : ; else $(MKDIR) $(INSTALL_MANODIR); fi
@@ -289,7 +289,7 @@ installopt:
 installopt_really:
 	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
 	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
-	$(CP) $(OCAMLDOC_OPT) $(INSTALL_BINDIR)
+	$(CP) $(OCAMLDOC_OPT) $(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)
 	$(CP) ocamldoc.hva $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
 
@@ -332,7 +332,7 @@ stdlib_man/Pervasives.o: $(STDLIB_MLIS)
 
 clean:: dummy
 	@rm -f *~ \#*\#
-	@rm -f $(OCAMLDOC) $(OCAMLDOC_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.a *.o
+	@rm -f $(OCAMLDOC)$(EXE) $(OCAMLDOC_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.a *.o
 	@rm -f odoc_parser.output odoc_text_parser.output
 	@rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
 	@rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli odoc_crc.ml
