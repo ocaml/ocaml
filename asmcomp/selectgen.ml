@@ -569,7 +569,8 @@ method private emit_stores env data regs_addr addr =
       let r = self#emit_expr env arg in
       let op' =
         match op with
-          Istore(_, addr) when r.(0).typ = Float -> Istore(Double, addr)
+        | Istore(_, addr) when Array.length r > 0 && r.(0).typ = Float
+            -> Istore(Double, addr)
         | _ -> op in
       self#insert (Iop op') (Array.append r regs_addr) [||];
       a := Arch.offset_addressing !a (size_expr env e))
