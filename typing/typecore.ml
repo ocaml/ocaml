@@ -206,6 +206,9 @@ let rec build_as_type env p =
       end;
       ty1
   | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_array _ -> p.pat_type
+(* GENERIC
+  | Tpat_dynamic (_,_) -> Predef.type_dyn
+/GENERIC *)
 
 let build_or_pat env loc lid =
   let path, decl =
@@ -387,6 +390,23 @@ let rec type_pat env sp =
       p
   | Ppat_type lid ->
       build_or_pat env sp.ppat_loc lid
+(* GENERIC
+  | Ppat_dynamic(sp, sty) ->
+      begin_def ();
+      let p = type_pat env sp in
+      end_def ();
+      generalize p.pat_type;
+      let ty = Typetexp.transl_type_scheme_pattern env sty in
+Format.fprintf Format.std_formatter "dyn (%a : %a)" Printtyp.type_scheme p.pat_type Printtyp.type_scheme ty;
+Format.print_newline ();
+      unify_pat env p ty;
+Format.fprintf Format.std_formatter "dyn (%a : %a)" Printtyp.type_scheme p.pat_type Printtyp.type_scheme ty;
+Format.print_newline ();
+      { pat_desc= Tpat_dynamic(p, ty);
+	pat_loc= sp.ppat_loc;
+	pat_type= Predef.type_dyn;
+	pat_env= env }
+/GENERIC *)
 
 let add_pattern_variables env =
   let pv = !pattern_variables in
@@ -493,6 +513,10 @@ let rec iter_pattern f p =
       iter_pattern f p'
   | Tpat_array pl ->
       List.iter (iter_pattern f) pl
+(* GENERIC
+  | Tpat_dynamic (p, scm) ->
+      iter_pattern f p (* ??? what to do with the type? *)
+/GENERIC *)
 
 (* Generalization criterion for expressions *)
 
@@ -522,6 +546,11 @@ let rec is_nonexpansive exp =
       is_nonexpansive ifso && is_nonexpansive_opt ifnot
   | Texp_new (_, cl_decl) when Ctype.class_type_arity cl_decl.cty_type > 0 ->
       true
+(* DYN *)
+  | Texp_coerce _ -> true
+(* /DYN *)
+(* GENERIC with its more complex expression, 
+   Texp_coerce will be expansive... *)
   | _ -> false
 
 and is_nonexpansive_opt = function
@@ -693,7 +722,6 @@ let is_mono_dynamization typs =
   with
   | Exit -> false
 ;;
-
 (* /DYN *)
 
 let rec type_exp env sexp =
@@ -1142,6 +1170,9 @@ let rec type_exp env sexp =
       begin_def ();
       let e = type_exp env se in
       end_def ();
+      (* We do not generalize the type here. The generalization
+	 and closedness check will be done after all the types
+	 become stable (i.e. at the compilation) *)
       if is_nonexpansive e then generalize e.exp_type 
       else make_nongen e.exp_type;
       if not (Ctype.closed_schema e.exp_type) then begin
@@ -1156,6 +1187,15 @@ let rec type_exp env sexp =
 	exp_type= Predef.type_dyn;
 	exp_env= env;
       }	
+  | Pexp_coerce (sarg) ->
+      let arg = type_expect env sarg Predef.type_dyn in
+      let ty_res = newvar () in
+      { exp_desc = Texp_coerce (arg);
+        exp_loc = sexp.pexp_loc;
+        exp_type = ty_res;
+        exp_env = env }
+(* /DYN *)
+(* GENERIC
   | Pexp_coerce(sarg, caselist) ->
       let arg = type_expect env sarg Predef.type_dyn in
       let ty_res = newvar () in
@@ -1168,7 +1208,7 @@ let rec type_exp env sexp =
         exp_loc = sexp.pexp_loc;
         exp_type = ty_res;
         exp_env = env }
-(* /DYN *)
+/GENERIC *)
 
 and type_argument env sarg ty_expected =
   let rec no_labels ty =
