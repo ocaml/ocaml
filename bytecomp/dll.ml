@@ -57,12 +57,12 @@ let extract_dll_names files =
 let open_dll name =
   let name = name ^ Config.ext_dll in
   let fullname =
-    try Misc.find_in_path !search_path name with Not_found -> name in
-  let fullname =
-    if Filename.is_implicit fullname then
-      Filename.concat Filename.current_dir_name fullname
-    else fullname
-  in
+    try
+      let fullname = Misc.find_in_path !search_path name in
+      if Filename.is_implicit fullname then
+        Filename.concat Filename.current_dir_name fullname
+      else fullname
+    with Not_found -> name in
   if not (List.mem fullname !names_of_opened_dlls) then begin
     let dll = dll_open fullname in
     names_of_opened_dlls := fullname :: !names_of_opened_dlls;
