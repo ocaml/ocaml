@@ -292,6 +292,32 @@ value rec patt_lid =
   | _ -> None ]
 ;
 
+value bigarray_get loc arr arg =
+  let coords =
+    match arg with
+    [ <:expr< ($list:el$) >> -> el
+    | _ -> [arg] ]
+  in
+  match coords with
+  [ [c1] -> <:expr< Bigarray.Array1.get $arr$ $c1$ >>
+  | [c1; c2] -> <:expr< Bigarray.Array2.get $arr$ $c1$ $c2$ >>
+  | [c1; c2; c3] -> <:expr< Bigarray.Array3.get $arr$ $c1$ $c2$ $c3$ >>
+  | coords -> <:expr< Bigarray.Genarray.get $arr$ [| $list:coords$ |] >> ]
+;
+
+value bigarray_set loc var newval =
+  match var with
+  [ <:expr< Bigarray.Array1.get $arr$ $c1$ >> ->
+      Some <:expr< Bigarray.Array1.set $arr$ $c1$ $newval$ >>
+  | <:expr< Bigarray.Array2.get $arr$ $c1$ $c2$ >> ->
+      Some <:expr< Bigarray.Array2.set $arr$ $c1$ $c2$ $newval$ >>
+  | <:expr< Bigarray.Array3.get $arr$ $c1$ $c2$ $c3$ >> ->
+      Some <:expr< Bigarray.Array3.set $arr$ $c1$ $c2$ $c3$ $newval$ >>
+  | <:expr< Bigarray.Genarray.get $arr$ [| $list:coords$ |] >> ->
+      Some <:expr< Bigarray.Genarray.set $arr$ [| $list:coords$ |] $newval$ >>
+  | _ -> None ]
+;
+
 (* ...works bad...
 value rec sync cs =
   match cs with parser
@@ -498,7 +524,10 @@ EXTEND
     | ":=" NONA
       [ e1 = SELF; ":="; e2 = expr LEVEL "expr1" ->
           <:expr< $e1$.val := $e2$ >>
-      | e1 = SELF; "<-"; e2 = expr LEVEL "expr1" -> <:expr< $e1$ := $e2$ >> ]
+      | e1 = SELF; "<-"; e2 = expr LEVEL "expr1" ->
+          match bigarray_set loc e1 e2 with
+          [ Some e -> e
+          | None -> <:expr< $e1$ := $e2$ >> ] ]
     | "||" RIGHTA
       [ e1 = SELF; "or"; e2 = SELF -> <:expr< $lid:"or"$ $e1$ $e2$ >>
       | e1 = SELF; "||"; e2 = SELF -> <:expr< $e1$ || $e2$ >> ]
@@ -570,6 +599,7 @@ EXTEND
     | "simple" LEFTA
       [ e1 = SELF; "."; "("; e2 = SELF; ")" -> <:expr< $e1$ .( $e2$ ) >>
       | e1 = SELF; "."; "["; e2 = SELF; "]" -> <:expr< $e1$ .[ $e2$ ] >>
+      | e1 = SELF; "."; "{"; e2 = SELF; "}" -> bigarray_get loc e1 e2
       | e1 = SELF; "."; e2 = SELF -> <:expr< $e1$ . $e2$ >>
       | "!"; e = SELF -> <:expr< $e$ . val>>
       | f = [ op = "~-" -> op | op = "~-." -> op | op = prefixop -> op ];

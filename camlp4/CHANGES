@@ -1,3 +1,9 @@
+Camlp4 Version 3.04
+-------------------
+
+- [12 Oct 01] Added missing bigarray syntax a.{b} (and Cie) in standard
+  syntax (pa_o).
+
 Camlp4 Version 3.03
 -------------------
 
