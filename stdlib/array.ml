@@ -200,7 +200,7 @@ let sort cmp a =
   let rec bubbledown l i =
     let j = maxson l i in
     set a i (get a j);
-    bubbledown l j;
+    bubbledown l j
   in
   let bubble l i = try bubbledown l i with Bottom i -> i in
   let rec trickleup i e =

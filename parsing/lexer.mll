@@ -291,7 +291,7 @@ rule token = parse
   | "'" '\\' _
       { let l = Lexing.lexeme lexbuf in
         let esc = String.sub l 1 (String.length l - 1) in
-        raise (Error(Illegal_escape esc, Location.curr lexbuf));
+        raise (Error(Illegal_escape esc, Location.curr lexbuf))
       }
   | "(*"
       { comment_start_loc := [Location.curr lexbuf];

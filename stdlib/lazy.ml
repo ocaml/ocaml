@@ -63,7 +63,7 @@ let force (l : 'arg t) =
       result
     with e ->
       Obj.set_field x 0 (Obj.repr (fun () -> raise e));
-      raise e;
+      raise e
   end
 ;;
 

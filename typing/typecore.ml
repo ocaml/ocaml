@@ -1473,7 +1473,7 @@ and type_application env funct sargs =
     | _ ->
         match sargs with
           (l, sarg0) :: _ when ignore_labels ->
-            raise(Error(sarg0.pexp_loc, Apply_wrong_label(l, ty_old)));
+            raise(Error(sarg0.pexp_loc, Apply_wrong_label(l, ty_old)))
         | _ ->
             type_unknown_args args omitted (instance ty_fun)
               (sargs @ more_sargs)
