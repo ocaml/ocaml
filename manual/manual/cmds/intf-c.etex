@@ -667,7 +667,7 @@ than 5 parameters of type "value", use the corresponding macros
 with these parameters as arguments.  If your function has more than 5
 parameters of type "value", use "CAMLparam5" with five of these
 parameters, and use one or more calls to the "CAMLxparam" macros for
-the remaining parameters ("CAMLxparam0" to "CAMLxparam5").
+the remaining parameters ("CAMLxparam1" to "CAMLxparam5").
 
 The macros "CAMLreturn" and "CAMLreturn0" are used to replace the C
 keyword "return".  Every occurence of "return x" must be replaced by
@@ -856,7 +856,7 @@ First, we write it using the simplified allocation functions:
 \begin{verbatim}
 value alloc_list_int(int i1, int i2)
 {
-  CAMLparam0;
+  CAMLparam0 ();
   CAMLlocal2 (result, r);
 
   r = alloc(2, 0);                        /* Allocate a cons cell */
@@ -879,7 +879,7 @@ their fields.
 \begin{verbatim}
 value alloc_list_int(int i1, int i2)
 {
-  CAMLparam0;
+  CAMLparam0 ();
   CAMLlocal2 (result, r);
 
   r = alloc_small(2, 0);                  /* Allocate a cons cell */
@@ -897,7 +897,7 @@ illustrates the use of "modify".
 \begin{verbatim}
 value alloc_list_int(int i1, int i2)
 {
-  CAMLparam0;
+  CAMLparam0 ();
   CAMLlocal2 (tail, r);
 
   r = alloc_small(2, 0);                  /* Allocate a cons cell */
