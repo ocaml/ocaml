@@ -25,6 +25,9 @@
 #ifdef SUPPORT_DYNAMIC_LINKING
 #include <dlfcn.h>
 #endif
+#ifdef HAS_UNISTD
+#include <unistd.h>
+#endif
 #include "memory.h"
 #include "misc.h"
 #include "osdeps.h"
