@@ -1,5 +1,5 @@
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 14:49:53 on Thu, Jul 12, 2001 by MakeDepend
+# These dependencies were produced at 20:33:24 on Tue, Aug 21, 2001 by MakeDepend
 
 :aboutbox.c.x Ä  ¶
  :aboutbox.c ¶
@@ -49,12 +49,13 @@
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -62,27 +63,44 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 
 :appleevents.c.x Ä  ¶
  :appleevents.c ¶
@@ -132,12 +150,13 @@
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -145,27 +164,44 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 
 :clipboard.c.x Ä  ¶
  :clipboard.c ¶
@@ -215,12 +251,13 @@
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -228,27 +265,44 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 
 :drag.c.x Ä  ¶
  :drag.c ¶
@@ -298,12 +352,13 @@
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -311,27 +366,44 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 
 :dummy_fragment.c.x Ä  ¶
  :dummy_fragment.c
@@ -384,12 +456,13 @@
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -397,27 +470,44 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 
 :events.c.x Ä  ¶
  :events.c ¶
@@ -467,12 +557,13 @@
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -480,27 +571,44 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 
 :files.c.x Ä  ¶
  :files.c ¶
@@ -550,12 +658,13 @@
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -563,27 +672,44 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 
 :glue.c.x Ä  ¶
  :glue.c ¶
@@ -635,12 +761,13 @@
  "{CIncludes}"VaListTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -648,27 +775,44 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 
 :graph.c.x Ä  ¶
  :graph.c ¶
@@ -721,12 +865,13 @@
  "{CIncludes}"VaListTDef.h ¶
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -734,25 +879,42 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 
 :lcontrols.c.x Ä  ¶
  :lcontrols.c ¶
@@ -768,7 +930,6 @@
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
  "{CIncludes}"MacErrors.h ¶
- "{CIncludes}"OSUtils.h ¶
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"limits.h ¶
  "{CIncludes}"signal.h ¶
@@ -804,38 +965,57 @@
  "{CIncludes}"Components.h ¶
  "{CIncludes}"MixedMode.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"Events.h ¶
  "{CIncludes}"TextCommon.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"Files.h ¶
  "{CIncludes}"CodeFragments.h ¶
- "{CIncludes}"MacMemory.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
+ "{CIncludes}"DateTimeUtils.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
  "{CIncludes}"VaListTDef.h ¶
  "{CIncludes}"WCharTDef.h ¶
- "{CIncludes}"Notification.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"OSUtils.h ¶
  "{CIncludes}"NameRegistry.h ¶
- "{CIncludes}"DriverFamilyMatching.h ¶
- "{CIncludes}"Aliases.h ¶
  "{CIncludes}"Multiprocessing.h ¶
+ "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"ATSTypes.h ¶
+ "{CIncludes}"MacMemory.h ¶
+ "{CIncludes}"Aliases.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h ¶
+ "{CIncludes}"CFURL.h
 
 :lib.c.x Ä  ¶
  :lib.c ¶
@@ -885,12 +1065,13 @@
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -898,27 +1079,44 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 
 :main.c.x Ä  ¶
  :main.c ¶
@@ -968,12 +1166,13 @@
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -981,27 +1180,44 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 
 :mcmemory.c.x Ä  ¶
  :mcmemory.c ¶
@@ -1051,12 +1267,13 @@
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -1064,27 +1281,44 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 
 :mcmisc.c.x Ä  ¶
  :mcmisc.c ¶
@@ -1134,12 +1368,13 @@
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -1147,27 +1382,44 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 
 :menus.c.x Ä  ¶
  :menus.c ¶
@@ -1217,12 +1469,13 @@
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -1230,27 +1483,44 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 
 :modalfilter.c.x Ä  ¶
  :modalfilter.c ¶
@@ -1300,12 +1570,13 @@
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -1313,27 +1584,44 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 
 :prefs.c.x Ä  ¶
  :prefs.c ¶
@@ -1383,12 +1671,13 @@
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -1396,27 +1685,44 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 
 :prims.c.x Ä  ¶
  :prims.c
@@ -1469,12 +1775,13 @@
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -1482,27 +1789,44 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 
 :scroll.c.x Ä  ¶
  :scroll.c ¶
@@ -1552,12 +1876,13 @@
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -1565,27 +1890,44 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 
 :windows.c.x Ä  ¶
  :windows.c ¶
@@ -1635,12 +1977,13 @@
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"Events.h ¶
  "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"AEInteraction.h ¶
  "{CIncludes}"Appearance.h ¶
+ "{CIncludes}"CarbonEvents.h ¶
  "{CIncludes}"Lists.h ¶
  "{CIncludes}"MacHelp.h ¶
+ "{CIncludes}"CFString.h ¶
  "{CIncludes}"TextEdit.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"Collections.h ¶
@@ -1648,25 +1991,42 @@
  "{CIncludes}"Files.h ¶
  "{CIncludes}"NameRegistry.h ¶
  "{CIncludes}"CodeFragments.h ¶
+ "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"DriverFamilyMatching.h ¶
+ "{CIncludes}"Disks.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"ATSTypes.h ¶
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"MacMemory.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Aliases.h ¶
- "{CIncludes}"Multiprocessing.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CGContext.h ¶
  "{CIncludes}"IntlResources.h ¶
- "{CIncludes}"Movies.h ¶
  "{CIncludes}"NumberFormatting.h ¶
  "{CIncludes}"StringCompare.h ¶
  "{CIncludes}"DateTimeUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"DriverServices.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"Balloons.h ¶
+ "{CIncludes}"CFBase.h ¶
+ "{CIncludes}"CFArray.h ¶
+ "{CIncludes}"CFData.h ¶
+ "{CIncludes}"CFDictionary.h ¶
  "{CIncludes}"stdarg.h ¶
- "{CIncludes}"ImageCompression.h ¶
- "{CIncludes}"MachineExceptions.h ¶
- "{CIncludes}"DriverSynchronization.h
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"CFBundle.h ¶
+ "{CIncludes}"CGBase.h ¶
+ "{CIncludes}"CGAffineTransform.h ¶
+ "{CIncludes}"CGColorSpace.h ¶
+ "{CIncludes}"CGFont.h ¶
+ "{CIncludes}"CGImage.h ¶
+ "{CIncludes}"CGPDFDocument.h ¶
+ "{CIncludes}"TypeSelect.h ¶
+ "{CIncludes}"CFURL.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"CGGeometry.h ¶
+ "{CIncludes}"CGDataProvider.h
 

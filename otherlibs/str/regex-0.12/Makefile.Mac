@@ -32,14 +32,11 @@ PPCCOptions = -w 29,35 {cdbgflag}
 
 DEFS = -d STDC_HEADERS -d STRING_H -d REGEX_MALLOC
 
-default all Ä regex.c.x
-	{C} {COptions} {CPPFLAGS} {DEFS} regex.c -o regex.c.o
-
-regex.c.x Ä regex.c regex.h
-	{PPCC} {PPCCOptions} {CPPFLAGS} {DEFS} regex.c -o regex.c.x
+default all Ä regex.c regex.h
+    {PPCC} {PPCCOptions} {CPPFLAGS} {DEFS} regex.c -o regex.c.x
 
 clean mostlyclean Ä
-	delete -i regex.c.o regex.c.x
+    delete -i regex.c.x
 
 distclean Ä clean
 

@@ -20,7 +20,7 @@ COPYRIGHTSTR = "¶"Copyright 1991-2001 INRIA¶""
 XIncludes = -i ::byterun:,::config: ¶
             -i ":WASTE:WASTE 1.3 Distribution:WASTE C/C++ Headers:"
 
-PPCC = mrc -proto strict -w 6
+PPCC = mrc -proto strict -w 6,35
 PPCCplus = mrcpp
 PPCCOptions = {XIncludes} {cdbgflag}
 PPCLinkOptions = -d {ldbgflag}

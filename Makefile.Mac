@@ -85,7 +85,7 @@ EXPUNGEOBJS = :utils:misc.cmo :utils:tbl.cmo ¶
 PERVASIVES = arg array buffer callback char digest filename format gc hashtbl ¶
   lexing list map obj parsing pervasives printexc printf queue random ¶
   set sort stack string stream sys oo genlex topdirs toploop weak lazy ¶
-  marshal int32 int64 nativeint
+  marshal int32 int64 nativeint outcometree
 
 # Recompile the system using the bootstrap compiler
 all Ä runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml ¶
@@ -206,6 +206,7 @@ install Ä $OutOfDate
     duplicate -y :lex:ocamllex "{BINDIR}ocamllex"
     duplicate -y :yacc:ocamlyacc "{BINDIR}ocamlyacc"
     duplicate -y toplevellib.cma expunge "{LIBDIR}"
+    duplicate -y :typing:outcometree.cmi :typing:outcometree.mli "{LIBDIR}"
     duplicate -y :toplevel:topmain.cmo "{LIBDIR}topmain.cmo"
     duplicate -y :toplevel:toploop.cmi :toplevel:topdirs.cmi "{LIBDIR}"
     directory :tools:
