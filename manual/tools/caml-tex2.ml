@@ -120,6 +120,8 @@ let process_file file =
                escape_backslash rest]
           end else
             escape_backslash phrase in
+        (* Backslash may also appear in output strings -Didier *)
+        let output = escape_backslash output in
         let phrase = global_replace ~!"^\\(.\\)" camlin phrase
         and output = global_replace ~!"^\\(.\\)" camlout output in
         if not !first then output_string oc "\\;\n";
@@ -156,3 +158,4 @@ let _ =
     with _ -> failwith "Cannot open output file"
   end;
   List.iter process_file (List.rev !files)
+
