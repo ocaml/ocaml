@@ -445,7 +445,7 @@ static value input_val_from_block(void)
   /* Fill it in */
   intern_rec(&obj);
   intern_add_to_heap(whsize);
-  /* Free everything */
+  /* Free internal data structures */
   if (intern_obj_table != NULL) stat_free(intern_obj_table);
   return obj;
 }
@@ -465,7 +465,6 @@ CAMLexport value input_value_from_malloc(char * data, long ofs)
   obj = input_val_from_block();
   /* Free the input */
   stat_free(intern_input);
-  if (intern_obj_table != NULL) stat_free(intern_obj_table);
   return obj;
 }
 
@@ -484,7 +483,6 @@ CAMLexport value input_value_from_block(char * data, long len)
   if (5*4 + block_len > len)
     failwith("input_value_from_block: bad block length");
   obj = input_val_from_block();
-  if (intern_obj_table != NULL) stat_free(intern_obj_table);
   return obj;
 }
 
