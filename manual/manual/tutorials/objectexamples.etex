@@ -295,7 +295,7 @@ or "int_comparable2".
 
 \subsection*{Using coercions}
 
-Subtyping  is never implicit.  There are, however, too ways of getting
+Subtyping  is never implicit.  There are, however, two ways of getting
 subtyping.  The most general construction is fully explicit: both the domain
 and the codomain of the type coercion must be given.
 
@@ -408,7 +408,7 @@ Another common problem may occur when one tries to define a coercion to a
 class "c" inside the definition of class "c". The problem is due to the type
 abbreviation not being completely defined yet, and so its subtypes are not
 clearly known.  Then, a coercion "(_ : #c :> c)" is taken to be 
-the identify function, as in
+the identity function, as in
 \begin{caml_example}
 function x -> (x :> 'a);;
 \end{caml_example}
@@ -419,7 +419,7 @@ This constrains the class to be closed:
 class c () as self = method m = (self : #c :> c) end;;
 \end{caml_example}
 Although declaring the class as "closed" will typecheck, this is not usually
-what is desired
+what is desired.
 \begin{caml_example}
 class closed c () as self = method m = (self : #c :> c) end;;
 \end{caml_example}
@@ -461,7 +461,7 @@ and widget (w : window) =
 end;;
 \end{caml_example}
 Although their types are mutually recursive, the classes "widget" and 
-"window" are themselves independant. 
+"window" are themselves independent. 
 
 \subsection*{Class interfaces}
 
@@ -514,7 +514,7 @@ end;;
 However, writing a method for iterating over a stack is more
 problematic.  A method "fold" would have type
 "('b -> 'a -> 'b) -> 'b -> 'b". Here "'a" is the parameter of the stack.
-The parametter "'b" is not related to the class "'a stack" but to the
+The parameter "'b" is not related to the class "'a stack" but to the
 argument that will be passed to the method "fold".
 The intuition is that method "fold" should be polymorphic, i.e. of type 
 "All ('a) ('b -> 'a -> 'b) -> 'b -> 'b", which  is not currently possible.
