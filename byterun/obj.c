@@ -208,8 +208,9 @@ CAMLprim value oo_cache_public_method (value meths, value tag, value *cache)
 
 value oo_cache_public_method2 (value *meths, value tag, value *cache)
 {
-  if (*(value*)(((char*)(meths+2)) + *cache - 1) == tag)
-    return *(value*)(((char*)(meths+1)) + *cache - 1);
+  value ofs = *cache & meths[1];
+  if (*(value*)(((char*)(meths+2)) + ofs - 1) == tag)
+    return *(value*)(((char*)(meths+1)) + ofs - 1);
   {
     int li = 3, hi = meths[0], mi;
     while (li < hi) {
