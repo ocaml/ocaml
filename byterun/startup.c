@@ -63,14 +63,14 @@
 
 extern int parser_trace;
 
-CAMLexport header_t atom_table[256];
+CAMLexport header_t caml_atom_table[256];
 
 /* Initialize the atom table */
 
 static void init_atoms(void)
 {
   int i;
-  for(i = 0; i < 256; i++) atom_table[i] = Make_header(0, i, Caml_white);
+  for(i = 0; i < 256; i++) caml_atom_table[i] = Make_header(0, i, Caml_white);
 }
 
 /* Read the trailer of a bytecode file */
@@ -94,8 +94,8 @@ static int read_trailer(int fd, struct exec_trailer *trail)
     return BAD_BYTECODE;
 }
 
-int attempt_open(char **name, struct exec_trailer *trail,
-                 int do_open_script)
+int caml_attempt_open(char **name, struct exec_trailer *trail,
+                      int do_open_script)
 {
   char * truename;
   int fd;
@@ -130,12 +130,12 @@ int attempt_open(char **name, struct exec_trailer *trail,
 
 /* Read the section descriptors */
 
-void read_section_descriptors(int fd, struct exec_trailer *trail)
+void caml_read_section_descriptors(int fd, struct exec_trailer *trail)
 {
   int toc_size, i;
 
   toc_size = trail->num_sections * 8;
-  trail->section = stat_alloc(toc_size);
+  trail->section = caml_stat_alloc(toc_size);
   lseek(fd, - (long) (TRAILER_SIZE + toc_size), SEEK_END);
   if (read(fd, (char *) trail->section, toc_size) != toc_size)
     caml_fatal_error("Fatal error: cannot read section table\n");
@@ -148,7 +148,7 @@ void read_section_descriptors(int fd, struct exec_trailer *trail)
    Return the length of the section data in bytes, or -1 if no section
    found with that name. */
 
-int32 seek_optional_section(int fd, struct exec_trailer *trail, char *name)
+int32 caml_seek_optional_section(int fd, struct exec_trailer *trail, char *name)
 {
   long ofs;
   int i;
@@ -167,9 +167,9 @@ int32 seek_optional_section(int fd, struct exec_trailer *trail, char *name)
 /* Position fd at the beginning of the section having the given name.
    Return the length of the section data in bytes. */
 
-int32 seek_section(int fd, struct exec_trailer *trail, char *name)
+int32 caml_seek_section(int fd, struct exec_trailer *trail, char *name)
 {
-  int32 len = seek_optional_section(fd, trail, name);
+  int32 len = caml_seek_optional_section(fd, trail, name);
   if (len == -1) 
     caml_fatal_error_arg("Fatal_error: section `%s' is missing\n", name);
   return len;
@@ -183,9 +183,9 @@ static char * read_section(int fd, struct exec_trailer *trail, char *name)
   int32 len;
   char * data;
 
-  len = seek_optional_section(fd, trail, name);
+  len = caml_seek_optional_section(fd, trail, name);
   if (len == -1) return NULL;
-  data = stat_alloc(len + 1);
+  data = caml_stat_alloc(len + 1);
   if (read(fd, data, len) != len)
     caml_fatal_error_arg("Fatal error: error reading section %s\n", name);
   data[len] = 0;
@@ -248,7 +248,7 @@ static int parse_command_line(char **argv)
       exit(0);
       break;
     case 'b':
-      init_backtrace();
+      caml_init_backtrace();
       break;
     case 'I':
       if (argv[i + 1] != NULL) {
@@ -297,7 +297,7 @@ static void parse_camlrunparam(void)
       case 'o': scanmult (opt, &percent_free_init); break;
       case 'O': scanmult (opt, &max_percent_free_init); break;
       case 'v': scanmult (opt, &caml_verb_gc); break;
-      case 'b': init_backtrace(); break;
+      case 'b': caml_init_backtrace(); break;
       case 'p': parser_trace = 1; break;
       }
     }
@@ -341,13 +341,13 @@ CAMLexport void caml_main(char **argv)
   if (executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
     exe_name = proc_self_exe;
 #endif
-  fd = attempt_open(&exe_name, &trail, 0);
+  fd = caml_attempt_open(&exe_name, &trail, 0);
   if (fd < 0) {
     pos = parse_command_line(argv);
     if (argv[pos] == 0)
       caml_fatal_error("No bytecode file specified.\n");
     exe_name = argv[pos];
-    fd = attempt_open(&exe_name, &trail, 1);
+    fd = caml_attempt_open(&exe_name, &trail, 1);
     switch(fd) {
     case FILE_NOT_FOUND:
       caml_fatal_error_arg("Fatal error: cannot find file %s\n", argv[pos]);
@@ -360,18 +360,18 @@ CAMLexport void caml_main(char **argv)
     }
   }
   /* Read the table of contents (section descriptors) */
-  read_section_descriptors(fd, &trail);
+  caml_read_section_descriptors(fd, &trail);
   /* Initialize the abstract machine */
   init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
            percent_free_init, max_percent_free_init);
-  init_stack (max_stack_init);
+  caml_init_stack (max_stack_init);
   init_atoms();
   /* Initialize the interpreter */
   interprete(NULL, 0);
   /* Initialize the debugger, if needed */
   debugger_init();
   /* Load the code */
-  code_size = seek_section(fd, &trail, "CODE");
+  code_size = caml_seek_section(fd, &trail, "CODE");
   load_code(fd, code_size);
   /* Build the table of primitives */
   shared_lib_path = read_section(fd, &trail, "DLPT");
@@ -379,18 +379,18 @@ CAMLexport void caml_main(char **argv)
   req_prims = read_section(fd, &trail, "PRIM");
   if (req_prims == NULL) caml_fatal_error("Fatal error: no PRIM section\n");
   build_primitive_table(shared_lib_path, shared_libs, req_prims);
-  stat_free(shared_lib_path);
-  stat_free(shared_libs);
-  stat_free(req_prims);
+  caml_stat_free(shared_lib_path);
+  caml_stat_free(shared_libs);
+  caml_stat_free(req_prims);
   /* Load the globals */
-  seek_section(fd, &trail, "DATA");
+  caml_seek_section(fd, &trail, "DATA");
   chan = caml_open_descriptor_in(fd);
-  global_data = input_val(chan);
+  caml_global_data = input_val(chan);
   caml_close_channel(chan); /* this also closes fd */
-  stat_free(trail.section);
+  caml_stat_free(trail.section);
   /* Ensure that the globals are in the major heap. */
-  oldify_one (global_data, &global_data);
-  oldify_mopup ();
+  caml_oldify_one (caml_global_data, &caml_global_data);
+  caml_oldify_mopup ();
   /* Initialize system libraries */
   init_exceptions();
   caml_sys_init(exe_name, argv + pos);
@@ -405,7 +405,7 @@ CAMLexport void caml_main(char **argv)
   if (Is_exception_result(res)) {
     exn_bucket = Extract_exception(res);
     if (debugger_in_use) {
-      extern_sp = &exn_bucket; /* The debugger needs the exception value. */
+      caml_extern_sp = &exn_bucket; /* The debugger needs the exception value.*/
       debugger(UNCAUGHT_EXC);
     }
     fatal_uncaught_exception(exn_bucket);
@@ -429,7 +429,7 @@ CAMLexport void caml_startup_code(code_t code, asize_t code_size,
   /* Initialize the abstract machine */
   init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
            percent_free_init, max_percent_free_init);
-  init_stack (max_stack_init);
+  caml_init_stack (max_stack_init);
   init_atoms();
   /* Initialize the interpreter */
   interprete(NULL, 0);
@@ -442,10 +442,10 @@ CAMLexport void caml_startup_code(code_t code, asize_t code_size,
   prim_table.size = prim_table.capacity = -1;
   prim_table.contents = (void **) builtin_cprim;
   /* Load the globals */
-  global_data = input_val_from_string((value)data, 0);
+  caml_global_data = input_val_from_string((value)data, 0);
   /* Ensure that the globals are in the major heap. */
-  oldify_one (global_data, &global_data);
-  oldify_mopup ();
+  caml_oldify_one (caml_global_data, &caml_global_data);
+  caml_oldify_mopup ();
   /* Run the code */
   init_exceptions();
   caml_sys_init("", argv);

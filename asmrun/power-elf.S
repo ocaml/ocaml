@@ -43,7 +43,7 @@ caml_call_gc:
         addi    0, 1, 8*32 + 32
         Storeglobal(0, caml_gc_regs, 11)
     /* Save current allocation pointer for debugging purposes */
-        Storeglobal(31, young_ptr, 11)
+        Storeglobal(31, caml_young_ptr, 11)
     /* Save exception pointer (if e.g. a sighandler raises) */
         Storeglobal(29, caml_exception_pointer, 11)
     /* Save all registers used by the code generator */
@@ -106,8 +106,8 @@ caml_call_gc:
     /* Call the GC */
         bl      garbage_collection
     /* Reload new allocation pointer and allocation limit */
-        Loadglobal(31, young_ptr, 11)
-        Loadglobal(30, young_limit, 11)
+        Loadglobal(31, caml_young_ptr, 11)
+        Loadglobal(30, caml_young_limit, 11)
     /* Restore all regs used by the code generator */
         addi    11, 1, 8*32 + 32 - 4
         lwzu    3, 4(11)
@@ -190,15 +190,15 @@ caml_c_call:
         Storeglobal(1, caml_bottom_of_stack, 12)
         Storeglobal(25, caml_last_return_address, 12)
     /* Make the exception handler and alloc ptr available to the C code */
-        Storeglobal(31, young_ptr, 11)
+        Storeglobal(31, caml_young_ptr, 11)
         Storeglobal(29, caml_exception_pointer, 11)
     /* Call the function (address in link register) */
         blrl
     /* Restore return address (in 25, preserved by the C function) */
         mtlr    25
     /* Reload allocation pointer and allocation limit*/
-        Loadglobal(31, young_ptr, 11)
-        Loadglobal(30, young_limit, 11)
+        Loadglobal(31, caml_young_ptr, 11)
+        Loadglobal(30, caml_young_limit, 11)
     /* Say we are back into Caml code */
         li      12, 0
         Storeglobal(12, caml_last_return_address, 11)
@@ -212,8 +212,8 @@ caml_c_call:
 raise_caml_exception:
     /* Reload Caml global registers */
         Loadglobal(1, caml_exception_pointer, 11)
-        Loadglobal(31, young_ptr, 11)
-        Loadglobal(30, young_limit, 11)
+        Loadglobal(31, caml_young_ptr, 11)
+        Loadglobal(30, caml_young_limit, 11)
     /* Say we are back into Caml code */
         li      0, 0
         Storeglobal(0, caml_last_return_address, 11)
@@ -232,7 +232,7 @@ raise_caml_exception:
 caml_start_program:
         Addrglobal(12, caml_program)
 
-/* Code shared between caml_start_program and callback */
+/* Code shared between caml_start_program and caml_callback */
 .L102:
     /* Allocate and link stack frame */
         stwu    1, -256(1)
@@ -298,8 +298,8 @@ caml_start_program:
         stw     11, 4(1)
         mr      29, 1
     /* Reload allocation pointers */
-        Loadglobal(31, young_ptr, 11) 
-        Loadglobal(30, young_limit, 11)
+        Loadglobal(31, caml_young_ptr, 11) 
+        Loadglobal(30, caml_young_limit, 11)
     /* Say we are back into Caml code */
         li      0, 0
         Storeglobal(0, caml_last_return_address, 11)
@@ -321,7 +321,7 @@ caml_start_program:
         Storeglobal(11, caml_gc_regs, 12) 
         addi    1, 1, 16
     /* Update allocation pointer */
-        Storeglobal(31, young_ptr, 11)
+        Storeglobal(31, caml_young_ptr, 11)
     /* Restore callee-save registers */
         addi    11, 1, 16-4
         lwzu    14, 4(11)
@@ -377,9 +377,9 @@ caml_start_program:
 
 /* Callback from C to Caml */
 
-        .globl  callback_exn
-        .type   callback_exn, @function
-callback_exn:
+        .globl  caml_callback_exn
+        .type   caml_callback_exn, @function
+caml_callback_exn:
     /* Initial shuffling of arguments */
         mr      0, 3            /* Closure */
         mr      3, 4            /* Argument */
@@ -387,9 +387,9 @@ callback_exn:
         lwz     12, 0(4)        /* Code pointer */
         b       .L102
 
-        .globl  callback2_exn
-        .type   callback2_exn, @function
-callback2_exn:
+        .globl  caml_callback2_exn
+        .type   caml_callback2_exn, @function
+caml_callback2_exn:
         mr      0, 3            /* Closure */
         mr      3, 4            /* First argument */
         mr      4, 5            /* Second argument */
@@ -397,9 +397,9 @@ callback2_exn:
         Addrglobal(12, caml_apply2)
         b       .L102
         
-        .globl  callback3_exn
-        .type   callback3_exn, @function
-callback3_exn:
+        .globl  caml_callback3_exn
+        .type   caml_callback3_exn, @function
+caml_callback3_exn:
         mr      0, 3            /* Closure */
         mr      3, 4            /* First argument */
         mr      4, 5            /* Second argument */

@@ -143,8 +143,8 @@ void execute_signal(int signal_number, int in_signal_handler)
   sigaddset(&sigs, signal_number);
   sigprocmask(SIG_BLOCK, &sigs, &sigs);
 #endif
-  res = callback_exn(Field(signal_handlers, signal_number),
-                     Val_int(rev_convert_signal_number(signal_number)));
+  res = caml_callback_exn(Field(signal_handlers, signal_number),
+                          Val_int(rev_convert_signal_number(signal_number)));
 #ifdef POSIX_SIGNALS
   if (! in_signal_handler) {
     /* Restore the original signal mask */
@@ -171,12 +171,14 @@ void garbage_collection(void)
 {
   int sig;
 
-  if (young_ptr < young_start || force_major_slice) minor_collection();
+  if (caml_young_ptr < caml_young_start || force_major_slice){
+    caml_minor_collection();
+  }
   /* If a signal arrives between the following two instructions,
      it will be lost. */
   sig = pending_signal;
   pending_signal = 0;
-  young_limit = young_start;
+  caml_young_limit = caml_young_start;
   if (sig) execute_signal(sig, 0);
 }
 
@@ -185,11 +187,11 @@ void garbage_collection(void)
 void urge_major_slice (void)
 {
   force_major_slice = 1;
-  young_limit = young_end;
-  /* This is only moderately effective on ports that cache young_limit
-     in a register, since modify() is called directly, not through
-     caml_c_call, so it may take a while before the register is reloaded
-     from young_limit. */
+  caml_young_limit = caml_young_end;
+  /* This is only moderately effective on ports that cache [caml_young_limit]
+     in a register, since [caml_modify] is called directly, not through
+     [caml_c_call], so it may take a while before the register is reloaded
+     from [caml_young_limit]. */
 }
 
 void enter_blocking_section(void)
@@ -202,7 +204,7 @@ void enter_blocking_section(void)
        it will be lost. */
     sig = pending_signal;
     pending_signal = 0;
-    young_limit = young_start;
+    caml_young_limit = caml_young_start;
     if (sig) execute_signal(sig, 0);
     async_signal_mode = 1;
     if (!pending_signal) break;
@@ -266,44 +268,44 @@ void handle_signal(int sig)
        Instead, we remember the signal and play with the allocation limit
        so that the next allocation will trigger a garbage collection. */
     pending_signal = sig;
-    young_limit = young_end;
-    /* Some ports cache young_limit in a register.
+    caml_young_limit = caml_young_end;
+    /* Some ports cache [caml_young_limit] in a register.
        Use the signal context to modify that register too, but only if
        we are inside Caml code (not inside C code). */
 #if defined(TARGET_alpha)
     if (In_code_area(context->sc_pc)) {
       /* Cached in register $14 */
-      context->sc_regs[14] = (long) young_limit;
+      context->sc_regs[14] = (long) caml_young_limit;
     }
 #endif
 #if defined(TARGET_mips)
     if (In_code_area(context->sc_pc)) {
       /* Cached in register $23 */
-      context->sc_regs[23] = (int) young_limit;
+      context->sc_regs[23] = (int) caml_young_limit;
     }
 #endif
 #if defined(TARGET_power) && defined(SYS_aix)
     if (caml_last_return_address == 0) {
       /* Cached in register 30 */
-      CONTEXT_GPR(context, 30) = (ulong_t) young_limit;
+      CONTEXT_GPR(context, 30) = (ulong_t) caml_young_limit;
     }
 #endif
 #if defined(TARGET_power) && defined(SYS_elf)
     if (caml_last_return_address == 0) {
       /* Cached in register 30 */
-      context->regs->gpr[30] = (unsigned long) young_limit;
+      context->regs->gpr[30] = (unsigned long) caml_young_limit;
     }
 #endif
 #if defined(TARGET_power) && defined(SYS_rhapsody)
     if (In_code_area(CONTEXT_PC(context))) {
       /* Cached in register 30 */
-      CONTEXT_GPR(context, 30) = (unsigned long) young_limit;
+      CONTEXT_GPR(context, 30) = (unsigned long) caml_young_limit;
     }
 #endif
 #if defined(TARGET_power) && defined(SYS_bsd)
     if (caml_last_return_address == 0) {
       /* Cached in register 30 */
-      context->sc_frame.fixreg[30] = (unsigned long) young_limit;
+      context->sc_frame.fixreg[30] = (unsigned long) caml_young_limit;
     }
 #endif
 #if defined(TARGET_sparc) && defined(SYS_solaris)
@@ -311,7 +313,7 @@ void handle_signal(int sig)
       if (In_code_area(gregs[REG_PC])) {
       /* Cached in register l7, which is saved on the stack 7 words
 	 after the stack pointer.  */
-        ((long *)(gregs[REG_SP]))[7] = (long) young_limit;
+        ((long *)(gregs[REG_SP]))[7] = (long) caml_young_limit;
       }
     }
 #endif
@@ -459,7 +461,7 @@ value install_signal_handler(value signal_number, value action) /* ML */
       signal_handlers = caml_alloc(NSIG, 0);
       register_global_root(&signal_handlers);
     }
-    modify(&Field(signal_handlers, sig), Field(action, 0));
+    caml_modify(&Field(signal_handlers, sig), Field(action, 0));
   }
   CAMLreturn (res);
 }
@@ -480,10 +482,11 @@ static void trap_handler(int sig, int code,
     fprintf(stderr, "Fatal error: illegal instruction, code 0x%x\n", code);
     exit(100);
   }
-  /* Recover young_ptr and caml_exception_pointer from the %l5 and %l6 regs */
+  /* Recover [caml_young_ptr] and [caml_exception_pointer]
+     from the %l5 and %l6 regs */
   sp = (int *) context->sc_sp;
   caml_exception_pointer = (char *) sp[5];
-  young_ptr = (char *) sp[6];
+  caml_young_ptr = (char *) sp[6];
   array_bound_error();
 }
 #endif
@@ -498,10 +501,11 @@ static void trap_handler(int sig, siginfo_t * info, void * context)
             info->si_code);
     exit(100);
   }
-  /* Recover young_ptr and caml_exception_pointer from the %l5 and %l6 regs */
+  /* Recover [caml_young_ptr] and [caml_exception_pointer]
+     from the %l5 and %l6 regs */
   sp = (long *) (((ucontext_t *)context)->uc_mcontext.gregs[REG_SP]);
   caml_exception_pointer = (char *) sp[5];
-  young_ptr = (char *) sp[6];
+  caml_young_ptr = (char *) sp[6];
   array_bound_error();
 }
 #endif
@@ -522,9 +526,10 @@ static void trap_handler(int sig, int code, STRUCT_SIGCONTEXT * context)
   sigemptyset(&mask);
   sigaddset(&mask, SIGTRAP);
   sigprocmask(SIG_UNBLOCK, &mask, NULL);
-  /* Recover young_ptr and caml_exception_pointer from registers 31 and 29 */
+  /* Recover [caml_young_ptr] and [caml_exception_pointer]
+     from registers 31 and 29 */
   caml_exception_pointer = (char *) CONTEXT_GPR(context, 29);
-  young_ptr = (char *) CONTEXT_GPR(context, 31);
+  caml_young_ptr = (char *) CONTEXT_GPR(context, 31);
   array_bound_error();
 }
 #endif
@@ -532,9 +537,10 @@ static void trap_handler(int sig, int code, STRUCT_SIGCONTEXT * context)
 #if defined(TARGET_power) && defined(SYS_elf)
 static void trap_handler(int sig, struct sigcontext * context)
 {
-  /* Recover young_ptr and caml_exception_pointer from registers 31 and 29 */
+  /* Recover [caml_young_ptr] and [caml_exception_pointer]
+     from registers 31 and 29 */
   caml_exception_pointer = (char *) context->regs->gpr[29];
-  young_ptr = (char *) context->regs->gpr[31];
+  caml_young_ptr = (char *) context->regs->gpr[31];
   array_bound_error();
 }
 #endif
@@ -547,9 +553,10 @@ static void trap_handler(int sig, int code, STRUCT_SIGCONTEXT * context)
   sigemptyset(&mask);
   sigaddset(&mask, SIGTRAP);
   sigprocmask(SIG_UNBLOCK, &mask, NULL);
-  /* Recover young_ptr and caml_exception_pointer from registers 31 and 29 */
+  /* Recover [caml_young_ptr] and [caml_exception_pointer]
+     from registers 31 and 29 */
   caml_exception_pointer = (char *) CONTEXT_GPR(context, 29);
-  young_ptr = (char *) CONTEXT_GPR(context, 31);
+  caml_young_ptr = (char *) CONTEXT_GPR(context, 31);
   array_bound_error();
 }
 #endif
@@ -557,9 +564,10 @@ static void trap_handler(int sig, int code, STRUCT_SIGCONTEXT * context)
 #if defined(TARGET_power) && defined(SYS_bsd)
 static void trap_handler(int sig, int code, struct sigcontext * context)
 {
-  /* Recover young_ptr and caml_exception_pointer from registers 31 and 29 */
+  /* Recover [caml_young_ptr] and [caml_exception_pointer]
+     from registers 31 and 29 */
   caml_exception_pointer = (char *) context->sc_frame.fixreg[29];
-  young_ptr = (char *) context->sc_frame.fixreg[31];
+  caml_young_ptr = (char *) context->sc_frame.fixreg[31];
   array_bound_error();
 }
 #endif

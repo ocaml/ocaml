@@ -32,10 +32,10 @@ typedef struct {
 #define Chunk_next(c) (((heap_chunk_head *) (c)) [-1]).next
 #define Chunk_block(c) (((heap_chunk_head *) (c)) [-1]).block
 
-extern int gc_phase;
-extern unsigned long allocated_words;
-extern double extra_heap_memory;
-extern unsigned long fl_size_at_phase_change;
+extern int caml_gc_phase;
+extern unsigned long caml_allocated_words;
+extern double caml_extra_heap_memory;
+extern unsigned long caml_fl_size_at_phase_change;
 
 #define Phase_mark 0
 #define Phase_sweep 1
@@ -47,27 +47,27 @@ typedef int page_table_entry;
 typedef char page_table_entry;
 #endif
 
-CAMLextern char *heap_start;
-CAMLextern char *heap_end;
+CAMLextern char *caml_heap_start;
+CAMLextern char *caml_heap_end;
 extern unsigned long total_heap_size;
-CAMLextern page_table_entry *page_table;
-extern asize_t page_low, page_high;
-extern char *gc_sweep_hp;
+CAMLextern page_table_entry *caml_page_table;
+extern asize_t caml_page_low, caml_page_high;
+extern char *caml_gc_sweep_hp;
 
 #define In_heap 1
 #define Not_in_heap 0
 #define Page(p) ((unsigned long) (p) >> Page_log)
 #define Is_in_heap(p) \
   (Assert (Is_block ((value) (p))), \
-   (addr)(p) >= (addr)heap_start && (addr)(p) < (addr)heap_end \
-   && page_table [Page (p)])
+   (addr)(p) >= (addr)caml_heap_start && (addr)(p) < (addr)caml_heap_end \
+   && caml_page_table [Page (p)])
 
-void init_major_heap (asize_t);           /* size in bytes */
-asize_t round_heap_chunk_size (asize_t);  /* size in bytes */
-void darken (value, value *);
-long major_collection_slice (long);
+void caml_init_major_heap (asize_t);           /* size in bytes */
+asize_t caml_round_heap_chunk_size (asize_t);  /* size in bytes */
+void caml_darken (value, value *);
+long caml_major_collection_slice (long);
 void major_collection (void);
-void finish_major_cycle (void);
+void caml_finish_major_cycle (void);
 
 
 #endif /* CAML_MAJOR_GC_H */

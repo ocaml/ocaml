@@ -34,7 +34,7 @@ CAMLprim value weak_create (value len)
 
   size = Long_val (len) + 1;
   if (size <= 0 || size > Max_wosize) invalid_argument ("Weak.create");
-  res = alloc_shr (size, Abstract_tag);
+  res = caml_alloc_shr (size, Abstract_tag);
   for (i = 1; i < size; i++) Field (res, i) = weak_none;
   Field (res, 0) = weak_list_head;
   weak_list_head = res;
@@ -76,8 +76,8 @@ CAMLprim value weak_get (value ar, value n)
     res = None_val;
   }else{
     elt = Field (ar, offset);
-    if (gc_phase == Phase_mark && Is_block (elt) && Is_in_heap (elt)){
-      darken (elt, NULL);
+    if (caml_gc_phase == Phase_mark && Is_block (elt) && Is_in_heap (elt)){
+      caml_darken (elt, NULL);
     }
     res = caml_alloc_small (1, Some_tag);
     Field (res, 0) = elt;

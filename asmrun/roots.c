@@ -65,7 +65,7 @@ static void init_frame_descriptors(void)
 
   /* Allocate the hash table */
   frame_descriptors =
-    (frame_descr **) stat_alloc(tblsize * sizeof(frame_descr *));
+    (frame_descr **) caml_stat_alloc(tblsize * sizeof(frame_descr *));
   for (i = 0; i < tblsize; i++) frame_descriptors[i] = NULL;
   frame_descriptors_mask = tblsize - 1;
 
@@ -97,7 +97,7 @@ value * caml_gc_regs;
 long caml_globals_inited = 0;
 static long caml_globals_scanned = 0;
 
-/* Call [oldify_one] on (at least) all the roots that point to the minor
+/* Call [caml_oldify_one] on (at least) all the roots that point to the minor
    heap. */
 void oldify_local_roots (void)
 {
@@ -188,16 +188,16 @@ void oldify_local_roots (void)
     Oldify (gr->root);
   }
   /* Finalised values */
-  final_do_young_roots (&oldify_one);
+  final_do_young_roots (&caml_oldify_one);
   /* Hook */
-  if (scan_roots_hook != NULL) (*scan_roots_hook)(oldify_one);
+  if (scan_roots_hook != NULL) (*scan_roots_hook)(caml_oldify_one);
 }
 
 /* Call [darken] on all roots */
 
 void darken_all_roots (void)
 {
-  do_roots (darken);
+  do_roots (caml_darken);
 }
 
 void do_roots (scanning_action f)

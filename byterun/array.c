@@ -23,14 +23,14 @@
 
 #ifndef NATIVE_CODE
 
-CAMLprim value array_get_addr(value array, value index)
+CAMLprim value caml_array_get_addr(value array, value index)
 {
   long idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array)) array_bound_error();
   return Field(array, idx);
 }
 
-CAMLprim value array_get_float(value array, value index)
+CAMLprim value caml_array_get_float(value array, value index)
 {
   long idx = Long_val(index);
   double d;
@@ -48,15 +48,15 @@ CAMLprim value array_get_float(value array, value index)
   return res;
 }
 
-CAMLprim value array_get(value array, value index)
+CAMLprim value caml_array_get(value array, value index)
 {
   if (Tag_val(array) == Double_array_tag)
-    return array_get_float(array, index);
+    return caml_array_get_float(array, index);
   else
-    return array_get_addr(array, index);
+    return caml_array_get_addr(array, index);
 }
 
-CAMLprim value array_set_addr(value array, value index, value newval)
+CAMLprim value caml_array_set_addr(value array, value index, value newval)
 {
   long idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array)) array_bound_error();
@@ -64,7 +64,7 @@ CAMLprim value array_set_addr(value array, value index, value newval)
   return Val_unit;
 }
 
-CAMLprim value array_set_float(value array, value index, value newval)
+CAMLprim value caml_array_set_float(value array, value index, value newval)
 {
   long idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
@@ -73,15 +73,15 @@ CAMLprim value array_set_float(value array, value index, value newval)
   return Val_unit;
 }
 
-CAMLprim value array_set(value array, value index, value newval)
+CAMLprim value caml_array_set(value array, value index, value newval)
 {
   if (Tag_val(array) == Double_array_tag)
-    return array_set_float(array, index, newval);
+    return caml_array_set_float(array, index, newval);
   else
-    return array_set_addr(array, index, newval);
+    return caml_array_set_addr(array, index, newval);
 }
 
-CAMLprim value array_unsafe_get_float(value array, value index)
+CAMLprim value caml_array_unsafe_get_float(value array, value index)
 {
   double d;
   value res;
@@ -96,38 +96,38 @@ CAMLprim value array_unsafe_get_float(value array, value index)
   return res;
 }
 
-CAMLprim value array_unsafe_get(value array, value index)
+CAMLprim value caml_array_unsafe_get(value array, value index)
 {
   if (Tag_val(array) == Double_array_tag)
-    return array_unsafe_get_float(array, index);
+    return caml_array_unsafe_get_float(array, index);
   else
     return Field(array, Long_val(index));
 }
 
-CAMLprim value array_unsafe_set_addr(value array, value index, value newval)
+CAMLprim value caml_array_unsafe_set_addr(value array, value index,value newval)
 {
   long idx = Long_val(index);
   Modify(&Field(array, idx), newval);
   return Val_unit;
 }
 
-CAMLprim value array_unsafe_set_float(value array, value index, value newval)
+CAMLprim value caml_array_unsafe_set_float(value array,value index,value newval)
 {
   Store_double_field(array, Long_val(index), Double_val(newval));
   return Val_unit;
 }
 
-CAMLprim value array_unsafe_set(value array, value index, value newval)
+CAMLprim value caml_array_unsafe_set(value array, value index, value newval)
 {
   if (Tag_val(array) == Double_array_tag)
-    return array_unsafe_set_float(array, index, newval);
+    return caml_array_unsafe_set_float(array, index, newval);
   else
-    return array_unsafe_set_addr(array, index, newval);
+    return caml_array_unsafe_set_addr(array, index, newval);
 }
 
 #endif
 
-CAMLprim value make_vect(value len, value init)
+CAMLprim value caml_make_vect(value len, value init)
 {
   CAMLparam2 (len, init);
   CAMLlocal1 (res);
@@ -155,21 +155,21 @@ CAMLprim value make_vect(value len, value init)
       for (i = 0; i < size; i++) Field(res, i) = init;
     }
     else if (Is_block(init) && Is_young(init)) {
-      minor_collection();
-      res = alloc_shr(size, 0);
+      caml_minor_collection();
+      res = caml_alloc_shr(size, 0);
       for (i = 0; i < size; i++) Field(res, i) = init;
-      res = check_urgent_gc (res);
+      res = caml_check_urgent_gc (res);
     }
     else {
-      res = alloc_shr(size, 0);
-      for (i = 0; i < size; i++) initialize(&Field(res, i), init);
-      res = check_urgent_gc (res);
+      res = caml_alloc_shr(size, 0);
+      for (i = 0; i < size; i++) caml_initialize(&Field(res, i), init);
+      res = caml_check_urgent_gc (res);
     }
   }
   CAMLreturn (res);
 }
 
-CAMLprim value make_array(value init)
+CAMLprim value caml_make_array(value init)
 {
   CAMLparam1 (init);
   mlsize_t wsize, size, i;

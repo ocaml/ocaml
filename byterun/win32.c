@@ -43,7 +43,7 @@ char * decompose_path(struct ext_table * tbl, char * path)
   int n;
 
   if (path == NULL) return NULL;
-  p = stat_alloc(strlen(path) + 1);
+  p = caml_stat_alloc(strlen(path) + 1);
   strcpy(p, path);
   q = p;
   while (1) {
@@ -67,18 +67,18 @@ char * search_in_path(struct ext_table * path, char * name)
     if (*p == '/' || *p == '\\') goto not_found;
   }
   for (i = 0; i < path->size; i++) {
-    fullname = stat_alloc(strlen((char *)(path->contents[i])) +
-                          strlen(name) + 2);
+    fullname = caml_stat_alloc(strlen((char *)(path->contents[i])) +
+                               strlen(name) + 2);
     strcpy(fullname, (char *)(path->contents[i]));
     strcat(fullname, "\\");
     strcat(fullname, name);
     caml_gc_message(0x100, "Searching %s\n", (unsigned long) fullname);
     if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) return fullname;
-    stat_free(fullname);
+    caml_stat_free(fullname);
   }
  not_found:
   caml_gc_message(0x100, "%s not found in search path\n", (unsigned long) name);
-  fullname = stat_alloc(strlen(name) + 1);
+  fullname = caml_stat_alloc(strlen(name) + 1);
   strcpy(fullname, name);
   return fullname;
 }
@@ -86,7 +86,7 @@ char * search_in_path(struct ext_table * path, char * name)
 CAMLexport char * search_exe_in_path(char * name)
 {
 #define MAX_PATH_LENGTH 512
-  char * fullname = stat_alloc(512);
+  char * fullname = caml_stat_alloc(512);
   char * filepart;
 
   if (! SearchPath(NULL,              /* use system search path */
@@ -101,12 +101,12 @@ CAMLexport char * search_exe_in_path(char * name)
 
 char * search_dll_in_path(struct ext_table * path, char * name)
 {
-  char * dllname = stat_alloc(strlen(name) + 5);
+  char * dllname = caml_stat_alloc(strlen(name) + 5);
   char * res;
   strcpy(dllname, name);
   strcat(dllname, ".dll");
   res = search_in_path(path, dllname);
-  stat_free(dllname);
+  caml_stat_free(dllname);
   return res;
 }
 
@@ -343,15 +343,15 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
   struct _finddata_t fileinfo;
   char * p;
 
-  template = stat_alloc(strlen(dirname) + 5);
+  template = caml_stat_alloc(strlen(dirname) + 5);
   strcpy(template, dirname);
   strcat(template, "\\*.*");
   h = _findfirst(template, &fileinfo);
-  stat_free(template);
+  caml_stat_free(template);
   if (h == -1) return errno == ENOENT ? 0 : -1;
   do {
     if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0) {
-      p = stat_alloc(strlen(fileinfo.name) + 1);
+      p = caml_stat_alloc(strlen(fileinfo.name) + 1);
       strcpy(p, fileinfo.name);
       caml_ext_table_add(contents, p);
     }

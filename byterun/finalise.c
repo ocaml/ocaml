@@ -72,7 +72,7 @@ void final_update (void)
     }
   }
   young = old;
-  for (i = active; i < oldactive; i++) darken (final_table[i].val, NULL);
+  for (i = active; i < oldactive; i++) caml_darken (final_table[i].val, NULL);
 }
 
 /* Call the finalisation functions for the finalising set.
@@ -87,7 +87,7 @@ void final_do_calls (void)
     caml_gc_message (0x80, "Calling finalisation functions.\n", 0);
     while (active < size){
       f = final_table[active++];
-      callback (f.fun, f.val);
+      caml_callback (f.fun, f.val);
     }
     caml_gc_message (0x80, "Done calling finalisation functions.\n", 0);
   }
@@ -164,14 +164,15 @@ CAMLprim value final_register (value f, value v)
   if (young >= active){
     if (final_table == NULL){
       unsigned long new_size = 30;
-      final_table = stat_alloc (new_size * sizeof (struct final));
+      final_table = caml_stat_alloc (new_size * sizeof (struct final));
       Assert (old == 0);
       Assert (young == 0);
       active = size = new_size;
     }else{
       unsigned long new_size = size * 2;
       unsigned long i;
-      final_table = stat_resize (final_table, new_size * sizeof (struct final));
+      final_table = caml_stat_resize (final_table,
+                                      new_size * sizeof (struct final));
       for (i = size-1; i >= active; i--){
         final_table[i + new_size - size] = final_table[i];
       }

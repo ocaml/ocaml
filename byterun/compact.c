@@ -26,8 +26,8 @@
 #include "roots.h"
 #include "weak.h"
 
-extern unsigned long percent_free;             /* major_gc.c */
-extern void shrink_heap (char *);              /* memory.c */
+extern unsigned long caml_percent_free;             /* major_gc.c */
+extern void caml_shrink_heap (char *);              /* memory.c */
 
 /* Encoded headers: the color is stored in the 2 least significant bits.
    (For pointer inversion, we need to distinguish headers from pointers.)
@@ -116,12 +116,12 @@ static char *compact_fl;
 
 static void init_compact_allocate (void)
 {
-  char *ch = heap_start;
+  char *ch = caml_heap_start;
   while (ch != NULL){
     Chunk_alloc (ch) = 0;
     ch = Chunk_next (ch);
   }
-  compact_fl = heap_start;
+  compact_fl = caml_heap_start;
 }
 
 static char *compact_allocate (mlsize_t size)
@@ -144,10 +144,10 @@ static char *compact_allocate (mlsize_t size)
   return adr;
 }
 
-void compact_heap (void)
+void caml_compact_heap (void)
 {
   char *ch, *chend;
-                                               Assert (gc_phase == Phase_idle);
+                                          Assert (caml_gc_phase == Phase_idle);
   caml_gc_message (0x10, "Compacting heap...\n", 0);
 
 #ifdef DEBUG
@@ -156,7 +156,7 @@ void compact_heap (void)
 
   /* First pass: encode all noninfix headers. */
   {
-    ch = heap_start;
+    ch = caml_heap_start;
     while (ch != NULL){
       header_t *p = (header_t *) ch;
 
@@ -189,7 +189,7 @@ void compact_heap (void)
     do_roots (invert_root);
     final_do_weak_roots (invert_root);
 
-    ch = heap_start;
+    ch = caml_heap_start;
     while (ch != NULL){
       word *p = (word *) ch;
       chend = ch + Chunk_size (ch);
@@ -249,7 +249,7 @@ void compact_heap (void)
      Rebuild infix headers. */
   {
     init_compact_allocate ();
-    ch = heap_start;
+    ch = caml_heap_start;
     while (ch != NULL){
       word *p = (word *) ch;
       
@@ -304,7 +304,7 @@ void compact_heap (void)
           }
           p += sz;
         }else{                                        Assert (Ecolor (q) == 3);
-          /* This is guaranteed only if compact_heap was called after a
+          /* This is guaranteed only if caml_compact_heap was called after a
              nonincremental major GC:       Assert (Tag_ehd (q) == String_tag);
           */
           /* No pointers to the header and no infix header:
@@ -322,7 +322,7 @@ void compact_heap (void)
      Use the exact same allocation algorithm as pass 3. */
   {
     init_compact_allocate ();
-    ch = heap_start;
+    ch = caml_heap_start;
     while (ch != NULL){
       word *p = (word *) ch;
 
@@ -350,7 +350,7 @@ void compact_heap (void)
     asize_t free = 0;
     asize_t wanted;
 
-    ch = heap_start;
+    ch = caml_heap_start;
     while (ch != NULL){
       if (Chunk_alloc (ch) != 0){
         live += Wsize_bsize (Chunk_alloc (ch));
@@ -361,8 +361,8 @@ void compact_heap (void)
 
     /* Add up the empty chunks until there are enough, then remove the
        other empty chunks. */
-    wanted = percent_free * (live / 100 + 1);
-    ch = heap_start;
+    wanted = caml_percent_free * (live / 100 + 1);
+    ch = caml_heap_start;
     while (ch != NULL){
       char *next_chunk = Chunk_next (ch);  /* Chunk_next (ch) will be erased */
 
@@ -370,7 +370,7 @@ void compact_heap (void)
         if (free < wanted){
           free += Wsize_bsize (Chunk_size (ch));
         }else{
-          shrink_heap (ch);
+          caml_shrink_heap (ch);
         }
       }
       ch = next_chunk;
@@ -379,7 +379,7 @@ void compact_heap (void)
 
   /* Rebuild the free list. */
   {
-    ch = heap_start;
+    ch = caml_heap_start;
     fl_reset ();
     while (ch != NULL){
       if (Chunk_size (ch) > Chunk_alloc (ch)){
@@ -393,23 +393,23 @@ void compact_heap (void)
   caml_gc_message (0x10, "done.\n", 0);
 }
 
-unsigned long percent_max;
+unsigned long caml_percent_max;  /* used in gc_ctrl.c */
 
-void compact_heap_maybe (void)
+void caml_compact_heap_maybe (void)
 {
   /* Estimated free words in the heap:
          FW = fl_size_at_change + 3 * (fl_cur_size - fl_size_at_change)
                                 FW = 3 * fl_cur_size - 2 * fl_size_at_change
      Estimated live words:      LW = stat_heap_size - FW
      Estimated free percentage: FP = 100 * FW / LW
-     We compact the heap if FP > percent_max
+     We compact the heap if FP > caml_percent_max
   */
   float fw, fp;
-                                               Assert (gc_phase == Phase_idle);
-  if (percent_max >= 1000000) return;
+                                          Assert (caml_gc_phase == Phase_idle);
+  if (caml_percent_max >= 1000000) return;
   if (stat_major_collections < 5 || stat_heap_chunks < 5) return;
 
-  fw = 3.0 * fl_cur_size - 2.0 * fl_size_at_phase_change;
+  fw = 3.0 * fl_cur_size - 2.0 * caml_fl_size_at_phase_change;
   if (fw < 0) fw = fl_cur_size;
 
   if (fw >= Wsize_bsize (stat_heap_size)){
@@ -419,17 +419,17 @@ void compact_heap_maybe (void)
     if (fp > 1000000.0) fp = 1000000.0;
   }
   caml_gc_message (0x200, "FL size at phase change = %lu\n",
-                   (unsigned long) fl_size_at_phase_change);
+                   (unsigned long) caml_fl_size_at_phase_change);
   caml_gc_message (0x200, "Estimated overhead = %lu%%\n", (unsigned long) fp);
-  if (fp >= percent_max){
+  if (fp >= caml_percent_max){
     caml_gc_message (0x200, "Automatic compaction triggered.\n", 0);
-    finish_major_cycle ();
+    caml_finish_major_cycle ();
 
     /* We just did a complete GC, so we can measure the overhead exactly. */
     fw = fl_cur_size;
     fp = 100.0 * fw / (Wsize_bsize (stat_heap_size) - fw);
     caml_gc_message (0x200, "Measured overhead: %lu%%\n", (unsigned long) fp);
 
-    compact_heap ();
+    caml_compact_heap ();
   }
 }

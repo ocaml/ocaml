@@ -51,7 +51,7 @@ char * decompose_path(struct ext_table * tbl, char * path)
   int n;
 
   if (path == NULL) return NULL;
-  p = stat_alloc(strlen(path) + 1);
+  p = caml_stat_alloc(strlen(path) + 1);
   strcpy(p, path);
   q = p;
   while (1) {
@@ -75,16 +75,16 @@ char * search_in_path(struct ext_table * path, char * name)
     if (*p == '/') goto not_found;
   }
   for (i = 0; i < path->size; i++) {
-    fullname = stat_alloc(strlen((char *)(path->contents[i])) +
-                          strlen(name) + 2);
+    fullname = caml_stat_alloc(strlen((char *)(path->contents[i])) +
+                               strlen(name) + 2);
     strcpy(fullname, (char *)(path->contents[i]));
     if (fullname[0] != 0) strcat(fullname, "/");
     strcat(fullname, name);
     if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) return fullname;
-    stat_free(fullname);
+    caml_stat_free(fullname);
   }
  not_found:
-  fullname = stat_alloc(strlen(name) + 1);
+  fullname = caml_stat_alloc(strlen(name) + 1);
   strcpy(fullname, name);
   return fullname;
 }
@@ -113,18 +113,18 @@ static char * cygwin_search_exe_in_path(struct ext_table * path, char * name)
     if (*p == '/' || *p == '\\') goto not_found;
   }
   for (i = 0; i < path->size; i++) {
-    fullname = stat_alloc(strlen((char *)(path->contents[i])) +
-                          strlen(name) + 6);
+    fullname = caml_stat_alloc(strlen((char *)(path->contents[i])) +
+                               strlen(name) + 6);
     strcpy(fullname, (char *)(path->contents[i]));
     strcat(fullname, "/");
     strcat(fullname, name);
     if (cygwin_file_exists(fullname)) return fullname;
     strcat(fullname, ".exe");
     if (cygwin_file_exists(fullname)) return fullname;
-    stat_free(fullname);
+    caml_stat_free(fullname);
   }
  not_found:
-  fullname = stat_alloc(strlen(name) + 5);
+  fullname = caml_stat_alloc(strlen(name) + 5);
   strcpy(fullname, name);
   if (cygwin_file_exists(fullname)) return fullname;
   strcat(fullname, ".exe");
@@ -148,19 +148,19 @@ char * search_exe_in_path(char * name)
 #else
   res = cygwin_search_exe_in_path(&path, name);
 #endif
-  stat_free(tofree);
+  caml_stat_free(tofree);
   caml_ext_table_free(&path, 0);
   return res;
 }
 
 char * search_dll_in_path(struct ext_table * path, char * name)
 {
-  char * dllname = stat_alloc(strlen(name) + 4);
+  char * dllname = caml_stat_alloc(strlen(name) + 4);
   char * res;
   strcpy(dllname, name);
   strcat(dllname, ".so");
   res = search_in_path(path, dllname);
-  stat_free(dllname);
+  caml_stat_free(dllname);
   return res;
 }
 
@@ -347,7 +347,7 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
     e = readdir(d);
     if (e == NULL) break;
     if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0) continue;
-    p = stat_alloc(strlen(e->d_name) + 1);
+    p = caml_stat_alloc(strlen(e->d_name) + 1);
     strcpy(p, e->d_name);
     caml_ext_table_add(contents, p);
   }

@@ -22,8 +22,8 @@
 #include "mlvalues.h"
 #include "io.h"
 
-CAMLextern value md5_string (value str, value ofs, value len);
-CAMLextern value md5_chan (value vchan, value len);
+CAMLextern value caml_md5_string (value str, value ofs, value len);
+CAMLextern value caml_md5_chan (value vchan, value len);
 
 struct MD5Context {
         uint32 buf[4];
@@ -31,11 +31,11 @@ struct MD5Context {
         unsigned char in[64];
 };
 
-CAMLextern void MD5Init (struct MD5Context *context);
-CAMLextern void MD5Update (struct MD5Context *context, unsigned char *buf, 
-                           unsigned long len);
-CAMLextern void MD5Final (unsigned char *digest, struct MD5Context *ctx);
-CAMLextern void MD5Transform (uint32 *buf, uint32 *in);
+CAMLextern void caml_MD5Init (struct MD5Context *context);
+CAMLextern void caml_MD5Update (struct MD5Context *context, unsigned char *buf, 
+                                unsigned long len);
+CAMLextern void caml_MD5Final (unsigned char *digest, struct MD5Context *ctx);
+CAMLextern void caml_MD5Transform (uint32 *buf, uint32 *in);
 
 
 #endif /* CAML_MD5_H */

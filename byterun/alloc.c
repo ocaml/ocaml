@@ -44,9 +44,9 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
       for (i = 0; i < wosize; i++) Field (result, i) = 0;
     }
   }else{
-    result = alloc_shr (wosize, tag);
+    result = caml_alloc_shr (wosize, tag);
     if (tag < No_scan_tag) memset (Bp_val (result), 0, Bsize_wsize (wosize));
-    result = check_urgent_gc (result);
+    result = caml_check_urgent_gc (result);
   }
   return result;
 }
@@ -76,8 +76,8 @@ CAMLexport value caml_alloc_string (mlsize_t len)
   if (wosize <= Max_young_wosize) {
     Alloc_small (result, wosize, String_tag);
   }else{
-    result = alloc_shr (wosize, String_tag);
-    result = check_urgent_gc (result);
+    result = caml_alloc_shr (wosize, String_tag);
+    result = caml_check_urgent_gc (result);
   }
   Field (result, wosize - 1) = 0;
   offset_index = Bsize_wsize (wosize) - 1;
@@ -121,7 +121,7 @@ CAMLexport value caml_alloc_array(value (*funct)(char const *),
          order (don't take the address &Field(result, n) before
          calling funct, which may cause a GC and move result). */
       v = funct(arr[n]);
-      modify(&Field(result, n), v);
+      caml_modify(&Field(result, n), v);
     }
     CAMLreturn (result);
   }
@@ -160,6 +160,6 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
   Assert (size == Wosize_val(dummy));
   Tag_val(dummy) = Tag_val(newval);
   for (i = 0; i < size; i++)
-    modify(&Field(dummy, i), Field(newval, i));
+    caml_modify(&Field(dummy, i), Field(newval, i));
   return Val_unit;
 }

@@ -84,8 +84,8 @@ void register_global_root(value *r)
       update[i] = (struct global_root *) &caml_global_roots;
     caml_global_roots.level = new_level;
   }
-  e = stat_alloc(sizeof(struct global_root) +
-                 new_level * sizeof(struct global_root *));
+  e = caml_stat_alloc(sizeof(struct global_root) +
+                      new_level * sizeof(struct global_root *));
   e->root = r;
   for (i = 0; i <= new_level; i++) {
     e->forward[i] = update[i]->forward[i];
@@ -121,7 +121,7 @@ void remove_global_root(value *r)
       update[i]->forward[i] = e->forward[i];
   }
   /* Reclaim list element */
-  stat_free(e);
+  caml_stat_free(e);
   /* Down-correct list level */
   while (caml_global_roots.level > 0 && 
          caml_global_roots.forward[caml_global_roots.level] == NULL)

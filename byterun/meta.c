@@ -30,12 +30,12 @@
 
 #ifndef NATIVE_CODE
 
-CAMLprim value get_global_data(value unit)
+CAMLprim value caml_get_global_data(value unit)
 {
-  return global_data;
+  return caml_global_data;
 }
 
-CAMLprim value reify_bytecode(value prog, value len)
+CAMLprim value caml_reify_bytecode(value prog, value len)
 {
   value clos;
 #ifdef ARCH_BIG_ENDIAN
@@ -49,34 +49,34 @@ CAMLprim value reify_bytecode(value prog, value len)
   return clos;
 }
 
-CAMLprim value realloc_global(value size)
+CAMLprim value caml_realloc_global(value size)
 {
   mlsize_t requested_size, actual_size, i;
   value new_global_data;
 
   requested_size = Long_val(size);
-  actual_size = Wosize_val(global_data);
+  actual_size = Wosize_val(caml_global_data);
   if (requested_size >= actual_size) {
     requested_size = (requested_size + 0x100) & 0xFFFFFF00;
     caml_gc_message (0x08, "Growing global data to %lu entries\n",
                      requested_size);
-    new_global_data = alloc_shr(requested_size, 0);
+    new_global_data = caml_alloc_shr(requested_size, 0);
     for (i = 0; i < actual_size; i++)
-      initialize(&Field(new_global_data, i), Field(global_data, i));
+      caml_initialize(&Field(new_global_data, i), Field(caml_global_data, i));
     for (i = actual_size; i < requested_size; i++){
       Field (new_global_data, i) = Val_long (0);
     }
-    global_data = new_global_data;
+    caml_global_data = new_global_data;
   }
   return Val_unit;
 }
     
-CAMLprim value get_current_environment(value unit)
+CAMLprim value caml_get_current_environment(value unit)
 {
-  return *extern_sp;
+  return *caml_extern_sp;
 }
 
-CAMLprim value invoke_traced_function(value codeptr, value env, value arg)
+CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
 {
   /* Stack layout on entry:
        return frame into instrument_closure function
@@ -104,9 +104,9 @@ CAMLprim value invoke_traced_function(value codeptr, value env, value arg)
   value * osp, * nsp;
   int i;
 
-  osp = extern_sp;
-  extern_sp -= 4;
-  nsp = extern_sp;
+  osp = caml_extern_sp;
+  caml_extern_sp -= 4;
+  nsp = caml_extern_sp;
   for (i = 0; i < 6; i++) nsp[i] = osp[i];
   nsp[6] = codeptr;
   nsp[7] = env;
@@ -119,43 +119,43 @@ CAMLprim value invoke_traced_function(value codeptr, value env, value arg)
 
 /* Dummy definitions to support compilation of ocamlc.opt */
 
-value get_global_data(value unit)
+value caml_get_global_data(value unit)
 {
   invalid_argument("Meta.get_global_data");
   return Val_unit; /* not reached */
 }
 
-value realloc_global(value size)
+value caml_realloc_global(value size)
 {
   invalid_argument("Meta.realloc_global");
   return Val_unit; /* not reached */
 }
     
-value available_primitives(value unit)
+value caml_available_primitives(value unit)
 {
   invalid_argument("Meta.available_primitives");
   return Val_unit; /* not reached */
 }
 
-value invoke_traced_function(value codeptr, value env, value arg)
+value caml_invoke_traced_function(value codeptr, value env, value arg)
 {
   invalid_argument("Meta.invoke_traced_function");
   return Val_unit; /* not reached */
 }
 
-value * stack_low;
-value * stack_high;
-value * stack_threshold;
-value * extern_sp;
-value * trapsp;
-int backtrace_active;
-int backtrace_pos;
-code_t * backtrace_buffer;
-value backtrace_last_exn;
-int callback_depth;
+value * caml_stack_low;
+value * caml_stack_high;
+value * caml_stack_threshold;
+value * caml_extern_sp;
+value * caml_trapsp;
+int caml_backtrace_active;
+int caml_backtrace_pos;
+code_t * caml_backtrace_buffer;
+value caml_backtrace_last_exn;
+int caml_callback_depth;
 int volatile something_to_do;
 void (* volatile async_action_hook)(void);
-void print_exception_backtrace(void) { }
+void caml_print_exception_backtrace(void) { }
 struct longjmp_buffer * external_raise;
 
 #endif

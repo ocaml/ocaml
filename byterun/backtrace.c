@@ -34,10 +34,10 @@
 #include "sys.h"
 #include "backtrace.h"
 
-CAMLexport int backtrace_active = 0;
-CAMLexport int backtrace_pos = 0;
-CAMLexport code_t * backtrace_buffer = NULL;
-CAMLexport value backtrace_last_exn = Val_unit;
+CAMLexport int caml_backtrace_active = 0;
+CAMLexport int caml_backtrace_pos = 0;
+CAMLexport code_t * caml_backtrace_buffer = NULL;
+CAMLexport value caml_backtrace_last_exn = Val_unit;
 #define BACKTRACE_BUFFER_SIZE 1024
 
 /* Location of fields in the Instruct.debug_event record */
@@ -56,38 +56,38 @@ enum {
 
 /* Initialize the backtrace machinery */
 
-void init_backtrace(void)
+void caml_init_backtrace(void)
 {
-  backtrace_active = 1;
-  register_global_root(&backtrace_last_exn);
-  /* Note: lazy initialization of backtrace_buffer in stash_backtrace
+  caml_backtrace_active = 1;
+  register_global_root(&caml_backtrace_last_exn);
+  /* Note: lazy initialization of caml_backtrace_buffer in caml_stash_backtrace
      to simplify the interface with the thread libraries */
 }
 
 /* Store the return addresses contained in the given stack fragment
    into the backtrace array */
 
-void stash_backtrace(value exn, code_t pc, value * sp)
+void caml_stash_backtrace(value exn, code_t pc, value * sp)
 {
   code_t end_code = (code_t) ((char *) start_code + code_size);
   if (pc != NULL) pc = pc - 1;
-  if (exn != backtrace_last_exn) {
-    backtrace_pos = 0;
-    backtrace_last_exn = exn;
+  if (exn != caml_backtrace_last_exn) {
+    caml_backtrace_pos = 0;
+    caml_backtrace_last_exn = exn;
   }
-  if (backtrace_buffer == NULL) {
-    backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
-    if (backtrace_buffer == NULL) return;
+  if (caml_backtrace_buffer == NULL) {
+    caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
+    if (caml_backtrace_buffer == NULL) return;
   }
-  if (backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
+  if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
   if (pc >= start_code && pc < end_code){
-    backtrace_buffer[backtrace_pos++] = pc;
+    caml_backtrace_buffer[caml_backtrace_pos++] = pc;
   }
-  for (/*nothing*/; sp < trapsp; sp++) {
+  for (/*nothing*/; sp < caml_trapsp; sp++) {
     code_t p = (code_t) *sp;
     if (p >= start_code && p < end_code) {
-      if (backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
-      backtrace_buffer[backtrace_pos++] = p;
+      if (caml_backtrace_pos >= BACKTRACE_BUFFER_SIZE) break;
+      caml_backtrace_buffer[caml_backtrace_pos++] = p;
     }
   }
 }
@@ -112,10 +112,10 @@ static value read_debug_info(void)
   value evl, l;
 
   exec_name = caml_exe_name;
-  fd = attempt_open(&exec_name, &trail, 1);
+  fd = caml_attempt_open(&exec_name, &trail, 1);
   if (fd < 0) CAMLreturn(Val_false);
-  read_section_descriptors(fd, &trail);
-  if (seek_optional_section(fd, &trail, "DBUG") == -1) {
+  caml_read_section_descriptors(fd, &trail);
+  if (caml_seek_optional_section(fd, &trail, "DBUG") == -1) {
     close(fd);
     CAMLreturn(Val_false);
   }
@@ -162,7 +162,7 @@ static value event_for_location(value events, code_t pc)
 
 static void print_location(value events, int index)
 {
-  code_t pc = backtrace_buffer[index];
+  code_t pc = caml_backtrace_buffer[index];
   char * info;
   value ev;
 
@@ -196,7 +196,7 @@ static void print_location(value events, int index)
 
 /* Print a backtrace */
 
-CAMLexport void print_exception_backtrace(void)
+CAMLexport void caml_print_exception_backtrace(void)
 {
   value events;
   int i;
@@ -207,6 +207,6 @@ CAMLexport void print_exception_backtrace(void)
             "(Program not linked with -g, cannot print stack backtrace)\n");
     return;
   }
-  for (i = 0; i < backtrace_pos; i++)
+  for (i = 0; i < caml_backtrace_pos; i++)
     print_location(events, i);
 }

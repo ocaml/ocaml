@@ -39,7 +39,7 @@ caml_call_gc:
         addu    $24, $sp, 0x100
         sw      $24, caml_gc_regs
     /* Save current allocation pointer for debugging purposes */
-        sw      $22, young_ptr
+        sw      $22, caml_young_ptr
     /* Save the exception handler (if e.g. a sighandler raises) */
         sw      $30, caml_exception_pointer
     /* Save all regs used by the code generator on the stack */
@@ -152,8 +152,8 @@ caml_call_gc:
         l.d     $f30, 30 * 8($sp)
         l.d     $f31, 31 * 8($sp)
     /* Reload new allocation pointer and allocation limit */
-        lw      $22, young_ptr
-        lw      $23, young_limit
+        lw      $22, caml_young_ptr
+        lw      $23, caml_young_limit
     /* Reload return address */
         lw      $31, caml_last_return_address
     /* Say that we are back into Caml code */
@@ -179,19 +179,19 @@ caml_c_call:
     /* Preload addresses of interesting global variables
        in callee-save registers */
         la      $16, caml_last_return_address
-        la      $17, young_ptr
+        la      $17, caml_young_ptr
     /* Save return address, bottom of stack, alloc ptr, exn ptr */
         sw      $31, 0($16)     /* caml_last_return_address */
         sw      $sp, caml_bottom_of_stack
-        sw      $22, 0($17)     /* young_ptr */
+        sw      $22, 0($17)     /* caml_young_ptr */
         sw      $30, caml_exception_pointer
     /* Call C function */
         move    $25, $24
         jal     $24
     /* Reload return address, alloc ptr, alloc limit */
         lw      $31, 0($16)     /* caml_last_return_address */
-        lw      $22, 0($17)     /* young_ptr */
-        lw      $23, young_limit /* young_limit */
+        lw      $22, 0($17)     /* caml_young_ptr */
+        lw      $23, caml_young_limit /* caml_young_limit */
     /* Zero caml_last_return_address, indicating we're back in Caml code */
         sw      $0, 0($16)      /* caml_last_return_address */
     /* Restore $gp and return */
@@ -211,7 +211,7 @@ caml_start_program:
         .cpsetup $25, 0x80, caml_start_program
     /* Load in $24 the code address to call */
         la      $24, caml_program
-    /* Code shared with callback* */
+    /* Code shared with caml_callback* */
 $103:
     /* Save return address */
         sd      $31, 0x88($sp)
@@ -248,8 +248,8 @@ $103:
         sw      $gp, 8($sp)
         move    $30, $sp
     /* Reload allocation pointers */
-        lw      $22, young_ptr
-        lw      $23, young_limit
+        lw      $22, caml_young_ptr
+        lw      $23, caml_young_limit
     /* Say that we are back into Caml code */
         sw      $0, caml_last_return_address
     /* Call the Caml code */
@@ -270,7 +270,7 @@ $106:
         sw      $24, caml_gc_regs
         addu    $sp, $sp, 16
     /* Update allocation pointer */
-        sw      $22, young_ptr
+        sw      $22, caml_young_ptr
     /* Reload callee-save registers and return */
         ld      $31, 0x88($sp)
         ld      $16, 0x0($sp)
@@ -310,8 +310,8 @@ raise_caml_exception:
         .cpsetup $25, $24, raise_caml_exception
     /* Branch to exn handler */
         move    $2, $4
-        lw      $22, young_ptr
-        lw      $23, young_limit
+        lw      $22, caml_young_ptr
+        lw      $23, caml_young_limit
         lw      $sp, caml_exception_pointer
         lw      $30, 0($sp)
         lw      $24, 4($sp)
@@ -323,23 +323,23 @@ raise_caml_exception:
 
 /* Callback from C to Caml */
 
-        .globl  callback_exn
-        .ent    callback_exn
-callback_exn:
+        .globl  caml_callback_exn
+        .ent    caml_callback_exn
+caml_callback_exn:
         subu    $sp, $sp, 0x90
-        .cpsetup $25, 0x80, callback_exn
+        .cpsetup $25, 0x80, caml_callback_exn
     /* Initial shuffling of arguments */
         move    $9, $4          /* closure */
         move    $8, $5          /* argument */
         lw      $24, 0($4)      /* code pointer */
         b       $103
-        .end    callback_exn
+        .end    caml_callback_exn
 
-        .globl  callback2_exn
-        .ent    callback2_exn
-callback2_exn:
+        .globl  caml_callback2_exn
+        .ent    caml_callback2_exn
+caml_callback2_exn:
         subu    $sp, $sp, 0x90
-        .cpsetup $25, 0x80, callback2_exn
+        .cpsetup $25, 0x80, caml_callback2_exn
     /* Initial shuffling of arguments */
         move    $10, $4                 /* closure */
         move    $8, $5                  /* first argument */
@@ -347,13 +347,13 @@ callback2_exn:
         la      $24, caml_apply2        /* code pointer */
         b       $103
 
-        .end    callback2_exn
+        .end    caml_callback2_exn
 
-        .globl  callback3_exn
-        .ent    callback3_exn
-callback3_exn:
+        .globl  caml_callback3_exn
+        .ent    caml_callback3_exn
+caml_callback3_exn:
         subu    $sp, $sp, 0x90
-        .cpsetup $25, 0x80, callback3_exn
+        .cpsetup $25, 0x80, caml_callback3_exn
     /* Initial shuffling of arguments */
         move    $11, $4                 /* closure */
         move    $8, $5                  /* first argument */
@@ -362,7 +362,7 @@ callback3_exn:
         la      $24, caml_apply3        /* code pointer */
         b       $103
 
-        .end    callback3_exn
+        .end    caml_callback3_exn
 
 /* Glue code to call array_bound_error */
 

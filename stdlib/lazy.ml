@@ -37,7 +37,7 @@
    fancy.
 
    We cannot use representation (3) for a [float Lazy.t] because
-   [make_array] assumes that only a [float] value can have tag
+   [caml_make_array] assumes that only a [float] value can have tag
    [Double_tag].
 
    We have to use the built-in type constructor [lazy_t] to

@@ -154,7 +154,7 @@ CAMLprim value caml_sys_open(value path, value flags, value perm)
   int fd;
   char * p;
 
-  p = stat_alloc(caml_string_length(path) + 1);
+  p = caml_stat_alloc(caml_string_length(path) + 1);
   strcpy(p, String_val(path));
   /* open on a named FIFO can block (PR#1533) */
   enter_blocking_section();
@@ -164,7 +164,7 @@ CAMLprim value caml_sys_open(value path, value flags, value perm)
 #endif
                                        );
   leave_blocking_section();
-  stat_free(p);
+  caml_stat_free(p);
   if (fd == -1) caml_sys_error(path);
 #if defined(F_SETFD) && defined(FD_CLOEXEC)
   fcntl(fd, F_SETFD, FD_CLOEXEC);
@@ -273,12 +273,12 @@ CAMLprim value caml_sys_system_command(value command)
   unsigned long len;
   
   len = caml_string_length (command);
-  buf = stat_alloc (len + 1);
+  buf = caml_stat_alloc (len + 1);
   memmove (buf, String_val (command), len + 1);
   enter_blocking_section ();
   status = system(buf);
   leave_blocking_section ();
-  stat_free(buf);
+  caml_stat_free(buf);
   if (status == -1) caml_sys_error(command);
   if (WIFEXITED(status))
     retcode = WEXITSTATUS(status);

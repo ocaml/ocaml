@@ -105,10 +105,10 @@ LBL(105):
         .align  FUNCTION_ALIGN
 G(caml_alloc1):
         PROFILE_CAML
-        movl    G(young_ptr), %eax
+        movl    G(caml_young_ptr), %eax
         subl    $8, %eax
-        movl    %eax, G(young_ptr)
-        cmpl    G(young_limit), %eax
+        movl    %eax, G(caml_young_ptr)
+        cmpl    G(caml_young_limit), %eax
         jb      LBL(100)
         ret
 LBL(100):
@@ -122,10 +122,10 @@ LBL(100):
         .align  FUNCTION_ALIGN
 G(caml_alloc2):
         PROFILE_CAML
-        movl    G(young_ptr), %eax
+        movl    G(caml_young_ptr), %eax
         subl    $12, %eax
-        movl    %eax, G(young_ptr)
-        cmpl    G(young_limit), %eax
+        movl    %eax, G(caml_young_ptr)
+        cmpl    G(caml_young_limit), %eax
         jb      LBL(101)
         ret
 LBL(101):
@@ -139,10 +139,10 @@ LBL(101):
         .align  FUNCTION_ALIGN
 G(caml_alloc3):
         PROFILE_CAML
-        movl    G(young_ptr), %eax
+        movl    G(caml_young_ptr), %eax
         subl    $16, %eax
-        movl    %eax, G(young_ptr)
-        cmpl    G(young_limit), %eax
+        movl    %eax, G(caml_young_ptr)
+        cmpl    G(caml_young_limit), %eax
         jb      LBL(102)
         ret
 LBL(102):
@@ -156,17 +156,17 @@ LBL(102):
         .align  FUNCTION_ALIGN
 G(caml_alloc):
         PROFILE_CAML
-        subl    G(young_ptr), %eax      /* eax = size - young_ptr */
-        negl    %eax                    /* eax = young_ptr - size */
-        cmpl    G(young_limit), %eax
+        subl    G(caml_young_ptr), %eax /* eax = size - caml_young_ptr */
+        negl    %eax                    /* eax = caml_young_ptr - size */
+        cmpl    G(caml_young_limit), %eax
         jb      LBL(103)
-        movl    %eax, G(young_ptr)
+        movl    %eax, G(caml_young_ptr)
         ret
 LBL(103):
-        subl    G(young_ptr), %eax      /* eax = - size */
+        subl    G(caml_young_ptr), %eax /* eax = - size */
         negl    %eax                    /* eax = size */
         pushl   %eax                    /* save desired size */
-        subl    %eax, G(young_ptr)      /* must update young_ptr */
+        subl    %eax, G(caml_young_ptr) /* must update young_ptr */
         movl    4(%esp), %eax
         movl    %eax, G(caml_last_return_address)
         leal    8(%esp), %eax
@@ -202,7 +202,7 @@ G(caml_start_program):
         pushl   %ebp
     /* Initial entry point is caml_program */
         movl    $ G(caml_program), %esi
-    /* Common code for caml_start_program and callback* */
+    /* Common code for caml_start_program and caml_callback* */
 LBL(106):
     /* Build a callback link */
         pushl   G(caml_gc_regs)
@@ -249,9 +249,9 @@ G(raise_caml_exception):
 
 /* Callback from C to Caml */
 
-        .globl  G(callback_exn)
+        .globl  G(caml_callback_exn)
         .align  FUNCTION_ALIGN
-G(callback_exn):
+G(caml_callback_exn):
         PROFILE_C
     /* Save callee-save registers */
         pushl   %ebx
@@ -264,9 +264,9 @@ G(callback_exn):
         movl    0(%ebx), %esi    /* code pointer */
         jmp     LBL(106)
 
-        .globl  G(callback2_exn)
+        .globl  G(caml_callback2_exn)
         .align  FUNCTION_ALIGN
-G(callback2_exn):
+G(caml_callback2_exn):
         PROFILE_C
     /* Save callee-save registers */
         pushl   %ebx
@@ -280,9 +280,9 @@ G(callback2_exn):
         movl    $ G(caml_apply2), %esi   /* code pointer */
         jmp     LBL(106)
 
-        .globl  G(callback3_exn)
+        .globl  G(caml_callback3_exn)
         .align  FUNCTION_ALIGN
-G(callback3_exn):
+G(caml_callback3_exn):
         PROFILE_C
     /* Save callee-save registers */
         pushl   %ebx

@@ -43,18 +43,18 @@ void load_code(int fd, asize_t len)
   struct MD5Context ctx;
 
   code_size = len;
-  start_code = (code_t) stat_alloc(code_size);
+  start_code = (code_t) caml_stat_alloc(code_size);
   if (read(fd, (char *) start_code, code_size) != code_size)
     caml_fatal_error("Fatal error: truncated bytecode file.\n");
-  MD5Init(&ctx);
-  MD5Update(&ctx, (unsigned char *) start_code, code_size);
-  MD5Final(code_md5, &ctx);
+  caml_MD5Init(&ctx);
+  caml_MD5Update(&ctx, (unsigned char *) start_code, code_size);
+  caml_MD5Final(code_md5, &ctx);
 #ifdef ARCH_BIG_ENDIAN
   fixup_endianness(start_code, code_size);
 #endif
   if (debugger_in_use) {
     len /= sizeof(opcode_t);
-    saved_code = (unsigned char *) stat_alloc(len);
+    saved_code = (unsigned char *) caml_stat_alloc(len);
     for (i = 0; i < len; i++) saved_code[i] = start_code[i];
   }
 #ifdef THREADED_CODE

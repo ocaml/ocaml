@@ -108,15 +108,15 @@ void fatal_uncaught_exception(value exn)
   /* Perform "at_exit" processing, ignoring all exceptions that may
      be triggered by this */
 #ifndef NATIVE_CODE
-  saved_backtrace_active = backtrace_active;
-  saved_backtrace_pos = backtrace_pos;
-  backtrace_active = 0;
+  saved_backtrace_active = caml_backtrace_active;
+  saved_backtrace_pos = caml_backtrace_pos;
+  caml_backtrace_active = 0;
 #endif
   at_exit = caml_named_value("Pervasives.do_at_exit");
-  if (at_exit != NULL) callback_exn(*at_exit, Val_unit);
+  if (at_exit != NULL) caml_callback_exn(*at_exit, Val_unit);
 #ifndef NATIVE_CODE
-  backtrace_active = saved_backtrace_active;
-  backtrace_pos = saved_backtrace_pos;
+  caml_backtrace_active = saved_backtrace_active;
+  caml_backtrace_pos = saved_backtrace_pos;
 #endif
   /* Display the uncaught exception */
 #ifdef HAS_UI
@@ -127,7 +127,9 @@ void fatal_uncaught_exception(value exn)
   free(msg);
   /* Display the backtrace if available */
 #ifndef NATIVE_CODE
-  if (backtrace_active && !debugger_in_use) print_exception_backtrace();
+  if (caml_backtrace_active && !debugger_in_use){
+    caml_print_exception_backtrace();
+  }
 #endif
   /* Terminate the process */
 #ifdef HAS_UI

@@ -48,7 +48,8 @@ void process_event(void)
 {
   int signal_number;
   void (*async_action)(void);
-  if (force_major_slice) minor_collection (); /* FIXME should be check_urgent_gc */
+  if (force_major_slice) caml_minor_collection ();
+                             /* FIXME should be [caml_check_urgent_gc] */
   /* If a signal arrives between the following two instructions,
      it will be lost.  To do: use atomic swap or atomic read-and-clear
      for processors that support it? */
@@ -78,8 +79,8 @@ void execute_signal(int signal_number, int in_signal_handler)
   sigaddset(&sigs, signal_number);
   sigprocmask(SIG_BLOCK, &sigs, &sigs);
 #endif
-  res = callback_exn(Field(signal_handlers, signal_number),
-                     Val_int(rev_convert_signal_number(signal_number)));
+  res = caml_callback_exn(Field(signal_handlers, signal_number),
+                          Val_int(rev_convert_signal_number(signal_number)));
 #ifdef POSIX_SIGNALS
   if (! in_signal_handler) {
     /* Restore the original signal mask */
@@ -289,7 +290,7 @@ CAMLprim value install_signal_handler(value signal_number, value action)
       signal_handlers = caml_alloc(NSIG, 0);
       register_global_root(&signal_handlers);
     }
-    modify(&Field(signal_handlers, sig), Field(action, 0));
+    caml_modify(&Field(signal_handlers, sig), Field(action, 0));
   }
   CAMLreturn (res);
 }

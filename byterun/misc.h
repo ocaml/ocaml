@@ -113,14 +113,14 @@ char *caml_aligned_malloc (asize_t, int, void **);
   00 -> free words in minor heap
   01 -> fields of free list blocks in major heap
   03 -> heap chunks deallocated by heap shrinking
-  04 -> fields deallocated by obj_truncate
+  04 -> fields deallocated by [obj_truncate]
   10 -> uninitialised fields of minor objects
   11 -> uninitialised fields of major objects
-  15 -> uninitialised words of caml_aligned_malloc blocks
-  85 -> filler bytes of caml_aligned_malloc
+  15 -> uninitialised words of [caml_aligned_malloc] blocks
+  85 -> filler bytes of [caml_aligned_malloc]
 
   special case (byte by byte):
-  D7 -> uninitialised words of stat_alloc blocks
+  D7 -> uninitialised words of [caml_stat_alloc] blocks
 */
 #define Debug_free_minor     Debug_tag (0x00)
 #define Debug_free_major     Debug_tag (0x01)

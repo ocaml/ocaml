@@ -34,8 +34,8 @@ FUNCTION(caml_call_gc)
         movq    %rax, caml_last_return_address(%rip)
         leaq    8(%rsp), %rax
         movq    %rax, caml_bottom_of_stack(%rip)
-    /* Save young_ptr, caml_exception_pointer */
-	movq	%r15, young_ptr(%rip)
+    /* Save caml_young_ptr, caml_exception_pointer */
+	movq	%r15, caml_young_ptr(%rip)
 	movq	%r14, caml_exception_pointer(%rip)
     /* Build array of registers, save it into caml_gc_regs */
 .L105:  
@@ -104,15 +104,15 @@ FUNCTION(caml_call_gc)
         popq    %rbp
         popq    %r12
         popq    %r13
-    /* Restore young_ptr, caml_exception_pointer */
-	movq	young_ptr(%rip), %r15
+    /* Restore caml_young_ptr, caml_exception_pointer */
+	movq	caml_young_ptr(%rip), %r15
 	movq	caml_exception_pointer(%rip), %r14
     /* Return to caller */
         ret
 
 FUNCTION(caml_alloc1)
         subq    $16, %r15
-        cmpq    young_limit(%rip), %r15
+        cmpq    caml_young_limit(%rip), %r15
         jb      .L100
         ret
 .L100:
@@ -127,7 +127,7 @@ FUNCTION(caml_alloc1)
 
 FUNCTION(caml_alloc2)
         subq    $24, %r15
-        cmpq    young_limit(%rip), %r15
+        cmpq    caml_young_limit(%rip), %r15
         jb      .L101
         ret
 .L101:
@@ -142,7 +142,7 @@ FUNCTION(caml_alloc2)
 
 FUNCTION(caml_alloc3)
         subq    $32, %r15
-        cmpq    young_limit(%rip), %r15
+        cmpq    caml_young_limit(%rip), %r15
         jb      .L102
         ret
 .L102:
@@ -157,7 +157,7 @@ FUNCTION(caml_alloc3)
 
 FUNCTION(caml_alloc)
         subq    %rax, %r15
-        cmpq    young_limit(%rip), %r15
+        cmpq    caml_young_limit(%rip), %r15
         jb      .L103
         ret
 .L103:
@@ -178,12 +178,12 @@ FUNCTION(caml_c_call)
         movq    %r12, caml_last_return_address(%rip)
         movq    %rsp, caml_bottom_of_stack(%rip)
     /* Make the exception handler and alloc ptr available to the C code */
-	movq	%r15, young_ptr(%rip)
+	movq	%r15, caml_young_ptr(%rip)
 	movq	%r14, caml_exception_pointer(%rip)
     /* Call the function (address in %rax) */
         call    *%rax
     /* Reload alloc ptr */
-	movq	young_ptr(%rip), %r15
+	movq	caml_young_ptr(%rip), %r15
     /* Return to caller */
 	pushq	%r12
 	ret
@@ -201,7 +201,7 @@ FUNCTION(caml_start_program)
 	subq	$8, %rsp	/* stack 16-aligned */
     /* Initial entry point is caml_program */
         leaq    caml_program(%rip), %r12
-    /* Common code for caml_start_program and callback* */
+    /* Common code for caml_start_program and caml_callback* */
 .L106:
     /* Build a callback link */
 	subq	$8, %rsp	/* stack 16-aligned */
@@ -209,7 +209,7 @@ FUNCTION(caml_start_program)
         pushq   caml_last_return_address(%rip)
         pushq   caml_bottom_of_stack(%rip)
     /* Setup alloc ptr and exception ptr */
-	movq	young_ptr(%rip), %r15
+	movq	caml_young_ptr(%rip), %r15
 	movq	caml_exception_pointer(%rip), %r14
     /* Build an exception handler */
         lea     .L108(%rip), %r13
@@ -224,7 +224,7 @@ FUNCTION(caml_start_program)
         popq    %r12    /* dummy register */
 .L109:
     /* Update alloc ptr and exception ptr */
-	movq	%r15, young_ptr(%rip)
+	movq	%r15, caml_young_ptr(%rip)
 	movq	%r14, caml_exception_pointer(%rip)
     /* Pop the callback link, restoring the global variables */
         popq    caml_bottom_of_stack(%rip)
@@ -253,12 +253,12 @@ FUNCTION(raise_caml_exception)
         movq    %rdi, %rax
         movq    caml_exception_pointer(%rip), %rsp
         popq    %r14                  /* Recover previous exception handler */
-        movq    young_ptr(%rip), %r15 /* Reload alloc ptr */
+        movq    caml_young_ptr(%rip), %r15 /* Reload alloc ptr */
         ret
 
 /* Callback from C to Caml */
 
-FUNCTION(callback_exn)
+FUNCTION(caml_callback_exn)
     /* Save callee-save registers */
         pushq   %rbx
         pushq   %rbp
@@ -273,7 +273,7 @@ FUNCTION(callback_exn)
         movq    0(%rbx), %r12   /* code pointer */
         jmp     .L106
 
-FUNCTION(callback2_exn)
+FUNCTION(caml_callback2_exn)
     /* Save callee-save registers */
         pushq   %rbx
         pushq   %rbp
@@ -289,7 +289,7 @@ FUNCTION(callback2_exn)
         leaq    caml_apply2(%rip), %r12  /* code pointer */
         jmp     .L106
 
-FUNCTION(callback3_exn)
+FUNCTION(caml_callback3_exn)
     /* Save callee-save registers */
         pushq   %rbx
         pushq   %rbp
@@ -308,7 +308,7 @@ FUNCTION(callback3_exn)
 
 FUNCTION(caml_array_bound_error)
     /* Make the exception handler and alloc ptr available to the C code */
-	movq	%r15, young_ptr(%rip)
+	movq	%r15, caml_young_ptr(%rip)
 	movq	%r14, caml_exception_pointer(%rip)
 	jmp	array_bound_error	
 

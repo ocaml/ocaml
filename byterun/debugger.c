@@ -129,7 +129,7 @@ void debugger_init(void)
   }
   open_connection();
   debugger_in_use = 1;
-  trap_barrier = stack_high;
+  caml_trap_barrier = caml_stack_high;
 }
 
 static value getval(struct channel *chan)
@@ -177,7 +177,7 @@ void debugger(enum event_kind event)
 
   /* Reset current frame */
   frame_number = 0;
-  frame = extern_sp + 1;
+  frame = caml_extern_sp + 1;
 
   /* Report the event to the debugger */
   switch(event) {
@@ -201,7 +201,7 @@ void debugger(enum event_kind event)
   }
   caml_putword(dbg_out, event_count);
   if (event == EVENT_COUNT || event == BREAKPOINT) {
-    caml_putword(dbg_out, stack_high - frame);
+    caml_putword(dbg_out, caml_stack_high - frame);
     caml_putword(dbg_out, (Pc(frame) - start_code) * sizeof(opcode_t));
   } else {
     /* No PC and no stack frame associated with other events */
@@ -254,11 +254,11 @@ void debugger(enum event_kind event)
       wait(NULL);
       break;
     case REQ_INITIAL_FRAME:
-      frame = extern_sp + 1;
+      frame = caml_extern_sp + 1;
       /* Fall through */
     case REQ_GET_FRAME:
-      caml_putword(dbg_out, stack_high - frame);
-      if (frame < stack_high){
+      caml_putword(dbg_out, caml_stack_high - frame);
+      if (frame < caml_stack_high){
         caml_putword(dbg_out, (Pc(frame) - start_code) * sizeof(opcode_t));
       }else{
         caml_putword (dbg_out, 0);
@@ -267,22 +267,22 @@ void debugger(enum event_kind event)
       break;
     case REQ_SET_FRAME:
       i = caml_getword(dbg_in);
-      frame = stack_high - i;
+      frame = caml_stack_high - i;
       break;
     case REQ_UP_FRAME:
       i = caml_getword(dbg_in);
-      if (frame + Extra_args(frame) + i + 3 >= stack_high) {
+      if (frame + Extra_args(frame) + i + 3 >= caml_stack_high) {
         caml_putword(dbg_out, -1);
       } else {
         frame += Extra_args(frame) + i + 3;
-        caml_putword(dbg_out, stack_high - frame);
+        caml_putword(dbg_out, caml_stack_high - frame);
         caml_putword(dbg_out, (Pc(frame) - start_code) * sizeof(opcode_t));
       }
       caml_flush(dbg_out);
       break;
     case REQ_SET_TRAP_BARRIER:
       i = caml_getword(dbg_in);
-      trap_barrier = stack_high - i;
+      caml_trap_barrier = caml_stack_high - i;
       break;
     case REQ_GET_LOCAL:
       i = caml_getword(dbg_in);
@@ -296,11 +296,11 @@ void debugger(enum event_kind event)
       break;
     case REQ_GET_GLOBAL:
       i = caml_getword(dbg_in);
-      putval(dbg_out, Field(global_data, i));
+      putval(dbg_out, Field(caml_global_data, i));
       caml_flush(dbg_out);
       break;
     case REQ_GET_ACCU:
-      putval(dbg_out, *extern_sp);
+      putval(dbg_out, *caml_extern_sp);
       caml_flush(dbg_out);
       break;
     case REQ_GET_HEADER:

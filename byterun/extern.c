@@ -62,7 +62,7 @@ static void alloc_extern_table(void)
 {
   asize_t i;
   extern_table = (struct extern_obj *)
-                 stat_alloc(extern_table_size * sizeof(struct extern_obj));
+                 caml_stat_alloc(extern_table_size * sizeof(struct extern_obj));
   for (i = 0; i < extern_table_size; i++) extern_table[i].ofs = 0;
 }
 
@@ -91,7 +91,7 @@ static void resize_extern_table(void)
       extern_table[h].obj = obj;
     }
   }
-  stat_free(oldtable);
+  caml_stat_free(oldtable);
 }
 
 /* Free the extern table. We keep it around for next call if
@@ -101,7 +101,7 @@ static void free_extern_table(void)
 {
   if (extern_table_size > INITIAL_EXTERN_TABLE_SIZE ||
       initial_ofs >= INITIAL_OFFSET_MAX) {
-    stat_free(extern_table);
+    caml_stat_free(extern_table);
     extern_table = NULL;
   }
 }
@@ -113,7 +113,7 @@ static int extern_block_malloced;
 
 static void alloc_extern_block(void)
 {
-  extern_block = stat_alloc(INITIAL_EXTERN_BLOCK_SIZE);
+  extern_block = caml_stat_alloc(INITIAL_EXTERN_BLOCK_SIZE);
   extern_limit = extern_block + INITIAL_EXTERN_BLOCK_SIZE;
   extern_ptr = extern_block;
   extern_block_malloced = 1;
@@ -132,7 +132,7 @@ static void resize_extern_block(int required)
   size = extern_limit - extern_block;
   reqd_size = curr_pos + required;
   while (size <= reqd_size) size *= 2;
-  extern_block = stat_resize(extern_block, size);
+  extern_block = caml_stat_resize(extern_block, size);
   extern_limit = extern_block + size;
   extern_ptr = extern_block + curr_pos;
 }
@@ -216,7 +216,7 @@ static int extern_closures;     /* Flag to allow externing code pointers */
 
 static void extern_invalid_argument(char *msg)
 {
-  if (extern_block_malloced) stat_free(extern_block);
+  if (extern_block_malloced) caml_stat_free(extern_block);
   initial_ofs += obj_counter;
   free_extern_table();
   invalid_argument(msg);
@@ -453,7 +453,7 @@ void output_val(struct channel *chan, value v, value flags)
      and extern_block may change.  So, save the pointer in a local variable. */
   block = extern_block;
   caml_really_putblock(chan, extern_block, len);
-  stat_free(block);
+  caml_stat_free(block);
 }
 
 CAMLprim value output_value(value vchan, value v, value flags)
@@ -475,7 +475,7 @@ CAMLprim value output_value_to_string(value v, value flags)
   len = extern_value(v, flags);
   res = caml_alloc_string(len);
   memmove(String_val(res), extern_block, len);
-  stat_free(extern_block);
+  caml_stat_free(extern_block);
   return res;
 }
 

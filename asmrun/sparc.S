@@ -22,8 +22,8 @@
 
         .common _caml_required_size, 4, "bss"
 
-#define Young_limit _young_limit
-#define Young_ptr _young_ptr
+#define Caml_young_limit _caml_young_limit
+#define Caml_young_ptr _caml_young_ptr
 #define Caml_bottom_of_stack _caml_bottom_of_stack
 #define Caml_last_return_address _caml_last_return_address
 #define Caml_gc_regs _caml_gc_regs
@@ -36,9 +36,9 @@
 #define Caml_start_program _caml_start_program
 #define Caml_program _caml_program
 #define Raise_caml_exception _raise_caml_exception
-#define Callback_exn _callback_exn
-#define Callback2_exn _callback2_exn
-#define Callback3_exn _callback3_exn
+#define Caml_callback_exn _caml_callback_exn
+#define Caml_callback2_exn _caml_callback2_exn
+#define Caml_callback3_exn _caml_callback3_exn
 #define Caml_apply2 _caml_apply2
 #define Caml_apply3 _caml_apply3
 #define Mlraise _mlraise
@@ -62,9 +62,9 @@
 #define Caml_start_program caml_start_program
 #define Caml_program caml_program
 #define Raise_caml_exception raise_caml_exception
-#define Callback_exn callback_exn
-#define Callback2_exn callback2_exn
-#define Callback3_exn callback3_exn
+#define Caml_callback_exn caml_callback_exn
+#define Caml_callback2_exn caml_callback2_exn
+#define Caml_callback3_exn caml_callback3_exn
 #define Caml_apply2 caml_apply2
 #define Caml_apply3 caml_apply3
 #define Mlraise mlraise
@@ -113,7 +113,7 @@ Caml_call_gc:
     /* Save exception pointer if GC raises */
         Store(Exn_ptr, Caml_exception_pointer)
     /* Save current allocation pointer for debugging purposes */
-        Store(Alloc_ptr, Young_ptr)
+        Store(Alloc_ptr, Caml_young_ptr)
     /* Record lowest stack address */
         Store(%sp, Caml_bottom_of_stack)
     /* Record last return address */
@@ -200,7 +200,7 @@ L100:   add     %sp, 96 + 15*8, %g2
         ldd     [%g1 + 0x68], %f26
         ldd     [%g1 + 0x70], %f28
     /* Reload alloc ptr */
-        Load(Young_ptr, Alloc_ptr)
+        Load(Caml_young_ptr, Alloc_ptr)
     /* Allocate space for block */
         Load(Caml_required_size, %g2)
 #ifdef INDIRECT_LIMIT
@@ -208,7 +208,7 @@ L100:   add     %sp, 96 + 15*8, %g2
         sub     Alloc_ptr, %g2, Alloc_ptr
         cmp     Alloc_ptr, %g1      /* Check that we have enough free space */
 #else
-        Load(Young_limit,Alloc_limit)
+        Load(Caml_young_limit,Alloc_limit)
         sub     Alloc_ptr, %g2, Alloc_ptr
         cmp     Alloc_ptr, Alloc_limit
 #endif
@@ -229,17 +229,17 @@ Caml_c_call:
         Store(%o7, Caml_last_return_address)
     /* Save the exception handler and alloc pointer */
         Store(Exn_ptr, Caml_exception_pointer)
-        sethi   %hi(Young_ptr), %g1
+        sethi   %hi(Caml_young_ptr), %g1
     /* Call the C function */
         call    %g2
-        st      Alloc_ptr, [%g1 + %lo(Young_ptr)]        /* in delay slot */
+        st      Alloc_ptr, [%g1 + %lo(Caml_young_ptr)]   /* in delay slot */
     /* Reload return address */
         Load(Caml_last_return_address, %o7)
     /* Reload alloc pointer */
-        sethi   %hi(Young_ptr), %g1
+        sethi   %hi(Caml_young_ptr), %g1
     /* Return to caller */
         retl
-        ld      [%g1 + %lo(Young_ptr)], Alloc_ptr        /* in delay slot */
+        ld      [%g1 + %lo(Caml_young_ptr)], Alloc_ptr   /* in delay slot */
 
 /* Start the Caml program */
 
@@ -250,7 +250,7 @@ Caml_start_program:
     /* Address of code to call */
         Address(Caml_program, %l2)
 
-    /* Code shared with callback* */
+    /* Code shared with caml_callback* */
 L108:
     /* Set up a callback link on the stack. */
         sub     %sp, 16, %sp
@@ -270,11 +270,11 @@ L111:   sub     %sp, 8, %sp
         st      Exn_ptr, [%sp + 100]
         mov     %sp, Exn_ptr
     /* Reload allocation pointers */
-        Load(Young_ptr, Alloc_ptr)
+        Load(Caml_young_ptr, Alloc_ptr)
 #ifdef INDIRECT_LIMIT
-        Address(Young_limit, Alloc_limit)
+        Address(Caml_young_limit, Alloc_limit)
 #else
-        Load(Young_limit, Alloc_limit)
+        Load(Caml_young_limit, Alloc_limit)
 #endif
     /* Call the Caml code */
 L109:   call    %l2
@@ -292,7 +292,7 @@ L112:   ld      [%sp + 96], %l0
         Store(%l2, Caml_gc_regs)
         add     %sp, 16, %sp
     /* Save allocation pointer */
-        Store(Alloc_ptr, Young_ptr)
+        Store(Alloc_ptr, Caml_young_ptr)
     /* Reload callee-save registers and return */
         ret
         restore %o0, 0, %o0     /* copy %o0 in this window to caller's %o0 */
@@ -321,11 +321,11 @@ L106:   restore
         nop
 L107:
     /* Reload allocation registers */
-        Load(Young_ptr, Alloc_ptr)
+        Load(Caml_young_ptr, Alloc_ptr)
 #ifdef INDIRECT_LIMIT
-        Address(Young_limit, Alloc_limit)
+        Address(Caml_young_limit, Alloc_limit)
 #else
-        Load(Young_limit, Alloc_limit)
+        Load(Caml_young_limit, Alloc_limit)
 #endif
     /* Branch to exception handler */
         mov     %g3, %sp

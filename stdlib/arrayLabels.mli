@@ -34,7 +34,7 @@ external set : 'a array -> int -> 'a -> unit = "%array_safe_set"
    0 to [Array.length a - 1].
    You can also write [a.(n) <- x] instead of [Array.set a n x]. *)
 
-external make : int -> 'a -> 'a array = "make_vect"
+external make : int -> 'a -> 'a array = "caml_make_vect"
 (** [Array.make n x] returns a fresh array of length [n],
    initialized with [x].
    All the elements of this new array are initially
@@ -47,7 +47,7 @@ external make : int -> 'a -> 'a array = "make_vect"
    If the value of [x] is a floating-point number, then the maximum
    size is only [Sys.max_array_length / 2].*)
 
-external create : int -> 'a -> 'a array = "make_vect"
+external create : int -> 'a -> 'a array = "caml_make_vect"
 (** @deprecated [Array.create] is an alias for {!ArrayLabels.make}. *)
 
 val init : int -> f:(int -> 'a) -> 'a array

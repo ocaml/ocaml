@@ -28,18 +28,18 @@
 
 CAMLprim value static_alloc(value size)
 {
-  return (value) stat_alloc((asize_t) Long_val(size));
+  return (value) caml_stat_alloc((asize_t) Long_val(size));
 }
 
 CAMLprim value static_free(value blk)
 {
-  stat_free((void *) blk);
+  caml_stat_free((void *) blk);
   return Val_unit;
 }
 
 CAMLprim value static_resize(value blk, value new_size)
 {
-  return (value) stat_resize((char *) blk, (asize_t) Long_val(new_size));
+  return (value) caml_stat_resize((char *) blk, (asize_t) Long_val(new_size));
 }
 
 CAMLprim value obj_is_block(value arg)
@@ -97,8 +97,8 @@ CAMLprim value obj_dup(value arg)
     res = caml_alloc_small(sz, tg);
     for (i = 0; i < sz; i++) Field(res, i) = Field(arg, i);
   } else {
-    res = alloc_shr(sz, tg);
-    for (i = 0; i < sz; i++) initialize(&Field(res, i), Field(arg, i));
+    res = caml_alloc_shr(sz, tg);
+    for (i = 0; i < sz; i++) caml_initialize(&Field(res, i), Field(arg, i));
   }
   CAMLreturn (res);
 }
@@ -130,7 +130,7 @@ CAMLprim value obj_truncate (value v, value newsize)
      can darken them as appropriate. */
   if (tag < No_scan_tag) {
     for (i = new_wosize; i < wosize; i++){
-      modify(&Field(v, i), Val_unit);
+      caml_modify(&Field(v, i), Val_unit);
 #ifdef DEBUG
       Field (v, i) = Debug_free_truncate;
 #endif

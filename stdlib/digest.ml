@@ -17,8 +17,8 @@
 
 type t = string
 
-external unsafe_string: string -> int -> int -> t = "md5_string"
-external channel: in_channel -> int -> t = "md5_chan"
+external unsafe_string: string -> int -> int -> t = "caml_md5_string"
+external channel: in_channel -> int -> t = "caml_md5_chan"
 
 let string str =
   unsafe_string str 0 (String.length str)

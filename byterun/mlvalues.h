@@ -164,7 +164,7 @@ typedef opcode_t * code_t;
 
 /* NOTE: [Forward_tag] and [Infix_tag] must be just under
    [No_scan_tag], with [Infix_tag] the lower one.
-   See [oldify_one] in minor_gc.c for more details.
+   See [caml_oldify_one] in minor_gc.c for more details.
 
    NOTE: Update stdlib/obj.ml whenever you change the tags.
  */
@@ -259,8 +259,8 @@ CAMLextern int64 Int64_val(value v);
 
 /* 3- Atoms are 0-tuples.  They are statically allocated once and for all. */
 
-CAMLextern header_t atom_table[];
-#define Atom(tag) (Val_hp (&(atom_table [(tag)])))
+CAMLextern header_t caml_atom_table[];
+#define Atom(tag) (Val_hp (&(caml_atom_table [(tag)])))
 
 /* Is_atom tests whether a well-formed block is statically allocated
    outside the heap. For the bytecode system, only zero-sized block (Atoms)
@@ -295,7 +295,7 @@ CAMLextern char * static_data_start, * static_data_end;
 
 /* The table of global identifiers */
 
-extern value global_data;
+extern value caml_global_data;
 
 
 #endif /* CAML_MLVALUES_H */

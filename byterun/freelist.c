@@ -157,7 +157,7 @@ void fl_init_merge (void)
 #endif
 }
 
-/* This is called by compact_heap. */
+/* This is called by caml_compact_heap. */
 void fl_reset (void)
 {
   Next (Fl_head) = 0;
@@ -284,10 +284,10 @@ void fl_add_block (char *bp)
                                             Assert (cur > bp || cur == NULL);
     Next (bp) = cur;
     Next (prev) = bp;
-    /* When inserting a block between fl_merge and gc_sweep_hp, we must
+    /* When inserting a block between fl_merge and caml_gc_sweep_hp, we must
        advance fl_merge to the new block, so that fl_merge is always the
-       last free-list block before gc_sweep_hp. */
-    if (prev == fl_merge && bp <= gc_sweep_hp) fl_merge = bp;
+       last free-list block before caml_gc_sweep_hp. */
+    if (prev == fl_merge && bp <= caml_gc_sweep_hp) fl_merge = bp;
   }
 }
 

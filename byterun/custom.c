@@ -34,10 +34,10 @@ CAMLextern value alloc_custom(struct custom_operations * ops,
     result = caml_alloc_small(wosize, Custom_tag);
     Custom_ops_val(result) = ops;
   } else {
-    result = alloc_shr(wosize, Custom_tag);
+    result = caml_alloc_shr(wosize, Custom_tag);
     Custom_ops_val(result) = ops;
-    adjust_gc_speed(mem, max);
-    result = check_urgent_gc(result);
+    caml_adjust_gc_speed(mem, max);
+    result = caml_check_urgent_gc(result);
   }
   return result;
 }
@@ -52,7 +52,7 @@ static struct custom_operations_list * custom_ops_table = NULL;
 CAMLextern void register_custom_operations(struct custom_operations * ops)
 {
   struct custom_operations_list * l =
-    stat_alloc(sizeof(struct custom_operations_list));
+    caml_stat_alloc(sizeof(struct custom_operations_list));
   Assert(ops->identifier != NULL);
   Assert(ops->deserialize != NULL);
   l->ops = ops;
@@ -76,14 +76,14 @@ struct custom_operations * final_custom_operations(final_fun fn)
   struct custom_operations * ops;
   for (l = custom_ops_final_table; l != NULL; l = l->next)
     if (l->ops->finalize == fn) return l->ops;
-  ops = stat_alloc(sizeof(struct custom_operations));
+  ops = caml_stat_alloc(sizeof(struct custom_operations));
   ops->identifier = "_final";
   ops->finalize = fn;
   ops->compare = custom_compare_default;
   ops->hash = custom_hash_default;
   ops->serialize = custom_serialize_default;
   ops->deserialize = custom_deserialize_default;
-  l = stat_alloc(sizeof(struct custom_operations_list));
+  l = caml_stat_alloc(sizeof(struct custom_operations_list));
   l->ops = ops;
   l->next = custom_ops_final_table;
   custom_ops_final_table = l;

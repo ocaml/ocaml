@@ -424,6 +424,7 @@ let exit retcode =
   do_at_exit ();
   sys_exit retcode
 
-external register_named_value: string -> 'a -> unit = "register_named_value"
+external register_named_value : string -> 'a -> unit
+                              = "caml_register_named_value"
 
 let _ = register_named_value "Pervasives.do_at_exit" do_at_exit

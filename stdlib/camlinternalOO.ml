@@ -450,7 +450,7 @@ let make_class_store pub_meths class_init init_table =
 let create_object table =
   (* XXX Appel de [obj_block] *)
   let obj = Obj.new_block Obj.object_tag table.size in
-  (* XXX Appel de [modify] *)
+  (* XXX Appel de [caml_modify] *)
   Obj.set_field obj 0 (Obj.repr table.buckets);
   set_id obj last_id;
   (Obj.obj obj)
@@ -459,7 +459,7 @@ let create_object_opt obj_0 table =
   if (Obj.magic obj_0 : bool) then obj_0 else begin
     (* XXX Appel de [obj_block] *)
     let obj = Obj.new_block Obj.object_tag table.size in
-    (* XXX Appel de [modify] *)
+    (* XXX Appel de [caml_modify] *)
     Obj.set_field obj 0 (Obj.repr table.buckets);
     set_id obj last_id;
     (Obj.obj obj)

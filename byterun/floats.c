@@ -96,12 +96,12 @@ CAMLprim value format_float(value fmt, value arg)
   if (prec < sizeof(format_buffer)) {
     dest = format_buffer;
   } else {
-    dest = stat_alloc(prec);
+    dest = caml_stat_alloc(prec);
   }
   sprintf(dest, String_val(fmt), Double_val(arg));
   res = caml_copy_string(dest);
   if (dest != format_buffer) {
-    stat_free(dest);
+    caml_stat_free(dest);
   }
   return res;
 }
@@ -114,7 +114,7 @@ CAMLprim value float_of_string(value vs)
   double d;
 
   len = caml_string_length(vs);
-  buf = len < sizeof(parse_buffer) ? parse_buffer : stat_alloc(len + 1);
+  buf = len < sizeof(parse_buffer) ? parse_buffer : caml_stat_alloc(len + 1);
   src = String_val(vs);
   dst = buf;
   while (len--) {
@@ -124,7 +124,7 @@ CAMLprim value float_of_string(value vs)
   *dst = 0;
   if (dst == buf) failwith("float_of_string");
   d = strtod((const char *) buf, &end);
-  if (buf != parse_buffer) stat_free(buf);
+  if (buf != parse_buffer) caml_stat_free(buf);
   if (end != dst) failwith("float_of_string");
   return copy_double(d);
 }

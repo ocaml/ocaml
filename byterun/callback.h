@@ -23,16 +23,17 @@
 #endif
 #include "mlvalues.h"
 
-CAMLextern value callback (value closure, value arg);
-CAMLextern value callback2 (value closure, value arg1, value arg2);
-CAMLextern value callback3 (value closure, value arg1, value arg2, value arg3);
-CAMLextern value callbackN (value closure, int narg, value args[]);
+CAMLextern value caml_callback (value closure, value arg);
+CAMLextern value caml_callback2 (value closure, value arg1, value arg2);
+CAMLextern value caml_callback3 (value closure, value arg1, value arg2,
+                                 value arg3);
+CAMLextern value caml_callbackN (value closure, int narg, value args[]);
 
-CAMLextern value callback_exn (value closure, value arg);
-CAMLextern value callback2_exn (value closure, value arg1, value arg2);
-CAMLextern value callback3_exn (value closure,
-                                value arg1, value arg2, value arg3);
-CAMLextern value callbackN_exn (value closure, int narg, value args[]);
+CAMLextern value caml_callback_exn (value closure, value arg);
+CAMLextern value caml_callback2_exn (value closure, value arg1, value arg2);
+CAMLextern value caml_callback3_exn (value closure,
+                                     value arg1, value arg2, value arg3);
+CAMLextern value caml_callbackN_exn (value closure, int narg, value args[]);
 
 #define Make_exception_result(v) ((v) | 2)
 #define Is_exception_result(v) (((v) & 3) == 2)
@@ -45,6 +46,6 @@ CAMLextern value * caml_named_value (char * name);
 CAMLextern void caml_main (char ** argv);
 CAMLextern void caml_startup (char ** argv);
 
-CAMLextern int callback_depth;
+CAMLextern int caml_callback_depth;
 
 #endif

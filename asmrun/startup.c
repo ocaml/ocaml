@@ -32,7 +32,7 @@
 #endif
 
 extern int parser_trace;
-header_t atom_table[256];
+header_t caml_atom_table[256];
 char * static_data_start, * static_data_end;
 char * code_area_start, * code_area_end;
 
@@ -56,7 +56,7 @@ static void init_atoms(void)
   int i;
   extern struct segment caml_data_segments[], caml_code_segments[];
 
-  for (i = 0; i < 256; i++) atom_table[i] = Make_header(0, i, Caml_white);
+  for (i = 0; i < 256; i++) caml_atom_table[i] = Make_header(0, i, Caml_white);
   minmax_table(caml_data_segments, &static_data_start, &static_data_end);
   minmax_table(caml_code_segments, &code_area_start, &code_area_end);
 }

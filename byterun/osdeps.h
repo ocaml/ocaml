@@ -26,7 +26,7 @@ extern char * decompose_path(struct ext_table * tbl, char * path);
 
 /* Search the given file in the given list of directories.
    If not found, return a copy of [name].  Result is allocated with
-   [stat_alloc]. */
+   [caml_stat_alloc]. */
 extern char * search_in_path(struct ext_table * path, char * name);
 
 /* Same, but search an executable name in the system path for executables. */

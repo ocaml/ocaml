@@ -287,7 +287,7 @@ let float_array_ref arr ofs =
   box_float(unboxed_float_array_ref arr ofs)
 
 let addr_array_set arr ofs newval =
-  Cop(Cextcall("modify", typ_void, false),
+  Cop(Cextcall("caml_modify", typ_void, false),
       [array_indexing log2_size_addr arr ofs; newval])
 let int_array_set arr ofs newval =
   Cop(Cstore Word, [array_indexing log2_size_addr arr ofs; newval])
@@ -594,12 +594,12 @@ let simplif_primitive_32bits = function
   | Plslbint Pint64 -> Pccall (default_prim "int64_shift_left")
   | Plsrbint Pint64 -> Pccall (default_prim "int64_shift_right_unsigned")
   | Pasrbint Pint64 -> Pccall (default_prim "int64_shift_right")
-  | Pbintcomp(Pint64, Lambda.Ceq) -> Pccall (default_prim "equal")
-  | Pbintcomp(Pint64, Lambda.Cneq) -> Pccall (default_prim "notequal")
-  | Pbintcomp(Pint64, Lambda.Clt) -> Pccall (default_prim "lessthan")
-  | Pbintcomp(Pint64, Lambda.Cgt) -> Pccall (default_prim "greaterthan")
-  | Pbintcomp(Pint64, Lambda.Cle) -> Pccall (default_prim "lessequal")
-  | Pbintcomp(Pint64, Lambda.Cge) -> Pccall (default_prim "greaterequal")
+  | Pbintcomp(Pint64, Lambda.Ceq) -> Pccall (default_prim "caml_equal")
+  | Pbintcomp(Pint64, Lambda.Cneq) -> Pccall (default_prim "caml_notequal")
+  | Pbintcomp(Pint64, Lambda.Clt) -> Pccall (default_prim "caml_lessthan")
+  | Pbintcomp(Pint64, Lambda.Cgt) -> Pccall (default_prim "caml_greaterthan")
+  | Pbintcomp(Pint64, Lambda.Cle) -> Pccall (default_prim "caml_lessequal")
+  | Pbintcomp(Pint64, Lambda.Cge) -> Pccall (default_prim "caml_greaterequal")
   | Pbigarrayref(n, Pbigarray_int64, layout) ->
       Pccall (default_prim ("bigarray_get_" ^ string_of_int n))
   | Pbigarrayset(n, Pbigarray_int64, layout) ->
@@ -856,7 +856,7 @@ let rec transl = function
       | (Pmakearray kind, args) ->
           begin match kind with
             Pgenarray ->
-              Cop(Cextcall("make_array", typ_addr, true),
+              Cop(Cextcall("caml_make_array", typ_addr, true),
                   [make_alloc 0 (List.map transl args)])
           | Paddrarray | Pintarray ->
               make_alloc 0 (List.map transl args)
@@ -1081,7 +1081,7 @@ and transl_prim_2 p arg1 arg2 =
   (* Heap operations *)
     Psetfield(n, ptr) ->
       if ptr then
-        return_unit(Cop(Cextcall("modify", typ_void, false),
+        return_unit(Cop(Cextcall("caml_modify", typ_void, false),
                         [field_address (transl arg1) n; transl arg2]))
       else
         return_unit(set_field (transl arg1) n (transl arg2))

@@ -37,14 +37,14 @@ static unsigned char * intern_input;
    Meaningful only if intern_input_malloced = 1. */
 
 static int intern_input_malloced;
-/* 1 if intern_input was allocated by stat_alloc()
-   and needs stat_free() on error, 0 otherwise. */
+/* 1 if intern_input was allocated by caml_stat_alloc()
+   and needs caml_stat_free() on error, 0 otherwise. */
 
 static header_t * intern_dest;
 /* Writing pointer in destination block */
 
 static char * intern_extra_block;
-/* If non-NULL, point to new heap chunk allocated with alloc_for_heap. */
+/* If non-NULL, point to new heap chunk allocated with caml_alloc_for_heap. */
 
 static asize_t obj_counter;
 /* Count how many objects seen so far */
@@ -100,11 +100,11 @@ static long read64s(void)
 
 static void intern_cleanup(void)
 {
-  if (intern_input_malloced) stat_free(intern_input);
-  if (intern_obj_table != NULL) stat_free(intern_obj_table);
+  if (intern_input_malloced) caml_stat_free(intern_input);
+  if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
   if (intern_extra_block != NULL) {
     /* free newly allocated heap chunk */
-    free_for_heap(intern_extra_block); 
+    caml_free_for_heap(intern_extra_block); 
   } else if (intern_block != 0) {
     /* restore original header for heap block, otherwise GC is confused */
     Hd_val(intern_block) = intern_header;
@@ -339,9 +339,9 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     /* Round desired size up to next page */
     asize_t request =
       ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log;
-    intern_extra_block = alloc_for_heap(request);
+    intern_extra_block = caml_alloc_for_heap(request);
     if (intern_extra_block == NULL) raise_out_of_memory();
-    intern_color = allocation_color(intern_extra_block);
+    intern_color = caml_allocation_color(intern_extra_block);
     intern_dest = (header_t *) intern_extra_block;
   } else {
     /* this is a specialised version of caml_alloc from alloc.c */
@@ -350,7 +350,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     }else if (wosize <= Max_young_wosize){
       intern_block = caml_alloc_small (wosize, String_tag);
     }else{
-      intern_block = alloc_shr (wosize, String_tag);
+      intern_block = caml_alloc_shr (wosize, String_tag);
       /* do not do the urgent_gc check here because it might darken
          intern_block into gray and break the Assert 3 lines down */
     }
@@ -362,7 +362,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
   }
   obj_counter = 0;
   if (num_objects > 0)
-    intern_obj_table = (value *) stat_alloc(num_objects * sizeof(value));
+    intern_obj_table = (value *) caml_stat_alloc(num_objects * sizeof(value));
   else
     intern_obj_table = NULL;
 }
@@ -381,7 +381,7 @@ static void intern_add_to_heap(mlsize_t whsize)
       make_free_blocks ((value *) intern_dest, end_extra_block - intern_dest,
                         0);
     }
-    add_to_heap(intern_extra_block);
+    caml_add_to_heap(intern_extra_block);
   }
 }
 
@@ -401,13 +401,13 @@ value input_val(struct channel *chan)
   size_32 = caml_getword(chan);
   size_64 = caml_getword(chan);
   /* Read block from channel */
-  block = stat_alloc(block_len);
+  block = caml_stat_alloc(block_len);
   /* During caml_really_getblock, concurrent input_val operations can take
      place (via signal handlers or context switching in systhreads),
      and intern_input may change.  So, wait until caml_really_getblock
      is over before using intern_input and the other global vars. */
   if (caml_really_getblock(chan, block, block_len) == 0) {
-    stat_free(block);
+    caml_stat_free(block);
     failwith("input_value: truncated object");
   }
   intern_input = (unsigned char *) block;
@@ -424,8 +424,8 @@ value input_val(struct channel *chan)
   intern_rec(&res);
   intern_add_to_heap(whsize);
   /* Free everything */
-  stat_free(intern_input);
-  if (intern_obj_table != NULL) stat_free(intern_obj_table);
+  caml_stat_free(intern_input);
+  if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
   return res;
 }
 
@@ -464,7 +464,7 @@ CAMLexport value input_val_from_string(value str, long int ofs)
   intern_rec(&obj);
   intern_add_to_heap(whsize);
   /* Free everything */
-  if (intern_obj_table != NULL) stat_free(intern_obj_table);
+  if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
   CAMLreturn (obj);
 }
 
@@ -492,7 +492,7 @@ static value input_val_from_block(void)
   intern_rec(&obj);
   intern_add_to_heap(whsize);
   /* Free internal data structures */
-  if (intern_obj_table != NULL) stat_free(intern_obj_table);
+  if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
   return obj;
 }
 
@@ -511,7 +511,7 @@ CAMLexport value input_value_from_malloc(char * data, long ofs)
   block_len = read32u();
   obj = input_val_from_block();
   /* Free the input */
-  stat_free(intern_input);
+  caml_stat_free(intern_input);
   return obj;
 }
 
@@ -560,11 +560,11 @@ unsigned char * code_checksum()
 
   if (! checksum_computed) {
     struct MD5Context ctx;
-    MD5Init(&ctx);
-    MD5Update(&ctx,
-              (unsigned char *) code_area_start,
-              code_area_end - code_area_start);
-    MD5Final(checksum, &ctx);
+    caml_MD5Init(&ctx);
+    caml_MD5Update(&ctx,
+                   (unsigned char *) code_area_start,
+                   code_area_end - code_area_start);
+    caml_MD5Final(checksum, &ctx);
     checksum_computed = 1;
   }
   return checksum;

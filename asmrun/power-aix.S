@@ -37,7 +37,7 @@
         addi    0, 1, 8*32 + 64
         stw     0, 0(11)
     # Save current allocation pointer for debugging purposes
-        lwz     11, L..young_ptr(2)
+        lwz     11, L..caml_young_ptr(2)
         stw     31, 0(11)
     # Save exception pointer (if e.g. a sighandler raises)
         lwz     11, L..caml_exception_pointer(2)
@@ -103,9 +103,9 @@
         bl      .garbage_collection
         or      0, 0, 0
     # Reload new allocation pointer and allocation limit
-        lwz     11, L..young_ptr(2)
+        lwz     11, L..caml_young_ptr(2)
         lwz     31, 0(11)
-        lwz     11, L..young_limit(2)
+        lwz     11, L..caml_young_limit(2)
         lwz     30, 0(11)
     # Restore all regs used by the code generator
         addi    11, 1, 8*32 + 64 - 4
@@ -192,14 +192,14 @@
         stw     1, 0(27)
         stw     25, 0(24)
     # Make the exception handler and alloc ptr available to the C code
-        lwz     27, L..young_ptr(2)
+        lwz     27, L..caml_young_ptr(2)
         lwz     26, L..caml_exception_pointer(2)
         stw     31, 0(27)
         stw     29, 0(26)
     # Preserve RTOC and return address in callee-save registers
     # The C function will preserve them, and the Caml code does not
     # expect them to be preserved
-    # Return address is in 25, RTOC is in 26, pointer to young_ptr in 27,
+    # Return address is in 25, RTOC is in 26, pointer to caml_young_ptr in 27,
     # pointer to caml_last_return_address is in 24
     # Call the function (descriptor in 11)
         lwz     0, 0(11)
@@ -213,7 +213,7 @@
     # Restore RTOC
         mr      2, 26
     # Reload allocation pointer
-        lwz     31, 0(27)     # 27 still points to young_ptr
+        lwz     31, 0(27)     # 27 still points to caml_young_ptr
     # Say we are back into Caml code
         li      12, 0
         stw     12, 0(24)     # 24 still points to caml_last_return_address
@@ -226,8 +226,8 @@
 .raise_caml_exception:
     # Reload Caml global registers
         lwz     4, L..caml_exception_pointer(2)
-        lwz     5, L..young_ptr(2)
-        lwz     6, L..young_limit(2)
+        lwz     5, L..caml_young_ptr(2)
+        lwz     6, L..caml_young_limit(2)
         lwz     1, 0(4)
         lwz     31, 0(5)
         lwz     30, 0(6)
@@ -250,7 +250,7 @@
 .caml_start_program:
         lwz     11, L..caml_program(2)
 
-#### Code shared between caml_start_program and callback*
+#### Code shared between caml_start_program and caml_callback*
 
 L..102:
         mflr    0
@@ -320,8 +320,8 @@ L..103:
         stw     2, 20(1)
         mr      29, 1
     # Reload allocation pointers
-        lwz     9, L..young_ptr(2)
-        lwz     10, L..young_limit(2)
+        lwz     9, L..caml_young_ptr(2)
+        lwz     10, L..caml_young_limit(2)
         lwz     31, 0(9)
         lwz     30, 0(10)
     # Say we are back into Caml code
@@ -354,7 +354,7 @@ L..106:
         stw     9, 0(12)
         addi    1, 1, 32
     # Update allocation pointer
-        lwz     11, L..young_ptr(2)
+        lwz     11, L..caml_young_ptr(2)
         stw     31, 0(11)
     # Deallocate stack frame
         addi    1, 1, 288
@@ -412,8 +412,8 @@ L..104:
 
 #### Callback from C to Caml
 
-        .globl  .callback_exn
-.callback_exn:
+        .globl  .caml_callback_exn
+.caml_callback_exn:
     # Initial shuffling of arguments
         mr      0, 3            # Closure
         mr      3, 4            # Argument
@@ -421,8 +421,8 @@ L..104:
         lwz     11, 0(4)        # Code pointer
         b       L..102
 
-        .globl  .callback2_exn
-.callback2_exn:
+        .globl  .caml_callback2_exn
+.caml_callback2_exn:
         mr      0, 3            # Closure
         mr      3, 4            # First argument
         mr      4, 5            # Second argument
@@ -430,8 +430,8 @@ L..104:
         lwz     11, L..caml_apply2(2)
         b       L..102
 
-        .globl  .callback3_exn
-.callback3_exn:
+        .globl  .caml_callback3_exn
+.caml_callback3_exn:
         mr      0, 3            # Closure
         mr      3, 4            # First argument
         mr      4, 5            # Second argument
@@ -453,10 +453,10 @@ system__frametable:
 #### TOC entries
 
         .toc
-L..young_limit:
-        .tc     young_limit[TC], young_limit
-L..young_ptr:
-        .tc     young_ptr[TC], young_ptr
+L..caml_young_limit:
+        .tc     caml_young_limit[TC], caml_young_limit
+L..caml_young_ptr:
+        .tc     caml_young_ptr[TC], caml_young_ptr
 L..caml_bottom_of_stack:
         .tc     caml_bottom_of_stack[TC], caml_bottom_of_stack
 L..caml_last_return_address:
@@ -497,17 +497,17 @@ raise_caml_exception:
 caml_start_program:
         .long   .caml_start_program, TOC[tc0], 0
 
-        .globl  callback_exn
-        .csect  callback_exn[DS]
-callback_exn:
-        .long   .callback_exn, TOC[tc0], 0
+        .globl  caml_callback_exn
+        .csect  caml_callback_exn[DS]
+caml_callback_exn:
+        .long   .caml_callback_exn, TOC[tc0], 0
 
-        .globl  callback2_exn
-        .csect  callback2_exn[DS]
-callback2_exn:
-        .long   .callback2_exn, TOC[tc0], 0
+        .globl  caml_callback2_exn
+        .csect  caml_callback2_exn[DS]
+caml_callback2_exn:
+        .long   .caml_callback2_exn, TOC[tc0], 0
 
-        .globl  callback3_exn
-        .csect  callback3_exn[DS]
-callback3_exn:
-        .long   .callback3_exn, TOC[tc0], 0
+        .globl  caml_callback3_exn
+        .csect  caml_callback3_exn[DS]
+caml_callback3_exn:
+        .long   .caml_callback3_exn, TOC[tc0], 0

@@ -81,18 +81,18 @@ static char * parse_ld_conf(void)
   stdlib = getenv("OCAMLLIB");
   if (stdlib == NULL) stdlib = getenv("CAMLLIB");
   if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
-  ldconfname = stat_alloc(strlen(stdlib) + 2 + sizeof(LD_CONF_NAME));
+  ldconfname = caml_stat_alloc(strlen(stdlib) + 2 + sizeof(LD_CONF_NAME));
   strcpy(ldconfname, stdlib);
   strcat(ldconfname, "/" LD_CONF_NAME);
   if (stat(ldconfname, &st) == -1) {
-    stat_free(ldconfname);
+    caml_stat_free(ldconfname);
     return NULL;
   }
   ldconf = open(ldconfname, O_RDONLY, 0);
   if (ldconf == -1)
     caml_fatal_error_arg("Fatal error: cannot read loader config file %s\n",
                          ldconfname);
-  config = stat_alloc(st.st_size + 1);
+  config = caml_stat_alloc(st.st_size + 1);
   nread = read(ldconf, config, st.st_size);
   if (nread == -1) 
     caml_fatal_error_arg
@@ -109,7 +109,7 @@ static char * parse_ld_conf(void)
   }
   if (q < p) caml_ext_table_add(&shared_libs_path, q);
   close(ldconf);
-  stat_free(ldconfname);
+  caml_stat_free(ldconfname);
   return config;
 }
 
@@ -128,7 +128,7 @@ static void open_shared_lib(char * name)
     caml_fatal_error_arg2("Fatal error: cannot load shared library %s\n", name,
                           "Reason: %s\n", caml_dlerror());
   caml_ext_table_add(&shared_libs, handle);
-  stat_free(realname);
+  caml_stat_free(realname);
 }
 
 /* Build the table of primitives, given a search path and a list
@@ -171,12 +171,12 @@ void build_primitive_table(char * lib_path,
 #endif
   }
   /* Clean up */
-  stat_free(tofree1);
-  stat_free(tofree2);
+  caml_stat_free(tofree1);
+  caml_stat_free(tofree2);
   caml_ext_table_free(&shared_libs_path, 0);
 }
 
-#endif
+#endif /* NATIVE_CODE */
 
 /** dlopen interface for the bytecode linker **/
 
@@ -250,4 +250,4 @@ value dynlink_get_current_libs(value unit)
   return Val_unit; /* not reached */
 }
 
-#endif
+#endif /* NATIVE_CODE */

@@ -45,7 +45,7 @@ _caml_call_gc:
         addi    r0, r1, 8*32 + 32
         Storeglobal r0, _caml_gc_regs, r11
     /* Save current allocation pointer for debugging purposes */
-        Storeglobal r31, _young_ptr, r11
+        Storeglobal r31, _caml_young_ptr, r11
     /* Save exception pointer (if e.g. a sighandler raises) */
         Storeglobal r29, _caml_exception_pointer, r11
     /* Save all registers used by the code generator */
@@ -108,8 +108,8 @@ _caml_call_gc:
     /* Call the GC */
         bl      _garbage_collection
     /* Reload new allocation pointer and allocation limit */
-        Loadglobal r31, _young_ptr, r11
-        Loadglobal r30, _young_limit, r11
+        Loadglobal r31, _caml_young_ptr, r11
+        Loadglobal r30, _caml_young_limit, r11
     /* Restore all regs used by the code generator */
         addi    r11, r1, 8*32 + 32 - 4
         lwzu    r3, 4(r11)
@@ -191,15 +191,15 @@ _caml_c_call:
         Storeglobal r1, _caml_bottom_of_stack, r12
         Storeglobal r25, _caml_last_return_address, r12
     /* Make the exception handler and alloc ptr available to the C code */
-        Storeglobal r31, _young_ptr, r11
+        Storeglobal r31, _caml_young_ptr, r11
         Storeglobal r29, _caml_exception_pointer, r11
     /* Call the function (address in link register) */
         blrl
     /* Restore return address (in 25, preserved by the C function) */
         mtlr    r25
     /* Reload allocation pointer and allocation limit*/
-        Loadglobal r31, _young_ptr, r11
-        Loadglobal r30, _young_limit, r11
+        Loadglobal r31, _caml_young_ptr, r11
+        Loadglobal r30, _caml_young_limit, r11
     /* Say we are back into Caml code */
         li      r12, 0
         Storeglobal r12, _caml_last_return_address, r11
@@ -212,8 +212,8 @@ _caml_c_call:
 _raise_caml_exception:
     /* Reload Caml global registers */
         Loadglobal r1, _caml_exception_pointer, r11
-        Loadglobal r31, _young_ptr, r11
-        Loadglobal r30, _young_limit, r11
+        Loadglobal r31, _caml_young_ptr, r11
+        Loadglobal r30, _caml_young_limit, r11
     /* Say we are back into Caml code */
         li      r0, 0
         Storeglobal r0, _caml_last_return_address, r11
@@ -231,7 +231,7 @@ _raise_caml_exception:
 _caml_start_program:
         Addrglobal r12, _caml_program
 
-/* Code shared between caml_start_program and callback */
+/* Code shared between caml_start_program and caml_callback */
 L102:
     /* Allocate and link stack frame */
         stwu    r1, -256(r1)
@@ -297,8 +297,8 @@ L103:
         stw     r11, 4(r1)
         mr      r29, r1
     /* Reload allocation pointers */
-        Loadglobal r31, _young_ptr, r11
-        Loadglobal r30, _young_limit, r11
+        Loadglobal r31, _caml_young_ptr, r11
+        Loadglobal r30, _caml_young_limit, r11
     /* Say we are back into Caml code */
         li      r0, 0
         Storeglobal r0, _caml_last_return_address, r11
@@ -320,7 +320,7 @@ L106:
         Storeglobal r11, _caml_gc_regs, r12
         addi    r1, r1, 16
     /* Update allocation pointer */
-        Storeglobal r31, _young_ptr, r11
+        Storeglobal r31, _caml_young_ptr, r11
     /* Restore callee-save registers */
         addi    r11, r1, 16-4
         lwzu    r14, 4(r11)
@@ -376,8 +376,8 @@ L104:
 
 /* Callback from C to Caml */
 
-        .globl  _callback_exn
-_callback_exn:
+        .globl  _caml_callback_exn
+_caml_callback_exn:
     /* Initial shuffling of arguments */
         mr      r0, r3            /* Closure */
         mr      r3, r4            /* Argument */
@@ -385,8 +385,8 @@ _callback_exn:
         lwz     r12, 0(r4)        /* Code pointer */
         b       L102
 
-        .globl  _callback2_exn
-_callback2_exn:
+        .globl  _caml_callback2_exn
+_caml_callback2_exn:
         mr      r0, r3            /* Closure */
         mr      r3, r4            /* First argument */
         mr      r4, r5            /* Second argument */
@@ -394,8 +394,8 @@ _callback2_exn:
         Addrglobal r12, _caml_apply2
         b       L102
 
-        .globl  _callback3_exn
-_callback3_exn:
+        .globl  _caml_callback3_exn
+_caml_callback3_exn:
         mr      r0, r3            /* Closure */
         mr      r3, r4            /* First argument */
         mr      r4, r5            /* Second argument */

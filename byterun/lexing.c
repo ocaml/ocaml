@@ -56,8 +56,8 @@ struct lexing_table {
 #define Short(tbl,n) (((short *)(tbl))[(n)])
 #endif
 
-CAMLprim value lex_engine(struct lexing_table *tbl, value start_state,
-                          struct lexer_buffer *lexbuf)
+CAMLprim value caml_lex_engine(struct lexing_table *tbl, value start_state,
+                               struct lexer_buffer *lexbuf)
 {
   int state, base, backtrk, c;
 
@@ -154,8 +154,8 @@ static void run_tag(char *pc, value mem) {
   }
 }
 
-CAMLprim value new_lex_engine(struct lexing_table *tbl, value start_state,
-                          struct lexer_buffer *lexbuf)
+CAMLprim value caml_new_lex_engine(struct lexing_table *tbl, value start_state,
+                                   struct lexer_buffer *lexbuf)
 {
   int state, base, backtrk, c, pstate ;
   state = Int_val(start_state);

@@ -73,12 +73,12 @@ CAMLexport void raise_with_string(value tag, char *msg)
 
 CAMLexport void failwith (char *msg)
 {
-  raise_with_string(Field(global_data, FAILURE_EXN), msg);
+  raise_with_string(Field(caml_global_data, FAILURE_EXN), msg);
 }
 
 CAMLexport void invalid_argument (char *msg)
 {
-  raise_with_string(Field(global_data, INVALID_EXN), msg);
+  raise_with_string(Field(caml_global_data, INVALID_EXN), msg);
 }
 
 CAMLexport void array_bound_error(void)
@@ -105,32 +105,32 @@ CAMLexport void raise_out_of_memory(void)
 
 CAMLexport void raise_stack_overflow(void)
 {
-  raise_constant(Field(global_data, STACK_OVERFLOW_EXN));
+  raise_constant(Field(caml_global_data, STACK_OVERFLOW_EXN));
 }
 
 CAMLexport void raise_sys_error(value msg)
 {
-  raise_with_arg(Field(global_data, SYS_ERROR_EXN), msg);
+  raise_with_arg(Field(caml_global_data, SYS_ERROR_EXN), msg);
 }
 
 CAMLexport void raise_end_of_file(void)
 {
-  raise_constant(Field(global_data, END_OF_FILE_EXN));
+  raise_constant(Field(caml_global_data, END_OF_FILE_EXN));
 }
 
 CAMLexport void raise_zero_divide(void)
 {
-  raise_constant(Field(global_data, ZERO_DIVIDE_EXN));
+  raise_constant(Field(caml_global_data, ZERO_DIVIDE_EXN));
 }
 
 CAMLexport void raise_not_found(void)
 {
-  raise_constant(Field(global_data, NOT_FOUND_EXN));
+  raise_constant(Field(caml_global_data, NOT_FOUND_EXN));
 }
 
 CAMLexport void raise_sys_blocked_io(void)
 {
-  raise_constant(Field(global_data, SYS_BLOCKED_IO));
+  raise_constant(Field(caml_global_data, SYS_BLOCKED_IO));
 }
 
 /* Initialization of statically-allocated exception buckets */
@@ -138,6 +138,6 @@ CAMLexport void raise_sys_blocked_io(void)
 void init_exceptions(void)
 {
   out_of_memory_bucket.hdr = Make_header(1, 0, Caml_white);
-  out_of_memory_bucket.exn = Field(global_data, OUT_OF_MEMORY_EXN);
+  out_of_memory_bucket.exn = Field(caml_global_data, OUT_OF_MEMORY_EXN);
   register_global_root(&out_of_memory_bucket.exn);
 }

@@ -25,12 +25,12 @@ CAMLextern void caml_startup_code(code_t code, asize_t code_size,
 
 enum { FILE_NOT_FOUND = -1, BAD_BYTECODE  = -2 };
 
-extern int attempt_open(char **name, struct exec_trailer *trail,
-                        int do_open_script);
-extern void read_section_descriptors(int fd, struct exec_trailer *trail);
-extern int32 seek_optional_section(int fd, struct exec_trailer *trail,
-                                   char *name);
-extern int32 seek_section(int fd, struct exec_trailer *trail, char *name);
+extern int caml_attempt_open(char **name, struct exec_trailer *trail,
+                             int do_open_script);
+extern void caml_read_section_descriptors(int fd, struct exec_trailer *trail);
+extern int32 caml_seek_optional_section(int fd, struct exec_trailer *trail,
+                                        char *name);
+extern int32 caml_seek_section(int fd, struct exec_trailer *trail, char *name);
 
 
 #endif /* CAML_STARTUP_H */

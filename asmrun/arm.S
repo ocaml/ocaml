@@ -114,7 +114,7 @@ caml_alloc:
         stfd    f2, [sp, #-8]!
         stfd    f3, [sp, #-8]!
     /* Save current allocation pointer for debugging purposes */
-        ldr     r10, .Lyoung_ptr
+        ldr     r10, .Lcaml_young_ptr
         str     alloc_ptr, [r10, #0]
     /* Save trap pointer in case an exception is raised during GC */
         ldr     r10, .Lcaml_exception_pointer
@@ -134,9 +134,9 @@ caml_alloc:
         mov     alloc_ptr, #0
         str     alloc_ptr, [r10, #0]
     /* Reload new allocation pointer and allocation limit */
-        ldr     r10, .Lyoung_ptr
+        ldr     r10, .Lcaml_young_ptr
         ldr     alloc_ptr, [r10, #0]
-        ldr     alloc_limit, .Lyoung_limit
+        ldr     alloc_limit, .Lcaml_young_limit
     /* Return to caller */
         ldmfd   sp!, {pc}
 
@@ -153,7 +153,7 @@ caml_c_call:
         str     lr, [r5, #0]
         str     sp, [r6, #0]
     /* Make the exception handler and alloc ptr available to the C code */
-        ldr     r6, .Lyoung_ptr
+        ldr     r6, .Lcaml_young_ptr
         ldr     r7, .Lcaml_exception_pointer
         str     alloc_ptr, [r6, #0]
         str     trap_ptr, [r7, #0]
@@ -161,7 +161,7 @@ caml_c_call:
         mov     lr, pc
         mov     pc, r10
     /* Reload alloc ptr */
-        ldr     alloc_ptr, [r6, #0]    /* r6 still points to young_ptr */
+        ldr     alloc_ptr, [r6, #0]    /* r6 still points to caml_young_ptr */
     /* Say that we are back into Caml code */
         mov     r6, #0
         str     r6, [r5, #0] /* r5 still points to caml_last_return_address */
@@ -174,7 +174,7 @@ caml_c_call:
 caml_start_program:
         ldr     r10, .Lcaml_program
 
-/* Code shared with callback* */
+/* Code shared with caml_callback* */
 /* Address of Caml code to call is in r10 */
 /* Arguments to the Caml code are in r0...r3 */
 
@@ -205,9 +205,9 @@ caml_start_program:
         str     r4, [sp, #4]
         mov     trap_ptr, sp
     /* Reload allocation pointers */
-        ldr     r4, .Lyoung_ptr
+        ldr     r4, .Lcaml_young_ptr
         ldr     alloc_ptr, [r4, #0]
-        ldr     alloc_limit, .Lyoung_limit
+        ldr     alloc_limit, .Lcaml_young_limit
     /* We are back into Caml code */
         ldr     r4, .Lcaml_last_return_address
         mov     r5, #0
@@ -234,7 +234,7 @@ caml_start_program:
         str     r5, [r4, #0]
         add     sp, sp, #4*3
     /* Update allocation pointer */
-        ldr     r4, .Lyoung_ptr
+        ldr     r4, .Lcaml_young_ptr
         str     alloc_ptr, [r4, #0]
     /* Reload callee-save registers and return */
         ldfd    f4, [sp], #8
@@ -258,9 +258,9 @@ caml_start_program:
         .global raise_caml_exception
 raise_caml_exception:
     /* Reload Caml allocation pointers */
-        ldr     r1, .Lyoung_ptr
+        ldr     r1, .Lcaml_young_ptr
         ldr     alloc_ptr, [r1, #0]
-        ldr     alloc_limit, .Lyoung_limit
+        ldr     alloc_limit, .Lcaml_young_limit
     /* Say we're back into Caml */
         ldr     r1, .Lcaml_last_return_address
         mov     r2, #0
@@ -273,8 +273,8 @@ raise_caml_exception:
 
 /* Callback from C to Caml */
 
-        .global callback_exn
-callback_exn:
+        .global caml_callback_exn
+caml_callback_exn:
     /* Initial shuffling of arguments (r0 = closure, r1 = first arg) */
         mov     r10, r0
         mov     r0, r1            /* r0 = first arg */
@@ -282,8 +282,8 @@ callback_exn:
         ldr     r10, [r10, #0]    /* code pointer */
         b       .Ljump_to_caml
 
-        .global callback2_exn
-callback2_exn:
+        .global caml_callback2_exn
+caml_callback2_exn:
     /* Initial shuffling of arguments (r0 = closure, r1 = arg1, r2 = arg2) */
         mov     r10, r0
         mov     r0, r1           /* r0 = first arg */
@@ -292,8 +292,8 @@ callback2_exn:
         ldr     r10, .Lcaml_apply2
         b       .Ljump_to_caml
 
-        .global callback3_exn
-callback3_exn:
+        .global caml_callback3_exn
+caml_callback3_exn:
     /* Initial shuffling of arguments */
     /* (r0 = closure, r1 = arg1, r2 = arg2, r3 = arg3) */
         mov     r10, r0
@@ -316,8 +316,8 @@ caml_array_bound_error:
 .Lcaml_last_return_address:     .word caml_last_return_address
 .Lcaml_bottom_of_stack:         .word caml_bottom_of_stack
 .Lcaml_gc_regs:                 .word caml_gc_regs
-.Lyoung_ptr:                    .word young_ptr
-.Lyoung_limit:                  .word young_limit
+.Lcaml_young_ptr:               .word caml_young_ptr
+.Lcaml_young_limit:             .word caml_young_limit
 .Lcaml_exception_pointer:       .word caml_exception_pointer
 .Lcaml_program:                 .word caml_program
 .LLtrap_handler:                .word .Ltrap_handler

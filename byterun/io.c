@@ -65,7 +65,7 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
 {
   struct channel * channel;
 
-  channel = (struct channel *) stat_alloc(sizeof(struct channel));
+  channel = (struct channel *) caml_stat_alloc(sizeof(struct channel));
   channel->fd = fd;
   channel->offset = lseek (fd, 0, SEEK_CUR);
   channel->curr = channel->max = channel->buff;
@@ -104,7 +104,7 @@ CAMLexport void caml_close_channel(struct channel *channel)
   if (channel->refcount > 0) return;
   if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(channel);
   unlink_channel(channel);
-  stat_free(channel);
+  caml_stat_free(channel);
 }
 
 CAMLexport file_offset caml_channel_size(struct channel *channel)
@@ -410,7 +410,7 @@ CAMLexport void caml_finalize_channel(value vchan)
   if (--chan->refcount > 0) return;
   if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(chan);
   unlink_channel(chan);
-  stat_free(chan);
+  caml_stat_free(chan);
 }
 
 static int compare_channel(value vchan1, value vchan2)

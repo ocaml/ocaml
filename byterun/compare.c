@@ -34,7 +34,7 @@ static struct compare_item * compare_stack = compare_stack_init;
 static struct compare_item * compare_stack_limit = compare_stack_init
                                                    + COMPARE_STACK_INIT_SIZE;
 
-CAMLexport int compare_unordered;
+CAMLexport int caml_compare_unordered;
 
 /* Free the compare stack if needed */
 static void compare_free_stack(void)
@@ -199,9 +199,9 @@ static long compare_val(value v1, value v2, int total)
       int res;
       int (*compare)(value v1, value v2) = Custom_ops_val(v1)->compare;
       if (compare == NULL) invalid_argument("equal: abstract value");
-      compare_unordered = 0;
+      caml_compare_unordered = 0;
       res = Custom_ops_val(v1)->compare(v1, v2);
-      if (compare_unordered && !total) return UNORDERED;
+      if (caml_compare_unordered && !total) return UNORDERED;
       if (res != 0) return res;
       break;
     }
@@ -234,7 +234,7 @@ static long compare_val(value v1, value v2, int total)
   }
 }
 
-CAMLprim value compare(value v1, value v2)
+CAMLprim value caml_compare(value v1, value v2)
 {
   long res = compare_val(v1, v2, 1);
   /* Free stack if needed */
@@ -247,42 +247,42 @@ CAMLprim value compare(value v1, value v2)
     return Val_int(EQUAL);
 }
 
-CAMLprim value equal(value v1, value v2)
+CAMLprim value caml_equal(value v1, value v2)
 {
   long res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res == 0);
 }
 
-CAMLprim value notequal(value v1, value v2)
+CAMLprim value caml_notequal(value v1, value v2)
 {
   long res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res != 0);
 }
 
-CAMLprim value lessthan(value v1, value v2)
+CAMLprim value caml_lessthan(value v1, value v2)
 {
   long res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res - 1 < -1);
 }
 
-CAMLprim value lessequal(value v1, value v2)
+CAMLprim value caml_lessequal(value v1, value v2)
 {
   long res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res - 1 <= -1);
 }
 
-CAMLprim value greaterthan(value v1, value v2)
+CAMLprim value caml_greaterthan(value v1, value v2)
 {
   long res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res > 0);
 }
 
-CAMLprim value greaterequal(value v1, value v2)
+CAMLprim value caml_greaterequal(value v1, value v2)
 {
   long res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();

@@ -310,17 +310,17 @@ let comp_primitive p args =
   | Pstringrefu -> Kgetstringchar
   | Pstringsetu -> Ksetstringchar
   | Parraylength kind -> Kvectlength
-  | Parrayrefs Pgenarray -> Kccall("array_get", 2)
-  | Parrayrefs Pfloatarray -> Kccall("array_get_float", 2)
-  | Parrayrefs _ -> Kccall("array_get_addr", 2)
-  | Parraysets Pgenarray -> Kccall("array_set", 3)
-  | Parraysets Pfloatarray -> Kccall("array_set_float", 3)
-  | Parraysets _ -> Kccall("array_set_addr", 3)
-  | Parrayrefu Pgenarray -> Kccall("array_unsafe_get", 2)
-  | Parrayrefu Pfloatarray -> Kccall("array_unsafe_get_float", 2)
+  | Parrayrefs Pgenarray -> Kccall("caml_array_get", 2)
+  | Parrayrefs Pfloatarray -> Kccall("caml_array_get_float", 2)
+  | Parrayrefs _ -> Kccall("caml_array_get_addr", 2)
+  | Parraysets Pgenarray -> Kccall("caml_array_set", 3)
+  | Parraysets Pfloatarray -> Kccall("caml_array_set_float", 3)
+  | Parraysets _ -> Kccall("caml_array_set_addr", 3)
+  | Parrayrefu Pgenarray -> Kccall("caml_array_unsafe_get", 2)
+  | Parrayrefu Pfloatarray -> Kccall("caml_array_unsafe_get_float", 2)
   | Parrayrefu _ -> Kgetvectitem
-  | Parraysetu Pgenarray -> Kccall("array_unsafe_set", 3)
-  | Parraysetu Pfloatarray -> Kccall("array_unsafe_set_float", 3)
+  | Parraysetu Pgenarray -> Kccall("caml_array_unsafe_set", 3)
+  | Parraysetu Pfloatarray -> Kccall("caml_array_unsafe_set_float", 3)
   | Parraysetu _ -> Ksetvectitem
   | Pisint -> Kisint
   | Pisout -> Kisout
@@ -345,12 +345,12 @@ let comp_primitive p args =
   | Plslbint bi -> comp_bint_primitive bi "shift_left" args
   | Plsrbint bi -> comp_bint_primitive bi "shift_right_unsigned" args
   | Pasrbint bi -> comp_bint_primitive bi "shift_right" args
-  | Pbintcomp(bi, Ceq) -> Kccall("equal", 2)
-  | Pbintcomp(bi, Cneq) -> Kccall("notequal", 2)
-  | Pbintcomp(bi, Clt) -> Kccall("lessthan", 2)
-  | Pbintcomp(bi, Cgt) -> Kccall("greaterthan", 2)
-  | Pbintcomp(bi, Cle) -> Kccall("lessequal", 2)
-  | Pbintcomp(bi, Cge) -> Kccall("greaterequal", 2)
+  | Pbintcomp(bi, Ceq) -> Kccall("caml_equal", 2)
+  | Pbintcomp(bi, Cneq) -> Kccall("caml_notequal", 2)
+  | Pbintcomp(bi, Clt) -> Kccall("caml_lessthan", 2)
+  | Pbintcomp(bi, Cgt) -> Kccall("caml_greaterthan", 2)
+  | Pbintcomp(bi, Cle) -> Kccall("caml_lessequal", 2)
+  | Pbintcomp(bi, Cge) -> Kccall("caml_greaterequal", 2)
   | Pbigarrayref(n, _, _) -> Kccall("bigarray_get_" ^ string_of_int n, n + 1)
   | Pbigarrayset(n, _, _) -> Kccall("bigarray_set_" ^ string_of_int n, n + 2)
   | _ -> fatal_error "Bytegen.comp_primitive"
@@ -554,7 +554,7 @@ let rec comp_expr env exp sz cont =
           then Kmakeblock(0, 0) :: cont
           else comp_args env args sz
                  (Kmakeblock(List.length args, 0) ::
-                  Kccall("make_array", 1) :: cont)
+                  Kccall("caml_make_array", 1) :: cont)
       end
 (* Integer first for enabling futher optimization (cf. emitcode.ml)  *)
   | Lprim (Pintcomp c, [arg ; (Lconst _ as k)]) ->
@@ -779,7 +779,7 @@ let comp_block env exp sz cont =
   (* +1 because comp_expr may have pushed one more word *)
   if !max_stack_used + 1 > Config.stack_threshold then
     Kconst(Const_base(Const_int(!max_stack_used + 1))) ::
-    Kccall("ensure_stack_capacity", 1) ::
+    Kccall("caml_ensure_stack_capacity", 1) ::
     code
   else
     code

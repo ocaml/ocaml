@@ -20,8 +20,8 @@
 #include "config.h"
 #include "misc.h"
 
-extern void compact_heap (void);
-extern void compact_heap_maybe (void);
+extern void caml_compact_heap (void);
+extern void caml_compact_heap_maybe (void);
 
 
 #endif /* CAML_COMPACT_H */

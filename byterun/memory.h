@@ -30,20 +30,20 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-CAMLextern value alloc_shr (mlsize_t, tag_t);
-void adjust_gc_speed (mlsize_t, mlsize_t);
-CAMLextern void modify (value *, value);
-CAMLextern void initialize (value *, value);
-CAMLextern value check_urgent_gc (value);
-CAMLextern void * stat_alloc (asize_t);              /* Size in bytes. */
-CAMLextern void stat_free (void *);
-CAMLextern void * stat_resize (void *, asize_t);     /* Size in bytes. */
-char *alloc_for_heap (asize_t request);   /* Size in bytes. */
-void free_for_heap (char *mem);
-int add_to_heap (char *mem);
-color_t allocation_color (void *hp);
+CAMLextern value caml_alloc_shr (mlsize_t, tag_t);
+void caml_adjust_gc_speed (mlsize_t, mlsize_t);
+CAMLextern void caml_modify (value *, value);
+CAMLextern void caml_initialize (value *, value);
+CAMLextern value caml_check_urgent_gc (value);
+CAMLextern void * caml_stat_alloc (asize_t);              /* Size in bytes. */
+CAMLextern void caml_stat_free (void *);
+CAMLextern void * caml_stat_resize (void *, asize_t);     /* Size in bytes. */
+char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
+void caml_free_for_heap (char *mem);
+int caml_add_to_heap (char *mem);
+color_t caml_allocation_color (void *hp);
 
-/* void shrink_heap (char *);        Only used in compact.c */
+/* void caml_shrink_heap (char *);        Only used in compact.c */
 
 /* <private> */
 
@@ -61,16 +61,16 @@ color_t allocation_color (void *hp);
 #define Alloc_small(result, wosize, tag) do{      CAMLassert (wosize >= 1); \
                                             CAMLassert ((tag_t) tag < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
-  young_ptr -= Bhsize_wosize (wosize);                                      \
-  if (young_ptr < young_limit){                                             \
-    young_ptr += Bhsize_wosize (wosize);                                    \
+  caml_young_ptr -= Bhsize_wosize (wosize);                                 \
+  if (caml_young_ptr < caml_young_limit){                                   \
+    caml_young_ptr += Bhsize_wosize (wosize);                               \
     Setup_for_gc;                                                           \
-    minor_collection ();                                                    \
+    caml_minor_collection ();                                               \
     Restore_after_gc;                                                       \
-    young_ptr -= Bhsize_wosize (wosize);                                    \
+    caml_young_ptr -= Bhsize_wosize (wosize);                               \
   }                                                                         \
-  Hd_hp (young_ptr) = Make_header ((wosize), (tag), Caml_black);            \
-  (result) = Val_hp (young_ptr);                                            \
+  Hd_hp (caml_young_ptr) = Make_header ((wosize), (tag), Caml_black);       \
+  (result) = Val_hp (caml_young_ptr);                                       \
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)
 
@@ -89,13 +89,13 @@ color_t allocation_color (void *hp);
   value _old_ = *(fp);                                                      \
   *(fp) = (val);                                                            \
   if (Is_in_heap (fp)){                                                     \
-    if (gc_phase == Phase_mark) darken (_old_, NULL);                       \
+    if (caml_gc_phase == Phase_mark) caml_darken (_old_, NULL);             \
     if (Is_block (val) && Is_young (val)                                    \
         && ! (Is_block (_old_) && Is_young (_old_))){                       \
-      *ref_table_ptr++ = (fp);                                              \
-      if (ref_table_ptr >= ref_table_limit){                                \
-        CAMLassert (ref_table_ptr == ref_table_limit);                      \
-        realloc_ref_table ();                                               \
+      *caml_ref_table_ptr++ = (fp);                                         \
+      if (caml_ref_table_ptr >= caml_ref_table_limit){                      \
+        CAMLassert (caml_ref_table_ptr == caml_ref_table_limit);            \
+        caml_realloc_ref_table ();                                          \
       }                                                                     \
     }                                                                       \
   }                                                                         \
@@ -277,7 +277,7 @@ CAMLextern struct caml__roots_block *local_roots;  /* defined in roots.c */
 #define Store_field(block, offset, val) do{ \
   mlsize_t caml__temp_offset = (offset); \
   value caml__temp_val = (val); \
-  modify (&Field ((block), caml__temp_offset), caml__temp_val); \
+  caml_modify (&Field ((block), caml__temp_offset), caml__temp_val); \
 }while(0)
 
 /*
