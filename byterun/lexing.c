@@ -78,7 +78,6 @@ value lex_engine(tbl, start_state, lexbuf)     /* ML */
 	return Val_int(-state - 1);
       }else{
 	c = 256;
-	lexbuf->lex_eof_reached = Val_int (0);
       }
     }else{
       /* Read next input char */
@@ -98,6 +97,11 @@ value lex_engine(tbl, start_state, lexbuf)     /* ML */
       } else {
         return lexbuf->lex_last_action;
       }
+    }else{
+      /* Erase the EOF condition only if the EOF pseudo-character was
+	 consumed by the automaton (i.e. there was no backtrack above)
+       */
+      if (c == 256) lexbuf->lex_eof_reached = Val_int (0);
     }
   }
 }

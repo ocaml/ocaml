@@ -21,8 +21,10 @@ let rec skip_phrase lexbuf =
     match Lexer.token lexbuf with
       Parser.SEMISEMI | Parser.EOF -> ()
     | _ -> skip_phrase lexbuf
-  with Lexer.Error(_,_,_) ->
-    skip_phrase lexbuf
+  with
+    | Lexer.Error (Lexer.Unterminated_comment, _, _) -> ()
+    | Lexer.Error (Lexer.Unterminated_string, _, _) -> ()
+    | Lexer.Error(_,_,_) -> skip_phrase lexbuf
 
 let maybe_skip_phrase lexbuf =
   if Parsing.is_current_lookahead Parser.SEMISEMI
