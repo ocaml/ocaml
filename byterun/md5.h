@@ -31,10 +31,11 @@ struct MD5Context {
         unsigned char in[64];
 };
 
-void MD5Init (struct MD5Context *context);
-void MD5Update (struct MD5Context *context, unsigned char *buf, unsigned len);
-void MD5Final (unsigned char *digest, struct MD5Context *ctx);
-void MD5Transform (uint32 *buf, uint32 *in);
+CAMLextern void MD5Init (struct MD5Context *context);
+CAMLextern void MD5Update (struct MD5Context *context, unsigned char *buf, 
+                           unsigned long len);
+CAMLextern void MD5Final (unsigned char *digest, struct MD5Context *ctx);
+CAMLextern void MD5Transform (uint32 *buf, uint32 *in);
 
 
 #endif
