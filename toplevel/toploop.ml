@@ -31,10 +31,14 @@ type directive_fun =
 type evaluation_outcome = Result of Obj.t | Exception of exn
 
 let load_lambda lam =
-  if !Clflags.dump_lambda then begin
+  if !Clflags.dump_rawlambda then begin
     Printlambda.lambda lam; print_newline()
   end;
-  let (init_code, fun_code) = Bytegen.compile_phrase lam in
+  let slam = Simplif.simplify_lambda lam in
+  if !Clflags.dump_lambda then begin
+    Printlambda.lambda slam; print_newline()
+  end;
+  let (init_code, fun_code) = Bytegen.compile_phrase slam in
   if !Clflags.dump_instr then begin
     Printinstr.instrlist init_code;
     Printinstr.instrlist fun_code;
@@ -169,6 +173,15 @@ let empty_lexbuf lb =
   lb.lex_abs_pos <- (-l);
   lb.lex_curr_pos <- l
 
+(* Toplevel initialization. Performed here instead of at the
+   beginning of loop() so that user code linked in with cslmktop
+   can call directives from Topdirs. *)
+
+let _ =
+  Symtable.init_toplevel();
+  toplevel_env := Compile.initial_env ();
+  Sys.interactive := true
+
 (* The loop *)
 
 let loop() =
@@ -178,10 +191,7 @@ let loop() =
   let lb = Lexing.from_function refill_lexbuf in
   Location.input_name := "";
   Location.input_lexbuf := Some lb;
-  Symtable.init_toplevel();
-  toplevel_env := Compile.initial_env ();
   Sys.catch_break true;
-  Sys.interactive := true;
   while true do
     try
       empty_lexbuf lb;
