@@ -142,6 +142,15 @@ external ignore : 'a -> unit = "%ignore"
 external fst : 'a * 'b -> 'a = "%field0"
 external snd : 'a * 'b -> 'b = "%field1"
 
+(* References *)
+
+type 'a ref = { mutable contents: 'a }
+external ref: 'a -> 'a ref = "%makemutable"
+external (!): 'a ref -> 'a = "%field0"
+external (:=): 'a ref -> 'a -> unit = "%setfield0"
+external incr: int ref -> unit = "%incr"
+external decr: int ref -> unit = "%decr"
+
 (* String conversion functions *)
 
 external format_int: string -> int -> string = "format_int"
@@ -338,23 +347,26 @@ let really_input ic s ofs len =
   else unsafe_really_input ic s ofs len
 
 let input_line ic =
-  let rec do_input buf pos =
-    if pos >= string_length buf then begin
-      let newbuf = string_create (2 * string_length buf) in
-      string_blit buf 0 newbuf 0 (string_length buf);
-      do_input newbuf pos
-    end else begin
+  let buf = ref (string_create 128) in
+  let pos = ref 0 in
+  begin try
+    while true do
+      if !pos = string_length !buf then begin
+        let newbuf = string_create (2 * !pos) in
+        string_blit !buf 0 newbuf 0 !pos;
+        buf := newbuf
+      end;
       let c = input_char ic in
-      if c = '\n' then begin
-        let res = string_create pos in
-        string_blit buf 0 res 0 pos;
-        res
-      end else begin
-        buf.[pos] <- c;
-        do_input buf (pos + 1)
-      end
-    end in
-  do_input (string_create 128) 0
+      if c = '\n' then raise Exit;
+      !buf.[!pos] <- c;
+      incr pos
+    done
+  with Exit -> ()
+     | End_of_file -> if !pos = 0 then raise End_of_file
+  end;
+  let res = string_create !pos in
+  string_blit !buf 0 res 0 !pos;
+  res
 
 let rec input_byte ic =
   try
@@ -413,15 +425,6 @@ let prerr_newline () = output_char stderr '\n'; flush stderr
 let read_line () = flush stdout; input_line stdin
 let read_int () = int_of_string(read_line())
 let read_float () = float_of_string(read_line())
-
-(* References *)
-
-type 'a ref = { mutable contents: 'a }
-external ref: 'a -> 'a ref = "%makemutable"
-external (!): 'a ref -> 'a = "%field0"
-external (:=): 'a ref -> 'a -> unit = "%setfield0"
-external incr: int ref -> unit = "%incr"
-external decr: int ref -> unit = "%decr"
 
 (* Miscellaneous *)
 

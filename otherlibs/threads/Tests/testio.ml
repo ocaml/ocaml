@@ -65,6 +65,24 @@ let make_lines ofile =
   done;
   close_out oc
 
+(* Test input_line on truncated lines *)
+
+let test_trunc_line ofile =
+  print_string "truncated line"; print_newline();
+  let oc = open_out ofile in
+  output_string oc "A line without newline!";
+  close_out oc;
+  try
+    let ic = open_in ofile in
+    let s = input_line ic in
+    close_in ic;
+    if s = "A line without newline!"
+    then print_string "passed"
+    else print_string "FAILED";
+    print_newline()
+  with End_of_file ->
+    print_string "FAILED"; print_newline()  
+
 (* The test *)
 
 let main() =
@@ -93,6 +111,7 @@ let main() =
   make_lines "/tmp/lines";
   test "line per line, short and long lines"
        copy_line copy_line "/tmp/lines" ofile;
+  test_trunc_line ofile;
   Sys.remove "/tmp/lines";
   Sys.remove ofile;
   exit 0
