@@ -24,6 +24,7 @@ let message_version = software^" "^version
 let usage = "Usage : "^(Sys.argv.(0))^" [options] <files>\n"
 let options_are = "Options are :"
 let option_version = " Print version and exit"
+let bytecode_only = "(bytecode version only)"
 let latex_only = "(LaTeX only)"
 let texi_only = "(TeXinfo only)"
 let latex_texi_only = "(LaTeX and TeXinfo only)"
@@ -35,7 +36,9 @@ let verbose_mode = " verbose mode"
 let include_dirs = "<dir>  Add <dir> to the list of include directories"
 let rectypes = " Allow arbitrary recursive types"
 let preprocess = "<command>  Pipe sources through preprocessor <command>"
-let load_file = "<file.cm[o|a]>  Load file defining a new documentation generator (bytecode version only)"
+let display_custom_generators_dir = " Display custom generators standard directory and exit"
+let add_load_dir = "<dir>  Add the given directory to the search path for custom generators "^bytecode_only
+let load_file = "<file.cm[o|a]>  Load file defining a new documentation generator "^bytecode_only
 let nolabels = " Ignore non-optional labels in types"
 let werr = "Treat ocamldoc warnings as errors"
 let target_dir = "<dir>  Generate files in directory <dir>, rather than in current directory (for man and HTML generators)"
@@ -186,6 +189,11 @@ let text_parse_error l c s =
   "line "^(string_of_int l)^", character "^(string_of_int c)^":\n"^
   (List.nth lines l)^"\n"^
   (String.make c ' ')^"^"
+
+let file_not_found_in_paths paths name =
+  Printf.sprintf "No file %s was found in the load paths: \n%s\n"
+    name
+    (String.concat "\n" paths)
 
 let tag_not_handled tag = "Tag @"^tag^" not handled by this generator"
 let bad_tree = "Incorrect tree structure."

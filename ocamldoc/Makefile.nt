@@ -65,7 +65,8 @@ INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-CMOFILES= odoc_global.cmo\
+CMOFILES= odoc_config.cmo \
+	odoc_global.cmo\
 	odoc_messages.cmo\
 	odoc_types.cmo\
 	odoc_misc.cmo\

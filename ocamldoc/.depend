@@ -1,11 +1,11 @@
 odoc.cmo: ../utils/clflags.cmo ../utils/config.cmi ../utils/misc.cmi \
-    odoc_analyse.cmi odoc_args.cmi odoc_crc.cmo odoc_dot.cmo odoc_global.cmi \
-    odoc_html.cmo odoc_info.cmi odoc_latex.cmo odoc_man.cmo odoc_messages.cmo \
-    odoc_texi.cmo ../typing/typedtree.cmi 
+    odoc_analyse.cmi odoc_args.cmi odoc_config.cmi odoc_crc.cmo odoc_dot.cmo \
+    odoc_global.cmi odoc_html.cmo odoc_info.cmi odoc_latex.cmo odoc_man.cmo \
+    odoc_messages.cmo odoc_texi.cmo ../typing/typedtree.cmi 
 odoc.cmx: ../utils/clflags.cmx ../utils/config.cmx ../utils/misc.cmx \
-    odoc_analyse.cmx odoc_args.cmx odoc_crc.cmx odoc_dot.cmx odoc_global.cmx \
-    odoc_html.cmx odoc_info.cmx odoc_latex.cmx odoc_man.cmx odoc_messages.cmx \
-    odoc_texi.cmx ../typing/typedtree.cmx 
+    odoc_analyse.cmx odoc_args.cmx odoc_config.cmx odoc_crc.cmx odoc_dot.cmx \
+    odoc_global.cmx odoc_html.cmx odoc_info.cmx odoc_latex.cmx odoc_man.cmx \
+    odoc_messages.cmx odoc_texi.cmx ../typing/typedtree.cmx 
 odoc_analyse.cmo: ../utils/ccomp.cmi ../utils/clflags.cmo ../utils/config.cmi \
     ../typing/ctype.cmi ../typing/env.cmi ../typing/includemod.cmi \
     ../parsing/lexer.cmi ../parsing/location.cmi ../utils/misc.cmi \
@@ -60,6 +60,8 @@ odoc_comments.cmx: odoc_comments_global.cmx odoc_global.cmx odoc_lexer.cmx \
     odoc_types.cmx odoc_comments.cmi 
 odoc_comments_global.cmo: odoc_comments_global.cmi 
 odoc_comments_global.cmx: odoc_comments_global.cmi 
+odoc_config.cmo: ../utils/config.cmi odoc_config.cmi 
+odoc_config.cmx: ../utils/config.cmx odoc_config.cmi 
 odoc_cross.cmo: odoc_class.cmo odoc_exception.cmo odoc_messages.cmo \
     odoc_misc.cmi odoc_module.cmo odoc_name.cmi odoc_parameter.cmo \
     odoc_search.cmi odoc_type.cmo odoc_types.cmi odoc_value.cmo \

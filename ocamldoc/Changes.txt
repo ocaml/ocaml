@@ -1,4 +1,9 @@
 Current :
+OK - add: new option -customdir
+OK - add: new option -i (to add a path to the directory where 
+     to look for custom generators)
+OK - add: add odoc_config.ml{,i}
+OK - add: keep_code in Odoc_info.Args interface
 OK - add: m_code_intf and m_code fields for modules, fit when the
    Odoc_args.keep_code option is set, and fit for all modules, not
    only toplevel ones

@@ -68,7 +68,8 @@ INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 COMPFLAGS=$(INCLUDES) -warn-error A
 LINKFLAGS=$(INCLUDES)
 
-CMOFILES= odoc_global.cmo\
+CMOFILES= odoc_config.cmo \
+	odoc_global.cmo\
 	odoc_messages.cmo\
 	odoc_types.cmo\
 	odoc_misc.cmo\
@@ -202,7 +203,7 @@ $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
 $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
 	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $(OCAMLCMXFILES) $(LIBCMXFILES)
 
-manpages: stdlib_man/Pervasives.o
+manpages: stdlib_man/Pervasives.3o
 
 odoc_crc.ml: $(CMIFILES)
 	$(EXTRAC_CRC) $(INCLUDES) \

@@ -932,6 +932,9 @@ module Args :
     
       (** The optional title to use in the generated documentation. *)
       val title : string option ref
+
+      (** To keep the code while merging, when we have both .ml and .mli files for a module. *)
+      val keep_code : bool ref
     
       (** The optional file whose content can be used as intro text. *)
       val intro_file : string option ref
