@@ -1235,7 +1235,15 @@ i_128:    ; OFFSETREF
           MOVEA.W    #Val_unit, accu_
           Next
 
-i_129:    ; GETMETHOD
+i_129:    ; ISINT
+          MOVE.L     accu_, D0
+          AND.L      #1, D0
+          LSL.L      #1, D0
+          OR.L       #1, D0
+          MOVEA.L    D0, accu_
+          Next
+
+i_130:    ; GETMETHOD
           MOVEA.L    (sp_), A0         ; sp[0]
           MOVEA.L    (A0), A0          ; Field (sp[0], 0)
           MOVE.L     accu_, D1
@@ -1249,17 +1257,17 @@ i_129:    ; GETMETHOD
           Next
 
 ; STOP
-i_130:    MOVE.L     initial_external_raise_(A7), (external_raise).L
+i_131:    MOVE.L     initial_external_raise_(A7), (external_raise).L
           MOVE.L     sp_, (extern_sp).L
           SUBQ.L     #1, (callback_depth).L
           MOVE.L     accu_, D0
           interprete_return
           Spacer
 
-i_131:    ; EVENT                          XXX debugger stuff not implemented
+i_132:    ; EVENT                          XXX debugger stuff not implemented
           Next
 
-i_132:    ; BREAK                          XXX debugger stuff not implemented
+i_133:    ; BREAK                          XXX debugger stuff not implemented
           Next
 
  IF NOT &DEBUG THEN
