@@ -15,6 +15,7 @@
 
 #include <mlvalues.h>
 #include "unixsupport.h"
+#include <errno.h>
 #include <sys/types.h>
 #ifdef HAS_DIRENT
 #include <dirent.h>
@@ -22,8 +23,11 @@
 #include <sys/dir.h>
 #endif
 
-CAMLprim value unix_closedir(value d)
+CAMLprim value unix_closedir(value vd)
 {
-  closedir((DIR *) d);
+  DIR * d = DIR_Val(vd);
+  if (d == (DIR *) NULL) unix_error(EBADF, "closedir", Nothing);
+  closedir(d);
+  DIR_Val(vd) = (DIR *) NULL;
   return Val_unit;
 }
