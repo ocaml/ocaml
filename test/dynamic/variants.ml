@@ -28,4 +28,50 @@ DYNTEST A3 ((42, 43)) as a3 to a1 for false in failures;;
 DYNTEST A3 ((42, 43)) as a3 to a2 for false in failures;;
 DYNTEST A3 ((42, 43)) as a3 to a3 for true in failures;;
 
+module M = struct type s = S end;;
+type s = S;;
+DYNTEST M.S as M.s to s for true in failures;;
+DYNTEST S as s to M.s for true in failures;;
+
+module BOOL = struct type t = True | False end;;
+module BOOL' = struct type t = False | True end;;
+DYNTEST BOOL.True as BOOL.t to BOOL'.t for false in failures;;
+DYNTEST BOOL'.True as BOOL'.t to BOOL.t for false in failures;;
+DYNTEST BOOL.False as BOOL.t to BOOL'.t for false in failures;;
+DYNTEST BOOL'.False as BOOL'.t to BOOL.t for false in failures;;
+
+module R = struct type t = A1 | A2 of t end;;
+module R' = struct type t = A1 | A2 of R.t end;;
+DYNTEST R.A1 as R.t to R.t for true in failures;;
+DYNTEST R.A1 as R.t to R'.t for true in failures;;
+DYNTEST R'.A1 as R'.t to R'.t for true in failures;;
+DYNTEST R'.A1 as R'.t to R.t for true in failures;;
+
+module S = struct type t1 = A1 of t2 and t2 = A3 | A2 of t1 end;;
+module S' = struct type t2 = A3 | A2 of t1 and t1 = A1 of t2 end;;
+DYNTEST S.A1 S.A3 as S.t1 to S'.t1 for true in failures;;
+DYNTEST S'.A1 S'.A3 as S'.t1 to S.t1 for true in failures;;
+
+module L = struct type 'a t = N | C of 'a * 'a t;;
+                  type 'a tr = A of ('a tr) t;; end;;
+
+module L' = struct type 'a t = N | C of 'a * 'a t;;
+                   type 'a tr = A of ('a tr) t;; end;;
+
+ 
+DYNTEST L.A L.N as (int L.t) L.tr to (int L'.t) L'.tr for true in failures;;
+
+DYNTEST L.A L.N as (int L.t) L.tr to int L'.tr for false in failures;;
+DYNTEST L'.A L'.N as (int L'.t) L'.tr to int L.tr for false in failures;;
+DYNTEST L.A L.N as (int L.t) L.tr to int L.tr for false in failures;;
+DYNTEST L'.A L'.N as (int L'.t) L'.tr to int L'.tr for false in failures;;
+
+DYNTEST L.A L.N as int L.tr to (int L'.t) L'.tr for false in failures;;
+DYNTEST L'.A L'.N as int L'.tr to (int  L.t) L.tr for false in failures;;
+DYNTEST L.A L.N as int L.tr to (int  L.t) L.tr for false in failures;;
+DYNTEST L'.A L'.N as int L'.tr to (int  L'.t) L'.tr for false in failures;;
+
+(* (fun x -> x : (int L.t) L.tr -> int L.tr);; *)
+
+
 SUMMARY in failures;;
