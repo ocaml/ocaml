@@ -39,11 +39,11 @@ let raw () =
   let newval =
     Array.unsafe_get state ((!j+24) mod 55) + Array.unsafe_get state !j in
   Array.unsafe_set state !j newval;
-  newval land 0x3FFFFFFF
+  newval land max_int
 
 (* Returns a float 0 <= x < 1 with at most 90 bits of precision. *)
 let rawfloat () =
-  let scale = 1073741824.0
+  let scale = float max_int +. 1.0
   and r0 = float (raw ())
   and r1 = float (raw ())
   and r2 = float (raw ())
@@ -53,7 +53,7 @@ let rec intaux n =
   let r = raw () in
   if r >= n then intaux n else r
 let int bound =
-  (intaux (0x3FFFFFFF / bound * bound)) mod bound
+  (intaux (max_int / bound * bound)) mod bound
 
 let float bound = rawfloat () *. bound
 
