@@ -542,7 +542,7 @@ let kscanf ib ef fmt f =
     | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
         let x = scan_int conv max ib in
         scan (stack f (token_int conv ib)) (i + 1)
-    | 'f' | 'g' | 'G' | 'e' | 'E' ->
+    | 'f' | 'g' | 'G' | 'e' | 'E' | 'F' ->
         let x = scan_float max ib in
         scan (stack f (token_float ib)) (i + 1)
     | 's' ->
@@ -557,7 +557,7 @@ let kscanf ib ef fmt f =
     | 'S' ->
         let x = scan_String max ib in
         scan (stack f (token_string ib)) (i + 1)
-    | 'b' ->
+    | 'b' | 'B' ->
         let x = scan_bool max ib in
         scan (stack f (token_bool ib)) (i + 1)
     | 'l' | 'n' | 'L' as t ->

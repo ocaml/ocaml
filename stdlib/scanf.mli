@@ -91,9 +91,10 @@ val bscanf :
    - [c]: reads a single character.
    - [C]: reads a single delimited character (delimiters and special
      escaped characters follow the lexical conventions of Caml).
-   - [f], [e], [E], [g], [G]: reads an optionally signed floating-point number
-     in decimal notation, in the style [dddd.ddd e/E+-dd].
-   - [b]: reads a boolean argument ([true] or [false]).
+   - [f], [e], [E], [g], [G], [F]: reads an optionally signed
+     floating-point number in decimal notation, in the style [dddd.ddd
+     e/E+-dd].
+   - [b], [B]: reads a boolean argument ([true] or [false]).
    - [ld], [li], [lu], [lx], [lX], [lo]: reads an [int32] argument to
      the format specified by the second letter (decimal, hexadecimal, etc).
    - [nd], [ni], [nu], [nx], [nX], [no]: reads a [nativeint] argument to
