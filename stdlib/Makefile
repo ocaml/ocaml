@@ -59,9 +59,9 @@ pervasives.cmx: pervasives.ml
 $(OBJS) std_exit.cmo: pervasives.cmi
 $(OBJS:.cmo=.cmx) std_exit.cmx: pervasives.cmi
 
-$(OBJS): $(COMPILER)
-$(OBJS:.cmo=.cmi): $(COMPILER)
-$(OBJS:.cmo=.cmx): $(OPTCOMPILER)
+$(OBJS) std_exit.cmo: $(COMPILER)
+$(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER)
+$(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
 
 clean:
 	rm -f *.cm* *.o *.a
