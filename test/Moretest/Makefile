@@ -45,29 +45,47 @@ cm.out: cmcaml.ml cmstub.c cmmain.c
 	$(CAMLOPT) -output-obj -o cm.o cmcaml.ml
 	$(NATIVECC) -g -o cm.out cm.o -I$(LIBDIR) -DNO_BYTECODE_FILE cmstub.c cmmain.c ../../asmrun/libasmrun.a $(CCLIBS)
 
-bigarrays.byt: bigarrf.o bigarrfstub.o \
-               ../../otherlibs/bigarray/bigarray.cma \
+bigarrays.byt: ../../otherlibs/bigarray/bigarray.cma \
                ../../otherlibs/bigarray/libbigarray.a bigarrays.ml
 	$(CAMLC) -custom -o bigarrays.byt \
                 -I ../../otherlibs/bigarray \
                 -I ../../otherlibs/unix \
                 unix.cma bigarray.cma bigarrays.ml \
-                bigarrf.o bigarrfstub.o \
                 ../../otherlibs/bigarray/libbigarray.a \
-                ../../otherlibs/unix/libunix.a \
-                ../../byterun/libcamlrun.a -cclib -lg2c
+                ../../otherlibs/unix/libunix.a
 
-bigarrays.out: bigarrf.o bigarrfstub.o \
-               ../../otherlibs/bigarray/bigarray.cmxa \
+bigarrays.out: ../../otherlibs/bigarray/bigarray.cmxa \
                ../../otherlibs/bigarray/libbigarray.a bigarrays.ml
 	$(CAMLOPT) $(OPTFLAGS) -o bigarrays.out \
                 -I ../../otherlibs/bigarray \
                 -I ../../otherlibs/unix \
                 unix.cmxa bigarray.cmxa bigarrays.ml \
+                ../../otherlibs/bigarray/libbigarray.a \
+                ../../otherlibs/unix/libunix.a
+
+bigarrf.byt: bigarrf.o bigarrfstub.o \
+               ../../otherlibs/bigarray/bigarray.cma \
+               ../../otherlibs/bigarray/libbigarray.a bigarrfml.ml
+	$(CAMLC) -custom -o bigarrf.byt \
+                -I ../../otherlibs/bigarray \
+                -I ../../otherlibs/unix \
+                unix.cma bigarray.cma bigarrf.ml \
                 bigarrf.o bigarrfstub.o \
                 ../../otherlibs/bigarray/libbigarray.a \
                 ../../otherlibs/unix/libunix.a \
-                ../../asmrun/libasmrun.a -cclib -lg2c
+                ../../byterun/libcamlrun.a -cclib -lg2c
+
+bigarrf.out: bigarrf.o bigarrfstub.o \
+               ../../otherlibs/bigarray/bigarray.cma \
+               ../../otherlibs/bigarray/libbigarray.a bigarrfml.ml
+	$(CAMLOPT) $(OPTFLAGS) -o bigarrf.out \
+                -I ../../otherlibs/bigarray \
+                -I ../../otherlibs/unix \
+                unix.cma bigarray.cma bigarrf.ml \
+                bigarrf.o bigarrfstub.o \
+                ../../otherlibs/bigarray/libbigarray.a \
+                ../../otherlibs/unix/libunix.a \
+                ../../byterun/libcamlrun.a -cclib -lg2c
 
 bigarrf.o: bigarrf.f
 	g77 -c bigarrf.f
