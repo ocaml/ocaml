@@ -40,7 +40,7 @@ value make_vect(value len, value init)      /* ML */
   mlsize_t size, i;
 
   size = Long_val(len);
-  if (size > Max_wosize) invalid_argument("Array.new");
+  if (size > Max_wosize) invalid_argument("Array.make");
 
   Begin_root(init);
     if (size == 0) {

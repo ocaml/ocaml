@@ -18,7 +18,7 @@ extern.o: extern.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h gc.h intext.h io.h fix_code.h memory.h major_gc.h \
  freelist.h minor_gc.h reverse.h str.h
 fail.o: fail.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
- mlvalues.h fail.h gc.h memory.h major_gc.h freelist.h minor_gc.h \
+ mlvalues.h fail.h io.h gc.h memory.h major_gc.h freelist.h minor_gc.h \
  signals.h stacks.h
 fix_code.o: fix_code.c config.h ../config/m.h ../config/s.h debugger.h \
  misc.h mlvalues.h fix_code.h instruct.h md5.h io.h memory.h gc.h \
@@ -55,7 +55,7 @@ main.o: main.c misc.h config.h ../config/m.h ../config/s.h mlvalues.h \
  sys.h
 major_gc.o: major_gc.c compact.h config.h ../config/m.h ../config/s.h \
  misc.h fail.h mlvalues.h freelist.h gc.h gc_ctrl.h major_gc.h roots.h \
- weak.h
+ memory.h minor_gc.h weak.h
 md5.o: md5.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h md5.h io.h reverse.h
 memory.o: memory.c fail.h misc.h config.h ../config/m.h ../config/s.h \
@@ -118,7 +118,7 @@ extern.d.o: extern.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h gc.h intext.h io.h fix_code.h memory.h major_gc.h \
  freelist.h minor_gc.h reverse.h str.h
 fail.d.o: fail.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
- mlvalues.h fail.h gc.h memory.h major_gc.h freelist.h minor_gc.h \
+ mlvalues.h fail.h io.h gc.h memory.h major_gc.h freelist.h minor_gc.h \
  signals.h stacks.h
 fix_code.d.o: fix_code.c config.h ../config/m.h ../config/s.h debugger.h \
  misc.h mlvalues.h fix_code.h instruct.h md5.h io.h memory.h gc.h \
@@ -156,7 +156,7 @@ main.d.o: main.c misc.h config.h ../config/m.h ../config/s.h mlvalues.h \
  sys.h
 major_gc.d.o: major_gc.c compact.h config.h ../config/m.h ../config/s.h \
  misc.h fail.h mlvalues.h freelist.h gc.h gc_ctrl.h major_gc.h roots.h \
- weak.h
+ memory.h minor_gc.h weak.h
 md5.d.o: md5.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h md5.h io.h reverse.h
 memory.d.o: memory.c fail.h misc.h config.h ../config/m.h ../config/s.h \
