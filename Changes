@@ -10,14 +10,16 @@ Added callback functions with 2 and 3 arguments.
 * More explicit error messages when a native-code program aborts due
 to array or string bound violations.
 
+* In patterns, "C _" allowed even if the constructor C has several arguments.
+
+* && and || allowed as alternate syntax for & and or.
+
 * cslopt for the Intel: code generation for floating-point
 operations entirely redone for the third time (a pox on whomever at
 Intel decided to organize the floating-point registers as a stack).
 
 * cslopt for the Sparc: don't use Sparc V8 smul and sdiv instructions,
 emulation on V7 processors is abysmal.
-
-* && and || allowed as alternate syntax for & and or.
 
 Release 1.12:
 
