@@ -26,10 +26,8 @@
 #ifdef HAS_SYS_SELECT_H
 #include <sys/select.h>
 #endif
-
-#if defined(__OpenBSD__) || defined(__MACH__)
 #include <string.h>
-#endif
+#include <unistd.h>
 
 typedef fd_set file_descr_set;
 

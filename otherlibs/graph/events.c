@@ -22,6 +22,8 @@
 #ifdef HAS_SYS_SELECT_H
 #include <sys/select.h>
 #endif
+#include <string.h>
+#include <unistd.h>
 
 struct event_data {
   short kind;
