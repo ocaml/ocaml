@@ -21,12 +21,12 @@ for ($i = 0; $i <= $#pages; $i++) {
   print "</HEAD>\n";
   print "<BODY>\n";
   if ($i < $#pages) {
-    print '<A HREF="', $pages[$i+1], '"><IMG SRC="next_motif.gif"></A>', "\n";
+    print '<A HREF="', $pages[$i+1], '"><IMG SRC="next_motif.gif" ALT="Next"></A>', "\n";
   }
   if ($i > 0) {
-    print '<A HREF="', $pages[$i-1], '"><IMG SRC="previous_motif.gif"></A>', "\n";
+    print '<A HREF="', $pages[$i-1], '"><IMG SRC="previous_motif.gif" ALT="Previous"></A>', "\n";
   }
-  print '<A HREF="index.html"><IMG SRC="contents_motif.gif"></A>', "\n";
+  print '<A HREF="index.html"><IMG SRC="contents_motif.gif" ALT="Contents"></A>', "\n";
   print "<HR>\n";
   $numlines = 0;
   while (<SRC>) {
@@ -36,12 +36,12 @@ for ($i = 0; $i <= $#pages; $i++) {
   if ($numlines >= 40) {
     print "<HR>\n";
     if ($i < $#pages) {
-      print '<A HREF="', $pages[$i+1], '"><IMG SRC="next_motif.gif"></A>', "\n";
+      print '<A HREF="', $pages[$i+1], '"><IMG SRC="next_motif.gif" ALT="Next"></A>', "\n";
     }
     if ($i > 0) {
-      print '<A HREF="', $pages[$i-1], '"><IMG SRC="previous_motif.gif"></A>', "\n";
+      print '<A HREF="', $pages[$i-1], '"><IMG SRC="previous_motif.gif" ALT="Previous"></A>', "\n";
     }
-    print '<A HREF="index.html"><IMG SRC="contents_motif.gif"></A>', "\n";
+    print '<A HREF="index.html"><IMG SRC="contents_motif.gif" ALT="Contents"></A>', "\n";
   }
   close(SRC);
   close(DST);

@@ -64,7 +64,7 @@ while(<INPUT>) {
     $level1++;
     $level2 = 0;
     select(STDOUT);
-    if ($level1 == 1) { print "<BR><HR><BR><UL>\n"; }
+    if ($level1 == 1) { print "<HR><BR><UL>\n"; }
     print "<LI><A HREF=\"node$level1.html\">$1</A>\n";
     open(FILE1, "> node$level1.html");
     select(FILE1);
@@ -73,7 +73,7 @@ while(<INPUT>) {
   if ($split2[$level1] && m|^<H2>(.*)</H2>|) {
     $level2++;
     select(FILE1);
-    if ($level2 == 1) { print "<BR><HR><BR><UL>\n"; }
+    if ($level2 == 1) { print "<HR><BR><UL>\n"; }
     print "<LI><A HREF=\"node$level1.$level2.html\">$1</A>\n";
     open(FILE2, "> node$level1.$level2.html");
     select(FILE2);
