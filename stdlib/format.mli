@@ -20,7 +20,7 @@
 
 (* You may consider this module as providing an extension to the
    [printf] facility to provide automatic line breaking. The addition of
-   pretty-printing annotations to your regular printf formats gives you
+   pretty-printing annotations to your regular [printf] formats gives you
    fancy indentation and line breaks.
    Pretty-printing annotations are described below in the documentation of
    the function [fprintf].
@@ -290,14 +290,12 @@ val err_formatter : formatter;;
            output to standard error. It is defined as
            [formatter_of_out_channel stderr]. *)
 
-val formatter_of_buffer : Buffer.t -> formatter * (unit -> string);;
-        (* [formatter_of_buffer b] returns the pair [(ppf, flush)],
-           where [ppf] is a new formatter writing to the corresponding
-           buffer [b], and [flush] is a function to 
-           get the material printed to the buffer.
-           When [flush] is called, the pending material is printed,
-           the buffer is reset (according to [Buffer.reset]) and its
-           contents is returned. *)
+val formatter_of_buffer : Buffer.t -> formatter;;
+        (* [formatter_of_buffer b] returns a new formatter writing to
+           buffer [b]. As usual, the formatter has to be flushed at
+           the end of pretty printing, using [pp_print_flush] or
+           [pp_print_newline], to display all the pending material. In
+           this case the buffer is also flushed using [Buffer.flush]. *)
 
 val stdbuf : Buffer.t;;
         (* The string buffer in which [str_formatter] writes. *)
@@ -309,8 +307,7 @@ val str_formatter : formatter;;
 val flush_str_formatter : unit -> string;;
         (* Returns the material printed with [str_formatter], flushes
            the formatter and reset the corresponding buffer.
-           [str_formatter] and [flush_str_formatter] are defined as
-           [formatter_of_buffer stdbuf]. *)
+           [str_formatter] is defined as [formatter_of_buffer stdbuf]. *)
 
 val make_formatter :
         (string -> int -> int -> unit) -> (unit -> unit) -> formatter;;
@@ -414,6 +411,9 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
            [open_box (); print_string "x ="; print_space (); print_int 1; close_box ()].
            It prints [x = 1] within a pretty-printing box. *)
 
+val bprintf: Buffer.t -> ('a, Buffer.t, unit) format -> 'a;;
+        (* Same as [fprintf], but instead of printing on a formatter,
+           writes into the buffer argument. *)
 val printf : ('a, formatter, unit) format -> 'a;;
         (* Same as [fprintf], but output on [std_formatter]. *)
 val eprintf: ('a, formatter, unit) format -> 'a;;
@@ -421,7 +421,7 @@ val eprintf: ('a, formatter, unit) format -> 'a;;
 val sprintf: ('a, unit, string) format -> 'a;;
         (* Same as [printf], but instead of printing on a formatter,
            return a string containing the result of formatting
-           the arguments. [sprintf] uses [stdbuf]. *)
+           the arguments. *)
 
 
 
