@@ -581,7 +581,7 @@ static void bigarray_serialize(value v,
 
   /* Serialize header information */
   serialize_int_4(b->num_dims);
-  serialize_int_4(b->flags);
+  serialize_int_4(b->flags & (BIGARRAY_KIND_MASK | BIGARRAY_LAYOUT_MASK));
   for (i = 0; i < b->num_dims; i++) serialize_int_4(b->dim[i]);
   /* Compute total number of elements */
   num_elts = 1;
@@ -640,7 +640,8 @@ unsigned long bigarray_deserialize(void * dst)
 
   /* Read back header information */
   b->num_dims = deserialize_uint_4();
-  b->flags = deserialize_uint_4();
+  b->flags = deserialize_uint_4() | BIGARRAY_MANAGED;
+  b->proxy = NULL;
   for (i = 0; i < b->num_dims; i++) b->dim[i] = deserialize_uint_4();
   /* Compute total number of elements */
   num_elts = bigarray_num_elts(b);
