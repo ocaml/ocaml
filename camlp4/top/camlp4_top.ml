@@ -71,7 +71,7 @@ value wrap f shfn lb =
          if i < shift then Some ' '
          else do {
            while
-             lb.lex_curr_pos >= String.length lb.lex_buffer &&
+             lb.lex_curr_pos >= lb.lex_buffer_len &&
              not lb.lex_eof_reached
            do {
              lb.refill_buff lb
