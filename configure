@@ -159,7 +159,8 @@ bytecclinkopts=""
 
 case "$bytecc,$host" in
   gcc,*-*-nextstep*)
-    bytecccompopts="-fno-defer-pop -Wall -U__GNUC__ -posix";;
+    bytecccompopts="-fno-defer-pop -Wall -U__GNUC__ -posix"
+    bytecclinkopts="-posix";;
   gcc,alpha-*-osf*)
     bytecccompopts="-fno-defer-pop -Wall"
     bytecclinkopts="-Xlinker -taso";;
@@ -216,7 +217,8 @@ case "$arch,$nativecc,$system" in
   mips,cc,irix)   nativecccompopts=-32
                   nativecclinkopts="-32 -Wl,-woff,84";;
   mips,cc,ultrix) nativecccompopts=-std;;
-  *,*,nextstep)   nativecccompopts="-Wall -posix";;
+  *,*,nextstep)   nativecccompopts="-Wall -posix"
+                  nativecclinkopts="-posix";;
   *,gcc,*)        nativecccompopts=-Wall;;
 esac
 
