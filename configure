@@ -560,6 +560,11 @@ if sh ./hasgot -i sys/socket.h -t socklen_t; then
   echo "#define HAS_SOCKLEN_T" >> s.h
 fi
 
+if sh ./hasgot inet_aton; then
+  echo "inet_aton() found."
+  echo "#define HAS_INET_ATON" >> s.h
+fi
+
 if sh ./hasgot -i unistd.h; then
   echo "unistd.h found."
   echo "#define HAS_UNISTD" >> s.h
