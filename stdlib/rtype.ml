@@ -158,7 +158,7 @@ and raw_print2 f ppf ty =
   match ty.desc with
   | Ttuple tyl -> 
       fprintf ppf "@[<0>%a@]" 
-	(raw_print_typlist (raw_print_simple f) "*") tyl
+	(raw_print_typlist (raw_print_simple f) " *") tyl
   | _ -> raw_print_simple f ppf ty
 
 and raw_print_simple f ppf ty =
