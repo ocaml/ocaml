@@ -432,9 +432,3 @@ let contains_calls = ref false
 let assemble_file infile outfile =
   Sys.command ("as -o " ^ outfile ^ " " ^ infile)
 
-(* Calling the archiver *)
-
-let create_archive archive file_list =
-  Misc.remove_file archive;
-  Sys.command ("ar rc " ^ archive ^ " " ^ String.concat " " file_list ^
-               " && ranlib " ^ archive)

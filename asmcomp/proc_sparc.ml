@@ -284,10 +284,3 @@ let contains_calls = ref false
 let assemble_file infile outfile =
   Sys.command ("as -o " ^ outfile ^ " " ^ infile)
 
-let create_archive archive file_list =
-  Misc.remove_file archive;
-  if Config.system = "solaris" then
-    Sys.command ("ar rc " ^ archive ^ " " ^ String.concat " " file_list)
-  else
-    Sys.command ("ar rc " ^ archive ^ " " ^ String.concat " " file_list ^
-                 " && ranlib " ^ archive)

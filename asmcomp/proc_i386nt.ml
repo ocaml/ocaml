@@ -438,10 +438,3 @@ let assemble_file infile outfile =
      /c  assemble only
      /Fo output file name *)
      
-
-(* Calling the archiver *)
-
-let create_archive archive file_list =
-  Misc.remove_file archive;
-  Sys.command ("lib /nologo /debugtype:cv /out:" ^ archive ^ " " ^
-               String.concat " " file_list)

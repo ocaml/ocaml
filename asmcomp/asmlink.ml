@@ -176,31 +176,41 @@ let call_linker file_list startup_file =
   let cmd =
     match Config.system with
       "win32" ->
-        Printf.sprintf
-          "%s /Fe%s -I%s %s %s %s %s %s %s"
-          Config.native_c_compiler
-          !Clflags.exec_name
-          Config.standard_library
-          (String.concat " " (List.rev !Clflags.ccopts))
-          startup_file
-          (String.concat " " (List.rev file_list))
-          (String.concat " " (List.rev !Clflags.ccobjs))
-          runtime_lib
-          Config.c_libraries
+        if not !Clflags.output_c_object then
+          Printf.sprintf "%s /Fe%s -I%s %s %s %s %s %s %s"
+            Config.native_c_compiler
+            !Clflags.exec_name
+            Config.standard_library
+            (String.concat " " (List.rev !Clflags.ccopts))
+            startup_file
+            (String.concat " " (List.rev file_list))
+            (String.concat " " (List.rev !Clflags.ccobjs))
+            runtime_lib
+            Config.c_libraries
+        else
+          Printf.sprintf "lib /nologo /debugtype:cv /out:%s %s %s"
+            !Clflags.object_name
+            startup_file
+            (String.concat " " (List.rev file_list))
     | _ ->
-        Printf.sprintf
-          "%s -o %s -I%s %s %s %s -L%s %s %s %s"
-          Config.native_c_compiler
-          !Clflags.exec_name
-          Config.standard_library
-          (String.concat " " (List.rev !Clflags.ccopts))
-          startup_file
-          (String.concat " " (List.rev file_list))
-          Config.standard_library
-          (String.concat " " (List.rev !Clflags.ccobjs))
-          runtime_lib
-          Config.c_libraries in
-  if Sys.command cmd <> 0 then raise(Error Linking_error)
+        if not !Clflags.output_c_object then
+          Printf.sprintf "%s -o %s -I%s %s %s %s -L%s %s %s %s"
+            Config.native_c_compiler
+            !Clflags.exec_name
+            Config.standard_library
+            (String.concat " " (List.rev !Clflags.ccopts))
+            startup_file
+            (String.concat " " (List.rev file_list))
+            Config.standard_library
+            (String.concat " " (List.rev !Clflags.ccobjs))
+            runtime_lib
+            Config.c_libraries
+        else
+          Printf.sprintf "ld -r -o %s %s %s"
+            !Clflags.object_name
+            startup_file
+            (String.concat " " (List.rev file_list))
+  in if Sys.command cmd <> 0 then raise(Error Linking_error)
 
 let object_file_name name =
   let file_name =

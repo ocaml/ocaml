@@ -46,7 +46,7 @@ let create_archive file_list lib_name =
     let (objfile_list, descr_list) =
       List.split (List.map read_info file_list) in
     output_value outchan descr_list;
-    if Proc.create_archive archive_name objfile_list <> 0
+    if Ccomp.create_archive archive_name objfile_list <> 0
     then raise(Error(Archiver_error archive_name));
     close_out outchan
   with x ->

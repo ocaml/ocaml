@@ -347,12 +347,9 @@ let oper_latency = function
 let num_stack_slots = [| 0; 0 |]
 let contains_calls = ref false
 
-(* Calling the assembler and the archiver *)
+(* Calling the assembler *)
 
 let assemble_file infile outfile =
   let proc = if powerpc then "ppc" else "pwr" in
   Sys.command ("as -u -m " ^ proc ^ " -o " ^ outfile ^ " " ^ infile)
 
-let create_archive archive file_list =
-  Misc.remove_file archive;
-  Sys.command ("ar rc " ^ archive ^ " " ^ String.concat " " file_list)

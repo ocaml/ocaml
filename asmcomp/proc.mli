@@ -75,6 +75,5 @@ val oper_latency: Mach.operation -> int
 val num_stack_slots: int array
 val contains_calls: bool ref
 
-(* Calling the assembler and the archiver *)
+(* Calling the assembler *)
 val assemble_file: string -> string -> int
-val create_archive: string -> string list -> int
