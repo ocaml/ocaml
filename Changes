@@ -20,6 +20,7 @@ Type-checker:
         module B: A.T
 - Improved efficiency of module type-checking via lazy computation of
   certain signature summary information.
+- An empty polymorphic variant type is now an error.
 
 Byte-code compiler:
 - Protect against VM stack overflow caused by module initialization code
