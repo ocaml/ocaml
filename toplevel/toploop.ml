@@ -67,45 +67,53 @@ let load_lambda ppf lam =
 
 (* Print the outcome of an evaluation *)
 
-let rec print_items env ppf = function
-  | Tsig_value(id, decl)::rem ->
-      fprintf ppf "@[<2>%a"
-      (Printtyp.value_description id) decl;
+let pr_item env ppf = function
+  | Tsig_value(id, decl) :: rem ->
       begin match decl.val_kind with
-      | Val_prim _ -> ()
+      | Val_prim _ ->
+          fprintf ppf "@[<2>%a@]"
+          (Printtyp.value_description id) decl
       | _ ->
-          fprintf ppf " =@ %a"
-          (fun ppf t ->
-            (print_value env (Symtable.get_global_value id)) ppf t)
+          fprintf ppf "@[<2>%a =@ %a@]"
+          (Printtyp.value_description id) decl
+          (print_value env (Symtable.get_global_value id))
           decl.val_type
       end;
-      fprintf ppf "@]@ %a" (print_items env) rem
-  | Tsig_type(id, decl)::rem ->
-      fprintf ppf "@[%a@ %a@]"
-      (Printtyp.type_declaration id) decl
-      (print_items env) rem
-  | Tsig_exception(id, decl)::rem ->
-      fprintf ppf "@[%a@ %a@]"
-      (Printtyp.exception_declaration id) decl
-      (print_items env) rem
-  | Tsig_module(id, mty)::rem ->
-      fprintf ppf "@[<2>module %a :@ %a@]@ %a"
+      rem
+  | Tsig_type(id, decl) :: rem ->
+      fprintf ppf "@[%a@]"
+      (Printtyp.type_declaration id) decl;
+      rem
+  | Tsig_exception(id, decl) :: rem ->
+      fprintf ppf "@[%a@]"
+      (Printtyp.exception_declaration id) decl;
+      rem
+  | Tsig_module(id, mty) :: rem ->
+      fprintf ppf "@[<2>module %a :@ %a@]"
       Printtyp.ident id
-      Printtyp.modtype mty
-      (print_items env) rem
-  | Tsig_modtype(id, decl)::rem ->
-      fprintf ppf "@[%a@ %a@]" 
-      (Printtyp.modtype_declaration id) decl
-      (print_items env) rem
-  | Tsig_class(id, decl)::cltydecl::tydecl1::tydecl2::rem ->
-      fprintf ppf "@[%a@ %a@]"
-      (Printtyp.class_declaration id) decl
-      (print_items env) rem
-  | Tsig_cltype(id, decl)::tydecl1::tydecl2::rem ->
-      fprintf ppf "@[%a@ %a@]" 
-      (Printtyp.cltype_declaration id) decl
-      (print_items env) rem
-  | _ -> ()
+      Printtyp.modtype mty;
+      rem
+  | Tsig_modtype(id, decl) :: rem ->
+      fprintf ppf "@[%a@]" 
+      (Printtyp.modtype_declaration id) decl;
+      rem
+  | Tsig_class(id, decl) :: cltydecl :: tydecl1 :: tydecl2 :: rem ->
+      fprintf ppf "@[%a@]"
+      (Printtyp.class_declaration id) decl;
+      rem
+  | Tsig_cltype(id, decl) :: tydecl1 :: tydecl2 :: rem ->
+      fprintf ppf "@[%a@]" 
+      (Printtyp.cltype_declaration id) decl;
+      rem
+  | _ -> []
+
+let rec pr_items space env ppf = function
+  | [] -> ()
+  | items ->
+     if space then fprintf ppf "@ ";
+     pr_items true env ppf (pr_item env ppf items)
+
+let print_items = pr_items false
 
 (* Print an exception produced by an evaluation *)
 
