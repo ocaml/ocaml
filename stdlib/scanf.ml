@@ -487,7 +487,7 @@ let scan_Float max ib =
    characters has been read.*)
 let scan_string stp max ib =
   let rec loop max =
-    if max = 0 || Scanning.eof ib then max else
+    if max = 0 || Scanning.end_of_input ib then max else
     let c = Scanning.checked_peek_char ib in
     if stp == [] then
       match c with

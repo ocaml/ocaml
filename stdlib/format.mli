@@ -165,6 +165,12 @@ val set_margin : int -> unit;;
    Nothing happens if [d] is smaller than 2 or
    bigger than 999999999. *)
 
+val set_margin_to_max : unit -> unit;;
+
+(** [set_margin_to_max ()] sets the value of the right margin to the
+   maximum possible value compatible with the various invariants of
+   the pretty printer. *)
+
 val get_margin : unit -> int;;
 (** Returns the position of the right margin. *)
 
@@ -523,6 +529,7 @@ val pp_set_mark_tags : formatter -> bool -> unit;;
 val pp_get_print_tags : formatter -> unit -> bool;;
 val pp_get_mark_tags : formatter -> unit -> bool;;
 val pp_set_margin : formatter -> int -> unit;;
+val pp_set_margin_to_max : formatter -> unit -> unit;;
 val pp_get_margin : formatter -> unit -> int;;
 val pp_set_max_indent : formatter -> int -> unit;;
 val pp_get_max_indent : formatter -> unit -> int;;

@@ -660,6 +660,9 @@ let pp_set_margin state n =
     (* Rebuild invariants. *)
     pp_set_max_indent state new_max_indent end;;
 
+let pp_set_margin_to_max state () =
+  pp_set_margin state (pp_infinity - 1);;
+
 let pp_get_margin state () = state.pp_margin;;
 
 let pp_set_formatter_output_functions state f g =
@@ -804,6 +807,7 @@ and set_tab = pp_set_tab std_formatter
 and print_tab = pp_print_tab std_formatter
 
 and set_margin = pp_set_margin std_formatter
+and set_margin_to_max = pp_set_margin_to_max std_formatter
 and get_margin = pp_get_margin std_formatter
 
 and set_max_indent = pp_set_max_indent std_formatter
