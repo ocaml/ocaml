@@ -189,11 +189,14 @@ static void mark_slice (long work)
           sz = Wosize_hd (hd);
           for (i = 1; i < sz; i++){
             curfield = Field (cur, i);
+           weak_again:
             if (curfield != 0 && Is_block (curfield) && Is_in_heap (curfield)){
               if (Tag_val (curfield) == Forward_tag){
-                Field (cur, i) = Forward_val (curfield);
+                curfield = Forward_val (curfield);
+                Field (cur, i) = curfield;
+                goto weak_again;
               }
-              else if (Is_white_val (curfield)){
+              if (Is_white_val (curfield)){
                 Field (cur, i) = 0;
               }
             }
