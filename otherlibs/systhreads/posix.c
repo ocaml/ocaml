@@ -472,7 +472,7 @@ value caml_mutex_new(value unit)        /* ML */
   mut = stat_alloc(sizeof(pthread_mutex_t));
   caml_pthread_check(pthread_mutex_init(mut, NULL), "Mutex.create");
   wrapper = alloc_final(2, caml_mutex_finalize, 1, Max_mutex_number);
-  Mutex_val(wrapper) = mut;
+  Field(wrapper, 1) = (value) mut;
   return wrapper;
 }
 
@@ -531,7 +531,7 @@ value caml_condition_new(value unit)        /* ML */
   cond = stat_alloc(sizeof(pthread_cond_t));
   caml_pthread_check(pthread_cond_init(cond, NULL), "Condition.create");
   wrapper = alloc_final(2, caml_condition_finalize, 1, Max_condition_number);
-  Condition_val(wrapper) = cond;
+  Field(wrapper, 1) = (value) cond;
   return wrapper;
 }
 
