@@ -45,7 +45,9 @@ void get_sockaddr(a)
         unix_error(ENAMETOOLONG, "", path);
       }
       bcopy(String_val(path), sock_addr.s_unix.sun_path, (int) len + 1);
-      sock_addr_len = sizeof(sock_addr.s_unix.sun_family) + len;
+      sock_addr_len =
+        ((char *)&(sock_addr.s_unix.sun_path) - (char *)&(sock_addr.s_unix))
+        + len;
       break;
     }
   case 1:                       /* ADDR_INET */
