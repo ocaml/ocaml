@@ -315,7 +315,7 @@ recovery (see below). The user can define a customized "parse_error"
 function in the header section of the grammar file.
 
 When the "Parsing.Parse_error" exception is raised, either explicitely
-in one of the actions or implicitely by the "parse_error" function,
+in one of the actions or implicitly by the "parse_error" function,
 the parser enters error recovery mode: it discards states from the
 stack until it reaches a place where the error token can be shifted.
 It then discards tokens from the input until it finds three successive
@@ -391,7 +391,6 @@ Here is the definition for the corresponding lexer:
           | '('            { LPAREN }
           | ')'            { RPAREN }
           | eof            { raise Eof }
-        ;;
 \end{verbatim}
 Here is the main program, that combines the parser with the lexer:
 \begin{verbatim}

@@ -292,51 +292,55 @@ As a convenience, "caml/mlvalues.h" defines the macros "Val_unit",
 \subsection{Kind tests}
 
 \begin{itemize}
-\item $\hbox{"Is_int"}(v)$ is true if value $v$ is an immediate integer,
+\item "Is_int("\var{v}")" is true if value \var{v} is an immediate integer,
 false otherwise
-\item $\hbox{"Is_block"}(v)$ is true if value $v$ is a pointer to a block,
+\item "Is_block("\var{v}")" is true if value \var{v} is a pointer to a block,
 and false if it is an immediate integer.
 \end{itemize}
 
 \subsection{Operations on integers}
 
 \begin{itemize}
-\item $\hbox{"Val_long"}(l)$ returns the value encoding the "long int" $l$
-\item $\hbox{"Long_val"}(v)$ returns the "long int" encoded in value $v$
-\item $\hbox{"Val_int"}(i)$ returns the value encoding the "int" $i$
-\item $\hbox{"Int_val"}(v)$ returns the "int" encoded in value $v$
+\item "Val_long("\var{l}")" returns the value encoding the "long int" \var{l}
+\item "Long_val("\var{v}")" returns the "long int" encoded in value \var{v}
+\item "Val_int("\var{i}")" returns the value encoding the "int" \var{i}
+\item "Int_val("\var{v}")" returns the "int" encoded in value \var{v}
 \end{itemize}
 
 \subsection{Accessing blocks}
 
 \begin{itemize}
-\item $\hbox{"Wosize_val"}(v)$ returns the size of value $v$, in words,
+\item "Wosize_val("\var{v}")" returns the size of value \var{v}, in words,
 excluding the header.
-\item $\hbox{"Tag_val"}(v)$ returns the tag of value $v$.
-\item $\hbox{"Field"}(v,n)$ returns the value contained in the $n\th$ field
-of the structured block $v$. Fields are numbered from 0 to
+\item "Tag_val("\var{v}")" returns the tag of value \var{v}.
+\item "Field("\var{v}", "\var{n}")" returns the value contained in the
+$n\th$ field
+of the structured block \var{v}. Fields are numbered from 0 to
 $\hbox{"Wosize_val"}(v)-1$.
-\item $\hbox{"Code_val"}(v)$ returns the code part of the closure $v$.
-\item $\hbox{"string_length"}(v)$ returns the length (number of characters)
-of the string $v$.
-\item $\hbox{"Byte"}(v,n)$ returns the $n\th$ character of the string
-$v$, with type "char". Characters are numbered from 0 to
+\item "Code_val("\var{v}")" returns the code part of the closure \var{v}.
+\item "string_length("\var{v}")" returns the length (number of characters)
+of the string \var{v}.
+\item "Byte("\var{v}", "\var{n}")" returns the $n\th$ character of the string
+\var{v}, with type "char". Characters are numbered from 0 to
 $\hbox{"string_length"}(v)-1$.
-\item $\hbox{"Byte_u"}(v,n)$ returns the $n\th$ character of the string
-$v$, with type "unsigned char". Characters are numbered from 0 to
+\item "Byte_u("\var{v}", "\var{n}")" returns the $n\th$ character of the string
+\var{v}, with type "unsigned char". Characters are numbered from 0 to
 $\hbox{"string_length"}(v)-1$.
-\item $\hbox{"String_val"}(v)$ returns a pointer to the first byte of the string
-$v$, with type "char *". This pointer is a valid C string: there is a
+\item "String_val("\var{v}")" returns a pointer to the first byte of the string
+\var{v}, with type "char *". This pointer is a valid C string: there is a
 null character after the last character in the string. However, Caml
 Light strings can contain embedded null characters, that will confuse
 the usual C functions over strings. 
-\item $\hbox{"Double_val"}(v)$ returns the floating-point number contained in
-value $v$, with type "double".
+\item "Double_val("\var{v}")" returns the floating-point number contained in
+value \var{v}, with type "double".
 \end{itemize}
-The expressions $\hbox{"Field"}(v,n)$, $\hbox{"Code_val"}(v)$,
-$\hbox{"Byte"}(v,n)$, $\hbox{"Byte_u"}(v,n)$ and $\hbox{"Double_val"}(v)$ are valid
-l-values. Hence, they can be assigned to, resulting in an in-place
-modification of value $v$. Assigning directly to $\hbox{"Field"}(v,n)$ must
+The expressions "Field("\var{v}", "\var{n}")",
+"Byte("\var{v}", "\var{n}")",
+"Byte_u("\var{v}", "\var{n}")",
+and "Double_val("\var{v}")"
+are valid l-values. Hence, they can be assigned to, resulting in an
+in-place modification of value \var{v}.
+Assigning directly to "Field("\var{v}", "\var{n}")" must
 be done with care to avoid confusing the garbage collector (see
 below).
 
@@ -354,24 +358,24 @@ against \verb"Max_young_wosize" to determine the correct allocation procedure.
 
 \begin{itemize}
 \item
-$\hbox{"Atom"}(t)$ returns an ``atom'' (zero-sized block) with tag $t$.
+"Atom("\var{t}")" returns an ``atom'' (zero-sized block) with tag \var{t}.
 Zero-sized blocks are preallocated outside of the heap. It is
 incorrect to try and allocate a zero-sized block using the functions below.
-For instance, $\hbox{"Atom"}(0)$ represents the empty array.
+For instance, "Atom(0)" represents the empty array.
 \item
-$\hbox{"alloc"}(n,t)$ returns a fresh small block of size
-$n \leq \hbox{"Max_young_wosize"}$ words, with tag $t$. 
+"alloc("\var{n}", "\var{t}")" returns a fresh small block of size
+$n \leq \hbox{"Max_young_wosize"}$ words, with tag \var{t}. 
 If this block is a structured block (i.e. if $t < \hbox{"No_scan_tag"}$), then 
 the fields of the block (initially containing garbage) must be initialized
 with legal values (using direct assignment to the fields of the block)
 before the next allocation.
 \item
-$\hbox{"alloc_tuple"}(n)$ returns a fresh small block of size
+"alloc_tuple("\var{n}")" returns a fresh small block of size
 $n \leq \hbox{"Max_young_wosize"}$ words, with
 tag 0. The fields of this block must be filled with legal values
 before the next allocation or modification.
 \item
-$\hbox{"alloc_shr"}(n,t)$ returns a fresh block of size $n$, with tag $t$.
+"alloc_shr("\var{n}", "\var{t}")" returns a fresh block of size \var{n}, with tag \var{t}.
 The size of the block can be greater than \verb"Max_young_wosize". (It
 can also be smaller, but in this case it is more efficient to call
 "alloc" instead of "alloc_shr".) 
@@ -380,25 +384,25 @@ the fields of the block (initially containing garbage) must be initialized
 with legal values (using the "initialize" function described below)
 before the next allocation.
 \item
-$\hbox{"alloc_string"}(n)$ returns a string value of length $n$ characters.
+"alloc_string("\var{n}")" returns a string value of length \var{n} characters.
 The string initially contains garbage.
 \item
-$\hbox{"copy_string"}(s)$ returns a string value containing a copy of
-the null-terminated C string $s$ (a "char *").
+"copy_string("\var{s}")" returns a string value containing a copy of
+the null-terminated C string \var{s} (a "char *").
 \item
-$\hbox{"copy_double"}(d)$ returns a floating-point value initialized
-with the "double" $d$.
+"copy_double("\var{d}")" returns a floating-point value initialized
+with the "double" \var{d}.
 \item
-$\hbox{"alloc_array"}(f,a)$ allocates an array of values, calling
-function $f$ over each element of the input array $a$ to transform it
-into a value. The array $a$ is an array of pointers terminated by the
-null pointer. The function $f$ receives each pointer as argument, and
+"alloc_array("\var{f}", "\var{a}")" allocates an array of values, calling
+function \var{f} over each element of the input array \var{a} to transform it
+into a value. The array \var{a} is an array of pointers terminated by the
+null pointer. The function \var{f} receives each pointer as argument, and
 returns a value. The zero-tagged block returned by
-$\hbox{"alloc_array"}(f,a)$ is filled with the values returned by the
-successive calls to $f$.
+"alloc_array("\var{f}", "\var{a}")" is filled with the values returned by the
+successive calls to \var{f}.
 \item
-$\hbox{"copy_string_array"}(p)$ allocates an array of strings, copied from
-the pointer to a string array $p$ (a \verb"char **").
+"copy_string_array("\var{p}")" allocates an array of strings, copied from
+the pointer to a string array \var{p} (a \verb"char **").
 \end{itemize}
 
 \subsection{Raising exceptions}
@@ -406,12 +410,33 @@ the pointer to a string array $p$ (a \verb"char **").
 C functions cannot raise arbitrary exceptions. However, two functions
 are provided to raise two standard exceptions:
 \begin{itemize}
-\item $\hbox{"failwith"}(s)$, where $s$ is a null-terminated C string (with
-type \verb"char *"), raises exception "Failure" with argument $s$.
-\item $\hbox{"invalid_argument"}(s)$, where $s$ is a null-terminated C
+\item "failwith("\var{s}")", where \var{s} is a null-terminated C string (with
+type \verb"char *"), raises exception "Failure" with argument \var{s}.
+\item "invalid_argument("\var{s}")", where \var{s} is a null-terminated C
 string (with type \verb"char *"), raises exception "Invalid_argument"
-with argument $s$.
+with argument \var{s}.
 \end{itemize}
+
+\subsection{Callbacks from C to Caml}
+
+C functions can apply Caml functional values (closures) to Caml values.
+The following functions are provided to perform the applications:
+\begin{itemize}
+\item "callback("\var{f, a}")" applies the functional value \var{f} to
+the value \var{a} and return the value returned by~\var{f}.
+\item "callback2("\var{f, a, b}")" applies the functional value \var{f}
+(which is assumed to be a curried Caml function with two arguments) to
+\var{a} and \var{b}.
+\item "callback3("\var{f, a, b, c}")" applies the functional value \var{f}
+(a curried Caml function with three arguments) to \var{a}, \var{b} and \var{c}.
+\end{itemize}
+If the function \var{f} does not return, but raises an exception that
+escapes the scope of the application, then this exception is
+propagated to the next enclosing Caml code, skipping over the C
+code. That is, if a Caml function \var{f} calls a C function \var{g} that
+calls back a Caml function \var{h} that raises a stray exception, then the
+execution of \var{g} is interrupted and the exception is propagated back
+into \var{f}.
 
 \section{Living in harmony with the garbage collector}
 
@@ -473,7 +498,9 @@ with the garbage collector using the "register_global_root" function.
 Registration of a global variable "v" is achieved by calling
 "register_global_root(&v)" just before a valid value is stored in "v"
 for the first time. Afterwards, the GC treats the variable "v" as a
-root value, as described above.
+root value, as described above. A typical use is for storing a Caml
+closure in a C global variable so that it can be called back later
+from other C functions.
 
 \begin{gcrule} Direct assignment to a field of a block, as in
 \begin{alltt}

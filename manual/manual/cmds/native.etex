@@ -37,7 +37,7 @@ produced by the bytecode compiler "cslc".
 Arguments ending in ".ml" are taken to be source files for compilation
 unit implementations. Implementations provide definitions for the
 names exported by the unit, and also contain expressions to be
-evaluated for their side-effects.  From the file \var{x}".ml", the "cslc"
+evaluated for their side-effects.  From the file \var{x}".ml", the "cslopt"
 compiler produces two files: \var{x}".o", containing native object code,
 and \var{x}".cmx", containing extra information for linking and
 optimization of the clients of the unit. The compiled implementation
@@ -112,7 +112,7 @@ directory \var{dir}.
 
 \item["-compact"]
 Optimize the produced code for space rather than for time. This
-results in smaller but slightly slower programs. The default is to
+results in slightly smaller but slightly slower programs. The default is to
 optimize for speed.
 
 \item["-i"]
@@ -127,7 +127,7 @@ and edit that file to remove all declarations of unexported names.
 \item["-I" \var{directory}]
 Add the given directory to the list of directories searched for
 compiled interface files (".cmi") and compiled object code files
-(".cmo"). By default, the current directory is searched first, then the
+(".cmx"). By default, the current directory is searched first, then the
 standard library directory. Directories added with "-I" are searched
 after the current directory, in the order in which they were given on
 the command line, but before the standard library directory.
@@ -165,8 +165,8 @@ compilers should generate code that behave the same.
 
 \begin{itemize}
 
-\item The following operations trigger a hardware trap which aborts
-the program instead of raising an exception ("Invalid_argument" and
+\item The following operations abort the program (often via an
+hardware trap) instead of raising an exception ("Invalid_argument" and
 "Division_by_zero" respectively):
 \begin{itemize}
 \item accesses to arrays and strings out of bounds;
@@ -179,13 +179,14 @@ abort the program instead of raising the "Invalid_argument" exception:
 \item structural comparisons "(=)", "(<>)", etc., when encountering a
 functional value;
 \item "Array.new" and "String.create" when the requested size is
-negative or exceeds the memory manager limits.
+negative or exceeds the memory manager limits;
+\item "output_value" when encountering a functional value or pointers
+outside the Caml heap (such as input-output buffers).
 \end{itemize}
 
-\item The following library functions are not yet implemented and will
-abort the program with a fatal error message:
-\begin{itemize}
-\item "Sys.signal" and "Sys.catch_break".
-\end{itemize}
+\item Signals are detected only when the program performs an
+allocation in the heap. That is, if a signal is delivered while in a
+piece of code that does not allocate, its handler will not be called
+until the next heap allocation.
 
 \end{itemize}

@@ -236,9 +236,9 @@ with "#load". See section~\ref{s:toplevel-modules} above.
 The "cslmktop" command builds Caml Special Light toplevels that
 contain user code preloaded at start-up. 
 
-The "cslmktop" command takes as argument a set of ".cmo" files, and
-links them with the object files that implement the Caml Special Light
-toplevel. The typical use is:
+The "cslmktop" command takes as argument a set of ".cmo" and ".cma"
+files, and links them with the object files that implement the Caml
+Special Light toplevel. The typical use is:
 \begin{verbatim}
         cslmktop -o mytoplevel foo.cmo bar.cmo gee.cmo
 \end{verbatim}
@@ -285,7 +285,7 @@ Link in ``custom runtime'' mode. See the corresponding option for
 
 \item["-I" \var{directory}]
 Add the given directory to the list of directories searched for
-compiled object code files (".cmo").
+compiled object code files (".cmo" and ".cma").
 
 \item["-o" \var{exec-file}]
 Specify the name of the toplevel file produced by the linker.
