@@ -189,7 +189,7 @@ CAMLexport void print_exception_backtrace(void)
   events = read_debug_info();
   if (events == Val_false) {
     fprintf(stderr,
-            "(Program not linked with -g, cannot print stack backtrace\n");
+            "(Program not linked with -g, cannot print stack backtrace)\n");
     return;
   }
   for (i = 0; i < backtrace_pos; i++)
