@@ -139,6 +139,10 @@ The following environment variables are also consulted:
   print a message at the start of each major GC cycle, when the heap
   size changes, and when compaction is triggered.
 
+\item["CAMLRUNPARAM"]  If "OCAMLRUNPARAM" is not found in the
+  environment, then "CAMLRUNPARAM" will be used instead.  If
+  "CAMLRUNPARAM" is not found, then the default values will be used.
+
 \item["PATH"] List of directories searched to find the bytecode
 executable file.
 \end{options}

@@ -352,6 +352,16 @@ The Sparc code generator supports the following additional options:
 The default is to generate code for SPARC version 7, which runs on all
 SPARC processors.
 
+\paragraph{Environment variables}
+The following environment variable is also consulted:
+\begin{options}
+\item["OCAMLRUNPARAM"]  Same usage as in "ocamlrun"
+  (see section~\ref{ocamlrun-options}), except that option "l"
+  is ignored (the operating system's stack size limit
+  is used instead).
+\item["CAMLRUNPARAM"]  Same as in "ocamlrun".
+\end{options}
+
 \section{Common errors}
 
 The error messages are almost identical to those of "ocamlc".
