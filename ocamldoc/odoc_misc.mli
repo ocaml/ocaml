@@ -91,6 +91,10 @@ val first_sentence_and_rest_of_text :
 (** Return the given [text] without any title or list. *)
 val text_no_title_no_list : Odoc_types.text -> Odoc_types.text
 
+(** Return the list of titles in a [text]. 
+   A title is a title level, an optional label and a text.*)
+val get_titles_in_text : Odoc_types.text -> (int * string option * Odoc_types.text) list
+
 (** Take a sorted list of elements, a function to get the name
    of an element and return the list of list of elements, 
    where each list group elements beginning by the same letter.

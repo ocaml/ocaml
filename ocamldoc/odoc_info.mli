@@ -506,6 +506,9 @@ module Module :
     (** The list of couples (module parameter, optional description). *)
     val module_parameters : ?trans:bool-> t_module -> (Parameter.module_parameter * text option) list
 
+    (** The list of module comments. *)
+    val module_comments : ?trans:bool-> t_module -> text list
+
     (** {3 Functions for module types} *)
 
     (** Access to the elements of a module type. *)
@@ -549,7 +552,9 @@ module Module :
 
     (** The list of couples (module parameter, optional description). *)
     val module_type_parameters : ?trans:bool-> t_module_type -> (Parameter.module_parameter * text option) list
-	
+
+    (** The list of module comments. *)
+    val module_type_comments : ?trans:bool-> t_module_type -> text list
   end
 
 (** Analysis of the given source files.
@@ -629,17 +634,20 @@ val string_of_method : Value.t_method -> string
    or the first blank line) of a text.
    Don't stop in the middle of [Code], [CodePre], [Verbatim], [List], [Enum],
    [Latex], [Link], [Ref], [Subscript] or [Superscript]. *)
-val first_sentence_of_text : Odoc_types.text -> Odoc_types.text
+val first_sentence_of_text : text -> text
 
 (** Return the first sentence (until the first dot followed by a blank
    or the first blank line) of a text, and the remaining text after.
    Don't stop in the middle of [Code], [CodePre], [Verbatim], [List], [Enum],
    [Latex], [Link], [Ref], [Subscript] or [Superscript].*)
-val first_sentence_and_rest_of_text : 
-    Odoc_types.text -> Odoc_types.text * Odoc_types.text
+val first_sentence_and_rest_of_text : text -> text * text
 
 (** Return the given [text] without any title or list. *)
-val text_no_title_no_list : Odoc_types.text -> Odoc_types.text
+val text_no_title_no_list : text -> text
+
+(** Return the list of titles in a [text]. 
+   A title is a title level, an optional label and a text.*)
+val get_titles_in_text : text -> (int * string option * text) list
 
 (** Take a sorted list of elements, a function to get the name
    of an element and return the list of list of elements, 

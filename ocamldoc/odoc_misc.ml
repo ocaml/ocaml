@@ -311,6 +311,36 @@ let rec text_no_title_no_list t =
   in
   List.flatten (List.map iter t)
 
+let get_titles_in_text t =
+  let l = ref [] in
+  let rec iter_ele ele =
+    match ele with
+    | Odoc_types.Title (n,lopt,t) -> l := (n,lopt,t) :: !l
+    | Odoc_types.List l
+    | Odoc_types.Enum l -> List.iter iter_text l	
+    | Odoc_types.Raw _
+    | Odoc_types.Code _
+    | Odoc_types.CodePre _
+    | Odoc_types.Verbatim _
+    | Odoc_types.Ref _ -> ()
+    | Odoc_types.Newline ->  ()
+    | Odoc_types.Block t
+    | Odoc_types.Bold t
+    | Odoc_types.Italic t
+    | Odoc_types.Center t
+    | Odoc_types.Left t
+    | Odoc_types.Right t
+    | Odoc_types.Emphasize t -> iter_text t
+    | Odoc_types.Latex s -> ()
+    | Odoc_types.Link (_, t)
+    | Odoc_types.Superscript t 
+    | Odoc_types.Subscript t  -> iter_text t
+  and iter_text te = 
+    List.iter iter_ele te
+  in
+  iter_text t;
+  List.rev !l
+
 
 (*********************************************************)
 let rec get_before_dot s =

@@ -140,6 +140,8 @@ let first_sentence_and_rest_of_text = Odoc_misc.first_sentence_and_rest_of_text
 
 let text_no_title_no_list = Odoc_misc.text_no_title_no_list
 
+let get_titles_in_text = Odoc_misc.get_titles_in_text
+
 let create_index_lists = Odoc_misc.create_index_lists
 
 let remove_option = Odoc_misc.remove_option
