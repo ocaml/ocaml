@@ -415,57 +415,7 @@ let rec type_exp env sexp =
         exp_env = env }
   | Pexp_apply(sfunct, sargs) ->
       let funct = type_exp env sfunct in
-      let rec type_unknown_args args omitted ty_fun = function
-        [] ->
-          (List.rev args,
-	   List.fold_left
-	     (fun ty_fun (l,ty,lv) -> newty2 lv (Tarrow(l,ty,ty_fun)))
-	     ty_fun omitted)
-      | (l1, sarg1) :: sargl ->
-          let (ty1, ty2) =
-            try
-              filter_arrow env ty_fun l1
-            with Unify _ ->
-	      match repr ty_fun with
-		{desc=Tarrow _} ->
-		  raise(Error(sfunct.pexp_loc, Apply_wrong_label l1))
-	      |	_ ->
-		  raise(Error(sfunct.pexp_loc,
-                              Apply_non_function funct.exp_type)) in
-          let arg1 = type_expect env sarg1 ty1 in
-          type_unknown_args (Some arg1 :: args) omitted ty2 sargl
-      in
-      let rec type_args args omitted ty_fun sargs =
-	match repr ty_fun with
-	  {desc=Tarrow (l, ty, ty_fun); level=lv} when sargs <> [] ->
-	    let name = label_name l in
-	    let sargs, sarg =
-	      try
-		let (l', sarg0, sargs) = extract_label name sargs in
-		sargs,
-		if is_optional l' || not (is_optional l) then
-		  Some sarg0
-		else
-		  Some { pexp_loc = sarg0.pexp_loc;
-			 pexp_desc = Pexp_construct (Longident.Lident "Some",
-						     Some sarg0, false) }
-	      with Not_found ->
-		sargs,
-		if is_optional l && List.mem_assoc "" sargs then
-		  Some { pexp_loc = Location.none;
-			 pexp_desc = Pexp_construct (Longident.Lident "None",
-						     None, false) }
-		else None
-	    in
-	    let arg, omitted =
-	      match sarg with None -> None, (l,ty,lv) :: omitted
-	      |	Some sarg -> Some (type_expect env sarg ty), omitted
-	    in
-	    type_args (arg::args) omitted ty_fun sargs
-	| _ ->
-	    type_unknown_args args omitted ty_fun sargs
-      in
-      let (args, ty_res) = type_args [] [] funct.exp_type sargs in
+      let (args, ty_res) = type_application env funct sargs in
       { exp_desc = Texp_apply(funct, args);
         exp_loc = sexp.pexp_loc;
         exp_type = ty_res;
@@ -822,6 +772,59 @@ let rec type_exp env sexp =
         exp_loc = sexp.pexp_loc;
         exp_type = ty;
         exp_env = env }
+
+and type_application env funct sargs =
+  let rec type_unknown_args args omitted ty_fun = function
+      [] ->
+        (List.rev args,
+	 List.fold_left
+	   (fun ty_fun (l,ty,lv) -> newty2 lv (Tarrow(l,ty,ty_fun)))
+	   ty_fun omitted)
+    | (l1, sarg1) :: sargl ->
+        let (ty1, ty2) =
+          try
+            filter_arrow env ty_fun l1
+          with Unify _ ->
+	    match repr ty_fun with
+	      {desc=Tarrow _} ->
+		raise(Error(funct.exp_loc, Apply_wrong_label l1))
+	    | _ ->
+		raise(Error(funct.exp_loc,
+                            Apply_non_function funct.exp_type)) in
+        let arg1 = type_expect env sarg1 ty1 in
+        type_unknown_args (Some arg1 :: args) omitted ty2 sargl
+  in
+  let rec type_args args omitted ty_fun sargs =
+    match expand_head env ty_fun with
+      {desc=Tarrow (l, ty, ty_fun); level=lv} when sargs <> [] ->
+	let name = label_name l in
+	let sargs, sarg =
+	  try
+	    let (l', sarg0, sargs) = extract_label name sargs in
+	    sargs,
+	    if is_optional l' || not (is_optional l) then
+	      Some sarg0
+	    else
+	      Some { pexp_loc = sarg0.pexp_loc;
+		     pexp_desc = Pexp_construct (Longident.Lident "Some",
+						 Some sarg0, false) }
+	  with Not_found ->
+	    sargs,
+	    if is_optional l && List.mem_assoc "" sargs then
+	      Some { pexp_loc = Location.none;
+		     pexp_desc = Pexp_construct (Longident.Lident "None",
+						 None, false) }
+	    else None
+	in
+	let arg, omitted =
+	  match sarg with None -> None, (l,ty,lv) :: omitted
+	  | Some sarg -> Some (type_expect env sarg ty), omitted
+	in
+	type_args (arg::args) omitted ty_fun sargs
+    | _ ->
+	type_unknown_args args omitted ty_fun sargs
+  in
+  type_args [] [] funct.exp_type sargs
 
 (* Typing of an expression with an expected type.
    Some constructs are treated specially to provide better error messages. *)
