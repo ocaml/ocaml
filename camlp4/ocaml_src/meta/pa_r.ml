@@ -2241,8 +2241,8 @@ Grammar.extend
         (fun (l : 'class_longident) _ (m : string) (loc : int * int) ->
            (m :: l : 'class_longident))]];
     Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e),
-    Some (Gramext.After "arrow"),
-    [None, Some Gramext.NonA,
+    Some (Gramext.Level "arrow"),
+    [None, Some Gramext.RightA,
      [[Gramext.Stoken ("OPTLABEL", ""); Gramext.Sself],
       Gramext.action
         (fun (t : 'ctyp) (i : string) (loc : int * int) ->

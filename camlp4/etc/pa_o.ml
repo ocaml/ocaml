@@ -1148,8 +1148,8 @@ EXTEND
       | i = LIDENT -> [i] ] ]
   ;
   (* Labels *)
-  ctyp: AFTER "arrow"
-    [ NONA
+  ctyp: LEVEL "arrow"
+    [ RIGHTA
       [ i = lident_colon; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
           <:ctyp< ~ $i$ : $t1$ -> $t2$ >>
       | i = OPTLABEL; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->

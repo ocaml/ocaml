@@ -748,8 +748,8 @@ EXTEND
       | i = LIDENT -> [i] ] ]
   ;
   (* Labels *)
-  ctyp: AFTER "arrow"
-    [ NONA
+  ctyp: LEVEL "arrow"
+    [ RIGHTA
       [ i = TILDEIDENT; ":"; t = SELF -> <:ctyp< ~ $i$ : $t$ >>
       | i = LABEL; t = SELF -> <:ctyp< ~ $i$ : $t$ >>
       | i = QUESTIONIDENT; ":"; t = SELF -> <:ctyp< ? $i$ : $t$ >> 
