@@ -104,7 +104,7 @@ Caml_alloc:
 Caml_call_gc:
     /* Save %g2 (required size) */
         Store(%g2, Caml_required_size)
-    /* Save Exn_ptr (exception pointer) */
+    /* Save exception pointer if GC raises */
         Store(Exn_ptr, Caml_exception_pointer)
     /* Save current allocation pointer for debugging purposes */
         Store(Alloc_ptr, Young_ptr)
@@ -203,7 +203,7 @@ Caml_c_call:
         sethi   %hi(Young_ptr), %g1
     /* Return to caller */
         retl
-        ld      [%g1 + %lo(Young_ptr)], Alloc_limit     /* in delay slot */
+        ld      [%g1 + %lo(Young_ptr)], Alloc_ptr        /* in delay slot */
 
 /* Start the Caml program */
 
@@ -269,27 +269,30 @@ L110:
 
         .global Raise_caml_exception
 Raise_caml_exception:
-    /* Reload global registers */
-        Load(Caml_exception_pointer, Exn_ptr)
-        Load(Young_ptr, Alloc_ptr)
-        Address(Young_limit, Alloc_limit)
     /* Save exception bucket in a register outside the reg windows */
-        mov     %o0, %g1
+        mov     %o0, %g2
+    /* Load exception pointer in a register outside the reg windows */
+        Load(Caml_exception_pointer, %g3)
     /* Pop some frames until the trap pointer is in the current frame. */
-        cmp     Exn_ptr, %fp
+        cmp     %g3, %fp
         blt     L107                    /* if Exn_ptr < %fp, over */
         nop
 L106:   restore
-        cmp     %fp, Exn_ptr            /* if %fp <= Exn_ptr, loop */
+        cmp     %fp, %g3                /* if %fp <= Exn_ptr, loop */
         ble     L106
         nop
-L107:   mov     Exn_ptr, %sp
+L107:
+    /* Reload allocation registers */
+        Load(Young_ptr, Alloc_ptr)
+        Address(Young_limit, Alloc_limit)
+    /* Branch to exception handler */
+        mov     %g3, %sp
         ld      [%sp + 96], %g1
         ld      [%sp + 100], Exn_ptr
         add     %sp, 8, %sp
         jmp     %g1 + 8
     /* Restore bucket, in delay slot */
-        mov     %g1, %o0
+        mov     %g2, %o0
 
 /* Callbacks C -> ML */
 
