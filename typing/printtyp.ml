@@ -132,7 +132,6 @@ let rec mark_loops_rec visited ty =
         mark_loops_rec visited ty2
     | Tnil                -> ()
     | Tlink _             -> fatal_error "Printtyp.mark_loops_rec (2)"
-    | _ -> assert false
 
 let mark_loops ty = mark_loops_rec [] ty
 
