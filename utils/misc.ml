@@ -75,22 +75,6 @@ let create_hashtable size init =
   List.iter (fun (key, data) -> Hashtbl.add tbl key data) init;
   tbl
 
-(* String functions *)
-
-let capitalize s =
-  let r = String.create (String.length s) in
-  String.blit s 0 r 0 (String.length s);
-  let c = s.[0] in
-  if c >= 'a' & c <= 'z' then r.[0] <- Char.chr(Char.code c - 32);
-  r
-
-let lowercase s =
-  let r = String.create (String.length s) in
-  String.blit s 0 r 0 (String.length s);
-  let c = s.[0] in
-  if c >= 'A' & c <= 'Z' then r.[0] <- Char.chr(Char.code c + 32);
-  r
-
 (* File copy *)
 
 let copy_file ic oc =

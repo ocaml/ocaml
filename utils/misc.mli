@@ -35,11 +35,6 @@ val create_hashtable: int -> ('a * 'b) list -> ('a, 'b) Hashtbl.t
         (* Create a hashtable of the given size and fills it with the
            given bindings. *)
 
-val capitalize: string -> string
-val lowercase: string -> string
-        (* Return a copy of the given string with the first character
-           set to uppercase or lowercase, respectively. *)
-
 val copy_file: in_channel -> out_channel -> unit
         (* [copy_file ic oc] reads the contents of file [ic] and copies
            them to [oc]. It stops when encountering EOF on [ic]. *)
