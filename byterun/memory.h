@@ -225,8 +225,8 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
   value x [(size)] = { 0 /* , 0, 0, ... */ }; \
   caml__roots_block caml__roots_##x; \
   void *caml__dummy_##x = ( \
-  caml_frame, \
-  (caml_roots_##x.next = local_roots), \
+  caml__frame, \
+  (caml__roots_##x.next = local_roots), \
   (local_roots = &caml__roots_##x), \
   (caml__roots_##x.nitems = (size)), \
   (caml__roots_##x.ntables = 1), \
