@@ -13,6 +13,9 @@
 
 (* System interface *)
 
+type config = { os_type : string; word_size : int };;
+external get_config: unit -> config = "sys_get_config"
+
 external get_argv: unit -> string array = "sys_get_argv"
 
 let argv = get_argv()
@@ -24,7 +27,6 @@ external getenv: string -> string = "sys_getenv"
 external command: string -> int = "sys_system_command"
 external chdir: string -> unit = "sys_chdir"
 external getcwd: unit -> string = "sys_getcwd"
-external get_os_type: unit -> string = "sys_get_os_type"
 
 let interactive = ref false
 

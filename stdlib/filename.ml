@@ -11,10 +11,12 @@
 
 (* $Id$ *)
 
+let systype = (Sys.get_config()).Sys.os_type;;
+
 let current_dir_name =
-  match Sys.get_os_type () with
+  match systype with
   | "Unix" -> "."
-  | "Windows NT" -> "."
+  | "Win32" -> "."
   | "Macintosh" -> ":"
   | _ -> failwith "Filename.current_dir_name: unknown system"
 ;;
@@ -39,9 +41,9 @@ let mac_concat dirname filename =
 ;;
 
 let concat =
-  match Sys.get_os_type () with
+  match systype with
   | "Unix" -> unix_concat
-  | "Windows NT" -> wnt_concat
+  | "Win32" -> wnt_concat
   | "Macintosh" -> mac_concat
   | _ -> failwith "Filename.concat: unknown system"
 ;;
@@ -70,9 +72,9 @@ let mac_is_absolute n =
 ;;
 
 let is_absolute =
-  match Sys.get_os_type () with
+  match systype with
   | "Unix" -> unix_is_absolute
-  | "Windows NT" -> wnt_is_absolute
+  | "Win32" -> wnt_is_absolute
   | "Macintosh" -> mac_is_absolute
   | _ -> failwith "Filename.is_absolute: unknown system"
 ;;
@@ -101,9 +103,9 @@ let wnt_check_suffix name suff =
 let mac_check_suffix = unix_check_suffix;;
 
 let check_suffix =
-  match Sys.get_os_type () with
+  match systype with
   | "Unix" -> unix_check_suffix
-  | "Windows NT" -> wnt_check_suffix
+  | "Win32" -> wnt_check_suffix
   | "Macintosh" -> mac_check_suffix
   | _ -> failwith "Filename.check_suffix: unknown system"
 ;;
@@ -179,24 +181,24 @@ let mac_dirname name =
 ;;
 
 let basename =
-  match Sys.get_os_type () with
+  match systype with
   | "Unix" -> unix_basename
-  | "Windows NT" -> wnt_basename
+  | "Win32" -> wnt_basename
   | "Macintosh" -> mac_basename
   | _ -> failwith "Filename.basename: unknown system"
 ;;
 let dirname =
-  match Sys.get_os_type () with
+  match systype with
   | "Unix" -> unix_dirname
-  | "Windows NT" -> wnt_dirname
+  | "Win32" -> wnt_dirname
   | "Macintosh" -> mac_dirname
   | _ -> failwith "Filename.dirname: unknown system"
 ;;
 
 let temporary_directory =
-  match Sys.get_os_type () with
+  match systype with
   | "Unix" -> (try Sys.getenv "TMPDIR" with Not_found -> "/tmp")
-  | "Windows NT" -> (try Sys.getenv "TEMP" with Not_found -> "C:\\temp")
+  | "Win32" -> (try Sys.getenv "TEMP" with Not_found -> "C:\\temp")
   | "Macintosh" -> (try Sys.getenv "TempFolder" with Not_found -> ":")
   | _ -> failwith "Filename.temporary_directory: unknown system"
 ;;

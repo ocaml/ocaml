@@ -13,6 +13,14 @@
 
 (* Module [Sys]: system interface *)
 
+type config = { os_type : string; word_size : int };;
+        (* Configuration information:
+-          [os_type] is one of Unix, Win32, MacOS.
+-          [word_size] is the size of one word, in bits: 32 or 64
+        *)
+external get_config: unit -> config = "sys_get_config"
+        (* Return the current run-time configuration. *)
+
 val argv: string array
         (* The command line arguments given to the process.
            The first element is the command name used to invoke the program.
@@ -37,9 +45,6 @@ val interactive: bool ref
         (* This reference is initially set to [false] in standalone
            programs and to [true] if the code is being executed under
            the interactive toplevel [csltop]. *)
-external get_os_type: unit -> string = "sys_get_os_type"
-        (* Return the operating system name. *)
-
 (*** Signal handling *)
 
 type signal_behavior =
