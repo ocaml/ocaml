@@ -70,11 +70,11 @@ val sleep : int -> unit
 (*** Sockets *)
 
 val socket : domain:Unix.socket_domain ->
-             kind:Unix.socket_type -> proto:int -> Unix.file_descr
+             kind:Unix.socket_type -> protocol:int -> Unix.file_descr
 val socketpair : domain:Unix.socket_domain -> kind:Unix.socket_type ->
-                 proto:int -> Unix.file_descr * Unix.file_descr
+                 protocol:int -> Unix.file_descr * Unix.file_descr
 val accept : Unix.file_descr -> Unix.file_descr * Unix.sockaddr
-val connect : Unix.file_descr -> Unix.sockaddr -> unit
+val connect : Unix.file_descr -> addr:Unix.sockaddr -> unit
 val recv : Unix.file_descr -> buf:string ->
            pos:int -> len:int -> mode:Unix.msg_flag list -> int
 val recvfrom : Unix.file_descr -> buf:string -> pos:int -> len:int ->
