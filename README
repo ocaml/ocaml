@@ -81,9 +81,10 @@ For MS Windows, see README.win32.  For the Macintosh, see INSTALL.MPW.
 
 DOCUMENTATION:
 
-The Objective Caml manual is distributed in HTML, Postscript, DVI, and
-plain text. It can be obtained by anonymous FTP from ftp.inria.fr as
-described below. It is also available on the World Wide Web, at
+The Objective Caml manual is distributed in HTML, PDF, Postscript,
+DVI, and plain text. It can be obtained by anonymous FTP from
+ftp.inria.fr as described below. It is also available on the World
+Wide Web, at
 
         http://caml.inria.fr/ocaml/
 

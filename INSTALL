@@ -5,9 +5,10 @@ PREREQUISITES
 
 * The GNU C compiler gcc is recommended, as the bytecode
   interpreter takes advantage of gcc-specific features to enhance
-  performance. Versions 2.5.8, 2.6.3, 2.7.0, 2.7.2 and 2.7.2.2 have
+  performance. Versions 2.5.8, 2.6.3, 2.7.2 and 2.7.2.3 have
   all been tested at some point and appear to work.
-  2.7.2.1 for Intel under Linux has known problems; use some other version.
+  2.7.2.1 for Intel under Linux/RedHat has known problems;
+  upgrade to 2.7.2.3.
 
 * Under HP/UX, gcc, the GNU binutils, and GNU make are all required.
   The native cc, as, and make have major problems.
@@ -209,8 +210,7 @@ environment variable, or set it to /bin/sh.
 
 * gcc 2.7.2.1 generates incorrect code for the runtime system in -O mode
 on some Intel x86 platforms (e.g. Linux RedHat 4.1 and 4.2).
-If this causes a problem, the solution is to downgrade to 2.7.2, or
-upgrade to 2.7.2.2 or above; both work all right.
+If this causes a problem, the solution is to upgrade to 2.7.2.3 or above.
 
 * On HP 9000/700 machines under HP/UX 9.  Some versions of cc are
 unable to compile correctly the runtime system (wrong code is
