@@ -186,6 +186,8 @@ let scan_float max ib =
      scan_exp_part max ib
   | c -> scan_exp_part max ib;;
 
+(* Scan a regular string: it stops with a space or one of the
+   characters in stp. *)
 let scan_string stp max ib =
   let rec loop max =
     if max = 0 || Scanning.end_of_input ib then max else
@@ -197,39 +199,89 @@ let scan_string stp max ib =
     if List.mem c stp then max else loop (Scanning.store_char ib c max) in 
   loop max;;
 
-let scan_String stp max ib =
-  let rec loop esc max =
-    if max = 0 || Scanning.end_of_input ib then max else
-    let c = Scanning.peek_char ib in
-    if stp = [] then
-      match c with
-      | '"' (* '"' helping Emacs *) ->
-         let max = Scanning.store_char ib c max in
-         if esc then loop false max else max 
-      | '\\' ->
-         if esc then loop false (Scanning.store_char ib c max) else
-         loop true max
-      | c -> loop false (Scanning.store_char ib c max) else
-    if List.mem c stp then max else loop false (Scanning.store_char ib c max) in
-  loop true max;;
-
+(* Scan a char: peek strictly one character in the input, whatsoever. *)
 let scan_char max ib =
   if max = 0 || Scanning.end_of_input ib then bad_input ib "a char" else
+  Scanning.store_char ib (Scanning.peek_char ib) max;;
+
+let char_for_backslash =
+  match Sys.os_type with
+  | "Unix" | "Win32" | "Cygwin" ->
+      begin function
+      | 'n' -> '\010'
+      | 'r' -> '\013'
+      | 'b' -> '\008'
+      | 't' -> '\009'
+      | c   -> c
+      end
+  | "MacOS" ->
+      begin function
+      | 'n' -> '\013'
+      | 'r' -> '\010'
+      | 'b' -> '\008'
+      | 't' -> '\009'
+      | c   -> c
+      end
+  | x -> assert false;;
+
+let char_for_decimal_code ib c0 c1 c2 =
+  let c =
+    100 * (int_of_char c0 - 48) + 10 * (int_of_char c1 - 48) +
+    (int_of_char c2 - 48) in
+  if c < 0 || c > 255
+  then bad_input ib (Printf.sprintf "\\ %c%c%c" c0 c1 c2)
+  else char_of_int c;;
+
+let bad_escape c = failwith ("illegal escape character " ^ String.make 1 c);;
+
+(* Called when encountering '\\' as starter of a char.
+   Stops before the corresponding '\''. *)
+let scan_backslash_char max ib =
+  if max = 0 || Scanning.end_of_input ib then bad_input ib "a char" else
   let c = Scanning.peek_char ib in
-  Scanning.store_char ib c max;;
+  match c with
+  | '\\' | '\'' | '"' | 'n' | 't' | 'b' | 'r' (* '"' helping Emacs *) ->
+     Scanning.store_char ib (char_for_backslash c) max
+  | '0' .. '9' as c ->
+     let get_digit () =
+       Scanning.next_char ib;
+       let c = Scanning.peek_char ib in
+       match c with
+       | '0' .. '9' as c -> c
+       | c -> bad_escape c in
+     let c0 = c in
+     let c1 = get_digit () in
+     let c2 = get_digit () in
+     Scanning.store_char ib (char_for_decimal_code ib c0 c1 c2) (max - 2)
+  | c -> bad_escape c;;
 
 let scan_Char max ib =
-  let rec loop esc max =
+  let rec loop s max =
    if max = 0 || Scanning.end_of_input ib then bad_input ib "a char" else
    let c = Scanning.peek_char ib in
-   match c with
-   | '\'' -> 
-      let max = Scanning.store_char ib c max in
-      if esc then loop false max else max 
-   | '\\' -> 
-      if esc then loop false (Scanning.store_char ib c max) else
-      loop true max
-   | c -> loop false (Scanning.store_char ib c max) in
+   match c, s with
+   | '\'', 3 -> Scanning.next_char ib; loop 2 (max - 1)
+   | '\'', 1 -> Scanning.next_char ib; max - 1
+   | '\\', 2 -> Scanning.next_char ib; loop 1 (scan_backslash_char (max - 1) ib)
+   | c, 2 -> loop 1 (Scanning.store_char ib c max)
+   | c, _ -> bad_escape c in
+  loop 3 max;;
+
+let scan_String stp max ib =
+  let rec loop s max =
+    if max = 0 || Scanning.end_of_input ib then bad_input ib "a string" else
+    let c = Scanning.peek_char ib in
+    if stp = [] then
+      match c, s with
+      | '"', true (* '"' helping Emacs *) ->
+         Scanning.next_char ib; loop false (max - 1)
+      | '"', false (* '"' helping Emacs *) ->
+         Scanning.next_char ib; max - 1
+      | '\\', false ->
+         Scanning.next_char ib; loop false (scan_backslash_char (max - 1) ib)
+      | c, false -> loop false (Scanning.store_char ib c max)
+      | c, _ -> bad_input ib (String.make 1 c) else
+    if List.mem c stp then max else loop s (Scanning.store_char ib c max) in
   loop true max;;
 
 let scan_bool max ib =
@@ -240,7 +292,9 @@ let scan_bool max ib =
     | _ -> 0 in
   scan_string [] (min max m) ib;;
 
-type char_set = Pos_set of string | Neg_set of string;;
+type char_set =
+   | Pos_set of string
+   | Neg_set of string;;
 
 let read_char_set fmt i =
   let lim = String.length fmt - 1 in
