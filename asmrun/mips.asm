@@ -360,7 +360,10 @@ $104:   jal     $24
 $105:
         sw      $22, young_ptr
         sw      $30, caml_exception_pointer
-        subu    $sp, $sp, 16    /* reserve some space for the call */
+        lw      $24, 0($sp)
+        sw      $24, caml_bottom_of_stack
+        lw      $25, 4($sp)
+        sw      $25, caml_last_return_address
         move    $4, $2          /* bucket as first argument */
         jal     mlraise         /* never returns */
 

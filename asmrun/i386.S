@@ -236,6 +236,8 @@ L107:
 L108:
     /* Exception handler: re-raise the exception through mlraise,
        so that local C roots are cleaned up correctly. */
+        popl    G(caml_bottom_of_stack)
+        popl    G(caml_last_return_address)
         pushl   %eax            /* exn bucket is the argument */
         call    G(mlraise)      /* never returns */
 

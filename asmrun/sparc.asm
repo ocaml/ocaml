@@ -324,10 +324,14 @@ L109:   call    %l2
         ret
         restore
 L110:
-    /* The trap handler: re-raise the exception through mlraise,
-       so that local C roots are cleaned up correctly. */
+    /* The trap handler */
         Store(%g5, Caml_exception_pointer)
         Store(%g6, Young_ptr)
+        ldd     [%sp + 96], %l0
+        Store(%l0, Caml_bottom_of_stack)
+        Store(%l1, Caml_last_return_address)
+    /* Re-raise the exception through mlraise,
+       so that local C roots are cleaned up correctly. */
         call    Mlraise         /* never returns */
         nop
 
