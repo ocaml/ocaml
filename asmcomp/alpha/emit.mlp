@@ -495,12 +495,7 @@ let emit_instr i =
               gc_return_lbl = lbl_redo;
               gc_frame = lbl_frame;
               gc_instr = i } :: !call_gc_sites;
-          if is_immediate n then
-            `{emit_label lbl_redo}:	subq	$13, {emit_int n}, $13\n`
-          else begin
-            `{emit_label lbl_redo}:	ldiq	$25, {emit_int n}\n`;
-            `	subq	$13, $25, $13\n`
-          end;
+          `{emit_label lbl_redo}:	lda	$13, -{emit_int n}($13)\n`;
           `	cmpult	$13, $14, $25\n`;
           `	bne	$25, {emit_label lbl_call_gc}\n`;
           `	addq	$13, 8, {emit_reg i.res.(0)}\n`
