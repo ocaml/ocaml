@@ -41,8 +41,8 @@
    For instance, the sequence 
    [open_box (); print_string "x ="; print_space (); print_int 1; close_box ()]
    that prints [x = 1] within a pretty-printing box, can be
-   abbreviated as [printf "@\[%s@ %i@\]" "x =" 1], or even shorter
-   [printf "@\[x =@ %i@\]" 1].
+   abbreviated as [printf "@[%s@ %i@]" "x =" 1], or even shorter
+   [printf "@[x =@ %i@]" 1].
 
    Rule of thumb for casual users of this library:
 -   use simple boxes (as obtained by [open_box 0]);
@@ -312,7 +312,7 @@ val set_all_formatter_output_functions :
    connected to [out] and [flush]: respective default values for
    [outspace] and [outnewline] are [out (String.make n ' ') 0 n]
    and [out "\n" 0 1]. *)
-	  
+
 val get_all_formatter_output_functions :
   unit ->
     (string -> int -> int -> unit) * (unit -> unit) * (unit -> unit) *
