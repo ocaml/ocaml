@@ -245,28 +245,27 @@ let duplicate_current_checkpoint () =
 
 (* Ensure we stop on an event. *)
 let rec stop_on_event report =
-  let find_event () =
-    if !debug_time_travel then
-      (print_string "Searching next event..."; print_newline ());
-    let report = do_go 1 in
-      !current_checkpoint.c_report <- Some report;
-      stop_on_event report
-  in
-    match report with
-      {rep_type = Breakpoint; rep_program_pointer = pc} ->
-        if Some pc = !temporary_breakpoint_position then begin
-                                        (* Others breakpoints are on events. *)
-                                        (* Check if we are on an event. *)
-          update_current_event ();
-          match !current_event with
-            None   -> find_event ()
-          | Some _ -> ()
-        end
-    | {rep_type = Trap_barrier; rep_stack_pointer = trap_frame} ->
-        (* No event at current position. *)
-        find_event ()
-    | _ ->
-        ()
+  match report with
+    {rep_type = Breakpoint; rep_program_pointer = pc} ->
+      update_current_event ();
+      begin match !current_event with
+        None   -> find_event ()
+      | Some _ -> ()
+      end
+  | {rep_type = Trap_barrier; rep_stack_pointer = trap_frame} ->
+      (* No event at current position. *)
+      find_event ()
+  | _ ->
+      ()
+
+and find_event () =
+  if !debug_time_travel then begin
+    print_string "Searching next event...";
+    print_newline ()
+  end;
+  let report = do_go 1 in
+  !current_checkpoint.c_report <- Some report;
+  stop_on_event report
 
 (* Was the movement interrupted ? *)
 (* --- An exception could have been used instead, *)
@@ -442,11 +441,9 @@ let go_to time =
 (* between current time and `max_time'. *)
 let rec find_last_breakpoint max_time =
   let on_breakpoint () =
-    match current_report () with
-      Some {rep_program_pointer = pc} ->
-        breakpoint_at_pc pc
-    | _ ->
-        false
+    match current_pc () with
+      None    -> false
+    | Some pc -> breakpoint_at_pc pc
   in
     let rec find break =
       let time = current_time () in
