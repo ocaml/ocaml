@@ -10,6 +10,11 @@
 #include "io.h"
 #include "roots.h"
 
+#if defined(HAS_SELECT) && defined(HAS_SETITIMER) && defined(HAS_GETTIMEOFDAY)
+#else
+#include "Cannot compile libthreads, system calls missing"
+#endif
+
 /* Configuration */
 
 /* Initial size of stack when a thread is created (4 Ko) */
