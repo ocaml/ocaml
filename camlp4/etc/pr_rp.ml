@@ -438,6 +438,7 @@ value pmatch e dg k =
   let (me, e) =
     match e with
     [ <:expr< let (strm__ : Stream.t _) = $me$ in $e$ >> -> (me, e)
+    | <:expr< match $_$ strm__ with [ $list:_$ ] >> -> (<:expr< strm__ >>, e)
     | _ -> failwith "Pr_rp.pmatch" ]
   in
   let (bp, e) =
@@ -468,6 +469,8 @@ let lev = find_pr_level "top" pr_expr.pr_levels in
 lev.pr_rules :=
   extfun lev.pr_rules with
   [ <:expr< let (strm__ : Stream.t _) = $_$ in $_$ >> as e ->
+      fun curr next _ k -> [: `pmatch e "" k :]
+  | <:expr< match $_$ strm__ with [ $list:_$ ] >> as e ->
       fun curr next _ k -> [: `pmatch e "" k :]
   | <:expr< fun strm__ -> $x$ >> ->
       fun curr next _ k -> [: `parser_body x "" k :]
