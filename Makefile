@@ -177,6 +177,7 @@ install:
 	cp toplevel/topmain.cmo $(LIBDIR)
 	cp toplevel/toploop.cmi toplevel/topdirs.cmi $(LIBDIR)
 	cd tools; $(MAKE) install
+	cd man; for i in *.m; do cp $$i $(MANDIR)/`basename $$i .m`.$(MANEXT); done
 
 # Installation of the native-code compiler
 installopt:
