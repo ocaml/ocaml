@@ -113,36 +113,36 @@ let rec transl_modtype env smty =
 and transl_signature env sg =
   match sg with
     [] -> []
-  | Psig_value(name, sdesc) :: srem ->
+  | {psig_desc = Psig_value(name, sdesc)} :: srem ->
       let desc = Typedecl.transl_value_decl env sdesc in
       let (id, newenv) = Env.enter_value name desc env in
       let rem = transl_signature newenv srem in
       Tsig_value(id, desc) :: rem
-  | Psig_type sdecls :: srem ->
+  | {psig_desc = Psig_type sdecls} :: srem ->
       let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
       let rem = transl_signature newenv srem in
       map_end (fun (id, info) -> Tsig_type(id, info)) decls rem
-  | Psig_exception(name, sarg) :: srem ->
+  | {psig_desc = Psig_exception(name, sarg)} :: srem ->
       let arg = Typedecl.transl_exception env sarg in
       let (id, newenv) = Env.enter_exception name arg env in
       let rem = transl_signature newenv srem in
       Tsig_exception(id, arg) :: rem
-  | Psig_module(name, smty) :: srem ->
+  | {psig_desc = Psig_module(name, smty)} :: srem ->
       let mty = transl_modtype env smty in
       let (id, newenv) = Env.enter_module name mty env in
       let rem = transl_signature newenv srem in
       Tsig_module(id, mty) :: rem
-  | Psig_modtype(name, sinfo) :: srem ->
+  | {psig_desc = Psig_modtype(name, sinfo)} :: srem ->
       let info = transl_modtype_info env sinfo in
       let (id, newenv) = Env.enter_modtype name info env in
       let rem = transl_signature newenv srem in
       Tsig_modtype(id, info) :: rem
-  | Psig_open(lid, loc) :: srem ->
+  | {psig_desc = Psig_open lid; psig_loc = loc} :: srem ->
       let (path, mty) = type_module_path env loc lid in
       let sg = extract_sig_open env loc mty in
       let newenv = Env.open_signature path sg env in
       transl_signature newenv srem
-  | Psig_include smty :: srem ->
+  | {psig_desc = Psig_include smty} :: srem ->
       let mty = transl_modtype env smty in
       let sg = extract_sig env smty.pmty_loc mty in
       let newenv = Env.add_signature sg env in
@@ -174,24 +174,27 @@ module StringSet = Set.Make(struct type t = string let compare = compare end)
 
 let check_unique_names sg =
   let type_names = ref StringSet.empty
-  and module_names = ref StringSet.empty in
+  and module_names = ref StringSet.empty
+  and modtype_names = ref StringSet.empty in
   let check class loc set_ref name =
     if StringSet.mem name !set_ref
     then raise(Error(loc, Repeated_name(class, name)))
     else set_ref := StringSet.add name !set_ref in
-  let check_item = function
+  let check_item item =
+    match item.pstr_desc with
       Pstr_eval exp -> ()
     | Pstr_value(rec_flag, exps) -> ()
     | Pstr_primitive(name, desc) -> ()
     | Pstr_type name_decl_list ->
         List.iter
-          (fun (name, decl) -> check "type" decl.ptype_loc type_names name)
+          (fun (name, decl) -> check "type" item.pstr_loc type_names name)
           name_decl_list
     | Pstr_exception(name, decl) -> ()
     | Pstr_module(name, smod) ->
-        check "module" smod.pmod_loc module_names name
-    | Pstr_modtype(name, decl) -> ()
-    | Pstr_open(lid, loc) -> () in
+        check "module" item.pstr_loc module_names name
+    | Pstr_modtype(name, decl) ->
+        check "module type" item.pstr_loc modtype_names name
+    | Pstr_open lid -> () in
   List.iter check_item sg
 
 (* Check that all core type schemes in a structure are closed *)
@@ -277,11 +280,11 @@ and type_structure env sstr =
 and type_struct env = function
     [] ->
       ([], [], env)
-  | Pstr_eval sexpr :: srem ->
+  | {pstr_desc = Pstr_eval sexpr} :: srem ->
       let expr = Typecore.type_expression env sexpr in
       let (str_rem, sig_rem, final_env) = type_struct env srem in
       (Tstr_eval expr :: str_rem, sig_rem, final_env)
-  | Pstr_value(rec_flag, sdefs) :: srem ->
+  | {pstr_desc = Pstr_value(rec_flag, sdefs)} :: srem ->
       let (defs, newenv) =
         Typecore.type_binding env rec_flag sdefs in
       let (str_rem, sig_rem, final_env) = type_struct newenv srem in
@@ -291,41 +294,41 @@ and type_struct env = function
       (Tstr_value(rec_flag, defs) :: str_rem,
        map_end make_sig_value bound_idents sig_rem,
        final_env)
-  | Pstr_primitive(name, sdesc) :: srem ->
+  | {pstr_desc = Pstr_primitive(name, sdesc)} :: srem ->
       let desc = Typedecl.transl_value_decl env sdesc in
       let (id, newenv) = Env.enter_value name desc env in
       let (str_rem, sig_rem, final_env) = type_struct newenv srem in
       (Tstr_primitive(id, desc) :: str_rem,
        Tsig_value(id, desc) :: sig_rem,
        final_env)
-  | Pstr_type sdecls :: srem ->
+  | {pstr_desc = Pstr_type sdecls} :: srem ->
       let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
       let (str_rem, sig_rem, final_env) = type_struct newenv srem in
       (Tstr_type decls :: str_rem,
        map_end (fun (id, info) -> Tsig_type(id, info)) decls sig_rem,
        final_env)
-  | Pstr_exception(name, sarg) :: srem ->
+  | {pstr_desc = Pstr_exception(name, sarg)} :: srem ->
       let arg = Typedecl.transl_exception env sarg in
       let (id, newenv) = Env.enter_exception name arg env in
       let (str_rem, sig_rem, final_env) = type_struct newenv srem in
       (Tstr_exception(id, arg) :: str_rem,
        Tsig_exception(id, arg) :: sig_rem,
        final_env)
-  | Pstr_module(name, smodl) :: srem ->
+  | {pstr_desc = Pstr_module(name, smodl)} :: srem ->
       let modl = type_module env smodl in
       let (id, newenv) = Env.enter_module name modl.mod_type env in
       let (str_rem, sig_rem, final_env) = type_struct newenv srem in
       (Tstr_module(id, modl) :: str_rem,
        Tsig_module(id, modl.mod_type) :: sig_rem,
        final_env)
-  | Pstr_modtype(name, smty) :: srem ->
+  | {pstr_desc = Pstr_modtype(name, smty)} :: srem ->
       let mty = transl_modtype env smty in
       let (id, newenv) = Env.enter_modtype name (Tmodtype_manifest mty) env in
       let (str_rem, sig_rem, final_env) = type_struct newenv srem in
       (Tstr_modtype(id, mty) :: str_rem,
        Tsig_modtype(id, Tmodtype_manifest mty) :: sig_rem,
        final_env)
-  | Pstr_open(lid, loc) :: srem ->
+  | {pstr_desc = Pstr_open lid; pstr_loc = loc} :: srem ->
       let (path, mty) = type_module_path env loc lid in
       let sg = extract_sig_open env loc mty in
       type_struct (Env.open_signature path sg env) srem
