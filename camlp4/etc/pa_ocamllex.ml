@@ -288,7 +288,7 @@ EXTEND
    | "("; r = regexp; ")" -> r
    | "_" -> Characters all_chars
    | c = CHAR -> Characters (Cset.singleton (char c))
-   | s = STRING -> regexp_for_string (Token.eval_string s)
+   | s = STRING -> regexp_for_string (Token.eval_string loc s)
    | "["; cc = ch_class; "]" ->  Characters cc
    | x = LIDENT ->
        try  Hashtbl.find named_regexps x
