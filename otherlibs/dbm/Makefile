@@ -45,7 +45,7 @@ clean: partialclean
 	rm -f *.a *.o
 
 install:
-	test -f libmldbm.so && cp libmldbm.so $(LIBDIR)/libmldbm.so
+	if test -f libmldbm.so; then cp libmldbm.so $(LIBDIR)/libmldbm.so; fi
 	cp libmldbm.a $(LIBDIR)/libmldbm.a
 	cd $(LIBDIR); $(RANLIB) libmldbm.a
 	cp dbm.cma dbm.cmi dbm.mli $(LIBDIR)

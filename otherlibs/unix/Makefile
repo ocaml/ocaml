@@ -63,7 +63,7 @@ clean: partialclean
 	rm -f *.a *.o *.so
 
 install:
-	test -f libunix.so && cp libunix.so $(LIBDIR)/libunix.so
+	if test -f libunix.so; then cp libunix.so $(LIBDIR)/libunix.so; fi
 	cp libunix.a $(LIBDIR)/libunix.a
 	cd $(LIBDIR); $(RANLIB) libunix.a
 	cp unix.cma $(MLOBJS:.cmo=.cmi) $(MLOBJS:.cmo=.mli) $(LIBDIR)

@@ -65,7 +65,7 @@ clean: partialclean
 	rm -f $(GENFILES)
 
 install:
-	test -f libthreads.so && cp libthreads.so $(LIBDIR)/libthreads.so
+	if test -f libthreads.so; cp libthreads.so $(LIBDIR)/libthreads.so; fi
 	cp libthreads.a $(LIBDIR)/libthreads.a
 	cd $(LIBDIR); $(RANLIB) libthreads.a
 	if test -d $(LIBDIR)/threads; then :; else mkdir $(LIBDIR)/threads; fi
@@ -74,7 +74,7 @@ install:
 	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)
 
 installopt:
-	test -f libthreadsnat.so && cp libthreadsnat.so $(LIBDIR)/libthreadsnat.so
+	if test -f libthreadsnat.so; then cp libthreadsnat.so $(LIBDIR)/libthreadsnat.so; fi
 	cp libthreadsnat.a $(LIBDIR)/libthreadsnat.a
 	cd $(LIBDIR); $(RANLIB) libthreadsnat.a
 	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.a $(LIBDIR)/threads

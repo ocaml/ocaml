@@ -51,7 +51,7 @@ clean: partialclean
 	cd $(REGEXLIB); if test -f Makefile; then $(MAKE) distclean; else exit 0; fi
 
 install:
-	test -f libstr.so && cp libstr.so $(LIBDIR)/libstr.so
+	if test -f libstr.so; then cp libstr.so $(LIBDIR)/libstr.so; fi
 	cp libstr.a $(LIBDIR)/libstr.a
 	cd $(LIBDIR); $(RANLIB) libstr.a
 	cp str.cma str.cmi str.mli $(LIBDIR)
