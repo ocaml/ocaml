@@ -23,9 +23,22 @@
 
 CAMLprim value unix_string_of_inet_addr(value a)
 {
-  struct in_addr address;
-  address.s_addr = GET_INET_ADDR(a);
-  return copy_string(inet_ntoa(address));
+  char * res;
+#ifdef HAS_IPV6
+  char buffer[64];
+  if (string_length(a) == 16)
+    res = (char *)
+      inet_ntop(AF_INET6, (const void *) &GET_INET6_ADDR(a),
+                buffer, sizeof(buffer));
+  else
+    res = (char *)
+      inet_ntop(AF_INET, (const void *) &GET_INET_ADDR(a),
+                buffer, sizeof(buffer));
+#else
+  res = inet_ntoa(GET_INET_ADDR(a));
+#endif
+  if (res == NULL) uerror("string_of_inet_addr", Nothing);
+  return copy_string(res);
 }
 
 #else

@@ -13,8 +13,4 @@
 
 /* $Id$ */
 
-#ifdef __STDC__
-value cst_to_constr(int, int *, int, int);
-#else
-value cst_to_constr();
-#endif
+extern value cst_to_constr(int n, int * tbl, int size, int deflt);

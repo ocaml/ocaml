@@ -43,8 +43,15 @@ extern int socket_domain_table[];
 static value alloc_one_addr(char const *a)
 {
   struct in_addr addr;
-  memmove (&addr, a, entry_h_length);
-  return alloc_inet_addr(addr.s_addr);
+#ifdef HAS_IPV6
+  struct in6_addr addr6;
+  if (entry_h_length == 16) {
+    memmove(&addr6, a, 16);
+    return alloc_inet6_addr(&addr6);
+  }
+#endif
+  memmove (&addr, a, 4);
+  return alloc_inet_addr(&addr);
 }
 
 static value alloc_host_entry(struct hostent *entry)
@@ -75,7 +82,7 @@ static value alloc_host_entry(struct hostent *entry)
 
 CAMLprim value unix_gethostbyaddr(value a)
 {
-  uint32 adr = GET_INET_ADDR(a);
+  struct in_addr adr = GET_INET_ADDR(a);
   struct hostent * hp;
 #if HAS_GETHOSTBYADDR_R == 7
   struct hostent h;

@@ -26,7 +26,7 @@ CAMLprim value unix_getpeername(value sock)
   union sock_addr_union addr;
   socklen_param_type addr_len;
 
-  addr_len = sizeof(sock_addr);
+  addr_len = sizeof(addr);
   retcode = getpeername(Int_val(sock), &addr.s_gen, &addr_len);
   if (retcode == -1) uerror("getpeername", Nothing);
   return alloc_sockaddr(&addr, addr_len);

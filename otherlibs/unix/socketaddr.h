@@ -24,9 +24,10 @@ union sock_addr_union {
   struct sockaddr s_gen;
   struct sockaddr_un s_unix;
   struct sockaddr_in s_inet;
+#ifdef HAS_IPV6
+  struct sockaddr_in6 s_inet6;
+#endif
 };
-
-extern union sock_addr_union sock_addr;
 
 #ifdef HAS_SOCKLEN_T
 typedef socklen_t socklen_param_type;
@@ -34,11 +35,15 @@ typedef socklen_t socklen_param_type;
 typedef int socklen_param_type;
 #endif
 
-void get_sockaddr (value mladdr,
-                   union sock_addr_union * addr /*out*/,
-                   socklen_param_type * addr_len /*out*/);
+extern void get_sockaddr (value mladdr,
+                          union sock_addr_union * addr /*out*/,
+                          socklen_param_type * addr_len /*out*/);
 CAMLprim value alloc_sockaddr (union sock_addr_union * addr /*in*/,
                       socklen_param_type addr_len);
-CAMLprim value alloc_inet_addr (uint32 inaddr);
+CAMLprim value alloc_inet_addr (struct in_addr * inaddr);
+#define GET_INET_ADDR(v) (*((struct in_addr *) (v)))
 
-#define GET_INET_ADDR(v) (*((uint32 *) (v)))
+#ifdef HAS_IPV6
+CAMLprim value alloc_inet6_addr (struct in6_addr * inaddr);
+#define GET_INET6_ADDR(v) (*((struct in6_addr *) (v)))
+#endif
