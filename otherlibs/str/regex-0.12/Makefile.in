@@ -58,8 +58,8 @@ distclean:: clean
 extraclean:: distclean
 	rm -f patch* *~* *\#* *.orig *.rej *.bak core a.out
 
-configure: configure.in
-	autoconf
+#configure: configure.in
+#	autoconf
 
 config.status: configure
 	sh configure --no-create
