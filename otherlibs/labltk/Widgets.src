@@ -1848,7 +1848,7 @@ widget text {
    function (string) image_configure_get
      [widget(text); "image"; "cgets"; name: string]
    function (string) image_create
-     [widget(text); "image"; "create"; option(embeddedi) list]
+     [widget(text); "image"; "create"; index: TextIndex; option(embeddedi) list]
    function (string list) image_names [widget(text); "image"; "names"]
    function (Index(text) as "[>`Linechar of int * int]") index [widget(text); "index"; index: TextIndex]
 ##ifdef CAMLTK
