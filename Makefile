@@ -54,7 +54,7 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/typemod.cmo
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
-  bytecomp/typeopt.cmo bytecomp/matching.cmo \
+  bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
   bytecomp/translobj.cmo bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo
@@ -420,7 +420,7 @@ beforedepend:: asmcomp/scheduling.ml
 # Preprocess the code emitters
 
 asmcomp/emit.ml: asmcomp/$(ARCH)/emit.mlp tools/cvt_emit
-	boot/ocamlrun tools/cvt_emit < asmcomp/$(ARCH)/emit.mlp > asmcomp/emit.ml \
+	$(CAMLRUN) tools/cvt_emit < asmcomp/$(ARCH)/emit.mlp > asmcomp/emit.ml \
         || { rm -f asmcomp/emit.ml; exit 2; }
 
 partialclean::
@@ -429,7 +429,7 @@ partialclean::
 beforedepend:: asmcomp/emit.ml
 
 tools/cvt_emit: tools/cvt_emit.mll
-	cd tools; $(MAKE) cvt_emit
+	cd tools; $(MAKE) CAMLC="../$(CAMLRUN) ../ocamlc -I ../stdlib" cvt_emit
 
 # The "expunge" utility
 
@@ -504,7 +504,7 @@ alldepend::
 # The extra libraries
 
 otherlibraries:
-	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) all); done
+	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) RUNTIME=$(RUNTIME) all); done
 otherlibrariesopt:
 	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) allopt); done
 partialclean::

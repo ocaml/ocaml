@@ -39,6 +39,7 @@ and instruction_desc =
   | Lpoptrap
   | Lraise
 
+val has_failthrough :  instruction_desc -> bool
 val end_instr: instruction
 val instr_cons: 
   instruction_desc -> Reg.t array -> Reg.t array -> instruction -> instruction

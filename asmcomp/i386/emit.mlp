@@ -69,6 +69,7 @@ let label_prefix =
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl
 
+
 (* Some data directives have different names under Solaris *)
 
 let word_dir =
@@ -94,6 +95,11 @@ let emit_align =
       (fun n -> `	.align	{emit_int n}\n`)
   | _ ->
       (fun n -> `	.align	{emit_int(Misc.log2 n)}\n`)
+  
+let emit_Llabel failthrough lbl =
+  if not failthrough && !fastcode_flag then
+    emit_align 16 ;
+  emit_label lbl
   
 (* Output a pseudo-register *)
 
@@ -278,7 +284,8 @@ let float_constants = ref ([] : (int * string) list)
 
 let tos = phys_reg 100
 
-let emit_instr i =
+
+let emit_instr failthrough i =
     match i.desc with
       Lend -> ()
     | Lop(Imove | Ispill | Ireload) ->
@@ -559,7 +566,7 @@ let emit_instr i =
         output_epilogue();
         `	ret\n`
     | Llabel lbl ->
-        `{emit_label lbl}:\n`
+        `{emit_Llabel failthrough lbl}:\n`
     | Lbranch lbl ->
         `	jmp	{emit_label lbl}\n`
     | Lcondbranch(tst, lbl) ->
@@ -692,8 +699,15 @@ let emit_instr i =
         `	popl    {emit_symbol "caml_exception_pointer"}\n`;
         `	ret\n`
 
-let rec emit_all i =
-  match i.desc with Lend -> () | _ -> emit_instr i; emit_all i.next
+let rec emit_all failthrough i =
+
+  match i.desc with
+  |  Lend -> ()
+  | _ ->
+      emit_instr failthrough i;
+      emit_all
+        (Linearize.has_failthrough  i.desc)
+        i.next
 
 (* Emission of the floating-point constants *)
 
@@ -736,7 +750,7 @@ let fundecl fundecl =
   call_gc_sites := [];
   range_check_trap := 0;
   `	.text\n`;
-  emit_align 4;
+  emit_align 16;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   if !Clflags.gprofile then emit_profile();
@@ -744,7 +758,7 @@ let fundecl fundecl =
   if n > 0 then
     `	subl	${emit_int n}, %esp\n`;
   `{emit_label !tailrec_entry_point}:\n`;
-  emit_all fundecl.fun_body;
+  emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   if !range_check_trap > 0 then
     `{emit_label !range_check_trap}:	call	{emit_symbol "caml_array_bound_error"}\n`;

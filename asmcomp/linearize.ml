@@ -45,6 +45,11 @@ and instruction_desc =
   | Lpoptrap
   | Lraise
 
+let has_failthrough = function
+  | Lreturn | Lbranch _ | Lswitch _ | Lraise
+  | Lop Itailcall_ind | Lop (Itailcall_imm _) -> false
+  | _ -> true 
+
 type fundecl =
   { fun_name: string;
     fun_body: instruction;
@@ -91,14 +96,23 @@ let copy_instr d i n =
   { desc = d; next = n;
     arg = i.Mach.arg; res = i.Mach.res; live = i.Mach.live }
 
-(* Label the beginning of the given instruction sequence.
-   If the sequence starts with a branch, jump over it. *)
+(*
+   Label the beginning of the given instruction sequence.
+   - If the sequence starts with a branch, jump over it.
+   - If the sequence is the end, (tail call position), just do nothing
+*)
 
-let get_label n =
-  match n.desc with
+let get_label n = match n.desc with
     Lbranch lbl -> (lbl, n)
   | Llabel lbl -> (lbl, n)
+  | Lend -> (-1, n)
   | _ -> let lbl = new_label() in (lbl, cons_instr (Llabel lbl) n)
+
+(* Check the failthrough label *)
+let check_label n = match n.desc with
+  | Lbranch lbl -> lbl
+  | Llabel lbl -> lbl
+  | _ -> -1
 
 (* Discard all instructions up to the next label.
    This function is to be called before adding a non-terminating
@@ -114,15 +128,21 @@ let rec discard_dead_code n =
   | Lop(Istackoffset _) -> n
   | _ -> discard_dead_code n.next
 
-(* Add a branch in front of a continuation.
+(*
+   Add a branch in front of a continuation.
    Discard dead code in the continuation.
-   Does not insert anything if we're just falling through. *)
+   Does not insert anything if we're just falling through
+   or if we jump to dead code after the end of function (lbl=-1)
+*)
 
 let add_branch lbl n =
-  let n1 = discard_dead_code n in
-  match n1.desc with
-    Llabel lbl1 when lbl1 = lbl -> n1
-  | _ -> cons_instr (Lbranch lbl) n1
+  if lbl >= 0 then
+    let n1 = discard_dead_code n in
+    match n1.desc with
+    | Llabel lbl1 when lbl1 = lbl -> n1
+    | _ -> cons_instr (Lbranch lbl) n1
+  else
+    discard_dead_code n
 
 (* Current labels for exit handler *)
 
@@ -133,6 +153,10 @@ let find_exit_label k =
     List.assoc k !exit_label
   with
   | Not_found -> Misc.fatal_error "Linearize.find_exit_label"
+
+let is_next_catch n = match !exit_label with
+| (n0,_)::_  when n0=n -> true
+| _ -> false
 
 (* Linearize an instruction [i]: add it in front of the continuation [n] *)
 
@@ -158,9 +182,14 @@ let rec linear i n =
           copy_instr (Lcondbranch(test, lbl)) i (linear ifnot n1)
       | _, Iend, Lbranch lbl ->
           copy_instr (Lcondbranch(invert_test test, lbl)) i (linear ifso n1)
+      | Iexit nfail1, Iexit nfail2, _ 
+            when is_next_catch nfail1 ->
+          let lbl2 = find_exit_label nfail2 in
+          copy_instr
+            (Lcondbranch (invert_test test, lbl2)) i (linear ifso n1)
       | Iexit nfail, _, _ ->
-          let n2 = linear ifnot n1 in
-          let lbl = find_exit_label nfail in
+          let n2 = linear ifnot n1
+          and lbl = find_exit_label nfail in
           copy_instr (Lcondbranch(test, lbl)) i n2
       | _,  Iexit nfail, _ ->
           let n2 = linear ifso n1 in
@@ -193,8 +222,7 @@ let rec linear i n =
       (* Switches with 1 and 2 branches have been eliminated earlier.
          Here, we do something for switches with 3 branches. *)
       if Array.length index = 3 then begin
-        let fallthrough_lbl =
-          match !n2.desc with Llabel lbl -> lbl | _ -> -1 in
+        let fallthrough_lbl = check_label !n2 in
         let find_label n =
           let lbl = lbl_cases.(index.(n)) in
           if lbl = fallthrough_lbl then None else Some lbl in

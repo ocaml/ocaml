@@ -52,8 +52,8 @@ let occurs_var var u =
     | Uswitch(arg, s) ->
         occurs arg or occurs_array s.us_cases_consts
                    or occurs_array s.us_cases_blocks
-    | Ustaticfail _ -> false
-    | Ucatch(_, body, hdlr) -> occurs body or occurs hdlr
+    | Ustaticfail (_, args) -> List.exists occurs args
+    | Ucatch(_, _, body, hdlr) -> occurs body or occurs hdlr
     | Utrywith(body, exn, hdlr) -> occurs body or occurs hdlr
     | Uifthenelse(cond, ifso, ifnot) ->
         occurs cond or occurs ifso or occurs ifnot
@@ -131,8 +131,8 @@ let lambda_smaller lam threshold =
         lambda_size lam;
         lambda_array_size cases.us_cases_consts;
         lambda_array_size cases.us_cases_blocks
-    | Ustaticfail _ -> ()
-    | Ucatch(_, body, handler) ->
+    | Ustaticfail (_,args) -> lambda_list_size args
+    | Ucatch(_, _, body, handler) ->
         incr size; lambda_size body; lambda_size handler
     | Utrywith(body, id, handler) ->
         size := !size + 8; lambda_size body; lambda_size handler
@@ -272,8 +272,8 @@ let rec substitute sb ulam =
                 us_cases_consts = Array.map (substitute sb) sw.us_cases_consts;
                 us_cases_blocks = Array.map (substitute sb) sw.us_cases_blocks;
                })
-  | Ustaticfail _ -> ulam
-  | Ucatch(nfail, u1, u2) -> Ucatch(nfail, substitute sb u1, substitute sb u2)
+  | Ustaticfail (nfail, args) -> Ustaticfail (nfail, List.map (substitute sb) args)
+  | Ucatch(nfail, ids, u1, u2) -> Ucatch(nfail, ids, substitute sb u1, substitute sb u2)
   | Utrywith(u1, id, u2) ->
       let id' = Ident.rename id in
       Utrywith(substitute sb u1, id', substitute (Tbl.add id (Uvar id') sb) u2)
@@ -410,6 +410,8 @@ let close_approx_var fenv cenv id =
 let close_var fenv cenv id =
   let (ulam, app) = close_approx_var fenv cenv id in ulam
 
+exception Found of int
+
 let rec close fenv cenv = function
     Lvar id ->
       close_approx_var fenv cenv id
@@ -529,17 +531,17 @@ let rec close fenv cenv = function
                 us_checked = sw.sw_checked && not sw.sw_nofail}),
        Value_unknown)
   | Lstaticfail ->
-      (Ustaticfail 0, Value_unknown)
-  | Lstaticraise i ->
-      (Ustaticfail i, Value_unknown)
+      (Ustaticfail (0, []), Value_unknown)
+  | Lstaticraise (i, args) ->
+      (Ustaticfail (i, close_list fenv cenv args), Value_unknown)
   | Lcatch(body, handler) ->
       let (ubody, _) = close fenv cenv body in
       let (uhandler, _) = close fenv cenv handler in
-      (Ucatch(0, ubody, uhandler), Value_unknown)
-  | Lstaticcatch(body, i, handler) ->
+      (Ucatch(0, [], ubody, uhandler), Value_unknown)
+  | Lstaticcatch(body, (i, vars), handler) ->
       let (ubody, _) = close fenv cenv body in
       let (uhandler, _) = close fenv cenv handler in
-      (Ucatch(i, ubody, uhandler), Value_unknown)
+      (Ucatch(i, vars, ubody, uhandler), Value_unknown)
   | Ltrywith(body, id, handler) ->
       let (ubody, _) = close fenv cenv body in
       let (uhandler, _) = close fenv cenv handler in
@@ -702,16 +704,30 @@ and close_switch fenv cenv nofail num_keys cases =
 (* if nofail holds, then static fail is replaced by a random branch *)
   if List.length cases < num_keys && not nofail then begin
     num_cases := 1;
-    ucases := [Ustaticfail 0]
+    ucases := [Ustaticfail (0,[])]
   end  ;
+  let store act =
+    let rec store_rec i = function
+      | [] -> [act]
+      | act0::rem ->
+          if act0 = act then raise (Found i)
+          else
+            act0 :: store_rec (i+1) rem in
+    try
+      ucases := store_rec 0 !ucases ;
+      let r = !num_cases in
+      incr num_cases ;
+      r
+    with
+    | Found i -> i in
+      
   List.iter
     (function (key, lam) ->
         let (ulam, _) = close fenv cenv lam in
-        ucases := ulam :: !ucases;
-        index.(key) <- !num_cases;
-        incr num_cases)
+        index.(key) <- store ulam)
     cases;
-  (index, Array.of_list(List.rev !ucases))
+    
+  (index, Array.of_list !ucases)
 
 (* The entry point *)
 

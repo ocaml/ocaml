@@ -174,6 +174,9 @@ let join_array rs =
     res
   end
 
+(* Registers for catch contructs *)
+let catch_regs = ref []
+
 (* The default instruction selection class *)
 
 class virtual selector_generic = object (self)
@@ -301,7 +304,11 @@ method select_condition = function
       (Iinttest(Isigned cmp), Ctuple args)
   | Cop(Ccmpa cmp, [arg1; Cconst_pointer n]) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned cmp, n), arg1)
+  | Cop(Ccmpa cmp, [arg1; Cconst_int n]) when self#is_immediate n ->
+      (Iinttest_imm(Iunsigned cmp, n), arg1)
   | Cop(Ccmpa cmp, [Cconst_pointer n; arg2]) when self#is_immediate n ->
+      (Iinttest_imm(Iunsigned(swap_comparison cmp), n), arg2)
+  | Cop(Ccmpa cmp, [Cconst_int n; arg2]) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned(swap_comparison cmp), n), arg2)
   | Cop(Ccmpa cmp, args) ->
       (Iinttest(Iunsigned cmp), Ctuple args)
@@ -477,13 +484,34 @@ method emit_expr env exp =
       let (rarg, sbody) = self#emit_sequence env ebody in
       self#insert (Iloop(sbody#extract)) [||] [||];
       [||]
-  | Ccatch(nfail, e1, e2) ->
+  | Ccatch(nfail, ids, e1, e2) ->
+      let rs =
+        List.map
+          (fun id ->
+            let r = Reg.createv typ_addr in
+            name_regs id r  ;
+            r)
+          ids in
+      catch_regs := (nfail, Array.concat rs) :: !catch_regs ; 
       let (r1, s1) = self#emit_sequence env e1 in
-      let (r2, s2) = self#emit_sequence env e2 in
+      catch_regs := List.tl !catch_regs ;
+      let new_env =
+        List.fold_left
+        (fun env (id,r) -> Tbl.add id r env)
+        env (List.combine ids rs) in
+      let (r2, s2) = self#emit_sequence new_env e2 in
       let r = join r1 s1 r2 s2 in
       self#insert (Icatch(nfail, s1#extract, s2#extract)) [||] [||];
       r
-  | Cexit nfail ->
+  | Cexit (nfail,args) ->
+      let (simple_list, ext_env) = self#emit_parts_list env args in
+      let src = self#emit_tuple ext_env simple_list in
+      let dest =
+        try List.assoc nfail !catch_regs with
+        | Not_found ->
+            Misc.fatal_error
+              ("Selectgen.emit_expr, on exit("^string_of_int nfail^")") in
+      self#insert_moves src dest ;
       self#insert (Iexit nfail) [||] [||];
       [||]
   | Ctrywith(e1, v, e2) ->
@@ -648,6 +676,7 @@ method emit_tail env exp =
       let rd = [|Proc.loc_exn_bucket|] in
       self#insert (Iop Imove) r1 rd;
       self#insert Iraise rd [||]
+  | Cexit (_,_) -> ignore (self#emit_expr env exp)
   | Csequence(e1, e2) ->
       let _ = self#emit_expr env e1 in
       self#emit_tail env e2
@@ -662,12 +691,23 @@ method emit_tail env exp =
       self#insert
         (Iswitch(index, Array.map (self#emit_tail_sequence env) ecases))
         rsel [||]
-  | Ccatch(io, e1, e2) ->
-      self#insert (Icatch(io, self#emit_tail_sequence env e1,
-                          self#emit_tail_sequence env e2))
-                  [||] [||]
-  | Cexit io ->
-      self#insert (Iexit io) [||] [||]
+  | Ccatch(nfail, ids, e1, e2) ->
+       let rs =
+        List.map
+          (fun id ->
+            let r = Reg.createv typ_addr in
+            name_regs id r  ;
+            r)
+          ids in
+      catch_regs := (nfail, Array.concat rs) :: !catch_regs ; 
+      let s1 = self#emit_tail_sequence env e1 in
+      catch_regs := List.tl !catch_regs ;
+      let new_env =
+        List.fold_left
+        (fun env (id,r) -> Tbl.add id r env)
+        env (List.combine ids rs) in
+      let s2 = self#emit_tail_sequence new_env e2 in
+      self#insert (Icatch(nfail, s1, s2)) [||] [||]
   | Ctrywith(e1, v, e2) ->
       Proc.contains_calls := true;
       let (r1, s1) = self#emit_sequence env e1 in

@@ -250,8 +250,13 @@ let rec reload i before =
 (* As an optimization, if a register needs to be spilled in one branch of
    a conditional but not in the other, then we spill it late on entrance
    in the branch that needs it spilled.
-   This strategy is turned off in loops, as it may prevent a spill from
-   being lifted up all the way out of the loop. *)
+   NB: This strategy is turned off in loops, as it may prevent a spill from
+   being lifted up all the way out of the loop.
+   NB again: This strategy is also turned off when one of the branch is
+   Iexit, as it generates many useless spills inside switch arms
+   NB ter: I am sure that, as implemented, this strategy generates useless
+   spills inside switches arms *)
+
 
 let spill_at_exit = ref []
 let find_spill_at_exit k =
@@ -296,7 +301,11 @@ let rec spill i finally =
       let (new_next, at_join) = spill i.next finally in
       let (new_ifso, before_ifso) = spill ifso at_join in
       let (new_ifnot, before_ifnot) = spill ifnot at_join in
-      if !inside_loop then
+      if
+        !inside_loop ||
+        (match new_ifso.desc with Iexit _ -> true | _ -> false) ||
+        (match new_ifnot.desc with Iexit _ -> true | _ -> false)
+      then
         (instr_cons (Iifthenelse(test, new_ifso, new_ifnot))
                      i.arg i.res new_next,
          Reg.Set.union before_ifso before_ifnot)
