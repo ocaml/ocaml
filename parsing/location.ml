@@ -136,7 +136,7 @@ let reset () =
   num_loc_lines := 0
 
 let (msg_file, msg_line, msg_chars, msg_to, msg_colon, warn_head) =
-  match (Sys.get_config ()).Sys.os_type with
+  match Sys.os_type with
   | "MacOS" -> ("File \"", "\"; line ", "; characters ", " to ", "", "### ")
   | _ -> ("File \"", "\", line ", ", characters ", "-", ":", "")
 ;;

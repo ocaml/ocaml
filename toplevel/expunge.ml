@@ -31,7 +31,7 @@ let expunge_map tbl =
     tbl
 
 let openflags =
-  match (Sys.get_config ()).Sys.os_type with
+  match Sys.os_type with
   | "MacOS" -> [Open_wronly; Open_trunc; Open_creat]
   | _ -> [Open_wronly; Open_trunc; Open_creat; Open_binary]
 ;;

@@ -115,7 +115,7 @@ let get_stored_string () =
 (* To translate escape sequences *)
 
 let char_for_backslash =
-  match (Sys.get_config ()).Sys.os_type with
+  match Sys.os_type with
   | "Unix" | "Win32" ->
       begin function
       | 'n' -> '\010'
@@ -132,7 +132,7 @@ let char_for_backslash =
       | 't' -> '\009'
       | c   -> c
 	  end
-  | x -> failwith ("Lexer: unknown system type: " ^ x)
+  | x -> fatal_error "Lexer: unknown system type"
 ;;
 
 let char_for_decimal_code lexbuf i =
