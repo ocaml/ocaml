@@ -79,7 +79,7 @@ exception Error of error
 val error_message: error -> string
 
 
-(*--*)
+(**/**)
 
 (** {2  } *)
 

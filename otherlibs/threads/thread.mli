@@ -107,7 +107,7 @@ val wait_signal : int list -> int
    switch to other threads. *)
 val yield : unit -> unit
 
-(*--*)
+(**/**)
 
 (** {2 Synchronization primitives}
 
