@@ -17,7 +17,7 @@ let current_dir_name =
   match systype with
   | "Unix" -> "."
   | "Win32" -> "."
-  | "Macintosh" -> ":"
+  | "MacOS" -> ":"
   | _ -> failwith "Filename.current_dir_name: unknown system"
 ;;
 
@@ -44,7 +44,7 @@ let concat =
   match systype with
   | "Unix" -> unix_concat
   | "Win32" -> wnt_concat
-  | "Macintosh" -> mac_concat
+  | "MacOS" -> mac_concat
   | _ -> failwith "Filename.concat: unknown system"
 ;;
 
@@ -75,7 +75,7 @@ let is_absolute =
   match systype with
   | "Unix" -> unix_is_absolute
   | "Win32" -> wnt_is_absolute
-  | "Macintosh" -> mac_is_absolute
+  | "MacOS" -> mac_is_absolute
   | _ -> failwith "Filename.is_absolute: unknown system"
 ;;
 
@@ -106,7 +106,7 @@ let check_suffix =
   match systype with
   | "Unix" -> unix_check_suffix
   | "Win32" -> wnt_check_suffix
-  | "Macintosh" -> mac_check_suffix
+  | "MacOS" -> mac_check_suffix
   | _ -> failwith "Filename.check_suffix: unknown system"
 ;;
 
@@ -184,14 +184,14 @@ let basename =
   match systype with
   | "Unix" -> unix_basename
   | "Win32" -> wnt_basename
-  | "Macintosh" -> mac_basename
+  | "MacOS" -> mac_basename
   | _ -> failwith "Filename.basename: unknown system"
 ;;
 let dirname =
   match systype with
   | "Unix" -> unix_dirname
   | "Win32" -> wnt_dirname
-  | "Macintosh" -> mac_dirname
+  | "MacOS" -> mac_dirname
   | _ -> failwith "Filename.dirname: unknown system"
 ;;
 
@@ -199,7 +199,7 @@ let temporary_directory =
   match systype with
   | "Unix" -> (try Sys.getenv "TMPDIR" with Not_found -> "/tmp")
   | "Win32" -> (try Sys.getenv "TEMP" with Not_found -> "C:\\temp")
-  | "Macintosh" -> (try Sys.getenv "TempFolder" with Not_found -> ":")
+  | "MacOS" -> (try Sys.getenv "TempFolder" with Not_found -> ":")
   | _ -> failwith "Filename.temporary_directory: unknown system"
 ;;
 
