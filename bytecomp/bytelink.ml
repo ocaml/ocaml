@@ -309,7 +309,7 @@ let link_bytecode_as_c objfiles outfile =
     Symtable.init();
     Hashtbl.clear crc_interfaces;
     let output_fun = output_code_string outchan
-    and currpos_fun () = fatal_error "Bytelink.link_bytecode_as_c" in
+    and currpos_fun () = 0 in
     List.iter (link_file output_fun currpos_fun) tolink;
     (* The final STOP instruction *)
     Printf.fprintf outchan "\n0x%x};\n\n" Opcodes.opSTOP;
