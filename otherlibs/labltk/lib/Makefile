@@ -32,6 +32,7 @@ labltktop$(EXE) : $(TOPDEPS) $(WIDGETOBJS) $(SUPPORT) ../support/liblabltk41.a
 	       -I $(TOPDIR)/toplevel toplevellib.cma labltk.cma \
 	       -I $(OTHERS)/unix unix.cma \
 	       -I $(OTHERS)/str str.cma \
+	       -dllpath $(LABLTKDIR) \
 	       topmain.cmo
 
 labltk: Makefile $(TOPDIR)/config/Makefile
