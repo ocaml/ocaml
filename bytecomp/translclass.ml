@@ -49,10 +49,8 @@ let lfield v i = Lprim(Pfield i, [Lvar v])
 let transl_label l = Lconst (Const_base (Const_string l))
 
 let rec transl_meth_list lst =
-  Lconst
-    (List.fold_right
-       (fun lab rem -> Const_block (0, [Const_base (Const_string lab); rem]))
-       lst (Const_pointer 0))
+  Lconst (Const_block
+            (0, List.map (fun lab -> Const_base (Const_string lab)) lst))
 
 let set_inst_var obj id expr =
   let kind = if Typeopt.maybe_pointer expr then Paddrarray else Pintarray in
@@ -68,15 +66,14 @@ let copy_inst_var obj id expr templ offset =
                                                    [Lvar id';
                                                     Lvar offset])])]))
 
-let transl_val tbl create name id rem =
-  Llet(StrictOpt, id, Lapply (oo_prim (if create then "new_variable"
-                                       else           "get_variable"),
-                              [Lvar tbl; transl_label name]),
-       rem)
+let transl_val tbl create name =
+  Lapply (oo_prim (if create then "new_variable" else "get_variable"),
+          [Lvar tbl; transl_label name])
 
 let transl_vals tbl create vals rem =
   List.fold_right
-    (fun (name, id) rem -> transl_val tbl create name id rem)
+    (fun (name, id) rem ->
+      Llet(StrictOpt, id, transl_val tbl create name, rem))
     vals rem
 
 let transl_super tbl meths inh_methods rem =
@@ -216,6 +213,19 @@ let bind_method tbl public_methods lab id cl_init =
 let bind_methods tbl public_methods meths cl_init =
   Meths.fold (bind_method tbl public_methods) meths cl_init
 
+let output_methods tbl vals methods lam =
+  let lam =
+    match methods with
+      [] -> lam
+    | [lab; code] ->
+        lsequence (Lapply(oo_prim "set_method", [Lvar tbl; lab; code])) lam
+    | _ ->
+        lsequence (Lapply(oo_prim "set_methods",
+                         [Lvar tbl; Lprim(Pmakeblock(0,Immutable), methods)]))
+          lam
+  in
+  transl_vals tbl true vals lam
+
 let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
   match cl.cl_desc with
     Tclass_ident path ->
@@ -231,45 +241,54 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
           assert false
       end
   | Tclass_structure str ->
-      let (inh_init, cl_init) =
+      let (inh_init, cl_init, methods, values) =
         List.fold_right
-          (fun field (inh_init, cl_init) ->
+          (fun field (inh_init, cl_init, methods, values) ->
             match field with
               Cf_inher (cl, vals, meths) ->
-                build_class_init cla pub_meths false inh_init
-                  (transl_vals cla false vals
-                     (transl_super cla str.cl_meths meths cl_init))
-                  msubst top cl
+                let cl_init = output_methods cla values methods cl_init in
+                let inh_init, cl_init =
+                  build_class_init cla pub_meths false inh_init
+                    (transl_vals cla false vals
+                       (transl_super cla str.cl_meths meths cl_init))
+                    msubst top cl in
+                (inh_init, cl_init, [], [])
             | Cf_val (name, id, exp) ->
-                (inh_init, transl_val cla true name id cl_init)
+                (inh_init, cl_init, methods, (name, id)::values)
             | Cf_meth (name, exp) ->
-                let met_code = msubst (transl_exp exp) in
+                let met_code = msubst true (transl_exp exp) in
                 let met_code =
-                  if !Clflags.native_code then
+                  if !Clflags.native_code && List.length met_code = 1 then
                     (* Force correct naming of method for profiles *)
                     let met = Ident.create ("method_" ^ name) in
-                    Llet(Strict, met, met_code, Lvar met)
+                    [Llet(Strict, met, List.hd met_code, Lvar met)]
                   else met_code
                 in
-                (inh_init,
-                 Lsequence(Lapply (oo_prim "set_method",
-                                   [Lvar cla;
-                                    Lvar (Meths.find name str.cl_meths);
-                                    met_code]),
+                (inh_init, cl_init,
+                 Lvar (Meths.find name str.cl_meths) :: met_code @ methods,
+                 values)
+                 (*
+                 Lsequence(Lapply (oo_prim ("set_method" ^ builtin),
+                                   Lvar cla ::
+                                   Lvar (Meths.find name str.cl_meths) ::
+                                   met_code),
                            cl_init))
+                  *)
             | Cf_let (rec_flag, defs, vals) ->
                 let vals =
                   List.map (function (id, _) -> (Ident.name id, id)) vals
                 in
-                (inh_init, transl_vals cla true vals cl_init)
+                (inh_init, cl_init, methods, vals @ values)
             | Cf_init exp ->
                 (inh_init,
                  Lsequence(Lapply (oo_prim "add_initializer",
-                                   [Lvar cla; msubst (transl_exp exp)]),
-                           cl_init)))
+                                   Lvar cla :: msubst false (transl_exp exp)),
+                           cl_init),
+                 methods, values))
           str.cl_field
-          (inh_init, cl_init)
+          (inh_init, cl_init, [], [])
       in
+      let cl_init = output_methods cla values methods cl_init in
       (inh_init, bind_methods cla pub_meths str.cl_meths cl_init)
   | Tclass_fun (pat, vals, cl, _) ->
       let (inh_init, cl_init) =
@@ -435,25 +454,53 @@ let rec builtin_meths self env env2 body =
   | Llet(Alias, s', Lvar s, body) when List.mem s self ->
       builtin_meths self env env2 body
   | Lapply(f, [arg]) when const_path f ->
-      let s, args = conv arg in Lapply(oo_prim ("app"^s), f :: args)
+      let s, args = conv arg in ("app"^s, f :: args)
   | Lapply(f, [arg; p]) when const_path f && const_path p ->
       let s, args = conv arg in
-      Lapply(oo_prim ("app"^s^"_const"), f :: args @ [p])
+      ("app"^s^"_const", f :: args @ [p])
   | Lapply(f, [p; arg]) when const_path f && const_path p ->
       let s, args = conv arg in
-      Lapply(oo_prim ("app_const"^s), f :: p :: args)
+      ("app_const"^s, f :: p :: args)
   | Lfunction (Curried, [x], body) ->
       let rec enter self = function
         | Lprim(Parraysetu _, [Lvar s; Lvar n; Lvar x'])
           when Ident.same x x' && List.mem s self ->
-            Lapply(oo_prim "set_var", [Lvar n])
+            ("set_var", [Lvar n])
         | Llet(Alias, s', Lvar s, body) when List.mem s self ->
             enter (s'::self) body
         | _ -> raise Not_found
       in enter self body
   | Lfunction _ -> raise Not_found
   | _ ->
-      let s, args = conv body in Lapply(oo_prim ("ret"^s), args)
+      let s, args = conv body in ("get"^s, args)
+
+module M = struct
+  open CamlinternalOO
+  let builtin_meths arr self env env2 body =
+    let builtin, args = builtin_meths self env env2 body in
+    if not arr then [Lapply(oo_prim builtin, args)] else
+    let tag = match builtin with
+      "get_const" -> GetConst
+    | "get_var"   -> GetVar
+    | "get_env"   -> GetEnv
+    | "get_meth"  -> GetMeth
+    | "set_var"   -> SetVar
+    | "app_const" -> AppConst
+    | "app_var"   -> AppVar
+    | "app_env"   -> AppEnv
+    | "app_meth"  -> AppMeth
+    | "app_const_const" -> AppConstConst
+    | "app_const_var"   -> AppConstVar
+    | "app_const_env"   -> AppConstEnv
+    | "app_const_meth"  -> AppConstMeth
+    | "app_var_const"   -> AppVarConst
+    | "app_env_const"   -> AppEnvConst
+    | "app_meth_const"  -> AppMethConst
+    | _ -> assert false
+    in Lconst(Const_pointer(Obj.magic tag)) :: args
+end
+open M
+
 
 (*
    XXX
@@ -487,7 +534,7 @@ let transl_class ids cl_id arity pub_meths cl =
       Ident.empty !new_ids'
   in
   let new_ids_meths = ref [] in
-  let msubst = function
+  let msubst arr = function
       Lfunction (Curried, self :: args, body) ->
         let env = Ident.create "env" in
         let body' =
@@ -496,13 +543,14 @@ let transl_class ids cl_id arity pub_meths cl =
         begin try
           (* Doesn't seem to improve size for bytecode *)
           (* if not !Clflags.native_code then raise Not_found; *)
-          builtin_meths [self] env env2 (lfunction args body')
+          builtin_meths arr [self] env env2 (lfunction args body')
         with Not_found ->
-          lfunction (self :: args)
-            (if not (IdentSet.mem env (free_variables body')) then body' else
-             Llet(Alias, env,
-                  Lprim(Parrayrefu Paddrarray, [Lvar self; Lvar env2]), body'))
-          end
+          [lfunction (self :: args)
+             (if not (IdentSet.mem env (free_variables body')) then body' else
+              Llet(Alias, env,
+                   Lprim(Parrayrefu Paddrarray,
+                         [Lvar self; Lvar env2]), body'))]
+        end
       | _ -> assert false
   in
   let new_ids_init = ref [] in

@@ -34,11 +34,12 @@ val get_variable : table -> string -> int
 val get_method_label : table -> string -> label
 val get_method : table -> label -> meth
 val set_method : table -> label -> meth -> unit
-val narrow : table -> string list -> string list -> string list -> unit
+val set_methods : table -> label array -> unit
+val narrow : table -> string array -> string array -> string array -> unit
 val widen : table -> unit
 val add_initializer : table -> (obj -> unit) -> unit
 val dummy_table : table
-val create_table : string list -> table
+val create_table : string array -> table
 val init_class : table -> unit
 
 (** {6 Objects} *)
@@ -56,25 +57,45 @@ val send : obj -> label -> t
 type tables
 val lookup_tables : tables -> table array -> tables
 
-(** {6 Builtin methods} *)
+(** {6 Builtins to reduce code size} *)
 
 open Obj
-val ret_const : t -> obj -> t
-val ret_var : int -> obj -> t
-val ret_env : int -> int -> obj -> t
-val ret_meth : label -> obj -> t
-val set_var : int -> obj -> t -> unit
-val app_const : (t -> t) -> t -> obj -> t
-val app_var : (t -> t) -> int -> obj -> t
-val app_env : (t -> t) -> int -> int -> obj -> t
-val app_meth : (t -> t) -> label -> obj -> t
-val app_const_const : (t -> t -> t) -> t -> t -> obj -> t
-val app_const_var : (t -> t -> t) -> t -> int -> obj -> t
-val app_const_env : (t -> t -> t) -> t -> int -> int -> obj -> t
-val app_const_meth : (t -> t -> t) -> t -> label -> obj -> t
-val app_var_const : (t -> t -> t) -> int -> t -> obj -> t
-val app_env_const : (t -> t -> t) -> int -> int -> t -> obj -> t
-val app_meth_const : (t -> t -> t) -> label -> t -> obj -> t
+type closure
+val get_const : t -> closure
+val get_var : int -> closure
+val get_env : int -> int -> closure
+val get_meth : label -> closure
+val set_var : int -> closure
+val app_const : (t -> t) -> t -> closure
+val app_var : (t -> t) -> int -> closure
+val app_env : (t -> t) -> int -> int -> closure
+val app_meth : (t -> t) -> label -> closure
+val app_const_const : (t -> t -> t) -> t -> t -> closure
+val app_const_var : (t -> t -> t) -> t -> int -> closure
+val app_const_env : (t -> t -> t) -> t -> int -> int -> closure
+val app_const_meth : (t -> t -> t) -> t -> label -> closure
+val app_var_const : (t -> t -> t) -> int -> t -> closure
+val app_env_const : (t -> t -> t) -> int -> int -> t -> closure
+val app_meth_const : (t -> t -> t) -> label -> t -> closure
+
+type impl =
+    GetConst
+  | GetVar
+  | GetEnv
+  | GetMeth
+  | SetVar
+  | AppConst
+  | AppVar
+  | AppEnv
+  | AppMeth
+  | AppConstConst
+  | AppConstVar
+  | AppConstEnv
+  | AppConstMeth
+  | AppVarConst
+  | AppEnvConst
+  | AppMethConst
+  | Closure of t
 
 (** {6 Parameters} *)
 

@@ -328,6 +328,9 @@ let get_method table label =
   table.buckets.(buck).(elem)
 
 let narrow table vars virt_meths concr_meths =
+  let vars = Array.to_list vars
+  and virt_meths = Array.to_list virt_meths
+  and concr_meths = Array.to_list concr_meths in
   let virt_meth_labs = List.map (get_method_label table) virt_meths in
   let concr_meth_labs = List.map (get_method_label table) concr_meths in
   table.previous_states <-
@@ -395,7 +398,7 @@ let add_initializer table f =
 
 let create_table public_methods =
   let table = new_table () in
-  List.iter
+  Array.iter
     (function met ->
        let lab = new_method met in
        table.methods_by_name  <- Meths.add met lab table.methods_by_name;
@@ -494,22 +497,85 @@ let lookup_tables root keys =
 
 (**** builtin methods ****)
 
-let ret_const x obj = x
-let ret_var n (obj : obj) = Array.unsafe_get obj n
-let ret_env env n obj = Obj.field (Array.unsafe_get obj env) n
-let ret_meth n (obj : obj) = Obj.repr (send obj n)
-let set_var n (obj : obj) x = Array.unsafe_set obj n x
-let app_const f x obj = f x
-let app_var f n (obj : obj) = f (Array.unsafe_get obj n)
-let app_env f env n obj = f (Obj.field (Array.unsafe_get obj env) n)
-let app_meth f n obj = f (Obj.repr (send obj n))
-let app_const_const f x y obj = f x y
-let app_const_var f x n obj = f x (Array.unsafe_get obj n)
-let app_const_env f x env n obj = f x (Obj.field (Array.unsafe_get obj env) n)
-let app_const_meth f x n obj = f x (Obj.repr (send obj n))
-let app_var_const f n x (obj : obj) = f (Array.unsafe_get obj n) x
-let app_env_const f env n x obj = f (Obj.field (Array.unsafe_get obj env) n) x
-let app_meth_const f n x obj = f (Obj.repr (send obj n)) x
+type closure = item
+external ret : (obj -> 'a) -> closure = "%identity"
+
+let get_const x = ret (fun obj -> x)
+let get_var n   = ret (fun obj -> Array.unsafe_get obj n)
+let get_env e n = ret (fun obj -> Obj.field (Array.unsafe_get obj e) n)
+let get_meth n  = ret (fun obj -> send obj n)
+let set_var n   = ret (fun obj x -> Array.unsafe_set obj n x)
+let app_const f x = ret (fun obj -> f x)
+let app_var f n   = ret (fun obj -> f (Array.unsafe_get obj n))
+let app_env f e n = ret (fun obj -> f (Obj.field (Array.unsafe_get obj e) n))
+let app_meth f n  = ret (fun obj -> f (repr(send obj n)))
+let app_const_const f x y = ret (fun obj -> f x y)
+let app_const_var f x n   = ret (fun obj -> f x (Array.unsafe_get obj n))
+let app_const_meth f x n = ret (fun obj -> f x (repr(send obj n)))
+let app_var_const f n x = ret (fun obj -> f (Array.unsafe_get obj n) x)
+let app_meth_const f n x = ret (fun obj -> f (repr(send obj n)) x)
+let app_const_env f x e n =
+  ret (fun obj -> f x (Obj.field (Array.unsafe_get obj e) n))
+let app_env_const f e n x =
+  ret (fun obj -> f (Obj.field (Array.unsafe_get obj e) n) x)
+
+type impl =
+    GetConst
+  | GetVar
+  | GetEnv
+  | GetMeth
+  | SetVar
+  | AppConst
+  | AppVar
+  | AppEnv
+  | AppMeth
+  | AppConstConst
+  | AppConstVar
+  | AppConstEnv
+  | AppConstMeth
+  | AppVarConst
+  | AppEnvConst
+  | AppMethConst
+  | Closure of Obj.t
+
+let method_impl i arr =
+  let next () = incr i; magic arr.(!i) in
+  match next() with
+    GetConst -> let x : t = next() in ret (fun obj -> x)
+  | GetVar   -> let n = next() in get_var n
+  | GetEnv   -> let e = next() and n = next() in get_env e n
+  | GetMeth  -> let n = next() in get_meth n
+  | SetVar   -> let n = next() in set_var n
+  | AppConst -> let f = next() and x = next() in ret (fun obj -> f x)
+  | AppVar   -> let f = next() and n = next () in app_var f n
+  | AppEnv   ->
+      let f = next() and e = next() and n = next() in app_env f e n
+  | AppMeth  -> let f = next() and n = next () in app_meth f n
+  | AppConstConst ->
+      let f = next() and x = next() and y = next() in ret (fun obj -> f x y)
+  | AppConstVar ->
+      let f = next() and x = next() and n = next() in app_const_var f x n
+  | AppConstEnv ->
+      let f = next() and x = next() and e = next () and n = next() in
+      app_const_env f x e n
+  | AppConstMeth ->
+      let f = next() and x = next() and n = next() in app_const_meth f x n
+  | AppVarConst ->
+      let f = next() and n = next() and x = next() in app_var_const f n x
+  | AppEnvConst ->
+      let f = next() and e = next () and n = next() and x = next() in
+      app_const_env f e n x
+  | AppMethConst ->
+      let f = next() and n = next() and x = next() in app_meth_const f n x
+  | Closure _ as clo -> magic clo
+
+let set_methods table methods =
+  let len = Array.length methods and i = ref 0 in
+  while !i < len do
+    let label = methods.(!i) and clo = method_impl i methods in
+    set_method table label clo;
+    incr i
+  done
 
 (**** Statistics ****)
 
