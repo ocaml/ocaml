@@ -491,9 +491,11 @@ let build_other env =  match env with
       make_pat (Tpat_variant(tag, arg, row)) p.pat_type p.pat_env in
     begin match
       List.fold_left
-        (fun others (tag,f) -> match Btype.row_field_repr f with
-          Rabsent | Reither _ -> others
-        | Rpresent arg -> make_other_pat tag (arg = None) :: others)
+        (fun others (tag,f) ->
+          if List.mem tag tags then others else
+          match Btype.row_field_repr f with
+            Rabsent | Reither _ -> others
+          | Rpresent arg -> make_other_pat tag (arg = None) :: others)
         [] row.row_fields
     with [] -> assert false
     | pat::other_pats ->
