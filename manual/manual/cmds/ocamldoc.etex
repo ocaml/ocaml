@@ -1,175 +1,114 @@
 \chapter{The documentation generator (ocamldoc)} \label{c:ocamldoc}
 \pdfchapter{The documentation generator (ocamldoc)}
 
-This chapter describes OCamldoc, a documentation generator
-using the comments in source files.
+This chapter describes OCamldoc, a tool that generates documentation from
+special comments embedded in source files.  The comments used by OCamldoc
+are of the form "(**"\ldots"*)" and follow the format described
+in section \ref{s:ocamldoc-comments}.
 
-In order to be used by OCamldoc, comments in source files must follow
-some rules, given in \ref{s:ocamldoc-comments}.
-OCamldoc can produce documentation in various formats (HTML, \LaTeX , 
-TeXinfo, man pages and "dot"), but one can add his own {\bf custom generator},
-as explained in \ref{s:ocamldoc-custom-generators}.
+OCamldoc can produce documentation in various formats: HTML, \LaTeX , 
+TeXinfo, Unix man pages, and "dot" dependency graphs.  Moreover,
+users can add their own custom generators, as explained in
+section \ref{s:ocamldoc-custom-generators}.
 
-In this chapter, an {\em element} is a type, a value, a module, an exception, a module type, 
-a type constructor, a record field, a class, a class type, a class method, 
-a class value or a class inheritance.
+In this chapter, we use the word {\em element} to refer to any of the
+following parts of an OCaml source file: a type declaration, a value,
+a module, an exception, a module type, a type constructor, a record
+field, a class, a class type, a class method, a class value or a class
+inheritance clause.
 
 \section{Usage} \label{s:ocamldoc-usage}
 
 \subsection{Invocation}
 
-The tool is started by the command "ocamlodc", as follows:
+OCamldoc is invoked via the command "ocamldoc", as follows:
 \begin{alltt}
         ocamldoc \var{options} \var{sourcefiles}
 \end{alltt}
 
-The following command-line options are recognized by "ocamldoc":
+\subsubsection*{Options for choosing the output format}
+
+The following options determine the format for the generated
+documentation.
 
 \begin{options}
-
-\item["-v"]
-Verbose mode. Display progress information.
-
-\item["-I" \var{directory}]
-Add \var{directory} to the list of included directories. Since OCamldoc
- calls the Objective Caml typer, it needs to know the modules used in the
- given source files. This option works the same way as for the
-"ocamlc" command.
-
-\item["-pp" \var{command}]
-Pipe sources through preprocessor \var{command}, the same way as 
-for the "ocamlc" command.
-
-\item["-rectypes"]
-Allow arbitrary recursive types, the same way as for the "ocamlc" command.
-
-\item["-g" \var{file.cm[o,a]}]
-Load \var{file} defining a new documentation generator, for bytecode
- version only. See \ref{s:ocamldoc-compilation-and-usage}.
-
-\item["-nolabels"]
-Use classic mode, the same way as for the "ocamlc" command.
-
-\item["-warn-error"]
-Treat warnings as errors.
-
-\item["-o" \var{file}]
-Output to \var{file} instead of "ocamldoc.out".
-(to use with the {\bf\tt -latex}, {\bf\tt -texi}, or {\bf\tt -dot} options)
-
-\item["-d" \var{dir}]
-Generate files in directory \var{dir}, rather than in current directory.
-
-\item["-dump" \var{file}]
-Dump collected information into \var{file}.
-
-\item["-load" \var{file}]
-Load information from \var{file} ; may be used several times.
-
 \item["-html"]
-Generate default HTML documentation in the current directory. You can 
-change the target directory with the {\bf\tt -d} option.
- You can customize the style of the generated pages by editing
-the generated "style.css" file or by giving your own.
+Generate documentation in HTML default format. The generated HTML pages
+are stored in the current directory, or in the directory specified
+with the {\bf\tt -d} option.   You can customize the style of the
+generated pages by editing the generated "style.css" file, or by providing
+your own style sheet using option "-css-style".
 
 \item["-latex"]
-Generate default \LaTeX\ documentation in the "ocamldoc.out" file. You can change the
-output file with the {\bf\tt -o} option. The generated \LaTeX\ document uses the file
- "ocamldoc.sty" included in the OCamldoc distribution. You can change this file to 
-customize the style of your \LaTeX\ documentation.
+Generate documentation in \LaTeX\ default format.  The generated
+\LaTeX\ document is saved in file "ocamldoc.out", or in the file
+specified with the {\bf\tt -o} option.  The document uses the style file
+"ocamldoc.sty" included in the OCamldoc distribution. You can change
+this file to  customize the style of your \LaTeX\ documentation.
 
 \item["-texi"]
-Generate default TeXinfo documentation in the "ocamldoc.out" file. You can change the
-output file with the {\bf\tt -o} option.
+Generate documentation in TeXinfo default format.  The generated
+\LaTeX\ document is saved in file "ocamldoc.out", or in the file
+specified with the {\bf\tt -o} option.
 
 \item["-man"]
-Generate default man pages in the current directory. You can change the target directory
+Generate documentation as a set of Unix "man" pages.  The generated pages
+are stored in the current directory, or in the directory specified
 with the {\bf\tt -d} option.
 
 \item["-dot"]
-Generate code for the "dot" tool. "dot" is a tool which creates graphs
-from a textual description. You can find it at 
+Generate a dependency graph for the toplevel modules, in a format suitable
+for displaying and processing by "dot". The "dot" tool is available from
 \url{http://www.research.att.com/sw/tools/graphviz/}.
-The {\bf\tt -dot} option generates the dependencies of toplevel modules, 
-in the "dot" format, in the "ocamldoc.out" file. 
-You can change the output file with the {\bf\tt -o} option.
+The textual representation of the graph is written to the file
+"ocamldoc.out", or to the file specified with the {\bf\tt -o} option.
+Use "dot ocamldoc.out" to display it.
 
-\item["-t" \var{title}]
-Use \var{title} as title for the generated documentation.
+\item["-g" \var{file.cm[o,a]}]
+Dynamically load the given file, which defines a custom documentation
+generator.  See section \ref{s:ocamldoc-compilation-and-usage}.  This
+option is supported by the "ocamldoc" command, but not by its
+native-code version "ocamldoc.opt".
 
-\item["-all-params"]
-Display the complete list of parameters for functions and methods (HTML only).
+\end{options}
 
-\item["-css-style" \var{filename}]
-Use \var{filename} as CSS style file (HTML only).
+\subsubsection*{General options}
 
-\item["-index-only"]
-Generate only index files (HTML only).
+\begin{options}
 
-\item["-colorize-code"]
-Try to colorize the code in "[ ]" and "\{[ ]\}" (HTML only).
-If the code is not ocaml-syntactically correct, no color is added.
+\item["-d" \var{dir}]
+Generate files in directory \var{dir}, rather than in the current directory.
 
-\item["-noheader"]
-Suppress header in generated documentation (\LaTeX\ only).
-
-\item["-notrailer"]
-Suppress trailer in generated documentation (\LaTeX\ only).
-
-\item["-sepfiles"]
-Generate one ".tex" file per toplevel module (\LaTeX\ only).
-
-\item["-latextitle" \var{n,style}]
-Associate \var{n} to the given sectionning \var{style}
-(e.g. 'section') in the latex output (\LaTeX\ only). This allows
-you to include the generated document at any level into another
-\LaTeX\ document.
-
-\item["-notoc"]
-Do not generate table of contents (\LaTeX\ only).
-
-\item["-sort"]
-Sort the list of top modules before generating the documentation.
+\item["-dump" \var{file}]
+Dump collected information into \var{file}.  This information can be
+read with the "-load" option in a subsequent invocation of "ocamldoc".
 
 \item["-hide" \var{modules}]
-Hide the given complete module names in generated doc.
+Hide the given complete module names in the generated documentation
 \var{modules} is a list of complete module names are separated
- by '","', like in "Pervasives,M2.M3", without blanks.
-
-\item["-no-stop"]
-Keep elements placed after the "(**/**)" special comment
-(see \ref{s:ocamldoc-comments}).
-
-\item["-no-custom-tags"]
-Do not allow custom @-tags (see \ref{s:ocamldoc-tags}).
-
-\item["-stars"]
-Remove blank characters until the first asterisk ('"*"') in each 
-line of comments.
-
-\item["-keep-code"]
-Always keep source code of values, methods and attributes 
-when available. 
-The source code is always kept when a ".ml"
-file is given, but is not when a ".mli" is given. 
-This option allows to always keep the source code.
+ by '","', without blanks.  For instance: "Pervasives,M2.M3".
 
 \item["-inv-merge-ml-mli"]
 Inverse implementations and interfaces when merging. All elements 
-in implementation files are kept and, using the {\bf\tt -m} option, 
-comments of the interface files can be merged with the ones of the 
-implementation.
+in implementation files are kept, and the {\bf\tt -m} option
+indicates which parts of the comments in interface files are merged
+with the comments in implementation files.
 
-\item["-esc8"]
-Escape accentuated characters in Info files (TeXinfo only).
+\item["-keep-code"]
+Always keep the source code for values, methods and instance variables,
+when available. 
+The source code is always kept when a ".ml"
+file is given, but is by default discarded when a ".mli" is given. 
+This option allows to always keep the source code.
 
-\item["-noindex"]
-Do not build index for Info files (TeXinfo only).
+\item["-load" \var{file}]
+Load information from \var{file}, which has been produced by
+"ocamldoc -dump".  Several "-load" options can be given.
 
 \item["-m" \var{flags}]
 Specify merge options between interfaces and implementations. 
-(see \ref{s:ocamldoc-merge} for details).
-\var{flags} can be one or more of the following characters:
+(see section \ref{s:ocamldoc-merge} for details).
+\var{flags} can be one or several of the following characters:
 \begin{options}
         \item["d"] merge description
         \item["a"] merge @author
@@ -180,62 +119,177 @@ Specify merge options between interfaces and implementations.
         \item["p"] merge @param
         \item["e"] merge @raise
         \item["r"] merge @return
-        \item["A"] merge all
+        \item["A"] merge everything
 \end{options}
 
-\item["-dot-types"]
-Output "dot" code for types dependencies instead of module dependencies.
-(to use with the {\bf\tt -dot} option only)
+\item["-no-custom-tags"]
+Do not allow custom @-tags (see section \ref{s:ocamldoc-tags}).
 
+\item["-no-stop"]
+Keep elements placed after the "(**/**)" special comment
+(see section \ref{s:ocamldoc-comments}).
+
+\item["-o" \var{file}]
+Output the generated documentation to \var{file} instead of "ocamldoc.out".
+This option is meaningful only in conjunction with the
+{\bf\tt -latex}, {\bf\tt -texi}, or {\bf\tt -dot} options.
+
+\item["-pp" \var{command}]
+Pipe sources through preprocessor \var{command}.
+
+\item["-sort"]
+Sort the list of top-level modules before generating the documentation.
+
+\item["-stars"]
+Remove blank characters until the first asterisk ('"*"') in each 
+line of comments.
+
+\item["-t" \var{title}]
+Use \var{title} as the title for the generated documentation.
+
+\item["-v"]
+Verbose mode. Display progress information.
+
+\item["-warn-error"]
+Treat warnings as errors.
+
+\end{options}
+
+\subsubsection*{Type-checking options}
+
+OCamldoc calls the Objective Caml type-checker to obtain type
+informations.  The following options impact the type-checking phase.
+They have the same meaning as for the "ocamlc" and "ocamlopt" commands.
+
+\begin{options}
+
+\item["-I" \var{directory}]
+Add \var{directory} to the list of directories search for compiled
+interface files (".cmi" files).
+
+\item["-nolabels"]
+Ignore non-optional labels in types.
+
+\item["-rectypes"]
+Allow arbitrary recursive types.  (See the "-rectypes" option to "ocamlc".)
+
+\end{options}
+
+\subsubsection*{Options for generating HTML pages}
+
+The following options apply in conjunction with the "-html" option:
+
+\begin{options}
+\item["-all-params"]
+Display the complete list of parameters for functions and methods.
+
+\item["-css-style" \var{filename}]
+Use \var{filename} as the Cascading Style Sheet file.
+
+\item["-colorize-code"]
+Colorize the OCaml code enclosed in "[ ]" and "\{[ ]\}", using colors
+to emphasize keywords, etc.  If the code fragments are not
+syntactically correct, no color is added.
+
+\item["-index-only"]
+Generate only index files.
+
+\end{options}
+
+\subsubsection*{Options for generating \LaTeX\ files}
+
+The following options apply in conjunction with the "-latex" option:
+
+\begin{options}
+\item["-latextitle" \var{n,style}]
+Associate style number \var{n} to the given \LaTeX\ sectioning command
+\var{style}, e.g. "section" or "subsection".  (\LaTeX\ only.)  This is
+useful when including the generated document in another \LaTeX\ document,
+at a given sectioning level.  The default association is 1 for "section",
+2 for "subsection", 3 for "subsubsection", 4 for "paragraph" and 5 for
+"subparagraph".
+
+\item["-noheader"]
+Suppress header in generated documentation.
+
+\item["-notoc"]
+Do not generate a table of contents (\LaTeX\ only).
+
+\item["-notrailer"]
+Suppress trailer in generated documentation.
+
+\item["-sepfiles"]
+Generate one ".tex" file per toplevel module, instead of the global
+"ocamldoc.out" file.
+\end{options}
+
+\subsubsection*{Options for generating TeXinfo files}
+
+The following options apply in conjunction with the "-texi" option:
+
+\begin{options}
+\item["-esc8"]
+Escape accented characters in Info files.
+
+\item["-noindex"]
+Do not build index for Info files.
+\end{options}
+
+\subsubsection*{Options for generating "dot" graphs}
+
+The following options apply in conjunction with the "-dot" option:
+
+\begin{options}
 \item["-dot-colors" \var{colors}]
 Specify the colors to use in the generated "dot" code. 
-When generating module dependencies, "ocamldoc" tries to give
-a different color to each different directory where given modules are.
-When generating types dependencies, "ocamldoc" tries to give
-a different color to each different module.
-\var{colors} is a list of color names separated by '","', like
+When generating module dependencies, "ocamldoc" uses different colors
+for modules, depending on the directories in which they reside.
+When generating types dependencies, "ocamldoc" uses different colors
+for types, depending on the modules in which they are defined.
+\var{colors} is a list of color names separated by '","', as
 in "Red,Blue,Green". The available colors are the ones supported by
 the "dot" tool.
-(to use with the {\bf\tt -dot} option only)
 
 \item["-dot-include-all"]
 Include all modules in the "dot" output, not only modules given
 on the command line or loaded with the {\bf\tt -load} option.
-(to use with the {\bf\tt -dot} option only)
 
 \item["-dot-reduce"]
 Perform a transitive reduction of the dependency graph before
 outputting the "dot" code. This can be useful if there are
-a lot of dependencies, making the graph unreadable.
-(to use with the {\bf\tt -dot} option only)
+a lot of transitive dependencies that clutter the graph.
 
+\item["-dot-types"]
+Output "dot" code describing the type dependency graph instead of
+the module dependency graph.
 \end{options}
 
-\subsection{Merge of modules}
+\subsection{Merging of module information}
 \label{s:ocamldoc-merge}
-Information on a module can be extracted from the ".mli" or ".ml" 
+
+Information on a module can be extracted either from the ".mli" or ".ml" 
 file, or both, depending on the files given on the command line. 
 When both ".mli" and ".ml" files are given for the same module, 
-information extracted from these files must be merged, according to the 
-following rules~:
+information extracted from these files is merged according to the 
+following rules:
 \begin{itemize}
-\item Only elements (values, types, classes, ...) in the ".mli"
-  file are kept,
+\item Only elements (values, types, classes, ...) declared in the ".mli"
+file are kept.  In other terms, definitions from the ".ml" file that are
+not exported in the ".mli" file are not documented.
 \item Descriptions of elements and descriptions in @-tags are handled 
-  this way~: 
-If a description for the same element or in the same @-tag of the same 
- element is present in both files, then the description of the ".ml" 
- file is concatenated to the one in the ".mli" file,
- if the according flag is given on the command line.
+as follows.  If a description for the same element or in the same
+@-tag of the same element is present in both files, then the
+description of the ".ml" file is concatenated to the one in the ".mli" file,
+if the corresponding "-m" flag is given on the command line.
 If a description is present in the ".ml" file and not in the 
-".mli" file then it is kept.
-In every case, all the information given in the ".mli" file is kept.
+".mli" file, the ".ml" description is kept.  
+In either case, all the information given in the ".mli" file is kept.
 \end{itemize}
 
 \subsection{Coding rules}
 \label{s:ocamldoc-rules}
 The following rules must be respected in order to avoid name clashes 
-which result in cross reference errors~:
+resulting in cross-reference errors:
 \begin{itemize}
 \item In a module, there must not be two modules, two module types or
   a module and a module type with the same name.
@@ -243,12 +297,9 @@ which result in cross reference errors~:
   a class and a class type with the same name.
 \item In a module, there must not be two values, two types, or two
   exceptions with the same name.
-\item Values defined in tuple, like in
-\begin{verbatim}
-let (x, y, z) = (1, 2, 3)
-\end{verbatim}
+\item Values defined in tuple, as in "let (x,y,z) = (1,2,3)"
 are not kept by OCamldoc.
-\item Avoid the following construction~:
+\item Avoid the following construction:
 \begin{verbatim}
 open Foo (* which has a module Bar with a value x *)
 module Foo = 
@@ -260,22 +311,24 @@ module Foo =
   end
   let dummy = Bar.x
 \end{verbatim}
-because in this case, OCamldoc will associate "Bar.x" to the one of module
- "Foo" defined just above, instead of "Bar.x" in the opened module "Foo".
+In this case, OCamldoc will associate "Bar.x" to the "x" of module
+"Foo" defined just above, instead of to the "Bar.x" defined in the
+opened module "Foo".
 \end{itemize}
 
-\section{Comments syntax}
+\section{Syntax of documentation comments}
 \label{s:ocamldoc-comments}
 
-\subsection{Placement of comments }
-OCamldoc can associate comments to some elements of the language encountered
- in the source files.
-The association is made according to the locations of comments with report
- to language elements. 
-The locations of comments in ".mli" and ".ml" files are different. \\
-Comments for documentation are called {\em special comments} and are defined
- between "(**" and "*)". Comments beginning with "(" and more than two "*"
- are ignored.
+Comments containing documentation material are called {\em special
+comments} and are written between "(**" and "*)". Special comments
+must start exactly with "(**".  Comments beginning with "(" and more
+than two "*" are ignored.
+
+\subsection{Placement of documentation comments}
+OCamldoc can associate comments to some elements of the language
+encountered in the source files.  The association is made according to
+the locations of comments with respect to the language elements.  The
+locations of comments in ".mli" and ".ml" files are different.
 
 %%%%%%%%%%%%%
 \subsubsection{Comments in ".mli" files}
@@ -284,25 +337,27 @@ after the element.\\
 A special comment before an element is associated to this element if~:
 \begin{itemize}
 \item There is no blank line or another special comment between the special 
-comment and the element. Meanwhile, there can be a simple comment between 
+comment and the element. However, a regular comment can occur between 
 the special comment and the element.
 \item The special comment is not already associated to the previous element.
 \item Ths special comment is not the first one of a toplevel module.
 \end{itemize}
 
-A special comment after an element is associated to this element if there is no
- blank line or comment between the special comment and the element.
+A special comment after an element is associated to this element if
+there is no blank line or comment between the special comment and the
+element.
 
-There are two exceptions, for type constructors and record field in type definitions,
- whose associated comment can only be placed after the constructor or field definition, 
-without blank line or other comment between them.\\
+There are two exceptions: for type constructors and record field in
+type definitions, the associated comment can only be placed after the
+constructor or field definition, without blank lines or other comments
+between them.
 
-The following example of file "toto.mli" shows where to place comments in a
-".mli" file.
+The following sample interface file "foo.mli" illustrates the
+placement rules for comments in ".mli" files.
 
 \begin{verbatim}
 (** The first special comment of the file is the comment associated 
-    to the whole module.*)
+    with the whole module.*)
 
 
 (** Special comments can be placed between elements and are kept 
@@ -322,21 +377,21 @@ val f : int -> int -> int
 (* Hello, I'm a simple comment :-) *)
 exception My_exception of (int -> int) * int
 
-(** Comment for type meteo  *)
-type meteo =
+(** Comment for type weather  *)
+type weather =
 | Rain of int (** The comment for construtor Rain *)
 | Sun (** The comment for constructor Sun *) 
 
-(** Comment for type meteo2  *)
-type meteo2 =
+(** Comment for type weather2  *)
+type weather2 =
 | Rain of int (** The comment for construtor Rain *)
 | Sun (** The comment for constructor Sun *) 
-(** I can continue the comment for type meteo2 here because a comment
-  because there is already a comment associated to the last construtor.*)
+(** I can continue the comment for type weather2 here
+  because there is already a comment associated to the last constructor.*)
 
 (** The comment for type my_record *)
 type my_record = {
-    val foo : int ; (** Comment for field foo *)
+    val foo : int ;    (** Comment for field foo *)
     val bar : string ; (** Comment for field bar *)
   }
   (** Continuation of comment for type my_record *)
@@ -372,10 +427,10 @@ class my_class :
     method m : float -> int
   end
 
-(** The comment for class type my_class_type *)
+(** The comment for the class type my_class_type *)
 class type my_class_type = 
   object
-    (** The comment for attribute x. *)
+    (** The comment for variable x. *)
     val mutable x : int
     
     (** The commend for method m. *)
@@ -388,7 +443,7 @@ module Foo =
     (** The comment for x *)
     val x : int
 
-    (** A special comment kept but not associated to any element *)
+    (** A special comment that is kept but not associated to any element *)
   end
     
 (** The comment for module type my_module_type. *)
@@ -412,14 +467,17 @@ module type my_module_type =
 
 %%%%%%%%%%%%%
 \subsubsection{Comments in {\tt .ml} files}
-A special comment is associated to an element if it is placed before the element and 
-there is no blank line between the comment and the element. Meanwhile, there can be
- a simple comment between the special comment and the element. There are two
- exceptions, for type constructors and record field in type definitions, whose
- associated comment must be placed after the constructor or field definition, 
+
+A special comment is associated to an element if it is placed before
+the element and there is no blank line between the comment and the
+element. Meanwhile, there can be a simple comment between the special
+comment and the element. There are two exceptions, for type
+constructors and record field in type definitions, whose associated
+comment must be placed after the constructor or field definition,
 without blank line between them.
 
-The following example of file "toto.ml" shows where to place comments in a ".ml" file.
+The following example of file "toto.ml" shows where to place comments
+in a ".ml" file.
 
 \begin{verbatim}
 (** The first special comment of the file is the comment associated 
@@ -436,14 +494,14 @@ let f x y = x + y
 (* A simple comment. *)
 exception My_exception of (int -> int) * int
 
-(** Comment for type meteo  *)
-type meteo =  
-| Rain of int (** The comment for construtor Rain *)
+(** Comment for type weather  *)
+type weather =  
+| Rain of int (** The comment for constructor Rain *)
 | Sun (** The comment for constructor Sun *) 
 
 (** The comment for type my_record *)
 type my_record = {
-    val foo : int ; (** Comment for field foo *)
+    val foo : int ;    (** Comment for field foo *)
     val bar : string ; (** Comment for field bar *)
   }
 
@@ -453,7 +511,7 @@ class my_class =
       (** A comment to describe inheritance from cl *)
       inherit cl 
 
-      (** The comment for field tutu *)
+      (** The comment for the instance variable tutu *)
       val mutable tutu = "tutu"
       (** The comment for toto *)
       val toto = 1 
@@ -467,7 +525,7 @@ class my_class =
 (** The comment for class type my_class_type *)
 class type my_class_type = 
   object
-    (** The comment for attribute x. *)
+    (** The comment for the instance variable x. *)
     val mutable x : int
     (** The commend for method m. *)
     method m : int -> int
@@ -492,10 +550,9 @@ module type my_module_type =
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{The Stop special comment}
-The special comment "(**/**)" can be used to tell OCamldoc not to keep 
-elements placed after this comment, in the current class, class type, 
-module or module type. \\
-Here is an example~:
+The special comment "(**/**)" tells OCamldoc to discard
+elements placed after this comment, up to the end of the current
+class, class type,  module or module type.  For instance:
 \begin{verbatim}
 class type foo =
   object
@@ -504,12 +561,12 @@ class type foo =
     
     (**/**)
 
-    (** This method won't appear in the doc *)
+    (** This method won't appear in the documentation *)
     method bar : int
   end
 
-(** This value appears in the doc since the Stop special comment
-    in the class does not concern the parent module of the class.*)
+(** This value appears in the documentation, since the Stop special comment
+    in the class does not affect the parent module of the class.*)
 val foo : string
 
 (**/**)
@@ -520,83 +577,81 @@ val bar : string
 type t = string
 \end{verbatim}
 
-The {\bf\tt -no-stop} of the "ocamldoc" tool allows to ignore the Stop
- special comments.
+The {\bf\tt -no-stop} option to "ocamldoc" causes the Stop special
+comments to be ignored.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Syntax of comments}
-Comments have a syntax, allowing to~:
-\begin{itemize}
-\item format the text of the comment,
-\item give specific information about parameters, version, author(s), ...
-\end{itemize}
+\subsection{Syntax of documentation comments}
 
-A comment associated to an element has the following form~:
+The inside of documentation comments "(**"\ldots"*)" consists of
+free-form text with optional formatting annotations, followed by
+optional {\em tags} giving more specific information about parameters,
+version, authors, \ldots\ The tags are distinguished by a leading @
+character.  Thus, a documentation comment has the following shape:
 \begin{verbatim}
-(** The comment begins with a description, which has the syntax of
-   the text rule described below.
+(** The comment begins with a description, which is text formatted
+   according to the rules described in the next section.
    The description continues until the first non-escaped '@' character.
    @author Mr Smith
    @param x description for parameter x
-   @... 
 *)
 \end{verbatim}
-Not all elements are concerned by @-tags. Even though it is permitted to 
-write @-tags for these elements, the tags will simply be ignored.
-The following elements are associated with the description part only~: 
-type constructors, record fields, and class inheritance.
-Some other elements are not concerned by some @-tags (for example a 
-parameter description for a class attribute) but the information is kept.
-
+Some elements support only a subset of all @-tags.  Tags that are not
+relevant to the documented element are simply ignored.  For instance,
+all tags are ignored when documenting type constructors, record
+fields, and class inheritance clauses.  Similarly, a "@param" tag on a
+class instance variable is ignored.
 
 %%%%%%%%%%%%%
 \subsection{Text formatting}
-The syntax is defined by the following BNC-like grammar~:\\
-%\ikwd{text\@\texttt{text}}
-%\ikwd{text-element\@\texttt{text-element}}
 
-{\tt text} ::= {\tt (text\_element)+}\\
+Here is the BNF grammar for the simple markup language used to format
+text descriptions.
 
-{\tt text\_element} ::=
+\newpage
 
-\hspace{0.3cm}\vbox{
-{\tt \{[0-9]+ text\}}~: give style {\tt[0-9]+} to the given {\tt text}. \\
-{\tt | \{[0-9]+:label text\}}~: 
-	give style {\tt[0-9]+} to the given {\tt text}, and add the given label to this
-	point. This point can be referenced by its fully-qualified label, the same way
-	as for any other element (see the syntax of "{!" below). \\
-{\tt | \{b text\}}~: set {\tt text} in bold. \\
-{\tt | \{i text\}}~: set {\tt text} in italic. \\
-{\tt | \{e text\}}~: emphasize {\tt text}. \\
-{\tt | \{C text\}}~: center {\tt text}. \\
-{\tt | \{L text\}}~: left align {\tt text}. \\
-{\tt | \{R text\}}~: right align {\tt text}. \\
-{\tt | \{ul list\}}~: build a list. \\
-{\tt | \{ol list\}}~: build an enumerated list. \\
-{\tt | \{\{:string\}text\}}~: make a link to the address (given as a string) with the given text . \\
-{\tt | [string]}~: set the given {\tt string} in source code style. \\
-{\tt | \{[string]\}}~: set the given {\tt string} in preformatted 
+\noindent{\it text} ::= ({\it text\_element})"+"\\
+
+\noindent{\it text\_element} ::= \\
+\begin{tabular}{@{}lp{10cm}}
+{\tt | \{[0-9]+ {\it text}\}} & format {\it text} as a section header;
+  the integer following "{" indicates the sectioning level. \\
+{\tt | \{[0-9]+:{\it label} {\it text}\}} & 
+  same, but also associate the name {\it label} to the current point.
+  This point can be referenced by its fully-qualified label in a
+  "{!" command, just like any other element. \\
+{\tt | \{b {\it text}\}} & set {\it text} in bold. \\
+{\tt | \{i {\it text}\}} & set {\it text} in italic. \\
+{\tt | \{e {\it text}\}} & emphasize {\it text}. \\
+{\tt | \{C {\it text}\}} & center {\it text}. \\
+{\tt | \{L {\it text}\}} & left align {\it text}. \\
+{\tt | \{R {\it text}\}} & right align {\it text}. \\
+{\tt | \{ul {\it list}\}} & build a list. \\
+{\tt | \{ol {\it list}\}} & build an enumerated list. \\
+{\tt | \{\{:{\it string}\}{\it text}\}} & put a link to the given address
+(given as a string) on the given text. \\
+{\tt | [{\it string}]} & set the given {\it string} in source code style. \\
+{\tt | \{[{\it string}]\}} & set the given {\it string} in preformatted 
 				source code style.\\
-{\tt | \{v string v\}}~: set the given {\tt string} in verbatim style. \\
-{\tt | \{\% string \%\}}~: take the given {\tt string} as \LaTeX\ code.\\
-{\tt | \{!string\}}~: use {\tt string} as a reference to an element. 
-				{\tt string} must be a fully qualified element name,
-				for example {\tt Foo.Bar.t}.\\
-{\tt | \{\^{} text\}}~: Set text in superscript.\\
-{\tt | \{\_ text\}}~: Set text in subscript.\\
-{\tt | escaped\_string}~: any characters with '{\tt \{}', '{\tt \}}', '{\tt [}', '{\tt ]}' and '{\tt @}' 
-	escaped by a '{\tt \textbackslash}'\\
-{\tt | blank\_line }~: to force a new line.
-}\\
+{\tt | \{v {\it string} v\}} & set the given {\it string} in verbatim style. \\
+{\tt | \{\% {\it string} \%\}} & take the given {\it string} 
+as raw \LaTeX\ code.\\
+{\tt | \{!{\it string}\}} & insert a reference to the element named
+{\it string}. {\it string} must be a fully qualified element name,
+for example {\tt Foo.Bar.t}.\\
+{\tt | \{\^{} {\it text}\}} & set text in superscript.\\
+{\tt | \{\_ {\it text}\}} & set text in subscript.\\
+{\tt | {\it escaped\_string}} & typeset the given string as is; 
+special characters ('{\tt \{}', '{\tt \}}', '{\tt [}', '{\tt ]}' and '{\tt @}')
+must be	escaped by a '{\tt \textbackslash}'\\
+{\tt | {\it blank\_line} } & force a new line.
+\end{tabular} \\
 
-{\tt list} ::=
+\noindent{\it list} ::= \\
+{}~~{\tt | (\{-  {\it text}\})+}\\
+{}~~{\tt | (\{li  {\it text}\})+}\\
 
-\hspace{0.3cm}\vbox{
-{\tt (\{-  text\})+}\\
-{\tt| (\{li  text\})+}\\
-}\\
-
-A shortcut syntax exists for lists and enumerated lists~:
+A shortcut syntax exists for lists and enumerated lists:
 \begin{verbatim}
 (** Here is a {b list}
 - item 1
@@ -605,7 +660,7 @@ A shortcut syntax exists for lists and enumerated lists~:
 
 The list is ended by the blank line.*)
 \end{verbatim}
-is equivalent to~:
+is equivalent to:
 \begin{verbatim}
 (** Here is a {b list} 
 {ul {- item 1}
@@ -614,109 +669,112 @@ is equivalent to~:
 The list is ended by the blank line.*)
 \end{verbatim}
 
-The same shortcut is available for enumerated lists, by using '"+"' 
+The same shortcut is available for enumerated lists, using '"+"' 
 instead of '"-"'. 
 Note that only one list can be defined by this shortcut in nested lists.
 
 In the description of a value, type, exception, module, module type, class 
 or class type, the {\em first sentence} is sometimes used in indexes, or
- when just a part of the description is needed. The {\em first sentence}
- is the first characters of the description, until
+when just a part of the description is needed. The first sentence
+is composed of the first characters of the description, until
 \begin{itemize}
 \item the first dot followed by a blank, or
 \item the first blank line
 \end{itemize}
 outside of the following text formatting :
-{\tt \{ul list\}},
-{\tt \{ol list\}},
-{\tt [string]},
-{\tt \{[string]\}},
-{\tt \{v string v\}},
-{\tt \{\% string\%\}},
-{\tt \{!string\}},
-{\tt \{\^{} text\}},
-{\tt \{\_ text\}}.
+{\tt \{ul {\em list}\}},
+{\tt \{ol {\em list}\}},
+{\tt [{\em string}]},
+{\tt \{[{\em string}]\}},
+{\tt \{v {\em string} v\}},
+{\tt \{\% {\em string}\%\}},
+{\tt \{!{\em string}\}},
+{\tt \{\^{} {\em text}\}},
+{\tt \{\_ {\em text}\}}.
 
 %%%%%%%%%%%%%
-\subsection{@-tags}
+\subsection{Documentation tags (@-tags)}
 \label{s:ocamldoc-tags}
 
 \subsubsection{Predefined tags}
-The folowing table gives the list of predefined @-tags, with their syntax and signification.\\
+The folowing table gives the list of predefined @-tags, with their
+syntax and meaning.\\
 
 \begin{tabular}{|p{5cm}|p{10cm}|}\hline
-"@author string" & The author of the element. One author by "@author" tag. 
-There may be various "@author" tags for the same element. \\ \hline
+"@author "{\em string} & The author of the element. One author by "@author" tag. 
+There may be several "@author" tags for the same element. \\ \hline
 
-"@deprecated text" & The "text" should describe when the element was 
-deprecated, what to use as a replacement and, eventually, the reason
- of the deprecation may be given. \\ \hline
+"@deprecated "{\em text} & The {\em text} should describe when the element was 
+deprecated, what to use as a replacement, and possibly the reason
+for deprecation. \\ \hline
 
-"@param id text" & Associate the given description ("text") to the
- given parameter name "id". This tag is used for functional values, 
+"@param "{\em id text} & Associate the given description ({\em text}) to the
+given parameter name {\em id}. This tag is used for functions,
 methods, classes and functors. \\ \hline
 
-"@raise Exc text" & The "text" indicates that the element may raise
+"@raise Exc "{\em text} & Explain that the element may raise
  the exception "Exc". \\ \hline
 
-"@return text" & The "text" should describe the return value and
- its permissible range. This tag is used for functional values
+"@return "{\em text} & Describe the return value and
+ its possible values. This tag is used for functions
  and methods. \\ \hline
 
-"@see <url> text" &  Add a reference to the url between '"<"' and '">"' 
-with the given "text" as comment. \\ \hline
+"@see <url> "{\em text} &  Add a reference to the URL between '"<"' and '">"' 
+with the given text as comment. \\ \hline
 
-"@see 'filename' text" &  Add a reference to the given file name singles
- quotes, with the given "text" as comment. \\ \hline
+"@see 'filename' "{\em text} &  Add a reference to the given file name 
+(written between single quotes), with the given text as comment. \\ \hline
 
-"@see \"document name\" text" &  Add a reference to the given document
- between double quotes, with the given "text" as comment. \\ \hline
+"@see \"document name\" "{\em text} &  Add a reference to the given
+document name (written between double quotes), with the given text
+as comment. \\ \hline
 
-"@since string" & The indication about when the element was introduced. \\ \hline
+"@since "{\em string} & Indicates when the element was introduced. \\ \hline
 
-"@version string" & The version of the element. \\ \hline
+"@version "{\em string} & The version number for the element. \\ \hline
 \end{tabular}
 
 \subsubsection{Custom tags}
 \label{s:ocamldoc-custom-tags}
-You can use custom tags in the doc comments, but they won't have any effect
- if the used generator doesn't handle them. To use a custom tag, 
-for example "foo", just put "@foo" with some text in your comment, like in:
+You can use custom tags in the documentation comments, but they will
+have no effect if the generator used does not handle them. To use a
+custom tag,  for example "foo", just put "@foo" with some text in your
+comment, as in:
 \begin{verbatim}
 (** My comment to show you a custom tag.
 @foo this is the text argument to the [foo] custom tag.
 *)
 \end{verbatim}
 
-To handle custom tags, you'll need to define a custom generator, 
-as explained in \ref{s:ocamldoc-handling-custom-tags}.
+To handle custom tags, you need to define a custom generator, 
+as explained in section \ref{s:ocamldoc-handling-custom-tags}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Custom generators}
 \label{s:ocamldoc-custom-generators}
 
-OCamldoc performs in two steps~:
+OCamldoc operates in two steps:
 \begin{enumerate}
-\item analysis of the source files~;
+\item analysis of the source files;
 \item generation of documentation, through a documentation generator, 
 	which is an object of class "Odoc_args.class_generator".
 \end{enumerate}
-It is possible with the bytecode version of OCamldoc (the "ocamldoc" command) 
-to use a different documentation generator from the default ones. \\
+Users can provide their own documentation generator to be used during
+step 2 instead of the default generators.
 All the information retrieved during the analysis step is available through
- the "Odoc_info" module, which gives access to all the types and functions
+the "Odoc_info" module, which gives access to all the types and functions
  representing the elements found in the given modules, with their associated 
 description.
 
-The files you can used to define custom generators are in the
-"ocamldoc" directory of the OCaml library.
+The files you can used to define custom generators are installed in the
+"ocamldoc" sub-directory of the OCaml standard library.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{The generator class}
 A generator class is a class of type "Odoc_args.doc_generator". 
 It has only one method\\
 "generator : Odoc_info.Module.t_module list -> unit"\\
-This method will be called with the list of analysed and eventually 
+This method will be called with the list of analysed and possibly
 merged "Odoc_info.t_module" structures.
 Of course the class can have other methods, but the object of this
  class must be coerced to "Odoc_args.doc_generator" before being
@@ -742,17 +800,18 @@ let my_generator = new my_doc_gen
 let _ = Odoc_args.set_doc_generator (my_generator :> Odoc_args.doc_generator)
 \end{verbatim}
 
-Note~: The new class can inherit from "Odoc_html.html", "Odoc_latex.latex",
+Note: The new class can inherit from "Odoc_html.html", "Odoc_latex.latex",
 "Odoc_man.man", "Odoc_texi.texi" or "Odoc_dot.dot", and
 redefine only some methods to benefit from the existing methods. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Handling custom tags}
 \label{s:ocamldoc-handling-custom-tags}
-Making a custom generator handle custom tags (see \ref{s:ocamldoc-custom-tags}) 
-is very simple.
 
-\subsubsection{HTML}
+Making a custom generator handle custom tags (see
+\ref{s:ocamldoc-custom-tags}) is very simple.
+
+\subsubsection*{For HTML}
 Here is how to develop a HTML generator handling your custom tags.
 
 The class "Odoc_html.html" inherits
@@ -774,19 +833,21 @@ class my_gen =
   end
 \end{verbatim}
 
-Another method of the class "Odoc_html.info" will look for the function associated
-to a custom tag and apply it to the text given to the tag. If no function is associated
-to a custom tag, then the method prints a warning message on "stderr".
+Another method of the class "Odoc_html.info" will look for the
+function associated to a custom tag and apply it to the text given to
+the tag. If no function is associated to a custom tag, then the method
+prints a warning message on "stderr".
 
-\subsubsection{Other generators}
-As for the HTML custom generator, you can define a new \LaTeX\ (resp. "man") generator
-by inheriting from the class "Odoc_latex.latex" (resp. "Odoc_man.man") and 
+\subsubsection{For other generators}
+As for the HTML custom generator, you can define a new \LaTeX
+(resp. "man") generator by inheriting from the class
+"Odoc_latex.latex" (resp. "Odoc_man.man") and  
 adding your own tag handler to the field "tag_functions".
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Adding command line options}
 The command line analysis is performed after loading the module containing the 
-documentation generator, though allowing command line options to be added to the
+documentation generator, thus allowing command line options to be added to the
  list of existing ones. Adding an option can be done with the function\\
 "Odoc_args.add_option : string * Arg.spec * string -> unit"\\
 Note: Existing command line options can be redefined using this function.
@@ -807,9 +868,10 @@ built in generator to {\tt ocamldoc},
 which would result in using this generator instead of the one you just loaded.
 
 %%%%%%%%%%%%%%
-\subsubsection{Defining a custom generator class in various files}
-It is possible to define a generator class which uses various modules, which can be defined
-in various files "file1.ml[i]", "file2.ml[i]", ..., "fileN.ml[i]". A ".cma" file must
+\subsubsection{Defining a custom generator class in several files}
+It is possible to define a generator class in several modules, which
+are defined in several files "file1.ml[i]", "file2.ml[i]", ...,
+"fileN.ml[i]". A ".cma" library file must
 be created, including all these files.\\
 The following commands create the "custom.cma" file from files "file1.ml[i]", ..., 
 "fileN.ml[i]"~:\\
@@ -819,7 +881,7 @@ ocamlc -I +ocamldoc -c file2.ml[i]\\
 ...\\
 ocamlc -I +ocamldoc -c fileN.ml[i]\\
 ocamlc -o custom.cma -a file1.cmo file2.cmo ... fileN.cmo}\\
-Then, the following command uses {\tt custom.cma} as custom generator~:\\
+Then, the following command uses {\tt custom.cma} as custom generator:\\
 {\tt ocamldoc -g custom.cma {\em other_options} {\em source_files}}\\
 Again, it is important not to give the {\bf\tt -html} or any other option selecting a
 built in generator to {\tt ocamldoc},
