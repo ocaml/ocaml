@@ -10,7 +10,8 @@ These executable files are then run by the bytecode interpreter
 \section{Overview of the compiler}
 
 The "ocamlc" command has a command-line interface similar to the one of
-most C compilers. It accepts several types of arguments:
+most C compilers. It accepts several types of arguments and processes them
+sequentially:
 
 \begin{itemize}
 \item
