@@ -218,7 +218,7 @@ val write : file_descr -> string -> int -> int -> int
            written. *)
 
 
-(*** Interfacing with the standard input/output library (module io). *)
+(*** Interfacing with the standard input/output library. *)
 
 external in_channel_of_descr : file_descr -> in_channel = "open_descriptor"
         (* Create an input channel reading from the given descriptor. *)

@@ -20,3 +20,12 @@ value unix_close(fd)             /* ML */
   if (close(Int_val(fd)) == -1) uerror("close", Nothing);
   return Val_unit;
 }
+
+value unix_closeall(last_fd)     /* ML */
+     value last_fd;
+{
+  int fd;
+  for (fd = 3; fd <= Int_val(last_fd); fd++) close(fd);
+  return Val_unit;
+}
+

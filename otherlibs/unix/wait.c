@@ -57,8 +57,10 @@ static value alloc_process_status(pid, status)
 value unix_wait()                /* ML */
 {
   int pid, status;
-  Push_roots(r, 1);
+
+  enter_blocking_section();
   pid = wait(&status);
+  leave_blocking_section();
   if (pid == -1) uerror("wait", Nothing);
   return alloc_process_status(pid, status);
 }
@@ -78,8 +80,10 @@ value unix_waitpid(flags, pid_req)
 {
   int pid, status;
   
+  enter_blocking_section();
   pid = waitpid(Int_val(pid_req), &status, 
                 convert_flag_list(flags, wait_flag_table));
+  leave_blocking_section();
   if (pid == -1) uerror("waitpid", Nothing);
   return alloc_process_status(pid, status);
 }

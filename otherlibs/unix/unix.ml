@@ -540,12 +540,11 @@ external tcflow: file_descr -> flow_action -> unit = "unix_tcflow"
 
 (* High-level process management (system, popen) *)
 
-let closeall () =
-  for i = 3 to !max_opened_descr do close i done
+external closeall : int -> unit = "unix_closeall"
 
 let system cmd =
   match fork() with
-     0 -> closeall();
+     0 -> closeall !max_opened_descr;
           execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |];
           exit 127
   | id -> snd(waitpid [] id)
@@ -556,7 +555,7 @@ let create_process cmd args new_stdin new_stdout new_stderr =
       if new_stdin  <> stdin  then dup2 new_stdin stdin;
       if new_stdout <> stdout then dup2 new_stdout stdout;
       if new_stderr <> stderr then dup2 new_stderr stderr;
-      closeall();
+      closeall !max_opened_descr;
       execvp cmd args;
       exit 127
   | id -> id

@@ -14,6 +14,7 @@
 #include <mlvalues.h>
 #include <alloc.h>
 #include <memory.h>
+#include <signals.h>
 #include "unix.h"
 
 #ifdef HAS_SELECT
@@ -91,7 +92,9 @@ value unix_select(readfds, writefds, exceptfds, timeout) /* ML */
     tv.tv_usec = (int) (1e6 * (tm - (int) tm));
     tvp = &tv;
   }
+  enter_blocking_section();
   retcode = select(FD_SETSIZE, &read, &write, &except, tvp);
+  leave_blocking_section();
   if (retcode == -1) uerror("select", Nothing);
   read_list = fdset_to_fdlist(&read);
   write_list = fdset_to_fdlist(&write);
