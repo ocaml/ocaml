@@ -17,8 +17,7 @@ CODE_EXE=$(BYTE_EXE:.byt=.out)
 
 default:
 	make all
-	make test bytetest
-	#cd Moretest; make
+	make codetest bytetest
 
 all: $(BYTE_EXE) $(CODE_EXE)
 

@@ -15,6 +15,7 @@
 
 #include "alloc.h"
 #include "config.h"
+#include "fail.h"
 #include "fix_code.h"
 #include "interp.h"
 #include "major_gc.h"
@@ -24,6 +25,8 @@
 #include "mlvalues.h"
 #include "prims.h"
 #include "stacks.h"
+
+#ifndef NATIVE_CODE
 
 value get_global_data(value unit)     /* ML */
 {
@@ -74,3 +77,24 @@ value get_current_environment(value unit) /* ML */
 {
   return *extern_sp;
 }
+
+#else
+
+/* Dummy definitions to support compilation of ocamlc.opt */
+
+value get_global_data(value unit)
+{
+  invalid_argument("Meta.get_global_data");
+}
+
+value realloc_global(value size)
+{
+  invalid_argument("Meta.realloc_global");
+}
+    
+value available_primitives(value unit)
+{
+  invalid_argument("Meta.available_primitives");
+}
+
+#endif

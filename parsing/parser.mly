@@ -423,10 +423,6 @@ expr:
       { mkexp(Pexp_apply($1, List.rev $2)) }
   | LET rec_flag let_bindings IN seq_expr %prec prec_let
       { mkexp(Pexp_let($2, List.rev $3, $5)) }
-  | LET rec_flag let_bindings IN error %prec prec_let
-      { syntax_error() }
-  | LET rec_flag let_bindings error %prec prec_let
-      { unclosed "let" 1 "in" 4 }
   | PARSER opt_pat opt_bar parser_cases %prec prec_fun
       { Pstream.cparser ($2, List.rev $4) }
   | FUNCTION opt_bar match_cases %prec prec_fun
@@ -441,8 +437,6 @@ expr:
       { mkexp(Pexp_try($2, List.rev $5)) }
   | TRY seq_expr WITH error %prec prec_try
       { syntax_error() }
-  | TRY seq_expr error %prec prec_try
-      { unclosed "try" 1 "with" 3 }
   | expr_comma_list
       { mkexp(Pexp_tuple(List.rev $1)) }
   | constr_longident simple_expr %prec prec_constr_appl
@@ -453,12 +447,8 @@ expr:
       { mkexp(Pexp_ifthenelse($2, $4, None)) }
   | WHILE seq_expr DO seq_expr DONE
       { mkexp(Pexp_while($2, $4)) }
-  | WHILE seq_expr DO seq_expr error
-      { unclosed "while" 1 "done" 5 }
   | FOR val_ident EQUAL seq_expr direction_flag seq_expr DO seq_expr DONE
       { mkexp(Pexp_for($2, $4, $6, $5, $8)) }
-  | FOR val_ident EQUAL seq_expr direction_flag seq_expr DO seq_expr error
-      { unclosed "for" 1 "done" 9 }
   | expr COLONCOLON expr
       { mkexp(Pexp_construct(Lident "::", Some(mkexp(Pexp_tuple[$1;$3])), false)) }
   | expr INFIXOP0 expr

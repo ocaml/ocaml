@@ -60,8 +60,8 @@ The "configure" script accepts the following options:
         conformant POSIX 1003.1c implementation on your system.
         As a rule of thumb, this option works under Solaris 2.5 and later,
         Digital Unix 4.0, and Linux with the LinuxThreads library.
-        It will *not* work under Digital Unix 3.2 or earlier, HPUX,
-        AIX, nor Linux without LinuxThreads.
+        It will *not* work under Digital Unix 3.2 or earlier, SunOS 4,
+        HPUX, AIX, nor Linux without LinuxThreads.
 
 Examples:
     ./configure -bindir /usr/bin -libdir /usr/lib/ocaml -mandir /usr/man/manl
@@ -86,9 +86,9 @@ This phase is fairly verbose; consider redirecting the output to a file:
         make world > log.world 2>&1     # in sh
         make world >& log.world         # in csh
 
-3- To be sure everything works well, you can try to bootstrap the
-system --- that is, to recompile all Objective Caml sources with
-the newly created compiler. From the top directory, do:
+3- (Optional) To be sure everything works well, you can try to
+bootstrap the system --- that is, to recompile all Objective Caml
+sources with the newly created compiler. From the top directory, do:
 
         make bootstrap
 
@@ -115,7 +115,23 @@ or:
         make opt > log.opt 2>&1     # in sh
         make opt >& log.opt         # in csh
 
-5- You can now install the Objective Caml system. This will create the
+5- (Optional) If you want to give the native-code compiler a serious
+test, you can try to compile the Objective Caml compilers with the
+native-code compiler (they are compiled to bytecode by default).
+Just do:
+
+        make ocamlc.opt         # to build a native-code version of ocamlc
+        make ocamlopt.opt       # to build a native-code version of ocamlopt
+
+Later, you can compile your programs to bytecode using ocamlc.opt
+instead of ocamlc, and to native-code using ocamlopt.opt instead of
+ocamlopt.  The ".opt" compilers should run faster than the normal
+compilers, especially on large input files, but they may take longer
+to start due to increased code size.  If compilation times are an issue on
+your programs, try the ".opt" compilers to see if they make a
+significant difference.  
+
+6- You can now install the Objective Caml system. This will create the
 following commands (in the binary directory selected during autoconfiguration):
 
         ocamlc           the batch bytecode compiler
@@ -131,17 +147,22 @@ following commands (in the binary directory selected during autoconfiguration):
         ocamlprof        execution count profiler
         ocamlcp          the bytecode compiler in profiling mode
 
+and also, if you built them during step 5,
+
+        ocamlc.opt       the batch bytecode compiler compiled with ocamlopt
+        ocamlopt.opt     the batch native-code compiler compiled with ocamlopt
+
 From the top directory, become superuser and do:
 
         umask 022       # make sure to give read & execute permission to all
         make install
 
-6- Installation is complete. Time to clean up. From the toplevel
+7- Installation is complete. Time to clean up. From the toplevel
 directory, do "make clean".
 
-7- The emacs/ subdirectory contains Emacs-Lisp files for an Objective Caml
-editing mode and an interface for the debugger.  To install these
-files, change to the emacs/ subdirectory and do
+8- (Optional) The emacs/ subdirectory contains Emacs-Lisp files for an
+Objective Caml editing mode and an interface for the debugger.  To
+install these files, change to the emacs/ subdirectory and do
 
         make EMACSDIR=<directory where to install the files> install
 or

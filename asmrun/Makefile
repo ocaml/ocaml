@@ -87,11 +87,13 @@ weak.c: ../byterun/weak.c
 	ln -s ../byterun/weak.c weak.c
 compact.c: ../byterun/compact.c
 	ln -s ../byterun/compact.c compact.c
+meta.c: ../byterun/meta.c
+	ln -s ../byterun/meta.c meta.c
 
 LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
   parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
-  weak.c compact.c
+  weak.c compact.c meta.c
 
 clean::
 	rm -f $(LINKEDFILES)

@@ -289,12 +289,11 @@ partialclean::
 
 beforedepend:: parsing\linenum.ml
 
-# The compiler compiled with the native-code compiler
-# Currently not working because it requires C primitives from byterun\meta.c
-# which are not provided by asmrun\libasmrun.lib
+# The bytecode compiler compiled with the native-code compiler
 
-# ocamlc.opt: $(COMPOBJS:.cmo=.cmx)
-#	$(CAMLOPT) $(LINKFLAGS) -o ocamlc.opt $(COMPOBJS:.cmo=.cmx)
+ocamlc.opt: $(COMPOBJS:.cmo=.cmx)
+	cd asmrun & $(MAKEREC) meta.o
+	$(CAMLOPT) $(LINKFLAGS) -o ocamlc.opt $(COMPOBJS:.cmo=.cmx) asmrun\meta.o
 
 partialclean::
 	rm -f ocamlc.opt

@@ -206,6 +206,8 @@ installopt:
 	cp ocamlopt $(BINDIR)/ocamlopt
 	cd stdlib; $(MAKE) installopt
 	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) installopt); done
+	if test -f ocamlc.opt; then cp ocamlc.opt $(BINDIR)/ocamlc.opt; else :; fi
+	if test -f ocamlopt.opt; then cp ocamlopt.opt $(BINDIR)/ocamlopt.opt; else :; fi
 
 clean:: partialclean
 
@@ -289,15 +291,14 @@ partialclean::
 
 beforedepend:: parsing/linenum.ml
 
-# The compiler compiled with the native-code compiler
-# Currently not working because it requires C primitives from byterun/meta.c
-# which are not provided by asmrun/libasmrun.a
+# The bytecode compiler compiled with the native-code compiler
 
-# ocamlc.opt: $(COMPOBJS:.cmo=.cmx)
-#	$(CAMLOPT) $(LINKFLAGS) -o ocamlc.opt $(COMPOBJS:.cmo=.cmx)
-#
-#partialclean::
-#	rm -f ocamlc.opt
+ocamlc.opt: $(COMPOBJS:.cmo=.cmx)
+	cd asmrun; $(MAKE) meta.o
+	$(CAMLOPT) $(LINKFLAGS) -o ocamlc.opt $(COMPOBJS:.cmo=.cmx) asmrun/meta.o
+
+partialclean::
+	rm -f ocamlc.opt
 
 # The native-code compiler compiled with itself
 
