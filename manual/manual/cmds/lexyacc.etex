@@ -327,13 +327,13 @@ Actions occurring in the middle of rules are not supported.
 
 Error recovery is supported as follows: when the parser reaches an
 error state (no grammar rules can apply), it calls a function named
-"parse_error" with the string "syntax error" as argument. The default
+"parse_error" with the string "\"syntax error\"" as argument. The default
 "parse_error" function does nothing and returns, thus initiating error
 recovery (see below). The user can define a customized "parse_error"
 function in the header section of the grammar file.
 
 The parser also enters error recovery mode if one of the grammar
-actions raise the "Parsing.Parse_error" exception.
+actions raises the "Parsing.Parse_error" exception.
 
 In error recovery mode, the parser discards states from the
 stack until it reaches a place where the error token can be shifted.
