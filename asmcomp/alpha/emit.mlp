@@ -272,9 +272,9 @@ let emit_call_gc gc =
 
 let rdata_section =
   match Config.system with
-    "digital" -> ".rdata"
-  | "linux"   -> ".section .rodata"
-  | _         -> assert false
+    "digital" | "openbsd" -> ".rdata"
+  | "linux" | "netbsd" -> ".section .rodata"
+  | _ -> assert false
 
 (* Names of various instructions *)
 
@@ -714,14 +714,14 @@ let emit_fundecl (fundecl, needs_gp) =
   end;
   `	.end	{emit_symbol fundecl.fun_name}\n`;
   if !bigint_constants <> [] then begin
-    `	.section .rodata\n`;
+    `	{emit_string rdata_section}\n`;
     `	.align	3\n`;
     List.iter
       (fun (lbl, n) -> `{emit_label lbl}:	.quad	{emit_string(Nativeint.to_hexa_string n)}\n`)
       !bigint_constants
   end;
   if !float_constants <> [] then begin
-    `	.section .rodata\n`;
+    `	{emit_string rdata_section}\n`;
     `	.align	3\n`;
     List.iter
       (fun (lbl, s) -> `{emit_label lbl}:	.t_floating {emit_string s}\n`)
