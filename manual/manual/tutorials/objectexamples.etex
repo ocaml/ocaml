@@ -580,8 +580,8 @@ Note that, while classe types "c1" and "c2" are different, both object types
 "c1" and "c2" define the same abbreviation. When the domain of a coercion is
 left implicit and its co-domain is an abbreviation of a known class type,
 then the class type, rather than the object type, is used to derive the
-coercion function. This allows to leave the domain implicit when coercing
-form a subclass to its superclass. 
+coercion function. This allows to leave the domain implicit in most cases
+when coercing form a subclass to its superclass. 
 %
 The type of a coercion can always be seen as below: 
 \begin{caml_example}
@@ -592,8 +592,14 @@ Note the difference between the two coercions: in the second case, the type
 "c2" has been unfolded once (according to the explicit recursion in the class
 type of "c2"); hence the success of applying this coercion to an object of
 class "c0".  You may also note that the type of "to_c1" is "#c1 -> c1" while
-the type of "to_c2" is more general than "#c2 -> c2". 
-
+the type of "to_c2" is more general than "#c2 -> c2". Unfortunately, it is
+not always true that the coercion "(_ : > c)" has a more general type than
+"#c -> c", in particular, when the type of self appears in the type of a
+method at rank 2 under the left arm of an arrow, as in:
+\begin{caml_example}
+class type c = object ('a) method m : ('a -> unit) -> unit end;;
+let to_c x = (x :> c);;
+\end{caml_example}
 
 A common problem may occur when one tries to define a coercion to a
 class "c" inside the definition of class "c". The problem is due to the type
@@ -617,27 +623,27 @@ class c = object (self) method m = (self :> c) end;;
 This problem can sometimes be avoided by first defining the abbreviation, 
 using a class type:
 \begin{caml_example}
-class type c0 = object method m : c0 end;;
-class c : c0 = object (self) method m = (self :> c0) end;;
+class type c' = object method m : c' end;;
+class c : c' = object (self) method m = (self :> c') end;;
 \end{caml_example}
 It is also possible to use a virtual class. Inheriting from this class
-simultaneously allows to enforce all methods of "c" to have the same
-type as the methods of "c0".
+simultaneously allows to enforce all methods of "c4" to have the same
+type as the methods of "c'".
 \begin{caml_example}
-class virtual c0 = object method virtual m : c0 end;;
-class c = object (self) inherit c0 method m = (self : #c0 :> c0) end;;
+class virtual c' = object method virtual m : c' end;;
+class c = object (self) inherit c' method m = (self :> c') end;;
 \end{caml_example}
 One could think of defining the type abbreviation directly:
 \begin{caml_example}
-type c1 = <m : c1>;;
+type c' = <m : c'>;;
 \end{caml_example}
-However, the abbreviation "#c0" cannot be defined directly in a similar way.
+However, the abbreviation "#c'" cannot be defined directly in a similar way.
 It can only be defined by a class or a class-type definition. 
 (One reason is that "#" sharp abbreviations carry an implicit anonymous
 variable ".." that cannot be explicitly named).
-Thus, the abbreviation "#c0" should be expanded:
+Thus, the abbreviation "#c'" should be expanded:
 \begin{caml_example}
-class c = object (self)  method m = (self : <m : c1; ..> as 'a :> c1) end;;
+class c = object (self)  method m = (self : (<m : c'; ..> as 'a) :> c') end;;
 \end{caml_example}
 
 \section{Functional objects}
