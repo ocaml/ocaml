@@ -320,7 +320,7 @@ let bscanf ib (fmt : ('a, Scanning.scanbuf, 'c) format) f =
   let lim = String.length fmt - 1 in
 
   let return v = Obj.magic v () in
-  let delay f x () = Obj.magic f x in
+  let delay f x () = f x in
   let stack f = delay (return f) in
 
   let rec scan spc f i =
