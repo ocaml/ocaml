@@ -179,7 +179,6 @@ let empty_lexbuf lb =
 
 let _ =
   Symtable.init_toplevel();
-  toplevel_env := Compile.initial_env ();
   Sys.interactive := true
 
 (* The loop *)
@@ -188,6 +187,7 @@ let loop() =
   print_string "\tCaml Special Light version ";
   print_string Config.version;
   print_newline(); print_newline();
+  toplevel_env := Compile.initial_env();
   let lb = Lexing.from_function refill_lexbuf in
   Location.input_name := "";
   Location.input_lexbuf := Some lb;
