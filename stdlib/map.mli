@@ -32,9 +32,8 @@ module type OrderedType =
              [f e1 e2] is zero if the keys [e1] and [e2] are equal,
              [f e1 e2] is strictly negative if [e1] is smaller than [e2],
              and [f e1 e2] is strictly positive if [e1] is greater than [e2].
-             Examples: a suitable ordering function for type [int]
-             is [(-)]. You can also use the generic structural comparison
-             function [compare]. *)
+             Example: a suitable ordering function is
+             the generic structural comparison function [compare]. *)
 
 module type S =
   sig
