@@ -51,6 +51,7 @@ install:
 	cp libthreads.lib $(LIBDIR)/libthreads.lib
 	if not exist $(LIBDIR)\threads mkdir $(LIBDIR)\threads
 	cp $(THREAD_OBJS:.cmo=.cmi) threads.cma $(LIBDIR)/threads
+	rm -f $(LIBDIR)/threads/stdlib.cma
 
 installopt:
 	cp libthreadsnat.a $(LIBDIR)/libthreadsnat.a
