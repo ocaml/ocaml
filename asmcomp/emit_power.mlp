@@ -37,8 +37,9 @@ let powerpc =
 
 let toc =
   match Config.system with
-    "elf" -> false
-  | _     -> true
+    "aix" -> true
+  | "elf" -> false
+  | _ -> fatal_error "wrong $(SYSTEM)"
 
 (* Layout of the stack *)
 
@@ -745,11 +746,14 @@ let fundecl fundecl =
   (* Emit the glue code to call the GC *)
   if !call_gc_label > 0 then begin
     `{emit_label !call_gc_label}:\n`;
-    `	mflr	0\n`;                  (* Save return address in r0 *)
-    `	bl	{emit_codesymbol "caml_call_gc"}\n`;
-    if toc then
+    if toc then begin
+      `	mflr	0\n`;                  (* Save return address in r0 *)
+      `	bl	.caml_call_gc\n`;
       `	cror	31, 31, 31\n`;         (* nop *)
-    `	blr\n`                         (* Will re-execute the allocation *)
+      `	blr\n`                         (* Will re-execute the allocation *)
+    end else begin
+      `	b	caml_call_gc\n`
+    end
   end;
   (* Emit the floating-point literals *)
   if !float_literals <> [] then begin
@@ -819,6 +823,7 @@ let begin_assembly() =
   Hashtbl.clear float_constants;
   Hashtbl.clear label_constants;
   defined_functions := StringSet.empty;
+  (* Emit the beginning of the data segment *)
   let lbl_begin = Compilenv.current_unit_name() ^ "_begin" in
   emit_string data_space;
   declare_global_data lbl_begin;
@@ -833,7 +838,7 @@ let end_assembly() =
     Hashtbl.iter emit_label_constant label_constants
   end;
   emit_string data_space;
-  (* Emit the end of data segment *)
+  (* Emit the end of the data segment *)
   let lbl_end = Compilenv.current_unit_name() ^ "_end" in
   declare_global_data lbl_end;
   `{emit_symbol lbl_end}:\n`;
