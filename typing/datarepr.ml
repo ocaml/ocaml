@@ -40,10 +40,21 @@ let exception_descr path_exc decl =
 
 let dummy_label =
   { lbl_res = Ttuple []; lbl_arg = Ttuple []; lbl_mut = Immutable;
-    lbl_pos = (-1); lbl_all = [||] }
+    lbl_pos = (-1); lbl_all = [||]; lbl_repres = Record_regular }
+
+(* Cannot call ctype.repres here *)
+
+let rec is_float = function
+    Tvar{tvar_link = Some ty} -> is_float ty
+  | Tconstr(p, _) -> Path.same p Predef.path_float
+  | _ -> false
 
 let label_descrs ty_res lbls =
   let all_labels = Array.new (List.length lbls) dummy_label in
+  let repres =
+    if List.for_all (fun (name, flag, ty) -> is_float ty) lbls
+    then Record_float
+    else Record_regular in
   let rec describe_labels num = function
       [] -> []
     | (name, mut_flag, ty_arg) :: rest ->
@@ -52,7 +63,8 @@ let label_descrs ty_res lbls =
             lbl_arg = ty_arg;
             lbl_mut = mut_flag;
             lbl_pos = num;
-            lbl_all = all_labels } in
+            lbl_all = all_labels;
+            lbl_repres = repres } in
         all_labels.(num) <- lbl;
         (name, lbl) :: describe_labels (num+1) rest in
   describe_labels 0 lbls

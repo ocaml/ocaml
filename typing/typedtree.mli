@@ -18,11 +18,7 @@ and type_variable =
 
 type value_description =
   { val_type: type_expr;                       (* Type of the val *)
-    val_prim: primitive_description option }   (* Is this a primitive? *)
-and primitive_description =
-  { prim_name: string;
-    prim_arity: int;
-    prim_alloc: bool }
+    val_prim: Primitive.description option }   (* Is this a primitive? *)
 
 (* Constructor descriptions *)
 
@@ -46,8 +42,12 @@ type label_description =
     lbl_arg: type_expr;                 (* Type of the argument *)
     lbl_mut: mutable_flag;              (* Is this a mutable field? *)
     lbl_pos: int;                       (* Position in block *)
-    lbl_all: label_description array    (* All the labels in this type *)
-  }
+    lbl_all: label_description array;   (* All the labels in this type *)
+    lbl_repres: record_representation } (* Representation for this record *)
+
+and record_representation =
+    Record_regular                      (* All fields are boxed / tagged *)
+  | Record_float                        (* All fields are floats *)
 
 (* Value expressions for the core language *)
 

@@ -116,15 +116,8 @@ let transl_exception env excdecl =
 
 let transl_value_decl env valdecl =
   let ty = Typetexp.transl_type_scheme env valdecl.pval_type in
-  let arity = Ctype.arity ty in
-  let prim =
-    match valdecl.pval_prim with
-      name :: "noalloc" :: _ ->
-        Some { prim_name = name; prim_arity = arity; prim_alloc = false }
-    | name :: _ -> 
-        Some { prim_name = name; prim_arity = arity; prim_alloc = true }
-    | [] -> None in
-  { val_type = ty; val_prim = prim }
+  { val_type = ty;
+    val_prim = Primitive.parse_declaration (Ctype.arity ty) valdecl.pval_prim }
 
 (* Error report *)
 
