@@ -55,7 +55,7 @@ COMP=bytecomp\lambda.cmo bytecomp\printlambda.cmo \
   bytecomp\typeopt.cmo bytecomp\switch.cmo bytecomp\matching.cmo \
   bytecomp\translobj.cmo bytecomp\translcore.cmo \
   bytecomp\translclass.cmo bytecomp\translmod.cmo \
-  bytecomp\simplif.cmo bytecomp\runtimedef.cmo
+  bytecomp\simplif.cmo bytecomp\runtimedef.cmo bytecomp\dllpath.cmo
 
 BYTECOMP=bytecomp\meta.cmo bytecomp\instruct.cmo bytecomp\bytegen.cmo \
   bytecomp\printinstr.cmo bytecomp\opcodes.cmo bytecomp\emitcode.cmo \
@@ -99,7 +99,8 @@ EXPUNGEOBJS=utils\misc.cmo utils\tbl.cmo \
   utils\config.cmo utils\clflags.cmo \
   typing\ident.cmo typing\path.cmo typing\types.cmo typing\btype.cmo \
   typing\predef.cmo bytecomp\runtimedef.cmo bytecomp\bytesections.cmo \
-  bytecomp\dll.cmo bytecomp\symtable.cmo toplevel\expunge.cmo
+  bytecomp\dllpath.cmo bytecomp\dll.cmo \
+  bytecomp\symtable.cmo toplevel\expunge.cmo
 
 PERVASIVES=arg array buffer callback char digest filename format gc hashtbl \
   lexing list map obj parsing pervasives printexc printf queue random \
