@@ -43,12 +43,14 @@ enum caml_bigarray_layout {
 enum caml_bigarray_managed {
   BIGARRAY_EXTERNAL = 0,        /* Data is not allocated by Caml */
   BIGARRAY_MANAGED = 0x200,     /* Data is allocated by Caml */
-  BIGARRAY_MANAGED_MASK = 0x200 /* Mask for "managed" bit in flags field */
+  BIGARRAY_MAPPED_FILE = 0x400, /* Data is a memory mapped file */
+  BIGARRAY_MANAGED_MASK = 0x600 /* Mask for "managed" bits in flags field */
 };
 
 struct caml_bigarray_proxy {
   long refcount;                /* Reference count */
   void * data;                  /* Pointer to base of actual data */
+  unsigned long size;           /* Size of data in bytes (if mapped file) */
 };
 
 struct caml_bigarray {
@@ -66,6 +68,5 @@ struct caml_bigarray {
 extern value alloc_bigarray(int flags, int num_dims, void * data, long * dim);
 extern value alloc_bigarray_dims(int flags, int num_dims, void * data,
                                  ... /*dimensions, with type long */);
-
 
 #endif

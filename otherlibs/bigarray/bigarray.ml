@@ -14,6 +14,10 @@
 
 (* Module [Bigarray]: large, multi-dimensional, numerical arrays *)
 
+external init : unit -> unit = "bigarray_init"
+
+let _ = init()
+
 type ('a, 'b) kind = int
 
 type int8_signed_elt
@@ -77,6 +81,9 @@ module Genarray = struct
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit
      = "bigarray_blit"
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "bigarray_fill"
+  external map_file: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
+                     shared:bool -> dims:int array -> ('a, 'b, 'c) t
+                     = "bigarray_map_file"
 end
 
 module Array1 = struct
@@ -94,6 +101,8 @@ module Array1 = struct
     let ofs = if (Obj.magic layout : 'a layout) = c_layout then 0 else 1 in
     for i = 0 to Array.length data - 1 do set ba (i + ofs) data.(i) done;
     ba
+  let map_file fd kind layout shared dim =
+    Genarray.map_file fd kind layout shared [|dim|]
 end
 
 module Array2 = struct
@@ -124,6 +133,8 @@ module Array2 = struct
       done
     done;
     ba
+  let map_file fd kind layout shared dim1 dim2 =
+    Genarray.map_file fd kind layout shared [|dim1;dim2|]
 end
 
 module Array3 = struct
@@ -163,6 +174,8 @@ module Array3 = struct
       done
     done;
     ba
+  let map_file fd kind layout shared dim1 dim2 dim3 =
+    Genarray.map_file fd kind layout shared [|dim1;dim2;dim3|]
 end
 
 external genarray_of_array1: ('a, 'b, 'c) Array1.t -> ('a, 'b, 'c) Genarray.t = "%identity"

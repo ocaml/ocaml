@@ -19,7 +19,7 @@ CFLAGS=-I../../byterun -g -O $(BYTECCCOMPOPTS)
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../unix
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../unix
 
-C_OBJS=bigarray_stubs.o
+C_OBJS=bigarray_stubs.o mmap_unix.o
 
 CAML_OBJS=bigarray.cmo
 
@@ -33,10 +33,10 @@ libbigarray.a: $(C_OBJS)
 	$(RANLIB) libbigarray.a
 
 bigarray.cma: $(CAML_OBJS)
-	$(CAMLC) -a -o bigarray.cma $(CAML_OBJS)
+	$(CAMLC) -a -linkall -o bigarray.cma $(CAML_OBJS)
 
 bigarray.cmxa: $(CAML_OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o bigarray.cmxa $(CAML_OBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -linkall -o bigarray.cmxa $(CAML_OBJS:.cmo=.cmx)
 
 partialclean:
 	rm -f *.cm*

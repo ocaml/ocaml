@@ -23,11 +23,14 @@
 #include "memory.h"
 #include "mlvalues.h"
 
+extern void bigarray_unmap_file(void * addr, unsigned long len);
+                                          /* from mmap_stubs.c */
+
 /* Compute the number of elements of a big array */
 
-static long bigarray_num_elts(struct caml_bigarray * b)
+static unsigned long bigarray_num_elts(struct caml_bigarray * b)
 {
-  long num_elts;
+  unsigned long num_elts;
   int i;
   num_elts = 1;
   for (i = 0; i < b->num_dims; i++) num_elts = num_elts * b->dim[i];
@@ -36,13 +39,21 @@ static long bigarray_num_elts(struct caml_bigarray * b)
 
 /* Size in bytes of a bigarray element, indexed by bigarray kind */
 
-static int bigarray_element_size[] =
+int bigarray_element_size[] =
 { 4 /*FLOAT32*/, 8 /*FLOAT64*/,
   1 /*SINT8*/, 1 /*UINT8*/,
   2 /*SINT16*/, 2 /*UINT16*/,
   4 /*INT32*/, 8 /*INT64*/,
   sizeof(value) /*CAML_INT*/, sizeof(value) /*NATIVE_INT*/
 };
+
+/* Compute the number of bytes for the elements of a big array */
+
+unsigned long bigarray_byte_size(struct caml_bigarray * b)
+{
+  return bigarray_num_elts(b)
+         * bigarray_element_size[b->flags & BIGARRAY_KIND_MASK];
+}
 
 /* Allocation of a big array */
 
@@ -366,14 +377,30 @@ value bigarray_dim(value vb, value vn)
 static void bigarray_finalize(value v)
 {
   struct caml_bigarray * b = Bigarray_val(v);
-  if ((b->flags & BIGARRAY_MANAGED_MASK) == BIGARRAY_EXTERNAL) return;
-  if (b->proxy == NULL) {
-    free(b->data);
-  } else {
-    if (-- b->proxy->refcount == 0) {
-      stat_free(b->proxy->data);
-      stat_free(b->proxy);
+
+  switch (b->flags & BIGARRAY_MANAGED_MASK) {
+  case BIGARRAY_EXTERNAL:
+    break;
+  case BIGARRAY_MANAGED:
+    if (b->proxy == NULL) {
+      free(b->data);
+    } else {
+      if (-- b->proxy->refcount == 0) {
+        stat_free(b->proxy->data);
+        stat_free(b->proxy);
+      }
     }
+    break;
+  case BIGARRAY_MAPPED_FILE:
+    if (b->proxy == NULL) {
+      bigarray_unmap_file(b->data, bigarray_byte_size(b));
+    } else {
+      if (-- b->proxy->refcount == 0) {
+        bigarray_unmap_file(b->proxy->data, b->proxy->size);
+        stat_free(b->proxy);
+      }
+    }
+    break;
   }
 }
 
@@ -383,7 +410,7 @@ static int bigarray_compare(value v1, value v2)
 {
   struct caml_bigarray * b1 = Bigarray_val(v1);
   struct caml_bigarray * b2 = Bigarray_val(v2);
-  long n, num_elts;
+  unsigned long n, num_elts;
   int i;
 
   /* Compare number of dimensions */
@@ -594,7 +621,7 @@ unsigned long bigarray_deserialize(void * dst)
 {
   struct caml_bigarray * b = dst;
   int i, elt_size;
-  long num_elts;
+  unsigned long num_elts;
 
   /* Read back header information */
   b->num_dims = deserialize_uint_4();
@@ -660,6 +687,8 @@ static void bigarray_update_proxy(struct caml_bigarray * b1,
     proxy = stat_alloc(sizeof(struct caml_bigarray_proxy));
     proxy->refcount = 2;      /* original array + sub array */
     proxy->data = b1->data;
+    proxy->size =
+      b1->flags & BIGARRAY_MAPPED_FILE ? bigarray_byte_size(b1) : 0;
     b1->proxy = proxy;
     b2->proxy = proxy;
   }
@@ -833,5 +862,13 @@ value bigarray_fill(value vb, value vinit)
     break;
   }
   }
+  return Val_unit;
+}
+
+/* Initialization */
+
+value bigarray_init(value unit)
+{
+  register_custom_operations(&bigarray_ops);
   return Val_unit;
 }

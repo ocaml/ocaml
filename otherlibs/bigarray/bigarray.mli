@@ -310,6 +310,40 @@ module Genarray: sig
          the big array [a].  Setting only some elements of [a] to [v]
          can be achieved by applying [Genarray.fill] to a sub-array
          or a slice of [a]. *)
+  external map_file: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
+                     shared:bool -> dims:int array -> ('a, 'b, 'c) t = "bigarray_map_file"
+      (* Memory mapping of a file as a big array.
+         [Genarray.map_file fd kind layout shared dims]
+         returns a big array of kind [kind], layout [layout],
+         and dimensions as specified in [dims].  The data contained in
+         this big array are the contents of the file referred to by
+         the file descriptor [fd] (as opened previously with
+         [Unix.openfile], for example).  If [shared] is [true],
+         all modifications performed on the array are reflected in
+         the file.  This requires that [fd] be opened with write permissions.
+         If [shared] is [false], modifications performed on the array
+         are done in memory only, using copy-on-write of the modified
+         pages; the underlying file is not affected.
+
+         [Genarray.map_file] is much more efficient than reading
+         the whole file in a big array, modifying that big array,
+         and writing it afterwards.
+
+         To adjust automatically the dimensions of the big array to
+         the actual size of the file, the major dimension (that is,
+         the first dimension for an array with C layout, and the last
+         dimension for an array with Fortran layout) can be given as
+         [-1].  [Genarray.map_file] then determines the major dimension
+         from the size of the file.  The file must contain an integral
+         number of sub-arrays as determined by the non-major dimensions,
+         otherwise [Failure] is raised.
+
+         If all dimensions of the big array are given, the file size is
+         matched against the size of the big array.  If the file is larger
+         than the big array, only the initial portion of the file is
+         mapped to the big array.  If the file is smaller than the big
+         array, the file is automatically grown to the size of the big array.
+         This requires write permissions on [fd]. *)
 end
 
 (*** One-dimensional arrays *)
@@ -359,6 +393,10 @@ module Array1: sig
   val of_array: ('a, 'b) kind -> 'c layout -> 'a array -> ('a, 'b, 'c) t
         (* Build a one-dimensional big array initialized from the
            given array.  *)
+  val map_file: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
+                shared:bool -> dim:int -> ('a, 'b, 'c) t
+        (* Memory mapping of a file as a one-dimensional big array.
+           See [Genarray.map_file] for more details. *)
 end
 
 (*** Two-dimensional arrays *)
@@ -432,6 +470,10 @@ module Array2: sig
   val of_array: ('a, 'b) kind -> 'c layout -> 'a array array -> ('a, 'b, 'c) t
         (* Build a two-dimensional big array initialized from the
            given array of arrays.  *)
+  val map_file: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
+                shared:bool -> dim1:int -> dim2:int -> ('a, 'b, 'c) t
+        (* Memory mapping of a file as a two-dimensional big array.
+           See [Genarray.map_file] for more details. *)
 end
 
 (*** Three-dimensional arrays *)
@@ -528,6 +570,10 @@ module Array3: sig
         ('a, 'b) kind -> 'c layout -> 'a array array array -> ('a, 'b, 'c) t
         (* Build a three-dimensional big array initialized from the
            given array of arrays of arrays.  *)
+  val map_file: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
+             shared:bool -> dim1:int -> dim2:int -> dim3:int -> ('a, 'b, 'c) t
+        (* Memory mapping of a file as a three-dimensional big array.
+           See [Genarray.map_file] for more details. *)
 end
 
 (*** Coercions between generic big arrays and fixed-dimension big arrays *)
