@@ -81,7 +81,7 @@ val concat : string -> string list -> string
 val iter : (char -> unit) -> string -> unit
 (** [String.iter f s] applies function [f] in turn to all
    the characters of [s].  It is equivalent to
-   [f s.(0); f s.(1); ...; f s.(String.length s - 1); ()]. *)
+   [f s.[0]; f s.[1]; ...; f s.[String.length s - 1]; ()]. *)
 
 val escaped : string -> string
 (** Return a copy of the argument, with special characters

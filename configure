@@ -1335,7 +1335,7 @@ if test $has_tk = true; then
     *) echo "This version is not known."; has_tk=false ;;
     esac
   else
-    echo "tcl.h and tk.h not found."
+    echo "tcl.h and/or tk.h not found."
     has_tk=false
   fi
 fi
@@ -1529,5 +1529,9 @@ echo "        use tcl/tk version ....... $tcl_version"
 echo "        options for compiling .... $tk_defs"
 echo "        options for linking ...... $tk_libs"
 else
-echo "The \"labltk\" library: not found"
+echo "The \"labltk\" library: not supported"
 fi
+
+echo
+echo "** Objective Caml configuration completed successfully **"
+echo

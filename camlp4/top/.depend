@@ -1,14 +1,12 @@
-camlp4_top.cmo: ../camlp4/ast2pt.cmi ../camlp4/mLast.cmi \
-    $(OTOP)/parsing/parsetree.cmi ../camlp4/pcaml.cmi \
-    $(OTOP)/toplevel/topdirs.cmi $(OTOP)/toplevel/toploop.cmi \
-    $(OTOP)/utils/warnings.cmi 
-camlp4_top.cmx: ../camlp4/ast2pt.cmx ../camlp4/mLast.cmi \
-    $(OTOP)/parsing/parsetree.cmi ../camlp4/pcaml.cmx \
-    $(OTOP)/toplevel/topdirs.cmx $(OTOP)/toplevel/toploop.cmx \
-    $(OTOP)/utils/warnings.cmx 
-oprint.cmo: $(OTOP)/typing/outcometree.cmi $(OTOP)/toplevel/toploop.cmi 
-oprint.cmx: $(OTOP)/typing/outcometree.cmi $(OTOP)/toplevel/toploop.cmx 
-rprint.cmo: $(OTOP)/parsing/asttypes.cmi $(OTOP)/typing/outcometree.cmi \
-    $(OTOP)/toplevel/toploop.cmi 
-rprint.cmx: $(OTOP)/parsing/asttypes.cmi $(OTOP)/typing/outcometree.cmi \
-    $(OTOP)/toplevel/toploop.cmx 
+camlp4_top.cmo: $(OTOP)/utils/warnings.cmi $(OTOP)/toplevel/toploop.cmi \
+    $(OTOP)/toplevel/topdirs.cmi ../camlp4/pcaml.cmi \
+    $(OTOP)/parsing/parsetree.cmi ../camlp4/mLast.cmi ../camlp4/ast2pt.cmi 
+camlp4_top.cmx: $(OTOP)/utils/warnings.cmx $(OTOP)/toplevel/toploop.cmx \
+    $(OTOP)/toplevel/topdirs.cmx ../camlp4/pcaml.cmx \
+    $(OTOP)/parsing/parsetree.cmi ../camlp4/mLast.cmi ../camlp4/ast2pt.cmx 
+oprint.cmo: $(OTOP)/toplevel/toploop.cmi $(OTOP)/typing/outcometree.cmi 
+oprint.cmx: $(OTOP)/toplevel/toploop.cmx $(OTOP)/typing/outcometree.cmi 
+rprint.cmo: $(OTOP)/toplevel/toploop.cmi $(OTOP)/typing/outcometree.cmi \
+    $(OTOP)/parsing/asttypes.cmi 
+rprint.cmx: $(OTOP)/toplevel/toploop.cmx $(OTOP)/typing/outcometree.cmi \
+    $(OTOP)/parsing/asttypes.cmi 
