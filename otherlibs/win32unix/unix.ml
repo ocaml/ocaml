@@ -285,6 +285,7 @@ external mkdir : string -> file_perm -> unit = "unix_mkdir"
 external rmdir : string -> unit = "unix_rmdir"
 external chdir : string -> unit = "unix_chdir"
 external getcwd : unit -> string = "unix_getcwd"
+let chroot _ = invalid_arg "Unix.chroot not implemented"
 
 type dir_entry =
     Dir_empty
@@ -343,6 +344,8 @@ type lock_command =
   | F_LOCK
   | F_TLOCK
   | F_TEST
+  | F_RLOCK
+  | F_TRLOCK
 
 let lockf fd cmd exten = invalid_arg "Unix.lockf not implemented"
 let kill pid signo = invalid_arg "Unix.kill not implemented"
