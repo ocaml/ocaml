@@ -1276,7 +1276,7 @@ row_field_list:
   | row_field_list BAR row_field                { $3 :: $1 }
 ;
 row_field:
-    name_tag opt_ampersand amper_type_list      { ($1, $2, List.rev $3) }
+    name_tag OF opt_ampersand amper_type_list   { ($1, $3, List.rev $4) }
   | name_tag                                    { ($1, true, []) }
 ;
 opt_ampersand:
