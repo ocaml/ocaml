@@ -92,7 +92,7 @@ and string = parse
 {
 (* Print the dependencies *)
 
-let load_path = ref ([] : string list)
+let load_path = ref [""]
 
 let opt_flag = ref true
 
