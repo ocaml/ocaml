@@ -358,7 +358,7 @@ and print_out_sig_item ppf =
       fprintf ppf "@[<2>%s %a :@ %a%a@]" kwd value_ident name !out_type
         ty pr_prims prims
 
-and print_out_type_decl kwd ppf (name, args, ty, constraints) =
+and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
   let print_constraints ppf params =
     List.iter
       (fun (ty1, ty2) ->
@@ -390,24 +390,25 @@ and print_out_type_decl kwd ppf (name, args, ty, constraints) =
   let print_private ppf = function
     Asttypes.Private -> fprintf ppf "private "
   | Asttypes.Public -> () in
-  let rec print_out_tkind = function
-  | Otyp_abstract ->
-      fprintf ppf "@[<2>@[<hv 2>%t@]%a@]" print_name_args print_constraints
-        constraints
-  | Otyp_record (lbls, priv) ->
-      fprintf ppf "@[<2>@[<hv 2>%t = %a{%a@;<1 -2>}@]%a@]" print_name_args
+  let rec print_out_tkind ppf = function
+  | Otyp_abstract -> ()
+  | Otyp_record lbls ->
+      fprintf ppf " = %a{%a@;<1 -2>}"
         print_private priv
         (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
-        print_constraints constraints
-  | Otyp_sum (constrs, priv) ->
-      fprintf ppf "@[<2>@[<hv 2>%t =@;<1 2>%a%a@]%a@]" print_name_args
+  | Otyp_sum constrs ->
+      fprintf ppf " =@;<1 2>%a%a"
         print_private priv
         (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
-        print_constraints constraints
   | ty ->
-      fprintf ppf "@[<2>@[<hv 2>%t =@ %a@]%a@]" print_name_args !out_type
-        ty print_constraints constraints in
-  print_out_tkind ty
+      fprintf ppf " =@;<1 2>%a%a"
+        print_private priv
+        !out_type ty
+  in
+  fprintf ppf "@[<2>@[<hv 2>%t%a@]%a@]"
+    print_name_args
+    print_out_tkind ty
+    print_constraints constraints
 and print_out_constr ppf (name, tyl) =
   match tyl with
     [] -> fprintf ppf "%s" name

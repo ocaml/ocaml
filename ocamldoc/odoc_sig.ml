@@ -172,7 +172,7 @@ module Analyser =
 
     let name_comment_from_type_kind pos_end pos_limit tk =
       match tk with
-        Parsetree.Ptype_abstract ->
+        Parsetree.Ptype_abstract | Parsetree.Ptype_private ->
           (0, [])
       | Parsetree.Ptype_variant (cons_core_type_list_list, _) ->
           let rec f acc cons_core_type_list_list =

@@ -106,14 +106,18 @@ let rec typexp s ty =
               Tlink ty2
           | _ ->
               let dup =
-                s.for_saving || more.level = generic_level || static_row row in
+                s.for_saving || more.level = generic_level || static_row row ||
+                match more.desc with Tconstr _ -> true | _ -> false in
               (* Various cases for the row variable *)
               let more' =
-                match more.desc with Tsubst ty -> ty
-                | _ ->
+                match more.desc with
+                  Tsubst ty -> ty
+                | Tconstr _ -> typexp s more
+                | Tunivar | Tvar ->
                     save_desc more more.desc;
                     if s.for_saving then newpersty more.desc else
                     if dup && more.desc <> Tunivar then newgenvar () else more
+                | _ -> assert false
               in
               (* Register new type first for recursion *)
               more.desc <- Tsubst(newgenty(Ttuple[more';ty']));

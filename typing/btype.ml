@@ -140,6 +140,26 @@ let proxy ty =
       in proxy_obj ty
   | _ -> ty0
 
+(**** Utilities for private types ****)
+
+let has_constr_row t =
+  match (repr t).desc with
+    Tobject(t,_) ->
+      let rec check_row t =
+        match (repr t).desc with
+          Tfield(_,_,_,t) -> check_row t
+        | Tconstr _ -> true
+        | _ -> false
+      in check_row t
+  | Tvariant row ->
+      (match row_more row with {desc=Tconstr _} -> true | _ -> false)
+  | _ ->
+      false
+
+let is_row_name s =
+  let l = String.length s in
+  if l < 4 then false else String.sub s (l-4) 4 = "#row"
+
 
                   (**********************************)
                   (*  Utilities for type traversal  *)
@@ -155,7 +175,7 @@ let rec iter_row f row =
     row.row_fields;
   match (repr row.row_more).desc with
     Tvariant row -> iter_row f row
-  | Tvar | Tnil | Tunivar | Tsubst _ ->
+  | Tvar | Tunivar | Tsubst _ | Tconstr _ ->
       Misc.may (fun (_,l) -> List.iter f l) row.row_name;
       List.iter f row.row_bound
   | _ -> assert false

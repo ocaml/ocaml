@@ -40,6 +40,63 @@ let value_descriptions env vd1 vd2 =
 let private_flags priv1 priv2 =
   match (priv1, priv2) with (Private, Public) -> false | (_, _) -> true
 
+(* Inclusion between manifest types (particularly for fixed types) *)
+
+let is_absrow env ty =
+  match ty.desc with
+    Tconstr(Pident id, _, _) ->
+      Btype.is_row_name (Ident.name id) &&
+      begin match Ctype.expand_head env ty with
+        {desc=Tobject _|Tvariant _} -> true
+      | _ -> false
+      end
+  | _ -> false
+
+let type_manifest env ty1 params1 ty2 params2 =
+  let ty1' = Ctype.expand_head env ty1 and ty2' = Ctype.expand_head env ty2 in
+  match ty1'.desc, ty2'.desc with
+    Tvariant row1, Tvariant row2 when is_absrow env (Btype.row_more row2) ->
+      let row1 = Btype.row_repr row1 and row2 = Btype.row_repr row2 in
+      Ctype.equal env true (ty1::params1) (row2.row_more::params2) &&
+      (match row1.row_more with	{desc=Tvar|Tconstr _} -> true | _ -> false) &&
+      let r1, r2, pairs =
+	Ctype.merge_row_fields row1.row_fields row2.row_fields in
+      (not row2.row_closed ||
+       row1.row_closed && Ctype.filter_row_fields false r1 = []) &&
+      List.for_all
+	(fun (_,f) -> match Btype.row_field_repr f with
+	  Rabsent | Reither _ -> true | Rpresent _ -> false)
+	r2 &&
+      let to_equal = ref (List.combine params1 params2) in
+      List.for_all
+	(fun (_, f1, f2) ->
+	  match Btype.row_field_repr f1, Btype.row_field_repr f2 with
+	    Rpresent(Some t1),
+	    (Rpresent(Some t2) | Reither(false, [t2], _, _)) ->
+	      to_equal := (t1,t2) :: !to_equal; true
+	  | Rpresent None, (Rpresent None | Reither(true, [], _, _)) -> true
+	  | Reither(c1,tl1,_,_), Reither(c2,tl2,_,_)
+	    when List.length tl1 = List.length tl2 && c1 = c2 ->
+	      to_equal := List.combine tl1 tl2 @ !to_equal; true
+	  | Rabsent, (Reither _ | Rabsent) -> true
+	  | _ -> false)
+	pairs &&
+      let tl1, tl2 = List.split !to_equal in
+      Ctype.equal env true tl1 tl2
+  | Tobject (fi1, _), Tobject (fi2, _)
+    when is_absrow env (snd(Ctype.flatten_fields fi2)) ->
+      let (fields2,rest2) = Ctype.flatten_fields fi2 in
+      Ctype.equal env true (ty1::params1) (rest2::params2) &&
+      let (fields1,rest1) = Ctype.flatten_fields fi1 in
+      (match rest1 with {desc=Tnil|Tvar|Tconstr _} -> true | _ -> false) &&
+      let pairs, miss1, miss2 = Ctype.associate_fields fields1 fields2 in
+      miss2 = [] &&
+      let tl1, tl2 =
+	List.split (List.map (fun (_,_,t1,_,t2) -> t1, t2) pairs) in
+      Ctype.equal env true (params1 @ tl1) (params2 @ tl2)
+  | _ -> 
+      Ctype.equal env true (ty1 :: params1) (ty2 :: params2)
+
 (* Inclusion between type declarations *)
 
 let type_declarations env id decl1 decl2 =
@@ -72,8 +129,7 @@ let type_declarations env id decl1 decl2 =
       (_, None) ->
         Ctype.equal env true decl1.type_params decl2.type_params
     | (Some ty1, Some ty2) ->
-        Ctype.equal env true (ty1::decl1.type_params)
-                             (ty2::decl2.type_params)
+	type_manifest env ty1 decl1.type_params ty2 decl2.type_params
     | (None, Some ty2) ->
         let ty1 =
           Btype.newgenty (Tconstr(Pident id, decl2.type_params, ref Mnil))
@@ -81,11 +137,9 @@ let type_declarations env id decl1 decl2 =
         Ctype.equal env true decl1.type_params decl2.type_params &&
         Ctype.equal env false [ty1] [ty2]
   end &&
-  begin decl2.type_kind <> Type_abstract || decl2.type_manifest <> None ||
   List.for_all2
     (fun (co1,cn1,ct1) (co2,cn2,ct2) -> (not co1 || co2) && (not cn1 || cn2))
     decl1.type_variance decl2.type_variance
-  end
 
 (* Inclusion between exception declarations *)
 

@@ -206,6 +206,15 @@ and signatures env subst sig1 sig2 =
         end
     | item2 :: rem ->
         let (id2, name2) = item_ident_name item2 in
+        let name2, report =
+          match name2 with
+            Field_type s when let l = String.length s in
+            l >= 4 && String.sub s (l-4) 4 = "#row" ->
+              (* Do not report in case of failure,
+                 as the main type will generate an error *)
+              Field_type (String.sub s 0 (String.length s - 4)), false
+          | _ -> name2, true
+        in
         begin try
           let (id1, item1, pos1) = Tbl.find name2 comps1 in
           let new_subst =
@@ -222,7 +231,9 @@ and signatures env subst sig1 sig2 =
           pair_components new_subst
             ((item1, item2, pos1) :: paired) unpaired rem
         with Not_found ->
-          pair_components subst paired (Missing_field id2 :: unpaired) rem
+          let unpaired =
+            if report then Missing_field id2 :: unpaired else unpaired in
+          pair_components subst paired unpaired rem
         end in
   (* Do the pairing and checking, and return the final coercion *)
   simplify_structure_coercion (pair_components subst [] [] sig2)

@@ -437,6 +437,7 @@ and tree_of_typfields sch rest = function
       let rest =
         match rest.desc with
         | Tvar | Tunivar -> Some (is_non_gen sch rest)
+        | Tconstr _ -> Some false
         | Tnil -> None
         | _ -> fatal_error "typfields (1)"
       in
@@ -531,26 +532,25 @@ let rec tree_of_type_decl id decl =
     | _ -> "?"
   in
   let type_defined decl =
-    if List.exists2
-        (fun ty x -> x <> (true,true,true) &&
-          (decl.type_kind = Type_abstract && ty_manifest = None
-         || (repr ty).desc <> Tvar))
+    let abstr =
+      match decl.type_kind with
+        Type_abstract ->
+          begin match decl.type_manifest with
+            None -> true
+          | Some ty -> has_constr_row ty
+          end
+      | Type_variant(_,p) | Type_record(_,_,p) ->
+          p = Private
+    in
+    let vari =
+      List.map2
+        (fun ty (co,cn,ct) ->
+          if abstr || (repr ty).desc <> Tvar then (co,cn) else (true,true))
         decl.type_params decl.type_variance
-    then
-      let vari = List.map (fun (co,cn,ct) -> (co,cn)) decl.type_variance in
-      (Ident.name id,
-       List.combine
-         (List.map (fun ty -> type_param (tree_of_typexp false ty)) params)
-         vari)
-    else
-      let ty =
-        tree_of_typexp false
-          (Btype.newgenty (Tconstr(Pident id, params, ref Mnil)))
-      in
-      match ty with
-      | Otyp_constr (Oide_ident id, tyl) ->
-          (id, List.map (fun ty -> (type_param ty, (true, true))) tyl)
-      | _ -> ("?", [])
+    in
+    (Ident.name id,
+     List.map2 (fun ty cocn -> type_param (tree_of_typexp false ty), cocn)
+       params vari)
   in
   let tree_of_manifest ty1 =
     match ty_manifest with
@@ -559,19 +559,21 @@ let rec tree_of_type_decl id decl =
   in
   let (name, args) = type_defined decl in
   let constraints = tree_of_constraints params in
-  let ty =
+  let ty, priv =
     match decl.type_kind with
     | Type_abstract ->
         begin match ty_manifest with
-        | None -> Otyp_abstract
-        | Some ty -> tree_of_typexp false ty
+        | None -> (Otyp_abstract, Public)
+        | Some ty ->
+            tree_of_typexp false ty, 
+            (if has_constr_row ty then Private else Public)
         end
     | Type_variant(cstrs, priv) ->
-        tree_of_manifest (Otyp_sum (List.map tree_of_constructor cstrs, priv))
+        tree_of_manifest (Otyp_sum (List.map tree_of_constructor cstrs)), priv
     | Type_record(lbls, rep, priv) ->
-        tree_of_manifest (Otyp_record (List.map tree_of_label lbls, priv))
+        tree_of_manifest (Otyp_record (List.map tree_of_label lbls)), priv
   in
-  (name, args, ty, constraints)
+  (name, args, ty, priv, constraints)
 
 and tree_of_constructor (name, args) =
   (name, tree_of_typlist false args)
@@ -785,6 +787,8 @@ and tree_of_signature = function
   | [] -> []
   | Tsig_value(id, decl) :: rem ->
       tree_of_value_description id decl :: tree_of_signature rem
+  | Tsig_type(id, _, _) :: rem when is_row_name (Ident.name id) ->
+      tree_of_signature rem
   | Tsig_type(id, decl, rs) :: rem ->
       Osig_type(tree_of_type_decl id decl, tree_of_rec rs) ::
       tree_of_signature rem

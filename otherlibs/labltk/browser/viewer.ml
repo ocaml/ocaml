@@ -400,7 +400,7 @@ class st_viewer ?(dir=Unix.getcwd()) ?on () =
   let label = Label.create tl ~anchor:`W ~padx:5 in
   let view = Frame.create tl in
   let buttons = Frame.create tl in
-  let all = Button.create buttons ~text:"Show all" ~padx:20
+  let _all = Button.create buttons ~text:"Show all" ~padx:20
   and close = Button.create buttons ~text:"Close all" ~command:close_all_views
   and detach = Button.create buttons ~text:"Detach"
   and edit = Button.create buttons ~text:"Impl"

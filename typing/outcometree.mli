@@ -52,9 +52,9 @@ type out_type =
   | Otyp_constr of out_ident * out_type list
   | Otyp_manifest of out_type * out_type
   | Otyp_object of (string * out_type) list * bool option
-  | Otyp_record of (string * bool * out_type) list * Asttypes.private_flag
+  | Otyp_record of (string * bool * out_type) list
   | Otyp_stuff of string
-  | Otyp_sum of (string * out_type list) list * Asttypes.private_flag
+  | Otyp_sum of (string * out_type list) list
   | Otyp_tuple of out_type list
   | Otyp_var of bool * string
   | Otyp_variant of
@@ -91,7 +91,7 @@ and out_sig_item =
   | Osig_type of out_type_decl * out_rec_status
   | Osig_value of string * out_type * string list
 and out_type_decl =
-  string * (string * (bool * bool)) list * out_type *
+  string * (string * (bool * bool)) list * out_type * Asttypes.private_flag *
   (out_type * out_type) list
 and out_rec_status =
   | Orec_not

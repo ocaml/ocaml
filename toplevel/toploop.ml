@@ -148,7 +148,7 @@ let load_lambda ppf lam =
 
 (* Print the outcome of an evaluation *)
 
-let pr_item env = function
+let rec pr_item env = function
   | Tsig_value(id, decl) :: rem ->
       let tree = Printtyp.tree_of_value_description id decl in
       let valopt =
@@ -162,6 +162,8 @@ let pr_item env = function
             Some v
       in
       Some (tree, valopt, rem)
+  | Tsig_type(id, _, _) :: rem when Btype.is_row_name (Ident.name id) ->
+      pr_item env rem
   | Tsig_type(id, decl, rs) :: rem ->
       let tree = Printtyp.tree_of_type_declaration id decl rs in
       Some (tree, None, rem)

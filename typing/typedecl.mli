@@ -18,23 +18,23 @@ open Types
 open Format
 
 val transl_type_decl:
-        Env.t -> (string * Parsetree.type_declaration) list ->
+    Env.t -> (string * Parsetree.type_declaration) list ->
                                   (Ident.t * type_declaration) list * Env.t
 val transl_exception:
-        Env.t -> Parsetree.exception_declaration -> exception_declaration
+    Env.t -> Parsetree.exception_declaration -> exception_declaration
 
 val transl_exn_rebind:
-        Env.t -> Location.t -> Longident.t -> Path.t * exception_declaration
+    Env.t -> Location.t -> Longident.t -> Path.t * exception_declaration
 
 val transl_value_decl:
-        Env.t -> Parsetree.value_description -> value_description
+    Env.t -> Parsetree.value_description -> value_description
 
 val transl_with_constraint:
-        Env.t -> Parsetree.type_declaration -> type_declaration
+    Env.t -> Path.t option -> Parsetree.type_declaration -> type_declaration
 
 val abstract_type_decl: int -> type_declaration
 val approx_type_decl:
-        Env.t -> (string * Parsetree.type_declaration) list ->
+    Env.t -> (string * Parsetree.type_declaration) list ->
                                   (Ident.t * type_declaration) list
 val check_recmod_typedecl:
     Env.t -> Location.t -> Ident.t list -> Path.t -> type_declaration -> unit
@@ -65,6 +65,7 @@ type error =
   | Not_an_exception of Longident.t
   | Bad_variance
   | Unavailable_type_constructor of Path.t
+  | Bad_fixed_type of string
 
 exception Error of Location.t * error
 

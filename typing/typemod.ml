@@ -68,16 +68,50 @@ let rm node =
 
 (* Merge one "with" constraint in a signature *)
 
+let rec add_rec_types env = function
+    Tsig_type(id, decl, Trec_next) :: rem ->
+      add_rec_types (Env.add_type id decl env) rem
+  | _ -> env
+
+let check_type_decl env id row_id newdecl decl rs rem =
+  let env = Env.add_type id newdecl env in
+  let env =
+    match row_id with None -> env | Some id -> Env.add_type id newdecl env in
+  let env = if rs = Trec_not then env else add_rec_types env rem in
+  Includemod.type_declarations env id newdecl decl
+
 let merge_constraint initial_env loc sg lid constr =
-  let rec merge env sg namelist =
+  let rec merge env sg namelist row_id =
     match (sg, namelist, constr) with
       ([], _, _) ->
         raise(Error(loc, With_no_component lid))
+    | (Tsig_type(id, decl, rs) :: rem, [s],
+       Pwith_type ({ptype_kind = Ptype_private} as sdecl))
+      when Ident.name id = s ->
+	let decl_row =
+	  { type_params =
+	      List.map (fun _ -> Btype.newgenvar()) sdecl.ptype_params;
+	    type_arity = List.length sdecl.ptype_params;
+	    type_kind = Type_abstract;
+	    type_manifest = None;
+	    type_variance =
+	      List.map (fun (c,n) -> (c,n,n)) sdecl.ptype_variance }
+	and id_row = Ident.create (s^"#row") in
+	let initial_env = Env.add_type id_row decl_row initial_env in
+        let newdecl = Typedecl.transl_with_constraint
+                        initial_env (Some(Pident id_row)) sdecl in
+        check_type_decl env id row_id newdecl decl rs rem;
+	let decl_row = {decl_row with type_params = newdecl.type_params} in
+        let rs' = if rs = Trec_first then Trec_not else rs in
+        Tsig_type(id_row, decl_row, rs') :: Tsig_type(id, newdecl, rs) :: rem
     | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
       when Ident.name id = s ->
-        let newdecl = Typedecl.transl_with_constraint initial_env sdecl in
-        Includemod.type_declarations env id newdecl decl;
+        let newdecl = Typedecl.transl_with_constraint initial_env None sdecl in
+        check_type_decl env id row_id newdecl decl rs rem;
         Tsig_type(id, newdecl, rs) :: rem
+    | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
+      when Ident.name id = s ^ "#row" ->
+        merge env rem namelist (Some id)
     | (Tsig_module(id, mty, rs) :: rem, [s], Pwith_module lid)
       when Ident.name id = s ->
         let (path, mty') = type_module_path initial_env loc lid in
@@ -86,12 +120,12 @@ let merge_constraint initial_env loc sg lid constr =
         Tsig_module(id, newmty, rs) :: rem
     | (Tsig_module(id, mty, rs) :: rem, s :: namelist, _)
       when Ident.name id = s ->
-        let newsg = merge env (extract_sig env loc mty) namelist in
+        let newsg = merge env (extract_sig env loc mty) namelist None in
         Tsig_module(id, Tmty_signature newsg, rs) :: rem
     | (item :: rem, _, _) ->
-        item :: merge (Env.add_item item env) rem namelist in
+        item :: merge (Env.add_item item env) rem namelist row_id in
   try
-    merge initial_env sg (Longident.flatten lid)
+    merge initial_env sg (Longident.flatten lid) None
   with Includemod.Error explanation ->
     raise(Error(loc, With_mismatch(lid, explanation)))
 
@@ -102,6 +136,12 @@ let map_rec fn decls rem =
   match decls with
   | [] -> rem
   | d1 :: dl -> fn Trec_first d1 :: map_end (fn Trec_next) dl rem
+
+let rec map_rec' fn decls rem =
+  match decls with
+  | (id,_ as d1) :: dl when Btype.is_row_name (Ident.name id) ->
+      fn Trec_not d1 :: map_rec' fn dl rem
+  | _ -> map_rec fn decls rem
 
 (* Auxiliary for translating recursively-defined module types.
    Return a module type that approximates the shape of the given module
@@ -138,7 +178,7 @@ let approx_modtype transl_mty init_env smty =
         | Psig_type sdecls ->
             let decls = Typedecl.approx_type_decl env sdecls in
             let rem = approx_sig env srem in
-            map_rec (fun rs (id, info) -> Tsig_type(id, info, rs)) decls rem
+            map_rec' (fun rs (id, info) -> Tsig_type(id, info, rs)) decls rem
         | Psig_module(name, smty) ->
             let mty = approx_mty env smty in
             let (id, newenv) = Env.enter_module name mty env in
@@ -272,7 +312,7 @@ and transl_signature env sg =
               sdecls;
             let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
             let rem = transl_sig newenv srem in
-            map_rec (fun rs (id, info) -> Tsig_type(id, info, rs)) decls rem
+            map_rec' (fun rs (id, info) -> Tsig_type(id, info, rs)) decls rem
         | Psig_exception(name, sarg) ->
             let arg = Typedecl.transl_exception env sarg in
             let (id, newenv) = Env.enter_exception name arg env in
@@ -554,7 +594,7 @@ and type_structure anchor env sstr =
           enrich_type_decls anchor decls env newenv in
         let (str_rem, sig_rem, final_env) = type_struct newenv' srem in
         (Tstr_type decls :: str_rem,
-         map_rec (fun rs (id, info) -> Tsig_type(id, info, rs)) decls sig_rem,
+         map_rec' (fun rs (id, info) -> Tsig_type(id, info, rs)) decls sig_rem,
          final_env)
     | {pstr_desc = Pstr_exception(name, sarg)} :: srem ->
         let arg = Typedecl.transl_exception env sarg in

@@ -133,6 +133,7 @@ and type_kind =
   | Ptype_variant of (string * core_type list * Location.t) list * private_flag
   | Ptype_record of
       (string * mutable_flag * core_type * Location.t) list * private_flag
+  | Ptype_private
 
 and exception_declaration = core_type list
 

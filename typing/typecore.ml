@@ -818,6 +818,8 @@ let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
 (* Typing of expressions *)
 
 let unify_exp env exp expected_ty =
+  (* Format.eprintf "@[%a@ %a@]@." Printtyp.raw_type_expr exp.exp_type
+    Printtyp.raw_type_expr expected_ty; *)
   try
     unify env exp.exp_type expected_ty
   with

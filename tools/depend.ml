@@ -68,7 +68,7 @@ let add_type_declaration bv td =
     td.ptype_cstrs;
   add_opt add_type bv td.ptype_manifest;
   let rec add_tkind = function
-    Ptype_abstract -> ()
+    Ptype_abstract | Ptype_private -> ()
   | Ptype_variant (cstrs, _) ->
       List.iter (fun (c, args, _) -> List.iter (add_type bv) args) cstrs
   | Ptype_record (lbls, _) ->
