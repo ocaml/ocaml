@@ -51,7 +51,7 @@ label-name:
         lowercase-ident
 ;
 tag-name:
-        capitalized-ident
+        ident
 ;
 typeconstr-name:
         lowercase-ident
