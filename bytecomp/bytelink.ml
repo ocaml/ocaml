@@ -305,6 +305,7 @@ let link_bytecode tolink exec_name standalone =
     let sharedobjs = List.map Dll.extract_dll_name !Clflags.dllibs in
     if standalone then begin
       (* Initialize the DLL machinery *)
+      Dll.init_compile !Clflags.no_std_include;
       Dll.add_path !load_path;
       try Dll.open_dlls sharedobjs
       with Failure reason -> raise(Error(Cannot_open_dll reason))

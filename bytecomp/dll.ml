@@ -148,6 +148,13 @@ let ld_library_path_contents () =
 let split_dll_path path =
   split path '\000'
 
+(* Initialization for separate compilation *)
+
+let init_compile nostdlib =
+  search_path :=
+    ld_library_path_contents() @
+    (if nostdlib then [] else ld_conf_contents())
+
 (* Initialization for linking in core (dynlink or toplevel) *)
 
 let init_toplevel dllpath =
