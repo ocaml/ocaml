@@ -99,11 +99,20 @@ val parse_argv : string array ->
 (** [Arg.parse_argv args speclist anon_fun usage_msg] parses the array
   [args] as if it were the command line.  It uses and updates the
   value of [Arg.current].  You must set [Arg.current] before calling
-  [parse_argv], and restore it afterward if needed. *)
+  [parse_argv], and restore it afterward if needed.
+  If an error occurs, [Arg.parse_argv] raises [Arg.Bad] with
+  the error message as argument.  If option [-help] or [--help] is
+  given, [Arg.parse_argv] raises [Arg.Help] with the help message
+  as argument.
+*)
+
+exception Help of string
+(** Raised by [Arg.parse_argv] when the user asks for help. *)
 
 exception Bad of string
 (** Functions in [spec] or [anon_fun] can raise [Arg.Bad] with an error
-   message to reject invalid arguments. *)
+    message to reject invalid arguments.
+    [Arg.Bad] is also raised by [Arg.parse_argv] in case of an error. *)
 
 val usage : (key * spec * doc) list -> usage_msg -> unit
 (** [Arg.usage speclist usage_msg] prints an error message including

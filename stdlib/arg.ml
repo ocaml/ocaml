@@ -38,6 +38,7 @@ type spec =
                                   function with each remaining argument *)
 
 exception Bad of string
+exception Help of string
 
 type error =
   | Unknown of string
@@ -60,43 +61,51 @@ let make_symlist prefix sep suffix l =
   | h::t -> (List.fold_left (fun x y -> x ^ sep ^ y) (prefix ^ h) t) ^ suffix
 ;;
 
-let print_spec (key, spec, doc) =
+let print_spec buf (key, spec, doc) =
   match spec with
-  | Symbol (l, _) -> eprintf "  %s %s %s\n" key (make_symlist "{" "|" "}" l) doc
-  | _ -> eprintf "  %s %s\n" key doc
+  | Symbol (l, _) -> bprintf buf "  %s %s %s\n" key (make_symlist "{" "|" "}" l)
+                             doc
+  | _ -> bprintf buf "  %s %s\n" key doc
+;;
+
+let usage_b buf speclist errmsg =
+  bprintf buf "%s\n" errmsg;
+  List.iter (print_spec buf) speclist;
+  try ignore (assoc3 "-help" speclist)
+  with Not_found -> bprintf buf "  -help   Display this list of options\n";
+  try ignore (assoc3 "--help" speclist)
+  with Not_found -> bprintf buf "  --help  Display this list of options\n";
 ;;
 
 let usage speclist errmsg =
-  eprintf "%s\n" errmsg;
-  List.iter print_spec speclist;
-  try ignore (assoc3 "-help" speclist)
-  with Not_found -> eprintf "  -help   Display this list of options\n";
-  try ignore (assoc3 "--help" speclist)
-  with Not_found -> eprintf "  --help  Display this list of options\n";
+  let b = Buffer.create 200 in
+  usage_b b speclist errmsg;
+  eprintf "%s" (Buffer.contents b);
 ;;
 
 let current = ref 0;;
 
 let parse_argv argv speclist anonfun errmsg =
+  let b = Buffer.create 200 in
   let stop error =
     let progname = if Array.length argv > 0 then argv.(0) else "(?)" in
     begin match error with
       | Unknown "-help" -> ()
       | Unknown "--help" -> ()
       | Unknown s ->
-          eprintf "%s: unknown option `%s'.\n" progname s
+          bprintf b "%s: unknown option `%s'.\n" progname s
       | Missing s ->
-          eprintf "%s: option `%s' needs an argument.\n" progname s
+          bprintf b "%s: option `%s' needs an argument.\n" progname s
       | Wrong (opt, arg, expected) ->
-          eprintf "%s: wrong argument `%s'; option `%s' expects %s.\n"
+          bprintf b "%s: wrong argument `%s'; option `%s' expects %s.\n"
                   progname arg opt expected
       | Message s ->
-          eprintf "%s: %s.\n" progname s
+          bprintf b "%s: %s.\n" progname s
     end;
-    usage speclist errmsg;
+    usage_b b speclist errmsg;
     if error = Unknown "-help" || error = Unknown "--help"
-    then exit 0
-    else exit 2
+    then raise (Help (Buffer.contents b))
+    else raise (Bad (Buffer.contents b))
   in
   let l = Array.length argv in
   incr current;
@@ -178,5 +187,9 @@ let parse_argv argv speclist anonfun errmsg =
 
 let parse =
   current := 0;
-  parse_argv Sys.argv;
+  try
+    parse_argv Sys.argv;
+  with
+  | Bad msg -> eprintf "%s" msg; exit 0;
+  | Help msg -> eprintf "%s" msg; exit 2;
 ;;
