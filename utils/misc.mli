@@ -35,6 +35,9 @@ val list_remove: 'a -> 'a list -> 'a list
            element equal to [x] removed. *)
 val split_last: 'a list -> 'a list * 'a
         (* Return the last element and the other elements of the given list. *)
+val samelist: ('a -> 'a -> bool) -> 'a list -> 'a list -> bool
+        (* Like [List.for_all2] but returns [false] if the two
+           lists have different length. *)
 
 val may: ('a -> unit) -> 'a option -> unit
 val may_map: ('a -> 'b) -> 'a option -> 'b option
