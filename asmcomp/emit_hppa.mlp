@@ -789,8 +789,8 @@ let is_one_instr i =
       | Istackoffset _ -> true
       | Iload(_, Iindexed n) -> i.res.(0).typ <> Float & is_offset n
       | Istore(_, Iindexed n) -> i.arg.(0).typ <> Float & is_offset n
-      | Iintop(Iadd | Isub | Iand | Ior | Ixor | Icheckbound) -> true
-      | Iintop_imm((Iadd | Isub | Ilsl | Ilsr | Iasr | Icheckbound), _) -> true
+      | Iintop(Iadd | Isub | Iand | Ior | Ixor) -> true
+      | Iintop_imm((Iadd | Isub | Ilsl | Ilsr | Iasr), _) -> true
       | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf -> true
       | Ispecific _ -> true
       | _ -> false
@@ -860,7 +860,7 @@ let sizeof_instr i =
           else (match addr with Iindexed ofs when is_offset ofs -> 1 | _ -> 2)
              + (match chunk with Byte_signed -> 1 | Sixteen_signed -> 1 | _ -> 0)
       | Istore(chunk, addr) ->
-          if i.res.(0).typ = Float
+          if i.arg.(0).typ = Float
           then 4 (* addil/ldo/fstws/fstws *)
           else (match addr with Iindexed ofs when is_offset ofs -> 1 | _ -> 2)
       | Ialloc _ -> if !fastcode_flag then 7 else 3
@@ -912,7 +912,7 @@ let fixup_cond_branches funbody =
       (* Branch offset is stored in 12 bits, giving a range of
          -2048 to +2047. Here, we allow 10% error in estimating
          the code positions. *)
-      displ < -1843 && displ > 1842
+      displ < -1843 || displ > 1842
     with Not_found ->
       fatal_error "Emit_hppa.long_branch" in
   let rec fix_branches pos i =
