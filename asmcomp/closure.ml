@@ -156,13 +156,25 @@ let lambda_smaller lam threshold =
   with Exit ->
     false
 
+(* Check if a clambda term is ``pure'',
+   that is without side-effects *and* not containing function definitions *)
+
+let rec is_pure_clambda = function
+    Uvar v -> true
+  | Uconst cst -> true
+  | Uprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ |
+           Pccall _ | Praise | Poffsetref _ | Pstringsetu | Pstringsets |
+           Parraysetu _ | Parraysets _), _) -> false
+  | Uprim(p, args) -> List.for_all is_pure_clambda args
+  | _ -> false
+
 (* Simplify primitive operations on integers *)
 
 let make_const_int n = (Uconst(Const_base(Const_int n)), Value_integer n)
 let make_const_ptr n = (Uconst(Const_pointer n), Value_constptr n)
 let make_const_bool b = make_const_ptr(if b then 1 else 0)
 
-let simplif_prim p (args, approxs) =
+let simplif_prim_pure p (args, approxs) =
   match approxs with
     [Value_integer x] ->
       begin match p with
@@ -209,7 +221,12 @@ let simplif_prim p (args, approxs) =
       end
   | _ ->
       (Uprim(p, args), Value_unknown)
-      
+
+let simplif_prim p (args, approxs as args_approxs) =
+  if List.for_all is_pure_clambda args
+  then simplif_prim_pure p args_approxs
+  else (Uprim(p, args), Value_unknown)
+
 (* Substitute variables in a [ulambda] term and perform
    some more simplifications on integer primitives.
    The variables must not be assigned in the term.
