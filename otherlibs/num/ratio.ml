@@ -12,7 +12,6 @@
 (***********************************************************************)
 
 open Int_misc
-open String_misc
 open Nat
 open Big_int
 open Arith_flags
@@ -552,14 +551,14 @@ let string_of_ratio r =
    scientifique. *)
 
 let ratio_of_string s =
-  let n = index_char s '/' 0 in
-  if n = -1 then
+  try
+    let n = String.index s '/' in
+    create_ratio (sys_big_int_of_string s 0 n)
+                 (sys_big_int_of_string s (n+1) (String.length s - n - 1))
+  with Not_found ->
     { numerator = big_int_of_string s;
       denominator = unit_big_int;
       normalized = true }
-  else
-    create_ratio (sys_big_int_of_string s 0 n)
-                 (sys_big_int_of_string s (n+1) (String.length s - n - 1))
 
 (* Coercion with type float *)
 

@@ -24,7 +24,7 @@ CFLAGS=-O -I../../byterun \
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../boot -w s
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -w s
 
-CAMLOBJS=int_misc.cmo string_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \
+CAMLOBJS=int_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \
   ratio.cmo num.cmo arith_status.cmo
 
 CMIFILES=big_int.cmi nat.cmi num.cmi ratio.cmi arith_status.cmi

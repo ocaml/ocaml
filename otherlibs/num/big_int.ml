@@ -461,7 +461,6 @@ let power_big_int_positive_big_int bi1 bi2 =
     0 -> unit_big_int
   | -1 -> invalid_arg "power_big_int_positive_big_int"
   | _ -> let nat = bi2.abs_value
-         and off = 0 
          and len_bi2 = num_digits_big_int bi2 in
          let bi1_len = num_digits_big_int bi1 in
          let res_len = int_of_big_int (mult_int_big_int bi1_len bi2) in

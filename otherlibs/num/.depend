@@ -1,6 +1,6 @@
-bng.o: bng.c bng.h bng_ppc.c bng_digit.c
 bng_alpha.o: bng_alpha.c
 bng_amd64.o: bng_amd64.c
+bng.o: bng.c bng.h bng_digit.c
 bng_digit.o: bng_digit.c
 bng_ia32.o: bng_ia32.c
 bng_mips.o: bng_mips.c
@@ -28,9 +28,5 @@ nat.cmo: int_misc.cmi nat.cmi
 nat.cmx: int_misc.cmx nat.cmi 
 num.cmo: arith_flags.cmi big_int.cmi int_misc.cmi nat.cmi ratio.cmi num.cmi 
 num.cmx: arith_flags.cmx big_int.cmx int_misc.cmx nat.cmx ratio.cmx num.cmi 
-ratio.cmo: arith_flags.cmi big_int.cmi int_misc.cmi nat.cmi string_misc.cmi \
-    ratio.cmi 
-ratio.cmx: arith_flags.cmx big_int.cmx int_misc.cmx nat.cmx string_misc.cmx \
-    ratio.cmi 
-string_misc.cmo: string_misc.cmi 
-string_misc.cmx: string_misc.cmi 
+ratio.cmo: arith_flags.cmi big_int.cmi int_misc.cmi nat.cmi ratio.cmi 
+ratio.cmx: arith_flags.cmx big_int.cmx int_misc.cmx nat.cmx ratio.cmi 
