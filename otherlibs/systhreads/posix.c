@@ -16,7 +16,9 @@
 #include <errno.h>
 #include <string.h>
 #include <pthread.h>
-#include <semaphore.h>
+#ifdef __sun__
+#define _POSIX_PTHREAD_SEMANTICS
+#endif
 #include <signal.h>
 #include <sys/time.h>
 #include "alloc.h"
@@ -563,52 +565,22 @@ value caml_condition_broadcast(value wrapper)           /* ML */
 
 /* Synchronous signal wait */
 
-static sem_t * wait_signal_sem[NSIG];
-static int * wait_signal_received[NSIG];
-
-static void caml_wait_signal_handler(int signo)
-{
-  *(wait_signal_received[signo]) = signo;
-  sem_post(wait_signal_sem[signo]);
-}
-
 value caml_wait_signal(value sigs)
 {
-  sem_t sem;
-  int res, s, retcode;
-  value l;
-  struct sigaction sa, oldsignals[NSIG];
+  sigset_t set;
+  int retcode, signo;
 
-  Begin_root(sigs);
-  if (sem_init(&sem, 0, 0) == -1)
-    caml_pthread_check(errno, "Thread.wait_signal (sem_init)");
-  res = 0;
-  sa.sa_handler = caml_wait_signal_handler;
-  sigemptyset(&sa.sa_mask);
-  sa.sa_flags = 0;
-  for (l = sigs; l != Val_int(0); l = Field(l, 1)) {
-    s = convert_signal_number(Int_val(Field(l, 0)));
-    if (sigaction(s, &sa, &oldsignals[s]) == -1) {
-      sem_destroy(&sem);
-      caml_pthread_check(errno, "Thread.wait_signal (sigaction)");
-    }
-    wait_signal_sem[s] = &sem;
-    wait_signal_received[s] = &res;
+  sigemptyset(&set);
+  while (sigs != Val_int(0)) {
+    int sig = convert_signal_number(Int_val(Field(sigs, 0)));
+    sigaddset(&set, sig);
+    sigs = Field(sigs, 1);
   }
   enter_blocking_section();
-  retcode = 0;
-  while (sem_wait(&sem) == -1) {
-    if (errno != EINTR) { retcode = errno; break; }
-  }
+  retcode = sigwait(&set, &signo);
   leave_blocking_section();
-  caml_pthread_check(retcode, "Thread.wait_signal (sem_wait)");
-  for (l = sigs; l != Val_int(0); l = Field(l, 1)) {
-    s = convert_signal_number(Int_val(Field(l, 0)));
-    sigaction(s, &oldsignals[s], NULL);
-  }
-  sem_destroy(&sem);
-  End_roots();
-  return Val_int(res);
+  caml_pthread_check(retcode, "Thread.wait_signal");
+  return Val_int(signo);
 }
 
 /* Error report */
