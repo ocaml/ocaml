@@ -24,8 +24,11 @@ let build_graph fundecl =
      - by a triangular bit matrix *)
 
   let num_regs = Reg.num_registers() in
-  let mat =
-    String.make (((num_regs * (num_regs + 1)) lsr 1 + 7) lsr 3) '\000' in
+  let mat_len = (((num_regs * (num_regs + 1)) lsr 1 + 7) lsr 3) in
+  if mat_len > Sys.max_string_length then
+    fatal_error("Interf.build_graph: too many pseudo-registers in function " ^
+                fundecl.fun_name);
+  let mat = String.make mat_len '\000' in
 
   (* Record an interference between two registers *)
   let add_interf ri rj =
