@@ -133,56 +133,52 @@ let divide_constructor {cases = cl; args = al} =
 
 (* Making a constructor description from a variant pattern *)
 
-let constr_of_variant row lab =
-  let consts = ref 0 and nonconsts = ref 0 and cst = ref true in
+let map_variant_matching row pm =
   let row = Btype.row_repr row in
+  let consts = ref 0 and nonconsts = ref 0 in
   if row.row_closed then
     List.iter
       (fun (lab', f) ->
 	match Btype.row_field_repr f with
 	  Rabsent | Reither(true, _::_, _) -> ()
 	| Reither(true, _, _) | Rpresent None -> incr consts
-	| Reither _ | Rpresent _ ->
-	    nonconsts := 1; if lab = lab' then cst := false)
+	| Reither _ | Rpresent _ -> incr nonconsts)
       row.row_fields
-  else (consts := 100000; nonconsts := 1);
-  { cstr_res = Ctype.newty (Tvariant row);
-    cstr_args = [];
-    cstr_arity = if !cst then 0 else 2;
-    cstr_tag =
-       if !cst then Cstr_constant (Btype.hash_variant lab) else Cstr_block 0;
-    cstr_consts = !consts;
-    cstr_nonconsts = !nonconsts }
-
-let map_variant_matching pm =
+  else (consts := 100000; nonconsts := 100000);
+  let const_cstr =
+    { cstr_res = Ctype.newty (Tvariant row);
+      cstr_args = [];
+      cstr_arity = 0;
+      cstr_tag = Cstr_block 0;
+      cstr_consts = !consts;
+      cstr_nonconsts = if !nonconsts = 0 then 0 else 1 }
+  and nonconst_cstr =
+    { cstr_res = Predef.type_int;
+      cstr_args = [];
+      cstr_arity = 0;
+      cstr_tag = Cstr_block 0;
+      cstr_consts = !nonconsts;
+      cstr_nonconsts = 0 }
+  in
   let pat_variant pat =
-    match pat.pat_desc with Tpat_variant (lab, pato, row) ->
-      let row = Btype.row_repr row in
+    match pat.pat_desc with Tpat_variant (lab, pato, _) ->
       if Btype.row_field_repr (List.assoc lab row.row_fields) = Rabsent
       then raise Not_found;
-      let patl =
-        match pato with None -> []
-        | Some pat ->
-	    let consts = ref 0 in
-	    if row.row_closed then
-      	      List.iter
-		(fun (lab,f) -> match Btype.row_field_repr f with
-		| Reither(false, _::_,_) | Rpresent(Some _) -> incr consts
-		| _ -> ())
-      	       	row.row_fields
-	    else consts := 100000;
-            [{ pat with
-	       pat_desc = Tpat_construct
-                 ({cstr_res = Ctype.newty(Tvariant row);
-      	       	   cstr_args = [];
-		   cstr_arity = 0;
-                   cstr_tag = Cstr_constant (Btype.hash_variant lab);
-		   cstr_consts = !consts; cstr_nonconsts = 0},
-		  []);
-               pat_type = Predef.type_int };
-             pat]
-      in
-      {pat with pat_desc = Tpat_construct (constr_of_variant row lab, patl)}
+      { pat with pat_desc =
+	match pato with
+	  None -> Tpat_construct
+	      ({ const_cstr with
+		 cstr_tag = Cstr_constant (Btype.hash_variant lab) }, [])
+	| Some pat -> Tpat_construct
+	      ({ const_cstr with cstr_arity = 2 },
+               [{ pat with
+		  pat_desc = Tpat_construct
+                    ({ nonconst_cstr with
+                       cstr_tag = Cstr_constant (Btype.hash_variant lab) },
+		     []);
+		  pat_type = Predef.type_int };
+		pat])
+      }
     | _ -> pat
   in
   { args = pm.args;
@@ -190,7 +186,8 @@ let map_variant_matching pm =
       List.fold_right
         (fun (patl, lam) l ->
 	  try (List.map pat_variant patl, lam) :: l with Not_found -> l)
-        pm.cases [] }
+        pm.cases [] },
+  const_cstr
 
 
 (* Matching against a variable *)
@@ -443,7 +440,11 @@ let combine_constructor arg cstr partial
 	lambda_unit
       else
       match (cstr.cstr_consts, cstr.cstr_nonconsts, consts, nonconsts) with
-        (1, 0, [0, act], []) -> act
+        (_, _, [n, act], []) when total -> act
+      | (_, _, [], [n, act]) when total -> act
+      | (_, _, [n, act1], [m, act2]) when total ->
+          mkifthenelse arg act2 act1
+      |	(1, 0, [n, act], []) -> act
       | (0, 1, [], [0, act]) -> act
       | (1, 1, [n, act1], [0, act2]) ->
           mkifthenelse arg act2 act1
@@ -452,13 +453,16 @@ let combine_constructor arg cstr partial
       | (n, 1, [], [0, act2]) ->
           mkifthenelse arg act2 Lstaticfail
       | (_, _, _, _) ->
-      	  match cstr.cstr_res.desc with Tconstr _ ->
+	  if List.for_all (fun (n,_) -> n < cstr.cstr_consts & n >= 0) consts
+	  && List.for_all (fun (n,_) -> n < cstr.cstr_nonconsts & n >= 0)
+	       nonconsts
+	  then
 	    Lswitch(arg, {sw_numconsts = cstr.cstr_consts;
 			  sw_consts = consts;
 			  sw_numblocks = cstr.cstr_nonconsts;
 			  sw_blocks = nonconsts;
 			  sw_checked = false})
-	  | _ ->
+	  else
 	  let cases = List.map (fun (n, act) -> Const_int n, act) consts in
 	  match nonconsts with
       	    [] -> make_switch_or_test_sequence (not total) arg cases consts
@@ -472,7 +476,10 @@ let combine_constructor arg cstr partial
   end
 
 let combine_orpat (lambda1, total1) (lambda2, total2) (lambda3, total3) =
-  (Lcatch(Lsequence(lambda1, lambda2), lambda3), total3)
+  if total1 & total2 then
+    (Lsequence(lambda1, lambda2), true)
+  else
+    (Lcatch(Lsequence(lambda1, lambda2), lambda3), total3)
 
 let combine_array kind arg (len_lambda_list, total1) (lambda2, total2) =
   let lambda1 =
@@ -574,9 +581,8 @@ let rec compile_match repr partial m =
                 combine_constructor newarg cstr partial'
                   (compile_list partial' constrs)
 		  (compile_match repr partial others)
-            | Tpat_variant(lab, _, lvar) ->
-	        let pm = map_variant_matching pm
-		and cstr = constr_of_variant lvar lab in
+            | Tpat_variant(lab, _, row) ->
+	        let pm, cstr = map_variant_matching row pm in
                 let (constrs, others) = divide_constructor pm in
 		let partial' =
 		  if others.cases = [] then partial else Partial in
