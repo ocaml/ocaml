@@ -295,8 +295,12 @@ let scanf_fun ib (fmt : ('a, 'b, 'c) format) f =
   let fmt = (Obj.magic fmt : string) in
   let lim = String.length fmt - 1 in
 
+  let return v = Obj.magic v () in
+  let delay f x () = Obj.magic f x in
+  let stack f = delay (return f) in
+
   let rec scan spc f i =
-    if i > lim then Obj.magic f else
+    if i > lim then return f else
     match fmt.[i] with
     | '%' -> scan_width spc f (i + 1)
     | '@' as t ->
@@ -333,7 +337,9 @@ let scanf_fun ib (fmt : ('a, 'b, 'c) format) f =
   and scan_conversion spc max f i =
     if i > lim then bad_format fmt i fmt.[lim - 1] else
     match fmt.[i] with
-    | 'c' -> let x = read_char max ib in scan true (Obj.magic f x) (i + 1)
+    | 'c' ->
+        let x = read_char max ib in
+        scan true (stack f x) (i + 1)
     | c ->
        if spc then skip_whites ib;
        match c with
@@ -343,22 +349,22 @@ let scanf_fun ib (fmt : ('a, 'b, 'c) format) f =
        | '%' as fc -> bad_input_buff ib
        | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' ->
            let x = scan_int c max ib in
-           scan true (Obj.magic f (token_int ib)) (i + 1)
+           scan true (stack f (token_int ib)) (i + 1)
        | 'f' | 'g' | 'G' | 'e' | 'E' ->
            let x = scan_float max ib in
-           scan true (Obj.magic f (token_float ib)) (i + 1)
+           scan true (stack f (token_float ib)) (i + 1)
        | 's' ->
            let i, stp = scan_stoppers (i + 1) in
            let x = scan_string stp max ib in
-           scan true (Obj.magic f (token_string ib)) (i + 1)
+           scan true (stack f (token_string ib)) (i + 1)
        | 'b' ->
            let x = read_bool 4 ib in
-           scan true (Obj.magic f x) (i + 1)
+           scan true (stack f x) (i + 1)
        | '[' ->
            let i, char_set = read_char_set fmt (i + 1) in
            let i, stp = scan_stoppers (i + 1) in
            let x = scan_chars_in_char_set stp char_set max ib in
-           scan true (Obj.magic f (token_string ib)) (i + 1)
+           scan true (stack f (token_string ib)) (i + 1)
        | 'l' | 'n' | 'L' as t ->
            let i = i + 1 in
            if i > lim then bad_format fmt (i - 1) t else begin
@@ -366,13 +372,13 @@ let scanf_fun ib (fmt : ('a, 'b, 'c) format) f =
            | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as c ->
               let x = scan_int c max ib in
               begin match t with
-              | 'l' -> scan true (Obj.magic f (token_int32 ib)) (i + 1)
-              | 'L' -> scan true (Obj.magic f (token_int64 ib)) (i + 1)
-              | _ -> scan true (Obj.magic f (token_nativeint ib)) (i + 1) end
+              | 'l' -> scan true (stack f (token_int32 ib)) (i + 1)
+              | 'L' -> scan true (stack f (token_int64 ib)) (i + 1)
+              | _ -> scan true (stack f (token_nativeint ib)) (i + 1) end
            | _ -> bad_format fmt i end
        | 'N' ->
            let x = Scanning.char_count ib in
-           scan true (Obj.magic f x) (i + 1)
+           scan true (stack f x) (i + 1)
        | c -> bad_format fmt i c
 
   and scan_stoppers i =
@@ -382,7 +388,7 @@ let scanf_fun ib (fmt : ('a, 'b, 'c) format) f =
     | _ -> i - 1, [] in
 
   Scanning.reset_token ib;
-  scan true f 0;;
+  scan true (fun () -> f) 0;;
 
 let bscanf ib =
  (Obj.magic scanf_fun :
