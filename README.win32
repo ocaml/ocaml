@@ -75,9 +75,11 @@ variables as follows:
   - set the OCAMLLIB variable to the "lib" subdirectory of the
     OCaml installation directory.
 For instance, if you installed OCaml in C:\Program Files\Objective Caml,
-do
+add the following two lines at the end of C:\autoexec.bat:
+
     set PATH=%PATH%;"C:\Program Files\Objective Caml\bin"
-    set OCAMLLIB="C:\Program Files\Objective Caml\lib"
+    set OCAMLLIB=C:\Program Files\Objective Caml\lib
+
 No such tweaking of environment variables is needed under NT, 2000 and XP.
 
 To run programs that use the LablTK GUI, the directory where the
