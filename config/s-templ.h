@@ -37,11 +37,6 @@
    routines provided in the standard library, but at least it is guaranteed
    to work. So, in doubt, don't define anything. */
 
-#define HAS__SETJMP
-
-/* Define HAS__SETJMP if you have `_setjmp' and
-   `_longjmp' as faster variants of `setjmp' and `longjmp'. */
-
 #define BSD_SIGNALS
 
 /* Define BSD_SIGNALS if signal handlers have the BSD semantics: the handler

@@ -90,15 +90,6 @@ if sh runtest -Dcopy=bcopy bytecopy.c; then
   echo "#define HAS_BCOPY" >> s.h
 fi
 
-# Check for _longjmp and _setjmp
-
-sh runtest setjmp.c
-case $? in
-  0) echo "_setjmp and _longjmp appear to work. Good!"
-     echo "#define HAS__SETJMP" >> s.h;;
-  *) echo "No _setjmp, _longjmp. We'll use setjmp and longjmp instead."
-esac
-
 # Check the semantics of signal handlers
 
 if sh hasgot sigaction sigprocmask; then
