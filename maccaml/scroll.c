@@ -300,7 +300,7 @@ void ScrollNewSize (WindowPtr w)
 }
 
 /* Return 1 if the vertical scroll bar is at its max setting, 0 otherwise.
-   (With 1/2 line fudge factor.)
+   (With 1 line fudge factor.)
 */
 int ScrollAtEnd (WindowPtr w)
 {
@@ -310,7 +310,7 @@ int ScrollAtEnd (WindowPtr w)
   Assert (st != NULL);
   val = LCGetValue ((*st)->scrollbars[V]);
   max = LCGetMax ((*st)->scrollbars[V]);
-  return (val >= max - (*st)->line_height / 2);
+  return val >= max - (*st)->line_height;
 }
 
 /* Scroll to the bottom of the document. */
