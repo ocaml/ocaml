@@ -124,12 +124,14 @@
     :typing:typedtree.cmx :typing:types.cmx :typing:includecore.cmi 
 :typing:includemod.cmoÄ :typing:ctype.cmi :typing:env.cmi :typing:ident.cmi ¶
     :typing:includeclass.cmi :typing:includecore.cmi :utils:misc.cmi ¶
-    :typing:path.cmi :typing:printtyp.cmi :typing:subst.cmi :utils:tbl.cmi ¶
-    :typing:typedtree.cmi :typing:types.cmi :typing:includemod.cmi 
+    :typing:mtype.cmi :typing:path.cmi :typing:printtyp.cmi :typing:subst.cmi ¶
+    :utils:tbl.cmi :typing:typedtree.cmi :typing:types.cmi ¶
+    :typing:includemod.cmi 
 :typing:includemod.cmxÄ :typing:ctype.cmx :typing:env.cmx :typing:ident.cmx ¶
     :typing:includeclass.cmx :typing:includecore.cmx :utils:misc.cmx ¶
-    :typing:path.cmx :typing:printtyp.cmx :typing:subst.cmx :utils:tbl.cmx ¶
-    :typing:typedtree.cmx :typing:types.cmx :typing:includemod.cmi 
+    :typing:mtype.cmx :typing:path.cmx :typing:printtyp.cmx :typing:subst.cmx ¶
+    :utils:tbl.cmx :typing:typedtree.cmx :typing:types.cmx ¶
+    :typing:includemod.cmi 
 :typing:mtype.cmoÄ :typing:btype.cmi :typing:ctype.cmi :typing:env.cmi ¶
     :typing:ident.cmi :typing:path.cmi :typing:types.cmi :typing:mtype.cmi 
 :typing:mtype.cmxÄ :typing:btype.cmx :typing:ctype.cmx :typing:env.cmx ¶
