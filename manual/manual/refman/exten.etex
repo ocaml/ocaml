@@ -22,6 +22,7 @@ classes of expressions:
 
 \ikwd{parser\@\verb`parser`}
 \ikwd{match\@\verb`match`}
+\ikwd{match\@\verb`when`}
 
 \begin{syntax}
 expr:
@@ -29,7 +30,7 @@ expr:
         | '[:' ':]'
         | '[:' stream-component { ';' stream-component } ':]'
         | 'parser' [pattern] stream-matching
-        | 'parser' 'match' expr 'with' [pattern] stream-matching
+        | 'match' expr 'with' 'parser' [pattern] stream-matching
 ;
 stream-component:
           "'" expr
@@ -44,7 +45,7 @@ stream-pattern:
         | '[:' stream-pat-comp { ';' stream-pat-comp [ ':' expr ] }':]'
 ;
 stream-pat-comp:
-          "'" pattern
+          "'" pattern [ 'when' expr ]
         | pattern '=' expr
         | ident
 ;
@@ -71,10 +72,12 @@ initial segments of streams. In particular, the stream pattern
 \verb"[: :]" matches all streams. Stream pattern components are
 matched against the corresponding elements of a stream. The component
 @"'" pattern@ matches the corresponding stream element against the
-pattern. The component @pattern '=' expr@ applies the function denoted by
-@expr@ to the current stream, then matches the result of
-the function against @pattern@. Finally, the component @ident@ simply
-binds the identifier to the stream being matched.
+pattern; if followed by @when@, the match is accepted only if the
+result of the guard expression is "true". The component @pattern '='
+expr@ applies the function denoted by @expr@ to the current stream,
+then matches the result of the function against @pattern@. Finally,
+the component @ident@ simply binds the identifier to the stream being
+matched.
 
 Stream matching proceeds destructively: once a component has been
 matched, it is discarded from the stream (by in-place modification).
