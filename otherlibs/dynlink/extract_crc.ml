@@ -1,11 +1,24 @@
-(* Read the CRC of the interfaces of the units *)
+(***********************************************************************)
+(*                                                                     *)
+(*                         Caml Special Light                          *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Automatique.  Distributed only by permission.                      *)
+(*                                                                     *)
+(***********************************************************************)
+
+(* $Id$ *)
+
+(* Print the digests of unit interfaces *)
 
 let load_path = ref ["."]
 let first = ref true
 
 let print_crc unit =
   try
-    let crc = Dynlink.crc_interface unit !load_path in
+    let crc = Dynlink.digest_interface unit !load_path in
     if !first then first := false else print_string ";\n";
     print_string "  \""; print_string unit; print_string "\",\n    \"";
     for i = 0 to String.length crc - 1 do

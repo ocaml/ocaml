@@ -1,3 +1,16 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                         Caml Special Light                          *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Automatique.  Distributed only by permission.                      *)
+(*                                                                     *)
+(***********************************************************************)
+
+(* $Id$ *)
+
 (* Dynamic loading of .cmo files *)
 
 open Emitcode
@@ -47,7 +60,7 @@ let add_available_units units =
 
 (* Read the CRC of an interface from its .cmi file *)
 
-let crc_interface unit loadpath =
+let digest_interface unit loadpath =
   let filename = Misc.find_in_path loadpath (Misc.lowercase unit ^ ".cmi") in
   let ic = open_in_bin filename in
   try
@@ -70,7 +83,7 @@ let crc_interface unit loadpath =
 
 let add_interfaces units loadpath =
   add_available_units
-    (List.map (fun unit -> (unit, crc_interface unit loadpath)) units)
+    (List.map (fun unit -> (unit, digest_interface unit loadpath)) units)
 
 (* Check whether the object file being loaded was compiled in unsafe mode *)
 

@@ -12,6 +12,8 @@ COMPILEROBJS=misc.cmo tbl.cmo clflags.cmo config.cmo ident.cmo \
 
 all: dynlink.cma extract_crc
 
+allopt:
+
 dynlink.cma: $(OBJS)
 	$(CAMLC) $(COMPFLAGS) -a -o dynlink.cma $(COMPILEROBJS) $(OBJS)
 
@@ -21,8 +23,12 @@ extract_crc: dynlink.cma extract_crc.cmo
 install:
 	cp dynlink.cmi dynlink.cma extract_crc $(LIBDIR)
 
+installopt:
+
 clean:
 	rm -f extract_crc *.cm[ioa]
+
+realclean:
 
 .SUFFIXES: .ml .mli .cmo .cmi
 
