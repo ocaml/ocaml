@@ -7,7 +7,7 @@ let rec eval bdd vars =
   | Node(l, v, _, h) ->
       if vars.(v) then eval h vars else eval l vars
 
-let rec getId bdd = 
+let getId bdd = 
   match bdd with 
     Node(_,_,id,_) -> id
   | Zero           -> 0
