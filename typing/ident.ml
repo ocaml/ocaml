@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -146,23 +146,3 @@ let rec find_name name = function
         k.data
       else
         find_name name (if c < 0 then l else r)
-
-let rec iter fn = function
-    Empty -> ()
-  | Node(l, k, r, _) ->
-      iter fn l; iter_node fn k; iter fn r
-and iter_node fn k =
-  fn k.ident k.data;
-  match k.previous with None -> () | Some prev_k -> iter_node fn prev_k
-
-let print_tbl print_elt tbl =
-  open_box 2;
-  print_string "[[";
-  iter (fun id data -> 
-          open_box 2;
-          print id; print_string " ->"; print_space(); print_elt data;
-          print_string ";"; close_box(); print_space())
-       tbl;
-  print_string "]]";
-  close_box()
-
