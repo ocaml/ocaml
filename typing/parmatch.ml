@@ -747,7 +747,7 @@ let build_other env =  match env with
       if List.mem f all_floats then try_floats (f +. 1.0)
       else
         make_pat
-          (Tpat_constant (Const_float (string_of_float f^".0")))
+          (Tpat_constant (Const_float (string_of_float f)))
           p.pat_type p.pat_env in
     try_floats 0.0
 | ({pat_desc = Tpat_array args} as p,_)::_ ->
