@@ -1655,26 +1655,22 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
         unify_pat env pat ty_arg';
         (pat, ext_env))
       caselist in
+  (* Build dummy cases, since we cannot type yet *)
+  let dummy_cases = List.map2
+      (fun (pat, _) (_, act) ->
+        let dummy = { exp_desc = Texp_tuple []; exp_type = newty (Ttuple[]);
+                      exp_env = env; exp_loc = act.pexp_loc } in
+        match act.pexp_desc with
+          Pexp_when _ ->
+            pat, {dummy with exp_desc = Texp_when(dummy, dummy)}
+        | _           -> pat, dummy)
+      pat_env_list caselist in
   (* Check partial matches here (required for polymorphic variants) *)
   let partial =
     match partial_loc with None -> Partial
-    | Some loc ->
-        (* Build dummy cases, since we cannot type yet *)
-        let cases = List.map2
-            (fun (pat, _) (_, act) ->
-              let dummy = { exp_desc = Texp_tuple [];
-                            exp_type = newty (Ttuple[]);
-                            exp_env = env; exp_loc = act.pexp_loc } in
-              match act.pexp_desc with
-                Pexp_when _ ->
-                  pat, {dummy with exp_desc = Texp_when(dummy, dummy)}
-              | _           -> pat, dummy)
-            pat_env_list caselist in
-        let partial = Parmatch.check_partial env loc cases in
-        (* Revert to normal typing of variants *)
-        List.iter (fun (pat, _) -> iter_pattern finalize_variant pat) cases;
-        partial
-  in
+    | Some loc -> Parmatch.check_partial env loc dummy_cases in
+  (* Revert to normal typing of variants (also register checks) *)
+  List.iter (fun (pat, _) -> iter_pattern finalize_variant pat) dummy_cases;
   (* `Contaminating' unifications start here *)
   begin match pat_env_list with [] -> ()
   | (pat, _) :: _ -> unify_pat env pat ty_arg
