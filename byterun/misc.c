@@ -5,7 +5,7 @@
 /*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -22,8 +22,9 @@
 
 void failed_assert (char * expr, char * file, int line)
 {
-  fprintf (stderr, "Assertion failed: %s; file %s; line %d\n",
-           expr, file, line);
+  fprintf (stderr, "file %s; line %d ### Assertion failed: %s\n",
+           file, line, expr);
+  fflush (stderr);
   exit (100);
 }
 
@@ -41,7 +42,7 @@ int verb_gc;
 
 void gc_message (int level, char *msg, unsigned long arg)
 {
-  if (verb_gc & level){
+  if (verb_gc & level || level == 0xFFFF){
 #ifdef HAS_UI
     ui_print_stderr(msg, (void *) arg);
 #else
