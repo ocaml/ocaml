@@ -253,13 +253,16 @@ let out_type = ref print_out_type
 
 (* Class types *)
 
+let type_parameter ppf (ty, (co, cn)) =
+  fprintf ppf "%s'%s" (if not cn then "+" else if not co then "-" else "")
+    ty
+
 let print_out_class_params ppf =
   function
     [] -> ()
   | tyl ->
       fprintf ppf "@[<1>[%a]@]@ "
-        (print_list (fun ppf x -> fprintf ppf "'%s" x)
-           (fun ppf -> fprintf ppf ", "))
+        (print_list type_parameter (fun ppf -> fprintf ppf ", "))
         tyl
 
 let rec print_out_class_type ppf =
@@ -322,12 +325,14 @@ and print_out_signature ppf =
       fprintf ppf "%a@ %a" !out_sig_item item print_out_signature items
 and print_out_sig_item ppf =
   function
-    Osig_class (vir_flag, name, params, clt) ->
-      fprintf ppf "@[<2>class%s@ %a%s@ :@ %a@]"
+    Osig_class (vir_flag, name, params, clt, rs) ->
+      fprintf ppf "@[<2>%s%s@ %a%s@ :@ %a@]"
+        (if rs = Orec_next then "and" else "class")
         (if vir_flag then " virtual" else "") print_out_class_params params
         name !out_class_type clt
-  | Osig_class_type (vir_flag, name, params, clt) ->
-      fprintf ppf "@[<2>class type%s@ %a%s@ =@ %a@]"
+  | Osig_class_type (vir_flag, name, params, clt, rs) ->
+      fprintf ppf "@[<2>%s%s@ %a%s@ =@ %a@]"
+        (if rs = Orec_next then "and" else "class type")
         (if vir_flag then " virtual" else "") print_out_class_params params
         name !out_class_type clt
   | Osig_exception (id, tyl) ->
@@ -336,9 +341,16 @@ and print_out_sig_item ppf =
       fprintf ppf "@[<2>module type %s@]" name
   | Osig_modtype (name, mty) ->
       fprintf ppf "@[<2>module type %s =@ %a@]" name !out_module_type mty
-  | Osig_module (name, mty) ->
-      fprintf ppf "@[<2>module %s :@ %a@]" name !out_module_type mty
-  | Osig_type tdl -> print_out_type_decl_list ppf tdl
+  | Osig_module (name, mty, rs) ->
+      fprintf ppf "@[<2>%s %s :@ %a@]" 
+        (match rs with Orec_not -> "module"
+                     | Orec_first -> "module rec"
+                     | Orec_next -> "and")
+        name !out_module_type mty
+  | Osig_type(td, rs) ->
+        print_out_type_decl
+          (if rs = Orec_next then "and" else "type")
+          ppf td
   | Osig_value (name, ty, prims) ->
       let kwd = if prims = [] then "val" else "external" in
       let pr_prims ppf =
@@ -350,13 +362,7 @@ and print_out_sig_item ppf =
       in
       fprintf ppf "@[<2>%s %a :@ %a%a@]" kwd value_ident name !out_type
         ty pr_prims prims
-and print_out_type_decl_list ppf =
-  function
-    [] -> ()
-  | [x] -> print_out_type_decl "type" ppf x
-  | x :: l ->
-      print_out_type_decl "type" ppf x;
-      List.iter (fun x -> fprintf ppf "@ %a" (print_out_type_decl "and") x) l
+
 and print_out_type_decl kwd ppf (name, args, ty, constraints) =
   let print_constraints ppf params =
     List.iter
@@ -364,10 +370,6 @@ and print_out_type_decl kwd ppf (name, args, ty, constraints) =
          fprintf ppf "@ @[<2>constraint %a =@ %a@]" !out_type ty1
            !out_type ty2)
       params
-  in
-  let type_parameter ppf (ty, (co, cn)) =
-    fprintf ppf "%s'%s" (if not cn then "+" else if not co then "-" else "")
-      ty
   in
   let type_defined ppf =
     match args with

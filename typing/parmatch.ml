@@ -696,7 +696,7 @@ let build_other_constant proj make first next p env =
 *)
 
 let build_other env =  match env with
-| ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _} as c,_)},_) as p
+| ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _} as c,_)},_)
   ::_ ->
     make_pat
       (Tpat_construct
@@ -1519,10 +1519,7 @@ let check_partial loc casel =
           *)
       begin match casel with
       | [] -> ()
-      | _  ->
-          Location.prerr_warning loc
-            (Warnings.Other
-               "Bad style, all clauses in this pattern-matching are guarded.")
+      | _  -> Location.prerr_warning loc Warnings.All_clauses_guarded
       end ;
       Partial
   | ps::_  ->      
@@ -1584,7 +1581,7 @@ let check_unused tdefs casel =
   if Warnings.is_active Warnings.Unused_match then
     let rec do_rec pref = function
       | [] -> ()
-      | (q,act as clause)::rem ->
+      | (q,act)::rem ->
           let qs = [q] in
             begin try
               let pss =
@@ -1602,10 +1599,7 @@ let check_unused tdefs casel =
                     ps
               | Used ->
                   check_used_extra pss qs
-            with e -> (* useless ? *)
-              Location.prerr_warning (location_of_clause qs)
-                (Warnings.Other "Fatal Error in Parmatch.check_unused") ;
-              raise e
+            with e -> assert false
             end ;
                    
           if has_guard act then

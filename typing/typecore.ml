@@ -38,6 +38,7 @@ type error =
   | Label_missing of string list
   | Label_not_mutable of Longident.t
   | Bad_format of string
+  | Bad_conversion of string * string
   | Undefined_method of type_expr * string
   | Undefined_inherited_method of string
   | Unbound_class of Longident.t
@@ -337,6 +338,22 @@ let build_or_pat env loc lid =
           pat pats in
       rp { r with pat_loc = loc }
 
+let rec find_record_qual = function
+  | [] -> None
+  | (Longident.Ldot (modname, _), _) :: _ -> Some modname
+  | _ :: rest -> find_record_qual rest
+
+let type_label_a_list type_lid_a lid_a_list =
+  match find_record_qual lid_a_list with
+  | None -> List.map type_lid_a lid_a_list
+  | Some modname ->
+      List.map
+        (function
+         | (Longident.Lident id), sarg ->
+              type_lid_a (Longident.Ldot (modname, id), sarg)
+         | lid_a -> type_lid_a lid_a)
+        lid_a_list
+
 let rec type_pat env sp =
   match sp.ppat_desc with
     Ppat_any ->
@@ -445,7 +462,7 @@ let rec type_pat env sp =
         (label, arg)
       in
       rp {
-        pat_desc = Tpat_record(List.map type_label_pat lid_sp_list);
+        pat_desc = Tpat_record(type_label_a_list type_label_pat lid_sp_list);
         pat_loc = sp.ppat_loc;
         pat_type = ty;
         pat_env = env }
@@ -613,110 +630,116 @@ and is_nonexpansive_opt = function
    (Handling of * modifiers contributed by Thorsten Ohl.) *)
 
 let type_format loc fmt =
-  let len = String.length fmt in
-  let ty_input = newvar ()
-  and ty_result = newvar ()
-  and ty_aresult = newvar () in
+
   let ty_arrow gty ty = newty (Tarrow ("", instance gty, ty, Cok)) in
-  let bad_format i len =
-    raise (Error (loc, Bad_format (String.sub fmt i len))) in
-  let incomplete i = bad_format i (len - i) in
 
-  let rec scan_format i =
-    if i >= len then ty_aresult, ty_result else
-    match fmt.[i] with
-    | '%' -> scan_flags i (i + 1)
-    | _ -> scan_format (i + 1)
-  and scan_flags i j =
-    if j >= len then incomplete i else
-    match fmt.[j] with
-    | '#' | '0' | '-' | ' ' | '+' -> scan_flags i (j + 1)
-    | _ -> scan_skip i j
-  and scan_skip i j =
-    if j >= len then incomplete i else
+  let rec type_in_format fmt =
+    let len = String.length fmt in
+
+    let bad_conversion fmt i c =
+      raise (Error (loc, Bad_conversion (fmt, String.sub fmt i len))) in
+    let incomplete i =
+      raise (Error (loc, Bad_format (String.sub fmt i (len - i)))) in
+
+    let ty_input = newvar ()
+    and ty_result = newvar ()
+    and ty_aresult = newvar () in
+
+    let meta = ref 0 in
+
+    let rec scan_format i =
+      if i >= len then
+        if !meta = 0 then ty_aresult, ty_result else incomplete (i - 1) else
+      match fmt.[i] with
+      | '%' -> scan_opts i (i + 1)
+      | _ -> scan_format (i + 1)
+    and scan_opts i j =
+      if j >= len then incomplete i else
       match fmt.[j] with
-      | '_' -> scan_rest true i j
+      | '_' -> scan_rest true i (j + 1)
       | _ -> scan_rest false i j
-  and scan_rest skip i j =
-    let rec scan_width i j =
-      if j >= len then incomplete i else
-      match fmt.[j] with
-      | '*' ->
-          let ty_aresult, ty_result = scan_dot i (j + 1) in
-          ty_aresult, ty_arrow Predef.type_int ty_result
-      | '_' -> scan_fixed_width i (j + 1)
-      | '.' -> scan_precision i (j + 1)
-      | _ -> scan_fixed_width i j
-    and scan_fixed_width i j =
-      if j >= len then incomplete i else
-      match fmt.[j] with
-      | '0' .. '9' | '-' | '+' -> scan_fixed_width i (j + 1)
-      | '.' -> scan_precision i (j + 1)
-      | _ -> scan_conversion i j
-    and scan_dot i j =
-      if j >= len then incomplete i else
-      match fmt.[j] with
-      | '.' -> scan_precision i (j + 1)
-      | _ -> scan_conversion i j
-    and scan_precision i j =
-      if j >= len then incomplete i else
-      match fmt.[j] with
-      | '*' ->
-          let ty_aresult, ty_result = scan_conversion i (j + 1) in
-          ty_aresult, ty_arrow Predef.type_int ty_result
-      | _ -> scan_fixed_precision i j
-    and scan_fixed_precision i j =
-      if j >= len then incomplete i else
-      match fmt.[j] with
-      | '0' .. '9' | '-' | '+' -> scan_fixed_precision i (j + 1)
-      | _ -> scan_conversion i j
+    and scan_rest skip i j =
+      let rec scan_flags i j =
+        if j >= len then incomplete i else
+        match fmt.[j] with
+        | '#' | '0' | '-' | ' ' | '+' -> scan_flags i (j + 1)
+        | _ -> scan_width i j
+      and scan_width i j = scan_width_or_prec_value scan_precision i j
+      and scan_decimal_string scan i j =
+        if j >= len then incomplete i else
+        match fmt.[j] with
+        | '0' .. '9' -> scan_decimal_string scan i (j + 1)
+        | _ -> scan i j
+      and scan_width_or_prec_value scan i j =
+        if j >= len then incomplete i else
+        match fmt.[j] with
+        | '*' ->
+            let ty_aresult, ty_result = scan i (j + 1) in
+            ty_aresult, ty_arrow Predef.type_int ty_result
+        | '-' | '+' -> scan_decimal_string scan i (j + 1)
+        | _ -> scan_decimal_string scan i j
+      and scan_precision i j =
+        if j >= len then incomplete i else
+        match fmt.[j] with
+        | '.' -> scan_width_or_prec_value scan_conversion i (j + 1)
+        | _ -> scan_conversion i j
 
-    and conversion j ty_arg =
-      let ty_aresult, ty_result = scan_format (j + 1) in
-      ty_aresult,
-      if skip then ty_result else ty_arrow ty_arg ty_result
+      and conversion j ty_arg =
+        let ty_aresult, ty_result = scan_format (j + 1) in
+        ty_aresult,
+        if skip then ty_result else ty_arrow ty_arg ty_result
 
-    and scan_conversion i j =
-      if j >= len then incomplete i else
-      match fmt.[j] with
-      | '%' | '!' -> scan_format (j + 1)
-      | 's' | 'S' | '[' -> conversion j Predef.type_string
-      | 'c' | 'C' -> conversion j Predef.type_char
-      | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' ->
+      and scan_conversion i j =
+        if j >= len then incomplete i else
+        match fmt.[j] with
+        | '%' | '!' -> scan_format (j + 1)
+        | 's' | 'S' | '[' -> conversion j Predef.type_string
+        | 'c' | 'C' -> conversion j Predef.type_char
+        | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' ->
           conversion j Predef.type_int
-      | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> conversion j Predef.type_float
-      | 'B' | 'b' -> conversion j Predef.type_bool
-      | 'a' ->
+        | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> conversion j Predef.type_float
+        | 'B' | 'b' -> conversion j Predef.type_bool
+        | 'a' ->
           let ty_arg = newvar () in
           let ty_a = ty_arrow ty_input (ty_arrow ty_arg ty_aresult) in 
           let ty_aresult, ty_result = conversion j ty_arg in
           ty_aresult, ty_arrow ty_a ty_result
-      | 't' -> conversion j (ty_arrow ty_input ty_aresult)
-      | 'n' when j + 1 = len -> conversion j Predef.type_int
-      | 'l' | 'n' | 'L' as conv ->
+        | 't' -> conversion j (ty_arrow ty_input ty_aresult)
+        | 'l' | 'n' | 'L' as c ->
           let j = j + 1 in
-          if j >= len then incomplete i else begin
+          if j >= len then conversion (j - 1) Predef.type_int else begin
             match fmt.[j] with
             | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
-                let ty_arg =
-                 match conv with
-                 | 'l' -> Predef.type_int32
-                 | 'n' -> Predef.type_nativeint
-                 | _ -> Predef.type_int64 in
-                conversion j ty_arg
-            | c ->
-               if conv = 'l' || conv = 'n'
-               then conversion (j - 1) Predef.type_int
-               else bad_format i (j - i)
+              let ty_arg =
+                match c with
+                | 'l' -> Predef.type_int32
+                | 'n' -> Predef.type_nativeint
+                | _ -> Predef.type_int64 in
+              conversion j ty_arg
+            | c -> conversion (j - 1) Predef.type_int
           end
-      | c -> bad_format i (j - i + 1) in
-    scan_width i j in
+        | '{' | '(' as c ->
+          let j = j + 1 in
+          if j >= len then incomplete i else
+          let sj =
+            Printf.sub_format
+              (fun fmt -> incomplete 0) bad_conversion c fmt j in
+          let sfmt = String.sub fmt j (sj - j - 1) in
+          let ty_sfmt = type_in_format sfmt in
+          begin match c with
+          | '{' -> conversion sj ty_sfmt
+          | _ -> incr meta; conversion (j - 1) ty_sfmt end
+        | ')' when !meta > 0 -> decr meta; scan_format (j + 1)
+        | c -> bad_conversion fmt i c in
+      scan_flags i j in
 
-  let ty_ares, ty_res = scan_format 0 in
-  newty
-    (Tconstr(Predef.path_format4,
-             [ty_res; ty_input; ty_ares; ty_result],
-             ref Mnil))
+    let ty_ares, ty_res = scan_format 0 in
+    newty
+      (Tconstr(Predef.path_format4,
+               [ty_res; ty_input; ty_ares; ty_result],
+               ref Mnil)) in
+
+  type_in_format fmt
 
 (* Approximate the type of an expression, for better recursion *)
 
@@ -850,14 +873,27 @@ let rec type_exp env sexp =
   | Pexp_function _ ->     (* defined in type_expect *)
       type_expect env sexp (newvar())
   | Pexp_apply(sfunct, sargs) ->
+      begin_def (); (* one more level for non-returning functions *)
       if !Clflags.principal then begin_def ();
       let funct = type_exp env sfunct in
       if !Clflags.principal then begin
         end_def ();
         generalize_structure funct.exp_type
       end;
+      let rec lower_args ty_fun =
+        match (expand_head env ty_fun).desc with
+          Tarrow (l, ty, ty_fun, com) ->
+            unify_var env (newvar()) ty;
+            lower_args ty_fun
+        | _ -> ()
+      in
+      let ty = instance funct.exp_type in
+      end_def ();
+      lower_args ty;
+      begin_def ();
       let (args, ty_res) = type_application env funct sargs in
-      let funct = {funct with exp_type = instance funct.exp_type} in
+      end_def ();
+      unify_var env (newvar()) funct.exp_type;
       re {
         exp_desc = Texp_apply(funct, args);
         exp_loc = sexp.pexp_loc;
@@ -938,7 +974,7 @@ let rec type_exp env sexp =
         if label.lbl_private = Private then
           raise(Error(sexp.pexp_loc, Private_type ty));
         (label, {arg with exp_type = instance arg.exp_type}) in
-      let lbl_exp_list = List.map type_label_exp lid_sexp_list in
+      let lbl_exp_list = type_label_a_list type_label_exp lid_sexp_list in
       let rec check_duplicates seen_pos lid_sexp lbl_exp =
         match (lid_sexp, lbl_exp) with
           ((lid, _) :: rem1, (lbl, _) :: rem2) ->
@@ -1149,6 +1185,9 @@ let rec type_exp env sexp =
               let (id, typ) =
                 filter_self_method env met Private meths privty
               in
+              if (repr typ).desc = Tvar then
+                Location.prerr_warning sexp.pexp_loc
+                  (Warnings.Undeclared_virtual_method met);
               (Texp_send(obj, Tmeth_val id), typ)
           | Texp_ident(path, {val_kind = Val_anc (methods, cl_num)}) ->
               let method_id =
@@ -1221,8 +1260,7 @@ let rec type_exp env sexp =
           | {desc = Tpoly (ty, tl); level = l} ->
               if !Clflags.principal && l <> generic_level then
                 Location.prerr_warning sexp.pexp_loc
-                  (Warnings.Other
-                     "This use of a polymorphic method is not principal");
+                  (Warnings.Not_principal "this use of a polymorphic method");
               snd (instance_poly false tl ty)
           | {desc = Tvar} as ty ->
               let ty' = newvar () in
@@ -1431,7 +1469,7 @@ and type_argument env sarg ty_expected' =
                                                [Some eta_var, Required])}],
                         Total) } in
       if warn then Location.prerr_warning texp.exp_loc
-          (Warnings.Other "Eliminated optional argument without principality");
+          (Warnings.Without_principality "eliminated optional argument");
       if is_nonexpansive texp then func texp else
       (* let-expand to have side effects *)
       let let_pat, let_var = var_pair "let" texp.exp_type in
@@ -1461,9 +1499,18 @@ and type_application env funct sargs =
          instance (result_type omitted ty_fun))
     | (l1, sarg1) :: sargl ->
         let (ty1, ty2) =
-          match (expand_head env ty_fun).desc with
+          let ty_fun = expand_head env ty_fun in
+          match ty_fun.desc with
             Tvar ->
               let t1 = newvar () and t2 = newvar () in
+              let not_identity = function
+                  Texp_ident(_,{val_kind=Val_prim
+                                  {Primitive.prim_name="%identity"}}) ->
+                    false
+                | _ -> true
+              in
+              if ty_fun.level >= t1.level && not_identity funct.exp_desc then
+                Location.prerr_warning sarg1.pexp_loc Warnings.Unused_argument;
               unify env ty_fun (newty (Tarrow(l1,t1,t2,Clink(ref Cunknown))));
               (t1, t2)
           | Tarrow (l,t1,t2,_) when l = l1
@@ -1510,11 +1557,11 @@ and type_application env funct sargs =
     match expand_head env ty_fun with
       {desc=Tarrow (l, ty, ty_fun, com); level=lv} as ty_fun'
       when (sargs <> [] || more_sargs <> []) && commu_repr com = Cok ->
-        let may_warn loc msg =
+        let may_warn loc w =
           if not !warned && !Clflags.principal && lv <> generic_level
           then begin
             warned := true;
-            Location.prerr_warning loc (Warnings.Other msg)
+            Location.prerr_warning loc w
           end
         in
         let name = label_name l
@@ -1538,14 +1585,14 @@ and type_application env funct sargs =
                 let (l', sarg0, sargs1, sargs2) = extract_label name sargs in
                 if sargs1 <> [] then
                   may_warn sarg0.pexp_loc
-                    "Commuting this argument is not principal";
+                    (Warnings.Not_principal "commuting this argument");
                 (l', sarg0, sargs1 @ sargs2, more_sargs)
               with Not_found ->
                 let (l', sarg0, sargs1, sargs2) =
                   extract_label name more_sargs in
                 if sargs1 <> [] || sargs <> [] then
                   may_warn sarg0.pexp_loc
-                    "Commuting this argument is not principal";
+                    (Warnings.Not_principal "commuting this argument");
                 (l', sarg0, sargs @ sargs1, sargs2)
             in
             sargs, more_sargs,
@@ -1553,7 +1600,7 @@ and type_application env funct sargs =
               Some (fun () -> type_argument env sarg0 ty)
             else begin
               may_warn sarg0.pexp_loc
-                "Using an optional argument here is not principal";
+                (Warnings.Not_principal "using an optional argument here");
               Some (fun () -> option_some (type_argument env sarg0 
                                              (extract_option_type env ty)))
             end
@@ -1563,12 +1610,12 @@ and type_application env funct sargs =
               (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
             then begin
               may_warn funct.exp_loc
-                "Eliminated an optional argument without principality";
+                (Warnings.Without_principality "eliminated optional argument");
               ignored := (l,ty,lv) :: !ignored;
               Some (fun () -> option_none (instance ty) Location.none)
             end else begin
               may_warn funct.exp_loc
-                "Commuted an argument without principality";
+                (Warnings.Without_principality "commuted an argument");
               None
             end
         in
@@ -1728,7 +1775,7 @@ and type_expect ?in_function env sexp ty_expected =
       in
       if is_optional l && all_labeled ty_res then
         Location.prerr_warning (fst (List.hd cases)).pat_loc
-          (Warnings.Other "This optional argument cannot be erased");
+          Warnings.Unerasable_optional_argument;
       re {
         exp_desc = Texp_function(cases, partial);
         exp_loc = sexp.pexp_loc;
@@ -1770,18 +1817,23 @@ and type_expect ?in_function env sexp ty_expected =
 (* Typing of statements (expressions whose values are discarded) *)
 
 and type_statement env sexp =
-    let exp = type_exp env sexp in
-    match (expand_head env exp.exp_type).desc with
-    | Tarrow _ ->
-        Location.prerr_warning sexp.pexp_loc Warnings.Partial_application;
-        exp
-    | Tconstr (p, _, _) when Path.same p Predef.path_unit -> exp
-    | Tvar ->
-        add_delayed_check (fun () -> check_partial_application env exp);
-        exp
-    | _ ->
-        Location.prerr_warning sexp.pexp_loc Warnings.Statement_type;
-        exp
+  begin_def();
+  let exp = type_exp env sexp in
+  end_def();
+  let ty = expand_head env exp.exp_type and tv = newvar() in
+  begin match ty.desc with
+  | Tarrow _ ->
+      Location.prerr_warning sexp.pexp_loc Warnings.Partial_application
+  | Tconstr (p, _, _) when Path.same p Predef.path_unit -> ()
+  | Tvar when ty.level > tv.level ->
+      Location.prerr_warning sexp.pexp_loc Warnings.Nonreturning_statement
+  | Tvar ->
+      add_delayed_check (fun () -> check_partial_application env exp)
+  | _ ->
+      Location.prerr_warning sexp.pexp_loc Warnings.Statement_type
+  end;
+  unify_var env tv ty;
+  exp
 
 (* Typing of match cases *)
 
@@ -1969,7 +2021,9 @@ let report_error ppf = function
   | Label_not_mutable lid ->
       fprintf ppf "The record field label %a is not mutable" longident lid
   | Bad_format s ->
-      fprintf ppf "Bad format `%s'" s
+      fprintf ppf "Bad format %S" s
+  | Bad_conversion (fmt, conv) ->
+      fprintf ppf "Bad conversion %S in format %S" fmt conv
   | Undefined_method (ty, me) ->
       reset_and_mark_loops ty;
       fprintf ppf

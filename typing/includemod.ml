@@ -104,26 +104,24 @@ type field_desc =
 
 let item_ident_name = function
     Tsig_value(id, _) -> (id, Field_value(Ident.name id))
-  | Tsig_type(id, _) -> (id, Field_type(Ident.name id))
+  | Tsig_type(id, _, _) -> (id, Field_type(Ident.name id))
   | Tsig_exception(id, _) -> (id, Field_exception(Ident.name id))
-  | Tsig_module(id, _) -> (id, Field_module(Ident.name id))
+  | Tsig_module(id, _, _) -> (id, Field_module(Ident.name id))
   | Tsig_modtype(id, _) -> (id, Field_modtype(Ident.name id))
-  | Tsig_class(id, _) -> (id, Field_class(Ident.name id))
-  | Tsig_cltype(id, _) -> (id, Field_classtype(Ident.name id))
+  | Tsig_class(id, _, _) -> (id, Field_class(Ident.name id))
+  | Tsig_cltype(id, _, _) -> (id, Field_classtype(Ident.name id))
 
 (* Simplify a structure coercion *)
 
 let simplify_structure_coercion cc =
-  let pos = ref 0 in
-  try
-    List.iter
-      (fun (n, c) ->
-        if n <> !pos || c <> Tcoerce_none then raise Exit;
-        incr pos)
-      cc;
-    Tcoerce_none
-  with Exit ->
-    Tcoerce_structure cc
+  let rec is_identity_coercion pos = function
+  | [] ->
+      true
+  | (n, c) :: rem ->
+      n = pos && c = Tcoerce_none && is_identity_coercion (pos + 1) rem in
+  if is_identity_coercion 0 cc
+  then Tcoerce_none
+  else Tcoerce_structure cc
 
 (* Inclusion between module types. 
    Return the restriction that transforms a value of the smaller type
@@ -184,13 +182,13 @@ and signatures env subst sig1 sig2 =
         let nextpos =
           match item with
             Tsig_value(_,{val_kind = Val_prim _})
-          | Tsig_type(_,_)
+          | Tsig_type(_,_,_)
           | Tsig_modtype(_,_)
-          | Tsig_cltype(_,_) -> pos
+          | Tsig_cltype(_,_,_) -> pos
           | Tsig_value(_,_)
           | Tsig_exception(_,_)
-          | Tsig_module(_,_)
-          | Tsig_class(_, _) -> pos+1 in
+          | Tsig_module(_,_,_)
+          | Tsig_class(_, _,_) -> pos+1 in
         build_component_table nextpos
                               (Tbl.add name (id, item, pos) tbl) rem in
   let comps1 =
@@ -227,7 +225,7 @@ and signatures env subst sig1 sig2 =
           pair_components subst paired (Missing_field id2 :: unpaired) rem
         end in
   (* Do the pairing and checking, and return the final coercion *)
-  simplify_structure_coercion(pair_components subst [] [] sig2)
+  simplify_structure_coercion (pair_components subst [] [] sig2)
 
 (* Inclusion between signature components *)
 
@@ -239,24 +237,24 @@ and signature_components env subst = function
         Val_prim p -> signature_components env subst rem
       | _ -> (pos, cc) :: signature_components env subst rem
       end
-  | (Tsig_type(id1, tydecl1), Tsig_type(id2, tydecl2), pos) :: rem ->
+  | (Tsig_type(id1, tydecl1, _), Tsig_type(id2, tydecl2, _), pos) :: rem ->
       type_declarations env subst id1 tydecl1 tydecl2;
       signature_components env subst rem
   | (Tsig_exception(id1, excdecl1), Tsig_exception(id2, excdecl2), pos)
     :: rem ->
       exception_declarations env subst id1 excdecl1 excdecl2;
       (pos, Tcoerce_none) :: signature_components env subst rem
-  | (Tsig_module(id1, mty1), Tsig_module(id2, mty2), pos) :: rem ->
+  | (Tsig_module(id1, mty1, _), Tsig_module(id2, mty2, _), pos) :: rem ->
       let cc =
         modtypes env subst (Mtype.strengthen env mty1 (Pident id1)) mty2 in
       (pos, cc) :: signature_components env subst rem
   | (Tsig_modtype(id1, info1), Tsig_modtype(id2, info2), pos) :: rem ->
       modtype_infos env subst id1 info1 info2;
       signature_components env subst rem
-  | (Tsig_class(id1, decl1), Tsig_class(id2, decl2), pos) :: rem ->
+  | (Tsig_class(id1, decl1, _), Tsig_class(id2, decl2, _), pos) :: rem ->
       class_declarations env subst id1 decl1 decl2;
       (pos, Tcoerce_none) :: signature_components env subst rem
-  | (Tsig_cltype(id1, info1), Tsig_cltype(id2, info2), pos) :: rem ->
+  | (Tsig_cltype(id1, info1, _), Tsig_cltype(id2, info2, _), pos) :: rem ->
       class_type_declarations env subst id1 info1 info2;
       signature_components env subst rem
   | _ ->

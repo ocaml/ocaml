@@ -183,7 +183,11 @@ let type_declaration s decl =
 let class_signature s sign =
   { cty_self = typexp s sign.cty_self;
     cty_vars = Vars.map (function (m, t) -> (m, typexp s t)) sign.cty_vars;
-    cty_concr = sign.cty_concr }
+    cty_concr = sign.cty_concr;
+    cty_inher =
+      List.map (fun (p, tl) -> (type_path s p, List.map (typexp s) tl))
+        sign.cty_inher
+  }
 
 let rec class_type s =
   function
@@ -197,6 +201,7 @@ let rec class_type s =
 let class_declaration s decl =
   let decl =
     { cty_params = List.map (typexp s) decl.cty_params;
+      cty_variance = decl.cty_variance;
       cty_type = class_type s decl.cty_type;
       cty_path = type_path s decl.cty_path;
       cty_new =
@@ -212,6 +217,7 @@ let class_declaration s decl =
 let cltype_declaration s decl =
   let decl =
     { clty_params = List.map (typexp s) decl.clty_params;
+      clty_variance = decl.clty_variance;
       clty_type = class_type s decl.clty_type;
       clty_path = type_path s decl.clty_path }
   in
@@ -233,10 +239,10 @@ let exception_declaration s tyl =
 
 let rec rename_bound_idents s idents = function
     [] -> (List.rev idents, s)
-  | Tsig_type(id, d) :: sg ->
+  | Tsig_type(id, d, _) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents (add_type id (Pident id') s) (id' :: idents) sg
-  | Tsig_module(id, mty) :: sg ->
+  | Tsig_module(id, mty, _) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents (add_module id (Pident id') s) (id' :: idents) sg
   | Tsig_modtype(id, d) :: sg ->
@@ -244,7 +250,7 @@ let rec rename_bound_idents s idents = function
       rename_bound_idents (add_modtype id (Tmty_ident(Pident id')) s)
                           (id' :: idents) sg
   | (Tsig_value(id, _) | Tsig_exception(id, _) | 
-     Tsig_class(id, _) | Tsig_cltype(id, _)) :: sg ->
+     Tsig_class(id, _, _) | Tsig_cltype(id, _, _)) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents s (id' :: idents) sg
 
@@ -277,18 +283,18 @@ and signature_component s comp newid =
   match comp with
     Tsig_value(id, d) ->
       Tsig_value(newid, value_description s d)
-  | Tsig_type(id, d) ->
-      Tsig_type(newid, type_declaration s d)
+  | Tsig_type(id, d, rs) ->
+      Tsig_type(newid, type_declaration s d, rs)
   | Tsig_exception(id, d) ->
       Tsig_exception(newid, exception_declaration s d)
-  | Tsig_module(id, mty) ->
-      Tsig_module(newid, modtype s mty)
+  | Tsig_module(id, mty, rs) ->
+      Tsig_module(newid, modtype s mty, rs)
   | Tsig_modtype(id, d) ->
       Tsig_modtype(newid, modtype_declaration s d)
-  | Tsig_class(id, d) ->
-      Tsig_class(newid, class_declaration s d)
-  | Tsig_cltype(id, d) ->
-      Tsig_cltype(newid, cltype_declaration s d)
+  | Tsig_class(id, d, rs) ->
+      Tsig_class(newid, class_declaration s d, rs)
+  | Tsig_cltype(id, d, rs) ->
+      Tsig_cltype(newid, cltype_declaration s d, rs)
 
 and modtype_declaration s = function
     Tmodtype_abstract -> Tmodtype_abstract

@@ -24,16 +24,6 @@ open Types
 open Btype
 open Outcometree
 
-(* Redefine it here since goal differs *)
-
-let rec opened_object ty =
-  match (repr ty).desc with
-    Tobject (t, _)     -> opened_object t
-  | Tfield(_, _, _, t) -> opened_object t
-  | Tvar               -> true
-  | Tunivar            -> true
-  | _                  -> false
-
 (* Print a long identifier *)
 
 let rec longident ppf = function
@@ -68,6 +58,13 @@ let rec path ppf = function
       fprintf ppf "%a.%s" path p s
   | Papply(p1, p2) ->
       fprintf ppf "%a(%a)" path p1 path p2
+
+(* Print a recursive annotation *)
+
+let tree_of_rec = function
+  | Trec_not -> Orec_not
+  | Trec_first -> Orec_first
+  | Trec_next -> Orec_next
 
 (* Print a raw type expression, with sharing *)
 
@@ -406,11 +403,8 @@ and tree_of_row_field sch (l, f) =
       else (l, false, tree_of_typlist sch tyl)
   | Rabsent -> (l, false, [] (* une erreur, en fait *))
 
-and tree_of_typlist sch = function
-  | [] -> []
-  | ty :: tyl ->
-      let tr = tree_of_typexp sch ty in
-      tr :: tree_of_typlist sch tyl
+and tree_of_typlist sch tyl =
+  List.map (tree_of_typexp sch) tyl
 
 and tree_of_typobject sch fi nm =
   begin match !nm with
@@ -539,8 +533,12 @@ let rec tree_of_type_decl id decl =
     | _ -> "?"
   in
   let type_defined decl =
-    if decl.type_kind = Type_abstract && ty_manifest = None
-       && List.exists (fun x -> x <> (true,true,true)) decl.type_variance then
+    if List.exists2
+        (fun ty x -> x <> (true,true,true) &&
+          (decl.type_kind = Type_abstract && ty_manifest = None
+         || (repr ty).desc <> Tvar))
+        decl.type_params decl.type_variance
+    then
       let vari = List.map (fun (co,cn,ct) -> (co,cn)) decl.type_variance in
       (Ident.name id,
        List.combine
@@ -583,11 +581,11 @@ and tree_of_constructor (name, args) =
 and tree_of_label (name, mut, arg) =
   (name, mut = Mutable, tree_of_typexp false arg)
 
-let tree_of_type_declaration id decl =
-  Osig_type [tree_of_type_decl id decl]
+let tree_of_type_declaration id decl rs =
+  Osig_type (tree_of_type_decl id decl, tree_of_rec rs)
 
 let type_declaration id ppf decl =
-  !Oprint.out_sig_item ppf (tree_of_type_declaration id decl)
+  !Oprint.out_sig_item ppf (tree_of_type_declaration id decl Trec_first)
 
 (* Print an exception declaration *)
 
@@ -711,13 +709,17 @@ let class_type ppf cty =
   prepare_class_type [] cty;
   !Oprint.out_class_type ppf (tree_of_class_type false [] cty)
 
-let tree_of_class_params = function
-  | [] -> []
-  | params ->
-      let tyl = tree_of_typlist true params in
-      List.map (function Otyp_var (_, s) -> s | _ -> "?") tyl
+let tree_of_class_param param variance =
+  (match tree_of_typexp true param with
+    Otyp_var (_, s) -> s
+  | _ -> "?"),
+  if (repr param).desc = Tvar then (true, true) else variance
 
-let tree_of_class_declaration id cl =
+let tree_of_class_params params =
+  let tyl = tree_of_typlist true params in
+  List.map (function Otyp_var (_, s) -> s | _ -> "?") tyl
+
+let tree_of_class_declaration id cl rs =
   let params = filter_params cl.cty_params in
 
   reset ();
@@ -731,13 +733,15 @@ let tree_of_class_declaration id cl =
 
   let vir_flag = cl.cty_new = None in
   Osig_class
-    (vir_flag, Ident.name id, tree_of_class_params params,
-     tree_of_class_type true params cl.cty_type)
+    (vir_flag, Ident.name id,
+     List.map2 tree_of_class_param params cl.cty_variance,
+     tree_of_class_type true params cl.cty_type,
+     tree_of_rec rs)
 
 let class_declaration id ppf cl =
-  !Oprint.out_sig_item ppf (tree_of_class_declaration id cl)
+  !Oprint.out_sig_item ppf (tree_of_class_declaration id cl Trec_first)
 
-let tree_of_cltype_declaration id cl =
+let tree_of_cltype_declaration id cl rs =
   let params = List.map repr cl.clty_params in
 
   reset ();
@@ -760,11 +764,13 @@ let tree_of_cltype_declaration id cl =
       fields in
 
   Osig_class_type
-    (virt, Ident.name id, tree_of_class_params params,
-     tree_of_class_type true params cl.clty_type)
+    (virt, Ident.name id,
+     List.map2 tree_of_class_param params cl.clty_variance,
+     tree_of_class_type true params cl.clty_type,
+     tree_of_rec rs)
 
 let cltype_declaration id ppf cl =
-  !Oprint.out_sig_item ppf (tree_of_cltype_declaration id cl)
+  !Oprint.out_sig_item ppf (tree_of_cltype_declaration id cl Trec_first)
 
 (* Print a module type *)
 
@@ -779,48 +785,25 @@ let rec tree_of_modtype = function
 
 and tree_of_signature = function
   | [] -> []
-  | item :: rem ->
-      match item with
-      | Tsig_value(id, decl) ->
-          tree_of_value_description id decl :: tree_of_signature rem
-      | Tsig_type(id, decl)  ->
-          let (type_decl_list, rem) =
-            let rec more_type_declarations = function
-            | Tsig_type(id, decl) :: rem ->
-                let (type_decl_list, rem) = more_type_declarations rem in
-                (id, decl) :: type_decl_list, rem
-            | rem -> [], rem in
-            more_type_declarations rem
-          in
-          let type_decl_list =
-            List.map (fun (id, decl) -> tree_of_type_decl id decl)
-              ((id, decl) :: type_decl_list)
-          in
-          Osig_type type_decl_list
-          ::
-          tree_of_signature rem
-      | Tsig_exception(id, decl)  ->
-          Osig_exception (Ident.name id, tree_of_typlist false decl) ::
-          tree_of_signature rem
-      | Tsig_module(id, mty)  ->
-          Osig_module (Ident.name id, tree_of_modtype mty) ::
-          tree_of_signature rem
-      | Tsig_modtype(id, decl)  ->
-          tree_of_modtype_declaration id decl :: tree_of_signature rem
-      | Tsig_class(id, decl) ->
-          let rem =
-            match rem with
-            | ctydecl :: tydecl1 :: tydecl2 :: rem -> rem
-            | _ -> []
-          in
-          tree_of_class_declaration id decl :: tree_of_signature rem
-      | Tsig_cltype(id, decl) ->
-          let rem =
-            match rem with
-            | tydecl1 :: tydecl2 :: rem -> rem
-            | _ -> []
-          in
-          tree_of_cltype_declaration id decl :: tree_of_signature rem
+  | Tsig_value(id, decl) :: rem ->
+      tree_of_value_description id decl :: tree_of_signature rem
+  | Tsig_type(id, decl, rs) :: rem ->
+      Osig_type(tree_of_type_decl id decl, tree_of_rec rs) ::
+      tree_of_signature rem
+  | Tsig_exception(id, decl) :: rem ->
+      Osig_exception (Ident.name id, tree_of_typlist false decl) ::
+      tree_of_signature rem
+  | Tsig_module(id, mty, rs) :: rem ->
+      Osig_module (Ident.name id, tree_of_modtype mty, tree_of_rec rs) ::
+      tree_of_signature rem
+  | Tsig_modtype(id, decl) :: rem ->
+      tree_of_modtype_declaration id decl :: tree_of_signature rem
+  | Tsig_class(id, decl, rs) :: ctydecl :: tydecl1 :: tydecl2 :: rem ->
+      tree_of_class_declaration id decl rs :: tree_of_signature rem
+  | Tsig_cltype(id, decl, rs) :: tydecl1 :: tydecl2 :: rem ->
+      tree_of_cltype_declaration id decl rs :: tree_of_signature rem
+  | _ ->
+      assert false
 
 and tree_of_modtype_declaration id decl =
   let mty =
@@ -830,7 +813,8 @@ and tree_of_modtype_declaration id decl =
   in
   Osig_modtype (Ident.name id, mty)
 
-let tree_of_module id mty = Osig_module (Ident.name id, tree_of_modtype mty)
+let tree_of_module id mty rs = 
+  Osig_module (Ident.name id, tree_of_modtype mty, tree_of_rec rs)
 
 let modtype ppf mty = !Oprint.out_module_type ppf (tree_of_modtype mty)
 let modtype_declaration id ppf decl =
@@ -859,11 +843,6 @@ let rec trace fst txt ppf = function
        (trace false txt) rem
   | _ -> ()
 
-let rec mismatch = function
-  | [(_, t); (_, t')] -> (t, t')
-  | _ :: _ :: rem -> mismatch rem
-  | _ -> assert false
-
 let rec filter_trace = function
   | (t1, t1') :: (t2, t2') :: rem ->
       let rem' = filter_trace rem in
@@ -886,11 +865,36 @@ let prepare_expansion (t, t') =
   mark_loops t; if t != t' then mark_loops t';
   (t, t')
 
+let may_prepare_expansion compact (t, t') =
+  match (repr t').desc with
+    Tvariant _ | Tobject _ when compact ->
+      mark_loops t; (t, t)
+  | _ -> prepare_expansion (t, t')
+
 let print_tags ppf fields =
   match fields with [] -> ()
   | (t, _) :: fields ->
       fprintf ppf "`%s" t;
       List.iter (fun (t, _) -> fprintf ppf ",@ `%s" t) fields
+
+let has_explanation unif t3 t4 =
+  match t3.desc, t4.desc with
+    Tfield _, _ | _, Tfield _
+  | Tunivar, Tvar | Tvar, Tunivar
+  | Tvariant _, Tvariant _ -> true
+  | Tconstr (p, _, _), Tvar | Tvar, Tconstr (p, _, _) ->
+      unif && min t3.level t4.level < Path.binding_time p
+  | _ -> false
+
+let rec mismatch unif = function
+    (_, t) :: (_, t') :: rem ->
+      begin match mismatch unif rem with
+        Some _ as m -> m
+      | None ->
+          if has_explanation unif t t' then Some(t,t') else None
+      end
+  | [] -> None
+  | _ -> assert false
 
 let explanation unif t3 t4 ppf =
   match t3.desc, t4.desc with
@@ -913,6 +917,8 @@ let explanation unif t3 t4 ppf =
   | _, Tfield (lab, _, _, _) when lab = dummy_method ->
       fprintf ppf
         "@,Self type cannot be unified with a closed object type"
+  | Tfield (l, _, _, _), Tfield (l', _, _, _) when l = l' ->
+      fprintf ppf "@,Types for method %s are incompatible" l
   | Tfield (l, _, _, _), _ ->
       fprintf ppf
         "@,@[Only the first object type has a method %s@]" l
@@ -933,22 +939,29 @@ let explanation unif t3 t4 ppf =
           fprintf ppf
             "@,@[The second variant type does not allow tag(s)@ @[<hov>%a@]@]"
             print_tags fields
+      | [l1,_], true, [l2,_], true when l1 = l2 ->
+          fprintf ppf "@,Types for tag `%s are incompatible" l1
       | _ -> ()
       end
   | _ -> ()
 
+let explanation unif mis ppf =
+  match mis with
+    None -> ()
+  | Some (t3, t4) -> explanation unif t3 t4 ppf
+
 let unification_error unif tr txt1 ppf txt2 =
   reset ();
   let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in
-  let (t3, t4) = mismatch tr in
+  let mis = mismatch unif tr in
   match tr with
   | [] | _ :: [] -> assert false
   | t1 :: t2 :: tr ->
     try
-      let t1, t1' = prepare_expansion t1
-      and t2, t2' = prepare_expansion t2 in
-      print_labels := not !Clflags.classic;
       let tr = filter_trace tr in
+      let t1, t1' = may_prepare_expansion (tr = []) t1
+      and t2, t2' = may_prepare_expansion (tr = []) t2 in
+      print_labels := not !Clflags.classic;
       let tr = List.map prepare_expansion tr in
       fprintf ppf
         "@[<v>\
@@ -959,7 +972,7 @@ let unification_error unif tr txt1 ppf txt2 =
         txt1 (type_expansion t1) t1'
         txt2 (type_expansion t2) t2'
         (trace false "is not compatible with type") tr
-        (explanation unif t3 t4);
+        (explanation unif mis);
       print_labels := true
     with exn ->
       print_labels := true;
@@ -986,6 +999,6 @@ let report_subtyping_error ppf tr1 txt1 tr2 =
   and tr2 = List.map prepare_expansion tr2 in
   trace true txt1 ppf tr1;
   if tr2 = [] then () else
-  let t3, t4 = mismatch tr2 in
+  let mis = mismatch true tr2 in
   trace false "is not compatible with type" ppf tr2;
-  explanation true t3 t4 ppf
+  explanation true mis ppf

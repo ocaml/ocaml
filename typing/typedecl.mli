@@ -42,8 +42,10 @@ val check_recmod_typedecl:
 (* for typeclass.ml *)
 val compute_variance_decls:
     Env.t ->
-    ((Ident.t * type_declaration) * ((bool * bool) list * Location.t)) list ->
-    (Ident.t * type_declaration) list
+    (Ident.t * type_declaration * type_declaration * class_declaration *
+       cltype_declaration * ((bool * bool) list * Location.t)) list ->
+    (type_declaration * type_declaration * class_declaration *
+       cltype_declaration) list
     
 type error =
     Repeated_parameter
