@@ -79,12 +79,12 @@ color_t allocation_color (void *hp);
 }                                                                           \
 
 
-typedef struct caml__roots_block {
+struct caml__roots_block {
   struct caml__roots_block *next;
   long ntables;
   long nitems;
   value *tables [5];
-} caml__roots_block;
+};
 
 extern struct caml__roots_block *local_roots;  /* defined in roots.c */
 
@@ -233,6 +233,11 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
   (caml__roots_##x.tables [0] = &(x [0])), \
   NULL)
 
+/* WARNING: [CAMLreturn] cannot be used exactly in the same places
+   as [return] : in an [if] statement, you must use a pair of braces
+   even if the [CAMLreturn] "statement" is the only statement in the
+   branch.
+*/
 #define CAMLreturn /*argument*/\
   local_roots = caml__frame; \
   return /*argument*/
