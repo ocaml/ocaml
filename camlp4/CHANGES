@@ -1,3 +1,4 @@
+- [22 June 2004] `make install' now installs also odyl.cmx
 - [12 may 2004] Added to the camlp4 tools the -version option that prints
   the version number, in the same way as the other ocaml tools.
 - [12 may 04] Locations are now handled as in OCaml. The main benefit
