@@ -85,7 +85,7 @@ static struct custom_operations bigarray_ops = {
    [data] cannot point into the Caml heap.
    [dim] may point into an object in the Caml heap.
 */
-value alloc_bigarray(int flags, int num_dims, void * data, long * dim)
+CAMLexport value alloc_bigarray(int flags, int num_dims, void * data, long * dim)
 {
   long num_elts, size;
   int i;
@@ -121,7 +121,7 @@ value alloc_bigarray(int flags, int num_dims, void * data, long * dim)
 /* Same as alloc_bigarray, but dimensions are passed as a list of
    arguments */
 
-value alloc_bigarray_dims(int flags, int num_dims, void * data, ...)
+CAMLexport value alloc_bigarray_dims(int flags, int num_dims, void * data, ...)
 {
   va_list ap;
   long dim[MAX_NUM_DIMS];
