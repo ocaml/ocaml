@@ -93,7 +93,7 @@ external (=) : 'a -> 'a -> bool = "%equal"
            Equality between functional values raises [Invalid_argument].
            Equality between cyclic data structures may not terminate. *)
 external (<>) : 'a -> 'a -> bool = "%notequal"
-        (* Negation of [prefix =]. *)
+        (* Negation of [(=)]. *)
 external (<) : 'a -> 'a -> bool = "%lessthan"
 external (>) : 'a -> 'a -> bool = "%greaterthan"
 external (<=) : 'a -> 'a -> bool = "%lessequal"
@@ -101,8 +101,8 @@ external (>=) : 'a -> 'a -> bool = "%greaterequal"
         (* Structural ordering functions. These functions coincide with
            the usual orderings over integer, string and floating-point
            numbers, and extend them to a total ordering over all types.
-           The ordering is compatible with [prefix =]. As in the case
-           of [prefix =], mutable structures are compared by contents.
+           The ordering is compatible with [(=)]. As in the case
+           of [(=)], mutable structures are compared by contents.
            Comparison between functional values raises [Invalid_argument].
            Comparison between cyclic structures may not terminate. *)
 external compare: 'a -> 'a -> int = "compare" "noalloc"
@@ -119,11 +119,11 @@ external (==) : 'a -> 'a -> bool = "%eq"
            On integers and characters, it is the same as structural
            equality. On mutable structures, [e1 == e2] is true if and only if
            physical modification of [e1] also affects [e2].
-           On non-mutable structures, the behavior of [prefix ==] is
+           On non-mutable structures, the behavior of [(==)] is
            implementation-dependent, except that [e1 == e2] implies
            [e1 = e2]. *)
 external (!=) : 'a -> 'a -> bool = "%noteq"
-        (* Negation of [prefix ==]. *)
+        (* Negation of [(==)]. *)
 
 (*** Boolean operations *)
 
@@ -141,7 +141,7 @@ external (or) : bool -> bool -> bool = "%sequor"
 (*** Integer arithmetic *)
 
 (* Integers are 31 bits wide (or 63 bits on 64-bit processors).
-   All operations are taken modulo $2^{31}$ (or $2^{63}$).
+   All operations are taken modulo @math{2^{31}} (or @math{2^{63}}).
    They do not fail on overflow. *)
 
 external (~-) : int -> int = "%negint"
@@ -375,7 +375,7 @@ val output : out_channel -> string -> int -> int -> unit
         (* [output chan buff ofs len] writes [len] characters from string 
            [buff], starting at offset [ofs], to the output channel [chan].
            Raise [Invalid_argument "output"] if [ofs] and [len] do not
-           designate a valid substring of [buff]. *)          
+           designate a valid substring of [buff]. *)
 external output_byte : out_channel -> int -> unit = "output_char"
         (* Write one 8-bit integer (as the single character with that code)
            on the given output channel. The given integer is taken modulo
@@ -490,18 +490,18 @@ external close_in : in_channel -> unit = "close_in"
 type 'a ref = { mutable contents: 'a }
         (* The type of references (mutable indirection cells) containing
            a value of type ['a]. *)
-external ref: 'a -> 'a ref = "%makeblock"
+external ref : 'a -> 'a ref = "%makeblock"
         (* Return a fresh reference containing the given value. *)
-external (!): 'a ref -> 'a = "%field0"
+external (!) : 'a ref -> 'a = "%field0"
         (* [!r] returns the current contents of reference [r].
            Could be defined as [fun r -> r.contents]. *)
-external (:=): 'a ref -> 'a -> unit = "%setfield0"
+external (:=) : 'a ref -> 'a -> unit = "%setfield0"
         (* [r := a] stores the value of [a] in reference [r].
            Could be defined as [fun r v -> r.contents <- v]. *)
-external incr: int ref -> unit = "%incr"
+external incr : int ref -> unit = "%incr"
         (* Increment the integer contained in the given reference.
            Could be defined as [fun r -> r := succ !r]. *)
-external decr: int ref -> unit = "%decr"
+external decr : int ref -> unit = "%decr"
         (* Decrement the integer contained in the given reference.
            Could be defined as [fun r -> r := pred !r]. *)
 
@@ -521,4 +521,4 @@ val exit : int -> 'a
 
 (*** For system use only, not for the casual user *)
 
-val unsafe_really_input: in_channel -> string -> int -> int -> unit
+val unsafe_really_input : in_channel -> string -> int -> int -> unit
