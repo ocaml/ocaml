@@ -530,15 +530,15 @@
  type_declaration_list_se
  (lambda_match
   ((list se1 se2 :: sel)
-   (let (((, n1 tpl)
+   (let (((, n1 loc1 tpl)
           (match se1
-                 ((Sexpr _ (list (Satom _ Alid n) :: sel))
-                  (, n (List.map type_parameter_se sel)))
-                 ((Satom _ Alid n)
-                  (, n (list)))
+                 ((Sexpr _ (list (Satom loc Alid n) :: sel))
+                  (, n loc (List.map type_parameter_se sel)))
+                 ((Satom loc Alid n)
+                  (, n loc (list)))
                  ((se)
                   (error se "type declaration")))))
-     (list (, n1 tpl (ctyp_se se2) (list)) ::
+     (list (, (, loc1 n1) tpl (ctyp_se se2) (list)) ::
            (type_declaration_list_se sel))))
   ((list) (list))
   ((list se :: _) (error se "type_declaration")))

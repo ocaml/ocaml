@@ -563,7 +563,7 @@ and when_expr e =
   | None -> expr e ]
 and mklabexp (lab, e) = (patt_label_long_id lab, expr e)
 and mkideexp (ide, e) = (ide, expr e)
-and mktype_decl (c, tl, td, cl) =
+and mktype_decl ((loc, c), tl, td, cl) =
   let cl =
     List.map
       (fun (t1, t2) ->

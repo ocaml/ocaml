@@ -495,7 +495,7 @@ value type_list b tdl _ k =
   HVbox
     [: `HVbox [: :];
        listwbws
-         (fun b (tn, tp, te, cl) _ k ->
+         (fun b ((_, tn), tp, te, cl) _ k ->
             let cstr = list constrain cl "" k in
             match te with
             [ <:ctyp< '$s$ >> when not (List.mem_assoc s tp) ->

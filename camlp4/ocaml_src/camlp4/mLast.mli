@@ -149,7 +149,7 @@ and str_item =
   | StTyp of loc * type_decl list
   | StVal of loc * bool * (patt * expr) list
 and type_decl =
-  string * (string * (bool * bool)) list * ctyp * (ctyp * ctyp) list
+  (loc * string) * (string * (bool * bool)) list * ctyp * (ctyp * ctyp) list
 and class_type =
     CtCon of loc * string list * ctyp list
   | CtFun of loc * ctyp * class_type

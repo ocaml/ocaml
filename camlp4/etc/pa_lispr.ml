@@ -520,14 +520,14 @@ and ipatt_opt_se =
 and type_declaration_list_se =
   fun
   [ [se1; se2 :: sel] ->
-      let (n1, tpl) =
+      let (n1, loc1, tpl) =
         match se1 with
-        [ Sexpr _ [Satom _ Alid n :: sel] ->
-            (n, List.map type_parameter_se sel)
-        | Satom _ Alid n -> (n, [])
+        [ Sexpr _ [Satom loc Alid n :: sel] ->
+            (n, loc, List.map type_parameter_se sel)
+        | Satom loc Alid n -> (n, loc, [])
         | se -> error se "type declaration" ]
       in
-      [(n1, tpl, ctyp_se se2, []) :: type_declaration_list_se sel]
+      [((loc1, n1), tpl, ctyp_se se2, []) :: type_declaration_list_se sel]
   | [] -> []
   | [se :: _] -> error se "type_declaration" ]
 and type_parameter_se =

@@ -102,13 +102,13 @@ value extract_label_types loc tn tal cdol =
          [ Some anon_record_type ->
              let new_tn = tn ^ "_" ^ c in
              let loc = loc_of_node anon_record_type in
-             let aux_def = (new_tn, [], anon_record_type, []) in
+             let aux_def = ((loc, new_tn), [], anon_record_type, []) in
              let tl = [<:ctyp< $lid:new_tn$ >>] in
              ([(c, tl) :: cdl], [aux_def :: aux])
          | None -> ([(c, tl) :: cdl], aux) ])
       cdol ([], [])
   in
-  [(tn, tal, <:ctyp< [ $list:cdl$ ] >>, []) :: aux]
+  [((loc, tn), tal, <:ctyp< [ $list:cdl$ ] >>, []) :: aux]
 ;
 
 value special x =
@@ -394,7 +394,8 @@ EXTEND
     [ [ x1 = idd -> (x1, loc) ] ]
   ;
   tb:
-    [ [ x1 = tyvars; x2 = idd; "="; x3 = ctyp -> (uncap x2, x1, x3, []) ] ]
+    [ [ x1 = tyvars; x2 = idd; "="; x3 = ctyp ->
+          ((loc, uncap x2), x1, x3, []) ] ]
   ;
   tyvars:
     [ [ "'"; x1 = LIDENT -> [(x1, (False, False))]
@@ -462,7 +463,7 @@ EXTEND
   ;
   tyspec:
     [ [ x1 = tyvars; x2 = idd ->
-          (uncap x2, x1, <:ctyp< '$choose_tvar x1$ >>, [])
+          ((loc, uncap x2), x1, <:ctyp< '$choose_tvar x1$ >>, [])
       | x1 = tyvars; x2 = idd; "="; x3 = ctyp -> not_impl loc "tyspec 2" ] ]
   ;
   valspec:

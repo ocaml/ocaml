@@ -1316,11 +1316,14 @@ EXTEND
   ;
   (* Type declaration *)
   type_declaration:
-    [ [ tpl = type_parameters; n = LIDENT; "="; tk = type_kind;
+    [ [ tpl = type_parameters; n = type_patt; "="; tk = type_kind;
         cl = LIST0 constrain ->
           (n, tpl, tk, cl)
-      | tpl = type_parameters; n = LIDENT; cl = LIST0 constrain ->
+      | tpl = type_parameters; n = type_patt; cl = LIST0 constrain ->
           (n, tpl, <:ctyp< '$choose_tvar tpl$ >>, cl) ] ]
+  ;
+  type_patt:
+    [ [ n = LIDENT -> (loc, n) ] ]
   ;
   constrain:
     [ [ "constraint"; t1 = ctyp; "="; t2 = ctyp -> (t1, t2) ] ]

@@ -499,9 +499,12 @@ EXTEND
     [ [ i = patt_label_ident; "="; p = ipatt -> (i, p) ] ]
   ;
   type_declaration:
-    [ [ n = LIDENT; tpl = LIST0 type_parameter; "="; tk = ctyp;
+    [ [ n = type_patt; tpl = LIST0 type_parameter; "="; tk = ctyp;
         cl = LIST0 constrain ->
           (n, tpl, tk, cl) ] ]
+  ;
+  type_patt:
+    [ [ n = LIDENT -> (loc, n) ] ]
   ;
   constrain:
     [ [ "constraint"; t1 = ctyp; "="; t2 = ctyp -> (t1, t2) ] ]

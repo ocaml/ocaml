@@ -483,7 +483,7 @@ value type_list b tdl k =
   HVbox
     [: `HVbox [: :];
        listwbws
-         (fun b (tn, tp, te, cl) k ->
+         (fun b ((_, tn), tp, te, cl) k ->
             let tn = var_escaped tn in
             HVbox
               [: `HVbox [: b; `S LR tn; type_params tp [: `S LR "=" :] :];

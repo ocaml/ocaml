@@ -171,6 +171,8 @@ Grammar.extend
      grammar_entry_create "label_ipatt"
    and type_declaration : 'type_declaration Grammar.Entry.e =
      grammar_entry_create "type_declaration"
+   and type_patt : 'type_patt Grammar.Entry.e =
+     grammar_entry_create "type_patt"
    and constrain : 'constrain Grammar.Entry.e =
      grammar_entry_create "constrain"
    and constructor_declaration : 'constructor_declaration Grammar.Entry.e =
@@ -1366,7 +1368,8 @@ Grammar.extend
     Grammar.Entry.obj (type_declaration : 'type_declaration Grammar.Entry.e),
     None,
     [None, None,
-     [[Gramext.Stoken ("LIDENT", "");
+     [[Gramext.Snterm
+         (Grammar.Entry.obj (type_patt : 'type_patt Grammar.Entry.e));
        Gramext.Slist0
          (Gramext.Snterm
             (Grammar.Entry.obj
@@ -1378,8 +1381,13 @@ Grammar.extend
             (Grammar.Entry.obj (constrain : 'constrain Grammar.Entry.e)))],
       Gramext.action
         (fun (cl : 'constrain list) (tk : 'ctyp) _
-           (tpl : 'type_parameter list) (n : string) (loc : int * int) ->
+           (tpl : 'type_parameter list) (n : 'type_patt) (loc : int * int) ->
            (n, tpl, tk, cl : 'type_declaration))]];
+    Grammar.Entry.obj (type_patt : 'type_patt Grammar.Entry.e), None,
+    [None, None,
+     [[Gramext.Stoken ("LIDENT", "")],
+      Gramext.action
+        (fun (n : string) (loc : int * int) -> (loc, n : 'type_patt))]];
     Grammar.Entry.obj (constrain : 'constrain Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("", "constraint");
