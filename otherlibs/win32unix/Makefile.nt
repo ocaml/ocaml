@@ -49,23 +49,18 @@ LIBS=$(call SYSLIB,wsock32)
 CAML_OBJS=unix.cmo unixLabels.cmo
 CAMLOPT_OBJS=$(CAML_OBJS:.cmo=.cmx)
 
+UNIX_CAML_FILES = unix.mli unixLabels.mli unixLabels.ml
+
 all: dllunix.dll libunix.$(A) unix.cma
 
 allopt: libunix.$(A) unix.cmxa
 
-dllunix.dll: io.h $(DOBJS)
+dllunix.dll: $(DOBJS)
 	$(call MKDLL,dllunix.dll,tmp.$(A),$(DOBJS) ../../byterun/ocamlrun.$(A) $(LIBS))
 	rm tmp.*
 
-libunix.$(A): io.h $(SOBJS)
+libunix.$(A): $(SOBJS)
 	$(call MKLIB,libunix.$(A),$(SOBJS))
-
-#copy_unix_files:
-#	@cd ../unix; cp -p -u $(UNIX_FILES) ../win32unix
-#	@cp ../unix/unix.mli ../unix/unixLabels.ml* .
-
-io.h: $(SYSTEM_INCLUDES)/io.h
-	cp "$(SYSTEM_INCLUDES)/io.h" io.h
 
 $(DOBJS) $(SOBJS): unixsupport.h
 
@@ -82,8 +77,7 @@ partialclean:
 
 clean: partialclean
 	rm -f *.$(A) *.dll *.$(O)
-	rm -f $(UNIX_FILES)
-	rm -f io.h
+	rm -f $(UNIX_FILES) $(UNIX_CAML_FILES)
 
 install:
 	cp dllunix.dll $(LIBDIR)/dllunix.dll
@@ -99,8 +93,8 @@ unixLabels.cmo: unixLabels.ml
 unixLabels.cmx: unixLabels.ml
 	$(CAMLOPT) -c $(COMPFLAGS) -nolabels unixLabels.ml
 
-$(UNIX_FILES): %.c: ../unix/%.c
-	cp ../unix/$*.c $*.c
+$(UNIX_FILES) $(UNIX_CAML_FILES): %: ../unix/%
+	cp ../unix/$* $*
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx .$(DO) .$(SO)
 
