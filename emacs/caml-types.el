@@ -30,6 +30,7 @@
 ; - make the command work only in caml-mode
 ; - integrate this file into caml.el (?)
 ; - write a proper documentation string for caml-types-show-type
+; - make it work correctly for preprocessed files (.mly, .mll)
 
 (setq caml-types-filename-re "\"\\([^\\\"]\\|\\\\.\\)*\"")
 (setq caml-types-number-re "\\([0-9]*\\)")

@@ -22,6 +22,10 @@
   interesting in case of errors.
 *)
 
+(* TO DO:
+   (?) reset type names between toplevel phrases
+*)
+
 open Format;;
 open Lexing;;
 open Location;;
