@@ -115,7 +115,7 @@ defaultentry:
 	@echo "Please refer to the installation instructions in file README.win32."
 
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries camlp4out win32gui
+all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries ocamldoc camlp4out win32gui
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -207,7 +207,7 @@ cleanboot:
 opt: runtimeopt ocamlopt libraryopt otherlibrariesopt camlp4opt
 
 # Native-code versions of the tools
-opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt ocamltoolsopt.opt
+opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt ocamltoolsopt.opt ocamldoc.opt
 
 # Installation
 install: installbyt installopt
@@ -231,6 +231,7 @@ installbyt:
 	cp toplevel\toploop.cmi $(LIBDIR)\toploop.cmi
 	cp toplevel\topdirs.cmi $(LIBDIR)\topdirs.cmi
 	cd tools & $(MAKEREC) install
+	cd ocamldoc & $(MAKEREC) install
 	for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) install & cd ..\..)
 	cd win32caml & $(MAKE) -nologo install
 	copy /a README $(DISTRIB)\Readme.gen
@@ -244,6 +245,7 @@ installopt:
 	cd asmrun & $(MAKEREC) install
 	cp ocamlopt $(BINDIR)\ocamlopt.exe
 	cd stdlib & $(MAKEREC) installopt
+	cd ocamldoc & $(MAKEREC) installopt
 	for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) installopt & cd ..\..)
 
 clean:: partialclean
@@ -515,6 +517,17 @@ partialclean::
 	cd tools & $(MAKEREC) clean
 alldepend::
 	cd tools & $(MAKEREC) depend
+
+# OCamldoc
+
+ocamldoc: 
+	cd ocamldoc & $(MAKEREC) all
+ocamldoc.opt: 
+	cd ocamldoc & $(MAKEREC) opt.opt
+partialclean::
+	cd ocamldoc & $(MAKEREC) clean
+alldepend::
+	cd ocamldoc & $(MAKEREC) depend
 
 # The extra libraries
 
