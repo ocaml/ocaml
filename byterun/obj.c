@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -14,6 +14,8 @@
 /* Operations on objects */
 
 #include "alloc.h"
+#include "fail.h"
+#include "gc.h"
 #include "major_gc.h"
 #include "memory.h"
 #include "minor_gc.h"
@@ -80,4 +82,29 @@ value obj_dup(value arg) /* ML */
   End_roots();
 
   return res;
+}
+
+/* Shorten the given block to the given size and return void.
+   Raise Invalid_argument if the given size is less than or equal
+   to 0 or greater than the current size.
+
+   algorithm:
+   Change the length field of the header.  Make up a white object
+   with the leftover part of the object: this is needed in the major
+   heap and harmless in the minor heap.
+*/
+value obj_truncate (value v, value newsize)  /* ML */
+{
+  mlsize_t new_wosize = Long_val (newsize);
+  header_t hd = Hd_val (v);
+  tag_t tag = Tag_hd (hd);
+  color_t color = Color_hd (hd);
+  mlsize_t wosize = Wosize_hd (hd);
+
+  if (new_wosize <= 0 || new_wosize > wosize) invalid_argument ("Obj.truncate");
+  if (new_wosize == wosize) return Val_unit;
+  Field (v, new_wosize) =
+    Make_header (Wosize_whsize (wosize-new_wosize), 0, White);
+  Hd_val (v) = Make_header (new_wosize, tag, color);
+  return Val_unit;
 }
