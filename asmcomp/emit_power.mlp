@@ -693,6 +693,17 @@ let emit_item = function
   | Clabel_address lbl ->
       `	.long	{emit_label (lbl + 10000)}\n`
   | Cstring s ->
+      let pos = ref 0 in
+      for i = 0 to String.length s - 1 do
+        if !pos = 0
+        then `	.byte	`
+        else `,`;
+        emit_int(Char.code s.[i]);
+        incr pos;
+        if !pos >= 16 then begin `\n`; pos := 0 end
+      done;
+      if !pos > 0 then `\n`
+(****        
       let l = String.length s in
       let i = ref 0 in
       while !i < l do
@@ -720,6 +731,7 @@ let emit_item = function
           `\n`
         end
       done
+******)
   | Cskip n ->
       if n > 0 then `	.space	{emit_int n}\n`
   | Calign n ->
