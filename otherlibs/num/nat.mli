@@ -25,7 +25,7 @@ external blit_nat: nat -> int -> nat -> int -> int -> unit = "blit_nat"
 val copy_nat: nat -> int -> int -> nat
 external set_digit_nat: nat -> int -> int -> unit = "set_digit_nat"
 external nth_digit_nat: nat -> int -> int = "nth_digit_nat"
-external length_nat: nat -> int = "%array_length"
+external length_nat: nat -> int = "%obj_size"
 val length_nat : nat -> int 
 external num_digits_nat: nat -> int -> int -> int = "num_digits_nat"
 external num_leading_zero_bits_in_digit: nat -> int -> int = "num_leading_zero_bits_in_digit"
