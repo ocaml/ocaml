@@ -61,6 +61,7 @@ let main () =
                                     Printmach.print_live := true);
        "-dspill", Arg.Unit(fun () -> dump_spill := true);
        "-dsplit", Arg.Unit(fun () -> dump_split := true);
+       "-dscheduling", Arg.Unit(fun () -> dump_scheduling := true);
        "-dinterf", Arg.Unit(fun () -> dump_interf := true);
        "-dprefer", Arg.Unit(fun () -> dump_prefer := true);
        "-dalloc", Arg.Unit(fun () -> dump_regalloc := true);
