@@ -89,20 +89,28 @@ val match_end: unit -> int
            of the substring that was matched by [string_match],
            [search_forward] or [search_backward]. [match_end()] returns
            the position of the character following the last character of
-           the matched substring. *)
+           the matched substring.  *)
 val matched_group: int -> string -> string
         (* [matched_group n s] returns the substring of [s] that was matched
            by the [n]th group [\(...\)] of the regular expression during
            the latest [string_match], [search_forward] or [search_backward].
            The user must make sure that the parameter [s] is the same string
-           that was passed to the matching or searching function. *)
+           that was passed to the matching or searching function.
+           [matched_group n s] raises [Not_found] if the [n]th group
+           of the regular expression was not matched.  This can happen
+           with groups inside alternatives [\|], options [?]
+           or repetitions [*].  For instance, the empty string will match
+           [\(a\)*], but [matched_group 1 ""] will raise [Not_found]
+           because the first group itself was not matched. *)
 val group_beginning: int -> int
 val group_end: int -> int
         (* [group_beginning n] returns the position of the first character
            of the substring that was matched by the [n]th group of
            the regular expression. [group_end n] returns
            the position of the character following the last character of
-           the matched substring. *)
+           the matched substring.  Both functions raise [Not_found]
+           if the [n]th group of the regular expression
+           was not matched. *)
 
 (*** Replacement *)
 
