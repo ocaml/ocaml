@@ -44,4 +44,6 @@ STDLIB_MODULES=\
   string \
   stringLabels \
   sys \
-  weak
+  weak \
+  rtype
+

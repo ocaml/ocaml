@@ -18,81 +18,49 @@ include ../config/Makefile
 RUNTIME=../boot/ocamlrun
 COMPILER=../ocamlc
 CAMLC=$(RUNTIME) $(COMPILER)
-COMPFLAGS=-warn-error A -nostdlib
+COMPFLAGS=-warn-error A -nostdlib -I ../stdlib
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
-OPTCOMPFLAGS=-warn-error A -nostdlib
+OPTCOMPFLAGS=-warn-error A -nostdlib -I ../stdlib
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
-BASIC=pervasives.cmo array.cmo list.cmo char.cmo string.cmo sys.cmo \
-  hashtbl.cmo sort.cmo marshal.cmo obj.cmo \
-  int32.cmo int64.cmo nativeint.cmo \
-  lexing.cmo parsing.cmo \
-  set.cmo map.cmo stack.cmo queue.cmo stream.cmo buffer.cmo \
-  printf.cmo format.cmo scanf.cmo \
-  arg.cmo printexc.cmo gc.cmo \
-  digest.cmo random.cmo callback.cmo camlinternalOO.cmo oo.cmo \
-  genlex.cmo weak.cmo \
-  lazy.cmo filename.cmo complex.cmo \
-  rtype.cmo
-LABELLED=arrayLabels.ml listLabels.ml stringLabels.ml moreLabels.ml
+OBJS=gcaml.cmo
+ALLOBJS=$(OBJS)
 
-OBJS=$(BASIC) labelled.cmo stdLabels.cmo
-ALLOBJS=$(BASIC) $(LABELLED:.ml=.cmo) stdLabels.cmo
+all: gcamllib.cma
 
-all: stdlib.cma std_exit.cmo camlheader camlheader_ur
-
-allopt: stdlib.cmxa std_exit.cmx allopt-$(PROFILING)
+allopt: gcamllib.cmxa
 
 allopt-noprof:
 
-allopt-prof: stdlib.p.cmxa std_exit.p.cmx
+allopt-prof: gcamllib.p.cmxa std_exit.p.cmx
 
 install:
-	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader camlheader_ur \
+	cp gcamllib.cma cmo *.cmi *.mli *.ml \
            $(LIBDIR)
 
 installopt: installopt-default installopt-$(PROFILING)
 
 installopt-default:
-	cp stdlib.cmxa stdlib.a std_exit.o *.cmx $(LIBDIR)
-	cd $(LIBDIR); $(RANLIB) stdlib.a
+	cp gcamllib.cmxa gcamllib.a *.cmx $(LIBDIR)
+	cd $(LIBDIR); $(RANLIB) gcamllib.a
 
 installopt-noprof:
-	rm -f $(LIBDIR)/stdlib.p.cmxa; ln -s stdlib.cmxa $(LIBDIR)/stdlib.p.cmxa
-	rm -f $(LIBDIR)/stdlib.p.a; ln -s stdlib.a $(LIBDIR)/stdlib.p.a
-	rm -f $(LIBDIR)/std_exit.p.cmx; \
-          ln -s std_exit.cmx $(LIBDIR)/std_exit.p.cmx
-	rm -f $(LIBDIR)/std_exit.p.o; ln -s std_exit.o $(LIBDIR)/std_exit.p.o
+	rm -f $(LIBDIR)/gcamllib.p.cmxa; ln -s gcamllib.cmxa $(LIBDIR)/gcamllib.p.cmxa
+	rm -f $(LIBDIR)/gcamllib.p.a; ln -s gcamllib.a $(LIBDIR)/gcamllib.p.a
 
 installopt-prof:
-	cp stdlib.p.cmxa stdlib.p.a std_exit.p.cmx std_exit.p.o $(LIBDIR)
-	cd $(LIBDIR); $(RANLIB) stdlib.p.a
+	cp gcamllib.p.cmxa gcamllib.p.a $(LIBDIR)
+	cd $(LIBDIR); $(RANLIB) gcamllib.p.a
 
-stdlib.cma: $(OBJS)
-	$(CAMLC) -a -o stdlib.cma $(ALLOBJS)
+gcamllib.cma: $(OBJS)
+	$(CAMLC) -a -o gcamllib.cma $(ALLOBJS)
 
-stdlib.cmxa: $(OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o stdlib.cmxa $(ALLOBJS:.cmo=.cmx)
+gcamllib.cmxa: $(OBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -o gcamllib.cmxa $(ALLOBJS:.cmo=.cmx)
 
-stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
-	$(CAMLOPT) -a -o stdlib.p.cmxa $(ALLOBJS:.cmo=.p.cmx)
-
-camlheader camlheader_ur: header.c ../config/Makefile
-	if $(SHARPBANGSCRIPTS); then \
-          echo '#!$(BINDIR)/ocamlrun' > camlheader && \
-          echo '#!' | tr -d '\012' > camlheader_ur; \
-        else \
-	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
-                    -DRUNTIME_NAME='"$(BINDIR)/ocamlrun"' \
-                    header.c -o tmpheader$(EXE) && \
-          strip tmpheader$(EXE) && \
-	  mv tmpheader$(EXE) camlheader && \
-          cp camlheader camlheader_ur; \
-        fi
-
-clean::
-	rm -f camlheader camlheader_ur
+gcamllib.p.cmxa: $(OBJS:.cmo=.p.cmx)
+	$(CAMLOPT) -a -o gcamllib.p.cmxa $(ALLOBJS:.cmo=.p.cmx)
 
 pervasives.cmi: pervasives.mli
 	$(CAMLC) $(COMPFLAGS) -nopervasives -c pervasives.mli
@@ -156,11 +124,10 @@ labelled.p.cmx:
 	@if test -f $*.n.cmx; then mv $*.n.cmx $*.cmx; else :; fi
 	@if test -f $*.n.o; then mv $*.n.o $*.o; else :; fi
 
-$(ALLOBJS) labelled.cmo std_exit.cmo: pervasives.cmi $(COMPILER)
-$(ALLOBJS:.cmo=.cmx) labelled.cmx std_exit.cmx: pervasives.cmi $(OPTCOMPILER)
-$(ALLOBJS:.cmo=.p.cmx) labelled.p.cmx std_exit.p.cmx: pervasives.cmi $(OPTCOMPILER)
-$(ALLOBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER)
-labelled.cmo labelled.cmx labelled.p.cmx: $(LABELLED) $(LABELLED:.ml=.mli)
+$(ALLOBJS): $(COMPILER)
+$(ALLOBJS:.cmo=.cmx): $(OPTCOMPILER)
+$(ALLOBJS:.cmo=.p.cmx): $(OPTCOMPILER)
+$(ALLOBJS:.cmo=.cmi): $(COMPILER)
 
 clean::
 	rm -f *.cm* *.o *.a

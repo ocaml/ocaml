@@ -139,6 +139,10 @@ let rec core_type i ppf x =
       line i ppf "Ptyp_poly%a\n"
         (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x)) sl;
       core_type i ppf ct;
+  | Ptyp_konst (konst, t) ->
+      line i ppf "Ptyp_konst\n";
+      list (i+1) core_type ppf konst; 
+      core_type (i+1) ppf t
 
 and core_field_type i ppf x =
   line i ppf "core_field_type %a\n" fmt_location x.pfield_loc;
@@ -295,6 +299,9 @@ and expression i ppf x =
   | Pexp_object s ->
       line i ppf "Pexp_object";
       class_structure i ppf s
+  | Pexp_rtype ct ->
+      line i ppf "Pexp_rtype";
+      core_type i ppf ct
 
 and value_description i ppf x =
   line i ppf "value_description\n";
@@ -561,6 +568,10 @@ and structure_item i ppf x =
   | Pstr_primitive (s, vd) ->
       line i ppf "Pstr_primitive \"%s\"\n" s;
       value_description i ppf vd;
+  | Pstr_genprimitive (s, exttyp, expr) ->
+      line i ppf "Pstr_genprimitive \"%s\"\n" s;
+      core_type (i+1) ppf exttyp;
+      expression (i+1) ppf expr
   | Pstr_type (l) ->
       line i ppf "Pstr_type\n";
       list i string_x_type_declaration ppf l;

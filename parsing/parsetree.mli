@@ -33,6 +33,7 @@ and core_type_desc =
   | Ptyp_alias of core_type * string
   | Ptyp_variant of row_field list * bool * label list option
   | Ptyp_poly of string list * core_type
+  | Ptyp_konst of core_type list * core_type
 
 and core_field_type =
   { pfield_desc: core_field_desc;
@@ -45,6 +46,9 @@ and core_field_desc =
 and row_field =
     Rtag of label * bool * core_type list
   | Rinherit of core_type
+
+(* Type expressions for generics *)
+and konstraint = core_type list (* must be type variables *)
 
 (* XXX Type expressions for the class language *)
 
@@ -111,6 +115,7 @@ and expression_desc =
   | Pexp_lazy of expression
   | Pexp_poly of expression * core_type option
   | Pexp_object of class_structure
+  | Pexp_rtype of core_type
 
 (* Value descriptions *)
 
@@ -247,6 +252,7 @@ and structure_item_desc =
     Pstr_eval of expression
   | Pstr_value of rec_flag * (pattern * expression) list
   | Pstr_primitive of string * value_description
+  | Pstr_genprimitive of string * core_type * expression
   | Pstr_type of (string * type_declaration) list
   | Pstr_exception of string * exception_declaration
   | Pstr_exn_rebind of string * Longident.t

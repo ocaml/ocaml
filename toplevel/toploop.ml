@@ -209,8 +209,10 @@ let execute_phrase print_outcome ppf phr =
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
       Typecore.reset_delayed_checks ();
-      let (str, sg, newenv) = Typemod.type_structure oldenv sstr in
+      let kset = Kset.empty () in
+      let (str, sg, newenv) = Typemod.type_structure oldenv kset sstr in
       Typecore.force_delayed_checks ();
+      (* FIXME kset must be empty *)
       let lam = Translmod.transl_toplevel_definition str in
       Warnings.check_fatal ();
       begin try

@@ -276,7 +276,7 @@ let rec add_labels_expr ~text ~values ~classes expr =
   | Pexp_override lst ->
       List.iter lst ~f:(fun (_,e) -> add_labels_rec e)
   | Pexp_ident _ | Pexp_constant _ | Pexp_construct _ | Pexp_variant _
-  | Pexp_new _ | Pexp_assertfalse | Pexp_object _ ->
+  | Pexp_new _ | Pexp_assertfalse | Pexp_object _ | Pexp_rtype _ ->
       ()
 
 let rec add_labels_class ~text ~classes ~values ~methods cl =
@@ -377,7 +377,7 @@ let add_labels ~intf ~impl ~file =
               end;
             end;
           (SMap.removes names values, classes)
-      | Pstr_primitive (s, {pval_type=sty}) ->
+      | Pstr_primitive (s, {pval_type= sty}) ->
           begin try
             let labels = SMap.find s values in
             insert_labels_type ~labels ~text sty;
