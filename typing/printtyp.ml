@@ -285,14 +285,18 @@ let rec typexp sch prio0 ty =
             if not (row.row_closed && all_present) && sch &&
               px.level <> generic_level then print_string "_["
             else print_char '[';
-            if row.row_closed && all_present then () else
-            if all_present then print_char '>' else print_char '<';
+            if all_present then begin
+              if row.row_closed then () else
+              if fields = [] then print_string "< .." else
+              print_char '>'
+            end else
+              print_char '<';
             print_list (row_field sch) (fun () -> printf "@,|") fields;
             if not (row.row_closed || all_present) then printf "@,| ..";
             if present <> [] && not all_present then begin
               print_space ();
               open_hovbox 2;
-              print_string "|>";
+              print_string ">";
               print_list (fun (s,_) -> print_char '`'; print_string s)
                 print_space present;
               close_box ()

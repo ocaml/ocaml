@@ -1213,6 +1213,8 @@ simple_core_type:
       { mktyp(Ptyp_variant(List.rev $2, not $3, List.rev $5)) }
   | LBRACKET RBRACKET
       { mktyp(Ptyp_variant([],true,[])) }
+  | LBRACKETLESS DOTDOT RBRACKET
+      { mktyp(Ptyp_variant([],false,[])) }
 ;
 opt_opened:
     BAR DOTDOT					{ true }
