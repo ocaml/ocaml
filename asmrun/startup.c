@@ -59,7 +59,6 @@ static void init_atoms(void)
 
 /* Configuration parameters and flags */
 
-static unsigned long verbose_init = 0;
 static unsigned long percent_free_init = Percent_free_def;
 static unsigned long max_percent_free_init = Max_percent_free_def;
 static unsigned long minor_heap_init = Minor_heap_def;
@@ -98,7 +97,7 @@ static void parse_camlrunparam(void)
       case 'l': scanmult (opt, &max_stack_init); break;
       case 'o': scanmult (opt, &percent_free_init); break;
       case 'O': scanmult (opt, &max_percent_free_init); break;
-      case 'v': scanmult (opt, &verbose_init); break;
+      case 'v': scanmult (opt, &verb_gc); break;
       }
     }
   }
@@ -115,11 +114,11 @@ void caml_main(char **argv)
   init_ieee_floats();
   init_custom_operations();
 #ifdef DEBUG
-  verbose_init = 1;
+  verb_gc = 63;
 #endif
   parse_camlrunparam();
   init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
-           percent_free_init, max_percent_free_init, verbose_init);
+           percent_free_init, max_percent_free_init);
   init_atoms();
   init_signals();
   sys_init(argv);
