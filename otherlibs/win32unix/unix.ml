@@ -476,18 +476,10 @@ type socket_option =
   | SO_DONTROUTE
   | SO_OOBINLINE
 
-external socket_internal :
-  socket_domain -> socket_type -> int -> bool -> file_descr
-  = "unix_socket"
-
-let socket dom typ proto = socket_internal dom typ proto true
-let async_socket dom typ proto = socket_internal dom typ proto false
+external socket : socket_domain -> socket_type -> int -> file_descr
+                                  = "unix_socket"
 let socketpair dom ty proto = invalid_arg "Unix.socketpair not implemented"
-
-external accept_internal :
-  file_descr -> bool -> file_descr * sockaddr = "unix_accept"
-let accept s = accept_internal s true
-let async_accept s = accept_internal s false
+external accept : file_descr -> file_descr * sockaddr = "unix_accept"
 external bind : file_descr -> sockaddr -> unit = "unix_bind"
 external connect : file_descr -> sockaddr -> unit = "unix_connect"
 external listen : file_descr -> int -> unit = "unix_listen"

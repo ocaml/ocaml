@@ -705,25 +705,6 @@ val socket : socket_domain -> socket_type -> int -> file_descr
         (* Create a new socket in the given domain, and with the
            given kind. The third argument is the protocol type; 0 selects
            the default protocol for that kind of sockets. *)
-val async_socket : socket_domain -> socket_type -> int -> file_descr
-        (* Same as [socket], but creates an asynchronous socket.
-           Under Unix, there is no distinction between
-           asynchronous/synchronous sockets, so [async_socket] is
-           synonymous for [socket].
-           Under Windows, there are two kinds of sockets.
-           Synchronous sockets behave like regular file descriptors:
-           you can use [read] and [write] to do I/O on them,
-           as well as pass them as standard input/output to another
-           process.  However, synchronous sockets do not support
-           event-based notification in GUIs such as CamlTk, and in
-           particular cannot be passed as argument to
-           [Fileevent.add_fileinput] and [Fileevent.add_fileoutput] in CamlTk.
-           Asynchronous sockets can be used with [Fileevent.add_fileinput]
-           and [Fileevent.add_fileoutput], but must be read with [recv]
-           and written with [send].  They cannot be used with [read],
-           [write], nor as standard input/output of another process.
-           As a rule of thumb, use [async_socket] to create sockets
-           that need to be passed to CamlTk, and [socket] otherwise. *)
 val socketpair :
         socket_domain -> socket_type -> int -> file_descr * file_descr
         (* Create a pair of unnamed sockets, connected together. *)
@@ -731,12 +712,6 @@ val accept : file_descr -> file_descr * sockaddr
         (* Accept connections on the given socket. The returned descriptor
            is a socket connected to the client; the returned address is
            the address of the connecting client. *)
-val async_accept : file_descr -> file_descr * sockaddr
-        (* Same as [accept], but the returned socket is set to
-           asynchronous mode.  See [async_socket] for a discussion of
-           synchronous vs. asynchronous mode.
-           As a rule of thumb, use [async_accept] if you're going to pass
-           the socket to CamlTk, and [accept] otherwise.  *)
 val bind : file_descr -> sockaddr -> unit
         (* Bind a socket to an address. *)
 val connect : file_descr -> sockaddr -> unit

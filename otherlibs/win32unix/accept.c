@@ -17,8 +17,8 @@
 #include "unixsupport.h"
 #include "socketaddr.h"
 
-value unix_accept(sock, synchronous)          /* ML */
-     value sock, synchronous;
+value unix_accept(sock)          /* ML */
+     value sock;
 {
   SOCKET sconn = (SOCKET) Handle_val(sock);
   SOCKET snew;
@@ -29,8 +29,8 @@ value unix_accept(sock, synchronous)          /* ML */
   retcode = getsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
                        (char *) &oldvalue, &oldvaluelen);
   if (retcode == 0) {
-    /* Set sockets to synchronous or asnychronous mode, as requested */
-    newvalue = Bool_val(synchronous) ? SO_SYNCHRONOUS_NONALERT : 0;
+    /* Set sockets to synchronous mode */
+    newvalue = SO_SYNCHRONOUS_NONALERT;
     setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, 
                (char *) &newvalue, sizeof(newvalue));
   }

@@ -24,7 +24,7 @@ int socket_type_table[] = {
   SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET
 };
 
-value unix_socket(domain, type, proto, synchronous) /* ML */
+value unix_socket(domain, type, proto) /* ML */
      value domain, type, proto;
 {
   SOCKET s;
@@ -34,8 +34,8 @@ value unix_socket(domain, type, proto, synchronous) /* ML */
   retcode = getsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
                        (char *) &oldvalue, &oldvaluelen);
   if (retcode == 0) {
-    /* Set sockets to synchronous or asnychronous mode, as requested */
-    newvalue = Bool_val(synchronous) ? SO_SYNCHRONOUS_NONALERT : 0;
+    /* Set sockets to synchronous mode */
+    newvalue = SO_SYNCHRONOUS_NONALERT;
     setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, 
                (char *) &newvalue, sizeof(newvalue));
   }

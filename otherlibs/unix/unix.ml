@@ -385,15 +385,10 @@ type socket_option =
 
 external socket : socket_domain -> socket_type -> int -> file_descr
                                   = "unix_socket"
-external async_socket : socket_domain -> socket_type -> int -> file_descr
-                                  = "unix_socket"
 external socketpair :
         socket_domain -> socket_type -> int -> file_descr * file_descr
                                   = "unix_socketpair"
 external accept : file_descr -> file_descr * sockaddr = "unix_accept"
-
-external async_accept : file_descr -> file_descr * sockaddr = "unix_accept"
-
 external bind : file_descr -> sockaddr -> unit = "unix_bind"
 external connect : file_descr -> sockaddr -> unit = "unix_connect"
 external listen : file_descr -> int -> unit = "unix_listen"
