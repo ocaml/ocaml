@@ -111,10 +111,11 @@ let scan_format fmt pos cont_s cont_a cont_t =
     | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
         Obj.magic(fun (n: int) ->
           cont_s (format_int (extract_format fmt pos i widths) n) (succ i))
-    | 'f' | 'e' | 'E' | 'g' | 'G' ->
+    | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' as conv ->
         Obj.magic(fun (f: float) ->
-          cont_s (format_float (extract_format fmt pos i widths) f) (succ i))
-    | 'b' ->
+          let s = format_float (extract_format fmt pos i widths) f in
+          cont_s (if conv = 'F' then valid_float_lexem s else s) (succ i))
+    | 'b' | 'B' ->
         Obj.magic(fun (b: bool) ->
           cont_s (string_of_bool b) (succ i))
     | 'a' ->

@@ -41,11 +41,14 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    - [C]: insert a character argument in Caml syntax (single quotes, escapes).
    - [f]: convert a floating-point argument to decimal notation,
      in the style [dddd.ddd].
+   - [F]: convert a floating-point argument in Caml syntax ([dddd.ddd]
+     with a mandatory [.]).
    - [e] or [E]: convert a floating-point argument to decimal notation,
      in the style [d.ddd e+-dd] (mantissa and exponent).
    - [g] or [G]: convert a floating-point argument to decimal notation,
      in style [f] or [e], [E] (whichever is more compact).
    - [b]: convert a boolean argument to the string [true] or [false]
+   - [B]: convert a boolean argument to the string [true] or [false]
    - [ld], [li], [lu], [lx], [lX], [lo]: convert an [int32] argument to
      the format specified by the second letter (decimal, hexadecimal, etc).
    - [nd], [ni], [nu], [nx], [nX], [no]: convert a [nativeint] argument to

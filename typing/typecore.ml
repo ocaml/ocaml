@@ -620,9 +620,9 @@ let type_format loc fmt =
         ty_arrow Predef.type_char (scan_format (j+1))
     | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' ->
         ty_arrow Predef.type_int (scan_format (j+1))
-    | 'f' | 'e' | 'E' | 'g' | 'G' ->
+    | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' ->
         ty_arrow Predef.type_float (scan_format (j+1))
-    | 'b' ->
+    | 'b' | 'B' ->
         ty_arrow Predef.type_bool (scan_format (j+1))
     | 'a' ->
         let ty_arg = newvar() in
