@@ -171,8 +171,11 @@ let execute_phrase phr =
 
 external input_scan_line : in_channel -> int = "input_scan_line"
 
+let first_line = ref true
+
 let refill_lexbuf buffer len =
-  output_char stdout '#'; flush stdout;
+  output_string stdout (if !first_line then "# " else "  "); flush stdout;
+  first_line := false;
   let n = min len (abs(input_scan_line stdin)) in
   input stdin buffer 0 n
 
@@ -201,7 +204,7 @@ let loop() =
   print_string Config.version;
   print_newline(); print_newline();
   (* Add whatever -I options have been specified on the command line,
-     but keep the directories that user code linked in with cslmktop
+     but keep the directories that user code linked in with ocamlmktop
      may have added to load_path. *)
   load_path := "" :: (List.rev !Clflags.include_dirs @ !load_path);
   toplevel_env := Compile.initial_env();
@@ -213,6 +216,7 @@ let loop() =
     try
       empty_lexbuf lb;
       Location.reset();
+      first_line := true;
       execute_phrase (!parse_toplevel_phrase lb); ()
     with
       End_of_file ->
