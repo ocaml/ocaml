@@ -218,8 +218,12 @@ let print_instr ic =
   else if op == opSWITCH then
     (let n = inputu ic in
      let orig = currpc ic in
-     for i = 0 to n-1 do
-       print_string "\n\t"; print_int i; print_string " -> ";
+     for i = 0 to (n land 0xFFFF) - 1 do
+       print_string "\n\tint "; print_int i; print_string " -> ";
+       print_int(orig + inputs ic)
+     done;
+     for i = 0 to (n lsr 16) - 1 do
+       print_string "\n\ttag "; print_int i; print_string " -> ";
        print_int(orig + inputs ic)
      done)
   (* translate *)
