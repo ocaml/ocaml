@@ -743,6 +743,9 @@ let list_labels env ty = list_labels_aux env [] [] ty
 
 (* Check that all univars are safe in a type *)
 let check_univars env kind exp ty_expected vars =
+  (* need to expand twice? cf. Ctype.unify2 *)
+  let vars = List.map (expand_head env) vars in
+  let vars = List.map (expand_head env) vars in
   let vars' =
     List.filter
       (fun t ->
