@@ -107,6 +107,11 @@ float.byt: float.cmo
 float.out: float.cmx
 	${CAMLOPT} -o float.out float.cmx
 
+intext.byt: intext.cmo intextaux.o
+	${CAMLC} -o intext.byt -custom intext.cmo intextaux.o
+intext.out: intext.cmx intextaux.o
+	${CAMLOPT} -o intext.out intext.cmx intextaux.o
+
 # Common rules
 
 .SUFFIXES:
