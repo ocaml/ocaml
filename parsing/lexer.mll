@@ -262,7 +262,7 @@ and comment = parse
 and string = parse
     '"'
       { () }
-  | '\\' ("\010" | "\013" | "\010\013") [' ' '\009'] *
+  | '\\' ("\010" | "\013" | "\013\010") [' ' '\009'] *
       { string lexbuf }
   | '\\' ['\\' '"' 'n' 't' 'b' 'r']
       { store_string_char(char_for_backslash(Lexing.lexeme_char lexbuf 1));
