@@ -1205,8 +1205,7 @@ let rec occur_rec env visited ty0 ty =
         if List.memq ty visited then raise Occur;
         if not !Clflags.recursive_types then
           iter_type_expr (occur_rec env (ty::visited) ty0) ty
-      with Occur ->
-        if not (generic_abbrev env p) then raise Occur else
+      with Occur when generic_abbrev env p ->
         let ty' = repr (expand_abbrev env ty) in
         (* Maybe we could simply make a recursive call here,
            but it seems it could make the occur check loop
@@ -2102,6 +2101,17 @@ let all_distinct_vars vars =
       if List.memq ty !tyl then false else
       (tyl := ty :: !tyl; ty.desc = Tvar))
     vars
+
+let matches env ty ty' =
+  let snap = snapshot () in
+  let vars = rigidify ty in
+  let ok =
+    try unify env ty ty'; all_distinct_vars vars
+    with Unify _ -> false
+  in
+  backtrack snap;
+  ok
+
 
                  (*********************************************)
                  (*  Equivalence between parameterized types  *)

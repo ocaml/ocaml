@@ -205,15 +205,8 @@ let rec check_constraints_rec env loc visited ty =
       with Ctype.Unify _ -> assert false
       | Not_found -> raise (Error(loc, Unavailable_type_constructor path))
       end;
-      let snap = Btype.snapshot () in
-      let vars = Ctype.rigidify ty in
-      begin try
-        Ctype.unify env ty ty';
-        if not (Ctype.all_distinct_vars vars) then raise (Ctype.Unify[])
-      with Ctype.Unify _ ->
-        raise (Error(loc, Constraint_failed (ty, ty')))
-      end;
-      Btype.backtrack snap;
+      if not (Ctype.matches env ty ty') then
+        raise (Error(loc, Constraint_failed (ty, ty')));
       List.iter (check_constraints_rec env loc visited) args
   | Tpoly (ty, tl) ->
       let _, ty = Ctype.instance_poly false tl ty in

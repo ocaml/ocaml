@@ -16,6 +16,8 @@ Type-checking:
   expressions.  For instance, if f: unit -> 'a list, "let x = f ()"
   gives "x" the generalized type forall 'a. 'a list, instead of '_a list
   as before.
+- Lots of bug fixes in the handling of polymorphism and recursion inside
+  types.
 - Format types now have 4 parameters instead of 3 (type ('a,'b,'c,'d) format)
   in order to support format concatenation and kprintf.
 - Added a new "-dtypes" option to ocamlc/ocamlopt, and an emacs extension
@@ -23,6 +25,7 @@ Type-checking:
   to file *.types, and the emacs extension allows the user to look at the
   type of any subexpression in the source file.  Works even in the case
   of a type error (all the types computed up to the error are available).
+  This new feature is also supported by ocamlbrowser.
 
 Both compilers:
 - Added option "-dtypes" to dump detailed type information to a file.

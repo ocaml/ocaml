@@ -169,12 +169,6 @@ let rec transl_type env policy styp =
                                                            List.length stl)));
       let args = List.map (transl_type env policy) stl in
       let params = Ctype.instance_list decl.type_params in
-      let cstr = newty (Tconstr(path, params, ref Mnil)) in
-      begin try
-        Ctype.enforce_constraints env cstr
-      with Unify trace ->
-        raise (Error(styp.ptyp_loc, Type_mismatch trace))
-      end;
       let unify_param =
         match decl.type_manifest with
           None -> unify_var
@@ -186,7 +180,13 @@ let rec transl_type env policy styp =
            try unify_param env ty' ty with Unify trace ->
              raise (Error(sty.ptyp_loc, Type_mismatch (swap_list trace))))
         (List.combine stl args) params;
-      cstr
+      let constr = newconstr path args in
+      begin try
+        Ctype.enforce_constraints env constr
+      with Unify trace ->
+        raise (Error(styp.ptyp_loc, Type_mismatch trace))
+      end;
+      constr
   | Ptyp_object fields ->
       newobj (transl_fields env policy fields)
   | Ptyp_class(lid, stl, present) ->
@@ -222,18 +222,17 @@ let rec transl_type env policy styp =
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                        List.length stl)));
       let args = List.map (transl_type env policy) stl in
-      let cstr = newty (Tconstr(path, args, ref Mnil)) in
-      let ty =
-        try Ctype.expand_head env cstr
-        with Unify trace ->
-          raise (Error(styp.ptyp_loc, Type_mismatch trace))
-      in
       let params = Ctype.instance_list decl.type_params in
       List.iter2
         (fun (sty, ty) ty' ->
            try unify_var env ty' ty with Unify trace ->
              raise (Error(sty.ptyp_loc, Type_mismatch (swap_list trace))))
         (List.combine stl args) params;
+      let ty =
+        try Ctype.expand_head env (newconstr path args)
+        with Unify trace ->
+          raise (Error(styp.ptyp_loc, Type_mismatch trace))
+      in
       begin match ty.desc with
         Tvariant row ->
           let row = Btype.row_repr row in

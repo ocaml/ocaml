@@ -395,10 +395,24 @@ let rec tree_of_type_decl id decl =
   List.iter add_alias params;
   List.iter mark_loops params;
   List.iter check_name_of_type (List.map proxy params);
-  begin match decl.type_manifest with
-  | None -> ()
-  | Some ty -> mark_loops ty
-  end;
+  let ty_manifest =
+    match decl.type_manifest with
+    | None -> None
+    | Some ty ->
+        let ty =
+          (* Special hack to hide variant name *)
+          match repr ty with {desc=Tvariant row} ->
+            let row = row_repr row in
+            begin match row.row_name with
+              Some (Pident id', _) when Ident.same id id' ->
+                newgenty (Tvariant {row with row_name = None})
+            | _ -> ty
+            end
+          | _ -> ty
+        in
+        mark_loops ty;
+        Some ty
+  in 
   let rec mark = function
   | Type_abstract -> ()
   | Type_variant [] -> ()
@@ -415,7 +429,7 @@ let rec tree_of_type_decl id decl =
     | _ -> "?"
   in
   let type_defined decl =
-    if decl.type_kind = Type_abstract && decl.type_manifest = None
+    if decl.type_kind = Type_abstract && ty_manifest = None
        && List.exists (fun x -> x <> (true,true,true)) decl.type_variance then
       let vari = List.map (fun (co,cn,ct) -> (co,cn)) decl.type_variance in
       (Ident.name id,
@@ -432,8 +446,8 @@ let rec tree_of_type_decl id decl =
           (id, List.map (fun ty -> (type_param ty, (true, true))) tyl)
       | _ -> ("?", [])
   in
-  let tree_of_manifest decl ty1 =
-    match decl.type_manifest with
+  let tree_of_manifest ty1 =
+    match ty_manifest with
     | None -> ty1
     | Some ty -> Otyp_manifest (tree_of_typexp false ty, ty1)
   in
@@ -441,14 +455,14 @@ let rec tree_of_type_decl id decl =
   let constraints = tree_of_constraints params in
   let rec tree_of_tkind = function
     | Type_abstract ->
-        begin match decl.type_manifest with
+        begin match ty_manifest with
         | None -> Otyp_abstract
         | Some ty -> tree_of_typexp false ty
         end
     | Type_variant cstrs ->
-        tree_of_manifest decl (Otyp_sum (List.map tree_of_constructor cstrs))
+        tree_of_manifest (Otyp_sum (List.map tree_of_constructor cstrs))
     | Type_record(lbls, rep) ->
-        tree_of_manifest decl (Otyp_record (List.map tree_of_label lbls))
+        tree_of_manifest (Otyp_record (List.map tree_of_label lbls))
     | Type_private tkind -> Otyp_private (tree_of_tkind tkind) in
   let ty = tree_of_tkind decl.type_kind 
   in
