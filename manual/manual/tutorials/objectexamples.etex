@@ -33,7 +33,9 @@ p#move 3;;
 p#get_x;;
 \end{caml_example}
 
-The library function "Oo.copy" copies an object. Its type is
+% XXX expliquer shallow
+
+The library function "Oo.copy" makes a shallow copy of an object. Its type is
 "< .. > as 'a -> 'a". The keyword "as" in that type
 binds the type variable "'a" to the object type "< .. >".
 "Oo.copy" therefore takes an object with any methods (represented by
@@ -65,9 +67,9 @@ p'#get_x, p'#color;;
 A point and a colored point have incompatible types: a point has no
 method "color". However, 
 the function "get_x" below is a generic function applying method
-"get_x" to any object "p" which has this method (and
+"get_x" to any object "p" that has this method (and
 possibly some others, which are represented by an ellipsis in the
-type). Thus it applies both to points and colored points. 
+type). Thus, it applies to both points and colored points. 
 \begin{caml_example}
 let get_succ_x p = p#get_x + 1;;
 get_succ_x p + get_succ_x p';;
@@ -81,7 +83,8 @@ let incr p = set_x p (get_succ_x p);;
 
 \subsection*{Parameterized classes}
 
-Reference cells can also be implemented as objects:
+Reference cells can also be implemented as objects. 
+The naive definition fails to typecheck:
 \begin{caml_example}
 class ref x_init = 
   val mutable x = x_init
@@ -89,7 +92,7 @@ class ref x_init =
   method set y = x <- y
 end;;
 \end{caml_example}
-The reason why this definition does not typecheck is that at least one
+The reason  is that at least one
 of the methods has a polymorphic type (here, the type of the value
 stored in the reference cell), thus the class should be parametric.  A
 monomorphic instance of the class could be defined by:
@@ -245,7 +248,7 @@ class virtual comparable () : 'a =
 end;;
 \end{caml_example}
 
-We then define a subclass of "comparable", which wraps integers as
+We then define a subclass of "comparable"  that wraps integers as
 comparable objects. There is a type constraint on the class parameter "x"
 as the primitive "<=" is a polymorphic comparison function in
 Objective Caml.  The "inherit" clause ensures that the type of objects
@@ -273,7 +276,7 @@ end;;
 \end{caml_example}
 
 The function "min" will return the minimum of any two objects
-whose type unify with "#comparable". The type of "min" is
+whose type unifies with "#comparable". The type of "min" is
 not the same as "#comparable -> #comparable -> #comparable", as
 the abbreviation "#comparable" hides a type variable (an
 ellipsis). Each occurrence of this abbreviation generates a new
@@ -296,7 +299,7 @@ Subtyping  is never implicit.  There are, however, too ways of getting
 subtyping.  The most general construction is fully explicit: both the domain
 and the codomain of the type coercion must be given.
 
-We have seen that point and colored have incompatible types.  For
+We have seen that points and colored points have incompatible types.  For
 instance, they cannot be mixed in the same
 list. However, a colored point can be coerced to a point, hiding its "color"
 method:
@@ -337,8 +340,8 @@ The domain of a coercion can usually be omitted. For instance, one can define:
 let to_point cp = (cp :> point);;
 \end{caml_example}
 In this case, the function "colored_point_to_point" is an instance of the 
-function "point". This is not always true however, and the fully
-explicit coercion  is more precise, and thus unavoidable in some cases. 
+function "to_point". This is not always true, however. The fully
+explicit coercion  is more precise and is sometimes  unavoidable. 
 Here is an example:
 \begin{caml_example}
 class virtual c () = virtual m : c end;;
@@ -348,25 +351,26 @@ class c' () as self =
   method m' = 1
 end;;
 \end{caml_example}
-The the type of the coercion to type "c" can be seen here:
+The  type of the coercion to type "c" can be seen here:
 \begin{caml_example}
 function x -> (x :> c);;
 \end{caml_example}
-
-Note that this function does not have type "< m : c; .. > -> c" as may
-be expected.
+% Note that this function does not have type "< m : c; .. > -> c" as may
+% be expected.
 % XXX Detailler... : pas de meilleur choix; pourquoi ce choix.
 % Actually, both "< m : 'a; .. > as 'a" and "< m : c; .. >"
 % are subtypes of type "c".
-This produces the type contradiction for type "c'".  As class "c'"
+% This produces the type contradiction for type "c'".  
+As class "c'"
 inherits from class "c", its method "m" must have type "c". On the
-other hand, expression "(self :> c)" try to unify the type of "self"
-and the domain of the coercion above; that is, the method "m" of
-"self" must have the same type as "self".  So, the type of "self"
-should be type "c". This is not possible, as the type of "self" has a
-method "m'", whereas type "c" don't.
+other hand, in expression "(self :> c)"  the type of "self"
+and the domain of the coercion above must be unified. 
+That is, the type of the method "m" in "self" (i.e. "c") is
+also the type of "self". So, the type of "self" is "c". 
+This is a contradiction, as the type of "self" has a
+method "m'", whereas type "c" does not.
 
-The desired function of type "<m : c;..> -> c" can be obtained by using a fully
+The desired coercion of type "<m : c;..> -> c" can be obtained by using a fully
 explicit coercion:
 \begin{caml_example}
 function x -> (x : #c :> c);;
@@ -391,9 +395,11 @@ class c' () as self =
   method m' = 1
 end;;
 \end{caml_example}
-Moreover, the simple coercion operator "(e :> t)" can be used to
-coerce an object from type "c'" to type "c". It is actually defined so
-as to work correctly with classes returning "self" without coercion.
+Here, the simple coercion operator "(e :> c)" can be used to
+coerce an object expression "e" from type "c'" to type "c". 
+Semi implicit coercions are actually defined so
+as to work correctly with classes returning "self". 
+% without coercion.
 \begin{caml_example}
 (new c' () :> c);;
 \end{caml_example}
@@ -423,22 +429,22 @@ using a virtual class:
 class virtual c0 () = virtual m : c0 end;;
 class c () as self = method m = (self : #c0 :> c0) end;;
 \end{caml_example}
-Then, the class "c" may be also declared to inherit from the virtual class
+The class "c" may be also declared to inherit from the virtual class
 "c0",  so as to simultaneously enforce all methods of "c" to have the same
 type as the methods of "c0".
 \begin{caml_example}
-class c () as self = inherit c0 () method m = (self #c0 :> c0) end;;
+class c () as self = inherit c0 () method m = (self : #c0 :> c0) end;;
 \end{caml_example}
 One could think of defining the type abbreviation directly:
-\begin{caml_eval}
+\begin{caml_example}
 type c1 = <m : c1>;;
-\end{caml_eval}
+\end{caml_example}
 However, the abbreviation "#c1" cannot be defined this way (the
 abbreviation "#c0" is defined from the class "c0", not from the type
 "c0"), and should be expanded:
-\begin{caml_eval}
+\begin{caml_example}
 class c () as self =  method m = (self : <m : c1; ..> as 'a :> c1) end;;
-\end{caml_eval}
+\end{caml_example}
 
 
 \subsection*{Recursive classes}
@@ -454,6 +460,8 @@ and widget (w : window) =
   method window = window
 end;;
 \end{caml_example}
+Although their types are mutually recursive, the classes "widget" and 
+"window" are themselves independant. 
 
 \subsection*{Class interfaces}
 
@@ -489,22 +497,15 @@ However, methods cannot be hidden.
 
 \subsection*{Simple modules as classes}
 
-In Objective Caml one often has a choice between using modules or classes. 
-
-% XXX some motivation
-
+There is sometime an alternative between using modules or classes. 
 Indeed, there are situations when the two approaches are quite similar. 
-
-% XXX stack example
-
-Implementing stacks is straightforward.
+For instance, a stack can be  straightforwardly implemented as a class:
 \begin{caml_example}
 exception Empty;;
 class 'a stack () =
   val mutable l = ([] : 'a list)
   method push x = l <- x::l
-  method pop =
-    match l with [] -> raise Empty | a::l' -> l <- l'; a
+  method pop = match l with [] -> raise Empty | a::l' -> l <- l'; a
   method clear = l <- []
   method length = List.length l
 end;;
@@ -512,20 +513,25 @@ end;;
 
 However, writing a method for iterating over a stack is more
 problematic.  A method "fold" would have type
-"('b -> 'a -> 'b) -> 'b -> 'b". This adds another type variable in the
-class type. The class "set" must be parameterize over "'b" as well.
-But this is not enough, as method "fold" of a given object can only be
-applied to functions that all have the same type.
+"('b -> 'a -> 'b) -> 'b -> 'b". Here "'a" is the parameter of the stack.
+The parametter "'b" is not related to the class "'a stack" but to the
+argument that will be passed to the method "fold".
+The intuition is that method "fold" should be polymorphic, i.e. of type 
+"All ('a) ('b -> 'a -> 'b) -> 'b -> 'b", which  is not currently possible.
+One possibility would be to make "'b" an extra parameter of class "stack"
 \begin{caml_example}
 class ('a, 'b) stack2 () =
   inherit ('a) stack ()
   method fold f (x : 'b) = List.fold_left f x l
 end;;
+\end{caml_example}
+However,  method "fold" of a given object can only be
+applied to functions that all have the same type:
+\begin{caml_example}
 let s = new stack2 ();;
 s#fold (+) 0;;
 s;;
 \end{caml_example}
-
 The solution is to leave the function "fold" outside of the class.
 \begin{caml_example}
 class 'a stack3 () =
