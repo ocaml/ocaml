@@ -62,13 +62,18 @@ let content ="
   \\let\\dospecials\\@new@specials
   }
 
-\\newenvironment{ocamldocdescription}
-{\\list{}{\\rightmargin0pt \\topsep0pt}\\raggedright\\item\\relax}
-{\\endlist\\medskip}
+\newenvironment{ocamldocdescription}
+{\list{}{\rightmargin0pt \topsep0pt}\raggedright\item\noindent\relax}
+{\endlist\medskip}
 
-\\newenvironment{ocamldoccomment}
-{\\list{}{\\leftmargin 2\\leftmargini \\rightmargin0pt \\topsep0pt}\\raggedright\\item\\relax}
-{\\endlist}
+\newenvironment{ocamldoccomment}
+{\list{}{\leftmargin 2\leftmargini \rightmargin0pt \topsep0pt}\raggedright\item\noindent\relax}
+{\endlist}
+
+\let \ocamldocparagraph \paragraph
+\def \paragraph #1{\ocamldocparagraph {#1}\noindent}
+\let \ocamldocsubparagraph \subparagraph
+\def \subparagraph #1{\ocamldocsubparagraph {#1}\noindent}
 
 \\let\\ocamldocvspace\\vspace
 \\endinput

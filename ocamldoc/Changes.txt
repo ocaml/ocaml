@@ -1,4 +1,6 @@
 Current :
+OK - fix: the generated ocamldoc.sty is more robust for paragraphs in
+     ocamldocdescription environment
 OK - fix: when generating separated files in latex, generate them in
      the same directory than the main file, (the one specified by -o)
 OK - mod: one section per to module in latex output + improve latex output
