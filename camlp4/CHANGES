@@ -1,6 +1,7 @@
-Camlp4 Version 3.02.1
----------------------
+Camlp4 Version 3.03
+-------------------
 
+- [07 Sep 01] Included Camlp4 in OCaml distribution.
 - [06 Sep 01] Added missing pattern construction #t
 - [05 Sep 01] Fixed bug in pa_o: {A.B.c = d} was refused.
 - [26 Aug 01] Fixed bug: in normal and revised syntaxes, refused -1.0
