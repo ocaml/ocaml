@@ -43,6 +43,10 @@ rule main = parse
   | "\\begin{verbatim}"
                 { print_string "<pre>"; inverbatim lexbuf;
                   print_string "</pre>"; main lexbuf }
+(* Caml programs *)
+  | "\\caml"
+      	       	{ print_string "<pre>"; camlprog lexbuf;
+		  print_string "</pre>"; main lexbuf }
 (* Raw html, latex only *)
   | "\\begin{rawhtml}"
                 { rawhtml lexbuf; main lexbuf }
@@ -108,7 +112,17 @@ and inverbatim = parse
   | "&"         { print_string "&amp;"; inverbatim lexbuf }
   | "\\end{verbatim}" { () }
   | _           { print_char(get_lexeme_char lexbuf 0); inverbatim lexbuf }
-  
+
+and camlprog = parse
+    "<"         { print_string "&lt;"; camlprog lexbuf }
+  | ">"         { print_string "&gt;"; camlprog lexbuf }
+  | "&"         { print_string "&amp;"; camlprog lexbuf }
+  | "\\?"       { print_string "#"; camlprog lexbuf }
+  | "\\:" | "\\;"  { camlprog lexbuf }
+  | "\\\\"      { print_string "\\"; camlprog lexbuf }
+  | "\\endcaml" { () }
+  | _           { print_char(get_lexeme_char lexbuf 0); camlprog lexbuf }
+
 and rawhtml = parse
     "\\end{rawhtml}" { () }
   | _           { print_char(get_lexeme_char lexbuf 0); rawhtml lexbuf }
@@ -127,4 +141,3 @@ and skip_arg = parse
                   if !brace_nesting > 0 then skip_arg lexbuf }
   | _           { skip_arg lexbuf }
 ;;
-
