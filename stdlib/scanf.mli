@@ -119,7 +119,7 @@ val bscanf :
    just before the next matching [c]. If no [c] character is
    encountered, the string token spreads as much as possible.
    For instance, ["%s@\t"] reads a string up to the next tabulation
-   character. If the scanning indication [\@c] does not follow a
+   character. If a scanning indication [\@c] does not follow a
    string conversion, it is ignored and treated as a plain [c]
    character.
 
@@ -144,6 +144,6 @@ val kscanf :
   ('b, Scanning.scanbuf, 'a) format -> 'b -> 'a;;
 (** Same as {!Scanf.bscanf}, but takes an additional function argument
   [ef] that is called in case of error: if the scanning process or
-  some convertion fails, the scanning function aborts and applies the
+  some conversion fails, the scanning function aborts and applies the
   error handling function [ef] to the scanning buffer and the
   exception that aborted evaluation. *)
