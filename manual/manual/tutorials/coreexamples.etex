@@ -14,9 +14,8 @@ For this overview of Caml, we use the interactive system, which
 is started by running "ocaml" from the Unix shell, or by launching the
 "OCamlwin.exe" application under Windows. This tutorial is presented
 as the transcript of a session with the interactive system:
-lines in {\tt typewriter font}, starting with "#", represent user
-input, and lines in {\sltt slanted typewriter font} are the system
-responses.
+lines starting with "#" represent user input; the system responses are
+printed below, without a leading "#".
 
 Under the interactive system, the user types Caml phrases, terminated
 by ";;", in response to the "#" prompt, and the system compiles them

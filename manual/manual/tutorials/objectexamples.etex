@@ -118,7 +118,7 @@ end;;
 
 let r = new ref 1 in r#set 2; (r#get);;
 \end{caml_example}
-The type parameter in the declaration may actually be constrainted in the
+The type parameter in the declaration may actually be constrained in the
 body of the class definition. In class type, the type parameter actual
 value is displayed in the "constraint" clause. 
 \begin{caml_example}
