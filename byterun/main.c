@@ -18,9 +18,6 @@
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
-#ifdef __linux__
-#include <i386/fpu_control.h>
-#endif
 #include "alloc.h"
 #include "exec.h"
 #include "fail.h"
@@ -146,9 +143,7 @@ int main(argc, argv)
 
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
-#ifdef __linux__
-  __setfpucw(_FPU_IEEE);
-#endif
+  init_ieee_floats();
 
   /* Parsing of command-line */
 #ifdef DEBUG

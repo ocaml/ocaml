@@ -15,9 +15,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef __linux__
-#include <i386/fpu_control.h>
-#endif
 #include "gc.h"
 #include "gc_ctrl.h"
 #include "misc.h"
@@ -43,11 +40,7 @@ int main(argc, argv)
   char * opt;
   value retcode;
 
-  /* Machine-dependent initialization of the floating-point hardware
-     so that it behaves as much as possible as specified in IEEE */
-#ifdef __linux__
-  __setfpucw(_FPU_IEEE);
-#endif
+  init_ieee_floats();
 
 #ifdef DEBUG
   verbose_init = 1;
