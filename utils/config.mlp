@@ -31,7 +31,6 @@ let native_c_libraries = "%%NATIVECCLIBS%%"
 let native_c_rpath = "%%NATIVECCRPATH%%"
 let native_partial_linker = "%%PARTIALLD%%"
 let ranlib = "%%RANLIBCMD%%"
-let systhreads_link = "%%PTHREADLINK%%"
 
 let exec_magic_number = "Caml1999X006"
 and cmi_magic_number = "Caml1999I008"
