@@ -272,9 +272,9 @@ case "$host" in
   m68k-*-sunos*)                arch=m68k; system=sunos;;
 esac
 
-case "$arch,$system" in
-  alpha,digital) nativecc=cc;;
-  mips,*) nativecc=cc;;
+case "$arch,$system,$cc" in
+  alpha,digital,gcc*) nativecc=cc;;
+  mips,*,gcc*) nativecc=cc;;
   *) nativecc="$bytecc";;
 esac
 
@@ -282,13 +282,13 @@ nativecccompopts=''
 nativecclinkopts=''
 
 case "$arch,$nativecc,$system" in
-  alpha,cc,digital) nativecccompopts=-std1;;
-  mips,cc,irix)     nativecccompopts=-32
-                    nativecclinkopts="-32 -Wl,-woff,84";;
-  mips,cc,ultrix)   nativecccompopts=-std;;
-  *,*,nextstep)     nativecccompopts="-Wall -U__GNUC__ -posix"
-                    nativecclinkopts="-posix";;
-  *,gcc,*)          nativecccompopts=-Wall;;
+  alpha,cc*,digital) nativecccompopts=-std1;;
+  mips,cc*,irix)     nativecccompopts=-32
+                     nativecclinkopts="-32 -Wl,-woff,84";;
+  mips,cc*,ultrix)   nativecccompopts=-std;;
+  *,*,nextstep)      nativecccompopts="-Wall -U__GNUC__ -posix"
+                     nativecclinkopts="-posix";;
+  *,gcc*,*)          nativecccompopts=-Wall;;
 esac
 
 asflags=''
