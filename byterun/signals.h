@@ -25,7 +25,6 @@ extern Volatile int async_signal_mode;
 void enter_blocking_section P((void));
 void leave_blocking_section P((void));
 void urge_major_slice P((void));
-void handle_signal P((int));
 
 extern void (*enter_blocking_section_hook)();
 extern void (*leave_blocking_section_hook)();

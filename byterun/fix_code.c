@@ -75,8 +75,6 @@ void thread_code(code, len, instr_table)
         uint32 block_size = sizes >> 16;
         p += const_size + block_size;
         break; }
-    case TRANSLATE:
-      p += *p + 1; break;
     }
   }
   Assert(p = code + len);

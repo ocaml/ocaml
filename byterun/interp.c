@@ -605,31 +605,11 @@ value interprete(prog, prog_size)
         pc += pc[(sizes & 0xFFFF) + index];
       } else {
         long index = Long_val(accu);
-        Assert(index >= 0 && index < (sizes & 0xFFFF));
-        pc += pc[index];
+        if ((unsigned long) index < (sizes & 0xFFFF))
+          pc += pc[index];
+        else
+          pc += (sizes & 0xFFFF) + (sizes >> 16);
       }
-      Next;
-    }
-    Instruct(TRANSLATE): {
-      long arg = Long_val(accu);
-      int num_cases = *pc++;
-      int low, high, i;
-      uint32 interv;
-      for (low = 0, high = num_cases - 1, accu = Val_int(0);
-           low <= high;
-           /*nothing*/) {
-        i = (low + high) / 2;
-        interv = pc[i];
-        if (arg < (interv & 0xFF))
-          high = i - 1;
-        else if (arg > ((interv >> 8) & 0xFF))
-          low = i + 1;
-        else {
-          accu = Val_long(arg + (interv >> 16) - (interv & 0xFF));
-          break;
-        }
-      }
-      pc += num_cases;
       Next;
     }
     Instruct(BOOLNOT):

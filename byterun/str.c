@@ -125,3 +125,11 @@ value is_printable(chr) /* ML */
   c = Int_val(chr);
   return Val_bool(printable_chars[c >> 3] & (1 << (c & 7)));
 }
+
+value bitvect_test(bv, n)       /* ML */
+     value bv, n;
+{
+  int pos = Int_val(n);
+  return Val_int(Byte_u(bv, pos >> 3) & (1 << (pos & 7)));
+}
+
