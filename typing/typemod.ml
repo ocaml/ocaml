@@ -161,12 +161,13 @@ and transl_signature env sg =
             let rem = transl_sig newenv srem in
             Tsig_exception(id, arg) :: rem
         | Psig_module(name, smty) ->
-            check "module type" item.psig_loc modtype_names name;
+            check "module" item.psig_loc module_names name;
             let mty = transl_modtype env smty in
             let (id, newenv) = Env.enter_module name mty env in
             let rem = transl_sig newenv srem in
             Tsig_module(id, mty) :: rem
         | Psig_modtype(name, sinfo) ->
+            check "module type" item.psig_loc modtype_names name;
             let info = transl_modtype_info env sinfo in
             let (id, newenv) = Env.enter_modtype name info env in
             let rem = transl_sig newenv srem in
