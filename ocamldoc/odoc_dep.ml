@@ -152,7 +152,7 @@ let type_deps t =
         (fun c ->
           List.iter 
             (fun e -> 
-              let s = Odoc_misc.string_of_type_expr e in
+              let s = Odoc_print.string_of_type_expr e in
               ignore (Str.global_substitute re f s)
             )
             c.T.vc_args
@@ -161,7 +161,7 @@ let type_deps t =
   | T.Type_record (rl, _) ->
       List.iter
         (fun r ->
-          let s = Odoc_misc.string_of_type_expr r.T.rf_type in
+          let s = Odoc_print.string_of_type_expr r.T.rf_type in
           ignore (Str.global_substitute re f s)
         )
         rl
@@ -170,7 +170,7 @@ let type_deps t =
   (match t.T.ty_manifest with
     None -> ()
   | Some e ->
-      let s = Odoc_misc.string_of_type_expr e in
+      let s = Odoc_print.string_of_type_expr e in
       ignore (Str.global_substitute re f s)
   );
 

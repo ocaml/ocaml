@@ -243,7 +243,7 @@ class man =
     (** Groff string to display a [Types.type_expr].*)
     method man_of_type_expr m_name t =
       let s = String.concat "\n"
-          (Str.split (Str.regexp "\n") (Odoc_misc.string_of_type_expr t))
+          (Str.split (Str.regexp "\n") (Odoc_print.string_of_type_expr t))
       in
       let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
       "\n.B "^(self#relative_idents m_name s2)^"\n"
@@ -251,7 +251,7 @@ class man =
     (** Groff string to display a [Types.class_type].*)
     method man_of_class_type_expr m_name t =
       let s = String.concat "\n"
-          (Str.split (Str.regexp "\n") (Odoc_misc.string_of_class_type t))
+          (Str.split (Str.regexp "\n") (Odoc_print.string_of_class_type t))
       in
       let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
       "\n.B "^(self#relative_idents m_name s2)^"\n"
@@ -274,7 +274,7 @@ class man =
     (** Groff string to display a [Types.module_type]. *)
     method man_of_module_type m_name t =
       let s = String.concat "\n"
-          (Str.split (Str.regexp "\n") (Odoc_misc.string_of_module_type t))
+          (Str.split (Str.regexp "\n") (Odoc_print.string_of_module_type t))
       in
       let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
       "\n.B "^(self#relative_idents m_name s2)^"\n"

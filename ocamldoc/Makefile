@@ -87,6 +87,7 @@ CMOFILES= odoc_config.cmo \
 	odoc_exception.cmo\
 	odoc_class.cmo\
 	odoc_module.cmo\
+	odoc_print.cmo \
 	odoc_str.cmo\
 	odoc_args.cmo\
 	odoc_comments_global.cmo\

@@ -115,7 +115,7 @@ let reset_type_names = Printtyp.reset
 
 let string_of_variance t (co,cn) = Odoc_str.string_of_variance t (co, cn)
 
-let string_of_type_expr t = Odoc_misc.string_of_type_expr t
+let string_of_type_expr t = Odoc_print.string_of_type_expr t
 
 let string_of_type_list sep type_list = Odoc_str.string_of_type_list sep type_list
 
@@ -123,9 +123,9 @@ let string_of_type_param_list t = Odoc_str.string_of_type_param_list t
 
 let string_of_class_type_param_list l = Odoc_str.string_of_class_type_param_list l
 
-let string_of_module_type = Odoc_misc.string_of_module_type
+let string_of_module_type = Odoc_print.string_of_module_type
 
-let string_of_class_type = Odoc_misc.string_of_class_type
+let string_of_class_type = Odoc_print.string_of_class_type
 
 let string_of_text t = Odoc_misc.string_of_text t
 

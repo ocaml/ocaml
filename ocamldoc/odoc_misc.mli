@@ -19,22 +19,6 @@ val input_file_as_string : string -> string
 (** This function creates a string from a Longident.t .*)
 val string_of_longident : Longident.t -> string
 
-(** This function takes a Types.type_expr and returns a string. 
-   It writes in and flushes [Format.str_formatter].*)
-val string_of_type_expr : Types.type_expr -> string
-
-(** This function returns a string representing a [Types.module_type]. 
-   @param complete indicates if we must print complete signatures
-   or just [sig end]. Default if [false].
-*)
-val string_of_module_type : ?complete: bool -> Types.module_type -> string
-
-(** This function returns a string representing a [Types.class_type]. 
-   @param complete indicates if we must print complete signatures
-   or just [object end]. Default if [false].
-*)
-val string_of_class_type : ?complete: bool -> Types.class_type -> string
-
 (** This function returns the list of (label, type_expr) describing
    the methods of a type_expr in a Tobject.*)
 val get_fields : Types.type_expr -> (string * Types.type_expr) list

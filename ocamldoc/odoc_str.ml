@@ -119,7 +119,7 @@ let string_of_type t =
      (List.map 
         (fun (p, co, cn) -> 
 	  (string_of_variance t (co, cn))^
-	  (Odoc_misc.string_of_type_expr p)^" "
+	  (Odoc_print.string_of_type_expr p)^" "
 	)
         t.M.ty_parameters
      )
@@ -127,7 +127,7 @@ let string_of_type t =
   (Name.simple t.M.ty_name)^" "^
   (match t.M.ty_manifest with
     None -> ""
-  | Some typ -> "= "^(Odoc_misc.string_of_type_expr typ)^" "
+  | Some typ -> "= "^(Odoc_print.string_of_type_expr typ)^" "
   )^
   (match t.M.ty_kind with
     M.Type_abstract -> 
@@ -142,7 +142,7 @@ let string_of_type t =
                 [] -> "" 
               | l -> 
                   " of "^(String.concat " * " 
-                            (List.map (fun t -> "("^(Odoc_misc.string_of_type_expr t)^")") l))
+                            (List.map (fun t -> "("^(Odoc_print.string_of_type_expr t)^")") l))
               )^
               (match cons.M.vc_text with
                 None ->
@@ -160,7 +160,7 @@ let string_of_type t =
          (List.map 
             (fun record ->
               "   "^(if record.M.rf_mutable then "mutable " else "")^
-              record.M.rf_name^" : "^(Odoc_misc.string_of_type_expr record.M.rf_type)^";"^
+              record.M.rf_name^" : "^(Odoc_print.string_of_type_expr record.M.rf_type)^";"^
               (match record.M.rf_text with
                 None ->
                   ""
@@ -184,7 +184,7 @@ let string_of_exception e =
     [] -> ""
   | _ ->" : "^
       (String.concat " -> " 
-         (List.map (fun t -> "("^(Odoc_misc.string_of_type_expr t)^")") e.M.ex_args)
+         (List.map (fun t -> "("^(Odoc_print.string_of_type_expr t)^")") e.M.ex_args)
       )
   )^
   (match e.M.ex_alias with
@@ -203,7 +203,7 @@ let string_of_exception e =
 let string_of_value v =
   let module M = Odoc_value in
   "val "^(Name.simple v.M.val_name)^" : "^
-  (Odoc_misc.string_of_type_expr v.M.val_type)^"\n"^
+  (Odoc_print.string_of_type_expr v.M.val_type)^"\n"^
   (match v.M.val_info with
     None -> ""
   | Some i -> Odoc_misc.string_of_info i)
@@ -213,7 +213,7 @@ let string_of_attribute a =
   "val "^
   (if a.M.att_mutable then Odoc_messages.mutab^" " else "")^
   (Name.simple a.M.att_value.M.val_name)^" : "^
-  (Odoc_misc.string_of_type_expr a.M.att_value.M.val_type)^"\n"^
+  (Odoc_print.string_of_type_expr a.M.att_value.M.val_type)^"\n"^
   (match a.M.att_value.M.val_info with
     None -> ""
   | Some i -> Odoc_misc.string_of_info i)
@@ -223,7 +223,7 @@ let string_of_method m =
   "method "^
   (if m.M.met_private then Odoc_messages.privat^" " else "")^
   (Name.simple m.M.met_value.M.val_name)^" : "^
-  (Odoc_misc.string_of_type_expr m.M.met_value.M.val_type)^"\n"^
+  (Odoc_print.string_of_type_expr m.M.met_value.M.val_type)^"\n"^
   (match m.M.met_value.M.val_info with
     None -> ""
   | Some i -> Odoc_misc.string_of_info i)

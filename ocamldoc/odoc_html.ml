@@ -333,6 +333,9 @@ class text =
 
   end
 
+let new_buf () = Buffer.create 512 
+let bp = Printf.bprintf
+
 (** A class used to generate html code for info structures. *)
 class virtual info =
   object (self)
@@ -1727,6 +1730,7 @@ class html =
         let type_file = Naming.file_type_module_complete_target modu.m_name in
         let code_file = Naming.file_code_module_complete_target modu.m_name in
         let chanout = open_out (Filename.concat !Args.target_dir html_file) in
+	let b = new_buf () in
         let pre_name = opt (fun m -> m.m_name) pre in
         let post_name = opt (fun m -> m.m_name) post in
         output_string chanout
