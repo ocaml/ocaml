@@ -1,15 +1,15 @@
 include Makefile.common
 
-all: support.cmo widget.cmo protocol.cmo \
-     textvariable.cmo timer.cmo fileevent.cmo \
+all: support.cmo rawwidget.cmo widget.cmo protocol.cmo \
+     textvariable.cmo timer.cmo fileevent.cmo camltkwrap.cmo \
      liblabltk41.a
 
-opt: support.cmx widget.cmx protocol.cmx \
-     textvariable.cmx timer.cmx fileevent.cmx \
+opt: support.cmx rawwidget.cmx widget.cmx protocol.cmx \
+     textvariable.cmx timer.cmx fileevent.cmx camltkwrap.cmx \
      liblabltk41.a
 
 COBJS=cltkCaml.o cltkEval.o cltkEvent.o cltkFile.o cltkMain.o \
-      cltkMisc.o cltkTimer.o cltkVar.o cltkWait.o
+      cltkMisc.o cltkTimer.o cltkVar.o cltkWait.o cltkImg.o
 
 CCFLAGS=-I../../../byterun $(TK_DEFS) $(X11_INCLUDES) $(SHAREDCCCOMPOPTS)
 
@@ -22,6 +22,7 @@ PUB=fileevent.cmi fileevent.mli \
     protocol.cmi protocol.mli \
     textvariable.cmi textvariable.mli \
     timer.cmi timer.mli \
+    rawwidget.cmi rawwidget.mli \
     widget.cmi widget.mli
 
 install: liblabltk41.a $(PUB)
