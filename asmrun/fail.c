@@ -34,6 +34,8 @@ typedef value caml_generated_constant[1];
 extern caml_generated_constant Out_of_memory, Sys_error, Failure,
   Invalid_argument, End_of_file, Division_by_zero, Not_found,
   Match_failure, Sys_blocked_io, Stack_overflow;
+extern caml_generated_constant
+  bucket_Out_of_memory, bucket_Stack_overflow;
 
 /* Exception raising */
 
@@ -98,28 +100,20 @@ void invalid_argument (char *msg)
 
 /* To raise Out_of_memory, we can't use raise_constant,
    because it allocates and we're out of memory...
-   We therefore build the bucket by hand.
+   We therefore use a statically-allocated bucket constructed
+   by the ocamlopt linker.
    This works OK because the exception value for Out_of_memory is also
    statically allocated out of the heap.
    The same applies to Stack_overflow. */
 
-static struct {
-  header_t hdr;
-  value exn;
-} out_of_memory_bucket, stack_overflow_bucket;
-
 void raise_out_of_memory(void)
 {
-  out_of_memory_bucket.hdr = Make_header(1, 0, Caml_white);
-  out_of_memory_bucket.exn = (value) Out_of_memory;
-  mlraise((value) &(out_of_memory_bucket.exn));
+  mlraise((value) &bucket_Out_of_memory);
 }
 
 void raise_stack_overflow(void)
 {
-  stack_overflow_bucket.hdr = Make_header(1, 0, Caml_white);
-  stack_overflow_bucket.exn = (value) Stack_overflow;
-  mlraise((value) &(stack_overflow_bucket.exn));
+  mlraise((value) &bucket_Stack_overflow);
 }
 
 void raise_sys_error(value msg)
@@ -151,7 +145,7 @@ void raise_sys_blocked_io(void)
    do a GC before the exception is raised (lack of stack descriptors
    for the ccall to array_bound_error  */
 
-#define BOUND_MSG "out-of-bound array or string access"
+#define BOUND_MSG "index out of bounds"
 #define BOUND_MSG_LEN (sizeof(BOUND_MSG) - 1)
 
 static struct {
