@@ -33,12 +33,10 @@ let labelstring l =
 let typelabel l =
   if l = "" then l else l ^ ":"
 
+let forbidden = [ "class"; "type"; "in"; "from"; "to" ]
 let nicknames =
   [ "class", "clas";
-    "type", "typ";
-    "in", "inside";
-    "from", "src";
-    "to", "dst" ]
+    "type", "typ" ]
 
 let small = String.lowercase
 
@@ -52,8 +50,10 @@ let gettklabel fc =
         then String.sub s ~pos:1 ~len:(String.length s - 1)
         else s
       in begin
-        try List.assoc s nicknames
-        with Not_found -> s
+        if List.mem s forbidden then
+          try List.assoc s nicknames
+          with Not_found -> small fc.var_name
+        else s
       end
   | _ -> raise (Failure "gettklabel")
 
@@ -101,7 +101,7 @@ let ppMLtype ?(any=false) ?(return=false) ?(def=false) ?(counter=ref 0) =
         let l = List.map fcl ~f:
           begin fun fc ->
             "?" ^ begin let p = gettklabel fc in
-                  if count ~item:p tklabels > 1 then small fc.ml_name else p
+                  if count ~item:p tklabels > 1 then small fc.var_name else p
                   end
             ^ ":" ^ 
             let l = types_of_template fc.template in
@@ -209,7 +209,7 @@ let write_constructors ~w = function
         end
 
 (* Write an ML variant *)
-let write_variant ~w {ml_name = mlconstr; var_name = varname; template = t} =
+let write_variant ~w {var_name = varname; template = t} =
   w "`";
   w varname;
   begin match types_of_template t with
@@ -740,7 +740,7 @@ let write_catch_optionals ~w clas ~def:typdef =
         if co <> "" then fatal_error "optionals in optionals";
         *)
         let p = gettklabel fc in
-        (if count ~item:p tklabels > 1 then small fc.ml_name else p),
+        (if count ~item:p tklabels > 1 then small fc.var_name else p),
         small fc.ml_name
       end in
     let p =  List.map l ~f:(fun (si, _) -> "  ?" ^ si) in

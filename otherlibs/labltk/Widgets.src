@@ -691,7 +691,7 @@ subtype option(rowcolumnconfigure) {
 subtype option(grid) {
    Column ["-column"; int]
    ColumnSpan ["-columnspan"; int]
-   Inside ["-in"; widget]
+   In(Inside) ["-in"; widget]
    IPadX ["-ipadx"; int]
    IPadY ["-ipady"; int]
    PadX
@@ -1106,7 +1106,7 @@ subtype option(pack) {
    Before ["-before"; widget]
    Expand ["-expand"; bool]
    Fill ["-fill"; FillMode]
-   In ["-in"; widget]
+   In(Inside) ["-in"; widget]
    IPadX ["-ipadx"; int]
    IPadY ["-ipady"; int]
    PadX
@@ -1161,11 +1161,11 @@ subtype option(photoimage) {
   }
 
 subtype photo(copy) {
-  ImgFrom ["-from"; int; int; int; int]
-  ImgTo   ["-to"; int; int; int; int]
-  Shrink  ["-shrink"]
-  Zoom    ["-zoom"; int; int]
-  Subsample ["-subsample"; int; int]
+  ImgFrom(Src) ["-from"; int; int; int; int]
+  ImgTo(Dst)   ["-to"; int; int; int; int]
+  Shrink       ["-shrink"]
+  Zoom         ["-zoom"; int; int]
+  Subsample    ["-subsample"; int; int]
   }
 
 subtype photo(put) {
@@ -1176,7 +1176,7 @@ subtype photo(read) {
   ImgFormat ["-format"; string]
   ImgFrom
   Shrink
-  TopLeft ["-to"; int; int]
+  TopLeft(Dst) ["-to"; int; int]
   }
 
 subtype photo(write) {
@@ -1323,7 +1323,7 @@ widget scale {
    option BigIncrement ["-bigincrement"; float]
    option ScaleCommand ["-command"; function (float)]
    option Digits ["-digits"; int]
-   option From ["-from"; float]
+   option From(Min) ["-from"; float]
    option Label ["-label"; string]
    option Length ["-length"; int]
    option Resolution ["-resolution"; float]
@@ -1331,7 +1331,7 @@ widget scale {
    option SliderLength ["-sliderlength"; int]
    option State
    option TickInterval ["-tickinterval"; float]
-   option To ["-to"; float]
+   option To(Max) ["-to"; float]
    option Variable
    option Width
 
