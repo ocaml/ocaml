@@ -80,41 +80,41 @@ let scan_failure_test f x =
   test_raises_exc_p (function Scan_failure _ -> true | _ -> false) f x;;
 
 (* The ``continuation'' that returns the scanned value. *)
-let void x = x;;
+let id x = x;;
 
 (* Testing space scanning. *)
 let test0 () =
- (sscanf "" "" void) 1 +
- (sscanf "" " " void) 2 +
- (sscanf " " " " void) 3 +
- (sscanf "\t" " " void) 4 +
- (sscanf "\n" " " void) 5 +
- (sscanf "\n\t 6" " %d" void)
+ (sscanf "" "" id) 1 +
+ (sscanf "" " " id) 2 +
+ (sscanf " " " " id) 3 +
+ (sscanf "\t" " " id) 4 +
+ (sscanf "\n" " " id) 5 +
+ (sscanf "\n\t 6" " %d" id)
 ;;
 test (test0 () = 21);;
 
 (* Testing integer scanning %i and %d. *)
 let test1 () =
- sscanf "1" "%d" void +
- sscanf " 2" " %d" void +
- sscanf " -2" " %d" void +
- sscanf " +2" " %d" void +
- sscanf " 2a " " %da" void;;
+ sscanf "1" "%d" id +
+ sscanf " 2" " %d" id +
+ sscanf " -2" " %d" id +
+ sscanf " +2" " %d" id +
+ sscanf " 2a " " %da" id;;
 
 test (test1 () = 5);;
 
 let test2 () =
- sscanf "123" "%2i" void +
- sscanf "245" "%d" void +
- sscanf " 2a " " %1da" void;;
+ sscanf "123" "%2i" id +
+ sscanf "245" "%d" id +
+ sscanf " 2a " " %1da" id;;
 
 test (test2 () = 259);;
 
 let test3 () =
- sscanf "0xff" "%3i" void +
- sscanf "0XEF" "%3i" void +
- sscanf "x=-245" " x = %d" void +
- sscanf " 2a " " %1da" void;;
+ sscanf "0xff" "%3i" id +
+ sscanf "0XEF" "%3i" id +
+ sscanf "x=-245" " x = %d" id +
+ sscanf " 2a " " %1da" id;;
 
 test (test3 () = -214);;
 
@@ -207,7 +207,7 @@ test (test7 ());;
 let verify_read c =
   let s = Printf.sprintf "%C" c in
   let ib = Scanning.from_string s in
-  assert (bscanf ib "%C" void = c);;
+  assert (bscanf ib "%C" id = c);;
 
 let verify_scan_Chars () =
   for i = 0 to 255 do verify_read (char_of_int i) done;;
@@ -221,7 +221,7 @@ test (test8 ());;
 (* %S and %s styles. *)
 let unit fmt s =
   let ib = Scanning.from_string (Printf.sprintf "%S" s) in
-  Scanf.bscanf ib fmt void;;
+  Scanf.bscanf ib fmt id;;
 
 let test_fmt fmt s = unit fmt s = s;;
 
@@ -268,6 +268,7 @@ let test11 () =
 ;;
 
 (* Empty string (end of input) testing. *)
+prerr_endline "Testing";;
 let test110 () =
  sscanf "" " " (fun x -> x) "" = "" &&
  sscanf "" "%s" (fun x -> x = "") &&
@@ -282,13 +283,10 @@ let test110 () =
  sscanf " " " %s " (fun x -> x = "") &&
  sscanf " " " %s %s" (fun x y -> x = "" && x = y) &&
  sscanf " " " %s@ %s" (fun x y -> x = "" && x = y) &&
- sscanf " poi !" " %s@ %s@." (fun x y -> x = "" && y = "poi!") &&
  sscanf " poi !" " %s@ %s@." (fun x y -> x = "poi" && y = "!") &&
  sscanf " poi !" "%s@ %s@." (fun x y -> x = "" && y = "poi !");;
 
-let test111 () =
- try (sscanf "" "%[^\n]@\n") (fun x -> false) with
- | End_of_file -> true;;
+let test111 () = sscanf "" "%[^\n]@\n" (fun x -> x = "");;
 
 test (test11 () && test110 () && test111 ());;
 
@@ -803,13 +801,45 @@ let test42 () =
 
 test (test42 ());;
 
-let test50 () =
+(* Testing end of file condition (bug found). *)
+let test43, test44 =
+ let s = "" in
+ let ib = Scanning.from_string s in
+ (fun () -> bscanf ib "%i%!" (fun i -> i)),
+ (fun () -> bscanf ib "%!%i" (fun i -> i));;
+
+test_raises_this_exc End_of_file test43 () &&
+test_raises_this_exc End_of_file test44 ();;
+
+(* Testing small range scanning (bug found). *)
+let test45 () =
  let s = "12.2" in
  let ib = Scanning.from_string s in
  bscanf ib "%[0-9].%[0-9]%s%!" (fun s1 s2 s3 ->
    s1 = "12" && s2 = "2" && s3 = "");;
 
-test (test50 ());;
+test (test45 ());;
+
+(* Testing meta formats. *)
+
+let test46, test47 =
+  (fun () ->
+     Printf.sprintf
+       (format_of_string "%i %(%s%).")
+       1 "spells one, %s" "in english"),
+  (fun () ->
+     Printf.sprintf
+       (format_of_string "%i ,%{%s%}, %s.")
+       1 "spells one %s" "in english");;
+
+test (test46 () = "1 spells one, in english.");;
+test (test47 () = "1 ,%s, in english.");;
+
+let test48 ()=
+  sscanf "12 \"%i\"89 " "%i %{%d%}%s %!"
+    (fun i f s -> i=12 && f="%i" && s="89");;
+
+test (test48 ());;
 
 (*******
 
