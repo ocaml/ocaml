@@ -34,7 +34,9 @@ let wrap parsing_fun lexbuf =
   try
     parsing_fun Lexer.token lexbuf
   with
-      Lexer.Error(_, _, _) as err ->
+    | Lexer.Error(Lexer.Unterminated_comment, _, _) as err -> raise err
+    | Lexer.Error(Lexer.Unterminated_string, _, _) as err -> raise err
+    | Lexer.Error(_, _, _) as err ->
         if !Location.input_name = "" then skip_phrase lexbuf;
         raise err
     | Parsing.Parse_error ->

@@ -146,3 +146,6 @@ let print_warning loc msg =
   print_string "Warning: "; print_string msg; print_newline();
   incr num_loc_lines
 
+let echo_eof () =
+  print_newline ();
+  incr num_loc_lines;
