@@ -108,6 +108,8 @@ bootstrap:
 # Check if fixpoint reached
 	$(MAKE) compare
 
+LIBFILES=stdlib.cma std_exit.cmo *.cmi cslheader
+
 # Start up the system from the distribution compiler
 coldstart:
 	cd byterun; $(MAKE) all
@@ -115,7 +117,7 @@ coldstart:
 	cd yacc; $(MAKE) all
 	cp yacc/camlyacc boot/camlyacc
 	cd stdlib; $(MAKE) COMPILER=../boot/camlc all
-	cp stdlib/stdlib.cma stdlib/*.cmi stdlib/cslheader boot
+	cd stdlib; cp $(LIBFILES) ../boot
 
 # Save the current bootstrap compiler
 backup:
@@ -125,7 +127,7 @@ backup:
 	mv boot/Saved.prev boot/Saved/Saved.prev
 	cp boot/camlrun boot/Saved
 	mv boot/camlc boot/camllex boot/camlyacc boot/Saved
-	mv boot/*.cmi boot/stdlib.cma boot/cslheader boot/Saved
+	cd boot; cp $(LIBFILES) Saved
 
 # Promote the newly compiled system to the rank of cross compiler
 # (Runs on the old runtime, produces code for the new runtime)
@@ -133,7 +135,7 @@ promote-cross:
 	cp camlc boot/camlc
 	cp lex/camllex boot/camllex
 	cp yacc/camlyacc boot/camlyacc
-	cp stdlib/stdlib.cma stdlib/*.cmi stdlib/cslheader boot
+	cd stdlib; cp $(LIBFILES) ../boot
 
 # Promote the newly compiled system to the rank of bootstrap compiler
 # (Runs on the new runtime, produces code for the new runtime)
