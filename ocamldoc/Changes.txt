@@ -1,4 +1,5 @@
 Current :
+OK - fix: missing spaces after carriage return in types (Odoc_misc.string_of_type_expr)
 OK - fixes: some bugs in the text parser 
      ( ]} meaning end of code and somehting else instead of end of precode)
 OK - add: in Odoc_info: text_of_string, text_string_of_text, info_of_string

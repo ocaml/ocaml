@@ -734,7 +734,7 @@ val apply_if_equal : ('a -> 'a) -> 'a -> 'a -> 'a
    @raise Text_syntax if a syntax error is encountered. *)
 val text_of_string : string -> text
 
-(** [string_text_of_text text] returns the string representing
+(** [text_string_of_text text] returns the string representing
    the given [text]. This string can then be parsed again
    by {!Odoc_info.text_of_string}.*)   
 val text_string_of_text : text -> string
@@ -745,6 +745,11 @@ val text_string_of_text : text -> string
    @return an empty structure if there was a syntax error. TODO: change this
 *)
 val info_of_string : string -> info
+
+(** [info_string_of_info info] returns the string representing
+   the given [info]. This string can then be parsed again
+   by {!Odoc_info.info_of_string}.*)   
+val info_string_of_info : info -> string
 
 (** [info_of_comment_file file] parses the given file
    and return an {!Odoc_info.info} structure. The content of the 
