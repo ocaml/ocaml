@@ -34,7 +34,7 @@ clean:
 
 realclean: clean
 	rm -f *.lib *.obj
-	rm -f $(REGEXLIB)\*.obj
+	rm -f $(REGEXLIB)/*.obj
 
 install:
 	cp libstr.lib $(LIBDIR)\libstr.lib
