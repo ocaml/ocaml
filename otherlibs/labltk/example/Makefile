@@ -22,6 +22,10 @@ clock: clock.cmo
 	$(LABLC) -custom $(COMPFLAGS) -o clock tk41.cma unix.cma clock.cmo \
 	      $(TKLINKOPT) -cclib -lunix
 
+clock.opt: clock.cmx
+	$(CAMLOPT) $(COMPFLAGS) -o clock.opt tk41.cmxa unix.cmxa clock.cmx \
+	      $(TKLINKOPT) -cclib -lunix
+
 tetris: tetris.cmo
 	$(LABLC) -custom $(COMPFLAGS) -o tetris tk41.cma tetris.cmo $(TKLINKOPT)
 
