@@ -823,6 +823,7 @@ value interprete(prog, prog_size)
       Next;
     Instruct(OFFSETREF):
       Field(accu, 0) += *pc << 1;
+      accu = Val_unit;
       pc++;
       Next;
 
