@@ -2,8 +2,8 @@
 
 external length : 'a array -> int = "%array_length"
 
-val get: 'a array -> int -> 'a
-val set: 'a array -> int -> 'a -> unit
+external get: 'a array -> int -> 'a = "array_get"
+external set: 'a array -> int -> 'a -> unit = "array_set"
 external new: int -> 'a -> 'a array = "make_vect"
 val new_matrix: int -> int -> 'a -> 'a array array
 val append: 'a array -> 'a array -> 'a array
@@ -17,6 +17,6 @@ val map: ('a -> 'b) -> 'a array -> 'b array
 val to_list: 'a array -> 'a list
 val of_list: 'a list -> 'a array
 
-external unsafe_get: 'a array -> int -> 'a = "%array_get"
-external unsafe_set: 'a array -> int -> 'a -> unit = "%array_set"
+external unsafe_get: 'a array -> int -> 'a = "%array_unsafe_get"
+external unsafe_set: 'a array -> int -> 'a -> unit = "%array_unsafe_set"
 

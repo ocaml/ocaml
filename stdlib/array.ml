@@ -1,10 +1,13 @@
 (* Array operations *)
 
 external length : 'a array -> int = "%array_length"
-external unsafe_get: 'a array -> int -> 'a = "%array_get"
-external unsafe_set: 'a array -> int -> 'a -> unit = "%array_set"
+external unsafe_get: 'a array -> int -> 'a = "%array_unsafe_get"
+external unsafe_set: 'a array -> int -> 'a -> unit = "%array_unsafe_set"
 external new: int -> 'a -> 'a array = "make_vect"
+external get: 'a array -> int -> 'a = "array_get"
+external set: 'a array -> int -> 'a -> unit = "array_set"
 
+(*****
 let get a n =
   if n < 0 or n >= length a
   then invalid_arg "Array.get"
@@ -14,6 +17,7 @@ let set a n v =
   if n < 0 or n >= length a
   then invalid_arg "Array.set"
   else unsafe_set a n v
+*****)
 
 let new_matrix sx sy init =
   let res = new sx [||] in
@@ -37,7 +41,7 @@ let append a1 a2 =
   if l1 = 0 & l2 = 0 then [||] else begin
     let r = new (l1 + l2) (unsafe_get (if l1 > 0 then a1 else a2) 0) in
     for i = 0 to l1 - 1 do unsafe_set r i (unsafe_get a1 i) done;  
-    for i = 0 to l2 - 1 do unsafe_set r (i + l1) (unsafe_get a1 i) done;  
+    for i = 0 to l2 - 1 do unsafe_set r (i + l1) (unsafe_get a2 i) done;  
     r
   end
 

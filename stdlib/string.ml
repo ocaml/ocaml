@@ -2,12 +2,15 @@
 
 external length : string -> int = "ml_string_length"
 external create: int -> string = "create_string"
-external unsafe_get : string -> int -> char = "%string_get"
-external unsafe_set : string -> int -> char -> unit = "%string_set"
+external unsafe_get : string -> int -> char = "%string_unsafe_get"
+external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"
+external get : string -> int -> char = "string_get"
+external set : string -> int -> char -> unit = "string_set"
 external unsafe_blit : string -> int -> string -> int -> int -> unit
                 = "blit_string"
 external unsafe_fill : string -> int -> int -> char -> unit = "fill_string"
 
+(******
 let get s n =
   if n < 0 or n >= length s
   then invalid_arg "String.get"
@@ -17,6 +20,7 @@ let set s n c =
   if n < 0 or n >= length s
   then invalid_arg "String.set"
   else unsafe_set s n c
+*******)
 
 let make n c =
   let s = create n in
