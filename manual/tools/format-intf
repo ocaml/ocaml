@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
 $html = 0;
 if ($ARGV[0] eq "-html") {

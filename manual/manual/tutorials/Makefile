@@ -1,6 +1,6 @@
-FILES= coreexamples.tex objectexamples.tex moduleexamples.tex advexamples.tex
+FILES= coreexamples.tex lablexamples.tex objectexamples.tex moduleexamples.tex advexamples.tex
 
-CAMLLATEX=../../tools/caml-tex
+CAMLLATEX=../../tools/caml-tex2
 TEXQUOTE=../../tools/texquote2
 
 ALLFILES=$(FILES)

@@ -7,6 +7,13 @@
  \gdef\@camloutputline#1^^M{\small\ttfamily\slshape#1\par} } %
 \def\@camlblankline{\medskip}
 \chardef\@camlbackslash="5C
+\def\@bunderline{\setbox0\hbox\bgroup\let\par\@parinunderline}
+
+\def \@parinunderline {\futurelet \@next \@@parinunderline}
+\def \@@parinunderline {\ifx \@next \? \let \@do \@@par@inunderline \else \let \@do \@@@parinunderline \fi \@do}
+\def \@@par@inunderline #1{\@eunderline\@oldpar\?\@bunderline}
+\def \@@@parinunderline {\@eunderline\@oldpar\@bunderline}
+\def\@eunderline{\egroup\underline{\box0}}
 
 \def\caml{
   \bgroup
@@ -19,9 +26,12 @@
   \catcode`\ \active
   \frenchspacing
   \@vobeyspaces
+  \let\@oldpar\par
   \let\?\@camlinputline
   \let\:\@camloutputline
   \let\;\@camlblankline
+  \let\<\@bunderline
+  \let\>\@eunderline
   \let\\\@camlbackslash
 }
 

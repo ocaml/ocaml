@@ -43,6 +43,7 @@ and as a
 \part{An introduction to Objective Caml}
 \label{p:tutorials}
 \input{coreexamples.tex}
+\input{lablexamples.tex}
 \input{objectexamples.tex}
 \input{moduleexamples.tex}
 \input{advexamples.tex}

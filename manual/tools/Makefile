@@ -1,6 +1,6 @@
 CFLAGS=-g -O
 
-all: texquote2 transf htmlquote htmlgen dvi2txt
+all: texquote2 transf htmlquote htmlgen dvi2txt caml-tex2
 
 dvi2txt:
 	cd dvi_to_txt; ${MAKE}
@@ -19,6 +19,10 @@ htmlgen: latexmacros.cmo latexscan.cmo latexmain.cmo
 
 latexscan.ml: latexscan.mll
 	ocamllex latexscan.mll
+
+caml-tex2: caml-tex2.cmo
+	ocamlc -custom -o caml-tex2 str.cma unix.cma caml-tex2.cmo \
+		-cclib -lunix -cclib -lstr
 
 .SUFFIXES:
 .SUFFIXES: .ml .cmo .mli .cmi .c
