@@ -620,7 +620,7 @@ let end_assembly () =
   `	.text\n`;
   `	.globl	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
-  let lbl_end = Compilenv.current_unit_name() ^ "_end" in
+  let lbl_end = Compilenv.current_unit_name() ^ "_data_end" in
   `	.data\n`;
   `	.globl	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
