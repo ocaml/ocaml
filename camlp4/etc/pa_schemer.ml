@@ -111,7 +111,9 @@ value digits kind bp len =
   parser
   [ [: d = kind; s :] -> ("INT", digits_under kind (Buff.store len d) s)
   | [: s :] ep ->
-      raise_with_loc (Reloc.shift_pos "" bp Token.nowhere, Reloc.shift_pos "" ep Token.nowhere) (Failure "ill-formed integer constant") ]
+      raise_with_loc
+        (Reloc.shift_pos bp Reloc.zero_loc, Reloc.shift_pos ep Reloc.zero_loc)
+        (Failure "ill-formed integer constant") ]
 ;
 
 value base_number kwt bp len =
@@ -133,7 +135,10 @@ value char_or_quote_id x =
   [ [: `''' :] -> ("CHAR", String.make 1 x)
   | [: s :] ep ->
       if List.mem x no_ident then
-        Stdpp.raise_with_loc (Reloc.shift_pos "" (ep - 2) Token.nowhere, Reloc.shift_pos "" (ep - 1) Token.nowhere) (Stream.Error "bad quote")
+        Stdpp.raise_with_loc
+          (Reloc.shift_pos (ep - 2) Reloc.zero_loc,
+           Reloc.shift_pos (ep - 1) Reloc.zero_loc)
+          (Stream.Error "bad quote")
       else
         let len = Buff.store (Buff.store 0 ''') x in
         let (s, dot) = ident len s in
@@ -168,7 +173,10 @@ value rec lexer kwt = parser [: t = lexer0 kwt; _ = no_dot :] -> t
 and no_dot =
   parser
   [ [: `'.' :] ep ->
-      Stdpp.raise_with_loc (Reloc.shift_pos "" (ep - 1) Token.nowhere, Reloc.shift_pos "" ep Token.nowhere) (Stream.Error "bad dot")
+      Stdpp.raise_with_loc
+        (Reloc.shift_pos (ep - 1) Reloc.zero_loc,
+         Reloc.shift_pos ep Reloc.zero_loc)
+        (Stream.Error "bad dot")
   | [: :] -> () ]
 and lexer0 kwt =
   parser bp
@@ -264,8 +272,11 @@ value lexer_gmake () =
   let kwt = Hashtbl.create 89 in
   {Token.tok_func =
      Token.lexer_func_of_parser
-       (fun s -> let (r,(bp,ep)) = lexer kwt s in
-                   (r, (Reloc.shift_pos "" bp Token.nowhere, Reloc.shift_pos "" ep Token.nowhere)));
+       (fun s ->
+          let (r, (bp, ep)) = lexer kwt s in
+          (r,
+           (Reloc.shift_pos bp Reloc.zero_loc,
+            Reloc.shift_pos ep Reloc.zero_loc)));
    Token.tok_using = lexer_using kwt; Token.tok_removing = fun [];
    Token.tok_match = Token.default_match; Token.tok_text = lexer_text;
    Token.tok_comm = None}
@@ -645,11 +656,11 @@ and expr_se =
   | Sexpr loc [se] ->
       let e = expr_se se in
       <:expr< $e$ () >>
-  | Sexpr loc [Slid _ "assert"; Suid _ "False" ] ->
+  | Sexpr loc [Slid _ "assert"; Suid _ "False"] ->
         <:expr< assert False >>
   | Sexpr loc [Slid _ "assert"; se] ->
       let e = expr_se se in
-        <:expr< assert $e$ >>
+      <:expr< assert $e$ >>
   | Sexpr loc [Slid _ "lazy"; se] ->
       let e = expr_se se in
       <:expr< lazy $e$ >>
