@@ -270,7 +270,7 @@ method schedule_fundecl f =
         | Lop(Icall_imm _ | Itailcall_imm _ | Iextcall(_, _)) -> [||]
         | Lreturn -> [||]
         | _ -> i.arg in
-      List.iter (longest_path critical_outputs) ready_queue;
+      List.iter (fun x -> longest_path critical_outputs x; ()) ready_queue;
       self#reschedule ready_queue 0 (schedule i)
     end in
 
