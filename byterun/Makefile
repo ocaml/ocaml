@@ -1,5 +1,4 @@
-include ../config/Makefile.h
-include ../Makefile.config
+include ../config/Makefile
 
 CC=$(BYTECC)
 CFLAGS=-O $(BYTECCCOMPOPTS)
@@ -19,10 +18,10 @@ PRIMS=array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
 all: cslrun
 
 cslrun: $(OBJS) prims.o
-	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) $(LOWADDRESSES) -o cslrun prims.o $(OBJS) $(CCLIBS)
+	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o cslrun prims.o $(OBJS) $(CCLIBS)
 
 cslrund: $(DOBJS) prims.o
-	$(BYTECC) -g $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) $(LOWADDRESSES) -o cslrund prims.o $(DOBJS) $(CCLIBS)
+	$(BYTECC) -g $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o cslrund prims.o $(DOBJS) $(CCLIBS)
 
 install:
 	cp cslrun $(BINDIR)/cslrun

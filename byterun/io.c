@@ -17,6 +17,9 @@
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
+#ifdef __STDC__
+#include <limits.h>
+#endif
 #include "alloc.h"
 #include "fail.h"
 #include "io.h"
@@ -27,6 +30,10 @@
 #include "sys.h"
 #ifdef HAS_UI
 #include "ui.h"
+#endif
+
+#ifndef INT_MAX
+#define INT_MAX 0x7FFFFFFF
 #endif
 
 /* Common functions. */
@@ -132,13 +139,14 @@ value output_int(channel, w)    /* ML */
   return Val_unit;
 }
 
-void putblock(channel, p, n)
+void putblock(channel, p, len)
      struct channel * channel;
      char * p;
-     unsigned n;
+     long len;
 {
-  unsigned m;
+  int n, m;
 
+  n = len >= INT_MAX ? INT_MAX : (int) len;
   m = channel->end - channel->curr;
   if (channel->curr == channel->buff && n >= m) {
     really_write(channel->fd, p, n);
@@ -170,7 +178,7 @@ value output(channel, buff, start, length) /* ML */
 {
   putblock((struct channel *) channel,
            &Byte(buff, Long_val(start)),
-           (unsigned) Long_val(length));
+           Long_val(length));
   return Val_unit;
 }
 
@@ -276,13 +284,14 @@ value input_int(channel)        /* ML */
   return Val_long(i);
 }
 
-unsigned getblock(channel, p, n)
+int getblock(channel, p, len)
      struct channel * channel;
      char * p;
-     unsigned n;
+     long len;
 {
-  unsigned m, l;
+  int n, m, l;
 
+  n = len >= INT_MAX ? INT_MAX : (int) len;
   m = channel->max - channel->curr;
   if (n <= m) {
     bcopy(channel->curr, p, n);
@@ -312,11 +321,11 @@ unsigned getblock(channel, p, n)
 int really_getblock(chan, p, n)
      struct channel * chan;
      char * p;
-     unsigned long n;
+     long n;
 {
-  unsigned r;
+  int r;
   while (n > 0) {
-    r = getblock(chan, p, (unsigned) n);
+    r = getblock(chan, p, n);
     if (r == 0) return 0;
     p += r;
     n -= r;
@@ -329,7 +338,7 @@ value input(channel, buff, start, length) /* ML */
 {
   return Val_long(getblock((struct channel *) channel,
                            &Byte(buff, Long_val(start)),
-                           (unsigned) Long_val(length)));
+                           Long_val(length)));
 }
 
 value seek_in(channel, pos)     /* ML */
