@@ -8,7 +8,7 @@ while : ; do
   case "$1" in
     "")
       break;;
-    -m)
+    -p)
       profargs="$profargs -m $2"; shift;;
     -I|-o|-ccopt|-cclib)
       cslargs="$cslargs $1 $2"; shift;;
