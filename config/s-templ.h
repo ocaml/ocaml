@@ -76,6 +76,10 @@
    Otherwise, we'll load /usr/include/sys/dir.h, and readdir() is expected to
    return a struct direct *. */
 
+#define HAS_REWINDDIR
+
+/* Define HAS_REWINDDIR if you have rewinddir(). */
+
 #define HAS_LOCKF
 
 /* Define HAS_LOCKF if the library provides the lockf() function. */
@@ -127,10 +131,10 @@
 
 /* Define HAS_SYMLINK if you have symlink() and readlink() and lstat(). */
 
-#define HAS_WAIT3
+#define HAS_WAIT4
 #define HAS_WAITPID
 
-/* Define HAS_WAIT3 if you have wait3().
+/* Define HAS_WAIT4 if you have wait4().
    Define HAS_WAITPID if you have waitpid(). */
 
 #define HAS_GETGROUPS
@@ -163,4 +167,8 @@
 #define HAS_GETTIMEOFDAY
 
 /* Define HAS_GETTIMEOFDAY if you have gettimeofday(). */
+
+#define HAS_MKTIME
+
+/* Define HAS_MKTIME if you have mktime(). */
 
