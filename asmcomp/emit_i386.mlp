@@ -291,12 +291,13 @@ let emit_instr i =
           `	jmp	{emit_symbol s}\n`
         end
     | Lop(Iextcall(s, alloc)) ->
-        if contains_floats i.arg or contains_floats i.res then
-          `	finit\n`;
         if alloc then begin
           `	movl	${emit_symbol s}, %eax\n`;
           `	call	{emit_symbol "caml_c_call"}\n`;
           record_frame i.live
+        end else if contains_floats i.arg or contains_floats i.res then begin
+          `	movl	${emit_symbol s}, %eax\n`;
+          `	call	{emit_symbol "caml_c_call_noalloc"}\n`
         end else
           `	call	{emit_symbol s}\n`;
         if Array.length i.res > 0 & i.res.(0).typ = Float then

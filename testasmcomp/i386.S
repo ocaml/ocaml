@@ -42,8 +42,16 @@ G(call_gen_code):
         ret
 
         .globl  G(caml_c_call)
+        .globl  G(caml_c_call_noalloc)
         .align  FUNCTION_ALIGN
 G(caml_c_call):
+G(caml_c_call_noalloc):
+        ffree   %st(0)
+        ffree   %st(1)
+        ffree   %st(2)
+        ffree   %st(3)
+        ffree   %st(4)
+        ffree   %st(5)
         jmp     *%eax
 
         .comm   G(caml_exception_pointer), 4

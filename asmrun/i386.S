@@ -91,14 +91,12 @@ L103:   popl    %eax
         jmp     L105
 
 G(caml_call_gc):
-    /* Recover desired size and adjust return address */
+    /* Adjust return address */
         popl    %eax
         addl    $2, %eax
-        pushl   %eax
-	movzwl	-2(%eax), %eax
 L105:
     /* Record lowest stack address and return address */
-        popl    G(caml_last_return_address)
+        movl    %eax, G(caml_last_return_address)
         movl    %esp, G(caml_bottom_of_stack)
     /* Save all regs used by the code generator */
         movl    %ebx, G(gc_entry_regs) + 4
@@ -107,8 +105,6 @@ L105:
         movl    %esi, G(gc_entry_regs) + 16
         movl    %edi, G(gc_entry_regs) + 20
         movl    %ebp, G(gc_entry_regs) + 24
-    /* Save desired size */
-        pushl   %eax
     /* Call the garbage collector */
         call    G(minor_collection)
     /* Restore all regs used by the code generator */
@@ -118,8 +114,10 @@ L105:
         movl    G(gc_entry_regs) + 16, %esi
         movl    G(gc_entry_regs) + 20, %edi
         movl    G(gc_entry_regs) + 24, %ebp
+    /* Recover desired size */
+        movl    G(caml_last_return_address), %eax
+	movzwl	-2(%eax), %eax
     /* Decrement young_ptr by desired size */
-        popl    %eax
         subl    %eax, G(young_ptr)
     /* Reload result of allocation in %eax */
         movl    G(young_ptr), %eax
@@ -134,11 +132,32 @@ L105:
         .align  FUNCTION_ALIGN
 G(caml_c_call):
     /* Record lowest stack address and return address */
+    /* In parallel, free the floating point registers */
+    /* (Pairing is expected on the Pentium.) */
         movl    (%esp), %edx
+        ffree   %st(0)
+        ffree   %st(1)
+        ffree   %st(2)
         movl    %edx, G(caml_last_return_address)
+        ffree   %st(3)
         leal    4(%esp), %edx
+        ffree   %st(4)
         movl    %edx, G(caml_bottom_of_stack)
+        ffree   %st(5)
     /* Call the function (address in %eax) */
+        jmp     *%eax
+
+        .globl  G(caml_c_call_noalloc)
+
+        .align  FUNCTION_ALIGN
+G(caml_c_call_noalloc):
+    /* Just free the floating point registers */
+        ffree   %st(0)
+        ffree   %st(1)
+        ffree   %st(2)
+        ffree   %st(3)
+        ffree   %st(4)
+        ffree   %st(5)
         jmp     *%eax
 
 /* Start the Caml program */
