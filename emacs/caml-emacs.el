@@ -5,10 +5,10 @@
 
 (defalias 'caml-line-beginning-position 'line-beginning-position)
 
-(defun caml-event-window (e) (event-window (event-start e)))
+(defun caml-event-window (e) (posn-window (event-start e)))
 (defun caml-event-point-start (e) (posn-point (event-stact e)))
 (defun caml-event-point-end (e) (posn-point (event-end e)))
-(defmacro caml-track-mouse (el) (track-mouse el))
+(defalias 'caml-track-mouse 'track-mouse)
 (defalias 'caml-read-event 'read-event)
 (defun caml-mouse-movement-p mouse-mouvement)
 

@@ -12,7 +12,7 @@
 (defun caml-event-window (e) (event-window e))
 (defun caml-event-point-start (e) (event-closest-point e))
 (defun caml-event-point-end (e) (event-closest-point e))
-(defmacro caml-track-mouse (el) (progn el))
+(defalias 'caml-track-mouse 'progn)
 (defalias 'caml-read-event 'next-event)
 (defun mouse-movement-p (e) (equal (event-type e) 'motion))
 

@@ -411,7 +411,7 @@ and its type is displayed in the minibuffer, until the move is released."
                   (setq limits (caml-types-find-interval target-buf target-pos
                                                          tree))
                   ))
-                (message (format "type: %s" type))
+                (message (setq mes (format "type: %s" type)))
                 (insert type)
                 ))
               (setq event (caml-read-event))
