@@ -242,8 +242,8 @@ EXTEND
       | "open"; i = mod_ident -> <:str_item< open $i$ >>
       | "type"; tdl = LIST1 type_declaration SEP "and" ->
           <:str_item< type $list:tdl$ >>
-      | "value"; r = OPT "rec"; l = LIST1 let_binding SEP "and" ->
-          <:str_item< value $rec:o2b r$ $list:l$ >>
+      | "value"; r = rec_flag; l = LIST1 let_binding SEP "and" ->
+          <:str_item< value $rec:r$ $list:l$ >>
       | e = expr -> <:str_item< $exp:e$ >> ] ]
   ;
   rebind_exn:
@@ -305,9 +305,9 @@ EXTEND
   ;
   expr:
     [ "top" RIGHTA
-      [ "let"; r = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
+      [ "let"; r = rec_flag; l = LIST1 let_binding SEP "and"; "in";
         x = SELF ->
-          <:expr< let $rec:o2b r$ $list:l$ in $x$ >>
+          <:expr< let $rec:r$ $list:l$ in $x$ >>
       | "let"; "module"; m = UIDENT; mb = module_binding; "in"; e = SELF ->
           <:expr< let module $m$ = $mb$ in $e$ >>
       | "fun"; "["; l = LIST0 match_case SEP "|"; "]" ->
@@ -330,8 +330,8 @@ EXTEND
       | "while"; e = SELF; "do"; "{"; seq = sequence; "}" ->
           <:expr< while $e$ do { $list:seq$ } >> ]
     | "where"
-      [ e = SELF; "where"; rf = OPT "rec"; lb = let_binding ->
-          <:expr< let $rec:o2b rf$ $list:[lb]$ in $e$ >> ]
+      [ e = SELF; "where"; rf = rec_flag; lb = let_binding ->
+          <:expr< let $rec:rf$ $list:[lb]$ in $e$ >> ]
     | ":=" NONA
       [ e1 = SELF; ":="; e2 = SELF; dummy -> <:expr< $e1$ := $e2$ >> ]
     | "||" RIGHTA
@@ -390,8 +390,7 @@ EXTEND
       | s = CHAR -> <:expr< $chr:s$ >>
       | i = expr_ident -> i
       | "["; "]" -> <:expr< [] >>
-      | "["; el = LIST1 expr SEP ";"; last = OPT [ "::"; e = expr -> e ];
-        "]" ->
+      | "["; el = LIST1 expr SEP ";"; last = cons_expr_opt; "]" ->
           mklistexp loc last el
       | "[|"; el = LIST0 expr SEP ";"; "|]" -> <:expr< [| $list:el$ |] >>
       | "{"; lel = LIST1 label_expr SEP ";"; "}" -> <:expr< { $list:lel$ } >>
@@ -404,13 +403,17 @@ EXTEND
           <:expr< ( $list:[e::el]$) >>
       | "("; e = SELF; ")" -> <:expr< $e$ >> ] ]
   ;
+  cons_expr_opt:
+    [ [ "::"; e = expr -> Some e
+      | -> None ] ]
+  ;
   dummy:
     [ [ -> () ] ]
   ;
   sequence:
-    [ [ "let"; o = OPT "rec"; l = LIST1 let_binding SEP "and"; [ "in" | ";" ];
+    [ [ "let"; rf = rec_flag; l = LIST1 let_binding SEP "and"; [ "in" | ";" ];
         el = SELF ->
-          [ <:expr< let $rec:o2b o$ $list:l$ in $mksequence loc el$ >>]
+          [ <:expr< let $rec:rf$ $list:l$ in $mksequence loc el$ >>]
       | e = expr; ";"; el = SELF -> [e :: el]
       | e = expr; ";" -> [e]
       | e = expr -> [e] ] ]
@@ -425,9 +428,16 @@ EXTEND
       | ":"; t = ctyp; "="; e = expr -> <:expr< ($e$ : $t$) >> ] ]
   ;
   match_case:
-    [ [ p = patt; aso = OPT [ "as"; p = patt -> p ];
-        w = OPT [ "when"; e = expr -> e ]; "->"; e = expr ->
+    [ [ p = patt; aso = as_patt_opt; w = when_expr_opt; "->"; e = expr ->
           mkmatchcase loc p aso w e ] ]
+  ;
+  as_patt_opt:
+    [ [ "as"; p = patt -> Some p
+      | -> None ] ]
+  ;
+  when_expr_opt:
+    [ [ "when"; e = expr -> Some e
+      | -> None ] ]
   ;
   label_expr:
     [ [ i = patt_label_ident; e = fun_binding -> (i, e) ] ]
@@ -462,8 +472,7 @@ EXTEND
       | "-"; s = INT -> mkuminpat loc "-" True s
       | "-"; s = FLOAT -> mkuminpat loc "-" False s
       | "["; "]" -> <:patt< [] >>
-      | "["; pl = LIST1 patt SEP ";"; last = OPT [ "::"; p = patt -> p ];
-        "]" ->
+      | "["; pl = LIST1 patt SEP ";"; last = cons_patt_opt; "]" ->
           mklistpat loc last pl
       | "[|"; pl = LIST0 patt SEP ";"; "|]" -> <:patt< [| $list:pl$ |] >>
       | "{"; lpl = LIST1 label_patt SEP ";"; "}" -> <:patt< { $list:lpl$ } >>
@@ -474,6 +483,10 @@ EXTEND
       | "("; p = SELF; ","; pl = LIST1 patt SEP ","; ")" ->
           <:patt< ( $list:[p::pl]$) >>
       | "_" -> <:patt< _ >> ] ]
+  ;
+  cons_patt_opt:
+    [ [ "::"; p = patt -> Some p
+      | -> None ] ]
   ;
   label_patt:
     [ [ i = patt_label_ident; "="; p = patt -> (i, p) ] ]
@@ -544,8 +557,8 @@ EXTEND
       | ci = UIDENT -> (loc, ci, []) ] ]
   ;
   label_declaration:
-    [ [ i = LIDENT; ":"; mf = OPT "mutable"; t = ctyp ->
-          (loc, i, o2b mf, t) ] ]
+    [ [ i = LIDENT; ":"; mf = mutable_flag; t = ctyp ->
+          (loc, i, mf, t) ] ]
   ;
   ident:
     [ [ i = LIDENT -> i
@@ -557,9 +570,17 @@ EXTEND
       | i = LIDENT -> [i]
       | i = UIDENT; "."; j = SELF -> [i :: j] ] ]
   ;
+  rec_flag:
+    [ [ "rec" -> True
+      | -> False ] ]
+  ;
   direction_flag:
     [ [ "to" -> True
       | "downto" -> False ] ]
+  ;
+  mutable_flag:
+    [ [ "mutable" -> True
+      | -> False ] ]
   ;
 END;
 
