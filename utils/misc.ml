@@ -51,7 +51,7 @@ let rec replicate_list elem n =
 (* File functions *)
 
 let find_in_path path name =
-  if Filename.is_absolute name then
+  if not (Filename.is_implicit name) then
     if Sys.file_exists name then name else raise Not_found
   else begin
     let rec try_dir = function
