@@ -358,7 +358,7 @@ let main () =
       process_file;
     exit 0
   with x ->
-    set_formatter_output stderr;
+    set_formatter_out_channel stderr;
     open_hovbox 0;
     begin match x with
       Lexer.Error(err, start, stop) ->
