@@ -6,7 +6,7 @@ CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../unix
 BYTECODE_C_OBJS=posix_b.o
 NATIVECODE_C_OBJS=posix_n.o
 
-THREAD_OBJS=thread.cmo condition.cmo event.cmo threadUnix.cmo
+THREAD_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 
 GENFILES=thread.ml
 
@@ -49,9 +49,11 @@ clean: partialclean
 install:
 	cp libthreads.a $(LIBDIR)/libthreads.a
 	if test -d $(LIBDIR)/threads; then :; else mkdir $(LIBDIR)/threads; fi
-	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi threads.cma stdlib.cma $(LIBDIR)/threads
+	cp $(THREAD_OBJS:.cmo=.cmi) threads.cma $(LIBDIR)/threads
 
 installopt:
+	cp libthreadsnat.a $(LIBDIR)/libthreadsnat.a
+	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.a $(LIBDIR)/threads
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
