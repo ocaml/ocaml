@@ -14,15 +14,15 @@ mlTk = LablTk + CamlTk
 ======================
 
 mlTk library supports two API's: LablTk and CamlTk. Historically LablTk is 
-developped from CamlTk. It has better typing thanks to newer features of
+developed from CamlTk. It has better typing thanks to newer features of
 O'Caml: labeled optional function arguments and polymorphic variants.
-CamlTk has the "classical" interfacef for Tcl/Tk and free from these new 
+CamlTk has the "classical" interface for Tcl/Tk and free from these new 
 gadgets. LablTk and CamlTk were maintained independently as two different
 libraries, but in mlTk, they are unified.
 
 LablTk API
 ----------
-LablTk API is 100% compatible with the origianl LablTk library,
+LablTk API is 100% compatible with the original LablTk library,
 which has been available in the O'Caml distribution. All the LablTk
 applications can be compiled also under mlTk without any modifications.
 
@@ -41,14 +41,14 @@ modifications:
 
  - Widget and the other Tcl/Tk related types are now under Camltk.
    (e.g. Widget.widget is now Camltk.Widget.widget)
-   Add open Camltk at the begining of .mli files, if these types are
+   Add open Camltk at the beginning of .mli files, if these types are
    used:
 
       open Camltk (* added for compiling under mlTk *)
 
       val create_progress_bar : Widget.widget -> Widget.widget
 
- - Some functions have additional optinal arguments. Higher order uses of
+ - Some functions have additional optional arguments. Higher order uses of
    these functions may require eta-expansions. For example, the function
    Bell.ring had a type unit -> unit, but now has 
    
