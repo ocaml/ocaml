@@ -55,6 +55,7 @@ Standard library:
 - Module Int32: new functions Int32.bits_of_float, Int32.float_of_bits.
 - Module Map: new functions is_empty, compare, equal.
 - Module Set: new function split.
+- Module Gc: in-order finalisation.
 
 Other libraries:
 - The Num library: complete reimplementation of the C/asm lowest

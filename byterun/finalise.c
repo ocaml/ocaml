@@ -27,31 +27,61 @@ struct final {
 };
 
 static struct final *final_table = NULL;
-static unsigned long old = 0, young = 0, active = 0, size = 0;
+static unsigned long old = 0, young = 0, size = 0;
 /* [0..old) : finalisable set
    [old..young) : recent set
-   [young..active) : free space
-   [active..size) : finalising set
+   [young..size) : free space
 */
 
-/* Find white finalisable values, darken them, and put them in the
-   finalising set.
+struct to_do {
+  struct to_do *next;
+  int size;
+  struct final item[1];  /* variable size */
+};
+
+static struct to_do *to_do_hd = NULL;
+static struct to_do *to_do_tl = NULL;
+
+static void alloc_to_do (int size)
+{
+  struct to_do *result = malloc (sizeof (struct to_do)
+                                 + size * sizeof (struct final));
+  if (result == NULL) caml_fatal_error ("out of memory");
+  result->next = NULL;
+  result->size = size;
+  if (to_do_tl == NULL){
+    to_do_hd = result;
+    to_do_tl = result;
+  }else{
+    Assert (to_do_tl->next == NULL);
+    to_do_tl->next = result;
+    to_do_tl = result;
+  }
+}
+
+/* Find white finalisable values, put them in the finalising set, and
+   darken them.
    The recent set is empty.
 */
 void caml_final_update (void)
 {
-  unsigned long i;
-  unsigned long oldactive = active;
+  unsigned long i, j, k;
+  unsigned long todo_count = 0;
   
   Assert (young == old);
-  Assert (young <= active);
+  for (i = 0; i < old; i++){
+    Assert (Is_block (final_table[i].val));
+    Assert (Is_in_heap (final_table[i].val));
+    if (Is_white_val (final_table[i].val)) ++ todo_count;
+  }
+
+  alloc_to_do (todo_count);
+  j = k = 0;
   for (i = 0; i < old; i++){
   again:
     Assert (Is_block (final_table[i].val));
     Assert (Is_in_heap (final_table[i].val));
     if (Is_white_val (final_table[i].val)){
-      struct final f;
-
       if (Tag_val (final_table[i].val) == Forward_tag){
         value fv = Forward_val (final_table[i].val);
         if (Is_block (fv) && (Is_young (fv) || Is_in_heap (fv))
@@ -65,15 +95,17 @@ void caml_final_update (void)
           }
         }
       }
-      f = final_table[i];
-      final_table[i] = final_table[--old];
-      final_table[--active] = f;
-      -- i;
+      to_do_tl->item[k++] = final_table[i];
+    }else{
+      final_table[j++] = final_table[i];
     }
   }
-  young = old;
-  for (i = active; i < oldactive; i++) caml_darken (final_table[i].val, NULL);
+  old = young = j;
+  to_do_tl->size = k;
+  for (i = 0; i < k; i++) caml_darken (to_do_tl->item[i++].val, NULL);
 }
+
+static int running_finalisation_function = 0;
 
 /* Call the finalisation functions for the finalising set.
    Note that this function must be reentrant.
@@ -81,15 +113,22 @@ void caml_final_update (void)
 void caml_final_do_calls (void)
 {
   struct final f;
-  
-  Assert (active <= size);
-  if (active < size){
-    caml_gc_message (0x80, "Calling finalisation functions.\n", 0);
-    while (active < size){
-      f = final_table[active++];
-      caml_callback (f.fun, f.val);
-    }
-    caml_gc_message (0x80, "Done calling finalisation functions.\n", 0);
+
+  if (running_finalisation_function) return;
+
+  while (to_do_hd != NULL && to_do_hd->size == 0){
+    to_do_hd = to_do_hd->next;
+    if (to_do_hd == NULL) to_do_tl = NULL;
+  }
+  if (to_do_hd != NULL){
+    Assert (to_do_hd->size > 0);
+    -- to_do_hd->size;
+    f = to_do_hd->item[to_do_hd->size];
+    caml_gc_message (0x80, "Calling finalisation function.\n", 0);
+    running_finalisation_function = 1;
+    caml_callback (f.fun, f.val);
+    running_finalisation_function = 0;
+    caml_gc_message (0x80, "Return from finalisation function.\n", 0);
   }
 }
 
@@ -105,14 +144,16 @@ void caml_final_do_calls (void)
 void caml_final_do_strong_roots (scanning_action f)
 {
   unsigned long i;
+  struct to_do *todo;
 
   Assert (old == young);
-  Assert (young <= active);
-  Assert (active <= size);
   for (i = 0; i < old; i++) Call_action (f, final_table[i].fun);
-  for (i = active; i < size; i++){
-    Call_action (f, final_table[i].fun);
-    Call_action (f, final_table[i].val);
+  
+  for (todo = to_do_hd; todo != NULL; todo = todo->next){
+    for (i = 0; i < todo->size; i++){
+      Call_action (f, todo->item[i].fun);
+      Call_action (f, todo->item[i].val);
+    }
   }
 }
 
@@ -159,33 +200,32 @@ CAMLprim value caml_final_register (value f, value v)
   }
 
   Assert (old <= young);
-  Assert (young <= active);
-  Assert (active <= size);
   
-  if (young >= active){
+  if (young >= size){
     if (final_table == NULL){
       unsigned long new_size = 30;
       final_table = caml_stat_alloc (new_size * sizeof (struct final));
       Assert (old == 0);
       Assert (young == 0);
-      active = size = new_size;
+      size = new_size;
     }else{
       unsigned long new_size = size * 2;
-      unsigned long i;
       final_table = caml_stat_resize (final_table,
                                       new_size * sizeof (struct final));
-      for (i = size-1; i >= active; i--){
-        final_table[i + new_size - size] = final_table[i];
-      }
-      active += new_size - size;
       size = new_size;
     }
   }
-  Assert (young < active);
+  Assert (young < size);
   final_table[young].fun = f;
   if (Tag_val (v) == Infix_tag) v -= Infix_offset_val (v);
   final_table[young].val = v;
   ++ young;
 
+  return Val_unit;
+}
+
+CAMLprim value caml_final_release (value unit)
+{
+  running_finalisation_function = 0;
   return Val_unit;
 }
