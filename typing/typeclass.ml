@@ -531,21 +531,23 @@ and class_expr cl_num val_env met_env scl =
       in
       if Path.same decl.cty_path unbound_class then
         raise(Error(scl.pcl_loc, Unbound_class_2 lid));
-      let tyl = List.map (transl_simple_type val_env false) styl in
+      let tyl = List.map
+          (fun sty -> transl_simple_type val_env false sty, sty.ptyp_loc)
+          styl
+      in
       let (params, clty) =
         Ctype.instance_class decl.cty_params decl.cty_type
       in
       let clty' = abbreviate_class_type path params clty in
-      if List.length params <> List.length styl then
+      if List.length params <> List.length tyl then
         raise(Error(scl.pcl_loc,
                     Parameter_arity_mismatch (lid, List.length params,
-                                                   List.length styl)));
+                                                   List.length tyl)));
       List.iter2
-        (fun sty ty ->
-           let ty' = transl_simple_type val_env false sty in
+        (fun (ty',loc) ty ->
            try Ctype.unify val_env ty' ty with Ctype.Unify trace ->
-             raise(Error(sty.ptyp_loc, Parameter_mismatch trace)))
-        styl params;
+             raise(Error(loc, Parameter_mismatch trace)))
+        tyl params;
       let cl =        
         {cl_desc = Tclass_ident path;
          cl_loc = scl.pcl_loc;
