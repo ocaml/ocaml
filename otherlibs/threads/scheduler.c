@@ -155,7 +155,6 @@ static void thread_scan_roots(scanning_action action)
 /* Forward declarations for async I/O handling */
 
 static int stdin_initial_status, stdout_initial_status, stderr_initial_status;
-static int thread_set_nonblock(int fd, int flag);
 static void thread_restore_std_descr(void);
 
 /* Initialize the thread machinery */
@@ -193,9 +192,15 @@ value thread_initialize(value unit)       /* ML */
   timer.it_value = timer.it_interval;
   setitimer(ITIMER_VIRTUAL, &timer, NULL);
   /* Set standard file descriptors to non-blocking mode */
-  stdin_initial_status = thread_set_nonblock(0, O_NONBLOCK);
-  stdout_initial_status = thread_set_nonblock(1, O_NONBLOCK);
-  stderr_initial_status = thread_set_nonblock(2, O_NONBLOCK);
+  stdin_initial_status = fcntl(0, F_GETFL);
+  stdout_initial_status = fcntl(1, F_GETFL);
+  stderr_initial_status = fcntl(2, F_GETFL);
+  if (stdin_initial_status != -1)
+    fcntl(0, F_SETFL, stdin_initial_status | O_NONBLOCK);
+  if (stdout_initial_status != -1)
+    fcntl(1, F_SETFL, stdout_initial_status | O_NONBLOCK);
+  if (stderr_initial_status != -1)
+    fcntl(2, F_SETFL, stderr_initial_status | O_NONBLOCK);
   /* Register an at-exit function to restore the standard file descriptors */
   atexit(thread_restore_std_descr);
   return Val_unit;
@@ -799,25 +804,11 @@ static value alloc_process_status(int pid, int status)
   return res;
 }
 
-/* Set the given file descriptor to non-blocking mode
-   and return 0 or O_NONBLOCK to indicate its previous status. */
-
-static int thread_set_nonblock(int fd, int flag)
-{
-  int retcode;
-  /* Fail silently if fcntl returns an error; the error will presumably
-     be caught when the file descriptor is operated on. */
-  retcode = fcntl(fd, F_GETFL);
-  if (retcode == -1) return 0;
-  fcntl(fd, F_SETFL, (retcode & ~O_NONBLOCK) | flag);
-  return retcode & O_NONBLOCK;
-}
-
 /* Restore the standard file descriptors to their initial state */
 
 static void thread_restore_std_descr(void)
 {
-  thread_set_nonblock(0, stdin_initial_status);
-  thread_set_nonblock(1, stdout_initial_status);
-  thread_set_nonblock(2, stderr_initial_status);
+  if (stdin_initial_status != -1) fcntl(0, F_SETFL, stdin_initial_status);
+  if (stdout_initial_status != -1) fcntl(1, F_SETFL, stdout_initial_status);
+  if (stderr_initial_status != -1) fcntl(2, F_SETFL, stderr_initial_status);
 }
