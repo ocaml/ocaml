@@ -465,7 +465,7 @@ let rec components_of_module env sub path mty =
             let comps = components_of_module !env sub path mty in
             c.comp_components <-
               Tbl.add (Ident.name id) (comps, !pos) c.comp_components;
-            env := store_components id path comps !env;
+            env := store_module id path mty !env;
             incr pos
         | Tsig_modtype(id, decl) ->
             let decl' = Subst.modtype_declaration sub decl in
@@ -591,18 +591,6 @@ and store_modtype id path info env =
     classes = env.classes;
     cltypes = env.cltypes;
     summary = Env_modtype(env.summary, id, info) }
-
-and store_components id path comps env =
-  { values = env.values;
-    constrs = env.constrs;
-    labels = env.labels;
-    types = env.types;
-    modules = env.modules;
-    modtypes = env.modtypes;
-    components = Ident.add id (path, comps) env.components;
-    classes = env.classes;
-    cltypes = env.cltypes;
-    summary = env.summary }
 
 and store_class id path desc env =
   { values = env.values;
