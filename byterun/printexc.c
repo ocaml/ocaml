@@ -102,7 +102,9 @@ void fatal_uncaught_exception(value exn)
   fprintf(stderr, "Fatal error: uncaught exception %s\n", msg);
 #endif
   free(msg);
+#ifndef NATIVE_CODE
   if (backtrace_active && !debugger_in_use) print_exception_backtrace();
+#endif
 #ifdef HAS_UI
   ui_exit(2);
 #else
