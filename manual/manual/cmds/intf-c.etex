@@ -546,6 +546,15 @@ the object contain the values of the instance variables of the object.
 Instance variables are stored in the order in which they appear in the
 class definition (taking inherited classes into account).
 
+One may extract a public method from an object using the C function
+"caml_get_public_method" (declared in "<caml/mlvalues.h>".)
+Since public method tags are hashed in the same way as variant tags,
+and methods are functions taking self as first argument, if you want
+to do the method call "foo#bar" from the C side, you should call:
+\begin{verbatim}
+  callback(caml_get_public_method(foo, hash_variant("bar")), foo);
+\end{verbatim}
+
 \subsection{Variants}
 
 Like constructed terms, values of variant types are represented either
