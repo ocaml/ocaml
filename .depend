@@ -570,10 +570,10 @@ typing/parmatch.cmx: typing/parmatch.cmi typing/typedtree.cmx \
     parsing/asttypes.cmi 
 typing/path.cmo: typing/path.cmi typing/ident.cmi 
 typing/path.cmx: typing/path.cmi typing/ident.cmx 
-typing/predef.cmo: typing/predef.cmi typing/ident.cmi typing/ctype.cmi \
-    typing/path.cmi typing/typedtree.cmi 
-typing/predef.cmx: typing/predef.cmi typing/ident.cmx typing/ctype.cmx \
-    typing/path.cmx typing/typedtree.cmx 
+typing/predef.cmo: typing/predef.cmi typing/ident.cmi typing/path.cmi \
+    typing/typedtree.cmi 
+typing/predef.cmx: typing/predef.cmi typing/ident.cmx typing/path.cmx \
+    typing/typedtree.cmx 
 typing/printtyp.cmo: typing/printtyp.cmi typing/typedtree.cmi \
     typing/ident.cmi typing/path.cmi parsing/longident.cmi \
     parsing/asttypes.cmi 

@@ -17,7 +17,7 @@ CAMLRUN=byterun/camlrun
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver -I toplevel
 
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
-  utils/clflags.cmo utils/meta.cmo utils/terminfo.cmo utils/crc.cmo
+  utils/clflags.cmo utils/terminfo.cmo utils/crc.cmo
 
 PARSING=parsing/location.cmo parsing/parser.cmo parsing/lexer.cmo \
   parsing/parse.cmo
@@ -34,7 +34,7 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/dectree.cmo bytecomp/matching.cmo \
   bytecomp/translcore.cmo bytecomp/translmod.cmo
 
-BYTECOMP=bytecomp/instruct.cmo bytecomp/bytegen.cmo \
+BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/printinstr.cmo bytecomp/opcodes.cmo bytecomp/emitcode.cmo \
   bytecomp/runtimedef.cmo bytecomp/symtable.cmo \
   bytecomp/bytelibrarian.cmo bytecomp/bytelink.cmo
@@ -240,7 +240,7 @@ clean::
 # The native-code compiler compiled with itself
 
 camlopt.opt: $(OPTOBJS:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) -o camlopt $(OPTOBJS:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) -o camlopt.opt $(OPTOBJS:.cmo=.cmx)
 
 clean::
 	rm -f camlopt.opt
@@ -367,13 +367,13 @@ alldepend::
 	$(CAMLOPT) $(COMPFLAGS) -c $<
 
 clean::
-	rm -f utils/*.cm[iox] utils/*~
-	rm -f parsing/*.cm[iox] parsing/*~
-	rm -f typing/*.cm[iox] typing/*~
-	rm -f bytecomp/*.cm[iox] bytecomp/*~
-	rm -f asmcomp/*.cm[iox] asmcomp/*~
-	rm -f driver/*.cm[iox] driver/*~
-	rm -f toplevel/*.cm[iox] toplevel/*~
+	rm -f utils/*.cm[iox] utils/*.[so] utils/*~
+	rm -f parsing/*.cm[iox] parsing/*.[so] parsing/*~
+	rm -f typing/*.cm[iox] typing/*.[so] typing/*~
+	rm -f bytecomp/*.cm[iox] bytecomp/*.[so] bytecomp/*~
+	rm -f asmcomp/*.cm[iox] asmcomp/*.[so] asmcomp/*~
+	rm -f driver/*.cm[iox] driver/*.[so] driver/*~
+	rm -f toplevel/*.cm[iox] toplevel/*.[so] toplevel/*~
 	rm -f *~
 
 depend: beforedepend
