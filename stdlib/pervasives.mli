@@ -846,9 +846,8 @@ val exit : int -> 'a
 val at_exit : (unit -> unit) -> unit
 (** Register the given function to be called at program
    termination time. The functions registered with [at_exit]
-   will be called when the program executes {!Pervasives.exit}. 
-   They will not be called if the program
-   terminates because of an uncaught exception.
+   will be called when the program executes {!Pervasives.exit},
+   or if the program terminates because of an uncaught exception.
    The functions are called in ``last in, first out'' order:
    the function most recently added with [at_exit] is called first. *)
 
