@@ -19,6 +19,7 @@ camltkobjsx: $(CAMLTKOBJSX)
 
 clean:
 	$(MAKE) -f Makefile.gen clean
+	-rm -f .depend
 
 install: $(CAMLTKOBJS)
 	if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
