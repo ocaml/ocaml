@@ -33,14 +33,14 @@ external to_int: t -> int = "int64_to_int"
 external of_int32: Int32.t -> t = "int64_of_int32"
 external to_int32: Int32.t -> int = "int64_to_int32"
 
-let zero = of_int 0
-let one = of_int 1
-let minus_one = of_int (-1)
+let zero = try of_int 0 with Invalid_argument _ -> Obj.magic Int32.zero
+let one = try of_int 1 with Invalid_argument _ -> Obj.magic Int32.one
+let minus_one = try of_int (-1) with Invalid_argument _ -> Obj.magic Int32.minus_one
 let succ n = add n one
 let pred n = sub n one
 let abs n = if n >= zero then n else neg n
-let min = shift_left one 63
-let max = add min one
+let min = try shift_left one 63 with Invalid_argument _ -> Obj.magic Int32.min
+let max = try add min one with Invalid_argument _ -> Obj.magic Int32.max
 let lognot n = logxor n minus_one
 
 external format : string -> t -> string = "int64_format"
