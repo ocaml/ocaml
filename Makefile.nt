@@ -184,7 +184,10 @@ installbyt:
 	cp toplevel\topdirs.cmi $(LIBDIR)\topdirs.cmi
 	cd tools & $(MAKEREC) install
 	cd otherlibs\str & $(MAKEREC) install
-	for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) installopt & cd ..\..)
+	for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) install & cd ..\..)
+	cp README.win32 $(DISTRIB)\Readme.txt
+	cp LICENSE $(DISTRIB)\License.txt
+	cp Changes $(DISTRIB)\Changes.txt
 
 # Installation of the native-code compiler
 installopt:

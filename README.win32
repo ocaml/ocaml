@@ -14,7 +14,7 @@ Linking Caml bytecode with C code (cslc -custom) requires the
 Microsoft Visual C++ compiler.
 
 The native-code compiler (cslopt) requires Visual C++ and the
-Microsoft assembler MASM version 5.
+Microsoft assembler MASM version 6.
 
 
 INSTALLATION:
@@ -71,7 +71,7 @@ The command-line tools can be recompiled from the Unix source
 distribution (csl-X.YZ.tar.gz), which also contains the files modified
 for Windows.
 
-In addition to Visual C++ 4.0 and MASM 5, you will also need a healthy
+In addition to Visual C++ 4.0 and MASM 6, you will also need a healthy
 set of Unix / GNU utilities that understands long file names
 (see e.g. ftp://ftp.cc.utexas.edu/microlib/nt/gnu/).
 
