@@ -222,7 +222,7 @@ value gr_open_graph (value vgeometry);
 value gr_close_graph (value unit);
 value gr_sigio_signal (value unit);
 value gr_sigio_handler (value unit);
-value gr_auto_flush (value flag);
+value gr_synchronize (value unit);
 value gr_flush (value unit);
 value gr_clear_graph (value unit);
 value gr_size_x (value unit);
@@ -257,7 +257,8 @@ value gr_sound (value vfreq, value vdur);
 /**** Ancillary macros and function */
 
 /* double-buffer or write-through */
-static int grautoflush;
+static int grdisplay_mode;
+static int grremember_mode;
 
 /* Current state */
 static long cur_x, cur_y;
@@ -268,20 +269,22 @@ static short cur_width, cur_font, cur_size;
 /* Drawing off-screen and on-screen simultaneously.  The following three
    macros must always be used together and in this order.
 */
-/* 1. Begin drawing in the off-screen buffer. */
+/* 1. Begin drawing in the off-screen buffer. See also gr_point_color */
 #define BeginOff { \
   CGrafPtr _saveport_; \
   GDHandle _savegdev_; \
   Rect _cliprect_; \
-  GetGWorld (&_saveport_, &_savegdev_); \
-  LockPixels (GetGWorldPixMap (gworld)); \
-  SetGWorld ((CGrafPtr) gworld, NULL);
+  if (grremember_mode) { \
+    GetGWorld (&_saveport_, &_savegdev_); \
+    LockPixels (GetGWorldPixMap (gworld)); \
+    SetGWorld ((CGrafPtr) gworld, NULL);
 
 /* 2. Continue with on-screen drawing. */
 #define On \
-  SetGWorld (_saveport_, _savegdev_); \
-  UnlockPixels (GetGWorldPixMap (gworld)); \
-  if (grautoflush){ \
+    SetGWorld (_saveport_, _savegdev_); \
+    UnlockPixels (GetGWorldPixMap (gworld)); \
+  } \
+  if (grdisplay_mode) { \
     SetPort (winGraphics); \
     ScrollCalcGraph (winGraphics, &_cliprect_); \
     ClipRect (&_cliprect_);
@@ -421,7 +424,8 @@ value gr_open_graph (value vgeometry)
     fgcolor.red = fgcolor.green = fgcolor.blue = 0;
   }
   /* Synchronise off-screen and on-screen by initialising everything. */
-  grautoflush = 1;
+  grremember_mode = 1;
+  grdisplay_mode = 1;
   gr_clear_graph (Val_unit);
   gr_moveto (Val_long (0), Val_long (0));
   gr_set_color (Val_long (0));
@@ -463,28 +467,22 @@ value gr_sigio_handler (value unit)           /* Not used on MacOS */
   return Val_unit;
 }
 
-value gr_flush (value unit)
+value gr_synchronize (value unit)
 {
 #pragma unused (unit)
   GraphUpdate ();
   return Val_unit;
 }
 
-value gr_auto_flush (value flag)
+value gr_display_mode (value flag)
 {
-  int newval = Bool_val (flag);
+  grdisplay_mode = Bool_val (flag);
+  return Val_unit;
+}
 
-  if (newval && !grautoflush){
-    gr_flush (Val_unit);
-    BeginOff
-    On
-      MoveTo (Wx (cur_x), Wy (cur_y));
-      PenSize (cur_width, cur_width);
-      TextFont (cur_font);
-      TextSize (cur_size);
-    End
-  }
-  grautoflush = newval;
+value gr_remember_mode (value flag)
+{
+  grremember_mode = Bool_val (flag);
   return Val_unit;
 }
 
@@ -550,11 +548,18 @@ value gr_point_color (value vx, value vy)
 
   gr_check_open ();
   if (x < 0 || x >= w0 || y < 0 || y >= h0) return Val_long (-1);
-  BeginOff
-    GetCPixel (Bx (x), By (y+1), &c);
-  On
-  End
+  {
+    CGrafPtr _saveport_;
+    GDHandle _savegdev_;
+    GetGWorld (&_saveport_, &_savegdev_);
+    LockPixels (GetGWorldPixMap (gworld));
+    SetGWorld ((CGrafPtr) gworld, NULL);
 
+    GetCPixel (Bx (x), By (y+1), &c);
+
+    SetGWorld (_saveport_, _savegdev_);
+    UnlockPixels (GetGWorldPixMap (gworld));
+  }
   return Val_long (((c.red & 0xFF00) << 8)
                    | (c.green & 0xFF00)
                    | ((c.blue & 0xFF00) >> 8));

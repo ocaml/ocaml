@@ -40,21 +40,35 @@ external size_y : unit -> int = "gr_size_y"
 
 (*** Double buffering *)
 
-external auto_flush : bool -> unit = "gr_auto_flush"
-        (* Set auto-flush mode on/off.  When turned off, drawings are done
-           in the backing store window but no more in the graphics window
-           itself.  This creates a simple effect of double buffering, by
-           allowing the user to do complex drawings in the backing store
-           while keeping older drawings on the screen.  The contents
-           of the backing store is copied onto the graphics window by
-           a call to [flush] (see below).  By default, auto-flush mode is
-           on, and all drawings are done both in the backing store and in
-           the graphics window. *)
+external display_mode : bool -> unit = "gr_display_mode"
+        (* Set display mode on or off. When turned on, drawings are done
+           in the graphics window. This occurs independently of
+           drawings into the backing store (see the function [remember_mode]
+           below). Default display mode is on. *)
 
-external flush : unit -> unit = "gr_flush"
-        (* Flush the contents of the backing store onto the graphics
-           window.  This function is automatically called each time
-           auto-flush mode is enabled. *)
+external remember_mode : bool -> unit = "gr_remember_mode"
+        (* Set remember mode on or off. When turned on, drawings are done
+           in the backing store window (that is in the memory). This
+           occurs independently of drawings onto the graphics window
+           (see the function [display_mode] above).
+           Default remember mode is on. *)
+
+external synchronize : unit -> unit = "gr_synchronize"
+        (* Synchronizes the backing store and the display, by copying
+           the contents of the backing store onto the graphics
+           window. *)
+
+val auto_synchronize : bool -> unit
+        (* Set automatic synchronization of backing store and display
+           on or off. When turned on, drawings are done simultaneously
+           in the backing store and the graphics window (this is equivalent to
+           setting display and remember modes on, and then calling
+           [synchronize]).
+
+           When automatic synchronization is turned off, drawings are
+           done in the backing store only.
+
+           Default automatic synchronization mode is on. *)
 
 (*** Colors *)
 

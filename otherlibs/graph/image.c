@@ -73,28 +73,32 @@ value gr_draw_image(value im, value vx, value vy)
 
   gr_check_open();
   if (Mask_im(im) != None) {
-    XSetClipOrigin(grdisplay, grbstore.gc, x, by);
-    XSetClipMask(grdisplay, grbstore.gc, Mask_im(im));
-    if(grauto_flush) {
+    if(grremember_mode) {
+      XSetClipOrigin(grdisplay, grbstore.gc, x, by);
+      XSetClipMask(grdisplay, grbstore.gc, Mask_im(im));
+    }
+    if(grdisplay_mode) {
       XSetClipOrigin(grdisplay, grwindow.gc, x, wy);
       XSetClipMask(grdisplay, grwindow.gc, Mask_im(im));
     }
   }
-  XCopyArea(grdisplay, Data_im(im), grbstore.win, grbstore.gc,
-            0, 0,
-            Width_im(im), Height_im(im),
-            x, by);
-  if(grauto_flush)
+  if(grremember_mode)
+    XCopyArea(grdisplay, Data_im(im), grbstore.win, grbstore.gc,
+              0, 0,
+              Width_im(im), Height_im(im),
+              x, by);
+  if(grdisplay_mode)
     XCopyArea(grdisplay, Data_im(im), grwindow.win, grwindow.gc,
 	      0, 0,
 	      Width_im(im), Height_im(im),
 	      x, wy);
   if (Mask_im(im) != None) {
-    XSetClipMask(grdisplay, grbstore.gc, None);
-    if(grauto_flush)
+    if(grremember_mode)
+      XSetClipMask(grdisplay, grbstore.gc, None);
+    if(grdisplay_mode)
       XSetClipMask(grdisplay, grwindow.gc, None);
   }
-  if(grauto_flush)
+  if(grdisplay_mode)
     XFlush(grdisplay);
   return Val_unit;
 }

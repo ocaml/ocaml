@@ -32,7 +32,8 @@ Colormap grcolormap;
 int grwhite, grblack;
 struct canvas grwindow;
 struct canvas grbstore;
-Bool grauto_flush ;
+Bool grdisplay_mode;
+Bool grremember_mode;
 int grx, gry;
 unsigned long grcolor;
 extern XFontStruct * grfont;
@@ -142,8 +143,9 @@ value gr_open_graph(value arg)
                    0, 0, grbstore.w, grbstore.h);
     XSetForeground(grdisplay, grbstore.gc, grcolor);
     
-    /* Set the auto-flush flag */
-    grauto_flush = True ;
+    /* Set the display and remember modes on */
+    grdisplay_mode = True ;
+    grremember_mode = True ;
 
     /* The global data structures are now correctly initialized.
        In particular, gr_sigio_handler can now handle events safely. */
@@ -215,11 +217,13 @@ value gr_close_graph(void)
 value gr_clear_graph(void)
 {
   gr_check_open();
-  XSetForeground(grdisplay, grbstore.gc, grwhite);
-  XFillRectangle(grdisplay, grbstore.win, grbstore.gc,
-                 0, 0, grbstore.w, grbstore.h);
-  XSetForeground(grdisplay, grbstore.gc, grcolor);
-  if(grauto_flush) {
+  if(grremember_mode) {
+    XSetForeground(grdisplay, grbstore.gc, grwhite);
+    XFillRectangle(grdisplay, grbstore.win, grbstore.gc,
+                   0, 0, grbstore.w, grbstore.h);
+    XSetForeground(grdisplay, grbstore.gc, grcolor);
+  }
+  if(grdisplay_mode) {
     XSetForeground(grdisplay, grwindow.gc, grwhite);
     XFillRectangle(grdisplay, grwindow.win, grwindow.gc,
 		   0, 0, grwindow.w, grwindow.h);
@@ -242,7 +246,7 @@ value gr_size_y(void)
   return Val_int(grwindow.h);
 }
 
-value gr_flush(void)
+value gr_synchronize(void)
 {
   XCopyArea(grdisplay, grbstore.win, grwindow.win, grwindow.gc,
 	    0, grbstore.h - grwindow.h,
@@ -252,14 +256,16 @@ value gr_flush(void)
   return Val_unit ;
 }
 
-value gr_auto_flush(value v)
+value gr_display_mode(value flag)
 {
-  Bool old = grauto_flush ;
-  grauto_flush = Bool_val(v) ;
-  if(old == False && grauto_flush == True)
-    return gr_flush() ;
-  else
-    return Val_unit ;
+  grdisplay_mode = Bool_val (flag);
+  return Val_unit ;
+}
+
+value gr_remember_mode(value flag)
+{
+  grremember_mode = Bool_val(flag);
+  return Val_unit ;
 }
 
 /* The gr_sigio_handler is called via the signal machinery in the bytecode

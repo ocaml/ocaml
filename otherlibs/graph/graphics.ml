@@ -45,8 +45,15 @@ external size_y : unit -> int = "gr_size_y"
 
 (* Double-buffering *)
 
-external auto_flush : bool -> unit = "gr_auto_flush"
-external flush : unit -> unit = "gr_flush"
+external display_mode : bool -> unit = "gr_display_mode"
+external remember_mode : bool -> unit = "gr_remember_mode"
+external synchronize : unit -> unit = "gr_synchronize"
+
+let auto_synchronize = function
+  | true -> display_mode true; remember_mode true; synchronize ()
+  | false -> display_mode false; remember_mode true
+;;
+
 
 (* Colors *)
 
