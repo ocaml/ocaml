@@ -292,8 +292,8 @@ beforedepend:: parsing\linenum.ml
 # The bytecode compiler compiled with the native-code compiler
 
 ocamlc.opt: $(COMPOBJS:.cmo=.cmx)
-	cd asmrun & $(MAKEREC) meta.o
-	$(CAMLOPT) $(LINKFLAGS) -o ocamlc.opt $(COMPOBJS:.cmo=.cmx) asmrun\meta.o
+	cd asmrun & $(MAKEREC) meta.obj
+	$(CAMLOPT) $(LINKFLAGS) -o ocamlc.opt $(COMPOBJS:.cmo=.cmx) asmrun\meta.obj
 
 partialclean::
 	rm -f ocamlc.opt

@@ -8,7 +8,7 @@ CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 CAMLDEP=..\boot\ocamlrun ..\tools\ocamldep
 
 OBJS=pervasives.cmo list.cmo char.cmo string.cmo array.cmo sys.cmo \
-  hashtbl.cmo sort.cmo filename.cmo obj.cmo marshal.cmo \
+  hashtbl.cmo sort.cmo filename.cmo marshal.cmo obj.cmo \
   lexing.cmo parsing.cmo \
   set.cmo map.cmo stack.cmo queue.cmo stream.cmo \
   printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo \
