@@ -457,21 +457,10 @@ let unbox_int bi arg =
       Cop(Cload(if bi = Pint32 then Thirtytwo_signed else Word),
           [Cop(Cadda, [arg; Cconst_int size_addr])])
 
-let unbox_unsigned_int bi arg =
-  match arg with
-    Cop(Calloc, [hdr; ops; Cop(Clsl, [contents; Cconst_int 32])])
-    when bi = Pint32 && size_int = 8 && big_endian ->
-      (* Force zero-extension of low 32 bits *)
-      Cop(Clsr, [Cop(Clsl, [contents; Cconst_int 32]); Cconst_int 32])
-  | Cop(Calloc, [hdr; ops; contents])
-    when bi = Pint32 && size_int = 8 && not big_endian ->
-      (* Force zero-extension of low 32 bits *)
-      Cop(Clsr, [Cop(Clsl, [contents; Cconst_int 32]); Cconst_int 32])
-  | Cop(Calloc, [hdr; ops; contents]) -> 
-      contents
-  | _ ->
-      Cop(Cload(if bi = Pint32 then Thirtytwo_unsigned else Word),
-          [Cop(Cadda, [arg; Cconst_int size_addr])])
+let make_unsigned_int bi arg =
+  if bi = Pint32 && size_int = 8
+  then Cop(Cand, [arg; Cconst_natint 0xFFFFFFFFn])
+  else arg
 
 (* Big arrays *)
 
@@ -1235,7 +1224,7 @@ and transl_prim_2 p arg1 arg2 =
                      [transl_unbox_int bi arg1; untag_int(transl arg2)]))
   | Plsrbint bi ->
       box_int bi (Cop(Clsr,
-                     [unbox_unsigned_int bi (transl arg1);
+                     [make_unsigned_int bi (transl_unbox_int bi arg1);
                       untag_int(transl arg2)]))
   | Pasrbint bi ->
       box_int bi (Cop(Casr,
