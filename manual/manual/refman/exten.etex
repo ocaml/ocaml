@@ -21,6 +21,7 @@ Streams are presented by the following extensions to the syntactic
 classes of expressions:
 
 \ikwd{parser\@\verb`parser`}
+\ikwd{match\@\verb`match`}
 
 \begin{syntax}
 expr:
@@ -28,6 +29,7 @@ expr:
         | '[:' ':]'
         | '[:' stream-component { ';' stream-component } ':]'
         | 'parser' [pattern] stream-matching
+        | 'parser' 'match' expr 'with' [pattern] stream-matching
 ;
 stream-component:
           "'" expr
