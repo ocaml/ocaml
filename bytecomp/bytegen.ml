@@ -463,27 +463,30 @@ let rec comp_expr env exp sz cont =
       end else begin
         let decl_size =
           List.map (fun (id, exp) -> (id, exp, size_of_lambda exp)) decl in
-        let rec comp_decl new_env sz i = function
-          | [] ->
-              comp_expr new_env body sz (add_pop ndecl cont)
-          | (id, exp, RHS_block blocksize) :: rem ->
-              comp_expr new_env exp sz
-                (Kpush :: Kacc i :: Kccall("update_dummy", 2) ::
-                 comp_decl new_env sz (i-1) rem)
-          | (id, exp, RHS_nonrec) :: rem ->
-              comp_decl new_env sz (i-1) rem
-        in
         let rec comp_init new_env sz = function
-          | [] ->
-              comp_decl new_env sz ndecl decl_size
+          | [] -> comp_nonrec new_env sz ndecl decl_size
           | (id, exp, RHS_block blocksize) :: rem ->
               Kconst(Const_base(Const_int blocksize)) ::
               Kccall("alloc_dummy", 1) :: Kpush ::
               comp_init (add_var id (sz+1) new_env) (sz+1) rem
           | (id, exp, RHS_nonrec) :: rem ->
+              Kconst(Const_base(Const_int 0)) :: Kpush ::
+              comp_init (add_var id (sz+1) new_env) (sz+1) rem
+        and comp_nonrec new_env sz i = function
+          | [] -> comp_rec new_env sz ndecl decl_size
+          | (id, exp, RHS_block blocksize) :: rem ->
+              comp_nonrec new_env sz (i-1) rem
+          | (id, exp, RHS_nonrec) :: rem ->
               comp_expr new_env exp sz
-                (Kpush ::
-                 comp_init (add_var id (sz+1) new_env) (sz+1) rem)
+                (Kassign (i-1) :: comp_nonrec new_env sz (i-1) rem)
+        and comp_rec new_env sz i = function
+          | [] -> comp_expr new_env body sz (add_pop ndecl cont)
+          | (id, exp, RHS_block blocksize) :: rem ->
+              comp_expr new_env exp sz
+                (Kpush :: Kacc i :: Kccall("update_dummy", 2) ::
+                 comp_rec new_env sz (i-1) rem)
+          | (id, exp, RHS_nonrec) :: rem ->
+              comp_rec new_env sz (i-1) rem
         in
         comp_init env sz decl_size
       end

@@ -24,7 +24,7 @@ type t = {
 
 (* Note on the use of Lexing.position in this module.
    If [pos_fname = ""], then use [!input_name] instead.
-   If [pos_lnum = -1], then [pos_bol = 0], use [pos_cnum] and
+   If [pos_lnum = -1], then [pos_bol = 0]. Use [pos_cnum] and
      re-parse the file to get the line and character numbers.
    Else all fields are correct.
 *)
