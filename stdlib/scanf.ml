@@ -154,8 +154,8 @@ let scan_optionally_signed_int max ib =
   if max = 0 || Scanning.end_of_input ib then bad_input ib "an int" else
   scan_unsigned_int max ib;;
 
-let scan_int c max ib =
-  match c with
+let scan_int conv max ib =
+  match conv with
   | 'd' -> scan_optionally_signed_decimal_int max ib
   | 'i' -> scan_optionally_signed_int max ib
   | 'o' -> scan_octal_digits max ib 
@@ -377,27 +377,27 @@ let bscanf ib (fmt : ('a, Scanning.scanbuf, 'c) format) f =
   let delay f x () = f x in
   let stack f = delay (return f) in
 
-  let rec scan spc f i =
+  let rec scan f i =
     if i > lim then return f else
     match fmt.[i] with
-    | '%' -> scan_width spc f (i + 1)
+    | '%' -> scan_width f (i + 1)
     | '@' as t ->
         let i = i + 1 in
         if i > lim then bad_format fmt (i - 1) t else begin
         match fmt.[i] with
         | fc when Scanning.end_of_input ib -> bad_input_buff ib
         | '@' as fc when Scanning.peek_char ib = fc ->
-           Scanning.next_char ib; scan spc f (i + 1)
+           Scanning.next_char ib; scan f (i + 1)
         | fc when Scanning.peek_char ib = fc ->
-           Scanning.next_char ib; scan false f (i + 1)
+           Scanning.next_char ib; scan f (i + 1)
         | fc -> bad_input_buff ib end
-    | ' ' | '\r' | '\t' | '\n' -> skip_whites ib; scan spc f (i + 1)
+    | ' ' | '\r' | '\t' | '\n' -> skip_whites ib; scan f (i + 1)
     | fc when Scanning.end_of_input ib -> bad_input_buff ib
     | fc when Scanning.peek_char ib = fc ->
-        Scanning.next_char ib; scan spc f (i + 1)
+        Scanning.next_char ib; scan f (i + 1)
     | fc -> bad_input_buff ib
 
-  and scan_width spc f i =
+  and scan_width f i =
     if i > lim then bad_format fmt i '%' else
     match fmt.[i] with
     | '0' .. '9' as c ->
@@ -409,63 +409,60 @@ let bscanf ib (fmt : ('a, Scanning.scanbuf, 'c) format) f =
                read_width accu (i + 1)
            | _ -> accu, i in
          let max, j = read_width 0 i in
-         scan_conversion spc max f j
-    | _ -> scan_conversion spc max_int f i
+         scan_conversion max f j
+    | _ -> scan_conversion max_int f i
 
-  and scan_conversion spc max f i =
+  and scan_conversion max f i =
     if i > lim then bad_format fmt i fmt.[lim - 1] else
     match fmt.[i] with
     | 'c' | 'C' as conv ->
         let x = if conv = 'c' then scan_char max ib else scan_Char max ib in
-        scan true (stack f (token_char ib)) (i + 1)
-    | c ->
-       if spc then skip_whites ib;
-       match c with
-       | fc when Scanning.end_of_input ib -> bad_input_buff ib
-       | '%' as fc when Scanning.peek_char ib = fc ->
-           Scanning.next_char ib; scan true f (i + 1)
-       | '%' as fc -> bad_input_buff ib
-       | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' ->
+        scan (stack f (token_char ib)) (i + 1)
+    | fc when Scanning.end_of_input ib -> bad_input_buff ib
+    | '%' as fc when Scanning.peek_char ib = fc ->
+        Scanning.next_char ib; scan f (i + 1)
+    | '%' as fc -> bad_input_buff ib
+    | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
+        let x = scan_int conv max ib in
+        scan (stack f (token_int ib)) (i + 1)
+    | 'f' | 'g' | 'G' | 'e' | 'E' ->
+        let x = scan_float max ib in
+        scan (stack f (token_float ib)) (i + 1)
+    | 's' | 'S' as conv ->
+        let i, stp = scan_stoppers (i + 1) in
+        let x =
+          if conv = 's'
+          then scan_string stp max ib
+          else scan_String stp max ib in
+        scan (stack f (token_string ib)) (i + 1)
+    | 'b' ->
+        let x = scan_bool max ib in
+        scan (stack f (token_bool ib)) (i + 1)
+    | '[' ->
+        let i, char_set = read_char_set fmt (i + 1) in
+        let i, stp = scan_stoppers (i + 1) in
+        let x = scan_chars_in_char_set stp char_set max ib in
+        scan (stack f (token_string ib)) (i + 1)
+    | 'l' | 'n' | 'L' as t ->
+        let i = i + 1 in
+        if i > lim then bad_format fmt (i - 1) t else begin
+        match fmt.[i] with
+        | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as c ->
            let x = scan_int c max ib in
-           scan true (stack f (token_int ib)) (i + 1)
-       | 'f' | 'g' | 'G' | 'e' | 'E' ->
-           let x = scan_float max ib in
-           scan true (stack f (token_float ib)) (i + 1)
-       | 's' | 'S' as conv ->
-           let i, stp = scan_stoppers (i + 1) in
-           let x =
-             if conv = 's'
-             then scan_string stp max ib
-             else scan_String stp max ib in
-           scan true (stack f (token_string ib)) (i + 1)
-       | 'b' ->
-           let x = scan_bool max ib in
-           scan true (stack f (token_bool ib)) (i + 1)
-       | '[' ->
-           let i, char_set = read_char_set fmt (i + 1) in
-           let i, stp = scan_stoppers (i + 1) in
-           let x = scan_chars_in_char_set stp char_set max ib in
-           scan true (stack f (token_string ib)) (i + 1)
-       | 'l' | 'n' | 'L' as t ->
-           let i = i + 1 in
-           if i > lim then bad_format fmt (i - 1) t else begin
-           match fmt.[i] with
-           | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as c ->
-              let x = scan_int c max ib in
-              begin match t with
-              | 'l' -> scan true (stack f (token_int32 ib)) (i + 1)
-              | 'L' -> scan true (stack f (token_int64 ib)) (i + 1)
-              | _ -> scan true (stack f (token_nativeint ib)) (i + 1) end
-           | fc -> bad_format fmt i fc end
-       | 'N' ->
-           let x = Scanning.char_count ib in
-           scan true (stack f x) (i + 1)
-       | 'r' ->
-           Obj.magic (fun reader arg ->
-             let x = reader ib arg in
-             scan spc (stack f x) (succ i))
+           begin match t with
+        | 'l' -> scan (stack f (token_int32 ib)) (i + 1)
+           | 'L' -> scan (stack f (token_int64 ib)) (i + 1)
+           | _ -> scan (stack f (token_nativeint ib)) (i + 1) end
+        | fc -> bad_format fmt i fc end
+    | 'N' ->
+        let x = Scanning.char_count ib in
+        scan (stack f x) (i + 1)
+    | 'r' ->
+        Obj.magic (fun reader arg ->
+          let x = reader ib arg in
+          scan (stack f x) (succ i))
 
-       | c -> bad_format fmt i c
+    | c -> bad_format fmt i c
 
   and scan_stoppers i =
     if i > lim then i - 1, [] else
@@ -474,7 +471,7 @@ let bscanf ib (fmt : ('a, Scanning.scanbuf, 'c) format) f =
     | _ -> i - 1, [] in
 
   Scanning.reset_token ib;
-  scan true (fun () -> f) 0;;
+  scan (fun () -> f) 0;;
 
 let fscanf ic = bscanf (Scanning.from_channel ic);;
 
