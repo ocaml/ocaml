@@ -187,3 +187,93 @@ G(raise_caml_exception):
         movl    G(caml_exception_pointer), %esp
         popl    G(caml_exception_pointer)
         ret
+
+/* Callback from C to Caml */
+
+        .globl  G(callback)
+        .align  FUNCTION_ALIGN
+G(callback):
+    /* Save callee-save registers */
+        pushl   %ebx
+        pushl   %esi
+        pushl   %edi
+        pushl   %ebp
+    /* Initial loading of arguments */
+        movl    20(%esp), %ebx   /* closure */
+        movl    24(%esp), %eax   /* argument */
+        movl    0(%ebx), %esi    /* code pointer */
+L106:
+    /* Build an exception handler */
+        pushl   $L108
+        pushl   G(caml_exception_pointer)
+        movl    %esp, G(caml_exception_pointer)
+    /* Build a callback link */
+        pushl   G(caml_last_return_address)
+        pushl   G(caml_bottom_of_stack)
+    /* Call the Caml code */
+        call    *%esi
+L107:
+    /* Pop the callback link, restoring the global variables
+       used by caml_c_call */
+        popl    G(caml_bottom_of_stack)
+        popl    G(caml_last_return_address)
+    /* Pop the exception handler */
+        popl    G(caml_exception_pointer)
+        popl    %esi    /* dummy register */
+    /* Restore callee-save registers.
+       In parallel, free the floating-point registers
+       that may have been used by Caml. */
+        popl    %ebp
+        ffree   %st(0)
+        popl    %edi
+        ffree   %st(1)
+        popl    %esi
+        ffree   %st(2)
+        popl    %ebx
+        ffree   %st(3)
+    /* Return to caller. */
+        ret
+L108:
+    /* Exception handler: re-raise the exception through mlraise,
+       so that local C roots are cleaned up correctly. */
+        pushl   %eax            /* exn bucket is the argument */
+        call    G(mlraise)      /* never returns */
+
+        .globl  G(callback2)
+        .align  FUNCTION_ALIGN
+G(callback2):
+    /* Save callee-save registers */
+        pushl   %ebx
+        pushl   %esi
+        pushl   %edi
+        pushl   %ebp
+    /* Initial loading of arguments */
+        movl    20(%esp), %ecx   /* closure */
+        movl    24(%esp), %eax   /* first argument */
+        movl    28(%esp), %ebx   /* second argument */
+        movl    $ G(caml_apply2), %esi   /* code pointer */
+        jmp     L106
+
+        .globl  G(callback3)
+        .align  FUNCTION_ALIGN
+G(callback3):
+    /* Save callee-save registers */
+        pushl   %ebx
+        pushl   %esi
+        pushl   %edi
+        pushl   %ebp
+    /* Initial loading of arguments */
+        movl    20(%esp), %edx   /* closure */
+        movl    24(%esp), %eax   /* first argument */
+        movl    28(%esp), %ebx   /* second argument */
+        movl    32(%esp), %ecx   /* third argument */
+        movl    $ G(caml_apply3), %esi   /* code pointer */
+        jmp     L106
+
+        .data
+        .globl  G(system_frametable)
+G(system_frametable):
+        .long   1               /* one descriptor */
+        .long   L107            /* return address into callback */
+        .word   -1              /* negative frame size => use callback link */
+        .word   0               /* no roots here */

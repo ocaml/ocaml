@@ -35,6 +35,7 @@
 
 #ifdef TARGET_i386
 #define Saved_return_address(sp) *((long *)(sp - 4))
+#define Callback_link(sp) ((struct callback_link *)sp)
 #endif
 
 #ifdef TARGET_mips
