@@ -355,14 +355,14 @@ A special comment before an element is associated to this element if~:
 comment and the element. However, a regular comment can occur between 
 the special comment and the element.
 \item The special comment is not already associated to the previous element.
-\item Ths special comment is not the first one of a toplevel module.
+\item The special comment is not the first one of a toplevel module.
 \end{itemize}
 
 A special comment after an element is associated to this element if
 there is no blank line or comment between the special comment and the
 element.
 
-There are two exceptions: for type constructors and record field in
+There are two exceptions: for type constructors and record fields in
 type definitions, the associated comment can only be placed after the
 constructor or field definition, without blank lines or other comments
 between them.
@@ -487,7 +487,7 @@ A special comment is associated to an element if it is placed before
 the element and there is no blank line between the comment and the
 element. Meanwhile, there can be a simple comment between the special
 comment and the element. There are two exceptions, for type
-constructors and record field in type definitions, whose associated
+constructors and record fields in type definitions, whose associated
 comment must be placed after the constructor or field definition,
 without blank line between them.
 
@@ -616,6 +616,8 @@ relevant to the documented element are simply ignored.  For instance,
 all tags are ignored when documenting type constructors, record
 fields, and class inheritance clauses.  Similarly, a "@param" tag on a
 class instance variable is ignored.
+
+At last, "(**)" is the empty documentation comment.
 
 %%%%%%%%%%%%%
 \subsection{Text formatting}
