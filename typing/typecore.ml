@@ -618,11 +618,11 @@ let type_format loc fmt =
         ty_arrow Predef.type_string (scan_format (j+1))
     | 'c' | 'C' ->
         ty_arrow Predef.type_char (scan_format (j+1))
-    | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' ->
+    | 'b' | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' ->
         ty_arrow Predef.type_int (scan_format (j+1))
     | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' ->
         ty_arrow Predef.type_float (scan_format (j+1))
-    | 'b' | 'B' ->
+    | 'B' ->
         ty_arrow Predef.type_bool (scan_format (j+1))
     | 'a' ->
         let ty_arg = newvar() in
@@ -633,7 +633,7 @@ let type_format loc fmt =
     | 'l' ->
         if j+1 >= len then incomplete i else begin
           match fmt.[j+1] with
-          | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
+          | 'b' | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
               ty_arrow Predef.type_int32 (scan_format (j+2))
           | c ->
               raise(Error(loc, Bad_format(String.sub fmt i (j-i+2))))
@@ -641,7 +641,7 @@ let type_format loc fmt =
     | 'n' ->
         if j+1 >= len then incomplete i else begin
           match fmt.[j+1] with
-          | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
+          | 'b' | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
               ty_arrow Predef.type_nativeint (scan_format (j+2))
           | c ->
               raise(Error(loc, Bad_format(String.sub fmt i (j-i+2))))
@@ -649,7 +649,7 @@ let type_format loc fmt =
     | 'L' ->
         if j+1 >= len then incomplete i else begin
           match fmt.[j+1] with
-          | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
+          | 'b' | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
               ty_arrow Predef.type_int64 (scan_format (j+2))
           | c ->
               raise(Error(loc, Bad_format(String.sub fmt i (j-i+2))))
