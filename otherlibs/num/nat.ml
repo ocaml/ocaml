@@ -55,6 +55,11 @@ let make_nat len =
   if len < 0 then invalid_arg "make_nat" else
     let res = create_nat len in set_to_zero_nat res 0 len; res
 
+(* Nat temporaries *)
+let a_2 = make_nat 2
+and a_1 = make_nat 1 
+and b_2 = make_nat 2 
+
 let copy_nat nat off_set length =
  let res = create_nat (length) in
   blit_nat res 0 nat off_set length; 
@@ -171,67 +176,62 @@ let gcd_nat nat1 off1 len1 nat2 off2 len2 =
       !real_len1
   end
 
-(* Does subnat1 = subnat2 or subnat2+1? *)
-let almost_eq_nat nat1 off1 len1 nat2 off2 len2 =
-  match compare_nat nat1 off1 len1 nat2 off2 len2 with
-       0 -> true
-    |  1 -> let over = incr_nat nat2 off2 len2 1 in
-            let res = eq_nat nat1 off1 len1 nat2 off2 (len2 + over) in
-            decr_nat nat2 off2 (len2 + over) 0;
-            res
-    | _ -> false
+(* Racine carrée entière par la méthode de Newton (entière par défaut). *)
 
-let sqrt_nat nat off len = 
- (* One more than intended because of addition in the initialization *)
- (* I hope it is sufficient for the addition in the loop, too difficult 
-    to determine so I introduce a failure if it is not true *)
- let size_sqrt = succ (len / 2 + len mod 2) in
- let size_copy = 2 * size_sqrt in
- let candidate = make_nat (size_sqrt) 
- and trash = make_nat (size_sqrt) in
-   (* Initialization of the candidate to the nearest power of 2 *)
-   set_digit_nat candidate (size_sqrt - 2) 1;
-   let shift = 
-     let s1 = if len mod 2 = 0 then 31 else 15
-     and s2 = num_leading_zero_bits_in_digit nat (off + len - 1) / 2 in
-     s1 - s2 in
-   shift_left_nat candidate (size_sqrt - 2)  1 trash 0 shift;
-   (* Initialization of the loop *)
-   let size_aux = size_copy - size_sqrt (* = size_sqrt *) in
-   let copy = make_nat (size_copy) in
-   let aux = make_nat (size_aux) in
-     set_digit_nat copy len 0;
-     blit_nat copy 0 nat off len;
-     div_nat copy 0 size_copy candidate 0 (pred size_sqrt);
-     blit_nat aux 0 copy (pred size_sqrt) size_aux;
-     (* This addition is safe because good sizes at the beginning *)
-     add_nat aux 0 size_aux candidate 0 (pred size_sqrt) 0;
-     shift_right_nat aux 0 size_aux trash 0 1;
-     let real_size_aux = ref (num_digits_nat aux 0 size_aux)
-     and real_size_candidate = ref (num_digits_nat candidate 0 size_sqrt) in
-     while not
-       (almost_eq_nat
-          aux 0 (num_digits_nat aux 0 size_aux)
-          candidate 0 (num_digits_nat candidate 0 size_sqrt))
-     do
-        blit_nat candidate 0 aux 0 !real_size_aux;
-        let diff_sizes = !real_size_candidate - !real_size_aux in
-            if diff_sizes > 0
-               then blit_nat candidate !real_size_aux
-                             (make_nat diff_sizes) 0 diff_sizes;
-        real_size_candidate := !real_size_aux;
-        set_digit_nat copy len 0;
-        blit_nat copy 0 nat off len;
-        div_nat copy 0 size_copy candidate 0 !real_size_candidate;
-        blit_nat aux 0 copy !real_size_candidate size_aux;
-        (* Hope this addition is ok else fail *)
-        if add_nat aux 0 size_aux candidate 0 !real_size_candidate 0 = 1
-        then invalid_arg "sqrt_nat: addition problem, see source code";
-        shift_right_nat aux 0 size_aux trash 0 1;
-        real_size_aux := num_digits_nat aux 0 size_aux
-     done;
-  copy_nat candidate 0 (num_digits_nat candidate 0 size_sqrt)
-;;
+(* Théorème: la suite xn+1 = (xn + a/xn) / 2 converge vers la racine *)
+(* carrée entière de a par défaut, si on part d'une valeur x0 *)
+(* strictement plus grande que la racine de a, sauf quand a est un *)
+(* carré - 1, cas auquel la suite alterne entre la racine par défaut *)
+(* et par excès. Dans tous les cas, le dernier terme de la partie *)
+(* strictement décroissante de la suite est le résultat cherché. *)
+
+let sqrt_nat rad off len =
+ let len = num_digits_nat rad off len in
+ (* Copie de travail du radicande *)
+ let len_parity = len mod 2 in
+ let rad_len = len + 1 + len_parity in
+ let rad =
+   let res = create_nat rad_len in
+   blit_nat res 0 rad off len;
+   set_digit_nat res len 0;
+   set_digit_nat res (rad_len - 1) 0;
+   res in
+ let cand_len = (len + 1) / 2 in  (* ceiling len / 2 *) 
+ let cand_rest = rad_len - cand_len in
+ (* Racine carrée supposée cand = "|FFFF .... |" *)
+ let cand = make_nat cand_len in
+ (* Amélioration de la racine de départ:
+    on calcule nbb le nombre de bits significatifs du premier digit du candidat
+    (la moitié du nombre de bits significatifs dans les deux premiers
+     digits du radicande étendu à une longueur paire).
+    shift_cand est word_size - nbb *)
+ let shift_cand =
+   ((num_leading_zero_bits_in_digit rad (len-1)) +
+     Sys.word_size * len_parity) / 2 in
+ (* Tous les bits du radicande sont à 0, on rend 0. *)
+ if shift_cand = Sys.word_size then cand else
+ begin
+  complement_nat cand 0 cand_len;
+  shift_right_nat cand 0 1 a_1 0 shift_cand;
+  let next_cand = create_nat rad_len in
+  (* Repeat until *)
+  let rec loop () =
+           (* next_cand := rad *)
+   blit_nat next_cand 0 rad 0 rad_len;
+           (* next_cand <- next_cand / cand *)
+   div_nat next_cand 0 rad_len cand 0 cand_len;
+           (* next_cand (poids fort) <- next_cand (poids fort) + cand,
+              i.e. next_cand <- cand + rad / cand *)
+   add_nat next_cand cand_len cand_rest cand 0 cand_len 0;
+        (* next_cand <- next_cand / 2 *)
+   shift_right_nat next_cand cand_len cand_rest a_1 0 1;
+   if lt_nat next_cand cand_len cand_rest cand 0 cand_len then
+    begin  (* cand <- next_cand *)
+     blit_nat cand 0 next_cand cand_len cand_len; loop ()
+    end
+   else cand in
+  loop ()
+ end;;
 
 let power_base_max = make_nat 2;;
 
@@ -251,11 +251,6 @@ let pmax =
   | 32 -> 9
   | _ -> failwith "Nat.pmax: unknown word size"
 ;;
-
-(* Nat temporaries *)
-let a_2 = make_nat 2
-and a_1 = make_nat 1 
-and b_2 = make_nat 2 
 
 let max_superscript_10_power_in_int =
   match length_of_digit with
