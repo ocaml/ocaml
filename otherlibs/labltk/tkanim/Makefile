@@ -28,16 +28,16 @@ gifanimtest-static: all gifanimtest.cmo
 gifanimtest: all gifanimtest.cmo
 	$(CAMLC) -o $@ -I ../lib -I ../support -I ../../unix -dllpath ../support -dllpath . unix.cma $(LIBNAME).cma tkanim.cma gifanimtest.cmo
 
-animwish: $(TKANIM_LIB) tkAppInit.o
-	$(CC) -o $@  tkAppInit.o $(TK_LINK) $(X11_LINK) \
-		-L. -ltkanim $(LIBS)
+#animwish: $(TKANIM_LIB) tkAppInit.o
+#	$(CC) -o $@  tkAppInit.o $(TK_LINK) $(X11_LINK) \
+#		-L. -ltkanim $(LIBS)
 
 $(OBJS) $(OBJS:.cmo=.cmi): ../lib/$(LIBNAME).cma
 
 $(OBJS:.cmo=.cmx): ../lib/$(LIBNAME).cmxa
 
 clean:
-	rm -f *.cm* *.o *.a dlltkanim.so animwish gifanimtest gifanimtest-static
+	rm -f *.cm* *.o *.a dlltkanim.so gifanimtest gifanimtest-static
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmo .mlp .cmx .c .o
