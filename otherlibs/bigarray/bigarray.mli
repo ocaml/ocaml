@@ -2,7 +2,7 @@
 (*                                                                     *)
 (*                           Objective Caml                            *)
 (*                                                                     *)
-(*          Manuel Serrano et Xavier Leroy, INRIA Rocquencourt         *)
+(*         Manuel Serrano and Xavier Leroy, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 2000 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
