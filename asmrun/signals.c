@@ -297,8 +297,7 @@ static void trap_handler(int sig, int code,
     exit(100);
   }
   /* Recover young_ptr and caml_exception_pointer from the %l5 and %l6 regs */
-  Assert(context->sc_wbcnt == 0);
-  sp = (int *) scp->sc_sp;
+  sp = (int *) context->sc_sp;
   caml_exception_pointer = (char *) sp[5];
   young_ptr = (char *) sp[6];
   array_bound_error();
@@ -318,7 +317,6 @@ static void trap_handler(int sig, siginfo_t * info, void * arg)
   }
   /* Recover young_ptr and caml_exception_pointer from the %l5 and %l6 regs */
   context = (ucontext_t *) arg;
-  Assert(context->uc_mcontext.gwins == NULL);
   sp = (int *) context->uc_mcontext.gregs[REG_SP];
   caml_exception_pointer = (char *) sp[5];
   young_ptr = (char *) sp[6];
