@@ -29,7 +29,8 @@
 typedef value caml_generated_constant[1];
 
 extern caml_generated_constant Out_of_memory, Sys_error, Failure,
-  Invalid_argument, End_of_file, Division_by_zero, Not_found, Match_failure;
+  Invalid_argument, End_of_file, Division_by_zero, Not_found,
+  Match_failure, Sys_blocked_io;
 
 /* Resetting the signal mask when raising an exception from C */
 
@@ -146,6 +147,11 @@ void raise_zero_divide(void)
 void raise_not_found(void)
 {
   raise_constant((value) Not_found);
+}
+
+void raise_sys_blocked_io(void)
+{
+  raise_constant((value) Sys_blocked_io));
 }
 
 /* We allocate statically the bucket for the exception because we can't

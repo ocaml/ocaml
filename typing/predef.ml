@@ -58,6 +58,7 @@ and ident_sys_error = Ident.create "Sys_error"
 and ident_end_of_file = Ident.create "End_of_file"
 and ident_division_by_zero = Ident.create "Division_by_zero"
 and ident_stack_overflow = Ident.create "Stack_overflow"
+and ident_sys_blocked_io = Ident.create "Sys_blocked_io"
 
 let path_match_failure = Pident ident_match_failure
 
@@ -107,6 +108,7 @@ let build_initial_env add_type add_exception empty_env =
   add_exception ident_invalid_argument [type_string] (
   add_exception ident_failure [type_string] (
   add_exception ident_not_found [] (
+  add_exception ident_sys_blocked_io [] (
   add_exception ident_sys_error [type_string] (
   add_exception ident_end_of_file [] (
   add_exception ident_division_by_zero [] (
@@ -120,11 +122,11 @@ let build_initial_env add_type add_exception empty_env =
   add_type ident_string decl_abstr (
   add_type ident_char decl_abstr (
   add_type ident_int decl_abstr (
-    empty_env)))))))))))))))))))
+    empty_env))))))))))))))))))))
 
 let builtin_values =
   List.map (fun id -> Ident.make_global id; (Ident.name id, id))
       [ident_match_failure; ident_out_of_memory; ident_stack_overflow;
        ident_invalid_argument;
        ident_failure; ident_not_found; ident_sys_error; ident_end_of_file;
-       ident_division_by_zero]
+       ident_division_by_zero; ident_sys_blocked_io]

@@ -91,6 +91,9 @@ exception Assert_failure of (string * int * int)
 exception Exit
         (* This exception is not raised by any library function.  It is
            provided for use in your programs. *)
+(*- exception Sys_blocked_io *)
+        (* A special case of [Sys_error] raised when no I/O is possible
+           on a non-blocking I/O channel. *)
 
 val invalid_arg: string -> 'a
         (* Raise exception [Invalid_argument] with the given string. *)
