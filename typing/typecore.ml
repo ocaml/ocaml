@@ -266,6 +266,18 @@ let build_or_pat env loc lid =
                           pat_env=env; pat_type=ty})
         pat pats
 
+let rec flatten_or_pat pat =
+  match pat.pat_desc with
+    Tpat_or (p1, p2, _) ->
+      flatten_or_pat p1 @ flatten_or_pat p2
+  | _ ->
+      [pat]
+
+let all_variants pat =
+  List.for_all
+    (function {pat_desc=Tpat_variant _} -> true | _ -> false)
+    (flatten_or_pat pat)
+
 let rec type_pat env sp =
   match sp.ppat_desc with
     Ppat_any ->
@@ -1717,26 +1729,57 @@ and type_cases ?in_function ?(multi=false)
   let cases =
     List.map2
       (fun (pat, ext_env) (spat, sexp) ->
-        let ty_res' =
-          match pat.pat_desc with
-            Tpat_variant (lab, _, row) when multi ->
-              let fi =
-                try List.assoc lab (row_repr row).row_fields
-                with Not_found -> assert false
-              in
-              begin match row_field_repr fi with
+        pat,
+        match pat.pat_desc with
+          Tpat_variant (lab, _, row) when multi ->
+            let fi = List.assoc lab (row_repr row).row_fields in
+            let ty_res' =
+              match row_field_repr fi with
                 Reither (c, _, m, _, e) ->
                   let ty_res' = Btype.newty2 (row_more row).level Tvar in
                   let tv = Btype.newty2 ty_res'.level Tvar in
-                  e := Some (Reither (c, [], m, [ty_res, ty_res'], ref None));
+                  e := Some(Reither (c, [], m, [ty_res, ty_res'], ref None));
                   unify_pat ext_env {pat with pat_type=tv} ty_res;
                   ty_res'
               | _ -> ty_res
-              end
-          | _ -> ty_res
-        in
-        let exp = type_expect ?in_function ext_env sexp ty_res' in
-        (pat, exp))
+            in
+            type_expect ?in_function ext_env sexp ty_res'
+        | Tpat_alias (p, id) when multi && all_variants p ->
+            let vd = Env.find_value (Path.Pident id) ext_env in
+            let row' =
+              match repr vd.val_type with
+                {desc=Tvariant row'} -> row'
+              | _ -> assert false
+            in
+            begin_def ();
+            let tv = newvar () in
+            let env = Env.add_value id {vd with val_type=tv} ext_env in
+            let exp = type_exp env sexp in
+            end_def ();
+            generalize exp.exp_type;
+            generalize tv;
+            List.iter
+              (function {pat_desc=Tpat_variant(lab,_,row)}, [tv'; ty'] ->
+                let fi' = List.assoc lab (row_repr row').row_fields in
+                let row' =
+                  {row' with row_fields=[lab,fi']; row_more=newvar()} in
+                unify_pat ext_env {pat with pat_type=tv'}
+                  (newty (Tvariant row'));
+                let fi = List.assoc lab (row_repr row).row_fields in
+                begin match row_field_repr fi with
+                  Reither (c, _, m, _, e) ->
+                    e := Some(Reither (c, [], m, [ty_res, ty'], ref None));
+                    let tv = Btype.newty2 (row_more row).level Tvar in
+                    unify_exp ext_env {exp with exp_type=ty'} tv
+                | _ ->
+                    unify_exp ext_env {exp with exp_type=ty'} ty_res
+                end
+              | _ -> assert false)
+              (List.map (fun p -> p, instance_list [tv; exp.exp_type])
+                 (flatten_or_pat p));
+            {exp with exp_type = instance exp.exp_type}
+        | _ ->
+            type_expect ?in_function ext_env sexp ty_res)
       pat_env_list caselist in
   add_delayed_check (fun () -> Parmatch.check_unused env cases);
   cases, partial
