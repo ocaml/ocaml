@@ -672,7 +672,7 @@ fi
 
 # Do #! scripts work?
 
-if (SHELL=/bin/sh; export SHELL; ./sharpbang > /dev/null); then
+if (SHELL=/bin/sh; export SHELL; (./sharpbang || ./sharpbang2) >/dev/null); then
   echo "#! appears to work in shell scripts"
   case "$host" in
     *-*-sunos*|*-*-unicos*)
