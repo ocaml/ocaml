@@ -89,9 +89,9 @@ Drawing is clipped to the screen.
 \fi
 \end{latexonly}
 
-\begin{htmlonly}
+\begin{rawhtml}
 <P ALIGN="center"><IMG SRC="libgraph.gif"></P>
-\end{htmlonly}
+\end{rawhtml}
 %
 
 \begin{library}
