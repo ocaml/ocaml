@@ -22,7 +22,7 @@ all: codegen $(PROGS)
 INCLUDES=-I ../utils -I ../typing -I ../asmcomp
 
 OTHEROBJS=../utils/misc.cmo ../utils/tbl.cmo \
-  ../utils/clflags.cmo ../utils/config.cmo \
+  ../utils/config.cmo ../utils/clflags.cmo \
   ../parsing/location.cmo \
   ../typing/ident.cmo ../typing/path.cmo ../typing/types.cmo \
   ../typing/subst.cmo ../typing/primitive.cmo \

@@ -20,8 +20,8 @@ INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver -I tople
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
   utils/clflags.cmo utils/terminfo.cmo utils/ccomp.cmo
 
-PARSING= parsing/location.cmo parsing/longident.cmo parsing/pstream.cmo \
-  parsing/parser.cmo parsing/lexer.cmo parsing/parse.cmo
+PARSING=parsing/location.cmo parsing/longident.cmo \
+  parsing/pstream.cmo parsing/parser.cmo parsing/lexer.cmo parsing/parse.cmo
 
 TYPING=typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/types.cmo \
@@ -245,7 +245,7 @@ clean::
 
 beforedepend:: utils/config.ml
 
-# The parser generator
+# The parser
 
 parsing/parser.mli parsing/parser.ml: parsing/parser.mly
 	$(CAMLYACC) $(YACCFLAGS) parsing/parser.mly
@@ -255,7 +255,7 @@ clean::
 
 beforedepend:: parsing/parser.mli parsing/parser.ml
 
-# The lexer generator
+# The lexer
 
 parsing/lexer.ml: parsing/lexer.mll
 	$(CAMLLEX) parsing/lexer.mll
