@@ -79,8 +79,8 @@ an equation, and the parameter is free ({\em i.e.\/} not bound via a
 type constraint to a constructed type), its variance constraint is
 checked but subtyping {\em etc.\/} will use the inferred variance of the
 parameter, which may be better; otherwise ({\em i.e.\/} for abstract types or
-constrained parameters), the variance given by the constraint is used,
-and it is invariant if no constraint was given.
+constrained parameters), the variance must be given explicitly,
+and it is invariant if no variance was given.
 
 The optional type equation @'=' typexpr@ makes the defined type
 equivalent to the type expression @typexpr@ on the right of the @'='@
