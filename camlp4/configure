@@ -1,0 +1,122 @@
+#!/bin/sh
+
+BINDIR=/usr/local/bin
+LIBDIR=/usr/local/lib/camlp4
+MANDIR=/usr/local/man/man1
+OPT=.opt
+
+abort ()
+{
+	echo
+	echo Configuration not changed
+	exit 1
+}
+
+trap abort 2
+
+askfor ()
+{
+	echo "$1 [$2]"
+	echo -n "? "
+	r=""
+	read r
+	if test $? -ne 0; then abort; fi
+	r=`eval echo $r`
+	if test "$win" = "false"; then
+	    case "$r" in
+ 	        /* | "") ;;
+		*) r=`pwd`/$r;;
+	    esac
+	fi
+	if test "$r" = ""; then r=$2; fi
+}
+
+echo "This shell script creates or updates the file config/Makefile.cnf."
+echo "At any time you can interrupt it by control-C or control-D."
+echo "In these cases, the file config/Makefile.cnf is not modified."
+echo
+
+if ocamlc -v >/dev/null 2>&1; then
+	:
+else
+        echo "You need the command ocamlc accessible in the path!"
+        echo "Configuration script failed!"
+        exit 1
+fi
+
+CAMLVERSION=`ocamlc -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
+
+case $CAMLVERSION in
+  1*|2*|3.00*|3.01*)
+        echo "Your version of OCaml is $CAMLVERSION."
+        echo "You need OCaml 3.02!"
+        echo "Configuration script failed!"
+        exit 1;;
+  3.*)   echo "You have OCaml $CAMLVERSION. Good!";;
+  ?*)   echo "You have OCaml $CAMLVERSION. Good!";;
+  *) echo "I found the OCaml compiler but cannot find version number!"
+     echo "Is it installed properly ?"
+     echo "Configuration script failed!"
+     exit 1;;
+esac
+
+x=`ocamlc -where`
+y=`echo $x | sed -e 's|\\\\|/|g'`
+echo "Ocaml library directory is $y"
+# y=`echo $x | sed -e 's|\\\\|\\\\\\\\|g'`
+# if test "$y" = "$x"; then win=false; else win=true; fi
+x="`echo 'Sys.os_type;;' | ocaml | grep Win32`"
+if test "$x" = ""; then win=false; else win=true; fi
+
+if test -f config/Makefile.cnf; then
+    . config/Makefile.cnf
+elif test "$win" = "true"; then
+    BINDIR=c:/ocaml/bin
+    LIBDIR=c:/camlp4/lib
+    MANDIR=c:/camlp4/man
+fi
+OLIBDIR="$y"
+
+if ocamlc.opt > /dev/null 2>&1 && ocamlopt.opt > /dev/null 2>&1; then
+    echo
+    echo "Compiling with native-code compilers ocamlc.opt and ocamlopt.opt"
+    OPT=.opt
+else
+    OPT=
+fi
+
+echo
+echo "The compilation process creates executable files."
+echo "Please tell me where to install them."
+askfor "Directory for executables" $BINDIR
+BINDIR=$r
+
+echo
+echo "The compilation process creates some library files."
+echo "Please tell me where to install them."
+askfor "Directory for library" $LIBDIR
+LIBDIR=$r
+
+echo
+echo "The system has some manual pages."
+echo "Please tell me where to install them."
+askfor "Directory for manual pages" $MANDIR
+MANDIR=$r
+
+(
+echo OTOP=../ocaml_stuff
+echo OPT=$OPT
+echo OLIBDIR=$OLIBDIR
+echo BINDIR=$BINDIR
+echo LIBDIR=$LIBDIR
+echo MANDIR=$MANDIR
+) > config/Makefile.cnf
+
+rm -f config/Makefile
+cat config/Makefile.tpl > config/Makefile
+echo >> config/Makefile
+cat config/Makefile.cnf >> config/Makefile
+
+echo
+echo "Resulting configuration file (config/Makefile.cnf):"
+cat config/Makefile.cnf

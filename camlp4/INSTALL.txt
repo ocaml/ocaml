@@ -1,0 +1,57 @@
+INSTALLATIONS INSTRUCTIONS IN UNIX MACHINES
+
+1- For the compilation, you need the Objective Caml compiler, "ocamlc"
+   installed in your machine, and its library "dynlink" installed too
+   (which is the default).
+
+2- From the top directory, do:
+        ./configure
+   and follow the instructions
+
+3- Do:
+        make world
+   This builds "camlp4" and some useful files.
+
+4- (Optional) To be sure everything works well, you can try to bootstrap the
+   system. Do:
+        make bootstrap
+
+5- (Optional) If your platform is supported by the native-code compiler, you
+   can build the native-code camlp4 library. To know if it is the case, just
+   type:
+        ocamlopt -v
+   If the answer is "The Objective Caml native-code, etc...", it exists.
+   If the answer is something like "command not found", no.
+   So, if you have it, you can do:
+        make opt
+
+6- You can now install the camlp4 system. This will create the command
+   "camlp4" and install library files. Become root and do:
+        make install
+
+7- Test the system by pretty printing your Objective Caml source files:
+        camlp4o pr_o.cmo foo.ml
+   "foo.ml" being one of your Objective Caml source files.
+
+
+INSTALLATIONS INSTRUCTIONS IN WINDOWS
+
+The better way to compile camlp4 is to use Gnu-Win32, a development
+tool for Windows NT/95 made by Cygnus. You can find informations and
+download it at location:
+
+      http://www.cygnus.com/misc/gnu-win32/
+
+Then edit the file "config/Makefile.tpl" and change the line
+      EXE=
+into:
+      EXE=.exe
+
+Then follow the same instructions than for unix above.
+
+Possible problems:
+
+- When you type "./configure" (point 2 above), the second question may
+be skipped without asking. This is a (known) bug of Cygnus Beta 19. To
+go around this problem, edit the file "configure" and change the line
+"read r" into "read r; read s" and try again.
