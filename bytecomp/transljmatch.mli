@@ -20,4 +20,4 @@
   cf. Compiling Pattern Matching in Join-Patterns
 *)
 
-val transl_jmatch: Typedtree.joinautomaton -> Joinmatch.match_automaton
+val transl_jmatch: Typedtree.joinautomaton -> Joinmatch.automaton

@@ -23,6 +23,13 @@
 open Typedtree
 open Joinmatch
 
+let null_ex = 
+  {exp_desc = Texp_null;
+    exp_loc = Location.none;
+    exp_type = Ctype.none;
+    exp_env = Env.empty
+}
+
 let null_pat = Parmatch.omega
 
 (************************************************************************) 
@@ -49,11 +56,11 @@ let collect cls =
 	Hashtbl.find tbl_id_args jid.jident_desc
       with Not_found -> []
     in
-    Hashtbl.replace tbl_id_args jid.jident_desc arg::former_args in
+    Hashtbl.replace tbl_id_args jid.jident_desc (arg::former_args) in
   (*joinclause -> ()*)
   let collect_clause cl =
     let (jpats,ex) = cl.jclause_desc in
-    List.map collect jpat jpats in
+    List.iter collect_jpat jpats in
   Array.iter collect_clause cls;
   let f id args ls = (id,args)::ls in
   Hashtbl.fold f tbl_id_args []
@@ -74,7 +81,7 @@ let make_disp id dag tbl_node2id par =
   let ns_sorted = 
     try
       Agraph.top_sort dag
-    with Cyclic -> assert false in
+    with Agraph.Cyclic -> assert false in
   let z = Ident.create "z" in
   (*build the (pattern, newid) list from a queue of nodes*)
   let rec build_rules q =
@@ -143,7 +150,7 @@ let rewrite id mcls dag tbl_node2id =
 		  | Some (_,jpat) -> Some (jpats_ls',jpat))
 	      |	Some (remains, jpat) -> Some (jpats::remains, jpat) in
 	match has_id jpats_ls id with
-	| None ->
+	| None -> mcl
 	| Some (remains, jpat) ->
 	    let (jid, pat) = jpat.jpat_desc in
 	    let xi = Ident.create "xi" in
@@ -169,7 +176,7 @@ let rewrite id mcls dag tbl_node2id =
 	    let new_or_jpats = build_or (pat_node::preds) in
 	    let (id2pat_ls, ex) = gd in
 	    Reaction (new_or_jpats::remains, ((xi, pat)::id2pat_ls, ex)) in
-  Array.map rewrite_clause mcls
+  Array.map rewrite_mclause mcls
 
 
 (*******************************************************************************)
@@ -242,7 +249,8 @@ let y mauto id args =
 	      else hd::(f pt tl) in
 	f pat trimed_pats' in
   let pi'= trim_eq_pat args in
-  let par = Parmatch.check_partial Location.none pi' in 
+  let patch = List.map (fun pat -> (pat,null_ex)) pi' in
+  let par = Parmatch.check_partial mauto.jauto_loc patch in 
   match pi' with
   | [] -> assert false         (*every channel takes a pat arg*)
   | [pat] ->
@@ -281,7 +289,7 @@ let y mauto id args =
 	      | pt::pts' ->
 		  try 
 		    Parmatch.lub pat pt :: (lubs pat pts') 
-		  with Empty -> lubs pat pts' in
+		  with Parmatch.Empty -> lubs pat pts' in
 	    let lubs' = compute_lubs pats' in
 	    (pat::lubs') @ lubs pat lubs' in
       let gamma = compute_lubs pi' in
