@@ -2,7 +2,7 @@
 
 !include ..\..\config\Makefile.nt
 
-SUBDIRS=compiler support lib jpf example browser
+SUBDIRS=compiler support lib jpf browser
 
 all:
 	cd support & $(MAKEREC)
