@@ -3,7 +3,7 @@ Objective Caml 3.07:
 
 Language features:
 - Experimental support for recursive module definitions
-      module rec A : SIGA = StructA and B : SIGB = StructB ..
+      module rec A : SIGA = StructA and B : SIGB = StructB and ...
 - Support for "private types", or more exactly concrete data types
   with private constructors or labels.  These data types can be
   de-structured normally in pattern matchings, but values of these
@@ -29,7 +29,7 @@ Type-checking:
 
 Both compilers:
 - Added option "-dtypes" to dump detailed type information to a file.
-- The "-i" option now generates no compiled files, it only prints
+- The "-i" option no longer generates compiled files, it only prints
   the inferred types.
 - The sources for the module named "Mod" can be placed either in Mod.ml or
   in mod.ml.
@@ -50,6 +50,7 @@ Both compilers:
   not be flagged as partial if new constructors were added to the data type.
 
 Native-code compiler:
+- New port: AMD64 (Opteron).
 - Fixed instruction selection bug on expressions of the kind (raise Exn)(arg).
 - Several bug fixes in ocamlopt -pack (tracking of imported modules,
   command line too long).
@@ -91,10 +92,10 @@ Runtime system:
 - output_value/input_value: fixed bug with large blocks (>= 4 Mwords)
   produced on a 64-bit platform and incorrectly read back on a 32-bit
   platform.
-- Added MacOS X support for dynamic linking of C libraries.
-- Fixed float alignment problem on Sparc V9 with gcc 3.2.
-- Improved stack backtraces on uncaught exceptions.
 - Fixed memory compaction bug involving input_value.
+- Added MacOS X support for dynamic linking of C libraries.
+- Improved stack backtraces on uncaught exceptions.
+- Fixed float alignment problem on Sparc V9 with gcc 3.2.
 
 Other libraries:
 - Dynlink:
