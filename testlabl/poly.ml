@@ -2,8 +2,7 @@
 (*
    How to check out ocaml with polymorphic methods:
    Either do 
-    cvs -q update -r poly_meth2 boot parsing tools toplevel typing utils \
-        otherlibs/labltk/browser/searchpos.ml
+    cvs -q update -r poly_meth2 `cat testlabl/dirs_poly`
    or
     cvs -q update -r poly_meth2 -f
    In the second case do not forget to add the -f flag to all ulterior
