@@ -882,7 +882,7 @@ let giving_up mess fmt i =
    then " (" ^ String.make 1 fmt.[i] ^ ")."
    else String.make 1 '.');;
 
-(* When an invalid format deserve a special error explanation. *)
+(* When an invalid format deserves a special error explanation. *)
 let format_invalid_arg mess fmt i = invalid_arg (giving_up mess fmt i);;
 
 (* Standard invalid format. *)
