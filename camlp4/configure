@@ -46,19 +46,7 @@ fi
 
 CAMLVERSION=`ocamlc -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
 
-case $CAMLVERSION in
-  1*|2*|3.00*|3.01*)
-        echo "Your version of OCaml is $CAMLVERSION."
-        echo "You need OCaml 3.02!"
-        echo "Configuration script failed!"
-        exit 1;;
-  3.*)   echo "You have OCaml $CAMLVERSION. Good!";;
-  ?*)   echo "You have OCaml $CAMLVERSION. Good!";;
-  *) echo "I found the OCaml compiler but cannot find version number!"
-     echo "Is it installed properly ?"
-     echo "Configuration script failed!"
-     exit 1;;
-esac
+echo "You have OCaml $CAMLVERSION."
 
 x=`ocamlc -where`
 y=`echo $x | sed -e 's|\\\\|/|g'`
@@ -104,6 +92,7 @@ askfor "Directory for manual pages" $MANDIR
 MANDIR=$r
 
 (
+echo EXE=.exe
 echo OTOP=../ocaml_stuff
 echo OPT=$OPT
 echo OLIBDIR=$OLIBDIR

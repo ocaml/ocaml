@@ -8,6 +8,7 @@ OPTDIRS=lib odyl camlp4 meta etc
 SHELL=/bin/sh
 
 all: boot/camlp4$(EXE)
+	cd ocaml_stuff; $(MAKE)
 	set -e; for i in $(DIRS); do cd $$i; $(MAKE) all; cd ..; done
 
 opt:
@@ -17,11 +18,13 @@ bullshit:
 	set -e; for i in $(OPTDIRS); do cd $$i; $(MAKE) opt; cd ..; done
 
 boot/camlp4$(EXE):
+	cd ocaml_stuff; $(MAKE)
 	$(MAKE) clean_cold library_cold compile_cold
 	$(MAKE) promote_cold
 	$(MAKE) clean_cold clean_hot library
 
 clean_hot:
+	cd ocaml_stuff; $(MAKE) clean
 	for i in $(DIRS); do (cd $$i; $(MAKE) clean); done
 
 depend:
@@ -76,6 +79,7 @@ cleanboot:
 bootstrap_fast: backup promote clean_hot fast compare
 
 fast: boot/camlp4$(EXE)
+	cd ocaml_stuff; $(MAKE) all
 	set -e; for i in $(FDIRS); do cd $$i; $(MAKE) all; cd ..; done
 
 clean_fast:
@@ -85,6 +89,7 @@ clean_fast:
 # The very beginning
 
 world:
+	cd ocaml_stuff; $(MAKE)
 	$(MAKE) clean_cold library_cold compile_cold
 	$(MAKE) promote_cold
 	$(MAKE) clean_cold clean_hot library all
