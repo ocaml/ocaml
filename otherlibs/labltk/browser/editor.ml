@@ -402,12 +402,14 @@ class editor ~top ~menus = object (self)
     if txt.name <> name then current_dir <- Filename.dirname name;
     try
       if Sys.file_exists name then
-        if txt.name = name then
-          Sys.rename name (name ^ "~")
-        else begin match
-          Jg_message.ask ~master:top ~title:"Save"
-            ("File `" ^ name ^ "' exists. Overwrite it?")
-        with `yes -> () | `no | `cancel -> raise Exit
+        if txt.name = name then begin
+          let backup = name ^ "~" in
+          if Sys.file_exists backup then Sys.remove backup;
+          try Sys.rename name backup with Sys_error _ -> ()
+        end else begin
+          match Jg_message.ask ~master:top ~title:"Save"
+              ("File `" ^ name ^ "' exists. Overwrite it?")
+          with `yes -> () | `no | `cancel -> raise Exit
         end;
       let file = open_out name in
       let text = Text.get txt.tw ~start:tstart ~stop:(tposend 1) in

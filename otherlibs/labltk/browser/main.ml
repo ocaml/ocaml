@@ -62,6 +62,11 @@ let _ =
   Searchpos.view_defined_ref := (fun s ~env -> Viewer.view_defined s ~env);
   Searchpos.editor_ref := Editor.f;
 
+  let is_win32 = Sys.os_type = "Win32" in
+  if is_win32 then
+    Format.pp_set_formatter_output_functions Format.err_formatter
+      (fun _ _ _ -> ()) (fun _ -> ());
+
   let top = openTk ~clas:"OCamlBrowser" () in
   Jg_config.init ();
 
@@ -74,6 +79,7 @@ let _ =
 
   while true do
     try
-      Printexc.print mainLoop ()
+      if is_win32 then mainLoop ()
+      else Printexc.print mainLoop ()
     with Protocol.TkError _ -> ()
   done
