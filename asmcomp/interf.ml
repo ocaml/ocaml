@@ -111,16 +111,18 @@ let build_graph fundecl =
      or if the source register already has a location. *)
 
   let add_pref weight r1 r2 =
-    let i = r1.stamp and j = r2.stamp in
-    if i = j then () else begin
-      match r1.loc with
-        Unknown ->
-          let n = if i < j then ((j * (j + 1)) lsr 1) + i
-                           else ((i * (i + 1)) lsr 1) + j in
-          let b = Char.code(mat.[n lsr 3]) in
-          let msk = 1 lsl (n land 7) in
-          if b land msk = 0 then r1.prefer <- (r2, weight) :: r1.prefer
-      | _ -> ()
+    if weight > 0 then begin
+      let i = r1.stamp and j = r2.stamp in
+      if i = j then () else begin
+        match r1.loc with
+          Unknown ->
+            let n = if i < j then ((j * (j + 1)) lsr 1) + i
+                             else ((i * (i + 1)) lsr 1) + j in
+            let b = Char.code(mat.[n lsr 3]) in
+            let msk = 1 lsl (n land 7) in
+            if b land msk = 0 then r1.prefer <- (r2, weight) :: r1.prefer
+        | _ -> ()
+      end
     end in
 
   (* Add a mutual preference between two regs *)
