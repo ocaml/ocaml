@@ -30,7 +30,7 @@ call_gen_code:
         alloc	r3 = ar.pfs, 0, 0, 64, 0
 
         /* Save PFS, return address and GP on stack */
-        add     sp = -368, sp
+        add     sp = -368, sp ;;
         add     r2 = 16, sp ;;
         ST8OFF(r2,r3,8) ;;
         mov     r3 = b0 ;;
