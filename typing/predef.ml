@@ -95,17 +95,17 @@ and type_dyn = newgenty (Tconstr(path_dyn, [], ref Mnil))
 and type_dtm = newgenty (Tconstr(path_dtm, [], ref Mnil))
 (*< JOCAML *)
 
-let ident_match_failure = Ident.create "Match_failure"
-and ident_out_of_memory = Ident.create "Out_of_memory"
-and ident_invalid_argument = Ident.create "Invalid_argument"
-and ident_failure = Ident.create "Failure"
-and ident_not_found = Ident.create "Not_found"
-and ident_sys_error = Ident.create "Sys_error"
-and ident_end_of_file = Ident.create "End_of_file"
-and ident_division_by_zero = Ident.create "Division_by_zero"
-and ident_stack_overflow = Ident.create "Stack_overflow"
-and ident_sys_blocked_io = Ident.create "Sys_blocked_io"
-and ident_assert_failure = Ident.create "Assert_failure"
+let ident_match_failure = Ident.create_predef_exn "Match_failure"
+and ident_out_of_memory = Ident.create_predef_exn "Out_of_memory"
+and ident_invalid_argument = Ident.create_predef_exn "Invalid_argument"
+and ident_failure = Ident.create_predef_exn "Failure"
+and ident_not_found = Ident.create_predef_exn "Not_found"
+and ident_sys_error = Ident.create_predef_exn "Sys_error"
+and ident_end_of_file = Ident.create_predef_exn "End_of_file"
+and ident_division_by_zero = Ident.create_predef_exn "Division_by_zero"
+and ident_stack_overflow = Ident.create_predef_exn "Stack_overflow"
+and ident_sys_blocked_io = Ident.create_predef_exn "Sys_blocked_io"
+and ident_assert_failure = Ident.create_predef_exn "Assert_failure"
 and ident_undefined_recursive_module =
         Ident.create_predef_exn "Undefined_recursive_module"
 
