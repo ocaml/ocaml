@@ -524,12 +524,14 @@ and type_let env rec_flag spat_sexp_list =
 (* Typing of toplevel bindings *)
 
 let type_binding env rec_flag spat_sexp_list =
+  reset_def();
   Typetexp.reset_type_variables();
   type_let env rec_flag spat_sexp_list
 
 (* Typing of toplevel expressions *)
 
 let type_expression env sexp =
+  reset_def();
   Typetexp.reset_type_variables();
   begin_def();
   let exp = type_exp env sexp in

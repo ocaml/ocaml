@@ -23,8 +23,9 @@ let current_level = ref 0
 
 let generic_level = (-1)
 
+let reset_def () = current_level := 0
 let begin_def () = incr current_level
-and end_def () = decr current_level
+let end_def () = decr current_level
 
 let newvar () =
   Tvar { tvar_level = !current_level; tvar_link = None }

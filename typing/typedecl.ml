@@ -133,6 +133,7 @@ let check_recursive_abbrev env (name, sdecl) (id, decl) =
 (* Translate a set of mutually recursive type declarations *)
 
 let transl_type_decl env name_sdecl_list =
+  Ctype.reset_def();
   let decls =
     match name_sdecl_list with
       [(name, {ptype_kind = Ptype_abstract}) as name_sdecl] ->
@@ -157,12 +158,14 @@ let transl_type_decl env name_sdecl_list =
 (* Translate an exception declaration *)
 
 let transl_exception env excdecl =
+  Ctype.reset_def();
   reset_type_variables();
   List.map (transl_simple_type env true) excdecl
 
 (* Translate a value declaration *)
 
 let transl_value_decl env valdecl =
+  Ctype.reset_def();
   let ty = Typetexp.transl_type_scheme env valdecl.pval_type in
   { val_type = ty;
     val_prim = Primitive.parse_declaration (Ctype.arity ty) valdecl.pval_prim }
@@ -171,6 +174,7 @@ let transl_value_decl env valdecl =
     transl_type_decl. *)
 
 let transl_with_constraint env sdecl =
+  Ctype.reset_def();
   Ctype.begin_def();
   reset_type_variables();
   let params =

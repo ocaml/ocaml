@@ -19,6 +19,8 @@ val begin_def: unit -> unit
         (* Raise the variable level by one at the beginning of a definition. *)
 val end_def: unit -> unit
         (* Lower the variable level by one at the end of a definition *)
+val reset_def: unit -> unit
+        (* Reset (to 0) the variable level *)
 val newvar: unit -> type_expr
         (* Return a fresh variable *)
 val new_global_var: unit -> type_expr
