@@ -70,7 +70,7 @@ module type S =
     (** Set union. *)
 
     val inter: t -> t -> t
-    (** Set interseection. *)
+    (** Set intersection. *)
 
     (** Set difference. *)
     val diff: t -> t -> t
