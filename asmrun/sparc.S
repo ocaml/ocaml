@@ -18,7 +18,7 @@
 
 #ifndef SYS_solaris
 
-        .common _gc_entry_regs, 22 * 4, "bss"
+        .common _gc_entry_regs, 19 * 4, "bss"
         .common _gc_entry_float_regs, 30 * 4, "bss"
         .common _caml_required_size, 4, "bss"
 
@@ -76,29 +76,9 @@
 
 #endif
 
-#ifdef SYS_sunos
-
-/* SunOS has no well-defined policy w.r.t. %g2 ... %g7
-   By trial and error, it appears that most libc functions preserve
-   %g5 ... %g7, except a few (e.g. sigtramp clobbers %g6).
-   Use %g5 ... %g7 for the global registers, but save and restore
-   them in caml_c_call. */
-#define Exn_ptr %g5
-#define Alloc_ptr %g6
-#define Alloc_limit %g7
-
-#else
-
-/* The Sparc ABI says that %g2 ... %g4 are reserved for the application
-   (and should be preserved across system calls and libc functions)
-   and %g5 ... %g7 are reserved for the libraries and kernel
-   (e.g. %g7 is used by the Solaris thread library).
-   Solaris follows the ABI; we assume BSD does, too. */
-#define Exn_ptr %g2
-#define Alloc_ptr %g3
-#define Alloc_limit %g4
-
-#endif
+#define Exn_ptr %l5
+#define Alloc_ptr %l6
+#define Alloc_limit %l7
 
 #define Load(symb,reg)  sethi %hi(symb), %g1; ld [%g1 + %lo(symb)], reg
 #define Store(reg,symb) sethi %hi(symb), %g1; st reg, [%g1 + %lo(symb)]
@@ -110,20 +90,20 @@
         .global Caml_alloc
         .global Caml_call_gc
 
-/* Required size in %l7 */
+/* Required size in %g2 */
 Caml_alloc:
         ld      [Alloc_limit], %g1
-        sub     Alloc_ptr, %l7, Alloc_ptr
+        sub     Alloc_ptr, %g2, Alloc_ptr
         cmp     Alloc_ptr, %g1
         blu     Caml_call_gc
         nop
         retl
         nop
 
-/* Required size in %l7 */
+/* Required size in %g2 */
 Caml_call_gc:
-    /* Save %l7 (required size) */
-        Store(%l7, Caml_required_size)
+    /* Save %g2 (required size) */
+        Store(%g2, Caml_required_size)
     /* Save Exn_ptr (exception pointer) */
         Store(Exn_ptr, Caml_exception_pointer)
     /* Save current allocation pointer for debugging purposes */
@@ -142,8 +122,9 @@ Caml_call_gc:
         std     %i4, [%g1 + 0x28]
         std     %l0, [%g1 + 0x30]
         std     %l2, [%g1 + 0x38]
-        std     %l4, [%g1 + 0x40]
-        st      %l6, [%g1 + 0x48]
+        st      %l4, [%g1 + 0x40]
+        st      %g3, [%g1 + 0x44]
+        st      %g4, [%g1 + 0x48]
         Address(Gc_entry_float_regs, %g1)
         std     %f0, [%g1]
         std     %f2, [%g1 + 0x8]
@@ -173,8 +154,9 @@ Caml_call_gc:
         ldd     [%g1 + 0x28], %i4
         ldd     [%g1 + 0x30], %l0
         ldd     [%g1 + 0x38], %l2
-        ldd     [%g1 + 0x40], %l4
-        ld      [%g1 + 0x48], %l6
+        ld      [%g1 + 0x40], %l4
+        ld      [%g1 + 0x44], %g3
+        ld      [%g1 + 0x48], %g4
         Address(Gc_entry_float_regs, %g1)
         ldd     [%g1], %f0
         ldd     [%g1 + 0x8], %f2
@@ -191,13 +173,11 @@ Caml_call_gc:
         ldd     [%g1 + 0x60], %f24
         ldd     [%g1 + 0x68], %f26
         ldd     [%g1 + 0x70], %f28
-    /* Reload global registers */
-        Load(Caml_exception_pointer, Exn_ptr)
+    /* Reload alloc ptr */
         Load(Young_ptr, Alloc_ptr)
-        Address(Young_limit, Alloc_limit)
     /* Allocate space for block */
-        Load(Caml_required_size, %l7)
-        sub     Alloc_ptr, %l7, Alloc_ptr
+        Load(Caml_required_size, %g2)
+        sub     Alloc_ptr, %g2, Alloc_ptr
     /* Return to caller */
         Load(Caml_last_return_address, %o7)
         retl
@@ -206,7 +186,7 @@ Caml_call_gc:
 /* Call a C function from Caml */
 
         .global Caml_c_call
-/* Function to call is in %l7 */
+/* Function to call is in %g2 */
 Caml_c_call:
     /* Record lowest stack address and return address */
         Store(%sp, Caml_bottom_of_stack)
@@ -215,17 +195,15 @@ Caml_c_call:
         Store(Exn_ptr, Caml_exception_pointer)
         sethi   %hi(Young_ptr), %g1
     /* Call the C function */
-        call    %l7
+        call    %g2
         st      Alloc_ptr, [%g1 + %lo(Young_ptr)]        /* in delay slot */
     /* Reload return address */
         Load(Caml_last_return_address, %o7)
-    /* Reload global registers */
-        Load(Caml_exception_pointer, Exn_ptr)
-        Load(Young_ptr, Alloc_ptr)
-        sethi   %hi(Young_limit), Alloc_limit
+    /* Reload alloc pointer */
+        sethi   %hi(Young_ptr), %g1
     /* Return to caller */
         retl
-        or      Alloc_limit, %lo(Young_limit), Alloc_limit /* in delay slot */
+        ld      [%g1 + %lo(Young_ptr)], Alloc_limit     /* in delay slot */
 
 /* Start the Caml program */
 

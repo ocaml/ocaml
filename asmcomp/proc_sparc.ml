@@ -96,13 +96,16 @@ let word_addressed = false
 (* Register map:
     %o0 - %o5   0 - 5       function results, C functions args / res
     %i0 - %i5   6 - 11      function arguments, preserved by C
-    %l0 - %l7   12 - 19     general purpose, preserved by C
+    %l0 - %l4   12 - 16     general purpose, preserved by C
+    %g3 - %g4   17 - 18     general purpose, not preserved by C
+
+    %l5                     exception pointer
+    %l6                     allocation pointer
+    %l7                     address of allocation limit
 
     %g0                     always zero
-    %g1                     temporary
-    %g2 (%g5 for SunOS)     exception pointer
-    %g3 (%g6 for SunOS)     allocation pointer
-    %g4 (%g7 for SunOS)     allocation limit
+    %g1 - %g2               temporaries
+    %g5 - %g7               reserved for system libraries
 
     %f0 - %f10  100 - 105   function arguments and results
     %f12 - %f28 106 - 114   general purpose
@@ -111,7 +114,8 @@ let word_addressed = false
 let int_reg_name = [|
   (* 0-5 *)   "%o0"; "%o1"; "%o2"; "%o3"; "%o4"; "%o5";
   (* 6-11 *)  "%i0"; "%i1"; "%i2"; "%i3"; "%i4"; "%i5";
-  (* 12-19 *) "%l0"; "%l1"; "%l2"; "%l3"; "%l4"; "%l5"; "%l6"; "%l7"
+  (* 12-16 *) "%l0"; "%l1"; "%l2"; "%l3"; "%l4";
+  (* 17-18 *) "%g3"; "%g4"
 |]
   
 let float_reg_name = [|
@@ -132,7 +136,7 @@ let register_class r =
   | Addr -> 0
   | Float -> 1
 
-let num_available_registers = [| 20; 15 |]
+let num_available_registers = [| 19; 15 |]
 
 let first_available_register = [| 0; 100 |]
 
@@ -144,8 +148,8 @@ let rotate_registers = true
 (* Representation of hard registers by pseudo-registers *)
 
 let hard_int_reg =
-  let v = Array.create 20 Reg.dummy in
-  for i = 0 to 19 do v.(i) <- Reg.at_location Int (Reg i) done;
+  let v = Array.create 19 Reg.dummy in
+  for i = 0 to 18 do v.(i) <- Reg.at_location Int (Reg i) done;
   v
 
 let hard_float_reg =
@@ -232,19 +236,15 @@ let loc_exn_bucket = phys_reg 0         (* $o0 *)
 
 (* Registers destroyed by operations *)
 
-let destroyed_at_c_call = (* %l0-%l6, %i0-%i5 preserved ; %l7 used as temp *)
+let destroyed_at_c_call = (* %l0-%l4, %i0-%i5 preserved *)
   Array.of_list(List.map phys_reg
-    [0; 1; 2; 3; 4; 5; 19;
+    [0; 1; 2; 3; 4; 5; 17; 18;
      100; 101; 102; 103; 104; 105; 106; 107;
      108; 109; 110; 111; 112; 113; 114])
-
-let destroy_l7 = [| phys_reg 19 (* %l7 *) |]
 
 let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
   | Iop(Iextcall(_, false)) -> destroyed_at_c_call
-  | Iop(Ialloc _) -> destroy_l7
-  | Iswitch(_, _) -> destroy_l7
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
@@ -256,9 +256,8 @@ let safe_register_pressure = function
   | _ -> 15
 
 let max_register_pressure = function
-    Iextcall(_, _) -> [| 13; 0 |]
-  | Ialloc _ -> [| 19; 15 |]
-  | _ -> [| 20; 15 |]
+    Iextcall(_, _) -> [| 11; 0 |]
+  | _ -> [| 19; 15 |]
 
 (* Reloading *)
 
