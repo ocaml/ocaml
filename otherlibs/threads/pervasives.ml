@@ -27,7 +27,6 @@ let failwith s = raise(Failure s)
 let invalid_arg s = raise(Invalid_argument s)
 
 exception Exit
-exception Assert_failure of (string * int * int)
 
 (* Comparisons *)
 
@@ -205,7 +204,7 @@ let valid_float_lexem s =
   loop 0
 ;;
 
-let string_of_float f = valid_float_lexem (format_float "%.12g" f);;
+let string_of_float f = valid_float_lexem (format_float "%.17g" f);;
 
 external float_of_string : string -> float = "float_of_string"
 
@@ -389,8 +388,6 @@ let input ic s ofs len =
   then invalid_arg "input"
   else unsafe_input ic s ofs len
 
-let input' ic ~buf ~pos ~len = input ic buf pos len
-
 let rec unsafe_really_input ic s ofs len =
   if len <= 0 then () else begin
     let r = unsafe_input ic s ofs len in
@@ -466,7 +463,8 @@ let print_char c = output_char stdout c
 let print_string s = output_string stdout s
 let print_int i = output_string stdout (string_of_int i)
 let print_float f = output_string stdout (string_of_float f)
-let print_endline s = output_string stdout s; output_char stdout '\n'
+let print_endline s =
+  output_string stdout s; output_char stdout '\n'; flush stdout
 let print_newline () = output_char stdout '\n'; flush stdout
 
 (* Output functions on standard error *)
