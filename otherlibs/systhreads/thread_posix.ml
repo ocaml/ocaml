@@ -53,12 +53,12 @@ let preempt signal = yield()
 (* Initialization of the scheduler *)
 
 let _ =
-  Sys.signal Sys.sigvtalrm (Sys.Signal_handle preempt);
+  ignore(Sys.signal Sys.sigvtalrm (Sys.Signal_handle preempt));
   thread_initialize()
 
 (* Wait functions *)
 
-let delay time = Unix.select [] [] [] time; ()
+let delay time = ignore(Unix.select [] [] [] time)
 
 let wait_read fd = ()
 let wait_write fd = ()
