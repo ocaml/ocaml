@@ -33,7 +33,7 @@ ocaml.res: ocaml.rc ocaml.ico
 $(OBJS): inria.h inriares.h
 
 clean:
-	rm -f ocamlwin.exe ocaml.res *.obj
+	rm -f ocamlwin.exe ocaml.res *.obj *.pdb ocamlwin.ilk
 
 install:
 	cp ocamlwin.exe $(PREFIX)/OCamlWin.exe
