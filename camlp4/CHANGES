@@ -1,6 +1,9 @@
 Camlp4 Version 3.04
 -------------------
 
+- [24 Oct 01] Fixed incorrect locations in sequences.
+- [24 Oct 01] Was erroneously compiled by the OCaml boot compiler instead
+  of the generated ocamlc. Fixed.
 - [15 Oct 01] Fixed some parsing differences between pa_o and ocamlyacc:
   in parsers, in labels.
 - [12 Oct 01] Added missing bigarray syntax a.{b} (and Cie) in standard

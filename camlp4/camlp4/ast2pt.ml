@@ -533,7 +533,9 @@ value rec expr =
         fun
         [ [] -> expr (ExUid loc "()")
         | [e] -> expr e
-        | [e :: el] -> mkexp loc (Pexp_sequence (expr e) (loop el)) ]
+        | [e :: el] ->
+            let loc = (fst (loc_of_expr e), snd loc) in
+            mkexp loc (Pexp_sequence (expr e) (loop el)) ]
   | ExSnd loc e s -> mkexp loc (Pexp_send (expr e) s)
   | ExSte loc e1 e2 ->
       mkexp loc

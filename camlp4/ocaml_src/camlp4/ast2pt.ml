@@ -542,7 +542,9 @@ let rec expr =
         function
           [] -> expr (ExUid (loc, "()"))
         | [e] -> expr e
-        | e :: el -> mkexp loc (Pexp_sequence (expr e, loop el))
+        | e :: el ->
+            let loc = fst (loc_of_expr e), snd loc in
+            mkexp loc (Pexp_sequence (expr e, loop el))
       in
       loop el
   | ExSnd (loc, e, s) -> mkexp loc (Pexp_send (expr e, s))
