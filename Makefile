@@ -275,7 +275,7 @@ ocamlc: $(COMPOBJS)
 	@chmod +x ocamlcomp.sh
 
 partialclean::
-	rm -f ocamlc
+	rm -f ocamlc ocamlcomp.sh
 
 # The native-code compiler
 
@@ -286,7 +286,7 @@ ocamlopt: $(OPTOBJS)
 	@chmod +x ocamlcompopt.sh
 
 partialclean::
-	rm -f ocamlopt
+	rm -f ocamlopt ocamlcompopt.sh
 
 # The toplevel
 
