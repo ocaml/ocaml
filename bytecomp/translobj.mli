@@ -21,6 +21,8 @@ val meth: string -> lambda * lambda list
 
 val reset_labels: unit -> unit
 val transl_label_init: lambda -> lambda
+val transl_store_label_init:
+    Ident.t -> int -> ('a -> lambda) -> 'a -> int * lambda
 
 val oo_wrap: Env.t -> bool -> ('a -> lambda) -> 'a -> lambda
 val oo_add_class: Ident.t -> Env.t * bool

@@ -46,7 +46,7 @@ let share c =
 (* Collect labels *)
 
 let cache_required = ref false
-let method_cache = Ident.create "*cache*"
+let method_cache = ref lambda_unit
 let method_count = ref 0
 
 let meth_tag s = Lconst(Const_base(Const_int(Btype.hash_variant s)))
@@ -56,7 +56,7 @@ let meth lab =
   if not (!cache_required && !Clflags.native_code) then (tag, []) else
   let n = !method_count in
   incr method_count;
-  (tag, [Lprim(Pfield n, [Lvar method_cache])])
+  (tag, [Lprim(Pfield n, [!method_cache])])
 
 let reset_labels () =
   Hashtbl.clear consts;
@@ -77,15 +77,22 @@ let transl_label_init expr =
       (fun c id expr -> Llet(Alias, id, Lconst c, expr))
       consts expr
   in
-  let expr =
-    if !method_count = 0 then expr else
-    Llet(StrictOpt, method_cache,
-         Lprim (Pccall prim_makearray, [int !method_count; int 0]),
-         expr)
-  in
   reset_labels ();
   expr
 
+let transl_store_label_init glob size f arg =
+  method_cache := Lprim(Pfield size, [Lprim(Pgetglobal glob, [])]);
+  let expr = f arg in
+  let (size, expr) =
+    if !method_count = 0 then (size, expr) else
+    (size+1,
+     Lsequence(
+     Lprim(Psetfield(size, false),
+	   [Lprim(Pgetglobal glob, []);
+	    Lprim (Pccall prim_makearray, [int !method_count; int 0])]),
+     expr))
+  in
+  (size, transl_label_init expr)
 
 (* Share classes *)
 

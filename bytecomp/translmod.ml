@@ -540,7 +540,9 @@ let transl_store_implementation module_name (str, restr) =
   primitive_declarations := [];
   let module_id = Ident.create_persistent module_name in
   let (map, prims, size) = build_ident_map restr (defined_idents str) in
-  (size, transl_label_init (transl_store_structure module_id map prims str))
+  transl_store_label_init module_id size
+    (transl_store_structure module_id map prims) str
+  (*size, transl_label_init (transl_store_structure module_id map prims str)*)
 
 (* Compile a toplevel phrase *)
 
