@@ -28,7 +28,7 @@ type addressing_mode =
 
 (* Sizes, endianness *)
 
-let big_endian = true                   (* CHECK *)
+let big_endian = true
 
 let size_addr = 4
 let size_int = 4
