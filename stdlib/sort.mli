@@ -14,7 +14,8 @@
 
 (** Sorting and merging lists.
 
-   @deprecated This module is obsolete and exists only for backward compatibility.
+   @deprecated This module is obsolete and exists only for backward
+   compatibility.
    The sorting functions in {!Array} and {!List} should be used instead.
    The new functions are faster and use less memory.
 *)
