@@ -26,12 +26,13 @@ start "ocaml" and type "#load \"dbm.cma\";;".
 This library is not available.
 \end{windows}
 
+\ifouthtml
 \begin{rawhtml}
 <a HREF=libref/Dbm.html> Module <tt>Dbm</tt>: interface to the NDBM database</a>
-<br>
 \end{rawhtml}
-%BEGIN LATEX
+
+\else
 \input{Dbm.tex}
-%END LATEX
+\fi
 
 

@@ -19,12 +19,13 @@ For interactive use of the "str" library, do:
 or (if dynamic linking of C libraries is supported on your platform),
 start "ocaml" and type "#load \"str.cma\";;".
 
+\ifouthtml
 \begin{rawhtml}
 <a HREF=libref/Str.html> Module <tt>Str</tt>: regular expressions and string processing</a>
-<br>
 \end{rawhtml}
-%BEGIN LATEX
+
+\else
 \input{Str.tex}
-%END LATEX
+\fi
 
 

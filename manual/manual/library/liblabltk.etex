@@ -78,10 +78,12 @@ here. We will just present some of the basic functions in the module
 "Tk". Note that for most other modules information can be found in the
 Tcl "man" page of their name.
 
+\ifouthtml
 \begin{rawhtml}
 <a HREF=libref/Tk.html> The <tt>Tk</tt> library: Basic functions and types for LablTk</a>
 \end{rawhtml}
-%BEGIN LATEX
+
+\else
 \input{Tk.tex}
-%END LATEX
+\fi
 

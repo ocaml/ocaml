@@ -21,10 +21,11 @@ printed one by one in typewriter font, followed by a short comment.
 All modules and the identifiers they export are indexed at the end of
 this report.
 
+\ifouthtml
 \begin{rawhtml}
 <a HREF=libref/Pervasives.html> Module <tt>Pervasives</tt>: the initially opened module</a>
 \end{rawhtml}
-%BEGIN LATEX
+\else
 \input{Pervasives.tex}
-%END LATEX
+\fi
 

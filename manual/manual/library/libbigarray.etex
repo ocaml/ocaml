@@ -44,15 +44,14 @@ For interactive use of the "bigarray" library, do:
 or (if dynamic linking of C libraries is supported on your platform),
 start "ocaml" and type "#load \"bigarray.cma\";;".
 
-
+\ifouthtml
 \begin{rawhtml}
 <a HREF=libref/Bigarray.html> Module <tt>Bigarray</tt>: large, multi-dimensional, numerical arrays</a>
-<br>
 \end{rawhtml}
 
-%BEGIN LATEX
+\else
 \input{Bigarray.tex}
-%END LATEX
+\fi
 
 \section{Big arrays in the Caml-C interface}
 

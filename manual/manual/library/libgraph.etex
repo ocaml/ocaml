@@ -91,10 +91,11 @@ Drawing is clipped to the screen.
 \end{htmlonly}
 %
 
+\ifouthtml
 \begin{rawhtml}
 <a HREF=libref/Graphics.html> Module <tt>Graphics</tt>: machine-independent graphics primitives</a>
-<br>
 \end{rawhtml}
-%BEGIN LATEX
+
+\else
 \input{Graphics.tex}
-%END LATEX
+\fi

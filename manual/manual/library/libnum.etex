@@ -23,7 +23,7 @@ For interactive use of the "nums" library, do:
 or (if dynamic linking of C libraries is supported on your platform),
 start "ocaml" and type "#load \"nums.cma\";;".
 
-
+\ifouthtml
 \begin{rawhtml}
 <ul>
 <li><a HREF=libref/Num.html> Module <tt>Num</tt>: operation on arbitrary-precision numbers</a></li>
@@ -32,10 +32,10 @@ start "ocaml" and type "#load \"nums.cma\";;".
 </ul>
 \end{rawhtml}
 
-%BEGIN LATEX
+\else
 \input{Num.tex}
 \input{Bigint.tex}
 \input{Arithstatus.tex}
-%END LATEX
+\fi
 
 

@@ -35,6 +35,7 @@ the Windows version of Objective Caml. The end of this chapter gives
 more information on the functions that are not supported under Windows.
 \end{windows}
 
+\ifouthtml
 \begin{rawhtml}
 <ul>
 <li><a HREF=libref/Unix.html> Module <tt>Unix</tt>: Unix system calls</a></li>
@@ -42,7 +43,7 @@ more information on the functions that are not supported under Windows.
 </ul>
 \end{rawhtml}
 
-%BEGIN LATEX
+\else
 \input{Unix.tex}
 
 \section{Module "UnixLabels": labelized version of the interface}
@@ -53,7 +54,7 @@ more information on the functions that are not supported under Windows.
 This module is identical to "Unix"~(\ref{Unix}), and only differs by
 the addition of labels. You may see these labels directly by looking
 at "unixLabels.mli", or by using the "ocamlbrowser" tool.
-%END LATEX
+\fi
 
 \newpage
 \begin{macos}
