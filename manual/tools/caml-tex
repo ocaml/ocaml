@@ -48,6 +48,7 @@ open(TOPLEVEL, "$camllight 2>&1 < .input.ml |") ||
 
 <TOPLEVEL>; <TOPLEVEL>;		# skip the banner
 $lastread = <TOPLEVEL>;
+$lastread =~ s/^# //;
 
 # Second pass: shuffle the TeX source and the output of the toplevel
 
@@ -80,9 +81,9 @@ foreach $infile (@ARGV) {
           last if m/;; *$/;
           $_ = <IN>;
         }
-	while ($lastread =~ s/^#//) { }
+	while ($lastread =~ s/^  //) { }
         while($lastread) {
-          last if $lastread =~ s/^#//;
+          last if $lastread =~ s/^# //;
           print STDERR $lastread;
           if (! $omit_answer) {
             while (length($lastread) > $linelen) {
