@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -183,9 +183,11 @@ let call_linker file_list startup_file =
     else "libasmrun" ^ ext_lib in
   let runtime_lib =
     try
-      find_in_path !load_path libname
+      if !nopervasives then ""
+      else find_in_path !load_path libname
     with Not_found ->
       raise(Error(File_not_found libname)) in
+  let c_lib = if !nopervasives then "" else Config.c_libraries in
   let cmd =
     match Config.system with
       "win32" ->
@@ -200,7 +202,7 @@ let call_linker file_list startup_file =
             (String.concat " " (List.map Ccomp.expand_libname
                                          (List.rev !Clflags.ccobjs)))
             runtime_lib
-            Config.c_libraries
+            c_lib
         else
           Printf.sprintf "%s /out:%s %s %s"
             Config.native_partial_linker
@@ -220,7 +222,7 @@ let call_linker file_list startup_file =
             Config.standard_library
             (String.concat " " (List.rev !Clflags.ccobjs))
             runtime_lib
-            Config.c_libraries
+            c_lib
         else
           Printf.sprintf "%s -o %s %s %s"
             Config.native_partial_linker
@@ -246,9 +248,12 @@ let object_file_name name =
 
 let link objfiles =
   let objfiles =
-    if !Clflags.gprofile
-    then "stdlib.p.cmxa" :: (objfiles @ ["std_exit.p.cmx"])
-    else "stdlib.cmxa" :: (objfiles @ ["std_exit.cmx"]) in
+    if !Clflags.nopervasives then
+      objfiles
+    else if !Clflags.gprofile then
+      "stdlib.p.cmxa" :: (objfiles @ ["std_exit.p.cmx"])
+    else
+      "stdlib.cmxa" :: (objfiles @ ["std_exit.cmx"]) in
   let units_tolink = List.fold_right scan_file objfiles [] in
   Array.iter remove_required Runtimedef.builtin_exceptions;
   if not (StringSet.is_empty !missing_globals) then

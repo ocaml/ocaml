@@ -478,7 +478,8 @@ let fix_exec_name name =
 (* Main entry point (build a custom runtime if needed) *)
 
 let link objfiles =
-  let objfiles = "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
+  let objfiles = if !Clflags.nopervasives then objfiles
+                 else "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
   if not !Clflags.custom_runtime then
     link_bytecode objfiles !Clflags.exec_name true
   else if not !Clflags.output_c_object then begin
