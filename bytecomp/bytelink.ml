@@ -228,18 +228,20 @@ let link_bytecode objfiles exec_name copy_header =
     (* Copy the header *)
     if copy_header then begin
       try
-        let inchan = open_in_bin (find_in_path !load_path "camlheader") in
+        let header =
+          if String.length !Clflags.use_runtime > 0
+          then "camlheader_ur" else "camlheader" in
+        let inchan = open_in_bin (find_in_path !load_path header) in
         copy_file inchan outchan;
         close_in inchan
       with Not_found | Sys_error _ -> ()
     end;
-    (* The path to the bytecode interpreter *)
+    (* The path to the bytecode interpreter (in use_vn mode) *)
     let pos0 = pos_out outchan in
-    output_string outchan
-      (if String.length !Clflags.use_runtime > 0
-       then make_absolute !Clflags.use_runtime
-       else Config.standard_runtime);
-    output_char outchan '\n';
+    if String.length !Clflags.use_runtime > 0 then begin
+      output_string outchan (make_absolute !Clflags.use_runtime);
+      output_char outchan '\n'
+    end;
     (* The bytecode *)
     let pos1 = pos_out outchan in
     Symtable.init();
@@ -302,16 +304,14 @@ let output_code_string outchan code =
 
 let output_data_string outchan data =
   let counter = ref 0 in
-  output_string outchan "\"";
   for i = 0 to String.length data - 1 do
-    Printf.fprintf outchan "\\%03o" (Char.code(data.[i]));
+    Printf.fprintf outchan "%d, " (Char.code(data.[i]));
     incr counter;
-    if !counter >= 16 then begin
-      output_string outchan "\\\n";
+    if !counter >= 12 then begin
+      output_string outchan "\n";
       counter := 0
     end
-  done;
-  output_string outchan "\";\n\n"
+  done
 
 (* Output a bytecode executable as a C file *)
 
@@ -329,9 +329,10 @@ let link_bytecode_as_c objfiles outfile =
     (* The final STOP instruction *)
     Printf.fprintf outchan "\n0x%x};\n\n" Opcodes.opSTOP;
     (* The table of global data *)
-    output_string outchan "static char * caml_data =\n";
+    output_string outchan "static char caml_data[] = {\n";
     output_data_string outchan
       (Marshal.to_string (Symtable.initial_global_table()) []);
+    Printf.fprintf outchan "\n};\n\n";
     (* The table of primitives *)
     Symtable.output_primitive_table outchan;
     (* The entry point *)

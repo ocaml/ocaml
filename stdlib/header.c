@@ -24,6 +24,8 @@
 #include <sys/stat.h>
 #include "../byterun/exec.h"
 
+char * default_runtime_path = RUNTIME_NAME;
+
 #define MAXPATHLEN 1024
 
 #ifndef S_ISREG
@@ -69,27 +71,29 @@ static unsigned long read_size(char * ptr)
          ((unsigned long) p[2] << 8) + p[3];
 }
 
-static int read_runtime_path(int fd, char *runtime_path)
+static char * read_runtime_path(int fd)
 {
   char buffer[TRAILER_SIZE];
+  static char runtime_path[MAXPATHLEN];
   unsigned path_size, code_size, prim_size, data_size;
   unsigned symbol_size, debug_size, size;
 
   lseek(fd, (long) -TRAILER_SIZE, SEEK_END);
-  if (read(fd, buffer, TRAILER_SIZE) < TRAILER_SIZE) return -1;
+  if (read(fd, buffer, TRAILER_SIZE) < TRAILER_SIZE) return NULL;
   path_size = read_size(buffer);
   code_size = read_size(buffer + 4);
   prim_size = read_size(buffer + 8);
   data_size = read_size(buffer + 12);
   symbol_size = read_size(buffer + 16);
   debug_size = read_size(buffer + 20);
-  if (path_size > MAXPATHLEN) return -1;
+  if (path_size > MAXPATHLEN) return NULL;
+  if (path_size == 0) return default_runtime_path;
   size = path_size + code_size + prim_size +
          data_size + symbol_size + debug_size + TRAILER_SIZE;
   lseek(fd, -size, SEEK_END);
-  if (read(fd, runtime_path, path_size) != path_size) return -1;
+  if (read(fd, runtime_path, path_size) != path_size) return NULL;
   runtime_path[path_size - 1] = 0;
-  return 0;
+  return runtime_path;
 }
 
 static void errwrite(char * msg)
@@ -99,13 +103,12 @@ static void errwrite(char * msg)
 
 int main(int argc, char ** argv)
 {
-  char * truename;
+  char * truename, * runtime_path;
   int fd;
-  char runtime_path[MAXPATHLEN];
 
   truename = searchpath(argv[0]);
   fd = open(truename, O_RDONLY);
-  if (fd == -1 || read_runtime_path(fd, runtime_path) == -1) {
+  if (fd == -1 || (runtime_path = read_runtime_path(fd)) == NULL) {
     errwrite(truename);
     errwrite(" not found or is not a bytecode executable file\n");
     return 2;

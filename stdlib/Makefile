@@ -17,12 +17,12 @@ OBJS=pervasives.cmo list.cmo char.cmo string.cmo array.cmo sys.cmo \
   digest.cmo random.cmo oo.cmo genlex.cmo callback.cmo weak.cmo \
   lazy.cmo
 
-all: stdlib.cma std_exit.cmo camlheader
+all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 
 allopt: stdlib.cmxa std_exit.cmx
 
 install:
-	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader $(LIBDIR)
+	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader camlheader_ur $(LIBDIR)
 
 installopt:
 	cp stdlib.cmxa stdlib.a std_exit.o *.cmx $(LIBDIR)
@@ -34,15 +34,18 @@ stdlib.cma: $(OBJS)
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
-camlheader: sharpbang header.c ../config/Makefile
-	if $(SHARPBANGSCRIPTS); \
-	then cp sharpbang camlheader; \
-	else $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) header.c -o camlheader; \
-	     strip camlheader; \
+camlheader camlheader_ur: header.c ../config/Makefile
+	if $(SHARPBANGSCRIPTS); then \
+          echo '#! $(BINDIR)/ocamlrun' > camlheader && \
+          echo -n '#! ' > camlheader_ur; \
+        else \
+	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -DRUNTIME_NAME='"$(BINDIR)/ocamlrun"' header.c -o camlheader && \
+          strip camlheader && \
+          cp camlheader camlheader_ur; \
         fi
 
 clean::
-	rm -f camlheader
+	rm -f camlheader camlheader_ur
 
 pervasives.cmi: pervasives.mli
 	$(CAMLC) $(COMPFLAGS) -nopervasives -c pervasives.mli

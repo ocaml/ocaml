@@ -17,6 +17,8 @@
 #include <process.h>
 #include "../byterun/exec.h"
 
+char * default_runtime_name = "ocamlrun";
+
 static unsigned long read_size(char * ptr)
 {
   unsigned char * p = (unsigned char *) ptr;
@@ -24,30 +26,32 @@ static unsigned long read_size(char * ptr)
          ((unsigned long) p[2] << 8) + p[3];
 }
 
-static int read_runtime_path(HANDLE h, char *runtime_path, int path_len)
+static char * read_runtime_path(HANDLE h)
 {
   char buffer[TRAILER_SIZE];
+  char runtime_path[MAX_PATH];
   DWORD nread;
   struct exec_trailer tr;
   long size;
 
-  if (SetFilePointer(h, -TRAILER_SIZE, NULL, FILE_END) == -1) return -1;
-  if (! ReadFile(h, buffer, TRAILER_SIZE, &nread, NULL)) return -1;
-  if (nread != TRAILER_SIZE) return -1;
+  if (SetFilePointer(h, -TRAILER_SIZE, NULL, FILE_END) == -1) return NULL;
+  if (! ReadFile(h, buffer, TRAILER_SIZE, &nread, NULL)) return NULL;
+  if (nread != TRAILER_SIZE) return NULL;
   tr.path_size = read_size(buffer);
   tr.code_size = read_size(buffer + 4);
   tr.prim_size = read_size(buffer + 8);
   tr.data_size = read_size(buffer + 12);
   tr.symbol_size = read_size(buffer + 16);
   tr.debug_size = read_size(buffer + 20);
-  if (tr.path_size >= path_len) return -1;
+  if (tr.path_size >= MAX_PATH) return NULL;
+  if (tr.path_size == 0) return default_runtime_path;
   size = tr.path_size + tr.code_size + tr.prim_size +
          tr.data_size + tr.symbol_size + tr.debug_size + TRAILER_SIZE;
-  if (SetFilePointer(h, -size, NULL, FILE_END) == -1) return -1;
-  if (! ReadFile(h, runtime_path, tr.path_size, &nread, NULL)) return -1;
-  if (nread != tr.path_size) return -1;
+  if (SetFilePointer(h, -size, NULL, FILE_END) == -1) return NULL;
+  if (! ReadFile(h, runtime_path, tr.path_size, &nread, NULL)) return NULL;
+  if (nread != tr.path_size) return NULL;
   runtime_path[tr.path_size - 1] = 0;
-  return 0;
+  return runtime_path;
 }
 
 static void errwrite(char * msg)
@@ -61,14 +65,14 @@ int main(int argc, char ** argv)
 {
   char truename[MAX_PATH];
   char * cmdline = GetCommandLine();
-  char runtime_path[MAX_PATH];
+  char * runtime_path;
   HANDLE h;
   int retcode;
 
   GetModuleFileName(NULL, truename, sizeof(truename));
   h = CreateFile(truename, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
   if (h == INVALID_HANDLE_VALUE ||
-      read_runtime_path(h, runtime_path, sizeof(runtime_path)) == -1) {
+      (runtime_path = read_runtime_path(h)) == NULL) {
     errwrite(truename);
     errwrite(" not found or is not a bytecode executable file\r\n");
     return 2;
