@@ -1,6 +1,22 @@
-(* my own tests *)
+(* $Id$ *)
+(*
+   How to check out ocaml with polymorphic methods:
+   Either do 
+    cvs -q update -r poly_meth2 boot parsing tools toplevel typing utils \
+        otherlibs/labltk/browser/searchpos.ml
+   or
+    cvs -q update -r poly_meth2 -f
+   In the second case do not forget to add the -f flag to all ulterior
+   calls to cvs update, otherwise all head files will be deleted!
+*)
 
+(* Tests for explicit polymorphism *)
 open StdLabels;;
+
+type 'a t = { t : 'a };;
+type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b };;
+let f l = { fold = List.fold_left l };;
+(f [1;2;3]).fold ~f:(+) ~init:0;;
 
 class ['b] ilist l = object
   val l = l
@@ -94,6 +110,10 @@ class vari = object
   method m = function `a -> 1 | _ -> 0
 end
 ;;
+class vari = object
+  method m : 'a. ([< `a|`b|`c] as 'a) -> int = function `a -> 1 | _ -> 0
+end
+;;
 module V =
   struct
     type v = [`a | `b | `c]
@@ -105,6 +125,23 @@ class varj = object
   method m = V.m
 end
 ;;
+
+module type T = sig
+  class vari : object method m : 'a. ([< `a | `b | `c] as 'a) -> int end
+end
+;;
+module M0 = struct
+  class vari = object
+    method virtual m : 'a. ([< `a|`b|`c] as 'a) -> int
+    method m = function `a -> 1 | _ -> 0
+  end
+end
+;;
+module M : T = M0
+;;
+let v = new M.vari;;
+v#m `a;;
+
 class point ~x ~y = object
   val x : int = x
   val y : int = y
