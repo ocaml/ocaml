@@ -382,6 +382,23 @@ class man =
 	     )
 	  )^"\n"
 
+    (** Groff for the given parameter,
+       and eventually its label. Note that we must remove
+       the option constructor if we print an optional argument.*)
+    method man_of_parameter m p =
+      let (pi,label) = p in
+      let (slabel, t) = 
+	let t = Parameter.typ p in
+	match label with
+	  "" -> ("", t)
+	| s -> 
+	    if is_optional label then 
+	      (s^":", Odoc_info.remove_option t)
+	    else
+	      (s^":", t)
+      in
+      slabel ^ (self#man_of_type_expr m t)
+
     (** Groff for the description of a function parameter. *)
     method man_of_parameter_description p =
       match Parameter.names p with
@@ -429,14 +446,12 @@ class man =
 	  )^"\n\n"
 
     (** Groff string for a [class_kind]. *)
-    method man_of_class_kind ?(with_def_syntax=true) ckind =
+    method man_of_class_kind ckind =
       match ckind with
 	Class_structure _ -> 
-	  (if with_def_syntax then " = " else "")^
-	  (self#man_of_code Odoc_messages.object_end)
+	  self#man_of_code Odoc_messages.object_end
 
       |	Class_apply capp ->
-	  (if with_def_syntax then " = " else "")^
 	  (
 	   match capp.capp_class with
 	     None -> capp.capp_name
@@ -449,7 +464,6 @@ class man =
 		capp.capp_params_code))
 	    
       |	Class_constr cco ->
-	  (if with_def_syntax then " = " else "")^
 	  (
 	   match cco.cco_type_parameters with
 	     [] -> ""
@@ -458,34 +472,27 @@ class man =
 	  (
 	   match cco.cco_class with
 	     None -> cco.cco_name
-	   | Some (Cl cl) -> cl.cl_name^" "
-	   | Some (Cltype (clt, _)) -> clt.clt_name^" "
+	   | Some (Cl cl) -> "\n.B "^cl.cl_name^"\n"
+	   | Some (Cltype (clt, _)) -> "\n.B "^clt.clt_name^"\n"
 	  )
       |	Class_constraint (ck, ctk) ->
-	  (if with_def_syntax then " = " else "")^
-	  "( "^(self#man_of_class_kind ~with_def_syntax: false ck)^
+	  "( "^(self#man_of_class_kind ck)^
 	  " : "^
 	  (self#man_of_class_type_kind ctk)^
 	  " )"
 
     (** Groff string for the given [class_type_kind].*)
-    method man_of_class_type_kind ?def_syntax ctkind =
+    method man_of_class_type_kind ctkind =
       match ctkind with
 	Class_type cta -> 
-	  (match def_syntax with
-	    None -> ""
-	  | Some s -> " "^s^" ")^
 	  (
 	   match cta.cta_class with
 	     None -> cta.cta_name
-	   | Some (Cltype (clt, _)) -> clt.clt_name
-	   | Some (Cl cl) -> cl.cl_name
+	   | Some (Cltype (clt, _)) -> "\n.B "^clt.clt_name^"\n"
+	   | Some (Cl cl) -> "\n.B "^cl.cl_name^"\n"
 	  )
       |	Class_signature _ ->
-	  (match def_syntax with
-	    None -> ""
-	  | Some s -> " "^s^" ")^
-	  (self#man_of_code Odoc_messages.object_end)
+	  self#man_of_code Odoc_messages.object_end
 
     (** Groff string for a [module_kind]. *)
     method man_of_module_kind ?(with_def_syntax=true) k =
@@ -552,32 +559,42 @@ class man =
 
     (** Groff string for a class. *)
     method man_of_class c =
+      let buf = Buffer.create 32 in
+      let p = Printf.bprintf in
       Odoc_info.reset_type_names () ;
-      ".I class "^
-      (if c.cl_virtual then "virtual " else "")^
+      let father = Name.father c.cl_name in
+      p buf ".I class %s"
+	(if c.cl_virtual then "virtual " else "");
       (
        match c.cl_type_parameters with
-	[] -> ""
-      |	l -> "["^(Odoc_misc.string_of_type_list ", " l)^".I ] "
-      )^
-      (Name.simple c.cl_name)^
-      (match c.cl_parameters with [] -> "" | _ -> " ... ")^
-      (self#man_of_class_kind c.cl_kind)^
-      "\n.sp\n"^(self#man_of_info c.cl_info)^"\n.sp\n"
+	 [] -> ()
+       | l -> p buf "[%s.I] " (Odoc_misc.string_of_type_list ", " l)
+      );
+      p buf "%s : " (Name.simple c.cl_name);
+      List.iter
+	(fun param -> p buf "%s-> " (self#man_of_parameter father param))
+	c.cl_parameters;
+
+      p buf "%s" (self#man_of_class_kind c.cl_kind);
+      p buf "\n.sp\n%s\n.sp\n" (self#man_of_info c.cl_info);
+      Buffer.contents buf
 
     (** Groff string for a class type. *)
     method man_of_class_type ct =
+      let buf = Buffer.create 32 in
+      let p = Printf.bprintf in
       Odoc_info.reset_type_names () ;
-      ".I class type "^
-      (if ct.clt_virtual then "virtual " else "")^
+      p buf ".I class type %s"
+	(if ct.clt_virtual then "virtual " else "");
       (
        match ct.clt_type_parameters with
-	[] -> ""
-      |	l -> "["^(Odoc_misc.string_of_type_list ", " l)^".I ] "
-      )^
-      (Name.simple ct.clt_name)^
-      (self#man_of_class_type_kind ~def_syntax: ":" ct.clt_kind)^
-      "\n.sp\n"^(self#man_of_info ct.clt_info)^"\n.sp\n"
+	[] -> ()
+      |	l -> p buf "[%s.I ] " (Odoc_misc.string_of_type_list ", " l)
+      );
+      p buf "%s = " (Name.simple ct.clt_name);
+      p buf "%s" (self#man_of_class_type_kind ct.clt_kind);
+      p buf "\n.sp\n%s\n.sp\n" (self#man_of_info ct.clt_info);
+      Buffer.contents buf
 
     (** Groff string for a module. *)
     method man_of_module m =
@@ -638,15 +655,9 @@ class man =
 	   ".SH "^Odoc_messages.clas^"\n"^
 	   Odoc_messages.clas^"   "^cl.cl_name^"\n"^
 	   ".SH "^Odoc_messages.documentation^"\n"^
-	   ".sp\n"^
-	   Odoc_messages.clas^"\n"^
-	   (if cl.cl_virtual then ".B virtual \n" else "")^
-	   ".B \""^(Name.simple cl.cl_name)^"\"\n"^
-	   (self#man_of_class_kind cl.cl_kind )^
-	   "\n.sp\n"^
-	   (self#man_of_info cl.cl_info)^"\n"^
 	   ".sp\n"
 	  );
+	output_string chanout (self#man_of_class cl);
 
 	(* parameters *)
 	output_string chanout 
@@ -696,15 +707,10 @@ class man =
 	   ".SH "^Odoc_messages.class_type^"\n"^
 	   Odoc_messages.class_type^"   "^ct.clt_name^"\n"^
 	   ".SH "^Odoc_messages.documentation^"\n"^
-	   ".sp\n"^
-	   Odoc_messages.class_type^"\n"^
-	   (if ct.clt_virtual then ".B virtual \n" else "")^
-	   ".B \""^(Name.simple ct.clt_name)^"\"\n"^
-	   (self#man_of_class_type_kind ~def_syntax: ":" ct.clt_kind )^
-	   "\n.sp\n"^
-	   (self#man_of_info ct.clt_info)^"\n"^
 	   ".sp\n"
 	  );
+	output_string chanout (self#man_of_class_type ct);
+
 	(* a large blank *)
 	output_string chanout "\n.sp\n.sp\n";
 (*

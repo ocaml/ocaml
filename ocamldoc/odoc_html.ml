@@ -1303,10 +1303,12 @@ class html =
 		 cta.cta_name
 	   | Some (Cltype (clt, _)) -> 
 	       let (html_file, _) = Naming.html_files clt.clt_name in 
-	       "<a href=\""^html_file^"\">"^clt.clt_name^"</a>"
+	       let rel = Name.get_relative father clt.clt_name in
+	       "<a href=\""^html_file^"\">"^rel^"</a>"
 	   | Some (Cl cl) -> 
 	       let (html_file, _) = Naming.html_files cl.cl_name in 
-	       "<a href=\""^html_file^"\">"^cl.cl_name^"</a>"
+	       let rel = Name.get_relative father cl.cl_name in
+	       "<a href=\""^html_file^"\">"^rel^"</a>"
 	  )
       |	Class_signature _ ->
 	  self#html_of_code ~with_pre: false Odoc_messages.object_end

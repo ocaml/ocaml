@@ -289,6 +289,23 @@ class virtual to_text =
       [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
       (self#text_of_info e.ex_info)
 
+    (** Return [text] value for the given parameter,
+       and eventually its label. Note that we must remove
+       the option constructor if we print an optional argument.*)
+    method text_of_parameter m p =
+      let (pi,label) = p in
+      let (slabel, t) = 
+	let t = Parameter.typ p in
+	match label with
+	  "" -> ([], t)
+	| s -> 
+	    if is_optional label then 
+	      ([Code (s^":")], Odoc_info.remove_option t)
+	    else
+	      ([Code (s^":")], t)
+      in
+      slabel @ (self#text_of_type_expr m t)
+
     (** Return [text] value for the description of a function parameter. *)
     method text_of_parameter_description p =
       match Parameter.names p with
@@ -365,16 +382,14 @@ class virtual to_text =
 	  ] 
 
     (** Return [text] value for the given [class_kind].*)
-    method text_of_class_kind father ?(with_def_syntax=true) ckind =
+    method text_of_class_kind father ckind =
       match ckind with
 	Class_structure _ -> 
-	  [Code ((if with_def_syntax then " = " else "")^
-		 Odoc_messages.object_end)
-	  ] 
+	  [Code Odoc_messages.object_end]
 
       |	Class_apply capp ->
 	  [Code 
-	      ((if with_def_syntax then " = " else "")^
+	      (
 	       (
 		match capp.capp_class with
 		  None -> capp.capp_name
@@ -389,7 +404,6 @@ class virtual to_text =
 	  ] 
 	    
       |	Class_constr cco ->
-	  (if with_def_syntax then [Code " = "] else [])@
 	  (
 	   match cco.cco_type_parameters with
 	     [] -> []
@@ -401,28 +415,23 @@ class virtual to_text =
 	  [Code (
 	    match cco.cco_class with
 	      None -> cco.cco_name
-	    | Some (Cl cl) -> cl.cl_name
-	    | Some (Cltype (clt,_)) -> clt.clt_name
+	    | Some (Cl cl) -> Name.get_relative father cl.cl_name
+	    | Some (Cltype (clt,_)) -> Name.get_relative father clt.clt_name
 	   )
 	  ] 
 
       |	Class_constraint (ck, ctk) ->
-	  (if with_def_syntax then [Code " = "] else [])@
 	  [Code "( "] @
-	  (self#text_of_class_kind father ~with_def_syntax: false ck) @
+	  (self#text_of_class_kind father ck) @
 	  [Code " : "] @
 	  (self#text_of_class_type_kind father ctk) @
 	  [Code " )"]
 
 
     (** Return [text] value for the given [class_type_kind].*)
-    method text_of_class_type_kind father ?def_syntax ctkind =
+    method text_of_class_type_kind father ctkind =
       match ctkind with
 	Class_type cta -> 
-	  (match def_syntax with
-	    None -> []
-	  | Some s -> [Code (" "^s^" ")]
-	  ) @
 	  (
 	   match cta.cta_type_parameters with
 	     [] -> []
@@ -434,14 +443,14 @@ class virtual to_text =
 	  (
 	   match cta.cta_class with
 	     None -> [ Code cta.cta_name ]
-	   | Some (Cltype (clt, _)) -> [Code clt.clt_name]
-	   | Some (Cl cl) -> [Code cl.cl_name]
+	   | Some (Cltype (clt, _)) -> 
+	       let rel = Name.get_relative father clt.clt_name in 
+	       [Code rel]
+	   | Some (Cl cl) -> 
+	       let rel = Name.get_relative father cl.cl_name in
+	       [Code rel]
 	  )
       |	Class_signature _ ->
-	  (match def_syntax with
-	    None -> []
-	  | Some s -> [Code (" "^s^" ")]
-	  ) @
 	  [Code Odoc_messages.object_end]
    
     (** Return [text] value for a [module_kind]. *)
