@@ -224,6 +224,7 @@ value alloc_shr (mlsize_t wosize, tag_t tag)
 {
   char *hp, *new_block;
 
+  if (wosize > Max_wosize) raise_out_of_memory ();
   hp = fl_allocate (wosize);
   if (hp == NULL){
     new_block = expand_heap (wosize);
