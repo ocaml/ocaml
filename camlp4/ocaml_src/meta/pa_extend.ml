@@ -1004,11 +1004,11 @@ let sslist_aux loc min sep s =
           {used = []; text = slist loc min sep s;
            styp = STapp (loc, "list", s.styp)}
         in
-        let patt = MLast.PaLid (loc, "l") in
+        let patt = MLast.PaLid (loc, "a") in
         {pattern = Some patt; symbol = symb}
       in
       let act =
-        MLast.ExApp (loc, MLast.ExUid (loc, "List"), MLast.ExLid (loc, "l"))
+        MLast.ExApp (loc, MLast.ExUid (loc, "List"), MLast.ExLid (loc, "a"))
       in
       {prod = [psymb]; action = Some act}
     in
@@ -1021,6 +1021,39 @@ let sslist loc min sep s =
   match s.text with
     TXself _ | TXnext _ -> slist loc min sep s
   | _ -> sslist_aux loc min sep s
+;;
+
+let ssopt loc s =
+  let psymbol p s t =
+    let symb = {used = []; text = s; styp = t} in
+    {pattern = Some p; symbol = symb}
+  in
+  let rl =
+    let r1 =
+      let prod =
+        let n = mk_name loc (MLast.ExLid (loc, "a_opt")) in
+        [psymbol (MLast.PaLid (loc, "a")) (TXnterm (loc, n, None))
+           (STquo (loc, "a_opt"))]
+      in
+      let act = MLast.ExLid (loc, "a") in {prod = prod; action = Some act}
+    in
+    let r2 =
+      let psymb =
+        let symb =
+          {used = []; text = TXopt (loc, s.text);
+           styp = STapp (loc, "option", s.styp)}
+        in
+        let patt = MLast.PaLid (loc, "a") in
+        {pattern = Some patt; symbol = symb}
+      in
+      let act =
+        MLast.ExApp (loc, MLast.ExUid (loc, "Option"), MLast.ExLid (loc, "a"))
+      in
+      {prod = [psymb]; action = Some act}
+    in
+    [r1; r2]
+  in
+  TXrules (loc, srules loc "anti" rl "")
 ;;
 
 let is_global e =
@@ -1619,7 +1652,9 @@ Grammar.extend
       Gramext.action
         (fun (s : 'symbol) _ (loc : int * int) ->
            (let styp = STapp (loc, "option", s.styp) in
-            let text = TXopt (loc, s.text) in
+            let text =
+              if !quotify then ssopt loc s else TXopt (loc, s.text)
+            in
             {used = s.used; text = text; styp = styp} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "LIST1"); Gramext.Sself;

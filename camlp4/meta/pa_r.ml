@@ -150,6 +150,8 @@ value mkassert loc e =
       else <:expr< if $e$ then () else $raiser$ >> ]
 ;
 
+value append_elem el e = el @ [e];
+
 (* ...suppose to flush the input in case of syntax error to avoid multiple
    errors in case of cut-and-paste in the xterm, but work bad: for example
    the input "for x = 1;" waits for another line before displaying the
@@ -166,11 +168,22 @@ and sync_semi cs =
 Pcaml.sync.val := sync;
 *)
 
-value type_parameter = Grammar.Entry.create gram "type_parameter";
-value fun_binding = Grammar.Entry.create gram "fun_binding";
 value ipatt = Grammar.Entry.create gram "ipatt";
-value direction_flag = Grammar.Entry.create gram "direction_flag";
-value mod_ident = Grammar.Entry.create gram "mod_ident";
+
+value not_yet_warned = ref True;
+value warning_seq () =
+  if not_yet_warned.val then do {
+    not_yet_warned.val := False;
+    Printf.eprintf "\
+*** warning: use of old syntax
+*** type \"camlp4r -help_seq\" in a shell for explanations
+";
+    flush stderr
+  }
+  else ()
+;
+Pcaml.add_option "-no_warn_seq" (Arg.Clear not_yet_warned)
+  " No warning when using old syntax for sequences.";
 
 EXTEND
   GLOBAL: interf implem use_file top_phrase;
@@ -211,8 +224,7 @@ END;
 
 EXTEND
   GLOBAL: sig_item str_item ctyp patt expr module_type module_expr class_type
-    class_expr class_sig_item class_str_item
-    let_binding type_parameter fun_binding ipatt direction_flag mod_ident;
+    class_expr class_sig_item class_str_item let_binding ipatt;
   module_expr:
     [ [ "functor"; "("; i = UIDENT; ":"; t = module_type; ")"; "->";
         me = SELF ->
@@ -619,7 +631,7 @@ EXTEND
       [ ci = class_longident; "["; ctcl = LIST0 ctyp SEP ","; "]" ->
           <:class_expr< $list:ci$ [ $list:ctcl$ ] >>
       | ci = class_longident -> <:class_expr< $list:ci$ >>
-      | "object"; cspo = class_self_patt_opt; cf = class_structure; "end" ->
+      | "object"; cspo = OPT class_self_patt; cf = class_structure; "end" ->
           <:class_expr< object $opt:cspo$ $list:cf$ end >>
       | "("; ce = SELF; ":"; ct = class_type; ")" ->
           <:class_expr< ($ce$ : $ct$) >>
@@ -628,10 +640,9 @@ EXTEND
   class_structure:
     [ [ cf = LIST0 [ cf = class_str_item; ";" -> cf ] -> cf ] ]
   ;
-  class_self_patt_opt:
-    [ [ "("; p = patt; ")" -> Some p
-      | "("; p = patt; ":"; t = ctyp; ")" -> Some <:patt< ($p$ : $t$) >>
-      | -> None ] ]
+  class_self_patt:
+    [ [ "("; p = patt; ")" -> p
+      | "("; p = patt; ":"; t = ctyp; ")" -> <:patt< ($p$ : $t$) >> ] ]
   ;
   class_str_item:
     [ [ "declare"; st = LIST0 [ s= class_str_item; ";" -> s ]; "end" ->
@@ -675,13 +686,12 @@ EXTEND
       | id = clty_longident; "["; tl = LIST1 ctyp SEP ","; "]" ->
           <:class_type< $list:id$ [ $list:tl$ ] >>
       | id = clty_longident -> <:class_type< $list:id$ >>
-      | "object"; cst = class_self_type_opt;
+      | "object"; cst = OPT class_self_type;
         csf = LIST0 [ csf = class_sig_item; ";" -> csf ]; "end" ->
           <:class_type< object $opt:cst$ $list:csf$ end >> ] ]
   ;
-  class_self_type_opt:
-    [ [ "("; t = ctyp; ")" -> Some t
-      | -> None ] ]
+  class_self_type:
+    [ [ "("; t = ctyp; ")" -> t ] ]
   ;
   class_sig_item:
     [ [ "declare"; st = LIST0 [ s = class_sig_item; ";" -> s ]; "end" ->
@@ -855,6 +865,21 @@ EXTEND
     [ [ "&" -> True
       | -> False ] ]
   ;
+  (* Compatibility old syntax of sequences *)
+  expr: LEVEL "top"
+    [ [ "do"; seq = LIST0 [ e = expr; ";" -> e ]; "return"; warning_sequence;
+        e = SELF ->
+          <:expr< do { $list:append_elem seq e$ } >>
+      | "for"; i = LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
+        "do"; seq = LIST0 [ e = expr; ";" -> e ]; warning_sequence; "done" ->
+          <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $list:seq$ } >>
+      | "while"; e = SELF; "do"; seq = LIST0 [ e = expr; ";" -> e ];
+        warning_sequence; "done" ->
+          <:expr< while $e$ do { $list:seq$ } >> ] ]
+  ;
+  warning_sequence:
+    [ [ -> warning_seq () ] ]
+  ;
 END;
 
 EXTEND
@@ -901,38 +926,5 @@ EXTEND
             [ Not_found -> ("", x) ]
           in
           Pcaml.handle_patt_quotation loc x ] ]
-  ;
-END;
-
-(* Old syntax for sequences *)
-
-value not_yet_warned = ref True;
-value warning_seq () =
-  if not_yet_warned.val then do {
-    not_yet_warned.val := False;
-    Printf.eprintf "\
-*** warning: use of old syntax
-*** type \"camlp4r -help_seq\" in a shell for explanations
-";
-    flush stderr
-  }
-  else ()
-;
-Pcaml.add_option "-no_warn_seq" (Arg.Clear not_yet_warned)
-  " No warning when using old syntax for sequences.";
-
-EXTEND
-  GLOBAL: expr direction_flag;
-  expr: LEVEL "top"
-    [ [ "do"; seq = LIST0 [ e = expr; ";" -> e ]; "return"; e = SELF ->
-          do { warning_seq (); <:expr< do { $list:seq @ [e]$ } >> }
-      | "for"; i = LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
-        "do"; seq = LIST0 [ e = expr; ";" -> e ]; "done" ->
-          do {
-            warning_seq ();
-            <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $list:seq$ } >>
-          }
-      | "while"; e = SELF; "do"; seq = LIST0 [ e = expr; ";" -> e ]; "done" ->
-          do { warning_seq (); <:expr< while $e$ do { $list:seq$ } >> } ] ]
   ;
 END;

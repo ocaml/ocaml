@@ -300,9 +300,9 @@ value rec symbol s k =
   | Stoken tok -> token tok k
   | Srules
       [([(Some <:patt< a >>, Snterm <:expr< a_list >>)], Some <:expr< a >>);
-       ([(Some <:patt< l >>,
+       ([(Some <:patt< a >>,
           ((Slist0 _ | Slist1 _ | Slist0sep _ _ | Slist1sep _ _) as s))],
-          Some <:expr< List l >>)]
+          Some <:expr< List a >>)]
     when not no_slist.val
     ->
       match s with
@@ -317,6 +317,12 @@ value rec symbol s k =
             [: `S LR "SLIST1"; `simple_symbol s [: :]; `S LR "SEP";
                `simple_symbol sep k :]
       | _ -> assert False ]
+  | Srules
+      [([(Some <:patt< a >>, Snterm <:expr< a_opt >>)], Some <:expr< a >>);
+       ([(Some <:patt< a >>, Sopt s)], Some <:expr< Option a >>)]
+    when not no_slist.val
+    ->
+      HVbox [: `S LR "SOPT"; `simple_symbol s k :]
   | Srules rl ->
       let rl = simplify_rules rl in
       HVbox [: `HVbox [: :]; rule_list  rl k :] ]

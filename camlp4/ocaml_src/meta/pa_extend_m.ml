@@ -18,7 +18,13 @@ Grammar.extend
   [Grammar.Entry.obj (symbol : 'symbol Grammar.Entry.e),
    Some (Gramext.Level "top"),
    [None, Some Gramext.NonA,
-    [[Gramext.srules
+    [[Gramext.Stoken ("UIDENT", "SOPT"); Gramext.Sself],
+     Gramext.action
+       (fun (s : 'symbol) _ (loc : int * int) ->
+          (let used = mk_name loc (MLast.ExLid (loc, "a_opt")) :: s.used in
+           {used = used; text = ssopt loc s; styp = STlid (loc, "ast")} :
+           'symbol));
+     [Gramext.srules
         [[Gramext.Stoken ("UIDENT", "SLIST1")],
          Gramext.action (fun _ (loc : int * int) -> (true : 'e__1));
          [Gramext.Stoken ("UIDENT", "SLIST0")],
@@ -36,11 +42,10 @@ Grammar.extend
           (loc : int * int) ->
           (let used =
              match sep with
-               Some symb ->
-                 mk_name loc (MLast.ExLid (loc, "anti")) ::
-                   (symb.used @ s.used)
+               Some symb -> symb.used @ s.used
              | None -> s.used
            in
+           let used = mk_name loc (MLast.ExLid (loc, "a_list")) :: used in
            {used = used; text = sslist loc min sep s;
             styp = STlid (loc, "ast")} :
            'symbol))]]];;

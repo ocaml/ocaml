@@ -50,6 +50,9 @@ value class_expr = Grammar.Entry.create gram "class expr";
 value class_sig_item = Grammar.Entry.create gram "class signature item";
 value class_str_item = Grammar.Entry.create gram "class structure item";
 
+value ipatt = Grammar.Entry.create gram "ipatt";
+value let_binding = Grammar.Entry.create gram "let_binding";
+
 value o2b =
   fun
   [ Option (Some _) -> Bool True
@@ -147,12 +150,13 @@ value mkassert loc e =
       else Node "ExIfe" [Loc; e; Node "ExUid" [Loc; Str "()"]; raiser] ]
 ;
 
+value append_elem el e = Append el e;
+
 value not_yet_warned = ref True;
 value warning_seq () =
   if not_yet_warned.val then do {
     not_yet_warned.val := False;
-    Printf.eprintf
-      "\
+    Printf.eprintf "\
 *** warning: use of old syntax for sequences in expr quotation\n";
     flush stderr
   }
@@ -161,7 +165,7 @@ value warning_seq () =
 
 EXTEND
   GLOBAL: sig_item str_item ctyp patt expr module_type module_expr class_type
-    class_expr class_sig_item class_str_item;
+    class_expr class_sig_item class_str_item let_binding ipatt;
   module_expr:
     [ [ "functor"; "("; i = a_UIDENT; ":"; t = module_type; ")"; "->";
         me = SELF ->
@@ -638,7 +642,7 @@ EXTEND
       [ ci = class_longident; "["; ctcl = SLIST0 ctyp SEP ","; "]" ->
           Node "CeCon" [Loc; ci; ctcl]
       | ci = class_longident -> Node "CeCon" [Loc; ci; List []]
-      | "object"; cspo = class_self_patt_opt; cf = class_structure; "end" ->
+      | "object"; cspo = SOPT class_self_patt; cf = class_structure; "end" ->
           Node "CeStr" [Loc; cspo; cf]
       | "("; ce = SELF; ":"; ct = class_type; ")" ->
           Node "CeTyc" [Loc; ce; ct]
@@ -647,11 +651,9 @@ EXTEND
   class_structure:
     [ [ cf = SLIST0 [ cf = class_str_item; ";" -> cf ] -> cf ] ]
   ;
-  class_self_patt_opt:
-    [ [ "("; p = patt; ")" -> Option (Some p)
-      | "("; p = patt; ":"; t = ctyp; ")" ->
-          Option (Some (Node "PaTyc" [Loc; p; t]))
-      | -> Option None ] ]
+  class_self_patt:
+    [ [ "("; p = patt; ")" -> p
+      | "("; p = patt; ":"; t = ctyp; ")" -> Node "PaTyc" [Loc; p; t] ] ]
   ;
   class_str_item:
     [ [ "declare"; st = SLIST0 [ s = class_str_item; ";" -> s ]; "end" ->
@@ -698,13 +700,12 @@ EXTEND
       | id = clty_longident; "["; tl = SLIST1 ctyp SEP ","; "]" ->
           Node "CtCon" [Loc; id; tl]
       | id = clty_longident -> Node "CtCon" [Loc; id; List []]
-      | "object"; cst = class_self_type_opt;
+      | "object"; cst = SOPT class_self_type;
         csf = SLIST0 [ csf = class_sig_item; ";" -> csf ]; "end" ->
           Node "CtSig" [Loc; cst; csf] ] ]
   ;
-  class_self_type_opt:
-    [ [ "("; t = ctyp; ")" -> Option (Some t)
-      | -> Option None ] ]
+  class_self_type:
+    [ [ "("; t = ctyp; ")" -> t ] ]
   ;
   class_sig_item:
     [ [ "declare"; st = SLIST0 [ s = class_sig_item; ";" -> s ]; "end" ->
@@ -893,6 +894,21 @@ EXTEND
     [ [ "&" -> Bool True
       | -> Bool False ] ]
   ;
+  (* Compatibility old syntax of sequences *)
+  expr: LEVEL "top"
+    [ [ "do"; seq = SLIST0 [ e = expr; ";" -> e ]; "return"; warning_sequence;
+        e = SELF ->
+          Node "ExSeq" [Loc; append_elem seq e]
+      | "for"; i = a_LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
+        "do"; seq = SLIST0 [ e = expr; ";" -> e ]; warning_sequence; "done" ->
+          Node "ExFor" [Loc; i; e1; e2; df; seq]
+      | "while"; e = SELF; "do"; seq = SLIST0 [ e = expr; ";" -> e ];
+        warning_sequence; "done" ->
+          Node "ExWhi" [Loc; e; seq] ] ]
+  ;
+  warning_sequence:
+    [ [ -> warning_seq () ] ]
+  ;
   (* Antiquotations *)
   str_item:
     [ [ "#"; n = a_LIDENT; dp = dir_param -> Node "StDir" [Loc; n; dp] ] ]
@@ -971,14 +987,8 @@ EXTEND
   class_type:
     [ [ a = ANTIQUOT "" -> antiquot "" loc a ] ]
   ;
-  class_self_patt_opt:
-    [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a ] ]
-  ;
   as_lident_opt:
     [ [ a = ANTIQUOT "as" -> antiquot "as" loc a ] ]
-  ;
-  class_self_type_opt:
-    [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a ] ]
   ;
   meth_list:
     [ [ a = a_list -> Tuple [a; Bool False]
@@ -998,6 +1008,9 @@ EXTEND
   ;
   a_list:
     [ [ a = ANTIQUOT "list" -> antiquot "list" loc a ] ]
+  ;
+  a_opt:
+    [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a ] ]
   ;
   a_UIDENT:
     [ [ a = ANTIQUOT "uid" -> antiquot "uid" loc a
@@ -1051,20 +1064,6 @@ EXTEND
   ;
   amp_flag:
     [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a ] ]
-  ;
-  (* Compatibility old syntax of sequences *)
-  expr: LEVEL "top"
-    [ [ "do"; seq = SLIST0 [ e = expr; ";" -> e ]; "return"; e = SELF ->
-          let _ = warning_seq () in
-          Node "ExSeq" [Loc; Append seq e]
-      | "for"; i = a_LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
-        "do"; seq = SLIST0 [ e = expr; ";" -> e ]; "done" ->
-          let _ = warning_seq () in
-          Node "ExFor" [Loc; i; e1; e2; df; seq]
-      | "while"; e = SELF; "do"; seq = SLIST0 [ e = expr; ";" -> e ];
-        "done" ->
-          let _ = warning_seq () in
-          Node "ExWhi" [Loc; e; seq] ] ]
   ;
 END;
 

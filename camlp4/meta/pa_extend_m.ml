@@ -21,10 +21,14 @@ EXTEND
         s = SELF; sep = OPT [ UIDENT "SEP"; t = symbol -> t ] ->
           let used =
             match sep with
-            [ Some symb -> [mk_name loc <:expr< anti >> :: symb.used @ s.used]
+            [ Some symb -> symb.used @ s.used
             | None -> s.used ]
           in
+          let used = [mk_name loc <:expr< a_list >> :: used] in
           {used = used; text = sslist loc min sep s;
-           styp = STlid loc "ast"} ] ]
+           styp = STlid loc "ast"}
+      | UIDENT "SOPT"; s = SELF ->
+          let used = [mk_name loc <:expr< a_opt >> :: s.used] in
+          {used = used; text = ssopt loc s; styp = STlid loc "ast"} ] ]
   ;
 END;
