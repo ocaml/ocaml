@@ -315,6 +315,66 @@ let print_dependencies target_file deps =
         end in
     print_items (String.length target_file + 2) deps
 
+(* Optionally preprocess a source file *)
+
+let preprocessor = ref None
+
+let preprocess sourcefile =
+  match !preprocessor with
+    None -> sourcefile
+  | Some pp ->
+      flush stdout;
+      let tmpfile = Filename.temp_file "camlpp" "" in
+      let comm = Printf.sprintf "%s %s > %s" pp sourcefile tmpfile in
+      if Sys.command comm <> 0 then begin
+        Misc.remove_file tmpfile;
+        Printf.eprintf "Preprocessing error\n";
+        exit 2
+      end;
+      tmpfile
+
+let remove_preprocessed inputfile =
+  match !preprocessor with
+    None -> ()
+  | Some _ -> Misc.remove_file inputfile
+
+(* Parse a file or get a dumped syntax tree in it *)
+
+exception Outdated_version
+
+let is_ast_file ic ast_magic =
+  try
+    let buffer = String.create (String.length ast_magic) in
+    really_input ic buffer 0 (String.length ast_magic);
+    if buffer = ast_magic then true
+    else if String.sub buffer 0 9 = String.sub ast_magic 0 9 then
+      raise Outdated_version
+    else false
+  with
+    Outdated_version ->
+      failwith "Ocaml and preprocessor have incompatible versions"
+  | _ -> false
+
+let parse_use_file ic =
+  if is_ast_file ic Config.ast_impl_magic_number then
+    let source_file = input_value ic in
+    [Ptop_def (input_value ic : Parsetree.structure)]
+  else begin
+    seek_in ic 0;
+    let lb = Lexing.from_channel ic in
+    Parse.use_file lb
+  end
+
+let parse_interface ic =
+  if is_ast_file ic Config.ast_intf_magic_number then
+    let source_file = input_value ic in
+    (input_value ic : Parsetree.signature)
+  else begin
+    seek_in ic 0;
+    let lb = Lexing.from_channel ic in
+    Parse.interface lb
+  end
+
 (* Process one file *)
 
 let error_occurred = ref false
@@ -324,11 +384,12 @@ let file_dependencies source_file =
   if Sys.file_exists source_file then begin
     try
       free_structure_names := StringSet.empty;
-      let ic = open_in_bin source_file in
+      let input_file = preprocess source_file in
+      let ic = open_in_bin input_file in
       try
-        let lb = Lexing.from_channel ic in
         if Filename.check_suffix source_file ".ml" then begin
-          add_use_file StringSet.empty (Parse.use_file lb);
+          let ast = parse_use_file ic in
+          add_use_file StringSet.empty ast;
           let basename = Filename.chop_suffix source_file ".ml" in
           let init_deps =
             if Sys.file_exists (basename ^ ".mli")
@@ -340,16 +401,18 @@ let file_dependencies source_file =
           print_dependencies (basename ^ ".cmx") opt_deps
         end else
         if Filename.check_suffix source_file ".mli" then begin
-          add_signature StringSet.empty (Parse.interface lb);
+          let ast = parse_interface ic in
+          add_signature StringSet.empty ast;
           let basename = Filename.chop_suffix source_file ".mli" in
           let (byt_deps, opt_deps) =
             StringSet.fold find_dependency !free_structure_names ([], []) in
           print_dependencies (basename ^ ".cmi") byt_deps
         end else
           ();
-        close_in ic
+        close_in ic; remove_preprocessed input_file
       with x ->
-        close_in ic; raise x
+        close_in ic; remove_preprocessed input_file;
+        raise x
     with x ->
       let report_err = function
       | Lexer.Error(err, start, stop) ->
@@ -376,6 +439,9 @@ let _ =
      "-I", Arg.String(fun dir -> load_path := !load_path @ [dir]),
        "<dir>  Add <dir> to the list of include directories";
      "-native", Arg.Set native_only,
-       "  Generate dependencies for a pure native-code project (no .cmo files)"
+       "  Generate dependencies for a pure native-code project \
+       (no .cmo files)";
+     "-pp", Arg.String(fun s -> preprocessor := Some s),
+       "<command>  Pipe sources through preprocessor <command>"
     ] file_dependencies usage;
   exit (if !error_occurred then 2 else 0)
