@@ -117,6 +117,8 @@ let rec highlight_location loc =
                 print_char c;
                 bol := (c = '\n') 
               done;
+              (* Make sure standout mode is over *)
+              Terminfo.puts stdout !end_standout 1;
               (* Position cursor back to original location *)
               for i = 1 to !num_loc_lines do
                 Terminfo.puts stdout !cursor_down 1
