@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -28,13 +28,11 @@ value get_tag x =
 value error loc str = raise_with_loc loc (Failure str);
 
 value char_of_char_token loc s =
-  try Token.eval_char s with
-  [ Failure _ as exn -> raise_with_loc loc exn ]
+  try Token.eval_char s with [ Failure _ as exn -> raise_with_loc loc exn ]
 ;
 
 value string_of_string_token loc s =
-  try Token.eval_string s with
-  [ Failure _ as exn -> raise_with_loc loc exn ]
+  try Token.eval_string s with [ Failure _ as exn -> raise_with_loc loc exn ]
 ;
 
 value mkloc (bp, ep) =
@@ -59,8 +57,8 @@ value conv_con =
   let t = Hashtbl.create 73 in
   do {
     List.iter (fun (s, s') -> Hashtbl.add t s s')
-      [("True", "true"); ("False", "false");
-       (" True", "True"); (" False", "False")];
+      [("True", "true"); ("False", "false"); (" True", "True");
+       (" False", "False")];
     fun s -> try Hashtbl.find t s with [ Not_found -> s ]
   }
 ;
@@ -530,13 +528,15 @@ value rec expr =
       in
       mkexp loc (Pexp_record (List.map mklabexp lel) eo)
   | ExSeq loc el ->
-      loop el where rec loop =
+      let rec loop =
         fun
         [ [] -> expr (ExUid loc "()")
         | [e] -> expr e
         | [e :: el] ->
             let loc = (fst (loc_of_expr e), snd loc) in
             mkexp loc (Pexp_sequence (expr e) (loop el)) ]
+      in
+      loop el
   | ExSnd loc e s -> mkexp loc (Pexp_send (expr e) s)
   | ExSte loc e1 e2 ->
       mkexp loc
@@ -597,15 +597,12 @@ and sig_item s l =
        l]
   | SgDcl loc sl -> List.fold_right sig_item sl l
   | SgDir loc _ _ -> l
-  | SgExc loc n tl ->
-      [mksig loc (Psig_exception n (List.map ctyp tl)) :: l]
-  | SgExt loc n t p ->
-      [mksig loc (Psig_value n (mkvalue_desc t p)) :: l]
+  | SgExc loc n tl -> [mksig loc (Psig_exception n (List.map ctyp tl)) :: l]
+  | SgExt loc n t p -> [mksig loc (Psig_value n (mkvalue_desc t p)) :: l]
   | SgInc loc mt -> [mksig loc (Psig_include (module_type mt)) :: l]
   | SgMod loc n mt -> [mksig loc (Psig_module n (module_type mt)) :: l]
   | SgMty loc n mt ->
-      [mksig loc (Psig_modtype n (Pmodtype_manifest (module_type mt))) ::
-       l]
+      [mksig loc (Psig_modtype n (Pmodtype_manifest (module_type mt))) :: l]
   | SgOpn loc id ->
       [mksig loc (Psig_open (long_id_of_string_list loc id)) :: l]
   | SgTyp loc tdl -> [mksig loc (Psig_type (List.map mktype_decl tdl)) :: l]
@@ -640,8 +637,7 @@ and str_item s l =
       in
       [mkstr loc si :: l]
   | StExp loc e -> [mkstr loc (Pstr_eval (expr e)) :: l]
-  | StExt loc n t p ->
-      [mkstr loc (Pstr_primitive n (mkvalue_desc t p)) :: l]
+  | StExt loc n t p -> [mkstr loc (Pstr_primitive n (mkvalue_desc t p)) :: l]
   | StInc loc me -> [mkstr loc (Pstr_include (module_expr me)) :: l]
   | StMod loc n me -> [mkstr loc (Pstr_module n (module_expr me)) :: l]
   | StMty loc n mt -> [mkstr loc (Pstr_modtype n (module_type mt)) :: l]
@@ -677,8 +673,7 @@ and class_sig_item c l =
   | CgMth loc s pf t -> [Pctf_meth (s, mkprivate pf, ctyp t, mkloc loc) :: l]
   | CgVal loc s b t ->
       [Pctf_val (s, mkmutable b, Some (ctyp t), mkloc loc) :: l]
-  | CgVir loc s b t ->
-      [Pctf_virt (s, mkprivate b, ctyp t, mkloc loc) :: l] ]
+  | CgVir loc s b t -> [Pctf_virt (s, mkprivate b, ctyp t, mkloc loc) :: l] ]
 and class_expr =
   fun
   [ CeApp loc _ _ as c ->
@@ -723,3 +718,27 @@ and class_str_item c l =
 
 value interf ast = List.fold_right sig_item ast [];
 value implem ast = List.fold_right str_item ast [];
+
+value directive loc =
+  fun
+  [ None -> Pdir_none
+  | Some (ExStr _ s) -> Pdir_string s
+  | Some (ExInt _ i) -> Pdir_int (int_of_string i)
+  | Some (ExUid _ "True") -> Pdir_bool True
+  | Some (ExUid _ "False") -> Pdir_bool False
+  | Some e ->
+      let sl =
+        loop e where rec loop =
+          fun
+          [ ExLid _ i | ExUid _ i -> [i]
+          | ExAcc _ e (ExLid _ i) | ExAcc _ e (ExUid _ i) -> loop e @ [i]
+          | e -> raise_with_loc (loc_of_expr e) (Failure "bad ast") ]
+      in
+      Pdir_ident (long_id_of_string_list loc sl) ]
+;
+
+value phrase =
+  fun
+  [ StDir loc d dp -> Ptop_dir d (directive loc dp)
+  | si -> Ptop_def (str_item si []) ]
+;

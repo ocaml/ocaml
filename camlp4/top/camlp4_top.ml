@@ -16,31 +16,6 @@ open Parsetree;
 open Lexing;
 open Stdpp;
 
-value ast2pt_directive loc =
-  fun
-  [ None -> Pdir_none
-  | Some <:expr< $str:s$ >> -> Pdir_string s
-  | Some <:expr< $int:i$ >> -> Pdir_int (int_of_string i)
-  | Some <:expr< True >> -> Pdir_bool True
-  | Some <:expr< False >> -> Pdir_bool False
-  | Some e ->
-      let sl =
-        loop e where rec loop =
-          fun
-          [ <:expr< $lid:i$ >> | <:expr< $uid:i$ >> -> [i]
-          | <:expr< $e$ . $lid:i$ >> | <:expr< $e$ . $uid:i$ >> ->
-              loop e @ [i]
-          | e -> raise_with_loc (MLast.loc_of_expr e) (Failure "bad ast") ]
-      in
-      Pdir_ident (Ast2pt.long_id_of_string_list loc sl) ]
-;
-
-value ast2pt_phrase =
-  fun
-  [ MLast.StDir loc d dp -> Ptop_dir d (ast2pt_directive loc dp)
-  | si -> Ptop_def (Ast2pt.str_item si []) ]
-;
-
 value highlight_locations lb loc1 loc2 =
   try
     let pos0 = - lb.lex_abs_pos in
@@ -132,7 +107,7 @@ value wrap f shfn lb =
 
 value toplevel_phrase cs =
   match Grammar.Entry.parse Pcaml.top_phrase cs with
-  [ Some phr -> ast2pt_phrase phr
+  [ Some phr -> Ast2pt.phrase phr
   | None -> raise End_of_file ]
 ;
 
@@ -166,7 +141,7 @@ value use_file cs =
             if stopped_at_directive then pl @ loop () else pl
       in
       let r = pl0 @ pl in
-      let r = List.map ast2pt_phrase r in
+      let r = List.map Ast2pt.phrase r in
       do { restore (); r }
     with e ->
       do { restore (); raise e }

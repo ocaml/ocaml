@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -20,3 +20,4 @@ val long_id_of_string_list : int * int -> string list -> Longident.t;;
 val str_item : MLast.str_item -> Parsetree.structure -> Parsetree.structure;;
 val interf : MLast.sig_item list -> Parsetree.signature;;
 val implem : MLast.str_item list -> Parsetree.structure;;
+val phrase : MLast.str_item -> Parsetree.toplevel_phrase;;

@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -731,3 +731,30 @@ and class_str_item c l =
 
 let interf ast = List.fold_right sig_item ast [];;
 let implem ast = List.fold_right str_item ast [];;
+
+let directive loc =
+  function
+    None -> Pdir_none
+  | Some (ExStr (_, s)) -> Pdir_string s
+  | Some (ExInt (_, i)) -> Pdir_int (int_of_string i)
+  | Some (ExUid (_, "True")) -> Pdir_bool true
+  | Some (ExUid (_, "False")) -> Pdir_bool false
+  | Some e ->
+      let sl =
+        let rec loop =
+          function
+            ExLid (_, i) | ExUid (_, i) -> [i]
+          | ExAcc (_, e, ExLid (_, i)) | ExAcc (_, e, ExUid (_, i)) ->
+              loop e @ [i]
+          | e -> raise_with_loc (loc_of_expr e) (Failure "bad ast")
+        in
+        loop e
+      in
+      Pdir_ident (long_id_of_string_list loc sl)
+;;
+
+let phrase =
+  function
+    StDir (loc, d, dp) -> Ptop_dir (d, directive loc dp)
+  | si -> Ptop_def (str_item si [])
+;;
