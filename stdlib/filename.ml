@@ -13,6 +13,18 @@
 
 (* $Id$ *)
 
+let generic_quote quotequote s =
+  let l = String.length s in
+  let b = Buffer.create (l + 20) in
+  Buffer.add_char b '\'';
+  for i = 0 to l - 1 do
+    if s.[i] = '\''
+    then Buffer.add_string b quotequote
+    else Buffer.add_char b  s.[i]
+  done;
+  Buffer.add_char b '\'';
+  Buffer.contents b
+
 module Unix = struct
   let current_dir_name = "."
   let parent_dir_name = ".."
@@ -45,6 +57,7 @@ module Unix = struct
       "."
   let temporary_directory =
     try Sys.getenv "TMPDIR" with Not_found -> "/tmp"
+  let quote = generic_quote "'\\''"  
 end
 
 module Win32 = struct
@@ -95,6 +108,20 @@ module Win32 = struct
       "."
   let temporary_directory =
     try Sys.getenv "TEMP" with Not_found -> "C:\\temp"
+  let quote s =
+    let l = String.length s in
+    let b = Buffer.create (l + 20) in
+    Buffer.add_char b '\"';
+    for i = 0 to l - 1 do
+      match s.[i] with
+        '\"' -> Buffer.add_string b "\\\""
+      | '\\' -> if i + 1 = l then Buffer.add_string b "\\\\"
+                else if s.[i + 1] = '\"' then Buffer.add_string b "\\\\\\\""
+                else Buffer.add_char b '\\'
+      |   c  -> Buffer.add_char b c
+    done;
+    Buffer.add_char b '\"';
+    Buffer.contents b
 end
 
 module MacOS = struct
@@ -123,23 +150,24 @@ module MacOS = struct
     with Not_found -> ":"
   let temporary_directory =
     try Sys.getenv "TempFolder" with Not_found -> ":"
+  let quote = generic_quote "'\182''"
 end
 
 let (current_dir_name, parent_dir_name, concat, is_relative, is_implicit,
-     check_suffix, basename, dirname, temporary_directory) =
+     check_suffix, basename, dirname, temporary_directory, quote) =
   match Sys.os_type with
     "Unix" | "Cygwin" ->
       (Unix.current_dir_name, Unix.parent_dir_name, Unix.concat,
        Unix.is_relative, Unix.is_implicit, Unix.check_suffix,
-       Unix.basename, Unix.dirname, Unix.temporary_directory)
+       Unix.basename, Unix.dirname, Unix.temporary_directory, Unix.quote)
   | "Win32" ->
       (Win32.current_dir_name, Win32.parent_dir_name, Win32.concat,
        Win32.is_relative, Win32.is_implicit, Win32.check_suffix,
-       Win32.basename, Win32.dirname, Win32.temporary_directory)
+       Win32.basename, Win32.dirname, Win32.temporary_directory, Win32.quote)
   | "MacOS" ->
       (MacOS.current_dir_name, MacOS.parent_dir_name, MacOS.concat,
        MacOS.is_relative, MacOS.is_implicit, MacOS.check_suffix,
-       MacOS.basename, MacOS.dirname, MacOS.temporary_directory)
+       MacOS.basename, MacOS.dirname, MacOS.temporary_directory, MacOS.quote)
   | _ -> assert false
 
 let chop_suffix name suff =
@@ -170,16 +198,3 @@ let temp_file prefix suffix =
     end
   in try_name 0
 
-let quote s =
-  let quotequote =
-    match Sys.os_type with "MacOS" -> "'\182''" | _ -> "'\\''" in
-  let l = String.length s in
-  let b = Buffer.create (l + 20) in
-  Buffer.add_char b '\'';
-  for i = 0 to l - 1 do
-    if s.[i] = '\''
-    then Buffer.add_string b quotequote
-    else Buffer.add_char b  s.[i]
-  done;
-  Buffer.add_char b '\'';
-  Buffer.contents b
