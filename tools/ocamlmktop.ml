@@ -15,5 +15,5 @@
 let _ =
   let args =
     String.concat " "
-      (List.map Filename.quote (List.tl (Array.to_list Sys.argv)) in
+      (List.map Filename.quote (List.tl (Array.to_list Sys.argv))) in
   exit(Sys.command("ocamlc -linkall toplevellib.cma " ^ args ^ " topstart.cmo"))
