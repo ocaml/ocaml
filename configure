@@ -44,6 +44,9 @@ gcc_warnings="-Wall -Wno-unused"
 unset LANG
 unset LC_ALL LC_CTYPE LC_COLLATE LC_MESSAGES LC_MONETARY LC_NUMERIC LC_TIME 
 
+# Turn off some MacOS X debugging stuff, same reason
+unset RC_TRACE_ARCHIVES RC_TRACE_DYLIBS RC_TRACE_PREBINDING_DISABLED
+
 # Parse command-line arguments
 
 while : ; do
@@ -1366,6 +1369,9 @@ if test $has_tk = true; then
     tk_libs="$tk_libs -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin $dllib"
 # elif sh ./hasgot $tk_libs -ltcl $tkauxlibs Tcl_DoOneEvent; then
 #   tk_libs="$tk_libs -ltk -ltcl"
+  elif sh ./hasgot -L/sw/lib $tk_libs -ltcl$tclmaj.$tclmin $tkauxlibs \
+                   Tcl_DoOneEvent
+  then tk_libs="-L/sw/lib -ltk$tkmaj.$tkmin -ltcl$tclmaj.$tclmin $dllib"
   else
     echo "Tcl library not found."
     has_tk=false
