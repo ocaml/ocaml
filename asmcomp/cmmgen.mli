@@ -16,7 +16,6 @@
 
 val compunit: int -> Clambda.ulambda -> Cmm.phrase list
 
-val package: string list -> string -> Cmm.phrase list
 val apply_function: int -> Cmm.phrase
 val curry_function: int -> Cmm.phrase list
 val entry_point: string list -> Cmm.phrase

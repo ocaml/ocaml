@@ -19,6 +19,8 @@ Both compilers:
   relaxed some other checks.
 - Fixed wrong code that was generated for "for i = a to max_int"
   or "for i = a downto min_int".
+- An explicit interface Mod.mli can now be provided for the module obtained
+  by ocamlc -pack -o Mod.cmo ... or ocamlopt -pack -o Mod.cmx ...
 
 Native-code compiler:
 - Fixed bug in ocamlopt -pack related to tracking of imported modules.

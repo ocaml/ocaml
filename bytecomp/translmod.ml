@@ -453,3 +453,44 @@ let transl_toplevel_item_and_close itm =
 let transl_toplevel_definition str =
   reset_labels ();
   make_sequence transl_toplevel_item_and_close str
+
+(* Compile the initialization code for a packed library *)
+
+let transl_package component_names target_name coercion =
+  let components =
+    match coercion with
+      Tcoerce_none ->
+        List.map (fun id -> Lprim(Pgetglobal id, [])) component_names
+    | Tcoerce_structure pos_cc_list ->
+        let g = Array.of_list component_names in
+        List.map
+          (fun (pos, cc) -> apply_coercion cc (Lprim(Pgetglobal g.(pos), [])))
+          pos_cc_list
+    | _ ->
+        assert false in
+  Lprim(Psetglobal target_name, [Lprim(Pmakeblock(0, Immutable), components)])
+
+let transl_store_package component_names target_name coercion =
+  let rec make_sequence fn pos arg =
+    match arg with
+      [] -> lambda_unit
+    | hd :: tl -> Lsequence(fn pos hd, make_sequence fn (pos + 1) tl) in
+  match coercion with
+    Tcoerce_none ->
+      (List.length component_names,
+       make_sequence
+         (fun pos id ->
+           Lprim(Psetfield(pos, false),
+                 [Lprim(Pgetglobal target_name, []);
+                  Lprim(Pgetglobal id, [])]))
+         0 component_names)
+  | Tcoerce_structure pos_cc_list ->
+      let id = Array.of_list component_names in
+      (List.length pos_cc_list,
+       make_sequence
+         (fun dst (src, cc) ->
+           Lprim(Psetfield(dst, false),
+                 [Lprim(Pgetglobal target_name, []);
+                  apply_coercion cc (Lprim(Pgetglobal id.(src), []))]))
+         0 pos_cc_list)
+  | _ -> assert false

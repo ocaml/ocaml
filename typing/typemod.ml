@@ -564,14 +564,23 @@ let package_units objfiles cmifile modulename =
       objfiles in
   (* Compute signature of packaged unit *)
   let sg = package_signatures Subst.identity units in
-  (* Determine imports *)
-  let unit_names = List.map fst units in
-  let imports =
-    List.filter
-      (fun (name, crc) -> not (List.mem name unit_names))
-      (Env.imported_units()) in
-  (* Write packaged signature *)
-  Env.save_signature_with_imports sg modulename cmifile imports
+  (* See if explicit interface is provided *)
+  let mlifile =
+    chop_extension_if_any cmifile ^ !Config.interface_suffix in
+  if Sys.file_exists mlifile then begin
+    let dclsig = Env.read_signature modulename cmifile in
+    Includemod.compunit "(obtained by packing)" sg mlifile dclsig 
+  end else begin
+    (* Determine imports *)
+    let unit_names = List.map fst units in
+    let imports =
+      List.filter
+        (fun (name, crc) -> not (List.mem name unit_names))
+        (Env.imported_units()) in
+    (* Write packaged signature *)
+    Env.save_signature_with_imports sg modulename cmifile imports;
+    Tcoerce_none
+  end
 
 (* Error report *)
 

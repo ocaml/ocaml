@@ -211,17 +211,15 @@ let build_package_cmx units unit_names target symbols_to_rename cmxfile =
     map_end (fun s -> target ^ "__" ^ s)
             (List.concat (List.map (fun info -> info.ui_defines) units))
             [target] in
+  let approx =
+    Compilenv.global_approx (Ident.create_persistent target) in
   let pkg_infos =
     { ui_name = target;
       ui_defines = defines;
       ui_imports_cmi = (target, Env.crc_of_unit target) ::
                        filter(Asmlink.extract_crc_interfaces());
       ui_imports_cmx = filter(Asmlink.extract_crc_implementations());
-      ui_approx =
-        Value_tuple
-          (Array.map
-            (fun info -> rename_approx mapping info.ui_approx)
-            (Array.of_list units));
+      ui_approx = rename_approx mapping approx;
       ui_curry_fun = union(List.map (fun info -> info.ui_curry_fun) units);
       ui_apply_fun = union(List.map (fun info -> info.ui_apply_fun) units);
       ui_force_link = List.exists (fun info -> info.ui_force_link) units
@@ -230,20 +228,16 @@ let build_package_cmx units unit_names target symbols_to_rename cmxfile =
 
 (* Make the .o file for the package (not renamed yet) *)
 
-let make_package_object ppf unit_names objfiles targetobj targetname =
-  let asmtemp = Filename.temp_file "camlpackage" Config.ext_asm in
+let make_package_object ppf unit_names objfiles
+                        targetobj targetname coercion =
   let objtemp = Filename.temp_file "camlpackage" Config.ext_obj in
-  let oc = open_out asmtemp in
-  Emitaux.output_channel := oc;
   Location.input_name := targetname; (* set the name of the "current" input *)
   Compilenv.reset targetname; (* set the name of the "current" compunit *)
-  Emit.begin_assembly();
-  List.iter (Asmgen.compile_phrase ppf) (Cmmgen.package unit_names targetname);
-  Emit.end_assembly();
-  close_out oc;
-  if Proc.assemble_file asmtemp objtemp <> 0 then
-    raise(Error(Assembler_error asmtemp));
-  remove_file asmtemp;
+  Asmgen.compile_implementation
+    (chop_extension_if_any objtemp) ppf
+    (Translmod.transl_store_package
+       (List.map Ident.create_persistent unit_names)
+       (Ident.create_persistent targetname) coercion);
   let ld_cmd =
     sprintf "%s -o %s %s %s"
             Config.native_partial_linker 
@@ -256,13 +250,14 @@ let make_package_object ppf unit_names objfiles targetobj targetname =
 
 (* Make the .cmx and the .o for the package *)
 
-let package_object_files ppf cmxfiles targetcmx targetobj targetname =
+let package_object_files ppf cmxfiles targetcmx 
+                         targetobj targetname coercion =
   let units = map_left_right read_unit_info cmxfiles in
   let unit_names = List.map (fun info -> info.ui_name) units in
   check_units cmxfiles units unit_names;
   let objfiles =
     List.map (fun f -> chop_extension_if_any f ^ Config.ext_obj) cmxfiles in
-  make_package_object ppf unit_names objfiles targetobj targetname;
+  make_package_object ppf unit_names objfiles targetobj targetname coercion;
   let symbols = rename_in_object_file unit_names targetname targetobj in
   build_package_cmx units unit_names targetname symbols targetcmx
 
@@ -282,10 +277,10 @@ let package_files ppf files targetcmx =
   let targetobj = prefix ^ Config.ext_obj in
   let targetname = String.capitalize(Filename.basename prefix) in
   try
-    Typemod.package_units cmxfiles targetcmi targetname;
-    package_object_files ppf cmxfiles targetcmx targetobj targetname
+    let coercion = Typemod.package_units cmxfiles targetcmi targetname in
+    package_object_files ppf cmxfiles targetcmx targetobj targetname coercion
   with x ->
-    remove_file targetcmi; remove_file targetcmx; remove_file targetobj;
+    remove_file targetcmx; remove_file targetobj;
     raise x
 
 (* Error report *)

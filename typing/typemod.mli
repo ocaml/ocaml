@@ -32,7 +32,7 @@ val check_nongen_schemes:
 val simplify_signature: signature -> signature
 
 val package_units:
-        string list -> string -> string -> unit
+        string list -> string -> string -> Typedtree.module_coercion
 
 type error =
     Unbound_module of Longident.t

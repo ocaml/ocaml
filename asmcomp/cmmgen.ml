@@ -1632,16 +1632,6 @@ let compunit size ulam =
          Cdefine_symbol glob;
          Cskip(size * size_addr)] :: c3
 
-(* Translate a package *)
-
-let package unit_names target =
-  [Cdata (Cint(block_header 0 (List.length unit_names)) ::
-          Cglobal_symbol target ::
-          Cdefine_symbol target ::
-          List.map (fun s -> Csymbol_address s) unit_names);
-   Cfunction {fun_name = target ^ "__entry"; fun_args = [];
-              fun_body = Ctuple[]; fun_fast = false}]
-
 (* Generate an application function:
      (defun caml_applyN (a1 ... aN clos)
        (if (= clos.arity N)
