@@ -31,8 +31,15 @@ let file_argument name =
   let ppf = Format.err_formatter in
   if Filename.check_suffix name ".cmo" || Filename.check_suffix name ".cma"
   then preload_objects := name :: !preload_objects
-  else exit
-      (if prepare ppf && Toploop.run_script ppf name Sys.argv then 0 else 2)
+  else
+    begin
+      let newargs = Array.sub Sys.argv !Arg.current
+                              (Array.length Sys.argv - !Arg.current)
+      in
+      if prepare ppf && Toploop.run_script ppf name newargs
+      then exit 0
+      else exit 2
+    end
 
 let main () =
   Arg.parse [

@@ -397,14 +397,9 @@ let loop ppf =
 (* Execute a script *)
 
 let run_script ppf name args =
-  let rec find n =
-    if n >= Array.length args then invalid_arg "Toploop.run_script";
-    if args.(n) = name then n else find (n+1) 
-  in
-  let pos = find 0 in
-  let len = Array.length args - pos in
+  let len = Array.length args in
   if Array.length Sys.argv < len then invalid_arg "Toploop.run_script";
-  Array.blit args pos Sys.argv 0 len;
+  Array.blit args 0 Sys.argv 0 len;
   Obj.truncate (Obj.repr Sys.argv) len;
   Arg.current := 0;
   Compile.init_path();
