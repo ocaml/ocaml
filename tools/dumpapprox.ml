@@ -31,6 +31,9 @@ let rec print_approx = function
       if fundesc.fun_closed then begin
         print_space(); print_string "(closed)"
       end;
+      if fundesc.fun_inline <> None then begin
+        print_space(); print_string "(inline)"
+      end;
       print_space(); print_string "->"; print_space();
       print_approx approx;
       close_box()
@@ -54,15 +57,15 @@ let print_infos (ui, crc) =
   print_string "Name: "; print_string ui.ui_name; print_newline();
   print_string "CRC of implementation: "; print_digest crc; print_newline();
   print_string "CRC of interface: "; print_digest ui.ui_interface; print_newline();
-  open_box 2;
+  open_vbox 2;
   print_string "Interfaces imported:";
   List.iter print_name_crc ui.ui_imports_cmi;
   close_box(); print_newline();
-  open_box 2;
+  open_vbox 2;
   print_string "Implementations imported:";
   List.iter print_name_crc ui.ui_imports_cmx;
   close_box(); print_newline();
-  open_box 2;
+  open_vbox 2;
   print_string "Approximation:"; print_space(); print_approx ui.ui_approx;
   close_box(); print_newline();
   open_box 2;

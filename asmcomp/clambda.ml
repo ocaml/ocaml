@@ -53,7 +53,8 @@ and ulambda_switch =
 type function_description =
   { fun_label: function_label;          (* Label of direct entry point *)
     fun_arity: int;                     (* Number of arguments *)
-    mutable fun_closed: bool }          (* True if environment not used *)
+    mutable fun_closed: bool;           (* True if environment not used *)
+    mutable fun_inline: (Ident.t list * ulambda) option }
 
 (* Approximation of values *)
 

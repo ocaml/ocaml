@@ -67,6 +67,8 @@ let main () =
              "<dir>  Add <dir> to the list of include directories";
        "-impl", Arg.String process_implementation_file,
              "<file>  Compile <file> as a .ml file";
+       "-inline", Arg.Int(fun n -> inline_threshold := n * 10),
+             "<n>  Set aggressiveness of inlining to <n>";
        "-intf", Arg.String process_interface_file,
              "<file>  Compile <file> as a .mli file";
        "-linkall", Arg.Set link_everything, " Don't remove unused modules";

@@ -15,6 +15,7 @@
 
 open Misc
 open Asttypes
+open Primitive
 open Lambda
 open Clambda
 
@@ -71,6 +72,90 @@ let occurs_var var u =
       true
   in occurs u
 
+(* Determine whether the estimated size of a clambda term is below
+   some threshold *)
+
+let prim_size prim args =
+  match prim with
+    Pidentity -> 0
+  | Pgetglobal id -> 1
+  | Psetglobal id -> 1
+  | Pmakeblock(tag, mut) -> 5 + List.length args
+  | Pfield f -> 1
+  | Psetfield(f, isptr) -> if isptr then 4 else 1
+  | Pfloatfield f -> 1
+  | Psetfloatfield f -> 1
+  | Pccall p -> (if p.prim_alloc then 10 else 4) + List.length args
+  | Praise -> 4
+  | Pstringlength -> 5
+  | Pstringrefs | Pstringsets -> 6
+  | Pmakearray kind -> 5 + List.length args
+  | Parraylength kind -> if kind = Pgenarray then 6 else 2
+  | Parrayrefu kind -> if kind = Pgenarray then 12 else 2
+  | Parraysetu kind -> if kind = Pgenarray then 16 else 4
+  | Parrayrefs kind -> if kind = Pgenarray then 18 else 8
+  | Parraysets kind -> if kind = Pgenarray then 22 else 10
+  | Pbittest -> 3
+  | _ -> 2 (* arithmetic and comparisons *)
+
+let lambda_smaller lam threshold =
+  let size = ref 0 in
+  let rec lambda_size lam =
+    if !size > threshold then raise Exit;
+    match lam with
+      Uvar v -> ()
+    | Uconst(Const_base(Const_int _ | Const_char _ | Const_float _) |
+             Const_pointer _) -> incr size
+    | Uconst _ ->
+        raise Exit (* avoid duplication of structured constants *)
+    | Udirect_apply(fn, args) ->
+        size := !size + 4; lambda_list_size args
+    | Ugeneric_apply(fn, args) ->
+        size := !size + 6; lambda_size fn; lambda_list_size args
+    | Uclosure(defs, vars) ->
+        raise Exit (* inlining would duplicate function definitions *)
+    | Uoffset(lam, ofs) ->
+        incr size; lambda_size lam
+    | Ulet(id, lam, body) ->
+        lambda_size lam; lambda_size body
+    | Uletrec(bindings, body) ->
+        raise Exit (* usually too large *)
+    | Uprim(prim, args) ->
+        size := !size + prim_size prim args;
+        lambda_list_size args
+    | Uswitch(lam, cases) ->
+        if Array.length cases.us_cases_consts > 0 then size := !size + 5;
+        if Array.length cases.us_cases_blocks > 0 then size := !size + 5;
+        if cases.us_checked then size := !size + 2;
+        lambda_size lam;
+        lambda_array_size cases.us_cases_consts;
+        lambda_array_size cases.us_cases_blocks
+    | Ustaticfail -> ()
+    | Ucatch(body, handler) ->
+        incr size; lambda_size body; lambda_size handler
+    | Utrywith(body, id, handler) ->
+        size := !size + 8; lambda_size body; lambda_size handler
+    | Uifthenelse(cond, ifso, ifnot) ->
+        size := !size + 2;
+        lambda_size cond; lambda_size ifso; lambda_size ifnot
+    | Usequence(lam1, lam2) ->
+        lambda_size lam1; lambda_size lam2
+    | Uwhile(cond, body) ->
+        size := !size + 2; lambda_size cond; lambda_size body
+    | Ufor(id, low, high, dir, body) ->
+        size := !size + 4; lambda_size low; lambda_size high; lambda_size body
+    | Uassign(id, lam) ->
+        incr size;  lambda_size lam
+    | Usend(met, obj, args) ->
+        size := !size + 8;
+        lambda_size met; lambda_size obj; lambda_list_size args
+  and lambda_list_size l = List.iter lambda_size l
+  and lambda_array_size a = Array.iter lambda_size a in
+  try
+    lambda_size lam; !size <= threshold
+  with Exit ->
+    false
+
 (* Check if a lambda term denoting a function is ``pure'',
    that is without side-effects *and* not containing function definitions *)
 
@@ -85,7 +170,13 @@ let rec is_pure = function
 let direct_apply fundesc funct ufunct uargs =
   let app_args =
     if fundesc.fun_closed then uargs else uargs @ [ufunct] in
-  let app = Udirect_apply(fundesc.fun_label, app_args) in
+  let app =
+    match fundesc.fun_inline with
+      None -> Udirect_apply(fundesc.fun_label, app_args)
+    | Some(params, body) ->
+        List.fold_right2
+          (fun param arg body -> Ulet(param, arg, body))
+          params app_args body in
   (if is_pure funct then app else Usequence(ufunct, app))
 
 (* Maintain the approximation of the global structure being defined *)
@@ -268,7 +359,8 @@ and close_functions fenv cenv fun_defs =
             let fundesc =
               {fun_label = label;
                fun_arity = (if kind = Tupled then -arity else arity);
-               fun_closed = true } in
+               fun_closed = true;
+               fun_inline = None } in
             (id, params, body, fundesc)
         | (_, _) -> fatal_error "Closure.close_functions")
       fun_defs in
@@ -323,11 +415,16 @@ and close_functions fenv cenv fun_defs =
   let (clos, infos) = List.split clos_info_list in
   (Uclosure(clos, List.map (close_var cenv) fv), infos)
 
-(* Same, for one function *)
+(* Same, for one non-recursive function *)
 
 and close_one_function fenv cenv id funct =
   match close_functions fenv cenv [id, funct] with
-      (clos, (id, pos, approx) :: _) -> (clos, approx)
+      ((Uclosure([_, _, params, body], _) as clos),
+       [_, _, (Value_closure(fundesc, _) as approx)]) ->
+        (* See if the function can be inlined *)
+        if lambda_smaller body (!Clflags.inline_threshold + List.length params)
+        then fundesc.fun_inline <- Some(params, body);
+        (clos, approx)
     | _ -> fatal_error "Closure.close_one_function"
 
 (* Close a switch *)
