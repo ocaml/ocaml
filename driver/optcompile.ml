@@ -37,7 +37,6 @@ let init_path () =
 (* Return the initial environment in which compilation proceeds. *)
 
 let initial_env () =
-  init_path();
   Ident.reinit();
   try
     if !Clflags.nopervasives
@@ -49,6 +48,7 @@ let initial_env () =
 (* Compile a .mli file *)
 
 let interface ppf sourcefile =
+  init_path();
   let prefixname = Misc.chop_extension_if_any sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
   let inputfile = Pparse.preprocess sourcefile in
@@ -78,6 +78,7 @@ let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
 
 let implementation ppf sourcefile =
+  init_path();
   let prefixname = Misc.chop_extension_if_any sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
   let inputfile = Pparse.preprocess sourcefile in
