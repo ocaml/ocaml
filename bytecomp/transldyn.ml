@@ -61,7 +61,11 @@ let var_path_name path =
 
 let extract_type_definitions whole_env ty0 =
   let r_env = ref Env.empty and r_sig = ref [] in
-  let rec all ty = Btype.iter_type_paths one ty
+  let rec all ty =
+    let ty1 = Ctype.correct_levels ty in
+    Ctype.normalize_type whole_env ty1;
+    Btype.iter_type_paths one ty1;
+    ty1
   and one path =
     if Predef.is_predef_type_path path then path else
     let name = Path.unique_name path in
@@ -77,20 +81,15 @@ let extract_type_definitions whole_env ty0 =
       in
       r_env := Env.add_type id decl !r_env;
       let decl' =
-        { type_params = (List.iter all decl.type_params; decl.type_params);
+        { type_params = decl.type_params;
           type_arity = decl.type_arity;
           type_kind = Type_abstract;
           type_manifest =
             begin match decl.type_manifest with
-            | Some ty ->
-                let ty1 = Ctype.correct_levels ty in
-                Ctype.normalize_type whole_env ty1;
-                all ty1;
-                Some ty1
+            | Some ty -> Some (all ty)
             | None ->
                 match decl.type_kind with
                 | Type_abstract ->
-                    if Predef.is_predef_type_path path then None else
                     raise (Unimplemented
                              ("Dynamicisation involving an abstract type: " ^
                               name))
@@ -105,16 +104,16 @@ let extract_type_definitions whole_env ty0 =
     end;
     path'
   in
-  all ty0;
+  let ty1 = all ty0 in
   let clean = true in
-  let vars = if clean then Ctype.free_type_variables ty0 else [] in
+  let vars = if clean then Ctype.free_type_variables ty1 else [] in
   if vars <> [] then raise (Unimplemented "dynamic of a polymorphic value cannot be typed in core Caml");
   (* TODO: check that each of the [vars] is generalisable (i.e., not '_a) *)
   let decl =
     { type_params = if clean then vars else [];
       type_arity = if clean then 0 else List.length vars;
       type_kind = Type_abstract;
-      type_manifest = Some ty0;
+      type_manifest = Some ty1;
       type_variance = if clean then List.map (fun _ -> true, true) vars (*??*) else [] }
   in
   Tsig_type (interesting_ident, decl) :: !r_sig
@@ -124,9 +123,7 @@ let extract_type_definitions whole_env ty0 =
    this type expression. Said value has the type Dynamics.type_bytes. *)
 let make_type_repr_code whole_env ty0 =
   Printf.eprintf "<Transldyn.make_type_repr_code>\n"; flush stderr;
-  let ty1 = Ctype.correct_levels ty0 in
-  Ctype.normalize_type whole_env ty1;
-  let sg = extract_type_definitions whole_env ty1 in
+  let sg = extract_type_definitions whole_env ty0 in
   let bytes =
     Marshal.to_string (sg : reified_type_data) []
   in
