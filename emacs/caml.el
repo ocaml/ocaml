@@ -474,6 +474,7 @@ have caml-electric-indent on, which see.")
 (defun caml-eval-region (start end)
   "Send the current region to the inferior Caml process."
   (interactive"r")
+  (require 'inf-caml)
   (inferior-caml-eval-region start end))
 
 ;; old version ---to be deleted later
@@ -500,6 +501,7 @@ This allows to jump other erroneous phrases.
 Optional arguments min max defines a region within which the phrase
 should lies."
   (interactive "p")
+  (require 'inf-caml)
   (inferior-caml-eval-phrase arg min max))
 
 (defun caml-eval-buffer (arg)
@@ -516,6 +518,7 @@ the current point."
 
 (defun caml-show-subshell ()
   (interactive)
+  (require 'inf-caml)
   (inferior-caml-show-subshell))
 
 
@@ -766,6 +769,7 @@ whole string."
 (defun caml-goto-phrase-error ()
   "Find the error location in current Caml phrase."
   (interactive)
+  (require 'inf-caml)
   (let ((bounds (save-excursion (caml-mark-phrase))))
     (inferior-caml-goto-error (car bounds) (cdr bounds))))
 
@@ -1617,6 +1621,38 @@ by |, insert one."
 ;   (let ((bounds (caml-mark-phrase)))
 ;     (indent-region (car bounds) (cdr bounds) nil)))
 
+;;; Additional commands by Didier to report errors in toplevel mode
+
+(defun caml-skip-blank-forward ()
+  (if (looking-at "[ \t\n]*\\((\\*\\([^*]\\|[^(]\\*[^)]\\)*\\*)[ \t\n]*\\)*")
+      (goto-char (match-end 0))))
+
+;; to mark phrases, so that repeated calls will take several of them
+;; knows little about Ocaml appart literals and comments, so it should work
+;; with other dialects as long as ;; marks the end of phrase. 
+
+(defun caml-find-phrase (&optional min-pos max-pos)
+  "Find the CAML phrase containing the point.
+Return the positin of the beginning of the phrase, and move point
+to the end.
+"
+  (interactive)
+  (while
+      (and (search-backward ";;" min-pos 'move)
+           (or (caml-in-literal-p)
+               (and caml-last-comment-start (caml-in-comment-p)))
+           ))
+  (if (looking-at ";;") (forward-char 2))
+  (caml-skip-blank-forward)
+  (let ((beg (point)))
+    (while
+        (and (search-forward ";;" max-pos 1)
+             (or (caml-in-literal-p)
+                 (and caml-last-comment-start (caml-in-comment-p)))
+             ))
+    (if (eobp) (newline))
+    beg))
+
 (defun caml-indent-phrase (arg)
   "Indent current phrase
 with prefix arg, indent that many phrases starting with the current phrase."
@@ -1769,6 +1805,8 @@ with prefix arg, indent that many phrases starting with the current phrase."
     (push-mark)
     (beginning-of-line 1)
     (backward-char 4)))
+
+(autoload 'run-caml "inf-caml.el")
 
 ;;; caml.el ends here
 

@@ -189,38 +189,6 @@ Input and output via buffer `*inferior-caml*'."
 
 ;;; orgininal inf-caml.el ended here
 
-;;; Additional commands by Didier to report errors in toplevel mode
-
-(defun caml-skip-blank-forward ()
-  (if (looking-at "[ \t\n]*\\((\\*\\([^*]\\|[^(]\\*[^)]\\)*\\*)[ \t\n]*\\)*")
-      (goto-char (match-end 0))))
-
-;; to mark phrases, so that repeated calls will take several of them
-;; knows little of Ocaml appar literals and comments, so it should work
-;; with other dialects as long as ;; marks the end of phrase. 
-
-(defun caml-find-phrase (&optional min-pos max-pos)
-  "Find the CAML phrase containing the point.
-Return the positin of the beginning of the phrase, and move point
-to the end.
-"
-  (interactive)
-  (while
-      (and (search-backward ";;" min-pos 'move)
-           (or (caml-in-literal-p)
-               (and caml-last-comment-start (caml-in-comment-p)))
-           ))
-  (if (looking-at ";;") (forward-char 2))
-  (caml-skip-blank-forward)
-  (let ((beg (point)))
-    (while
-        (and (search-forward ";;" max-pos 1)
-             (or (caml-in-literal-p)
-                 (and caml-last-comment-start (caml-in-comment-p)))
-             ))
-    (if (eobp) (newline))
-    beg))
-
 ;; as eval-phrase, but ignores errors.
 
 (defun inferior-caml-just-eval-phrase (arg &optional min max)
