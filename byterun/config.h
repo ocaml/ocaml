@@ -46,14 +46,15 @@ typedef short int32;
 typedef unsigned short uint32;
 #endif
 
-#if defined(ARCH_INT64_TYPE) && defined(ARCH_UINT64_TYPE)
+#if defined(ARCH_INT64_TYPE)
 typedef ARCH_INT64_TYPE int64;
 typedef ARCH_UINT64_TYPE uint64;
 #else
-/* Int64.t will not be supported, and operations over it are not defined,
-   but we must define the types int64 and uint64 as 64-bit placeholders. */
-typedef struct { uint32 a, b; } uint64;
-typedef uint64 int64;
+#  if ARCH_BIG_ENDIAN
+typedef struct { uint32 h, l; } uint64, int64;
+#  else
+typedef struct { uint32 l, h; } uint64, int64;
+#  endif
 #endif
 
 /* Endianness of floats */
@@ -71,13 +72,8 @@ typedef uint64 int64;
 #define ARCH_FLOAT_ENDIANNESS 0x01234567
 #endif
 
-/* Library dependencies */
-
 /* We use threaded code interpretation if the compiler provides labels
-   as first-class values (GCC 2.x).
-   Macintosh 68k also uses threaded code, with the assembly-language
-   bytecode interpreter (THREADED_CODE defined in config/sm-Mac.h).
-*/
+   as first-class values (GCC 2.x). */
 
 #if defined(__GNUC__) && __GNUC__ >= 2 && !defined(DEBUG) && !defined (SHRINKED_GNUC)
 #define THREADED_CODE

@@ -77,6 +77,26 @@ static long parse_long(char * p)
   return sign < 0 ? -((long) res) : (long) res;
 }
 
+#ifdef NONSTANDARD_DIV_MOD
+long caml_safe_div(long p, long q)
+{
+  unsigned long ap = p >= 0 ? p : -p;
+  unsigned long aq = q >= 0 ? q : -q;
+  unsigned long ar = ap / aq;
+  return (p ^ q) >= 0 ? ar : -ar;
+}
+
+long caml_safe_mod(long p, long q)
+{
+  unsigned long ap = p >= 0 ? p : -p;
+  unsigned long aq = q >= 0 ? q : -q;
+  unsigned long ar = ap % aq;
+  return p >= 0 ? ar : -ar;
+}
+#endif
+
+/* Tagged integers */
+
 CAMLprim value int_of_string(value s)
 {
   return Val_long(parse_long(String_val(s)));
@@ -194,14 +214,22 @@ CAMLprim value int32_div(value v1, value v2)
 {
   int32 divisor = Int32_val(v2);
   if (divisor == 0) raise_zero_divide();
+#ifdef NONSTANDARD_DIV_MOD
+  return copy_int32(caml_safe_div(Int32_val(v1), divisor));
+#else
   return copy_int32(Int32_val(v1) / divisor);
+#endif
 }
 
 CAMLprim value int32_mod(value v1, value v2)
 {
   int32 divisor = Int32_val(v2);
   if (divisor == 0) raise_zero_divide();
+#ifdef NONSTANDARD_DIV_MOD
+  return copy_int32(caml_safe_mod(Int32_val(v1), divisor));
+#else
   return copy_int32(Int32_val(v1) % divisor);
+#endif
 }
 
 CAMLprim value int32_and(value v1, value v2)
@@ -256,6 +284,10 @@ CAMLprim value int32_of_string(value s)
 /* 64-bit integers */
 
 #ifdef ARCH_INT64_TYPE
+#include "int64_native.h"
+#else
+#include "int64_emul.h"
+#endif
 
 #ifdef ARCH_ALIGN_INT64
 
@@ -273,12 +305,12 @@ static int int64_compare(value v1, value v2)
 {
   int64 i1 = Int64_val(v1);
   int64 i2 = Int64_val(v2);
-  return i1 == i2 ? 0 : i1 < i2 ? -1 : 1;
+  return I64_compare(i1, i2);
 }
 
 static long int64_hash(value v)
 {
-  return (long) Int64_val(v);
+  return I64_to_long(Int64_val(v));
 }
 
 static void int64_serialize(value v, unsigned long * wsize_32,
@@ -325,75 +357,81 @@ CAMLexport value copy_int64(int64 i)
 }
 
 CAMLprim value int64_neg(value v)
-{ return copy_int64(- Int64_val(v)); }
+{ return copy_int64(I64_neg(Int64_val(v))); }
 
 CAMLprim value int64_add(value v1, value v2)
-{ return copy_int64(Int64_val(v1) + Int64_val(v2)); }
+{ return copy_int64(I64_add(Int64_val(v1), Int64_val(v2))); }
 
 CAMLprim value int64_sub(value v1, value v2)
-{ return copy_int64(Int64_val(v1) - Int64_val(v2)); }
+{ return copy_int64(I64_sub(Int64_val(v1), Int64_val(v2))); }
 
 CAMLprim value int64_mul(value v1, value v2)
-{ return copy_int64(Int64_val(v1) * Int64_val(v2)); }
+{ return copy_int64(I64_mul(Int64_val(v1), Int64_val(v2))); }
 
 CAMLprim value int64_div(value v1, value v2)
 {
   int64 divisor = Int64_val(v2);
-  if (divisor == 0) raise_zero_divide();
-  return copy_int64(Int64_val(v1) / divisor);
+  if (I64_is_zero(divisor)) raise_zero_divide();
+  return copy_int64(I64_div(Int64_val(v1), divisor));
 }
 
 CAMLprim value int64_mod(value v1, value v2)
 {
   int64 divisor = Int64_val(v2);
-  if (divisor == 0) raise_zero_divide();
-  return copy_int64(Int64_val(v1) % divisor);
+  if (I64_is_zero(divisor)) raise_zero_divide();
+  return copy_int64(I64_mod(Int64_val(v1), divisor));
 }
 
 CAMLprim value int64_and(value v1, value v2)
-{ return copy_int64(Int64_val(v1) & Int64_val(v2)); }
+{ return copy_int64(I64_and(Int64_val(v1), Int64_val(v2))); }
 
 CAMLprim value int64_or(value v1, value v2)
-{ return copy_int64(Int64_val(v1) | Int64_val(v2)); }
+{ return copy_int64(I64_or(Int64_val(v1), Int64_val(v2))); }
 
 CAMLprim value int64_xor(value v1, value v2)
-{ return copy_int64(Int64_val(v1) ^ Int64_val(v2)); }
+{ return copy_int64(I64_xor(Int64_val(v1), Int64_val(v2))); }
 
 CAMLprim value int64_shift_left(value v1, value v2)
-{ return copy_int64(Int64_val(v1) << Int_val(v2)); }
+{ return copy_int64(I64_lsl(Int64_val(v1), Int_val(v2))); }
 
 CAMLprim value int64_shift_right(value v1, value v2)
-{ return copy_int64(Int64_val(v1) >> Int_val(v2)); }
+{ return copy_int64(I64_asr(Int64_val(v1), Int_val(v2))); }
 
 CAMLprim value int64_shift_right_unsigned(value v1, value v2)
-{ return copy_int64((uint64)Int64_val(v1) >> Int_val(v2)); }
+{ return copy_int64(I64_lsr(Int64_val(v1), Int_val(v2))); }
 
 CAMLprim value int64_of_int(value v)
-{ return copy_int64(Long_val(v)); }
+{ return copy_int64(I64_of_long(Long_val(v))); }
 
 CAMLprim value int64_to_int(value v)
-{ return Val_long((long) Int64_val(v)); }
+{ return Val_long(I64_to_long(Int64_val(v))); }
 
 CAMLprim value int64_of_float(value v)
-{ return copy_int64((int64)(Double_val(v))); }
+{ return copy_int64(I64_of_double(Double_val(v))); }
 
 CAMLprim value int64_to_float(value v)
-{ return copy_double((double)(Int64_val(v))); }
+{ return copy_double(I64_to_double(Int64_val(v))); }
 
 CAMLprim value int64_of_int32(value v)
-{ return copy_int64(Int32_val(v)); }
+{ return copy_int64(I64_of_int32(Int32_val(v))); }
 
 CAMLprim value int64_to_int32(value v)
-{ return copy_int32((int32) Int64_val(v)); }
+{ return copy_int32(I64_to_int32(Int64_val(v))); }
 
 CAMLprim value int64_of_nativeint(value v)
-{ return copy_int64(Nativeint_val(v)); }
+{ return copy_int64(I64_of_long(Nativeint_val(v))); }
 
 CAMLprim value int64_to_nativeint(value v)
-{ return copy_nativeint((long) Int64_val(v)); }
+{ return copy_nativeint(I64_to_long(Int64_val(v))); }
+
+#ifdef ARCH_INT64_PRINTF_FORMAT
+#define I64_format(buf,fmt,x) sprintf(buf,fmt,x)
+#else
+#include "int64_format.h"
+#define ARCH_INT64_PRINTF_FORMAT ""
+#endif
 
 CAMLprim value int64_format(value fmt, value arg)
-#ifdef ARCH_INT64_PRINTF_FORMAT
 {
   char format_string[FORMAT_BUFFER_SIZE];
   char default_format_buffer[FORMAT_BUFFER_SIZE];
@@ -402,33 +440,32 @@ CAMLprim value int64_format(value fmt, value arg)
 
   buffer = parse_format(fmt, ARCH_INT64_PRINTF_FORMAT,
                         format_string, default_format_buffer);
-  sprintf(buffer, format_string, Int64_val(arg));
+  I64_format(buffer, format_string, Int64_val(arg));
   res = copy_string(buffer);
   if (buffer != default_format_buffer) stat_free(buffer);
   return res;
 }
-#else
-{ invalid_argument ("Int64.format is not implemented on this platform"); }
-#endif
 
 CAMLprim value int64_of_string(value s)
 {
   char * p;
-  uint64 res;
+  int64 res;
   int sign, base, d;
 
   p = parse_sign_and_base(String_val(s), &base, &sign);
   d = parse_digit(*p);
   if (d < 0 || d >= base) failwith("int_of_string");
-  for (p++, res = d; /*nothing*/; p++) {
+  res = I64_of_int32(d);
+  for (p++; /*nothing*/; p++) {
     char c = *p;
     if (c == '_') continue;
     d = parse_digit(c);
     if (d < 0 || d >= base) break;
-    res = base * res + d;
+    res = I64_add(I64_mul(I64_of_int32(base), res), I64_of_int32(d));
   }
   if (*p != 0) failwith("int_of_string");
-  return copy_int64(sign < 0 ? -((int64) res) : (int64) res);
+  if (sign < 0) res = I64_neg(res);
+  return copy_int64(res);
 }
 
 CAMLprim value int64_bits_of_float(value vd)
@@ -444,88 +481,6 @@ CAMLprim value int64_float_of_bits(value vi)
   u.i = Int64_val(vi);
   return copy_double(u.d);
 }
-
-#else
-
-static char int64_error[] =
-  "The type int64 is not supported on this platform";
-
-value copy_int64(int64 i)
-{ invalid_argument(int64_error); }
-
-value int64_neg(value v)
-{ invalid_argument(int64_error); }
-
-value int64_add(value v1, value v2)
-{ invalid_argument(int64_error); }
-
-value int64_sub(value v1, value v2)
-{ invalid_argument(int64_error); }
-
-value int64_mul(value v1, value v2)
-{ invalid_argument(int64_error); }
-
-value int64_div(value v1, value v2)
-{ invalid_argument(int64_error); }
-
-value int64_mod(value v1, value v2)
-{ invalid_argument(int64_error); }
-
-value int64_and(value v1, value v2)
-{ invalid_argument(int64_error); }
-
-value int64_or(value v1, value v2)
-{ invalid_argument(int64_error); }
-
-value int64_xor(value v1, value v2)
-{ invalid_argument(int64_error); }
-
-value int64_shift_left(value v1, value v2)
-{ invalid_argument(int64_error); }
-
-value int64_shift_right(value v1, value v2)
-{ invalid_argument(int64_error); }
-
-value int64_shift_right_unsigned(value v1, value v2)
-{ invalid_argument(int64_error); }
-
-value int64_of_int(value v)
-{ invalid_argument(int64_error); }
-
-value int64_to_int(value v)
-{ invalid_argument(int64_error); }
-
-value int64_of_float(value v)
-{ invalid_argument(int64_error); }
-
-value int64_to_float(value v)
-{ invalid_argument(int64_error); }
-
-value int64_of_int32(value v)
-{ invalid_argument(int64_error); }
-
-value int64_to_int32(value v)
-{ invalid_argument(int64_error); }
-
-value int64_of_nativeint(value v)
-{ invalid_argument(int64_error); }
-
-value int64_to_nativeint(value v)
-{ invalid_argument(int64_error); }
-
-value int64_format(value fmt, value arg)
-{ invalid_argument(int64_error); }
-
-value int64_of_string(value s)
-{ invalid_argument(int64_error); }
-
-value int64_bits_of_float(value vd)
-{ invalid_argument(int64_error); }
-
-value int64_float_of_bits(value vi)
-{ invalid_argument(int64_error); }
-
-#endif
 
 /* Native integers */
 
@@ -612,14 +567,22 @@ CAMLprim value nativeint_div(value v1, value v2)
 {
   long divisor = Nativeint_val(v2);
   if (divisor == 0) raise_zero_divide();
+#ifdef NONSTANDARD_DIV_MOD
+  return copy_nativeint(caml_safe_div(Nativeint_val(v1), divisor));
+#else
   return copy_nativeint(Nativeint_val(v1) / divisor);
+#endif
 }
 
 CAMLprim value nativeint_mod(value v1, value v2)
 {
   long divisor = Nativeint_val(v2);
   if (divisor == 0) raise_zero_divide();
+#ifdef NONSTANDARD_DIV_MOD
+  return copy_nativeint(caml_safe_mod(Nativeint_val(v1), divisor));
+#else
   return copy_nativeint(Nativeint_val(v1) % divisor);
+#endif
 }
 
 CAMLprim value nativeint_and(value v1, value v2)

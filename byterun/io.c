@@ -728,11 +728,15 @@ CAMLprim value caml_input_scan_line(value vchannel)
 #ifndef ARCH_INT64_TYPE
 CAMLexport value Val_file_offset(file_offset fofs)
 {
-  invalid_argument("The type int64 is not supported on this platform");
+  int64 ofs;
+  ofs.l = fofs;
+  ofs.h = 0;
+  return copy_int64(ofs);
 }
 
 CAMLexport file_offset File_offset_val(value v)
 {
-  invalid_argument("The type int64 is not supported on this platform");
+  int64 ofs = Int64_val(v);
+  return (file_offset) ofs.l;
 }
 #endif

@@ -102,16 +102,11 @@ struct custom_operations * final_custom_operations(final_fun fn)
   return ops;
 }
 
-extern struct custom_operations int32_ops, nativeint_ops;
-#ifdef ARCH_INT64_TYPE
-extern struct custom_operations int64_ops;
-#endif
+extern struct custom_operations int32_ops, nativeint_ops, int64_ops;
 
 void init_custom_operations(void)
 {
   register_custom_operations(&int32_ops);
   register_custom_operations(&nativeint_ops);
-#ifdef ARCH_INT64_TYPE
   register_custom_operations(&int64_ops);
-#endif
 }

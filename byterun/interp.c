@@ -173,8 +173,8 @@ sp is a local copy of the global variable extern_sp. */
 /* Division and modulus madness */
 
 #ifdef NONSTANDARD_DIV_MOD
-static long safe_div(long p, long q);
-static long safe_mod(long p, long q);
+extern long caml_safe_div(long p, long q);
+extern long caml_safe_mod(long p, long q);
 #endif
 
 /* The interpreter itself */
@@ -917,7 +917,7 @@ value interprete(code_t prog, asize_t prog_size)
       long divisor = Long_val(*sp++);
       if (divisor == 0) { Setup_for_c_call; raise_zero_divide(); }
 #ifdef NONSTANDARD_DIV_MOD
-      accu = Val_long(safe_div(Long_val(accu), divisor));
+      accu = Val_long(caml_safe_div(Long_val(accu), divisor));
 #else
       accu = Val_long(Long_val(accu) / divisor);
 #endif
@@ -927,7 +927,7 @@ value interprete(code_t prog, asize_t prog_size)
       long divisor = Long_val(*sp++);
       if (divisor == 0) { Setup_for_c_call; raise_zero_divide(); }
 #ifdef NONSTANDARD_DIV_MOD
-      accu = Val_long(safe_mod(Long_val(accu), divisor));
+      accu = Val_long(caml_safe_mod(Long_val(accu), divisor));
 #else
       accu = Val_long(Long_val(accu) % divisor);
 #endif
@@ -1034,21 +1034,3 @@ value interprete(code_t prog, asize_t prog_size)
   }
 #endif
 }
-
-#ifdef NONSTANDARD_DIV_MOD
-long safe_div(long p, long q)
-{
-  unsigned long ap = p >= 0 ? p : -p;
-  unsigned long aq = q >= 0 ? q : -q;
-  unsigned long ar = ap / aq;
-  return (p ^ q) >= 0 ? ar : -ar;
-}
-
-long safe_mod(long p, long q)
-{
-  unsigned long ap = p >= 0 ? p : -p;
-  unsigned long aq = q >= 0 ? q : -q;
-  unsigned long ar = ap % aq;
-  return p >= 0 ? ar : -ar;
-}
-#endif
