@@ -1,0 +1,24 @@
+CAMLC = ::::boot:ocamlrun ::::ocamlc -I ::::stdlib:
+CAMLOPT = ::::boot:ocamlrun ::::ocamlopt -I ::::stdlib:
+
+test Ä test.byt
+	:test.byt
+
+TESTFILES = test.cmo test_nats.cmo test_big_ints.cmo ¶
+            test_ratios.cmo test_nums.cmo end_test.cmo
+
+test.byt Ä {TESTFILES} ::nums.cma ::libnums.o
+	{CAMLC} -o test.byt -custom ::nums.cma {TESTFILES} ::libnums.o
+
+.cmo Ä .ml
+	{CAMLC} -I :: -c {default}.ml
+
+ocamlnum Ä
+	ocamlmktop -o ocamlnum -custom ::nums.cma ::libnums.o
+
+clean Ä
+	delete -i test.byt ocamlnum
+	delete -i Å.cm[io] || set status 0
+
+depend Ä
+	ocamldep Å.ml > Makefile.Mac.depend

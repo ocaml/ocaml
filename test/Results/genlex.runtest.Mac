@@ -1,0 +1,7 @@
+if "{1}" == test
+  shift
+  {parameters} :Lex:testscanner.mll
+else if "{1}" == bench
+  shift
+  time {"parameters"} :Lex:testscanner.mll "·dev:null"
+end

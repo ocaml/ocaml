@@ -1,0 +1,115 @@
+#  Copyright     Digital Equipment Corporation & INRIA     1988, 1989, 1992
+
+C = sc
+COptions = -opt speed -model far -i :h: -d CAML_LIGHT
+LinkOptions = -state nouse -compact
+Libs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
+       "{clibraries}StdCLib.far.o" "{libraries}MathLib.far.o" ¶
+       "{libraries}ToolLibs.o" "{libraries}Interface.o"
+
+PPCC = mrc
+PPCCOptions = -i :h: -d CAML_LIGHT -w 30
+PPCLinkOptions =
+PPCLibs = "{sharedlibraries}MathLib" "{ppclibraries}PPCCRuntime.o" ¶
+          "{ppclibraries}PPCToolLibs.o" "{sharedlibraries}StdCLib" ¶
+		  "{ppclibraries}StdCRuntime.o" "{sharedlibraries}InterfaceLib"
+
+LIB = libbignum.o
+OBJECT = :o:KerN.o :o:bnInit.o :o:bnMult.o :o:bnDivide.o :o:bnCmp.o :o:bzf.o ¶
+         :o:bz.o
+
+PPCLIB = libbignum.x
+PPCOBJECT = :o:KerN.x :o:bnInit.x :o:bnMult.x :o:bnDivide.x :o:bnCmp.x ¶
+            :o:bzf.x :o:bz.x
+
+KERNH = :h:BigNum.h 
+
+# extra entries:
+# all     - make all the stuff
+# tidy    - cleanup directories
+# scratch - start from scratch
+
+default Ä
+	echo "Usage: make <version>"
+	echo "see README for valid versions."
+
+#all Ä testKerN bztest 
+#	echo All is done
+
+all Ä {LIB} {PPCLIB}
+	echo All is done
+
+scratch Ä
+	delete -i :o:Å.[ox] || set status 0
+	delete -i libbignum.o libbignum.x
+	delete -i bztest brtest testKerN
+
+# build the BigNum library
+{LIB} Ä {OBJECT}
+	lib -o {LIB} {OBJECT}
+
+{PPCLIB} Ä {PPCOBJECT}
+	ppclink -xm library -o {PPCLIB} {PPCOBJECT}
+
+# How to choose the machine dependent version. All produce KerN.o
+:o:KerN.o Ä :c:KerN.c 
+	echo "The Default is KerN written in C with digits on long"
+	domake C -d C="{C}" -d COptions="{COptions}"
+
+C Ä scratch
+	{C} {COptions} :c:KerN.c -o :o:KerN.o
+	{PPCC} {PPCCOptions} :c:KerN.c -o :o:KerN.x
+	domake all
+
+.o Ä .c {KERNH}
+	{C} {COptions} {depdir}{default}.c -o {targdir}{default}.o
+
+.x Ä .c {KERNH}
+	{PPCC} {PPCCOptions} {depdir}{default}.c -o {targdir}{default}.x
+
+:o: Ä :c: :c:bn: :c:bz: :c:br: :c:bzf:
+
+# Level N
+:o:bnInit.o :o:bnInit.x Ä {KERNH}
+:o:bnMult.o :o:bnMult.x Ä {KERNH}
+:o:bnDivide.o :o:bnDivide.x Ä {KERNH}
+:o:bnCmp.o :o:bnCmp.x Ä {KERNH}
+
+# Level Z
+:o:bz.o :o:bz.x Ä :h:BigZ.h {KERNH}
+
+# level R
+:o:br.o :o:br.x Ä :h:BigR.h :h:BigZ.h {KERNH}
+
+# Some functions built with BigZ
+:o:bzf.o :o:bzf.x Ä :h:BigZ.h {KERNH}
+
+# Tests Of KerN
+testKerN ÄÄ :o:testKerN.o {LIB}
+	ilink -c 'MPS ' -t MPST :o:testKerN.o {LIB} {LinkOptions} -o testKerN {Libs}
+
+testKerN ÄÄ :o:testKerN.x {PPCLIB}
+	ppclink -c 'MPS ' -t MPST :o:testKerN.x {PPCLIB} {PPCLinkOptions} ¶
+	        -o testKerN {PPCLibs}
+
+:o:testKerN.o :o:testKerN.x Ä {KERNH}
+
+# Tests Of BigZ
+bztest ÄÄ :o:bztest.o {LIB}
+	ilink -c 'MPS ' -t MPST :o:bztest.o {LIB} {LinkOptions} -o bztest {Libs}
+
+bztest ÄÄ :o:bztest.x {PPCLIB}
+	ppclink -c 'MPS ' -t MPST :o:bztest.x {PPCLIB} {PPCLinkOptions} ¶
+	        -o bztest {PPCLibs}
+
+:o:bztest.o :o:bztest.x Ä :h:BigZ.h {KERNH}
+
+# Tests Of BigR
+brtest ÄÄ :o:brtest.o {LIB}
+	ilink -c 'MPS ' -t MPST :o:brtest.o {LIB} {LinkOptions} -o brtest {Libs}
+
+brtest ÄÄ :o:brtest.x {PPCLIB}
+	ppclink -c 'MPS ' -t MPST :o:brtest.x {PPCLIB} {PPCLinkOptions} ¶
+	        -o brtest {PPCLibs}
+
+:o:brtest.o :o:brtest.x Ä :h:BigR.h :h:BigZ.h {KERNH}

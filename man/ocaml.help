@@ -1,0 +1,51 @@
+-   
+OCaml           # Objective Caml toplevel
+OCaml [-I directory] [-unsafe]
+    -I directory            # search for interface files in directory
+    -unsafe                 # suppress bound checking for arrays and strings
+
+-   
+OCamlc          # Objective Caml compiler
+OCamlc [options…] name…
+    -a                      # build a library file
+    -c                      # compile only, do not link
+    -cclib option           # pass option to the C linker
+    -ccopt option           # pass option to the C compiler
+    -i                      # print types
+    -I directory            # look in directory for .cm[io] files
+    -o file                 # output to file (default a.out)
+    -v                      # print compiler version number
+    -unsafe                 # suppress bound checking for arrays and strings
+
+-   
+OCamlc-custom   # Objective Caml compiler for custom runtime mode
+OCamlc-custom [options…] name…
+    -a                      # build a library file
+    -c                      # compile only, do not link
+    -cclib option           # pass option to the C linker
+    -ccopt option           # pass option to the C compiler
+    -i                      # print types
+    -I directory            # look in directory for .cm[io] files
+    -o file                 # output to file (default a.out)
+    -v                      # print compiler version number
+    -unsafe                 # suppress bound checking for arrays and strings
+
+-   
+OCamlDep        # Objective Caml dependency generator
+OcamlDep [-I directory] name…
+    -I                      # look in directory for .cmi files
+
+-   
+OCamlLex        # Objective Caml lexer generator
+OCamlLex name.mll
+
+-   
+OCamlRun        # Objective Caml bytecode interpreter
+OCamlRun [-v] file [arguments…]
+    -v                      # print GC messages
+
+-   
+OCamlYacc       # Objective Caml parser generator
+OCamlYacc [-v] [-b string] file.mly
+    -v                      # put verbose report in file.output
+    -b string               # name output files string.ml and string.mli

@@ -1,0 +1,28 @@
+:KB:equations.cmiÄ :KB:terms.cmi 
+:KB:kb.cmiÄ :KB:equations.cmi :KB:terms.cmi 
+:KB:orderings.cmiÄ :KB:terms.cmi 
+:KB:equations.cmoÄ :KB:terms.cmi :KB:equations.cmi 
+:KB:equations.cmxÄ :KB:terms.cmx :KB:equations.cmi 
+:KB:kb.cmoÄ :KB:equations.cmi :KB:terms.cmi :KB:kb.cmi 
+:KB:kb.cmxÄ :KB:equations.cmx :KB:terms.cmx :KB:kb.cmi 
+:KB:kbmain.cmoÄ :KB:equations.cmi :KB:kb.cmi :KB:orderings.cmi :KB:terms.cmi 
+:KB:kbmain.cmxÄ :KB:equations.cmx :KB:kb.cmx :KB:orderings.cmx :KB:terms.cmx 
+:KB:orderings.cmoÄ :KB:terms.cmi :KB:orderings.cmi 
+:KB:orderings.cmxÄ :KB:terms.cmx :KB:orderings.cmi 
+:KB:terms.cmoÄ :KB:terms.cmi 
+:KB:terms.cmxÄ :KB:terms.cmi 
+:Lex:grammar.cmiÄ :Lex:syntax.cmo 
+:Lex:gram_aux.cmoÄ :Lex:syntax.cmo 
+:Lex:gram_aux.cmxÄ :Lex:syntax.cmx 
+:Lex:grammar.cmoÄ :Lex:gram_aux.cmo :Lex:syntax.cmo :Lex:grammar.cmi 
+:Lex:grammar.cmxÄ :Lex:gram_aux.cmx :Lex:syntax.cmx :Lex:grammar.cmi 
+:Lex:lexgen.cmoÄ :Lex:syntax.cmo 
+:Lex:lexgen.cmxÄ :Lex:syntax.cmx 
+:Lex:main.cmoÄ :Lex:grammar.cmi :Lex:lexgen.cmo :Lex:output.cmo ¶
+    :Lex:scan_aux.cmo :Lex:scanner.cmo :Lex:syntax.cmo 
+:Lex:main.cmxÄ :Lex:grammar.cmx :Lex:lexgen.cmx :Lex:output.cmx ¶
+    :Lex:scan_aux.cmx :Lex:scanner.cmx :Lex:syntax.cmx 
+:Lex:output.cmoÄ :Lex:syntax.cmo 
+:Lex:output.cmxÄ :Lex:syntax.cmx 
+:Lex:scanner.cmoÄ :Lex:grammar.cmi :Lex:scan_aux.cmo :Lex:syntax.cmo 
+:Lex:scanner.cmxÄ :Lex:grammar.cmx :Lex:scan_aux.cmx :Lex:syntax.cmx 

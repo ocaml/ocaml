@@ -1,0 +1,12 @@
+set echo 0
+
+if "{1}" == test
+  shift
+  set exit 0
+  {"parameters"} | search -r /e-[1-9][0-9]+°/
+  exit 0 if {status}
+  exit 2
+else if "{1}" == bench
+  shift
+  time {"parameters"} ">dev:null"
+end

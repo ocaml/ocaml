@@ -1,0 +1,32 @@
+### Compile-time configuration
+
+########## General configuration
+
+### Where to install the binaries
+set -e BINDIR "{mpw}User Commands:"
+
+### Where to install the standard library
+set -e LIBDIR "{mpw}User Commands:ocaml-lib:"
+
+### Where to install the help file
+set -e HELPFILE "{mpw}O'Caml.help"
+
+
+############# Configuration for the native-code compiler
+# (not used)
+
+set -e ARCH none
+set -e MODEL ppc
+set -e SYSTEM unknown
+set -e NATIVECC MrC
+
+
+############# Configuration for the contributed libraries
+
+### Which libraries to compile and install
+# Currently available:
+#       str             Regular expressions and high-level string processing
+#       num             Arbitrary-precision rational arithmetic
+#       dynlink         Dynamic linking of bytecode
+#
+set -e OTHERLIBRARIES "num str dynlink"
