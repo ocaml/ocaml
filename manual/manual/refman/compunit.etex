@@ -1,4 +1,5 @@
 \section{Compilation units}
+\pdfsection{Compilation units}
 
 \begin{syntax}
 unit-interface: { specification [';;'] }

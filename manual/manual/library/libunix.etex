@@ -1,4 +1,5 @@
 \chapter{The unix library: Unix system calls}
+\pdfchapterfold{-1}{The unix library: Unix system calls}
 
 The "unix" library makes many Unix
 system calls and system-related library functions available to

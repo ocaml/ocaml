@@ -1,4 +1,5 @@
 \chapter{Batch compilation (ocamlc)} \label{c:camlc}
+\pdfchapter{Batch compilation (ocamlc)}
 
 This chapter describes the Objective Caml batch compiler "ocamlc",
 which compiles Caml source files to bytecode object files and link

@@ -1,4 +1,5 @@
 \section{Expressions} \label{s:value-expr}
+\pdfsection{Expressions}
 \ikwd{in\@\verb`in`|see{\verb`let`}}
 \ikwd{and\@\verb`and`|see{\verb`let`, \verb`type`}}
 \ikwd{rec\@\verb`rec`|see{\verb`let`}}

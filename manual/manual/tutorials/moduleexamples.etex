@@ -1,4 +1,5 @@
 \chapter{The module system} \label{c:moduleexamples}
+\pdfchapter{Tutorial: The module system}
 
 This chapter introduces the module system of Objective Caml.
 

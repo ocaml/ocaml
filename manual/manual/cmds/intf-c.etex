@@ -1,4 +1,5 @@
 \chapter{Interfacing C with Objective Caml} \label{c:intf-c}
+\pdfchapter{Interfacing C with Objective Caml}
 
 This chapter describes how user-defined primitives, written in C, can
 be linked with Caml code and called from Caml functions.

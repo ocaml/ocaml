@@ -1,4 +1,5 @@
 \chapter{The core language} \label{c:core-xamples}
+\pdfchapter{Tutorial: The core language}
 
 This part of the manual is a tutorial introduction to the Objective
 Caml language. A good familiarity with programming in a conventional

@@ -7,11 +7,19 @@ CSLDIR=../../csl
 
 manual: files
 	cd texstuff; \
-	TEXINPUTS=$(TEXINPUTS) pdfolatex manual.tex
+	TEXINPUTS=$(TEXINPUTS) latex manual.tex
 
 index::
 	cd texstuff; makeindex manual.idx
 	cd texstuff; makeindex manual.kwd.idx
+
+pdfmanual: files
+	cd texstuff; \
+	TEXINPUTS=$(TEXINPUTS) pdfolatex pdfmanual.tex
+
+index::
+	cd texstuff; makeindex pdfmanual.idx
+	cd texstuff; makeindex pdfmanual.kwd.idx
 
 plaintext: files
 	cd texstuff; \
@@ -37,10 +45,10 @@ files: $(FILES)
 	cd tutorials; $(MAKE) all
 
 all:
-	$(MAKE) manual plaintext
-	$(MAKE) manual plaintext
+	$(MAKE) manual pdfmanual plaintext
+	$(MAKE) manual pdfmanual plaintext
 	$(MAKE) index
-	$(MAKE) manual plaintext
+	$(MAKE) manual pdfmanual plaintext
 	$(MAKE) html
 clean:
 	rm -f $(FILES)
@@ -52,7 +60,7 @@ clean:
 
 release:
 	gzip < texstuff/manual.dvi > $(RELEASE)refman.dvi.gz
-	dvips -Pps -o '!gzip > $(RELEASE)refman.ps.gz' texstuff/manual.dvi
+	dvips -Php11rv -o '!gzip > $(RELEASE)refman.ps.gz' texstuff/manual.dvi
 	cp texstuff/plaintext.txt $(RELEASE)refman.txt
 	cp texstuff/plaintext.ipr $(RELEASE)refman.prn
 	tar cf - htmlman/*.* | gzip > $(RELEASE)refman.html.tar.gz

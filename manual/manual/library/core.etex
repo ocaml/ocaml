@@ -1,4 +1,5 @@
 \chapter{The core library} \label{c:stdlib}
+\pdfchapterfold{-1}{The core library}
 
 This chapter describes the functions provided by the Caml Light
 core library module: module "Pervasives". This module is special in two

@@ -1,4 +1,5 @@
 \chapter{The graphics library}
+\pdfchapterfold{-1}{The graphics library}
 
 The "graphics" library provides a set of portable drawing primitives.
 Drawing takes place
@@ -57,6 +58,12 @@ and angles are measured counterclockwise (in degrees).
 Drawing is clipped to the screen.
 %
 \begin{latexonly}
+\ifpdf
+\begin{center}
+\leavevmode
+\pdfimage width 10cm ../library/libgraph.png
+\end{center}
+\else
 \begin{center}
 \setlength{\unitlength}{0.5mm}
 \begin{picture}(130,100)(-10,-10)
@@ -79,7 +86,12 @@ Drawing is clipped to the screen.
 \put(-10,40){\makebox(0,0)[r]{$y$}}
 \end{picture}
 \end{center}
+\fi
 \end{latexonly}
+
+\begin{htmlonly}
+<P ALIGN="center"><IMG SRC="libgraph.gif"></P>
+\end{htmlonly}
 %
 
 \begin{library}

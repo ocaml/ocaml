@@ -1,4 +1,5 @@
 \chapter{The debugger (ocamldebug)} \label{c:debugger}
+\pdfchapter{The debugger (ocamldebug)}
 
 This chapter describes the Objective Caml source-level replay debugger
 "ocamldebug".

@@ -130,5 +130,8 @@ def_macro "\\caml" [Print "<pre>"];
 def_macro "\\endcaml" [Print "</pre>"];
 def_macro "\\rminalltt" [Print_arg];
 def_macro "\\event" [Print "<font color=\"red\">*</font>"];
+def_macro "\\pdfchapter" [Skip_arg];
+def_macro "\\pdfchapterfold" [Skip_arg; Skip_arg];
+def_macro "\\pdfsection" [Skip_arg];
 ();;
 

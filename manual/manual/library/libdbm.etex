@@ -1,4 +1,5 @@
 \chapter{The dbm library: access to NDBM databases}
+\pdfchapterfold{-1}{The dbm library: access to NDBM databases}
 
 The "dbm" library provides access to NDBM databases under Unix.
 NDBM databases maintain key/data associations, where both the key and

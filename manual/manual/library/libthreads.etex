@@ -1,5 +1,6 @@
 \chapter{The threads library}
 \label{c:threads}
+\pdfchapterfold{-5}{The threads library}
 
 The "threads" library allows concurrent programming in Objective Caml.
 It provides multiple threads of control (also called lightweight

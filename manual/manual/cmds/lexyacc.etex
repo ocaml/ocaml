@@ -1,5 +1,6 @@
 \chapter{Lexer and parser generators (ocamllex, ocamlyacc)}
 \label{c:ocamlyacc}
+\pdfchapter{Lexer and parser generators (ocamllex, ocamlyacc)}
 
 This chapter describes two program generators: "ocamllex", that
 produces a lexical analyzer from a set of regular expressions with

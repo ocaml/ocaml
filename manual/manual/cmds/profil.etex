@@ -1,4 +1,5 @@
 \chapter{Profiling (ocamlprof)} \label{c:profiler}
+\pdfchapter{Profiling (ocamlprof)}
 
 This chapter describes how the execution of Objective Caml
 programs can be profiled, by recording how many times functions are

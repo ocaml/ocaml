@@ -1,4 +1,5 @@
 \chapter{Dependency generator (ocamldep)} \label{c:camldep}
+\pdfchapter{Dependency generator (ocamldep)}
 
 The "ocamldep" command scans a set of Objective Caml source files
 (".ml" and ".mli" files) for references to external compilation units,

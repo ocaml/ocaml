@@ -1,4 +1,5 @@
 \chapter{Language extensions} \label{c:extensions}
+\pdfchapter{Language extensions}
 
 This chapter describes the language features that are implemented in
 Objective Caml, but not described in the Objective Caml

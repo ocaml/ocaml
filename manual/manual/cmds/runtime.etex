@@ -1,4 +1,5 @@
 \chapter{The runtime system (ocamlrun)} \label{c:runtime}
+\pdfchapter{The runtime system (ocamlrun)}
 
 The "ocamlrun" command executes bytecode files produced by the
 linking phase of the "ocamlc" command.

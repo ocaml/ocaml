@@ -1,4 +1,5 @@
 \chapter{The standard library}
+\pdfchapterfold{-28}{The standard library}
 
 This chapter describes the functions provided by the Caml Light
 standard library. The modules from the standard library are

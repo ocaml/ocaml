@@ -1,4 +1,5 @@
 \section{Module types (module specifications)}
+\pdfsection{Module types (module specifications)}
 
 Module types are the module-level equivalent of type expressions: they
 specify the general shape and type properties of modules.

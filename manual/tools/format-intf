@@ -20,6 +20,10 @@ print "\\section{$_}\n\n";
 $label = $modname; $label =~ s/[^A-Za-z0-9]//g;
 print "\\label{s:$label}\n";
 print "\\index{$modname (module)@\\verb`$modname` (module)}%\n\n";
+s/{\\tt //g;
+s/}//g;
+s/_//g;
+print "\\pdfsection{$_}\n\n";
 
 $incomment = 0;
 $inverbatim = 0;

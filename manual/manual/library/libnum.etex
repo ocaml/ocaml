@@ -1,4 +1,5 @@
 \chapter{The num library: arbitrary-precision rational arithmetic}
+\pdfchapterfold{-2}{The num library: arbitrary-precision rational arithmetic}
 
 The "num" library implements
 exact-precision rational arithmetic. It is built upon the
