@@ -2310,7 +2310,7 @@ let rec normalize_type_rec env ty =
     iter_type_expr (normalize_type_rec env) ty
   end
 
-let normalize_type env ty = ()
+let normalize_type env ty =
   normalize_type_rec env ty;
   unmark_type ty
       
