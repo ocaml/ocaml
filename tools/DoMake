@@ -6,10 +6,14 @@ set echo 0
 
 set tempfile "{TempFolder}temp-domake-`Date -n`"
 
-if "`exists Makefile.Mac.depend`" != ""
-  set domake_files "-f Makefile.Mac -f Makefile.Mac.depend"
-else
+if "`exists Makefile.Mac`" != ""
   set domake_files "-f Makefile.Mac"
+else
+  set domake_files "-f Makefile"
+end
+
+if "`exists Makefile.Mac.depend`" != ""
+  set domake_files "{domake_files} -f Makefile.Mac.depend"
 end
 
 if "{1}" == "-quiet"
