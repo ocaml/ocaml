@@ -165,13 +165,17 @@ static void errwrite(char * msg)
   write(2, msg, strlen(msg));
 }
 
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 int main(int argc, char ** argv)
 {
   char * truename, * runtime_path;
   int fd;
 
   truename = searchpath(argv[0]);
-  fd = open(truename, O_RDONLY);
+  fd = open(truename, O_RDONLY | O_BINARY);
   if (fd == -1 || (runtime_path = read_runtime_path(fd)) == NULL) {
     errwrite(truename);
     errwrite(" not found or is not a bytecode executable file\n");
