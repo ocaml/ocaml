@@ -120,6 +120,13 @@ val usage : (key * spec * doc) list -> usage_msg -> unit
     {!Arg.parse} prints in case of error.
     [speclist] and [usage_msg] are the same as for [Arg.parse]. *)
 
+val align: (key * spec * doc) list -> (key * spec * doc) list;;
+(** Align the documentation strings by inserting spaces at the first
+    space, according to the length of the keyword.  Use a
+    space as the first character in a doc string if you want to
+    align the whole string.  The doc strings corresponding to
+    [Symbol] arguments are not aligned. *)
+
 val current : int ref
 (** Position (in {!Sys.argv}) of the argument being processed.  You can
     change this value, e.g. to force {!Arg.parse} to skip some arguments.
