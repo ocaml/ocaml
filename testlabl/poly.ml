@@ -100,13 +100,11 @@ module V =
     let m : [< v] -> int = function `a -> 1 | _ -> 0
   end
 ;;
-(*
 class varj = object
   method virtual m : 'a. ([< V.v] as 'a) -> int
   method m = V.m
 end
 ;;
-*)
 class point ~x ~y = object
   val x : int = x
   val y : int = y
