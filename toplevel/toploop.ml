@@ -122,6 +122,7 @@ let load_lambda ppf lam =
   let can_free = (fun_code = []) in
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code reloc;
+  Symtable.check_global_initialized reloc;
   Symtable.update_global_table();
   try
     may_trace := true;
