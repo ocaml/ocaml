@@ -170,7 +170,9 @@ value interprete(code_t prog, asize_t prog_size)
   long extra_args;
   struct longjmp_buffer * initial_external_raise;
   int initial_sp_offset;
-  struct caml__roots_block *initial_local_roots;
+  /* volatile prevents collapsing initial_local_roots with another
+     local variable, like Digital Unix 4.0 C compiler does (wrongly) */
+  struct caml__roots_block * volatile initial_local_roots;
   struct longjmp_buffer raise_buf;
   value * modify_dest, modify_newval;
 #ifndef THREADED_CODE
