@@ -88,7 +88,7 @@ value alloc_final (mlsize_t len, final_fun fun, mlsize_t mem, mlsize_t max)
                       len * sizeof(value), mem, max);
 }
 
-value copy_string(char *s)
+value copy_string(char const *s)
 {
   int len;
   value res;
@@ -99,7 +99,7 @@ value copy_string(char *s)
   return res;
 }
 
-value alloc_array(value (*funct)(char *), char ** arr)
+value alloc_array(value (*funct)(char const *), char const ** arr)
 {
   CAMLparam0 ();
   mlsize_t nbr, n;
@@ -122,7 +122,7 @@ value alloc_array(value (*funct)(char *), char ** arr)
   }
 }
 
-value copy_string_array(char **arr)
+value copy_string_array(char const ** arr)
 {
   return alloc_array(copy_string, arr);
 }

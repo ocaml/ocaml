@@ -71,7 +71,7 @@ value realloc_global(value size)      /* ML */
     
 value available_primitives(value unit)    /* ML */
 {
-  return copy_string_array(names_of_cprim);
+  return copy_string_array((char const **) names_of_cprim);
 }
 
 value get_current_environment(value unit) /* ML */

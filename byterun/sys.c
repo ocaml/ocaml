@@ -219,7 +219,7 @@ static char ** main_argv;
 
 value sys_get_argv(value unit)        /* ML */
 {
-  return copy_string_array(main_argv);
+  return copy_string_array((char const **) main_argv);
 }
 
 void sys_init(char **argv)

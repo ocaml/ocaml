@@ -23,13 +23,13 @@ value alloc (mlsize_t, tag_t);
 value alloc_small (mlsize_t, tag_t);
 value alloc_tuple (mlsize_t);
 value alloc_string (mlsize_t);
-value copy_string (char *);
-value copy_string_array (char **);
+value copy_string (char const *);
+value copy_string_array (char const **);
 value copy_double (double);
 value copy_int32 (int32);       /* defined in [ints.c] */
 value copy_int64 (int64);       /* defined in [ints.c] */
 value copy_nativeint (long);    /* defined in [ints.c] */
-value alloc_array (value (*funct) (char *), char ** array);
+value alloc_array (value (*funct) (char const *), char const ** array);
 
 typedef void (*final_fun)(value);
 value alloc_final (mlsize_t /*size in words*/,
