@@ -121,7 +121,7 @@ object (self)
       len
     with Unix.Unix_error _ -> 0
     end;
-  method history (dir : [`next|`previous]) =
+  method history (dir : [`Next|`Previous]) =
     if not h#empty then begin
       if reading then begin
         Text.delete textw ~start:(`Mark"input",[`Char 1])
@@ -131,7 +131,7 @@ object (self)
         Text.mark_set textw ~mark:"input"
           ~index:(`Mark"insert",[`Char(-1)])
       end;
-      self#insert (if dir = `previous then h#previous else h#next)
+      self#insert (if dir = `Previous then h#previous else h#next)
     end
   method private lex ?(start = `Mark"insert",[`Linestart])
       ?(stop = `Mark"insert",[`Lineend]) () =
@@ -176,10 +176,10 @@ object (self)
         ([], `KeyRelease, [`Char], fun ev -> self#keyrelease ev.ev_Char);
         (* [], `KeyPressDetail"Return", [], fun _ -> self#return; *)
         ([], `ButtonPressDetail 2, [`MouseX; `MouseY],  self#paste);
-        ([`Alt], `KeyPressDetail"p", [], fun _ -> self#history `previous);
-        ([`Alt], `KeyPressDetail"n", [], fun _ -> self#history `next);
-        ([`Meta], `KeyPressDetail"p", [], fun _ -> self#history `previous);
-        ([`Meta], `KeyPressDetail"n", [], fun _ -> self#history `next);
+        ([`Alt], `KeyPressDetail"p", [], fun _ -> self#history `Previous);
+        ([`Alt], `KeyPressDetail"n", [], fun _ -> self#history `Next);
+        ([`Meta], `KeyPressDetail"p", [], fun _ -> self#history `Previous);
+        ([`Meta], `KeyPressDetail"n", [], fun _ -> self#history `Next);
         ([`Control], `KeyPressDetail"c", [], fun _ -> self#interrupt);
         ([], `Destroy, [], fun _ -> self#kill) ]
     in
@@ -356,9 +356,9 @@ let f ~prog ~title =
     end;
   file_menu#add_command "Close" ~command:(fun () -> destroy tl);
   history_menu#add_command "Previous  " ~accelerator:"M-p"
-    ~command:(fun () -> (!sh)#history `previous);
+    ~command:(fun () -> (!sh)#history `Previous);
   history_menu#add_command "Next" ~accelerator:"M-n"
-    ~command:(fun () -> (!sh)#history `next);
+    ~command:(fun () -> (!sh)#history `Next);
   signal_menu#add_command "Interrupt  " ~accelerator:"C-c"
     ~command:(fun () -> (!sh)#interrupt);
   signal_menu#add_command "Kill" ~command:(fun () -> (!sh)#kill)

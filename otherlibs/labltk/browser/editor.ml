@@ -409,7 +409,7 @@ class editor ~top ~menus = object (self)
         end else begin
           match Jg_message.ask ~master:top ~title:"Save"
               ("File `" ^ name ^ "' exists. Overwrite it?")
-          with `yes -> () | `no | `cancel -> raise Exit
+          with `Yes -> Sys.remove name | `No | `Cancel -> raise Exit
         end;
       let file = open_out name in
       let text = Text.get txt.tw ~start:tstart ~stop:(tposend 1) in
@@ -432,9 +432,9 @@ class editor ~top ~menus = object (self)
           if Textvariable.get txt.modified = "modified" then
             begin match Jg_message.ask ~master:top ~title:"Open"
                 ("`" ^ Filename.basename txt.name ^ "' modified. Save it?")
-            with `yes -> self#save_text txt
-            | `no -> ()
-            | `cancel -> raise Exit
+            with `Yes -> self#save_text txt
+            | `No -> ()
+            | `Cancel -> raise Exit
             end;
           Checkbutton.deselect label;
           (Text.index current_tw ~index:(`Mark"insert", []), [])
@@ -469,9 +469,9 @@ class editor ~top ~menus = object (self)
       if Textvariable.get txt.modified = "modified" then
         begin match Jg_message.ask ~master:top ~title:"Close"
             ("`" ^ Filename.basename txt.name ^ "' modified. Save it?")
-        with `yes -> self#save_text txt
-        | `no -> ()
-        | `cancel -> raise Exit
+        with `Yes -> self#save_text txt
+        | `No -> ()
+        | `Cancel -> raise Exit
         end;
       windows <- exclude txt windows;
       if windows = [] then
@@ -495,9 +495,9 @@ class editor ~top ~menus = object (self)
           if Textvariable.get txt.modified = "modified" then
             match Jg_message.ask ~master:top ~title:"Quit" ~cancel
                 ("`" ^ Filename.basename txt.name ^ "' modified. Save it?")
-            with `yes -> self#save_text txt
-            | `no -> ()
-            | `cancel -> raise Exit
+            with `Yes -> self#save_text txt
+            | `No -> ()
+            | `Cancel -> raise Exit
         end;
       bind top ~events:[`Destroy];
       destroy top

@@ -213,8 +213,8 @@ let get_fields ~prefix ~sign self =
 
 let rec search_type_in_signature t ~sign ~prefix ~mode =
   let matches = match mode with
-        `included -> included t ~prefix
-      | `exact -> equal t ~prefix
+        `Included -> included t ~prefix
+      | `Exact -> equal t ~prefix
   and lid_of_id id = mklid (prefix @ [Ident.name id]) in
   List2.flat_map sign ~f:
   begin fun item -> match item with
@@ -260,9 +260,9 @@ let rec search_type_in_signature t ~sign ~prefix ~mode =
 
 let search_all_types t ~mode =
   let tl = match mode, t.desc with
-      `exact, _ -> [t]
-    | `included, Tarrow _ -> [t]
-    | `included, _ ->
+      `Exact, _ -> [t]
+    | `Included, Tarrow _ -> [t]
+    | `Included, _ ->
       [t; newty(Tarrow("",t,newvar(),Cok)); newty(Tarrow("",newvar(),t,Cok))]
   in List2.flat_map !module_list ~f:
     begin fun modname ->

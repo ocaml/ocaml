@@ -27,4 +27,4 @@ val formatted :
 
 val ask :
     title:string -> ?master:toplevel widget ->
-    ?no:bool -> ?cancel:bool -> string -> [`cancel|`no|`yes]
+    ?no:bool -> ?cancel:bool -> string -> [`Cancel|`No|`Yes]

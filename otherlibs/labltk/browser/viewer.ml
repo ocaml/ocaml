@@ -169,10 +169,10 @@ let search_string ?(mode="symbol") ew =
         begin match guess_search_mode text with
           `Long -> search_string_symbol text
         | `Pattern -> search_pattern_symbol text
-        | `Type -> search_string_type text ~mode:`included
+        | `Type -> search_string_type text ~mode:`Included
         end
-    | "Type" -> search_string_type text ~mode:`included
-    | "Exact" -> search_string_type text ~mode:`exact
+    | "Type" -> search_string_type text ~mode:`Included
+    | "Exact" -> search_string_type text ~mode:`Exact
     | _ -> assert false
     in
     match l with [] -> ()
