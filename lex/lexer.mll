@@ -167,7 +167,7 @@ and string = parse
     { line_start_pos := Lexing.lexeme_end lexbuf;
       incr line_num;
       string lexbuf }
-  | '\\' ['\\' '"' 'n' 't' 'b' 'r'] 
+  | '\\' ['\\' '"' '\'' 'n' 't' 'b' 'r'] 
     { store_string_char(char_for_backslash(Lexing.lexeme_char lexbuf 1));
       string lexbuf }
   | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] 
