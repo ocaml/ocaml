@@ -539,3 +539,5 @@ val at_exit: (unit -> unit) -> unit
 (*** For system use only, not for the casual user *)
 
 val unsafe_really_input : in_channel -> string -> int -> int -> unit
+
+val do_at_exit: unit -> unit

@@ -11,6 +11,6 @@
 
 (* $Id$ *)
 
-(* Ensure that [exit] is called at the end of every program *)
+(* Ensure that [at_exit] functions are called at the end of every program *)
 
-let _ = exit 0
+let _ = do_at_exit()
