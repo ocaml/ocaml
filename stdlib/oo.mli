@@ -22,14 +22,14 @@ val copy : (< .. > as 'a) -> 'a
 
 (**/**)
 
-(** {2 For system use only, not for the casual user} *)
+(** {6 For system use only, not for the casual user} *)
 
-(** {2 Methods} *)
+(** {6 Methods} *)
 
 type label
 val new_method : string -> label
 
-(** {2 Classes} *)
+(** {6 Classes} *)
 
 type table
 type meth
@@ -46,13 +46,13 @@ val add_initializer : table -> (obj -> unit) -> unit
 val create_table : string list -> table
 val init_class : table -> unit
 
-(** {2 Objects} *)
+(** {6 Objects} *)
 
 val create_object : table -> obj
 val run_initializers : obj -> table -> unit
 val send : obj -> label -> t
 
-(** {2 Parameters} *)
+(** {6 Parameters} *)
 
 type params =
   { mutable compact_table : bool;
@@ -63,7 +63,7 @@ type params =
 
 val params : params
 
-(** {2 Statistics} *)
+(** {6 Statistics} *)
 
 type stats =
   { classes : int; 

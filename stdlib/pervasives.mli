@@ -24,7 +24,7 @@
    name, without prefixing them by [Pervasives].
 *)
 
-(** {2 Predefined types} 
+(** {6 Predefined types} 
 These are predefined types :
 {[ type int]}    The type of integer numbers.
 {[ type char]}   The type of characters.
@@ -45,7 +45,7 @@ These are predefined types :
                  [%a] and [%t] printing functions (see module {!Printf}).
 *)
 
-(** {2 Exceptions} *)
+(** {6 Exceptions} *)
 
 external raise : exn -> 'a = "%raise"
 (** Raise the given exception value *)
@@ -113,7 +113,7 @@ val failwith : string -> 'a
 (** Raise exception [Failure] with the given string. *)
 
 
-(** {2 Comparisons} *)
+(** {6 Comparisons} *)
 
 
 external ( = ) : 'a -> 'a -> bool = "%equal"
@@ -172,7 +172,7 @@ external ( != ) : 'a -> 'a -> bool = "%noteq"
 (** Negation of {!Pervasives.==}. *)
 
 
-(** {2 Boolean operations} *)
+(** {6 Boolean operations} *)
 
 
 external not : bool -> bool = "%boolnot"
@@ -195,7 +195,7 @@ external ( or ) : bool -> bool -> bool = "%sequor"
    [e2] is not evaluated at all. *)
 
 
-(** {2 Integer arithmetic} *)
+(** {6 Integer arithmetic} *)
 
 (** Integers are 31 bits wide (or 63 bits on 64-bit processors).
    All operations are taken modulo 2{^31} (or 2{^63}).
@@ -246,7 +246,7 @@ val min_int : int
 
 
 
-(** {3 Bitwise operations} *)
+(** {7 Bitwise operations} *)
 
 
 external ( land ) : int -> int -> int = "%andint"
@@ -279,7 +279,7 @@ external ( asr ) : int -> int -> int = "%asrint"
    The result is unspecified if [m < 0] or [m >= bitsize]. *)
     
 
-(** {2 Floating-point arithmetic}
+(** {6 Floating-point arithmetic}
 
    Caml's floating-point numbers follow the
    IEEE 754 standard, using double precision (64 bits) numbers.
@@ -433,7 +433,7 @@ external classify_float : float -> fpclass = "classify_float"
    normal, subnormal, zero, infinite, or not a number. *)
 
 
-(** {2 String operations}
+(** {6 String operations}
 
    More string operations are provided in module {!String}.
 *)
@@ -442,7 +442,7 @@ val ( ^ ) : string -> string -> string
 (** String concatenation. *)
 
 
-(** {2 Character operations}
+(** {6 Character operations}
 
    More character operations are provided in module {!Char}.
 *)
@@ -456,7 +456,7 @@ val char_of_int : int -> char
    outside the range 0--255. *)
 
 
-(** {2 Unit operations} *)
+(** {6 Unit operations} *)
 
 external ignore : 'a -> unit = "%ignore"
 (** Discard the value of its argument and return [()].
@@ -467,7 +467,7 @@ external ignore : 'a -> unit = "%ignore"
    avoids the warning. *)
 
 
-(** {2 String conversion functions} *)
+(** {6 String conversion functions} *)
 
 val string_of_bool : bool -> string
 (** Return the string representation of a boolean. *)
@@ -497,7 +497,7 @@ external float_of_string : string -> float = "float_of_string"
 
 
 
-(** {2 Pair operations} *)
+(** {6 Pair operations} *)
 
 external fst : 'a * 'b -> 'a = "%field0"
 (** Return the first component of a pair. *)
@@ -506,7 +506,7 @@ external snd : 'a * 'b -> 'b = "%field1"
 (** Return the second component of a pair. *)
 
 
-(** {2 List operations}
+(** {6 List operations}
 
    More list operations are provided in module {!List}. 
 *)
@@ -515,7 +515,7 @@ val ( @ ) : 'a list -> 'a list -> 'a list
 (** List concatenation. *)
 
 
-(** {2 Input/output} *)
+(** {6 Input/output} *)
 
 type in_channel
 (** The type of input channel. *)
@@ -533,7 +533,7 @@ val stderr : out_channel
 (** The standard error ouput for the process. *)
 
 
-(** {3 Output functions on standard output} *)
+(** {7 Output functions on standard output} *)
 
 val print_char : char -> unit
 (** Print a character on standard output. *)
@@ -557,7 +557,7 @@ val print_newline : unit -> unit
    buffering of standard output. *)
 
 
-(** {3 Output functions on standard error} *)
+(** {7 Output functions on standard error} *)
 
 val prerr_char : char -> unit
 (** Print a character on standard error. *)
@@ -580,7 +580,7 @@ val prerr_newline : unit -> unit
    standard error. *)
 
 
-(** {3 Input functions on standard input} *)
+(** {7 Input functions on standard input} *)
 
 val read_line : unit -> string
 (** Flush standard output, then read characters from standard input
@@ -598,7 +598,7 @@ val read_float : unit -> float
    The result is unspecified if the line read is not a valid
    representation of a floating-point number. *)
 
-(** {3 General output functions} *)
+(** {7 General output functions} *)
 
 
 type open_flag =
@@ -703,7 +703,7 @@ val set_binary_mode_out : out_channel -> bool -> unit
    do not distinguish between text mode and binary mode. *)
 
 
-(** {3 General input functions} *)
+(** {7 General input functions} *)
 
 val open_in : string -> in_channel
 (** Open the named file for reading, and return a new input channel
@@ -803,7 +803,7 @@ val set_binary_mode_in : in_channel -> bool -> unit
    do not distinguish between text mode and binary mode. *)
 
 
-(** {2 References} *)
+(** {6 References} *)
 
 
 type 'a ref = { mutable contents : 'a }
@@ -830,7 +830,7 @@ external decr : int ref -> unit = "%decr"
    Equivalent to [fun r -> r := pred !r]. *)
 
 
-(** {2 Program termination} *)
+(** {6 Program termination} *)
 
 
 val exit : int -> 'a
@@ -855,7 +855,7 @@ val at_exit : (unit -> unit) -> unit
 
 (**/**)
 
-(** {2 For system use only, not for the casual user} *)
+(** {6 For system use only, not for the casual user} *)
 
 val unsafe_really_input : in_channel -> string -> int -> int -> unit
 

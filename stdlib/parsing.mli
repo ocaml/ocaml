@@ -50,7 +50,7 @@ exception Parse_error
 
 (**/**)
 
-(** {2  } *)
+(** {6  } *)
 
 (** The following definitions are used by the generated parsers only.
    They are not intended to be used by user programs. *)
