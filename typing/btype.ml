@@ -141,6 +141,65 @@ let iter_type_expr f ty =
   | Tlink ty            -> f ty
   | Tsubst ty           -> f ty
 
+let rec map_type_paths f ty =
+  let new_desc =
+    match ty.desc with
+    | Tvar -> Tvar
+    | Tarrow (label, dom, im, commutable) ->
+        Tarrow (label, map_type_paths f dom, map_type_paths f im, commutable)
+    | Ttuple tys ->
+        Ttuple (List.map (map_type_paths f) tys)
+    | Tconstr (path, tys, abbrev) ->
+      (* TODO: abbrev? *)
+        let path' = f path in
+        Tconstr (path', List.map (map_type_paths f) tys, ref Mnil)
+    | Tobject (ty1, r) ->
+        let o' = match !r with
+        | None -> None
+        | Some (path, tys) ->
+            let path' = f path in
+            Some (path', List.map (map_type_paths f) tys)
+        in
+        Tobject (map_type_paths f ty1, ref o')
+    | Tfield (label, kind, ty1, ty2) ->
+        Tfield (label, kind, map_type_paths f ty1, map_type_paths f ty2)
+    | Tnil -> Tnil
+    | Tlink ty1 -> Tlink (map_type_paths f ty1)
+    | Tsubst ty1 -> Tsubst (map_type_paths f ty1)
+    | Tvariant row -> Tvariant (map_row_paths f row)
+  in
+  {ty with desc = new_desc}
+
+and map_row_paths f row =
+  { row_fields =
+      (List.map
+         (function (label, row_field) ->
+           label, map_row_field_paths f row_field)
+         row.row_fields);
+    row_more = map_type_paths f row.row_more;
+    row_bound = List.map (map_type_paths f) row.row_bound;
+    row_closed = row.row_closed;
+    row_name =
+      (match row.row_name with
+       | None -> None
+       | Some (path, tys) ->
+           let path' = f path in
+           Some (path', List.map (map_type_paths f) tys))
+  }
+
+and map_row_field_paths f = function
+  | Rpresent (Some ty) -> Rpresent (Some (map_type_paths f ty))
+  | Rpresent None -> Rpresent None
+  | Reither (c, tys, b, r) ->
+      let tys' = List.map (map_type_paths f) tys in
+      let o' =
+        match !r with
+        | None -> None
+        | Some row_field -> Some (map_row_field_paths f row_field)
+      in
+      Reither (c, tys, b, ref o')
+  | Rabsent -> Rabsent
+
 let copy_row f row keep more =
   let fields = List.map
       (fun (l, fi) -> l,
