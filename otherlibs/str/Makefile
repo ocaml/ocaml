@@ -3,7 +3,8 @@
 include ../../Makefile.config
 
 # Compilation options
-CFLAGS=-O -I$(REGEXLIB) -I../../byterun
+CC=$(BYTECC)
+CFLAGS=-O -I$(REGEXLIB) -I../../byterun $(BYTECCCOMPOPTS)
 CAMLC=../../boot/camlrun ../../boot/camlc -I ../../boot
 REGEXLIB=regex-0.12
 COBJS=strstubs.o $(REGEXLIB)/regex.o
