@@ -18,8 +18,9 @@
 type stat =
   { minor_words : float; 
     (** Number of words allocated in the minor heap since
-       the program was started.  This number is accurate in the
-       byte-code runtime, but only approximate in the native runtime. *)
+       the program was started.  This number is accurate in
+       byte-code programs, but only an approximation in programs
+       compiled to native code. *)
 
     promoted_words : float;
     (** Number of words allocated in the minor heap that
@@ -34,16 +35,14 @@ type stat =
     (** Number of minor collections since the program was started. *)
 
     major_collections : int;
-    (** Number of major collection cycles, not counting
-       the current cycle, since the program was started. *)
+    (** Number of major collection cycles completed since the program
+        was started. *)
 
     heap_words : int;
     (** Total size of the major heap, in words. *)
 
     heap_chunks : int;
-    (** Number of times the major heap size was increased
-       since the program was started (including the initial allocation
-       of the heap). *)
+    (** Number of contiguous pieces of memory that make up the major heap. *)
 
     live_words : int;
     (** Number of words of live data in the major heap, including the header
@@ -139,13 +138,11 @@ external counters : unit -> float * float * float = "gc_counters"
    than [stat]. *)
 
 external get : unit -> control = "gc_get"
-(** Return the current values of the GC parameters in a {!Gc.control} record. *)
+(** Return the current values of the GC parameters in a [control] record. *)
 
 external set : control -> unit = "gc_set"
-(** [set r] changes the GC parameters according to the {!Gc.control} record [r].
-   The normal usage is:
-   
-   [Gc.set { (Gc.get()) with Gc.verbose = 13 }] *)
+(** [set r] changes the GC parameters according to the [control] record [r].
+   The normal usage is: [Gc.set { (Gc.get()) with Gc.verbose = 0x00d }] *)
 
 external minor : unit -> unit = "gc_minor"
 (** Trigger a minor collection. *)
@@ -177,13 +174,13 @@ val allocated_bytes : unit -> float
    with [int] on 32-bit machines. *)
 
 val finalise : ('a -> unit) -> 'a -> unit
-(** [Gc.finalise f v] registers [f] as a finalisation function for [v].
+(** [finalise f v] registers [f] as a finalisation function for [v].
    [v] must be heap-allocated.  [f] will be called with [v] as
    argument at some point between the first time [v] becomes unreachable
    and the time [v] is collected by the GC.  Several functions can
    be registered for the same value, or even several instances of the
    same function.  Each instance will be called once (or never,
-   if the program terminates before the GC deallocates [v]).
+   if the program terminates before [v] becomes unreachable).
    
   
    A number of pitfalls are associated with finalised values:
@@ -194,7 +191,8 @@ val finalise : ('a -> unit) -> 'a -> unit
 
 
    Anything reachable from the closure of finalisation functions
-   is considered reachable, so the following code will not work:
+   is considered reachable, so the following code will not work
+   as expected:
    - [ let v = ... in Gc.finalise (fun x -> ...) v ]
 
    Instead you should write:
@@ -202,17 +200,16 @@ val finalise : ('a -> unit) -> 'a -> unit
      
 
    The [f] function can use all features of O'Caml, including
-   assignments that make the value reachable again (indeed, the value
-   is already reachable from the stack during the execution of the
-   function).  It can also loop forever (in this case, the other
+   assignments that make the value reachable again.  It can also
+   loop forever (in this case, the other
    finalisation functions will be called during the execution of f).
-   It can call [Gc.finalise] on [v] or other values to register other
+   It can call [finalise] on [v] or other values to register other
    functions or even itself.  It can raise an exception; in this case
    the exception will interrupt whatever the program was doing when
    the function was called.
 
    
-   [Gc.finalise] will raise [Invalid_argument] if [v] is not
+   [finalise] will raise [Invalid_argument] if [v] is not
    heap-allocated.  Some examples of values that are not
    heap-allocated are integers, constant constructors, booleans,
    the empty array, the empty list, the unit value.  The exact list
@@ -220,14 +217,15 @@ val finalise : ('a -> unit) -> 'a -> unit
    Some constant values can be heap-allocated but never deallocated
    during the lifetime of the program, for example a list of integer
    constants; this is also implementation-dependent.
-   You should also be aware that some optimisations will duplicate
+   You should also be aware that compiler optimisations may duplicate
    some immutable values, for example floating-point numbers when
    stored into arrays, so they can be finalised and collected while
    another copy is still in use by the program.
 
    
-   The results of calling {!String.make}, {!String.create}, and
-   {!Array.make} are guaranteed to be heap-allocated and non-constant
+   The results of calling {!String.make}, {!String.create},
+   {!Array.make}, and {!Pervasives.ref} are guaranteed to be
+   heap-allocated and non-constant
    except when the length argument is [0].
 *)
 
@@ -237,11 +235,11 @@ type alarm
    and delete alarms. *)
 
 val create_alarm : (unit -> unit) -> alarm
-(** [create_alarm f] will arrange for f to be called at the end of each
-   major GC cycle.  A value of type {!Gc.alarm} is returned that you can
-   use to call {!Gc.delete_alarm}. *)
+(** [create_alarm f] will arrange for [f] to be called at the end of each
+   major GC cycle, starting with the current cycle or the next one.
+   A value of type [alarm] is returned that you can
+   use to call [delete_alarm]. *)
 
 val delete_alarm : alarm -> unit
 (** [delete_alarm a] will stop the calls to the function associated
    to [a].  Calling [delete_alarm a] again has no effect. *)
-

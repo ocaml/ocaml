@@ -240,7 +240,7 @@ static int parse_command_line(char **argv)
       break;
 #endif
     case 'v':
-      verb_gc = 1+4+8+16+32;
+      verb_gc = 0x001+0x004+0x008+0x010+0x020;
       break;
     case 'p':
       for (j = 0; names_of_builtin_cprim[j] != NULL; j++)
@@ -273,9 +273,10 @@ static void scanmult (char *opt, long unsigned int *var)
 {
   char mult = ' ';
   sscanf (opt, "=%lu%c", var, &mult);
+  sscanf (opt, "=0x%lx%c", var, &mult);
   if (mult == 'k') *var = *var * 1024;
-  if (mult == 'M') *var = *var * (1024 * 1024);
-  if (mult == 'G') *var = *var * (1024 * 1024 * 1024);
+  if (mult == 'M') *var = *var * 1024 * 1024;
+  if (mult == 'G') *var = *var * 1024 * 1024 * 1024;
 }
 
 static void parse_camlrunparam(void)
