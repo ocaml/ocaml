@@ -4,14 +4,14 @@ arg.cmo: array.cmi list.cmi printf.cmi string.cmi sys.cmi arg.cmi
 arg.cmx: array.cmx list.cmx printf.cmx string.cmx sys.cmx arg.cmi 
 array.cmo: list.cmi array.cmi 
 array.cmx: list.cmx array.cmi 
-char.cmo: string.cmi char.cmi 
-char.cmx: string.cmx char.cmi 
+char.cmo: char.cmi 
+char.cmx: char.cmi 
 digest.cmo: string.cmi digest.cmi 
 digest.cmx: string.cmx digest.cmi 
 filename.cmo: string.cmi sys.cmi filename.cmi 
 filename.cmx: string.cmx sys.cmx filename.cmi 
-format.cmo: queue.cmi string.cmi format.cmi 
-format.cmx: queue.cmx string.cmx format.cmi 
+format.cmo: string.cmi format.cmi 
+format.cmx: string.cmx format.cmi 
 gc.cmo: printf.cmi gc.cmi 
 gc.cmx: printf.cmx gc.cmi 
 genlex.cmo: char.cmi hashtbl.cmi list.cmi stream.cmi string.cmi genlex.cmi 
@@ -26,8 +26,10 @@ map.cmo: map.cmi
 map.cmx: map.cmi 
 obj.cmo: obj.cmi 
 obj.cmx: obj.cmi 
-oo.cmo: array.cmi hashtbl.cmi list.cmi obj.cmi random.cmi sort.cmi oo.cmi 
-oo.cmx: array.cmx hashtbl.cmx list.cmx obj.cmx random.cmx sort.cmx oo.cmi 
+oo.cmo: array.cmi hashtbl.cmi list.cmi map.cmi obj.cmi random.cmi sort.cmi \
+    sys.cmi oo.cmi 
+oo.cmx: array.cmx hashtbl.cmx list.cmx map.cmx obj.cmx random.cmx sort.cmx \
+    sys.cmx oo.cmi 
 parsing.cmo: array.cmi lexing.cmi obj.cmi parsing.cmi 
 parsing.cmx: array.cmx lexing.cmx obj.cmx parsing.cmi 
 pervasives.cmo: pervasives.cmi 
@@ -48,7 +50,7 @@ stack.cmo: list.cmi stack.cmi
 stack.cmx: list.cmx stack.cmi 
 stream.cmo: list.cmi obj.cmi string.cmi stream.cmi 
 stream.cmx: list.cmx obj.cmx string.cmx stream.cmi 
-string.cmo: list.cmi string.cmi 
-string.cmx: list.cmx string.cmi 
+string.cmo: char.cmi list.cmi string.cmi 
+string.cmx: char.cmx list.cmx string.cmi 
 sys.cmo: sys.cmi 
 sys.cmx: sys.cmi 

@@ -115,3 +115,24 @@ let escaped s =
         done;
         s'
       end
+
+let map f s =
+  let l = length s in
+  if l = 0 then s else begin
+    let r = create l in
+    for i = 0 to l - 1 do unsafe_set r i (f(unsafe_get s i)) done;
+    r
+  end
+
+let uppercase s = map Char.uppercase s
+let lowercase s = map Char.uppercase s
+
+let apply1 f s =
+  if length s = 0 then s else begin
+    let r = copy s in
+    unsafe_set r 0 (f(unsafe_get s 0));
+    r
+  end
+
+let capitalize s = apply1 Char.uppercase s
+let uncapitalize s = apply1 Char.lowercase s

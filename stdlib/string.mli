@@ -70,6 +70,19 @@ val escaped: string -> string
            by escape sequences, following the lexical conventions of
            Caml Light. *)
 
+val uppercase: string -> string
+        (* Return a copy of the argument, with all lowercase letters
+           translated to uppercase. *)
+val lowercase: string -> string
+        (* Return a copy of the argument, with all uppercase letters
+           translated to lowercase. *)
+val capitalize: string -> string
+        (* Return a copy of the argument, with the first letter
+           set to uppercase. *)
+val uncapitalize: string -> string
+        (* Return a copy of the argument, with the first letter
+           set to lowercase. *)
+
 (*--*)
 
 external unsafe_get : string -> int -> char = "%string_unsafe_get"

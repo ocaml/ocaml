@@ -23,7 +23,10 @@ val escaped : char -> string
         (* Return a string representing the given character,
            with special characters escaped following the lexical conventions
            of Caml Light. *)
-
+val lowercase: char -> char
+val uppercase: char -> char
+        (* Convert the given character to its equivalent lowercase or
+           uppercase character, respectively. *)
 (*--*)
 
 external unsafe_chr: int -> char = "%identity"

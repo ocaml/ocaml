@@ -8,7 +8,7 @@ CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 CPPFLAGS=-DUNIX
 
-OBJS=pervasives.cmo list.cmo string.cmo char.cmo array.cmo sys.cmo \
+OBJS=pervasives.cmo list.cmo char.cmo string.cmo array.cmo sys.cmo \
   hashtbl.cmo sort.cmo filename.cmo obj.cmo lexing.cmo parsing.cmo \
   set.cmo map.cmo stack.cmo queue.cmo stream.cmo \
   printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo \
@@ -73,5 +73,5 @@ clean::
 
 include .depend
 
-depend: beforedepend
+depend:
 	$(CAMLDEP) *.mli *.ml > .depend

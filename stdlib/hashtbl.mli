@@ -15,6 +15,8 @@
 
 (* Hash tables are hashed association tables, with in-place modification. *)
 
+(*** Generic interface *)
+
 type ('a, 'b) t
         (* The type of hash tables from type ['a] to type ['b]. *)
 
@@ -56,6 +58,50 @@ val iter : ('a -> 'b -> 'c) -> ('a, 'b) t -> unit
            as second argument. The order in which the bindings are passed to
            [f] is unspecified. Each binding is presented exactly once
            to [f]. *)
+
+(*** Functorial interface *)
+
+module type HashedType =
+  sig
+    type t
+    val equal: t -> t -> bool
+    val hash: t -> int
+  end
+        (* The input signature of the functor [Hashtbl.Make].
+           [t] is the type of keys.
+           [equal] is the equality predicate used to compare keys.
+           [hash] is a hashing function on keys, returning a non-negative
+           integer. It must be such that if two keys are equal according
+           to [equal], then they must have identical hash values as computed
+           by [hash].
+           Examples: suitable ([equal], [hash]) pairs for arbitrary key
+           types include
+           ([(=)], [Hashtbl.hash]) for comparing objects by structure,
+           ([(==)], [Hashtbl.hash]) for comparing objects by addresses
+           (e.g. for mutable or cyclic keys). *)
+
+module type S =
+  sig
+    type key
+    type 'a t
+    val create: int -> 'a t
+    val clear: 'a t -> unit
+    val add: 'a t -> key -> 'a -> unit
+    val remove: 'a t -> key -> unit
+    val find: 'a t -> key -> 'a
+    val find_all: 'a t -> key -> 'a list
+    val iter: (key -> 'a -> 'b) -> 'a t -> unit
+  end
+
+module Make(H: HashedType): (S with type key = H.t)
+
+        (* The functor [Hashtbl.Make] returns a structure containing
+           a type [key] of keys and a type ['a t] of hash tables
+           associating data of type ['a] to keys of type [key].
+           The operations perform similarly to those of the generic
+           interface, but use the hashing and equality functions
+           specified in the functor argument [H] instead of generic
+           equality and hashing. *)
 
 (*** The polymorphic hash primitive *)
 
