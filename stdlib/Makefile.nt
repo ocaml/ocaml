@@ -34,7 +34,7 @@ all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 allopt: stdlib.cmxa std_exit.cmx
 
 install:
-	cp stdlib.cma std_exit.cmo *.cmi *.mli camlheader camlheader_ur $(LIBDIR)
+	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader camlheader_ur $(LIBDIR)
 
 installopt:
 	cp stdlib.cmxa stdlib.lib std_exit.obj *.cmx $(LIBDIR)
