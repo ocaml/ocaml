@@ -169,7 +169,7 @@ let main () =
          \032    X/x enable/disable all other warnings\n\
          \032    default setting is \"Aelz\"";
        "-warn-error" , Arg.String (Warnings.parse_options true),
-         "<flags>  Treat the warnings enabled by <flags> as errors.\n\
+        "<flags>  Treat the warnings of <flags> as errors, if they are enabled.\n\
          \032    See option -w for the list of flags.\n\
          \032    Default setting is \"a\" (warnings are not errors)";
        "-where", Arg.Unit print_standard_library,

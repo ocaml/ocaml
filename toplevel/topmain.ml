@@ -84,7 +84,7 @@ let main () =
        \032    X/x enable/disable all other warnings\n\
        \032    default setting is \"Aelz\"";
      "-warn-error" , Arg.String (Warnings.parse_options true),
-       "<flags>  Enable or disable fatal warnings according to <flags>\n\
+       "<flags>  Treat the warnings of <flags> as errors, if they are enabled.\n\
          \032    (see option -w for the list of flags)\n\
          \032    default setting is a (all warnings are non-fatal)";
 
