@@ -63,3 +63,4 @@ type value_approximation =
   | Value_tuple of value_approximation array
   | Value_unknown
   | Value_integer of int
+  | Value_constptr of int

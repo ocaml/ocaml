@@ -159,7 +159,8 @@ let lambda_smaller lam threshold =
 (* Simplify primitive operations on integers *)
 
 let make_const_int n = (Uconst(Const_base(Const_int n)), Value_integer n)
-let make_const_ptr n = (Uconst(Const_pointer n), Value_unknown)
+let make_const_ptr n = (Uconst(Const_pointer n), Value_constptr n)
+let make_const_bool b = make_const_ptr(if b then 1 else 0)
 
 let simplif_prim p (args, approxs) =
   match approxs with
@@ -191,7 +192,19 @@ let simplif_prim p (args, approxs) =
             | Cgt -> x > y
             | Cle -> x <= y
             | Cge -> x >= y in
-          make_const_ptr(if result then 1 else 0)
+          make_const_bool result
+      | _ -> (Uprim(p, args), Value_unknown)
+      end
+  | [Value_constptr x] ->
+      begin match p with
+        Pidentity -> make_const_ptr x
+      | Pnot -> make_const_bool(x = 0)
+      | _ -> (Uprim(p, args), Value_unknown)
+      end
+  | [Value_constptr x; Value_constptr y] ->
+      begin match p with
+        Psequand -> make_const_bool(x <> 0 && y <> 0)
+      | Psequor  -> make_const_bool(x <> 0 || y <> 0)
       | _ -> (Uprim(p, args), Value_unknown)
       end
   | _ ->
@@ -206,7 +219,7 @@ let simplif_prim p (args, approxs) =
 let approx_ulam = function
     Uconst(Const_base(Const_int n)) -> Value_integer n
   | Uconst(Const_base(Const_char c)) -> Value_integer(Char.code c)
-  | Uconst(Const_pointer n) -> Value_integer n
+  | Uconst(Const_pointer n) -> Value_constptr n
   | _ -> Value_unknown
 
 let substitute sb ulam =
@@ -295,20 +308,28 @@ let direct_apply fundesc funct ufunct uargs =
   then app
   else Usequence(ufunct, app)
 
-(* Add [Value_integer] info to the approximation of an application *)
+(* Add [Value_integer] or [Value_constptr] info to the approximation
+   of an application *)
 
 let strengthen_approx appl approx =
   match approx_ulam appl with
-    Value_integer _ as intapprox -> intapprox
+    (Value_integer _ | Value_constptr _) as intapprox -> intapprox
   | _ -> approx
 
-(* If a term has approximation Value_integer and is pure, replace it
-   by an integer constant *)
+(* If a term has approximation Value_integer or Value_constptr and is pure,
+   replace it by an integer constant *)
 
 let check_constant_result lam ulam approx =
   match approx with
     Value_integer n when is_pure lam -> make_const_int n
+  | Value_constptr n when is_pure lam -> make_const_ptr n
   | _ -> (ulam, approx)
+
+(* Evaluate an expression with known value for its side effects only,
+   or discard it if it's pure *)
+
+let sequence_constant_expr lam ulam1 (ulam2, approx2 as res2) =
+  if is_pure lam then res2 else (Usequence(ulam1, ulam2), approx2)
 
 (* Maintain the approximation of the global structure being defined *)
 
@@ -326,6 +347,8 @@ let close_approx_var fenv cenv id =
   match approx with
     Value_integer n ->
       make_const_int n
+  | Value_constptr n ->
+      make_const_ptr n
   | approx ->
       let subst = try Tbl.find id cenv with Not_found -> Uvar id in
       (subst, approx)
@@ -340,6 +363,7 @@ let rec close fenv cenv = function
       begin match cst with
         Const_base(Const_int n) -> (Uconst cst, Value_integer n)
       | Const_base(Const_char c) -> (Uconst cst, Value_integer(Char.code c))
+      | Const_pointer n -> (Uconst cst, Value_constptr n)
       | _ -> (Uconst cst, Value_unknown)
       end
   | Lfunction(kind, params, body) as funct ->
@@ -375,7 +399,8 @@ let rec close fenv cenv = function
         (Variable, _) ->
           let (ubody, abody) = close fenv cenv body in
           (Ulet(id, ulam, ubody), abody)
-      | (_, Value_integer n) when str = Alias || is_pure lam ->
+      | (_, (Value_integer _ | Value_constptr _))
+        when str = Alias || is_pure lam ->
           close (Tbl.add id alam fenv) cenv body
       | (_, _) ->
           let (ubody, abody) = close (Tbl.add id alam fenv) cenv body in
@@ -460,10 +485,15 @@ let rec close fenv cenv = function
       let (uhandler, _) = close fenv cenv handler in
       (Utrywith(ubody, id, uhandler), Value_unknown)
   | Lifthenelse(arg, ifso, ifnot) ->
-      let (uarg, _) = close fenv cenv arg in
-      let (uifso, _) = close fenv cenv ifso in
-      let (uifnot, _) = close fenv cenv ifnot in
-      (Uifthenelse(uarg, uifso, uifnot), Value_unknown)
+      begin match close fenv cenv arg with
+        (uarg, Value_constptr n) ->
+          sequence_constant_expr arg uarg
+            (close fenv cenv (if n = 0 then ifnot else ifso))
+      | (uarg, _ ) ->    
+          let (uifso, _) = close fenv cenv ifso in
+          let (uifnot, _) = close fenv cenv ifnot in
+          (Uifthenelse(uarg, uifso, uifnot), Value_unknown)
+      end
   | Lsequence(lam1, lam2) ->
       let (ulam1, _) = close fenv cenv lam1 in
       let (ulam2, approx) = close fenv cenv lam2 in
