@@ -18,13 +18,11 @@
 #include "mlvalues.h"
 #include "sys.h"
 
-extern void caml_main P((int, char **));
-
+extern void caml_main P((char **));
 
 #ifdef _WIN32
 extern void expand_command_line P((int *, char ***));
 #endif
-
 
 #if macintosh
 #include "rotatecursor.h"
@@ -43,7 +41,7 @@ int main(argc, argv)
 #if macintosh
   rotatecursor_init (&something_to_do, &have_to_interact);
 #endif
-  caml_main(argc, argv);
+  caml_main(argv);
   sys_exit(Val_int(0));
   return 0; /* not reached */
 }

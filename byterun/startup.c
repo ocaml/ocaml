@@ -34,6 +34,9 @@
 #include "mlvalues.h"
 #include "stacks.h"
 #include "sys.h"
+#ifdef HAS_UI
+#include "ui.h"
+#endif
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -41,13 +44,16 @@
 
 header_t atom_table[256];
 code_t start_code;
-asize_t code_size;
+
+/* Initialize the atom table */
 
 static void init_atoms()
 {
   int i;
   for(i = 0; i < 256; i++) atom_table[i] = Make_header(0, i, White);
 }
+
+/* Read the trailer of a bytecode file */
 
 static unsigned long read_size(p)
      unsigned char * p;
@@ -127,88 +133,131 @@ Algorithm:
 
 */
 
-extern void init_ieee_floats();
+/* Configuration parameters flags */
 
-void caml_main(argc, argv)
-     int argc;
+static int verbose_init = 0, percent_free_init = Percent_free_def;
+static long minor_heap_init = Minor_heap_def, heap_chunk_init = Heap_chunk_def;
+extern int trace_flag;
+
+/* Parse options on the command line */
+
+static int parse_command_line(argv)
+     char ** argv;
+{
+  int i;
+
+  for(i = 1; argv[i] != NULL && argv[i][0] == '-'; i++) {
+    switch(argv[i][1]) {
+#ifdef DEBUG
+    case 't':
+      trace_flag = 1;
+      break;
+#endif
+    case 'v':
+      verbose_init = 1;
+      break;
+    default:
+      fatal_error_arg("Unknown option %s.\n", argv[i]);
+    }
+  }
+  return i;
+}
+
+/* Parse the CAMLRUNPARAM variable */
+/* The option letter for each runtime option is the first letter of the
+   last word of the ML name of the option (see [stdlib/gc.mli]). */
+
+static void parse_camlrunparam()
+{
+  char *opt = getenv ("CAMLRUNPARAM");
+  if (opt != NULL){
+    while (*opt != '\0'){
+      switch (*opt++){
+      case 's': sscanf (opt, "=%ld", &minor_heap_init); break;
+      case 'i': sscanf (opt, "=%ld", &heap_chunk_init); break;
+      case 'o': sscanf (opt, "=%d", &percent_free_init); break;
+      case 'v': sscanf (opt, "=%d", &verbose_init); break;
+      }
+    }
+  }
+}
+
+/* Print an uncaught exception and abort */
+
+static void fatal_uncaught_exception(exn)
+     value exn;
+{
+  mlsize_t i;
+  value v;
+#ifdef HAS_UI
+#define errprintf1(fmt) ui_print_stderr(fmt, NULL)
+#define errprintf2(fmt,arg) ui_print_stderr(fmt, (char *)(arg))
+#else
+#define errprintf1(fmt) fprintf(stderr, fmt)
+#define errprintf2(fmt,arg) fprintf(stderr, fmt, arg)
+#endif
+  errprintf2("Fatal error: uncaught exception %s",
+             String_val(Field(Field(exn, 0), 0)));
+  if (Wosize_val(exn) >= 2) {
+    errprintf1("(");
+    for (i = 1; i < Wosize_val(exn); i++) {
+      if (i > 1) errprintf1(", ");
+      v = Field(exn, i);
+      if (Is_long(v))
+        errprintf2("%ld", Long_val(v));
+      else if (Tag_val(v) == String_tag)
+        errprintf2("\"%s\"", String_val(v));
+      else
+        errprintf1("_");
+    }
+    errprintf1(")");
+  }
+  errprintf1("\n");
+}
+             
+extern void init_ieee_floats P((void));
+
+/* Main entry point when loading code from a file */
+
+void caml_main(argv)
      char ** argv;
 {
   int fd;
   struct exec_trailer trail;
-  int i;
+  int pos;
   struct longjmp_buffer raise_buf;
-  struct channel * chan;
-  int verbose_init = 0, percent_free_init = Percent_free_def;
-  long minor_heap_init = Minor_heap_def, heap_chunk_init = Heap_chunk_def;
 
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
   init_ieee_floats();
-
-  /* Parsing of command-line */
+  /* Determine options and position of bytecode file */
 #ifdef DEBUG
   verbose_init = 1;
 #endif
-
-  i = 0;
+  parse_camlrunparam();
+  pos = 0;
   fd = attempt_open(&argv[0], &trail, 0);
-
   if (fd < 0) {
-
-    for(i = 1; i < argc && argv[i][0] == '-'; i++) {
-      switch(argv[i][1]) {
-#ifdef DEBUG
-      case 't': {
-        extern int trace_flag;
-        trace_flag = 1;
-        break;
-      }
-#endif
-      case 'v':
-        verbose_init = 1;
-        break;
-      default:
-        fatal_error_arg("Unknown option %s.\n", argv[i]);
-      }
-    }
-
-    if (argv[i] == 0)
+    pos = parse_command_line(argv);
+    if (argv[pos] == 0)
       fatal_error("No bytecode file specified.\n");
-
-    fd = attempt_open(&argv[i], &trail, 1);
-
+    fd = attempt_open(&argv[pos], &trail, 1);
     switch(fd) {
     case FILE_NOT_FOUND:
-      fatal_error_arg("Fatal error: cannot find file %s\n", argv[i]);
+      fatal_error_arg("Fatal error: cannot find file %s\n", argv[pos]);
       break;
     case TRUNCATED_FILE:
     case BAD_MAGIC_NUM:
       fatal_error_arg(
         "Fatal error: the file %s is not a bytecode executable file\n",
-        argv[i]);
+        argv[pos]);
       break;
     }
   }
-
-  /* Runtime options.  The option letter is the first letter of the
-     last word of the ML name of the option (see [lib/gc.mli]). */
-
-  { char *opt = getenv ("CAMLRUNPARAM");
-    if (opt != NULL){
-      while (*opt != '\0'){
-	switch (*opt++){
-	case 's': sscanf (opt, "=%ld", &minor_heap_init); break;
-	case 'i': sscanf (opt, "=%ld", &heap_chunk_init); break;
-	case 'o': sscanf (opt, "=%d", &percent_free_init); break;
-	case 'v': sscanf (opt, "=%d", &verbose_init); break;
-	}
-      }
-    }
-  }
-
+  /* Set up a catch-all exception handler */
   if (sigsetjmp(raise_buf.buf, 1) == 0) {
-
     external_raise = &raise_buf;
+    /* Initialize the abstract machine */
     init_gc (minor_heap_init, heap_chunk_init, percent_free_init,
 	     verbose_init);
     init_stack();
@@ -216,12 +265,11 @@ void caml_main(argc, argv)
     /* Load the code */
     lseek(fd, - (long) (TRAILER_SIZE + trail.code_size + trail.data_size
                         + trail.symbol_size + trail.debug_size), 2);
-    code_size = trail.code_size;
-    start_code = (code_t) stat_alloc(code_size);
-    if (read(fd, (char *) start_code, code_size) != code_size)
+    start_code = (code_t) stat_alloc(trail.code_size);
+    if (read(fd, (char *) start_code, trail.code_size) != trail.code_size)
       fatal_error("Fatal error: truncated bytecode file.\n");
 #ifdef ARCH_BIG_ENDIAN
-    fixup_endianness(start_code, code_size);
+    fixup_endianness(start_code, trail.code_size);
 #endif
     /* Load the globals */
     { struct channel * chan;
@@ -235,20 +283,47 @@ void caml_main(argc, argv)
     /* Ensure that the globals are in the major heap. */
     oldify(global_data, &global_data);
     /* Run the code */
-    sys_init(argv + i);
-    interprete(start_code, code_size);
-
+    sys_init(argv + pos);
+    interprete(start_code, trail.code_size);
   } else {
-
-    if (!strcmp (String_val(Field(Field(exn_bucket, 0), 0)), "Failure")
-        && Wosize_val (exn_bucket) >= 2
-        && Tag_val (Field (exn_bucket, 1)) == String_tag){
-      fatal_error_arg ("Fatal error: uncaught exception Failure \"%s\".\n",
-                       String_val (Field (exn_bucket, 1)));
-    }else{
-	  fatal_error_arg("Fatal error: uncaught exception %s.\n",
-					  String_val(Field(Field(exn_bucket, 0), 0)));
-    }
+    fatal_uncaught_exception(exn_bucket);
   }
 }
 
+/* Main entry point when code is linked in as initialized data */
+
+void caml_startup_code(code, code_size, data, argv)
+     code_t code;
+     asize_t code_size;
+     char * data;
+     char ** argv;
+{
+  struct longjmp_buffer raise_buf;
+
+  init_ieee_floats();
+#ifdef DEBUG
+  verbose_init = 1;
+#endif
+  parse_camlrunparam();
+  /* Set up a catch-all exception handler */
+  if (sigsetjmp(raise_buf.buf, 1) == 0) {
+    external_raise = &raise_buf;
+    /* Initialize the abstract machine */
+    init_gc (minor_heap_init, heap_chunk_init, percent_free_init,
+	     verbose_init);
+    init_stack();
+    init_atoms();
+    /* Load the code */
+    start_code = code;
+    /* Load the globals */
+    global_data = input_value_from_string((value)data, Val_int(0));
+    /* Ensure that the globals are in the major heap. */
+    oldify(global_data, &global_data);
+    /* Run the code */
+    sys_init(argv);
+    interprete(start_code, code_size);
+  } else {
+    fatal_uncaught_exception(exn_bucket);
+  }
+}
+  

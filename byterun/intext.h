@@ -70,7 +70,7 @@
 
 value output_value P((struct channel *, value));
 value input_value P((struct channel *));
-
+value input_value_from_string P((value, value));
 
 #endif
 

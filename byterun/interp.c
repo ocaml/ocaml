@@ -43,7 +43,6 @@ extern int volatile have_to_interact;
 
 sp is a local copy of the global variable extern_sp. */
 
-extern code_t start_code;
 int callback_depth = 0;
 
 /* Instruction decoding */
