@@ -29,7 +29,9 @@ val create : int -> t
         as the number of characters that are expected to be stored in
         the buffer (for instance, 80 for a buffer that holds one output
         line).  Nothing bad will happen if the buffer grows beyond that
-        limit, however.  In doubt, take [n = 16] for instance. *)
+        limit, however.  In doubt, take [n = 16] for instance.
+        If [n] is not between 1 and [Sys.max_string_length], it will
+        be clipped to that interval. *)
 val contents : t -> string
      (* Return a copy of the current contents of the buffer.
         The buffer itself is unchanged. *)

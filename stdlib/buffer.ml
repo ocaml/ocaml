@@ -18,7 +18,8 @@ type t =
   initial_buffer : string}
 
 let create n =
- if n <= 0 then invalid_arg "Buffer.create";
+ let n = if n < 1 then 1 else n in
+ let n = if n > Sys.max_string_length then Sys.max_string_length else n in
  let s = String.create n in
  {buffer = s; position = 0; length = String.length s; initial_buffer = s}
 

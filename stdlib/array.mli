@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -36,7 +36,11 @@ external create: int -> 'a -> 'a array = "make_vect"
            physically equal to [x] (in the sense of the [==] predicate).
            Consequently, if [x] is mutable, it is shared among all elements
            of the array, and modifying [x] through one of the array entries
-           will modify all other entries at the same time. *)
+           will modify all other entries at the same time.
+           Raise [Invalid_argument] if [n <= 0] or [n > Sys.max_array_length].
+           If the value of [x] is a floating-point number, then the maximum
+           size is only [Sys.max_array_length / 2].
+           [Array.create] is a deprecated alias for [Array.make]. *)
 val init: int -> (int -> 'a) -> 'a array
         (* [Array.init n f] returns a fresh array of length [n],
            with element number [i] initialized to the result of [f i].
@@ -49,7 +53,13 @@ val create_matrix: int -> int -> 'a -> 'a array array
            second dimension [dimy]. All the elements of this new matrix
            are initially physically equal to [e].
            The element ([x,y]) of a matrix [m] is accessed
-           with the notation [m.(x).(y)]. *)
+           with the notation [m.(x).(y)].
+           Raise [Invalid_argument] if [dimx] or [dimy] is less than 1 or
+           greater than [Sys.max_array_length].
+           If the value of [e] is a floating-point number, then the maximum
+           size is only [Sys.max_array_length / 2].
+           [Array.create_matrix] is a deprecated alias for [Array.make_matrix].
+           *)
 val append: 'a array -> 'a array -> 'a array
         (* [Array.append v1 v2] returns a fresh array containing the
            concatenation of the arrays [v1] and [v2]. *)

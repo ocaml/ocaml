@@ -5,7 +5,7 @@
 (*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -118,13 +118,7 @@ external get : unit -> control = "gc_get"
   (* Return the current values of the GC parameters in a [control] record. *)
 external set : control -> unit = "gc_set"
   (* [set r] changes the GC parameters according to the [control] record [r].
-     The normal usage is:
-     [
-       let r = Gc.get () in    (* Get the current parameters. *)
-         r.verbose <- 13;      (* Change some of them. *)
-         Gc.set r              (* Set the new values. *)
-     ]
-  *)
+     The normal usage is: [ Gc.set { (Gc.get()) with Gc.verbose = 13 } ]. *)
 external minor : unit -> unit = "gc_minor"
   (* Trigger a minor collection. *)
 external major : unit -> unit = "gc_major"

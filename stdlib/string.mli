@@ -32,10 +32,14 @@ external set : string -> int -> char -> unit = "%string_safe_set"
 
 external create : int -> string = "create_string"
         (* [String.create n] returns a fresh string of length [n].
-           The string initially contains arbitrary characters. *)
+           The string initially contains arbitrary characters.
+           Raise [Invalid_argument] if [n <= 0] or [n > Sys.max_string_length].
+           *)
 val make : int -> char -> string
         (* [String.make n c] returns a fresh string of length [n],
-           filled with the character [c]. *)
+           filled with the character [c].
+           Raise [Invalid_argument] if [n <= 0] or [n > Sys.max_string_length].
+           *)
 val copy : string -> string
         (* Return a copy of the given string. *)
 val sub : string -> int -> int -> string

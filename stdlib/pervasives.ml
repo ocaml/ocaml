@@ -147,7 +147,7 @@ let string_of_bool b =
 let bool_of_string = function
   | "true" -> true
   | "false" -> false
-  | _ -> invalid_arg "string_of_bool"
+  | _ -> invalid_arg "bool_of_string"
 
 let string_of_int n =
   format_int "%d" n
