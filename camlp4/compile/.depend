@@ -1,4 +1,0 @@
-compile.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
-compile.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
-comp_trail.cmo: ../camlp4/pcaml.cmi 
-comp_trail.cmx: ../camlp4/pcaml.cmx 
