@@ -177,6 +177,10 @@ and meth_list loc fl v =
   | (lab, t) :: fl -> mkfield loc (Pfield (lab, ctyp t)) :: meth_list loc fl v
 ;;
 
+(* DYN *)
+let ctyp_constraint t = [], ctyp t
+(* /DYN *)
+
 let mktype loc tl cl tk tm =
   let (params, variance) = List.split tl in
   {ptype_params = params; ptype_cstrs = cl; ptype_kind = tk;
@@ -377,7 +381,7 @@ let rec patt =
   | PaStr (loc, s) ->
       mkpat loc (Ppat_constant (Const_string (string_of_string_token loc s)))
   | PaTup (loc, pl) -> mkpat loc (Ppat_tuple (List.map patt pl))
-  | PaTyc (loc, p, t) -> mkpat loc (Ppat_constraint (patt p, ctyp t))
+  | PaTyc (loc, p, t) -> mkpat loc (Ppat_constraint (patt p, (ctyp_constraint t))) (* DYN *)
   | PaTyp (loc, sl) -> mkpat loc (Ppat_type (long_id_of_string_list loc sl))
   | PaUid (loc, s) ->
       let ca = not !no_constructors_arity in
@@ -504,7 +508,7 @@ let rec expr =
   | ExChr (loc, s) ->
       mkexp loc (Pexp_constant (Const_char (char_of_char_token loc s)))
   | ExCoe (loc, e, t1, t2) ->
-      mkexp loc (Pexp_constraint (expr e, option ctyp t1, Some (ctyp t2)))
+      mkexp loc (Pexp_constraint (expr e, option ctyp_constraint t1, Some (ctyp_constraint t2))) (* DYN *)
   | ExFlo (loc, s) -> mkexp loc (Pexp_constant (Const_float s))
   | ExFor (loc, i, e1, e2, df, el) ->
       let e3 = ExSeq (loc, el) in
@@ -558,7 +562,7 @@ let rec expr =
   | ExTry (loc, e, pel) -> mkexp loc (Pexp_try (expr e, List.map mkpwe pel))
   | ExTup (loc, el) -> mkexp loc (Pexp_tuple (List.map expr el))
   | ExTyc (loc, e, t) ->
-      mkexp loc (Pexp_constraint (expr e, Some (ctyp t), None))
+      mkexp loc (Pexp_constraint (expr e, Some (ctyp_constraint t), None)) (* DYN *)
   | ExUid (loc, s) ->
       let ca = not !no_constructors_arity in
       mkexp loc (Pexp_construct (lident (conv_con s), None, ca))
