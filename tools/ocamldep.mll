@@ -161,12 +161,15 @@ let file_dependencies source_file =
 
 (* Entry point *)
 
+let usage = "Usage: ocamldep [-I <dir>] <files>"
+
 let _ =
-  Arg.parse
-    ["-I", Arg.String(fun dir -> load_path := !load_path @ [dir]);
-     "-opt", Arg.Set opt_flag;
-     "-noopt", Arg.Clear opt_flag]
-    file_dependencies;
+  Arg.parse [
+     "-I", Arg.String(fun dir -> load_path := !load_path @ [dir]),
+           "<dir>  Add <dir> to the list of include directories";
+     "-opt", Arg.Set opt_flag, " (undocumented)";
+     "-noopt", Arg.Clear opt_flag, " (undocumented)"
+    ] file_dependencies usage;
   exit 0
     
 }

@@ -348,14 +348,18 @@ let process_file filename =
 
 open Format
 
+let usage = "Usage: ocamlprof <options> <files>\noptions are:"
+
 let main () =
   try
-    Arg.parse
-      ["-instrument", Arg.Set instr_mode;
-       "-m", Arg.String (fun s -> modes := s);
-       "-f", Arg.String (fun s -> dumpfile := s);
-       "-F", Arg.String (fun s -> special_id := s)]
-      process_file;
+    Arg.parse [
+       "-f", Arg.String (fun s -> dumpfile := s),
+             "<file>  Use <file> as dump file (default ocamlprof.dump)";
+       "-F", Arg.String (fun s -> special_id := s),
+             "<s>  Insert string <s> with the counts";
+       "-instrument", Arg.Set instr_mode, " (undocumented)";
+       "-m", Arg.String (fun s -> modes := s), " (undocumented)"
+      ] process_file usage;
     exit 0
   with x ->
     set_formatter_out_channel stderr;

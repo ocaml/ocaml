@@ -48,43 +48,57 @@ let print_version_number () =
   print_string Config.version;
   print_newline()
 
+let usage = "Usage: ocamlopt <options> <files>\noptions are:"
+
 let main () =
   try
     native_code := true;
-    Arg.parse
-      ["-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs);
-       "-c", Arg.Set compile_only;
-       "-S", Arg.Set keep_asm_file;
-       "-o", Arg.String(fun s -> exec_name := s; archive_name := s);
-       "-i", Arg.Set print_types;
-       "-a", Arg.Set make_archive;
-       "-pp", Arg.String(fun s -> preprocessor := Some s);
-       "-unsafe", Arg.Set fast;
-       "-compact", Arg.Clear optimize_for_speed;
-       "-nopervasives", Arg.Set nopervasives;
-       "-ccopt", Arg.String(fun s -> ccopts := s :: !ccopts);
-       "-cclib", Arg.String(fun s -> ccobjs := s :: !ccobjs);
-       "-linkall", Arg.Set link_everything;
-       "-drawlambda", Arg.Set dump_rawlambda;
-       "-dlambda", Arg.Set dump_lambda;
-       "-dcmm", Arg.Set dump_cmm;
-       "-dsel", Arg.Set dump_selection;
+    Arg.parse [
+       "-a", Arg.Set make_archive, " Build a library";
+       "-c", Arg.Set compile_only, " Compile only (do not link)";
+       "-cclib", Arg.String(fun s -> ccobjs := s :: !ccobjs),
+             "<opt>  Pass option <opt> to the C linker";
+       "-ccopt", Arg.String(fun s -> ccopts := s :: !ccopts)
+             "<opt>  Pass option <opt> to the C compiler and linker";
+       "-compact", Arg.Clear optimize_for_speed,
+             " Optimize code size rather than speed";
+       "-i", Arg.Set print_types, " Print the types";
+       "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs)
+             "<dir>  Add <dir> to the list of include directories";
+       "-impl", Arg.String process_implementation_file,
+             "<file>  Compile <file> as a .ml file";
+       "-intf", Arg.String process_interface_file,
+             "<file>  Compile <file> as a .mli file";
+       "-linkall", Arg.Set link_everything, " Don't remove unused modules";
+       "-o", Arg.String(fun s -> exec_name := s; archive_name := s),
+             "<file>  Set output file name to <file> (default a.out)";
+       "-pp", Arg.String(fun s -> preprocessor := Some s),
+             "<command>  Pipe sources through preprocessor <command>";
+       "-S", Arg.Set keep_asm_file, " Don't delete assembly file";
+       "-v", Arg.Unit print_version_number, " Print compiler version number";
+       "-unsafe", Arg.Set fast, " No bound checking on array and string access";
+
+       "-nopervasives", Arg.Set nopervasives, " (undocumented)";
+       "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";
+       "-dlambda", Arg.Set dump_lambda, " (undocumented)";
+       "-dcmm", Arg.Set dump_cmm, " (undocumented)";
+       "-dsel", Arg.Set dump_selection, " (undocumented)";
        "-dlive", Arg.Unit(fun () -> dump_live := true;
-                                    Printmach.print_live := true);
-       "-dspill", Arg.Set dump_spill;
-       "-dsplit", Arg.Set dump_split;
-       "-dinterf", Arg.Set dump_interf;
-       "-dprefer", Arg.Set dump_prefer;
-       "-dalloc", Arg.Set dump_regalloc;
-       "-dreload", Arg.Set dump_reload;
-       "-dscheduling", Arg.Set dump_scheduling;
-       "-dlinear", Arg.Set dump_linear;
-       "-dstartup", Arg.Set keep_startup_file;
-       "-v", Arg.Unit print_version_number;
-       "-intf", Arg.String process_interface_file;
-       "-impl", Arg.String process_implementation_file;
-       "-", Arg.String process_file]
-      process_file;
+                                    Printmach.print_live := true),
+             " (undocumented)";
+       "-dspill", Arg.Set dump_spill, " (undocumented)";
+       "-dsplit", Arg.Set dump_split, " (undocumented)";
+       "-dinterf", Arg.Set dump_interf, " (undocumented)";
+       "-dprefer", Arg.Set dump_prefer, " (undocumented)";
+       "-dalloc", Arg.Set dump_regalloc, " (undocumented)";
+       "-dreload", Arg.Set dump_reload, " (undocumented)";
+       "-dscheduling", Arg.Set dump_scheduling, " (undocumented)";
+       "-dlinear", Arg.Set dump_linear, " (undocumented)";
+       "-dstartup", Arg.Set keep_startup_file, " (undocumented)";
+
+       "-", Arg.String process_file,
+            "<file>  Treat <file> as a file name (even if it starts with `-')"
+      ] process_file usage;
     if !make_archive then begin
       Optcompile.init_path();
       Asmlibrarian.create_archive (List.rev !objfiles) !archive_name

@@ -12,7 +12,7 @@
 (* $Id$ *)
 
 type spec =
-    Unit of (unit -> unit)     (* Call the function with no argument *)
+  | Unit of (unit -> unit)     (* Call the function with no argument *)
   | Set of bool ref            (* Set the reference to true *)
   | Clear of bool ref          (* Set the reference to false *)
   | String of (string -> unit) (* Call the function with a string argument *)
@@ -22,45 +22,59 @@ type spec =
 exception Bad of string
 
 type error =
-    Unknown of string
+  | Unknown of string
   | Wrong of string * string * string  (* option, actual, expected *)
   | Missing of string
   | Message of string
 
 open Printf
 
-let stop error =
-  let progname =
-    if Array.length Sys.argv > 0 then Sys.argv.(0) else "(?)" in
-  begin match error with
-      Unknown s ->
-        eprintf "%s: unknown option `%s'.\n" progname s
-    | Missing s ->
-        eprintf "%s: option `%s' needs an argument.\n" progname s
-    | Wrong (opt, arg, expected) ->
-        eprintf "%s: wrong argument `%s'; option `%s' expects %s.\n"
-                progname arg opt expected
-    | Message s ->
-        eprintf "%s: %s.\n" progname s
-  end;
-  exit 2
+let rec assoc3 x l =
+  match l with
+  | [] -> raise Not_found
+  | (y1, y2, y3)::t when y1 = x -> y2
+  | _::t -> assoc3 x t
+;;
 
-let parse speclist anonfun =
+let print_doc =
+  function (key, _, doc) -> eprintf "  %s %s\n" key doc
+;;
+
+let parse speclist anonfun errmsg =
+  let stop error =
+    (* Print the reason for the error *)
+    let progname =
+      if Array.length Sys.argv > 0 then Sys.argv.(0) else "(?)" in
+    begin match error with
+      | Unknown s when s = "-help" -> ()
+      | Unknown s ->
+          eprintf "%s: unknown option `%s'.\n" progname s
+      | Missing s ->
+          eprintf "%s: option `%s' needs an argument.\n" progname s
+      | Wrong (opt, arg, expected) ->
+          eprintf "%s: wrong argument `%s'; option `%s' expects %s.\n"
+                  progname arg opt expected
+      | Message s ->
+          eprintf "%s: %s.\n" progname s
+    end;
+    (* Print the usage message *)
+    eprintf "%s\n" errmsg;
+    List.iter print_doc speclist;
+    exit 2
+  in
   let rec p = function
-      [] -> ()
+    | [] -> ()
     | s :: t ->
         if String.length s >= 1 & String.get s 0 = '-'
         then do_key s t
         else begin try (anonfun s); p t with Bad m -> stop (Message m) end
-  and do_key s l =    
+  and do_key s l =
     let action =
-      try
-        List.assoc s speclist
-      with Not_found ->
-        stop (Unknown s) in
+      try assoc3 s speclist
+      with Not_found -> stop (Unknown s) in
     try
       match (action, l) with
-        (Unit f, l) -> f (); p l
+      | (Unit f, l) -> f (); p l
       | (Set r, l) -> r := true; p l
       | (Clear r, l) -> r := false; p l
       | (String f, arg::t) -> f arg; p t
@@ -74,5 +88,5 @@ let parse speclist anonfun =
     with Bad m -> stop (Message m)
   in
     match Array.to_list Sys.argv with
-      [] -> ()
+    | [] -> ()
     | a::l -> p l

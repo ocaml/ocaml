@@ -14,27 +14,29 @@
 (* Module [Arg]: parsing of command line arguments *)
 
 (* This module provides a general mechanism for extracting options and
-   arguments from the command line to the program. *)
+   arguments from the command line to the program.
+*)
 
 (* Syntax of command lines:
     A keyword is a character string starting with a [-].
     An option is a keyword alone or followed by an argument.
-    There are six types of keywords: [Unit], [String], [Int], and [Float].
-    [Unit], [Set_flag] and [Clear_flag] keywords do not take an argument.
-    [String], [Int], and [Float] keywords take the following word on the
-    command line as an argument.
-    Arguments not preceded by a keyword are called anonymous arguments. *)
+    There are six types of keywords: [Unit], [Set], [Clear], [String],
+    [Int], and [Float].  [Unit], [Set] and [Clear] keywords take no
+    argument.  [String], [Int], and [Float] keywords take the following
+    word on the command line as an argument.
+    Arguments not preceded by a keyword are called anonymous arguments.
+*)
 
 (*  Examples ([cmd] is assumed to be the command name):
 -   [cmd -flag           ](a unit option)
 -   [cmd -int 1          ](an int option with argument [1])
 -   [cmd -string foobar  ](a string option with argument ["foobar"])
 -   [cmd -float 12.34    ](a float option with argument [12.34])
--   [cmd 1 2 3           ](three anonymous arguments: ["1"], ["2"], and ["3"])
+-   [cmd a b c           ](three anonymous arguments: ["a"], ["b"], and ["c"])
 *)
 
 type spec =
-    Unit of (unit -> unit)     (* Call the function with no argument *)
+  | Unit of (unit -> unit)     (* Call the function with no argument *)
   | Set of bool ref            (* Set the reference to true *)
   | Clear of bool ref          (* Set the reference to false *)
   | String of (string -> unit) (* Call the function with a string argument *)
@@ -43,15 +45,33 @@ type spec =
         (* The concrete type describing the behavior associated
            with a keyword. *)
 
-val parse : (string * spec) list -> (string -> unit) -> unit
-        (* [parse speclist anonfun] parses the command line,
-           calling the functions in [speclist] whenever appropriate,
-           and [anonfun] on anonymous arguments.
-           The functions are called in the same order as they appear
-           on the command line.
-           The strings in the [(string * spec) list] are keywords and must
-           start with a [-], else they are ignored. *)
+val parse : (string * spec * string) list -> (string -> unit) -> string -> unit
+(*
+    [parse speclist anonfun errmsg] parses the command line.
+    [speclist] is a list of triples [(key, spec, doc)].
+    [key] is the option keyword, it must start with a [-].
+    [spec] gives the option type and the function to call when this option
+    is found on the command line.
+    [doc] is a one-line description of this option.
+    [anonfun] is called on anonymous arguments.
+    The functions in [spec] and [anonfun] are called in the same order
+    as their arguments appear on the command line.
+
+    If an error occurs, [parse] exits the program, after printing an error
+    message as follows:
+-   The reason for the error: unknown option, invalid or missing argument, etc.
+-   [errmsg]
+-   The list of options, each followed by the corresponding [doc] string.
+
+    For the user to be able to specify anonymous arguments starting with a
+    [-], include for example [("--", String anonfun, doc)] in [speclist].
+
+    By default, [parse] recognizes a unit option [-help], which will
+    display [errmsg] and the list of options, and exit the program.
+    You can override this behaviour by specifying your own [-help]
+    option in [speclist].
+*)
 
 exception Bad of string
-        (* Functions in [speclist] or [anonfun] can raise [Bad] with
+        (* Functions in [spec] or [anonfun] can raise [Bad] with
            an error message to reject invalid arguments. *)

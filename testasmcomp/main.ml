@@ -37,21 +37,23 @@ let compile_file filename =
     | x ->
         close_in ic; raise x
 
+let usage = "Usage: codegen <options> <files>\noptions are:"
+
 let main() =
-  Arg.parse
-    ["-dcmm", Arg.Set dump_cmm;
-     "-dsel", Arg.Set dump_selection;
+  Arg.parse [
+     "-dcmm", Arg.Set dump_cmm, "";
+     "-dsel", Arg.Set dump_selection, "";
      "-dlive", Arg.Unit(fun () -> dump_live := true;
-                                  Printmach.print_live := true);
-     "-dspill", Arg.Set dump_spill;
-     "-dsplit", Arg.Set dump_split;
-     "-dinterf", Arg.Set dump_interf;
-     "-dprefer", Arg.Set dump_prefer;
-     "-dalloc", Arg.Set dump_regalloc;
-     "-dreload", Arg.Set dump_reload;
-     "-dscheduling", Arg.Set dump_scheduling;
-     "-dlinear", Arg.Set dump_linear]
-    compile_file
+                                  Printmach.print_live := true), "";
+     "-dspill", Arg.Set dump_spill, "";
+     "-dsplit", Arg.Set dump_split, "";
+     "-dinterf", Arg.Set dump_interf, "";
+     "-dprefer", Arg.Set dump_prefer, "";
+     "-dalloc", Arg.Set dump_regalloc, "";
+     "-dreload", Arg.Set dump_reload, "";
+     "-dscheduling", Arg.Set dump_scheduling, "";
+     "-dlinear", Arg.Set dump_linear, ""
+    ] compile_file usage
 
 let _ = Printexc.catch main (); exit 0
 

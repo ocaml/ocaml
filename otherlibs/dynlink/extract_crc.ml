@@ -35,11 +35,14 @@ let print_crc unit =
     end;
     exit 2
 
+let usage = "Usage: extract_crc [-I <dir>] <files>"
+
 let main () =
   print_string "let crc_unit_list = [\n";
   Arg.parse
-    ["-I", Arg.String(fun dir -> load_path := !load_path @ [dir])]
-    print_crc;
+    ["-I", Arg.String(fun dir -> load_path := !load_path @ [dir]),
+           "<dir>  Add <dir> to the list of include directories"]
+    print_crc usage;
   print_string "\n]\n"
 
 let _ = main(); exit 0
