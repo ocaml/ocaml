@@ -86,11 +86,11 @@ let lex_refill read_fun aux_buffer lexbuf =
 let from_function f =
   { refill_buff = lex_refill f (String.create 512);
     lex_buffer = String.create 1024;
-    lex_buffer_end = 1024;
-    lex_abs_pos = - 1024;
-    lex_start_pos = 1024;
-    lex_curr_pos = 1024;
-    lex_last_pos = 1024;
+    lex_buffer_end = 0;
+    lex_abs_pos = 0;
+    lex_start_pos = 0;
+    lex_curr_pos = 0;
+    lex_last_pos = 0;
     lex_last_action = 0;
     lex_eof_reached = false }
 
