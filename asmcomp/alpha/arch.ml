@@ -17,6 +17,10 @@
 open Misc
 open Format
 
+(* Machine-specific command-line options *)
+
+let command_line_options = []
+
 (* Addressing modes *)
 
 type addressing_mode =

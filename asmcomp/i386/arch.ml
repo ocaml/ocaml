@@ -12,6 +12,10 @@
 
 (* $Id$ *)
 
+(* Machine-specific command-line options *)
+
+let command_line_options = []
+
 (* Specific operations for the Intel 386 processor *)
 
 open Misc

@@ -76,7 +76,7 @@ let main () =
   c_linker := Config.native_c_linker;
   let ppf = Format.err_formatter in
   try
-    Arg.parse [
+    Arg.parse (Arch.command_line_options @ [
        "-a", Arg.Set make_archive, " Build a library";
        "-c", Arg.Set compile_only, " Compile only (do not link)";
        "-cc", Arg.String(fun s -> c_compiler := s; c_linker := s),
@@ -176,7 +176,7 @@ let main () =
        "-dstartup", Arg.Set keep_startup_file, " (undocumented)";
        "-", Arg.String (process_file ppf),
             "<file>  Treat <file> as a file name (even if it starts with `-')"
-      ] (process_file ppf) usage;
+      ]) (process_file ppf) usage;
     if !make_archive then begin
       Optcompile.init_path();
       Asmlibrarian.create_archive (List.rev !objfiles)

@@ -17,6 +17,12 @@
 open Misc
 open Format
 
+(* Machine-specific command-line options *)
+
+let command_line_options = []
+
+(* Specific operations *)
+
 type specific_operation =
     Imultaddf                           (* multiply and add *)
   | Imultsubf                           (* multiply and subtract *)
