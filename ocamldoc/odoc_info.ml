@@ -117,7 +117,7 @@ let string_of_variance t (co,cn) = Odoc_str.string_of_variance t (co, cn)
 
 let string_of_type_expr t = Odoc_print.string_of_type_expr t
 
-let string_of_type_list sep type_list = Odoc_str.string_of_type_list sep type_list
+let string_of_type_list ?par sep type_list = Odoc_str.string_of_type_list ?par sep type_list
 
 let string_of_type_param_list t = Odoc_str.string_of_type_param_list t
 

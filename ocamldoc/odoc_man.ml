@@ -311,8 +311,8 @@ class man =
       bs b "\n"
 
     (** Print groff string to display a [Types.type_expr list].*)
-    method man_of_type_expr_list b m_name sep l =
-      let s = Odoc_str.string_of_type_list sep l in
+    method man_of_type_expr_list ?par b m_name sep l =
+      let s = Odoc_str.string_of_type_list ?par sep l in
       let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
       bs b "\n.B ";
       bs b (self#relative_idents m_name s2);
@@ -361,7 +361,9 @@ class man =
          [] -> ()
        | _ -> 
            bs b ".B of ";
-           self#man_of_type_expr_list b (Name.father e.ex_name) " * " e.ex_args
+           self#man_of_type_expr_list 
+	     ~par: false
+	     b (Name.father e.ex_name) " * " e.ex_args
       );
       (
        match e.ex_alias with
@@ -418,11 +420,11 @@ class man =
 		   bs b " *)\n "
                | l, None -> 
                    bs b "\n.B of ";
-		   self#man_of_type_expr_list b father " * " l;
+		   self#man_of_type_expr_list ~par: false b father " * " l;
 		   bs b " "
                | l, (Some t) ->
                    bs b "\n.B of ";
-		   self#man_of_type_expr_list b father " * " l;
+		   self#man_of_type_expr_list ~par: false b father " * " l;
                    bs b ".I \"  \"\n";
                    bs b "(* ";
 		   self#man_of_text b t;

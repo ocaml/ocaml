@@ -994,9 +994,9 @@ class html =
       bs b "</code>"
 
     (** Print html code to display a [Types.type_expr list]. *)
-    method html_of_type_expr_list b m_name sep l =
+    method html_of_type_expr_list ?par b m_name sep l =
       print_DEBUG "html#html_of_type_expr_list";
-      let s = Odoc_info.string_of_type_list sep l in
+      let s = Odoc_info.string_of_type_list ?par sep l in
       print_DEBUG "html#html_of_type_expr_list: 1";
       let s2 = newline_to_indented_br s in
       print_DEBUG "html#html_of_type_expr_list: 2";
@@ -1081,7 +1081,8 @@ class html =
          [] -> ()
        | _ -> 
            bs b (" "^(self#keyword "of")^" ");
-           self#html_of_type_expr_list b (Name.father e.ex_name) " * " e.ex_args
+           self#html_of_type_expr_list 
+	     ~par: false b (Name.father e.ex_name) " * " e.ex_args
       );
       (
        match e.ex_alias with
@@ -1149,7 +1150,7 @@ class html =
                [] -> ()
              | l -> 
 		 bs b (" " ^ (self#keyword "of") ^ " ");
-		 self#html_of_type_expr_list b father " * " l;
+		 self#html_of_type_expr_list ~par: false b father " * " l;
             );
             bs b "</code></td>\n";
             (

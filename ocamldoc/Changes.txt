@@ -1,5 +1,23 @@
 Current :
-OK - add: new option -customdir
+OK - fix: useless parenthesis around agruments of arguments of a type constructor in
+     type definitions, and aournd arguments of exceptions in exception definitions.
+OK - fix: blank lines in verbatim, latex, code pre, code and ele ref modes
+     are now accepted
+OK - fix: html generator: included module names were displayed with their simple
+     name rather than their fully qualified name
+OK - fix: use a formatter from a buffer rather Format.str_formatter in
+     Odoc_mist.sting_of_module_type, to avoid too much blanks
+OK - new module odoc_print, will work when Format.pp_print_flush is fixed
+OK - odoc_html: use buffers instead of string concatenation
+OK - odoc_man: use buffers instead of string concatenation
+OK - odoc_cross.ml: use hash tables modified on the fly to resolve 
+    (module | module type | exception) name aliases
+OK - odoc_html: replace some calls to Str. by specific functions on strings
+OK - odoc_cross.ml: use a Map to associate a complete name to
+    the known elements with this name, instead of searching each time
+    through the whole list of modules -> a gain of more than 90% in speed
+    for cross-referecing (Odoc_cross.associate)
+OK - fix: Odoc_name.cut printed a '(' instead of a '.' OK - add: new option -customdir
 OK - add: new option -i (to add a path to the directory where 
      to look for custom generators)
 OK - add: add odoc_config.ml{,i}
@@ -20,23 +38,11 @@ OK - add: field m_code for modules, to keep the code of top modules
 OK - fix: display "include Foo" instead of "include module Foo" in Latex, Man, Texi
 OK - fix: not display comments associated to include directives
 OK - fix: bad display of type parameters for class and class types
-- need to fix display of type parameters for inherited classes/class types
-OK - fix: html generator: included module names were displayed with their simple
-     name rather than their fully qualified name
-OK - fix: use a formatter from a buffer rather Format.str_formatter in
-     Odoc_mist.sting_of_module_type, to avoid too much blanks
-OK - new module odoc_print, will work when Format.pp_print_flush is fixed
-  - odoc_html: use buffers instead of string concatenation
-OK - odoc_man: use buffers instead of string concatenation
-  - odoc_latex: use buffers instead of string concatenation
-OK - odoc_cross.ml: use hash tables modified on the fly to resolve 
-    (module | module type | exception) name aliases
-OK - odoc_html: replace some calls to Str. by specific functions on strings
-OK - odoc_cross.ml: use a Map to associate a complete name to
-    the known elements with this name, instead of searching each time
-    through the whole list of modules -> a gain of more than 90% in speed
-    for cross-referecing (Odoc_cross.associate)
-OK - fix: Odoc_name.cut printed a '(' instead of a '.' 
+
+TODO:
+ - need to fix display of type parameters for inherited classes/class types
+ - odoc_latex: use buffers instead of string concatenation
+
 
 
 ======

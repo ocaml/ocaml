@@ -447,7 +447,7 @@ class latex =
                        | l -> 
                            Format.fprintf Format.str_formatter " %s@ %s" 
 			     "of"
-                             (self#normal_type_list mod_name " * " l)
+                             (self#normal_type_list ~par: false mod_name " * " l)
 		      );
 		      Format.flush_str_formatter ()
                     in

@@ -708,7 +708,10 @@ rule main = parse
          END_SHORTCUT_LIST
         )
       else
-        BLANK_LINE
+	if !latex_mode or (!open_brackets >= 1) or !code_pre_mode or !ele_ref_mode or !verb_mode then
+	  Char (Lexing.lexeme lexbuf)
+	else
+          BLANK_LINE
     } 
    
 | eof           { EOF }

@@ -201,8 +201,8 @@ class virtual to_text =
       (self#relative_idents m_name (Odoc_info.string_of_type_expr t))
 
     (** Get a string for a list of types where all idents are relative. *)
-    method normal_type_list m_name sep t =
-      (self#relative_idents m_name (Odoc_info.string_of_type_list sep t))
+    method normal_type_list ?par m_name sep t =
+      (self#relative_idents m_name (Odoc_info.string_of_type_list ?par sep t))
 
     (** Get a string for a list of class or class type type parameters
        where all idents are relative. *)
@@ -296,7 +296,9 @@ class virtual to_text =
         | _ -> 
             Format.fprintf Format.str_formatter "@ of "
         );
-      let s = self#normal_type_list (Name.father e.ex_name) " * " e.ex_args in
+      let s = self#normal_type_list 
+	  ~par: false (Name.father e.ex_name) " * " e.ex_args 
+      in
       let s2 = 
         Format.fprintf Format.str_formatter "%s" s ;
         (match e.ex_alias with
