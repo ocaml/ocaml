@@ -296,7 +296,8 @@ class point_again x =
   end;;
 \end{caml_example}
 
-%XXX Parler de private virtual ?
+Of course, private methods can also be virtual. Then, the keywords must
+appear in this order "method private virtual". 
 
 \section{Class interfaces}
 \pdfsection{Class interfaces}
