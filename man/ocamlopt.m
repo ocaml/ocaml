@@ -67,7 +67,7 @@ names exported by the unit, and also contain expressions to be
 evaluated for their side-effects.  From the file 
 .IR x \&.ml,
 the 
-.BR ocamlc (1)
+.BR ocamlopt (1)
 compiler produces two files: 
 .IR x \&.o,
 containing native object code, and 
