@@ -69,7 +69,7 @@
 *)
 
 
-(** {2 Boxes} *)
+(** {6 Boxes} *)
 
 val open_box : int -> unit
 (** [open_box d] opens a new pretty-printing box
@@ -86,7 +86,7 @@ val open_box : int -> unit
 val close_box : unit -> unit
 (** Close the most recently opened pretty-printing box. *)
 
-(** {2 Formatting functions} *)
+(** {6 Formatting functions} *)
 
 val print_string : string -> unit
 (** [print_string str] prints [str] in the current box. *)
@@ -109,7 +109,7 @@ val print_bool : bool -> unit
 (** Print a boolean in the current box. *)
 
 
-(** {2 Break hints} *)
+(** {6 Break hints} *)
 
 val print_space : unit -> unit
 (** [print_space ()] is used to separate items (typically to print
@@ -153,7 +153,7 @@ val print_if_newline : unit -> unit
    command. *)
 
 
-(** {2 Margin} *)
+(** {6 Margin} *)
 
 val set_margin : int -> unit
 (** [set_margin d] sets the value of the right margin
@@ -166,7 +166,7 @@ val get_margin : unit -> int
 (** Return the position of the right margin. *)
 
 
-(** {2 Maximum indentation limit} *)
+(** {6 Maximum indentation limit} *)
 
 val set_max_indent : int -> unit
 (** [set_max_indent d] sets the value of the maximum
@@ -180,7 +180,7 @@ val get_max_indent : unit -> int
 (** Return the value of the maximum indentation limit (in characters). *)
 
 
-(** {2 Formatting depth: maximum number of boxes allowed before ellipsis} *)
+(** {6 Formatting depth: maximum number of boxes allowed before ellipsis} *)
 
 val set_max_boxes : int -> unit
 (** [set_max_boxes max] sets the maximum number
@@ -197,7 +197,7 @@ val over_max_boxes : unit -> bool
 (** Test if the maximum number of boxes allowed have already been opened. *)
 
 
-(** {2 Advanced formatting} *)
+(** {6 Advanced formatting} *)
 
 val open_hbox : unit -> unit
 (** [open_hbox ()] opens a new pretty-printing box.
@@ -231,7 +231,7 @@ val open_hovbox : int -> unit
    current indentation. *)
 
 
-(** {2 Tabulations} *)
+(** {6 Tabulations} *)
 
 val open_tbox : unit -> unit
 (** Open a tabulation box. *)
@@ -258,7 +258,7 @@ val print_tab : unit -> unit
 (** [print_tab ()] is equivalent to [print_tbreak (0,0)]. *)
 
 
-(** {2 Ellipsis} *)
+(** {6 Ellipsis} *)
 
 val set_ellipsis_text : string -> unit
 (** Set the text of the ellipsis printed when too many boxes
@@ -268,13 +268,13 @@ val get_ellipsis_text : unit -> string
 (** Return the text of the ellipsis. *)
 
 
-(** {2 Redirecting formatter output} *)
+(** {6 Redirecting formatter output} *)
 
 val set_formatter_out_channel : out_channel -> unit
 (** Redirect the pretty-printer output to the given channel. *)
 
 
-(** {2 Changing the meaning of printing material} *)
+(** {6 Changing the meaning of printing material} *)
 
 val set_formatter_output_functions :
   (string -> int -> int -> unit) -> (unit -> unit) -> unit
@@ -292,7 +292,7 @@ val get_formatter_output_functions :
 (** Return the current output functions of the pretty-printer. *)
 
 
-(** {2 Changing the meaning of pretty printing (indentation, line breaking, and printing material)} *)
+(** {6 Changing the meaning of pretty printing (indentation, line breaking, and printing material)} *)
 
 val set_all_formatter_output_functions :
   out:(string -> int -> int -> unit) -> flush:(unit -> unit) ->
@@ -321,7 +321,7 @@ val get_all_formatter_output_functions :
    including line breaking and indentation functions. *)
 
 
-(** {2 Multiple formatted output} *)
+(** {6 Multiple formatted output} *)
 
 type formatter
 (** Abstract data type corresponding to a pretty-printer and
@@ -378,7 +378,7 @@ val make_formatter :
    is returned by [make_formatter (output oc) (fun () -> flush oc)]. *)
 
 
-(** {2 Basic functions to use with formatters} *)
+(** {6 Basic functions to use with formatters} *)
 
 val pp_open_hbox : formatter -> unit -> unit
 val pp_open_vbox : formatter -> int -> unit
@@ -431,7 +431,7 @@ val pp_get_all_formatter_output_functions :
    [print_string] is equal to [pp_print_string std_formatter]. *)
 
 
-(** {2 [printf] like functions for pretty-printing.} *)
+(** {6 [printf] like functions for pretty-printing.} *)
 
 val fprintf : formatter -> ('a, formatter, unit) format -> 'a
 (** [fprintf ff format arg1 ... argN] formats the arguments

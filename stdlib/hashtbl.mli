@@ -19,7 +19,7 @@
 *)
 
 
-(** {2 Generic interface} *)
+(** {6 Generic interface} *)
 
 
 type ('a, 'b) t
@@ -87,7 +87,7 @@ val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
    to [f]. *)
 
 
-(** {2 Functorial interface} *)
+(** {6 Functorial interface} *)
 
 
 module type HashedType =
@@ -138,7 +138,7 @@ module Make (H : HashedType) : S with type key = H.t
     equality and hashing. *)
 
 
-(** {2 The polymorphic hash primitive} *)
+(** {6 The polymorphic hash primitive} *)
 
 
 val hash : 'a -> int
