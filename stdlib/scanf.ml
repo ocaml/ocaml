@@ -160,30 +160,6 @@ let scan_int c max ib =
   | 'X' -> scan_Hexadecimal_digits max ib
   | c -> assert false;;
 
-let read_optionally_signed_decimal_int max ib =
-  let max = scan_optionally_signed_decimal_int max ib in
-  token_int ib;;
-
-let read_unsigned_decimal_int max ib =
-  let max = scan_unsigned_decimal_int max ib in
-  token_int ib;;
-
-let read_optionally_signed_int max ib =
-  let max = scan_optionally_signed_int max ib in
-  token_int ib;;
-
-let read_unsigned_octal_int max ib =
-  let max = scan_octal_digits max ib in
-  token_int ib;;
-
-let read_unsigned_hexadecimal_int max ib =
-  let max = scan_hexadecimal_digits max ib in
-  token_int ib;;
-
-let read_unsigned_Hexadecimal_int max ib =
-  let max = scan_Hexadecimal_digits max ib in
-  token_int ib;;
-
 (* Scanning floating point numbers. *)
 let scan_frac_part max ib = scan_unsigned_decimal_int max ib;;
 
