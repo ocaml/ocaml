@@ -75,6 +75,7 @@ value unix_mktime(value t)            /* ML */
     tm.tm_yday = Int_val(Field(t, 7));
     tm.tm_isdst = -1; /* tm.tm_isdst = Bool_val(Field(t, 8)); */
     clock = mktime(&tm);
+    if (clock == (time_t) -1) unix_error(ERANGE, "mktime", Nothing);
     tmval = alloc_tm(&tm);
     clkval = copy_double((double) clock);
     res = alloc_small(2, 0);
