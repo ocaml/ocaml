@@ -84,3 +84,11 @@ let copy_file_chunk ic oc len =
       if r = 0 then raise End_of_file else (output oc buff 0 r; copy(n-r))
     end
   in copy len
+
+(* Integer operations *)
+
+let rec log2 n =
+  if n <= 1 then 1 else 1 + log2(n asr 1)
+
+let align n a =
+  (n + a - 1) land (-a)
