@@ -479,7 +479,9 @@ let instr_source lexbuf =
   and old_channel = !user_channel in
     let io_chan =
       try
-        io_channel_of_descr (openfile (expand_path file) [O_RDONLY] 0)
+        io_channel_of_descr
+          (openfile (find_in_path !Config.load_path (expand_path file))
+             [O_RDONLY] 0)
       with
         (Unix_error _) as x  -> Unix_tools.report_error x; raise Toplevel
     in
