@@ -22,7 +22,7 @@ open Compilenv
 type error =
     File_not_found of string
   | Not_an_object_file of string
-  | Missing_implementations of string list
+  | Missing_implementations of (string * string list) list
   | Inconsistent_interface of string * string * string
   | Inconsistent_implementation of string * string * string
   | Assembler_error of string
@@ -80,22 +80,26 @@ let add_ccobjs l =
 
 (* First pass: determine which units are needed *)
 
-module StringSet =
-  Set.Make(struct
-    type t = string
-    let compare = compare
-  end)
-
-let missing_globals = ref StringSet.empty
+let missing_globals = (Hashtbl.create 17 : (string, string list ref) Hashtbl.t)
 
 let is_required name =
-  StringSet.mem name !missing_globals
+  try ignore (Hashtbl.find missing_globals name); true
+  with Not_found -> false
 
-let add_required (name, crc) =
-  missing_globals := StringSet.add name !missing_globals
+let add_required by (name, crc) =
+  try
+    let rq = Hashtbl.find missing_globals name in
+    rq := by :: !rq
+  with Not_found ->
+    Hashtbl.add missing_globals name (ref [by])
 
 let remove_required name =
-  missing_globals := StringSet.remove name !missing_globals
+  Hashtbl.remove missing_globals name
+
+let extract_missing_globals () =
+  let mg = ref [] in
+  Hashtbl.iter (fun md rq -> mg := (md, !rq) :: !mg) missing_globals;
+  !mg
 
 let scan_file obj_name tolink =
   let file_name =
@@ -109,7 +113,7 @@ let scan_file obj_name tolink =
     let (info, crc) = Compilenv.read_unit_info file_name in
     check_consistency file_name info crc;
     remove_required info.ui_name;
-    List.iter add_required info.ui_imports_cmx;
+    List.iter (add_required file_name) info.ui_imports_cmx;
     info :: tolink
   end
   else if Filename.check_suffix file_name ".cmxa" then begin
@@ -131,7 +135,9 @@ let scan_file obj_name tolink =
         then begin
           check_consistency file_name info crc;
           remove_required info.ui_name;
-          List.iter add_required info.ui_imports_cmx;
+          List.iter (add_required (Printf.sprintf "%s(%s)"
+                                                  file_name info.ui_name))
+                    info.ui_imports_cmx;
           info :: reqd
         end else
           reqd)
@@ -271,8 +277,10 @@ let link objfiles =
       "stdlib.cmxa" :: (objfiles @ ["std_exit.cmx"]) in
   let units_tolink = List.fold_right scan_file objfiles [] in
   Array.iter remove_required Runtimedef.builtin_exceptions;
-  if not (StringSet.is_empty !missing_globals) then
-    raise(Error(Missing_implementations(StringSet.elements !missing_globals)));
+  begin match extract_missing_globals() with
+    [] -> ()
+  | mg -> raise(Error(Missing_implementations mg))
+  end;
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
   Clflags.ccopts := !Clflags.ccopts @ !lib_ccopts;
   let startup = Filename.temp_file "camlstartup" ext_asm in
@@ -299,8 +307,18 @@ let report_error = function
       printf "The file %s is not a compilation unit description" name
   | Missing_implementations l ->
       printf
-       "@[No implementation(s) provided for the following module(s):%a@]"
-       (fun fmt -> List.iter (fun s -> Format.fprintf fmt "@ %s" s)) l
+       "@[<v 2>No implementations provided for the following modules:%t@]"
+       (fun fmt ->
+          List.iter
+            (fun (md, rq) ->
+              printf "@ @[<hov 2>%s referenced from %t@]"
+                md
+                (fun fmt ->
+                   match rq with
+                     [] -> ()
+                   | r1::rl -> printf "%s" r1;
+                               List.iter (fun r -> printf ",@ %s" r) rl))
+          l)
   | Inconsistent_interface(intf, file1, file2) ->
       printf
        "@[<hv>Files %s@ and %s@ make inconsistent assumptions \
