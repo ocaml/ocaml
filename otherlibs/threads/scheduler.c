@@ -126,14 +126,14 @@ static void (*prev_scan_roots_hook) (scanning_action);
 
 static void thread_scan_roots(scanning_action action)
 {
-  thread_t th;
-
+  thread_t th, start;
+  
   /* Scan all active descriptors */
+  start = curr_thread;
   (*action)((value) curr_thread, (value *) &curr_thread);
   /* Don't scan curr_thread->sp, this has already been done.
      Don't scan local roots either, for the same reason. */
-  for (th = curr_thread->next; th != curr_thread; th = th->next) {
-    (*action)((value) th, (value *) &th);
+  for (th = start->next; th != start; th = th->next) {
     do_local_roots(action, th->sp, th->stack_high, NULL);
   }
   /* Hook */
