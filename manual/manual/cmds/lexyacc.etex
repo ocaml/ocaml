@@ -185,6 +185,12 @@ Useful for lexing nested comments, for example.
 
 \end{options}
 
+\subsection{Reserved identifiers}
+
+All identifiers starting with "__ocaml_lex" are reserved for use by
+"ocamllex"; do not use any such identifier in your programs.
+
+
 \section{Overview of "ocamlyacc"}
 
 The "ocamlyacc" command produces a parser from a context-free grammar
