@@ -170,7 +170,7 @@ let rec rename i sub =
       (instr_cons (Icatch(new_body, new_handler)) [||] [||] new_next,
        sub_next)
   | Iexit ->
-      exit_subst := merge_substs !exit_subst sub i.next;
+      exit_subst := merge_substs !exit_subst sub i;
       (i, None)
   | Itrywith(body, handler) ->
       let (new_body, sub_body) = rename body sub in

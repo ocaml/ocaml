@@ -71,7 +71,7 @@ let rec live i finally =
       i.live <- before_body;
       before_body
   | Iexit ->
-      (* i.live remains empty since no regs are live across *)
+      i.live <- !live_at_exit;          (* These regs are live across *)
       !live_at_exit
   | Itrywith(body, handler) ->
       let at_join = live i.next finally in
