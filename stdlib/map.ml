@@ -24,6 +24,7 @@ module type S =
     val empty: 'a t
     val add: key -> 'a -> 'a t -> 'a t
     val find: key -> 'a t -> 'a
+    val remove: key -> 'a t -> 'a t
     val iter: (key -> 'a -> 'b) -> 'a t -> unit
     val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   end
@@ -95,6 +96,25 @@ module Make(Ord: OrderedType) = struct
           let c = Ord.compare x v in
           if c = 0 then d
           else find x (if c < 0 then l else r)
+
+    let rec merge t1 t2 =
+      match (t1, t2) with
+        (Empty, t) -> t
+      | (t, Empty) -> t
+      | (Node(l1, v1, d1, r1, h1), Node(l2, v2, d2, r2, h2)) ->
+          bal l1 v1 d1 (bal (merge r1 l2) v2 d2 r2)
+
+    let rec remove x = function
+        Empty ->
+          Empty
+      | Node(l, v, d, r, h) as t ->
+          let c = Ord.compare x v in
+          if c = 0 then
+            merge l r
+          else if c < 0 then
+            bal (remove x l) v d r
+          else
+            bal l v d (remove x r)
 
     let rec iter f = function
         Empty -> ()

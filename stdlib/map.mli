@@ -51,6 +51,9 @@ module type S =
     val find: key -> 'a t -> 'a
         (* [find x m] returns the current binding of [x] in [m],
            or raises [Not_found] if no such binding exists. *)
+    val remove: key -> 'a t -> 'a t
+        (* [remove x m] returns a map containing the same bindings as
+           [m], except for [x] which is unbound in the returned map. *)
     val iter: (key -> 'a -> 'b) -> 'a t -> unit
         (* [iter f m] applies [f] to all bindings in map [m],
 	   discarding the results.
