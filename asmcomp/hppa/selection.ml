@@ -17,6 +17,7 @@ open Misc
 open Cmm
 open Reg
 open Arch
+open Proc
 open Mach
 
 let shiftadd = function
@@ -87,6 +88,20 @@ method select_operation op args =
   | (Cxor, args) -> (Iintop Ixor, args)
   | _ ->
       super#select_operation op args
+
+(* Deal with register constraints *)
+
+method insert_op op rs rd =
+  match op with
+    Iintop(Idiv | Imod) -> (* handled via calls to millicode *)
+      let rs' = [|phys_reg 20; phys_reg 19|] (* %r26, %r25 *)
+      and rd' = [|phys_reg 22|] (* %r29 *) in
+      self#insert_moves rs rs';
+      self#insert (Iop op) rs' rd';
+      self#insert_moves rd' rd;
+      rd
+  | _ ->
+      super#insert_op op rs rd
 
 end
 
