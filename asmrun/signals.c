@@ -79,20 +79,7 @@ void leave_blocking_section()
 void handle_signal(sig, code, context)
      int sig, code;
      struct sigcontext * context;
-#endif
-#if defined(TARGET_sparc) && defined(SYS_sunos)
-void handle_signal(sig, code, context, address)
-     int sig, code;
-     struct sigcontext * context;
-     char * address;
-#endif
-#if defined(TARGET_sparc) && defined(SYS_solaris)
-void handle_signal(sig, info, context)
-     int sig;
-     struct siginfo_t * info;
-     struct ucontext_t * context;
-#endif
-#ifdef TARGET_i386
+#else
 void handle_signal(sig)
      int sig;
 #endif
