@@ -29,6 +29,7 @@
 \part{The Caml Special Light language}
 \label{p:refman}
 \input refman.tex
+\input exten.tex
 
 \part{The Caml Special Light tools}
 \label{p:commands}
