@@ -35,7 +35,7 @@ val type_class_arg_pattern:
         Typedtree.pattern * (Ident.t * Ident.t * type_expr) list *
         Env.t * Env.t
 val type_self_pattern:
-        string -> Env.t -> Env.t -> Env.t -> Parsetree.pattern ->
+        string -> type_expr -> Env.t -> Env.t -> Env.t -> Parsetree.pattern ->
         Typedtree.pattern *
         (Ident.t * type_expr) Meths.t ref *
         (Ident.t * Asttypes.mutable_flag * type_expr) Vars.t ref *

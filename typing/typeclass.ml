@@ -534,28 +534,44 @@ let rec class_field cl_num self_type meths vars
       (val_env, met_env, par_env, field::fields,
        concr_meths, warn_meths, inh_vals)
 
-and class_structure cl_num val_env met_env (spat, str) =
+and class_structure cl_num final val_env met_env loc (spat, str) =
   (* Environment for substructures *)
   let par_env = met_env in
 
+  (* Private self type more method access, with a dummy method preventing
+     it from being closed. *)
+  let self_type = Ctype.newvar () in
+  Ctype.unify val_env
+      (Ctype.filter_method val_env dummy_method Private self_type)
+      (Ctype.newty (Ttuple []));
+
   (* Self binder *)
   let (pat, meths, vars, val_env, meth_env, par_env) =
-    type_self_pattern cl_num val_env met_env par_env spat
+    type_self_pattern cl_num self_type val_env met_env par_env spat
   in
-  let self_type = pat.pat_type in
+  let public_self = pat.pat_type in
 
-  (* Check that the binder has a correct type, and introduce a dummy
-     method preventing self type from being closed. *)
-  let ty = Ctype.newvar () in
-  Ctype.unify val_env
-      (Ctype.filter_method val_env dummy_method Private ty)
-      (Ctype.newty (Ttuple []));
-  begin try Ctype.unify val_env self_type ty with
+  (* Check that the binder has a correct type *)
+  let public_fields =
+    if final then Ctype.newvar () else Ctype.object_fields self_type in
+  let ty =
+    if final then Ctype.newty (Tobject (public_fields, ref None))
+    else self_type in
+  begin try Ctype.unify val_env public_self ty with
     Ctype.Unify _ ->
-      raise(Error(spat.ppat_loc, Pattern_type_clash self_type))
+      raise(Error(spat.ppat_loc, Pattern_type_clash public_self))
+  end;
+  if final then begin
+    (* Copy known information to self_type *)
+    List.iter
+      (fun (lab,kind,ty) ->
+        try Ctype.unify val_env ty
+            (Ctype.filter_method val_env lab Public self_type)
+        with _ -> assert false)
+      (fst (Ctype.flatten_fields public_fields))
   end;
 
-  (* Class fields *)
+  (* Typing of class fields *)
   let (_, _, _, fields, concr_meths, _, _) =
     List.fold_left (class_field cl_num self_type meths vars)
       (val_env, meth_env, par_env, [], Concr.empty, Concr.empty,
@@ -563,20 +579,57 @@ and class_structure cl_num val_env met_env (spat, str) =
       str
   in
   Ctype.unify val_env self_type (Ctype.newvar ());
-  let methods =
-    if !Clflags.principal then
-      fst (Ctype.flatten_fields (Ctype.object_fields self_type))
-    else [] in
-  List.iter (fun (_,_,ty) -> Ctype.generalize_spine ty) methods;
+  let (methods, _) = Ctype.flatten_fields (Ctype.object_fields self_type) in
+  let priv_meths =
+    List.filter (fun (_,kind,_) -> Btype.field_kind_repr kind <> Fpresent)
+      methods in
+  if final then begin
+    (* Copy methods from self type to the public self, which has not
+       been modified yet. self_type will not change after this point *)
+    List.iter
+      (fun (lab,kind,ty) -> if lab <> dummy_method then
+        try prerr_endline lab; Ctype.unify val_env public_self
+            (Ctype.newty
+               (Tobject
+                  (Ctype.newty
+                     (Tfield(lab, Btype.copy_kind kind, ty, Ctype.newvar())),
+                   ref None)))
+        with Ctype.Unify _ ->
+          raise(Error(spat.ppat_loc, Pattern_type_clash public_self)))
+      methods;
+    let public_self = Ctype.expand_head val_env public_self in
+    if Ctype.opened_object public_self then Ctype.close_object public_self;
+    Ctype.close_object self_type;
+  end;
+
+  (* Typing of method bodies *)
+  if !Clflags.principal then
+    List.iter (fun (_,_,ty) -> Ctype.generalize_spine ty) methods;
   let vars_final = !vars in
   let fields = List.map Lazy.force (List.rev fields) in
   vars := vars_final;
-  List.iter (fun (_,_,ty) -> Ctype.unify val_env ty (Ctype.newvar ())) methods;
+  if !Clflags.principal then
+    List.iter (fun (_,_,ty) -> Ctype.unify val_env ty (Ctype.newvar ()))
+      methods;
+
+  (* Check for private methods made public *)
+  let pub_meths' =
+    List.filter (fun (_,kind,_) -> Btype.field_kind_repr kind = Fpresent)
+      (fst (Ctype.flatten_fields public_fields)) in
+  let names = List.map (fun (x,_,_) -> x) in
+  let l1 = names priv_meths and l2 = names pub_meths' in
+  let added = List.filter (fun x -> List.mem x l1) l2 in
+  if added <> [] then
+    Location.prerr_warning pat.pat_loc
+      (Warnings.Other
+         (String.concat " "
+            ("the following private methods were made public implicitly:\n "
+             :: added)));
 
   {cl_field = fields;
    cl_meths = Meths.map (function (id, ty) -> id) !meths},
 
-  {cty_self = self_type;
+  {cty_self = if final then public_self else self_type;
    cty_vars = Vars.map (function (id, mut, ty) -> (mut, ty)) !vars;
    cty_concr = concr_meths }
 
@@ -618,7 +671,8 @@ and class_expr cl_num val_env met_env scl =
           cl_type = clty';
           cl_env = val_env}
   | Pcl_structure cl_str ->
-      let (desc, ty) = class_structure cl_num val_env met_env cl_str in
+      let (desc, ty) =
+        class_structure cl_num false val_env met_env scl.pcl_loc cl_str in
       rc {cl_desc = Tclass_structure desc;
           cl_loc = scl.pcl_loc;
           cl_type = Tcty_signature ty;
@@ -1155,10 +1209,13 @@ let merge_type_decls
 let final_env define_class env
     (id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
      arity, pub_meths, coe, expr) =
-  Env.add_type obj_id obj_abbr (
-  Env.add_type cl_id cl_abbr (
-  Env.add_cltype ty_id cltydef (
-  if define_class then Env.add_class id clty env else env)))
+  (* Add definitions after cleaning them *)
+  Env.add_type obj_id (Subst.type_declaration Subst.identity obj_abbr) (
+  Env.add_type cl_id (Subst.type_declaration Subst.identity cl_abbr) (
+  Env.add_cltype ty_id (Subst.cltype_declaration Subst.identity cltydef) (
+  if define_class then
+    Env.add_class id (Subst.class_declaration Subst.identity clty) env
+  else env)))
 
 (* Check that #c is coercible to c if there is a self-coercion *)
 let check_coercions env
@@ -1265,17 +1322,18 @@ and unify_parents_struct env ty st =
 
 let type_object env loc s =
   incr class_num;
-  let (desc, sign) = class_structure (string_of_int !class_num) env env s in
-  let sty = Ctype.expand_head env sign.cty_self in
+  let (desc, sign) =
+    class_structure (string_of_int !class_num) true env env loc s in
+  let sty = sign.cty_self in
+  let sign = {sign with cty_self = Ctype.expand_head env sty} in
   begin match virtual_methods sign with
     [] -> ()
   | mets -> raise(Error(loc, Virtual_class(true, mets)))
   end;
-  Ctype.hide_private_methods sty;
-  Ctype.close_object sty;
-  unify_parents_struct env sty desc;
-  let (fields, _) = Ctype.flatten_fields (Ctype.object_fields sty) in
+  Ctype.hide_private_methods sign.cty_self;
+  let (fields, _) = Ctype.flatten_fields (Ctype.object_fields sign.cty_self) in
   let meths = List.map (fun (s,_,_) -> s) fields in
+  unify_parents_struct env sty desc;
   (desc, sign, meths)
 
 let () =

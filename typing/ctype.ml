@@ -603,7 +603,7 @@ let rec update_level env level ty =
         end;
         set_level ty level;
         iter_type_expr (update_level env level) ty
-    | Tfield(_, k, _, _) ->
+    | Tfield("*dummy method*", k, _, _) ->
         begin match field_kind_repr k with
           Fvar _ (* {contents = None} *) -> raise (Unify [(ty, newvar2 level)])
         | _                              -> ()
