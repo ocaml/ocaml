@@ -212,7 +212,7 @@ let chop_extension name =
   with Not_found ->
     invalid_arg "Filename.chop_extension"
 
-external open_desc: string -> open_flag list -> int -> int = "sys_open"
+external open_desc: string -> open_flag list -> int -> int = "caml_sys_open"
 external close_desc: int -> unit = "sys_close"
 
 let prng = Random.State.make_self_init ();;

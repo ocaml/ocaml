@@ -148,7 +148,7 @@ static int sys_open_flags[] = {
   O_BINARY, O_TEXT, O_NONBLOCK
 };
 
-CAMLprim value sys_open(value path, value flags, value perm)
+CAMLprim value caml_sys_open(value path, value flags, value perm)
 {
   CAMLparam3(path, flags, perm);
   int fd;

@@ -13,8 +13,8 @@
 
 /* $Id$ */
 
-#ifndef _mlvalues_
-#define _mlvalues_
+#ifndef CAML_MLVALUES_H
+#define CAML_MLVALUES_H
 
 
 #include "config.h"
@@ -296,4 +296,4 @@ CAMLextern char * static_data_start, * static_data_end;
 extern value global_data;
 
 
-#endif /* _mlvalues_ */
+#endif /* CAML_MLVALUES_H */
