@@ -94,7 +94,7 @@ void get_sockaddr(value mladr,
 }
 
 value alloc_sockaddr(union sock_addr_union * adr /*in*/,
-                     socklen_param_type adr_len)
+                     socklen_param_type adr_len, int close_on_error)
 {
   value res;
   switch(adr->s_gen.sa_family) {
@@ -129,6 +129,7 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
     }
 #endif
   default:
+    if (close_on_error != -1) close (close_on_error);
     unix_error(EAFNOSUPPORT, "", Nothing);
   }
   return res;
