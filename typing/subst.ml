@@ -42,21 +42,6 @@ let add_modtype id ty s =
     modules = s.modules;
     modtypes = Tbl.add id ty s.modtypes }
 
-let remove_type id s =
-  { types = Tbl.remove id s.types;
-    modules = s.modules;
-    modtypes = s.modtypes }
-
-let remove_module id s =
-  { types = s.types;
-    modules = Tbl.remove id s.modules;
-    modtypes = s.modtypes }
-
-let remove_modtype id s =
-  { types = s.types;
-    modules = s.modules;
-    modtypes = Tbl.remove id s.modtypes }
-
 let rec module_path s = function
     Pident id as p ->
       begin try Tbl.find id s.modules with Not_found -> p end
@@ -251,21 +236,28 @@ let rec modtype s = function
   | Tmty_signature sg ->
       Tmty_signature(signature s sg)
   | Tmty_functor(id, arg, res) ->
-      Tmty_functor(id, modtype s arg, modtype (remove_module id s) res)
+      let id' = Ident.rename id in
+      Tmty_functor(id', modtype s arg,
+                        modtype (add_module id (Pident id') s) res)
 
 and signature s = function
     [] -> []
   | Tsig_value(id, d) :: sg ->
       Tsig_value(id, value_description s d) :: signature s sg
   | Tsig_type(id, d) :: sg ->
-      Tsig_type(id, type_declaration s d) :: signature (remove_type id s) sg
+      let id' = Ident.rename id in
+      Tsig_type(id', type_declaration s d) ::
+      signature (add_type id (Pident id') s) sg
   | Tsig_exception(id, d) :: sg ->
       Tsig_exception(id, exception_declaration s d) :: signature s sg
   | Tsig_module(id, mty) :: sg ->
-      Tsig_module(id, modtype s mty) :: signature (remove_module id s) sg
+      let id' = Ident.rename id in
+      Tsig_module(id', modtype s mty) ::
+      signature (add_module id (Pident id') s) sg
   | Tsig_modtype(id, d) :: sg ->
-      Tsig_modtype(id, modtype_declaration s d) ::
-      signature (remove_modtype id s) sg
+      let id' = Ident.rename id in
+      Tsig_modtype(id', modtype_declaration s d) ::
+      signature (add_modtype id (Tmty_ident(Pident id')) s) sg
   | Tsig_class(id, d) :: sg ->
       Tsig_class(id, class_declaration s d) :: signature s sg
   | Tsig_cltype(id, d) :: sg ->
