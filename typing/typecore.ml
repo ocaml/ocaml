@@ -303,6 +303,9 @@ let rec is_nonexpansive exp =
   | Texp_let(rec_flag, pat_exp_list, body) ->
       List.for_all (fun (pat, exp) -> is_nonexpansive exp) pat_exp_list &
       is_nonexpansive body
+  | Texp_apply(e, None::el) ->
+      is_nonexpansive e &&
+      List.for_all (function None -> true | Some exp -> is_nonexpansive e) el
   | Texp_function _ -> true
   | Texp_tuple el ->
       List.for_all is_nonexpansive el
@@ -896,7 +899,56 @@ and type_application env funct sargs =
 	in
 	let arg, omitted =
 	  match sarg with None -> None, (l,ty,lv) :: omitted
-	  | Some sarg -> Some (type_expect env sarg ty), omitted
+	  | Some sarg ->
+	      let targ =
+		match expand_head env ty, sarg with
+		| _, {pexp_desc = Pexp_function(l,_,_)}
+		  when not (is_optional l) ->
+		    type_expect env sarg ty
+		| {desc = Tarrow("",ty_arg,ty_res)}, _ ->
+		    (* apply optional arguments when expected type is "" *)
+		    let texp = type_exp env sarg in
+		    let rec make_args args ty_fun =
+		      match (expand_head env ty_fun).desc with
+		      |	Tarrow (l,ty_arg,ty_fun) when is_optional l ->
+			  let sarg =
+			    { sarg with pexp_desc = Pexp_construct
+				(Longident.Lident "None", None, false) } in
+			  let arg = type_expect env sarg ty_arg in
+			  make_args (Some arg :: args) ty_fun
+		      |	Tarrow (l,_,_) when l = "" || !Clflags.classic ->
+			  args, ty_fun
+		      |	Tvar ->
+			  args, ty_fun
+		      |	_ -> [], texp.exp_type
+		    in
+		    let args, ty_fun = make_args [] texp.exp_type in
+		    unify_exp env {texp with exp_type = ty_fun} ty;
+		    if args = [] then texp else
+		    (* eta-expand to avoid side effects *)
+		    let var_pair name ty =
+		      let id = Ident.create name in
+		      {pat_desc = Tpat_var id; pat_type = ty_arg;
+		       pat_loc = Location.none; pat_env = env},
+		      {exp_type = ty_arg; exp_loc = Location.none;
+		       exp_env = env; exp_desc = Texp_ident(
+		       Path.Pident id,{val_type = ty_arg; val_kind = Val_reg})}
+		    in
+		    let eta_pat, eta_var = var_pair "eta" ty_arg in
+		    let func texp =
+		      { texp with exp_type = ty_fun; exp_desc = Texp_function
+			  ([eta_pat, {texp with exp_type = ty_res; exp_desc =
+				      Texp_apply (texp, args@[Some eta_var])}],
+			   Total) } in
+		    if is_nonexpansive texp then func texp else
+		    (* let-expand to have side effects *)
+		    let let_pat, let_var = var_pair "let" texp.exp_type in
+		    { texp with exp_type = ty_fun; exp_desc =
+		      Texp_let (Nonrecursive, [let_pat, texp], func let_var) }
+		| _ ->
+		    type_expect env sarg ty
+	      in
+	      Some targ, omitted
 	in
 	type_args (arg::args) omitted ty_fun sargs more_sargs
     | _ ->
