@@ -32,7 +32,7 @@ let shift n s =
   if s > 0 then
     { msw = (n.msw lsl s) lor (n.lsb lsl (s-1)); lsb = 0 }
   else
-    { msw = n.msw asr (-s); lsb = (n.msw asr (1-s)) land 1 }
+    { msw = n.msw asr (-s); lsb = (n.msw asr (-s - 1)) land 1 }
 
 let sign n =
   if n.msw < 0 then -1 else
