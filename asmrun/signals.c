@@ -14,7 +14,7 @@
 
 #include <signal.h>
 #include <stdio.h>
-#if defined(TARGET_sparc) && defined(SYS_solaris)
+#if (defined(TARGET_sparc) && defined(SYS_solaris))
 #include <ucontext.h>
 #endif
 #include "alloc.h"
@@ -313,7 +313,7 @@ value install_signal_handler(value signal_number, value action) /* ML */
     act = SIG_IGN;
     break;
   default:                      /* Signal_handle */
-    act = handle_signal;
+    act = (void (*)(int)) handle_signal;
     break;
   }
 #ifdef POSIX_SIGNALS
@@ -483,19 +483,6 @@ static void segv_handler(int signo, siginfo_t * info, void * arg)
 {
   if (is_stack_overflow((char *) info->si_addr, 0))
     raise_stack_overflow();
-}
-#endif
-
-#if defined(TARGET_alpha) && defined(SYS_digital)
-static void segv_handler(int signo, siginfo_t * info, void * arg)
-{
-  ucontext_t * context = (ucontext_t *) arg;
-  if (is_stack_overflow((char *) info->si_addr, caml_last_return_address)) {
-    /* Recover young_ptr and caml_exception_pointer from regs $13 and $15 */
-    young_ptr = (char *) (context->uc_mcontext.sc_regs[13]);
-    caml_exception_pointer = (char *) (context->uc_mcontext.sc_regs[15]);
-    raise_stack_overflow();
-  }
 }
 #endif
 
