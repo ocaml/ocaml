@@ -52,39 +52,43 @@ void oldify (p, v)
      value *p;
      value v;
 {
-  value result;
-  mlsize_t i;
+  value result, field0;
+  header_t hd;
+  mlsize_t sz, i;
+  int tag;
 
  tail_call:
   if (Is_block (v) && Is_young (v)){
     Assert (Hp_val (v) >= young_ptr);
-    if (Is_blue_val (v)){    /* Already forwarded ? */
+    hd = Hd_val (v);
+    tag = Tag_hd (hd);
+    if (Is_blue_hd (hd)){    /* Already forwarded ? */
       *p = Field (v, 0);     /* Then the forward pointer is the first field. */
-    }else if (Tag_val(v) == Infix_tag) {
-      mlsize_t offset = Infix_offset_val(v);
+    }else if (tag == Infix_tag) {
+      mlsize_t offset = Infix_offset_hd (hd);
       oldify(p, v - offset);
       *p += offset;
-    }else if (Tag_val (v) >= No_scan_tag){
-      result = alloc_shr (Wosize_val (v), Tag_val (v));
-      bcopy (Bp_val (v), Bp_val (result), Bosize_val (v));
-      Hd_val (v) = Bluehd_hd (Hd_val (v));    /* Put the forward flag. */
+    }else if (tag >= No_scan_tag){
+      sz = Wosize_hd (hd);
+      result = alloc_shr (sz, tag);
+      for (i = 0; i < sz; i++) Field(result, i) = Field(v, i);
+      Hd_val (v) = Bluehd_hd (hd);            /* Put the forward flag. */
       Field (v, 0) = result;                  /* And the forward pointer. */
       *p = result;
     }else{
       /* We can do recursive calls before all the fields are filled, because
          we will not be calling the major GC. */
-      value field0 = Field (v, 0);
-      mlsize_t sz = Wosize_val (v);
-
-      result = alloc_shr (sz, Tag_val (v));
+      sz = Wosize_hd (hd);
+      result = alloc_shr (sz, tag);
       *p = result;
-      Hd_val (v) = Bluehd_hd (Hd_val (v));    /* Put the forward flag. */
+      field0 = Field (v, 0);
+      Hd_val (v) = Bluehd_hd (hd);            /* Put the forward flag. */
       Field (v, 0) = result;                  /* And the forward pointer. */
-      if (sz == 1){
+      if (sz == 1) {
         p = &Field (result, 0);
         v = field0;
         goto tail_call;
-      }else{
+      } else {
         oldify (&Field (result, 0), field0);
         for (i = 1; i < sz - 1; i++){
           oldify (&Field (result, i), Field (v, i));

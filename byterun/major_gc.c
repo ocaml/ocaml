@@ -87,21 +87,34 @@ static void mark_slice (work)
      long work;
 {
   value v, child;
-  mlsize_t i;
+  header_t hd;
+  mlsize_t size, i;
 
   while (work > 0){
     if (gray_vals_cur > gray_vals){
       v = *--gray_vals_cur;
-      Assert (Is_gray_val (v));
-      Hd_val (v) = Blackhd_hd (Hd_val (v));
-      if (Tag_val (v) < No_scan_tag){
-	for (i = Wosize_val (v); i > 0;){
-	  --i;
+      hd = Hd_val(v);
+      Assert (Is_gray_hd (hd));
+      Hd_val (v) = Blackhd_hd (hd);
+      size = Wosize_hd(hd);
+      if (Tag_hd (hd) < No_scan_tag){
+	for (i = 0; i < size; i++){
 	  child = Field (v, i);
-	  darken (child);
-	}
+          if (Is_block (child) && Is_in_heap (child)) {
+            hd = Hd_val(child);
+            if (Tag_hd(hd) == Infix_tag) {
+              child -= Infix_offset_val(child);
+              hd = Hd_val(child);
+            }
+            if (Is_white_hd (hd)){
+              Hd_val (child) = Grayhd_hd (hd);
+              *gray_vals_cur++ = child;
+              if (gray_vals_cur >= gray_vals_end) realloc_gray_vals ();
+            }
+          }
+        }
       }
-      work -= Whsize_val (v);
+      work -= Whsize_wosize(size);
     }else if (markhp != NULL){
       if (markhp == limit){
 	chunk = (((heap_chunk_head *) chunk) [-1]).next;
