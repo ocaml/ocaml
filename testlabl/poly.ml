@@ -31,6 +31,13 @@ class ilist2 l = object
   method fold = List.fold_left l
 end
 ;;
+let ilist2 l = object
+  inherit [_] vlist
+  val l = l
+  method add x = {< l = x :: l >}
+  method fold = List.fold_left l
+end
+;;
 class ['a] ilist3 l = object
   inherit ['a] vlist
   val l = l
@@ -451,3 +458,11 @@ class type ['a] cb = object ('s) inherit ['a, 's] b end
 	  
 type bt = 'b ca cb as 'b
 ;;
+
+(* final classes, etc... *)
+class c = object method m = 1 end;;
+let f () = object (self:c) method m = 1 end;;
+let f () = object (self:c) method private n = 1 method m = self#n end;;
+let f () = object method private n = 1 method m = {<>}#n end;;
+let f () = object (self:c) method n = 1 method m = 2 end;;
+let f () = object (_:'s) constraint 's = < n : int > method m = 1 end;;

@@ -23,6 +23,7 @@
     method add : int -> 'a
     method fold : f:('b -> int -> 'b) -> init:'b -> 'b
   end
+#             val ilist2 : 'a list -> 'a vlist = <fun>
 #             class ['a] ilist3 :
   'a list ->
   object ('b)
@@ -313,4 +314,19 @@ class type ['a] cb =
     method as_b : ('a, 'b) b
   end
 type bt = 'a ca cb as 'a
+#     class c : object method m : int end
+# val f : unit -> c = <fun>
+# val f : unit -> c = <fun>
+# Characters 11-60:
+Warning: the following private methods were made public implicitly:
+  n
+val f : unit -> < m : int; n : int > = <fun>
+# Characters 11-56:
+This object is expected to have type c = < m : int > but has actually type
+  < m : int; n : 'a >
+Only the second object type has a method n
+# Characters 11-69:
+This object is expected to have type < n : int > but has actually type
+  < m : 'a >
+Only the first object type has a method n
 # 
