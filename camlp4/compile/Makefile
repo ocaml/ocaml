@@ -28,7 +28,9 @@ pa_$D_fast.ml: comp_head.ml $D_fast.ml comp_trail.ml
 $D_fast.ml: compile.cmo $(SRC)
 	OTOP=$(OTOP) EXE=$(EXE) ./compile.sh $(COMP_OPT) $(SRC) > $D_fast.ml
 
-#	OTOP=$(OTOP) EXE=$(EXE) ./compile.sh $(COMP_OPT) $(SRC) | sed -e "s/expr_16/expr_15/" > $D_fast.ml
+pa_$D_fast.cmx: pa_$D_fast.ml
+	$(OTOP)/boot/ocamlrun ../boot/camlp4r -nolib -I ../boot q_MLast.cmo pa_extend.cmo -o pa_$D_fast.ppo pa_$D_fast.ml
+	$(OTOP)/ocamlopt.opt -I $(OTOP)/stdlib -warn-error A -I ../camlp4 -I ../boot -c -impl pa_$D_fast.ppo
 
 clean::
 	rm -f *.cm* *.pp[io] *.o *.bak .*.bak *.out *.opt
