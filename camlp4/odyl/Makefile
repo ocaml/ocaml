@@ -29,10 +29,12 @@ odyl_main.cmx: odyl_main.ml
 	rm -f odyl_main.ppo
 
 odyl_config.ml:
-	echo "let standard_library =" > odyl_config.ml
-	echo "  try Sys.getenv \"CAMLP4LIB\" with" >> odyl_config.ml
-	echo "    Not_found -> \"$(LIBDIR)/camlp4\"" | \
-	sed -e 's|\\|/|g' >> odyl_config.ml
+	(echo 'let standard_library ='; \
+	 echo '  try Sys.getenv "CAMLP4LIB" with Not_found -> '; \
+	 echo '  try Sys.getenv "OCAMLLIB" ^ "/camlp4" with Not_found -> '; \
+	 echo '  try Sys.getenv "CAMLLIB" ^ "/camlp4" with Not_found -> '; \
+         echo '  "$(LIBDIR)/camlp4"') \
+        | sed -e 's|\\|/|g' > odyl_config.ml
 
 clean::
 	rm -f *.cm* *.pp[io] *.o *.bak .*.bak *.out *.opt *.a
