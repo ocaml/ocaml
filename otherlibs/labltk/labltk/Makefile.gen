@@ -3,7 +3,7 @@ include ../support/Makefile.common
 all: tk.ml labltk.ml .depend
 
 _tkgen.ml: ../Widgets.src ../compiler/tkcompiler
-	cd ..; ../../boot/ocamlrun compiler/tkcompiler -outdir labltk
+	cd ..; $(CAMLRUNGEN) compiler/tkcompiler -outdir labltk
 
 # dependencies are broken: wouldn't work with gmake 3.77
 
