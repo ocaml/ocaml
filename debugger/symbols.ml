@@ -83,8 +83,8 @@ let read_symbols bytecode_file =
           let real_evl =
             Primitives.filter
               (function
-                 {ev_kind = Event_function | Event_return _} -> false
-               | _                                           -> true)
+                 {ev_kind = Event_pseudo} -> false
+               | _                        -> true)
               sorted_evl
           in
           Hashtbl.add events_by_module md (Array.of_list real_evl))
@@ -96,8 +96,8 @@ let any_event_at_pc pc =
 let event_at_pc pc =
   let ev = any_event_at_pc pc in
   match ev.ev_kind with
-    Event_function | Event_return _ -> raise Not_found
-  | _                               -> ev
+    Event_pseudo -> raise Not_found
+  | _            -> ev
 
 (* List all events in module *)
 let events_in_module mdle =
@@ -148,6 +148,6 @@ let set_all_events () =
   Hashtbl.iter
     (fun pc ev ->
        match ev.ev_kind with
-         Event_function | Event_return _ -> ()
-       | _                               -> Debugcom.set_event ev.ev_pos)
+         Event_pseudo -> ()
+       | _            -> Debugcom.set_event ev.ev_pos)
     events_by_pc

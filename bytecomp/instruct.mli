@@ -34,16 +34,21 @@ type debug_event =
     ev_module: string;                  (* Name of defining module *)
     ev_char: int;                       (* Location in source file *)
     ev_kind: debug_event_kind;          (* Before/after event *)
+    ev_info: debug_event_info;          (* Extra information *)
     ev_typenv: Env.summary;             (* Typing environment *)
     ev_compenv: compilation_env;        (* Compilation environment *)
     ev_stacksize: int;                  (* Size of stack frame *)
-    mutable ev_repr: debug_event_repr } (* Position of the representative *)
+    ev_repr: debug_event_repr }         (* Position of the representative *)
 
 and debug_event_kind =
     Event_before
-  | Event_after of Types.type_expr * int
-  | Event_function
+  | Event_after of Types.type_expr
+  | Event_pseudo
+
+and debug_event_info =
+    Event_function
   | Event_return of int
+  | Event_other
 
 and debug_event_repr =
     Event_none

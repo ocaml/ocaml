@@ -107,6 +107,75 @@ let rec size_of_lambda = function
   | Levent (lam, _) -> size_of_lambda lam
   | _ -> fatal_error "Bytegen.size_of_lambda"
 
+(**** Merging consecutive events ****)
+
+let copy_event ev kind info repr =
+  { ev_pos = 0;                   (* patched in emitcode *)
+    ev_module = ev.ev_module;
+    ev_char = ev.ev_char;
+    ev_kind = kind;
+    ev_info = info;
+    ev_typenv = ev.ev_typenv;
+    ev_compenv = ev.ev_compenv;
+    ev_stacksize = ev.ev_stacksize;
+    ev_repr = repr }
+
+let merge_infos ev ev' =
+  match ev.ev_info, ev'.ev_info with
+    Event_other, info -> info
+  | info, Event_other -> info
+  | _                 -> fatal_error "Bytegen.merge_infos"
+
+let merge_repr ev ev' =
+  match ev.ev_repr, ev'.ev_repr with
+    Event_none, x -> x
+  | x, Event_none -> x
+  | Event_parent r, Event_child r' when r == r' && !r = 1 -> Event_none
+  | _, _          -> fatal_error "Bytegen.merge_repr"
+
+let merge_events ev ev' =
+  let (maj, min) =
+    match ev.ev_kind, ev'.ev_kind with
+    (* Discard pseudo-events *)    
+      Event_pseudo,  _                              -> ev', ev
+    | _,             Event_pseudo                   -> ev,  ev'
+    (* Keep following event, supposedly more informative *)
+    | Event_before,  (Event_after _ | Event_before) -> ev',  ev
+    (* Discard following events, supposedly less informative *)
+    | Event_after _, (Event_after _ | Event_before) -> ev, ev'
+  in
+  copy_event maj maj.ev_kind (merge_infos maj min) (merge_repr maj min)
+
+let weaken_event ev cont =
+  match ev.ev_kind with
+    Event_after _ ->
+      begin match cont with
+        Kpush :: Kevent ({ev_repr = Event_none} as ev') :: c ->
+          begin match ev.ev_info with
+            Event_return _ ->
+              (* Weaken event *)
+              let repr = ref 1 in
+              let ev =
+                copy_event ev Event_pseudo ev.ev_info (Event_parent repr)
+              and ev' =
+                copy_event ev' ev'.ev_kind ev'.ev_info (Event_child repr)
+              in
+              Kevent ev :: Kpush :: Kevent ev' :: c
+          | _ ->
+              (* Only keep following event, equivalent *)
+              cont
+          end
+      | _ ->
+          Kevent ev :: cont
+      end
+  | _ ->
+      Kevent ev :: cont
+  
+let add_event ev =
+  function
+    Kevent ev' :: cont -> weaken_event (merge_events ev ev') cont
+  | cont               -> weaken_event ev cont
+
 (**** Compilation of a lambda expression ****)
 
 (* The label to which Lstaticfail branches, and the stack size at that point.*)
@@ -393,11 +462,12 @@ let rec comp_expr env exp sz cont =
         fatal_error "Bytegen.comp_expr: assign"
       end
   | Levent(lam, lev) ->
-      let event kind =
+      let event kind info =
         { ev_pos = 0;                   (* patched in emitcode *)
           ev_module = !compunit_name;
           ev_char = lev.lev_loc;
           ev_kind = kind;
+          ev_info = info;
           ev_typenv = lev.lev_env;
           ev_compenv = env;
           ev_stacksize = sz;
@@ -418,49 +488,24 @@ let rec comp_expr env exp sz cont =
       begin match lev.lev_kind with
         Lev_before ->
           let c = comp_expr env lam sz cont in
-          let ev = event Event_before in
-          begin match c with
-            (* Keep following event, supposedly more informative *)
-            Kevent ev' :: _ -> ev'.ev_repr <- ev.ev_repr; c
-          | _               -> Kevent ev :: c
-          end
+          let ev = event Event_before Event_other in
+          add_event ev c
       | Lev_function ->
           let c = comp_expr env lam sz cont in
-          begin match c with
-            (* Only keep following event (its a real one) *)
-            Kevent ev' :: _ -> ev'.ev_repr <- Event_none; c
-          | _               -> Kevent (event Event_function) :: c
-          end
+          let ev = event Event_pseudo Event_function in
+          add_event ev c
+      | Lev_after _ when is_tailcall cont -> (* don't destroy tail call opt *)
+          comp_expr env lam sz cont
       | Lev_after ty ->
-          if is_tailcall cont then      (* don't destroy tail call opt *)
-            comp_expr env lam sz cont
-          else begin
-            let nargs =
-              match lam with
-                Lapply(_, args)   -> List.length args
-              | Lsend(_, _, args) -> List.length args + 1
-              | _                 -> -1
-            in
-            let cont1 =
-              match cont with
-              (* Discard following events, supposedly less informative *)
-                Kevent _ :: c ->
-                  Kevent (event (Event_after (ty, nargs))) :: c
-              (* Weaken event *)
-              | Kpush :: Kevent ev' :: _ when nargs >= 0 ->
-                  let repr = ref 1 in
-                  let ev = event (Event_return nargs) in
-                  ev.ev_repr <- Event_parent repr;
-                  ev'.ev_repr <- Event_child repr;
-                  Kevent ev :: cont
-              (* Only keep following event, equivalent *)
-              | Kpush :: Kevent _ :: _ ->
-                  cont
-              | _  ->
-                  Kevent (event (Event_after (ty, nargs))):: cont
-            in
-            comp_expr env lam sz cont1
-          end
+          let info =
+            match lam with
+              Lapply(_, args)   -> Event_return (List.length args)
+            | Lsend(_, _, args) -> Event_return (List.length args + 1)
+            | _                 -> Event_other
+          in
+          let ev = event (Event_after ty) info in
+          let cont1 = add_event ev cont in
+          comp_expr env lam sz cont1
       end
 
 (* Compile a list of arguments [e1; ...; eN] to a primitive operation.

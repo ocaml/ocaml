@@ -867,17 +867,21 @@ let info_events lexbuf =
     print_endline ("Module : " ^ mdle);
     print_endline "   Address  Character      Kind      Repr.";
     List.iter
-      (fun {ev_pos = pc; ev_char = char; ev_kind = kind; ev_repr = repr} ->
+      (function ev ->
          Printf.printf
-           "%10d %10d  %8s %10s\n"
-           pc
-           char
-           (match kind with
+           "%10d %10d  %10s %10s\n"
+           ev.ev_pos
+           ev.ev_char
+           ((match ev.ev_kind with
                Event_before   -> "before"
              | Event_after _  -> "after"
-             | Event_function -> "function"
-             | Event_return _ -> "return")
-           (match repr with
+             | Event_pseudo   -> "pseudo")
+            ^
+            (match ev.ev_info with
+               Event_function -> "/fun"
+             | Event_return _ -> "/ret"
+             | Event_other    -> ""))
+           (match ev.ev_repr with
               Event_none        -> ""
             | Event_parent _    -> "(repr)"
             | Event_child repr  -> string_of_int !repr))
