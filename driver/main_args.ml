@@ -15,6 +15,7 @@ module Make_options (F :
    sig
      val _a : unit -> unit
      val _c : unit -> unit
+     val _cc : string -> unit
      val _cclib : string -> unit
      val _ccopt : string -> unit
      val _custom : unit -> unit
@@ -47,6 +48,8 @@ struct
   let list = [
     "-a", Arg.Unit F._a, " Build a library";
     "-c", Arg.Unit F._c, " Compile only (do not link)";
+    "-cc", Arg.String F._cc,
+           "<comp>  Use <comp> as the C compiler and linker";
     "-cclib", Arg.String F._cclib, "<opt>  Pass option <opt> to the C linker";
     "-ccopt", Arg.String F._ccopt,
                       "<opt>  Pass option <opt> to the C compiler and linker";

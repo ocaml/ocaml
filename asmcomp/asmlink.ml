@@ -185,7 +185,7 @@ let call_linker file_list startup_file =
       "win32" ->
         if not !Clflags.output_c_object then
           Printf.sprintf "%s /Fe%s -I%s %s %s %s %s %s %s"
-            Config.native_c_compiler
+            !Clflags.c_compiler
             !Clflags.exec_name
             Config.standard_library
             (String.concat " " (List.rev !Clflags.ccopts))
@@ -203,7 +203,7 @@ let call_linker file_list startup_file =
     | _ ->
         if not !Clflags.output_c_object then
           Printf.sprintf "%s %s -o %s -I%s %s %s %s -L%s %s %s %s"
-            Config.native_c_compiler
+            !Clflags.c_compiler
             (if !Clflags.gprofile then "-pg" else "")
             !Clflags.exec_name
             Config.standard_library

@@ -52,11 +52,14 @@ let print_version_number () =
 let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
 
 let main () =
+  c_compiler := Config.native_c_compiler;
   try
     native_code := true;
     Arg.parse [
        "-a", Arg.Set make_archive, " Build a library";
        "-c", Arg.Set compile_only, " Compile only (do not link)";
+       "-cc", Arg.String(fun s -> c_compiler := s),
+             "<comp>  Use <comp> as the C compiler and linker";
        "-cclib", Arg.String(fun s -> ccobjs := s :: !ccobjs),
              "<opt>  Pass option <opt> to the C linker";
        "-ccopt", Arg.String(fun s -> ccopts := s :: !ccopts),

@@ -32,6 +32,7 @@ let incompatible o =
 module Options = Main_args.Make_options (struct
   let _a () = make_archive := true; option "-a" ()
   let _c = option "-c"
+  let _cc s = option_with_arg "-cc" s
   let _cclib s = option_with_arg "-cclib" s
   let _ccopt s = option_with_arg "-ccopt" s
   let _custom = option "-custom"

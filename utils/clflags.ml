@@ -38,7 +38,7 @@ and use_prims = ref ""                  (* -use_prims ... *)
 and use_runtime = ref ""                (* -use_runtime ... *)
 and make_runtime = ref false            (* -make_runtime *)
 and gprofile = ref false                (* -p *)
-
+and c_compiler = ref Config.bytecomp_c_compiler (* -cc *)
 let dump_rawlambda = ref false          (* -drawlambda *)
 and dump_lambda = ref false             (* -dlambda *)
 and dump_instr = ref false              (* -dinstr *)

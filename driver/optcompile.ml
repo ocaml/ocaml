@@ -134,4 +134,4 @@ let implementation sourcefile =
   remove_preprocessed inputfile
 
 let c_file name =
-  if Ccomp.compile_file_native name <> 0 then exit 2
+  if Ccomp.compile_file name <> 0 then exit 2

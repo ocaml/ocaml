@@ -372,7 +372,7 @@ let build_custom_runtime prim_name exec_name =
       Ccomp.command
        (Printf.sprintf
           "%s -o %s -I%s %s %s -L%s %s %s %s"
-          Config.bytecomp_c_compiler
+          !Clflags.c_compiler
           exec_name
           Config.standard_library
           (String.concat " " (List.rev !Clflags.ccopts))
@@ -385,7 +385,7 @@ let build_custom_runtime prim_name exec_name =
       Ccomp.command
        (Printf.sprintf
           "%s /Fe%s -I%s %s %s %s %s %s"
-          Config.bytecomp_c_compiler
+          !Clflags.c_compiler
           exec_name
           Config.standard_library
           (String.concat " " (List.rev !Clflags.ccopts))
@@ -508,7 +508,7 @@ let link objfiles =
     if Sys.file_exists c_file then raise(Error(File_exists c_file));
     try
       link_bytecode_as_c objfiles c_file;
-      if Ccomp.compile_file_bytecode c_file <> 0
+      if Ccomp.compile_file c_file <> 0
       then raise(Error Custom_runtime);
       remove_file c_file
     with x ->
