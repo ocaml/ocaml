@@ -220,7 +220,6 @@ ctyp_f.val :=
        (fun curr next t k ->
           match t with
           [ <:ctyp< $t1$ $t2$ >> -> [: curr t1 [: :]; `next t2 k :]
-          | MLast.TyXnd _ c t -> [: `S LR ("Xnd_" ^ c); `next t k :]
           | t -> [: `next t k :] ]);
      level (fun _ x -> HOVbox x)
        (fun curr next t k ->
@@ -277,7 +276,7 @@ ctyp_f.val :=
           | <:ctyp< $_$ -> $_$ >> | <:ctyp< $_$ $_$ >> |
             <:ctyp< $_$ == $_$ >> | <:ctyp< $_$ . $_$ >> |
             <:ctyp< $_$ as $_$ >> | <:ctyp< ? $_$ : $_$ >> |
-            <:ctyp< ~ $_$ : $_$ >> | MLast.TyXnd _ _ _ ->
+            <:ctyp< ~ $_$ : $_$ >> ->
               [: `S LO "("; `ctyp t [: `HVbox [: `S RO ")"; k :] :] :]
           | MLast.TyCls _ id -> [: `S LO "#"; `class_longident id k :]
           | MLast.TyObj _ [] False -> [: `S LR "<>"; k :]
@@ -327,8 +326,7 @@ value rec get_defined_ident =
   | <:patt< ~ $_$ : $p$ >> -> get_defined_ident p
   | <:patt< ? $_$ : $p$ >> -> get_defined_ident p
   | <:patt< ? $_$ : ($p$ = $e$) >> -> get_defined_ident p
-  | MLast.PaAnt _ p -> get_defined_ident p
-  | MLast.PaXnd _ _ p -> get_defined_ident p ]
+  | MLast.PaAnt _ p -> get_defined_ident p ]
 ;
 
 value un_irrefut_patt p =
@@ -1191,8 +1189,6 @@ pr_expr.pr_levels :=
           fun curr next _ k -> [: curr x "" [: :]; `next y "" k :]
       | MLast.ExNew _ sl ->
           fun curr next _ k -> [: `S LR "new"; `class_longident sl k :]
-      | MLast.ExXnd _ c e ->
-          fun curr next _ k -> [: `S LR ("Xnd_" ^ c); `next e "" k :]
       | e -> fun curr next _ k -> [: `next e "" k :] ]};
    {pr_label = "dot"; pr_box _ x = HOVbox x;
     pr_rules =
@@ -1299,8 +1295,7 @@ pr_expr.pr_levels :=
         <:expr< if $_$ then $_$ else $_$ >> | <:expr< do { $list:_$ } >> |
         <:expr< for $_$ = $_$ $to:_$ $_$ do { $list:_$ } >> |
         <:expr< while $_$ do { $list:_$ } >> |
-        <:expr< let $rec:_$ $list:_$ in $_$ >> | MLast.ExNew _ _ |
-        MLast.ExXnd _ _ _ as e ->
+        <:expr< let $rec:_$ $list:_$ in $_$ >> | MLast.ExNew _ _ as e ->
           fun curr next _ k ->
             [: `S LO "("; `expr e [: `HVbox [: `S RO ")"; k :] :] :]
       | e -> fun curr next _ k -> [: `next e "" k :] ]}];
@@ -1325,8 +1320,6 @@ pr_patt.pr_levels :=
           fun curr next _ k -> [: `next p "" k :]
       | <:patt< $x$ $y$ >> ->
           fun curr next _ k -> [: curr x "" [: :]; `next y "" k :]
-      | MLast.PaXnd _ c p ->
-          fun curr next _ k -> [: `S LR ("Xnd_" ^ c); `next p "" k :]
       | p -> fun curr next _ k -> [: `next p "" k :] ]};
    {pr_label = ""; pr_box _ x = HOVbox x;
     pr_rules =
@@ -1415,8 +1408,8 @@ pr_patt.pr_levels :=
             [: `S LO ("?" ^ i ^ ":"); `S LO "("; `patt p [: `S LR "=" :];
                `expr e [: `S RO ")"; k :] :]
       | <:patt< _ >> -> fun curr next _ k -> [: `S LR "_"; k :]
-      | <:patt< $_$ $_$ >> | <:patt< $_$ .. $_$ >> | <:patt< $_$ | $_$ >> |
-        MLast.PaXnd _ _ _ as p ->
+      | <:patt< $_$ $_$ >> | <:patt< $_$ .. $_$ >>
+      | <:patt< $_$ | $_$ >> as p ->
           fun curr next _ k ->
             [: `S LO "("; `patt p [: `HVbox [: `S RO ")"; k :] :] :]
       | p -> fun curr next _ k -> [: `next p "" k :] ]}];

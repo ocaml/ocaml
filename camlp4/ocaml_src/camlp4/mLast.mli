@@ -34,7 +34,6 @@ type ctyp =
   | TyTup of loc * ctyp list
   | TyUid of loc * string
   | TyVrn of loc * row_field list * string list option option
-  | TyXnd of loc * string * ctyp
 and row_field = RfTag of string * bool * ctyp list | RfInh of ctyp
 ;;
 
@@ -68,7 +67,6 @@ type patt =
   | PaTyp of loc * string list
   | PaUid of loc * string
   | PaVrn of loc * string
-  | PaXnd of loc * string * patt
 and expr =
     ExAcc of loc * expr * expr
   | ExAnt of loc * expr
@@ -102,7 +100,6 @@ and expr =
   | ExUid of loc * string
   | ExVrn of loc * string
   | ExWhi of loc * expr * expr list
-  | ExXnd of loc * string * expr
 and module_type =
     MtAcc of loc * module_type * module_type
   | MtApp of loc * module_type * module_type
@@ -154,7 +151,6 @@ and class_type =
     CtCon of loc * string list * ctyp list
   | CtFun of loc * ctyp * class_type
   | CtSig of loc * ctyp option * class_sig_item list
-  | CtXnd of loc * string * class_type
 and class_sig_item =
     CgCtr of loc * ctyp * ctyp
   | CgDcl of loc * class_sig_item list
@@ -169,7 +165,6 @@ and class_expr =
   | CeLet of loc * bool * (patt * expr) list * class_expr
   | CeStr of loc * patt option * class_str_item list
   | CeTyc of loc * class_expr * class_type
-  | CeXnd of loc * string * class_expr
 and class_str_item =
     CrCtr of loc * ctyp * ctyp
   | CrDcl of loc * class_str_item list

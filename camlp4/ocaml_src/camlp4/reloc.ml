@@ -44,7 +44,6 @@ let rec ctyp floc sh =
     | TyUid (loc, x1) -> TyUid (floc loc, x1)
     | TyVrn (loc, x1, x2) ->
         TyVrn (floc loc, List.map (row_field floc sh) x1, x2)
-    | TyXnd (loc, x1, x2) -> TyXnd (floc loc, x1, self x2)
   in
   self
 and row_field floc sh =
@@ -86,7 +85,6 @@ let rec patt floc sh =
     | PaTyp (loc, x1) -> PaTyp (floc loc, x1)
     | PaUid (loc, x1) -> PaUid (floc loc, x1)
     | PaVrn (loc, x1) -> PaVrn (floc loc, x1)
-    | PaXnd (loc, x1, x2) -> PaXnd (floc loc, x1, self x2)
   in
   self
 and expr floc sh =
@@ -154,7 +152,6 @@ and expr floc sh =
     | ExUid (loc, x1) -> ExUid (floc loc, x1)
     | ExVrn (loc, x1) -> ExVrn (floc loc, x1)
     | ExWhi (loc, x1, x2) -> ExWhi (floc loc, self x1, List.map self x2)
-    | ExXnd (loc, x1, x2) -> ExXnd (floc loc, x1, self x2)
   in
   self
 and module_type floc sh =
@@ -256,7 +253,6 @@ and class_type floc sh =
         CtSig
           (floc loc, option_map (ctyp floc sh) x1,
            List.map (class_sig_item floc sh) x2)
-    | CtXnd (loc, x1, x2) -> CtXnd (floc loc, x1, self x2)
   in
   self
 and class_sig_item floc sh =
@@ -289,7 +285,6 @@ and class_expr floc sh =
           (floc loc, option_map (patt floc sh) x1,
            List.map (class_str_item floc sh) x2)
     | CeTyc (loc, x1, x2) -> CeTyc (floc loc, self x1, class_type floc sh x2)
-    | CeXnd (loc, x1, x2) -> CeXnd (floc loc, x1, self x2)
   in
   self
 and class_str_item floc sh =

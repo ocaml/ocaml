@@ -43,8 +43,8 @@ value rec ctyp floc sh =
           (List.map (fun (x1, x2) -> (x1, List.map self x2)) x1)
     | TyTup loc x1 -> TyTup (floc loc) (List.map self x1)
     | TyUid loc x1 -> TyUid (floc loc) x1
-    | TyVrn loc x1 x2 -> TyVrn (floc loc) (List.map (row_field floc sh) x1) x2
-    | TyXnd loc x1 x2 -> TyXnd (floc loc) x1 (self x2) ]
+    | TyVrn loc x1 x2 ->
+        TyVrn (floc loc) (List.map (row_field floc sh) x1) x2 ]
 and row_field floc sh =
   fun
   [ RfTag x1 x2 x3 -> RfTag x1 x2 (List.map (ctyp floc sh) x3)
@@ -85,8 +85,7 @@ value rec patt floc sh =
     | PaTyc loc x1 x2 -> PaTyc (floc loc) (self x1) (ctyp floc sh x2)
     | PaTyp loc x1 -> PaTyp (floc loc) x1
     | PaUid loc x1 -> PaUid (floc loc) x1
-    | PaVrn loc x1 -> PaVrn (floc loc) x1
-    | PaXnd loc x1 x2 -> PaXnd (floc loc) x1 (self x2) ]
+    | PaVrn loc x1 -> PaVrn (floc loc) x1 ]
 and expr floc sh =
   self where rec self =
     fun
@@ -147,8 +146,7 @@ and expr floc sh =
     | ExTyc loc x1 x2 -> ExTyc (floc loc) (self x1) (ctyp floc sh x2)
     | ExUid loc x1 -> ExUid (floc loc) x1
     | ExVrn loc x1 -> ExVrn (floc loc) x1
-    | ExWhi loc x1 x2 -> ExWhi (floc loc) (self x1) (List.map self x2)
-    | ExXnd loc x1 x2 -> ExXnd (floc loc) x1 (self x2) ]
+    | ExWhi loc x1 x2 -> ExWhi (floc loc) (self x1) (List.map self x2) ]
 and module_type floc sh =
   self where rec self =
     fun
@@ -233,8 +231,7 @@ and class_type floc sh =
     | CtFun loc x1 x2 -> CtFun (floc loc) (ctyp floc sh x1) (self x2)
     | CtSig loc x1 x2 ->
         CtSig (floc loc) (option_map (ctyp floc sh) x1)
-          (List.map (class_sig_item floc sh) x2)
-    | CtXnd loc x1 x2 -> CtXnd (floc loc) x1 (self x2) ]
+          (List.map (class_sig_item floc sh) x2) ]
 and class_sig_item floc sh =
   self where rec self =
     fun
@@ -258,8 +255,7 @@ and class_expr floc sh =
     | CeStr loc x1 x2 ->
         CeStr (floc loc) (option_map (patt floc sh) x1)
           (List.map (class_str_item floc sh) x2)
-    | CeTyc loc x1 x2 -> CeTyc (floc loc) (self x1) (class_type floc sh x2)
-    | CeXnd loc x1 x2 -> CeXnd (floc loc) x1 (self x2) ]
+    | CeTyc loc x1 x2 -> CeTyc (floc loc) (self x1) (class_type floc sh x2) ]
 and class_str_item floc sh =
   self where rec self =
     fun

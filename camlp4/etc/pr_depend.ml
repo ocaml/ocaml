@@ -52,7 +52,6 @@ value rec ctyp =
   | TySum _ cdl -> list constr_decl cdl
   | TyTup _ tl -> list ctyp tl
   | TyVrn _ sbtll _ -> list variant sbtll
-  | TyXnd _ _ t -> ctyp t
   | x -> not_impl "ctyp" x ]
 and constr_decl (_, tl) = list ctyp tl
 and label_decl (_, _, t) = ctyp t
@@ -88,7 +87,6 @@ value rec patt =
   | PaTyc _ p t -> do { patt p; ctyp t; }
   | PaUid _ _ -> ()
   | PaVrn _ _ -> ()
-  | PaXnd _ _ p -> patt p
   | x -> not_impl "patt" x ]
 and patt_module =
   fun
@@ -129,7 +127,6 @@ value rec expr =
   | ExUid _ _ -> ()
   | ExVrn _ _ -> ()
   | ExWhi _ e el -> do { expr e; list expr el; }
-  | ExXnd _ _ e -> expr e
   | x -> not_impl "expr" x ]
 and expr_module =
   fun

@@ -33,8 +33,7 @@ type ctyp =
   | TySum of loc and list (string * list ctyp)
   | TyTup of loc and list ctyp
   | TyUid of loc and string
-  | TyVrn of loc and list row_field and option (option (list string))
-  | TyXnd of loc and string and ctyp ]
+  | TyVrn of loc and list row_field and option (option (list string)) ]
 and row_field =
   [ RfTag of string and bool and list ctyp
   | RfInh of ctyp ]
@@ -69,8 +68,7 @@ type patt =
   | PaTyc of loc and patt and ctyp
   | PaTyp of loc and list string
   | PaUid of loc and string
-  | PaVrn of loc and string
-  | PaXnd of loc and string and patt ]
+  | PaVrn of loc and string ]
 and expr =
   [ ExAcc of loc and expr and expr
   | ExAnt of loc and expr
@@ -103,8 +101,7 @@ and expr =
   | ExTyc of loc and expr and ctyp
   | ExUid of loc and string
   | ExVrn of loc and string
-  | ExWhi of loc and expr and list expr
-  | ExXnd of loc and string and expr ]
+  | ExWhi of loc and expr and list expr ]
 and module_type =
   [ MtAcc of loc and module_type and module_type
   | MtApp of loc and module_type and module_type
@@ -155,8 +152,7 @@ and type_decl =
 and class_type =
   [ CtCon of loc and list string and list ctyp
   | CtFun of loc and ctyp and class_type
-  | CtSig of loc and option ctyp and list class_sig_item
-  | CtXnd of loc and string and class_type ]
+  | CtSig of loc and option ctyp and list class_sig_item ]
 and class_sig_item =
   [ CgCtr of loc and ctyp and ctyp
   | CgDcl of loc and list class_sig_item
@@ -170,8 +166,7 @@ and class_expr =
   | CeFun of loc and patt and class_expr
   | CeLet of loc and bool and list (patt * expr) and class_expr
   | CeStr of loc and option patt and list class_str_item
-  | CeTyc of loc and class_expr and class_type
-  | CeXnd of loc and string and class_expr ]
+  | CeTyc of loc and class_expr and class_type ]
 and class_str_item =
   [ CrCtr of loc and ctyp and ctyp
   | CrDcl of loc and list class_str_item

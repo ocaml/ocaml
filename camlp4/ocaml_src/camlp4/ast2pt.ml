@@ -171,8 +171,6 @@ let rec ctyp =
         | Some (Some sl) -> true, Some sl
       in
       mktyp loc (Ptyp_variant (catl, clos, sl))
-  | TyXnd (loc, c, _) ->
-      error loc ("type \"" ^ c ^ "\" (extension) not allowed here")
 and meth_list loc fl v =
   match fl with
     [] -> if v then [mkfield loc Pfield_var] else []
@@ -385,8 +383,6 @@ let rec patt =
       let ca = not !no_constructors_arity in
       mkpat loc (Ppat_construct (lident (conv_con s), None, ca))
   | PaVrn (loc, s) -> mkpat loc (Ppat_variant (s, None))
-  | PaXnd (loc, c, _) ->
-      error loc ("pattern \"" ^ c ^ "\" (extension) not allowed here")
 and mklabpat (lab, p) = patt_label_long_id lab, patt p;;
 
 let rec expr_fa al =
@@ -561,8 +557,6 @@ let rec expr =
   | ExVrn (loc, s) -> mkexp loc (Pexp_variant (s, None))
   | ExWhi (loc, e1, el) ->
       let e2 = ExSeq (loc, el) in mkexp loc (Pexp_while (expr e1, expr e2))
-  | ExXnd (loc, c, _) ->
-      error loc ("expression \"" ^ c ^ "\" (extension) not allowed here")
 and label_expr =
   function
     ExLab (loc, lab, e) -> lab, expr e
@@ -668,8 +662,6 @@ and class_type =
       in
       let cil = List.fold_right class_sig_item ctfl [] in
       mkcty loc (Pcty_signature (ctyp t, cil))
-  | CtXnd (loc, c, _) ->
-      error loc ("class type \"" ^ c ^ "\" (extension) not allowed here")
 and class_sig_item c l =
   match c with
     CgCtr (loc, t1, t2) -> Pctf_cstr (ctyp t1, ctyp t2, mkloc loc) :: l
@@ -710,9 +702,6 @@ and class_expr =
       mkpcl loc (Pcl_structure (patt p, cil))
   | CeTyc (loc, ce, ct) ->
       mkpcl loc (Pcl_constraint (class_expr ce, class_type ct))
-  | CeXnd (loc, c, _) ->
-      error loc
-        ("class expression \"" ^ c ^ "\" (extension) not allowed here")
 and class_str_item c l =
   match c with
     CrCtr (loc, t1, t2) -> Pcf_cstr (ctyp t1, ctyp t2, mkloc loc) :: l

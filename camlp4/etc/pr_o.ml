@@ -296,7 +296,6 @@ simple_ctyp_f.val :=
                      listws (fun x _ k -> HOVbox [: curr x "" k :]) (S RO ",")
                        tl "" [: `S RO ")" :];
                      curr t "" k :] ]
-          | MLast.TyXnd _ c t -> [: `next t "" [: :]; `S LR ("Xnd_" ^ c) :]
           | t -> [: `next t "" k :] ]);
      level (fun x -> HOVbox x)
        (fun curr next t _ k ->
@@ -341,8 +340,7 @@ simple_ctyp_f.val :=
           | <:ctyp< $_$ -> $_$ >> | <:ctyp< $_$ $_$ >> |
             <:ctyp< $_$ == $_$ >> | <:ctyp< $_$ . $_$ >> |
             <:ctyp< ($list:_$) >> | <:ctyp< $_$ as $_$ >> |
-            <:ctyp< ~ $_$ : $_$ >> | <:ctyp< ? $_$ : $_$ >> |
-            MLast.TyXnd _ _ _ as t ->
+            <:ctyp< ~ $_$ : $_$ >> | <:ctyp< ? $_$ : $_$ >> as t ->
               [: `S LO "("; `ctyp t "" [: `HVbox [: `S RO ")"; k :] :] :]
           | MLast.TyCls _ id -> [: `S LO "#"; `class_longident id "" k :]
           | MLast.TyObj _ [] False -> [: `S LR "<>"; k :]
@@ -1306,8 +1304,6 @@ pr_expr.pr_levels :=
             | _ -> [: curr x "" [: :]; `next y "" k :] ]
       | MLast.ExNew _ sl ->
           fun curr next dg k -> [: `S LR "new"; `class_longident sl "" k :]
-      | MLast.ExXnd _ c e ->
-          fun curr next dg k -> [: `S LR ("Xnd_" ^ c); `next e "" k :]
       | e -> fun curr next dg k -> [: `next e dg k :] ]};
    {pr_label = "dot"; pr_box _ x = HOVbox x;
     pr_rules =
@@ -1430,8 +1426,8 @@ pr_expr.pr_levels :=
         <:expr< for $_$ = $_$ $to:_$ $_$ do { $list:_$ } >> |
         <:expr< while $_$ do { $list:_$ } >> | <:expr< ($list: _$) >> |
         <:expr< $_$ . $_$ >> | <:expr< $_$ . ( $_$ ) >> |
-        <:expr< $_$ . [ $_$ ] >> | <:expr< $_$ := $_$ >> | MLast.ExNew _ _ |
-        MLast.ExXnd _ _ _ as e ->
+        <:expr< $_$ . [ $_$ ] >> | <:expr< $_$ := $_$ >> |
+        MLast.ExNew _ _ as e ->
           fun curr next dg k ->
             [: `S LO "("; `expr e "" [: `HVbox [: `S RO ")"; k :] :] :]
       | e -> fun curr next dg k -> [: `next e "" k :] ]}];
@@ -1503,8 +1499,6 @@ pr_patt.pr_levels :=
                          listws (fun x _ k -> HOVbox [: curr x "" k :])
                            (S RO ",") al "" [: `S RO ")"; k :] :] :]
             | _ -> [: curr x "" [: :]; `next y "" k :] ]
-      | MLast.PaXnd _ c p ->
-          fun curr next dg k -> [: `S LR ("Xnd_" ^ c); `next p "" k :]
       | p -> fun curr next dg k -> [: `next p "" k :] ]};
    {pr_label = ""; pr_box _ x = HOVbox x;
     pr_rules =
@@ -1582,8 +1576,7 @@ pr_patt.pr_levels :=
                `expr e "" [: `S RO ")"; k :] :]
       | <:patt< _ >> -> fun curr next dg k -> [: `S LR "_"; k :]
       | <:patt< $_$ $_$ >> | <:patt< ($_$ as $_$) >> | <:patt< $_$ | $_$ >> |
-        <:patt< ($list:_$) >> | <:patt< $_$ .. $_$ >> |
-        MLast.PaXnd _ _ _ as p ->
+        <:patt< ($list:_$) >> | <:patt< $_$ .. $_$ >> as p ->
           fun curr next dg k ->
             [: `S LO "("; `patt p "" [: `HVbox [: `S RO ")"; k :] :] :]
       | p -> fun curr next dg k -> [: `next p "" k :] ]}];
