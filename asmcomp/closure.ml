@@ -265,13 +265,16 @@ let rec bind_params subst params args body =
       else Ulet(p1, a1, bind_params subst pl al body)
   | (_, _) -> assert false
 
-(* Check if a lambda term denoting a function is ``pure'',
+(* Check if a lambda term is ``pure'',
    that is without side-effects *and* not containing function definitions *)
 
 let rec is_pure = function
     Lvar v -> true
-  | Lprim(Pgetglobal id, _) -> true
-  | Lprim(Pfield n, [arg]) -> is_pure arg
+  | Lconst cst -> true
+  | Lprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ |
+           Pccall _ | Praise | Poffsetref _ | Pstringsetu | Pstringsets |
+           Parraysetu _ | Parraysets _), _) -> false
+  | Lprim(p, args) -> List.for_all is_pure args
   | _ -> false
 
 (* Generate a direct application *)
@@ -298,6 +301,14 @@ let strengthen_approx appl approx =
   match approx_ulam appl with
     Value_integer _ as intapprox -> intapprox
   | _ -> approx
+
+(* If a term has approximation Value_integer and is pure, replace it
+   by an integer constant *)
+
+let check_constant_result lam ulam approx =
+  match approx with
+    Value_integer n when is_pure lam -> make_const_int n
+  | _ -> (ulam, approx)
 
 (* Maintain the approximation of the global structure being defined *)
 
@@ -364,7 +375,7 @@ let rec close fenv cenv = function
         (Variable, _) ->
           let (ubody, abody) = close fenv cenv body in
           (Ulet(id, ulam, ubody), abody)
-      | (_, Value_integer n) ->
+      | (_, Value_integer n) when str = Alias || is_pure lam ->
           close (Tbl.add id alam fenv) cenv body
       | (_, _) ->
           let (ubody, abody) = close (Tbl.add id alam fenv) cenv body in
@@ -401,11 +412,9 @@ let rec close fenv cenv = function
         let (ubody, approx) = close fenv_body cenv body in
         (Uletrec(udefs, ubody), approx)
       end
-  | Lprim(Pgetglobal id, []) ->
-      begin match Compilenv.global_approx id with
-        Value_integer n -> make_const_int n
-      | app -> (Uprim(Pgetglobal id, []), app)
-      end
+  | Lprim(Pgetglobal id, []) as lam ->
+      check_constant_result lam
+          (Uprim(Pgetglobal id, [])) (Compilenv.global_approx id)
   | Lprim(Pmakeblock(tag, mut) as prim, lams) ->
       let (ulams, approxs) = List.split (List.map (close fenv cenv) lams) in
       (Uprim(prim, ulams),
@@ -419,7 +428,7 @@ let rec close fenv cenv = function
         match approx with
           Value_tuple a when n < Array.length a -> a.(n)
         | _ -> Value_unknown in
-      (Uprim(Pfield n, [ulam]), fieldapprox)
+      check_constant_result lam (Uprim(Pfield n, [ulam])) fieldapprox
   | Lprim(Psetfield(n, _), [Lprim(Pgetglobal id, []); lam]) ->
       let (ulam, approx) = close fenv cenv lam in
       (!global_approx).(n) <- approx;
