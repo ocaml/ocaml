@@ -290,7 +290,7 @@ module Make(Ord: OrderedType) =
     let rec fold f s accu =
       match s with
         Empty -> accu
-      | Node(l, v, r, _) -> fold f l (f v (fold f r accu))
+      | Node(l, v, r, _) -> fold f r (f v (fold f l accu))
 
     let rec for_all p = function
         Empty -> true
