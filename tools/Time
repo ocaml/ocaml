@@ -7,6 +7,4 @@ set startdate `date -n`
 {parameters}
 set enddate `date -n`
 
-echo -n '# Time: ' >dev:stderr
-echo "`evaluate ( {enddate} - {startdate} ) Ö 60`mn" ¶
-     "`evaluate ( {enddate} - {startdate} ) % 60`s" > dev:stderr
+echo "# Time: `evaluate {enddate} - {startdate}` s" > dev:stderr
