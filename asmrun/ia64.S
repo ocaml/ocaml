@@ -315,9 +315,13 @@ caml_start_program:
         /* Save ar.bsp, flush register window, and save ar.rnat */
         mov     r2 = ar.bsp ;;
         STOREGLOBAL(r2, caml_saved_bsp#) ;;
-        flushrs ;;              /* must be first instr in group */
+        mov     r14 = ar.rsc ;;
+        and     r2 = ~0x3, r14;;        /* set rsc.mode = 0 */
+	mov	ar.rsc = r2 ;;		/* RSE is in enforced lazy mode */
+        flushrs ;;                      /* must be first instr in group */
         mov     r2 = ar.rnat ;;
         STOREGLOBAL(r2, caml_saved_rnat#)
+	mov	ar.rsc = r14		/* restore original RSE mode */
 
         /* Reload allocation pointers */
         LOADGLOBAL(r4, young_ptr#)
@@ -355,28 +359,28 @@ caml_start_program:
 
         /* Restore all callee-save registers from stack */
         add     r2 = 16, sp ;;
-	LD8OFF(r2, r3, 8) ;;    /* 0 : ar.pfs */
+	LD8OFF(r3, r2, 8) ;;    /* 0 : ar.pfs */
         mov     ar.pfs = r3
-        LD8OFF(r2, r3, 8) ;;    /* 1 : return address */
+        LD8OFF(r3, r2, 8) ;;    /* 1 : return address */
         mov     b0 = r3
-        LD8OFF(r2, gp, 8) ;;    /* 2 : gp */
-        LD8OFF(r2, r3, 8) ;;    /* 3 : predicates */
-        mov     r3 = pr
-        LD8OFF(r2, r3, 8) ;;    /* 4 : ar.fpsr */
+        LD8OFF(gp, r2, 8) ;;    /* 2 : gp */
+        LD8OFF(r3, r2, 8) ;;    /* 3 : predicates */
+        mov     pr = r3, -1
+        LD8OFF(r3, r2, 8) ;;    /* 4 : ar.fpsr */
         mov     ar.fpsr = r3
-        LD8OFF(r2, r3, 8) ;;    /* 5 : ar.unat */
+        LD8OFF(r3, r2, 8) ;;    /* 5 : ar.unat */
         mov     ar.unat = r3
-        LD8OFF(r2, r3, 8) ;;    /* 6 : ar.lc */
+        LD8OFF(r3, r2, 8) ;;    /* 6 : ar.lc */
         mov     ar.lc = r3
-        LD8OFF(r2, r3, 8) ;;    /* 7 - 11 : b1 - b5 */
+        LD8OFF(r3, r2, 8) ;;    /* 7 - 11 : b1 - b5 */
         mov     b1 = r3
-        LD8OFF(r2, r3, 8) ;;
+        LD8OFF(r3, r2, 8) ;;
         mov     b2 = r3
-        LD8OFF(r2, r3, 8) ;;
+        LD8OFF(r3, r2, 8) ;;
         mov     b3 = r3
-        LD8OFF(r2, r3, 8) ;;
+        LD8OFF(r3, r2, 8) ;;
         mov     b4 = r3
-        LD8OFF(r2, r3, 8) ;;
+        LD8OFF(r3, r2, 8) ;;
         mov     b5 = r3
 
         add     r3 = 8, r2 ;;
@@ -420,8 +424,8 @@ raise_caml_exception:
         /* Perform "context switch" as per the Software Conventions Guide,
            chapter 10 */
         flushrs ;;                      /* flush dirty registers to stack */
-        mov     r4 = ar.rsc ;;
-        and     r2 = ~0x3, r4;;         /* set rsc.mode = 0 */
+        mov     r14 = ar.rsc ;;
+        and     r2 = ~0x3, r14;;        /* set rsc.mode = 0 */
         dep     r2 = r0, r2, 16, 4 ;;   /* clear rsc.loadrs */
         mov     ar.rsc = r2 ;;          /* RSE is in enforced lazy mode */
         invala ;;                       /* Invalidate ALAT */
@@ -429,7 +433,7 @@ raise_caml_exception:
         mov     ar.bspstore = r2        /* Restore ar.bspstore */
         LOADGLOBAL(r2, caml_saved_rnat#) ;;
         mov     ar.rnat = r2            /* Restore ar.rnat */
-        mov     ar.rsc = r4 ;;          /* Restore original RSE mode */
+        mov     ar.rsc = r14 ;;         /* Restore original RSE mode */
 
         /* Reload allocation pointers and exception pointer */
         LOADGLOBAL(r4, young_ptr#)
