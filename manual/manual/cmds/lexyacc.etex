@@ -58,6 +58,10 @@ Output code that does not use the Caml built-in automata
 interpreter. Instead, the automaton is encoded by Caml functions.
 This option is useful for debugging "ocamllex", using it for
 production lexers is not recommended.
+
+\item["-q"]
+Quiet mode.  "ocamllex" normally outputs informational messages
+to standard output.  They are suppressed if option "-q" is used.
 \end{options}
 
 \section{Syntax of lexer definitions}
