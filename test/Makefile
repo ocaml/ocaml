@@ -16,9 +16,7 @@ BYTE_EXE=fib.byt takc.byt taku.byt sieve.byt quicksort.byt quicksort.fast.byt \
 
 CODE_EXE=$(BYTE_EXE:.byt=.out)
 
-default:
-	$(MAKE) all
-	$(MAKE) codetest bytetest
+default: all codetest bytetest
 
 all: $(BYTE_EXE) $(CODE_EXE)
 
