@@ -11,24 +11,8 @@
 
 (* $Id$ *)
 
-type t = { mutable waiting: Thread.t list }
-
-let new () = { waiting = [] }
-
-let wait cond mut =
-  Thread.critical_section := true;
-  Mutex.unlock mut;
-  cond.waiting <- Thread.self() :: cond.waiting;
-  Thread.sleep();
-  Mutex.lock mut
-
-let signal cond =
-  match cond.waiting with               (* atomic *)
-    [] -> ()
-  | th :: rem -> cond.waiting <- rem (* atomic *); Thread.wakeup th
-
-let broadcast cond =
-  let w = cond.waiting in                  (* atomic *)
-  cond.waiting <- [];                      (* atomic *)
-  List.iter Thread.wakeup w
-
+type t
+external new: unit -> t = "csl_condition_new"
+external wait: t -> Mutex.t -> unit = "csl_condition_wait"
+external signal: t -> unit = "csl_condition_signal"
+external broadcast: t -> unit = "csl_condition_broadcast"

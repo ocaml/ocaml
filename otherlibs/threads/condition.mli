@@ -32,16 +32,16 @@
 
 type t
         (* The type of condition variables. *)
-val new: unit -> t
+external new: unit -> t = "csl_condition_new"
         (* Return a new condition variable. *)
-val wait: t -> Mutex.t -> unit
+external wait: t -> Mutex.t -> unit = "csl_condition_wait"
         (* [wait c m] atomically unlocks the mutex [m] and suspends the
            calling process on the condition variable [c]. The process will
            restart after the condition variable [c] has been signalled.
            The mutex [m] is locked again before [wait] returns. *)
-val signal: t -> unit
+external signal: t -> unit = "csl_condition_signal"
         (* [signal c] restarts one of the processes waiting on the 
            condition variable [c]. *)
-val broadcast: t -> unit
+external broadcast: t -> unit = "csl_condition_broadcast"
         (* [broadcast c] restarts all processes waiting on the 
            condition variable [c]. *)
