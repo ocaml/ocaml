@@ -170,10 +170,6 @@ module Analyser =
     (** This function merge two optional info structures. *)
     let merge_infos = Odoc_merge.merge_info_opt Odoc_types.all_merge_options 
 
-    (** This function takes a Parsetree.type_kind and returns the list of 
-       (name, optional comment) for the various fields/constructors of the type, 
-       or an empty list for an abstract type.
-       [pos_start] and [pos_end] are the first and last char of the complete type definition.*)
     let name_comment_from_type_kind pos_start pos_end pos_limit tk =
       match tk with
 	Parsetree.Ptype_abstract ->
@@ -241,8 +237,6 @@ module Analyser =
 	  in
 	  (0, f name_mutable_type_list)
 
-    (** This function converts a Types.type_kind into a Odoc_type.type_kind,
-       by associating the comment found in the parsetree of each constructor/field, if any.*)
     let get_type_kind env name_comment_list type_kind =
       match type_kind with
 	Types.Type_abstract ->
