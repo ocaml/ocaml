@@ -101,7 +101,7 @@ caml_call_gc:
 
         /* Save requested size and GP on stack */
         add     r3 = 16, sp
-        st8     [r3] = r2, 8
+        ST8OFF(r3, r2, 8)
         st8     [r3] = gp
 
         /* Record lowest stack address, return address, GC regs */
@@ -205,15 +205,15 @@ caml_c_call:
            code-generator registers to be preserved */
 
         /* Recover entry point from the function pointer in r2 */
-        ld8     r3 = [r2], 8
+        LD8OFF(r3, r2, 8)
         mov     b6 = r3
 
         /* Preserve gp in r7 */
         mov     r7 = gp
 
         /* Record lowest stack address and return address */
+	mov	r14 = b0
         STOREGLOBAL(sp, caml_bottom_of_stack#)
-        mov     r14 = b0
         STOREGLOBAL(r14, caml_last_return_address#)
 
         /* Make the exception handler and alloc ptr available to the C code */
@@ -230,7 +230,8 @@ caml_c_call:
         mov     gp = r7
 
         /* Reload alloc ptr and alloc limit */
-        LOADGLOBAL(r4, young_ptr#)
+        /* gas bug LOADGLOBAL(r4, young_ptr#) */
+        add r3 = @ltoff(young_ptr#), r7; ld8 r3 = [r3]; ld8 r4 = [r3]
         LOADGLOBAL(r5, young_limit#)
 
         /* Reload return address and say that we are back into Caml code */
@@ -377,7 +378,7 @@ caml_start_program:
 raise_caml_exception:
         /* Allocate 64 "out" registers (for the Caml code) and no locals */
         /* Since we don't return, don't bother saving the PFS */
-        alloc	r0 = ar.pfs, 0, 0, 64, 0
+        alloc	r2 = ar.pfs, 0, 0, 64, 0
 
         /* Move exn bucket where Caml expects it */
         mov     r8 = r32
@@ -396,7 +397,10 @@ raise_caml_exception:
         ld8     r6 = [r6]
         ld8     r2 = [r2]
         mov     b6 = r2
-        br      b6
+
+	/* Branch to handler.  Must use a call so as to set up the
+	   CFM and PFS correctly. */
+        br.call.sptk.many b0 = b6
 
         .endp   raise_caml_exception
 
