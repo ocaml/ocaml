@@ -231,6 +231,8 @@ static double timeofday()
 #define END_FOREACH(x) } while (x != curr_thread)
 static value alloc_process_status();
 
+extern int callback_depth;
+
 static value schedule_thread()
 {
   thread_t run_thread, th;
@@ -238,6 +240,12 @@ static value schedule_thread()
   double delay, now;
   int need_select, need_wait;
 
+  /* Don't allow preemption during a callback */
+  if (callback_depth > 0) {
+    if (curr_thread->status != RUNNABLE)
+      invalid_argument("Thread: deadlock in callback");
+    return curr_thread->retval;
+  }
   /* Save the status of the current thread */
   curr_thread->stack_low = stack_low;
   curr_thread->stack_high = stack_high;
