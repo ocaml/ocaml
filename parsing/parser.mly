@@ -39,30 +39,43 @@ let mkfield d =
 let mkoperator name pos =
   { pexp_desc = Pexp_ident(Lident name); pexp_loc = rhs_loc pos }
 
+(* Ghost expressions and patterns:
+    expressions and patterns added by the parser;
+    their location is an empty range of characters.
+    The profiler doesn't instrument such expressions.
+*)
+let ghexp d point =
+  { pexp_desc = d; pexp_loc = {loc_start = point; loc_end = point} }
+;;
+let ghpat d point =
+  { ppat_desc = d; ppat_loc = {loc_start = point; loc_end = point} }
+;;
+
 let mkassert e =
   let {loc_start = st; loc_end = en} = symbol_loc () in
-  let triple = mkexp (Pexp_tuple
-                       [mkexp (Pexp_constant (Const_string !input_name));
-                        mkexp (Pexp_constant (Const_int st));
-                        mkexp (Pexp_constant (Const_int en))]) in
+  let triple = ghexp (Pexp_tuple
+                       [ghexp (Pexp_constant (Const_string !input_name)) en;
+                        ghexp (Pexp_constant (Const_int st)) en;
+                        ghexp (Pexp_constant (Const_int en)) en]) en in
   let ex = Ldot (Lident "Pervasives", "Assert_failure") in
-  let bucket = mkexp (Pexp_construct (ex, Some triple, false)) in
+  let bucket = ghexp (Pexp_construct (ex, Some triple, false)) en in
   let ra = Ldot (Lident "Pervasives", "raise") in
-  let raiser = mkexp (Pexp_apply (mkexp (Pexp_ident ra), [bucket])) in
-  let un = mkexp (Pexp_construct (Lident "()", None, false)) in
+  let raiser = ghexp (Pexp_apply (ghexp (Pexp_ident ra) en, [bucket])) en in
+  let un = ghexp (Pexp_construct (Lident "()", None, false)) en in
   match e with
   | {pexp_desc = Pexp_construct (Lident "false", None, false) } -> raiser
   | _ -> if !Clflags.noassert
-         then un
+         then mkexp (Pexp_construct (Lident "()", None, false))
          else mkexp (Pexp_ifthenelse (e, un, Some raiser))
 ;;
 
 let mklazy e =
-  let void_pat = mkpat (Ppat_construct (Lident "()", None, false)) in
+  let {loc_start = st} = symbol_loc () in
+  let void_pat = ghpat (Ppat_construct (Lident "()", None, false)) st in
   let f = mkexp (Pexp_function ([void_pat, e])) in
   let delayed = Ldot (Lident "Lazy", "Delayed") in
   let df = mkexp (Pexp_construct (delayed, Some f, false)) in
-  let r = mkexp (Pexp_ident (Ldot (Lident "Pervasives", "ref"))) in
+  let r = ghexp (Pexp_ident (Ldot (Lident "Pervasives", "ref"))) st in
   mkexp (Pexp_apply (r, [df]))
 ;;
 
@@ -78,20 +91,27 @@ let mkuminus name arg =
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, [arg]))
 
-let rec mklistexp = function
+let rec mklistexp point = function
     [] ->
-      mkexp(Pexp_construct(Lident "[]", None, false))
+      ghexp(Pexp_construct(Lident "[]", None, false)) point
   | e1 :: el ->
-      mkexp(Pexp_construct(Lident "::",
-                           Some(mkexp(Pexp_tuple[e1; mklistexp el])),
-                           false))
-let rec mklistpat = function
+      let exp_el = mklistexp point el in
+      let l = {loc_start = e1.pexp_loc.loc_start;
+               loc_end = exp_el.pexp_loc.loc_end}
+      in
+      let arg = {pexp_desc = Pexp_tuple [e1; exp_el]; pexp_loc = l} in
+      {pexp_desc = Pexp_construct(Lident "::", Some arg, false); pexp_loc = l}
+
+let rec mklistpat point = function
     [] ->
-      mkpat(Ppat_construct(Lident "[]", None, false))
+      ghpat(Ppat_construct(Lident "[]", None, false)) point
   | p1 :: pl ->
-      mkpat(Ppat_construct(Lident "::",
-                           Some(mkpat(Ppat_tuple[p1; mklistpat pl])),
-                           false))
+      let pat_pl = mklistpat point pl in
+      let l = {loc_start = p1.ppat_loc.loc_start;
+               loc_end = pat_pl.ppat_loc.loc_end}
+      in
+      let arg = {ppat_desc = Ppat_tuple [p1; pat_pl]; ppat_loc = l} in
+      {ppat_desc = Ppat_construct(Lident "::", Some arg, false); ppat_loc = l}
 
 let mkstrexp e =
   { pstr_desc = Pstr_eval e; pstr_loc = e.pexp_loc }
@@ -546,7 +566,7 @@ simple_expr:
   | LBRACKETBAR BARRBRACKET
       { mkexp(Pexp_array []) }
   | LBRACKET expr_semi_list opt_semi RBRACKET
-      { mklistexp(List.rev $2) }
+      { mklistexp (rhs_loc 4).loc_end (List.rev $2) }
   | LBRACKET expr_semi_list opt_semi error
       { unclosed "[" 1 "]" 4 }
   | PREFIXOP simple_expr
@@ -562,8 +582,10 @@ simple_expr:
   | LBRACELESS GREATERRBRACE
       { mkexp(Pexp_override []) }
   | LPAREN SHARP label RPAREN
-      { mkexp(Pexp_function [mkpat(Ppat_var "x"),
-                mkexp(Pexp_send(mkexp(Pexp_ident (Lident"x")), $3))]) }
+      { let pt = (rhs_loc 2).loc_end in
+        mkexp(Pexp_function [ghpat(Ppat_var "x") pt,
+                ghexp(Pexp_send(ghexp(Pexp_ident (Lident"x")) pt, $3)) pt])
+      }
 ;
 simple_expr_list:
     simple_expr
@@ -709,7 +731,7 @@ simple_pattern:
   | LBRACE lbl_pattern_list opt_semi error
       { unclosed "{" 1 "}" 4 }
   | LBRACKET pattern_semi_list opt_semi RBRACKET
-      { mklistpat(List.rev $2) }
+      { mklistpat (rhs_loc 4).loc_end (List.rev $2) }
   | LBRACKET pattern_semi_list opt_semi error
       { unclosed "[" 1 "]" 4 }
   | LBRACKETBAR pattern_semi_list opt_semi BARRBRACKET
