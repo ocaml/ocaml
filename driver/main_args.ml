@@ -41,6 +41,7 @@ module Make_options (F :
      val _pp : string -> unit
      val _principal : unit -> unit
      val _rectypes : unit -> unit
+     val _stypes : unit -> unit
      val _thread : unit -> unit
      val _unsafe : unit -> unit
      val _use_prims : string -> unit
@@ -106,6 +107,7 @@ struct
     "-principal", Arg.Unit F._principal,
            " Check principality of type inference";
     "-rectypes", Arg.Unit F._rectypes, " Allow arbitrary recursive types";
+    "-stypes", Arg.Unit F._stypes, " Save types for use with caml-types.el";
     "-thread", Arg.Unit F._thread, " Use thread-safe standard library";
     "-unsafe", Arg.Unit F._unsafe,
            " No bounds checking on array and string access";

@@ -524,7 +524,10 @@ and simplify_signature sg =
 
 let type_implementation sourcefile prefixname modulename initial_env ast =
   Typecore.reset_delayed_checks ();
-  let (str, sg, finalenv) = type_structure initial_env ast in
+  let (str, sg, finalenv) =
+    Misc.try_finally (fun () -> type_structure initial_env ast)
+                     (fun () -> Stypes.dump (prefixname ^ ".types"))
+  in
   Typecore.force_delayed_checks ();
   if !Clflags.print_types then
     fprintf std_formatter "%a@." Printtyp.signature (simplify_signature sg);

@@ -19,6 +19,16 @@ exception Fatal_error
 let fatal_error msg =
   prerr_string ">> Fatal error: "; prerr_endline msg; raise Fatal_error
 
+(* Exceptions *)
+
+let try_finally f1 f2 =
+  try
+    let result = f1 () in
+    f2 ();
+    result
+  with x -> f2 (); raise x
+;;
+
 (* List functions *)
 
 let rec map_end f l1 l2 =

@@ -112,8 +112,8 @@ startup.o: startup.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
 str.o: str.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
   mlvalues.h fail.h
 sys.o: sys.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
-  mlvalues.h debugger.h fail.h instruct.h signals.h stacks.h memory.h \
-  gc.h major_gc.h freelist.h minor_gc.h sys.h
+  mlvalues.h debugger.h fail.h instruct.h osdeps.h signals.h stacks.h \
+  memory.h gc.h major_gc.h freelist.h minor_gc.h sys.h
 terminfo.o: terminfo.c config.h ../config/m.h ../config/s.h alloc.h \
   misc.h mlvalues.h fail.h io.h
 unix.o: unix.c config.h ../config/m.h ../config/s.h memory.h gc.h \
@@ -237,8 +237,8 @@ startup.d.o: startup.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
 str.d.o: str.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
   mlvalues.h fail.h
 sys.d.o: sys.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
-  mlvalues.h debugger.h fail.h instruct.h signals.h stacks.h memory.h \
-  gc.h major_gc.h freelist.h minor_gc.h sys.h
+  mlvalues.h debugger.h fail.h instruct.h osdeps.h signals.h stacks.h \
+  memory.h gc.h major_gc.h freelist.h minor_gc.h sys.h
 terminfo.d.o: terminfo.c config.h ../config/m.h ../config/s.h alloc.h \
   misc.h mlvalues.h fail.h io.h
 unix.d.o: unix.c config.h ../config/m.h ../config/s.h memory.h gc.h \

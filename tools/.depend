@@ -33,6 +33,8 @@ ocamldep.cmx: ../utils/clflags.cmx ../utils/config.cmx depend.cmx \
     ../parsing/lexer.cmx ../parsing/location.cmx ../parsing/longident.cmx \
     ../utils/misc.cmx ../parsing/parse.cmx ../parsing/parsetree.cmi \
     ../parsing/syntaxerr.cmx 
+ocamlmktop.cmo: ../utils/ccomp.cmi 
+ocamlmktop.cmx: ../utils/ccomp.cmx 
 ocamlprof.cmo: ../utils/clflags.cmo ../utils/config.cmi ../parsing/lexer.cmi \
     ../parsing/location.cmi ../utils/misc.cmi ../parsing/parse.cmi \
     ../parsing/parsetree.cmi ../parsing/syntaxerr.cmi 

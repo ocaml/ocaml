@@ -1,10 +1,10 @@
 nat_stubs.o: nat_stubs.c ../../byterun/alloc.h ../../byterun/misc.h \
- ../../byterun/config.h ../../byterun/../config/m.h \
- ../../byterun/../config/s.h ../../byterun/mlvalues.h \
- ../../byterun/custom.h ../../byterun/intext.h ../../byterun/io.h \
- ../../byterun/fix_code.h ../../byterun/fail.h ../../byterun/memory.h \
- ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/freelist.h \
- ../../byterun/minor_gc.h nat.h bignum/h/BigNum.h bignum/h/BntoBnn.h
+  ../../byterun/config.h ../../config/m.h ../../config/s.h \
+  ../../byterun/mlvalues.h ../../byterun/custom.h ../../byterun/intext.h \
+  ../../byterun/io.h ../../byterun/fix_code.h ../../byterun/fail.h \
+  ../../byterun/memory.h ../../byterun/gc.h ../../byterun/major_gc.h \
+  ../../byterun/freelist.h ../../byterun/minor_gc.h nat.h \
+  bignum/h/BigNum.h bignum/h/BntoBnn.h
 big_int.cmi: nat.cmi 
 num.cmi: big_int.cmi nat.cmi ratio.cmi 
 ratio.cmi: big_int.cmi nat.cmi 
