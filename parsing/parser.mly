@@ -1309,8 +1309,7 @@ operator:
 ;
 constr_ident:
     UIDENT                                      { $1 }
-/* useless, and conflicts with variants
-  | LBRACKET RBRACKET                           { "[]" } */
+  | LBRACKET RBRACKET                           { "[]" }
   | LPAREN RPAREN                               { "()" }
   | COLONCOLON                                  { "::" }
   | FALSE                                       { "false" }
