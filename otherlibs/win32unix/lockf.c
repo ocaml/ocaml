@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <mlvalues.h>
+#include <fail.h>
 #include "unixsupport.h"
 #include <stdio.h>
 
@@ -82,12 +83,12 @@ CAMLprim value unix_lockf(value fd, value cmd, value span)
 	VersionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
 	if(GetVersionEx(&VersionInfo) == 0)
 		{
-		return invalid_argument("lockf only supported on WIN32_NT platforms: could not determine current platform.");
+		invalid_argument("lockf only supported on WIN32_NT platforms: could not determine current platform.");
 		}
 /* file locking only exists on NT versions */
 	if(VersionInfo.dwPlatformId != VER_PLATFORM_WIN32_NT)
 		{
-		return invalid_argument("lockf only supported on WIN32_NT platforms");
+		invalid_argument("lockf only supported on WIN32_NT platforms");
 		}
 
 	h = Handle_val(fd);

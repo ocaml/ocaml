@@ -425,8 +425,8 @@ let rec extract suffix l =
 ;;
 
 let build_custom_runtime prim_name exec_name =
-  match Sys.os_type with
-    "Unix" | "Cygwin" ->
+  match Config.ccomp_type with
+    "cc" ->
       Ccomp.command
        (Printf.sprintf
           "%s -o %s %s %s %s %s %s -lcamlrun %s"
@@ -440,7 +440,7 @@ let build_custom_runtime prim_name exec_name =
                       !load_path))
           (Ccomp.quote_files (List.rev !Clflags.ccobjs))
           Config.bytecomp_c_libraries)
-  | "Win32" ->
+  | "msvc" ->
       let retcode =
       Ccomp.command
        (Printf.sprintf
@@ -459,7 +459,7 @@ let build_custom_runtime prim_name exec_name =
       remove_file
         (Filename.chop_suffix (Filename.basename prim_name) ".c" ^ ".obj");
       retcode
-  | "MacOS" ->
+  | "mrc" ->
       let cppc = "mrc"
       and libsppc = "\"{sharedlibraries}MathLib\" \
                      \"{ppclibraries}PPCCRuntime.o\" \

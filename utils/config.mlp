@@ -25,6 +25,7 @@ let standard_library =
     "%%LIBDIR%%"
 
 let standard_runtime = "%%BYTERUN%%"
+let ccomp_type = "%%CCOMPTYPE%%"
 let bytecomp_c_compiler = "%%BYTECC%%"
 let bytecomp_c_linker = "%%BYTELINK%%"
 let bytecomp_c_libraries = "%%BYTECCLIBS%%"

@@ -12,14 +12,14 @@
 
 # $Id$
 
-!include ..\config\Makefile.nt
+include ../config/Makefile
 
-CAMLRUN=..\boot\ocamlrun
-CAMLC=$(CAMLRUN) ..\boot\ocamlc -I ..\boot
-CAMLOPT=$(CAMLRUN) ..\ocamlopt
-CAMLLEX=$(CAMLRUN) ..\boot\ocamllex
-INCLUDES=-I ..\utils -I ..\parsing -I ..\typing -I ..\bytecomp -I ..\asmcomp \
-         -I ..\driver
+CAMLRUN=../boot/ocamlrun
+CAMLC=$(CAMLRUN) ../boot/ocamlc -I ../boot
+CAMLOPT=$(CAMLRUN) ../ocamlopt
+CAMLLEX=$(CAMLRUN) ../boot/ocamllex
+INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
+         -I ../driver
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
@@ -44,7 +44,7 @@ clean::
 	rm -f ocamldep
 
 install::
-	cp ocamldep $(BINDIR)\ocamldep.exe
+	cp ocamldep $(BINDIR)/ocamldep.exe
 
 beforedepend:: ocamldep.ml
 
@@ -62,8 +62,8 @@ ocamlcp.exe: ocamlcp.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlcp.exe main_args.cmo ocamlcp.cmo
 
 install::
-	cp ocamlprof $(BINDIR)\ocamlprof.exe
-	cp ocamlcp.exe $(BINDIR)\ocamlcp.exe
+	cp ocamlprof $(BINDIR)/ocamlprof.exe
+	cp ocamlcp.exe $(BINDIR)/ocamlcp.exe
 	cp profiling.cmi profiling.cmo $(LIBDIR)
 
 clean::
@@ -75,7 +75,7 @@ ocamlmktop.exe: ocamlmktop.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlmktop.exe ocamlmktop.cmo
 
 install::
-	cp ocamlmktop.exe $(BINDIR)\ocamlmktop.exe
+	cp ocamlmktop.exe $(BINDIR)/ocamlmktop.exe
 
 clean::
 	rm -f ocamlmktop.exe
@@ -110,13 +110,13 @@ dumpobj: $(DUMPOBJ)
 clean::
 	rm -f dumpobj
 
-opnames.ml: ..\byterun\instruct.h
-	sed -e '/\/\*/d' \
-            -e 's\enum \(.*\) {/let names_of_\1 = [|/' \
+opnames.ml: ../byterun/instruct.h
+	sed -e '////*/d' \
+            -e 's/enum /(.*/) {/let names_of_/1 = [|/' \
             -e 's/};$$/ |]/' \
-            -e 's/\([A-Z][A-Z_0-9a-z]*\)/"\1"/g' \
+            -e 's//([A-Z][A-Z_0-9a-z]*/)/"/1"/g' \
             -e 's/,/;/g' \
-        ..\byterun\instruct.h > opnames.ml
+        ../byterun/instruct.h > opnames.ml
 
 clean::
 	rm -f opnames.ml
@@ -164,6 +164,6 @@ clean::
 	rm -f *.cmo *.cmi
 
 depend: beforedepend
-	$(CAMLRUN) .\ocamldep $(INCLUDES) *.mli *.ml > .depend
+	$(CAMLRUN) ./ocamldep $(INCLUDES) *.mli *.ml > .depend
 
-!include .depend
+include .depend

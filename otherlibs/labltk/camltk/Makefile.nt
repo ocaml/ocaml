@@ -1,4 +1,4 @@
-!include ..\support\Makefile.common.nt
+include ../support/Makefile.common.nt
 
 COMPFLAGS= -I ../support
 
@@ -8,10 +8,10 @@ opt: camltkobjsx
 
 # All .{ml,mli} files are generated in this directory
 clean : 
-	rm -f *.cm* *.ml *.mli *.a *.obj
+	rm -f *.cm* *.ml *.mli *.$(A) *.$(O)
 	$(MAKE) -f Makefile.gen.nt clean
 
-!include .\modules
+include ./modules
 
 CAMLTKOBJS = $(WIDGETOBJS) cTk.cmo camltk.cmo
 CAMLTKOBJSX = $(CAMLTKOBJS:.cmo=.cmx)
@@ -21,11 +21,11 @@ camltkobjs: $(CAMLTKOBJS)
 camltkobjsx: $(CAMLTKOBJSX)
 
 install: $(CAMLTKOBJS)
-	@if not exist $(INSTALLDIR) mkdir $(INSTALLDIR)
+	mkdir -p $(INSTALLDIR)
 	cp *.cmi [a-z]*.mli $(INSTALLDIR)
 
 installopt: $(CAMLTKOBJSX)
-	@if not exist $(INSTALLDIR) mkdir $(INSTALLDIR)
+	mkdir -p $(INSTALLDIR)
 	cp $(CAMLTKOBJSX) $(INSTALLDIR)
 
 .SUFFIXES :
@@ -40,4 +40,4 @@ installopt: $(CAMLTKOBJSX)
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
-!include .depend
+include .depend

@@ -29,8 +29,8 @@ let quote_files lst =
     (List.map (fun f -> if f = "" then f else Filename.quote f) lst)
 
 let compile_file name =
-  match Sys.os_type with
-  | "MacOS" ->
+  match Config.ccomp_type with
+  | "mrc" ->
      let qname = Filename.quote name in
      let includes = (Clflags.std_include_dir ()) @ !Clflags.include_dirs
      in
@@ -40,9 +40,8 @@ let compile_file name =
          (String.concat "," (List.rev_map Filename.quote includes))
          qname
      in
-     run_command ("sc " ^ args ^ " -o " ^ qname ^ ".o");
      command ("mrc " ^ args ^ " -o " ^ qname ^ ".x")
-  | _ ->
+  | "cc" | "msvc" ->
      command
        (Printf.sprintf
          "%s -c %s %s %s %s"
@@ -52,12 +51,13 @@ let compile_file name =
              (List.rev_map (fun dir -> "-I" ^ dir) !Clflags.include_dirs))
          (Clflags.std_include_flag "-I")
          (Filename.quote name))
+  | _ -> assert false
 
 let create_archive archive file_list =
   Misc.remove_file archive;
   let quoted_archive = Filename.quote archive in
-  match Config.system with
-    "win32" ->
+  match Config.ccomp_type with
+    "msvc" ->
       command(Printf.sprintf "lib /nologo /debugtype:cv /out:%s %s"
                              quoted_archive (quote_files file_list))
   | _ ->

@@ -14,6 +14,7 @@
 /* $Id$ */
 
 #include <mlvalues.h>
+#include <alloc.h>
 #include "unixsupport.h"
 
 #ifdef HAS_UNISTD
@@ -71,5 +72,5 @@ CAMLprim value unix_lseek_64(value fd, value ofs, value cmd)
       uerror("lseek", Nothing);
     }
   }
-  return copy_int64(ofs_high << 32 | ret);
+  return copy_int64((int64) ofs_high << 32 | ret);
 }

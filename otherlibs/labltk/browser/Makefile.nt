@@ -1,12 +1,18 @@
-!include ..\support\Makefile.common.nt
+include ../support/Makefile.common.nt
 
 LABLTKLIB=-I ../labltk -I ../lib -I ../support
 OTHERSLIB=-I $(OTHERS)/win32unix -I $(OTHERS)/str -I $(OTHERS)/systhreads
 OCAMLTOPLIB=-I $(TOPDIR)/parsing -I $(TOPDIR)/utils -I $(TOPDIR)/typing
 INCLUDES=$(OTHERSLIB) $(LABLTKLIB) $(OCAMLTOPLIB)
-CCFLAGS=-I..\..\..\byterun /Zi $(TK_DEFS)
+CCFLAGS=-I../../../byterun $(TK_DEFS)
 
-OBJ =	list2.cmo	useunix.cmo	setpath.cmo	lexical.cmo	\
+ifeq ($(CCOMPTYPE),cc)
+WINDOWS_APP=
+else
+WINDOWS_APP=-cclib "/link /subsystem:windows"
+endif
+
+OBJS =	list2.cmo	useunix.cmo	setpath.cmo	lexical.cmo	\
 	fileselect.cmo	searchid.cmo	searchpos.cmo	shell.cmo	\
         help.cmo        \
 	viewer.cmo	typecheck.cmo	editor.cmo	main.cmo
@@ -18,7 +24,7 @@ JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
 
 # Default rules
 
-.SUFFIXES: .ml .mli .cmo .cmi .cmx
+.SUFFIXES: .ml .mli .cmo .cmi .cmx .c .$(O)
 
 .ml.cmo:
 	$(CAMLCOMP) $(INCLUDES) $<
@@ -26,27 +32,27 @@ JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
 .mli.cmi:
 	$(CAMLCOMP) $(INCLUDES) $<
 
-y.c.obj:
+.c.$(O):
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CCFLAGS) -c $<
 
 all: ocamlbrowser.exe
 
 ocamlbrowser.exe: $(TOPDIR)/toplevel/toplevellib.cma \
-	..\support\lib$(LIBNAME).lib
-ocamlbrowser.exe: jglib.cma $(OBJ) winmain.obj
+	../support/lib$(LIBNAME).$(A)
+ocamlbrowser.exe: jglib.cma $(OBJS) winmain.$(O)
 	$(CAMLC) -o ocamlbrowser.exe -custom $(INCLUDES) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
-		unix.cma threads.cma str.cma $(LIBNAME).cma jglib.cma $(OBJ) \
-		winmain.obj -cclib "/subsystem:windows"
+		unix.cma threads.cma str.cma $(LIBNAME).cma jglib.cma $(OBJS) \
+		winmain.$(O) $(WINDOWS_APP)
 
 jglib.cma: $(JG)
 	$(CAMLCOMP) -a -o jglib.cma $(JG) 
 
 install:
-	if exist ocamlbrowser.exe cp ocamlbrowser.exe $(BINDIR)
+	if test -f ocamlbrowser.exe; then cp ocamlbrowser.exe $(BINDIR); fi
 
 clean:
-	rm -f *.cm? ocamlbrowser.exe dummy.mli *~ *.orig *.obj *.pdb
+	rm -f *.cm? ocamlbrowser.exe dummy.mli *~ *.orig *.$(O)
 
 depend:
 	$(CAMLDEP) *.ml *.mli > .depend
@@ -55,4 +61,4 @@ dummy.mli:
 	cp dummyWin.mli dummy.mli
 shell.cmo: dummy.cmi
 
-!include	.depend
+include	.depend

@@ -14,6 +14,7 @@
 /* $Id$ */
 
 #include <mlvalues.h>
+#include <alloc.h>
 #include "unixsupport.h"
 
 static int sockopt_bool[] = {

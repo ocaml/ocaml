@@ -13,7 +13,7 @@
 
 # $Id$
 
-!include ..\config\Makefile.nt
+include ../config/Makefile
 
 CC=cl /nologo
 CFLAGS=/MT -O /Zi

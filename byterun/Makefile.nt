@@ -13,18 +13,21 @@
 
 # $Id$
 
-!include ..\config\Makefile.nt
+include ../config/Makefile
 
 CC=$(BYTECC)
-CFLAGS=-DIN_OCAMLRUN -DOCAML_STDLIB_DIR="\"$(LIBDIR:\=\\)\""
+CFLAGS=-DIN_OCAMLRUN -DOCAML_STDLIB_DIR='"$(LIBDIR)"'
 
-OBJS=interp.obj misc.obj stacks.obj fix_code.obj startup.obj main.obj \
-  fail.obj signals.obj freelist.obj major_gc.obj minor_gc.obj \
-  memory.obj alloc.obj roots.obj compare.obj ints.obj floats.obj \
-  str.obj array.obj io.obj extern.obj intern.obj hash.obj sys.obj \
-  meta.obj parsing.obj gc_ctrl.obj terminfo.obj md5.obj obj.obj lexing.obj \
-  win32.obj printexc.obj callback.obj debugger.obj weak.obj compact.obj \
-  finalise.obj custom.obj backtrace.obj globroots.obj dynlink.obj
+COMMONOBJS=interp.o misc.o stacks.o fix_code.o startup.o \
+  fail.o signals.o freelist.o major_gc.o minor_gc.o \
+  memory.o alloc.o roots.o compare.o ints.o floats.o \
+  str.o array.o io.o extern.o intern.o hash.o sys.o \
+  meta.o parsing.o gc_ctrl.o terminfo.o md5.o obj.o lexing.o \
+  win32.o printexc.o callback.o debugger.o weak.o compact.o \
+  finalise.o custom.o backtrace.o globroots.o dynlink.o
+
+DOBJS=$(COMMONOBJS:.o=.$(DO)) prims.$(DO)
+SOBJS=$(COMMONOBJS:.o=.$(SO)) main.$(SO)
 
 PRIMS=alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
@@ -33,31 +36,27 @@ PRIMS=alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
 
 PUBLIC_INCLUDES=mlvalues.h alloc.h misc.h callback.h fail.h custom.h intext.h
 
-all: ocamlrun.exe libcamlrun.lib
-	if not exist ..\stdlib\caml mkdir ..\stdlib\caml
-	cp $(PUBLIC_INCLUDES) ..\stdlib\caml
-	sed -e "/#include .*\/m.h/r ..\config\m.h" \
-            -e "/#include .*\/s.h/r ..\config\s.h" \
-            -e "/#include /d" config.h > ..\stdlib\caml\config.h
-	sed -e "/#include .*gc\.h/d" \
-	    -e "/#define Alloc_small/,/^}/d" \
-	    -e "/Modify/,/^}/d" memory.h > ..\stdlib\caml\memory.h
+all: ocamlrun.exe libcamlrun.$(A)
 
-ocamlrun.exe: $(OBJS:.obj=.dobj) prims.dobj
-	link /nologo /out:ocamlrun.exe $(OBJS:.obj=.dobj) prims.dobj $(BYTECCLIBS)
+ocamlrun.exe: ocamlrun.dll main.$(DO)
+	$(CC) -o ocamlrun.exe main.$(DO) ocamlrun.$(A)
 
-libcamlrun.lib: $(OBJS:.obj=.sobj)
-	$(MKLIB)libcamlrun.lib $(OBJS:.obj=.sobj)
+ocamlrun.dll: $(DOBJS)
+	$(call MKDLL,ocamlrun.dll,ocamlrun.$(A),$(DOBJS) $(BYTECCLIBS))
+
+libcamlrun.$(A): $(SOBJS)
+	$(call MKLIB,libcamlrun.$(A),$(SOBJS))
 
 install:
-	cp ocamlrun.exe $(BINDIR)\ocamlrun.exe
-	cp ocamlrun.lib $(LIBDIR)\ocamlrun.lib
-	cp libcamlrun.lib $(LIBDIR)\libcamlrun.lib
-	if not exist $(LIBDIR)\caml mkdir $(LIBDIR)\caml
-	for %i in ($(PUBLIC_INCLUDES)) do sed -f ../tools/cleanup-header %i > $(LIBDIR)\caml\%i
+	cp ocamlrun.exe $(BINDIR)/ocamlrun.exe
+	cp ocamlrun.dll $(BINDIR)/ocamlrun.dll
+	cp ocamlrun.$(A) $(LIBDIR)/ocamlrun.$(A)
+	cp libcamlrun.$(A) $(LIBDIR)/libcamlrun.$(A)
+	test -d $(LIBDIR)/caml || mkdir -p $(LIBDIR)/caml
+	for i in $(PUBLIC_INCLUDES); do sed -f ../tools/cleanup-header $$i > $(LIBDIR)/caml/$$i; done
 
 clean:
-	rm -f *.exe *.dobj *.sobj *.lib
+	rm -f *.exe *.dll *.$(O) *.$(A)
 	rm -f primitives prims.c opnames.h jumptbl.h
 
 primitives : $(PRIMS)
@@ -65,15 +64,15 @@ primitives : $(PRIMS)
 	    $(PRIMS) > primitives
 
 prims.c : primitives
-        echo #include "mlvalues.h" > prims.c
-        echo #include "prims.h" >> prims.c
-        sed -e "s/.*/extern value &();/" primitives >> prims.c
-        echo c_primitive builtin_cprim[] = { >> prims.c
-        sed -e "s/.*/   &,/" primitives >> prims.c
-        echo     0 }; >> prims.c
-        echo char * names_of_builtin_cprim[] = { >> prims.c
-        sed -e "s/.*/   \"^&\",/" primitives >> prims.c
-        echo     0 }; >> prims.c
+	(echo '#include "mlvalues.h"'; \
+	 echo '#include "prims.h"'; \
+	 sed -e 's/.*/extern value &();/' primitives; \
+	 echo 'c_primitive builtin_cprim[] = {'; \
+	 sed -e 's/.*/	&,/' primitives; \
+	 echo '	 0 };'; \
+	 echo 'char * names_of_builtin_cprim[] = {'; \
+	 sed -e 's/.*/	"&",/' primitives; \
+	 echo '	 0 };') > prims.c
 
 opnames.h : instruct.h
 	sed -e "/\/\*/d" \
@@ -86,17 +85,20 @@ jumptbl.h : instruct.h
 	sed -n -e "/^  /s/ \([A-Z]\)/ \&\&lbl_\1/gp" \
 	       -e "/^}/q" instruct.h > jumptbl.h
 
-.SUFFIXES: .dobj .sobj
+main.$(DO): main.c
+	$(CC) $(DLLCCCOMPOPTS) -c main.c
+	mv main.$(O) main.$(DO)
 
-.c.dobj:
+.SUFFIXES: .$(DO) .$(SO)
+
+.c.$(DO):
 	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) -c $<
-	mv $*.obj $*.dobj
-.c.sobj:
+	mv $*.$(O) $*.$(DO)
+.c.$(SO):
 	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) -c $<
-	mv $*.obj $*.sobj
+	mv $*.$(O) $*.$(SO)
 
-depend:
-	sed -e "s/\.o/.dobj/g" .depend > .depend.nt
-	sed -e "s/\.o/.sobj/g" .depend >> .depend.nt
+.depend.nt:
+	sed -e '/\.d\.o/q' -e 's/^\(.*\)\.o:/\1.$$(DO) \1.$$(SO):/' .depend > .depend.nt
 
-!include .depend.nt
+include .depend.nt

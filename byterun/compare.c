@@ -163,7 +163,10 @@ static long compare_val(value v1, value v2)
       break;
     }
     case Custom_tag: {
-      int res = Custom_ops_val(v1)->compare(v1, v2);
+      int res;
+      int (*compare)(value v1, value v2) = Custom_ops_val(v1)->compare;
+      if (compare == NULL) failwith("equal: abstract value");
+      res = Custom_ops_val(v1)->compare(v1, v2);
       if (res != 0) return res;
       break;
     }

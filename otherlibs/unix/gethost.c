@@ -32,8 +32,8 @@
 #define NETDB_BUFFER_SIZE 10000
 
 #ifdef _WIN32
-#define GETHOSTBYADDR_IS_REENTRANT
-#define GETHOSTBYNAME_IS_REENTRANT
+#define GETHOSTBYADDR_IS_REENTRANT 1
+#define GETHOSTBYNAME_IS_REENTRANT 1
 #endif
 
 static int entry_h_length;
@@ -112,7 +112,7 @@ CAMLprim value unix_gethostbyname(value name)
   struct hostent * hp;
   char * hostname;
 
-#if HAS_GETHOSTBYNAME_R != 0 || GETHOSTBYNAME_IS_REENTRANT
+#if HAS_GETHOSTBYNAME_R || GETHOSTBYNAME_IS_REENTRANT
   hostname = stat_alloc(string_length(name) + 1);
   strcpy(hostname, String_val(name));
 #else
@@ -148,7 +148,7 @@ CAMLprim value unix_gethostbyname(value name)
 #endif
 #endif
 
-#if HAS_GETHOSTBYNAME_R != 0 || GETHOSTBYNAME_IS_REENTRANT
+#if HAS_GETHOSTBYNAME_R || GETHOSTBYNAME_IS_REENTRANT
   stat_free(hostname);
 #endif
 

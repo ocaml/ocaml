@@ -75,7 +75,7 @@ clean::
 	rm -f Lex/*.cm[iox] Lex/*.[os]
 	rm -f Lex/*~
 
-Lex/grammar.ml Lex/grammar.mli: Lex/grammar.mly ../yacc/ocamlyacc
+Lex/grammar.ml Lex/grammar.mli: Lex/grammar.mly ../yacc/ocamlyacc$(EXE)
 	$(CAMLYACC) $(YACCFLAGS) Lex/grammar.mly
 
 clean::

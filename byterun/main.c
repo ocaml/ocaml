@@ -20,10 +20,10 @@
 #include "mlvalues.h"
 #include "sys.h"
 
-extern void caml_main (char **);
+CAMLextern void caml_main (char **);
 
 #ifdef _WIN32
-extern void expand_command_line (int *, char ***);
+CAMLextern void expand_command_line (int *, char ***);
 #endif
 
 #if macintosh

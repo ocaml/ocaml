@@ -270,7 +270,7 @@ static void caml_thread_finalize(value vthread)
 
 /* Initialize the thread machinery */
 
-CAMLprim caml_thread_initialize(value unit)
+CAMLprim value caml_thread_initialize(value unit)
 {
   value vthread = Val_unit;
   value descr;
@@ -359,7 +359,7 @@ static void caml_thread_start(caml_thread_t th)
   /* The thread now stops running */
 }
 
-CAMLprim caml_thread_new(value clos)
+CAMLprim value caml_thread_new(value clos)
 {
   caml_thread_t th;
   value vthread = Val_unit;
@@ -427,7 +427,7 @@ CAMLprim caml_thread_new(value clos)
 
 /* Return the current thread */
 
-CAMLprim caml_thread_self(value unit)
+CAMLprim value caml_thread_self(value unit)
 {
   if (curr_thread == NULL) invalid_argument("Thread.self: not initialized");
   return curr_thread->descr;
@@ -435,14 +435,14 @@ CAMLprim caml_thread_self(value unit)
 
 /* Return the identifier of a thread */
 
-CAMLprim caml_thread_id(value th)
+CAMLprim value caml_thread_id(value th)
 {
   return Ident(th);
 }
 
 /* Print uncaught exception and backtrace */
 
-CAMLprim caml_thread_uncaught_exception(value exn)
+CAMLprim value caml_thread_uncaught_exception(value exn)
 {
   char * msg = format_caml_exception(exn);
   fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
@@ -457,7 +457,7 @@ CAMLprim caml_thread_uncaught_exception(value exn)
 
 /* Allow re-scheduling */
 
-CAMLprim caml_thread_yield(value unit)
+CAMLprim value caml_thread_yield(value unit)
 {
   enter_blocking_section();
   Sleep(0);
@@ -467,7 +467,7 @@ CAMLprim caml_thread_yield(value unit)
 
 /* Suspend the current thread until another thread terminates */
 
-CAMLprim caml_thread_join(value th)
+CAMLprim value caml_thread_join(value th)
 {
   HANDLE h;
   Begin_root(th)                /* prevent deallocation of handle */
@@ -505,7 +505,7 @@ static struct custom_operations caml_mutex_ops = {
   custom_deserialize_default
 };
 
-CAMLprim caml_mutex_new(value unit)
+CAMLprim value caml_mutex_new(value unit)
 {
   value mut;
   mut = alloc_custom(&caml_mutex_ops, sizeof(HANDLE), 1, Max_mutex_number);
@@ -514,7 +514,7 @@ CAMLprim caml_mutex_new(value unit)
   return mut;
 }
 
-CAMLprim caml_mutex_lock(value mut)
+CAMLprim value caml_mutex_lock(value mut)
 {
   int retcode;
   Begin_root(mut)               /* prevent deallocation of mutex */
@@ -526,7 +526,7 @@ CAMLprim caml_mutex_lock(value mut)
   return Val_unit;
 }
 
-CAMLprim caml_mutex_unlock(value mut)
+CAMLprim value caml_mutex_unlock(value mut)
 {
   BOOL retcode;
   Begin_root(mut)               /* prevent deallocation of mutex */
@@ -538,7 +538,7 @@ CAMLprim caml_mutex_unlock(value mut)
   return Val_unit;
 }
 
-CAMLprim caml_mutex_try_lock(value mut)
+CAMLprim value caml_mutex_try_lock(value mut)
 {
   int retcode;
   retcode = WaitForSingleObject(Mutex_val(mut), 0);
@@ -549,7 +549,7 @@ CAMLprim caml_mutex_try_lock(value mut)
 
 /* Delay */
 
-CAMLprim caml_thread_delay(value val)
+CAMLprim value caml_thread_delay(value val)
 {
   enter_blocking_section();
   Sleep((DWORD)(Double_val(val)*1000)); /* milliseconds */
@@ -588,7 +588,7 @@ static struct custom_operations caml_condition_ops = {
   custom_deserialize_default
 };
 
-CAMLprim caml_condition_new(value unit)
+CAMLprim value caml_condition_new(value unit)
 {
   value cond;
   cond = alloc_custom(&caml_condition_ops, sizeof(struct caml_condvar),
@@ -600,7 +600,7 @@ CAMLprim caml_condition_new(value unit)
   return cond;
 }
 
-CAMLprim caml_condition_wait(value cond, value mut)
+CAMLprim value caml_condition_wait(value cond, value mut)
 {
   int retcode;
   HANDLE m = Mutex_val(mut);
@@ -623,7 +623,7 @@ CAMLprim caml_condition_wait(value cond, value mut)
   return Val_unit;
 }
 
-CAMLprim caml_condition_signal(value cond)
+CAMLprim value caml_condition_signal(value cond)
 {
   HANDLE s = Condition_val(cond)->sem;
 
@@ -639,7 +639,7 @@ CAMLprim caml_condition_signal(value cond)
   return Val_unit;
 }
 
-CAMLprim caml_condition_broadcast(value cond)
+CAMLprim value caml_condition_broadcast(value cond)
 {
   HANDLE s = Condition_val(cond)->sem;
   unsigned long c = Condition_val(cond)->count;
@@ -710,6 +710,6 @@ CAMLprim value caml_wait_signal(value sigs)
 static void caml_wthread_error(char * msg)
 {
   char errmsg[1024];
-  sprintf(errmsg, "%s: error code %x\n", msg, GetLastError());
+  sprintf(errmsg, "%s: error code %lx\n", msg, GetLastError());
   raise_sys_error(copy_string(errmsg));
 }

@@ -1,4 +1,4 @@
-!include ..\support\Makefile.common.nt
+include ../support/Makefile.common.nt
 
 COMPFLAGS=-I ../labltk -I ../support -I $(OTHERS)/win32unix -I $(OTHERS)/str
 
@@ -24,14 +24,14 @@ install: libjpf.cma
 	cp $(OBJS:.cmo=.cmi) $(OBJS:.cmo=.mli) libjpf.cma $(INSTALLDIR)
 
 installopt: libjpf.cmxa
-	cp libjpf.cmxa libjpf.lib $(INSTALLDIR)
+	cp libjpf.cmxa libjpf.$(A) $(INSTALLDIR)
 
 clean:
-	rm -f *.cm* *.obj *.a *~ *test *.lib
+	rm -f *.cm* *.$(O) *.$(A) *~ *test
 
-$(OBJS) $(OBJS:.cmo=.cmi): ..\lib\$(LIBNAME).cma
+$(OBJS) $(OBJS:.cmo=.cmi): ../lib/$(LIBNAME).cma
 
-$(OBJSX): ..\lib\$(LIBNAME).cmxa
+$(OBJSX): ../lib/$(LIBNAME).cmxa
 
 ### Tests
 

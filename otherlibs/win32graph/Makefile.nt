@@ -13,62 +13,61 @@
 
 # $Id$
 
-!include ../../config/Makefile.nt
+include ../../config/Makefile
 
 # Compilation options
 CC=$(BYTECC)
-CFLAGS=-I..\..\byterun
-CAMLC=..\..\boot\ocamlrun ..\..\ocamlc -I ..\..\stdlib
-CAMLOPT=..\..\boot\ocamlrun ..\..\ocamlopt -I ..\..\stdlib
+CFLAGS=-I../../byterun
+CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
+CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 COMPFLAGS=-warn-error A
 
-COBJS=open.obj draw.obj dib.obj
+COBJS=open.$(O) draw.$(O) dib.$(O)
 CAMLOBJS=graphics.cmo
-WIN32LIBS=kernel32.lib gdi32.lib user32.lib
+WIN32LIBS=$(call SYSLIB,kernel32) $(call SYSLIB,gdi32) $(call SYSLIB,user32)
 
-all: dllgraphics.dll libgraphics.lib graphics.cma
+all: dllgraphics.dll libgraphics.$(A) graphics.cma
 
-allopt: libgraphics.lib graphics.cmxa
+allopt: libgraphics.$(A) graphics.cmxa
 
-dllgraphics.dll: $(COBJS:.obj=.dobj)
-	link /nologo /dll /out:dllgraphics.dll /implib:tmp.lib \
-	  $(COBJS:.obj=.dobj) ..\..\byterun\ocamlrun.lib $(WIN32LIBS)
+dllgraphics.dll: $(COBJS:.$(O)=.$(DO))
+	$(call MKDLL,dllgraphics.dll,tmp.$(A),\
+	  $(COBJS:.$(O)=.$(DO)) ../../byterun/ocamlrun.$(A) $(WIN32LIBS))
 	rm tmp.*
 
-libgraphics.lib: $(COBJS:.obj=.sobj)
-	rm -f libgraphics.lib
-	$(MKLIB)libgraphics.lib $(COBJS:.obj=.sobj)
+libgraphics.$(A): $(COBJS:.$(O)=.$(SO))
+	$(call MKLIB,libgraphics.$(A),$(COBJS:.$(O)=.$(SO)))
 
 graphics.cma: $(CAMLOBJS)
 	$(CAMLC) -a -o graphics.cma $(CAMLOBJS) \
-	  -dllib -lgraphics -cclib -lgraphics $(WIN32LIBS)
+	  -dllib -lgraphics -cclib -lgraphics -cclib "$(WIN32LIBS)"
 
 graphics.cmxa: $(CAMLOBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o graphics.cmxa $(CAMLOBJS:.cmo=.cmx) \
-	  -cclib -lgraphics $(WIN32LIBS)
+	  -cclib -lgraphics -cclib "$(WIN32LIBS)"
 
 partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f *.lib *.dll *.exp *.sobj *.dobj
+	rm -f *.$(A) *.dll *.exp *.$(O)
 	rm -f graphics.ml graphics.mli
 	rm -f io.h
 
 install:
 	cp dllgraphics.dll $(LIBDIR)/dllgraphics.dll
-	cp libgraphics.lib $(LIBDIR)/libgraphics.lib
+	cp libgraphics.$(A) $(LIBDIR)/libgraphics.$(A)
 	cp graphics.cmi graphics.cma $(LIBDIR)
 
 installopt:
-	cp graphics.cmxa graphics.cmx graphics.lib $(LIBDIR)
+	cp graphics.cmxa graphics.cmx graphics.$(A) $(LIBDIR)
 
-graphics.ml: ..\graph\graphics.ml
-	copy ..\graph\graphics.ml graphics.ml
-graphics.mli: ..\graph\graphics.mli
-	copy ..\graph\graphics.mli graphics.mli
+graphics.ml: ../graph/graphics.ml
+	cp ../graph/graphics.ml graphics.ml
+graphics.mli: ../graph/graphics.mli
+	cp ../graph/graphics.mli graphics.mli
 
-.SUFFIXES: .ml .mli .cmo .cmi .cmx .dobj .sobj
+.SUFFIXES: .ml .mli .cmo .cmi .cmx .$(DO) .$(SO)
 
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
@@ -79,17 +78,17 @@ graphics.mli: ..\graph\graphics.mli
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
-.c.dobj:
+.c.$(DO):
 	$(BYTECC) $(DLLCCCOMPOPTS) $(CFLAGS) -c $<
-	mv $*.obj $*.dobj
+	mv $*.$(O) $*.$(DO)
 
-.c.sobj:
+.c.$(SO):
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CFLAGS) -c $<
-	mv $*.obj $*.sobj
+	mv $*.$(O) $*.$(SO)
 
 depend:
 
 graphics.cmo: graphics.cmi
 graphics.cmx: graphics.cmi
-draw.sobj draw.dobj: libgraph.h
-open.sobj open.dobj: libgraph.h
+draw.$(SO) draw.$(DO): libgraph.h
+open.$(SO) open.$(DO): libgraph.h

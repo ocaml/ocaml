@@ -13,12 +13,12 @@
 
 # $Id$
 
-include ..\..\config\Makefile.nt
+include ../../config/Makefile
 
 CC=$(BYTECC)
-CFLAGS=-I..\..\byterun -I..\win32unix
-CAMLC=..\..\boot\ocamlrun ..\..\ocamlc -I ..\..\stdlib -I ..\win32unix
-CAMLOPT=..\..\boot\ocamlrun ..\..\ocamlopt -I ..\..\stdlib -I ..\win32unix
+CFLAGS=-I../../byterun -I../win32unix
+CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../win32unix
+CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../win32unix
 
 C_OBJS=bigarray_stubs.obj mmap_win32.obj
 
@@ -28,14 +28,13 @@ all: dllbigarray.dll libbigarray.lib bigarray.cma
 
 allopt: libbigarray.lib bigarray.cmxa
 
-dllbigarray.dll: $(C_OBJS:.obj=.dobj)
-	link /nologo /dll /out:dllbigarray.dll /implib:tmp.lib \
-	  $(C_OBJS:.obj=.dobj) ..\..\byterun\ocamlrun.lib
+dllbigarray.dll: $(C_OBJS:.obj=.$(DO))
+	$(call MKDLL,dllbigarray.dll,tmp.$(A),\
+	  $(C_OBJS:.obj=.$(DO)) ../../byterun/ocamlrun.$(A))
 	rm tmp.*
 
-libbigarray.lib: $(C_OBJS:.obj=.sobj)
-	rm -f libunix.lib
-	$(MKLIB)libbigarray.lib $(C_OBJS:.obj=.sobj)
+libbigarray.lib: $(C_OBJS:.obj=.$(SO))
+	$(call MKLIB,libbigarray.$(A),$(C_OBJS:.obj=.$(SO)))
 
 bigarray.cma: $(CAML_OBJS)
 	$(CAMLC) -a -linkall -o bigarray.cma $(CAML_OBJS) \
@@ -46,20 +45,20 @@ bigarray.cmxa: $(CAML_OBJS:.cmo=.cmx)
            $(CAML_OBJS:.cmo=.cmx) -cclib -lbigarray
 
 install:
-	cp dllbigarray.dll libbigarray.lib $(LIBDIR)
+	cp dllbigarray.dll libbigarray.$(A) $(LIBDIR)
 	cp bigarray.cmi bigarray.mli bigarray.cma $(LIBDIR)
 	cp bigarray.h $(LIBDIR)/caml/bigarray.h
 
 installopt:
-	cp bigarray.lib $(CAML_OBJS:.cmo=.cmx) bigarray.cmxa $(LIBDIR)
+	cp bigarray.$(A) $(CAML_OBJS:.cmo=.cmx) bigarray.cmxa $(LIBDIR)
 
 partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f *.dll *.lib *.dobj *.sobj
+	rm -f *.dll *.$(A) *.$(O)
 
-.SUFFIXES: .ml .mli .cmo .cmi .cmx .dobj .sobj
+.SUFFIXES: .ml .mli .cmo .cmi .cmx .$(DO) .$(SO)
 
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
@@ -70,16 +69,16 @@ clean: partialclean
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
-.c.dobj:
+.c.$(DO):
 	$(BYTECC) $(DLLCCCOMPOPTS) $(CFLAGS) -c $<
-	mv $*.obj $*.dobj
+	mv $*.$(O) $*.$(DO)
 
-.c.sobj:
+.c.$(SO):
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CFLAGS) -c $<
-	mv $*.obj $*.sobj
+	mv $*.$(O) $*.$(SO)
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend
-	..\..\boot\ocamlrun ..\..\tools\ocamldep *.mli *.ml >> .depend
+	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend

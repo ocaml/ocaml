@@ -15,24 +15,28 @@
 
 # Makefile for the "num" (exact rational arithmetic) library
 
-!include ..\..\config\Makefile.nt
+include ../../config/Makefile
 
 # Compilation options
 CC=$(BYTECC)
-CFLAGS=-O -I.\bignum\h -I..\..\byterun
-CAMLC=..\..\boot\ocamlrun ..\..\ocamlc -I ..\..\boot -w s
-CAMLOPT=..\..\boot\ocamlrun ..\..\ocamlopt -I ..\..\stdlib -w s
+CFLAGS=-O -I./bignum/h -I../../byterun
+CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../boot -w s
+CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -w s
 
 CAMLOBJS=int_misc.cmo string_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \
   ratio.cmo num.cmo arith_status.cmo
 
 CMIFILES=big_int.cmi nat.cmi num.cmi ratio.cmi arith_status.cmi
 
-COBJS=nat_stubs.obj
+DCOBJS=nat_stubs.$(DO)
+SCOBJS=nat_stubs.$(SO)
+BIGNUM_SOBJS=bignum/o/KerN.$(SO) bignum/o/bnInit.$(SO) \
+  bignum/o/bnMult.$(SO) bignum/o/bnDivide.$(SO) \
+  bignum/o/bnCmp.$(SO) bignum/o/bzf.$(SO) bignum/o/bz.$(SO)
 
-all: dllnums.dll libnums.lib nums.cma $(CMIFILES)
+all: dllnums.dll libnums.$(A) nums.cma $(CMIFILES)
 
-allopt: libnums.lib nums.cmxa $(CMIFILES)
+allopt: libnums.$(A) nums.cmxa $(CMIFILES)
 
 nums.cma: $(CAMLOBJS)
 	$(CAMLC) -a -o nums.cma $(CAMLOBJS) -dllib -lnums -cclib -lnums
@@ -40,36 +44,36 @@ nums.cma: $(CAMLOBJS)
 nums.cmxa: $(CAMLOBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o nums.cmxa $(CAMLOBJS:.cmo=.cmx) -cclib -lnums
 
-dllnums.dll: bignum\dbignum.lib $(COBJS:.obj=.dobj)
-	link /nologo /dll /out:dllnums.dll /implib:tmp.lib \
-	  bignum\dbignum.lib $(COBJS:.obj=.dobj) ..\..\byterun\ocamlrun.lib
+dllnums.dll: bignum/dbignum.$(A) $(DCOBJS)
+	$(call MKDLL,dllnums.dll,tmp.$(A),\
+	  $(DCOBJS) bignum/dbignum.$(A) ../../byterun/ocamlrun.$(A))
 	rm tmp.*
 
-libnums.lib: bignum\sbignum.lib $(COBJS:.obj=.sobj)
-	$(MKLIB)libnums.lib bignum\sbignum.lib $(COBJS:.obj=.sobj)
+libnums.$(A): bignum/sbignum.$(A) $(SCOBJS)
+	$(call MKLIB,libnums.$(A),$(SCOBJS) $(BIGNUM_SOBJS))
 
-bignum\dbignum.lib bignum\sbignum.lib:
-	cd bignum & $(MAKEREC)
+bignum/dbignum.$(A) bignum/sbignum.$(A):
+	cd bignum ; $(MAKEREC)
 
-$(CAMLOBJS:.cmo=.cmx): ..\..\ocamlopt
+$(CAMLOBJS:.cmo=.cmx): ../../ocamlopt
 
 install:
-	cp dllnums.dll $(LIBDIR)\dllnums.dll
-	cp libnums.lib $(LIBDIR)\libnums.lib
+	cp dllnums.dll $(LIBDIR)/dllnums.dll
+	cp libnums.$(A) $(LIBDIR)/libnums.$(A)
 	cp nums.cma $(CMIFILES) $(LIBDIR)
 
 installopt:
-	cp $(CAMLOBJS:.cmo=.cmx) nums.cmxa nums.lib $(LIBDIR)
+	cp $(CAMLOBJS:.cmo=.cmx) nums.cmxa nums.$(A) $(LIBDIR)
 
 partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f *.dll *.lib *.dobj *.sobj
-	cd bignum & $(MAKEREC) scratch
-	cd test & $(MAKEREC) clean
+	rm -f *.dll *.$(A) *.$(O)
+	cd bignum ; $(MAKEREC) scratch
+	cd test ; $(MAKEREC) clean
 
-.SUFFIXES: .ml .mli .cmi .cmo .cmx .dobj .sobj
+.SUFFIXES: .ml .mli .cmi .cmo .cmx .$(DO) .$(SO)
 
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
@@ -80,18 +84,18 @@ clean: partialclean
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
-.c.dobj:
+.c.$(DO):
 	$(BYTECC) $(DLLCCCOMPOPTS) $(CFLAGS) -c $<
-	mv $*.obj $*.dobj
+	mv $*.$(O) $*.$(DO)
 
-.c.sobj:
+.c.$(SO):
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CFLAGS) -c $<
-	mv $*.obj $*.sobj
+	mv $*.$(O) $*.$(SO)
 
-nat_stubs.obj: nat.h
+nat_stubs.$(O): nat.h
 
 depend:
-	sed -e "s/\.o/.dobj/g" .depend > .depend.nt
-	sed -e "s/\.o/.sobj/g" .depend >> .depend.nt
+	sed -e 's/\.o/.$(DO)/g' .depend > .depend.nt
+	sed -e 's/\.o/.$(SO)/g' .depend >> .depend.nt
 
-!include .depend.nt
+include .depend.nt

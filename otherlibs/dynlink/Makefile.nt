@@ -15,17 +15,17 @@
 
 # Makefile for the dynamic link library
 
-!include ..\..\config\Makefile.nt
+include ../../config/Makefile
 
-CAMLC=..\..\boot\ocamlrun ..\..\ocamlc
-INCLUDES=-I ..\..\utils -I ..\..\typing -I ..\..\bytecomp
-COMPFLAGS=-I ..\..\stdlib $(INCLUDES)
+CAMLC=../../boot/ocamlrun ../../ocamlc
+INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp
+COMPFLAGS=-warn-error A -I ../../stdlib $(INCLUDES)
 
 OBJS=dynlink.cmo
-COMPILEROBJS=misc.cmo config.cmo tbl.cmo \
-  clflags.cmo ident.cmo path.cmo \
+COMPILEROBJS=misc.cmo config.cmo tbl.cmo clflags.cmo \
+  ident.cmo path.cmo \
   types.cmo btype.cmo predef.cmo runtimedef.cmo \
-  bytesections.cmo dll.cmo symtable.cmo opcodes.cmo
+  bytesections.cmo dll.cmo symtable.cmo opcodes.cmo meta.cmo
 
 all: dynlink.cma extract_crc
 
@@ -38,7 +38,7 @@ extract_crc: dynlink.cma extract_crc.cmo
 	$(CAMLC) $(COMPFLAGS) -o extract_crc dynlink.cma extract_crc.cmo
 
 install:
-	cp dynlink.cmi dynlink.cma extract_crc $(LIBDIR)
+	cp dynlink.cmi dynlink.cma dynlink.mli extract_crc $(LIBDIR)
 
 installopt:
 
@@ -56,6 +56,6 @@ clean: partialclean
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 depend:
-	..\..\boot\ocamlrun ..\..\tools\ocamldep *.mli *.ml > .depend
+	../../boot/ocamlrun ../../tools/ocamldep $(INCLUDES) *.mli *.ml >.depend
 
-!include .depend
+include .depend

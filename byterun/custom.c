@@ -42,18 +42,6 @@ CAMLextern value alloc_custom(struct custom_operations * ops,
   return result;
 }
 
-CAMLextern int custom_compare_default(value v1, value v2)
-{
-  failwith("equal: abstract value");
-  return 0;
-}
-
-CAMLextern void custom_serialize_default(value v, unsigned long * wsize_32,
-                                         unsigned long * wsize_64)
-{
-  failwith("output_value: abstract value");
-}
-
 struct custom_operations_list {
   struct custom_operations * ops;
   struct custom_operations_list * next;

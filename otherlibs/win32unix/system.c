@@ -16,6 +16,7 @@
 #include <mlvalues.h>
 #include <memory.h>
 #include <alloc.h>
+#include <signals.h>
 #include "unixsupport.h"
 #include <process.h>
 #include <stdio.h>

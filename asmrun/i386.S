@@ -35,7 +35,8 @@
 #endif
 
 #if defined(SYS_linux_elf) || defined(SYS_bsd_elf) \
- || defined(SYS_solaris) || defined(SYS_beos) || defined(SYS_cygwin)
+ || defined(SYS_solaris) || defined(SYS_beos) || defined(SYS_cygwin) \
+ || defined(SYS_mingw)
 #define FUNCTION_ALIGN 4
 #else
 #define FUNCTION_ALIGN 2

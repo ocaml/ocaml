@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "bigarray.h"
+#include "alloc.h"
 #include "custom.h"
 #include "fail.h"
 #include "mlvalues.h"
@@ -110,6 +111,6 @@ static void bigarray_sys_error(void)
                      buffer,
                      sizeof(buffer),
                      NULL))
-    sprintf(buffer, "Unknown error %d\n", errnum);
+    sprintf(buffer, "Unknown error %ld\n", errnum);
   raise_sys_error(copy_string(buffer));
 }

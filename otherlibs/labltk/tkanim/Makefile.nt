@@ -1,33 +1,34 @@
-!include ..\support\Makefile.common.nt
+include ../support/Makefile.common.nt
 
-CCFLAGS=-I..\support -I..\..\..\byterun $(TK_DEFS)
+CCFLAGS=-I../support -I../../../byterun $(TK_DEFS)
 
 COMPFLAGS=-I $(OTHERS)/win32unix -I ../support -I ../camltk
 
-all: tkanim.cma dlltkanim.dll libtkanim.lib
-opt: tkanim.cmxa libtkanim.lib
+all: tkanim.cma dlltkanim.dll libtkanim.$(A)
+opt: tkanim.cmxa libtkanim.$(A)
 example: gifanimtest.exe
 
 OBJS=tkanim.cmo
 COBJS= cltkaniminit.obj tkAnimGIF.obj
+DCOBJS=$(COBJS:.obj=.$(DO))
+SCOBJS=$(COBJS:.obj=.$(SO))
 
 tkanim.cma: $(OBJS)
 	$(CAMLLIBR) -o tkanim.cma $(OBJS) \
-	  -dllib -ltkanim -cclib -ltkanim $(TK_LINK)
+	  -dllib -ltkanim -cclib -ltkanim -cclib "$(TK_LINK)"
 
 tkanim.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPTLIBR) -o tkanim.cmxa $(OBJS:.cmo=.cmx) \
-	  -cclib -ltkanim $(TK_LINK)
+	  -cclib -ltkanim -cclib "$(TK_LINK)"
 
-libtkanim.lib: $(COBJS:.obj=.sobj)
-	rm -f libtkanim.lib
-	$(MKLIB)libtkanim.lib $(COBJS:.obj=.sobj)
+libtkanim.$(A): $(SCOBJS)
+	$(call MKLIB,libtkanim.$(A), $(SCOBJS))
 
-dlltkanim.dll: $(COBJS:.obj=.dobj)
-	link /nologo /dll /out:dlltkanim.dll /implib:tmp.lib \
-	  $(COBJS:.obj=.dobj) ..\support\dll$(LIBNAME).lib \
-	  ..\..\..\byterun\ocamlrun.lib \
-	  $(TK_LINK) wsock32.lib 
+dlltkanim.dll: $(DCOBJS)
+	$(call MKDLL,dlltkanim.dll,tmp.$(A), \
+	  $(DCOBJS) ../support/dll$(LIBNAME).$(A) \
+	  ../../../byterun/ocamlrun.$(A) \
+	  $(TK_LINK) $(call SYSLIB,wsock32))
 	rm tmp.*
 
 gifanimtest.exe: all gifanimtest.cmo
@@ -38,14 +39,14 @@ gifanimtest.exe: all gifanimtest.cmo
 # 		-L. -ltkanim $(LIBS)
 
 clean:
-	rm -f *.cm* *.obj *.dobj *.sobj *.lib *.dll gifanimtest.exe
+	rm -f *.cm* *.$(O) *.$(A) *.dll gifanimtest.exe
 
-$(OBJS) $(OBJS:.cmo=.cmi): ..\lib\$(LIBNAME).cma
+$(OBJS) $(OBJS:.cmo=.cmi): ../lib/$(LIBNAME).cma
 
-$(OBJS:.cmo=.cmx): ..\lib\$(LIBNAME).cmxa
+$(OBJS:.cmo=.cmx): ../lib/$(LIBNAME).cmxa
 
 .SUFFIXES :
-.SUFFIXES : .mli .ml .cmi .cmo .mlp .cmx .c .dobj .sobj
+.SUFFIXES : .mli .ml .cmi .cmo .mlp .cmx .c .$(DO) .$(SO)
 
 .mli.cmi:
 	$(CAMLCOMP) $(COMPFLAGS) $<
@@ -56,21 +57,21 @@ $(OBJS:.cmo=.cmx): ..\lib\$(LIBNAME).cmxa
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
-.c.dobj:
+.c.$(DO):
 	$(BYTECC) $(DLLCCCOMPOPTS) $(CCFLAGS) -c $<
-	mv $*.obj $*.dobj
+	mv $*.$(O) $*.$(DO)
 
-.c.sobj:
+.c.$(SO):
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CCFLAGS) -c $<
-	mv $*.obj $*.sobj
+	mv $*.$(O) $*.$(SO)
 
 install: tkanim.cma 
-	cp tkanim.cma *.cmi *.mli libtkanim.lib dlltkanim.dll $(INSTALLDIR)
+	cp tkanim.cma *.cmi *.mli libtkanim.$(A) dlltkanim.dll $(INSTALLDIR)
 
 installopt: tkanim.cmxa
-	cp tkanim.cmxa $(INSTALLDIR)
+	cp tkanim.cmxa tkanim.$(A) $(INSTALLDIR)
 
 depend: tkanim.ml
 	$(CAMLDEP) *.mli *.ml > .depend
 
-!include .depend
+include .depend

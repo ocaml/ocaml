@@ -1,4 +1,4 @@
-!include ..\support\Makefile.common.nt
+include ../support/Makefile.common.nt
 
 COMPFLAGS= -I ../support
 
@@ -8,10 +8,10 @@ opt: labltkobjsx
 
 # All .{ml,mli} files are generated in this directory
 clean : 
-	rm -f *.cm* *.ml *.mli *.a *.obj
+	rm -f *.cm* *.ml *.mli *.$(A) *.$(O)
 	$(MAKE) -f Makefile.gen.nt clean
 
-!include .\modules
+include ./modules
 
 LABLTKOBJS = $(WIDGETOBJS) tk.cmo labltk.cmo
 LABLTKOBJSX = $(LABLTKOBJS:.cmo=.cmx)
@@ -21,15 +21,15 @@ labltkobjs: $(LABLTKOBJS)
 labltkobjsx: $(LABLTKOBJSX)
 
 install: $(LABLTKOBJS)
-	@if not exist $(INSTALLDIR) mkdir $(INSTALLDIR)
+	mkdir -p $(INSTALLDIR)
 	cp *.cmi [a-z]*.mli $(INSTALLDIR)
 
 installopt: $(LABLTKOBJSX)
-	@if not exist $(INSTALLDIR) mkdir $(INSTALLDIR)
+	mkdir -p $(INSTALLDIR)
 	cp $(LABLTKOBJSX) $(INSTALLDIR)
 
 .SUFFIXES :
-.SUFFIXES : .mli .ml .cmi .cmx .cmo .mlp
+.SUFFIXES : .mli .ml .cmi .cmx .cmo
 
 .mli.cmi:
 	$(CAMLCOMP) $(COMPFLAGS) $<
@@ -40,4 +40,4 @@ installopt: $(LABLTKOBJSX)
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
-!include .depend
+include .depend

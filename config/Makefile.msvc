@@ -13,23 +13,34 @@
 
 # $Id$
 
-# Configuration for Windows NT/95, Visual C++ 6.0
+# Configuration for Windows, Visual C++ compiler
 
 ######### General configuration
 
-PREFIX=C:\ocaml
+PREFIX=C:/ocaml
 
 ### Where to install the binaries
-BINDIR=$(PREFIX)\bin
+BINDIR=$(PREFIX)/bin
 
 ### Where to install the standard library
-LIBDIR=$(PREFIX)\lib
+LIBDIR=$(PREFIX)/lib
 
 ### Where to install the info files
 DISTRIB=$(PREFIX)
 
-### Location of VC++ include files
-SYSTEM_INCLUDES=c:\Msdev\VC98\Include
+### Location of MSVC include files
+SYSTEM_INCLUDES=c:/msdev/vc98/include
+
+########## Toolchain and OS dependencies
+
+TOOLCHAIN=msvc
+CCOMPTYPE=msvc
+O=obj
+A=lib
+S=asm
+SO=s.obj
+DO=d.obj
+EXE=.exe
 
 ########## Configuration for the bytecode compiler
 
@@ -52,9 +63,17 @@ NATIVECCLIBS=advapi32.lib
 ### How to invoke the C preprocessor
 CPP=cl /nologo /EP
 
-### How to invoke the librarian
-MKLIB=lib /nologo /debugtype:CV /out:
-MKDLL=cl /nologo /MD /LD
+### How to build a DLL
+MKDLL=link /nologo /dll /out:$(1) /implib:$(2) $(3)
+
+### How to build a static library
+MKLIB=lib /nologo /debugtype:CV /out:$(1) $(2)
+
+### Canonicalize the name of a system library
+SYSLIB=$(1).lib
+
+### The ranlib command
+RANLIBCMD=
 
 ############# Configuration for the native-code compiler
 
@@ -76,9 +95,12 @@ NATIVECCCOMPOPTS=/Ox /MT
 ### Additional link-time options for $(NATIVECC)
 NATIVECCLINKOPTS=/MT
 
-### Flags for the assembler
-AS=ml /nologo
-AFLAGS=/coff /Cp
+### Build partially-linked object file
+PARTIALLD=lib /nologo /debugtype:cv
+
+### nm and objcopy are missing
+BINUTILS_NM=
+BINUTILS_OBJCOPY=
 
 ############# Configuration for the contributed libraries
 
@@ -88,9 +110,10 @@ OTHERLIBRARIES=win32unix systhreads str num win32graph dynlink bigarray labltk
 BIGNUM_ARCH=C
 
 ### Configuration for LablTk
-TK_DEFS=-Ic:\Tcl\include
+TK_DEFS=-Ic:/Tcl/include
 TK_LINK=tk83.lib tcl83.lib
 
 ############# Aliases for common commands
 
-MAKEREC=$(MAKE) -nologo -f Makefile.nt 
+MAKEREC=$(MAKE) -f Makefile.nt 
+MAKECMD=$(MAKE)

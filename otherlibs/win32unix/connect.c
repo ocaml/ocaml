@@ -14,6 +14,7 @@
 /* $Id$ */
 
 #include <mlvalues.h>
+#include <signals.h>
 #include "unixsupport.h"
 #include "socketaddr.h"
 

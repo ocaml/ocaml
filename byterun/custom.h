@@ -31,10 +31,9 @@ struct custom_operations {
 };
 
 #define custom_finalize_default NULL
-CAMLextern int custom_compare_default(value v1, value v2);
+#define custom_compare_default NULL
 #define custom_hash_default NULL
-CAMLextern void custom_serialize_default(value v, unsigned long * wsize_32,
-                                         unsigned long * wsize_64);
+#define custom_serialize_default NULL
 #define custom_deserialize_default NULL
 
 #define Custom_ops_val(v) (*((struct custom_operations **) (v)))

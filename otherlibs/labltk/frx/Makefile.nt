@@ -1,4 +1,4 @@
-!include ..\support\Makefile.common.nt
+include ../support/Makefile.common.nt
 
 COMPFLAGS=-I ../camltk -I ../support
 
@@ -24,15 +24,15 @@ install: libfrx.cma
 	cp *.cmi *.mli libfrx.cma $(INSTALLDIR)
 
 installopt: libfrx.cmxa
-	cp libfrx.cmxa libfrx.lib $(INSTALLDIR)
+	cp libfrx.cmxa libfrx.$(A) $(INSTALLDIR)
  
 
 clean:
-	rm -f *.cm* *.obj *.a *~ *test *.lib
+	rm -f *.cm* *.$(O) *.$(A) *~ *test
 
-$(OBJS) $(OBJS:.cmo=.cmi): ..\lib\$(LIBNAME).cma
+$(OBJS) $(OBJS:.cmo=.cmi): ../lib/$(LIBNAME).cma
 
-$(OBJSX): ..\lib\$(LIBNAME).cmxa
+$(OBJSX): ../lib/$(LIBNAME).cmxa
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmo .cmx
@@ -50,4 +50,4 @@ $(OBJSX): ..\lib\$(LIBNAME).cmxa
 depend: 
 	$(CAMLDEP) *.mli *.ml > .depend
 
-!include .depend
+include .depend

@@ -13,6 +13,7 @@
 
 /* $Id$ */
 
+#include <stddef.h>
 #include <mlvalues.h>
 #include <callback.h>
 #include <alloc.h>

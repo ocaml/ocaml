@@ -1,87 +1,87 @@
-!include ..\..\..\config\Makefile.nt
+include ../../../config/Makefile
 
 CC = $(BYTECC)
-CFLAGS = -c -I.\h -DCAML_LIGHT
-KERNH = h\BigNum.h 
-OBJS = o\KerN.obj o\bnInit.obj o\bnMult.obj o\bnDivide.obj \
-       o\bnCmp.obj o\bzf.obj o\bz.obj 
+CFLAGS = -c -I./h -DCAML_LIGHT
+KERNH = h/BigNum.h 
+OBJS = o/KerN.$(O) o/bnInit.$(O) o/bnMult.$(O) o/bnDivide.$(O) \
+       o/bnCmp.$(O) o/bzf.$(O) o/bz.$(O) 
 
-all: dbignum.lib sbignum.lib
+all: dbignum.$(A) sbignum.$(A)
 
 scratch:
-	rm -f *.lib o/*.dobj o/*.sobj
+	rm -f *.$(A) o/*.$(O)
 
 # DLL
 
-dbignum.lib: $(OBJS:.obj=.dobj)
-	$(MKLIB)dbignum.lib $(OBJS:.obj=.dobj)
+dbignum.$(A): $(OBJS:.$(O)=.$(DO))
+	$(call MKLIB,dbignum.$(A),$(OBJS:.$(O)=.$(DO)))
 
-o\KerN.dobj: c\KerN.c 
-	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c\KerN.c
-	mv KerN.obj o\KerN.dobj
+o/KerN.$(DO): c/KerN.c 
+	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c/KerN.c
+	mv KerN.$(O) o/KerN.$(DO)
 
-o\bnInit.dobj: c\bn\bnInit.c $(KERNH)
-	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c\bn\bnInit.c
-	mv bnInit.obj o\bnInit.dobj
+o/bnInit.$(DO): c/bn/bnInit.c $(KERNH)
+	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c/bn/bnInit.c
+	mv bnInit.$(O) o/bnInit.$(DO)
 
-o\bnMult.dobj: c\bn\bnMult.c $(KERNH)
-	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c\bn\bnMult.c
-	mv bnMult.obj o\bnMult.dobj
+o/bnMult.$(DO): c/bn/bnMult.c $(KERNH)
+	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c/bn/bnMult.c
+	mv bnMult.$(O) o/bnMult.$(DO)
 
-o\bnDivide.dobj: c\bn\bnDivide.c $(KERNH)
-	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c\bn\bnDivide.c
-	mv bnDivide.obj o\bnDivide.dobj
+o/bnDivide.$(DO): c/bn/bnDivide.c $(KERNH)
+	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c/bn/bnDivide.c
+	mv bnDivide.$(O) o/bnDivide.$(DO)
 
-o\bnCmp.dobj: c\bn\bnCmp.c $(KERNH)
-	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c\bn\bnCmp.c
-	mv bnCmp.obj o\bnCmp.dobj
+o/bnCmp.$(DO): c/bn/bnCmp.c $(KERNH)
+	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c/bn/bnCmp.c
+	mv bnCmp.$(O) o/bnCmp.$(DO)
 
-o\bz.dobj: c\bz.c h/BigZ.h $(KERNH)
-	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c\bz.c
-	mv bz.obj o\bz.dobj
+o/bz.$(DO): c/bz.c h/BigZ.h $(KERNH)
+	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c/bz.c
+	mv bz.$(O) o/bz.$(DO)
 
-o\br.dobj: c\br.c h/BigR.h h/BigZ.h $(KERNH)
-	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c\br.c
-	mv br.obj o\br.dobj
+o/br.$(DO): c/br.c h/BigR.h h/BigZ.h $(KERNH)
+	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c/br.c
+	mv br.$(O) o/br.$(DO)
 
-o\bzf.dobj: c\bzf.c h/BigZ.h $(KERNH)
-	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c\bzf.c
-	mv bzf.obj o\bzf.dobj
+o/bzf.$(DO): c/bzf.c h/BigZ.h $(KERNH)
+	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c/bzf.c
+	mv bzf.$(O) o/bzf.$(DO)
 
 # Static
 
-sbignum.lib: $(OBJS:.obj=.sobj)
-	$(MKLIB)sbignum.lib $(OBJS:.obj=.sobj)
+sbignum.$(A): $(OBJS:.$(O)=.$(SO))
+	$(call MKLIB,sbignum.$(A),$(OBJS:.$(O)=.$(SO)))
 
-o\KerN.sobj: c\KerN.c 
-	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c\KerN.c
-	mv KerN.obj o\KerN.sobj
+o/KerN.$(SO): c/KerN.c 
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c/KerN.c
+	mv KerN.$(O) o/KerN.$(SO)
 
-o\bnInit.sobj: c\bn\bnInit.c $(KERNH)
-	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c\bn\bnInit.c
-	mv bnInit.obj o\bnInit.sobj
+o/bnInit.$(SO): c/bn/bnInit.c $(KERNH)
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c/bn/bnInit.c
+	mv bnInit.$(O) o/bnInit.$(SO)
 
-o\bnMult.sobj: c\bn\bnMult.c $(KERNH)
-	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c\bn\bnMult.c
-	mv bnMult.obj o\bnMult.sobj
+o/bnMult.$(SO): c/bn/bnMult.c $(KERNH)
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c/bn/bnMult.c
+	mv bnMult.$(O) o/bnMult.$(SO)
 
-o\bnDivide.sobj: c\bn\bnDivide.c $(KERNH)
-	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c\bn\bnDivide.c
-	mv bnDivide.obj o\bnDivide.sobj
+o/bnDivide.$(SO): c/bn/bnDivide.c $(KERNH)
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c/bn/bnDivide.c
+	mv bnDivide.$(O) o/bnDivide.$(SO)
 
-o\bnCmp.sobj: c\bn\bnCmp.c $(KERNH)
-	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c\bn\bnCmp.c
-	mv bnCmp.obj o\bnCmp.sobj
+o/bnCmp.$(SO): c/bn/bnCmp.c $(KERNH)
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c/bn/bnCmp.c
+	mv bnCmp.$(O) o/bnCmp.$(SO)
 
-o\bz.sobj: c\bz.c h/BigZ.h $(KERNH)
-	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c\bz.c
-	mv bz.obj o\bz.sobj
+o/bz.$(SO): c/bz.c h/BigZ.h $(KERNH)
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c/bz.c
+	mv bz.$(O) o/bz.$(SO)
 
-o\br.sobj: c\br.c h/BigR.h h/BigZ.h $(KERNH)
-	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c\br.c
-	mv br.obj o\br.sobj
+o/br.$(SO): c/br.c h/BigR.h h/BigZ.h $(KERNH)
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c/br.c
+	mv br.$(O) o/br.$(SO)
 
-o\bzf.sobj: c\bzf.c h/BigZ.h $(KERNH)
-	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c\bzf.c
-	mv bzf.obj o\bzf.sobj
+o/bzf.$(SO): c/bzf.c h/BigZ.h $(KERNH)
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c/bzf.c
+	mv bzf.$(O) o/bzf.$(SO)
 

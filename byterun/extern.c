@@ -334,6 +334,10 @@ static void extern_rec(value v)
     case Custom_tag: {
       unsigned long sz_32, sz_64;
       char * ident = Custom_ops_val(v)->identifier;
+      void (*serialize)(value v, unsigned long * wsize_32,
+			unsigned long * wsize_64)
+	= Custom_ops_val(v)->serialize;
+      if (serialize == NULL) failwith("output_value: abstract value");
       Write(CODE_CUSTOM);
       writeblock(ident, strlen(ident) + 1);
       Custom_ops_val(v)->serialize(v, &sz_32, &sz_64);
