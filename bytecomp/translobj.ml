@@ -46,6 +46,9 @@ let share c =
 
 let used_methods = ref ([] : (string * Ident.t) list);;
 
+let meth s = Lconst(Const_pointer(Btype.hash_variant s))
+
+(*
 let meth lab =
   try
     List.assoc lab !used_methods
@@ -53,6 +56,7 @@ let meth lab =
     let id = Ident.create lab in
     used_methods := (lab, id)::!used_methods;
     id
+*)
 
 let reset_labels () =
   Hashtbl.clear consts;

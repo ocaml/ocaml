@@ -17,7 +17,7 @@ open Lambda
 val oo_prim: string -> lambda
 
 val share: structured_constant -> lambda
-val meth: string -> Ident.t
+val meth: string -> lambda
 
 val reset_labels: unit -> unit
 val transl_label_init: lambda -> lambda

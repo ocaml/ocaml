@@ -1009,13 +1009,33 @@ value interprete(code_t prog, asize_t prog_size)
     
 /* Object-oriented operations */
 
+/*
 #define Lookup(obj, lab) \
   Field (Field (Field (obj, 0), ((lab) >> 16) / sizeof (value)), \
          ((lab) / sizeof (value)) & 0xFF)
+*/
+#define Lookup(obj, lab) Field (Field (obj, 0), Int_val(lab))
 
     Instruct(GETMETHOD):
       accu = Lookup(sp[0], accu);
       Next;
+
+    Instruct(GETMETIND): {
+      /* accu == object, *pc == label */
+      value tags = Field (Field(accu,0), 0);
+      value tag = *pc;
+      pc++;
+      int li = 0, hi = Wosize_val(tags)-1, mi;
+      value low = Field(tags,li), high = Field(tags,hi), mid;
+      while (li < hi) {
+        mi = (li+hi+1) >> 1;
+        mid = Field(tags,mi);
+        if (tag < mid) hi = mi-1;
+        else li = mi;
+      }
+      accu = Field (Field(obj,0), li+1);
+      Next;
+    }
 
 /* Debugging and machine control */
 

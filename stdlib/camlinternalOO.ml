@@ -58,181 +58,30 @@ let first_bucket = 0
 let bucket_size = 32                    (* Must be 256 or less *)
 let initial_object_size = 2
 
-(**** Index ****)
-
-type label = int
-
-let label_count = ref 0
-
-let next label =
-  incr label_count;
-  let label = label + step in
-  if label mod (step * bucket_size) = 0 then
-    label + step * (65536 - bucket_size)
-  else
-    label
-
-let decode label =
-  (label / 65536 / step, (label mod (step * bucket_size)) / step)
-
 (**** Items ****)
 
 type item
 
 let dummy_item = (magic () : item)
 
-(**** Buckets ****)
+(**** Types ****)
 
-type bucket = item array
-
-let version = ref 0
-
-let set_bucket_version (bucket : bucket) =
-  bucket.(bucket_size) <- (magic !version : item)
-
-let bucket_version bucket =
-  (magic bucket.(bucket_size) : int)
-
-let bucket_list = ref []
-
-let empty_bucket = [| |]
-
-let new_bucket () =
-  let bucket = Array.create (bucket_size + 1) dummy_item in
-  set_bucket_version bucket;
-  bucket_list := bucket :: !bucket_list;
-  bucket
-
-let copy_bucket bucket =
-  let bucket = Array.copy bucket in
-  set_bucket_version bucket;
-  bucket.(bucket_size) <- (magic !version : item);
-  bucket_list := bucket :: !bucket_list;
-  bucket
-
-(**** Make a clean bucket ****)
-
-let new_filled_bucket pos methods =
-  let bucket = new_bucket () in
-  List.iter
-    (fun (lab, met) ->
-       let (buck, elem) = decode lab in
-       if buck = pos then
-         bucket.(elem) <- (magic met : item))
-    (List.rev methods);
-  bucket
-
-(**** Bucket merging ****)
-
-let small_buckets = ref (Array.create 10 [| |])
-let small_bucket_count = ref 0
-
-let insert_bucket bucket =
-  let length = Array.length !small_buckets in
-  if !small_bucket_count >= length then begin
-    let new_array = Array.create (2 * length) [| |] in
-    Array.blit !small_buckets 0 new_array 0 length;
-    small_buckets := new_array
-  end;
-  !small_buckets.(!small_bucket_count) <- bucket;
-  incr small_bucket_count
-
-let remove_bucket n =
-  !small_buckets.(n) <- !small_buckets.(!small_bucket_count - 1);
-  decr small_bucket_count
-
-let bucket_used b =
-  let n = ref 0 in
-  for i = 0 to bucket_size - 1 do
-    if b.(i) != dummy_item then incr n
-  done;
-  !n
-
-let small_bucket b = bucket_used b <= params.bucket_small_size
-
-exception Failed
-
-let rec except e =
-  function
-    [] -> []
-  | e'::l -> if e == e' then l else e'::(except e l)
-
-let merge_buckets b1 b2 =
-  for i = 0 to bucket_size - 1 do
-    if
-      (b2.(i) != dummy_item) && (b1.(i) != dummy_item) && (b2.(i) != b1.(i))
-    then
-      raise Failed
-  done;
-  for i = 0 to bucket_size - 1 do
-    if b2.(i) != dummy_item then
-      b1.(i) <- b2.(i)
-  done;
-  bucket_list := except b2 !bucket_list;
-  b1
-
-let prng = Random.State.make [| 0 |];;
-
-let rec choose bucket i =
-  if (i > 0) && (!small_bucket_count > 0) then begin
-    let n = Random.State.int prng !small_bucket_count in
-    if not (small_bucket !small_buckets.(n)) then begin
-      remove_bucket n; choose bucket i
-    end else
-      try
-        merge_buckets !small_buckets.(n) bucket
-      with Failed ->
-        choose bucket (i - 1)
-  end else begin
-    insert_bucket bucket;
-    bucket
-  end
-
-let compact b =
-  if
-    (b != empty_bucket) && (bucket_version b = !version) && (small_bucket b)
-  then
-    choose b params.retry_count
-  else
-    b
-
-let compact_buckets buckets =
-  for i = first_bucket to Array.length buckets - 1 do
-    buckets.(i) <- compact buckets.(i)
-  done
+type label = int
+type closure = item
+type obj = t array
+external ret : (obj -> 'a) -> closure = "%identity"
 
 (**** Labels ****)
 
-let first_label = first_bucket * 65536 * step
-
-let last_label = ref first_label
-let methods = Hashtbl.create 101
-
-let new_label () =
-  let label = !last_label in
-  last_label := next !last_label;
-  label
-
-let new_method met =
-  try
-    Hashtbl.find methods met
-  with Not_found ->
-    let label = new_label () in
-    Hashtbl.add methods met label;
-    label
-
-let public_method_label met =
-  try
-    Hashtbl.find methods met
-  with Not_found ->
-    invalid_arg "Oo.public_method_label"
-
-let new_anonymous_method =
-  new_label
-
-(**** Types ****)
-
-type obj = t array
+let public_method_label s =
+  let accu = ref 0 in
+  for i = 0 to String.length s - 1 do
+    accu := 223 * !accu + Char.code s.[i]
+  done;
+  (* reduce to 31 bits *)
+  accu := !accu land (1 lsl 31 - 1);
+  (* make it signed for 64 bits architectures *)
+  if !accu > 0x3FFFFFFF then !accu - (1 lsl 31) else !accu
 
 (**** Sparse array ****)
 
@@ -247,7 +96,7 @@ type labs = bool Labs.t
 (* The compiler assumes that the first field of this structure is [size]. *)
 type table =
  { mutable size: int;
-   mutable buckets: bucket array;
+   mutable methods: closure array;
    mutable methods_by_name: meths;
    mutable methods_by_label: labs;
    mutable previous_states:
@@ -258,20 +107,20 @@ type table =
    mutable initializers: (obj -> unit) list }
 
 let dummy_table =
-  { buckets = [| |];
+  { methods = [| |];
     methods_by_name = Meths.empty;
     methods_by_label = Labs.empty;
     previous_states = [];
     hidden_meths = [];
     vars = Vars.empty;
     initializers = [];
-    size = initial_object_size }
+    size = 0 }
 
 let table_count = ref 0
 
-let new_table () =
+let new_table public =
   incr table_count;
-  { buckets = [| |];
+  { methods = [| public |];
     methods_by_name = Meths.empty;
     methods_by_label = Labs.empty;
     previous_states = [];
@@ -281,22 +130,16 @@ let new_table () =
     size = initial_object_size }
 
 let resize array new_size =
-  let old_size = Array.length array.buckets in
+  let old_size = Array.length array.methods in
   if new_size > old_size then begin
-    let new_buck = Array.create new_size empty_bucket in
-    Array.blit array.buckets 0 new_buck 0 old_size;
-    array.buckets <- new_buck
+    let new_buck = Array.create new_size dummy_item in
+    Array.blit array.methods 0 new_buck 0 old_size;
+    array.methods <- new_buck
  end
 
 let put array label element =
-  let (buck, elem) = decode label in
-  resize array (buck + 1);
-  let bucket = ref (array.buckets.(buck)) in
-  if !bucket == empty_bucket then begin
-    bucket := new_bucket ();
-    array.buckets.(buck) <- !bucket
-  end;
-  !bucket.(elem) <- element
+  resize array (label + 1);
+  array.methods.(label) <- element
 
 (**** Classes ****)
 
@@ -306,11 +149,16 @@ let inst_var_count = ref 0
 type t
 type meth = item
 
+let new_method table =
+  let index = Array.length table.methods in
+  resize table (index + 1);
+  index
+
 let get_method_label table name =
   try
     Meths.find name table.methods_by_name
   with Not_found ->
-    let label = new_anonymous_method () in
+    let label = new_method table in
     table.methods_by_name <- Meths.add name label table.methods_by_name;
     table.methods_by_label <- Labs.add label true table.methods_by_label;
     label
@@ -323,9 +171,8 @@ let set_method table label element =
     table.hidden_meths <- (label, element) :: table.hidden_meths
 
 let get_method table label =
-  try List.assoc label table.hidden_meths with Not_found ->
-  let (buck, elem) = decode label in
-  table.buckets.(buck).(elem)
+  try List.assoc label table.hidden_meths
+  with Not_found -> table.methods.(label)
 
 let to_list arr =
   if arr == magic 0 then [] else Array.to_list arr
@@ -406,12 +253,12 @@ let get_variable table name =
 let add_initializer table f =
   table.initializers <- f::table.initializers
 
-let create_table public_methods =
-  let table = new_table () in
+let create_table public_map public_methods =
+  let table = new_table public_map in
   if public_methods != magic 0 then
     Array.iter
       (function met ->
-        let lab = new_method met in
+        let lab = new_method table in
         table.methods_by_name  <- Meths.add met lab table.methods_by_name;
         table.methods_by_label <- Labs.add lab true table.methods_by_label)
       public_methods;
@@ -419,8 +266,6 @@ let create_table public_methods =
 
 let init_class table =
   inst_var_count := !inst_var_count + table.size - 1;
-  if params.compact_table then
-    compact_buckets table.buckets;
   table.initializers <- List.rev table.initializers
 
 let inherits cla vals virt_meths concr_meths (_, super, _, env) top =
@@ -430,16 +275,16 @@ let inherits cla vals virt_meths concr_meths (_, super, _, env) top =
   widen cla;
   init
 
-let make_class pub_meths class_init =
-  let table = create_table pub_meths in
+let make_class pub_map pub_meths class_init =
+  let table = create_table pub_map pub_meths in
   let env_init = class_init table in
   init_class table;
   (env_init (Obj.repr 0), class_init, env_init, Obj.repr 0)
 
 type init_table = { mutable env_init: t; mutable class_init: table -> t }
 
-let make_class_store pub_meths class_init init_table =
-  let table = create_table pub_meths in
+let make_class_store pub_map pub_meths class_init init_table =
+  let table = create_table pub_map pub_meths in
   let env_init = class_init table in
   init_class table;
   init_table.class_init <- class_init;
@@ -451,7 +296,7 @@ let create_object table =
   (* XXX Appel de [obj_block] *)
   let obj = Obj.new_block Obj.object_tag table.size in
   (* XXX Appel de [modify] *)
-  Obj.set_field obj 0 (Obj.repr table.buckets);
+  Obj.set_field obj 0 (Obj.repr table.methods);
   set_id obj last_id;
   (Obj.obj obj)
 
@@ -460,7 +305,7 @@ let create_object_opt obj_0 table =
     (* XXX Appel de [obj_block] *)
     let obj = Obj.new_block Obj.object_tag table.size in
     (* XXX Appel de [modify] *)
-    Obj.set_field obj 0 (Obj.repr table.buckets);
+    Obj.set_field obj 0 (Obj.repr table.methods);
     set_id obj last_id;
     (Obj.obj obj)
   end
@@ -532,9 +377,6 @@ let lookup_tables root keys =
     build_path (Array.length keys - 1) keys root
 
 (**** builtin methods ****)
-
-type closure = item
-external ret : (obj -> 'a) -> closure = "%identity"
 
 let get_const x = ret (fun obj -> x)
 let get_var n   = ret (fun obj -> Array.unsafe_get obj n)
@@ -635,35 +477,8 @@ let set_methods table methods =
 (**** Statistics ****)
 
 type stats =
-  { classes: int; labels: int; methods: int; inst_vars: int; buckets: int;
-    distrib : int array; small_bucket_count: int; small_bucket_max: int }
-
-let distrib () =
-  let d = Array.create 32 0 in
-  List.iter
-    (function b ->
-       let n = bucket_used b in
-       d.(n - 1) <- d.(n - 1) + 1)
-    !bucket_list;
-  d
+  { classes: int; methods: int; inst_vars: int; }
 
 let stats () =
-  { classes = !table_count; labels = !label_count;
-    methods = !method_count; inst_vars = !inst_var_count;
-    buckets = List.length !bucket_list; distrib = distrib ();
-    small_bucket_count = !small_bucket_count;
-    small_bucket_max = Array.length !small_buckets  }
-
-let sort_buck lst =
-  List.map snd
-    (Sort.list (fun (n, _) (n', _) -> n <= n')
-       (List.map (function b -> (bucket_used b, b)) lst))
-
-let show_buckets () =
-  List.iter
-    (function b ->
-       for i = 0 to bucket_size - 1 do
-         print_char (if b.(i) == dummy_item then '.' else '*')
-       done;
-       print_newline ())
-    (sort_buck !bucket_list)
+  { classes = !table_count;
+    methods = !method_count; inst_vars = !inst_var_count; }

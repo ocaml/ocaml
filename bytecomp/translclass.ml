@@ -204,12 +204,9 @@ let rec build_object_init_0 cl_table params cl copy_env subst_env top ids =
 
 
 let bind_method tbl public_methods lab id cl_init =
-  if List.mem lab public_methods then
-    Llet(Alias, id, Lvar (meth lab), cl_init)
-  else
-    Llet(StrictOpt, id, Lapply (oo_prim "get_method_label",
-                                [Lvar tbl; transl_label lab]),
-    cl_init)
+  Llet(StrictOpt, id, Lapply (oo_prim "get_method_label",
+                              [Lvar tbl; transl_label lab]),
+       cl_init)
 
 let bind_methods tbl public_methods meths cl_init =
   Meths.fold (bind_method tbl public_methods) meths cl_init
@@ -572,6 +569,7 @@ let transl_class ids cl_id arity pub_meths cl =
           if new_ids = [] then body else
           subst_lambda (subst env body 0 new_ids_meths) body in
         begin try
+          raise Not_found;
           (* Doesn't seem to improve size for bytecode *)
           (* if not !Clflags.native_code then raise Not_found; *)
           builtin_meths arr [self] env env2 (lfunction args body')
@@ -611,9 +609,19 @@ let transl_class ids cl_id arity pub_meths cl =
   and class_init = Ident.create "class_init"
   and env_init = Ident.create "env_init"
   and obj_init = Ident.create "obj_init" in
+  let public_map pub_meths =
+    let meth = Ident.create "meth" in
+    let i = ref 0 in
+    let index m = incr i;
+      (Const_int (Btype.hash_variant m), Lconst(Const_pointer !i)) in
+    Lfunction(Curried, [meth],
+              Matching.make_test_sequence None (Pintcomp Cneq) (Pintcomp Clt)
+                (Lvar meth) (List.map index pub_meths))
+  in
   let ltable table lam =
     Llet(Strict, table,
-         Lapply (oo_prim "create_table", [transl_meth_list pub_meths]), lam)
+         Lapply (oo_prim "create_table",
+                 [public_map pub_meths; transl_meth_list pub_meths]), lam)
   and ldirect obj_init =
     Llet(Strict, obj_init, cl_init,
          Lsequence(Lapply (oo_prim "init_class", [Lvar cla]),
@@ -630,7 +638,7 @@ let transl_class ids cl_id arity pub_meths cl =
          lam class_init)
   and lbody class_init =
     Lapply (oo_prim "make_class",
-            [transl_meth_list pub_meths; Lvar class_init])
+            [public_map pub_meths;transl_meth_list pub_meths; Lvar class_init])
   and lbody_virt lenvs =
     Lprim(Pmakeblock(0, Immutable),
           [lambda_unit; Lfunction(Curried,[cla], cl_init); lambda_unit; lenvs])
@@ -701,7 +709,7 @@ let transl_class ids cl_id arity pub_meths cl =
               if not concrete then lclass_virt () else
               lclass (
               Lapply (oo_prim "make_class_store",
-                      [transl_meth_list pub_meths;
+                      [public_map pub_meths; transl_meth_list pub_meths;
                        Lvar class_init; Lvar cached]))),
   make_envs (
   if ids = [] then Lapply(lfield cached 0, [lenvs]) else

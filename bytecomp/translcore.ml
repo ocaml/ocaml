@@ -655,12 +655,19 @@ and transl_exp0 e =
         (Lifthenelse(transl_exp cond, event_before body (transl_exp body),
                      staticfail))
   | Texp_send(expr, met) ->
-      let met_id =
+      let self = Ident.create "obj" in
+      let met_index =
         match met with
-          Tmeth_name nm -> Translobj.meth nm
-        | Tmeth_val id  -> id
+          Tmeth_name nm ->
+            Lapply(Lprim(Pfield 0,[Lprim(Pfield 0,[Lvar self])]),
+                   [Translobj.meth nm])
+        | Tmeth_val id  -> Lvar id
       in
-      event_after e (Lsend(Lvar met_id, transl_exp expr, []))
+      event_after e
+        (Llet(Strict, self, transl_exp expr,
+              Lapply(Lprim(Parrayrefu Paddrarray,
+                           [Lprim(Pfield 0,[Lvar self]); met_index]),
+                     [Lvar self])))
   | Texp_new (cl, _) ->
       Lapply(Lprim(Pfield 0, [transl_path cl]), [lambda_unit])
   | Texp_instvar(path_self, path) ->

@@ -17,18 +17,16 @@
     All functions in this module are for system use only, not for the
     casual user. *)
 
-(** {6 Methods} *)
-
-type label
-val new_method : string -> label
-val public_method_label : string -> label
-
 (** {6 Classes} *)
 
+type label
 type table
 type meth
 type t
 type obj
+type closure
+val public_method_label : string -> label
+val new_method : table -> label
 val new_variable : table -> string -> int
 val new_variables : table -> string array -> int
 val get_variable : table -> string -> int
@@ -40,17 +38,17 @@ val narrow : table -> string array -> string array -> string array -> unit
 val widen : table -> unit
 val add_initializer : table -> (obj -> unit) -> unit
 val dummy_table : table
-val create_table : string array -> table
+val create_table : closure -> string array -> table
 val init_class : table -> unit
 val inherits :
     table -> string array -> string array -> string array ->
     (t * (table -> obj -> Obj.t) * t * obj) -> bool -> Obj.t
 val make_class :
-    string array -> (table -> Obj.t -> t) ->
+    closure -> string array -> (table -> Obj.t -> t) ->
     (t * (table -> Obj.t -> t) * (Obj.t -> t) * Obj.t)
 type init_table
 val make_class_store :
-    string array -> (table -> t) -> init_table -> unit
+    closure -> string array -> (table -> t) -> init_table -> unit
 
 (** {6 Objects} *)
 
@@ -70,7 +68,6 @@ val lookup_tables : tables -> table array -> tables
 (** {6 Builtins to reduce code size} *)
 
 open Obj
-type closure
 val get_const : t -> closure
 val get_var : int -> closure
 val get_env : int -> int -> closure
@@ -130,12 +127,6 @@ val params : params
 
 type stats =
   { classes : int; 
-    labels : int; 
     methods : int; 
-    inst_vars : int; 
-    buckets : int;
-    distrib : int array; 
-    small_bucket_count : int; 
-    small_bucket_max : int }
+    inst_vars : int }
 val stats : unit -> stats
-val show_buckets : unit -> unit
