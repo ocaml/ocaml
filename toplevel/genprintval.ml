@@ -164,7 +164,7 @@ module Make(O : OBJ) = struct
 
     exception Ellipsis
 
-    let cautious f arg = try f arg with Ellipsis -> print_string "..."
+    let cautious f ppf arg = try f arg with Ellipsis -> fprintf ppf "..."
 
     let print_value max_steps max_depth check_depth env obj ppf ty =
 
@@ -203,8 +203,7 @@ module Make(O : OBJ) = struct
                     if O.is_block next_obj then
                       fprintf ppf ";@ %a" print_conses next_obj
                   in
-                  fprintf ppf "@[<1>[%a]@]"
-                  (fun ppf obj -> cautious (print_conses ppf) obj) obj
+                  fprintf ppf "@[<1>[%a]@]" (cautious (print_conses ppf)) obj
                 end
               end else
                 fprintf ppf "[]"
@@ -219,8 +218,7 @@ module Make(O : OBJ) = struct
                     print_val 0 (depth - 1) (O.field obj i) ppf ty_arg;
                     print_items ppf (i + 1)
                   end in
-                fprintf ppf "@[<2>[|%a|]@]"
-                        (fun ppf i -> cautious (print_items ppf) i) 0;
+                fprintf ppf "@[<2>[|%a|]@]" (cautious (print_items ppf)) 0;
               end
           | Tconstr(path, ty_list, _) ->
               begin try
@@ -254,9 +252,8 @@ module Make(O : OBJ) = struct
                           then fprintf ppf "@[<2>(%a@ %a)@]"
                           else fprintf ppf "@[<1>%a@ %a@]")
                           (print_constr env path) constr_name
-                          (fun ppf ty ->
-                             cautious
-                              (print_val 2 (depth - 1) (O.field obj 0) ppf) ty)
+                          (cautious
+                             (print_val 2 (depth - 1) (O.field obj 0) ppf))
                           ty1;
                     | tyl ->
                         if check_depth depth obj ty then
@@ -279,13 +276,13 @@ module Make(O : OBJ) = struct
                           if pos > 0 then fprintf ppf ";@ ";
                           fprintf ppf "@[<1>%a=@,%a@]"
                           (print_label env path) lbl_name
-                          (fun ppf t ->
-                             cautious (print_val 0 (depth - 1)
-                                      (O.field obj pos) ppf) t) ty_arg;
+                          (cautious (print_val 0 (depth - 1)
+                                     (O.field obj pos) ppf))
+                          ty_arg;
                           (print_fields (pos + 1)) ppf remainder in
 
                       fprintf ppf "@[<1>{%a}@]"
-                      (fun ppf l -> cautious (print_fields 0 ppf) l) lbl_list;
+                      (cautious (print_fields 0 ppf)) lbl_list;
                     end
               with
                 Not_found ->                (* raised by Env.find_type *)
@@ -305,17 +302,18 @@ module Make(O : OBJ) = struct
                    (fun (l, f) -> if Btype.hash_variant l = tag then
                      match Btype.row_field_repr f with
                      | Rpresent(Some ty) ->
-                        fprintf ppf "%s@ " l;
-                        cautious (print_val 2 (depth - 1) (O.field obj 1) ppf)ty
+                        fprintf ppf "%s@ %a" l
+                        (cautious (print_val 2 (depth - 1) (O.field obj 1) ppf))
+                        ty
                      | _ -> ()))
                   row.row_fields;
               end else begin
                 let tag : int = O.obj obj in
-                print_char '`';
-                List.iter
-                  (fun (l,_) ->
-                    if Btype.hash_variant l = tag then fprintf ppf "%s" l)
-                  row.row_fields
+                let pr_rows ppf =
+                  List.iter
+                  (fun (l, _) ->
+                    if Btype.hash_variant l = tag then fprintf ppf "%s" l) in
+                fprintf ppf "`%a" pr_rows row.row_fields
               end
           | Tobject (_, _) ->
               fprintf ppf "<obj>"
@@ -331,8 +329,8 @@ module Make(O : OBJ) = struct
               if i > 0 then fprintf ppf ",@ ";
               print_val prio (depth - 1) (O.field obj i) ppf ty;
               print_list (i + 1) ty_list in
-      cautious (print_list 0) ty_list
+      cautious (print_list 0) ppf ty_list
 
-    in cautious (print_val 0 max_depth obj ppf) ty
+    in cautious (print_val 0 max_depth obj ppf) ppf ty
 
 end

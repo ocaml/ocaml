@@ -69,7 +69,7 @@ let load_lambda ppf lam =
 
 let rec print_items env ppf = function
   | Tsig_value(id, decl)::rem ->
-      printf "@[<2>%a"
+      fprintf ppf "@[<2>%a"
       (Printtyp.value_description id) decl;
       begin match decl.val_kind with
       | Val_prim _ -> ()
@@ -145,7 +145,7 @@ let execute_phrase print_outcome ppf phr =
                 Printtyp.type_scheme exp.exp_type
                 (print_value newenv v) exp.exp_type
             | _ ->
-                fprintf ppf "@[<v>%a@]@\n"
+                fprintf ppf "@[<v>%a@]@."
                 (print_items newenv) sg
           end;
           toplevel_env := newenv;
