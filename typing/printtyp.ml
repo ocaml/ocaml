@@ -434,13 +434,10 @@ let metho sch concrete (lab, kind, ty) =
 
 let rec prepare_class_type path =
   function
-    Tcty_constr (p, rv::tyl, cty)
-        when not (Path.same p path) && (repr rv).desc = Tvar ->
+    Tcty_constr (p, tyl, cty) ->
       let sty = Ctype.self_type cty in
       visited_objects := sty :: !visited_objects;
       List.iter mark_loops tyl
-  | Tcty_constr (_, _, cty)  ->
-      prepare_class_type path cty
   | Tcty_signature sign ->
       let sty = repr sign.cty_self in
       (* Self may have a name *)
@@ -456,10 +453,7 @@ let rec prepare_class_type path =
 
 let rec perform_class_type sch p params =
   function
-    Tcty_constr (p', rv::tyl, cty)
-(* XXX Critere de non-expansion insuffisant :
-   expanser egalement s'il y a plus de methods publiques *)
-        when not (Path.same p p') && (repr rv).desc = Tvar ->
+    Tcty_constr (p', tyl, cty) ->
       let sty = Ctype.self_type cty in
       open_box 0;
       if tyl <> [] then begin
@@ -480,13 +474,11 @@ let rec perform_class_type sch p params =
         close_box ()
       end;
       close_box ()
-  | Tcty_constr (_, _, cty)  ->
-      perform_class_type sch p params cty
   | Tcty_signature sign ->
       let sty = repr sign.cty_self in
       open_hvbox 2;
       open_box 2;
-      print_string "sig";
+      print_string "object";
       if List.memq sty !aliased then begin
         print_space ();
         open_box 0;
@@ -507,7 +499,7 @@ let rec perform_class_type sch p params =
       close_box()
   | Tcty_fun (ty, cty) ->
       open_box 0;
-      print_string "{"; typexp sch 0 ty; print_string "} ->";
+      typexp sch 0 ty; print_string " ->";
       print_space ();
       perform_class_type sch p params cty;
       close_box ()
@@ -558,7 +550,8 @@ let class_declaration id cl =
   end;
   ident id;
   print_space ();
-  alternate_class_type true cl.cty_path params cl.cty_type;
+  print_string ":"; print_space ();
+  perform_class_type true cl.cty_path params cl.cty_type;
   close_box ()
 
 let cltype_declaration id cl =
@@ -724,7 +717,7 @@ let rec filter_trace =
   | _ ->
       []
 
-let unification_error tr txt1 txt2 =
+let unification_error unif tr txt1 txt2 =
   reset ();
   let (t3, t4) = mismatch tr in
   match tr with
@@ -743,17 +736,19 @@ let unification_error tr txt1 txt2 =
       type_expansion t2 t2';
       close_box();
       trace false (fun _ -> print_string "is not compatible with type") tr;
-      print_cut ();
       begin match t3.desc, t4.desc with
         Tfield _, Tvar | Tvar, Tfield _ ->
+          print_cut ();
           print_string "Self type cannot escape its class"
-      | Tconstr (p, _, _), Tvar ->
+      | Tconstr (p, _, _), Tvar when unif ->
+          print_cut ();
           open_box 0;
           print_string "The type constructor"; print_break 1 2;
           path p;
           print_space (); print_string "would escape its scope";
           close_box()
-      | Tvar, Tconstr (p, _, _) ->
+      | Tvar, Tconstr (p, _, _) when unif ->
+          print_cut ();
           open_box 0;
           print_string "The type constructor"; print_break 1 2;
           path p;
@@ -761,13 +756,16 @@ let unification_error tr txt1 txt2 =
           close_box()
       | Tfield ("*dummy method*", _, _, _), _
       | _, Tfield ("*dummy method*", _, _, _) ->
+          print_cut ();
           print_string "Self type cannot be unified with a closed object type"
       | Tfield (l, _, _, _), _ ->
+          print_cut ();
           open_box 0;
           print_string "Only the first object type has a method ";
           print_string l;
           close_box()
       | _, Tfield (l, _, _, _) ->
+          print_cut ();
           open_box 0;
           print_string "Only the second object type has a method ";
           print_string l;
@@ -776,3 +774,6 @@ let unification_error tr txt1 txt2 =
           ()
       end;
       close_box ()
+
+let trace fst txt tr =
+  trace fst txt (filter_trace tr)
