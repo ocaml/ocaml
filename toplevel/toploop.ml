@@ -213,8 +213,8 @@ let use_file ppf name =
     success
   with Not_found -> fprintf ppf "Cannot find file %s.@." name; false
 
-let use_silently name =
-  protect use_print_results false (fun () -> use_file name)
+let use_silently ppf name =
+  protect use_print_results false (fun () -> use_file ppf name)
 
 (* Reading function for interactive use *)
 
