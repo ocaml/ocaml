@@ -117,7 +117,7 @@ let implementation sourcefile =
   try
     let (str, sg, finalenv) =
       Typemod.type_structure (initial_env()) ast in
-    if !Clflags.print_types then (Printtyp.signature sg; print_flush());
+    if !Clflags.print_types then (Printtyp.signature sg; print_newline());
     let (coercion, crc) =
       if Sys.file_exists (prefixname ^ ".mli") then begin
         let intf_file =
