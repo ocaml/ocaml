@@ -36,77 +36,25 @@
 /* Allocation */
 
         .text
+	.globl  G(caml_call_gc)
         .globl  G(caml_alloc1)
         .globl  G(caml_alloc2)
         .globl  G(caml_alloc3)
         .globl  G(caml_alloc)
-	.globl  G(caml_call_gc)
-
-        .align  FUNCTION_ALIGN
-G(caml_alloc1):
-        movl    G(young_ptr), %eax
-        subl    $8, %eax
-        movl    %eax, G(young_ptr)
-        cmpl    G(young_limit), %eax
-        jb      L100
-        ret
-L100:   movl    $8, %eax
-        jmp     L105
-
-        .align  FUNCTION_ALIGN
-G(caml_alloc2):
-        movl    G(young_ptr), %eax
-        subl    $12, %eax
-        movl    %eax, G(young_ptr)
-        cmpl    G(young_limit), %eax
-        jb      L101
-        ret
-L101:   movl    $12, %eax
-        jmp     L105
-
-        .align  FUNCTION_ALIGN
-G(caml_alloc3):
-        movl    G(young_ptr), %eax
-        subl    $16, %eax
-        movl    %eax, G(young_ptr)
-        cmpl    G(young_limit), %eax
-        jb      L102
-        ret
-L102:   movl    $16, %eax
-        jmp     L105
-
-        .align  FUNCTION_ALIGN
-G(caml_alloc):
-        pushl   %eax
-        movl    G(young_ptr), %eax
-        subl    (%esp), %eax
-        movl    %eax, G(young_ptr)
-        cmpl    G(young_limit), %eax
-        jb      L103
-        addl    $4, %esp
-        ret
-L103:   popl    %eax
-        jmp     L105
 
 G(caml_call_gc):
-    /* Adjust return address and recover desired size in %eax */
-        popl    %eax
-        addl    $2, %eax
-        pushl   %eax
-        movzwl  -2(%eax), %eax
-L105:
     /* Record lowest stack address and return address */
-        popl    G(caml_last_return_address)
-        movl    %esp, G(caml_bottom_of_stack)
+        movl    0(%esp), %eax
+        movl    %eax, G(caml_last_return_address)
+        leal    4(%esp), %eax
+        movl    %eax, G(caml_bottom_of_stack)
     /* Save all regs used by the code generator */
-        movl    %ebx, G(gc_entry_regs) + 4
+L105:   movl    %ebx, G(gc_entry_regs) + 4
         movl    %ecx, G(gc_entry_regs) + 8
         movl    %edx, G(gc_entry_regs) + 12
         movl    %esi, G(gc_entry_regs) + 16
         movl    %edi, G(gc_entry_regs) + 20
         movl    %ebp, G(gc_entry_regs) + 24
-    /* Save desired size */
-        pushl   %eax
     /* Call the garbage collector */
         call    G(garbage_collection)
     /* Restore all regs used by the code generator */
@@ -116,15 +64,72 @@ L105:
         movl    G(gc_entry_regs) + 16, %esi
         movl    G(gc_entry_regs) + 20, %edi
         movl    G(gc_entry_regs) + 24, %ebp
-    /* Recover desired size */
-        popl    %eax
-    /* Decrement young_ptr by desired size */
-        subl    %eax, G(young_ptr)
-    /* Reload result of allocation in %eax */
-        movl    G(young_ptr), %eax
     /* Return to caller */
-        pushl   G(caml_last_return_address)
         ret
+
+        .align  FUNCTION_ALIGN
+G(caml_alloc1):
+        movl    G(young_ptr), %eax
+        subl    $8, %eax
+        movl    %eax, G(young_ptr)
+        cmpl    G(young_limit), %eax
+        jb      L100
+        ret
+L100:   movl    0(%esp), %eax
+        movl    %eax, G(caml_last_return_address)
+        leal    4(%esp), %eax
+        movl    %eax, G(caml_bottom_of_stack)
+        call    L105
+        jmp     caml_alloc1
+
+        .align  FUNCTION_ALIGN
+G(caml_alloc2):
+        movl    G(young_ptr), %eax
+        subl    $12, %eax
+        movl    %eax, G(young_ptr)
+        cmpl    G(young_limit), %eax
+        jb      L101
+        ret
+L101:   movl    0(%esp), %eax
+        movl    %eax, G(caml_last_return_address)
+        leal    4(%esp), %eax
+        movl    %eax, G(caml_bottom_of_stack)
+        call    L105
+        jmp     caml_alloc2
+
+        .align  FUNCTION_ALIGN
+G(caml_alloc3):
+        movl    G(young_ptr), %eax
+        subl    $16, %eax
+        movl    %eax, G(young_ptr)
+        cmpl    G(young_limit), %eax
+        jb      L102
+        ret
+L102:   movl    0(%esp), %eax
+        movl    %eax, G(caml_last_return_address)
+        leal    4(%esp), %eax
+        movl    %eax, G(caml_bottom_of_stack)
+        call    L105
+        jmp     caml_alloc3
+
+        .align  FUNCTION_ALIGN
+G(caml_alloc):
+	subl	G(young_ptr), %eax      /* eax = size - young_ptr */
+        negl    %eax                    /* eax = young_ptr - size */
+        cmpl    G(young_limit), %eax
+        jb      L103
+        movl    %eax, G(young_ptr)
+        ret
+L103:   subl	G(young_ptr), %eax      /* eax = - size */
+        negl    %eax                    /* eax = size */
+        pushl   %eax                    /* save desired size */
+        movl    4(%esp), %eax
+        movl    %eax, G(caml_last_return_address)
+        leal    8(%esp), %eax
+        movl    %eax, G(caml_bottom_of_stack)
+        call    L105
+        popl    %eax                    /* recover desired size */
+        jmp     caml_alloc
 
 /* Call a C function from Caml */
 

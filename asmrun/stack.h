@@ -35,9 +35,6 @@
 
 #ifdef TARGET_i386
 #define Saved_return_address(sp) *((long *)(sp - 4))
-#define Already_scanned(sp, retaddr) ((retaddr & 1) == 0)
-#define Mark_scanned(sp, retaddr) (*((long *)(sp - 4)) += 1)
-#define Mask_already_scanned(retaddr) (((retaddr + 1) & ~1) - 1)
 #define Callback_link(sp) ((struct callback_link *)(sp + 8))
 #endif
 
