@@ -30,10 +30,10 @@ BASIC=pervasives.cmo array.cmo list.cmo char.cmo string.cmo sys.cmo \
   buffer.cmo printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo \
   digest.cmo random.cmo oo.cmo genlex.cmo callback.cmo weak.cmo \
   lazy.cmo filename.cmo int32.cmo int64.cmo nativeint.cmo
-LABELLED=arrayLabels.ml listLabels.ml stringLabels.ml
+LABELLED=arrayLabels.ml listLabels.ml stringLabels.ml stdLabels.ml
 
-OBJS=$(BASIC) stdLabels.cmo
-ALLOBJS=$(BASIC) $(LABELLED:.ml=.cmo) stdLabels.cmo
+OBJS=$(BASIC) labelled.cmo
+ALLOBJS=$(BASIC) $(LABELLED:.ml=.cmo)
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 
@@ -108,19 +108,15 @@ oo.cmi: oo.mli
 	$(CAMLC) $(COMPFLAGS) -nopervasives -c oo.mli
 
 # labelled modules require the -nolabels flag
-labelled-cmo: $(LABELLED)
+labelled.cmo: $(LABELLED)
 	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.cmo)
 	touch $@
-labelled-cmx: $(LABELLED)
+labelled.cmx: $(LABELLED)
 	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.cmx)
 	touch $@
-labelled-p.cmx: $(LABELLED)
+labelled.p.cmx: $(LABELLED)
 	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.p.cmx)
 	touch $@
-
-stdLabels.cmo: labelled-cmo
-stdLabels.cmx: labelled-cmx
-stdLabels.p.cmx: labelled-p.cmx
 
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
 
@@ -148,7 +144,7 @@ $(OBJS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmi $(OPTCOMPILER)
 $(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER)
 
 clean::
-	rm -f *.cm* *.o *.a labelled-*
+	rm -f *.cm* *.o *.a
 	rm -f *~
 
 include .depend
