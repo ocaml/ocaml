@@ -98,7 +98,7 @@ let class_type env d1 d2 =
   Ctype.equal env (List.map fst cstr1) self1 (List.map fst cstr2) self2
       &
   (* Same concretes methods *)
-  for_all2 (=) (Sort.list (<) d1.cty_concr) (Sort.list (<) d2.cty_concr)
+  Concr.equal d1.cty_concr d2.cty_concr
       &
   (* If virtual, stays virtual *)
   (d1.cty_new <> None or d2.cty_new = None)

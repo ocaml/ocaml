@@ -76,13 +76,14 @@ and record_representation =
 (* Type expressions for classes *)
 
 module Vars : Map.S with type key = string
+module Concr : Set.S with type elt = string
 
 type class_type =
   { cty_params: type_expr list;
     cty_args: type_expr list;
     cty_vars: (mutable_flag * type_expr) Vars.t;
     cty_self: type_expr;
-    cty_concr: string list;
+    cty_concr: Concr.t;
     mutable cty_new: type_expr option }
 
 (* Value expressions for the core language *)

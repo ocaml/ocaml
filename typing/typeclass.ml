@@ -55,7 +55,7 @@ let rec add_methods env self concr concr_lst t =
   match (Ctype.repr t).desc with
     Tfield (lab, _, t') ->
       Ctype.filter_method env lab self;
-      if List.exists ((=) lab) concr_lst then
+      if Concr.mem lab concr_lst then
         (Ctype.filter_method env lab concr; ());
       add_methods env self concr concr_lst t'
   | _ ->
@@ -98,7 +98,7 @@ let make_stub env cl =
       	       begin match (Ctype.expand_root env anc.cty_self).desc with
                  Tobject (ty, _) ->
                    add_methods env self concr anc.cty_concr ty;
-	           Sort.merge (<) meths anc.cty_concr
+	           Concr.union anc.cty_concr meths
                | _ -> fatal_error "Typeclass.make_stub"
                end
 	 | Pcf_val _ ->
@@ -109,8 +109,8 @@ let make_stub env cl =
 	 | Pcf_meth (lab, _, _) ->
 	     Ctype.filter_method env lab self;
              Ctype.filter_method env lab concr;
-	     Sort.merge (<) meths [lab])
-      [] cl.pcl_field
+	     Concr.add lab meths)
+      Concr.empty cl.pcl_field
   in
   Ctype.close_object concr;
 
@@ -316,12 +316,13 @@ let type_class_field env var_env self cl (met_env, fields, vars_sig) =
         | Some name ->
             let ty = Ctype.newobj (Ctype.newvar ()) in
             let used_methods =
-              List.map
-                (fun lab ->
+              Concr.fold
+                (fun lab rem ->
                    Ctype.unify met_env (Ctype.filter_method met_env lab ty)
                                        (Ctype.filter_method met_env lab self);
-                   (lab, Ident.create lab))
+                   (lab, Ident.create lab)::rem)
                 cl_type.cty_concr
+                []
             in
             Ctype.close_object ty;
             let (id, met_env) =
@@ -736,7 +737,7 @@ let build_abbrevs temp_env env (cl, obj_id) =
       	       begin match (Ctype.expand_root env anc.cty_self).desc with
                  Tobject (ty, _) ->
                    add_methods env self concr anc.cty_concr ty;
-	           Sort.merge (<) meths anc.cty_concr
+	           Concr.union anc.cty_concr meths
                | _ -> fatal_error "Typeclass.make_stub"
                end
 	 | Pctf_val _ ->
@@ -747,8 +748,8 @@ let build_abbrevs temp_env env (cl, obj_id) =
 	 | Pctf_meth (lab, _, _) ->
 	     Ctype.filter_method env lab self;
              Ctype.filter_method env lab concr;
-	     Sort.merge (<) meths [lab])
-      [] cl.pcty_field
+	     Concr.add lab meths)
+      Concr.empty cl.pcty_field
   in
   Ctype.close_object concr;
 

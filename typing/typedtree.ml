@@ -75,14 +75,16 @@ and record_representation =
 
 (* Type expressions for classes *)
 
-module Vars = Map.Make(struct type t = string let compare = compare end)
+module OrderedString = struct type t = string let compare = compare end
+module Vars = Map.Make(OrderedString)
+module Concr = Set.Make(OrderedString)
 
 type class_type =
   { cty_params: type_expr list;
     cty_args: type_expr list;
     cty_vars: (Asttypes.mutable_flag * type_expr) Vars.t;
     cty_self: type_expr;
-    cty_concr: string list;
+    cty_concr: Concr.t;
     mutable cty_new: type_expr option }
 
 (* Value expressions for the core language *)

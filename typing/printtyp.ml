@@ -453,7 +453,7 @@ let class_type id cl_ty =
   let (meths, virt) =
     List.fold_right
       (fun ((lab, ty) as m) (ml, vl) ->
-      	 if List.exists (fun lab' -> lab = lab') cl_ty.cty_concr then
+      	 if Concr.mem lab cl_ty.cty_concr then
 	   (m::ml, vl)
 	 else
 	   (ml, m::vl))
