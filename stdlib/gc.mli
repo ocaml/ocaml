@@ -12,7 +12,9 @@
 
 (* $Id$ *)
 
-(* Module [Gc]: memory management control and statistics *)
+(* Module [Gc]:
+   memory management control and statistics; finalised values
+*)
 
 type stat = {
   minor_words : int;
@@ -97,13 +99,14 @@ type control = {
 -     [verbose]  This value controls the GC messages on standard error output.
              It is a sum of some of the following flags, to print messages
              on the corresponding events:
--            [1 ] Start of major GC cycle.
--            [2 ] Minor collection and major GC slice.
--            [4 ] Growing and shrinking of the heap.
--            [8 ] Resizing of stacks and memory manager tables.
--            [16] Heap compaction.
--            [32] Change of GC parameters.
--            [64] Computation of major GC slice size.
+-            [0x01] Start of major GC cycle.
+-            [0x02] Minor collection and major GC slice.
+-            [0x04] Growing and shrinking of the heap.
+-            [0x08] Resizing of stacks and memory manager tables.
+-            [0x10] Heap compaction.
+-            [0x20] Change of GC parameters.
+-            [0x40] Computation of major GC slice size.
+-            [0x80] Calling of finalisation functions.
              Default: 0.
 -     [stack_limit]  The maximum size of the stack (in words).  This is only
              relevant to the byte-code runtime, as the native code runtime
@@ -139,4 +142,48 @@ val print_stat : out_channel -> unit
 
 val allocated_bytes : unit -> int
   (* Return the total number of bytes allocated since the program was
-     started. *)
+     started.  Warning: on 32-bit machines, this counter can easily
+     get beyond [max_int] and roll over. *)
+
+
+val finalise : ('a -> unit) -> 'a -> unit;;
+  (* [Gc.finalise f v] registers [f] as a finalisation function for [v].
+     [v] must be heap-allocated.  [f] will be called with [v] as
+     argument at some point between the first time [v] becomes unreachable
+     and the time [v] is collected by the GC.  Several functions can
+     be registered for the same value, or even several instances of the
+     same function.  Each instance will be called once (or never,
+     if the program terminates before the GC deallocates [v]).
+     
+     A number of pitfalls are associated with finalised values:
+     finalisation functions are called asynchronously, sometimes
+     even during the execution of other finalisation functions.
+     In a multithreaded program, finalisation functions are called
+     from any thread, thus they cannot not acquire any mutex.
+
+     Anything reachable from the closure of finalisation functions
+     is considered reachable, so the following code will not work:
+-    [ let v = ... in Gc.finalise (fun x -> ...) v ]
+     Instead you should write:
+-    [ let f = fun x -> ... ;; let v = ... in Gc.finalise f v ]
+     
+     The [f] function can use all features of O'Caml, including
+     assignments that make the value reachable again (indeed, the value
+     is already reachable from the stack during the execution of the
+     function).  It can also loop forever (in this case, the other
+     finalisation functions will be called during the execution of f).
+     It can call [Gc.finalise] on [v] or other values to register other
+     functions or even itself.  It can raise an exception; in this case
+     the exception will interrupt whatever the program was doing when
+     the function was called.
+     
+     [Gc.finalise] will raise [Invalid_argument "Gc.finalise"] if [v]
+     is not heap-allocated.  Some examples of values that are not
+     heap-allocated are integers, constant constructors, booleans,
+     the empty array, the empty list, the unit value.  The exact list
+     of what is heap-allocated or not is implementation-dependent.
+     You should also be aware that some optimisations will duplicate
+     some immutable values, especially floating-point numbers when
+     stored into arrays, so they can be finalised and collected while
+     another copy is still in use by the program.
+  *)

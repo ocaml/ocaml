@@ -70,3 +70,5 @@ let print_stat c =
 let allocated_bytes () =
   let (mi, ma, pro) = counters () in (mi + ma - pro) * (Sys.word_size / 8)
 ;;
+
+external finalise : ('a -> unit) -> 'a -> unit = "final_register";;

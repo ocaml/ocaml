@@ -15,6 +15,7 @@
 #include <string.h>
 #include "config.h"
 #include "fail.h"
+#include "finalise.h"
 #include "gc.h"
 #include "gc_ctrl.h"
 #include "major_gc.h"
@@ -117,26 +118,46 @@ void oldify (value v, value *p)
   }
 }
 
-void minor_collection (void)
+/* Make sure the minor heap is empty by performing a minor collection
+   if needed.
+*/
+void empty_minor_heap (void)
 {
   value **r;
+
+  if (young_ptr != young_end){
+    in_minor_collection = 1;
+    gc_message (0x02, "<", 0);
+    oldify_local_roots();
+    for (r = ref_table; r < ref_table_ptr; r++) oldify (**r, *r);
+    stat_minor_words += Wsize_bsize (young_end - young_ptr);
+    young_ptr = young_end;
+    ref_table_ptr = ref_table;
+    ref_table_limit = ref_table_threshold;
+    gc_message (0x02, ">", 0);
+    in_minor_collection = 0;
+  }
+  final_empty_young ();
+}
+
+/* Do a minor collection and a slice of major collection, call finalisation
+   functions, etc.
+   Leave the minor heap empty.
+*/
+void minor_collection (void)
+{
   long prev_alloc_words = allocated_words;
 
-  in_minor_collection = 1;
-  gc_message (0x02, "<", 0);
-  oldify_local_roots();
-  for (r = ref_table; r < ref_table_ptr; r++) oldify (**r, *r);
-  stat_minor_words += Wsize_bsize (young_end - young_ptr);
-  young_ptr = young_end;
-  ref_table_ptr = ref_table;
-  ref_table_limit = ref_table_threshold;
-  gc_message (0x02, ">", 0);
-  in_minor_collection = 0;
+  empty_minor_heap ();
 
   stat_promoted_words += allocated_words - prev_alloc_words;
   ++ stat_minor_collections;
   major_collection_slice ();
   force_major_slice = 0;
+  
+  final_do_calls ();
+
+  empty_minor_heap ();
 }
 
 value check_urgent_gc (value extra_root)

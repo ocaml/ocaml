@@ -23,13 +23,13 @@ OBJS=interp.o misc.o stacks.o fix_code.o startup.o main.o \
   fail.o signals.o printexc.o \
   compare.o ints.o floats.o str.o array.o io.o extern.o intern.o \
   hash.o sys.o meta.o parsing.o gc_ctrl.o terminfo.o md5.o obj.o \
-  lexing.o callback.o debugger.o weak.o compact.o
+  lexing.o callback.o debugger.o weak.o compact.o finalise.o
 
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
 
 PRIMS=alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
-  signals.c str.c sys.c terminfo.c callback.c weak.c
+  signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c
 
 PUBLIC_INCLUDES=mlvalues.h alloc.h misc.h callback.h fail.h
 

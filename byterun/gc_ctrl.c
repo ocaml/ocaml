@@ -124,7 +124,7 @@ static value heap_stats (int returnstats)
   header_t cur_hd;
 
 #ifdef DEBUG
-  gc_message (0xFFFF, "### O'Caml runtime: heap check ###\n", 0);
+  gc_message (-1, "### O'Caml runtime: heap check ###\n", 0);
 #endif
 
   while (chunk != NULL){
@@ -336,22 +336,26 @@ value gc_minor(value v) /* ML */
 
 value gc_major(value v) /* ML */
 {                                                    Assert (v == Val_unit);
-  minor_collection ();
+  empty_minor_heap ();
   finish_major_cycle ();
+  final_do_calls ();
   return Val_unit;
 }
 
 value gc_full_major(value v) /* ML */
 {                                                    Assert (v == Val_unit);
-  minor_collection ();
+  empty_minor_heap ();
   finish_major_cycle ();
+  final_do_calls ();
+  empty_minor_heap ();
   finish_major_cycle ();
+  final_do_calls ();
   return Val_unit;
 }
 
 value gc_compaction(value v) /* ML */
 {                                                    Assert (v == Val_unit);
-  minor_collection ();
+  empty_minor_heap ();
   finish_major_cycle ();
   finish_major_cycle ();
   compact_heap ();
@@ -365,12 +369,13 @@ void init_gc (unsigned long minor_size, unsigned long major_size,
   unsigned long major_heap_size = Bsize_wsize (norm_heapincr (major_size));
 
 #ifdef DEBUG
-  gc_message (0xFFFF, "### O'Caml runtime: debug mode "
+  gc_message (-1, "### O'Caml runtime: debug mode "
 #ifdef CPU_TYPE_STRING
                                "(" CPU_TYPE_STRING ") "
 #endif
                                                        "###\n", 0);
 #endif /* DEBUG */
+/* FIXME remove comments in preprocessor lines (ANSI C wart) */
 
   verb_gc = verb;
   set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));

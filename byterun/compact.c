@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "config.h"
+#include "finalise.h"
 #include "freelist.h"
 #include "gc.h"
 #include "gc_ctrl.h"
@@ -182,8 +183,10 @@ void compact_heap (void)
      Don't forget roots and weak pointers. */
   {
     /* Invert roots first because the threads library needs some heap
-       data structures to find its roots. */
+       data structures to find its roots.  Fortunately, it doesn't need
+       the headers (see above). */
     do_roots (invert_root);
+    final_do_weak_roots (invert_root);
 
     ch = heap_start;
     while (ch != NULL){

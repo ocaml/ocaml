@@ -17,6 +17,7 @@
 #include "compact.h"
 #include "config.h"
 #include "fail.h"
+#include "finalise.h"
 #include "freelist.h"
 #include "gc.h"
 #include "gc_ctrl.h"
@@ -104,6 +105,7 @@ static void mark_slice (long work)
   header_t hd;
   mlsize_t size, i;
 
+  gc_message (0x40, "Marking %lu words\n", work);
   gray_vals_ptr = gray_vals_cur;
   while (work > 0){
     if (gray_vals_ptr > gray_vals){
@@ -155,11 +157,17 @@ static void mark_slice (long work)
       chunk = heap_start;
       markhp = chunk;
       limit = chunk + Chunk_size (chunk);
+    }else if (gc_phase == Phase_mark){
+      /* The main marking phase is over.  Handle finalised values. */
+      gray_vals_cur = gray_vals_ptr;
+      final_update ();
+      gray_vals_ptr = gray_vals_cur;
+      gc_phase = Phase_mark_final;
     }else{
       /* Marking is done. */
 
       update_weak_pointers ();
-      
+
       /* Initialise the sweep phase. */
       gray_vals_cur = gray_vals_ptr;
       gc_sweep_hp = heap_start;
@@ -209,6 +217,7 @@ static void sweep_slice (long int work)
   char *hp;
   header_t hd;
 
+  gc_message (0x40, "Sweeping %lu words\n", work);
   while (work > 0){
     if (gc_sweep_hp < limit){
       hp = gc_sweep_hp;
@@ -247,11 +256,11 @@ static void sweep_slice (long int work)
   }
 }
 
-/* The main entry point for the GC.  Called at each minor GC. */
+/* The main entry point for the GC.  Called after each minor GC. */
 void major_collection_slice (void)
 {
   double p;
-  /* 
+  /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
                  FM = stat_heap_size * percent_free / (100 + percent_free)
      Garbage at the start of the GC cycle:
@@ -291,19 +300,13 @@ void major_collection_slice (void)
   gc_message (0x40, "amount of work to do = %luu\n",
               (unsigned long) (p * 1000000));
 
-  if (gc_phase == Phase_mark){
+  if (gc_phase == Phase_mark || gc_phase == Phase_mark_final){
     long work = (long) (p * stat_heap_size * 100 / (100+percent_free)) + Margin;
-    if (verb_gc & 0x40){
-      gc_message (0x40, "Marking %lu words\n", work);
-    }
     mark_slice (work);
     gc_message (0x02, "!", 0);
   }else{
     long work = (long) (p * stat_heap_size) + Margin;
     Assert (gc_phase == Phase_sweep);
-    if (verb_gc & 0x40){
-      gc_message (0x40, "Sweeping %lu words\n", work);
-    }
     sweep_slice (work);
     gc_message (0x02, "$", 0);
   }
@@ -315,7 +318,9 @@ void major_collection_slice (void)
   extra_heap_memory = 0.0;
 }
 
-/* The minor heap must be empty when this function is called. */
+/* The minor heap must be empty when this function is called;
+   the minor heap is empty when this function returns.
+*/
 /* This does not call compact_heap_maybe because the estimations of
    free and live memory are only valid for a cycle done incrementally.
    Besides, this function is called by compact_heap_maybe.
@@ -369,7 +374,7 @@ void init_major_heap (asize_t heap_size)
   page_high = Page (heap_end);
 
   page_table_size = page_high - page_low;
-  page_table_block = 
+  page_table_block =
     (page_table_entry *) malloc (page_table_size * sizeof (page_table_entry));
   if (page_table_block == NULL){
     fatal_error ("Fatal error: not enough memory for the initial heap.\n");

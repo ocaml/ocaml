@@ -127,8 +127,7 @@ value * caml_gc_regs;
 long caml_globals_inited = 0;
 static long caml_globals_scanned = 0;
 
-/* Call [oldify] on all stack roots, C roots and global roots */
-
+/* Call [oldify] on (at least) all the roots that point to the minor heap. */
 void oldify_local_roots (void)
 {
   char * sp;
@@ -217,6 +216,8 @@ void oldify_local_roots (void)
   for (gr = global_roots; gr != NULL; gr = gr->next) {
     oldify(*(gr->root), gr->root);
   }
+  /* Finalised values */
+  final_do_young_roots (&oldify);
   /* Hook */
   if (scan_roots_hook != NULL) (*scan_roots_hook)(oldify);
 }
@@ -248,6 +249,8 @@ void do_roots (scanning_action f)
   for (gr = global_roots; gr != NULL; gr = gr->next) {
     f (*(gr->root), gr->root);
   }
+  /* Finalised values */
+  final_do_strong_roots (f);
   /* Hook */
   if (scan_roots_hook != NULL) (*scan_roots_hook)(f);
 }

@@ -20,7 +20,7 @@
 
 typedef void (*scanning_action) (value, value *);
 
-void oldify_local_roots (void);
+void oldify_young_roots (void);
 void darken_all_roots (void);
 void do_roots (scanning_action);
 #ifndef NATIVE_CODE

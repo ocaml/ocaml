@@ -36,6 +36,7 @@ extern unsigned long allocated_words;
 extern double extra_heap_memory;
 
 #define Phase_mark 0
+#define Phase_mark_final 3
 #define Phase_sweep 1
 #define Phase_idle 2
 

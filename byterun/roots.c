@@ -24,6 +24,7 @@
 
 struct caml__roots_block *local_roots = NULL;
 
+/* FIXME turn this into a table and synchronise with asmrun/roots.c */
 struct global_root {
   value * root;
   struct global_root * next;
@@ -61,8 +62,8 @@ void remove_global_root(value *r)
   }
 }
 
-/* Call [oldify] on all roots except [global_data] */
-
+/* FIXME rename to [oldify_young_roots] and synchronise with asmrun/roots.c */
+/* Call [oldify] on (at least) all the roots that point to the minor heap. */
 void oldify_local_roots (void)
 {
   register value * sp;
@@ -74,7 +75,7 @@ void oldify_local_roots (void)
   for (sp = extern_sp; sp < stack_high; sp++) {
     oldify (*sp, sp);
   }
-  /* Local C roots */
+  /* Local C roots */  /* FIXME do the old-frame trick ? */
   for (lr = local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
@@ -87,8 +88,10 @@ void oldify_local_roots (void)
   for (gr = global_roots; gr != NULL; gr = gr->next) {
     oldify(*(gr->root), gr->root);
   }
+  /* Finalised values */
+  final_do_young_roots (&oldify);
   /* Hook */
-  if (scan_roots_hook != NULL) (*scan_roots_hook)(oldify);
+  if (scan_roots_hook != NULL) (*scan_roots_hook)(&oldify);
 }
 
 /* Call [darken] on all roots */
@@ -112,11 +115,14 @@ void do_roots (scanning_action f)
   for (gr = global_roots; gr != NULL; gr = gr->next) {
     f (*(gr->root), gr->root);
   }
+  /* Finalised values */
+  final_do_strong_roots (f);
   /* Hook */
   if (scan_roots_hook != NULL) (*scan_roots_hook)(f);
 }
 
-void do_local_roots (scanning_action f, value *stack_low, value *stack_high, struct caml__roots_block *local_roots)
+void do_local_roots (scanning_action f, value *stack_low, value *stack_high,
+                     struct caml__roots_block *local_roots)
 {
   register value * sp;
   struct caml__roots_block *lr;
