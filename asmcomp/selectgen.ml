@@ -44,33 +44,60 @@ let oper_result_type = function
 
 (* Infer the size in bytes of the result of a simple expression *)
 
-let size_expr env exp =
-  let rec size localenv = function
-      Cconst_int _ | Cconst_natint _ -> Arch.size_int
-    | Cconst_symbol _ | Cconst_pointer _ -> Arch.size_addr
-    | Cconst_float _ -> Arch.size_float
-    | Cvar id ->
-        begin try
-          Tbl.find id localenv
-        with Not_found ->
-        try
-          let regs = Tbl.find id env in
-          size_machtype (Array.map (fun r -> r.typ) regs)
-        with Not_found ->
-          fatal_error("Selection.size_expr: unbound var " ^
-                      Ident.unique_name id)
-        end
-    | Ctuple el ->
-        List.fold_right (fun e sz -> size localenv e + sz) el 0
-    | Cop(op, args) ->
-        size_machtype(oper_result_type op)
-    | Clet(id, arg, body) ->
-        size (Tbl.add id (size localenv arg) localenv) body
-    | Csequence(e1, e2) ->
-        size localenv e2
-    | _ ->
-        fatal_error "Selection.size_expr"
-  in size Tbl.empty exp
+let rec size env localenv = function
+    Cconst_int _ | Cconst_natint _ -> Arch.size_int
+  | Cconst_symbol _ | Cconst_pointer _ -> Arch.size_addr
+  | Cconst_float _ -> Arch.size_float
+  | Cvar id ->
+      begin try
+        Tbl.find id localenv
+      with Not_found ->
+      try
+        let regs = Tbl.find id env in
+        size_machtype (Array.map (fun r -> r.typ) regs)
+      with Not_found ->
+        fatal_error("Selection.size_expr: unbound var " ^
+                    Ident.unique_name id)
+      end
+  | Ctuple el ->
+      size_list env localenv el
+  | Cop(op, args) ->
+      size_machtype(oper_result_type op)
+  | Clet(id, arg, body) ->
+      size env (Tbl.add id (size env localenv arg) localenv) body
+  | Csequence(e1, e2) ->
+      size env localenv e2
+  | _ ->
+      fatal_error "Selection.size"
+
+and size_list env localenv el =
+  List.fold_right (fun e sz -> size env localenv e + sz) el 0
+
+let size_expr env exp = size env Tbl.empty exp
+
+(* Compute the total size (in bytes) of memory allocated by
+   a simple expression *)
+
+let rec alloc_sz env localenv = function
+    Ctuple el ->
+      alloc_sz_list env localenv el
+  | Cop(op, args) ->
+      let s = alloc_sz_list env localenv args in
+      begin match op with
+        Calloc -> s + size_list env localenv args
+      | _ -> s
+      end
+  | Clet(id, arg, body) ->
+      alloc_sz env localenv arg +
+      alloc_sz env (Tbl.add id (size env localenv arg) localenv) body
+  | Csequence(e1, e2) ->
+      alloc_sz env localenv e1 + alloc_sz env localenv e2
+  | _ -> 0
+
+and alloc_sz_list env localenv el =
+  List.fold_right (fun e sz -> alloc_sz env localenv e + sz) el 0
+
+let alloc_size env exp = alloc_sz env Tbl.empty exp
 
 (* Says if an expression is "simple". A "simple" expression has no
    side-effects and its execution can be delayed until its value
@@ -92,7 +119,7 @@ let rec is_simple_expr = function
   | Cop(op, args) ->
       begin match op with
         (* The following may have side effects *)
-        Capply _ | Cextcall(_, _, _) | Calloc | Cstore | Cstorechunk _ | 
+        Capply _ | Cextcall(_, _, _) | Cstore | Cstorechunk _ | 
         Craise -> false
         (* The remaining operations are simple if their args are *)
       | _ -> List.for_all is_simple_expr args
@@ -169,6 +196,11 @@ let join_array rs =
     done;
     res
   end
+
+(* Addressing mode to refer to the header word of a newly allocated object *)
+
+let header_addressing =
+  Arch.offset_addressing Arch.identity_addressing (-Arch.size_int)
 
 (* The default instruction selection class *)
 
@@ -325,6 +357,14 @@ method extract =
     else extract (instr_cons i.desc i.arg i.res res) i.next in
   extract (end_instr()) instr_seq
 
+(* Are we inside a combined allocation? *)
+
+val mutable alloc_state = (None : (Reg.t array * int) option)
+
+(* None: no combined allocation
+   Some(r, n): earlier allocation left result in register [r],
+     current offset in allocated block is [n]. *)
+
 (* Insert a sequence of moves from one pseudoreg set to another. *)
 
 method insert_move src dst =
@@ -451,10 +491,21 @@ method emit_expr env exp =
           Proc.contains_calls := true;
           let rd = Reg.createv typ_addr in
           let size = size_expr env (Ctuple new_args) in
-          self#insert (Iop(Ialloc size)) [||] rd;
-          self#emit_stores env new_args rd 
-            (Arch.offset_addressing Arch.identity_addressing (-Arch.size_int));
-          rd
+          begin match alloc_state with
+            None ->
+              let total_size = alloc_size env (Cop(Calloc, new_args)) in
+              self#insert (Iop(Ialloc total_size)) [||] rd;
+              alloc_state <- Some(rd, size);
+              self#emit_stores env new_args rd header_addressing;
+              alloc_state <- None;
+              rd
+          | Some(ralloc, ofs) ->
+              self#insert_op (Iintop_imm(Iadd, ofs)) ralloc rd;
+              alloc_state <- Some(ralloc, ofs + size);
+              self#emit_stores env new_args ralloc
+                               (Arch.offset_addressing header_addressing ofs);
+              rd
+          end
       | op ->
           let r1 = self#emit_tuple env new_args in
           let rd = Reg.createv ty in
