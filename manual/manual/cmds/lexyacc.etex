@@ -78,7 +78,6 @@ and \ldots
 \end{alltt}
 \endgroup
 Comments are delimited by "(*" and "*)", as in Caml.
-
 The "parse" keyword, can be replaced by the "shortest" keyword, with
 the semantic consequences explained below.
 
@@ -227,9 +226,11 @@ Return the absolute position in the input text of the end of the
 matched string. The first character read from the input text has
 position 0.
 
-\item[\var{entrypoint} "lexbuf"]
+\newcommand{\sub}[1]{$_{#1}$}%
+\item[\var{entrypoint} {[\var{exp\sub{1}}\ldots{} \var{exp\sub{n}}]} "lexbuf"]
 (Where \var{entrypoint} is the name of another entry point in the same
 lexer definition.) Recursively call the lexer on the given entry point.
+Notice that "lexbuf" is the last argument.
 Useful for lexing nested comments, for example.
 
 \end{options}
