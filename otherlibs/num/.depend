@@ -1,10 +1,17 @@
+bng_alpha.o: bng_alpha.c
+bng_amd64.o: bng_amd64.c
+bng.o: bng.c bng.h bng_ia32.c bng_digit.c
+bng_digit.o: bng_digit.c
+bng_ia32.o: bng_ia32.c
+bng_mips.o: bng_mips.c
+bng_ppc.o: bng_ppc.c
+bng_sparc.o: bng_sparc.c
 nat_stubs.o: nat_stubs.c ../../byterun/alloc.h ../../byterun/misc.h \
   ../../byterun/config.h ../../config/m.h ../../config/s.h \
   ../../byterun/mlvalues.h ../../byterun/custom.h ../../byterun/intext.h \
   ../../byterun/io.h ../../byterun/fix_code.h ../../byterun/fail.h \
   ../../byterun/memory.h ../../byterun/gc.h ../../byterun/major_gc.h \
-  ../../byterun/freelist.h ../../byterun/minor_gc.h nat.h \
-  bignum/h/BigNum.h bignum/h/BntoBnn.h
+  ../../byterun/freelist.h ../../byterun/minor_gc.h bng.h nat.h
 big_int.cmi: nat.cmi 
 num.cmi: big_int.cmi nat.cmi ratio.cmi 
 ratio.cmi: big_int.cmi nat.cmi 

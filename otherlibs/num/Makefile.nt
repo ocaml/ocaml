@@ -19,7 +19,8 @@ include ../../config/Makefile
 
 # Compilation options
 CC=$(BYTECC)
-CFLAGS=-O -I./bignum/h -I../../byterun
+CFLAGS=-O -I../../byterun \
+          -DBNG_ARCH_$(BNG_ARCH) -DBNG_ASM_LEVEL=$(BNG_ASM_LEVEL)
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../boot -w s
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -w s
 
@@ -28,11 +29,8 @@ CAMLOBJS=int_misc.cmo string_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \
 
 CMIFILES=big_int.cmi nat.cmi num.cmi ratio.cmi arith_status.cmi
 
-DCOBJS=nat_stubs.$(DO)
-SCOBJS=nat_stubs.$(SO)
-BIGNUM_SOBJS=bignum/o/KerN.$(SO) bignum/o/bnInit.$(SO) \
-  bignum/o/bnMult.$(SO) bignum/o/bnDivide.$(SO) \
-  bignum/o/bnCmp.$(SO) bignum/o/bzf.$(SO) bignum/o/bz.$(SO)
+DCOBJS=bng.$(DO) nat_stubs.$(DO)
+SCOBJS=bng.$(SO) nat_stubs.$(SO)
 
 all: dllnums.dll libnums.$(A) nums.cma $(CMIFILES)
 
@@ -44,16 +42,13 @@ nums.cma: $(CAMLOBJS)
 nums.cmxa: $(CAMLOBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o nums.cmxa $(CAMLOBJS:.cmo=.cmx) -cclib -lnums
 
-dllnums.dll: bignum/dbignum.$(A) $(DCOBJS)
+dllnums.dll: $(DCOBJS)
 	$(call MKDLL,dllnums.dll,tmp.$(A),\
-	  $(DCOBJS) bignum/dbignum.$(A) ../../byterun/ocamlrun.$(A))
+	  $(DCOBJS) ../../byterun/ocamlrun.$(A))
 	rm tmp.*
 
-libnums.$(A): bignum/sbignum.$(A) $(SCOBJS)
-	$(call MKLIB,libnums.$(A),$(SCOBJS) $(BIGNUM_SOBJS))
-
-bignum/dbignum.$(A) bignum/sbignum.$(A):
-	cd bignum ; $(MAKEREC)
+libnums.$(A): $(SCOBJS)
+	$(call MKLIB,libnums.$(A),$(SCOBJS))
 
 $(CAMLOBJS:.cmo=.cmx): ../../ocamlopt
 
@@ -92,7 +87,8 @@ clean: partialclean
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CFLAGS) -c $<
 	mv $*.$(O) $*.$(SO)
 
-nat_stubs.$(O): nat.h
+bng.$(DO) bng.$(SO): bng.h bng_digit.c \
+       bng_alpha.c bng_amd64.c bng_ia32.c bng_mips.c bng_ppc.c bng_sparc.c
 
 depend:
 	sed -e 's/\.o/.$(DO)/g' .depend > .depend.nt

@@ -19,7 +19,8 @@ include ../../config/Makefile
 
 # Compilation options
 CC=$(BYTECC)
-CFLAGS=-O -I./bignum/h -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
+CFLAGS=-O -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
+          -DBNG_ARCH_$(BNG_ARCH) -DBNG_ASM_LEVEL=$(BNG_ASM_LEVEL)
 CAMLC=../../ocamlcomp.sh -w s
 CAMLOPT=../../ocamlcompopt.sh -w s
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
@@ -30,9 +31,7 @@ CAMLOBJS=int_misc.cmo string_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \
 
 CMIFILES=big_int.cmi nat.cmi num.cmi ratio.cmi arith_status.cmi
 
-COBJS=nat_stubs.o
-BIGNUM_OBJS=bignum/o/KerN.o bignum/o/bnInit.o bignum/o/bnMult.o \
-  bignum/o/bnDivide.o bignum/o/bnCmp.o bignum/o/bzf.o bignum/o/bz.o
+COBJS=bng.o nat_stubs.o
 
 all: libnums.a nums.cma $(CMIFILES)
 
@@ -44,11 +43,8 @@ nums.cma: $(CAMLOBJS)
 nums.cmxa: $(CAMLOBJS:.cmo=.cmx)
 	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o nums $(CAMLOBJS:.cmo=.cmx)
 
-libnums.a: $(BIGNUM_OBJS) $(COBJS)
-	$(MKLIB) -o nums $(BIGNUM_OBJS) $(COBJS)
-
-$(BIGNUM_OBJS):
-	cd bignum; $(MAKE) $(BIGNUM_ARCH) CC="$(CC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)"
+libnums.a: $(COBJS)
+	$(MKLIB) -o nums $(COBJS)
 
 $(CAMLOBJS:.cmo=.cmx): ../../ocamlopt
 
@@ -67,7 +63,6 @@ partialclean:
 
 clean: partialclean
 	rm -f *.a *.o *.so
-	cd bignum; $(MAKE) scratch
 	cd test; $(MAKE) clean
 
 .SUFFIXES: .ml .mli .cmi .cmo .cmx
@@ -81,7 +76,8 @@ clean: partialclean
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
-nat_stubs.o: nat.h
+bng.o: bng.h bng_digit.c \
+       bng_alpha.c bng_amd64.c bng_ia32.c bng_mips.c bng_ppc.c bng_sparc.c
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend

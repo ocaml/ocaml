@@ -15,6 +15,8 @@
 
 CAMLC=../../../boot/ocamlrun ../../../ocamlc -I ../../../stdlib -I ..
 CAMLOPT=../../../boot/ocamlrun ../../../ocamlopt -I ../../../stdlib -I ..
+CC=$(BYTECC)
+CFLAGS=-I.. $(BYTECCCOMPOPTS)
 
 test: test.byt test.opt
 	../../../byterun/ocamlrun -I .. ./test.byt
@@ -32,6 +34,9 @@ test.byt: $(TESTFILES) ../nums.cma ../libnums.lib
 test.opt: $(TESTOPTFILES) ../nums.cmxa ../libnums.lib
 	$(CAMLOPT) -o test.opt nums.cmxa $(TESTOPTFILES)
 
+test_bng.exe: test_bng.o
+	$(CC) $(CFLAGS) -o test_bng.exe ../bng.o test_bng.o -lbignum
+
 $(TESTOPTFILES): ../../../ocamlopt
 
 .SUFFIXES: .ml .cmo .cmx
@@ -46,7 +51,7 @@ ocamltopnum.exe:
 	ocamlmktop -o ocamltopnum.exe -custom ../nums.cma ../libnums.$(A)
 
 clean:
-	rm -f test.byt test.opt *.$(O) *.cm? ocamltopnum.exe
+	rm -f test.byt test.opt test_bng.exe *.$(O) *.cm? ocamltopnum.exe
 
 depend:
 	ocamldep *.ml > .depend

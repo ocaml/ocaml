@@ -13,19 +13,17 @@
 
 /* $Id$ */
 
-#define CAML_LIGHT
 #include "alloc.h"
 #include "custom.h"
 #include "intext.h"
 #include "fail.h"
 #include "memory.h"
 #include "mlvalues.h"
+
+#include "bng.h"
 #include "nat.h"
 
-#include "BigNum.h"
-#include "BntoBnn.h"
-
-/* Stub code for the BigNum package. */
+/* Stub code for the Nat module. */
 
 static void serialize_nat(value, unsigned long *, unsigned long *);
 static unsigned long deserialize_nat(void * dst);
@@ -41,6 +39,7 @@ static struct custom_operations nat_operations = {
 
 CAMLprim value initialize_nat(value unit)
 {
+  bng_init();
   register_custom_operations(&nat_operations);
   return Val_unit;
 }
@@ -59,71 +58,76 @@ CAMLprim value length_nat(value nat)
 
 CAMLprim value set_to_zero_nat(value nat, value ofs, value len)
 {
-  BnSetToZero(Bignum_val(nat), Long_val(ofs), Long_val(len));
+  bng_zero(&Digit_val(nat, Long_val(ofs)), Long_val(len));
   return Val_unit;
 }
 
-CAMLprim value blit_nat(value nat1, value ofs1, value nat2, value ofs2, value len)
+CAMLprim value blit_nat(value nat1, value ofs1,
+                        value nat2, value ofs2,
+                        value len)
 {
-  BnAssign(Bignum_val(nat1), Long_val(ofs1),
-           Bignum_val(nat2), Long_val(ofs2),
-           Long_val(len));
+  bng_assign(&Digit_val(nat1, Long_val(ofs1)),
+             &Digit_val(nat2, Long_val(ofs2)),
+             Long_val(len));
   return Val_unit;
 }
 
 CAMLprim value set_digit_nat(value nat, value ofs, value digit)
 {
-  BnSetDigit(Bignum_val(nat), Long_val(ofs), Long_val(digit));
+  Digit_val(nat, Long_val(ofs)) = Long_val(digit);
   return Val_unit;
 }
 
 CAMLprim value nth_digit_nat(value nat, value ofs)
 {
-  return Val_long(BnGetDigit(Bignum_val(nat), Long_val(ofs)));
+  return Val_long(Digit_val(nat, Long_val(ofs)));
 }
 
 CAMLprim value num_digits_nat(value nat, value ofs, value len)
 {
-  return Val_long(BnNumDigits(Bignum_val(nat), Long_val(ofs), Long_val(len)));
+  return Val_long(bng_num_digits(&Digit_val(nat, Long_val(ofs)),
+                                 Long_val(len)));
 }
 
 CAMLprim value num_leading_zero_bits_in_digit(value nat, value ofs)
 {
   return
-    Val_long(BnNumLeadingZeroBitsInDigit(Bignum_val(nat), Long_val(ofs)));
+    Val_long(bng_leading_zero_bits(Digit_val(nat, Long_val(ofs))));
 }
 
 CAMLprim value is_digit_int(value nat, value ofs)
 {
-  return Val_bool(BnDoesDigitFitInWord(Bignum_val(nat), Long_val(ofs)));
+  return Val_bool(Digit_val(nat, Long_val(ofs)) <= Max_long);
 }
 
 CAMLprim value is_digit_zero(value nat, value ofs)
 {
-  return Val_bool(BnIsDigitZero(Bignum_val(nat), Long_val(ofs)));
+  return Val_bool(Digit_val(nat, Long_val(ofs)) == 0);
 }
 
 CAMLprim value is_digit_normalized(value nat, value ofs)
 {
-  return Val_bool(BnIsDigitNormalized(Bignum_val(nat), Long_val(ofs)));
+  return
+    Val_bool(Digit_val(nat, Long_val(ofs)) & (1L << (BNG_BITS_PER_DIGIT-1)));
 }
 
 CAMLprim value is_digit_odd(value nat, value ofs)
 {
-  return Val_bool(BnIsDigitOdd(Bignum_val(nat), Long_val(ofs)));
+  return Val_bool(Digit_val(nat, Long_val(ofs)) & 1);
 }
 
 CAMLprim value incr_nat(value nat, value ofs, value len, value carry_in)
 {
-  return Val_long(BnAddCarry(Bignum_val(nat), Long_val(ofs),
-                             Long_val(len), Long_val(carry_in)));
+  return Val_long(bng_add_carry(&Digit_val(nat, Long_val(ofs)),
+                                Long_val(len), Long_val(carry_in)));
 }
 
-value add_nat_native(value nat1, value ofs1, value len1, value nat2, value ofs2, value len2, value carry_in)
+value add_nat_native(value nat1, value ofs1, value len1,
+                     value nat2, value ofs2, value len2, value carry_in)
 {
-  return Val_long(BnAdd(Bignum_val(nat1), Long_val(ofs1), Long_val(len1),
-                        Bignum_val(nat2), Long_val(ofs2), Long_val(len2),
-                        Long_val(carry_in)));
+  return Val_long(bng_add(&Digit_val(nat1, Long_val(ofs1)), Long_val(len1),
+                          &Digit_val(nat2, Long_val(ofs2)), Long_val(len2),
+                          Long_val(carry_in)));
 }
 
 CAMLprim value add_nat(value *argv, int argn)
@@ -134,21 +138,22 @@ CAMLprim value add_nat(value *argv, int argn)
 
 CAMLprim value complement_nat(value nat, value ofs, value len)
 {
-  BnComplement(Bignum_val(nat), Long_val(ofs), Long_val(len));
+  bng_complement(&Digit_val(nat, Long_val(ofs)), Long_val(len));
   return Val_unit;
 }
 
 CAMLprim value decr_nat(value nat, value ofs, value len, value carry_in)
 {
-  return Val_long(BnSubtractBorrow(Bignum_val(nat), Long_val(ofs),
-                                   Long_val(len), Long_val(carry_in)));
+  return Val_long(1 ^ bng_sub_carry(&Digit_val(nat, Long_val(ofs)),
+                                    Long_val(len), 1 ^ Long_val(carry_in)));
 }
 
-value sub_nat_native(value nat1, value ofs1, value len1, value nat2, value ofs2, value len2, value carry_in)
+value sub_nat_native(value nat1, value ofs1, value len1,
+                     value nat2, value ofs2, value len2, value carry_in)
 {
-  return Val_long(BnSubtract(Bignum_val(nat1), Long_val(ofs1), Long_val(len1),
-                             Bignum_val(nat2), Long_val(ofs2), Long_val(len2),
-                             Long_val(carry_in)));
+  return Val_long(1 ^ bng_sub(&Digit_val(nat1, Long_val(ofs1)), Long_val(len1),
+                              &Digit_val(nat2, Long_val(ofs2)), Long_val(len2),
+                              1 ^ Long_val(carry_in)));
 }
 
 CAMLprim value sub_nat(value *argv, int argn)
@@ -157,12 +162,15 @@ CAMLprim value sub_nat(value *argv, int argn)
                         argv[4], argv[5], argv[6]);
 }
 
-value mult_digit_nat_native(value nat1, value ofs1, value len1, value nat2, value ofs2, value len2, value nat3, value ofs3)
+value mult_digit_nat_native(value nat1, value ofs1, value len1,
+                            value nat2, value ofs2, value len2,
+                            value nat3, value ofs3)
 {
   return
-    Val_long(BnMultiplyDigit(Bignum_val(nat1), Long_val(ofs1), Long_val(len1),
-                             Bignum_val(nat2), Long_val(ofs2), Long_val(len2),
-                             Bignum_val(nat3), Long_val(ofs3)));
+    Val_long(bng_mult_add_digit(
+                   &Digit_val(nat1, Long_val(ofs1)), Long_val(len1),
+                   &Digit_val(nat2, Long_val(ofs2)), Long_val(len2),
+                   Digit_val(nat3, Long_val(ofs3))));
 }
 
 CAMLprim value mult_digit_nat(value *argv, int argn)
@@ -171,12 +179,14 @@ CAMLprim value mult_digit_nat(value *argv, int argn)
                                argv[4], argv[5], argv[6], argv[7]);
 }
 
-value mult_nat_native(value nat1, value ofs1, value len1, value nat2, value ofs2, value len2, value nat3, value ofs3, value len3)
+value mult_nat_native(value nat1, value ofs1, value len1,
+                      value nat2, value ofs2, value len2,
+                      value nat3, value ofs3, value len3)
 {
   return
-    Val_long(BnMultiply(Bignum_val(nat1), Long_val(ofs1), Long_val(len1),
-                        Bignum_val(nat2), Long_val(ofs2), Long_val(len2),
-                        Bignum_val(nat3), Long_val(ofs3), Long_val(len3)));
+    Val_long(bng_mult_add(&Digit_val(nat1, Long_val(ofs1)), Long_val(len1),
+                          &Digit_val(nat2, Long_val(ofs2)), Long_val(len2),
+                          &Digit_val(nat3, Long_val(ofs3)), Long_val(len3)));
 }
 
 CAMLprim value mult_nat(value *argv, int argn)
@@ -185,10 +195,12 @@ CAMLprim value mult_nat(value *argv, int argn)
                          argv[4], argv[5], argv[6], argv[7], argv[8]);
 }
 
-value shift_left_nat_native(value nat1, value ofs1, value len1, value nat2, value ofs2, value nbits)
+value shift_left_nat_native(value nat1, value ofs1, value len1,
+                            value nat2, value ofs2, value nbits)
 {
-  BnShiftLeft(Bignum_val(nat1), Long_val(ofs1), Long_val(len1),
-              Bignum_val(nat2), Long_val(ofs2), Long_val(nbits));
+  Digit_val(nat2, Long_val(ofs2)) =
+    bng_shift_left(&Digit_val(nat1, Long_val(ofs1)), Long_val(len1),
+                   Long_val(nbits));
   return Val_unit;
 }
 
@@ -198,12 +210,15 @@ CAMLprim value shift_left_nat(value *argv, int argn)
                                argv[3], argv[4], argv[5]);
 }
 
-value div_digit_nat_native(value natq, value ofsq, value natr, value ofsr, value nat1, value ofs1, value len1, value nat2, value ofs2)
+value div_digit_nat_native(value natq, value ofsq,
+                           value natr, value ofsr,
+                           value nat1, value ofs1, value len1,
+                           value nat2, value ofs2)
 {
-  BnDivideDigit(Bignum_val(natq), Long_val(ofsq),
-                Bignum_val(natr), Long_val(ofsr),
-                Bignum_val(nat1), Long_val(ofs1), Long_val(len1),
-                Bignum_val(nat2), Long_val(ofs2));
+  Digit_val(natr, Long_val(ofsr)) =
+    bng_div_rem_digit(&Digit_val(natq, Long_val(ofsq)),
+                      &Digit_val(nat1, Long_val(ofs1)), Long_val(len1),
+                      Digit_val(nat2, Long_val(ofs2)));
   return Val_unit;
 }
 
@@ -213,10 +228,11 @@ CAMLprim value div_digit_nat(value *argv, int argn)
                               argv[4], argv[5], argv[6], argv[7], argv[8]);
 }
 
-value div_nat_native(value nat1, value ofs1, value len1, value nat2, value ofs2, value len2)
+value div_nat_native(value nat1, value ofs1, value len1,
+                     value nat2, value ofs2, value len2)
 {
-  BnDivide(Bignum_val(nat1), Long_val(ofs1), Long_val(len1),
-           Bignum_val(nat2), Long_val(ofs2), Long_val(len2));
+  bng_div_rem(&Digit_val(nat1, Long_val(ofs1)), Long_val(len1),
+              &Digit_val(nat2, Long_val(ofs2)), Long_val(len2));
   return Val_unit;
 }
 
@@ -226,29 +242,37 @@ CAMLprim value div_nat(value *argv, int argn)
                         argv[3], argv[4], argv[5]);
 }
  
-value shift_right_nat_native(value nat1, value ofs1, value len1, value nat2, value ofs2, value nbits)
+value shift_right_nat_native(value nat1, value ofs1, value len1,
+                             value nat2, value ofs2, value nbits)
 {
-  BnShiftRight(Bignum_val(nat1), Long_val(ofs1), Long_val(len1),
-              Bignum_val(nat2), Long_val(ofs2), Long_val(nbits));
+  Digit_val(nat2, Long_val(ofs2)) =
+    bng_shift_right(&Digit_val(nat1, Long_val(ofs1)), Long_val(len1),
+                    Long_val(nbits));
   return Val_unit;
 }
 
 CAMLprim value shift_right_nat(value *argv, int argn)
 {
   return shift_right_nat_native(argv[0], argv[1], argv[2],
-                               argv[3], argv[4], argv[5]);
+                                argv[3], argv[4], argv[5]);
 }
 
-CAMLprim value compare_digits_nat(value nat1, value ofs1, value nat2, value ofs2)
+CAMLprim value compare_digits_nat(value nat1, value ofs1, 
+                                  value nat2, value ofs2)
 {
-  return Val_long(BnCompareDigits(Bignum_val(nat1), Long_val(ofs1),
-                                  Bignum_val(nat2), Long_val(ofs2)));
+  bngdigit d1 = Digit_val(nat1, Long_val(ofs1));
+  bngdigit d2 = Digit_val(nat2, Long_val(ofs2));
+  if (d1 > d2) return Val_int(1);
+  if (d1 < d2) return Val_int(-1);
+  return Val_int(0);
 }
 
-value compare_nat_native(value nat1, value ofs1, value len1, value nat2, value ofs2, value len2)
+value compare_nat_native(value nat1, value ofs1, value len1,
+                         value nat2, value ofs2, value len2)
 {
-  return Val_long(BnCompare(Bignum_val(nat1), Long_val(ofs1), Long_val(len1),
-                            Bignum_val(nat2), Long_val(ofs2), Long_val(len2)));
+  return
+    Val_int(bng_compare(&Digit_val(nat1, Long_val(ofs1)), Long_val(len1),
+                        &Digit_val(nat2, Long_val(ofs2)), Long_val(len2)));
 }
 
 CAMLprim value compare_nat(value *argv, int argn)
@@ -259,22 +283,19 @@ CAMLprim value compare_nat(value *argv, int argn)
 
 CAMLprim value land_digit_nat(value nat1, value ofs1, value nat2, value ofs2)
 {
-  BnAndDigits(Bignum_val(nat1), Long_val(ofs1),
-              Bignum_val(nat2), Long_val(ofs2));
+  Digit_val(nat1, Long_val(ofs1)) &= Digit_val(nat2, Long_val(ofs2));
   return Val_unit;
 }
 
 CAMLprim value lor_digit_nat(value nat1, value ofs1, value nat2, value ofs2)
 {
-  BnOrDigits(Bignum_val(nat1), Long_val(ofs1),
-              Bignum_val(nat2), Long_val(ofs2));
+  Digit_val(nat1, Long_val(ofs1)) |= Digit_val(nat2, Long_val(ofs2));
   return Val_unit;
 }
 
 CAMLprim value lxor_digit_nat(value nat1, value ofs1, value nat2, value ofs2)
 {
-  BnXorDigits(Bignum_val(nat1), Long_val(ofs1),
-              Bignum_val(nat2), Long_val(ofs2));
+  Digit_val(nat1, Long_val(ofs1)) ^= Digit_val(nat2, Long_val(ofs2));
   return Val_unit;
 }
 
