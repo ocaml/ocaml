@@ -1656,7 +1656,7 @@ and unify_row_field env fixed1 fixed2 f1 f2 =
   | Reither(c1, tl1, m1, e1), Reither(c2, tl2, m2, e2) ->
       if e1 == e2 then () else
       let redo =
-        m1 || m2 &&
+        (m1 || m2) &&
         match tl1 @ tl2 with [] -> false
         | t1 :: tl ->
             if c1 || c2 then raise (Unify []);
