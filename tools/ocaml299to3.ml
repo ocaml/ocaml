@@ -65,6 +65,11 @@ let convert buffer =
             Buffer.add_string output_buffer "?(";
             Buffer.add_string output_buffer l;
             input_pos := stop
+        | LPAREN ->
+            copy_input last_start;
+            Buffer.add_string output_buffer "~(";
+            Buffer.add_string output_buffer l;
+            input_pos := stop
         | QUESTION ->
             copy_input last_stop;
             Buffer.add_string output_buffer l;
