@@ -52,13 +52,12 @@ module Make(Obj : Obj) = struct
        Here, we do a feeble attempt to print
        integer, string and float arguments... *)
 
-    let print_exception obj =
-      print_string (Obj.obj(Obj.field(Obj.field obj 0) 0) : string);
-      if Obj.size obj > 1 then begin
+    let print_exception_args obj start_offset =
+      if Obj.size obj > start_offset then begin
         open_box 1;
         print_string "(";
-        for i = 1 to Obj.size obj - 1 do
-          if i > 1 then begin print_string ","; print_space() end;
+        for i = start_offset to Obj.size obj - 1 do
+          if i > start_offset then begin print_string ","; print_space() end;
           let arg = Obj.field obj i in
           if not (Obj.is_block arg) then
             print_int(Obj.obj arg : int)  (* Note: this could be a char! *)
@@ -74,6 +73,15 @@ module Make(Obj : Obj) = struct
         print_string ")";
         close_box()
       end
+
+    let print_exception bucket =
+      let name = (Obj.obj(Obj.field(Obj.field bucket 0) 0) : string) in
+      print_string name;
+      if (name = "Match_failure" || name = "Assert_failure")
+      && Obj.size bucket = 2
+      && Obj.tag(Obj.field bucket 1) = 0
+      then print_exception_args (Obj.field bucket 1) 0
+      else print_exception_args bucket 1
 
     (* Recover a constructor by its tag *)
 
