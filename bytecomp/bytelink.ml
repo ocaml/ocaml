@@ -394,39 +394,34 @@ let rec extract suffix l =
 ;;
 
 let build_custom_runtime prim_name exec_name =
-  let libname = "libcamlrun" ^ ext_lib in
-  let runtime_lib =
-    try
-      find_in_path !load_path libname
-    with Not_found ->
-      raise(Error(File_not_found libname)) in
   match Sys.os_type with
     "Unix" ->
       Ccomp.command
        (Printf.sprintf
-          "%s -o %s -I%s %s %s -L%s %s %s %s"
-          !Clflags.c_compiler
+          "%s -o %s -I%s %s %s %s %s -lcamlrun %s"
+          !Clflags.c_linker
           exec_name
           Config.standard_library
           (String.concat " " (List.rev !Clflags.ccopts))
           prim_name
-          Config.standard_library
+          (String.concat " "
+            (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
+                      !load_path))
           (String.concat " " (List.rev !Clflags.ccobjs))
-          runtime_lib
           Config.c_libraries)
   | "Win32" ->
       let retcode =
       Ccomp.command
        (Printf.sprintf
           "%s /Fe%s -I%s %s %s %s %s %s"
-          !Clflags.c_compiler
+          !Clflags.c_linker
           exec_name
           Config.standard_library
           (String.concat " " (List.rev !Clflags.ccopts))
           prim_name
-          (String.concat " " (List.map Ccomp.expand_libname
-                                       (List.rev !Clflags.ccobjs)))
-          runtime_lib
+          (String.concat " "
+                         (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
+          (Ccomp.expand_libname "-lcamlrun")
           Config.c_libraries) in
       (* C compiler doesn't clean up after itself *)
       remove_file (Filename.chop_suffix prim_name ".c" ^ ".obj");

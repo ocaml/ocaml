@@ -214,14 +214,14 @@ let call_linker file_list startup_file =
       "win32" ->
         if not !Clflags.output_c_object then
           Printf.sprintf "%s /Fe%s -I%s %s %s %s %s %s %s"
-            !Clflags.c_compiler
+            !Clflags.c_linker
             !Clflags.exec_name
             Config.standard_library
             (String.concat " " (List.rev !Clflags.ccopts))
             startup_file
             (String.concat " " (List.rev file_list))
-            (String.concat " " (List.map Ccomp.expand_libname
-                                         (List.rev !Clflags.ccobjs)))
+            (String.concat " "
+                           (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
             runtime_lib
             c_lib
         else
@@ -232,15 +232,17 @@ let call_linker file_list startup_file =
             (String.concat " " (List.rev file_list))
     | _ ->
         if not !Clflags.output_c_object then
-          Printf.sprintf "%s %s -o %s -I%s %s %s %s -L%s %s %s %s"
-            !Clflags.c_compiler
+          Printf.sprintf "%s %s -o %s -I%s %s %s %s %s %s %s %s"
+            !Clflags.c_linker
             (if !Clflags.gprofile then "-pg" else "")
             !Clflags.exec_name
             Config.standard_library
             (String.concat " " (List.rev !Clflags.ccopts))
             startup_file
             (String.concat " " (List.rev file_list))
-            Config.standard_library
+            (String.concat " "
+              (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
+                        !load_path))
             (String.concat " " (List.rev !Clflags.ccobjs))
             runtime_lib
             c_lib
