@@ -854,7 +854,7 @@ let rec transl = function
           end
       | (Pbigarrayset(num_dims, elt_kind, layout), arg1 :: argl) ->
           let (argidx, argnewval) = split_last argl in
-          bigarray_set elt_kind layout
+          return_unit(bigarray_set elt_kind layout
             (transl arg1)
             (List.map transl argidx)
             (match elt_kind with
@@ -864,7 +864,7 @@ let rec transl = function
             | Pbigarray_int32 -> transl_unbox_int Pint32 argnewval
             | Pbigarray_int64 -> transl_unbox_int Pint64 argnewval
             | Pbigarray_native_int -> transl_unbox_int Pnativeint argnewval
-            | _ -> untag_int (transl argnewval))
+            | _ -> untag_int (transl argnewval)))
       | (p, [arg]) ->
           transl_prim_1 p arg
       | (p, [arg1; arg2]) ->
