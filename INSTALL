@@ -81,6 +81,9 @@ The "configure" script accepts the following options:
 -no-tk
         Do not attempt to build LablTk.
 
+-no-pthread
+        Do not attempt to use POSIX threads.
+
 -verbose
         Verbose output of the configuration tests. Use it if the outcome
         of configure is not what you were expecting.

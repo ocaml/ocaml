@@ -30,6 +30,7 @@ dllib=''
 x11_include_dir=''
 x11_lib_dir=''
 tk_wanted=yes
+pthread_wanted=yes
 tk_defs=''
 tk_libs=''
 tk_x11=yes
@@ -84,6 +85,8 @@ while : ; do
         x11_lib_dir=$2; shift;;
     -with-pthread*|--with-pthread*)
         ;; # Ignored for backward compatibility
+    -no-pthread*|--no-pthread*)
+        pthread_wanted=no;;
     -no-tk|--no-tk)
         tk_wanted=no;;
     -tkdefs*|--tkdefs*)
@@ -1055,6 +1058,7 @@ case "$host" in
   *)             pthread_link="-lpthread";;
 esac
 
+if test "$pthread_wanted" = "yes"; then
 if ./hasgot -i pthread.h $pthread_link pthread_self; then
   echo "POSIX threads library supported."
   otherlibraries="$otherlibraries systhreads"
@@ -1077,6 +1081,7 @@ if ./hasgot -i pthread.h $pthread_link pthread_self; then
   fi
 else
   echo "POSIX threads not found."
+fi
 fi
 
 # Determine if the bytecode thread library is supported
