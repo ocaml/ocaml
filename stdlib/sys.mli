@@ -29,6 +29,9 @@ external getenv: string -> string = "sys_getenv"
            environment. Raise [Not_found] if the variable is unbound. *)
 external command: string -> int = "sys_system_command"
         (* Execute the given shell command and return its exit code. *)
+external time: unit -> float = "sys_time"
+        (* Return the processor time, in seconds, used by the program
+           since the beginning of execution. *)
 external chdir: string -> unit = "sys_chdir"
         (* Change the current working directory of the process. *)
 external getcwd: unit -> string = "sys_getcwd"

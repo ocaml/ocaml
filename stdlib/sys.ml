@@ -26,6 +26,7 @@ external remove: string -> unit = "sys_remove"
 external rename : string -> string -> unit = "sys_rename"
 external getenv: string -> string = "sys_getenv"
 external command: string -> int = "sys_system_command"
+external time: unit -> float = "sys_time"
 external chdir: string -> unit = "sys_chdir"
 external getcwd: unit -> string = "sys_getcwd"
 

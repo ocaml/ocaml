@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #if !macintosh
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -26,6 +27,9 @@
 #include "config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
+#endif
+#ifdef HAS_TIMES
+#include <sys/times.h>
 #endif
 #include "alloc.h"
 #include "debugger.h"
@@ -212,6 +216,25 @@ value sys_system_command(value command)   /* ML */
 #endif
   if (retcode == -1) sys_error(command);
   return Val_int(retcode);
+}
+
+value sys_time(value unit)            /* ML */
+{
+#ifdef HAS_TIMES
+#ifndef CLK_TCK
+#ifdef HZ
+#define CLK_TCK HZ
+#else
+#define CLK_TCK 60
+#endif
+#endif
+  struct tms t;
+  times(&t);
+  return copy_double((double)(t.tms_utime + t.tms_stime) / CLK_TCK);
+#else
+  /* clock() is standard ANSI C */
+  return copy_double((double)clock() / CLOCKS_PER_SEC);
+#endif
 }
 
 value sys_get_config(value unit)  /* ML */
