@@ -13,7 +13,9 @@
 
 (* $Id$ *)
 
-(** Pseudo-random number generator (PRNG). *)
+(** Pseudo-random number generators (PRNG). *)
+
+(** {6 functions for casual users} *)
 
 val init : int -> unit
 (** Initialize the generator, using the argument as a seed.
@@ -24,7 +26,8 @@ val full_init : int array -> unit
 
 val self_init : unit -> unit
 (** Initialize the generator with a more-or-less random seed chosen
-   in a system-dependent way. *)
+   in a system-dependent way.  The generator is initialised with this
+   function at the start of the program. *)
 
 val bits : unit -> int
 (** Return 30 random bits in a nonnegative integer. *)
@@ -37,8 +40,8 @@ val int : int -> int
 val float : float -> float
 (** [Random.float bound] returns a random floating-point number
    between 0 (inclusive) and [bound] (exclusive).  If [bound] is
-   negative, the result is negative.  If [bound] is 0, the result
-   is 0. *)
+   negative, the result is negative or zero.  If [bound] is 0,
+   the result is 0. *)
 
 val bool : unit -> bool
 (** [Random.bool ()] returns [true] or [false] with probability 0.5 each. *)
@@ -48,10 +51,33 @@ type state
    generator. *)
 
 val get_state : unit -> state
-(** Returns the current state of the generator.  This is useful for
+(** Return the current state of the generator.  This is useful for
    checkpointing computations that use the PRNG. *)
 
 val set_state : state -> unit
-(** Resets the state of the generator to some previous state returned by
+(** Reset the state of the generator to some previous state returned by
    {!Random.get_state}. *)
 
+
+(** {6 functions for serious users} *)
+
+(** These function manipulate the current state explicitely.
+    This allows you to use one or several deterministic PRNGs,
+    even in a multi-threaded program, without interference from
+    other parts of the program (for example, the Filename module
+    and some object-oriented primitives use the default PRNG).
+*)
+
+val s_make : int array -> state;;
+(** Create a new state and initialize it with the given seed. *)
+
+val s_copy : state -> state;;
+(** Make a copy of the given state. *)
+
+val s_bits : state -> int;;
+val s_int : state -> int -> int;;
+val s_float : state -> float -> float;;
+val s_bool : state -> bool;;
+(** These functions are the same as the above versions, except that they
+    use (and update) the given PRNG state instead of the default one.
+*)

@@ -55,6 +55,7 @@ Libraries:
 - Module Arg: added Set_*, Symbol.
 - Module Scanf: %n and %N formats to count characters / items read so far;
     assorted bug fixes.
+- Module Random: better seeding; added functions for serious use.
 
 Runtime system:
 - output_value/input_value: fixed bug with large blocks (>= 4 Mwords)
