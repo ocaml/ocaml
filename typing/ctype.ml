@@ -595,7 +595,12 @@ let limited_generalize ty0 ty =
       if (ty.level = generic_level) || (ty == ty0) then
         roots := ty :: !roots;
       ty.level <- !idx;
-      iter_type_expr (inverse [ty]) ty
+      let pty' =
+        match ty.desc with
+          Tvariant row -> [ty; row_more row]
+        | _ -> [ty]
+      in
+      iter_type_expr (inverse pty') ty
     end else if ty.level < lowest_level then begin
       let (_, parents) = Hashtbl.find graph ty.level in
       parents := pty @ !parents
@@ -706,10 +711,14 @@ let rec copy ty =
               (* This variant type has been already copied *)
               ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
               Tlink ty2
+          | _ when more.level <> generic_level ->
+              (* If the row variable is not generic, do nothing *)
+              Tvariant row0
           | _ ->
-              (* We shall really check the level on the row variable *)
-              if more.level <> generic_level then Tvariant row0 else
-              (* We create a new copy *)
+              (* Register new type first for recursion *)
+              save_desc more more.desc;
+              more.desc <- ty.desc;
+              (* Create a new copy *)
               let fields =
                 List.map
                   (fun (l,fi) -> l,
@@ -720,16 +729,11 @@ let rec copy ty =
                     | fi -> fi)
                   row.row_fields
               and name =
-                may_map (fun (p,l) -> p, List.map copy l) row.row_name in
-              let var =
-                Tvariant { row_fields = fields; row_more = newvar();
-                           row_bound = List.map copy row.row_bound;
-                           row_closed = row.row_closed; row_name = name }
+                may_map (fun (p,l) -> p, List.map copy l) row.row_name
               in
-              (* Remember it for other occurences *)
-              save_desc more more.desc;
-              more.desc <- ty.desc;
-              var
+              Tvariant { row_fields = fields; row_more = newvar();
+                         row_bound = List.map copy row.row_bound;
+                         row_closed = row.row_closed; row_name = name }
           end
       | Tfield (label, kind, t1, t2) ->
           begin match field_kind_repr kind with

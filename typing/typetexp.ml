@@ -375,7 +375,7 @@ let report_error ppf = function
         but is here applied to %i argument(s)@]"
        longident lid expected provided
   | Bound_type_variable name ->
-      fprintf ppf "Already bound type parameter %s" name
+      fprintf ppf "Already bound type parameter '%s" name
   | Recursive_type ->
       fprintf ppf "This type is recursive"
   | Unbound_class lid ->
