@@ -262,9 +262,14 @@ and rewrite_trymatching l =
 let rewrite_class_field =
   function
     Pcf_inher (_, _, l, _, _) -> List.iter rewrite_exp l
-  | Pcf_val (_, _, _, Some exp, _) -> rewrite_exp exp
+  | Pcf_val (_, _, _, Some sexp, _) -> rewrite_exp sexp
   | Pcf_val (_, _, _, None, _) | Pcf_virt _ -> ()
-  | Pcf_meth (_, exp, _) -> rewrite_exp exp
+  | Pcf_meth (_, ({pexp_desc = Pexp_function _} as sexp), _) ->
+      rewrite_exp sexp
+  | Pcf_meth (_, sexp, _) ->
+      if !instr_fun then
+        insert_profile sexp.pexp_loc;
+      rewrite_exp sexp
 
 let rewrite_class cl =
   List.iter rewrite_class_field cl.pcl_field
