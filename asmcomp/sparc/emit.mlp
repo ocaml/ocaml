@@ -175,7 +175,8 @@ let record_frame live =
         {typ = Addr; loc = Reg r} ->
           live_offset := ((r lsl 1) + 1) :: !live_offset
       | {typ = Addr; loc = Stack s} as reg ->
-          live_offset := slot_offset s (register_class reg) :: !live_offset
+          live_offset :=
+            slot_offset s (register_class reg) - 96 :: !live_offset
       | _ -> ())
     live;
   frame_descriptors :=
