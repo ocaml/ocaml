@@ -30,7 +30,8 @@ static void GetCurrentPosition(HDC hDC,POINT *pt)
         MoveToEx(hDC,pt->x,pt->y,0);
 }
 
-static value gr_draw_or_fill_arc(value *argv,int argc,BOOL fill);
+static value gr_draw_or_fill_arc(value vx, value vy, value vrx, value vry,
+				 value vstart, value vend, BOOL fill);
 
 CAMLprim value gr_plot(value vx, value vy)
 {
@@ -214,9 +215,15 @@ CAMLprim value gr_set_window_title(value text)
         return Val_unit;
 }
 
-CAMLprim value gr_draw_arc(value *argv ,int argc)
+CAMLprim value gr_draw_arc(value *argv, int argc)
 {
-        return gr_draw_or_fill_arc(argv,argc,FALSE);
+  return gr_draw_or_fill_arc(argv[0], argv[1], argv[2], argv[3],
+			     argv[4], argv[5], FALSE);
+}
+
+CAMLprim value gr_draw_arc_nat(vx, vy, vrx, vry, vstart, vend)
+{
+  return gr_draw_or_fill_arc(vx, vy, vrx, vry, vstart, vend, FALSE);
 }
 
 CAMLprim value gr_set_line_width(value vwidth)
@@ -272,22 +279,21 @@ CAMLprim value gr_set_color(value vcolor)
 }
 
 
-static value gr_draw_or_fill_arc(value *argv,int argc,BOOL fill)
+static value gr_draw_or_fill_arc(value vx, value vy, value vrx, value vry,
+				 value vstart, value vend, BOOL fill)
 {
         int x, y, r_x, r_y, start, end;
         int     x1, y1, x2, y2, x3, y3, x4, y4;
         double cvt = 3.141592653/180.0;
-        //              HPEN newPen = CreatePen(PS_SOLID,1,grwindow.CurrentColor);
-        HPEN oldPen;
 
-        r_x = Int_val(argv[2]);
-        r_y = Int_val(argv[3]);
+        r_x = Int_val(vrx);
+        r_y = Int_val(vry);
         if ((r_x < 0) || (r_y < 0))
                 invalid_argument("draw_arc: radius must be positive");
-        x     = Int_val(argv[0]);
-        y     = Int_val(argv[1]);
-        start = Int_val(argv[4]);
-        end   = Int_val(argv[5]);
+        x     = Int_val(vx);
+        y     = Int_val(vy);
+        start = Int_val(vstart);
+        end   = Int_val(vend);
 
         // Upper-left corner of bounding rect.
         x1=     x - r_x;
@@ -303,7 +309,7 @@ static value gr_draw_or_fill_arc(value *argv,int argc,BOOL fill)
         y4=y + (int)(100.0*sin(cvt*end));
 
         if (grremember_mode) {
-                oldPen = SelectObject(grwindow.gcBitmap,grwindow.CurrentPen);
+                SelectObject(grwindow.gcBitmap,grwindow.CurrentPen);
                 SelectObject(grwindow.gcBitmap,grwindow.CurrentBrush);
                 if( fill )
                         Pie(grwindow.gcBitmap,x1, UD(y1), x2, UD(y2),
@@ -311,10 +317,9 @@ static value gr_draw_or_fill_arc(value *argv,int argc,BOOL fill)
                 else
                         Arc(grwindow.gcBitmap,x1, UD(y1), x2, UD(y2),
                                 x3, UD(y3), x4, UD(y4));
-                //                      SelectObject(grwindow.gcBitmap,oldPen);
         }
         if( grdisplay_mode ) {
-                oldPen = SelectObject(grwindow.gc,grwindow.CurrentPen);
+                SelectObject(grwindow.gc,grwindow.CurrentPen);
                 SelectObject(grwindow.gc,grwindow.CurrentBrush);
                 if (fill)
                         Pie(grwindow.gc,x1, UD(y1), x2, UD(y2),
@@ -322,9 +327,7 @@ static value gr_draw_or_fill_arc(value *argv,int argc,BOOL fill)
                 else
                         Arc(grwindow.gc,x1, UD(y1), x2, UD(y2),
                                 x3, UD(y3), x4, UD(y4));
-                //                      SelectObject(grwindow.gc,oldPen);
         }
-        //              DeleteObject(newPen);
         return Val_unit;
 }
 
@@ -558,9 +561,15 @@ CAMLprim value gr_fill_poly(value vect)
         return Val_unit;
 }
 
-CAMLprim value gr_fill_arc(value *argv,int argc)
+CAMLprim value gr_fill_arc(value *argv, int argc)
 {
-        return gr_draw_or_fill_arc(argv,argc,TRUE);
+  return gr_draw_or_fill_arc(argv[0], argv[1], argv[2], argv[3],
+			     argv[4], argv[5], TRUE);
+}
+
+CAMLprim value gr_fill_arc_nat(vx, vy, vrx, vry, vstart, vend)
+{
+  return gr_draw_or_fill_arc(vx, vy, vrx, vry, vstart, vend, TRUE);
 }
 
 // Image primitives
