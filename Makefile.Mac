@@ -44,7 +44,8 @@ BYTECOMP = :bytecomp:meta.cmo :bytecomp:instruct.cmo :bytecomp:bytegen.cmo ¶
   :bytecomp:printinstr.cmo :bytecomp:opcodes.cmo :bytecomp:emitcode.cmo ¶
   :bytecomp:symtable.cmo :bytecomp:bytelibrarian.cmo :bytecomp:bytelink.cmo
 
-DRIVER = :driver:errors.cmo :driver:compile.cmo :driver:main.cmo
+DRIVER = :driver:errors.cmo :driver:compile.cmo :driver:main_args.cmo ¶
+         :driver:main.cmo
 
 TOPLEVEL = :driver:errors.cmo :driver:compile.cmo ¶
   :toplevel:genprintval.cmo ¶

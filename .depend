@@ -553,9 +553,13 @@ driver/errors.cmx: bytecomp/bytelibrarian.cmx bytecomp/bytelink.cmx \
     typing/typedecl.cmx typing/typemod.cmx typing/typetexp.cmx \
     driver/errors.cmi 
 driver/main.cmo: bytecomp/bytelibrarian.cmi bytecomp/bytelink.cmi \
-    utils/clflags.cmo driver/compile.cmi utils/config.cmi driver/errors.cmi 
+    utils/clflags.cmo driver/compile.cmi utils/config.cmi driver/errors.cmi \
+    driver/main_args.cmi 
 driver/main.cmx: bytecomp/bytelibrarian.cmx bytecomp/bytelink.cmx \
-    utils/clflags.cmx driver/compile.cmx utils/config.cmx driver/errors.cmx 
+    utils/clflags.cmx driver/compile.cmx utils/config.cmx driver/errors.cmx \
+    driver/main_args.cmx 
+driver/main_args.cmo: driver/main_args.cmi 
+driver/main_args.cmx: driver/main_args.cmi 
 driver/optcompile.cmo: asmcomp/asmgen.cmi utils/ccomp.cmi utils/clflags.cmo \
     asmcomp/compilenv.cmi utils/config.cmi typing/env.cmi \
     typing/includemod.cmi parsing/location.cmi utils/misc.cmi \
