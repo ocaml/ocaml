@@ -649,6 +649,21 @@ let fprintf ppf format =
   let format = (Obj.magic format : string) in
   let limit = String.length format in
 
+  let print_as = ref None in
+
+  let pp_print_as_char ppf c =
+      match !print_as with
+      | None -> pp_print_char ppf c
+      | Some size ->
+         pp_print_as ppf size (String.make 1 c);
+         print_as := None
+  and pp_print_as_string ppf s =
+      match !print_as with
+      | None -> pp_print_string ppf s
+      | Some size ->
+         pp_print_as ppf size s;
+         print_as := None in
+
   let rec doprn i =
     if i >= limit then
       Obj.magic ()
@@ -685,6 +700,12 @@ let fprintf ppf format =
           | ';' ->
               let j = do_pp_break ppf (i + 2) in
               doprn j
+          | '<' ->
+              let size, j = get_int "fprintf: bad print format" (i + 2) in
+              if format.[pred j] != '>'
+               then invalid_arg "fprintf: bad print format"
+               else print_as := Some size;
+              doprn j
           | _ -> invalid_arg ("fprintf: unknown format") end
       | '%' ->
           let j = skip_args (succ i) in
@@ -695,7 +716,7 @@ let fprintf ppf format =
           | 's' ->
               Obj.magic(fun s ->
                 if j <= i+1 then
-                  pp_print_string ppf s
+                  pp_print_as_string ppf s
                 else begin
                   let p =
                     try
@@ -703,34 +724,34 @@ let fprintf ppf format =
                     with _ ->
                       invalid_arg "fprintf: bad %s format" in
                   if p > 0 && String.length s < p then begin
-                    pp_print_string ppf
+                    pp_print_as_string ppf
                                   (String.make (p - String.length s) ' ');
-                    pp_print_string ppf s
+                    pp_print_as_string ppf s
                   end else if p < 0 && String.length s < -p then begin
-                    pp_print_string ppf s;
-                    pp_print_string ppf
+                    pp_print_as_string ppf s;
+                    pp_print_as_string ppf
                                   (String.make (-p - String.length s) ' ')
                   end else
-                    pp_print_string ppf s
+                    pp_print_as_string ppf s
                 end;
                 doprn (succ j))
           | 'c' ->
               Obj.magic(fun c ->
-                pp_print_char ppf c;
+                pp_print_as_char ppf c;
                 doprn (succ j))
           | 'd' | 'o' | 'x' | 'X' | 'u' ->
               Obj.magic(fun n ->
-                pp_print_string ppf
+                pp_print_as_string ppf
                                 (format_int (String.sub format i (j-i+1)) n);
                 doprn (succ j))
           | 'f' | 'e' | 'E' | 'g' | 'G' ->
               Obj.magic(fun f ->
-                pp_print_string ppf
+                pp_print_as_string ppf
                                 (format_float (String.sub format i (j-i+1)) f);
                 doprn (succ j))
           | 'b' ->
               Obj.magic(fun b ->
-                pp_print_string ppf (string_of_bool b);
+                pp_print_as_string ppf (string_of_bool b);
                 doprn(succ j))
           | 'a' ->
               Obj.magic(fun printer arg ->
@@ -743,7 +764,7 @@ let fprintf ppf format =
           | c ->
               invalid_arg ("fprintf: unknown format")
           end
-       | c -> pp_print_char ppf c; doprn (succ i)
+       | c -> pp_print_as_char ppf c; doprn (succ i)
 
   and skip_args j =
     match format.[j] with
@@ -761,7 +782,7 @@ let fprintf ppf format =
        | '0' .. '9' | '-' -> get (succ j)
        | '>' | ' ' ->
          if j = i then 0, succ j else
-          begin try int_of_string (String.sub format i (j-i)), succ j
+          begin try int_of_string (String.sub format i (j - i)), succ j
           with Failure _ -> invalid_arg s end
        | c -> invalid_arg s in
        get i
@@ -788,8 +809,7 @@ let fprintf ppf format =
    | _ -> Pp_box, j
 
   and do_pp_break ppf i =
-   if i >= limit
-   then begin pp_print_space ppf (); i end else
+   if i >= limit then begin pp_print_space ppf (); i end else
    match format.[i] with
    | '<' ->
      let nspaces, j = get_int "fprintf: bad break format" (succ i) in
@@ -800,8 +820,7 @@ let fprintf ppf format =
    | c ->  pp_print_space ppf (); i
 
   and do_pp_open ppf i =
-   if i >= limit
-   then begin pp_open_box_gen ppf 0 Pp_box; i end else
+   if i >= limit then begin pp_open_box_gen ppf 0 Pp_box; i end else
    match format.[i] with
    | '<' ->
      let k, j = get_box_kind (succ i) in

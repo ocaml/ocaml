@@ -318,7 +318,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
            Box type is one of [h], [v], [hv], or [hov],
            which stand respectively for an horizontal, vertical,
            ``horizontal-vertical'' and ``horizontal or vertical'' box.
-           For instance, [@\[<hov2>] opens an ``horizontal or vertical''
+           For instance, [@\[<hov 2>] opens an ``horizontal or vertical''
            box with indentation 2.
 -          [@\]]: close the most recently opened pretty-printing box.
 -          [@,]: output a good break as with [print_cut ()].
@@ -332,6 +332,11 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
 -          [@?]: flush the pretty printer as with [print_flush ()].
 -          [@.]: flush the pretty printer and output a new line, as with
            [print_newline ()].
+-          [@<n>]: print the following item as if it were of length [n].
+           Hence, [printf "@<0>%s" arg] is equivalent to [print_as 0 arg].
+           If [@<n>] is not followed by a conversion specification,
+           then the following character of the format is printed as if
+           it were of length [n].
 -          [@@]: print a plain [@] character. *)
 
 val printf : ('a, formatter, unit) format -> 'a;;
