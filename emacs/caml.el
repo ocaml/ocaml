@@ -619,7 +619,7 @@ variable caml-mode-indentation."
 ;; This function switches to monobyte mode
 
 (if (not (fboundp 'char-bytes))
-    (defalias 'forward-byte forward-char)
+    (defalias 'forward-byte 'forward-char)
   (defun caml-char-bytes (ch)
     (let ((l (char-bytes ch)))
       (if (> l 1) (- l 1) l)))

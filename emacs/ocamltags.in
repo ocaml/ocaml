@@ -29,8 +29,9 @@
 
 (defun caml-tags-file (filename)
   (let* ((output-buffer (current-buffer))
+         (basename (file-name-nondirectory filename))
          (backpatch (prog2
-                        (insert "\n" filename)
+                        (insert "\n" basename)
                         (point))))
     (find-file-read-only filename)
     (caml-mode)

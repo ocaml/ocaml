@@ -28,7 +28,7 @@ To install the mode itself, edit the Makefile and do
 
 	% make install
 
-To install ocamltags, set SCRIPTDIR in the Makefile and do
+To install ocamltags, do
 
 	% make install-ocamltags
 

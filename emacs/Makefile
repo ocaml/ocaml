@@ -1,3 +1,5 @@
+include ../config/Makefile
+
 # Files to install
 FILES=	caml-font.el caml-hilit.el caml.el camldebug.el \
 	inf-caml.el caml-compat.el
@@ -9,7 +11,7 @@ FILES=	caml-font.el caml-hilit.el caml.el camldebug.el \
 EMACS=emacs
 
 # Where to install ocamltags script
-SCRIPTDIR = /usr/local/bin
+SCRIPTDIR = $(BINDIR)
 
 # Command for byte-compiling the files
 COMPILECMD=(progn \
@@ -44,7 +46,7 @@ ocamltags:	ocamltags.in
 
 install-ocamltags: ocamltags
 
-	cp ocamltags $(SCRIPTDIR)/olabltags
+	cp ocamltags $(SCRIPTDIR)/ocamltags
 
 clean:
 	rm -f ocamltags *~ #*#
