@@ -1,0 +1,11 @@
+#!/bin/sh
+
+case "$1" in
+  true) shift
+        exec ../ocamlrun  -I ../otherlibs/unix -I ../otherlibs/str ./ocamldoc $*
+	;;
+     *) shift
+	exec ./ocamldoc $*
+	;;
+esac
+  
