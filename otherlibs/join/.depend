@@ -1,0 +1,13 @@
+jprims.cmo: jprims.cmi 
+jprims.cmx: jprims.cmi 
+jprims.cmo: jprims.cmi 
+jprims.cmx: jprims.cmi 
+whashtbl.cmi: weakarray.cmi 
+jprims.cmo: jprims.cmi 
+jprims.cmx: jprims.cmi 
+weakarray.cmo: weakarray.cmi 
+weakarray.cmx: weakarray.cmi 
+weakset.cmo: weakset.cmi 
+weakset.cmx: weakset.cmi 
+whashtbl.cmo: weakarray.cmi whashtbl.cmi 
+whashtbl.cmx: weakarray.cmx whashtbl.cmi 

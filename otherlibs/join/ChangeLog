@@ -1,0 +1,7 @@
+2001-11-15:
+  * Implemented simple local operations:
+    - create_location
+    - halt
+    - create_process
+  * Free threads are kept in spools inside their location.
+  * Modified systhreads/threads to add a context to each thread.
