@@ -479,6 +479,7 @@ let pp_set_print_tags state b = state.pp_print_tags <- b;;
 let pp_set_mark_tags state b = state.pp_mark_tags <- b;;
 let pp_get_print_tags state () = state.pp_print_tags;;
 let pp_get_mark_tags state () = state.pp_mark_tags;;
+let pp_set_tags state b = pp_set_print_tags state b; pp_set_mark_tags state b;;
 
 let pp_get_formatter_tag_functions state () =
   {mark_open_tag = state.pp_mark_open_tag;
@@ -829,6 +830,8 @@ and set_mark_tags =
     pp_set_mark_tags std_formatter
 and get_mark_tags =
     pp_get_mark_tags std_formatter
+and set_tags =
+    pp_set_tags std_formatter
 ;;
 
 
@@ -837,10 +840,6 @@ and get_mark_tags =
   Printf implementation.
 
  **************************************************************)
-
-(* Basic primitive functions to format int and floating point numbers. *)
-external format_int : string -> int -> string = "format_int";;
-external format_float : string -> float -> string = "format_float";;
 
 (* Error messages when processing formats. *)
 

@@ -84,7 +84,7 @@ val open_box : int -> unit;;
    current indentation. *)
 
 val close_box : unit -> unit;;
-(** Close the most recently opened pretty-printing box. *)
+(** Closes the most recently opened pretty-printing box. *)
 
 (** {6 Formatting functions} *)
 
@@ -97,16 +97,16 @@ val print_as : int -> string -> unit;;
    it were of length [len]. *)
 
 val print_int : int -> unit;;
-(** Print an integer in the current box. *)
+(** Prints an integer in the current box. *)
 
 val print_float : float -> unit;;
-(** Print a floating point number in the current box. *)
+(** Prints a floating point number in the current box. *)
 
 val print_char : char -> unit;;
-(** Print a character in the current box. *)
+(** Prints a character in the current box. *)
 
 val print_bool : bool -> unit;;
-(** Print a boolean in the current box. *)
+(** Prints a boolean in the current box. *)
 
 
 (** {6 Break hints} *)
@@ -127,7 +127,7 @@ val print_cut : unit -> unit;;
    It is equivalent to [print_break 0 0]. *)
 
 val print_break : int -> int -> unit;;
-(** Insert a break hint in a pretty-printing box.
+(** Inserts a break hint in a pretty-printing box.
    [print_break nspaces offset] indicates that the line may
    be split (a newline character is printed) at this point,
    if the contents of the current box does not fit on the
@@ -137,18 +137,18 @@ val print_break : int -> int -> unit;;
    [nspaces] spaces are printed. *)
 
 val print_flush : unit -> unit;;
-(** Flush the pretty printer: all opened boxes are closed,
+(** Flushes the pretty printer: all opened boxes are closed,
    and all pending text is displayed. *)
 
 val print_newline : unit -> unit;;
 (** Equivalent to [print_flush] followed by a new line. *)
 
 val force_newline : unit -> unit;;
-(** Force a newline in the current box. Not the normal way of
+(** Forces a newline in the current box. Not the normal way of
    pretty-printing, you should prefer break hints. *)
 
 val print_if_newline : unit -> unit;;
-(** Execute the next formatting command if the preceding line
+(** Executes the next formatting command if the preceding line
    has just been split. Otherwise, ignore the next formatting
    command. *)
 
@@ -163,7 +163,7 @@ val set_margin : int -> unit;;
    bigger than 999999999. *)
 
 val get_margin : unit -> int;;
-(** Return the position of the right margin. *)
+(** Returns the position of the right margin. *)
 
 
 (** {6 Maximum indentation limit} *)
@@ -191,10 +191,10 @@ val set_max_boxes : int -> unit;;
    Nothing happens if [max] is not greater than 1. *)
 
 val get_max_boxes : unit -> int;;
-(** Return the maximum number of boxes allowed before ellipsis. *)
+(** Returns the maximum number of boxes allowed before ellipsis. *)
 
 val over_max_boxes : unit -> bool;;
-(** Test if the maximum number of boxes allowed have already been opened. *)
+(** Tests if the maximum number of boxes allowed have already been opened. *)
 
 
 (** {6 Advanced formatting} *)
@@ -234,10 +234,10 @@ val open_hovbox : int -> unit;;
 (** {6 Tabulations} *)
 
 val open_tbox : unit -> unit;;
-(** Open a tabulation box. *)
+(** Opens a tabulation box. *)
 
 val close_tbox : unit -> unit;;
-(** Close the most recently opened tabulation box. *)
+(** Closes the most recently opened tabulation box. *)
 
 val print_tbreak : int -> int -> unit;;
 (** Break hint in a tabulation box.
@@ -252,60 +252,10 @@ val print_tbreak : int -> int -> unit;;
    indentation. *)
 
 val set_tab : unit -> unit;;
-(** Set a tabulation mark at the current insertion point. *)
+(** Sets a tabulation mark at the current insertion point. *)
 
 val print_tab : unit -> unit;;
 (** [print_tab ()] is equivalent to [print_tbreak (0,0)]. *)
-
-
-(** {6 Tags} *)
-
-
-(** Tags are used to mark printed entities for user's defined
-   purposes, e.g. setting font and giving size indications for a
-   display device, or marking delimitations of semantics entities
-   (e.g. HTML or TeX elements or terminal escape sequences).
-   Tag markers are not considered as part of the printing material
-   that drive line breaking (the length of the strings corresponding
-   to tag markers is considered as zero).
-
-   In addition, if [set_print_tags] is set to [false], the pretty
-   printer engine omits tags. *)
-
-type tag = string;;
-
-val open_tag : tag -> unit;;
-val close_tag : unit -> unit;;
-(** [open_tag s] opens the tag named [s] that is output as the zero
-    length token [mark_open_tag s]; next [close_tag ()] call
-    outputs [mark_close_tag s], also as a zero length token.  *)
-
-type formatter_tag_functions = {
-  mark_open_tag : tag -> string;
-  mark_close_tag : tag -> string;
-  print_open_tag : tag -> unit;
-  print_close_tag : tag -> unit;
-};;
-(** The tag handling functions of a formatter:
- [mark] versions output string as 0 length tokens,
- [print] versions can perform regular printing. *)
-
-val set_formatter_tag_functions :
-    formatter_tag_functions -> unit;;
-val get_formatter_tag_functions :
-    unit -> formatter_tag_functions;;
-
-val set_print_tags : bool -> unit;;
-val set_mark_tags : bool -> unit;;
-(** [set_print_tags b] turns on or off the printing of tags, while 
-    [set_mark_tags b] turns on or off the output of tag markers.
-    This way a single pretty printing routine can output both simple
-    ``verbatim'' material or richer decorated output depending on the
-    treatment of tags. Default behavior of the pretty printer is to
-    print tags and markers of tags. *)
-val get_print_tags : unit -> bool;;
-val get_mark_tags : unit -> bool;;
-(** Return the current status of tag printing and marking. *)
 
 
 (** {6 Ellipsis} *)
@@ -318,13 +268,83 @@ val get_ellipsis_text : unit -> string;;
 (** Return the text of the ellipsis. *)
 
 
+(** {6 Tags} *)
+
+type tag = string;;
+
+(** Tags are used to decorate printed entities for user's defined
+   purposes, e.g. setting font and giving size indications for a
+   display device, or marking delimitations of semantics entities
+   (e.g. HTML or TeX elements or terminal escape sequences).
+
+   By default, those tags do not influence line breaking calculation:
+   the tag ``markers'' are not considered as part of the printing
+   material that drive line breaking (in other words, the length of
+   those strings is considered as zero for line breaking).
+
+   Thus, tag handling is in some sense transparent to pretty-printing
+   and do not interfere with usual pretty-printing. Hence, a single
+   pretty printing routine can output both simple ``verbatim''
+   material or richer decorated output depending on the treatment of
+   tags. Default behavior of the pretty printer engine is to consider
+   tags as active, so that output is decorated. Otherwise, if
+   [set_tags] is set to [false], the pretty printer engine just skips
+   tags, and the output is regular.
+
+   When a tag has been opened (or closed), it is both and successively
+   ``printed'' and ``marked''. Printing a tag means calling a
+   formatter specific function with the name of the tag as argument:
+   that ``tag printing'' function can then print any regular material
+   to the formatter (so that this material is enqueued as usual in the
+   formatter queue for further line-breaking computation). Marking a
+   tag means to output an arbitrary string (the ``tag marker''),
+   directly into the output device of the formatter. Hence, the
+   formatter specific ``tag marking'' function must return the tag
+   marker string associated to its tag argument. Being flushed
+   directly into the output device of the formatter, tag marker
+   strings are not considered as part of the printing material that
+   drive line breaking (in other words, the length of the strings
+   corresponding to tag markers is considered as zero for line
+   breaking). In addition, advanced users may take advantage of
+   the specificity of tag markers to be precisely output when the
+   pretty printer has already decided where to break the lines, and
+   precisely when the queue is flushed into the output device.
+
+   In the spirit of HTML tags, the default tag marking functions
+   output tags enclosed in "<" and ">": hence, the opening marker of
+   tag [t] is ["<t>"] and the closing marker ["</t>"].
+
+   Default tag printing functions just do nothing.
+
+   Tag marking and tag printing functions are user definable and can
+   be set by calling [set_formatter_tag_functions]. *)
+
+val open_tag : tag -> unit;;
+(** [open_tag t] opens the tag named [t]; the [print_open_tag]
+   function of the formatter is called with [t] as argument;
+   the tag marker [mark_open_tag t] will be flushed into the output
+   device of the formatter. *)
+val close_tag : unit -> unit;;
+(** [close_tag ()] closes the most recently opened tag [t].
+   In addition, the [print_close_tag] function of the formatter is called
+   with [t] as argument. The marker [mark_close_tag t] will be flushed
+   into the output device of the formatter. *)
+
+val set_tags : bool -> unit;;
+(** [set_tags b] turns on or off the treatment of tags (default is on). *)
+val set_print_tags : bool -> unit;;
+val set_mark_tags : bool -> unit;;
+(** [set_print_tags b] turns on or off the printing of tags, while 
+    [set_mark_tags b] turns on or off the output of tag markers. *)
+val get_print_tags : unit -> bool;;
+val get_mark_tags : unit -> bool;;
+(** Return the current status of tag printing and marking. *)
+
+
 (** {6 Redirecting formatter output} *)
 
 val set_formatter_out_channel : out_channel -> unit;;
 (** Redirect the pretty-printer output to the given channel. *)
-
-
-(** {6 Changing the meaning of printing material} *)
 
 val set_formatter_output_functions :
   (string -> int -> int -> unit) -> (unit -> unit) -> unit;;
@@ -341,21 +361,43 @@ val get_formatter_output_functions :
   unit -> (string -> int -> int -> unit) * (unit -> unit);;
 (** Return the current output functions of the pretty-printer. *)
 
-(*val set_formatter_tag_functions :
-  (string -> tag) -> (tag -> unit) -> unit;;
+(** {6 Changing the meaning of printing tags} *)
 
-(** [set_formatter_tag_functions open close] changes the meaning of
-   opening and closing tags to use the functions [open] and [close].
+type formatter_tag_functions = {
+  mark_open_tag : tag -> string;
+  mark_close_tag : tag -> string;
+  print_open_tag : tag -> unit;
+  print_close_tag : tag -> unit;
+};;
+(** The tag handling functions specific to a formatter:
+   [mark] versions are the ``tag marking'' functions that associate a string
+   marker to a tag in order for the pretty-printing engine to flush
+   those markers as 0 length tokens in the output device of the formatter.
+   [print] versions are the ``tag printing'' functions that can perform
+   regular printing when a tag is closed or opened. *)
 
-   When opening a tag name [s], the string [s] is passed to the [open]
-   function that must return the tag corresponding to that name; this
-   tag is sent back to the tag closing function [close], when the
-   next call to [close_tag ()] happens.
-*)
+val set_formatter_tag_functions :
+  formatter_tag_functions -> unit;;
+
+(** [set_formatter_tag_functions tag_funs] changes the meaning of
+   opening and closing tags to use the functions in [tag_funs].
+
+   When opening a tag name [t], the string [t] is passed to the
+   opening tag marking function (the [mark_open_tag] field of the
+   record [tag_funs]), that must return the opening tag marker for to
+   that name. When the next call to [close_tag ()] happens, the tag
+   name [t] is sent back to the closing tag marking function (the
+   [mark_close_tag] field of record [tag_funs]), that must return a
+   closing tag marker for that name.
+
+   The [print_] field of the record contains the functions that are
+   called at tag opening and tag closing time, to output regular
+   material in the pretty-printer queue. *)
+
 val get_formatter_tag_functions :
-  unit -> (string -> tag) * (tag -> unit);;
+  unit -> formatter_tag_functions;;
 (** Return the current tag functions of the pretty-printer. *)
-*)
+
 (** {6 Changing the meaning of pretty printing (indentation, line breaking, and printing material)} *)
 
 val set_all_formatter_output_functions :
@@ -392,8 +434,8 @@ val get_all_formatter_output_functions :
 (** {6 Multiple formatted output} *)
 
 type formatter;;
-(** Abstract data type corresponding to a pretty-printer and
-   all its machinery.
+(** Abstract data type corresponding to a pretty-printer (also called a
+   formatter) and all its machinery.
    Defining new pretty-printers permits the output of
    material in parallel on several channels.
    Parameters of a pretty-printer are local to this pretty-printer:
@@ -417,7 +459,7 @@ val std_formatter : formatter;;
 val err_formatter : formatter;;
 (** A formatter to use with formatting functions below for
    output to standard error. It is defined as
-  [formatter_of_out_channel stderr]. *)
+   [formatter_of_out_channel stderr]. *)
 
 val formatter_of_buffer : Buffer.t -> formatter;;
 (** [formatter_of_buffer b] returns a new formatter writing to
@@ -435,7 +477,7 @@ val str_formatter : formatter;;
 
 val flush_str_formatter : unit -> string;;
 (** Returns the material printed with [str_formatter], flushes
-   the formatter and reset the corresponding buffer. *)
+   the formatter and resets the corresponding buffer. *)
 
 val make_formatter :
   (string -> int -> int -> unit) -> (unit -> unit) -> formatter;;
@@ -472,6 +514,7 @@ val pp_close_tbox : formatter -> unit -> unit;;
 val pp_print_tbreak : formatter -> int -> int -> unit;;
 val pp_set_tab : formatter -> unit -> unit;;
 val pp_print_tab : formatter -> unit -> unit;;
+val pp_set_tags : formatter -> bool -> unit;;
 val pp_set_print_tags : formatter -> bool -> unit;;
 val pp_set_mark_tags : formatter -> bool -> unit;;
 val pp_get_print_tags : formatter -> unit -> bool;;
@@ -565,7 +608,6 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
    Example: [printf "@[%s@ %d@]" "x =" 1] is equivalent to 
    [open_box (); print_string "x ="; print_space (); print_int 1; close_box ()].
    It prints [x = 1] within a pretty-printing box.
-
 *)
 
 val printf : ('a, formatter, unit) format -> 'a;;
@@ -576,7 +618,7 @@ val eprintf : ('a, formatter, unit) format -> 'a;;
 
 val sprintf : ('a, unit, string) format -> 'a;;
 (** Same as [printf] above, but instead of printing on a formatter,
-   return a string containing the result of formatting the arguments.
+   returns a string containing the result of formatting the arguments.
    Note that the pretty-printer queue is flushed at the end of each
    call to [sprintf].
 
@@ -597,8 +639,9 @@ val bprintf : Buffer.t -> ('a, formatter, unit) format -> 'a;;
    material on the same buffer [b], you should consider using
    [fprintf] with a formatter writing to the buffer [b] (as obtained
    by [formatter_of_buffer b]), otherwise the repeated flushes of the
-   pretty-printer queue would result in badly formatted output. *)
+   pretty-printer queue would result in unexpected and badly formatted
+   output. *)
 
 val kprintf : (string -> string) -> ('a, unit, string) format -> 'a;;
 (** Same as [sprintf] above, but instead of returning the string,
-    pass it to the first argument. *)
+   passes it to the first argument. *)
