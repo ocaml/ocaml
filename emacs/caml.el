@@ -1533,8 +1533,11 @@ by |, insert one."
 			    (current-column)))
 		  (abbrev-correct (if (= last-command-char ?\ ) 1 0)))
 	      (indent-to (- indent
-			    (symbol-value
-			     (nth 1 (assoc kw caml-leading-kwops-alist)))
+			    (or
+                             (symbol-value
+                              (nth 1
+                                   (assoc kw caml-leading-kwops-alist)))
+                             0)
 			    abbrev-correct)))))))
 
 (defun caml-indent-phrase ()

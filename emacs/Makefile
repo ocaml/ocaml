@@ -1,5 +1,6 @@
 # Files to install
-FILES=caml-font.el caml-hilit.el caml.el camldebug.el inf-caml.el
+FILES=	caml-font.el caml-hilit.el caml.el camldebug.el \
+	inf-caml.el caml-compat.el
 
 # Where to install. If empty, automatically determined.
 #EMACSDIR=
@@ -7,12 +8,19 @@ FILES=caml-font.el caml-hilit.el caml.el camldebug.el inf-caml.el
 # Name of Emacs executable
 EMACS=emacs
 
+# Where to install ocamltags script
+SCRIPTDIR = /usr/local/bin
+
 # Command for byte-compiling the files
 COMPILECMD=(progn \
               (setq load-path (cons "." load-path)) \
               (byte-compile-file "caml.el") \
               (byte-compile-file "inf-caml.el") \
               (byte-compile-file "camldebug.el"))
+
+ocamltags:	ocamltags.in
+	sed -e 's:@EMACS@:$(EMACS):' ocamltags.in >ocamltags
+	chmod a+x ocamltags
 
 install:
 	@if test "$(EMACSDIR)" = ""; then \
@@ -28,11 +36,12 @@ install:
           $(MAKE) simple-install; \
         fi
 
-simple-install:
+simple-install:  ocamltags
 	@echo "Installing in $(EMACSDIR)..."
 	if test -d $(EMACSDIR); then : ; else mkdir -p $(EMACSDIR); fi
 	cp $(FILES) $(EMACSDIR)
 	cd $(EMACSDIR); $(EMACS) --batch --eval '$(COMPILECMD)'
+	cp ocamltags $(SCRIPTDIR)/ocamltags
 
 clean:
-	rm -f *~ #*#
+	rm -f ocamltags *~ #*#

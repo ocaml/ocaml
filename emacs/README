@@ -1,4 +1,4 @@
-	    O'Caml emacs mode, version 2.01 of 1998/10/14
+	    O'Caml emacs mode, version 2.01+ of 1998/12/16
 
 The files in this archive define a caml-mode for emacs, for editing
 Objective Caml and Objective Label programs, as well as an
@@ -54,10 +54,14 @@ For other bindings, see C-h b.
 
 Changes log:
 -----------
+Version 2.01+:
+--------------
+* corrected a bug in caml-font.el <Adam P. Jenkins>
+
+* corrected abbreviations and added ocamltags script <Ian T Zimmerman>
+
 Version 2.01:
 ------------
-* abbreviation code corrected by ITZ
-
 * code for interactive errors added by ITZ
 
 Version 2.00:
