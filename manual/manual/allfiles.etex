@@ -56,6 +56,10 @@
 \input libthreads.tex
 \input libgraph.tex
 
+\part{Tutorials}
+\label{p:tutorials}
+\input objectexamples.tex
+
 \part{Appendix}
 \label{p:appendix}
  
