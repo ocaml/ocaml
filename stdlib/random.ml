@@ -61,8 +61,9 @@ let int bound =
 
 let float bound = rawfloat () *. bound
 
-(* Simple initialisation.  The seed is an integer.
-*)
+let bool () = (bits () land 1 = 0);;
+
+(* Simple initialisation.  The seed is an integer. *)
 let init seed =
   let mdg i =
     let d = Digest.string (string_of_int i ^ string_of_int seed) in

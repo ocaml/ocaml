@@ -40,6 +40,9 @@ val float : float -> float
    negative, the result is negative.  If [bound] is 0, the result
    is 0. *)
 
+val bool : unit -> bool
+(** [Random.bool ()] returns [true] or [false] with probability 0.5 each. *)
+
 type state
 (** Values of this type are used to store the current state of the
    generator. *)
