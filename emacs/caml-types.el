@@ -121,17 +121,30 @@
                   (right (caml-types-get-pos target-buf
                                              (nth 2 loc) (nth 3 loc))))
               (move-overlay caml-types-expr-ovl left right target-buf))
-            (re-search-forward "^type(")  ;; not strictly correct
+            (re-search-forward "^type(");; not strictly correct
             (forward-line 1)
             (re-search-forward "  \\(\\([^\n)]\\|.)\\|\n[^)]\\)*\\)\n)")
             (move-overlay caml-types-type-ovl (match-beginning 1) (match-end 1)
                           type-buf)
             (message (format "type: %s" (match-string 1)))
-            ; *** this doesn't seem to work, I don't know why...
-            ; *** (goto-char type-point)
-            ; *** workaround: set the mark instead
+                                        ; *** this doesn't seem to work, I don't know why...
+                                        ; *** (goto-char type-point)
+                                        ; *** workaround: set the mark instead
             (set-mark (match-beginning 1))
-            (set-buffer target-buf)))))))
+            )))
+      (let
+          ((window (get-buffer-window type-buf))
+           (this-window (selected-window)))
+        
+        (if window
+            (progn
+              (select-window window)
+              (goto-char (mark))
+              (select-window this-window))))
+      (unwind-protect
+          (sit-for 3)
+        (delete-overlay caml-types-expr-ovl))
+      )))
 
 (defun caml-types-date< (date1 date2)
   (or (< (car date1) (car date2))
