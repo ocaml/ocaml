@@ -70,6 +70,8 @@ typedef unsigned long mark_t;
 #define Min_long (-(1L << (8 * sizeof(value) - 2)))
 #define Val_int(x) Val_long(x)
 #define Int_val(x) ((int) Long_val(x))
+#define Unsigned_long_val(x) ((unsigned long)(x) >> 1)
+#define Unsigned_int_val(x)  ((int) Unsigned_long_val(x))
 
 /* Structure of the header:
 
