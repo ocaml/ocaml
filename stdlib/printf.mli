@@ -49,6 +49,7 @@ val fprintf: out_channel -> ('a, out_channel, unit) format -> 'a
                 in the output of [fprintf] at the current point.
 -          [t]: same as [%a], but takes only one argument (with type
                 [out_channel -> unit]) and apply it to [outchan].
+-          [%]: take no argument and output one [%] character.
 -          Refer to the C library [printf] function for the meaning of
            flags and field width specifiers.
 
@@ -62,5 +63,6 @@ val eprintf: ('a, out_channel, unit) format -> 'a
         (* Same as [fprintf], but output on [stderr]. *)
 
 val sprintf: ('a, unit, string) format -> 'a
-        (* Same as [printf], but return the result of formatting in a
-           string. *)
+        (* Same as [printf], but instead of printing on an output channel,
+           return a string containing the result of formatting
+           the arguments. *)

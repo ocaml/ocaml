@@ -191,12 +191,16 @@ external close_desc: int -> unit = "sys_close"
 
 let temp_file prefix suffix =
   let rec try_name counter =
-    let name =
-      concat temporary_directory (prefix ^ string_of_int counter ^ suffix) in
-    try
-      close_desc(open_desc name [Open_wronly; Open_creat; Open_excl] 0o666);
-      name
-    with Sys_error _ ->
-      try_name (counter + 1)
+    if counter >= 1000 then
+      invalid_arg "Filename.temp_file: temp dir nonexistent or full"
+    else begin
+      let name =
+        concat temporary_directory (prefix ^ string_of_int counter ^ suffix) in
+      try
+        close_desc(open_desc name [Open_wronly; Open_creat; Open_excl] 0o666);
+        name
+      with Sys_error _ ->
+        try_name (counter + 1)
+    end
   in try_name 0
 

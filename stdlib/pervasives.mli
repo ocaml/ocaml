@@ -113,8 +113,9 @@ external (>) : 'a -> 'a -> bool = "%greaterthan"
 external (<=) : 'a -> 'a -> bool = "%lessequal"
 external (>=) : 'a -> 'a -> bool = "%greaterequal"
         (* Structural ordering functions. These functions coincide with
-           the usual orderings over integer, string and floating-point
-           numbers, and extend them to a total ordering over all types.
+           the usual orderings over integers, characters, strings
+           and floating-point numbers, and extend them to a
+           total ordering over all types.
            The ordering is compatible with [(=)]. As in the case
            of [(=)], mutable structures are compared by contents.
            Comparison between functional values raises [Invalid_argument].
@@ -143,15 +144,15 @@ external (!=) : 'a -> 'a -> bool = "%noteq"
 
 external not : bool -> bool = "%boolnot"
         (* The boolean negation. *)
-external (&) : bool -> bool -> bool = "%sequand"
 external (&&) : bool -> bool -> bool = "%sequand"
+external (&) : bool -> bool -> bool = "%sequand"
         (* The boolean ``and''. Evaluation is sequential, left-to-right:
-           in [e1 & e2], [e1] is evaluated first, and if it returns [false],
+           in [e1 && e2], [e1] is evaluated first, and if it returns [false],
            [e2] is not evaluated at all. *)
-external (or) : bool -> bool -> bool = "%sequor"
 external (||) : bool -> bool -> bool = "%sequor"
+external (or) : bool -> bool -> bool = "%sequor"
         (* The boolean ``or''. Evaluation is sequential, left-to-right:
-           in [e1 or e2], [e1] is evaluated first, and if it returns [true],
+           in [e1 || e2], [e1] is evaluated first, and if it returns [true],
            [e2] is not evaluated at all. *)
 
 (*** Integer arithmetic *)
@@ -173,11 +174,16 @@ external (-) : int -> int -> int = "%subint"
 external ( * ) : int -> int -> int = "%mulint"
         (* Integer multiplication. *)
 external (/) : int -> int -> int = "%divint"
+        (* Integer division.
+           Raise [Division_by_zero] if the second argument is 0. *)
 external (mod) : int -> int -> int = "%modint"
-        (* Integer division and remainder.
-           Raise [Division_by_zero] if the second argument is 0.
-           If one of the arguments is negative, the result is
-           platform-dependent. *)
+        (* Integer remainder.  If [x >= 0] and [y > 0], the result
+           of [x mod y] satisfies the following properties:
+           [0 <= x mod y < y] and
+           [x = (x / y) * y + x mod y].
+           If [y = 0], [x mod y] raises [Division_by_zero].
+           If [x < 0] or [y < 0], the result of [x mod y] is
+           not specified and depends on the platform. *)
 val abs : int -> int
         (* Return the absolute value of the argument. *)
 val max_int: int
@@ -224,47 +230,48 @@ external (/.) : float -> float -> float = "%divfloat"
         (* Floating-point division. *)
 external ( ** ) : float -> float -> float = "power_float" "pow" "float"
         (* Exponentiation *)
+external sqrt : float -> float = "sqrt_float" "sqrt" "float"
+        (* Square root *)
 external exp : float -> float = "exp_float" "exp" "float"
-
+external log : float -> float = "log_float" "log" "float"
+external log10 : float -> float = "log10_float" "log10" "float"
+        (* Exponential, natural logarithm, base 10 logarithm. *)
+external cos : float -> float = "cos_float" "cos" "float"
+external sin : float -> float = "sin_float" "sin" "float"
+external tan : float -> float = "tan_float" "tan" "float"
 external acos : float -> float = "acos_float" "acos" "float"
 external asin : float -> float = "asin_float" "asin" "float"
 external atan : float -> float = "atan_float" "atan" "float"
 external atan2 : float -> float -> float = "atan2_float" "atan2" "float"
-external cos : float -> float = "cos_float" "cos" "float"
+        (* The usual trignonmetric functions *)
 external cosh : float -> float = "cosh_float" "cosh" "float"
-
-external log : float -> float = "log_float" "log" "float"
-external log10 : float -> float = "log10_float" "log10" "float"
-
-external sin : float -> float = "sin_float" "sin" "float"
 external sinh : float -> float = "sinh_float" "sinh" "float"
-external sqrt : float -> float = "sqrt_float" "sqrt" "float"
-external tan : float -> float = "tan_float" "tan" "float"
 external tanh : float -> float = "tanh_float" "tanh" "float"
-        (* Usual transcendental functions on floating-point numbers. *)
+        (* The usual hyperbolic trigonometric functions *)
 external ceil : float -> float = "ceil_float" "ceil" "float"
 external floor : float -> float = "floor_float" "floor" "float"
-          (* Round the given float to an integer value.
-             [floor f] returns the greatest integer value less than or
-             equal to [f].
-             [ceil f] returns the least integer value greater than or
-             equal to [f]. *)
+        (* Round the given float to an integer value.
+           [floor f] returns the greatest integer value less than or
+           equal to [f].
+           [ceil f] returns the least integer value greater than or
+           equal to [f]. *)
 external abs_float : float -> float = "%absfloat"
         (* Return the absolute value of the argument. *)
 external mod_float : float -> float -> float = "fmod_float" "fmod" "float"
-          (* [fmod a b] returns the remainder of [a] with respect to
-             [b]. *)
+        (* [mod_float a b] returns the remainder of [a] with respect to
+           [b].  The returned value is [a -. n *. b], where [n]
+           is the quotient [a /. b] rounded towards zero to an integer. *)
 external frexp : float -> float * int = "frexp_float"
-          (* [frexp f] returns the pair of the significant
-             and the exponent of [f] (when [f] is zero, the
-             significant [x] and the exponent [n] of [f] are equal to
-             zero; when [f] is non-zero, they are defined by
-             [f = x *. 2 ** n]). *)
+        (* [frexp f] returns the pair of the significant
+           and the exponent of [f].  When [f] is zero, the
+           significant [x] and the exponent [n] of [f] are equal to
+           zero.  When [f] is non-zero, they are defined by
+           [f = x *. 2 ** n] and [0.5 <= x < 1.0]. *)
 external ldexp : float -> int -> float = "ldexp_float"
-           (* [ldexp x n] returns [x *. 2 ** n]. *)
+        (* [ldexp x n] returns [x *. 2 ** n]. *)
 external modf : float -> float * float = "modf_float" "modf"
-           (* [modf f] returns the pair of the fractional and integral
-              part of [f]. *)
+        (* [modf f] returns the pair of the fractional and integral
+           part of [f]. *)
 external float : int -> float = "%floatofint"
         (* Convert an integer to floating-point. *)
 external truncate : float -> int = "%intoffloat"
@@ -537,16 +544,16 @@ external ref : 'a -> 'a ref = "%makemutable"
         (* Return a fresh reference containing the given value. *)
 external (!) : 'a ref -> 'a = "%field0"
         (* [!r] returns the current contents of reference [r].
-           Could be defined as [fun r -> r.contents]. *)
+           Equivalent to [fun r -> r.contents]. *)
 external (:=) : 'a ref -> 'a -> unit = "%setfield0"
         (* [r := a] stores the value of [a] in reference [r].
-           Could be defined as [fun r v -> r.contents <- v]. *)
+           Equivalent to [fun r v -> r.contents <- v]. *)
 external incr : int ref -> unit = "%incr"
         (* Increment the integer contained in the given reference.
-           Could be defined as [fun r -> r := succ !r]. *)
+           Equivalent to [fun r -> r := succ !r]. *)
 external decr : int ref -> unit = "%decr"
         (* Decrement the integer contained in the given reference.
-           Could be defined as [fun r -> r := pred !r]. *)
+           Equivalent to [fun r -> r := pred !r]. *)
 
 (*** Program termination *)
 
@@ -562,9 +569,11 @@ val exit : int -> 'a
 val at_exit: (unit -> unit) -> unit
         (* Register the given function to be called at program
            termination time. The functions registered with [at_exit]
-           will be called in some unspecified order when the program
-           executes [exit]. They will not be called if the program
-           terminates because of an uncaught exception. *)
+           will be called when the program executes [exit]. 
+           They will not be called if the program
+           terminates because of an uncaught exception.
+           The functions are called in ``last in, first out'' order:
+           the function most recently added with [at_exit] is called first. *)
 
 (*--*)
 

@@ -71,19 +71,20 @@ val escaped: string -> string
            Objective Caml. *)
 
 val index: string -> char -> int
-        (* [index s c] returns the position of the leftmost occurrence of
-           character [c] in string [s].  Raise [Not_found] if [c] does not
-           occur in [s]. *)
+        (* [String.index s c] returns the position of the leftmost
+           occurrence of character [c] in string [s].
+           Raise [Not_found] if [c] does not occur in [s]. *)
 val rindex: string -> char -> int
-        (* [rindex s c] returns the position of the rightmost occurrence of
-           character [c] in string [s].  Raise [Not_found] if [c] does not
-           occur in [s]. *)
+        (* [String.rindex s c] returns the position of the rightmost
+           occurrence of character [c] in string [s].
+           Raise [Not_found] if [c] does not occur in [s]. *)
 val index_from: string -> int -> char -> int
 val rindex_from: string -> int -> char -> int
-        (* Same as [index] and [rindex], but start searching at the character
-           position given as second argument. [index s c] is equivalent
-           to [index_from s 0 c], and [rindex s c] to
-           [rindex_from s (String.length s - 1) c]. *)
+        (* Same as [String.index] and [String.rindex], but start
+           searching at the character position given as second argument.
+           [String.index s c] is equivalent to [String.index_from s 0 c],
+           and [String.rindex s c] to
+           [String.rindex_from s (String.length s - 1) c]. *)
 
 val uppercase: string -> string
         (* Return a copy of the argument, with all lowercase letters

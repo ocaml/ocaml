@@ -39,7 +39,9 @@ external create: int -> 'a -> 'a array = "make_vect"
            will modify all other entries at the same time. *)
 val init: int -> (int -> 'a) -> 'a array
         (* [Array.init n f] returns a fresh array of length [n],
-           with element number [i] equal to [f i]. *)
+           with element number [i] initialized to the result of [f i].
+           In other terms, [Array.init n f] tabulates the results of [f]
+           applied to the integers [0] to [n-1]. *)
 val make_matrix: int -> int -> 'a -> 'a array array
 val create_matrix: int -> int -> 'a -> 'a array array
         (* [Array.make_matrix dimx dimy e] returns a two-dimensional array
@@ -50,7 +52,7 @@ val create_matrix: int -> int -> 'a -> 'a array array
            with the notation [m.(x).(y)]. *)
 val append: 'a array -> 'a array -> 'a array
         (* [Array.append v1 v2] returns a fresh array containing the
-           concatenation of arrays [v1] and [v2]. *)
+           concatenation of the arrays [v1] and [v2]. *)
 val concat: 'a array list -> 'a array
         (* Same as [Array.append], but catenates a list of arrays. *)
 val sub: 'a array -> int -> int -> 'a array

@@ -62,7 +62,7 @@ module type S =
            for doing sets of sets. *)
     val equal: t -> t -> bool
         (* [equal s1 s2] tests whether the sets [s1] and [s2] are
-           equal, that is, contain the same elements. *)
+           equal, that is, contain equal elements. *)
     val subset: t -> t -> bool
         (* [subset s1 s2] tests whether the set [s1] is a subset of
            the set [s2]. *)
@@ -79,7 +79,16 @@ module type S =
         (* Return the number of elements of a set. *)
     val elements: t -> elt list
         (* Return the list of all elements of the given set.
-           The elements appear in the list in some unspecified order. *)
+           The returned list is sorted in increasing order with respect
+           to the ordering [Ord.compare], where [Ord] is the argument
+           given to [Set.Make]. *)
+    val min_elt: t -> elt
+        (* Return the smallest element of the given set
+           (with respect to the [Ord.compare] ordering), or raise
+           [Not_found] if the set is empty. *)
+    val max_elt: t -> elt
+        (* Same as [min_elt], but returns the largest element of the
+           given set. *)
     val choose: t -> elt
         (* Return one element of the given set, or raise [Not_found] if
            the set is empty. Which element is chosen is unspecified,

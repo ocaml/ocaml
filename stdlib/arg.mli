@@ -52,7 +52,7 @@ type spec =
 
 val parse : (string * spec * string) list -> (string -> unit) -> string -> unit
 (*
-    [parse speclist anonfun usage_msg] parses the command line.
+    [Arg.parse speclist anonfun usage_msg] parses the command line.
     [speclist] is a list of triples [(key, spec, doc)].
     [key] is the option keyword, it must start with a ['-'] character.
     [spec] gives the option type and the function to call when this option
@@ -62,8 +62,8 @@ val parse : (string * spec * string) list -> (string -> unit) -> string -> unit
     The functions in [spec] and [anonfun] are called in the same order
     as their arguments appear on the command line.
 
-    If an error occurs, [parse] exits the program, after printing an error
-    message as follows:
+    If an error occurs, [Arg.parse] exits the program, after printing
+    an error message as follows:
 -   The reason for the error: unknown option, invalid or missing argument, etc.
 -   [usage_msg]
 -   The list of options, each followed by the corresponding [doc] string.
@@ -79,19 +79,20 @@ val parse : (string * spec * string) list -> (string -> unit) -> string -> unit
 
 exception Bad of string
 (*
-     Functions in [spec] or [anonfun] can raise [Bad] with an error
+     Functions in [spec] or [anonfun] can raise [Arg.Bad] with an error
      message to reject invalid arguments.
 *)
 
 val usage: (string * spec * string) list -> string -> unit
 (*
-    [usage speclist usage_msg]
-    [speclist] and [usage_msg] are the same as for [parse].  [usage]
-    prints the same error message that [parse] prints in case of error.
+    [Arg.usage speclist usage_msg] prints an error message including
+    the list of valid options.  This is the same message that
+    [Arg.parse] prints in case of error.
+    [speclist] and [usage_msg] are the same as for [Arg.parse].
 *)
 
 val current: int ref;;
 (*
     Position (in [Sys.argv]) of the argument being processed.  You can
-    change this value, e.g. to force [parse] to skip some arguments.
+    change this value, e.g. to force [Arg.parse] to skip some arguments.
 *)

@@ -38,6 +38,8 @@ module type S =
     val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
     val cardinal: t -> int
     val elements: t -> elt list
+    val min_elt: t -> elt
+    val max_elt: t -> elt
     val choose: t -> elt
   end
 
@@ -150,8 +152,7 @@ module Make(Ord: OrderedType) =
         Empty -> false
       | Node(l, v, r, _) ->
           let c = Ord.compare x v in
-          if c = 0 then true else
-          if c < 0 then mem x l else mem x r
+          c = 0 || mem x (if c < 0 then l else r)
 
     let rec add x = function
         Empty -> Node(Empty, x, Empty, 1)
@@ -253,8 +254,16 @@ module Make(Ord: OrderedType) =
     let elements s =
       elements_aux [] s
 
-    let rec choose = function
+    let rec min_elt = function
         Empty -> raise Not_found
       | Node(Empty, v, r, _) -> v
-      | Node(l, v, r, _) -> choose l
+      | Node(l, v, r, _) -> min_elt l
+
+    let rec max_elt = function
+        Empty -> raise Not_found
+      | Node(l, v, Empty, _) -> v
+      | Node(l, v, r, _) -> max_elt r
+
+    let choose = min_elt
+
   end

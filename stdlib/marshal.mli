@@ -125,7 +125,7 @@ val total_size : string -> int -> int
            [Marshal.header_size] characters into the buffer,
            then determine the length of the remainder of the
            representation using [Marshal.data_size],
-           make sure the buffer is large enough to hold the variable
-           size, then read it, and finally call [Marshal.from_string]
+           make sure the buffer is large enough to hold the remaining
+           data, then read it, and finally call [Marshal.from_string]
            to unmarshal the value. *)
 

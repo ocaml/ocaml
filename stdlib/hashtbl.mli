@@ -25,7 +25,7 @@ val create : int -> ('a,'b) t
            initial size [n].  The table grows as needed, so [n] is
            just an initial guess.  Better results are said to be
            achieved when [n] is a prime number.
-           Raise [Invalid_argument "hashtbl__new"] if [n] is less than 1. *)
+           Raise [Invalid_argument] if [n] is less than 1. *)
 
 val clear : ('a, 'b) t -> unit
         (* Empty a hash table. *)
@@ -33,9 +33,9 @@ val clear : ('a, 'b) t -> unit
 val add : ('a, 'b) t -> 'a -> 'b -> unit
         (* [Hashtbl.add tbl x y] adds a binding of [x] to [y] in table [tbl].
            Previous bindings for [x] are not removed, but simply
-           hidden. That is, after performing [remove tbl x], the previous
-           binding for [x], if any, is restored.
-           (This is the semantics of association lists.) *)
+           hidden. That is, after performing [Hashtbl.remove tbl x],
+           the previous binding for [x], if any, is restored.
+           (Same behavior as with association lists.) *)
 
 val find : ('a, 'b) t -> 'a -> 'b
         (* [Hashtbl.find tbl x] returns the current binding of [x] in [tbl],
@@ -76,7 +76,7 @@ module type HashedType =
            by [hash].
            Examples: suitable ([equal], [hash]) pairs for arbitrary key
            types include
-           ([(=)], [Hashtbl.hash]) for comparing objects by structure,
+           ([(=)], [Hashtbl.hash]) for comparing objects by structure, and
            ([(==)], [Hashtbl.hash]) for comparing objects by addresses
            (e.g. for mutable or cyclic keys). *)
 

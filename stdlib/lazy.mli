@@ -20,7 +20,7 @@ type 'a status =
 ;;
 
 type 'a t = 'a status ref;;
-(* A value of type ['a Lazy.t] is a deferred computation (called a
+(* A value of type ['a Lazy.t] is a deferred computation (also called a
    suspension) that computes a result of type ['a].  The expression
    [lazy (expr)] returns a suspension that computes [expr].
 *)

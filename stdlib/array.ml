@@ -50,7 +50,7 @@ let copy a =
 
 let append a1 a2 =
   let l1 = length a1 and l2 = length a2 in
-  if l1 = 0 & l2 = 0 then [||] else begin
+  if l1 = 0 && l2 = 0 then [||] else begin
     let r = create (l1 + l2) (unsafe_get (if l1 > 0 then a1 else a2) 0) in
     for i = 0 to l1 - 1 do unsafe_set r i (unsafe_get a1 i) done;  
     for i = 0 to l2 - 1 do unsafe_set r (i + l1) (unsafe_get a2 i) done;  

@@ -16,7 +16,8 @@
 val argv: string array
         (* The command line arguments given to the process.
            The first element is the command name used to invoke the program.
-           The following elements are the arguments given to the program. *)
+           The following elements are the command-line arguments
+           given to the program. *)
 external file_exists: string -> bool = "sys_file_exists"
         (* Test if a file with the given name exists. *)
 external remove: string -> unit = "sys_remove"
@@ -39,7 +40,7 @@ external getcwd: unit -> string = "sys_getcwd"
 val interactive: bool ref
         (* This reference is initially set to [false] in standalone
            programs and to [true] if the code is being executed under
-           the interactive toplevel [csltop]. *)
+           the interactive toplevel system [ocaml]. *)
 val os_type: string
         (* Operating system currently executing the Caml program.
            One of ["Unix"], ["Win32"], or ["MacOS"]. *)
@@ -59,6 +60,7 @@ type signal_behavior =
   | Signal_handle of (int -> unit)
         (* What to do when receiving a signal:
 -          [Signal_default]: take the default behavior
+              (usually: abort the program)
 -          [Signal_ignore]: ignore the signal
 -          [Signal_handle f]: call function [f], giving it the signal
              number as argument. *)

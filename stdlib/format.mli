@@ -21,7 +21,7 @@
 (* Rule of thumb for casual users:
 -   use simple boxes (as obtained by [open_box 0]);
 -   use simple break hints (as obtained by [print_cut ()] that outputs a
-   simple break hint, or by [print_space ()] that ouputs a space
+   simple break hint, or by [print_space ()] that outputs a space
    indicating a break hint);
 -   once a box is opened, display its material with basic printing
    functions (e. g. [print_int] and [print_string]);
@@ -311,26 +311,28 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
            indications.
            The pretty-printing indication characters are introduced by
            a [@] character, and their meanings are:
--          [\[]: open a pretty-printing box. The type and offset of the
+-          [@\[]: open a pretty-printing box. The type and offset of the
            box may be optionally specified with the following syntax:
            the [<] character, followed by an optional box type indication,
            then an optional integer offset, and the closing [>] character. 
            Box type is one of [h], [v], [hv], or [hov],
            which stand respectively for an horizontal, vertical,
            ``horizontal-vertical'' and ``horizontal or vertical'' box.
--          [\]]: close the most recently opened pretty-printing box.
--          [,]: output a good break as with [print_cut ()].
--          [ ]: output a space, as with [print_space ()].
--          [\n]: force a newline, as with [force_newline ()].
--          [;]: output a good break as with [print_break]. The
+           For instance, [@\[<hov2>] opens an ``horizontal or vertical''
+           box with indentation 2.
+-          [@\]]: close the most recently opened pretty-printing box.
+-          [@,]: output a good break as with [print_cut ()].
+-          [@ ]: output a space, as with [print_space ()].
+-          [@\n]: force a newline, as with [force_newline ()].
+-          [@;]: output a good break as with [print_break]. The
            [nspaces] and [offset] parameters of the break may be
            optionally specified with the following syntax: 
            the [<] character, followed by an integer [nspaces] value,
            then an integer offset, and a closing [>] character. 
--          [?]: flush the pretty printer as with [print_flush ()].
--          [.]: flush the pretty printer and output a new line, as with
+-          [@?]: flush the pretty printer as with [print_flush ()].
+-          [@.]: flush the pretty printer and output a new line, as with
            [print_newline ()].
--          [@]: a plain [@] character. *)
+-          [@@]: print a plain [@] character. *)
 
 val printf : ('a, formatter, unit) format -> 'a;;
         (* Same as [fprintf], but output on [std_formatter]. *)
