@@ -1699,8 +1699,9 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
                                   (lab, expand_trace env trace)]))
           sign2.cty_vars
     | _ ->
-        if not trace then
-          raise (Failure [CM_Class_type_mismatch (cty1, cty2)])
+        raise
+          (Failure (if trace then []
+                    else [CM_Class_type_mismatch (cty1, cty2)]))
   with
     Failure error when trace ->
       raise (Failure (CM_Class_type_mismatch (cty1, cty2)::error))
