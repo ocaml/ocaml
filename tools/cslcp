@@ -1,0 +1,28 @@
+#!/bin/sh
+
+toremove=""
+cslargs=""
+profargs=""
+
+while : ; do
+  case "$1" in
+    "")
+      break;;
+    -m)
+      profargs="$profargs -m $2"; shift;;
+    -I|-o|-ccopt|-cclib)
+      cslargs="$cslargs $1 $2"; shift;;
+    *.ml)
+      toremove="$toremove ${1}t"
+      cslprof -instrument $profargs $1 > ${1}t || { rm -f $toremove; exit 2; }
+      cslargs="$cslargs ${1}t";;
+    *)
+      cslargs="$cslargs $1";;
+  esac
+  shift
+done
+
+cslc $cslargs
+status=$?
+rm -f $toremove
+exit $status
