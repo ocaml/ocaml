@@ -1,7 +1,7 @@
 !include ../../config/Makefile.nt
 
 # Compilation options
-SYSTEM_INCLUDES=\msdev\include
+SYSTEM_INCLUDES=\msdev\VC98\include
 CC=$(BYTECC)
 CFLAGS=-I..\..\byterun -I..\unix $(BYTECCCOMPOPTS)
 CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc -I ..\..\stdlib
