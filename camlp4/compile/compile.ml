@@ -135,6 +135,7 @@ value rec contain_loc =
   fun
   [ <:expr< $lid:s$ >> -> s = "loc"
   | <:expr< $uid:_$ >> -> False
+  | <:expr< $str:_$ >> -> False
   | <:expr< ($list:el$) >> -> List.exists contain_loc el
   | <:expr< $e1$ $e2$ >> -> contain_loc e1 || contain_loc e2
   | _ -> True ]
