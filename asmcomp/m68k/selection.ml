@@ -140,7 +140,7 @@ method select_store addr exp =
     Cconst_int n -> (Ispecific(Istore_int(n, addr)), Ctuple [])
   | Cconst_pointer n -> (Ispecific(Istore_int(n, addr)), Ctuple [])
   | Cconst_symbol s -> (Ispecific(Istore_symbol(s, addr)), Ctuple [])
-  | _ -> raise Use_default
+  | _ -> super#select_store addr exp
 
 (* Deal with register constraints *)
 
