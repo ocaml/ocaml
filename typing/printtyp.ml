@@ -353,7 +353,7 @@ and print_simple_out_type ppf =
       let print_present ppf =
         function
         | [] -> ()
-        | l -> fprintf ppf "@[<hov>[>%a@]" pr_present l
+        | l -> fprintf ppf "@[<hov>[>%a]@]" pr_present l
       in
       fprintf ppf "@[%a%s#%a%a@]" print_typargs tyl
         (if ng then "_" else "") print_ident id print_present tags
