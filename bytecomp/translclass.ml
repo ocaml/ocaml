@@ -126,6 +126,4 @@ let transl_class cl_id cl =
     Lapply (oo_prim "create_class", [Lvar cl_id; cl_init])
 
 let class_stub =
-  let unit = Ident.create "unit" in
-  Llet(Strict, unit, lambda_unit,
-  Lprim(Pmakeblock(0, Mutable), [Lvar unit; Lvar unit; Lvar unit]))
+  Lprim(Pmakeblock(0, Mutable), [lambda_unit; lambda_unit; lambda_unit])
