@@ -6,7 +6,12 @@ Language features:
 - Allows _ separators in integer and float literals, e.g. 1_000_000.
 
 Type-checker:
+- New -principal option to enforce principality of type inference.
 - Fixed subtle typing bug with higher-order functors.
+- Fixed several complexity problems; changed (again) the  behaviour of
+  simple coercions.
+- Fixed various bugs with objects and polymorphic variants.
+- Improved some error messages.
 
 Both compilers:
 - Added option "-pack" to assemble several compilation units as one unit
@@ -92,7 +97,8 @@ Other libraries:
     now supports also the CamlTK API (no labels); 
     support for Activate and Deactivate events;
     support for virtual events;
-    added UTF conversion.
+    added UTF conversion;
+    export the tcl interpreter as caml value, to avoid DLL dependencies.
 - Unix:
     added sub-module LargeFile to support files larger than 1Gb
       (file offsets are int64 rather than int);
@@ -106,17 +112,22 @@ Tools:
 - Debugger: now supports the option -I +dir.
 - ocamllex: supports the same identifiers as ocamlc; warns for
   bad \ escapes in strings and characters.
+- ocamlbrowser:
+    recenter the module boxes when showing a cross-reference;
+    include the current directory in the ocaml path.
 
 Windows port:
 - Can now compile with Mingw (the GNU compilers without the Cygwin
   runtime library) in addition to MSVC.
 - Toplevel GUI: wrong filenames were given to #use and #load commands;
   read_line() was buggy for short lines (2 characters or less).
+- OCamlBrowser: now fully functional.
 - Graphics library: fixed several bugs in event handling.
 - Threads library: fixed preemption bug.
 - Unix library: better handling of the underlying differences between
   sockets and regular file descriptors; 
   added Unix.lockf and a better Unix.rename (thanks to Tracy Camp).
+- LablTk library: fixed a bug in Fileinput
 
 
 Objective Caml 3.04:
