@@ -156,7 +156,7 @@ value use_file cs =
             | _ -> (pl, False) ]
           else (pl, True)
       in
-      let pl =
+      let r =
         if eoi then pl0
         else
           loop () where rec loop () =
