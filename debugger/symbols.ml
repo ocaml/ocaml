@@ -17,8 +17,6 @@
 open Instruct
 open Debugger_config (* Toplevel *)
 
-let verbose = ref true
-
 let modules =
   ref ([] : string list)
 
@@ -54,11 +52,16 @@ let read_symbols' bytecode_file =
   seek_in ic (pos_trailer - debug_size - symbol_size);
   Symtable.restore_state (input_value ic);
   let all_events = (input_value ic : debug_event list list) in
-    close_in ic;
-    all_events
+  close_in ic;
+  all_events
 
 let read_symbols bytecode_file =
   let all_events = read_symbols' bytecode_file in
+
+  modules := []; events := [];
+  Hashtbl.clear events_by_pc; Hashtbl.clear events_by_module;
+  Hashtbl.clear all_events_by_module;
+
   List.iter
     (fun evl ->
       List.iter
