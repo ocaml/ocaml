@@ -25,7 +25,8 @@ extern value tcl_string_to_caml( char * );
 extern char * caml_string_to_tcl( value );
 
 /* cltkEval.c */
-CAMLprim Tcl_Interp *cltclinterp; /* The Tcl interpretor */
+extern Tcl_Interp *cltclinterp; /* The Tcl interpretor */
+extern Tcl_Interp * get_cltclinterp(void);
 extern value copy_string_list(int argc, char ** argv);
 
 /* cltkCaml.c */
@@ -34,7 +35,7 @@ extern value *tkerror_exn;
 extern value *handler_code;
 extern int CamlCBCmd(ClientData clientdata, Tcl_Interp *interp,
                      int argc, char *argv[]);
-CAMLprim void tk_error(char * errmsg) Noreturn;
+extern void tk_error(char * errmsg) Noreturn;
 
 /* cltkMain.c */
 extern int signal_events;
