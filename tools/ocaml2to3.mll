@@ -227,9 +227,11 @@ let _ =
   if Array.length Sys.argv < 2 || Sys.argv.(1) = "-h" || Sys.argv.(1) = "-help"
   then begin
     print_endline "Usage: ocaml2to3 <source file> ...";
-    print_endline "  Convert Objective Caml implementation or interface files";
-    print_endline "  to a syntax compatible with version 3.";
-    print_endline "  Old files is renamed to <file>.bak.";
+    print_endline "Description:";
+    print_endline
+      "Convert Objective Caml implementation or interface files to a syntax";
+    print_endline
+      "compatible with version 3. Old files are renamed to <file>.bak.";
     exit 0
   end;
   for i = 1 to Array.length Sys.argv - 1 do
