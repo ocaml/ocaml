@@ -425,57 +425,64 @@ value caml_thread_yield(value unit)        /* ML */
 
 value caml_thread_join(value th)          /* ML */
 {
-  Begin_root(th)
-    caml_mutex_lock(Terminated(th));
-    caml_mutex_unlock(Terminated(th));
+  value mut = Terminated(th);
+  Begin_root(mut)
+    caml_mutex_lock(mut);
+    caml_mutex_unlock(mut);
   End_roots();
   return Val_unit;
 }
 
 /* Mutex operations */
 
-#define Mutex_val(v) (*((pthread_mutex_t *)(&Field(v, 1))))
+#define Mutex_val(v) ((pthread_mutex_t *) Field(v, 1))
 #define Max_mutex_number 1000
 
-static void caml_mutex_finalize(value mut)
+static void caml_mutex_finalize(value wrapper)
 {
-  pthread_mutex_destroy(&Mutex_val(mut));
+  pthread_mutex_t * mut = Mutex_val(wrapper);
+  pthread_mutex_destroy(mut);
+  stat_free(mut);
 }
 
 value caml_mutex_new(value unit)        /* ML */
 {
-  value mut;
-  mut = alloc_final(1 + sizeof(pthread_mutex_t) / sizeof(value),
-                    caml_mutex_finalize, 1, Max_mutex_number);
-  caml_pthread_check(pthread_mutex_init(&Mutex_val(mut), NULL),
-                     "Mutex.create");
-  return mut;
+  pthread_mutex_t * mut;
+  value wrapper;
+  mut = stat_alloc(sizeof(pthread_mutex_t));
+  caml_pthread_check(pthread_mutex_init(mut, NULL), "Mutex.create");
+  wrapper = alloc_final(2, caml_mutex_finalize, 1, Max_mutex_number);
+  Mutex_val(wrapper) = mut;
+  return wrapper;
 }
 
-value caml_mutex_lock(value mut)           /* ML */
+value caml_mutex_lock(value wrapper)     /* ML */
 {
   int retcode;
+  pthread_mutex_t * mut = Mutex_val(wrapper);
   enter_blocking_section();
-  retcode = pthread_mutex_lock(&(Mutex_val(mut)));
+  retcode = pthread_mutex_lock(mut);
   leave_blocking_section();
   caml_pthread_check(retcode, "Mutex.lock");
   return Val_unit;
 }
 
-value caml_mutex_unlock(value mut)           /* ML */
+value caml_mutex_unlock(value wrapper)           /* ML */
 {
   int retcode;
+  pthread_mutex_t * mut = Mutex_val(wrapper);
   enter_blocking_section();
-  retcode = pthread_mutex_unlock(&(Mutex_val(mut)));
+  retcode = pthread_mutex_unlock(mut);
   leave_blocking_section();
   caml_pthread_check(retcode, "Mutex.unlock");
   return Val_unit;
 }
 
-value caml_mutex_try_lock(value mut)           /* ML */
+value caml_mutex_try_lock(value wrapper)           /* ML */
 {
   int retcode;
-  retcode = pthread_mutex_trylock(&(Mutex_val(mut)));
+  pthread_mutex_t * mut = Mutex_val(wrapper);
+  retcode = pthread_mutex_trylock(mut);
   if (retcode == EBUSY) return Val_false;
   caml_pthread_check(retcode, "Mutex.try_lock");
   return Val_true;
@@ -483,49 +490,56 @@ value caml_mutex_try_lock(value mut)           /* ML */
 
 /* Conditions operations */
 
-#define Condition_val(v) (*((pthread_cond_t *)(&Field(v, 1))))
+#define Condition_val(v) ((pthread_cond_t *) Field(v, 1))
 #define Max_condition_number 1000
 
-static void caml_condition_finalize(value cond)
+static void caml_condition_finalize(value wrapper)
 {
-  pthread_cond_destroy(&Condition_val(cond));
+  pthread_cond_t * cond = Condition_val(wrapper);
+  pthread_cond_destroy(cond);
+  stat_free(cond);
 }
 
 value caml_condition_new(value unit)        /* ML */
 {
-  value cond;
-  cond = alloc_final(1 + sizeof(pthread_cond_t) / sizeof(value),
-                     caml_condition_finalize, 1, Max_condition_number);
-  caml_pthread_check(pthread_cond_init(&Condition_val(cond), NULL),
-                     "Condition.create");
-  return cond;
+  pthread_cond_t * cond;
+  value wrapper;
+  cond = stat_alloc(sizeof(pthread_cond_t));
+  caml_pthread_check(pthread_cond_init(cond, NULL), "Condition.create");
+  wrapper = alloc_final(2, caml_condition_finalize, 1, Max_condition_number);
+  Condition_val(wrapper) = cond;
+  return wrapper;
 }
 
-value caml_condition_wait(value cond, value mut)           /* ML */
+value caml_condition_wait(value wcond, value wmut)           /* ML */
 {
   int retcode;
+  pthread_cond_t * cond = Condition_val(wcond);
+  pthread_mutex_t * mut = Mutex_val(wmut);
   enter_blocking_section();
-  retcode = pthread_cond_wait(&Condition_val(cond), &Mutex_val(mut));
+  retcode = pthread_cond_wait(cond, mut);
   leave_blocking_section();
   caml_pthread_check(retcode, "Condition.wait");
   return Val_unit;
 }
 
-value caml_condition_signal(value cond)           /* ML */
+value caml_condition_signal(value wrapper)           /* ML */
 {
   int retcode;
+  pthread_cond_t * cond = Condition_val(wrapper);
   enter_blocking_section();
-  retcode = pthread_cond_signal(&Condition_val(cond));
+  retcode = pthread_cond_signal(cond);
   leave_blocking_section();
   caml_pthread_check(retcode, "Condition.signal");
   return Val_unit;
 }
 
-value caml_condition_broadcast(value cond)           /* ML */
+value caml_condition_broadcast(value wrapper)           /* ML */
 {
   int retcode;
+  pthread_cond_t * cond = Condition_val(wrapper);
   enter_blocking_section();
-  retcode = pthread_cond_broadcast(&Condition_val(cond));
+  retcode = pthread_cond_broadcast(cond);
   leave_blocking_section();
   caml_pthread_check(retcode, "Condition.broadcast");
   return Val_unit;
