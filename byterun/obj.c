@@ -111,8 +111,7 @@ CAMLprim value obj_truncate (value v, value newsize)
 
   if (tag == Double_array_tag) new_wosize *= Double_wosize;  /* PR#156 */
 
-  if (new_wosize <= 0 || new_wosize > wosize) 
-    invalid_argument ("Obj.truncate");
+  if (new_wosize <= 0 || new_wosize > wosize) invalid_argument ("Obj.truncate");
   if (new_wosize == wosize) return Val_unit;
   /* PR#61: since we're about to lose our references to the elements
      beyond new_wosize in v, erase them explicitly so that the GC
@@ -125,8 +124,11 @@ CAMLprim value obj_truncate (value v, value newsize)
 #endif
     }
   }
+  /* We must use an odd tag for the header of the leftovers so it does not
+     look like a pointer because there may be some references to it in
+     ref_table. */
   Field (v, new_wosize) =
-    Make_header (Wosize_whsize (wosize-new_wosize), 0, Caml_white);
+    Make_header (Wosize_whsize (wosize-new_wosize), 1, Caml_white);
   Hd_val (v) = Make_header (new_wosize, tag, color);
   return Val_unit;
 }
