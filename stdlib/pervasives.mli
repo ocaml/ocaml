@@ -526,14 +526,18 @@ val input_line : in_channel -> string
            Raise [End_of_file] if the end of the file is reached
            at the beginning of line. *)
 val input : in_channel -> buf:string -> pos:int -> len:int -> int
-        (* Attempt to read [len] characters from the given channel,
+        (* Read up to [len] characters from the given channel,
            storing them in string [buf], starting at character number [pos].
            It returns the actual number of characters read, between 0 and
            [len] (inclusive).
            A return value of 0 means that the end of file was reached.
            A return value between 0 and [len] exclusive means that
-           no more characters were available at that time; [input] must be
-           called again to read the remaining characters, if desired.
+           not all requested [len] characters were read, either because
+           no more characters were available at that time, or because
+           the implementation found it convenient to do a partial read;
+           [input] must be called again to read the remaining characters,
+           if desired.  (See also [Pervasives.really_input] for reading
+           exactly [len] characters.)
            Exception [Invalid_argument "input"] is raised if [pos] and [len]
            do not designate a valid substring of [buf]. *)          
 val really_input : in_channel -> buf:string -> pos:int -> len:int -> unit
