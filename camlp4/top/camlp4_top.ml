@@ -76,7 +76,7 @@ value wrap f shfn lb =
            do {
              lb.refill_buff lb
            };
-           if lb.lex_eof_reached then None
+           if lb.lex_curr_pos >= lb.lex_buffer_len then None
            else do {
              let c = lb.lex_buffer.[lb.lex_curr_pos] in
              lb.lex_curr_pos := lb.lex_curr_pos + 1;
