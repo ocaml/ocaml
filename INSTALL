@@ -84,6 +84,23 @@ The "configure" script accepts the following options:
 -no-pthread
         Do not attempt to use POSIX threads.
 
+-with-pthread
+        Attempt to use POSIX threads (this is the default).
+
+-no-shared-libs
+        Do not configure support for shared libraries
+
+-dldefs <cpp flags>
+-dllibs <flags and libraries>
+        These options specify where to find the libraries for dynamic
+        linking (i.e. use of shared libraries).  "-dldefs" specifies
+        options for finding the header files, and "-dllibs" for finding
+        the C libraries.
+
+-binutils <directory>
+        This option specifies where to find the GNU binutils (objcopy
+        and nm) executables.
+
 -verbose
         Verbose output of the configuration tests. Use it if the outcome
         of configure is not what you were expecting.
