@@ -9,8 +9,7 @@
 
 /* Magic number */
 
-#define Base_magic_number 0x8495A6B9
-#define Compact_magic_number (Base_magic_number + 4)
+#define Intext_magic_number 0x8495A6BD
 
 /* Codes for the compact format */
 
@@ -29,17 +28,19 @@
 #define CODE_STRING32 0xA
 #define CODE_DOUBLE_BIG 0xB
 #define CODE_DOUBLE_LITTLE 0xC
+#define CODE_DOUBLE_ARRAY8_BIG 0xD
+#define CODE_DOUBLE_ARRAY8_LITTLE 0xE
+#define CODE_DOUBLE_ARRAY32_BIG 0xF
+#define CODE_DOUBLE_ARRAY32_LITTLE 0x7
+
 #ifdef BIG_ENDIAN
 #define CODE_DOUBLE_NATIVE CODE_DOUBLE_BIG
+#define CODE_DOUBLE_ARRAY8_NATIVE CODE_DOUBLE_ARRAY8_BIG
+#define CODE_DOUBLE_ARRAY32_NATIVE CODE_DOUBLE_ARRAY32_BIG
 #else
 #define CODE_DOUBLE_NATIVE CODE_DOUBLE_LITTLE
-#endif
-#define CODE_DOUBLE_ARRAY_BIG 0xD
-#define CODE_DOUBLE_ARRAY_LITTLE 0xE
-#ifdef BIG_ENDIAN
-#define CODE_DOUBLE_ARRAY_NATIVE CODE_DOUBLE_ARRAY_BIG
-#else
-#define CODE_DOUBLE_ARRAY_NATIVE CODE_DOUBLE_ARRAY_LITTLE
+#define CODE_DOUBLE_ARRAY8_NATIVE CODE_DOUBLE_ARRAY8_LITTLE
+#define CODE_DOUBLE_ARRAY32_NATIVE CODE_DOUBLE_ARRAY32_LITTLE
 #endif
 
 /* Initial sizes of data structures for extern */

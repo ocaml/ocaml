@@ -188,7 +188,11 @@ static void emit_compact(chan, v)
         if (sizeof(double) != 8)
           invalid_argument("output_value: non-standard floats");
         nfloats = Wosize_val(v) / Double_wosize;
-        output32(chan, CODE_DOUBLE_ARRAY_NATIVE, nfloats);
+        if (nfloats < 0x100) {
+          output8(chan, CODE_DOUBLE_ARRAY8_NATIVE, nfloats);
+        } else {
+          output32(chan, CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
+        }
         putblock(chan, (char *) v, Bosize_val(v));
         size_32 += 1 + nfloats * 2;
         size_64 += 1 + nfloats;
@@ -225,7 +229,7 @@ value output_value(chan, v) /* ML */
      value v;
 {
   value start_loc, final_loc;
-  putword(chan, Compact_magic_number);
+  putword(chan, Intext_magic_number);
   start_loc = pos_out(chan);
   putword(chan, 0);
   putword(chan, 0);
