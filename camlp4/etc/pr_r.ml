@@ -520,7 +520,7 @@ value rec sequence_loop =
            [: `S LR "let"; r :] (S LR "and") pel [: `S LR "in" :];
          sequence_loop el :]
   | [(<:expr< let $rec:_$ $list:_$ in $_$ >> as e) :: el] ->
-      [: `HVbox [: `S LO "("; `expr e [: `S RO ")"; `S LR "in" :] :];
+      [: `HVbox [: `S LO "("; `expr e [: `S RO ");" :] :];
          sequence_loop el :]
   | [e] -> [: `expr e [: :] :]
   | [e :: el] -> [: `expr e [: `S RO ";" :]; sequence_loop el :]

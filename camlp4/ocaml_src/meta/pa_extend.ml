@@ -615,30 +615,63 @@ let rec quot_expr e =
   match e with
     MLast.ExUid (_, "None") ->
       MLast.ExApp
-        (loc, MLast.ExUid (loc, "Option"), MLast.ExUid (loc, "None"))
+        (loc,
+         MLast.ExAcc
+           (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Option")),
+         MLast.ExUid (loc, "None"))
   | MLast.ExApp (_, MLast.ExUid (_, "Some"), e) ->
       MLast.ExApp
-        (loc, MLast.ExUid (loc, "Option"),
+        (loc,
+         MLast.ExAcc
+           (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Option")),
          MLast.ExApp (loc, MLast.ExUid (loc, "Some"), quot_expr e))
   | MLast.ExUid (_, "False") ->
-      MLast.ExApp (loc, MLast.ExUid (loc, "Bool"), MLast.ExUid (loc, "False"))
+      MLast.ExApp
+        (loc,
+         MLast.ExAcc
+           (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Bool")),
+         MLast.ExUid (loc, "False"))
   | MLast.ExUid (_, "True") ->
-      MLast.ExApp (loc, MLast.ExUid (loc, "Bool"), MLast.ExUid (loc, "True"))
-  | MLast.ExApp (_, MLast.ExUid (_, "List"), _) -> e
-  | MLast.ExApp (_, MLast.ExUid (_, "Option"), _) -> e
-  | MLast.ExApp (_, MLast.ExUid (_, "Str"), _) -> e
+      MLast.ExApp
+        (loc,
+         MLast.ExAcc
+           (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Bool")),
+         MLast.ExUid (loc, "True"))
+  | MLast.ExApp
+      (_, MLast.ExAcc (_, MLast.ExUid (_, "Qast"), MLast.ExUid (_, "List")),
+       _) ->
+      e
+  | MLast.ExApp
+      (_, MLast.ExAcc (_, MLast.ExUid (_, "Qast"), MLast.ExUid (_, "Option")),
+       _) ->
+      e
+  | MLast.ExApp
+      (_, MLast.ExAcc (_, MLast.ExUid (_, "Qast"), MLast.ExUid (_, "Str")),
+       _) ->
+      e
   | MLast.ExUid (_, "[]") ->
-      MLast.ExApp (loc, MLast.ExUid (loc, "List"), MLast.ExUid (loc, "[]"))
+      MLast.ExApp
+        (loc,
+         MLast.ExAcc
+           (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "List")),
+         MLast.ExUid (loc, "[]"))
   | MLast.ExApp
       (_, MLast.ExApp (_, MLast.ExUid (_, "::"), e), MLast.ExUid (_, "[]")) ->
       MLast.ExApp
-        (loc, MLast.ExUid (loc, "List"),
+        (loc,
+         MLast.ExAcc
+           (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "List")),
          MLast.ExApp
            (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), quot_expr e),
             MLast.ExUid (loc, "[]")))
   | MLast.ExApp (_, MLast.ExApp (_, MLast.ExUid (_, "::"), e1), e2) ->
       MLast.ExApp
-        (loc, MLast.ExApp (loc, MLast.ExUid (loc, "Cons"), quot_expr e1),
+        (loc,
+         MLast.ExApp
+           (loc,
+            MLast.ExAcc
+              (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Cons")),
+            quot_expr e1),
          quot_expr e2)
   | MLast.ExApp (_, _, _) ->
       let (f, al) = expr_fa [] e in
@@ -648,13 +681,19 @@ let rec quot_expr e =
           MLast.ExApp
             (loc,
              MLast.ExApp
-               (loc, MLast.ExUid (loc, "Node"), MLast.ExStr (loc, c)),
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Node")),
+                MLast.ExStr (loc, c)),
              mklistexp loc al)
       | MLast.ExAcc (_, _, MLast.ExUid (_, c)) ->
           MLast.ExApp
             (loc,
              MLast.ExApp
-               (loc, MLast.ExUid (loc, "Node"), MLast.ExStr (loc, c)),
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Node")),
+                MLast.ExStr (loc, c)),
              mklistexp loc al)
       | _ -> e
       end
@@ -673,17 +712,31 @@ let rec quot_expr e =
                MLast.ExTup (loc, [lab; quot_expr e]))
             pel
         in
-        MLast.ExApp (loc, MLast.ExUid (loc, "Record"), mklistexp loc lel)
+        MLast.ExApp
+          (loc,
+           MLast.ExAcc
+             (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Record")),
+           mklistexp loc lel)
       with
         Not_found -> e
       end
   | MLast.ExLid (_, s) ->
-      if s = !(Stdpp.loc_name) then MLast.ExUid (loc, "Loc") else e
+      if s = !(Stdpp.loc_name) then
+        MLast.ExAcc (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Loc"))
+      else e
   | MLast.ExStr (_, s) ->
-      MLast.ExApp (loc, MLast.ExUid (loc, "Str"), MLast.ExStr (loc, s))
+      MLast.ExApp
+        (loc,
+         MLast.ExAcc
+           (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Str")),
+         MLast.ExStr (loc, s))
   | MLast.ExTup (_, el) ->
       let el = List.map quot_expr el in
-      MLast.ExApp (loc, MLast.ExUid (loc, "Tuple"), mklistexp loc el)
+      MLast.ExApp
+        (loc,
+         MLast.ExAcc
+           (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Tuple")),
+         mklistexp loc el)
   | _ -> e
 ;;
 
@@ -723,7 +776,11 @@ let quotify_action psl act =
                MLast.ExMat
                  (loc, MLast.ExLid (loc, pname),
                   [MLast.PaApp
-                     (loc, MLast.PaUid (loc, "Tuple"), mklistpat loc pl1),
+                     (loc,
+                      MLast.PaAcc
+                        (loc, MLast.PaUid (loc, "Qast"),
+                         MLast.PaUid (loc, "Tuple")),
+                      mklistpat loc pl1),
                    None, MLast.ExTup (loc, el1);
                    MLast.PaAny loc, None,
                    MLast.ExMat (loc, MLast.ExUid (loc, "()"), [])])],
@@ -1008,13 +1065,17 @@ let sslist_aux loc min sep s =
         {pattern = Some patt; symbol = symb}
       in
       let act =
-        MLast.ExApp (loc, MLast.ExUid (loc, "List"), MLast.ExLid (loc, "a"))
+        MLast.ExApp
+          (loc,
+           MLast.ExAcc
+             (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "List")),
+           MLast.ExLid (loc, "a"))
       in
       {prod = [psymb]; action = Some act}
     in
     [r1; r2]
   in
-  TXrules (loc, srules loc "anti" rl "")
+  TXrules (loc, srules loc "a_list" rl "")
 ;;
 
 let sslist loc min sep s =
@@ -1047,13 +1108,17 @@ let ssopt loc s =
         {pattern = Some patt; symbol = symb}
       in
       let act =
-        MLast.ExApp (loc, MLast.ExUid (loc, "Option"), MLast.ExLid (loc, "a"))
+        MLast.ExApp
+          (loc,
+           MLast.ExAcc
+             (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Option")),
+           MLast.ExLid (loc, "a"))
       in
       {prod = [psymb]; action = Some act}
     in
     [r1; r2]
   in
-  TXrules (loc, srules loc "anti" rl "")
+  TXrules (loc, srules loc "a_opt" rl "")
 ;;
 
 let is_global e =

@@ -14,26 +14,30 @@
 
 value gram = Grammar.create (Plexer.make ());
 
-type ast =
-  [ Node of string and list ast
-  | List of list ast
-  | Tuple of list ast
-  | Option of option ast
-  | Str of string
-  | Chr of string
-  | Bool of bool
-  | Cons of ast and ast
-  | Append of ast and ast
-  | Record of list (string * ast)
-  | Loc
-  | Antiquot of MLast.loc and string ]
+module Qast =
+  struct
+    type t =
+      [ Node of string and list t
+      | List of list t
+      | Tuple of list t
+      | Option of option t
+      | Str of string
+      | Bool of bool
+      | Cons of t and t
+      | Append of t and t
+      | Record of list (string * t)
+      | Loc
+      | Antiquot of MLast.loc and string ]
+    ;
+  end
 ;
+
 value antiquot k (bp, ep) x =
   let shift =
     if k = "" then String.length "$"
     else String.length "$" + String.length k + String.length ":"
   in
-  Antiquot (shift + bp, shift + ep) x
+  Qast.Antiquot (shift + bp, shift + ep) x
 ;
 
 value sig_item = Grammar.Entry.create gram "signature item";
@@ -55,108 +59,116 @@ value let_binding = Grammar.Entry.create gram "let_binding";
 
 value o2b =
   fun
-  [ Option (Some _) -> Bool True
-  | Option None -> Bool False
+  [ Qast.Option (Some _) -> Qast.Bool True
+  | Qast.Option None -> Qast.Bool False
   | x -> x ]
 ;
 
 value mksequence _ =
   fun
-  [ List [e] -> e
-  | el -> Node "ExSeq" [Loc; el] ]
+  [ Qast.List [e] -> e
+  | el -> Qast.Node "ExSeq" [Qast.Loc; el] ]
 ;
 
 value mkmatchcase _ p aso w e =
   let p =
     match aso with
-    [ Option (Some p2) -> Node "PaAli" [Loc; p; p2]
-    | Option None -> p
-    | _ -> Node "PaAli" [Loc; p; aso] ]
+    [ Qast.Option (Some p2) -> Qast.Node "PaAli" [Qast.Loc; p; p2]
+    | Qast.Option None -> p
+    | _ -> Qast.Node "PaAli" [Qast.Loc; p; aso] ]
   in
-  Tuple [p; w; e]
+  Qast.Tuple [p; w; e]
 ;
 
 value mkumin _ f arg =
   match arg with
-  [ Node "ExInt" [Loc; Str n] when int_of_string n > 0 ->
+  [ Qast.Node "ExInt" [Qast.Loc; Qast.Str n] when int_of_string n > 0 ->
       let n = "-" ^ n in
-      Node "ExInt" [Loc; Str n]
-  | Node "ExFlo" [Loc; Str n] when float_of_string n > 0.0 ->
+      Qast.Node "ExInt" [Qast.Loc; Qast.Str n]
+  | Qast.Node "ExFlo" [Qast.Loc; Qast.Str n] when float_of_string n > 0.0 ->
       let n = "-" ^ n in
-      Node "ExFlo" [Loc; Str n]
+      Qast.Node "ExFlo" [Qast.Loc; Qast.Str n]
   | _ ->
       let f = "~" ^ f in
-      Node "ExApp" [Loc; Node "ExLid" [Loc; Str f]; arg] ]
+      Qast.Node "ExApp"
+        [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str f]; arg] ]
 ;
 
 value mkuminpat _ f is_int s =
-  if is_int then Node "PaInt" [Loc; s] else Node "PaFlo" [Loc; s]
+  if is_int then Qast.Node "PaInt" [Qast.Loc; s]
+  else Qast.Node "PaFlo" [Qast.Loc; s]
 ;
 
 value mklistexp _ last =
   loop True where rec loop top =
     fun
-    [ List [] ->
+    [ Qast.List [] ->
         match last with
-        [ Option (Some e) -> e
-        | Option None -> Node "ExUid" [Loc; Str "[]"]
+        [ Qast.Option (Some e) -> e
+        | Qast.Option None -> Qast.Node "ExUid" [Qast.Loc; Qast.Str "[]"]
         | a -> a ]
-    | List [e1 :: el] ->
-        Node "ExApp"
-          [Loc; Node "ExApp" [Loc; Node "ExUid" [Loc; Str "::"]; e1];
-           loop False (List el)]
+    | Qast.List [e1 :: el] ->
+        Qast.Node "ExApp"
+          [Qast.Loc;
+           Qast.Node "ExApp"
+             [Qast.Loc; Qast.Node "ExUid" [Qast.Loc; Qast.Str "::"]; e1];
+           loop False (Qast.List el)]
     | a -> a ]
 ;
 
 value mklistpat _ last =
   loop True where rec loop top =
     fun
-    [ List [] ->
+    [ Qast.List [] ->
         match last with
-        [ Option (Some p) -> p
-        | Option None -> Node "PaUid" [Loc; Str "[]"]
+        [ Qast.Option (Some p) -> p
+        | Qast.Option None -> Qast.Node "PaUid" [Qast.Loc; Qast.Str "[]"]
         | a -> a ]
-    | List [p1 :: pl] ->
-        Node "PaApp"
-          [Loc; Node "PaApp" [Loc; Node "PaUid" [Loc; Str "::"]; p1];
-           loop False (List pl)]
+    | Qast.List [p1 :: pl] ->
+        Qast.Node "PaApp"
+          [Qast.Loc;
+           Qast.Node "PaApp"
+             [Qast.Loc; Qast.Node "PaUid" [Qast.Loc; Qast.Str "::"]; p1];
+           loop False (Qast.List pl)]
     | a -> a ]
 ;
 
 value mkexprident loc i j =
-  let rec loop m =
+  loop (Qast.Node "ExUid" [Qast.Loc; i]) j where rec loop m =
     fun
-    [ Node "ExAcc" [_; x; y] -> loop (Node "ExAcc" [Loc; m; x]) y
-    | e -> Node "ExAcc" [Loc; m; e] ]
-  in
-  loop (Node "ExUid" [Loc; i]) j
+    [ Qast.Node "ExAcc" [_; x; y] ->
+        loop (Qast.Node "ExAcc" [Qast.Loc; m; x]) y
+    | e -> Qast.Node "ExAcc" [Qast.Loc; m; e] ]
 ;
 
 value mkassert loc e =
-  let f = Node "ExStr" [Loc; Str Pcaml.input_file.val] in
-  let bp = Node "ExInt" [Loc; Str (string_of_int (fst loc))] in
-  let ep = Node "ExInt" [Loc; Str (string_of_int (snd loc))] in
+  let f = Qast.Node "ExStr" [Qast.Loc; Qast.Str Pcaml.input_file.val] in
+  let bp = Qast.Node "ExInt" [Qast.Loc; Qast.Str (string_of_int (fst loc))] in
+  let ep = Qast.Node "ExInt" [Qast.Loc; Qast.Str (string_of_int (snd loc))] in
   let raiser =
-    Node "ExApp"
-      [Loc; Node "ExLid" [Loc; Str "raise"];
-       Node "ExApp"
-         [Loc; Node "ExUid" [Loc; Str "Assert_failure"];
-          Node "ExTup" [Loc; List [f; bp; ep]]]]
+    Qast.Node "ExApp"
+      [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "raise"];
+       Qast.Node "ExApp"
+         [Qast.Loc; Qast.Node "ExUid" [Qast.Loc; Qast.Str "Assert_failure"];
+          Qast.Node "ExTup" [Qast.Loc; Qast.List [f; bp; ep]]]]
   in
   match e with
-  [ Node "ExUid" [_; Str "False"] -> raiser
+  [ Qast.Node "ExUid" [_; Qast.Str "False"] -> raiser
   | _ ->
-      if Pcaml.no_assert.val then Node "ExUid" [Loc; Str "()"]
-      else Node "ExIfe" [Loc; e; Node "ExUid" [Loc; Str "()"]; raiser] ]
+      if Pcaml.no_assert.val then Qast.Node "ExUid" [Qast.Loc; Qast.Str "()"]
+      else
+        Qast.Node "ExIfe"
+          [Qast.Loc; e; Qast.Node "ExUid" [Qast.Loc; Qast.Str "()"]; raiser] ]
 ;
 
-value append_elem el e = Append el e;
+value append_elem el e = Qast.Append el e;
 
 value not_yet_warned = ref True;
 value warning_seq () =
   if not_yet_warned.val then do {
     not_yet_warned.val := False;
-    Printf.eprintf "\
+    Printf.eprintf
+      "\
 *** warning: use of old syntax for sequences in expr quotation\n";
     flush stderr
   }
@@ -169,265 +181,362 @@ EXTEND
   module_expr:
     [ [ "functor"; "("; i = a_UIDENT; ":"; t = module_type; ")"; "->";
         me = SELF ->
-          Node "MeFun" [Loc; i; t; me]
+          Qast.Node "MeFun" [Qast.Loc; i; t; me]
       | "struct"; st = SLIST0 [ s = str_item; ";" -> s ]; "end" ->
-          Node "MeStr" [Loc; st] ]
-    | [ me1 = SELF; me2 = SELF -> Node "MeApp" [Loc; me1; me2] ]
-    | [ me1 = SELF; "."; me2 = SELF -> Node "MeAcc" [Loc; me1; me2] ]
+          Qast.Node "MeStr" [Qast.Loc; st] ]
+    | [ me1 = SELF; me2 = SELF -> Qast.Node "MeApp" [Qast.Loc; me1; me2] ]
+    | [ me1 = SELF; "."; me2 = SELF ->
+          Qast.Node "MeAcc" [Qast.Loc; me1; me2] ]
     | "simple"
-      [ i = a_UIDENT -> Node "MeUid" [Loc; i]
+      [ i = a_UIDENT -> Qast.Node "MeUid" [Qast.Loc; i]
       | "("; me = SELF; ":"; mt = module_type; ")" ->
-          Node "MeTyc" [Loc; me; mt]
+          Qast.Node "MeTyc" [Qast.Loc; me; mt]
       | "("; me = SELF; ")" -> me ] ]
   ;
   str_item:
     [ "top"
       [ "declare"; st = SLIST0 [ s = str_item; ";" -> s ]; "end" ->
-          Node "StDcl" [Loc; st]
+          Qast.Node "StDcl" [Qast.Loc; st]
       | "exception"; ctl = constructor_declaration; b = rebind_exn ->
           let (_, c, tl) =
             match ctl with
-            [ Tuple [xx1; xx2; xx3] -> (xx1, xx2, xx3)
+            [ Qast.Tuple [xx1; xx2; xx3] -> (xx1, xx2, xx3)
             | _ -> match () with [] ]
           in
-          Node "StExc" [Loc; c; tl; b]
+          Qast.Node "StExc" [Qast.Loc; c; tl; b]
       | "external"; i = a_LIDENT; ":"; t = ctyp; "="; pd = SLIST1 a_STRING ->
-          Node "StExt" [Loc; i; t; pd]
-      | "include"; me = module_expr -> Node "StInc" [Loc; me]
+          Qast.Node "StExt" [Qast.Loc; i; t; pd]
+      | "include"; me = module_expr -> Qast.Node "StInc" [Qast.Loc; me]
       | "module"; i = a_UIDENT; mb = module_binding ->
-          Node "StMod" [Loc; i; mb]
+          Qast.Node "StMod" [Qast.Loc; i; mb]
       | "module"; "type"; i = a_UIDENT; "="; mt = module_type ->
-          Node "StMty" [Loc; i; mt]
-      | "open"; i = mod_ident -> Node "StOpn" [Loc; i]
+          Qast.Node "StMty" [Qast.Loc; i; mt]
+      | "open"; i = mod_ident -> Qast.Node "StOpn" [Qast.Loc; i]
       | "type"; tdl = SLIST1 type_declaration SEP "and" ->
-          Node "StTyp" [Loc; tdl]
+          Qast.Node "StTyp" [Qast.Loc; tdl]
       | "value"; r = rec_flag; l = SLIST1 let_binding SEP "and" ->
-          Node "StVal" [Loc; r; l]
-      | e = expr -> Node "StExp" [Loc; e] ] ]
+          Qast.Node "StVal" [Qast.Loc; r; l]
+      | e = expr -> Qast.Node "StExp" [Qast.Loc; e] ] ]
   ;
   rebind_exn:
     [ [ "="; sl = mod_ident -> sl
-      | -> List [] ] ]
+      | -> Qast.List [] ] ]
   ;
   module_binding:
     [ RIGHTA
       [ "("; m = a_UIDENT; ":"; mt = module_type; ")"; mb = SELF ->
-          Node "MeFun" [Loc; m; mt; mb]
+          Qast.Node "MeFun" [Qast.Loc; m; mt; mb]
       | ":"; mt = module_type; "="; me = module_expr ->
-          Node "MeTyc" [Loc; me; mt]
+          Qast.Node "MeTyc" [Qast.Loc; me; mt]
       | "="; me = module_expr -> me ] ]
   ;
   module_type:
     [ [ "functor"; "("; i = a_UIDENT; ":"; t = SELF; ")"; "->"; mt = SELF ->
-          Node "MtFun" [Loc; i; t; mt] ]
+          Qast.Node "MtFun" [Qast.Loc; i; t; mt] ]
     | [ mt = SELF; "with"; wcl = SLIST1 with_constr SEP "and" ->
-          Node "MtWit" [Loc; mt; wcl] ]
+          Qast.Node "MtWit" [Qast.Loc; mt; wcl] ]
     | [ "sig"; sg = SLIST0 [ s = sig_item; ";" -> s ]; "end" ->
-          Node "MtSig" [Loc; sg] ]
-    | [ m1 = SELF; m2 = SELF -> Node "MtApp" [Loc; m1; m2] ]
-    | [ m1 = SELF; "."; m2 = SELF -> Node "MtAcc" [Loc; m1; m2] ]
+          Qast.Node "MtSig" [Qast.Loc; sg] ]
+    | [ m1 = SELF; m2 = SELF -> Qast.Node "MtApp" [Qast.Loc; m1; m2] ]
+    | [ m1 = SELF; "."; m2 = SELF -> Qast.Node "MtAcc" [Qast.Loc; m1; m2] ]
     | "simple"
-      [ i = a_UIDENT -> Node "MtUid" [Loc; i]
-      | i = a_LIDENT -> Node "MtLid" [Loc; i]
+      [ i = a_UIDENT -> Qast.Node "MtUid" [Qast.Loc; i]
+      | i = a_LIDENT -> Qast.Node "MtLid" [Qast.Loc; i]
       | "("; mt = SELF; ")" -> mt ] ]
   ;
   sig_item:
     [ "top"
       [ "declare"; st = SLIST0 [ s = sig_item; ";" -> s ]; "end" ->
-          Node "SgDcl" [Loc; st]
+          Qast.Node "SgDcl" [Qast.Loc; st]
       | "exception"; ctl = constructor_declaration ->
           let (_, c, tl) =
             match ctl with
-            [ Tuple [xx1; xx2; xx3] -> (xx1, xx2, xx3)
+            [ Qast.Tuple [xx1; xx2; xx3] -> (xx1, xx2, xx3)
             | _ -> match () with [] ]
           in
-          Node "SgExc" [Loc; c; tl]
+          Qast.Node "SgExc" [Qast.Loc; c; tl]
       | "external"; i = a_LIDENT; ":"; t = ctyp; "="; pd = SLIST1 a_STRING ->
-          Node "SgExt" [Loc; i; t; pd]
-      | "include"; mt = module_type -> Node "SgInc" [Loc; mt]
+          Qast.Node "SgExt" [Qast.Loc; i; t; pd]
+      | "include"; mt = module_type -> Qast.Node "SgInc" [Qast.Loc; mt]
       | "module"; i = a_UIDENT; mt = module_declaration ->
-          Node "SgMod" [Loc; i; mt]
+          Qast.Node "SgMod" [Qast.Loc; i; mt]
       | "module"; "type"; i = a_UIDENT; "="; mt = module_type ->
-          Node "SgMty" [Loc; i; mt]
-      | "open"; i = mod_ident -> Node "SgOpn" [Loc; i]
+          Qast.Node "SgMty" [Qast.Loc; i; mt]
+      | "open"; i = mod_ident -> Qast.Node "SgOpn" [Qast.Loc; i]
       | "type"; tdl = SLIST1 type_declaration SEP "and" ->
-          Node "SgTyp" [Loc; tdl]
-      | "value"; i = a_LIDENT; ":"; t = ctyp -> Node "SgVal" [Loc; i; t] ] ]
+          Qast.Node "SgTyp" [Qast.Loc; tdl]
+      | "value"; i = a_LIDENT; ":"; t = ctyp ->
+          Qast.Node "SgVal" [Qast.Loc; i; t] ] ]
   ;
   module_declaration:
     [ RIGHTA
       [ ":"; mt = module_type -> mt
       | "("; i = a_UIDENT; ":"; t = module_type; ")"; mt = SELF ->
-          Node "MtFun" [Loc; i; t; mt] ] ]
+          Qast.Node "MtFun" [Qast.Loc; i; t; mt] ] ]
   ;
   with_constr:
     [ [ "type"; i = mod_ident; tpl = SLIST0 type_parameter; "="; t = ctyp ->
-          Node "WcTyp" [Loc; i; tpl; t]
+          Qast.Node "WcTyp" [Qast.Loc; i; tpl; t]
       | "module"; i = mod_ident; "="; mt = module_type ->
-          Node "WcMod" [Loc; i; mt] ] ]
+          Qast.Node "WcMod" [Qast.Loc; i; mt] ] ]
   ;
   expr:
     [ "top" RIGHTA
       [ "let"; r = rec_flag; l = SLIST1 let_binding SEP "and"; "in";
         x = SELF ->
-          Node "ExLet" [Loc; r; l; x]
+          Qast.Node "ExLet" [Qast.Loc; r; l; x]
       | "let"; "module"; m = a_UIDENT; mb = module_binding; "in"; e = SELF ->
-          Node "ExLmd" [Loc; m; mb; e]
+          Qast.Node "ExLmd" [Qast.Loc; m; mb; e]
       | "fun"; "["; l = SLIST0 match_case SEP "|"; "]" ->
-          Node "ExFun" [Loc; l]
+          Qast.Node "ExFun" [Qast.Loc; l]
       | "fun"; p = ipatt; e = fun_def ->
-          Node "ExFun" [Loc; List [Tuple [p; Option None; e]]]
+          Qast.Node "ExFun"
+            [Qast.Loc; Qast.List [Qast.Tuple [p; Qast.Option None; e]]]
       | "match"; e = SELF; "with"; "["; l = SLIST0 match_case SEP "|"; "]" ->
-          Node "ExMat" [Loc; e; l]
+          Qast.Node "ExMat" [Qast.Loc; e; l]
       | "match"; e = SELF; "with"; p1 = ipatt; "->"; e1 = SELF ->
-          Node "ExMat" [Loc; e; List [Tuple [p1; Option None; e1]]]
+          Qast.Node "ExMat"
+            [Qast.Loc; e; Qast.List [Qast.Tuple [p1; Qast.Option None; e1]]]
       | "try"; e = SELF; "with"; "["; l = SLIST0 match_case SEP "|"; "]" ->
-          Node "ExTry" [Loc; e; l]
+          Qast.Node "ExTry" [Qast.Loc; e; l]
       | "try"; e = SELF; "with"; p1 = ipatt; "->"; e1 = SELF ->
-          Node "ExTry" [Loc; e; List [Tuple [p1; Option None; e1]]]
+          Qast.Node "ExTry"
+            [Qast.Loc; e; Qast.List [Qast.Tuple [p1; Qast.Option None; e1]]]
       | "if"; e1 = SELF; "then"; e2 = SELF; "else"; e3 = SELF ->
-          Node "ExIfe" [Loc; e1; e2; e3]
+          Qast.Node "ExIfe" [Qast.Loc; e1; e2; e3]
       | "do"; "{"; seq = sequence; "}" -> mksequence loc seq
       | "for"; i = a_LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
         "do"; "{"; seq = sequence; "}" ->
-          Node "ExFor" [Loc; i; e1; e2; df; seq]
+          Qast.Node "ExFor" [Qast.Loc; i; e1; e2; df; seq]
       | "while"; e = SELF; "do"; "{"; seq = sequence; "}" ->
-          Node "ExWhi" [Loc; e; seq] ]
+          Qast.Node "ExWhi" [Qast.Loc; e; seq] ]
     | "where"
       [ e = SELF; "where"; rf = rec_flag; lb = let_binding ->
-          Node "ExLet" [Loc; rf; List [lb]; e] ]
+          Qast.Node "ExLet" [Qast.Loc; rf; Qast.List [lb]; e] ]
     | ":=" NONA
-      [ e1 = SELF; ":="; e2 = SELF; dummy -> Node "ExAss" [Loc; e1; e2] ]
+      [ e1 = SELF; ":="; e2 = SELF; dummy ->
+          Qast.Node "ExAss" [Qast.Loc; e1; e2] ]
     | "||" RIGHTA
       [ e1 = SELF; "||"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "||"]; e1]; e2] ]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "||"]; e1];
+             e2] ]
     | "&&" RIGHTA
       [ e1 = SELF; "&&"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "&&"]; e1]; e2] ]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "&&"]; e1];
+             e2] ]
     | "<" LEFTA
       [ e1 = SELF; "<"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "<"]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "<"]; e1];
+             e2]
       | e1 = SELF; ">"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str ">"]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str ">"]; e1];
+             e2]
       | e1 = SELF; "<="; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "<="]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "<="]; e1];
+             e2]
       | e1 = SELF; ">="; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str ">="]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str ">="]; e1];
+             e2]
       | e1 = SELF; "="; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "="]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "="]; e1];
+             e2]
       | e1 = SELF; "<>"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "<>"]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "<>"]; e1];
+             e2]
       | e1 = SELF; "=="; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "=="]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "=="]; e1];
+             e2]
       | e1 = SELF; "!="; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "!="]; e1]; e2] ]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "!="]; e1];
+             e2] ]
     | "^" RIGHTA
       [ e1 = SELF; "^"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "^"]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "^"]; e1];
+             e2]
       | e1 = SELF; "@"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "@"]; e1]; e2] ]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "@"]; e1];
+             e2] ]
     | "+" LEFTA
       [ e1 = SELF; "+"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "+"]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "+"]; e1];
+             e2]
       | e1 = SELF; "-"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "-"]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "-"]; e1];
+             e2]
       | e1 = SELF; "+."; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "+."]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "+."]; e1];
+             e2]
       | e1 = SELF; "-."; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "-."]; e1]; e2] ]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "-."]; e1];
+             e2] ]
     | "*" LEFTA
       [ e1 = SELF; "*"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "*"]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "*"]; e1];
+             e2]
       | e1 = SELF; "/"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "/"]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "/"]; e1];
+             e2]
       | e1 = SELF; "*."; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "*."]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "*."]; e1];
+             e2]
       | e1 = SELF; "/."; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "/."]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "/."]; e1];
+             e2]
       | e1 = SELF; "land"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "land"]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "land"]; e1];
+             e2]
       | e1 = SELF; "lor"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "lor"]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "lor"]; e1];
+             e2]
       | e1 = SELF; "lxor"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "lxor"]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "lxor"]; e1];
+             e2]
       | e1 = SELF; "mod"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "mod"]; e1]; e2] ]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "mod"]; e1];
+             e2] ]
     | "**" RIGHTA
       [ e1 = SELF; "**"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "**"]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "**"]; e1];
+             e2]
       | e1 = SELF; "asr"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "asr"]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "asr"]; e1];
+             e2]
       | e1 = SELF; "lsl"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "lsl"]; e1]; e2]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "lsl"]; e1];
+             e2]
       | e1 = SELF; "lsr"; e2 = SELF ->
-          Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "lsr"]; e1]; e2] ]
+          Qast.Node "ExApp"
+            [Qast.Loc;
+             Qast.Node "ExApp"
+               [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "lsr"]; e1];
+             e2] ]
     | "unary minus" NONA
       [ "-"; e = SELF -> mkumin loc "-" e
       | "-."; e = SELF -> mkumin loc "-." e ]
     | "apply" LEFTA
-      [ e1 = SELF; e2 = SELF -> Node "ExApp" [Loc; e1; e2]
+      [ e1 = SELF; e2 = SELF -> Qast.Node "ExApp" [Qast.Loc; e1; e2]
       | "assert"; e = SELF -> mkassert loc e
-      | "lazy"; e = SELF -> Node "ExLaz" [Loc; e] ]
+      | "lazy"; e = SELF -> Qast.Node "ExLaz" [Qast.Loc; e] ]
     | "." LEFTA
-      [ e1 = SELF; "."; "("; e2 = SELF; ")" -> Node "ExAre" [Loc; e1; e2]
-      | e1 = SELF; "."; "["; e2 = SELF; "]" -> Node "ExSte" [Loc; e1; e2]
-      | e1 = SELF; "."; e2 = SELF -> Node "ExAcc" [Loc; e1; e2] ]
+      [ e1 = SELF; "."; "("; e2 = SELF; ")" ->
+          Qast.Node "ExAre" [Qast.Loc; e1; e2]
+      | e1 = SELF; "."; "["; e2 = SELF; "]" ->
+          Qast.Node "ExSte" [Qast.Loc; e1; e2]
+      | e1 = SELF; "."; e2 = SELF -> Qast.Node "ExAcc" [Qast.Loc; e1; e2] ]
     | "~-" NONA
-      [ "~-"; e = SELF -> Node "ExApp" [Loc; Node "ExLid" [Loc; Str "~-"]; e]
+      [ "~-"; e = SELF ->
+          Qast.Node "ExApp"
+            [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "~-"]; e]
       | "~-."; e = SELF ->
-          Node "ExApp" [Loc; Node "ExLid" [Loc; Str "~-."]; e] ]
+          Qast.Node "ExApp"
+            [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "~-."]; e] ]
     | "simple"
-      [ s = a_INT -> Node "ExInt" [Loc; s]
-      | s = a_FLOAT -> Node "ExFlo" [Loc; s]
-      | s = a_STRING -> Node "ExStr" [Loc; s]
-      | s = a_CHAR -> Node "ExChr" [Loc; s]
+      [ s = a_INT -> Qast.Node "ExInt" [Qast.Loc; s]
+      | s = a_FLOAT -> Qast.Node "ExFlo" [Qast.Loc; s]
+      | s = a_STRING -> Qast.Node "ExStr" [Qast.Loc; s]
+      | s = a_CHAR -> Qast.Node "ExChr" [Qast.Loc; s]
       | i = expr_ident -> i
-      | "["; "]" -> Node "ExUid" [Loc; Str "[]"]
+      | "["; "]" -> Qast.Node "ExUid" [Qast.Loc; Qast.Str "[]"]
       | "["; el = SLIST1 expr SEP ";"; last = cons_expr_opt; "]" ->
           mklistexp loc last el
-      | "[|"; el = SLIST0 expr SEP ";"; "|]" -> Node "ExArr" [Loc; el]
+      | "[|"; el = SLIST0 expr SEP ";"; "|]" ->
+          Qast.Node "ExArr" [Qast.Loc; el]
       | "{"; lel = SLIST1 label_expr SEP ";"; "}" ->
-          Node "ExRec" [Loc; lel; Option None]
+          Qast.Node "ExRec" [Qast.Loc; lel; Qast.Option None]
       | "{"; "("; e = SELF; ")"; "with"; lel = SLIST1 label_expr SEP ";";
         "}" ->
-          Node "ExRec" [Loc; lel; Option (Some e)]
-      | "("; ")" -> Node "ExUid" [Loc; Str "()"]
-      | "("; e = SELF; ":"; t = ctyp; ")" -> Node "ExTyc" [Loc; e; t]
+          Qast.Node "ExRec" [Qast.Loc; lel; Qast.Option (Some e)]
+      | "("; ")" -> Qast.Node "ExUid" [Qast.Loc; Qast.Str "()"]
+      | "("; e = SELF; ":"; t = ctyp; ")" ->
+          Qast.Node "ExTyc" [Qast.Loc; e; t]
       | "("; e = SELF; ","; el = SLIST1 expr SEP ","; ")" ->
-          Node "ExTup" [Loc; Cons e el]
+          Qast.Node "ExTup" [Qast.Loc; Qast.Cons e el]
       | "("; e = SELF; ")" -> e ] ]
   ;
   cons_expr_opt:
-    [ [ "::"; e = expr -> Option (Some e)
-      | -> Option None ] ]
+    [ [ "::"; e = expr -> Qast.Option (Some e)
+      | -> Qast.Option None ] ]
   ;
   dummy:
     [ [ -> () ] ]
@@ -435,155 +544,167 @@ EXTEND
   sequence:
     [ [ "let"; rf = rec_flag; l = SLIST1 let_binding SEP "and";
         [ "in" | ";" ]; el = SELF ->
-          List [Node "ExLet" [Loc; rf; l; mksequence loc el]]
-      | e = expr; ";"; el = SELF -> Cons e el
-      | e = expr; ";" -> List [e]
-      | e = expr -> List [e] ] ]
+          Qast.List [Qast.Node "ExLet" [Qast.Loc; rf; l; mksequence loc el]]
+      | e = expr; ";"; el = SELF -> Qast.Cons e el
+      | e = expr; ";" -> Qast.List [e]
+      | e = expr -> Qast.List [e] ] ]
   ;
   let_binding:
-    [ [ p = ipatt; e = fun_binding -> Tuple [p; e] ] ]
+    [ [ p = ipatt; e = fun_binding -> Qast.Tuple [p; e] ] ]
   ;
   fun_binding:
     [ RIGHTA
       [ p = ipatt; e = SELF ->
-          Node "ExFun" [Loc; List [Tuple [p; Option None; e]]]
+          Qast.Node "ExFun"
+            [Qast.Loc; Qast.List [Qast.Tuple [p; Qast.Option None; e]]]
       | "="; e = expr -> e
-      | ":"; t = ctyp; "="; e = expr -> Node "ExTyc" [Loc; e; t] ] ]
+      | ":"; t = ctyp; "="; e = expr -> Qast.Node "ExTyc" [Qast.Loc; e; t] ] ]
   ;
   match_case:
     [ [ p = patt; aso = as_patt_opt; w = when_expr_opt; "->"; e = expr ->
           mkmatchcase loc p aso w e ] ]
   ;
   as_patt_opt:
-    [ [ "as"; p = patt -> Option (Some p)
-      | -> Option None ] ]
+    [ [ "as"; p = patt -> Qast.Option (Some p)
+      | -> Qast.Option None ] ]
   ;
   when_expr_opt:
-    [ [ "when"; e = expr -> Option (Some e)
-      | -> Option None ] ]
+    [ [ "when"; e = expr -> Qast.Option (Some e)
+      | -> Qast.Option None ] ]
   ;
   label_expr:
-    [ [ i = patt_label_ident; e = fun_binding -> Tuple [i; e] ] ]
+    [ [ i = patt_label_ident; e = fun_binding -> Qast.Tuple [i; e] ] ]
   ;
   expr_ident:
     [ RIGHTA
-      [ i = a_LIDENT -> Node "ExLid" [Loc; i]
-      | i = a_UIDENT -> Node "ExUid" [Loc; i]
+      [ i = a_LIDENT -> Qast.Node "ExLid" [Qast.Loc; i]
+      | i = a_UIDENT -> Qast.Node "ExUid" [Qast.Loc; i]
       | i = a_UIDENT; "."; j = SELF -> mkexprident loc i j ] ]
   ;
   fun_def:
     [ RIGHTA
       [ p = ipatt; e = SELF ->
-          Node "ExFun" [Loc; List [Tuple [p; Option None; e]]]
+          Qast.Node "ExFun"
+            [Qast.Loc; Qast.List [Qast.Tuple [p; Qast.Option None; e]]]
       | "->"; e = expr -> e ] ]
   ;
   patt:
     [ LEFTA
-      [ p1 = SELF; "|"; p2 = SELF -> Node "PaOrp" [Loc; p1; p2] ]
+      [ p1 = SELF; "|"; p2 = SELF -> Qast.Node "PaOrp" [Qast.Loc; p1; p2] ]
     | NONA
-      [ p1 = SELF; ".."; p2 = SELF -> Node "PaRng" [Loc; p1; p2] ]
+      [ p1 = SELF; ".."; p2 = SELF -> Qast.Node "PaRng" [Qast.Loc; p1; p2] ]
     | LEFTA
-      [ p1 = SELF; p2 = SELF -> Node "PaApp" [Loc; p1; p2] ]
+      [ p1 = SELF; p2 = SELF -> Qast.Node "PaApp" [Qast.Loc; p1; p2] ]
     | LEFTA
-      [ p1 = SELF; "."; p2 = SELF -> Node "PaAcc" [Loc; p1; p2] ]
+      [ p1 = SELF; "."; p2 = SELF -> Qast.Node "PaAcc" [Qast.Loc; p1; p2] ]
     | "simple"
-      [ s = a_LIDENT -> Node "PaLid" [Loc; s]
-      | s = a_UIDENT -> Node "PaUid" [Loc; s]
-      | s = a_INT -> Node "PaInt" [Loc; s]
-      | s = a_FLOAT -> Node "PaFlo" [Loc; s]
-      | s = a_STRING -> Node "PaStr" [Loc; s]
-      | s = a_CHAR -> Node "PaChr" [Loc; s]
+      [ s = a_LIDENT -> Qast.Node "PaLid" [Qast.Loc; s]
+      | s = a_UIDENT -> Qast.Node "PaUid" [Qast.Loc; s]
+      | s = a_INT -> Qast.Node "PaInt" [Qast.Loc; s]
+      | s = a_FLOAT -> Qast.Node "PaFlo" [Qast.Loc; s]
+      | s = a_STRING -> Qast.Node "PaStr" [Qast.Loc; s]
+      | s = a_CHAR -> Qast.Node "PaChr" [Qast.Loc; s]
       | "-"; s = a_INT -> mkuminpat loc "-" True s
       | "-"; s = a_FLOAT -> mkuminpat loc "-" False s
-      | "["; "]" -> Node "PaUid" [Loc; Str "[]"]
+      | "["; "]" -> Qast.Node "PaUid" [Qast.Loc; Qast.Str "[]"]
       | "["; pl = SLIST1 patt SEP ";"; last = cons_patt_opt; "]" ->
           mklistpat loc last pl
-      | "[|"; pl = SLIST0 patt SEP ";"; "|]" -> Node "PaArr" [Loc; pl]
-      | "{"; lpl = SLIST1 label_patt SEP ";"; "}" -> Node "PaRec" [Loc; lpl]
-      | "("; ")" -> Node "PaUid" [Loc; Str "()"]
+      | "[|"; pl = SLIST0 patt SEP ";"; "|]" ->
+          Qast.Node "PaArr" [Qast.Loc; pl]
+      | "{"; lpl = SLIST1 label_patt SEP ";"; "}" ->
+          Qast.Node "PaRec" [Qast.Loc; lpl]
+      | "("; ")" -> Qast.Node "PaUid" [Qast.Loc; Qast.Str "()"]
       | "("; p = SELF; ")" -> p
-      | "("; p = SELF; ":"; t = ctyp; ")" -> Node "PaTyc" [Loc; p; t]
-      | "("; p = SELF; "as"; p2 = SELF; ")" -> Node "PaAli" [Loc; p; p2]
+      | "("; p = SELF; ":"; t = ctyp; ")" ->
+          Qast.Node "PaTyc" [Qast.Loc; p; t]
+      | "("; p = SELF; "as"; p2 = SELF; ")" ->
+          Qast.Node "PaAli" [Qast.Loc; p; p2]
       | "("; p = SELF; ","; pl = SLIST1 patt SEP ","; ")" ->
-          Node "PaTup" [Loc; Cons p pl]
-      | "_" -> Node "PaAny" [Loc] ] ]
+          Qast.Node "PaTup" [Qast.Loc; Qast.Cons p pl]
+      | "_" -> Qast.Node "PaAny" [Qast.Loc] ] ]
   ;
   cons_patt_opt:
-    [ [ "::"; p = patt -> Option (Some p)
-      | -> Option None ] ]
+    [ [ "::"; p = patt -> Qast.Option (Some p)
+      | -> Qast.Option None ] ]
   ;
   label_patt:
-    [ [ i = patt_label_ident; "="; p = patt -> Tuple [i; p] ] ]
+    [ [ i = patt_label_ident; "="; p = patt -> Qast.Tuple [i; p] ] ]
   ;
   patt_label_ident:
     [ LEFTA
-      [ p1 = SELF; "."; p2 = SELF -> Node "PaAcc" [Loc; p1; p2] ]
+      [ p1 = SELF; "."; p2 = SELF -> Qast.Node "PaAcc" [Qast.Loc; p1; p2] ]
     | "simple" RIGHTA
-      [ i = a_UIDENT -> Node "PaUid" [Loc; i]
-      | i = a_LIDENT -> Node "PaLid" [Loc; i] ] ]
+      [ i = a_UIDENT -> Qast.Node "PaUid" [Qast.Loc; i]
+      | i = a_LIDENT -> Qast.Node "PaLid" [Qast.Loc; i] ] ]
   ;
   ipatt:
-    [ [ "{"; lpl = SLIST1 label_ipatt SEP ";"; "}" -> Node "PaRec" [Loc; lpl]
-      | "("; ")" -> Node "PaUid" [Loc; Str "()"]
+    [ [ "{"; lpl = SLIST1 label_ipatt SEP ";"; "}" ->
+          Qast.Node "PaRec" [Qast.Loc; lpl]
+      | "("; ")" -> Qast.Node "PaUid" [Qast.Loc; Qast.Str "()"]
       | "("; p = SELF; ")" -> p
-      | "("; p = SELF; ":"; t = ctyp; ")" -> Node "PaTyc" [Loc; p; t]
-      | "("; p = SELF; "as"; p2 = SELF; ")" -> Node "PaAli" [Loc; p; p2]
+      | "("; p = SELF; ":"; t = ctyp; ")" ->
+          Qast.Node "PaTyc" [Qast.Loc; p; t]
+      | "("; p = SELF; "as"; p2 = SELF; ")" ->
+          Qast.Node "PaAli" [Qast.Loc; p; p2]
       | "("; p = SELF; ","; pl = SLIST1 ipatt SEP ","; ")" ->
-          Node "PaTup" [Loc; Cons p pl]
-      | s = a_LIDENT -> Node "PaLid" [Loc; s]
-      | "_" -> Node "PaAny" [Loc] ] ]
+          Qast.Node "PaTup" [Qast.Loc; Qast.Cons p pl]
+      | s = a_LIDENT -> Qast.Node "PaLid" [Qast.Loc; s]
+      | "_" -> Qast.Node "PaAny" [Qast.Loc] ] ]
   ;
   label_ipatt:
-    [ [ i = patt_label_ident; "="; p = ipatt -> Tuple [i; p] ] ]
+    [ [ i = patt_label_ident; "="; p = ipatt -> Qast.Tuple [i; p] ] ]
   ;
   type_declaration:
     [ [ n = type_patt; tpl = SLIST0 type_parameter; "="; tk = ctyp;
         cl = SLIST0 constrain ->
-          Tuple [n; tpl; tk; cl] ] ]
+          Qast.Tuple [n; tpl; tk; cl] ] ]
   ;
   type_patt:
-    [ [ n = a_LIDENT -> Tuple [Loc; n] ] ]
+    [ [ n = a_LIDENT -> Qast.Tuple [Qast.Loc; n] ] ]
   ;
   constrain:
-    [ [ "constraint"; t1 = ctyp; "="; t2 = ctyp -> Tuple [t1; t2] ] ]
+    [ [ "constraint"; t1 = ctyp; "="; t2 = ctyp -> Qast.Tuple [t1; t2] ] ]
   ;
   type_parameter:
-    [ [ "'"; i = ident -> Tuple [i; Tuple [Bool False; Bool False]]
-      | "+"; "'"; i = ident -> Tuple [i; Tuple [Bool True; Bool False]]
-      | "-"; "'"; i = ident -> Tuple [i; Tuple [Bool False; Bool True]] ] ]
+    [ [ "'"; i = ident ->
+          Qast.Tuple [i; Qast.Tuple [Qast.Bool False; Qast.Bool False]]
+      | "+"; "'"; i = ident ->
+          Qast.Tuple [i; Qast.Tuple [Qast.Bool True; Qast.Bool False]]
+      | "-"; "'"; i = ident ->
+          Qast.Tuple [i; Qast.Tuple [Qast.Bool False; Qast.Bool True]] ] ]
   ;
   ctyp:
     [ LEFTA
-      [ t1 = SELF; "=="; t2 = SELF -> Node "TyMan" [Loc; t1; t2] ]
+      [ t1 = SELF; "=="; t2 = SELF -> Qast.Node "TyMan" [Qast.Loc; t1; t2] ]
     | LEFTA
-      [ t1 = SELF; "as"; t2 = SELF -> Node "TyAli" [Loc; t1; t2] ]
+      [ t1 = SELF; "as"; t2 = SELF -> Qast.Node "TyAli" [Qast.Loc; t1; t2] ]
     | "arrow" RIGHTA
-      [ t1 = SELF; "->"; t2 = SELF -> Node "TyArr" [Loc; t1; t2] ]
+      [ t1 = SELF; "->"; t2 = SELF -> Qast.Node "TyArr" [Qast.Loc; t1; t2] ]
     | LEFTA
-      [ t1 = SELF; t2 = SELF -> Node "TyApp" [Loc; t1; t2] ]
+      [ t1 = SELF; t2 = SELF -> Qast.Node "TyApp" [Qast.Loc; t1; t2] ]
     | LEFTA
-      [ t1 = SELF; "."; t2 = SELF -> Node "TyAcc" [Loc; t1; t2] ]
+      [ t1 = SELF; "."; t2 = SELF -> Qast.Node "TyAcc" [Qast.Loc; t1; t2] ]
     | "simple"
-      [ "'"; i = ident -> Node "TyQuo" [Loc; i]
-      | "_" -> Node "TyAny" [Loc]
-      | i = a_LIDENT -> Node "TyLid" [Loc; i]
-      | i = a_UIDENT -> Node "TyUid" [Loc; i]
+      [ "'"; i = ident -> Qast.Node "TyQuo" [Qast.Loc; i]
+      | "_" -> Qast.Node "TyAny" [Qast.Loc]
+      | i = a_LIDENT -> Qast.Node "TyLid" [Qast.Loc; i]
+      | i = a_UIDENT -> Qast.Node "TyUid" [Qast.Loc; i]
       | "("; t = SELF; "*"; tl = SLIST1 ctyp SEP "*"; ")" ->
-          Node "TyTup" [Loc; Cons t tl]
+          Qast.Node "TyTup" [Qast.Loc; Qast.Cons t tl]
       | "("; t = SELF; ")" -> t
       | "["; cdl = SLIST0 constructor_declaration SEP "|"; "]" ->
-          Node "TySum" [Loc; cdl]
+          Qast.Node "TySum" [Qast.Loc; cdl]
       | "{"; ldl = SLIST1 label_declaration SEP ";"; "}" ->
-          Node "TyRec" [Loc; ldl] ] ]
+          Qast.Node "TyRec" [Qast.Loc; ldl] ] ]
   ;
   constructor_declaration:
     [ [ ci = a_UIDENT; "of"; cal = SLIST1 ctyp SEP "and" ->
-          Tuple [Loc; ci; cal]
-      | ci = a_UIDENT -> Tuple [Loc; ci; List []] ] ]
+          Qast.Tuple [Qast.Loc; ci; cal]
+      | ci = a_UIDENT -> Qast.Tuple [Qast.Loc; ci; Qast.List []] ] ]
   ;
   label_declaration:
     [ [ i = a_LIDENT; ":"; mf = mutable_flag; t = ctyp ->
-          Tuple [Loc; i; mf; t] ] ]
+          Qast.Tuple [Qast.Loc; i; mf; t] ] ]
   ;
   ident:
     [ [ i = a_LIDENT -> i
@@ -591,61 +712,64 @@ EXTEND
   ;
   mod_ident:
     [ RIGHTA
-      [ i = a_UIDENT -> List [i]
-      | i = a_LIDENT -> List [i]
-      | i = a_UIDENT; "."; j = SELF -> Cons i j ] ]
+      [ i = a_UIDENT -> Qast.List [i]
+      | i = a_LIDENT -> Qast.List [i]
+      | i = a_UIDENT; "."; j = SELF -> Qast.Cons i j ] ]
   ;
   (* Objects and Classes *)
   str_item:
     [ [ "class"; cd = SLIST1 class_declaration SEP "and" ->
-          Node "StCls" [Loc; cd]
+          Qast.Node "StCls" [Qast.Loc; cd]
       | "class"; "type"; ctd = SLIST1 class_type_declaration SEP "and" ->
-          Node "StClt" [Loc; ctd] ] ]
+          Qast.Node "StClt" [Qast.Loc; ctd] ] ]
   ;
   sig_item:
     [ [ "class"; cd = SLIST1 class_description SEP "and" ->
-          Node "SgCls" [Loc; cd]
+          Qast.Node "SgCls" [Qast.Loc; cd]
       | "class"; "type"; ctd = SLIST1 class_type_declaration SEP "and" ->
-          Node "SgClt" [Loc; ctd] ] ]
+          Qast.Node "SgClt" [Qast.Loc; ctd] ] ]
   ;
   class_declaration:
     [ [ vf = virtual_flag; i = a_LIDENT; ctp = class_type_parameters;
         cfb = class_fun_binding ->
-          Record
-            [("ciLoc", Loc); ("ciVir", vf); ("ciPrm", ctp); ("ciNam", i);
+          Qast.Record
+            [("ciLoc", Qast.Loc); ("ciVir", vf); ("ciPrm", ctp); ("ciNam", i);
              ("ciExp", cfb)] ] ]
   ;
   class_fun_binding:
     [ [ "="; ce = class_expr -> ce
       | ":"; ct = class_type; "="; ce = class_expr ->
-          Node "CeTyc" [Loc; ce; ct]
-      | p = ipatt; cfb = SELF -> Node "CeFun" [Loc; p; cfb] ] ]
+          Qast.Node "CeTyc" [Qast.Loc; ce; ct]
+      | p = ipatt; cfb = SELF -> Qast.Node "CeFun" [Qast.Loc; p; cfb] ] ]
   ;
   class_type_parameters:
-    [ [ -> Tuple [Loc; List []]
-      | "["; tpl = SLIST1 type_parameter SEP ","; "]" -> Tuple [Loc; tpl] ] ]
+    [ [ -> Qast.Tuple [Qast.Loc; Qast.List []]
+      | "["; tpl = SLIST1 type_parameter SEP ","; "]" ->
+          Qast.Tuple [Qast.Loc; tpl] ] ]
   ;
   class_fun_def:
     [ [ p = patt LEVEL "simple"; "->"; ce = class_expr ->
-          Node "CeFun" [Loc; p; ce]
-      | p = patt LEVEL "simple"; cfd = SELF -> Node "CeFun" [Loc; p; cfd] ] ]
+          Qast.Node "CeFun" [Qast.Loc; p; ce]
+      | p = patt LEVEL "simple"; cfd = SELF ->
+          Qast.Node "CeFun" [Qast.Loc; p; cfd] ] ]
   ;
   class_expr:
     [ "top"
       [ "fun"; cfd = class_fun_def -> cfd
       | "let"; rf = rec_flag; lb = SLIST1 let_binding SEP "and"; "in";
         ce = SELF ->
-          Node "CeLet" [Loc; rf; lb; ce] ]
+          Qast.Node "CeLet" [Qast.Loc; rf; lb; ce] ]
     | "apply" NONA
-      [ ce = SELF; e = expr LEVEL "simple" -> Node "CeApp" [Loc; ce; e] ]
+      [ ce = SELF; e = expr LEVEL "simple" ->
+          Qast.Node "CeApp" [Qast.Loc; ce; e] ]
     | "simple"
       [ ci = class_longident; "["; ctcl = SLIST0 ctyp SEP ","; "]" ->
-          Node "CeCon" [Loc; ci; ctcl]
-      | ci = class_longident -> Node "CeCon" [Loc; ci; List []]
+          Qast.Node "CeCon" [Qast.Loc; ci; ctcl]
+      | ci = class_longident -> Qast.Node "CeCon" [Qast.Loc; ci; Qast.List []]
       | "object"; cspo = SOPT class_self_patt; cf = class_structure; "end" ->
-          Node "CeStr" [Loc; cspo; cf]
+          Qast.Node "CeStr" [Qast.Loc; cspo; cf]
       | "("; ce = SELF; ":"; ct = class_type; ")" ->
-          Node "CeTyc" [Loc; ce; ct]
+          Qast.Node "CeTyc" [Qast.Loc; ce; ct]
       | "("; ce = SELF; ")" -> ce ] ]
   ;
   class_structure:
@@ -653,295 +777,332 @@ EXTEND
   ;
   class_self_patt:
     [ [ "("; p = patt; ")" -> p
-      | "("; p = patt; ":"; t = ctyp; ")" -> Node "PaTyc" [Loc; p; t] ] ]
+      | "("; p = patt; ":"; t = ctyp; ")" ->
+          Qast.Node "PaTyc" [Qast.Loc; p; t] ] ]
   ;
   class_str_item:
     [ [ "declare"; st = SLIST0 [ s = class_str_item; ";" -> s ]; "end" ->
-          Node "CrDcl" [Loc; st]
+          Qast.Node "CrDcl" [Qast.Loc; st]
       | "inherit"; ce = class_expr; pb = as_lident_opt ->
-          Node "CrInh" [Loc; ce; pb]
+          Qast.Node "CrInh" [Qast.Loc; ce; pb]
       | "value"; labmfe = cvalue ->
           let (lab, mf, e) =
             match labmfe with
-            [ Tuple [xx1; xx2; xx3] -> (xx1, xx2, xx3)
+            [ Qast.Tuple [xx1; xx2; xx3] -> (xx1, xx2, xx3)
             | _ -> match () with [] ]
           in
-          Node "CrVal" [Loc; lab; mf; e]
+          Qast.Node "CrVal" [Qast.Loc; lab; mf; e]
       | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
-          Node "CrVir" [Loc; l; Bool True; t]
+          Qast.Node "CrVir" [Qast.Loc; l; Qast.Bool True; t]
       | "method"; "virtual"; l = label; ":"; t = ctyp ->
-          Node "CrVir" [Loc; l; Bool False; t]
+          Qast.Node "CrVir" [Qast.Loc; l; Qast.Bool False; t]
       | "method"; "private"; l = label; fb = fun_binding ->
-          Node "CrMth" [Loc; l; Bool True; fb]
+          Qast.Node "CrMth" [Qast.Loc; l; Qast.Bool True; fb]
       | "method"; l = label; fb = fun_binding ->
-          Node "CrMth" [Loc; l; Bool False; fb]
-      | "type"; t1 = ctyp; "="; t2 = ctyp -> Node "CrCtr" [Loc; t1; t2]
-      | "initializer"; se = expr -> Node "CrIni" [Loc; se] ] ]
+          Qast.Node "CrMth" [Qast.Loc; l; Qast.Bool False; fb]
+      | "type"; t1 = ctyp; "="; t2 = ctyp ->
+          Qast.Node "CrCtr" [Qast.Loc; t1; t2]
+      | "initializer"; se = expr -> Qast.Node "CrIni" [Qast.Loc; se] ] ]
   ;
   as_lident_opt:
-    [ [ "as"; i = a_LIDENT -> Option (Some i)
-      | -> Option None ] ]
+    [ [ "as"; i = a_LIDENT -> Qast.Option (Some i)
+      | -> Qast.Option None ] ]
   ;
   cvalue:
-    [ [ mf = mutable_flag; l = label; "="; e = expr -> Tuple [l; mf; e]
+    [ [ mf = mutable_flag; l = label; "="; e = expr -> Qast.Tuple [l; mf; e]
       | mf = mutable_flag; l = label; ":"; t = ctyp; "="; e = expr ->
-          Tuple [l; mf; Node "ExTyc" [Loc; e; t]]
+          Qast.Tuple [l; mf; Qast.Node "ExTyc" [Qast.Loc; e; t]]
       | mf = mutable_flag; l = label; ":"; t = ctyp; ":>"; t2 = ctyp; "=";
         e = expr ->
-          Tuple [l; mf; Node "ExCoe" [Loc; e; Option (Some t); t2]]
+          Qast.Tuple
+            [l; mf; Qast.Node "ExCoe" [Qast.Loc; e; Qast.Option (Some t); t2]]
       | mf = mutable_flag; l = label; ":>"; t = ctyp; "="; e = expr ->
-          Tuple [l; mf; Node "ExCoe" [Loc; e; Option None; t]] ] ]
+          Qast.Tuple
+            [l; mf; Qast.Node "ExCoe" [Qast.Loc; e; Qast.Option None; t]] ] ]
   ;
   label:
     [ [ i = a_LIDENT -> i ] ]
   ;
   class_type:
-    [ [ "["; t = ctyp; "]"; "->"; ct = SELF -> Node "CtFun" [Loc; t; ct]
+    [ [ "["; t = ctyp; "]"; "->"; ct = SELF ->
+          Qast.Node "CtFun" [Qast.Loc; t; ct]
       | id = clty_longident; "["; tl = SLIST1 ctyp SEP ","; "]" ->
-          Node "CtCon" [Loc; id; tl]
-      | id = clty_longident -> Node "CtCon" [Loc; id; List []]
+          Qast.Node "CtCon" [Qast.Loc; id; tl]
+      | id = clty_longident -> Qast.Node "CtCon" [Qast.Loc; id; Qast.List []]
       | "object"; cst = SOPT class_self_type;
         csf = SLIST0 [ csf = class_sig_item; ";" -> csf ]; "end" ->
-          Node "CtSig" [Loc; cst; csf] ] ]
+          Qast.Node "CtSig" [Qast.Loc; cst; csf] ] ]
   ;
   class_self_type:
     [ [ "("; t = ctyp; ")" -> t ] ]
   ;
   class_sig_item:
     [ [ "declare"; st = SLIST0 [ s = class_sig_item; ";" -> s ]; "end" ->
-          Node "CgDcl" [Loc; st]
-      | "inherit"; cs = class_type -> Node "CgInh" [Loc; cs]
+          Qast.Node "CgDcl" [Qast.Loc; st]
+      | "inherit"; cs = class_type -> Qast.Node "CgInh" [Qast.Loc; cs]
       | "value"; mf = mutable_flag; l = label; ":"; t = ctyp ->
-          Node "CgVal" [Loc; l; mf; t]
+          Qast.Node "CgVal" [Qast.Loc; l; mf; t]
       | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
-          Node "CgVir" [Loc; l; Bool True; t]
+          Qast.Node "CgVir" [Qast.Loc; l; Qast.Bool True; t]
       | "method"; "virtual"; l = label; ":"; t = ctyp ->
-          Node "CgVir" [Loc; l; Bool False; t]
+          Qast.Node "CgVir" [Qast.Loc; l; Qast.Bool False; t]
       | "method"; "private"; l = label; ":"; t = ctyp ->
-          Node "CgMth" [Loc; l; Bool True; t]
+          Qast.Node "CgMth" [Qast.Loc; l; Qast.Bool True; t]
       | "method"; l = label; ":"; t = ctyp ->
-          Node "CgMth" [Loc; l; Bool False; t]
-      | "type"; t1 = ctyp; "="; t2 = ctyp -> Node "CgCtr" [Loc; t1; t2] ] ]
+          Qast.Node "CgMth" [Qast.Loc; l; Qast.Bool False; t]
+      | "type"; t1 = ctyp; "="; t2 = ctyp ->
+          Qast.Node "CgCtr" [Qast.Loc; t1; t2] ] ]
   ;
   class_description:
     [ [ vf = virtual_flag; n = a_LIDENT; ctp = class_type_parameters; ":";
         ct = class_type ->
-          Record
-            [("ciLoc", Loc); ("ciVir", vf); ("ciPrm", ctp); ("ciNam", n);
+          Qast.Record
+            [("ciLoc", Qast.Loc); ("ciVir", vf); ("ciPrm", ctp); ("ciNam", n);
              ("ciExp", ct)] ] ]
   ;
   class_type_declaration:
     [ [ vf = virtual_flag; n = a_LIDENT; ctp = class_type_parameters; "=";
         cs = class_type ->
-          Record
-            [("ciLoc", Loc); ("ciVir", vf); ("ciPrm", ctp); ("ciNam", n);
+          Qast.Record
+            [("ciLoc", Qast.Loc); ("ciVir", vf); ("ciPrm", ctp); ("ciNam", n);
              ("ciExp", cs)] ] ]
   ;
   expr: LEVEL "apply"
     [ LEFTA
-      [ "new"; i = class_longident -> Node "ExNew" [Loc; i] ] ]
+      [ "new"; i = class_longident -> Qast.Node "ExNew" [Qast.Loc; i] ] ]
   ;
   expr: LEVEL "."
-    [ [ e = SELF; "#"; lab = label -> Node "ExSnd" [Loc; e; lab] ] ]
+    [ [ e = SELF; "#"; lab = label -> Qast.Node "ExSnd" [Qast.Loc; e; lab] ] ]
   ;
   expr: LEVEL "simple"
     [ [ "("; e = SELF; ":"; t = ctyp; ":>"; t2 = ctyp; ")" ->
-          Node "ExCoe" [Loc; e; Option (Some t); t2]
+          Qast.Node "ExCoe" [Qast.Loc; e; Qast.Option (Some t); t2]
       | "("; e = SELF; ":>"; t = ctyp; ")" ->
-          Node "ExCoe" [Loc; e; Option None; t]
-      | "{<"; ">}" -> Node "ExOvr" [Loc; List []]
-      | "{<"; fel = field_expr_list; ">}" -> Node "ExOvr" [Loc; fel] ] ]
+          Qast.Node "ExCoe" [Qast.Loc; e; Qast.Option None; t]
+      | "{<"; ">}" -> Qast.Node "ExOvr" [Qast.Loc; Qast.List []]
+      | "{<"; fel = field_expr_list; ">}" ->
+          Qast.Node "ExOvr" [Qast.Loc; fel] ] ]
   ;
   field_expr_list:
-    [ [ l = label; "="; e = expr; ";"; fel = SELF -> Cons (Tuple [l; e]) fel
-      | l = label; "="; e = expr; ";" -> List [Tuple [l; e]]
-      | l = label; "="; e = expr -> List [Tuple [l; e]] ] ]
+    [ [ l = label; "="; e = expr; ";"; fel = SELF ->
+          Qast.Cons (Qast.Tuple [l; e]) fel
+      | l = label; "="; e = expr; ";" -> Qast.List [Qast.Tuple [l; e]]
+      | l = label; "="; e = expr -> Qast.List [Qast.Tuple [l; e]] ] ]
   ;
   ctyp: LEVEL "simple"
-    [ [ "#"; id = class_longident -> Node "TyCls" [Loc; id]
+    [ [ "#"; id = class_longident -> Qast.Node "TyCls" [Qast.Loc; id]
       | "<"; mlv = meth_list; ">" ->
           let (ml, v) =
             match mlv with
-            [ Tuple [xx1; xx2] -> (xx1, xx2)
+            [ Qast.Tuple [xx1; xx2] -> (xx1, xx2)
             | _ -> match () with [] ]
           in
-          Node "TyObj" [Loc; ml; v]
-      | "<"; ">" -> Node "TyObj" [Loc; List []; Bool False] ] ]
+          Qast.Node "TyObj" [Qast.Loc; ml; v]
+      | "<"; ">" ->
+          Qast.Node "TyObj" [Qast.Loc; Qast.List []; Qast.Bool False] ] ]
   ;
   meth_list:
     [ [ f = field; ";"; mlv = SELF ->
           let (ml, v) =
             match mlv with
-            [ Tuple [xx1; xx2] -> (xx1, xx2)
+            [ Qast.Tuple [xx1; xx2] -> (xx1, xx2)
             | _ -> match () with [] ]
           in
-          Tuple [Cons f ml; v]
-      | f = field; ";" -> Tuple [List [f]; Bool False]
-      | f = field -> Tuple [List [f]; Bool False]
-      | ".." -> Tuple [List []; Bool True] ] ]
+          Qast.Tuple [Qast.Cons f ml; v]
+      | f = field; ";" -> Qast.Tuple [Qast.List [f]; Qast.Bool False]
+      | f = field -> Qast.Tuple [Qast.List [f]; Qast.Bool False]
+      | ".." -> Qast.Tuple [Qast.List []; Qast.Bool True] ] ]
   ;
   field:
-    [ [ lab = a_LIDENT; ":"; t = ctyp -> Tuple [lab; t] ] ]
+    [ [ lab = a_LIDENT; ":"; t = ctyp -> Qast.Tuple [lab; t] ] ]
   ;
   clty_longident:
-    [ [ m = a_UIDENT; "."; l = SELF -> Cons m l
-      | i = a_LIDENT -> List [i] ] ]
+    [ [ m = a_UIDENT; "."; l = SELF -> Qast.Cons m l
+      | i = a_LIDENT -> Qast.List [i] ] ]
   ;
   class_longident:
-    [ [ m = a_UIDENT; "."; l = SELF -> Cons m l
-      | i = a_LIDENT -> List [i] ] ]
+    [ [ m = a_UIDENT; "."; l = SELF -> Qast.Cons m l
+      | i = a_LIDENT -> Qast.List [i] ] ]
   ;
   (* Labels *)
   ctyp: AFTER "arrow"
     [ NONA
-      [ i = a_TILDEIDENT; ":"; t = SELF -> Node "TyLab" [Loc; i; t]
-      | i = a_QUESTIONIDENT; ":"; t = SELF -> Node "TyOlb" [Loc; i; t] ] ]
+      [ i = a_TILDEIDENT; ":"; t = SELF -> Qast.Node "TyLab" [Qast.Loc; i; t]
+      | i = a_QUESTIONIDENT; ":"; t = SELF ->
+          Qast.Node "TyOlb" [Qast.Loc; i; t] ] ]
   ;
   ctyp: LEVEL "simple"
     [ [ "[|"; rfl = SLIST0 row_field SEP "|"; "|]" ->
-          Node "TyVrn" [Loc; rfl; Option None]
+          Qast.Node "TyVrn" [Qast.Loc; rfl; Qast.Option None]
       | "[|"; ">"; rfl = row_field_list; "|]" ->
-          Node "TyVrn" [Loc; rfl; Option (Some (Option None))]
+          Qast.Node "TyVrn"
+            [Qast.Loc; rfl; Qast.Option (Some (Qast.Option None))]
       | "[|"; "<"; rfl = row_field_list; "|]" ->
-          Node "TyVrn" [Loc; rfl; Option (Some (Option (Some (List []))))]
+          Qast.Node "TyVrn"
+            [Qast.Loc; rfl;
+             Qast.Option (Some (Qast.Option (Some (Qast.List []))))]
       | "[|"; "<"; rfl = row_field_list; ">"; ntl = SLIST1 name_tag; "|]" ->
-          Node "TyVrn" [Loc; rfl; Option (Some (Option (Some ntl)))] ] ]
+          Qast.Node "TyVrn"
+            [Qast.Loc; rfl; Qast.Option (Some (Qast.Option (Some ntl)))] ] ]
   ;
   row_field_list:
     [ [ rfl = SLIST1 row_field SEP "|" -> rfl ] ]
   ;
   row_field:
-    [ [ "`"; i = ident -> Node "RfTag" [i; Bool True; List []]
+    [ [ "`"; i = ident -> Qast.Node "RfTag" [i; Qast.Bool True; Qast.List []]
       | "`"; i = ident; "of"; ao = amp_flag; l = SLIST1 ctyp SEP "&" ->
-          Node "RfTag" [i; ao; l]
-      | t = ctyp -> Node "RfInh" [t] ] ]
+          Qast.Node "RfTag" [i; ao; l]
+      | t = ctyp -> Qast.Node "RfInh" [t] ] ]
   ;
   name_tag:
     [ [ "`"; i = ident -> i ] ]
   ;
   patt: LEVEL "simple"
-    [ [ "`"; s = ident -> Node "PaVrn" [Loc; s]
-      | "#"; sl = mod_ident -> Node "PaTyp" [Loc; sl]
-      | i = a_TILDEIDENT; ":"; p = SELF -> Node "PaLab" [Loc; i; p]
-      | i = a_TILDEIDENT -> Node "PaLab" [Loc; i; Node "PaLid" [Loc; i]]
+    [ [ "`"; s = ident -> Qast.Node "PaVrn" [Qast.Loc; s]
+      | "#"; sl = mod_ident -> Qast.Node "PaTyp" [Qast.Loc; sl]
+      | i = a_TILDEIDENT; ":"; p = SELF -> Qast.Node "PaLab" [Qast.Loc; i; p]
+      | i = a_TILDEIDENT ->
+          Qast.Node "PaLab" [Qast.Loc; i; Qast.Node "PaLid" [Qast.Loc; i]]
       | i = a_QUESTIONIDENT; ":"; "("; p = SELF; ")" ->
-          Node "PaOlb" [Loc; i; p; Option None]
+          Qast.Node "PaOlb" [Qast.Loc; i; p; Qast.Option None]
       | i = a_QUESTIONIDENT; ":"; "("; p = SELF; "="; e = expr; ")" ->
-          Node "PaOlb" [Loc; i; p; Option (Some e)]
+          Qast.Node "PaOlb" [Qast.Loc; i; p; Qast.Option (Some e)]
       | i = a_QUESTIONIDENT; ":"; "("; p = SELF; ":"; t = ctyp; ")" ->
-          Node "PaOlb" [Loc; i; Node "PaTyc" [Loc; p; t]; Option None]
+          Qast.Node "PaOlb"
+            [Qast.Loc; i; Qast.Node "PaTyc" [Qast.Loc; p; t];
+             Qast.Option None]
       | i = a_QUESTIONIDENT; ":"; "("; p = SELF; ":"; t = ctyp; "="; e = expr;
         ")" ->
-          Node "PaOlb" [Loc; i; Node "PaTyc" [Loc; p; t]; Option (Some e)]
+          Qast.Node "PaOlb"
+            [Qast.Loc; i; Qast.Node "PaTyc" [Qast.Loc; p; t];
+             Qast.Option (Some e)]
       | i = a_QUESTIONIDENT ->
-          Node "PaOlb" [Loc; i; Node "PaLid" [Loc; i]; Option None]
+          Qast.Node "PaOlb"
+            [Qast.Loc; i; Qast.Node "PaLid" [Qast.Loc; i]; Qast.Option None]
       | "?"; "("; i = a_LIDENT; "="; e = expr; ")" ->
-          Node "PaOlb" [Loc; i; Node "PaLid" [Loc; i]; Option (Some e)]
+          Qast.Node "PaOlb"
+            [Qast.Loc; i; Qast.Node "PaLid" [Qast.Loc; i];
+             Qast.Option (Some e)]
       | "?"; "("; i = a_LIDENT; ":"; t = ctyp; "="; e = expr; ")" ->
-          Node "PaOlb"
-            [Loc; i; Node "PaTyc" [Loc; Node "PaLid" [Loc; i]; t];
-             Option (Some e)] ] ]
+          Qast.Node "PaOlb"
+            [Qast.Loc; i;
+             Qast.Node "PaTyc" [Qast.Loc; Qast.Node "PaLid" [Qast.Loc; i]; t];
+             Qast.Option (Some e)] ] ]
   ;
   ipatt:
-    [ [ i = a_TILDEIDENT; ":"; p = SELF -> Node "PaLab" [Loc; i; p]
-      | i = a_TILDEIDENT -> Node "PaLab" [Loc; i; Node "PaLid" [Loc; i]]
+    [ [ i = a_TILDEIDENT; ":"; p = SELF -> Qast.Node "PaLab" [Qast.Loc; i; p]
+      | i = a_TILDEIDENT ->
+          Qast.Node "PaLab" [Qast.Loc; i; Qast.Node "PaLid" [Qast.Loc; i]]
       | i = a_QUESTIONIDENT; ":"; "("; p = SELF; ")" ->
-          Node "PaOlb" [Loc; i; p; Option None]
+          Qast.Node "PaOlb" [Qast.Loc; i; p; Qast.Option None]
       | i = a_QUESTIONIDENT; ":"; "("; p = SELF; "="; e = expr; ")" ->
-          Node "PaOlb" [Loc; i; p; Option (Some e)]
+          Qast.Node "PaOlb" [Qast.Loc; i; p; Qast.Option (Some e)]
       | i = a_QUESTIONIDENT; ":"; "("; p = SELF; ":"; t = ctyp; ")" ->
-          Node "PaOlb" [Loc; i; Node "PaTyc" [Loc; p; t]; Option None]
+          Qast.Node "PaOlb"
+            [Qast.Loc; i; Qast.Node "PaTyc" [Qast.Loc; p; t];
+             Qast.Option None]
       | i = a_QUESTIONIDENT; ":"; "("; p = SELF; ":"; t = ctyp; "="; e = expr;
         ")" ->
-          Node "PaOlb" [Loc; i; Node "PaTyc" [Loc; p; t]; Option (Some e)]
+          Qast.Node "PaOlb"
+            [Qast.Loc; i; Qast.Node "PaTyc" [Qast.Loc; p; t];
+             Qast.Option (Some e)]
       | i = a_QUESTIONIDENT ->
-          Node "PaOlb" [Loc; i; Node "PaLid" [Loc; i]; Option None]
+          Qast.Node "PaOlb"
+            [Qast.Loc; i; Qast.Node "PaLid" [Qast.Loc; i]; Qast.Option None]
       | "?"; "("; i = a_LIDENT; "="; e = expr; ")" ->
-          Node "PaOlb" [Loc; i; Node "PaLid" [Loc; i]; Option (Some e)]
+          Qast.Node "PaOlb"
+            [Qast.Loc; i; Qast.Node "PaLid" [Qast.Loc; i];
+             Qast.Option (Some e)]
       | "?"; "("; i = a_LIDENT; ":"; t = ctyp; "="; e = expr; ")" ->
-          Node "PaOlb"
-            [Loc; i; Node "PaTyc" [Loc; Node "PaLid" [Loc; i]; t];
-             Option (Some e)] ] ]
+          Qast.Node "PaOlb"
+            [Qast.Loc; i;
+             Qast.Node "PaTyc" [Qast.Loc; Qast.Node "PaLid" [Qast.Loc; i]; t];
+             Qast.Option (Some e)] ] ]
   ;
   expr: AFTER "apply"
     [ "label" NONA
-      [ i = a_TILDEIDENT; ":"; e = SELF -> Node "ExLab" [Loc; i; e]
-      | i = a_TILDEIDENT -> Node "ExLab" [Loc; i; Node "ExLid" [Loc; i]]
-      | i = a_QUESTIONIDENT; ":"; e = SELF -> Node "ExOlb" [Loc; i; e]
+      [ i = a_TILDEIDENT; ":"; e = SELF -> Qast.Node "ExLab" [Qast.Loc; i; e]
+      | i = a_TILDEIDENT ->
+          Qast.Node "ExLab" [Qast.Loc; i; Qast.Node "ExLid" [Qast.Loc; i]]
+      | i = a_QUESTIONIDENT; ":"; e = SELF ->
+          Qast.Node "ExOlb" [Qast.Loc; i; e]
       | i = a_QUESTIONIDENT ->
-          Node "ExOlb" [Loc; i; Node "ExLid" [Loc; i]] ] ]
+          Qast.Node "ExOlb" [Qast.Loc; i; Qast.Node "ExLid" [Qast.Loc; i]] ] ]
   ;
   expr: LEVEL "simple"
-    [ [ "`"; s = ident -> Node "ExVrn" [Loc; s] ] ]
+    [ [ "`"; s = ident -> Qast.Node "ExVrn" [Qast.Loc; s] ] ]
   ;
   rec_flag:
-    [ [ "rec" -> Bool True
-      | -> Bool False ] ]
+    [ [ "rec" -> Qast.Bool True
+      | -> Qast.Bool False ] ]
   ;
   direction_flag:
-    [ [ "to" -> Bool True
-      | "downto" -> Bool False ] ]
+    [ [ "to" -> Qast.Bool True
+      | "downto" -> Qast.Bool False ] ]
   ;
   mutable_flag:
-    [ [ "mutable" -> Bool True
-      | -> Bool False ] ]
+    [ [ "mutable" -> Qast.Bool True
+      | -> Qast.Bool False ] ]
   ;
   virtual_flag:
-    [ [ "virtual" -> Bool True
-      | -> Bool False ] ]
+    [ [ "virtual" -> Qast.Bool True
+      | -> Qast.Bool False ] ]
   ;
   amp_flag:
-    [ [ "&" -> Bool True
-      | -> Bool False ] ]
+    [ [ "&" -> Qast.Bool True
+      | -> Qast.Bool False ] ]
   ;
   (* Compatibility old syntax of sequences *)
   expr: LEVEL "top"
     [ [ "do"; seq = SLIST0 [ e = expr; ";" -> e ]; "return"; warning_sequence;
         e = SELF ->
-          Node "ExSeq" [Loc; append_elem seq e]
+          Qast.Node "ExSeq" [Qast.Loc; append_elem seq e]
       | "for"; i = a_LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
         "do"; seq = SLIST0 [ e = expr; ";" -> e ]; warning_sequence; "done" ->
-          Node "ExFor" [Loc; i; e1; e2; df; seq]
+          Qast.Node "ExFor" [Qast.Loc; i; e1; e2; df; seq]
       | "while"; e = SELF; "do"; seq = SLIST0 [ e = expr; ";" -> e ];
         warning_sequence; "done" ->
-          Node "ExWhi" [Loc; e; seq] ] ]
+          Qast.Node "ExWhi" [Qast.Loc; e; seq] ] ]
   ;
   warning_sequence:
     [ [ -> warning_seq () ] ]
   ;
   (* Antiquotations *)
   str_item:
-    [ [ "#"; n = a_LIDENT; dp = dir_param -> Node "StDir" [Loc; n; dp] ] ]
+    [ [ "#"; n = a_LIDENT; dp = dir_param ->
+          Qast.Node "StDir" [Qast.Loc; n; dp] ] ]
   ;
   sig_item:
-    [ [ "#"; n = a_LIDENT; dp = dir_param -> Node "SgDir" [Loc; n; dp] ] ]
+    [ [ "#"; n = a_LIDENT; dp = dir_param ->
+          Qast.Node "SgDir" [Qast.Loc; n; dp] ] ]
   ;
   dir_param:
     [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a
-      | e = expr -> Option (Some e)
-      | -> Option None ] ]
+      | e = expr -> Qast.Option (Some e)
+      | -> Qast.Option None ] ]
   ;
   module_expr: LEVEL "simple"
     [ [ a = ANTIQUOT "mexp" -> antiquot "mexp" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a ] ]
+      | a = ANTIQUOT -> antiquot "" loc a ] ]
   ;
   str_item: LEVEL "top"
     [ [ a = ANTIQUOT "stri" -> antiquot "stri" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a ] ]
+      | a = ANTIQUOT -> antiquot "" loc a ] ]
   ;
   module_type: LEVEL "simple"
     [ [ a = ANTIQUOT "mtyp" -> antiquot "mtyp" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a ] ]
+      | a = ANTIQUOT -> antiquot "" loc a ] ]
   ;
   sig_item: LEVEL "top"
     [ [ a = ANTIQUOT "sigi" -> antiquot "sigi" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a ] ]
+      | a = ANTIQUOT -> antiquot "" loc a ] ]
   ;
   expr: LEVEL "simple"
     [ [ a = ANTIQUOT "exp" -> antiquot "exp" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a
-      | a = ANTIQUOT "anti" -> Node "ExAnt" [Loc; antiquot "anti" loc a]
-      | "("; el = a_list; ")" -> Node "ExTup" [Loc; el] ] ]
+      | a = ANTIQUOT -> antiquot "" loc a
+      | a = ANTIQUOT "anti" ->
+          Qast.Node "ExAnt" [Qast.Loc; antiquot "anti" loc a]
+      | "("; el = a_list; ")" -> Qast.Node "ExTup" [Qast.Loc; el] ] ]
   ;
   sequence:
     [ [ a = ANTIQUOT "list" -> antiquot "list" loc a ] ]
@@ -951,9 +1112,10 @@ EXTEND
   ;
   patt: LEVEL "simple"
     [ [ a = ANTIQUOT "pat" -> antiquot "pat" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a
-      | a = ANTIQUOT "anti" -> Node "PaAnt" [Loc; antiquot "anti" loc a]
-      | "("; pl = a_list; ")" -> Node "PaTup" [Loc; pl] ] ]
+      | a = ANTIQUOT -> antiquot "" loc a
+      | a = ANTIQUOT "anti" ->
+          Qast.Node "PaAnt" [Qast.Loc; antiquot "anti" loc a]
+      | "("; pl = a_list; ")" -> Qast.Node "PaTup" [Qast.Loc; pl] ] ]
   ;
   patt_label_ident: LEVEL "simple"
     [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
@@ -963,14 +1125,15 @@ EXTEND
   ;
   ipatt:
     [ [ a = ANTIQUOT "pat" -> antiquot "pat" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a
-      | a = ANTIQUOT "anti" -> Node "PaAnt" [Loc; antiquot "anti" loc a]
-      | "("; pl = a_list; ")" -> Node "PaTup" [Loc; pl] ] ]
+      | a = ANTIQUOT -> antiquot "" loc a
+      | a = ANTIQUOT "anti" ->
+          Qast.Node "PaAnt" [Qast.Loc; antiquot "anti" loc a]
+      | "("; pl = a_list; ")" -> Qast.Node "PaTup" [Qast.Loc; pl] ] ]
   ;
   ctyp: LEVEL "simple"
     [ [ a = ANTIQUOT "typ" -> antiquot "typ" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a
-      | "("; tl = a_list; ")" -> Node "TyTup" [Loc; tl] ] ]
+      | a = ANTIQUOT -> antiquot "" loc a
+      | "("; tl = a_list; ")" -> Qast.Node "TyTup" [Qast.Loc; tl] ] ]
   ;
   mod_ident:
     [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
@@ -979,23 +1142,23 @@ EXTEND
     [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
   ;
   class_str_item:
-    [ [ a = ANTIQUOT "" -> antiquot "" loc a ] ]
+    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
   ;
   class_sig_item:
-    [ [ a = ANTIQUOT "" -> antiquot "" loc a ] ]
+    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
   ;
   class_type:
-    [ [ a = ANTIQUOT "" -> antiquot "" loc a ] ]
+    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
   ;
   as_lident_opt:
     [ [ a = ANTIQUOT "as" -> antiquot "as" loc a ] ]
   ;
   meth_list:
-    [ [ a = a_list -> Tuple [a; Bool False]
-      | a = a_list; b = ANTIQUOT -> Tuple [a; antiquot "" loc b] ] ]
+    [ [ a = a_list -> Qast.Tuple [a; Qast.Bool False]
+      | a = a_list; b = ANTIQUOT -> Qast.Tuple [a; antiquot "" loc b] ] ]
   ;
   expr: LEVEL "simple"
-    [ [ "{<"; fel = a_list; ">}" -> Node "ExOvr" [Loc; fel] ] ]
+    [ [ "{<"; fel = a_list; ">}" -> Qast.Node "ExOvr" [Qast.Loc; fel] ] ]
   ;
   clty_longident:
     [ [ a = a_list -> a ] ]
@@ -1004,7 +1167,7 @@ EXTEND
     [ [ a = a_list -> a ] ]
   ;
   patt: LEVEL "simple"
-    [ [ "#"; a = a_list -> Node "PaTyp" [Loc; a] ] ]
+    [ [ "#"; a = a_list -> Qast.Node "PaTyp" [Qast.Loc; a] ] ]
   ;
   a_list:
     [ [ a = ANTIQUOT "list" -> antiquot "list" loc a ] ]
@@ -1014,41 +1177,41 @@ EXTEND
   ;
   a_UIDENT:
     [ [ a = ANTIQUOT "uid" -> antiquot "uid" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a
-      | i = UIDENT -> Str i ] ]
+      | a = ANTIQUOT -> antiquot "" loc a
+      | i = UIDENT -> Qast.Str i ] ]
   ;
   a_LIDENT:
     [ [ a = ANTIQUOT "lid" -> antiquot "lid" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a
-      | i = LIDENT -> Str i ] ]
+      | a = ANTIQUOT -> antiquot "" loc a
+      | i = LIDENT -> Qast.Str i ] ]
   ;
   a_INT:
     [ [ a = ANTIQUOT "int" -> antiquot "int" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a
-      | s = INT -> Str s ] ]
+      | a = ANTIQUOT -> antiquot "" loc a
+      | s = INT -> Qast.Str s ] ]
   ;
   a_FLOAT:
     [ [ a = ANTIQUOT "flo" -> antiquot "flo" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a
-      | s = FLOAT -> Str s ] ]
+      | a = ANTIQUOT -> antiquot "" loc a
+      | s = FLOAT -> Qast.Str s ] ]
   ;
   a_STRING:
     [ [ a = ANTIQUOT "str" -> antiquot "str" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a
-      | s = STRING -> Str s ] ]
+      | a = ANTIQUOT -> antiquot "" loc a
+      | s = STRING -> Qast.Str s ] ]
   ;
   a_CHAR:
     [ [ a = ANTIQUOT "chr" -> antiquot "chr" loc a
-      | a = ANTIQUOT "" -> antiquot "" loc a
-      | s = CHAR -> Str s ] ]
+      | a = ANTIQUOT -> antiquot "" loc a
+      | s = CHAR -> Qast.Str s ] ]
   ;
   a_TILDEIDENT:
-    [ [ "~"; a = ANTIQUOT "" -> antiquot "" loc a
-      | s = TILDEIDENT -> Str s ] ]
+    [ [ "~"; a = ANTIQUOT -> antiquot "" loc a
+      | s = TILDEIDENT -> Qast.Str s ] ]
   ;
   a_QUESTIONIDENT:
-    [ [ "?"; a = ANTIQUOT "" -> antiquot "" loc a
-      | s = QUESTIONIDENT -> Str s ] ]
+    [ [ "?"; a = ANTIQUOT -> antiquot "" loc a
+      | s = QUESTIONIDENT -> Qast.Str s ] ]
   ;
   rec_flag:
     [ [ a = ANTIQUOT "rec" -> antiquot "rec" loc a ] ]
@@ -1071,24 +1234,23 @@ value loc = (0, 0);
 
 value rec expr_of_ast =
   fun
-  [ Node n al ->
+  [ Qast.Node n al ->
       List.fold_left (fun e a -> <:expr< $e$ $expr_of_ast a$ >>)
         <:expr< MLast.$uid:n$ >> al
-  | List al ->
+  | Qast.List al ->
       List.fold_right (fun a e -> <:expr< [$expr_of_ast a$ :: $e$] >>) al
         <:expr< [] >>
-  | Tuple al -> <:expr< ($list:List.map expr_of_ast al$) >>
-  | Option None -> <:expr< None >>
-  | Option (Some a) -> <:expr< Some $expr_of_ast a$ >>
-  | Str s -> <:expr< $str:s$ >>
-  | Chr c -> <:expr< $chr:c$ >>
-  | Bool True -> <:expr< True >>
-  | Bool False -> <:expr< False >>
-  | Cons a1 a2 -> <:expr< [$expr_of_ast a1$ :: $expr_of_ast a2$] >>
-  | Append a1 a2 -> <:expr< $expr_of_ast a1$ @ [$expr_of_ast a2$] >>
-  | Record lal -> <:expr< {$list:List.map label_expr_of_ast lal$} >>
-  | Loc -> <:expr< $lid:Stdpp.loc_name.val$ >>
-  | Antiquot loc s ->
+  | Qast.Tuple al -> <:expr< ($list:List.map expr_of_ast al$) >>
+  | Qast.Option None -> <:expr< None >>
+  | Qast.Option (Some a) -> <:expr< Some $expr_of_ast a$ >>
+  | Qast.Str s -> <:expr< $str:s$ >>
+  | Qast.Bool True -> <:expr< True >>
+  | Qast.Bool False -> <:expr< False >>
+  | Qast.Cons a1 a2 -> <:expr< [$expr_of_ast a1$ :: $expr_of_ast a2$] >>
+  | Qast.Append a1 a2 -> <:expr< $expr_of_ast a1$ @ [$expr_of_ast a2$] >>
+  | Qast.Record lal -> <:expr< {$list:List.map label_expr_of_ast lal$} >>
+  | Qast.Loc -> <:expr< $lid:Stdpp.loc_name.val$ >>
+  | Qast.Antiquot loc s ->
       let e =
         try Grammar.Entry.parse Pcaml.expr_eoi (Stream.of_string s) with
         [ Stdpp.Exc_located (bp, ep) exc ->
@@ -1099,24 +1261,23 @@ and label_expr_of_ast (l, a) = (<:patt< MLast.$lid:l$ >>, expr_of_ast a);
 
 value rec patt_of_ast =
   fun
-  [ Node n al ->
+  [ Qast.Node n al ->
       List.fold_left (fun e a -> <:patt< $e$ $patt_of_ast a$ >>)
         <:patt< MLast.$uid:n$ >> al
-  | List al ->
+  | Qast.List al ->
       List.fold_right (fun a p -> <:patt< [$patt_of_ast a$ :: $p$] >>) al
         <:patt< [] >>
-  | Tuple al -> <:patt< ($list:List.map patt_of_ast al$) >>
-  | Option None -> <:patt< None >>
-  | Option (Some a) -> <:patt< Some $patt_of_ast a$ >>
-  | Str s -> <:patt< $str:s$ >>
-  | Chr c -> <:patt< $chr:c$ >>
-  | Bool True -> <:patt< True >>
-  | Bool False -> <:patt< False >>
-  | Cons a1 a2 -> <:patt< [$patt_of_ast a1$ :: $patt_of_ast a2$] >>
-  | Append _ _ -> failwith "bad pattern"
-  | Record lal -> <:patt< {$list:List.map label_patt_of_ast lal$} >>
-  | Loc -> <:patt< _ >>
-  | Antiquot loc s ->
+  | Qast.Tuple al -> <:patt< ($list:List.map patt_of_ast al$) >>
+  | Qast.Option None -> <:patt< None >>
+  | Qast.Option (Some a) -> <:patt< Some $patt_of_ast a$ >>
+  | Qast.Str s -> <:patt< $str:s$ >>
+  | Qast.Bool True -> <:patt< True >>
+  | Qast.Bool False -> <:patt< False >>
+  | Qast.Cons a1 a2 -> <:patt< [$patt_of_ast a1$ :: $patt_of_ast a2$] >>
+  | Qast.Append _ _ -> failwith "bad pattern"
+  | Qast.Record lal -> <:patt< {$list:List.map label_patt_of_ast lal$} >>
+  | Qast.Loc -> <:patt< _ >>
+  | Qast.Antiquot loc s ->
       let p =
         try Grammar.Entry.parse Pcaml.patt_eoi (Stream.of_string s) with
         [ Stdpp.Exc_located (bp, ep) exc ->

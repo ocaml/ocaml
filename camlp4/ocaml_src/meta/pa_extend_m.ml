@@ -22,7 +22,7 @@ Grammar.extend
      Gramext.action
        (fun (s : 'symbol) _ (loc : int * int) ->
           (let used = mk_name loc (MLast.ExLid (loc, "a_opt")) :: s.used in
-           {used = used; text = ssopt loc s; styp = STlid (loc, "ast")} :
+           {used = used; text = ssopt loc s; styp = STquo (loc, "a_opt")} :
            'symbol));
      [Gramext.srules
         [[Gramext.Stoken ("UIDENT", "SLIST1")],
@@ -47,5 +47,5 @@ Grammar.extend
            in
            let used = mk_name loc (MLast.ExLid (loc, "a_list")) :: used in
            {used = used; text = sslist loc min sep s;
-            styp = STlid (loc, "ast")} :
+            styp = STquo (loc, "a_list")} :
            'symbol))]]];;

@@ -275,22 +275,24 @@ value rec expr_fa al =
 value rec quot_expr e =
   let loc = MLast.loc_of_expr e in
   match e with
-  [ <:expr< None >> -> <:expr< Option None >>
-  | <:expr< Some $e$ >> -> <:expr< Option (Some $quot_expr e$) >>
-  | <:expr< False >> -> <:expr< Bool False >>
-  | <:expr< True >> -> <:expr< Bool True >>
-  | <:expr< List $_$ >> -> e
-  | <:expr< Option $_$ >> -> e
-  | <:expr< Str $_$ >> -> e
-  | <:expr< [] >> -> <:expr< List [] >>
-  | <:expr< [$e$] >> -> <:expr< List [$quot_expr e$] >>
-  | <:expr< [$e1$ :: $e2$] >> -> <:expr< Cons $quot_expr e1$  $quot_expr e2$ >>
+  [ <:expr< None >> -> <:expr< Qast.Option None >>
+  | <:expr< Some $e$ >> -> <:expr< Qast.Option (Some $quot_expr e$) >>
+  | <:expr< False >> -> <:expr< Qast.Bool False >>
+  | <:expr< True >> -> <:expr< Qast.Bool True >>
+  | <:expr< Qast.List $_$ >> -> e
+  | <:expr< Qast.Option $_$ >> -> e
+  | <:expr< Qast.Str $_$ >> -> e
+  | <:expr< [] >> -> <:expr< Qast.List [] >>
+  | <:expr< [$e$] >> -> <:expr< Qast.List [$quot_expr e$] >>
+  | <:expr< [$e1$ :: $e2$] >> ->
+      <:expr< Qast.Cons $quot_expr e1$  $quot_expr e2$ >>
   | <:expr< $_$ $_$ >> ->
       let (f, al) = expr_fa [] e in
       let al = List.map quot_expr al in
       match f with
-      [ <:expr< $uid:c$ >> -> <:expr< Node $str:c$ $mklistexp loc al$ >>
-      | <:expr< $_$.$uid:c$ >> -> <:expr< Node $str:c$ $mklistexp loc al$ >>
+      [ <:expr< $uid:c$ >> -> <:expr< Qast.Node $str:c$ $mklistexp loc al$ >>
+      | <:expr< $_$.$uid:c$ >> ->
+          <:expr< Qast.Node $str:c$ $mklistexp loc al$ >>
       | _ -> e ]
   | <:expr< {$list:pel$} >> ->
       try
@@ -306,14 +308,15 @@ value rec quot_expr e =
                <:expr< ($lab$, $quot_expr e$) >>)
             pel
         in
-        <:expr< Record $mklistexp loc lel$>>
+        <:expr< Qast.Record $mklistexp loc lel$>>
       with
       [ Not_found -> e ]
-  | <:expr< $lid:s$ >> -> if s = Stdpp.loc_name.val then <:expr< Loc >> else e
-  | <:expr< $str:s$ >> -> <:expr< Str $str:s$ >>
+  | <:expr< $lid:s$ >> ->
+      if s = Stdpp.loc_name.val then <:expr< Qast.Loc >> else e
+  | <:expr< $str:s$ >> -> <:expr< Qast.Str $str:s$ >>
   | <:expr< ($list:el$) >> ->
       let el = List.map quot_expr el in
-      <:expr< Tuple $mklistexp loc el$ >>
+      <:expr< Qast.Tuple $mklistexp loc el$ >>
   | _ -> e ]
 ;
 
@@ -350,7 +353,7 @@ value quotify_action psl act =
            <:expr<
               let ($list:pl$) =
                 match $lid:pname$ with
-                [ Tuple $mklistpat loc pl1$ -> ($list:el1$)
+                [ Qast.Tuple $mklistpat loc pl1$ -> ($list:el1$)
                 | _ -> match () with [] ]
               in $e$ >>
        | _ -> e ])
@@ -513,12 +516,12 @@ value sslist_aux loc min sep s =
         let patt = <:patt< a >> in
         {pattern = Some patt; symbol = symb}
       in
-      let act = <:expr< List a >> in
+      let act = <:expr< Qast.List a >> in
       {prod = [psymb]; action = Some act}
     in
     [r1; r2]
   in
-  TXrules loc (srules loc "anti" rl "")
+  TXrules loc (srules loc "a_list" rl "")
 ;
 
 value sslist loc min sep s =
@@ -550,12 +553,12 @@ value ssopt loc s =
         let patt = <:patt< a >> in
         {pattern = Some patt; symbol = symb}
       in
-      let act = <:expr< Option a >> in
+      let act = <:expr< Qast.Option a >> in
       {prod = [psymb]; action = Some act}
     in
     [r1; r2]
   in
-  TXrules loc (srules loc "anti" rl "")
+  TXrules loc (srules loc "a_opt" rl "")
 ;
 
 value is_global e =

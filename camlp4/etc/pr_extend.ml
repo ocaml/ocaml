@@ -53,9 +53,11 @@ value rec listwbws elem b sep el dg k =
 
 value rec get_globals =
   fun
-  [ [(<:patt< _ >>, <:expr< ($e$ : Grammar.Entry.e '$_$) >>) :: pel] ->
-      [e :: get_globals pel]
-  | [] -> []
+  [ [(<:patt< _ >>, <:expr< ($e$ : $uid:gmod1$.Entry.e '$_$) >>) :: pel] ->
+      let (gmod, gl) = get_globals pel in
+      if gmod = "" || gmod = gmod1 then (gmod1, [e :: gl])
+      else raise Not_found
+  | [] -> ("", [])
   | _ -> raise Not_found ]
 ;
 
@@ -135,10 +137,10 @@ type symbol =
 
 value rec unsymbol =
   fun
-  [ <:expr< Gramext.Snterm (Grammar.Entry.obj ($e$ : $_$)) >> -> Snterm e
-  | <:expr< Gramext.Snterml (Grammar.Entry.obj ($e$ : $_$)) $str:s$ >> ->
+  [ <:expr< Gramext.Snterm ($uid:_$.Entry.obj ($e$ : $_$)) >> -> Snterm e
+  | <:expr< Gramext.Snterml ($uid:_$.Entry.obj ($e$ : $_$)) $str:s$ >> ->
       Snterml e s
-  | <:expr< Gramext.Snterml (Grammar.Entry.obj ($e$ : $_$), $str:s$) >> ->
+  | <:expr< Gramext.Snterml ($uid:_$.Entry.obj ($e$ : $_$), $str:s$) >> ->
       Snterml e s
   | <:expr< Gramext.Slist0 $e$ >> -> Slist0 (unsymbol e)
   | <:expr< Gramext.Slist0sep $e1$ $e2$ >> ->
@@ -214,12 +216,12 @@ value rec unentry_list =
 ;
 
 value unextend_body e =
-  let (globals, e) =
+  let ((_, globals), e) =
     match e with
     [ <:expr< let $list:pel$ in $e1$ >> ->
         try (get_globals pel, e1) with
-        [ Not_found -> ([], e) ]
-    | _ -> ([], e) ]
+        [ Not_found -> (("", []), e) ]
+    | _ -> (("", []), e) ]
   in
   let e =
     match e with
@@ -240,6 +242,27 @@ value unextend_body e =
   in
   let el = unentry_list e in
   (globals, el)
+;
+
+value ungextend_body e =
+  let e =
+    match e with
+    [ <:expr<
+        let grammar_entry_create = Gram.Entry.create in
+        let $list:ll$ in $e$
+      >> ->
+        let _ = get_locals ll in e
+    | _ -> e ]
+  in
+  match e with
+  [ <:expr< do { $list:el$ } >> ->
+      List.map
+        (fun
+         [ <:expr< $uid:_$.extend ($e$ : $uid:_$.Entry.e '$_$) $pos$ $ll$ >> ->
+             (e, unposition pos, unlevel_list ll)
+         | _ -> raise Not_found ])
+        el
+  | _ -> raise Not_found ]
 ;
 
 (* Printing *)
@@ -302,7 +325,7 @@ value rec symbol s k =
       [([(Some <:patt< a >>, Snterm <:expr< a_list >>)], Some <:expr< a >>);
        ([(Some <:patt< a >>,
           ((Slist0 _ | Slist1 _ | Slist0sep _ _ | Slist1sep _ _) as s))],
-          Some <:expr< List a >>)]
+          Some <:expr< Qast.List a >>)]
     when not no_slist.val
     ->
       match s with
@@ -319,7 +342,7 @@ value rec symbol s k =
       | _ -> assert False ]
   | Srules
       [([(Some <:patt< a >>, Snterm <:expr< a_opt >>)], Some <:expr< a >>);
-       ([(Some <:patt< a >>, Sopt s)], Some <:expr< Option a >>)]
+       ([(Some <:patt< a >>, Sopt s)], Some <:expr< Qast.Option a >>)]
     when not no_slist.val
     ->
       HVbox [: `S LR "SOPT"; `simple_symbol s k :]
@@ -386,7 +409,7 @@ value level_list ll k =
          [: `S LR "]"; k :] :]
 ;
 
-value entry  (e, pos, ll) k =
+value entry (e, pos, ll) k =
   BEbox
     [: `HVbox [: `expr e "" [: `S RO ":" :]; position pos :];
        `level_list  ll [: :];
@@ -429,7 +452,40 @@ value extend e dg k =
   | _ -> expr e "" k ]
 ;
 
+value get_gextend =
+  fun
+  [ <:expr< let $list:gl$ in $e$ >> ->
+      try
+        let (gmod, gl) = get_globals gl in
+        let el = ungextend_body e in
+        Some (gmod, gl, el)
+      with
+      [ Not_found -> None ]
+  | _ -> None ]
+;
+
+value gextend e dg k =
+  match get_gextend e with
+  [ Some (gmod, gl, el) ->
+      BEbox
+        [: `HVbox [: `S LR "GEXTEND"; `S LR gmod :];
+           `extend_body (gl, el) [: :];
+           `HVbox [: `S LR "END"; k :] :]
+  | None -> expr e "" k ]
+;
+
+value is_gextend e = get_gextend e <> None;
+
 (* Printer extensions *)
+
+let lev =
+  try find_pr_level "expr1" pr_expr.pr_levels with
+  [ Failure _ -> find_pr_level "top" pr_expr.pr_levels ]
+in
+lev.pr_rules :=
+  extfun lev.pr_rules with
+  [ <:expr< let $list:_$ in $_$ >> as e when is_gextend e ->
+      fun curr next _ k -> [: `next e "" k :] ];
 
 let lev = find_pr_level "apply" pr_expr.pr_levels in
 lev.pr_rules :=
@@ -441,7 +497,9 @@ let lev = find_pr_level "simple" pr_expr.pr_levels in
 lev.pr_rules :=
   extfun lev.pr_rules with
   [ <:expr< Grammar.extend $_$ >> as e ->
-      fun curr next _ k -> [: `extend e "" k :] ];
+      fun curr next _ k -> [: `extend e "" k :]
+  | <:expr< let $list:_$ in $_$ >> as e when is_gextend e ->
+      fun curr next _ k -> [: `gextend e "" k :] ];
 
 Pcaml.add_option "-no_slist" (Arg.Set no_slist)
   "    Don't reconstruct SLIST";
