@@ -980,7 +980,7 @@ let rec occur_rec env visited ty0 ty =
         if ty' == ty0 || List.memq ty' visited then raise Occur;
         match ty'.desc with
           Tobject _ -> ()
-        | _         -> iter_type_expr (occur_rec env (ty::visited) ty0) ty
+        | _         -> iter_type_expr (occur_rec env (ty'::visited) ty0) ty'
       with Cannot_expand ->
         raise Occur
       end
