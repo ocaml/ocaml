@@ -107,11 +107,11 @@ types and the public functions to the corresponding types and
 functions in the modules "windows", "images" and "buttons":
 \begin{verbatim}
 (* File mylib.ml *)
-type window == windows__win
- and image  == images__pixmap
- and button == buttons__t;;
-let new_window = windows__open_window
-and draw_image = images__draw
+type window == Windows.win
+ and image  == Images.pixmap
+ and button == Buttons.t;;
+let new_window = Windows.open_window
+and draw_image = Images.draw
 and ...
 \end{verbatim}
 The files "windows.ml", "images.ml" and "buttons.ml" can open the
@@ -120,11 +120,11 @@ The files "windows.ml", "images.ml" and "buttons.ml" can open the
 not reference the abstract types nor the public functions, to avoid
 circularities.
 
-Types such as "windows__win" in the example above can be exported by
+Types such as "Windows.win" in the example above can be exported by
 the "windows" module either abstractly or concretely (with their
 definition). Often, it is necessary to export them concretely, because
 the other modules in the library ("images", "buttons") need to build
-or destructure directly values of that type. Even if "windows__win" is
+or destructure directly values of that type. Even if "Windows.win" is
 exported concretely by the "windows" module, that type will remain
 abstract to the library user, since it is abstracted by the public
 interface "mylib".

@@ -358,7 +358,7 @@ frame). It can also print selected parts of a value by matching it
 against a pattern.
 
 Variable names can be specified either fully qualified
-(\var{module-name}"__"\var{var-name}) or unqualified
+(\var{Module-name}"."\var{var-name}) or unqualified
 (\var{var-name}). Unqualified names either correspond to local
 variables, or are completed into fully qualified global names
 by looking at a list of ``opened'' modules that define the same name
