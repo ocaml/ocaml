@@ -114,6 +114,64 @@ value extract_label_types loc tn tal cdol =
   [((loc, tn), tal, <:ctyp< [ $list:cdl$ ] >>, []) :: aux]
 ;
 
+value function_of_clause_list loc xl =
+  let (fname, nbpat, l) =
+    List.fold_left
+      (fun (fname, nbpat, l) ((x1, loc), x2, x3, x4) ->
+         let (fname, nbpat) =
+           if fname = "" then (x1, List.length x2)
+           else if x1 <> fname then
+             raise_with_loc loc
+               (Stream.Error ("'" ^ fname ^ "' expected"))
+           else if List.length x2 <> nbpat then
+             raise_with_loc loc
+               (Stream.Error "bad number of patterns in that clause")
+           else (fname, nbpat)
+         in
+         let x4 =
+           match x3 with
+           [ Some t -> <:expr< ($x4$ : $t$) >>
+           | _ -> x4 ]
+         in
+         let l = [(x2, x4) :: l] in
+         (fname, nbpat, l))
+      ("", 0, []) xl
+  in
+  let l = List.rev l in
+  let e =
+    match l with
+    [ [(pl, e)] ->
+        List.fold_right (fun p e -> <:expr< fun $p$ -> $e$ >>) pl e
+     | _ ->
+        if nbpat = 1 then
+          let pwel =
+            List.map
+              (fun (pl, e) -> (<:patt< $List.hd pl$ >>, None, e)) l
+          in
+          <:expr< fun [ $list:pwel$ ] >>
+        else
+          let sl =
+            loop 0 where rec loop n =
+              if n = nbpat then []
+              else ["a" ^ string_of_int (n + 1) :: loop (n + 1)]
+          in
+          let p =
+            let pl = List.map (fun s -> <:patt< $lid:s$ >>) sl in
+            <:patt< ($list:pl$) >>
+          in
+          let e =
+            let el = List.map (fun s -> <:expr< $lid:s$ >>) sl in
+            let pwel =
+              List.map
+                (fun (pl, e) -> (<:patt< ($list:pl$) >>, None, e)) l
+            in
+            <:expr< match ($list:el$) with [ $list:pwel$ ] >>
+          in
+          <:expr< fun $p$ -> $e$ >> ]
+  in
+  (<:patt< $lid:fname$ >>, e)
+;
+
 value special x =
   do {
     assert (String.length x > 0);
@@ -355,52 +413,13 @@ EXTEND
       | ":"; x1 = ctyp -> Some x1 ] ]
   ;
   fb:
-    [ [ xl = LIST1 clause SEP "|" ->
-          let (fname, l) =
-            List.fold_left
-              (fun (fname, l) ((x1, loc), x2, x3, x4) ->
-                 let fname =
-                   match fname with
-                   [ Some fname ->
-                       if x1 <> fname then
-                         raise_with_loc loc
-                           (Stream.Error ("'" ^ fname ^ "' expected"))
-                       else Some fname
-                   | _ -> Some x1 ]
-                 in
-                 let x4 =
-                   match x3 with
-                   [ Some t -> <:expr< ($x4$ : $t$) >>
-                   | _ -> x4 ]
-                 in
-                 let l = [(x2, None, x4) :: l] in
-                 (fname, l))
-              (None, []) xl
-          in
-          match fname with
-          [ Some fname ->
-              (<:patt< $lid:fname$ >>, <:expr< fun [ $list:List.rev l$ ] >>)
-          | None -> assert False ]
+    [ [ xl = LIST1 clause SEP "|" -> function_of_clause_list loc xl
       | "lazy"; x1 = LIST1 clause SEP "|" -> not_impl loc "fb 2" ] ]
   ;
   clause:
-    [ [ x1 = lident_loc; x2 = patt LEVEL "apat"; x3 = patt LEVEL "apat";
-        x4 = constrain; "="; x5 = expr ->
-          let x2 =
-            match x2 with
-            [ <:patt< $lid:s$ >> -> s
-            | _ -> raise (Stream.Error "bad clause") ]
-          in
-          ((x2, loc), <:patt< ($lid:fst x1$, $x3$) >>, x4, x5)
-      | x1 = lident_loc; x2 = patt LEVEL "apat"; x3 = constrain; "=";
-        x4 = expr ->
-          (x1, x2, x3, x4)
-      | x1 = patt LEVEL "apat"; x2 = idd_loc; x3 = patt LEVEL "apat";
-        x4 = constrain; "="; x5 = expr ->
-          (x2, <:patt< ($x1$, $x3$) >>, x4, x5) ] ]
-  ;
-  idd_loc:
-    [ [ x1 = idd -> (x1, loc) ] ]
+    [ [ x1 = lident_loc; x2 = LIST1 (patt LEVEL "apat"); x3 = constrain;
+        "="; x4 = expr ->
+          (x1, x2, x3, x4) ] ]
   ;
   tb:
     [ [ x1 = tyvars; x2 = idd; "="; x3 = ctyp ->

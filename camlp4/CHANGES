@@ -1,6 +1,10 @@
 Camlp4 Version ....
 -------------------
 
+- [04 Jan 02] Fixed bug in pa_sml (SML syntax): the function definitions
+  with several currified parameters did not work. It works now, but the
+  previous code was supposed to treat let ("fun" in SML syntax) definitions
+  of infix operators, what does not work any more now.
 - [04 Jan 02] Alain Frisch's contribution:
   Added pa_ocamllex.cma, syntax for ocamllex files. The command:
       camlp4 pa_ocamllex.cmo pr_o.cmo -ocamllex -impl foo.mll > foo.ml
