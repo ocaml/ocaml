@@ -27,9 +27,9 @@ CAMLDEP_IMPORTS = misc.cmo config.cmo clflags.cmo terminfo.cmo ¶
    linenum.cmo warnings.cmo location.cmo longident.cmo ¶
    syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
 
-CAMLDEP = ocamldep.cmo
+CAMLDEP = depend.cmo ocamldep.cmo
 
-ocamldep Ä {CAMLDEP}
+ocamldep Ä depend.cmi {CAMLDEP}
     {CAMLC} {LINKFLAGS} -o ocamldep {CAMLDEP_IMPORTS} {CAMLDEP}
 
 clean ÄÄ
