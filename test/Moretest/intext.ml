@@ -278,12 +278,58 @@ let test_size() =
   let s = Marshal.to_string (G(A, G(B 2, G(C 3.14, G(D "glop", E 'e'))))) [] in
   test 300 (Marshal.header_size + Marshal.data_size s 0 = String.length s)
 
+(* Test for really big objects *)
+
+let counter = ref 0
+
+let rec make_big n =
+  if n <= 0 then begin
+    incr counter; B !counter
+  end else begin
+    let l = make_big (n-1) in
+    let r = make_big (n-1) in
+    G(l, r)
+  end
+
+let rec check_big n x =
+  if n <= 0 then begin
+    match x with
+      B k -> incr counter; k = !counter
+    | _   -> false
+  end else begin
+    match x with
+      G(l, r) -> check_big (n-1) l && check_big (n-1) r
+    | _       -> false
+  end
+
 let main() =
-  test_out "intext.data"; test_in "intext.data";
-  test_out "intext.data"; test_in "intext.data";
-  Sys.remove "intext.data";
-  test_string();
-  test_buffer();
-  test_size()
+  if Array.length Sys.argv <= 2 then begin
+    test_out "intext.data"; test_in "intext.data";
+    test_out "intext.data"; test_in "intext.data";
+    Sys.remove "intext.data";
+    test_string();
+    test_buffer();
+    test_size()
+  end else
+  if Sys.argv.(1) = "make" then begin
+    let n = int_of_string Sys.argv.(2) in
+    let oc = open_out_bin "intext.data" in
+    counter := 0;
+    output_value oc (make_big n);
+    close_out oc
+  end else
+  if Sys.argv.(1) = "test" then begin
+    let n = int_of_string Sys.argv.(2) in
+    let ic = open_in_bin "intext.data" in
+    let b = (input_value ic : t) in
+    Gc.full_major();
+    close_in ic;
+    counter := 0;
+    if check_big n b then
+      Printf.printf "Test big %d passed" n
+    else
+      Printf.printf "Test big %d FAILED" n;
+    print_newline()
+  end
 
 let _ = Printexc.catch main (); exit 0
