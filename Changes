@@ -2,8 +2,8 @@ Objective Caml 2.00:
 --------------------
 
 * Language:
-  - New class language.  See http://...
-    for an overview, and the manual for reference.
+  - New class language.  See http://caml.inria.fr/ocaml/refman/
+    for a tutorial (chapter 2) and for the reference manual (section 4.9).
   - Local module definitions "let module X = <module-expr> in <expr>".
   - Record copying with update "{r with lbl1 = expr1; ...}".
   - Array patterns "[|pat1; ...;patN|]" in pattern-matchings.
