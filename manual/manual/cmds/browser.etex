@@ -1,8 +1,8 @@
-\chapter{OCamlBrowser} \label{c:browser}
-\pdfchapter{OCamlBrowser}
+\chapter{The browser/editor (ocamlbrowser)} \label{c:browser}
+\pdfchapter{The browser/editor (ocamlbrowser)}
 
 This chapter describes OCamlBrowser, a source and compiled interface
-browser, written using LablTk. This is a necessary companion to the
+browser, written using LablTk. This is a useful companion to the
 programmer.
 
 Its functions are:
@@ -12,7 +12,7 @@ Its functions are:
 \item integrated Objective Caml shell, running as a subprocess.
 \end{itemize}
 
-\section{Options} \label{s:browser-options}
+\section{Invocation} \label{s:browser-options}
 
 The browser is started by the command "ocamlrowser", as follows:
 \begin{alltt}
@@ -161,20 +161,4 @@ The executed subshell is given the current load path.
   also import the browser's path into the subprocess.
 \item {\bf History} M-p and M-n browse up and down.
 \item {\bf Signal} C-c interrupts, and you can also kill the subprocess.
-\end{itemize}
-
-\section{Bugs}
-
-\begin{itemize}
-\item This not really a bug, but OCamlBrowser is a huge memory
-  consumer.  Go and buy some.
-  
-\item When you quit the editor and some file was modified, a dialogue
-  is displayed asking whether you want to really quit or not. But 1) if
-  you quit directly from the viewer, there is no dialogue at all, and
-  2) if you close from the window manager, the dialogue is displayed,
-  but you cannot cancel the destruction... Beware.
-  
-\item When you run it through xon, the shell hangs at the first error.
-  But its ok if you start ocamlbrowser from a remote shell...
 \end{itemize}
