@@ -84,7 +84,7 @@ latter is read and executed as described below.
 
 The toplevel system does not perform line editing, but it can
 easily be used in conjunction with an external line editor such as
-"ledit" or "ocaml2" 
+"ledit", "ocaml2" or "rlwrap"
 \begin{latexonly}
 (see the Caml Hump "http://caml.inria.fr/humps/index_framed_caml.html").
 \end{latexonly}
