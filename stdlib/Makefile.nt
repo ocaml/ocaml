@@ -22,20 +22,18 @@ OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
-BASIC=pervasives.cmo array.cmo list.cmo char.cmo string.cmo sys.cmo \
+OBJS=pervasives.cmo $(OTHERS)
+OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
   hashtbl.cmo sort.cmo marshal.cmo obj.cmo \
   int32.cmo int64.cmo nativeint.cmo \
   lexing.cmo parsing.cmo \
   set.cmo map.cmo stack.cmo queue.cmo stream.cmo buffer.cmo \
   printf.cmo format.cmo scanf.cmo \
   arg.cmo printexc.cmo gc.cmo \
-  digest.cmo random.cmo camlinternalOO.cmo oo.cmo \
-  genlex.cmo callback.cmo weak.cmo \
-  lazy.cmo filename.cmo complex.cmo
-LABELLED=arrayLabels.ml listLabels.ml stringLabels.ml moreLabels.ml
-
-OBJS=$(BASIC) labelled.cmo stdLabels.cmo
-ALLOBJS=$(BASIC) $(LABELLED:.ml=.cmo) stdLabels.cmo
+  digest.cmo random.cmo callback.cmo camlinternalOO.cmo oo.cmo \
+  genlex.cmo weak.cmo \
+  lazy.cmo filename.cmo complex.cmo \
+  arrayLabels.cmo listLabels.cmo stringLabels.cmo moreLabels.cmo stdLabels.cmo
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 
@@ -48,10 +46,10 @@ installopt:
 	cp stdlib.cmxa stdlib.$(A) std_exit.$(O) *.cmx $(LIBDIR)
 
 stdlib.cma: $(OBJS)
-	$(CAMLC) -a -o stdlib.cma $(ALLOBJS)
+	$(CAMLC) -a -o stdlib.cma $(OBJS)
 
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o stdlib.cmxa $(ALLOBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
 camlheader camlheader_ur: headernt.c ../config/Makefile
 	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o camlheader.exe headernt.c
@@ -61,46 +59,30 @@ camlheader camlheader_ur: headernt.c ../config/Makefile
 clean::
 	rm -f camlheader camlheader_ur
 
-pervasives.cmi: pervasives.mli
-	$(CAMLC) $(COMPFLAGS) -nopervasives -c pervasives.mli
-
-pervasives.cmo: pervasives.ml
-	$(CAMLC) $(COMPFLAGS) -nopervasives -c pervasives.ml
-
-pervasives.cmx: pervasives.ml
-	$(CAMLOPT) $(COMPFLAGS) -nopervasives -c pervasives.ml
-
-# camlinternalOO.cmi must be compiled with -nopervasives for applets
-camlinternalOO.cmi: camlinternalOO.mli
-	$(CAMLC) $(COMPFLAGS) -nopervasives -c camlinternalOO.mli
-
-# labelled modules require the -nolabels flag
-labelled.cmo:
-	$(MAKEREC) EXTRAFLAGS=-nolabels RUNTIME=$(RUNTIME) COMPILER=$(COMPILER) $(LABELLED:.ml=.cmo)
-	touch $@
-labelled.cmx:
-	$(MAKEREC) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.cmx)
-	touch $@
-labelled.p.cmx:
-	$(MAKEREC) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.p.cmx)
-	touch $@
-
-# generic rules
 .SUFFIXES: .mli .ml .cmi .cmo .cmx
 
 .mli.cmi:
-	$(CAMLC) $(COMPFLAGS) $(EXTRAFLAGS) -c $<
+	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
 
 .ml.cmo:
-	$(CAMLC) $(COMPFLAGS) $(EXTRAFLAGS) -c $<
+	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) $(EXTRAFLAGS) -c $<
+	$(CAMLOPT) $(OPTCOMPFLAGS) `./Compflags $@` -c $<
 
-$(ALLOBJS) labelled.cmo std_exit.cmo: pervasives.cmi $(COMPILER)
-$(ALLOBJS:.cmo=.cmx) labelled.cmx std_exit.cmx: pervasives.cmi $(OPTCOMPILER)
-$(ALLOBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER)
-labelled.cmo labelled.cmx: $(LABELLED) $(LABELLED:.ml=.mli)
+# Dependencies on the compiler
+$(OBJS) std_exit.cmo: $(COMPILER)
+$(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER)
+$(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
+$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: $(OPTCOMPILER)
+
+# Dependencies on Pervasives (not tracked by ocamldep)
+$(OBJS) std_exit.cmo: pervasives.cmi
+$(OTHERS:.cmo=.cmi) std_exit.cmi: pervasives.cmi
+$(OBJS:.cmo=.cmx) std_exit.cmx: pervasives.cmi
+$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmi
+$(OTHERS:.cmo=.cmx) std_exit.cmx: pervasives.cmx
+$(OTHERS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmx
 
 clean::
 	rm -f *.cm* *.$(O) *.$(A)
