@@ -48,9 +48,15 @@ let setvalue name v =
 
 let rec eval_path = function
   | Pident id ->
-      if Ident.persistent id
-      then Symtable.get_global_value id
-      else getvalue (Ident.name id)
+      if Ident.persistent id || Ident.global id then
+        Symtable.get_global_value id
+      else begin
+        let name = Ident.name id in
+        try
+          Hashtbl.find toplevel_value_bindings name
+        with Not_found ->
+          raise (Symtable.Error(Symtable.Undefined_global name))
+      end
   | Pdot(p, s, pos) ->
       Obj.field (eval_path p) pos
   | Papply(p1, p2) ->
