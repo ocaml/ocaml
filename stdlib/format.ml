@@ -869,7 +869,26 @@ let format_int_of_string fmt i s =
 
 let implode_rev s0 = function
   | [] -> s0
-  | l -> String.concat "" (s0 :: List.rev l);;
+  | l -> String.concat "" (List.rev (s0 :: l));;
+
+(* Getting strings out of buffers. *)
+let get_buffer_out b =
+ let s = Buffer.contents b in
+ Buffer.reset b;
+ s;;
+
+(* ppf is supposed to be a pretty-printer that outputs in buffer b:
+   to extract contents of ppf as a string we flush ppf and get the string
+   out of b. *)
+let string_out b ppf =
+ pp_flush_queue ppf false;
+ get_buffer_out b;;
+
+let exstring printer arg =
+ let b = Buffer.create 512 in
+ let ppf = formatter_of_buffer b in
+ printer ppf arg;
+ string_out b ppf;;
 
 (* [fprintf_out] is the printf-like function generator: given the
    - [str] flag that tells if we are printing into a string,
@@ -1020,9 +1039,16 @@ let fprintf_out str out ppf format =
     | '%' ->
        let s0 = String.sub format i (j - i) in
        let cont_s s i = get (s :: s0 :: accu) i i
-       and cont_a printer arg i = invalid_integer format i
-       and cont_t printer i = invalid_integer format i in
-       Printf.scan_format format i cont_s cont_a cont_t
+       and cont_a printer arg i =
+         let s =
+           if str then (Obj.magic printer) () arg else exstring printer arg in
+         get (s :: s0 :: accu) i i
+       and cont_t printer i =
+         let s =
+           if str then (Obj.magic printer) ()
+           else exstring (fun ppf () -> printer ppf) () in
+         get (s :: s0 :: accu) i i in
+       Printf.scan_format format j cont_s cont_a cont_t
     | c -> get accu i (succ j) in
    get [] i i
 
@@ -1061,23 +1087,14 @@ let fprintf_out str out ppf format =
 
   doprn 0;;
 
-let get_buffer_out b =
- let s = Buffer.contents b in
- Buffer.reset b;
- s;;
-
-let string_out b ppf () =
- pp_flush_queue ppf false;
- get_buffer_out b;;
-
 let fprintf ppf = fprintf_out false unit_out ppf;;
-let printf f = fprintf_out false unit_out std_formatter f;;
-let eprintf f = fprintf_out false unit_out err_formatter f;;
-let kprintf k f =
+let printf f = fprintf std_formatter f;;
+let eprintf f = fprintf err_formatter f;;
+
+let kprintf k =
  let b = Buffer.create 512 in
  let ppf = formatter_of_buffer b in
- fprintf_out true (fun () -> k (string_out b ppf ())) ppf f
-;;
+ fprintf_out true (fun () -> k (string_out b ppf)) ppf;;
 let sprintf f = kprintf (fun x -> x) f;;
 
 let bprintf b =
