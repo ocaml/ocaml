@@ -114,32 +114,22 @@ let print_if flag printer arg =
   if !flag then begin printer arg; print_newline() end;
   arg
 
+let (++) x f = f x
+let (+++) (x, y) f = (x, f y)
+
 let implementation sourcefile =
   let prefixname = Filename.chop_extension sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
   let inputfile = preprocess sourcefile (prefixname ^ ".ppo") in
-  let ast = parse_file inputfile Parse.implementation ast_impl_magic_number in
-  let (str, sg, finalenv) = Typemod.type_structure (initial_env()) ast in
-  if !Clflags.print_types then (Printtyp.signature sg; print_newline());
-  let coercion =
-    if Sys.file_exists (prefixname ^ ".mli") then begin
-      let intf_file =
-        try find_in_path !load_path (prefixname ^ ".cmi")
-        with Not_found -> prefixname ^ ".cmi" in
-      let dclsig = Env.read_signature modulename intf_file in
-      Includemod.compunit sourcefile sg intf_file dclsig
-    end else begin
-      Typemod.check_nongen_schemes finalenv str;
-      Env.save_signature sg modulename (prefixname ^ ".cmi");
-      Tcoerce_none
-    end in
+  let env = initial_env() in
   Compilenv.reset modulename;
-  let (compunit_size, lam) =
-    Translmod.transl_store_implementation modulename str coercion in
-  Asmgen.compile_implementation prefixname compunit_size
-    (print_if Clflags.dump_lambda Printlambda.lambda
-      (Simplif.simplify_lambda
-        (print_if Clflags.dump_rawlambda Printlambda.lambda lam)));
+  parse_file inputfile Parse.implementation ast_impl_magic_number
+  ++ Typemod.type_implementation sourcefile prefixname modulename env
+  ++ Translmod.transl_store_implementation modulename
+  +++ print_if Clflags.dump_rawlambda Printlambda.lambda
+  +++ Simplif.simplify_lambda
+  +++ print_if Clflags.dump_lambda Printlambda.lambda
+  ++ Asmgen.compile_implementation prefixname;
   Compilenv.save_unit_info (prefixname ^ ".cmx");
   remove_preprocessed inputfile
 

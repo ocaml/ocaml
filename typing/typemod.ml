@@ -403,6 +403,25 @@ and type_struct env sstr =
 let _ =
   Typecore.type_module := type_module
 
+(* Typecheck an implementation file *)
+
+let type_implementation sourcefile prefixname modulename initial_env ast =
+  let (str, sg, finalenv) = type_structure initial_env ast in
+  if !Clflags.print_types then (Printtyp.signature sg; print_newline());
+  let coercion =
+    if Sys.file_exists (prefixname ^ ".mli") then begin
+      let intf_file =
+        try find_in_path !Config.load_path (prefixname ^ ".cmi")
+        with Not_found -> prefixname ^ ".cmi" in
+      let dclsig = Env.read_signature modulename intf_file in
+      Includemod.compunit sourcefile sg intf_file dclsig
+    end else begin
+      check_nongen_schemes finalenv str;
+      Env.save_signature sg modulename (prefixname ^ ".cmi");
+      Tcoerce_none
+    end in
+  (str, coercion)
+
 (* Error report *)
 
 open Format

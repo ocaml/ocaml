@@ -17,9 +17,9 @@
 open Typedtree
 open Lambda
 
-val transl_implementation: string -> structure -> module_coercion -> lambda
+val transl_implementation: string -> structure * module_coercion -> lambda
 val transl_store_implementation:
-      string -> structure -> module_coercion -> int * lambda
+      string -> structure * module_coercion -> int * lambda
 val transl_toplevel_definition: structure -> lambda
 
 val primitive_declarations: string list ref

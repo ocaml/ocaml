@@ -81,7 +81,7 @@ let compile_phrase p =
     Cfunction fd -> compile_fundecl fd
   | Cdata dl -> Emit.data dl
 
-let compile_implementation prefixname size lam =
+let compile_implementation prefixname (size, lam) =
   let asmfile =
     if !keep_asm_file
     then prefixname ^ ext_asm
@@ -90,7 +90,9 @@ let compile_implementation prefixname size lam =
   begin try
     Emitaux.output_channel := oc;
     Emit.begin_assembly();
-    List.iter compile_phrase (Cmmgen.compunit size (Closure.intro size lam));
+    Closure.intro size lam
+    ++ Cmmgen.compunit size
+    ++ List.iter compile_phrase ++ (fun () -> ());
     Emit.end_assembly();
     close_out oc
   with x ->

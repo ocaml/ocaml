@@ -157,7 +157,7 @@ let _ =
 
 (* Compile an implementation *)
 
-let transl_implementation module_name str cc =
+let transl_implementation module_name (str, cc) =
   reset_labels ();
   primitive_declarations := [];
   let module_id = Ident.create_persistent module_name in
@@ -282,7 +282,7 @@ let build_ident_map restr idlist =
 (* Compile an implementation using transl_store_structure 
    (for the native-code compiler). *)
 
-let transl_store_implementation module_name str restr =
+let transl_store_implementation module_name (str, restr) =
   reset_labels ();
   primitive_declarations := [];
   let module_id = Ident.create_persistent module_name in
