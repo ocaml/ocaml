@@ -588,7 +588,7 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
        been modified yet. self_type will not change after this point *)
     List.iter
       (fun (lab,kind,ty) -> if lab <> dummy_method then
-        try prerr_endline lab; Ctype.unify val_env public_self
+        try Ctype.unify val_env public_self
             (Ctype.newty
                (Tobject
                   (Ctype.newty
@@ -1324,16 +1324,15 @@ let type_object env loc s =
   incr class_num;
   let (desc, sign) =
     class_structure (string_of_int !class_num) true env env loc s in
-  let sty = sign.cty_self in
-  let sign = {sign with cty_self = Ctype.expand_head env sty} in
-  begin match virtual_methods sign with
+  let sty = Ctype.expand_head env sign.cty_self in
+  begin match virtual_methods {sign with cty_self = sty} with
     [] -> ()
   | mets -> raise(Error(loc, Virtual_class(true, mets)))
   end;
-  Ctype.hide_private_methods sign.cty_self;
-  let (fields, _) = Ctype.flatten_fields (Ctype.object_fields sign.cty_self) in
+  Ctype.hide_private_methods sty;
+  let (fields, _) = Ctype.flatten_fields (Ctype.object_fields sty) in
   let meths = List.map (fun (s,_,_) -> s) fields in
-  unify_parents_struct env sty desc;
+  unify_parents_struct env sign.cty_self desc;
   (desc, sign, meths)
 
 let () =
