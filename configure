@@ -189,10 +189,13 @@ case "$bytecc,$host" in
     mathlib="";;
   gcc,alpha-*-osf*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
+    if sh ./hasgot -mieee; then bytecccompopts="-mieee $bytecccompopts"; fi
     # Put code and static data in lower 4GB
     bytecclinkopts="-Wl,-T,12000000 -Wl,-D,14000000"
     # Tell gcc that we can use 32-bit code addresses for threaded code
     echo "#define ARCH_CODE32" >> m.h;;
+  cc,alpha-*-osf*)
+    bytecccompopts="-std1 -ieee";;
   cc,mips-*-irix6*)
     # Add -n32 flag to ensure compatibility with native-code compiler
     bytecccompopts="-n32"
