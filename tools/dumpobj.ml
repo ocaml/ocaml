@@ -48,7 +48,7 @@ type global_table_entry =
 
 let start = ref 0                             (* Position of beg. of code *)
 let reloc = ref ([] : (reloc_info * int) list)  (* Relocation table *)
-let globals = ref ([||] : global_table_entry array) (* Global List.map *)
+let globals = ref ([||] : global_table_entry array) (* Global map *)
 let objfile = ref false               (* true if dumping a .zo *)
 
 (* Print a structured constant *)
