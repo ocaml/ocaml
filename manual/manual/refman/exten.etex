@@ -224,7 +224,7 @@ Recursive module definitions, introduced by the 'module rec' \ldots
 identifiers being defined.  A typical example of a recursive module
 definition is:
 \begin{verbatim}
-        module A : sig
+    module rec A : sig
                      type t = Leaf of string | Node of ASet.t
                      val compare: t -> t -> int
                    end
@@ -242,7 +242,7 @@ definition is:
 \end{verbatim}
 It can be given the following specification:
 \begin{verbatim}
-        module A : sig
+    module rec A : sig
                      type t = Leaf of string | Node of ASet.t
                      val compare: t -> t -> int
                    end
