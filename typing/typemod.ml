@@ -659,7 +659,10 @@ and type_structure anchor env sstr =
         (Tstr_include (modl, bound_value_identifiers sg) :: str_rem,
          sg @ sig_rem,
          final_env)
-  in type_struct env sstr
+  in
+  if !Clflags.save_types
+  then List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;
+  type_struct env sstr
 
 let type_module = type_module None
 let type_structure = type_structure None
