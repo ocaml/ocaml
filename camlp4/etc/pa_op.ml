@@ -306,10 +306,11 @@ EXTEND
   ;
   stream_patt_comp_err:
     [ [ spc = stream_patt_comp;
-        eo = OPT [ "?"; e = expr LEVEL "expr1" -> e ] -> (spc, eo) ] ]
+        eo = OPT [ "??"; e = expr LEVEL "expr1" -> e ] -> (spc, eo) ] ]
   ;
   ipatt:
-    [ [ i = LIDENT -> <:patt< $lid:i$ >> ] ]
+    [ [ i = LIDENT -> <:patt< $lid:i$ >>
+      | "_" -> <:patt< _ >> ] ]
   ;
 
   expr: LEVEL "simple"
