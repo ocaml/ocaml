@@ -18,10 +18,51 @@ open StdLabels
 module Unix = UnixLabels
 open Tk
 
+let fatal_error text =
+  let top = openTk ~clas:"OCamlBrowser" () in
+  let mw = Message.create top ~text ~padx:20 ~pady:10
+      ~width:400 ~justify:`Left ~aspect:400 ~anchor:`W
+  and b = Button.create top ~text:"OK" ~command:(fun () -> destroy top) in
+  pack [mw] ~side:`Top ~fill:`Both;
+  pack [b] ~side:`Bottom;
+  mainLoop ();
+  exit 0
+
+let rec get_incr key = function
+    [] -> raise Not_found
+  | (k, c, d) :: rem ->
+      if k = key then
+        match c with Arg.Set _ | Arg.Clear _ -> false | _ -> true
+      else get_incr key rem
+
+let check ~spec argv =
+  let i = ref 1 in
+  while !i < Array.length argv do
+    try
+      let a = get_incr argv.(!i) spec in
+      incr i; if a then incr i
+    with Not_found ->
+      i := Array.length argv + 1
+  done;
+  !i = Array.length argv
+
+open Printf
+
+let usage ~spec errmsg =
+  let b = Buffer.create 1024 in
+  bprintf b "%s\n" errmsg;
+  List.iter (function (key, _, doc) -> bprintf b "  %s %s\n" key doc) spec;
+  Buffer.contents b
+
 let _ =
+  let is_win32 = Sys.os_type = "Win32" in
+  if is_win32 then
+    Format.pp_set_formatter_output_functions Format.err_formatter
+      (fun _ _ _ -> ()) (fun _ -> ());
+
   let path = ref [] in
   let st = ref true in
-  Arg.parse
+  let spec =
     [ "-I", Arg.String (fun s -> path := s :: !path),
       "<dir>  Add <dir> to the list of include directories";
       "-labels", Arg.Clear Clflags.classic, " <obsolete>";
@@ -46,8 +87,11 @@ let _ =
         \032    V/v enable/disable hidden instance variable\n\
         \032    X/x enable/disable all other warnings\n\
         \032    default setting is \"Al\" (all warnings but labels enabled)" ]
+  and errmsg = "Command line: ocamlbrowser <options>" in
+  if not (check ~spec Sys.argv) then fatal_error (usage ~spec errmsg);
+  Arg.parse spec
     (fun name -> raise(Arg.Bad("don't know what to do with " ^ name)))
-    "ocamlbrowser :";
+    errmsg;
   Config.load_path :=
     Sys.getcwd ()
     :: List.rev_map ~f:(Misc.expand_directory Config.standard_library) !path
@@ -56,16 +100,16 @@ let _ =
   Unix.putenv "TERM" "noterminal";
   begin
     try Searchid.start_env := Env.open_pers_signature "Pervasives" Env.initial
-    with Env.Error _ -> ()
+    with _ ->
+      fatal_error
+        (Printf.sprintf "%s\nPlease check that %s %s"
+           "Couldn't initialize environment."
+           (if is_win32 then "%OCAMLLIB%" else "$OCAMLLIB")
+           "points to the Objective Caml library.")
   end;
   
   Searchpos.view_defined_ref := (fun s ~env -> Viewer.view_defined s ~env);
   Searchpos.editor_ref := Editor.f;
-
-  let is_win32 = Sys.os_type = "Win32" in
-  if is_win32 then
-    Format.pp_set_formatter_output_functions Format.err_formatter
-      (fun _ _ _ -> ()) (fun _ -> ());
 
   let top = openTk ~clas:"OCamlBrowser" () in
   Jg_config.init ();
