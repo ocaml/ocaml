@@ -2075,7 +2075,7 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
 let subtypes = ref []
 
 let rec build_subtype env visited posi t =
-  if not posi then (t, false) else
+  (* if not posi then (t, false) else *)
   let t = repr t in
   match t.desc with
     Tvar ->
@@ -2089,7 +2089,8 @@ let rec build_subtype env visited posi t =
   | Tarrow(l, t1, t2) ->
       if List.memq t visited then (t, false) else
       let visited = t :: visited in
-      let (t1', c1) = build_subtype env visited (not posi) t1 in
+      (* let (t1', c1) = build_subtype env visited (not posi) t1 in *)
+      let (t1', c1) = (t1, false) in
       let (t2', c2) = build_subtype env visited posi t2 in
       if c1 or c2 then (newty (Tarrow(l, t1', t2')), true)
       else (t, false)
