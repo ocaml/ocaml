@@ -280,6 +280,17 @@ have caml-electric-indent on, which see.")
   (if running-xemacs
       (define-key caml-mode-map 'backspace 'backward-delete-char-untabify)
     (define-key caml-mode-map "\177" 'backward-delete-char-untabify))
+
+  ;; caml-types
+  (define-key caml-mode-map [?\C-c?\C-t] 'caml-types-show-type)
+  (define-key caml-mode-map [down-mouse-2] 'caml-types-explore)
+  ;; caml-help
+  (define-key caml-mode-map [?\C-c?i] 'ocaml-add-path)
+  (define-key caml-mode-map [?\C-c?]] 'ocaml-close-module)
+  (define-key caml-mode-map [?\C-c?[] 'ocaml-open-module)
+  (define-key caml-mode-map [?\C-c?\C-h] 'caml-help)
+  (define-key caml-mode-map [?\C-c?\t] 'caml-complete)
+  ;; others
   (define-key caml-mode-map "\C-cb" 'caml-insert-begin-form)
   (define-key caml-mode-map "\C-cf" 'caml-insert-for-form)
   (define-key caml-mode-map "\C-ci" 'caml-insert-if-form)
@@ -299,12 +310,29 @@ have caml-electric-indent on, which see.")
   (define-key caml-mode-map "\M-\C-h" 'caml-mark-phrase)
   (define-key caml-mode-map "\M-\C-q" 'caml-indent-phrase)
   (define-key caml-mode-map "\M-\C-x" 'caml-eval-phrase)
+
   (if running-xemacs nil ; if not running xemacs
     (let ((map (make-sparse-keymap "Caml"))
           (forms (make-sparse-keymap "Forms")))
       (define-key caml-mode-map "\C-c\C-d" 'caml-show-imenu)
       (define-key caml-mode-map [menu-bar] (make-sparse-keymap))
       (define-key caml-mode-map [menu-bar caml] (cons "Caml" map))
+      ;; caml-help
+
+      (define-key map [open] '("Open add path" . ocaml-add-path ))
+      (define-key map [close]
+         '("Close module for help" . ocaml-close-module))
+      (define-key map [open] '("Open module for help" . ocaml-open-module))
+      (define-key map [help] '("Help for identifier" . caml-help))
+      (define-key map [complete] '("Complete identifier" . caml-complete))
+      (define-key map [separator-help] '("---"))
+
+      ;; caml-types
+      (define-key map [show-type]
+          '("Show type at point" . caml-types-show-type ))
+      (define-key map [separator-types] '("---"))
+
+      ;; others
       (define-key map [run-caml] '("Start subshell..." . run-caml))
       (define-key map [compile] '("Compile..." . compile))
       (define-key map [switch-view]
@@ -345,7 +373,16 @@ have caml-electric-indent on, which see.")
         "---"
         [ "Switch view" caml-find-alternate-file t ]
         [ "Compile..." compile t ]
-        [ "Start subshell..." run-caml t ]))
+        [ "Start subshell..." run-caml t ]
+        "---"
+        [ "Show type at point" caml-types-show-type t ]
+        "---"
+        [ "Complete identifier" caml-complete t ]
+        [ "Help for identifier" caml-help t ]
+        [ "Add path for documentation" ocaml-add-path t ]
+        [ "Open module for documentation" ocaml-open t ]
+        [ "Close module for documentation" ocaml-close t ]
+        ))
   "Menu to add to the menubar when running Xemacs")
 
 (defvar caml-mode-syntax-table nil
@@ -1835,7 +1872,21 @@ with prefix arg, indent that many phrases starting with the current phrase."
 
 (autoload 'run-caml "inf-caml" "Run an inferior Caml process." t)
 
-(load "caml-types")
+(autoload 'caml-types-show-type "caml-types"
+  "Show the type of expression or pattern at point." t)
+(autoload 'caml-types-explore "caml-types"
+  "Explore type annotations by mouse dragging." t)
+
+(autoload 'caml-help "caml-help"
+  "Show documentation for qualilifed OCaml identifier." t)
+(autoload 'caml-complete "caml-help"
+  "Does completion for documented qualified OCaml identifier." t)
+(autoload 'ocaml-open-module "caml-help"
+  "Add module in documentation search path." t)
+(autoload 'ocaml-close-module "caml-help"
+  "Remove module from documentation search path." t)
+(autoload 'ocaml-add-path "caml-help"
+  "Add search path for documentation." t)
 
 ;;; caml.el ends here
 

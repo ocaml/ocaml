@@ -314,7 +314,7 @@ with an optional non-nil argument.
       )))
 
 (defun caml-complete (arg)
-  "Does completion for qualified identifiers. 
+  "Does completion for OCaml identifiers qualified. 
 
 It attemps to recognize an qualified identifier Module . entry 
 around point using function \\[ocaml-qualified-identifier].
@@ -607,7 +607,7 @@ current buffer using \\[ocaml-qualified-identifier]."
     ))
 
 (defun caml-help (arg)
-  "Find help for qualified identifiers. 
+  "Find documentation for OCaml qualified identifiers. 
 
 It attemps to recognize an qualified identifier of the form
 ``Module . entry'' around point using function `ocaml-qualified-identifier'.
@@ -770,30 +770,30 @@ buffer positions."
 
   
 
-;; bindings
+;; bindings ---now in caml.el
 
-(and
- (boundp 'caml-mode-map)
- (keymapp caml-mode-map)
- (progn 
-   (define-key caml-mode-map [?\C-c?i] 'ocaml-add-path)
-   (define-key caml-mode-map [?\C-c?]] 'ocaml-close-module)
-   (define-key caml-mode-map [?\C-c?[] 'ocaml-open-module)
-   (define-key caml-mode-map [?\C-c?\C-h] 'caml-help)
-   (define-key caml-mode-map [?\C-c?\t] 'caml-complete)
-   (let ((map (lookup-key caml-mode-map [menu-bar caml])))
-     (and
-      (keymapp map)
-      (progn
-        (define-key map [separator-help] '("---"))
-        (define-key map [open] '("Open add path" . ocaml-add-path ))
-        (define-key map [close]
-          '("Close module for help" . ocaml-close-module))
-        (define-key map [open] '("Open module for help" . ocaml-open-module))
-        (define-key map [help] '("Help for identifier" . caml-help))
-        (define-key map [complete] '("Complete identifier" . caml-complete))
-        ) 
-   ))))
+; (and
+;  (boundp 'caml-mode-map)
+;  (keymapp caml-mode-map)
+;  (progn 
+;    (define-key caml-mode-map [?\C-c?i] 'ocaml-add-path)
+;    (define-key caml-mode-map [?\C-c?]] 'ocaml-close-module)
+;    (define-key caml-mode-map [?\C-c?[] 'ocaml-open-module)
+;    (define-key caml-mode-map [?\C-c?\C-h] 'caml-help)
+;    (define-key caml-mode-map [?\C-c?\t] 'caml-complete)
+;    (let ((map (lookup-key caml-mode-map [menu-bar caml])))
+;      (and
+;       (keymapp map)
+;       (progn
+;         (define-key map [separator-help] '("---"))
+;         (define-key map [open] '("Open add path" . ocaml-add-path ))
+;         (define-key map [close]
+;           '("Close module for help" . ocaml-close-module))
+;         (define-key map [open] '("Open module for help" . ocaml-open-module))
+;         (define-key map [help] '("Help for identifier" . caml-help))
+;         (define-key map [complete] '("Complete identifier" . caml-complete))
+;         ) 
+;    ))))
 
 
 (provide 'caml-help)
