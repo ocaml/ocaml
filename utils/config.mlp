@@ -19,7 +19,7 @@ let native_c_compiler = "%%NATIVECC%%"
 
 let c_libraries = "%%CCLIBS%%"
 
-let version = "1.06"
+let version = "1.07"
 
 let exec_magic_number = "Caml1999X001"
 and cmi_magic_number = "Caml1999I001"
