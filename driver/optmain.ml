@@ -31,7 +31,7 @@ let main () =
     Arg.parse
       ["-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs);
        "-c", Arg.Unit(fun () -> compile_only := true);
-       "-S", Arg.Unit(fun s -> assembler_only := true; compile_only := true);
+       "-S", Arg.Unit(fun s -> keep_asm_file := true);
        "-o", Arg.String(fun s -> exec_name := s; archive_name := s);
        "-i", Arg.Unit(fun () -> print_types := true);
        "-a", Arg.Unit(fun () -> make_archive := true);
