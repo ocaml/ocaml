@@ -87,7 +87,8 @@ and meth =
 and class_expr =
   { cl_desc: class_expr_desc;
     cl_loc: Location.t;
-    cl_type: class_type }
+    cl_type: class_type;
+    cl_env: Env.t }
 
 and class_expr_desc =
     Tclass_ident of Path.t

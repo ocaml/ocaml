@@ -104,7 +104,7 @@ let create_object cl obj init =
                           [Lvar obj; Lvar obj'; Lvar cl]))))
   end
 
-let rec build_object_init cl_table obj params inh_init cl =
+let rec build_object_init cl_table obj params inh_init obj_init cl =
   match cl.cl_desc with
     Tclass_ident path ->
       let obj_init = Ident.create "obj_init" in
@@ -117,7 +117,8 @@ let rec build_object_init cl_table obj params inh_init cl =
                match field with
                  Cf_inher (cl, _, _) ->
                    let (inh_init, obj_init') =
-                     build_object_init cl_table obj [] inh_init cl
+                     build_object_init cl_table obj [] inh_init
+                       (fun _ -> lambda_unit) cl
                    in
                    (inh_init, lsequence obj_init' obj_init)
                | Cf_val (_, id, exp) ->
@@ -133,7 +134,7 @@ let rec build_object_init cl_table obj params inh_init cl =
                                       rem)
                          vals obj_init)))
             str.cl_field
-            (inh_init, lambda_unit)
+            (inh_init, obj_init obj)
         in
         (inh_init,
          List.fold_right
@@ -142,7 +143,7 @@ let rec build_object_init cl_table obj params inh_init cl =
            params obj_init))
   | Tclass_fun (pat, vals, cl, partial) ->
       let (inh_init, obj_init) =
-        build_object_init cl_table obj (vals @ params) inh_init cl
+        build_object_init cl_table obj (vals @ params) inh_init obj_init cl
       in
       (inh_init,
        let build params rem =
@@ -157,28 +158,29 @@ let rec build_object_init cl_table obj params inh_init cl =
        end)
   | Tclass_apply (cl, oexprs) ->
       let (inh_init, obj_init) =
-        build_object_init cl_table obj params inh_init cl
+        build_object_init cl_table obj params inh_init obj_init cl
       in
       (inh_init, transl_apply obj_init oexprs)
   | Tclass_let (rec_flag, defs, vals, cl) ->
       let (inh_init, obj_init) =
-        build_object_init cl_table obj (vals @ params) inh_init cl
+        build_object_init cl_table obj (vals @ params) inh_init obj_init cl
       in
       (inh_init, Translcore.transl_let rec_flag defs obj_init)
   | Tclass_constraint (cl, vals, pub_meths, concr_meths) ->
-      build_object_init cl_table obj params inh_init cl
+      build_object_init cl_table obj params inh_init obj_init cl
 
-let rec build_object_init_0 cl_table params cl =
+let rec build_object_init_0 cl_table params cl copy_env =
   match cl.cl_desc with
     Tclass_let (rec_flag, defs, vals, cl) ->
       let (inh_init, obj_init) =
-        build_object_init_0 cl_table (vals @ params) cl
+        build_object_init_0 cl_table (vals @ params) cl copy_env
       in
       (inh_init, Translcore.transl_let rec_flag defs obj_init)
   | _ ->
-      let obj = Ident.create "self" in
-      let (inh_init, obj_init) = build_object_init cl_table obj params [] cl in
-      let obj_init = lfunction [obj] obj_init in
+      let obj = Ident.create "self" and env = Ident.create "env" in
+      let (inh_init, obj_init) =
+        build_object_init cl_table obj params [] (copy_env env) cl in
+      let obj_init = lfunction [env; obj] obj_init in
       (inh_init, obj_init)
 
 let bind_method tbl public_methods lab id cl_init =
@@ -192,7 +194,7 @@ let bind_method tbl public_methods lab id cl_init =
 let bind_methods tbl public_methods meths cl_init =
   Meths.fold (bind_method tbl public_methods) meths cl_init
 
-let rec build_class_init cla pub_meths cstr inh_init cl_init cl =
+let rec build_class_init cla pub_meths cstr inh_init cl_init msubst cl =
   match cl.cl_desc with
     Tclass_ident path ->
       begin match inh_init with
@@ -213,17 +215,18 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init cl =
                 build_class_init cla pub_meths false inh_init
                   (transl_vals cla false vals
                      (transl_super cla str.cl_meths meths cl_init))
-                  cl
+                  msubst cl
             | Cf_val (name, id, exp) ->
                 (inh_init, transl_val cla true name id cl_init)
             | Cf_meth (name, exp) ->
+                let met_code = msubst (transl_exp exp) in
                 let met_code =
-                  if !Clflags.native_code then begin
+                  if !Clflags.native_code then
                     (* Force correct naming of method for profiles *)
                     let met = Ident.create ("method_" ^ name) in
-                    Llet(Strict, met, transl_exp exp, Lvar met)
-                  end else
-                    transl_exp exp in
+                    Llet(Strict, met, met_code, Lvar met)
+                  else met_code
+                in
                 (inh_init,
                  Lsequence(Lapply (oo_prim "set_method",
                                    [Lvar cla;
@@ -238,7 +241,7 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init cl =
             | Cf_init exp ->
                 (inh_init,
                  Lsequence(Lapply (oo_prim "add_initializer",
-                                   [Lvar cla; transl_exp exp]),
+                                   [Lvar cla; msubst (transl_exp exp)]),
                            cl_init)))
           str.cl_field
           (inh_init, cl_init)
@@ -246,21 +249,21 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init cl =
       (inh_init, bind_methods cla pub_meths str.cl_meths cl_init)
   | Tclass_fun (pat, vals, cl, _) ->
       let (inh_init, cl_init) =
-        build_class_init cla pub_meths cstr inh_init cl_init cl
+        build_class_init cla pub_meths cstr inh_init cl_init msubst cl
       in
       let vals = List.map (function (id, _) -> (Ident.name id, id)) vals in
       (inh_init, transl_vals cla true vals cl_init)
   | Tclass_apply (cl, exprs) ->
-      build_class_init cla pub_meths cstr inh_init cl_init cl
+      build_class_init cla pub_meths cstr inh_init cl_init msubst cl
   | Tclass_let (rec_flag, defs, vals, cl) ->
       let (inh_init, cl_init) =
-        build_class_init cla pub_meths cstr inh_init cl_init cl
+        build_class_init cla pub_meths cstr inh_init cl_init msubst cl
       in
       let vals = List.map (function (id, _) -> (Ident.name id, id)) vals in
       (inh_init, transl_vals cla true vals cl_init)
   | Tclass_constraint (cl, vals, meths, concr_meths) ->
       let core cl_init =
-        build_class_init cla pub_meths true inh_init cl_init cl
+        build_class_init cla pub_meths true inh_init cl_init msubst cl
       in
       if cstr then
         core cl_init
@@ -296,34 +299,141 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init cl =
    let ???) ?
 *)
 
+
 let transl_class ids cl_id arity pub_meths cl =
+  let tables = Ident.create (Ident.name cl_id ^ "_tables") in
+  let top_env = oo_add_class tables in
+  let new_ids = Env.diff top_env cl.cl_env in
+  let replicate id = Ident.create (Ident.name id) in
+  let new_ids2 = List.map replicate new_ids in
+  let subst self =
+    List.fold_left2
+      (fun subst id id2 ->
+        Ident.add id (Lprim(Parrayrefu Paddrarray, [Lvar self; Lvar id2]))
+          subst)
+      Ident.empty new_ids new_ids2
+  in
+  let msubst =
+    if new_ids = [] then fun x -> x else
+    function
+        Lfunction (Curried, self :: args, body) ->
+          Lfunction (Curried, self :: args, subst_lambda (subst self) body)
+      | _ -> assert false
+  in
+  let copy_env env self =
+    let i = ref (-1) in
+    List.fold_left
+      (fun lam id2 ->
+        incr i;
+        lsequence
+          (Lifused(id2, Lprim(
+                   Parraysetu Paddrarray,
+                   [Lvar self; Lvar id2; Lprim(Pfield !i, [Lvar env])])))
+          lam)
+      lambda_unit new_ids2
+  in
+
   let cla = Ident.create "class" in
-  let (inh_init, obj_init) = build_object_init_0 cla [] cl in
+  let (inh_init, obj_init) = build_object_init_0 cla [] cl copy_env in
   if not (Translcore.check_recursive_lambda ids obj_init) then
     raise(Error(cl.cl_loc, Illegal_class_expr));
   let (inh_init, cl_init) =
-    build_class_init cla pub_meths true (List.rev inh_init) obj_init cl
+    build_class_init cla pub_meths true (List.rev inh_init) obj_init msubst cl
   in
   assert (inh_init = []);
   let table = Ident.create "table" in
   let class_init = Ident.create "class_init" in
   let obj_init = Ident.create "obj_init" in
-  Llet(Strict, table,
-       Lapply (oo_prim "create_table", [transl_meth_list pub_meths]),
-  Llet(Strict, class_init,
-       Lfunction(Curried, [cla], cl_init),
-  Llet(Strict, obj_init, Lapply(Lvar class_init, [Lvar table]),
-  Lsequence(Lapply (oo_prim "init_class", [Lvar table]),
-            Lprim(Pmakeblock(0, Immutable),
-                  [Lvar obj_init;
-                   Lvar class_init;
-                   Lvar table])))))
+  let ltable lam =
+    Llet(Strict, table,
+         Lapply (oo_prim "create_table", [transl_meth_list pub_meths]), lam)
+  and lclass lam =
+    Llet(Strict, class_init, Lfunction(Curried, [cla], cl_init), lam)
+  and lbody =
+    Llet(Strict, obj_init, Lapply(Lvar class_init, [Lvar table]),
+         Lsequence(Lapply (oo_prim "init_class", [Lvar table]),
+                   Lprim(Pmakeblock(0, Immutable),
+                         [Lapply(Lvar obj_init, [lambda_unit]);
+                          Lvar class_init;
+                          Lvar table;
+                          lambda_unit])))
+  in
+  if new_ids = [] then ltable (lclass lbody) else
+  let env_index = Ident.create "env_index"
+  and env = Ident.create "env" in
+  let make_env lam =
+    Llet(Strict, env,
+         Lprim(Pmakeblock(0, Immutable),
+               List.map2 (fun id id2 -> Lifused(id2, Lvar id))
+                 new_ids new_ids2),
+         lam)
+  and def_ids cla lam =
+    let i = ref (-1) in
+    List.fold_left
+      (fun lam id2 ->
+        Llet(StrictOpt, id2,
+             Lapply (oo_prim "new_variable", [Lvar cla; transl_label ""]),
+             lam))
+   lam new_ids2
+  (*
+  and subst env =
+    let i = ref (-1) in
+    List.fold_left
+      (fun subst id ->
+        incr i;
+        Ident.add id (Lprim(Pfield !i, [Lvar env])) subst)
+      Ident.empty new_ids
+  *)
+  in
+  let obj_init2 = Ident.create "obj_init"
+  and env_init = Ident.create "env_init"
+  and env2 = Ident.create "env"
+  and self = Ident.create "self" in
+  let lclass lam =
+    Llet(Strict, class_init,
+         Lfunction(Curried, [cla], def_ids cla cl_init),
+         lam)
+  in
+  lclass (
+  Lsequence(
+  Lifthenelse(Lprim(Pfield 0, [Lvar tables]), Lconst (Const_pointer 0),
+              ltable (
+              Llet (Strict, env_init,
+                    Lapply(Lvar class_init, [Lvar table]),
+                    Lsequence(
+                    Lapply (oo_prim "init_class", [Lvar table]),
+                    Lprim(
+                    Psetfield(0, true),
+                    [Lvar tables;
+                     Lprim(Pmakeblock(0,Immutable),
+                           [Lvar table; Lvar env_init])]))))),
+  make_env (
+  Lprim(Pmakeblock(0, Immutable),
+        [Lapply(Lprim(Pfield 1, [Lprim(Pfield 0, [Lvar tables])]), [Lvar env]);
+         Lvar class_init;
+         Lprim(Pfield 0, [Lprim(Pfield 0, [Lvar tables])]);
+         Lvar env]))))
+
+(* example:
+module M(X : sig val x : int end) = struct
+  class c = object method m = X.x end
+end;;
+module M1 = M (struct let x = 3 end);;
+let o = new M1.c;;
+let f (x : int) =
+  let module M = struct class c = object method m = x end end in new M.c;;
+*)
 
 let class_stub =
   Lprim(Pmakeblock(0, Mutable), [lambda_unit; lambda_unit; lambda_unit])
 
 let dummy_class undef_fn =
   Lprim(Pmakeblock(0, Mutable), [undef_fn; undef_fn; oo_prim "dummy_table"])
+
+(* Wrapper for class compilation *)
+
+let transl_class ids cl_id arity pub_meths cl =
+  oo_wrap cl.cl_env (transl_class ids cl_id arity pub_meths) cl
 
 (* Error report *)
 

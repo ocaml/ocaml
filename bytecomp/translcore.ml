@@ -877,6 +877,18 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
     end
   end
 
+(* Wrapper for class compilation *)
+
+let transl_exp e =
+  Translobj.oo_wrap e.exp_env transl_exp e
+
+let transl_let rec_flag pat_expr_list body =
+  match pat_expr_list with
+    [] -> body
+  | (_, expr) :: _ ->
+      Translobj.oo_wrap expr.exp_env
+        (transl_let rec_flag pat_expr_list) body
+
 (* Compile an exception definition *)
 
 let transl_exception id path decl =

@@ -60,3 +60,38 @@ let transl_label_init expr =
     in
     reset_labels ();
     expr'
+
+
+(* Share classes *)
+
+let wrapping = ref false
+let top_env = ref Env.empty
+let classes = ref []
+
+let oo_add_class id =
+  classes := id :: !classes;
+  !top_env
+
+let oo_wrap env f x =
+  if !wrapping then f x else
+  try
+    wrapping := true;
+    top_env := env;
+    classes := [];
+    let lambda = f x in
+    let lambda =
+      List.fold_left
+        (fun lambda id ->
+          Llet(StrictOpt, id, Lprim(Pmakeblock(0, Mutable),
+                                    [Lconst(Const_pointer 0)]),
+               lambda))
+        lambda !classes
+    in
+    wrapping := false;
+    top_env := Env.empty;
+    lambda
+  with exn ->
+    wrapping := false;
+    top_env := Env.empty;
+    raise exn
+    

@@ -20,6 +20,7 @@ type t
 
 val empty: t
 val initial: t
+val diff: t -> t -> Ident.t list
 
 (* Lookup by paths *)
 

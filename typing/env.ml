@@ -88,6 +88,20 @@ let empty = {
   cltypes = Ident.empty;
   summary = Env_empty }
 
+let diff_keys tbl1 tbl2 =
+  let keys2 = Ident.keys tbl2 in
+  List.filter
+    (fun id ->
+      match Ident.find_same id tbl2 with Pident _, _ ->
+        (try ignore (Ident.find_same id tbl1); false with Not_found -> true)
+      | _ -> false)
+    keys2
+
+let diff env1 env2 =
+  diff_keys env1.values env2.values @
+  diff_keys env1.modules env2.modules @
+  diff_keys env1.classes env2.classes
+
 (* Forward declarations *)
 
 let components_of_module' =

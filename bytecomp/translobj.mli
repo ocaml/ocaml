@@ -18,3 +18,6 @@ val meth: string -> Ident.t
 
 val reset_labels: unit -> unit
 val transl_label_init: Lambda.lambda -> Lambda.lambda
+
+val oo_wrap: Env.t -> ('a -> Lambda.lambda) -> 'a -> Lambda.lambda
+val oo_add_class: Ident.t -> Env.t

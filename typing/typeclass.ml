@@ -610,17 +610,20 @@ and class_expr cl_num val_env met_env scl =
       let cl =        
         rc {cl_desc = Tclass_ident path;
             cl_loc = scl.pcl_loc;
-            cl_type = clty'}
+            cl_type = clty';
+            cl_env = val_env}
       in
       let (vals, meths, concrs) = extract_constraints clty in
       rc {cl_desc = Tclass_constraint (cl, vals, meths, concrs);
           cl_loc = scl.pcl_loc;
-          cl_type = clty'}
+          cl_type = clty';
+          cl_env = val_env}
   | Pcl_structure cl_str ->
       let (desc, ty) = class_structure cl_num val_env met_env cl_str in
       rc {cl_desc = Tclass_structure desc;
           cl_loc = scl.pcl_loc;
-          cl_type = Tcty_signature ty}
+          cl_type = Tcty_signature ty;
+          cl_env = val_env}
   | Pcl_fun (l, Some default, spat, sbody) ->
       let loc = default.pexp_loc in
       let scases =
@@ -682,7 +685,8 @@ and class_expr cl_num val_env met_env scl =
           (Warnings.Other "This optional argument cannot be erased");
       rc {cl_desc = Tclass_fun (pat, pv, cl, partial);
           cl_loc = scl.pcl_loc;
-          cl_type = Tcty_fun (l, Ctype.instance pat.pat_type, cl.cl_type)}
+          cl_type = Tcty_fun (l, Ctype.instance pat.pat_type, cl.cl_type);
+          cl_env = val_env}
   | Pcl_apply (scl', sargs) ->
       let cl = class_expr cl_num val_env met_env scl' in
       let rec nonopt_labels ls ty_fun =
@@ -769,7 +773,8 @@ and class_expr cl_num val_env met_env scl =
       in
       rc {cl_desc = Tclass_apply (cl, args);
           cl_loc = scl.pcl_loc;
-          cl_type = cty}
+          cl_type = cty;
+          cl_env = val_env}
   | Pcl_let (rec_flag, sdefs, scl') ->
       let (defs, val_env) =
         try
@@ -802,7 +807,8 @@ and class_expr cl_num val_env met_env scl =
       let cl = class_expr cl_num val_env met_env scl' in
       rc {cl_desc = Tclass_let (rec_flag, defs, vals, cl);
           cl_loc = scl.pcl_loc;
-          cl_type = cl.cl_type}
+          cl_type = cl.cl_type;
+          cl_env = val_env}
   | Pcl_constraint (scl', scty) ->
       Ctype.begin_class_def ();
       let context = Typetexp.narrow () in
@@ -824,7 +830,8 @@ and class_expr cl_num val_env met_env scl =
       let (vals, meths, concrs) = extract_constraints clty in
       rc {cl_desc = Tclass_constraint (cl, vals, meths, concrs);
           cl_loc = scl.pcl_loc;
-          cl_type = snd (Ctype.instance_class [] clty)}
+          cl_type = snd (Ctype.instance_class [] clty);
+          cl_env = val_env}
 
 (*******************************)
 
