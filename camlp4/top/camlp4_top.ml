@@ -88,11 +88,13 @@ value print_location lb loc =
   else Toploop.print_location Format.err_formatter (Ast2pt.mkloc loc)
 ;
 
-value wrap f lb =
+value wrap f shfn lb =
   let cs =
+    let shift = shfn lb in
     Stream.from
-      (fun _ ->
-         do {
+      (fun i ->
+         if i < shift then Some ' '
+         else do {
            while
              lb.lex_curr_pos >= String.length lb.lex_buffer &&
              not lb.lex_eof_reached
@@ -168,10 +170,13 @@ Toploop.parse_toplevel_phrase.val :=
     do {
       Printf.eprintf "\tCamlp4 Parsing version %s\n\n" Pcaml.version;
       flush stderr;
-      Toploop.parse_toplevel_phrase.val := wrap toplevel_phrase;
+      Toploop.parse_toplevel_phrase.val := wrap toplevel_phrase (fun _ -> 0);
       Toploop.parse_toplevel_phrase.val lb
     };
-Toploop.parse_use_file.val := wrap use_file;
+
+Toploop.parse_use_file.val :=
+  wrap use_file (fun lb -> lb.lex_curr_pos - lb.lex_start_pos)
+;
 
 Pcaml.warning.val :=
   fun loc txt ->
