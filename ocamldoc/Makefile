@@ -301,7 +301,8 @@ test: dummy
 
 test_stdlib: dummy
 	$(MKDIR) $@ 
-	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc ../stdlib/*.mli \
+	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc -keep-code \
+	../stdlib/pervasives.ml ../stdlib/*.mli \
 	../otherlibs/unix/unix.mli \
 	../otherlibs/str/str.mli
 
