@@ -1,3 +1,17 @@
+#########################################################################
+#                                                                       #
+#                            Objective Caml                             #
+#                                                                       #
+#            Damien Doligez, projet Para, INRIA Rocquencourt            #
+#                                                                       #
+#   Copyright 1999 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the Q Public License version 1.0.                #
+#                                                                       #
+#########################################################################
+
+# $Id$
+
 CAMLC = ::boot:ocamlrun ::ocamlc -I ::stdlib: -I :KB: -I :Lex:
 CAMLYACC = ::yacc:ocamlyacc
 CAMLLEX = ::boot:ocamlrun ::lex:ocamllex

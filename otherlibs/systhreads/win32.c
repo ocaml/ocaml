@@ -5,7 +5,8 @@
 /*           Xavier Leroy and Pascal Cuoq, INRIA Rocquencourt          */
 /*                                                                     */
 /*  Copyright 1995 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  All rights reserved.  This file is distributed    */
+/*  under the terms of the GNU Library General Public License.         */
 /*                                                                     */
 /***********************************************************************/
 

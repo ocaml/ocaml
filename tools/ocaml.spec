@@ -1,12 +1,10 @@
 Name: ocaml
-Version: 2.02
-Release: 2
+Version: 2.03
+Release: 1
 Summary: The Objective Caml compiler and programming environment
-Source0: ftp://ftp.inria.fr/lang/caml-light/ocaml-2.02.tar.gz
-Source1: ftp://ftp.inria.fr/lang/caml-light/ocaml-2.02-refman.html.tar.gz
-Source2: ftp://ftp.inria.fr/lang/caml-light/ocaml-2.02-refman.ps.gz
-Source3: ftp://ftp.inria.fr/lang/caml-light/ocamltk41-R200.tar.gz
-Patch0: ftp://ftp.inria.fr/lang/caml-light/ocaml-2.02-patch1.diffs
+Source0: ftp://ftp.inria.fr/lang/caml-light/ocaml-2.03.tar.gz
+Source1: ftp://ftp.inria.fr/lang/caml-light/ocaml-2.03-refman.html.tar.gz
+Source2: ftp://ftp.inria.fr/lang/caml-light/ocaml-2.03-refman.ps.gz
 Copyright: freely redistributable
 Group: Development/Languages
 Vendor: INRIA Rocquencourt
@@ -23,29 +21,17 @@ Lex&Yacc tools, a replay debugger, and a comprehensive library.
 %prep
 %setup -T -b 0
 %setup -T -D -a 1
-%setup -T -D -a 3
-%patch0 -p1 
-mv ocamltk41 otherlibs/ocamltk41
 cp ../../SOURCES/ocaml-2.02-refman.ps.gz refman.ps.gz
 
 %build
 ./configure -bindir /usr/bin -libdir /usr/lib/ocaml -mandir /usr/man/man1
-cat > otherlibs/ocamltk41/site.config.redhat << 'EOF'
-OCAMLLIBDIR=/usr/lib/ocaml
-CPPFLAGS=-I/usr/X11R6/include
-INSTALLDIR=/usr/lib/ocaml/camltk
-EOF
-(cd otherlibs/ocamltk41; ./configure --with-config=site.config.redhat)
 make world opt ocamlc.opt ocamlopt.opt
-rm -rf /usr/lib/ocaml
-make install
-cd otherlibs/ocamltk41
-make all opt
-make install installopt
-rm /usr/lib/ocaml/camltk/ocamltktop
+(cd emacs; make ocamltags)
 
 %install
-(cd emacs; make install EMACSDIR=/usr/lib/emacs/site-lisp)
+rm -rf /usr/lib/ocaml
+make install
+(cd emacs; make install install-ocamltags EMACSDIR=/usr/lib/emacs/site-lisp)
 
 %files
 /usr/bin/ocaml
@@ -61,6 +47,7 @@ rm /usr/lib/ocaml/camltk/ocamltktop
 /usr/bin/ocamlyacc
 /usr/bin/ocamlc.opt
 /usr/bin/ocamlopt.opt
+/usr/bin/ocamltags
 /usr/lib/ocaml
 /usr/man/man1/ocaml.1
 /usr/man/man1/ocamlc.1
@@ -79,4 +66,5 @@ rm /usr/lib/ocaml/camltk/ocamltktop
 /usr/lib/emacs/site-lisp/caml.el
 /usr/lib/emacs/site-lisp/camldebug.el
 /usr/lib/emacs/site-lisp/inf-caml.el
+/usr/lib/emacs/site-lisp/caml-compat.el
 %doc refman.ps.gz htmlman

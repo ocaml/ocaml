@@ -1,3 +1,5 @@
+# $Id$
+
 include ../config/Makefile
 
 # Files to install

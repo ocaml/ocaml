@@ -5,7 +5,8 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1998 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  All rights reserved.  This file is distributed    */
+/*  under the terms of the Q Public License version 1.0.               */
 /*                                                                     */
 /***********************************************************************/
 
