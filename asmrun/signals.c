@@ -13,7 +13,7 @@
 
 #include <signal.h>
 #include <stdio.h>
-#ifdef __linux
+#if defined(__linux) && defined(TARGET_power)
 #include <asm/sigcontext.h>
 #endif
 #include "alloc.h"
@@ -90,14 +90,15 @@ void leave_blocking_section()
   async_signal_mode = 0;
 }
 
-#if defined(__linux)
-void handle_signal(sig, context)
-     int sig;
-     struct pt_regs * context;
-#elif defined(TARGET_alpha) || defined(TARGET_mips) || defined(TARGET_power)
+#if defined(TARGET_alpha) || defined(TARGET_mips) || \
+    (defined(TARGET_power) && defined(_AIX))
 void handle_signal(sig, code, context)
      int sig, code;
      struct sigcontext * context;
+#elif defined(TARGET_power) && defined(__linux)
+void handle_signal(sig, context)
+     int sig;
+     struct pt_regs * context;
 #else
 void handle_signal(sig)
      int sig;
