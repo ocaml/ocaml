@@ -90,15 +90,14 @@ void leave_blocking_section()
   async_signal_mode = 0;
 }
 
-#if defined(TARGET_alpha) || defined(TARGET_mips) || \
-    (defined(TARGET_power) && defined(_AIX))
-void handle_signal(sig, code, context)
-     int sig, code;
-     struct sigcontext * context;
-#elif defined(TARGET_power) && defined(__linux)
+#if defined(__linux)
 void handle_signal(sig, context)
      int sig;
      struct pt_regs * context;
+#elif defined(TARGET_alpha) || defined(TARGET_mips) || defined(TARGET_power)
+void handle_signal(sig, code, context)
+     int sig, code;
+     struct sigcontext * context;
 #else
 void handle_signal(sig)
      int sig;
