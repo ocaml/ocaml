@@ -1,6 +1,6 @@
 include ../support/Makefile.common
 
-all: tk.ml .depend
+all: tk.ml labltk.ml .depend
 
 _tkgen.ml: ../Widgets.src ../compiler/tkcompiler
 	cd ..; ../../boot/ocamlrun compiler/tkcompiler -outdir labltk

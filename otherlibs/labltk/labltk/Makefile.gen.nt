@@ -1,31 +1,31 @@
 !include ..\support\Makefile.common.nt
 
-all: tk.ml .depend
+all: tk.ml labltk.ml .depend
 
 tkgen.ml: ..\Widgets.src ..\compiler\tkcompiler
-	cd .. & ..\..\boot\ocamlrun compiler/tkcompiler
+	cd .. & ..\..\boot\ocamlrun compiler/tkcompiler -outdir labltk
 
 # dependencies are broken: wouldn't work with gmake 3.77
 
-tk.ml .depend: tkgen.ml ..\builtin\report.ml #../builtin/builtin_*.ml
-	type << > tk.ml
+tk.ml labltk.ml .depend: _tkgen.ml ..\builtin\report.ml ..\compiler\pp #../builtin/builtin_*.ml
+	type << > _tk.ml
 open StdLabels
 open Widget
 open Protocol
 open Support
 open Textvariable
 <<
-	type ..\builtin\report.ml >> tk.ml
-	type ..\builtin\builtin_*.ml >> tk.ml
-	type tkgen.ml >> tk.ml
-	type << >> tk.ml
+	type ..\builtin\report.ml >> _tk.ml
+	type ..\builtin\builtin_*.ml >> _tk.ml
+	type _tkgen.ml >> _tk.ml
+	type << >> _tk.ml
 
 
 module Tkintf = struct
 <<
-	type ..\builtin\builtini_*.ml >> tk.ml
-	type tkigen.ml >> tk.ml
-	type << >> tk.ml
+	type ..\builtin\builtini_*.ml >> _tk.ml
+	type tkigen.ml >> _tk.ml
+	type << >> _tk.ml
 end (* module Tkintf *)
 
 
@@ -33,6 +33,11 @@ open Tkintf
 
 
 <<
-	type ..\builtin\builtinf_*.ml >> tk.ml
-	type tkfgen.ml >> tk.ml
-	$(LABLDEP) *.mli *.ml > .depend
+	type ..\builtin\builtinf_*.ml >> _tk.ml
+	type tkfgen.ml >> _tk.ml
+	..\..\..\boot\ocamlrun ..\compiler\pp < _tk.ml > tk.ml
+	rm -f _tk.ml
+	$(LABLDEP) -I ..\support ..\support\*.mli [a-z]*.mli [a-z]*.ml > .depend
+
+clean:
+	rm -f modules .depend

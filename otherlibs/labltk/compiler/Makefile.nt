@@ -1,10 +1,19 @@
 !include ..\support\Makefile.common.nt
 
-OBJS=   ../support/support.cmo tsort.cmo tables.cmo lexer.cmo parser.cmo \
-        compile.cmo intf.cmo printer.cmo maincompile.cmo
+OBJS=	../support/support.cmo flags.cmo copyright.cmo \
+	tsort.cmo tables.cmo printer.cmo lexer.cmo \
+	pplex.cmo ppyac.cmo ppexec.cmo ppparse.cmo \
+	parser.cmo compile.cmo intf.cmo maincompile.cmo
+
+PPOBJS= pplex.cmo ppyac.cmo ppexec.cmo ppparse.cmo pp.cmo
+
+all: tkcompiler.exe pp.exe
 
 tkcompiler.exe : $(OBJS)
-	$(CAMLC) $(LINKFLAGS) -o tkcompiler.exe $(OBJS)
+	$(LABLC) $(LINKFLAGS) -o tkcompiler.exe $(OBJS)
+
+pp.exe : $(PPOBJS)
+	$(LABLC) $(LINKFLAGS) -o pp.exe $(PPOBJS)
 
 lexer.ml: lexer.mll
 	$(LABLLEX) lexer.mll
@@ -12,14 +21,35 @@ lexer.ml: lexer.mll
 parser.ml parser.mli: parser.mly
 	$(LABLYACC) -v parser.mly
 
+pplex.ml: lexer.mll
+	$(LABLLEX) lexer.mll
+
+ppyac.ml parser.mli: parser.mly
+	$(LABLYACC) -v parser.mly
+
+copyright.ml: copyright
+	type << > copyright.ml
+let copyright="\\
+<<
+	type copyright >> copyright.ml
+	type << > copyright.ml
+"
+
+let write ~w = w copyright;;
+<<
+
 clean : 
-	rm -f *.cm*  parser.ml parser.mli lexer.ml tkcompiler.exe parser.output
+	rm -f *.cm*  parser.ml parser.mli lexer.ml copyright.ml
+	rm -f pplex.ml ppyac.ml ppyac.mli ppyac.output
+	rm -f tkcompiler.exe pp.exe parser.output
 
 scratch :
 	rm -f *.cm*  parser.ml parser.mli lexer.ml tkcompiler.exe
+	rm -f *.cm*  pplex.ml ppyac.ml ppyac.mli pp.exe
 
 install: 
 	cp tkcompiler.exe $(LABLTKDIR)
+	cp pp.exe $(LABLTKDIR)
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmo .mlp
@@ -30,7 +60,7 @@ install:
 .ml.cmo:
 	$(LABLCOMP) $(COMPFLAGS) -I ../support $<
 
-depend: parser.ml parser.mli lexer.ml
+depend: parser.ml parser.mli lexer.ml pplex.ml ppyac.ml ppyac.mli
 	$(LABLDEP) *.mli *.ml > .depend
 
 !include .depend

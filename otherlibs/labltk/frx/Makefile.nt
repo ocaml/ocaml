@@ -1,5 +1,4 @@
-!include ..\..\..\csl\config\Makefile.nt
-!include ..\Makefile.config.nt
+!include ..\support\Makefile.common.nt
 
 COMPFLAGS=-I ../lib -I ../support
 
@@ -15,30 +14,30 @@ all: libfrx.cma
 opt: libfrx.cmxa
 
 libfrx.cma: $(OBJS)
-	$(CAMLLIBR) -o libfrx.cma $(OBJS)
+	$(LABLLIBR) -o libfrx.cma $(OBJS)
 
 libfrx.cmxa: $(OBJSX)
 	$(CAMLOPTLIBR) -o libfrx.cmxa $(OBJSX)
  
 
 install: libfrx.cma
-	cp *.cmi *.mli libfrx.cma $(INSTALLDIR)
+	cp *.cmi *.mli libfrx.cma $(LABLTKDIR)
 
 installopt: libfrx.cmxa
-	cp libfrx.cmxa libfrx.lib $(INSTALLDIR)
+	cp libfrx.cmxa libfrx.lib $(LABLTKDIR)
  
 
 clean:
-	rm -f *.cm*
+	rm -f *.cm* *.o *.a *~ *test
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmo .cmx
 
 .mli.cmi:
-	$(CAMLCOMP) $(COMPFLAGS) $<
+	$(LABLCOMP) $(COMPFLAGS) $<
 
 .ml.cmo:
-	$(CAMLCOMP) $(COMPFLAGS) $<
+	$(LABLCOMP) $(COMPFLAGS) $<
 
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<

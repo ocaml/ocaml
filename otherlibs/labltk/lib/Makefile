@@ -11,7 +11,7 @@ include ../labltk/modules
 LABLTKOBJS=tk.cmo $(WIDGETOBJS)
 
 include ../camltk/modules
-CAMLTKOBJS=cTk.cmo $(CWIDGETOBJS) camltk.cmo
+CAMLTKOBJS=cTk.cmo $(CWIDGETOBJS) labltk.cmo camltk.cmo
 
 SUPPORT=../support/support.cmo ../support/rawwidget.cmo \
 	../support/widget.cmo ../support/protocol.cmo \

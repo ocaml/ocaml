@@ -318,6 +318,18 @@ module Timer = Timer;;
       output_string oc (Printf.sprintf "module %s = %s;;\n"
 			  (String.capitalize name)
 			  (String.capitalize name))) module_table;
+    (* widget typer *)
+    output_string oc "\n(** Widget typers *)\n\nopen Widget\n\n";
+    Hashtbl.iter (fun name def ->
+      match def.module_type with
+      |	Widget ->
+	  output_string oc (Printf.sprintf 
+	      "let %s (w : any widget) =\n" name);
+	  output_string oc (Printf.sprintf 
+	      "  Rawwidget.check_class w widget_%s_table;\n" name);
+	  output_string oc (Printf.sprintf
+	      "  (Obj.magic w : %s widget);;\n\n" name);
+      |	_ -> () ) module_table;
     close_out oc
   end;
 

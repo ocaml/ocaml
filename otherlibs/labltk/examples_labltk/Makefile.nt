@@ -1,7 +1,7 @@
 !include ..\support\Makefile.common
 
 # We are using the non-installed library !
-COMPFLAGS= -I ../lib -I ../camltk -I ../support
+COMPFLAGS= -I ../lib -I ../labltk -I ../support
 LINKFLAGS= -I ../lib
 
 # Use pieces of Makefile.config
@@ -37,4 +37,4 @@ clean :
 	$(LABLCOMP) $(COMPFLAGS) $<
 
 .ml.cmo:
-o	$(LABLCOMP) $(COMPFLAGS) $<
+	$(LABLCOMP) $(COMPFLAGS) $<
