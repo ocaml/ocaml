@@ -26,6 +26,7 @@ let waitpid = Unix.waitpid
 let system = Unix.system
 let read = Unix.read
 let write = Unix.write
+let select = Unix.select
 
 let timed_read fd buff ofs len timeout =
   if Thread.wait_timed_read fd timeout

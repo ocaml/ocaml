@@ -34,6 +34,13 @@ val system : string -> Unix.process_status
 val read : Unix.file_descr -> string -> int -> int -> int
 val write : Unix.file_descr -> string -> int -> int -> int
 
+(*** Polling *)
+
+val select :
+  Unix.file_descr list -> Unix.file_descr list ->
+  Unix.file_descr list -> float ->
+        Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
+
 (*** Input/output with timeout *)
 
 val timed_read : Unix.file_descr -> string -> int -> int -> float -> int
