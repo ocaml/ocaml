@@ -87,7 +87,7 @@ static struct {
 void raise_out_of_memory(void)
 {
   if (out_of_memory_bucket.exn == 0) 
-    fatal_error("Fatal eror: out of memory while raising Out_of_memory\n");
+    fatal_error("Fatal error: out of memory while raising Out_of_memory\n");
   mlraise((value) &(out_of_memory_bucket.exn));
 }
 
