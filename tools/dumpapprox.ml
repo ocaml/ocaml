@@ -54,6 +54,9 @@ let print_name_crc (name, crc) =
 let print_infos (ui, crc) =
   printf "Name: %s@." ui.ui_name;
   printf "CRC of implementation: %a@." print_digest crc;
+  printf "@[<hov 2>Globals defined:";
+  List.iter (fun s -> printf "@ %s" s) ui.ui_defines;
+  printf "@]@.";
   let pr_imports ppf imps = List.iter print_name_crc imps in
   printf "@[<v 2>Interfaces imported:%a@]@." pr_imports ui.ui_imports_cmi;
   printf "@[<v 2>Implementations imported:%a@]@." pr_imports ui.ui_imports_cmx;
