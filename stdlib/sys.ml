@@ -19,6 +19,7 @@ let argv = get_argv()
 
 external file_exists: string -> bool = "sys_file_exists"
 external remove: string -> unit = "sys_remove"
+external rename : string -> string -> unit = "sys_rename"
 external getenv: string -> string = "sys_getenv"
 external command: string -> int = "sys_system_command"
 external chdir: string -> unit = "sys_chdir"
