@@ -411,7 +411,7 @@ Grammar.extend
               Tuple [Loc; c; tl] -> Node ("StExc", [c; tl; b])
             | _ ->
                 match () with
-                _ -> raise (Match_failure ("meta/q_MLast.ml", 4408, 4424)) :
+                _ -> raise (Match_failure ("q_MLast.ml", 4408, 4424)) :
             'str_item));
       [Gramext.Stoken ("", "#");
        Gramext.Snterm (Grammar.Entry.obj (lident : 'lident Grammar.Entry.e));
@@ -648,7 +648,7 @@ Grammar.extend
               Tuple [Loc; c; tl] -> Node ("SgExc", [c; tl])
             | _ ->
                 match () with
-                _ -> raise (Match_failure ("meta/q_MLast.ml", 6410, 6426)) :
+                _ -> raise (Match_failure ("q_MLast.ml", 6410, 6426)) :
             'sig_item));
       [Gramext.Stoken ("", "#");
        Gramext.Snterm (Grammar.Entry.obj (lident : 'lident Grammar.Entry.e));

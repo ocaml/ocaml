@@ -548,7 +548,7 @@ and parser_of_token_list p1 tokl =
           [: a = ps; s :] ->
             let act = p1 s in
             app act a
-    | [] -> assert False ]
+    | [] -> invalid_arg "parser_of_token_list" ]
 and parser_of_symbol entry nlevn =
   fun
   [ Slist0 s ->

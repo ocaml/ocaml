@@ -588,7 +588,7 @@ and parser_of_token_list p1 tokl =
         let p1 = loop (n + 1) tokl in
         (fun (strm__ : _ Stream.t) ->
            let a = ps strm__ in let act = p1 strm__ in app act a)
-    | [] -> assert false
+    | [] -> invalid_arg "parser_of_token_list"
   in
   loop 1 tokl
 and parser_of_symbol entry nlevn =

@@ -134,12 +134,14 @@ bootstrap_sources:
 		 cp ../../$$i/.depend .); \
 	 done
 	@-for i in $(FDIRS); do \
-		for j in $$i/*.ml*; do \
+		(cd $$i; \
+		 for j in *.ml*; do \
 			echo ============================================; \
-			echo ocaml_src.new/$$j; \
-			OTOP=.. ./tools/conv.sh $$j | \
-			sed 's/$$Id.*\$$/$(TXTGEN)/' > ocaml_src.new/$$j; \
-		done; \
+			echo ocaml_src.new/$$i/$$j; \
+			OTOP=../.. ../tools/conv.sh $$j | \
+			sed 's/$$Id.*\$$/$(TXTGEN)/' > \
+			../ocaml_src.new/$$i/$$j; \
+		 done); \
 	done
 
 promote_sources:

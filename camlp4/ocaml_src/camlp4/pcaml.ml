@@ -18,8 +18,7 @@ let gram =
   Grammar.create
     {Token.func = (fun _ -> failwith "no loaded parsing module");
      Token.using = (fun _ -> ()); Token.removing = (fun _ -> ());
-     Token.tparse =
-       (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 1035, 1041)));
+     Token.tparse = (fun _ -> raise (Match_failure ("pcaml.ml", 1035, 1041)));
      Token.text = fun _ -> ""}
 ;;
 
@@ -335,23 +334,19 @@ and kont = pretty Stream.t
 ;;
 
 let pr_str_item =
-  {pr_fun =
-     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11621, 11627)));
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 11621, 11627)));
    pr_levels = []}
 ;;
 let pr_sig_item =
-  {pr_fun =
-     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11676, 11682)));
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 11676, 11682)));
    pr_levels = []}
 ;;
 let pr_expr =
-  {pr_fun =
-     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11727, 11733)));
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 11727, 11733)));
    pr_levels = []}
 ;;
 let pr_patt =
-  {pr_fun =
-     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11778, 11784)));
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 11778, 11784)));
    pr_levels = []}
 ;;
 let pr_expr_fun_args = ref Extfun.empty;;
