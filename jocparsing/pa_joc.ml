@@ -10,57 +10,24 @@ DELETE_RULE
  expr: SELF ; "or" ; SELF
 END
 
-(* Big pm needed to get location, compiled code is optimal! *)
-let get_loc = function
-  | ExAcc (l, _, _)
-  | ExAnt (l, _)
-  | ExApp (l, _, _)
-  | ExAre (l, _, _)
-  | ExArr (l, _)
-  | ExAss (l, _, _)
-  | ExChr (l, _)
-  | ExCoe (l, _, _, _)
-  | ExFlo (l, _)
-  | ExFor (l, _, _, _, _, _)
-  | ExFun (l, _)
-  | ExIfe (l, _, _, _)
-  | ExInt (l, _)
-  | ExLab (l, _, _)
-  | ExLet (l, _, _, _)
-  | ExLid (l, _)
-  | ExLmd (l, _, _, _)
-  | ExMat (l, _, _)
-  | ExNew (l, _)
-  | ExOlb (l, _, _)
-  | ExOvr (l, _)
-  | ExRec (l, _, _)
-  | ExSeq (l, _)
-  | ExSnd (l, _, _)
-  | ExSte (l, _, _)
-  | ExStr (l, _)
-  | ExTry (l, _, _)
-  | ExTup (l, _)
-  | ExTyc (l, _, _)
-  | ExUid (l, _)
-  | ExVrn (l, _)
-  | ExWhi (l, _, _)
-  | ExLoc (l, _, _)
-  | ExDef (l, _, _)
-  | ExRep (l, _, _)
-  | ExNul l
-  | ExPar (l, _, _)
-  | ExSpa (l, _) -> l
+
+DELETE_RULE
+ expr: SELF ; ";"  ; SELF
+END
 
 
-(* Some kind of append, needed because "&" is left-associative *)
-let rec add_par l e1 e2 = match e1 with
-| ExPar (m, f1, f2) ->
-    let (start_f2, _) = get_loc f2
-    and (_, end_l) = l in
-    ExPar (l, f1, add_par (start_f2, end_l) f2 e2)
-| _ -> ExPar (l, e1, e2)
+DELETE_RULE
+ expr: SELF ; ";"
+END
+
+
+let get_seq = function
+  | ExSeq (loc, el) -> el
+  | e               -> [e]
+
 
 let joinident = Grammar.Entry.create gram "joinident"
+let joinarg   = Grammar.Entry.create gram "joinarg"
 let joinpattern = Grammar.Entry.create gram "joinpattern"
 let joinclause = Grammar.Entry.create gram "joinclause"
 let joinautomaton = Grammar.Entry.create gram "joinautomaton"
@@ -70,8 +37,14 @@ EXTEND
  joinident:
    [[id=LIDENT -> (loc, id)]];
 
+ joinarg:
+   [[
+     id=LIDENT -> (loc, Some id)
+  |  "_"       -> (loc, None)
+   ]];
+
  joinpattern:
-   [[id=joinident ; "(" ; args = LIST0 joinident SEP "," ; ")" ->
+   [[id=joinident ; "(" ; args = LIST0 joinarg SEP "," ; ")" ->
      (loc, id, args)]];
  joinclause:
    [[jpats = LIST1 joinpattern SEP "&" ; "=" ; e=expr ->
@@ -89,10 +62,16 @@ EXTEND
       (loc, id, [], e)
     ]];
 
- expr: LEVEL "top" 
-    [[
-      e1 = SELF ; "&"; e2 = SELF -> add_par loc e1 e2
+ expr: BEFORE "expr1" 
+    ["top" RIGHTA [
+      e1 = SELF ; "&"; e2 = SELF -> ExPar (loc, e1, e2)
     ]];
+ expr: AFTER "top"
+    [[
+       e1 = SELF; ";"; e2 = SELF ->  ExSeq (loc,e1::get_seq e2)
+      | e1 = SELF; ";" -> e1
+    ]];
+
  expr: LEVEL "expr1"
     [[
       "reply" ; e = SELF ; "to" ; id = joinident -> ExRep (loc, e, id)

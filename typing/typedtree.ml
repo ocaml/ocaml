@@ -104,7 +104,7 @@ and joinclause =
       jclause_loc : Location.t}
 
 and joinpattern =
-    { jpat_desc: joinident * joinident list ;
+    { jpat_desc: joinident * joinarg list ;
       jpat_loc: Location.t}
 
 and joinident =
@@ -113,6 +113,11 @@ and joinident =
       jident_type : type_expr;
       jident_env : Env.t;}
 
+and joinarg =
+    { jarg_desc : Ident.t option ;
+      jarg_loc  : Location.t;
+      jarg_type : type_expr;
+      jarg_env : Env.t;}
 (*< JOCAML *)
 
 and meth =

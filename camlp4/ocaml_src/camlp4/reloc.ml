@@ -170,8 +170,9 @@ and joinautomaton floc sh (loc, cls) =
 and joinclause floc sh (loc, jpats, e) =
   floc loc, List.map (joinpattern floc sh) jpats, expr floc sh e
 and joinpattern floc sh (loc, id, args) =
-  floc loc, joinident floc sh id, List.map (joinident floc sh) args
+  floc loc, joinident floc sh id, List.map (joinarg floc sh) args
 and joinident floc sh (loc, id) = floc loc, id
+and joinarg floc sh (loc, idopt) = floc loc, idopt
 and module_type floc sh =
   let rec self =
     function

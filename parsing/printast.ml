@@ -35,7 +35,10 @@ let rec fmt_longident_aux f x =
 let fmt_longident f x = fprintf f "\"%a\"" fmt_longident_aux x;;
 
 (*> JOCAML *)
-let fmt_joinident f x = fprintf f "\"%s\"" x;;
+let fmt_joinident f x = fprintf f "\"%s\"" x
+and fmt_joinarg f = function
+  | None -> fprintf f "\"_\""
+  | Some x ->  fprintf f "\"%s\"" x;;
 (*< JOCAML *)
 
 let fmt_constant f x =
@@ -105,11 +108,16 @@ let joinident i ppf ji =
   line i ppf "%a\n" fmt_joinident ji.pjident_desc
 ;;
 
+let joinarg i ppf ji =
+  line i ppf "joinident %a\n" fmt_location ji.pjarg_loc;
+  let i = i+1 in
+  line i ppf "%a\n" fmt_joinarg ji.pjarg_desc
+;;
 let joinpattern i ppf jpat =
   line i ppf "joinpattern %a\n" fmt_location jpat.pjpat_loc;
   let x,args = jpat.pjpat_desc in
   joinident (i+1) ppf x;
-  list (i+1) joinident ppf args;
+  list (i+1) joinarg ppf args;
 ;;
 (*< JOCAML *)
 

@@ -15,8 +15,9 @@ COMPILER=../ocamlc $(INCLUDES)
 CAMLC=$(RUNTIME) $(COMPILER)
 PARSER=../camlp4/etc/camlp4o $(INCLUDES) pa_extend.cmo
 CAMLP4O=$(RUNTIME) $(PARSER)
+
 pa_joc.cmo: pa_joc.ml
-	$(CAMLC) -dlambda -pp "$(CAMLP4O)" -c pa_joc.ml
+	$(CAMLC) -pp "$(CAMLP4O)" -c pa_joc.ml
 
 test:
 	$(CAMLC) -dparsetree -pp "$(RUNTIME) ../camlp4/etc/camlp4o ./pa_joc.cmo" t.ml

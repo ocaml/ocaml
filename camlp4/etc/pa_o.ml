@@ -466,9 +466,9 @@ EXTEND
   ;
   (* Core expressions *)
   expr:
-    [ "top" LEFTA
+    [ "top" RIGHTA
       [ e1 = SELF; ";"; e2 = SELF ->
-          <:expr< do { $list:get_seq e1 @ [e2]$ } >>
+         <:expr< do { $list:[e1 :: get_seq e2]$ } >>
       | e1 = SELF; ";" -> e1 ]
     | "expr1"
       [ "let"; o = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";

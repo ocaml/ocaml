@@ -61,6 +61,7 @@ type error =
   | Garrigue_illegal of string (* merci Jacques ! *)
   | Vouillon_illegal of string (* merci Jerome ! *)
   | Send_non_channel of type_expr
+  | Join_pattern_type_clash of (type_expr * type_expr) list
 (*< JOCAML *)
 
 exception Error of Location.t * error
@@ -454,18 +455,19 @@ let enter_location all_chans jid =
   all_chans := id :: !all_chans ;
   (id, ty)
 
-let enter_jarg cl_ids arg =  
-  let name = arg.pjident_desc in
+let enter_jarg cl_ids arg = match arg.pjarg_desc with
+| Some name ->
   let p id = Ident.name id = name in
   (* check linearity *)
   if
     List.exists p !cl_ids
   then
-    raise (Error (arg.pjident_loc, Multiply_bound_variable));      
+    raise (Error (arg.pjarg_loc, Multiply_bound_variable));      
   (* create identifier *)
   let id = Ident.create name in
   cl_ids := id :: !cl_ids ;
-  id
+  Some id
+| None -> None
 
 let mk_jident id loc ty env =
   {
@@ -473,6 +475,14 @@ let mk_jident id loc ty env =
     jident_loc  = loc;
     jident_type = ty;
     jident_env  = env;
+  } 
+
+and mk_jarg id loc ty env =
+  {
+    jarg_desc = id;
+    jarg_loc  = loc;
+    jarg_type = ty;
+    jarg_env  = env;
   } 
 
 let type_auto_lhs all_chans env {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
@@ -493,9 +503,8 @@ let type_auto_lhs all_chans env {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
               and args =
                 List.map
                   (fun jid ->
-                    let id =
-                      enter_jarg cl_ids jid in
-                    mk_jident id jid.pjident_loc (newvar()) env)
+                    let idopt = enter_jarg cl_ids jid in
+                    mk_jarg idopt jid.pjarg_loc (newvar()) env)
                   sargs in
               {jpat_desc = chan, args;
                jpat_loc  = sjpat.pjpat_loc;})
@@ -1777,12 +1786,14 @@ and type_clause env names jpats scl =
        continuation_kind = false;} in
     conts := kdesc :: !conts;
     List.fold_left
-      (fun env jid ->
-        Env.add_value
-          jid.jident_desc
-          {val_kind = Val_reg ;
-           val_type = jid.jident_type}
-          env)
+      (fun env jarg -> match jarg.jarg_desc with
+      | Some id ->
+          Env.add_value
+            id
+            {val_kind = Val_reg ;
+            val_type = jarg.jarg_type}
+            env
+      | None -> env)
       (Env.add_continuation kid kdesc env) args in
   let new_env = List.fold_right extend_env jpats env
   and _,sexp = scl.pjclause_desc in
@@ -1798,10 +1809,10 @@ and type_clause env names jpats scl =
         with Not_found -> assert false in
       let targs = match args with
       | [] -> instance (Predef.type_unit)
-      | [jid] -> jid.jident_type
+      | [jarg] -> jarg.jarg_type
       | _ ->
           newty
-            (Ttuple (List.map (fun jid -> jid.jident_type) args)) in
+            (Ttuple (List.map (fun jarg -> jarg.jarg_type) args)) in
       let otchan =
         match kdesc with
         | {continuation_kind=false} ->
@@ -1809,9 +1820,9 @@ and type_clause env names jpats scl =
         | {continuation_type=tres} ->
             newty (Tarrow ("", targs, tres, Cok)) in
       try
-        unify env tchan otchan
+        unify env otchan tchan
       with Unify trace ->
-        raise(Error(jpat.jpat_loc, Pattern_type_clash(trace))))
+        raise(Error(jpat.jpat_loc, Join_pattern_type_clash(trace))))
     jpats !conts ;
 
   { jclause_loc = scl.pjclause_loc;
@@ -2084,4 +2095,10 @@ let report_error ppf = function
       fprintf ppf "Illegal object in jocaml: %s" msg
   | Send_non_channel typ ->
       fprintf ppf "This expression is not a channel"
+  | Join_pattern_type_clash trace ->
+      report_unification_error ppf trace
+        (function ppf ->
+           fprintf ppf "This join-pattern defines a channel of type")
+        (function ppf ->
+           fprintf ppf "but the channel is used with type")
 (*< JOCAML *)      

@@ -118,9 +118,11 @@ and joinautomaton = (loc * list joinclause)
 
 and joinclause = (loc * list joinpattern * expr)
 
-and joinpattern = (loc * joinident * list joinident)
+and joinpattern = (loc * joinident * list joinarg)
 
 and joinident = (loc * string)
+
+and joinarg = (loc * option string)
 (*< JOCAML *)
 
 and module_type =
