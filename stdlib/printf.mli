@@ -56,10 +56,10 @@ val fprintf: out_channel -> ('a, out_channel, unit) format -> 'a
            before converting the first missing argument. *)
 
 val printf: ('a, out_channel, unit) format -> 'a
-        (* Same as [fprintf], but output on [std_out]. *)
+        (* Same as [fprintf], but output on [stdout]. *)
 
 val eprintf: ('a, out_channel, unit) format -> 'a
-        (* Same as [fprintf], but output on [std_err]. *)
+        (* Same as [fprintf], but output on [stderr]. *)
 
 val sprintf: ('a, unit, string) format -> 'a
         (* Same as [printf], but return the result of formatting in a
