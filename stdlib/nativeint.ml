@@ -28,6 +28,8 @@ external shift_right: nativeint -> int -> nativeint = "%nativeint_asr"
 external shift_right_logical: nativeint -> int -> nativeint = "%nativeint_lsr"
 external of_int: int -> nativeint = "%nativeint_of_int"
 external to_int: nativeint -> int = "%nativeint_to_int"
+external of_float : float -> nativeint = "nativeint_of_float"
+external to_float : nativeint -> float = "nativeint_to_float"
 external of_int32: int32 -> nativeint = "%nativeint_of_int32"
 external to_int32: nativeint -> int32 = "%nativeint_to_int32"
 

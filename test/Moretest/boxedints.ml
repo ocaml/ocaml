@@ -42,11 +42,13 @@ module type TESTSIG = sig
     val shift_right_logical: t -> int -> t 
     val of_int: int -> t 
     val to_int: t -> int 
+    val of_float: float -> t 
+    val to_float: t -> float
     val zero: t
     val one: t
     val minus_one: t
-    val min: t
-    val max: t
+    val min_int: t
+    val max_int: t
     val format : string -> t -> string 
     val to_string: t -> string
     val of_string: string -> t 
@@ -76,9 +78,9 @@ struct
     test 6 (of_string "-0o1234567012") (of_int (- 0o1234567012));
     test 7 (of_string "0b01010111111000001100")
            (of_int 0b01010111111000001100);
-    test 8 (of_string "0x7FFFFFFF") max;
-    test 9 (of_string "-0x80000000") min;
-    test 10 (of_string "0x80000000") min;
+    test 8 (of_string "0x7FFFFFFF") max_int;
+    test 9 (of_string "-0x80000000") min_int;
+    test 10 (of_string "0x80000000") min_int;
     test 11 (of_string "0xFFFFFFFF") minus_one;
 
     testing_function "to_string, format";
@@ -88,8 +90,8 @@ struct
     List.iter (fun (n, s) -> test n (format "0x%X" (of_string s)) s)
       [7, "0x0"; 8, "0x123"; 9, "0xABCDEF"; 10, "0x12345678";
        11, "0x7FFFFFFF"; 12, "0x80000000"; 13, "0xFFFFFFFF"];
-    test 14 (to_string max) "2147483647";
-    test 15 (to_string min) "-2147483648";
+    test 14 (to_string max_int) "2147483647";
+    test 15 (to_string min_int) "-2147483648";
     test 16 (to_string zero) "0";
     test 17 (to_string one) "1";
     test 18 (to_string minus_one) "-1";
@@ -99,8 +101,8 @@ struct
     test 2 (neg (of_int 123)) (of_int (-123));
     test 3 (neg (of_int (-456))) (of_int 456);
     test 4 (neg (of_int 123456789)) (of_int (-123456789));
-    test 5 (neg max) (of_string "-0x7FFFFFFF");
-    test 6 (neg min) min;
+    test 5 (neg max_int) (of_string "-0x7FFFFFFF");
+    test 6 (neg min_int) min_int;
 
     testing_function "add";
     test 1 (add (of_int 0) (of_int 0)) (of_int 0);
@@ -112,11 +114,11 @@ struct
     test 7 (add (of_int (-123)) (of_int (-456))) (of_int (-579));
     test 8 (add (of_string "0x12345678") (of_string "0x9ABCDEF"))
            (of_string "0x1be02467");
-    test 9 (add max max) (of_int (-2));
-    test 10 (add min min) zero;
-    test 11 (add max one) min;
-    test 12 (add min minus_one) max;
-    test 13 (add max min) minus_one;
+    test 9 (add max_int max_int) (of_int (-2));
+    test 10 (add min_int min_int) zero;
+    test 11 (add max_int one) min_int;
+    test 12 (add min_int minus_one) max_int;
+    test 13 (add max_int min_int) minus_one;
 
     testing_function "sub";
     test 1 (sub (of_int 0) (of_int 0)) (of_int 0);
@@ -128,10 +130,10 @@ struct
     test 7 (sub (of_int (-123)) (of_int (-456))) (of_int 333);
     test 8 (sub (of_string "0x12345678") (of_string "0x9ABCDEF"))
            (of_string "0x8888889");
-    test 9 (sub max min) minus_one;
-    test 10 (sub min max) one;
-    test 11 (sub min one) max;
-    test 12 (sub max minus_one) min;
+    test 9 (sub max_int min_int) minus_one;
+    test 10 (sub min_int max_int) one;
+    test 11 (sub min_int one) max_int;
+    test 12 (sub max_int minus_one) min_int;
 
     testing_function "mul";
     test 1 (mul (of_int 0) (of_int 0)) (of_int 0);
@@ -147,7 +149,7 @@ struct
     test 11 (mul (of_int (-123)) (of_int (-456))) (of_int 56088);
     test 12 (mul (of_string "0x12345678") (of_string "0x9ABCDEF"))
             (of_string "0xe242d208");
-    test 13 (mul max max) one;
+    test 13 (mul max_int max_int) one;
 
     testing_function "div";
     List.iter
@@ -244,6 +246,22 @@ struct
        6, "0xb11b00", 7, "0x16236";
        7, "-0xb11b00", 7, "0x1fe9dca"];
 
+    testing_function "of_float";
+    test 1 (of_float 0.0) (of_int 0);
+    test 2 (of_float 123.0) (of_int 123);
+    test 3 (of_float 123.456) (of_int 123);
+    test 4 (of_float 123.999) (of_int 123);
+    test 5 (of_float (-456.0)) (of_int (-456));
+    test 6 (of_float (-456.123)) (of_int (-456));
+    test 7 (of_float (-456.789)) (of_int (-456));
+
+    testing_function "to_float";
+    test 1 (to_float (of_int 0)) 0.0;
+    test 2 (to_float (of_int 123)) 123.0;
+    test 3 (to_float (of_int (-456))) (-456.0);
+    test 4 (to_float (of_int 0x3FFFFFFF)) 1073741823.0;
+    test 5 (to_float (of_int (-0x40000000))) (-1073741824.0);
+
     testing_function "Comparisons";
     test 1 (testcomp (of_int 0) (of_int 0))
            (true,false,false,false,true,true);
@@ -257,7 +275,7 @@ struct
            (false,true,false,true,false,true);
     test 6 (testcomp (of_int 0) (of_int (-1)))
            (false,true,false,true,false,true);
-    test 7 (testcomp max min)
+    test 7 (testcomp max_int min_int)
            (false,true,false,true,false,true);
 
     ()
@@ -287,9 +305,9 @@ struct
     test 6 (of_string "-0o1234567012") (of_int (- 0o1234567012));
     test 7 (of_string "0b01010111111000001100")
            (of_int 0b01010111111000001100);
-    test 8 (of_string "0x7FFFFFFFFFFFFFFF") max;
-    test 9 (of_string "-0x8000000000000000") min;
-    test 10 (of_string "0x8000000000000000") min;
+    test 8 (of_string "0x7FFFFFFFFFFFFFFF") max_int;
+    test 9 (of_string "-0x8000000000000000") min_int;
+    test 10 (of_string "0x8000000000000000") min_int;
     test 11 (of_string "0xFFFFFFFFFFFFFFFF") minus_one;
 
     testing_function "to_string, format";
@@ -302,8 +320,8 @@ struct
       [7, "0x0"; 8, "0x123"; 9, "0xABCDEF"; 10, "0x1234567812345678";
        11, "0x7FFFFFFFFFFFFFFF"; 12, "0x8000000000000000";
        13, "0xFFFFFFFFFFFFFFFF"];
-    test 14 (to_string max) "9223372036854775807";
-    test 15 (to_string min) "-9223372036854775808";
+    test 14 (to_string max_int) "9223372036854775807";
+    test 15 (to_string min_int) "-9223372036854775808";
     test 16 (to_string zero) "0";
     test 17 (to_string one) "1";
     test 18 (to_string minus_one) "-1";
@@ -313,8 +331,8 @@ struct
     test 2 (neg (of_int 123)) (of_int (-123));
     test 3 (neg (of_int (-456))) (of_int 456);
     test 4 (neg (of_int 123456789)) (of_int (-123456789));
-    test 5 (neg max) (of_string "-0x7FFFFFFFFFFFFFFF");
-    test 6 (neg min) min;
+    test 5 (neg max_int) (of_string "-0x7FFFFFFFFFFFFFFF");
+    test 6 (neg min_int) min_int;
 
     testing_function "add";
     test 1 (add (of_int 0) (of_int 0)) (of_int 0);
@@ -327,11 +345,11 @@ struct
     test 8 (add (of_string "0x1234567812345678") 
                 (of_string "0x9ABCDEF09ABCDEF"))
            (of_string "0x1be024671be02467");
-    test 9 (add max max) (of_int (-2));
-    test 10 (add min min) zero;
-    test 11 (add max one) min;
-    test 12 (add min minus_one) max;
-    test 13 (add max min) minus_one;
+    test 9 (add max_int max_int) (of_int (-2));
+    test 10 (add min_int min_int) zero;
+    test 11 (add max_int one) min_int;
+    test 12 (add min_int minus_one) max_int;
+    test 13 (add max_int min_int) minus_one;
 
     testing_function "sub";
     test 1 (sub (of_int 0) (of_int 0)) (of_int 0);
@@ -344,10 +362,10 @@ struct
     test 8 (sub (of_string "0x1234567812345678") 
                 (of_string "0x9ABCDEF09ABCDEF"))
            (of_string "0x888888908888889");
-    test 9 (sub max min) minus_one;
-    test 10 (sub min max) one;
-    test 11 (sub min one) max;
-    test 12 (sub max minus_one) min;
+    test 9 (sub max_int min_int) minus_one;
+    test 10 (sub min_int max_int) one;
+    test 11 (sub min_int one) max_int;
+    test 12 (sub max_int minus_one) min_int;
 
     testing_function "mul";
     test 1 (mul (of_int 0) (of_int 0)) (of_int 0);
@@ -363,7 +381,7 @@ struct
     test 11 (mul (of_int (-123)) (of_int (-456))) (of_int 56088);
     test 12 (mul (of_string "0x12345678") (of_string "0x9ABCDEF"))
            (of_string "0xb00ea4e242d208");
-    test 13 (mul max max) one;
+    test 13 (mul max_int max_int) one;
 
     testing_function "div";
     List.iter
@@ -473,7 +491,7 @@ struct
            (false,true,false,true,false,true);
     test 6 (testcomp (of_int 0) (of_int (-1)))
            (false,true,false,true,false,true);
-    test 7 (testcomp max min)
+    test 7 (testcomp max_int min_int)
            (false,true,false,true,false,true);
 
     ()

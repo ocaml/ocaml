@@ -76,13 +76,21 @@ external shift_right_logical : int32 -> int -> int32 = "%int32_lsr"
 
 external of_int : int -> int32 = "%int32_of_int"
       (* Convert the given integer (type [int]) to a 32-bit integer
-         (type [Int32.int32]). *)
+         (type [int32]). *)
 external to_int : int32 -> int = "%int32_to_int"
-      (* Convert the given 32-bit integer (type [Int32.int32]) to an
+      (* Convert the given 32-bit integer (type [int32]) to an
          integer (type [int]).  On 32-bit platforms, the 32-bit integer
          is taken modulo $2^{31}$, i.e. the high-order bit is lost
          during the conversion.  On 64-bit platforms, the conversion
          is exact. *)
+
+external of_float : float -> int32 = "int32_of_float"
+      (* Convert the given floating-point number to a 32-bit integer,
+         discarding the fractional part (truncate towards 0).
+         The result of the conversion is undefined if, after truncation,
+         the number is outside the range [Int32.min_int, Int32.max_int]. *)
+external to_float : int32 -> float = "int32_to_float"
+      (* Convert the given 32-bit integer to a floating-point number. *)
 
 external of_string : string -> int32 = "int32_of_string"
       (* Convert the given string to a 32-bit integer.

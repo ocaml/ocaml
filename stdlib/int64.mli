@@ -82,14 +82,22 @@ external shift_right_logical : int64 -> int -> int64 = "%int64_lsr"
 
 external of_int : int -> int64 = "%int64_of_int"
       (* Convert the given integer (type [int]) to a 64-bit integer
-         (type [Int64.int64]). *)
+         (type [int64]). *)
 external to_int : int64 -> int = "%int64_to_int"
-      (* Convert the given 64-bit integer (type [Int64.int64]) to an
+      (* Convert the given 64-bit integer (type [int64]) to an
          integer (type [int]).  On 64-bit platforms, the 64-bit integer
          is taken modulo $2^{63}$, i.e. the high-order bit is lost
          during the conversion.  On 32-bit platforms, the 64-bit integer
          is taken modulo $2^{31}$, i.e. the top 33 bits are lost
          during the conversion. *)
+
+external of_float : float -> int64 = "int64_of_float"
+      (* Convert the given floating-point number to a 64-bit integer,
+         discarding the fractional part (truncate towards 0).
+         The result of the conversion is undefined if, after truncation,
+         the number is outside the range [Int64.min_int, Int64.max_int]. *)
+external to_float : int64 -> float = "int64_to_float"
+      (* Convert the given 64-bit integer to a floating-point number. *)
 
 external of_int32 : int32 -> int64 = "%int64_of_int32"
       (* Convert the given 32-bit integer (type [int32])
