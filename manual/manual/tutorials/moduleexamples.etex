@@ -115,7 +115,7 @@ type comparison = Less | Equal | Greater;;
 module type ORDERED_TYPE =
   sig
     type t
-    val cmp: t -> t -> comparison
+    val compare: t -> t -> comparison
   end;;
 module Set =
   functor (Elt: ORDERED_TYPE) ->
@@ -127,7 +127,7 @@ module Set =
         match s with
           [] -> [x]
         | hd::tl ->
-           match Elt.cmp x hd with
+           match Elt.compare x hd with
              Equal   -> s         (* x is already in s *)
            | Less    -> x :: s    (* x is smaller than all elements of s *)
            | Greater -> hd :: add x tl
@@ -135,7 +135,7 @@ module Set =
         match s with
           [] -> false
         | hd::tl ->
-            match Elt.cmp x hd with
+            match Elt.compare x hd with
               Equal   -> true     (* x belongs to s *)
             | Less    -> false    (* x is smaller than all elements of s *)
             | Greater -> member x tl
@@ -147,7 +147,7 @@ type, we obtain set operations for this type:
 module OrderedString =
   struct
     type t = string
-    let cmp x y = if x = y then Equal else if x < y then Less else Greater
+    let compare x y = if x = y then Equal else if x < y then Less else Greater
   end;;
 module StringSet = Set(OrderedString);;
 StringSet.member "bar" (StringSet.add "foo" StringSet.empty);;
@@ -226,8 +226,8 @@ distinguishing upper and lower case.
 module NoCaseString =
   struct
     type t = string
-    let cmp s1 s2 =
-      OrderedString.cmp (String.lowercase s1) (String.lowercase s2)
+    let compare s1 s2 =
+      OrderedString.compare (String.lowercase s1) (String.lowercase s2)
   end;;
 module NoCaseStringSet = AbstractSet(NoCaseString);;
 NoCaseStringSet.add "FOO" AbstractStringSet.empty;;
