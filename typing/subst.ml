@@ -105,20 +105,21 @@ let rec typexp s ty =
               ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
               Tlink ty2
           | _ ->
-              let static = static_row row in
+              let dup =
+                s.for_saving || more.level = generic_level || static_row row in
               (* Various cases for the row variable *)
               let more' =
                 match more.desc with Tsubst ty -> ty
                 | _ ->
                     save_desc more more.desc;
                     if s.for_saving then newpersty more.desc else
-                    if static then newgenvar () else more
+                    if dup && more.desc <> Tunivar then newgenvar () else more
               in
               (* Register new type first for recursion *)
               more.desc <- Tsubst(newgenty(Ttuple[more';ty']));
               (* Return a new copy *)
               let row =
-                copy_row (typexp s) true row (not s.for_saving) more' in
+                copy_row (typexp s) true row (not dup) more' in
               let row =
                 if s.for_saving then {row with row_bound = []} else row in
               match row.row_name with
