@@ -19,12 +19,11 @@ include ../../config/Makefile
 
 # Compilation options
 CC=$(BYTECC)
-CFLAGS=-O -I$(REGEXLIB) -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
+CFLAGS=-O -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 CAMLC=../../ocamlcomp.sh
 CAMLOPT=../../ocamlcompopt.sh
 COMPFLAGS=-warn-error A
-REGEXLIB=regex-0.12
-COBJS=strstubs.o $(REGEXLIB)/regex.o
+COBJS=strstubs.o
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 
 all: libstr.a str.cmi str.cma
@@ -40,9 +39,6 @@ str.cma: str.cmo
 str.cmxa: str.cmx
 	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o str str.cmx
 
-$(REGEXLIB)/regex.o: $(REGEXLIB)/regex.c $(REGEXLIB)/regex.h
-	cd $(REGEXLIB); CC="$(CC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)" sh configure; $(MAKE)
-
 str.cmx: ../../ocamlopt
 
 partialclean:
@@ -50,7 +46,6 @@ partialclean:
 
 clean: partialclean
 	rm -f *.a *.so *.o
-	cd $(REGEXLIB); if test -f Makefile; then $(MAKE) distclean; else exit 0; fi
 
 install:
 	if test -f dllstr.so; then cp dllstr.so $(STUBLIBDIR)/dllstr.so; fi

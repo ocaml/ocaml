@@ -19,13 +19,11 @@ include ../../config/Makefile
 
 # Compilation options
 CC=$(BYTECC)
-CFLAGS=-I$(REGEXLIB) -I../../byterun
+CFLAGS=-I../../byterun
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../boot
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
-REGEXLIB=regex-0.12
-REGEXFLAGS=-DREGEX_MALLOC -DSTDC_HEADERS
-DCOBJS=strstubs.$(DO) $(REGEXLIB)/regex.$(DO)
-SCOBJS=strstubs.$(SO) $(REGEXLIB)/regex.$(SO)
+DCOBJS=strstubs.$(DO)
+SCOBJS=strstubs.$(SO)
 
 all: dllstr.dll libstr.$(A) str.cmi str.cma
 
@@ -44,14 +42,6 @@ str.cma: str.cmo
 str.cmxa: str.cmx
 	$(CAMLOPT) -a -o str.cmxa str.cmx -cclib -lstr
 
-$(REGEXLIB)/regex.$(DO): $(REGEXLIB)/regex.c $(REGEXLIB)/regex.h
-	cd $(REGEXLIB); $(CC) $(REGEXFLAGS) $(DLLCCCOMPOPTS) -c regex.c
-	mv $(REGEXLIB)/regex.$(O) $(REGEXLIB)/regex.$(DO)
-
-$(REGEXLIB)/regex.$(SO): $(REGEXLIB)/regex.c $(REGEXLIB)/regex.h
-	cd $(REGEXLIB); $(CC) $(REGEXFLAGS) $(BYTECCCOMPOPTS) -c regex.c
-	mv $(REGEXLIB)/regex.$(O) $(REGEXLIB)/regex.$(SO)
-
 str.cmx: ../../ocamlopt
 
 partialclean:
@@ -59,7 +49,6 @@ partialclean:
 
 clean: partialclean
 	rm -f *.$(A) *.dll *.$(O) *.$(SO)
-	rm -f $(REGEXLIB)/*.$(O)
 
 install:
 	cp dllstr.dll $(STUBLIBDIR)/dllstr.dll

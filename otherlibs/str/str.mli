@@ -29,19 +29,19 @@ val regexp : string -> regexp
    [$^.*+?[]]. The following constructs are recognized:
    - [.     ] matches any character except newline
    - [*     ] (postfix) matches the previous expression zero, one or
-     several times
+              several times
    - [+     ] (postfix) matches the previous expression one or
-     several times
+              several times
    - [?     ] (postfix) matches the previous expression once or
-     not at all
+              not at all
    - [[..]  ] character set; ranges are denoted with [-], as in [[a-z]];
-     an initial [^], as in [[^0-9]], complements the set
+              an initial [^], as in [[^0-9]], complements the set
    - [^     ] matches at beginning of line
    - [$     ] matches at end of line
    - [\|    ] (infix) alternative between two expressions
    - [\(..\)] grouping and naming of the enclosed expression
    - [\1    ] the text matched by the first [\(...\)] expression
-     ([\2] for the second expression, etc)
+     ([\2] for the second expression, and so on up to [\9])
    - [\b    ] matches word boundaries
    - [\     ] quotes special characters. *)
 
@@ -66,26 +66,23 @@ val regexp_string_case_fold : string -> regexp
 (** {6 String matching and searching} *)
 
 
-external string_match : regexp -> string -> int -> bool = "str_string_match"
+val string_match : regexp -> string -> int -> bool
 (** [string_match r s start] tests whether the characters in [s]
    starting at position [start] match the regular expression [r].
    The first character of a string has position [0], as usual. *)
 
-external search_forward :
-  regexp -> string -> int -> int = "str_search_forward"
+val search_forward : regexp -> string -> int -> int
 (** [search_forward r s start] searchs the string [s] for a substring
    matching the regular expression [r]. The search starts at position
    [start] and proceeds towards the end of the string.
    Return the position of the first character of the matched
    substring, or raise [Not_found] if no substring matches. *)
 
-external search_backward :
-  regexp -> string -> int -> int = "str_search_backward"
+val search_backward : regexp -> string -> int -> int
 (** Same as {!Str.search_forward}, but the search proceeds towards the
    beginning of the string. *)
 
-external string_partial_match :
-  regexp -> string -> int -> bool = "str_string_partial_match"
+val string_partial_match : regexp -> string -> int -> bool
 (** Similar to {!Str.string_match}, but succeeds whenever the argument
    string is a prefix of a string that matches.  This includes
    the case of a true complete match. *)
@@ -162,12 +159,12 @@ val substitute_first : regexp -> (string -> string) -> string -> string
 (** Same as {!Str.global_substitute}, except that only the first substring
    matching the regular expression is replaced. *)
 
+val replace_matched : string -> string -> string
 (** [replace_matched repl s] returns the replacement text [repl]
    in which [\1], [\2], etc. have been replaced by the text
    matched by the corresponding groups in the most recent matching
    operation.  [s] must be the same string that was matched during
    this matching operation. *)     
-val replace_matched : string -> string -> string
         
 
 (** {6 Splitting} *)
@@ -195,10 +192,7 @@ val split_delim : regexp -> string -> string list
 val bounded_split_delim : regexp -> string -> int -> string list
 (** Same as {!Str.bounded_split}, but occurrences of the
    delimiter at the beginning and at the end of the string are
-   recognized and returned as empty strings in the result.
-   For instance, [split_delim (regexp " ") " abc "]
-   returns [[""; "abc"; ""]], while [split] with the same
-   arguments returns [["abc"]]. *)
+   recognized and returned as empty strings in the result. *)
 
 type split_result = 
     Text of string
@@ -216,9 +210,7 @@ val bounded_full_split : regexp -> string -> int -> split_result list
 (** Same as {!Str.bounded_split_delim}, but returns
    the delimiters as well as the substrings contained between
    delimiters.  The former are tagged [Delim] in the result list;
-   the latter are tagged [Text].  For instance,
-   [full_split (regexp "[{}]") "{ab}"] returns
-   [[Delim "{"; Text "ab"; Delim "}"]]. *)
+   the latter are tagged [Text]. *)
 
 
 (** {6 Extracting substrings} *)

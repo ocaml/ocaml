@@ -1,170 +1,413 @@
-#if !macintosh
-#include <sys/types.h>
-#else
-#include <SizeTDef.h>
-#endif
+/***********************************************************************/
+/*                                                                     */
+/*                           Objective Caml                            */
+/*                                                                     */
+/*           Xavier Leroy, projet Cristal, INRIA Rocquencourt          */
+/*                                                                     */
+/*  Copyright 1996 Institut National de Recherche en Informatique et   */
+/*  en Automatique.  All rights reserved.  This file is distributed    */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../../LICENSE.  */
+/*                                                                     */
+/***********************************************************************/
+
+/* $Id$ */
+
+#include <assert.h>
 #include <string.h>
-#include <regex.h>
+#include <ctype.h>
 #include <mlvalues.h>
 #include <alloc.h>
-#include <custom.h>
-#include <fail.h>
 #include <memory.h>
+#include <fail.h>
 
-struct regexp_struct {
-  struct custom_operations * ops;
-  struct re_pattern_buffer re;
+/* The backtracking NFA interpreter */
+
+struct backtrack_point {
+  char * txt;
+  value * pc;
+  int mask;
 };
 
-typedef struct regexp_struct * regexp;
+#define BACKTRACK_STACK_BLOCK_SIZE 500
 
-static void free_regexp(value vexpr)
-{
-  regexp expr = (regexp) Bp_val(vexpr);
-  expr->re.translate = NULL;
-  re_free(&(expr->re));
-}
-
-static struct custom_operations regexp_ops = {
-  "_regexp",
-  free_regexp,
-  custom_compare_default,
-  custom_hash_default,
-  custom_serialize_default,
-  custom_deserialize_default
+struct backtrack_stack {
+  struct backtrack_stack * previous;
+  struct backtrack_point point[BACKTRACK_STACK_BLOCK_SIZE];
 };
 
-static regexp alloc_regexp(void)
+#define Opcode(x) ((x) & 0xFF)
+#define Arg(x) ((unsigned long)(x) >> 8)
+#define SignedArg(x) ((long)(x) >> 8)
+
+enum {
+  CHAR,       /* match a single character */
+  CHARNORM,   /* match a single character, after normalization */
+  STRING,     /* match a character string */
+  STRINGNORM, /* match a character string, after normalization */
+  CHARCLASS,  /* match a character class */
+  BOL,        /* match at beginning of line */
+  EOL,        /* match at end of line */
+  WORDBOUNDARY, /* match on a word boundary */
+  BEGGROUP,   /* record the beginning of a group */
+  ENDGROUP,   /* record the end of a group */
+  REFGROUP,   /* match a previously matched group */
+  ACCEPT,     /* report success */
+  SIMPLEOPT,  /* match a character class 0 or 1 times */
+  SIMPLESTAR, /* match a character class 0, 1 or several times */
+  SIMPLEPLUS, /* match a character class 1 or several times */
+  GOTO,       /* unconditional branch */
+  PUSHBACK    /* record a backtrack point -- 
+                 where to jump in case of failure */
+};
+
+/* Accessors in a compiled regexp */
+#define Prog(re) Field(re, 0)
+#define Cpool(re) Field(re, 1)
+#define Normtable(re) Field(re, 2)
+#define Numgroups(re) Int_val(Field(re, 3))
+#define Startchars(re) Int_val(Field(re, 4))
+
+/* Record positions of matched groups */
+struct re_group {
+  unsigned char * tentative_start;
+  unsigned char * start;
+  unsigned char * end;
+};
+static struct re_group re_group[32];
+
+/* Bitvector recording which groups were fully matched */
+static int re_mask;
+
+/* The initial backtracking stack */
+static struct backtrack_stack initial_stack = { NULL, };
+
+/* Free a chained list of backtracking stacks */
+static void free_backtrack_stack(struct backtrack_stack * stack)
 {
-  value res =
-    alloc_custom(&regexp_ops, sizeof(struct regexp_struct), 1, 10000);
-  return (regexp) res;
-}
-
-#define RE_SYNTAX RE_SYNTAX_EMACS
-
-static char * case_fold_table = NULL;
-
-CAMLprim value str_compile_regexp(value src, value fold)
-{
-  regexp expr;
-  char * msg;
-
-  Begin_root(src);
-  expr = alloc_regexp();
-  End_roots();
-  re_syntax_options = RE_SYNTAX;
-  if (Bool_val(fold) && case_fold_table == NULL) {
-    int i;
-    case_fold_table = stat_alloc(256);
-    for (i = 0; i <= 255; i++) case_fold_table[i] = i;
-    for (i = 'A'; i <= 'Z'; i++) case_fold_table[i] = i + 32;
-    for (i = 192; i <= 214; i++) case_fold_table[i] = i + 32;
-    for (i = 216; i <= 222; i++) case_fold_table[i] = i + 32;
+  struct backtrack_stack * prevstack;
+  while ((prevstack = stack->previous) != NULL) {
+    stat_free(stack);
+    stack = prevstack;
   }
-  expr->re.translate = Bool_val(fold) ? case_fold_table : NULL;
-  expr->re.fastmap = stat_alloc(256);
-  expr->re.buffer = NULL;
-  expr->re.allocated = 0;
-  msg = (char *) re_compile_pattern(String_val(src), string_length(src),
-                                    &(expr->re));
-  if (msg != NULL) failwith(msg);
-  re_compile_fastmap(&(expr->re));
-  expr->re.regs_allocated = REGS_FIXED;
-  return (value) expr;
 }
 
-static regoff_t start_regs[10], end_regs[10];
+/* Membership in a bit vector representing a set of booleans */
+#define In_bitset(s,i,tmp) (tmp = (i), ((s)[tmp >> 3] >> (tmp & 7)) & 1)
 
-static struct re_registers match_regs = { 10, start_regs, end_regs };
+/* Determine if a character is a word constituent */
+static unsigned char re_word_letters[32] = {
+  0, 0, 0, 0, 0, 0, 0, 0, 254, 255, 255, 7, 254, 255, 255, 7,
+  0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 127, 255, 255, 255, 127, 255
+};
+#define Is_word_letter(c) ((re_word_letters[(c) >> 3] >> ((c) & 7)) & 1)
 
-CAMLprim value str_string_match(regexp expr, value text, value pos)
+/* The bytecode interpreter for the NFA */
+
+static int re_match(value re, 
+                    unsigned char * starttxt,
+                    register unsigned char * txt,
+                    register unsigned char * endtxt,
+                    int accept_partial_match)
 {
-  int len = string_length(text);
-  int start = Int_val(pos);
-  if (start < 0 || start > len)
+  register value * pc;
+  struct backtrack_stack * stack;
+  struct backtrack_point * sp;
+  value cpool;
+  value normtable;
+  unsigned char c;
+
+  pc = &Field(Prog(re), 0);
+  stack = &initial_stack;
+  sp = stack->point;
+  cpool = Cpool(re);
+  normtable = Normtable(re);
+  re_mask = 0;
+  re_group[0].start = txt;
+
+  while (1) {
+    long instr = Long_val(*pc++);
+    switch (Opcode(instr)) {
+    case CHAR:
+      if (txt == endtxt) goto prefix_match;
+      if (*txt != Arg(instr)) goto backtrack;
+      txt++;
+      break;
+    case CHARNORM:
+      if (txt == endtxt) goto prefix_match;
+      if (Byte_u(normtable, *txt) != Arg(instr)) goto backtrack;
+      txt++;
+      break;
+    case STRING: {
+      unsigned char * s =
+        (unsigned char *) String_val(Field(cpool, Arg(instr)));
+      while ((c = *s++) != 0) {
+        if (txt == endtxt) goto prefix_match;
+        if (c != *txt) goto backtrack;
+        txt++;
+      }
+      break;
+    }
+    case STRINGNORM: {
+      unsigned char * s =
+        (unsigned char *) String_val(Field(cpool, Arg(instr)));
+      while ((c = *s++) != 0) {
+        if (txt == endtxt) goto prefix_match;
+        if (c != Byte_u(normtable, *txt)) goto backtrack;
+        txt++;
+      }
+      break;
+    }
+    case CHARCLASS:
+      if (txt == endtxt) goto prefix_match;
+      if (! In_bitset(String_val(Field(cpool, Arg(instr))), *txt, c))
+        goto backtrack;
+      txt++;
+      break;
+    case BOL:
+      if (txt > starttxt && txt[-1] != '\n') goto backtrack;
+      break;
+    case EOL:
+      if (txt < endtxt && *txt != '\n') goto backtrack;
+      break;
+    case WORDBOUNDARY:
+      /* At beginning and end of text: no
+         At beginning of text: OK if current char is a letter
+         At end of text: OK if previous char is a letter
+         Otherwise: 
+           OK if previous char is a letter and current char not a letter
+           or previous char is not a letter and current char is a letter */
+      if (txt == starttxt) {
+        if (txt == endtxt) goto prefix_match;
+        if (Is_word_letter(txt[0])) break;
+        goto backtrack;
+      } else if (txt == endtxt) {
+        if (Is_word_letter(txt[-1])) break;
+        goto backtrack;
+      } else {
+        if (Is_word_letter(txt[-1]) != Is_word_letter(txt[0])) break;
+        goto backtrack;
+      }
+    case BEGGROUP: {
+      int group_no = Arg(instr);
+      re_group[group_no].tentative_start = txt;
+      break;
+    }
+    case ENDGROUP: {
+      int group_no = Arg(instr);
+      struct re_group * group = &(re_group[group_no]);
+      group->start = group->tentative_start;
+      group->end = txt;
+      re_mask |= (1 << group_no);
+      break;
+    }
+    case REFGROUP: {
+      int group_no = Arg(instr);
+      struct re_group * group = &(re_group[group_no]);
+      unsigned char * s;
+      if ((re_mask & (1 << group_no)) == 0) goto backtrack;
+      for (s = group->start; s < group->end; s++) {
+        if (txt == endtxt) goto prefix_match;
+        if (*s != *txt) goto backtrack;
+        txt++;
+      }
+      break;
+    }
+    case ACCEPT:
+      goto accept;
+    case SIMPLEOPT: {
+      char * set = String_val(Field(cpool, Arg(instr)));
+      if (txt < endtxt && In_bitset(set, *txt, c)) txt++;
+      break;
+    }
+    case SIMPLESTAR: {
+      char * set = String_val(Field(cpool, Arg(instr)));
+      while (txt < endtxt && In_bitset(set, *txt, c))
+        txt++;
+      break;
+    }
+    case SIMPLEPLUS: {
+      char * set = String_val(Field(cpool, Arg(instr)));
+      if (txt == endtxt) goto prefix_match;
+      if (! In_bitset(set, *txt, c)) goto backtrack;
+      txt++;
+      while (txt < endtxt && In_bitset(set, *txt, c))
+        txt++;
+      break;
+    }
+    case GOTO:
+      pc = pc + SignedArg(instr);
+      break;
+    case PUSHBACK:
+      if (sp == stack->point + BACKTRACK_STACK_BLOCK_SIZE) {
+        struct backtrack_stack * newstack = 
+          stat_alloc(sizeof(struct backtrack_stack));
+        newstack->previous = stack;
+        stack = newstack;
+        sp = stack->point;
+      }
+      sp->txt = txt;
+      sp->pc = pc + SignedArg(instr);
+      sp->mask = re_mask;
+      sp++;
+      break;
+    default:
+      assert(0);
+    }
+    /* Continue with next instruction */
+    continue;
+  prefix_match:
+    /* We get here when matching failed because the end of text
+       was encountered. */
+    if (accept_partial_match) goto accept;
+  backtrack:
+    /* We get here when matching fails.  Backtrack to most recent saved
+       point. */
+    if (sp == stack->point) {
+      struct backtrack_stack * prevstack = stack->previous;
+      if (prevstack == NULL) return 0;
+      stat_free(stack);
+      stack = prevstack;
+      sp = stack->point + BACKTRACK_STACK_BLOCK_SIZE;
+    }
+    sp--;
+    txt = sp->txt;
+    pc = sp->pc;
+    re_mask = sp->mask;
+  }  
+ accept:
+  /* We get here when the regexp was successfully matched */
+  free_backtrack_stack(stack);
+  re_group[0].end = txt;
+  re_mask |= 1;
+  return 1;
+}
+
+/* Allocate an integer array containing the positions of the matched groups.
+   Beginning of group #N is at 2N, end is at 2N+1.
+   Take position = -1 when group wasn't matched. */
+
+static value re_alloc_groups(value re, value str)
+{
+  CAMLparam1(str);
+  CAMLlocal1(res);
+  unsigned char * starttxt = (unsigned char *) String_val(str);
+  int n = Numgroups(re);
+  int i;
+
+  res = alloc(n * 2, 0);
+  for (i = 0; i < n; i++) {
+    if ((re_mask & (1 << i)) == 0) {
+      Field(res, i * 2) = Val_int(-1);
+      Field(res, i * 2 + 1) = Val_int(-1);
+    } else {
+      Field(res, i * 2) = Val_long(re_group[i].start - starttxt);
+      Field(res, i * 2 + 1) = Val_long(re_group[i].end - starttxt);
+    }
+  }
+  CAMLreturn(res);
+}
+
+/* String matching and searching.  All functions return the empty array
+   on failure, and an array of positions on success. */
+
+CAMLprim value re_string_match(value re, value str, value pos)
+{
+  unsigned char * starttxt = &Byte_u(str, 0);
+  unsigned char * txt = &Byte_u(str, Long_val(pos));
+  unsigned char * endtxt = &Byte_u(str, string_length(str));
+
+  if (txt < starttxt || txt > endtxt)
     invalid_argument("Str.string_match");
-  switch (re_match(&(expr->re), String_val(text), len,
-                   start, &match_regs)) {
-  case -2:
-    failwith("Str.string_match");
-  case -1:
-  case -3:
-    return Val_false;
-  default:
-    return Val_true;
+  if (re_match(re, starttxt, txt, endtxt, 0)) {
+    return re_alloc_groups(re, str);
+  } else {
+    return Atom(0);
   }
 }
 
-CAMLprim value str_string_partial_match(regexp expr, value text, value pos)
+CAMLprim value re_partial_match(value re, value str, value pos)
 {
-  int len = string_length(text);
-  int start = Int_val(pos);
-  if (start < 0 || start > len)
+  unsigned char * starttxt = &Byte_u(str, 0);
+  unsigned char * txt = &Byte_u(str, Long_val(pos));
+  unsigned char * endtxt = &Byte_u(str, string_length(str));
+
+  if (txt < starttxt || txt > endtxt)
     invalid_argument("Str.string_partial_match");
-  switch (re_match(&(expr->re), String_val(text), len,
-                   start, &match_regs)) {
-  case -2:
-    failwith("Str.string_partial_match");
-  case -1:
-    return Val_false;
-  default:
-    return Val_true;
+  if (re_match(re, starttxt, txt, endtxt, 1)) {
+    return re_alloc_groups(re, str);
+  } else {
+    return Atom(0);
   }
 }
 
-CAMLprim value str_search_forward(regexp expr, value text, value pos)
+CAMLprim value re_search_forward(value re, value str, value startpos)
 {
-  int res;
-  int len = string_length(text);
-  int start = Int_val(pos);
-  if (start < 0 || start > len)
+  unsigned char * starttxt = &Byte_u(str, 0);
+  unsigned char * txt = &Byte_u(str, Long_val(startpos));
+  unsigned char * endtxt = &Byte_u(str, string_length(str));
+  unsigned char * startchars;
+  unsigned char c;
+
+  if (txt < starttxt || txt > endtxt)
     invalid_argument("Str.search_forward");
-  res = re_search(&(expr->re), String_val(text), len, start, len-start,
-                  &match_regs);
-  switch(res) {
-  case -2:
-    failwith("Str.search_forward");
-  case -1:
-    raise_not_found();
-  default:
-    return Val_int(res);
+  if (Startchars(re) == -1) {
+    do {
+      if (re_match(re, starttxt, txt, endtxt, 0))
+        return re_alloc_groups(re, str);
+      txt++;
+    } while (txt <= endtxt);
+    return Atom(0);
+  } else {
+    startchars =
+      (unsigned char *) String_val(Field(Cpool(re), Startchars(re)));
+    do {
+      while (txt < endtxt && startchars[*txt] == 0) txt++;
+      if (re_match(re, starttxt, txt, endtxt, 0))
+        return re_alloc_groups(re, str);
+      txt++;
+    } while (txt <= endtxt);
+    return Atom(0);
   }
 }
 
-CAMLprim value str_search_backward(regexp expr, value text, value pos)
+CAMLprim value re_search_backward(value re, value str, value startpos)
 {
-  int res;
-  int len = string_length(text);
-  int start = Int_val(pos);
-  if (start < 0 || start > len)
+  unsigned char * starttxt = &Byte_u(str, 0);
+  unsigned char * txt = &Byte_u(str, Long_val(startpos));
+  unsigned char * endtxt = &Byte_u(str, string_length(str));
+  unsigned char * startchars;
+  unsigned char c;
+
+  if (txt < starttxt || txt > endtxt)
     invalid_argument("Str.search_backward");
-  res = re_search(&(expr->re), String_val(text), len, start, -start-1,
-                  &match_regs);
-  switch(res) {
-  case -2:
-    failwith("Str.search_backward");
-  case -1:
-    raise_not_found();
-  default:
-    return Val_int(res);
+  if (Startchars(re) == -1) {
+    do {
+      if (re_match(re, starttxt, txt, endtxt, 0))
+        return re_alloc_groups(re, str);
+      txt--;
+    } while (txt >= starttxt);
+    return Atom(0);
+  } else {
+    startchars =
+      (unsigned char *) String_val(Field(Cpool(re), Startchars(re)));
+    do {
+      while (txt > starttxt && startchars[*txt] == 0) txt--;
+      if (re_match(re, starttxt, txt, endtxt, 0))
+        return re_alloc_groups(re, str);
+      txt--;
+    } while (txt >= starttxt);
+    return Atom(0);
   }
 }
 
-CAMLprim value str_beginning_group(value ngroup)
-{
-  return Val_int(start_regs[Int_val(ngroup)]);
-}
+/* Replacement */
 
-CAMLprim value str_end_group(value ngroup)
+CAMLprim value re_replacement_text(value repl, value groups, value orig)
 {
-  return Val_int(end_regs[Int_val(ngroup)]);
-}
-
-CAMLprim value str_replacement_text(value repl, value orig)
-{
-  value res;
-  mlsize_t len, n;
+  CAMLparam3(repl, groups, orig);
+  CAMLlocal1(res);
+  mlsize_t start, end, len, n;
   char * p, * q;
   int c;
 
@@ -184,15 +427,20 @@ CAMLprim value str_replacement_text(value repl, value orig)
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
         c -= '0';
-        len += end_regs[c] - start_regs[c]; break;
+        if (c*2 >= Wosize_val(groups))
+          failwith("Str.replace: reference to unmatched group");
+        start = Long_val(Field(groups, c*2));
+        end = Long_val(Field(groups, c*2 + 1));
+        if (start == (mlsize_t) -1)
+          failwith("Str.replace: reference to unmatched group");
+        len += end - start;
+        break;
       default:
         len += 2; break;
       }
     }
   }
-  Begin_roots2(orig,repl);
-    res = alloc_string(len);
-  End_roots();
+  res = alloc_string(len);
   p = String_val(repl);
   q = String_val(res);
   n = string_length(repl);
@@ -208,8 +456,10 @@ CAMLprim value str_replacement_text(value repl, value orig)
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
         c -= '0';
-        len = end_regs[c] - start_regs[c];
-        memmove (q, &Byte(orig, start_regs[c]), len);
+        start = Long_val(Field(groups, c*2));
+        end = Long_val(Field(groups, c*2 + 1));
+        len = end - start;
+        memmove (q, &Byte(orig, start), len);
         q += len;
         break;
       default:
@@ -217,6 +467,6 @@ CAMLprim value str_replacement_text(value repl, value orig)
       }
     }
   }
-  return res;
+  CAMLreturn(res);
 }
 

@@ -17,12 +17,11 @@
 
 # Compilation options
 PPCC = mrc
-PPCCOptions = -i {REGEXLIB},:::byterun:,:::config: -w 7 {cdbgflag}
+PPCCOptions = -i :::byterun:,:::config: -w 7 {cdbgflag}
 
 CAMLC = :::boot:ocamlrun :::ocamlc -I :::stdlib:
-REGEXLIB = :regex-0.12:
 
-PPCCOBJS = strstubs.c.x {REGEXLIB}regex.c.x
+PPCCOBJS = strstubs.c.x
 
 all Ä libstr.x str.cmi str.cma
 
@@ -32,15 +31,11 @@ libstr.x Ä {PPCCOBJS}
 str.cma Ä str.cmo
     {CAMLC} -a -o str.cma str.cmo
 
-{REGEXLIB}regex.c.x Ä {REGEXLIB}regex.c {REGEXLIB}regex.h
-    directory {REGEXLIB}; domake; directory ::
-
 partialclean Ä
     delete -i Å.cm[aio] || set status 0
 
 clean Ä partialclean
     delete -i Å.x || set status 0
-    directory {REGEXLIB}; domake distclean; directory ::
 
 install Ä
     duplicate -y libstr.x str.cma str.cmi "{LIBDIR}"
