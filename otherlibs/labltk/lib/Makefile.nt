@@ -39,7 +39,7 @@ install: tk41.cma labltk
 
 installopt: tk41.cmxa
 	@if not exist $(LABLTKDIR) mkdir $(LABLTKDIR)
-	cp tk41.cmxa tk41.a $(LABLTKDIR)
+	cp tk41.cmxa tk41.lib $(LABLTKDIR)
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmx .cmo .mlp
