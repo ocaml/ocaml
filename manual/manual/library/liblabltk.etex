@@ -38,7 +38,7 @@ in place of "ocaml".
 \end{unix}
 
 \begin{windows}
-The "labltk" library has been precompiled for use with Tcl/Tk 8.0.
+The "labltk" library has been precompiled for use with Tcl/Tk 8.3.
 You must first have it installed on your system.
 It can be downloaded from \\
 "http://www.scriptics.com/products/tcltk/8.3.html".
@@ -46,9 +46,14 @@ After installing it, you must put the dynamically loaded libraries
 "tcl83.dll" and "tk83.dll" (from the "bin" directory of the Tcl
 installation) in a directory included in you path.
 
-The toplevel, including Unix and Str, is available as "labltk".
-But you need to explicitly add the "labltk" library directory to your
-load path with the "#directory" directive.
+No toplevel is available, but you can load the library from the
+standard toplevel with the following commands.
+\begin{quote}
+\begin{verbatim}
+# #directory "+labltk";;
+# #load "labltk.cma";;
+\end{verbatim}
+\end{quote}
 \end{windows}
 
 The "labltk" library is composed of a large number of modules.
