@@ -31,6 +31,7 @@ and dynlink = ref supports_shared_libraries
 and failsafe = ref false    (* whether to fall back on static build only *)
 and c_libs = ref []         (* libs to pass to mksharedlib and ocamlc -cclib *)
 and c_opts = ref []      (* options to pass to mksharedlib and ocamlc -ccopt *)
+and ld_opts = ref []        (* options to pass only to the linker *)
 and ocamlc = ref (Filename.concat bindir "ocamlc")
 and ocamlopt = ref (Filename.concat bindir "ocamlopt")
 and output = ref "a"        (* Output name for Caml part of library *)
@@ -75,6 +76,10 @@ let parse_arguments argv =
       caml_opts := next_arg () :: "-I" :: !caml_opts
     else if s = "-failsafe" then
       failsafe := true
+    else if s = "-h" || s = "-help" then
+      raise (Bad_argument "")
+    else if s = "-ldopt" then
+      ld_opts := next_arg () :: !ld_opts
     else if s = "-linkall" then
       caml_opts := s :: !caml_opts
     else if starts_with s "-l" then
@@ -115,7 +120,7 @@ let parse_arguments argv =
   List.iter
     (fun r -> r := List.rev !r)
     [ bytecode_objs; native_objs; c_objs; caml_libs; caml_opts; 
-      c_libs; c_objs; rpath ];
+      c_libs; c_objs; ld_opts; rpath ];
   if !output_c = "" then output_c := !output
 
 let usage = "\
@@ -127,6 +132,7 @@ Options are:
   -dllpath <dir> Add <dir> to the run-time search path for DLLs
   -I <dir>       Add <dir> to the path searched for Caml object files
   -failsafe      fall back to static linking if DLL construction failed
+  -ldopt <opt>   C option passed to the shared linker only
   -linkall       Build Caml archive with link-all behavior
   -l<lib>        Specify a dependent C library
   -L<dir>        Add <dir> to the path searched for C libraries
@@ -176,11 +182,12 @@ let build_libs () =
   if !c_objs <> [] then begin
     if !dynlink then begin
       let retcode = command
-        (sprintf "%s dll%s.so %s %s %s %s"
+        (sprintf "%s dll%s.so %s %s %s %s %s"
                     mksharedlib
                     !output_c
                     (String.concat " " !c_objs)
                     (String.concat " " !c_opts)
+                    (String.concat " " !ld_opts)
                     (make_rpath mksharedlib_rpath)
                     (String.concat " " !c_libs)) in
       if retcode <> 0 then if !failsafe then dynlink := false else exit 2
@@ -227,6 +234,8 @@ let _ =
     parse_arguments Sys.argv;
     build_libs()
   with
+  | Bad_argument "" ->
+      prerr_string usage; exit 0
   | Bad_argument s ->
       prerr_endline s; prerr_string usage; exit 4
   | Sys_error s ->
