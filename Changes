@@ -1,3 +1,5 @@
+- Enhanced scanf code: %N is now correct, ...
+
 - Enhanced the compilation of recursive values: "let rec" is now
   less restrictive.
 
