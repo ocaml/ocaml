@@ -1091,6 +1091,7 @@ let report_subtyping_error ppf tr1 txt1 tr2 =
   let tr1 = List.map prepare_expansion tr1
   and tr2 = List.map prepare_expansion tr2 in
   trace true txt1 ppf tr1;
+  if tr2 = [] then () else
   let t3, t4 = mismatch tr2 in
   trace false "is not compatible with type" ppf tr2;
   explanation true t3 t4 ppf
