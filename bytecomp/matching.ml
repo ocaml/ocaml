@@ -527,11 +527,15 @@ let for_multiple_match loc paraml pat_act_list =
       args = [Lprim(Pmakeblock(0, Immutable), paraml), Strict] } in
   let pm2 =
     simplify_matching pm1 in
-  let pm3 =
-    try
+  try
+    let idl = List.map (fun _ -> Ident.create "match") paraml in
+    let pm3 =
       { cases = flatten_cases (List.length paraml) pm2.cases;
-        args = List.map (fun lam -> (lam, Strict)) paraml }
-    with Cannot_flatten ->
-      pm2 in
-  let (lambda, total) = compile_match None pm3 in
-  if total then lambda else Lcatch(lambda, partial_function loc ())
+        args = List.map (fun id -> (Lvar id, Alias)) idl } in
+    let (lambda, total) = compile_match None pm3 in
+    let lambda2 =
+      if total then lambda else Lcatch(lambda, partial_function loc ()) in
+    List.fold_right2 (bind Strict) idl paraml lambda2
+  with Cannot_flatten ->
+    let (lambda, total) = compile_match None pm2 in
+    if total then lambda else Lcatch(lambda, partial_function loc ())
