@@ -165,6 +165,10 @@ class man =
       let s2 = Str.global_replace (Str.regexp "\n[ ]*") "\n" s in
       Str.global_replace (Str.regexp "\n\n") "\n" s2
 
+    (** Return the given string without no newlines. *)
+    method remove_newlines s =
+      Str.global_replace (Str.regexp "[ ]*\n[ ]*") " " s
+      
     (** Return the groff string for a text element. *)
     method man_of_text_element te =
       match te with
@@ -534,8 +538,18 @@ class man =
            "OCamldoc "^
            "\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
 
+	let abstract = 
+	  match cl.cl_info with
+	    None | Some { i_desc = None } -> ""
+	  | Some { i_desc = Some t } ->
+	      let s = Odoc_info.string_of_text (Odoc_info.first_sentence_of_text t) in
+	      self#remove_newlines s
+	in
+
         output_string chanout
           (
+	   ".SH NAME\n"^
+	   cl.cl_name^" \\- "^abstract^"\n"^
            ".SH "^Odoc_messages.clas^"\n"^
            Odoc_messages.clas^"   "^cl.cl_name^"\n"^
            ".SH "^Odoc_messages.documentation^"\n"^
@@ -586,8 +600,18 @@ class man =
            "OCamldoc "^
            "\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
 
+	let abstract = 
+	  match ct.clt_info with
+	    None | Some { i_desc = None } -> ""
+	  | Some { i_desc = Some t } ->
+	      let s = Odoc_info.string_of_text (Odoc_info.first_sentence_of_text t) in
+	      self#remove_newlines s
+	in
+
         output_string chanout
           (
+	   ".SH NAME\n"^
+	   ct.clt_name^" \\- "^abstract^"\n"^
            ".SH "^Odoc_messages.class_type^"\n"^
            Odoc_messages.class_type^"   "^ct.clt_name^"\n"^
            ".SH "^Odoc_messages.documentation^"\n"^
@@ -634,8 +658,17 @@ class man =
            "OCamldoc "^
            "\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
 
+	let abstract = 
+	  match mt.mt_info with
+	    None | Some { i_desc = None } -> ""
+	  | Some { i_desc = Some t } ->
+	      let s = Odoc_info.string_of_text (Odoc_info.first_sentence_of_text t) in
+	      self#remove_newlines s
+	in
         output_string chanout
           (
+	   ".SH NAME\n"^
+	   mt.mt_name^" \\- "^abstract^"\n"^
            ".SH "^Odoc_messages.module_type^"\n"^
            Odoc_messages.module_type^"   "^mt.mt_name^"\n"^
            ".SH "^Odoc_messages.documentation^"\n"^
@@ -704,8 +737,18 @@ class man =
            "OCamldoc "^
            "\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
 
+	let abstract = 
+	  match m.m_info with
+	    None | Some { i_desc = None } -> ""
+	  | Some { i_desc = Some t } ->
+	      let s = Odoc_info.string_of_text (Odoc_info.first_sentence_of_text t) in
+	      self#remove_newlines s
+	in
+
         output_string chanout
           (
+	   ".SH NAME\n"^
+	   m.m_name^" \\- "^abstract^"\n"^
            ".SH "^Odoc_messages.modul^"\n"^
            Odoc_messages.modul^"   "^m.m_name^"\n"^
            ".SH "^Odoc_messages.documentation^"\n"^
@@ -817,11 +860,15 @@ class man =
       try
         let chanout = self#open_out file in
         output_string chanout
-          (".TH \""^name^"\" "^
+          (
+	   ".TH \""^name^"\" "^
            "man "^
            "\""^(Odoc_misc.string_of_date ~hour: false date)^"\" "^ 
            "OCamldoc "^
-           "\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
+           "\""^(match !Args.title with Some t -> t | None -> "")^"\"\n"^
+	   ".SH NAME\n"^
+	   name^" \\- \n\n"
+	  );
 
         let f ele =
           match ele with
