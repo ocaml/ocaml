@@ -27,6 +27,22 @@ let create n =
 
 let contents b = String.sub b.buffer 0 b.position
 
+let sub b ofs len =
+  if ofs < 0 || len < 0 || ofs > b.position - len 
+  then invalid_arg "Buffer.sub"
+  else begin
+    let r = String.create len in
+    String.blit b.buffer ofs r 0 len;
+    r
+  end
+;;
+
+let nth b ofs = 
+  if ofs < 0 || ofs >= b.position then 
+   invalid_arg "Buffer.nth"
+  else String.get b.buffer ofs
+;;
+
 let length b = b.position
 
 let clear b = b.position <- 0
