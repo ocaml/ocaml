@@ -15,4 +15,4 @@ val error_when_null_denominator_flag : bool ref
 val normalize_ratio_flag : bool ref
 val normalize_ratio_when_printing_flag : bool ref
 val floating_precision : int ref
-val approx_printing_flag : bool ref;;
+val approx_printing_flag : bool ref

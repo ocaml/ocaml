@@ -13,7 +13,7 @@
 
 (* Module [Arith_status]: flags that control rational arithmetic *)
 
-val arith_status: unit -> unit;;
+val arith_status: unit -> unit
         (* Print the current status of the arithmetic flags. *)
 
 val get_error_when_null_denominator : unit -> bool
@@ -46,4 +46,4 @@ val set_floating_precision : int -> unit
            This parameter is the number of digits displayed when
            [approx_printing] is on.
            Initially: 12. *)
-;;
+
