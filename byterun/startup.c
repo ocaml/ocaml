@@ -291,6 +291,7 @@ void caml_main(char **argv)
     debugger(PROGRAM_START);
     interprete(start_code, trail.code_size);
   } else {
+    extern_sp = &exn_bucket; /* The debugger needs the exception value. */
     debugger(UNCAUGHT_EXC);
     fatal_uncaught_exception(exn_bucket);
   }
