@@ -44,49 +44,49 @@ let esome x = mkexp (Pexp_construct (Lident "Some", Some x, false))
 (* parsers *)
 
 let stream_pattern_component skont =
+  let elock = eloc skont.pexp_loc in
   function
     Spat_term (p, None) ->
       (afun "peek" [mkexp sexp],
-       p, mkexp (Pexp_sequence (afun "junk" [mkexp sexp], skont)))
+       p, elock (Pexp_sequence (afun "junk" [mkexp sexp], skont)))
   | Spat_term (p, Some e) ->
       (afun "peek" [mkexp sexp],
        p,
-       mkexp
+       elock
          (Pexp_when
-            (e, mkexp(Pexp_sequence (afun "junk" [mkexp sexp], skont)))))
+            (e, elock(Pexp_sequence (afun "junk" [mkexp sexp], skont)))))
   | Spat_nterm (p, e) ->
-      (mkexp
+      let eloce = eloc e.pexp_loc in
+      (eloce
          (Pexp_try
-            (esome (mkexp (Pexp_apply (e, [mkexp sexp]))),
+            (esome (eloce (Pexp_apply (e, [mkexp sexp]))),
              [(pcon "Failure" None,
                mkexp (Pexp_construct (Lident "None", None, false)))])),
        p, skont)
   | Spat_sterm p ->
       (esome (mkexp sexp), p, skont)
 
+(* error continuation for 2nd to last component of a stream pattern *)
+let ekont1 = function
+  | Some _ as estr -> araise "Error" estr
+  | None -> araise "Error" (Some (mkexp (Pexp_constant (Const_string ""))))
+;;
+
 let rec stream_pattern epo e ekont =
   function
     [] ->
       begin match epo with
         Some ep ->
-          mkexp (Pexp_let (Nonrecursive, [(ep, afun "count" [mkexp sexp])], e))
+          let countexpr = afun "count" [mkexp sexp] in
+          eloc e.pexp_loc (Pexp_match (countexpr, [(ep, e)]))
       | _ -> e
       end
   | (spc, err) :: spcl ->
-      let skont =
-        let ekont err =
-          let str =
-            match err with
-              Some estr -> estr
-            | _ -> mkexp (Pexp_constant (Const_string ""))
-          in
-          araise "Error" (Some str)
-        in
-        stream_pattern epo e ekont spcl
-      in
+      (* success continuation *)
+      let skont = stream_pattern epo e ekont1 spcl in
       let (tst, p, e) = stream_pattern_component skont spc in
       let ckont = ekont err in
-      mkexp
+      eloc e.pexp_loc
         (Pexp_match
            (tst,
             [(ploc p.ppat_loc (Ppat_construct (Lident "Some", Some p, false)),
@@ -102,8 +102,7 @@ let cparser (bpo, pc) =
   let pc = parser_cases pc in
   let e =
     match bpo with
-      Some bp ->
-        mkexp (Pexp_let (Nonrecursive, [(bp, afun "count" [mkexp sexp])], pc))
+      Some bp -> mkexp (Pexp_match (afun "count" [mkexp sexp], [(bp, pc)]))
     | None -> pc
   in
   mkexp (Pexp_function [(mkpat spat, e)])
