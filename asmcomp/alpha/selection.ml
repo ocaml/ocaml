@@ -60,6 +60,8 @@ method select_operation op args =
       (Ispecific(if shift = 2 then Isub4 else Isub8), [arg1; arg2])
   | (Csubi, [Cop(Cmuli, [Cconst_int(4|8 as mult); arg1]); arg2]) ->
       (Ispecific(if mult = 4 then Isub4 else Isub8), [arg1; arg2])
+  | ((Caddi|Cadda), [arg1; Cconst_int n]) when self#is_immediate (-n) ->
+      (Iintop_imm(Isub, -n), [arg1])
   | (Cdivi, [arg1; Cconst_int n])
     when (not digital_asm) && n <> 1 lsl (Misc.log2 n) ->
       (Iintop Idiv, args)
