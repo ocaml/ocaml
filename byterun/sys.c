@@ -278,9 +278,9 @@ char * searchpath(char * name)
     if (p != fullname && p[-1] != '\\') *p++ = '\\';
     for (q = name; *q != 0; p++, q++) *p = *q;
     *p = 0;
-    if (stat(fullname, &st) == 0) break;
+    if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) break;
     strcpy(p, ".exe");
-    if (stat(fullname, &st) == 0) break;
+    if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) break;
     if (*path == 0) return 0;
     path++;
   }
@@ -329,6 +329,8 @@ char * searchpath(char * name)
 }
 
 #endif /* _WIN32, macintosh, ... */
+
+/* Wrapper around "system" for Win32 */
 
 #ifdef _WIN32
 
