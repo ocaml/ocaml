@@ -71,8 +71,11 @@ clean::
 
 # To make custom toplevels
 
-ocamlmktop.exe: ocamlmktop.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamlmktop.exe ocamlmktop.cmo
+OCAMLMKTOP=ocamlmktop.cmo
+OCAMLMKTOP_IMPORTS=misc.cmo config.cmo clflags.cmo ccomp.cmo
+
+ocamlmktop.exe: $(OCAMLMKTOP)
+	$(CAMLC) $(LINKFLAGS) -o ocamlmktop.exe $(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP)
 
 install::
 	cp ocamlmktop.exe $(BINDIR)/ocamlmktop.exe
