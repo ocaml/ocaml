@@ -351,7 +351,6 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
   if (h == -1) return errno == ENOENT ? 0 : -1;
   do {
     if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0) {
-      printf("Adding %s\n", fileinfo.name);
       p = stat_alloc(strlen(fileinfo.name) + 1);
       strcpy(p, fileinfo.name);
       ext_table_add(contents, p);
