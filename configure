@@ -1122,5 +1122,5 @@ echo "        use tcl/tk version ....... $tcl_version"
 echo "        options for compiling .... $tk_defs"
 echo "        options for linking ...... $tk_libs"
 else
-echo "The \"labltk\" library: configuration failed"
+echo "The \"labltk\" library: not found"
 fi
