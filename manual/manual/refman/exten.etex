@@ -154,4 +154,4 @@ For more information, see the description of module "Lazy" in the
 standard library (section~\ref{s:Lazy}).
 %
 \index{Lazy (module)\@\verb`Lazy` (module)}%
-\index{force@\verb`force`}%
+\index{force\@\verb`force`}%
