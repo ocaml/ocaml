@@ -13,8 +13,8 @@
 
 /* Asm part of the runtime system, Alpha processor */
 
-        .comm   gc_entry_regs 8 * 32
-        .comm   gc_entry_float_regs 8 * 32
+        .comm   gc_entry_regs, 8 * 32
+        .comm   gc_entry_float_regs, 8 * 32
 
 #define SAVE_ALL_REGS \
         lda     $24, gc_entry_regs; \
@@ -117,12 +117,13 @@
         .globl  caml_call_gc
 
 /* caml_alloc* : all code generator registers preserved,
-   $gp preserved, $27 not valid on entry */
+   $gp preserved, $27 not necessarily valid on entry */
 
         .globl  caml_alloc1
         .ent    caml_alloc1
         .align  3
 caml_alloc1:
+        .prologue 0
         subq    $13, 16, $13
         cmpult  $13, $14, $25
         bne     $25, $100
@@ -135,6 +136,7 @@ $100:   ldiq    $25, 16
         .ent    caml_alloc2
         .align  3
 caml_alloc2:
+        .prologue 0
         subq    $13, 24, $13
         cmpult  $13, $14, $25
         bne     $25, $101
@@ -147,6 +149,7 @@ $101:   ldiq    $25, 24
         .ent    caml_alloc3
         .align  3
 caml_alloc3:
+        .prologue 0
         subq    $13, 32, $13
         cmpult  $13, $14, $25
         bne     $25, $102
@@ -159,6 +162,7 @@ $102:   ldiq    $25, 32
         .ent    caml_alloc
         .align  3
 caml_alloc:
+        .prologue 0
         subq    $13, $25, $13
         .set    noat
         cmpult  $13, $14, $at
@@ -171,6 +175,7 @@ caml_alloc:
         .ent    caml_call_gc
         .align  3
 caml_call_gc:
+        .prologue 0
         ldiq    $25, 0
 $110:   lda     $sp, -32($sp)
         stq     $26, 0($sp)
@@ -213,18 +218,18 @@ $103:   ldgp    $gp, 0($27)
         .end    caml_call_gc
 
 /* Call a C function from Caml */
+/* Function to call is in $25 */
 
         .globl  caml_c_call
         .ent    caml_c_call
         .align  3
 caml_c_call:
-    /* Function to call is in $27 */
-    /* Preserve return address and caller's $gp in callee-save registers */
+        .prologue 0
+    /* Preserve return address and caller's $gp callee-save registers */
         mov     $26, $9
         mov     $gp, $10
     /* Rebuild $gp */
-        br      $25, $105
-$105:   ldgp    $gp, 0($25)
+        ldgp    $gp, 8($27)
     /* Record lowest stack address and return address */
         lda     $11, caml_last_return_address
         stq     $26, 0($11)
@@ -232,12 +237,14 @@ $105:   ldgp    $gp, 0($25)
     /* Make the exception handler and alloc ptr available to the C code */
         lda     $12, young_ptr
         stq     $13, 0($12)
+        lda     $14, young_limit
         stq     $15, caml_exception_pointer
     /* Call the function */
-        jsr     ($27)
+        mov     $25, $27
+        jsr     ($25)
     /* Reload alloc ptr and alloc limit */
         ldq     $13, 0($12)  /* $12 still points to young_ptr */
-        ldq     $14, young_limit
+        ldq     $14, 0($14)  /* $14 still points to young_limit */
     /* Say that we are back into Caml code */
         stq     $31, 0($11)  /* $11 still points to caml_last_return_address */
     /* Restore $gp */
@@ -296,9 +303,11 @@ $107:
     /* We are back into Caml code */
         stq     $31, caml_last_return_address
     /* Call the Caml code */
-$108:   jsr     ($25)
-    /* Reload $gp */
-        bic     $26, 1, $26     /* return address may have "scanned" bit set */
+        mov     $25, $27
+        jsr     ($25)
+$108:
+    /* Reload $gp, masking off low bit in retaddr (might have been marked) */
+        bic     $26, 1, $26
         ldgp    $gp, 4($26)
     /* Pop the trap frame, restoring caml_exception_pointer */
         ldq     $15, 0($sp)
@@ -368,20 +377,6 @@ raise_caml_exception:
         jmp     $25, ($27)      /* Keep retaddr in $25 to help debugging */
         .end    raise_caml_exception
 
-/* Glue code to jump to array_bound_error after reinitializing $gp */
-
-        .globl  call_array_bound_error
-        .ent    call_array_bound_error
-        .align  3
-call_array_bound_error:
-        nop
-    /* Rebuild $gp */
-        br      $27, $106
-$106:   ldgp    $gp, 0($27)
-    /* Branch to array_bound_error -- never returns */
-        jsr     array_bound_error
-        .end    call_array_bound_error
-
 /* Callback from C to Caml */
 
         .globl  callback
@@ -428,7 +423,7 @@ callback3:
         .globl  system_frametable
 system_frametable:
         .quad   1               /* one descriptor */
-        .quad   $108 + 4        /* return address into callback */
+        .quad   $108            /* return address into callback */
         .word   -1              /* negative frame size => use callback link */
         .word   0               /* no roots here */
         .align  3
