@@ -136,7 +136,7 @@ let rec transl_type env policy rowvar styp =
             end
         | Delayed ->
             begin try
-              Tbl.find name !used_variables
+              instance (Tbl.find name !used_variables)
             with Not_found -> try
               let v1 = instance (Tbl.find name !type_variables) in
               let v2 = new_global_var () in
@@ -293,7 +293,18 @@ let rec transl_type env policy rowvar styp =
             raise(Error(styp.ptyp_loc, Bound_type_variable alias))
       else begin
         try
-          let t = instance (Tbl.find alias !type_variables) in
+          let v1 = instance (Tbl.find alias !type_variables) in
+          let t =
+            (* Special case if using indirect variable bindings *)
+            if policy = Delayed then
+              try instance (Tbl.find alias !used_variables)
+              with Not_found ->
+                let v2 = new_global_var () in
+                used_variables := Tbl.add alias v2 !used_variables;
+                bindings := (styp.ptyp_loc, v1, v2)::!bindings;
+                v2
+            else v1
+          in
           let ty = transl_type env policy None st in
           begin try unify_var env t ty with Unify trace ->
             let trace = swap_list trace in
@@ -304,6 +315,8 @@ let rec transl_type env policy rowvar styp =
           begin_def ();
           let t = newvar () in
           type_variables := Tbl.add alias t !type_variables;
+          if policy = Delayed then
+            used_variables := Tbl.add alias t !used_variables;
           let ty = transl_type env policy None st in
           begin try unify_var env t ty with Unify trace ->
             let trace = swap_list trace in

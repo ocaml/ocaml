@@ -120,6 +120,10 @@ let unify_pat env pat expected_ty =
       raise(Typetexp.Error(pat.pat_loc, Typetexp.Variant_tags (l1, l2)))
 
 let pattern_variables = ref ([]: (Ident.t * type_expr) list)
+let pattern_force = ref ([] : (unit -> unit) list)
+let reset_pattern () =
+  pattern_variables := [];
+  pattern_force := []
 
 let enter_variable loc name ty =
   if List.exists (fun (id, _) -> Ident.name id = name) !pattern_variables
@@ -389,35 +393,39 @@ let rec type_pat env sp =
         pat_env = env }
   | Ppat_constraint(sp, sty) ->
       let p = type_pat env sp in
-      let ty = Typetexp.transl_simple_type env false sty in
+      let ty, force = Typetexp.transl_simple_type_delayed env sty in
       unify_pat env p ty;
+      pattern_force := force :: !pattern_force;
       p
   | Ppat_type lid ->
       build_or_pat env sp.ppat_loc lid
 
+let get_ref r =
+  let v = !r in r := []; v
+
 let add_pattern_variables env =
-  let pv = !pattern_variables in
-  pattern_variables := [];
+  let pv = get_ref pattern_variables in
   List.fold_right
     (fun (id, ty) env ->
        Env.add_value id {val_type = ty; val_kind = Val_reg} env)
     pv env
 
 let type_pattern env spat =
-  pattern_variables := [];
+  reset_pattern ();
   let pat = type_pat env spat in
   let new_env = add_pattern_variables env in
-  (pat, new_env)
+  (pat, new_env, get_ref pattern_force)
 
 let type_pattern_list env spatl =
-  pattern_variables := [];
+  reset_pattern ();
   let patl = List.map (type_pat env) spatl in
   let new_env = add_pattern_variables env in
-  (patl, new_env)
+  (patl, new_env, get_ref pattern_force)
 
 let type_class_arg_pattern cl_num val_env met_env l spat =
-  pattern_variables := [];
+  reset_pattern ();
   let pat = type_pat val_env spat in
+  List.iter (fun f -> f()) (get_ref pattern_force);
   if is_optional l then unify_pat val_env pat (type_option (newvar ()));
   let (pv, met_env) =
     List.fold_right
@@ -438,8 +446,9 @@ let type_self_pattern cl_num val_env met_env par_env spat =
     mkpat (Ppat_alias (mkpat(Ppat_alias (spat, "selfpat-*")),
                        "selfpat-" ^ cl_num))
   in
-  pattern_variables := [];
+  reset_pattern ();
   let pat = type_pat val_env spat in
+  List.iter (fun f -> f()) (get_ref pattern_force);
   let meths = ref Meths.empty in
   let vars = ref Vars.empty in
   let pv = !pattern_variables in
@@ -1647,11 +1656,13 @@ and type_statement env sexp =
 
 and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
   let ty_arg' = newvar () in
+  let pattern_force = ref [] in
   let pat_env_list =
     List.map
       (fun (spat, sexp) ->
         if !Clflags.principal then begin_def ();
-        let (pat, ext_env) = type_pattern env spat in
+        let (pat, ext_env, force) = type_pattern env spat in
+        pattern_force := force @ !pattern_force;
         let pat =
           if !Clflags.principal then begin
             end_def ();
@@ -1679,6 +1690,7 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
   (* Revert to normal typing of variants (also register checks) *)
   List.iter (fun (pat, _) -> iter_pattern finalize_variant pat) dummy_cases;
   (* `Contaminating' unifications start here *)
+  List.iter (fun f -> f()) !pattern_force;
   begin match pat_env_list with [] -> ()
   | (pat, _) :: _ -> unify_pat env pat ty_arg
   end;
@@ -1697,7 +1709,7 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
 and type_let env rec_flag spat_sexp_list =
   begin_def();
   if !Clflags.principal then begin_def ();
-  let (pat_list, new_env) =
+  let (pat_list, new_env, force) =
     type_pattern_list env (List.map (fun (spat, sexp) -> spat) spat_sexp_list)
   in
   if rec_flag = Recursive then
@@ -1713,6 +1725,8 @@ and type_let env rec_flag spat_sexp_list =
           {pat with pat_type = instance pat.pat_type})
         pat_list
     end else pat_list in
+  (* Only bind pattern variables after generalizing *)
+  List.iter (fun f -> f()) force;
   let exp_env =
     match rec_flag with Nonrecursive | Default -> env | Recursive -> new_env in
   let exp_list =
