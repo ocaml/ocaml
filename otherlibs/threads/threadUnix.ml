@@ -51,14 +51,16 @@ let system cmd =
 (*** File I/O *)
 
 let rec read fd buff ofs len =
-  Thread.wait_read fd;
-  try Unix.read fd buff ofs len
-  with Unix_error((EAGAIN | EWOULDBLOCK), _, _) -> read fd buff ofs len
+  try
+    Unix.read fd buff ofs len
+  with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
+    Thread.wait_read fd; read fd buff ofs len
 
 let rec write fd buff ofs len =
-  Thread.wait_write fd;
-  try Unix.write fd buff ofs len
-  with Unix_error((EAGAIN | EWOULDBLOCK), _, _) -> write fd buff ofs len
+  try
+    Unix.write fd buff ofs len
+  with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
+    Thread.wait_write fd; write fd buff ofs len
 
 let rec timed_read fd buff ofs len timeout =
   if Thread.wait_timed_read fd timeout
@@ -83,6 +85,7 @@ let select = Thread.select
 let pipe() =
   let (out_fd, in_fd as fd_pair) = Unix.pipe() in
   Unix.set_nonblock in_fd;
+  Unix.set_nonblock out_fd;
   fd_pair
 
 let open_process_out cmd =
@@ -129,26 +132,31 @@ let connect s addr =
     ignore(Unix.getpeername s)
 
 let rec recv fd buf ofs len flags =
-  Thread.wait_read fd;
-  try Unix.recv fd buf ofs len flags
-  with Unix_error((EAGAIN | EWOULDBLOCK), _, _) -> recv fd buf ofs len flags
+  try
+    Unix.recv fd buf ofs len flags
+  with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
+    Thread.wait_read fd; recv fd buf ofs len flags
 
 let rec recvfrom fd buf ofs len flags =
-  Thread.wait_read fd;
-  try Unix.recvfrom fd buf ofs len flags
+  try
+    Unix.recvfrom fd buf ofs len flags
   with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
-              recvfrom fd buf ofs len flags
+    Thread.wait_read fd;
+    recvfrom fd buf ofs len flags
 
 let rec send fd buf ofs len flags =
-  Thread.wait_write fd;
-  try Unix.send fd buf ofs len flags
-  with Unix_error((EAGAIN | EWOULDBLOCK), _, _) -> send fd buf ofs len flags
+  try
+    Unix.send fd buf ofs len flags
+  with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
+    Thread.wait_write fd;
+    send fd buf ofs len flags
   
 let rec sendto fd buf ofs len flags addr =
-  Thread.wait_write fd;
-  try Unix.sendto fd buf ofs len flags addr
+  try
+    Unix.sendto fd buf ofs len flags addr
   with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
-              sendto fd buf ofs len flags addr
+    Thread.wait_write fd;
+    sendto fd buf ofs len flags addr
 
 let open_connection sockaddr =
   let domain =

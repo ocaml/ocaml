@@ -222,8 +222,11 @@ let open_out_bin name =
 external flush_partial : out_channel -> bool = "caml_flush_partial"
 
 let rec flush oc =
-  wait_outchan oc (-1);
-  let success = try flush_partial oc with Sys_blocked_io -> false in
+  let success =
+    try
+      flush_partial oc
+    with Sys_blocked_io ->
+      wait_outchan oc (-1); false in
   if success then () else flush oc
 
 external unsafe_output_partial : out_channel -> string -> int -> int -> int
@@ -231,9 +234,11 @@ external unsafe_output_partial : out_channel -> string -> int -> int -> int
 
 let rec unsafe_output oc buf pos len =
   if len > 0 then begin
-    wait_outchan oc len;
-    let written = 
-      try unsafe_output_partial oc buf pos len with Sys_blocked_io -> 0 in
+    let written =
+      try
+        unsafe_output_partial oc buf pos len
+      with Sys_blocked_io ->
+        wait_outchan oc len; 0 in
     unsafe_output oc buf (pos + written) (len - written)
   end
 
@@ -242,8 +247,10 @@ external output_char_blocking : out_channel -> char -> unit
 external output_byte_blocking : out_channel -> int -> unit = "caml_output_char"
 
 let rec output_char oc c =
-  wait_outchan oc 1;
-  try output_char_blocking oc c with Sys_blocked_io -> output_char oc c
+  try
+    output_char_blocking oc c
+  with Sys_blocked_io ->
+    wait_outchan oc 1; output_char oc c
 
 let output_string oc s =
   unsafe_output oc s 0 (string_length s)
@@ -254,8 +261,10 @@ let output oc s ofs len =
   else unsafe_output oc s ofs len
 
 let rec output_byte oc b =
-  wait_outchan oc 1;
-  try output_byte_blocking oc b with Sys_blocked_io -> output_byte oc b
+  try
+    output_byte_blocking oc b
+  with Sys_blocked_io ->
+    wait_outchan oc 1; output_byte oc b
 
 let output_binary_int oc n =
   output_byte oc (n asr 24);
@@ -295,16 +304,19 @@ external input_char_blocking : in_channel -> char = "caml_input_char"
 external input_byte_blocking : in_channel -> int = "caml_input_char"
 
 let rec input_char ic =
-  wait_inchan ic;
-  try input_char_blocking ic with Sys_blocked_io -> input_char ic
+  try
+    input_char_blocking ic
+  with Sys_blocked_io ->
+    wait_inchan ic; input_char ic
 
 external unsafe_input_blocking : in_channel -> string -> int -> int -> int
                                = "caml_input"
 
 let rec unsafe_input ic s ofs len =
-  wait_inchan ic;
-  try unsafe_input_blocking ic s ofs len
-  with Sys_blocked_io -> unsafe_input ic s ofs len
+  try
+    unsafe_input_blocking ic s ofs len
+  with Sys_blocked_io ->
+    wait_inchan ic; unsafe_input ic s ofs len
 
 let input ic s ofs len =
   if ofs < 0 or ofs + len > string_length s
@@ -344,8 +356,10 @@ let input_line ic =
   do_input (string_create 128) 0
 
 let rec input_byte ic =
-  wait_inchan ic;
-  try input_byte_blocking ic with Sys_blocked_io -> input_byte ic
+  try
+    input_byte_blocking ic
+  with Sys_blocked_io ->
+    wait_inchan ic; input_byte ic
 
 let input_binary_int ic =
   let b1 = input_byte ic in
