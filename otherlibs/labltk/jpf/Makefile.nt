@@ -1,6 +1,6 @@
 !include ..\support\Makefile.common.nt
 
-COMPFLAGS=-I ../lib -I ../support -I $(OTHERS)/unix -I $(OTHERS)/str
+COMPFLAGS=-I ../lib -I ../support -I $(OTHERS)/win32unix -I $(OTHERS)/str
 
 OBJS= fileselect.cmo balloon.cmo
 
