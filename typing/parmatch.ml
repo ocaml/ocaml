@@ -925,7 +925,7 @@ let rec exhaust variants tdefs pss n = match pss with
 | []    ->  Rsome (omegas n)
 | []::_ ->  Rnone
 | pss   ->
-    let q0 = discr_pat omega pss in     
+    let q0 = discr_pat omega pss in
     begin match filter_all q0 pss with
           (* first column of pss is made of variables only *)
       [] ->
@@ -1270,6 +1270,27 @@ let get_mins le ps =
         else select_rec (p::r) ps in
   select_rec [] (select_rec [] ps)
 
+let rec flatten_or_pat pat =
+  match pat.pat_desc with
+    Tpat_or (p1, p2, _) -> flatten_or_pat p1 @ flatten_or_pat p2
+  | Tpat_alias (p, _) -> flatten_or_pat p
+  | _ -> [pat]
+
+(* Remove redundant cases from or-patterns *)
+let rec simplify_or_pat pat =
+  match pat.pat_desc with
+    Tpat_or (p1, p2, e) ->
+      let pats = flatten_or_pat pat in
+      let pats = List.map simplify_or_pat pats in
+      let pats' = get_mins le_pat pats in
+      List.fold_left
+        (fun orpat p -> {pat with pat_desc = Tpat_or (orpat, p, e)})
+        (List.hd pats') (List.tl pats')
+  | pd ->
+      let pd' = map_pattern_desc simplify_or_pat pat.pat_desc in
+      if pd == pd' then pat
+      else {pat with pat_desc = pd'}
+
 
 (*
   lub p q is a pattern that matches all values matched by p and q
@@ -1454,7 +1475,8 @@ and look_variants = function
 
 let check_partial tdefs loc casel =
   let variant_inside = List.exists (fun (p,_) -> look_variant p) casel in
-  let pss = initial_matrix casel in    
+  let pss = initial_matrix casel in
+  let pss = List.map (List.map simplify_or_pat) pss in
   let pss = get_mins le_pats pss in
   match pss with
   | [] ->

@@ -151,6 +151,9 @@ and module_coercion =
 
 (* Auxiliary functions over the a.s.t. *)
 
+val iter_pattern_desc : (pattern -> unit) -> pattern_desc -> unit
+val map_pattern_desc : (pattern -> pattern) -> pattern_desc -> pattern_desc
+
 val let_bound_idents: (pattern * expression) list -> Ident.t list
 val rev_let_bound_idents: (pattern * expression) list -> Ident.t list
 

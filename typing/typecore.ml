@@ -543,24 +543,7 @@ let finalize_variant pat =
 
 let rec iter_pattern f p =
   f p;
-  match p.pat_desc with
-    Tpat_any | Tpat_var _ | Tpat_constant _ ->
-      ()
-  | Tpat_alias (p, _) ->
-      iter_pattern f p
-  | Tpat_tuple pl ->
-      List.iter (iter_pattern f) pl
-  | Tpat_construct (_, pl) ->
-      List.iter (iter_pattern f) pl
-  | Tpat_variant (_, p, _) ->
-      may (iter_pattern f) p
-  | Tpat_record fl ->
-      List.iter (fun (_, p) -> iter_pattern f p) fl
-  | Tpat_or (p, p', _) ->
-      iter_pattern f p;
-      iter_pattern f p'
-  | Tpat_array pl ->
-      List.iter (iter_pattern f) pl
+  iter_pattern_desc (iter_pattern f) p.pat_desc
 
 (* Generalization criterion for expressions *)
 
