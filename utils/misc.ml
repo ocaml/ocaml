@@ -1,7 +1,5 @@
 (* Errors *)
 
-type 'a option = None | Some of 'a
-
 exception Fatal_error
 
 let fatal_error msg =

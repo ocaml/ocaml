@@ -1,4 +1,3 @@
-open Misc
 open Path
 
 open Asttypes
@@ -62,22 +61,28 @@ let name_lambda arg fn =
     Lvar id -> fn id
   | _ -> let id = Ident.new "let" in Llet(id, arg, fn id)
 
+module IdentSet =
+  Set.Make(struct
+    type t = Ident.t
+    let compare = compare
+  end)
+
 let free_variables l =
-  let fv = ref Cset.empty in
+  let fv = ref IdentSet.empty in
   let rec freevars = function
     Lvar id ->
-      fv := Cset.add id !fv
+      fv := IdentSet.add id !fv
   | Lconst sc -> ()
   | Lapply(fn, args) ->
       freevars fn; List.iter freevars args
   | Lfunction(param, body) ->
-      freevars body; fv := Cset.remove param !fv
+      freevars body; fv := IdentSet.remove param !fv
   | Llet(id, arg, body) ->
-      freevars arg; freevars body; fv := Cset.remove id !fv
+      freevars arg; freevars body; fv := IdentSet.remove id !fv
   | Lletrec(decl, body) ->
       freevars body;
       List.iter (fun (id, exp, sz) -> freevars exp) decl;
-      List.iter (fun (id, exp, sz) -> fv := Cset.remove id !fv) decl
+      List.iter (fun (id, exp, sz) -> fv := IdentSet.remove id !fv) decl
   | Lprim(p, args) ->
       List.iter freevars args
   | Lswitch(arg, lo, hi, cases) ->
@@ -86,7 +91,7 @@ let free_variables l =
   | Lcatch(e1, e2) ->
       freevars e1; freevars e2
   | Ltrywith(e1, exn, e2) ->
-      freevars e1; freevars e2; fv := Cset.remove exn !fv
+      freevars e1; freevars e2; fv := IdentSet.remove exn !fv
   | Lifthenelse(e1, e2, e3) ->
       freevars e1; freevars e2; freevars e3
   | Lsequence(e1, e2) ->
@@ -94,10 +99,10 @@ let free_variables l =
   | Lwhile(e1, e2) ->
       freevars e1; freevars e2
   | Lfor(v, e1, e2, dir, e3) -> 
-      freevars e1; freevars e2; freevars e3; fv := Cset.remove v !fv
+      freevars e1; freevars e2; freevars e3; fv := IdentSet.remove v !fv
   | Lshared(e, lblref) ->
       freevars e
-  in freevars l; Cset.elements !fv
+  in freevars l; IdentSet.elements !fv
 
 (* Check if an action has a "when" guard *)
 

@@ -1,6 +1,5 @@
 (* The "lambda" intermediate code *)
 
-open Misc
 open Asttypes
 
 type primitive =

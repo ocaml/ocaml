@@ -1,7 +1,5 @@
 (* Miscellaneous useful types and functions *)
 
-type 'a option = None | Some of 'a
-
 val fatal_error: string -> 'a
 exception Fatal_error
 

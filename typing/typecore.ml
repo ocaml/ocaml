@@ -1,6 +1,5 @@
 (* Typechecking for the core language *)
 
-open Misc
 open Asttypes
 open Parsetree
 open Typedtree

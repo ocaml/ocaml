@@ -15,7 +15,7 @@ CAMLRUN=byterun/camlrun
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I driver -I toplevel
 
-UTILS=utils/misc.cmo utils/tbl.cmo utils/cset.cmo utils/config.cmo \
+UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
   utils/clflags.cmo utils/meta.cmo utils/terminfo.cmo utils/crc.cmo
 
 PARSING=parsing/location.cmo parsing/parser.cmo parsing/lexer.cmo parsing/parse.cmo
@@ -45,13 +45,13 @@ COMPOBJS=$(UTILS) $(PARSING) $(TYPING) $(BYTECOMP) $(DRIVER)
 
 TOPOBJS=$(UTILS) $(PARSING) $(TYPING) $(BYTECOMP) $(TOPLEVEL)
 
-EXPUNGEOBJS=utils/misc.cmo utils/cset.cmo utils/tbl.cmo \
+EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   utils/config.cmo utils/clflags.cmo \
   typing/ident.cmo typing/predef.cmo \
   bytecomp/runtimedef.cmo bytecomp/symtable.cmo \
   toplevel/expunge.cmo
 
-PERVASIVES=arg array baltree char filename format hashtbl lexing list \
+PERVASIVES=arg array char filename format hashtbl lexing list map \
   obj parsing pervasives printexc printf queue set sort stack string sys
 
 # Recompile the system using the bootstrap compiler

@@ -1,6 +1,5 @@
 (* Abstract syntax tree after typing *)
 
-open Misc
 open Asttypes
 
 (* Type expressions for the core language *)

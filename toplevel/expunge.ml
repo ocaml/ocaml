@@ -4,21 +4,27 @@
 open Sys
 open Misc
 
-let to_keep = ref (Cset.empty: string Cset.t)
+module StringSet =
+  Set.Make(struct
+    type t = string
+    let compare = compare
+  end)
+
+let to_keep = ref StringSet.empty
 
 let expunge_map tbl =
   Symtable.filter_global_map
-    (fun id -> Cset.mem (Ident.name id) !to_keep)
+    (fun id -> StringSet.mem (Ident.name id) !to_keep)
     tbl
 
 let main () =
   let input_name = Sys.argv.(1) in
   let output_name = Sys.argv.(2) in
   Array.iter
-    (fun exn -> to_keep := Cset.add exn !to_keep)
+    (fun exn -> to_keep := StringSet.add exn !to_keep)
     Runtimedef.builtin_exceptions;
   for i = 3 to Array.length Sys.argv - 1 do
-    to_keep := Cset.add (capitalize Sys.argv.(i)) !to_keep
+    to_keep := StringSet.add (capitalize Sys.argv.(i)) !to_keep
   done;
   let ic = open_in_bin input_name in
   let pos_trailer =

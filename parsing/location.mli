@@ -1,7 +1,5 @@
 (* Source code locations, used in parsetree *)
 
-open Misc
-
 type t =
   { loc_start: int; loc_end: int }
 

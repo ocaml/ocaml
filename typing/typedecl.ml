@@ -30,6 +30,12 @@ let rec enter_types env = function
 
 (* Translate one type declaration *)
 
+module StringSet =
+  Set.Make(struct
+    type t = string
+    let compare = compare
+  end)
+
 let transl_declaration env (name, sdecl) id =
   Ctype.begin_def();
   reset_type_variables();
@@ -45,12 +51,12 @@ let transl_declaration env (name, sdecl) id =
     | Ptype_manifest sty ->
         Type_manifest(transl_simple_type env true sty)
     | Ptype_variant cstrs ->
-        let all_constrs = ref Cset.empty in
+        let all_constrs = ref StringSet.empty in
         List.iter
           (fun (name, args) ->
-            if Cset.mem name !all_constrs then
+            if StringSet.mem name !all_constrs then
               raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
-            all_constrs := Cset.add name !all_constrs)
+            all_constrs := StringSet.add name !all_constrs)
           cstrs;
         if List.length cstrs > Config.max_tag then
           raise(Error(sdecl.ptype_loc, Too_many_constructors));
@@ -59,12 +65,12 @@ let transl_declaration env (name, sdecl) id =
                   (name, List.map (transl_simple_type env true) args))
           cstrs)
     | Ptype_record lbls ->
-        let all_labels = ref Cset.empty in
+        let all_labels = ref StringSet.empty in
         List.iter
           (fun (name, mut, arg) ->
-            if Cset.mem name !all_labels then
+            if StringSet.mem name !all_labels then
               raise(Error(sdecl.ptype_loc, Duplicate_label name));
-            all_labels := Cset.add name !all_labels)
+            all_labels := StringSet.add name !all_labels)
           lbls;
         Type_record(List.map
           (fun (name, mut, arg) ->

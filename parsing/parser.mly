@@ -1,7 +1,6 @@
 /* The parser definition */
 
 %{
-open Misc
 open Location
 open Asttypes
 open Longident

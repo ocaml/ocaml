@@ -1,4 +1,3 @@
-open Misc
 open Format
 
 type t = { mutable stamp: int; name: string; mutable global: bool }

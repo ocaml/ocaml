@@ -1,6 +1,5 @@
 (* Abstract syntax tree produced by parsing *)
 
-open Misc
 open Asttypes
 
 (* Type expressions for the core language *)

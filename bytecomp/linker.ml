@@ -22,21 +22,30 @@ type link_action =
 
 (* First pass: determine which units are needed *)
 
-let missing_globals = ref (Cset.empty : Ident.t Cset.t)
+module IdentSet =
+  Set.Make(struct
+    type t = Ident.t
+    let compare = compare
+  end)
+
+let missing_globals = ref IdentSet.empty
 
 let is_required (rel, pos) =
   match rel with
-    Reloc_setglobal id -> Cset.mem id !missing_globals
+    Reloc_setglobal id ->
+      IdentSet.mem id !missing_globals
   | _ -> false
 
 let add_required (rel, pos) =
   match rel with
-    Reloc_getglobal id -> missing_globals := Cset.add id !missing_globals
+    Reloc_getglobal id ->
+      missing_globals := IdentSet.add id !missing_globals
   | _ -> ()
 
 let remove_required (rel, pos) =
   match rel with
-    Reloc_setglobal id -> missing_globals := Cset.remove id !missing_globals
+    Reloc_setglobal id ->
+      missing_globals := IdentSet.remove id !missing_globals
   | _ -> ()
 
 let scan_file tolink obj_name =

@@ -1,6 +1,5 @@
 (* Substitutions *)
 
-open Misc
 open Path
 open Typedtree
 

@@ -1,7 +1,6 @@
 (* Printing functions *)
 
 open Format
-open Misc
 open Longident
 open Path
 open Asttypes

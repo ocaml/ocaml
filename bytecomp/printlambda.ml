@@ -1,5 +1,4 @@
 open Format
-open Misc
 open Asttypes
 open Lambda
 
