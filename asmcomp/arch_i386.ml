@@ -25,6 +25,10 @@ type specific_operation =
   | Istore_int of int * addressing_mode (* Store an integer constant *)
   | Istore_symbol of string * addressing_mode (* Store a symbol *)
   | Ioffset_loc of int * addressing_mode (* Add a constant to a location *)
+  | Ipush                               (* Push regs on stack *)
+  | Ipush_int of int                    (* Push an integer constant *)
+  | Ipush_symbol of string              (* Push a symbol *)
+  | Ipush_load of Cmm.machtype_component * addressing_mode (* Load and push *)
   | Isubfrev | Idivfrev                 (* Reversed float sub and div *)
   | Ifloatarithmem of float_operation * addressing_mode (* float arith w/mem *)
 
@@ -94,6 +98,22 @@ let print_specific_operation printreg op arg =
   | Ioffset_loc(n, addr) ->
       print_string "["; print_addressing printreg addr arg;
       print_string "] +:= "; print_int n
+  | Ipush ->
+      print_string "push ";
+      for i = 0 to Array.length arg - 1 do
+        if i > 0 then print_string ", ";
+        printreg arg.(i)
+      done
+  | Ipush_int n ->
+      print_string "push "; print_int n
+  | Ipush_symbol s ->
+      print_string "push \""; print_string s; print_string "\""
+  | Ipush_load(Cmm.Float, addr) ->
+      print_string "pushfloat ["; print_addressing printreg addr arg;
+      print_string "]"
+  | Ipush_load(_, addr) ->
+      print_string "push ["; print_addressing printreg addr arg;
+      print_string "]"
   | Isubfrev ->
       printreg arg.(0); print_string " -f(rev) "; printreg arg.(1)
   | Idivfrev ->

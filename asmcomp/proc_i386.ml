@@ -257,6 +257,16 @@ let select_store addr exp =
   | Cconst_symbol s -> (Ispecific(Istore_symbol(s, addr)), Ctuple [])
   | _ -> raise Use_default
 
+let select_push exp =
+  match exp with
+    Cconst_int n -> (Ispecific(Ipush_int n), Ctuple [])
+  | Cconst_pointer n -> (Ispecific(Ipush_int n), Ctuple [])
+  | Cconst_symbol s -> (Ispecific(Ipush_symbol s), Ctuple [])
+  | Cop(Cload ty, [loc]) when Array.length ty = 1 ->
+      let (addr, arg) = select_addressing loc in
+      (Ispecific(Ipush_load(ty.(0), addr)), arg)
+  | _ -> (Ispecific(Ipush), exp)
+
 let pseudoregs_for_operation op arg res =
   match op with
   (* Two-address binary operations *)
@@ -341,8 +351,9 @@ let loc_parameters arg =
   let (loc, ofs) = calling_conventions 0 5 101 104 incoming arg in loc
 let loc_results res =
   let (loc, ofs) = calling_conventions 0 5 101 104 not_supported res in loc
+let extcall_use_push = true
 let loc_external_arguments arg =
-  calling_conventions 0 (-1) 101 100 outgoing arg
+  fatal_error "Proc.loc_external_arguments"
 let loc_external_results res =
   let (loc, ofs) = calling_conventions 0 0 101 101 not_supported res in loc
 
@@ -400,7 +411,7 @@ let reload_operation makereg op arg res =
       then ([|arg.(0); makereg arg.(1)|], res)
       else (arg, res)
   | Iintop(Ilsl|Ilsr|Iasr) | Iintop_imm(_, _) | Ifloatofint | Iintoffloat |
-    Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf ->
+    Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf | Ispecific(Ipush) ->
       (* The argument(s) can be either in register or on stack *)
       (arg, res)
   | Ispecific(Ifloatarithmem(_, _)) ->

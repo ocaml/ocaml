@@ -25,6 +25,8 @@ val select_oper:
         Mach.operation * Cmm.expression list
 val select_store:
       Arch.addressing_mode -> Cmm.expression -> Mach.operation * Cmm.expression
+val select_push:
+      Cmm.expression -> Mach.operation * Cmm.expression
 val pseudoregs_for_operation:
       Mach.operation -> Reg.t array -> Reg.t array ->
         Reg.t array * Reg.t array * bool
@@ -46,6 +48,7 @@ val loc_results: Reg.t array -> Reg.t array
 val loc_parameters: Reg.t array -> Reg.t array
 val loc_external_arguments: Reg.t array -> Reg.t array * int
 val loc_external_results: Reg.t array -> Reg.t array
+val extcall_use_push : bool
 val loc_exn_bucket: Reg.t
 
 (* Maximal register pressures for pre-spilling *)

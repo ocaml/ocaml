@@ -402,14 +402,23 @@ let rec emit_expr env exp seq =
           rd
       | Iextcall(lbl, alloc) ->
           Proc.contains_calls := true;
-          let r1 = emit_tuple env new_args seq in
-          let rd = Reg.createv ty in
-          let (loc_arg, stack_ofs) = Proc.loc_external_arguments r1 in
-          let loc_res = Proc.loc_external_results rd in
-          insert_move_args r1 loc_arg stack_ofs seq;
-          insert (Iop(Iextcall(lbl, alloc))) loc_arg loc_res seq;
-          insert_move_results loc_res rd stack_ofs seq;
-          rd
+          if Proc.extcall_use_push then begin
+            let stack_ofs = emit_pushes env new_args seq in
+            let rd = Reg.createv ty in
+            let loc_res = Proc.loc_external_results rd in
+            insert (Iop(Iextcall(lbl, alloc))) [||] loc_res seq;
+            insert_move_results loc_res rd stack_ofs seq;
+            rd
+          end else begin
+            let r1 = emit_tuple env new_args seq in
+            let rd = Reg.createv ty in
+            let (loc_arg, stack_ofs) = Proc.loc_external_arguments r1 in
+            let loc_res = Proc.loc_external_results rd in
+            insert_move_args r1 loc_arg stack_ofs seq;
+            insert (Iop(Iextcall(lbl, alloc))) loc_arg loc_res seq;
+            insert_move_results loc_res rd stack_ofs seq;
+            rd
+          end
       | Iload(Word, addr) ->
           let r1 = emit_tuple env new_args seq in
           let rd = Reg.createv ty in
@@ -570,6 +579,16 @@ and emit_stores env data seq regs_addr addr =
           a := Arch.offset_addressing !a (size_component r.(i).typ)
         done)
     data
+
+and emit_pushes env args seq =
+  match args with
+    [] -> 0
+  | e :: el ->
+      let ofs = emit_pushes env el seq in
+      let (op, arg) = Proc.select_push e in
+      let r = emit_expr env arg seq in
+      insert (Iop op) r [||] seq;
+      ofs + size_expr env e
 
 (* Same, but in tail position *)
 
