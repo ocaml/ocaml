@@ -381,8 +381,8 @@ let set_level ty level =
   ty.level <- level
 let set_univar rty ty =
   log_change (Cuniv (rty, !rty)); rty := Some ty
-let log_name nm = log_change (Cname (nm, !nm))
-let unset_name nm = log_name nm; nm := None
+let set_name nm v =
+  log_change (Cname (nm, !nm)); nm := v
 let set_row_field e v =
   log_change (Crow (e, !e)); e := Some v
 let set_kind rk k =

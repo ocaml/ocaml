@@ -259,13 +259,13 @@ let row_variable ty =
 let set_object_name id rv params ty =
   match (repr ty).desc with
     Tobject (fi, nm) ->
-      log_name nm; nm := Some (Path.Pident id, rv::params)
+      set_name nm (Some (Path.Pident id, rv::params))
   | _ ->
       assert false
 
 let remove_object_name ty =
   match (repr ty).desc with
-    Tobject (_, nm)   -> unset_name nm
+    Tobject (_, nm)   -> set_name nm None
   | Tconstr (_, _, _) -> ()
   | _                 -> fatal_error "Ctype.remove_object_name"
 
@@ -592,7 +592,7 @@ let rec update_level env level ty =
         end
     | Tobject(_, ({contents=Some(p, tl)} as nm))
       when level < Path.binding_time p ->
-        unset_name nm;
+        set_name nm None;
         update_level env level ty
     | Tvariant row ->
         let row = row_repr row in
@@ -1436,7 +1436,7 @@ and unify3 env t1 t1' t2 t2' =
           when let va = repr va in va.desc = Tvar || va.desc = Tunivar ->
             ()
         | Tobject (_, nm2) ->
-            log_name nm2; nm2 := !nm1
+            set_name nm2 !nm1
         | _ ->
             ()
         end
@@ -2912,9 +2912,9 @@ let rec normalize_type_rec env ty =
             let v' = repr v in
             begin match v'.desc with
             | Tvar|Tunivar ->
-                if v' != v then (log_name nm;  nm := Some (n, v' :: l))
+                if v' != v then set_name nm (Some (n, v' :: l))
             | Tnil -> log_type ty; ty.desc <- Tconstr (n, l, ref Mnil)
-            | _ -> unset_name nm
+            | _ -> set_name nm None
             end
         | _ ->
             fatal_error "Ctype.normalize_type_rec"
