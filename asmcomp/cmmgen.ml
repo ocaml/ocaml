@@ -1115,6 +1115,10 @@ let global_table namelist =
         List.map (fun name -> Csymbol_address name) namelist @
         [cint_zero])
 
+let globals_map namelist =
+  Cdata(emit_constant "globals_map"
+          (Const_base (Const_string (Marshal.to_string namelist []))) [])
+
 (* Generate the master table of frame descriptors *)
 
 let frame_table namelist =

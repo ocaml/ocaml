@@ -163,6 +163,12 @@ let make_startup_file filename info_list =
     (fun name -> Asmgen.compile_phrase(Cmmgen.predef_exception name))
     Runtimedef.builtin_exceptions;
   Asmgen.compile_phrase(Cmmgen.global_table name_list);
+  Asmgen.compile_phrase
+    (Cmmgen.globals_map
+      (List.map
+        (fun name ->
+          let (auth_name,crc) = Hashtbl.find crc_interfaces name in (name,crc))
+        name_list));
   Asmgen.compile_phrase(Cmmgen.data_segment_table ("startup" :: name_list));
   Asmgen.compile_phrase(Cmmgen.code_segment_table ("startup" :: name_list));
   Asmgen.compile_phrase
