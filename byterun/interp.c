@@ -268,6 +268,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #ifdef DEBUG
     if (caml_icount-- == 0) caml_stop_here ();
     if (caml_trace_flag) caml_disasm_instr(pc);
+    if (caml_trace_flag>1) {
+      printf("env=");
+      caml_trace_value_file(env,prog,prog_size,stdout);
+      putchar('\n');
+      caml_trace_accu_sp_file(accu,sp,prog,prog_size,stdout);
+      fflush(stdout);
+    };
     Assert(sp >= caml_stack_low);
     Assert(sp <= caml_stack_high);
 #endif
