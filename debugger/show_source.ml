@@ -26,7 +26,7 @@ let print_line buffer line_number start point before =
   and content = buffer_content buffer
   in
     printf "%i " line_number;
-    if (point <= next) & (point >= start) then
+    if point <= next && point >= start then
       (print_string (String.sub content start (point - start));
        print_string (if before then event_mark_before else event_mark_after);
        print_string (String.sub content point (next - point)))
@@ -41,7 +41,7 @@ let show_no_point () =
 
 (* Print the line containing the point *)
 let show_point mdle point before selected =
-  if !emacs & selected then
+  if !emacs && selected then
     begin try
       let source = source_of_module mdle in
         printf "\026\026M%s:%i" source point;

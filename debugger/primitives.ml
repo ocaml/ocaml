@@ -121,21 +121,24 @@ let find p =
 (* ### c s -> pos *)
 let string_pos s c =
   let i = ref 0 and l = String.length s in
-    while (!i < l) & (String.get s !i != c) do i := !i + 1 done;
+    while !i < l && String.get s !i != c do i := !i + 1 done;
     if !i = l then raise Not_found;
     !i
 
 (* Remove blanks (spaces and tabs) at beginning and end of a string. *)
+let is_space = function
+  | ' ' | '\t' -> true | _ -> false
+
 let string_trim s =
   let l = String.length s and i = ref 0 in
     while
-      (!i < l) & (match String.get s !i with ' ' | '\t' -> true | _ -> false)
+      !i < l && is_space (String.get s !i)
     do
       incr i
     done;
     let j = ref (l - 1) in
       while
-        (!j >= !i) & (match String.get s !j with ' ' | '\t' -> true | _ -> false)
+        !j >= !i && is_space (String.get s !i)
       do
         decr j
       done;

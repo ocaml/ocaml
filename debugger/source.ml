@@ -86,7 +86,7 @@ let next_linefeed (buffer, _) pos =
       raise Out_of_range
     else
       let rec search p =
-        if (p = len) or (String.get buffer p = '\n') then
+        if p = len || String.get buffer p = '\n' then
           p
         else
           search (succ p)
@@ -101,7 +101,7 @@ let next_line buffer (pos, line) =
 let line_of_pos buffer position =
   let rec find =
     function
-      [] ->
+    | [] ->
         if position < 0 then
           raise Out_of_range
         else

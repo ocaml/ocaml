@@ -16,6 +16,7 @@
 (************************ Reading and executing commands ***************)
 
 open Lexing;;
+open Format;;
 
-val interprete_line : string -> bool;;
-val line_loop : lexbuf -> unit;;
+val interprete_line : formatter -> string -> bool;;
+val line_loop : formatter -> lexbuf -> unit;;

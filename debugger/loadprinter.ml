@@ -66,21 +66,21 @@ let rec loadfiles ppf name =
     true
   with
   | Dynlink.Error (Dynlink.Unavailable_unit unit) ->
-      loadfiles (String.uncapitalize unit ^ ".cmo")
+      loadfiles ppf (String.uncapitalize unit ^ ".cmo")
         &&
-      loadfiles name
+      loadfiles ppf name
   | Not_found ->
       fprintf ppf "Cannot find file %s@." name;
       false
   | Dynlink.Error e ->
       raise(Error(Load_failure e))
 
-let loadfile name =
+let loadfile ppf name =
   if !debugger_symtable = None then begin
     Dynlink.add_interfaces stdlib_units [Config.standard_library];
     Dynlink.allow_unsafe_modules true
   end;
-  ignore(loadfiles name)
+  ignore(loadfiles ppf name)
 
 (* Return the value referred to by a path (as in toplevel/topdirs) *)
 (* Note: evaluation proceeds in the debugger memory space, not in

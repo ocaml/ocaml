@@ -25,56 +25,55 @@ open Program_management
 open Frames
 open Show_information
 
-
 let line_buffer = Lexing.from_function read_user_input
 
-let rec loop () =
-  line_loop line_buffer;
-  if !loaded & (not (yes_or_no "The program is running. Quit anyway")) then
-    loop ()
+let rec loop ppf =
+  line_loop ppf line_buffer;
+  if !loaded && (not (yes_or_no "The program is running. Quit anyway")) then
+    loop ppf
 
-let rec protect cont =
+let rec protect ppf cont =
   try
-    cont ()
+    cont ppf
   with
-    End_of_file ->
-      protect (function () ->
+  | End_of_file ->
+      protect ppf (function ppf ->
         forget_process
           !current_checkpoint.c_fd
           !current_checkpoint.c_pid;
         flush stdout;
         stop_user_input ();
-        loop ())
+        loop ppf)
   | Toplevel ->
-      protect (function () ->
+      protect ppf (function ppf ->
         flush stdout;
         stop_user_input ();
-        loop ())
+        loop ppf)
   | Sys.Break ->
-      protect (function () ->
+      protect ppf (function ppf ->
         print_endline "Interrupted.";
         Exec.protect (function () ->
           flush stdout;
           stop_user_input ();
           if !loaded then begin
             try_select_frame 0;
-            show_current_event ()
+            show_current_event ppf;
           end);
-        loop ())
+        loop ppf)
   | Current_checkpoint_lost ->
-      protect (function () ->
+      protect ppf (function ppf ->
         print_endline "Trying to recover...";
         flush stdout;
         stop_user_input ();
         recover ();
         try_select_frame 0;
-        show_current_event ();
-        loop ())
+        show_current_event ppf;
+        loop ppf)
   | x ->
       kill_program ();
       raise x
 
-let toplevel_loop () = protect loop
+let toplevel_loop () = protect Format.std_formatter loop
 
 (* Parsing of command-line arguments *)
 

@@ -473,7 +473,7 @@ let rec back_to time time_max =
   in
     go_to (max time t);
     let (new_time, break) = find_last_breakpoint time_max in
-    if break <> None or (new_time <= time) then begin
+    if break <> None || (new_time <= time) then begin
       go_to new_time;
       interrupted := break <> None;
       last_breakpoint := break

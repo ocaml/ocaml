@@ -65,7 +65,7 @@ let search_in_path name =
       let path = Sys.getenv "PATH" in
         let length = String.length path in
           let rec traverse pointer =
-            if (pointer >= length) or (path.[pointer] = ':') then
+            if (pointer >= length) || (path.[pointer] = ':') then
               pointer
             else
               traverse (pointer + 1)
@@ -74,17 +74,12 @@ let search_in_path name =
               let pos2 = traverse pos in
                 let directory = (String.sub path pos (pos2 - pos)) in
                   let fullname =
-                    if directory = "" then
-                      name
-                    else
-                      directory ^ "/" ^ name
+                    if directory = "" then name else directory ^ "/" ^ name
                   in
                     try check fullname with
-                      Not_found ->
-                        if pos2 < length then
-                          find (pos2 + 1)
-                        else
-                          raise Not_found
+                    | Not_found ->
+                        if pos2 < length then find (pos2 + 1)
+                        else raise Not_found
           in
             find 0
 
@@ -94,7 +89,7 @@ let rec expand_path ch =
   let rec subst_variable ch =
     try
       let pos = string_pos ch '$' in
-        if (pos + 1 < String.length ch) & (ch.[pos + 1] = '$') then
+        if (pos + 1 < String.length ch) && (ch.[pos + 1] = '$') then
           (String.sub ch 0 (pos + 1))
             ^ (subst_variable
                  (String.sub ch (pos + 2) (String.length ch - pos - 2)))
