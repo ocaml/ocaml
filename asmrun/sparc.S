@@ -14,9 +14,9 @@
 /* Asm part of the runtime system for the Sparc processor.  */
 /* Must be preprocessed by cpp */
 
-/* SunOS 4 and BSD prefix identifiers with _, Solaris does not */
+/* SunOS 4 and BSD prefix identifiers with _, Solaris and Linux do not */
 
-#ifndef SYS_solaris
+#if defined(SYS_sunos) || defined(SYS_bsd)
 
         .common _caml_required_size, 4, "bss"
 

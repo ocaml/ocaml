@@ -257,6 +257,7 @@ case "$host" in
   sparc-*-sunos4.*)             arch=sparc; system=sunos;;
   sparc-*-solaris2.*)           arch=sparc; system=solaris;;
   sparc-*-*bsd*)                arch=sparc; system=bsd;;
+  sparc-*-linux)                arch=sparc; system=linux;;
   i[3456]86-*-linuxaout)        arch=i386; system=linux_aout;;
   i[3456]86-*-linuxoldld)       arch=i386; system=linux_aout;;
   i[3456]86-*-linux)            arch=i386; system=linux_elf;;
@@ -304,6 +305,7 @@ case "$arch,$model,$system" in
   mips,*,irix)      asflags='-32 -O2'; asppflags="$asflags";;
   mips,*,ultrix)    asflags='-O2'; asppflags="$asflags";;
   sparc,*,bsd)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
+  sparc,*,linux)    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   sparc,*,*)        asppflags='-P -DSYS_$(SYSTEM)';;
   i386,*,solaris)   asppflags='-P -DSYS_$(SYSTEM)';;
   i386,*,*)         aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;

@@ -294,7 +294,7 @@ static void trap_handler(int sig, siginfo_t * info, void * context)
 }
 #endif
 
-#if defined(TARGET_sparc) && defined(SYS_bsd)
+#if defined(TARGET_sparc) && (defined(SYS_bsd) || defined(SYS_linux))
 static void trap_handler(int sig)
 {
   array_bound_error();
@@ -312,7 +312,8 @@ static void trap_handler(int sig)
 
 void init_signals(void)
 {
-#if defined(TARGET_sparc) && (defined(SYS_sunos) || defined(SYS_bsd))
+#if defined(TARGET_sparc) && \
+      (defined(SYS_sunos) || defined(SYS_bsd) || defined(SYS_linux))
   signal(SIGILL, trap_handler);
 #endif
 #if defined(TARGET_sparc) && defined(SYS_solaris)
