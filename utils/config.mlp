@@ -22,7 +22,7 @@ let c_libraries = "%%CCLIBS%%"
 let version = "1.08"
 
 let exec_magic_number = "Caml1999X001"
-and cmi_magic_number = "Caml1999I001"
+and cmi_magic_number = "Caml1999I002"
 and cmo_magic_number = "Caml1999O001"
 and cma_magic_number = "Caml1999A001"
 and cmx_magic_number = "Caml1999X001"
