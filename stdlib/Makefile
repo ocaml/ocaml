@@ -20,9 +20,9 @@ install:
 stdlib.cma: $(OBJS)
 	$(CAMLC) -a -o stdlib.cma $(OBJS)
 
-# stdlib.cmxa: $(OBJS:.cmo=.cmx)
-#	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
-optlib: $(OBJS:.cmo=.cmx)
+stdlib.cmxa: $(OBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
+# optlib: $(OBJS:.cmo=.cmx)
 
 cslheader: header.c ../Makefile.config
 	if $(SHARPBANGSCRIPTS); \
