@@ -3,7 +3,8 @@
 let gc_thread () =
   while true do
 (*    print_string "gc"; print_newline(); *)
-    Gc.minor()
+    Gc.minor();
+    Thread.yield()
   done
 
 let stdin_thread () =
