@@ -39,6 +39,7 @@ type control = {
 };;
 
 external stat : unit -> stat = "gc_stat";;
+external counters : unit -> (int * int * int) = "gc_counters";;
 external get : unit -> control = "gc_get";;
 external set : control -> unit = "gc_set";;
 external minor : unit -> unit = "gc_minor";;
@@ -64,4 +65,8 @@ let print_stat c =
   fprintf c "largest_free: %d\n" st.largest_free;
   fprintf c "fragments: %d\n" st.fragments;
   fprintf c "compactions: %d\n" st.compactions;
+;;
+
+let allocated_bytes () =
+  let (mi, ma, pro) = counters () in (mi + ma - pro) * (Sys.word_size / 8)
 ;;

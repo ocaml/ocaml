@@ -43,17 +43,18 @@ type stat = {
              was started.
 -     [major_collections]  Number of major collection cycles, not counting
              the current cycle, since the program was started.
--     [heap_words]  Total number of words in the major heap.
+-     [heap_words]  Total size of the major heap, in words.
 -     [heap_chunks]  Number of times the major heap size was increased
-             since the program was started.
+             since the program was started (including the initial allocation
+             of the heap).
 -     [live_words]  Number of words of live data in the major heap, including
              the header words.
--     [live_blocks]  Number of live objects in the major heap.
+-     [live_blocks]  Number of live blocks in the major heap.
 -     [free_words]  Number of words in the free list.
--     [free_blocks]  Number of objects in the free list.
--     [largest_free]  Size (in words) of the largest object in the free list.
+-     [free_blocks]  Number of blocks in the free list.
+-     [largest_free]  Size (in words) of the largest block in the free list.
 -     [fragments]  Number of wasted words due to fragmentation.  These are
-             1-words free blocks placed between two live objects.  They
+             1-words free blocks placed between two live blocks.  They
              cannot be inserted in the free list, thus they are not available
              for allocation.
 -     [compactions]  Number of heap compactions since the program was started.
@@ -80,10 +81,10 @@ type control = {
              major heap when increasing it.  Default: 62k.
 -     [space_overhead]  The major GC speed is computed from this parameter.
              This is the memory that will be "wasted" because the GC does not
-             immediatly collect unreachable objects.  It is expressed as a
+             immediatly collect unreachable blocks.  It is expressed as a
              percentage of the memory used for live data.
              The GC will work more (use more CPU time and collect
-             objects more eagerly) if [space_overhead] is smaller.
+             blocks more eagerly) if [space_overhead] is smaller.
              The computation of the GC speed assumes that the amount
              of live data is constant.  Default: 42.
 -     [max_overhead]  Heap compaction is triggered when the estimated amount
@@ -112,9 +113,9 @@ type control = {
 external stat : unit -> stat = "gc_stat"
   (* Return the current values of the memory management counters in a
      [stat] record. *)
-val print_stat : out_channel -> unit
-  (* Print the current values of the memory management counters (in
-     human-readable form) into the channel argument. *)
+external counters : unit -> (int * int * int) = "gc_counters"
+  (* Return [(minor_words, promoted_words, major_words)].  Much faster
+     than [stat]. *)
 external get : unit -> control = "gc_get"
   (* Return the current values of the GC parameters in a [control] record. *)
 external set : control -> unit = "gc_set"
@@ -126,7 +127,15 @@ external major : unit -> unit = "gc_major"
   (* Finish the current major collection cycle. *)
 external full_major : unit -> unit = "gc_full_major"
   (* Finish the current major collection cycle and perform a complete
-     new cycle.  This will collect all currently unreachable objects. *)
+     new cycle.  This will collect all currently unreachable blocks. *)
 external compact : unit -> unit = "gc_compaction";;
   (* Perform a full major collection and compact the heap.  Note that heap
      compaction is a lengthy operation. *)
+
+val print_stat : out_channel -> unit
+  (* Print the current values of the memory management counters (in
+     human-readable form) into the channel argument. *)
+
+val allocated_bytes : unit -> int
+  (* Return the total number of bytes allocated since the program was
+     started. *)

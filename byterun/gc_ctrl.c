@@ -225,6 +225,20 @@ value gc_stat(value v) /* ML */
   return heap_stats (1);
 }
 
+value gc_counters(value v) /* ML */
+{
+  CAMLparam1 (v);
+  CAMLlocal1 (res);
+
+  Assert (v == Val_unit);
+  res = alloc_small (3, 0);
+  Field (res, 0) = Val_long (stat_minor_words
+                             + Wsize_bsize (young_end - young_ptr));
+  Field (res, 1) = Val_long (stat_promoted_words);
+  Field (res, 2) = Val_long (stat_major_words + allocated_words);
+  CAMLreturn (res);
+}
+
 value gc_get(value v) /* ML */
 {
   value res;
