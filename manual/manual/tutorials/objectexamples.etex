@@ -609,7 +609,7 @@ parameterless classes the coercion "(_ :> c)" is always more general than
 
 
 A common problem may occur when one tries to define a coercion to a
-class "c" inside the definition of class "c". The problem is due to the type
+class "c" while defining class "c". The problem is due to the type
 abbreviation not being completely defined yet, and so its subtypes are not
 clearly known.  Then, a coercion "(_ :> c)" or "(_ : #c :> c)" is taken to be 
 the identity function, as in
@@ -625,33 +625,50 @@ further extension of the class. Therefore, a type error is generated
 when the unification of this type with another type would result in a
 closed object type.
 \begin{caml_example}
+class c = object method m = 1 end
+and d = object (self)
+  inherit c
+  method n = 2
+  method as_c = (self :> c)
+end;;
+\end{caml_example}
+Remark that the most common instance of the problem, coercing self to
+its current class, is detected as a special case by the type checker,
+and properly typed.
+\begin{caml_example}
 class c = object (self) method m = (self :> c) end;;
 \end{caml_example}
-This problem can sometimes be avoided by first defining the abbreviation, 
-using a class type:
+Such problems can sometimes be avoided by first defining the
+abbreviation, using a class type:
 \begin{caml_example}
-class type c' = object method m : c' end;;
-class c : c' = object (self) method m = (self :> c') end;;
+class type c' = object method m : int end;;
+class c : c' = object method m = 1 end
+and d = object (self)
+  inherit c
+  method n = 2
+  method as_c = (self :> c')
+end;;
 \end{caml_example}
 It is also possible to use a virtual class. Inheriting from this class
-simultaneously allows to enforce all methods of "c4" to have the same
+simultaneously allows to enforce all methods of "c" to have the same
 type as the methods of "c'".
 \begin{caml_example}
-class virtual c' = object method virtual m : c' end;;
-class c = object (self) inherit c' method m = (self :> c') end;;
+class virtual c' = object method virtual m : int end;;
+class c = object (self) inherit c' method m = 1 end;;
 \end{caml_example}
 One could think of defining the type abbreviation directly:
-\begin{caml_example}
-type c' = <m : c'>;;
-\end{caml_example}
+\begin{caml_example*}
+type c' = <m : int>;;
+\end{caml_example*}
 However, the abbreviation "#c'" cannot be defined directly in a similar way.
 It can only be defined by a class or a class-type definition. 
-(One reason is that "#" sharp abbreviations carry an implicit anonymous
-variable ".." that cannot be explicitly named).
-Thus, the abbreviation "#c'" should be expanded:
-\begin{caml_example}
-class c = object (self)  method m = (self : (<m : c'; ..> as 'a) :> c') end;;
-\end{caml_example}
+This is because "#" sharp abbreviations carry an implicit anonymous
+variable ".." that cannot be explicitly named.
+The closer you get to it is:
+\begin{caml_example*}
+type 'a c'_class = 'a constraint 'a = < m : int; .. >;;
+\end{caml_example*}
+with an extra type variable capturing the open object type.
 
 \section{Functional objects}
 \pdfsection{Functional objects}
