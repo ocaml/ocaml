@@ -40,8 +40,11 @@ while :; do
         native_objs="$native_objs $1";;
     *.o|*.a)
         c_objs="$c_objs $1";;
-    -cclib|-dllpath)
+    -cclib)
         caml_libs="$caml_libs $1 $2"
+        shift;;
+    -ccopt|-dllpath)
+        caml_opts="$caml_opts $1 $2"
         shift;;
     -l*)
         c_libs="$c_libs $1"

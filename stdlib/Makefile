@@ -23,13 +23,17 @@ CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 OPTCOMPFLAGS=
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
-OBJS=pervasives.cmo array.cmo list.cmo char.cmo string.cmo sys.cmo \
+BASIC=pervasives.cmo array.cmo list.cmo char.cmo string.cmo sys.cmo \
   hashtbl.cmo sort.cmo marshal.cmo obj.cmo \
   lexing.cmo parsing.cmo \
   set.cmo map.cmo stack.cmo queue.cmo stream.cmo \
   buffer.cmo printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo \
   digest.cmo random.cmo oo.cmo genlex.cmo callback.cmo weak.cmo \
   lazy.cmo filename.cmo int32.cmo int64.cmo nativeint.cmo
+LABELLED=arrayLabels.ml listLabels.ml stringLabels.ml
+
+OBJS=$(BASIC) labelled.cmo stdLabels.cmo
+ALLOBJS=$(BASIC) $(LABELLED:.ml=.cmo) stdLabels.cmo
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 
@@ -59,13 +63,13 @@ installopt-prof:
 	cd $(LIBDIR); $(RANLIB) stdlib.p.a
 
 stdlib.cma: $(OBJS)
-	$(CAMLC) -a -o stdlib.cma $(OBJS)
+	$(CAMLC) -a -o stdlib.cma $(ALLOBJS)
 
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -o stdlib.cmxa $(ALLOBJS:.cmo=.cmx)
 
 stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
-	$(CAMLOPT) -a -o stdlib.p.cmxa $(OBJS:.cmo=.p.cmx)
+	$(CAMLOPT) -a -o stdlib.p.cmxa $(ALLOBJS:.cmo=.p.cmx)
 
 camlheader camlheader_ur: header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); then \
@@ -103,30 +107,42 @@ pervasives.p.cmx: pervasives.ml
 oo.cmi: oo.mli
 	$(CAMLC) $(COMPFLAGS) -nopervasives -c oo.mli
 
+# labelled modules require the -nolabels flag
+labelled.cmo:
+	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.cmo)
+	touch $@
+labelled.cmx:
+	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.cmx)
+	touch $@
+labelled.p.cmx:
+	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.p.cmx)
+	touch $@
+
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
 
 .mli.cmi:
-	$(CAMLC) $(COMPFLAGS) -c $<
+	$(CAMLC) $(COMPFLAGS) $(EXTRAFLAGS) -c $<
 
 .ml.cmo:
-	$(CAMLC) $(COMPFLAGS) -c $<
+	$(CAMLC) $(COMPFLAGS) $(EXTRAFLAGS) -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(OPTCOMPFLAGS) -c $<
+	$(CAMLOPT) $(OPTCOMPFLAGS) $(EXTRAFLAGS) -c $<
 
 .ml.p.cmx:
 	@if test -f $*.cmx; then mv $*.cmx $*.n.cmx; else :; fi
 	@if test -f $*.o; then mv $*.o $*.n.o; else :; fi
-	$(CAMLOPT) $(OPTCOMPFLAGS) -p -c $<
+	$(CAMLOPT) $(OPTCOMPFLAGS) $(EXTRAFLAGS) -p -c $<
 	mv $*.cmx $*.p.cmx
 	mv $*.o $*.p.o
 	@if test -f $*.n.cmx; then mv $*.n.cmx $*.cmx; else :; fi
 	@if test -f $*.n.o; then mv $*.n.o $*.o; else :; fi
 
-$(OBJS) std_exit.cmo: pervasives.cmi $(COMPILER)
-$(OBJS:.cmo=.cmx) std_exit.cmx: pervasives.cmi $(OPTCOMPILER)
-$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmi $(OPTCOMPILER)
-$(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER)
+$(ALLOBJS) labelled.cmo std_exit.cmo: pervasives.cmi $(COMPILER)
+$(ALLOBJS:.cmo=.cmx) labelled.cmx std_exit.cmx: pervasives.cmi $(OPTCOMPILER)
+$(ALLOBJS:.cmo=.p.cmx) labelled.p.cmx std_exit.p.cmx: pervasives.cmi $(OPTCOMPILER)
+$(ALLOBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER)
+labelled.cmo labelled.cmx labelled.p.cmx: $(LABELLED) $(LABELLED:.ml=.mli)
 
 clean::
 	rm -f *.cm* *.o *.a

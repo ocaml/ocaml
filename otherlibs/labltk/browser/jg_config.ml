@@ -13,6 +13,7 @@
 
 (* $Id$ *)
 
+open StdLabels
 open Jg_tk
 
 let fixed = if wingui then "{Courier New} 8" else "fixed"

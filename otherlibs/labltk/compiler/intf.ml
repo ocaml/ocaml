@@ -15,6 +15,8 @@
 
 (* $Id$ *)
 
+open StdLabels
+
 (* Write .mli for widgets *)
 
 open Tables
@@ -25,7 +27,7 @@ let write_create_p ~w wname =
   begin
     try 
       let option = Hashtbl.find types_table "options" in
-      let classdefs = List.assoc wname option.subtypes in
+      let classdefs = List.assoc wname ~map:option.subtypes in
       let tklabels = List.map ~f:gettklabel classdefs in
       let l = List.map classdefs ~f:
         begin fun fc ->

@@ -15,6 +15,8 @@
 
 (* $Id$ *)
 
+open StdLabels
+open Support
 open Tables
 open Printer
 open Compile
@@ -84,7 +86,7 @@ let parse_file filename =
    in an hash table. *)
 let elements t =
  let elems = ref [] in
- Hashtbl.iter ~f:(fun ~key:_ ~data:d -> elems := d :: !elems) t;
+ Hashtbl.iter (fun _ d -> elems := d :: !elems) t;
  !elems;;
 
 (* Verifies that duplicated clauses are semantically equivalent and
@@ -117,7 +119,7 @@ let uniq_clauses = function
        let c = constr.var_name in
        if Hashtbl.mem t c
        then (check_constr constr (Hashtbl.find t c))
-       else Hashtbl.add t ~key:c ~data:constr);
+       else Hashtbl'.add t ~key:c ~data:constr);
      elements t;;
 
 let option_hack oc =
@@ -198,8 +200,7 @@ let compile () =
     ~f:(write_function_type ~w:(output_string oc));
   close_out oc;
   verbose_endline "Creating other ml, mli ...";
-  Hashtbl.iter module_table ~f:
-  begin fun ~key:wname ~data:wdef ->
+  let write_module wname wdef =
     verbose_endline ("  "^wname);
     let modname = wname in
     let oc = open_out_bin (destfile (modname ^ ".ml")) 
@@ -210,11 +211,11 @@ let compile () =
     end;
     output_string oc "open Protocol\n";
     List.iter ~f:(fun s -> output_string oc s; output_string oc' s)
-    [ "open Tk\n";
-      "open Tkintf\n";
-      "open Widget\n";
-      "open Textvariable\n"
-    ];
+      [ "open StdLabels\n";
+        "open Tk\n";
+        "open Tkintf\n";
+        "open Widget\n";
+        "open Textvariable\n" ];
     begin match wdef.module_type with
       Widget ->
         write_create ~w:(output_string oc) wname;
@@ -231,46 +232,48 @@ let compile () =
            (sort_components wdef.externals);
     close_out oc;
     close_out oc'
-  end;
+  in Hashtbl.iter write_module module_table;
   (* write the module list for the Makefile *)
   (* and hack to death until it works *)
   let oc = open_out_bin (destfile "modules") in
-    output_string oc "WIDGETOBJS=";
-    Hashtbl.iter module_table
-    ~f:(fun ~key:name ~data:_ ->
-         output_string oc name;
-         output_string oc ".cmo ");
-    output_string oc "\n";
-    Hashtbl.iter module_table
-    ~f:(fun ~key:name ~data:_ ->
-         output_string oc name;
-         output_string oc ".ml ");
-    output_string oc ": tkgen.ml\n\n";
-    Hashtbl.iter module_table ~f:
-      begin fun ~key:name ~data:_ ->
-        output_string oc name;
-        output_string oc ".cmo : ";
-        output_string oc name;
-        output_string oc ".ml\n";
-        output_string oc name;
-        output_string oc ".cmi : ";
-        output_string oc name;
-        output_string oc ".mli\n"
-      end;
-    close_out oc
+  output_string oc "WIDGETOBJS=";
+  Hashtbl.iter
+    (fun name _ ->
+      output_string oc name;
+      output_string oc ".cmo ")
+    module_table;
+  output_string oc "\n";
+  Hashtbl.iter
+    (fun name _ ->
+      output_string oc name;
+      output_string oc ".ml ")
+    module_table;
+  output_string oc ": tkgen.ml\n\n";
+  Hashtbl.iter
+    (fun name _ ->
+      output_string oc name;
+      output_string oc ".cmo : ";
+      output_string oc name;
+      output_string oc ".ml\n";
+      output_string oc name;
+      output_string oc ".cmi : ";
+      output_string oc name;
+      output_string oc ".mli\n")
+    module_table;
+  close_out oc
 
 let main () =
   Arg.parse
-    ~keywords:[ "-verbose",  Arg.Unit (fun () -> flag_verbose := true),
-               "Make output verbose" ]
-    ~others:(fun filename -> input_name := filename)
-    ~errmsg:"Usage: tkcompiler <source file>" ;
+    [ "-verbose",  Arg.Unit (fun () -> flag_verbose := true),
+      "Make output verbose" ]
+    (fun filename -> input_name := filename)
+    "Usage: tkcompiler <source file>" ;
   try
-    verbose_string "Parsing... ";
+    verbose_endline "Parsing...";
     parse_file !input_name;
-    verbose_string "Compiling... ";
+    verbose_endline "Compiling...";
     compile ();
-    verbose_string "Finished";
+    verbose_endline "Finished";
     exit 0
   with
   | Lexer.Lexical_error s ->

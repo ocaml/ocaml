@@ -50,6 +50,7 @@ module Options = Main_args.Make_options (struct
   let _linkall = option "-linkall"
   let _make_runtime = option "-make-runtime"
   let _noassert = option "-noassert"
+  let _nolabels = option "-nolabels"
   let _noautolink = option "-noautolink"
   let _o s = option_with_arg "-o" s
   let _output_obj = option "-output-obj"

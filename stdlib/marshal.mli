@@ -47,7 +47,7 @@ type extern_flags =
   | Closures                            (* Send function closures *)
         (* The flags to the [Marshal.to_*] functions below. *)
 
-val to_channel: out_channel -> 'a -> mode:extern_flags list -> unit
+val to_channel: out_channel -> 'a -> extern_flags list -> unit
         (* [Marshal.to_channel chan v flags] writes the representation
            of [v] on channel [chan]. The [flags] argument is a
            possibly empty list of flags that governs the marshaling
@@ -77,15 +77,14 @@ val to_channel: out_channel -> 'a -> mode:extern_flags list -> unit
            at un-marshaling time, using an MD5 digest of the code
            transmitted along with the code position.) *)
 
-external to_string: 'a -> mode:extern_flags list -> string
+external to_string: 'a -> extern_flags list -> string
     = "output_value_to_string"
         (* [Marshal.to_string v flags] returns a string containing
            the representation of [v] as a sequence of bytes.
            The [flags] argument has the same meaning as for
            [Marshal.to_channel]. *)
 
-val to_buffer: string -> pos:int -> len:int ->
-               'a -> mode:extern_flags list -> int
+val to_buffer: string -> int -> int -> 'a -> extern_flags list -> int
         (* [Marshal.to_buffer buff ofs len v flags] marshals the value [v],
            storing its byte representation in the string [buff],
            starting at character number [ofs], and writing at most
@@ -100,15 +99,15 @@ val from_channel: in_channel -> 'a
            one of the [Marshal.to_*] functions, and reconstructs and
            returns the corresponding value.*)
 
-val from_string: string -> pos:int -> 'a
+val from_string: string -> int -> 'a
         (* [Marshal.from_string buff ofs] unmarshals a structured value
            like [Marshal.from_channel] does, except that the byte
            representation is not read from a channel, but taken from
            the string [buff], starting at position [ofs]. *)
 
 val header_size : int
-val data_size : string -> pos:int -> int
-val total_size : string -> pos:int -> int
+val data_size : string -> int -> int
+val total_size : string -> int -> int
         (* The bytes representing a marshaled value are composed of
            a fixed-size header and a variable-sized data part,
            whose size can be determined from the header.

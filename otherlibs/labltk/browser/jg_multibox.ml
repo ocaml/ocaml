@@ -13,6 +13,8 @@
 
 (* $Id$ *)
 
+open StdLabels
+
 let rec gen_list ~f:f ~len =
   if len = 0 then [] else f () :: gen_list ~f:f ~len:(len - 1)
 

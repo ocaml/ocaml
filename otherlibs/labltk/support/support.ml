@@ -15,6 +15,8 @@
 
 (* $Id$ *)
 
+open StdLabels
+
 (* Parsing results of Tcl *)
 (* List.split a string according to char_sep predicate *)
 let split_str ~pred:char_sep str =
@@ -45,3 +47,7 @@ let maycons f x l =
   match x with
     Some x -> f x :: l
   | None -> l
+
+(* Get some labels on Hashtbl.add *)
+module Hashtbl' =
+  struct let add tbl ~key ~data = Hashtbl.add tbl key data end

@@ -13,6 +13,8 @@
 
 (* $Id$ *)
 
+open StdLabels
+module Unix = UnixLabels
 open Tk
 open Jg_tk
 open Dummy
@@ -196,7 +198,7 @@ object (self)
         let len = ref 0 in
         try while len := ThreadUnix.read fd ~buf ~pos:0 ~len:1024; !len > 0 do
           Mutex.lock imutex;
-          Buffer.add_substring ibuffer buf ~pos:0 ~len:!len;
+          Buffer.add_substring ibuffer buf 0 !len;
           Mutex.unlock imutex
         done with Unix.Unix_error _ -> ()
       in
@@ -204,7 +206,7 @@ object (self)
       let rec read_buffer () =
         Mutex.lock imutex;
         if Buffer.length ibuffer > 0 then begin
-          self#insert (Str.global_replace ~pat:~!"\r\n" ~templ:"\n"
+          self#insert (Str.global_replace ~!"\r\n" "\n"
                          (Buffer.contents ibuffer));
           Buffer.reset ibuffer;
           Text.mark_set textw ~mark:"input" ~index:(`Mark"insert",[`Char(-1)])
@@ -254,12 +256,12 @@ let warnings = ref "A"
 
 let f ~prog ~title =
   let progargs =
-    List.filter ~f:((<>) "") (Str.split ~sep:~!" " prog) in
+    List.filter ~f:((<>) "") (Str.split ~!" " prog) in
   if progargs = [] then () else
   let prog = List.hd progargs in
   let path =
     try Sys.getenv "PATH" with Not_found -> "/bin" ^ path_sep ^ "/usr/bin" in
-  let exec_path = Str.split ~sep:~!path_sep path in
+  let exec_path = Str.split ~!path_sep path in
   let exists =
     if not (Filename.is_implicit prog) then may_exec prog else
     List.exists exec_path
@@ -280,7 +282,7 @@ let f ~prog ~title =
   pack [frame] ~fill:`Both ~expand:true;
   let env = Array.map (Unix.environment ()) ~f:
       begin fun s ->
-        if Str.string_match ~pat:~!"TERM=" s ~pos:0 then "TERM=dumb" else s
+        if Str.string_match ~!"TERM=" s 0 then "TERM=dumb" else s
       end in
   let load_path =
     List2.flat_map !Config.load_path ~f:(fun dir -> ["-I"; dir]) in

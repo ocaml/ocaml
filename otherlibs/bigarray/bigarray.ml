@@ -82,7 +82,7 @@ module Genarray = struct
      = "bigarray_blit"
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "bigarray_fill"
   external map_file: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
-                     shared:bool -> dims:int array -> ('a, 'b, 'c) t
+                     bool -> int array -> ('a, 'b, 'c) t
                      = "bigarray_map_file"
 end
 

@@ -13,6 +13,7 @@
 
 (* $Id$ *)
 
+open StdLabels
 open Tk
 open Jg_tk
 open Mytypes
@@ -42,7 +43,7 @@ let list_modules ~path =
 
 let reset_modules box =
   Listbox.delete box ~first:(`Num 0) ~last:`End;
-  module_list := Sort.list ~order:(Jg_completion.lt_string ~nocase:true)
+  module_list := Sort.list (Jg_completion.lt_string ~nocase:true)
       (list_modules ~path:!Config.load_path);
   Listbox.insert box ~index:`End ~texts:!module_list;
   Jg_box.recenter box ~index:(`Num 0)
@@ -99,10 +100,7 @@ let choose_symbol ~title ~env ?signature ?path l =
   and detach = Button.create buttons ~text:"Detach"
   and edit = Button.create buttons ~text:"Impl"
   and intf = Button.create buttons ~text:"Intf" in
-  let l = Sort.list l ~order:
-      (fun (li1, _) (li2,_) ->
-        string_of_longident li1 < string_of_longident li2)
-  in
+  let l = List.sort l ~cmp:(fun (li1, _) (li2,_) -> compare li1 li2) in
   let nl = List.map l ~f:
     begin fun (li, k) ->
       string_of_longident li ^ " (" ^ string_of_kind k ^ ")"
@@ -164,7 +162,7 @@ let search_which = ref "itself"
 
 let search_symbol () =
   if !module_list = [] then
-  module_list := Sort.list ~order:(<) (list_modules ~path:!Config.load_path);
+  module_list := List.sort ~cmp:compare (list_modules ~path:!Config.load_path);
   let tl = Jg_toplevel.titled "Search symbol" in
   Jg_bind.escape_destroy tl;
   let ew = Entry.create tl ~width:30 in
@@ -505,11 +503,7 @@ object (self)
       match path with None -> 1
       | Some path -> self#get_box ~path
     in
-
-    let l = Sort.list l ~order:
-        (fun (li1, _) (li2,_) ->
-          string_of_longident li1 < string_of_longident li2)
-    in
+    let l = List.sort l ~cmp:(fun (li1, _) (li2,_) -> compare li1 li2) in
     let nl = List.map l ~f:
         begin fun (li, k) ->
           string_of_longident li ^ " (" ^ string_of_kind k ^ ")"

@@ -23,7 +23,14 @@ external dll_sym: dll_handle -> string -> dll_address = "dynlink_lookup_symbol"
 external add_primitive: dll_address -> int = "dynlink_add_primitive"
 external get_current_dlls: unit -> dll_handle array
                                            = "dynlink_get_current_libs"
-
+(*
+external dll_open: string -> dll_handle = "%identity"
+external dll_close: dll_handle -> unit = "%identity"
+external dll_sym: dll_handle -> string -> dll_address = "%equal"
+external add_primitive: dll_address -> int = "%identity"
+external get_current_dlls: unit -> dll_handle array
+                                           = "%identity"
+*)
 (* Current search path for DLLs *)
 let search_path = ref ([] : string list)
 

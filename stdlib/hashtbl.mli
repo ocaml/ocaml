@@ -31,7 +31,7 @@ val create : int -> ('a,'b) t
 val clear : ('a, 'b) t -> unit
         (* Empty a hash table. *)
 
-val add : ('a, 'b) t -> key:'a -> data:'b -> unit
+val add : ('a, 'b) t -> 'a -> 'b -> unit
         (* [Hashtbl.add tbl x y] adds a binding of [x] to [y] in table [tbl].
            Previous bindings for [x] are not removed, but simply
            hidden. That is, after performing [Hashtbl.remove tbl x],
@@ -56,21 +56,21 @@ val remove : ('a, 'b) t -> 'a -> unit
            restoring the previous binding if it exists.
            It does nothing if [x] is not bound in [tbl]. *)
 
-val replace : ('a, 'b) t -> key:'a -> data:'b -> unit
+val replace : ('a, 'b) t -> 'a -> 'b -> unit
         (* [Hashtbl.replace tbl x y] replaces the current binding of [x]
            in [tbl] by a binding of [x] to [y].  If [x] is unbound in [tbl],
            a binding of [x] to [y] is added to [tbl].
            This is functionally equivalent to [Hashtbl.remove tbl x]
            followed by [Hashtbl.add tbl x y]. *)
 
-val iter : f:(key:'a -> data:'b -> unit) -> ('a, 'b) t -> unit
+val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
         (* [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl].
            [f] receives the key as first argument, and the associated value
            as second argument. The order in which the bindings are passed to
            [f] is unspecified. Each binding is presented exactly once
            to [f]. *)
 
-val fold : f:(key:'a -> data:'b -> 'c -> 'c) -> ('a, 'b) t -> init:'c -> 'c
+val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
         (* [Hashtbl.fold f tbl init] computes
            [(f kN dN ... (f k1 d1 init)...)],
            where [k1 ... kN] are the keys of all bindings in [tbl],
@@ -106,14 +106,14 @@ module type S =
     type 'a t
     val create: int -> 'a t
     val clear: 'a t -> unit
-    val add: 'a t -> key:key -> data:'a -> unit
+    val add: 'a t -> key -> 'a -> unit
     val remove: 'a t -> key -> unit
     val find: 'a t -> key -> 'a
     val find_all: 'a t -> key -> 'a list
-    val replace : 'a t -> key:key -> data:'a -> unit
+    val replace: 'a t -> key -> 'a -> unit
     val mem: 'a t -> key -> bool
-    val iter: f:(key:key -> data:'a -> unit) -> 'a t -> unit
-    val fold: f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
+    val iter: (key -> 'a -> unit) -> 'a t -> unit
+    val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   end
 
 module Make(H: HashedType): (S with type key = H.t)

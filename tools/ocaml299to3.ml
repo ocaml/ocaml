@@ -15,9 +15,9 @@
 open Lexer299
 
 let input_buffer = Buffer.create 16383
-let input_function ic ~buf ~len =
-  let len = input ic ~buf ~pos:0 ~len in
-  Buffer.add_substring input_buffer buf ~pos:0 ~len;
+let input_function ic buf len =
+  let len = input ic buf 0 len in
+  Buffer.add_substring input_buffer buf 0 len;
   len
 
 let output_buffer = Buffer.create 16383
@@ -28,7 +28,7 @@ let convert buffer =
   let input_pos = ref 0 in
   let copy_input stop =
     Buffer.add_substring output_buffer (Buffer.contents input_buffer)
-      ~pos:!input_pos ~len:(stop - !input_pos);
+      !input_pos (stop - !input_pos);
     input_pos := stop
   in
   let last = ref (EOF, 0, 0) in

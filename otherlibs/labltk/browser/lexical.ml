@@ -13,6 +13,7 @@
 
 (* $Id$ *)
 
+open StdLabels
 open Tk
 open Jg_tk
 open Parser

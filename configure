@@ -996,26 +996,32 @@ fi
 # Look for tcl/tk
 
 echo "Configuring LablTk..."
-if test "$ostype" != "Cygwin" && \
-   (test "$x11_include" = "not found" || test "$x11_link" = "not found")
-then
+
+if test "$ostype" = "Cygwin"; then
+  has_tk=true
+elif test "$x11_include" = "not found" || test "$x11_link" = "not found"; then
   echo "X11 not found."
   has_tk=false
 else
+  tk_x11_include="$x11_include"
+  tk_x11_libs="$x11_libs -lX11"
   has_tk=true
+fi
+
+if test $has_tk = true; then
   tcl_version=''
-  tcl_version=`sh ./runtest $tk_defs tclversion.c 2> /dev/null`
+  tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
   if test -z "$tcl_version" && test -z "$tk_defs"; then
     tk_defs=-I/usr/local/include
-    tcl_version=`sh ./runtest $tk_defs tclversion.c 2> /dev/null`
+    tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
   fi
   if test -z "$tcl_version"; then
     tk_defs="-I/usr/include/tcl8.2 -I/usr/include/tk8.2"
-    tcl_version=`sh ./runtest $tk_defs tclversion.c 2> /dev/null`
+    tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
   fi
   if test -z "$tcl_version"; then
     tk_defs="-I/usr/include/tcl8.3 -I/usr/include/tk8.3"
-    tcl_version=`sh ./runtest $tk_defs tclversion.c 2> /dev/null`
+    tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
   fi
   if test -n "$tcl_version"; then
     echo "tcl.h version $tcl_version found."
@@ -1032,11 +1038,6 @@ else
     echo "tcl.h not found."
     has_tk=false
   fi
-fi
-
-if test $has_tk = true && test "$ostype" != "Cygwin"; then
-  tk_x11_include=$x11_include
-  tk_x11_libs="$x11_libs -lX11"
 fi
 
 if test $has_tk = true; then

@@ -15,6 +15,7 @@
 
 (* $Id$ *)
 
+open StdLabels
 open Tables
 
 (* CONFIGURE *)
@@ -51,7 +52,7 @@ let gettklabel fc =
         else s
       in begin
         if List.mem s forbidden then
-          try List.assoc s nicknames
+          try List.assoc s ~map:nicknames
           with Not_found -> small fc.var_name
         else s
       end
@@ -96,7 +97,7 @@ let ppMLtype ?(any=false) ?(return=false) ?(def=false) ?(counter=ref 0) =
      begin
        try 
         let typdef = Hashtbl.find types_table sup in
-        let fcl = List.assoc sub typdef.subtypes in
+        let fcl = List.assoc sub ~map:typdef.subtypes in
         let tklabels = List.map ~f:gettklabel fcl in
         let l = List.map fcl ~f:
           begin fun fc ->
@@ -498,7 +499,7 @@ let code_of_template ~context_widget ?func:(funtemplate=false) template =
     StringArg s -> "TkToken \"" ^ s ^ "\""
   | TypeArg (_, List (Subtype (sup, sub) as ty)) ->
       let typdef = Hashtbl.find types_table sup in
-      let classdef = List.assoc sub typdef.subtypes in
+      let classdef = List.assoc sub ~map:typdef.subtypes in
       let lbl = gettklabel (List.hd classdef) in
       catch_opts := (sub ^ "_" ^ sup, lbl);
       newvar := newvar2;

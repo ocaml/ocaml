@@ -15,6 +15,7 @@
 
 (* file selection box *)
 
+open StdLabels
 open Useunix
 open Str
 open Filename
@@ -30,24 +31,24 @@ let (~!) = Jg_memo.fast ~f:Str.regexp
 (* Convert Windows-style directory separator '\' to caml-style '/' *)
 let caml_dir path =
   if Sys.os_type = "Win32" then
-    global_replace ~pat:(regexp "\\\\") ~templ:"/" path
+    global_replace ~!"\\\\" "/" path
   else path
 
 let parse_filter s = 
   let s = caml_dir s in
   (* replace // by / *)
-  let s = global_replace ~pat:~!"/+" ~templ:"/" s in
+  let s = global_replace ~!"/+" "/" s in
   (* replace /./ by / *)
-  let s = global_replace ~pat:~!"/\./" ~templ:"/" s in
+  let s = global_replace ~!"/\./" "/" s in
   (* replace hoge/../ by "" *)
-  let s = global_replace s
-      ~pat:~!"\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\./" ~templ:"" in
+  let s = global_replace ~!"\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\./"
+                         "" s in
   (* replace hoge/..$ by *)
-  let s = global_replace s
-      ~pat:~!"\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\.$" ~templ:"" in
+  let s = global_replace ~!"\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\.$"
+                         "" s in
   (* replace ^/hoge/../ by / *)
-  let s = global_replace ~pat:~!"^\(/\.\.\)+/" ~templ:"/" s in
-  if string_match s ~pat:~!"^\([^\*?[]*[/:]\)\(.*\)" ~pos:0 then 
+  let s = global_replace ~!"^\(/\.\.\)+/" "/" s in
+  if string_match ~!"^\([^\*?[]*[/:]\)\(.*\)" s 0 then 
     let dirs = matched_group 1 s
     and ptrn = matched_group 2 s
     in
@@ -59,18 +60,18 @@ let rec fixpoint ~f v =
   if v = v' then v else fixpoint ~f v'
 
 let unix_regexp s =
-  let s = Str.global_replace ~pat:~!"[$^.+]" ~templ:"\\\\\\0" s in
-  let s = Str.global_replace ~pat:~!"\\*" ~templ:".*" s in
-  let s = Str.global_replace ~pat:~!"\\?" ~templ:".?" s in
+  let s = Str.global_replace ~!"[$^.+]" "\\\\\\0" s in
+  let s = Str.global_replace ~!"\\*" ".*" s in
+  let s = Str.global_replace ~!"\\?" ".?" s in
   let s =
     fixpoint s
-      ~f:(Str.replace_first ~pat:~!"\\({.*\\),\\(.*}\\)" ~templ:"\\1\\|\\2") in
+      ~f:(Str.replace_first ~!"\\({.*\\),\\(.*}\\)" "\\1\\|\\2") in
   let s =
-    Str.global_replace ~pat:~!"{\\(.*\\)}" ~templ:"\\(\\1\\)" s in
+    Str.global_replace ~!"{\\(.*\\)}" "\\(\\1\\)" s in
   Str.regexp s
 
-let exact_match s ~pat =
-  Str.string_match ~pat s ~pos:0 && Str.match_end () = String.length s
+let exact_match ~pat s =
+  Str.string_match pat s 0 && Str.match_end () = String.length s
 
 let ls ~dir ~pattern =
   let files = get_files_in_directory dir in
@@ -130,7 +131,7 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
       List.fold_left !Config.load_path ~init:[] ~f:
       begin fun acc dir ->
         let files = ls ~dir ~pattern in
-        Sort.merge ~order:(<) files
+        Sort.merge (<) files
           (List.fold_left files ~init:acc
            ~f:(fun acc name -> List2.exclude name acc))
       end

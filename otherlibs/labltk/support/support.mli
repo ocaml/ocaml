@@ -18,3 +18,5 @@
 val split_str : pred:(char -> bool) -> string -> string list
 val may : ('a -> 'b) -> 'a option -> 'b option
 val maycons : ('a -> 'b) -> 'a option -> 'b list -> 'b list
+module Hashtbl' :
+  sig val add : ('a, 'b) Hashtbl.t -> key:'a -> data:'b -> unit end

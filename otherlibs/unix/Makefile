@@ -39,18 +39,20 @@ OBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
   time.o times.o truncate.o umask.o unixsupport.o unlink.o \
   utimes.o wait.o write.o
 
-all: libunix.a unix.cmi unix.cma
+MLOBJS=unix.cmo unixLabels.cmo
 
-allopt: libunix.a unix.cmi unix.cmxa
+all: libunix.a unix.cma
+
+allopt: libunix.a unix.cmxa
 
 libunix.a: $(OBJS)
 	$(MKLIB) -o unix $(OBJS)
 
-unix.cma: unix.cmo
-	$(MKLIB) -o unix -ocamlc '$(CAMLC)' -linkall unix.cmo
+unix.cma: $(MLOBJS)
+	$(MKLIB) -o unix -ocamlc '$(CAMLC)' -linkall $(MLOBJS)
 
-unix.cmxa: unix.cmx
-	$(MKLIB) -o unix -ocamlopt '$(CAMLOPT)' -linkall unix.cmx
+unix.cmxa: $(MLOBJS:.cmo=.cmx)
+	$(MKLIB) -o unix -ocamlopt '$(CAMLOPT)' -linkall $(MLOBJS:.cmo=.cmx)
 
 unix.cmx: ../../ocamlopt
 
@@ -64,10 +66,10 @@ install:
 	test -f libunix.so && cp libunix.so $(LIBDIR)/libunix.so
 	cp libunix.a $(LIBDIR)/libunix.a
 	cd $(LIBDIR); $(RANLIB) libunix.a
-	cp unix.cmi unix.cma unix.mli $(LIBDIR)
+	cp unix.cma $(MLOBJS:.cmo=.cmi) $(MLOBJS:.cmo=.mli) $(LIBDIR)
 
 installopt:
-	cp unix.cmx unix.cmxa unix.a $(LIBDIR)
+	cp $(MLOBJS:.cmo=.cmx) unix.cmxa unix.a $(LIBDIR)
 	cd $(LIBDIR); $(RANLIB) unix.a
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
@@ -76,10 +78,10 @@ installopt:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmo:
-	$(CAMLC) -c $(COMPFLAGS) $<
+	$(CAMLC) -c $(COMPFLAGS) -nolabels $<
 
 .ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $<
+	$(CAMLOPT) -c $(COMPFLAGS) -nolabels $<
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend

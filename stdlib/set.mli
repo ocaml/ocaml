@@ -69,25 +69,25 @@ module type S =
     val subset: t -> t -> bool
         (* [subset s1 s2] tests whether the set [s1] is a subset of
            the set [s2]. *)
-    val iter: f:(elt -> unit) -> t -> unit
+    val iter: (elt -> unit) -> t -> unit
         (* [iter f s] applies [f] in turn to all elements of [s].
            The order in which the elements of [s] are presented to [f]
            is unspecified. *)
-    val fold: f:(elt -> 'a -> 'a) -> t -> init:'a -> 'a
+    val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
         (* [fold f s a] computes [(f xN ... (f x2 (f x1 a))...)],
            where [x1 ... xN] are the elements of [s].
            The order in which elements of [s] are presented to [f] is
            unspecified. *)
-    val for_all: f:(elt -> bool) -> t -> bool
+    val for_all: (elt -> bool) -> t -> bool
         (* [for_all p s] checks if all elements of the set
            satisfy the predicate [p]. *)
-    val exists: f:(elt -> bool) -> t -> bool
+    val exists: (elt -> bool) -> t -> bool
         (* [exists p s] checks if at least one element of
            the set satisfies the predicate [p]. *)
-    val filter: f:(elt -> bool) -> t -> t
+    val filter: (elt -> bool) -> t -> t
         (* [filter p s] returns the set of all elements in [s]
            that satisfy predicate [p]. *)
-    val partition: f:(elt -> bool) -> t -> t * t
+    val partition: (elt -> bool) -> t -> t * t
         (* [partition p s] returns a pair of sets [(s1, s2)], where
            [s1] is the set of all the elements of [s] that satisfy the
            predicate [p], and [s2] is the set of all the elements of

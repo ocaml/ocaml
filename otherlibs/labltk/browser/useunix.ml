@@ -13,7 +13,8 @@
 
 (* $Id$ *)
 
-open Unix
+open StdLabels
+open UnixLabels
 
 let get_files_in_directory dir =
   match
@@ -30,7 +31,7 @@ let get_files_in_directory dir =
         | None ->
             closedir dirh; l 
       in
-      Sort.list ~order:(<=) (get_them [])
+      List.sort ~cmp:compare (get_them [])
 
 let is_directory name =
   try

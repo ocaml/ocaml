@@ -31,6 +31,8 @@ let to_buffer buff ofs len v flags =
   then invalid_arg "Marshal.to_buffer: substring out of bounds"
   else to_buffer_unsafe buff ofs len v flags
 
+let to_buffer' ~buf ~pos ~len v ~mode = to_buffer buf pos len v mode
+
 external from_string_unsafe: string -> int -> 'a = "input_value_from_string"
 external data_size_unsafe: string -> int -> int = "marshal_data_size"
 

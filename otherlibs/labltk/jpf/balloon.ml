@@ -13,11 +13,14 @@
 
 (* $Id$ *)
 
+open StdLabels
+
 (* easy balloon help facility *)
 
 open Tk
 open Widget
 open Protocol
+open Support
 
 (* switch -- if you do not want balloons, set false *)
 let flag = ref true
@@ -90,7 +93,7 @@ let init () =
     begin fun w ->
       try Hashtbl.find t w.ev_Widget
       with Not_found ->
-        Hashtbl.add t ~key:w.ev_Widget ~data: ();
+        Hashtbl'.add t ~key:w.ev_Widget ~data: ();
         let x = Option.get w.ev_Widget ~name: "balloon" ~clas: "Balloon" in
         if x <> "" then put ~on: w.ev_Widget ~ms: 1000 x
     end

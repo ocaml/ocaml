@@ -1,7 +1,7 @@
 include ../support/Makefile.common
 
-OBJS=tsort.cmo tables.cmo printer.cmo lexer.cmo parser.cmo \
- compile.cmo intf.cmo maincompile.cmo
+OBJS=	../support/support.cmo tsort.cmo tables.cmo printer.cmo lexer.cmo \
+	parser.cmo compile.cmo intf.cmo maincompile.cmo
 
 tkcompiler : $(OBJS)
 	$(LABLC) $(LINKFLAGS) -o tkcompiler $(OBJS)
@@ -25,10 +25,10 @@ install:
 .SUFFIXES : .mli .ml .cmi .cmo .mlp
 
 .mli.cmi:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(LABLCOMP) $(COMPFLAGS) -I ../support $<
 
 .ml.cmo:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(LABLCOMP) $(COMPFLAGS) -I ../support $<
 
 depend: parser.ml parser.mli lexer.ml
 	$(LABLDEP) *.mli *.ml > .depend

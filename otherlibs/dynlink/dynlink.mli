@@ -26,7 +26,7 @@ val loadfile : string -> unit
 val loadfile_private : string -> unit
         (* Same as [loadfile], except that the module loaded is not
            made available to other modules dynamically loaded afterwards. *)
-val add_interfaces : units:string list -> paths:string list -> unit
+val add_interfaces : string list -> string list -> unit
         (* [add_interfaces units path] grants dynamically-linked object
            files access to the compilation  units named in list [units].
            The interfaces ([.cmi] files) for these units are searched in

@@ -17,7 +17,7 @@
 external length : string -> int = "%string_length"
 external get : string -> int -> char = "%string_safe_get"
 external set : string -> int -> char -> unit = "%string_safe_set"
-external create: int -> string = "create_string"
+external create : int -> string = "create_string"
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
 external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"
 external unsafe_blit : string -> int -> string -> int -> int -> unit
@@ -55,6 +55,9 @@ let blit s1 ofs1 s2 ofs2 len =
              || ofs2 < 0 || ofs2 + len > length s2
   then invalid_arg "String.blit"
   else unsafe_blit s1 ofs1 s2 ofs2 len
+
+let iter f a =
+  for i = 0 to length a - 1 do f(unsafe_get a i) done
 
 let concat sep l =
   match l with

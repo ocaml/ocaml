@@ -40,7 +40,7 @@ val from_string : string -> lexbuf
            the given string. Reading starts from the first character in
            the string. An end-of-input condition is generated when the
            end of the string is reached. *)
-val from_function : (buf:string -> len:int -> int) -> lexbuf
+val from_function : (string -> int -> int) -> lexbuf
         (* Create a lexer buffer with the given function as its reading method.
            When the scanner needs more characters, it will call the given
            function, giving it a character string [s] and a character

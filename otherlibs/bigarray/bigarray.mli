@@ -156,8 +156,7 @@ module Genarray: sig
          in Fortran layout; reads and writes in this array use the
          Caml type [float]. *)
 
-  external create:
-    kind:('a, 'b) kind -> layout:'c layout -> dims:int array -> ('a, 'b, 'c) t
+  external create: ('a, 'b) kind -> 'c layout -> int array -> ('a, 'b, 'c) t
     = "bigarray_create"
       (* [Genarray.create kind layout dimensions] returns a new big array
          whose element kind is determined by the parameter [kind] (one of
@@ -223,8 +222,7 @@ module Genarray: sig
          (The syntax [a.{...} <- v] with one, two or three coordinates is
          reserved for updating one-, two- and three-dimensional arrays
          as described below.) *)
-  external sub_left:
-    ('a, 'b, c_layout) t -> pos:int -> len:int -> ('a, 'b, c_layout) t
+  external sub_left: ('a, 'b, c_layout) t -> int -> int -> ('a, 'b, c_layout) t
     = "bigarray_sub"
       (* Extract a sub-array of the given big array by restricting the
          first (left-most) dimension.  [Genarray.sub_left a ofs len]
@@ -243,8 +241,7 @@ module Genarray: sig
          a valid sub-array of [a], that is, if [ofs < 0], or [len < 0],
          or [ofs + len > Genarray.nth_dim a 0]. *)
   external sub_right:
-    ('a, 'b, fortran_layout) t ->
-    pos:int -> len:int -> ('a, 'b, fortran_layout) t
+    ('a, 'b, fortran_layout) t -> int -> int -> ('a, 'b, fortran_layout) t
     = "bigarray_sub"
       (* Extract a sub-array of the given big array by restricting the
          last (right-most) dimension.  [Genarray.sub_right a ofs len]
@@ -296,7 +293,7 @@ module Genarray: sig
          [Genarray.slice_right] applies only to big arrays in Fortran layout.
          Raise [Invalid_arg] if [M >= N], or if [[|i1; ... ; iM|]]
          is outside the bounds of [a]. *)
-  external blit: src:('a, 'b, 'c) t -> dst:('a, 'b, 'c) t -> unit
+  external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit
       = "bigarray_blit"
       (* Copy all elements of a big array in another big array.
          [Genarray.blit src dst] copies all elements of [src] into
@@ -311,8 +308,8 @@ module Genarray: sig
          can be achieved by applying [Genarray.fill] to a sub-array
          or a slice of [a]. *)
   external map_file:
-    Unix.file_descr -> kind:('a, 'b) kind -> layout:'c layout ->
-    shared:bool -> dims:int array -> ('a, 'b, 'c) t = "bigarray_map_file"
+    Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
+    bool -> int array -> ('a, 'b, 'c) t = "bigarray_map_file"
       (* Memory mapping of a file as a big array.
          [Genarray.map_file fd kind layout shared dims]
          returns a big array of kind [kind], layout [layout],
@@ -360,8 +357,7 @@ module Array1: sig
   type ('a, 'b, 'c) t
         (* The type of one-dimensional big arrays whose elements have
            Caml type ['a], representation kind ['b], and memory layout ['c]. *)
-  val create:
-    kind:('a, 'b) kind -> layout:'c layout -> dim:int -> ('a, 'b, 'c) t
+  val create: ('a, 'b) kind -> 'c layout -> int -> ('a, 'b, 'c) t
         (* [Array1.create kind layout dim] returns a new bigarray of
            one dimension, whose size is [dim].  [kind] and [layout]
            determine the array element kind and the array layout
@@ -381,23 +377,22 @@ module Array1: sig
            stores the value [v] at index [x] in [a].
            [x] must be inside the bounds of [a] as described in [Array1.get];
            otherwise, [Invalid_arg] is raised. *)
-  external sub: ('a, 'b, 'c) t -> pos:int -> len:int -> ('a, 'b, 'c) t
+  external sub: ('a, 'b, 'c) t -> int -> int -> ('a, 'b, 'c) t
     = "bigarray_sub"
         (* Extract a sub-array of the given one-dimensional big array.
            See [Genarray.sub_left] for more details. *)
-  external blit: src:('a, 'b, 'c) t -> dst:('a, 'b, 'c) t -> unit
+  external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit
     = "bigarray_blit"
         (* Copy the first big array to the second big array.
            See [Genarray.blit] for more details. *)
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "bigarray_fill"
         (* Fill the given big array with the given value.
            See [Genarray.fill] for more details. *)
-  val of_array:
-    kind:('a, 'b) kind -> layout:'c layout -> 'a array -> ('a, 'b, 'c) t
+  val of_array: ('a, 'b) kind -> 'c layout -> 'a array -> ('a, 'b, 'c) t
         (* Build a one-dimensional big array initialized from the
            given array.  *)
-  val map_file: Unix.file_descr -> kind:('a, 'b) kind -> layout:'c layout ->
-                shared:bool -> dim:int -> ('a, 'b, 'c) t
+  val map_file: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
+                bool -> int -> ('a, 'b, 'c) t
         (* Memory mapping of a file as a one-dimensional big array.
            See [Genarray.map_file] for more details. *)
 end
@@ -411,9 +406,7 @@ module Array2: sig
   type ('a, 'b, 'c) t
         (* The type of two-dimensional big arrays whose elements have
            Caml type ['a], representation kind ['b], and memory layout ['c]. *)
-  val create:
-    kind:('a, 'b) kind ->
-    layout:'c layout -> dim1:int -> dim2:int -> ('a, 'b, 'c) t
+  val create: ('a, 'b) kind ->  'c layout -> int -> int -> ('a, 'b, 'c) t
         (* [Array2.create kind layout dim1 dim2] returns a new bigarray of
            two dimension, whose size is [dim1] in the first dimension
            and [dim2] in the second dimension.  [kind] and [layout]
@@ -437,46 +430,43 @@ module Array2: sig
            [x] and [y] must be within the bounds of [a],
            as described for [Genarray.set];
            otherwise, [Invalid_arg] is raised. *)
-  external sub_left:
-    ('a, 'b, c_layout) t -> pos:int -> len:int -> ('a, 'b, c_layout) t
+  external sub_left: ('a, 'b, c_layout) t -> int -> int -> ('a, 'b, c_layout) t
     = "bigarray_sub"
         (* Extract a two-dimensional sub-array of the given two-dimensional 
            big array by restricting the first dimension.
            See [Genarray.sub_left] for more details.  [Array2.sub_left]
            applies only to arrays with C layout. *)
   external sub_right:
-    ('a, 'b, fortran_layout) t ->
-    pos:int -> len:int -> ('a, 'b, fortran_layout) t = "bigarray_sub"
+    ('a, 'b, fortran_layout) t -> int -> int -> ('a, 'b, fortran_layout) t
+    = "bigarray_sub"
         (* Extract a two-dimensional sub-array of the given two-dimensional 
            big array by restricting the second dimension.
            See [Genarray.sub_right] for more details.  [Array2.sub_right]
            applies only to arrays with Fortran layout. *)
-  val slice_left:
-    ('a, 'b, c_layout) t -> x:int -> ('a, 'b, c_layout) Array1.t
+  val slice_left: ('a, 'b, c_layout) t -> int -> ('a, 'b, c_layout) Array1.t
         (* Extract a row (one-dimensional slice) of the given two-dimensional
            big array.  The integer parameter is the index of the row to
            extract.  See [Genarray.slice_left] for more details.
            [Array2.slice_left] applies only to arrays with C layout. *)
   val slice_right:
-    ('a, 'b, fortran_layout) t -> y:int -> ('a, 'b, fortran_layout) Array1.t
+    ('a, 'b, fortran_layout) t -> int -> ('a, 'b, fortran_layout) Array1.t
         (* Extract a column (one-dimensional slice) of the given
            two-dimensional big array.  The integer parameter is the
            index of the column to extract.  See [Genarray.slice_right] for
            more details.  [Array2.slice_right] applies only to arrays
            with Fortran layout. *)
-  external blit: src:('a, 'b, 'c) t -> dst:('a, 'b, 'c) t -> unit
+  external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit
     = "bigarray_blit"
         (* Copy the first big array to the second big array.
            See [Genarray.blit] for more details. *)
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "bigarray_fill"
         (* Fill the given big array with the given value.
            See [Genarray.fill] for more details. *)
-  val of_array:
-    kind:('a, 'b) kind -> layout:'c layout -> 'a array array -> ('a, 'b, 'c) t
+  val of_array: ('a, 'b) kind -> 'c layout -> 'a array array -> ('a, 'b, 'c) t
         (* Build a two-dimensional big array initialized from the
            given array of arrays.  *)
-  val map_file: Unix.file_descr -> kind:('a, 'b) kind -> layout:'c layout ->
-                shared:bool -> dim1:int -> dim2:int -> ('a, 'b, 'c) t
+  val map_file: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
+                bool -> int -> int -> ('a, 'b, 'c) t
         (* Memory mapping of a file as a two-dimensional big array.
            See [Genarray.map_file] for more details. *)
 end
@@ -490,9 +480,7 @@ module Array3: sig
   type ('a, 'b, 'c) t
         (* The type of three-dimensional big arrays whose elements have
            Caml type ['a], representation kind ['b], and memory layout ['c]. *)
-  val create:
-    kind:('a, 'b) kind -> layout:'c layout ->
-    dim1:int -> dim2:int -> dim3:int -> ('a, 'b, 'c) t
+  val create: ('a, 'b) kind -> 'c layout -> int -> int -> int -> ('a, 'b, 'c) t
         (* [Array3.create kind layout dim1 dim2 dim3] returns a new bigarray of
            three dimension, whose size is [dim1] in the first dimension,
            [dim2] in the second dimension, and [dim3] in the third.
@@ -513,59 +501,57 @@ module Array3: sig
            [x], [y] and [z] must be within the bounds of [a],
            as described for [Genarray.get]; otherwise, [Invalid_arg]
            is raised. *)
-  external set: ('a, 'b, 'c) t -> int -> int -> int -> 'a -> unit = "%bigarray_set_3"
+  external set: ('a, 'b, 'c) t -> int -> int -> int -> 'a -> unit
+    = "%bigarray_set_3"
         (* [Array3.set a x y v], or alternatively [a.{x,y,z} <- v],
            stores the value [v] at coordinates ([x], [y], [z]) in [a].
            [x], [y] and [z] must be within the bounds of [a],
            as described for [Genarray.set];
            otherwise, [Invalid_arg] is raised. *)
-  external sub_left:
-    ('a, 'b, c_layout) t -> pos:int -> len:int -> ('a, 'b, c_layout) t
+  external sub_left: ('a, 'b, c_layout) t -> int -> int -> ('a, 'b, c_layout) t
     = "bigarray_sub"
         (* Extract a three-dimensional sub-array of the given
            three-dimensional big array by restricting the first dimension.
            See [Genarray.sub_left] for more details.  [Array3.sub_left]
            applies only to arrays with C layout. *)
   external sub_right:
-    ('a, 'b, fortran_layout) t ->
-    pos:int -> len:int -> ('a, 'b, fortran_layout) t
+    ('a, 'b, fortran_layout) t -> int -> int -> ('a, 'b, fortran_layout) t
     = "bigarray_sub"
         (* Extract a three-dimensional sub-array of the given
            three-dimensional big array by restricting the second dimension.
            See [Genarray.sub_right] for more details.  [Array3.sub_right]
            applies only to arrays with Fortran layout. *)
   val slice_left_1:
-    ('a, 'b, c_layout) t -> x:int -> y:int -> ('a, 'b, c_layout) Array1.t
+    ('a, 'b, c_layout) t -> int -> int -> ('a, 'b, c_layout) Array1.t
         (* Extract a one-dimensional slice of the given three-dimensional
            big array by fixing the first two coordinates.
            The integer parameters are the coordinates of the slice to
            extract.  See [Genarray.slice_left] for more details.
            [Array3.slice_left_1] applies only to arrays with C layout. *)
   val slice_right_1:
-    ('a, 'b, fortran_layout) t -> y:int -> z:int -> 
-        ('a, 'b, fortran_layout) Array1.t
+    ('a, 'b, fortran_layout) t ->
+    int -> int -> ('a, 'b, fortran_layout) Array1.t
         (* Extract a one-dimensional slice of the given three-dimensional
            big array by fixing the last two coordinates.
            The integer parameters are the coordinates of the slice to
            extract.  See [Genarray.slice_right] for more details.
            [Array3.slice_right_1] applies only to arrays with Fortran
            layout. *)
-  val slice_left_2:
-    ('a, 'b, c_layout) t -> x:int -> ('a, 'b, c_layout) Array2.t
+  val slice_left_2: ('a, 'b, c_layout) t -> int -> ('a, 'b, c_layout) Array2.t
         (* Extract a  two-dimensional slice of the given three-dimensional
            big array by fixing the first coordinate.
            The integer parameter is the first coordinate of the slice to
            extract.  See [Genarray.slice_left] for more details.
            [Array3.slice_left_2] applies only to arrays with C layout. *)
   val slice_right_2:
-    ('a, 'b, fortran_layout) t -> z:int -> ('a, 'b, fortran_layout) Array2.t
+    ('a, 'b, fortran_layout) t -> int -> ('a, 'b, fortran_layout) Array2.t
         (* Extract a two-dimensional slice of the given
            three-dimensional big array by fixing the last coordinate.
            The integer parameter is the coordinate of the slice
            to extract.  See [Genarray.slice_right] for more details.
            [Array3.slice_right_2] applies only to arrays with Fortran
            layout. *)
-  external blit: src:('a, 'b, 'c) t -> dst:('a, 'b, 'c) t -> unit
+  external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit
     = "bigarray_blit"
         (* Copy the first big array to the second big array.
            See [Genarray.blit] for more details. *)
@@ -573,21 +559,23 @@ module Array3: sig
         (* Fill the given big array with the given value.
            See [Genarray.fill] for more details. *)
   val of_array:
-        kind:('a, 'b) kind -> layout:'c layout ->
-        'a array array array -> ('a, 'b, 'c) t
+    ('a, 'b) kind -> 'c layout -> 'a array array array -> ('a, 'b, 'c) t
         (* Build a three-dimensional big array initialized from the
            given array of arrays of arrays.  *)
-  val map_file: Unix.file_descr -> kind:('a, 'b) kind -> layout:'c layout ->
-             shared:bool -> dim1:int -> dim2:int -> dim3:int -> ('a, 'b, 'c) t
+  val map_file: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
+             bool -> int -> int -> int -> ('a, 'b, 'c) t
         (* Memory mapping of a file as a three-dimensional big array.
            See [Genarray.map_file] for more details. *)
 end
 
 (*** Coercions between generic big arrays and fixed-dimension big arrays *)
 
-external genarray_of_array1: ('a, 'b, 'c) Array1.t -> ('a, 'b, 'c) Genarray.t = "%identity"
-external genarray_of_array2: ('a, 'b, 'c) Array2.t -> ('a, 'b, 'c) Genarray.t = "%identity"
-external genarray_of_array3: ('a, 'b, 'c) Array3.t -> ('a, 'b, 'c) Genarray.t = "%identity"
+external genarray_of_array1: ('a, 'b, 'c) Array1.t -> ('a, 'b, 'c) Genarray.t
+  = "%identity"
+external genarray_of_array2: ('a, 'b, 'c) Array2.t -> ('a, 'b, 'c) Genarray.t
+  = "%identity"
+external genarray_of_array3: ('a, 'b, 'c) Array3.t -> ('a, 'b, 'c) Genarray.t
+  = "%identity"
         (* Return the generic big array corresponding to the given
            one-dimensional, two-dimensional or three-dimensional big array. *)
 val array1_of_genarray: ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array1.t
@@ -605,8 +593,7 @@ val array3_of_genarray: ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array3.t
 
 (*** Re-shaping big arrays *)
 
-val reshape:
-      ('a, 'b, 'c) Genarray.t -> dims:int array -> ('a, 'b, 'c) Genarray.t
+val reshape: ('a, 'b, 'c) Genarray.t -> int array -> ('a, 'b, 'c) Genarray.t
         (* [reshape b [|d1;...;dN|]] converts the big array [b] to a
            [N]-dimensional array of dimensions [d1]...[dN].  The returned
            array and the original array [b] share their data
@@ -621,16 +608,13 @@ val reshape:
            elements as the original big array [b].  That is, the product
            of the dimensions of [b] must be equal to [i1 * ... * iN].
            Otherwise, [Invalid_arg] is raised. *)
-val reshape_1:
-      ('a, 'b, 'c) Genarray.t -> dim:int -> ('a, 'b, 'c) Array1.t
+val reshape_1: ('a, 'b, 'c) Genarray.t -> int -> ('a, 'b, 'c) Array1.t
         (* Specialized version of [reshape] for reshaping to one-dimensional
            arrays. *)
-val reshape_2:
-      ('a, 'b, 'c) Genarray.t -> dim1:int -> dim2:int -> ('a, 'b, 'c) Array2.t
+val reshape_2: ('a, 'b, 'c) Genarray.t -> int -> int -> ('a, 'b, 'c) Array2.t
         (* Specialized version of [reshape] for reshaping to two-dimensional
            arrays. *)
 val reshape_3:
-      ('a, 'b, 'c) Genarray.t -> dim1:int -> dim2:int -> dim3:int ->
-      ('a, 'b, 'c) Array3.t
+      ('a, 'b, 'c) Genarray.t -> int -> int -> int -> ('a, 'b, 'c) Array3.t
         (* Specialized version of [reshape] for reshaping to three-dimensional
            arrays. *)

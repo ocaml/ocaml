@@ -177,7 +177,7 @@ module type S =
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
     val iter: (key -> 'a -> unit) -> 'a t -> unit
-    val fold: f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
+    val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   end
 
 module Make(H: HashedType): (S with type key = H.t) =

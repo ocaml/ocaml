@@ -621,6 +621,24 @@ and class_expr cl_num val_env met_env scl =
        cl_type = Tcty_fun (l, pat.pat_type, cl.cl_type)}
   | Pcl_apply (scl', sargs) ->
       let cl = class_expr cl_num val_env met_env scl' in
+      let rec nonopt_labels ls ty_fun =
+        match ty_fun with
+        | Tcty_fun (l, _, ty_res) ->
+            if Btype.is_optional l then nonopt_labels ls ty_res
+            else nonopt_labels (l::ls) ty_res
+        | _    -> ls
+      in
+      let ignore_labels =
+        !Clflags.classic ||
+        let labels = nonopt_labels [] cl.cl_type in
+        List.length labels = List.length sargs &&
+        List.for_all (fun (l,_) -> l = "") sargs &&
+        List.exists (fun l -> l <> "") labels &&
+        begin
+          Location.prerr_warning cl.cl_loc Warnings.Labels_omitted;
+          true
+        end
+      in
       let rec type_args args omitted ty_fun sargs more_sargs =
         match ty_fun with
         | Tcty_fun (l, ty, ty_fun) when sargs <> [] || more_sargs <> [] ->
@@ -628,7 +646,7 @@ and class_expr cl_num val_env met_env scl =
             and optional =
               if Btype.is_optional l then Optional else Required in
             let sargs, more_sargs, arg =
-              if !Clflags.classic && not (Btype.is_optional l) then begin
+              if ignore_labels && not (Btype.is_optional l) then begin
                 match sargs, more_sargs with
                   (l', sarg0)::_, _ ->
                     raise(Error(sarg0.pexp_loc, Apply_wrong_label(l')))
@@ -680,7 +698,7 @@ and class_expr cl_num val_env met_env scl =
                    ty_fun omitted)
       in
       let (args, cty) =
-        if !Clflags.classic then
+        if ignore_labels then
           type_args [] [] cl.cl_type [] sargs
         else
           type_args [] [] cl.cl_type sargs []

@@ -77,16 +77,16 @@ val foreground: color
 
 (*** Point and line drawing *)
 
-external plot : x:int -> y:int -> unit = "gr_plot"
+external plot : int -> int -> unit = "gr_plot"
         (* Plot the given point with the current drawing color. *)
 val plots : (int * int) array -> unit
         (* Plot the given points with the current drawing color. *)
-external point_color : x:int -> y:int -> color = "gr_point_color"
+external point_color : int -> int -> color = "gr_point_color"
         (* Return the color of the given point in the backing store
            (see "Double buffering" below). *)
-external moveto : x:int -> y:int -> unit = "gr_moveto"
+external moveto : int -> int -> unit = "gr_moveto"
         (* Position the current point. *)
-val rmoveto : dx:int -> dy:int -> unit
+val rmoveto : int -> int -> unit
         (* [rmoveto dx dy] translates the current point by the given vector. *)
 external current_x : unit -> int = "gr_current_x"
         (* Return the abscissa of the current point. *)
@@ -94,10 +94,10 @@ external current_y : unit -> int = "gr_current_y"
         (* Return the ordinate of the current point. *)
 val current_point : unit -> int * int
         (* Return the position of the current point. *)
-external lineto : x:int -> y:int -> unit = "gr_lineto"
+external lineto : int -> int -> unit = "gr_lineto"
         (* Draw a line with endpoints the current point and the given point,
            and move the current point to the given point. *)
-val rlineto : dx:int -> dy:int -> unit
+val rlineto : int -> int -> unit
         (* Draw a line with endpoints the current point and the
            current point translated of the given vector,
            and move the current point to this point. *)
@@ -105,7 +105,7 @@ val curveto : int * int -> int * int -> int * int -> unit
         (* [curveto b c d] draws a cubic Bezier curve starting from
            the current point to point [d], with control points [b] and
            [c], and moves the current point to [d]. *)
-external draw_rect : x:int -> y:int -> w:int -> h:int -> unit = "gr_draw_rect"
+external draw_rect : int -> int -> int -> int -> unit = "gr_draw_rect"
         (* [draw_rect x y w h] draws the rectangle with lower left corner
            at [x,y], width [w] and height [h].
            The current point is unchanged. *)
@@ -127,16 +127,16 @@ val draw_segments : (int * int * int * int) array -> unit
            the coordinates of the end points of the segment.
            The current point is unchanged. *)
 external draw_arc :
-        x:int -> y:int -> rx:int -> ry:int -> start:int -> stop:int -> unit
+        int -> int -> int -> int -> int -> int -> unit
                = "gr_draw_arc" "gr_draw_arc_nat"
         (* [draw_arc x y rx ry a1 a2] draws an elliptical arc with center
            [x,y], horizontal radius [rx], vertical radius [ry], from angle
            [a1] to angle [a2] (in degrees). The current point is unchanged. *)
-val draw_ellipse : x:int -> y:int -> rx:int -> ry:int -> unit
+val draw_ellipse : int -> int -> int -> int -> unit
         (* [draw_ellipse x y rx ry] draws an ellipse with center
            [x,y], horizontal radius [rx] and vertical radius [ry].
            The current point is unchanged.  *)
-val draw_circle : x:int -> y:int -> r:int -> unit
+val draw_circle : int -> int -> int -> unit
         (* [draw_circle x y r] draws a circle with center [x,y] and
            radius [r]. The current point is unchanged. *)
 external set_line_width : int -> unit = "gr_set_line_width"
@@ -163,21 +163,21 @@ external text_size : string -> int * int = "gr_text_size"
 
 (*** Filling *)
 
-external fill_rect : x:int -> y:int -> w:int -> h:int -> unit = "gr_fill_rect"
+external fill_rect : int -> int -> int -> int -> unit = "gr_fill_rect"
         (* [fill_rect x y w h] fills the rectangle with lower left corner
            at [x,y], width [w] and height [h], with the current color. *)
 external fill_poly : (int * int) array -> unit = "gr_fill_poly"
         (* Fill the given polygon with the current color. The array
            contains the coordinates of the vertices of the polygon. *)
 external fill_arc :
-        x:int -> y:int -> rx:int -> ry:int -> start:int -> stop:int -> unit
+        int -> int -> int -> int -> int -> int -> unit
                = "gr_fill_arc" "gr_fill_arc_nat"
         (* Fill an elliptical pie slice with the current color. The
            parameters are the same as for [draw_arc]. *)
-val fill_ellipse : x:int -> y:int -> rx:int -> ry:int -> unit
+val fill_ellipse : int -> int -> int -> int -> unit
         (* Fill an ellipse with the current color. The
            parameters are the same as for [draw_ellipse]. *)
-val fill_circle : x:int -> y:int -> r:int -> unit
+val fill_circle : int -> int -> int -> unit
         (* Fill a circle with the current color. The
            parameters are the same as for [draw_circle]. *)
 
@@ -202,17 +202,17 @@ external make_image : color array array -> image = "gr_make_image"
            is raised. *)
 external dump_image : image -> color array array = "gr_dump_image"
         (* Convert an image to a color matrix. *)
-external draw_image : image -> x:int -> y:int -> unit = "gr_draw_image"
+external draw_image : image -> int -> int -> unit = "gr_draw_image"
         (* Draw the given image with lower left corner at the given point. *)
-val get_image : x:int -> y:int -> w:int -> h:int -> image
+val get_image : int -> int -> int -> int -> image
         (* Capture the contents of a rectangle on the screen as an image.
            The parameters are the same as for [fill_rect]. *)
-external create_image : w:int -> h:int -> image = "gr_create_image"
+external create_image : int -> int -> image = "gr_create_image"
         (* [create_image w h] returns a new image [w] pixels wide and [h]
            pixels tall, to be used in conjunction with [blit_image].
            The initial image contents are random, except that no point
            is transparent. *)
-external blit_image : image -> x:int -> y:int -> unit = "gr_blit_image"
+external blit_image : image -> int -> int -> unit = "gr_blit_image"
         (* [blit_image img x y] copies screen pixels into the image [img],
            modifying [img] in-place. The pixels copied are those inside the
            rectangle with lower left corner at [x,y], and width and height
@@ -265,7 +265,7 @@ val key_pressed : unit -> bool
 
 (*** Sound *)
 
-external sound : freq:int -> ms:int -> unit = "gr_sound"
+external sound : int -> int -> unit = "gr_sound"
         (* [sound freq dur] plays a sound at frequency [freq] (in hertz)
            for a duration [dur] (in milliseconds). *)
 

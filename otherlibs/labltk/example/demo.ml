@@ -17,6 +17,7 @@
 (* Some CamlTk4 Demonstration by JPF *)
 
 (* First, open these modules for convenience *)
+open StdLabels
 open Tk
 
 (* Dummy let *)

@@ -32,6 +32,7 @@ module Make_options (F :
      val _make_runtime : unit -> unit
      val _noassert : unit -> unit
      val _noautolink : unit -> unit
+     val _nolabels : unit -> unit
      val _o : string -> unit
      val _output_obj : unit -> unit
      val _pp : string -> unit
@@ -84,6 +85,7 @@ struct
     "-noassert", Arg.Unit F._noassert, " Don't compile assertion checks";
     "-noautolink", Arg.Unit F._noautolink,
            " Don't automatically link C libraries specified in .cma files";
+    "-nolabels", Arg.Unit F._nolabels, " Ignore non-optional labels in types";
     "-o", Arg.String F._o, "<file>  Set output file name to <file>";
     "-output-obj", Arg.Unit F._output_obj,
                           " Output a C object file instead of an executable";
@@ -104,6 +106,7 @@ struct
       \032    A/a enable/disable all warnings\n\
       \032    C/c enable/disable suspicious comment\n\
       \032    F/f enable/disable partially applied function\n\
+      \032    L/l enable/disable labels omitted in application\n\
       \032    M/m enable/disable overriden method\n\
       \032    P/p enable/disable partial match\n\
       \032    S/s enable/disable non-unit statement\n\

@@ -32,6 +32,7 @@ module Make_options (F :
       val _make_runtime : unit -> unit
       val _noassert : unit -> unit
       val _noautolink : unit -> unit
+      val _nolabels : unit -> unit
       val _o : string -> unit
       val _output_obj : unit -> unit
       val _pp : string -> unit

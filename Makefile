@@ -108,7 +108,8 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
 PERVASIVES=arg array buffer callback char digest filename format gc hashtbl \
   lexing list map obj parsing pervasives printexc printf queue random \
   set sort stack string stream sys oo genlex topdirs toploop weak lazy \
-  marshal int32 int64 nativeint outcometree
+  marshal int32 int64 nativeint outcometree \
+  arrayLabels listLabels stringLabels stdLabels
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
@@ -277,7 +278,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	@rm -f utils/config.ml
 	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
             -e 's|%%BYTERUN%%|$(BINDIR)/ocamlrun|' \
-            -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS)|' \
+            -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)|' \
             -e 's|%%BYTELINK%%|$(BYTECC) $(BYTECCLINKOPTS)|' \
             -e 's|%%BYTECCRPATH%%|$(BYTECCRPATH)|' \
             -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|' \

@@ -52,7 +52,7 @@ val dirname : string -> string
            current directory to [dirname name] (with [Sys.chdir]),
            references to [basename name] (which is a relative file name)
            designate the same file as [name] before the call to [Sys.chdir]. *)
-val temp_file : prefix:string -> suffix:string -> string
+val temp_file : string -> string -> string
         (* [temp_file prefix suffix] returns the name of a
            fresh temporary file in the temporary directory.
            The base name of the temporary file is formed by concatenating

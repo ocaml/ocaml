@@ -62,13 +62,12 @@ val check: 'a t -> int -> bool;;
            full, [false] if it is empty.  Note that even if [Weak.check ar n]
            returns [true], a subsequent [Weak.get ar n] can return [None].
         *)
-val fill: 'a t -> pos:int -> len:int -> 'a option -> unit;;
+val fill: 'a t -> int -> int -> 'a option -> unit;;
         (* [Weak.fill ar ofs len el] sets to [el] all pointers of [ar] from
            [ofs] to [ofs + len - 1].  Raise [Invalid_argument "Weak.fill"]
            if [ofs] and [len] do not designate a valid subarray of [a].
         *)
-val blit : src:'a t -> src_pos:int ->
-           dst:'a t -> dst_pos:int -> len:int -> unit;;
+val blit : 'a t -> int -> 'a t -> int -> int -> unit;;
         (* [Weak.blit ar1 off1 ar2 off2 len] copies [len] weak pointers
            from [ar1] (starting at [off1]) to [ar2] (starting at [off2]).
            It works correctly even if [ar1] and [ar2] are the same.

@@ -27,9 +27,9 @@ external tag : t -> int = "obj_tag"
 external size : t -> int = "%obj_size"
 external field : t -> int -> t = "%obj_field"
 external set_field : t -> int -> t -> unit = "%obj_set_field"
-external new_block : int -> len:int -> t = "obj_block"
+external new_block : int -> int -> t = "obj_block"
 external dup : t -> t = "obj_dup"
-external truncate : t -> len:int -> unit = "obj_truncate"
+external truncate : t -> int -> unit = "obj_truncate"
 
 val no_scan_tag : int
 val closure_tag : int
