@@ -120,7 +120,8 @@ external get : unit -> control = "gc_get"
   (* Return the current values of the GC parameters in a [control] record. *)
 external set : control -> unit = "gc_set"
   (* [set r] changes the GC parameters according to the [control] record [r].
-     The normal usage is: [ Gc.set { (Gc.get()) with Gc.verbose = 13 } ]. *)
+     The normal usage is:
+-    [Gc.set { (Gc.get()) with Gc.verbose = 13 }] *)
 external minor : unit -> unit = "gc_minor"
   (* Trigger a minor collection. *)
 external major : unit -> unit = "gc_major"
