@@ -342,20 +342,45 @@ value next_token_fun dfa find_kwd =
   and quote_in_comment bp =
     parser
     [ [: `'''; s :] -> comment bp s
-    | [: `'\\'; s :] -> quote_antislash_in_comment bp 0 s
+    | [: `'\013'; s :] -> quote_cr_in_comment bp s
+    | [: `'\\'; s :] -> quote_antislash_in_comment bp s
+    | [: `'('; s :] -> quote_left_paren_in_comment bp s
+    | [: `'*'; s :] -> quote_star_in_comment bp s
+    | [: `'"'; s :] -> quote_doublequote_in_comment bp s
     | [: `_; s :] -> quote_any_in_comment bp s
     | [: s :] -> comment bp s ]
   and quote_any_in_comment bp =
     parser
     [ [: `'''; s :] -> comment bp s
     | [: s :] -> comment bp s ]
-  and quote_antislash_in_comment bp len =
+  and quote_cr_in_comment bp =
+    parser
+    [ [: `'\010'; s :] -> quote_any_in_comment bp s
+    | [: s :] -> quote_any_in_comment bp s ]
+  and quote_left_paren_in_comment bp =
     parser
     [ [: `'''; s :] -> comment bp s
+    | [: s :] -> left_paren_in_comment bp s ]
+  and quote_star_in_comment bp =
+    parser
+    [ [: `'''; s :] -> comment bp s
+    | [: s :] -> star_in_comment bp s ]
+  and quote_doublequote_in_comment bp =
+    parser
+    [ [: `'''; s :] -> comment bp s
+    | [: _ = string bp 0; s :] -> comment bp s ]
+  and quote_antislash_in_comment bp =
+    parser
+    [ [: `'''; s :] -> quote_antislash_quote_in_comment bp s
     | [: `('\\' | '"' | 'n' | 't' | 'b' | 'r'); s :] ->
         quote_any_in_comment bp s
     | [: `('0'..'9'); s :] -> quote_antislash_digit_in_comment bp s
+    | [: `'x'; s :] -> quote_antislash_x_in_comment bp s
     | [: s :] -> comment bp s ]
+  and quote_antislash_quote_in_comment bp =
+    parser
+    [ [: `'''; s :] -> comment bp s
+    | [: s :] -> quote_in_comment bp s ]
   and quote_antislash_digit_in_comment bp =
     parser
     [ [: `('0'..'9'); s :] -> quote_antislash_digit2_in_comment bp s
@@ -363,6 +388,14 @@ value next_token_fun dfa find_kwd =
   and quote_antislash_digit2_in_comment bp =
     parser
     [ [: `('0'..'9'); s :] -> quote_any_in_comment bp s
+    | [: s :] -> comment bp s ]
+  and quote_antislash_x_in_comment bp =
+    parser
+    [ [: _ = hexa; s :] -> quote_antislash_x_digit_in_comment bp s
+    | [: s :] -> comment bp s ]
+  and quote_antislash_x_digit_in_comment bp =
+    parser
+    [ [: _ = hexa; s :] -> quote_any_in_comment bp s
     | [: s :] -> comment bp s ]
   and left_paren_in_comment bp =
     parser

@@ -533,21 +533,47 @@ let next_token_fun dfa find_kwd =
   and quote_in_comment bp (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '\'' -> Stream.junk strm__; comment bp strm__
-    | Some '\\' -> Stream.junk strm__; quote_antislash_in_comment bp 0 strm__
+    | Some '\013' -> Stream.junk strm__; quote_cr_in_comment bp strm__
+    | Some '\\' -> Stream.junk strm__; quote_antislash_in_comment bp strm__
+    | Some '(' -> Stream.junk strm__; quote_left_paren_in_comment bp strm__
+    | Some '*' -> Stream.junk strm__; quote_star_in_comment bp strm__
+    | Some '\"' -> Stream.junk strm__; quote_doublequote_in_comment bp strm__
     | Some _ -> Stream.junk strm__; quote_any_in_comment bp strm__
     | _ -> comment bp strm__
   and quote_any_in_comment bp (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '\'' -> Stream.junk strm__; comment bp strm__
     | _ -> comment bp strm__
-  and quote_antislash_in_comment bp len (strm__ : _ Stream.t) =
+  and quote_cr_in_comment bp (strm__ : _ Stream.t) =
+    match Stream.peek strm__ with
+      Some '\010' -> Stream.junk strm__; quote_any_in_comment bp strm__
+    | _ -> quote_any_in_comment bp strm__
+  and quote_left_paren_in_comment bp (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '\'' -> Stream.junk strm__; comment bp strm__
+    | _ -> left_paren_in_comment bp strm__
+  and quote_star_in_comment bp (strm__ : _ Stream.t) =
+    match Stream.peek strm__ with
+      Some '\'' -> Stream.junk strm__; comment bp strm__
+    | _ -> star_in_comment bp strm__
+  and quote_doublequote_in_comment bp (strm__ : _ Stream.t) =
+    match Stream.peek strm__ with
+      Some '\'' -> Stream.junk strm__; comment bp strm__
+    | _ -> let _ = string bp 0 strm__ in comment bp strm__
+  and quote_antislash_in_comment bp (strm__ : _ Stream.t) =
+    match Stream.peek strm__ with
+      Some '\'' ->
+        Stream.junk strm__; quote_antislash_quote_in_comment bp strm__
     | Some ('\\' | '\"' | 'n' | 't' | 'b' | 'r') ->
         Stream.junk strm__; quote_any_in_comment bp strm__
     | Some ('0'..'9') ->
         Stream.junk strm__; quote_antislash_digit_in_comment bp strm__
+    | Some 'x' -> Stream.junk strm__; quote_antislash_x_in_comment bp strm__
     | _ -> comment bp strm__
+  and quote_antislash_quote_in_comment bp (strm__ : _ Stream.t) =
+    match Stream.peek strm__ with
+      Some '\'' -> Stream.junk strm__; comment bp strm__
+    | _ -> quote_in_comment bp strm__
   and quote_antislash_digit_in_comment bp (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some ('0'..'9') ->
@@ -556,6 +582,20 @@ let next_token_fun dfa find_kwd =
   and quote_antislash_digit2_in_comment bp (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some ('0'..'9') -> Stream.junk strm__; quote_any_in_comment bp strm__
+    | _ -> comment bp strm__
+  and quote_antislash_x_in_comment bp (strm__ : _ Stream.t) =
+    match
+      try Some (hexa strm__) with
+        Stream.Failure -> None
+    with
+      Some _ -> quote_antislash_x_digit_in_comment bp strm__
+    | _ -> comment bp strm__
+  and quote_antislash_x_digit_in_comment bp (strm__ : _ Stream.t) =
+    match
+      try Some (hexa strm__) with
+        Stream.Failure -> None
+    with
+      Some _ -> quote_any_in_comment bp strm__
     | _ -> comment bp strm__
   and left_paren_in_comment bp (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
