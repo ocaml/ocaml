@@ -31,15 +31,21 @@ type t = tkTimer * cbid (* the token and the cb id *)
 
 (* A timer is used only once, so we must clean the callback table *)
 let add ~ms ~callback =
+  if !Protocol.debug then begin
+    prerr_string "Timer.add "; flush stderr;
+  end;
   let id = new_function_id () in
+  if !Protocol.debug then begin
+    prerr_string "id="; prerr_cbid id; flush stderr;
+  end;
   let wrapped _ =
     clear_callback id; (* do it first in case f raises exception *)
     callback() in
   Hashtbl.add callback_naming_table id wrapped;
-  if !Protocol.debug then begin
-    prerr_cbid id; prerr_endline " for timer"
-  end;
   let t = internal_add_timer ms id in
+  if !Protocol.debug then begin
+    prerr_endline " done"
+  end;
    t,id
 
 let set ~ms ~callback = ignore (add ~ms ~callback);;
