@@ -21,6 +21,6 @@ COMPFLAGS=
 LINKFLAGS=
 DLLPATH=`if $(SUPPORTS_SHARED_LIBRARIES); then echo -dllpath $(LABLTKDIR); fi`
 
-CAMLOPT=$(CAMLRUN) $(TOPDIR)/ocamlopt -I $(TOPDIR)/stdlib -labels
+CAMLOPT=$(CAMLRUN) $(TOPDIR)/ocamlopt -I $(TOPDIR)/stdlib
 CAMLOPTLIBR=$(CAMLOPT) -a
 MKLIB=$(CAMLRUN) $(TOPDIR)/tools/ocamlmklib
