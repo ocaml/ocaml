@@ -590,6 +590,9 @@ let type_format loc fmt =
         let ty_aresult, ty_result = scan_dot i (j+1) in
         ty_aresult, ty_arrow Predef.type_int ty_result
     | '.' -> scan_precision i (j+1)
+    | '_' ->
+        let _, _ = scan_fixed_width i (j+1) in
+        ty_aresult, ty_result
     | _ -> scan_fixed_width i j
   and scan_fixed_width i j =
     if j >= len then incomplete i else

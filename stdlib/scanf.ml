@@ -587,6 +587,7 @@ let kscanf ib ef fmt f =
   let return v = Obj.magic v () in
   let delay f x () = f x in
   let stack f = delay (return f) in
+  let no_stack f x = f in
 
   let rec scan_fmt f i =
     if i > lim then f else
@@ -605,6 +606,12 @@ let kscanf ib ef fmt f =
   and scan_fmt_width f i =
     if i > lim then bad_format fmt i '%' else
     match fmt.[i] with
+    | '_' -> scan_fmt_fixed_width true f (i + 1)
+    | _ -> scan_fmt_fixed_width false f i
+
+  and scan_fmt_fixed_width skip f i =
+    if i > lim then bad_format fmt i '%' else
+    match fmt.[i] with
     | '0' .. '9' as c ->
         let rec read_width accu i =
           if i > lim then accu, i else
@@ -614,10 +621,11 @@ let kscanf ib ef fmt f =
               read_width accu (i + 1)
           | _ -> accu, i in
         let max, j = read_width 0 i in
-        scan_fmt_conversion max f j
-    | _ -> scan_fmt_conversion max_int f i
+        scan_fmt_conversion skip max f j
+    | _ -> scan_fmt_conversion skip max_int f i
 
-  and scan_fmt_conversion max f i =
+  and scan_fmt_conversion skip max f i =
+    let stack = if skip then no_stack else stack in
     if i > lim then bad_format fmt i fmt.[lim - 1] else
     match fmt.[i] with
     | '%' as c ->
