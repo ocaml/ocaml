@@ -12,18 +12,19 @@
 
 (* $Id$ *)
 
-(* Module [GraphicsX11]: additional graphics primitives for the X Windows system *)
+(** Additional graphics primitives for the X Windows system. *)
 
 type window_id = string
 
+(** Return the unique identifier of the Caml graphics window.
+   The returned string is an unsigned 32 bits integer 
+   in decimal form. *)
 val window_id : unit -> window_id
-        (* Return the unique identifier of the Caml graphics window.
-           The returned string is an unsigned 32 bits integer 
-           in decimal form. *)
 
+(** Create a sub-window of the current Caml graphics window
+   and return its identifier. *)
 val open_subwindow : x:int -> y:int -> width:int -> height:int -> window_id
-         (* Create a sub-window of the current Caml graphics window
-            and return its identifier. *)
 
+(** Close the sub-window having the given identifier. *)
 val close_subwindow : window_id -> unit
-         (* Close the sub-window having the given identifier. *)
+
