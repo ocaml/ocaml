@@ -22,11 +22,14 @@ type 'a status =
 
 type 'a t = 'a status ref;;
 
+exception Undefined;;
+
 let force l =
   match !l with
   | Value v -> v
   | Exception e -> raise e
   | Delayed f ->
+      l := Exception Undefined;
       try let v = f () in l := Value v; v
       with e -> l := Exception e; raise e
 ;;

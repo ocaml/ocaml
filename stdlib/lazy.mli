@@ -26,9 +26,13 @@ type 'a t = 'a status ref;;
    [lazy (expr)] returns a suspension that computes [expr].
 *)
 
+exception Undefined;;
+
 val force: 'a t -> 'a;;
 (* [Lazy.force x] computes the suspension [x] and returns its result.
    If the suspension was already computed, [Lazy.force x] returns the
    same value again.  If it raised an exception, the same exception is
    raised again.
+   Raise [Undefined] if the evaluation of the suspension requires its
+   own result.
 *)
