@@ -39,7 +39,6 @@ exception Error of Location.t * error
 (* Translation of type expressions *)
 
 let type_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
-let aliases        = ref (Tbl.empty : (string, type_expr) Tbl.t)
 let saved_type_variables = ref ([] : (string, type_expr) Tbl.t list)
 
 let used_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
@@ -81,7 +80,7 @@ type policy = Fixed | Extensible | Delayed
 
 let rec transl_type env policy styp =
   match styp.ptyp_desc with
-    Ptyp_any -> new_global_var()
+    Ptyp_any -> Ctype.newvar ()
   | Ptyp_var name ->
       begin
         match policy with
