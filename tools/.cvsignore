@@ -5,3 +5,4 @@ opnames.ml
 dumpobj
 dumpapprox
 objinfo
+cvt_emit
