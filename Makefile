@@ -312,8 +312,8 @@ beforedepend:: asmcomp/proc.ml
 # Preprocess the code emitters
 
 asmcomp/emit.ml: asmcomp/emit_$(ARCH).mlp tools/cvt_emit
-	tools/cvt_emit asmcomp/emit_$(ARCH).mlp > asmcomp/emit.ml \
-        || rm -f asmcomp/emit.ml
+	perl tools/cvt_emit asmcomp/emit_$(ARCH).mlp > asmcomp/emit.ml \
+        || { rm -f asmcomp/emit.ml; exit 2; }
 
 clean::
 	rm -f asmcomp/emit.ml
