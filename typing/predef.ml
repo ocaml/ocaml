@@ -29,6 +29,9 @@ and ident_array = Ident.create "array"
 and ident_list = Ident.create "list"
 and ident_format = Ident.create "format"
 and ident_option = Ident.create "option"
+and ident_nativeint = Ident.create "nativeint"
+and ident_int32 = Ident.create "int32"
+and ident_int64 = Ident.create "int64"
 
 let path_int = Pident ident_int
 and path_char = Pident ident_char
@@ -41,6 +44,9 @@ and path_array = Pident ident_array
 and path_list = Pident ident_list
 and path_format = Pident ident_format
 and path_option = Pident ident_option
+and path_nativeint = Pident ident_nativeint
+and path_int32 = Pident ident_int32
+and path_int64 = Pident ident_int64
 
 let type_int = newgenty (Tconstr(path_int, [], ref Mnil))
 and type_char = newgenty (Tconstr(path_char, [], ref Mnil))
@@ -52,6 +58,9 @@ and type_exn = newgenty (Tconstr(path_exn, [], ref Mnil))
 and type_array t = newgenty (Tconstr(path_array, [t], ref Mnil))
 and type_list t = newgenty (Tconstr(path_list, [t], ref Mnil))
 and type_option t = newgenty (Tconstr(path_option, [t], ref Mnil))
+and type_nativeint = newgenty (Tconstr(path_nativeint, [], ref Mnil))
+and type_int32 = newgenty (Tconstr(path_int32, [], ref Mnil))
+and type_int64 = newgenty (Tconstr(path_int64, [], ref Mnil))
 
 let ident_match_failure = Ident.create "Match_failure"
 and ident_out_of_memory = Ident.create "Out_of_memory"
@@ -123,6 +132,9 @@ let build_initial_env add_type add_exception empty_env =
   add_exception ident_sys_error [type_string] (
   add_exception ident_end_of_file [] (
   add_exception ident_division_by_zero [] (
+  add_type ident_int64 decl_abstr (
+  add_type ident_int32 decl_abstr (
+  add_type ident_nativeint decl_abstr (
   add_type ident_option decl_option (
   add_type ident_format decl_format (
   add_type ident_list decl_list (
@@ -134,7 +146,7 @@ let build_initial_env add_type add_exception empty_env =
   add_type ident_string decl_abstr (
   add_type ident_char decl_abstr (
   add_type ident_int decl_abstr (
-    empty_env)))))))))))))))))))))
+    empty_env))))))))))))))))))))))))
 
 let builtin_values =
   List.map (fun id -> Ident.make_global id; (Ident.name id, id))

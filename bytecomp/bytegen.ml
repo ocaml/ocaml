@@ -219,6 +219,97 @@ let functions_to_compile  = (Stack.create () : function_to_compile Stack.t)
 
 let compunit_name = ref ""
 
+(* Translate a primitive to a bytecode instruction (possibly a call to a C
+   function) *)
+
+let comp_bint_primitive bi suff args =
+  let pref =
+    match bi with Pnativeint -> "nativeint_"
+                | Pint32 -> "int32_"
+                | Pint64 -> "int64_" in
+  Kccall(pref ^ suff, List.length args)
+
+let comp_primitive p args =
+  match p with
+    Pgetglobal id -> Kgetglobal id
+  | Psetglobal id -> Ksetglobal id
+  | Pintcomp cmp -> Kintcomp cmp
+  | Pmakeblock(tag, mut) -> Kmakeblock(List.length args, tag)
+  | Pfield n -> Kgetfield n
+  | Psetfield(n, ptr) -> Ksetfield n
+  | Pfloatfield n -> Kgetfloatfield n
+  | Psetfloatfield n -> Ksetfloatfield n
+  | Pccall p -> Kccall(p.prim_name, p.prim_arity)
+  | Pnegint -> Knegint
+  | Paddint -> Kaddint
+  | Psubint -> Ksubint
+  | Pmulint -> Kmulint
+  | Pdivint -> Kdivint
+  | Pmodint -> Kmodint
+  | Pandint -> Kandint
+  | Porint -> Korint
+  | Pxorint -> Kxorint
+  | Plslint -> Klslint
+  | Plsrint -> Klsrint
+  | Pasrint -> Kasrint
+  | Poffsetint n -> Koffsetint n
+  | Poffsetref n -> Koffsetref n
+  | Pintoffloat -> Kccall("int_of_float", 1)
+  | Pfloatofint -> Kccall("float_of_int", 1)
+  | Pnegfloat -> Kccall("neg_float", 1)
+  | Pabsfloat -> Kccall("abs_float", 1)
+  | Paddfloat -> Kccall("add_float", 2)
+  | Psubfloat -> Kccall("sub_float", 2)
+  | Pmulfloat -> Kccall("mul_float", 2)
+  | Pdivfloat -> Kccall("div_float", 2)
+  | Pfloatcomp Ceq -> Kccall("eq_float", 2)
+  | Pfloatcomp Cneq -> Kccall("neq_float", 2)
+  | Pfloatcomp Clt -> Kccall("lt_float", 2)
+  | Pfloatcomp Cgt -> Kccall("gt_float", 2)
+  | Pfloatcomp Cle -> Kccall("le_float", 2)
+  | Pfloatcomp Cge -> Kccall("ge_float", 2)
+  | Pstringlength -> Kccall("ml_string_length", 1)
+  | Pstringrefs -> Kccall("string_get", 2)
+  | Pstringsets -> Kccall("string_set", 3)
+  | Pstringrefu -> Kgetstringchar
+  | Pstringsetu -> Ksetstringchar
+  | Parraylength kind -> Kvectlength
+  | Parrayrefs Pgenarray -> Kccall("array_get", 2)
+  | Parrayrefs Pfloatarray -> Kccall("array_get_float", 2)
+  | Parrayrefs _ -> Kccall("array_get_addr", 2)
+  | Parraysets Pgenarray -> Kccall("array_set", 3)
+  | Parraysets Pfloatarray -> Kccall("array_set_float", 3)
+  | Parraysets _ -> Kccall("array_set_addr", 3)
+  | Parrayrefu Pgenarray -> Kccall("array_unsafe_get", 2)
+  | Parrayrefu Pfloatarray -> Kccall("array_unsafe_get_float", 2)
+  | Parrayrefu _ -> Kgetvectitem
+  | Parraysetu Pgenarray -> Kccall("array_unsafe_set", 3)
+  | Parraysetu Pfloatarray -> Kccall("array_unsafe_set_float", 3)
+  | Parraysetu _ -> Ksetvectitem
+  | Pisint -> Kisint
+  | Pbittest -> Kccall("bitvect_test", 2)
+  | Pbintofint bi -> comp_bint_primitive bi "of_int" args
+  | Pintofbint bi -> comp_bint_primitive bi "to_int" args
+  | Pnegbint bi -> comp_bint_primitive bi "neg" args
+  | Paddbint bi -> comp_bint_primitive bi "add" args
+  | Psubbint bi -> comp_bint_primitive bi "sub" args
+  | Pmulbint bi -> comp_bint_primitive bi "mul" args
+  | Pdivbint bi -> comp_bint_primitive bi "div" args
+  | Pmodbint bi -> comp_bint_primitive bi "mod" args
+  | Pandbint bi -> comp_bint_primitive bi "and" args
+  | Porbint bi -> comp_bint_primitive bi "or" args
+  | Pxorbint bi -> comp_bint_primitive bi "xor" args
+  | Plslbint bi -> comp_bint_primitive bi "shift_left" args
+  | Plsrbint bi -> comp_bint_primitive bi "shift_right_unsigned" args
+  | Pasrbint bi -> comp_bint_primitive bi "shift_right" args
+  | Pbintcomp(bi, Ceq) -> Kccall("equal", 2)
+  | Pbintcomp(bi, Cneq) -> Kccall("notequal", 2)
+  | Pbintcomp(bi, Clt) -> Kccall("lessthan", 2)
+  | Pbintcomp(bi, Cgt) -> Kccall("greaterthan", 2)
+  | Pbintcomp(bi, Cle) -> Kccall("lessequal", 2)
+  | Pbintcomp(bi, Cge) -> Kccall("greaterequal", 2)
+  | _ -> fatal_error "Bytegen.comp_primitive"
+
 (* Compile an expression.
    The value of the expression is left in the accumulator.
    env = compilation environment
@@ -394,67 +485,7 @@ let rec comp_expr env exp sz cont =
                   Kccall("make_array", 1) :: cont)
       end
   | Lprim(p, args) ->
-      let instr =
-        match p with
-          Pgetglobal id -> Kgetglobal id
-        | Psetglobal id -> Ksetglobal id
-        | Pintcomp cmp -> Kintcomp cmp
-        | Pmakeblock(tag, mut) -> Kmakeblock(List.length args, tag)
-        | Pfield n -> Kgetfield n
-        | Psetfield(n, ptr) -> Ksetfield n
-        | Pfloatfield n -> Kgetfloatfield n
-        | Psetfloatfield n -> Ksetfloatfield n
-        | Pccall p -> Kccall(p.prim_name, p.prim_arity)
-        | Pnegint -> Knegint
-        | Paddint -> Kaddint
-        | Psubint -> Ksubint
-        | Pmulint -> Kmulint
-        | Pdivint -> Kdivint
-        | Pmodint -> Kmodint
-        | Pandint -> Kandint
-        | Porint -> Korint
-        | Pxorint -> Kxorint
-        | Plslint -> Klslint
-        | Plsrint -> Klsrint
-        | Pasrint -> Kasrint
-        | Poffsetint n -> Koffsetint n
-        | Poffsetref n -> Koffsetref n
-        | Pintoffloat -> Kccall("int_of_float", 1)
-        | Pfloatofint -> Kccall("float_of_int", 1)
-        | Pnegfloat -> Kccall("neg_float", 1)
-        | Pabsfloat -> Kccall("abs_float", 1)
-        | Paddfloat -> Kccall("add_float", 2)
-        | Psubfloat -> Kccall("sub_float", 2)
-        | Pmulfloat -> Kccall("mul_float", 2)
-        | Pdivfloat -> Kccall("div_float", 2)
-        | Pfloatcomp Ceq -> Kccall("eq_float", 2)
-        | Pfloatcomp Cneq -> Kccall("neq_float", 2)
-        | Pfloatcomp Clt -> Kccall("lt_float", 2)
-        | Pfloatcomp Cgt -> Kccall("gt_float", 2)
-        | Pfloatcomp Cle -> Kccall("le_float", 2)
-        | Pfloatcomp Cge -> Kccall("ge_float", 2)
-        | Pstringlength -> Kccall("ml_string_length", 1)
-        | Pstringrefs -> Kccall("string_get", 2)
-        | Pstringsets -> Kccall("string_set", 3)
-        | Pstringrefu -> Kgetstringchar
-        | Pstringsetu -> Ksetstringchar
-        | Parraylength kind -> Kvectlength
-        | Parrayrefs Pgenarray -> Kccall("array_get", 2)
-        | Parrayrefs Pfloatarray -> Kccall("array_get_float", 2)
-        | Parrayrefs _ -> Kccall("array_get_addr", 2)
-        | Parraysets Pgenarray -> Kccall("array_set", 3)
-        | Parraysets Pfloatarray -> Kccall("array_set_float", 3)
-        | Parraysets _ -> Kccall("array_set_addr", 3)
-        | Parrayrefu Pgenarray -> Kccall("array_unsafe_get", 2)
-        | Parrayrefu Pfloatarray -> Kccall("array_unsafe_get_float", 2)
-        | Parrayrefu _ -> Kgetvectitem
-        | Parraysetu Pgenarray -> Kccall("array_unsafe_set", 3)
-        | Parraysetu Pfloatarray -> Kccall("array_unsafe_set_float", 3)
-        | Parraysetu _ -> Ksetvectitem
-        | Pisint -> Kisint
-        | Pbittest -> Kccall("bitvect_test", 2)
-        | _ -> fatal_error "Bytegen.comp_expr: prim" in
-      comp_args env args sz (instr :: cont)
+      comp_args env args sz (comp_primitive p args :: cont)
   | Lcatch(body, Lstaticfail) ->
       comp_expr env body sz cont
   | Lcatch(body, handler) ->

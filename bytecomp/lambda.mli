@@ -59,12 +59,31 @@ type primitive =
   | Pisint
   (* Bitvect operations *)
   | Pbittest
+  (* Operations on boxed integers (Nativeint.t, Int32.t, Int64.t) *)
+  | Pbintofint of boxed_integer
+  | Pintofbint of boxed_integer
+  | Pnegbint of boxed_integer
+  | Paddbint of boxed_integer
+  | Psubbint of boxed_integer
+  | Pmulbint of boxed_integer
+  | Pdivbint of boxed_integer
+  | Pmodbint of boxed_integer
+  | Pandbint of boxed_integer
+  | Porbint of boxed_integer
+  | Pxorbint of boxed_integer
+  | Plslbint of boxed_integer
+  | Plsrbint of boxed_integer
+  | Pasrbint of boxed_integer
+  | Pbintcomp of boxed_integer * comparison
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
 
 and array_kind =
     Pgenarray | Paddrarray | Pintarray | Pfloatarray
+
+and boxed_integer =
+    Pnativeint | Pint32 | Pint64
 
 type structured_constant =
     Const_base of constant

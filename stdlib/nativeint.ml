@@ -14,22 +14,20 @@
 
 (* Module [Nativeint]: processor-native integers *)
 
-type t
-
-external neg: t -> t = "nativeint_neg"
-external add: t -> t -> t = "nativeint_add"
-external sub: t -> t -> t = "nativeint_sub"
-external mul: t -> t -> t = "nativeint_mul"
-external div: t -> t -> t = "nativeint_div"
-external rem: t -> t -> t = "nativeint_mod"
-external logand: t -> t -> t = "nativeint_and"
-external logor: t -> t -> t = "nativeint_or"
-external logxor: t -> t -> t = "nativeint_xor"
-external shift_left: t -> int -> t = "nativeint_shift_left"
-external shift_right: t -> int -> t = "nativeint_shift_right"
-external shift_right_logical: t -> int -> t = "nativeint_shift_right_unsigned"
-external of_int: int -> t = "nativeint_of_int"
-external to_int: t -> int = "nativeint_to_int"
+external neg: nativeint -> nativeint = "%nativeint_neg"
+external add: nativeint -> nativeint -> nativeint = "%nativeint_add"
+external sub: nativeint -> nativeint -> nativeint = "%nativeint_sub"
+external mul: nativeint -> nativeint -> nativeint = "%nativeint_mul"
+external div: nativeint -> nativeint -> nativeint = "%nativeint_div"
+external rem: nativeint -> nativeint -> nativeint = "%nativeint_mod"
+external logand: nativeint -> nativeint -> nativeint = "%nativeint_and"
+external logor: nativeint -> nativeint -> nativeint = "%nativeint_or"
+external logxor: nativeint -> nativeint -> nativeint = "%nativeint_xor"
+external shift_left: nativeint -> int -> nativeint = "%nativeint_lsl"
+external shift_right: nativeint -> int -> nativeint = "%nativeint_asr"
+external shift_right_logical: nativeint -> int -> nativeint = "%nativeint_lsr"
+external of_int: int -> nativeint = "%nativeint_of_int"
+external to_int: nativeint -> int = "%nativeint_to_int"
 
 let zero = of_int 0
 let one = of_int 1
@@ -38,10 +36,10 @@ let succ n = add n one
 let pred n = sub n one
 let abs n = if n >= zero then n else neg n
 let min = shift_left one (Sys.word_size - 1)
-let max = add min one
+let max = sub min one
 let lognot n = logxor n minus_one
 
-external format : string -> t -> string = "nativeint_format"
+external format : string -> nativeint -> string = "nativeint_format"
 let to_string n = format "%d" n
 
-external of_string: string -> t = "nativeint_of_string"
+external of_string: string -> nativeint = "nativeint_of_string"

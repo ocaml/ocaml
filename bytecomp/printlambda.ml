@@ -43,6 +43,12 @@ let rec struct_const ppf = function
 
 let print_id ppf id = Ident.print id
 
+let print_boxed_integer name bi =
+  match bi with
+    Pnativeint -> printf "Nativeint.%s" name
+  | Pint32 -> printf "Int32.%s" name
+  | Pint64 -> printf "Int64.%s" name
+
 let primitive ppf = function
     Pidentity -> print_string "id"
   | Pignore -> print_string "ignore"
@@ -108,6 +114,26 @@ let primitive ppf = function
   | Parraysets _ -> print_string "array.set"
   | Pisint -> print_string "isint"
   | Pbittest -> print_string "testbit"
+  | Pbintofint bi -> print_boxed_integer "of_int" bi
+  | Pintofbint bi -> print_boxed_integer "to_int" bi
+  | Pnegbint bi -> print_boxed_integer "neg" bi
+  | Paddbint bi -> print_boxed_integer "add" bi
+  | Psubbint bi -> print_boxed_integer "sub" bi
+  | Pmulbint bi -> print_boxed_integer "mul" bi
+  | Pdivbint bi -> print_boxed_integer "div" bi
+  | Pmodbint bi -> print_boxed_integer "mod" bi
+  | Pandbint bi -> print_boxed_integer "and" bi
+  | Porbint bi -> print_boxed_integer "or" bi
+  | Pxorbint bi -> print_boxed_integer "xor" bi
+  | Plslbint bi -> print_boxed_integer "lsl" bi
+  | Plsrbint bi -> print_boxed_integer "lsr" bi
+  | Pasrbint bi -> print_boxed_integer "asr" bi
+  | Pbintcomp(bi, Ceq) -> print_boxed_integer "==" bi
+  | Pbintcomp(bi, Cneq) -> print_boxed_integer "!=" bi
+  | Pbintcomp(bi, Clt) -> print_boxed_integer "<" bi
+  | Pbintcomp(bi, Cgt) -> print_boxed_integer ">" bi
+  | Pbintcomp(bi, Cle) -> print_boxed_integer "<=" bi
+  | Pbintcomp(bi, Cge) -> print_boxed_integer ">=" bi
 
 let rec lam ppf = function
     Lvar id ->

@@ -22,12 +22,12 @@ open Types
 open Typedtree
 open Lambda
 
-let has_base_type exp base_ty =
+let has_base_type exp base_ty_path =
   let exp_ty =
     Ctype.expand_head exp.exp_env (Ctype.correct_levels exp.exp_type) in
-  match (Ctype.repr exp_ty, Ctype.repr base_ty) with
-    {desc = Tconstr(p1, _, _)}, {desc = Tconstr(p2, _, _)} -> Path.same p1 p2
-  | (_, _) -> false
+  match Ctype.repr exp_ty with
+    {desc = Tconstr(p, _, _)} -> Path.same p base_ty_path
+  | _ -> false
 
 let maybe_pointer exp =
   let exp_ty =
@@ -92,3 +92,4 @@ let array_kind_gen ty env =
 let array_kind exp = array_kind_gen exp.exp_type exp.exp_env
 
 let array_pattern_kind pat = array_kind_gen pat.pat_type pat.pat_env
+
