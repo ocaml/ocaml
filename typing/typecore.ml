@@ -54,6 +54,8 @@ type error =
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
   | Not_a_variant_type of Longident.t
+  | Unbound_module of Longident.t
+  | Structure_expected of module_type
 
 exception Error of Location.t * error
 
@@ -586,6 +588,21 @@ let rec type_approx env sexp =
       end
   | _ -> newvar ()
 
+(* Extract a signature from a module type *)
+
+let extract_sig_open env loc mty =
+  match Mtype.scrape env mty with
+    Tmty_signature sg -> sg
+  | _ -> raise(Error(loc, Structure_expected mty))
+
+(* Lookup the type of a module path *)
+
+let type_module_path env loc lid =
+  try
+    Env.lookup_module lid env
+  with Not_found ->
+    raise(Error(loc, Unbound_module lid))
+
 (* Typing of expressions *)
 
 let unify_exp env exp expected_ty =
@@ -1017,6 +1034,11 @@ let rec type_exp env sexp =
          exp_type = newvar ();
          exp_env = env;
        }
+  | Pexp_letopen (lid, sbody) ->
+      let (path, mty) = type_module_path env sexp.pexp_loc lid in
+      let sg = extract_sig_open env sexp.pexp_loc mty in
+      let new_env = Env.open_signature path sg env in
+      type_exp new_env sbody
 
 and type_argument env sarg ty_expected =
   let rec no_labels ty =
@@ -1526,3 +1548,7 @@ let report_error ppf = function
         longident lid
   | Not_a_variant_type lid ->
       fprintf ppf "The type %a@ is not a variant type" longident lid
+  | Unbound_module lid -> fprintf ppf "Unbound module %a" longident lid
+  | Structure_expected mty ->
+      fprintf ppf
+        "@[This module is not a structure; it has type@ %a" modtype mty

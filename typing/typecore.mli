@@ -84,6 +84,8 @@ type error =
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
   | Not_a_variant_type of Longident.t
+  | Unbound_module of Longident.t
+  | Structure_expected of module_type
 
 exception Error of Location.t * error
 
