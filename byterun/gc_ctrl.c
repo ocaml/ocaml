@@ -205,8 +205,8 @@ static value heap_stats (int returnstats)
                       + (double) Wsize_bsize (young_end - young_ptr);
     double prowords = stat_promoted_words;
     double majwords = stat_major_words + (double) allocated_words;
-    long mincoll = stat_major_collections;
-    long majcoll = stat_minor_collections;
+    long mincoll = stat_minor_collections;
+    long majcoll = stat_major_collections;
     long heap_words = Wsize_bsize (stat_heap_size);
     long cpct = stat_compactions;
 

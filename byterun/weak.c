@@ -94,7 +94,7 @@ CAMLprim value weak_get_copy (value ar, value n)
   if (Tag_val (v) < No_scan_tag){
     mlsize_t i;
     for (i = 0; i < Wosize_val (v); i++){
-      Store_field (elt, i, Field (v, i));
+      Modify (&Field (elt, i), Field (v, i));
     }
   }else{
     memmove (Bp_val (elt), Bp_val (v), Bosize_val (v));
