@@ -431,7 +431,7 @@ The "loadingmode" variable controls how the program is executed.
 \item["set loadingmode direct"]
 The program is run directly by the debugger. This is the default mode.
 \item["set loadingmode runtime"]
-The debugger execute the Objective Caml runtime "camlrun" on the program.
+The debugger execute the Objective Caml runtime "ocamlrun" on the program.
 Rarely useful; moreover it prevents the debugging of programs compiled
 in ``custom runtime'' mode.
 \item["set loadingmode manual"]
@@ -507,8 +507,7 @@ either a file name, or an Internet port specification
 address in dot notation, and \var{port} is a port number on the host.
 \end{options}
 
-On the debugged program side, the socket name is passed either by the
-"-D" command line option to "camlrun", or through the
+On the debugged program side, the socket name is passed through the
 "CAML_DEBUG_SOCKET" environment variable.
 
 \subsection{Fine-tuning the debugger} \label{s:fine-tuning}
