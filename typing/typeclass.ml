@@ -40,7 +40,7 @@ type error =
   | Unbound_val of string
   | Unbound_type_var of (unit -> unit) * Ctype.closed_class_failure
   | Make_nongen_seltype of type_expr
-  | Non_generalizable_class of (unit -> unit)
+  | Non_generalizable_class of Ident.t * Types.class_declaration
 
 exception Error of Location.t * error
 
@@ -875,12 +875,8 @@ let final_env define_class
   | Some ty -> Ctype.generalize ty
   end;
 
-  if not (closed_class clty) then begin
-    let printer =
-      fun () -> Printtyp.class_declaration id clty
-    in
-    raise(Error(cl.pci_loc, Non_generalizable_class printer))
-  end
+  if not (closed_class clty) then
+    raise(Error(cl.pci_loc, Non_generalizable_class (id, clty)));
 
   begin match
     Ctype.closed_class clty.cty_params
@@ -1119,9 +1115,9 @@ let report_error = function
       print_cut ();
       print_string "It would escape the scope of its class";
       close_box ()
-  | Non_generalizable_class printer ->
+  | Non_generalizable_class (id, clty) ->
       open_box 0;
       print_string "The type of this class,"; print_space();
-      printer(); print_string ","; print_space();
+      Printtyp.class_declaration id clty; print_string ","; print_space();
       print_string "contains type variables that cannot be generalized";
       close_box()

@@ -58,7 +58,7 @@ type error =
   | Unbound_val of string
   | Unbound_type_var of (unit -> unit) * Ctype.closed_class_failure
   | Make_nongen_seltype of type_expr
-  | Non_generalizable_class of (unit -> unit)
+  | Non_generalizable_class of Ident.t * Types.class_declaration
 
 exception Error of Location.t * error
 
