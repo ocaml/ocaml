@@ -469,12 +469,15 @@ let rec class_field cl_num self_type meths vars
         raise(Error(loc, Method_type_mismatch (lab, trace)))
       end;
       let meth_expr = make_method cl_num expr in
+      (* backup variables for Pexp_override *)
+      let vars_local = !vars in
 
       let field =
         lazy begin
           let meth_type =
             Ctype.newty (Tarrow("", self_type, Ctype.instance ty, Cok)) in
           Ctype.raise_nongen_level ();
+          vars := vars_local;
           let texp = type_expect met_env meth_expr meth_type in
           Ctype.end_def ();
           Cf_meth (lab, texp)
@@ -518,12 +521,14 @@ let rec class_field cl_num self_type meths vars
 
   | Pcf_init expr ->
       let expr = make_method cl_num expr in
+      let vars_local = !vars in
       let field =
         lazy begin
           Ctype.raise_nongen_level ();
           let meth_type =
             Ctype.newty
               (Tarrow ("", self_type, Ctype.instance Predef.type_unit, Cok)) in
+          vars := vars_local;
           let texp = type_expect met_env expr meth_type in
           Ctype.end_def ();
           Cf_init texp
@@ -581,7 +586,6 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
     {cty_self = public_self;
      cty_vars = Vars.map (function (id, mut, ty) -> (mut, ty)) !vars;
      cty_concr = concr_meths } in
-  let meths = Meths.map (function (id, ty) -> id) !meths in
   let methods = get_methods self_type in
   let priv_meths =
     List.filter (fun (_,kind,_) -> Btype.field_kind_repr kind <> Fpresent)
@@ -611,6 +615,7 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
   if !Clflags.principal then
     List.iter (fun (_,_,ty) -> Ctype.unify val_env ty (Ctype.newvar ()))
       methods;
+  let meths = Meths.map (function (id, ty) -> id) !meths in
 
   (* Check for private methods made public *)
   let pub_meths' =
