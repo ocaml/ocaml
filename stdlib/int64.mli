@@ -12,9 +12,9 @@
 
 (* $Id$ *)
 
-(** Module [Int64]: 64-bit integers *)
+(** Module [Int64]: 64-bit integers.
 
-(** This module provides operations on the type [int64] of
+   This module provides operations on the type [int64] of
    signed 64-bit integers.  Unlike the built-in [int] type,
    the type [int64] is guaranteed to be exactly 64-bit wide on all
    platforms.  All arithmetic operations over [int64] are taken
