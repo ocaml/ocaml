@@ -113,7 +113,7 @@ value rec skip_spaces =
 value error_on_unknown_keywords = ref False;
 value err loc msg = raise_with_loc loc (Token.Error msg);
 
-value next_token_fun find_kwd =
+value next_token_fun dfa find_kwd =
   let keyword_or_error loc s =
     try (("", find_kwd s), loc) with
     [ Not_found ->
@@ -262,9 +262,14 @@ value next_token_fun find_kwd =
         ("ANTIQUOT", k ^ ":" ^ locate_or_antiquot_rest bp 0 s)
     | [: `'\\'; `c; s :] ->
         ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
-    | [: `c; s :] ->
-        ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
-    | [: :] ep -> err (bp, ep) "antiquotation not terminated" ]
+    | [: s :] ->
+        if dfa then
+          match s with parser
+          [ [: `c :] ->
+              ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
+          | [: :] ep -> err (bp, ep) "antiquotation not terminated" ]
+        else
+          ("", get_buff (ident2 (store 0 '$') s)) ]
   and maybe_locate bp len =
     parser
     [ [: `'$' :] -> ("ANTIQUOT", ":" ^ get_buff len)
@@ -366,9 +371,12 @@ value next_token_fun find_kwd =
         err (Stream.count cstrm, Stream.count cstrm + 1) str ]
 ;
 
+value dollar_for_antiquotation = ref True;
+
 value func kwd_table =
   let find = Hashtbl.find kwd_table in
-  Token.lexer_func_of_parser (next_token_fun find)
+  let dfa = dollar_for_antiquotation.val in
+  Token.lexer_func_of_parser (next_token_fun dfa find)
 ;
 
 value rec check_keyword_stream =

@@ -222,7 +222,7 @@ and name_of_tree_failed entry =
           List.fold_left
             (fun s tok ->
                (if s = "" then "" else s ^ " ") ^
-               entry.egram.glexer.Token.text tok)
+                 entry.egram.glexer.Token.text tok)
             "" tokl ]
   | DeadEnd | LocAct _ _ -> "???" ]
 ;
@@ -511,9 +511,7 @@ and parser_of_token_list p1 tokl =
         let ps strm =
           match peek_nth n strm with
           [ Some (con, prm) when p_con = "ANY" || con = p_con ->
-              do {
-                for i = 1 to n do { Stream.junk strm }; Obj.repr prm
-              }
+              do { for i = 1 to n do { Stream.junk strm }; Obj.repr prm }
           | _ -> raise Stream.Failure ]
         in
         parser bp [: a = ps; act = p1 bp a :] -> app act a
@@ -522,9 +520,7 @@ and parser_of_token_list p1 tokl =
           match peek_nth n strm with
           [ Some (con, prm)
             when (p_con = "ANY" || con = p_con) && prm = p_prm ->
-              do {
-                for i = 1 to n do { Stream.junk strm }; Obj.repr prm
-              }
+              do { for i = 1 to n do { Stream.junk strm }; Obj.repr prm }
           | _ -> raise Stream.Failure ]
         in
         parser bp [: a = ps; act = p1 bp a :] -> app act a
@@ -543,7 +539,8 @@ and parser_of_token_list p1 tokl =
         let ps strm =
           match peek_nth n strm with
           [ Some (con, prm)
-            when (p_con = "ANY" || con = p_con) && prm = p_prm -> prm
+            when (p_con = "ANY" || con = p_con) && prm = p_prm ->
+              prm
           | _ -> raise Stream.Failure ]
         in
         let p1 = loop (n + 1) tokl in
@@ -697,7 +694,7 @@ value empty_entry ename levn strm =
   raise (Stream.Error ("entry [" ^ ename ^ "] is empty"))
 ;
 
-value rec start_parser_of_entry entry =
+value start_parser_of_entry entry =
   match entry.edesc with
   [ Dlevels [] -> empty_entry entry.ename
   | Dlevels elev -> start_parser_of_levels entry 0 elev
@@ -764,8 +761,7 @@ value extend_entry entry position rules =
   with
   [ Token.Error s ->
       do {
-        Printf.eprintf "Lexer initialization error.\n%s\n"
-          (String.capitalize s);
+        Printf.eprintf "Lexer initialization error.\n%s\n" s;
         flush stderr;
         failwith "Grammar.extend"
       } ]

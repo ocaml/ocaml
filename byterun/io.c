@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../LICENSE.     */
 /*                                                                     */
 /***********************************************************************/
 
@@ -253,7 +254,7 @@ CAMLexport long pos_out(struct channel *channel)
 
 /* Input */
 
-static int do_read(int fd, char *p, unsigned int n)
+CAMLexport int do_read(int fd, char *p, unsigned int n)
 {
   int retcode;
 

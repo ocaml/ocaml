@@ -34,9 +34,10 @@ let process_file ppf name =
        || Filename.check_suffix name ".cma" then
     objfiles := name :: !objfiles
   else if Filename.check_suffix name ext_obj
-       || Filename.check_suffix name ext_lib
-       || Filename.check_suffix name ext_dll then
+       || Filename.check_suffix name ext_lib then
     ccobjs := name :: !ccobjs
+  else if Filename.check_suffix name ext_dll then
+    dllibs := name :: !dllibs
   else if Filename.check_suffix name ".c" then begin
     Compile.c_file name;
     match Sys.os_type with
@@ -74,6 +75,7 @@ module Options = Main_args.Make_options (struct
   let _cclib s = ccobjs := s :: !ccobjs
   let _ccopt s = ccopts := s :: !ccopts
   let _custom = set custom_runtime
+  let _dllib s = dllibs := s :: !dllibs
   let _dllpath s = dllpaths := !dllpaths @ [s]
   let _g = set debug
   let _i = set print_types

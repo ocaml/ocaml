@@ -20,6 +20,7 @@ open Parser
 
 type error =
   | Illegal_character of char
+  | Illegal_escape of string
   | Unterminated_comment
   | Unterminated_string
   | Unterminated_string_in_comment
@@ -140,7 +141,10 @@ let char_for_decimal_code lexbuf i =
   let c = 100 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
            10 * (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) +
                 (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48) in  
-  Char.chr(c land 0xFF)
+  if c < 0 || c > 255 then raise (Error(Illegal_escape (Lexing.lexeme lexbuf),
+					Lexing.lexeme_start lexbuf,
+					Lexing.lexeme_end lexbuf))
+  else Char.chr c
 
 (* To store the position of the beginning of a string and comment *)
 let string_start_pos = ref 0;;
@@ -154,6 +158,8 @@ open Format
 let report_error ppf = function
   | Illegal_character c ->
       fprintf ppf "Illegal character (%s)" (Char.escaped c)
+  | Illegal_escape s ->
+      fprintf ppf "Illegal escape (%s)" s
   | Unterminated_comment ->
       fprintf ppf "Comment not terminated"
   | Unterminated_string ->
@@ -227,6 +233,9 @@ rule token = parse
       { CHAR(char_for_backslash (Lexing.lexeme_char lexbuf 2)) }
   | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { CHAR(char_for_decimal_code lexbuf 2) }
+  | "'" '\\' _ "'"
+      { raise (Error(Illegal_escape (Lexing.lexeme lexbuf),
+                     Lexing.lexeme_start lexbuf, Lexing.lexeme_end lexbuf))}
   | "(*"
       { comment_start_pos := [Lexing.lexeme_start lexbuf];
         comment lexbuf;

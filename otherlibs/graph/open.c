@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../../LICENSE.  */
 /*                                                                     */
 /***********************************************************************/
 
@@ -192,6 +193,7 @@ value gr_open_graph(value arg)
   gry = 0;
   /* Reset the color cache */
   gr_init_color_cache();
+  gr_init_direct_rgb_to_pixel();
   return Val_unit;
 }
 
@@ -257,6 +259,7 @@ value gr_clear_graph(void)
     XFlush(grdisplay);
   }
   gr_init_color_cache();
+  gr_init_direct_rgb_to_pixel();
   return Val_unit;
 }
 

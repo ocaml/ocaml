@@ -106,7 +106,7 @@ value process pa pr getdir =
     let phr =
       try
         loop () where rec loop () =
-          let (pl, stopped_at_directive) = Grammar.Entry.parse pa cs in
+          let (pl, stopped_at_directive) = pa cs in
           if stopped_at_directive then do {
             match getdir (List.rev pl) with
             [ Some x ->
@@ -142,8 +142,10 @@ value gimd =
   | _ -> None ]
 ;
 
-value process_intf () = process Pcaml.interf Pcaml.print_interf.val gind;
-value process_impl () = process Pcaml.implem Pcaml.print_implem.val gimd;
+value process_intf () =
+  process Pcaml.parse_interf.val Pcaml.print_interf.val gind;
+value process_impl () =
+  process Pcaml.parse_implem.val Pcaml.print_implem.val gimd;
 
 type file_kind =
   [ Intf
@@ -225,6 +227,18 @@ value remaining_args =
   List.rev (loop [] (Arg.current.val + 1))
 ;
 
+value report_error =
+  fun
+  [ Odyl_main.Error fname msg ->
+      do {
+        Format.print_string "Error while loading \"";
+        Format.print_string fname;
+        Format.print_string "\": ";
+        Format.print_string msg
+      }
+  | exc -> Pcaml.report_error exc ]
+;
+
 value go () =
   let arg_spec_list = initial_spec_list @ Pcaml.arg_spec_list () in
   do {
@@ -253,7 +267,7 @@ value go () =
               do { print_location (bp, ep); exc }
           | _ -> exc ]
         in
-        Pcaml.report_error exc;
+        report_error exc;
         Format.close_box ();
         Format.print_newline ();
         exit 2

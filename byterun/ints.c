@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../LICENSE.     */
 /*                                                                     */
 /***********************************************************************/
 
@@ -100,11 +101,13 @@ static char * parse_format(value fmt,
   memmove(format_string, String_val(fmt), len);
   p = format_string + len - 1;
   lastletter = *p;
+  /* Compress two-letter formats, ignoring the [lnL] annotation */
+  if (p[-1] == 'l' || p[-1] == 'n' || p[-1] == 'L') p--;
   memmove(p, suffix, len_suffix);  p += len_suffix;
   *p++ = lastletter;
   *p = 0;
   /* Determine space needed for result and allocate it dynamically if needed */
-  prec = 32;
+  prec = 22 + 5; /* 22 digits for 64-bit number in octal + 5 extra */
   for (p = String_val(fmt); *p != 0; p++) {
     if (*p >= '0' && *p <= '9') {
       prec = atoi(p) + 5;

@@ -50,6 +50,7 @@ val type_self_pattern:
         (Ident.t * Asttypes.mutable_flag * type_expr) Vars.t ref *
         Env.t * Env.t * Env.t
 val type_expect:
+        ?in_function:(Location.t * type_expr) ->
         Env.t -> Parsetree.expression -> type_expr -> Typedtree.expression
 val type_exp:
         Env.t -> Parsetree.expression -> Typedtree.expression
@@ -61,6 +62,8 @@ val type_argument:
 val option_some: Typedtree.expression -> Typedtree.expression
 val option_none: type_expr -> Location.t -> Typedtree.expression
 val extract_option_type: Env.t -> type_expr -> type_expr
+
+val self_coercion : (Path.t * Location.t list ref) list ref
 
 type error =
     Unbound_value of Longident.t
@@ -88,7 +91,7 @@ type error =
   | Outside_class
   | Value_multiply_overridden of string
   | Coercion_failure of type_expr * type_expr * (type_expr * type_expr) list
-  | Too_many_arguments
+  | Too_many_arguments of bool * type_expr
   | Abstract_wrong_label of label * type_expr
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t

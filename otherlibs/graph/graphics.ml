@@ -6,7 +6,8 @@
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License.         *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../../LICENSE.  *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -34,7 +35,7 @@ let unix_close_graph () =
 
 let (open_graph, close_graph) =
   match Sys.os_type with
-  | "Unix" -> (unix_open_graph, unix_close_graph)
+  | "Unix" | "Cygwin" -> (unix_open_graph, unix_close_graph)
   | "Win32" -> (raw_open_graph, raw_close_graph)
   | "MacOS" -> (raw_open_graph, raw_close_graph)
   | _ -> invalid_arg ("Graphics: unknown OS type: " ^ Sys.os_type)

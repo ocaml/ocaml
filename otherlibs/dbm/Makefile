@@ -6,7 +6,8 @@
 #                                                                       #
 #   Copyright 1999 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License.          #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../../LICENSE.   #
 #                                                                       #
 #########################################################################
 
@@ -20,7 +21,7 @@ include ../../config/Makefile
 CC=$(BYTECC) -g
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
-MKLIB=../../tools/ocamlmklib
+MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 
 CFLAGS=$(DBM_INCLUDES) -I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 COBJS=cldbm.o
@@ -36,16 +37,16 @@ dbm.cma: dbm.cmo
 	$(MKLIB) -ocamlc '$(CAMLC)' -o dbm -oc mldbm dbm.cmo $(DBM_LINK)
 
 dbm.cmxa: dbm.cmx
-	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o dbm dbm.cmx $(DBM_LINK)
+	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o dbm -oc mldbm dbm.cmx $(DBM_LINK)
 
 partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f *.a *.o
+	rm -f *.a *.o *.so
 
 install:
-	if test -f libmldbm.so; then cp libmldbm.so $(LIBDIR)/libmldbm.so; fi
+	if test -f dllmldbm.so; then cp dllmldbm.so $(LIBDIR)/dllmldbm.so; fi
 	cp libmldbm.a $(LIBDIR)/libmldbm.a
 	cd $(LIBDIR); $(RANLIB) libmldbm.a
 	cp dbm.cma dbm.cmi dbm.mli $(LIBDIR)

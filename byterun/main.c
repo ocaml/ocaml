@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../LICENSE.     */
 /*                                                                     */
 /***********************************************************************/
 
@@ -21,6 +22,10 @@
 
 extern void caml_main (char **);
 
+#ifdef __linux__
+#include <unistd.h>
+#endif
+
 #ifdef _WIN32
 extern void expand_command_line (int *, char ***);
 #endif
@@ -33,7 +38,17 @@ extern void expand_command_line (int *, char ***);
 int main(int argc, char **argv)
 {
 #ifdef _WIN32
+  /* Expand wildcards and diversions in command line */
   expand_command_line(&argc, &argv);
+#endif
+#ifdef __linux__
+  /* Recover argv[0] from /proc/self/exe, much more reliable */
+  char exename[1024];
+  int retcode = readlink("/proc/self/exe", exename, sizeof(exename));
+  if (retcode != -1 && retcode < sizeof(exename)) {
+    exename[retcode] = 0;
+    argv[0] = exename;
+  }
 #endif
 #if macintosh
   rotatecursor_options (&something_to_do, 0, NULL);

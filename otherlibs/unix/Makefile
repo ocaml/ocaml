@@ -6,7 +6,8 @@
 #                                                                       #
 #   Copyright 1999 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License.          #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../../LICENSE.   #
 #                                                                       #
 #########################################################################
 
@@ -21,7 +22,7 @@ CC=$(BYTECC)
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
-MKLIB=../../tools/ocamlmklib
+MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 
 OBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
   chown.o chroot.o close.o closedir.o connect.o cst2constr.o cstringv.o \
@@ -63,7 +64,7 @@ clean: partialclean
 	rm -f *.a *.o *.so
 
 install:
-	if test -f libunix.so; then cp libunix.so $(LIBDIR)/libunix.so; fi
+	if test -f dllunix.so; then cp dllunix.so $(LIBDIR)/dllunix.so; fi
 	cp libunix.a $(LIBDIR)/libunix.a
 	cd $(LIBDIR); $(RANLIB) libunix.a
 	cp unix.cma $(MLOBJS:.cmo=.cmi) $(MLOBJS:.cmo=.mli) $(LIBDIR)

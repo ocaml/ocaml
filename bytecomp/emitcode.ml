@@ -48,8 +48,9 @@ type compilation_unit =
 type library =
   { lib_units: compilation_unit list;   (* List of compilation units *)
     lib_custom: bool;                   (* Requires custom mode linking? *)
-    lib_ccobjs: string list;            (* C object files needed *)
-    lib_ccopts: string list }           (* Extra opts to C compiler *)
+    lib_ccobjs: string list;            (* C object files needed for -custom *)
+    lib_ccopts: string list;            (* Extra opts to C compiler *)
+    lib_dllibs: string list }           (* DLLs needed *)
 
 (* Buffering of bytecode *)
 
@@ -275,7 +276,6 @@ let emit_instr = function
   | Kpushtrap lbl -> out opPUSHTRAP; out_label lbl
   | Kpoptrap -> out opPOPTRAP
   | Kraise -> out opRAISE
-  | Kreraise -> out opRERAISE
   | Kcheck_signals -> out opCHECK_SIGNALS
   | Kccall(name, n) ->
       if n <= 5

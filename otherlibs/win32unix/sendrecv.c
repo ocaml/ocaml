@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../../LICENSE.  */
 /*                                                                     */
 /***********************************************************************/
 
@@ -35,7 +36,10 @@ CAMLprim value unix_recv(value sock, value buff, value ofs, value len, value fla
     ret = recv((SOCKET) Handle_val(sock), iobuf, (int) numbytes,
                convert_flag_list(flags, msg_flag_table));
     leave_blocking_section();
-    if (ret == -1) unix_error(WSAGetLastError(), "recv", Nothing);
+    if (ret == -1) {
+      win32_maperr(WSAGetLastError());
+      uerror("recv", Nothing);
+    }
     memmove (&Byte(buff, Long_val(ofs)), iobuf, ret);
   End_roots();
   return Val_int(ret);
@@ -61,7 +65,10 @@ CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len, value
                    convert_flag_list(flags, msg_flag_table),
                    &addr.s_gen, &addr_len);
     leave_blocking_section();
-    if (ret == -1) unix_error(WSAGetLastError(), "recvfrom", Nothing);
+    if (ret == -1) {
+      win32_maperr(WSAGetLastError());
+      uerror("recvfrom", Nothing);
+    }
     memmove (&Byte(buff, Long_val(ofs)), iobuf, ret);
     adr = alloc_sockaddr(&addr, addr_len);
     res = alloc_small(2, 0);
@@ -84,7 +91,10 @@ CAMLprim value unix_send(value sock, value buff, value ofs, value len, value fla
   ret = send((SOCKET) Handle_val(sock), iobuf, (int) numbytes,
              convert_flag_list(flags, msg_flag_table));
   leave_blocking_section();
-  if (ret == -1) unix_error(WSAGetLastError(), "send", Nothing);
+  if (ret == -1) {
+    win32_maperr(WSAGetLastError());
+    uerror("send", Nothing);
+  }
   return Val_int(ret);
 }
 
@@ -106,7 +116,10 @@ value unix_sendto_native(value sock, value buff, value ofs, value len, value fla
                convert_flag_list(flags, msg_flag_table),
                &addr.s_gen, addr_len);
   leave_blocking_section();
-  if (ret == -1) unix_error(WSAGetLastError(), "sendto", Nothing);
+  if (ret == -1) {
+    win32_maperr(WSAGetLastError());
+    uerror("sendto", Nothing);
+  }
   return Val_int(ret);
 }
 

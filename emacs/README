@@ -63,6 +63,10 @@ For other bindings, see C-h b.
 Changes log:
 -----------
 
+Version 3.03:
+-------------
+* process ;; properly
+
 Version 3.00:
 -------------
 * adapt to new label syntax

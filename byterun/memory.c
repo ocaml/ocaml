@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../LICENSE.     */
 /*                                                                     */
 /***********************************************************************/
 
@@ -320,12 +321,7 @@ void * stat_alloc (asize_t sz)
   /* malloc() may return NULL if size is 0 */
   if (result == NULL && sz != 0) raise_out_of_memory ();
 #ifdef DEBUG
-  {
-    value *p;
-    for (p = result; p < (value *) ((char *) result + sz); p++){
-      *p = Debug_uninit_stat;
-    }
-  }
+  memset (result, Debug_uninit_stat, sz);
 #endif
   return result;
 }

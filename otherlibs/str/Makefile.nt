@@ -6,7 +6,8 @@
 #                                                                       #
 #   Copyright 1999 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License.          #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../../LICENSE.   #
 #                                                                       #
 #########################################################################
 
@@ -25,19 +26,19 @@ REGEXLIB=regex-0.12
 REGEXFLAGS=-DREGEX_MALLOC -DSTDC_HEADERS
 COBJS=strstubs.obj $(REGEXLIB)\regex.obj
 
-all: libstr.dll libstr.lib str.cmi str.cma
+all: dllstr.dll libstr.lib str.cmi str.cma
 
 allopt: libstr.lib str.cmi str.cmxa
 
-libstr.dll: $(COBJS:.obj=.dobj)
-	link /nologo /dll /out:libstr.dll /implib:tmp.lib $(COBJS:.obj=.dobj) ..\..\byterun\ocamlrun.lib
+dllstr.dll: $(COBJS:.obj=.dobj)
+	link /nologo /dll /out:dllstr.dll /implib:tmp.lib $(COBJS:.obj=.dobj) ..\..\byterun\ocamlrun.lib
 	rm tmp.*
 
 libstr.lib: $(COBJS:.obj=.sobj)
 	$(MKLIB)libstr.lib $(COBJS:.obj=.sobj)
 
 str.cma: str.cmo
-	$(CAMLC) -a -o str.cma str.cmo -cclib -lstr
+	$(CAMLC) -a -o str.cma str.cmo -dllib -lstr -cclib -lstr
 
 str.cmxa: str.cmx
 	$(CAMLOPT) -a -o str.cmxa str.cmx -cclib -lstr
@@ -60,7 +61,7 @@ clean: partialclean
 	rm -f $(REGEXLIB)/*.dobj $(REGEXLIB)/*.sobj
 
 install:
-	cp libstr.dll $(LIBDIR)\libstr.dll
+	cp dllstr.dll $(LIBDIR)\dllstr.dll
 	cp libstr.lib $(LIBDIR)\libstr.lib
 	cp str.cma str.cmi $(LIBDIR)
 

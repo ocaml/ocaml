@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../LICENSE.     */
 /*                                                                     */
 /***********************************************************************/
 
@@ -299,7 +300,16 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     intern_color = allocation_color(intern_extra_block);
     intern_dest = intern_extra_block;
   } else {
-    intern_block = alloc(wosize, String_tag);
+    /* this is a specialised version of alloc from alloc.c */
+    if (wosize == 0){
+      intern_block = Atom (String_tag);
+    }else if (wosize <= Max_young_wosize){
+      intern_block = alloc_small (wosize, String_tag);
+    }else{
+      intern_block = alloc_shr (wosize, String_tag);
+      /* do not do the urgent_gc check here because it might darken
+         intern_block into gray and break the Assert 3 lines down */
+    }
     intern_header = Hd_val(intern_block);
     intern_color = Color_hd(intern_header);
     Assert (intern_color == Caml_white || intern_color == Caml_black);
@@ -417,14 +427,11 @@ CAMLprim value input_value_from_string(value str, value ofs)
   return input_val_from_string(str, Long_val(ofs));
 }
 
-CAMLexport value input_value_from_malloc(char * data, long ofs)
+static value input_val_from_block(void)
 {
   mlsize_t num_objects, size_32, size_64, whsize;
   value obj;
 
-  intern_input = (unsigned char *) data;
-  intern_src = intern_input + ofs + 2*4;
-  intern_input_malloced = 1;
   num_objects = read32u();
   size_32 = read32u();
   size_64 = read32u();
@@ -439,7 +446,44 @@ CAMLexport value input_value_from_malloc(char * data, long ofs)
   intern_rec(&obj);
   intern_add_to_heap(whsize);
   /* Free everything */
+  if (intern_obj_table != NULL) stat_free(intern_obj_table);
+  return obj;
+}
+
+CAMLexport value input_value_from_malloc(char * data, long ofs)
+{
+  mlsize_t magic, block_len;
+  value obj;
+
+  intern_input = (unsigned char *) data;
+  intern_src = intern_input + ofs;
+  intern_input_malloced = 1;
+  magic = read32u();
+  if (magic != Intext_magic_number) 
+    failwith("input_value_from_malloc: bad object");
+  block_len = read32u();
+  obj = input_val_from_block();
+  /* Free the input */
   stat_free(intern_input);
+  if (intern_obj_table != NULL) stat_free(intern_obj_table);
+  return obj;
+}
+
+CAMLexport value input_value_from_block(char * data, long len)
+{
+  mlsize_t magic, block_len;
+  value obj;
+
+  intern_input = (unsigned char *) data;
+  intern_src = intern_input;
+  intern_input_malloced = 0;
+  magic = read32u();
+  if (magic != Intext_magic_number) 
+    failwith("input_value_from_block: bad object");
+  block_len = read32u();
+  if (5*4 + block_len > len)
+    failwith("input_value_from_block: bad block length");
+  obj = input_val_from_block();
   if (intern_obj_table != NULL) stat_free(intern_obj_table);
   return obj;
 }

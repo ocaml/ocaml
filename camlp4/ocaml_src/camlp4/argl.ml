@@ -116,7 +116,7 @@ let process pa pr getdir =
   let phr =
     try
       let rec loop () =
-        let (pl, stopped_at_directive) = Grammar.Entry.parse pa cs in
+        let (pl, stopped_at_directive) = pa cs in
         if stopped_at_directive then
           begin
             begin match getdir (List.rev pl) with
@@ -154,8 +154,12 @@ let gimd =
   | _ -> None
 ;;
 
-let process_intf () = process Pcaml.interf !(Pcaml.print_interf) gind;;
-let process_impl () = process Pcaml.implem !(Pcaml.print_implem) gimd;;
+let process_intf () =
+  process !(Pcaml.parse_interf) !(Pcaml.print_interf) gind
+;;
+let process_impl () =
+  process !(Pcaml.parse_implem) !(Pcaml.print_implem) gimd
+;;
 
 type file_kind = Intf | Impl;;
 let file_kind = ref Intf;;
@@ -223,6 +227,16 @@ let remaining_args =
   List.rev (loop [] (!(Arg.current) + 1))
 ;;
 
+let report_error =
+  function
+    Odyl_main.Error (fname, msg) ->
+      Format.print_string "Error while loading \"";
+      Format.print_string fname;
+      Format.print_string "\": ";
+      Format.print_string msg
+  | exc -> Pcaml.report_error exc
+;;
+
 let go () =
   let arg_spec_list = initial_spec_list @ Pcaml.arg_spec_list () in
   begin match parse arg_spec_list anon_fun remaining_args with
@@ -247,10 +261,7 @@ let go () =
           Stdpp.Exc_located ((bp, ep), exc) -> print_location (bp, ep); exc
         | _ -> exc
       in
-      Pcaml.report_error exc;
-      Format.close_box ();
-      Format.print_newline ();
-      exit 2
+      report_error exc; Format.close_box (); Format.print_newline (); exit 2
 ;;
 
 Odyl_main.name := "camlp4";;

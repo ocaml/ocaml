@@ -2,6 +2,7 @@ open Test;;
 open Nat;;
 open Big_int;;
 open Int_misc;;
+open List;;
 
 testing_function "compare_big_int";;
 
@@ -266,15 +267,18 @@ eq_big_int (gcd_big_int (big_int_of_int 12) (big_int_of_int 16),
 for i = 9 to 28 do
   let n1 = Random.int 1000000000
   and n2 = Random.int 100000 in
+  let _ =
     test i eq
       (int_of_big_int (gcd_big_int (big_int_of_int n1) (big_int_of_int n2)),
-       gcd_int n1 n2)
+       gcd_int n1 n2) in
+  ()
 done;;
 
 testing_function "int_of_big_int";;
 
 test 1
 eq_int (int_of_big_int (big_int_of_int 1), 1);;
+
 
 testing_function "is_int_big_int";;
 
@@ -293,6 +297,7 @@ test 6
 eq (is_int_big_int (big_int_of_string (string_of_int least_int)), true);;
 test 7
 eq (is_int_big_int (big_int_of_string (string_of_int monster_int)), true);;
+
 (* Should be false *)
 (* Successor of biggest_int is not an int *)
 test 8
@@ -335,7 +340,7 @@ eq_big_int (big_int_of_string "-3456", big_int_of_int (-3456));;
 
 let implode = List.fold_left (^) "";; (* Au diable l'efficacite *)
 
-let l = List.rev [
+let l = rev [
 "174679877494298468451661416292903906557638850173895426081611831060970135303";
 "044177587617233125776581034213405720474892937404345377707655788096850784519";
 "539374048533324740018513057210881137248587265169064879918339714405948322501";
@@ -356,13 +361,41 @@ let l = List.rev [
 "32"
 ] in
 
-let bi1=big_int_of_string (implode (List.rev l)) in
+let bi1 = big_int_of_string (implode (rev l)) in
 
-let bi2=big_int_of_string (implode (List.rev ("3" :: List.tl l))) in
+let bi2 = big_int_of_string (implode (rev ("3" :: tl l))) in
 
 test 10
 eq_big_int (bi1, (add_big_int (mult_big_int bi2 (big_int_of_string "10")) 
-                              (big_int_of_string "2")));;
+                              (big_int_of_string "2")))
+(* test 11
+ &&
+eq_big_int (bi1, (add_big_int (mult_big_int bi2 (big_int_of_string "10e0"))
+                              (big_int_of_string "20e-1"))) &&
+test 12
+eq_big_int (minus_big_int bi1,
+            (add_big_int (mult_big_int bi2 (big_int_of_string "-10e0"))
+                         (big_int_of_string "-20e-1"))) &&
+test 13
+eq_big_int (bi1, (add_big_int (mult_big_int bi2 (big_int_of_string "+10e0"))
+                              (big_int_of_string "+20e-1"))) &&
+test 14
+eq_big_int (minus_big_int bi1,
+            (add_big_int (mult_big_int bi2 (big_int_of_string "-10e+0"))
+                         (big_int_of_string "-20e-1"))) &&
+test 15
+eq_big_int (minus_big_int bi1,
+            (add_big_int (mult_big_int bi2 (big_int_of_string "-1e+1"))
+                         (big_int_of_string "-2e-0"))) &&
+test 16
+eq_big_int (minus_big_int bi1,
+            (add_big_int (mult_big_int bi2 (big_int_of_string "-0.1e+2"))
+                         (big_int_of_string "-2.0e-0"))) &&
+test 17
+eq_big_int (minus_big_int bi1,
+            (add_big_int (mult_big_int bi2 (big_int_of_string "-1.000e+1"))
+                         (big_int_of_string "-0.02e2")))*)
+;;
 
 testing_function "power_base_int";;
 
@@ -373,7 +406,7 @@ test 2
 eq_big_int (big_int_of_nat (power_base_int 10 8), big_int_of_int 100000000)
 ;;
 test 3
-eq_big_int (big_int_of_nat (power_base_int 2 (if sixtyfour then 64 else 32)), 
+eq_big_int (big_int_of_nat (power_base_int 2 (length_of_int + 2)), 
             big_int_of_nat (let nat = make_nat 2 in
                               set_digit_nat nat 1 1;
                               nat))
@@ -389,12 +422,47 @@ test 3
 eq_big_int (base_power_big_int 10 1 (big_int_of_int 123), big_int_of_int 1230)
 ;;
 
+testing_function "power_int_positive_big_int";;
+
+test 1
+eq_big_int (power_int_positive_big_int 2 (big_int_of_int 10),
+            big_int_of_int 1024);;
+test 2
+eq_big_int
+ (power_int_positive_big_int 2 (big_int_of_int 65),
+  big_int_of_string "36893488147419103232");;
+
+test 3
+eq_big_int
+ (power_int_positive_big_int 3 (big_int_of_string "47"),
+  big_int_of_string "26588814358957503287787");;
+
+
+testing_function "power_big_int_positive_big_int";;
+
+test 1
+eq_big_int
+ (power_big_int_positive_big_int (big_int_of_int 2) (big_int_of_int 10),
+  big_int_of_int 1024);;
+
+test 2
+eq_big_int
+ (power_big_int_positive_big_int (big_int_of_int 2) (big_int_of_int 65),
+  big_int_of_string "36893488147419103232");;
+
+test 3
+eq_big_int
+ (power_big_int_positive_big_int
+   (big_int_of_string "3") (big_int_of_string "47"),
+  big_int_of_string "26588814358957503287787");;
+
 testing_function "square_big_int";;
-test 1 eq
- (square_big_int (big_int_of_string "0"), big_int_of_string"0");;
+
+test 1 eq_big_int
+ (square_big_int (big_int_of_string "0"), big_int_of_string "0");;
 test 2 eq_big_int
- (square_big_int (big_int_of_string "1"), big_int_of_string"1");;
+ (square_big_int (big_int_of_string "1"), big_int_of_string "1");;
 test 3 eq_big_int
- (square_big_int (big_int_of_string "-1"), big_int_of_string"1");;
+ (square_big_int (big_int_of_string "-1"), big_int_of_string "1");;
 test 4 eq_big_int
- (square_big_int (big_int_of_string "-7"), big_int_of_string"49");;
+ (square_big_int (big_int_of_string "-7"), big_int_of_string "49");;

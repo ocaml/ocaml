@@ -6,7 +6,8 @@
 #                                                                       #
 #   Copyright 1999 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License.          #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../LICENSE.      #
 #                                                                       #
 #########################################################################
 
@@ -71,7 +72,7 @@ oo.cmi: oo.mli
 
 # labelled modules require the -nolabels flag
 labelled.cmo:
-	$(MAKEREC) EXTRAFLAGS=-nolabels COMPILER=$(COMPILER) $(LABELLED:.ml=.cmo)
+	$(MAKEREC) EXTRAFLAGS=-nolabels RUNTIME=$(RUNTIME) COMPILER=$(COMPILER) $(LABELLED:.ml=.cmo)
 	touch $@
 labelled.cmx:
 	$(MAKEREC) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.cmx)

@@ -159,7 +159,7 @@ module type S =
 -      * The type [parsable] is used in function [parse] instead of
 -        the char stream, avoiding the possible loss of tokens. *)
 
-module Make : functor (L : LexerType) -> S;;
+module Make (L : LexerType) : S;;
 
 (*--*)
 

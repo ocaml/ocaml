@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../LICENSE.     */
 /*                                                                     */
 /***********************************************************************/
 
@@ -23,4 +24,5 @@
 #define ARCH_INT64_TYPE __int64
 #define ARCH_UINT64_TYPE unsigned __int64
 #define ARCH_INT64_PRINTF_FORMAT "I64"
+#undef NONSTANDARD_DIV_MOD
 

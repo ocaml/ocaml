@@ -6,15 +6,17 @@
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License.         *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
 
 (* $Id$ *)
 
-(* Module [Obj]: operations on internal representations of values *)
+(** Operations on internal representations of values.
 
-(* Not for the casual user. *)
+   Not for the casual user. 
+*)
 
 type t
 
@@ -41,8 +43,7 @@ val double_tag : int
 val double_array_tag : int
 val final_tag : int
 
-(* The following two functions are deprecated.  Use module [Marshal]
-   instead. *)
+(** The following two functions are deprecated.  Use module {!Marshal} instead. *)
 
 val marshal : t -> string
 val unmarshal : string -> int -> t * int

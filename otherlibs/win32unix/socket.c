@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../../LICENSE.  */
 /*                                                                     */
 /***********************************************************************/
 
@@ -48,6 +49,9 @@ CAMLprim value unix_socket(domain, type, proto)
     setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, 
                (char *) &oldvalue, oldvaluelen);
   }
-  if (s == INVALID_SOCKET) unix_error(WSAGetLastError(), "socket", Nothing);
+  if (s == INVALID_SOCKET) {
+    win32_maperr(WSAGetLastError());
+    uerror("socket", Nothing);
+  }
   return win_alloc_handle((HANDLE) s);
 }

@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../../LICENSE.  */
 /*                                                                     */
 /***********************************************************************/
 
@@ -80,8 +81,9 @@ struct thread_struct {
   value * stack_threshold;
   value * sp;
   value * trapsp;
-  value backtrace_pos;          /* The backtrace buffer for this thread */
+  value backtrace_pos;          /* The backtrace info for this thread */
   code_t * backtrace_buffer;
+  value backtrace_last_exn;
   value status;                 /* RUNNABLE, KILLED. etc (see below) */
   value fd;     /* File descriptor on which we're doing read or write */
   value readfds, writefds, exceptfds;
@@ -170,6 +172,7 @@ value thread_initialize(value unit)       /* ML */
   curr_thread->trapsp = trapsp;
   curr_thread->backtrace_pos = Val_int(backtrace_pos);
   curr_thread->backtrace_buffer = backtrace_buffer;
+  curr_thread->backtrace_last_exn = backtrace_last_exn;
   curr_thread->status = RUNNABLE;
   curr_thread->fd = Val_int(0);
   curr_thread->readfds = NO_FDS;
@@ -232,6 +235,7 @@ value thread_new(value clos)          /* ML */
   /* Finish initialization of th */
   th->backtrace_pos = Val_int(0);
   th->backtrace_buffer = NULL;
+  th->backtrace_last_exn = Val_unit;
   /* The thread is initially runnable */
   th->status = RUNNABLE;
   th->fd = Val_int(0);
@@ -296,6 +300,7 @@ static value schedule_thread(void)
   curr_thread->trapsp = trapsp;
   curr_thread->backtrace_pos = Val_int(backtrace_pos);
   curr_thread->backtrace_buffer = backtrace_buffer;
+  curr_thread->backtrace_last_exn = backtrace_last_exn;
 
 try_again:
   /* Find if a thread is runnable.
@@ -488,6 +493,7 @@ try_again:
   trapsp = curr_thread->trapsp;
   backtrace_pos = Int_val(curr_thread->backtrace_pos);
   backtrace_buffer = curr_thread->backtrace_buffer;
+  backtrace_last_exn = curr_thread->backtrace_last_exn;
   return curr_thread->retval;
 }
 

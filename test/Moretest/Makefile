@@ -102,6 +102,16 @@ globroots.out: globroots.ml globrootsprim.o
 globrootsprim.o: globrootsprim.c
 	$(BYTECC) $(BYTECCCOMPOPTS) -I../../byterun -c globrootsprim.c
 
+float.byt: float.cmo
+	${CAMLC} -o float.byt float.cmo
+float.out: float.cmx
+	${CAMLOPT} -o float.out float.cmx
+
+intext.byt: intext.cmo intextaux.o
+	${CAMLC} -o intext.byt -custom intext.cmo intextaux.o
+intext.out: intext.cmx intextaux.o
+	${CAMLOPT} -o intext.out intext.cmx intextaux.o
+
 # Common rules
 
 .SUFFIXES:

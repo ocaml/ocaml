@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../LICENSE.     */
 /*                                                                     */
 /***********************************************************************/
 
@@ -88,7 +89,7 @@ CAMLprim value format_float(value fmt, value arg)
       break;
     }
   }
-  if (prec <= sizeof(format_buffer)) {
+  if (prec < sizeof(format_buffer)) {
     dest = format_buffer;
   } else {
     dest = stat_alloc(prec);
@@ -101,9 +102,13 @@ CAMLprim value format_float(value fmt, value arg)
   return res;
 }
 
-CAMLprim value float_of_string(value s)
+CAMLprim value float_of_string(value vs)
 {
-  return copy_double(atof(String_val(s)));
+  char * s = String_val(vs);
+  char * ends;
+  double d = strtod((const char *) s, &ends);
+  if (ends != s + string_length(vs)) failwith("float_of_string");
+  return copy_double(d);
 }
 
 CAMLprim value int_of_float(value f)

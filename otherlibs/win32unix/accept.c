@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../../LICENSE.  */
 /*                                                                     */
 /***********************************************************************/
 
@@ -46,8 +47,10 @@ CAMLprim value unix_accept(sock)
     setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, 
                (char *) &oldvalue, oldvaluelen);
   }
-  if (snew == INVALID_SOCKET)
-    unix_error(WSAGetLastError(), "accept", Nothing);
+  if (snew == INVALID_SOCKET) {
+    win32_maperr(WSAGetLastError());
+    uerror("accept", Nothing);
+  }
   Begin_roots2 (fd, adr)
     fd = win_alloc_handle((HANDLE) snew);
     adr = alloc_sockaddr(&addr, addr_len);

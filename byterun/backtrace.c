@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 2000 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../LICENSE.     */
 /*                                                                     */
 /***********************************************************************/
 
@@ -36,6 +37,7 @@
 CAMLexport int backtrace_active = 0;
 CAMLexport int backtrace_pos = 0;
 CAMLexport code_t * backtrace_buffer = NULL;
+CAMLexport value backtrace_last_exn = Val_unit;
 #define BACKTRACE_BUFFER_SIZE 1024
 
 /* Location of fields in the Instruct.debug_event record */
@@ -44,18 +46,32 @@ enum { EV_POS = 0,
        EV_CHAR = 2,
        EV_KIND = 3 };
 
+/* Initialize the backtrace machinery */
+
+void init_backtrace(void)
+{
+  backtrace_active = 1;
+  register_global_root(&backtrace_last_exn);
+  /* Note: lazy initialization of backtrace_buffer in stash_backtrace
+     to simplify the interface with the thread libraries */
+}
+
 /* Store the return addresses contained in the given stack fragment
    into the backtrace array */
 
-void stash_backtrace(code_t pc, value * sp)
+void stash_backtrace(value exn, code_t pc, value * sp)
 {
-  code_t end_code = start_code + code_size;
+  code_t end_code = (code_t) ((char *) start_code + code_size);
   if (pc != NULL) pc = pc - 1;
-  if (backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
+  if (exn != backtrace_last_exn) {
+    backtrace_pos = 0;
+    backtrace_last_exn = exn;
+  }
   if (backtrace_buffer == NULL) {
     backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
     if (backtrace_buffer == NULL) return;
   }
+  if (backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
   backtrace_buffer[backtrace_pos++] = pc;
   for (/*nothing*/; sp < trapsp; sp++) {
     code_t p = (code_t) *sp;
@@ -132,22 +148,25 @@ static value event_for_location(value events, code_t pc)
 
 /* Print the location corresponding to the given PC */
 
-static void print_location(value events, code_t pc)
+static void print_location(value events, int index)
 {
+  code_t pc = backtrace_buffer[index];
   char * info;
   value ev;
 
   if (pc == NULL) {
-    fprintf(stderr, "Raised from a C function");
+    fprintf(stderr, "Raised from a C function\n");
     return;
   }
   ev = event_for_location(events, pc);
   if (is_instruction(*pc, RAISE)) {
-    info = "Raised at";
-  } else if (is_instruction(*pc, RERAISE)) {
-    /* Ignore compiler-inserted re-raise */
+    /* Ignore compiler-inserted raise */
     if (ev == Val_false) return;
-    info = "Re-raised at";
+    /* Initial raise if index == 0, re-raise otherwise */
+    if (index == 0)
+      info = "Raised at";
+    else
+      info = "Re-raised at";
   } else {
     info = "Called from";
   }
@@ -174,5 +193,5 @@ CAMLexport void print_exception_backtrace(void)
     return;
   }
   for (i = 0; i < backtrace_pos; i++)
-    print_location(events, backtrace_buffer[i]);
+    print_location(events, i);
 }

@@ -126,7 +126,7 @@ EXTEND
       | "#"; n = lident; dp = dir_param -> Node "StDir" [n; dp]
       | "exception"; ctl = constructor_declaration; b = rebind_exn ->
           match ctl with
-          [ Tuple ctl -> Node "StExc" (ctl @ [b])
+          [ Tuple [Loc; c; tl] -> Node "StExc" [c; tl; b]
           | _ -> match () with [] ]
       | "external"; i = lident; ":"; t = ctyp; "="; p = SLIST1 string ->
           Node "StExt" [i; t; p]
@@ -175,7 +175,7 @@ EXTEND
       | "#"; n = lident; dp = dir_param -> Node "SgDir" [n; dp]
       | "exception"; ctl = constructor_declaration ->
           match ctl with
-          [ Tuple ctl -> Node "SgExc" ctl
+          [ Tuple [Loc; c; tl] -> Node "SgExc" [c; tl]
           | _ -> match () with [] ]
       | "external"; i = lident; ":"; t = ctyp; "="; p = SLIST1 string ->
           Node "SgExt" [i; t; p]
@@ -400,7 +400,12 @@ EXTEND
           let p = Node "PaTyc" [p; t] in
           Node "PaOlb" [i; p; Option e]
       | "?"; i = lident ->
-          Node "PaOlb" [i; Node "PaLid" [i]; Option None] ]
+          Node "PaOlb" [i; Node "PaLid" [i]; Option None]
+      | "?"; "("; i = lident; "="; e = expr; ")" ->
+          Node "PaOlb" [i; Node "PaLid" [i]; Option (Some e)]
+      | "?"; "("; i = lident; ":"; t = ctyp; "="; e = expr; ")" ->
+          let p = Node "PaTyc" [Node "PaLid" [i]; t] in
+          Node "PaOlb" [i; p; Option (Some e) ] ]
     | "simple"
       [ v = LIDENT -> Node "PaLid" [Str v]
       | v = UIDENT -> Node "PaUid" [Str v]
@@ -469,14 +474,14 @@ EXTEND
   type_declaration:
     [ [ n = lident; tpl = SLIST0 type_parameter; "="; tk = ctyp;
         cl = SLIST0 constrain ->
-          Tuple [n; tpl; tk; cl] ] ]
+          Tuple [Tuple [Loc; n]; tpl; tk; cl] ] ]
   ;
   constrain:
     [ [ "constraint"; t1 = ctyp; "="; t2 = ctyp -> Tuple [t1; t2] ] ]
   ;
   type_parameter:
     [ [ "'"; i = ident -> Tuple [i; Tuple [Bool False; Bool False]]
-      | "_"; "'"; i = ident -> Tuple [i; Tuple [Bool True; Bool False]]
+      | "+"; "'"; i = ident -> Tuple [i; Tuple [Bool True; Bool False]]
       | "-"; "'"; i = ident -> Tuple [i; Tuple [Bool False; Bool True]] ] ]
   ;
   ctyp:
@@ -527,11 +532,13 @@ EXTEND
       | -> List [] ] ]
   ;
   constructor_declaration:
-    [ [ ci = uident; "of"; cal = SLIST1 ctyp SEP "and" -> Tuple [ci; cal]
-      | ci = uident -> Tuple [ci; List []] ] ]
+    [ [ ci = uident; "of"; cal = SLIST1 ctyp SEP "and" ->
+          Tuple [Loc; ci; cal]
+      | ci = uident -> Tuple [Loc; ci; List []] ] ]
   ;
   label_declaration:
-    [ [ i = lident; ":"; mf = mutable_flag; t = ctyp -> Tuple [i; mf; t] ] ]
+    [ [ i = lident; ":"; mf = mutable_flag; t = ctyp ->
+          Tuple [Loc; i; mf; t] ] ]
   ;
   ident:
     [ [ i = LIDENT -> Str i

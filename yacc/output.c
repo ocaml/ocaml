@@ -71,8 +71,8 @@ void output(void)
   output_rule_data();
   output_yydefred();
   output_actions();
-  free_parser();
   output_debug();
+  free_parser();
   if (sflag)
     fprintf(output_file,
       "let yyact = Array.new %d (fun _ -> (failwith \"parser\" : Obj.t))\n",
@@ -796,6 +796,22 @@ void output_stored_text(void)
 
 void output_debug(void)
 {
+  int i;
+
+  fprintf(code_file, "let yynames_const = \"\\\n");
+  for (i = 0; i < ntokens; i++) {
+    if (symbol_true_token[i] && symbol_tag[i] == NULL) {
+      fprintf(code_file, "  %s\\000\\\n", symbol_name[i]);
+    }
+  }
+  fprintf(code_file, "  \"\n\n");
+  fprintf(code_file, "let yynames_block = \"\\\n");
+  for (i = 0; i < ntokens; i++) {
+    if (symbol_true_token[i] && symbol_tag[i] != NULL) {
+      fprintf(code_file, "  %s\\000\\\n", symbol_name[i]);
+    }
+  }
+  fprintf(code_file, "  \"\n\n");
 }
 
 void output_trailing_text(void)

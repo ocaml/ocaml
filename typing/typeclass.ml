@@ -44,6 +44,7 @@ type error =
   | Unbound_type_var of (formatter -> unit) * Ctype.closed_class_failure
   | Make_nongen_seltype of type_expr
   | Non_generalizable_class of Ident.t * Types.class_declaration
+  | Cannot_coerce_self of type_expr
 
 exception Error of Location.t * error
 
@@ -427,9 +428,11 @@ let rec class_field cl_num self_type meths vars
         raise(Typecore.Error(expr.pexp_loc, Expr_type_clash(trace)))
       end;
       Ctype.end_def ();
+      let vars_local = !vars in
       let field =
         lazy begin
           Ctype.raise_nongen_level ();
+          vars := vars_local;
           let texp = type_expect met_env meth_expr meth_type in
           Ctype.end_def ();
           Cf_meth (lab, texp)
@@ -473,6 +476,7 @@ let rec class_field cl_num self_type meths vars
 
   | Pcf_init expr ->
       let expr = make_method cl_num expr in
+      let vars_local = !vars in
       let field =
         lazy begin
           Ctype.raise_nongen_level ();
@@ -480,6 +484,7 @@ let rec class_field cl_num self_type meths vars
           let (obj_ty, res_ty) = Ctype.filter_arrow val_env meth_type "" in
           Ctype.unify val_env obj_ty self_type;
           Ctype.unify val_env res_ty (Ctype.instance Predef.type_unit);
+          vars := vars_local;
           let texp = type_expect met_env expr meth_type in
           Ctype.end_def ();
           Cf_init texp
@@ -513,7 +518,9 @@ and class_structure cl_num val_env met_env (spat, str) =
       (val_env, meth_env, par_env, [], Concr.empty, StringSet.empty)
       str
   in
+  let vars_final = !vars in
   let fields = List.map Lazy.force (List.rev fields) in
+  vars := vars_final;
 
   {cl_field = fields;
    cl_meths = Meths.map (function (id, ty) -> id) !meths},
@@ -867,9 +874,21 @@ let class_infos define_class kind
     with Already_bound ->
       raise(Error(snd cl.pci_params, Repeated_parameter))
   in
+
+  (* Allow self coercions (only for class declarations) *)
+  let coercion_locs = ref [] in
   
   (* Type the class expression *)
-  let (expr, typ) = kind env cl.pci_expr in
+  let (expr, typ) =
+    try
+      Typecore.self_coercion :=
+        (Path.Pident obj_id, coercion_locs) :: !Typecore.self_coercion;
+      let res = kind env cl.pci_expr in
+      Typecore.self_coercion := List.tl !Typecore.self_coercion;
+      res
+    with exn ->
+      Typecore.self_coercion := []; raise exn
+  in
   
   Ctype.end_def ();
   
@@ -926,7 +945,7 @@ let class_infos define_class kind
       raise(Error(cl.pci_loc, Abbrev_type_clash (constr, ty, cl_ty)))
     end
   end;
-  
+
   (* Type of the class constructor *)
   begin try
     Ctype.unify env (constructor_type constr obj_type) constr_type
@@ -1001,12 +1020,12 @@ let class_infos define_class kind
      type_variance = List.map (fun _ -> true, true) cl_params}
   in
   ((cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-    arity, pub_meths, expr) :: res,
+    arity, pub_meths, List.rev !coercion_locs, expr) :: res,
    env)
 
 let final_decl define_class
     (cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-     arity, pub_meths, expr) =
+     arity, pub_meths, coe, expr) =
 
   List.iter Ctype.generalize clty.cty_params;
   generalize_class_type clty.cty_type;
@@ -1043,11 +1062,11 @@ let final_decl define_class
   end;
 
   (id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-   arity, pub_meths, expr, (cl.pci_variance, cl.pci_loc))
+   arity, pub_meths, coe, expr, (cl.pci_variance, cl.pci_loc))
 
 let extract_type_decls
     (id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-     arity, pub_meths, expr, required) decls =
+     arity, pub_meths, coe, expr, required) decls =
   ((obj_id, obj_abbr), required) :: ((cl_id, cl_abbr), required) :: decls
 
 let rec compact = function
@@ -1057,17 +1076,45 @@ let rec compact = function
 
 let merge_type_decls
     (id, clty, ty_id, cltydef, _obj_id, _obj_abbr, _cl_id, _cl_abbr,
-     arity, pub_meths, expr, req) ((obj_id, obj_abbr), (cl_id, cl_abbr)) =
+     arity, pub_meths, coe, expr, req) ((obj_id, obj_abbr), (cl_id, cl_abbr)) =
   (id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-   arity, pub_meths, expr)
+   arity, pub_meths, coe, expr)
 
 let final_env define_class env
     (id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-     arity, pub_meths, expr) =
+     arity, pub_meths, coe, expr) =
   Env.add_type obj_id obj_abbr (
   Env.add_type cl_id cl_abbr (
   Env.add_cltype ty_id cltydef (
   if define_class then Env.add_class id clty env else env)))
+
+(* Check that #c is coercible to c if there is a self-coercion *)
+let check_coercions env
+    (id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
+     arity, pub_meths, coercion_locs, expr) =
+  begin match coercion_locs with [] -> ()
+  | loc :: _ ->
+      let cl_ty, obj_ty =
+        match cl_abbr.type_manifest, obj_abbr.type_manifest with
+          Some cl_ab, Some obj_ab ->
+            let cl_params, cl_ty =
+              Ctype.instance_parameterized_type cl_abbr.type_params cl_ab
+            and obj_params, obj_ty =
+              Ctype.instance_parameterized_type obj_abbr.type_params obj_ab
+            in
+            List.iter2 (Ctype.unify env) cl_params obj_params;
+            cl_ty, obj_ty
+        | _ -> assert false
+      in
+      begin try Ctype.subtype env cl_ty obj_ty ()
+      with Ctype.Subtype (tr1, tr2) ->
+        raise(Typecore.Error(loc, Typecore.Not_subtype(tr1, tr2)))
+      end;
+      if not (Ctype.opened_object cl_ty) then
+        raise(Error(loc, Cannot_coerce_self obj_ty))
+  end;
+  (id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
+   arity, pub_meths, expr)
 
 (*******************************)
 
@@ -1094,6 +1141,7 @@ let type_classes define_class approx kind env cls =
   let decls = Typedecl.compute_variance_decls env decls in
   let res = List.map2 merge_type_decls res (compact decls) in
   let env = List.fold_left (final_env define_class) env res in
+  let res = List.map (check_coercions env) res in
   (res, env)
 
 let class_num = ref 0
@@ -1118,7 +1166,7 @@ let class_type_declarations env cls =
   in
   (List.map
      (function
-          (_, _, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, _, _, _) ->
+       (_, _, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, _, _, _) ->
         (ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr))
      decl,
    env)
@@ -1250,3 +1298,9 @@ let report_error ppf = function
         "@[The type of this class,@ %a,@ \
            contains type variables that cannot be generalized@]"
         (Printtyp.class_declaration id) clty
+  | Cannot_coerce_self ty ->
+      fprintf ppf
+        "@[The type of self cannot be coerced to@ \
+           the type of the current class:@ %a.@.\
+           Some occurences are contravariant@]"
+        Printtyp.type_scheme ty

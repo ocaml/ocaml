@@ -6,7 +6,8 @@
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License.         *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../../LICENSE.  *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -121,6 +122,15 @@ let neg_infinity =
 let nan =
   float_of_bytes "\127\240\000\000\000\000\000\001"
               (* 0x7F F0 00 00 00 00 00 01 *)
+let max_float =
+  float_of_bytes "\127\239\255\255\255\255\255\255"
+              (* 0x7f ef ff ff ff ff ff ff *)
+let min_float =
+  float_of_bytes "\000\016\000\000\000\000\000\000"
+              (* 0x00 10 00 00 00 00 00 00 *)
+let epsilon_float =
+  float_of_bytes "\060\176\000\000\000\000\000\000"
+              (* 0x3c b0 00 00 00 00 00 00 *)
 type fpclass =
     FP_normal
   | FP_subnormal
@@ -477,3 +487,7 @@ let do_at_exit () = (!exit_function) ()
 let exit retcode =
   do_at_exit ();
   sys_exit retcode
+
+external register_named_value: string -> 'a -> unit = "register_named_value"
+
+let _ = register_named_value "Pervasives.do_at_exit" do_at_exit

@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 2000 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../LICENSE.     */
 /*                                                                     */
 /***********************************************************************/
 
@@ -72,7 +73,8 @@ static char * parse_ld_conf(void)
   struct stat st;
   int ldconf, nread;
 
-  stdlib = getenv("CAMLLIB");
+  stdlib = getenv("OCAMLLIB");
+  if (stdlib == NULL) stdlib = getenv("CAMLLIB");
   if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
   ldconfname = stat_alloc(strlen(stdlib) + 2 + sizeof(LD_CONF_NAME));
   strcpy(ldconfname, stdlib);

@@ -1,3 +1,38 @@
+Camlp4 Version 3.04
+-------------------
+
+- [07 Dec 01] Added Pcaml.parse_interf and Pcaml.parse_implem, hooks to
+  specify the parsers tof use, i.e. now can use other parsing technics
+  than the Camlp4 grammar system.
+- [27 Nov 01] Fixed functions Token.eval_char and Token.eval_string which
+  returned bad values, resulting lexing of backslash sequences incompatible
+  with OCaml (e.g. "\1" returned "\001" (one character) but OCaml returns
+  the string of the two characters \ and 1).
+- [15 Nov 01] In revised syntax, in let binding in sequences, the "in"
+  can be replaced by a semicolon; the revised syntax printer pr_r.cmo
+  now rather prints a semicolon there.
+- [07 Nov 01] Added the ability to use $ as token: was impossible so far,
+  because of AST quotation uses it for its antiquotation. The fix is just
+  a little (invisible) change in Plexer.
+- [05 Nov 01] Added option -tc (types comment) when using pr_o or pr_r
+  try to print comments inside sum and record types like they are in
+  the source (not by default, because may work incorrectly).
+- [05 Nov 01] Added option -ca (comment after) when using pr_o or pr_r:
+  print ocamldoc comments after the declarations, when they are before.
+- [04 Nov 01] Added locations for variants and labels declarations in AST
+  (file MLast.mli).
+- [03 Nov 01] In pretty printers pr_o and pr_r, skip to next begin of line
+  when displaying the sources between phrase, to prevent e.g. the displaying
+  of the possible last comment of a sum type declaration (the other comment
+  being not displayed anyway).
+- [24 Oct 01] Fixed incorrect locations in sequences.
+- [24 Oct 01] Was erroneously compiled by the OCaml boot compiler instead
+  of the generated ocamlc. Fixed.
+- [15 Oct 01] Fixed some parsing differences between pa_o and ocamlyacc:
+  in parsers, in labels.
+- [12 Oct 01] Added missing bigarray syntax a.{b} (and Cie) in standard
+  syntax (pa_o).
+
 Camlp4 Version 3.03
 -------------------
 

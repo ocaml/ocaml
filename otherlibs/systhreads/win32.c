@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1995 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../../LICENSE.  */
 /*                                                                     */
 /***********************************************************************/
 
@@ -67,7 +68,7 @@ struct caml_thread_descr {
 
 struct caml_thread_struct {
   HANDLE wthread;               /* The Windows thread handle */
-  value descr;                  /* The heap-allocated descriptor */
+  value descr;                  /* The heap-allocated descriptor (root) */
   struct caml_thread_struct * next;  /* Double linking of running threads */
   struct caml_thread_struct * prev;
 #ifdef NATIVE_CODE
@@ -86,6 +87,7 @@ struct caml_thread_struct {
   struct longjmp_buffer * external_raise; /* Saved external_raise */
   int backtrace_pos;            /* Saved backtrace_pos */
   code_t * backtrace_buffer;    /* Saved backtrace_buffer */
+  value backtrace_last_exn;     /* Saved backtrace_last_exn (root) */
 #endif
 };
 
@@ -124,6 +126,9 @@ static void caml_thread_scan_roots(scanning_action action)
   th = curr_thread;
   do {
     (*action)(th->descr, &th->descr);
+#ifndef NATIVE_CODE
+    (*action)(th->backtrace_last_exn, &th->backtrace_last_exn);
+#endif
     /* Don't rescan the stack of the current thread, it was done already */
     if (th != curr_thread) {
 #ifdef NATIVE_CODE
@@ -167,6 +172,7 @@ static void caml_thread_enter_blocking_section(void)
   curr_thread->external_raise = external_raise;
   curr_thread->backtrace_pos = backtrace_pos;
   curr_thread->backtrace_buffer = backtrace_buffer;
+  curr_thread->backtrace_last_exn = backtrace_last_exn;
 #endif
   /* Release the global mutex */
   ReleaseMutex(caml_mutex);
@@ -196,6 +202,7 @@ static void caml_thread_leave_blocking_section(void)
   external_raise = curr_thread->external_raise;
   backtrace_pos = curr_thread->backtrace_pos;
   backtrace_buffer = curr_thread->backtrace_buffer;
+  backtrace_last_exn = curr_thread->backtrace_last_exn;
 #endif
   if (prev_leave_blocking_section_hook != NULL)
     (*prev_leave_blocking_section_hook)();
@@ -394,6 +401,7 @@ CAMLprim caml_thread_new(value clos)
     th->external_raise = NULL;
     th->backtrace_pos = 0;
     th->backtrace_buffer = NULL;
+    th->backtrace_last_exn = Val_unit;
 #endif
     /* Add thread info block to the list of threads */
     th->next = curr_thread->next;

@@ -55,7 +55,7 @@ let print_infos (ui, crc) =
   printf "Name: %s@." ui.ui_name;
   printf "CRC of implementation: %a@." print_digest crc;
   let pr_imports ppf imps = List.iter print_name_crc imps in
-  printf "@[<v 2>Interfaces imported:%a2]@." pr_imports ui.ui_imports_cmi;
+  printf "@[<v 2>Interfaces imported:%a@]@." pr_imports ui.ui_imports_cmi;
   printf "@[<v 2>Implementations imported:%a@]@." pr_imports ui.ui_imports_cmx;
   printf "@[<v 2>Approximation:@ %a@]@." print_approx ui.ui_approx;
   let pr_funs ppf fns =

@@ -14,8 +14,8 @@
 
 (* Handling of dynamically-linked libraries *)
 
-(* Extract names of DLLs from a list of C object files and libraries *)
-val extract_dll_names: string list -> string list
+(* Extract the name of a DLLs from its external name (xxx.so or -lxxx) *)
+val extract_dll_name: string -> string
 
 (* Open a list of DLLs, adding them to opened_dlls.
    Raise [Failure msg] in case of error. *)

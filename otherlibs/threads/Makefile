@@ -6,7 +6,8 @@
 #                                                                       #
 #   Copyright 1999 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License.          #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../../LICENSE.   #
 #                                                                       #
 #########################################################################
 
@@ -17,7 +18,7 @@ include ../../config/Makefile
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -g
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../unix
-MKLIB=../../tools/ocamlmklib
+MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 
 C_OBJS=scheduler.o
 
@@ -91,11 +92,11 @@ partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f libthreads.a *.o
+	rm -f libthreads.a dllthreads.so *.o
 	rm -f pervasives.mli marshal.mli unix.mli
 
 install:
-	if test -f libthreads.so; then cp libthreads.so $(LIBDIR)/libthreads.so; fi
+	if test -f dllthreads.so; then cp dllthreads.so $(LIBDIR)/dllthreads.so; fi
 	cp libthreads.a $(LIBDIR)/libthreads.a
 	cd $(LIBDIR); $(RANLIB) libthreads.a
 	if test -d $(LIBDIR)/threads; then : ; else mkdir $(LIBDIR)/threads; fi

@@ -134,6 +134,430 @@ let text_of_psymbol_list loc gmod psl tvar =
     psl (MLast.ExUid (loc, "[]"))
 ;;
 
+let meta_action = ref false;;
+
+module MetaAction =
+  struct
+    let not_impl f x =
+      let desc =
+        if Obj.is_block (Obj.repr x) then
+          "tag = " ^ string_of_int (Obj.tag (Obj.repr x))
+        else "int_val = " ^ string_of_int (Obj.magic x)
+      in
+      failwith (f ^ ", not impl: " ^ desc)
+    ;;
+    let loc = 0, 0;;
+    let rec mlist mf =
+      function
+        [] -> MLast.ExUid (loc, "[]")
+      | x :: l ->
+          MLast.ExApp
+            (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), mf x),
+             mlist mf l)
+    ;;
+    let moption mf =
+      function
+        None -> MLast.ExUid (loc, "None")
+      | Some x -> MLast.ExApp (loc, MLast.ExUid (loc, "Some"), mf x)
+    ;;
+    let mbool =
+      function
+        false -> MLast.ExUid (loc, "False")
+      | true -> MLast.ExUid (loc, "True")
+    ;;
+    let mloc =
+      MLast.ExTup (loc, [MLast.ExInt (loc, "0"); MLast.ExInt (loc, "0")])
+    ;;
+    let rec mexpr =
+      function
+        MLast.ExAcc (loc, e1, e2) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExApp
+                  (loc,
+                   MLast.ExAcc
+                     (loc, MLast.ExUid (loc, "MLast"),
+                      MLast.ExUid (loc, "ExAcc")),
+                   mloc),
+                mexpr e1),
+             mexpr e2)
+      | MLast.ExApp (loc, e1, e2) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExApp
+                  (loc,
+                   MLast.ExAcc
+                     (loc, MLast.ExUid (loc, "MLast"),
+                      MLast.ExUid (loc, "ExApp")),
+                   mloc),
+                mexpr e1),
+             mexpr e2)
+      | MLast.ExChr (loc, s) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "MLast"),
+                   MLast.ExUid (loc, "ExChr")),
+                mloc),
+             MLast.ExStr (loc, s))
+      | MLast.ExFun (loc, pwel) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "MLast"),
+                   MLast.ExUid (loc, "ExFun")),
+                mloc),
+             mlist mpwe pwel)
+      | MLast.ExIfe (loc, e1, e2, e3) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExApp
+                  (loc,
+                   MLast.ExApp
+                     (loc,
+                      MLast.ExAcc
+                        (loc, MLast.ExUid (loc, "MLast"),
+                         MLast.ExUid (loc, "ExIfe")),
+                      mloc),
+                   mexpr e1),
+                mexpr e2),
+             mexpr e3)
+      | MLast.ExInt (loc, s) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "MLast"),
+                   MLast.ExUid (loc, "ExInt")),
+                mloc),
+             MLast.ExStr (loc, s))
+      | MLast.ExFlo (loc, s) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "MLast"),
+                   MLast.ExUid (loc, "ExFlo")),
+                mloc),
+             MLast.ExStr (loc, s))
+      | MLast.ExLet (loc, rf, pel, e) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExApp
+                  (loc,
+                   MLast.ExApp
+                     (loc,
+                      MLast.ExAcc
+                        (loc, MLast.ExUid (loc, "MLast"),
+                         MLast.ExUid (loc, "ExLet")),
+                      mloc),
+                   mbool rf),
+                mlist mpe pel),
+             mexpr e)
+      | MLast.ExLid (loc, s) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "MLast"),
+                   MLast.ExUid (loc, "ExLid")),
+                mloc),
+             MLast.ExStr (loc, s))
+      | MLast.ExMat (loc, e, pwel) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExApp
+                  (loc,
+                   MLast.ExAcc
+                     (loc, MLast.ExUid (loc, "MLast"),
+                      MLast.ExUid (loc, "ExMat")),
+                   mloc),
+                mexpr e),
+             mlist mpwe pwel)
+      | MLast.ExRec (loc, pel, eo) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExApp
+                  (loc,
+                   MLast.ExAcc
+                     (loc, MLast.ExUid (loc, "MLast"),
+                      MLast.ExUid (loc, "ExRec")),
+                   mloc),
+                mlist mpe pel),
+             moption mexpr eo)
+      | MLast.ExSeq (loc, el) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "MLast"),
+                   MLast.ExUid (loc, "ExSeq")),
+                mloc),
+             mlist mexpr el)
+      | MLast.ExStr (loc, s) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "MLast"),
+                   MLast.ExUid (loc, "ExStr")),
+                mloc),
+             MLast.ExStr (loc, s))
+      | MLast.ExTry (loc, e, pwel) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExApp
+                  (loc,
+                   MLast.ExAcc
+                     (loc, MLast.ExUid (loc, "MLast"),
+                      MLast.ExUid (loc, "ExTry")),
+                   mloc),
+                mexpr e),
+             mlist mpwe pwel)
+      | MLast.ExTup (loc, el) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "MLast"),
+                   MLast.ExUid (loc, "ExTup")),
+                mloc),
+             mlist mexpr el)
+      | MLast.ExTyc (loc, e, t) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExApp
+                  (loc,
+                   MLast.ExAcc
+                     (loc, MLast.ExUid (loc, "MLast"),
+                      MLast.ExUid (loc, "ExTyc")),
+                   mloc),
+                mexpr e),
+             mctyp t)
+      | MLast.ExUid (loc, s) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "MLast"),
+                   MLast.ExUid (loc, "ExUid")),
+                mloc),
+             MLast.ExStr (loc, s))
+      | x -> not_impl "mexpr" x
+    and mpatt =
+      function
+        MLast.PaAcc (loc, p1, p2) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExApp
+                  (loc,
+                   MLast.ExAcc
+                     (loc, MLast.ExUid (loc, "MLast"),
+                      MLast.ExUid (loc, "PaAcc")),
+                   mloc),
+                mpatt p1),
+             mpatt p2)
+      | MLast.PaAny loc ->
+          MLast.ExApp
+            (loc,
+             MLast.ExAcc
+               (loc, MLast.ExUid (loc, "MLast"), MLast.ExUid (loc, "PaAny")),
+             mloc)
+      | MLast.PaApp (loc, p1, p2) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExApp
+                  (loc,
+                   MLast.ExAcc
+                     (loc, MLast.ExUid (loc, "MLast"),
+                      MLast.ExUid (loc, "PaApp")),
+                   mloc),
+                mpatt p1),
+             mpatt p2)
+      | MLast.PaInt (loc, s) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "MLast"),
+                   MLast.ExUid (loc, "PaInt")),
+                mloc),
+             MLast.ExStr (loc, s))
+      | MLast.PaLid (loc, s) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "MLast"),
+                   MLast.ExUid (loc, "PaLid")),
+                mloc),
+             MLast.ExStr (loc, s))
+      | MLast.PaOrp (loc, p1, p2) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExApp
+                  (loc,
+                   MLast.ExAcc
+                     (loc, MLast.ExUid (loc, "MLast"),
+                      MLast.ExUid (loc, "PaOrp")),
+                   mloc),
+                mpatt p1),
+             mpatt p2)
+      | MLast.PaStr (loc, s) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "MLast"),
+                   MLast.ExUid (loc, "PaStr")),
+                mloc),
+             MLast.ExStr (loc, s))
+      | MLast.PaTup (loc, pl) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "MLast"),
+                   MLast.ExUid (loc, "PaTup")),
+                mloc),
+             mlist mpatt pl)
+      | MLast.PaTyc (loc, p, t) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExApp
+                  (loc,
+                   MLast.ExAcc
+                     (loc, MLast.ExUid (loc, "MLast"),
+                      MLast.ExUid (loc, "PaTyc")),
+                   mloc),
+                mpatt p),
+             mctyp t)
+      | MLast.PaUid (loc, s) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "MLast"),
+                   MLast.ExUid (loc, "PaUid")),
+                mloc),
+             MLast.ExStr (loc, s))
+      | x -> not_impl "mpatt" x
+    and mctyp =
+      function
+        MLast.TyAcc (loc, t1, t2) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExApp
+                  (loc,
+                   MLast.ExAcc
+                     (loc, MLast.ExUid (loc, "MLast"),
+                      MLast.ExUid (loc, "TyAcc")),
+                   mloc),
+                mctyp t1),
+             mctyp t2)
+      | MLast.TyApp (loc, t1, t2) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExApp
+                  (loc,
+                   MLast.ExAcc
+                     (loc, MLast.ExUid (loc, "MLast"),
+                      MLast.ExUid (loc, "TyApp")),
+                   mloc),
+                mctyp t1),
+             mctyp t2)
+      | MLast.TyLid (loc, s) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "MLast"),
+                   MLast.ExUid (loc, "TyLid")),
+                mloc),
+             MLast.ExStr (loc, s))
+      | MLast.TyQuo (loc, s) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "MLast"),
+                   MLast.ExUid (loc, "TyQuo")),
+                mloc),
+             MLast.ExStr (loc, s))
+      | MLast.TyTup (loc, tl) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "MLast"),
+                   MLast.ExUid (loc, "TyTup")),
+                mloc),
+             mlist mctyp tl)
+      | MLast.TyUid (loc, s) ->
+          MLast.ExApp
+            (loc,
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc, MLast.ExUid (loc, "MLast"),
+                   MLast.ExUid (loc, "TyUid")),
+                mloc),
+             MLast.ExStr (loc, s))
+      | x -> not_impl "mctyp" x
+    and mpe (p, e) = MLast.ExTup (loc, [mpatt p; mexpr e])
+    and mpwe (p, w, e) =
+      MLast.ExTup (loc, [mpatt p; moption mexpr w; mexpr e])
+    ;;
+  end
+;;
+
 let text_of_action loc psl rtvar act tvar =
   let locid = MLast.PaLid (loc, !(Stdpp.loc_name)) in
   let act =
@@ -159,6 +583,15 @@ let text_of_action loc psl rtvar act tvar =
              let t = ps.symbol.styp tvar in
              MLast.ExFun (loc, [MLast.PaTyc (loc, p, t), None, txt]))
       e psl
+  in
+  let txt =
+    if !meta_action then
+      MLast.ExApp
+        (loc,
+         MLast.ExAcc
+           (loc, MLast.ExUid (loc, "Obj"), MLast.ExLid (loc, "magic")),
+         MetaAction.mexpr txt)
+    else txt
   in
   MLast.ExApp
     (loc,
@@ -1137,3 +1570,5 @@ Grammar.extend
       Gramext.action
         (fun (s : string) (loc : int * int) ->
            (MLast.ExStr (loc, s) : 'string))]]]);;
+
+Pcaml.add_option "-meta_action" (Arg.Set meta_action) " Undocumented";;

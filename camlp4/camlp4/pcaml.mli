@@ -19,6 +19,11 @@
 
 (* Parsers *)
 
+value parse_interf :
+  ref (Stream.t char -> (list (MLast.sig_item * MLast.loc) * bool));
+value parse_implem :
+  ref (Stream.t char -> (list (MLast.str_item * MLast.loc) * bool));
+
 value gram : Grammar.g;
 value interf : Grammar.Entry.e (list (MLast.sig_item * MLast.loc) * bool);
 value implem : Grammar.Entry.e (list (MLast.str_item * MLast.loc) * bool);

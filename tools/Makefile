@@ -75,20 +75,29 @@ clean::
 
 # To help building mixed-mode libraries (Caml + C)
 
-ocamlmklib: ocamlmklib.tpl ../config/Makefile
-	sed -e "s|%%BINDIR%%|$(BINDIR)|" \
-            -e "s|%%SUPPORTS_SHARED_LIBRARIES%%|$(SUPPORTS_SHARED_LIBRARIES)|" \
-            -e "s|%%MKSHAREDLIB%%|$(MKSHAREDLIB)|" \
-	    -e "s|%%SHAREDLDTYPE%%|$(SHAREDLDTYPE)|" \
-            -e "s|%%RANLIB%%|$(RANLIB)|" \
-          ocamlmklib.tpl > ocamlmklib
-	chmod +x ocamlmklib
+ocamlmklib: ocamlmklib.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamlmklib ocamlmklib.cmo
 
 install::
 	cp ocamlmklib $(BINDIR)/ocamlmklib
 
 clean::
 	rm -f ocamlmklib
+
+ocamlmklib.ml: ocamlmklib.mlp ../config/Makefile
+	sed -e "s|%%BINDIR%%|$(BINDIR)|" \
+            -e "s|%%SUPPORTS_SHARED_LIBRARIES%%|$(SUPPORTS_SHARED_LIBRARIES)|" \
+            -e "s|%%MKSHAREDLIB%%|$(MKSHAREDLIB)|" \
+            -e "s|%%BYTECCRPATH%%|$(BYTECCRPATH)|" \
+            -e "s|%%NATIVECCRPATH%%|$(NATIVECCRPATH)|" \
+            -e "s|%%MKSHAREDLIBRPATH%%|$(MKSHAREDLIBRPATH)|" \
+            -e "s|%%RANLIB%%|$(RANLIB)|" \
+          ocamlmklib.mlp > ocamlmklib.ml
+
+beforedepend:: ocamlmklib.ml
+
+clean::
+	rm -f ocamlmklib.ml
 
 # Converter olabl/ocaml 2.99 to ocaml 3
 
@@ -170,6 +179,7 @@ clean::
 	rm -f dumpobj
 
 opnames.ml: ../byterun/instruct.h
+	unset LC_ALL LC_CTYPE LC_COLLATE LANG; \
 	sed -e '/\/\*/d' \
             -e '/^#/d' \
             -e 's/enum \(.*\) {/let names_of_\1 = [|/' \

@@ -33,6 +33,9 @@ do {
   Grammar.Unsafe.clear_entry let_binding;
 };
 
+Pcaml.parse_interf.val := Grammar.Entry.parse interf;
+Pcaml.parse_implem.val := Grammar.Entry.parse implem;
+
 value not_impl loc s =
   raise_with_loc loc (Stream.Error ("not implemented feature [" ^ s ^ "]"))
 ;
@@ -104,8 +107,8 @@ value extract_label_types loc tn tal cdol =
              let loc = loc_of_node anon_record_type in
              let aux_def = ((loc, new_tn), [], anon_record_type, []) in
              let tl = [<:ctyp< $lid:new_tn$ >>] in
-             ([(c, tl) :: cdl], [aux_def :: aux])
-         | None -> ([(c, tl) :: cdl], aux) ])
+             ([(loc, c, tl) :: cdl], [aux_def :: aux])
+         | None -> ([(loc, c, tl) :: cdl], aux) ])
       cdol ([], [])
   in
   [((loc, tn), tal, <:ctyp< [ $list:cdl$ ] >>, []) :: aux]
@@ -218,7 +221,7 @@ EXTEND
       | x1 = INT -> not_impl loc "selector 1" ] ]
   ;
   tlabel:
-    [ [ x1 = selector; ":"; x2 = ctyp -> (x1, False, x2) ] ]
+    [ [ x1 = selector; ":"; x2 = ctyp -> (loc, x1, False, x2) ] ]
   ;
   tuple_ty:
     [ [ x1 = ctyp LEVEL "ty'"; "*"; x2 = tuple_ty -> [x1 :: x2]

@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1998 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../LICENSE.     */
 /*                                                                     */
 /***********************************************************************/
 
@@ -71,6 +72,14 @@ static __inline char * read_runtime_path(HANDLE h)
   return runtime_path;
 }
 
+static BOOL WINAPI ctrl_handler(DWORD event)
+{
+  if (event == CTRL_C_EVENT || event == CTRL_BREAK_EVENT)
+    return TRUE;		/* pretend we've handled them */
+  else
+    return FALSE;
+}
+
 #define msg_and_length(msg) msg , (sizeof(msg) - 1)
 
 static __inline void __declspec(noreturn) run_runtime(char * runtime,
@@ -92,6 +101,10 @@ static __inline void __declspec(noreturn) run_runtime(char * runtime,
     __assume(0); /* Not reached */
 #endif
   }
+  /* Need to ignore ctrl-C and ctrl-break, otherwise we'll die and take
+     the underlying OCaml program with us! */
+  SetConsoleCtrlHandler(ctrl_handler, TRUE);
+
   stinfo.cb = sizeof(stinfo);
   stinfo.lpReserved = NULL;
   stinfo.lpDesktop = NULL;

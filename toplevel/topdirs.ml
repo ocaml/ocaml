@@ -110,7 +110,7 @@ let dir_load ppf name =
         seek_in ic toc_pos;
         let lib = (input_value ic : library) in
         begin try
-          Dll.open_dlls (Dll.extract_dll_names lib.lib_ccobjs)
+          Dll.open_dlls (List.map Dll.extract_dll_name lib.lib_dllibs)
         with Failure reason ->
           fprintf ppf "Cannot load required shared library: %s.@." reason;
           raise Load_failed

@@ -6,7 +6,8 @@
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License.         *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -283,11 +284,12 @@ let format_pp_token state size = function
             then break_new_line state off width else
            (* break the line here leads to new indentation ? *)
            if state.pp_current_indent > state.pp_margin - width + off
-           then break_new_line state off width else break_same_line state n
+           then break_new_line state off width
+           else break_same_line state n
         | Pp_hvbox -> break_new_line state off width
         | Pp_fits -> break_same_line state n
-        | Pp_vbox  -> break_new_line state off width
-        | Pp_hbox  -> break_same_line state n
+        | Pp_vbox -> break_new_line state off width
+        | Pp_hbox -> break_same_line state n
         end
      | _ -> () (* No opened block *)
      end;;
@@ -365,11 +367,9 @@ let scan_push state b tok =
     state.pp_scan_stack <-
      Scan_elem (state.pp_right_total, tok) :: state.pp_scan_stack;;
 
-(*
-  To open a new block :
-  the user may set the depth bound pp_max_boxes
-  any text nested deeper is printed as the ellipsis string
-*)
+(* To open a new block :
+   the user may set the depth bound pp_max_boxes
+   any text nested deeper is printed as the ellipsis string *)
 let pp_open_box_gen state indent br_ty =
     state.pp_curr_depth <- state.pp_curr_depth + 1;
     if state.pp_curr_depth < state.pp_max_boxes then
@@ -626,8 +626,10 @@ let make_formatter f g = pp_make_formatter f g display_newline display_blanks;;
 let formatter_of_out_channel oc =
  make_formatter (output oc) (fun () -> flush oc);;
 
+let unit_out () = ();;
+
 let formatter_of_buffer b =
-  make_formatter (Buffer.add_substring b) (fun () -> ());;
+ make_formatter (Buffer.add_substring b) unit_out;;
 
 let stdbuf = Buffer.create 512;;
 
@@ -694,24 +696,35 @@ and set_all_formatter_output_functions =
 and get_all_formatter_output_functions =
     pp_get_all_formatter_output_functions std_formatter;;
 
-external format_int: string -> int -> string = "format_int"
-external format_float: string -> float -> string = "format_float"
+
+(* Printf implementation. *)
+
+external format_int : string -> int -> string = "format_int";;
+external format_float : string -> float -> string = "format_float";;
 
 let format_invalid_arg s c = invalid_arg (s ^ String.make 1 c);;
 
+(* [fprintf_out] is the printf-like function generator: given the
+   - [str] flag that tells if we are printing into a string,
+   - the [out] function that has to be called at the end of formatting,
+   it generates a [fprintf] function that takes as arguments a [ppf]
+   formatter and a printing format to print the rest of arguments
+   according to the format.
+   Regular [fprintf]-like functions of this module are obtained via partial
+   applications of [fprintf_out]. *)
 let fprintf_out str out ppf format =
   let format = (Obj.magic format : string) in
   let limit = String.length format in
 
   let print_as = ref None in
 
-  let pp_print_as_char ppf c =
+  let pp_print_as_char c =
       match !print_as with
       | None -> pp_print_char ppf c
       | Some size ->
          pp_print_as ppf size (String.make 1 c);
          print_as := None
-  and pp_print_as_string ppf s =
+  and pp_print_as_string s =
       match !print_as with
       | None -> pp_print_string ppf s
       | Some size ->
@@ -723,6 +736,8 @@ let fprintf_out str out ppf format =
       Obj.magic (out ())
     else
       match format.[i] with
+      | '%' ->
+          Printf.scan_format format i cont_s cont_a cont_t
       | '@' ->
           let j = succ i in
           if j >= limit then invalid_arg ("fprintf: unknown format " ^ format)
@@ -762,79 +777,24 @@ let fprintf_out str out ppf format =
                then invalid_arg ("fprintf: bad print format " ^ format)
                else print_as := Some size;
               doprn j
-          | c -> format_invalid_arg "fprintf: unknown format " c end
-      | '%' ->
-          let j = skip_args (succ i) in
-          begin match format.[j] with
-          | '%' ->
-              pp_print_char ppf '%';
-              doprn (succ j)
-          | 's' ->
-              Obj.magic(fun s ->
-                if j <= succ i then
-                  pp_print_as_string ppf s
-                else begin
-                  let p =
-                    try
-                      int_of_string (String.sub format (succ i) (j - i - 1))
-                    with _ ->
-                      invalid_arg ("fprintf: bad %s format, " ^ format) in
-                  if p > 0 && String.length s < p then begin
-                    pp_print_as_string ppf
-                     (String.make (p - String.length s) ' ');
-                    pp_print_as_string ppf s end else
-                  if p < 0 && String.length s < -p then begin
-                    pp_print_as_string ppf s;
-                    pp_print_as_string ppf
-                     (String.make (-p - String.length s) ' ') end
-                  else pp_print_as_string ppf s
-                end;
-                doprn (succ j))
-          | 'c' ->
-              Obj.magic(fun c ->
-                pp_print_as_char ppf c;
-                doprn (succ j))
-          | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
-              Obj.magic(fun n ->
-                pp_print_as_string ppf
-                 (format_int (String.sub format i (j - i + 1)) n);
-                doprn (succ j))
-          | 'f' | 'e' | 'E' | 'g' | 'G' ->
-              Obj.magic(fun f ->
-                pp_print_as_string ppf
-                 (format_float (String.sub format i (j - i + 1)) f);
-                doprn (succ j))
-          | 'b' ->
-              Obj.magic(fun b ->
-                pp_print_as_string ppf (string_of_bool b);
-                doprn (succ j))
-          | 'a' ->
-              if str then
-               Obj.magic(fun printer arg ->
-                pp_print_as_string ppf (printer () arg);
-                doprn (succ j))
-              else
-               Obj.magic(fun printer arg ->
-                printer ppf arg;
-                doprn (succ j))
-          | 't' ->
-              if str then
-               Obj.magic(fun printer ->
-                pp_print_as_string ppf (printer ());
-                doprn (succ j))
-              else
-               Obj.magic(fun printer ->
-                printer ppf;
-                doprn (succ j))
-          | c ->
-              format_invalid_arg "fprintf: unknown format " c
+          | c -> format_invalid_arg "fprintf: unknown format " c
           end
-       | c -> pp_print_as_char ppf c; doprn (succ i)
+      | c -> pp_print_as_char c; doprn (succ i)
 
-  and skip_args j =
-    match format.[j] with
-    | '0' .. '9' | ' ' | '.' | '-' -> skip_args (succ j)
-    | c -> j
+  and cont_s s i =
+    pp_print_as_string s; doprn i
+  and cont_a printer arg i =
+    if str then
+      pp_print_as_string ((Obj.magic printer) () arg)
+    else
+      printer ppf arg;
+    doprn i
+  and cont_t printer i =
+    if str then
+      pp_print_as_string ((Obj.magic printer) ())
+    else
+      printer ppf;
+    doprn i
 
   and get_int s1 s2 i =
    if i >= limit then invalid_arg (s1 ^ s2) else
@@ -899,8 +859,6 @@ let fprintf_out str out ppf format =
 
   in doprn 0;;
 
-let unit_out () = ();;
-
 let get_buffer_out b =
  let s = Buffer.contents b in
  Buffer.reset b;
@@ -922,4 +880,4 @@ let bprintf b =
  let ppf = formatter_of_buffer b in
  fprintf_out false (fun () -> pp_flush_queue ppf false) ppf;;
 
-let _ = at_exit print_flush;;
+at_exit print_flush;;

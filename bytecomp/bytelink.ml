@@ -28,7 +28,6 @@ type error =
   | Custom_runtime
   | File_exists of string
   | Cannot_open_dll of string
-  | Require_custom
 
 exception Error of error
 
@@ -39,16 +38,21 @@ type link_action =
       (* Name of .cma file and descriptors of the units to be linked. *)
 
 (* Add C objects and options from a library descriptor *)
-(* Ignore them if -noautolink was given *)
+(* Ignore them if -noautolink or -use-runtime or -use-prim was given *)
 
 let lib_ccobjs = ref []
 let lib_ccopts = ref []
+let lib_dllibs = ref []
 
 let add_ccobjs l =
-  if not !Clflags.no_auto_link then begin
+  if not !Clflags.no_auto_link
+      && String.length !Clflags.use_runtime = 0
+      && String.length !Clflags.use_prims = 0
+  then begin
     if l.lib_custom then Clflags.custom_runtime := true;
     lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs;
-    lib_ccopts := l.lib_ccopts @ !lib_ccopts
+    lib_ccopts := l.lib_ccopts @ !lib_ccopts;
+    lib_dllibs := l.lib_dllibs @ !lib_dllibs
   end
 
 (* A note on ccobj ordering:
@@ -254,6 +258,13 @@ let output_debug_info oc =
 let output_stringlist oc l =
   List.iter (fun s -> output_string oc s; output_byte oc 0) l
 
+(* Transform a file name into an absolute file name *)
+
+let make_absolute file =
+  if Filename.is_relative file
+  then Filename.concat (Sys.getcwd()) file
+  else file
+
 (* Create a bytecode executable file *)
 
 let link_bytecode tolink exec_name standalone =
@@ -268,21 +279,28 @@ let link_bytecode tolink exec_name standalone =
     if standalone then begin
       (* Copy the header *)
       try
-        let inchan = open_in_bin (find_in_path !load_path "camlheader") in
+        let header =
+          if String.length !Clflags.use_runtime > 0
+          then "camlheader_ur" else "camlheader" in
+        let inchan = open_in_bin (find_in_path !load_path header) in
         copy_file inchan outchan;
         close_in inchan
       with Not_found | Sys_error _ -> ()
     end;
     Bytesections.init_record outchan;
+    (* The path to the bytecode interpreter (in use_runtime mode) *)
+    if String.length !Clflags.use_runtime > 0 then begin
+      output_string outchan (make_absolute !Clflags.use_runtime);
+      output_char outchan '\n';
+      Bytesections.record outchan "RNTM"
+    end;
     (* The bytecode *)
     let start_code = pos_out outchan in
     Symtable.init();
     Hashtbl.clear crc_interfaces;
-    let sharedobjs = Dll.extract_dll_names !Clflags.ccobjs in
+    let sharedobjs = List.map Dll.extract_dll_name !Clflags.dllibs in
     if standalone then begin
       (* Initialize the DLL machinery *)
-      if List.length sharedobjs < List.length !Clflags.ccobjs
-      then raise (Error Require_custom);
       Dll.add_path !load_path;
       try Dll.open_dlls sharedobjs
       with Failure reason -> raise(Error(Cannot_open_dll reason))
@@ -405,17 +423,9 @@ let rec extract suffix l =
 let build_custom_runtime prim_name exec_name =
   match Sys.os_type with
     "Unix" | "Cygwin" ->
-      let rpath =
-        if Config.bytecomp_c_rpath = "" then "" else
-        String.concat ":"
-          (List.filter ((<>) "") 
-             (!Clflags.dllpaths @
-              Dllpath.ld_library_path_contents() @
-              Dllpath.ld_conf_contents()))
-      in
       Ccomp.command
        (Printf.sprintf
-          "%s -o %s -I%s %s %s %s %s %s -lcamlrun %s"
+          "%s -o %s -I%s %s %s %s %s -lcamlrun %s"
           !Clflags.c_linker
           exec_name
           Config.standard_library
@@ -424,7 +434,6 @@ let build_custom_runtime prim_name exec_name =
           (String.concat " "
             (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
                       !load_path))
-          (if rpath <> "" then Config.bytecomp_c_rpath ^ rpath else "")
           (String.concat " " (List.rev !Clflags.ccobjs))
           Config.bytecomp_c_libraries)
   | "Win32" ->
@@ -441,8 +450,10 @@ let build_custom_runtime prim_name exec_name =
                          (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
           (Ccomp.expand_libname "-lcamlrun")
           Config.bytecomp_c_libraries) in
-      (* C compiler doesn't clean up after itself *)
-      remove_file (Filename.chop_suffix prim_name ".c" ^ ".obj");
+      (* C compiler doesn't clean up after itself.  Note that the .obj
+         file is created in the current working directory. *)
+      remove_file
+        (Filename.chop_suffix (Filename.basename prim_name) ".c" ^ ".obj");
       retcode
   | "MacOS" ->
       let cppc = "mrc"
@@ -497,11 +508,14 @@ let fix_exec_name name =
 (* Main entry point (build a custom runtime if needed) *)
 
 let link objfiles =
-  let objfiles = if !Clflags.nopervasives then objfiles
-                 else "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
+  let objfiles =
+    if !Clflags.nopervasives then objfiles
+    else if !Clflags.output_c_object then "stdlib.cma" :: objfiles
+    else "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
   let tolink = List.fold_right scan_file objfiles [] in
-  Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
+  Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs; (* put user's libs last *)
   Clflags.ccopts := !lib_ccopts @ !Clflags.ccopts; (* put user's opts first *)
+  Clflags.dllibs := !lib_dllibs @ !Clflags.dllibs; (* put user's DLLs first *)
   if not !Clflags.custom_runtime then
     link_bytecode tolink !Clflags.exec_name true
   else if not !Clflags.output_c_object then begin
@@ -551,7 +565,7 @@ let report_error ppf = function
       Symtable.report_error err
   | Inconsistent_import(intf, file1, file2) ->
       fprintf ppf
-        "@[<hv 0>Files %s and %s@ \
+        "@[<hov>Files %s@ and %s@ \
                  make inconsistent assumptions over interface %s@]"
         file1 file2 intf
   | Custom_runtime ->
@@ -560,5 +574,3 @@ let report_error ppf = function
       fprintf ppf "Cannot overwrite existing file %s" file
   | Cannot_open_dll file ->
       fprintf ppf "Error on dynamically loaded library: %s" file
-  | Require_custom ->
-      fprintf ppf "Linking with non-Caml, non-shared object files requires the -custom flag"

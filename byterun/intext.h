@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../LICENSE.     */
 /*                                                                     */
 /***********************************************************************/
 
@@ -66,9 +67,11 @@
 #define INITIAL_EXTERN_BLOCK_SIZE 8192
 #endif
 
-#ifndef INITIAL_EXTERN_TABLE_SIZE
-#define INITIAL_EXTERN_TABLE_SIZE 2039
+#ifndef INITIAL_EXTERN_TABLE_SIZE_LOG2
+#define INITIAL_EXTERN_TABLE_SIZE_LOG2 11
 #endif
+
+#define INITIAL_EXTERN_TABLE_SIZE (1UL << INITIAL_EXTERN_TABLE_SIZE_LOG2)
 
 /* Maximal value of initial_ofs above which we should start again with
    initial_ofs = 1. Should be low enough to prevent rollover of initial_ofs
@@ -77,17 +80,40 @@
    any value below 2^N - (2^N / (2 * sizeof(value))) suffices.
    We just take 2^(N-1) for simplicity. */
 
-#define INITIAL_OFFSET_MAX ((unsigned long)1 << (8 * sizeof(value) - 1))
+#define INITIAL_OFFSET_MAX (1UL << (8 * sizeof(value) - 1))
 
 /* The entry points */
 
 CAMLextern void output_val (struct channel * chan, value v, value flags);
+  /* Output [v] with flags [flags] on the channel [chan]. */
 CAMLextern void output_value_to_malloc(value v, value flags,
                                        /*out*/ char ** buf,
                                        /*out*/ long * len);
+  /* Output [v] with flags [flags] to a memory buffer allocated with
+     malloc.  On return, [*buf] points to the buffer and [*len]
+     contains the number of bytes in buffer. */
+CAMLextern long output_value_to_block(value v, value flags,
+                                      char * data, long len);
+  /* Output [v] with flags [flags] to a user-provided memory buffer.
+     [data] points to the start of this buffer, and [len] is its size
+     in bytes.  Return the number of bytes actually written in buffer.
+     Raise [Failure] if buffer is too short. */
+
 CAMLextern value input_val (struct channel * chan);
+  /* Read a structured value from the channel [chan]. */
 CAMLextern value input_val_from_string (value str, long ofs);
+  /* Read a structured value from the Caml string [str], starting
+     at offset [ofs]. */
 CAMLextern value input_value_from_malloc(char * data, long ofs);
+  /* Read a structured value from a malloced buffer.  [data] points
+     to the beginning of the buffer, and [ofs] is the offset of the
+     beginning of the externed data in this buffer.  The buffer is
+     deallocated with [free] on return, or if an exception is raised. */
+CAMLextern value input_value_from_block(char * data, long len);
+  /* Read a structured value from a user-provided buffer.  [data] points
+     to the beginning of the externed data in this buffer,
+     and [len] is the length in bytes of valid data in this buffer.
+     The buffer is never deallocated by this routine. */
 
 /* Functions for writing user-defined marshallers */
 

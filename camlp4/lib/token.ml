@@ -119,17 +119,17 @@ value rec backslash s i =
     | '0'..'9' as c -> backslash1 (valch c) s (i + 1)
     | _ -> raise Not_found ]
 and backslash1 cod s i =
-  if i = String.length s then (Char.chr cod, i)
+  if i = String.length s then ('\\', i - 1)
   else
     match s.[i] with
     [ '0'..'9' as c -> backslash2 (10 * cod + valch c) s (i + 1)
-    | _ -> (Char.chr cod, i) ]
+    | _ -> ('\\', i - 1) ]
 and backslash2 cod s i =
-  if i = String.length s then (Char.chr cod, i)
+  if i = String.length s then ('\\', i - 2)
   else
     match s.[i] with
     [ '0'..'9' as c -> (Char.chr (10 * cod + valch c), i + 1)
-    | _ -> (Char.chr cod, i) ]
+    | _ -> ('\\', i - 2) ]
 ;
 
 value rec skip_indent s i =

@@ -38,7 +38,10 @@ Pcaml.add_option "-help_seq" (Arg.Unit help_sequences)
   "    Print explanations about new sequences and exit.";
 
 do {
+  let odfa = Plexer.dollar_for_antiquotation.val in
+  Plexer.dollar_for_antiquotation.val := False;
   Grammar.Unsafe.reinit_gram gram (Plexer.make ());
+  Plexer.dollar_for_antiquotation.val := odfa;
   Grammar.Unsafe.clear_entry interf;
   Grammar.Unsafe.clear_entry implem;
   Grammar.Unsafe.clear_entry top_phrase;
@@ -56,6 +59,9 @@ do {
   Grammar.Unsafe.clear_entry class_sig_item;
   Grammar.Unsafe.clear_entry class_str_item
 };
+
+Pcaml.parse_interf.val := Grammar.Entry.parse interf;
+Pcaml.parse_implem.val := Grammar.Entry.parse implem;
 
 value o2b =
   fun
@@ -180,7 +186,7 @@ EXTEND
     [ "top"
       [ "declare"; st = LIST0 [ s = str_item; ";" -> s ]; "end" ->
           <:str_item< declare $list:st$ end >>
-      | "exception"; (c, tl) = constructor_declaration; b = rebind_exn ->
+      | "exception"; (_, c, tl) = constructor_declaration; b = rebind_exn ->
           <:str_item< exception $c$ of $list:tl$ = $b$ >>
       | "external"; i = LIDENT; ":"; t = ctyp; "="; pd = LIST1 STRING ->
           <:str_item< external $i$ : $t$ = $list:pd$ >>
@@ -225,7 +231,7 @@ EXTEND
     [ "top"
       [ "declare"; st = LIST0 [ s = sig_item; ";" -> s ]; "end" ->
           <:sig_item< declare $list:st$ end >>
-      | "exception"; (c, tl) = constructor_declaration ->
+      | "exception"; (_, c, tl) = constructor_declaration ->
           <:sig_item< exception $c$ of $list:tl$ >>
       | "external"; i = LIDENT; ":"; t = ctyp; "="; pd = LIST1 STRING ->
           <:sig_item< external $i$ : $t$ = $list:pd$ >>
@@ -262,14 +268,14 @@ EXTEND
       | "fun"; "["; l = LIST0 match_case SEP "|"; "]" ->
           <:expr< fun [ $list:l$ ] >>
       | "fun"; p = ipatt; e = fun_def -> <:expr< fun $p$ -> $e$ >>
-      | "match"; x = SELF; "with"; "["; l = LIST0 match_case SEP "|"; "]" ->
-          <:expr< match $x$ with [ $list:l$ ] >>
-      | "match"; x = SELF; "with"; p = ipatt; "->"; e = SELF ->
-          <:expr< match $x$ with $p$ -> $e$ >>
-      | "try"; x = SELF; "with"; "["; l = LIST0 match_case SEP "|"; "]" ->
-          <:expr< try $x$ with [ $list:l$ ] >>
-      | "try"; x = SELF; "with"; p = ipatt; "->"; e = SELF ->
-          <:expr< try $x$ with $p$ -> $e$ >>
+      | "match"; e = SELF; "with"; "["; l = LIST0 match_case SEP "|"; "]" ->
+          <:expr< match $e$ with [ $list:l$ ] >>
+      | "match"; e = SELF; "with"; p1 = ipatt; "->"; e1 = SELF ->
+          <:expr< match $e$ with $p1$ -> $e1$ >>
+      | "try"; e = SELF; "with"; "["; l = LIST0 match_case SEP "|"; "]" ->
+          <:expr< try $e$ with [ $list:l$ ] >>
+      | "try"; e = SELF; "with"; p1 = ipatt; "->"; e1 = SELF ->
+          <:expr< try $e$ with $p1$ -> $e1$ >>
       | "if"; e1 = SELF; "then"; e2 = SELF; "else"; e3 = SELF ->
           <:expr< if $e1$ then $e2$ else $e3$ >>
       | "do"; "{"; seq = sequence; "}" ->
@@ -389,7 +395,7 @@ EXTEND
     [ [ -> () ] ]
   ;
   sequence:
-    [ [ "let"; o = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
+    [ [ "let"; o = OPT "rec"; l = LIST1 let_binding SEP "and"; [ "in" | ";" ];
         el = SELF ->
           let e =
             match el with
@@ -427,13 +433,13 @@ EXTEND
     [ RIGHTA
       [ i = LIDENT -> <:expr< $lid:i$ >>
       | i = UIDENT -> <:expr< $uid:i$ >>
-      | m = UIDENT; "."; i = SELF ->
+      | i = UIDENT; "."; j = SELF ->
           let rec loop m =
             fun
             [ <:expr< $x$ . $y$ >> -> loop <:expr< $m$ . $x$ >> y
             | e -> <:expr< $m$ . $e$ >> ]
           in
-          loop <:expr< $uid:m$ >> i ] ]
+          loop <:expr< $uid:i$ >> j ] ]
   ;
   fun_def:
     [ RIGHTA
@@ -557,11 +563,12 @@ EXTEND
           <:ctyp< { $list:ldl$ } >> ] ]
   ;
   constructor_declaration:
-    [ [ ci = UIDENT; "of"; cal = LIST1 ctyp SEP "and" -> (ci, cal)
-      | ci = UIDENT -> (ci, []) ] ]
+    [ [ ci = UIDENT; "of"; cal = LIST1 ctyp SEP "and" -> (loc, ci, cal)
+      | ci = UIDENT -> (loc, ci, []) ] ]
   ;
   label_declaration:
-    [ [ i = LIDENT; ":"; mf = OPT "mutable"; t = ctyp -> (i, o2b mf, t) ] ]
+    [ [ i = LIDENT; ":"; mf = OPT "mutable"; t = ctyp ->
+          (loc, i, o2b mf, t) ] ]
   ;
   ident:
     [ [ i = LIDENT -> i
@@ -571,7 +578,7 @@ EXTEND
     [ RIGHTA
       [ i = UIDENT -> [i]
       | i = LIDENT -> [i]
-      | m = UIDENT; "."; i = SELF -> [m :: i] ] ]
+      | i = UIDENT; "."; j = SELF -> [i :: j] ] ]
   ;
   direction_flag:
     [ [ "to" -> True
@@ -665,9 +672,9 @@ EXTEND
     [ [ mf = OPT "mutable"; l = label; "="; e = expr -> (l, o2b mf, e)
       | mf = OPT "mutable"; l = label; ":"; t = ctyp; "="; e = expr ->
           (l, o2b mf, <:expr< ($e$ : $t$) >>)
-      | mf = OPT "mutable"; l = label; ":"; t1 = ctyp; ":>"; t2 = ctyp; "=";
+      | mf = OPT "mutable"; l = label; ":"; t = ctyp; ":>"; t2 = ctyp; "=";
         e = expr ->
-          (l, o2b mf, <:expr< ($e$ : $t1$ :> $t2$) >>)
+          (l, o2b mf, <:expr< ($e$ : $t$ :> $t2$) >>)
       | mf = OPT "mutable"; l = label; ":>"; t = ctyp; "="; e = expr ->
           (l, o2b mf, <:expr< ($e$ :> $t$) >>) ] ]
   ;
@@ -722,8 +729,8 @@ EXTEND
     [ [ e = SELF; "#"; lab = label -> <:expr< $e$ # $lab$ >> ] ]
   ;
   expr: LEVEL "simple"
-    [ [ "("; e = SELF; ":"; t1 = ctyp; ":>"; t2 = ctyp; ")" ->
-          <:expr< ($e$ : $t1$ :> $t2$ ) >>
+    [ [ "("; e = SELF; ":"; t = ctyp; ":>"; t2 = ctyp; ")" ->
+          <:expr< ($e$ : $t$ :> $t2$ ) >>
       | "("; e = SELF; ":>"; t = ctyp; ")" -> <:expr< ($e$ :> $t$) >>
       | "{<"; ">}" -> <:expr< {< >} >>
       | "{<"; fel = field_expr_list; ">}" -> <:expr< {< $list:fel$ >} >> ] ]
@@ -788,7 +795,26 @@ EXTEND
   ;
   patt: LEVEL "simple"
     [ [ "`"; s = ident -> <:patt< ` $s$ >>
-      | "#"; sl = mod_ident -> <:patt< # $list:sl$ >> ] ]
+      | "#"; sl = mod_ident -> <:patt< # $list:sl$ >>
+      | i = TILDEIDENTCOLON; p = SELF ->
+          <:patt< ~ $i$ : $p$ >>
+      | i = TILDEIDENT ->
+          <:patt< ~ $i$ >>
+      | i = QUESTIONIDENTCOLON; "("; p = patt; ")" ->
+          <:patt< ? $i$ : ( $p$ ) >>
+      | i = QUESTIONIDENTCOLON; "("; p = patt; "="; e = expr; ")" ->
+          <:patt< ? $i$ : ( $p$ = $e$ ) >>
+      | i = QUESTIONIDENTCOLON; "("; p = patt; ":"; t = ctyp; ")" ->
+          <:patt< ? $i$ : ( $p$ : $t$ ) >>
+      | i = QUESTIONIDENTCOLON; "("; p = patt; ":"; t = ctyp; "=";
+        e = expr; ")" ->
+          <:patt< ? $i$ : ( $p$ : $t$ = $e$ ) >>
+      | i = QUESTIONIDENT ->
+          <:patt< ? $i$ >>
+      | "?"; "("; i = LIDENT; "="; e = expr; ")" ->
+          <:patt< ? ( $i$ = $e$ ) >>
+      | "?"; "("; i = LIDENT; ":"; t = ctyp; "="; e = expr; ")" ->
+          <:patt< ? ( $i$ : $t$ = $e$ ) >> ] ]
   ;
   ipatt:
     [ [ i = TILDEIDENTCOLON; p = SELF ->
@@ -805,7 +831,11 @@ EXTEND
         e = expr; ")" ->
           <:patt< ? $i$ : ( $p$ : $t$ = $e$ ) >>
       | i = QUESTIONIDENT ->
-          <:patt< ? $i$ >> ] ]
+          <:patt< ? $i$ >>
+      | "?"; "("; i = LIDENT; "="; e = expr; ")" ->
+          <:patt< ? ( $i$ = $e$ ) >>
+      | "?"; "("; i = LIDENT; ":"; t = ctyp; "="; e = expr; ")" ->
+          <:patt< ? ( $i$ : $t$ = $e$ ) >> ] ]
   ;
   expr: AFTER "apply"
     [ "label"
@@ -838,7 +868,7 @@ value warning_seq () =
   else ()
 ;
 Pcaml.add_option "-no_warn_seq" (Arg.Clear not_yet_warned)
-  "    Warn when using old syntax for sequences.";
+  " No warning when using old syntax for sequences.";
 
 EXTEND
   GLOBAL: expr direction_flag;

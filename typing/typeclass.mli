@@ -62,6 +62,7 @@ type error =
   | Unbound_type_var of (formatter -> unit) * Ctype.closed_class_failure
   | Make_nongen_seltype of type_expr
   | Non_generalizable_class of Ident.t * Types.class_declaration
+  | Cannot_coerce_self of type_expr
 
 exception Error of Location.t * error
 

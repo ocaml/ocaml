@@ -280,7 +280,9 @@ have caml-electric-indent on, which see.")
 ;that way we get out effect even when we do \C-x` in compilation buffer
 ;  (define-key caml-mode-map "\C-x`" 'caml-next-error)
 
-  (define-key caml-mode-map "\177" 'backward-delete-char-untabify)
+  (if running-xemacs
+      (define-key caml-mode-map 'backspace 'backward-delete-char-untabify)
+    (define-key caml-mode-map "\177" 'backward-delete-char-untabify))
   (define-key caml-mode-map "\C-cb" 'caml-insert-begin-form)
   (define-key caml-mode-map "\C-cf" 'caml-insert-for-form)
   (define-key caml-mode-map "\C-ci" 'caml-insert-if-form)
@@ -474,16 +476,48 @@ have caml-electric-indent on, which see.")
   (interactive"r")
   (inferior-caml-eval-region start end))
 
-(defun caml-eval-phrase ()
-  "Send the current Caml phrase to the inferior Caml process."
-  (interactive)
-  (save-excursion
-    (let ((bounds (caml-mark-phrase)))
-    (inferior-caml-eval-region (car bounds) (cdr bounds)))))
+;; old version ---to be deleted later
+; 
+; (defun caml-eval-phrase ()
+;   "Send the current Caml phrase to the inferior Caml process."
+;   (interactive)
+;   (save-excursion
+;     (let ((bounds (caml-mark-phrase)))
+;     (inferior-caml-eval-region (car bounds) (cdr bounds)))))
+
+(defun caml-eval-phrase (arg &optional min max)
+  "Send the phrase containing the point to the CAML process.
+With prefix-arg send as many phrases as its numeric value, 
+If an error occurs during evalutaion, stop at this phrase and
+repport the error. 
+
+Return nil if noerror and position of error if any.
+
+If arg's numeric value is zero or negative, evaluate the current phrase
+or as many as prefix arg, ignoring evaluation errors. 
+This allows to jump other erroneous phrases. 
+
+Optional arguments min max defines a region within which the phrase
+should lies."
+  (interactive "p")
+  (inferior-caml-eval-phrase arg min max))
+
+(defun caml-eval-buffer (arg)
+  "Evaluate the buffer from the beginning to the phrase under the point.
+With prefix arg, evaluate past the whole buffer, no stopping at
+the current point."
+  (interactive "p")
+  (let ((here (point)) ((error))
+    (goto-char (point-min))
+    (setq error
+          (caml-eval-phrase 500 (point-min) (if arg (point-max) here))))
+    (if error (set-mark (error)))
+    (goto-char here)))
 
 (defun caml-show-subshell ()
   (interactive)
   (inferior-caml-show-subshell))
+
 
 ;;; Imenu support
 (defun caml-show-imenu ()
@@ -988,7 +1022,8 @@ Used to distinguish it from toplevel let construct.")
              (aref caml-kwop-regexps caml-max-indent-priority)))
     (cond
      ; special case for ;;
-     ((and (= (preceding-char) ?\;) (= (following-char) ?\;)))
+     ((and (= (preceding-char) ?\;) (= (following-char) ?\;))
+      (setq in-expr nil))
      ((looking-at caml-before-expr-prefix)
       (goto-char (match-end 0))
       (skip-chars-forward " \t\n")
@@ -1083,7 +1118,8 @@ keywords."
     ("\["               t       8       caml-lb-indent)
     ("{"                t       8       caml-lc-indent)
     ("\("               t       8       caml-lp-indent)
-    ("|"                nil     2       caml-no-indent))
+    ("|"                nil     2       caml-no-indent)
+    (";;"               nil     0       caml-no-indent))
 ; if-else and let-in are not keywords but idioms
 ; "|" is not in the regexps
 ; all these 3 values correspond to hard-coded names
@@ -1106,7 +1142,7 @@ the line where the governing keyword occurs.")
 (aset caml-kwop-regexps 0
       (concat
        "\\<\\(begin\\|object\\|for\\|s\\(ig\\|truct\\)\\|while\\)\\>"
-       "\\|:begin\\>\\|[[({]"))
+       "\\|:begin\\>\\|[[({]\\|;;"))
 (aset caml-kwop-regexps 1
       (concat (aref caml-kwop-regexps 0) "\\|\\<\\(class\\|module\\)\\>"))
 (aset caml-kwop-regexps 2
@@ -1306,6 +1342,10 @@ the line where the governing keyword occurs.")
        ((not kwop) (setq done t))
        ((caml-at-sexp-close-p)
         (caml-find-paren-match (following-char)))
+       ((and (string= kwop ";") (= (preceding-char) ?\;))
+        (goto-char 0)
+        (setq kwop ";;")
+        (setq done t))
        ((and (>= prio 2) (string= kwop "|")) (setq done t))
        ((string= kwop "end") (caml-find-end-match))
        ((string= kwop "done") (caml-find-done-match))
@@ -1346,6 +1386,8 @@ Does not preserve point."
 
   (let* (in-expr
          (kwop (cond
+                ((looking-at ";;")
+                 (beginning-of-line 1))
                 ((looking-at "|\\([^]|]\\|\\'\\)")
                  (caml-find-pipe-match))
                 ((and (looking-at caml-phrase-start-keywords)
@@ -1419,8 +1461,7 @@ matching nodes to determine KEYWORD's final indentation.")
   (save-excursion
     (back-to-indentation)
     (cond
-     ((looking-at comment-start-skip)
-      (current-column))
+     ((looking-at comment-start-skip) (current-column))
      ((caml-in-comment-p)
       (let ((closing (looking-at "\\*)"))
             (comment-mark (looking-at "\\*")))
@@ -1571,10 +1612,22 @@ by |, insert one."
                              0)
                             abbrev-correct)))))))
 
-(defun caml-indent-phrase ()
-  (interactive "*")
-  (let ((bounds (caml-mark-phrase)))
-    (indent-region (car bounds) (cdr bounds) nil)))
+; (defun caml-indent-phrase ()
+;   (interactive "*")
+;   (let ((bounds (caml-mark-phrase)))
+;     (indent-region (car bounds) (cdr bounds) nil)))
+
+(defun caml-indent-phrase (arg)
+  (interactive "p")
+  (save-excursion
+    (let ((beg (caml-find-phrase)))
+    (while (progn (setq arg (- arg 1)) (> arg 0))
+      (caml-find-region))
+    (indent-region beg (point) nil))))
+
+(defun caml-indent-buffer ()
+  (interactive)
+  (indent-region (point-min) (point-max) nil))
 
 (defun caml-backward-to-less-indent (&optional n)
   "Move cursor back  N lines with less or same indentation."

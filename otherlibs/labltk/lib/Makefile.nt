@@ -19,7 +19,7 @@ WIDGETOBJSX = $(WIDGETOBJS:.cmo=.cmx)
 
 labltk.cma : $(SUPPORT) $(WIDGETOBJS) tk.cmo 
 	$(LABLLIBR) -o labltk.cma $(SUPPORT) tk.cmo $(WIDGETOBJS) \
-	  -cclib -llabltk41
+	  -dllib -llabltk41 -cclib -llabltk41 $(TK_LINK)
 
 labltk.cmxa : $(SUPPORTX) $(WIDGETOBJSX) tk.cmx
 	$(CAMLOPTLIBR) -o labltk.cmxa $(SUPPORTX) tk.cmx $(WIDGETOBJSX) \

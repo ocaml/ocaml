@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../LICENSE.     */
 /*                                                                     */
 /***********************************************************************/
 
@@ -27,6 +28,12 @@
 #if macintosh
 #include "rotatecursor.h"
 #endif /* macintosh */
+
+#ifdef _WIN32
+typedef void (*sighandler)(int sig);
+extern sighandler win32_signal(int sig, sighandler action);
+#define signal(sig,act) win32_signal(sig,act)
+#endif
 
 int volatile async_signal_mode = 0;
 int volatile pending_signal = 0;
@@ -126,6 +133,16 @@ CAMLexport void enter_blocking_section(void)
 
 CAMLexport void leave_blocking_section(void)
 {
+#ifdef _WIN32
+  /* Under Win32, asynchronous signals such as ctrl-C are not processed
+     immediately (see ctrl_handler in win32.c), but simply set
+     pending_signal and let the system call run to completion.
+     Hence, test pending_signal here and act upon it, before we get
+     a chance to process the result of the system call. */
+  int signal_number = pending_signal;
+  pending_signal = 0;
+  if (signal_number) execute_signal(signal_number, 1);
+#endif
   if (leave_blocking_section_hook != NULL) leave_blocking_section_hook();
   Assert(async_signal_mode);
   async_signal_mode = 0;

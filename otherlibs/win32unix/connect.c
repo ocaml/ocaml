@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../../LICENSE.  */
 /*                                                                     */
 /***********************************************************************/
 
@@ -28,6 +29,9 @@ CAMLprim value unix_connect(socket, address)
   enter_blocking_section();
   retcode = connect(s, &addr.s_gen, addr_len);
   leave_blocking_section();
-  if (retcode == -1) unix_error(WSAGetLastError(), "connect", Nothing);
+  if (retcode == -1) {
+    win32_maperr(WSAGetLastError());
+    uerror("connect", Nothing);
+  }
   return Val_unit;
 }

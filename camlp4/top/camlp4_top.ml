@@ -135,28 +135,35 @@ value toplevel_phrase cs =
   [ Some phr -> ast2pt_phrase phr
   | None -> raise End_of_file ]
 ;
+
 value use_file cs =
   let v = Pcaml.input_file.val in
   do {
     Pcaml.input_file.val := Toploop.input_name.val;
     let restore () = Pcaml.input_file.val := v in
     try
-      let r =
+      let (pl0, eoi) =
         loop () where rec loop () =
           let (pl, stopped_at_directive) =
             Grammar.Entry.parse Pcaml.use_file cs
           in
           if stopped_at_directive then
-            match List.rev pl with
-            [ [MLast.StDir _ "load" (Some <:expr< $str:s$ >>) :: rpl] ->
-                do {
-                  Topdirs.dir_load Format.std_formatter s;
-                  List.rev_append rpl (loop ())
-                }
-            | [MLast.StDir _ "directory" (Some <:expr< $str:s$ >>) :: rpl] ->
-                do { Topdirs.dir_directory s; List.rev_append rpl (loop ()) }
-            | _ -> pl @ loop () ]
-          else pl
+            match pl with
+            [ [MLast.StDir _ "load" (Some <:expr< $str:s$ >>)] ->
+                do { Topdirs.dir_load Format.std_formatter s; loop () }
+            | [MLast.StDir _ "directory" (Some <:expr< $str:s$ >>)] ->
+                do { Topdirs.dir_directory s; loop () }
+            | _ -> (pl, False) ]
+          else (pl, True)
+      in
+      let r =
+        if eoi then pl0
+        else
+          loop () where rec loop () =
+            let (pl, stopped_at_directive) =
+              Grammar.Entry.parse Pcaml.use_file cs
+            in
+            if stopped_at_directive then pl @ loop () else pl0 @ pl
       in
       let r = List.map ast2pt_phrase r in
       do { restore (); r }

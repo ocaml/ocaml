@@ -203,7 +203,7 @@ let print_out_exception ppf exn outv =
   | Stack_overflow ->
       fprintf ppf "Stack overflow during evaluation (looping recursion?).@."
   | _ ->
-      fprintf ppf "@[Uncaught exception:@ %a.@]@." !print_out_value outv
+      fprintf ppf "@[Exception:@ %a.@]@." !print_out_value outv
 
 let print_exception_outcome ppf exn =
   if exn = Out_of_memory then Gc.full_major ();
@@ -231,35 +231,41 @@ let print_out_phrase = ref print_phrase
 let execute_phrase print_outcome ppf phr =
   match phr with
   | Ptop_def sstr ->
-      let (str, sg, newenv) = Typemod.type_structure !toplevel_env sstr in
+      let oldenv = !toplevel_env in
+      let (str, sg, newenv) = Typemod.type_structure oldenv sstr in
       let lam = Translmod.transl_toplevel_definition str in
       Warnings.check_fatal ();
-      let res = load_lambda ppf lam in
-      let out_phr =
-        match res with
-        | Result v ->
-            if print_outcome then
-              match str with
-              | [Tstr_eval exp] ->
-                  let outv = outval_of_value newenv v exp.exp_type in
-                  let ty = Printtyp.tree_of_type_scheme exp.exp_type in
-                  Ophr_eval (outv, ty)
-              | [] -> Ophr_signature []
-              | _ -> Ophr_signature (item_list newenv sg)
-            else Ophr_signature []
-        | Exception exn ->
-            if exn = Out_of_memory then Gc.full_major();
-            let outv =
-              outval_of_value !toplevel_env (Obj.repr exn) Predef.type_exn
-            in
-            Ophr_exception (exn, outv)
-      in
-      !print_out_phrase ppf out_phr;
-      begin match out_phr with
-      | Ophr_eval (_, _) | Ophr_signature _ -> toplevel_env := newenv; true
-      | Ophr_exception _ -> false
-      end
-      
+      begin try
+        toplevel_env := newenv;
+        let res = load_lambda ppf lam in
+        let out_phr =
+          match res with
+          | Result v ->
+              if print_outcome then
+                match str with
+                | [Tstr_eval exp] ->
+                    let outv = outval_of_value newenv v exp.exp_type in
+                    let ty = Printtyp.tree_of_type_scheme exp.exp_type in
+                    Ophr_eval (outv, ty)
+                | [] -> Ophr_signature []
+                | _ -> Ophr_signature (item_list newenv sg)
+              else Ophr_signature []
+          | Exception exn ->
+              toplevel_env := oldenv;
+              if exn = Out_of_memory then Gc.full_major();
+              let outv =
+                outval_of_value !toplevel_env (Obj.repr exn) Predef.type_exn
+              in
+              Ophr_exception (exn, outv)
+        in
+        !print_out_phrase ppf out_phr;
+        begin match out_phr with
+        | Ophr_eval (_, _) | Ophr_signature _ -> true
+        | Ophr_exception _ -> false
+        end
+      with x ->
+        toplevel_env := oldenv; raise x
+      end      
   | Ptop_dir(dir_name, dir_arg) ->
       try
         match (Hashtbl.find directive_table dir_name, dir_arg) with
@@ -417,4 +423,5 @@ let run_script ppf name args =
   Arg.current := 0;
   Compile.init_path();
   toplevel_env := Compile.initial_env();
+  Sys.interactive := false;
   use_silently ppf name

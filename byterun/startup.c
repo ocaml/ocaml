@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../LICENSE.     */
 /*                                                                     */
 /***********************************************************************/
 
@@ -59,6 +60,8 @@
 #ifndef SEEK_END
 #define SEEK_END 2
 #endif
+
+extern int parser_trace;
 
 CAMLexport header_t atom_table[256];
 
@@ -235,10 +238,6 @@ static int parse_command_line(char **argv)
     case 't':
       trace_flag = 1;
       break;
-    case 'P':
-      { extern int parser_trace;
-        parser_trace = 1;
-        break; }
 #endif
     case 'v':
       verb_gc = 1+4+8+16+32;
@@ -249,7 +248,7 @@ static int parse_command_line(char **argv)
       exit(0);
       break;
     case 'b':
-      backtrace_active = 1;
+      init_backtrace();
       break;
     case 'I':
       if (argv[i + 1] != NULL) {
@@ -295,7 +294,8 @@ static void parse_camlrunparam(void)
       case 'o': scanmult (opt, &percent_free_init); break;
       case 'O': scanmult (opt, &max_percent_free_init); break;
       case 'v': scanmult (opt, &verb_gc); break;
-      case 'b': backtrace_active = 1; break;
+      case 'b': init_backtrace(); break;
+      case 'p': parser_trace = 1; break;
       }
     }
   }

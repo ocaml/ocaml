@@ -6,20 +6,21 @@
 (*                                                                     *)
 (*  Copyright 2001 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License.         *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
 
 (* $Id$ *)
 
-(* Module [StdLabels]: standard labeled libraries *)
+(** Extra labeled libraries.
 
-(* This meta-module provides labelized version of the [Hashtbl],
-   [Map] and [Set] modules.
+   This meta-module provides labelized version of the {!Hashtbl},
+   {!Map} and {!Set} modules.
 
-   They only differ by their labels. They are provided for backwards
-   compatibility with previous versions of Objective Caml, and it is
-   preferable to avoid them in new projects.
+   They only differ by their labels. They are provided to help
+   porting from previous versions of Objective Caml.
+   The contents of this module are subject to change.
 *)
 
 module Hashtbl : sig
@@ -27,6 +28,7 @@ module Hashtbl : sig
   val create : int -> ('a, 'b) t
   val clear : ('a, 'b) t -> unit
   val add : ('a, 'b) t -> key:'a -> data:'b -> unit
+  val copy : ('a, 'b) t -> ('a, 'b) t
   val find : ('a, 'b) t -> 'a -> 'b
   val find_all : ('a, 'b) t -> 'a -> 'b list
   val mem : ('a, 'b) t -> 'a -> bool
@@ -43,6 +45,7 @@ module Hashtbl : sig
       and 'a t
       val create : int -> 'a t
       val clear : 'a t -> unit
+      val copy : 'a t -> 'a t
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
       val find : 'a t -> key -> 'a

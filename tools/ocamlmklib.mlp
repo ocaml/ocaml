@@ -152,22 +152,15 @@ let scommand cmd =
 let safe_remove s =
   try Sys.remove s with Sys_error _ -> ()
 
-let make_set l =
-  let rec merge l = function
-    []     -> List.rev l
-  | p :: r -> if List.mem p l then merge l r else merge (p::l) r
-  in
-  merge [] l
-
 let make_rpath flag =
   if !rpath = [] || flag = ""
   then ""
-  else flag ^ String.concat ":" (make_set !rpath)
+  else flag ^ String.concat ":" !rpath
 
 let make_rpath_ccopt flag =
   if !rpath = [] || flag = "" 
   then ""
-  else "-ccopt " ^ flag ^ String.concat ":" (make_set !rpath)
+  else "-ccopt " ^ flag ^ String.concat ":" !rpath
 
 let prefix_list pref l =
   List.map (fun s -> pref ^ s) l
@@ -197,7 +190,7 @@ let build_libs () =
   end;
   if !bytecode_objs <> [] then
     scommand
-      (sprintf "%s -a %s -o %s.cma %s %s -dllib -l%s -cclib -l%s %s %s %s %s"
+      (sprintf "%s -a %s -o %s.cma %s %s -dllib -l%s -cclib -l%s %s %s %s"
                   !ocamlc
                   (if !dynlink then "" else "-custom")
                   !output
@@ -207,11 +200,10 @@ let build_libs () =
                   !output_c
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
                   (make_rpath_ccopt bytecc_rpath)
-                  (String.concat " " (prefix_list "-cclib " !c_libs))
-                  (String.concat " " !caml_libs));
+                  (String.concat " " (prefix_list "-cclib " !c_libs)));
   if !native_objs <> [] then
     scommand
-      (sprintf "%s -a -o %s.cmxa %s %s -cclib -l%s %s %s %s %s"
+      (sprintf "%s -a -o %s.cmxa %s %s -cclib -l%s %s %s %s"
                   !ocamlopt
                   !output
                   (String.concat " " !caml_opts)
@@ -219,8 +211,7 @@ let build_libs () =
                   !output_c
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
                   (make_rpath_ccopt nativecc_rpath)
-                  (String.concat " " (prefix_list "-cclib " !c_libs))
-                  (String.concat " " !caml_libs))
+                  (String.concat " " (prefix_list "-cclib " !c_libs)))
 
 let _ =
   try

@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../../LICENSE.  */
 /*                                                                     */
 /***********************************************************************/
 
@@ -110,6 +111,20 @@ static struct error_entry win_error_table[] = {
   { ERROR_WRITE_PROTECT,
     ERROR_SHARING_BUFFER_EXCEEDED - ERROR_WRITE_PROTECT,
     EACCES },
+  { WSAEINVAL, 0, EINVAL },
+  { WSAEACCES, 0, EACCES },
+  { WSAEBADF, 0, EBADF },
+  { WSAEFAULT, 0, EFAULT },
+  { WSAEINTR, 0, EINTR },
+  { WSAEINVAL, 0, EINVAL },
+  { WSAEMFILE, 0, EMFILE },
+#ifdef WSANAMETOOLONG
+  { WSANAMETOOLONG, 0, ENAMETOOLONG },
+#endif
+#ifdef WSAENFILE
+  { WSAENFILE, 0, ENFILE },
+#endif
+  { WSAENOTEMPTY, 0, ENOTEMPTY },
   { 0, -1, 0 }
 };
 

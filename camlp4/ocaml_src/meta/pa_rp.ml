@@ -342,17 +342,20 @@ let cparser_match loc me bpo pc =
            pc)
     | None -> pc
   in
-  MLast.ExLet
-    (loc, false,
-     [MLast.PaTyc
-        (loc, MLast.PaLid (loc, strm_n),
-         MLast.TyApp
-           (loc,
-            MLast.TyAcc
-              (loc, MLast.TyUid (loc, "Stream"), MLast.TyLid (loc, "t")),
-            MLast.TyAny loc)),
-      me],
-     e)
+  match me with
+    MLast.ExLid (_, x) when x = strm_n -> e
+  | _ ->
+      MLast.ExLet
+        (loc, false,
+         [MLast.PaTyc
+            (loc, MLast.PaLid (loc, strm_n),
+             MLast.TyApp
+               (loc,
+                MLast.TyAcc
+                  (loc, MLast.TyUid (loc, "Stream"), MLast.TyLid (loc, "t")),
+                MLast.TyAny loc)),
+          me],
+         e)
 ;;
 
 (* streams *)

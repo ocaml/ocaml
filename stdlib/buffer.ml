@@ -6,7 +6,8 @@
 (*                                                                     *)
 (*  Copyright 1999 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License.         *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -22,7 +23,7 @@ let create n =
  let n = if n < 1 then 1 else n in
  let n = if n > Sys.max_string_length then Sys.max_string_length else n in
  let s = String.create n in
- {buffer = s; position = 0; length = String.length s; initial_buffer = s}
+ {buffer = s; position = 0; length = n; initial_buffer = s}
 
 let contents b = String.sub b.buffer 0 b.position
 

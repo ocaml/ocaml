@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../LICENSE.     */
 /*                                                                     */
 /***********************************************************************/
 
@@ -36,15 +37,23 @@ struct extern_obj {
 };
 
 static byteoffset_t initial_ofs = 1; /* Initial value of object offsets */
-static struct extern_obj * extern_table = NULL;
+static byteoffset_t obj_counter;     /* Number of objects emitted so far */
+static struct extern_obj * extern_table = NULL; /* Table of objects seen */
 static unsigned long extern_table_size;
-static byteoffset_t obj_counter;    /* Number of objects emitted so far */
+static unsigned long extern_table_mask;
+static unsigned int extern_hash_shift;
+/* extern_table_size, extern_table_mask and extern_hash_shift are such that
+      extern_table_size == 1 << (wordsize - extern_hash_shift)
+      extern_table_mask == extern_table_size - 1  */
 
+/* Multiplicative Fibonacci hashing (Knuth vol 3, section 6.4, page 518).
+   HASH_FACTOR is (sqrt(5) - 1) / 2 * 2^wordsize. */
 #ifdef ARCH_SIXTYFOUR
-#define Hash(v) (((unsigned long) ((v) >> 3)) % extern_table_size)
+#define HASH_FACTOR 11400714819323198485UL
 #else
-#define Hash(v) (((unsigned long) ((v) >> 2)) % extern_table_size)
+#define HASH_FACTOR 2654435769UL
 #endif
+#define Hash(v) (((unsigned long)(v) * HASH_FACTOR) >> extern_hash_shift)
 
 /* Allocate a new extern table */
 static void alloc_extern_table(void)
@@ -66,17 +75,16 @@ static void resize_extern_table(void)
 
   oldsize = extern_table_size;
   oldtable = extern_table;
+  extern_hash_shift = extern_hash_shift - 1;
   extern_table_size = 2 * extern_table_size;
+  extern_table_mask = extern_table_size - 1;
   alloc_extern_table();
   for (i = 0; i < oldsize; i++) {
     ofs = oldtable[i].ofs;
     if (ofs >= initial_ofs) {
       obj = oldtable[i].obj;
       h = Hash(obj);
-      while (extern_table[h].ofs >= initial_ofs) {
-        h++;
-        if (h >= extern_table_size) h = 0;
-      }
+      while (extern_table[h].ofs > 0) h = (h + 1) & extern_table_mask;
       extern_table[h].ofs = ofs;
       extern_table[h].obj = obj;
     }
@@ -86,7 +94,7 @@ static void resize_extern_table(void)
 
 /* Free the extern table. We keep it around for next call if
    it's still small (we did not grow it) and the initial offset
-   does not risk running over next time. */
+   does not risk overflowing next time. */
 static void free_extern_table(void)
 {
   if (extern_table_size > INITIAL_EXTERN_TABLE_SIZE ||
@@ -228,6 +236,7 @@ static void extern_rec(value v)
     tag_t tag = Tag_hd(hd);
     mlsize_t sz = Wosize_hd(hd);
     asize_t h;
+
     /* Atoms are treated specially for two reasons: they are not allocated
        in the externed block, and they are automatically shared. */
     if (sz == 0) {
@@ -254,8 +263,7 @@ static void extern_rec(value v)
           }
           return;
         }
-        h++;
-        if (h >= extern_table_size) h = 0;
+        h = (h + 1) & extern_table_mask;
       }
       /* Not seen yet. Record the object */
       extern_table[h].ofs = initial_ofs + obj_counter;
@@ -361,6 +369,8 @@ static long extern_value(value v, value flags)
   extern_closures = fl & CLOSURES;
   /* Allocate hashtable of objects already seen, if needed */
   extern_table_size = INITIAL_EXTERN_TABLE_SIZE;
+  extern_table_mask = extern_table_size - 1;
+  extern_hash_shift = 8 * sizeof(value) - INITIAL_EXTERN_TABLE_SIZE_LOG2;
   if (extern_table == NULL) {
     alloc_extern_table();
     initial_ofs = 1;
@@ -458,6 +468,18 @@ CAMLexport void output_value_to_malloc(value v, value flags,
   len_res = extern_value(v, flags);
   *buf = extern_block;
   *len = len_res;
+}
+
+CAMLexport long output_value_to_block(value v, value flags,
+                                      char * buf, long len)
+{
+  long len_res;
+  extern_block = buf;
+  extern_limit = extern_block + len;
+  extern_ptr = extern_block;
+  extern_block_malloced = 0;
+  len_res = extern_value(v, flags);
+  return len_res;
 }
 
 /* Functions for writing user-defined marshallers */

@@ -187,8 +187,8 @@ value mktype loc tl cl tk tm =
 ;
 value mkmutable m = if m then Mutable else Immutable;
 value mkprivate m = if m then Private else Public;
-value mktrecord (n, m, t) = (n, mkmutable m, ctyp t);
-value mkvariant (c, tl) = (c, List.map ctyp tl);
+value mktrecord (_, n, m, t) = (n, mkmutable m, ctyp t);
+value mkvariant (_, c, tl) = (c, List.map ctyp tl);
 value type_decl tl cl =
   fun
   [ TyMan loc t (TyRec _ ltl) ->
@@ -535,7 +535,9 @@ value rec expr =
         fun
         [ [] -> expr (ExUid loc "()")
         | [e] -> expr e
-        | [e :: el] -> mkexp loc (Pexp_sequence (expr e) (loop el)) ]
+        | [e :: el] ->
+            let loc = (fst (loc_of_expr e), snd loc) in
+            mkexp loc (Pexp_sequence (expr e) (loop el)) ]
   | ExSnd loc e s -> mkexp loc (Pexp_send (expr e) s)
   | ExSte loc e1 e2 ->
       mkexp loc

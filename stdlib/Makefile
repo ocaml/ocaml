@@ -6,7 +6,8 @@
 #                                                                       #
 #   Copyright 1999 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License.          #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../LICENSE.      #
 #                                                                       #
 #########################################################################
 
@@ -26,7 +27,6 @@ CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 BASIC=pervasives.cmo array.cmo list.cmo char.cmo string.cmo sys.cmo \
   hashtbl.cmo sort.cmo marshal.cmo obj.cmo \
   lexing.cmo parsing.cmo \
-  dynamics.cmo \
   set.cmo map.cmo stack.cmo queue.cmo stream.cmo \
   buffer.cmo printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo \
   digest.cmo random.cmo oo.cmo genlex.cmo callback.cmo weak.cmo \
@@ -110,7 +110,7 @@ oo.cmi: oo.mli
 
 # labelled modules require the -nolabels flag
 labelled.cmo:
-	$(MAKE) EXTRAFLAGS=-nolabels COMPILER=$(COMPILER) $(LABELLED:.ml=.cmo)
+	$(MAKE) EXTRAFLAGS=-nolabels RUNTIME=$(RUNTIME) COMPILER=$(COMPILER) $(LABELLED:.ml=.cmo)
 	touch $@
 labelled.cmx:
 	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.cmx)

@@ -6,7 +6,8 @@
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License.         */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../../LICENSE.  */
 /*                                                                     */
 /***********************************************************************/
 
@@ -24,7 +25,9 @@ CAMLprim value unix_shutdown(sock, cmd)
      value sock, cmd;
 {
   if (shutdown((SOCKET) Handle_val(sock),
-               shutdown_command_table[Int_val(cmd)]) == -1)
-    unix_error(WSAGetLastError(), "shutdown", Nothing);
+               shutdown_command_table[Int_val(cmd)]) == -1) {
+    win32_maperr(WSAGetLastError());
+    uerror("shutdown", Nothing);
+  }
   return Val_unit;
 }

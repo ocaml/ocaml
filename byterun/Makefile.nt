@@ -6,7 +6,8 @@
 #                                                                       #
 #   Copyright 1999 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License.          #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../LICENSE.      #
 #                                                                       #
 #########################################################################
 
@@ -30,7 +31,7 @@ PRIMS=alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c \
   dynlink.c
 
-PUBLIC_INCLUDES=mlvalues.h alloc.h misc.h callback.h fail.h custom.h
+PUBLIC_INCLUDES=mlvalues.h alloc.h misc.h callback.h fail.h custom.h intext.h
 
 all: ocamlrun.exe libcamlrun.lib
 	if not exist ..\stdlib\caml mkdir ..\stdlib\caml

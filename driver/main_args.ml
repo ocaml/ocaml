@@ -20,6 +20,7 @@ module Make_options (F :
      val _cclib : string -> unit
      val _ccopt : string -> unit
      val _custom : unit -> unit
+     val _dllib : string -> unit
      val _dllpath : string -> unit
      val _g : unit -> unit
      val _i : unit -> unit
@@ -67,6 +68,7 @@ struct
     "-ccopt", Arg.String F._ccopt,
                       "<opt>  Pass option <opt> to the C compiler and linker";
     "-custom", Arg.Unit F._custom, " Link in custom mode";
+    "-dllib", Arg.String F._dllib, "<lib>  Use the dynamically-loaded library <lib>";
     "-dllpath", Arg.String F._dllpath, "<dir>  Add <dir> to the run-time search path for shared libraries";
     "-g", Arg.Unit F._g, " Save debugging information";
     "-i", Arg.Unit F._i, " Print the types";
@@ -80,10 +82,10 @@ struct
            "<file>  (deprecated) same as -intf-suffix";
     "-labels", Arg.Unit F._labels, " Use commuting label mode";
     "-linkall", Arg.Unit F._linkall, " Link all modules, even unused ones";
-    (* "-make-runtime", Arg.Unit F._make_runtime,
-           " Build a runtime system with given C objects and libraries"; *)
-    (* "-make_runtime", Arg.Unit F._make_runtime,
-           " (deprecated) same as -make-runtime"; *)
+    "-make-runtime", Arg.Unit F._make_runtime,
+           " Build a runtime system with given C objects and libraries";
+    "-make_runtime", Arg.Unit F._make_runtime,
+           " (deprecated) same as -make-runtime";
     "-modern", Arg.Unit F._labels, " (deprecated) same as -labels";
     "-noassert", Arg.Unit F._noassert, " Don't compile assertion checks";
     "-noautolink", Arg.Unit F._noautolink,
@@ -101,10 +103,10 @@ struct
 (*< JOCAML *)    
     "-unsafe", Arg.Unit F._unsafe,
                             " No bounds checking on array and string access";
-    (* "-use-runtime", Arg.String F._use_runtime,
-                  "<path>  Generate bytecode for the given runtime system"; *)
-    (* "-use_runtime", Arg.String F._use_runtime,
-                  "<path>  (deprecated) same as -use-runtime"; *)
+    "-use-runtime", Arg.String F._use_runtime,
+                  "<path>  Generate bytecode for the given runtime system";
+    "-use_runtime", Arg.String F._use_runtime,
+                  "<path>  (deprecated) same as -use-runtime";
     "-v", Arg.Unit F._v, " Print compiler version number and exit";
     "-verbose", Arg.Unit F._verbose, " Print calls to external commands";
     "-w", Arg.String F._w,

@@ -49,7 +49,7 @@ type error =
   | Outside_class
   | Value_multiply_overridden of string
   | Coercion_failure of type_expr * type_expr * (type_expr * type_expr) list
-  | Too_many_arguments
+  | Too_many_arguments of bool * type_expr
   | Abstract_wrong_label of label * type_expr
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
@@ -584,7 +584,7 @@ let check_unused_variant pat =
           | Some pat -> List.iter (unify_pat pat.pat_env pat) (ty::tl)
           end
       | Reither (c, l, true, e) ->
-          e := Some (Reither (c, l, false, ref None))
+          e := Some (Reither (c, [], false, ref None))
       | _ -> ()
       end
   | _ -> ()
@@ -646,47 +646,100 @@ and is_nonexpansive_opt = function
     None -> true
   | Some e -> is_nonexpansive e
 
-(* Typing of printf formats *)
+(* Typing of printf formats.  
+   (Handling of * modifiers contributed by Thorsten Ohl.) *)
 
 let type_format loc fmt =
   let len = String.length fmt in
   let ty_input = newvar()
   and ty_result = newvar() in
-  let rec skip_args j =
-    if j >= len then j else
-      match fmt.[j] with
-        '0' .. '9' | ' ' | '.' | '-' -> skip_args (j+1)
-      | _ -> j in
   let ty_arrow gty ty = newty (Tarrow("", instance gty, ty, Cok)) in
+  let incomplete i =
+    raise (Error (loc, Bad_format (String.sub fmt i (len - i)))) in
   let rec scan_format i =
     if i >= len then ty_result else
     match fmt.[i] with
-      '%' ->
-        let j = skip_args(i+1) in
-        if j >= len then raise(Error(loc, Bad_format "%"));
-        begin match fmt.[j] with
-          '%' ->
-            scan_format (j+1)
-        | 's' ->
-            ty_arrow Predef.type_string (scan_format (j+1))
-        | 'c' ->
-            ty_arrow Predef.type_char (scan_format (j+1))
-        | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
-            ty_arrow Predef.type_int (scan_format (j+1))
-        | 'f' | 'e' | 'E' | 'g' | 'G' ->
-            ty_arrow Predef.type_float (scan_format (j+1))
-        | 'b' ->
-            ty_arrow Predef.type_bool (scan_format (j+1))
-        | 'a' ->
-            let ty_arg = newvar() in
-            ty_arrow (ty_arrow ty_input (ty_arrow ty_arg ty_result))
-                     (ty_arrow ty_arg (scan_format (j+1)))
-        | 't' ->
-            ty_arrow (ty_arrow ty_input ty_result) (scan_format (j+1))
-        | c ->
-            raise(Error(loc, Bad_format(String.sub fmt i (j-i+1))))
+    | '%' -> scan_flags i (i+1)
+    | _ -> scan_format (i+1)
+  and scan_flags i j =
+    if j >= len then incomplete i else
+    match fmt.[j] with
+    | '#' | '0' | '-' | ' ' | '+' -> scan_flags i (j+1)
+    | _ -> scan_width i j
+  and scan_width i j =
+    if j >= len then incomplete i else
+    match fmt.[j] with
+    | '*' -> ty_arrow Predef.type_int (scan_dot i (j+1))
+    | '.' -> scan_precision i (j+1)
+    | _ -> scan_fixed_width i j
+  and scan_fixed_width i j =
+    if j >= len then incomplete i else
+    match fmt.[j] with
+    | '0' .. '9' | '-' | '+' -> scan_fixed_width i (j+1)
+    | '.' -> scan_precision i (j+1)
+    | _ -> scan_conversion i j
+  and scan_dot i j =
+    if j >= len then incomplete i else
+    match fmt.[j] with
+    | '.' -> scan_precision i (j+1)
+    | _ -> scan_conversion i j
+  and scan_precision i j =
+    if j >= len then incomplete i else
+    match fmt.[j] with
+    | '*' -> ty_arrow Predef.type_int (scan_conversion i (j+1))
+    | _ -> scan_fixed_precision i j
+  and scan_fixed_precision i j =
+    if j >= len then incomplete i else
+    match fmt.[j] with
+    | '0' .. '9' | '-' | '+' -> scan_fixed_precision i (j+1)
+    | _ -> scan_conversion i j
+  and scan_conversion i j =
+    if j >= len then incomplete i else
+    match fmt.[j] with
+    | '%' -> scan_format (j+1)
+    | 's' ->
+        ty_arrow Predef.type_string (scan_format (j+1))
+    | 'c' ->
+        ty_arrow Predef.type_char (scan_format (j+1))
+    | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
+        ty_arrow Predef.type_int (scan_format (j+1))
+    | 'f' | 'e' | 'E' | 'g' | 'G' ->
+        ty_arrow Predef.type_float (scan_format (j+1))
+    | 'b' ->
+        ty_arrow Predef.type_bool (scan_format (j+1))
+    | 'a' ->
+        let ty_arg = newvar() in
+        ty_arrow (ty_arrow ty_input (ty_arrow ty_arg ty_result))
+          (ty_arrow ty_arg (scan_format (j+1)))
+    | 't' ->
+        ty_arrow (ty_arrow ty_input ty_result) (scan_format (j+1))
+    | 'l' ->
+        if j+1 >= len then incomplete i else begin
+          match fmt.[j+1] with
+          | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
+              ty_arrow Predef.type_int32 (scan_format (j+2))
+          | c ->
+              raise(Error(loc, Bad_format(String.sub fmt i (j-i+2))))
         end
-    | _ -> scan_format (i+1) in
+    | 'n' ->
+        if j+1 >= len then incomplete i else begin
+          match fmt.[j+1] with
+          | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
+              ty_arrow Predef.type_nativeint (scan_format (j+2))
+          | c ->
+              raise(Error(loc, Bad_format(String.sub fmt i (j-i+2))))
+        end
+    | 'L' ->
+        if j+1 >= len then incomplete i else begin
+          match fmt.[j+1] with
+          | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
+              ty_arrow Predef.type_int64 (scan_format (j+2))
+          | c ->
+              raise(Error(loc, Bad_format(String.sub fmt i (j-i+2))))
+        end
+    | c ->
+        raise(Error(loc, Bad_format(String.sub fmt i (j-i+1))))
+  in
   newty
     (Tconstr(Predef.path_format, [scan_format 0; ty_input; ty_result],
              ref Mnil))
@@ -715,13 +768,29 @@ let rec type_approx env sexp =
   | Pexp_constraint (e, sty1, sty2) ->
       let ty = type_approx env e
       and ty1 = match sty1 with None -> newvar () | Some sty -> approx_type sty
-      and ty2 = match sty1 with None -> newvar () | Some sty -> approx_type sty
+      and ty2 = match sty2 with None -> newvar () | Some sty -> approx_type sty
       in begin
         try unify env ty ty1; unify env ty1 ty2; ty2
         with Unify trace ->
           raise(Error(sexp.pexp_loc, Expr_type_clash trace))
       end
   | _ -> newvar ()
+
+(* List labels in a function type, and whether return type is a variable *)
+let rec list_labels_aux env visited ls ty_fun =
+  let ty = expand_head env ty_fun in
+  if !Clflags.recursive_types && List.memq ty visited then
+    List.rev ls, false
+  else match ty.desc with
+    Tarrow (l, _, ty_res, _) ->
+      list_labels_aux env (ty::visited) (l::ls) ty_res
+  | _ ->
+      List.rev ls, ty.desc = Tvar
+
+let list_labels env ty = list_labels_aux env [] [] ty
+
+(* Hack to allow coercion of self. Will clean-up later. *)
+let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
 
 (* Typing of expressions *)
 
@@ -1070,12 +1139,19 @@ let rec do_type_exp ctx env sexp =
             let (ty', force) =
               Typetexp.transl_simple_type_delayed env sty'
             in
-            let ty = enlarge_type env ty' in
-            force ();
             let arg = do_type_exp ctx env sarg in
-            begin try Ctype.unify env arg.exp_type ty with Unify trace ->
-              raise(Error(sarg.pexp_loc,
-                    Coercion_failure(ty', full_expand env ty', trace)))
+            begin match arg.exp_desc, !self_coercion, (repr ty').desc with
+              Texp_ident(_, {val_kind=Val_self _}), (path,r) :: _,
+              Tconstr(path',_,_) when Path.same path path' ->
+                r := sexp.pexp_loc :: !r;
+                force ()
+            | _ ->
+                let ty = enlarge_type env ty' in
+                force ();
+                begin try Ctype.unify env arg.exp_type ty with Unify trace ->
+                  raise(Error(sarg.pexp_loc,
+                              Coercion_failure(ty', full_expand env ty', trace)))
+                end
             end;
             (arg, ty')
         | (Some sty, Some sty') ->
@@ -1362,13 +1438,9 @@ let rec do_type_exp ctx env sexp =
 (*< JOCAML *)
 
 and type_argument env sarg ty_expected =
-  let rec no_labels ty =
-    let ty = expand_head env ty in
-    match ty.desc with
-      Tvar -> false
-    | Tarrow ("",_, ty,_) when not !Clflags.classic -> no_labels ty
-    | Tarrow _ -> false
-    | _ -> true
+  let no_labels ty =
+    let ls, tvar = list_labels env ty in
+    not tvar && List.for_all ((=) "") ls
   in
   match expand_head env ty_expected, sarg with
   | _, {pexp_desc = Pexp_function(l,_,_)} when not (is_optional l) ->
@@ -1389,9 +1461,10 @@ and type_argument env sarg ty_expected =
         |  _ -> [], texp.exp_type, false
       in
       let args, ty_fun, simple_res = make_args [] texp.exp_type in
-      if not (simple_res || no_labels ty_res) then
-        type_expect env sarg ty_expected
-      else begin
+      if not (simple_res || no_labels ty_res) then begin
+        unify_exp env texp ty_expected;
+        texp
+      end else begin
       unify_exp env {texp with exp_type = ty_fun} ty_expected;
       if args = [] then texp else
       (* eta-expand to avoid side effects *)
@@ -1424,19 +1497,16 @@ and type_application env funct sargs =
       (fun ty_fun (l,ty,lv) -> newty2 lv (Tarrow(l,ty,ty_fun,Cok)))
       ty_fun omitted
   in
-  let rec has_label l ty_fun =
-    match (expand_head env ty_fun).desc with
-    | Tarrow (l', _, ty_res, _) ->
-        (l = l' || has_label l ty_res)
-    | Tvar -> true
-    | _ -> false
+  let has_label l ty_fun =
+    let ls, tvar = list_labels env ty_fun in
+    tvar || List.mem l ls
   in
   let ignored = ref [] in
   let rec type_unknown_args args omitted ty_fun = function
       [] ->
-        (List.rev_map
+        (List.map
            (function None, x -> None, x | Some f, x -> Some (f ()), x)
-           args,
+           (List.rev args),
          result_type omitted ty_fun)
     | (l1, sarg1) :: sargl ->
         let (ty1, ty2) =
@@ -1471,26 +1541,18 @@ and type_application env funct sargs =
         in
         type_unknown_args ((Some arg1, optional) :: args) omitted ty2 sargl
   in
-  let rec nonopt_labels ls ty_fun =
-    match (expand_head env ty_fun).desc with
-    | Tarrow (l, _, ty_res, _) ->
-        if is_optional l then nonopt_labels ls ty_res
-        else nonopt_labels (l::ls) ty_res
-    | Tvar -> None
-    | _    -> Some ls
-  in
   let ignore_labels =
     !Clflags.classic ||
-    match nonopt_labels [] funct.exp_type with
-    | Some labels ->
-        List.length labels = List.length sargs &&
-        List.for_all (fun (l,_) -> l = "") sargs &&
-        List.exists (fun l -> l <> "") labels &&
-        begin
-          Location.prerr_warning funct.exp_loc Warnings.Labels_omitted;
-          true
-        end
-    | None -> false
+    begin
+      let ls, tvar = list_labels env funct.exp_type in
+      not tvar &&
+      let labels = List.filter (fun l -> not (is_optional l)) ls in
+      List.length labels = List.length sargs &&
+      List.for_all (fun (l,_) -> l = "") sargs &&
+      List.exists (fun l -> l <> "") labels &&
+      (Location.prerr_warning funct.exp_loc Warnings.Labels_omitted;
+       true)
+    end
   in
   let rec type_args args omitted ty_fun ty_old sargs more_sargs =
     match expand_head env ty_fun with
@@ -1592,7 +1654,7 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
 (* Typing of an expression with an expected type.
    Some constructs are treated specially to provide better error messages. *)
 
-and type_expect env sexp ty_expected =
+and type_expect ?in_function env sexp ty_expected =
   match sexp.pexp_desc with
     Pexp_constant(Const_string s as cst) ->
       let exp =
@@ -1646,8 +1708,12 @@ and type_expect env sexp ty_expected =
                                 {pexp_loc = sexp.pexp_loc; pexp_desc =
                                  Pexp_let(Default, [spat, smatch], sbody)}])}
       in
-      type_expect env sfun ty_expected
+      type_expect ?in_function env sfun ty_expected
   | Pexp_function (l, _, caselist) ->
+      let (loc, ty_fun) =
+        match in_function with Some p -> p
+        | None -> (sexp.pexp_loc, ty_expected)
+      in
       let (ty_arg, ty_res) =
         try filter_arrow env ty_expected l
         with Unify _ ->
@@ -1655,7 +1721,8 @@ and type_expect env sexp ty_expected =
             {desc = Tarrow _} as ty ->
               raise(Error(sexp.pexp_loc, Abstract_wrong_label(l, ty)))
           | _ ->
-              raise(Error(sexp.pexp_loc, Too_many_arguments))
+              raise(Error(loc,
+                          Too_many_arguments (in_function <> None, ty_fun)))
       in
       if is_optional l then begin
         try unify env ty_arg (type_option(newvar()))
@@ -1665,12 +1732,11 @@ and type_expect env sexp ty_expected =
       let env_noconts = Env.remove_continuations env in
 (*< JOCAML *)      
       let cases, partial =
-        type_cases E env_noconts ty_arg ty_res (Some sexp.pexp_loc) caselist in
-      let rec all_labeled ty =
-        match (repr ty).desc with
-          Tarrow ("", _, _, _) | Tvar -> false
-        | Tarrow (l, _, ty, _) -> l.[0] <> '?' && all_labeled ty
-        | _ -> true
+        type_cases ~in_function:(loc,ty_fun) E env_noconts ty_arg ty_res
+          (Some sexp.pexp_loc) caselist in
+      let all_labeled ty =
+        let ls, tvar = list_labels env ty in
+        not (tvar || List.exists (fun l -> l = "" || l.[0] = '?') ls)
       in
       if is_optional l && all_labeled ty_res then
         Location.prerr_warning (fst (List.hd cases)).pat_loc
@@ -1700,7 +1766,7 @@ and type_statement env sexp =
 
 (* Typing of match cases *)
 (* Argument ty_res is unused when ctx is P *)
-and type_cases ctx env ty_arg ty_res partial_loc caselist =
+and type_cases ?in_function ctx env ty_arg ty_res partial_loc caselist =
   let ty_arg' = newvar () in
   let pat_env_list =
     List.map
@@ -1728,11 +1794,12 @@ and type_cases ctx env ty_arg ty_res partial_loc caselist =
   begin match pat_env_list with [] -> ()
   | (pat, _) :: _ -> unify_pat env pat ty_arg
   end;
+  let in_function = if List.length caselist = 1 then in_function else None in
   let cases = match ctx with
   | E ->    
     List.map2
       (fun (pat, ext_env) (_, sexp) ->        
-        let exp = type_expect ext_env sexp ty_res in
+        let exp = type_expect ?in_function ext_env sexp ty_res in
         (pat, exp))
       pat_env_list caselist
   | P ->
@@ -2089,8 +2156,17 @@ let report_error ppf = function
            (type_expansion ty) ty')
         (function ppf ->
            fprintf ppf "but is here used with type")
-  | Too_many_arguments ->
-      fprintf ppf "This function expects too many arguments"
+  | Too_many_arguments (in_function, ty) ->
+      reset_and_mark_loops ty;
+      if in_function then begin
+        fprintf ppf "This function expects too many arguments,@ ";
+        fprintf ppf "it should have type@ %a"
+          type_expr ty
+      end else begin
+        fprintf ppf "This expression should not be a function,@ ";
+        fprintf ppf "the expected type is@ %a"
+          type_expr ty
+      end
   | Abstract_wrong_label (l, ty) ->
       let label_mark = function
         | "" -> "but its first argument is not labeled"

@@ -6,7 +6,8 @@
 #                                                                       #
 #   Copyright 1999 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License.          #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../../LICENSE.   #
 #                                                                       #
 #########################################################################
 
@@ -16,7 +17,7 @@ include ../../config/Makefile
 
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../unix
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../unix
-MKLIB=../../tools/ocamlmklib
+MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 
 BYTECODE_C_OBJS=posix_b.o
 NATIVECODE_C_OBJS=posix_n.o
@@ -30,15 +31,17 @@ all: libthreads.a threads.cma
 allopt: libthreadsnat.a threads.cmxa
 
 libthreads.a: $(BYTECODE_C_OBJS)
-	$(MKLIB) -o threads $(BYTECODE_C_OBJS) $(PTHREAD_LINK)
+	$(MKLIB) -o threads $(BYTECODE_C_OBJS)
 
 posix_b.o: posix.c
 	$(BYTECC) -O -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
 	   -c posix.c
 	mv posix.o posix_b.o
 
+# Dynamic linking with -lpthread is risky on many platforms, so
+# do not create a shared object for libthreadsnat.
 libthreadsnat.a: $(NATIVECODE_C_OBJS)
-	$(MKLIB) -o threadsnat $(NATIVECODE_C_OBJS) $(PTHREAD_LINK)
+	$(AR) rc libthreadsnat.a $(NATIVECODE_C_OBJS)
 
 posix_n.o: posix.c
 	$(NATIVECC) -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -c posix.c
@@ -48,9 +51,10 @@ threads.cma: $(THREAD_OBJS)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o threads $(THREAD_OBJS) \
           -cclib -lunix $(PTHREAD_LINK)
 
+# See remark above: force static linking of libthreadsnat.a
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
-	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o threads -oc threadsnat \
-          $(THREAD_OBJS:.cmo=.cmx) -cclib -lunix $(PTHREAD_LINK)
+	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
+          -cclib -lthreadsnat -cclib -lunix -cclib "$(PTHREAD_LINK)"
 
 $(THREAD_OBJS:.cmo=.cmx): ../../ocamlopt
 
@@ -65,7 +69,7 @@ clean: partialclean
 	rm -f $(GENFILES)
 
 install:
-	if test -f libthreads.so; then cp libthreads.so $(LIBDIR)/libthreads.so; fi
+	if test -f dllthreads.so; then cp dllthreads.so $(LIBDIR)/dllthreads.so; fi
 	cp libthreads.a $(LIBDIR)/libthreads.a
 	cd $(LIBDIR); $(RANLIB) libthreads.a
 	if test -d $(LIBDIR)/threads; then :; else mkdir $(LIBDIR)/threads; fi
@@ -74,7 +78,6 @@ install:
 	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)
 
 installopt:
-	if test -f libthreadsnat.so; then cp libthreadsnat.so $(LIBDIR)/libthreadsnat.so; fi
 	cp libthreadsnat.a $(LIBDIR)/libthreadsnat.a
 	cd $(LIBDIR); $(RANLIB) libthreadsnat.a
 	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.a $(LIBDIR)/threads

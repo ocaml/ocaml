@@ -6,7 +6,8 @@
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License.         *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -22,7 +23,7 @@ let hash x = hash_param 10 100 x
    when buckets become too long. *)
 
 type ('a, 'b) t =
-  { mutable max_len: int;                     (* max length of a bucket *)
+  { mutable size: int;                        (* number of elements *)
     mutable data: ('a, 'b) bucketlist array } (* the buckets *)
 
 and ('a, 'b) bucketlist =
@@ -30,14 +31,18 @@ and ('a, 'b) bucketlist =
   | Cons of 'a * 'b * ('a, 'b) bucketlist
 
 let create initial_size =
-  let s = if initial_size < 1 then 1 else initial_size in
-  let s = if s > Sys.max_array_length then Sys.max_array_length else s in
-  { max_len = 3; data = Array.make s Empty }
+  let s = min (max 1 initial_size) Sys.max_array_length in
+  { size = 0; data = Array.make s Empty }
 
 let clear h =
   for i = 0 to Array.length h.data - 1 do
     h.data.(i) <- Empty
-  done
+  done;
+  h.size <- 0
+
+let copy h =
+  { size = h.size;
+    data = Array.copy h.data }
 
 let resize hashfun tbl =
   let odata = tbl.data in
@@ -55,27 +60,23 @@ let resize hashfun tbl =
       insert_bucket odata.(i)
     done;
     tbl.data <- ndata;
-  end;
-  tbl.max_len <- 2 * tbl.max_len
-
-let rec bucket_too_long n bucket =
-  if n < 0 then true else
-    match bucket with
-      Empty -> false
-    | Cons(_,_,rest) -> bucket_too_long (n - 1) rest
+  end
 
 let add h key info =
   let i = (hash key) mod (Array.length h.data) in
   let bucket = Cons(key, info, h.data.(i)) in
   h.data.(i) <- bucket;
-  if bucket_too_long h.max_len bucket then resize hash h
+  h.size <- succ h.size;
+  if h.size > Array.length h.data lsl 1 then resize hash h
 
 let remove h key =
   let rec remove_bucket = function
       Empty ->
         Empty
     | Cons(k, i, next) ->
-        if k = key then next else Cons(k, i, remove_bucket next) in
+        if k = key
+        then begin h.size <- pred h.size; next end
+        else Cons(k, i, remove_bucket next) in
   let i = (hash key) mod (Array.length h.data) in
   h.data.(i) <- remove_bucket h.data.(i)
 
@@ -120,7 +121,9 @@ let replace h key info =
   try
     h.data.(i) <- replace_bucket l
   with Not_found ->
-    h.data.(i) <- Cons(key, info, l)
+    h.data.(i) <- Cons(key, info, l);
+    h.size <- succ h.size;
+    if h.size > Array.length h.data lsl 1 then resize hash h
 
 let mem h key =
   let rec mem_in_bucket = function
@@ -170,6 +173,7 @@ module type S =
     type 'a t
     val create: int -> 'a t
     val clear: 'a t -> unit
+    val copy: 'a t -> 'a t
     val add: 'a t -> key -> 'a -> unit
     val remove: 'a t -> key -> unit
     val find: 'a t -> key -> 'a
@@ -187,12 +191,14 @@ module Make(H: HashedType): (S with type key = H.t) =
     type 'a t = 'a hashtbl
     let create = create
     let clear = clear
-    
+    let copy = copy
+
     let add h key info =
       let i = (H.hash key) mod (Array.length h.data) in
       let bucket = Cons(key, info, h.data.(i)) in
       h.data.(i) <- bucket;
-      if bucket_too_long h.max_len bucket then resize H.hash h
+      h.size <- succ h.size;
+      if h.size > Array.length h.data lsl 1 then resize H.hash h
 
     let remove h key =
       let rec remove_bucket = function
@@ -200,7 +206,7 @@ module Make(H: HashedType): (S with type key = H.t) =
             Empty
         | Cons(k, i, next) ->
             if H.equal k key
-            then next
+            then begin h.size <- pred h.size; next end
             else Cons(k, i, remove_bucket next) in
       let i = (H.hash key) mod (Array.length h.data) in
       h.data.(i) <- remove_bucket h.data.(i)
@@ -248,7 +254,9 @@ module Make(H: HashedType): (S with type key = H.t) =
       try
         h.data.(i) <- replace_bucket l
       with Not_found ->
-        h.data.(i) <- Cons(key, info, l)
+        h.data.(i) <- Cons(key, info, l);
+        h.size <- succ h.size;
+        if h.size > Array.length h.data lsl 1 then resize H.hash h
 
     let mem h key =
       let rec mem_in_bucket = function

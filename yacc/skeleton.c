@@ -38,7 +38,9 @@ char *define_tables[] =
   "    tablesize=yytablesize;",
   "    table=yytable;",
   "    check=yycheck;",
-  "    error_function=parse_error }",
+  "    error_function=parse_error;",
+  "    names_const=yynames_const;",
+  "    names_block=yynames_block }",
   0
 };
 

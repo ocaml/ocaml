@@ -6,7 +6,8 @@
 #                                                                       #
 #   Copyright 1999 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License.          #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../../LICENSE.   #
 #                                                                       #
 #########################################################################
 
@@ -20,7 +21,7 @@ CC=$(BYTECC)
 CFLAGS=-I../../byterun $(X11_INCLUDES) -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
-MKLIB=../../tools/ocamlmklib
+MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 
 OBJS=open.o draw.o fill.o color.o text.o \
   image.o make_img.o dump_img.o point_col.o sound.o events.o \
@@ -48,7 +49,7 @@ clean: partialclean
 	rm -f *.a *.so *.o
 
 install:
-	if test -f libgraphics.so; then cp libgraphics.so $(LIBDIR)/libgraphics.so; fi
+	if test -f dllgraphics.so; then cp dllgraphics.so $(LIBDIR)/dllgraphics.so; fi
 	cp libgraphics.a $(LIBDIR)/libgraphics.a
 	cd $(LIBDIR); $(RANLIB) libgraphics.a
 	cp graphics.cm[ia] graphicsX11.cmi graphics.mli graphicsX11.mli $(LIBDIR)

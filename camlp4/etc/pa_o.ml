@@ -18,7 +18,10 @@ open Pcaml;
 Pcaml.no_constructors_arity.val := True;
 
 do {
+  let odfa = Plexer.dollar_for_antiquotation.val in
+  Plexer.dollar_for_antiquotation.val := False;
   Grammar.Unsafe.reinit_gram gram (Plexer.make ());
+  Plexer.dollar_for_antiquotation.val := odfa;
   Grammar.Unsafe.clear_entry interf;
   Grammar.Unsafe.clear_entry implem;
   Grammar.Unsafe.clear_entry top_phrase;
@@ -36,6 +39,9 @@ do {
   Grammar.Unsafe.clear_entry class_sig_item;
   Grammar.Unsafe.clear_entry class_str_item
 };
+
+Pcaml.parse_interf.val := Grammar.Entry.parse interf;
+Pcaml.parse_implem.val := Grammar.Entry.parse implem;
 
 value o2b =
   fun
@@ -90,7 +96,7 @@ value is_operator =
       ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"];
     List.iter (fun x -> Hashtbl.add ct x True)
       ['!'; '&'; '*'; '+'; '-'; '/'; ':'; '<'; '='; '>'; '@'; '^'; '|'; '~';
-       '?'; '%'; '.'];
+       '?'; '%'; '.'; '$'];
     fun x ->
       try Hashtbl.find ht x with
       [ Not_found -> try Hashtbl.find ct x.[0] with _ -> False ]
@@ -105,11 +111,20 @@ value operator =
 *)
 
 value operator_rparen =
-  Grammar.Entry.of_parser gram "operator"
+  Grammar.Entry.of_parser gram "operator_rparen"
     (fun strm ->
        match Stream.npeek 2 strm with
        [ [("", s); ("", ")")] when is_operator s ->
            do { Stream.junk strm; Stream.junk strm; s }
+       | _ -> raise Stream.Failure ])
+;
+
+value lident_colon =
+  Grammar.Entry.of_parser gram "lident_colon"
+    (fun strm ->
+       match Stream.npeek 2 strm with
+       [ [("LIDENT", i); ("", ":")] ->
+           do { Stream.junk strm; Stream.junk strm; i }
        | _ -> raise Stream.Failure ])
 ;
 
@@ -128,7 +143,7 @@ value symbolchar =
 
 value prefixop =
   let list = ['!'; '?'; '~'] in
-  let excl = ["!="] in
+  let excl = ["!="; "??"] in
   Grammar.Entry.of_parser gram "prefixop"
     (parser
        [: `("", x)
@@ -233,13 +248,13 @@ value test_not_class_signature =
 ;
 
 value test_label_eq =
-  let rec test lev strm =
-    match stream_peek_nth lev strm with
-    [ Some (("UIDENT", _) | ("LIDENT", _) | ("", ".")) -> test (lev + 1) strm
-    | Some ("", "=") -> ()
-    | _ -> raise Stream.Failure ]
-  in
-  Grammar.Entry.of_parser gram "test_label_eq" (test 1)
+  Grammar.Entry.of_parser gram "test_label_eq"
+    (test 1 where rec test lev strm =
+       match stream_peek_nth lev strm with
+       [ Some (("UIDENT", _) | ("LIDENT", _) | ("", ".")) ->
+           test (lev + 1) strm
+       | Some ("", "=") -> ()
+       | _ -> raise Stream.Failure ])
 ;
 
 value constr_arity = ref [("Some", 1); ("Match_Failure", 1)];
@@ -289,6 +304,32 @@ value rec patt_lid =
       match patt_lid p1 with
       [ Some (i, pl) -> Some (i, [p2 :: pl])
       | None -> None ]
+  | _ -> None ]
+;
+
+value bigarray_get loc arr arg =
+  let coords =
+    match arg with
+    [ <:expr< ($list:el$) >> -> el
+    | _ -> [arg] ]
+  in
+  match coords with
+  [ [c1] -> <:expr< Bigarray.Array1.get $arr$ $c1$ >>
+  | [c1; c2] -> <:expr< Bigarray.Array2.get $arr$ $c1$ $c2$ >>
+  | [c1; c2; c3] -> <:expr< Bigarray.Array3.get $arr$ $c1$ $c2$ $c3$ >>
+  | coords -> <:expr< Bigarray.Genarray.get $arr$ [| $list:coords$ |] >> ]
+;
+
+value bigarray_set loc var newval =
+  match var with
+  [ <:expr< Bigarray.Array1.get $arr$ $c1$ >> ->
+      Some <:expr< Bigarray.Array1.set $arr$ $c1$ $newval$ >>
+  | <:expr< Bigarray.Array2.get $arr$ $c1$ $c2$ >> ->
+      Some <:expr< Bigarray.Array2.set $arr$ $c1$ $c2$ $newval$ >>
+  | <:expr< Bigarray.Array3.get $arr$ $c1$ $c2$ $c3$ >> ->
+      Some <:expr< Bigarray.Array3.set $arr$ $c1$ $c2$ $c3$ $newval$ >>
+  | <:expr< Bigarray.Genarray.get $arr$ [| $list:coords$ |] >> ->
+      Some <:expr< Bigarray.Genarray.set $arr$ [| $list:coords$ |] $newval$ >>
   | _ -> None ]
 ;
 
@@ -367,12 +408,12 @@ EXTEND
   ;
   mod_expr_ident:
     [ LEFTA
-      [ m1 = SELF; "."; m2 = SELF -> <:module_expr< $m1$ . $m2$ >> ]
-    | [ m = UIDENT -> <:module_expr< $uid:m$ >> ] ]
+      [ i = SELF; "."; j = SELF -> <:module_expr< $i$ . $j$ >> ]
+    | [ i = UIDENT -> <:module_expr< $uid:i$ >> ] ]
   ;
   str_item:
     [ "top"
-      [ "exception"; (c, tl) = constructor_declaration; b = rebind_exn ->
+      [ "exception"; (_, c, tl) = constructor_declaration; b = rebind_exn ->
           <:str_item< exception $c$ of $list:tl$ = $b$ >>
       | "external"; i = LIDENT; ":"; t = ctyp; "="; pd = LIST1 STRING ->
           <:str_item< external $i$ : $t$ = $list:pd$ >>
@@ -431,7 +472,7 @@ EXTEND
   ;
   sig_item:
     [ "top"
-      [ "exception"; (c, tl) = constructor_declaration ->
+      [ "exception"; (_, c, tl) = constructor_declaration ->
           <:sig_item< exception $c$ of $list:tl$ >>
       | "external"; i = LIDENT; ":"; t = ctyp; "="; pd = LIST1 STRING ->
           <:sig_item< external $i$ : $t$ = $list:pd$ >>
@@ -468,7 +509,7 @@ EXTEND
   expr:
     [ "top" RIGHTA
       [ e1 = SELF; ";"; e2 = SELF ->
-         <:expr< do { $list:[e1 :: get_seq e2]$ } >>
+          <:expr< do { $list:[e1 :: get_seq e2]$ } >>
       | e1 = SELF; ";" -> e1 ]
     | "expr1"
       [ "let"; o = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
@@ -481,13 +522,15 @@ EXTEND
           <:expr< fun [ $list:l$ ] >>
       | "fun"; p = patt LEVEL "simple"; e = fun_def ->
           <:expr< fun [$p$ -> $e$] >>
-      | "match"; x = SELF; "with"; OPT "|"; l = LIST1 match_case SEP "|" ->
-          <:expr< match $x$ with [ $list:l$ ] >>
-      | "try"; x = SELF; "with"; OPT "|"; l = LIST1 match_case SEP "|" ->
-          <:expr< try $x$ with [ $list:l$ ] >>
+      | "match"; e = SELF; "with"; OPT "|"; l = LIST1 match_case SEP "|" ->
+          <:expr< match $e$ with [ $list:l$ ] >>
+      | "try"; e = SELF; "with"; OPT "|"; l = LIST1 match_case SEP "|" ->
+          <:expr< try $e$ with [ $list:l$ ] >>
       | "if"; e1 = SELF; "then"; e2 = expr LEVEL "expr1";
-        e3 = [ "else"; e = expr LEVEL "expr1" -> e | -> <:expr< () >> ] ->
+        "else"; e3 = expr LEVEL "expr1" ->
           <:expr< if $e1$ then $e2$ else $e3$ >>
+      | "if"; e1 = SELF; "then"; e2 = expr LEVEL "expr1" ->
+          <:expr< if $e1$ then $e2$ else () >>
       | "for"; i = LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
         "do"; e = SELF; "done" ->
           <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $list:get_seq e$ } >>
@@ -498,7 +541,10 @@ EXTEND
     | ":=" NONA
       [ e1 = SELF; ":="; e2 = expr LEVEL "expr1" ->
           <:expr< $e1$.val := $e2$ >>
-      | e1 = SELF; "<-"; e2 = expr LEVEL "expr1" -> <:expr< $e1$ := $e2$ >> ]
+      | e1 = SELF; "<-"; e2 = expr LEVEL "expr1" ->
+          match bigarray_set loc e1 e2 with
+          [ Some e -> e
+          | None -> <:expr< $e1$ := $e2$ >> ] ]
     | "||" RIGHTA
       [ e1 = SELF; "or"; e2 = SELF -> <:expr< $lid:"or"$ $e1$ $e2$ >>
       | e1 = SELF; "||"; e2 = SELF -> <:expr< $e1$ || $e2$ >> ]
@@ -514,6 +560,7 @@ EXTEND
       | e1 = SELF; "<>"; e2 = SELF -> <:expr< $e1$ <> $e2$ >>
       | e1 = SELF; "=="; e2 = SELF -> <:expr< $e1$ == $e2$ >>
       | e1 = SELF; "!="; e2 = SELF -> <:expr< $e1$ != $e2$ >>
+      | e1 = SELF; "$"; e2 = SELF -> <:expr< $lid:"\$"$ $e1$ $e2$ >>
       | e1 = SELF; op = infixop0; e2 = SELF -> <:expr< $lid:op$ $e1$ $e2$ >> ]
     | "^" RIGHTA
       [ e1 = SELF; "^"; e2 = SELF -> <:expr< $e1$ ^ $e2$ >>
@@ -555,7 +602,7 @@ EXTEND
               [ <:expr< ( $list:el$ ) >> ->
                   List.fold_left (fun e1 e2 -> <:expr< $e1$ $e2$ >>) e1 el
               | _ -> <:expr< $e1$ $e2$ >> ] ]
-      | "assert"; e = expr LEVEL "simple" ->
+      | "assert"; e = SELF ->
           let f = <:expr< $str:input_file.val$ >> in
           let bp = <:expr< $int:string_of_int (fst loc)$ >> in
           let ep = <:expr< $int:string_of_int (snd loc)$ >> in
@@ -567,15 +614,18 @@ EXTEND
               else <:expr< if $e$ then () else $raiser$ >> ]
       | "lazy"; e = SELF ->
           <:expr< Pervasives.ref (Lazy.Delayed (fun () -> $e$)) >> ]
-    | "simple" LEFTA
+    | "." LEFTA
       [ e1 = SELF; "."; "("; e2 = SELF; ")" -> <:expr< $e1$ .( $e2$ ) >>
       | e1 = SELF; "."; "["; e2 = SELF; "]" -> <:expr< $e1$ .[ $e2$ ] >>
-      | e1 = SELF; "."; e2 = SELF -> <:expr< $e1$ . $e2$ >>
-      | "!"; e = SELF -> <:expr< $e$ . val>>
-      | f = [ op = "~-" -> op | op = "~-." -> op | op = prefixop -> op ];
-        e = SELF ->
-          <:expr< $lid:f$ $e$ >>
-      | s = INT -> <:expr< $int:s$ >>
+      | e1 = SELF; "."; "{"; e2 = SELF; "}" -> bigarray_get loc e1 e2
+      | e1 = SELF; "."; e2 = SELF -> <:expr< $e1$ . $e2$ >> ]
+    | "~-" NONA
+      [ "!"; e = SELF -> <:expr< $e$ . val>>
+      | "~-"; e = SELF -> <:expr< ~- $e$ >>
+      | "~-."; e = SELF -> <:expr< ~-. $e$ >>
+      | f = prefixop; e = SELF -> <:expr< $lid:f$ $e$ >> ]
+    | "simple" LEFTA
+      [ s = INT -> <:expr< $int:s$ >>
       | s = FLOAT -> <:expr< $flo:s$ >>
       | s = STRING -> <:expr< $str:s$ >>
       | c = CHAR -> <:expr< $chr:c$ >>
@@ -590,7 +640,7 @@ EXTEND
       | "[|"; el = expr1_semi_list; "|]" -> <:expr< [| $list:el$ |] >>
       | "{"; test_label_eq; lel = lbl_expr_list; "}" ->
           <:expr< { $list:lel$ } >>
-      | "{"; e = expr LEVEL "simple"; "with"; lel = lbl_expr_list; "}" ->
+      | "{"; e = expr LEVEL "."; "with"; lel = lbl_expr_list; "}" ->
           <:expr< { ($e$) with $list:lel$ } >>
       | "("; ")" -> <:expr< () >>
       | "("; op = operator_rparen -> <:expr< $lid:op$ >>
@@ -660,15 +710,15 @@ EXTEND
     [ RIGHTA
       [ i = LIDENT -> <:expr< $lid:i$ >>
       | i = UIDENT -> <:expr< $uid:i$ >>
-      | m = UIDENT; "."; i = SELF ->
+      | i = UIDENT; "."; j = SELF ->
           let rec loop m =
             fun
             [ <:expr< $x$ . $y$ >> -> loop <:expr< $m$ . $x$ >> y
             | e -> <:expr< $m$ . $e$ >> ]
           in
-          loop <:expr< $uid:m$ >> i
-      | m = UIDENT; "."; "("; i = operator_rparen ->
-          <:expr< $uid:m$ . $lid:i$ >> ] ]
+          loop <:expr< $uid:i$ >> j
+      | i = UIDENT; "."; "("; j = operator_rparen ->
+          <:expr< $uid:i$ . $lid:j$ >> ] ]
   ;
   (* Patterns *)
   patt:
@@ -712,6 +762,8 @@ EXTEND
       | s = FLOAT -> <:patt< $flo:s$ >>
       | s = STRING -> <:patt< $str:s$ >>
       | s = CHAR -> <:patt< $chr:s$ >>
+      | UIDENT "True" -> <:patt< $uid:" True"$ >>
+      | UIDENT "False" -> <:patt< $uid:" False"$ >>
       | s = "false" -> <:patt< False >>
       | s = "true" -> <:patt< True >>
       | "["; "]" -> <:patt< [] >>
@@ -801,8 +853,9 @@ EXTEND
       | "-"; "'"; i = ident -> (i, (False, True)) ] ]
   ;
   constructor_declaration:
-    [ [ ci = UIDENT; "of"; cal = LIST1 ctyp LEVEL "ctyp1" SEP "*" -> (ci, cal)
-      | ci = UIDENT -> (ci, []) ] ]
+    [ [ ci = UIDENT; "of"; cal = LIST1 ctyp LEVEL "ctyp1" SEP "*" ->
+          (loc, ci, cal)
+      | ci = UIDENT -> (loc, ci, []) ] ]
   ;
   label_declarations:
     [ [ ld = label_declaration; ";"; ldl = SELF -> [ld :: ldl]
@@ -810,15 +863,15 @@ EXTEND
       | ld = label_declaration -> [ld] ] ]
   ;
   label_declaration:
-    [ [ i = LIDENT; ":"; t = ctyp -> (i, False, t)
-      | "mutable"; i = LIDENT; ":"; t = ctyp -> (i, True, t) ] ]
+    [ [ i = LIDENT; ":"; t = ctyp -> (loc, i, False, t)
+      | "mutable"; i = LIDENT; ":"; t = ctyp -> (loc, i, True, t) ] ]
   ;
   (* Core types *)
   ctyp:
     [ [ t1 = SELF; "as"; "'"; i = ident -> <:ctyp< $t1$ as '$i$ >> ]
     | "arrow" RIGHTA
       [ t1 = SELF; "->"; t2 = SELF -> <:ctyp< $t1$ -> $t2$ >> ]
-    | [ t = SELF; "*"; tl = LIST1 ctyp LEVEL "ctyp1" SEP "*" ->
+    | [ t = SELF; "*"; tl = LIST1 (ctyp LEVEL "ctyp1") SEP "*" ->
           <:ctyp< ( $list:[t :: tl]$ ) >> ]
     | "ctyp1"
       [ t1 = SELF; t2 = SELF -> <:ctyp< $t2$ $t1$ >> ]
@@ -844,7 +897,7 @@ EXTEND
     [ RIGHTA
       [ i = UIDENT -> [i]
       | i = LIDENT -> [i]
-      | m = UIDENT; "."; i = SELF -> [m :: i] ] ]
+      | i = UIDENT; "."; j = SELF -> [i :: j] ] ]
   ;
   (* Miscellaneous *)
   direction_flag:
@@ -916,7 +969,7 @@ EXTEND
       | "let"; rf = OPT "rec"; lb = LIST1 let_binding SEP "and"; "in";
         ce = SELF ->
           <:class_expr< let $rec:o2b rf$ $list:lb$ in $ce$ >> ]
-    | "apply" NONA
+    | "apply" LEFTA
       [ ce = SELF; e = expr LEVEL "label" ->
           <:class_expr< $ce$ $e$ >> ]
     | "simple"
@@ -962,9 +1015,9 @@ EXTEND
     [ [ mf = OPT "mutable"; l = label; "="; e = expr -> (l, o2b mf, e)
       | mf = OPT "mutable"; l = label; ":"; t = ctyp; "="; e = expr ->
           (l, o2b mf, <:expr< ($e$ : $t$) >>)
-      | mf = OPT "mutable"; l = label; ":"; t1 = ctyp; ":>"; t2 = ctyp; "=";
+      | mf = OPT "mutable"; l = label; ":"; t = ctyp; ":>"; t2 = ctyp; "=";
         e = expr ->
-          (l, o2b mf, <:expr< ($e$ : $t1$ :> $t2$) >>)
+          (l, o2b mf, <:expr< ($e$ : $t$ :> $t2$) >>)
       | mf = OPT "mutable"; l = label; ":>"; t = ctyp; "="; e = expr ->
           (l, o2b mf, <:expr< ($e$ :> $t$) >>) ] ]
   ;
@@ -1027,12 +1080,12 @@ EXTEND
     [ LEFTA
       [ "new"; i = class_longident -> <:expr< new $list:i$ >> ] ]
   ;
-  expr: LEVEL "simple"
+  expr: LEVEL "."
     [ [ e = SELF; "#"; lab = label -> <:expr< $e$ # $lab$ >> ] ]
   ;
   expr: LEVEL "simple"
-    [ [ "("; e = SELF; ":"; t1 = ctyp; ":>"; t2 = ctyp; ")" ->
-          <:expr< ($e$ : $t1$ :> $t2$) >>
+    [ [ "("; e = SELF; ":"; t = ctyp; ":>"; t2 = ctyp; ")" ->
+          <:expr< ($e$ : $t$ :> $t2$) >>
       | "("; e = SELF; ":>"; t = ctyp; ")" -> <:expr< ($e$ :> $t$) >>
       | "{<"; ">}" -> <:expr< {< >} >>
       | "{<"; fel = field_expr_list; ">}" -> <:expr< {< $list:fel$ >} >> ] ]
@@ -1075,7 +1128,7 @@ EXTEND
   GLOBAL: ctyp expr patt fun_def fun_binding class_type class_fun_binding;
   ctyp: AFTER "arrow"
     [ NONA
-      [ i = LIDENT; ":"; t = SELF -> <:ctyp< ~ $i$ : $t$ >>
+      [ i = lident_colon; t = SELF -> <:ctyp< ~ $i$ : $t$ >>
       | i = QUESTIONIDENTCOLON; t = SELF -> <:ctyp< ? $i$ : $t$ >> ] ]
   ;
   ctyp: LEVEL "simple"
@@ -1126,6 +1179,8 @@ EXTEND
            <:patt< ~ $i$ : $p$ >>
       | i = TILDEIDENT ->
            <:patt< ~ $i$ >>
+      | "~"; "("; i = LIDENT; ")" ->
+           <:patt< ~ $i$ >>
       | "~"; "("; i = LIDENT; ":"; t = ctyp; ")" ->
            <:patt< ~ $i$ : ($lid:i$ : $t$) >>
       | i = QUESTIONIDENTCOLON; j = LIDENT ->
@@ -1148,7 +1203,7 @@ EXTEND
           <:patt< ? $i$ : ( $lid:i$ : $t$ ) >> ] ]
   ;
   class_type:
-    [ [ i = LIDENT; ":"; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
+    [ [ i = lident_colon; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
           <:class_type< [ ~ $i$ : $t$ ] -> $ct$ >>
       | i = QUESTIONIDENTCOLON; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
           <:class_type< [ ? $i$ : $t$ ] -> $ct$ >> ] ]

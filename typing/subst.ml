@@ -66,6 +66,10 @@ let rec typexp s ty =
       ty
   | Tsubst ty ->
       ty
+(* cannot do it, since it would omit subsitution
+  | Tvariant row when not (static_row row) ->
+      ty
+*)
   | _ ->
     let desc = ty.desc in
     save_desc ty desc;
@@ -73,14 +77,6 @@ let rec typexp s ty =
     ty.desc <- Tsubst ty';
     ty'.desc <-
       begin match desc with
-        Tvar | Tlink _ ->
-          fatal_error "Subst.typexp"
-      | Tarrow(l, t1, t2, c) ->
-          let c =
-            if commu_repr c = Cok then Cok else Clink (ref Cunknown) in
-          Tarrow(l, typexp s t1, typexp s t2, c)
-      | Ttuple tl ->
-          Ttuple(List.map (typexp s) tl)
       | Tconstr(p, tl, abbrev) ->
           Tconstr(type_path s p, List.map (typexp s) tl, ref Mnil)
       | Tobject (t1, name) ->
@@ -99,32 +95,18 @@ let rec typexp s ty =
               ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
               Tlink ty2
           | _ ->
-              (* We create a new copy *)
-              let bound = ref [] in
-              let fields =
-                List.map
-                  (fun (l,fi) -> l,
-                    match row_field_repr fi with
-                      Rpresent (Some ty) -> Rpresent(Some (typexp s ty))
-                    | Reither(c, l, m, _) ->
-                        let l = List.map (typexp s) l in
-                        bound := l @ !bound;
-                        Reither(c, l, m, ref None)
-                    | fi -> fi)
-                  row.row_fields
-              and name =
-                may_map
-                  (fun (p,l) -> type_path s p, List.map (typexp s) l)
-                  row.row_name in
-              let var =
-                Tvariant { row_fields = fields; row_more = newgenvar();
-                           row_bound = !bound;
-                           row_closed = row.row_closed; row_name = name }
-              in
-              (* Remember it for other occurences *)
+              let static = static_row row in
+              (* Register new type first for recursion *)
               save_desc more more.desc;
               more.desc <- ty.desc;
-              var
+              let more' = if static then newgenvar () else more in
+              (* Return a new copy *)
+              let row = copy_row (typexp s) row true more' in
+              match row.row_name with
+                Some (p, tl) ->
+                  Tvariant {row with row_name = Some (type_path s p, tl)}
+              | None ->
+                  Tvariant row
           end
       | Tfield(label, kind, t1, t2) ->
           begin match field_kind_repr kind with
@@ -135,10 +117,7 @@ let rec typexp s ty =
           | Fvar _ (* {contents = None} *) as k ->
               Tfield(label, k, typexp s t1, typexp s t2)
           end
-      | Tnil ->
-          Tnil
-      | Tsubst _ ->
-          assert false
+      | _ -> copy_type_desc (typexp s) desc
       end;
     ty'
 

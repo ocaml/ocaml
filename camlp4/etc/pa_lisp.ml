@@ -585,7 +585,7 @@
  constructor_declaration_se
  (lambda_match
   ((Sexpr loc (list (Satom _ Auid ci) :: sel))
-   (, ci (List.map ctyp_se sel)))
+   (, loc ci (List.map ctyp_se sel)))
   (se
    (error se "constructor_declaration"))))
 
@@ -628,6 +628,9 @@
  (Grammar.Unsafe.clear_entry class_expr)
  (Grammar.Unsafe.clear_entry class_sig_item)
  (Grammar.Unsafe.clear_entry class_str_item))
+
+(:= Pcaml.parse_interf.val (Grammar.Entry.parse interf))
+(:= Pcaml.parse_implem.val (Grammar.Entry.parse implem))
 
 (value sexpr (Grammar.Entry.create gram "sexpr"))
 (value atom (Grammar.Entry.create gram "atom"))

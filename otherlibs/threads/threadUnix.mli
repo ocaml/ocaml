@@ -6,21 +6,22 @@
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License.         *)
+(*  under the terms of the GNU Library General Public License, with    *)
+(*  the special exception on linking described in file ../../LICENSE.  *)
 (*                                                                     *)
 (***********************************************************************)
 
 (* $Id$ *)
 
-(* Module [ThreadUnix]: thread-compatible system calls *)
+(** Thread-compatible system calls.
 
-(* This module is deprecated: its functionality has been merged back into
-   the [Unix] module.  Threaded programs can now call the functions
-   from module [Unix] directly, and still get the correct behavior
+   @deprecated The functionality of this module has been merged back into
+   the {!Unix} module.  Threaded programs can now call the functions
+   from module {!Unix} directly, and still get the correct behavior
    (block the calling thread, if required, but do not block all threads
    in the process).  *)
 
-(*** Process handling *)
+(** {2 Process handling} *)
 
 val execv : string -> string array -> unit
 val execve : string -> string array -> string array -> unit
@@ -29,61 +30,60 @@ val wait : unit -> int * Unix.process_status
 val waitpid : Unix.wait_flag list -> int -> int * Unix.process_status
 val system : string -> Unix.process_status
 
-(*** Basic input/output *)
+(** {2 Basic input/output} *)
 
 val read : Unix.file_descr -> string -> int -> int -> int
 val write : Unix.file_descr -> string -> int -> int -> int
 
-(*** Input/output with timeout *)
+(** {2 Input/output with timeout} *)
 
-val timed_read :
-      Unix.file_descr ->
-      string -> int -> int -> float -> int
-val timed_write :
-      Unix.file_descr ->
-      string -> int -> int -> float -> int
-      (* Behave as [read] and [write], except that
-         [Unix_error(ETIMEDOUT,_,_)] is raised if no data is
-         available for reading or ready for writing after [d] seconds.
-         The delay [d] is given in the fifth argument, in seconds. *)
+val timed_read : Unix.file_descr -> string -> int -> int -> float -> int
+(** See {!ThreadUnix.timed_write}. *)
 
-(*** Polling *)
+val timed_write : Unix.file_descr -> string -> int -> int -> float -> int
+(** Behave as {!ThreadUnix.read} and {!ThreadUnix.write}, except that
+   [Unix_error(ETIMEDOUT,_,_)] is raised if no data is
+   available for reading or ready for writing after [d] seconds.
+   The delay [d] is given in the fifth argument, in seconds. *)
+
+(** {2 Polling} *)
 
 val select :
-  Unix.file_descr list -> Unix.file_descr list ->
-  Unix.file_descr list -> float ->
-        Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
+  Unix.file_descr list -> Unix.file_descr list -> Unix.file_descr list ->
+    float ->
+    Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
 
-(*** Pipes and redirections *)
+(** {2 Pipes and redirections} *)
 
 val pipe : unit -> Unix.file_descr * Unix.file_descr
-val open_process_in: string -> in_channel
-val open_process_out: string -> out_channel
-val open_process: string -> in_channel * out_channel
-val open_process_full:
-      string -> string array -> in_channel * out_channel * in_channel
+val open_process_in : string -> in_channel
+val open_process_out : string -> out_channel
+val open_process : string -> in_channel * out_channel
+val open_process_full :
+  string -> string array -> in_channel * out_channel * in_channel
 
-(*** Time *)
+(** {2 Time} *)
 
 val sleep : int -> unit
 
-(*** Sockets *)
+(** {2 Sockets} *)
 
-val socket : Unix.socket_domain ->
-             Unix.socket_type -> int -> Unix.file_descr
-val socketpair : Unix.socket_domain -> Unix.socket_type ->
-                 int -> Unix.file_descr * Unix.file_descr
+val socket : Unix.socket_domain -> Unix.socket_type -> int -> Unix.file_descr
+val socketpair :
+  Unix.socket_domain -> Unix.socket_type -> int ->
+    Unix.file_descr * Unix.file_descr
 val accept : Unix.file_descr -> Unix.file_descr * Unix.sockaddr
 val connect : Unix.file_descr -> Unix.sockaddr -> unit
-val recv : Unix.file_descr -> string ->
-           int -> int -> Unix.msg_flag list -> int
-val recvfrom : Unix.file_descr -> string -> int -> int ->
-               Unix.msg_flag list -> int * Unix.sockaddr
-val send : Unix.file_descr -> string -> int -> int ->
-           Unix.msg_flag list -> int
-val sendto : Unix.file_descr -> string -> int -> int ->
-             Unix.msg_flag list -> Unix.sockaddr -> int
+val recv :
+  Unix.file_descr -> string -> int -> int -> Unix.msg_flag list -> int
+val recvfrom :
+  Unix.file_descr -> string -> int -> int -> Unix.msg_flag list ->
+    int * Unix.sockaddr
+val send :
+  Unix.file_descr -> string -> int -> int -> Unix.msg_flag list -> int
+val sendto :
+  Unix.file_descr -> string -> int -> int -> Unix.msg_flag list ->
+    Unix.sockaddr -> int
 val open_connection : Unix.sockaddr -> in_channel * out_channel
 val establish_server :
-      (in_channel -> out_channel -> unit) ->
-      Unix.sockaddr -> unit
+  (in_channel -> out_channel -> unit) -> Unix.sockaddr -> unit

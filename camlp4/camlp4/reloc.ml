@@ -37,10 +37,11 @@ value rec ctyp floc sh =
     | TyOlb loc x1 x2 -> TyOlb (floc loc) x1 (self x2)
     | TyQuo loc x1 -> TyQuo (floc loc) x1
     | TyRec loc x1 ->
-        TyRec (floc loc) (List.map (fun (x1, x2, x3) -> (x1, x2, self x3)) x1)
+        TyRec (floc loc)
+          (List.map (fun (loc, x1, x2, x3) -> (floc loc, x1, x2, self x3)) x1)
     | TySum loc x1 ->
         TySum (floc loc)
-          (List.map (fun (x1, x2) -> (x1, List.map self x2)) x1)
+          (List.map (fun (loc, x1, x2) -> (floc loc, x1, List.map self x2)) x1)
     | TyTup loc x1 -> TyTup (floc loc) (List.map self x1)
     | TyUid loc x1 -> TyUid (floc loc) x1
     | TyVrn loc x1 x2 ->

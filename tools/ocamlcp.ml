@@ -39,6 +39,7 @@ module Options = Main_args.Make_options (struct
   let _cclib s = option_with_arg "-cclib" s
   let _ccopt s = option_with_arg "-ccopt" s
   let _custom = option "-custom"
+  let _dllib = option_with_arg "-dllib"
   let _dllpath = option_with_arg "-dllpath"
   let _g = option "-g"
   let _i = option "-i"

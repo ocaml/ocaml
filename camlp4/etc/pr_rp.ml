@@ -94,6 +94,12 @@ value rec is_free v =
   | _ -> raise NotImpl ]
 ;
 
+value gensym =
+  let cnt = ref 0 in
+  fun () ->
+    do { incr cnt; "pr_rp_symb_" ^ string_of_int cnt.val }
+;
+
 value free_var_in_expr c e =
   let rec loop_alpha v =
     let x = String.make 1 v in
@@ -110,7 +116,7 @@ value free_var_in_expr c e =
     [ Some v -> v
     | None -> loop_count 1 ]
   with
-  [ NotImpl -> "\\%a" ]
+  [ NotImpl -> gensym () ]
 ;
 
 value parserify =
@@ -432,6 +438,7 @@ value pmatch e dg k =
   let (me, e) =
     match e with
     [ <:expr< let (strm__ : Stream.t _) = $me$ in $e$ >> -> (me, e)
+    | <:expr< match $_$ strm__ with [ $list:_$ ] >> -> (<:expr< strm__ >>, e)
     | _ -> failwith "Pr_rp.pmatch" ]
   in
   let (bp, e) =
@@ -462,6 +469,8 @@ let lev = find_pr_level "top" pr_expr.pr_levels in
 lev.pr_rules :=
   extfun lev.pr_rules with
   [ <:expr< let (strm__ : Stream.t _) = $_$ in $_$ >> as e ->
+      fun curr next _ k -> [: `pmatch e "" k :]
+  | <:expr< match $_$ strm__ with [ $list:_$ ] >> as e ->
       fun curr next _ k -> [: `pmatch e "" k :]
   | <:expr< fun strm__ -> $x$ >> ->
       fun curr next _ k -> [: `parser_body x "" k :]

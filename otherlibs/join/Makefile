@@ -19,7 +19,7 @@ COMPILER=../../ocamlc
 OPTCOMPILER=../../ocamlopt
 CAMLC=$(RUNTIME) $(COMPILER) $(INCLUDES)
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER) $(INCLUDES)
-MKLIB=../../tools/ocamlmklib
+MKLIB=$(RUNTIME) ../../tools/ocamlmklib
 CC=$(BYTECC) -g
 CFLAGS=  -I../../byterun -O $(BYTECCCOMPOPTS)
 

@@ -66,9 +66,16 @@ let rec commu_repr = function
     Clink r when !r <> Cunknown -> commu_repr !r
   | c -> c
 
-let rec row_field_repr = function
-    Reither(_, _, _, {contents = Some fi}) -> row_field_repr fi
+let rec row_field_repr_aux tl = function
+    Reither(_, tl', _, {contents = Some fi}) ->
+      row_field_repr_aux (tl@tl') fi
+  | Reither(c, tl', m, r) ->
+      Reither(c, tl@tl', m, r)
+  | Rpresent (Some _) when tl <> [] ->
+      Rpresent (Some (List.hd tl))
   | fi -> fi
+
+let row_field_repr fi = row_field_repr_aux [] fi
 
 let rec row_repr row =
   match (repr row.row_more).desc with
@@ -133,6 +140,48 @@ let iter_type_expr f ty =
   | Tnil                -> ()
   | Tlink ty            -> f ty
   | Tsubst ty           -> f ty
+
+let copy_row f row keep more =
+  let fields = List.map
+      (fun (l, fi) -> l,
+        match row_field_repr fi with
+        | Rpresent(Some ty) -> Rpresent(Some(f ty))
+        | Reither(c, tl, m, e) ->
+            let e = if keep then e else ref None in
+            Reither(c, List.map f tl, m, e)
+        | _ -> fi)
+      row.row_fields in
+  let name =
+    match row.row_name with None -> None
+    | Some (path, tl) -> Some (path, List.map f tl) in
+  { row_fields = fields; row_more = more;
+    row_bound = List.map f row.row_bound;
+    row_closed = row.row_closed; row_name = name; }
+
+let rec copy_kind = function
+    Fvar{contents = Some k} -> copy_kind k
+  | Fvar _   -> Fvar (ref None)
+  | Fpresent -> Fpresent
+  | Fabsent  -> assert false
+
+let copy_commu c =
+  if commu_repr c = Cok then Cok else Clink (ref Cunknown)
+
+let rec copy_type_desc f = function
+    Tvar                -> Tvar
+  | Tarrow (p, ty1, ty2, c)-> Tarrow (p, f ty1, f ty2, copy_commu c)
+  | Ttuple l            -> Ttuple (List.map f l)
+  | Tconstr (p, l, _)   -> Tconstr (p, List.map f l, ref Mnil)
+  | Tobject(ty, {contents = Some (p, tl)})
+                        -> Tobject (f ty, ref (Some(p, List.map f tl)))
+  | Tobject (ty, _)     -> Tobject (f ty, ref None)
+  | Tvariant row        ->
+      let row = row_repr row in
+      Tvariant (copy_row f row false (f row.row_more))
+  | Tfield (p, k, ty1, ty2) -> Tfield (p, copy_kind k, f ty1, f ty2)
+  | Tnil                -> Tnil
+  | Tlink ty            -> copy_type_desc f ty.desc
+  | Tsubst ty           -> assert false
 
 let saved_desc = ref []
   (* Saved association of generic nodes with their description. *)

@@ -6,7 +6,8 @@
 #                                                                       #
 #   Copyright 1999 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License.          #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../../LICENSE.   #
 #                                                                       #
 #########################################################################
 
@@ -21,7 +22,7 @@ CC=$(BYTECC)
 CFLAGS=-O -I./bignum/h -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -w s
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -w s
-MKLIB=../../tools/ocamlmklib
+MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 
 CAMLOBJS=int_misc.cmo string_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \
   ratio.cmo num.cmo arith_status.cmo
@@ -51,7 +52,7 @@ $(BIGNUM_OBJS):
 $(CAMLOBJS:.cmo=.cmx): ../../ocamlopt
 
 install:
-	if test -f libnums.so; then cp libnums.so $(LIBDIR); fi
+	if test -f dllnums.so; then cp dllnums.so $(LIBDIR)/dllnums.so; fi
 	cp libnums.a $(LIBDIR)/libnums.a
 	cd $(LIBDIR); $(RANLIB) libnums.a
 	cp nums.cma $(CMIFILES) $(CMIFILES:.cmi=.mli) $(LIBDIR)

@@ -6,7 +6,8 @@
 #                                                                       #
 #   Copyright 1999 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License.          #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../../LICENSE.   #
 #                                                                       #
 #########################################################################
 
@@ -24,7 +25,7 @@ OBJS=dynlink.cmo
 COMPILEROBJS=misc.cmo config.cmo tbl.cmo clflags.cmo \
   ident.cmo path.cmo \
   types.cmo btype.cmo predef.cmo runtimedef.cmo \
-  bytesections.cmo dllpath.cmo dll.cmo symtable.cmo opcodes.cmo meta.cmo
+  bytesections.cmo dll.cmo symtable.cmo opcodes.cmo meta.cmo
 
 all: dynlink.cma extract_crc
 

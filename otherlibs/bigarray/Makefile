@@ -6,7 +6,8 @@
 #                                                                       #
 #   Copyright 1999 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License.          #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../../LICENSE.   #
 #                                                                       #
 #########################################################################
 
@@ -18,7 +19,7 @@ CC=$(BYTECC)
 CFLAGS=-I../../byterun -g -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../unix
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../unix
-MKLIB=../../tools/ocamlmklib
+MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 
 C_OBJS=bigarray_stubs.o mmap_unix.o
 
@@ -39,7 +40,7 @@ bigarray.cmxa: $(CAML_OBJS:.cmo=.cmx)
           $(CAML_OBJS:.cmo=.cmx)
 
 install:
-	if test -f libbigarray.so; then cp libbigarray.so $(LIBDIR); fi
+	if test -f dllbigarray.so; then cp dllbigarray.so $(LIBDIR)/dllbigarray.so; fi
 	cp bigarray.cmi bigarray.mli libbigarray.a bigarray.cma $(LIBDIR)
 	cd $(LIBDIR); $(RANLIB) libbigarray.a
 	cp bigarray.h $(LIBDIR)/caml/bigarray.h
@@ -52,7 +53,7 @@ partialclean:
 	rm -f *.cm* 
 
 clean: partialclean
-	rm -f libbigarray.* *.o bigarray.a
+	rm -f libbigarray.* *.o bigarray.a *.so
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 

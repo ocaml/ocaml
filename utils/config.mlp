@@ -12,9 +12,12 @@
 
 (* $Id$ *)
 
-let version = "3.03 ALPHA"
+let version = "3.04"
 
 let standard_library =
+  try
+    Sys.getenv "OCAMLLIB"
+  with Not_found ->
   try
     Sys.getenv "CAMLLIB"
   with Not_found ->
@@ -24,20 +27,18 @@ let standard_runtime = "%%BYTERUN%%"
 let bytecomp_c_compiler = "%%BYTECC%%"
 let bytecomp_c_linker = "%%BYTELINK%%"
 let bytecomp_c_libraries = "%%BYTECCLIBS%%"
-let bytecomp_c_rpath = "%%BYTECCRPATH%%"
 let native_c_compiler = "%%NATIVECC%%"
 let native_c_linker = "%%NATIVELINK%%"
 let native_c_libraries = "%%NATIVECCLIBS%%"
-let native_c_rpath = "%%NATIVECCRPATH%%"
 let native_partial_linker = "%%PARTIALLD%%"
 let ranlib = "%%RANLIBCMD%%"
 
-let exec_magic_number = "Caml1999X006"
+let exec_magic_number = "Caml1999X007"
 and cmi_magic_number = "Caml1999I008"
 and cmo_magic_number = "Caml1999O004"
-and cma_magic_number = "Caml1999A005"
+and cma_magic_number = "Caml1999A006"
 and cmx_magic_number = "Caml1999Y006"
-and cmxa_magic_number = "Caml1999Z007"
+and cmxa_magic_number = "Caml1999Z008"
 and ast_impl_magic_number = "Caml1999M008"
 and ast_intf_magic_number = "Caml1999N007"
 
