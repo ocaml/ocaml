@@ -234,7 +234,8 @@ let rec emit_instr i dslot =
             {loc = Reg rs; typ = (Int | Addr)}, {loc = Reg rd} ->
               `	mov	{emit_reg src}, {emit_reg dst}\n`
           | {loc = Reg rs; typ = Float}, {loc = Reg rd; typ = Float} ->
-              `	fmovd	{emit_reg src}, {emit_reg dst}\n`
+              `	fmovs	{emit_reg src}, {emit_reg dst}\n`;
+              `	fmovs	{emit_reg(next_in_pair src)}, {emit_reg(next_in_pair dst)}\n`
           | {loc = Reg rs; typ = Float}, {loc = Reg rd; typ = (Int | Addr)} ->
               (* This happens when calling C functions and passing a float arg
                  in %o0...%o5 *)
@@ -522,7 +523,8 @@ let is_one_instr i =
   match i.desc with
     Lop op ->
       begin match op with
-        Imove | Ispill | Ireload -> i.arg.(0).typ = i.res.(0).typ
+        Imove | Ispill | Ireload ->
+          i.arg.(0).typ <> Float && i.res.(0).typ <> Float
       | Iconst_int n -> is_native_immediate n
       | Istackoffset _ -> true
       | Iload(_, Iindexed n) -> i.res.(0).typ <> Float & is_immediate n
