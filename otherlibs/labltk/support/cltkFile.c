@@ -38,52 +38,22 @@ void FileProc(ClientData clientdata, int mask)
 
 #ifndef _WIN32
 
-/* Unix system */
+/* Under Unix, we use file handlers */
 
-#if TCL_MAJOR_VERSION >= 8
-#define tcl_filehandle(fd) Int_val(fd)
-#define Tcl_File int
-#define Tcl_FreeFile(fd)
-#else
+/* Map Unix.file_descr values to Tcl file handles (for tcl 7)
+   or Unix file descriptors (for tcl 8). */
+
+#if (TCL_MAJOR_VERSION < 8)
 static Tcl_File tcl_filehandle(value fd)
 {
   return Tcl_GetFile((ClientData)Long_val(fd), TCL_UNIX_FD);
 }
-#endif
-
 #else
-
-/* Windows */
-
-#define Handle_val(v) (*((HANDLE *)(v)))
-
-static Tcl_File tcl_filehandle(value fd)
-{
-  HANDLE h = Handle_val(fd);
-  int type;
-  int optval, optsize;
-
-  optsize = sizeof(optval);
-  if (getsockopt((SOCKET) h, SOL_SOCKET, SO_TYPE, &optval, &optsize) == 0)
-    type = TCL_WIN_SOCKET;
-  else
-    switch (GetFileType(h)) {
-    case FILE_TYPE_CHAR:
-      type = TCL_WIN_CONSOLE;
-    case FILE_TYPE_PIPE:
-      type = TCL_WIN_PIPE;
-    case FILE_TYPE_DISK:
-    default:                    /* use WIN_FILE for unknown handles */
-      type = TCL_WIN_FILE;
-    }
-  return Tcl_GetFile(h, type);
-}
-
+#define tcl_filehandle(fd) Int_val(fd)
+#define Tcl_File int
 #endif
 
-value camltk_add_file_input(fd, cbid)    /* ML */
-     value fd;
-     value cbid;
+value camltk_add_file_input(value fd, value cbid)    /* ML */
 {
   CheckInit();
   Tcl_CreateFileHandler(tcl_filehandle(fd), TCL_READABLE, 
@@ -98,18 +68,17 @@ value camltk_add_file_input(fd, cbid)    /* ML */
  * in rem_file (it doesn't close the fd anyway). For fds for which we
  * repeatedly add/rem, this will cause some overhead.
  */
-value camltk_rem_file_input(fd) /* ML */
-     value fd;
+value camltk_rem_file_input(value fd, value cbid) /* ML */
 {
   Tcl_File fh = tcl_filehandle(fd);
   Tcl_DeleteFileHandler(fh);
+#if (TCL_MAJOR_VERSION < 8)
   Tcl_FreeFile(fh);
+#endif
   return Val_unit;
 }
 
-value camltk_add_file_output(fd, cbid)    /* ML */
-     value fd;
-     value cbid;
+value camltk_add_file_output(value fd, value cbid)    /* ML */
 {
   CheckInit();
   Tcl_CreateFileHandler(tcl_filehandle(fd), TCL_WRITABLE, 
@@ -117,12 +86,67 @@ value camltk_add_file_output(fd, cbid)    /* ML */
   return Val_unit;
 }
 
-value camltk_rem_file_output(fd) /* ML */
-     value fd;
+value camltk_rem_file_output(value fd, value cbid) /* ML */
 {
   Tcl_File fh = tcl_filehandle(fd);
   Tcl_DeleteFileHandler(fh);
+#if (TCL_MAJOR_VERSION < 8)
   Tcl_FreeFile(fh);
+#endif
   return Val_unit;
 }
 
+#else
+
+/* Under Win32, we go through the generic channel abstraction */
+
+/* Map Unix.file_descr values to Tcl channels */
+
+#define Handle_val(v) (*((HANDLE *)(v)))
+
+static Tcl_Channel tcl_channel(value fd, int flags)
+{
+  HANDLE h = Handle_val(fd);
+  int optval, optsize;
+
+  optsize = sizeof(optval);
+  if (getsockopt((SOCKET) h, SOL_SOCKET, SO_TYPE,
+                 (char *)&optval, &optsize) == 0)
+    return Tcl_MakeTcpClientChannel((ClientData) h);
+  else
+    return Tcl_MakeFileChannel((ClientData) h, flags);
+}
+
+value camltk_add_file_input(value fd, value cbid)    /* ML */
+{
+  CheckInit();
+  Tcl_CreateChannelHandler(tcl_channel(fd, TCL_READABLE),
+                           TCL_READABLE,
+                           FileProc, (ClientData) (Int_val(cbid)));
+  return Val_unit;
+}
+
+value camltk_rem_file_input(value fd, value cbid) /* ML */
+{
+  Tcl_DeleteChannelHandler(tcl_channel(fd, TCL_READABLE),
+                           FileProc, (ClientData) (Int_val(cbid)));
+  return Val_unit;
+}
+
+value camltk_add_file_output(value fd, value cbid)    /* ML */
+{
+  CheckInit();
+  Tcl_CreateChannelHandler(tcl_channel(fd, TCL_WRITABLE),
+                           TCL_WRITABLE,
+                           FileProc, (ClientData) (Int_val(cbid)));
+  return Val_unit;
+}
+
+value camltk_rem_file_output(value fd, value cbid) /* ML */
+{
+  Tcl_DeleteChannelHandler(tcl_channel(fd, TCL_WRITABLE),
+                           FileProc, (ClientData) (Int_val(cbid)));
+  return Val_unit;
+}
+
+#endif

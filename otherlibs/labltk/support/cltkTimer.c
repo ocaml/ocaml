@@ -34,14 +34,14 @@ value camltk_add_timer(milli, cbid) /* ML */
 {
   CheckInit();
   /* look at tkEvent.c , Tk_Token is an int */ 
-  return (value)Tcl_CreateTimerHandler(Int_val(milli), TimerProc, 
-                                       (ClientData) (Long_val(cbid)));
+  return (Val_int(Tcl_CreateTimerHandler(Int_val(milli), TimerProc, 
+                                       (ClientData) (Int_val(cbid)))));
 }
 
 value camltk_rem_timer(token) /* ML */
      value token;
 {
-  Tcl_DeleteTimerHandler((Tcl_TimerToken) token);
+  Tcl_DeleteTimerHandler((Tcl_TimerToken) Int_val(token));
   return Val_unit;
 }
 

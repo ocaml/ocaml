@@ -190,7 +190,7 @@ int CamlInvokeCmd(dummy
 
 
 /* Now the real Tk stuff */
-static Tk_Window mainWindow;
+Tk_Window cltk_mainWindow;
 
 #define RCNAME ".camltkrc"
 #define CAMLCB "camlcb"

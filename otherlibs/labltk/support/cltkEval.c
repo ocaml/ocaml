@@ -54,7 +54,8 @@ value copy_string_list(argc, argv)
 
 /*
  * Calling Tcl from Caml
- *   this version works on an arbitrary Tcl command
+ *   this version works on an arbitrary Tcl command,
+ *   and does parsing and substitution
  */
 value camltk_tcl_eval(str) /* ML */
 value str; 
@@ -206,7 +207,29 @@ value v;
     /* Eval */
     Tcl_ResetResult(cltclinterp);
     if (Tcl_GetCommandInfo(cltclinterp,argv[0],&info)) { /* command found */
+#if (TCL_MAJOR_VERSION >= 8)
+      /* info.proc might be a NULL pointer
+       * We should probably attempt an Obj invocation, but the following quick
+       * hack is easier.
+       */
+      if (info.proc == NULL) {
+        Tcl_DString buf;
+        char *string;
+        Tcl_DStringInit(&buf);
+        Tcl_DStringAppend(&buf, argv[0], -1);
+        for (i=1; i<size; i++) {
+          Tcl_DStringAppend(&buf, " ", -1);
+          Tcl_DStringAppend(&buf, argv[i], -1);
+        }
+        // fprintf(stderr,"80 compat: %s\n", argv[0]);
+        result = Tcl_Eval(cltclinterp, Tcl_DStringValue(&buf));
+        Tcl_DStringFree(&buf);
+      }
+      else
+        result = (*info.proc)(info.clientData,cltclinterp,size,argv);
+#else
       result = (*info.proc)(info.clientData,cltclinterp,size,argv);
+#endif
     } else {/* implement the autoload stuff */
       if (Tcl_GetCommandInfo(cltclinterp,"unknown",&info)) { /* unknown found */
         for (i = size; i >= 0; i--)
