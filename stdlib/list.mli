@@ -184,7 +184,7 @@ val split : ('a * 'b) list -> 'a list * 'b list
         *)
 val combine : 'a list -> 'b list -> ('a * 'b) list
         (* Transform a pair of lists into a list of pairs:
-           [combine ([a1; ...; an], [b1; ...; bn])] is
+           [combine [a1; ...; an] [b1; ...; bn]] is
               [[(a1,b1); ...; (an,bn)]].
            Raise [Invalid_argument] if the two lists
            have different lengths.  Not tail-recursive. *)
