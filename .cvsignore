@@ -1,4 +1,4 @@
-camlc
+cslc
 expunge
-camltop
-camlopt
+csltop
+cslopt

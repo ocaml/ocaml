@@ -1,2 +1,7 @@
-camldep
-camldep.ml
+csldep
+csldep.ml
+cslprof
+opnames.ml
+dumpobj
+dumpapprox
+objinfo
