@@ -218,16 +218,19 @@ external (-) : int -> int -> int = "%subint"
 external ( * ) : int -> int -> int = "%mulint"
 
 (** Integer division.
-   Raise [Division_by_zero] if the second argument is 0. *)
+   Raise [Division_by_zero] if the second argument is 0.
+   Integer division rounds the real quotient of its arguments towards zero.
+   More precisely, if [x >= 0] and [y > 0], [x / y] is the greatest integer
+   less than or equal to the real quotient of [x] by [y].  Moreover,
+   [(-x) / y = x / (-y) = -(x / y)].  *)
 external (/) : int -> int -> int = "%divint"
 
-(** Integer remainder.  If [x >= 0] and [y > 0], the result
+(** Integer remainder.  If [y] is not zero, the result
    of [x mod y] satisfies the following properties:
-   [0 <= x mod y < y] and
-   [x = (x / y) * y + x mod y].
+   [x = (x / y) * y + x mod y] and
+   [abs(x mod y) < abs(y)].
    If [y = 0], [x mod y] raises [Division_by_zero].
-   If [x < 0] or [y < 0], the result of [x mod y] is
-   not specified and depends on the platform. *)
+   Notice that [x mod y] is negative if [x < 0]. *)
 external (mod) : int -> int -> int = "%modint"
 
 (** Return the absolute value of the argument. *)

@@ -366,6 +366,18 @@ if $int64_supported; then
   esac
 fi
 
+# Check semantics of division and modulus
+
+sh ./runtest divmod.c
+case $? in
+  0) echo "Native division and modulus have round-towards-zero semantics, will use them."
+     echo "#undef NONSTANDARD_DIV_MOD" >> m.h;;
+  1) echo "Native division and modulus do not have round-towards-zero semantics, will use software emulation."
+     echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
+  *) echo "Something went wrong while checking native division and modulus, please report it."
+     echo "#define NONSTANDARD_DIV_MOD" >> m.h;;
+esac
+
 # Shared library support
 
 shared_libraries_supported=false

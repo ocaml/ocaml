@@ -71,3 +71,10 @@
    supports word-aligned 64-bit integers.  Leave undefined if
    64-bit integers are not supported. */
 
+#undef NONSTANDARD_DIV_MOD
+
+/* Leave NONSTANDARD_DIV_MOD undefined if the C operators / and % implement
+   round-towards-zero semantics, as specified by ISO C 9x and implemented
+   by most contemporary processors.  Otherwise, or if you don't know,
+   define NONSTANDARD_DIV_MOD: this will select a slower but correct
+   software emulation of division and modulus. */
