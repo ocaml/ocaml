@@ -350,6 +350,7 @@ extern void open_error (char *filename);
 extern void output (void);
 extern void over_unionized (char *u_cptr);
 extern void prec_redeclared (void);
+extern void polymorphic_entry_point(char *s);
 extern void reader (void);
 extern void reflexive_transitive_closure (unsigned int *R, int n);
 extern void reprec_warning (char *s);

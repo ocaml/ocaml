@@ -302,3 +302,12 @@ void entry_without_type(char *s)
             myname, s);
     done(1);
 }
+
+void polymorphic_entry_point(char *s)
+{
+    fprintf(stderr,
+            "%s: e - the start symbol %s has a polymorphic type\n",
+            myname, s);
+    done(1);
+}
+

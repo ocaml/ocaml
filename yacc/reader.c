@@ -1658,6 +1658,24 @@ void pack_symbols(void)
     FREE(v);
 }
 
+static unsigned char caml_ident_start[32] =
+"\000\000\000\000\000\000\000\000\376\377\377\207\376\377\377\007\000\000\000\000\000\000\000\000\377\377\177\377\377\377\177\377";
+static unsigned char caml_ident_body[32] =
+"\000\000\000\000\200\000\377\003\376\377\377\207\376\377\377\007\000\000\000\000\000\000\000\000\377\377\177\377\377\377\177\377";
+
+#define In_bitmap(bm,c) (bm[(unsigned char)(c) >> 3] & (1 << ((c) & 7)))
+
+static int is_polymorphic(char * s)
+{
+  while (*s != 0) {
+    char c = *s++;
+    if (c == '\'') return 1;
+    if (In_bitmap(caml_ident_start, c)) {
+      while (In_bitmap(caml_ident_body, *s)) s++;
+    }
+  }
+  return 0;
+}
 
 void make_goal(void)
 {
@@ -1682,6 +1700,8 @@ void make_goal(void)
       pitem[nitems++] = bp;
       if (bp->tag == NULL)
         entry_without_type(bp->name);
+      if (is_polymorphic(bp->tag))
+        polymorphic_entry_point(bp->name);
       fprintf(entry_file,
               "let %s (lexfun : Lexing.lexbuf -> token) (lexbuf : Lexing.lexbuf) =\n   (yyparse yytables %d lexfun lexbuf : %s)\n",
               bp->name, bp->entry, bp->tag);
