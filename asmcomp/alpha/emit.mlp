@@ -30,7 +30,7 @@ open Emitaux
 let instr_copy i next =
   { desc = i.desc; next = next; arg = i.arg; res = i.res; live = i.live }
 
-let insert_load_gp i =
+let insert_load_gp f =
 
   let labels_needing_gp = ref LabelSet.empty in
   let fixpoint_reached = ref false in
@@ -98,7 +98,7 @@ let insert_load_gp i =
 
   while not !fixpoint_reached do
     fixpoint_reached := true;
-    needs_gp i
+    needs_gp f.fun_body
   done;
 
   (* Insert Ireloadgp instructions after calls where needed *)
@@ -120,7 +120,9 @@ let insert_load_gp i =
       (new_instr, instr_needs_gp needs_next i.desc)
     end in
 
-  insert_reload_gp i
+  { fun_body = insert_reload_gp f.fun_body;
+    fun_name = f.fun_name;
+    fun_fast = f.fun_fast }
 
 (* Second pass: code generation proper *)
 
@@ -632,7 +634,7 @@ let emit_instr i =
           `	br	{emit_label jumptbl.(i)}\n`
         done;
         `{emit_label lbl_jump}:	s4addq	{emit_reg i.arg.(0)}, $25, $25\n`;
-        `	jmp	($25)\n`
+        `	jmp	($25), {emit_label jumptbl.(0)}\n`
     | Lsetuptrap lbl ->
         `	br	$25, {emit_label lbl}\n`
     | Lpushtrap ->
@@ -658,8 +660,7 @@ let rec emit_all i =
 
 (* Emission of a function declaration *)
 
-let fundecl fundecl =
-  let (body, needs_gp) = insert_load_gp fundecl.fun_body in
+let emit_fundecl (fundecl, needs_gp) =
   function_name := fundecl.fun_name;
   fastcode_flag := fundecl.fun_fast;
   stack_offset := 0;
@@ -692,13 +693,16 @@ let fundecl fundecl =
   `	.prologue {emit_int(if needs_gp then 1 else 0)}\n`;
   tailrec_entry_point := new_label();
   `{emit_label !tailrec_entry_point}:\n`;
-  emit_all body;
+  emit_all fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   if !range_check_trap > 0 then begin
     `{emit_label !range_check_trap}:\n`;
     `	jsr	array_bound_error\n`
   end;
   `	.end	{emit_symbol fundecl.fun_name}\n`
+
+let fundecl f =
+  emit_fundecl (insert_load_gp f)
 
 (* Emission of data *)
 
@@ -707,7 +711,7 @@ let emit_item = function
       `	.globl	{emit_symbol s}\n`;
       `{emit_symbol s}:\n`
   | Cdefine_label lbl ->
-      `{emit_label (10000 + lbl)}:\n`
+      `{emit_label (100000 + lbl)}:\n`
   | Cint8 n ->
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
@@ -719,7 +723,7 @@ let emit_item = function
   | Csymbol_address s ->
       `	.quad	{emit_symbol s}\n`
   | Clabel_address lbl ->
-      `	.quad	{emit_label (10000 + lbl)}\n`
+      `	.quad	{emit_label (100000 + lbl)}\n`
   | Cstring s ->
       emit_string_directive "	.ascii	" s
   | Cskip n ->
