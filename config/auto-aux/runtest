@@ -1,6 +1,0 @@
-#!/bin/sh
-if test "$verbose" = yes; then
-echo "runtest: $cc -o tst $* $cclibs" >&2
-fi
-$cc -o tst $* $cclibs || exit 100
-exec ./tst
