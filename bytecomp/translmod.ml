@@ -355,15 +355,23 @@ let toploop_ident = Ident.create_persistent "Toploop"
 let toploop_getvalue_pos = 0 (* position of getvalue in module Toploop *)
 let toploop_setvalue_pos = 1 (* position of setvalue in module Toploop *)
 
+let aliased_idents = Hashtbl.create 17
+
+let set_toplevel_name = Hashtbl.add aliased_idents
+
+let toplevel_name id =
+  try Hashtbl.find aliased_idents id
+  with Not_found -> Ident.name id
+
 let toploop_getvalue id =
   Lapply(Lprim(Pfield toploop_getvalue_pos,
                  [Lprim(Pgetglobal toploop_ident, [])]),
-         [Lconst(Const_base(Const_string (Ident.unique_name id)))])
+         [Lconst(Const_base(Const_string (toplevel_name id)))])
 
 let toploop_setvalue id lam =
   Lapply(Lprim(Pfield toploop_setvalue_pos,
                  [Lprim(Pgetglobal toploop_ident, [])]),
-         [Lconst(Const_base(Const_string (Ident.unique_name id))); lam])
+         [Lconst(Const_base(Const_string (toplevel_name id))); lam])
 
 let toploop_setvalue_id id = toploop_setvalue id (Lvar id)
 
@@ -395,6 +403,9 @@ let transl_toplevel_item = function
       lambda_unit
   | Tstr_class cl_list ->
       let ids = List.map (fun (i, _, _, _) -> i) cl_list in
+      List.iter
+        (fun id -> set_toplevel_name id (Ident.name id ^ "(c)"))
+        ids;
       Lletrec(List.map
                 (fun (id, arity, meths, cl) ->
                    (id, transl_class ids id arity meths cl))
