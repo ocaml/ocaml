@@ -23,4 +23,5 @@
 #define ARCH_INT64_TYPE __int64
 #define ARCH_UINT64_TYPE unsigned __int64
 #define ARCH_INT64_PRINTF_FORMAT "I64"
+#undef NONSTANDARD_DIV_MOD
 
