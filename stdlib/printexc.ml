@@ -21,6 +21,8 @@ let prerr_loc file first_char last_char msg =
 let print_exn = function
     Out_of_memory ->
       prerr_string "Out of memory\n"
+  | Stack_overflow ->
+      prerr_string "Stack overflow\n"
   | Match_failure(file, first_char, last_char) ->
       prerr_loc file first_char last_char "Pattern matching failed";
   | Assert_failure(file, first_char, last_char) ->

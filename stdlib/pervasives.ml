@@ -21,7 +21,7 @@ let failwith s = raise(Failure s)
 let invalid_arg s = raise(Invalid_argument s)
 
 exception Exit
-exception Assert_failure of string * int * int
+exception Assert_failure of (string * int * int)
 
 (* Comparisons *)
 

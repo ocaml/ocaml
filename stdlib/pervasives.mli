@@ -53,12 +53,12 @@ type 'a option = None | Some of 'a
 
 external raise : exn -> 'a = "%raise"
         (* Raise the given exception value *)
-(*- exception Match_failure of string * int * int *)
+(*- exception Match_failure of (string * int * int) *)
         (* Exception raised when none of the cases of a pattern-matching
            apply. The arguments are the location of the pattern-matching
            in the source code (file name, position of first character,
            position of last character). *)
-exception Assert_failure of string * int * int
+exception Assert_failure of (string * int * int)
         (* Exception raised when an assertion fails.  The arguments are
            the location of the pattern-matching in the source code
            (file name, position of first character, position of last
@@ -75,6 +75,10 @@ exception Assert_failure of string * int * int
 (*- exception Out_of_memory *)
         (* Exception raised by the garbage collector
            when there is insufficient memory to complete the computation. *)
+(*- exception Stack_overflow *)
+        (* Exception raised by the bytecode interpreter when the evaluation
+           stack reaches its maximal size. This often indicates infinite
+           or excessively deep recursion in the user's program. *)
 (*- exception Sys_error of string *)
         (* Exception raised by the input/output functions to report
            an operating system error. *)
