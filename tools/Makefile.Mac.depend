@@ -10,8 +10,12 @@ dumpobj.cmxÄ ::parsing:asttypes.cmi ::utils:config.cmx ¶
     ::bytecomp:opcodes.cmx opnames.cmx ::utils:tbl.cmx 
 objinfo.cmoÄ ::utils:config.cmi ::bytecomp:emitcode.cmi 
 objinfo.cmxÄ ::utils:config.cmx ::bytecomp:emitcode.cmx 
-ocamldep.cmoÄ ::utils:misc.cmi 
-ocamldep.cmxÄ ::utils:misc.cmx 
+ocamldep.cmoÄ ::parsing:lexer.cmi ::parsing:location.cmi ¶
+    ::parsing:longident.cmi ::utils:misc.cmi ::parsing:parse.cmi ¶
+    ::parsing:parsetree.cmi ::parsing:syntaxerr.cmi 
+ocamldep.cmxÄ ::parsing:lexer.cmx ::parsing:location.cmx ¶
+    ::parsing:longident.cmx ::utils:misc.cmx ::parsing:parse.cmx ¶
+    ::parsing:parsetree.cmi ::parsing:syntaxerr.cmx 
 ocamlprof.cmoÄ ::utils:clflags.cmo ::utils:config.cmi ::parsing:lexer.cmi ¶
     ::parsing:location.cmi ::utils:misc.cmi ::parsing:parse.cmi ¶
     ::parsing:parsetree.cmi ::parsing:syntaxerr.cmi 

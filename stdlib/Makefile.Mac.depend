@@ -10,8 +10,8 @@ char.cmoÄ char.cmi
 char.cmxÄ char.cmi 
 digest.cmoÄ string.cmi digest.cmi 
 digest.cmxÄ string.cmx digest.cmi 
-filename.cmoÄ string.cmi sys.cmi filename.cmi 
-filename.cmxÄ string.cmx sys.cmx filename.cmi 
+filename.cmoÄ pervasives.cmi string.cmi sys.cmi filename.cmi 
+filename.cmxÄ pervasives.cmx string.cmx sys.cmx filename.cmi 
 format.cmoÄ obj.cmi string.cmi format.cmi 
 format.cmxÄ obj.cmx string.cmx format.cmi 
 gc.cmoÄ printf.cmi gc.cmi 
@@ -46,8 +46,8 @@ printf.cmoÄ list.cmi obj.cmi string.cmi printf.cmi
 printf.cmxÄ list.cmx obj.cmx string.cmx printf.cmi 
 queue.cmoÄ queue.cmi 
 queue.cmxÄ queue.cmi 
-random.cmoÄ array.cmi char.cmi digest.cmi random.cmi 
-random.cmxÄ array.cmx char.cmx digest.cmx random.cmi 
+random.cmoÄ array.cmi char.cmi digest.cmi string.cmi random.cmi 
+random.cmxÄ array.cmx char.cmx digest.cmx string.cmx random.cmi 
 set.cmoÄ set.cmi 
 set.cmxÄ set.cmi 
 sort.cmoÄ sort.cmi 

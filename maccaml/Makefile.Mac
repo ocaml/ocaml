@@ -8,7 +8,7 @@ LinkOptions = -model far -compact -pad 0 -state nouse -br 68k -msg nodup
 SysLibs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
           "{clibraries}StdCLib.far.o" "{libraries}MathLib.far.o" ¶
           "{libraries}Interface.o"
-CamlrunLibs = ::byterun:libcamlrun.o
+CamlrunLibs = ::byterun:libcamlrun.o ::otherlibs:num:libnums.o
 WELibs = :WASTE-1.2:WASTELib.o
 Libs = {camlrunlibs} {welibs} {syslibs}
 
@@ -19,7 +19,7 @@ PPCSysLibs = "{sharedlibraries}MathLib" "{ppclibraries}PPCCRuntime.o" ¶
              "{sharedlibraries}StdCLib" ¶
              "{ppclibraries}StdCRuntime.o" "{sharedlibraries}InterfaceLib" ¶
              "{sharedlibraries}DragLib"
-PPCCamlrunLibs = ::byterun:libcamlrun.x
+PPCCamlrunLibs = ::byterun:libcamlrun.x ::otherlibs:num:libnums.x
 PPCWELibs = :WASTE-1.2:WASTELib.x
 PPCLibs = {ppccamlrunlibs} {ppcwelibs} {ppcsyslibs}
 
@@ -45,8 +45,8 @@ PPCOBJS = aboutbox.c.x appleevents.c.x clipboard.c.x ¶
 all Ä appli
     set status 0
 
-primitives Ä ::byterun:primitives graphprims
-    catenate ::byterun:primitives graphprims >primitives
+primitives Ä ::byterun:primitives graphprims numprims
+    catenate ::byterun:primitives graphprims numprims >primitives
 
 prims.c Ä primitives
     echo '#include "mlvalues.h"' > prims.c
@@ -67,9 +67,10 @@ OCaml.PPC Ä {PPCOBJS}
     rename -y OCaml.PPC.xcoff "Objective Caml.xcoff"  # XXX
 
 OCaml.bytecode Ä primitives ::toplevellib.cma ::toplevel:topmain.cmo ¶
-                 ::otherlibs:graph:graphics.cma 
+                 ::otherlibs:graph:graphics.cma ::otherlibs:num:nums.cma
     ::byterun:ocamlrun ::ocamlc -I ::stdlib: -linkall -use-prims primitives ¶
-       ::toplevellib.cma ::otherlibs:graph:graphics.cma ::toplevel:topmain.cmo ¶
+       ::toplevellib.cma ::otherlibs:graph:graphics.cma ¶
+       ::otherlibs:num:nums.cma ::toplevel:topmain.cmo ¶
        -o OCaml.bytecode
     mergefragment -c -t Caml OCaml.bytecode
 

@@ -9,30 +9,26 @@ all Ä ocamldep
 
 # The dependency generator
 
+CAMLDEP_IMPORTS = misc.cmo config.cmo clflags.cmo terminfo.cmo ¶
+   linenum.cmo warnings.cmo location.cmo longident.cmo pstream.cmo ¶
+   syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
+
 CAMLDEP = ocamldep.cmo
 
 ocamldep Ä {CAMLDEP}
-    {CAMLC} {LINKFLAGS} -o ocamldep misc.cmo {CAMLDEP}
+    {CAMLC} {LINKFLAGS} -o ocamldep {CAMLDEP_IMPORTS} {CAMLDEP}
 
 clean ÄÄ
     delete -i ocamldep
 
-ocamldep.ml Ä ocamldep.mll
-    {CAMLLEX} ocamldep.mll
-
-clean ÄÄ
-    delete -i ocamldep.ml
-
 install ÄÄ
     duplicate -y ocamldep "{BINDIR}ocamldep"
-
-beforedepend ÄÄ ocamldep
 
 # The profiler  (not available on the Mac for the moment)
 #
 #CSLPROF = ocamlprof.cmo
 #CSLPROF_IMPORTS = misc.cmo config.cmo clflags.cmo terminfo.cmo ¶
-#  linenum.cmo location.cmo longident.cmo pstream.cmo ¶
+#  linenum.cmo warnings.cmo location.cmo longident.cmo pstream.cmo ¶
 #  syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
 #
 #ocamlprof Ä {CSLPROF} profiling.cmo

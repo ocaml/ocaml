@@ -3,8 +3,8 @@
 # Compilation options
 C = sc
 COptions = -model far -i :bignum:h:,:::byterun:
-CAMLC = :::boot:ocamlrun :::boot:ocamlc -I :::stdlib:
-CAMLOPT = :::boot:ocamlrun :::ocamlopt: -I :::stdlib:
+CAMLC = :::boot:ocamlrun :::boot:ocamlc -I :::stdlib: -w s
+CAMLOPT = :::boot:ocamlrun :::ocamlopt: -I :::stdlib: -w s
 
 PPCC = mrc
 PPCCOptions = -i :bignum:h:,:::byterun: -w 35
