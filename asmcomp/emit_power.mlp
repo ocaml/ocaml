@@ -51,10 +51,10 @@ let frame_size () =
     (if !contains_calls then 4 else 0) in (* The return address *)
   Misc.align size 8
 
-let slot_offset loc class =
+let slot_offset loc cls =
   match loc with
     Local n ->
-      if class = 0
+      if cls = 0
       then 24 + !stack_offset + num_stack_slots.(1) * 8 + n * 4
       else 24 + !stack_offset + n * 8
   | Incoming n -> frame_size() + n
@@ -179,9 +179,9 @@ let label_constant table constant =
     Hashtbl.add table constant lbl;
     lbl
 
-let symbol_constants = (Hashtbl.new 17 : (string, int) Hashtbl.t)
-let float_constants = (Hashtbl.new 11 : (string, int) Hashtbl.t)
-let label_constants = (Hashtbl.new 7 : (int, int) Hashtbl.t)
+let symbol_constants = (Hashtbl.create 17 : (string, int) Hashtbl.t)
+let float_constants = (Hashtbl.create 11 : (string, int) Hashtbl.t)
+let label_constants = (Hashtbl.create 7 : (int, int) Hashtbl.t)
 
 let label_symbol s = label_constant symbol_constants s
 let label_float  s = label_constant float_constants s
