@@ -39,6 +39,9 @@ value class_str_item = Grammar.Entry.create gram "class_str_item";
 value class_type = Grammar.Entry.create gram "class_type";
 value class_expr = Grammar.Entry.create gram "class_expr";
 
+value parse_interf = ref (Grammar.Entry.parse interf);
+value parse_implem = ref (Grammar.Entry.parse implem);
+
 value rec skip_to_eol cs =
   match Stream.peek cs with
   [ Some '\n' -> ()

@@ -56,6 +56,9 @@ Grammar.Unsafe.clear_entry class_expr;
 Grammar.Unsafe.clear_entry class_sig_item;
 Grammar.Unsafe.clear_entry class_str_item;;
 
+Pcaml.parse_interf := Grammar.Entry.parse interf;;
+Pcaml.parse_implem := Grammar.Entry.parse implem;;
+
 let o2b =
   function
     Some _ -> true

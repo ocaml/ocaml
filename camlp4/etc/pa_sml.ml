@@ -33,6 +33,9 @@ do {
   Grammar.Unsafe.clear_entry let_binding;
 };
 
+Pcaml.parse_interf.val := Grammar.Entry.parse interf;
+Pcaml.parse_implem.val := Grammar.Entry.parse implem;
+
 value not_impl loc s =
   raise_with_loc loc (Stream.Error ("not implemented feature [" ^ s ^ "]"))
 ;

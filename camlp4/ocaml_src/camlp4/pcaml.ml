@@ -41,6 +41,9 @@ let class_str_item = Grammar.Entry.create gram "class_str_item";;
 let class_type = Grammar.Entry.create gram "class_type";;
 let class_expr = Grammar.Entry.create gram "class_expr";;
 
+let parse_interf = ref (Grammar.Entry.parse interf);;
+let parse_implem = ref (Grammar.Entry.parse implem);;
+
 let rec skip_to_eol cs =
   match Stream.peek cs with
     Some '\n' -> ()
@@ -333,22 +336,22 @@ and kont = pretty Stream.t
 
 let pr_str_item =
   {pr_fun =
-     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11510, 11516)));
+     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11621, 11627)));
    pr_levels = []}
 ;;
 let pr_sig_item =
   {pr_fun =
-     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11565, 11571)));
+     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11676, 11682)));
    pr_levels = []}
 ;;
 let pr_expr =
   {pr_fun =
-     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11616, 11622)));
+     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11727, 11733)));
    pr_levels = []}
 ;;
 let pr_patt =
   {pr_fun =
-     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11667, 11673)));
+     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11778, 11784)));
    pr_levels = []}
 ;;
 let pr_expr_fun_args = ref Extfun.empty;;

@@ -116,7 +116,7 @@ let process pa pr getdir =
   let phr =
     try
       let rec loop () =
-        let (pl, stopped_at_directive) = Grammar.Entry.parse pa cs in
+        let (pl, stopped_at_directive) = pa cs in
         if stopped_at_directive then
           begin
             begin match getdir (List.rev pl) with
@@ -154,8 +154,12 @@ let gimd =
   | _ -> None
 ;;
 
-let process_intf () = process Pcaml.interf !(Pcaml.print_interf) gind;;
-let process_impl () = process Pcaml.implem !(Pcaml.print_implem) gimd;;
+let process_intf () =
+  process !(Pcaml.parse_interf) !(Pcaml.print_interf) gind
+;;
+let process_impl () =
+  process !(Pcaml.parse_implem) !(Pcaml.print_implem) gimd
+;;
 
 type file_kind = Intf | Impl;;
 let file_kind = ref Intf;;

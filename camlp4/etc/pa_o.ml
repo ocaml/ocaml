@@ -40,6 +40,9 @@ do {
   Grammar.Unsafe.clear_entry class_str_item
 };
 
+Pcaml.parse_interf.val := Grammar.Entry.parse interf;
+Pcaml.parse_implem.val := Grammar.Entry.parse implem;
+
 value o2b =
   fun
   [ Some _ -> True

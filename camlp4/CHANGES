@@ -1,6 +1,9 @@
 Camlp4 Version 3.04
 -------------------
 
+- [07 Dec 01] Added Pcaml.parse_interf and Pcaml.parse_implem, hooks to
+  specify the parsers tof use, i.e. now can use other parsing technics
+  than the Camlp4 grammar system.
 - [27 Nov 01] Fixed functions Token.eval_char and Token.eval_string which
   returned bad values, resulting lexing of backslash sequences incompatible
   with OCaml (e.g. "\1" returned "\001" (one character) but OCaml returns

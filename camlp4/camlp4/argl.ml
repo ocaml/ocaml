@@ -106,7 +106,7 @@ value process pa pr getdir =
     let phr =
       try
         loop () where rec loop () =
-          let (pl, stopped_at_directive) = Grammar.Entry.parse pa cs in
+          let (pl, stopped_at_directive) = pa cs in
           if stopped_at_directive then do {
             match getdir (List.rev pl) with
             [ Some x ->
@@ -142,8 +142,10 @@ value gimd =
   | _ -> None ]
 ;
 
-value process_intf () = process Pcaml.interf Pcaml.print_interf.val gind;
-value process_impl () = process Pcaml.implem Pcaml.print_implem.val gimd;
+value process_intf () =
+  process Pcaml.parse_interf.val Pcaml.print_interf.val gind;
+value process_impl () =
+  process Pcaml.parse_implem.val Pcaml.print_implem.val gimd;
 
 type file_kind =
   [ Intf
