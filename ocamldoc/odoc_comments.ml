@@ -253,8 +253,12 @@ module Info_retriever =
 	    (_, None) ->
 	      (
 	       try
+		 (* if the special comment is the stop comment (**/**),
+		    then we must not associate it. *)
 		 let pos = Str.search_forward (Str.regexp_string "(**") s 0 in
-		 if blank_line (String.sub s 0 pos) then
+		 if blank_line (String.sub s 0 pos) or 
+		   d.Odoc_types.i_desc = Some [Odoc_types.Raw "/*"]
+		 then
 		   (0, None)
 		 else
 		   (len, Some d)
@@ -276,17 +280,19 @@ module Info_retriever =
       let (assoc_com, ele_coms) =
         (* get the comments *)
 	let (len, special_coms) =  all_special file s in
-	(* if there is no blank line after the special comments, then the 
+	(* if there is no blank line after the special comments, and
+	   if the last special comment is not the stop special comment, then the 
 	   last special comments must be associated to the element. *)
-	if blank_line_outside_simple file
-	    (String.sub s len ((String.length s) - len)) 
-	then
-	  (None, special_coms)
-	else
-	  match List.rev special_coms with
-	    [] ->
-	      (None, [])
-	  | h :: q ->
+	match List.rev special_coms with
+	  [] ->
+	    (None, [])
+	|  h :: q ->
+	    if (blank_line_outside_simple file
+		  (String.sub s len ((String.length s) - len)) )
+		or h.Odoc_types.i_desc = Some [Odoc_types.Raw "/*"]
+	    then
+	      (None, special_coms)
+	    else
 	      (Some h, List.rev q)
       in
       let ele_comments =
