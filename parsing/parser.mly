@@ -363,16 +363,16 @@ expr:
       { mkexp(Pexp_apply($1, List.rev $2)) }
   | LET rec_flag let_bindings IN expr %prec prec_let
       { mkexp(Pexp_let($2, List.rev $3, $5)) }
-  | PARSER opt_pat parser_cases %prec prec_fun
-      { Pstream.cparser ($2, List.rev $3) }
+  | PARSER opt_pat opt_bar parser_cases %prec prec_fun
+      { Pstream.cparser ($2, List.rev $4) }
   | FUNCTION opt_bar match_cases %prec prec_fun
       { mkexp(Pexp_function(List.rev $3)) }
   | FUN simple_pattern fun_def %prec prec_fun
       { mkexp(Pexp_function([$2, $3])) }
   | MATCH expr WITH opt_bar match_cases %prec prec_match
       { mkexp(Pexp_match($2, List.rev $5)) }
-  | MATCH expr WITH PARSER opt_pat parser_cases %prec prec_match
-      { mkexp(Pexp_apply(Pstream.cparser ($5, List.rev $6), [$2])) }
+  | MATCH expr WITH PARSER opt_pat opt_bar parser_cases %prec prec_match
+      { mkexp(Pexp_apply(Pstream.cparser ($5, List.rev $7), [$2])) }
   | TRY expr WITH opt_bar match_cases %prec prec_try
       { mkexp(Pexp_try($2, List.rev $5)) }
   | expr_comma_list
@@ -528,7 +528,7 @@ stream_pattern_component:
 ;
 opt_pat:
     /* empty */                                 { None }
-  | pattern                                     { Some $1 }
+  | simple_pattern                              { Some $1 }
 ;
 opt_err:
     /* empty */                                 { None }
