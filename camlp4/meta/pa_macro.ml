@@ -50,7 +50,7 @@ type item_or_def 'a =
   [ SdStr of 'a
   | SdDef of string and option (list string * MLast.expr)
   | SdUnd of string
-  | SdNop ]
+  | SdITE of string and list (item_or_def 'a) and list (item_or_def 'a) ]
 ;
 
 value rec list_remove x =
@@ -189,30 +189,45 @@ value undef x =
   [ Not_found -> () ]
 ;
 
+value rec execute_macro = fun
+[ SdStr i -> [i]
+| SdDef x eo -> do { define eo x; [] }
+| SdUnd x -> do { undef x; [] }
+| SdITE i l1 l2 ->
+   execute_macro_list (if is_defined i then l1 else l2) ]
+
+and execute_macro_list = fun
+[ [] -> []
+| [hd::tl] -> (* The eveluation order is important here *)
+  let il1 = execute_macro hd in
+  let il2 = execute_macro_list tl in
+    il1 @ il2 ]
+; 
+
 EXTEND
   GLOBAL: expr patt str_item sig_item;
   str_item: FIRST
     [ [ x = macro_def ->
-          match x with
-          [ SdStr [si] -> si
-          | SdStr sil -> <:str_item< declare $list:sil$ end >>
-          | SdDef x eo -> do { define eo x; <:str_item< declare end >> }
-          | SdUnd x -> do { undef x; <:str_item< declare end >> }
-          | SdNop -> <:str_item< declare end >> ] ] ]
+          match execute_macro x with
+          [ [si] -> si
+          | sil -> <:str_item< declare $list:sil$ end >> ] ] ]
   ;
   macro_def:
     [ [ "DEFINE"; i = uident; def = opt_macro_value -> SdDef i def
       | "UNDEF"; i = uident -> SdUnd i
-      | "IFDEF"; i = uident; "THEN"; d = str_item_or_macro; _ = endif ->
-          if is_defined i then d else SdNop
-      | "IFDEF"; i = uident; "THEN"; d1 = str_item_or_macro; "ELSE";
-        d2 = str_item_or_macro; _ = endif ->
-          if is_defined i then d1 else d2
-      | "IFNDEF"; i = uident; "THEN"; d = str_item_or_macro; _ = endif ->
-          if is_defined i then SdNop else d
-      | "IFNDEF"; i = uident; "THEN"; d1 = str_item_or_macro; "ELSE";
-        d2 = str_item_or_macro; _ = endif ->
-          if is_defined i then d2 else d1 ] ]
+      | "IFDEF"; i = uident; "THEN"; dl = smlist; _ = endif ->
+          SdITE i dl []
+      | "IFDEF"; i = uident; "THEN"; dl1 = smlist; "ELSE";
+        dl2 = smlist; _ = endif ->
+          SdITE i dl1 dl2
+      | "IFNDEF"; i = uident; "THEN"; dl = smlist; _ = endif ->
+          SdITE i [] dl
+      | "IFNDEF"; i = uident; "THEN"; dl1 = smlist; "ELSE";
+        dl2 = smlist; _ = endif ->
+          SdITE i dl2 dl1 ] ]
+  ;
+  smlist:
+    [ [ sml = LIST1 str_item_or_macro -> sml ] ]
   ;
     endif:
       [ [ "END" -> ()
@@ -220,7 +235,7 @@ EXTEND
     ;
   str_item_or_macro:
     [ [ d = macro_def -> d
-      | si = LIST1 str_item -> SdStr si ] ]
+      | si = str_item -> SdStr si ] ]
   ;
   opt_macro_value:
     [ [ "("; pl = LIST1 LIDENT SEP ","; ")"; "="; e = expr -> Some (pl, e)

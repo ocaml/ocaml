@@ -50,7 +50,7 @@ type 'a item_or_def =
     SdStr of 'a
   | SdDef of string * (string list * MLast.expr) option
   | SdUnd of string
-  | SdNop
+  | SdITE of string * 'a item_or_def list * 'a item_or_def list
 ;;
 
 let rec list_remove x =
@@ -207,6 +207,20 @@ let undef x =
     Not_found -> ()
 ;;
 
+let rec execute_macro =
+  function
+    SdStr i -> [i]
+  | SdDef (x, eo) -> define eo x; []
+  | SdUnd x -> undef x; []
+  | SdITE (i, l1, l2) -> execute_macro_list (if is_defined i then l1 else l2)
+and execute_macro_list =
+  function
+    [] -> []
+  | hd :: tl ->
+      let il1 = execute_macro hd in
+      let il2 = execute_macro_list tl in il1 @ il2
+;; 
+
 Grammar.extend
   (let _ = (expr : 'expr Grammar.Entry.e)
    and _ = (patt : 'patt Grammar.Entry.e)
@@ -217,6 +231,7 @@ Grammar.extend
    in
    let macro_def : 'macro_def Grammar.Entry.e =
      grammar_entry_create "macro_def"
+   and smlist : 'smlist Grammar.Entry.e = grammar_entry_create "smlist"
    and endif : 'endif Grammar.Entry.e = grammar_entry_create "endif"
    and str_item_or_macro : 'str_item_or_macro Grammar.Entry.e =
      grammar_entry_create "str_item_or_macro"
@@ -230,69 +245,52 @@ Grammar.extend
          (Grammar.Entry.obj (macro_def : 'macro_def Grammar.Entry.e))],
       Gramext.action
         (fun (x : 'macro_def) (loc : Lexing.position * Lexing.position) ->
-           (match x with
-              SdStr [si] -> si
-            | SdStr sil -> MLast.StDcl (loc, sil)
-            | SdDef (x, eo) -> define eo x; MLast.StDcl (loc, [])
-            | SdUnd x -> undef x; MLast.StDcl (loc, [])
-            | SdNop -> MLast.StDcl (loc, []) :
+           (match execute_macro x with
+              [si] -> si
+            | sil -> MLast.StDcl (loc, sil) :
             'str_item))]];
     Grammar.Entry.obj (macro_def : 'macro_def Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("", "IFNDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
        Gramext.Stoken ("", "THEN");
-       Gramext.Snterm
-         (Grammar.Entry.obj
-            (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e));
+       Gramext.Snterm (Grammar.Entry.obj (smlist : 'smlist Grammar.Entry.e));
        Gramext.Stoken ("", "ELSE");
-       Gramext.Snterm
-         (Grammar.Entry.obj
-            (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e));
+       Gramext.Snterm (Grammar.Entry.obj (smlist : 'smlist Grammar.Entry.e));
        Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
-        (fun (_ : 'endif) (d2 : 'str_item_or_macro) _
-           (d1 : 'str_item_or_macro) _ (i : 'uident) _
+        (fun (_ : 'endif) (dl2 : 'smlist) _ (dl1 : 'smlist) _ (i : 'uident) _
            (loc : Lexing.position * Lexing.position) ->
-           (if is_defined i then d2 else d1 : 'macro_def));
+           (SdITE (i, dl2, dl1) : 'macro_def));
       [Gramext.Stoken ("", "IFNDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
        Gramext.Stoken ("", "THEN");
-       Gramext.Snterm
-         (Grammar.Entry.obj
-            (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e));
+       Gramext.Snterm (Grammar.Entry.obj (smlist : 'smlist Grammar.Entry.e));
        Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
-        (fun (_ : 'endif) (d : 'str_item_or_macro) _ (i : 'uident) _
+        (fun (_ : 'endif) (dl : 'smlist) _ (i : 'uident) _
            (loc : Lexing.position * Lexing.position) ->
-           (if is_defined i then SdNop else d : 'macro_def));
+           (SdITE (i, [], dl) : 'macro_def));
       [Gramext.Stoken ("", "IFDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
        Gramext.Stoken ("", "THEN");
-       Gramext.Snterm
-         (Grammar.Entry.obj
-            (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e));
+       Gramext.Snterm (Grammar.Entry.obj (smlist : 'smlist Grammar.Entry.e));
        Gramext.Stoken ("", "ELSE");
-       Gramext.Snterm
-         (Grammar.Entry.obj
-            (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e));
+       Gramext.Snterm (Grammar.Entry.obj (smlist : 'smlist Grammar.Entry.e));
        Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
-        (fun (_ : 'endif) (d2 : 'str_item_or_macro) _
-           (d1 : 'str_item_or_macro) _ (i : 'uident) _
+        (fun (_ : 'endif) (dl2 : 'smlist) _ (dl1 : 'smlist) _ (i : 'uident) _
            (loc : Lexing.position * Lexing.position) ->
-           (if is_defined i then d1 else d2 : 'macro_def));
+           (SdITE (i, dl1, dl2) : 'macro_def));
       [Gramext.Stoken ("", "IFDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
        Gramext.Stoken ("", "THEN");
-       Gramext.Snterm
-         (Grammar.Entry.obj
-            (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e));
+       Gramext.Snterm (Grammar.Entry.obj (smlist : 'smlist Grammar.Entry.e));
        Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
-        (fun (_ : 'endif) (d : 'str_item_or_macro) _ (i : 'uident) _
+        (fun (_ : 'endif) (dl : 'smlist) _ (i : 'uident) _
            (loc : Lexing.position * Lexing.position) ->
-           (if is_defined i then d else SdNop : 'macro_def));
+           (SdITE (i, dl, []) : 'macro_def));
       [Gramext.Stoken ("", "UNDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e))],
       Gramext.action
@@ -307,6 +305,16 @@ Grammar.extend
         (fun (def : 'opt_macro_value) (i : 'uident) _
            (loc : Lexing.position * Lexing.position) ->
            (SdDef (i, def) : 'macro_def))]];
+    Grammar.Entry.obj (smlist : 'smlist Grammar.Entry.e), None,
+    [None, None,
+     [[Gramext.Slist1
+         (Gramext.Snterm
+            (Grammar.Entry.obj
+               (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e)))],
+      Gramext.action
+        (fun (sml : 'str_item_or_macro list)
+           (loc : Lexing.position * Lexing.position) ->
+           (sml : 'smlist))]];
     Grammar.Entry.obj (endif : 'endif Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("", "ENDIF")],
@@ -319,12 +327,10 @@ Grammar.extend
       (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e),
     None,
     [None, None,
-     [[Gramext.Slist1
-         (Gramext.Snterm
-            (Grammar.Entry.obj (str_item : 'str_item Grammar.Entry.e)))],
+     [[Gramext.Snterm
+         (Grammar.Entry.obj (str_item : 'str_item Grammar.Entry.e))],
       Gramext.action
-        (fun (si : 'str_item list)
-           (loc : Lexing.position * Lexing.position) ->
+        (fun (si : 'str_item) (loc : Lexing.position * Lexing.position) ->
            (SdStr si : 'str_item_or_macro));
       [Gramext.Snterm
          (Grammar.Entry.obj (macro_def : 'macro_def Grammar.Entry.e))],
