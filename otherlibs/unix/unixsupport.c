@@ -253,11 +253,11 @@ void unix_error(int errcode, char *cmdname, value cmdarg)
     name = copy_string(cmdname);
     errconstr =
       cst_to_constr(errcode, error_table, sizeof(error_table)/sizeof(int), -1);
-    if (errconstr == -1) {
+    if (errconstr == Val_int(-1)) {
       err = alloc(1, 0);
       Field(err, 0) = Val_int(errcode);
     } else {
-      err = Val_int(errconstr);
+      err = errconstr;
     }
     if (unix_error_exn == NULL) {
       unix_error_exn = caml_named_value("Unix.Unix_error");
