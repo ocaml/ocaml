@@ -516,28 +516,42 @@ let emit_instr fallthrough i =
     | Lop(Iintop op) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
-    | Lop(Iintop_imm(Idiv, n)) when n = 1 lsl (Misc.log2 n) ->
-        let l = Misc.log2 n in
-        if is_immediate n then
-          `	addq	{emit_reg i.arg.(0)}, {emit_int(n-1)}, $25\n`
-        else begin
-          `	ldiq	$25, {emit_int(n-1)}\n`;
-          `	addq	{emit_reg i.arg.(0)}, $25, $25\n`
-        end;
-        `	cmovge	{emit_reg i.arg.(0)}, {emit_reg i.arg.(0)}, $25\n`;
-        `	sra	$25, {emit_int l}, {emit_reg i.res.(0)}\n`
-    | Lop(Iintop_imm(Imod, n)) when n = 1 lsl (Misc.log2 n) ->
-        let l = Misc.log2 n in
-        if is_immediate n then
-          `	and	{emit_reg i.arg.(0)}, {emit_int(n-1)}, $25\n`
-        else begin
-          `	ldiq	$25, {emit_int (n-1)}\n`;
-          `	and	{emit_reg i.arg.(0)}, $25, $25\n`
-        end;
-        `	subq	$25, {emit_int n}, $24\n`;
-        `	cmovge	{emit_reg i.arg.(0)}, $25, $24\n`;
-        `	cmoveq	$25, $25, $24\n`;
-        `	mov	$24, {emit_reg i.res.(0)}\n`
+    | Lop(Iintop_imm(Idiv, n)) ->
+        if n = 1 lsl (Misc.log2 n) then begin
+          let l = Misc.log2 n in
+          if is_immediate n then
+            `	addq	{emit_reg i.arg.(0)}, {emit_int(n-1)}, $25\n`
+          else begin
+            `	ldiq	$25, {emit_int(n-1)}\n`;
+            `	addq	{emit_reg i.arg.(0)}, $25, $25\n`
+          end;
+          `	cmovge	{emit_reg i.arg.(0)}, {emit_reg i.arg.(0)}, $25\n`;
+          `	sra	$25, {emit_int l}, {emit_reg i.res.(0)}\n`
+        end else begin
+          (* divq with immediate arg is incorrectly assembled in Tru64 5.1,
+             so emulate it ourselves *)
+          `	ldiq	$25, {emit_int n}\n`;
+          `	divq	{emit_reg i.arg.(0)}, $25, {emit_reg i.res.(0)}\n`
+        end
+    | Lop(Iintop_imm(Imod, n)) ->
+        if n = 1 lsl (Misc.log2 n) then begin
+          let l = Misc.log2 n in
+          if is_immediate n then
+            `	and	{emit_reg i.arg.(0)}, {emit_int(n-1)}, $25\n`
+          else begin
+            `	ldiq	$25, {emit_int (n-1)}\n`;
+            `	and	{emit_reg i.arg.(0)}, $25, $25\n`
+          end;
+          `	subq	$25, {emit_int n}, $24\n`;
+          `	cmovge	{emit_reg i.arg.(0)}, $25, $24\n`;
+          `	cmoveq	$25, $25, $24\n`;
+          `	mov	$24, {emit_reg i.res.(0)}\n`
+        end else begin
+          (* remq with immediate arg is incorrectly assembled in Tru64 5.1,
+             so emulate it ourselves *)
+          `	ldiq	$25, {emit_int n}\n`;
+          `	remq	{emit_reg i.arg.(0)}, $25, {emit_reg i.res.(0)}\n`
+        end
     | Lop(Iintop_imm(Ilsl, 1)) ->
         (* Turn x << 1 into x + x, slightly faster according to the docs *)
         `	addq	{emit_reg i.arg.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.res.(0)}\n`
