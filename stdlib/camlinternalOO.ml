@@ -66,6 +66,7 @@ let dummy_item = (magic () : item)
 
 (**** Types ****)
 
+type tag
 type label = int
 type closure = item
 type obj = t array
@@ -73,7 +74,7 @@ external ret : (obj -> 'a) -> closure = "%identity"
 
 (**** Labels ****)
 
-let public_method_label s =
+let public_method_label s : tag =
   let accu = ref 0 in
   for i = 0 to String.length s - 1 do
     accu := 223 * !accu + Char.code s.[i]
@@ -81,7 +82,7 @@ let public_method_label s =
   (* reduce to 31 bits *)
   accu := !accu land (1 lsl 31 - 1);
   (* make it signed for 64 bits architectures *)
-  if !accu > 0x3FFFFFFF then !accu - (1 lsl 31) else !accu
+  magic (if !accu > 0x3FFFFFFF then !accu - (1 lsl 31) else !accu)
 
 (**** Sparse array ****)
 
@@ -118,9 +119,9 @@ let dummy_table =
 
 let table_count = ref 0
 
-let new_table public =
+let new_table pub_labels =
   incr table_count;
-  { methods = [| public |];
+  { methods = [| magic (pub_labels : tag array) |];
     methods_by_name = Meths.empty;
     methods_by_label = Labs.empty;
     previous_states = [];
@@ -162,6 +163,9 @@ let get_method_label table name =
     table.methods_by_name <- Meths.add name label table.methods_by_name;
     table.methods_by_label <- Labs.add label true table.methods_by_label;
     label
+
+let get_method_labels table names =
+  Array.map (get_method_label table) names
 
 let set_method table label element =
   incr method_count;
@@ -250,18 +254,25 @@ let new_variables table names =
 let get_variable table name =
   Vars.find name table.vars
 
+let get_variables table names =
+  Array.map (get_variable table) names
+
 let add_initializer table f =
   table.initializers <- f::table.initializers
 
-let create_table public_map public_methods =
-  let table = new_table public_map in
-  if public_methods != magic 0 then
-    Array.iter
-      (function met ->
-        let lab = new_method table in
-        table.methods_by_name  <- Meths.add met lab table.methods_by_name;
-        table.methods_by_label <- Labs.add lab true table.methods_by_label)
-      public_methods;
+let create_table public_methods =
+  if public_methods == magic 0 then new_table [||] else
+  let public_methods = Array.copy public_methods in
+  Array.sort
+    (fun s s' -> compare (public_method_label s) (public_method_label s'))
+    public_methods;
+  let table = new_table (Array.map public_method_label public_methods) in
+  Array.iter
+    (function met ->
+      let lab = new_method table in
+      table.methods_by_name  <- Meths.add met lab table.methods_by_name;
+      table.methods_by_label <- Labs.add lab true table.methods_by_label)
+    public_methods;
   table
 
 let init_class table =
@@ -275,16 +286,16 @@ let inherits cla vals virt_meths concr_meths (_, super, _, env) top =
   widen cla;
   init
 
-let make_class pub_map pub_meths class_init =
-  let table = create_table pub_map pub_meths in
+let make_class pub_meths class_init =
+  let table = create_table pub_meths in
   let env_init = class_init table in
   init_class table;
   (env_init (Obj.repr 0), class_init, env_init, Obj.repr 0)
 
 type init_table = { mutable env_init: t; mutable class_init: table -> t }
 
-let make_class_store pub_map pub_meths class_init init_table =
-  let table = create_table pub_map pub_meths in
+let make_class_store pub_meths class_init init_table =
+  let table = create_table pub_meths in
   let env_init = class_init table in
   init_class table;
   init_table.class_init <- class_init;
@@ -339,7 +350,10 @@ let send obj lab =
   let (buck, elem) = decode lab in
   (magic obj : (obj -> t) array array array).(0).(buck).(elem) obj
 *)
-external send : obj -> label -> 'a = "%send"
+external send : obj -> tag -> 'a = "%send"
+external sendself : obj -> label -> 'a = "%sendself"
+external get_public_method : obj -> tag -> closure
+    = "get_public_method" "noalloc"
 
 (**** table collection access ****)
 
@@ -381,28 +395,28 @@ let lookup_tables root keys =
 let get_const x = ret (fun obj -> x)
 let get_var n   = ret (fun obj -> Array.unsafe_get obj n)
 let get_env e n = ret (fun obj -> Obj.field (Array.unsafe_get obj e) n)
-let get_meth n  = ret (fun obj -> send obj n)
+let get_meth n  = ret (fun obj -> sendself obj n)
 let set_var n   = ret (fun obj x -> Array.unsafe_set obj n x)
 let app_const f x = ret (fun obj -> f x)
 let app_var f n   = ret (fun obj -> f (Array.unsafe_get obj n))
 let app_env f e n = ret (fun obj -> f (Obj.field (Array.unsafe_get obj e) n))
-let app_meth f n  = ret (fun obj -> f (send obj n))
+let app_meth f n  = ret (fun obj -> f (sendself obj n))
 let app_const_const f x y = ret (fun obj -> f x y)
 let app_const_var f x n   = ret (fun obj -> f x (Array.unsafe_get obj n))
-let app_const_meth f x n = ret (fun obj -> f x (send obj n))
+let app_const_meth f x n = ret (fun obj -> f x (sendself obj n))
 let app_var_const f n x = ret (fun obj -> f (Array.unsafe_get obj n) x)
-let app_meth_const f n x = ret (fun obj -> f (send obj n) x)
+let app_meth_const f n x = ret (fun obj -> f (sendself obj n) x)
 let app_const_env f x e n =
   ret (fun obj -> f x (Obj.field (Array.unsafe_get obj e) n))
 let app_env_const f e n x =
   ret (fun obj -> f (Obj.field (Array.unsafe_get obj e) n) x)
-let meth_app_const n x = ret (fun obj -> (send obj n) x)
+let meth_app_const n x = ret (fun obj -> (sendself obj n) x)
 let meth_app_var n m =
-  ret (fun obj -> (send obj n) (Array.unsafe_get obj m))
+  ret (fun obj -> (sendself obj n) (Array.unsafe_get obj m))
 let meth_app_env n e m =
-  ret (fun obj -> (send obj n) (Obj.field (Array.unsafe_get obj e) m))
+  ret (fun obj -> (sendself obj n) (Obj.field (Array.unsafe_get obj e) m))
 let meth_app_meth n m =
-  ret (fun obj -> (send obj n) (send obj m))
+  ret (fun obj -> (sendself obj n) (sendself obj m))
 
 type impl =
     GetConst

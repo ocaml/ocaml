@@ -274,10 +274,11 @@ let rec lam ppf = function
        lam hi lam body
   | Lassign(id, expr) ->
       fprintf ppf "@[<2>(assign@ %a@ %a)@]" Ident.print id lam expr
-  | Lsend (met, obj, largs) ->
+  | Lsend (k, met, obj, largs) ->
       let args ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      fprintf ppf "@[<2>(send@ %a@ %a%a)@]" lam obj lam met args largs
+      let self = if k = Self then "self" else "" in
+      fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" self lam obj lam met args largs
   | Levent(expr, ev) ->
       let kind = 
        match ev.lev_kind with

@@ -516,9 +516,11 @@ let rec transl_exp e =
 and transl_exp0 e =
   match e.exp_desc with
     Texp_ident(path, {val_kind = Val_prim p}) ->
-      if p.prim_name = "%send" then
+      let public_send = p.prim_name = "%send" in
+      if public_send || p.prim_name = "%sendself" then
+        let kind = if public_send then Public else Self in
 	let obj = Ident.create "obj" and meth = Ident.create "meth" in
-	Lfunction(Curried, [obj; meth], Lsend(Lvar meth, Lvar obj, []))
+	Lfunction(Curried, [obj; meth], Lsend(kind, Lvar meth, Lvar obj, []))
       else
 	transl_primitive p
   | Texp_ident(path, {val_kind = Val_anc _}) ->
@@ -542,9 +544,11 @@ and transl_exp0 e =
     when List.length args = p.prim_arity
     && List.for_all (fun (arg,_) -> arg <> None) args ->
       let args = List.map (function Some x, _ -> x | _ -> assert false) args in
-      if p.prim_name = "%send" then
+      let public_send = p.prim_name = "%send" in
+      if public_send || p.prim_name = "%sendself" then
+        let kind = if public_send then Public else Self in
 	let obj = transl_exp (List.hd args) in
-	event_after e (Lsend (transl_exp (List.nth args 1), obj, []))
+	event_after e (Lsend (kind, transl_exp (List.nth args 1), obj, []))
       else let prim = transl_prim p args in
       begin match (prim, args) with
         (Praise, [arg1]) ->
@@ -655,19 +659,12 @@ and transl_exp0 e =
         (Lifthenelse(transl_exp cond, event_before body (transl_exp body),
                      staticfail))
   | Texp_send(expr, met) ->
-      let self = Ident.create "obj" in
-      let met_index =
+      let (kind, met) =
         match met with
-          Tmeth_name nm ->
-            Lapply(Lprim(Pfield 0,[Lprim(Pfield 0,[Lvar self])]),
-                   [Translobj.meth nm])
-        | Tmeth_val id  -> Lvar id
+          Tmeth_name nm -> (Public, Translobj.meth nm)
+        | Tmeth_val id  -> (Self, Lvar id)
       in
-      event_after e
-        (Llet(Strict, self, transl_exp expr,
-              Lapply(Lprim(Parrayrefu Paddrarray,
-                           [Lprim(Pfield 0,[Lvar self]); met_index]),
-                     [Lvar self])))
+      event_after e (Lsend (kind, met, transl_exp expr, []))
   | Texp_new (cl, _) ->
       Lapply(Lprim(Pfield 0, [transl_path cl]), [lambda_unit])
   | Texp_instvar(path_self, path) ->
@@ -715,10 +712,10 @@ and transl_tupled_cases patl_expr_list =
 and transl_apply lam sargs =
   let lapply funct args =
     match funct with
-      Lsend(lmet, lobj, largs) ->
-        Lsend(lmet, lobj, largs @ args)
-    | Levent(Lsend(lmet, lobj, largs), _) ->
-        Lsend(lmet, lobj, largs @ args)
+      Lsend(k, lmet, lobj, largs) ->
+        Lsend(k, lmet, lobj, largs @ args)
+    | Levent(Lsend(k, lmet, lobj, largs), _) ->
+        Lsend(k, lmet, lobj, largs @ args)
     | Lapply(lexp, largs) ->
         Lapply(lexp, largs @ args)
     | lexp ->

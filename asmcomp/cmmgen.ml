@@ -315,10 +315,7 @@ let string_length exp =
 let lookup_label obj lab =
   bind "lab" lab (fun lab ->
     let table = Cop (Cload Word, [obj]) in
-    let buck_index = Cop(Clsr, [lab; Cconst_int 16]) in
-    let bucket = Cop(Cload Word, [Cop (Cadda, [table; buck_index])]) in
-    let item_index = Cop(Cand, [lab; Cconst_int (255 * size_addr)]) in
-    Cop (Cload Word, [Cop (Cadda, [bucket; item_index])]))
+    Cop(Cload Word, [Cop (Cadda, [table; lab])]))
 
 (* Allocation *)
 

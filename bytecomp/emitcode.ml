@@ -293,6 +293,7 @@ let emit_instr = function
   | Kisint -> out opISINT
   | Kisout -> out opULTINT
   | Kgetmethod -> out opGETMETHOD
+  | Kgetpubmet -> out opGETPUBMET
   | Kevent ev -> record_event ev
   | Kstop -> out opSTOP
 

@@ -203,13 +203,25 @@ let rec build_object_init_0 cl_table params cl copy_env subst_env top ids =
       (inh_init, lfunction [env] (subst_env env obj_init))
 
 
-let bind_method tbl public_methods lab id cl_init =
+let bind_method tbl lab id cl_init =
   Llet(StrictOpt, id, Lapply (oo_prim "get_method_label",
                               [Lvar tbl; transl_label lab]),
        cl_init)
 
-let bind_methods tbl public_methods meths cl_init =
-  Meths.fold (bind_method tbl public_methods) meths cl_init
+let bind_methods tbl meths cl_init =
+  let methl = Meths.fold (fun lab id tl -> (lab,id) :: tl) meths [] in
+  let len = List.length methl in
+  if len < 2 then Meths.fold (bind_method tbl) meths cl_init else
+  let ids = Ident.create "ids" in
+  let i = ref len in
+  Llet(StrictOpt, ids,
+       Lapply (oo_prim "get_method_labels",
+               [Lvar tbl; transl_meth_list (List.map fst methl)]),
+       List.fold_right
+         (fun (lab,id) lam ->
+           decr i; Llet(StrictOpt, id, Lprim(Pfield !i, [Lvar ids]), lam))
+         methl cl_init)
+  
 
 let output_methods tbl vals methods lam =
   let lam =
@@ -230,7 +242,7 @@ let rec ignore_cstrs cl =
   | Tclass_apply (cl, _) -> ignore_cstrs cl
   | _ -> cl
 
-let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
+let rec build_class_init cla cstr inh_init cl_init msubst top cl =
   match cl.cl_desc with
     Tclass_ident path ->
       begin match inh_init with
@@ -252,7 +264,7 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
               Cf_inher (cl, vals, meths) ->
                 let cl_init = output_methods cla values methods cl_init in
                 let inh_init, cl_init =
-                  build_class_init cla pub_meths false inh_init
+                  build_class_init cla false inh_init
                     (transl_vals cla false false vals
                        (transl_super cla str.cl_meths meths cl_init))
                     msubst top cl in
@@ -293,18 +305,18 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
           (inh_init, cl_init, [], [])
       in
       let cl_init = output_methods cla values methods cl_init in
-      (inh_init, bind_methods cla pub_meths str.cl_meths cl_init)
+      (inh_init, bind_methods cla str.cl_meths cl_init)
   | Tclass_fun (pat, vals, cl, _) ->
       let (inh_init, cl_init) =
-        build_class_init cla pub_meths cstr inh_init cl_init msubst top cl
+        build_class_init cla cstr inh_init cl_init msubst top cl
       in
       let vals = List.map (function (id, _) -> (Ident.name id, id)) vals in
       (inh_init, transl_vals cla true false vals cl_init)
   | Tclass_apply (cl, exprs) ->
-      build_class_init cla pub_meths cstr inh_init cl_init msubst top cl
+      build_class_init cla cstr inh_init cl_init msubst top cl
   | Tclass_let (rec_flag, defs, vals, cl) ->
       let (inh_init, cl_init) =
-        build_class_init cla pub_meths cstr inh_init cl_init msubst top cl
+        build_class_init cla cstr inh_init cl_init msubst top cl
       in
       let vals = List.map (function (id, _) -> (Ident.name id, id)) vals in
       (inh_init, transl_vals cla true false vals cl_init)
@@ -328,7 +340,7 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
                  cl_init))
       | _ ->
 	  let core cl_init =
-            build_class_init cla pub_meths true inh_init cl_init msubst top cl
+            build_class_init cla true inh_init cl_init msubst top cl
 	  in
 	  if cstr then core cl_init else
           let (inh_init, cl_init) =
@@ -455,7 +467,7 @@ let rec builtin_meths self env env2 body =
         "var", [Lvar n]
     | Lprim(Pfield n, [Lvar e]) when Ident.same e env ->
         "env", [Lvar env2; Lconst(Const_pointer n)]
-    | Lsend(Lvar n, Lvar s, []) when List.mem s self ->
+    | Lsend(Self, Lvar n, Lvar s, []) when List.mem s self ->
         "meth", [Lvar n]
     | _ -> raise Not_found
   in
@@ -470,7 +482,7 @@ let rec builtin_meths self env env2 body =
   | Lapply(f, [p; arg]) when const_path f && const_path p ->
       let s, args = conv arg in
       ("app_const_"^s, f :: p :: args)
-  | Lsend(Lvar n, Lvar s, [arg]) when List.mem s self ->
+  | Lsend(Self, Lvar n, Lvar s, [arg]) when List.mem s self ->
       let s, args = conv arg in
       ("meth_app_"^s, Lvar n :: args)
   | Lfunction (Curried, [x], body) ->
@@ -569,7 +581,6 @@ let transl_class ids cl_id arity pub_meths cl =
           if new_ids = [] then body else
           subst_lambda (subst env body 0 new_ids_meths) body in
         begin try
-          raise Not_found;
           (* Doesn't seem to improve size for bytecode *)
           (* if not !Clflags.native_code then raise Not_found; *)
           builtin_meths arr [self] env env2 (lfunction args body')
@@ -601,15 +612,20 @@ let transl_class ids cl_id arity pub_meths cl =
   if not (Translcore.check_recursive_lambda ids obj_init) then
     raise(Error(cl.cl_loc, Illegal_class_expr));
   let (inh_init', cl_init) =
-    build_class_init cla pub_meths true (List.rev inh_init)
-      obj_init msubst top cl
+    build_class_init cla true (List.rev inh_init) obj_init msubst top cl
   in
   assert (inh_init' = []);
   let table = Ident.create "table"
   and class_init = Ident.create "class_init"
   and env_init = Ident.create "env_init"
   and obj_init = Ident.create "obj_init" in
-  let public_map pub_meths =
+  let pub_meths =
+    List.sort
+      (fun s s' -> compare (Btype.hash_variant s) (Btype.hash_variant s'))
+      pub_meths in
+  (*
+  let public_map () =
+    if not !Clflags.native_code then lambda_unit else
     let meth = Ident.create "meth" in
     let i = ref 0 in
     let index m = incr i;
@@ -618,10 +634,10 @@ let transl_class ids cl_id arity pub_meths cl =
               Matching.make_test_sequence None (Pintcomp Cneq) (Pintcomp Clt)
                 (Lvar meth) (List.map index pub_meths))
   in
+  *)
   let ltable table lam =
     Llet(Strict, table,
-         Lapply (oo_prim "create_table",
-                 [public_map pub_meths; transl_meth_list pub_meths]), lam)
+         Lapply (oo_prim "create_table", [transl_meth_list pub_meths]), lam)
   and ldirect obj_init =
     Llet(Strict, obj_init, cl_init,
          Lsequence(Lapply (oo_prim "init_class", [Lvar cla]),
@@ -638,7 +654,7 @@ let transl_class ids cl_id arity pub_meths cl =
          lam class_init)
   and lbody class_init =
     Lapply (oo_prim "make_class",
-            [public_map pub_meths;transl_meth_list pub_meths; Lvar class_init])
+            [transl_meth_list pub_meths; Lvar class_init])
   and lbody_virt lenvs =
     Lprim(Pmakeblock(0, Immutable),
           [lambda_unit; Lfunction(Curried,[cla], cl_init); lambda_unit; lenvs])
@@ -709,7 +725,7 @@ let transl_class ids cl_id arity pub_meths cl =
               if not concrete then lclass_virt () else
               lclass (
               Lapply (oo_prim "make_class_store",
-                      [public_map pub_meths; transl_meth_list pub_meths;
+                      [transl_meth_list pub_meths;
                        Lvar class_init; Lvar cached]))),
   make_envs (
   if ids = [] then Lapply(lfield cached 0, [lenvs]) else

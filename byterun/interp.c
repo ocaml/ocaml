@@ -1020,20 +1020,16 @@ value interprete(code_t prog, asize_t prog_size)
       accu = Lookup(sp[0], accu);
       Next;
 
-    Instruct(GETMETIND): {
-      /* accu == object, *pc == label */
-      value tags = Field (Field(accu,0), 0);
-      value tag = *pc;
-      pc++;
+    Instruct(GETPUBMET): {
+      /* accu == tag, sp[0] == object */
+      value tags = Field (Field(sp[0],0), 0);
       int li = 0, hi = Wosize_val(tags)-1, mi;
-      value low = Field(tags,li), high = Field(tags,hi), mid;
       while (li < hi) {
         mi = (li+hi+1) >> 1;
-        mid = Field(tags,mi);
-        if (tag < mid) hi = mi-1;
+        if (accu < Field(tags,mi)) hi = mi-1;
         else li = mi;
       }
-      accu = Field (Field(obj,0), li+1);
+      accu = Field (Field(sp[0],0), li+1);
       Next;
     }
 
