@@ -276,20 +276,21 @@ caml_start_program:
         add     sp = -32, sp
         LOADGLOBAL(r3, caml_bottom_of_stack#)
         add     r2 = 16, sp ;;
-        ST8OFF(r2, r3, 8) ;;
-        LOADGLOBAL(r3, caml_last_return_address#)
-        ST8OFF(r2, r3, 8) ;;
-        LOADGLOBAL(r3, caml_gc_regs#)
-        ST8OFF(r2, r3, 8) ;;
+        ST8OFF(r2, r3, 8)
+        LOADGLOBAL(r3, caml_last_return_address#) ;;
+        ST8OFF(r2, r3, 8)
+        LOADGLOBAL(r3, caml_gc_regs#) ;;
+        ST8OFF(r2, r3, 8)
 
         /* Set up a trap frame to catch exceptions escaping the Caml code */
         mov     r6 = sp
         add     sp = -16, sp ;;
         LOADGLOBAL(r3, caml_exception_pointer#)
         add     r2 = 16, sp ;;
-        ST8OFF(r2, r3, 8) ;;
-        LOADGLOBAL(r3, .L101)
-        ST8OFF(r2, r3, 8) ;;
+        ST8OFF(r2, r3, 8)
+.L110:	mov	r3 = ip ;;
+	add	r3 = .L101 - .L110, r3 ;;
+        ST8OFF(r2, r3, 8)
 
         /* Reload allocation pointers */
         LOADGLOBAL(r4, young_ptr#)
