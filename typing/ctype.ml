@@ -722,15 +722,15 @@ let rec copy ty =
 		  row.row_fields
 	      and name =
 		may_map (fun (p,l) -> p, List.map copy l) row.row_name in
-	      let var = newty (
+	      let var =
 		Tvariant { row_fields = fields; row_more = newvar();
 			   row_bound = List.map copy row.row_bound;
 			   row_closed = row.row_closed; row_name = name }
-	       ) in
+	      in
 	      (* Remember it for other occurences *)
 	      save_desc more more.desc;
-	      more.desc <- Tsubst var;
-	      Tlink var
+	      more.desc <- ty.desc;
+	      var
 	  end
       | Tfield (label, kind, t1, t2) ->
           begin match field_kind_repr kind with
@@ -2290,15 +2290,15 @@ let rec nondep_type_rec env id ty =
 		    Some (p, List.map (nondep_type_rec env id) l)
 		| _ -> None
 	      in
-	      let var = newgenty (
+	      let var =
 		Tvariant { row_fields = fields; row_more = newgenvar();
 			   row_bound = !bound;
 			   row_closed = row.row_closed; row_name = name }
-	       ) in
+	      in
 	      (* Remember it for other occurences *)
 	      save_desc more more.desc;
-	      more.desc <- Tsubst var;
-	      Tsubst var
+	      more.desc <- ty.desc;
+	      var
 	  end
       | Tfield(label, kind, t1, t2) ->
           begin match field_kind_repr kind with

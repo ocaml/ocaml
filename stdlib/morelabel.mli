@@ -10,7 +10,7 @@ module Hashtbl : sig
 
 (*** Generic interface *)
 
-type ('a, 'b) t
+type ('a, 'b) t = ('a, 'b) Hashtbl.t
         (* The type of hash tables from type ['a] to type ['b]. *)
 
 val create : int -> ('a,'b) t
@@ -296,7 +296,7 @@ module type S =
         (* Test whether a set is empty or not. *)
     val mem: elt:elt -> t -> bool
         (* [mem x s] tests whether [x] belongs to the set [s]. *)
-    val add: let:elt -> t -> t
+    val add: elt:elt -> t -> t
         (* [add x s] returns a set containing all elements of [s],
            plus [x]. If [x] was already in [s], [s] is returned unchanged. *)
     val singleton: elt -> t

@@ -577,7 +577,7 @@ and class_expr cl_num val_env met_env scl =
       in
       let rec all_labeled = function
 	  Tcty_fun ("", _, _) -> false
-	| Tcty_fun (_, _, ty_fun) -> all_labeled ty_fun
+	| Tcty_fun (l, _, ty_fun) -> l.[0] <> '?' && all_labeled ty_fun
 	| _ -> true
       in
       let partial =

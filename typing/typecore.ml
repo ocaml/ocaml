@@ -930,7 +930,7 @@ and type_expect env sexp ty_expected =
       let rec all_labeled ty =
 	match (repr ty).desc with
 	  Tarrow ("", _, _) | Tvar -> false
-	| Tarrow (_, _, ty) -> all_labeled ty
+	| Tarrow (l, _, ty) -> l.[0] <> '?' && all_labeled ty
 	| _ -> true
       in
       if is_optional l && all_labeled ty_res then

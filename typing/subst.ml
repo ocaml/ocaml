@@ -126,15 +126,15 @@ let rec typexp s ty =
 		  row.row_fields
 	      and name =
 		may_map (fun (p,l) -> p, List.map (typexp s) l) row.row_name in
-	      let var =	newgenty (
+	      let var =
 		Tvariant { row_fields = fields; row_more = newgenvar();
 			   row_bound = !bound;
 			   row_closed = row.row_closed; row_name = name }
-	       ) in
+	      in
 	      (* Remember it for other occurences *)
 	      save_desc more more.desc;
-	      more.desc <- Tsubst var;
-	      Tsubst var
+	      more.desc <- ty.desc;
+	      var
 	  end
       | Tfield(label, kind, t1, t2) ->
           begin match field_kind_repr kind with
