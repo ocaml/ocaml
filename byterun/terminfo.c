@@ -45,10 +45,13 @@ CAMLprim value terminfo_setup (value vchan)
 {
   value result;
   static char buffer[1024];
+  char *term;
 
   chan = Channel (vchan);
 
-  if (tgetent(buffer, getenv("TERM")) != 1) return Bad_term;
+  term = getenv ("TERM");
+  if (term == NULL) return Bad_term;
+  if (tgetent(buffer, term) != 1) return Bad_term;
 
   num_lines = tgetnum ("li");
   up = tgetstr ("up", &area_p);
