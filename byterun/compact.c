@@ -167,6 +167,10 @@ void compact_heap (void)
      Link infix headers in each block in an inverted list of inverted lists.
      Don't forget roots and weak pointers. */
   {
+    /* Invert roots first because the threads library needs some heap
+       data structures to find its roots. */
+    do_roots (invert_root);
+
     ch = heap_start;
     while (ch != NULL){
       word *p = (word *) ch;
@@ -218,8 +222,6 @@ void compact_heap (void)
         pp = &Field (p, 0);
       }
     }
-    /* Invert roots */
-    do_roots (invert_root);
   }
 
 
