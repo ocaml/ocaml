@@ -40,9 +40,11 @@ bigarray.cmxa: $(CAML_OBJS:.cmo=.cmx)
 
 install:
 	cp bigarray.cmi bigarray.mli libbigarray.a bigarray.cma $(LIBDIR)
+	cd $(LIBDIR); $(RANLIB) libbigarray.a
 
 installopt:
-	cp libbigarray.a bigarray.cmxa $(LIBDIR)
+	cp bigarray.a $(CAML_OBJS:.cmo=.cmx) bigarray.cmxa $(LIBDIR)
+	cd $(LIBDIR); $(RANLIB) bigarray.a
 
 partialclean:
 	rm -f *.cm*
