@@ -602,6 +602,7 @@ let rec search_pos_structure :pos str =
   | Tstr_primitive (_, vd) ->()
   | Tstr_type _ -> ()
   | Tstr_exception _ -> ()
+  | Tstr_exn_rebind(_, _) -> ()
   | Tstr_module (_, m) -> search_pos_module_expr m :pos
   | Tstr_modtype _ -> ()
   | Tstr_open _ -> ()

@@ -129,6 +129,7 @@ and structure_item =
   | Tstr_primitive of Ident.t * value_description
   | Tstr_type of (Ident.t * type_declaration) list
   | Tstr_exception of Ident.t * exception_declaration
+  | Tstr_exn_rebind of Ident.t * Path.t
   | Tstr_module of Ident.t * module_expr
   | Tstr_modtype of Ident.t * module_type
   | Tstr_open of Path.t

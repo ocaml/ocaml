@@ -31,6 +31,8 @@ type error =
   | Type_clash of (type_expr * type_expr) list
   | Null_arity_external
   | Unbound_type_var
+  | Unbound_exception of Longident.t
+  | Not_an_exception of Longident.t
 
 exception Error of Location.t * error
 
@@ -274,6 +276,17 @@ let transl_exception env excdecl =
   List.iter Ctype.generalize types;
   types
 
+(* Translate an exception rebinding *)
+let transl_exn_rebind env loc lid =
+  let cdescr =
+    try
+      Env.lookup_constructor lid env
+    with Not_found ->
+      raise(Error(loc, Unbound_exception lid)) in
+  match cdescr.cstr_tag with
+    Cstr_exception path -> (path, cdescr.cstr_args)
+  | _ -> raise(Error(loc, Not_an_exception lid))
+
 (* Translate a value declaration *)
 let transl_value_decl env valdecl =
   let ty = Typetexp.transl_type_scheme env valdecl.pval_type in
@@ -351,4 +364,9 @@ let report_error ppf = function
   | Null_arity_external ->
       fprintf ppf "External identifiers must be functions"
   | Unbound_type_var ->
-      fprintf ppf "A type variable is unbound in this type declaration";;
+      fprintf ppf "A type variable is unbound in this type declaration"
+  | Unbound_exception lid ->
+      fprintf ppf "Unbound exception constructor@ %a" Printtyp.longident lid
+  | Not_an_exception lid ->
+      fprintf ppf "The constructor@ %a@ is not an exception"
+        Printtyp.longident lid

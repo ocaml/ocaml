@@ -417,6 +417,8 @@ structure_item:
       { mkstr(Pstr_type(List.rev $2)) }
   | EXCEPTION UIDENT constructor_arguments
       { mkstr(Pstr_exception($2, $3)) }
+  | EXCEPTION UIDENT EQUAL constr_longident
+      { mkstr(Pstr_exn_rebind($2, $4)) }
   | MODULE UIDENT module_binding
       { mkstr(Pstr_module($2, $3)) }
   | MODULE TYPE ident EQUAL module_type

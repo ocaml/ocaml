@@ -151,6 +151,9 @@ and transl_structure fields cc rootpath = function
   | Tstr_exception(id, decl) :: rem ->
       Llet(Strict, id, transl_exception id (field_path rootpath id) decl,
            transl_structure (id :: fields) cc rootpath rem)
+  | Tstr_exn_rebind(id, path) :: rem ->
+      Llet(Strict, id, transl_path path,
+           transl_structure (id :: fields) cc rootpath rem)
   | Tstr_module(id, modl) :: rem ->
       Llet(Strict, id,
            transl_module Tcoerce_none (field_path rootpath id) modl,
@@ -215,6 +218,10 @@ let transl_store_structure glob map prims str =
       transl_store subst rem
   | Tstr_exception(id, decl) :: rem ->
       let lam = transl_exception id (field_path (global_path glob) id) decl in
+      Lsequence(Llet(Strict, id, lam, store_ident id),
+                transl_store (add_ident false id subst) rem)
+  | Tstr_exn_rebind(id, path) :: rem ->
+      let lam = subst_lambda subst (transl_path path) in
       Lsequence(Llet(Strict, id, lam, store_ident id),
                 transl_store (add_ident false id subst) rem)
   | Tstr_module(id, modl) :: rem ->
@@ -288,6 +295,7 @@ let rec defined_idents = function
   | Tstr_primitive(id, descr) :: rem -> defined_idents rem
   | Tstr_type decls :: rem -> defined_idents rem
   | Tstr_exception(id, decl) :: rem -> id :: defined_idents rem
+  | Tstr_exn_rebind(id, path) :: rem -> id :: defined_idents rem
   | Tstr_module(id, modl) :: rem -> id :: defined_idents rem
   | Tstr_modtype(id, decl) :: rem -> defined_idents rem
   | Tstr_open path :: rem -> defined_idents rem
@@ -360,6 +368,9 @@ let transl_toplevel_item = function
   | Tstr_exception(id, decl) ->
       Ident.make_global id;
       Lprim(Psetglobal id, [transl_exception id None decl])
+  | Tstr_exn_rebind(id, path) ->
+      Ident.make_global id;
+      Lprim(Psetglobal id, [transl_path path])
   | Tstr_module(id, modl) ->
       Ident.make_global id;
       Lprim(Psetglobal id, [transl_module Tcoerce_none None modl])

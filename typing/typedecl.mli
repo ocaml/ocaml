@@ -23,6 +23,9 @@ val transl_type_decl:
 val transl_exception:
         Env.t -> Parsetree.exception_declaration -> exception_declaration
 
+val transl_exn_rebind:
+        Env.t -> Location.t -> Longident.t -> Path.t * exception_declaration
+
 val transl_value_decl:
         Env.t -> Parsetree.value_description -> value_description
 
@@ -40,6 +43,8 @@ type error =
   | Type_clash of (type_expr * type_expr) list
   | Null_arity_external
   | Unbound_type_var
+  | Unbound_exception of Longident.t
+  | Not_an_exception of Longident.t
 
 exception Error of Location.t * error
 

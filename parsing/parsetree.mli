@@ -236,6 +236,7 @@ and structure_item_desc =
   | Pstr_primitive of string * value_description
   | Pstr_type of (string * type_declaration) list
   | Pstr_exception of string * exception_declaration
+  | Pstr_exn_rebind of string * Longident.t
   | Pstr_module of string * module_expr
   | Pstr_modtype of string * module_type
   | Pstr_open of Longident.t

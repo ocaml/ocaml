@@ -249,6 +249,7 @@ let check_unique_names sg =
           (fun (name, decl) -> check "type" item.pstr_loc type_names name)
           name_decl_list
     | Pstr_exception(name, decl) -> ()
+    | Pstr_exn_rebind(name, path) -> ()
     | Pstr_module(name, smod) ->
         check "module" item.pstr_loc module_names name
     | Pstr_modtype(name, decl) ->
@@ -401,6 +402,13 @@ and type_struct env sstr =
       let (id, newenv) = Env.enter_exception name arg env in
       let (str_rem, sig_rem, final_env) = type_struct newenv srem in
       (Tstr_exception(id, arg) :: str_rem,
+       Tsig_exception(id, arg) :: sig_rem,
+       final_env)
+  | {pstr_desc = Pstr_exn_rebind(name, longid); pstr_loc = loc} :: srem ->
+      let (path, arg) = Typedecl.transl_exn_rebind env loc longid in
+      let (id, newenv) = Env.enter_exception name arg env in
+      let (str_rem, sig_rem, final_env) = type_struct newenv srem in
+      (Tstr_exn_rebind(id, path) :: str_rem,
        Tsig_exception(id, arg) :: sig_rem,
        final_env)
   | {pstr_desc = Pstr_module(name, smodl)} :: srem ->
