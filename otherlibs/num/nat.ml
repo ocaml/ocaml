@@ -244,32 +244,32 @@ let power_base_max = make_nat 2;;
 
 match length_of_digit with
   | 64 -> 
-      set_digit_nat power_base_max 0 1000000000000000000;
+      set_digit_nat power_base_max 0 (Int64.to_int 1000000000000000000L);
       mult_digit_nat power_base_max 0 2 
                      power_base_max 0 1 (nat_of_int 9) 0;
       ()
   | 32 -> set_digit_nat power_base_max 0 1000000000
-  | _ -> failwith "Nat.power_base_max: unknown word size"
+  | _ -> assert false
 ;;
 
 let pmax =
   match length_of_digit with
   | 64 -> 19
   | 32 -> 9
-  | _ -> failwith "Nat.pmax: unknown word size"
+  | _ -> assert false
 ;;
 
 let max_superscript_10_power_in_int =
   match length_of_digit with
   | 64 -> 18
   | 32 -> 9
-  | _ -> failwith "Nat.max_superscript_10_power_in_int: unknown word size"
+  | _ -> assert false
 ;;
 let max_power_10_power_in_int =
   match length_of_digit with
-  | 64 -> nat_of_int 1000000000000000000
+  | 64 -> nat_of_int (Int64.to_int 1000000000000000000L)
   | 32 -> nat_of_int 1000000000
-  | _ -> failwith "Nat.max_power_10_power_in_int: unknown word size"
+  | _ -> assert false
 ;;
 
 let raw_string_of_digit nat off =
