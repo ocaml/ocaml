@@ -20,6 +20,7 @@ exception Unify of (type_expr * type_expr) list
 exception Subtype of
         (type_expr * type_expr) list * (type_expr * type_expr) list
 exception Cannot_expand
+exception Cannot_apply
 exception Recursive_abbrev
 
 val generic_level: int
@@ -77,11 +78,11 @@ val instance_class:
       	class_type ->
         type_expr list * type_expr list *
         (mutable_flag * type_expr) Vars.t * type_expr
-val substitute:
-        Env.t -> type_expr list -> type_expr list -> type_expr -> type_expr
-        (* [substitute [v1...vN] [t1...tN] t]
-           returns a copy of [t] where the [vi] are replaced
-           by the [ti]. *)
+val apply:
+        Env.t -> type_expr list -> type_expr -> type_expr list -> type_expr
+        (* [apply [p1...pN] t [a1...aN]] match the arguments [ai] to
+        the parameters [pi] and returns the corresponding instance of
+        [t]. Exception [Cannot_apply] is raised in case of failure. *)
 
 val expand_abbrev:
         Env.t -> Path.t -> type_expr list -> Types.abbrev_memo ref ->
@@ -127,7 +128,7 @@ val nondep_class_type: Env.t -> Ident.t -> class_type -> class_type
 val correct_abbrev: Env.t -> Ident.t -> type_expr list -> type_expr -> unit
 
 type closed_schema_result = Var of type_expr | Row_var of type_expr
-val closed_schema: bool -> type_expr -> bool
+val closed_schema: type_expr -> bool
 val closed_schema_verbose: type_expr -> closed_schema_result option
         (* Check whether the given type scheme contains no non-generic
            type variables *)
