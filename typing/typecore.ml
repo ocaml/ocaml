@@ -677,11 +677,6 @@ let type_format loc fmt =
           let ty_a = ty_arrow ty_input (ty_arrow ty_arg ty_aresult) in 
           let ty_aresult, ty_result = conversion j ty_arg in
           ty_aresult, ty_arrow ty_a ty_result
-      | '$' ->
-          let ty_arg = Predef.type_string in
-          let ty_f = ty_arrow Predef.type_string Predef.type_string in 
-          let ty_aresult, ty_result = conversion j ty_arg in
-          ty_aresult, ty_arrow ty_f ty_result
       | 't' -> conversion j (ty_arrow ty_input ty_aresult)
       | 'n' when j + 1 = len -> conversion j Predef.type_int
       | 'l' | 'n' | 'L' as conv ->

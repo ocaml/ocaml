@@ -64,13 +64,6 @@ val fprintf : out_channel -> ('a, out_channel, unit, unit) format -> 'a
      in the output of [fprintf] at the current point.
    - [t]: same as [%a], but takes only one argument (with type
      [out_channel -> unit]) and apply it to [outchan].
-   - [$]: variable substitution in strings. Takes two arguments: a
-     function mapping from variable names to string values and a
-     string pattern where any identifier following a dollar sign is
-     considered a variable name. Each variable name is replaced by its
-     value as specified by the mapping, and the resulting string
-     pattern is inserted in the output. See {!Buffer.add_substitute} for
-     details on variable syntax.
    - [!]: take no argument and flush the output.
    - [%]: take no argument and output one [%] character.
 
