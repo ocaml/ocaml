@@ -388,7 +388,7 @@ value install_signal_handler(value signal_number, value action) /* ML */
 #ifdef POSIX_SIGNALS
   sigact.sa_handler = act;
   sigemptyset(&sigact.sa_mask);
-#if defined(SYS_solaris) || defined(SYS_rhapsody)
+#if defined(SYS_solaris) || defined(DARWIN_VERSION_6)
   sigact.sa_flags = SA_SIGINFO;
 #else
   sigact.sa_flags = 0;
@@ -586,10 +586,10 @@ void init_signals(void)
     struct sigaction act;
     act.sa_handler = (void (*)(int)) trap_handler;
     sigemptyset(&act.sa_mask);
-#if defined (SYS_aix)
-    act.sa_flags = 0;
-#elif defined (SYS_rhapsody)
+#if defined (DARWIN_VERSION_6)
     act.sa_flags = SA_SIGINFO;
+#elif defined (SYS_aix) || defined (SYS_rhapsody)
+    act.sa_flags = 0;
 #else
     act.sa_flags = SA_NODEFER;
 #endif
