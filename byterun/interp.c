@@ -32,12 +32,6 @@
 #include "signals.h"
 #include "stacks.h"
 
-#ifdef __STDC__
-const char caml_interp_ident[] = 
-  "$Id$"
-  " on " __DATE__ " at " __TIME__ ;
-#endif
-
 /* Registers for the abstract machine:
         pc         the code pointer
         sp         the stack pointer (grows downward)
