@@ -221,6 +221,8 @@ let rec iter_pattern f p =
   | Tpat_or (p, p') ->
       iter_pattern f p;
       iter_pattern f p'
+  | Tpat_array pl ->
+      List.iter (iter_pattern f) pl
 
 (* Generalization criterion for expressions *)
 
@@ -261,9 +263,8 @@ let type_format loc fmt =
     match fmt.[i] with
       '%' ->
         let j = skip_args(i+1) in
-        begin match String.unsafe_get fmt j with
-        (* We're using unsafe_get here so that if j = String.length fmt,
-           we'll fall in the catch-all case of the match *)
+        if j >= len then raise(Error(loc, Bad_format "%"));
+        begin match fmt.[j] with
           '%' ->
             scan_format (j+1)
         | 's' ->
@@ -780,7 +781,7 @@ and type_let env rec_flag spat_sexp_list =
   List.iter2
     (fun pat exp ->
        if not (is_nonexpansive exp) then
-         iter_pattern (fun pat ->make_nongen pat.pat_type) pat)
+         iter_pattern (fun pat -> make_nongen pat.pat_type) pat)
     pat_list exp_list;
   List.iter
     (fun pat -> iter_pattern (fun pat -> generalize pat.pat_type) pat)
