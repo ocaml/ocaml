@@ -26,6 +26,7 @@
 #include "interp.h"
 #include "intext.h"
 #include "io.h"
+#include "minor_gc.h"
 #include "misc.h"
 #include "mlvalues.h"
 #include "stacks.h"
@@ -230,6 +231,8 @@ int main(argc, argv)
     chan = open_descr(fd);
     global_data = input_value(chan);
     close_in(chan);
+    /* Ensure that the globals are in the major heap. */
+    oldify(global_data, &global_data);
 
     sys_init(argv + i);
     interprete(start_code, code_size);

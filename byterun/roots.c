@@ -44,16 +44,13 @@ void register_global_root(r)
   global_roots = gr;
 }
 
-/* Call [oldify] on all roots */
+/* Call [oldify] on all roots except [global_data] */
 
 void oldify_local_roots ()
 {
   register value * sp;
   value * block;
   struct global_root * gr;
-
-  /* Global variables */
-  oldify(global_data, &global_data);
 
   /* The stack */
   for (sp = extern_sp; sp < stack_high; sp++) {
@@ -101,6 +98,3 @@ void darken_all_roots ()
   /* Hook */
   if (scan_roots_hook != NULL) (*scan_roots_hook)(darken);
 }
-
-
-
