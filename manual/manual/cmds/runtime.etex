@@ -54,7 +54,8 @@ standard error.
 The following environment variables are also consulted:
 
 \begin{options}
-\item["CAMLRUNPARAM"] Set the garbage collection parameters.
+\item["OCAMLRUNPARAM"] Set the garbage collection parameters.
+  (If "OCAMLRUNPARAM" is not set, "CAMLRUNPARAM" will be used instead.)
   This variable must be a sequence of parameter specifications.
   A parameter specification is an option letter followed by an "="
   sign, a decimal number, and an optional multiplier.  There are
@@ -84,7 +85,7 @@ The following environment variables are also consulted:
   $2^{20}$, and $2^{30}$ respectively.
   For example, on a 32-bit machine, under "bash" the command
 \begin{alltt}
-        export CAMLRUNPARAM='s=256k,v=1'
+        export OCAMLRUNPARAM='s=256k,v=1'
 \end{alltt}
   tells a subsequent "ocamlrun" to set its initial minor heap size to
   1~megabyte and to print a message at the start of each major GC cycle.
