@@ -51,6 +51,10 @@ val pivot_level: int
         (* Type marking: ty.level <- pivot_level - ty.level *)
 val mark_type: type_expr -> unit
         (* Mark a type *)
+val mark_type_node: type_expr -> unit
+        (* Mark a type node (but not its sons) *)
+val mark_type_params: type_expr -> unit
+        (* Mark the sons of a type node *)
 val unmark_type: type_expr -> unit
 val unmark_type_decl: type_declaration -> unit
 val unmark_class_type: class_type -> unit
