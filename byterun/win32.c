@@ -263,7 +263,8 @@ static void expand_diversion(char * filename)
 {
   struct _stat stat;
   int fd;
-  char * buf, * endbuf, * p, * s;
+  char * buf, * endbuf, * p, * q, * s;
+  int inquote;
 
   if (_stat(filename, &stat) == -1 ||
       (fd = _open(filename, O_RDONLY | O_BINARY, 0)) == -1) {
@@ -280,11 +281,38 @@ static void expand_diversion(char * filename)
     while (p < endbuf && isspace(*p)) p++;
     if (p >= endbuf) break;
     s = p;
-    /* Skip to next blank or end of buffer */
-    while (p < endbuf && !isspace(*p)) p++;
+    /* Skip to end of argument, taking quotes into account */
+    q = s;
+    inquote = 0;
+    while (p < endbuf) {
+      if (! inquote) {
+        if (isspace(*p)) break;
+        if (*p == '"') { inquote = 1; p++; continue; }
+        *q++ = *p++;
+      } else {
+        switch (*p) {
+          case '"':
+            inquote = 0; p++; continue;
+          case '\\':
+            if (p + 4 <= endbuf && strncmp(p, "\\\\\\\"", 4) == 0) {
+              p += 4; *q++ = '\\'; *q++ = '"'; continue;
+            }
+            if (p + 3 <= endbuf && strncmp(p, "\\\\\"", 3) == 0) {
+              p += 3; *q++ = '\\'; inquote = 0; continue;
+            }
+            if (p + 2 <= endbuf && p[1] == '"') {
+              p += 2; *q++ = '"'; continue;
+            }
+            /* fallthrough */
+        default:
+          *q++ = *p++;
+        }
+      }
+    }
     /* Delimit argument and expand it */
-    *p++ = 0;
+    *q++ = 0;
     expand_argument(s);
+    p++;
   }
 }
 
