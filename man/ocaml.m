@@ -7,7 +7,7 @@ ocaml \- The Objective Caml interactive toplevel
 .SH SYNOPSIS
 .B ocaml
 [
-.B \-modern
+.B \-labels
 ]
 [
 .B \-unsafe
@@ -63,10 +63,11 @@ were given on the command line, but before the standard library
 directory.
 
 .TP
-.B \-modern
-Switch to the modern semantics for application. Arguments should be
+.B \-labels
+Switch to ``commuting label mode''. Arguments must be
 explicitly labeled by labels appearing in types. Arguments with different
 labels may commute freely.
+
 
 .TP
 .B \-unsafe

@@ -19,7 +19,7 @@ ocamlopt \- The Objective Caml native-code compiler
 .B \-compact
 ]
 [
-.B \-modern
+.B \-labels
 ]
 [
 .B \-unsafe
@@ -220,8 +220,8 @@ is saved in the file
 Print the version number of the compiler.
 
 .TP
-.B \-modern
-Switch to the modern semantics for application. Arguments should be
+.B \-labels
+Switch to ``commuting label mode''. Arguments must be
 explicitly labeled by labels appearing in types. Arguments with different
 labels may commute freely.
 

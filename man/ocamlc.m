@@ -19,7 +19,7 @@ ocamlc \- The Objective Caml bytecode compiler
 .B \-custom
 ]
 [
-.B \-modern
+.B \-labels
 ]
 [
 .B \-unsafe
@@ -231,8 +231,8 @@ option is given, specify the name of the library produced.
 Print the version number of the compiler.
 
 .TP
-.B \-modern
-Switch to the modern semantics for application. Arguments should be
+.B \-labels
+Switch to ``commuting label mode''. Arguments must be
 explicitly labeled by labels appearing in types. Arguments with different
 labels may commute freely.
 
