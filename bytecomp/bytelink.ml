@@ -405,6 +405,13 @@ let rec extract suffix l =
 let build_custom_runtime prim_name exec_name =
   match Sys.os_type with
     "Unix" | "Cygwin" ->
+      let rpath =
+        String.concat ":"
+          (List.filter ((<>) "") 
+             (!Clflags.dllpaths @
+              Dllpath.ld_library_path_contents() @
+              Dllpath.ld_conf_contents()))
+      in
       Ccomp.command
        (Printf.sprintf
           "%s -o %s -I%s %s %s %s %s %s -lcamlrun %s"
@@ -416,12 +423,7 @@ let build_custom_runtime prim_name exec_name =
           (String.concat " "
             (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
                       !load_path))
-          (String.concat " "
-            (List.map (fun dir -> if dir = "" then "" else
-                                  Config.bytecomp_c_rpath ^ dir)
-                      (!Clflags.dllpaths @
-                       Dllpath.ld_library_path_contents() @
-                       Dllpath.ld_conf_contents())))
+          (if rpath <> "" then Config.bytecomp_c_rpath ^ rpath else "")
           (String.concat " " (List.rev !Clflags.ccobjs))
           Config.bytecomp_c_libraries)
   | "Win32" ->
