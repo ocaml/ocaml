@@ -210,7 +210,7 @@ char * searchpath(name)
   }
   path = getenv("PATH");
   if (path == NULL) return 0;
-  fullname = stat_alloc(strlen(filename) + strlen(path) + 2);
+  fullname = stat_alloc(strlen(name) + strlen(path) + 2);
   while(1) {
     for (p = fullname; *path != 0 && *path != ':'; p++, path++) *p = *path;
     if (p != fullname) *p++ = '/';
