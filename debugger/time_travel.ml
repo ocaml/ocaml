@@ -82,7 +82,7 @@ let wait_for_connection checkpoint =
              main_loop)
   with
     Sys.Break ->
-      checkpoint.c_parent = root;
+      checkpoint.c_parent <- root;
       remove_checkpoint checkpoint;
       checkpoint.c_pid <- -1;
       raise Sys.Break
@@ -106,7 +106,7 @@ let kill_checkpoint checkpoint =
      stop checkpoint.c_fd;
      if checkpoint.c_parent.c_pid > 0 then
        wait_child checkpoint.c_parent.c_fd;
-     checkpoint.c_parent = root;
+     checkpoint.c_parent <- root;
      close_io checkpoint.c_fd;
      remove_file checkpoint.c_fd;
      remove_checkpoint checkpoint);
@@ -184,7 +184,7 @@ let clean_checkpoints time checkpoint_count =
       let (kept, lost) =
         new_checkpoint_list checkpoint_count accepted after
       in
-	List.map kill_checkpoint (lost @ rejected);
+	List.iter kill_checkpoint (lost @ rejected);
       	checkpoints := kept
 
 (*** Internal functions for moving. ***)
@@ -316,7 +316,7 @@ let internal_step duration =
       	            (find_checkpoint_before (current_time ()))));
 	if !debug_time_travel then begin
           print_string "Checkpoints : pid(time)"; print_newline ();
-      	  List.map
+      	  List.iter
             (function {c_time = time; c_pid = pid; c_valid = valid} ->
       	       print_int pid;
                print_string "("; print_int time; print_string ")";
@@ -324,7 +324,7 @@ let internal_step duration =
       	       print_string " ")
       	    !checkpoints;
       	  print_newline ()
-	  end
+	end
 
 (*** Miscellaneous functions (exported). ***)
 
