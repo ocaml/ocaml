@@ -20,6 +20,8 @@ genlex.cmo: char.cmi hashtbl.cmi list.cmi stream.cmi string.cmi genlex.cmi
 genlex.cmx: char.cmx hashtbl.cmx list.cmx stream.cmx string.cmx genlex.cmi 
 hashtbl.cmo: array.cmi hashtbl.cmi 
 hashtbl.cmx: array.cmx hashtbl.cmi 
+lazy.cmo: lazy.cmi 
+lazy.cmx: lazy.cmi 
 lexing.cmo: string.cmi lexing.cmi 
 lexing.cmx: string.cmx lexing.cmi 
 list.cmo: list.cmi 

@@ -86,6 +86,6 @@ val lcons : (unit -> 'a) -> 'a t -> 'a t;;
 val lsing : (unit -> 'a) -> 'a t;;
 
 val sempty : 'a t;;
-val lazy : (unit -> 'a t) -> 'a t;;
+val slazy : (unit -> 'a t) -> 'a t;;
 
 val dump : ('a -> unit) -> 'a t -> unit;;

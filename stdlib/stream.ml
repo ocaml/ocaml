@@ -155,7 +155,7 @@ let lcons f s = {count = 0; data = Slazy (fun _ -> Scons (f (), s.data))};;
 let lsing f = {count = 0; data = Slazy (fun _ -> Scons (f (), Sempty))};;
 
 let sempty = {count = 0; data = Sempty};;
-let lazy f = {count = 0; data = Slazy (fun _ -> (f ()).data)};;
+let slazy f = {count = 0; data = Slazy (fun _ -> (f ()).data)};;
 
 (* For debugging use *)
 

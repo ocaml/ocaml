@@ -110,10 +110,10 @@ let cparser (bpo, pc) =
 
 (* streams *)
 
-let lazy e = mkexp (Pexp_function [(mkpat Ppat_any, e)])
+let clazy e = mkexp (Pexp_function [(mkpat Ppat_any, e)])
 
 let rec cstream =
   function
     [] -> eval "sempty"
-  | Sexp_term e :: secl -> afun "lcons" [lazy e; cstream secl]
-  | Sexp_nterm e :: secl -> afun "lapp" [lazy e; cstream secl]
+  | Sexp_term e :: secl -> afun "lcons" [clazy e; cstream secl]
+  | Sexp_nterm e :: secl -> afun "lapp" [clazy e; cstream secl]

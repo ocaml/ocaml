@@ -55,6 +55,7 @@ let keyword_table =
     "in", IN;
     "include", INCLUDE;
     "inherit", INHERIT;
+    "lazy", LAZY;
     "let", LET;
     "match", MATCH;
     "method", METHOD;

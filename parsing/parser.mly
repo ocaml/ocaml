@@ -57,6 +57,12 @@ let mkassert e =
          else mkexp (Pexp_ifthenelse (e, un, Some raiser))
 ;;
 
+let mklazy e =
+  let f = mkexp (Pexp_ident (Ldot (Lident "Lazy", "_lazy"))) in
+  let void_pat = mkpat (Ppat_construct (Lident "()", None, false)) in
+  mkexp (Pexp_apply (f, [mkexp (Pexp_function ([void_pat, e]))]))
+;;
+
 let mkinfix arg1 name arg2 =
   mkexp(Pexp_apply(mkoperator name 2, [arg1; arg2]))
 
@@ -152,6 +158,7 @@ let unclosed opening_name opening_num closing_name closing_num =
 %token <string> INFIXOP4
 %token INHERIT
 %token <int> INT
+%token LAZY
 %token LBRACE
 %token LBRACELESS
 %token LBRACKET
@@ -487,6 +494,8 @@ expr:
       { mkexp(Pexp_setinstvar($1, $3)) }
   | ASSERT simple_expr %prec prec_appl
       { mkassert $2 }
+  | LAZY simple_expr %prec prec_appl
+      { mklazy $2 }
 ;
 simple_expr:
     val_longident
