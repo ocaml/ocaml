@@ -22,7 +22,6 @@ install:
 
 installopt:
 	cp stdlib.cmxa stdlib.lib std_exit.obj *.cmx $(LIBDIR)
-	cd $(LIBDIR) & $(RANLIB) stdlib.lib
 
 stdlib.cma: $(OBJS)
 	$(CAMLC) -a -o stdlib.cma $(OBJS)
@@ -30,8 +29,8 @@ stdlib.cma: $(OBJS)
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
-cslheader: header.c ..\config\Makefile.nt
-	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -Fecslheader. header.c
+cslheader: headernt.c ..\config\Makefile.nt
+	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -Fecslheader. headernt.c
 
 clean::
 	rm -f cslheader
