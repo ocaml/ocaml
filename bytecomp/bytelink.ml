@@ -92,8 +92,9 @@ let scan_file obj_name tolink =
       let required =
         List.fold_right
           (fun compunit reqd ->
-            if List.exists is_required compunit.cu_reloc
+            if compunit.cu_force_link
             or !Clflags.link_everything
+            or List.exists is_required compunit.cu_reloc
             then begin
               List.iter remove_required compunit.cu_reloc;
               List.iter add_required compunit.cu_reloc;

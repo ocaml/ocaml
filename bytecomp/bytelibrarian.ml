@@ -40,6 +40,7 @@ let copy_object_file outchan name =
     let compunit = (input_value ic : compilation_unit) in
     seek_in ic compunit.cu_pos;
     compunit.cu_pos <- pos_out outchan;
+    compunit.cu_force_link <- !Clflags.link_everything;
     copy_file_chunk ic outchan compunit.cu_codesize;
     close_in ic;
     compunit

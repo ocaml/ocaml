@@ -149,52 +149,58 @@ let transl_implementation module_name str cc =
    for the native-code compiler. Store the defined values in the fields
    of the global as soon as they are defined, in order to reduce register
    pressure.
-   "map" is a table from idents to (position in global block, coercion). *)
+   "map" is a table from idents to (position in global block, coercion).
+   "prim" is a list of (position in global block, primitive declaration). *)
 
-let rec transl_store_structure glob map = function
+let transl_store_structure glob map prims str =
+  let rec transl_store = function
     [] ->
       lambda_unit
   | Tstr_eval expr :: rem ->
-      Lsequence(transl_exp expr, transl_store_structure glob map rem)
+      Lsequence(transl_exp expr, transl_store rem)
   | Tstr_value(rec_flag, pat_expr_list) :: rem ->
       transl_let rec_flag pat_expr_list
         (store_idents glob map (let_bound_idents pat_expr_list)
-          (transl_store_structure glob map rem))
+          (transl_store rem))
   | Tstr_primitive(id, descr) :: rem ->
       begin match descr.val_prim with
         None -> ()
       | Some p -> primitive_declarations :=
                     p.Primitive.prim_name :: !primitive_declarations
       end;
-      store_ident glob map id (transl_store_structure glob map rem)
+      transl_store rem
   | Tstr_type(decls) :: rem ->
-      transl_store_structure glob map rem
+      transl_store rem
   | Tstr_exception(id, decl) :: rem ->
       Llet(Strict, id, transl_exception id decl,
-           store_ident glob map id (transl_store_structure glob map rem))
+           store_ident glob map id (transl_store rem))
   | Tstr_module(id, modl) :: rem ->
       Llet(Strict, id, transl_module Tcoerce_none modl,
-           store_ident glob map id (transl_store_structure glob map rem))
+           store_ident glob map id (transl_store rem))
   | Tstr_modtype(id, decl) :: rem ->
-      transl_store_structure glob map rem
+      transl_store rem
   | Tstr_open path :: rem ->
-      transl_store_structure glob map rem
+      transl_store rem
 
-and store_ident glob map id cont =
-  try
-    let (pos, cc) = Ident.find_same id map in
-    let init_val =
-      match cc with
-        Tcoerce_primitive p -> transl_primitive p
-      | _ -> apply_coercion cc (Lvar id) in
-    Lsequence
-     (Lprim(Psetfield(pos, false), [Lprim(Pgetglobal glob, []); init_val]),
-      cont)
-  with Not_found ->
-    cont
+  and store_ident glob map id cont =
+    try
+      let (pos, cc) = Ident.find_same id map in
+      let init_val = apply_coercion cc (Lvar id) in
+      Lsequence
+       (Lprim(Psetfield(pos, false), [Lprim(Pgetglobal glob, []); init_val]),
+        cont)
+    with Not_found ->
+      cont
 
-and store_idents glob map idlist cont =
-  List.fold_right (store_ident glob map) idlist cont
+  and store_idents glob map idlist cont =
+    List.fold_right (store_ident glob map) idlist cont
+
+  and store_primitive (pos, prim) cont =
+    Lsequence(Lprim(Psetfield(pos, false),
+                    [Lprim(Pgetglobal glob, []); transl_primitive prim]),
+              cont)
+  in
+    List.fold_right store_primitive prims (transl_store str)
 
 (* Build the list of value identifiers defined by a toplevel structure *)
 
@@ -210,36 +216,47 @@ let rec defined_idents = function
   | Tstr_modtype(id, decl) :: rem -> defined_idents rem
   | Tstr_open path :: rem -> defined_idents rem
 
-(* Distribute a coercion over the list of value identifiers built above. *)
+(* Transform a coercion and the list of value identifiers built above
+   into a table id -> (pos, coercion), with [pos] being the position
+   in the global block where the value of [id] must be stored,
+   and [coercion] the coercion to be applied to it.
+   A given identifier may appear several times
+   in the coercion (if it occurs several times in the signature); remember
+   to assign it the position of its last occurrence.
+   Also buid a list of primitives and their positions in the global block,
+   and the total size of the global block. *)
 
-let distribute_coercion restr idlist =
+let build_ident_map restr idlist =
   match restr with
     Tcoerce_none ->
-      List.map (fun id -> (id, Tcoerce_none)) idlist
+      let rec build_map pos map = function
+        [] ->
+          (map, [], pos)
+      | id :: rem ->
+          build_map (pos+1) (Ident.add id (pos, Tcoerce_none) map) rem
+      in build_map 0 Ident.empty idlist
   | Tcoerce_structure pos_cc_list ->
       let idarray = Array.of_list idlist in
-      List.map (fun (pos, cc) -> (idarray.(pos), cc)) pos_cc_list
-  | _->
-      fatal_error "Translmod.distribute_coercion"
-
-(* Transform the list (id, coercion) built above into a table
-   id -> (pos, coercion). A given identifier may appear several times
-   in the list (if it occurs several times in the signature); remember
-   to assign it the position of its last occurrence. *)
-
-let rec build_ident_map pos map = function
-    [] -> map
-  | (id, cc) :: rem -> build_ident_map (pos+1) (Ident.add id (pos, cc) map) rem
-
+      let rec build_map pos map prims = function
+        [] ->
+          (map, prims, pos)
+      | (source_pos, Tcoerce_primitive p) :: rem ->
+          build_map (pos+1) map ((pos, p) :: prims) rem
+      | (source_pos, cc) :: rem ->
+          build_map (pos+1) (Ident.add idarray.(source_pos) (pos, cc) map)
+                    prims rem
+      in build_map 0 Ident.empty [] pos_cc_list
+  | _ ->
+      fatal_error "Translmod.build_ident_map"
+        
 (* Compile an implementation using transl_store_structure 
    (for the native-code compiler). *)
 
-let transl_store_implementation module_name str cc =
+let transl_store_implementation module_name str restr =
   primitive_declarations := [];
   let module_id = Ident.new_persistent module_name in
-  let id_cc_list = distribute_coercion cc (defined_idents str) in
-  let map = build_ident_map 0 Ident.empty id_cc_list in
-  (List.length id_cc_list, transl_store_structure module_id map str)
+  let (map, prims, size) = build_ident_map restr (defined_idents str) in
+  (size, transl_store_structure module_id map prims str)
 
 (* Compile a sequence of expressions *)
 

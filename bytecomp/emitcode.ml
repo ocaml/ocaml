@@ -38,7 +38,8 @@ type compilation_unit =
     cu_reloc: (reloc_info * int) list;  (* Relocation information *)
     cu_interface: Digest.t;             (* CRC of interface implemented *)
     cu_imports: (string * Digest.t) list; (* Names and CRC of intfs imported *)
-    cu_primitives: string list }        (* Primitives declared inside *)
+    cu_primitives: string list;         (* Primitives declared inside *)
+    mutable cu_force_link: bool }       (* Must be linked even if unref'ed *)
 
 (* Format of a .cmo file:
      magic number (Config.cmo_magic_number)
@@ -288,7 +289,8 @@ let to_file outchan unit_name crc_interface code =
       cu_reloc = List.rev !reloc_info;
       cu_interface = crc_interface;
       cu_imports = Env.imported_units();
-      cu_primitives = !Translmod.primitive_declarations } in
+      cu_primitives = !Translmod.primitive_declarations;
+      cu_force_link = false } in
   init();                               (* Free out_buffer and reloc_info *)
   let pos_compunit = pos_out outchan in
   output_value outchan compunit;

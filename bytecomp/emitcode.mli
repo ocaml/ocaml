@@ -33,10 +33,11 @@ type compilation_unit =
     cu_reloc: (reloc_info * int) list;  (* Relocation information *)
     cu_interface: Digest.t;             (* CRC of interface implemented *)
     cu_imports: (string * Digest.t) list; (* Names and CRC of intfs imported *)
-    cu_primitives: string list }        (* Primitives declared inside *)
+    cu_primitives: string list;         (* Primitives declared inside *)
+    mutable cu_force_link: bool }       (* Must be linked even if unref'ed *)
 
 (* Format of a .cmo file:
-     Obj.magic number (Config.cmo_magic_number)
+     magic number (Config.cmo_magic_number)
      absolute offset of compilation unit descriptor
      block of relocatable bytecode
      compilation unit descriptor *)
