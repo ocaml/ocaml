@@ -107,6 +107,7 @@ let rec transl_modtype env smty =
       Tmty_signature final_sg
       
 and transl_signature env sg =
+  Ctype.init_def(Ident.current_time());
   match sg with
     [] -> []
   | {psig_desc = Psig_value(name, sdesc)} :: srem ->
