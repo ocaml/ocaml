@@ -35,15 +35,15 @@ labltk: Makefile $(TOPDIR)/config/Makefile
 labltklink: Makefile $(TOPDIR)/config/Makefile
 	@echo Generate $@
 	@echo "#!/bin/sh" > $@
-	@echo 'exec ocamlc -custom -I $(LABLTKDIR) tk41.cma "$$@"\\' >> $@
-	@echo '	-cclib "-L$(LABLTKDIR) -llabltk41 $(TK_LINK)"\\' >> $@
+	@echo 'exec ocamlc -custom -I $(LABLTKDIR) tk41.cma "$$@" \' >> $@
+	@echo '	-cclib "-L$(LABLTKDIR) -llabltk41 $(TK_LINK)" \' >> $@
 	@echo '	$(X11_LINK) -cclib "$(CCLIBS) $(DLLIB)"' >> $@
 
 labltkopt: Makefile $(TOPDIR)/config/Makefile
 	@echo Generate $@
 	@echo "#!/bin/sh" > $@
-	@echo 'exec ocamlopt -custom -I $(LABLTKDIR) tk41.cmxa "$$@"\\' >> $@
-	@echo '	-cclib "-L$(LABLTKDIR) -llabltk41 $(TK_LINK)"\\' >> $@
+	@echo 'exec ocamlopt -custom -I $(LABLTKDIR) tk41.cmxa "$$@" \' >> $@
+	@echo '	-cclib "-L$(LABLTKDIR) -llabltk41 $(TK_LINK)" \' >> $@
 	@echo '	$(X11_LINK) -cclib "$(CCLIBS) $(DLLIB)"' >> $@
 
 # All .{ml,mli} files are generated in this directory
