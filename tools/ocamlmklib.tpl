@@ -50,18 +50,18 @@ while :; do
         shift;;
     -custom)
         dynlink=false;;
-    -l*)
-        c_libs="$c_libs $1"
-        c_libs_caml="$c_libs_caml -cclib $1";;
-    -L*)
-        c_opts="$c_opts $1"
-        c_opts_caml="$c_opts_caml -ccopt $1";;
     -I)
         caml_opts="$caml_opts $1 $2"
         shift;;
     -linkall)
         caml_opts="$caml_opts $1"
         shift;;
+    -l*)
+        c_libs="$c_libs $1"
+        c_libs_caml="$c_libs_caml -cclib $1";;
+    -L*)
+        c_opts="$c_opts $1"
+        c_opts_caml="$c_opts_caml -ccopt $1";;
     -ocamlc)
         ocamlc="$2"
         shift;;
@@ -127,7 +127,7 @@ if test "$c_objs" != ""; then
     ar rc lib$output_c.a $c_objs ||
     %%RANLIB%% lib$output_c.a
 fi
-if $dynlink; then :; else
+if $dynlink; then
     c_libs_caml=''
 fi
 if test "$bytecode_objs" != ""; then
