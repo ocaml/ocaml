@@ -117,7 +117,7 @@ let pseudoregs_for_operation op arg res =
   (* For floating-point operations, the result is always left at the
      top of the floating-point stack *)
   | Iconst_float _ | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
-  | Ifloatofint |Ispecific(Isubfrev | Idivfrev | Ifloatarithmem(_, _)) ->
+  | Ifloatofint | Ispecific(Isubfrev | Idivfrev | Ifloatarithmem(_, _)) ->
       (arg, [| tos |], false)           (* don't move it immediately *)
   (* Same for a floating-point load *)
   | Iload(Word, addr) when res.(0).typ = Float ->
