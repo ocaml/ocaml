@@ -333,3 +333,18 @@ raise_caml_exception:
         jmp     $25, ($27)      /* Keep retaddr in $25 to help debugging */
 
         .end    raise_caml_exception
+
+/* Glue code to jump to array_bound_error after reinitializing $gp */
+
+        .globl  call_array_bound_error
+        .ent    call_array_bound_error
+        .align  3
+call_array_bound_error:
+    /* Rebuild $gp */
+        br      $27, $106
+$106:   ldgp    $gp, 0($27)
+    /* Branch to array_bound_error -- never returns */
+        jsr     array_bound_error
+
+        .end    call_array_bound_error
+

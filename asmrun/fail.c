@@ -39,6 +39,7 @@ void mlraise(v)
      value v;
 {
   leave_blocking_section();
+  local_roots = NULL;
   raise_caml_exception(v);
 }
 

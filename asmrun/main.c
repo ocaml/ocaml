@@ -41,7 +41,7 @@ int main(argc, argv)
   value retcode;
 
   init_ieee_floats();
-
+  init_signals();
 #ifdef DEBUG
   verbose_init = 1;
 #endif
