@@ -21,40 +21,54 @@ open Types
 type t = 
   { types: (Ident.t, Path.t) Tbl.t;
     modules: (Ident.t, Path.t) Tbl.t;
-    modtypes: (Ident.t, module_type) Tbl.t }
+    modtypes: (Ident.t, module_type) Tbl.t;
+    max_level: int }
 
 let identity =
-  { types = Tbl.empty; modules = Tbl.empty; modtypes = Tbl.empty }
+  { types = Tbl.empty; modules = Tbl.empty; modtypes = Tbl.empty;
+    max_level = -1 }
 
 let add_type id p s =
   { types = Tbl.add id p s.types;
     modules = s.modules;
-    modtypes = s.modtypes }
+    modtypes = s.modtypes;
+    max_level = s.max_level }
 
 let add_module id p s =
   { types = s.types;
     modules = Tbl.add id p s.modules;
-    modtypes = s.modtypes }
+    modtypes = s.modtypes;
+    max_level = s.max_level }
 
 let add_modtype id ty s =
   { types = s.types;
     modules = s.modules;
-    modtypes = Tbl.add id ty s.modtypes }
+    modtypes = Tbl.add id ty s.modtypes;
+    max_level = s.max_level }
 
 let remove_type id s =
   { types = Tbl.remove id s.types;
     modules = s.modules;
-    modtypes = s.modtypes }
+    modtypes = s.modtypes;
+    max_level = s.max_level }
 
 let remove_module id s =
   { types = s.types;
     modules = Tbl.remove id s.modules;
-    modtypes = s.modtypes }
+    modtypes = s.modtypes;
+    max_level = s.max_level }
 
 let remove_modtype id s =
   { types = s.types;
     modules = s.modules;
-    modtypes = Tbl.remove id s.modtypes }
+    modtypes = Tbl.remove id s.modtypes;
+    max_level = s.max_level }
+
+let limit_level lev s =
+  { types = s.types;
+    modules = s.modules;
+    modtypes = s.modtypes;
+    max_level = if s.max_level = -1 then lev else min s.max_level lev }
 
 let rec module_path s = function
     Pident id as p ->
@@ -80,7 +94,8 @@ let lowest_level = generic_level
 let pivot_level = 2 * lowest_level - 1
     (* pivot_level - lowest_level < lowest_level *)
 
-let newmarkedvar ()    = { desc = Tvar; level = pivot_level - generic_level }
+let newmarkedvar () =
+  { desc = Tvar; level = pivot_level - generic_level }
 
 let rec repr =
   function
@@ -115,9 +130,16 @@ let rec unmark_type ty =
 (* Similar to [Ctype.nondep_type_rec]. *)
 let rec typexp s ty =
   let ty = repr ty in
-  if (ty.desc = Tvar) || (ty.level < lowest_level) then
+  if ty.level < lowest_level then
     ty
-  else begin
+  else if ty.desc = Tvar then begin
+    if
+      (ty.level <> generic_level) && (s.max_level <> -1)
+      && (ty.level > s.max_level)
+    then
+      ty.level <- s.max_level;
+    ty
+  end else begin
     let desc = ty.desc in
     saved_desc := (ty, desc)::!saved_desc;
     let ty' = newmarkedvar () in        (* Stub *)
@@ -147,8 +169,8 @@ let rec typexp s ty =
   end
 
 (*
-   Always make a copy of the type (generation of abbreviations from
-   class definitions relies on this).
+   Always make a copy of the type (Ctype.correct_levels relies on
+   this).
 *)
 let type_expr s ty =
   let ty' = typexp s ty in
