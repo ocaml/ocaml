@@ -141,65 +141,6 @@ let iter_type_expr f ty =
   | Tlink ty            -> f ty
   | Tsubst ty           -> f ty
 
-let rec iter_ty_paths f ty =
-  match ty.desc with
-  | Tvar -> ()
-  | Tarrow (label, dom, im, commutable) ->
-      iter_ty_paths f dom;
-      iter_ty_paths f im
-  | Ttuple tys ->
-      List.iter (iter_ty_paths f) tys
-  | Tconstr (path, tys, abbrev) ->
-      let path' = f path in
-      ty.desc <- Tconstr (path', tys, abbrev);
-      abbrev := Mnil;
-      List.iter (iter_ty_paths f) tys
-  | Tobject (ty1, r) ->
-      begin match !r with
-      | None -> ()
-      | Some (path, tys) ->
-          let path' = f path in
-          r := Some (path', tys);
-          List.iter (iter_ty_paths f) tys
-      end;
-      iter_ty_paths f ty1
-  | Tfield (label, kind, ty1, ty2) ->
-      iter_ty_paths f ty1;
-      iter_ty_paths f ty2
-  | Tnil -> ()
-  | Tlink ty1 -> iter_ty_paths f ty1
-  | Tsubst ty1 -> iter_ty_paths f ty1
-  | Tvariant row ->
-      let row' = iter_row_paths f row in
-      if row != row' then ty.desc <- Tvariant row'
-
-and iter_row_paths f row =
-  List.iter
-    (function (label, row_field) -> iter_row_field_paths f row_field)
-    row.row_fields;
-  iter_ty_paths f row.row_more;
-  List.iter (iter_ty_paths f) row.row_bound;
-  begin match row.row_name with
-  | None -> row
-  | Some (path, tys) ->
-      let path' = f path in
-      List.iter (iter_ty_paths f) tys;
-      { row with row_name = Some (path', tys) }
-  end
-
-and iter_row_field_paths f = function
-  | Rpresent (Some ty) -> iter_ty_paths f ty
-  | Rpresent None -> ()
-  | Reither (c, tys, b, r) ->
-      List.iter (iter_ty_paths f) tys;
-      begin match !r with
-      | None -> ()
-      | Some row_field -> iter_row_field_paths f row_field
-      end
-  | Rabsent -> ()
-
-let iter_type_paths f ty = iter_ty_paths f ty
-
 let copy_row f row keep more =
   let fields = List.map
       (fun (l, fi) -> l,
@@ -270,6 +211,10 @@ let mark_type_node ty =
 let mark_type_params ty =
   iter_type_expr mark_type ty
 
+let is_marked ty =
+  let ty = repr ty in
+  ty.level < lowest_level
+
 (* Remove marks from a type. *)
 let rec unmark_type ty =
   let ty = repr ty in
@@ -304,6 +249,72 @@ let rec unmark_class_type =
       unmark_class_signature sign
   | Tcty_fun (_, ty, cty) ->
       unmark_type ty; unmark_class_type cty
+
+
+let rec iter_ty_paths f ty =
+  if not (is_marked ty) then begin
+    mark_type_node ty;
+    match ty.desc with
+    | Tvar -> ()
+    | Tarrow (label, dom, im, commutable) ->
+        iter_ty_paths f dom;
+        iter_ty_paths f im
+    | Ttuple tys ->
+        List.iter (iter_ty_paths f) tys
+    | Tconstr (path, tys, abbrev) ->
+        let path' = f path in
+        ty.desc <- Tconstr (path', tys, abbrev);
+        abbrev := Mnil;
+        List.iter (iter_ty_paths f) tys
+    | Tobject (ty1, r) ->
+        begin match !r with
+        | None -> ()
+        | Some (path, tys) ->
+            let path' = f path in
+            r := Some (path', tys);
+            List.iter (iter_ty_paths f) tys
+        end;
+        iter_ty_paths f ty1
+    | Tfield (label, kind, ty1, ty2) ->
+        iter_ty_paths f ty1;
+        iter_ty_paths f ty2
+    | Tnil -> ()
+    | Tlink ty1 -> iter_ty_paths f ty1
+    | Tsubst ty1 -> iter_ty_paths f ty1
+    | Tvariant row ->
+        let row' = iter_row_paths f row in
+        if row != row' then ty.desc <- Tvariant row'
+  end
+
+and iter_row_paths f row =
+  List.iter
+    (function (label, row_field) -> iter_row_field_paths f row_field)
+    row.row_fields;
+  iter_ty_paths f row.row_more;
+  List.iter (iter_ty_paths f) row.row_bound;
+  begin match row.row_name with
+  | None -> row
+  | Some (path, tys) ->
+      let path' = f path in
+      List.iter (iter_ty_paths f) tys;
+      { row with row_name = Some (path', tys) }
+  end
+
+and iter_row_field_paths f = function
+  | Rpresent (Some ty) -> iter_ty_paths f ty
+  | Rpresent None -> ()
+  | Reither (c, tys, b, r) ->
+      List.iter (iter_ty_paths f) tys;
+      begin match !r with
+      | None -> ()
+      | Some row_field -> iter_row_field_paths f row_field
+      end
+  | Rabsent -> ()
+
+let iter_type_paths f ty =
+  iter_ty_paths f ty;
+  unmark_type ty
+
 
 
                   (*******************************************)
