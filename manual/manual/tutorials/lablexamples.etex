@@ -397,14 +397,17 @@ let rec map ~f : 'a vlist -> 'b vlist = function
 
 Type-checking polymorphic variants is a subtle thing, and some
 expressions may result in more complex type information.
+
 \begin{caml_example}
-function `A -> `B | x -> x;;
+let f = function `A -> `C | `B -> `D | x -> x;;
+f `E;;
 \end{caml_example}
-Here the ".." means that we know that "`A" and "`B" may not have an
-argument, but there is no specified upper bound on the number of
-variant tags in this variant type. We know also that "`B" can appear
-in the result, and input and output types have to be kept equal
-because "x" is returned as is.
+Here we are seeing two phenomena. First, since this matching is open
+(the last case catches any tag), we obtain the type "[> `A | `B]"
+rather than "[< `A | `B]" in a closed matching. Then, since "x" is
+returned as is, input and return types are identical. The notation "as
+'a" denotes such type sharing. If we apply "f" to yet another tag
+"`E", it gets added to the list.
 
 \begin{caml_example}
 let f1 = function `A x -> x = 1 | `B -> true | `C -> false
@@ -438,7 +441,7 @@ let split_cases = function
 \end{caml_example}
 When an or-pattern composed of variant tags is wrapped inside an
 alias-pattern, the alias is given a type containing only the tags
-enumerated in the or-pattern. this allows for many useful idioms, like
+enumerated in the or-pattern. This allows for many useful idioms, like
 incremental definition of functions.
 
 \begin{caml_example}
@@ -472,4 +475,44 @@ let g1 = function `Tag1 _ -> "Tag1" | `Tag2 _ -> "Tag2";;
 let g = function
   | #myvariant as x -> g1 x
   | `Tag3 -> "Tag3";;
+\end{caml_example}
+
+\subsection{Weaknesses of polymorphic variants}
+
+After seeing the power of polymorphic variants, one may wonder why
+they were added to core language variants, rather than replacing them.
+
+The answer is two fold. One first aspect is that while being pretty
+efficient, the lack of static type information allows for less
+optimizations, and makes polymorphic variants slightly heavier than
+core language ones. However noticeable differences would only
+appear on huge data structures.
+
+More important is the fact that polymorphic variants, while being
+type-safe, result in a weaker type discipline. That is, core language
+variants do actually much more than ensuring type-safety, they also
+check that you use only declared constructors, that all constructors
+present in a data-structure are compatible, and they enforce typing
+constraints to their parameters.
+
+For this reason, you must be more careful about making types explicit
+when you use polymorphic variants. When you write a library, this is
+easy since you can describe exact types in interfaces, but for simple
+programs you are probably better off with core language variants.
+
+Beware also that certain idioms make trivial errors very hard to find.
+For instance, the following code is probably wrong but the compiler
+has no way to see it.
+\begin{caml_example}
+type abc = [`A | `B | `C] ;;
+let f = function
+  | `As -> "A"
+  | #abc -> "other" ;;
+let f : abc -> string = f ;;
+\end{caml_example}
+You can avoid such risks by annotating the definition itself.
+\begin{caml_example}
+let f : abc -> string = function
+  | `As -> "A"
+  | #abc -> "other" ;;
 \end{caml_example}

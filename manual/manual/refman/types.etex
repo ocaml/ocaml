@@ -108,10 +108,9 @@ an object type constructor are rejected.
 
 \begin{syntax}
 variant-type:
-        [ tag-spec { '|' tag-spec } ]
-      | '>' tag-spec { '|' tag-spec }
-      | '<' '..'
-      | '<' tag-spec-full { '|' tag-spec-full } ['|' '..'] [ '>' {{ '`'tag-name }} ]
+        [ tag-spec ] { '|' tag-spec }
+      | '>' [ tag-spec ] { '|' tag-spec }
+      | '<' [ '|' ] tag-spec-full { '|' tag-spec-full } [ '>' {{ '`'tag-name }} ]
 ;
 tag-spec:
         '`'tag-name [ "of" typexpr ]
@@ -124,27 +123,26 @@ Variant types describe the values a polymorphic variant may take.
 
 The first case is an exact variant type: all possible tags are
 known, with their associated types, and they can all be present.
-Its structure is fully known.
+Its structure is fully known. A special case is the empty type,
+with no tag, which contains no value.
 
-The second case describes a polymorphic variant value: 
-it gives the list of all tags the value could take, with their
-associated types. This type is still compatible with a variant type
-containing more tags.
+The second case is an open variant type, describing a polymorphic
+variant value: it gives the list of all tags the value could take,
+with their associated types. This type is still compatible with a
+variant type containing more tags. A special case is the unknown
+type, which does not define any tag, and is compatible with any
+variant type.
 
-The third case is the type with no information: nothing is known about
-which tags the variant is allowed to use. It only says that this must
-be a variant.
+The third case is a closed variant type. It gives information about
+all the possible tags and their associated types, and which tags are
+known to potentially appear in values. The above exact variant type is
+just an abbreviation for a closed variant type where all possible tags
+are also potentially present.
 
-The fourth case is the most general one. It gives information about
-all the possible tags and their associated types, whether more tags
-are allowed or not (with the ellipsis '..'), and which tags are known
-to potentially appear in values.
-
-Full specification of variant tags are only used in this last
-form. They can be understood as a conjunctive type for the argument:
+Full specification of variant tags are only used for non-exact closed
+types. They can be understood as a conjunctive type for the argument:
 it is intended to have all the types enumerated in the
-specification. If the first ampersand "&" appears just after the tag
-name, or no type at all is given, then no argument is allowed.
+specification.
 
 Such conjunctive constraints may be unsatisfiable. In such a case the
 corresponding tag may not be used in a value of this type. This
@@ -183,10 +181,10 @@ type @'#' class-path 'as' "'" ident '->' "'" ident@.
 \#-types can also be used to abbreviate variant types. Similarly they
 express the presence of a row variable, allowing further refinement of
 the type. Precisely, if "t" has been defined as the type
-@"[" "`tag"_1 t_1 "|" \dots "|`tag"_n t_n"]"@ then "\#t" is the type
-@"[<" "`tag"_1 t_1 "|" \dots"|`tag"_n t_n"]"@, and
+@"[" "`tag"_1 a_1 "|" \dots "|`tag"_n a_n"]"@ then "#t" is the type
+@"[<" "`tag"_1 a_1 "|" \dots"|`tag"_n a_n"]"@, and
 @"#t[>" "`tag"_1 \dots"`tag"_k"]"@ is the type
-@"[<" "`tag"_1 t_1 "|" \dots"|`tag"_n t_n ">" "`tag"_1 \dots"`tag"_k"]"@.
+@"[<" "`tag"_1 a_1 "|" \dots"|`tag"_n a_n ">" "`tag"_1 \dots"`tag"_k"]"@.
 
 \subsubsection*{Variant and record types}
 
