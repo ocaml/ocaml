@@ -67,3 +67,9 @@ val subst_type : env -> Types.type_expr -> Types.type_expr
 
 (** Replace the [Path.t] by a complete [Path.t] in a [Types.module_type].*)
 val subst_module_type : env -> Types.module_type -> Types.module_type
+
+(** Replace the [Path.t] by a complete [Path.t] in a [Types.class_type].
+   Also empty the structures to get only [object end] when the type
+   is printed.
+*)
+val subst_class_type : env -> Types.class_type -> Types.class_type

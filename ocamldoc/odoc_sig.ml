@@ -696,7 +696,7 @@ module Analyser =
 	    let new_module = 
 	      {
 		m_name = complete_name ;
-		m_type = Some sig_module_type;
+		m_type = sig_module_type;
 		m_info = comment_opt ;
 		m_is_interface = true ;
 		m_file = !file_name ;
@@ -714,7 +714,7 @@ module Analyser =
 	    let new_env = Odoc_env.add_module env new_module.m_name in
 	    let new_env2 = 
 	      match new_module.m_type with (* A VOIR : cela peut-il être Tmty_ident ? dans ce cas, on aurait pas la signature *)
-		Some (Types.Tmty_signature s) -> Odoc_env.add_signature new_env new_module.m_name ~rel: (Name.simple new_module.m_name) s
+		Types.Tmty_signature s -> Odoc_env.add_signature new_env new_module.m_name ~rel: (Name.simple new_module.m_name) s
 	      | _ -> new_env
 	    in
 	    (maybe_more, new_env2, [ Element_module new_module ])
@@ -848,7 +848,7 @@ module Analyser =
 		   {
 		     cl_name = complete_name ;
 		     cl_info = assoc_com ;
-		     cl_type = sig_class_type ;
+		     cl_type = Odoc_env.subst_class_type env sig_class_type ;
 		     cl_type_parameters = sig_class_decl.Types.cty_params;
 		     cl_virtual = class_desc.Parsetree.pci_virt = Asttypes.Virtual ;
 		     cl_kind = class_kind ;
@@ -919,7 +919,7 @@ module Analyser =
 		    {
 		      clt_name = complete_name ;
 		      clt_info = assoc_com ;
-		      clt_type = sig_class_type ;
+		      clt_type = Odoc_env.subst_class_type env sig_class_type ;
 		      clt_type_parameters = sig_cltype_decl.clty_params ;
 		      clt_virtual = ct_decl.Parsetree.pci_virt = Asttypes.Virtual ;
 		      clt_kind = kind ;
@@ -1209,7 +1209,7 @@ module Analyser =
       let m =
 	{
 	  m_name = mod_name ;
-	  m_type = Some (Types.Tmty_signature signat) ;
+	  m_type = Types.Tmty_signature signat ;
 	  m_info = info_opt ;
 	  m_is_interface = true ;
 	  m_file = !file_name ;

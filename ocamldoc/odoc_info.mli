@@ -433,9 +433,7 @@ module Module :
     and t_module = Odoc_module.t_module =
 	{
 	  m_name : Name.t ; (** Complete name of the module. *)
-	  m_type : Types.module_type option ; 
-             (** The type of the module. 
-		It is [None] when we had only the .ml file and it is a top module. *)
+	  m_type : Types.module_type ; (** The type of the module. *)
 	  mutable m_info : info option ; (** Information found in the optional associated comment. *)
 	  m_is_interface : bool ; (** [true] for modules read from interface files *)
 	  m_file : string ; (** The file the module is defined in. *)
@@ -602,11 +600,18 @@ val string_of_type_expr : Types.type_expr -> string
    with a given separator. It writes in and flushes [Format.str_formatter].*)
 val string_of_type_list : string -> Types.type_expr list -> string
 
-(** This function returns a string representing a [Types.module_type]. *)
-val string_of_module_type : Types.module_type -> string
+(** This function returns a string representing a [Types.module_type]. 
+   @param complete indicates if we must print complete signatures
+   or just [sig end]. Default if [false].
+*)
+val string_of_module_type : ?complete: bool -> Types.module_type -> string
 
-(** This function returns a string representing a [Types.class_type]. *)
-val string_of_class_type : Types.class_type -> string
+(** This function returns a string representing a [Types.class_type]. 
+   @param complete indicates if we must print complete signatures
+   or just [object end]. Default if [false].
+*)
+val string_of_class_type : ?complete: bool -> Types.class_type -> string
+
 
 (** Get a string from a text. *)
 val string_of_text : text -> string

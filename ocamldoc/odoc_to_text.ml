@@ -187,6 +187,14 @@ class virtual to_text =
       in
       s2
 
+    (** Get a string for a [Types.class_type] where all idents are relative. *)
+    method normal_class_type m_name t =
+      (self#relative_idents m_name (Odoc_info.string_of_class_type t))
+
+    (** Get a string for a [Types.module_type] where all idents are relative. *)
+    method normal_module_type m_name t =
+      (self#relative_idents m_name (Odoc_info.string_of_module_type t))
+
     (** Get a string for a type where all idents are relative. *)
     method normal_type m_name t =
       (self#relative_idents m_name (Odoc_info.string_of_type_expr t))
@@ -380,6 +388,8 @@ class virtual to_text =
 		 l
 	      )
 	  ] 
+
+(**/**)
 
     (** Return [text] value for the given [class_kind].*)
     method text_of_class_kind father ckind =

@@ -55,8 +55,7 @@ and module_kind =
 (** Representation of a module. *)
 and t_module = {
     m_name : Name.t ; 
-    m_type : Types.module_type option ; 
-        (** It is [None] when we had only the .ml file and it is a top module. *)
+    m_type : Types.module_type ; 
     mutable m_info : Odoc_types.info option ;
     m_is_interface : bool ; (** true for modules read from interface files *)
     m_file : string ; (** the file the module is defined in. *)
@@ -215,7 +214,7 @@ let rec module_elements ?(trans=true) m =
   | Module_constraint (k, tk) ->
       (* A VOIR : utiliser k ou tk ? *)
       module_elements ~trans: trans
-	{ m_name = "" ; m_info = None ; m_type = None ;
+	{ m_name = "" ; m_info = None ; m_type = Types.Tmty_signature [] ;
 	  m_is_interface = false ; m_file = "" ; m_kind = k ;
 	  m_loc = Odoc_types.dummy_loc ;
 	  m_top_deps = [] ;

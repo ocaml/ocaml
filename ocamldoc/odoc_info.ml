@@ -127,9 +127,9 @@ let string_of_type_expr t = Odoc_misc.string_of_type_expr t
    with a given separator. *)
 let string_of_type_list sep type_list = Odoc_misc.string_of_type_list sep type_list
 
-let string_of_module_type t = Odoc_misc.string_of_module_type t
+let string_of_module_type = Odoc_misc.string_of_module_type
 
-let string_of_class_type t = Odoc_misc.string_of_class_type t
+let string_of_class_type = Odoc_misc.string_of_class_type
 
 let string_of_text t = Odoc_misc.string_of_text t
 

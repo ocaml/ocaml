@@ -249,9 +249,6 @@ let subst_type env t =
     (t, new_deja_vu)
   in
   let (res, _) = iter [] t in
-(**  print_string "Odoc_env.subst_type fini";
-   print_newline ();
-*)
   res
 
 let subst_module_type env t =
@@ -267,5 +264,20 @@ let subst_module_type env t =
   in
   iter t
 
-
-    
+let subst_class_type env t =
+  let rec iter t =
+    match t with
+      Types.Tcty_constr (p,texp_list,ct) ->
+	let new_p = Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
+	let new_texp_list = List.map (subst_type env) texp_list in
+	let new_ct = iter ct in
+	Types.Tcty_constr (new_p, new_texp_list, new_ct)
+    | Types.Tcty_signature cs ->
+	(* on ne s'occupe pas des vals et methods *)
+	t
+    | Types.Tcty_fun (l, texp, ct) ->
+	let new_texp = subst_type env texp in
+	let new_ct = iter ct in
+	Types.Tcty_fun (l, new_texp, new_ct)
+  in
+  iter t

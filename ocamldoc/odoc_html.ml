@@ -494,14 +494,6 @@ class html =
 	".title4 { font-size : 20pt ; background-color : #41CDFF }" ;
 	".title5 { font-size : 20pt ; background-color : #41EDFF }" ;
 	".title6 { font-size : 20pt ; background-color : #41FFFF }" ;
-(*
-	".title1 { font-size : 20pt ; background-color : #AAFF44 }" ;
-	".title2 { font-size : 20pt ; background-color : #AAFF66 }" ;
-	".title3 { font-size : 20pt ; background-color : #AAFF99 }" ;
-	".title4 { font-size : 20pt ; background-color : #AAFFCC }" ;
-	".title5 { font-size : 20pt ; background-color : #AAFFFF }" ;
-	".title6 { font-size : 20pt ; background-color : #DDFF44 }" ;
-*)
 	"body { background-color : White }" ;
 	"tr { background-color : White }" ;
       ]	
@@ -762,6 +754,15 @@ class html =
       let s2 = Str.global_replace (Str.regexp "\n") "<br>       " s in
       "<code class=\"type\">"^(self#create_fully_qualified_idents_links m_name s2)^"</code>"
 
+
+    (** Return html code to display a [Types.class_type].*)
+    method html_of_class_type_expr m_name t =
+      let s = String.concat "\n"
+	  (Str.split (Str.regexp "\n") (Odoc_info.string_of_class_type t))
+      in
+      let s2 = Str.global_replace (Str.regexp "\n") "<br>       " s in
+      "<code class=\"type\">"^(self#create_fully_qualified_idents_links m_name s2)^"</code>"
+
     (** Return html code to display a [Types.type_expr list].*)
     method html_of_type_expr_list m_name sep l =
       print_DEBUG "html#html_of_type_expr_list";
@@ -782,14 +783,14 @@ class html =
     (** Generate a file containing the module type in the given file name. *)
     method output_module_type in_title file mtyp =
       let s = String.concat "\n"
-	  (Str.split (Str.regexp "\n") (Odoc_info.string_of_module_type mtyp))
+	  (Str.split (Str.regexp "\n") (Odoc_info.string_of_module_type ~complete: true mtyp))
       in
       self#output_code in_title file s
 
     (** Generate a file containing the class type in the given file name. *)
     method output_class_type in_title file ctyp =
       let s = String.concat "\n"
-	  (Str.split (Str.regexp "\n") (Odoc_info.string_of_class_type ctyp))
+	  (Str.split (Str.regexp "\n") (Odoc_info.string_of_class_type ~complete: true ctyp))
       in
       self#output_code in_title file s
 
@@ -1107,117 +1108,49 @@ class html =
 	  "</tr>\n"^
 	  "</table>\n"
 
-    (** Return html code for a [module_kind]. *)
-    method html_of_module_kind ?(with_def_syntax=true) k =
-      match k with
-	Module_alias m_alias ->
-	  (match m_alias.ma_module with
-	    None ->
-	      (if with_def_syntax then " = " else "")^
-	      m_alias.ma_name
-	    | Some (Mod m) ->
-		let (html_file,_) = Naming.html_files m.m_name in
-		(if with_def_syntax then " = " else "")^
-		"<a href=\""^html_file^"\">"^m.m_name^"</a>"
-	    | Some (Modtype mt) ->
-		let (html_file,_) = Naming.html_files mt.mt_name in
-		(if with_def_syntax then " : " else "")^
-		"<a href=\""^html_file^"\">"^mt.mt_name^"</a>"
-	    )
-      | Module_apply (k1, k2) ->
-	  (if with_def_syntax then " = " else "")^
-	  (self#html_of_module_kind ~with_def_syntax: false k1)^
-	  " ( "^(self#html_of_module_kind ~with_def_syntax: false k2)^" ) "
-									 
-      | Module_with (tk, code) ->
-	  (if with_def_syntax then " : " else "")^
-	  (self#html_of_module_type_kind ~with_def_syntax: false tk)^
-	  (self#html_of_code ~with_pre: false code)
-	    
-      | Module_constraint (k, tk) ->
-	  (if with_def_syntax then " = " else "")^
-	  "( "^(self#html_of_module_kind ~with_def_syntax: false k)^" : "^
-	  (self#html_of_module_type_kind ~with_def_syntax: false tk)^" )"
-									
-      | Module_struct _ ->
-	  (if with_def_syntax then " = " else "")^
-	  (self#html_of_code ~with_pre: false (Odoc_messages.struct_end^" "))
-
-      | Module_functor (_, k)  ->
-	  (if with_def_syntax then " = " else "")^
-	  (self#html_of_code ~with_pre: false "functor ... ")^
-	  " -> "^(self#html_of_module_kind ~with_def_syntax: false k)
-
-    (** Return html code for a [module_type_kind]. *)
-    method html_of_module_type_kind ?(with_def_syntax=true) tk =
-      match tk with
-      | Module_type_struct _ ->
-	  (if with_def_syntax then " : " else "")^
-	  (self#html_of_code ~with_pre: false Odoc_messages.sig_end)
-
-      | Module_type_functor (params, k) ->
-	  let f p = "("^p.mp_name^" : "^(self#html_of_module_type "" p.mp_type)^") -> " in
-	  let s1 = String.concat "" (List.map f params) in
-	  let s2 = self#html_of_module_type_kind ~with_def_syntax: false k in
-	  (if with_def_syntax then " : " else "")^s1^s2
-	  
-      | Module_type_with (tk2, code) -> 
-	  let s = self#html_of_module_type_kind ~with_def_syntax: false tk2 in
-	  (if with_def_syntax then " : " else "")^
-	  s^(self#html_of_code ~with_pre: false code)
-
-      | Module_type_alias mt_alias ->
-	  (if with_def_syntax then " : " else "")^
-	  (match mt_alias.mta_module with
-	    None ->
-	      mt_alias.mta_name
-	  | Some mt ->
-	      let (html_file,_) = Naming.html_files mt.mt_name in
-	      "<a href=\""^html_file^"\">"^mt.mt_name^"</a>"
-	  )
-
     (** Return html code for a module. *)
     method html_of_module ?(info=true) ?(complete=true) ?(with_link=true) m =
       let (html_file, _) = Naming.html_files m.m_name in
-      let s1 = 
-	"<pre>"^(self#keyword "module")^" "^
-	(
-	 if with_link then
-	   "<a href=\""^html_file^"\">"^(Name.simple m.m_name)^"</a>"
-	 else
-	   Name.simple m.m_name
-	)^
-	(self#html_of_module_kind m.m_kind)^
-	"</pre>"
-      in
-      let s2 = 
-	if info then
-	  (if complete then self#html_of_info else self#html_of_info_first_sentence) m.m_info
-	else
-	  ""
-      in
-      s1^s2
+      let father = Name.father m.m_name in
+      let buf = Buffer.create 32 in
+      let p = Printf.bprintf in
+      p buf "<pre>%s " (self#keyword "module");
+      (
+       if with_link then
+	 p buf "<a href=\"%s\">%s</a>" html_file (Name.simple m.m_name)
+       else
+	 p buf "%s" (Name.simple m.m_name)
+      );
+      p buf ": %s</pre>" (self#html_of_module_type father m.m_type);
+      if info then
+	p buf "%s" ((if complete then self#html_of_info else self#html_of_info_first_sentence) m.m_info)
+      else
+	();
+      Buffer.contents buf
 
     (** Return html code for a module type. *)
     method html_of_modtype ?(info=true) ?(complete=true) ?(with_link=true) mt =
       let (html_file, _) = Naming.html_files mt.mt_name in
-      "<pre>"^(self#keyword "module type")^" "^
+      let father = Name.father mt.mt_name in
+      let buf = Buffer.create 32 in
+      let p = Printf.bprintf in
+      p buf "<pre>%s " (self#keyword "module type");
       (
        if with_link then
-	 "<a href=\""^html_file^"\">"^(Name.simple mt.mt_name)^"</a>"
+	 p buf "<a href=\"%s\">%s</a>" html_file (Name.simple mt.mt_name)
 	 else
-	 Name.simple mt.mt_name
-      )^
-      (match mt.mt_kind with
-      |	Some tk -> self#html_of_module_type_kind tk
-      |	None  ->  ""
-      )^
-      "</pre>"^
-      (if info then
-	(if complete then self#html_of_info else self#html_of_info_first_sentence) mt.mt_info
+	 p buf "%s" (Name.simple mt.mt_name)
+      );
+      (match mt.mt_type with
+	None -> ()
+      |	Some mtyp -> p buf " = %s" (self#html_of_module_type father mtyp)
+      );
+      Buffer.add_string buf "</pre>";
+      if info then
+	p buf "%s" ((if complete then self#html_of_info else self#html_of_info_first_sentence) mt.mt_info)
       else
-	""
-      )
+	();
+      Buffer.contents buf
 
     (** Return html code for an included module. *)
     method html_of_included_module im =
@@ -1240,81 +1173,9 @@ class html =
       )^
       "</pre>\n"
 
-    (** Return html code for the given [class_kind].*)
-    method html_of_class_kind father ckind =
-      print_DEBUG "html#html_of_class_kind";
-      match ckind with
-	Class_structure _ -> 
-	  (self#html_of_code ~with_pre: false Odoc_messages.object_end)
-
-      |	Class_apply capp ->
-	  (
-	   match capp.capp_class with
-	     None -> capp.capp_name
-	   | Some cl -> 
-	       let (html_file, _) = Naming.html_files cl.cl_name in 
-	       "<a href=\""^html_file^"\">"^cl.cl_name^"</a>"
-	  )^
-	  " "^
-	  (String.concat " "
-	     (List.map
-		(fun s -> self#html_of_code ~with_pre: false ("("^s^")"))
-		capp.capp_params_code))
-	    
-      |	Class_constr cco ->
-	  (
-	   match cco.cco_type_parameters with
-	     [] -> ""
-	   | l -> "["^(self#html_of_type_expr_list father ", " l)^"] "
-	  )^
-	  (
-	   match cco.cco_class with
-	     None -> cco.cco_name
-	   | Some (Cl cl) -> 
-	       let (html_file, _) = Naming.html_files cl.cl_name in 
-	       let rel = Name.get_relative father cl.cl_name in
-	       "<a href=\""^html_file^"\">"^rel^"</a> "
-	   | Some (Cltype (clt,_)) -> 
-	       let (html_file, _) = Naming.html_files clt.clt_name in 
-	       let rel = Name.get_relative father clt.clt_name in
-	       "<a href=\""^html_file^"\">"^rel^"</a> "
-	  )
-      |	Class_constraint (ck, ctk) ->
-	  "( "^(self#html_of_class_kind father ck)^
-	  " : "^
-	  (self#html_of_class_type_kind father ctk)^
-	  " )"
-
-    (** Return html code for the given [class_type_kind].*)
-    method html_of_class_type_kind father ctkind =
-      match ctkind with
-	Class_type cta -> 
-	  (
-	   match cta.cta_type_parameters with
-	     [] -> ""
-	   | l -> "["^(self#html_of_type_expr_list father  ", " l)^"] "
-	  )^
-	  (
-	   match cta.cta_class with
-	     None -> 
-	       if cta.cta_name = Odoc_messages.object_end then
-		 self#html_of_code ~with_pre: false cta.cta_name
-	       else
-		 cta.cta_name
-	   | Some (Cltype (clt, _)) -> 
-	       let (html_file, _) = Naming.html_files clt.clt_name in 
-	       let rel = Name.get_relative father clt.clt_name in
-	       "<a href=\""^html_file^"\">"^rel^"</a>"
-	   | Some (Cl cl) -> 
-	       let (html_file, _) = Naming.html_files cl.cl_name in 
-	       let rel = Name.get_relative father cl.cl_name in
-	       "<a href=\""^html_file^"\">"^rel^"</a>"
-	  )
-      |	Class_signature _ ->
-	  self#html_of_code ~with_pre: false Odoc_messages.object_end
-
     (** Return html code for a class. *)
     method html_of_class ?(complete=true) ?(with_link=true) c =
+      let father = Name.father c.cl_name in
       Odoc_info.reset_type_names ();
       let buf = Buffer.create 32 in
       let (html_file, _) = Naming.html_files c.cl_name in
@@ -1335,7 +1196,7 @@ class html =
 	 [] -> ()
        | l -> 
 	   p buf "[%s] "
-	     (self#html_of_type_expr_list (Name.father c.cl_name) ", " l)
+	     (self#html_of_type_expr_list father ", " l)
       );
       print_DEBUG "html#html_of_class : with link or not" ;
       (
@@ -1346,14 +1207,7 @@ class html =
       );
 
       Buffer.add_string buf " : " ;
-
-      List.iter
-	(fun param -> 
-	  p buf "%s -> " (self#html_of_parameter (Name.father c.cl_name) param))
-	c.cl_parameters;
-
-      print_DEBUG "html#html_of_class : class kind" ; 
-      Buffer.add_string buf (self#html_of_class_kind (Name.father c.cl_name) c.cl_kind);
+      Buffer.add_string buf (self#html_of_class_type_expr father c.cl_type);
       Buffer.add_string buf "</pre>" ;
       print_DEBUG "html#html_of_class : info" ;
       Buffer.add_string buf 
@@ -1363,6 +1217,7 @@ class html =
     (** Return html code for a class type. *)
     method html_of_class_type ?(complete=true) ?(with_link=true) ct =
       Odoc_info.reset_type_names ();
+      let father = Name.father ct.clt_name in
       let buf = Buffer.create 32 in
       let p = Printf.bprintf in
       let (html_file, _) = Naming.html_files ct.clt_name in
@@ -1379,7 +1234,7 @@ class html =
       (
        match ct.clt_type_parameters with
 	[] -> ()
-      |	l -> p buf "[%s] " (self#html_of_type_expr_list (Name.father ct.clt_name) ", " l)
+      |	l -> p buf "[%s] " (self#html_of_type_expr_list father ", " l)
       );
 
       if with_link then
@@ -1388,7 +1243,7 @@ class html =
 	p buf "%s" (Name.simple ct.clt_name);
 
       Buffer.add_string buf " = ";
-      Buffer.add_string buf (self#html_of_class_type_kind (Name.father ct.clt_name) ct.clt_kind);
+      Buffer.add_string buf (self#html_of_class_type_expr father ct.clt_type);
       Buffer.add_string buf "</pre>";
       Buffer.add_string buf ((if complete then self#html_of_info else self#html_of_info_first_sentence) ct.clt_info);
 
@@ -1419,15 +1274,6 @@ class html =
     (** Return html code for a module comment.*)
     method html_of_module_comment text =
       "<br>\n"^(self#html_of_text text)^"<br><br>\n"
-(*
-      (* Add some style if there is no style for the first part of the text. *)
-      let text2 =
-	match text with
-	| (Odoc_info.Raw s) :: q -> (Odoc_info.Title (2, [Odoc_info.Raw s])) :: q
-	| _ -> text
-      in
-      self#html_of_text text2
-*)
 
     (** Return html code for a class comment.*)
     method html_of_class_comment text =
@@ -1704,10 +1550,7 @@ class html =
 	   (self#navbar pre_name post_name modu.m_name)^
 	   "<center><h1>"^(if Module.module_is_functor modu then Odoc_messages.functo else Odoc_messages.modul)^
 	   " "^
-	   (match modu.m_type with
-	     Some _ -> "<a href=\""^type_file^"\">"^modu.m_name^"</a>"
-	   | None-> modu.m_name
-	   )^
+	   "<a href=\""^type_file^"\">"^modu.m_name^"</a>"^
 	   "</h1></center>\n"^
 	   "<br>\n"^
 	   (self#html_of_module ~with_link: false modu)
@@ -1755,14 +1598,10 @@ class html =
 	generate_elements  self#generate_for_class_type (Module.module_class_types modu);
         
         (* generate the file with the complete module type *)
-	(
-	 match modu.m_type with
-	   None -> ()
-	 | Some mty -> self#output_module_type 
-	       modu.m_name
-	       (Filename.concat !Odoc_args.target_dir type_file)
-	       mty
-	)
+	self#output_module_type 
+	  modu.m_name
+	  (Filename.concat !Odoc_args.target_dir type_file)
+	  modu.m_type
       with
 	Sys_error s ->
 	  raise (Failure s)

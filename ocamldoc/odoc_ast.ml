@@ -917,7 +917,7 @@ module Analyser =
       let pos_start = p_class_decl.Parsetree.pci_expr.Parsetree.pcl_loc.Location.loc_start in
       let type_parameters = tt_type_params in
       let virt = p_class_decl.Parsetree.pci_virt = Asttypes.Virtual in
-      let cltype = tt_class_exp.Typedtree.cl_type in
+      let cltype = Odoc_env.subst_class_type env tt_class_exp.Typedtree.cl_type in
       let (parameters, kind) = analyse_class_kind 
 	  env
 	  complete_name
@@ -1233,7 +1233,7 @@ module Analyser =
 	     let new_env2 = 
 	       match new_module.m_type with
                  (* A VOIR : cela peut-il être Tmty_ident ? dans ce cas, on aurait pas la signature *)
-		 Some (Types.Tmty_signature s) -> 
+		 Types.Tmty_signature s -> 
 		   Odoc_env.add_signature new_env new_module.m_name
 		     ~rel: (Name.simple new_module.m_name) s
 	       | _ -> 
@@ -1374,7 +1374,7 @@ module Analyser =
 		    {
 		      clt_name = complete_name ;
 		      clt_info = com_opt ;
-		      clt_type = tt_cltype_declaration.Types.clty_type ;
+		      clt_type = Odoc_env.subst_class_type env tt_cltype_declaration.Types.clty_type ;
 		      clt_type_parameters = List.map (Odoc_env.subst_type new_env) type_params ;
 		      clt_virtual = virt ;
 		      clt_kind = kind ;
@@ -1407,7 +1407,7 @@ module Analyser =
       let m_base =
 	{
 	  m_name = complete_name ;
-	  m_type = Some tt_module_expr.Typedtree.mod_type ;
+	  m_type = tt_module_expr.Typedtree.mod_type ;
 	  m_info = comment_opt ;
 	  m_is_interface = false ;
 	  m_file = !file_name ;
@@ -1495,7 +1495,7 @@ module Analyser =
 	  in
 	  { 
 	    m_base with
-	    m_type = Some tt_modtype ; 
+	    m_type = tt_modtype ; 
 	    m_kind = Module_constraint (m_base2.m_kind, 
 					mtkind)
 
@@ -1534,7 +1534,7 @@ module Analyser =
        let m =
 	 {
 	   m_name = mod_name ;
-	   m_type = None ;
+	   m_type = Types.Tmty_signature [] ;
 	   m_info = info_opt ;
 	   m_is_interface = false ;
 	   m_file = !file_name ;

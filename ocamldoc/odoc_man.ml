@@ -240,6 +240,14 @@ class man =
       let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
       "\n.B "^(self#relative_idents m_name s2)^"\n"
 
+    (** Groff string to display a [Types.class_type].*)
+    method man_of_class_type_expr m_name t =
+      let s = String.concat "\n"
+	  (Str.split (Str.regexp "\n") (Odoc_misc.string_of_class_type t))
+      in
+      let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
+      "\n.B "^(self#relative_idents m_name s2)^"\n"
+
     (** Groff string to display a [Types.type_expr list].*)
     method man_of_type_expr_list m_name sep l =
       let s = Odoc_misc.string_of_type_list sep l in
@@ -382,23 +390,6 @@ class man =
 	     )
 	  )^"\n"
 
-    (** Groff for the given parameter,
-       and eventually its label. Note that we must remove
-       the option constructor if we print an optional argument.*)
-    method man_of_parameter m p =
-      let (pi,label) = p in
-      let (slabel, t) = 
-	let t = Parameter.typ p in
-	match label with
-	  "" -> ("", t)
-	| s -> 
-	    if is_optional label then 
-	      (s^":", Odoc_info.remove_option t)
-	    else
-	      (s^":", t)
-      in
-      slabel ^ (self#man_of_type_expr m t)
-
     (** Groff for the description of a function parameter. *)
     method man_of_parameter_description p =
       match Parameter.names p with
@@ -445,118 +436,6 @@ class man =
 	     )
 	  )^"\n\n"
 
-    (** Groff string for a [class_kind]. *)
-    method man_of_class_kind ckind =
-      match ckind with
-	Class_structure _ -> 
-	  self#man_of_code Odoc_messages.object_end
-
-      |	Class_apply capp ->
-	  (
-	   match capp.capp_class with
-	     None -> capp.capp_name
-	   | Some cl ->  cl.cl_name
-	  )^
-	  " "^
-	  (String.concat " "
-	     (List.map
-		(fun s -> self#man_of_code ("("^s^")"))
-		capp.capp_params_code))
-	    
-      |	Class_constr cco ->
-	  (
-	   match cco.cco_type_parameters with
-	     [] -> ""
-	   | l -> "["^(Odoc_misc.string_of_type_list ", " l)^"] "
-	  )^
-	  (
-	   match cco.cco_class with
-	     None -> cco.cco_name
-	   | Some (Cl cl) -> "\n.B "^cl.cl_name^"\n"
-	   | Some (Cltype (clt, _)) -> "\n.B "^clt.clt_name^"\n"
-	  )
-      |	Class_constraint (ck, ctk) ->
-	  "( "^(self#man_of_class_kind ck)^
-	  " : "^
-	  (self#man_of_class_type_kind ctk)^
-	  " )"
-
-    (** Groff string for the given [class_type_kind].*)
-    method man_of_class_type_kind ctkind =
-      match ctkind with
-	Class_type cta -> 
-	  (
-	   match cta.cta_class with
-	     None -> cta.cta_name
-	   | Some (Cltype (clt, _)) -> "\n.B "^clt.clt_name^"\n"
-	   | Some (Cl cl) -> "\n.B "^cl.cl_name^"\n"
-	  )
-      |	Class_signature _ ->
-	  self#man_of_code Odoc_messages.object_end
-
-    (** Groff string for a [module_kind]. *)
-    method man_of_module_kind ?(with_def_syntax=true) k =
-      match k with
-	Module_alias m_alias ->
-	  (match m_alias.ma_module with
-	    None ->
-	      (if with_def_syntax then " = " else "")^
-	      m_alias.ma_name
-	  | Some (Mod m) ->
-	      (if with_def_syntax then " = " else "")^m.m_name
-	  | Some (Modtype mt) ->
-	      (if with_def_syntax then " : " else "")^mt.mt_name
-	  )
-      | Module_apply (k1, k2) ->
-	  (if with_def_syntax then " = " else "")^
-	  (self#man_of_module_kind ~with_def_syntax: false k1)^
-	  " ( "^(self#man_of_module_kind ~with_def_syntax: false k2)^" ) "
-									 
-      | Module_with (tk, code) ->
-	  (if with_def_syntax then " : " else "")^
-	  (self#man_of_module_type_kind ~with_def_syntax: false tk)^
-	  (self#man_of_code code)
-	    
-      | Module_constraint (k, tk) ->
-	  (if with_def_syntax then " = " else "")^
-	  "( "^(self#man_of_module_kind ~with_def_syntax: false k)^" : "^
-	  (self#man_of_module_type_kind ~with_def_syntax: false tk)^" )"
-									
-      | Module_struct _ ->
-	  (if with_def_syntax then " = " else "")^
-	  (self#man_of_code (Odoc_messages.struct_end^" "))
-
-      | Module_functor _  ->
-	  (if with_def_syntax then " = " else "")^
-	  (self#man_of_code "functor ... ")
-
-    (** Groff string for a [module_type_kind]. *)
-    method man_of_module_type_kind ?(with_def_syntax=true) tk =
-      match tk with
-      | Module_type_struct _ ->
-	  (if with_def_syntax then " : " else "")^
-	  (self#man_of_code Odoc_messages.sig_end)
-
-      | Module_type_functor (params, k) ->
-	  let f p = "("^p.mp_name^" : "^(self#man_of_module_type "" p.mp_type)^") -> " in
-	  let s1 = String.concat "" (List.map f params) in
-	  let s2 = self#man_of_module_type_kind ~with_def_syntax: false k in
-	  (if with_def_syntax then " : " else "")^s1^s2
-	  
-      | Module_type_with (tk2, code) -> (* we don't want to print nested with's *)
-	  let s = self#man_of_module_type_kind ~with_def_syntax: false tk2 in
-	  (if with_def_syntax then " : " else "")^
-	  s^(self#man_of_code code)
-
-      | Module_type_alias mt_alias ->
-	  (if with_def_syntax then " : " else "")^
-	  (match mt_alias.mta_module with
-	    None ->
-	      mt_alias.mta_name
-	  | Some mt ->
-	      mt.mt_name
-	  )
-
     (** Groff string for a class. *)
     method man_of_class c =
       let buf = Buffer.create 32 in
@@ -570,12 +449,9 @@ class man =
 	 [] -> ()
        | l -> p buf "[%s.I] " (Odoc_misc.string_of_type_list ", " l)
       );
-      p buf "%s : " (Name.simple c.cl_name);
-      List.iter
-	(fun param -> p buf "%s-> " (self#man_of_parameter father param))
-	c.cl_parameters;
-
-      p buf "%s" (self#man_of_class_kind c.cl_kind);
+      p buf "%s : %s" 
+	(Name.simple c.cl_name)
+	(self#man_of_class_type_expr (Name.father c.cl_name) c.cl_type);
       p buf "\n.sp\n%s\n.sp\n" (self#man_of_info c.cl_info);
       Buffer.contents buf
 
@@ -591,21 +467,26 @@ class man =
 	[] -> ()
       |	l -> p buf "[%s.I ] " (Odoc_misc.string_of_type_list ", " l)
       );
-      p buf "%s = " (Name.simple ct.clt_name);
-      p buf "%s" (self#man_of_class_type_kind ct.clt_kind);
+      p buf "%s = %s" 
+	(Name.simple ct.clt_name)
+	(self#man_of_class_type_expr (Name.father ct.clt_name) ct.clt_type);
       p buf "\n.sp\n%s\n.sp\n" (self#man_of_info ct.clt_info);
       Buffer.contents buf
 
     (** Groff string for a module. *)
     method man_of_module m =
       ".I module "^(Name.simple m.m_name)^
-      (self#man_of_module_kind m.m_kind)^
+      " : "^(self#man_of_module_type (Name.father m.m_name) m.m_type)^
       "\n.sp\n"^(self#man_of_info m.m_info)^"\n.sp\n"
 
     (** Groff string for a module type. *)
     method man_of_modtype mt =
       ".I module type "^(Name.simple mt.mt_name)^
-      (match mt.mt_kind with None -> "" | Some k -> self#man_of_module_type_kind k)^
+      " = "^
+      (match mt.mt_type with 
+	None -> ""
+      | Some t -> self#man_of_module_type (Name.father mt.mt_name) t
+      )^
       "\n.sp\n"^(self#man_of_info mt.mt_info)^"\n.sp\n"
 
     (** Groff string for a module comment.*)
@@ -758,7 +639,11 @@ class man =
 	   ".sp\n"^
 	   Odoc_messages.module_type^"\n"^
 	   ".BI \""^(Name.simple mt.mt_name)^"\"\n"^
-	   (match mt.mt_kind with None -> "" | Some k -> self#man_of_module_type_kind k)^
+	   " = "^
+	   (match mt.mt_type with
+	     None -> ""
+	   | Some t -> self#man_of_module_type (Name.father mt.mt_name) t
+	   )^
 	   "\n.sp\n"^
 	   (self#man_of_info mt.mt_info)^"\n"^
 	   ".sp\n"
@@ -824,7 +709,7 @@ class man =
 	   ".sp\n"^
 	   Odoc_messages.modul^"\n"^
 	   ".BI \""^(Name.simple m.m_name)^"\"\n"^
-	   (self#man_of_module_kind m.m_kind)^
+	   " : "^(self#man_of_module_type (Name.father m.m_name) m.m_type)^
 	   "\n.sp\n"^
 	   (self#man_of_info m.m_info)^"\n"^
 	   ".sp\n"

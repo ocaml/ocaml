@@ -449,10 +449,16 @@ class latex =
 
     (** Return the LaTeX code for the given module. *)
     method latex_of_module ?(with_link=true) m =
+      let buf = Buffer.create 32 in
+      let f = Format.formatter_of_buffer buf in
+      let father = Name.father m.m_name in
       let t = 
-	[Code "module "] @
-	[Code (Name.simple m.m_name)] @
-	(self#text_of_module_kind m.m_kind) @
+	Format.fprintf f "module %s" (Name.simple m.m_name);
+	Format.fprintf f " = %s"
+	  (self#normal_module_type father m.m_type);
+	Format.pp_print_flush f ();
+
+	(CodePre (Buffer.contents buf)) ::
 	(
 	 if with_link 
 	 then [Odoc_info.Latex ("\\\n["^(self#make_ref m.m_name)^"]")]
@@ -463,13 +469,21 @@ class latex =
 
     (** Return the LaTeX code for the given module type. *)
     method latex_of_module_type ?(with_link=true) mt =
+      let buf = Buffer.create 32 in
+      let f = Format.formatter_of_buffer buf in
+      let father = Name.father mt.mt_name in
       let t = 
-	[Code "module type "] @
-	[Code (Name.simple mt.mt_name)] @
-	(match mt.mt_kind with
-	  None -> []
-	| Some k -> self#text_of_module_type_kind k
-	) @
+	Format.fprintf f "module type %s" (Name.simple mt.mt_name);
+	(match mt.mt_type with
+	  None -> ()
+	| Some mtyp -> 
+	    Format.fprintf f " = %s"
+	      (self#normal_module_type father mtyp)
+	);
+
+	Format.pp_print_flush f ();
+
+	(CodePre (Buffer.contents buf)) ::
 	(
 	 if with_link 
 	 then [Odoc_info.Latex ("\\\n["^(self#make_ref mt.mt_name)^"]")]
@@ -487,88 +501,6 @@ class latex =
 			      |	Some (Mod m) -> m.m_name
 			      |	Some (Modtype mt) -> mt.mt_name)
 			  ] )
-
-    (** Return a well-formatted code string for the given [class_kind].*)
-    method pre_of_class_kind f father ckind =
-      let p = Format.fprintf in
-       match ckind with
-	Class_structure _ -> 
-	  p f "%s" Odoc_messages.object_end 
-
-      |	Class_apply capp ->
-	  p f "%s" 
-	    (match capp.capp_class with
-	      None -> capp.capp_name
-	    | Some cl -> cl.cl_name
-	    );
-	  List.iter 
-	    (fun s -> p f " (%s)" s)
-	    capp.capp_params_code
-	    
-      |	Class_constr cco ->
-	  (match cco.cco_type_parameters with
-	    [] -> ()
-	  | l -> 
-	      p f "[";
-	      let s = self#normal_type_list father ", " l in
-	      p f "%s] " s
-	  );
-	  p f "%s"
-	    (match cco.cco_class with
-	      None -> cco.cco_name
-	    | Some (Cl cl) -> Name.get_relative father cl.cl_name
-	    | Some (Cltype (clt, _)) -> Name.get_relative father clt.clt_name
-	    )
-
-      |	Class_constraint (ck, ctk) ->
-	  p f "(" ;
-	  self#pre_of_class_kind f father ck ;
-	  p f " : " ;
-	  self#pre_of_class_type_kind f father ctk ;
-	  p f ")" 
-
-    (** Return well-formatted string for the given [class_type_kind].*)
-    method pre_of_class_type_kind f father ctkind =
-      let p = Format.fprintf in
-      match ctkind with
-	Class_type cta -> 
-	  (
-	   match cta.cta_type_parameters with
-	     [] -> ()
-	   | l -> 
-	       p f "[" ;
-	       let s = self#normal_type_list father ", " l in
-	       p f "%s] " s
-	  );
-	  p f "%s" 
-	    (
-	     match cta.cta_class with
-	       None -> cta.cta_name
-	     | Some (Cltype (clt, _)) -> Name.get_relative father clt.clt_name
-	     | Some (Cl cl) -> Name.get_relative father cl.cl_name
-	    )
-
-      |	Class_signature _ ->
-	  p f "%s" Odoc_messages.object_end 
-
-
-    (** Return a string for the given parameter,
-       and eventually its label. Note that we must remove
-       the option constructor if we print an optional argument.*)
-    method string_of_parameter m p =
-      let (pi,label) = p in
-      let (slabel, t) = 
-	let t = Parameter.typ p in
-	match label with
-	  "" -> ("", t)
-	| s -> 
-	    if is_optional label then 
-	      (s^":", Odoc_info.remove_option t)
-	    else
-	      (s^":", t)
-      in
-      slabel ^ (self#normal_type m t)
-
 
     (** Return the LaTeX code for the given class. *)
     method latex_of_class ?(with_link=true) c =
@@ -588,14 +520,8 @@ class latex =
 	     Format.fprintf f "%s] " s1
 	);
 	Format.fprintf f "%s : " (Name.simple c.cl_name);
-	
-	List.iter
-	  (fun param -> 
-	    Format.fprintf f "%s -> " 
-	      (self#string_of_parameter father param)
-	  )
-	  c.cl_parameters;
-	self#pre_of_class_kind f father c.cl_kind ;
+	Format.fprintf f "%s" (self#normal_class_type father c.cl_type);
+
 	Format.pp_print_flush f ();
 	
 	(CodePre (Buffer.contents buf)) ::
@@ -625,8 +551,8 @@ class latex =
 	     Format.fprintf f "%s] " s1
 	);
 	Format.fprintf f "%s = " (Name.simple ct.clt_name);
-	self#pre_of_class_type_kind f father ct.clt_kind ;
-	  
+	Format.fprintf f "%s" (self#normal_class_type father ct.clt_type);
+
 	Format.pp_print_flush f ();
 	(CodePre (Buffer.contents buf)) ::
 	(
