@@ -46,7 +46,7 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    - [g] or [G]: convert a floating-point argument to decimal notation,
      in style [f] or [e], [E] (whichever is more compact).
    - [b]: convert a boolean argument to the string [true] or [false]
-   - [ld], [li], [lu], [lx], [lX], [lo]: convert an [int32] argument to.
+   - [ld], [li], [lu], [lx], [lX], [lo]: convert an [int32] argument to
      the format specified by the second letter (decimal, hexadecimal, etc).
    - [nd], [ni], [nu], [nx], [nX], [no]: convert a [nativeint] argument to
      the format specified by the second letter.
