@@ -72,7 +72,6 @@ void output()
   output_actions();
   free_parser();
   output_debug();
-  output_trailing_text();
   if (sflag)
     fprintf(output_file,
       "let yyact = Array.new %d (fun _ -> (failwith \"parser\" : Obj.t))\n",
@@ -85,6 +84,7 @@ void output()
     fprintf(output_file, "|]\n");
   write_section(define_tables);
   output_entries();
+  output_trailing_text();
 }
 
 
