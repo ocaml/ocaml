@@ -42,12 +42,14 @@ value gr_set_text_size (value sz)
 static void gr_draw_text(char *txt, int len)
 {
   if (grfont == NULL) gr_font(DEFAULT_FONT);
-  XDrawString(grdisplay, grwindow.win, grwindow.gc,
-              grx, Wcvt(gry) - grfont->descent + 1, txt, len);
   XDrawString(grdisplay, grbstore.win, grbstore.gc,
               grx, Bcvt(gry) - grfont->descent + 1, txt, len);
+  if(grautoflush) {
+    XDrawString(grdisplay, grwindow.win, grwindow.gc,
+		grx, Wcvt(gry) - grfont->descent + 1, txt, len);
+    XFlush(grdisplay);
+  }
   grx += XTextWidth(grfont, txt, len);
-  XFlush(grdisplay);
 }
 
 value gr_draw_char(value chr)
@@ -58,7 +60,7 @@ value gr_draw_char(value chr)
   gr_draw_text(str, 1);
   return Val_unit;
 }
-  
+
 value gr_draw_string(value str)
 {
   gr_check_open();

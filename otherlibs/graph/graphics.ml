@@ -43,6 +43,11 @@ external clear_graph : unit -> unit = "gr_clear_graph"
 external size_x : unit -> int = "gr_size_x"
 external size_y : unit -> int = "gr_size_y"
 
+(* Double-buffering *)
+
+external autoflush : bool -> unit = "gr_autoflush"
+external flush : unit -> unit = "gr_flush"
+
 (* Colors *)
 
 type color = int

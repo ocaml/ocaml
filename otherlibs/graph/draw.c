@@ -20,9 +20,11 @@ value gr_plot(value vx, value vy)
   int x = Int_val(vx);
   int y = Int_val(vy);
   gr_check_open();
-  XDrawPoint(grdisplay, grwindow.win, grwindow.gc, x, Wcvt(y));
   XDrawPoint(grdisplay, grbstore.win, grbstore.gc, x, Bcvt(y));
-  XFlush(grdisplay);
+  if(grautoflush) {
+    XDrawPoint(grdisplay, grwindow.win, grwindow.gc, x, Wcvt(y));
+    XFlush(grdisplay);
+  }
   return Val_unit;
 }
 
@@ -47,13 +49,15 @@ value gr_lineto(value vx, value vy)
   int x = Int_val(vx);
   int y = Int_val(vy);
   gr_check_open();
-  XDrawLine(grdisplay, grwindow.win, grwindow.gc,
-            grx, Wcvt(gry), x, Wcvt(y));
   XDrawLine(grdisplay, grbstore.win, grbstore.gc,
-            grx, Bcvt(gry), x, Bcvt(y));
+	    grx, Bcvt(gry), x, Bcvt(y));
+  if(grautoflush) {
+    XDrawLine(grdisplay, grwindow.win, grwindow.gc,
+	      grx, Wcvt(gry), x, Wcvt(y));
+    XFlush(grdisplay);
+  }
   grx = x;
   gry = y;
-  XFlush(grdisplay);
   return Val_unit;
 }
 
@@ -67,11 +71,13 @@ value gr_draw_arc_nat(value vx, value vy, value vrx, value vry, value va1, value
   int a2 = Int_val(va2);
 
   gr_check_open();
-  XDrawArc(grdisplay, grwindow.win, grwindow.gc,
-           x - rx, Wcvt(y) - ry, rx * 2, ry * 2, a1 * 64, (a2 - a1) * 64);
   XDrawArc(grdisplay, grbstore.win, grbstore.gc,
-           x - rx, Bcvt(y) - ry, rx * 2, ry * 2, a1 * 64, (a2 - a1) * 64);
-  XFlush(grdisplay);
+	   x - rx, Bcvt(y) - ry, rx * 2, ry * 2, a1 * 64, (a2 - a1) * 64);
+  if(grautoflush) {
+    XDrawArc(grdisplay, grwindow.win, grwindow.gc,
+	     x - rx, Wcvt(y) - ry, rx * 2, ry * 2, a1 * 64, (a2 - a1) * 64);
+    XFlush(grdisplay);
+  }
   return Val_unit;
 }
 
@@ -91,4 +97,3 @@ value gr_set_line_width(value vwidth)
                      width, LineSolid, CapRound, JoinRound);
   return Val_unit;
 }
-

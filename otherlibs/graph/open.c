@@ -29,6 +29,7 @@ Colormap grcolormap;
 int grwhite, grblack;
 struct canvas grwindow;
 struct canvas grbstore;
+Bool grautoflush ;
 int grx, gry;
 unsigned long grcolor;
 extern XFontStruct * grfont;
@@ -138,6 +139,9 @@ value gr_open_graph(value arg)
                    0, 0, grbstore.w, grbstore.h);
     XSetForeground(grdisplay, grbstore.gc, grcolor);
     
+    /* Set the auto-flush flag */
+    grautoflush = True ;
+
     /* The global data structures are now correctly initialized.
        In particular, gr_sigio_handler can now handle events safely. */
     gr_initialized = True;
@@ -208,15 +212,17 @@ value gr_close_graph(void)
 value gr_clear_graph(void)
 {
   gr_check_open();
-  XSetForeground(grdisplay, grwindow.gc, grwhite);
-  XFillRectangle(grdisplay, grwindow.win, grwindow.gc,
-                 0, 0, grwindow.w, grwindow.h);
-  XSetForeground(grdisplay, grwindow.gc, grcolor);
   XSetForeground(grdisplay, grbstore.gc, grwhite);
   XFillRectangle(grdisplay, grbstore.win, grbstore.gc,
                  0, 0, grbstore.w, grbstore.h);
   XSetForeground(grdisplay, grbstore.gc, grcolor);
-  XFlush(grdisplay);
+  if(grautoflush) {
+    XSetForeground(grdisplay, grwindow.gc, grwhite);
+    XFillRectangle(grdisplay, grwindow.win, grwindow.gc,
+		   0, 0, grwindow.w, grwindow.h);
+    XSetForeground(grdisplay, grwindow.gc, grcolor);
+    XFlush(grdisplay);
+  }
   gr_init_color_cache();
   return Val_unit;
 }
@@ -231,6 +237,26 @@ value gr_size_y(void)
 {
   gr_check_open();
   return Val_int(grwindow.h);
+}
+
+value gr_flush(void)
+{
+  XCopyArea(grdisplay, grbstore.win, grwindow.win, grwindow.gc,
+	    0, grbstore.h - grwindow.h,
+	    grwindow.w, grwindow.h,
+	    0, 0);
+  XFlush(grdisplay);
+  return Val_unit ;
+}
+
+value gr_autoflush(value v)
+{
+  Bool old = grautoflush ;
+  grautoflush = Bool_val(v) ;
+  if(old == False && grautoflush == True)
+    return gr_flush() ;
+  else
+    return Val_unit ;
 }
 
 /* The gr_sigio_handler is called via the signal machinery in the bytecode
@@ -360,4 +386,3 @@ static int gr_ioerror_handler(Display *display)
   gr_fail("fatal I/O error", NULL);
   return 0;
 }
-

@@ -62,26 +62,28 @@ value gr_draw_image(value im, value vx, value vy)
 
   gr_check_open();
   if (Mask_im(im) != None) {
-    XSetClipOrigin(grdisplay, grwindow.gc, x, wy);
-    XSetClipMask(grdisplay, grwindow.gc, Mask_im(im));
     XSetClipOrigin(grdisplay, grbstore.gc, x, by);
     XSetClipMask(grdisplay, grbstore.gc, Mask_im(im));
+    if(grautoflush) {
+      XSetClipOrigin(grdisplay, grwindow.gc, x, wy);
+      XSetClipMask(grdisplay, grwindow.gc, Mask_im(im));
+    }
   }
-  XCopyArea(grdisplay, Data_im(im), grwindow.win, grwindow.gc,
-            0, 0,
-            Width_im(im), Height_im(im),
-            x, wy);
   XCopyArea(grdisplay, Data_im(im), grbstore.win, grbstore.gc,
             0, 0,
             Width_im(im), Height_im(im),
             x, by);
+  if(grautoflush)
+    XCopyArea(grdisplay, Data_im(im), grwindow.win, grwindow.gc,
+	      0, 0,
+	      Width_im(im), Height_im(im),
+	      x, wy);
   if (Mask_im(im) != None) {
-    XSetClipMask(grdisplay, grwindow.gc, None);
     XSetClipMask(grdisplay, grbstore.gc, None);
+    if(grautoflush)
+      XSetClipMask(grdisplay, grwindow.gc, None);
   }
-  XFlush(grdisplay);
+  if(grautoflush)
+    XFlush(grdisplay);
   return Val_unit;
 }
-
-
-            

@@ -31,5 +31,3 @@ value gr_sound(value vfreq, value vdur)
   XFlush(grdisplay);
   return Val_unit;
 }
-
-

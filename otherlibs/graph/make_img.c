@@ -50,7 +50,7 @@ value gr_make_image(value m)
     bits_per_pixel = idata->bits_per_pixel;
 #ifdef DIRECT_RGB_DEBUG
     fprintf(stderr, "Byte_order: %d = %s\n", byte_order,
-            byte_order ? "LSBFirst" : "MSBFirst");
+	    byte_order ? "LSBFirst" : "MSBFirst");
     fprintf(stderr, "Bitmp_unit: %d\n", bitmap_unit);
     fprintf(stderr, "Bits per pixel: %d\n", idata->bits_per_pixel);
 #endif
@@ -107,3 +107,4 @@ value gr_make_image(value m)
   XFlush(grdisplay);
   return im;
 }
+

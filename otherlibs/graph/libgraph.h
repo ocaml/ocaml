@@ -29,6 +29,7 @@ extern Colormap grcolormap;     /* The color map */
 extern struct canvas grwindow;  /* The graphics window */
 extern struct canvas grbstore;  /* The pixmap used for backing store */
 extern int grwhite, grblack;    /* Black and white pixels */
+extern Bool grautoflush;        /* Auto-flush flag */
 extern int grx, gry;            /* Coordinates of the current point */
 extern unsigned long grcolor;   /* Current drawing color */
 extern XFontStruct * grfont;    /* Current font */
@@ -41,6 +42,7 @@ extern int bits_per_pixel;
 #define Wcvt(y) (grwindow.h - 1 - (y))
 #define Bcvt(y) (grbstore.h - 1 - (y))
 #define WtoB(y) ((y) + grbstore.h - grwindow.h)
+#define BtoW(y) ((y) + grwindow.h - grbstore.h)
 #define min(a,b) ((a) < (b) ? (a) : (b))
 #define max(a,b) ((a) > (b) ? (a) : (b))
 
