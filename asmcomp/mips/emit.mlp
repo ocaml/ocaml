@@ -300,38 +300,47 @@ let emit_instr i =
           `	addu	$sp, $sp, {emit_int (-n)}\n`;
         stack_offset := !stack_offset + n
     | Lop(Iload(chunk, addr)) ->
-        begin match i.res.(0).typ with
-          Int | Addr ->
-            let load_instr =
-              match chunk with
-                Word -> "lw"
-              | Byte_unsigned -> "lbu"
-              | Byte_signed -> "lb"
-              | Sixteen_unsigned -> "lhu"
-              | Sixteen_signed -> "lh" in
-            `	{emit_string load_instr}	{emit_reg i.res.(0)}, {emit_addressing addr i.arg 0}\n`
-        | Float ->
+        let dest = i.res.(0) in
+        begin match chunk with
+          Double ->
             (* Destination is not necessarily 8-aligned,
                hence better not use l.d *)
             `	ldl	$24, {emit_addressing addr i.arg 0}\n`;
             `	ldr	$24, {emit_addressing (offset_addressing addr 7) i.arg 0}\n`;
-            `	dmtc1	$24, {emit_reg i.res.(0)}\n`
+            `	dmtc1	$24, {emit_reg dest}\n`
+        | Single ->
+            `	l.s	{emit_reg dest}, {emit_addressing addr i.arg 0}\n`;
+            `	cvt.d.s	{emit_reg dest}, {emit_reg dest}\n`
+        | _ ->
+            let load_instr =
+              match chunk with
+                Byte_unsigned -> "lbu"
+              | Byte_signed -> "lb"
+              | Sixteen_unsigned -> "lhu"
+              | Sixteen_signed -> "lh"
+              | Word -> "lw" in
+            `	{emit_string load_instr}	{emit_reg dest}, {emit_addressing addr i.arg 0}\n`
         end
     | Lop(Istore(chunk, addr)) ->
-        begin match i.arg.(0).typ with
-          Int | Addr ->
-            let store_instr =
-              match chunk with
-                Word -> "sw"
-              | Byte_unsigned | Byte_signed -> "sb"
-              | Sixteen_unsigned | Sixteen_signed -> "sh" in
-            `	{emit_string store_instr}	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
-        | Float ->
+        let src = i.arg.(0) in
+        begin match chunk with
+          Double ->
             (* Destination is not necessarily 8-aligned,
                hence better not use s.d *)
-            `	dmfc1	$24, {emit_reg i.arg.(0)}\n`;
+            `	dmfc1	$24, {emit_reg src}\n`;
             `	sdl	$24, {emit_addressing addr i.arg 1}\n`;
             `	sdr	$24, {emit_addressing (offset_addressing addr 7) i.arg 1}\n`
+        | Single ->
+            `	cvt.s.d	$f31, {emit_reg src}\n`;
+            `	s.s	$f31, {emit_addressing addr i.arg 1}\n`
+        | _ ->
+            let store_instr =
+              match chunk with
+                Byte_unsigned | Byte_signed -> "sb"
+              | Sixteen_unsigned | Sixteen_signed -> "sh"
+              | _ -> "sw" in
+            `	{emit_string store_instr}	{emit_reg src}, {emit_addressing addr i.arg 1}\n`
+        | Float ->
         end
     | Lop(Ialloc n) ->
         if !call_gc_label = 0 then call_gc_label := new_label();
@@ -514,7 +523,9 @@ let emit_item = function
       `	.half	{emit_int n}\n`
   | Cint n ->
       `	.word	{emit_nativeint n}\n`
-  | Cfloat f ->
+  | Csingle f ->
+      `	.float	{emit_string f}\n`
+  | Cdouble f ->
       `	.align	0\n`; (* Prevent alignment on 8-byte boundary *)
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->
