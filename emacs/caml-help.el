@@ -208,7 +208,7 @@ When call interactively, make completion over known modules."
         (setq ocaml-visible-modules
               (cons (ocaml-get-or-make-module arg) (ocaml-visible-modules)))
         ))
-  (message "%S" (mapcar 'car ocaml-visible-modules)))
+  (message "%S" (mapcar 'car (ocaml-visible-modules))))
 
 (defun ocaml-close-module (arg)
   "*Close module of name ARG when ARG is a string. 
@@ -229,7 +229,7 @@ Otherwise if ARG is true, close all modules and reset to default. "
             (remove-if '(lambda (m) (equal (car m) arg))
                        ocaml-visible-modules))
       ))
-  (message "%S" (mapcar 'car ocaml-visible-modules)))
+  (message "%S" (mapcar 'car (ocaml-visible-modules))))
            
 
 ;; Look for identifiers around point
@@ -637,10 +637,21 @@ of using contextual values.
 
 ;; bindings
 
-(if (and (boundp 'caml-mode-map) (keymapp caml-mode-map))
-    (progn 
-      (define-key caml-mode-map [?\C-c?\C-h] 'caml-help)
-      (define-key caml-mode-map [?\C-c?\t] 'caml-complete)
-      ))
+(and
+ (boundp 'caml-mode-map)
+ (keymapp caml-mode-map)
+ (progn 
+   (define-key caml-mode-map [?\C-c?\C-h] 'caml-help)
+   (define-key caml-mode-map [?\C-c?\t] 'caml-complete)
+   (let ((map (lookup-key caml-mode-map [menu-bar caml])))
+     (and
+      (keymapp map)
+      (progn
+        (define-key map [separator-help] '("---"))
+        (define-key map [help] '("Help for identifier" . caml-help))
+        (define-key map [complete] '("Complete identifier" . caml-complete))
+        ) 
+   ))))
+
 
 (provide 'caml-help)
