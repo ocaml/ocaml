@@ -11,8 +11,9 @@ opt: support.cmx widget.cmx protocol.cmx \
 COBJS=cltkCaml.o cltkEval.o cltkEvent.o cltkFile.o cltkMain.o \
       cltkMisc.o cltkTimer.o cltkVar.o cltkWait.o
 
-#CCFLAGS=-ccopt -g $(TKINCLUDES)
 CCFLAGS=$(TKINCLUDES)
+
+COMPFLAGS=-I $(OTHERS)/unix
 
 liblabltk41.a : $(COBJS)
 	rm -f liblabltk41.a

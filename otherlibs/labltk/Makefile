@@ -1,4 +1,4 @@
-include Makefile.config
+# Top Makefile for LablTk
 
 SUBDIRS=compiler support lib jpf example browser
 
@@ -29,9 +29,7 @@ example/all:
 browser: browser/all
 
 browser/all:
-	cd browser; \
-	$(MAKE) LINKER='ocamlc -custom -ccopt -L../support -cclib -llabltk41 $(TKLIBS) $(X11_LIBS)' \
-		LABLTKLIB="-I ../lib -I ../support"
+	cd browser; $(MAKE) all
 
 install: 
 	if test -d $(INSTALLBINDIR); then : ; \

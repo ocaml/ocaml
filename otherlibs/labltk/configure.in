@@ -32,18 +32,6 @@ AC_ARG_WITH(config,
    AC_MSG_ERROR(
 You must provide a file giving the location of various software using the option --with-config=file. Check the INSTALL instructions))
 
-if test -z "$OCAMLLIBDIR"; then
-  AC_MSG_ERROR("OCAMLLIBDIR is still undefined. Edit $SITECFG")
-fi
-
-if test -z "$INSTALLDIR"; then
-  AC_MSG_ERROR("INSTALLDIR is still undefined. Edit $SITECFG")
-fi
-
-if test -z "$INSTALLBINDIR"; then
-  AC_MSG_ERROR("INSTALLBINDIR is still undefined. Edit $SITECFG")
-fi
-
 dnl builtin rule for X
 AC_PATH_XTRA
 WITH_X="$X_LIBS $X_PRE_LIBS -lX11 $X_EXTRA_LIBS"
@@ -134,13 +122,6 @@ dnl This is the file that we produce
 dnl These are the variables that are substituted in Makefile.config.in to
 dnl produce Makefile.config
 
-dnl The OCAML library
-AC_SUBST(OCAMLLIBDIR)
-
-dnl Install dir
-AC_SUBST(INSTALLDIR)
-AC_SUBST(INSTALLBINDIR)
-
 dnl Info collected about X
 dnl The includes and options
 dnl AC_SUBST(X_CFLAGS)
@@ -160,8 +141,6 @@ dnl CPPFLAGS, LIBS and LDFLAGS are substituted by default
 dnl Info collected about ranlib
 AC_SUBST(RANLIB)
 AC_SUBST(CPPPROG)
-dnl LIBS is subsituted by default
-AC_SUBST(OCAMLSRCDIR)
 
 dnl Files to generate
 AC_OUTPUT(Makefile.config labltk labltklink labltkopt)

@@ -1,12 +1,10 @@
-## Where you installed Objective Label
-LIBDIR=@OCAMLLIBDIR@
+## Paths are relative to subdirectories
+## Where you compiled Objective Caml
+TOPDIR=../../..
+## Path to the otherlibs subdirectory
+OTHERS=../..
 
-## Where are the sources (for LablBrowser).
-OCAMLDIR=@OCAMLSRCDIR@
-
-## Where you want to install LablTk41 libraries and binaries
-INSTALLDIR=@INSTALLDIR@
-INSTALLBINDIR=@INSTALLBINDIR@
+include $(TOPDIR)/config/Makefile
 
 ### What to use to link with X
 X11_LIBS=-cclib "@X_LIBS@ @THE_X_LIBS@"
@@ -15,25 +13,20 @@ X11_LIBS=-cclib "@X_LIBS@ @THE_X_LIBS@"
 TKINCLUDES=-ccopt "@CPPFLAGS@"
 TKLIBS=-cclib "@LDFLAGS@ @LIBS@"
 
-### Making a library
-RANLIB=@RANLIB@
-
 ### Shouldn't need to change anything below
 ## Tools from the Objective Label distribution
-EXCRC=$(LIBDIR)/extract_crc
-EXPUNGE=$(LIBDIR)/expunge
 
-LABLC=ocamlc
+CAMLRUN=$(TOPDIR)/boot/ocamlrun
+LABLC=$(CAMLRUN) $(TOPDIR)/boot/ocamlc -I $(TOPDIR)/boot
 LABLCOMP=$(LABLC) -w s -modern -c
-CPP=@CPPPROG@ -P
-LABLYACC=ocamlyacc -v
-LABLLEX=ocamllex
+LABLYACC=$(TOPDIR)/boot/ocamlyacc -v
+LABLLEX=$(CAMLRUN) $(TOPDIR)/boot/ocamllex
 LABLLIBR=$(LABLC) -a
-LABLDEP=ocamldep
+LABLDEP=$(CAMLRUN) $(TOPDIR)/tools/ocamldep
 COMPFLAGS=
 LINKFLAGS=
 
-CAMLOPT=ocamlopt
+CAMLOPT==$(CAMLRUN) $(TOPDIR)/ocamlopt -I $(TOPDIR)/stdlib
 CAMLOPTLIBR=$(CAMLOPT) -a
 
 ## End of configuration section

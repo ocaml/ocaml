@@ -31,7 +31,7 @@ tk41.cmxa : $(SUPPORTX) $(WIDGETOBJSX) tk.cmx
 
 labltktop : $(WIDGETOBJS) $(SUPPORT)
 	$(LABLC) -custom -linkall -o labltktop -I ../support $(TKLINKOPT) \
-	       toplevellib.cma tk41.cma topmain.cmo
+	       -I $(TOPDIR)/toplevel toplevellib.cma tk41.cma topmain.cmo
 
 # All .{ml,mli} files are generated in this directory
 clean : 

@@ -1,6 +1,6 @@
 include ../Makefile.config
 
-COMPFLAGS=-I ../lib -I ../support
+COMPFLAGS=-I ../lib -I ../support -I $(OTHERS)/unix -I $(OTHERS)/str
 
 OBJS= fileselect.cmo balloon.cmo
 

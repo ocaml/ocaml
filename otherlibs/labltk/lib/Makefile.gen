@@ -3,7 +3,7 @@ include ../Makefile.config
 all: tk.ml .depend
 
 tkgen.ml: ../Widgets.src ../compiler/tkcompiler
-	cd ..; compiler/tkcompiler
+	cd ..; ../../boot/ocamlrun compiler/tkcompiler
 
 # dependencies are broken: wouldn't work with gmake 3.77
 

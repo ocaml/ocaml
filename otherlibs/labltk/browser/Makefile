@@ -1,9 +1,10 @@
 include ../Makefile.config
 
-LINKER=labltklink
-LABLTKLIB=-I $(INSTALLDIR)
-INCLUDES=$(LABLTKLIB) $(OLABLINCLUDES)
-OLABLINCLUDES=-I $(OCAMLDIR)/parsing -I $(OCAMLDIR)/utils -I $(OCAMLDIR)/typing
+LABLTKLIB=-I ../lib -I ../support
+OTHERSLIB=-I $(OTHERS)/unix -I $(OTHERS)/str
+OCAMLTOPLIB=-I $(TOPDIR)/parsing -I $(TOPDIR)/utils -I $(TOPDIR)/typing
+INCLUDES=$(OTHERSLIB) $(LABLTKLIB) $(OCAMLTOPLIB)
+CLIBS=-L../support -llabltk41 -L$(OTHERS)/str -lstr -L$(OTHERS)/unix -lunix
 
 OBJ =	list2.cmo	useunix.cmo	setpath.cmo	lexical.cmo	\
 	fileselect.cmo	searchid.cmo	searchpos.cmo	shell.cmo	\
@@ -27,9 +28,10 @@ JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
 all: lablbrowser
 
 lablbrowser: jglib.cma $(OBJ)
-	$(LINKER) -o lablbrowser $(LABLTKLIB) toplevellib.cma \
+	$(LABLC) -custom -o lablbrowser $(INCLUDES) \
+		$(TOPDIR)/toplevel/toplevellib.cma \
 		unix.cma str.cma tk41.cma jglib.cma $(OBJ) \
-		-cclib -lstr -cclib -lunix $(SYSLIBS)
+		-cclib "$(CLIBS)" $(TKLIBS) $(X11_LIBS)
 
 jglib.cma: $(JG)
 	$(LABLCOMP) -a -o jglib.cma $(JG) 
