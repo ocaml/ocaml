@@ -14,9 +14,8 @@ main differences with "lex" and "yacc", it does not explain the basics
 of writing a lexer or parser description in "lex" and "yacc". Readers
 unfamiliar with "lex" and "yacc" are referred to  ``Compilers:
 principles, techniques, and tools'' by Aho, Sethi and Ullman
-(Addison-Wesley, 1986), ``Compiler design in~C'' by Holub
-(Prentice-Hall, 1990), or ``Lex $\&$ Yacc'', by Mason and Brown
-(O'Reilly, 1990).
+(Addison-Wesley, 1986), or ``Lex $\&$ Yacc'', by Levine, Mason and
+Brown (O'Reilly, 1992).
 
 \section{Overview of "ocamllex"}
 
@@ -310,8 +309,6 @@ resynchronization points, as in "yacc".
 Actions occurring in the middle of rules are not supported.
 
 \subsection{Error handling}
-
-When the parser reaches an error state (no grammar rules can apply),
 
 Error recovery is supported as follows: when the parser reaches an
 error state (no grammar rules can apply), it calls a function named

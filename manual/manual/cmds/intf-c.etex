@@ -515,12 +515,13 @@ let you register up to 5 variables at the same time.  "Begin_root" is
 the same as "Begin_roots1".  "Begin_roots_block("\var{ptr}","\var{size}")"
 allows you to register an array of roots.  \var{ptr} is a pointer to
 the first element, and \var{size} is the number of elements in the
-array.  Once registered, each of your variables (or array element) has
-the following properties: if it points to a
-heap-allocated block, this block (and its contents) will not be
-reclaimed; moreover, if this block is relocated by the garbage
-collector, the variable is updated to point to the new location for
-the block.
+array.
+
+Once registered, each of your variables (or array element) has the
+following properties: if it points to a heap-allocated block, this
+block (and its contents) will not be reclaimed; moreover, if this
+block is relocated by the garbage collector, the variable is updated
+to point to the new location for the block.
 
 Each of the "Begin_roots" macros open a C block that must be closed
 with a matching "End_roots" at the same nesting level.  The block must
@@ -780,6 +781,24 @@ option, causing it to output a C object file containing the native
 code for all Caml modules on the command-line, as well as the Caml
 startup code. Initialization is performed by calling "caml_startup" as
 in the case of the bytecode compiler.
+
+\paragraph{Warning:} On some ports, special options are required on the final
+linking phase that links together the object file produced by the
+"-output-obj" option and the remainder of the program.  Those options
+are shows in the configuration file "config/Makefile" generated during
+compilation of Objective Caml, as the variables "BYTECCLINKOPTS"
+(for object files produced by "ocamlc -output-obj") and
+"NATIVECCLINKOPTS" (for object files produced by "ocamlopt
+-output-obj").  Currently, the only ports that require special
+attention are:
+\begin{itemize}
+\item Digital Unix on the Alpha: object files produced by "ocamlc
+-output-obj" must be linked with the "-taso" option.  This is not
+necessary for object files produced by "ocamlopt -output-obj".
+\item Windows NT: the object file produced by Objective Caml have been
+compiled with the "/MT" flag, and therefore all other object files
+linked with it should also be compiled with "/MT".
+\end{itemize}
 
 \section{A complete example}
 

@@ -194,7 +194,7 @@ file is built from the basename of the source file with the extension
 
 \item["-thread"]
 Compile or link multithreaded programs, in combination with the
-[Threads] library described in chapter~\ref{c:threads}. What this
+"threads" library described in chapter~\ref{c:threads}. What this
 option actually does is select a special, thread-safe version of the
 standard library.
 

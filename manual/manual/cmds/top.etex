@@ -54,14 +54,24 @@ starting with "#" (the sharp sign). These directives control the
 behavior of the toplevel; they are listed below in
 section~\ref{s:toplevel-directives}.
 
-\medskip
-
 \begin{unix}
-The toplevel system is started by the command "ocaml". Phrases are
-read on standard input, results are printed on standard output, errors
-on standard error. End-of-file on standard input terminates
-"ocaml" (see also the "#quit" directive in
-section~\ref{s:toplevel-directives}).
+The toplevel system is started by the command "ocaml", as follows:
+\begin{alltt}
+        ocaml \var{options}               # interactive mode
+        ocaml \var{options} \var{scriptfile} # script mode
+\end{alltt}
+If no filename is given on the command line, the toplevel system
+enters interactive mode: phrases are read on standard input, results
+are printed on standard output, errors on standard error. End-of-file
+on standard input terminates "ocaml" (see also the "#quit" directive
+in section~\ref{s:toplevel-directives}).
+
+On start-up (before the first phrase is read), if the file
+".ocamlinit" exists in the current directory,
+its contents are read as a sequence of Objective Caml phrases
+and executed as per the "#use" directive
+described in section~\label{s:toplevel-directives}.
+The evaluation outcode for each phrase are not displayed.
 
 The toplevel system does not perform line editing, but it can
 easily be used in conjunction with an external line editor such as
@@ -72,8 +82,24 @@ Objective Caml distribution).
 
 At any point, the parsing, compilation or evaluation of the current
 phrase can be interrupted by pressing "ctrl-C" (or, more precisely,
-by sending the "intr" signal to the "ocaml" process). The toplevel
+by sending the "sigintr" signal to the "ocaml" process). The toplevel
 then immediately returns to the "#" prompt.
+
+If a filename is given on the command-line to "ocaml", the toplevel
+system enters script mode: the contents of the file are read as a
+sequence of Objective Caml phrases and executed, as per the "#use"
+directive (section~\label{s:toplevel-directives}). The outcome of the
+evaluation is not printed.  On reaching the end of file, the "ocaml"
+command exits immediately.  No commands are read from standard input.
+
+In script mode, the first line of the script is ignored if it starts
+with "#!".  Thus, it is theoretically possible to make the script
+itself executable and put as first line "#!/usr/local/bin/ocaml",
+thus calling the toplevel system automatically when the script is
+run.  However, "ocaml" itself is a "#!" script on most installations
+of Objective Caml, and Unix kernels usually do not handle nested "#!"
+scripts.
+
 \end{unix}
 
 \begin{windows}
@@ -129,6 +155,7 @@ accesses an array or string outside of its bounds.
 
 \end{options}
 
+\begin{unix}
 The following environment variables are also consulted:
 \begin{options}
 \item["LC_CTYPE"] If set to "iso_8859_1", accented characters (from the
@@ -141,6 +168,7 @@ attempts to underline visually the location of the error. It
 consults the "TERM" variable to determines the type of output terminal
 and look up its capabilities in the terminal database.
 \end{options}
+\end{unix}
 
 \section{Toplevel directives}
 \label{s:toplevel-directives}
@@ -211,7 +239,7 @@ Remaining parts of values are printed as "..." (ellipsis).
 
 Toplevel phrases can refer to identifiers defined in compilation units
 with the same mechanisms as for separately compiled units: either by
-using qualified names ("modulename.localname"), or by using
+using qualified names ("Modulename.localname"), or by using
 the "open" construct and unqualified names (see section~\ref{s:names}).
 
 However, before referencing another compilation unit, an

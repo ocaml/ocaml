@@ -176,6 +176,12 @@ file is built from the basename of the source file with the extension
 Keep the assembly code produced during the compilation. The assembly
 code for the source file \var{x}".ml" is saved in the file \var{x}".s".
 
+\item["-thread"]
+Compile or link multithreaded programs, in combination with the
+"threads" library described in chapter~\ref{c:threads}. What this
+option actually does is select a special, thread-safe version of the
+standard library.
+
 \item["-unsafe"]
 Turn bound checking off on array and string accesses (the "v.(i)" and
 "s.[i]" constructs). Programs compiled with "-unsafe" are therefore
@@ -200,16 +206,20 @@ compilers should generate code that behave identically.
 
 \begin{itemize}
 
-\item The following operations abort the program (often via an
-hardware trap) instead of raising an exception ("Invalid_argument" and
-"Division_by_zero" respectively):
+\item The following operations abort the program (either by printing
+an error message or just via an hardware trap or fatal Unix signal)
+instead of raising an exception:
 \begin{itemize}
-\item accesses to arrays and strings out of bounds;
+\item out-of bounds accesses to arrays and strings;
 \item integer division by zero, modulus by zero;
+\item stack overflow;
 \item on the Alpha processor only, floating-point operations involving
 infinite or denormalized numbers (all other processors supported by
 "ocamlopt" treat these numbers correctly, as per the IEEE 754 standard).
 \end{itemize}
+In particular, notice that stack overflow caused by excessively deep
+recursion is reported by most Unix kernels as a ``segmentation
+violation'' signal.
 
 \item The following library functions print a fatal error message and
 abort the program instead of raising the "Invalid_argument" exception:
@@ -228,3 +238,10 @@ piece of code that does not allocate, its handler will not be called
 until the next heap allocation.
 
 \end{itemize}
+
+The best way to avoid running into those incompatibilities is to {\em
+never} trap the "Invalid_argument", "Division_by_zero", and
+"Stack_overflow" exceptions, thus also treating them as fatal errors
+with the bytecode compiler as well as with the native-code compiler.
+Test the divisor or array/string index before performing
+the operation instead of trapping the exception afterwards.
