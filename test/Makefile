@@ -57,14 +57,14 @@ clean::
 	rm -f Lex/*.cm[iox] Lex/*.[os]
 	rm -f Lex/*~
 
-Lex/grammar.ml Lex/grammar.mli: Lex/grammar.mly
+Lex/grammar.ml Lex/grammar.mli: Lex/grammar.mly ../yacc/cslyacc
 	$(CAMLYACC) $(YACCFLAGS) Lex/grammar.mly
 
 clean::
 	rm -f Lex/grammar.ml Lex/grammar.mli
 beforedepend:: Lex/grammar.ml Lex/grammar.mli
 
-Lex/scanner.ml: Lex/scanner.mll
+Lex/scanner.ml: Lex/scanner.mll ../lex/csllex
 	$(CAMLLEX) Lex/scanner.mll
 
 clean::
