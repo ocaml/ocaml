@@ -42,7 +42,7 @@ LIB_OBJS=pervasives.cmo \
 
 UNIXLIB=../unix
 
-UNIXLIB_OBJS=unix.cmo
+UNIXLIB_OBJS=unix.cmo $(UNIXLIB)/unixLabels.cmo
 
 all: libthreads.a threads.cma stdlib.cma unix.cma
 
