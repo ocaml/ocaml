@@ -137,36 +137,32 @@ let apply1 f s =
 let capitalize s = apply1 Char.uppercase s
 let uncapitalize s = apply1 Char.lowercase s
 
-let rec index_rec s i c =
-  if i >= length s then raise Not_found
-  else if unsafe_get s i = c then i
-  else index_rec s (i+1) c
+let rec index_rec s lim i c =
+  if i >= lim then raise Not_found else
+  if unsafe_get s i = c then i else index_rec s lim (i+1) c;;
 
-let index s c = index_rec s 0 c
+let index s c = index_rec s (length s) 0 c;;
 
 let index_from s i c =
-  if i < 0 || i >= length s
-  then invalid_arg "String.index_from"
-  else index_rec s i c
+  if i < 0 || i >= length s then invalid_arg "String.index_from" else
+  index_rec s (length s) i c;;
 
 let rec rindex_rec s i c =
-  if i < 0 then raise Not_found
-  else if unsafe_get s i = c then i
-  else rindex_rec s (i-1) c
+  if i < 0 then raise Not_found else
+  if unsafe_get s i = c then i else rindex_rec s (i-1) c;;
 
-let rindex s c = rindex_rec s (length s - 1) c
+let rindex s c = rindex_rec s (length s - 1) c;;
 
 let rindex_from s i c =
-  if i < 0 || i >= length s
-  then invalid_arg "String.rindex_from"
-  else rindex_rec s i c
+  if i < 0 || i >= length s then invalid_arg "String.rindex_from" else
+  rindex_rec s i c;;
 
 let contains_from s i c =
   if i < 0 || i >= length s then invalid_arg "String.contains_from" else
-  try let _ = index_rec s i c in true with Not_found -> false;;
+  try let _ = index_rec s (length s) i c in true with Not_found -> false;;
 
 let rcontains_from s i c =
   if i < 0 || i >= length s then invalid_arg "String.rcontains_from" else
   try let _ = rindex_rec s i c in true with Not_found -> false;;
 
-let contains s c = contains_from s 0 c;;
+let contains s c = s <> "" && contains_from s 0 c;;
