@@ -160,8 +160,9 @@ let find_printer_type lid =
     let (path, desc) = Env.lookup_value lid !toplevel_env in
     Ctype.begin_def();
     let ty_arg = Ctype.newvar() in
-    Ctype.unify !toplevel_env (Ctype.newty (Tarrow(ty_arg, Predef.type_unit)))
-                              (Ctype.instance desc.val_type);
+    Ctype.unify !toplevel_env
+      (Ctype.newty (Tarrow(ty_arg, Ctype.instance Predef.type_unit)))
+      (Ctype.instance desc.val_type);
     Ctype.end_def();
     Ctype.generalize ty_arg;
     (ty_arg, path)
