@@ -99,7 +99,11 @@ camltk_setimgdata_native (value imgname, value pixmap, value x, value y,
   pib.offset[0] = 0;
   pib.offset[1] = 1;
   pib.offset[2] = 2;
-  Tk_PhotoPutBlock(ph,&pib,Int_val(x),Int_val(y),Int_val(w),Int_val(h)); 
+  Tk_PhotoPutBlock(ph,&pib,Int_val(x),Int_val(y),Int_val(w),Int_val(h)
+#if (TK_MAJOR_VERSION == 8 && TK_MINOR_VERSION >= 4 || TK_MAJOR_VERSION > 8)
+                   , TK_PHOTO_COMPOSITE_SET
+#endif
+    ); 
 }
 
 CAMLprim void camltk_setimgdata_bytecode(argv,argn)
