@@ -48,6 +48,14 @@ let q = Oo.copy p;;
 q#move 7; (p#get_x, q#get_x);;
 \end{caml_example}
 
+Objects can be compared using the generic comparison functions ("=",
+"<", ...).  Two objects are equals if and only if they are physically
+equals. In particular, an object and its copy are not equals.
+\begin{caml_example}
+let q = Oo.copy p;;
+p = q, p = p;;
+\end{caml_example}
+
 \subsection*{Inheritance}
 
 We now define a new class "colored_point". This class inherits from
@@ -168,7 +176,7 @@ end;;
 \end{caml_example}
 
 
-\subsection*{Self reference}
+\subsection*{Reference to self}
 
 A method can also send messages to the object that invoked the method. 
 For that, self must be explicitly bound, 
@@ -292,6 +300,57 @@ or "int_comparable2".
 (min (new int_comparable2 5) (new int_comparable2 3))#x;;
 \end{caml_example}
 
+
+\subsection*{Protected methods}
+
+Protected methods are methods that does not appears in object
+interfaces. They can only be invoked from other methods of the
+same object.
+\begin{caml_example} 
+class restricted_point x_init as self =
+  val mutable x = x_init
+  method get_x = x
+  method protected move d = x <- x + d
+  method bump = self#move 1
+end;;
+let p = new restricted_point 0;;
+p#move 10;;
+p#bump;;
+\end{caml_example}
+Protected methods are inherited.  They can be hidden by signature
+matching, as described in the next section.
+
+\subsection*{Class interfaces}
+
+Class interfaces are inferred from class definitions. 
+They may also be defined directly in interfaces of modules. 
+For instance, the following is the interface of a module defining
+class "restricted_point".
+\begin{caml_example}
+module type POINT = sig 
+  class restricted_point (int) =
+    val mutable x : int
+    method get_x : int
+    method protected move : int -> unit
+    method bump : unit
+ end 
+end;;
+module Point : POINT = struct 
+  class restricted_point x = inherit restricted_point x end
+end;;
+\end{caml_example}
+It is sometime necessary to restrict the interface of classes.
+Instance variables and protected methods can be hidden by signature
+matching (however, public methods cannot be hidden):
+\begin{caml_example}
+module type ABSPOINT = sig 
+  class restricted_point (int) =
+    method get_x : int
+    method bump : unit
+ end 
+end;;
+module Abspoint : ABSPOINT = Point;;
+\end{caml_example}
 
 \subsection*{Using coercions}
 
@@ -462,38 +521,6 @@ end;;
 \end{caml_example}
 Although their types are mutually recursive, the classes "widget" and 
 "window" are themselves independent. 
-
-\subsection*{Class interfaces}
-
-Class interfaces are inferred from class definitions. 
-They may also be defined directly in interfaces of modules. 
-For instance, the following is 
-the interface of a module defining class "point".
-\begin{caml_example}
-module type POINT = sig 
-  class point (int) =
-    val mutable x : int
-    method get_x : int
-    method move : int -> unit
- end 
-end;;
-module Point : POINT = struct 
-  class point x = inherit point x end
-end;;
-\end{caml_example}
-It is sometime necessary to restrict the interface of classes. 
-Instance variables can be hidden by signature matching:
-\begin{caml_example}
-module type ABSPOINT = sig 
-  class point (int) =
-    method get_x : int
-    method move : int -> unit
- end 
-end;;
-module Abspoint : ABSPOINT = Point;;
-\end{caml_example}
-However, methods cannot be hidden.
-% XXX Expliquer pourquoi ?
 
 \subsection*{Simple modules as classes}
 

@@ -83,8 +83,8 @@ The type expression @typexpr 'as' "'" ident@ denotes the same type as
 @typexpr@, and also binds the type variable @ident@ to type @typexpr@
 both in @typexpr@ and in the remaining part of the type. 
 If the type variable @ident@ actually occurs in @typexpr@, a recursive
-type is created. Recursive types are allowed as long as any recursion
-crosses a type constructor or an object type.
+type is created. Recursive types are only allowed when any recursion
+crosses an object type.
 %
 
 \subsubsection*{Object types}
@@ -96,8 +96,8 @@ is a record of method types.
 The type @'<' method-type { ';' method-type } ';' '..'  '>'@ is the
 type of an object with methods and their associated types are described by
 @method-type_1, \ldots, method-type_n@, and possibly some other
-methods represented by the ellipsis.  This ellipsis actually behaves
-as a type variable.
+methods represented by the ellipsis.  This ellipsis actually is
+a special kind of type variable, named row variable.
 
 \subsubsection*{\#-types}
 \label{s:sharp-types}

@@ -2,16 +2,15 @@
 
 \subsection{Class definitions} \label{s:classdef}
 
-\ikwd{and\@\verb`and`}
 \ikwd{as\@\verb`as`}
 \ikwd{class\@\verb`class`}
 \ikwd{closed\@\verb`closed`}
 \ikwd{end\@\verb`end`}
 \ikwd{inherit\@\verb`inherit`}
 \ikwd{method\@\verb`method`}
+\ikwd{protected\@\verb`protected`}
 \ikwd{mutable\@\verb`mutable`}
 \ikwd{private\@\verb`private`}
-\ikwd{then\@\verb`then`}
 \ikwd{val\@\verb`val`}
 \ikwd{virtual\@\verb`virtual`}
 
@@ -39,8 +38,8 @@ class-binders:
 class-fields:
     'inherit' ancestor
   | 'val' value
-  | 'virtual' method-type
-  | 'method' method
+  | 'virtual' [ 'protected' ] method-type
+  | 'method' [ 'protected' ] method
 ;
 ancestor:
     [ '(' typexpr { ',' typexpr } ')' ] class-path {{ expr }} ['as' value-name]
@@ -147,9 +146,19 @@ keeping the same initial value.
 \subsubsection*{Method definition}
 
 \ikwd{method\@\verb`method`}
+\ikwd{protected\@\verb`protected`}
 
 Method definition is written @'method' method@.  The definition of a
-method overrides any previous definition of this method.
+method overrides any previous definition of this method.  The method
+will be public (that is, not protected) if any of the definition
+states so.
+
+A protected method, @'method protected' method@ or @'virtual
+protected' method@, is a method that can only be invoked from other
+methods to the current object. This invocation is performed using the
+expression @value-name '#' method-name@, where @value-name@ is
+directly bound to self at the beginning of the class definition.
+Protected methods does not appears in object types.
 
 Method bodies do not have access to class parameters, but to instance
 variables.  Some special
@@ -220,9 +229,10 @@ The type of a concrete method can be omitted. That way, the status of
 a method can be changed from virtual to concrete without having the
 method type be given.
 
-Some type information can be hidden in a class type: some instance
-variables can be omitted; some previously non-mutable instance
-variables can be flagged mutable.
+Some type information can be hidden in a class type: instance
+variables and protected concrete methods can be omitted; previously
+non-mutable instance variables can be flagged mutable. Moreover,
+protected methods can be turned into public methods.
 
 \begin{syntax}
 class-type:
@@ -238,8 +248,8 @@ class-type-params:
 class-type-fields:
     'inherit' ancestor-type
   | 'val' value-type
-  | 'virtual' method-type
-  | 'method' method-name [ ':' typexpr ]
+  | 'virtual' [ 'protected' ] method-type
+  | 'method' [ 'protected' ] method-name [ ':' typexpr ]
 ;
 ancestor-type:
     [ '(' typexpr { "," typexpr } ')' ] class-path

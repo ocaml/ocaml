@@ -174,8 +174,9 @@ for i = a to b do \event body done
 \end{itemize}
 Exceptions: A function application followed by a function return is replaced
 by the compiler by a jump (tail-call optimization). In this case, no
-event is put after the function application. Also, no event is put
-after a function application when the function is external (written in C).
+event is put after the function application.
+% Also, no event is put after a function application when the function
+% is external (written in C).
 
 \subsection{Starting the debugged program}
 
@@ -219,7 +220,13 @@ the previous event. With an argument, do it \var{count} times.
 \item["next "\optvar{count}] Run the program and stop at the next
 event, skipping over function calls. With an argument, do it
 \var{count} times.
+\item["previous "\optvar{count}] Run the program backward and stop at
+the previous event, skipping over function calls. With an argument, do
+it \var{count} times.
 \item["finish"] Run the program until the current function returns.
+\end{options}
+\item["start"] Run the program backward and stop at the first event
+before the current function invocation.
 \end{options}
 
 \subsection{Time travel}
@@ -551,12 +558,13 @@ functions must therefore be loaded explicitly in the debugger.
 
 \begin{options}
 \item["load_printer \""\var{file-name}"\""]
-Load in the debugger the indicated ".cmo" or ".cma" object file.
-The file is loaded in an environment consisting only of
-the Objective Caml standard library plus the definitions provided by
-object files previously loaded using "load_printer". The loaded file
-does not have direct access to the modules of the program being
-debugged.
+Load in the debugger the indicated ".cmo" or ".cma" object file.  The
+file is loaded in an environment consisting only of the Objective Caml
+standard library plus the definitions provided by object files
+previously loaded using "load_printer".  If this file depends on other
+object files not yet loaded, the debugger automatically loads them if
+it is able to find them in the search path.  The loaded file does not
+have direct access to the modules of the program being debugged.
 
 \item["install_printer "\var{printer-name}]
 Register the function named \var{printer-name} (a
