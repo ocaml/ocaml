@@ -28,7 +28,10 @@ let tl = function
 let rec nth l n =
   match l with
     [] -> failwith "nth"
-  | a::l -> if n <= 0 then a else nth l (n-1)
+  | a::l ->
+      if n = 0 then a else
+      if n > 0 then nth l (n-1) else
+      invalid_argument "List.nth"
 
 let rec rev_append accu = function
     [] -> accu
@@ -47,7 +50,6 @@ let rec map f = function
 let rec iter f = function
     [] -> ()
   | a::l -> f a; iter f l
-
 
 let rec fold_left f accu l =
   match l with
