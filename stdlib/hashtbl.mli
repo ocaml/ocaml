@@ -52,7 +52,7 @@ val remove : ('a, 'b) t -> 'a -> unit
 val iter : ('a -> 'b -> 'c) -> ('a, 'b) t -> unit
         (* [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl],
 	   discarding all the results.
-           [f] receives the key as first argument, and the associated val
+           [f] receives the key as first argument, and the associated value
            as second argument. The order in which the bindings are passed to
            [f] is unpredictable. Each binding is presented exactly once
            to [f]. *)
@@ -60,22 +60,22 @@ val iter : ('a -> 'b -> 'c) -> ('a, 'b) t -> unit
 (*** The polymorphic hash primitive *)
 
 val hash : 'a -> int
-        (* [Hashtbl.hash x] associates a positive integer to any val of
+        (* [Hashtbl.hash x] associates a positive integer to any value of
            any type. It is guaranteed that
                 if [x = y], then [hash x = hash y]. 
            Moreover, [hash] always terminates, even on cyclic
            structures. *)
 
 external hash_param : int -> int -> 'a -> int = "hash_univ_param" "noalloc"
-        (* [Hashtbl.hash_param n m x] computes a hash val for [x], with the
+        (* [Hashtbl.hash_param n m x] computes a hash value for [x], with the
            same properties as for [hash]. The two extra parameters [n] and
            [m] give more precise control over hashing. Hashing performs a
            depth-first, right-to-left traversal of the structure [x], stopping
            after [n] meaningful nodes were encountered, or [m] nodes,
            meaningful or not, were encountered. Meaningful nodes are: integers;
            floating-point numbers; strings; characters; booleans; and constant
-           constructors. Larger vals of [m] and [n] means that more
+           constructors. Larger values of [m] and [n] means that more
            nodes are taken into account to compute the final hash
-           val, and therefore collisions are less likely to happen.
+           value, and therefore collisions are less likely to happen.
            However, hashing takes longer. The parameters [m] and [n]
            govern the tradeoff between accuracy and speed. *)
