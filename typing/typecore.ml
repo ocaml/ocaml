@@ -153,7 +153,7 @@ let build_or_pat env loc lid =
         | _ -> pats, fields)
       ([],[]) fields in
   let row =
-    { row_fields = fields; row_more = newvar(); row_bound = !bound;
+    { row_fields = List.rev fields; row_more = newvar(); row_bound = !bound;
       row_closed = false; row_name = Some (path, tyl) }
   in
   let ty = newty (Tvariant row) in
@@ -166,7 +166,7 @@ let build_or_pat env loc lid =
     [] -> raise(Error(loc, Not_a_variant_type lid))
   | pat :: pats ->
       List.fold_left
-        (fun pat pat0 -> {pat_desc=Tpat_or(pat,pat0); pat_loc=loc;
+        (fun pat pat0 -> {pat_desc=Tpat_or(pat0,pat); pat_loc=loc;
                           pat_env=env; pat_type=ty})
         pat pats
 
