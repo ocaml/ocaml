@@ -41,11 +41,13 @@ let add_const c n =
   if n = 0 then c else Cop(Caddi, [c; Cconst_int n])
 
 let incr_int = function
-    Cop(Caddi, [c; Cconst_int n]) -> add_const c (n+1)
+    Cconst_int n -> Cconst_int(n+1)
+  | Cop(Caddi, [c; Cconst_int n]) -> add_const c (n+1)
   | c -> add_const c 1
 
 let decr_int = function
-    Cop(Caddi, [c; Cconst_int n]) -> add_const c (n-1)
+    Cconst_int n -> Cconst_int(n-1)
+  | Cop(Caddi, [c; Cconst_int n]) -> add_const c (n-1)
   | c -> add_const c (-1)
 
 let add_int c1 c2 =
@@ -152,11 +154,11 @@ let array_indexing ptr ofs =
   | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1]); Cconst_int 1]) ->
       Cop(Cadda, [ptr; lsl_const c log2_size_addr])
   | Cop(Caddi, [c; Cconst_int n]) ->
-      Cop(Cadda, [ptr; add_const (lsl_const c (log2_size_addr - 1))
-                                 ((n - 1) lsl (log2_size_addr - 1))])
+      Cop(Cadda, [Cop(Cadda, [ptr; lsl_const c (log2_size_addr - 1)]);
+                  Cconst_int((n-1) lsl (log2_size_addr - 1))])
   | _ ->
-      Cop(Cadda, [ptr; add_const (lsl_const ofs (log2_size_addr - 1))
-                                 ((-1) lsl (log2_size_addr - 1))])
+      Cop(Cadda, [Cop(Cadda, [ptr; lsl_const ofs (log2_size_addr - 1)]);
+                  Cconst_int((-1) lsl (log2_size_addr - 1))])
 
 (* String length *)
 
@@ -370,8 +372,12 @@ let rec transl = function
         (bind "ref" (transl arg) (fun arg ->
           Cop(Cstore,
               [arg; add_const (Cop(Cload typ_int, [arg])) (n lsl 1)])))
+  | Uprim(Pfloatofint, [arg]) ->
+      box_float(Cop(Cfloatofint, [untag_int(transl arg)]))
+  | Uprim(Pintoffloat, [arg]) ->
+      tag_int(Cop(Cintoffloat, [transl_unbox_float arg]))
   | Uprim(Pnegfloat, [arg]) ->
-      box_float(Cop(Caddf, [Cconst_float "0.0";
+      box_float(Cop(Csubf, [Cconst_float "0.0";
                             transl_unbox_float arg]))
   | Uprim(Paddfloat, [arg1; arg2]) ->
       box_float(Cop(Caddf, [transl_unbox_float arg1; transl_unbox_float arg2]))

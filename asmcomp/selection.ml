@@ -48,11 +48,20 @@ let rec size_expr env = function
   | _ ->
       fatal_error "Selection.size_expr"
 
-(* Says if an operation is "safe", i.e. without side-effects *)
+(* Says if an operation is "cheap". A "cheap" operation is an operation
+   without side-effects and whose execution can be delayed until its value
+   is really needed. In the case of e.g. an [alloc] instruction,
+   the non-cheap parts of arguments are computed in right-to-left order
+   first, then the block is allocated, then the cheap parts are evaluated
+   and stored. *)
 
-let safe_operation = function
+let cheap_operation = function
+    (* The following may have side effects *)
     Capply _ | Cextcall(_, _, _) | Calloc | Cstore | Cstorechunk _ | 
     Cmodify | Craise -> false
+    (* The following are expensive to compute, better start them early *)
+  | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat -> false
+    (* The remaining operations are cheap *)
   | _ -> true
 
 (* Default instruction selection for operators *)
@@ -463,7 +472,7 @@ and emit_parts env exp seq =
       (Ctuple explist, env)
   | Clet(id, arg, body) ->
       emit_parts (emit_let env id arg seq) body seq
-  | Cop(op, args) when safe_operation op ->
+  | Cop(op, args) when cheap_operation op ->
       let (new_args, new_env) = emit_parts_list env args seq in
       (Cop(op, new_args), new_env)
   | _ ->

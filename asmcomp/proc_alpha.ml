@@ -62,8 +62,8 @@ let is_immediate (n:int) = true
     $15                     trap pointer
     $16 - $23   13 - 20     function arguments
     $24, $25                temporaries
-    $26-$30                 stack ptr, global ptr, etc
-    $31         21          always zero
+    $26 - $30               stack ptr, global ptr, etc
+    $31                     always zero
 
     $f0 - $f7   100 - 107   function results
     $f8 - $f15  108 - 115   general purpose ($f2 - $f9 preserved by C)
