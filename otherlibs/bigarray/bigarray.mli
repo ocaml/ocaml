@@ -395,7 +395,7 @@ module Genarray :
 
 (** {2 One-dimensional arrays} *)
 
-(** The [Array1] structure provides operations similar to those of
+(** One-dimensional arrays. The [Array1] structure provides operations similar to those of
    {!Bigarray.Genarray}, but specialized to the case of one-dimensional arrays.
    (The [Array2] and [Array3] structures below provide operations
    specialized for two- and three-dimensional arrays.)
@@ -458,7 +458,7 @@ end
 
 (** {2 Two-dimensional arrays} *)
 
-(** The [Array2] structure provides operations similar to those of
+(** Two-dimensional arrays. The [Array2] structure provides operations similar to those of
    {!Bigarray.Genarray}, but specialized to the case of two-dimensional arrays. *)
 module Array2 :
   sig
@@ -544,7 +544,7 @@ module Array2 :
 
 (** {2 Three-dimensional arrays} *)
 
-(** The [Array3] structure provides operations similar to those of
+(** Three-dimensional arrays. The [Array3] structure provides operations similar to those of
    {!Bigarray.Genarray}, but specialized to the case of three-dimensional arrays. *)
 module Array3 :
   sig

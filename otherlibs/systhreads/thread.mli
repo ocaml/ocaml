@@ -12,7 +12,7 @@
 
 (* $Id$ *)
 
-(** Lightweight threads for Posix 1003.1c and Win32. *)
+(** Lightweight threads for Posix [1003.1c] and Win32. *)
 
 type t
 (** The type of thread handles. *)
