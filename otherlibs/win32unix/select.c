@@ -57,6 +57,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
 
   Begin_roots3 (readfds, writefds, exceptfds)
   Begin_roots3 (read_list, write_list, except_list)
+    tm = Double_val(timeout);
     if (readfds == Val_int(0)
 	&& writefds == Val_int(0)
 	&& exceptfds == Val_int(0)) {
@@ -70,7 +71,6 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
       fdlist_to_fdset(readfds, &read);
       fdlist_to_fdset(writefds, &write);
       fdlist_to_fdset(exceptfds, &except);
-      tm = Double_val(timeout);
       if (tm < 0.0)
 	tvp = (struct timeval *) NULL;
       else {
