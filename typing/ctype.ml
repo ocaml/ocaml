@@ -2524,7 +2524,11 @@ let rec build_subtype env visited loops posi level t =
           in
           let path, cl_abbr = Env.lookup_type (lid_of_path "#" p) env in
           let body =
-            match cl_abbr.type_manifest with Some ty -> ty
+            match cl_abbr.type_manifest with Some ty ->
+              begin match (repr ty).desc with
+                Tobject(_,{contents=Some(p',_)}) when Path.same p p' -> ty
+              | _ -> raise Not_found
+              end
             | None -> assert false in
           let ty =
             subst env t'.level abbrev None cl_abbr.type_params tl body in
