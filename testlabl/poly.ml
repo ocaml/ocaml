@@ -389,3 +389,20 @@ type t = u and u = t;;
 (* PR#1731 *)
 class ['t] a = object constraint 't = [> `A of 't a] end
 type t = [ `A of t a ];;
+
+(* Wrong in 3.06 *)
+type ('a,'b) t constraint 'a = 'b and ('a,'b) u = ('a,'b) t;;
+
+(* Full polymorphism if we do not expand *)
+type 'a t = 'a and u = int t;;
+
+(* Loose polymorphism if we expand *)
+type 'a t constraint 'a = int;;
+type 'a u = 'a and 'a v = 'a u t;;
+type 'a u = 'a and 'a v = 'a u t constraint 'a = int;;
+
+(* Behaviour is unstable *)
+type g = int;;
+type 'a t = unit constraint 'a = g;;
+type 'a u = 'a and 'a v = 'a u t;;
+type 'a u = 'a and 'a v = 'a u t constraint 'a = int;;
