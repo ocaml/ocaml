@@ -4,7 +4,7 @@ PROGS=test1.byt test2.byt test3.byt test4.byt test5.byt test6.byt \
 
 !include ../../../config/Makefile.nt
 
-CAMLC=..\..\..\boot\ocamlrun ..\..\..\ocamlc -I .. -I ..\..\win32unix -I ..\..\..\stdlib -ccopt /Zi
+CAMLC=..\..\..\boot\ocamlrun ..\..\..\ocamlc -I .. -I ..\..\win32unix -I ..\..\..\stdlib
 CAMLOPT=..\..\..\boot\ocamlrun ..\..\..\ocamlopt -I .. -I ..\..\win32unix -I ..\..\..\stdlib
 
 all: $(PROGS)

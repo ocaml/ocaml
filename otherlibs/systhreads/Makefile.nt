@@ -21,7 +21,7 @@ libthreads.lib: $(BYTECODE_C_OBJS)
 	$(MKLIB)libthreads.lib $(BYTECODE_C_OBJS)
 
 win32_b.obj: win32.c
-	$(BYTECC) -O -I..\..\byterun $(BYTECCCOMPOPTS) /Zi -c win32.c
+	$(BYTECC) -O -I..\..\byterun $(BYTECCCOMPOPTS) -c win32.c
 	mv win32.obj win32_b.obj
 
 libthreadsnat.lib: $(NATIVECODE_C_OBJS)

@@ -522,21 +522,22 @@ value caml_condition_new(value unit)        /* ML */
 
 value caml_condition_wait(value cond, value mut)           /* ML */
 {
-  int retcode1, retcode2;
+  int retcode;
   HANDLE m = Mutex_val(mut);
   HANDLE s = Condition_val(cond)->sem;
+  HANDLE handles[2];
 
   Condition_val(cond)->count ++;
   enter_blocking_section();
   /* Release mutex */
   ReleaseMutex(m);
-  /* Wait for semaphore to be non-null, and decrement it */
-  retcode1 = WaitForSingleObject(s, INFINITE);
-  /* Re-acquire mutex */
-  retcode2 = WaitForSingleObject(m, INFINITE);
+  /* Wait for semaphore to be non-null, and decrement it.
+     Simultaneously, re-acquire mutex. */
+  handles[0] = s;
+  handles[1] = m;
+  retcode = WaitForMultipleObjects(2, handles, TRUE, INFINITE);
   leave_blocking_section();
-  if (retcode1 == WAIT_FAILED || retcode2 == WAIT_FAILED)
-    caml_wthread_error("Condition.wait");
+  if (retcode == WAIT_FAILED) caml_wthread_error("Condition.wait");
   return Val_unit;
 }
 
