@@ -22,9 +22,11 @@
 #include "roots.h"
 #include "alloc.h"
 #include "memory.h"
+#include "signals.h"
 
-#if defined(HAS_SELECT) && defined(HAS_SETITIMER) && defined(HAS_GETTIMEOFDAY)
-#else
+#if ! (defined(HAS_SELECT) && \
+       defined(HAS_SETITIMER) && \
+       defined(HAS_GETTIMEOFDAY))
 #include "Cannot compile libthreads, system calls missing"
 #endif
 
@@ -241,11 +243,8 @@ static value schedule_thread()
   int need_select, need_wait;
 
   /* Don't allow preemption during a callback */
-  if (callback_depth > 0) {
-    if (curr_thread->status != RUNNABLE)
-      invalid_argument("Thread: deadlock in callback");
-    return curr_thread->retval;
-  }
+  if (callback_depth > 0) return curr_thread->retval;
+
   /* Save the status of the current thread */
   curr_thread->stack_low = stack_low;
   curr_thread->stack_high = stack_high;
@@ -333,7 +332,9 @@ try_again:
     else {
       delay_ptr = NULL;
     }
+    enter_blocking_section();
     retcode = select(FD_SETSIZE, &readfds, &writefds, NULL, delay_ptr);
+    leave_blocking_section();
     if (retcode > 0) {
       /* Some descriptors are ready. 
          Mark the corresponding threads runnable. */
@@ -358,11 +359,15 @@ try_again:
         }
       END_FOREACH(th);
     }
-    /* If we get here with run_thread still NULL, some of the delays 
-       have expired, or some wait() need to be polled again.
-       We go through the loop once more to make the
+    /* If we get here with run_thread still NULL, one of the following
+       may have happened:
+       - a delay has expired
+       - a wait() needs to be polled again
+       - the select() failed (e.g. was interrupted)
+       In these cases, we go through the loop once more to make the
        corresponding threads runnable. */
-    if (run_thread == NULL && (delay != DELAY_INFTY || need_wait))
+    if (run_thread == NULL &&
+        (delay != DELAY_INFTY || need_wait || retcode == -1))
       goto try_again;
   }
 
@@ -379,6 +384,15 @@ try_again:
   return curr_thread->retval;
 }
 
+/* Since context switching is not allowed in callbacks, a thread that
+   blocks during a callback is a deadlock. */
+
+static void check_callback()
+{
+  if (callback_depth > 0)
+    fatal_error("Thread: deadlock during callback");
+}
+
 /* Reschedule without suspending the current thread */
 
 value thread_yield(unit)        /* ML */
@@ -393,6 +407,7 @@ value thread_yield(unit)        /* ML */
 value thread_sleep(unit)        /* ML */
      value unit;
 {
+  check_callback();
   curr_thread->status = SUSPENDED;
   return schedule_thread();
 }
@@ -402,6 +417,7 @@ value thread_sleep(unit)        /* ML */
 value thread_wait_read(fd)        /* ML */
      value fd;
 {
+  check_callback();
   curr_thread->status = BLOCKED_READ;
   curr_thread->fd = fd;
   return schedule_thread();
@@ -410,6 +426,7 @@ value thread_wait_read(fd)        /* ML */
 value thread_wait_write(fd)        /* ML */
      value fd;
 {
+  check_callback();
   curr_thread->status = BLOCKED_WRITE;
   curr_thread->fd = fd;
   return schedule_thread();
@@ -446,6 +463,7 @@ value thread_delay(time)          /* ML */
      value time;
 {
   double date = timeofday() + Double_val(time);
+  check_callback();
   curr_thread->status = BLOCKED_DELAY;
   Assign(curr_thread->delay, copy_double(date));
   return schedule_thread();
@@ -457,6 +475,7 @@ value thread_wait_timed_read(fd, time)        /* ML */
      value fd, time;
 {
   double date = timeofday() + Double_val(time);
+  check_callback();
   curr_thread->status = BLOCKED_READ | BLOCKED_DELAY;
   curr_thread->fd = fd;
   Assign(curr_thread->delay, copy_double(date));
@@ -467,6 +486,7 @@ value thread_wait_timed_write(fd, time)        /* ML */
      value fd, time;
 {
   double date = timeofday() + Double_val(time);
+  check_callback();
   curr_thread->status = BLOCKED_WRITE | BLOCKED_DELAY;
   curr_thread->fd = fd;
   Assign(curr_thread->delay, copy_double(date));
@@ -478,6 +498,7 @@ value thread_wait_timed_write(fd, time)        /* ML */
 value thread_join(th)          /* ML */
      value th;
 {
+  check_callback();
   if (((thread_t)th)->status == KILLED) return Val_unit;
   curr_thread->status = BLOCKED_JOIN;
   Assign(curr_thread->joining, th);
@@ -489,6 +510,7 @@ value thread_join(th)          /* ML */
 value thread_wait_pid(pid)          /* ML */
      value pid;
 {
+  check_callback();
   curr_thread->status = BLOCKED_WAIT;
   curr_thread->waitpid = pid;
   return schedule_thread();
