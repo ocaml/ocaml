@@ -1503,6 +1503,8 @@ let check_partial_all v casel =
   with
   | NoGuard -> None
 
+
+
 let check_partial loc casel =
   if Warnings.is_active (Warnings.Partial_match "") then begin
   let pss = initial_matrix casel in

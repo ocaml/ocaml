@@ -620,7 +620,7 @@ let type_auto_lhs env {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
         jpats, get_ref pattern_variables, get_ref pattern_force)
       sauto in
   let name = Ident.create "auto" in
-  (name, List.map (add_alone sauto) (get_ref auto_chans), auto)
+  (name, !auto_count, List.map (add_alone sauto) (get_ref auto_chans), auto)
 
 let rec do_type_autos_lhs env = function
   | [] -> []
@@ -2290,7 +2290,7 @@ and type_clause env names (jpats,pat_vars,pat_force) scl =
     jclause_desc = (jpats, exp);}
   
 
-and type_auto env (my_name, def_names, auto_lhs) sauto =
+and type_auto env (my_name, nchans, def_names, auto_lhs) sauto =
   let env = Env.remove_continuations env in
   let cls =
     Array.of_list
@@ -2308,9 +2308,10 @@ and type_auto env (my_name, def_names, auto_lhs) sauto =
       | _ -> assert false)
       def_names in
   {jauto_desc = cls;
-   jauto_name = my_name;
-   jauto_names = List.rev def_names;
-   jauto_loc = sauto.pjauto_loc}
+    jauto_name = my_name;
+    jauto_nchans = nchans;
+    jauto_names = List.rev def_names;
+    jauto_loc = sauto.pjauto_loc}
 
 and generalize_auto env auto =
   Array.iter
@@ -2348,7 +2349,7 @@ and type_def env sautos =
   let names_lhs_list = type_autos_lhs env sautos in
   let new_env =
     List.fold_left
-      (fun env (name, names, _) -> add_auto_names env name names)
+      (fun env (name, _, names, _) -> add_auto_names env name names)
       env names_lhs_list in
   let autos =
     List.map2 (type_auto new_env) names_lhs_list sautos in
@@ -2366,7 +2367,7 @@ and type_loc env sdefs =
     List.fold_left
       (fun env (jid_loc, autos_lhs) ->
        List.fold_left
-          (fun env (name,names,_) -> add_auto_names env name names)
+          (fun env (name, _, names,_) -> add_auto_names env name names)
           (Env.add_value
              jid_loc.jident_desc
              {val_type = jid_loc.jident_type; val_kind = Val_reg}

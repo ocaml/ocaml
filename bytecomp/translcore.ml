@@ -1057,6 +1057,9 @@ and  build_channels autos k =
   List.fold_right Transljoin.build_channels autos k
 
 and do_transl_def some_loc autos body =
+(* let autos  = List.map Joinmatch.transform autos in*)
+(* Joinmatch.transform: joinpattern joinautomaton -> joinpattern list joinautomaton*)
+(* then the build_matches should be changed to take joinpattern list*)
     let cautos = List.map Transljoin.build_matches autos in    
     create_autos some_loc cautos
       (build_channels autos

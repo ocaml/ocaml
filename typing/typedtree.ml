@@ -85,20 +85,21 @@ and expression_desc =
   | Texp_par of expression * expression
   | Texp_null
   | Texp_reply of expression * Path.t
-  | Texp_def of joinautomaton list * expression
+  | Texp_def of joinpattern joinautomaton list * expression
   | Texp_loc of joinlocation list * expression
   | Texp_dynamic of expression
   | Texp_coerce of expression * Parsetree.core_type
   | Texp_dyntype of module_expr
 
 and joinlocation =
-    {jloc_desc : joinident * joinautomaton list * expression ;
+    {jloc_desc : joinident * joinpattern joinautomaton list * expression ;
       jloc_loc : Location.t}
 
-and joinautomaton =
-    {jauto_desc : joinclause array ;
+and 'a joinautomaton =
+    {jauto_desc : 'a joinclause array ;
      jauto_name : Ident.t;
      jauto_names : (Ident.t * joinchannel) list ;
+      mutable jauto_nchans: int;
      (* names defined, description *)
      jauto_loc : Location.t}
 
@@ -108,8 +109,8 @@ and joinchannel =
      jchannel_id   : int ;
      jchannel_type : type_expr;}
 
-and joinclause =
-    {jclause_desc : joinpattern list * expression ;
+and 'a joinclause =
+    {jclause_desc : 'a list * expression ;
       jclause_loc : Location.t}
 
 and joinpattern =
@@ -197,7 +198,7 @@ and structure_item =
   | Tstr_cltype of (Ident.t * cltype_declaration) list
   | Tstr_include of module_expr * Ident.t list
 (*> JOCAML *)
-  | Tstr_def of joinautomaton list
+  | Tstr_def of joinpattern joinautomaton list
   | Tstr_loc of joinlocation list
 (*< JOCAML *)
 
