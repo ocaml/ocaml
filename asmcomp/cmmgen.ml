@@ -827,7 +827,27 @@ and transl_switch arg index cases =
   match Array.length index with
     1 -> transl cases.(0)
   | 2 -> Cifthenelse(arg, transl cases.(index.(1)), transl cases.(index.(0)))
-  | _ -> Cswitch(arg, index, Array.map transl cases)
+  | _ ->
+      (* Determine whether all actions minus one or two are equal to
+         Ustaticfail *)
+      let num_fail = ref 0 in
+      let key1 = ref (-1) in
+      let key2 = ref (-1) in
+      for i = 0 to Array.length index - 1 do
+        if cases.(index.(i)) = Ustaticfail then incr num_fail
+        else if !key1 < 0 then key1 := i
+        else if !key2 < 0 then key2 := i
+      done;
+      match Array.length index - !num_fail with
+        0 -> Csequence(arg, Cexit)
+      | 1 -> Cifthenelse(Cop(Ccmpi Ceq, [arg; Cconst_int !key1]),
+                         transl cases.(index.(!key1)), Cexit)
+      | 2 -> bind "test" arg (fun a ->
+               Cifthenelse(Cop(Ccmpi Ceq, [a; Cconst_int !key1]),
+                           transl cases.(index.(!key1)),
+                           Cifthenelse(Cop(Ccmpi Ceq, [a; Cconst_int !key2]),
+                                       transl cases.(index.(!key2)), Cexit)))
+      | _ -> Cswitch(arg, index, Array.map transl cases)
 
 and transl_letrec bindings cont =
   let rec init_blocks = function
