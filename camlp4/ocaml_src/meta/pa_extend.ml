@@ -602,16 +602,22 @@ let mklistpat loc =
   loop true
 ;;
 
-let rec quot_act e =
+let rec quot_expr e =
   let loc = MLast.loc_of_expr e in
   match e with
-    MLast.ExUid (_, "None") ->
+    MLast.ExMat (_, e, pel) ->
+      let pel = List.map quot_match_case pel in
+      MLast.ExMat (loc, quot_expr e, pel)
+  | MLast.ExLet (_, false, pel, e) ->
+      let pel = List.map quot_let_binding pel in
+      MLast.ExLet (loc, false, pel, quot_expr e)
+  | MLast.ExUid (_, "None") ->
       MLast.ExApp
         (loc, MLast.ExUid (loc, "Option"), MLast.ExUid (loc, "None"))
   | MLast.ExApp (_, MLast.ExUid (_, "Some"), e) ->
       MLast.ExApp
         (loc, MLast.ExUid (loc, "Option"),
-         MLast.ExApp (loc, MLast.ExUid (loc, "Some"), quot_act e))
+         MLast.ExApp (loc, MLast.ExUid (loc, "Some"), quot_expr e))
   | MLast.ExUid (_, "False") ->
       MLast.ExApp (loc, MLast.ExUid (loc, "Bool"), MLast.ExUid (loc, "False"))
   | MLast.ExUid (_, "True") ->
@@ -626,15 +632,15 @@ let rec quot_act e =
       MLast.ExApp
         (loc, MLast.ExUid (loc, "List"),
          MLast.ExApp
-           (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), quot_act e),
+           (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), quot_expr e),
             MLast.ExUid (loc, "[]")))
   | MLast.ExApp (_, MLast.ExApp (_, MLast.ExUid (_, "::"), e1), e2) ->
       MLast.ExApp
-        (loc, MLast.ExApp (loc, MLast.ExUid (loc, "Cons"), quot_act e1),
-         quot_act e2)
+        (loc, MLast.ExApp (loc, MLast.ExUid (loc, "Cons"), quot_expr e1),
+         quot_expr e2)
   | MLast.ExApp (_, _, _) ->
       let (f, al) = expr_fa [] e in
-      let al = List.map quot_act al in
+      let al = List.map quot_expr al in
       begin match f with
         MLast.ExUid (_, c) ->
           MLast.ExApp
@@ -655,10 +661,37 @@ let rec quot_act e =
   | MLast.ExStr (_, s) ->
       MLast.ExApp (loc, MLast.ExUid (loc, "Str"), MLast.ExStr (loc, s))
   | MLast.ExTup (_, el) ->
-      let el = List.map quot_act el in
+      let el = List.map quot_expr el in
       MLast.ExApp (loc, MLast.ExUid (loc, "Tuple"), mklistexp loc el)
   | _ -> e
-;;
+and quot_patt p =
+  let loc = MLast.loc_of_patt p in
+  match p with
+    MLast.PaApp (_, MLast.PaApp (_, MLast.PaUid (_, "::"), p1), pl) ->
+      let p1 = quot_patt p1 in
+      begin match quot_patt pl with
+        MLast.PaApp
+          (_, MLast.PaUid (_, "List"),
+           MLast.PaApp
+             (_, MLast.PaApp (_, MLast.PaUid (_, "::"), pl),
+              MLast.PaUid (_, "[]"))) ->
+          MLast.PaApp
+            (loc, MLast.PaUid (loc, "List"),
+             MLast.PaApp
+               (loc, MLast.PaApp (loc, MLast.PaUid (loc, "::"), p1), pl))
+      | MLast.PaApp (_, MLast.PaUid (_, "List"), MLast.PaUid (_, "[]")) ->
+          MLast.PaApp
+            (loc, MLast.PaUid (loc, "List"),
+             MLast.PaApp
+               (loc, MLast.PaApp (loc, MLast.PaUid (loc, "::"), p1),
+                MLast.PaUid (loc, "[]")))
+      | _ -> p
+      end
+  | MLast.PaUid (_, "[]") ->
+      MLast.PaApp (loc, MLast.PaUid (loc, "List"), MLast.PaUid (loc, "[]"))
+  | _ -> p
+and quot_match_case (p, eo, e) = quot_patt p, eo, quot_expr e
+and quot_let_binding (p, e) = quot_patt p, quot_expr e;;
 
 let symgen = "xx";;
 
@@ -672,7 +705,7 @@ let pname_of_ptuple pl =
 ;;
 
 let quotify_action psl act =
-  let e = quot_act act in
+  let e = quot_expr act in
   List.fold_left
     (fun e ps ->
        match ps.pattern with

@@ -261,22 +261,28 @@ value mklistpat loc =
         <:patt< [$p1$ :: $loop False pl$] >> ]
 ;
 
-value rec quot_act e =
+value rec quot_expr e =
   let loc = MLast.loc_of_expr e in
   match e with
-  [ <:expr< None >> -> <:expr< Option None >>
-  | <:expr< Some $e$ >> -> <:expr< Option (Some $quot_act e$) >>
+  [ <:expr< match $e$ with [ $list:pel$ ] >> ->
+      let pel = List.map quot_match_case pel in
+      <:expr< match $quot_expr e$ with [ $list:pel$ ] >>
+  | <:expr< let $list:pel$ in $e$ >> ->
+      let pel = List.map quot_let_binding pel in
+      <:expr< let $list:pel$ in $quot_expr e$ >>
+  | <:expr< None >> -> <:expr< Option None >>
+  | <:expr< Some $e$ >> -> <:expr< Option (Some $quot_expr e$) >>
   | <:expr< False >> -> <:expr< Bool False >>
   | <:expr< True >> -> <:expr< Bool True >>
   | <:expr< List $_$ >> -> e
   | <:expr< Option $_$ >> -> e
   | <:expr< Str $_$ >> -> e
   | <:expr< [] >> -> <:expr< List [] >>
-  | <:expr< [$e$] >> -> <:expr< List [$quot_act e$] >>
-  | <:expr< [$e1$ :: $e2$] >> -> <:expr< Cons $quot_act e1$  $quot_act e2$ >>
+  | <:expr< [$e$] >> -> <:expr< List [$quot_expr e$] >>
+  | <:expr< [$e1$ :: $e2$] >> -> <:expr< Cons $quot_expr e1$  $quot_expr e2$ >>
   | <:expr< $_$ $_$ >> ->
       let (f, al) = expr_fa [] e in
-      let al = List.map quot_act al in
+      let al = List.map quot_expr al in
       match f with
       [ <:expr< $uid:c$ >> -> <:expr< Node $str:c$ $mklistexp loc al$ >>
       | <:expr< $_$.$uid:c$ >> -> <:expr< Node $str:c$ $mklistexp loc al$ >>
@@ -284,9 +290,24 @@ value rec quot_act e =
   | <:expr< $lid:s$ >> -> if s = Stdpp.loc_name.val then <:expr< Loc >> else e
   | <:expr< $str:s$ >> -> <:expr< Str $str:s$ >>
   | <:expr< ($list:el$) >> ->
-      let el = List.map quot_act el in
+      let el = List.map quot_expr el in
       <:expr< Tuple $mklistexp loc el$ >>
   | _ -> e ]
+and quot_patt p =
+  let loc = MLast.loc_of_patt p in
+  match p with
+  [ <:patt< [$p1$ :: $pl$] >> ->
+      let p1 = quot_patt p1 in
+      match quot_patt pl with
+      [ <:patt< List [$pl$] >> -> <:patt< List [$p1$ :: $pl$] >>
+      | <:patt< List [] >> -> <:patt< List [$p1$] >>
+      | _ -> p ]
+  | <:patt< [] >> -> <:patt< List [] >>
+  | _ -> p ]
+and quot_match_case (p, eo, e) =
+  (quot_patt p, eo, quot_expr e)
+and quot_let_binding (p, e) =
+  (quot_patt p, quot_expr e)
 ;
 
 value symgen = "xx";
@@ -301,7 +322,7 @@ value pname_of_ptuple pl =
 ;
 
 value quotify_action psl act =
-  let e = quot_act act in
+  let e = quot_expr act in
   List.fold_left
     (fun e ps ->
        match ps.pattern with

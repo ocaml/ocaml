@@ -98,6 +98,40 @@ value mklistpat last =
            loop False pl] ]
 ;
 
+value mkassert loc e =
+  let f = Node "ExStr" [Loc; Str Pcaml.input_file.val] in
+  let bp = Node "ExInt" [Loc; Str (string_of_int (fst loc))] in
+  let ep = Node "ExInt" [Loc; Str (string_of_int (snd loc))] in
+  let raiser =
+    Node "ExApp"
+      [Loc; Node "ExLid" [Loc; Str "raise"];
+       Node "ExApp"
+         [Loc; Node "ExUid" [Loc; Str "Assert_failure"];
+          Node "ExTup" [Loc; List [f; bp; ep]]]]
+  in
+  match e with
+  [ Node "ExUid" [_; Str "False"] -> raiser
+  | _ ->
+      if Pcaml.no_assert.val then Node "ExUid" [Loc; Str "()"]
+      else Node "ExIfe" [Loc; e; Node "ExUid" [Loc; Str "()"]; raiser] ]
+;
+
+value mklazy loc e =
+  Node "ExApp"
+    [Loc;
+     Node "ExAcc"
+       [Loc; Node "ExUid" [Loc; Str "Pervasives"];
+        Node "ExLid" [Loc; Str "ref"]];
+     Node "ExApp"
+       [Loc;
+        Node "ExAcc"
+          [Loc; Node "ExUid" [Loc; Str "Lazy"];
+           Node "ExUid" [Loc; Str "Delayed"]];
+        Node "ExFun"
+          [Loc;
+           List [Tuple [Node "PaUid" [Loc; Str "()"]; Option None; e]]]]]
+;
+
 value neg s = string_of_int (- int_of_string s);
 
 value not_yet_warned = ref True;
@@ -153,7 +187,6 @@ EXTEND
           Node "StTyp" [Loc; tdl]
       | "value"; r = SOPT "rec"; l = SLIST1 let_binding SEP "and" ->
           Node "StVal" [Loc; o2b r; l]
-      | "#"; n = lident; dp = dir_param -> Node "StDir" [Loc; n; dp]
       | e = expr -> Node "StExp" [Loc; e] ] ]
   ;
   rebind_exn:
@@ -204,8 +237,7 @@ EXTEND
       | "open"; i = mod_ident -> Node "SgOpn" [Loc; i]
       | "type"; tdl = SLIST1 type_declaration SEP "and" ->
           Node "SgTyp" [Loc; tdl]
-      | "value"; i = a_LIDENT; ":"; t = ctyp -> Node "SgVal" [Loc; i; t]
-      | "#"; n = lident; dp = dir_param -> Node "SgDir" [Loc; n; dp] ] ]
+      | "value"; i = a_LIDENT; ":"; t = ctyp -> Node "SgVal" [Loc; i; t] ] ]
   ;
   module_declaration:
     [ RIGHTA
@@ -218,11 +250,6 @@ EXTEND
           Node "WcTyp" [Loc; i; tpl; t]
       | "module"; i = mod_ident; "="; mt = module_type ->
           Node "WcMod" [Loc; i; mt] ] ]
-  ;
-  dir_param:
-    [ [ a = anti_opt -> a
-      | e = expr -> Option (Some e)
-      | -> Option None ] ]
   ;
   expr:
     [ "top" RIGHTA
@@ -354,18 +381,9 @@ EXTEND
       [ "-"; e = SELF -> mkumin loc "-" e
       | "-."; e = SELF -> mkumin loc "-." e ]
     | "apply" LEFTA
-      [ e1 = SELF; e2 = SELF -> Node "ExApp" [Loc; e1; e2] ]
-    | "label" NONA
-      [ lab = TILDEIDENTCOLON; e = SELF -> Node "ExLab" [Loc; Str lab; e]
-      | lab = TILDEIDENT ->
-          Node "ExLab" [Loc; Str lab; Node "ExLid" [Loc; Str lab]]
-      | lab = QUESTIONIDENTCOLON; e = SELF -> Node "ExOlb" [Loc; Str lab; e]
-      | lab = QUESTIONIDENT ->
-          Node "ExOlb" [Loc; Str lab; Node "ExLid" [Loc; Str lab]]
-      | "~"; a = anti_; ":"; e = SELF -> Node "ExLab" [Loc; a; e]
-      | "~"; a = anti_ -> Node "ExLab" [Loc; a; Node "ExLid" [Loc; a]]
-      | "?"; a = anti_; ":"; e = SELF -> Node "ExOlb" [Loc; a; e]
-      | "?"; a = anti_ -> Node "ExOlb" [Loc; a; Node "ExLid" [Loc; a]] ]
+      [ e1 = SELF; e2 = SELF -> Node "ExApp" [Loc; e1; e2]
+      | "assert"; e = SELF -> mkassert loc e
+      | "lazy"; e = SELF -> mklazy loc e ]
     | "." LEFTA
       [ e1 = SELF; "."; "("; e2 = SELF; ")" -> Node "ExAre" [Loc; e1; e2]
       | e1 = SELF; "."; "["; e2 = SELF; "]" -> Node "ExSte" [Loc; e1; e2]
@@ -397,21 +415,7 @@ EXTEND
           Node "ExTup" [Loc; Cons e el]
       | "("; e = SELF; ")" -> e
       | "("; el = anti_list; ")" -> Node "ExTup" [Loc; el]
-      | a = anti_anti -> Node "ExAnt" [Loc; a]
-      | "`"; s = ident -> Node "ExVrn" [Loc; s] ] ]
-  ;
-  expr: LEVEL "top"
-    [ [ "do"; seq = SLIST0 [ e = expr; ";" -> e ]; "return"; e = SELF ->
-          let _ = warning_seq () in
-          Node "ExSeq" [Loc; Append seq e]
-      | "for"; i = a_LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
-        "do"; seq = SLIST0 [ e = expr; ";" -> e ]; "done" ->
-          let _ = warning_seq () in
-          Node "ExFor" [Loc; i; e1; e2; df; seq]
-      | "while"; e = SELF; "do"; seq = SLIST0 [ e = expr; ";" -> e ];
-        "done" ->
-          let _ = warning_seq () in
-          Node "ExWhi" [Loc; e; seq] ] ]
+      | a = anti_anti -> Node "ExAnt" [Loc; a] ] ]
   ;
   dummy:
     [ [ -> () ] ]
@@ -673,6 +677,17 @@ EXTEND
       | "mutable" -> Bool True
       | -> Bool False ] ]
   ;
+  str_item:
+    [ [ "#"; n = lident; dp = dir_param -> Node "StDir" [Loc; n; dp] ] ]
+  ;
+  sig_item:
+    [ [ "#"; n = lident; dp = dir_param -> Node "SgDir" [Loc; n; dp] ] ]
+  ;
+  dir_param:
+    [ [ a = anti_opt -> a
+      | e = expr -> Option (Some e)
+      | -> Option None ] ]
+  ;
   a_module_expr:
     [ [ a = ANTIQUOT "mexp" -> antiquot "mexp" loc a
       | a = ANTIQUOT "" -> antiquot "" loc a ] ]
@@ -767,6 +782,37 @@ EXTEND
   ;
   anti_when:
     [ [ a = ANTIQUOT "when" -> antiquot "when" loc a ] ]
+  ;
+  (* Compatibility old syntax of sequences *)
+  expr: LEVEL "top"
+    [ [ "do"; seq = SLIST0 [ e = expr; ";" -> e ]; "return"; e = SELF ->
+          let _ = warning_seq () in
+          Node "ExSeq" [Loc; Append seq e]
+      | "for"; i = a_LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
+        "do"; seq = SLIST0 [ e = expr; ";" -> e ]; "done" ->
+          let _ = warning_seq () in
+          Node "ExFor" [Loc; i; e1; e2; df; seq]
+      | "while"; e = SELF; "do"; seq = SLIST0 [ e = expr; ";" -> e ];
+        "done" ->
+          let _ = warning_seq () in
+          Node "ExWhi" [Loc; e; seq] ] ]
+  ;
+  (* Labels and variants *)
+  expr: AFTER "apply"
+    [ "label" NONA
+      [ lab = TILDEIDENTCOLON; e = SELF -> Node "ExLab" [Loc; Str lab; e]
+      | lab = TILDEIDENT ->
+          Node "ExLab" [Loc; Str lab; Node "ExLid" [Loc; Str lab]]
+      | lab = QUESTIONIDENTCOLON; e = SELF -> Node "ExOlb" [Loc; Str lab; e]
+      | lab = QUESTIONIDENT ->
+          Node "ExOlb" [Loc; Str lab; Node "ExLid" [Loc; Str lab]]
+      | "~"; a = anti_; ":"; e = SELF -> Node "ExLab" [Loc; a; e]
+      | "~"; a = anti_ -> Node "ExLab" [Loc; a; Node "ExLid" [Loc; a]]
+      | "?"; a = anti_; ":"; e = SELF -> Node "ExOlb" [Loc; a; e]
+      | "?"; a = anti_ -> Node "ExOlb" [Loc; a; Node "ExLid" [Loc; a]] ] ]
+  ;
+  expr: LEVEL "simple"
+    [ [ "`"; s = ident -> Node "ExVrn" [Loc; s] ] ]
   ;
   (* Objects and Classes *)
   str_item:

@@ -110,6 +110,22 @@ value mklistpat loc last =
         <:patt< [$p1$ :: $loop False pl$] >> ]
 ;
 
+value mkassert loc e =
+  let f = <:expr< $str:input_file.val$ >> in
+  let bp = <:expr< $int:string_of_int (fst loc)$ >> in
+  let ep = <:expr< $int:string_of_int (snd loc)$ >> in
+  let raiser = <:expr< raise (Assert_failure ($f$, $bp$, $ep$)) >> in
+  match e with
+  [ <:expr< False >> -> raiser
+  | _ ->
+      if no_assert.val then <:expr< () >>
+      else <:expr< if $e$ then () else $raiser$ >> ]
+;
+
+value mklazy loc e =
+  <:expr< Pervasives.ref (Lazy.Delayed (fun () -> $e$)) >>
+;
+
 (* ...suppose to flush the input in case of syntax error to avoid multiple
    errors in case of cut-and-paste in the xterm, but work bad: for example
    the input "for x = 1;" waits for another line before displaying the
@@ -331,22 +347,12 @@ EXTEND
       | e1 = SELF; "lsl"; e2 = SELF -> <:expr< $e1$ lsl $e2$ >>
       | e1 = SELF; "lsr"; e2 = SELF -> <:expr< $e1$ lsr $e2$ >> ]
     | "unary minus" NONA
-      [ "-"; e = SELF -> <:expr< $mkumin loc "-" e$ >>
-      | "-."; e = SELF -> <:expr< $mkumin loc "-." e$ >> ]
+      [ "-"; e = SELF -> mkumin loc "-" e
+      | "-."; e = SELF -> mkumin loc "-." e ]
     | "apply" LEFTA
       [ e1 = SELF; e2 = SELF -> <:expr< $e1$ $e2$ >>
-      | "assert"; e = SELF ->
-          let f = <:expr< $str:input_file.val$ >> in
-          let bp = <:expr< $int:string_of_int (fst loc)$ >> in
-          let ep = <:expr< $int:string_of_int (snd loc)$ >> in
-          let raiser = <:expr< raise (Assert_failure ($f$, $bp$, $ep$)) >> in
-          match e with
-          [ <:expr< False >> -> raiser
-          | _ ->
-              if no_assert.val then <:expr< () >>
-              else <:expr< if $e$ then () else $raiser$ >> ]
-      | "lazy"; e = SELF ->
-          <:expr< Pervasives.ref (Lazy.Delayed (fun () -> $e$)) >> ]
+      | "assert"; e = SELF -> mkassert loc e
+      | "lazy"; e = SELF -> mklazy loc e ]
     | "." LEFTA
       [ e1 = SELF; "."; "("; e2 = SELF; ")" -> <:expr< $e1$ .( $e2$ ) >>
       | e1 = SELF; "."; "["; e2 = SELF; "]" -> <:expr< $e1$ .[ $e2$ ] >>
