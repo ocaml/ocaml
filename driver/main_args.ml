@@ -107,7 +107,7 @@ struct
     "-principal", Arg.Unit F._principal,
            " Check principality of type inference";
     "-rectypes", Arg.Unit F._rectypes, " Allow arbitrary recursive types";
-    "-stypes", Arg.Unit F._stypes, " Save types for use with caml-types.el";
+    "-stypes", Arg.Unit F._stypes, " Save types in <filename>.types";
     "-thread", Arg.Unit F._thread, " Use thread-safe standard library";
     "-unsafe", Arg.Unit F._unsafe,
            " No bounds checking on array and string access";

@@ -126,6 +126,7 @@ let main () =
        "-rectypes", Arg.Set recursive_types,
              " Allow arbitrary recursive types";
        "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";
+       "-stypes", Arg.Set save_types, " Save types in <filename>.types";
        "-thread", Arg.Set thread_safe, " Use thread-safe standard library";
        "-unsafe", Arg.Set fast,
              " No bounds checking on array and string access";
