@@ -6,10 +6,13 @@ include ../../Makefile.config
 CC=$(BYTECC)
 CFLAGS=-O -I$(REGEXLIB) -I../../byterun $(BYTECCCOMPOPTS)
 CAMLC=../../boot/camlrun ../../boot/camlc -I ../../boot
+CAMLOPT=../../boot/camlrun ../../camlopt -I ../../stdlib
 REGEXLIB=regex-0.12
 COBJS=strstubs.o $(REGEXLIB)/regex.o
 
-all: libstr.a str.cma
+all: libstr.a str.cmi str.cma
+
+allopt: libstr.a str.cmi str.cmxa
 
 libstr.a: $(COBJS)
 	rm -f libstr.a
@@ -19,12 +22,14 @@ libstr.a: $(COBJS)
 str.cma: str.cmo
 	$(CAMLC) -a -o str.cma str.cmo
 
+str.cmxa: str.cmx
+	$(CAMLOPT) -a -o str.cmxa str.cmx
+
 $(REGEXLIB)/regex.o: $(REGEXLIB)/regex.c $(REGEXLIB)/regex.h
 	cd $(REGEXLIB); CC="$(CC)" sh configure; make
 
 clean:
-	rm -f libstr.a *.o *.cm[ioa] camlstr
-	rm -f *.dvi *.log *.aux
+	rm -f libstr.a *.o *.cm* camlstr
 	cd $(REGEXLIB); if test -f Makefile; then make distclean; else exit 0; fi
 
 install:
@@ -32,13 +37,20 @@ install:
 	cd $(LIBDIR); $(RANLIB) libstr.a
 	cp str.cma str.cmi $(LIBDIR)
 
-.SUFFIXES: .ml .mli .cmo .cmi
+installopt:
+	cp str.cmxa str.a $(LIBDIR)
+	cd $(LIBDIR); $(RANLIB) str.a
+
+.SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmo:
 	$(CAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmx:
+	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend
