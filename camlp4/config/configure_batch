@@ -104,7 +104,6 @@ esac
 
 rm -f Makefile
 cat Makefile.tpl > Makefile
-echo >> Makefile
 cat Makefile.cnf >> Makefile
 
 echo "Resulting configuration file (Makefile.cnf):"

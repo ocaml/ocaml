@@ -1,8 +1,7 @@
-
 EXE=.exe
-OTOP=../..
 OPT=
-OLIBDIR=C:/ocaml/lib
+OTOP=../..
+OLIBDIR=$(OTOP)/boot
 BINDIR=C:/ocaml/bin
 LIBDIR=C:/camlp4/lib
 MANDIR=C:/camlp4/man
