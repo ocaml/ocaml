@@ -99,7 +99,10 @@
   (parser
    (((d kind) s) (values "INT" (digits_under kind (Buff.store len d) s)))
    ((s) ep
-    (raise_with_loc (values bp ep) (Failure "ill-formed integer constant")))))
+    (raise_with_loc (values
+                       (Reloc.shift_pos bp Reloc.zero_loc)
+                       (Reloc.shift_pos ep Reloc.zero_loc))
+       (Failure "ill-formed integer constant")))))
 
 (define (base_number kwt bp len)
   (parser
@@ -118,7 +121,9 @@
    (((` ''')) (values "CHAR" (String.make 1 x)))
    ((s) ep
     (if (List.mem x no_ident)
-        (Stdpp.raise_with_loc (values (- ep 2) (- ep 1))
+        (Stdpp.raise_with_loc (values
+                                 (Reloc.shift_pos (- ep 2) Reloc.zero_loc)
+                                 (Reloc.shift_pos (- ep 1) Reloc.zero_loc))
          (Stream.Error "bad quote"))
         (let* ((len (Buff.store (Buff.store 0 ''') x))
                ((values s dot) (ident len s)))
@@ -155,7 +160,10 @@
   (no_dot
     (parser
      (((` '.')) ep
-      (Stdpp.raise_with_loc (values (- ep 1) ep) (Stream.Error "bad dot")))
+      (Stdpp.raise_with_loc (values
+                               (Reloc.shift_pos (- ep 1) Reloc.zero_loc)
+                               (Reloc.shift_pos ep Reloc.zero_loc))
+         (Stream.Error "bad dot")))
      (() ())))
   ((lexer0 kwt)
     (parser bp
@@ -248,7 +256,12 @@
 
 (define (lexer_gmake ())
   (let ((kwt (Hashtbl.create 89)))
-     {(Token.tok_func (Token.lexer_func_of_parser (lexer kwt)))
+     {(Token.tok_func
+       (Token.lexer_func_of_parser
+        (lambda (s)
+          (let (((values r (values bp ep)) (lexer kwt s)))
+            (values r (values (Reloc.shift_pos bp Reloc.zero_loc)
+                              (Reloc.shift_pos ep Reloc.zero_loc)))))))
       (Token.tok_using (lexer_using kwt))
       (Token.tok_removing (lambda))
       (Token.tok_match Token.default_match)
@@ -605,6 +618,8 @@
      ((Sexpr loc [(Slid _ ":") se1 se2])
       (let* ((e (expr_se se1)) (t (ctyp_se se2))) <:expr< ( $e$ : $t$ ) >>))
      ((Sexpr loc [se]) (let ((e (expr_se se))) <:expr< $e$ () >>))
+     ((Sexpr loc [(Slid _ "assert") (Suid _ "False")])
+        <:expr< assert False >>)
      ((Sexpr loc [(Slid _ "assert") se])
         (let ((e (expr_se se))) <:expr< assert $e$ >>))
      ((Sexpr loc [(Slid _ "lazy") se])
@@ -832,7 +847,7 @@
             (lambda_match
              ([] (assert False))
              ([se] (ctyp_se se))
-             ([se . sel] 
+             ([se . sel]
                (let* ((t1 (ctyp_se se))
                       (loc (values (fst (loc_of_sexpr se)) (snd loc)))
                       (t2 (loop sel)))
