@@ -87,9 +87,15 @@ let rec sel_operation op args =
   | (Cloadchunk chunk, [arg]) ->
       let (addr, eloc) = Proc.select_addressing arg in
       (Iload(chunk, addr), [eloc])
-  | (Cstore, arg1 :: rem) ->
+  | (Cstore, [arg1; arg2]) ->
       let (addr, eloc) = Proc.select_addressing arg1 in
-      (Istore(Word, addr), eloc :: rem)
+      begin try
+        let (op, newarg2) = Proc.select_store addr arg2 in
+        (op, [newarg2; eloc])
+      with Proc.Use_default ->
+        (Istore(Word, addr), [arg2; eloc])
+        (* Inversion addr/datum in Istore *)
+      end
   | (Cstorechunk chunk, [arg1; arg2]) ->
       let (addr, eloc) = Proc.select_addressing arg1 in
       (Istore(chunk, addr), [arg2; eloc])
@@ -423,14 +429,6 @@ let rec emit_expr env exp seq =
           let r1 = emit_tuple env new_args seq in
           let rd = Reg.createv ty in
           insert_op (Iload(Word, addr)) r1 rd seq
-      | Istore(Word, addr) ->
-          begin match new_args with
-            [] -> fatal_error "Selection.Istore"
-          | arg_addr :: args_data ->
-              let ra = emit_expr env arg_addr seq in
-              emit_stores env args_data seq ra addr;
-              [||]
-          end
       | Ialloc _ ->
           Proc.contains_calls := true;
           let rd = Reg.createv typ_addr in
