@@ -1077,14 +1077,19 @@ module Analyser =
                raise (Failure "Parsetree.Pmty_signature signature but not Types.Tmty_signature signat")
           )
             
-      | Parsetree.Pmty_functor (_,_, module_type2) ->
+      | Parsetree.Pmty_functor (_,pmodule_type2, module_type2) ->
           (
+	   let loc_start = pmodule_type2.Parsetree.pmty_loc.Location.loc_start.Lexing.pos_cnum in
+           let loc_end = pmodule_type2.Parsetree.pmty_loc.Location.loc_end.Lexing.pos_cnum in
+	   let mp_type_code = get_string_of_file loc_start loc_end in
+	   print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
            match sig_module_type with
              Types.Tmty_functor (ident, param_module_type, body_module_type) ->
                let param = 
                  {
                    mp_name = Name.from_ident ident ;
                    mp_type = Odoc_env.subst_module_type env param_module_type ;
+		   mp_type_code = mp_type_code ;
                  } 
                in
                (
@@ -1140,14 +1145,19 @@ module Analyser =
                (* if we're here something's wrong *)
                raise (Failure "Parsetree.Pmty_signature signature but not Types.Tmty_signature signat")
           )
-      | Parsetree.Pmty_functor (_,_,module_type2) (* of string * module_type * module_type *) ->
+      | Parsetree.Pmty_functor (_,pmodule_type2,module_type2) (* of string * module_type * module_type *) ->
           (
            match sig_module_type with
              Types.Tmty_functor (ident, param_module_type, body_module_type) ->
+	       let loc_start = pmodule_type2.Parsetree.pmty_loc.Location.loc_start.Lexing.pos_cnum in
+               let loc_end = pmodule_type2.Parsetree.pmty_loc.Location.loc_end.Lexing.pos_cnum in
+	       let mp_type_code = get_string_of_file loc_start loc_end in
+	       print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
                let param = 
                  {
                    mp_name = Name.from_ident ident ;
                    mp_type = Odoc_env.subst_module_type env param_module_type ;
+		   mp_type_code = mp_type_code ;
                  } 
                in
                (
@@ -1321,41 +1331,18 @@ module Analyser =
 	else
 	  None
       in
-      let m =
-        {
-          m_name = mod_name ;
-          m_type = Types.Tmty_signature signat ;
-          m_info = info_opt ;
-          m_is_interface = true ;
-          m_file = !file_name ;
-          m_kind = Module_struct elements ;
-          m_loc = { loc_impl = None ; loc_inter = Some (!file_name, 0) } ;
-          m_top_deps = [] ;
-	  m_code = None ;
-	  m_code_intf = code_intf ;
-        } 
-      in
-      
-      print_DEBUG "Eléments du module:";
-      let f e =
-        let s = 
-          match e with
-            Element_module m -> "module "^m.m_name
-          | Element_module_type mt -> "module type "^mt.mt_name
-          | Element_included_module im -> "included module "^im.im_name
-          | Element_class c -> "class "^c.cl_name
-          | Element_class_type ct -> "class type "^ct.clt_name
-          | Element_value v -> "value "^v.val_name
-          | Element_exception e -> "exception "^e.ex_name
-          | Element_type t -> "type "^t.ty_name
-          | Element_module_comment t -> Odoc_misc.string_of_text t
-        in
-        print_DEBUG s;
-        ()
-      in
-      List.iter f elements;
-
-      m
+      {
+        m_name = mod_name ;
+        m_type = Types.Tmty_signature signat ;
+        m_info = info_opt ;
+        m_is_interface = true ;
+        m_file = !file_name ;
+        m_kind = Module_struct elements ;
+        m_loc = { loc_impl = None ; loc_inter = Some (!file_name, 0) } ;
+        m_top_deps = [] ;
+	m_code = None ;
+	m_code_intf = code_intf ;
+      } 
           
     end
 

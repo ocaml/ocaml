@@ -964,11 +964,17 @@ class html =
     method create_fully_qualified_module_idents_links m_name s =
       let f str_t = 
         let match_s = Str.matched_string str_t in
+	let rel = Name.get_relative m_name match_s in
+	let s_final = Odoc_info.apply_if_equal 
+            Odoc_info.use_hidden_modules 
+            match_s
+            rel
+        in
         if StringSet.mem match_s known_modules_names then
           let (html_file, _) = Naming.html_files match_s in
-          "<a href=\""^html_file^"\">"^(Name.get_relative m_name match_s)^"</a>"
+          "<a href=\""^html_file^"\">"^s_final^"</a>"
         else
-          match_s
+          s_final
       in
       let s2 = Str.global_substitute
           (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([A-Z][a-zA-Z_'0-9]*\\)")
@@ -1022,12 +1028,16 @@ class html =
       bs b "</code>"
 
     (** Print html code to display a [Types.module_type]. *)
-    method html_of_module_type b m_name t =
-      let s = remove_last_newline (Odoc_info.string_of_module_type t) in
+    method html_of_module_type b ?code m_name t =
+      let s = remove_last_newline (Odoc_info.string_of_module_type ?code t) in
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_module_idents_links m_name s);
       bs b "</code>"
-        
+
+    (** Print html code to display the type of a module parameter.. *)
+    method html_of_module_parameter_type b m_name p =
+      self#html_of_module_type b m_name ~code: p.mp_type_code p.mp_type
+
     (** Generate a file containing the module type in the given file name. *)
     method output_module_type in_title file mtyp =
       let s = remove_last_newline (Odoc_info.string_of_module_type ~complete: true mtyp) in
@@ -1378,7 +1388,7 @@ class html =
               bs b "</code></td>\n" ;
               bs b "<td align=\"center\" valign=\"top\">:</td>\n";
               bs b "<td>" ;
-	      self#html_of_module_type b m_name p.mp_type;
+	      self#html_of_module_parameter_type b m_name p;
 	      bs b "\n";
               (
 	       match desc_opt with
@@ -1857,7 +1867,9 @@ class html =
         self#html_of_modtype b ~with_link: false mt;
            
         (* parameters for functors *)
-        self#html_of_module_parameter_list b "" (Module.module_type_parameters mt);
+        self#html_of_module_parameter_list b 
+	  (Name.father mt.mt_name)
+	  (Module.module_type_parameters mt);
         (* a horizontal line *)
         bs b "<hr width=\"100%\">\n";
         (* module elements *)
@@ -1950,7 +1962,9 @@ class html =
         self#html_of_module b ~with_link: false modu;
 
         (* parameters for functors *)
-        self#html_of_module_parameter_list b "" (Module.module_parameters modu);
+        self#html_of_module_parameter_list b
+	  (Name.father modu.m_name)
+	  (Module.module_parameters modu);
 
         (* a horizontal line *)
         bs b "<hr width=\"100%\">\n";
@@ -2192,12 +2206,17 @@ class html =
       (* Get the names of all known modules and module types. *)
       let module_types = Odoc_info.Search.module_types module_list in
       let modules = Odoc_info.Search.modules module_list in
-      let module_type_names = List.map (fun mt -> mt.mt_name) module_types in
       known_modules_names <-
 	List.fold_left 
 	  (fun acc m -> StringSet.add m.m_name acc) 
 	  known_modules_names 
 	  modules ;
+      known_modules_names <-
+	List.fold_left
+	  (fun acc mt -> StringSet.add mt.mt_name acc) 
+	  known_modules_names 
+	  module_types ;
+
       (* generate html for each module *)
       if not !Args.index_only then 
         self#generate_elements self#generate_for_module module_list ;

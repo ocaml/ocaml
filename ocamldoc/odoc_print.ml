@@ -44,22 +44,36 @@ let string_of_type_expr t =
   Printtyp.type_scheme_max ~b_reset_names: false type_fmt t;
   flush_type_fmt ()
 
+exception Use_code of string
+
 (** Return the given module type where methods and vals have been removed
-   from the signatures. Used when we don't want to print a too long module type.*)
-let simpl_module_type t =
+   from the signatures. Used when we don't want to print a too long module type.
+   @param code when the code is given, we raise the [Use_code] exception is we
+   encouter a signature, to that the calling function can use the code rather
+   than the "emptied" type.
+*)
+let simpl_module_type ?code t =
   let rec iter t =
     match t with
       Types.Tmty_ident p -> t
-    | Types.Tmty_signature _ -> Types.Tmty_signature []
+    | Types.Tmty_signature _ -> 
+	(
+	 match code with
+	   None -> Types.Tmty_signature []
+	 | Some s -> raise (Use_code s)
+	)
     | Types.Tmty_functor (id, mt1, mt2) ->
         Types.Tmty_functor (id, iter mt1, iter mt2)
   in
   iter t
 
-let string_of_module_type ?(complete=false) t =
-  let t2 = if complete then t else simpl_module_type t in
-  Printtyp.modtype modtype_fmt t2;
-  flush_modtype_fmt ()
+let string_of_module_type ?code ?(complete=false) t =
+  try
+    let t2 = if complete then t else simpl_module_type ?code t in
+    Printtyp.modtype modtype_fmt t2;
+    flush_modtype_fmt ()
+  with
+    Use_code s -> s
 
 (** Return the given class type where methods and vals have been removed
    from the signatures. Used when we don't want to print a too long class type.*)

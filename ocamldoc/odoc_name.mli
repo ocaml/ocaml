@@ -41,9 +41,12 @@ val prefix : t -> t -> bool
 (** Take two names n1 and n2 = n3.n4 and return n4 if n3=n1 or else n2. *)
 val get_relative : t -> t -> t
 
+(** Take two names n1=n3.n4 and n2 = n5.n6 and return n6 if n3=n5 or else n2. *)
+val get_relative_raw : t -> t -> t
+
 (** Take a list of module names to hide and a name,
    and return the name when the module name (or part of it)
-   was removedn, according to the list of module names to hide.*)
+   was removed, according to the list of module names to hide.*)
 val hide_given_modules : t list -> t -> t
 
 (** Indicate if a name if qualified or not. *)

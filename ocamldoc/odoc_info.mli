@@ -143,6 +143,7 @@ module Parameter :
         {
           mp_name : string ;
           mp_type : Types.module_type ;
+	  mp_type_code : string ;
         } 
     
     (** {3 Functions} *)
@@ -632,8 +633,10 @@ val string_of_class_type_param_list : Types.type_expr list -> string
 (** This function returns a string representing a [Types.module_type]. 
    @param complete indicates if we must print complete signatures
    or just [sig end]. Default if [false].
+   @param code if [complete = false] and the type contains something else
+   than identificators and functors, then the given code is used.
 *)
-val string_of_module_type : ?complete: bool -> Types.module_type -> string
+val string_of_module_type : ?code: string -> ?complete: bool -> Types.module_type -> string
 
 (** This function returns a string representing a [Types.class_type]. 
    @param complete indicates if we must print complete signatures

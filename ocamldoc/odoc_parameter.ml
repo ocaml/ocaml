@@ -38,6 +38,7 @@ type parameter = param_info
 type module_parameter = {
     mp_name : string ;
     mp_type : Types.module_type ;
+    mp_type_code : string ;
   } 
 
 
