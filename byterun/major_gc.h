@@ -34,7 +34,8 @@ typedef struct {
 
 extern int caml_gc_phase;
 extern unsigned long caml_allocated_words;
-extern double caml_extra_heap_memory;
+extern double caml_extra_heap_resources;
+extern unsigned long caml_dependent_size, caml_dependent_allocated;
 extern unsigned long caml_fl_size_at_phase_change;
 
 #define Phase_mark 0
