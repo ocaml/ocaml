@@ -234,26 +234,6 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
           raise (Error (loc, Orpat_vars min_var)) in
   unify_vars p1_vs p2_vs
 
-let private_mask env pat ty_res =
-  try match (expand_head env ty_res).desc with
-    Tconstr (p, tl, _) ->
-      let td = Env.find_type p env in
-      begin match td.type_kind with
-        Type_variant(_,Public) | Type_record(_,_,Public) ->
-          ()
-      | _ ->
-          let cn (_,n,_) = n in
-          if not (List.exists cn td.type_variance) then () else
-          if List.for_all cn td.type_variance then raise Not_found else
-          let tl' =
-            List.map2 (fun t (_,n,_) -> if n then t else newvar())
-              tl td.type_variance
-          in unify_pat env pat (newty (Tconstr(p, tl', ref Mnil)))
-      end
-  | _ -> raise Not_found
-  with Not_found ->
-    unify_pat env pat ty_res
-
 let rec build_as_type env p =
   match p.pat_desc with
     Tpat_alias(p1, _) -> build_as_type env p1
@@ -261,11 +241,11 @@ let rec build_as_type env p =
       let tyl = List.map (build_as_type env) pl in
       newty (Ttuple tyl)
   | Tpat_construct(cstr, pl) ->
+      if cstr.cstr_private = Private then p.pat_type else
       let tyl = List.map (build_as_type env) pl in
       let ty_args, ty_res = instance_constructor cstr in
       List.iter2 (fun (p,ty) -> unify_pat env {p with pat_type = ty})
         (List.combine pl tyl) ty_args;
-      private_mask env p ty_res;
       ty_res
   | Tpat_variant(l, p', _) ->
       let ty = may_map (build_as_type env) p' in
@@ -274,6 +254,7 @@ let rec build_as_type env p =
                       row_fixed=false; row_closed=false})
   | Tpat_record lpl ->
       let lbl = fst(List.hd lpl) in
+      if lbl.lbl_private = Private then p.pat_type else
       let ty = newvar () in
       let ppl = List.map (fun (l,p) -> l.lbl_pos, p) lpl in
       let do_label lbl =
@@ -288,7 +269,6 @@ let rec build_as_type env p =
           unify_pat env p ty_res'
         end in
       Array.iter do_label lbl.lbl_all;
-      private_mask env p ty;
       ty
   | Tpat_or(p1, p2, path) ->
       let ty1 = build_as_type env p1 and ty2 = build_as_type env p2 in
