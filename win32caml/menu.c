@@ -60,9 +60,12 @@ int OpenMlFile(char *fname,int lenbuf)
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR | OFN_LONGNAMES |
 		OFN_HIDEREADONLY |OFN_EXPLORER;
 	r = GetOpenFileName(&ofn);
-	if (r == 0)
-		return 0;
-	else return 1;
+	if (r) {
+	  /* Replace backslashes by forward slashes in file name */
+	  for (p = fname; *p != 0; p++)
+	    if (*p == '\\') *p = '/';
+	}
+	return r;
 }
 /*------------------------------------------------------------------------
  Procedure:     GetSaveName ID:1
