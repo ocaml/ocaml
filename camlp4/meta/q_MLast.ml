@@ -629,16 +629,16 @@ EXTEND
   class_expr:
     [ "top"
       [ "fun"; cfd = class_fun_def -> cfd
-      | "let"; rf = SOPT "rec"; lb = SLIST1 let_binding SEP "and"; "in";
+      | "let"; rf = rec_flag; lb = SLIST1 let_binding SEP "and"; "in";
         ce = SELF ->
-          Node "CeLet" [Loc; o2b rf; lb; ce] ]
+          Node "CeLet" [Loc; rf; lb; ce] ]
     | "apply" NONA
       [ ce = SELF; e = expr LEVEL "simple" -> Node "CeApp" [Loc; ce; e] ]
     | "simple"
       [ ci = class_longident; "["; ctcl = SLIST0 ctyp SEP ","; "]" ->
           Node "CeCon" [Loc; ci; ctcl]
       | ci = class_longident -> Node "CeCon" [Loc; ci; List []]
-      | "object"; cspo = SOPT class_self_patt; cf = class_structure; "end" ->
+      | "object"; cspo = class_self_patt_opt; cf = class_structure; "end" ->
           Node "CeStr" [Loc; cspo; cf]
       | "("; ce = SELF; ":"; ct = class_type; ")" ->
           Node "CeTyc" [Loc; ce; ct]
@@ -647,14 +647,16 @@ EXTEND
   class_structure:
     [ [ cf = SLIST0 [ cf = class_str_item; ";" -> cf ] -> cf ] ]
   ;
-  class_self_patt:
-    [ [ "("; p = patt; ")" -> p
-      | "("; p = patt; ":"; t = ctyp; ")" -> Node "PaTyc" [Loc; p; t] ] ]
+  class_self_patt_opt:
+    [ [ "("; p = patt; ")" -> Option (Some p)
+      | "("; p = patt; ":"; t = ctyp; ")" ->
+          Option (Some (Node "PaTyc" [Loc; p; t]))
+      | -> Option None ] ]
   ;
   class_str_item:
     [ [ "declare"; st = SLIST0 [ s = class_str_item; ";" -> s ]; "end" ->
           Node "CrDcl" [Loc; st]
-      | "inherit"; ce = class_expr; pb = SOPT [ "as"; i = a_LIDENT -> i ] ->
+      | "inherit"; ce = class_expr; pb = as_lident_opt ->
           Node "CrInh" [Loc; ce; pb]
       | "value"; labmfe = cvalue ->
           let (lab, mf, e) =
@@ -674,6 +676,10 @@ EXTEND
       | "type"; t1 = ctyp; "="; t2 = ctyp -> Node "CrCtr" [Loc; t1; t2]
       | "initializer"; se = expr -> Node "CrIni" [Loc; se] ] ]
   ;
+  as_lident_opt:
+    [ [ "as"; i = a_LIDENT -> Option (Some i)
+      | -> Option None ] ]
+  ;
   cvalue:
     [ [ mf = mutable_flag; l = label; "="; e = expr -> Tuple [l; mf; e]
       | mf = mutable_flag; l = label; ":"; t = ctyp; "="; e = expr ->
@@ -692,12 +698,13 @@ EXTEND
       | id = clty_longident; "["; tl = SLIST1 ctyp SEP ","; "]" ->
           Node "CtCon" [Loc; id; tl]
       | id = clty_longident -> Node "CtCon" [Loc; id; List []]
-      | "object"; cst = SOPT class_self_type;
+      | "object"; cst = class_self_type_opt;
         csf = SLIST0 [ csf = class_sig_item; ";" -> csf ]; "end" ->
           Node "CtSig" [Loc; cst; csf] ] ]
   ;
-  class_self_type:
-    [ [ "("; t = ctyp; ")" -> t ] ]
+  class_self_type_opt:
+    [ [ "("; t = ctyp; ")" -> Option (Some t)
+      | -> Option None ] ]
   ;
   class_sig_item:
     [ [ "declare"; st = SLIST0 [ s = class_sig_item; ";" -> s ]; "end" ->
@@ -783,22 +790,6 @@ EXTEND
     [ [ m = a_UIDENT; "."; l = SELF -> Cons m l
       | i = a_LIDENT -> List [i] ] ]
   ;
-  rec_flag:
-    [ [ "rec" -> Bool True
-      | -> Bool False ] ]
-  ;
-  direction_flag:
-    [ [ "to" -> Bool True
-      | "downto" -> Bool False ] ]
-  ;
-  mutable_flag:
-    [ [ "mutable" -> Bool True
-      | -> Bool False ] ]
-  ;
-  virtual_flag:
-    [ [ "virtual" -> Bool True
-      | -> Bool False ] ]
-  ;
   (* Labels *)
   ctyp: AFTER "arrow"
     [ NONA
@@ -820,8 +811,8 @@ EXTEND
   ;
   row_field:
     [ [ "`"; i = ident -> Node "RfTag" [i; Bool True; List []]
-      | "`"; i = ident; "of"; ao = SOPT "&"; l = SLIST1 ctyp SEP "&" ->
-          Node "RfTag" [i; o2b ao; l]
+      | "`"; i = ident; "of"; ao = amp_flag; l = SLIST1 ctyp SEP "&" ->
+          Node "RfTag" [i; ao; l]
       | t = ctyp -> Node "RfInh" [t] ] ]
   ;
   name_tag:
@@ -850,8 +841,26 @@ EXTEND
             [Loc; i; Node "PaTyc" [Loc; Node "PaLid" [Loc; i]; t];
              Option (Some e)] ] ]
   ;
-  patt: LEVEL "simple"
-    [ [ "#"; a = anti_list -> Node "PaTyp" [Loc; a] ] ]
+  ipatt:
+    [ [ i = a_TILDEIDENT; ":"; p = SELF -> Node "PaLab" [Loc; i; p]
+      | i = a_TILDEIDENT -> Node "PaLab" [Loc; i; Node "PaLid" [Loc; i]]
+      | i = a_QUESTIONIDENT; ":"; "("; p = SELF; ")" ->
+          Node "PaOlb" [Loc; i; p; Option None]
+      | i = a_QUESTIONIDENT; ":"; "("; p = SELF; "="; e = expr; ")" ->
+          Node "PaOlb" [Loc; i; p; Option (Some e)]
+      | i = a_QUESTIONIDENT; ":"; "("; p = SELF; ":"; t = ctyp; ")" ->
+          Node "PaOlb" [Loc; i; Node "PaTyc" [Loc; p; t]; Option None]
+      | i = a_QUESTIONIDENT; ":"; "("; p = SELF; ":"; t = ctyp; "="; e = expr;
+        ")" ->
+          Node "PaOlb" [Loc; i; Node "PaTyc" [Loc; p; t]; Option (Some e)]
+      | i = a_QUESTIONIDENT ->
+          Node "PaOlb" [Loc; i; Node "PaLid" [Loc; i]; Option None]
+      | "?"; "("; i = a_LIDENT; "="; e = expr; ")" ->
+          Node "PaOlb" [Loc; i; Node "PaLid" [Loc; i]; Option (Some e)]
+      | "?"; "("; i = a_LIDENT; ":"; t = ctyp; "="; e = expr; ")" ->
+          Node "PaOlb"
+            [Loc; i; Node "PaTyc" [Loc; Node "PaLid" [Loc; i]; t];
+             Option (Some e)] ] ]
   ;
   expr: AFTER "apply"
     [ "label" NONA
@@ -869,7 +878,27 @@ EXTEND
   expr: LEVEL "simple"
     [ [ "`"; s = ident -> Node "ExVrn" [Loc; s] ] ]
   ;
-
+  rec_flag:
+    [ [ "rec" -> Bool True
+      | -> Bool False ] ]
+  ;
+  direction_flag:
+    [ [ "to" -> Bool True
+      | "downto" -> Bool False ] ]
+  ;
+  mutable_flag:
+    [ [ "mutable" -> Bool True
+      | -> Bool False ] ]
+  ;
+  virtual_flag:
+    [ [ "virtual" -> Bool True
+      | -> Bool False ] ]
+  ;
+  amp_flag:
+    [ [ "&" -> Bool True
+      | -> Bool False ] ]
+  ;
+  (* Antiquotations *)
   str_item:
     [ [ "#"; n = a_LIDENT; dp = dir_param -> Node "StDir" [Loc; n; dp] ] ]
   ;
@@ -936,7 +965,7 @@ EXTEND
     [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
   ;
   class_expr: LEVEL "simple"
-    [ [ a = anti_ -> a ] ]
+    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
   ;
   class_str_item:
     [ [ a = ANTIQUOT "" -> antiquot "" loc a ] ]
@@ -946,6 +975,15 @@ EXTEND
   ;
   class_type:
     [ [ a = ANTIQUOT "" -> antiquot "" loc a ] ]
+  ;
+  class_self_patt_opt:
+    [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a ] ]
+  ;
+  as_lident_opt:
+    [ [ a = ANTIQUOT "as" -> antiquot "as" loc a ] ]
+  ;
+  class_self_type_opt:
+    [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a ] ]
   ;
   meth_list:
     [ [ a = anti_list -> Tuple [a; Bool False]
@@ -959,6 +997,9 @@ EXTEND
   ;
   class_longident:
     [ [ a = anti_list -> a ] ]
+  ;
+  patt: LEVEL "simple"
+    [ [ "#"; a = anti_list -> Node "PaTyp" [Loc; a] ] ]
   ;
   a_UIDENT:
     [ [ a = ANTIQUOT "uid" -> antiquot "uid" loc a
@@ -1017,6 +1058,9 @@ EXTEND
   ;
   virtual_flag:
     [ [ a = ANTIQUOT "virt" -> antiquot "virt" loc a ] ]
+  ;
+  amp_flag:
+    [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a ] ]
   ;
   anti_:
     [ [ a = ANTIQUOT -> antiquot "" loc a ] ]

@@ -609,9 +609,9 @@ EXTEND
   class_expr:
     [ "top"
       [ "fun"; cfd = class_fun_def -> cfd
-      | "let"; rf = OPT "rec"; lb = LIST1 let_binding SEP "and"; "in";
+      | "let"; rf = rec_flag; lb = LIST1 let_binding SEP "and"; "in";
         ce = SELF ->
-          <:class_expr< let $rec:o2b rf$ $list:lb$ in $ce$ >> ]
+          <:class_expr< let $rec:rf$ $list:lb$ in $ce$ >> ]
     | "apply" NONA
       [ ce = SELF; e = expr LEVEL "simple" ->
           <:class_expr< $ce$ $e$ >> ]
@@ -619,7 +619,7 @@ EXTEND
       [ ci = class_longident; "["; ctcl = LIST0 ctyp SEP ","; "]" ->
           <:class_expr< $list:ci$ [ $list:ctcl$ ] >>
       | ci = class_longident -> <:class_expr< $list:ci$ >>
-      | "object"; cspo = OPT class_self_patt; cf = class_structure; "end" ->
+      | "object"; cspo = class_self_patt_opt; cf = class_structure; "end" ->
           <:class_expr< object $opt:cspo$ $list:cf$ end >>
       | "("; ce = SELF; ":"; ct = class_type; ")" ->
           <:class_expr< ($ce$ : $ct$) >>
@@ -628,14 +628,15 @@ EXTEND
   class_structure:
     [ [ cf = LIST0 [ cf = class_str_item; ";" -> cf ] -> cf ] ]
   ;
-  class_self_patt:
-    [ [ "("; p = patt; ")" -> p
-      | "("; p = patt; ":"; t = ctyp; ")" -> <:patt< ($p$ : $t$) >> ] ]
+  class_self_patt_opt:
+    [ [ "("; p = patt; ")" -> Some p
+      | "("; p = patt; ":"; t = ctyp; ")" -> Some <:patt< ($p$ : $t$) >>
+      | -> None ] ]
   ;
   class_str_item:
     [ [ "declare"; st = LIST0 [ s= class_str_item; ";" -> s ]; "end" ->
           <:class_str_item< declare $list:st$ end >>
-      | "inherit"; ce = class_expr; pb = OPT [ "as"; i = LIDENT -> i ] ->
+      | "inherit"; ce = class_expr; pb = as_lident_opt ->
           <:class_str_item< inherit $ce$ $as:pb$ >>
       | "value"; (lab, mf, e) = cvalue ->
           <:class_str_item< value $mut:mf$ $lab$ = $e$ >>
@@ -650,6 +651,10 @@ EXTEND
       | "type"; t1 = ctyp; "="; t2 = ctyp ->
           <:class_str_item< type $t1$ = $t2$ >>
       | "initializer"; se = expr -> <:class_str_item< initializer $se$ >> ] ]
+  ;
+  as_lident_opt:
+    [ [ "as"; i = LIDENT -> Some i
+      | -> None ] ]
   ;
   cvalue:
     [ [ mf = mutable_flag; l = label; "="; e = expr -> (l, mf, e)
@@ -670,12 +675,13 @@ EXTEND
       | id = clty_longident; "["; tl = LIST1 ctyp SEP ","; "]" ->
           <:class_type< $list:id$ [ $list:tl$ ] >>
       | id = clty_longident -> <:class_type< $list:id$ >>
-      | "object"; cst = OPT class_self_type;
+      | "object"; cst = class_self_type_opt;
         csf = LIST0 [ csf = class_sig_item; ";" -> csf ]; "end" ->
           <:class_type< object $opt:cst$ $list:csf$ end >> ] ]
   ;
-  class_self_type:
-    [ [ "("; t = ctyp; ")" -> t ] ]
+  class_self_type_opt:
+    [ [ "("; t = ctyp; ")" -> Some t
+      | -> None ] ]
   ;
   class_sig_item:
     [ [ "declare"; st = LIST0 [ s = class_sig_item; ";" -> s ]; "end" ->
@@ -747,22 +753,6 @@ EXTEND
     [ [ m = UIDENT; "."; l = SELF -> [m :: l]
       | i = LIDENT -> [i] ] ]
   ;
-  rec_flag:
-    [ [ "rec" -> True
-      | -> False ] ]
-  ;
-  direction_flag:
-    [ [ "to" -> True
-      | "downto" -> False ] ]
-  ;
-  mutable_flag:
-    [ [ "mutable" -> True
-      | -> False ] ]
-  ;
-  virtual_flag:
-    [ [ "virtual" -> True
-      | -> False ] ]
-  ;
   (* Labels *)
   ctyp: AFTER "arrow"
     [ NONA
@@ -784,8 +774,8 @@ EXTEND
   ;
   row_field:
     [ [ "`"; i = ident -> MLast.RfTag i True []
-      | "`"; i = ident; "of"; ao = OPT "&"; l = LIST1 ctyp SEP "&" ->
-          MLast.RfTag i (o2b ao) l
+      | "`"; i = ident; "of"; ao = amp_flag; l = LIST1 ctyp SEP "&" ->
+          MLast.RfTag i ao l
       | t = ctyp -> MLast.RfInh t ] ]
   ;
   name_tag:
@@ -836,7 +826,7 @@ EXTEND
           <:patt< ? ( $i$ : $t$ = $e$ ) >> ] ]
   ;
   expr: AFTER "apply"
-    [ "label"
+    [ "label" NONA
       [ i = TILDEIDENTCOLON; e = SELF -> <:expr< ~ $i$ : $e$ >>
       | i = TILDEIDENT -> <:expr< ~ $i$ >>
       | i = QUESTIONIDENTCOLON; e = SELF -> <:expr< ? $i$ : $e$ >>
@@ -844,6 +834,26 @@ EXTEND
   ;
   expr: LEVEL "simple"
     [ [ "`"; s = ident -> <:expr< ` $s$ >> ] ]
+  ;
+  rec_flag:
+    [ [ "rec" -> True
+      | -> False ] ]
+  ;
+  direction_flag:
+    [ [ "to" -> True
+      | "downto" -> False ] ]
+  ;
+  mutable_flag:
+    [ [ "mutable" -> True
+      | -> False ] ]
+  ;
+  virtual_flag:
+    [ [ "virtual" -> True
+      | -> False ] ]
+  ;
+  amp_flag:
+    [ [ "&" -> True
+      | -> False ] ]
   ;
 END;
 
