@@ -6,6 +6,8 @@ OCAMLOPT=@OTOP=$(OTOP) OPT=$(OPT) EXE=$(EXE) ../tools/ocamlopt.sh
 OCAMLCFLAGS=
 MKDIR=mkdir -p
 
+# Uncomment this for systematically building profiled versions of
+# Camlp4 libraries
 #PROFILING=prof
 
 TESTDIRECTORY= test `basename "$<"` != "$<" && { echo "You are not in the right directory"; exit 1; }
