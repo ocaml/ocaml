@@ -989,10 +989,11 @@ let rec moregen env t1 t2 =
         end
     | (Tconstr(p1, tl1, abbrev1), Tconstr(p2, tl2, abbrev2)) ->
         begin try
-          moregen env (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
-        with Cannot_expand ->
-        try
           moregen env t1 (expand_abbrev env p2 tl2 abbrev2 t2.level)
+        with Cannot_expand ->
+        t2.desc <- !d2;
+        try
+          moregen env (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
         with Cannot_expand ->
           raise (Unify [])
         end
