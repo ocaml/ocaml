@@ -53,11 +53,11 @@ let frame_size () =
 
 let slot_offset loc class =
   match loc with
-    Incoming n -> frame_size() + 24 + n
-  | Local n ->
+    Local n ->
       if class = 0
       then 24 + !stack_offset + num_stack_slots.(1) * 8 + n * 4
       else 24 + !stack_offset + n * 8
+  | Incoming n -> frame_size() + n
   | Outgoing n -> n
 
 (* Output a symbol *)
