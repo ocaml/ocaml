@@ -62,6 +62,11 @@ For other bindings, see C-h b.
 
 Changes log:
 -----------
+
+* intelligent indentation of parenthesis
+
+Version 2.02:
+-------------
 * improved ocamltags <ITZ and JG>
 
 * added support for multibyte characters in emacs 20
