@@ -58,12 +58,12 @@ and strengthen_sig env sg p =
 
 type variance = Co | Contra | Strict
 
-let nondep_supertype env id mty =
+let nondep_supertype env mid mty =
 
   let rec nondep_mty var mty =
     match mty with
       Tmty_ident p ->
-        if Path.isfree id p then begin
+        if Path.isfree mid p then begin
           match Env.find_modtype p env with
             Tmodtype_abstract -> raise Not_found
           | Tmodtype_manifest mty -> nondep_mty var mty      
@@ -82,7 +82,7 @@ let nondep_supertype env id mty =
       match item with
         Tsig_value(id, d) ->
           begin try
-            Tsig_value(id, {val_type = Ctype.nondep_type env id d.val_type;
+            Tsig_value(id, {val_type = Ctype.nondep_type env mid d.val_type;
                             val_prim = d.val_prim}) :: rem'
           with Not_found ->
             match var with Co -> rem' | _ -> raise Not_found
@@ -97,7 +97,7 @@ let nondep_supertype env id mty =
           end
       | Tsig_exception(id, d) ->
           begin try
-            Tsig_exception(id, List.map (Ctype.nondep_type env id) d) :: rem'
+            Tsig_exception(id, List.map (Ctype.nondep_type env mid) d) :: rem'
           with Not_found ->
             match var with Co -> rem' | _ -> raise Not_found
           end
@@ -124,14 +124,14 @@ let nondep_supertype env id mty =
          Type_abstract ->
            Type_abstract
        | Type_manifest ty ->
-           Type_manifest(Ctype.nondep_type env id ty)
+           Type_manifest(Ctype.nondep_type env mid ty)
        | Type_variant cstrs ->
            Type_variant(List.map
-             (fun (c, tl) -> (c, List.map (Ctype.nondep_type env id) tl))
+             (fun (c, tl) -> (c, List.map (Ctype.nondep_type env mid) tl))
              cstrs)
        | Type_record lbls ->
            Type_record(List.map
-             (fun (c, mut, t) -> (c, mut, Ctype.nondep_type env id t))
+             (fun (c, mut, t) -> (c, mut, Ctype.nondep_type env mid t))
              lbls)}
 
   and abstract_type_decl d =
