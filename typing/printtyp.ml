@@ -367,7 +367,8 @@ let exception_declaration id decl =
 
 let value_description id decl =
   open_box 2;
-  print_string "val "; ident id; print_string " :"; print_space();
+  print_string (if decl.val_kind = Val_reg then "val " else "external ");
+  ident id; print_string " :"; print_space();
   type_scheme decl.val_type;
   begin match decl.val_kind with
     Val_prim p ->
