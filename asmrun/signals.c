@@ -79,6 +79,7 @@ void enter_blocking_section(void)
        it will be lost. */
     sig = pending_signal;
     pending_signal = 0;
+    young_limit = young_start;
     if (sig) execute_signal(sig);
     async_signal_mode = 1;
     if (!pending_signal) break;
