@@ -15,6 +15,12 @@ let action_arg s sl =
           s :: sl -> f s; Some sl
         | [] -> None
       else begin f s; Some sl end
+  | Arg.Set_string r ->
+      if s = "" then
+        match sl with
+          s :: sl -> r := s; Some sl
+        | [] -> None
+      else begin r := s; Some sl end
   | Arg.Int f ->
       if s = "" then
         match sl with
@@ -27,12 +33,35 @@ let action_arg s sl =
         begin try f (int_of_string s); Some sl with
           Failure "int_of_string" -> None
         end
+  | Arg.Set_int r ->
+      if s = "" then
+        match sl with
+          s :: sl ->
+            begin try r := (int_of_string s); Some sl with
+              Failure "int_of_string" -> None
+            end
+        | [] -> None
+      else
+        begin try r := (int_of_string s); Some sl with
+          Failure "int_of_string" -> None
+        end
   | Arg.Float f ->
       if s = "" then
         match sl with
           s :: sl -> f (float_of_string s); Some sl
         | [] -> None
       else begin f (float_of_string s); Some sl end
+  | Arg.Set_float r ->
+      if s = "" then
+        match sl with
+          s :: sl -> r := (float_of_string s); Some sl
+        | [] -> None
+      else begin r := (float_of_string s); Some sl end
+  | Arg.Symbol (syms, f) ->
+      begin match (if s = "" then sl else (s::sl)) with
+      | s :: sl when List.mem s syms -> f s; Some sl
+      | _ -> None
+      end
 ;;
 
 let common_start s1 s2 =
@@ -186,6 +215,24 @@ let align_doc key s =
   p ^ tab ^ s
 ;;
 
+let make_symlist l =
+  match l with
+  | [] -> "<none>"
+  | h :: t -> (List.fold_left (fun x y -> x ^ "|" ^ y) ("{" ^ h) t) ^ "}"
+;;
+
+let print_usage_list l =
+  List.iter
+    (fun (key, spec, doc) ->
+      match spec with
+      | Arg.Symbol (symbs, _) ->
+          let s = make_symlist symbs in
+          let synt = key ^ " " ^ s in
+          eprintf "  %s %s\n" synt (align_doc synt doc)
+      | _ -> eprintf "  %s %s\n" key (align_doc key doc) )
+    l
+;;
+
 let usage ini_sl ext_sl =
   eprintf "\
 Usage: camlp4 [load-options] [--] [other-options]
@@ -196,8 +243,7 @@ Load options:
   <object-file> Load this file in Camlp4 core.
 Other options:
   <file>        Parse this file.\n";
-  List.iter (fun (key, _, doc) -> eprintf "  %s %s\n" key (align_doc key doc))
-    ini_sl;
+  print_usage_list ini_sl;
   begin
     let rec loop =
       function
@@ -210,9 +256,7 @@ Other options:
   if ext_sl <> [] then
     begin
       eprintf "Options added by loaded object files:\n";
-      List.iter
-        (fun (key, _, doc) -> eprintf "  %s %s\n" key (align_doc key doc))
-        ext_sl
+      print_usage_list ext_sl;
     end
 ;;
 
