@@ -1,0 +1,93 @@
+#########################################################################
+#                                                                       #
+#                            Objective Caml                             #
+#                                                                       #
+#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
+#                                                                       #
+#   Copyright 2001 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the GNU Library General Public License.          #
+#                                                                       #
+#########################################################################
+
+# $Id$
+
+!include ../../config/Makefile.nt
+
+# Compilation options
+CC=$(BYTECC)
+CFLAGS=-I..\..\byterun
+CAMLC=..\..\boot\ocamlrun ..\..\ocamlc -I ..\..\stdlib
+CAMLOPT=..\..\boot\ocamlrun ..\..\ocamlopt -I ..\..\stdlib
+
+COBJS=open.obj draw.obj dib.obj
+CAMLOBJS=graphics.cmo
+WIN32LIBS=kernel32.lib gdi32.lib user32.lib
+
+all: dllgraphics.dll libgraphics.lib graphics.cma
+
+allopt: libgraphics.lib graphics.cmxa
+
+dllgraphics.dll: $(COBJS:.obj=.dobj)
+	link /nologo /dll /out:dllgraphics.dll /implib:tmp.lib \
+	  $(COBJS:.obj=.dobj) ..\..\byterun\ocamlrun.lib $(WIN32LIBS)
+	rm tmp.*
+
+libgraphics.lib: $(COBJS:.obj=.sobj)
+	rm -f libgraphics.lib
+	$(MKLIB)libgraphics.lib $(COBJS:.obj=.sobj)
+
+graphics.cma: $(CAMLOBJS)
+	$(CAMLC) -a -o graphics.cma $(CAMLOBJS) \
+	  -dllib -lgraphics -cclib -lgraphics $(WIN32LIBS)
+
+graphics.cmxa: $(CAMLOBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -o graphics.cmxa $(CAMLOBJS:.cmo=.cmx) \
+	  -cclib -lgraphics $(WIN32LIBS)
+
+partialclean:
+	rm -f *.cm*
+
+clean: partialclean
+	rm -f *.lib *.dll *.exp *.sobj *.dobj
+	rm -f graphics.ml graphics.mli
+	rm -f io.h
+
+install:
+	cp dllgraphics.dll $(LIBDIR)/dllgraphics.dll
+	cp libgraphics.lib $(LIBDIR)/libgraphics.lib
+	cp graphics.cmi graphics.cma $(LIBDIR)
+
+installopt:
+	cp graphics.cmxa graphics.cmx graphics.lib $(LIBDIR)
+
+graphics.ml: ..\graph\graphics.ml
+	copy ..\graph\graphics.ml graphics.ml
+graphics.mli: ..\graph\graphics.mli
+	copy ..\graph\graphics.mli graphics.mli
+
+.SUFFIXES: .ml .mli .cmo .cmi .cmx .dobj .sobj
+
+.mli.cmi:
+	$(CAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmo:
+	$(CAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmx:
+	$(CAMLOPT) -c $(COMPFLAGS) $<
+
+.c.dobj:
+	$(BYTECC) $(DLLCCCOMPOPTS) $(CFLAGS) -c $<
+	mv $*.obj $*.dobj
+
+.c.sobj:
+	$(BYTECC) $(BYTECCCOMPOPTS) $(CFLAGS) -c $<
+	mv $*.obj $*.sobj
+
+depend:
+
+graphics.cmo: graphics.cmi
+graphics.cmx: graphics.cmi
+draw.sobj draw.dobj: libgraph.h
+open.sobj open.dobj: libgraph.h
