@@ -125,17 +125,3 @@ and signature_item =
 and modtype_declaration =
     Tmodtype_abstract
   | Tmodtype_manifest of module_type
-
-(* Iteration on types *)
-
-val iter_type_expr: (type_expr -> unit) -> type_expr -> unit
-
-(* Memorization of abbreviation expansions *)
-
-val cleanup_abbrev: unit -> unit
-        (* Flush the cache of abbreviation expansions.
-           When some types are saved (using [output_value]), this
-           function MUST be called just before. *)
-
-val memorize_abbrev: abbrev_memo ref -> Path.t -> type_expr -> unit
-        (* Add an expansion in the cache *)

@@ -18,6 +18,7 @@ open Asttypes
 open Parsetree
 open Types
 open Typedtree
+open Btype
 open Ctype
 
 

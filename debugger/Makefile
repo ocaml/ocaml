@@ -19,7 +19,7 @@ OTHEROBJS=\
   ../utils/tbl.cmo ../utils/clflags.cmo \
   ../parsing/longident.cmo \
   ../typing/ident.cmo ../typing/path.cmo ../typing/types.cmo \
-  ../typing/primitive.cmo ../typing/typedtree.cmo \
+  ../typing/btype.cmo ../typing/primitive.cmo ../typing/typedtree.cmo \
   ../typing/subst.cmo ../typing/predef.cmo \
   ../typing/datarepr.cmo ../typing/env.cmo \
   ../typing/ctype.cmo ../typing/printtyp.cmo ../typing/mtype.cmo \
@@ -59,7 +59,7 @@ OBJS=\
 
 all: ocamldebug
 
-ocamldebug: $(OBJS)
+ocamldebug: $(OBJS) $(OTHEROBJS)
 	$(CAMLC) $(LINKFLAGS) -o ocamldebug $(OTHEROBJS) $(OBJS) ../otherlibs/unix/libunix.a
 
 install:

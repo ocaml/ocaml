@@ -15,10 +15,7 @@
 
 open Path
 open Types
-
-
-let newgenty desc =
-  {desc = desc; level = -1 (* generic_level *)}
+open Btype
 
 let ident_int = Ident.create "int"
 and ident_char = Ident.create "char"
@@ -64,10 +61,6 @@ and ident_division_by_zero = Ident.create "Division_by_zero"
 let path_match_failure = Pident ident_match_failure
 
 let build_initial_env add_type add_exception empty_env =
-  let newvar() =
-    (* Cannot call the real newvar from ctype here
-       because ctype imports predef via env *)
-    {desc = Tvar; level = -1 (*generic_level*)} in
   let decl_abstr =
     {type_params = [];
      type_arity = 0;
@@ -89,19 +82,19 @@ let build_initial_env add_type add_exception empty_env =
      type_kind = Type_variant [];
      type_manifest = None}
   and decl_array =
-    let tvar = newvar() in
+    let tvar = newgenvar() in
     {type_params = [tvar];
      type_arity = 1;
      type_kind = Type_abstract;
      type_manifest = None}
   and decl_list =
-    let tvar = newvar() in
+    let tvar = newgenvar() in
     {type_params = [tvar];
      type_arity = 1;
      type_kind = Type_variant["[]", []; "::", [tvar; type_list tvar]];
      type_manifest = None}
   and decl_format =
-    {type_params = [newvar(); newvar(); newvar()];
+    {type_params = [newgenvar(); newgenvar(); newgenvar()];
      type_arity = 3;
      type_kind = Type_abstract;
      type_manifest = None} in

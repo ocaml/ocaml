@@ -20,7 +20,7 @@ open Longident
 open Path
 open Asttypes
 open Types
-
+open Btype
 
 (* Print a long identifier *)
 
@@ -205,6 +205,7 @@ let rec typexp sch prio0 ty =
       if prio0 >= 1 then print_string ")";
       close_box()
     end
+(* ; print_string "["; print_int ty.level; print_string "]" *)
 
 and typlist sch prio sep = function
     [] -> ()

@@ -27,6 +27,7 @@ PARSING=parsing/linenum.cmo parsing/location.cmo parsing/longident.cmo \
 
 TYPING=typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/types.cmo \
+  typing/btype.cmo \
   typing/subst.cmo typing/predef.cmo \
   typing/datarepr.cmo typing/env.cmo \
   typing/typedtree.cmo \
@@ -78,7 +79,7 @@ OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
 EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   utils/config.cmo utils/clflags.cmo \
-  typing/ident.cmo typing/predef.cmo \
+  typing/ident.cmo typing/types.cmo typing/btype.cmo typing/predef.cmo \
   bytecomp/runtimedef.cmo bytecomp/symtable.cmo \
   toplevel/expunge.cmo
 

@@ -66,12 +66,11 @@ let type_declarations env id decl1 decl2 =
                              (ty2::decl2.type_params)
     | (None, Some ty2) ->
         let ty1 =
-	  {desc = Tconstr(Pident id, decl2.type_params, ref Mnil);
-	   level = Ctype.generic_level }
-	in
-          Ctype.equal env true decl1.type_params decl2.type_params
-            &
-          Ctype.equal env false [ty1] [ty2]
+          Btype.newgenty (Tconstr(Pident id, decl2.type_params, ref Mnil))
+        in
+        Ctype.equal env true decl1.type_params decl2.type_params
+          &
+        Ctype.equal env false [ty1] [ty2]
   end
 
 (* Inclusion between exception declarations *)

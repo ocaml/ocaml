@@ -127,35 +127,3 @@ and signature_item =
 and modtype_declaration =
     Tmodtype_abstract
   | Tmodtype_manifest of module_type
-
-(* Iteration on types *)
-
-let iter_type_expr f ty =
-  match ty.desc with
-    Tvar               -> ()
-  | Tarrow (ty1, ty2) -> f ty1; f ty2
-  | Ttuple l           -> List.iter f l
-  | Tconstr (_, l, _)          -> List.iter f l
-  | Tobject(ty, {contents = Some (_, p)})
-                         -> f ty; List.iter f p
-  | Tobject (ty, _)    -> f ty
-  | Tfield (_, ty1, ty2) -> f ty1; f ty2
-  | Tnil               -> ()
-  | Tlink ty           -> f ty
-
-(* Memorization of abbreviation expansion *)
-(* Must be here rather than in ctype.ml, because used by
-   Env.save_signature *)
-
-let memo = ref []
-        (* Contains the list of saved abbreviation expansions. *)
-
-let cleanup_abbrev () =
-        (* Remove all memorized abbreviation expansions. *)
-  List.iter (fun abbr -> abbr := Mnil) !memo;
-  memo := []
-
-let memorize_abbrev mem path v =
-        (* Memorize the expansion of an abbreviation. *)
-  mem := Mcons (path, v, !mem);
-  memo := mem :: !memo
