@@ -7,10 +7,18 @@
             j hi
             pivot (addraref a hi))
         (while (< i j)
-          (while (if (< i hi) (<= (app cmp [(addraref a i) pivot] int) 0) 0)
-            (assign i (+ i 1)))
-          (while (if (> j lo) (>= (app cmp [(addraref a j) pivot] int) 0) 0)
-            (assign j (- j 1)))
+          (catch
+            (while 1
+              (if (>= i hi) exit [])
+              (if (> (app cmp [(addraref a i) pivot] int) 0) exit [])
+              (assign i (+ i 1)))
+            with [])
+          (catch
+            (while 1
+              (if (<= j lo) exit [])
+              (if (< (app cmp [(addraref a j) pivot] int) 0) exit [])
+              (assign j (- j 1)))
+           with [])
           (if (< i j)
               (let temp (addraref a i)
                    (addraset a i (addraref a j))

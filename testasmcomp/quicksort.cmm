@@ -4,10 +4,18 @@
             j hi
             pivot (addraref a hi))
         (while (< i j)
-          (while (if (< i hi) (<= (addraref a i) pivot) 0)
-            (assign i (+ i 1)))
-          (while (if (> j lo) (>= (addraref a j) pivot) 0)
-            (assign j (- j 1)))
+          (catch
+              (while 1
+                (if (>= i hi) exit [])
+                (if (> (addraref a i) pivot) exit [])
+                (assign i (+ i 1)))
+           with [])
+          (catch
+              (while 1
+                (if (<= j lo) exit [])
+                (if (< (addraref a j) pivot) exit [])
+                (assign j (- j 1)))
+           with [])
           (if (< i j)
               (let temp (addraref a i)
                    (addraset a i (addraref a j))
