@@ -19,8 +19,8 @@ void array_bound_error()
   exit(2);
 }
 
-long r[100];
-double d[10];
+long r[200];
+double d[20];
 long x, y;
 double f, g;
 
@@ -160,7 +160,22 @@ void do_test()
       FLOATTEST(d[3], (f + g));
       FLOATTEST(d[4], (f - g));
       FLOATTEST(d[5], (f * g));
-      FLOATTEST(d[6], (g != 0.0 ? f / g : 0.0));
+      FLOATTEST(d[6], f / g);
+
+      FLOATTEST(d[7], (f + (g + 1.0)));
+      FLOATTEST(d[8], (f - (g + 1.0)));
+      FLOATTEST(d[9], (f * (g + 1.0)));
+      FLOATTEST(d[10], f / (g + 1.0));
+
+      FLOATTEST(d[11], ((f + 1.0) + g));
+      FLOATTEST(d[12], ((f + 1.0) - g));
+      FLOATTEST(d[13], ((f + 1.0) * g));
+      FLOATTEST(d[14], (f + 1.0) / g);
+
+      FLOATTEST(d[15], ((f + 1.0) + (g + 1.0)));
+      FLOATTEST(d[16], ((f + 1.0) - (g + 1.0)));
+      FLOATTEST(d[17], ((f + 1.0) * (g + 1.0)));
+      FLOATTEST(d[18], (f + 1.0) / (g + 1.0));
 
       INTFLOATTEST(r[81], (f == g));
       INTFLOATTEST(r[82], (f != g));
@@ -169,7 +184,7 @@ void do_test()
       INTFLOATTEST(r[85], (f <= g));
       INTFLOATTEST(r[86], (f >= g));
 
-      FLOATINTTEST(d[7], (double) x);
+      FLOATINTTEST(d[19], (double) x);
       INTFLOATTEST(r[87], (long) f);
 
       INTTEST(r[88], (x >= 0) && (x < y));
@@ -182,6 +197,27 @@ void do_test()
       INTFLOATTEST(r[94], (f > g));
       INTFLOATTEST(r[95], (f <= g));
       INTFLOATTEST(r[96], (f >= g));
+
+      INTFLOATTEST(r[97], (f + 1.0 == g + 1.0));
+      INTFLOATTEST(r[98], (f + 1.0 != g + 1.0));
+      INTFLOATTEST(r[99], (f + 1.0 < g + 1.0));
+      INTFLOATTEST(r[100], (f + 1.0 > g + 1.0));
+      INTFLOATTEST(r[101], (f + 1.0 <= g + 1.0));
+      INTFLOATTEST(r[102], (f + 1.0 >= g + 1.0));
+
+      INTFLOATTEST(r[103], (f == g + 1.0));
+      INTFLOATTEST(r[104], (f != g + 1.0));
+      INTFLOATTEST(r[105], (f < g + 1.0));
+      INTFLOATTEST(r[106], (f > g + 1.0));
+      INTFLOATTEST(r[107], (f <= g + 1.0));
+      INTFLOATTEST(r[108], (f >= g + 1.0));
+
+      INTFLOATTEST(r[109], (f + 1.0 == g));
+      INTFLOATTEST(r[110], (f + 1.0 != g));
+      INTFLOATTEST(r[111], (f + 1.0 < g));
+      INTFLOATTEST(r[112], (f + 1.0 > g));
+      INTFLOATTEST(r[113], (f + 1.0 <= g));
+      INTFLOATTEST(r[114], (f + 1.0 >= g));
 }
 
 #ifdef __i386__

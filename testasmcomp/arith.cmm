@@ -124,7 +124,22 @@
       (floataset d 3 (+f f g))
       (floataset d 4 (-f f g))
       (floataset d 5 ( *f f g))
-      (floataset d 6 (if (!=f g 0.0) (/f f g) 0.0))
+      (floataset d 6 (/f f g))
+
+      (floataset d 7 (+f f (+f g 1.0)))
+      (floataset d 8 (-f f (+f g 1.0)))
+      (floataset d 9 ( *f f (+f g 1.0)))
+      (floataset d 10 (/f f (+f g 1.0)))
+
+      (floataset d 11 (+f (+f f 1.0) g))
+      (floataset d 12 (-f (+f f 1.0) g))
+      (floataset d 13 ( *f (+f f 1.0) g))
+      (floataset d 14 (/f (+f f 1.0) g))
+
+      (floataset d 15 (+f (+f f 1.0) (+f g 1.0)))
+      (floataset d 16 (-f (+f f 1.0) (+f g 1.0)))
+      (floataset d 17 ( *f (+f f 1.0) (+f g 1.0)))
+      (floataset d 18 (/f (+f f 1.0) (+f g 1.0)))
 
       (addraset r 81 (==f f g))
       (addraset r 82 (!=f f g))
@@ -133,7 +148,7 @@
       (addraset r 85 (<=f f g))
       (addraset r 86 (>=f f g))
 
-      (floataset d 7 (floatofint x))
+      (floataset d 19 (floatofint x))
       (addraset r 87 (intoffloat f))
 
       (if (and (>= x 0) (< x y))
@@ -154,6 +169,27 @@
       (addraset r 94 (let res 1 (if (>f f g) [] (assign res 0)) res))
       (addraset r 95 (let res 1 (if (<=f f g) [] (assign res 0)) res))
       (addraset r 96 (let res 1 (if (>=f f g) [] (assign res 0)) res))
+
+      (addraset r 97 (==f (+f f 1.0) (+f g 1.0)))
+      (addraset r 98 (!=f (+f f 1.0) (+f g 1.0)))
+      (addraset r 99 (<f (+f f 1.0) (+f g 1.0)))
+      (addraset r 100 (>f (+f f 1.0) (+f g 1.0)))
+      (addraset r 101 (<=f (+f f 1.0) (+f g 1.0)))
+      (addraset r 102 (>=f (+f f 1.0) (+f g 1.0)))
+
+      (addraset r 103 (==f f (+f g 1.0)))
+      (addraset r 104 (!=f f (+f g 1.0)))
+      (addraset r 105 (<f f (+f g 1.0)))
+      (addraset r 106 (>f f (+f g 1.0)))
+      (addraset r 107 (<=f f (+f g 1.0)))
+      (addraset r 108 (>=f f (+f g 1.0)))
+
+      (addraset r 109 (==f (+f f 1.0) g))
+      (addraset r 110 (!=f (+f f 1.0) g))
+      (addraset r 111 (<f (+f f 1.0) g))
+      (addraset r 112 (>f (+f f 1.0) g))
+      (addraset r 113 (<=f (+f f 1.0) g))
+      (addraset r 114 (>=f (+f f 1.0) g))
 
 )))))))
 
