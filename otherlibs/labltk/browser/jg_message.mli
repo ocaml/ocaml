@@ -13,15 +13,17 @@
 
 (* $Id$ *)
 
+open Widget
+
 val formatted :
   title:string ->
-  ?on:Widget.frame Widget.widget ->
+  ?on:frame widget ->
   ?ppf:Format.formatter ->
   ?width:int ->
   ?maxheight:int ->
   ?minheight:int ->
-  unit -> Widget.any Widget.widget * Widget.text Widget.widget * (unit -> unit)
+  unit -> any widget * text widget * (unit -> unit)
 
 val ask :
-    title:string -> ?master:Widget.toplevel Widget.widget ->
-    string -> [`cancel|`no|`yes]
+    title:string -> ?master:toplevel widget ->
+    ?cancel:bool -> string -> [`cancel|`no|`yes]

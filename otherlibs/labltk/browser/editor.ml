@@ -473,20 +473,20 @@ class editor ~top ~menus = object (self)
 
   method close_file () = self#close_window (List.hd windows)
 
-  method quit () =
+  method quit ?(cancel=true) () =
     try
       List.iter windows ~f:
         begin fun txt ->
           if Textvariable.get txt.modified = "modified" then
-            match Jg_message.ask ~master:top ~title:"Quit"
+            match Jg_message.ask ~master:top ~title:"Quit" ~cancel
                 ("`" ^ Filename.basename txt.name ^ "' modified. Save it?")
             with `yes -> self#save_text txt
             | `no -> ()
             | `cancel -> raise Exit
         end;
       bind top ~events:[`Destroy];
-      destroy top; break ()
-    with Exit -> break ()
+      destroy top
+    with Exit -> ()
 
   method reopen ~file ~pos =
     if not (Winfo.ismapped top) then Wm.deiconify top;
@@ -514,10 +514,10 @@ class editor ~top ~menus = object (self)
           ~action:(fun _ -> act (); break ())
       end;
 
-    bind top ~events:[`Destroy] ~breakable:true ~fields:[`Widget] ~action:
+    bind top ~events:[`Destroy] ~fields:[`Widget] ~action:
       begin fun ev ->
         if Widget.name ev.ev_Widget = Widget.name top
-        then (break (); self#quit ())
+        then self#quit ~cancel:false ()
       end;
 
     (* File menu *)
