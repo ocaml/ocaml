@@ -25,45 +25,18 @@ available from ftp://ftp.scriptics.com/pub/tcl/tcl8_0/tcl804.exe
 
 INSTALLATION:
 
-The binary distribution consists in a .zip archive file. This .zip
-contains long filenames and therefore cannot be unpacked with pkunzip.
-Use either Winzip (shareware) or the NT/95 version of unzip (freeware):
-
-        ftp://ftp.winsite.com/pub/pc/winnt/misc/wznt56.exe
-        ftp://ftp.uu.net/pub/archiving/zip/WIN32/unz540xN.exe
-
-Unzipping the distribution creates (among others) the following
-directories and files:
-
-        ocaml\ocamlwin.exe     The toplevel application
-        ocaml\ocamlwin.ini     Its configuration file
-        ocaml\bin\             The command-line compilers and tools
-        ocaml\lib\             The standard library files
-
-Installing the toplevel application:
-
-  First of all, copy the file ocaml\ocamlwin.ini to your Windows system
-  directory, e.g. C:\winnt or C:\win95 or C:\windows.
-
-  The file ocamlwin.ini you just copied assumes that the Caml distribution
-  resides in C:\ocaml. If this is not the case, edit the copy in
-  the Windows system directory (e.g. C:\winnt\ocamlwin.ini)
-  and change the line that says
-
-          CmdLine=ocamlrun c:\ocaml\bin\ocaml.exe -I c:\ocaml\lib
-  to
-          CmdLine=ocamlrun <caml_dir>\bin\ocaml.exe -I <caml_dir>\lib
-  e.g.
-          CmdLine=ocamlrun D:\lang\ocaml\bin\ocaml.exe -I D:\lang\ocaml\lib
+The binary distribution is a self-installing executable archive.
+Just run it and it should install OCaml automatically.
 
 Installing the command-line tools:
 
-  You must add the ocaml\bin subdirectory to the PATH variable, e.g.
+  You must add the "bin" subdirectory of the OCaml installation directory
+  to the PATH variable, e.g.
 
           set PATH=%PATH%;D:\lang\ocaml\bin
 
   Running directly the tools (e.g. typing D:\lang\ocaml\bin\ocamlc)
-  will not work if the ocaml\bin directory is not in PATH, because ocamlc
+  will not work if the "bin" subdirectory is not in PATH, because ocamlc
   and the other tools will be unable to find the Caml runtime system
   ocamlrun.exe.
 
@@ -73,6 +46,10 @@ Installing the command-line tools:
 
           set CAMLLIB=D:\lang\ocaml\lib
 
+  For Windows 95 and 98, the OCaml installer is able to perform the
+  corresponding modifications to AUTOEXEC.BAT (define CAMLLIB and
+  append to the PATH variable).  For Windows NT, you'll have to
+  edit the environment variables yourself.
 
 RECOMPILATION FROM THE SOURCES:
 
