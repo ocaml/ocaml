@@ -480,6 +480,11 @@ if sh hasgot mktime; then
   echo "#define HAS_MKTIME" >> s.h
 fi
 
+if sh hasgot setsid; then
+  echo "setsid() found."
+  echo "#define HAS_SETSID" >> s.h
+fi
+
 # Determine the target architecture for the "num" library
 
 case "$host" in

@@ -505,6 +505,8 @@ type flow_action = TCOOFF | TCOON | TCIOFF | TCION
 
 external tcflow: file_descr -> flow_action -> unit = "unix_tcflow"
 
+external setsid : unit -> int = "unix_setsid"
+
 (* High-level process management (system, popen) *)
 
 let system cmd =
@@ -637,3 +639,4 @@ let establish_server server_fun sockaddr =
             close_out outchan
     | id -> close s; waitpid [] id (* Reclaim the son *); ()
   done
+

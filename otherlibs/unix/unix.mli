@@ -175,7 +175,6 @@ external nice : int -> int = "unix_nice"
            ``nice'' value. (Higher values of the ``nice'' value mean
            lower priorities.) Return the new nice value. *)
 
-
 (*** Basic file input/output *)
 
 type file_descr
@@ -913,3 +912,7 @@ external tcflow: file_descr -> flow_action -> unit = "unix_tcflow"
            [TCOOFF] suspends output, [TCOON] restarts output,
            [TCIOFF] transmits a STOP character to suspend input,
            and [TCION] transmits a START character to restart input. *)
+
+external setsid : unit -> int = "unix_setsid"
+        (* Put the calling process in a new session and detach it from
+           its controlling terminal. *)
