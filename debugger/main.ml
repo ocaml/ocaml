@@ -75,10 +75,12 @@ let rec protect cont =
 
 let toplevel_loop () = protect loop
 
+(* Parsing of command-line arguments *)
+
+exception Found_program_name
+
 let anonymous s =
-  if !program_name = ""
-  then program_name := s
-  else arguments := Printf.sprintf "%s '%s'" !arguments s
+  program_name := s; raise Found_program_name
 let add_include d =
   default_load_path := d :: !default_load_path
 let set_socket s =
@@ -90,22 +92,35 @@ let set_directory dir =
 let set_emacs () =
   emacs := true
 
+let speclist =
+  ["-I", Arg.String add_include,
+      "<dir>  Add <dir> to the list of include directories";
+   "-s", Arg.String set_socket,
+      "<filename>  Set the name of the communication socket";
+   "-c", Arg.Int set_checkpoints,
+      "<count>  Set max number of checkpoints kept";
+   "-cd", Arg.String set_directory,
+      "<dir>  Change working directory";
+   "-emacs", Arg.Unit set_emacs,
+      "For running the debugger under emacs"]
+
 let main () =
   try
     socket_name := "/tmp/camldebug" ^ (string_of_int (Unix.getpid ()));
-    Arg.parse
-      ["-I", Arg.String add_include,
-          "<dir>  Add <dir> to the list of include directories";
-       "-s", Arg.String set_socket,
-          "<filename>  Set the name of the communication socket";
-       "-c", Arg.Int set_checkpoints,
-          "<count>  Set max number of checkpoints kept";
-       "-cd", Arg.String set_directory,
-          "<dir>  Change working directory";
-       "-emacs", Arg.Unit set_emacs,
-          "For running the debugger under emacs"]
-      anonymous
-      "";
+    begin try
+      Arg.parse speclist anonymous "";
+      Arg.usage speclist
+        "No program name specified\n\
+         Usage: ocamldebug [options] <program> [arguments]\n\
+         Options are:";
+      exit 2
+    with Found_program_name ->
+      let i = ref 1 in
+      while Sys.argv.(!i) != !program_name do incr i done;
+      for j = !i + 1 to Array.length Sys.argv - 1 do
+        arguments := Printf.sprintf "%s '%s'" !arguments Sys.argv.(j)
+      done
+    end;
     current_prompt := debugger_prompt;
     print_string "\tObjective Caml Debugger version ";
     print_string Config.version;
