@@ -22,10 +22,17 @@
 
 value unix_inet_addr_of_string(value s) /* ML */
 {
+#ifdef HAS_INET_ATON
+  struct in_addr address;
+  if (inet_aton(String_val(s), &address) == 0)
+    failwith("inet_addr_of_string");
+  return alloc_inet_addr(address.s_addr);
+#else
   unsigned int address;
   address = inet_addr(String_val(s));
   if (address == (unsigned int) -1) failwith("inet_addr_of_string");
   return alloc_inet_addr(address);
+#endif
 }
 
 #else
