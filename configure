@@ -186,7 +186,7 @@ case "$host" in
   i[3456]86-*-*bsd*)            arch=i386; system=bsd;;
   i[3456]86-*-nextstep*)        arch=i386; system=nextstep;;
   mips-*-ultrix*)               arch=mips;;
-  hppa-*-nextstep*)             arch=hppa;;
+  hppa1.1-*-nextstep*)          arch=hppa;;
   rs6000-*-aix*)                arch=power; model=rs6000;;
   powerpc-*-aix*)               arch=power; model=ppc;;
 esac
