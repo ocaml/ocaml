@@ -1160,6 +1160,10 @@ if test $has_tk = true; then
     tk_defs="-I/usr/include/tcl8.3 -I/usr/include/tk8.3"
     tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
   fi
+  if test -z "$tcl_version"; then
+    tk_defs="-I/sw/include"
+    tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
+  fi
   if test -n "$tcl_version"; then
     echo "tcl.h version $tcl_version found."
     case $tcl_version in
@@ -1214,6 +1218,9 @@ if test $has_tk = true; then
 fi
 if test $has_tk = true; then
   if sh ./hasgot $tk_libs $tk_x11_libs $tkauxlibs Tk_SetGrid; then
+    echo "Tcl/Tk libraries found."
+  elif sh ./hasgot -L/sw/lib $tk_libs $tk_x11_libs $tkauxlibs Tk_SetGrid; then
+    tk_libs="-L/sw/lib $tk_libs"
     echo "Tcl/Tk libraries found."
   else
     echo "Tcl library found."
