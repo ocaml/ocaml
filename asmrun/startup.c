@@ -42,7 +42,7 @@ static void init_atoms()
 
 extern value caml_start_program P((void));
 
-int caml_main(argc, argv)
+void caml_main(argc, argv)
      int argc;
      char * argv[];
 {
@@ -73,9 +73,7 @@ int caml_main(argc, argv)
   init_signals();
   sys_init(argv);
   retcode = caml_start_program();
-  if (retcode == 0) {
-    sys_exit(Val_int(0));
-  } else {
+  if (retcode != 0) {
     fatal_error_arg("Fatal error: uncaught exception %s.\n",
                     String_val(Field(Field(retcode, 0), 0)));
   }

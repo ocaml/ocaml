@@ -27,9 +27,6 @@
 
 #ifdef TARGET_sparc
 #define Saved_return_address(sp) *((long *)(sp + 92))
-#define Already_scanned(sp, retaddr) (retaddr & 1)
-#define Mark_scanned(sp, retaddr) (*((long *)(sp + 92)) = retaddr | 1)
-#define Mask_already_scanned(retaddr) (retaddr & ~1)
 #define Callback_link(sp) ((struct callback_link *)(sp + 104))
 #endif
 
@@ -40,18 +37,12 @@
 
 #ifdef TARGET_mips
 #define Saved_return_address(sp) *((long *)(sp - 4))
-#define Already_scanned(sp, retaddr) (retaddr & 1)
-#define Mark_scanned(sp, retaddr) (*((long *)(sp - 4)) = retaddr | 1)
-#define Mask_already_scanned(retaddr) (retaddr & ~1)
 #define Callback_link(sp) ((struct callback_link *)(sp + 8))
 #endif
 
 #ifdef TARGET_hppa
 #define Stack_grows_upwards
 #define Saved_return_address(sp) *((long *)sp)
-#define Already_scanned(sp, retaddr) (retaddr & 0x80000000)
-#define Mark_scanned(sp, retaddr) (*((long *)sp) = retaddr | 0x80000000)
-#define Mask_already_scanned(retaddr) (retaddr & ~0x80000000)
 #define Callback_link(sp) ((struct callback_link *)(sp - 16))
 #endif
 
