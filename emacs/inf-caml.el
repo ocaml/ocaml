@@ -163,13 +163,14 @@ Input and output via buffer `*inferior-caml*'."
   (interactive "r")
   (save-excursion (caml-run-process-if-needed))
   (save-excursion
-    (comint-send-region inferior-caml-buffer-name start end)
     (goto-char end)
     (caml-skip-comments-backward)
+    (comint-send-region inferior-caml-buffer-name start (point))
     ;; normally, ";;" are part of the region
-    (if (not (and (>= (point) 2)
-		  (prog2 (backward-char 2) (looking-at ";;"))))
-	(comint-send-string inferior-caml-buffer-name ";;\n"))
+    (if (and (>= (point) 2)
+             (prog2 (backward-char 2) (looking-at ";;")))
+        (comint-send-string inferior-caml-buffer-name "\n")
+      (comint-send-string inferior-caml-buffer-name ";;\n"))
     ;; the user may not want to see the output buffer
     (if caml-display-when-eval
         (display-buffer inferior-caml-buffer-name t))))
@@ -205,9 +206,7 @@ should lies."
     (while (> arg 0)
       (setq arg (- arg 1))
       (setq beg  (caml-find-phrase min max))
-      (caml-eval-region beg (point))
-      (comint-send-string inferior-caml-buffer-name "\n")
-      )
+      (caml-eval-region beg (point)))
     beg))
 
 (defvar caml-previous-output nil
