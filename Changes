@@ -1,3 +1,24 @@
+Objective Caml 3.08.2:
+----------------------
+
+Bug fixes:
+- runtime: memory leak when unmarshalling big data structures (PR#3247)
+- camlp4: incorrect line numbers in errors (PR#3188)
+- emacs: xemacs-specific code, wrong call to "sit-for"
+- ocamldoc: "Lexing: empty token" (PR#3173)
+- unix: problem with close_process_* (PR#3191)
+- unix: possible coredumps (PR#3252)
+- stdlib: wrong order in Set.fold (PR#3161)
+- ocamlcp: array out of bounds in profiled programs (PR#3267)
+- yacc: problem with polymorphic variant types for grammar entries (PR#3033)
+
+Misc:
+- export <caml/printexc.h> for caml_format_exception (PR#3080)
+- clean up caml_search_exe_in_path (maybe PR#3079)
+- camlp4: new function "make_lexer" for new-style locations
+- unix: added missing #includes (PR#3088)
+
+
 Objective Caml 3.08.1:
 ----------------------
 
