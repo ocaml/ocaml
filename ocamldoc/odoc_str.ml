@@ -69,11 +69,14 @@ let raw_string_of_type_list sep type_list =
   Format.pp_print_flush fmt ();
   Buffer.contents buf
 
-let string_of_type_list sep type_list =
+let string_of_type_list ?par sep type_list =
   let par =
-    match type_list with
-      [] | [_] -> false
-    | _ -> true
+    match par with
+    | Some b -> b
+    | None ->
+	match type_list with
+	  [] | [_] -> false
+	| _ -> true
   in
   Printf.sprintf "%s%s%s"
     (if par then "(" else "")

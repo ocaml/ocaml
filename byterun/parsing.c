@@ -115,7 +115,6 @@ static char * token_name(char * names, int number)
 
 static void print_token(struct parser_tables *tables, int state, value tok)
 {
-  mlsize_t i;
   value v;
 
   if (Is_long(tok)) {

@@ -150,13 +150,6 @@ LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
 clean::
 	rm -f $(LINKEDFILES)
 
-# For HPUX, we can't use gcc as ASPP because it may have been configured with
-# the vendor's assembler
-hppa.o: hppa.S
-	gcc -traditional -E -DSYS_$(SYSTEM) -o hppa.s hppa.S
-	gas -o hppa.o hppa.s || { rm -f hppa.s; exit 2; }
-	rm -f hppa.s
-
 .SUFFIXES: .S .d.o .p.o
 
 .S.o:

@@ -339,200 +339,194 @@ let build_or_pat env loc lid =
           pat pats in
       rp { r with pat_loc = loc }
 
-let type_pat ?(nonlinear=false) env sp =
-  let rec type_pat0 env sp =
-    match sp.ppat_desc with
-      Ppat_any ->
-        rp {
-          pat_desc = Tpat_any;
-          pat_loc = sp.ppat_loc;
-          pat_type = newvar();
-          pat_env = env },
-	[]
-    | Ppat_var name ->
-        let ty = newvar() in
-        let id = enter_variable sp.ppat_loc name ty in
-        rp {
-          pat_desc = Tpat_var id;
-          pat_loc = sp.ppat_loc;
-          pat_type = ty;
-          pat_env = env },
-	[]
-    | Ppat_alias(sq, name) ->
-        let q, nonlinears = type_pat0 env sq in
-        begin_def ();
-        let ty_var = build_as_type env q in
-        end_def ();
-        generalize ty_var;
-        let id = enter_variable sp.ppat_loc name ty_var in
-        rp {
-          pat_desc = Tpat_alias(q, id);
-          pat_loc = sp.ppat_loc;
-          pat_type = q.pat_type;
-          pat_env = env },
-	nonlinears
-    | Ppat_constant cst ->
-        rp {
-          pat_desc = Tpat_constant cst;
-          pat_loc = sp.ppat_loc;
-          pat_type = type_constant cst;
-          pat_env = env },
-	[]
-    | Ppat_tuple spl ->
-        let pl,nonlinearsl = 
-	  let pnonlinearsl = List.map (type_pat0 env) spl in
-	  List.map fst pnonlinearsl,
-	  List.map snd pnonlinearsl
-	in
-        rp {
-          pat_desc = Tpat_tuple pl;
-          pat_loc = sp.ppat_loc;
-          pat_type = newty (Ttuple(List.map (fun p -> p.pat_type) pl));
-          pat_env = env },
-	List.flatten nonlinearsl
-    | Ppat_construct(lid, sarg, explicit_arity) ->
-        let constr =
+let rec find_record_qual = function
+  | [] -> None
+  | (Longident.Ldot (modname, _), _) :: _ -> Some modname
+  | _ :: rest -> find_record_qual rest
+
+let type_label_a_list type_lid_a lid_a_list =
+  match find_record_qual lid_a_list with
+  | None -> List.map type_lid_a lid_a_list
+  | Some modname ->
+      List.map
+        (function
+         | (Longident.Lident id), sarg ->
+              type_lid_a (Longident.Ldot (modname, id), sarg)
+         | lid_a -> type_lid_a lid_a)
+        lid_a_list
+
+let nonlinear_variables = ref []
+let reset_nonlinear_variables () = nonlinear_variables := []
+
+let rec type_pat ?(nonlinear=false) env sp =
+  match sp.ppat_desc with
+    Ppat_any ->
+      rp {
+        pat_desc = Tpat_any;
+        pat_loc = sp.ppat_loc;
+        pat_type = newvar();
+        pat_env = env }
+  | Ppat_var name ->
+      let ty = newvar() in
+      let id = enter_variable sp.ppat_loc name ty in
+      rp {
+        pat_desc = Tpat_var id;
+        pat_loc = sp.ppat_loc;
+        pat_type = ty;
+        pat_env = env }
+  | Ppat_alias(sq, name) ->
+      let q = type_pat env sq in
+      begin_def ();
+      let ty_var = build_as_type env q in
+      end_def ();
+      generalize ty_var;
+      let id = enter_variable sp.ppat_loc name ty_var in
+      rp {
+        pat_desc = Tpat_alias(q, id);
+        pat_loc = sp.ppat_loc;
+        pat_type = q.pat_type;
+        pat_env = env }
+  | Ppat_constant cst ->
+      rp {
+        pat_desc = Tpat_constant cst;
+        pat_loc = sp.ppat_loc;
+        pat_type = type_constant cst;
+        pat_env = env }
+  | Ppat_tuple spl ->
+      let pl = List.map (type_pat env) spl in
+      rp {
+        pat_desc = Tpat_tuple pl;
+        pat_loc = sp.ppat_loc;
+        pat_type = newty (Ttuple(List.map (fun p -> p.pat_type) pl));
+        pat_env = env }
+  | Ppat_construct(lid, sarg, explicit_arity) ->
+      let constr =
+        try
+          Env.lookup_constructor lid env
+        with Not_found ->
+          raise(Error(sp.ppat_loc, Unbound_constructor lid)) in
+      let sargs =
+        match sarg with
+          None -> []
+        | Some {ppat_desc = Ppat_tuple spl} when explicit_arity -> spl
+        | Some {ppat_desc = Ppat_tuple spl} when constr.cstr_arity > 1 -> spl
+        | Some({ppat_desc = Ppat_any} as sp) when constr.cstr_arity > 1 ->
+            replicate_list sp constr.cstr_arity
+        | Some sp -> [sp] in
+      if List.length sargs <> constr.cstr_arity then
+        raise(Error(sp.ppat_loc, Constructor_arity_mismatch(lid,
+                                     constr.cstr_arity, List.length sargs)));
+      let args = List.map (type_pat env) sargs in
+      let (ty_args, ty_res) = instance_constructor constr in
+      List.iter2 (unify_pat env) args ty_args;
+      rp {
+        pat_desc = Tpat_construct(constr, args);
+        pat_loc = sp.ppat_loc;
+        pat_type = ty_res;
+        pat_env = env }
+  | Ppat_variant(l, sarg) ->
+      let arg = may_map (type_pat env) sarg in
+      let arg_type = match arg with None -> [] | Some arg -> [arg.pat_type]  in
+      let row = { row_fields =
+                    [l, Reither(arg = None, arg_type, true, ref None)];
+                  row_bound = arg_type;
+                  row_closed = false;
+                  row_more = newvar ();
+                  row_fixed = false;
+                  row_name = None } in
+      rp {
+        pat_desc = Tpat_variant(l, arg, row);
+        pat_loc = sp.ppat_loc;
+        pat_type = newty (Tvariant row);
+        pat_env = env }
+  | Ppat_record lid_sp_list ->
+      let rec check_duplicates = function
+        [] -> ()
+      | (lid, sarg) :: remainder ->
+          if List.mem_assoc lid remainder
+          then raise(Error(sp.ppat_loc, Label_multiply_defined lid))
+          else check_duplicates remainder in
+      check_duplicates lid_sp_list;
+      let ty = newvar() in
+      let type_label_pat (lid, sarg) =
+        let label =
           try
-            Env.lookup_constructor lid env
+            Env.lookup_label lid env
           with Not_found ->
-            raise(Error(sp.ppat_loc, Unbound_constructor lid)) in
-        let sargs =
-          match sarg with
-            None -> []
-          | Some {ppat_desc = Ppat_tuple spl} when explicit_arity -> spl
-          | Some {ppat_desc = Ppat_tuple spl} when constr.cstr_arity > 1 -> spl
-          | Some({ppat_desc = Ppat_any} as sp) when constr.cstr_arity > 1 ->
-              replicate_list sp constr.cstr_arity
-          | Some sp -> [sp] in
-        if List.length sargs <> constr.cstr_arity then
-          raise(Error(sp.ppat_loc, Constructor_arity_mismatch(lid,
-                                       constr.cstr_arity, List.length sargs)));
-        let args, nonlinearsl = 
-	  let argnonlinearsl = List.map (type_pat0 env) sargs in
-	  List.map fst argnonlinearsl,
-	  List.map snd argnonlinearsl
-	in
-        let (ty_args, ty_res) = instance_constructor constr in
-        List.iter2 (unify_pat env) args ty_args;
-        rp {
-          pat_desc = Tpat_construct(constr, args);
-          pat_loc = sp.ppat_loc;
-          pat_type = ty_res;
-          pat_env = env },
-	List.flatten nonlinearsl
-    | Ppat_variant(l, sarg) ->
-        let arg, nonlinears = 
-	  match may_map (type_pat0 env) sarg with
-	  | None -> None, []
-	  | Some (arg, nonlinears) -> Some arg, nonlinears
-	in
-        let arg_type = match arg with None -> [] | Some arg -> [arg.pat_type]  in
-        let row = { row_fields =
-                      [l, Reither(arg = None, arg_type, true, ref None)];
-                    row_bound = arg_type;
-                    row_closed = false;
-                    row_more = newvar ();
-                    row_fixed = false;
-                    row_name = None } in
-        rp {
-          pat_desc = Tpat_variant(l, arg, row);
-          pat_loc = sp.ppat_loc;
-          pat_type = newty (Tvariant row);
-          pat_env = env },
-	nonlinears
-    | Ppat_record lid_sp_list ->
-        let rec check_duplicates = function
-          [] -> ()
-        | (lid, sarg) :: remainder ->
-            if List.mem_assoc lid remainder
-            then raise(Error(sp.ppat_loc, Label_multiply_defined lid))
-            else check_duplicates remainder in
-        check_duplicates lid_sp_list;
-        let ty = newvar() in
-        let type_label_pat (lid, sarg) =
-          let label =
-            try
-              Env.lookup_label lid env
-            with Not_found ->
-              raise(Error(sp.ppat_loc, Unbound_label lid)) in
-          let (_, ty_arg, ty_res) = instance_label false label in
-          begin try
-            unify env ty_res ty
-          with Unify trace ->
-            raise(Error(sp.ppat_loc, Label_mismatch(lid, trace)))
-          end;
-          let arg, nonlinears = type_pat0 env sarg in
-          unify_pat env arg ty_arg;
-          (label, arg), nonlinears
-        in
-	let label_pat_list, nonlinearsl =
-	  let l = List.map type_label_pat lid_sp_list in
-	  List.map fst l, List.map snd l
-	in
-        rp {
-          pat_desc = Tpat_record label_pat_list;
-          pat_loc = sp.ppat_loc;
-          pat_type = ty;
-          pat_env = env },
-	List.flatten nonlinearsl 
-    | Ppat_array spl ->
-        let pl, nonlinearsl = 
-	  let l = List.map (type_pat0 env) spl in
-	  List.map fst l, List.map snd l
-	in
-        let ty_elt = newvar() in
-        List.iter (fun p -> unify_pat env p ty_elt) pl;
-        rp {
-          pat_desc = Tpat_array pl;
-          pat_loc = sp.ppat_loc;
-          pat_type = instance (Predef.type_array ty_elt);
-          pat_env = env },
-	List.flatten nonlinearsl
-    | Ppat_or(sp1, sp2) ->
-	let implicit_when_empty_check loc nonlinears =
-	  match nonlinears with
-	  | {Typertype.varinfo_name=n} :: _ ->
-	      raise (Error(loc, Orpat_with_non_linear_tvar n))
-	  | _ -> ()
-	in
-        let initial_pattern_variables = !pattern_variables in
-        let p1,nonlinears1 = type_pat0 env sp1 in
-	implicit_when_empty_check sp1.ppat_loc nonlinears1;
-        let p1_variables = !pattern_variables in
-        pattern_variables := initial_pattern_variables ;
-        let p2,nonlinears2 = type_pat0 env sp2 in
-	implicit_when_empty_check sp2.ppat_loc nonlinears2;
-        let p2_variables = !pattern_variables in
-        unify_pat env p2 p1.pat_type;
-        let alpha_env =
-          enter_orpat_variables sp.ppat_loc env p1_variables p2_variables in
-        pattern_variables := p1_variables ;
-        rp {
-          pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
-          pat_loc = sp.ppat_loc;
-          pat_type = p1.pat_type;
-          pat_env = env },
-	[] (* must be empty! *)
-    | Ppat_constraint(sp, sty) ->
-        let p, nonlinears = type_pat0 env sp in
-        let ty, force = Typetexp.transl_simple_type_delayed env sty in
-        unify_pat env p ty;
-        pattern_force := force :: !pattern_force;
-        p, nonlinears
-    | Ppat_type lid ->
-        build_or_pat env sp.ppat_loc lid, []
-    | Ppat_rtype sty ->
-        (* translate pattern *)
-        let sp, nonlinears = 
-	  Typertype.pattern_of_type nonlinear
-	    (fun lid -> fst (Env.lookup_type lid env)) sty 
-	in
-        let pat, internal_nonlinears = type_pat0 env sp in
-	assert (internal_nonlinears=[]);
-        unify_pat env pat (Typertype.get_rtype_type ());
-        pat, nonlinears
-  in
-  type_pat0 env sp
+            raise(Error(sp.ppat_loc, Unbound_label lid)) in
+        let (_, ty_arg, ty_res) = instance_label false label in
+        begin try
+          unify env ty_res ty
+        with Unify trace ->
+          raise(Error(sp.ppat_loc, Label_mismatch(lid, trace)))
+        end;
+        let arg = type_pat env sarg in
+        unify_pat env arg ty_arg;
+        (label, arg)
+      in
+      rp {
+        pat_desc = Tpat_record(type_label_a_list type_label_pat lid_sp_list);
+        pat_loc = sp.ppat_loc;
+        pat_type = ty;
+        pat_env = env }
+  | Ppat_array spl ->
+      let pl = List.map (type_pat env) spl in
+      let ty_elt = newvar() in
+      List.iter (fun p -> unify_pat env p ty_elt) pl;
+      rp {
+        pat_desc = Tpat_array pl;
+        pat_loc = sp.ppat_loc;
+        pat_type = instance (Predef.type_array ty_elt);
+        pat_env = env }
+  | Ppat_or(sp1, sp2) ->
+      let initial_pattern_variables = !pattern_variables in
+      let p1 = type_pat env sp1 in
+      let p1_variables = !pattern_variables in
+      pattern_variables := initial_pattern_variables ;
+      let p2 = type_pat env sp2 in
+      let p2_variables = !pattern_variables in
+      unify_pat env p2 p1.pat_type;
+      let alpha_env =
+        enter_orpat_variables sp.ppat_loc env p1_variables p2_variables in
+      pattern_variables := p1_variables ;
+      rp {
+        pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
+        pat_loc = sp.ppat_loc;
+        pat_type = p1.pat_type;
+        pat_env = env }
+  | Ppat_constraint(sp, sty) ->
+      let p = type_pat env sp in
+      let ty, force = Typetexp.transl_simple_type_delayed env sty in
+      unify_pat env p ty;
+      pattern_force := force :: !pattern_force;
+      p
+  | Ppat_type lid ->
+      build_or_pat env sp.ppat_loc lid
+  | Ppat_rtype sty ->
+      (* translate pattern *)
+      let sp, nonlinears = 
+	Typertype.pattern_of_type nonlinear
+	  (fun lid -> fst (Env.lookup_type lid env)) sty 
+      in
+      (* typing of the produced pattern. it must not contain
+	 nonlinear things! *)
+      (* escape and reset the nonlinear variable information *)
+      let escaped_nonlinear_variables = !nonlinear_variables in
+      reset_nonlinear_variables ();
+      (* type the produced pattern *)
+      let pat = type_pat env sp in
+      (* check it has no nonlinear variables *)
+      assert (!nonlinear_variables=[]);
+      (* recover the original nonlinear_variable information *)
+      nonlinear_variables := escaped_nonlinear_variables;
+      unify_pat env pat (Typertype.get_rtype_type ());
+      nonlinear_variables := nonlinears @ !nonlinear_variables;
+      pat
+
+let type_pat ?nonlinear env sp =
+  reset_nonlinear_variables ();
+  let p = type_pat ?nonlinear env sp in
+  p, !nonlinear_variables
 
 let get_ref r =
   let v = !r in r := []; v
@@ -678,9 +672,10 @@ let type_format loc fmt =
   and ty_result = newvar ()
   and ty_aresult = newvar () in
   let ty_arrow gty ty = newty (Tarrow ("", instance gty, ty, Cok)) in
-  let bad_format i len =
-    raise (Error (loc, Bad_format (String.sub fmt i len))) in
-  let incomplete i = bad_format i (len - i) in
+
+  let invalid_fmt s = raise (Error (loc, Bad_format s)) in
+  let incomplete i = invalid_fmt (String.sub fmt i (len - i)) in
+  let invalid i j = invalid_fmt (String.sub fmt i (j - i + 1)) in
 
   let rec scan_format i =
     if i >= len then ty_aresult, ty_result else
@@ -742,8 +737,7 @@ let type_format loc fmt =
       | '%' | '!' -> scan_format (j + 1)
       | 's' | 'S' | '[' -> conversion j Predef.type_string
       | 'c' | 'C' -> conversion j Predef.type_char
-      | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' ->
-          conversion j Predef.type_int
+      | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' -> conversion j Predef.type_int
       | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> conversion j Predef.type_float
       | 'B' | 'b' -> conversion j Predef.type_bool
       | 'a' ->
@@ -752,24 +746,24 @@ let type_format loc fmt =
           let ty_aresult, ty_result = conversion j ty_arg in
           ty_aresult, ty_arrow ty_a ty_result
       | 't' -> conversion j (ty_arrow ty_input ty_aresult)
-      | 'n' when j + 1 = len -> conversion j Predef.type_int
-      | 'l' | 'n' | 'L' as conv ->
+      | 'n' | 'l' when j + 1 = len -> conversion j Predef.type_int
+      | 'n' | 'l' | 'L' as c ->
           let j = j + 1 in
           if j >= len then incomplete i else begin
-            match fmt.[j] with
-            | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
-                let ty_arg =
-                 match conv with
-                 | 'l' -> Predef.type_int32
-                 | 'n' -> Predef.type_nativeint
-                 | _ -> Predef.type_int64 in
-                conversion j ty_arg
-            | c ->
-               if conv = 'l' || conv = 'n'
-               then conversion (j - 1) Predef.type_int
-               else bad_format i (j - i)
+          match fmt.[j] with
+          | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
+             let ty_arg =
+               match c with
+               | 'l' -> Predef.type_int32
+               | 'n' -> Predef.type_nativeint
+               | _ -> Predef.type_int64 in
+              conversion j ty_arg
+          | _ ->
+             if c = 'l' || c = 'n'
+             then conversion (j - 1) Predef.type_int
+             else invalid i (j - i)
           end
-      | c -> bad_format i (j - i + 1) in
+      | c -> invalid i j in
     scan_width i j in
 
   let ty_ares, ty_res = scan_format 0 in
@@ -1038,7 +1032,7 @@ Format.fprintf Format.err_formatter "funct=%a@."
         if label.lbl_private = Private then
           raise(Error(sexp.pexp_loc, Private_type ty));
         (label, {arg with exp_type = instance arg.exp_type}) in
-      let lbl_exp_list = List.map type_label_exp lid_sexp_list in
+      let lbl_exp_list = type_label_a_list type_label_exp lid_sexp_list in
       let rec check_duplicates seen_pos lid_sexp lbl_exp =
         match (lid_sexp, lbl_exp) with
           ((lid, _) :: rem1, (lbl, _) :: rem2) ->

@@ -23,7 +23,6 @@ OCAMLLEX = $(CAMLRUN) ../boot/ocamllex
 OCAMLYACC= ../boot/ocamlyacc
 OCAMLLIB = $(LIBDIR)
 OCAMLBIN = $(BINDIR)
-EXTRAC_CRC = $(CAMLRUN) ../otherlibs/dynlink/extract_crc
 
 OCAMLPP=-pp './remove_DEBUG'
 
@@ -102,10 +101,10 @@ CMOFILES= odoc_config.cmo \
 	odoc_control.cmo\
 	odoc_inherit.cmo\
 	odoc_search.cmo\
+	odoc_scan.cmo\
 	odoc_cross.cmo\
 	odoc_dep.cmo\
 	odoc_analyse.cmo\
-	odoc_scan.cmo\
 	odoc_info.cmo
 
 
@@ -198,8 +197,8 @@ libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
 debug: 
 	make OCAMLPP=""
 
-$(OCAMLDOC): $(EXECMOFILES) odoc_crc.cmo odoc.cmo
-	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES) odoc_crc.cmo odoc.cmo
+$(OCAMLDOC): $(EXECMOFILES) odoc.cmo
+	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES) odoc.cmo
 $(OCAMLDOC_OPT): $(EXECMXFILES) odoc_opt.cmx
 	$(OCAMLOPT) -o $@ unix.cmxa str.cmxa $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES) odoc_opt.cmx
 
@@ -209,34 +208,6 @@ $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
 	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $(OCAMLCMXFILES) $(LIBCMXFILES)
 
 manpages: stdlib_man/Pervasives.3o
-
-odoc_crc.ml: $(CMIFILES)
-	$(EXTRAC_CRC) $(INCLUDES) \
-	Arg Arith_status Array Big_int Buffer Callback Char Digest Dynlink \
-	Filename Format Gc Genlex Hashtbl \
-	Lazy Lexing List Map Marshal Nat Nativeint \
-	Num Obj CamlinternalOO Outcometree Parsing Pervasives Printexc \
-	Printf Profiling Queue Random Ratio \
-	Set Sort Stack Std_exit Str Stream \
-	String Sys Topdirs Toploop Unix Weak \
-	Printast Ident Tbl Misc Config Clflags Warnings Ccomp \
-	Linenum Location Longident Syntaxerr Parser Lexer Parse \
-	Types Path Btype Predef Datarepr Subst Env Ctype Primitive \
-	Oprint Printtyp Includecore Typetexp Parmatch Typedtree Typecore \
-	Includeclass Typedecl Typeclass Mtype Includemod Typemod \
-	Lambda Typeopt Printlambda Switch Matching Translobj Translcore \
-	Bytesections Runtimedef Symtable Opcodes Bytelink Bytelibrarian \
-	Translclass Errors Main_args Asttypes Depend \
-	Odoc_global Odoc_args Odoc_info Odoc_messages Odoc_types \
-	Odoc_misc Odoc_text_parser Odoc_text_lexer \
-	Odoc_text Odoc_comments_global Odoc_parser \
-	Odoc_lexer Odoc_comments Odoc_name Odoc_parameter \
-	Odoc_value Odoc_type Odoc_exception Odoc_class \
-	Odoc_module Odoc_str Odoc_args Odoc_env \
-	Odoc_sig Odoc_ast Odoc_control Odoc_inherit \
-	Odoc_search Odoc_cross Odoc_merge Odoc_analyse \
-	Odoc_dag2html Odoc_ocamlhtml Odoc_html Odoc_to_text \
-	Odoc_latex_style Odoc_latex Odoc_man Odoc_texi Odoc_scan > $@
 
 # Parsers and lexers dependencies :
 ###################################
@@ -285,7 +256,7 @@ install: dummy
 	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
 	if test -d $(INSTALL_CUSTOMDIR); then : ; else $(MKDIR) $(INSTALL_CUSTOMDIR); fi
 	$(CP) $(OCAMLDOC)$(EXE) $(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)
-	$(CP) ocamldoc.hva *.cmi $(GENERATORS) $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
+	$(CP) ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
 	if test -d $(INSTALL_MANODIR); then : ; else $(MKDIR) $(INSTALL_MANODIR); fi
 	$(CP) stdlib_man/* $(INSTALL_MANODIR)
@@ -321,6 +292,15 @@ test_latex: dummy
 	$(MKDIR) $@ 
 	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) odoc*.ml odoc*.mli ../stdlib/*.mli ../otherlibs/unix/unix.mli
 
+test_latex_simple: dummy
+	$(MKDIR) $@ 
+	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) \
+	-latextitle 6,subsection -latextitle 7,subsubection \
+	../stdlib/hashtbl.mli \
+	../stdlib/arg.mli \
+	../otherlibs/unix/unix.mli \
+	../stdlib/map.mli
+
 test_man: dummy
 	$(MKDIR) $@ 
 	$(OCAMLDOC_RUN) -man -sort -d $@ $(INCLUDES) odoc*.ml odoc*.mli
@@ -351,7 +331,7 @@ clean:: dummy
 	@rm -f $(OCAMLDOC)$(EXE) $(OCAMLDOC_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.a *.o
 	@rm -f odoc_parser.output odoc_text_parser.output
 	@rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
-	@rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli odoc_crc.ml
+	@rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli 
 	@rm -rf stdlib_man
 
 depend::

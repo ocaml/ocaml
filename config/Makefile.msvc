@@ -108,7 +108,8 @@ BINUTILS_OBJCOPY=objcopy
 OTHERLIBRARIES=win32unix systhreads str num win32graph dynlink bigarray labltk
 
 ### Name of the target architecture for the "num" library
-BIGNUM_ARCH=C
+BNG_ARCH=generic
+BNG_ASM_LEVEL=0
 
 ### Configuration for LablTk
 # Set TK_ROOT to the directory where you installed TCL/TK 8.3

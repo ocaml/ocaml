@@ -186,13 +186,18 @@ module Plexer =
       | [: :] -> () ]
     ;
     value error_on_unknown_keywords = ref False;
-    value next_token_fun find_id_kwd find_spe_kwd =
-      let err bp ep msg = raise_with_loc (bp, ep) (Token.Error msg) in
-      let keyword_or_error (bp, ep) s =
+    value next_token_fun find_id_kwd find_spe_kwd fname lnum bolpos =
+      let make_pos p =
+        {Lexing.pos_fname = fname.val; Lexing.pos_lnum = lnum.val;
+         Lexing.pos_bol = bolpos.val; Lexing.pos_cnum = p} in
+      let mkloc (bp, ep) = (make_pos bp, make_pos ep) in
+
+      let err loc msg = raise_with_loc loc (Token.Error msg) in
+      let keyword_or_error (bp,ep) s =
         try ("", find_spe_kwd s) with
         [ Not_found ->
             if error_on_unknown_keywords.val then
-              err bp ep ("illegal token: " ^ s)
+              err (mkloc (bp, ep)) ("illegal token: " ^ s)
             else ("", s) ]
       in
       let rec next_token =
@@ -280,14 +285,14 @@ module Plexer =
         [ [: `'"' :] -> get_buff len
         | [: `'\\'; `c; s :] -> string bp (store (store len '\\') c) s
         | [: `c; s :] -> string bp (store len c) s
-        | [: :] ep -> err bp ep "string not terminated" ]
+        | [: :] ep -> err (mkloc (bp, ep)) "string not terminated" ]
       and char bp len =
         parser
         [ [: `'''; s :] ->
             if len = 0 then char bp (store len ''') s else get_buff len
         | [: `'\\'; `c; s :] -> char bp (store (store len '\\') c) s
         | [: `c; s :] -> char bp (store len c) s
-        | [: :] ep -> err bp ep "char not terminated" ]
+        | [: :] ep -> err (mkloc(bp,ep)) "char not terminated" ]
       and locate_or_antiquot bp len =
         parser
         [ [: `'$' :] -> ("ANTIQUOT", ":" ^ get_buff len)
@@ -300,7 +305,7 @@ module Plexer =
             ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
         | [: `c; s :] ->
             ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
-        | [: :] ep -> err bp ep "antiquotation not terminated" ]
+        | [: :] ep -> err (mkloc(bp,ep)) "antiquotation not terminated" ]
       and maybe_locate bp len =
         parser
         [ [: `'$' :] -> ("ANTIQUOT", ":" ^ get_buff len)
@@ -311,7 +316,7 @@ module Plexer =
             ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
         | [: `c; s :] ->
             ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
-        | [: :] ep -> err bp ep "antiquotation not terminated" ]
+        | [: :] ep -> err (mkloc(bp,ep)) "antiquotation not terminated" ]
       and antiquot bp len =
         parser
         [ [: `'$' :] -> ("ANTIQUOT", ":" ^ get_buff len)
@@ -324,13 +329,13 @@ module Plexer =
             ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
         | [: `c; s :] ->
             ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
-        | [: :] ep -> err bp ep "antiquotation not terminated" ]
+        | [: :] ep -> err (mkloc(bp,ep)) "antiquotation not terminated" ]
       and locate_or_antiquot_rest bp len =
         parser
         [ [: `'$' :] -> get_buff len
         | [: `'\\'; `c; s :] -> locate_or_antiquot_rest bp (store len c) s
         | [: `c; s :] -> locate_or_antiquot_rest bp (store len c) s
-        | [: :] ep -> err bp ep "antiquotation not terminated" ]
+        | [: :] ep -> err (mkloc(bp,ep)) "antiquotation not terminated" ]
       and quotation bp len =
         parser
         [ [: `'>'; s :] -> maybe_end_quotation bp len s
@@ -344,7 +349,7 @@ module Plexer =
              s :] ->
             quotation bp len s
         | [: `c; s :] -> quotation bp (store len c) s
-        | [: :] ep -> err bp ep "quotation not terminated" ]
+        | [: :] ep -> err (mkloc(bp,ep)) "quotation not terminated" ]
       and maybe_nested_quotation bp len =
         parser
         [ [: `'<'; s :] -> mstore (quotation bp (store len '<') s) ">>"
@@ -366,20 +371,20 @@ module Plexer =
             next_token_loc s
         | [: `'('; s :] -> maybe_comment bp s
         | [: `'#'; _ = spaces_tabs; a = linenum bp :] -> a
-        | [: tok = next_token :] ep -> (tok, (bp, ep))
-        | [: _ = Stream.empty :] -> (("EOI", ""), (bp, succ bp)) ]
+        | [: tok = next_token :] ep -> (tok, mkloc(bp, ep))
+        | [: _ = Stream.empty :] -> (("EOI", ""), mkloc(bp, succ bp)) ]
       and maybe_comment bp =
         parser
         [ [: `'*'; s :] -> do { comment bp s; next_token_loc s }
         | [: :] ep ->
             let tok = keyword_or_error (bp, ep) "(" in
-            (tok, (bp, ep)) ]
+            (tok, mkloc(bp, ep)) ]
       and comment bp =
         parser
         [ [: `'('; s :] -> maybe_nested_comment bp s
         | [: `'*'; s :] -> maybe_end_comment bp s
         | [: `c; s :] -> comment bp s
-        | [: :] ep -> err bp ep "comment not terminated" ]
+        | [: :] ep -> err (mkloc(bp,ep)) "comment not terminated" ]
       and maybe_nested_comment bp =
         parser
         [ [: `'*'; s :] -> do { comment bp s; comment bp s }
@@ -391,7 +396,7 @@ module Plexer =
         [ [: `'0'..'9'; _ = digits; _ = spaces_tabs; `'"'; _ = any_to_nl;
              s :] ->
             next_token_loc s
-        | [: :] -> (keyword_or_error (bp, bp + 1) "#", (bp, bp + 1)) ]
+        | [: :] -> (keyword_or_error (bp, bp + 1) "#", mkloc(bp, bp + 1)) ]
       and spaces_tabs =
         parser [ [: `' ' | '\t'; s :] -> spaces_tabs s | [: :] -> () ]
       and digits = parser [ [: `'0'..'9'; s :] -> digits s | [: :] -> () ]
@@ -404,7 +409,7 @@ module Plexer =
       fun cstrm ->
         try next_token_loc cstrm with
         [ Stream.Error str ->
-            err (Stream.count cstrm) (Stream.count cstrm + 1) str ]
+            err (mkloc(Stream.count cstrm, Stream.count cstrm + 1)) str ]
     ;
     value locerr () = invalid_arg "Lexer: location function";
     value loct_create () = ref (Array.create 1024 None);
@@ -429,9 +434,12 @@ module Plexer =
       }
     ;
     value func kwd_table =
+      let bolpos = ref 0 in
+      let lnum = ref 0 in
+      let fname = ref "" in
       let find = Hashtbl.find kwd_table in
       let lex cstrm =
-        let next_token_loc = next_token_fun find find in
+        let next_token_loc = next_token_fun find find fname lnum bolpos in
         let loct = loct_create () in
         let ts =
           Stream.from
@@ -620,7 +628,7 @@ value mkumin loc f arg =
       <:expr< $lid:f$ $arg$ >> ]
 ;
 
-external loc_of_node : 'a -> (int * int) = "%field0";
+external loc_of_node : 'a -> MLast.loc = "%field0";
 
 value mklistexp loc last =
   loop True where rec loop top =
@@ -1139,10 +1147,13 @@ EXTEND
           let x =
             try
               let i = String.index x ':' in
-              (int_of_string (String.sub x 0 i),
+              ({Lexing.pos_fname = "";
+                Lexing.pos_lnum = 0;
+                Lexing.pos_bol = 0;
+                Lexing.pos_cnum = int_of_string (String.sub x 0 i)},
                String.sub x (i + 1) (String.length x - i - 1))
             with
-            [ Not_found | Failure _ -> (0, x) ]
+            [ Not_found | Failure _ -> (Token.nowhere, x) ]
           in
           Pcaml.handle_expr_locate loc x
       | x = QUOTATION ->
@@ -1265,10 +1276,13 @@ EXTEND
           let x =
             try
               let i = String.index x ':' in
-              (int_of_string (String.sub x 0 i),
+              ({Lexing.pos_fname = "";
+                Lexing.pos_lnum = 0;
+                Lexing.pos_bol = 0;
+                Lexing.pos_cnum =  int_of_string (String.sub x 0 i)},
                String.sub x (i + 1) (String.length x - i - 1))
             with
-            [ Not_found | Failure _ -> (0, x) ]
+            [ Not_found | Failure _ -> (Token.nowhere, x) ]
           in
           Pcaml.handle_patt_locate loc x
       | x = QUOTATION ->

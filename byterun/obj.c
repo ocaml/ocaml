@@ -19,6 +19,7 @@
 #include "alloc.h"
 #include "fail.h"
 #include "gc.h"
+#include "interp.h"
 #include "major_gc.h"
 #include "memory.h"
 #include "minor_gc.h"
@@ -36,6 +37,21 @@ CAMLprim value caml_static_free(value blk)
   caml_stat_free((void *) blk);
   return Val_unit;
 }
+
+/* signal to the interpreter machinery that a bytecode is no more
+   needed (before freeing it) - this might be useful for a JIT
+   implementation */
+
+CAMLprim value caml_static_release_bytecode(value blk, value size)
+{
+#ifndef NATIVE_CODE
+  caml_release_bytecode((code_t) blk, (asize_t) Long_val(size));
+#else
+  caml_failwith("Meta.static_release_bytecode impossible with native code");
+#endif
+  return Val_unit;
+}
+
 
 CAMLprim value caml_static_resize(value blk, value new_size)
 {
@@ -181,3 +197,59 @@ CAMLprim value caml_lazy_make_forward (value v)
   Modify (&Field (res, 0), v);
   CAMLreturn (res);
 }
+
+/* For camlinternalOO.ml
+   See also GETPUBMET in interp.c
+ */
+
+CAMLprim value caml_get_public_method (value obj, value tag)
+{
+  value meths = Field (obj, 0);
+  int li = 3, hi = Field(meths,0), mi;
+  while (li < hi) {
+    mi = ((li+hi) >> 1) | 1;
+    if (tag < Field(meths,mi)) hi = mi-2;
+    else li = mi;
+  }
+  return Field (meths, li-1);
+}
+
+/* these two functions might be useful to an hypothetical JIT */
+
+#ifdef CAML_JIT
+#ifdef NATIVE_CODE
+#define MARK 1
+#else
+#define MARK 0
+#endif
+value caml_cache_public_method (value meths, value tag, value *cache)
+{
+  int li = 3, hi = Field(meths,0), mi;
+  while (li < hi) {
+    mi = ((li+hi) >> 1) | 1;
+    if (tag < Field(meths,mi)) hi = mi-2;
+    else li = mi;
+  }
+  *cache = (li-3)*sizeof(value) + MARK;
+  return Field (meths, li-1);
+}
+
+value caml_cache_public_method2 (value *meths, value tag, value *cache)
+{
+  value ofs = *cache & meths[1];
+  if (*(value*)(((char*)(meths+3)) + ofs - MARK) == tag)
+    return *(value*)(((char*)(meths+2)) + ofs - MARK);
+  {
+    int li = 3, hi = meths[0], mi;
+    while (li < hi) {
+      mi = ((li+hi) >> 1) | 1;
+      if (tag < meths[mi]) hi = mi-2;
+      else li = mi;
+    }
+    *cache = (li-3)*sizeof(value) + MARK;
+    return meths[li-1];
+  }
+}
+#endif /*CAML_JIT*/
+
+/* eof $Id$ */

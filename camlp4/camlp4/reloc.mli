@@ -12,5 +12,9 @@
 
 (* $Id$ *)
 
-value patt : (MLast.loc -> MLast.loc) -> int -> MLast.patt -> MLast.patt;
-value expr : (MLast.loc -> MLast.loc) -> int -> MLast.expr -> MLast.expr;
+value zero_loc : Lexing.position;
+value shift_pos : int -> Lexing.position -> Lexing.position;
+value adjust_loc : Lexing.position -> MLast.loc -> MLast.loc;
+value linearize : MLast.loc -> MLast.loc;
+value patt : (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.patt -> MLast.patt;
+value expr : (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.expr -> MLast.expr;

@@ -70,13 +70,24 @@ let print_spec buf (key, spec, doc) =
   | _ -> bprintf buf "  %s %s\n" key doc
 ;;
 
+let help_action () = raise (Stop (Unknown "-help"));;
+
+let add_help speclist =
+  let add1 =
+    try ignore (assoc3 "-help" speclist); []
+    with Not_found ->
+            ["-help", Unit help_action, " Display this list of options"]
+  and add2 =
+    try ignore (assoc3 "--help" speclist); []
+    with Not_found ->
+            ["--help", Unit help_action, " Display this list of options"]
+  in
+  speclist @ (add1 @ add2)
+;;
+
 let usage_b buf speclist errmsg =
   bprintf buf "%s\n" errmsg;
-  List.iter (print_spec buf) speclist;
-  try ignore (assoc3 "-help" speclist)
-  with Not_found -> bprintf buf "  -help   Display this list of options\n";
-  try ignore (assoc3 "--help" speclist)
-  with Not_found -> bprintf buf "  --help  Display this list of options\n";
+  List.iter (print_spec buf) (add_help speclist);
 ;;
 
 let usage speclist errmsg =
@@ -201,4 +212,36 @@ let parse l f msg =
   with
   | Bad msg -> eprintf "%s" msg; exit 2;
   | Help msg -> printf "%s" msg; exit 0;
+;;
+
+let rec second_word s =
+  let len = String.length s in
+  let rec loop n =
+    if n >= len then len
+    else if s.[n] = ' ' then loop (n+1)
+    else n
+  in
+  try loop (String.index s ' ')
+  with Not_found -> len
+;;
+
+let max_arg_len cur (kwd, _, doc) =
+  max cur (String.length kwd + second_word doc)
+;;
+
+let add_padding len ksd =
+  match ksd with
+  | (_, Symbol _, _) -> ksd
+  | (kwd, spec, msg) ->
+      let cutcol = second_word msg in
+      let spaces = String.make (len - String.length kwd - cutcol) ' ' in
+      let prefix = String.sub msg 0 cutcol in
+      let suffix = String.sub msg cutcol (String.length msg - cutcol) in
+      (kwd, spec, prefix ^ spaces ^ suffix)
+;;
+
+let align speclist =
+  let completed = add_help speclist in
+  let len = List.fold_left max_arg_len 0 completed in
+  List.map (add_padding len) completed
 ;;

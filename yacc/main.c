@@ -39,6 +39,7 @@ char temp_form[] = "yacc.XXXXXXX";
 #endif
 
 int lineno;
+char *virtual_input_file_name = NULL;
 int outline;
 
 char *action_file_name;

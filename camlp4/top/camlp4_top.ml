@@ -59,8 +59,9 @@ value highlight_locations lb loc1 loc2 =
 
 value print_location lb loc =
   if String.length Toploop.input_name.val = 0 then
-    highlight_locations lb loc (-1, -1)
-  else Toploop.print_location Format.err_formatter (Ast2pt.mkloc loc)
+    highlight_locations lb ((fst loc).Lexing.pos_cnum, (snd loc).Lexing.pos_cnum) (-1, -1)
+  else Toploop.print_location Format.err_formatter
+    (Ast2pt.mkloc loc)
 ;
 
 value wrap f shfn lb =

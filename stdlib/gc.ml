@@ -78,6 +78,7 @@ let allocated_bytes () =
 ;;
 
 external finalise : ('a -> unit) -> 'a -> unit = "caml_final_register";;
+external finalise_release : unit -> unit = "caml_final_release";;
 
 
 type alarm = bool ref;;

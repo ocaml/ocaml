@@ -1105,3 +1105,33 @@ let _  =
   test "luc"  f (B, A, A, A, A, A, A, A, A, A, A, B, A, A, A, A) "10" ;
   test "luc"  f (B, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A) "12" ;
  ()
+
+(*
+  By Gilles Peskine, compilation raised some assert false i make_failactionneg
+*)
+
+type bg = [
+  | `False
+  | `True
+  ]
+  
+type vg = [
+  | `A
+  | `B
+  | `U of int
+  | `V of int
+  ]
+
+type tg = {
+    v : vg;
+    x : bg;
+  }
+
+let predg x = true 
+
+let rec gilles o = match o with
+  | {v = (`U data | `V data); x = `False} when predg o -> 1
+  | {v = (`A|`B) ; x = `False}
+  | {v = (`U _ | `V _); x = `False}
+  | {v = _ ; x = `True}
+    -> 2

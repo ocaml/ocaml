@@ -19,7 +19,7 @@ open Longident;
 open Asttypes;
 
 value fast = ref False;
-value no_constructors_arity = ref False;
+value no_constructors_arity = Pcaml.no_constructors_arity;
 
 value get_tag x =
   if Obj.is_block (Obj.repr x) then Obj.tag (Obj.repr x) else Obj.magic x
@@ -39,24 +39,35 @@ value string_of_string_token loc s =
 value glob_fname = ref "";
 
 value mkloc (bp, ep) =
-  let loc_at n = {
-        Lexing.pos_fname = glob_fname.val;
-        Lexing.pos_lnum = 1;  (* ddr met -1 ici ??? *)
-        Lexing.pos_bol = 0;
-        Lexing.pos_cnum = n
+  let loc_at n = 
+    { (n) with
+        Lexing.pos_fname = 
+          if n.Lexing.pos_fname = "" then
+            if glob_fname.val = "" then
+              Pcaml.input_file.val
+            else
+              glob_fname.val
+          else
+            n.Lexing.pos_fname
       }
   in
   {Location.loc_start = loc_at bp;
    Location.loc_end = loc_at ep;
-   Location.loc_ghost = False} (* ddr met: bp = 0 && ep = 0 *)
+   Location.loc_ghost =
+     bp.Lexing.pos_cnum = 0 && ep.Lexing.pos_cnum = 0}
 ;
 
 value mkghloc (bp, ep) =
-  let loc_at n = {
-        Lexing.pos_fname = "";
-        Lexing.pos_lnum = 1;
-        Lexing.pos_bol = 0;
-        Lexing.pos_cnum = n
+  let loc_at n = 
+    { (n) with
+        Lexing.pos_fname = 
+          if n.Lexing.pos_fname = "" then
+            if glob_fname.val = "" then
+              Pcaml.input_file.val
+            else
+              glob_fname.val
+          else
+            n.Lexing.pos_fname
       }
   in
   {Location.loc_start = loc_at bp;
@@ -131,22 +142,37 @@ value rec ctyp_fa al =
   | f -> (f, al) ]
 ;
 
-value rec ctyp_long_id =
-  fun
+value rec ctyp_long_id_prefix t =
+  match t with
   [ TyAcc _ m (TyLid _ s) ->
-      let (is_cls, li) = ctyp_long_id m in
-      (is_cls, ldot li s)
+      error (loc_of_ctyp t) "invalid module expression"
   | TyAcc _ m (TyUid _ s) ->
-      let (is_cls, li) = ctyp_long_id m in
+      let (is_cls, li) = ctyp_long_id_prefix m in
       (is_cls, ldot li s)
   | TyApp _ m1 m2 ->
-      let (is_cls, li1) = ctyp_long_id m1 in
-      let (_, li2) = ctyp_long_id m2 in
+      let (is_cls, li1) = ctyp_long_id_prefix m1 in
+      let (_, li2) = ctyp_long_id_prefix m2 in
       (is_cls, Lapply li1 li2)
   | TyUid _ s -> (False, lident s)
+  | TyLid _ s ->
+      error (loc_of_ctyp t) "invalid module expression"
+  | t -> error (loc_of_ctyp t) "invalid module expression" ]
+;
+
+value ctyp_long_id t =
+  match t with
+  [ TyAcc _ m (TyLid _ s) ->
+      let (is_cls, li) = ctyp_long_id_prefix m in
+      (is_cls, ldot li s)
+  | TyAcc _ m (TyUid _ s as t) ->
+      error (loc_of_ctyp t) "invalid type name"
+  | TyApp _ m1 m2 ->
+      error (loc_of_ctyp t) "invalid type name"
+  | TyUid _ s ->
+      error (loc_of_ctyp t) "invalid type name"
   | TyLid _ s -> (False, lident s)
   | TyCls loc sl -> (True, long_id_of_string_list loc sl)
-  | t -> error (loc_of_ctyp t) "incorrect type" ]
+  | t -> error (loc_of_ctyp t) "invalid type" ]
 ;
 
 value rec ctyp =
@@ -160,7 +186,7 @@ value rec ctyp =
         match (t1, t2) with
         [ (t, TyQuo _ s) -> (t, s)
         | (TyQuo _ s, t) -> (t, s)
-        | _ -> error loc "incorrect alias type" ]
+        | _ -> error loc "invalid alias type" ]
       in
       mktyp loc (Ptyp_alias (ctyp t) i)
   | TyAny loc -> mktyp loc Ptyp_any
@@ -187,7 +213,7 @@ value rec ctyp =
   | TyRec loc _ _ -> error loc "record type not allowed here"
   | TySum loc _ _ -> error loc "sum type not allowed here"
   | TyTup loc tl -> mktyp loc (Ptyp_tuple (List.map ctyp tl))
-  | TyUid loc s -> mktyp loc (Ptyp_constr (lident s) [])
+  | TyUid loc s as t -> error (loc_of_ctyp t) "invalid type"
   | TyVrn loc catl ool ->
       let catl =
         List.map
@@ -391,7 +417,7 @@ value rec patt =
         match (p1, p2) with
         [ (p, PaLid _ s) -> (p, s)
         | (PaLid _ s, p) -> (p, s)
-        | _ -> error loc "incorrect alias pattern" ]
+        | _ -> error loc "invalid alias pattern" ]
       in
       mkpat loc (Ppat_alias (patt p) i)
   | PaAnt _ p -> patt p
@@ -615,6 +641,14 @@ value rec expr =
   | ExLmd loc i me e -> mkexp loc (Pexp_letmodule i (module_expr me) (expr e))
   | ExMat loc e pel -> mkexp loc (Pexp_match (expr e) (List.map mkpwe pel))
   | ExNew loc id -> mkexp loc (Pexp_new (long_id_of_string_list loc id))
+  | ExObj loc po cfl -> 
+      let p =
+        match po with
+        [ Some p -> p
+        | None -> PaAny loc ]
+      in
+      let cil = List.fold_right class_str_item cfl [] in
+      mkexp loc (Pexp_object (patt p, cil))
   | ExOlb loc _ _ -> error loc "labeled expression not allowed here"
   | ExOvr loc iel -> mkexp loc (Pexp_override (List.map mkideexp iel))
   | ExRec loc lel eo ->

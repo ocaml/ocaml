@@ -9,8 +9,8 @@ OCAMLCFLAGS= $(INCLUDES) -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 INTERFACES=-I $(OLIBDIR) Arg Array ArrayLabels Buffer Callback CamlinternalOO Char Complex Digest Filename Format Gc Genlex Hashtbl Int32 Int64 Lazy Lexing List ListLabels Map Marshal MoreLabels Nativeint Obj Oo Parsing Pervasives Printexc Printf Queue Random Scanf Set Sort Stack StdLabels Stream String StringLabels Sys Weak -I ../../boot Extfold Extfun Fstream Gramext Grammar Plexer Stdpp Token -I $(OTOP)/utils Config Warnings -I $(OTOP)/parsing Asttypes Location Longident Parsetree -I . Ast2pt MLast Pcaml Quotation Spretty
 CAMLP4_INTF=$(OTOP)/utils/config.cmi $(OTOP)/utils/warnings.cmi $(OTOP)/parsing/asttypes.cmi $(OTOP)/parsing/location.cmi $(OTOP)/parsing/longident.cmi $(OTOP)/parsing/parsetree.cmi ast2pt.cmi mLast.cmi pcaml.cmi spretty.cmi quotation.cmi
-CAMLP4_OBJS=../../boot/stdpp.cmo ../../boot/token.cmo ../../boot/plexer.cmo ../../boot/gramext.cmo ../../boot/grammar.cmo ../../boot/extfold.cmo ../../boot/extfun.cmo ../../boot/fstream.cmo $(OTOP)/utils/config.cmo quotation.cmo ast2pt.cmo spretty.cmo reloc.cmo pcaml.cmo argl.cmo
-CAMLP4_XOBJS=../lib/stdpp.cmx ../lib/token.cmx ../lib/plexer.cmx ../lib/gramext.cmx ../lib/grammar.cmx ../lib/extfold.cmx ../lib/extfun.cmx ../lib/fstream.cmx $(OTOP)/utils/config.cmx quotation.cmx ast2pt.cmx spretty.cmx reloc.cmx pcaml.cmx argl.cmx
+CAMLP4_OBJS=../../boot/stdpp.cmo ../../boot/token.cmo ../../boot/plexer.cmo ../../boot/gramext.cmo ../../boot/grammar.cmo ../../boot/extfold.cmo ../../boot/extfun.cmo ../../boot/fstream.cmo $(OTOP)/utils/config.cmo quotation.cmo spretty.cmo reloc.cmo pcaml.cmo ast2pt.cmo argl.cmo
+CAMLP4_XOBJS=../lib/stdpp.cmx ../lib/token.cmx ../lib/plexer.cmx ../lib/gramext.cmx ../lib/grammar.cmx ../lib/extfold.cmx ../lib/extfun.cmx ../lib/fstream.cmx $(OTOP)/utils/config.cmx quotation.cmx spretty.cmx reloc.cmx pcaml.cmx ast2pt.cmx argl.cmx
 OBJS=../odyl/odyl.cma camlp4.cma
 CAMLP4M=
 
@@ -22,7 +22,7 @@ opt: $(OBJS:.cma=.cmxa)
 optp4: $(CAMLP4OPT)
 
 $(CAMLP4): $(OBJS) ../odyl/odyl.cmo
-	$(OCAMLC) $(OBJS) $(CAMLP4M) ../odyl/odyl.cmo -linkall -o $(CAMLP4)
+	$(OCAMLC) -g $(OBJS) $(CAMLP4M) ../odyl/odyl.cmo -linkall -o $(CAMLP4)
 
 $(CAMLP4OPT): $(OBJS:.cma=.cmxa) ../odyl/odyl.cmx
 	$(OCAMLOPT) $(OBJS:.cma=.cmxa) $(CAMLP4M) ../odyl/odyl.cmx -linkall -o $(CAMLP4OPT)

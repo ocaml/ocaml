@@ -603,7 +603,9 @@ val output_byte : out_channel -> int -> unit
    256. *)
 
 val output_binary_int : out_channel -> int -> unit
-(** Write one integer in binary format on the given output channel.
+(** Write one integer in binary format (4 bytes, big-endian)
+   on the given output channel.
+   The given integer is taken modulo 2{^32}.
    The only reliable way to read it back is through the
    {!Pervasives.input_binary_int} function. The format is compatible across
    all machines for a given version of Objective Caml. *)
@@ -623,7 +625,9 @@ val seek_out : out_channel -> int -> unit
    the behavior is unspecified. *)
 
 val pos_out : out_channel -> int
-(** Return the current writing position for the given channel. *)
+(** Return the current writing position for the given channel.  Does
+    not work on channels opened with the [Open_append] flag (returns
+    unspecified results). *)
 
 val out_channel_length : out_channel -> int
 (** Return the total length (number of characters) of the
@@ -713,8 +717,8 @@ val input_byte : in_channel -> int
    Raise [End_of_file] if an end of file was reached. *)
 
 val input_binary_int : in_channel -> int
-(** Read an integer encoded in binary format from the given input
-   channel. See {!Pervasives.output_binary_int}.
+(** Read an integer encoded in binary format (4 bytes, big-endian)
+   from the given input channel. See {!Pervasives.output_binary_int}.
    Raise [End_of_file] if an end of file was reached while reading the
    integer. *)
 

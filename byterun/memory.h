@@ -32,6 +32,8 @@
 
 CAMLextern value caml_alloc_shr (mlsize_t, tag_t);
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
+CAMLextern void caml_alloc_dependent_memory (mlsize_t);
+CAMLextern void caml_free_dependent_memory (mlsize_t);
 CAMLextern void caml_modify (value *, value);
 CAMLextern void caml_initialize (value *, value);
 CAMLextern value caml_check_urgent_gc (value);
@@ -168,9 +170,15 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
   CAMLxparamN (x, (size))
 
 
+#if defined (__GNUC__)
+  #define CAMLunused __attribute__ ((unused))
+#else
+  #define CAMLunused
+#endif
+
 #define CAMLxparam1(x) \
   struct caml__roots_block caml__roots_##x; \
-  int caml__dummy_##x = ( \
+  CAMLunused int caml__dummy_##x = ( \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -180,7 +188,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 
 #define CAMLxparam2(x, y) \
   struct caml__roots_block caml__roots_##x; \
-  int caml__dummy_##x = ( \
+  CAMLunused int caml__dummy_##x = ( \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -191,7 +199,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 
 #define CAMLxparam3(x, y, z) \
   struct caml__roots_block caml__roots_##x; \
-  int caml__dummy_##x = ( \
+  CAMLunused int caml__dummy_##x = ( \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -203,7 +211,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 
 #define CAMLxparam4(x, y, z, t) \
   struct caml__roots_block caml__roots_##x; \
-  int caml__dummy_##x = ( \
+  CAMLunused int caml__dummy_##x = ( \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -216,7 +224,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 
 #define CAMLxparam5(x, y, z, t, u) \
   struct caml__roots_block caml__roots_##x; \
-  int caml__dummy_##x = ( \
+  CAMLunused int caml__dummy_##x = ( \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = 1), \
@@ -230,7 +238,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 
 #define CAMLxparamN(x, size) \
   struct caml__roots_block caml__roots_##x; \
-  int caml__dummy_##x = ( \
+  CAMLunused int caml__dummy_##x = ( \
     (caml__roots_##x.next = caml_local_roots), \
     (caml_local_roots = &caml__roots_##x), \
     (caml__roots_##x.nitems = (size)), \
@@ -272,6 +280,9 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
   caml_local_roots = caml__frame; \
   return (result); \
 }while(0)
+
+#define CAMLnoreturn ((void) caml__frame)
+
 
 /* convenience macro */
 #define Store_field(block, offset, val) do{ \

@@ -113,7 +113,7 @@ void caml_thread_code (code_t code, asize_t len)
   l[APPTERM] = l[CLOSURE] = l[PUSHGETGLOBALFIELD] =
   l[GETGLOBALFIELD] = l[MAKEBLOCK] = l[C_CALLN] =
   l[BEQ] = l[BNEQ] = l[BLTINT] = l[BLEINT] = l[BGTINT] = l[BGEINT] =
-  l[BULTINT] = l[BUGEINT] = 2;
+  l[BULTINT] = l[BUGEINT] = l[GETPUBMET] = 2;
   len /= sizeof(opcode_t);
   for (p = code; p < code + len; /*nothing*/) {
     opcode_t instr = *p;

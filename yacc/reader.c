@@ -155,6 +155,51 @@ void skip_comment(void)
     }
 }
 
+char *substring (char *str, int start, int len)
+{
+  int i;
+  char *buf = MALLOC (len+1);
+  if (buf == NULL) return NULL;
+  for (i = 0; i < len; i++){
+    buf[i] = str[start+i];
+  }
+  return buf;
+}
+
+void parse_line_directive (void)
+{
+  int i = 0, j = 0;
+  int line_number = 0;
+  char *file_name = NULL;
+
+ again:
+  if (line == 0) return;
+  if (line[i] != '#') return;
+  ++ i;
+  while (line[i] == ' ' || line[i] == '\t') ++ i;
+  if (line[i] < '0' || line[i] > '9') return;
+  while (line[i] >= '0' && line[i] <= '9'){
+    line_number = line_number * 10 + line[i] - '0';
+    ++ i;
+  }
+  while (line[i] == ' ' || line[i] == '\t') ++ i;
+  if (line[i] == '"'){
+    ++ i;
+    j = i;
+    while (line[j] != '"' && line[j] != '\0') ++j;
+    if (line[j] == '"'){
+      file_name = substring (line, i, j - i);
+      if (file_name == NULL) no_space ();
+    }
+  }
+  lineno = line_number - 1;
+  if (file_name != NULL){
+    if (virtual_input_file_name != NULL) FREE (virtual_input_file_name);
+    virtual_input_file_name = file_name;
+  }
+  get_line ();
+  goto again;
+}
 
 int
 nextc(void)
@@ -164,6 +209,7 @@ nextc(void)
     if (line == 0)
     {
         get_line();
+        parse_line_directive ();
         if (line == 0)
             return (EOF);
     }
@@ -175,6 +221,7 @@ nextc(void)
         {
         case '\n':
             get_line();
+            parse_line_directive ();
             if (line == 0) return (EOF);
             s = cptr;
             break;
@@ -204,6 +251,7 @@ nextc(void)
             else if (s[1] == '/')
             {
                 get_line();
+                parse_line_directive ();
                 if (line == 0) return (EOF);
                 s = cptr;
                 break;
@@ -380,8 +428,11 @@ loop:
           fwrite(cptr, 1, 2, f);
           cptr += 2;
         } else
-        if (cptr[0] == '\\' && isdigit(cptr[1]) && isdigit(cptr[2]) &&
-            isdigit(cptr[3]) && cptr[4] == '\'') {
+        if (cptr[0] == '\\'
+            && isdigit((unsigned char) cptr[1])
+            && isdigit((unsigned char) cptr[2])
+            && isdigit((unsigned char) cptr[3])
+            && cptr[4] == '\'') {
           fwrite(cptr, 1, 5, f);
           cptr += 5;
         } else
@@ -726,10 +777,10 @@ is_reserved(char *name)
             strcmp(name, "$end") == 0)
         return (1);
 
-    if (name[0] == '$' && name[1] == '$' && isdigit(name[2]))
+    if (name[0] == '$' && name[1] == '$' && isdigit((unsigned char) name[2]))
     {
         s = name + 3;
-        while (isdigit(*s)) ++s;
+        while (isdigit((unsigned char) *s)) ++s;
         if (*s == NUL) return (1);
     }
 
@@ -1245,7 +1296,7 @@ loop:
     c = *cptr;
     if (c == '$')
     {
-        if (isdigit(cptr[1]))
+        if (isdigit((unsigned char) cptr[1]))
         {
             ++cptr;
             i = get_number();
@@ -1336,8 +1387,11 @@ loop:
           fwrite(cptr, 1, 2, f);
           cptr += 2;
         } else
-        if (cptr[0] == '\\' && isdigit(cptr[1]) && isdigit(cptr[2]) &&
-            isdigit(cptr[3]) && cptr[4] == '\'') {
+        if (cptr[0] == '\\' 
+            && isdigit((unsigned char) cptr[1])
+            && isdigit((unsigned char) cptr[2])
+            && isdigit((unsigned char) cptr[3])
+            && cptr[4] == '\'') {
           fwrite(cptr, 1, 5, f);
           cptr += 5;
         } else
@@ -1823,6 +1877,8 @@ void print_grammar(void)
 
 void reader(void)
 {
+    virtual_input_file_name = substring (input_file_name, 0,
+                                         strlen (input_file_name));
     create_symbol_table();
     read_declarations();
     output_token_type();

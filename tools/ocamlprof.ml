@@ -21,8 +21,9 @@ open Location
 open Misc
 open Parsetree
 
-(* User programs must not use identifiers that start with this prefix. *)
-let idprefix = "__ocaml_prof";;
+(* User programs must not use identifiers that start with these prefixes. *)
+let idprefix = "__ocaml_prof_";;
+let modprefix = "OCAML__prof_";;
 
 
 (* Errors specific to the profiler *)
@@ -87,8 +88,10 @@ let add_incr_counter modul (kind,pos) =
    | Close -> fprintf !outchan ")";
    | Open ->
          fprintf !outchan
-                 "(%s_cnt_%s_.(%d) <- Pervasives.succ %s_cnt_%s_.(%d); "
-                 idprefix modul !prof_counter idprefix modul !prof_counter;
+                 "(%sArray.set %s_cnt %d \
+                               (%sPervasives.succ (%sArray.get %s_cnt %d)); "
+                 modprefix idprefix !prof_counter
+                 modprefix modprefix idprefix !prof_counter;
          incr prof_counter;
 ;;
 
@@ -127,12 +130,14 @@ let pos_len = ref 0
 let init_rewrite modes mod_name =
   cur_point := 0;
   if !instr_mode then begin
-    fprintf !outchan "let %s_cnt_%s_ = Array.create 0000000" idprefix mod_name;
+    fprintf !outchan "module %sArray = Array;; " modprefix;
+    fprintf !outchan "module %sPervasives = Pervasives;; " modprefix;
+    fprintf !outchan "let %s_cnt = Array.create 0000000" idprefix;
     pos_len := pos_out !outchan;
     fprintf !outchan 
             " 0;; Profiling.counters := \
-              (\"%s\", (\"%s\", %s_cnt_%s_)) :: !Profiling.counters;; "
-            mod_name modes idprefix mod_name
+              (\"%s\", (\"%s\", %s_cnt)) :: !Profiling.counters;; "
+            mod_name modes idprefix;
   end
 
 let final_rewrite add_function =
@@ -178,7 +183,7 @@ and rw_exp iflag sexp =
     rewrite_exp iflag sbody
 
   | Pexp_function (_, _, caselist) ->
-    if !instr_fun && not sexp.pexp_loc.loc_ghost then
+    if !instr_fun then
       rewrite_function iflag caselist
     else
       rewrite_patlexp_list iflag caselist
@@ -414,6 +419,7 @@ let process_intf_file filename = null_rewrite filename;;
 
 let process_impl_file filename =
    let modname = Filename.basename(Filename.chop_extension filename) in
+       (* FIXME should let modname = String.capitalize modname *)
    if !instr_mode then begin
      (* Instrumentation mode *)
      set_flags !modes;

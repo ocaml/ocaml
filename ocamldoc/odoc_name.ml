@@ -60,7 +60,7 @@ let cut name =
                      '(' -> 
                        j := 1
                    | _ ->
-                       Buffer.add_char buf.(!j) '('
+                       Buffer.add_char buf.(!j) '.'
                  else
                    Buffer.add_char buf.(!j) s.[i]
              | c ->
@@ -79,10 +79,28 @@ let father name = fst (cut name)
 
 let concat n1 n2 = n1^"."^n2
 
-let head n =
-  match Str.split (Str.regexp "\\.") n with
-    [] -> n
-  | h :: _ -> h
+let head_and_tail n =
+  try
+    let pos = String.index n '.' in
+    if pos > 0 then
+      let h = String.sub n 0 pos in
+      try
+	ignore (String.index h '(');
+	(n, "")
+      with
+	Not_found ->
+	  let len = String.length n in
+	  if pos >= (len - 1) then
+	    (h, "")
+	  else
+	    (h, String.sub n (pos + 1) (len - pos - 1))
+    else
+      (n, "")
+  with
+    Not_found -> (n, "")
+
+let head n = fst (head_and_tail n)
+let tail n = snd (head_and_tail n)
 
 let depth name =
   try
@@ -97,6 +115,20 @@ let prefix n1 n2 =
     ((String.sub n2 0 len1) = n1) &
     (n2.[len1] = '.')
   with _ -> false)
+
+let rec get_relative_raw n1 n2 =
+  let (f1,s1) = head_and_tail n1 in
+  let (f2,s2) = head_and_tail n2 in
+  if f1 = f2 then
+    if f2 = s2 or s2 = "" then
+      s2
+    else
+      if f1 = s1 or s1 = "" then
+	s2
+      else
+	get_relative_raw s1 s2
+  else
+    n2
 
 let get_relative n1 n2 =
   if prefix n1 n2 then
@@ -142,21 +174,3 @@ let to_path n =
 
 let from_longident longident = String.concat "." (Longident.flatten longident)
 
-let name_alias name cpl_aliases =
-  let rec f n1 = function
-      [] -> raise Not_found
-    | (n2, n3) :: q ->
-        if n2 = n1 then 
-          n3
-        else
-          if prefix n2 n1 then
-            let ln2 = String.length n2 in
-            n3^(String.sub n1 ln2 ((String.length n1) - ln2))
-          else
-            f n1 q
-  in
-  let rec iter n =
-    try iter (f n cpl_aliases)
-    with Not_found -> n
-  in
-  iter name

@@ -56,8 +56,12 @@
                 something in the pipe. This is enough for most
                 applications.
 ------------------------------------------------------------------------*/
+#ifndef _INRIA_H_
+#define _INRIA_H_
 
 #include <windows.h>
+#include "editbuffer.h"
+#include "history.h"
 
 // In this structure should go eventually all global variables scattered
 // through the program.
@@ -90,26 +94,33 @@ void HandleCommand(HWND hwnd, WPARAM wParam,LPARAM lParam);
 int GetOcamlPath(void);                         // Finds where ocaml.exe is
 void ForceRepaint(void);                        // Ditto.
 void AddLineToControl(char *buf);
+void AddStringToControl(char* buf);
 char *GetHistoryLine(int n);            // Gets the nth history line base 1.
 int StartOcaml(void);
+void InterruptOcaml(void);
+int ResetText(void);
+BOOL SendingFullCommand(void);
+void RewriteCurrentEditBuffer(void);
+void RefreshCurrentEditBuffer(void);
+
 // **************** User defined window messages *************
-#define WM_NEWLINE      (WM_USER+6000)
-#define WM_TIMERTICK (WM_USER+6001)
-#define WM_QUITOCAML (WM_USER+6002)
+#define WM_NEWLINE		(WM_USER+6000)
+#define WM_TIMERTICK	(WM_USER+6001)
+#define WM_QUITOCAML	(WM_USER+6002)
+#define WM_SYNTAXERROR	(WM_USER+6003)
+#define WM_UNBOUNDVAL	(WM_USER+6004)
+#define WM_ILLEGALCHAR	(WM_USER+6005)
+
 // ********************** Structures ***********************
 typedef struct tagPosition {
         int line;
         int col;
 } POSITION;
 
-// Simple linked list for holding the history lines
-typedef struct tagHistory {
-        struct tagHistory *Next;
-        char *Text;
-} HISTORYLINE;
-
 extern void *SafeMalloc(int);
-extern HISTORYLINE *History; // The root of the history lines
+extern StatementHistory *History; // The root of the history lines
+extern StatementHistory *HistoryTail; // The tail of the history lines
+extern EditBuffer *CurrentEditBuffer; // current edit buffer
 
 #define IDEDITCONTROL 15432
-
+#endif

@@ -192,7 +192,7 @@ value create : Token.lexer -> g;
 
 (*** For system use *)
 
-value loc_of_token_interval : int -> int -> (int * int);
+value loc_of_token_interval : int -> int -> Token.flocation;
 value extend :
   list
     (Gramext.g_entry 'te * option Gramext.position *

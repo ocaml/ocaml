@@ -39,7 +39,7 @@ verbose=no
 withcurses=yes
 withsharedlibs=yes
 binutils_dir=''
-gcc_warnings="-Wall -Wno-unused"
+gcc_warnings="-Wall"
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -405,8 +405,16 @@ case "$host" in
     # On Sparc V9 with certain versions of gcc, determination of double
     # alignment is not reliable (PR#1521), hence force it.
     # Same goes for hppa.
-    echo "Doubles must be doubleword-aligned."
-    echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
+    # But there's a knack (PR#2572):
+    # if we're in 64-bit mode (sizeof(long) == 8), 
+    # we must not doubleword-align floats...
+    if test $2 = 8; then
+      echo "Doubles can be word-aligned."
+      echo "#undef ARCH_ALIGN_DOUBLE" >> m.h
+    else
+      echo "Doubles must be doubleword-aligned."
+      echo "#define ARCH_ALIGN_DOUBLE" >> m.h
+    fi;;
   *)
     sh ./runtest dblalign.c
     case $? in
@@ -423,17 +431,28 @@ case "$host" in
 esac
 
 if $int64_native; then
-  sh ./runtest int64align.c
-  case $? in
-    0) echo "64-bit integers can be word-aligned."
-       echo "#undef ARCH_ALIGN_INT64" >> m.h;;
-    1) echo "64-bit integers must be doubleword-aligned."
-       echo "#define ARCH_ALIGN_INT64" >> m.h;;
-    *) echo "Something went wrong during alignment determination for 64-bit integers."
-       echo "I'm going to assume this architecture has alignment constraints."
-       echo "That's a safe bet: Objective Caml will work even if"
-       echo "this architecture has actually no alignment constraints."
-       echo "#define ARCH_ALIGN_INT64" >> m.h;;
+  case "$host" in
+    hppa*-*-*)
+      if test $2 = 8; then
+        echo "64-bit integers can be word-aligned."
+        echo "#undef ARCH_ALIGN_INT64" >> m.h
+      else
+        echo "64-bit integers must be doubleword-aligned."
+        echo "#define ARCH_ALIGN_INT64" >> m.h
+      fi;;
+    *)
+      sh ./runtest int64align.c
+      case $? in
+        0) echo "64-bit integers can be word-aligned."
+           echo "#undef ARCH_ALIGN_INT64" >> m.h;;
+        1) echo "64-bit integers must be doubleword-aligned."
+           echo "#define ARCH_ALIGN_INT64" >> m.h;;
+        *) echo "Something went wrong during alignment determination for 64-bit integers."
+           echo "I'm going to assume this architecture has alignment constraints."
+           echo "That's a safe bet: Objective Caml will work even if"
+           echo "this architecture has actually no alignment constraints."
+           echo "#define ARCH_ALIGN_INT64" >> m.h;;
+      esac
   esac
 else
   echo "#undef ARCH_ALIGN_INT64" >> m.h
@@ -471,13 +490,19 @@ if test $withsharedlibs = "yes"; then
       shared_libraries_supported=true;;
     alpha*-*-osf*)
       case "$bytecc" in
-        cc*) sharedcccompopts="";;
-        gcc*) sharedcccompopts="-fPIC";;
-      esac
-      mksharedlib="ld -shared -expect_unresolved '*' -o"
-      byteccrpath="-Wl,-rpath,"
-      mksharedlibrpath="-rpath "
-      shared_libraries_supported=true;;
+        gcc*)
+          sharedcccompopts="-fPIC"
+          mksharedlib="$bytecc -shared -o"
+          byteccrpath="-Wl,-rpath,"
+          mksharedlibrpath="-Wl,-rpath,"
+          shared_libraries_supported=true;;
+        cc*)
+          sharedcccompopts=""
+          mksharedlib="ld -shared -expect_unresolved '*' -o"
+          byteccrpath="-Wl,-rpath,"
+          mksharedlibrpath="-rpath "
+          shared_libraries_supported=true;;
+      esac;;
     *-*-solaris2*)
       case "$bytecc" in
         gcc*)
@@ -551,7 +576,7 @@ case "$host" in
   mips-*-irix6*)                arch=mips; system=irix;;
   hppa1.1-*-hpux*)              arch=hppa; system=hpux;;
   hppa2.0*-*-hpux*)             arch=hppa; system=hpux;;
-  hppa1.1-*-nextstep*)          arch=hppa; system=nextstep;;
+  hppa*-*-linux*)		arch=hppa; system=linux;;
   rs6000-*-aix*)                arch=power; model=rs6000; system=aix;;
   powerpc-*-aix*)               arch=power; model=ppc; system=aix;;
   powerpc-*-linux*)             arch=power; model=ppc; system=elf;;
@@ -561,8 +586,8 @@ case "$host" in
   arm*-*-linux*)                arch=arm; system=linux;;
   ia64-*-linux*)                arch=ia64; system=linux;;
   ia64-*-freebsd*)              arch=ia64; system=freebsd;;
-  amd64-*-freebsd*)             arch=amd64; system=freebsd;;
   x86_64-*-linux*)              arch=amd64; system=linux;;
+  x86_64-*-freebsd*)            arch=amd64; system=freebsd;;
 esac
 
 if test -z "$ccoption"; then
@@ -637,6 +662,7 @@ case "$arch,$model,$system" in
   sparc,*,solaris)
     profiling='prof'
     case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
+  amd64,*,linux) profiling='prof';;
   *) profiling='noprof';;
 esac
 
@@ -732,11 +758,6 @@ fi
 
 # For the sys module
 
-if sh ./hasgot strerror; then
-  echo "strerror() found."
-  echo "#define HAS_STRERROR" >> s.h
-fi
-
 if sh ./hasgot times; then
   echo "times() found."
   echo "#define HAS_TIMES" >> s.h
@@ -781,6 +802,13 @@ fi
 if sh ./hasgot inet_aton; then
   echo "inet_aton() found."
   echo "#define HAS_INET_ATON" >> s.h
+fi
+
+if sh ./hasgot -i sys/types.h -i sys/socket.h -i netinet/in.h \
+               -t 'struct sockaddr_in6' \
+&& sh ./hasgot getaddrinfo getnameinfo inet_pton inet_ntop; then
+  echo "IPv6 is supported."
+  echo "#define HAS_IPV6" >> s.h
 fi
 
 if sh ./hasgot -i unistd.h; then

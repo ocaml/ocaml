@@ -19,7 +19,7 @@
    these values in concrete syntax (see the Camlp4 documentation).
    See also the file q_MLast.ml in Camlp4 sources. *)
 
-type loc = (int * int);
+type loc = (Lexing.position * Lexing.position);
 
 type ctyp =
   [ TyAcc of loc and ctyp and ctyp
@@ -104,6 +104,7 @@ and expr =
   | ExLmd of loc and string and module_expr and expr
   | ExMat of loc and expr and list (patt * option expr * expr)
   | ExNew of loc and list string
+  | ExObj of loc and option patt and list class_str_item
   | ExOlb of loc and string and option expr
   | ExOvr of loc and list (string * expr)
   | ExRec of loc and list (patt * expr) and option expr

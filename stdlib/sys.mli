@@ -32,7 +32,9 @@ external remove : string -> unit = "caml_sys_remove"
 
 external rename : string -> string -> unit = "caml_sys_rename"
 (** Rename a file. The first argument is the old name and the
-   second is the new name. *)
+   second is the new name. If there is already another file
+   under the new name, [rename] may replace it, or raise an
+   exception, depending on your operating system. *)
 
 external getenv : string -> string = "caml_sys_getenv"
 (** Return the value associated to a variable in the process
@@ -98,9 +100,11 @@ type signal_behavior =
 
 external signal :
   int -> signal_behavior -> signal_behavior = "caml_install_signal_handler"
-(** Set the behavior of the system on receipt of a given signal.
-   The first argument is the signal number.  Return the behavior
-   previously associated with the signal. *)
+(** Set the behavior of the system on receipt of a given signal.  The
+   first argument is the signal number.  Return the behavior
+   previously associated with the signal. If the signal number is
+   invalid (or not available on your system), an [Invalid_argument]
+   exception is raised. *)
 
 val set_signal : int -> signal_behavior -> unit
 (** Same as {!Sys.signal} but return value is ignored. *)

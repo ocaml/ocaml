@@ -825,7 +825,9 @@ let instance_class params cty =
           {cty_self = copy sign.cty_self;
            cty_vars =
              Vars.map (function (mut, ty) -> (mut, copy ty)) sign.cty_vars;
-           cty_concr = sign.cty_concr}
+           cty_concr = sign.cty_concr;
+           cty_inher =
+             List.map (fun (p,tl) -> (p, List.map copy tl)) sign.cty_inher}
     | Tcty_fun (l, ty, cty) ->
         Tcty_fun (l, copy ty, copy_class_type cty)
   in
@@ -1227,21 +1229,21 @@ let occur env ty0 ty =
    be done at meta-level, using bindings in univar_pairs *)
 let rec unify_univar t1 t2 = function
     (cl1, cl2) :: rem ->
-      let repr_univ = List.map (fun (t,o) -> repr t, o) in
-      let cl1 = repr_univ cl1 and cl2 = repr_univ cl2 in
-      begin try
-        let r1 = List.assq t1 cl1 in
-        match !r1 with
-          Some t -> if t2 != repr t then raise (Unify [])
-        | None ->
-            try
-              let r2 = List.assq t2 cl2 in
-              if !r2 <> None then raise (Unify []);
-              set_univar r1 t2; set_univar r2 t1
-            with Not_found ->
-              raise (Unify [])
-      with Not_found ->
-        unify_univar t1 t2 rem
+      let find_univ t cl =
+        try
+          let (_, r) = List.find (fun (t',_) -> t == repr t') cl in
+          Some r
+        with Not_found -> None
+      in
+      begin match find_univ t1 cl1, find_univ t2 cl2 with
+        Some {contents=Some t'2}, Some _ when t2 == repr t'2 ->
+          ()
+      | Some({contents=None} as r1), Some({contents=None} as r2) ->
+          set_univar r1 t2; set_univar r2 t1
+      | None, None ->
+          unify_univar t1 t2 rem
+      | _ ->
+          raise (Unify [])
       end
   | [] -> raise (Unify [])
 
@@ -1302,6 +1304,13 @@ let expand_trace env trace =
     (fun (t1, t2) rem ->
        (repr t1, full_expand env t1)::(repr t2, full_expand env t2)::rem)
     trace []
+
+(* build a dummy variant type *)
+let mkvariant fields closed =
+  newgenty
+    (Tvariant
+       {row_fields = fields; row_closed = closed; row_more = newvar();
+        row_bound = []; row_fixed = false; row_name = None })
 
 (**** Unification ****)
 
@@ -1460,9 +1469,9 @@ and unify3 env t1 t1' t2 t2' =
         unify_row env row1 row2
     | (Tfield _, Tfield _) ->           (* Actually unused *)
         unify_fields env t1' t2'
-    | (Tfield(_,kind,_,rem), Tnil) | (Tnil, Tfield(_,kind,_,rem)) ->
+    | (Tfield(f,kind,_,rem), Tnil) | (Tnil, Tfield(f,kind,_,rem)) ->
         begin match field_kind_repr kind with
-          Fvar r -> r := Some Fabsent
+          Fvar r when f <> dummy_method -> set_kind r Fabsent
         | _      -> raise (Unify [])
         end
     | (Tnil, Tnil) ->
@@ -1544,15 +1553,16 @@ and unify_fields env ty1 ty2 =          (* Optimization *)
   let (fields1, rest1) = flatten_fields ty1
   and (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
+  let l1 = (repr ty1).level and l2 = (repr ty2).level in
   let va =
     if miss1 = [] then rest2
     else if miss2 = [] then rest1
-    else newvar ()
+    else newty2 (min l1 l2) Tvar
   in
   let d1 = rest1.desc and d2 = rest2.desc in
   try
-    unify env (build_fields (repr ty1).level miss1 va) rest2;
-    unify env rest1 (build_fields (repr ty2).level miss2 va);
+    unify env (build_fields l1 miss1 va) rest2;
+    unify env rest1 (build_fields l2 miss2 va);
     List.iter
       (fun (n, k1, t1, k2, t2) ->
         unify_kind k1 k2;
@@ -1604,11 +1614,6 @@ and unify_row env row1 row2 =
         row_field_repr f1 = Rabsent || row_field_repr f2 <> Rabsent)
       pairs
   in
-  let mkvariant fields closed =
-    newgenty
-      (Tvariant
-         {row_fields = fields; row_closed = closed; row_more = newvar();
-          row_bound = []; row_fixed = false; row_name = None }) in
   let empty fields =
     List.for_all (fun (_,f) -> row_field_repr f = Rabsent) fields in
   (* Check whether we are going to build an empty type *)
@@ -1657,7 +1662,10 @@ and unify_row env row1 row2 =
     let undo = ref [] in
     List.iter
       (fun (l,f1,f2) ->
-        unify_row_field env row1.row_fixed row2.row_fixed undo l f1 f2)
+        try unify_row_field env row1.row_fixed row2.row_fixed undo l f1 f2
+        with Unify trace ->
+          raise (Unify ((mkvariant [l,f1] true,
+                         mkvariant [l,f2] true) :: trace)))
       pairs;
     (* Special case when there is only one field left *)
     if row0.row_closed then begin
@@ -1728,6 +1736,7 @@ and unify_row_field env fixed1 fixed2 undo l f1 f2 =
   | Rpresent None, Reither(true, [], _, e2) when not fixed2 ->
       set_row_field e2 f1
   | _ -> raise (Unify [])
+    
 
 let unify env ty1 ty2 =
   try
@@ -3191,7 +3200,10 @@ let nondep_class_signature env id sign =
     cty_vars =
       Vars.map (function (m, t) -> (m, nondep_type_rec env id t))
         sign.cty_vars;
-    cty_concr = sign.cty_concr }
+    cty_concr = sign.cty_concr;
+    cty_inher =
+      List.map (fun (p,tl) -> (p, List.map (nondep_type_rec env id) tl))
+        sign.cty_inher }
 
 let rec nondep_class_type env id =
   function

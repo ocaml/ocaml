@@ -30,7 +30,10 @@ module Qast =
       | Loc
       | Antiquot of MLast.loc and string ]
     ;
-    value loc = (0, 0);
+    value loc =
+        let nowhere =
+          {(Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 0 } in
+          (nowhere,nowhere);
     value rec to_expr =
       fun
       [ Node n al ->
@@ -56,7 +59,7 @@ module Qast =
           let e =
             try Grammar.Entry.parse Pcaml.expr_eoi (Stream.of_string s) with
             [ Stdpp.Exc_located (bp, ep) exc ->
-                raise (Stdpp.Exc_located (fst loc + bp, fst loc + ep) exc) ]
+              raise (Stdpp.Exc_located (Reloc.adjust_loc (fst loc) (bp,ep)) exc) ]
           in
           <:expr< $anti:e$ >> ]
     and to_expr_label (l, a) = (<:patt< MLast.$lid:l$ >>, to_expr a);
@@ -83,7 +86,7 @@ module Qast =
           let p =
             try Grammar.Entry.parse Pcaml.patt_eoi (Stream.of_string s) with
             [ Stdpp.Exc_located (bp, ep) exc ->
-                raise (Stdpp.Exc_located (fst loc + bp, fst loc + ep) exc) ]
+                raise (Stdpp.Exc_located (Reloc.adjust_loc (fst loc) (bp, ep)) exc) ]
           in
           <:patt< $anti:p$ >> ]
     and to_patt_label (l, a) = (<:patt< MLast.$lid:l$ >>, to_patt a);
@@ -95,7 +98,7 @@ value antiquot k (bp, ep) x =
     if k = "" then String.length "$"
     else String.length "$" + String.length k + String.length ":"
   in
-  Qast.Antiquot (shift + bp, shift + ep) x
+  Qast.Antiquot (Reloc.shift_pos shift bp, Reloc.shift_pos (-1) ep) x
 ;
 
 value sig_item = Grammar.Entry.create gram "signature item";
@@ -123,6 +126,9 @@ value a_opt = Grammar.Entry.create gram "a_opt";
 value a_UIDENT = Grammar.Entry.create gram "a_UIDENT";
 value a_LIDENT = Grammar.Entry.create gram "a_LIDENT";
 value a_INT = Grammar.Entry.create gram "a_INT";
+value a_INT32 = Grammar.Entry.create gram "a_INT32";
+value a_INT64 = Grammar.Entry.create gram "a_INT64";
+value a_NATIVEINT = Grammar.Entry.create gram "a__NATIVEINT";
 value a_FLOAT = Grammar.Entry.create gram "a_FLOAT";
 value a_STRING = Grammar.Entry.create gram "a_STRING";
 value a_CHAR = Grammar.Entry.create gram "a_CHAR";
@@ -254,7 +260,7 @@ value not_yet_warned_variant = ref True;
 value warn_variant _ =
   if not_yet_warned_variant.val then do {
     not_yet_warned_variant.val := False;
-    Pcaml.warning.val (0, 1)
+    Pcaml.warning.val (Lexing.dummy_pos, Reloc.shift_pos 1 Lexing.dummy_pos)
       (Printf.sprintf
          "use of syntax of variants types deprecated since version 3.05");
   }
@@ -265,7 +271,7 @@ value not_yet_warned_seq = ref True;
 value warn_sequence _ =
   if not_yet_warned_seq.val then do {
     not_yet_warned_seq.val := False;
-    Pcaml.warning.val (0, 1)
+    Pcaml.warning.val (Lexing.dummy_pos, Reloc.shift_pos 1 Lexing.dummy_pos)
       (Printf.sprintf
          "use of syntax of sequences deprecated since version 3.01.1");
   }
@@ -623,6 +629,9 @@ EXTEND
             [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "~-."]; e] ]
     | "simple"
       [ s = a_INT -> Qast.Node "ExInt" [Qast.Loc; s]
+      | s = a_INT32 -> Qast.Node  "ExInt32" [Qast.Loc; s]
+      | s = a_INT64 -> Qast.Node  "ExInt64" [Qast.Loc; s]
+      | s = a_NATIVEINT -> Qast.Node  "ExNativeInt" [Qast.Loc; s]
       | s = a_FLOAT -> Qast.Node "ExFlo" [Qast.Loc; s]
       | s = a_STRING -> Qast.Node "ExStr" [Qast.Loc; s]
       | s = a_CHAR -> Qast.Node "ExChr" [Qast.Loc; s]
@@ -712,10 +721,16 @@ EXTEND
       [ s = a_LIDENT -> Qast.Node "PaLid" [Qast.Loc; s]
       | s = a_UIDENT -> Qast.Node "PaUid" [Qast.Loc; s]
       | s = a_INT -> Qast.Node "PaInt" [Qast.Loc; s]
+      | s = a_INT32 -> Qast.Node  "PaInt32" [Qast.Loc; s]
+      | s = a_INT64 -> Qast.Node  "PaInt64" [Qast.Loc; s]
+      | s = a_NATIVEINT -> Qast.Node  "PaNativeInt" [Qast.Loc; s]
       | s = a_FLOAT -> Qast.Node "PaFlo" [Qast.Loc; s]
       | s = a_STRING -> Qast.Node "PaStr" [Qast.Loc; s]
       | s = a_CHAR -> Qast.Node "PaChr" [Qast.Loc; s]
       | "-"; s = a_INT -> mkuminpat Qast.Loc (Qast.Str "-") (Qast.Bool True) s
+      | "-"; s = a_INT32 -> mkuminpat Qast.Loc (Qast.Str "-") (Qast.Bool True) s
+      | "-"; s = a_INT64 -> mkuminpat Qast.Loc (Qast.Str "-") (Qast.Bool True) s
+      | "-"; s = a_NATIVEINT -> mkuminpat Qast.Loc (Qast.Str "-") (Qast.Bool True) s
       | "-"; s = a_FLOAT ->
           mkuminpat Qast.Loc (Qast.Str "-") (Qast.Bool False) s
       | "["; "]" -> Qast.Node "PaUid" [Qast.Loc; Qast.Str "[]"]
@@ -1027,6 +1042,13 @@ EXTEND
              Qast.Option (Some (Qast.Option (Some (Qast.List []))))]
       | "["; "<"; rfl = row_field_list; ">"; ntl = SLIST1 name_tag; "]" ->
           Qast.Node "TyVrn"
+            [Qast.Loc; rfl; Qast.Option (Some (Qast.Option (Some ntl)))]
+      | "[<"; rfl = row_field_list; "]" ->
+          Qast.Node "TyVrn"
+            [Qast.Loc; rfl;
+             Qast.Option (Some (Qast.Option (Some (Qast.List []))))]
+      | "[<"; rfl = row_field_list; ">"; ntl = SLIST1 name_tag; "]" ->
+          Qast.Node "TyVrn"
             [Qast.Loc; rfl; Qast.Option (Some (Qast.Option (Some ntl)))] ] ]
   ;
   row_field_list:
@@ -1331,6 +1353,21 @@ EXTEND
     [ [ a = ANTIQUOT "int" -> antiquot "int" loc a
       | a = ANTIQUOT -> antiquot "" loc a
       | s = INT -> Qast.Str s ] ]
+  ;
+  a_INT32:
+    [ [ a = ANTIQUOT "int32" -> antiquot "int32" loc a
+      | a = ANTIQUOT -> antiquot "" loc a
+      | s = INT32 -> Qast.Str s ] ]
+  ;
+  a_INT64:
+    [ [ a = ANTIQUOT "int64" -> antiquot "int64" loc a
+      | a = ANTIQUOT -> antiquot "" loc a
+      | s = INT64 -> Qast.Str s ] ]
+  ;
+  a_NATIVEINT:
+    [ [ a = ANTIQUOT "nativeint" -> antiquot "nativeint" loc a
+      | a = ANTIQUOT -> antiquot "" loc a
+      | s = NATIVEINT -> Qast.Str s ] ]
   ;
   a_FLOAT:
     [ [ a = ANTIQUOT "flo" -> antiquot "flo" loc a

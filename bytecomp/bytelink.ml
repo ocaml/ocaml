@@ -468,35 +468,6 @@ let build_custom_runtime prim_name exec_name =
       remove_file
         (Filename.chop_suffix (Filename.basename prim_name) ".c" ^ ".obj");
       retcode
-  | "mrc" ->
-      let cppc = "mrc"
-      and libsppc = "\"{sharedlibraries}MathLib\" \
-                     \"{ppclibraries}PPCCRuntime.o\" \
-                     \"{ppclibraries}PPCToolLibs.o\" \
-                     \"{sharedlibraries}StdCLib\" \
-                     \"{ppclibraries}StdCRuntime.o\" \
-                     \"{sharedlibraries}InterfaceLib\""
-      and linkppc = "ppclink -d"
-      and objsppc = extract ".x" (List.rev !Clflags.ccobjs)
-      and q_prim_name = Filename.quote prim_name
-      and q_exec_name = Filename.quote exec_name
-      in
-      Ccomp.run_command (Printf.sprintf "%s %s %s %s -o %s.x"
-        cppc
-        (Clflags.std_include_flag "-i ")
-        (String.concat " " (List.rev_map Filename.quote !Clflags.ccopts))
-        q_prim_name
-        q_prim_name);
-      Ccomp.run_command ("delete -i " ^ q_exec_name);
-      Ccomp.command (Printf.sprintf
-        "%s -t MPST -c 'MPS ' -o %s %s.x %s %s %s"
-        linkppc
-        q_exec_name
-        q_prim_name
-        (String.concat " " (List.map Filename.quote objsppc))
-        (Filename.quote
-            (Filename.concat Config.standard_library "libcamlrun.x"))
-        libsppc)
   | _ -> assert false
 
 let append_bytecode_and_cleanup bytecode_name exec_name prim_name =

@@ -188,14 +188,15 @@ val finalise : ('a -> unit) -> 'a -> unit
    be registered for the same value, or even several instances of the
    same function.  Each instance will be called once (or never,
    if the program terminates before [v] becomes unreachable).
-   
-  
-   A number of pitfalls are associated with finalised values:
-   finalisation functions are called asynchronously, sometimes
-   even during the execution of other finalisation functions.
-   In a multithreaded program, finalisation functions are called
-   from any thread, thus they must not acquire any mutex.
 
+   The GC will call the finalisation functions in the order of
+   deallocation.  When several values become unreachable at the
+   same time (i.e. during the same GC cycle), the finalisation
+   functions will be called in the reverse order of the corresponding
+   calls to [finalise].  If [finalise] is called in the same order
+   as the values are allocated, that means each value is finalised
+   before the values it depends upon.  Of course, this becomes
+   false if additional dependencies are introduced by assignments.
 
    Anything reachable from the closure of finalisation functions
    is considered reachable, so the following code will not work
@@ -232,9 +233,13 @@ val finalise : ('a -> unit) -> 'a -> unit
    
    The results of calling {!String.make}, {!String.create},
    {!Array.make}, and {!Pervasives.ref} are guaranteed to be
-   heap-allocated and non-constant
-   except when the length argument is [0].
+   heap-allocated and non-constant except when the length argument is [0].
 *)
+
+val finalise_release : unit -> unit;;
+(** A finalisation function may call [finalise_release] to tell the
+    GC that it can launch the next finalisation function without waiting
+    for the current one to return. *)
 
 type alarm
 (** An alarm is a piece of data that calls a user function at the end of

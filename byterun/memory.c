@@ -21,6 +21,7 @@
 #include "gc_ctrl.h"
 #include "major_gc.h"
 #include "memory.h"
+#include "major_gc.h"
 #include "minor_gc.h"
 #include "misc.h"
 #include "mlvalues.h"
@@ -297,26 +298,49 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
   return Val_hp (hp);
 }
 
-/* Use this function to tell the major GC to speed up when you use
-   finalized blocks to automatically deallocate extra-heap stuff.
-   The GC will do at least one cycle every [max] allocated words;
-   [mem] is the number of words allocated this time.
-   Note that only [mem/max] is relevant.  You can use numbers of bytes
-   (or kilobytes, ...) instead of words.  You can change units between
-   calls to [caml_adjust_gc_speed].
+/* Dependent memory is all memory blocks allocated out of the heap
+   that depend on the GC (and finalizers) for deallocation.
+   For the GC to take dependent memory in its automatic speed setting,
+   you must call [caml_alloc_dependent_memory] when you alloate some
+   dependent memory, and [caml_free_dependent_memory] when you
+   free it.  In both cases, you pass as argument the size of the
+   block being allocated or freed.
 */
-CAMLexport void caml_adjust_gc_speed (mlsize_t mem, mlsize_t max)
+CAMLexport void caml_alloc_dependent_memory (mlsize_t nbytes)
+{
+  caml_dependent_size += nbytes / sizeof (value);
+  caml_dependent_allocated += nbytes / sizeof (value);
+}
+
+CAMLexport void caml_free_dependent_memory (mlsize_t nbytes)
+{
+  if (caml_dependent_size < nbytes / sizeof (value)){
+    caml_dependent_size = 0;
+  }else{
+    caml_dependent_size -= nbytes / sizeof (value);
+  }
+}
+
+/* Use this function to tell the major GC to speed up when you use
+   finalized blocks to automatically deallocate resources (other
+   than memory). The GC will do at least one cycle every [max]
+   allocated resources; [res] is the number of resources allocated
+   this time.
+   Note that only [res/max] is relevant.  The units (and kind of
+   resource) can change between calls to [caml_adjust_gc_speed].
+*/
+CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
 {
   if (max == 0) max = 1;
-  if (mem > max) mem = max;
-  caml_extra_heap_memory += (double) mem / (double) max;
-  if (caml_extra_heap_memory > 1.0){
-    caml_extra_heap_memory = 1.0;
+  if (res > max) res = max;
+  caml_extra_heap_resources += (double) res / (double) max;
+  if (caml_extra_heap_resources > 1.0){
+    caml_extra_heap_resources = 1.0;
     caml_urge_major_slice ();
   }
-  if (caml_extra_heap_memory > (double) Wsize_bsize (caml_minor_heap_size)
-                               / 2.0
-                               / (double) Wsize_bsize (caml_stat_heap_size)) {
+  if (caml_extra_heap_resources
+           > (double) Wsize_bsize (caml_minor_heap_size) / 2.0
+             / (double) Wsize_bsize (caml_stat_heap_size)) {
     caml_urge_major_slice ();
   }
 }

@@ -789,13 +789,13 @@ value apply_printer printer ast =
         List.fold_left
           (fun (first, last_pos) (si, (bp, ep)) ->
              do {
-               fprintf ppf "@[%a@]@?" copy_source (ic, first, last_pos, bp);
+               fprintf ppf "@[%a@]@?" copy_source (ic, first, last_pos.Lexing.pos_cnum, bp.Lexing.pos_cnum);
                fprintf ppf "@[%a@]@?" printer (si, nok);
                (False, ep)
              })
-          (True, 0) ast
+          (True, Token.nowhere) ast
       in
-      fprintf ppf "@[%a@]@?" copy_to_end (ic, first, last_pos)
+      fprintf ppf "@[%a@]@?" copy_to_end (ic, first, last_pos.Lexing.pos_cnum)
     with x ->
       do { fprintf ppf "@."; close_in ic; raise x };
     close_in ic;

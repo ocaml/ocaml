@@ -84,6 +84,7 @@ prims.c : primitives
 	 echo '	 0 };') > prims.c
 
 opnames.h : instruct.h
+	LANG=C; \
 	sed -e '/\/\*/d' \
 	    -e '/^#/d' \
 	    -e 's/enum /char * names_of_/' \

@@ -8,7 +8,10 @@ open Gramext;
 value strict_parsing = ref False;
 value keywords = ref [];
 
-value loc = (0, 0);
+value loc =
+  let nowhere = 
+    {(Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 0 } in
+  (nowhere,nowhere);
 
 (* Watch the segmentation faults here! the compiled file must have been
    loaded in camlp4 with the option pa_extend.cmo -meta_action. *)
@@ -101,7 +104,7 @@ value nth_patt_of_act (e, n) =
   let patt_list =
     loop e where rec loop =
       fun
-      [ <:expr< fun (loc : (int * int)) -> $_$ >> -> []
+      [ <:expr< fun (loc : (Lexing.position * Lexing.position)) -> $_$ >> -> []
       | <:expr< fun ($p$ : $_$) -> $e$ >> -> [p :: loop e]
       | <:expr< fun $p$ -> $e$ >> -> [p :: loop e]
       | _ -> failwith "nth_patt_of_act" ]
@@ -111,14 +114,14 @@ value nth_patt_of_act (e, n) =
 
 value rec last_patt_of_act =
   fun
-  [ <:expr< fun ($p$ : $_$) (loc : (int * int)) -> $_$ >> -> p
+  [ <:expr< fun ($p$ : $_$) (loc : (Lexing.position * Lexing.position)) -> $_$ >> -> p
   | <:expr< fun $_$ -> $e$ >> -> last_patt_of_act e
   | _ -> failwith "last_patt_of_act" ]
 ;
 
 value rec final_action =
   fun
-  [ <:expr< fun (loc : (int * int)) -> ($e$ : $_$) >> -> e
+  [ <:expr< fun (loc : (Lexing.position * Lexing.position)) -> ($e$ : $_$) >> -> e
   | <:expr< fun $_$ -> $e$ >> -> final_action e
   | _ -> failwith "final_action" ]
 ;
@@ -560,7 +563,10 @@ value compile () =
         $expr_list list$
     >>
   in
-  let loc = (1, 1) in
+  let loc =
+    let l1 = 
+      {(Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 1 } in
+    (l1,l1) in
   ([(si1, loc); (si2, loc)], False)
 ;
 

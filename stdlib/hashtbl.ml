@@ -44,6 +44,8 @@ let copy h =
   { size = h.size;
     data = Array.copy h.data }
 
+let length h = h.size
+
 let resize hashfun tbl =
   let odata = tbl.data in
   let osize = Array.length odata in
@@ -184,6 +186,7 @@ module type S =
     val mem : 'a t -> key -> bool
     val iter: (key -> 'a -> unit) -> 'a t -> unit
     val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val length: 'a t -> int
   end
 
 module Make(H: HashedType): (S with type key = H.t) =
@@ -272,4 +275,7 @@ module Make(H: HashedType): (S with type key = H.t) =
 
     let iter = iter
     let fold = fold
+    let length = length
   end
+
+(* eof $Id$ *)

@@ -651,8 +651,8 @@ CAMLexport void caml_deserialize_block_1(void * data, long len)
 
 CAMLexport void caml_deserialize_block_2(void * data, long len)
 {
-  unsigned char * p, * q;
 #ifndef ARCH_BIG_ENDIAN
+  unsigned char * p, * q;
   for (p = intern_src, q = data; len > 0; len--, p += 2, q += 2)
     Reverse_16(q, p);
   intern_src = p;
@@ -664,8 +664,8 @@ CAMLexport void caml_deserialize_block_2(void * data, long len)
 
 CAMLexport void caml_deserialize_block_4(void * data, long len)
 {
-  unsigned char * p, * q;
 #ifndef ARCH_BIG_ENDIAN
+  unsigned char * p, * q;
   for (p = intern_src, q = data; len > 0; len--, p += 4, q += 4)
     Reverse_32(q, p);
   intern_src = p;
@@ -677,8 +677,8 @@ CAMLexport void caml_deserialize_block_4(void * data, long len)
 
 CAMLexport void caml_deserialize_block_8(void * data, long len)
 {
-  unsigned char * p, * q;
 #ifndef ARCH_BIG_ENDIAN
+  unsigned char * p, * q;
   for (p = intern_src, q = data; len > 0; len--, p += 8, q += 8)
     Reverse_64(q, p);
   intern_src = p;

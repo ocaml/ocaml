@@ -8,9 +8,10 @@ eval.cmi: debugcom.cmi ../typing/env.cmi ../typing/ident.cmi \
 events.cmi: ../bytecomp/instruct.cmi 
 frames.cmi: ../bytecomp/instruct.cmi primitives.cmi 
 input_handling.cmi: primitives.cmi 
+lexer.cmi: parser.cmi 
 loadprinter.cmi: ../otherlibs/dynlink/dynlink.cmi ../parsing/longident.cmi 
-parser.cmi: ../parsing/longident.cmi parser_aux.cmi 
 parser_aux.cmi: ../parsing/longident.cmi primitives.cmi 
+parser.cmi: ../parsing/longident.cmi parser_aux.cmi 
 pattern_matching.cmi: debugcom.cmi parser_aux.cmi ../typing/typedtree.cmi 
 pos.cmi: ../bytecomp/instruct.cmi 
 primitives.cmi: ../otherlibs/unix/unix.cmi 
@@ -32,21 +33,21 @@ checkpoints.cmx: debugcom.cmx int64ops.cmx primitives.cmx checkpoints.cmi
 command_line.cmo: breakpoints.cmi checkpoints.cmi ../utils/config.cmi \
     ../typing/ctype.cmi debugcom.cmi debugger_config.cmi envaux.cmi eval.cmi \
     events.cmi frames.cmi history.cmi input_handling.cmi \
-    ../bytecomp/instruct.cmi int64ops.cmi ../parsing/lexer.cmi \
-    loadprinter.cmi ../utils/misc.cmi parameters.cmi parser.cmi \
-    parser_aux.cmi pos.cmi primitives.cmi printval.cmi program_loading.cmi \
-    program_management.cmi show_information.cmi show_source.cmi source.cmi \
-    symbols.cmi time_travel.cmi ../typing/types.cmi \
-    ../otherlibs/unix/unix.cmi unix_tools.cmi command_line.cmi 
+    ../bytecomp/instruct.cmi int64ops.cmi lexer.cmi loadprinter.cmi \
+    ../utils/misc.cmi parameters.cmi parser.cmi parser_aux.cmi pos.cmi \
+    primitives.cmi printval.cmi program_loading.cmi program_management.cmi \
+    show_information.cmi show_source.cmi source.cmi symbols.cmi \
+    time_travel.cmi ../typing/types.cmi ../otherlibs/unix/unix.cmi \
+    unix_tools.cmi command_line.cmi 
 command_line.cmx: breakpoints.cmx checkpoints.cmx ../utils/config.cmx \
     ../typing/ctype.cmx debugcom.cmx debugger_config.cmx envaux.cmx eval.cmx \
     events.cmx frames.cmx history.cmx input_handling.cmx \
-    ../bytecomp/instruct.cmx int64ops.cmx ../parsing/lexer.cmx \
-    loadprinter.cmx ../utils/misc.cmx parameters.cmx parser.cmx \
-    parser_aux.cmi pos.cmx primitives.cmx printval.cmx program_loading.cmx \
-    program_management.cmx show_information.cmx show_source.cmx source.cmx \
-    symbols.cmx time_travel.cmx ../typing/types.cmx \
-    ../otherlibs/unix/unix.cmx unix_tools.cmx command_line.cmi 
+    ../bytecomp/instruct.cmx int64ops.cmx lexer.cmx loadprinter.cmx \
+    ../utils/misc.cmx parameters.cmx parser.cmx parser_aux.cmi pos.cmx \
+    primitives.cmx printval.cmx program_loading.cmx program_management.cmx \
+    show_information.cmx show_source.cmx source.cmx symbols.cmx \
+    time_travel.cmx ../typing/types.cmx ../otherlibs/unix/unix.cmx \
+    unix_tools.cmx command_line.cmi 
 debugcom.cmo: input_handling.cmi int64ops.cmi ../utils/misc.cmi \
     primitives.cmi debugcom.cmi 
 debugcom.cmx: input_handling.cmx int64ops.cmx ../utils/misc.cmx \
@@ -85,14 +86,14 @@ history.cmo: checkpoints.cmi debugger_config.cmi int64ops.cmi \
     ../utils/misc.cmi primitives.cmi history.cmi 
 history.cmx: checkpoints.cmx debugger_config.cmx int64ops.cmx \
     ../utils/misc.cmx primitives.cmx history.cmi 
-input_handling.cmo: ../parsing/lexer.cmi primitives.cmi \
-    ../otherlibs/unix/unix.cmi input_handling.cmi 
-input_handling.cmx: ../parsing/lexer.cmx primitives.cmx \
-    ../otherlibs/unix/unix.cmx input_handling.cmi 
+input_handling.cmo: lexer.cmi primitives.cmi ../otherlibs/unix/unix.cmi \
+    input_handling.cmi 
+input_handling.cmx: lexer.cmx primitives.cmx ../otherlibs/unix/unix.cmx \
+    input_handling.cmi 
 int64ops.cmo: int64ops.cmi 
 int64ops.cmx: int64ops.cmi 
-lexer.cmo: parser.cmi primitives.cmi 
-lexer.cmx: parser.cmx primitives.cmx 
+lexer.cmo: parser.cmi primitives.cmi lexer.cmi 
+lexer.cmx: parser.cmx primitives.cmx lexer.cmi 
 loadprinter.cmo: ../utils/config.cmi ../typing/ctype.cmi debugger_config.cmi \
     ../otherlibs/dynlink/dynlink.cmi ../typing/env.cmi ../typing/ident.cmi \
     ../parsing/longident.cmi ../utils/misc.cmi ../typing/path.cmi \

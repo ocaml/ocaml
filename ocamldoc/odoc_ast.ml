@@ -423,7 +423,7 @@ module Analyser =
            | l ->
                match l with
                  [] ->
-                   (* cas impossible, on l'a filtr avant *)
+                   (* cas impossible, on l'a filtré avant *)
                    assert false
                | (pattern_param, exp) :: second_ele :: q ->
                    (* implicit pattern matching -> anonymous parameter *)
@@ -1162,6 +1162,8 @@ module Analyser =
           )
 
       | Parsetree.Pstr_recmodule mods ->
+	  (* A VOIR ICI ca merde avec /work/tmp/graph.ml: pas de lien avec les module type 
+	     dans les contraintes sur les modules *)
 	  let new_env =
             List.fold_left 
               (fun acc_env (name, _, mod_exp) ->
@@ -1383,11 +1385,23 @@ module Analyser =
       let complete_name = Name.concat current_module_name module_name in
       let pos_start = p_module_expr.Parsetree.pmod_loc.Location.loc_start.Lexing.pos_cnum in
       let pos_end = p_module_expr.Parsetree.pmod_loc.Location.loc_end.Lexing.pos_cnum in
-      let modtype = tt_module_expr.Typedtree.mod_type in
+      let modtype = 
+        (* A VOIR : Odoc_env.subst_module_type env  ? *)
+	tt_module_expr.Typedtree.mod_type 
+      in
+      let m_code_intf =
+	match p_module_expr.Parsetree.pmod_desc with
+	  Parsetree.Pmod_constraint (_, pmodule_type) ->
+	    let loc_start = pmodule_type.Parsetree.pmty_loc.Location.loc_start.Lexing.pos_cnum in
+            let loc_end = pmodule_type.Parsetree.pmty_loc.Location.loc_end.Lexing.pos_cnum in
+	    Some (get_string_of_file loc_start loc_end)
+	| _ ->
+	    None
+      in
       let m_base =
         {
           m_name = complete_name ;
-          m_type = tt_module_expr.Typedtree.mod_type ;
+          m_type = modtype ;
           m_info = comment_opt ;
           m_is_interface = false ;
           m_file = !file_name ;
@@ -1395,7 +1409,7 @@ module Analyser =
           m_loc = { loc_impl = Some (!file_name, pos_start) ; loc_inter = None } ;
           m_top_deps = [] ;
 	  m_code = None ; (* code is set by the caller, after the module is created *)
-	  m_code_intf = None ;
+	  m_code_intf = m_code_intf ;
       } 
       in
       match (p_module_expr.Parsetree.pmod_desc, tt_module_expr.Typedtree.mod_desc) with
@@ -1411,30 +1425,37 @@ module Analyser =
           let elements2 = replace_dummy_included_modules elements included_modules_from_tt in
           { m_base with m_kind = Module_struct elements2 }
 
-      | (Parsetree.Pmod_functor (_, _, p_module_expr2), 
+      | (Parsetree.Pmod_functor (_, pmodule_type, p_module_expr2), 
          Typedtree.Tmod_functor (ident, mtyp, tt_module_expr2)) ->
-          let param =
-            {
-              mp_name = Name.from_ident ident ;
-              mp_type = Odoc_env.subst_module_type env mtyp ;              
-            } 
-          in
-          let dummy_complete_name = Name.concat "__" param.mp_name in
-          let new_env = Odoc_env.add_module env dummy_complete_name in
-          let m_base2 = analyse_module 
-              new_env
-              current_module_name
-              module_name
-              None
-              p_module_expr2
-              tt_module_expr2
-          in
-          let kind = 
-            match m_base2.m_kind with
-              Module_functor (params, k) -> Module_functor (param :: params, m_base2.m_kind)
-            | k -> Module_functor ([param], k)
-          in
-          { m_base with m_kind = kind }
+	   let loc_start = pmodule_type.Parsetree.pmty_loc.Location.loc_start.Lexing.pos_cnum in
+           let loc_end = pmodule_type.Parsetree.pmty_loc.Location.loc_end.Lexing.pos_cnum in
+	   let mp_type_code = get_string_of_file loc_start loc_end in
+	   print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
+	   let mp_name = Name.from_ident ident in
+	   let mp_kind = Sig.analyse_module_type_kind env 
+	       current_module_name pmodule_type mtyp
+	   in
+           let param =
+             {
+               mp_name = mp_name ;
+               mp_type = Odoc_env.subst_module_type env mtyp ;
+	       mp_type_code = mp_type_code ;
+	       mp_kind = mp_kind ;
+             } 
+           in
+           let dummy_complete_name = (*Name.concat "__"*) param.mp_name in
+	   (* TODO: A VOIR CE __ *)
+           let new_env = Odoc_env.add_module env dummy_complete_name in
+           let m_base2 = analyse_module 
+               new_env
+               current_module_name
+               module_name
+               None
+               p_module_expr2
+               tt_module_expr2
+           in
+           let kind = m_base2.m_kind in
+           { m_base with m_kind = Module_functor (param, kind) }
 
       | (Parsetree.Pmod_apply (p_module_expr1, p_module_expr2), 
          Typedtree.Tmod_apply (tt_module_expr1, tt_module_expr2, _))
@@ -1463,6 +1484,8 @@ module Analyser =
 
       | (Parsetree.Pmod_constraint (p_module_expr2, p_modtype), 
          Typedtree.Tmod_constraint (tt_module_expr2, tt_modtype, _)) ->
+	  print_DEBUG ("Odoc_ast: case Parsetree.Pmod_constraint + Typedtree.Tmod_constraint "^module_name);
+
           (* we create the module with p_module_expr2 and tt_module_expr2 
              but we change its type according to the constraint. 
              A VOIR : est-ce que c'est bien ?
@@ -1482,7 +1505,7 @@ module Analyser =
           in
           { 
             m_base with
-            m_type = tt_modtype ; 
+            m_type = Odoc_env.subst_module_type env tt_modtype ; 
             m_kind = Module_constraint (m_base2.m_kind, 
                                         mtkind)
 
@@ -1497,11 +1520,16 @@ module Analyser =
 	    tt_modtype, _)
 	) ->
 	  (* needed for recursive modules *)
+
+	  print_DEBUG ("Odoc_ast: case Parsetree.Pmod_structure + Typedtree.Tmod_constraint "^module_name);
 	  let elements = analyse_structure env complete_name pos_start pos_end p_structure tt_structure in
           (* we must complete the included modules *)
           let included_modules_from_tt = tt_get_included_module_list tt_structure in
           let elements2 = replace_dummy_included_modules elements included_modules_from_tt in
-          { m_base with m_kind = Module_struct elements2 }
+          { m_base with 
+	    m_type = Odoc_env.subst_module_type env tt_modtype ;
+	    m_kind = Module_struct elements2 ;
+	  }
 
       | (parsetree, typedtree) ->
           let s_parse = 
@@ -1552,21 +1580,18 @@ module Analyser =
        let included_modules_from_tt = tt_get_included_module_list tree_structure in
        let elements2 = replace_dummy_included_modules elements included_modules_from_tt in
        let kind = Module_struct elements2 in
-       let m =
-         {
-           m_name = mod_name ;
-           m_type = Types.Tmty_signature [] ;
-           m_info = info_opt ;
-           m_is_interface = false ;
-           m_file = !file_name ;
-           m_kind = kind ;
-           m_loc = { loc_impl = Some (!file_name, 0) ; loc_inter = None } ;
-           m_top_deps = [] ;
-	   m_code = (if !Odoc_args.keep_code then Some !file else None) ;
-	   m_code_intf = None ;
-         } 
-       in
-       m
+       {
+         m_name = mod_name ;
+         m_type = Types.Tmty_signature [] ;
+         m_info = info_opt ;
+         m_is_interface = false ;
+         m_file = !file_name ;
+         m_kind = kind ;
+         m_loc = { loc_impl = Some (!file_name, 0) ; loc_inter = None } ;
+         m_top_deps = [] ;
+	 m_code = (if !Odoc_args.keep_code then Some !file else None) ;
+	 m_code_intf = None ;
+       } 
   end
 
 

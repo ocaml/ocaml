@@ -109,6 +109,7 @@ value rec cstream gloc =
 
 (* Syntax extensions in Ocaml grammar *)
 
+
 EXTEND
   GLOBAL: expr;
   expr: LEVEL "expr1"

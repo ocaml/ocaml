@@ -40,6 +40,10 @@ let rec remove_as = function
   | Alternative (e1, e2) -> Alternative (remove_as e1, remove_as e2)
   | Repetition e -> Repetition (remove_as e)
 
+let as_cset = function
+  | Characters s -> s
+  | _ -> raise Cset.Bad
+
 %}
 
 %token <string> Tident
@@ -47,9 +51,10 @@ let rec remove_as = function
 %token <string> Tstring
 %token <Syntax.location> Taction
 %token Trule Tparse Tparse_shortest Tand Tequal Tend Tor Tunderscore Teof Tlbracket Trbracket
-%token Tstar Tmaybe Tplus Tlparen Trparen Tcaret Tdash Tlet Tas
+%token Tstar Tmaybe Tplus Tlparen Trparen Tcaret Tdash Tlet Tas Tsharp
 
 %right Tas
+%left Tsharp
 %left Tor
 %nonassoc CONCAT
 %nonassoc Tmaybe Tstar Tplus
@@ -131,6 +136,12 @@ regexp:
         { Alternative(Epsilon, $1) }
   | regexp Tplus
         { Sequence(Repetition (remove_as $1), $1) }
+  | regexp Tsharp regexp
+        {
+          let s1 = as_cset $1
+          and s2 = as_cset $3 in
+          Characters (Cset.diff s1 s2)
+        } 
   | regexp Tor regexp
         { Alternative($1,$3) }
   | regexp regexp %prec CONCAT

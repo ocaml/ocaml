@@ -12,7 +12,7 @@
 
 (* $Id$ *)
 
-exception Exc_located of (int * int) and exn;
+exception Exc_located of Token.flocation and exn;
 
 value raise_with_loc loc exc =
   match exc with
@@ -20,6 +20,14 @@ value raise_with_loc loc exc =
   | _ -> raise (Exc_located loc exc) ]
 ;
 
+value line_of_loc fname (bp, ep) =
+  (bp.Lexing.pos_fname,
+   bp.Lexing.pos_lnum,
+   bp.Lexing.pos_cnum - bp.Lexing.pos_bol,
+   ep.Lexing.pos_cnum - bp.Lexing.pos_bol)
+;
+
+(*
 value line_of_loc fname (bp, ep) =
   try
     let ic = open_in_bin fname in
@@ -75,5 +83,6 @@ value line_of_loc fname (bp, ep) =
   with
   [ Sys_error _ -> (fname, 1, bp, ep) ]
 ;
+*)
 
 value loc_name = ref "loc";

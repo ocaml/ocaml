@@ -236,7 +236,7 @@ static int parse_command_line(char **argv)
     switch(argv[i][1]) {
 #ifdef DEBUG
     case 't':
-      caml_trace_flag = 1;
+      caml_trace_flag++;
       break;
 #endif
     case 'v':

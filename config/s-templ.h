@@ -47,10 +47,6 @@
    Also add the required libraries (e.g. -lcurses -ltermcap) to $(CCLIBS)
    in ../Makefile.config */
 
-#define HAS_STRERROR
-
-/* Define HAS_STRERROR if you have strerror(). */
-
 #define SUPPORT_DYNAMIC_LINKING
 
 /* Define SUPPORT_DYNAMIC_LINKING if dynamic loading of C stub code

@@ -128,7 +128,9 @@ let print_location loc =
   if !(Pcaml.input_file) <> "-" then
     let (fname, line, bp, ep) = Stdpp.line_of_loc !(Pcaml.input_file) loc in
     eprintf loc_fmt !(Pcaml.input_file) line bp ep
-  else eprintf "At location %d-%d\n" (fst loc) (snd loc)
+  else
+    eprintf "At location %d-%d\n" (fst loc).Lexing.pos_cnum
+      (snd loc).Lexing.pos_cnum
 ;;
 
 let print_warning loc s = print_location loc; eprintf "%s\n" s;;
@@ -215,6 +217,10 @@ let file_kind_of_name name =
   else raise (Arg.Bad ("don't know what to do with " ^ name))
 ;;
 
+let print_version_string () =
+  print_string Pcaml.version; print_newline (); exit 0
+;;
+
 let print_version () =
   eprintf "Camlp4 version %s\n" Pcaml.version; flush stderr; exit 0
 ;;
@@ -291,14 +297,7 @@ let print_usage_list l =
 
 let usage ini_sl ext_sl =
   eprintf "\
-Usage: camlp4 [load-options] [--] [other-options]
-Load options:
-  -I directory  Add directory in search patch for object files.
-  -where        Print camlp4 library directory and exit.
-  -nolib        No automatic search for object files in library directory.
-  <object-file> Load this file in Camlp4 core.
-Other options:
-  <file>        Parse this file.\n";
+Usage: camlp4 [load-options] [--] [other-options]Load options:  -I directory  Add directory in search patch for object files.  -where        Print camlp4 library directory and exit.  -nolib        No automatic search for object files in library directory.  <object-file> Load this file in Camlp4 core.Other options:  <file>        Parse this file.\n";
   print_usage_list ini_sl;
   begin
     let rec loop =
@@ -318,9 +317,7 @@ Other options:
 
 let warn_noassert () =
   eprintf "\
-camlp4 warning: option -noassert is obsolete
-You should give the -noassert option to the ocaml compiler instead.
-"
+camlp4 warning: option -noassert is obsoleteYou should give the -noassert option to the ocaml compiler instead."
 ;;
 
 let initial_spec_list =
@@ -340,7 +337,9 @@ let initial_spec_list =
    "<file> Dump quotation expander result in case of syntax error.";
    "-o", Arg.String (fun x -> Pcaml.output_file := Some x),
    "<file> Output on <file> instead of standard output.";
-   "-v", Arg.Unit print_version, "Print Camlp4 version and exit."]
+   "-v", Arg.Unit print_version, "Print Camlp4 version and exit.";
+   "-version", Arg.Unit print_version_string,
+   "Print Camlp4 version number and exit."]
 ;;
 
 let anon_fun x = Pcaml.input_file := x; file_kind := file_kind_of_name x;;

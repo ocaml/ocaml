@@ -50,10 +50,10 @@ let initial_env () =
 
 (* Compile a .mli file *)
 
-let interface ppf sourcefile =
+let interface ppf sourcefile outputprefix =
   init_path();
-  let prefixname = chop_extension_if_any sourcefile in
-  let modulename = String.capitalize(Filename.basename prefixname) in
+  let modulename =
+    String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
   let inputfile = Pparse.preprocess sourcefile in
   try
     let ast =
@@ -65,7 +65,7 @@ let interface ppf sourcefile =
                                    (Typemod.simplify_signature sg);
     Warnings.check_fatal ();
     if not !Clflags.print_types then
-      Env.save_signature sg modulename (prefixname ^ ".cmi");
+      Env.save_signature sg modulename (outputprefix ^ ".cmi");
     Pparse.remove_preprocessed inputfile
   with e ->
     Pparse.remove_preprocessed_if_ast inputfile;
@@ -79,27 +79,27 @@ let print_if ppf flag printer arg =
 
 let (++) x f = f x
 
-let implementation ppf sourcefile =
+let implementation ppf sourcefile outputprefix =
   init_path();
-  let prefixname = chop_extension_if_any sourcefile in
-  let modulename = String.capitalize(Filename.basename prefixname) in
+  let modulename =
+    String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
   let inputfile = Pparse.preprocess sourcefile in
   let env = initial_env() in
   if !Clflags.print_types then begin
     try ignore(
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
-      ++ Typemod.type_implementation sourcefile prefixname modulename env)
+      ++ Typemod.type_implementation sourcefile outputprefix modulename env)
     with x ->
       Pparse.remove_preprocessed_if_ast inputfile;
       raise x
   end else begin    
-    let objfile = prefixname ^ ".cmo" in
+    let objfile = outputprefix ^ ".cmo" in
     let oc = open_out_bin objfile in
     try
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
-      ++ Typemod.type_implementation sourcefile prefixname modulename env
+      ++ Typemod.type_implementation sourcefile outputprefix modulename env
       ++ Translmod.transl_implementation modulename
       ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
       ++ Simplif.simplify_lambda

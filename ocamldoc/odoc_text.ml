@@ -134,6 +134,12 @@ module Texter =
 	  )
       | Superscript t -> p b "{^" ; p_text b t ; p b "}"
       | Subscript t -> p b "{_" ; p_text b t ; p b "}"
+      | Module_list l -> 
+	  p b "{!modules:";
+	  List.iter (fun s -> p b " %s" s) l;
+	  p b "}"
+      |	Index_list ->
+	  p b "{!indexlist}"
 	    
     let string_of_text s =
       let b = Buffer.create 256 in

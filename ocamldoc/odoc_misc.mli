@@ -16,6 +16,9 @@
 (** This function returns a file in the form of one string.*)
 val input_file_as_string : string -> string
 
+(** [split_with_blanks s] splits the given string [s] according to blanks. *)
+val split_with_blanks : string -> string list
+
 (** This function creates a string from a Longident.t .*)
 val string_of_longident : Longident.t -> string
 

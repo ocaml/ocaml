@@ -52,9 +52,9 @@ let rec add_signature env root ?rel signat =
   let f env item =
     match item with
       Types.Tsig_value (ident, _) -> { env with env_values = (rel_name ident, qualify ident) :: env.env_values }
-    | Types.Tsig_type (ident,_ ) -> { env with env_types = (rel_name ident, qualify ident) :: env.env_types }
+    | Types.Tsig_type (ident,_,_) -> { env with env_types = (rel_name ident, qualify ident) :: env.env_types }
     | Types.Tsig_exception (ident, _) -> { env with env_exceptions = (rel_name ident, qualify ident) :: env.env_exceptions }
-    | Types.Tsig_module (ident, modtype) -> 
+    | Types.Tsig_module (ident, modtype, _) -> 
         let env2 = 
           match modtype with (* A VOIR : le cas où c'est un identificateur, dans ce cas on n'a pas de signature *)
             Types.Tmty_signature s -> add_signature env (qualify ident) ~rel: (rel_name ident) s
@@ -73,8 +73,8 @@ let rec add_signature env root ?rel signat =
               |  _ -> env
         in
         { env2 with env_module_types = (rel_name ident, qualify ident) :: env2.env_module_types }
-    | Types.Tsig_class (ident, _) -> { env with env_classes = (rel_name ident, qualify ident) :: env.env_classes }
-    | Types.Tsig_cltype (ident, _) -> { env with env_class_types = (rel_name ident, qualify ident) :: env.env_class_types }
+    | Types.Tsig_class (ident, _, _) -> { env with env_classes = (rel_name ident, qualify ident) :: env.env_classes }
+    | Types.Tsig_cltype (ident, _, _) -> { env with env_class_types = (rel_name ident, qualify ident) :: env.env_class_types }
   in
   List.fold_left f env signat 
 

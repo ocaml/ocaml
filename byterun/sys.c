@@ -51,31 +51,10 @@
 extern int errno;
 #endif
 
-#ifdef HAS_STRERROR
-
-#ifndef _WIN32
-extern char * strerror(int);
-#endif
-
 static char * error_message(void)
 {
   return strerror(errno);
 }
-
-#else
-
-extern int sys_nerr;
-extern char * sys_errlist [];
-
-static char * error_message(void)
-{
-  if (errno < 0 || errno >= sys_nerr)
-    return "unknown error";
-  else
-    return sys_errlist[errno];
-}
-
-#endif /* HAS_STRERROR */
 
 #ifndef EAGAIN
 #define EAGAIN (-1)
@@ -106,6 +85,7 @@ CAMLexport void caml_sys_error(value arg)
     }
     caml_raise_sys_error(str);
   }
+  CAMLnoreturn;
 }
 
 CAMLprim value caml_sys_exit(value retcode)
@@ -179,7 +159,7 @@ CAMLprim value caml_sys_remove(value name)
 CAMLprim value caml_sys_rename(value oldname, value newname)
 {
   if (rename(String_val(oldname), String_val(newname)) != 0)
-    caml_sys_error(oldname);
+    caml_sys_error(NO_ARG);
   return Val_unit;
 }
 

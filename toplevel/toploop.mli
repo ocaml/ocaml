@@ -98,6 +98,10 @@ val print_out_signature :
 val print_out_phrase :
   (formatter -> Outcometree.out_phrase -> unit) ref
 
+(* Hooks for external line editor *)
+
+val read_interactive_input : (string -> string -> int -> int * bool) ref
+
 (* Hooks for initialization *)
 
 val toplevel_startup_hook : (unit -> unit) ref

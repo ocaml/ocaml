@@ -30,7 +30,7 @@ val rhs_start : int -> int
 (** Same as {!Parsing.symbol_start} and {!Parsing.symbol_end}, but
    return the offset of the string matching the [n]th item on the
    right-hand side of the rule, where [n] is the integer parameter
-   to [lhs_start] and [lhs_end]. [n] is 1 for the leftmost item. *)
+   to [rhs_start] and [rhs_end]. [n] is 1 for the leftmost item. *)
 
 val rhs_end : int -> int
 (** See {!Parsing.rhs_start}. *)

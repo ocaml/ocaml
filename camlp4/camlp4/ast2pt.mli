@@ -14,8 +14,8 @@
 
 value fast : ref bool;
 value no_constructors_arity : ref bool;
-value mkloc : (int * int) -> Location.t;
-value long_id_of_string_list : (int * int) -> list string -> Longident.t;
+value mkloc : MLast.loc -> Location.t;
+value long_id_of_string_list : MLast.loc -> list string -> Longident.t;
 
 value str_item : MLast.str_item -> Parsetree.structure -> Parsetree.structure;
 value interf : list MLast.sig_item -> Parsetree.signature;

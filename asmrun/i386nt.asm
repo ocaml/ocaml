@@ -18,14 +18,13 @@
 	.386
 	.MODEL FLAT
 
-        EXTERN  _garbage_collection: PROC
-        EXTERN  _mlraise: PROC
+        EXTERN  _caml_garbage_collection: PROC
         EXTERN  _caml_apply2: PROC
         EXTERN  _caml_apply3: PROC
         EXTERN  _caml_program: PROC
-        EXTERN  _array_bound_error: PROC
-        EXTERN  _young_limit: DWORD
-        EXTERN  _young_ptr: DWORD
+        EXTERN  _caml_array_bound_error: PROC
+        EXTERN  _caml_young_limit: DWORD
+        EXTERN  _caml_young_ptr: DWORD
         EXTERN	_caml_bottom_of_stack: DWORD
         EXTERN	_caml_last_return_address: DWORD
         EXTERN	_caml_gc_regs: DWORD
@@ -37,7 +36,7 @@
         PUBLIC  _caml_alloc1
         PUBLIC  _caml_alloc2
         PUBLIC  _caml_alloc3
-        PUBLIC  _caml_alloc
+        PUBLIC  _caml_allocN
 	PUBLIC  _caml_call_gc
 
 _caml_call_gc:
@@ -56,7 +55,7 @@ L105:   push    ebp
         push    eax
         mov     _caml_gc_regs, esp
     ; Call the garbage collector 
-        call	_garbage_collection
+        call	_caml_garbage_collection
     ; Restore all regs used by the code generator 
 	pop     eax
         pop     ebx
@@ -70,10 +69,10 @@ L105:   push    ebp
 
         ALIGN  4
 _caml_alloc1:
-        mov	eax, _young_ptr
+        mov	eax, _caml_young_ptr
         sub	eax, 8
-        mov	_young_ptr, eax
-        cmp	eax, _young_limit
+        mov	_caml_young_ptr, eax
+        cmp	eax, _caml_young_limit
         jb	L100
         ret	
 L100:   mov	eax, [esp]
@@ -85,10 +84,10 @@ L100:   mov	eax, [esp]
 
         ALIGN  4
 _caml_alloc2:
-        mov	eax, _young_ptr
+        mov	eax, _caml_young_ptr
         sub	eax, 12
-        mov	_young_ptr, eax
-        cmp	eax, _young_limit
+        mov	_caml_young_ptr, eax
+        cmp	eax, _caml_young_limit
         jb	L101
         ret	
 L101:   mov	eax, [esp]
@@ -100,10 +99,10 @@ L101:   mov	eax, [esp]
 
         ALIGN  4
 _caml_alloc3:
-        mov	eax, _young_ptr
+        mov	eax, _caml_young_ptr
         sub	eax, 16
-        mov	_young_ptr, eax
-        cmp	eax, _young_limit
+        mov	_caml_young_ptr, eax
+        cmp	eax, _caml_young_limit
         jb	L102
         ret	
 L102:   mov	eax, [esp]
@@ -114,24 +113,24 @@ L102:   mov	eax, [esp]
         jmp     _caml_alloc3
 
         ALIGN  4
-_caml_alloc:
-        sub     eax, _young_ptr         ; eax = size - young_ptr
+_caml_allocN:
+        sub     eax, _caml_young_ptr         ; eax = size - young_ptr
         neg     eax                     ; eax = young_ptr - size
-        cmp     eax, _young_limit
+        cmp     eax, _caml_young_limit
         jb      L103
-        mov     _young_ptr, eax
+        mov     _caml_young_ptr, eax
         ret
-L103:   sub     eax, _young_ptr         ; eax = - size
+L103:   sub     eax, _caml_young_ptr         ; eax = - size
         neg     eax                     ; eax = size
         push    eax                     ; save desired size
-        sub     _young_ptr, eax         ; must update young_ptr
+        sub     _caml_young_ptr, eax         ; must update young_ptr
         mov	eax, [esp+4]
         mov     _caml_last_return_address, eax
         lea     eax, [esp+8]
         mov     _caml_bottom_of_stack, eax
         call    L105
         pop     eax                     ; recover desired size
-        jmp     _caml_alloc
+        jmp     _caml_allocN
 
 ; Call a C function from Caml 
 
@@ -197,9 +196,9 @@ L108:
 
 ; Raise an exception from C 
 
-        PUBLIC  _raise_caml_exception
+        PUBLIC  _caml_raise_exception
         ALIGN  4
-_raise_caml_exception:
+_caml_raise_exception:
         mov	eax, [esp+4]
         mov	esp, _caml_exception_pointer
         pop	_caml_exception_pointer
@@ -207,9 +206,9 @@ _raise_caml_exception:
 
 ; Callback from C to Caml 
 
-        PUBLIC  _callback_exn
+        PUBLIC  _caml_callback_exn
         ALIGN  4
-_callback_exn:
+_caml_callback_exn:
     ; Save callee-save registers 
         push	ebx
         push	esi
@@ -221,9 +220,9 @@ _callback_exn:
         mov	esi, [ebx]      ; code pointer
         jmp     L106
 
-        PUBLIC  _callback2_exn
+        PUBLIC  _caml_callback2_exn
         ALIGN  4
-_callback2_exn:
+_caml_callback2_exn:
     ; Save callee-save registers 
         push	ebx
         push	esi
@@ -236,9 +235,9 @@ _callback2_exn:
         mov	esi, offset _caml_apply2   ; code pointer 
         jmp	L106
 
-        PUBLIC  _callback3_exn
+        PUBLIC  _caml_callback3_exn
         ALIGN	4
-_callback3_exn:
+_caml_callback3_exn:
     ; Save callee-save registers 
         push	ebx
         push	esi
@@ -252,9 +251,9 @@ _callback3_exn:
         mov	esi, offset _caml_apply3   ; code pointer 
         jmp	L106
 
-        PUBLIC  _caml_array_bound_error
+        PUBLIC  _caml_ml_array_bound_error
         ALIGN   4
-_caml_array_bound_error:
+_caml_ml_array_bound_error:
     ; Empty the floating-point stack
         ffree   st(0)
         ffree   st(1)
@@ -265,11 +264,11 @@ _caml_array_bound_error:
         ffree   st(6)
         ffree   st(7)
     ; Branch to array_bound_error
-        jmp     _array_bound_error
+        jmp     _caml_array_bound_error
 
         .DATA
-        PUBLIC  _system__frametable
-_system__frametable LABEL DWORD
+        PUBLIC  _caml_system__frametable
+_caml_system__frametable LABEL DWORD
         DWORD   1               ; one descriptor 
         DWORD   L107            ; return address into callback 
         WORD    -1              ; negative frame size => use callback link 

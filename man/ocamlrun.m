@@ -21,7 +21,7 @@ command.
 The first non-option argument is taken to be the name of the file
 containing the executable bytecode. (That file is searched in the
 executable path as well as in the current directory.) The remaining
-arguments are passed to the Caml Light program, in the string array
+arguments are passed to the Objective Caml program, in the string array
 Sys.argv. Element 0 of this array is the name of the
 bytecode executable file; elements 1 to 
 .I n
@@ -61,6 +61,9 @@ This variable must be a sequence of parameter specifications.
 A parameter specification is an option letter followed by an =
 sign, a decimal number, and an optional multiplier.  There are seven
 options:
+.TP
+.BR b \ (backtrace)
+Print a stack backtrace in case of an uncaught exception.
 .TP
 .BR s \ (minor_heap_size)
 Size of the minor heap.
@@ -104,6 +107,12 @@ Change of GC parameters.
 .TP
 .BR 64
 Computation of major GC slice size.
+.TP
+.BR 128
+Calling of finalisation function.
+.TP
+.BR 256
+Startup messages.
 
 The multiplier is
 .B k

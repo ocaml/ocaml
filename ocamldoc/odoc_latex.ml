@@ -23,6 +23,35 @@ open Exception
 open Class 
 open Module
 
+let new_buf () = Buffer.create 1024
+let new_fmt () =
+  let b = new_buf () in
+  let fmt = Format.formatter_of_buffer b in
+  (fmt,
+   fun () -> 
+    Format.pp_print_flush fmt ();
+    let s = Buffer.contents b in
+    Buffer.reset b;
+    s
+  )
+
+let p = Format.fprintf
+let ps f s = Format.fprintf f "%s" s
+
+
+let bp = Printf.bprintf
+let bs = Buffer.add_string
+
+let print_concat fmt sep f =
+  let rec iter = function
+      [] -> ()
+    | [c] -> f c
+    | c :: q ->
+	f c;
+	ps fmt sep;
+	iter q
+  in
+  iter
 
 (** Generation of LaTeX code from text structures. *)
 class text =
@@ -185,109 +214,140 @@ class text =
     (** Return latex code for the ref to a given label. *)
     method make_ref label = "\\ref{"^label^"}"
 
-    (** Return the LaTeX code corresponding to the [text] parameter.*)
-    method latex_of_text t = String.concat "" (List.map self#latex_of_text_element t)
+    (** Print the LaTeX code corresponding to the [text] parameter.*)
+    method latex_of_text fmt t = 
+      List.iter (self#latex_of_text_element fmt) t
         
-    (** Return the LaTeX code for the [text_element] in parameter. *)
-    method latex_of_text_element te =
+    (** Print the LaTeX code for the [text_element] in parameter. *)
+    method latex_of_text_element fmt te =
       match te with
-      | Odoc_info.Raw s -> self#latex_of_Raw s
-      | Odoc_info.Code s -> self#latex_of_Code s
-      | Odoc_info.CodePre s -> self#latex_of_CodePre s
-      | Odoc_info.Verbatim s -> self#latex_of_Verbatim s
-      | Odoc_info.Bold t -> self#latex_of_Bold t
-      | Odoc_info.Italic t -> self#latex_of_Italic t 
-      | Odoc_info.Emphasize t -> self#latex_of_Emphasize t
-      | Odoc_info.Center t -> self#latex_of_Center t
-      | Odoc_info.Left t -> self#latex_of_Left t
-      | Odoc_info.Right t -> self#latex_of_Right t
-      | Odoc_info.List tl -> self#latex_of_List tl
-      | Odoc_info.Enum tl -> self#latex_of_Enum tl
-      | Odoc_info.Newline -> self#latex_of_Newline
-      | Odoc_info.Block t -> self#latex_of_Block t
-      | Odoc_info.Title (n, l_opt, t) -> self#latex_of_Title n l_opt t
-      | Odoc_info.Latex s -> self#latex_of_Latex s
-      | Odoc_info.Link (s, t) -> self#latex_of_Link s t
-      | Odoc_info.Ref (name, ref_opt) -> self#latex_of_Ref name ref_opt
-      | Odoc_info.Superscript t -> self#latex_of_Superscript t
-      | Odoc_info.Subscript t -> self#latex_of_Subscript t
-            
-    method latex_of_Raw s = self#escape s
+      | Odoc_info.Raw s -> self#latex_of_Raw fmt s
+      | Odoc_info.Code s -> self#latex_of_Code fmt s
+      | Odoc_info.CodePre s -> self#latex_of_CodePre fmt s
+      | Odoc_info.Verbatim s -> self#latex_of_Verbatim fmt s
+      | Odoc_info.Bold t -> self#latex_of_Bold fmt t
+      | Odoc_info.Italic t -> self#latex_of_Italic fmt t 
+      | Odoc_info.Emphasize t -> self#latex_of_Emphasize fmt t
+      | Odoc_info.Center t -> self#latex_of_Center fmt t
+      | Odoc_info.Left t -> self#latex_of_Left fmt t
+      | Odoc_info.Right t -> self#latex_of_Right fmt t
+      | Odoc_info.List tl -> self#latex_of_List fmt tl
+      | Odoc_info.Enum tl -> self#latex_of_Enum fmt tl
+      | Odoc_info.Newline -> self#latex_of_Newline fmt
+      | Odoc_info.Block t -> self#latex_of_Block fmt t
+      | Odoc_info.Title (n, l_opt, t) -> self#latex_of_Title fmt n l_opt t
+      | Odoc_info.Latex s -> self#latex_of_Latex fmt s
+      | Odoc_info.Link (s, t) -> self#latex_of_Link fmt s t
+      | Odoc_info.Ref (name, ref_opt) -> self#latex_of_Ref fmt name ref_opt
+      | Odoc_info.Superscript t -> self#latex_of_Superscript fmt t
+      | Odoc_info.Subscript t -> self#latex_of_Subscript fmt t
+      |	Odoc_info.Module_list _ -> ()
+      |	Odoc_info.Index_list -> ()
 
-    method latex_of_Code s = 
+    method latex_of_Raw fmt s = 
+      ps fmt (self#escape s)
+
+    method latex_of_Code fmt s = 
       let s2 = self#escape_code s in
       let s3 = Str.global_replace (Str.regexp "\n") ("\\\\\n") s2 in
-      "{\\tt{"^s3^"}}"
+      p fmt "{\\tt{%s}}" s3
 
-    method latex_of_CodePre s =
-      "\\begin{ocamldoccode}\n"^(self#escape_simple s)^"\n\\end{ocamldoccode}\n"
+    method latex_of_CodePre fmt s =
+      ps fmt "\\begin{ocamldoccode}\n";
+      ps fmt (self#escape_simple s);
+      ps fmt "\n\\end{ocamldoccode}\n"
 
-    method latex_of_Verbatim s = "\\begin{verbatim}"^s^"\\end{verbatim}"
+    method latex_of_Verbatim fmt s = 
+      ps fmt "\\begin{verbatim}";
+      ps fmt s;
+      ps fmt "\\end{verbatim}"
 
-    method latex_of_Bold t =
-      let s = self#latex_of_text t in
-      "{\\bf "^s^"}"
+    method latex_of_Bold fmt t =
+      ps fmt "{\\bf ";
+      self#latex_of_text fmt t;
+      ps fmt "}"
 
-    method latex_of_Italic t = 
-      let s = self#latex_of_text t in
-      "{\\it "^s^"}"
+    method latex_of_Italic fmt t = 
+      ps fmt "{\\it ";
+      self#latex_of_text fmt t;
+      ps fmt "}"
 
-    method latex_of_Emphasize t =
-      let s = self#latex_of_text t in
-      "{\\em "^s^"}"
+    method latex_of_Emphasize fmt t =
+      ps fmt "{\\em ";
+      self#latex_of_text fmt t;
+      ps fmt "}"
 
-    method latex_of_Center t =
-      let s = self#latex_of_text t in
-      "\\begin{center}\n"^s^"\\end{center}\n"
+    method latex_of_Center fmt t =
+      ps fmt "\\begin{center}\n";
+      self#latex_of_text fmt t;
+      ps fmt "\\end{center}\n"
 
-    method latex_of_Left t =
-      let s = self#latex_of_text t in
-      "\\begin{flushleft}\n"^s^"\\end{flushleft}\n"
+    method latex_of_Left fmt t =
+      ps fmt "\\begin{flushleft}\n";
+      self#latex_of_text fmt t;
+      ps fmt "\\end{flushleft}\n"
 
-    method latex_of_Right t =
-      let s = self#latex_of_text t in
-      "\\begin{flushright}\n"^s^"\\end{flushright}\n"
+    method latex_of_Right fmt t =
+      ps fmt "\\begin{flushright}\n";
+      self#latex_of_text fmt t;
+      ps fmt "\\end{flushright}\n"
 
-    method latex_of_List tl =
-      "\\begin{itemize}"^
-      (String.concat ""
-         (List.map (fun t -> "\\item "^(self#latex_of_text t)^"\n") tl))^
-      "\\end{itemize}\n"
+    method latex_of_List fmt tl =
+      ps fmt "\\begin{itemize}\n";
+      List.iter 
+	(fun t -> 
+	  ps fmt "\\item ";
+	  self#latex_of_text fmt t;
+	  ps fmt "\n"
+	) 
+	tl;
+      ps fmt "\\end{itemize}\n"
 
-    method latex_of_Enum tl =
-      "\\begin{enumerate}"^
-      (String.concat ""
-         (List.map (fun t -> "\\item "^(self#latex_of_text t)^"\n") tl))^
-      "\\end{enumerate}\n"
+    method latex_of_Enum fmt tl =
+      ps fmt "\\begin{enumerate}\n";
+      List.iter 
+	(fun t -> 
+	  ps fmt "\\item ";
+	  self#latex_of_text fmt t;
+	  ps fmt "\n"
+	) 
+	tl;
+      ps fmt "\\end{enumerate}\n"
 
-    method latex_of_Newline = "\n\n"
+    method latex_of_Newline fmt = ps fmt "\n\n"
 
-    method latex_of_Block t =
-      let s = self#latex_of_text t in
-      "\\begin{ocamldocdescription}\n"^s^"\n\\end{ocamldocdescription}\n"
+    method latex_of_Block fmt t =
+      ps fmt "\\begin{ocamldocdescription}\n";
+      self#latex_of_text fmt t;
+      ps fmt "\n\\end{ocamldocdescription}\n"
 
-    method latex_of_Title n label_opt t =
-      let s_title = self#latex_of_text t in
-      let s_title2 = self#section_style n s_title in
-      s_title2^
-      (match label_opt with
-        None -> ""
-      | Some l -> self#make_label (self#label ~no_: false l))
+    method latex_of_Title fmt n label_opt t =
+      let (fmt2, flush) = new_fmt () in
+      self#latex_of_text fmt2 t;
+      let s_title2 = self#section_style n (flush ()) in
+      ps fmt s_title2;
+      (
+       match label_opt with
+         None -> ()
+       | Some l ->
+	   ps fmt (self#make_label (self#label ~no_: false l))
+      )
 
-    method latex_of_Latex s = s
+    method latex_of_Latex fmt s = ps fmt s
 
-    method latex_of_Link s t =
-      let s1 = self#latex_of_text t in
-      let s2 = "[\\url{"^s^"}]" in
-      s1^s2
+    method latex_of_Link fmt s t =
+      self#latex_of_text fmt t ;
+      ps fmt "[\\url{";
+      ps fmt s ;
+      ps fmt "}]"
 
-    method latex_of_Ref name ref_opt =
+    method latex_of_Ref fmt name ref_opt =
       match ref_opt with
         None -> 
-          self#latex_of_text_element 
+          self#latex_of_text_element fmt
             (Odoc_info.Code (Odoc_info.use_hidden_modules name))
       | Some (RK_section _) -> 
-          self#latex_of_text_element
+          self#latex_of_text_element fmt
             (Latex ("["^(self#make_ref (self#label ~no_:false (Name.simple name)))^"]"))
       | Some kind ->
           let f_label = 
@@ -303,16 +363,21 @@ class text =
             | Odoc_info.RK_method -> self#method_label
             | Odoc_info.RK_section _ -> assert false
           in
-          (self#latex_of_text 
-             [
-               Odoc_info.Code (Odoc_info.use_hidden_modules name) ;
-               Latex ("["^(self#make_ref (f_label name))^"]")
-             ] 
-          )
+          self#latex_of_text fmt
+            [
+              Odoc_info.Code (Odoc_info.use_hidden_modules name) ;
+              Latex ("["^(self#make_ref (f_label name))^"]")
+            ] 
 
-    method latex_of_Superscript t = "$^{"^(self#latex_of_text t)^"}$"
+    method latex_of_Superscript fmt t = 
+      ps fmt "$^{";
+      self#latex_of_text fmt t;
+      ps fmt "}$"
 
-    method latex_of_Subscript t = "$_{"^(self#latex_of_text t)^"}$"
+    method latex_of_Subscript fmt t = 
+      ps fmt "$_{";
+      self#latex_of_text fmt t;
+      ps fmt "}$"
 
   end
 
@@ -320,15 +385,15 @@ class text =
 class virtual info =
   object (self)
     (** The method used to get LaTeX code from a [text]. *)
-    method virtual latex_of_text : Odoc_info.text -> string
+    method virtual latex_of_text : Format.formatter -> Odoc_info.text -> unit
 
     (** The method used to get a [text] from an optionel info structure. *)
     method virtual text_of_info : ?block: bool -> Odoc_info.info option -> Odoc_info.text 
 
-    (** Return LaTeX code for a description, except for the [i_params] field. *)
-    method latex_of_info info_opt = 
-      self#latex_of_text 
-        (self#text_of_info ~block: false info_opt)
+    (** Print LaTeX code for a description, except for the [i_params] field. *)
+    method latex_of_info fmt ?(block=false) info_opt = 
+      self#latex_of_text fmt 
+        (self#text_of_info ~block info_opt)
   end
 
 (** This class is used to create objects which can generate a simple LaTeX documentation. *)
@@ -356,78 +421,68 @@ class latex =
                 let (_, rest) = Odoc_info.first_sentence_and_rest_of_text (self#text_of_info ~block: false i_opt) in
                 (Odoc_info.text_no_title_no_list first, rest)
 
-    (** Return LaTeX code for a value. *)
-    method latex_of_value v = 
+    (** Print LaTeX code for a value. *)
+    method latex_of_value fmt v = 
       Odoc_info.reset_type_names () ;
-      self#latex_of_text 
-        ((Latex (self#make_label (self#value_label v.val_name))) :: 
+      let label = self#value_label v.val_name in
+      let latex = self#make_label label in
+      self#latex_of_text fmt
+        ((Latex latex) :: 
          (to_text#text_of_value v))
 
-    (** Return LaTeX code for a class attribute. *)
-    method latex_of_attribute a =
-      self#latex_of_text 
+    (** Print LaTeX code for a class attribute. *)
+    method latex_of_attribute fmt a =
+      self#latex_of_text fmt
         ((Latex (self#make_label (self#attribute_label a.att_value.val_name))) :: 
          (to_text#text_of_attribute a))
 
-    (** Return LaTeX code for a class method. *)
-    method latex_of_method m = 
-      self#latex_of_text
+    (** Print LaTeX code for a class method. *)
+    method latex_of_method fmt m = 
+      self#latex_of_text fmt
         ((Latex (self#make_label (self#method_label m.met_value.val_name))) :: 
          (to_text#text_of_method m))
 
-    (** Return LaTeX code for the parameters of a type. *)
-    method latex_of_type_params m_name t =
-      let f (p, co, cn) =
-	Printf.sprintf "%s%s"
-	  (Odoc_info.string_of_variance t (co,cn))
-	  (self#normal_type m_name p)
+    (** Print LaTeX code for the parameters of a type. *)
+    method latex_of_type_params fmt m_name t =
+      let print_one (p, co, cn) =
+	ps fmt (Odoc_info.string_of_variance t (co,cn));
+	ps fmt (self#normal_type m_name p)
       in
       match t.ty_parameters with
-        [] -> ""
-      | [(p,co,cn)] -> f (p, co, cn)
+        [] -> ()
+      | [(p,co,cn)] -> print_one (p, co, cn)
       | l -> 
-	  Printf.sprintf "(%s)"
-	    (String.concat ", " (List.map f t.ty_parameters))
+	  ps fmt "(";
+	  print_concat fmt ", " print_one t.ty_parameters;
+	  ps fmt ")"
 
-    (** Return LaTeX code for a type. *)
-    method latex_of_type t =
+    (** Print LaTeX code for a type. *)
+    method latex_of_type fmt t =
       let s_name = Name.simple t.ty_name in
       let text = 
+	let (fmt2, flush2) = new_fmt () in
         Odoc_info.reset_type_names () ;
         let mod_name = Name.father t.ty_name in
-        let s_type1 = 
-          Format.fprintf Format.str_formatter "@[<hov 2>type ";
-          Format.fprintf Format.str_formatter "%s%s" 
-	    (self#latex_of_type_params mod_name t)
-	    (match t.ty_parameters with [] -> "" | _ -> " ");
-	  Format.flush_str_formatter ()
-        in
-        Format.fprintf Format.str_formatter 
-          ("@[<hov 2>%s %s")
-          s_type1
-          s_name;
-        let s_type2 = 
-	  (
-           match t.ty_manifest with
-             None -> ()
-           | Some typ -> 
-               Format.fprintf Format.str_formatter 
-		 " = %s"
-		 (self#normal_type mod_name typ)
-	  );
-	  Format.flush_str_formatter ()
-        in
+        Format.fprintf fmt2 "@[<h 2>type ";
+	self#latex_of_type_params fmt2 mod_name t;
+	(match t.ty_parameters with [] -> () | _ -> ps fmt2 " ");
+        ps fmt2 s_name;
+	(
+         match t.ty_manifest with
+           None -> ()
+         | Some typ -> 
+             p fmt2 " = %s" (self#normal_type mod_name typ)
+	);
         let s_type3 = 
-          Format.fprintf Format.str_formatter 
-            ("%s %s")
-            s_type2
+          p fmt2
+            " %s"
             (
 	     match t.ty_kind with
                Type_abstract -> ""
              | Type_variant (_, priv) -> "="^(if priv then " private" else "")
              | Type_record (_, priv) -> "= "^(if priv then "private " else "")^"{" 
 	    ) ;
-          Format.flush_str_formatter ()
+          flush2 ()
         in
         
         let defs = 
@@ -438,28 +493,28 @@ class latex =
                (List.map
                   (fun constr ->
                     let s_cons = 
-                      Format.fprintf Format.str_formatter 
-                        "@[<hov 6>  | %s"
-                        constr.vc_name;
+                      p fmt2 "@[<h 6>  | %s" constr.vc_name;
                       (
 		       match constr.vc_args with
                          [] -> ()
                        | l -> 
-                           Format.fprintf Format.str_formatter " %s@ %s" 
+                           p fmt2 " %s@ %s" 
 			     "of"
-                             (self#normal_type_list mod_name " * " l)
+                             (self#normal_type_list ~par: false mod_name " * " l)
 		      );
-		      Format.flush_str_formatter ()
+		      flush2 ()
                     in
                     [ CodePre s_cons ] @
                     (match constr.vc_text with
                       None -> []
                     | Some t -> 
-                        [ Latex
-                            ("\\begin{ocamldoccomment}\n"^
-                             (self#latex_of_text t)^
-                             "\n\\end{ocamldoccomment}\n")
-                        ] 
+			let s = 
+			  ps fmt2 "\\begin{ocamldoccomment}\n";
+			  self#latex_of_text fmt2 t;
+			  ps fmt2 "\n\\end{ocamldoccomment}\n";
+			  flush2 ()
+			in
+                        [ Latex s]
                     )
                   )
                   l
@@ -470,22 +525,24 @@ class latex =
                  (List.map
                     (fun r ->
                       let s_field = 
-                        Format.fprintf Format.str_formatter 
-                          "@[<hov 6>  %s%s :@ %s ;"
+                        p fmt2
+			  "@[<h 6>  %s%s :@ %s ;"
                           (if r.rf_mutable then "mutable " else "")
                           r.rf_name
                           (self#normal_type mod_name r.rf_type);
-			Format.flush_str_formatter ()
+			flush2 ()
                       in
                       [ CodePre s_field ] @
                       (match r.rf_text with
                         None -> []
                       | Some t -> 
-                          [ Latex
-                              ("\\begin{ocamldoccomment}\n"^
-                               (self#latex_of_text t)^
-                               "\n\\end{ocamldoccomment}\n")
-                          ] 
+                          let s = 
+			    ps fmt2 "\\begin{ocamldoccomment}\n";
+			    self#latex_of_text fmt2 t;
+			    ps fmt2 "\n\\end{ocamldoccomment}\n";
+			    flush2 ()
+			in
+                        [ Latex s]
                       )
                     )
                     l
@@ -506,193 +563,394 @@ class latex =
         [Latex ("\\index{"^(self#type_label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
         (self#text_of_info t.ty_info)
       in
-      self#latex_of_text 
+      self#latex_of_text fmt
         ((Latex (self#make_label (self#type_label t.ty_name))) :: text)
 
-    (** Return LaTeX code for an exception. *)
-    method latex_of_exception e =
+    (** Print LaTeX code for an exception. *)
+    method latex_of_exception fmt e =
       Odoc_info.reset_type_names () ;
-      self#latex_of_text 
+      self#latex_of_text fmt
         ((Latex (self#make_label (self#exception_label e.ex_name))) :: 
          (to_text#text_of_exception e))
 
-    (** Return the LaTeX code for the given module. 
-       @param for_detail indicate if we must print the type ([false]) or just ["sig"] ([true]).*)
-    method latex_of_module ?(for_detail=false) ?(with_link=true) m =
-      let buf = Buffer.create 32 in
-      let f = Format.formatter_of_buffer buf in
+    method latex_of_module_parameter fmt m_name p =
+      self#latex_of_text fmt 
+	[
+	  Code "functor (";
+	  Code p.mp_name ;
+	  Code " : ";
+	] ;
+      self#latex_of_module_type_kind fmt m_name p.mp_kind;
+      self#latex_of_text fmt [ Code ") -> "]
+
+
+    method latex_of_module_type_kind fmt father kind =
+      match kind with
+	Module_type_struct eles ->
+	  self#latex_of_text fmt [Latex "\\begin{ocamldocsigend}\n"];
+	  List.iter (self#latex_of_module_element fmt father) eles;
+	  self#latex_of_text fmt [Latex "\\end{ocamldocsigend}\n"]
+      | Module_type_functor (p, k) ->
+	  self#latex_of_module_parameter fmt father p;
+	  self#latex_of_module_type_kind fmt father k
+      | Module_type_alias a ->
+	  self#latex_of_text fmt 
+	    [Code (self#relative_module_idents father a.mta_name)]
+      | Module_type_with (k, s) ->
+	  self#latex_of_module_type_kind fmt father k;
+	  self#latex_of_text fmt 
+	    [ Code " "; 
+	      Code (self#relative_idents father s);
+	    ]
+	    
+    method latex_of_module_kind fmt father kind =
+      match kind with
+	Module_struct eles ->
+	  self#latex_of_text fmt [Latex "\\begin{ocamldocsigend}\n"];
+	  List.iter (self#latex_of_module_element fmt father) eles;
+	  self#latex_of_text fmt [Latex "\\end{ocamldocsigend}\n"]
+      | Module_alias a ->
+	  self#latex_of_text fmt 
+	    [Code (self#relative_module_idents father a.ma_name)]
+      | Module_functor (p, k) ->
+	  self#latex_of_module_parameter fmt father p;
+	  self#latex_of_module_kind fmt father k
+      | Module_apply (k1, k2) ->
+	  (* TODO: l'application n'est pas correcte dans un .mli. 
+	     Que faire ? -> afficher le module_type du typedtree  *)
+	  self#latex_of_module_kind fmt father k1;
+	  self#latex_of_text fmt [Code "("];
+	  self#latex_of_module_kind fmt father k2;
+	  self#latex_of_text fmt [Code ")"]
+      | Module_with (k, s) ->
+	  (* TODO: à modifier quand Module_with sera plus détaillé *)
+	  self#latex_of_module_type_kind fmt father k;
+	  self#latex_of_text fmt 
+	    [ Code " "; 
+	      Code (self#relative_idents father s) ;
+	    ]
+      | Module_constraint (k, tk) ->
+	  (* TODO: on affiche quoi ? *)
+	  self#latex_of_module_kind fmt father k
+
+    method latex_of_class_parameter fmt father p =
+      ps fmt (self#normal_type father (Parameter.typ p))
+
+    method latex_of_class_parameter_list fmt father params =
+      List.iter
+	(fun p -> 
+	  self#latex_of_class_parameter fmt father p;
+	  ps fmt " -> ")
+	params
+
+    method latex_of_class_kind fmt father kind =
+      match kind with
+        Class_structure (inh, eles) -> 
+	  self#latex_of_text fmt [Latex "\\begin{ocamldocobjectend}\n"];
+	  self#generate_inheritance_info fmt inh;
+	  List.iter (self#latex_of_class_element fmt father) eles;
+	  self#latex_of_text fmt [Latex "\\end{ocamldocobjectend}\n"]
+
+      | Class_apply capp ->
+	  (* TODO: afficher le type final à partir du typedtree *)
+	  self#latex_of_text fmt [Raw "class application not handled yet"]
+            
+      | Class_constr cco ->
+	  (
+           match cco.cco_type_parameters with
+             [] -> ()
+           | l -> 
+               self#latex_of_text fmt
+		 (
+		  Code "[" ::
+		  (self#text_of_class_type_param_expr_list father l) @
+		  [Code "] "]
+		 )
+	  );
+	  self#latex_of_text fmt
+	    [Code (self#relative_idents father cco.cco_name)]
+
+      | Class_constraint (ck, ctk) ->
+          self#latex_of_text fmt [Code "( "] ;
+          self#latex_of_class_kind fmt father ck;
+          self#latex_of_text fmt [Code " : "] ;
+          self#latex_of_class_type_kind fmt father ctk;
+          self#latex_of_text fmt [Code " )"]
+
+    method latex_of_class_type_kind fmt father kind =
+      match kind with
+        Class_type cta -> 
+          (
+           match cta.cta_type_parameters with
+             [] -> ()
+           | l -> 
+               self#latex_of_text fmt 
+		 (Code "[" ::
+		  (self#text_of_class_type_param_expr_list father l) @
+		  [Code "] "]
+		 )
+          );
+          self#latex_of_text fmt
+	    [Code (self#relative_idents father cta.cta_name)]
+
+      | Class_signature (inh, eles) -> 
+	  self#latex_of_text fmt [Latex "\\begin{ocamldocobjectend}\n"];
+	  self#generate_inheritance_info fmt inh;
+	  List.iter (self#latex_of_class_element fmt father) eles;
+	  self#latex_of_text fmt [Latex "\\end{ocamldocobjectend}\n"]
+
+    method latex_for_module_index fmt m =
+      self#latex_of_text fmt 
+	[Latex ("\\index{"^(self#module_label m.m_name)^"@\\verb`"^
+		(self#label ~no_:false m.m_name)^"`}\n"
+	       )
+	]
+
+    method latex_for_module_type_index fmt mt =
+      self#latex_of_text fmt 
+	[Latex ("\\index{"^(self#module_type_label mt.mt_name)^"@\\verb`"^
+		(self#label ~no_:false mt.mt_name)^"`}\n"
+	       )
+	]
+
+    method latex_for_module_label fmt m =
+      ps fmt (self#make_label (self#module_label m.m_name))
+
+    method latex_for_module_type_label fmt mt =
+      ps fmt (self#make_label (self#module_type_label mt.mt_name))
+
+
+    method latex_for_class_index fmt c =
+      self#latex_of_text fmt 
+	[Latex ("\\index{"^(self#class_label c.cl_name)^"@\\verb`"^
+		(self#label ~no_:false c.cl_name)^"`}\n"
+	       )
+	]
+
+    method latex_for_class_type_index fmt ct =
+      self#latex_of_text fmt 
+	[Latex ("\\index{"^(self#class_type_label ct.clt_name)^"@\\verb`"^
+		(self#label ~no_:false ct.clt_name)^"`}\n"
+	       )
+	]
+
+    method latex_for_class_label fmt c =
+      ps fmt (self#make_label (self#class_label c.cl_name))
+
+    method latex_for_class_type_label fmt ct =
+      ps fmt (self#make_label (self#class_type_label ct.clt_name))
+
+    (** Print the LaTeX code for the given module. *)
+    method latex_of_module fmt m =
       let father = Name.father m.m_name in
       let t = 
-        Format.fprintf f "module %s" (Name.simple m.m_name);
-        Format.fprintf f " : %s"
-          (
-	   if for_detail 
-	   then "sig" 
-	   else (self#normal_module_type father m.m_type)
-	  );
-          
-        Format.pp_print_flush f ();
-
-        (CodePre (Buffer.contents buf)) ::
-        (
-         if with_link 
-         then [Odoc_info.Latex ("\\\n["^(self#make_ref (self#module_label m.m_name))^"]")]
-         else [] 
-        )
+        [
+	  Latex "\\begin{ocamldoccode}\n" ;
+	  Code "module ";
+	  Code (Name.simple m.m_name);
+          Code " : ";
+	]
       in
-      self#latex_of_text t
+      self#latex_of_text fmt t;
+      self#latex_of_text fmt [ Latex "\\end{ocamldoccode}\n" ];
+      self#latex_for_module_label fmt m;
+      self#latex_for_module_index fmt m;
+      p fmt "@[<h 4>";
+      self#latex_of_module_kind fmt father m.m_kind;
+      (
+       match Module.module_is_functor m with
+	 false -> ()
+       | true ->
+	   self#latex_of_text fmt  [Newline];
+	   (
+	    match List.filter (fun (_,d) -> d <> None)
+		(module_parameters ~trans: false m)
+	    with
+	      [] -> ()
+	    | l ->
+		let t = 
+		  [ Bold [Raw "Parameters: "];
+		    List
+		      (List.map
+			 (fun (p,text_opt) ->
+			   let t = match text_opt with None -> [] | Some t -> t in
+			   ( Raw p.mp_name :: Raw ": " :: t)
+			 )
+			 l
+		      )
+		  ]
+	   in
+	   self#latex_of_text fmt t
+	   );
+      );
+      self#latex_of_text fmt [Newline];
+      self#latex_of_info fmt ~block: true m.m_info;
+      p fmt "@]";
 
-    (** Return the LaTeX code for the given module type. 
-       @param for_detail indicate if we must print the type ([false]) or just ["sig"] ([true]).*)
-    method latex_of_module_type ?(for_detail=false) ?(with_link=true) mt =
-      let buf = Buffer.create 32 in
-      let f = Format.formatter_of_buffer buf in
+
+    (** Print the LaTeX code for the given module type. *)
+    method latex_of_module_type fmt mt =
       let father = Name.father mt.mt_name in
       let t = 
-        Format.fprintf f "module type %s" (Name.simple mt.mt_name);
-        (match mt.mt_type with
-          None -> ()
-        | Some mtyp -> 
-            Format.fprintf f " = %s"
-              (
-	       if for_detail 
-	       then "sig" 
-	       else (self#normal_module_type father mtyp)
-	      )
-        );
+        [
+	  Latex "\\begin{ocamldoccode}\n" ;
+	  Code "module type " ;
+	  Code (Name.simple mt.mt_name);
+	] 
+      in
+      self#latex_of_text fmt t;
+      (
+       match mt.mt_type, mt.mt_kind with
+       | Some mtyp, Some kind -> 
+           self#latex_of_text fmt [ Code " = " ];
+	   self#latex_of_text fmt [ Latex "\\end{ocamldoccode}\n" ];
+	   self#latex_for_module_type_label fmt mt;
+	   self#latex_for_module_type_index fmt mt;
+	   p fmt "@[<h 4>";
+	   self#latex_of_module_type_kind fmt father kind
+       | _ ->
+	   self#latex_of_text fmt [ Latex "\\end{ocamldoccode}\n" ];
+	   self#latex_for_module_type_index fmt mt;
+	   p fmt "@[<h 4>";
+      );
+      (
+       match Module.module_type_is_functor mt with
+	 false -> ()
+       | true ->
+	   self#latex_of_text fmt [Newline];
+	   (
+	    match List.filter (fun (_,d) -> d <> None)
+		(module_type_parameters ~trans: false mt)
+	    with
+	      [] -> ()
+	    | l ->
+		let t = 
+		  [ Bold [Raw "Parameters: "];
+		    List
+		      (List.map
+			 (fun (p,text_opt) ->
+			   let t = match text_opt with None -> [] | Some t -> t in
+			   ( Raw p.mp_name :: Raw ": " :: t)
+			 )
+			 l
+		      )
+		  ] 
+		in
+		self#latex_of_text fmt t
+	   );
+      );
+      self#latex_of_text fmt [Newline];
+      self#latex_of_info fmt ~block: true mt.mt_info;
+      p fmt "@]";
 
-        Format.pp_print_flush f ();
-
-        (CodePre (Buffer.contents buf)) ::
-        (
-         if with_link 
-         then [Odoc_info.Latex ("\\\n["^(self#make_ref (self#module_type_label mt.mt_name))^"]")]
-         else [] 
+    (** Print the LaTeX code for the given included module. *)
+    method latex_of_included_module fmt im =
+      self#latex_of_text fmt
+	((Code "include ") ::
+         (Code 
+            (match im.im_module with
+              None -> im.im_name
+            | Some (Mod m) -> m.m_name
+            | Some (Modtype mt) -> mt.mt_name)
+	 ) ::
+	 (self#text_of_info im.im_info)
         )
-      in
-      self#latex_of_text t
 
-    (** Return the LaTeX code for the given included module. *)
-    method latex_of_included_module im =
-      (self#latex_of_text ((Code "include ") ::
-                           (Code 
-                              (match im.im_module with
-                                None -> im.im_name
-                              | Some (Mod m) -> m.m_name
-                              | Some (Modtype mt) -> mt.mt_name)
-			   ) ::
-			   (self#text_of_info im.im_info)
-                          )
-      )
-
-    (** Return the LaTeX code for the given class. 
-       @param for_detail indicate if we must print the type ([false]) or just ["object"] ([true]).*)
-    method latex_of_class ?(for_detail=false) ?(with_link=true) c =
+    (** Print the LaTeX code for the given class. *)
+    method latex_of_class fmt c =
       Odoc_info.reset_type_names () ;
-      let buf = Buffer.create 32 in
-      let f = Format.formatter_of_buffer buf in
       let father = Name.father c.cl_name in
-      let t = 
-        Format.fprintf f "class %s" 
-          (if c.cl_virtual then "virtual " else "");
-        (
-         match c.cl_type_parameters with
-           [] -> ()
-         | l -> 
-             let s1 = self#normal_class_type_param_list father l in
-             Format.fprintf f "%s " s1
-        );
-        Format.fprintf f "%s : %s" 
-	  (Name.simple c.cl_name)
-          (
-	   if for_detail then
-	     "object"
-	   else
-	     self#normal_class_type father c.cl_type
-	  );
-
-        Format.pp_print_flush f ();
-        
-        (CodePre (Buffer.contents buf)) ::
-        (
-         if with_link 
-         then [Odoc_info.Latex (" ["^(self#make_ref (self#class_label c.cl_name))^"]")]
-         else [] 
-        ) 
+      let type_params =
+        match c.cl_type_parameters with
+          [] -> ""
+        | l -> (self#normal_class_type_param_list father l)^" "
       in
-      self#latex_of_text t
+      let t = 
+	[
+	  Latex "\\begin{ocamldoccode}\n" ;
+	  Code (Printf.sprintf
+		  "class %s%s%s : "
+		  (if c.cl_virtual then "virtual " else "")
+		  type_params
+		  (Name.simple c.cl_name)
+	       )
+	] 
+      in
+      self#latex_of_text fmt t;
+      self#latex_of_class_parameter_list fmt father c.cl_parameters;
+      self#latex_of_text fmt [ Latex "\\end{ocamldoccode}\n" ];
+      self#latex_for_class_label fmt c;
+      self#latex_for_class_index fmt c;
+      p fmt "@[<h 4>";
+      self#latex_of_class_kind fmt father c.cl_kind;
+      self#latex_of_text fmt [Newline];
+      self#latex_of_info fmt ~block: true c.cl_info;
+      p fmt "@]"
 
-    (** Return the LaTeX code for the given class type. 
-       @param for_detail indicate if we must print the type ([false]) or just ["object"] ([true]).*)
-    method latex_of_class_type ?(for_detail=false) ?(with_link=true) ct =
+    (** Print the LaTeX code for the given class type. *)
+    method latex_of_class_type fmt ct =
       Odoc_info.reset_type_names () ;
-      let buf = Buffer.create 32 in
-      let f = Format.formatter_of_buffer buf in
       let father = Name.father ct.clt_name in
-      let t = 
-        Format.fprintf f "class type %s" 
-          (if ct.clt_virtual then "virtual " else "");
-        (
-         match ct.clt_type_parameters with
-             [] -> ()
-         | l -> 
-             let s1 = self#normal_class_type_param_list father l in
-             Format.fprintf f "%s " s1
-        );
-        Format.fprintf f "%s = %s" 
-	  (Name.simple ct.clt_name)
-          (if for_detail then
-	    "object"
-	  else
-	    self#normal_class_type father ct.clt_type
-	  );
-
-        Format.pp_print_flush f ();
-        (CodePre (Buffer.contents buf)) ::
-        (
-         if with_link 
-         then [Odoc_info.Latex (" ["^(self#make_ref (self#class_type_label ct.clt_name))^"]")]
-         else [] 
-        ) 
+      let type_params =
+        match ct.clt_type_parameters with
+          [] -> ""
+        | l -> (self#normal_class_type_param_list father l)^" "
       in
-      self#latex_of_text t
+      let t = 
+	[
+	  Latex "\\begin{ocamldoccode}\n" ;
+	  Code (Printf.sprintf
+		  "class type %s%s%s = "
+		  (if ct.clt_virtual then "virtual " else "")
+		  type_params
+		  (Name.simple ct.clt_name)
+	       )
+	] 
+      in
+      self#latex_of_text fmt t;
 
-    (** Return the LaTeX code for the given class element. *)
-    method latex_of_class_element class_name class_ele =
-      (self#latex_of_text [Newline])^
-      (
-       match class_ele with
-         Class_attribute att -> self#latex_of_attribute att
-       | Class_method met -> self#latex_of_method met
-       | Class_comment t ->
-           match t with
-           | [] -> ""
-           | (Title (_,_,_)) :: _ -> self#latex_of_text t
-           | _ -> self#latex_of_text [ Title ((Name.depth class_name) + 2, None, t) ]
-      )
+      self#latex_of_text fmt [ Latex "\\end{ocamldoccode}\n" ];
+      self#latex_for_class_type_label fmt ct;
+      self#latex_for_class_type_index fmt ct;
+      p fmt "@[<h 4>";
+      self#latex_of_class_type_kind fmt father ct.clt_kind;
+      self#latex_of_text fmt [Newline];
+      self#latex_of_info fmt ~block: true ct.clt_info;
+      p fmt "@]"
 
-    (** Return the LaTeX code for the given module element. *)
-    method latex_of_module_element module_name module_ele =
-      (self#latex_of_text [Newline])^
-      (
-       match module_ele with
-         Element_module m -> self#latex_of_module m
-       | Element_module_type mt -> self#latex_of_module_type mt
-       | Element_included_module im -> self#latex_of_included_module im
-       | Element_class c -> self#latex_of_class c
-       | Element_class_type ct -> self#latex_of_class_type ct
-       | Element_value v -> self#latex_of_value v
-       | Element_exception e -> self#latex_of_exception e
-       | Element_type t -> self#latex_of_type t
-       | Element_module_comment t -> self#latex_of_text t
-      )
+    (** Print the LaTeX code for the given class element. *)
+    method latex_of_class_element fmt class_name class_ele =
+      self#latex_of_text fmt [Newline];
+      match class_ele with
+        Class_attribute att -> self#latex_of_attribute fmt att
+      | Class_method met -> self#latex_of_method fmt met
+      | Class_comment t ->
+          match t with
+          | [] -> ()
+          | (Title (_,_,_)) :: _ -> self#latex_of_text fmt t
+          | _ -> self#latex_of_text fmt [ Title ((Name.depth class_name) + 2, None, t) ]
+
+    (** Print the LaTeX code for the given module element. *)
+    method latex_of_module_element fmt module_name module_ele =
+      self#latex_of_text fmt [Newline];
+      match module_ele with
+        Element_module m -> self#latex_of_module fmt m
+      | Element_module_type mt -> self#latex_of_module_type fmt mt
+      | Element_included_module im -> self#latex_of_included_module fmt im
+      | Element_class c -> self#latex_of_class fmt c
+      | Element_class_type ct -> self#latex_of_class_type fmt ct
+      | Element_value v -> self#latex_of_value fmt v
+      | Element_exception e -> self#latex_of_exception fmt e
+      | Element_type t -> self#latex_of_type fmt t
+      | Element_module_comment t -> self#latex_of_text fmt t
 
     (** Generate the LaTeX code for the given list of inherited classes.*)
-    method generate_inheritance_info chanout inher_l =
+    method generate_inheritance_info fmt inher_l =
       let f inh =
         match inh.ic_class with
           None -> (* we can't make the reference *)
-            (Odoc_info.Code inh.ic_name) ::
+	    Newline ::
+            Code ("inherit "^inh.ic_name) ::
             (match inh.ic_text with
               None -> []
             | Some t -> Newline :: t
@@ -704,29 +962,24 @@ class latex =
               | Cltype _ -> self#class_type_label inh.ic_name
             in
             (* we can create the reference *)
-            (Odoc_info.Code inh.ic_name) ::
+	    Newline ::
+            Odoc_info.Code ("inherit "^inh.ic_name) ::
             (Odoc_info.Latex (" ["^(self#make_ref label)^"]")) :: 
             (match inh.ic_text with
               None -> []
             | Some t -> Newline :: t
             )
       in
-      let text = [
-        Odoc_info.Bold [Odoc_info.Raw Odoc_messages.inherits ];
-        Odoc_info.List (List.map f inher_l)
-      ] 
-      in
-      let s = self#latex_of_text text in
-      output_string chanout s
+      List.iter (self#latex_of_text fmt) (List.map f inher_l)
 
     (** Generate the LaTeX code for the inherited classes of the given class. *)
-    method generate_class_inheritance_info chanout cl =
+    method generate_class_inheritance_info fmt cl =
       let rec iter_kind k = 
         match k with
           Class_structure ([], _) ->
             ()
         | Class_structure (l, _) ->
-            self#generate_inheritance_info chanout l
+            self#generate_inheritance_info fmt l
         | Class_constraint (k, _) ->
             iter_kind k
         | Class_apply _
@@ -736,190 +989,68 @@ class latex =
       iter_kind cl.cl_kind
 
     (** Generate the LaTeX code for the inherited classes of the given class type. *)
-    method generate_class_type_inheritance_info chanout clt =
+    method generate_class_type_inheritance_info fmt clt =
       match clt.clt_kind with
         Class_signature ([], _) ->
           ()
       | Class_signature (l, _) ->
-          self#generate_inheritance_info chanout l
+          self#generate_inheritance_info fmt l
       | Class_type _ ->
           ()
 
-    (** Generate the LaTeX code for the given class, in the given out channel. *)
-    method generate_for_class chanout c =
-      Odoc_info.reset_type_names () ;
-      let depth = Name.depth c.cl_name in
-      let (first_t, rest_t) = self#first_and_rest_of_info c.cl_info in
-      let text = [ Title (depth, None, [ Raw (Odoc_messages.clas^" ") ; Code c.cl_name ] @
-                          (match first_t with 
-                            [] -> []
-                          | t -> (Raw " : ") :: t)) ;
-                   Latex (self#make_label (self#class_label c.cl_name)) ;
-                 ] 
-      in
-      output_string chanout (self#latex_of_text text);
-      output_string chanout ((self#latex_of_class ~for_detail: true ~with_link: false c)^"\n\n") ;
-      let s_name = Name.simple c.cl_name in
-      output_string chanout
-        (self#latex_of_text [Latex ("\\index{"^(self#class_label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]);
-      output_string chanout (self#latex_of_text rest_t) ;
-      (* parameters *)
-      output_string chanout 
-        (self#latex_of_text (self#text_of_parameter_list (Name.father c.cl_name) c.cl_parameters));
-       
-      output_string chanout (self#latex_of_text [ Newline ] );
-      output_string chanout ("\\ocamldocvspace{0.5cm}\n\n");
-      self#generate_class_inheritance_info chanout c;
-
-      List.iter 
-        (fun ele -> output_string chanout ((self#latex_of_class_element c.cl_name ele)^"\n\n"))
-        (Class.class_elements ~trans: false c);
-
-      output_string chanout (self#latex_of_text [ CodePre "end"])
-
-    (** Generate the LaTeX code for the given class type, in the given out channel. *)
-    method generate_for_class_type chanout ct =
-      Odoc_info.reset_type_names () ;
-      let depth = Name.depth ct.clt_name in
-      let (first_t, rest_t) = self#first_and_rest_of_info ct.clt_info in
-      let text = [ Title (depth, None, [ Raw (Odoc_messages.class_type^" ") ; Code ct.clt_name ] @
-                          (match first_t with 
-                            [] -> []
-                          | t -> (Raw " : ") :: t)) ;
-                   Latex (self#make_label (self#class_type_label ct.clt_name)) ;
-                 ] 
-      in
-
-      output_string chanout (self#latex_of_text text);
-      output_string chanout ((self#latex_of_class_type ~for_detail: true ~with_link: false ct)^"\n\n") ;
-      let s_name = Name.simple ct.clt_name in
-      output_string chanout
-        (self#latex_of_text [Latex ("\\index{"^(self#class_type_label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]);
-      output_string chanout ((self#latex_of_text rest_t)) ;
-      output_string chanout (self#latex_of_text [ Newline]) ;
-      output_string chanout ("\\ocamldocvspace{0.5cm}\n\n");
-      self#generate_class_type_inheritance_info chanout ct;
-
-      List.iter 
-        (fun ele -> output_string chanout ((self#latex_of_class_element ct.clt_name ele)^"\n\n"))
-        (Class.class_type_elements ~trans: false ct);
-
-      output_string chanout (self#latex_of_text [ CodePre "end"])
-
-    (** Generate the LaTeX code for the given module type, in the given out channel. *)
-    method generate_for_module_type chanout mt =
-      let depth = Name.depth mt.mt_name in
-      let (first_t, rest_t) = self#first_and_rest_of_info mt.mt_info in
-      let text = [ Title (depth,  None,
-                          [ Raw (Odoc_messages.module_type^" ") ; Code mt.mt_name ] @
-                          (match first_t with 
-                            [] -> []
-                          | t -> (Raw " : ") :: t)) ;
-                   Latex (self#make_label (self#module_type_label mt.mt_name)) ;
-                 ] 
-      in
-      output_string chanout (self#latex_of_text text);
-      if depth > 1 then
-        output_string chanout ((self#latex_of_module_type ~for_detail: true ~with_link: false mt)^"\n\n");
-      let s_name = Name.simple mt.mt_name in
-      output_string chanout
-        (self#latex_of_text [Latex ("\\index{"^(self#module_type_label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]);
-      output_string chanout (self#latex_of_text rest_t) ;
-      (* parameters *)
-      output_string chanout 
-        (self#latex_of_text 
-           (self#text_of_module_parameter_list
-              (Module.module_type_parameters mt)));
-
-      output_string chanout (self#latex_of_text [ Newline ] );
-      output_string chanout ("\\ocamldocvspace{0.5cm}\n\n");
-      List.iter 
-        (fun ele -> output_string chanout ((self#latex_of_module_element mt.mt_name ele)^"\n\n"))
-        (Module.module_type_elements ~trans: false mt);
-
-      if depth > 1 then 
-	output_string chanout (self#latex_of_text [ CodePre "end"]);
-
-      (* create sub parts for modules, module types, classes and class types *)
-      let rec iter ele =
-        match ele with
-          Element_module m -> self#generate_for_module chanout m
-        | Element_module_type mt -> self#generate_for_module_type chanout mt
-        | Element_class c -> self#generate_for_class chanout c
-        | Element_class_type ct -> self#generate_for_class_type chanout ct
-        | _ -> ()
-      in
-      List.iter iter (Module.module_type_elements ~trans: false mt)
-
-    (** Generate the LaTeX code for the given module, in the given out channel. *)
-    method generate_for_module chanout m =
-      let depth = Name.depth m.m_name in
+    (** Generate the LaTeX code for the given top module, in the given buffer. *)
+    method generate_for_top_module fmt m =
       let (first_t, rest_t) = self#first_and_rest_of_info m.m_info in
-      let text = [ Title (depth, None,
+      let text = [ Title (1, None,
                           [ Raw (Odoc_messages.modul^" ") ; Code m.m_name ] @
                           (match first_t with 
                             [] -> []
                           | t -> (Raw " : ") :: t)) ;
-                   Latex (self#make_label (self#module_label m.m_name)) ;
                  ] 
       in
-      output_string chanout (self#latex_of_text text);
-      if depth > 1 then
-        output_string chanout ((self#latex_of_module ~for_detail:true ~with_link: false m)^"\n\n");
-      let s_name = Name.simple m.m_name in
-      output_string chanout
-        (self#latex_of_text [Latex ("\\index{"^(self#module_label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]);
-      output_string chanout (self#latex_of_text rest_t) ;
-      (* parameters *)
-      output_string chanout 
-        (self#latex_of_text 
-           (self#text_of_module_parameter_list
-              (Module.module_parameters m)));
+      self#latex_of_text fmt text;
+      self#latex_for_module_label fmt m;
+      self#latex_for_module_index fmt m;
+      self#latex_of_text fmt rest_t ;
 
-      output_string chanout (self#latex_of_text [ Newline ]) ;
-      output_string chanout ("\\ocamldocvspace{0.5cm}\n\n");
+      self#latex_of_text fmt [ Newline ] ;
+      ps fmt "\\ocamldocvspace{0.5cm}\n\n";
       List.iter 
-        (fun ele -> output_string chanout ((self#latex_of_module_element m.m_name ele)^"\n\n"))
-        (Module.module_elements ~trans: false m);
+        (fun ele -> 
+	  self#latex_of_module_element fmt m.m_name ele;
+	  ps fmt "\n\n"
+	)
+        (Module.module_elements ~trans: false m)
 
-      if depth > 1 then 
-	output_string chanout (self#latex_of_text [ CodePre "end"]);
-
-      (* create sub parts for modules, module types, classes and class types *)
-      let rec iter ele =
-        match ele with
-          Element_module m -> self#generate_for_module chanout m
-        | Element_module_type mt -> self#generate_for_module_type chanout mt
-        | Element_class c -> self#generate_for_class chanout c
-        | Element_class_type ct -> self#generate_for_class_type chanout ct
-        | _ -> ()
-      in
-      List.iter iter (Module.module_elements ~trans: false m)
-
-    (** Return the header of the TeX document. *)
-    method latex_header =
-      "\\documentclass[11pt]{article} \n"^
-      "\\usepackage[latin1]{inputenc} \n"^
-      "\\usepackage[T1]{fontenc} \n"^
-      "\\usepackage{fullpage} \n"^
-      "\\usepackage{url} \n"^
-      "\\usepackage{ocamldoc}\n"^
+    (** Print the header of the TeX document. *)
+    method latex_header fmt =
+      ps fmt "\\documentclass[11pt]{article} \n";
+      ps fmt "\\usepackage[latin1]{inputenc} \n";
+      ps fmt "\\usepackage[T1]{fontenc} \n";
+      ps fmt "\\usepackage{fullpage} \n";
+      ps fmt "\\usepackage{url} \n";
+      ps fmt "\\usepackage{ocamldoc}\n";
       (
        match !Args.title with 
-         None -> ""
-       | Some s -> "\\title{"^(self#escape s)^"}\n"
-      )^
-      "\\begin{document}\n"^
-      (match !Args.title with None -> "" | Some _ -> "\\maketitle\n")^
-      (if !Args.with_toc then "\\tableofcontents\n" else "")^
+         None -> ()
+       | Some s -> 
+	   ps fmt "\\title{";
+	   ps fmt (self#escape s);
+	   ps fmt "}\n"
+      );
+      ps fmt "\\begin{document}\n";
+      (match !Args.title with 
+	None -> () | 
+	Some _ -> ps fmt "\\maketitle\n"
+      );
+      if !Args.with_toc then ps fmt "\\tableofcontents\n";
       (
        let info = Odoc_info.apply_opt
 	   Odoc_info.info_of_comment_file !Odoc_info.Args.intro_file 
        in
-       Printf.sprintf "%s%s%s"
-	 (match info with None -> "" | Some _ -> "\\vspace{0.2cm}")
-	 (self#latex_of_info info)
-	 (match info with None -> "" | Some _ -> "\n\n")
+       (match info with None -> () | Some _ -> ps fmt "\\vspace{0.2cm}");
+       self#latex_of_info fmt info;
+       (match info with None -> () | Some _ -> ps fmt "\n\n")
       )
 	
 
@@ -946,14 +1077,18 @@ class latex =
     (** Generate the LaTeX file from a module list, in the {!Odoc_info.Args.out_file} file. *)
     method generate module_list =
       self#generate_style_file ;
+      let main_file = !Args.out_file in
+      let dir = Filename.dirname main_file in
       if !Args.separate_files then
         (
          let f m =
            try
              let chanout = 
-               open_out ((Filename.concat !Args.target_dir (Name.simple m.m_name))^".tex")
+               open_out ((Filename.concat dir (Name.simple m.m_name))^".tex")
              in
-             self#generate_for_module chanout m ;
+	     let fmt = Format.formatter_of_out_channel chanout in
+             self#generate_for_top_module fmt m ;
+	     Format.pp_print_flush fmt ();
              close_out chanout
            with
              Failure s
@@ -965,16 +1100,19 @@ class latex =
         );
       
       try
-        let chanout = open_out !Args.out_file in
-        let _ = if !Args.with_header then output_string chanout self#latex_header else () in
+        let chanout = open_out main_file in
+	let fmt = Format.formatter_of_out_channel chanout in
+        if !Args.with_header then self#latex_header fmt;
         List.iter 
-          (fun m -> if !Args.separate_files then
-            output_string chanout ("\\input{"^((Name.simple m.m_name))^".tex}\n")
-          else
-            self#generate_for_module chanout m
+          (fun m -> 
+	    if !Args.separate_files then
+              ps fmt ("\\input{"^((Name.simple m.m_name))^".tex}\n")
+            else
+              self#generate_for_top_module fmt m
           ) 
           module_list ;
-        let _ = if !Args.with_trailer then output_string chanout "\\end{document}" else () in
+        if !Args.with_trailer then ps fmt "\\end{document}";
+	Format.pp_print_flush fmt ();
         close_out chanout
       with
         Failure s

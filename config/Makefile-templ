@@ -261,12 +261,17 @@ OTHERLIBRARIES=unix str num threads graph dynlink labltk bigarray
 
 ### Name of the target architecture for the "num" library
 # Known targets:
-#       x86     68K     vax     ns      mips    alpha   pyramid i960
-#       sparc   supersparc      sparc-solaris   supersparc-solaris
-# See the file otherlibs/num/README for more explanations.
-# If you don't know, leave BIGNUM_ARCH=C, which selects a portable
+#	generic (portable C, works everywhere)
+#	ia32	(Intel x86)
+#	amd64	(AMD Opteron, Athlon64)
+#       alpha
+#	mips
+#	ppc	(Power PC)
+#	sparc
+# If you don't know, leave BNG_ARCH=generic, which selects a portable
 # C implementation of these routines.
-BIGNUM_ARCH=alpha
+BNG_ARCH=generic
+BNG_ASM_LEVEL=1
 
 ### Link-time options to ocamlc or ocamlopt for linking with POSIX threads
 # Needed for the "systhreads" package

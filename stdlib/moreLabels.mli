@@ -38,6 +38,7 @@ module Hashtbl : sig
   val fold :
       f:(key:'a -> data:'b -> 'c -> 'c) ->
         ('a, 'b) t -> init:'c -> 'c
+  val length : ('a, 'b) t -> int
   module type HashedType = Hashtbl.HashedType
   module type S =
     sig
@@ -56,6 +57,7 @@ module Hashtbl : sig
       val fold :
           f:(key:key -> data:'a -> 'b -> 'b) ->
           'a t -> init:'b -> 'b
+      val length : 'a t -> int
     end
   module Make : functor (H : HashedType) -> S with type key = H.t
   val hash : 'a -> int
@@ -70,6 +72,7 @@ module Map : sig
       type key
       and (+'a) t
       val empty : 'a t
+      val is_empty: 'a t -> bool
       val add : key:key -> data:'a -> 'a t -> 'a t
       val find : key -> 'a t -> 'a
       val remove : key -> 'a t -> 'a t
@@ -80,7 +83,9 @@ module Map : sig
       val fold :
           f:(key:key -> data:'a -> 'b -> 'b) ->
           'a t -> init:'b -> 'b
-    end
+      val compare: cmp:('a -> 'a -> int) -> 'a t -> 'a t -> int
+      val equal: cmp:('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+  end
   module Make : functor (Ord : OrderedType) -> S with type key = Ord.t
 end
 
@@ -113,6 +118,7 @@ module Set : sig
       val min_elt : t -> elt
       val max_elt : t -> elt
       val choose : t -> elt
+      val split: elt -> t -> t * bool * t
     end
   module Make : functor (Ord : OrderedType) -> S with type elt = Ord.t
 end

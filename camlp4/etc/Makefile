@@ -4,18 +4,17 @@ include ../config/Makefile
 
 INCLUDES=-I ../camlp4 -I ../boot -I $(OTOP)/lex
 OCAMLCFLAGS=-warn-error A $(INCLUDES)
-OBJS=q_phony.cmo pa_o.cmo pa_op.cmo pa_oop.cmo pa_ru.cmo pa_format.cmo \
-     pa_olabl.cmo pa_sml.cmo pa_lisp.cmo pa_scheme.cmo pa_extfold.cmo \
-     pa_extfun.cmo pa_fstream.cmo pa_lefteval.cmo pa_ifdef.cmo pr_r.cmo \
-     pr_rp.cmo pr_o.cmo pr_op.cmo pr_scheme.cmo pr_schemep.cmo \
-     pr_extend.cmo pr_extfun.cmo pr_null.cmo pr_depend.cmo
+# pa_list, pa_scheme dont work any longer because of locations OBJS=q_phony.cmo pa_o.cmo pa_op.cmo pa_oop.cmo pa_ru.cmo pa_format.cmo pa_olabl.cmo pa_sml.cmo pa_lisp.cmo pa_scheme.cmo pa_extfold.cmo pa_extfun.cmo pa_fstream.cmo pa_lefteval.cmo pa_ifdef.cmo pr_r.cmo pr_rp.cmo pr_o.cmo pr_op.cmo pr_scheme.cmo pr_schemep.cmo pr_extend.cmo pr_extfun.cmo pr_null.cmo pr_depend.cmo
+OBJS=q_phony.cmo pa_o.cmo pa_op.cmo pa_oop.cmo pa_ru.cmo pa_format.cmo pa_olabl.cmo pa_sml.cmo pa_extfold.cmo pa_extfun.cmo pa_fstream.cmo pa_lefteval.cmo pa_ifdef.cmo pr_r.cmo pr_rp.cmo pr_o.cmo pr_op.cmo pr_scheme.cmo pr_schemep.cmo pr_extend.cmo pr_extfun.cmo pr_null.cmo pr_depend.cmo
+
 OBJSX=$(OBJS:.cmo=.cmx)
 INTF=pa_o.cmi
 CAMLP4OM=pa_o.cmo pa_op.cmo ../meta/pr_dump.cmo
 CAMLP4OMX=$(CAMLP4OM:.cmo=.cmx)
 CAMLP4SCHM=pa_scheme.cmo ../meta/pr_dump.cmo
 SHELL=/bin/sh
-COUT=$(OBJS) camlp4o$(EXE) camlp4sch$(EXE)
+# camlp4schm is broken COUT=$(OBJS) camlp4o$(EXE) #camlp4sch$(EXE)
+COUT=$(OBJS) camlp4o$(EXE)
 COPT=$(OBJSX) camlp4o.opt
 
 all: $(COUT) mkcamlp4.sh
@@ -100,7 +99,8 @@ install:
 	cp $(OBJS) "$(LIBDIR)/camlp4/."
 	cp $(INTF) "$(LIBDIR)/camlp4/."
 	cp lib.sml "$(LIBDIR)/camlp4/."
-	cp camlp4o$(EXE) camlp4sch$(EXE) "$(BINDIR)/."
+#	cp camlp4o$(EXE) camlp4sch$(EXE) "$(BINDIR)/."
+	cp camlp4o$(EXE) "$(BINDIR)/."
 	if test -f camlp4o.opt; then cp camlp4o.opt "$(BINDIR)/camlp4o.opt$(EXE)"; cp $(OBJSX) $(OBJSX:.cmx=.o) "$(LIBDIR)/camlp4/."; fi
 	cp mkcamlp4.sh "$(BINDIR)/mkcamlp4"
 	chmod a+x "$(BINDIR)/mkcamlp4"

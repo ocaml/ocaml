@@ -249,7 +249,7 @@ let dir_untrace ppf lid =
         []
     | f :: rem ->
         if Path.same f.path path then begin
-          set_code_pointer (eval_path path) f.actual_code;
+          set_code_pointer f.closure f.actual_code;
           fprintf ppf "%a is no longer traced.@." Printtyp.longident lid;
           rem
         end else f :: remove rem in
@@ -260,7 +260,7 @@ let dir_untrace ppf lid =
 let dir_untrace_all ppf () =
   List.iter
     (fun f ->
-      set_code_pointer (eval_path f.path) f.actual_code;
+      set_code_pointer f.closure f.actual_code;
       fprintf ppf "%a is no longer traced.@." Printtyp.path f.path)
     !traced_functions;
   traced_functions := []

@@ -33,11 +33,19 @@ exception Error of string;
 
 (** {6 Lexer type} *)
 
-type location = (int * int);
-type location_function = int -> location;
+type flocation = (Lexing.position * Lexing.position);
+
+value nowhere : Lexing.position;
+value dummy_loc : flocation;
+
+value make_loc : (int * int) -> flocation;
+value succ_pos : Lexing.position ->  Lexing.position;
+value lt_pos : Lexing.position ->  Lexing.position -> bool;
+
+type flocation_function = int -> flocation;
   (** The type for a function associating a number of a token in a stream
       (starting from 0) to its source location. *)
-type lexer_func 'te = Stream.t char -> (Stream.t 'te * location_function);
+type lexer_func 'te = Stream.t char -> (Stream.t 'te * flocation_function);
   (** The type for a lexer function. The character stream is the input
       stream to be lexed. The result is a pair of a token stream and
       a location function for this tokens stream. *)
@@ -48,7 +56,7 @@ type glexer 'te =
     tok_removing : pattern -> unit;
     tok_match : pattern -> 'te -> string;
     tok_text : pattern -> string;
-    tok_comm : mutable option (list location) }
+    tok_comm : mutable option (list flocation) }
 ;
    (** The type for a lexer used by Camlp4 grammars.
 -      The field [tok_func] is the main lexer function. See [lexer_func]
@@ -96,14 +104,14 @@ value default_match : pattern -> (string * string) -> string;
    as well. *)
 
 value lexer_func_of_parser :
-  (Stream.t char -> ('te * location)) -> lexer_func 'te;
+  (Stream.t char -> ('te * flocation)) -> lexer_func 'te;
    (** A lexer function from a lexer written as a char stream parser
        returning the next token and its location. *)
 value lexer_func_of_ocamllex : (Lexing.lexbuf -> 'te) -> lexer_func 'te;
    (** A lexer function from a lexer created by [ocamllex] *)
 
-value make_stream_and_location :
-  (unit -> ('te * location)) -> (Stream.t 'te * location_function);
+value make_stream_and_flocation :
+  (unit -> ('te * flocation)) -> (Stream.t 'te * flocation_function);
    (** General function *)
 
 (** {6 Useful functions} *)
@@ -114,7 +122,7 @@ value eval_char : string -> char;
        incorrect backslash sequence is found; [Token.eval_char (Char.escaped c)]
        returns [c] *)
 
-value eval_string : location -> string -> string;
+value eval_string : flocation -> string -> string;
    (** Convert a string token, where the escape sequences (backslashes)
        remain to be interpreted; issue a warning if an incorrect
        backslash sequence is found;

@@ -912,7 +912,9 @@ EXTEND
             else
               match x4 with
               [ <:module_expr< struct $list:list$ end >> ->
-                  let si = let loc = (0, 0) in <:str_item< open AAA >> in
+                  let si =
+                    let loc = (Token.nowhere, Token.nowhere) in
+                    <:str_item< open AAA >> in
                   <:module_expr< struct $list:[si :: list]$ end >>
               | _ -> not_impl loc "fctb 1" ]
           in

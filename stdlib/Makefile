@@ -18,14 +18,17 @@ include ../config/Makefile
 RUNTIME=../boot/ocamlrun
 COMPILER=../ocamlc
 CAMLC=$(RUNTIME) $(COMPILER)
-COMPFLAGS=-warn-error A -nostdlib
+COMPFLAGS=-g -warn-error A -nostdlib
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 OPTCOMPFLAGS=-warn-error A -nostdlib
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
-BASIC=builtintypes.cmo \
-  pervasives.cmo array.cmo list.cmo char.cmo string.cmo sys.cmo \
+NOBUILTINFLAG=-nobuiltintypes
+
+OBJS=builtintypes.cmo \
+  pervasives.cmo $(OTHERS)
+OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
   hashtbl.cmo sort.cmo marshal.cmo obj.cmo \
   int32.cmo int64.cmo nativeint.cmo \
   lexing.cmo parsing.cmo \
@@ -35,11 +38,17 @@ BASIC=builtintypes.cmo \
   digest.cmo random.cmo callback.cmo camlinternalOO.cmo oo.cmo \
   genlex.cmo weak.cmo \
   lazy.cmo filename.cmo complex.cmo \
-  rtype.cmo
-LABELLED=arrayLabels.ml listLabels.ml stringLabels.ml moreLabels.ml
+  rtype.cmo \
+  arrayLabels.cmo listLabels.cmo stringLabels.cmo moreLabels.cmo stdLabels.cmo
 
-OBJS=$(BASIC) labelled.cmo stdLabels.cmo
-ALLOBJS=$(BASIC) $(LABELLED:.ml=.cmo) stdLabels.cmo
+# make MODE=migration when you want to port gcaml to the latest ocaml-cvs
+ifeq ($(MODE),migration)
+ifeq ($(CAMLC),../boot/ocamlrun ../boot/ocamlc)
+# migration + coldstart
+NOBUILTINFLAG:=
+OBJS:=pervasives.cmo $(OTHERS)
+endif
+endif
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 
@@ -48,6 +57,7 @@ allopt: stdlib.cmxa std_exit.cmx allopt-$(PROFILING)
 allopt-noprof:
 
 allopt-prof: stdlib.p.cmxa std_exit.p.cmx
+	rm -f std_exit.p.cmi
 
 install:
 	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader camlheader_ur \
@@ -71,13 +81,13 @@ installopt-prof:
 	cd $(LIBDIR); $(RANLIB) stdlib.p.a
 
 stdlib.cma: $(OBJS)
-	$(CAMLC) -a -o stdlib.cma $(ALLOBJS)
+	$(CAMLC) -a -o stdlib.cma $(OBJS)
 
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o stdlib.cmxa $(ALLOBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
 stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
-	$(CAMLOPT) -a -o stdlib.p.cmxa $(ALLOBJS:.cmo=.p.cmx)
+	$(CAMLOPT) -a -o stdlib.p.cmxa $(OBJS:.cmo=.p.cmx)
 
 camlheader camlheader_ur: header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); then \
@@ -118,20 +128,20 @@ pervasives.p.cmx: pervasives.ml
            then mv pervasives.n.o pervasives.o; else :; fi
 
 builtintypes.cmi: builtintypes.mli
-	$(CAMLC) $(COMPFLAGS) -nobuiltintypes -c builtintypes.mli
+	$(CAMLC) $(COMPFLAGS) $(NOBUILTINFLAG) -c builtintypes.mli
 
 builtintypes.cmo: builtintypes.ml
-	$(CAMLC) $(COMPFLAGS) -nobuiltintypes -c builtintypes.ml
+	$(CAMLC) $(COMPFLAGS) $(NOBUILTINFLAG) -c builtintypes.ml
 
 builtintypes.cmx: builtintypes.ml
-	$(CAMLOPT) $(OPTCOMPFLAGS) -nobuiltintypes -c builtintypes.ml
+	$(CAMLOPT) $(OPTCOMPFLAGS) $(NOBUILTINFLAG) -c builtintypes.ml
 
 builtintypes.p.cmx: builtintypes.ml
 	@if test -f builtintypes.cmx; \
            then mv builtintypes.cmx builtintypes.n.cmx; else :; fi
 	@if test -f builtintypes.o; \
            then mv builtintypes.o builtintypes.n.o; else :; fi
-	$(CAMLOPT) $(OPTCOMPFLAGS) -p -nobuiltintypes -c builtintypes.ml
+	$(CAMLOPT) $(OPTCOMPFLAGS) -p $(NOBUILTINFLAG) -c builtintypes.ml
 	mv builtintypes.cmx builtintypes.p.cmx
 	mv builtintypes.o builtintypes.p.o
 	@if test -f builtintypes.n.cmx; \
@@ -184,28 +194,30 @@ labelled.p.cmx:
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
 
 .mli.cmi:
-	$(CAMLC) $(COMPFLAGS) $(EXTRAFLAGS) -c $<
+	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
 
 .ml.cmo:
-	$(CAMLC) $(COMPFLAGS) $(EXTRAFLAGS) -c $<
+	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(OPTCOMPFLAGS) $(EXTRAFLAGS) -c $<
+	$(CAMLOPT) $(OPTCOMPFLAGS) `./Compflags $@` -c $<
 
 .ml.p.cmx:
-	@if test -f $*.cmx; then mv $*.cmx $*.n.cmx; else :; fi
-	@if test -f $*.o; then mv $*.o $*.n.o; else :; fi
-	$(CAMLOPT) $(OPTCOMPFLAGS) $(EXTRAFLAGS) -p -c $<
-	mv $*.cmx $*.p.cmx
-	mv $*.o $*.p.o
-	@if test -f $*.n.cmx; then mv $*.n.cmx $*.cmx; else :; fi
-	@if test -f $*.n.o; then mv $*.n.o $*.o; else :; fi
+	$(CAMLOPT) $(OPTCOMPFLAGS) `./Compflags $@` -p -c -o $*.p.cmx $<
 
-$(ALLOBJS) labelled.cmo std_exit.cmo: pervasives.cmi $(COMPILER)
-$(ALLOBJS:.cmo=.cmx) labelled.cmx std_exit.cmx: pervasives.cmi $(OPTCOMPILER)
-$(ALLOBJS:.cmo=.p.cmx) labelled.p.cmx std_exit.p.cmx: pervasives.cmi $(OPTCOMPILER)
-$(ALLOBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER)
-labelled.cmo labelled.cmx labelled.p.cmx: $(LABELLED) $(LABELLED:.ml=.mli)
+# Dependencies on the compiler
+$(OBJS) std_exit.cmo: $(COMPILER)
+$(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER)
+$(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
+$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: $(OPTCOMPILER)
+
+# Dependencies on Pervasives (not tracked by ocamldep)
+$(OBJS) std_exit.cmo: pervasives.cmi
+$(OTHERS:.cmo=.cmi) std_exit.cmi: pervasives.cmi
+$(OBJS:.cmo=.cmx) std_exit.cmx: pervasives.cmi
+$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmi
+$(OTHERS:.cmo=.cmx) std_exit.cmx: pervasives.cmx
+$(OTHERS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmx
 
 clean::
 	rm -f *.cm* *.o *.a

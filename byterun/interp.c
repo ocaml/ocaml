@@ -114,7 +114,7 @@ sp is a local copy of the global variable caml_extern_sp. */
    For GCC, I have hand-assigned hardware registers for several architectures.
 */
 
-#if defined(__GNUC__) && !defined(DEBUG)
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(DEBUG)
 #ifdef __mips__
 #define PC_REG asm("$16")
 #define SP_REG asm("$17")
@@ -183,6 +183,11 @@ extern long caml_safe_div(long p, long q);
 extern long caml_safe_mod(long p, long q);
 #endif
 
+
+#ifdef DEBUG
+static long caml_bcodcount;
+#endif
+
 /* The interpreter itself */
 
 value caml_interprete(code_t prog, asize_t prog_size)
@@ -207,15 +212,15 @@ value caml_interprete(code_t prog, asize_t prog_size)
   long extra_args;
   struct longjmp_buffer * initial_external_raise;
   int initial_sp_offset;
-  /* volatile prevents collapsing initial_local_roots with another
-     local variable, like Digital Unix 4.0 C compiler does (wrongly) */
+  /* volatile ensures that initial_local_roots and saved_pc
+     will keep correct value across longjmp */
   struct caml__roots_block * volatile initial_local_roots;
+  volatile code_t saved_pc;
   struct longjmp_buffer raise_buf;
   value * modify_dest, modify_newval;
 #ifndef THREADED_CODE
   opcode_t curr_instr;
 #endif
-  code_t saved_pc;
 
 #ifdef THREADED_CODE
   static void * jumptable[] = {
@@ -266,8 +271,17 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #else
   while(1) {
 #ifdef DEBUG
+    caml_bcodcount++;
     if (caml_icount-- == 0) caml_stop_here ();
+    if (caml_trace_flag>1) printf("\n##%ld\n", caml_bcodcount);
     if (caml_trace_flag) caml_disasm_instr(pc);
+    if (caml_trace_flag>1) {
+      printf("env=");
+      caml_trace_value_file(env,prog,prog_size,stdout);
+      putchar('\n');
+      caml_trace_accu_sp_file(accu,sp,prog,prog_size,stdout);
+      fflush(stdout);
+    };
     Assert(sp >= caml_stack_low);
     Assert(sp <= caml_stack_high);
 #endif
@@ -1012,13 +1026,72 @@ value caml_interprete(code_t prog, asize_t prog_size)
     
 /* Object-oriented operations */
 
-#define Lookup(obj, lab) \
-  Field (Field (Field (obj, 0), ((lab) >> 16) / sizeof (value)), \
-         ((lab) / sizeof (value)) & 0xFF)
+#define Lookup(obj, lab) Field (Field (obj, 0), Int_val(lab))
+
+      /* please don't forget to keep below code in sync with the
+	 functions caml_cache_public_method and
+	 caml_cache_public_method2 in obj.c */
 
     Instruct(GETMETHOD):
       accu = Lookup(sp[0], accu);
       Next;
+
+#define CAML_METHOD_CACHE
+#ifdef CAML_METHOD_CACHE
+    Instruct(GETPUBMET): {
+      /* accu == object, pc[0] == tag, pc[1] == cache */
+      value meths = Field (accu, 0);
+      value ofs;
+#ifdef CAML_TEST_CACHE
+      static int calls = 0, hits = 0;
+      if (calls >= 10000000) {
+        fprintf(stderr, "cache hit = %d%%\n", hits / 100000);
+        calls = 0; hits = 0;
+      }
+      calls++;
+#endif
+      *--sp = accu;
+      accu = Val_int(*pc++);
+      ofs = *pc & Field(meths,1);
+      if (*(value*)(((char*)&Field(meths,3)) + ofs) == accu) {
+#ifdef CAML_TEST_CACHE
+        hits++;
+#endif
+        accu = *(value*)(((char*)&Field(meths,2)) + ofs);
+      }
+      else
+      {
+        int li = 3, hi = Field(meths,0), mi;
+        while (li < hi) {
+          mi = ((li+hi) >> 1) | 1;
+          if (accu < Field(meths,mi)) hi = mi-2;
+          else li = mi;
+        }
+        *pc = (li-3)*sizeof(value);
+        accu = Field (meths, li-1);
+      }
+      pc++;
+      Next;
+    }
+#else
+    Instruct(GETPUBMET):
+      *--sp = accu;
+      accu = Val_int(*pc);
+      pc += 2;
+      /* Fallthrough */
+#endif
+    Instruct(GETDYNMET): {
+      /* accu == tag, sp[0] == object, *pc == cache */
+      value meths = Field (sp[0], 0);
+      int li = 3, hi = Field(meths,0), mi;
+      while (li < hi) {
+        mi = ((li+hi) >> 1) | 1;
+        if (accu < Field(meths,mi)) hi = mi-2;
+        else li = mi;
+      }
+      accu = Field (meths, li-1);
+      Next;
+    }
 
 /* Debugging and machine control */
 
@@ -1054,3 +1127,22 @@ value caml_interprete(code_t prog, asize_t prog_size)
   }
 #endif
 }
+
+void caml_prepare_bytecode(code_t prog, asize_t prog_size) {
+  /* other implementations of the interpreter (such as an hypothetical
+     JIT translator) might want to do something with a bytecode before
+     running it */
+  Assert(prog);
+  Assert(prog_size>0);
+  /* actually, the threading of the bytecode might be done here */
+} 
+
+void caml_release_bytecode(code_t prog, asize_t prog_size) {
+  /* other implementations of the interpreter (such as an hypothetical
+     JIT translator) might want to know when a bytecode is removed */
+  /* check that we have a program */
+  Assert(prog);
+  Assert(prog_size>0);
+}
+
+/* eof $Id$ */

@@ -323,7 +323,10 @@ EXTEND
         "do"; "{"; seq = sequence; "}" ->
           <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $list:seq$ } >>
       | "while"; e = SELF; "do"; "{"; seq = sequence; "}" ->
-          <:expr< while $e$ do { $list:seq$ } >> ]
+          <:expr< while $e$ do { $list:seq$ } >>
+      | "object"; cspo = OPT class_self_patt; cf = class_structure; "end" ->
+          (* <:expr< object $opt:cspo$ $list:cf$ end >> *)
+          MLast.ExObj loc cspo cf ]
     | "where"
       [ e = SELF; "where"; rf = OPT "rec"; lb = let_binding ->
           <:expr< let $opt:o2b rf$ $list:[lb]$ in $e$ >> ]
@@ -392,9 +395,8 @@ EXTEND
           mklistexp loc last el
       | "[|"; el = LIST0 expr SEP ";"; "|]" -> <:expr< [| $list:el$ |] >>
       | "{"; lel = LIST1 label_expr SEP ";"; "}" -> <:expr< { $list:lel$ } >>
-      | "{"; "("; e = SELF; ")"; "with"; lel = LIST1 label_expr SEP ";";
-        "}" ->
-          <:expr< { ($e$) with $list:lel$ } >>
+      | "{"; "("; e = SELF; ")"; "with"; lel = LIST1 label_expr SEP ";"; "}"
+        -> <:expr< { ($e$) with $list:lel$ } >>
       | "("; ")" -> <:expr< () >>
       | "("; e = SELF; ":"; t = ctyp; ")" -> <:expr< ($e$ : $t$) >>
       | "("; e = SELF; ","; el = LIST1 expr SEP ","; ")" ->
@@ -735,8 +737,14 @@ EXTEND
   ;
   ctyp: LEVEL "simple"
     [ [ "#"; id = class_longident -> <:ctyp< # $list:id$ >>
-      | "<"; ml = LIST0 field SEP ";"; v = OPT ".."; ">" ->
-          <:ctyp< < $list:ml$ $opt:o2b v$ > >> ] ]
+      | "<"; (ml, v) = meth_list; ">" -> <:ctyp< < $list:ml$ $opt:v$ > >>
+      | "<"; ">" -> <:ctyp< < > >> ] ]
+  ;
+  meth_list:
+    [ [ f = field; ";"; (ml, v) = SELF -> ([f :: ml], v)
+      | f = field; ";" -> ([f], False)
+      | f = field -> ([f], False)
+      | ".." -> ([], True) ] ]
   ;
   field:
     [ [ lab = LIDENT; ":"; t = ctyp -> (lab, t) ] ]
@@ -760,6 +768,10 @@ EXTEND
       | "["; "<"; rfl = row_field_list; "]" ->
           <:ctyp< [ < $list:rfl$ ] >>
       | "["; "<"; rfl = row_field_list; ">"; ntl = LIST1 name_tag; "]" ->
+          <:ctyp< [ < $list:rfl$ > $list:ntl$ ] >>
+      | "[<"; rfl = row_field_list; "]" ->
+          <:ctyp< [ < $list:rfl$ ] >>
+      | "[<"; rfl = row_field_list; ">"; ntl = LIST1 name_tag; "]" ->
           <:ctyp< [ < $list:rfl$ > $list:ntl$ ] >> ] ]
   ;
   row_field_list:
@@ -901,10 +913,11 @@ EXTEND
           let x =
             try
               let i = String.index x ':' in
-              (int_of_string (String.sub x 0 i),
+              ({ (Lexing.dummy_pos) with Lexing.pos_cnum = int_of_string (String.sub x 0 i) }
+                 ,
                String.sub x (i + 1) (String.length x - i - 1))
             with
-            [ Not_found | Failure _ -> (0, x) ]
+            [ Not_found | Failure _ -> ({(Lexing.dummy_pos) with Lexing.pos_cnum = 0}, x) ]
           in
           Pcaml.handle_expr_locate loc x
       | x = QUOTATION ->
@@ -923,10 +936,11 @@ EXTEND
           let x =
             try
               let i = String.index x ':' in
-              (int_of_string (String.sub x 0 i),
+              ({(Lexing.dummy_pos) with Lexing.pos_cnum = int_of_string (String.sub x 0 i)}
+                 ,
                String.sub x (i + 1) (String.length x - i - 1))
             with
-            [ Not_found | Failure _ -> (0, x) ]
+            [ Not_found | Failure _ -> ({(Lexing.dummy_pos) with Lexing.pos_cnum = 0}, x) ]
           in
           Pcaml.handle_patt_locate loc x
       | x = QUOTATION ->

@@ -2,8 +2,9 @@
 
 (cond
  ((x-display-color-p)
+  (require 'font-lock)
   (cond
-   ((not (memq 'font-lock-type-face (face-list)))
+   ((not (boundp 'font-lock-type-face))
     ; make the necessary faces
     (make-face 'Firebrick)
     (set-face-foreground 'Firebrick "Firebrick")

@@ -83,15 +83,15 @@ value no_constructors_arity : ref bool;
 value sync : ref (Stream.t char -> unit);
 
 value handle_expr_quotation : MLast.loc -> (string * string) -> MLast.expr;
-value handle_expr_locate : MLast.loc -> (int * string) -> MLast.expr;
+value handle_expr_locate : MLast.loc -> (Lexing.position * string) -> MLast.expr;
 
 value handle_patt_quotation : MLast.loc -> (string * string) -> MLast.patt;
-value handle_patt_locate : MLast.loc -> (int * string) -> MLast.patt;
+value handle_patt_locate : MLast.loc -> (Lexing.position * string) -> MLast.patt;
 
 value expr_reloc :
-  (MLast.loc -> MLast.loc) -> int -> MLast.expr -> MLast.expr;
+  (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.expr -> MLast.expr;
 value patt_reloc :
-  (MLast.loc -> MLast.loc) -> int -> MLast.patt -> MLast.patt;
+  (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.patt -> MLast.patt;
 
 (** To possibly rename identifiers; parsers may call this function
     when generating their identifiers; default = identity *)
@@ -99,7 +99,7 @@ value rename_id : ref (string -> string);
 
 (** Allow user to catch exceptions in quotations *)
 type err_ctx =
-  [ Finding | Expanding | ParsingResult of (int * int) and string | Locating ]
+  [ Finding | Expanding | ParsingResult of MLast.loc and string | Locating ]
 ;
 exception Qerror of string and err_ctx and exn;
 
@@ -151,7 +151,8 @@ value inter_phrases : ref (option string);
 
 (* for system use *)
 
-value warning : ref ((int * int) -> string -> unit);
+value warning : ref (MLast.loc -> string -> unit);
 value expr_eoi : Grammar.Entry.e MLast.expr;
 value patt_eoi : Grammar.Entry.e MLast.patt;
 value arg_spec_list : unit -> list (string * Arg.spec * string);
+value no_constructors_arity : ref bool;

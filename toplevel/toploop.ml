@@ -132,11 +132,17 @@ let load_lambda ppf lam =
     may_trace := true;
     let retval = (Meta.reify_bytecode code code_size) () in
     may_trace := false;
-    if can_free then Meta.static_free code;
+    if can_free then begin 
+      Meta.static_release_bytecode code code_size;
+      Meta.static_free code;
+    end;
     Result retval
   with x ->
     may_trace := false;
-    if can_free then Meta.static_free code;
+    if can_free then begin 
+      Meta.static_release_bytecode code code_size;
+      Meta.static_free code;
+    end;
     Symtable.restore_state initial_symtable;
     Exception x
 
@@ -156,23 +162,23 @@ let pr_item env = function
             Some v
       in
       Some (tree, valopt, rem)
-  | Tsig_type(id, decl) :: rem ->
-      let tree = Printtyp.tree_of_type_declaration id decl in
+  | Tsig_type(id, decl, rs) :: rem ->
+      let tree = Printtyp.tree_of_type_declaration id decl rs in
       Some (tree, None, rem)
   | Tsig_exception(id, decl) :: rem ->
       let tree = Printtyp.tree_of_exception_declaration id decl in
       Some (tree, None, rem)
-  | Tsig_module(id, mty) :: rem ->
-      let tree = Printtyp.tree_of_module id mty in
+  | Tsig_module(id, mty, rs) :: rem ->
+      let tree = Printtyp.tree_of_module id mty rs in
       Some (tree, None, rem)
   | Tsig_modtype(id, decl) :: rem ->
       let tree = Printtyp.tree_of_modtype_declaration id decl in
       Some (tree, None, rem)
-  | Tsig_class(id, decl) :: cltydecl :: tydecl1 :: tydecl2 :: rem ->
-      let tree = Printtyp.tree_of_class_declaration id decl in
+  | Tsig_class(id, decl, rs) :: cltydecl :: tydecl1 :: tydecl2 :: rem ->
+      let tree = Printtyp.tree_of_class_declaration id decl rs in
       Some (tree, None, rem)
-  | Tsig_cltype(id, decl) :: tydecl1 :: tydecl2 :: rem ->
-      let tree = Printtyp.tree_of_cltype_declaration id decl in
+  | Tsig_cltype(id, decl, rs) :: tydecl1 :: tydecl2 :: rem ->
+      let tree = Printtyp.tree_of_cltype_declaration id decl rs in
       Some (tree, None, rem)
   | _ -> None
 
@@ -312,6 +318,26 @@ let use_silently ppf name =
 let first_line = ref true
 let got_eof = ref false;;
 
+let read_input_default prompt buffer len =
+  output_string stdout prompt; flush stdout;
+  let i = ref 0 in
+  try
+    while true do
+      if !i >= len then raise Exit;
+      let c = input_char stdin in
+      buffer.[!i] <- c;
+      incr i;
+      if c = '\n' then raise Exit;
+    done;
+    (!i, false)
+  with
+  | End_of_file ->
+      (!i, true)
+  | Exit ->
+      (!i, false)
+
+let read_interactive_input = ref read_input_default
+
 let refill_lexbuf buffer len =
   if !got_eof then (got_eof := false; 0) else begin
     let prompt =
@@ -319,23 +345,14 @@ let refill_lexbuf buffer len =
       else if Lexer.in_comment () then "* "
       else "  "
     in
-    output_string stdout prompt; flush stdout;
     first_line := false;
-    let i = ref 0 in
-    try
-      while true do
-        if !i >= len then raise Exit;
-        let c = input_char stdin in
-        buffer.[!i] <- c;
-        incr i;
-        if c = '\n' then raise Exit;
-      done;
-      !i
-    with
-    | End_of_file ->
-        Location.echo_eof ();
-        if !i > 0 then (got_eof := true; !i) else 0
-    | Exit -> !i
+    let (len, eof) = !read_interactive_input prompt buffer len in
+    if eof then begin
+      Location.echo_eof ();
+      if len > 0 then got_eof := true;
+      len
+    end else
+      len
   end
 
 (* Toplevel initialization. Performed here instead of at the
@@ -374,7 +391,7 @@ let initialize_toplevel_env () =
 exception PPerror
 
 let loop ppf =
-  fprintf ppf "        Objective Caml version %s@.@." Config.version;
+  fprintf ppf "        G'Caml version %s@.@." Config.version;
   initialize_toplevel_env ();
   let lb = Lexing.from_function refill_lexbuf in
   Location.input_name := "";
