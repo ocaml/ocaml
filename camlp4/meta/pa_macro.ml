@@ -13,6 +13,7 @@ Added statements:
      IFDEF <uident> THEN <structure_items> ELSE <structure_items> (END | ENDIF)
      IFNDEF <uident> THEN <structure_items> (END | ENDIF)
      IFNDEF <uident> THEN <structure_items> ELSE <structure_items> (END | ENDIF)
+     INCLUDE <string>
 
   In expressions:
 
@@ -28,13 +29,20 @@ Added statements:
 
   As Camlp4 options:
 
-     -D<uident>
-     -U<uident>
+     -D<uident>                      define <uident>
+     -U<uident>                      undefine it
+     -I<dir>                         add <dir> to the search path for INCLUDE'd files
 
   After having used a DEFINE <uident> followed by "= <expression>", you
   can use it in expressions *and* in patterns. If the expression defining
   the macro cannot be used as a pattern, there is an error message if
   it is used in a pattern.
+
+  The toplevel statement INCLUDE <string> can be used to include a
+  file containing macro definitions; note that files included in such
+  a way can not have any non-macro toplevel items.  The included files
+  are looked up in directories passed in via the -I option, falling
+  back to the current directory.
 
   The expression __FILE__ returns the current compiled file name.
   The expression __LOCATION__ returns the current location of itself.
@@ -50,7 +58,8 @@ type item_or_def 'a =
   [ SdStr of 'a
   | SdDef of string and option (list string * MLast.expr)
   | SdUnd of string
-  | SdITE of string and list (item_or_def 'a) and list (item_or_def 'a) ]
+  | SdITE of string and list (item_or_def 'a) and list (item_or_def 'a)
+  | SdInc of string ]
 ;
 
 value rec list_remove x =
@@ -189,12 +198,45 @@ value undef x =
   [ Not_found -> () ]
 ;
 
+(* This is a list of directories to search for INCLUDE statements. *)
+value include_dirs = ref []
+;
+
+(* Add something to the above, make sure it ends with a slash. *)
+value add_include_dir str =
+  if str <> "" then
+    let str =
+      if String.get str ((String.length str)-1) = '/'
+      then str else str ^ "/"
+    in include_dirs.val := include_dirs.val @ [str]
+  else ()
+;
+
+value smlist = Grammar.Entry.create Pcaml.gram "smlist"
+;
+
+value parse_include_file =
+  let dir_ok file dir = Sys.file_exists (dir ^ file) in
+  fun file ->
+    let file =
+      try (List.find (dir_ok file) (include_dirs.val @ ["./"])) ^ file
+      with [ Not_found -> file ]
+    in
+    let st = Stream.of_channel (open_in file) in
+    let old_input = Pcaml.input_file.val in
+    do {
+      Pcaml.input_file.val := file;
+      let items = Grammar.Entry.parse smlist st in
+      do { Pcaml.input_file.val := old_input; items } }
+;
+
 value rec execute_macro = fun
 [ SdStr i -> [i]
 | SdDef x eo -> do { define eo x; [] }
 | SdUnd x -> do { undef x; [] }
 | SdITE i l1 l2 ->
-   execute_macro_list (if is_defined i then l1 else l2) ]
+   execute_macro_list (if is_defined i then l1 else l2)
+| SdInc f -> execute_macro_list (parse_include_file f) ]
 
 and execute_macro_list = fun
 [ [] -> []
@@ -205,7 +247,7 @@ and execute_macro_list = fun
 ; 
 
 EXTEND
-  GLOBAL: expr patt str_item sig_item;
+  GLOBAL: expr patt str_item sig_item smlist;
   str_item: FIRST
     [ [ x = macro_def ->
           match execute_macro x with
@@ -224,7 +266,8 @@ EXTEND
           SdITE i [] dl
       | "IFNDEF"; i = uident; "THEN"; dl1 = smlist; "ELSE";
         dl2 = smlist; _ = endif ->
-          SdITE i dl2 dl1 ] ]
+          SdITE i dl2 dl1
+      | "INCLUDE"; fname = STRING -> SdInc fname ] ]
   ;
   smlist:
     [ [ sml = LIST1 str_item_or_macro -> sml ] ]
@@ -271,4 +314,7 @@ Pcaml.add_option "-D" (Arg.String (define None))
 ;
 Pcaml.add_option "-U" (Arg.String undef)
   "<string> Undefine for IFDEF instruction."
+;
+Pcaml.add_option "-I" (Arg.String add_include_dir)
+  "<string> Add a directory to INCLUDE search path."
 ;
