@@ -1,3 +1,5 @@
+% $Id$
+
 \chapter{The runtime system (ocamlrun)} \label{c:runtime}
 \pdfchapter{The runtime system (ocamlrun)}
 
@@ -87,7 +89,8 @@ The following environment variables are also consulted:
   (If "OCAMLRUNPARAM" is not set, "CAMLRUNPARAM" will be used instead.)
   This variable must be a sequence of parameter specifications.
   A parameter specification is an option letter followed by an "="
-  sign, a decimal number, and an optional multiplier.  There are
+  sign, a decimal number (or an hexadecimal number prefixed by "0x"),
+  and an optional multiplier.  There are
   nine options, six of which correspond to the fields of the
   "control" record documented in 
 \ifouthtml
@@ -112,16 +115,15 @@ The following environment variables are also consulted:
   \item[v] ("verbose")  What GC messages to print to stderr.  This
   is a sum of values selected from the following:
   \begin{options}
-        \item[1   (= 0b0000000001)] Start of major GC cycle.
-        \item[2   (= 0b0000000010)] Minor collection and major GC slice.
-        \item[4   (= 0b0000000100)] Growing and shrinking of the heap.
-        \item[8   (= 0b0000001000)] Resizing of stacks and memory manager
-           tables.
-        \item[16  (= 0b0000010000)] Heap compaction.
-        \item[32  (= 0b0000100000)] Change of GC parameters.
-        \item[64  (= 0b0001000000)] Computation of major GC slice size.
-        \item[128 (= 0b0010000000)] Calling of finalization functions
-        \item[256 (= 0b0100000000)] Startup messages (loading the bytecode
+        \item[1   (= 0x001)] Start of major GC cycle.
+        \item[2   (= 0x002)] Minor collection and major GC slice.
+        \item[4   (= 0x004)] Growing and shrinking of the heap.
+        \item[8   (= 0x008)] Resizing of stacks and memory manager tables.
+        \item[16  (= 0x010)] Heap compaction.
+        \item[32  (= 0x020)] Change of GC parameters.
+        \item[64  (= 0x040)] Computation of major GC slice size.
+        \item[128 (= 0x080)] Calling of finalization functions
+        \item[256 (= 0x100)] Startup messages (loading the bytecode
            executable file, resolving shared libraries).
   \end{options}
   \item[l] ("stack_limit") The limit (in words) of the stack size.
@@ -131,11 +133,12 @@ The following environment variables are also consulted:
   $2^{20}$, and $2^{30}$ respectively.
   For example, on a 32-bit machine, under "bash" the command
 \begin{alltt}
-        export OCAMLRUNPARAM='b,s=256k,v=1'
+        export OCAMLRUNPARAM='b,s=256k,v=0x015'
 \end{alltt}
   tells a subsequent "ocamlrun" to print backtraces for uncaught exceptions,
   set its initial minor heap size to 1~megabyte and
-  print a message at the start of each major GC cycle.
+  print a message at the start of each major GC cycle, when the heap
+  size changes, and when compaction is triggered.
 
 \item["PATH"] List of directories searched to find the bytecode
 executable file.
