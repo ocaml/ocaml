@@ -135,7 +135,9 @@ let link_compunit outchan inchan file_name compunit =
   let code_block = String.create compunit.cu_codesize in
   really_input inchan code_block 0 compunit.cu_codesize;
   Symtable.patch_object code_block compunit.cu_reloc;
-  output outchan code_block 0 compunit.cu_codesize
+  output outchan code_block 0 compunit.cu_codesize;
+  if !Clflags.link_everything then
+    List.iter Symtable.require_primitive compunit.cu_primitives
 
 (* Link in a .cmo file *)
 

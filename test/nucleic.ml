@@ -94,13 +94,14 @@ tfo_apply t p
       z = ((p.x * t.c) + (p.y * t.f) + (p.z * t.i) + t.tz) }
 
 (*
-   The function "tfo-List.combine" multiplies two transformation matrices A and B.
+   The function "tfo-combine" multiplies two transformation matrices A and B.
    The result is a new matrix which cumulates the transformations described
    by A and B.
 *)
 
 let
 tfo_combine a b =
+(* <HAND_CSE> *)
   (* Hand elimination of common subexpressions.
      Assumes lots of float registers (32 is perfect, 16 still OK).
      Loses on the I386, of course. *)
@@ -123,7 +124,9 @@ tfo_combine a b =
       ty = ((a_tx * b_b) + (a_ty * b_e) + (a_tz * b_h) + b_ty);
       tz = ((a_tx * b_c) + (a_ty * b_f) + (a_tz * b_i) + b_tz)
     }
-(*** Original without CSE:
+(* </HAND_CSE> *)
+ (* Original without CSE *)
+(* <NO_CSE> *) (***
     { a = ((a.a * b.a) + (a.b * b.d) + (a.c * b.g));
       b = ((a.a * b.b) + (a.b * b.e) + (a.c * b.h));
       c = ((a.a * b.c) + (a.b * b.f) + (a.c * b.i));
@@ -137,7 +140,7 @@ tfo_combine a b =
       ty = ((a.tx * b.b) + (a.ty * b.e) + (a.tz * b.h) + b.ty);
       tz = ((a.tx * b.c) + (a.ty * b.f) + (a.tz * b.i) + b.tz)
     }
-****)
+  ***) (* </NO_CSE> *)
 
 (*
    The function "tfo-inv-ortho" computes the inverse of a homogeneous

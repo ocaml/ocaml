@@ -43,8 +43,15 @@ let dump_obj filename =
       print_string name; print_newline())
     cu.cu_imports;
   print_string "  Uses unsafe features: ";
-  print_string (if cu.cu_unsafe then "YES" else "no");
-  print_newline()
+  begin match cu.cu_primitives with
+    [] -> print_string "no"; print_newline()
+  | l  -> print_string "YES"; print_newline();
+          print_string "  Primitives declared in this module:";
+          print_newline();
+          List.iter
+            (fun name -> print_string "\t"; print_string name; print_newline())
+            l
+  end
 
 let main() =
   for i = 1 to Array.length Sys.argv - 1 do

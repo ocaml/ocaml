@@ -33,7 +33,7 @@ type compilation_unit =
     cu_reloc: (reloc_info * int) list;  (* Relocation information *)
     cu_interface: Digest.t;             (* CRC of interface implemented *)
     cu_imports: (string * Digest.t) list; (* Names and CRC of intfs imported *)
-    cu_unsafe: bool }                   (* Uses unsafe features? *)
+    cu_primitives: string list }        (* Primitives declared inside *)
 
 (* Format of a .cmo file:
      Obj.magic number (Config.cmo_magic_number)

@@ -80,7 +80,7 @@ let allow_unsafe_modules b =
   unsafe_allowed := b
 
 let check_unsafe_module cu =
-  if (not !unsafe_allowed) & cu.cu_unsafe
+  if (not !unsafe_allowed) & cu.cu_primitives <> []
   then raise(Error(Unsafe_file))
 
 (* Load in-core and execute a bytecode object file *)

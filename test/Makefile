@@ -1,3 +1,5 @@
+include ../Makefile.config
+
 CAMLC=../boot/cslrun ../cslc -I ../stdlib -I KB -I Lex
 CAMLOPT=../boot/cslrun ../cslopt -I ../stdlib -I KB -I Lex
 OPTFLAGS=-S
@@ -14,6 +16,17 @@ BYTE_EXE=fib.byt takc.byt taku.byt sieve.byt quicksort.byt quicksort.fast.byt \
 CODE_EXE=$(BYTE_EXE:.byt=.out)
 
 all: $(BYTE_EXE) $(CODE_EXE)
+
+# Nucleic
+
+nucleic.out: nucleic.ml
+	case $(ARCH) in \
+          i386) sed -e '/<HAND_CSE>/,/<\/HAND_CSE>/d' -e '/NO_CSE>/d' \
+                nucleic.ml > nucleic.mlt; \
+	        $(CAMLOPT) $(OPTFLAGS) -o nucleic.out nucleic.mlt; \
+	        rm -f nucleic.mlt;; \
+             *) $(CAMLOPT) $(OPTFLAGS) -o nucleic.out nucleic.ml;; \
+        esac
 
 # KB
 

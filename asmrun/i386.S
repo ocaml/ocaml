@@ -19,8 +19,10 @@
 
 #ifdef SYS_linux_elf
 #define G(x) x
+#define FUNCTION_ALIGN 16
 #else
 #define G(x) _##x
+#define FUNCTION_ALIGN 4
 #endif
 
         .comm   G(young_start), 4
@@ -42,7 +44,7 @@
         .globl  G(caml_alloc)
 	.globl  G(caml_call_gc)
 
-        .align  4
+        .align  FUNCTION_ALIGN
 G(caml_alloc1):
         movl    G(young_ptr), %eax
         subl    $8, %eax
@@ -53,7 +55,7 @@ G(caml_alloc1):
 L100:   movl    $8, %eax
         jmp     L105
 
-        .align  4
+        .align  FUNCTION_ALIGN
 G(caml_alloc2):
         movl    G(young_ptr), %eax
         subl    $12, %eax
@@ -64,7 +66,7 @@ G(caml_alloc2):
 L101:   movl    $12, %eax
         jmp     L105
 
-        .align  4
+        .align  FUNCTION_ALIGN
 G(caml_alloc3):
         movl    G(young_ptr), %eax
         subl    $16, %eax
@@ -75,7 +77,7 @@ G(caml_alloc3):
 L102:   movl    $16, %eax
         jmp     L105
 
-        .align  4
+        .align  FUNCTION_ALIGN
 G(caml_alloc):
         pushl   %eax
         movl    G(young_ptr), %eax
@@ -129,22 +131,20 @@ L105:
 
         .globl  G(caml_c_call)
 
-        .align  4
+        .align  FUNCTION_ALIGN
 G(caml_c_call):
     /* Record lowest stack address and return address */
         movl    (%esp), %edx
         movl    %edx, G(caml_last_return_address)
         leal    4(%esp), %edx
         movl    %edx, G(caml_bottom_of_stack)
-    /* Free the floating-point register stack */
-        finit
     /* Call the function (address in %eax) */
         jmp     *%eax
 
 /* Start the Caml program */
 
         .globl  G(caml_start_program)
-        .align  4
+        .align  FUNCTION_ALIGN
 G(caml_start_program):
     /* Save callee-save registers */
         pushl   %ebx
@@ -174,7 +174,7 @@ L104:
 /* Raise an exception from C */
 
         .globl  G(raise_caml_exception)
-        .align  4
+        .align  FUNCTION_ALIGN
 G(raise_caml_exception):
         movl    4(%esp), %eax
         movl    G(caml_exception_pointer), %esp

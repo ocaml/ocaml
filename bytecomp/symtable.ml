@@ -79,6 +79,9 @@ let num_of_prim name =
     then enter_numtable c_prim_table name
     else raise(Error(Unavailable_primitive name))
 
+let require_primitive name =
+  if name.[0] <> '%' then begin num_of_prim name; () end
+
 open Printf
 
 let output_primitives prim_file_name =
