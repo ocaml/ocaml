@@ -682,7 +682,7 @@ let type_format loc fmt =
     and scan_conversion i j =
       if j >= len then incomplete i else
       match fmt.[j] with
-      | '%' | '$' -> scan_format (j + 1)
+      | '%' | '!' -> scan_format (j + 1)
       | 's' | 'S' | '[' -> conversion j Predef.type_string
       | 'c' | 'C' -> conversion j Predef.type_char
       | 'b' | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' ->
@@ -690,10 +690,15 @@ let type_format loc fmt =
       | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> conversion j Predef.type_float
       | 'B' -> conversion j Predef.type_bool
       | 'a' ->
-          let ty_arg = newvar() in
+          let ty_arg = newvar () in
           let ty_a = ty_arrow ty_input (ty_arrow ty_arg ty_aresult) in 
           let ty_aresult, ty_result = conversion j ty_arg in
           ty_aresult, ty_arrow ty_a ty_result
+      | '$' ->
+          let ty_arg = Predef.type_string in
+          let ty_f = ty_arrow Predef.type_string Predef.type_string in 
+          let ty_aresult, ty_result = conversion j ty_arg in
+          ty_aresult, ty_arrow ty_f ty_result
       | 'r' ->
           let ty_res = newvar() in
           let ty_r = ty_arrow ty_input ty_res in

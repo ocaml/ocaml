@@ -113,6 +113,11 @@ let extract_format fmt start stop widths =
               Buffer.add_char b c; fill_format (succ i) w
       in fill_format start (List.rev widths)
 
+let substitute_string f s =
+  let b = Buffer.create (2 * String.length s) in
+  Buffer.add_substitute b f s;
+  Buffer.contents b;;
+
 let format_int_with_conv conv fmt i =
    match conv with
    | 'b' -> format_binary_int fmt i
@@ -212,8 +217,11 @@ let scan_format fmt pos cont_s cont_a cont_t cont_f =
         | _ ->
             bad_format fmt pos
         end
-    | '$' ->
+    | '!' ->
         Obj.magic (cont_f (succ i))
+    | '$' ->
+        Obj.magic (fun f s ->
+          cont_s (substitute_string f s) (succ i))
     | _ ->
         bad_format fmt pos
   in scan_flags [] (pos + 1)
@@ -281,5 +289,3 @@ let bprintf dest fmt =
     printer dest; doprn i
   and cont_f i = doprn i
   in doprn 0
-
-

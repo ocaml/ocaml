@@ -63,7 +63,8 @@ val fprintf : out_channel -> ('a, out_channel, unit, unit) format -> 'a
      in the output of [fprintf] at the current point.
    - [t]: same as [%a], but takes only one argument (with type
      [out_channel -> unit]) and apply it to [outchan].
-   - [$]: take no argument and flush the output.
+   - [!]: take no argument and flush the output.
+   - [$]: take two arguments.
    - [%]: take no argument and output one [%] character.
 
    The optional flags include:
