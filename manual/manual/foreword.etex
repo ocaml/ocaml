@@ -25,6 +25,10 @@ Objective Caml runs on several operating systems. The parts of
 this manual that are specific to one operating system are presented as
 shown below:
 
+\begin{macos} This is material specific to MacOS 7, 8, 9.  MacOS X
+is a version of Unix as far as Objective Caml is concerned.
+\end{macos}
+
 \begin{unix} This is material specific to Unix.
 \end{unix}
 

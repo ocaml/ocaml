@@ -1,8 +1,8 @@
 \chapter{The librarian (camllibr)} \label{c:camllibr}
 
-\begin{mac} This command is a MPW tool, not a standalone Macintosh
+\begin{macos} This command is a MPW tool, not a standalone Macintosh
 application.
-\end{mac}
+\end{macos}
 
 \section{Overview}
 

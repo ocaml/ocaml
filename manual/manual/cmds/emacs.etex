@@ -7,7 +7,7 @@ Gnu Emacs version 19 (version 18 is also partially supported).
 interface are in "contrib/camlmode" in the distribution.
 \end{unix}
 
-\begin{mac} The Caml/Emacs interface is not available. \end{mac}
+\begin{macos} The Caml/Emacs interface is not available. \end{macos}
 
 \begin{pc} The Caml/Emacs interface is not available. \end{pc}
 
