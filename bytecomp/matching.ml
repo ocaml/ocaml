@@ -151,7 +151,7 @@ let divide_tuple arity {cases = cl; args = al} =
       ({pat_desc = Tpat_tuple args} :: patl, action) :: rem ->
         add_line (args @ patl, action) (divide rem)
     | ({pat_desc = Tpat_any} :: patl, action) :: rem ->
-        add_line (any_pat_list arity, action) (divide rem)
+        add_line (any_pat_list arity @ patl, action) (divide rem)
     | _ ->
         make_tuple_matching arity al
   in divide cl
