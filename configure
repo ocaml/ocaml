@@ -834,9 +834,17 @@ fi
 # See if we can compile the dbm library
 
 dbm_include="not found"
+dbm_link="not found"
 for dir in /usr/include /usr/include/gdbm /usr/include/db1; do
   if test -f $dir/ndbm.h; then
     dbm_include=$dir
+    if sh ./hasgot dbm_open; then
+      dbm_link=""
+    elif sh ./hasgot -lndbm dbm_open; then
+      dbm_link="-cclib -lndbm"
+    else
+      dbm_include="not found"
+    fi
     break
   fi
 done
@@ -850,6 +858,7 @@ else
     dbm_include="-I$dbm_include"
   fi
   echo "DBM_INCLUDES=$dbm_include" >> Makefile
+  echo "DBM_LINK=$dbm_link" >> Makefile
   otherlibraries="$otherlibraries dbm"
 fi
 
