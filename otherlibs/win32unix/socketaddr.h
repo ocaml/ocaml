@@ -28,11 +28,10 @@ typedef socklen_t socklen_param_type;
 typedef int socklen_param_type;
 #endif
 
-void get_sockaddr (value mladdr,
-                   union sock_addr_union * addr /*out*/,
-                   socklen_param_type * addr_len /*out*/);
-value alloc_sockaddr (union sock_addr_union * addr /*in*/,
+extern void get_sockaddr (value mladdr,
+                          union sock_addr_union * addr /*out*/,
+                          socklen_param_type * addr_len /*out*/);
+CAMLprim value alloc_sockaddr (union sock_addr_union * addr /*in*/,
                       socklen_param_type addr_len);
-value alloc_inet_addr (uint32 inaddr);
-
-#define GET_INET_ADDR(v) (*((uint32 *) (v)))
+CAMLprim value alloc_inet_addr (struct in_addr * inaddr);
+#define GET_INET_ADDR(v) (*((struct in_addr *) (v)))

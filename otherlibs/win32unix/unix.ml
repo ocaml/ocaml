@@ -464,7 +464,9 @@ let getgrgid = getpwnam
 
 (* Internet addresses *)
 
-type inet_addr
+type inet_addr = string
+
+let is_inet6_addr s = String.length s = 16
 
 external inet_addr_of_string : string -> inet_addr
                                     = "unix_inet_addr_of_string"
@@ -472,12 +474,18 @@ external string_of_inet_addr : inet_addr -> string
                                     = "unix_string_of_inet_addr"
 
 let inet_addr_any = inet_addr_of_string "0.0.0.0"
+let inet_addr_loopback = inet_addr_of_string "127.0.0.1"
+let inet6_addr_any =
+  try inet_addr_of_string "::" with Failure _ -> inet_addr_any
+let inet6_addr_loopback =
+  try inet_addr_of_string "::1" with Failure _ -> inet_addr_loopback
 
 (* Sockets *)
 
 type socket_domain =
     PF_UNIX
   | PF_INET
+  | PF_INET6
 
 type socket_type =
     SOCK_STREAM
@@ -488,6 +496,10 @@ type socket_type =
 type sockaddr =
     ADDR_UNIX of string
   | ADDR_INET of inet_addr * int
+
+let domain_of_sockaddr = function
+    ADDR_UNIX _ -> PF_UNIX
+  | ADDR_INET(a, _) -> if is_inet6_addr a then PF_INET6 else PF_INET
 
 type shutdown_command =
     SHUTDOWN_RECEIVE
@@ -611,6 +623,115 @@ external getservbyname : string -> string -> service_entry
                                          = "unix_getservbyname"
 external getservbyport : int -> string -> service_entry
                                          = "unix_getservbyport"
+
+type addr_info =
+  { ai_family : socket_domain;
+    ai_socktype : socket_type;
+    ai_protocol : int;
+    ai_addr : sockaddr;
+    ai_canonname : string }
+
+type getaddrinfo_option =
+    AI_FAMILY of socket_domain
+  | AI_SOCKTYPE of socket_type
+  | AI_PROTOCOL of int
+  | AI_NUMERICHOST
+  | AI_CANONNAME
+  | AI_PASSIVE
+
+let getaddrinfo node service opts =
+  (* Parse options *)
+  let opt_socktype = ref None
+  and opt_protocol = ref 0
+  and opt_passive = ref false in
+  List.iter
+    (function AI_SOCKTYPE s -> opt_socktype := Some s
+            | AI_PROTOCOL p -> opt_protocol := p
+            | AI_PASSIVE -> opt_passive := true
+            | _ -> ())
+    opts;
+  (* Determine socket types and port numbers *)
+  let get_port ty kind =
+    if service = "" then [ty, 0] else
+      try
+        [ty, int_of_string service]
+      with Failure _ ->
+      try
+        [ty, (getservbyname service kind).s_port]
+      with Not_found -> [] 
+  in
+  let ports =
+    match !opt_socktype with
+    | None ->
+        get_port SOCK_STREAM "tcp" @ get_port SOCK_DGRAM "udp"
+    | Some SOCK_STREAM ->
+        get_port SOCK_STREAM "tcp"
+    | Some SOCK_DGRAM ->
+        get_port SOCK_DGRAM "udp"
+    | Some ty ->
+        if service = "" then [ty, 0] else [] in
+  (* Determine IP addresses *)
+  let addresses =
+    if node = "" then
+      if List.mem AI_PASSIVE opts
+      then [inet_addr_any, "0.0.0.0"]
+      else [inet_addr_loopback, "127.0.0.1"]
+    else
+      try
+        [inet_addr_of_string node, node]
+      with Failure _ ->
+      try
+        let he = gethostbyname node in
+        List.map
+          (fun a -> (a, he.h_name))
+          (Array.to_list he.h_addr_list)
+      with Not_found ->
+        [] in
+  (* Cross-product of addresses and ports *)
+  List.flatten
+    (List.map 
+      (fun (ty, port) ->
+        List.map
+          (fun (addr, name) ->
+            { ai_family = PF_INET;
+              ai_socktype = ty;
+              ai_protocol = !opt_protocol;
+              ai_addr = ADDR_INET(addr, port);
+              ai_canonname = name })
+          addresses)
+      ports)
+
+type name_info =
+  { ni_hostname : string;
+    ni_service : string }
+
+type getnameinfo_option =
+    NI_NOFQDN
+  | NI_NUMERICHOST
+  | NI_NAMEREQD
+  | NI_NUMERICSERV
+  | NI_DGRAM
+
+let getnameinfo addr opts =
+  match addr with
+  | ADDR_UNIX f ->
+      { ni_hostname = ""; ni_service = f } (* why not? *)
+  | ADDR_INET(a, p) ->
+      let hostname =
+        try
+          if List.mem NI_NUMERICHOST opts then raise Not_found;
+          (gethostbyaddr a).h_name
+        with Not_found ->
+          if List.mem NI_NAMEREQD opts then raise Not_found;
+          string_of_inet_addr a in
+      let service =
+        try
+          if List.mem NI_NUMERICSERV opts then raise Not_found;
+          let kind = if List.mem NI_DGRAM opts then "udp" else "tcp" in
+          (getservbyport p kind).s_name
+        with Not_found ->
+          string_of_int p in
+      { ni_hostname = hostname; ni_service = service }
 
 (* High-level process management (system, popen) *)
 
