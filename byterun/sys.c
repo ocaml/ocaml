@@ -200,10 +200,18 @@ value sys_system_command(command)   /* ML */
   return Val_int(retcode);
 }
 
-value sys_get_os_type(unit)  /* ML */
+value sys_get_config(unit)  /* ML */
      value unit;
 {
-  return copy_string (OCAML_OS_TYPE);
+#define result (r[0])
+  Push_roots (r, 1);
+
+  result = alloc_tuple (2);
+  Modify (&Field (result, 0), copy_string (OCAML_OS_TYPE));
+  Modify (&Field (result, 1), Val_long (8*sizeof(value)));
+  Pop_roots ();
+  return result;
+#undef result
 }
 
 /* Search path function */
