@@ -53,6 +53,7 @@ let main () =
        \032    A/a enable/disable all warnings\n\
        \032    C/c enable/disable suspicious comment\n\
        \032    D/d enable/disable deprecated features\n\
+       \032    E/e enable/disable fragile match\n\
        \032    F/f enable/disable partially applied function\n\
        \032    M/m enable/disable overriden method\n\
        \032    P/p enable/disable partial match\n\
