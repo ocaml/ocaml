@@ -163,6 +163,9 @@ case "$bytecc,$host" in
     # (For those who want to force "cc -64")
     # Turn off warning "unused library"
     bytecclinkopts="-Wl,-woff,84";;
+  *,alpha-*-unicos*)
+    # For the Cray T3E
+    bytecccompopts="-DUMK";;
 esac
 
 # Configure compiler to use in further tests

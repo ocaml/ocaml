@@ -92,10 +92,18 @@ value fill_string(value s, value offset, value len, value init) /* ML */
   return Val_unit;
 }
 
-static unsigned char printable_chars_ascii[] = /* 0x20-0x7E */
-  "\000\000\000\000\377\377\377\377\377\377\377\377\377\377\377\177\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000";
-static unsigned char printable_chars_iso[] = /* 0x20-0x7E 0xA1-0xFF */
-  "\000\000\000\000\377\377\377\377\377\377\377\377\377\377\377\177\000\000\000\000\376\377\377\377\377\377\377\377\377\377\377\377";
+static unsigned char printable_chars_ascii[] = { /* 0x20-0x7E */
+  0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF,
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F,
+  0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0
+};
+static unsigned char printable_chars_iso[] = { /* 0x20-0x7E 0xA1-0xFF */
+  0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF,
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F,
+  0, 0, 0, 0, 0xFE, 0xFF, 0xFF, 0xFF,
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+};
 
 value is_printable(value chr) /* ML */
 {

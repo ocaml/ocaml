@@ -109,10 +109,17 @@ sp is a local copy of the global variable extern_sp. */
 #define ACCU_REG asm("%l2")
 #endif
 #ifdef __alpha__
+#ifdef __CRAY__
+#define PC_REG asm("r9")
+#define SP_REG asm("r10")
+#define ACCU_REG asm("r11")
+#define JUMPTBL_BASE_REG asm("r12")
+#else
 #define PC_REG asm("$9")
 #define SP_REG asm("$10")
 #define ACCU_REG asm("$11")
 #define JUMPTBL_BASE_REG asm("$12")
+#endif
 #endif
 #ifdef __i386__
 #define PC_REG asm("%esi")
