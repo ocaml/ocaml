@@ -153,7 +153,7 @@ let box_float c = Cop(Calloc, [alloc_float_header; c])
 
 let unbox_float = function
     Cop(Calloc, [header; c]) -> c
-  | c -> Cop(Cload typ_float, [c])
+  | c -> Cop(Cload Double, [c])
 
 let is_unboxed_float = function
     Uconst(Const_base(Const_float f)) -> true
@@ -230,13 +230,13 @@ let field_address ptr n =
   else Cop(Cadda, [ptr; Cconst_int(n * size_addr)])
 
 let get_field ptr n =
-  Cop(Cload typ_addr, [field_address ptr n])
+  Cop(Cload Word, [field_address ptr n])
 
 let set_field ptr n newval =
-  Cop(Cstore, [field_address ptr n; newval])
+  Cop(Cstore Word, [field_address ptr n; newval])
 
 let header ptr =
-  Cop(Cload typ_int, [Cop(Cadda, [ptr; Cconst_int(-size_int)])])
+  Cop(Cload Word, [Cop(Cadda, [ptr; Cconst_int(-size_int)])])
 
 let tag_offset =
   if big_endian then -1 else -size_int
@@ -245,7 +245,7 @@ let get_tag ptr =
   if Proc.word_addressed then           (* If byte loads are slow *)
     Cop(Cand, [header ptr; Cconst_int 255])
   else                                  (* If byte loads are efficient *)
-    Cop(Cloadchunk Byte_unsigned,
+    Cop(Cload Byte_unsigned,
         [Cop(Cadda, [ptr; Cconst_int(tag_offset)])])
 
 (* Array indexing *)
@@ -283,9 +283,9 @@ let array_indexing log2size ptr ofs =
                    Cconst_int((-1) lsl (log2size - 1))])
 
 let addr_array_ref arr ofs =
-  Cop(Cload typ_addr, [array_indexing log2_size_addr arr ofs])
+  Cop(Cload Word, [array_indexing log2_size_addr arr ofs])
 let unboxed_float_array_ref arr ofs =
-  Cop(Cload typ_float, [array_indexing log2_size_float arr ofs])
+  Cop(Cload Double, [array_indexing log2_size_float arr ofs])
 let float_array_ref arr ofs =
   box_float(unboxed_float_array_ref arr ofs)
 
@@ -293,9 +293,9 @@ let addr_array_set arr ofs newval =
   Cop(Cextcall("modify", typ_void, false),
       [array_indexing log2_size_addr arr ofs; newval])
 let int_array_set arr ofs newval =
-  Cop(Cstore, [array_indexing log2_size_addr arr ofs; newval])
+  Cop(Cstore Word, [array_indexing log2_size_addr arr ofs; newval])
 let float_array_set arr ofs newval =
-  Cop(Cstore, [array_indexing log2_size_float arr ofs; newval])
+  Cop(Cstore Double, [array_indexing log2_size_float arr ofs; newval])
 
 (* String length *)
 
@@ -310,18 +310,18 @@ let string_length exp =
               Cconst_int 1]),
          Cop(Csubi,
              [Cvar tmp_var;
-               Cop(Cloadchunk Byte_unsigned,
+               Cop(Cload Byte_unsigned,
                      [Cop(Cadda, [str; Cvar tmp_var])])])))
 
 (* Message sending *)
 
 let lookup_label obj lab =
   bind "lab" lab (fun lab ->
-    let table = Cop (Cload typ_addr, [obj]) in
+    let table = Cop (Cload Word, [obj]) in
     let buck_index = Cop(Clsr, [lab; Cconst_int 16]) in
-    let bucket = Cop(Cload typ_addr, [Cop (Cadda, [table; buck_index])]) in
+    let bucket = Cop(Cload Word, [Cop (Cadda, [table; buck_index])]) in
     let item_index = Cop(Cand, [lab; Cconst_int (255 * size_addr)]) in
-    Cop (Cload typ_addr, [Cop (Cadda, [bucket; item_index])]))
+    Cop (Cload Word, [Cop (Cadda, [bucket; item_index])]))
 
 (* To compile "let rec" over values *)
 
@@ -512,13 +512,13 @@ let rec transl = function
   | Uprim(Pfloatfield n, [arg]) ->
       let ptr = transl arg in
       box_float(
-        Cop(Cload typ_float,
+        Cop(Cload Double,
             [if n = 0 then ptr
                        else Cop(Cadda, [ptr; Cconst_int(n * size_float)])]))
   | Uprim(Psetfloatfield n, [loc; newval]) ->
       let ptr = transl loc in
       return_unit(
-        Cop(Cstore,
+        Cop(Cstore Double,
             [if n = 0 then ptr
                        else Cop(Cadda, [ptr; Cconst_int(n * size_float)]);
                    transl_unbox_float newval]))
@@ -583,8 +583,8 @@ let rec transl = function
   | Uprim(Poffsetref n, [arg]) ->
       return_unit
         (bind "ref" (transl arg) (fun arg ->
-          Cop(Cstore,
-              [arg; add_const (Cop(Cload typ_int, [arg])) (n lsl 1)])))
+          Cop(Cstore Word,
+              [arg; add_const (Cop(Cload Word, [arg])) (n lsl 1)])))
 
   (* Float operations *)
   | Uprim(Pfloatofint, [arg]) ->
@@ -615,10 +615,10 @@ let rec transl = function
   | Uprim(Pstringlength, [arg]) ->
       tag_int(string_length (transl arg))
   | Uprim(Pstringrefu, [arg1; arg2]) ->
-      tag_int(Cop(Cloadchunk Byte_unsigned,
+      tag_int(Cop(Cload Byte_unsigned,
                   [add_int (transl arg1) (untag_int(transl arg2))]))
   | Uprim(Pstringsetu, [arg1; arg2; arg3]) ->
-      return_unit(Cop(Cstorechunk Byte_unsigned,
+      return_unit(Cop(Cstore Byte_unsigned,
                       [add_int (transl arg1) (untag_int(transl arg2));
                         untag_int(transl arg3)]))
   | Uprim(Pstringrefs, [arg1; arg2]) ->
@@ -627,14 +627,14 @@ let rec transl = function
           bind "index" (untag_int (transl arg2)) (fun idx ->
             Csequence(
               Cop(Ccheckbound, [string_length str; idx]),
-              Cop(Cloadchunk Byte_unsigned, [add_int str idx])))))
+              Cop(Cload Byte_unsigned, [add_int str idx])))))
   | Uprim(Pstringsets, [arg1; arg2; arg3]) ->
       return_unit
         (bind "str" (transl arg1) (fun str ->
           bind "index" (untag_int (transl arg2)) (fun idx ->
             Csequence(
               Cop(Ccheckbound, [string_length str; idx]),
-              Cop(Cstorechunk Byte_unsigned,
+              Cop(Cstore Byte_unsigned,
                   [add_int str idx; untag_int(transl arg3)])))))
 
   (* Array operations *)
@@ -761,7 +761,7 @@ let rec transl = function
   | Uprim(Pbittest, [arg1; arg2]) ->
       bind "index" (untag_int(transl arg2)) (fun idx ->
         tag_int(
-          Cop(Cand, [Cop(Clsr, [Cop(Cloadchunk Byte_unsigned,
+          Cop(Cand, [Cop(Clsr, [Cop(Cload Byte_unsigned,
                                     [add_int (transl arg1)
                                       (Cop(Clsr, [idx; Cconst_int 3]))]);
                                 Cop(Cand, [idx; Cconst_int 7])]);
@@ -936,7 +936,7 @@ let rec transl_all_functions already_translated cont =
 let rec emit_constant symb cst cont =
   match cst with
     Const_base(Const_float s) ->
-      Cint(float_header) :: Cdefine_symbol symb :: Cfloat s :: cont
+      Cint(float_header) :: Cdefine_symbol symb :: Cdouble s :: cont
   | Const_base(Const_string s) ->
       Cint(string_header (String.length s)) ::
       Cdefine_symbol symb ::
@@ -949,7 +949,7 @@ let rec emit_constant symb cst cont =
   | Const_float_array(fields) ->
       Cint(floatarray_header (List.length fields)) ::
       Cdefine_symbol symb ::
-      Misc.map_end (fun f -> Cfloat f) fields cont
+      Misc.map_end (fun f -> Cdouble f) fields cont
   | _ -> fatal_error "gencmm.emit_constant"
 
 and emit_constant_fields fields cont =
@@ -971,7 +971,7 @@ and emit_constant_field field cont =
   | Const_base(Const_float s) ->
       let lbl = new_const_label() in
       (Clabel_address lbl,
-       Cint(float_header) :: Cdefine_label lbl :: Cfloat s :: cont)
+       Cint(float_header) :: Cdefine_label lbl :: Cdouble s :: cont)
   | Const_base(Const_string s) ->
       let lbl = new_const_label() in
       (Clabel_address lbl,
@@ -989,7 +989,7 @@ and emit_constant_field field cont =
       let lbl = new_const_label() in
       (Clabel_address lbl,
        Cint(floatarray_header (List.length fields)) :: Cdefine_label lbl ::
-       Misc.map_end (fun f -> Cfloat f) fields cont)
+       Misc.map_end (fun f -> Cdouble f) fields cont)
 
 and emit_string_constant s cont =
   let n = size_int - 1 - (String.length s) mod size_int in
@@ -1176,10 +1176,10 @@ let curry_function arity =
 
 let entry_point namelist =
   let incr_global_inited =
-    Cop(Cstore, [Cconst_symbol "caml_globals_inited";
-                 Cop(Caddi, [Cop(Cload typ_int,
-                                   [Cconst_symbol "caml_globals_inited"]);
-                             Cconst_int 1])]) in
+    Cop(Cstore Word,
+        [Cconst_symbol "caml_globals_inited";
+         Cop(Caddi, [Cop(Cload Word, [Cconst_symbol "caml_globals_inited"]);
+                     Cconst_int 1])]) in
   let body =
     List.fold_right
       (fun name next ->

@@ -27,11 +27,14 @@ type environment = (Ident.t, Reg.t array) Tbl.t
 let oper_result_type = function
     Capply ty -> ty
   | Cextcall(s, ty, alloc) -> ty
-  | Cload ty -> ty
-  | Cloadchunk c -> typ_int
+  | Cload c ->
+      begin match c with
+        Word -> typ_addr
+      | Single | Double -> typ_float
+      | _ -> typ_int
+      end
   | Calloc -> typ_addr
-  | Cstore -> typ_void
-  | Cstorechunk c -> typ_void
+  | Cstore c -> typ_void
   | Caddi | Csubi | Cmuli | Cdivi | Cmodi |
     Cand | Cor | Cxor | Clsl | Clsr | Casr |
     Ccmpi _ | Ccmpa _ | Ccmpf _ -> typ_int
@@ -93,8 +96,7 @@ let rec is_simple_expr = function
   | Cop(op, args) ->
       begin match op with
         (* The following may have side effects *)
-        Capply _ | Cextcall(_, _, _) | Calloc | Cstore | Cstorechunk _ | 
-        Craise -> false
+        Capply _ | Cextcall(_, _, _) | Calloc | Cstore _ | Craise -> false
         (* The remaining operations are simple if their args are *)
       | _ -> List.for_all is_simple_expr args
       end
@@ -184,7 +186,7 @@ method virtual is_immediate : int -> bool
 method virtual select_addressing :
   Cmm.expression -> Arch.addressing_mode * Cmm.expression
 
-(* Default instruction selection for stores *)
+(* Default instruction selection for stores (of words) *)
 
 method select_store addr arg =
   (Istore(Word, addr), arg)
@@ -196,21 +198,18 @@ method select_operation op args =
     (Capply ty, Cconst_symbol s :: rem) -> (Icall_imm s, rem)
   | (Capply ty, _) -> (Icall_ind, args)
   | (Cextcall(s, ty, alloc), _) -> (Iextcall(s, alloc), args)
-  | (Cload ty, [arg]) ->
-      let (addr, eloc) = self#select_addressing arg in
-      (Iload(Word, addr), [eloc])
-  | (Cloadchunk chunk, [arg]) ->
+  | (Cload chunk, [arg]) ->
       let (addr, eloc) = self#select_addressing arg in
       (Iload(chunk, addr), [eloc])
-  | (Cstore, [arg1; arg2]) ->
+  | (Cstore chunk, [arg1; arg2]) ->
       let (addr, eloc) = self#select_addressing arg1 in
-      let (op, newarg2) = self#select_store addr arg2 in
-      (op, [newarg2; eloc])
-      (* Inversion addr/datum in Istore *)
-  | (Cstorechunk chunk, [arg1; arg2]) ->
-      let (addr, eloc) = self#select_addressing arg1 in
-      (Istore(chunk, addr), [arg2; eloc])
-      (* Inversion addr/datum in Istore *)
+      if chunk = Word then begin
+        let (op, newarg2) = self#select_store addr arg2 in
+        (op, [newarg2; eloc])
+      end else begin
+        (Istore(chunk, addr), [arg2; eloc])
+        (* Inversion addr/datum in Istore *)
+      end
   | (Calloc, _) -> (Ialloc 0, args)
   | (Caddi, _) -> self#select_arith_comm Iadd args
   | (Csubi, _) -> self#select_arith Isub args
@@ -397,14 +396,6 @@ method emit_expr env exp =
   | Ctuple exp_list ->
       let (simple_list, ext_env) = self#emit_parts_list env exp_list in
       self#emit_tuple ext_env simple_list
-  | Cop(Cproj(ofs, len), [Cop(Cload ty, [arg])]) ->
-      let byte_offset = size_machtype(Array.sub ty 0 ofs) in
-      self#emit_expr env
-        (Cop(Cload(Array.sub ty ofs len),
-             [Cop(Cadda, [arg; Cconst_int byte_offset])]))
-  | Cop(Cproj(ofs, len), [arg]) ->
-      let r = self#emit_expr env arg in
-      Array.sub r ofs len
   | Cop(Craise, [arg]) ->
       let r1 = self#emit_expr env arg in
       let rd = [|Proc.loc_exn_bucket|] in
@@ -577,7 +568,11 @@ method private emit_stores env data regs_addr addr =
     (fun e ->
       let (op, arg) = self#select_store !a e in
       let r = self#emit_expr env arg in
-      self#insert (Iop op) (Array.append r regs_addr) [||];
+      let op' =
+        match op with
+          Istore(_, addr) when r.(0).typ = Float -> Istore(Double, addr)
+        | _ -> op in
+      self#insert (Iop op') (Array.append r regs_addr) [||];
       a := Arch.offset_addressing !a (size_expr env e))
     data
 

@@ -39,24 +39,25 @@ let comparison = function
   | Cge -> print_string ">="
 
 let chunk = function
-    Byte_unsigned -> print_string "unsigned byte"
-  | Byte_signed -> print_string "signed byte"
-  | Sixteen_unsigned -> print_string "unsigned half"
-  | Sixteen_signed -> print_string "signed half"
+    Byte_unsigned -> print_string "unsigned int8"
+  | Byte_signed -> print_string "signed int8"
+  | Sixteen_unsigned -> print_string "unsigned int16"
+  | Sixteen_signed -> print_string "signed int16"
+  | Thirtytwo_unsigned -> print_string "unsigned int32"
+  | Thirtytwo_signed -> print_string "signed int32"
   | Word -> ()
+  | Single -> print_string "float32"
+  | Double -> print_string "float64"
 
 let operation = function
     Capply ty -> print_string "app"
   | Cextcall(lbl, ty, alloc) ->
       print_string "extcall \""; print_string lbl; print_string "\""
-  | Cproj(ofs, len) ->
-      print_string "proj "; print_int ofs;
-      if len > 1 then begin print_string "-"; print_int (ofs + len - 1) end
-  | Cload mty -> print_string "load"
-  | Cloadchunk c -> print_string "load "; chunk c
+  | Cload Word -> print_string "load"
+  | Cload c -> print_string "load "; chunk c
   | Calloc -> print_string "alloc"
-  | Cstore -> print_string "store"
-  | Cstorechunk c -> print_string "store "; chunk c
+  | Cstore Word -> print_string "store"
+  | Cstore c -> print_string "store "; chunk c
   | Caddi -> print_string "+"
   | Csubi -> print_string "-"
   | Cmuli -> print_string "*"
@@ -144,7 +145,6 @@ let rec expression = function
       begin match op with
         Capply mty -> print_space(); machtype mty
       | Cextcall(_, mty, _) -> print_space(); machtype mty
-      | Cload mty -> print_space(); machtype mty
       | _ -> ()
       end;
       print_string ")";
@@ -227,9 +227,11 @@ let data_item = function
     Cdefine_symbol s -> print_string "\""; print_string s; print_string "\":"
   | Cdefine_label l -> print_string "L"; print_int l; print_string ":"
   | Cint8 n -> print_string "byte "; print_int n
-  | Cint16 n -> print_string "half "; print_int n
+  | Cint16 n -> print_string "int16 "; print_int n
+  | Cint32 n -> print_string "int32 "; print_string(Nativeint.to_string n)
   | Cint n -> print_string "int "; print_string(Nativeint.to_string n)
-  | Cfloat f -> print_string "float "; print_string f
+  | Csingle f -> print_string "single "; print_string f
+  | Cdouble f -> print_string "double "; print_string f
   | Csymbol_address s ->
       print_string "addr \""; print_string s; print_string "\""
   | Clabel_address l -> print_string "addr L"; print_int l

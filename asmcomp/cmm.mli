@@ -45,17 +45,18 @@ type memory_chunk =
   | Byte_signed
   | Sixteen_unsigned
   | Sixteen_signed
+  | Thirtytwo_unsigned
+  | Thirtytwo_signed
   | Word
+  | Single
+  | Double
 
 type operation =
     Capply of machtype
   | Cextcall of string * machtype * bool
-  | Cproj of int * int
-  | Cload of machtype
-  | Cloadchunk of memory_chunk
+  | Cload of memory_chunk
   | Calloc
-  | Cstore
-  | Cstorechunk of memory_chunk
+  | Cstore of memory_chunk
   | Caddi | Csubi | Cmuli | Cdivi | Cmodi
   | Cand | Cor | Cxor | Clsl | Clsr | Casr
   | Ccmpi of comparison
@@ -98,8 +99,10 @@ type data_item =
   | Cdefine_label of int
   | Cint8 of int
   | Cint16 of int
+  | Cint32 of Nativeint.t
   | Cint of Nativeint.t
-  | Cfloat of string
+  | Csingle of string
+  | Cdouble of string
   | Csymbol_address of string
   | Clabel_address of int
   | Cstring of string

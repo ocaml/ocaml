@@ -115,19 +115,16 @@ let pseudoregs_for_operation op arg res =
      Keep it simple, force it in edx. *)
   | Iintop_imm(Imod, _) ->
       ([| edx |], [| edx |], true)
-  (* For floating-point operations, the result is always left at the
-     top of the floating-point stack *)
+  (* For floating-point operations and floating-point loads,
+     the result is always left at the top of the floating-point stack *)
   | Iconst_float _ | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
-  | Ifloatofint | Ispecific(Isubfrev | Idivfrev | Ifloatarithmem(_, _)) ->
+  | Ifloatofint | Iload((Single | Double), _)
+  | Ispecific(Isubfrev | Idivfrev | Ifloatarithmem(_, _)) ->
       (arg, [| tos |], false)           (* don't move it immediately *)
-  (* Same for a floating-point load *)
-  | Iload(Word, addr) when res.(0).typ = Float ->
-      (arg, [| tos |], false)
   (* For storing a byte, the argument must be in eax...edx.
-     For storing a halfword, any reg is ok.
-     Keep it simple, just force it to be in edx in both cases. *)
-  | Istore(Word, addr) -> raise Use_default
-  | Istore(chunk, addr) ->
+     (But for a short, any reg will do!)
+     Keep it simple, just force the argument to be in edx. *)
+  | Istore((Byte_unsigned | Byte_signed), addr) ->
       let newarg = Array.copy arg in
       newarg.(0) <- edx;
       (newarg, res, false)
@@ -201,7 +198,7 @@ method select_operation op args =
   | Cdivf ->
       self#select_floatarith Idivf (Ispecific Idivfrev) Ifloatdiv Ifloatdivrev args
   (* Recognize store instructions *)
-  | Cstore ->
+  | Cstore Word ->
       begin match args with
         [loc; Cop(Caddi, [Cop(Cload _, [loc']); Cconst_int n])]
         when loc = loc' ->
@@ -216,10 +213,10 @@ method select_operation op args =
 
 method select_floatarith regular_op reversed_op mem_op mem_rev_op args =
   match args with
-    [arg1; Cop(Cload _, [loc2])] ->
+    [arg1; Cop(Cload Double, [loc2])] ->
       let (addr, arg2) = self#select_addressing loc2 in
       (Ispecific(Ifloatarithmem(mem_op, addr)), [arg1; arg2])
-  | [Cop(Cload _, [loc1]); arg2] ->
+  | [Cop(Cload Double, [loc1]); arg2] ->
       let (addr, arg1) = self#select_addressing loc1 in
       (Ispecific(Ifloatarithmem(mem_rev_op, addr)), [arg2; arg1])
   | [arg1; arg2] ->
@@ -255,12 +252,12 @@ method select_push exp =
   | Cconst_natint n -> (Ispecific(Ipush_int n), Ctuple [])
   | Cconst_pointer n -> (Ispecific(Ipush_int(Nativeint.from n)), Ctuple [])
   | Cconst_symbol s -> (Ispecific(Ipush_symbol s), Ctuple [])
-  | Cop(Cload ty, [loc]) when ty = typ_float ->
-      let (addr, arg) = self#select_addressing loc in
-      (Ispecific(Ipush_load_float addr), arg)
-  | Cop(Cload ty, [loc]) when ty = typ_addr or ty = typ_int ->
+  | Cop(Cload Word, [loc]) ->
       let (addr, arg) = self#select_addressing loc in
       (Ispecific(Ipush_load addr), arg)
+  | Cop(Cload Double, [loc]) ->
+      let (addr, arg) = self#select_addressing loc in
+      (Ispecific(Ipush_load_float addr), arg)
   | _ -> (Ispecific(Ipush), exp)
 
 method emit_extcall_args env args =

@@ -345,43 +345,44 @@ let emit_instr i =
         stack_offset := !stack_offset + n
     | Lop(Iload(chunk, addr)) ->
         let dest = i.res.(0) in
-        begin match dest.typ with
-          Int | Addr ->
-            begin match (chunk, dest.loc) with
-              (Word, _) ->
-                `	movl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
-            | (Byte_unsigned, _) ->
-                `	movzbl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
-            | (Byte_signed, _) ->
-                `	movsbl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
-            | (Sixteen_unsigned, _) ->
-                `	movzwl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
-            | (Sixteen_signed, _) ->
-                `	movswl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
-            end
-        | Float ->
+        begin match chunk with
+          | Byte_unsigned ->
+              `	movzbl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
+          | Byte_signed ->
+              `	movsbl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
+          | Sixteen_unsigned ->
+              `	movzwl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
+          | Sixteen_signed ->
+              `	movswl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
+          | Single ->
+            `	flds	{emit_addressing addr i.arg 0}\n`
+          | Double ->
             `	fldl	{emit_addressing addr i.arg 0}\n`
-        end
-    | Lop(Istore(Word, addr)) ->
-        begin match i.arg.(0).typ with
-          Int | Addr ->
-            `	movl	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
-        | Float ->
-            if i.arg.(0) = tos then
-              `	fstpl	{emit_addressing addr i.arg 1}\n`
-            else begin
-              `	fldl	{emit_reg i.arg.(0)}\n`;
-              `	fstpl	{emit_addressing addr i.arg 1}\n`
-            end
+          | _ (* Word | Thirtytwo_signed | Thirtytwo_unsigned *) ->
+              `	movl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
         end
     | Lop(Istore(chunk, addr)) ->
-        (* i.arg.(0) is guaranteed to be in %edx, actually *)
         begin match chunk with
-          Word -> fatal_error "Emit_i386: store word"
-        | Byte_unsigned | Byte_signed ->
+          | Word | Thirtytwo_signed | Thirtytwo_unsigned ->
+            `	movl	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
+          | Byte_unsigned | Byte_signed ->
             `	movb	{emit_reg8 i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
-        | Sixteen_unsigned | Sixteen_signed ->
+          | Sixteen_unsigned | Sixteen_signed ->
             `	movw	{emit_reg16 i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
+          | Single ->
+              if i.arg.(0) = tos then
+                `	fstps	{emit_addressing addr i.arg 1}\n`
+              else begin
+                `	fldl	{emit_reg i.arg.(0)}\n`;
+                `	fstps	{emit_addressing addr i.arg 1}\n`
+              end
+          | Double ->
+              if i.arg.(0) = tos then
+                `	fstpl	{emit_addressing addr i.arg 1}\n`
+              else begin
+                `	fldl	{emit_reg i.arg.(0)}\n`;
+                `	fstpl	{emit_addressing addr i.arg 1}\n`
+              end
         end
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
@@ -755,7 +756,9 @@ let emit_item = function
       `	{emit_string word_dir}	{emit_int n}\n`
   | Cint n ->
       `	.long	{emit_nativeint n}\n`
-  | Cfloat f ->
+  | Csingle f ->
+      `	.float	{emit_string f}\n`
+  | Cdouble f ->
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->
       `	.long	{emit_symbol s}\n`
