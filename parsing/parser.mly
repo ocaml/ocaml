@@ -85,12 +85,17 @@ let mklazy e =
 let mkinfix arg1 name arg2 =
   mkexp(Pexp_apply(mkoperator name 2, [arg1; arg2]))
 
+let neg_float_string f =
+  if String.length f > 0 && f.[0] = '-'
+  then String.sub f 1 (String.length f - 1)
+  else "-" ^ f
+
 let mkuminus name arg =
   match arg.pexp_desc with
     Pexp_constant(Const_int n) ->
       mkexp(Pexp_constant(Const_int(-n)))
   | Pexp_constant(Const_float f) ->
-      mkexp(Pexp_constant(Const_float("-" ^ f)))
+      mkexp(Pexp_constant(Const_float(neg_float_string f)))
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, [arg]))
 
