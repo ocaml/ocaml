@@ -22,10 +22,12 @@
     A keyword is a character string starting with a [-].
     An option is a keyword alone or followed by an argument.
     The types of keywords are: [Unit], [Set], [Clear], [String],
-    [Int], [Float], and [Rest].  [Unit], [Set] and [Clear] keywords take
-    no argument.  [String], [Int], and [Float] keywords take the following
-    word on the command line as an argument.  A [Rest] keyword takes the
-    remaining of the command line as (string) arguments.
+    [Set_string], [Int], [Set_int], [Float], [Set_float], [Symbol],
+    and [Rest].
+    [Unit], [Set] and [Clear] keywords take no argument.  A [Rest]
+    keyword takes the remaining of the command line as arguments.
+    Every other keyword takes the following word on the command line
+    as argument.
     Arguments not preceded by a keyword are called anonymous arguments.
 
    Examples ([cmd] is assumed to be the command name):
@@ -60,18 +62,18 @@ type spec =
 type key = string
 type doc = string
 type usage_msg = string
-type annon_fun = (string -> unit)
+type anon_fun = (string -> unit)
 
 val parse :
-  (key * spec * doc) list -> annon_fun -> usage_msg -> unit
-(** [Arg.parse speclist anonfun usage_msg] parses the command line.
+  (key * spec * doc) list -> anon_fun -> usage_msg -> unit
+(** [Arg.parse speclist anon_fun usage_msg] parses the command line.
     [speclist] is a list of triples [(key, spec, doc)].
     [key] is the option keyword, it must start with a ['-'] character.
     [spec] gives the option type and the function to call when this option
     is found on the command line.
     [doc] is a one-line description of this option.
-    [anonfun] is called on anonymous arguments.
-    The functions in [spec] and [anonfun] are called in the same order
+    [anon_fun] is called on anonymous arguments.
+    The functions in [spec] and [anon_fun] are called in the same order
     as their arguments appear on the command line.
 
     If an error occurs, [Arg.parse] exits the program, after printing
@@ -81,7 +83,7 @@ val parse :
 -   The list of options, each followed by the corresponding [doc] string.
 
     For the user to be able to specify anonymous arguments starting with a
-    [-], include for example [("-", String anonfun, doc)] in [speclist].
+    [-], include for example [("-", String anon_fun, doc)] in [speclist].
 
     By default, [parse] recognizes two unit options, [-help] and [--help],
     which will display [usage_msg] and the list of options, and exit
@@ -90,12 +92,13 @@ val parse :
 *)
 
 val parse_argv : string array ->
-  (key * spec * doc) list -> annon_fun -> usage_msg -> unit
-(** [Arg.parse_argv args speclist anonfun usage_msg] parses array [args] as
-  if it were the command line. *)
+  (key * spec * doc) list -> anon_fun -> usage_msg -> unit
+(** [Arg.parse_argv args speclist anon_fun usage_msg] parses the array
+  [args] as if it were the command line.  It saves the value of
+  [Arg.current] before starting and restores it before returning. *)
 
 exception Bad of string
-(** Functions in [spec] or [anonfun] can raise [Arg.Bad] with an error
+(** Functions in [spec] or [anon_fun] can raise [Arg.Bad] with an error
    message to reject invalid arguments. *)
 
 val usage : (key * spec * doc) list -> usage_msg -> unit

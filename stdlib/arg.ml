@@ -16,7 +16,7 @@
 type key = string
 type doc = string
 type usage_msg = string
-type annon_fun = (string -> unit)
+type anon_fun = (string -> unit)
 
 type spec =
   | Unit of (unit -> unit)     (* Call the function with unit argument *)
