@@ -201,8 +201,8 @@ The following character sequences are also keywords:
 \begin{verbatim}
     !=    #     &     &&    '     (     )     *     +     ,     -
     -.    ->    .     ..    :     ::    :=    :>    ;     ;;    <
-    <-    =     >     >]    >}    ?     ??    [     [<    [|    ]
-    _     `     {     {<    |     |]    }     ~
+    <-    =     >     >]    >}    ?     ??    [     [<    [>    [|
+    ]     _     `     {     {<    |     |]    }     ~
 \end{verbatim}
 %
 Note that the following identifiers are keywords of the Camlp4
