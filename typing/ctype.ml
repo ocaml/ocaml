@@ -24,7 +24,7 @@ open Types
      When necessary, some sharing can be lost. Types will still be
      printed correctly (XXX a faire...), and types defined for a class
      do not depend on sharing thanks to constrained abbreviations (XXX
-     a faire...).
+     a faire...). (Of course, typing will still be correct.)
    - All nodes of a type must have a level : that way, one know
      whether a node must be duplicated or not when instantiating a
      type.
@@ -41,18 +41,6 @@ open Types
    - Types recursifs sans limitation.
    - #-type implementes comme de vraies abreviations.
    - Deplacer Ctype.repr dans Types ?
-
-Constructeurs de type constraints
-=================================
-  La contrainte n'apparait que pour entrer un type, ou pour l'afficher.
-  Comment lire un type recursif ???
-    - Le nombre de variables libres dans les parametres donne l'arite
-      effectif du type.
-    - Lire le type en accumulant les contraintes
-        [t' t] traduit en [('a, 'b) t where t'' = t'], ou ['a] et ['b]
-        sont les variables libres de [t''].
-      Probleme de bootstrap : on ne connait pas encore t'' lorsque
-      l'on le lit !
 
 *)
 
@@ -208,7 +196,7 @@ let remove_object_name ty =
                          (*  Type level manipulation  *)
                          (*****************************)
 
-
+(* XXX Keep only [generalize_keep_expans] ? *)
 let rec generalize ty =
   let ty = repr ty in
   if ty.level > !current_level then begin
@@ -222,7 +210,45 @@ let rec generalize ty =
     iter_type_expr generalize ty
   end
 
-let expand_abbrev' = ref (fun _ _ _ _ _ -> raise Cannot_expand)
+(* Generalize and keep abbreviations *)
+let rec generalize_keep_expans ty =
+  let ty = repr ty in
+  if ty.level > !current_level then begin
+    ty.level <- generic_level;
+    begin match ty.desc with
+      Tconstr (_, _, abbrev) ->
+        generalize_expans !abbrev
+    | _ -> ()
+    end;
+    iter_type_expr generalize_keep_expans ty
+  end
+
+and generalize_expans =
+  function
+    Mnil              ->  ()
+  | Mcons(_, ty, rem) ->  generalize_keep_expans ty; generalize_expans rem
+  | Mlink rem         ->  generalize_expans !rem
+
+let rec ungeneralize ty =
+  let ty = repr ty in
+  if ty.level = generic_level then begin
+    ty.level <- !current_level;
+    begin match ty.desc with
+      Tconstr (_, _, abbrev) ->
+        ungeneralize_expans !abbrev
+    | _ -> ()
+    end;
+    iter_type_expr ungeneralize ty
+  end
+
+and ungeneralize_expans =
+  function
+    Mnil              ->  ()
+  | Mcons(_, ty, rem) ->  ungeneralize ty; ungeneralize_expans rem
+  | Mlink rem         ->  ungeneralize_expans !rem
+
+let expand_abbrev' = (* Forward declaration *)
+  ref (fun env path args abbrev level -> raise Cannot_expand)
 
 (* Lower the levels of a type. *)
 (* Assume [level] is not [generic_level]. *)
@@ -232,21 +258,27 @@ let rec update_level env level ty =
     ty.level <- level;
     begin match ty.desc with
       Tconstr(p, tl, abbrev)  when level < Path.binding_time p ->
-        (* First try to replace an abbreviation by its expansion:
-           [ty.desc <- Tlink expans]. *)
+        (* Try first to replace an abbreviation by its expansion. *)
         begin try
           let ty' = !expand_abbrev' env p tl abbrev ty.level in
           ty.desc <- Tlink ty'
+          (* [expand_abbrev] already checks the level, so no need to
+             recurse further. *)
         with Cannot_expand ->
           raise (Unify [])
         end
-    | _ -> ()
+    | _ ->
+        iter_type_expr (update_level env level) ty
     end;
-    iter_type_expr (update_level env level) ty
   end
 
-(* XXX Env.empty correct ? *)
 let make_nongen ty = update_level Env.empty !current_level ty
+(* 
+   Function [update_level] will never try to expand an abbreviation in
+   this case ([current_level] is higher than the binding time of any
+   type constructor path). So, it can be called with the empty
+   environnement.
+*)
 
 
                               (*******************)
@@ -376,26 +408,33 @@ let instance_class cl =
 
 (**** Instantiation with parameter substitution ****)
 
-let rec subst abbrev params args body =
-  if !current_level <> generic_level then begin
+let rec subst level abbrev params args body =
+  if level <> generic_level then begin
+    let old_level = !current_level in
+    current_level := level;
     List.iter2 bind_param params args;
     abbreviations := abbrev;
     let ty = copy body in
     abbreviations := ref Mnil;
     cleanup_types ();
+    current_level := old_level;
     ty
   end else begin
     (* One cannot expand directly to a generic type. *)
-    begin_def ();
     let vars = List.map (fun _ -> newvar ()) args in
-    let ty = subst abbrev params vars body in
+    begin_def ();
+    let ty = subst !current_level abbrev params vars body in
     end_def ();
-    generalize ty;
+    generalize_keep_expans ty;
     List.iter2 (fun v a -> v.desc <- Tlink a) vars args;
     ty
   end
 
-let substitute params args body = subst (ref Mnil) params args body
+(* Only the shape of the type matters, not whether is is generic or
+   not. [generic_level] might be slighty slower, but it ensures
+   invariants on types (decreasing levels.) *)
+let substitute params args body =
+  subst generic_level (ref Mnil) params args body
 
 
                               (****************************)
@@ -408,9 +447,9 @@ let rec find_expans p1 =
   function
     Mnil ->
       None
-  | Mcons (p2, ty, rem) when Path.same p1 p2 ->
+  | Mcons (p2, ty, _) when Path.same p1 p2 ->
       Some ty
-  | Mcons (p2, ty, rem) ->
+  | Mcons (_, _, rem) ->
       find_expans p1 rem
   | Mlink {contents = rem} ->
       find_expans p1 rem
@@ -436,12 +475,9 @@ let expand_abbrev env path args abbrev level =
         try Env.find_type path env with Not_found -> raise Cannot_expand in
       match decl.type_manifest with
         Some body ->
-          let v = newvar () in
+          let v = newvar () in          (* Stub *)
           memorize_abbrev abbrev path v;
-          let old_level = !current_level in
-          current_level := level;
-          let ty = subst abbrev decl.type_params args body in
-          current_level := old_level;
+          let ty = subst level abbrev decl.type_params args body in
           v.desc <- Tlink ty;
           ty
       | _ ->
@@ -455,7 +491,7 @@ let rec expand_root env ty =
   match ty.desc with
     Tconstr(p, tl, abbrev) ->
       begin try
-        expand_root env (expand_abbrev env p tl (ref !abbrev) ty.level)
+        expand_root env (expand_abbrev env p tl abbrev ty.level)
       with Cannot_expand ->
         ty
       end
@@ -1165,10 +1201,15 @@ let subtype env ty1 ty2 =
 let inst_subst = ref ([] : (type_expr * type_expr) list)
 
 (* XXX A voir... *)
+(* XXX Petit probleme... (deroulement) *)
+(*     module F(X : sig type t end) = struct type t = X.t end;;       *)
+(*     module M = F(struct type t = <x : t> end);;                    *)
+(*  -> module M : sig type t = < x : < x : 'a > as 'a > end  *)
 let rec nondep_type_rec env id ty =
   let ty = repr ty in
   if ty.desc = Tvar then ty else
-  try List.assq ty !inst_subst with Not_found ->
+  try newgenty (Tlink (List.assq ty !inst_subst)) with Not_found ->
+            (* Tlink important permet de ne pas modifier la variable *)
     let ty' = newgenvar () in
     inst_subst := (ty, ty') :: !inst_subst;
     ty'.desc <-
@@ -1183,7 +1224,7 @@ let rec nondep_type_rec env id ty =
           if Path.isfree id p then
             begin try
               (nondep_type_rec env id
-                 (expand_abbrev env p tl (ref !abbrev) ty.level)).desc
+                 (expand_abbrev env p tl abbrev ty.level)).desc
             with Cannot_expand ->
               raise Not_found
             end
@@ -1437,7 +1478,7 @@ let unroll_abbrev id tl ty =
   let ty = repr ty in
   match ty.desc with
     Tvar ->
-      (* Maybe abbreviations should not expand to a type variable. *)
+      (* XXX Maybe abbreviations should not expand to a type variable ? *)
       ty
   | _ ->
       let ty' = {desc = ty.desc; level = ty.level} in
