@@ -564,7 +564,6 @@ let rec type_exp env sexp =
       let arg = type_exp env sarg in
       let ty_res = newvar() in
       let cases = type_cases env arg.exp_type ty_res caselist in
-      Parmatch.check_unused env cases;
       let partial = Parmatch.check_partial env sexp.pexp_loc cases in
       { exp_desc = Texp_match(arg, cases, partial);
         exp_loc = sexp.pexp_loc;
@@ -574,7 +573,6 @@ let rec type_exp env sexp =
       let body = type_exp env sbody in
       let cases =
         type_cases env (instance Predef.type_exn) body.exp_type caselist in
-      Parmatch.check_unused env cases;
       { exp_desc = Texp_try(body, cases);
         exp_loc = sexp.pexp_loc;
         exp_type = body.exp_type;
@@ -1160,6 +1158,7 @@ and type_expect env sexp ty_expected =
         with Unify _ -> assert false
       end;
       let cases = type_cases env ty_arg ty_res caselist in
+      let partial = Parmatch.check_partial env sexp.pexp_loc cases in
       let rec all_labeled ty =
         match (repr ty).desc with
           Tarrow ("", _, _) | Tvar -> false
@@ -1169,8 +1168,6 @@ and type_expect env sexp ty_expected =
       if is_optional l && all_labeled ty_res then
         Location.prerr_warning (fst (List.hd cases)).pat_loc
           (Warnings.Other "This optional argument cannot be erased");
-      Parmatch.check_unused env cases;
-      let partial = Parmatch.check_partial env sexp.pexp_loc cases in
       { exp_desc = Texp_function(cases, partial);
         exp_loc = sexp.pexp_loc;
         exp_type = newty (Tarrow(l, ty_arg, ty_res));
@@ -1205,6 +1202,16 @@ and type_cases env ty_arg ty_res caselist =
         unify_pat env pat ty_arg';
         (pat, ext_env))
       caselist in
+  (* Check unused cases here (required for polymorphic variants) *)
+  let cases = List.map2
+      (fun (pat, _) (_, act) ->
+        let dummy = { exp_desc = Texp_tuple []; exp_type = newty (Ttuple[]);
+                      exp_env = env; exp_loc = act.pexp_loc } in
+        match act.pexp_desc with
+          Pexp_when _ -> pat, {dummy with exp_desc = Texp_when(dummy, dummy)}
+        | _           -> pat, dummy)
+      pat_env_list caselist in
+  Parmatch.check_unused env cases;
   (* Delay other unifications until after the use of unify_pat *)
   begin match pat_env_list with [] -> ()
   | (pat, _) :: _ -> unify_pat' env pat ty_arg
