@@ -19,11 +19,11 @@ CAMLP4OPT=phony
 
 all: $(CAMLP4)
 
-opt: opt-$(PROFILING)
+opt: opt$(PROFILING)
 
-opt-noprof: $(OBJS:.cma=.cmxa)
+optnoprof: $(OBJS:.cma=.cmxa)
 
-opt-prof: opt-noprof $(OBJS:.cma=.p.cmxa)
+optprof: optnoprof $(OBJS:.cma=.p.cmxa)
 
 optp4: $(CAMLP4OPT)
 

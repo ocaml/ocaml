@@ -9,10 +9,10 @@ SHELL=/bin/sh
 TARGET=gramlib.cma
 
 all: $(TARGET)
-opt: opt-$(PROFILING)
+opt: opt$(PROFILING)
 
-opt-noprof: $(TARGET:.cma=.cmxa)
-opt-prof: opt-noprof $(TARGET:.cma=.p.cmxa)
+optnoprof: $(TARGET:.cma=.cmxa)
+optprof: optnoprof $(TARGET:.cma=.p.cmxa)
 
 $(TARGET): $(OBJS)
 	$(OCAMLC) $(OBJS) -a -o $(TARGET)

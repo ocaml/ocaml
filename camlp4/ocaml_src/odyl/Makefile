@@ -12,11 +12,11 @@ OBJS=odyl_config.cmo odyl_main.cmo
 
 all: odyl$(EXE)
 
-opt: opt-$(PROFILING)
+opt: opt$(PROFILING)
 
-opt-noprof: odyl.cmx odyl.cmxa
+optnoprof: odyl.cmx odyl.cmxa
 
-opt-prof: opt-noprof odyl.p.cmx odyl.p.cmxa
+optprof: optnoprof odyl.p.cmx odyl.p.cmxa
 
 odyl$(EXE): odyl.cma odyl.cmo
 	$(OCAMLC) odyl.cma odyl.cmo -o $@

@@ -1,3 +1,7 @@
+- [01 July 2004] profiled versions of Camlp4 libs are *NOT* installed
+  by default (not even built). To build and install them, uncomment
+  the line PROFILING=prof in camlp4/config/Makefile.tpl, and then
+  make opt.opt.
 - [22-23 June 2004] `make install' now installs also pa_[or].cmx, pa_[or]p.cmx,
   pa_[or]_fast.cmx, and odyl.cmx
 - [12 may 2004] Added to the camlp4 tools the -version option that prints
