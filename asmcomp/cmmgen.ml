@@ -149,7 +149,7 @@ let subst_boxed_float boxed_id unboxed_id exp =
     | Cassign(id, arg) -> 
         if Ident.same id boxed_id then begin
           assigned := true;
-          Cassign(unboxed_id, unbox_float arg)
+          Cassign(unboxed_id, subst(unbox_float arg))
         end else
           Cassign(id, subst arg)
     | Ctuple argl -> Ctuple(List.map subst argl)
