@@ -108,7 +108,9 @@ value obj_truncate (value v, value newsize)  /* ML */
   /* PR#61: since we're about to lose our references to the elements
      beyond new_wosize in v, erase them explicitly so that the GC
      can darken them as appropriate. */
-  for (i = new_wosize; i < wosize; i++) modify(&Field(v, i), Val_unit);
+  if (tag < No_scan_tag) {
+    for (i = new_wosize; i < wosize; i++) modify(&Field(v, i), Val_unit);
+  }
   Field (v, new_wosize) =
     Make_header (Wosize_whsize (wosize-new_wosize), 0, Caml_white);
   Hd_val (v) = Make_header (new_wosize, tag, color);
