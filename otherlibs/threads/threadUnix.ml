@@ -28,12 +28,12 @@ let execv proc args =
 let execve proc args env =
   Thread.critical_section := true;
   Unix.setitimer ITIMER_VIRTUAL {it_interval = 0.0; it_value = 0.0};
-  Unix.execv proc args
+  Unix.execve proc args
 
 let execvp proc args =
   Thread.critical_section := true;
   Unix.setitimer ITIMER_VIRTUAL {it_interval = 0.0; it_value = 0.0};
-  Unix.execv proc args
+  Unix.execvp proc args
 
 let wait () =
   Thread.wait_pid (-1)
