@@ -209,10 +209,10 @@ CAMLprim value unix_setsockopt_float(value socket, value option, value status)
 
 #else
 
-CAMLprim value unix_getsockopt(value socket, value option)
+CAMLprim value unix_getsockopt_bool(value socket, value option)
 { invalid_argument("getsockopt not implemented"); }
 
-CAMLprim value unix_setsockopt(value socket, value option, value status)
+CAMLprim value unix_setsockopt_bool(value socket, value option, value status)
 { invalid_argument("setsockopt not implemented"); }
 
 CAMLprim value unix_getsockopt_int(value socket, value option)
