@@ -162,6 +162,10 @@ let _ = Hashtbl.add directive_table "remove_printer"
 
 external current_environment: unit -> Obj.t = "get_current_environment"
 
+let tracing_function_ptr =
+  get_code_pointer
+    (Obj.repr (fun arg -> Trace.print_trace (current_environment()) arg))
+
 let dir_trace lid =
   try
     let (path, desc) = Env.lookup_value lid !toplevel_env in
@@ -174,7 +178,8 @@ let dir_trace lid =
     | _ ->
         let clos = eval_path path in
         (* Nothing to do if it's not a closure *)
-        if Obj.is_block clos & Obj.tag clos = 250 then begin
+        if Obj.is_block clos &&
+           (Obj.tag clos = 250 || Obj.tag clos = 249) then begin
         match is_traced clos with
           Some opath ->
             Printtyp.path path;
@@ -183,20 +188,16 @@ let dir_trace lid =
             print_newline()
         | None ->
             (* Instrument the old closure *)
-            let old_clos = copy_closure clos in
             traced_functions :=
               { path = path; 
                 closure = clos;
-                initial_closure = old_clos;
+                actual_code = get_code_pointer clos;
                 instrumented_fun =
-                  instrument_closure !toplevel_env lid
-                                     desc.val_type
-                                     old_clos}
+                  instrument_closure !toplevel_env lid desc.val_type }
               :: !traced_functions;
-            (* Redirect the code field of the old closure *)
-            overwrite_closure clos
-             (Obj.repr (fun arg ->
-                          Trace.print_trace (current_environment()) arg));
+            (* Redirect the code field of the closure to point
+               to the instrumentation function *)
+            set_code_pointer clos tracing_function_ptr;
             Printtyp.longident lid; print_string " is now traced.";
             print_newline()
         end else begin
@@ -217,7 +218,7 @@ let dir_untrace lid =
         []
     | f :: rem ->
         if Path.same f.path path then begin
-          overwrite_closure (eval_path path) f.initial_closure;
+          set_code_pointer (eval_path path) f.actual_code;
           Printtyp.longident lid; print_string " is no longer traced.";
           print_newline();
           rem
@@ -230,9 +231,9 @@ let dir_untrace lid =
 let dir_untrace_all () =
   List.iter
     (fun f ->
-        overwrite_closure (eval_path f.path) f.initial_closure;
-        Printtyp.path f.path; print_string " is no longer traced.";
-        print_newline())
+      set_code_pointer (eval_path f.path) f.actual_code;
+      Printtyp.path f.path; print_string " is no longer traced.";
+      print_newline())
     !traced_functions;
   traced_functions := []
 
