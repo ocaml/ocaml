@@ -312,6 +312,8 @@ EXTEND
       | "("; ")" -> <:expr< () >>
       | "("; x1 = expr; ","; x2 = LIST1 SELF SEP ","; ")" ->
           <:expr< ($list:[x1::x2]$) >>
+      | "("; x1 = expr; ";"; x2 = LIST1 SELF SEP ";"; ")" ->
+          <:expr< do { $list:[x1::x2]$ } >>
       | "("; x1 = expr; ")" -> x1 ] ]
   ;
   fixity:
@@ -335,10 +337,14 @@ EXTEND
       | "_" -> <:patt< _ >>
       | "["; "]" -> <:patt< [] >>
       | "["; x1 = patt; "]" -> <:patt< [$x1$] >>
+      | "{"; x1 = LIST1 plabel SEP ","; "}" -> <:patt< {$list:x1$} >>
       | "("; ")" -> <:patt< () >>
       | "("; x1 = patt; ","; x2 = LIST1 SELF SEP ","; ")" ->
           <:patt< ($list:[x1::x2]$) >>
       | "("; x1 = patt; ")" -> x1 ] ]
+  ;
+  plabel:
+    [ [ x1 = selector; "="; x2 = patt -> (<:patt< $lid:x1$ >>, x2) ] ]
   ;
   vb:
     [ [ "lazy"; x1 = patt; "="; x2 = expr -> not_impl loc "vb 1"
@@ -524,7 +530,7 @@ EXTEND
     [ [ "("; x1 = strdecs; ")"; x2 = arg_fct -> not_impl loc "arg_fct 1"
       | "("; x1 = module_expr; ")"; x2 = arg_fct -> not_impl loc "arg_fct 2"
       | "("; x1 = module_expr; ")" -> x1
-      | "("; x2 = strdecs; ")" -> not_impl loc "arg_fct 4" ] ]
+      | "("; x2 = strdecs; ")" -> <:module_expr< struct $list:x2$ end >> ] ]
   ;
   strdecs:
     [ [ x1 = str_item LEVEL "strdec"; x2 = strdecs -> [x1 :: x2]
