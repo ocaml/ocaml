@@ -109,12 +109,23 @@ module Make(Ord: OrderedType) = struct
           let c = Ord.compare x v in
           c = 0 || mem x (if c < 0 then l else r)
 
-    let rec merge t1 t2 =
+    let rec min_binding = function
+        Empty -> raise Not_found
+      | Node(Empty, x, d, r, _) -> (x, d)
+      | Node(l, x, d, r, _) -> min_binding l
+
+    let rec remove_min_binding = function
+        Empty -> invalid_arg "Map.remove_min_elt"
+      | Node(Empty, x, d, r, _) -> r
+      | Node(l, x, d, r, _) -> bal (remove_min_binding l) x d r
+
+    let merge t1 t2 =
       match (t1, t2) with
         (Empty, t) -> t
       | (t, Empty) -> t
-      | (Node(l1, v1, d1, r1, h1), Node(l2, v2, d2, r2, h2)) ->
-          bal l1 v1 d1 (bal (merge r1 l2) v2 d2 r2)
+      | (_, _) ->
+          let (x, d) = min_binding t2 in
+          bal t1 x d (remove_min_binding t2)
 
     let rec remove x = function
         Empty ->
