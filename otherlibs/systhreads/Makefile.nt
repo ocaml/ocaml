@@ -28,7 +28,7 @@ all: dllthreads.dll libthreads.$(A) threads.cma
 allopt: libthreadsnat.$(A) threads.cmxa
 
 dllthreads.dll: win32_b.$(DO)
-	$(call MKDLL,dllthreads.dll,tmp.lib,win32_b.$(DO) ../../byterun/ocamlrun.$(A))
+	$(call MKDLL,dllthreads.dll,tmp.$(A),win32_b.$(DO) ../../byterun/ocamlrun.$(A))
 	rm tmp.*
 
 libthreads.$(A): win32_b.$(SO)
@@ -43,7 +43,7 @@ win32_b.$(SO): win32.c
 	mv win32.$(O) win32_b.$(SO)
 
 libthreadsnat.$(A): win32_n.$(O)
-	$(call MKLIB,libthreadsnat.lib,win32_n.$(O))
+	$(call MKLIB,libthreadsnat.$(A),win32_n.$(O))
 
 win32_n.$(O): win32.c
 	$(NATIVECC) -DNATIVE_CODE -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) -c win32.c

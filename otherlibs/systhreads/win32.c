@@ -16,6 +16,7 @@
 /* Thread interface for Win32 threads */
 
 #include <windows.h>
+#include <process.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -250,7 +251,7 @@ static void caml_io_mutex_unlock_exn(void)
 
 /* The "tick" thread fakes a signal at regular intervals. */
 
-static void * caml_thread_tick(void)
+static void caml_thread_tick(void * arg)
 {
   while(1) {
     Sleep(Thread_timeout);
@@ -330,8 +331,9 @@ CAMLprim value caml_thread_initialize(value unit)
 
 /* Create a thread */
 
-static void caml_thread_start(caml_thread_t th)
+static void caml_thread_start(void * arg)
 {
+  caml_thread_t th = (caml_thread_t) arg;
   value clos;
 
   /* Associate the thread descriptor with the thread */
@@ -710,6 +712,6 @@ CAMLprim value caml_wait_signal(value sigs)
 static void caml_wthread_error(char * msg)
 {
   char errmsg[1024];
-  sprintf(errmsg, "%s: error code %lx\n", msg, GetLastError());
+  sprintf(errmsg, "%s: error code %lx", msg, GetLastError());
   raise_sys_error(copy_string(errmsg));
 }
