@@ -103,9 +103,9 @@ static long thread_next_ident = 0;
 
 /* Forward declarations */
 
-value caml_mutex_new (value);
-value caml_mutex_lock (value);
-value caml_mutex_unlock (value);
+value caml_threadstatus_new (void);
+void caml_threadstatus_terminate (value);
+int caml_threadstatus_wait (value);
 static void caml_pthread_check (int, char *);
 
 /* Hook for scanning the stacks of the other threads */
@@ -274,9 +274,8 @@ value caml_thread_initialize(value unit)   /* ML */
     /* Initialize the keys */
     pthread_key_create(&thread_descriptor_key, NULL);
     pthread_key_create(&last_channel_locked_key, NULL);
-    /* Create and acquire a termination lock for the current thread */
-    mu = caml_mutex_new(Val_unit);
-    caml_mutex_lock(mu);
+    /* Create and initialize the termination semaphore */
+    mu = caml_threadstatus_new();
     /* Create a descriptor for the current thread */
     descr = alloc_small(3, 0);
     Ident(descr) = Val_long(thread_next_ident);
@@ -332,7 +331,7 @@ static void * caml_thread_start(void * arg)
   modify(&(Start_closure(th->descr)), Val_unit);
   callback(clos, Val_unit);
   /* Signal that the thread has terminated */
-  caml_mutex_unlock(Terminated(th->descr));
+  caml_threadstatus_terminate(Terminated(th->descr));
   /* Remove th from the doubly-linked list of threads */
   th->next->prev = th->prev;
   th->prev->next = th->next;
@@ -357,9 +356,8 @@ value caml_thread_new(value clos)          /* ML */
   int err;
 
   Begin_roots2 (clos, mu)
-    /* Create and acquire the termination lock */
-    mu = caml_mutex_new(Val_unit);
-    caml_mutex_lock(mu);
+    /* Create and initialize the termination semaphore */
+    mu = caml_threadstatus_new();
     /* Create a descriptor for the new thread */
     descr = alloc_small(3, 0);
     Ident(descr) = Val_long(thread_next_ident);
@@ -392,6 +390,7 @@ value caml_thread_new(value clos)          /* ML */
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
     err = pthread_create(&th->pthread, &attr, caml_thread_start, (void *) th);
+    /* Unlock the termination mutex so that the new thread can acquire it */
     if (err != 0) {
       /* Fork failed, remove thread info block from list of threads */
       th->next->prev = curr_thread;
@@ -435,11 +434,8 @@ value caml_thread_yield(value unit)        /* ML */
 
 value caml_thread_join(value th)          /* ML */
 {
-  value mut = Terminated(th);
-  Begin_root(mut)
-    caml_mutex_lock(mut);
-    caml_mutex_unlock(mut);
-  End_roots();
+  int retcode = caml_threadstatus_wait(Terminated(th));
+  caml_pthread_check(retcode, "Thread.join");
   return Val_unit;
 }
 
@@ -590,6 +586,80 @@ value caml_condition_broadcast(value wrapper)           /* ML */
   End_roots();
   caml_pthread_check(retcode, "Condition.broadcast");
   return Val_unit;
+}
+
+/* Thread status blocks */
+
+struct caml_threadstatus {
+  pthread_mutex_t lock;          /* mutex for mutual exclusion */
+  enum { ALIVE, TERMINATED } status;   /* status of thread */
+  pthread_cond_t terminated;    /* signaled when thread terminates */
+};
+
+#define Threadstatus_val(v) \
+  (* ((struct caml_threadstatus **) Data_custom_val(v)))
+#define Max_threadstatus_number 500
+
+static void caml_threadstatus_finalize(value wrapper)
+{
+  struct caml_threadstatus * ts = Threadstatus_val(wrapper);
+  pthread_mutex_destroy(&ts->lock);
+  pthread_cond_destroy(&ts->terminated);
+  stat_free(ts);
+}
+
+static struct custom_operations caml_threadstatus_ops = {
+  "_threadstatus",
+  caml_threadstatus_finalize,
+  caml_mutex_condition_compare,
+  custom_hash_default,
+  custom_serialize_default,
+  custom_deserialize_default
+};
+
+value caml_threadstatus_new (void)
+{
+  struct caml_threadstatus * ts;
+  value wrapper;
+  ts = stat_alloc(sizeof(struct caml_threadstatus));
+  caml_pthread_check(pthread_mutex_init(&ts->lock, NULL), "Thread.create");
+  caml_pthread_check(pthread_cond_init(&ts->terminated, NULL),
+                     "Thread.create");
+  ts->status = ALIVE;
+  wrapper = alloc_custom(&caml_threadstatus_ops,
+                         sizeof(struct caml_threadstatus *),
+                         1, Max_threadstatus_number);
+  Threadstatus_val(wrapper) = ts;
+  return wrapper;
+}
+
+void caml_threadstatus_terminate (value wrapper)
+{
+  struct caml_threadstatus * ts = Threadstatus_val(wrapper);
+  pthread_mutex_lock(&ts->lock);
+  ts->status = TERMINATED;
+  pthread_mutex_unlock(&ts->lock);
+  pthread_cond_broadcast(&ts->terminated);
+}
+
+int caml_threadstatus_wait (value wrapper)
+{
+  struct caml_threadstatus * ts = Threadstatus_val(wrapper);
+  int retcode;
+
+  Begin_roots1(wrapper)         /* prevent deallocation of ts */
+    enter_blocking_section();
+    retcode = pthread_mutex_lock(&ts->lock);
+    if (retcode != 0) goto error;
+    while (ts->status != TERMINATED) {
+      retcode = pthread_cond_wait(&ts->terminated, &ts->lock);
+      if (retcode != 0) goto error;
+    }
+    retcode = pthread_mutex_unlock(&ts->lock);
+ error:
+    leave_blocking_section();
+  End_roots();
+  return retcode;
 }
 
 /* Synchronous signal wait */
