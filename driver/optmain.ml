@@ -45,10 +45,11 @@ let process_file name =
 
 let print_version_number () =
   print_string "The Objective Caml native-code compiler, version ";
-  print_string Config.version;
-  print_newline()
+  print_string Config.version; print_newline();
+  print_string "Standard library directory: ";
+  print_string Config.standard_library; print_newline()
 
-let usage = "Usage: ocamlopt <options> <files>\noptions are:"
+let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
 
 let main () =
   try
@@ -67,11 +68,12 @@ let main () =
              "<dir>  Add <dir> to the list of include directories";
        "-impl", Arg.String process_implementation_file,
              "<file>  Compile <file> as a .ml file";
-       "-inline", Arg.Int(fun n -> inline_threshold := n * 10),
+       "-inline", Arg.Int(fun n -> inline_threshold := n * 8),
              "<n>  Set aggressiveness of inlining to <n>";
        "-intf", Arg.String process_interface_file,
              "<file>  Compile <file> as a .mli file";
-       "-linkall", Arg.Set link_everything, " Don't remove unused modules";
+       "-linkall", Arg.Set link_everything,
+             " Link all modules, even unused ones";
        "-o", Arg.String(fun s -> exec_name := s;
                                  archive_name := s;
                                  object_name := s),
@@ -80,9 +82,9 @@ let main () =
              "Output a C object file instead of an executable";
        "-pp", Arg.String(fun s -> preprocessor := Some s),
              "<command>  Pipe sources through preprocessor <command>";
-       "-S", Arg.Set keep_asm_file, " Don't delete assembly file";
+       "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";
        "-v", Arg.Unit print_version_number, " Print compiler version number";
-       "-unsafe", Arg.Set fast, " No bound checking on array and string access";
+       "-unsafe", Arg.Set fast, " No bounds checking on array and string access";
 
        "-nopervasives", Arg.Set nopervasives, " (undocumented)";
        "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";

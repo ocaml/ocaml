@@ -140,7 +140,7 @@ let implementation sourcefile =
       end in
     Emitcode.to_file oc modulename crc
       (print_if Clflags.dump_instr Printinstr.instrlist
-        (Bytegen.compile_implementation
+        (Bytegen.compile_implementation modulename
           (print_if Clflags.dump_lambda Printlambda.lambda
             (Simplif.simplify_lambda
               (print_if Clflags.dump_rawlambda Printlambda.lambda

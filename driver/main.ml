@@ -45,10 +45,11 @@ let process_file name =
 
 let print_version_number () =
   print_string "The Objective Caml compiler, version ";
-  print_string Config.version;
-  print_newline()
+  print_string Config.version; print_newline();
+  print_string "Standard library directory: ";
+  print_string Config.standard_library; print_newline()
 
-let usage = "Usage: ocamlc <options> <files>\noptions are:"
+let usage = "Usage: ocamlc <options> <files>\nOptions are:"
 
 let main () =
   try
@@ -68,7 +69,8 @@ let main () =
              "<file>  Compile <file> as a .ml file";
        "-intf", Arg.String process_interface_file,
              "<file>  Compile <file> as a .mli file";
-       "-linkall", Arg.Set link_everything, " Don't remove unused modules";
+       "-linkall", Arg.Set link_everything,
+             " Link all modules, even unused ones";
        "-o", Arg.String(fun s -> exec_name := s;
                                  archive_name := s;
                                  object_name := s),
@@ -79,7 +81,7 @@ let main () =
        "-pp", Arg.String(fun s -> preprocessor := Some s),
              "<command>  Pipe sources through preprocessor <command>";
        "-thread", Arg.Set thread_safe, " Use thread-safe standard library";
-       "-unsafe", Arg.Set fast, " No bound checking on array and string access";
+       "-unsafe", Arg.Set fast, " No bounds checking on array and string access";
        "-v", Arg.Unit print_version_number, " Print compiler version number";
 
        "-nopervasives", Arg.Set nopervasives, " (undocumented)";
