@@ -76,7 +76,6 @@ let process_file file =
       open_out_gen ~mode:[Open_wronly; Open_creat; Open_append; Open_text]
         ~perm:0x666 !outfile
     with _ -> failwith "Cannot open output file" in
-  let first = ref true in
   try while true do
     let input = ref (input_line ic) in
     if string_match ~pat:~!"\\\\begin{caml_example\\(\\*?\\)}[ \t]*$"
@@ -84,6 +83,7 @@ let process_file file =
     then begin
       let omit_answer = matched_group 1 !input = "*" in
       output_string oc camlbegin;
+      let first = ref true in
       let read_phrase () =
         let phrase = Buffer.create 256 in
         while
@@ -91,7 +91,7 @@ let process_file file =
           if string_match ~pat:~!"\\\\end{caml_example\\*?}[ \t]*$"
               input ~pos:0
           then raise End_of_file;
-          Buffer.add_char phrase '\n';
+          if Buffer.length phrase > 0 then Buffer.add_char phrase '\n';
           Buffer.add_string phrase input;
           not (string_match ~pat:~!".*;;[ \t]*$" input ~pos:0)
         do
@@ -121,7 +121,7 @@ let process_file file =
             escape_backslash phrase in
         let phrase = global_replace ~pat:~!"^\(.\)" ~templ:camlin phrase
         and output = global_replace ~pat:~!"^\(.\)" ~templ:camlout output in
-        if not !first then output_string oc "\\;";
+        if not !first then output_string oc "\\;\n";
         fprintf oc "%s\n" phrase;
         if not omit_answer then fprintf oc "%s" output;
         flush oc;
