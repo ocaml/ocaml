@@ -199,17 +199,23 @@ let _ =
   test_search_forward r n "abbbbbbbbbbbac"
     [||];
 
-  start_test "Search for /r\\(\\(g*\\|k\\)y?\\)*/";
-  let r = Str.regexp "r\\(\\(g*\\|k\\)y?\\)*" in
+  start_test "Search for /r\\(\\(g*\\|k\\)y?\\)*A/";
+  let r = Str.regexp "r\\(\\(g*\\|k\\)y?\\)*A" in
   let n = 2 in
   test_search_forward r n "ArA"
-    [|"r"; "~"; "~"|];
+    [|"rA"; ""; ""|];
   test_search_forward r n "ArkA"
-    [|"rk"; ""; ""|];
-  test_search_forward r n "Ary"
-    [|"ry"; ""; ""|];
-  test_search_forward r n "Argggkyggk"
-    [|"rgggkyggk"; ""; ""|];
+    [|"rkA"; ""; ""|];
+  test_search_forward r n "AryA"
+    [|"ryA"; ""; ""|];
+  test_search_forward r n "ArgggkyggkA"
+    [|"rgggkyggkA"; ""; ""|];
+
+  start_test "Search for /A\\(\\(t\\|v\\)\\(q?\\|n\\)\\)*A/";
+  let r = Str.regexp "A\\(\\(t\\|v\\)\\(q?\\|n\\)\\)*A" in
+  let n = 3 in
+  test_search_forward r n "AvA"
+    [|"AvA"; "v"; "v"; ""|];
 
   start_test "Search for /\\(\\|f\\)*x/";
   let r = Str.regexp "\\(\\|f\\)*x" in
