@@ -70,7 +70,15 @@ echo "O=o" >> Makefile.cnf
 echo "A=a" >> Makefile.cnf
 echo "OPT=" >> Makefile.cnf
 echo "OTOP=$ocaml_top" >> Makefile.cnf
-grep '^RANLIB' ../../config/Makefile >> Makefile.cnf
+if test -r ../../config/auto_aux/Makefile; then
+    grep '^RANLIB' ../../config/auto_aux/Makefile >> Makefile.cnf
+elif test -r ../../config/Makefile; then
+    grep '^RANLIB' ../../config/Makefile >> Makefile.cnf
+else
+    echo "Could not read OCaml config Makefile"
+    echo "Configuration script failed!"
+    exit 1
+fi
 
 if test "$ocaml_top" = "../ocaml_stuff"; then
     if ocamlc -v >/dev/null 2>&1; then
