@@ -292,6 +292,8 @@ void gr_handle_simple_event(XEvent *e)
       XFillRectangle(grdisplay, newbstore.win, newbstore.gc,
                      0, 0, newbstore.w, newbstore.h);
       XSetForeground(grdisplay, newbstore.gc, grcolor);
+      if (grfont != NULL)
+        XSetFont(grdisplay, newbstore.gc, grfont->fid);
 
       /* Copy the old backing store into the new one */
       XCopyArea(grdisplay, grbstore.win, newbstore.win, newbstore.gc,
