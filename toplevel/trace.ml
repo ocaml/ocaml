@@ -30,10 +30,10 @@ let traced_functions = ref ([] : traced_function list)
 
 (* Check if a function is already traced *)
 
-let is_traced path =
+let is_traced clos =
   let rec is_traced = function
-      [] -> false
-    | tf :: rem -> Path.same path tf.path or is_traced rem
+      [] -> None
+    | tf :: rem -> if tf.closure == clos then Some tf.path else is_traced rem
   in is_traced !traced_functions
 
 (* Make a copy of a closure *)

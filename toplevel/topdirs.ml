@@ -198,15 +198,17 @@ external current_environment: unit -> Obj.t = "get_current_environment"
 let dir_trace lid =
   try
     let (path, desc) = Env.lookup_value lid !toplevel_env in
-    if is_traced path then begin
-      Printtyp.path path; print_string " is already traced.";
-      print_newline()
-    end else begin
-      let clos = eval_path path in
-      (* Nothing to do if it's not a closure *)
-      if Obj.is_block clos & Obj.tag clos = 250 then begin
-        let old_clos = copy_closure clos in
+    let clos = eval_path path in
+    (* Nothing to do if it's not a closure *)
+    if Obj.is_block clos & Obj.tag clos = 250 then begin
+    match is_traced clos with
+      Some opath ->
+        Printtyp.path path; print_string " is already traced (under the name ";
+        Printtyp.path opath; print_string ")";
+        print_newline()
+    | None ->
         (* Instrument the old closure *)
+        let old_clos = copy_closure clos in
         traced_functions :=
           { path = path; 
             closure = clos;
@@ -228,11 +230,10 @@ let dir_trace lid =
         | _ ->
             Printtyp.longident lid; print_string " is now traced.";
             print_newline()
-      end else begin
-        Printtyp.longident lid; print_string " is not a function.";
-        print_newline()
-      end      
-    end
+    end else begin
+      Printtyp.longident lid; print_string " is not a function.";
+      print_newline()
+    end      
   with Not_found ->
     print_string "Unbound value "; Printtyp.longident lid;
     print_newline()
