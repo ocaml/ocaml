@@ -187,11 +187,11 @@ value alloc_shr (wosize, tag)
   Assert (Is_in_heap (Val_hp (hp)));
 
   if (gc_phase == Phase_mark
-      || gc_phase == Phase_sweep && (addr)hp >= (addr)gc_sweep_hp){
+      || (gc_phase == Phase_sweep && (addr)hp >= (addr)gc_sweep_hp)){
     Hd_hp (hp) = Make_header (wosize, tag, Black);
   }else{
     Assert (gc_phase == Phase_idle
-	    || gc_phase == Phase_sweep && (addr)hp < (addr)gc_sweep_hp);
+	    || (gc_phase == Phase_sweep && (addr)hp < (addr)gc_sweep_hp));
     Hd_hp (hp) = Make_header (wosize, tag, White);
   }
   allocated_words += Whsize_wosize (wosize);

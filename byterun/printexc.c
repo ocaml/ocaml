@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "fail.h"
 #include "misc.h"
 #include "mlvalues.h"
@@ -22,37 +23,79 @@
 #include "ui.h"
 #endif
 
+struct stringbuf {
+  char * ptr;
+  char * end;
+  char data[256];
+};
+
+static void add_char(buf, c)
+     struct stringbuf * buf;
+     char c;
+{
+  if (buf->ptr < buf->end) *(buf->ptr++) = c;
+}
+
+static void add_string(buf, s)
+     struct stringbuf * buf;
+     char * s;
+{
+  int len = strlen(s);
+  if (buf->ptr + len > buf->end) len = buf->end - buf->ptr;
+  if (len > 0) bcopy(s, buf->ptr, len);
+  buf->ptr += len;
+}
+  
 #ifdef HAS_UI
-#define errprintf1(fmt) ui_print_stderr(fmt, NULL)
-#define errprintf2(fmt,arg) ui_print_stderr(fmt, (char *)(arg))
+#define errprintf(fmt,arg) ui_print_stderr(fmt, arg)
 #else
-#define errprintf1(fmt) fprintf(stderr, fmt)
-#define errprintf2(fmt,arg) fprintf(stderr, fmt, arg)
+#define errprintf(fmt,arg) fprintf(stderr, fmt, arg)
 #endif
 
 void fatal_uncaught_exception(exn)
      value exn;
 {
-  mlsize_t i;
-  value v;
+  mlsize_t start, i;
+  value bucket, v;
+  struct stringbuf buf;
+  char intbuf[64];
 
-  errprintf2("Fatal error: uncaught exception %s",
-             String_val(Field(Field(exn, 0), 0)));
+  buf.ptr = buf.data;
+  buf.end = buf.data + sizeof(buf.data) - 1;
+  add_string(&buf, String_val(Field(Field(exn, 0), 0)));
   if (Wosize_val(exn) >= 2) {
-    errprintf1("(");
-    for (i = 1; i < Wosize_val(exn); i++) {
-      if (i > 1) errprintf1(", ");
-      v = Field(exn, i);
-      if (Is_long(v))
-        errprintf2("%ld", Long_val(v));
-      else if (Tag_val(v) == String_tag)
-        errprintf2("\"%s\"", String_val(v));
-      else
-        errprintf1("_");
+    /* Check for exceptions in the style of Match_failure and Assert_failure */
+    if (Wosize_val(exn) == 2 &&
+        Is_block(Field(exn, 1)) &&
+        Tag_val(Field(exn, 1)) == 0) {
+      bucket = Field(exn, 1);
+      start = 0;
+    } else {
+      bucket = exn;
+      start = 1;
     }
-    errprintf1(")");
+    add_char(&buf, '(');
+    for (i = start; i < Wosize_val(bucket); i++) {
+      if (i > start) add_string(&buf, ", ");
+      v = Field(bucket, i);
+      if (Is_long(v)) {
+        sprintf(intbuf, "%ld", Long_val(v));
+        add_string(&buf, intbuf);
+      } else if (Tag_val(v) == String_tag) {
+        add_char(&buf, '"');
+        add_string(&buf, String_val(v));
+        add_char(&buf, '"');
+      } else {
+        add_char(&buf, '_');
+      }
+    }
+    add_char(&buf, ')');
   }
-  errprintf1("\n");
+  *buf.ptr = 0;              /* Terminate string */
+  errprintf("Fatal error: uncaught exception %s\n", buf.data);
+#ifdef HAS_UI
+  ui_exit(2);
+#else
   exit(2);
+#endif
 }
-

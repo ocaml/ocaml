@@ -50,7 +50,7 @@ void realloc_stack()
 
   Assert(extern_sp >= stack_low);
   size = stack_high - stack_low;
-  if (size >= max_stack_size) raise_out_of_memory();
+  if (size >= max_stack_size) raise_stack_overflow();
   size *= 2;
   gc_message ("Growing stack to %luk bytes\n",
 	      (unsigned long) size * sizeof(value) / 1024);

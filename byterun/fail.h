@@ -27,6 +27,7 @@
 #define ZERO_DIVIDE_EXN 5       /* "Division_by_zero" */
 #define NOT_FOUND_EXN 6         /* "Not_found" */
 #define MATCH_FAILURE_EXN 7     /* "Match_failure" */
+#define STACK_OVERFLOW_EXN 8    /* "Stack_overflow" */
 
 #ifdef POSIX_SIGNALS
 struct longjmp_buffer {
@@ -50,6 +51,7 @@ void raise_with_string P((value tag, char * msg)) Noreturn;
 void failwith P((char *)) Noreturn;
 void invalid_argument P((char *)) Noreturn;
 void raise_out_of_memory P((void)) Noreturn;
+void raise_stack_overflow P((void)) Noreturn;
 void raise_sys_error P((value)) Noreturn;
 void raise_end_of_file P((void)) Noreturn;
 void raise_zero_divide P((void)) Noreturn;

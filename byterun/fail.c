@@ -102,6 +102,11 @@ void raise_out_of_memory()
   mlraise((value) &(out_of_memory_bucket.exn));
 }
 
+void raise_stack_overflow()
+{
+  raise_constant(Field(global_data, STACK_OVERFLOW_EXN));
+}
+
 void raise_sys_error(msg)
      value msg;
 {
