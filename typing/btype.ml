@@ -208,6 +208,11 @@ let cleanup_abbrev () =
 
 let memorize_abbrev mem path v v' =
         (* Memorize the expansion of an abbreviation. *)
+  (* assert
+    begin match (repr v').desc with
+      Tconstr (path', _, _) when Path.same path path'-> false
+    | _ -> true
+    end; *)
   mem := Mcons (path, v, v', !mem);
   memo := mem :: !memo
 

@@ -853,7 +853,13 @@ let rec find_expans p1 =
   function
     Mnil ->
       None
-  | Mcons (p2, _, ty, _) when Path.same p1 p2 ->
+  | Mcons (p2, ty0, ty, _) when Path.same p1 p2 ->
+      (* assert
+        begin match (repr ty).desc with
+          Tconstr (p3, _, _) when Path.same p2 p3-> false
+        | _ -> true
+        end;
+      assert (repr ty0 != repr ty); *)
       Some ty
   | Mcons (_, _, _, rem) ->
       find_expans p1 rem
