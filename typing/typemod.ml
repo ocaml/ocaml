@@ -499,7 +499,7 @@ let type_implementation sourcefile prefixname modulename initial_env ast =
       let intf_file =
         try find_in_path !Config.load_path (prefixname ^ ".cmi")
         with Not_found ->
-          raise (Env.Error(File_not_found (prefixname ^ ".cmi"))) in
+          raise (Env.Error(Env.File_not_found (prefixname ^ ".cmi"))) in
       let dclsig = Env.read_signature modulename intf_file in
       Includemod.compunit sourcefile sg intf_file dclsig
     end else begin
