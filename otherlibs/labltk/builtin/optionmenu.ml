@@ -13,4 +13,4 @@ let create :parent :variable ?:name values =
    if res <> Widget.name mw then
      raise (TkError "internal error in Optionmenu.create")
    else
-     w,mw
+     w, mw
