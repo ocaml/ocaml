@@ -94,14 +94,6 @@ CAMLprim value unix_gethostbyaddr(value a)
                        &h, buffer, sizeof(buffer), &hp, &h_errnop);
   leave_blocking_section();
   if (rc != 0) hp = NULL;
-#elif HAS_GETHOSTBYADDR_R == 5
-  struct hostent h;
-  struct hostent_data hdata;
-  int rc;
-  enter_blocking_section();
-  rc = gethostbyaddr_r((char *) &adr, 4, AF_INET, &h, &hdata);
-  leave_blocking_section();
-  hp = rc == 0 ? &h : NULL;
 #else
 #ifdef GETHOSTBYADDR_IS_REENTRANT
   enter_blocking_section();
@@ -145,16 +137,6 @@ CAMLprim value unix_gethostbyname(value name)
     rc = gethostbyname_r(hostname, &h, buffer, sizeof(buffer), &hp, &h_errno);
     leave_blocking_section();
     if (rc != 0) hp = NULL;
-  }
-#elif HAS_GETHOSTBYNAME_R == 3
-  {
-    struct hostent h;
-    struct hostent_data hdata;
-    int rc;
-    enter_blocking_section();
-    rc = gethostbyname_r(hostname, &h, &hdata);
-    leave_blocking_section();
-    hp = rc == 0 ? &h : NULL;
   }
 #else
 #ifdef GETHOSTBYNAME_IS_REENTRANT

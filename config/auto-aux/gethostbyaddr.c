@@ -13,6 +13,11 @@
 
 /* $Id$ */
 
+#ifndef _REENTRANT
+/* This helps detection on Digital Unix... */
+#define _REENTRANT
+#endif
+
 #include <sys/types.h>
 #include <netdb.h>
 
@@ -41,14 +46,6 @@ int main(int argc, char ** argv)
   int rc;
   rc = gethostbyaddr_r(address, length, type, &h,
                        buffer, buflen, &hp, &h_errnop);
-#elif NUM_ARGS == 5
-  char * address;
-  int length;
-  int type;
-  struct hostent h;
-  struct hostent_data hdata;
-  int rc;
-  rc = gethostbyaddr_r(address, length, type, &h, &hdata);
 #endif
   return 0;
 }
