@@ -186,6 +186,45 @@ let test2 ?:x ?:y () = test ?:x ?:y () ();;
 test2 ?x:None;;
 \end{caml_example}
 
+\subsection{Labels and type inference}
+
+While they provide an increased comfort for writing function
+applications, labels and optional arguments have the pitfall that they
+cannot be inferred as completely as the rest of the language.
+
+You can see it in the following example.
+\begin{caml_example}
+let bump_twice bump x =
+  bump (bump step:2 x);;
+bump_twice bump 1;;
+\end{caml_example}
+While we intended "bump" to be of type "?step:int -> int -> int", it
+is inferred as "'a -> step:int -> 'a". These two type being
+incompatible, a type error occurs when applying "bump_twice" to
+"bump".
+
+We will not try here to explain in detail why such an erroneous type
+is inferred. One must just understand that there is not enough
+information in the above program to deduce the correct type of
+"bump". That is, there is no way to know whether an argument is
+optional or not, or which is the correct order, by looking only at how
+a function is applied. The strategy used by the compiler is to assume
+that there are no optional arguments, and that applications are done
+in the right order.
+
+The right way to solve this problem is to add a type annotation to
+the argument "bump".
+\begin{caml_example}
+let bump_twice (bump : ?step:int -> int -> int) x =
+  bump (bump step:2 x);;
+bump_twice bump 1;;
+\end{caml_example}
+In practive, such problems appear mostly when using objects whose
+methods have optional arguments, so that writing the type of object
+arguments is often a good idea.
+
+In one specific case, 
+
 \subsection{Suggestions for labeling}
 
 Like for names, choosing labels for functions is not an easy task. A
@@ -264,6 +303,7 @@ is only used when a more detailed specification is needed.
 \begin{caml_eval}
 #modern false;;
 \end{caml_eval}
+
 
 \section{Polymorphic variants}
 \pdfsection{Polymorphic variants}
