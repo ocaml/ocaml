@@ -1,7 +1,7 @@
 (* my own tests *)
 
-open StdLabels
-(*
+open StdLabels;;
+
 class ['b] ilist l = object
   val l = l
   method add x = {< l = x :: l >}
@@ -88,38 +88,39 @@ class ['a] ostream1 ~hd ~tl = object (self : 'b)
     self#tl#fold ~f ~init:(f self#hd init)
 end
 ;;
-*)
+
 class vari = object
   method virtual m : 'a. ([< `a|`b|`c] as 'a) -> int
   method m = function `a -> 1 | _ -> 0
 end
 ;;
-(*
 module V =
   struct
-    type v = [a b c]
-    let m : #v -> int = function `a -> 1 | _ -> 0
+    type v = [`a | `b | `c]
+    let m : [< v] -> int = function `a -> 1 | _ -> 0
   end
 ;;
+(*
 class varj = object
-  method virtual m : 'a. (#V.v as 'a) -> int
+  method virtual m : 'a. ([< V.v] as 'a) -> int
   method m = V.m
 end
 ;;
-class point :x :y = object
+*)
+class point ~x ~y = object
   val x : int = x
   val y : int = y
   method x = x
   method y = y
 end
 ;;
-class color_point :x :y :color = object
-  inherit point :x :y
+class color_point ~x ~y ~color = object
+  inherit point ~x ~y
   val color : string = color
   method color = color
 end
 ;;
-class circle (p : #point) :r = object
+class circle (p : #point) ~r = object
   val p = (p :> point)
   val r = r
   method virtual distance : 'a. (#point as 'a) -> float
@@ -129,16 +130,17 @@ class circle (p : #point) :r = object
     if d < 0. then 0. else d
 end
 ;;
-let p0 = new point x:3 y:5
-let p1 = new point x:10 y:13
-let cp = new color_point x:12 y:(-5) color:"green"
-let c = new circle p0 r:2
+let p0 = new point ~x:3 ~y:5
+let p1 = new point ~x:10 ~y:13
+let cp = new color_point ~x:12 ~y:(-5) ~color:"green"
+let c = new circle p0 ~r:2
 let d = c#distance cp
 ;;
 let f (x : < m : 'a. 'a -> 'a >) = (x : < m : 'b. 'b -> 'b >)
 ;;
 let f (x : < m : 'a. 'a -> 'a list >) = (x : < m : 'b. 'b -> 'c >)
 ;;
+
 class id = object
   method virtual id : 'a. 'a -> 'a
   method id x = x
@@ -207,6 +209,7 @@ class c = object
   method m (f : #id) = f#id 1, f#id true
 end
 ;;
+
 class id2 = object (_ : 'b)
   method virtual id : 'a. 'a -> 'a
   method id x = x
@@ -244,9 +247,10 @@ class number = object (self : 'self)
   val num = 0
   method num = num
   method succ = {< num = num + 1 >}
-  method prev = self#switch zero:(fun () -> failwith "zero") prev:(fun x -> x)
+  method prev =
+    self#switch ~zero:(fun () -> failwith "zero") ~prev:(fun x -> x)
   method switch : 'a. zero:(unit -> 'a) -> prev:('self -> 'a) -> 'a =
-    fun :zero :prev ->
+    fun ~zero ~prev ->
       if num = 0 then zero () else prev {< num = num - 1 >}
 end
 ;;
@@ -282,6 +286,6 @@ let sum (l : 'a #olist) = l#fold ~f:(fun x acc -> x+acc) ~init:0
 let count (l : 'a #olist) = l#fold ~f:(fun _ acc -> acc+1) ~init:0
 ;;
 let append (l : 'a #olist) (l' : 'b #olist) =
-  l#fold init:l' ~f:(fun ~init -> acc#cons)
+  l#fold ~init:l' ~f:(fun x acc -> acc#cons x)
 ;;
-*)
+
