@@ -329,6 +329,7 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
             -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
             -e 's|%%BINUTILS_NM%%|$(BINUTILS_NM)|' \
+            -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
             -e 's|%%BINUTILS_OBJCOPY%%|$(BINUTILS_OBJCOPY)|' \
             -e 's|%%ARCH%%|$(ARCH)|' \
             -e 's|%%MODEL%%|$(MODEL)|' \

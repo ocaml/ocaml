@@ -217,10 +217,14 @@ SHARPBANGSCRIPTS=true
 #ASPPPROFFLAGS=-DPROFILING
 
 ### Whether profiling with gprof is supported
-# If yes: (x86/Linux, Alpha/Digital Unix):
+# If yes: (x86/Linux, Alpha/Digital Unix, Sparc/Solaris):
 #PROFILING=prof
 # If no: (all others)
 #PROFILING=noprof
+
+### Option to give to the C compiler for profiling
+#CC_PROFILE=-pg
+#CC_PROFILE=-xpg
 
 ### Path to the "objcopy" program from GNU binutils.
 # You need a sufficiently recent version of the binutils so that

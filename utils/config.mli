@@ -50,6 +50,8 @@ val binutils_nm: string
         (* The "nm" command from GNU binutils, or "" if not available *)
 val binutils_objcopy: string
         (* The "objcopy" command from GNU binutils, or "" if not available *)
+val cc_profile : string
+        (* The command line option to the C compiler to enable profiling. *)
 
 val load_path: string list ref
         (* Directories in the search path for .cmi and .cmo files *)

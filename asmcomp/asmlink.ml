@@ -219,7 +219,7 @@ let call_linker file_list startup_file output_name =
         if not !Clflags.output_c_object then
           Printf.sprintf "%s %s -o %s %s %s %s %s %s %s %s %s"
             !Clflags.c_linker
-            (if !Clflags.gprofile then "-pg" else "")
+            (if !Clflags.gprofile then Config.cc_profile else "")
             (Filename.quote output_name)
             (Clflags.std_include_flag "-I")
             (String.concat " " (List.rev !Clflags.ccopts))

@@ -615,10 +615,14 @@ case "$arch,$model,$system" in
                     aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM) -Wa,-xexplicit';;
 esac
 
+cc_profile='-pg'
 case "$arch,$model,$system" in
   alpha,*,digital) profiling='prof';;
   i386,*,linux_elf) profiling='prof';;
   i386,*,bsd_elf) profiling='prof';;
+  sparc,*,solaris)
+    profiling='prof'
+    case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
   *) profiling='noprof';;
 esac
 
@@ -1389,6 +1393,7 @@ echo "BINUTILS_NM=$binutils_nm" >> Makefile
 echo "DYNLINKOPTS=$dllib" >> Makefile
 echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
 echo "DEBUGGER=$debugger" >> Makefile
+echo "CC_PROFILE=$cc_profile" >> Makefile
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile
