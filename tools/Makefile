@@ -84,7 +84,7 @@ ocaml2to3.ml: ocaml2to3.mll
 	$(CAMLLEX) ocaml2to3.mll
 
 install::
-	cp ocam2to3 $(BINDIR)/ocaml2to3
+	cp ocaml2to3 $(BINDIR)/ocaml2to3
 
 clean::
 	rm -f ocaml2to3 ocaml2to3.ml
