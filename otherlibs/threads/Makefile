@@ -13,12 +13,13 @@ LIB=../../stdlib
 LIB_OBJS=pervasives.cmo \
   $(LIB)/list.cmo $(LIB)/char.cmo $(LIB)/string.cmo \
   $(LIB)/array.cmo $(LIB)/sys.cmo $(LIB)/hashtbl.cmo $(LIB)/sort.cmo \
-  $(LIB)/filename.cmo $(LIB)/obj.cmo $(LIB)/lexing.cmo $(LIB)/parsing.cmo \
+  $(LIB)/filename.cmo $(LIB)/marshal.cmo $(LIB)/obj.cmo \
+  $(LIB)/lexing.cmo $(LIB)/parsing.cmo \
   $(LIB)/set.cmo $(LIB)/map.cmo $(LIB)/stack.cmo $(LIB)/queue.cmo \
   $(LIB)/stream.cmo $(LIB)/printf.cmo $(LIB)/format.cmo $(LIB)/arg.cmo \
   $(LIB)/printexc.cmo $(LIB)/gc.cmo $(LIB)/digest.cmo $(LIB)/random.cmo \
   $(LIB)/oo.cmo $(LIB)/genlex.cmo $(LIB)/callback.cmo $(LIB)/weak.cmo \
-  $(LIB)/marshal.cmo
+  $(LIB)/lazy.cmo 
 
 all: libthreads.a threads.cma stdlib.cma
 
