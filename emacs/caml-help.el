@@ -186,12 +186,51 @@
         (while (re-search-forward "^ *open  *\\([A-Z][a-zA-Z'_0-9]*\\)"
                                   (point-max) t)
           (let ((module (match-string 1)))
-            (if (member module ocaml-visible-modules) nil
+            (if (assoc module ocaml-visible-modules) nil
               (setq ocaml-visible-modules
                     (cons (ocaml-get-or-make-module module)
                           ocaml-visible-modules)))))
         )))
   ocaml-visible-modules)
+
+(defun ocaml-open-module (arg)
+  "*Make module of name ARG visible whe ARG is a string.
+When call interactively, make completion over known modules."
+  (interactive "P")
+  (if (not (stringp arg))
+      (let ((modules (ocaml-module-alist)) module)
+        (setq arg
+              (completing-read "Open module: " modules))))
+  (if (and (stringp arg) (not (equal arg "")))
+      (progn
+        (if (assoc arg (ocaml-visible-modules))
+            (ocaml-close-module arg))
+        (setq ocaml-visible-modules
+              (cons (ocaml-get-or-make-module arg) (ocaml-visible-modules)))
+        ))
+  (message "%S" (mapcar 'car ocaml-visible-modules)))
+
+(defun ocaml-close-module (arg)
+  "*Close module of name ARG when ARG is a string. 
+When call interactively, make completion over visible modules. 
+Otherwise if ARG is true, close all modules and reset to default. "
+  (interactive "P")
+  (if (= (prefix-numeric-value arg) 4)
+      (setq ocaml-visible-modules 'lazy)
+    (let* ((modules (ocaml-visible-modules)) default)
+      (if (null modules) (error-message "No visible module to close"))
+      (unless (stringp arg)
+        (setq arg
+              (completing-read
+               (concat "Close module ["  (caar modules) "] : ")
+               modules))
+        (if (equal arg "") (setq arg (caar modules))))
+      (setq ocaml-visible-modules
+            (remove-if '(lambda (m) (equal (car m) arg))
+                       ocaml-visible-modules))
+      ))
+  (message "%S" (mapcar 'car ocaml-visible-modules)))
+           
 
 ;; Look for identifiers around point
 
@@ -259,7 +298,7 @@ with an optional non-nil argument.
   "Does completion for qualified identifiers. 
 
 It attemps to recognize an qualified identifier Module . entry 
-around point using function `ocaml-qualified-identifier'.
+around point using function \\[ocaml-qualified-identifier].
 
 If Module is defined, it does completion for identifier in Module.
 
@@ -311,6 +350,7 @@ where identifier is defined."
               ((null completion)
                (let*
                    ((modules (ocaml-find-module pattern))
+                    (visible (intersection modules (ocaml-visible-modules)))
                     (hist)
                     (module
                      (cond
@@ -318,6 +358,8 @@ where identifier is defined."
                        nil)
                       ((equal (length modules) 1)
                        (caar modules))
+                      ((equal (length visible) 1)
+                       (caar visible))
                       (t
                        (setq hist (mapcar 'car modules))
                        (completing-read "Module: " modules nil t
@@ -345,8 +387,8 @@ where identifier is defined."
 ;; Info files (only in ocamldoc style)
 
 
-(defvar ocaml-info-basename "ocaml"
-  "Basename of ocaml info files describing library modules.
+(defvar ocaml-info-prefix "ocaml-lib"
+  "Prefix of ocaml info files describing library modules.
 Suffix .info will be added to info files. 
 Additional suffix .gz may be added if info files are compressed.
 ")
@@ -392,8 +434,8 @@ Additional suffix .gz may be added if info files are compressed.
 
 (defun ocaml-hevea-info ()
   "The default way to create an info data base from the value 
-of `Info-default-directory-list' and the base name `ocaml-info-name'
-of files with basename `ocaml-info-basename' to look for. 
+of \\[Info-default-directory-list] and the base name \\[ocaml-info-name] 
+of files to look for. 
 
 This uses info files produced by HeVeA.
 "
@@ -402,7 +444,7 @@ This uses info files produced by HeVeA.
              (if (member d seen) nil
                (setq collect
                      (ocaml-hevea-info-add-entries
-                      collect d ocaml-info-basename))
+                      collect d ocaml-info-prefix))
                (setq done (cons d seen))))
           Info-directory-list)
     collect))
@@ -434,8 +476,8 @@ This uses info files produced by HeVeA.
 
 (defun ocaml-ocamldoc-info ()
   "The default way to create an info data base from the value 
-of `Info-default-directory-list' and the base name `ocaml-info-name' 
-of files with basename `ocaml-info-basename' to look for. 
+of \\[Info-default-directory-list] and the base name \\[ocaml-info-name] 
+of files to look for.
 
 This uses info files produced by ocamldoc."
   (require 'info)
@@ -451,18 +493,19 @@ This uses info files produced by ocamldoc."
 
 ;; Continuing
 
-(defvar ocaml-info-alist nil
+(defvar ocaml-info-alist 'ocaml-ocamldoc-info
   "A-list binding module names to info entries: 
 
   nil means do not use info.
 
   A function to build the list lazily (at the first call). The result of
 the function call will be assign permanently to this variable for future
-uses. We provide two default functions `ocaml-hevea-info' and
-`ocaml-ocamldoc-info'. 
+uses. We provide two default functions \\[ocaml-info-default-function]
+(info produced by HeVeA is the default) and \\[ocaml-info-default-function] 
+(info produced by ocamldoc). 
 
   Otherwise, this value should be an alist binding module names to info
-entries of the form to \"(entry)section\" be taken by the `info'
+entries of the form to \"(entry)section\" be taken by the \\[info] 
 command. An entry may be an info module or a complete file name."
 )
 
@@ -496,43 +539,48 @@ command. An entry may be an info module or a complete file name."
 (defun ocaml-goto-help (&optional module entry)
   "Searches info manual for MODULE and ENTRY in MODULE.
 If unspecified, MODULE and ENTRY are inferred from the position in the
-current buffer using `ocaml-qualified-identifier'."
+current buffer using \\[ocaml-qualified-identifier]."
   (interactive)
-  (let ((info-section (assoc module (ocaml-info-alist))))
-    (if info-section (info (cdr info-section))
-      (ocaml-visible-modules)
-      (let* ((module-info
-              (or (assoc module (ocaml-module-alist))
-                  (and (file-exists-p
-                        (concat (ocaml-uncapitalize module) ".mli"))
-                       (ocaml-get-or-make-module module))))                  
-             (location (cdr (cadr module-info))))
-        (cond
-         (location
-          (view-file (concat location (ocaml-uncapitalize module) ".mli"))
-          (bury-buffer (current-buffer)))
-         (info-section (error "Aborted"))
-         (t (error "No help for module %s" module))))
-      ))
-  (if (stringp entry)
-      (let ((here (point)))
-        (goto-char (point-min))
-        (or (re-search-forward
-             (concat "\\(val\\|exception\\|external\\|[|{;]\\) +"
-                     (regexp-quote entry))
-             (point-max) t)
-            (search-forward entry (point-max) t)
-            (progn
-              (message "Help for entry %s not found in module %s"
-                       entry module)
-              (goto-char here)))))
-  )
+  (let ((window (selected-window)))
+    (let ((info-section (assoc module (ocaml-info-alist))))
+      (if info-section (info-other-window (cdr info-section))
+        (ocaml-visible-modules)
+        (let* ((module-info
+                (or (assoc module (ocaml-module-alist))
+                    (and (file-exists-p
+                          (concat (ocaml-uncapitalize module) ".mli"))
+                         (ocaml-get-or-make-module module))))                  
+               (location (cdr (cadr module-info))))
+          (cond
+           (location
+                                        ; (view-file
+            (message "FOO")
+            (view-file-other-window
+             (concat location (ocaml-uncapitalize module) ".mli"))
+            (bury-buffer (current-buffer)))
+           (info-section (error "Aborted"))
+           (t (error "No help for module %s" module))))
+        ))
+    (if (stringp entry)
+        (let ((here (point)))
+          (goto-char (point-min))
+          (or (re-search-forward
+               (concat "\\(val\\|exception\\|external\\|[|{;]\\) +"
+                       (regexp-quote entry))
+               (point-max) t)
+              (search-forward entry (point-max) t)
+              (progn
+                (message "Help for entry %s not found in module %s"
+                         entry module)
+                (goto-char here)))))
+    (if (window-live-p window) (select-window window))
+    ))
 
 (defun caml-help (arg)
   "Find help for qualified identifiers. 
 
 It attemps to recognize an qualified identifier of the form Module . entry 
-around point using function `ocaml-qualified-identifier'.
+around point using function \\[ocaml-qualified-identifier].
 
 If Module is undefined it finds it from indentifier and visible modules, 
 or asks the user interactively. 
@@ -541,38 +589,47 @@ It then opens the info documentation for Module if available or
 to the Module.mli file otherwises, and searches for entry. 
 
 With prefix arg 0, it recomputes visible modules and their content. 
-With prefix arg 4, it prompt for Module instead of its contectual value. 
+With prefix arg 4, prompts for Module and identifier instead
+of using contextual values. 
 "
   (interactive "p")
-  (let ((module) (entry))
+  (let ((module) (entry) (module-entry))
     (cond
      ((= arg 4)
       (or (and
            (setq module
-                (completing-read "Module: " ocaml-module-alist nil t))
-           (not (string-equal module "")))
-          (error "Quit")))
+                (completing-read "Module: " (ocaml-module-alist)
+                                 nil t "" (cons 'hist 0))))
+           (not (string-equal module ""))
+          (error "Quit"))
+      (let ((symbols
+             (mapcar 'list
+                     (ocaml-module-symbols
+                      (assoc module (ocaml-module-alist))))))
+        (setq entry (completing-read "Value: " symbols nil t)))
+      (if (string-equal entry "") (setq entry nil))
+      )
      (t
       (if (= arg 0) (setq ocaml-visible-modules 'lazy))
-      (let ((module-entry (ocaml-qualified-identifier)))
-        (setq entry (ocaml-buffer-substring (cdr module-entry)))
-        (setq module
-              (or (ocaml-buffer-substring (car module-entry))
-                  (let ((modules
-                         (or (ocaml-find-module entry (ocaml-visible-modules))
-                             (ocaml-find-module entry)))
-                         (hist))
-                    (cond
-                     ((null modules)
-                      (error "No module found for entry %s" entry))
-                     ((equal (length modules) 1)
-                      (caar modules))
-                     (t
-                      (setq hist (mapcar 'car modules))
-                      (completing-read "Module: " modules nil t
-                                       "" (cons 'hist 0)))
-                     ))))
-        )))
+      (setq module-entry (ocaml-qualified-identifier))
+      (setq entry (ocaml-buffer-substring (cdr module-entry)))
+      (setq module
+            (or (ocaml-buffer-substring (car module-entry))
+                (let ((modules
+                       (or (ocaml-find-module entry (ocaml-visible-modules))
+                           (ocaml-find-module entry)))
+                      (hist))
+                  (cond
+                   ((null modules)
+                    (error "No module found for entry %s" entry))
+                   ((equal (length modules) 1)
+                    (caar modules))
+                   (t
+                    (setq hist (mapcar 'car modules))
+                    (completing-read "Module: " modules nil t
+                                     "" (cons 'hist 0)))
+                   ))))
+      ))
      (message "Help for %s%s%s" module (if entry "." "") (or entry ""))
      (ocaml-goto-help module entry)
      ))
