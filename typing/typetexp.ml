@@ -445,7 +445,7 @@ and transl_fields env policy =
   function
     [] ->
       newty Tnil
-  | {pfield_desc = Pfield_var} as field::_ ->
+  | {pfield_desc = Pfield_var}::_ ->
       if policy = Univars then new_pre_univar () else newvar ()
   | {pfield_desc = Pfield(s, e)}::l ->
       let ty1 = transl_type env policy e in

@@ -1148,7 +1148,6 @@ let rec non_recursive_abbrev env ty0 ty =
   let ty = repr ty in
   if ty == repr ty0 then raise Recursive_abbrev;
   if not (List.memq ty !visited) then begin
-    let level = ty.level in
     visited := ty :: !visited;
     match ty.desc with
       Tconstr(p, args, abbrev) ->
@@ -1727,7 +1726,7 @@ and unify_row env row1 row2 =
     if row0.row_closed then begin
       match filter_row_fields false (row_repr row1).row_fields with [l, fi] ->
         begin match row_field_repr fi with
-          Reither(c, t1::tl, _, e) as f1 ->
+          Reither(c, t1::tl, _, e) ->
             let f1' = Rpresent (Some t1) in
             set_row_field e f1';
             begin try
@@ -1735,7 +1734,7 @@ and unify_row env row1 row2 =
               List.iter (unify env t1) tl
             with exn ->
               e := None;
-              List.assoc l !undo := Some f1';
+              set_row_field (List.assoc l !undo) f1';
               raise exn
             end
         | Reither(true, [], _, e) ->

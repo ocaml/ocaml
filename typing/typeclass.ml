@@ -359,7 +359,6 @@ and class_type env scty =
       let (params, clty) =
         Ctype.instance_class decl.clty_params decl.clty_type
       in
-      let sty = Ctype.self_type clty in
       if List.length params <> List.length styl then
         raise(Error(scty.pcty_loc,
                     Parameter_arity_mismatch (lid, List.length params,
