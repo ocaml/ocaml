@@ -458,7 +458,7 @@ let rec tree_of_type_decl id decl =
         tree_of_manifest decl (Otyp_sum (List.map tree_of_constructor cstrs))
     | Type_record(lbls, rep) ->
         tree_of_manifest decl (Otyp_record (List.map tree_of_label lbls))
-    | Type_virtual tkind -> tree_of_tkind tkind in
+    | Type_virtual tkind -> Otyp_virtual (tree_of_tkind tkind) in
   let ty = tree_of_tkind decl.type_kind 
   in
   (name, args, ty, constraints)

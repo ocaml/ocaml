@@ -176,7 +176,8 @@ and print_simple_out_type ppf =
         print_present tags
   | Otyp_alias _ | Otyp_poly _ | Otyp_arrow _ | Otyp_tuple _ as ty ->
       fprintf ppf "@[<1>(%a)@]" print_out_type ty
-  | Otyp_abstract | Otyp_sum _ | Otyp_record _ | Otyp_manifest (_, _) -> ()
+  | Otyp_abstract | Otyp_sum _ | Otyp_record _ | Otyp_virtual _
+  | Otyp_manifest (_, _) -> ()
 and print_fields rest ppf =
   function
     [] ->
@@ -355,21 +356,26 @@ and print_out_type_decl kwd ppf (name, args, ty, constraints) =
       Otyp_manifest (_, ty) -> ty
     | _ -> ty
   in
-  match ty with
+  let print_virtual ppf v = if v then fprintf ppf "virtual " in
+  let rec print_out_tkind v = function
     Otyp_abstract ->
       fprintf ppf "@[<2>@[<hv 2>%t@]%a@]" print_name_args print_constraints
         constraints
   | Otyp_record lbls ->
-      fprintf ppf "@[<2>@[<hv 2>%t = {%a@;<1 -2>}@]@ %a@]" print_name_args
+      fprintf ppf "@[<2>@[<hv 2>%t = %a {%a@;<1 -2>}@]@ %a@]" print_name_args
+        print_virtual v
         (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
         print_constraints constraints
   | Otyp_sum constrs ->
-      fprintf ppf "@[<2>@[<hv 2>%t =@;<1 2>%a@]%a@]" print_name_args
+      fprintf ppf "@[<2>@[<hv 2>%t =@;<1 2>%a%a@]%a@]" print_name_args
+        print_virtual v
         (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
         print_constraints constraints
+  | Otyp_virtual ty -> print_out_tkind true ty
   | ty ->
       fprintf ppf "@[<2>@[<hv 2>%t =@ %a@]%a@]" print_name_args !out_type
-        ty print_constraints constraints
+        ty print_constraints constraints in
+  print_out_tkind false ty
 and print_out_constr ppf (name, tyl) =
   match tyl with
     [] -> fprintf ppf "%s" name

@@ -135,6 +135,7 @@ and print_out_type_2 ppf =
         (print_typlist print_simple_out_type "") tyl
   | ty -> print_simple_out_type ppf ty ]
 and print_simple_out_type ppf =
+  let rec print_tkind v ppf =
   fun
   [ Otyp_var ng s -> fprintf ppf "'%s%s" (if ng then "_" else "") s
   | Otyp_constr id [] -> fprintf ppf "@[%a@]" print_ident id
@@ -169,15 +170,20 @@ and print_simple_out_type ppf =
   | Otyp_manifest ty1 ty2 ->
       fprintf ppf "@[<2>%a ==@ %a@]" print_out_type ty1 print_out_type ty2
   | Otyp_sum constrs ->
-      fprintf ppf "@[<hv>[ %a ]@]"
+      fprintf ppf "@[<hv>%a[ %a ]@]" print_virtual v
         (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
   | Otyp_record lbls ->
-      fprintf ppf "@[<hv 2>{ %a }@]"
+      fprintf ppf "@[<hv 2>%a{ %a }@]" print_virtual v
         (print_list print_out_label (fun ppf -> fprintf ppf ";@ ")) lbls
+  | Otyp_virtual tk -> print_tkind True ppf tk
   | Otyp_abstract -> fprintf ppf "'abstract"
   | Otyp_alias _ _ | Otyp_poly _ _
   | Otyp_arrow _ _ _ | Otyp_constr _ [_ :: _] as ty ->
       fprintf ppf "@[<1>(%a)@]" print_out_type ty ]
+  and print_virtual ppf v =
+     if v then fprintf ppf "virtual " else ()
+  in
+  print_tkind False ppf
 and print_out_constr ppf (name, tyl) =
   match tyl with
   [ [] -> fprintf ppf "%s" name

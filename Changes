@@ -1,3 +1,15 @@
+- Introduction of a new kind of data types: the virtual data types.
+  Virtual types are intended to modelize non free algebraic types that
+  must verified semantic relations that were not enforceable in
+  previously available Caml data types.
+  Values from virtual types can be freely used in pattern matching but
+  the creation of values is reserved to special purpose functions
+  provided in the type definition module.
+  That way, the construction functions can enforced any required invariant for
+  the datatype.
+
+- Introduction of new printf format %$ to flush the output.
+
 - Enhanced scanf code: %N is now correct, ...
 
 - Enhanced the compilation of recursive values: "let rec" is now
