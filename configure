@@ -645,6 +645,11 @@ fi
 echo "#define OCAML_OS_TYPE \"$ostype\"" >> s.h
 echo "#define OCAML_STDLIB_DIR \"$libdir\"" >> s.h
 
+# Use 64-bit file offset if possible
+
+bytecccompopts="$bytecccompopts -D_FILE_OFFSET_BITS=64"
+nativecccompopts="$nativecccompopts -D_FILE_OFFSET_BITS=64"
+
 # Check the semantics of signal handlers
 
 if sh ./hasgot sigaction sigprocmask; then

@@ -15,8 +15,6 @@
 
 /* Buffered input/output. */
 
-#define _FILE_OFFSET_BITS 64
-
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>

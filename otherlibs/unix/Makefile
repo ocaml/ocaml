@@ -19,7 +19,7 @@ include ../../config/Makefile
 
 # Compilation options
 CC=$(BYTECC)
-CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -D_FILE_OFFSET_BITS=64
+CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
