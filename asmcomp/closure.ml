@@ -97,6 +97,8 @@ let prim_size prim args =
   | Parrayrefs kind -> if kind = Pgenarray then 18 else 8
   | Parraysets kind -> if kind = Pgenarray then 22 else 10
   | Pbittest -> 3
+  | Pbigarrayref(ndims, _, _) -> 4 + ndims * 6
+  | Pbigarrayset(ndims, _, _) -> 4 + ndims * 6
   | _ -> 2 (* arithmetic and comparisons *)
 
 let lambda_smaller lam threshold =
@@ -165,7 +167,7 @@ let rec is_pure_clambda = function
   | Uconst cst -> true
   | Uprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ |
            Pccall _ | Praise | Poffsetref _ | Pstringsetu | Pstringsets |
-           Parraysetu _ | Parraysets _), _) -> false
+           Parraysetu _ | Parraysets _ | Pbigarrayset _), _) -> false
   | Uprim(p, args) -> List.for_all is_pure_clambda args
   | _ -> false
 
