@@ -362,7 +362,7 @@ let constructors_of_type ty_path decl =
   match decl.type_kind with
     Type_variant cstrs ->
       Datarepr.constructor_descrs
-        (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
+        (Btype.newgenconstr ty_path decl.type_params decl.type_arity)
         cstrs
   | _ -> []
 
@@ -372,7 +372,7 @@ let labels_of_type ty_path decl =
   match decl.type_kind with
     Type_record(labels, rep) ->
       Datarepr.label_descrs
-        (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
+        (Btype.newgenconstr ty_path decl.type_params decl.type_arity)
         labels rep
   | _ -> []
 

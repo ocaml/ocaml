@@ -23,6 +23,13 @@ open Asttypes
 open Types
 open Btype
 
+(* Misc *)
+let rec firsts n l =
+  if n = 0 then [] else
+  match l with
+    []     -> invalid_arg "Typetexp.firsts"
+  | a :: l -> a :: firsts (n-1) l
+
 (* Print a long identifier *)
 
 let rec longident ppf = function
@@ -106,8 +113,8 @@ let rec mark_loops_rec visited ty =
     | Tarrow(_, ty1, ty2, _) ->
         mark_loops_rec visited ty1; mark_loops_rec visited ty2
     | Ttuple tyl -> List.iter (mark_loops_rec visited) tyl
-    | Tconstr(_, tyl, _) ->
-        List.iter (mark_loops_rec visited) tyl
+    | Tconstr(_, tyl, ar, _) ->
+        List.iter (mark_loops_rec visited) (firsts ar tyl)
     | Tvariant row ->
         let row = row_repr row in
         if List.memq px !visited_objects then add_alias px else
@@ -128,8 +135,8 @@ let rec mark_loops_rec visited ty =
           begin match !nm with
           | None ->
               mark_loops_rec visited fi
-          | Some (_, l) ->
-              List.iter (mark_loops_rec visited) l
+          | Some (_, l, ar) ->
+              List.iter (mark_loops_rec visited) (firsts ar (List.tl l))
           end
         end
     | Tfield(_, kind, ty1, ty2) when field_kind_repr kind = Fpresent ->
@@ -186,7 +193,8 @@ let rec typexp sch prio0 ppf ty =
           print_label ppf l;
           if is_optional l then
             match (repr ty1).desc with
-            | Tconstr(path, [ty], _) when Path.same path Predef.path_option ->
+            | Tconstr(path, [ty], _, _)
+              when Path.same path Predef.path_option ->
                 typexp sch 2 ppf ty
             | _ -> fprintf ppf "<hidden>"
           else typexp sch 2 ppf ty1;
@@ -198,8 +206,8 @@ let rec typexp sch prio0 ppf ty =
         if prio >= 3
         then fprintf ppf "@[<1>(%a)@]" (typlist sch 3 " *") tyl
         else fprintf ppf "@[<0>%a@]" (typlist sch 3 " *") tyl
-    | Tconstr(p, tyl, abbrev) ->
-        fprintf ppf "@[%a%a@]" (typargs sch) tyl path p
+    | Tconstr(p, tyl, ar, abbrev) ->
+        fprintf ppf "@[%a%a@]" (typargs sch) (firsts ar tyl) path p
     | Tvariant row ->
         let row = row_repr row in
         let fields =
@@ -307,8 +315,9 @@ and typobject sch ty fi ppf nm =
           Sort.list (fun (n, _) (n', _) -> n <= n') present_fields in
         typfields sch rest ppf sorted_fields in
       fprintf ppf "@[<2>< %a >@]" pr_fields fi
-  | Some (p, {desc = Tvar} :: tyl) ->
-      fprintf ppf "@[%a%s#%a@]" (typargs sch) tyl (non_gen_mark sch ty) path p
+  | Some (p, {desc = Tvar} :: tyl, ar) ->
+      fprintf ppf "@[%a%s#%a@]" (typargs sch) (firsts ar tyl)
+        (non_gen_mark sch ty) path p
   | _ ->
         fatal_error "Printtyp.typobject"
   end
@@ -361,7 +370,7 @@ let rec type_decl kwd id ppf decl =
 
   reset();
 
-  let params = filter_params decl.type_params in
+  let params = filter_params (firsts decl.type_arity decl.type_params) in
 
   aliased := params @ !aliased;
   List.iter mark_loops params;
@@ -395,7 +404,8 @@ let rec type_decl kwd id ppf decl =
         (List.combine params decl.type_variance)
         ident id
     else
-      type_expr ppf (Btype.newgenty (Tconstr(Pident id, params, ref Mnil)))
+      type_expr ppf
+        (Btype.newgenconstr (Pident id) decl.type_params decl.type_arity)
   in
   let print_manifest ppf decl =
     match decl.type_manifest with
@@ -534,8 +544,9 @@ let rec perform_class_type sch params ppf = function
       let ty =
        if is_optional l then
          match (repr ty).desc with
-         | Tconstr(path, [ty], _) when Path.same path Predef.path_option -> ty
-         | _ -> newconstr (Path.Pident(Ident.create "<hidden>")) []
+         | Tconstr(path, [ty], _, _) when Path.same path Predef.path_option ->
+             ty
+         | _ -> newconstr (Path.Pident(Ident.create "<hidden>")) [] 0
        else ty in
       fprintf ppf "@[%a%a ->@ %a@]"
        print_label l (typexp sch 2) ty (perform_class_type sch params) cty
@@ -706,12 +717,12 @@ let unification_error unif tr txt1 ppf txt2 =
         match t3.desc, t4.desc with
         | Tfield _, Tvar | Tvar, Tfield _ ->
             fprintf ppf "@,Self type cannot escape its class"
-        | Tconstr (p, _, _), Tvar
+        | Tconstr (p, _, _, _), Tvar
             when unif && t4.level < Path.binding_time p ->
             fprintf ppf
               "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
               path p
-        | Tvar, Tconstr (p, _, _)
+        | Tvar, Tconstr (p, _, _, _)
             when unif && t3.level < Path.binding_time p ->
             fprintf ppf
               "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"

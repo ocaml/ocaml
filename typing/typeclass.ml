@@ -862,7 +862,8 @@ let class_infos define_class kind
 
   (* Check the abbreviation for the object type *)
   let (obj_params', obj_type) = Ctype.instance_class params typ in
-  let constr = Ctype.newconstr (Path.Pident obj_id) obj_params in
+  let arity = List.length obj_params' in
+  let constr = Ctype.newconstr (Path.Pident obj_id) obj_params arity in
   begin
     let ty = Ctype.self_type obj_type in
     Ctype.hide_private_methods ty;
@@ -873,7 +874,7 @@ let class_infos define_class kind
       raise(Error(cl.pci_loc,
             Bad_parameters (obj_id, constr,
                             Ctype.newconstr (Path.Pident obj_id)
-                                            obj_params')))
+                                            obj_params' arity)))
     end;
     begin try
       Ctype.unify env ty constr
@@ -888,21 +889,21 @@ let class_infos define_class kind
     let (cl_params', cl_type) = Ctype.instance_class params typ in
     let ty = Ctype.self_type cl_type in
     Ctype.hide_private_methods ty;
-    Ctype.set_object_name obj_id (Ctype.row_variable ty) cl_params ty;
+    Ctype.set_object_name obj_id (Ctype.row_variable ty) cl_params arity ty;
     begin try
       List.iter2 (Ctype.unify env) cl_params cl_params'
     with Ctype.Unify _ ->
       raise(Error(cl.pci_loc,
             Bad_parameters (cl_id,
                             Ctype.newconstr (Path.Pident cl_id)
-                                            cl_params,
+                                            cl_params arity,
                             Ctype.newconstr (Path.Pident cl_id)
-                                            cl_params')))
+                                            cl_params' arity )))
     end;
     begin try
       Ctype.unify env ty cl_ty
     with Ctype.Unify _ ->
-      let constr = Ctype.newconstr (Path.Pident cl_id) params in
+      let constr = Ctype.newconstr (Path.Pident cl_id) params arity in
       raise(Error(cl.pci_loc, Abbrev_type_clash (constr, ty, cl_ty)))
     end
   end;
@@ -972,7 +973,8 @@ let class_infos define_class kind
     Ctype.instance_parameterized_type params (Ctype.self_type typ)
   in
   Ctype.hide_private_methods cl_ty;
-  Ctype.set_object_name obj_id (Ctype.row_variable cl_ty) cl_params cl_ty;
+  Ctype.set_object_name obj_id (Ctype.row_variable cl_ty)
+    cl_params arity cl_ty;
   let cl_abbr =
     {type_params = cl_params;
      type_arity = List.length cl_params;

@@ -29,7 +29,7 @@ exception Empty (* Empty pattern *)
 let get_type_descr ty tenv =
   let ty = Ctype.repr (Ctype.expand_head tenv ty) in
   match ty.desc with
-  | Tconstr (path,_,_) -> Env.find_type path tenv
+  | Tconstr (path,_,_,_) -> Env.find_type path tenv
   | _ -> fatal_error "Parmatch.get_type_descr"
 
 let get_constr tag ty tenv =

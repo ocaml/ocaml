@@ -22,6 +22,15 @@ open Types
 open Typedtree
 open Typetexp
 
+(* Misc *)
+let rec skip n l =
+  if n = 0 then l else
+  match l with [] -> invalid_arg "Typedecl.skip"
+  | _ :: l -> skip (n-1) l
+
+let rec build_list n f =
+  if n = 0 then [] else f () :: build_list (n-1) f
+
 type error =
     Repeated_parameter
   | Duplicate_constructor of string
@@ -64,7 +73,7 @@ let update_type temp_env env id loc =
   match decl.type_manifest with None -> ()
   | Some ty ->
       let params = List.map (fun _ -> Ctype.newvar ()) decl.type_params in
-      try Ctype.unify env (Ctype.newconstr path params) ty
+      try Ctype.unify env (Ctype.newconstr path params decl.type_arity) ty
       with Ctype.Unify trace ->
         raise (Error(loc, Type_clash trace))
 
@@ -72,7 +81,7 @@ let update_type temp_env env id loc =
 
 let is_float env ty =
   match Ctype.repr (Ctype.expand_head env ty) with
-    {desc = Tconstr(p, _, _)} -> Path.same p Predef.path_float
+    {desc = Tconstr(p, _, _, _)} -> Path.same p Predef.path_float
   | _ -> false
 
 (* Translate one type declaration *)
@@ -187,10 +196,10 @@ let rec check_constraints_rec env loc visited ty =
   if TypeSet.mem ty !visited then () else begin
   visited := TypeSet.add ty !visited;
   match ty.desc with
-  | Tconstr (path, args, _) ->
+  | Tconstr (path, args, ar, _) ->
       Ctype.begin_def ();
       let args' = List.map (fun _ -> Ctype.newvar ()) args in
-      let ty' = Ctype.newconstr path args' in
+      let ty' = Ctype.newconstr path args' ar in
       begin try Ctype.enforce_constraints env ty'
       with Ctype.Unify _ -> assert false
       end;
@@ -250,7 +259,7 @@ let check_abbrev env (_, sdecl) (id, decl) =
   match decl with
     {type_kind = (Type_variant _ | Type_record _); type_manifest = Some ty} ->
       begin match (Ctype.repr ty).desc with
-        Tconstr(path, args, _) ->
+        Tconstr(path, args, _, _) ->
           begin try
             let decl' = Env.find_type path env in
             if List.length args = List.length decl.type_params
@@ -288,10 +297,10 @@ let rec check_expansion_rec env id args loc id_check_list visited ty =
   if List.memq ty visited then () else
   let visited = ty :: visited in
   begin match ty.desc with
-  | Tconstr(Path.Pident id' as path, args', _) ->
+  | Tconstr(Path.Pident id' as path, args', ar, _) ->
       if Ident.same id id' then begin
         if not (Ctype.equal env false args args') then
-          raise (Error(loc, Parameters_differ(ty, Ctype.newconstr path args)))
+          raise(Error(loc,Parameters_differ(ty, Ctype.newconstr path args ar)))
       end else begin try
         let (loc, checked) = List.assoc id' id_check_list in
         if List.exists (Ctype.equal env false args') !checked then () else
@@ -343,7 +352,7 @@ let compute_variance env tvl nega posi ty =
           compute_variance_rec posi nega ty2
       | Ttuple tl ->
           List.iter (compute_variance_rec posi nega) tl
-      | Tconstr (path, tl, _) ->
+      | Tconstr (path, tl, _, _) ->
           if tl = [] then () else
           let decl = Env.find_type path env in
           List.iter2
@@ -436,6 +445,78 @@ let compute_variance_decls env decls =
     List.map (fun (l,_) -> List.map (fun _ -> false, false) l) required in
   fst (compute_variance_fixpoint env decls required variances)
 
+(* Hidden arguments *)
+let rec hidden_params env decls visited hidden others ty =
+  let ty = Btype.repr ty in
+  if TypeSet.mem ty !visited then () else begin
+    visited := TypeSet.add ty !visited;
+    begin match ty.desc with
+      Tconstr (Path.Pident id, tyl, _, _) when List.mem_assoc id decls ->
+        others := TypeSet.add ty !others
+    | Tconstr (path, tyl, _, _) ->
+        let decl = Env.find_type path env in
+        let h = skip decl.type_arity tyl in
+        hidden := List.fold_right TypeSet.add h !hidden
+    | Tvariant row ->
+        hidden := TypeSet.add (Btype.row_more row) !hidden
+    | _ -> ()
+    end;
+    Btype.iter_type_expr (hidden_params env decls visited hidden others) ty
+  end
+
+let hidden_params_decl env decls (id, decl) =
+  let hidden = ref TypeSet.empty
+  and visited = ref TypeSet.empty
+  and others = ref TypeSet.empty in
+  begin match decl.type_kind, decl.type_manifest with
+  | Type_variant l, _ ->
+      List.iter
+        (fun (_, tyl) ->
+          List.iter (hidden_params env decls visited hidden others) tyl)
+        l
+  | Type_record (l, _), _ ->
+      List.iter
+        (fun (_, _, ty) -> hidden_params env decls visited hidden others ty)
+        l
+  | Type_abstract, Some ty ->
+      hidden_params env decls visited hidden others ty
+  | _ -> ()
+  end;
+  !hidden, !others
+
+let more_hidden_params hiddens others n =
+  TypeSet.fold
+    (function {desc=Tconstr (Path.Pident id, tyl, _, _)} ->
+      (+) (List.assoc id hiddens)
+    | _ -> assert false)
+    others n
+
+let insert_hidden_params hiddens (id, decl) (hidden, others) =
+  let params = ref (List.rev decl.type_params) in
+  TypeSet.iter (fun ty -> params := ty :: !params) hidden;
+  TypeSet.iter
+    (function {desc=Tconstr (Path.Pident id as p, tyl, ar, r)} as ty ->
+      let n = List.assoc id hiddens in
+      let args = build_list n Btype.newgenvar in
+      ty.desc <- Tconstr (p, tyl @ args, ar, r);
+      params := List.rev_append args !params
+    | _ -> assert false)
+    others;
+  (id, {decl with type_params = List.rev !params})
+
+let compute_hidden_params env decls =
+  let hidden_others = List.map (hidden_params_decl env decls) decls in
+  let hidden, others = List.split hidden_others in
+  let ids = List.map fst decls in
+  let rec fix hiddens =
+    let ids_hiddens = List.combine ids hiddens in
+    let hiddens' = List.map2 (more_hidden_params ids_hiddens) others hiddens in
+    if hiddens' <> hiddens then fix hiddens' else hiddens
+  in
+  let hiddens = fix (List.map TypeSet.cardinal hidden) in
+  let ids_hiddens = List.combine ids hiddens in
+  List.map2 (insert_hidden_params ids_hiddens) decls hidden_others
+
 (* Translate a set of mutually recursive type declarations *)
 let transl_type_decl env name_sdecl_list =
   (* Create identifiers. *)
@@ -490,10 +571,16 @@ let transl_type_decl env name_sdecl_list =
       id_list name_sdecl_list
   in
   List.iter (check_expansion newenv (List.flatten id_loc_list)) decls;
+  (* extra parameters *)
+  let decls = compute_hidden_params newenv decls in
   (* Add variances to the environment *)
   let required =
-    List.map (fun (_, sdecl) -> sdecl.ptype_variance, sdecl.ptype_loc)
-      name_sdecl_list
+    List.map2
+      (fun (_, sdecl) (_, decl) ->
+        sdecl.ptype_variance @ replicate_list (false,false)
+          (List.length decl.type_params - decl.type_arity),
+        sdecl.ptype_loc)
+      name_sdecl_list decls
   in
   let final_decls, final_env =
     compute_variance_fixpoint env decls required

@@ -74,8 +74,7 @@ let type_constant = function
 
 (* Specific version of type_option, using newty rather than newgenty *)
 
-let type_option ty =
-  newty (Tconstr(Predef.path_option,[ty], ref Mnil))
+let type_option ty = newconstr Predef.path_option [ty] 1
 
 let option_none ty loc =
   let cnone = Env.lookup_constructor (Longident.Lident "None") Env.initial in
@@ -88,14 +87,14 @@ let option_some texp =
     exp_type = type_option texp.exp_type; exp_env = texp.exp_env }
 
 let extract_option_type env ty =
-  match expand_head env ty with {desc = Tconstr(path, [ty], _)}
+  match expand_head env ty with {desc = Tconstr(path, [ty], _, _)}
     when Path.same path Predef.path_option -> ty
   | _ -> assert false
 
 let rec extract_label_names env ty =
   let ty = repr ty in
   match ty.desc with
-  | Tconstr (path, _, _) ->
+  | Tconstr (path, _, _, _) ->
       let td = Env.find_type path env in
       begin match td.type_kind with
       | Type_record (fields, _) -> List.map (fun (name, _, _) -> name) fields
@@ -205,7 +204,7 @@ let build_or_pat env loc lid =
   in
   let tyl = List.map (fun _ -> newvar()) decl.type_params in
   let fields =
-    let ty = expand_head env (newty(Tconstr(path, tyl, ref Mnil))) in
+    let ty = expand_head env (newconstr path tyl decl.type_arity) in
     match ty.desc with
       Tvariant row when static_row row ->
         (row_repr row).row_fields
@@ -559,9 +558,7 @@ let type_format loc fmt =
             raise(Error(loc, Bad_format(String.sub fmt i (j-i+1))))
         end
     | _ -> scan_format (i+1) in
-  newty
-    (Tconstr(Predef.path_format, [scan_format 0; ty_input; ty_result],
-             ref Mnil))
+  newconstr Predef.path_format [scan_format 0; ty_input; ty_result] 3
 
 (* Approximate the type of an expression, for better recursion *)
 
@@ -1278,7 +1275,7 @@ and type_expect env sexp ty_expected =
           exp_type =
             (* Terrible hack for format strings *)
             begin match (repr ty_expected).desc with
-              Tconstr(path, _, _) when Path.same path Predef.path_format ->
+              Tconstr(path, _, _, _) when Path.same path Predef.path_format ->
                 type_format sexp.pexp_loc s
             | _ -> instance Predef.type_string
             end;
@@ -1366,7 +1363,7 @@ and type_statement env sexp =
     | Tarrow _ ->
         Location.prerr_warning sexp.pexp_loc Warnings.Partial_application;
         exp
-    | Tconstr (p, _, _) when Path.same p Predef.path_unit -> exp
+    | Tconstr (p, _, _, _) when Path.same p Predef.path_unit -> exp
     | Tvar -> exp
     | _ ->
         Location.prerr_warning sexp.pexp_loc Warnings.Statement_type;

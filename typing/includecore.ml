@@ -68,8 +68,7 @@ let type_declarations env id decl1 decl2 =
                              (ty2::decl2.type_params)
     | (None, Some ty2) ->
         let ty1 =
-          Btype.newgenty (Tconstr(Pident id, decl2.type_params, ref Mnil))
-        in
+          Btype.newgenconstr (Pident id) decl2.type_params decl2.type_arity in
         Ctype.equal env true decl1.type_params decl2.type_params &&
         Ctype.equal env false [ty1] [ty2]
   end &&

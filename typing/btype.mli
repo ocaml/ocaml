@@ -25,6 +25,8 @@ val newgenty: type_desc -> type_expr
         (* Create a generic type *)
 val newgenvar: unit -> type_expr
         (* Return a fresh generic variable *)
+val newgenconstr: Path.t -> type_expr list -> int -> type_expr
+        (* Return a generic constructor *)
 
 (* Use Tsubst instead
 val newmarkedvar: int -> type_expr
@@ -53,6 +55,8 @@ val static_row: row_desc -> bool
         (* Return whether the row is static or not *)
 val hash_variant: label -> int
         (* Hash function for variant tags *)
+val filter_bound: type_expr list -> type_expr list
+        (* Filter out (some) useless extra bound variables *)
 
 (**** Utilities for type traversal ****)
 

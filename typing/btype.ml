@@ -33,6 +33,8 @@ let newty2 level desc  =
   incr new_id; { desc = desc; level = level; id = !new_id }
 let newgenty desc      = newty2 generic_level desc
 let newgenvar ()       = newgenty Tvar
+let newgenconstr path args arity =
+  newgenty (Tconstr(path, args, arity, ref Mnil))
 (*
 let newmarkedvar level =
   incr new_id; { desc = Tvar; level = pivot_level - level; id = !new_id }
@@ -99,6 +101,15 @@ let hash_variant s =
   (* make it signed for 64 bits architectures *)
   if !accu > 0x3FFFFFFF then !accu - (1 lsl 31) else !accu
 
+let filter_bound l =
+  let rec filter bound = function
+      [] -> bound
+    | ty :: rem ->
+        let ty = repr ty in
+        if List.memq ty bound then filter bound rem
+        else filter (ty::bound) rem
+  in filter [] l
+
 
                   (**********************************)
                   (*  Utilities for type traversal  *)
@@ -124,9 +135,9 @@ let iter_type_expr f ty =
     Tvar                -> ()
   | Tarrow (_, ty1, ty2, _) -> f ty1; f ty2
   | Ttuple l            -> List.iter f l
-  | Tconstr (_, l, _)   -> List.iter f l
-  | Tobject(ty, {contents = Some (_, p)})
-                        -> f ty; List.iter f p
+  | Tconstr (_, l, _, _)-> List.iter f l
+  | Tobject(ty, {contents = Some (_, tl, _)})
+                        -> f ty; List.iter f tl
   | Tobject (ty, _)     -> f ty
   | Tvariant row        -> iter_row f row; f (row_more row)
   | Tfield (_, _, ty1, ty2) -> f ty1; f ty2

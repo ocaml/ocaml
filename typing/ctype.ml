@@ -143,7 +143,8 @@ let new_global_var ()  = newty2 !global_level Tvar
 
 let newobj fields      = newty (Tobject (fields, ref None))
 
-let newconstr path tyl = newty (Tconstr (path, tyl, ref Mnil))
+let newconstr path tyl arity =
+  newty (Tconstr (path, tyl, arity, ref Mnil))
 
 let none = newty (Ttuple [])                (* Clearly ill-formed type *)
 
@@ -246,11 +247,11 @@ let row_variable ty =
 (**** Object name manipulation ****)
 (* +++ Bientot obsolete *)
 
-let set_object_name id rv params ty =
+let set_object_name id rv params ar ty =
   match (repr ty).desc with
     Tobject (fi, nm) ->
       begin try
-        nm := Some (Path.Pident id, rv::params)
+        nm := Some (Path.Pident id, rv::params, ar)
       with Not_found ->
         ()
       end
@@ -260,7 +261,7 @@ let set_object_name id rv params ty =
 let remove_object_name ty =
   match (repr ty).desc with
     Tobject (_, nm)   -> nm := None
-  | Tconstr (_, _, _) -> ()
+  | Tconstr _         -> ()
   | _                 -> fatal_error "Ctype.remove_object_name"
 
 (**** Hiding of private methods ****)
@@ -496,7 +497,7 @@ let rec iter_generalize tyl ty =
   if (ty.level > !current_level) && (ty.level <> generic_level) then begin
     ty.level <- generic_level;
     begin match ty.desc with
-      Tconstr (_, _, abbrev) ->
+      Tconstr (_, _, _, abbrev) ->
         generalize_expans tyl !abbrev
     | _ -> ()
     end;
@@ -541,7 +542,7 @@ let rec update_level env level ty =
   let ty = repr ty in
   if ty.level > level then begin
     begin match ty.desc with
-      Tconstr(p, tl, abbrev)  when level < Path.binding_time p ->
+      Tconstr(p, tl, _, abbrev)  when level < Path.binding_time p ->
         (* Try first to replace an abbreviation by its expansion. *)
         begin try
           ty.desc <- Tlink (!try_expand_head' env ty);
@@ -669,7 +670,7 @@ let rec copy ty =
           Tarrow (l, copy t1, copy t2, c)
       | Ttuple tl ->
           Ttuple (List.map copy tl)
-      | Tconstr (p, tl, _) ->
+      | Tconstr (p, tl, ar, _) ->
           begin match find_repr p !(!abbreviations) with
             Some ty when repr ty != t -> (* XXX Commentaire... *)
               Tlink ty
@@ -683,7 +684,7 @@ let rec copy ty =
              ation can be released by changing the content of just
              one reference.
           *)
-              Tconstr (p, List.map copy tl,
+              Tconstr (p, List.map copy tl, ar,
                        ref (match !(!abbreviations) with
                               Mcons _ -> Mlink !abbreviations
                             | abbrev  -> abbrev))
@@ -693,8 +694,8 @@ let rec copy ty =
             match name with
               None ->
                 None
-            | Some (p, tl) ->
-                Some (p, List.map copy tl)
+            | Some (p, tl, ar) ->
+                Some (p, List.map copy tl, ar)
           in
           Tobject (copy t1, ref name')
       | Tvariant row0 ->
@@ -817,7 +818,7 @@ let rec subst env level abbrev ty params args body =
     let body0 = newvar () in          (* Stub *)
     begin match ty with
       None      -> ()
-    | Some ({desc = Tconstr (path, _, _)} as ty) ->
+    | Some ({desc = Tconstr (path, _, _, _)} as ty) ->
         memorize_abbrev abbrev path ty body0
     | _ ->
         assert false
@@ -829,7 +830,7 @@ let rec subst env level abbrev ty params args body =
     List.iter2 (!unify' env) params' args;
     current_level := old_level;
     body'
-  with Unify _ as exn ->
+  with exn ->
     current_level := old_level;
     raise exn
 
@@ -901,7 +902,7 @@ let expand_abbrev env ty =
     previous_env := env
   end;
   match ty with
-    {desc = Tconstr (path, args, abbrev); level = level} ->
+    {desc = Tconstr (path, args, ar, abbrev); level = level} ->
       begin match find_expans path !abbrev with
         Some ty ->
           if level <> generic_level then
@@ -956,7 +957,7 @@ let rec expand_head env ty =
    respect the type constraints *)
 let enforce_constraints env ty =
   match ty with
-    {desc = Tconstr (path, args, abbrev); level = level} ->
+    {desc = Tconstr (path, args, ar, abbrev); level = level} ->
       let decl = Env.find_type path env in
       ignore
         (subst env level (ref Mnil) None decl.type_params args (newvar2 level))
@@ -968,7 +969,7 @@ let enforce_constraints env ty =
 let rec full_expand env ty =
   let ty = repr (expand_head env ty) in
   match ty.desc with
-    Tobject (fi, {contents = Some (_, v::_)}) when (repr v).desc = Tvar ->
+    Tobject (fi, {contents = Some (_, v::_, _)}) when (repr v).desc = Tvar ->
       newty2 ty.level (Tobject (fi, ref None))
   | _ ->
       ty
@@ -1004,7 +1005,7 @@ let rec non_recursive_abbrev env ty0 ty =
     let level = ty.level in
     visited := ty :: !visited;
     match ty.desc with
-      Tconstr(p, args, abbrev) ->
+      Tconstr(p, args, ar, abbrev) ->
         begin try
           non_recursive_abbrev env ty0 (try_expand_head env ty)
         with Cannot_expand ->
@@ -1030,7 +1031,7 @@ let correct_abbrev env ident params ty =
 let rec occur_rec env visited ty0 ty =
   if ty == ty0  then raise Occur;
   match ty.desc with
-    Tconstr(p, tl, abbrev) ->
+    Tconstr(p, tl, ar, abbrev) ->
       begin try
         if List.memq ty visited then raise Occur;
         iter_type_expr (occur_rec env (ty::visited) ty0) ty
@@ -1138,8 +1139,7 @@ let rec unify env t1 t2 =
         occur env t2 t1;
         update_level env t2.level t1;
         t2.desc <- Tlink t1
-    | (Tconstr (p1, [], a1), Tconstr (p2, [], a2))
-          when Path.same p1 p2
+    | (Tconstr (p1, [], _, a1), Tconstr (p2, [], _, a2)) when Path.same p1 p2
             (* This optimization assumes that t1 does not expand to t2
                (and conversely), so we fall back to the general case
                when any of the types has a cached expansion. *)
@@ -1204,14 +1204,15 @@ and unify3 env t1 t1' t2 t2' =
         end
     | (Ttuple tl1, Ttuple tl2) ->
         unify_list env tl1 tl2
-    | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
+    | (Tconstr (p1, tl1, _, _), Tconstr (p2, tl2, _, _))
+      when Path.same p1 p2 ->
         unify_list env tl1 tl2
     | (Tobject (fi1, nm1), Tobject (fi2, _)) ->
         unify_fields env fi1 fi2;
         (* Type [t2'] may have been instantiated by [unify_fields] *)
         (* XXX One should do some kind of unification... *)
         begin match (repr t2').desc with
-          Tobject (_, {contents = Some (_, va::_)})
+          Tobject (_, {contents = Some (_, va::_, _)})
                 when (repr va).desc = Tvar ->
             ()  
         | Tobject (_, nm2) ->
@@ -1232,7 +1233,7 @@ and unify3 env t1 t1' t2 t2' =
 (* XXX Commentaires + changer "create_recursion" *)
     if create_recursion then begin
       match t2.desc with
-        Tconstr (p, tl, abbrev) ->
+        Tconstr (p, tl, ar, abbrev) ->
           forget_abbrev abbrev p;
           let t2'' = expand_head env t2 in
           if not (closed_parameterized_type tl t2'') then
@@ -1248,13 +1249,13 @@ and unify3 env t1 t1' t2 t2' =
     *)
     if t1 != t1' (* && t2 != t2' *) then begin
       match (t1.desc, t2.desc) with
-        (Tconstr (p, ty::_, _), _)
+        (Tconstr (p, ty::_, _, _), _)
             when ((repr ty).desc <> Tvar)
               && weak_abbrev p
               && not (deep_occur t1 t2) ->
           update_level env t1.level t2;
           t1.desc <- Tlink t2
-      | (_, Tconstr (p, ty::_, _))
+      | (_, Tconstr (p, ty::_, _, _))
             when ((repr ty).desc <> Tvar)
               && weak_abbrev p
               && not (deep_occur t2 t1) ->
@@ -1330,7 +1331,7 @@ and unify_row env row1 row2 =
     then row2.row_name
     else None
   in
-  let bound = row1.row_bound @ row2.row_bound in
+  let bound = filter_bound (row1.row_bound @ row2.row_bound) in
   let row0 = {row_fields = []; row_more = more; row_bound = bound;
               row_closed = closed; row_name = name} in
   let more row rest =
@@ -1519,7 +1520,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
         moregen_occur env t1.level t2;
         occur env t1 t2;
         t1.desc <- Tlink t2
-    | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
+    | (Tconstr (p1, [], _, _), Tconstr (p2, [], _, _)) when Path.same p1 p2 ->
         ()
     | _ ->
         let t1' = expand_head env t1 in
@@ -1542,8 +1543,8 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
               moregen inst_nongen type_pairs env u1 u2
           | (Ttuple tl1, Ttuple tl2) ->
               moregen_list inst_nongen type_pairs env tl1 tl2
-          | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
-                when Path.same p1 p2 ->
+          | (Tconstr (p1, tl1, _, _), Tconstr (p2, tl2, _, _))
+            when Path.same p1 p2 ->
               moregen_list inst_nongen type_pairs env tl1 tl2
           | (Tvariant row1, Tvariant row2) ->
               moregen_row inst_nongen type_pairs env row1 row2
@@ -1687,7 +1688,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
         with Not_found ->
           subst := (t1, t2) :: !subst
         end
-    | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
+    | (Tconstr (p1, [], _, _), Tconstr (p2, [], _, _)) when Path.same p1 p2 ->
         ()
     | _ ->
         let t1' = expand_head env t1 in
@@ -1712,8 +1713,8 @@ let rec eqtype rename type_pairs subst env t1 t2 =
               eqtype rename type_pairs subst env u1 u2;
           | (Ttuple tl1, Ttuple tl2) ->
               eqtype_list rename type_pairs subst env tl1 tl2
-          | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
-                when Path.same p1 p2 ->
+          | (Tconstr (p1, tl1, _, _), Tconstr (p2, tl2, _, _))
+            when Path.same p1 p2 ->
               eqtype_list rename type_pairs subst env tl1 tl2
           | (Tvariant row1, Tvariant row2) ->
               eqtype_row rename type_pairs subst env row1 row2
@@ -2107,7 +2108,7 @@ let rec build_subtype env visited posi t =
       if List.exists snd tlist' then
         (newty (Ttuple (List.map fst tlist')), true)
       else (t, false)
-  | Tconstr(p, tl, abbrev) when generic_abbrev env p ->
+  | Tconstr(p, tl, ar, abbrev) when generic_abbrev env p ->
       let t' = repr (expand_abbrev env t) in
       let (t'', c) =
         try match t'.desc with
@@ -2133,7 +2134,7 @@ let rec build_subtype env visited posi t =
               let ty = repr ty in
               let ty1 =
                 match ty.desc with
-                  Tobject(ty1,{contents=Some(p',_)}) ->
+                  Tobject(ty1,{contents=Some(p',_,_)}) ->
                     if Path.same p p' then ty1 else raise Not_found
                 | _ -> assert false in
               ty.desc <- Tvar;
@@ -2149,7 +2150,7 @@ let rec build_subtype env visited posi t =
         with Not_found -> build_subtype env visited posi t'
       in
       if c then (t'', true) else (t, false)
-  | Tconstr(p, tl, abbrev) ->
+  | Tconstr(p, tl, ar, abbrev) ->
       let decl = Env.find_type p env in
       let tl' =
         List.map2
@@ -2163,7 +2164,9 @@ let rec build_subtype env visited posi t =
           decl.type_variance tl
       in
       if List.exists snd tl' then
-        (newconstr p (List.map fst tl'), true)
+        let t' = newconstr p (List.map fst tl') ar in
+        enforce_constraints env t';
+        (t', true)
       else
         (t, false)
   | Tvariant row ->
@@ -2274,13 +2277,13 @@ let rec subtype_rec env trace t1 t2 cstrs =
         subtype_rec env ((u1, u2)::trace) u1 u2 cstrs
     | (Ttuple tl1, Ttuple tl2) ->
         subtype_list env trace tl1 tl2 cstrs
-    | (Tconstr(p1, [], _), Tconstr(p2, [], _)) when Path.same p1 p2 ->
+    | (Tconstr(p1, [], _, _), Tconstr(p2, [], _, _)) when Path.same p1 p2 ->
         cstrs
-    | (Tconstr(p1, tl1, abbrev1), _) when generic_abbrev env p1 ->
+    | (Tconstr(p1, tl1, _, abbrev1), _) when generic_abbrev env p1 ->
         subtype_rec env trace (expand_abbrev env t1) t2 cstrs
-    | (_, Tconstr(p2, tl2, abbrev2)) when generic_abbrev env p2 ->
+    | (_, Tconstr(p2, tl2, _, abbrev2)) when generic_abbrev env p2 ->
         subtype_rec env trace t1 (expand_abbrev env t2) cstrs
-    | (Tconstr(p1, tl1, _), Tconstr(p2, tl2, _)) when Path.same p1 p2 ->
+    | (Tconstr(p1, tl1, _, _), Tconstr(p2, tl2, _, _)) when Path.same p1 p2 ->
         let decl = Env.find_type p1 env in
         List.fold_left2
           (fun cstrs (co, cn) (t1, t2) ->
@@ -2382,14 +2385,14 @@ let unalias ty =
   | _ ->
       newty2 ty.level ty.desc
 
-let unroll_abbrev id tl ty =
+let unroll_abbrev id tl ar ty =
   let ty = repr ty in
   if (ty.desc = Tvar) || (List.exists (deep_occur ty) tl) then
     ty
   else
     let ty' = newty2 ty.level ty.desc in
     ty.desc <- Tlink (newty2 ty.level
-                             (Tconstr (Path.Pident id, tl, ref Mnil)));
+                        (Tconstr (Path.Pident id, tl, ar, ref Mnil)));
     ty'
 
 (* Return the arity (as for curried functions) of the given type. *)
@@ -2402,9 +2405,9 @@ let rec arity ty =
 let rec cyclic_abbrev env id ty =
   let ty = repr ty in
   match ty.desc with
-    Tconstr (Path.Pident id', _, _) when Ident.same id id' ->
+    Tconstr (Path.Pident id', _, _, _) when Ident.same id id' ->
       true
-  | Tconstr (p, tl, abbrev) ->
+  | Tconstr (p, tl, _, abbrev) ->
       begin try
         cyclic_abbrev env id (try_expand_head env ty)
       with Cannot_expand ->
@@ -2440,18 +2443,16 @@ let rec normalize_type_rec env ty =
               else f
             | _ -> f)
           row.row_fields
-      and bound = List.fold_left
-          (fun tyl ty -> if List.memq ty tyl then tyl else ty :: tyl)
-          [] (List.map repr row.row_bound)
-      in ty.desc <- Tvariant {row with row_fields = fields; row_bound = bound}
+      and bound = filter_bound row.row_bound in
+      ty.desc <- Tvariant {row with row_fields = fields; row_bound = bound}
     | Tobject (_, nm) ->
         begin match !nm with
         | None -> ()
-        | Some (n, v :: l) ->
+        | Some (n, v :: l, ar) ->
             let v' = repr v in
             begin match v'.desc with
-            | Tvar -> if v' != v then nm := Some (n, v' :: l)
-            | Tnil -> ty.desc <- Tconstr (n, l, ref Mnil)
+            | Tvar -> if v' != v then nm := Some (n, v' :: l, ar)
+            | Tnil -> ty.desc <- Tconstr (n, l, ar, ref Mnil)
             | _ -> nm := None
             end
         | _ ->
@@ -2502,7 +2503,7 @@ let rec nondep_type_rec env id ty =
           Tarrow(l, nondep_type_rec env id t1, nondep_type_rec env id t2, c)
       | Ttuple tl ->
           Ttuple(List.map (nondep_type_rec env id) tl)
-      | Tconstr(p, tl, abbrev) ->
+      | Tconstr(p, tl, ar, abbrev) ->
           if Path.isfree id p then
             begin try
               Tlink (nondep_type_rec env id
@@ -2517,14 +2518,14 @@ let rec nondep_type_rec env id ty =
               raise Not_found
             end
           else
-            Tconstr(p, List.map (nondep_type_rec env id) tl, ref Mnil)
+            Tconstr(p, List.map (nondep_type_rec env id) tl, ar, ref Mnil)
       | Tobject (t1, name) ->
           Tobject (nondep_type_rec env id t1,
                  ref (match !name with
                         None -> None
-                      | Some (p, tl) ->
-                          if Path.isfree id p then None
-                          else Some (p, List.map (nondep_type_rec env id) tl)))
+                      | Some (p, tl, ar) ->
+                          if Path.isfree id p then None else
+                          Some (p, List.map (nondep_type_rec env id) tl, ar)))
       | Tvariant row ->
           let row = row_repr row in
           let more = repr row.row_more in
@@ -2625,7 +2626,8 @@ let nondep_type_decl env mid id is_covariant decl =
             match decl.type_manifest with
               None -> None
             | Some ty ->
-                Some (unroll_abbrev id params (nondep_type_rec env mid ty))
+                Some (unroll_abbrev id params decl.type_arity
+                        (nondep_type_rec env mid ty))
           with Not_found when is_covariant ->
             None
           end;

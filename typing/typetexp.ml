@@ -19,6 +19,13 @@ open Parsetree
 open Types
 open Ctype
 
+(* Misc *)
+let rec firsts n l =
+  if n = 0 then [] else
+  match l with
+    []     -> invalid_arg "Typetexp.firsts"
+  | a :: l -> a :: firsts (n-1) l
+
 exception Already_bound
 
 type error =
@@ -131,8 +138,8 @@ let rec transl_type env policy styp =
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                            List.length stl)));
       let args = List.map (transl_type env policy) stl in
-      let params = List.map (fun _ -> Ctype.newvar ()) args in
-      let cstr = newty (Tconstr(path, params, ref Mnil)) in
+      let params = List.map (fun _ -> Ctype.newvar ()) decl.type_params in
+      let cstr = newconstr path params decl.type_arity in
       begin try
         Ctype.enforce_constraints env cstr
       with Unify trace ->
@@ -142,7 +149,7 @@ let rec transl_type env policy styp =
         (fun (sty, ty) ty' ->
            try unify env ty ty' with Unify trace ->
              raise (Error(sty.ptyp_loc, Type_mismatch trace)))
-        (List.combine stl args) params;
+        (List.combine stl args) (firsts decl.type_arity params);
       cstr
   | Ptyp_object fields ->
       newobj (transl_fields env policy fields)
@@ -175,18 +182,18 @@ let rec transl_type env policy styp =
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                            List.length stl)));
       let args = List.map (transl_type env policy) stl in
-      let cstr = newty (Tconstr(path, args, ref Mnil)) in
+      let params = List.map (fun _ -> Ctype.newvar ()) decl.type_params in
+      let cstr = newconstr path params decl.type_arity in
       let ty =
         try Ctype.expand_head env cstr
         with Unify trace ->
           raise (Error(styp.ptyp_loc, Type_mismatch trace))
       in
-      let params = Ctype.instance_list decl.type_params in
       List.iter2
-        (fun (sty, ty') ty ->
-           try unify env ty' ty with Unify trace ->
+        (fun (sty, ty) ty' ->
+           try unify env ty ty' with Unify trace ->
              raise (Error(sty.ptyp_loc, Type_mismatch trace)))
-        (List.combine stl args) params;
+        (List.combine stl args) (firsts decl.type_arity params);
       begin match ty.desc with
         Tvariant row ->
           let row = Btype.row_repr row in

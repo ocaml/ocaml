@@ -44,7 +44,7 @@ val new_global_var: unit -> type_expr
         (* Return a fresh variable, bound at toplevel
            (as type variables ['a] in type constraints). *)
 val newobj: type_expr -> type_expr
-val newconstr: Path.t -> type_expr list -> type_expr
+val newconstr: Path.t -> type_expr list -> int -> type_expr
 val none: type_expr
         (* A dummy type expression *)
 
@@ -67,7 +67,7 @@ val close_object: type_expr -> unit
 val row_variable: type_expr -> type_expr
         (* Return the row variable of an open object type *)
 val set_object_name:
-        Ident.t -> type_expr -> type_expr list -> type_expr -> unit
+        Ident.t -> type_expr -> type_expr list -> int -> type_expr -> unit
 val remove_object_name: type_expr -> unit
 val hide_private_methods: type_expr -> unit
 

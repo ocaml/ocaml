@@ -81,14 +81,14 @@ let rec typexp s ty =
           Tarrow(l, typexp s t1, typexp s t2, c)
       | Ttuple tl ->
           Ttuple(List.map (typexp s) tl)
-      | Tconstr(p, tl, abbrev) ->
-          Tconstr(type_path s p, List.map (typexp s) tl, ref Mnil)
+      | Tconstr(p, tl, arity, abbrev) ->
+          Tconstr(type_path s p, List.map (typexp s) tl, arity, ref Mnil)
       | Tobject (t1, name) ->
           Tobject (typexp s t1,
                  ref (match !name with
                         None -> None
-                      | Some (p, tl) ->
-                          Some (type_path s p, List.map (typexp s) tl)))
+                      | Some (p, tl, ar) ->
+                          Some (type_path s p, List.map (typexp s) tl, ar)))
       | Tvariant row ->
           let row = row_repr row in
           let more = repr row.row_more in

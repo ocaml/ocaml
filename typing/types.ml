@@ -28,8 +28,8 @@ and type_desc =
     Tvar
   | Tarrow of label * type_expr * type_expr * commutable
   | Ttuple of type_expr list
-  | Tconstr of Path.t * type_expr list * abbrev_memo ref
-  | Tobject of type_expr * (Path.t * type_expr list) option ref
+  | Tconstr of Path.t * type_expr list * int * abbrev_memo ref
+  | Tobject of type_expr * (Path.t * type_expr list * int) option ref
   | Tfield of string * field_kind * type_expr * type_expr
   | Tnil
   | Tlink of type_expr
