@@ -340,23 +340,20 @@ let string_of_big_int bi =
   then "-" ^ string_of_nat bi.abs_value
   else string_of_nat bi.abs_value
 
-(* XL: j'ai puissamment simplifie "big_int_of_string", en virant
-   la notation scientifique (123e6 ou 123.456e12). *)
+
+let sys_big_int_of_string_aux s ofs len sgn =
+  if len < 1 then failwith "sys_big_int_of_string";
+  let n = sys_nat_of_string 10 s ofs len in
+  if is_zero_nat n 0 (length_nat n) then zero_big_int
+  else {sign = sgn; abs_value = n}
+;;
 
 let sys_big_int_of_string s ofs len =
-  let (sign, nat) =
-    match s.[ofs] with
-      '-' -> if len > 1
-                then (-1, sys_nat_of_string 10 s (ofs+1) (len-1))
-                else failwith "sys_big_int_of_string"
-    | '+' -> if len > 1
-                then (1, sys_nat_of_string 10 s (ofs+1) (len-1))
-                else failwith "sys_big_int_of_string"
-    | _ -> if len > 0
-              then (1, sys_nat_of_string 10 s ofs len)
-              else failwith "sys_big_int_of_string" in
-  { sign = if is_zero_nat nat 0 (length_nat nat) then 0 else sign;
-    abs_value = nat }
+  match s.[ofs] with
+  | '-' -> sys_big_int_of_string_aux s (ofs+1) (len-1) (-1)
+  | '+' -> sys_big_int_of_string_aux s (ofs+1) (len-1) 1
+  | _ -> sys_big_int_of_string_aux s ofs len 1
+;;
 
 let big_int_of_string s =
   sys_big_int_of_string s 0 (String.length s)
@@ -544,19 +541,18 @@ let float_of_big_int bi =
 (* Integer part of the square root of a big_int *)
 let sqrt_big_int bi =
  match bi.sign with 
-   -1 -> invalid_arg "sqrt_big_int"
- | 0  ->  {sign = 0;
-           abs_value = make_nat (1)}
- |  _  -> {sign = 1;
-           abs_value = sqrt_nat (bi.abs_value) 0 (num_digits_big_int bi)}
+ | 0 -> zero_big_int
+ | -1 -> invalid_arg "sqrt_big_int"
+ | _ -> {sign = 1;
+         abs_value = sqrt_nat (bi.abs_value) 0 (num_digits_big_int bi)}
 
 let square_big_int bi =
+  if bi.sign == 0 then zero_big_int else
   let len_bi = num_digits_big_int bi in
   let len_res = 2 * len_bi in
   let res = make_nat len_res in
-    square_nat res 0 len_res (bi.abs_value) 0 len_bi;
-    { sign = bi.sign * bi.sign;
-      abs_value = res }
+  square_nat res 0 len_res (bi.abs_value) 0 len_bi;
+  {sign = 1; abs_value = res}
 
 (* round off of the futur last digit (of the integer represented by the string
    argument of the function) that is now the previous one.
