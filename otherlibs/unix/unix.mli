@@ -240,7 +240,8 @@ type open_flag =
 
 
 type file_perm = int
-(** The type of file access rights. *)
+(** The type of file access rights, e.g. [0o640] is read and write for user, 
+    read for group, none for others *)
 
 val openfile : string -> open_flag list -> file_perm -> file_descr
 (** Open the named file with the given flags. Third argument is
