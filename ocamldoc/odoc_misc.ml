@@ -12,22 +12,26 @@
 
 
 let input_file_as_string nom =
-  let chanin = open_in nom in
-  let buf = Buffer.create 80 in
+  let chanin = open_in_bin nom in
+  let len = 1024 in
+  let s = String.create len in
+  let buf = Buffer.create len in
   let rec iter () =
     try
-      Buffer.add_string buf ((input_line chanin)^"\n");
-      iter ()
+      let n = input chanin s 0 len in
+      if n = 0 then
+	()
+      else
+	(
+	 Buffer.add_substring buf s 0 n;
+	 iter ()
+	)
     with
       End_of_file -> ()
   in
   iter ();
   close_in chanin;
-  let len = Buffer.length buf in
-  if len <= 1 then
-    Buffer.contents buf
-  else
-    (String.sub (Buffer.contents buf) 0 (len - 1))
+  Buffer.contents buf
 
 let string_of_longident li = String.concat "." (Longident.flatten li)
 
