@@ -45,14 +45,6 @@ let new_channel () =
   { writes_pending = Queue.new();
     reads_pending = Queue.new() }
 
-(* Poll if one events of a list of basic events is ready *)
-
-let rec poll_events = function
-    [] ->
-      false
-  | bev :: rem ->
-      bev.poll() or poll_events rem
-
 (* Basic synchronization function *)
 
 let masterlock = Mutex.new()
@@ -100,6 +92,36 @@ let rec flatten_event ev accu =
 
 let sync ev =
   basic_sync(scramble_array(Array.of_list(flatten_event ev [])))
+
+(* Event polling -- like sync, but non-blocking *)
+
+let basic_poll genev =
+  let performed = ref (-1) in
+  let condition = Condition.new() in
+  let bev = Array.new(Array.length genev) (genev.(0) performed condition 0) in
+  for i = 1 to Array.length genev - 1 do
+    bev.(i) <- genev.(i) performed condition i
+  done;
+  (* See if any of the events is already activable *)
+  let rec poll_events i =
+    if i >= Array.length bev
+    then false
+    else bev.(i).poll() or poll_events (i+1) in
+  Mutex.lock masterlock;
+  let ready = poll_events 0 in
+  if ready then begin
+    (* Extract the result *)
+    Mutex.unlock masterlock;
+    Some(bev.(!performed).result())
+  end else begin
+    (* Cancel the communication offers *)
+    performed := 0;
+    Mutex.unlock masterlock;
+    None
+  end
+
+let poll ev =
+  basic_poll(scramble_array(Array.of_list(flatten_event ev [])))
 
 (* Event construction *)
 

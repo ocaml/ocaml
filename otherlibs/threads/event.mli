@@ -45,10 +45,16 @@ val guard: (unit -> 'a event) -> 'a event
            compute events with side-effects at the time of the synchronization
            operation. *)
 val sync: 'a event -> 'a
-        (* ``Synchronize'' on an event: offers all the communication 
+        (* ``Synchronize'' on an event: offer all the communication 
            possibilities specified in the event to the outside world,
            and block until one of the communications succeed. The result
            value of that communication is returned. *)
 val select: 'a event list -> 'a
         (* ``Synchronize'' on an alternative of events.
            [select evl] is shorthand for [sync(choose el)]. *)
+val poll: 'a event -> 'a option
+        (* Non-blocking version of [sync]: offer all the communication 
+           possibilities specified in the event to the outside world,
+           and if one can take place immediately, perform it and return
+           [Some r] where [r] is the result value of that communication.
+           Otherwise, return [None] without blocking. *)
