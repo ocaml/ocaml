@@ -79,7 +79,7 @@ let add_required (name, crc) =
 let remove_required name =
   missing_globals := StringSet.remove name !missing_globals
 
-let scan_file tolink obj_name =
+let scan_file obj_name tolink =
   let file_name =
     try
       find_in_path !load_path obj_name
@@ -196,7 +196,7 @@ let object_file_name name =
 
 let link objfiles =
   let objfiles = "stdlib.cmxa" :: (objfiles @ ["std_exit.cmx"]) in
-  let units_tolink = List.fold_left scan_file [] (List.rev objfiles) in
+  let units_tolink = List.fold_right scan_file objfiles [] in
   if not (StringSet.is_empty !missing_globals) then
     raise(Error(Missing_implementations(StringSet.elements !missing_globals)));
   let startup = temp_file "camlstartup" ".s" in

@@ -411,7 +411,7 @@ let emit_instr i =
         `	subq	$25, {emit_int n}, $24\n`;
         `	cmovge	{emit_reg i.arg.(0)}, $25, $24\n`;
         `	cmoveq	$25, $25, $24\n`;
-        `	move	$24, {emit_reg i.res.(0)}\n`
+        `	mov	$24, {emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Icomp cmp, n)) ->
         let (comp, test) = name_for_int_comparison cmp in
         `	{emit_string comp}	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`;
