@@ -1283,18 +1283,16 @@ simple_core_type2:
       { mktyp(Ptyp_variant([$2], true, None)) }
   | LBRACKET BAR row_field_list RBRACKET
       { mktyp(Ptyp_variant(List.rev $3, true, None)) }
-  | LBRACKETBAR row_field_list RBRACKET
-      { mktyp(Ptyp_variant(List.rev $2, true, None)) }
   | LBRACKET row_field BAR row_field_list RBRACKET
       { mktyp(Ptyp_variant($2 :: List.rev $4, true, None)) }
   | LBRACKET GREATER opt_bar row_field_list RBRACKET
       { mktyp(Ptyp_variant(List.rev $4, false, None)) }
+  | LBRACKET GREATER RBRACKET
+      { mktyp(Ptyp_variant([], false, None)) }
   | LBRACKETLESS opt_bar row_field_list RBRACKET
       { mktyp(Ptyp_variant(List.rev $3, true, Some [])) }
   | LBRACKETLESS opt_bar row_field_list GREATER name_tag_list RBRACKET
       { mktyp(Ptyp_variant(List.rev $3, true, Some (List.rev $5))) }
-  | LBRACKET GREATER RBRACKET
-      { mktyp(Ptyp_variant([], false, None)) }
 ;
 row_field_list:
     row_field                                   { [$1] }
