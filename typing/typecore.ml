@@ -1241,7 +1241,7 @@ let report_error ppf = function
   | Unbound_constructor lid ->
       fprintf ppf "Unbound constructor %a" longident lid
   | Unbound_label lid ->
-      fprintf ppf "Unbound label %a" longident lid
+      fprintf ppf "Unbound record field label %a" longident lid
   | Constructor_arity_mismatch(lid, expected, provided) ->
       fprintf ppf
        "@[The constructor %a@ expects %i argument(s),@ \
@@ -1250,7 +1250,8 @@ let report_error ppf = function
   | Label_mismatch(lid, trace) ->
       report_unification_error ppf trace
         (function ppf ->
-           fprintf ppf "The label %a@ belongs to the type" longident lid)
+           fprintf ppf "The record field label %a@ belongs to the type"
+                   longident lid)
         (function ppf ->
            fprintf ppf "but is here mixed with labels of type")
   | Pattern_type_clash trace ->
@@ -1279,19 +1280,20 @@ let report_error ppf = function
       end
   | Apply_wrong_label (l, ty) ->
       let print_label ppf = function
-        | "" -> fprintf ppf "out label"
-        | l -> fprintf ppf " label %s:" l in
+        | "" -> fprintf ppf "without label"
+        | l -> fprintf ppf "with label %s:" l in
       reset_and_mark_loops ty;
       fprintf ppf
         "@[<v>@[<2>Expecting function has type@ %a@]@,\
-          This argument cannot be applied with%a@]"
+          This argument cannot be applied %a@]"
         type_expr ty print_label l
   | Label_multiply_defined lid ->
-      fprintf ppf "The label %a is defined several times" longident lid
+      fprintf ppf "The record field label %a is defined several times"
+              longident lid
   | Label_missing ->
-      fprintf ppf "Some labels are undefined"
+      fprintf ppf "Some record field labels are undefined"
   | Label_not_mutable lid ->
-      fprintf ppf "The label %a is not mutable" longident lid
+      fprintf ppf "The record field label %a is not mutable" longident lid
   | Bad_format s ->
       fprintf ppf "Bad format `%s'" s
   | Undefined_method (ty, me) ->
@@ -1309,7 +1311,7 @@ let report_error ppf = function
   | Unbound_instance_variable v ->
       fprintf ppf "Unbound instance variable %s" v
   | Instance_variable_not_mutable v ->
-      fprintf ppf " The instance variable %s is not mutable" v
+      fprintf ppf "The instance variable %s is not mutable" v
   | Not_subtype(tr1, tr2) ->
       reset ();
       let tr1 = List.map prepare_expansion tr1
