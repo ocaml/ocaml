@@ -29,6 +29,9 @@ val loadfile : string -> unit
            access value names defined by the unit. Therefore, the unit
            must register itself its entry points with the main program,
            e.g. by modifying tables of functions. *)
+val loadfile_private : string -> unit
+        (* Same as [loadfile], except that the module loaded is not
+           made available to other modules dynamically loaded afterwards. *)
 val add_interfaces : string list -> string list -> unit
         (* [add_interfaces units path] grants dynamically-linked object
            files access to the compilation  units named in list [units].
