@@ -484,6 +484,12 @@ let rec type_pat env sp =
   | Ppat_type lid ->
       build_or_pat env sp.ppat_loc lid
   | Ppat_rtype sty ->
+      (* translate pattern *)
+      let sp = Typertype.pattern_of_type 
+	  (fun lid -> fst (Env.lookup_type lid env)) sty
+      in
+      type_pat env sp
+(*
       (* FIXME: define globally? *)
       let type_path, _ = 
 	Env.lookup_type (Longident.Ldot (Longident.Lident "Rtype", "type_expr")) env in 
@@ -500,6 +506,7 @@ let rec type_pat env sp =
         pat_loc = sp.ppat_loc;
         pat_type = type_t;
         pat_env = env }
+*)
 
 let get_ref r =
   let v = !r in r := []; v
@@ -1408,6 +1415,10 @@ Format.fprintf Format.err_formatter "funct=%a@."
         exp_env = env;
       }
   | Pexp_rtype sty ->
+      let sexp = Typertype.value_of_type 
+	  (fun lid -> fst (Env.lookup_type lid env)) sty in
+      type_exp env kset sexp
+(*
       (* FIXME: define globally? *)
       let type_path, _ = 
 	Env.lookup_type (Longident.Ldot (Longident.Lident "Rtype", "type_expr")) env in 
@@ -1434,6 +1445,7 @@ Format.fprintf Format.err_formatter "funct=%a@."
         exp_type = type_t;
         exp_env = env
       }
+*)
   | Pexp_poly _ ->
       assert false
       

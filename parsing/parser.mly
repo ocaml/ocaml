@@ -1278,8 +1278,8 @@ simple_core_type:
 simple_core_type2:
     QUOTE ident
       { mktyp(Ptyp_var $2) }
-  | COMMA val_longident
-      { mktyp(Ptyp_lident $2) }
+  | INFIXOP1 val_longident
+      { if $1 = "^" then mktyp(Ptyp_lident $2) else raise Parse_error }
   | UNDERSCORE
       { mktyp(Ptyp_any) }
   | type_longident

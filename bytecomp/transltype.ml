@@ -171,7 +171,7 @@ let transl_type_expr vartbl t =
         make_block 0 [Lconst(Const_base (Const_string l)); 
   		    transl_type_expr t1; 
   		    transl_type_expr t2]
-    | Ttuple ts -> make_block 1 (List.map transl_type_expr ts)
+    | Ttuple ts -> make_block 1 [transl_list transl_type_expr ts]
     | Tconstr (p, ts, _) ->
         make_block 2 [Lconst (transl_rpath_of_path p); 
   		    transl_list transl_type_expr ts]
