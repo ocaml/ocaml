@@ -16,6 +16,12 @@ Type-checking:
   expressions.  For instance, if f: unit -> 'a list, "let x = f ()"
   gives "x" the generalized type forall 'a. 'a list, instead of '_a list
   as before.
+- The typing of polymorphic variants in pattern matching has changed.
+  It is intended to be more regular, sticking to the principle of "closing
+  only the variants which would be otherwise incomplete". Two potential
+  consequences: (1) some types may be left open which were closed before,
+  and the resulting type might not match the interface anymore (expected to
+  be rare); (2) in some cases an incomplete match may be generated.
 - Lots of bug fixes in the handling of polymorphism and recursion inside
   types.
 - Added a new "-dtypes" option to ocamlc/ocamlopt, and an emacs extension
