@@ -2243,3 +2243,15 @@ module Tkvars {
 module Pixmap {
    external create "builtin/rawimg"
    }
+
+%%% encodings : require if you want write your application international
+
+module Encoding {
+  function (string) convertfrom ["encoding"; "convertfrom"; 
+                                 ?encoding: [string]; string]
+  function (string) convertto ["encoding"; "convertto";
+	                        ?encoding: [string]; string]	
+  function (string list) names ["encoding"; "names"]
+  function () system_set ["encoding"; "system"; string]
+  function (string) system_get ["encoding"; "system"]
+}	

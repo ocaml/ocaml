@@ -29,19 +29,24 @@ CAMLprim value camltk_splitlist (value v)
   int argc;
   char **argv;
   int result;
+  char *utf;
 
   CheckInit();
 
+  utf = caml_string_to_tcl(String_val(v)); 
   /* argv is allocated by Tcl, to be freed by us */
-  result = Tcl_SplitList(cltclinterp,String_val(v),&argc,&argv);
+  result = Tcl_SplitList(cltclinterp,utf,&argc,&argv);
   switch(result) {
   case TCL_OK:
    { value res = copy_string_list(argc,argv);
      Tcl_Free((char *)argv);	/* only one large block was allocated */
+     /* argv points into utf: utf must be freed after argv are freed */
+     stat_free( utf );
      return res;
    }
   case TCL_ERROR:
   default:
+    stat_free( utf );
     tk_error(cltclinterp->result);
   }
 }

@@ -33,7 +33,6 @@
     (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION >= 1)) /* 8.1 */
 # define UTFCONVERSION
 #endif
-#undef UTFCONVERSION
 
 /* This variable auto_utf_conversion controls the automatic conversion 
    between the coding specified by LANG and UTF. */
@@ -58,42 +57,35 @@ value set_auto_utf_conversion( value b )
 
 char *external_to_utf( char *str ){
   char *res;
-  Tcl_DString utf;
+  Tcl_DString dstr;
   int length;
 
-  Tcl_ExternalToUtfDString(NULL, str, strlen(str), &utf);
-  length = Tcl_DStringLength(&utf);
+  Tcl_ExternalToUtfDString(NULL, str, strlen(str), &dstr);
+  length = Tcl_DStringLength(&dstr);
   res = stat_alloc(length + 1);
-  memmove( res, Tcl_DStringValue(&utf), length+1);
-  Tcl_DStringFree(&utf);
+  memmove( res, Tcl_DStringValue(&dstr), length+1);
+  Tcl_DStringFree(&dstr);
 
   return res;
 }
 
 char *utf_to_external( char *str ){
   char *res;
-  Tcl_DString ext;
+  Tcl_DString dstr;
   int length;
 
-  Tcl_UtfToExternalDString(NULL, str, strlen(str), &ext);
-  length = Tcl_DStringLength(&ext);
+  Tcl_UtfToExternalDString(NULL, str, strlen(str), &dstr);
+  length = Tcl_DStringLength(&dstr);
   res = stat_alloc(length + 1);
-  memmove( res, Tcl_DStringValue(&ext), length+1);
-  Tcl_DStringFree(&ext);
+  memmove( res, Tcl_DStringValue(&dstr), length+1);
+  Tcl_DStringFree(&dstr);
 
   return res;
 }
 
 char *caml_string_to_tcl( value s )
 {
-  CAMLparam1(s);
-  char *str;
-  char *res;
- 
-  str = string_to_c( s );
-  res = external_to_utf( str );
-  stat_free(str);
-  return res;
+  return external_to_utf( String_val(s) );
 }
 
 value tcl_string_to_caml( char *s )
@@ -105,7 +97,7 @@ value tcl_string_to_caml( char *s )
   str = utf_to_external( s );
   res = copy_string(str);
   stat_free(str);
-  return res;
+  CAMLreturn(res);
 }
 
 #else
