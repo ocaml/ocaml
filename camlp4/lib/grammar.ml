@@ -791,38 +791,44 @@ module Unsafe =
   struct value clear_entry = clear_entry; value reinit_gram = reinit_gram; end
 ;
 
-exception EntryFound of g_entry;
 value find_entry e s =
-  let rec find_levels levs =
-    try
-      do {
-        List.iter
-          (fun lev -> do { find_tree lev.lsuffix; find_tree lev.lprefix })
-          levs;
-        raise Not_found
-      }
-    with
-    [ EntryFound e -> e
-    | _ -> raise Not_found ]
+  let rec find_levels =
+    fun
+    [ [] -> None
+    | [lev :: levs] ->
+        match find_tree lev.lsuffix with
+        [ None ->
+            match find_tree lev.lprefix with
+            [ None -> find_levels levs
+            | x -> x ]
+        | x -> x ] ]
   and find_symbol =
     fun
-    [ Snterm e -> if e.ename = s then raise (EntryFound e) else ()
-    | Snterml e _ -> if e.ename = s then raise (EntryFound e) else ()
+    [ Snterm e -> if e.ename = s then Some e else None
+    | Snterml e _ -> if e.ename = s then Some e else None
     | Slist0 s -> find_symbol s
     | Slist0sep s _ -> find_symbol s
     | Slist1 s -> find_symbol s
     | Slist1sep s _ -> find_symbol s
     | Sopt s -> find_symbol s
     | Stree t -> find_tree t
-    | _ -> () ]
+    | _ -> None ]
   and find_tree =
     fun
     [ Node {node = s; brother = bro; son = son} ->
-        do { find_symbol s; find_tree bro; find_tree son }
-    | _ -> () ]
+        match find_symbol s with
+        [ None ->
+            match find_tree bro with
+            [ None -> find_tree son
+            | x -> x ]
+        | x -> x ]
+    | _ -> None ]
   in
   match e.edesc with
-  [ Dlevels levs -> find_levels levs
+  [ Dlevels levs ->
+      match find_levels levs with
+      [ Some e -> e
+      | None -> raise Not_found ]
   | Dparser _ -> raise Not_found ]
 ;
 
@@ -846,7 +852,7 @@ module Entry =
     ;
     external obj : e 'a -> Gramext.g_entry = "%identity";
     value print e = print_entry std_formatter (obj e);
-    value find e = Obj.magic (find_entry (obj e));
+    value find e s = find_entry (obj e) s;
   end
 ;
 

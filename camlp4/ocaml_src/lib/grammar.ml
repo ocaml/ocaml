@@ -866,35 +866,48 @@ module Unsafe =
   struct let clear_entry = clear_entry;; let reinit_gram = reinit_gram;; end
 ;;
 
-exception EntryFound of g_entry;;
 let find_entry e s =
-  let rec find_levels levs =
-    try
-      List.iter (fun lev -> find_tree lev.lsuffix; find_tree lev.lprefix)
-        levs;
-      raise Not_found
-    with
-      EntryFound e -> e
-    | _ -> raise Not_found
+  let rec find_levels =
+    function
+      [] -> None
+    | lev :: levs ->
+        match find_tree lev.lsuffix with
+          None ->
+            begin match find_tree lev.lprefix with
+              None -> find_levels levs
+            | x -> x
+            end
+        | x -> x
   and find_symbol =
     function
-      Snterm e -> if e.ename = s then raise (EntryFound e)
-    | Snterml (e, _) -> if e.ename = s then raise (EntryFound e)
+      Snterm e -> if e.ename = s then Some e else None
+    | Snterml (e, _) -> if e.ename = s then Some e else None
     | Slist0 s -> find_symbol s
     | Slist0sep (s, _) -> find_symbol s
     | Slist1 s -> find_symbol s
     | Slist1sep (s, _) -> find_symbol s
     | Sopt s -> find_symbol s
     | Stree t -> find_tree t
-    | _ -> ()
+    | _ -> None
   and find_tree =
     function
       Node {node = s; brother = bro; son = son} ->
-        find_symbol s; find_tree bro; find_tree son
-    | _ -> ()
+        begin match find_symbol s with
+          None ->
+            begin match find_tree bro with
+              None -> find_tree son
+            | x -> x
+            end
+        | x -> x
+        end
+    | _ -> None
   in
   match e.edesc with
-    Dlevels levs -> find_levels levs
+    Dlevels levs ->
+      begin match find_levels levs with
+        Some e -> e
+      | None -> raise Not_found
+      end
   | Dparser _ -> raise Not_found
 ;;
 
@@ -920,7 +933,7 @@ module Entry =
     ;;
     external obj : 'a e -> Gramext.g_entry = "%identity";;
     let print e = print_entry std_formatter (obj e);;
-    let find e = Obj.magic (find_entry (obj e));;
+    let find e s = find_entry (obj e) s;;
   end
 ;;
 
