@@ -811,6 +811,7 @@ let build_abbrevs temp_env env (cl, obj_id) =
                   Non_closed(obj_id, obj_params, obj_ty, v)))
   end;
   Ctype.generalize obj_ty;
+  let obj_ty = Ctype.unroll_abbrev obj_id obj_params obj_ty in
   let obj_abbrev =
     { type_params = obj_params;
       type_arity = List.length obj_params;
