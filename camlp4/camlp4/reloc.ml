@@ -73,6 +73,9 @@ value rec patt floc sh =
     | PaArr loc x1 -> PaArr (floc loc) (List.map self x1)
     | PaChr loc x1 -> PaChr (floc loc) x1
     | PaInt loc x1 -> PaInt (floc loc) x1
+    | PaInt32 loc x1 -> PaInt32 (floc loc) x1
+    | PaInt64 loc x1 -> PaInt64 (floc loc) x1
+    | PaNativeInt loc x1 -> PaNativeInt (floc loc) x1
     | PaFlo loc x1 -> PaFlo (floc loc) x1
     | PaLab loc x1 x2 -> PaLab (floc loc) x1 (option_map self x2)
     | PaLid loc x1 -> PaLid (floc loc) x1
@@ -117,6 +120,9 @@ and expr floc sh =
              x1)
     | ExIfe loc x1 x2 x3 -> ExIfe (floc loc) (self x1) (self x2) (self x3)
     | ExInt loc x1 -> ExInt (floc loc) x1
+    | ExInt32 loc x1 -> ExInt32 (floc loc) x1
+    | ExInt64 loc x1 -> ExInt64 (floc loc) x1
+    | ExNativeInt loc x1 -> ExNativeInt (floc loc) x1
     | ExLab loc x1 x2 -> ExLab (floc loc) x1 (option_map self x2)
     | ExLaz loc x1 -> ExLaz (floc loc) (self x1)
     | ExLet loc x1 x2 x3 ->

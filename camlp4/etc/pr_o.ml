@@ -1210,8 +1210,11 @@ pr_expr.pr_levels :=
    {pr_label = ""; pr_box _ x = HOVbox x;
     pr_rules =
       extfun Extfun.empty with
-      [ <:expr< $int:x$ >> -> fun curr next dg k -> [: `S LR x; k :]
-      | <:expr< $flo:x$ >> -> fun curr next dg k -> [: `S LR x; k :]
+      [ ( <:expr< $int:x$ >> | <:expr< $flo:x$ >> )
+          -> fun curr next dg k -> [: `S LR x; k :]
+      | MLast.ExInt32 _ x -> fun curr next dg k -> [: `S LR (x^"l"); k :]
+      | MLast.ExInt64 _ x -> fun curr next dg k -> [: `S LR (x^"L"); k :]
+      | MLast.ExNativeInt _ x -> fun curr next dg k -> [: `S LR (x^"n"); k :]
       | e -> fun curr next dg k -> [: `next e dg k :] ]};
    {pr_label = "apply"; pr_box _ x = HOVbox x;
     pr_rules =
@@ -1285,11 +1288,22 @@ pr_expr.pr_levels :=
     pr_box e x = LocInfo (MLast.loc_of_expr e) (HOVbox x);
     pr_rules =
       extfun Extfun.empty with
-      [ <:expr< $int:x$ >> ->
+      [ ( <:expr< $int:x$ >> | <:expr< $flo:x$ >> )
+          -> fun curr next dg k ->
+               if x.[0] = '-' then [: `S LO "("; `S LR x; `S RO ")"; k :]
+               else [: `S LR x; k :]
+      | MLast.ExInt32 _ x ->
+          fun curr next dg k ->
+            let x = x^"l" in
+            if x.[0] = '-' then [: `S LO "("; `S LR x; `S RO ")"; k :]
+            else [: `S LR x; k :]
+      | MLast.ExInt64 _ x ->
+            let x = x^"L" in
           fun curr next dg k ->
             if x.[0] = '-' then [: `S LO "("; `S LR x; `S RO ")"; k :]
             else [: `S LR x; k :]
-      | <:expr< $flo:x$ >> ->
+      | MLast.ExNativeInt _ x ->
+            let x = x^"n" in
           fun curr next dg k ->
             if x.[0] = '-' then [: `S LO "("; `S LR x; `S RO ")"; k :]
             else [: `S LR x; k :]
@@ -1481,8 +1495,14 @@ pr_patt.pr_levels :=
           fun curr next dg k ->
             [: `S LO "("; `patt p "" [: `S LR ":" :];
                `ctyp ct "" [: `S RO ")"; k :] :]
-      | <:patt< $int:s$ >> -> fun curr next dg k -> [: `S LR s; k :]
-      | <:patt< $flo:s$ >> -> fun curr next dg k -> [: `S LR s; k :]
+      | ( <:patt< $int:s$ >> | <:patt< $flo:s$ >> )
+        -> fun curr next dg k -> [: `S LR s; k :]
+      | MLast.PaInt32 _ s
+        -> fun curr next dg k -> [: `S LR (s^"l"); k :]
+      | MLast.PaInt64 _ s
+        -> fun curr next dg k -> [: `S LR (s^"L"); k :]
+      | MLast.PaNativeInt _ s
+        -> fun curr next dg k -> [: `S LR (s^"n"); k :]
       | <:patt< $str:s$ >> ->
           fun curr next dg k -> [: `S LR ("\"" ^ s ^ "\""); k :]
       | <:patt< $chr:c$ >> ->

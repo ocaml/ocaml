@@ -94,15 +94,13 @@ value neg_string n =
 value mkumin loc f arg =
   match arg with
   [ <:expr< $int:n$ >> -> <:expr< $int:neg_string n$ >>
+  | MLast.ExInt32 loc n -> MLast.ExInt32 loc (neg_string n)
+  | MLast.ExInt64 loc n -> MLast.ExInt64 loc (neg_string n)
+  | MLast.ExNativeInt loc n -> MLast.ExNativeInt loc (neg_string n)
   | <:expr< $flo:n$ >> -> <:expr< $flo:neg_string n$ >>
   | _ ->
       let f = "~" ^ f in
       <:expr< $lid:f$ $arg$ >> ]
-;
-
-value mkuminpat loc f is_int n =
-  if is_int then <:patt< $int:neg_string n$ >>
-  else <:patt< $flo:neg_string n$ >>
 ;
 
 value mklistexp loc last =
@@ -371,6 +369,9 @@ EXTEND
       | "~-."; e = SELF -> <:expr< ~-. $e$ >> ]
     | "simple"
       [ s = INT -> <:expr< $int:s$ >>
+      | s = INT32 -> MLast.ExInt32 loc s
+      | s = INT64 -> MLast.ExInt64 loc s
+      | s = NATIVEINT -> MLast.ExNativeInt loc s
       | s = FLOAT -> <:expr< $flo:s$ >>
       | s = STRING -> <:expr< $str:s$ >>
       | s = CHAR -> <:expr< $chr:s$ >>
@@ -452,11 +453,17 @@ EXTEND
       [ s = LIDENT -> <:patt< $lid:s$ >>
       | s = UIDENT -> <:patt< $uid:s$ >>
       | s = INT -> <:patt< $int:s$ >>
+      | s = INT32 -> MLast.PaInt32 loc s
+      | s = INT64 -> MLast.PaInt64 loc s
+      | s = NATIVEINT -> MLast.PaNativeInt loc s
       | s = FLOAT -> <:patt< $flo:s$ >>
       | s = STRING -> <:patt< $str:s$ >>
       | s = CHAR -> <:patt< $chr:s$ >>
-      | "-"; s = INT -> mkuminpat loc "-" True s
-      | "-"; s = FLOAT -> mkuminpat loc "-" False s
+      | "-"; s = INT -> MLast.PaInt loc (neg_string s)
+      | "-"; s = INT32 -> MLast.PaInt32 loc (neg_string s)
+      | "-"; s = INT64 -> MLast.PaInt64 loc (neg_string s)
+      | "-"; s = NATIVEINT -> MLast.PaNativeInt loc (neg_string s)
+      | "-"; s = FLOAT -> <:patt< $flo:neg_string s$ >>
       | "["; "]" -> <:patt< [] >>
       | "["; pl = LIST1 patt SEP ";"; last = cons_patt_opt; "]" ->
           mklistpat loc last pl

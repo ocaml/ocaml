@@ -98,6 +98,9 @@ and number len =
   | [: `'_'; s :] -> number len s
   | [: `'.'; s :] -> decimal_part (store len '.') s
   | [: `'e' | 'E'; s :] -> exponent_part (store len 'E') s
+  | [: `'l' :] -> ("INT32", get_buff len)
+  | [: `'L' :] -> ("INT64", get_buff len)
+  | [: `'n' :] -> ("NATIVEINT", get_buff len)
   | [: :] -> ("INT", get_buff len) ]
 and decimal_part len =
   parser
@@ -880,7 +883,8 @@ value using_token kwd_table ident_table (p_con, p_prm) =
             if Hashtbl.mem kwd_table p_prm then
               error_ident_and_keyword p_con p_prm
             else Hashtbl.add ident_table p_prm p_con ]
-  | "TILDEIDENT" | "QUESTIONIDENT" | "INT" | "FLOAT" | "CHAR" | "STRING" |
+  | "TILDEIDENT" | "QUESTIONIDENT" | "INT" | "INT32" | "INT64" | "NATIVEINT"
+  | "FLOAT" | "CHAR" | "STRING" |
     "QUOTATION" | "ANTIQUOT" | "LOCATE" | "EOI" ->
       ()
   | _ ->
@@ -906,7 +910,10 @@ value text =
   | ("UIDENT", "") -> "uppercase identifier"
   | ("UIDENT", t) -> "'" ^ t ^ "'"
   | ("INT", "") -> "integer"
-  | ("INT", s) -> "'" ^ s ^ "'"
+  | ("INT32", "") -> "32 bits integer"
+  | ("INT64", "") -> "64 bits integer"
+  | ("NATIVEINT", "") -> "native integer"
+  | (("INT" | "INT32" | "NATIVEINT"), s) -> "'" ^ s ^ "'"
   | ("FLOAT", "") -> "float"
   | ("STRING", "") -> "string"
   | ("CHAR", "") -> "char"

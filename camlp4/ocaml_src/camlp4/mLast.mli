@@ -62,6 +62,9 @@ type patt =
   | PaArr of loc * patt list
   | PaChr of loc * string
   | PaInt of loc * string
+  | PaInt32 of loc * string
+  | PaInt64 of loc * string
+  | PaNativeInt of loc * string
   | PaFlo of loc * string
   | PaLab of loc * string * patt option
   | PaLid of loc * string
@@ -91,6 +94,9 @@ and expr =
   | ExFun of loc * (patt * expr option * expr) list
   | ExIfe of loc * expr * expr * expr
   | ExInt of loc * string
+  | ExInt32 of loc * string
+  | ExInt64 of loc * string
+  | ExNativeInt of loc * string
   | ExLab of loc * string * expr option
   | ExLaz of loc * expr
   | ExLet of loc * bool * (patt * expr) list * expr

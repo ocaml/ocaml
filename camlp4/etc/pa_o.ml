@@ -56,6 +56,12 @@ value mkumin loc f arg =
   [ ("-", <:expr< $int:n$ >>) when int_of_string n > 0 ->
       let n = "-" ^ n in
       <:expr< $int:n$ >>
+  | ("-", MLast.ExInt32 loc n) when (Int32.of_string n) > 0l ->
+      MLast.ExInt32 loc ("-" ^ n)
+  | ("-", MLast.ExInt64 loc n) when (Int64.of_string n) > 0L ->
+      MLast.ExInt64 loc ("-" ^ n)
+  | ("-", MLast.ExNativeInt loc n) when (Nativeint.of_string n) > 0n ->
+      MLast.ExNativeInt loc ("-" ^ n)
   | (_, <:expr< $flo:n$ >>) when float_of_string n > 0.0 ->
       let n = "-" ^ n in
       <:expr< $flo:n$ >>
@@ -629,6 +635,9 @@ EXTEND
       | f = prefixop; e = SELF -> <:expr< $lid:f$ $e$ >> ]
     | "simple" LEFTA
       [ s = INT -> <:expr< $int:s$ >>
+      | s = INT32 -> MLast.ExInt32 loc s
+      | s = INT64 -> MLast.ExInt64 loc s
+      | s = NATIVEINT -> MLast.ExNativeInt loc s
       | s = FLOAT -> <:expr< $flo:s$ >>
       | s = STRING -> <:expr< $str:s$ >>
       | c = CHAR -> <:expr< $chr:c$ >>
@@ -761,7 +770,13 @@ EXTEND
       [ s = LIDENT -> <:patt< $lid:s$ >>
       | s = UIDENT -> <:patt< $uid:s$ >>
       | s = INT -> <:patt< $int:s$ >>
+      | s = INT32 -> MLast.PaInt32 loc s
+      | s = INT64 -> MLast.PaInt64 loc s
+      | s = NATIVEINT -> MLast.PaNativeInt loc s
       | "-"; s = INT -> <:patt< $int:"-" ^ s$ >>
+      | "-"; s = INT32 -> MLast.PaInt32 loc ("-" ^ s)
+      | "-"; s = INT64 -> MLast.PaInt64 loc ("-" ^ s)
+      | "-"; s = NATIVEINT -> MLast.PaNativeInt loc ("-" ^ s)
       | "-"; s = FLOAT -> <:patt< $flo:"-" ^ s$ >>
       | s = FLOAT -> <:patt< $flo:s$ >>
       | s = STRING -> <:patt< $str:s$ >>

@@ -424,6 +424,9 @@ value rec patt =
   | PaChr loc s ->
       mkpat loc (Ppat_constant (Const_char (char_of_char_token loc s)))
   | PaInt loc s -> mkpat loc (Ppat_constant (Const_int (int_of_string s)))
+  | PaInt32 loc s -> mkpat loc (Ppat_constant (Const_int32 (Int32.of_string s)))
+  | PaInt64 loc s -> mkpat loc (Ppat_constant (Const_int64 (Int64.of_string s)))
+  | PaNativeInt loc s -> mkpat loc (Ppat_constant (Const_nativeint (Nativeint.of_string s)))
   | PaFlo loc s -> mkpat loc (Ppat_constant (Const_float s))
   | PaLab loc _ _ -> error loc "labeled pattern not allowed here"
   | PaLid loc s -> mkpat loc (Ppat_var s)
@@ -600,6 +603,9 @@ value rec expr =
   | ExIfe loc e1 e2 e3 ->
       mkexp loc (Pexp_ifthenelse (expr e1) (expr e2) (Some (expr e3)))
   | ExInt loc s -> mkexp loc (Pexp_constant (Const_int (int_of_string s)))
+  | ExInt32 loc s -> mkexp loc (Pexp_constant (Const_int32 (Int32.of_string s)))
+  | ExInt64 loc s -> mkexp loc (Pexp_constant (Const_int64 (Int64.of_string s)))
+  | ExNativeInt loc s -> mkexp loc (Pexp_constant (Const_nativeint (Nativeint.of_string s)))
   | ExLab loc _ _ -> error loc "labeled expression not allowed here"
   | ExLaz loc e -> mkexp loc (Pexp_lazy (expr e))
   | ExLet loc rf pel e ->
