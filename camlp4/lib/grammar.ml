@@ -461,12 +461,13 @@ value do_recover parser_of_tree entry nlevn alevn bp a s son =
 ;
 
 value strict_parsing = ref False;
+value strict_parsing_warning = ref False;
 
 value recover parser_of_tree entry nlevn alevn bp a s son strm =
   if strict_parsing.val then raise (Stream.Error (tree_failed entry a s son))
   else
     let _ =
-      if warning_verbose.val then
+      if strict_parsing_warning.val then
         do {
           let msg = tree_failed entry a s son in
           try

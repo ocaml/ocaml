@@ -165,6 +165,10 @@ value strict_parsing : ref bool;
    (** Flag to apply strict parsing, without trying to recover errors;
        default = [False] *)
 
+value strict_parsing_warning : ref bool;
+   (** Flag for displaying a warning when entering recovery mode;
+       default = [False] *)
+
 value print_entry : Format.formatter -> Gramext.g_entry 'te -> unit;
    (** General printer for all kinds of entries (obj entries) *)
 

@@ -464,12 +464,13 @@ let do_recover
 ;;
 
 let strict_parsing = ref false;;
+let strict_parsing_warning = ref false;;
 
 let recover parser_of_tree entry nlevn alevn bp a s son strm =
   if !strict_parsing then raise (Stream.Error (tree_failed entry a s son))
   else
     let _ =
-      if !warning_verbose then
+      if !strict_parsing_warning then
         let msg = tree_failed entry a s son in
         begin try
           let (_, bp2) = !floc bp in

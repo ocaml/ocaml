@@ -156,6 +156,10 @@ val strict_parsing : bool ref;;
    (** Flag to apply strict parsing, without trying to recover errors;
        default = [False] *)
 
+val strict_parsing_warning : bool ref;;
+   (** Flag for displaying a warning when entering recovery mode;
+       default = [False] *)
+
 val print_entry : Format.formatter -> 'te Gramext.g_entry -> unit;;
    (** General printer for all kinds of entries (obj entries) *)
 
