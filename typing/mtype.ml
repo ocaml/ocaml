@@ -28,6 +28,9 @@ let rec scrape env mty =
       end
   | _ -> mty
 
+let freshen mty =
+  Subst.modtype Subst.identity mty
+
 let rec strengthen env mty p =
   match scrape env mty with
     Tmty_signature sg ->

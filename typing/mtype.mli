@@ -20,6 +20,9 @@ val scrape: Env.t -> module_type -> module_type
         (* Expand toplevel module type abbreviations
            till hitting a "hard" module type (signature, functor,
            or abstract module type ident. *)
+val freshen: module_type -> module_type
+        (* Return an alpha-equivalent copy of the given module type
+           where bound identifiers are fresh. *)
 val strengthen: Env.t -> module_type -> Path.t -> module_type
         (* Strengthen abstract type components relative to the
            given path. *)

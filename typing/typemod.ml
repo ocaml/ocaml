@@ -237,7 +237,7 @@ let rec transl_modtype env smty =
           (fun sg (lid, sdecl) ->
             merge_constraint env smty.pmty_loc sg lid sdecl)
           init_sg constraints in
-      Tmty_signature final_sg
+      Mtype.freshen (Tmty_signature final_sg)
       
 and transl_signature env sg =
   let type_names = ref StringSet.empty
