@@ -13,8 +13,10 @@ type mutable_flag = Immutable | Mutable
 
 type label = string
 
+type private_flag = Private | Public
+
 type type_expr =
-  { mutable desc: type_desc; 
+  { (* mutable *) desc: type_desc; 
     (* mutable level: int; *)
     (* mutable id: int *) }
 
@@ -52,10 +54,24 @@ type type_declaration =
 
 and type_kind =
     Type_abstract
-  | Type_variant of (string * type_expr list) list (* * private_flag *)
+  | Type_variant of (string * type_expr list) list * private_flag
   | Type_record of (string * mutable_flag * type_expr) list
-                 * record_representation (* * private_flag *)
+                 * record_representation * private_flag
 
+(* type equality *)
+let rec equal t1 t2 =
+  if t1 == t2 then true
+  else equal_desc t1.desc t2.desc
+and equal_desc d1 d2 =
+  match d1, d2 with
+  | Tarrow (l1, t11, t12), Tarrow (l2, t21, t22) ->
+      l1 = l2 && equal t11 t21 && equal t12 t22
+  | Ttuple ts1, Ttuple ts2 when List.length ts1 = List.length ts2 ->
+      List.for_all2 equal ts1 ts2
+  | Tconstr (p1, ts1), Tconstr (p2, ts2) ->
+      p1 = p2 && List.for_all2 equal ts1 ts2
+  | _ -> false
+  
 open Format
 
 (* Print a type expression *)

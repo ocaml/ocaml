@@ -24,6 +24,18 @@ let get_rtype_type () =
   in
   Btype.newgenty (Tconstr (rtype_path, [], ref Mnil))
 
+let get_rtype_type_declaration () =
+  (* must be got dynamically, since Rtype is not available in the compilation
+     of stdlib *)
+  let rtypedecl_path = 
+    try
+      fst (Env.lookup_type (Ldot (Lident "Rtype", "type_declaration")) Env.empty)
+    with
+    | Not_found ->
+	Misc.fatal_error ("Primitive type Rtype.type_declaration not found.")
+  in
+  Btype.newgenty (Tconstr (rtypedecl_path, [], ref Mnil))
+
 (* Longidents *)
 
 let cstr name = Ldot (Lident "Rtype", name)
@@ -331,4 +343,110 @@ let recover_type_expr t =
   in
   recover_type_expr t
 
+(* type declarations *)
 
+let cached_runtime_type_tbl = ref []
+let reset_cached_runtime_type_tbl =
+  cached_runtime_type_tbl := []
+
+let rec runtime_path = function
+  | Pident id -> Rtype.Path.Pident (Ident.name id, Ident.stamp id)
+  | Pdot (p, n, i) -> Rtype.Path.Pdot (runtime_path p, n, i)
+  | Papply (p1,p2) -> Rtype.Path.Papply (runtime_path p1, runtime_path p2)
+
+let rec runtime_type_expr t =
+  match t.desc with
+  | Tlink t -> runtime_type_expr t
+  | _ ->
+      try
+	List.assq t !cached_runtime_type_tbl
+      with
+      | Not_found ->
+	  { Rtype.desc= runtime_type_desc t.desc }
+
+and runtime_type_desc = function
+  | Tvar -> Rtype.Tvar
+  | Tarrow (l,t1,t2,_) -> 
+      Rtype.Tarrow (l,runtime_type_expr t1, runtime_type_expr t2)
+  | Ttuple ts -> Rtype.Ttuple (List.map runtime_type_expr ts)
+  | Tconstr (p, ts, _) ->
+      Rtype.Tconstr (runtime_path p, List.map runtime_type_expr ts)
+  | _ -> raise (Error (Location.none, Unsupported))
+
+let runtime_private_flag = function
+  | Private -> Rtype.Private
+  | Public -> Rtype.Public
+
+let runtime_record_representation = function
+  | Record_regular -> Rtype.Record_regular
+  | Record_float -> Rtype.Record_float
+
+let runtime_mutable_flag = function
+  | Immutable -> Rtype.Immutable
+  | Mutable -> Rtype.Mutable
+
+let runtime_type_kind = function
+  | Type_abstract -> Rtype.Type_abstract
+  | Type_variant (stss, p) -> 
+      Rtype.Type_variant 
+	(List.map (fun (s,ts) -> s, List.map runtime_type_expr ts) stss,
+	 runtime_private_flag p)
+  | Type_record (lmts, repl, p) ->
+      Rtype.Type_record 
+	(List.map (fun (l,m,t) -> 
+	  l, runtime_mutable_flag m, runtime_type_expr t) lmts,
+	 runtime_record_representation repl,
+	 runtime_private_flag p)
+
+let runtime_type_declaration td =
+  { Rtype.type_params= List.map runtime_type_expr td.type_params;
+    Rtype.type_arity= td.type_arity;
+    Rtype.type_kind= runtime_type_kind td.type_kind;
+    Rtype.type_manifest= 
+      (match td.type_manifest with 
+       | None -> None
+       | Some m -> Some (runtime_type_expr m));
+    Rtype.type_variance= td.type_variance }
+
+(*
+let makeexp desc = { pexp_desc= desc; pexp_loc= Location.none }
+
+(* type var sharing is lost! *)
+let value_of_type_kind = function
+  | Type_abstract -> 
+      make_exp_construct Location.none (cstr "Type_abstract") []
+  | Type_variant (v,p) -> 
+      make_exp_construct Location.none (cstr "Type_variant")
+	[mktailexp (List.map (fun (n,args) ->
+	  makeexp (Pexp_tuple 
+		     [makeexp (Pexp_constant (Const_string n));
+   		      mktailexp (List.map value_of_type args)])) v);
+	 value_of_private_flag p]
+  | Type_record (defs, repl, p) ->
+      make_exp_construct Location.none (cstr "Type_record")
+	[mktailexp (List.map (fun (l,mut,t) ->
+	  makeexp (Pexp_tuple 
+		     [makeexp (Pexp_constant (Const_string l));
+		      value_of_mutable_flag mut;
+		      value_of_type t])) defs);
+         value_of_mutable_flag mut;
+         value_of_type t]		    
+
+let value_of_type_declaration tdecl =
+  makeexp 
+    (Pexp_record [ 
+      cstr "type_params", 
+      mktailexp (List.map value_of_type tdecl.type_params);
+		   
+      cstr "type_arity",
+      makeexp (Pexp_constant (Const_int tdec.type_arity));
+		   
+      cstr "type_kind",
+      value_of_type_kind tdecl.type_kind;
+
+      cstr "type_manifest",
+      make_opt_exp value_of_type tdecl.type_manifest;
+
+      cstr "type_variance",
+      mktailexp (List.map value_of_variance_flags tdecl.type_variance) ])
+*)

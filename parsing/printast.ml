@@ -308,6 +308,8 @@ and expression i ppf x =
   | Pexp_rtype ct ->
       line i ppf "Pexp_rtype";
       core_type i ppf ct
+  | Pexp_typedecl li ->
+      line i ppf "Pexp_typedecl %a\n" fmt_longident li
 
 and value_description i ppf x =
   line i ppf "value_description\n";

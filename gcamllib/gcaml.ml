@@ -24,3 +24,23 @@ generic val print : {'a} => 'a -> unit =
     | _ -> print_string "<unprintable>"
   in
   f
+
+generic val cast : {'a, 'b} => 'a -> 'b =
+  fun ta tb v ->
+    match ta, tb with
+    | [: int :], [: float :] -> Obj.repr (float_of_int (Obj.obj v))
+    | [: int :], [: char :] -> Obj.repr (char_of_int (Obj.obj v))
+    | [: int :], [: string :] -> Obj.repr (string_of_int (Obj.obj v))
+    | [: int :], [: bool :] -> Obj.repr (if Obj.obj v = 0 then false else true)
+    | [: float :], [: int :] -> Obj.repr (int_of_float (Obj.obj v))
+    | [: float :], [: string :] -> Obj.repr (string_of_float (Obj.obj v))
+    | [: char :], [: int :] -> Obj.repr (int_of_char (Obj.obj v))
+    | [: char :], [: string :] -> Obj.repr (String.make 1 (Obj.obj v))
+    | [: char :], [: bool :] -> Obj.repr (if Obj.obj v = '\000' then false else true)
+    | [: string :], [: int :] -> Obj.repr (int_of_string  (Obj.obj v))
+    | [: string :], [: float :] -> Obj.repr (float_of_string  (Obj.obj v))
+    | [: string :], [: bool :] -> Obj.repr (bool_of_string (Obj.obj v))
+    | [: ^x :], [: ^y :] when Rtype.equal x y (* FIXME *) -> v
+    | _ -> assert false
+
+

@@ -118,6 +118,7 @@ and expression_desc =
   | Pexp_poly of expression * core_type option
   | Pexp_object of class_structure
   | Pexp_rtype of core_type
+  | Pexp_typedecl of Longident.t
 
 (* Value descriptions *)
 

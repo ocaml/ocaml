@@ -286,6 +286,7 @@ and rw_exp iflag sexp =
       List.iter (rewrite_class_field iflag) fieldl
 
   | Pexp_rtype ty -> () (* FIXME *)
+  | Pexp_typedecl lid -> () (* FIXME *)
 
 and rewrite_ifbody iflag ghost sifbody =
   if !instr_if && not ghost then

@@ -80,6 +80,7 @@ let keyword_table =
     "true", TRUE;
     "try", TRY;
     "type", TYPE;
+"typedecl", TYPEDECL;
     "val", VAL;
     "virtual", VIRTUAL;
     "when", WHEN;

@@ -9,3 +9,5 @@ val dyn : {'a} => 'a -> dyn
 val coerce : {'a} => dyn -> 'a
 
 val print : {'a} => 'a -> unit
+
+val cast : {'a, 'b} => 'a -> 'b

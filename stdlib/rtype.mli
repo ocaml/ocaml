@@ -13,8 +13,10 @@ type mutable_flag = Immutable | Mutable
 
 type label = string
 
+type private_flag = Private | Public
+
 type type_expr =
-  { mutable desc: type_desc; 
+  { (* mutable *) desc: type_desc; 
     (* mutable level: int; *)
     (* mutable id: int *) }
 
@@ -50,17 +52,14 @@ type type_declaration =
 
 and type_kind =
     Type_abstract
-  | Type_variant of (string * type_expr list) list (* * private_flag *)
+  | Type_variant of (string * type_expr list) list * private_flag
   | Type_record of (string * mutable_flag * type_expr) list
-                 * record_representation (* * private_flag *)
+                 * record_representation * private_flag
 
-val mk_type : type_desc -> type_expr
+(* type equality *)
+val equal : type_expr -> type_expr -> bool
 
 (* printers *)
 val reset_names : unit -> unit
-(*
-val new_name : unit -> string
-val name_of_type : type_expr -> string
-*)
 val print_path : Format.formatter -> Path.t -> unit
 val print : Format.formatter -> type_expr -> unit

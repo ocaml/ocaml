@@ -714,6 +714,16 @@ and transl_exp0 e =
       | Typertype.Error (loc, Typertype.Unsupported) ->
 	  raise (Error (loc, Unsupported_type_constructor))
       end
+  | Texp_typedecl path ->
+      (* path should be one of predefined types. Since they have no
+         corresponding embeded type decl codes, we create them here. *)
+      let transl_type_declaration decl =
+	(* Translation of type declaration *)
+	Lconst (Metacomp.transl_constant 
+		  (Obj.repr (Typertype.runtime_type_declaration decl)))
+      in
+      transl_type_declaration (Env.find_type path Env.initial)
+      
 
 and transl_list expr_list =
   List.map transl_exp expr_list

@@ -240,6 +240,12 @@ let compile_recmodule compile_rhs bindings cont =
 
 (* Compile a module expression *)
 
+let transl_type_declarations decls =
+  List.map (fun (id, desc) -> 
+    id, 
+    Lconst (Metacomp.transl_constant 
+	      (Obj.repr (Typertype.runtime_type_declaration desc)))) decls
+
 let rec transl_module cc rootpath mexp =
   match mexp.mod_desc with
     Tmod_ident path ->
@@ -302,9 +308,7 @@ and transl_structure fields cc rootpath = function
       transl_structure fields cc rootpath rem
   | Tstr_type(decls) :: rem ->
       let idents = List.map fst decls in
-      let defs = (* currencly just units are assigned *)
-	List.map (fun id -> id, lambda_unit) idents 
-      in
+      let defs = transl_type_declarations decls in
       List.fold_right (fun (id,def) st ->
 	Llet(Strict, id, def, st)) defs
 	(transl_structure (idents @ fields) cc rootpath rem)
@@ -393,9 +397,7 @@ let transl_store_structure glob map prims str =
       transl_store subst rem
   | Tstr_type(decls) :: rem ->
       let idents = List.map fst decls in
-      let defs = (* currencly just units are assigned *)
-	List.map (fun id -> id,lambda_unit) idents 
-      in
+      let defs = transl_type_declarations decls in
       let lam = 
 	List.fold_right (fun (id,def) st ->
 	  Llet(Strict, id, def, st)) defs (store_idents idents)
@@ -603,9 +605,7 @@ let transl_toplevel_item = function
       let idents = List.map fst decls in
       (* idents must be global before we create lambda *)
       List.iter (fun id -> Ident.make_global id) idents;
-      let defs = (* currencly just units are assigned *)
-	List.map (fun id -> id,lambda_unit) idents 
-      in
+      let defs = transl_type_declarations decls in
       let lam = 
 	make_sequence (fun (id,def) ->
 	  Llet (Strict, id, def, Lprim(Psetglobal id, [Lvar id]))) defs

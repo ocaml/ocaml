@@ -79,6 +79,7 @@ and expression_desc =
   | Texp_lazy of expression
   | Texp_object of class_structure * class_signature * string list
   | Texp_rtype of type_expr
+  | Texp_typedecl of Path.t
 
 and meth =
     Tmeth_name of string

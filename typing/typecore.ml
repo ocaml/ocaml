@@ -1402,6 +1402,28 @@ Format.fprintf Format.err_formatter "funct=%a@."
       let sexp = Typertype.value_of_type 
 	  (fun lid -> fst (Env.lookup_type lid env)) sty in
       type_expect env kset sexp (Typertype.get_rtype_type ())
+  | Pexp_typedecl lid ->
+      begin try
+	let path, decl = Env.lookup_type lid env in
+	let t = Typertype.get_rtype_type_declaration () in
+	if List.mem path Predef.builtin_types then begin
+          re {
+            exp_desc = Texp_typedecl path;
+            exp_loc = sexp.pexp_loc;
+            exp_type = t;
+            exp_env = env }
+	end else begin
+	  let desc = { val_type= t; val_kind= Val_reg } in
+          re {
+            exp_desc = Texp_ident(path, desc);
+            exp_loc = sexp.pexp_loc;
+            exp_type = t;
+            exp_env = env }
+        end
+      with Not_found ->
+        raise(Error(sexp.pexp_loc, Unbound_value lid))
+      end
+      
   | Pexp_poly _ ->
       assert false
       

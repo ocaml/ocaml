@@ -162,6 +162,8 @@ let rec add_expr bv exp =
   | Pexp_object (pat, fieldl) ->
       add_pattern bv pat; List.iter (add_class_field bv) fieldl
   | Pexp_rtype t -> add_type bv t
+  | Pexp_typedecl lid -> add bv lid
+
 and add_pat_expr_list bv pel =
   List.iter (fun (p, e) -> add_pattern bv p; add_expr bv e) pel
 

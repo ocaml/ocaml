@@ -293,6 +293,7 @@ let bigarray_set arr arg newval =
 %token TRUE
 %token TRY
 %token TYPE
+%token TYPEDECL
 %token <string> UIDENT
 %token UNDERSCORE
 %token VAL
@@ -891,6 +892,9 @@ expr:
       { mkexp (Pexp_object($2)) }
   | OBJECT class_structure error
       { unclosed "object" 1 "end" 3 }
+  | TYPEDECL val_longident
+      { mkexp(Pexp_typedecl $2) }
+      
 ;
 simple_expr:
     val_longident
