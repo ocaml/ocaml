@@ -17,7 +17,6 @@
 
 open Misc
 open Instruct
-open Opcodes
 open Emitcode
 
 type error =
