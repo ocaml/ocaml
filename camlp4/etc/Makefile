@@ -31,13 +31,19 @@ pr_schemep.cmo: parserify.cmo pr_schp_main.cmo
 	$(OCAMLC) parserify.cmo pr_schp_main.cmo -a -o $@
 
 pr_rp.cmx: parserify.cmx pr_rp_main.cmx
-	$(OCAMLOPT) parserify.cmx pr_rp_main.cmx -a -o $@
+	$(OCAMLOPT) parserify.cmx pr_rp_main.cmx -a -o pr_rp.cmxa
+	mv pr_rp.cmxa pr_rp.cmx
+	mv pr_rp.a pr_rp.o
 
 pr_op.cmx: parserify.cmx pr_op_main.cmx
-	$(OCAMLOPT) parserify.cmx pr_op_main.cmx -a -o $@
+	$(OCAMLOPT) parserify.cmx pr_op_main.cmx -a -o pr_op.cmxa
+	mv pr_op.cmxa pr_op.cmx
+	mv pr_op.a pr_op.o
 
 pr_schemep.cmx: parserify.cmx pr_schp_main.cmx
-	$(OCAMLOPT) parserify.cmx pr_schp_main.cmx -a -o $@
+	$(OCAMLOPT) parserify.cmx pr_schp_main.cmx -a -o pr_schemep.cmxa
+	mv pr_schemep.cmxa pr_schemep.cmx
+	mv pr_schemep.a pr_schemep.o
 
 camlp4o$(EXE): ../camlp4/camlp4$(EXE) $(CAMLP4OM)
 	rm -f camlp4o$(EXE)
