@@ -1008,7 +1008,8 @@ let emit_item = function
   | Cfloat f ->
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->
-      use_symbol s;
+      if hpux && String.length s >= 5 && String.sub s 0 5 = "caml_" then
+        `	.import	{emit_symbol s}, code\n`;
       `	.long	{emit_symbol s}\n`
   | Clabel_address lbl ->
       `	.long	{emit_label(lbl + 100000)}\n`
