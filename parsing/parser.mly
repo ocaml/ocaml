@@ -234,6 +234,7 @@ let bigarray_set arr arg newval =
 %token MINUSDOT
 %token MINUSGREATER
 %token MODULE
+%token MULTIFUN
 %token MULTIMATCH
 %token MUTABLE
 %token NEW
@@ -300,7 +301,7 @@ The precedences must be listed from low to high.
 %nonassoc SEMI                          /* below EQUAL ({lbl=...; lbl=...}) */
 %nonassoc LET                           /* above SEMI ( ...; let ... in ...) */
 %nonassoc below_WITH
-%nonassoc FUNCTION WITH                 /* below BAR  (match ... with ...) */
+%nonassoc FUNCTION WITH MULTIFUN        /* below BAR  (match ... with ...) */
 %nonassoc THEN                          /* below ELSE (if ... then ...) */
 %nonassoc ELSE                          /* (if ... then ... else ...) */
 %nonassoc LESSMINUS                     /* below COLONEQUAL (lbl <- x := e) */
@@ -774,10 +775,12 @@ expr:
       { mkexp(Pexp_function("", None, List.rev $3)) }
   | FUN labeled_simple_pattern fun_def
       { let (l,o,p) = $2 in mkexp(Pexp_function(l, o, [p, $3])) }
+  | MULTIFUN opt_bar match_cases
+      { mkexp(Pexp_multifun(List.rev $3)) }
   | MATCH seq_expr WITH opt_bar match_cases
-      { mkexp(Pexp_match($2, List.rev $5)) }
+      { mkexp(Pexp_match($2, List.rev $5, false)) }
   | MULTIMATCH seq_expr WITH opt_bar match_cases
-      { mkexp(Pexp_multimatch($2, List.rev $5)) }
+      { mkexp(Pexp_match($2, List.rev $5, true)) }
   | TRY seq_expr WITH opt_bar match_cases
       { mkexp(Pexp_try($2, List.rev $5)) }
   | TRY seq_expr WITH error

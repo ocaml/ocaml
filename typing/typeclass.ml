@@ -625,7 +625,7 @@ and class_expr cl_num val_env met_env scl =
         {pexp_loc = loc; pexp_desc =
          Pexp_match({pexp_loc = loc; pexp_desc =
                      Pexp_ident(Longident.Lident"*opt*")},
-                    scases)} in
+                    scases, false)} in
       let sfun =
         {pcl_loc = scl.pcl_loc; pcl_desc =
          Pcl_fun(l, None, {ppat_loc = loc; ppat_desc = Ppat_var"*opt*"},

@@ -198,13 +198,13 @@ and expression i ppf x =
       line i ppf "Pexp_apply\n";
       expression i ppf e;
       list i label_x_expression ppf l;
-  | Pexp_match (e, l) ->
+  | Pexp_match (e, l, b) ->
       line i ppf "Pexp_match\n";
       expression i ppf e;
       list i pattern_x_expression_case ppf l;
-  | Pexp_multimatch (e, l) ->
-      line i ppf "Pexp_multimatch\n";
-      expression i ppf e;
+      bool i ppf b
+  | Pexp_multifun l ->
+      line i ppf "Pexp_multifun\n";
       list i pattern_x_expression_case ppf l;
   | Pexp_try (e, l) ->
       line i ppf "Pexp_try\n";

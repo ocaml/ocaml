@@ -696,7 +696,7 @@ let rec type_approx env sexp =
        newty (Tarrow(p, type_option (newvar ()), type_approx env e, Cok))
   | Pexp_function (p,_,(_,e)::_) ->
        newty (Tarrow(p, newvar (), type_approx env e, Cok))
-  | Pexp_match (_, (_,e)::_) -> type_approx env e
+  | Pexp_match (_, (_,e)::_, false) -> type_approx env e
   | Pexp_try (e, _) -> type_approx env e
   | Pexp_tuple l -> newty (Ttuple(List.map (type_approx env) l))
   | Pexp_ifthenelse (_,e,_) -> type_approx env e
@@ -818,24 +818,24 @@ let rec type_exp env sexp =
         exp_loc = sexp.pexp_loc;
         exp_type = ty_res;
         exp_env = env }
-  | Pexp_match(sarg, caselist) ->
+  | Pexp_match(sarg, caselist, multi) ->
       let arg = type_exp env sarg in
       let ty_res = newvar() in
       let cases, partial =
-        type_cases env arg.exp_type ty_res (Some sexp.pexp_loc) caselist in
+        type_cases env arg.exp_type ty_res (Some sexp.pexp_loc) caselist ~multi
+      in
       { exp_desc = Texp_match(arg, cases, partial);
         exp_loc = sexp.pexp_loc;
         exp_type = ty_res;
         exp_env = env }
-  | Pexp_multimatch(sarg, caselist) ->
-      let arg = type_exp env sarg in
-      let ty_res = newvar() in
+  | Pexp_multifun caselist ->
+      let ty_arg = newvar() and ty_res = newvar() in
       let cases, partial =
-        type_cases ~multi:true env arg.exp_type ty_res
-          (Some sexp.pexp_loc) caselist in
-      { exp_desc = Texp_match(arg, cases, partial);
+        type_cases env ty_arg ty_res (Some sexp.pexp_loc) caselist ~multi:true
+      in
+      { exp_desc = Texp_function (cases, partial);
         exp_loc = sexp.pexp_loc;
-        exp_type = ty_res;
+        exp_type = newty (Tarrow ("", ty_arg, ty_res, Cok));
         exp_env = env }
   | Pexp_try(sbody, caselist) ->
       let body = type_exp env sbody in
@@ -1593,7 +1593,7 @@ and type_expect ?in_function env sexp ty_expected =
         {pexp_loc = loc; pexp_desc =
          Pexp_match({pexp_loc = loc; pexp_desc =
                      Pexp_ident(Longident.Lident"*opt*")},
-                    scases)} in
+                    scases, false)} in
       let sfun =
         {pexp_loc = sexp.pexp_loc; pexp_desc =
          Pexp_function(l, None,[{ppat_loc = loc; ppat_desc = Ppat_var"*opt*"},

@@ -127,8 +127,9 @@ let namable_row row =
   List.for_all
     (fun (_, f) ->
        match row_field_repr f with
-       | Reither(c, l, _, [], _) ->
-           row.row_closed && if c then l = [] else List.length l = 1
+       | Reither(c, l, _, pl, _) ->
+           row.row_closed && pl = [] &&
+           if c then l = [] else List.length l = 1
        | _ -> true)
     row.row_fields
 

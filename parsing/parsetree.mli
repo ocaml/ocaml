@@ -86,7 +86,7 @@ and expression_desc =
   | Pexp_let of rec_flag * (pattern * expression) list * expression
   | Pexp_function of label * expression option * (pattern * expression) list
   | Pexp_apply of expression * (label * expression) list
-  | Pexp_match of expression * (pattern * expression) list
+  | Pexp_match of expression * (pattern * expression) list * bool
   | Pexp_try of expression * (pattern * expression) list
   | Pexp_tuple of expression list
   | Pexp_construct of Longident.t * expression option * bool
@@ -110,7 +110,7 @@ and expression_desc =
   | Pexp_assertfalse
   | Pexp_lazy of expression
   | Pexp_poly of expression * core_type option
-  | Pexp_multimatch of expression * (pattern * expression) list
+  | Pexp_multifun of (pattern * expression) list
 
 (* Value descriptions *)
 
