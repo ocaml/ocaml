@@ -96,7 +96,7 @@ and joinlocation =
       jloc_loc : Location.t}
 
 and joinautomaton =
-    {jauto_desc : joinclause list ;
+    {jauto_desc : joinclause array ;
      jauto_name : Ident.t;
      jauto_names : (Ident.t * joinchannel) list ;
      (* names defined, description *)
@@ -104,6 +104,7 @@ and joinautomaton =
 
 and joinchannel =
     {jchannel_sync : bool ;
+     jchannel_alone : int option ;
      jchannel_id   : int ;
      jchannel_type : type_expr;}
 
@@ -273,7 +274,7 @@ let do_def_bound_idents autos r =
       List.fold_right
         (fun (name,_) r -> name::r)
         names
-        r)
+        (name::r))
     autos r
 
 let do_loc_bound_idents locs r =

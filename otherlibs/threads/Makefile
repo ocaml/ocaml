@@ -16,7 +16,7 @@
 include ../../config/Makefile
 
 CC=$(BYTECC)
-CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -g
+CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DCAML_NAME_SPACE -g
 CAMLC=../../ocamlcomp.sh -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-warn-error A

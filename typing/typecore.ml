@@ -589,8 +589,19 @@ let mk_jident id loc ty env =
     jident_env = env;
   }
 
+let rec look_alone name i = function
+  | [] -> None
+  | {pjclause_desc=[{pjpat_desc=({pjident_desc=id},_)}],_}::rem ->
+      if name=id then Some i
+      else look_alone name (i+1) rem
+  | _::rem -> look_alone name (i+1) rem
+
+let add_alone sauto (id, (ty, num)) =
+  (id,(ty, num, look_alone (Ident.name id) 0 sauto))
+
 let type_auto_lhs env {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
   reset_auto () ;
+  let alones = ref [] in
   let auto =
     List.map
       (fun cl ->
@@ -609,7 +620,7 @@ let type_auto_lhs env {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
         jpats, get_ref pattern_variables, get_ref pattern_force)
       sauto in
   let name = Ident.create "auto" in
-  (name, get_ref auto_chans, auto)
+  (name, List.map (add_alone sauto) (get_ref auto_chans), auto)
 
 let rec do_type_autos_lhs env = function
   | [] -> []
@@ -2237,7 +2248,7 @@ and type_clause env names (jpats,pat_vars,pat_force) scl =
         let chan, arg = jpat.jpat_desc in
         let tchan =
           try
-            let (ty,_) = List.assoc chan.jident_desc names in
+            let (ty,_,_) = List.assoc chan.jident_desc names in
             ty
           with Not_found -> assert false in
         let targ = arg.pat_type in
@@ -2282,14 +2293,18 @@ and type_clause env names (jpats,pat_vars,pat_force) scl =
 and type_auto env (my_name, def_names, auto_lhs) sauto =
   let env = Env.remove_continuations env in
   let cls =
-    List.map2 (type_clause env def_names) auto_lhs sauto.pjauto_desc in
+    Array.of_list
+      (List.map2 (type_clause env def_names) auto_lhs sauto.pjauto_desc) in
   let def_names =
     List.map
-      (fun (chan, (ty, num)) -> match (expand_head env ty).desc with
-      | Tarrow (_, _, _, _) ->
-          chan, {jchannel_sync=true; jchannel_type=ty ; jchannel_id=num}
-      | Tconstr (p, _, _) when Path.same p Predef.path_channel ->
-          chan, {jchannel_sync=false; jchannel_type=ty; jchannel_id=num}
+      (fun (chan, (ty, num, alone)) ->
+        match (expand_head env ty).desc with
+        | Tarrow (_, _, _, _) ->
+            chan, {jchannel_sync=true; jchannel_alone=alone ;
+                   jchannel_type=ty ; jchannel_id=num}
+        | Tconstr (p, _, _) when Path.same p Predef.path_channel ->
+            chan, {jchannel_sync=false; jchannel_alone=alone ;
+                   jchannel_type=ty; jchannel_id=num}
       | _ -> assert false)
       def_names in
   {jauto_desc = cls;
@@ -2298,7 +2313,7 @@ and type_auto env (my_name, def_names, auto_lhs) sauto =
    jauto_loc = sauto.pjauto_loc}
 
 and generalize_auto env auto =
-  List.iter
+  Array.iter
     (fun cl ->
       let jpats,_ = cl.jclause_desc in
       let tys = ref [] in
@@ -2323,9 +2338,9 @@ and generalize_auto env auto =
 
 and add_auto_names env name names =
    List.fold_left
-     (fun env (id,(ty,num)) ->
+     (fun env (id,(ty,num,alone)) ->
          Env.add_value id
-         {val_type = ty; val_kind = Val_channel (name,num)} env)
+         {val_type = ty; val_kind = Val_channel (name,num,alone)} env)
       env names
 
 and type_def env sautos =

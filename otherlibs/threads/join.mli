@@ -26,8 +26,10 @@ type reaction
 val patch_table : automaton -> reaction array -> unit
 
 val send_async : automaton -> int -> Obj.t -> unit
+val send_async_alone : automaton -> int -> Obj.t -> unit
 
 val send_sync : automaton -> int -> Obj.t -> Obj.t
+val send_sync_alone : automaton -> int -> Obj.t -> Obj.t
 
 type continuation
 

@@ -63,11 +63,11 @@ thread.ml: thread_posix.ml
 	ln -s thread_posix.ml thread.ml
 
 join.ml: ../threads/join.ml
-	cp ../threads/join.ml .
+	cp -f ../threads/join.ml . && chmod -w join.ml
 
 
 join.mli: ../threads/join.mli
-	cp ../threads/join.mli .
+	cp -f ../threads/join.mli . && chmod -w join.mli
 
 
 partialclean:

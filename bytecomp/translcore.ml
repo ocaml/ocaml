@@ -548,7 +548,8 @@ and transl_exp0 e =
 	transl_primitive p
   | Texp_ident(path, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
-  | Texp_ident(path, {val_kind = Val_reg | Val_self _ | Val_channel (_,_)}) ->
+  | Texp_ident(path,
+               {val_kind = Val_reg | Val_self _ | Val_channel (_,_,_)}) ->
       transl_path path
   | Texp_ident _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
   | Texp_constant cst ->
@@ -588,9 +589,9 @@ and transl_exp0 e =
   | Texp_apply
       ({exp_desc =
          Texp_ident
-           (path, {val_kind = Val_channel (auto,num)})},
+           (path, {val_kind = Val_channel (auto,num,alone)})},
        ((Some arg,_)::oargs)) ->
-      let lfunct = Transljoin.send_sync auto num (transl_exp arg) in
+      let lfunct = Transljoin.send_sync auto num alone (transl_exp arg) in
       event_after e
         (match oargs with
         | [] -> lfunct
@@ -851,8 +852,8 @@ and transl_simple_proc sync p = match p.exp_desc with
 | Texp_exec  (e) -> transl_exp e
 | Texp_par (_,_) -> transl_spawn sync None p
 | Texp_asyncsend
-    ({exp_desc=Texp_ident (_,{val_kind=Val_channel (auto,num)})},e2) ->
-        Transljoin.send_async auto num (transl_exp e2)
+    ({exp_desc=Texp_ident (_,{val_kind=Val_channel (auto,num,alone)})},e2) ->
+        Transljoin.send_async auto num alone (transl_exp e2)
 | Texp_asyncsend (e1,e2) -> Lapply (transl_exp e1,[transl_exp e2])
 | Texp_reply (e, (Pident id as path)) ->
     begin match sync with
@@ -864,22 +865,34 @@ and transl_simple_proc sync p = match p.exp_desc with
 | _ -> fatal_error "Translcore.transl_simple_proc"
 
 
-and transl_guarded_proc loc sync pats p = match pats with
+and transl_guarded_proc fst loc sync pats p = match pats with
 | []     -> assert false
-| [pat]  ->
+| [id,is_sync,alone,pat] ->
     let param = name_join_pattern "param" pat in
-    ([param],
-     Matching.for_function
-       loc None (Lvar param)
-           (transl_cases no_event (transl_proc sync) [pat,p] ) Total)
-| pat::rem ->
+    if fst && alone <> None then
+      let pat =
+        if is_sync then match sync, pat.pat_desc with
+        | Some oid, Tpat_tuple [_ ;pat] when Ident.equal id oid -> pat
+        | _ -> pat
+        else
+          pat in      
+      ([param],
+       Matching.for_function
+         loc None (Lvar param)
+         (transl_cases no_event (transl_proc sync) [pat,p] ) Total)
+    else
+      ([param],
+       Matching.for_function
+         loc None (Lvar param)
+         (transl_cases no_event (transl_proc sync) [pat,p] ) Total)
+| (_,_,_,pat)::rem ->
     let param = name_join_pattern "param" pat in
-    let (params, body) = transl_guarded_proc loc sync rem p in
+    let (params, body) = transl_guarded_proc false loc sync rem p in
     (param::params,
      Matching.for_function loc None (Lvar param) [pat,body] Total)
       
 and guarded_proc_as_fun cl_loc sync jpats p =
-  let params, body = transl_guarded_proc cl_loc sync jpats p in
+  let params, body = transl_guarded_proc true cl_loc sync jpats p in
   params, body
 
 (* transl_spawn separates e into a forked part and a part to execute now *)

@@ -22,8 +22,8 @@ val exit : unit -> Lambda.lambda
 val create_location : unit -> Lambda.lambda
 val create_process : Lambda.lambda -> Lambda.lambda
 val create_process_location : Ident.t -> Lambda.lambda -> Lambda.lambda
-val send_async : Ident.t -> int -> Lambda.lambda -> Lambda.lambda
-val send_sync : Ident.t -> int -> Lambda.lambda -> Lambda.lambda
+val send_async : Ident.t -> int -> int option -> Lambda.lambda -> Lambda.lambda
+val send_sync : Ident.t -> int -> int option -> Lambda.lambda -> Lambda.lambda
 val create_automaton : Ident.t option -> int -> int -> Lambda.lambda
 val patch_match : Ident.t -> int -> int list -> Lambda.lambda
 val patch_guard : Ident.t -> int -> Lambda.lambda -> Lambda.lambda
@@ -46,7 +46,7 @@ type phase1
 type comp_guard =
     Location.t -> (* Location of reaction *)
     Ident.t option -> (* principal name *)
-    Typedtree.pattern list -> (* join pattern *)
+    (Ident.t * bool * int option * Typedtree.pattern) list -> (* join pattern *)
     Typedtree.expression -> (* guarded process *)
     Ident.t list * Lambda.lambda
 

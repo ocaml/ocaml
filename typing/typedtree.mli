@@ -95,7 +95,7 @@ and joinlocation =
     jloc_loc : Location.t}
 
 and joinautomaton =
-    {jauto_desc : joinclause list ;
+    {jauto_desc : joinclause array ;
      jauto_name : Ident.t;
      jauto_names : (Ident.t * joinchannel) list ;
      (* names defined, description*)
@@ -103,6 +103,7 @@ and joinautomaton =
 
 and joinchannel =
     {jchannel_sync : bool ;
+     jchannel_alone : int option ;
      jchannel_id   : int ;
      jchannel_type : type_expr;}
 

@@ -391,7 +391,16 @@ let transl_store_structure glob map prims str =
       Lsequence(subst_lambda subst lam,
                 transl_store (add_idents false ids subst) rem)
 (*> JOCAML *)
-  | (Tstr_loc (_) | Tstr_def (_))::rem -> assert false
+  | Tstr_loc d::rem ->
+      let ids = loc_bound_idents d in
+      let lam = transl_loc d (store_idents ids) in
+      Lsequence(subst_lambda subst lam,
+                transl_store (add_idents false ids subst) rem)
+  | Tstr_def d::rem ->
+      let ids = def_bound_idents d in
+      let lam = transl_def d (store_idents ids) in
+      Lsequence(subst_lambda subst lam,
+                transl_store (add_idents false ids subst) rem)
 (*< JOCAML *)
   | Tstr_primitive(id, descr) :: rem ->
       begin match descr.val_kind with

@@ -40,15 +40,38 @@ let nthreads_mutex = Mutex.create ()
 and nthreads_condition = Condition.create ()
 and nthreads = ref 1 (* Real threads devoted to join *)
 and in_pool = ref 0  (* Count of such waiting in pool *)
+and suspended = ref 0 (* Count of such being suspended *)
 and pool_kont = ref [] (* work available for pool processes *)
+
+let incr_locked r =
+  Mutex.lock nthreads_mutex ;
+  incr r ;
+  Mutex.unlock nthreads_mutex
+
+and decr_locked r =
+  Mutex.lock nthreads_mutex ;
+  decr r ;
+  Mutex.unlock nthreads_mutex
+
+let something_running () =
+  let r =
+    !nthreads > !in_pool + !suspended || !pool_kont <> [] in
+  debug2 "SOMETHING" (sprintf "%b" r) ;
+  r
+
+let check_something () =
+  if not (something_running ()) then
+    Condition.signal nthreads_condition
 
 let exit_hook () =
   Mutex.lock nthreads_mutex ;
   decr nthreads ;
-  if !nthreads > !in_pool then
+  begin if something_running () then
     Condition.wait nthreads_condition nthreads_mutex
   else
     Mutex.unlock nthreads_mutex
+  end ;
+  debug1 "EXIT HOOK" "over"
 
 let _ = at_exit exit_hook
 
@@ -64,11 +87,8 @@ external thread_uncaught_exception : exn -> unit = "caml_thread_uncaught_excepti
 let really_exit_thread () =
   Mutex.lock nthreads_mutex ;
   decr nthreads ;
-  debug1 "REAL EXIT"
-    (sprintf "%i nthread=%i pool=%i"
-       (Thread.id (Thread.self ()))
-       !nthreads !in_pool) ;
-  if !nthreads <= !in_pool && !pool_kont = [] then
+  debug1 "REAL EXIT" (sprintf "%i nthread=%i pool=%i" (Thread.id (Thread.self ())) !nthreads !in_pool) ;
+  if not (something_running ()) then
     Condition.signal nthreads_condition ;
   Mutex.unlock nthreads_mutex ;
   Thread.exit ()
@@ -77,13 +97,18 @@ let really_exit_thread () =
    uses thread_new, to short-circuit handling of exceptions by Thread *)  
 
 let really_create_process f =
-  Mutex.lock nthreads_mutex ;
-  incr nthreads ;
-  Mutex.unlock nthreads_mutex ;
-  let t = Thread.id (thread_new f) in
-  debug1 "REAL FORK"
-    (sprintf "%i nthread=%i pool=%i" t !nthreads !in_pool)
-
+  incr_locked nthreads ;
+  try
+    let t = Thread.id (thread_new f) in
+    debug1 "REAL FORK" (sprintf "%i nthread=%i suspended=%i pool=%i" t !nthreads !suspended !in_pool)
+  with
+  | e ->
+      prerr_string "Cannot create process: " ;
+      prerr_endline (Printexc.to_string e) ;
+      decr_locked nthreads ;
+      if not (something_running ()) then
+        Condition.signal nthreads_condition
+      
 
 
 (****************)
@@ -107,8 +132,10 @@ let rec do_pool_enter () =
       f ()
   | [] ->
       incr in_pool ;
-      if !nthreads <= !in_pool then Condition.signal nthreads_condition ;
-      debug2 "POOL SLEEP" (sprintf "%i" (Thread.id (Thread.self()))) ;
+      if not (something_running ()) then Condition.signal nthreads_condition ;
+      debug2 "POOL SLEEP"
+        (sprintf "%i, nthread=%i suspended=%i pool=%i"
+           (Thread.id (Thread.self())) !nthreads !suspended !in_pool) ;
       Condition.wait pool_condition nthreads_mutex ;
       debug2 "POOL AWAKE" (sprintf "%i" (Thread.id (Thread.self()))) ;
       decr in_pool ;
@@ -130,8 +157,8 @@ let create_process f =
   let g () = 
     begin try f ()
     with e ->
-        flush stdout; flush stderr;
-        thread_uncaught_exception e
+      flush stdout; flush stderr;
+      thread_uncaught_exception e
     end ;
     exit_thread () in
 
@@ -199,7 +226,11 @@ let kont_create mtx =
 
 (* mutex is locked *)
 let kont_suspend k =
+  debug1 "KONT_SUSPEND" (sprintf "%i" (Thread.id (Thread.self ()))) ;
+  incr_locked suspended ;
+  check_something () ;
   Condition.wait k.kcondition k.kmutex ;
+  decr_locked suspended ;
   Mutex.unlock k.kmutex ;
   match k.kval with
   | Go f -> f ()
@@ -219,8 +250,9 @@ let kont_go k f =
 (* Spawn new process
    called from asynchronous sends when no principal exists *)
 let fire_go auto f =
-  create_process f ;
-  Mutex.unlock auto.mutex
+  Mutex.unlock auto.mutex ;
+  create_process f
+
 
 (* Transfert control to frozen principal thread and suspend current thread *)
 let kont_go_suspend kme k f =
@@ -229,7 +261,11 @@ let kont_go_suspend kme k f =
   Condition.signal k.kcondition ;
 (* suspend current, which will normally be signaled by guarded executed
    on principal *)
+  debug1 "KONT_GO_SUSPEND" (sprintf "%i" (Thread.id (Thread.self ()))) ;
+  incr_locked suspended ;
+  check_something () ;
   Condition.wait kme.kcondition k.kmutex ;
+  decr_locked suspended ;
   Mutex.unlock kme.kmutex ;
   match kme.kval with
   | Ret v -> v
@@ -245,7 +281,11 @@ let just_go k f =
    called from synchronous, when there is no principal name *)
 let fire_suspend k auto f =
   create_process f ;
+  debug1 "FIRE_SUSPEND" (sprintf "%i" (Thread.id (Thread.self ()))) ;
+  incr_locked suspended ;
+  check_something () ;
   Condition.wait k.kcondition k.kmutex ;
+  decr_locked suspended ;
   Mutex.unlock k.kmutex ;
   match k.kval with
   | Ret v -> v
@@ -258,9 +298,9 @@ let rec attempt_match auto reactions i =
     let (ipat, iprim, f) = Obj.magic (Obj.field reactions i) in
     if ipat land auto.status = ipat then
       if iprim < 0 then
-        f auto fire_go (* f will unlock auto's mutex *)
+        f fire_go (* f will unlock auto's mutex *)
       else
-        f auto kont_go
+        f kont_go
     else
       attempt_match auto reactions (i+1)
   end
@@ -280,6 +320,10 @@ let send_async auto idx a =
     attempt_match auto (Obj.magic auto.matches) 0
   end
 
+and send_async_alone auto g a =
+  debug3 "SEND_ASYNC_ALONE" (sprintf "match %i" g) ;
+  let _,_,f = Obj.magic (Obj.field (Obj.magic auto.matches) g) in
+  create_process (fun () -> f a)
   
 let reply_to v k =
   debug3 "REPLY" (sprintf "%i" (Obj.magic v)) ;
@@ -297,11 +341,11 @@ let rec attempt_match_sync idx kont auto reactions i =
     let (ipat, ipri, f) = Obj.magic (Obj.field reactions i) in
     if ipat land auto.status = ipat then begin
       if ipri < 0 then
-        f auto (fire_suspend kont)   (* will create other thread *)
+        f (fire_suspend kont)   (* will create other thread *)
       else if ipri = idx then
-        f auto just_go                (* will continue evaluation *)
+        f just_go               (* will continue evaluation *)
       else begin
-        f auto (kont_go_suspend kont) (* will awake principal thread *)
+        f (kont_go_suspend kont) (* will awake principal thread *)
       end
     end else attempt_match_sync idx kont auto reactions (i+1)
   end
@@ -322,3 +366,15 @@ let send_sync auto idx a =
     attempt_match_sync idx kont auto (Obj.magic auto.matches) 0
   end
 
+and send_sync_alone auto g a =
+  debug3 "SEND_SYNC_ALONE" (sprintf "match %i" g) ;
+  let _,ipri,f = Obj.magic (Obj.field (Obj.magic auto.matches) g) in
+  if ipri >= 0 then begin
+    debug3 "SEND_SYNC_ALONE" "direct" ;
+    f a    
+  end else begin
+    debug3 "SEND_SYNC_ALONE" "fire" ;
+    Mutex.lock auto.mutex ;
+    let k = kont_create auto.mutex in
+    fire_suspend k auto (fun () -> f (k,a))
+  end
