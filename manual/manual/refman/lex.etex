@@ -92,7 +92,7 @@ The two single quotes enclose either one character different from
 \begin{tableau}{|l|l|}{Sequence}{Character denoted}
 \entree{"\\\\"}{backslash ("\\")}
 \entree{"\\'"}{single quote ("'")}
-\entree{"\\n"}{newline (LF)}
+\entree{"\\n"}{linefeed (LF)}
 \entree{"\\r"}{return (CR)}
 \entree{"\\t"}{horizontal tabulation (TAB)}
 \entree{"\\b"}{backspace (BS)}
@@ -119,7 +119,7 @@ table below:
 \begin{tableau}{|l|l|}{Sequence}{Character denoted}
 \entree{"\\\\"}{backslash ("\\")}
 \entree{"\\\""}{double quote ("\"")}
-\entree{"\\n"}{newline (LF)}
+\entree{"\\n"}{linefeed (LF)}
 \entree{"\\r"}{return (CR)}
 \entree{"\\t"}{horizontal tabulation (TAB)}
 \entree{"\\b"}{backspace (BS)}

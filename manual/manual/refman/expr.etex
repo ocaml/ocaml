@@ -100,7 +100,7 @@ precedence come first. For infix and prefix symbols, we write
 \entree{"*"\ldots"   /"\ldots"   %"\ldots"   mod"}{left}
 \entree{"+"\ldots"   -"\ldots}{left}
 \entree{"::"}{right}
-\entree{{\tt \char64} "^"}{right}
+\entree{{\tt \char64}\ldots "^"\ldots}{right}
 \entree{comparisons ("=  ==  < " etc.), all other infix symbols}{left}
 \entree{"not"}{--}
 \entree{"&   &&"}{left}
