@@ -179,21 +179,6 @@ let enter_val vars lab mut ty val_env met_env par_env =
   vars := Vars.add lab (id, mut, ty) !vars;
   result
 
-let rec make_nongen_class_type env =
-  function
-    Tcty_constr (_, _, cty) ->
-      make_nongen_class_type env cty
-  | Tcty_signature sign ->
-      Vars.iter (fun _ (_, ty) -> Ctype.make_nongen ty) sign.cty_vars;
-      Concr.iter
-        (function nm ->
-           Ctype.make_nongen
-            (Ctype.filter_method env nm Private sign.cty_self))
-        sign.cty_concr
-  | Tcty_fun (ty, cty) ->
-      Ctype.make_nongen ty;
-      make_nongen_class_type env cty
-
 let inheritance impl self_type env concr_meths loc parent =
   match scrape_class_type parent with
     Tcty_signature cl_sig ->
@@ -387,12 +372,6 @@ let rec class_field self_type meths vars
       if StringSet.mem lab inh_vals then
         Location.print_warning loc (Warnings.Hide_instance_variable lab);
       let exp = type_exp val_env sexp in
-      if not (Typecore.is_nonexpansive exp) then
-        begin try
-          Ctype.make_nongen exp.exp_type
-        with Ctype.Unify [(ty, _)] ->
-          raise(Error(loc, Make_nongen_seltype ty))
-        end;
       let (id, val_env, met_env, par_env) =
         enter_val vars lab mut exp.exp_type val_env met_env par_env
       in
@@ -573,11 +552,6 @@ and class_expr val_env met_env scl =
             end
       in
       let (args, cty) = type_args cl.cl_type sargs in
-      begin try
-        make_nongen_class_type val_env cty
-      with Ctype.Unify [(ty, _)] ->
-        raise(Error(scl.pcl_loc, Make_nongen_seltype ty))
-      end;
       {cl_desc = Tclass_apply (cl, args);
        cl_loc = scl.pcl_loc;
        cl_type = cty}
