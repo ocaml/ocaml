@@ -43,6 +43,8 @@ static int heap_is_pure;   /* The heap is pure if the only gray objects
                               below [markhp] are also in [gray_vals]. */
 unsigned long allocated_words;
 double extra_heap_memory;
+unsigned long fl_size_at_phase_change = 0;
+
 extern char *fl_merge;  /* Defined in freelist.c. */
 
 static char *markhp, *chunk, *limit;
@@ -222,6 +224,7 @@ static void mark_slice (long work)
       gc_sweep_hp = chunk;
       limit = chunk + Chunk_size (chunk);
       work = 0;
+      fl_size_at_phase_change = fl_cur_size;
     }
   }
   gray_vals_cur = gray_vals_ptr;
@@ -283,12 +286,10 @@ long major_collection_slice (long howmuch)
   /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
                  FM = stat_heap_size * percent_free / (100 + percent_free)
-     Garbage at the start of the GC cycle:
-                 G = FM * 2/3
      Proportion of free memory consumed since the previous slice:
-                 PH = allocated_words / G
-                    = 3 * allocated_words * (100 + percent_free)
-                      / (2 * stat_heap_size * percent_free)
+                 PH = allocated_words / FM
+                    = allocated_words * (100 + percent_free)
+                      / (stat_heap_size * percent_free)
      Proportion of extra-heap memory consumed since the previous slice:
                  PE = extra_heap_memory
      Proportion of total work to do in this slice:
@@ -306,12 +307,10 @@ long major_collection_slice (long howmuch)
      This slice will either mark 2*MS words or sweep 2*SS words.
   */
 
-#define Margin 100  /* Make it a little faster to be on the safe side. */
-
   if (gc_phase == Phase_idle) start_cycle ();
 
-  p = 1.5 * allocated_words * (100 + percent_free)
-      / stat_heap_size / percent_free;
+  p = (double) allocated_words * (100 + percent_free)
+      / Wsize_bsize (stat_heap_size) / percent_free;
   if (p < extra_heap_memory) p = extra_heap_memory;
 
   gc_message (0x40, "allocated_words = %lu\n", allocated_words);
@@ -321,11 +320,11 @@ long major_collection_slice (long howmuch)
               (unsigned long) (p * 1000000));
 
   if (gc_phase == Phase_mark){
-    computed_work = (long) (p * stat_heap_size * 100 / (100+percent_free));
+    computed_work = 2 * (long) (p * Wsize_bsize (stat_heap_size) * 100
+                                / (100+percent_free));
   }else{
-    computed_work = (long) (p * stat_heap_size);
+    computed_work = 2 * (long) (p * Wsize_bsize (stat_heap_size));
   }
-  computed_work += Margin;
   gc_message (0x40, "ordered work = %ld words\n", howmuch);
   gc_message (0x40, "computed work = %ld words\n", computed_work);
   if (howmuch == 0) howmuch = computed_work;
@@ -418,6 +417,8 @@ void init_major_heap (asize_t heap_size)
   Chunk_block (heap_start) = block;
   heap_end = heap_start + stat_heap_size;
   Assert ((unsigned long) heap_end % Page_size == 0);
+
+  stat_heap_chunks = 1;
 
   page_low = Page (heap_start);
   page_high = Page (heap_end);

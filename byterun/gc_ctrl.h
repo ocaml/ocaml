@@ -28,7 +28,8 @@ extern long
      stat_major_collections,
      stat_heap_size,
      stat_top_heap_size,
-     stat_compactions;
+     stat_compactions,
+     stat_heap_chunks;
 
 void init_gc (unsigned long, unsigned long, unsigned long,
               unsigned long, unsigned long);

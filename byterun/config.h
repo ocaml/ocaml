@@ -140,9 +140,12 @@ typedef struct { uint32 l, h; } uint64, int64;
    total size of live objects. */
 #define Percent_free_def 42
 
-/* Default setting for the compacter: 300%
-   (i.e. trigger the compacter when 3/4 of the heap is free) */
-#define Max_percent_free_def 300
+/* Default setting for the compacter: 500%
+   (i.e. trigger the compacter when 5/6 of the heap is free or garbage)
+   This can be set quite high because the overhead is over-estimated
+   when fragmentation occurs.
+ */
+#define Max_percent_free_def 500
 
 
 #endif /* _config_ */

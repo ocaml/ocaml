@@ -397,24 +397,37 @@ unsigned long percent_max;
 
 void compact_heap_maybe (void)
 {
-  /* Estimated free words in the heap: FW = 1.5 * fl_cur_size
-     Estimated live words: LW = stat_heap_size - FW
-     We compact the heap if FW > percent_max / 100 * LW
+  /* Estimated free words in the heap:
+         FW = fl_size_at_change + 3 * (fl_cur_size - fl_size_at_change)
+                                FW = 3 * fl_cur_size - 2 * fl_size_at_change
+     Estimated live words:      LW = stat_heap_size - FW
+     Estimated free percentage: FP = 100 * FW / LW
+     We compact the heap if FP > percent_max
   */
-  float fw;
+  float fw, fp;
                                                Assert (gc_phase == Phase_idle);
   if (percent_max >= 1000000) return;
-  switch (percent_max){
-  case 0:
+  if (stat_major_collections < 5 || stat_heap_chunks < 5) return;
+
+  fw = 3.0 * fl_cur_size - 2.0 * fl_size_at_phase_change;
+  if (fw < 0) fw = fl_cur_size;
+
+  if (fw >= Wsize_bsize (stat_heap_size)){
+    fp = 1000000.0;
+  }else{
+    fp = 100.0 * fw / (Wsize_bsize (stat_heap_size) - fw);
+    if (fp > 1000000.0) fp = 1000000.0;
+  }
+  gc_message (0x200, "Estimated overhead = %lu%%\n", (unsigned long) fp);
+  if (fp >= percent_max){
+    gc_message (0x200, "Automatic compaction triggered.\n", 0);
     finish_major_cycle ();
+
+    /* We just did a complete GC, so we can measure the overhead exactly. */
+    fw = fl_cur_size;
+    fp = 100.0 * fw / (Wsize_bsize (stat_heap_size) - fw);
+    gc_message (0x200, "Measured overhead: %lu%%\n", (unsigned long) fp);
+
     compact_heap ();
-    break;
-  default:
-    fw = 1.5 * fl_cur_size;
-    if (fw > 0.01 * percent_max * (Wsize_bsize (stat_heap_size) - fw)){
-      finish_major_cycle ();
-      compact_heap ();
-    }
-    break;
   }
 }

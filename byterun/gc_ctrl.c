@@ -37,7 +37,8 @@ long stat_minor_collections = 0,
      stat_major_collections = 0,
      stat_heap_size = 0,              /* bytes */
      stat_top_heap_size = 0,          /* bytes */
-     stat_compactions = 0;
+     stat_compactions = 0,
+     stat_heap_chunks = 0;
 
 extern asize_t major_heap_increment;  /* bytes; see major_gc.c */
 extern unsigned long percent_free;    /*        see major_gc.c */
@@ -146,7 +147,7 @@ static value heap_stats (int returnstats)
       switch (Color_hd (cur_hd)){
       case Caml_white:
         if (Wosize_hd (cur_hd) == 0){
-          ++fragments;
+          ++ fragments;
           Assert (prev_hp == NULL
                   || Color_hp (prev_hp) != Caml_blue
                   || cur_hp == gc_sweep_hp);
@@ -196,6 +197,7 @@ static value heap_stats (int returnstats)
     chunk = Chunk_next (chunk);
   }
 
+  Assert (heap_chunks == stat_heap_chunks);
   Assert (live_words + free_words + fragments == Wsize_bsize (stat_heap_size));
 
   if (returnstats){
@@ -210,6 +212,7 @@ static value heap_stats (int returnstats)
     long majcoll = stat_major_collections;
     long heap_words = Wsize_bsize (stat_heap_size);
     long cpct = stat_compactions;
+    long top_heap_words = Wsize_bsize (stat_top_heap_size);
 
     res = alloc_tuple (15);
     Store_field (res, 0, copy_double (minwords));
@@ -226,7 +229,7 @@ static value heap_stats (int returnstats)
     Store_field (res, 11, Val_long (largest_free));
     Store_field (res, 12, Val_long (fragments));
     Store_field (res, 13, Val_long (cpct));
-    Store_field (res, 14, Val_long (Wsize_bsize (stat_top_heap_size)));
+    Store_field (res, 14, Val_long (top_heap_words));
     CAMLreturn (res);
   }else{
     CAMLreturn (Val_unit);

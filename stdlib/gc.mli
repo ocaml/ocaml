@@ -95,32 +95,32 @@ type control =
        percentage of the memory used for live data.
        The GC will work more (use more CPU time and collect
        blocks more eagerly) if [space_overhead] is smaller.
-       The computation of the GC speed assumes that the amount
-       of live data is constant.  Default: 42. *)
+       Default: 42. *)
 
     mutable verbose : int;
     (** This value controls the GC messages on standard error output.
        It is a sum of some of the following flags, to print messages
        on the corresponding events:
-       - [0x01] Start of major GC cycle.
-       - [0x02] Minor collection and major GC slice.
-       - [0x04] Growing and shrinking of the heap.
-       - [0x08] Resizing of stacks and memory manager tables.
-       - [0x10] Heap compaction.
-       - [0x20] Change of GC parameters.
-       - [0x40] Computation of major GC slice size.
-       - [0x80] Calling of finalisation functions.
+       - [0x001] Start of major GC cycle.
+       - [0x002] Minor collection and major GC slice.
+       - [0x004] Growing and shrinking of the heap.
+       - [0x008] Resizing of stacks and memory manager tables.
+       - [0x010] Heap compaction.
+       - [0x020] Change of GC parameters.
+       - [0x040] Computation of major GC slice size.
+       - [0x080] Calling of finalisation functions.
        - [0x100] Bytecode executable search at start-up.
+       - [0x200] Computation of compaction triggering condition.
        Default: 0. *)
 
     mutable max_overhead : int;
     (** Heap compaction is triggered when the estimated amount
-       of free memory is more than [max_overhead] percent of the amount
-       of live data.  If [max_overhead] is set to 0, heap
+       of "wasted" memory is more than [max_overhead] percent of the
+       amount of live data.  If [max_overhead] is set to 0, heap
        compaction is triggered at the end of each major GC cycle
        (this setting is intended for testing purposes only).
        If [max_overhead >= 1000000], compaction is never triggered.
-       Default: 300. *)
+       Default: 500. *)
 
     mutable stack_limit : int;
     (** The maximum size of the stack (in words).  This is only

@@ -35,6 +35,7 @@ typedef struct {
 extern int gc_phase;
 extern unsigned long allocated_words;
 extern double extra_heap_memory;
+extern unsigned long fl_size_at_phase_change;
 
 #define Phase_mark 0
 #define Phase_sweep 1

@@ -55,9 +55,9 @@ void free_for_heap (header_t *mem)
   free (Chunk_block (mem));
 }
 
-/* Take a block of memory as argument, which must be the result of a
+/* Take a chunk of memory as argument, which must be the result of a
    call to [alloc_for_heap], and insert it into the heap chaining.
-   The contents of the block must be a sequence of valid blocks and
+   The contents of the chunk must be a sequence of valid blocks and
    fragments: no space between blocks and no trailing garbage.  If
    some blocks are blue, they must be added to the free list by the
    caller.  All other blocks must have the color [allocation_color(mem)].
@@ -118,7 +118,7 @@ int add_to_heap (header_t *mem)
     page_table [i] = In_heap;
   }
 
-  /* Chain this heap block. */
+  /* Chain this heap chunk. */
   {
     char **last = &heap_start;
     char *cur = *last;
@@ -129,6 +129,8 @@ int add_to_heap (header_t *mem)
     }
     Chunk_next (m) = cur;
     *last = m;
+
+    ++ stat_heap_chunks;
   }
 
   /* Update the heap bounds as needed. */
@@ -195,6 +197,8 @@ void shrink_heap (char *chunk)
     }
   }
 #endif
+
+  -- stat_heap_chunks;
 
   /* Remove [chunk] from the list of chunks. */
   cp = &heap_start;
@@ -283,7 +287,7 @@ void adjust_gc_speed (mlsize_t mem, mlsize_t max)
     urge_major_slice ();
   }
   if (extra_heap_memory > (double) Wsize_bsize (minor_heap_size)
-                          / 2.0 / (double) stat_heap_size) {
+                          / 2.0 / (double) Wsize_bsize (stat_heap_size)) {
     urge_major_slice ();
   }
 }
