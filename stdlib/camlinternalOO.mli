@@ -41,17 +41,17 @@ val narrow : table -> string array -> string array -> string array -> unit
 val widen : table -> unit
 val add_initializer : table -> (obj -> unit) -> unit
 val dummy_table : table
-val create_table : string array -> table
+val create_table : int -> string array -> table
 val init_class : table -> unit
 val inherits :
     table -> string array -> string array -> string array ->
     (t * (table -> obj -> Obj.t) * t * obj) -> bool -> Obj.t
 val make_class :
-    string array -> (table -> Obj.t -> t) ->
+    int -> string array -> (table -> Obj.t -> t) ->
     (t * (table -> Obj.t -> t) * (Obj.t -> t) * Obj.t)
 type init_table
 val make_class_store :
-    string array -> (table -> t) -> init_table -> unit
+    int -> string array -> (table -> t) -> init_table -> unit
 
 (** {6 Objects} *)
 
@@ -64,12 +64,12 @@ val create_object_and_run_initializers : obj -> table -> obj
 external send : obj -> tag -> t = "%send"
 external sendself : obj -> label -> t = "%sendself"
 external get_public_method : obj -> tag -> closure
-    = "get_public_method" "noalloc"
+    = "oo_get_public_method" "noalloc"
 
 (** {6 Table cache} *)
 
 type tables
-val lookup_tables : tables -> table array -> tables
+val lookup_tables : tables -> closure array -> tables
 
 (** {6 Builtins to reduce code size} *)
 

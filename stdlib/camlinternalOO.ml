@@ -94,10 +94,12 @@ type meths = label Meths.t
 module Labs = Map.Make(struct type t = label let compare = compare end)
 type labs = bool Labs.t
 
+
 (* The compiler assumes that the first field of this structure is [size]. *)
 type table =
  { mutable size: int;
    mutable methods: closure array;
+   mutable next_label: int;
    mutable methods_by_name: meths;
    mutable methods_by_label: labs;
    mutable previous_states:
@@ -109,6 +111,7 @@ type table =
 
 let dummy_table =
   { methods = [| |];
+    next_label = 0;
     methods_by_name = Meths.empty;
     methods_by_label = Labs.empty;
     previous_states = [];
@@ -119,9 +122,10 @@ let dummy_table =
 
 let table_count = ref 0
 
-let new_table pub_labels =
+let new_table meths next =
   incr table_count;
-  { methods = [| magic (pub_labels : tag array) |];
+  { methods = meths;
+    next_label = next;
     methods_by_name = Meths.empty;
     methods_by_label = Labs.empty;
     previous_states = [];
@@ -151,8 +155,13 @@ type t
 type meth = item
 
 let new_method table =
-  let index = Array.length table.methods in
-  resize table (index + 1);
+  let len = Array.length table.methods in
+  while table.next_label < len &&
+    table.methods.(table.next_label) <> dummy_item
+  do table.next_label <- table.next_label + 1 done;
+  let index = table.next_label in
+  table.next_label <- table.next_label + 1;
+  resize table (index+1);
   index
 
 let get_method_label table name =
@@ -260,16 +269,49 @@ let get_variables table names =
 let add_initializer table f =
   table.initializers <- f::table.initializers
 
+(*
 let create_table public_methods =
   if public_methods == magic 0 then new_table [||] else
-  let public_methods = Array.copy public_methods in
-  Array.sort
-    (fun s s' -> compare (public_method_label s) (public_method_label s'))
-    public_methods;
   let table = new_table (Array.map public_method_label public_methods) in
   Array.iter
     (function met ->
       let lab = new_method table in
+      table.methods.(lab) <- magic 1;
+      table.methods_by_name  <- Meths.add met lab table.methods_by_name;
+      table.methods_by_label <- Labs.add lab true table.methods_by_label)
+    public_methods;
+  table
+*)
+
+let compute_labels n tags =
+  if n = 0 then Array.mapi (fun i _ -> i+1) tags else
+  let base = -(1 lsl 30) in
+  let ofs = n - base mod n in
+  let umod (x : tag) = (((magic x : int) lxor base) mod n + ofs) mod n in
+  Array.map umod tags
+
+let init_hash n labels =
+  let arr = Array.create (n+1) 0 and last = ref 0 in
+  arr.(0) <- n;
+  Array.iter
+    (fun lab ->
+      last := max !last lab;
+      Array.unsafe_set arr lab 1)
+    labels;
+  if !last = n then arr else Array.sub arr 0 (!last+1)
+
+let create_table n public_methods =
+  if public_methods == magic 0 then new_table [||] 0 else
+  (* [public_methods] must be in ascending order for bytecode *)
+  let tags = Array.map public_method_label public_methods in
+  let labels = compute_labels n tags in
+  let table =
+    if n = 0 then new_table [|magic tags|] (Array.length tags + 1) else
+    new_table (magic (init_hash n labels : int array)) 1
+  in
+  Array.iteri
+    (fun i met ->
+      let lab = labels.(i) in
       table.methods_by_name  <- Meths.add met lab table.methods_by_name;
       table.methods_by_label <- Labs.add lab true table.methods_by_label)
     public_methods;
@@ -286,16 +328,16 @@ let inherits cla vals virt_meths concr_meths (_, super, _, env) top =
   widen cla;
   init
 
-let make_class pub_meths class_init =
-  let table = create_table pub_meths in
+let make_class hash_size pub_meths class_init =
+  let table = create_table hash_size pub_meths in
   let env_init = class_init table in
   init_class table;
   (env_init (Obj.repr 0), class_init, env_init, Obj.repr 0)
 
 type init_table = { mutable env_init: t; mutable class_init: table -> t }
 
-let make_class_store pub_meths class_init init_table =
-  let table = create_table pub_meths in
+let make_class_store hash_size pub_meths class_init init_table =
+  let table = create_table hash_size pub_meths in
   let env_init = class_init table in
   init_class table;
   init_table.class_init <- class_init;
@@ -353,13 +395,13 @@ let send obj lab =
 external send : obj -> tag -> 'a = "%send"
 external sendself : obj -> label -> 'a = "%sendself"
 external get_public_method : obj -> tag -> closure
-    = "get_public_method" "noalloc"
+    = "oo_get_public_method" "noalloc"
 
 (**** table collection access ****)
 
-type tables = Empty | Cons of table * tables * tables
+type tables = Empty | Cons of closure * tables * tables
 type mut_tables =
-    {key: table; mutable data: tables; mutable next: tables}
+    {key: closure; mutable data: tables; mutable next: tables}
 external mut : tables -> mut_tables = "%identity"
 
 let build_path n keys tables =

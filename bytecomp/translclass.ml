@@ -529,6 +529,23 @@ module M = struct
 end
 open M
 
+let rec hash_size n tags =
+  let arr = String.make n ' ' in
+  let base = -(1 lsl 30) in
+  let ofs = n - base mod n in
+  let umod x = ((x lxor base) mod n + ofs) mod n in
+  try
+    List.iter
+      (fun x ->
+        let y = umod x in
+        if String.unsafe_get arr y = ' ' then String.unsafe_set arr y '1'
+        else raise Not_found)
+      tags;
+    n
+  with Not_found -> hash_size (n+1) tags
+
+let perfect_hash_size tags =
+  hash_size (List.length tags) tags
 
 (*
    Traduction d'une classe.
@@ -623,6 +640,11 @@ let transl_class ids cl_id arity pub_meths cl =
     List.sort
       (fun s s' -> compare (Btype.hash_variant s) (Btype.hash_variant s'))
       pub_meths in
+  let hash_size =
+    if not !Clflags.native_code then lambda_unit else
+    let size = perfect_hash_size (List.map Btype.hash_variant pub_meths) in
+    Lconst(Const_base(Const_int size))
+  in
   (*
   let public_map () =
     if not !Clflags.native_code then lambda_unit else
@@ -637,7 +659,8 @@ let transl_class ids cl_id arity pub_meths cl =
   *)
   let ltable table lam =
     Llet(Strict, table,
-         Lapply (oo_prim "create_table", [transl_meth_list pub_meths]), lam)
+         Lapply (oo_prim "create_table",
+                 [hash_size; transl_meth_list pub_meths]), lam)
   and ldirect obj_init =
     Llet(Strict, obj_init, cl_init,
          Lsequence(Lapply (oo_prim "init_class", [Lvar cla]),
@@ -654,7 +677,7 @@ let transl_class ids cl_id arity pub_meths cl =
          lam class_init)
   and lbody class_init =
     Lapply (oo_prim "make_class",
-            [transl_meth_list pub_meths; Lvar class_init])
+            [hash_size; transl_meth_list pub_meths; Lvar class_init])
   and lbody_virt lenvs =
     Lprim(Pmakeblock(0, Immutable),
           [lambda_unit; Lfunction(Curried,[cla], cl_init); lambda_unit; lenvs])
@@ -725,7 +748,7 @@ let transl_class ids cl_id arity pub_meths cl =
               if not concrete then lclass_virt () else
               lclass (
               Lapply (oo_prim "make_class_store",
-                      [transl_meth_list pub_meths;
+                      [hash_size; transl_meth_list pub_meths;
                        Lvar class_init; Lvar cached]))),
   make_envs (
   if ids = [] then Lapply(lfield cached 0, [lenvs]) else
