@@ -71,7 +71,19 @@ let transl_val tbl create name =
   Lapply (oo_prim (if create then "new_variable" else "get_variable"),
           [Lvar tbl; transl_label name])
 
-let transl_vals tbl create vals rem =
+let transl_vals tbl create sure vals rem =
+  if create && sure && List.length vals > 1 then
+    let (_,id0) = List.hd vals in
+    let call =
+      Lapply(oo_prim "new_variables",
+	     [Lvar tbl; transl_meth_list (List.map fst vals)]) in
+    let i = ref (List.length vals) in
+    Llet(Strict, id0, call,
+	 List.fold_right
+	   (fun (name,id) rem ->
+	     decr i; Llet(Alias, id, Lprim(Poffsetint !i, [Lvar id0]), rem))
+	   (List.tl vals) rem)
+  else
   List.fold_right
     (fun (name, id) rem ->
       Llet(StrictOpt, id, transl_val tbl create name, rem))
@@ -222,7 +234,7 @@ let output_methods tbl vals methods lam =
                          [Lvar tbl; Lprim(Pmakeblock(0,Immutable), methods)]))
           lam
   in
-  transl_vals tbl true vals lam
+  transl_vals tbl true true vals lam
 
 let rec ignore_cstrs cl =
   match cl.cl_desc with
@@ -253,7 +265,7 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
                 let cl_init = output_methods cla values methods cl_init in
                 let inh_init, cl_init =
                   build_class_init cla pub_meths false inh_init
-                    (transl_vals cla false vals
+                    (transl_vals cla false false vals
                        (transl_super cla str.cl_meths meths cl_init))
                     msubst top cl in
                 (inh_init, cl_init, [], [])
@@ -299,7 +311,7 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
         build_class_init cla pub_meths cstr inh_init cl_init msubst top cl
       in
       let vals = List.map (function (id, _) -> (Ident.name id, id)) vals in
-      (inh_init, transl_vals cla true vals cl_init)
+      (inh_init, transl_vals cla true false vals cl_init)
   | Tclass_apply (cl, exprs) ->
       build_class_init cla pub_meths cstr inh_init cl_init msubst top cl
   | Tclass_let (rec_flag, defs, vals, cl) ->
@@ -307,7 +319,7 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
         build_class_init cla pub_meths cstr inh_init cl_init msubst top cl
       in
       let vals = List.map (function (id, _) -> (Ident.name id, id)) vals in
-      (inh_init, transl_vals cla true vals cl_init)
+      (inh_init, transl_vals cla true false vals cl_init)
   | Tclass_constraint (cl, vals, meths, concr_meths) ->
       let virt_meths =
         List.filter (fun lab -> not (Concr.mem lab concr_meths)) meths in

@@ -393,6 +393,13 @@ let new_variable table name =
   table.vars <- Vars.add name index table.vars;
   index
 
+let new_variables table names =
+  let index = new_variable table names.(0) in
+  for i = 1 to Array.length names - 1 do
+    ignore (new_variable table names.(i))
+  done;
+  index
+
 let get_variable table name =
   Vars.find name table.vars
 

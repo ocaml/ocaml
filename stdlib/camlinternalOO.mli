@@ -30,6 +30,7 @@ type meth
 type t
 type obj
 val new_variable : table -> string -> int
+val new_variables : table -> string array -> int
 val get_variable : table -> string -> int
 val get_method_label : table -> string -> label
 val get_method : table -> label -> meth
