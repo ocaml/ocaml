@@ -17,7 +17,14 @@
 (* This module implements a pretty-printing facility to format text
    within ``pretty-printing boxes''. The pretty-printer breaks lines
    at specified break hints, and indents lines according to the box
-   structure. *)
+   structure.
+
+   Warning: the material output by the following functions is delayed
+   in the pretty-printer queue in order to compute the proper line
+   breaking. Hence, you should not mix calls to the printing functions
+   of the basic I/O system with calls to the functions of this module:
+   this could result in some strange output seemingly unrelated with
+   the evaluation order of printing commands. *)
 
 (* You may consider this module as providing an extension to the
    [printf] facility to provide automatic line breaking. The addition of
