@@ -6,5 +6,5 @@
 \newcommand\textbackslash{\begin{rawhtml}\\end{rawhtml}}
 \newcommand\textasciicircum{\^{}}
 \newcommand\sharp{#}
-
+\let\ocamldocvspace\vspace
 

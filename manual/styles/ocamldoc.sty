@@ -11,8 +11,9 @@
   \rightskip\z@skip
   \parindent\z@
   \parfillskip\@flushglue
-  \parskip\z@skip
-  \noindent\@@par
+  \parskip\z@skip 
+  %\noindent
+  \@@par\smallskip
   \@tempswafalse
   \def\par{%
     \if@tempswa
@@ -53,5 +54,7 @@
 {\list{}{\leftmargin 2\leftmargini \rightmargin0pt \topsep0pt}\raggedright\item\relax}
 {\endlist}
 
+\let\ocamldocvspace\vspace
 \endinput
+
 

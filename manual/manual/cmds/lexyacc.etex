@@ -62,6 +62,10 @@ and \ldots
 
 Comments are delimited by "(*" and "*)", as in Caml.
 
+The "parse" keyword, can be replaced by the "shortest" keyword, with
+the semantical consequence explained below.
+
+
 \subsection{Header and trailer}
 The {\it header} and {\it trailer} sections are arbitrary Caml
 text enclosed in curly braces. Either or both can be omitted. If
@@ -93,6 +97,15 @@ If several regular expressions match a prefix of the input, the
 ``longest match'' rule applies: the regular expression that matches
 the longest prefix of the input is selected.  In case of tie, the
 regular expression that occurs earlier in the rule is selected.
+
+However, if lexer rules are introduced with the "shortest" keyword in
+place of the "parse" keyword, then the ``shortest match'' rule applies:
+the shortest prefix of the input is selected. In case of tie, the
+regular expression that occurs earlier in the rule is still selected.
+This feature is not intended for use in ordinary lexical analyzers, it
+may facilitate the use of "ocamllex" as a simple text processing tool.
+
+
 
 \subsection{Regular expressions}
 
@@ -156,16 +169,20 @@ Match the same strings as @regexp@.
 Reference the regular expression bound to @ident@ by an earlier
 @"let" ident "=" regexp@ definition.
 
+\item[@regexp 'as' ident@]
+Bind the substring matched by @regexp@ to identifier @ident@.
 \end{options}
 
 Concerning the precedences of operators, "*" and "+" have
 highest precedence, followed by "?", then concatenation, then
-"|" (alternation).
+"|" (alternation), then "as".
 
 \subsection{Actions}
 
 The actions are arbitrary Caml expressions. They are evaluated in
-a context where the identifier "lexbuf" is bound to the current lexer
+a context where the identifiers defined by using the "as" construct
+are bound to subparts of the matched string.
+Additionally, "lexbuf" is bound to the current lexer
 buffer. Some typical uses for "lexbuf", in conjunction with the
 operations on lexer buffers provided by the "Lexing" standard library
 module, are listed below.
@@ -194,6 +211,51 @@ lexer definition.) Recursively call the lexer on the given entry point.
 Useful for lexing nested comments, for example.
 
 \end{options}
+
+\subsection{Variables in regular expressions}
+The "as" construct is similar to ``\emph{groups}'' as provided by
+numerous regular expression packages.
+The type of these variables can be "string", "char", "string option"
+or "char option".
+
+We first consider the case of linear patterns, that is the case when
+all "as" bound variables are distinct.
+In @regexp 'as' ident@, the type of @ident@ normally is "string" (or
+"string option") except
+when @regexp@ is a character constant, an underscore, a string
+constant of length one, a character set specification, or an
+alternation of those. Then, the type of @ident@ is "char" (or "char
+option").
+Option types are introduced when overall rule matching does not
+implies matching of the bound sub-pattern. This is in particular the
+case of @'(' regexp 'as' indent')' '?'@ and of
+@regexp_1 '|' '(' regexp_2 'as' ident ')'@.
+
+There is no linearity restriction over "as" bound variables.
+When a variable is bound more then once, the previous rules are to be
+extended as follows:
+\begin{itemize}
+\item A variable is a "char" variable when all its occurrences bind
+"char" occurrences in the previous sense.
+\item A variable is an "option" variable when the overall expression
+can be matched without binding this variable.
+\end{itemize}
+For instance, in
+\verb+('a' as x) | ( 'a' (_ as x) )+ the variable \verb+x+  is of type
+"char", whereas in 
+\verb+("ab" as x) | ( 'a' (_ as x) ? )+ the variable \verb+x+  is of type
+"string option".
+
+
+In some cases, a sucessful match may not yield a unique set of bindings.
+For instance the matching of \verb+aba+ by the regular expression
+\verb+(('a'|"ab") as x) (("ba"|'a') as y)+ may result in binding
+either
+\verb+x+ to \verb+"ab"+ and \verb+y+ to \verb+"a"+, or
+\verb+x+ to \verb+"a"+ and \verb+y+ to \verb+"ba"+.
+The behavior of "ocamllex" on such ambiguous regular expressions is
+purposely left unspecified.
+
 
 \subsection{Reserved identifiers}
 
@@ -423,7 +485,7 @@ Here is the definition for the corresponding lexer:
         rule token = parse
             [' ' '\t']     { token lexbuf }     (* skip blanks *)
           | ['\n' ]        { EOL }
-          | ['0'-'9']+     { INT(int_of_string(Lexing.lexeme lexbuf)) }
+          | ['0'-'9']+ as lxm { INT(int_of_string lxm) }
           | '+'            { PLUS }
           | '-'            { MINUS }
           | '*'            { TIMES }
@@ -473,8 +535,8 @@ rule token = parse
 | "keyword2"   { KWD2 }
 | ...
 | "keyword100" { KWD100 }
-| ['A'-'Z' 'a'-'z'] ['A'-'Z' 'a'-'z' '0'-'9' '_'] *
-               { IDENT(Lexing.lexeme lexbuf) }
+| ['A'-'Z' 'a'-'z'] ['A'-'Z' 'a'-'z' '0'-'9' '_'] * as id
+               { IDENT id}
 \end{verbatim}
 To keep the generated automata small, rewrite those definitions with
 only one general ``identifier'' rule, followed by a hashtable lookup
@@ -488,12 +550,17 @@ to separate keywords from identifiers:
                 "keyword100", KWD100 ]
 }
 rule token = parse
-  ['A'-'Z' 'a'-'z'] ['A'-'Z' 'a'-'z' '0'-'9' '_'] *
-               { let id = Lexing.lexeme lexbuf in
-                 try
+  ['A'-'Z' 'a'-'z'] ['A'-'Z' 'a'-'z' '0'-'9' '_'] * as id
+               { try
                    Hashtbl.find keyword_table s
                  with Not_found ->
                    IDENT s }
 \end{verbatim}
+
+\item[ocamllex: Position memory overflow, too many bindings]
+The deterministic automata generated by "ocamllex" manage a memory of
+positions inside the scanned lexer buffer. The size of this memory is
+limited to at most 255 cells. This error should not show up in normal
+situations.
 
 \end{options}

@@ -38,6 +38,7 @@ caml-tex2: caml-tex2.cmo
 	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
+	rm -f transf.ml latexscan.ml htmltransf.ml
 	rm -f texquote2 transf htmlquote htmlgen dvi2txt
 	rm -f transf.ml latex.ml
 	rm -f *.o *.cm? *.cmxa
