@@ -185,46 +185,23 @@ CAMLprim value lazy_make_forward (value v)
 CAMLprim value oo_get_public_method (value obj, value tag)
 {
   value meths = Field (obj, 0);
-  int count = Int_val(Field(meths,0));
-  int li = 1, hi = count, mi;
+  int li = 3, hi = Field(meths,0), mi;
   while (li < hi) {
-    mi = (li+hi+1) >> 1;
-    if (tag < Field(meths,mi*2+1)) hi = mi-1;
+    mi = ((li+hi) >> 1) | 1;
+    if (tag < Field(meths,mi)) hi = mi-2;
     else li = mi;
   }
-  return Field (meths, li*2);
+  return Field (meths, li-1);
 }
 
 CAMLprim value oo_cache_public_method (value meths, value tag, value *cache)
 {
-  int count = Int_val(Field(meths,0));
-  int li = 1, hi = count, mi;
+  int li = 3, hi = Field(meths,0), mi;
   while (li < hi) {
-    mi = (li+hi+1) >> 1;
-    if (tag < Field(meths,mi*2+1)) hi = mi-1;
+    mi = ((li+hi) >> 1) | 1;
+    if (tag < Field(meths,mi)) hi = mi-2;
     else li = mi;
   }
-  li *= 2;
-  *cache = li-1;
-  return Field (meths, li);
-}
-
-CAMLprim value oo_cache_public_method2 (value obj, value tag, value *cache)
-{
-  value meths = Field (obj, 0);
-  value tags = Field (meths, 0);
-  if (tags == cache[0]) return Field(meths, Int_val(cache[1]));
-  {
-    value met;
-    int li = 0, hi = Wosize_val(tags)-1, mi;
-    while (li < hi) {
-      mi = (li+hi+1) >> 1;
-      if (tag < Field(tags,mi)) hi = mi-1;
-      else li = mi;
-    }
-    cache[0] = tags;
-    li++;
-    cache[1] = Val_int(li);
-    return Field(meths, li);
-  }
+  *cache = li-2;
+  return Field (meths, li-1);
 }
