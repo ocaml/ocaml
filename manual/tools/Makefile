@@ -1,4 +1,4 @@
-CFLAGS=-g
+CFLAGS=-g -O
 
 all: texquote2 transf htmlquote htmlgen dvi2txt
 
