@@ -68,13 +68,18 @@ let main () =
        "-intf", Arg.String process_interface_file,
              "<file>  Compile <file> as a .mli file";
        "-linkall", Arg.Set link_everything, " Don't remove unused modules";
-       "-o", Arg.String(fun s -> exec_name := s; archive_name := s),
+       "-o", Arg.String(fun s -> exec_name := s;
+                                 archive_name := s;
+                                 object_name := s),
              "<file>  Set output file name to <file> (default a.out)";
+       "-output-obj", Arg.Unit(fun () -> output_c_object := true;
+                                         custom_runtime := true),
+             "Output a C object file instead of an executable";
        "-pp", Arg.String(fun s -> preprocessor := Some s),
-              "<command>  Pipe sources through preprocessor <command>";
+             "<command>  Pipe sources through preprocessor <command>";
        "-thread", Arg.Set thread_safe, " Use thread-safe standard library";
-       "-v", Arg.Unit print_version_number, " Print compiler version number";
        "-unsafe", Arg.Set fast, " No bound checking on array and string access";
+       "-v", Arg.Unit print_version_number, " Print compiler version number";
 
        "-nopervasives", Arg.Set nopervasives, " (undocumented)";
        "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";

@@ -145,15 +145,4 @@ let implementation sourcefile =
     raise x
 
 let c_file name =
-  if Sys.command
-     (Printf.sprintf
-       "%s -c %s %s -I%s %s"
-       Config.bytecomp_c_compiler
-       (String.concat " " (List.rev !Clflags.ccopts))
-       (String.concat " "
-         (List.map (fun dir -> "-I" ^ dir) 
-                   (List.rev !Clflags.include_dirs)))
-       Config.standard_library
-       name)
-     <> 0
-  then exit 2
+  if Ccomp.compile_file name <> 0 then exit 2
