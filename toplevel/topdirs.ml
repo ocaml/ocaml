@@ -52,21 +52,22 @@ let _ = Hashtbl.add directive_table "cd" (Directive_string dir_cd)
 exception Load_failed
 
 let check_consistency ppf filename compunit =
-  List.iter
-    (fun (name, crc) ->
-      let crc_intf =
-        try
-          Env.crc_of_unit name
-        with Not_found ->
-          fprintf ppf "Cannot find compiled interface for %s.@." name;
-          raise Load_failed in
-      if crc <> crc_intf then begin
-        fprintf ppf "@[<hv 0>File %s is not up-to-date with respect to@ \
-                             interface %s@]@."
-                filename name;
+  Bytelink.check_consistency filename compunit;
+  (* Check consistency of unit against its .cmi, if it can be found *)
+  try
+    let crc_intf = Env.crc_of_unit compunit.cu_name in
+    let crc_impl =
+      try List.assoc compunit.cu_name compunit.cu_imports
+      with Not_found -> assert false in
+    if crc_intf <> crc_impl then begin
+      fprintf ppf "@[<hv 0>File %s is not up-to-date with respect to@ \
+                           interface %s@]@."
+              filename compunit.cu_name;
         raise Load_failed
-      end)
-    compunit.cu_imports
+      end
+  with Not_found ->
+    (* Couldn't find .cmi, ignore it (or should we print a warning?) *)
+    ()
 
 let load_compunit ic filename ppf compunit =
   check_consistency ppf filename compunit;
