@@ -30,8 +30,9 @@ between 128 and 255 following the ISO 8859-1 standard.
 \subsubsection*{Character strings} \label{s:string-val}
 
 String values are finite sequences of characters. The current
-implementation supports strings containing up to $2^{24} - 6$
-characters (16777210 characters).
+implementation supports strings containing up to $2^{24} - 5$
+characters (16777211 characters); on 64-bit platforms, the limit is
+$2^{57} - 9$.
 
 \subsection{Tuples}
 
@@ -51,7 +52,8 @@ implementation supports records with up to $2^{22} - 1$ fields
 
 Arrays are finite, variable-sized sequences of values of the same
 type.  The current implementation supports arrays containing to
-$2^{22} - 1$ elements (4194303 elements).
+$2^{22} - 1$ elements (4194303 elements); on 64-bit platforms, the
+limit is $2^{54} - 1$
 
 \subsection{Variant values}
 
@@ -69,8 +71,8 @@ constructors:
 \entree{"[]"}{the empty list}
 \end{tableau}
 
-The current implementation limits the number of distinct constructors
-in a given variant type to at most 249.
+The current implementation limits each variant type to have at most
+246 non-constant constructors.
 
 \subsection{Polymorphic variants}
 
@@ -89,3 +91,5 @@ Objects are composed of a hidden internal state which is a
 record of instance variables, and a set of methods for accessing and
 modifying these variables.  The structure of an object is described by
 the toplevel class that created it.
+
+% $Id$

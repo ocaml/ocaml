@@ -17,7 +17,7 @@ non-constant -- class @ncconstr-name@),
 \item module names (@module-name@),
 \item module type names (@modtype-name@).
 \end{itemize}
-These nine name spaces are distinguished both by the context and by the
+These eleven name spaces are distinguished both by the context and by the
 capitalization of the identifier: whether the first letter of the
 identifier is in lowercase (written @lowercase-ident@ below) or in
 uppercase (written @capitalized-ident@).  Underscore is considered a
@@ -153,3 +153,5 @@ result of a functor application.
 Label names, tag names, method names and instance variable names need
 not be qualified: the former three are global labels, while the latter
 are local to a class.
+
+% $Id$
