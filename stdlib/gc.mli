@@ -150,12 +150,18 @@ external set : control -> unit = "gc_set"
 external minor : unit -> unit = "gc_minor"
 (** Trigger a minor collection. *)
 
+external major_slice : int -> int = "gc_major_slice";;
+(** Do a minor collection and a slice of major collection.  The argument
+    is the size of the slice, 0 to use the automatically-computed
+    slice size.  In all cases, the result is the computed slice size. *)
+
 external major : unit -> unit = "gc_major"
-(** Finish the current major collection cycle. *)
+(** Do a minor collection and finish the current major collection cycle. *)
 
 external full_major : unit -> unit = "gc_full_major"
-(** Finish the current major collection cycle and perform a complete
-   new cycle.  This will collect all currently unreachable blocks. *)
+(** Do a minor collection, finish the current major collection cycle,
+   and perform a complete new cycle.  This will collect all currently
+   unreachable blocks. *)
 
 external compact : unit -> unit = "gc_compaction"
 (** Perform a full major collection and compact the heap.  Note that heap

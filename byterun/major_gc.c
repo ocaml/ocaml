@@ -35,7 +35,7 @@ char *heap_start, *heap_end;
 page_table_entry *page_table;
 asize_t page_low, page_high;
 char *gc_sweep_hp;
-int gc_phase;
+int gc_phase;        /* always Phase_mark, Phase_sweep, or Phase_idle */
 static value *gray_vals;
 value *gray_vals_cur, *gray_vals_end;
 static asize_t gray_vals_size;
@@ -47,7 +47,11 @@ extern char *fl_merge;  /* Defined in freelist.c. */
 
 static char *markhp, *chunk, *limit;
 
-static void update_weak_pointers (void);
+static int gc_subphase;     /* Subphase_main, Subphase_weak, Subphase_final */
+#define Subphase_main 10
+#define Subphase_weak 11
+#define Subphase_final 12
+static value *weak_prev;
 
 static void realloc_gray_vals (void)
 {
@@ -94,6 +98,7 @@ static void start_cycle (void)
   gc_message (0x01, "Starting new major GC cycle\n", 0);
   darken_all_roots();
   gc_phase = Phase_mark;
+  gc_subphase = Subphase_main;
   markhp = NULL;
 #ifdef DEBUG
   heap_check ();
@@ -107,7 +112,7 @@ static void mark_slice (long work)
   header_t hd;
   mlsize_t size, i;
 
-  gc_message (0x40, "Marking %lu words\n", work);
+  gc_message (0x40, "Marking %ld words\n", work);
   gray_vals_ptr = gray_vals_cur;
   while (work > 0){
     if (gray_vals_ptr > gray_vals){
@@ -119,13 +124,13 @@ static void mark_slice (long work)
       if (Tag_hd (hd) < No_scan_tag){
         for (i = 0; i < size; i++){
           child = Field (v, i);
-        again:
+        mark_again:
           if (Is_block (child) && Is_in_heap (child)) {
             hd = Hd_val(child);
             if (Tag_hd (hd) == Forward_tag){
               child = Forward_val (child);
               Field (v, i) = child;
-              goto again;
+              goto mark_again;
             }
             if (Tag_hd(hd) == Infix_tag) {
               child -= Infix_offset_val(child);
@@ -165,17 +170,50 @@ static void mark_slice (long work)
       chunk = heap_start;
       markhp = chunk;
       limit = chunk + Chunk_size (chunk);
-    }else if (gc_phase == Phase_mark){
-      /* The main marking phase is over.  Handle finalised values. */
-      gray_vals_cur = gray_vals_ptr;
-      final_update ();
-      gray_vals_ptr = gray_vals_cur;
-      gc_phase = Phase_mark_final;
+    }else if (gc_subphase == Subphase_main){
+      /* The main marking phase is over.  Start removing weak pointers to
+         dead values. */
+      gc_subphase = Subphase_weak;
+      weak_prev = &weak_list_head;
+    }else if (gc_subphase == Subphase_weak){
+      value cur, curfield;
+      mlsize_t sz, i;
+      header_t hd;
+
+      cur = *weak_prev;
+      if (cur != NULL){
+        hd = Hd_val (cur);
+        if (Color_hd (hd) == Caml_white){
+          /* The whole array is dead, remove it from the list. */
+          *weak_prev = Field (cur, 0);
+        }else{
+          sz = Wosize_hd (hd);
+          for (i = 1; i < sz; i++){
+            curfield = Field (cur, i);
+          weak_again:
+            if (curfield != 0 && Is_block (curfield) && Is_in_heap (curfield)
+                && Is_white_val (curfield)){
+              if (Tag_val (curfield) == Forward_tag){
+                curfield = Forward_val (curfield);
+                Field (cur, i) = curfield;
+                goto weak_again;
+              }
+              Field (cur, i) = 0;
+            }
+          }
+          weak_prev = &Field (cur, 0);
+        }
+        work -= Whsize_hd (hd);
+      }else{
+        Assert (weak_prev == NULL);
+        /* Subphase_weak is done.  Handle finalised values. */
+        gray_vals_cur = gray_vals_ptr;
+        final_update ();
+        gray_vals_ptr = gray_vals_cur;
+        gc_subphase = Subphase_final;
+      }
     }else{
-      /* Marking is done. */
-
-      update_weak_pointers ();
-
+      Assert (gc_subphase == Subphase_final);
       /* Initialise the sweep phase. */
       gray_vals_cur = gray_vals_ptr;
       gc_sweep_hp = heap_start;
@@ -190,43 +228,12 @@ static void mark_slice (long work)
   gray_vals_cur = gray_vals_ptr;
 }
 
-/* Walk through the linked list of weak arrays.
-   Arrays that are white are removed from this list.
-   For the other arrays, pointers to white objects are erased.
-*/
-static void update_weak_pointers (void)
-{
-  value *prev = &weak_list_head;
-  value *cur = (value *) *prev;
-  mlsize_t sz, i;
-
-  while (cur != NULL){
-    if (Color_val (cur) == Caml_white){
-      *prev = Field (cur, 0);
-      cur = (value *) *prev;
-    }else{
-      value curfield;
-
-      sz = Wosize_val (cur);
-      for (i = 1; i < sz; i++){
-        curfield = Field (cur, i);
-        if (curfield != 0 && Is_block (curfield) && Is_in_heap (curfield)
-            && Is_white_val (curfield)){
-          Field (cur, i) = 0;
-        }
-      }
-      prev = &Field (cur, 0);
-      cur = (value *) *prev;
-    }
-  }
-}
-
-static void sweep_slice (long int work)
+static void sweep_slice (long work)
 {
   char *hp;
   header_t hd;
 
-  gc_message (0x40, "Sweeping %lu words\n", work);
+  gc_message (0x40, "Sweeping %ld words\n", work);
   while (work > 0){
     if (gc_sweep_hp < limit){
       hp = gc_sweep_hp;
@@ -266,10 +273,14 @@ static void sweep_slice (long int work)
   }
 }
 
-/* The main entry point for the GC.  Called after each minor GC. */
-void major_collection_slice (void)
+/* The main entry point for the GC.  Called after each minor GC.
+   [howmuch] is the amount of work to do, 0 to let the GC compute it.
+   Return the computed amount of work to do.
+ */
+long major_collection_slice (long howmuch)
 {
   double p;
+  long computed_work;
   /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
                  FM = stat_heap_size * percent_free / (100 + percent_free)
@@ -310,14 +321,21 @@ void major_collection_slice (void)
   gc_message (0x40, "amount of work to do = %luu\n",
               (unsigned long) (p * 1000000));
 
-  if (gc_phase == Phase_mark || gc_phase == Phase_mark_final){
-    long work = (long) (p * stat_heap_size * 100 / (100+percent_free)) + Margin;
-    mark_slice (work);
+  if (gc_phase == Phase_mark){
+    computed_work = (long) (p * stat_heap_size * 100 / (100+percent_free));
+  }else{
+    computed_work = (long) (p * stat_heap_size);
+  }
+  computed_work += Margin;
+  gc_message (0x40, "ordered work = %ld words\n", howmuch);
+  gc_message (0x40, "computed work = %ld words\n", computed_work);
+  if (howmuch == 0) howmuch = computed_work;
+  if (gc_phase == Phase_mark){
+    mark_slice (howmuch);
     gc_message (0x02, "!", 0);
   }else{
-    long work = (long) (p * stat_heap_size) + Margin;
     Assert (gc_phase == Phase_sweep);
-    sweep_slice (work);
+    sweep_slice (howmuch);
     gc_message (0x02, "$", 0);
   }
 
@@ -326,6 +344,7 @@ void major_collection_slice (void)
   stat_major_words += allocated_words;
   allocated_words = 0;
   extra_heap_memory = 0.0;
+  return computed_work;
 }
 
 /* The minor heap must be empty when this function is called;
@@ -338,9 +357,9 @@ void major_collection_slice (void)
 void finish_major_cycle (void)
 {
   if (gc_phase == Phase_idle) start_cycle ();
-  if (gc_phase == Phase_mark) mark_slice (LONG_MAX);
+  while (gc_phase == Phase_mark) mark_slice (LONG_MAX);
   Assert (gc_phase == Phase_sweep);
-  sweep_slice (LONG_MAX);
+  while (gc_phase == Phase_sweep) sweep_slice (LONG_MAX);
   Assert (gc_phase == Phase_idle);
   stat_major_words += allocated_words;
   allocated_words = 0;

@@ -67,7 +67,7 @@ void set_minor_heap_size (asize_t size)
   ref_table_end = ref_table + ref_table_size + ref_table_reserve;
 }
 
-static value oldify_todo_list = NULL;
+static value oldify_todo_list = 0;
 
 /* Note that the tests on the tag depend on the fact that Infix_tag,
    Forward_tag, and No_scan_tag are contiguous. */
@@ -135,7 +135,7 @@ void oldify_mopup (void)
   value v, new_v, f;
   mlsize_t i;
 
-  while (oldify_todo_list != NULL){
+  while (oldify_todo_list != 0){
     v = oldify_todo_list;                /* Get the head. */
     Assert (Hd_val (v) == 0);            /* It must be forwarded. */
     new_v = Field (v, 0);                /* Follow forward pointer. */
@@ -200,9 +200,9 @@ void minor_collection (void)
 
   stat_promoted_words += allocated_words - prev_alloc_words;
   ++ stat_minor_collections;
-  major_collection_slice ();
+  major_collection_slice (0);
   force_major_slice = 0;
-  
+
   final_do_calls ();
 
   empty_minor_heap ();

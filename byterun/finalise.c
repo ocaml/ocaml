@@ -48,8 +48,15 @@ void final_update (void)
   for (i = 0; i < old; i++){
     Assert (Is_block (final_table[i].val));
     Assert (Is_in_heap (final_table[i].val));
+  again:
     if (Is_white_val (final_table[i].val)){
-      struct final f = final_table[i];
+      struct final f;
+
+      if (Tag_val (final_table[i].val) == Forward_tag){
+        final_table[i].val = Forward_val (final_table[i].val);
+        goto again;
+      }
+      f = final_table[i];
       final_table[i] = final_table[--old];
       final_table[--active] = f;
       -- i;

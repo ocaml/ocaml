@@ -45,6 +45,7 @@ external counters : unit -> (float * float * float) = "gc_counters";;
 external get : unit -> control = "gc_get";;
 external set : control -> unit = "gc_set";;
 external minor : unit -> unit = "gc_minor";;
+external major_slice : int -> int = "gc_major_slice";;
 external major : unit -> unit = "gc_major";;
 external full_major : unit -> unit = "gc_full_major";;
 external compact : unit -> unit = "gc_compaction";;

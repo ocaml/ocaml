@@ -206,7 +206,7 @@ void shrink_heap (char *chunk)
     page_table [i] = Not_in_heap;
   }
 
-  /* Free the [malloc]ed block that contains [chunk]. */
+  /* Free the [malloc] block that contains [chunk]. */
   free (Chunk_block (chunk));
 }
 

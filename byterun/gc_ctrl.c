@@ -377,6 +377,13 @@ CAMLprim value gc_full_major(value v)
   return Val_unit;
 }
 
+CAMLprim value gc_major_slice (value v)
+{
+  Assert (Is_long (v));
+  empty_minor_heap ();
+  return Val_long (major_collection_slice (Long_val (v)));
+}
+
 CAMLprim value gc_compaction(value v)
 {                                                    Assert (v == Val_unit);
   empty_minor_heap ();

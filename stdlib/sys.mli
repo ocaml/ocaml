@@ -169,3 +169,11 @@ val catch_break : bool -> unit
    Call [catch_break true] to enable raising [Break],
    and [catch_break false] to let the system
    terminate the program on user interrupt. *)
+
+
+val ocaml_version : string;;
+(** [ocaml_version] is the version of Objective Caml.
+    It is a string of the form ["major.minor[additional-info] (date)"]
+    Where major and minor are integers, date is in standard format
+    (i.e. YYYY-MM-DD), and [additional-info] is a string that may be
+    empty and does not start with a digit. *)
