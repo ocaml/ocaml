@@ -159,6 +159,7 @@ int add_to_heap (char *m)
 /* Allocate more memory from malloc for the heap.
    Return a blue block of at least the requested size (in words).
    The caller must insert the block into the free list.
+   The request must be less than or equal to Max_wosize.
    Return NULL when out of memory.
 */
 static char *expand_heap (mlsize_t request)

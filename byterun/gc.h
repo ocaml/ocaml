@@ -40,9 +40,11 @@
 
 /* This depends on the layout of the header.  See [mlvalues.h]. */
 #define Make_header(wosize, tag, color)                                       \
+      (Assert ((wosize) <= Max_wosize),                                       \
        ((header_t) (((header_t) (wosize) << 10)                               \
                     + (color)                                                 \
-                    + (tag_t) (tag)))
+                    + (tag_t) (tag)))                                         \
+      )
 
 #define Is_white_val(val) (Color_val(val) == Caml_white)
 #define Is_gray_val(val) (Color_val(val) == Caml_gray)

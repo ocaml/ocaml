@@ -172,6 +172,7 @@ char *fl_merge_block (char *bp)
 {
   char *prev, *cur, *adj;
   header_t hd = Hd_bp (bp);
+  mlsize_t prev_wosz;
 
   fl_cur_size += Whsize_hd (hd);
   
@@ -192,10 +193,13 @@ char *fl_merge_block (char *bp)
 
   /* If [last_fragment] and [bp] are adjacent, merge them. */
   if (last_fragment == Hp_bp (bp)){
-    hd = Make_header (Whsize_bp (bp), 0, Caml_white);
-    bp = last_fragment;
-    Hd_bp (bp) = hd;
-    fl_cur_size += Whsize_wosize (0);
+    mlsize_t bp_whsz = Whsize_bp (bp);
+    if (bp_whsz <= Max_wosize){
+      hd = Make_header (bp_whsz, 0, Caml_white);
+      bp = last_fragment;
+      Hd_bp (bp) = hd;
+      fl_cur_size += Whsize_wosize (0);
+    }
   }
 
   /* If [bp] and [cur] are adjacent, remove [cur] from the free-list
@@ -203,24 +207,28 @@ char *fl_merge_block (char *bp)
   adj = bp + Bosize_hd (hd);
   if (adj == Hp_bp (cur)){
     char *next_cur = Next (cur);
-    long cur_whsz = Whsize_bp (cur);
+    mlsize_t cur_whsz = Whsize_bp (cur);
 
-    Next (prev) = next_cur;
-    if (fl_prev == cur) fl_prev = prev;
-    hd = Make_header (Wosize_hd (hd) + cur_whsz, 0, Caml_blue);
-    Hd_bp (bp) = hd;
-    adj = bp + Bosize_hd (hd);
+    if (Wosize_hd (hd) + cur_whsz <= Max_wosize){
+      Next (prev) = next_cur;
+      if (fl_prev == cur) fl_prev = prev;
+      hd = Make_header (Wosize_hd (hd) + cur_whsz, 0, Caml_blue);
+      Hd_bp (bp) = hd;
+      adj = bp + Bosize_hd (hd);
 #ifdef DEBUG
-    fl_last = NULL;
-    Next (cur) = (char *) Debug_free_major;
-    Hd_bp (cur) = Debug_free_major;
+      fl_last = NULL;
+      Next (cur) = (char *) Debug_free_major;
+      Hd_bp (cur) = Debug_free_major;
 #endif
-    cur = next_cur;
+      cur = next_cur;
+    }
   }
   /* If [prev] and [bp] are adjacent merge them, else insert [bp] into
      the free-list if it is big enough. */
-  if (prev + Bosize_bp (prev) == Hp_bp (bp)){
-    Hd_bp (prev) = Make_header (Wosize_bp (prev) + Whsize_hd (hd), 0,Caml_blue);
+  prev_wosz = Wosize_bp (prev);
+  if (prev + Bsize_wsize (prev_wosz) == Hp_bp (bp)
+      && prev_wosz + Whsize_hd (hd) < Max_wosize){
+    Hd_bp (prev) = Make_header (prev_wosz + Whsize_hd (hd), 0,Caml_blue);
 #ifdef DEBUG
     Hd_bp (bp) = Debug_free_major;
 #endif
@@ -280,5 +288,29 @@ void fl_add_block (char *bp)
        advance fl_merge to the new block, so that fl_merge is always the
        last free-list block before gc_sweep_hp. */
     if (prev == fl_merge && bp <= gc_sweep_hp) fl_merge = bp;
+  }
+}
+
+/* Cut a block of memory into Max_wosize pieces, give them headers,
+   and optionally merge them into the free list.
+   arguments:
+   p: pointer to the first word of the block
+   size: size of the block (in words)
+   do_merge: 1 -> do merge; 0 -> do not merge
+*/
+void make_free_blocks (value *p, mlsize_t size, int do_merge)
+{
+  mlsize_t sz;
+
+  while (size > 0){
+    if (size > Whsize_wosize (Max_wosize)){
+      sz = Whsize_wosize (Max_wosize);
+    }else{
+      sz = size;
+    }
+    *(header_t *)p = Make_header (Wosize_whsize (sz), 0, Caml_white);
+    if (do_merge) fl_merge_block (Bp_hp (p));
+    size -= sz;
+    p += sz;
   }
 }

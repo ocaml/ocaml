@@ -446,9 +446,8 @@ void init_major_heap (asize_t heap_size)
     page_table [i] = In_heap;
   }
 
-  Hd_hp (heap_start) = Make_header (Wosize_bhsize(stat_heap_size),0,Caml_blue);
   fl_init_merge ();
-  fl_merge_block (Bp_hp (heap_start));
+  make_free_blocks ((value *) heap_start, Wsize_bsize (stat_heap_size), 1);
   gc_phase = Phase_idle;
   gray_vals_size = 2048;
   gray_vals = (value *) malloc (gray_vals_size * sizeof (value));

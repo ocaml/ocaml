@@ -29,6 +29,7 @@ void fl_init_merge (void);
 void fl_reset (void);
 char *fl_merge_block (char *);
 void fl_add_block (char *);
+void make_free_blocks (value *, mlsize_t, int);
 
 
 #endif /* _freelist_ */

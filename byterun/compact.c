@@ -381,10 +381,8 @@ void compact_heap (void)
     fl_reset ();
     while (ch != NULL){
       if (Chunk_size (ch) > Chunk_alloc (ch)){
-        header_t *p = (header_t *) (ch + Chunk_alloc (ch));
-        *p = Make_header (Wosize_bhsize (Chunk_size (ch) - Chunk_alloc (ch)),
-                          0, Caml_white);
-        fl_merge_block (Bp_hp (p));
+        make_free_blocks ((value *) (ch + Chunk_alloc (ch)),
+                          Wsize_bsize (Chunk_size (ch) - Chunk_alloc (ch)), 1);
       }
       ch = Chunk_next (ch);
     }

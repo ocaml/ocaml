@@ -182,13 +182,16 @@ static value heap_stats (int returnstats)
         if (Whsize_hd (cur_hd) > largest_free){
           largest_free = Whsize_hd (cur_hd);
         }
+        /* not true any more with big heap chunks
         Assert (prev_hp == NULL
                 || (Color_hp (prev_hp) != Caml_blue && Wosize_hp (prev_hp) > 0)
                 || cur_hp == gc_sweep_hp);
         Assert (Next (cur_hp) == chunk_end
                 || (Color_hp (Next (cur_hp)) != Caml_blue
                     && Wosize_hp (Next (cur_hp)) > 0)
+                || (Whsize_hd (cur_hd) + Wosize_hp (Next (cur_hp)) > Max_wosize)
                 || Next (cur_hp) == gc_sweep_hp);
+        */
         break;
       }
       prev_hp = cur_hp;
