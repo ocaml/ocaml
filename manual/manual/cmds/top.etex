@@ -113,9 +113,9 @@ launched from the Windows file manager or program manager.
 
 The ``Terminal'' windows is split in two panes. Phrases are entered
 and edited in the bottom pane. The top pane displays a copy of the
-input phrases as they are processed by the Caml Light toplevel,
+input phrases as they are processed by the Objective Caml toplevel,
 interspersed with the toplevel responses. The ``Return'' key sends the
-contents of the bottom pane to the Caml Light toplevel. The ``Enter''
+contents of the bottom pane to the Objective Caml toplevel. The ``Enter''
 key inserts a newline without sending the contents of the Input
 window. (This can be configured with the ``Preferences'' menu item.)
 
@@ -127,7 +127,7 @@ To quit the "Camlwin" application, either select ``Quit'' from
 the ``File'' menu, or use the "quit" function described below.
 
 At any point, the parsing, compilation or evaluation of the current
-phrase can be interrupted by selecting the ``Interrupt Caml Light''
+phrase can be interrupted by selecting the ``Interrupt Objective Caml''
 menu item. This goes back to the "#" prompt.
 \end{windows}
 

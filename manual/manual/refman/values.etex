@@ -2,7 +2,7 @@
 \pdfsection{Values}
 
 This section describes the kinds of values that are manipulated by
-Caml Light programs.
+Objective Caml programs.
 
 \subsection{Base values}
 

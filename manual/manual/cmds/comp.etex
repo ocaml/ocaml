@@ -40,7 +40,7 @@ the implementation \var{x}".ml".
 \item
 Arguments ending in ".cmo" are taken to be compiled object bytecode.  These
 files are linked together, along with the object files obtained
-by compiling ".ml" arguments (if any), and the Caml Light standard
+by compiling ".ml" arguments (if any), and the Objective Caml standard
 library, to produce a standalone executable program. The order in
 which ".cmo" and ".ml" arguments are presented on the command line is
 relevant: compilation units are initialized in that order at
