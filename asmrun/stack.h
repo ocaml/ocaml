@@ -18,7 +18,7 @@
 
 /* Macros to access the stack frame */
 #ifdef TARGET_alpha
-#define NUM_GC_REGS 32
+#define NUM_GC_REGS 31
 #define Saved_return_address(sp) *((long *)(sp - 8))
 #define Already_scanned(sp, retaddr) (retaddr & 1L)
 #define Mark_scanned(sp, retaddr) (*((long *)(sp - 8)) = retaddr | 1L)

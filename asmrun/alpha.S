@@ -13,101 +13,6 @@
 
 /* Asm part of the runtime system, Alpha processor */
 
-        .comm   gc_entry_regs, 8 * 32
-        .comm   gc_entry_float_regs, 8 * 32
-
-#define SAVE_ALL_REGS \
-        lda     $24, gc_entry_regs; \
-        stq     $0, 0 * 8 ($24); \
-        stq     $1, 1 * 8 ($24); \
-        stq     $2, 2 * 8 ($24); \
-        stq     $3, 3 * 8 ($24); \
-        stq     $4, 4 * 8 ($24); \
-        stq     $5, 5 * 8 ($24); \
-        stq     $6, 6 * 8 ($24); \
-        stq     $7, 7 * 8 ($24); \
-        stq     $8, 8 * 8 ($24); \
-        stq     $9, 9 * 8 ($24); \
-        stq     $10, 10 * 8 ($24); \
-        stq     $11, 11 * 8 ($24); \
-        stq     $12, 12 * 8 ($24); \
-        stq     $16, 16 * 8 ($24); \
-        stq     $17, 17 * 8 ($24); \
-        stq     $18, 18 * 8 ($24); \
-        stq     $19, 19 * 8 ($24); \
-        stq     $20, 20 * 8 ($24); \
-        stq     $21, 21 * 8 ($24); \
-        stq     $22, 22 * 8 ($24); \
-        lda     $24, gc_entry_float_regs; \
-        stt     $f0, 0 * 8 ($24); \
-        stt     $f1, 1 * 8 ($24); \
-        stt     $f10, 10 * 8 ($24); \
-        stt     $f11, 11 * 8 ($24); \
-        stt     $f12, 12 * 8 ($24); \
-        stt     $f13, 13 * 8 ($24); \
-        stt     $f14, 14 * 8 ($24); \
-        stt     $f15, 15 * 8 ($24); \
-        stt     $f16, 16 * 8 ($24); \
-        stt     $f17, 17 * 8 ($24); \
-        stt     $f18, 18 * 8 ($24); \
-        stt     $f19, 19 * 8 ($24); \
-        stt     $f20, 20 * 8 ($24); \
-        stt     $f21, 21 * 8 ($24); \
-        stt     $f22, 22 * 8 ($24); \
-        stt     $f23, 23 * 8 ($24); \
-        stt     $f24, 24 * 8 ($24); \
-        stt     $f25, 25 * 8 ($24); \
-        stt     $f26, 26 * 8 ($24); \
-        stt     $f27, 27 * 8 ($24); \
-        stt     $f29, 29 * 8 ($24); \
-        stt     $f30, 30 * 8 ($24)
-
-#define LOAD_ALL_REGS \
-        lda     $24, gc_entry_regs; \
-        ldq     $0, 0 * 8 ($24); \
-        ldq     $1, 1 * 8 ($24); \
-        ldq     $2, 2 * 8 ($24); \
-        ldq     $3, 3 * 8 ($24); \
-        ldq     $4, 4 * 8 ($24); \
-        ldq     $5, 5 * 8 ($24); \
-        ldq     $6, 6 * 8 ($24); \
-        ldq     $7, 7 * 8 ($24); \
-        ldq     $8, 8 * 8 ($24); \
-        ldq     $9, 9 * 8 ($24); \
-        ldq     $10, 10 * 8 ($24); \
-        ldq     $11, 11 * 8 ($24); \
-        ldq     $12, 12 * 8 ($24); \
-        ldq     $16, 16 * 8 ($24); \
-        ldq     $17, 17 * 8 ($24); \
-        ldq     $18, 18 * 8 ($24); \
-        ldq     $19, 19 * 8 ($24); \
-        ldq     $20, 20 * 8 ($24); \
-        ldq     $21, 21 * 8 ($24); \
-        ldq     $22, 22 * 8 ($24); \
-        lda     $24, gc_entry_float_regs; \
-        ldt     $f0, 0 * 8 ($24); \
-        ldt     $f1, 1 * 8 ($24); \
-        ldt     $f10, 10 * 8 ($24); \
-        ldt     $f11, 11 * 8 ($24); \
-        ldt     $f12, 12 * 8 ($24); \
-        ldt     $f13, 13 * 8 ($24); \
-        ldt     $f14, 14 * 8 ($24); \
-        ldt     $f15, 15 * 8 ($24); \
-        ldt     $f16, 16 * 8 ($24); \
-        ldt     $f17, 17 * 8 ($24); \
-        ldt     $f18, 18 * 8 ($24); \
-        ldt     $f19, 19 * 8 ($24); \
-        ldt     $f20, 20 * 8 ($24); \
-        ldt     $f21, 21 * 8 ($24); \
-        ldt     $f22, 22 * 8 ($24); \
-        ldt     $f23, 23 * 8 ($24); \
-        ldt     $f24, 24 * 8 ($24); \
-        ldt     $f25, 25 * 8 ($24); \
-        ldt     $f26, 26 * 8 ($24); \
-        ldt     $f27, 27 * 8 ($24); \
-        ldt     $f29, 29 * 8 ($24); \
-        ldt     $f30, 30 * 8 ($24)
-
 /* Allocation */
 
         .text
@@ -177,42 +82,124 @@ caml_alloc:
 caml_call_gc:
         .prologue 0
         ldiq    $25, 0
-$110:   lda     $sp, -32($sp)
-        stq     $26, 0($sp)
-        stq     $gp, 8($sp)
-        stq     $25, 16($sp)
+$110:   lda     $sp, -0x200($sp)
+    /* 0x200 = 8 (retaddr) + 31*8 (ints) + 32*8 (floats) */
+        stq     $26, 0x1F8($sp)         /* return address */
+        stq     $gp, 0x1F0($sp)         /* caller's $gp */
+        stq     $25, 0x1E8($sp)         /* desired size */
     /* Rebuild $gp */
         br      $27, $103
 $103:   ldgp    $gp, 0($27)
-    /* Record lowest stack address and return address */
-        ldq     $24, 0($sp)
-        stq     $24, caml_last_return_address
-        lda     $24, 32($sp)
-        stq     $24, caml_bottom_of_stack
+    /* Record last context */
+        lda     $24, 0x100($sp)
+        sta     $24, caml_last_context
     /* Save current allocation pointer for debugging purposes */
         stq     $13, young_ptr
     /* Save trap pointer in case an exception is raised (e.g. sighandler) */
         stq     $15, caml_exception_pointer
-    /* Save all regs used by the code generator in the arrays
-    /* gc_entry_regs and gc_entry_float_regs. */
-        SAVE_ALL_REGS
+    /* Save all integer regs used by the code generator in the context */
+        stq     $0, 0 * 8 ($24)
+        stq     $1, 1 * 8 ($24)
+        stq     $2, 2 * 8 ($24)
+        stq     $3, 3 * 8 ($24)
+        stq     $4, 4 * 8 ($24)
+        stq     $5, 5 * 8 ($24)
+        stq     $6, 6 * 8 ($24)
+        stq     $7, 7 * 8 ($24)
+        stq     $8, 8 * 8 ($24)
+        stq     $9, 9 * 8 ($24)
+        stq     $10, 10 * 8 ($24)
+        stq     $11, 11 * 8 ($24)
+        stq     $12, 12 * 8 ($24)
+        stq     $16, 16 * 8 ($24)
+        stq     $17, 17 * 8 ($24)
+        stq     $18, 18 * 8 ($24)
+        stq     $19, 19 * 8 ($24)
+        stq     $20, 20 * 8 ($24)
+        stq     $21, 21 * 8 ($24)
+        stq     $22, 22 * 8 ($24)
+    /* Save all float regs that are not callee-save on the stack */
+        stt     $f0, 0 * 8 ($sp)
+        stt     $f1, 1 * 8 ($sp)
+        stt     $f10, 10 * 8 ($sp)
+        stt     $f11, 11 * 8 ($sp)
+        stt     $f12, 12 * 8 ($sp)
+        stt     $f13, 13 * 8 ($sp)
+        stt     $f14, 14 * 8 ($sp)
+        stt     $f15, 15 * 8 ($sp)
+        stt     $f16, 16 * 8 ($sp)
+        stt     $f17, 17 * 8 ($sp)
+        stt     $f18, 18 * 8 ($sp)
+        stt     $f19, 19 * 8 ($sp)
+        stt     $f20, 20 * 8 ($sp)
+        stt     $f21, 21 * 8 ($sp)
+        stt     $f22, 22 * 8 ($sp)
+        stt     $f23, 23 * 8 ($sp)
+        stt     $f24, 24 * 8 ($sp)
+        stt     $f25, 25 * 8 ($sp)
+        stt     $f26, 26 * 8 ($sp)
+        stt     $f27, 27 * 8 ($sp)
+        stt     $f29, 29 * 8 ($sp)
+        stt     $f30, 30 * 8 ($sp)
     /* Call the garbage collector */
         jsr     garbage_collection
-    /* Restore all regs used by the code generator */
         ldgp    $gp, 0($26)
-        LOAD_ALL_REGS
+    /* Restore all regs used by the code generator */
+        lda     $24, 0x100($sp)
+        ldq     $0, 0 * 8 ($24)
+        ldq     $1, 1 * 8 ($24)
+        ldq     $2, 2 * 8 ($24)
+        ldq     $3, 3 * 8 ($24)
+        ldq     $4, 4 * 8 ($24)
+        ldq     $5, 5 * 8 ($24)
+        ldq     $6, 6 * 8 ($24)
+        ldq     $7, 7 * 8 ($24)
+        ldq     $8, 8 * 8 ($24)
+        ldq     $9, 9 * 8 ($24)
+        ldq     $10, 10 * 8 ($24)
+        ldq     $11, 11 * 8 ($24)
+        ldq     $12, 12 * 8 ($24)
+        ldq     $16, 16 * 8 ($24)
+        ldq     $17, 17 * 8 ($24)
+        ldq     $18, 18 * 8 ($24)
+        ldq     $19, 19 * 8 ($24)
+        ldq     $20, 20 * 8 ($24)
+        ldq     $21, 21 * 8 ($24)
+        ldq     $22, 22 * 8 ($24)
+        ldt     $f0, 0 * 8 ($sp)
+        ldt     $f1, 1 * 8 ($sp)
+        ldt     $f10, 10 * 8 ($sp)
+        ldt     $f11, 11 * 8 ($sp)
+        ldt     $f12, 12 * 8 ($sp)
+        ldt     $f13, 13 * 8 ($sp)
+        ldt     $f14, 14 * 8 ($sp)
+        ldt     $f15, 15 * 8 ($sp)
+        ldt     $f16, 16 * 8 ($sp)
+        ldt     $f17, 17 * 8 ($sp)
+        ldt     $f18, 18 * 8 ($sp)
+        ldt     $f19, 19 * 8 ($sp)
+        ldt     $f20, 20 * 8 ($sp)
+        ldt     $f21, 21 * 8 ($sp)
+        ldt     $f22, 22 * 8 ($sp)
+        ldt     $f23, 23 * 8 ($sp)
+        ldt     $f24, 24 * 8 ($sp)
+        ldt     $f25, 25 * 8 ($sp)
+        ldt     $f26, 26 * 8 ($sp)
+        ldt     $f27, 27 * 8 ($sp)
+        ldt     $f29, 29 * 8 ($sp)
+        ldt     $f30, 30 * 8 ($sp)
     /* Reload new allocation pointer and allocation limit */
         ldq     $13, young_ptr
         ldq     $14, young_limit
     /* Allocate space for the block */
-        ldq     $25, 16($sp)
+        ldq     $25, 0x1E8($sp)
         subq    $13, $25, $13
     /* Say that we are back into Caml code */
-        stq     $31, caml_last_return_address
+        stq     $31, caml_last_context
     /* Return to caller */
-        ldq     $26, 0($sp)
-        ldq     $gp, 8($sp)
-        lda     $sp, 32($sp)
+        ldq     $26, 0x1F8($sp)
+        ldq     $gp, 0x1F0($sp)
+        lda     $sp, 0x200($sp)
         ret     ($26)
 
         .end    caml_call_gc
@@ -231,10 +218,13 @@ caml_c_call:
     /* Rebuild $gp */
         br      $25, $104
 $104:   ldgp    $gp, 0($25)
-    /* Record lowest stack address and return address */
-        lda     $11, caml_last_return_address
-        stq     $26, 0($11)
-        stq     $sp, caml_bottom_of_stack
+    /* Record last context.  We don't fill the register section since
+       no registers are live across caml_c_call. */
+        lda     -16($sp), $sp
+        sta     $26, 8($sp)
+        lda     (8 - 31*8)($sp), $25
+        lda     $11, caml_last_context
+        sta     $25, 0($11)
     /* Make the exception handler and alloc ptr available to the C code */
         lda     $12, young_ptr
         stq     $13, 0($12)
@@ -246,10 +236,11 @@ $104:   ldgp    $gp, 0($25)
         ldq     $13, 0($12)  /* $12 still points to young_ptr */
         ldq     $14, 0($14)  /* $14 still points to young_limit */
     /* Say that we are back into Caml code */
-        stq     $31, 0($11)  /* $11 still points to caml_last_return_address */
+        stq     $31, 0($11)  /* $11 still points to caml_last_context */
     /* Restore $gp */
         mov     $10, $gp
     /* Return */
+        lda     16($sp), $sp
         ret     ($9)
 
         .end    caml_c_call
@@ -286,10 +277,8 @@ $107:
         stt     $f9, 120($sp)
     /* Set up a callback link on the stack. */
         lda     $sp, -16($sp)
-        ldq     $0, caml_bottom_of_stack
+        ldq     $0, caml_last_context
         stq     $0, 0($sp)
-        ldq     $1, caml_last_return_address
-        stq     $1, 8($sp)
     /* Set up a trap frame to catch exceptions escaping the Caml code */
         lda     $sp, -16($sp)
         ldq     $15, caml_exception_pointer
@@ -301,7 +290,7 @@ $107:
         ldq     $13, young_ptr
         ldq     $14, young_limit
     /* We are back into Caml code */
-        stq     $31, caml_last_return_address
+        stq     $31, caml_last_context
     /* Call the Caml code */
         mov     $25, $27
 $108:   jsr     ($25)
@@ -312,11 +301,9 @@ $108:   jsr     ($25)
         ldq     $15, 0($sp)
         stq     $15, caml_exception_pointer
         lda     $sp, 16($sp)
-    /* Restore the global variables used by caml_c_call */
+    /* Restore caml_last_context */
         ldq     $24, 0($sp)
-        stq     $24, caml_bottom_of_stack
-        ldq     $25, 8($sp)
-        stq     $25, caml_last_return_address
+        stq     $24, caml_last_context
         lda     $sp, 16($sp)
     /* Update allocation pointer */
         stq     $13, young_ptr
