@@ -1755,7 +1755,6 @@ class html =
     (** Generate all the html files from a module list. The main
        file is [index.html]. *)
     method generate module_list =
-      let sorted_module_list = Sort.list (fun m1 -> fun m2 -> m1.m_name < m2.m_name) module_list in
       (* init the style *)
       self#init_style ;
       (* init the lists of elements *)
@@ -1770,7 +1769,7 @@ class html =
       list_module_types <- Odoc_info.Search.module_types module_list ;
       
       (* prepare the page header *)
-      self#prepare_header sorted_module_list ;
+      self#prepare_header module_list ;
       (* Get the names of all known types. *)
       let types = Odoc_info.Search.types module_list in
       let type_names = List.map (fun t -> t.ty_name) types in
@@ -1789,19 +1788,19 @@ class html =
       known_modules_names <- module_type_names @ module_names ;
       (* generate html for each module *)
       if not !Odoc_args.index_only then 
-	generate_elements self#generate_for_module sorted_module_list ;
+	generate_elements self#generate_for_module module_list ;
 
       try
-	self#generate_index sorted_module_list;
-	self#generate_values_index sorted_module_list ;
-	self#generate_exceptions_index sorted_module_list ;
-	self#generate_types_index sorted_module_list ;
-	self#generate_attributes_index sorted_module_list ;
-	self#generate_methods_index sorted_module_list ;
-	self#generate_classes_index sorted_module_list ;
-	self#generate_class_types_index sorted_module_list ;
-	self#generate_modules_index sorted_module_list ;
-	self#generate_module_types_index sorted_module_list ;
+	self#generate_index module_list;
+	self#generate_values_index module_list ;
+	self#generate_exceptions_index module_list ;
+	self#generate_types_index module_list ;
+	self#generate_attributes_index module_list ;
+	self#generate_methods_index module_list ;
+	self#generate_classes_index module_list ;
+	self#generate_class_types_index module_list ;
+	self#generate_modules_index module_list ;
+	self#generate_module_types_index module_list ;
       with
 	Failure s ->
 	  prerr_endline s ;
