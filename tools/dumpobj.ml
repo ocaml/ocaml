@@ -164,8 +164,11 @@ let print_primitive ic =
 
 (* Disassemble one instruction *)
 
+let currpc ic =
+  currpos ic / 4
+
 let print_instr ic =
-  print_int (currpos ic); print_string "\t";
+  print_int (currpc ic); print_string "\t";
   let op = inputu ic in
   print_string
     (if op >= Array.length names_of_instructions then "???"
@@ -190,11 +193,11 @@ let print_instr ic =
   (* One displacement *)
   else if op == opPUSH_RETADDR or op == opBRANCH or op == opBRANCHIF
   or op == opBRANCHIFNOT or op == opPUSHTRAP then
-    (let p = currpos ic in print_int (p + inputs ic))
+    (let p = currpc ic in print_int (p + inputs ic))
   (* One size, one displacement *)
   else if op == opCLOSURE or op == opCLOSUREREC then
     (print_int (inputu ic); print_string ", ";
-     let p = currpos ic in print_int (p + inputs ic))
+     let p = currpc ic in print_int (p + inputs ic))
   (* getglobal *)
   else if op == opGETGLOBAL or op == opPUSHGETGLOBAL then
     (print_getglobal_name ic)
@@ -214,7 +217,7 @@ let print_instr ic =
   (* switch *)
   else if op == opSWITCH then
     (let n = inputu ic in
-     let orig = currpos ic in
+     let orig = currpc ic in
      for i = 0 to n-1 do
        print_string "\n\t"; print_int i; print_string " -> ";
        print_int(orig + inputs ic)
