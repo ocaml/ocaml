@@ -419,7 +419,7 @@ if test $withsharedlibs = "yes"; then
   case "$host" in
     *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*)
       sharedcccompopts="-fPIC"
-      mksharedlib="gcc -shared -o"
+      mksharedlib="$bytecc -shared -o"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
       byteccrpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"

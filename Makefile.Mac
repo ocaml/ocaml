@@ -60,7 +60,7 @@ COMP = :bytecomp:lambda.cmo :bytecomp:printlambda.cmo ¶
 BYTECOMP = :bytecomp:meta.cmo :bytecomp:instruct.cmo :bytecomp:bytegen.cmo ¶
   :bytecomp:printinstr.cmo :bytecomp:opcodes.cmo :bytecomp:emitcode.cmo ¶
   :bytecomp:bytesections.cmo :bytecomp:dll.cmo ¶
-  :bytecomp:symtable.cmo :bytecomp:bytelibrarian.cmo :bytecomp:bytelink.cmo
+  :bytecomp:symtable.cmo :bytecomp:bytelink.cmo :bytecomp:bytelibrarian.cmo
 
 DRIVER = :driver:errors.cmo :driver:compile.cmo :driver:main_args.cmo ¶
          :driver:main.cmo
