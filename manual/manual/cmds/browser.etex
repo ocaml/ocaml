@@ -12,10 +12,41 @@ Its functions are:
 \item integrated Objective Caml shell, running as a subprocess.
 \end{itemize}
 
-The name of the command is "ocamlbrowser", and, as with the
-toplevel, you may change the standard library directory by setting
-"CAMLLIB", extend the load path using "-I" options, set commuting
-label mode with "-labels" or select warnings with "-w".
+\section{Options} \label{s:browser-options}
+
+The browser is started by the command "ocamlrowser", as follows:
+\begin{alltt}
+        ocamlbrowser \var{options}
+\end{alltt}
+
+The following command-line options are recognized by "ocamlbrowser".
+
+\begin{options}
+
+\item["-I" \var{directory}]
+Add the given directory to the list of directories searched for
+source and compiled files. By default, only the standard library
+directory is searched.  The standard library can also be changed by
+setting the "CAMLLIB" environment variable.
+
+\item["-labels"]
+Switch to the {\em commuting label} mode of compilation, meaning that
+labeling rules are applied strictly, and commutation between
+arguments is allowed. (See section~\ref{s:commuting-mode}.)
+
+\item["-rectypes"]
+Allow arbitrary recursive types during type-checking.  By default,
+only recursive types where the recursion goes through an object type
+are supported.
+
+\item["-w" \var{warning-list}]
+Enable or disable warnings according to the argument \var{warning-list}.
+
+\end{options}
+
+All options can also be modified inside the application by the {\bf
+  Modules - Path editor} and {\bf Compiler - Preferences} commands.
+They are inherited when you start a toplevel shell.
 
 \section{Viewer}
 This is the first window you get when you start OCamlBrowser.
@@ -29,7 +60,7 @@ start your trip.
   type inclusion ({\em cf.} Search Symbol - Included type).
 
 \item The {\bf Close all} button is there to dismiss the windows
-  creating during you trip (every click creates one\dots) By
+  created during you trip (every click creates one\dots) By
   double-clicking on it you will quit the browser.
 
 \item {\bf File - Open} and {\bf File - Editor} give access to the
@@ -81,10 +112,10 @@ At the bottom, a series of buttons, depending on the context.
   interface of the currently displayed signature, if it is available.
 \end{itemize}
 
-C-s lets you search a string in the signature.
+Control-S lets you search a string in the signature.
 
 \section{File editor}
-You can edit files with it, if you like to live dangerously. Otherwise
+You can edit files with it, if you're not yet used to emacs. Otherwise
 you can use it as a browser, making occasional corrections.
 
 The {\bf Edit} menu contains commands for jump (C-g), search (C-s),

@@ -150,8 +150,8 @@ the toplevel is running with the "#directory" directive
 (section~\ref{s:toplevel-directives}).
 
 \item["-labels"]
-Switch to the {\em commuting label} mode of compilation, meaning that labeling
-rules are applied strictly, and commutation between labeled arguments
+Switch to the {\em commuting label} mode of compilation, meaning that
+labeling rules are applied strictly, and commutation between arguments
 is allowed. (See section~\ref{s:commuting-mode}.)
 
 \item["-rectypes"]
@@ -167,8 +167,7 @@ slightly faster, but unsafe: anything can happen if the program
 accesses an array or string outside of its bounds.
 
 \item["-w" \var{warning-list}]
-Enable or disable warnings according to the argument.
-\var{warning-list}.
+Enable or disable warnings according to the argument \var{warning-list}.
 
 \end{options}
 
