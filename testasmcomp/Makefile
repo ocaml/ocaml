@@ -11,6 +11,7 @@ DEPFLAGS=$(INCLUDES)
 CAMLRUN=../boot/cslrun
 
 CODEGEN=./codegen
+CC=$(NATIVECC)
 CFLAGS=-g
 
 PROGS=fib.out tak.out quicksort.out quicksort2.out soli.out integr.out \

@@ -26,7 +26,7 @@ double f, g;
   }
 #define FLOATTEST(arg,res) \
   { double result = (res); \
-    if (arg != result) \
+    if (arg < result || arg > result) \
       printf("Failed test \"%s == %s\" for f=%g and g=%g: result %e, expected %e\n", \
              #arg, #res, f, g, arg, result); \
   }
