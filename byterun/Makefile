@@ -7,12 +7,12 @@ DFLAGS=-g -DDEBUG $(CCCOMPOPTS)
 OBJS=interp.o misc.o stacks.o fix_code.o main.o fail.o signals.o \
   freelist.o major_gc.o minor_gc.o memory.o alloc.o roots.o \
   compare.o ints.o floats.o str.o array.o io.o extern.o intern.o \
-  hash.o sys.o meta.o parsing.o lexing.o gc_ctrl.o terminfo.o crc.o
+  hash.o sys.o meta.o parsing.o gc_ctrl.o terminfo.o crc.o
 
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
 
 PRIMS=array.c compare.c crc.c extern.c floats.c gc_ctrl.c hash.c \
-  intern.c interp.c ints.c io.c lexing.c meta.c parsing.c \
+  intern.c interp.c ints.c io.c meta.c parsing.c \
   signals.c str.c sys.c terminfo.c
 
 all: camlrun camlrund
