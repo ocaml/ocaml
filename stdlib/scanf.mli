@@ -160,7 +160,7 @@ val bscanf :
      succeeds and returns the format string ["number is %u"].
    - [\( fmt %\)]: scanning format insertion.
      This conversion reads a format string specified by [fmt] with
-     the same conventions as the [\{ fmt \}] conversion above.
+     the same conventions as the [\{ fmt %\}] conversion above.
      After successful reading of a format string compatible with
      [fmt], the scanning process goes on, first scanning according to
      the very format string read, then resuming as usual to the
