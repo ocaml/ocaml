@@ -48,8 +48,8 @@
 
         .common caml_required_size, 4, 4
 
-#define Young_limit young_limit
-#define Young_ptr young_ptr
+#define Caml_young_limit caml_young_limit
+#define Caml_young_ptr caml_young_ptr
 #define Caml_bottom_of_stack caml_bottom_of_stack
 #define Caml_last_return_address caml_last_return_address
 #define Caml_gc_regs caml_gc_regs
@@ -338,8 +338,8 @@ L107:
 
 /* Callbacks C -> ML */
 
-        .global Callback_exn
-Callback_exn:
+        .global Caml_callback_exn
+Caml_callback_exn:
     /* Save callee-save registers and return address */
         save    %sp, -96, %sp
     /* Initial shuffling of arguments */
@@ -349,8 +349,8 @@ Callback_exn:
         b       L108
         ld      [%g1], %l2      /* code pointer */
 
-        .global Callback2_exn
-Callback2_exn:
+        .global Caml_callback2_exn
+Caml_callback2_exn:
     /* Save callee-save registers and return address */
         save    %sp, -104, %sp
     /* Initial shuffling of arguments */
@@ -362,8 +362,8 @@ Callback2_exn:
         b       L108
         or      %l2, %lo(Caml_apply2), %l2
 
-        .global Callback3_exn
-Callback3_exn:
+        .global Caml_callback3_exn
+Caml_callback3_exn:
     /* Save callee-save registers and return address */
         save    %sp, -104, %sp
     /* Initial shuffling of arguments */
