@@ -46,7 +46,7 @@ let rec update_mod shape o n =
   | Function ->
       if Obj.tag n = Obj.closure_tag && Obj.size n <= Obj.size o
       then overwrite o n
-      else overwrite o (Obj.repr (fun x -> (Obj.obj n : 'a -> 'b) x))
+      else overwrite o (Obj.repr (fun x -> (Obj.obj n : _ -> _) x))
   | Lazy ->
       assert (Obj.tag n = Obj.lazy_tag);
       overwrite o n
