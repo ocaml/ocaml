@@ -1022,10 +1022,10 @@ Used to distinguish it from toplevel let construct.")
              (aref caml-kwop-regexps caml-max-indent-priority)))
     (cond
      ; special case for ;;
-     ((and (= (preceding-char) ?\;) (= (following-char) ?\;))
+     ((and (> (point) 1) (= (preceding-char) ?\;) (= (following-char) ?\;))
       (setq in-expr nil))
      ((looking-at caml-before-expr-prefix)
-      (goto-char (match-end 0))
+      (if (not (looking-at "(\\*")) (goto-char (match-end 0)))
       (skip-chars-forward " \t\n")
       (while (looking-at "(\\*")
         (forward-char)
@@ -1051,19 +1051,18 @@ keywords."
 
   (let ((start-literal (concat "[\"" caml-quote-char "]"))
         found kwop)
-    (progn
-      (while (and (not found)
-                  (re-search-backward kwop-regexp nil t))
-        (setq kwop (caml-match-string 0))
-        (cond
-         ((looking-at "(\\*")
-          (backward-char))
-         ((caml-in-comment-p)
-          (search-backward "(" nil 'move))
-         ((looking-at start-literal))
-         ((caml-in-literal-p)
-          (re-search-backward start-literal))  ;ugly hack
-         ((setq found t)))))
+    (while (and (> (point) 1) (not found)
+                (re-search-backward kwop-regexp nil 'move))
+      (setq kwop (caml-match-string 0))
+      (cond
+       ((looking-at "(\\*")
+        (if (> (point) 1) (backward-char)))
+       ((caml-in-comment-p)
+        (search-backward "(" nil 'move))
+       ((looking-at start-literal))
+       ((caml-in-literal-p)
+        (re-search-backward start-literal nil 'move))  ;ugly hack
+       ((setq found t))))
     (if found
         (if (not (string-match "\\`[^|[]|[^]|]?\\'" kwop)) ;arrrrgh!!
             kwop
@@ -1342,8 +1341,9 @@ the line where the governing keyword occurs.")
        ((not kwop) (setq done t))
        ((caml-at-sexp-close-p)
         (caml-find-paren-match (following-char)))
-       ((and (string= kwop ";") (= (preceding-char) ?\;))
-        (goto-char 0)
+       ((or (string= kwop ";;")
+            (and (string= kwop ";") (= (preceding-char) ?\;)))
+        (forward-line 1)
         (setq kwop ";;")
         (setq done t))
        ((and (>= prio 2) (string= kwop "|")) (setq done t))
@@ -1461,7 +1461,7 @@ matching nodes to determine KEYWORD's final indentation.")
   (save-excursion
     (back-to-indentation)
     (cond
-     ((looking-at comment-start-skip) (current-column))
+     ((and (bolp) (looking-at comment-start-skip)) (current-column))
      ((caml-in-comment-p)
       (let ((closing (looking-at "\\*)"))
             (comment-mark (looking-at "\\*")))
@@ -1612,18 +1612,18 @@ by |, insert one."
                              0)
                             abbrev-correct)))))))
 
-; (defun caml-indent-phrase ()
-;   (interactive "*")
-;   (let ((bounds (caml-mark-phrase)))
-;     (indent-region (car bounds) (cdr bounds) nil)))
+(defun caml-indent-phrase ()
+  (interactive "*")
+  (let ((bounds (caml-mark-phrase)))
+    (indent-region (car bounds) (cdr bounds) nil)))
 
-(defun caml-indent-phrase (arg)
-  (interactive "p")
-  (save-excursion
-    (let ((beg (caml-find-phrase)))
-    (while (progn (setq arg (- arg 1)) (> arg 0))
-      (caml-find-region))
-    (indent-region beg (point) nil))))
+; (defun caml-indent-phrase (arg)
+;   (interactive "p")
+;   (save-excursion
+;     (let ((beg (caml-find-phrase)))
+;     (while (progn (setq arg (- arg 1)) (> arg 0))
+;       (caml-find-region))
+;     (indent-region beg (point) nil))))
 
 (defun caml-indent-buffer ()
   (interactive)
