@@ -137,18 +137,18 @@ val putenv: string -> string -> unit
 type process_status =
     WEXITED of int 
         (** The process terminated normally by [exit]; 
-	   the argument is the return code. *)
+           the argument is the return code. *)
   | WSIGNALED of int
-	(** The process was killed by a signal;
-	   the argument is the signal number. *)
+        (** The process was killed by a signal;
+           the argument is the signal number. *)
   | WSTOPPED of int
-	(** The process was stopped by a signal; the argument is the
-	   signal number. *)
+        (** The process was stopped by a signal; the argument is the
+           signal number. *)
 
 (** Flags for {!Unix.waitpid}. *)
 type wait_flag =
     WNOHANG (** do not block if no child has
-	       died yet, but immediately return with a pid equal to 0.*)
+               died yet, but immediately return with a pid equal to 0.*)
   | WUNTRACED (** report also the children that receive stop signals. *)
 
 (** [execv prog args] execute the program in file [prog], with
@@ -324,14 +324,14 @@ type stats =
     st_ctime : float;           (** Last status change time *)
   } 
 
-(** Return the information for the named file. *)
+(** Return the informations for the named file. *)
 val stat : string -> stats
 
 (** Same as {!Unix.stat}, but in case the file is a symbolic link,
-   return the information for the link itself. *)
+   return the informations for the link itself. *)
 val lstat : string -> stats
 
-(** Return the information for the file associated with the given
+(** Return the informations for the file associated with the given
    descriptor. *)
 val fstat : file_descr -> stats
 
@@ -346,7 +346,7 @@ val unlink : string -> unit
 val rename : string -> string -> unit
 
 (** [link source dest] creates a hard link named [dest] to the file
-   named [new]. *)
+   named [source]. *)
 val link : string -> string -> unit
 
 
@@ -633,7 +633,7 @@ type process_times =
     tms_stime : float;  (** System time for the process *)
     tms_cutime : float; (** User time for the children processes *)
     tms_cstime : float; (** System time for the children processes *)
-  } 
+  }
 
 (** The type representing wallclock time and calendar date. *)
 type tm =
