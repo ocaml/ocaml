@@ -119,15 +119,8 @@ let hide_given_modules l s =
 
 let qualified name = String.contains name '.'
 
-let from_ident ident = 
-  Ident.print (Format.str_formatter) ident;
-  let s = Format.flush_str_formatter () in
-  (* the ident is of the form name/id ; we get the name only *)
-  try
-    List.hd (Str.split (Str.regexp "/") s)
-  with
-    _ ->
-      ""
+let from_ident ident = Ident.name ident
+
 
 let from_path path = Path.name path
 
