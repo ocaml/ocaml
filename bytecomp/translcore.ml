@@ -621,7 +621,7 @@ let rec transl_exp e =
   | Texp_dynamic (exp) ->
       begin try 
 	Lapply(Transltype.rtype_prim "dynamic_comp", 
-	       [ make_block 0 [ Transltype.transl_run_type_of_typexp 
+	       [ make_block 0 [ Transltype.transl_run_type_of_type_expr 
 				  exp.exp_env exp.exp_type ];
 		 transl_exp exp ])
       with
@@ -637,7 +637,7 @@ let rec transl_exp e =
 		  [Const_base(Const_string !Location.input_name);
 		   Const_base(Const_int e.exp_loc.Location.loc_start);
 		   Const_base(Const_int e.exp_loc.Location.loc_end)]));
-	       make_block 0 [ Transltype.transl_run_type_of_typexp 
+	       make_block 0 [ Transltype.transl_run_type_of_type_expr 
 				e.exp_env e.exp_type ];
 	       transl_exp exp ])
       with

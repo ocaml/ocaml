@@ -340,7 +340,7 @@ let recursive_full_expand env ty =
   ty'
 ;;
 
-let rec val_type_of_typexp env of_tconstr ty =
+let rec val_type_of_type_expr env of_tconstr ty =
   let ty = repr ty in
   let px = proxy ty in
   if List.mem_assq px !names then
@@ -360,10 +360,10 @@ let rec val_type_of_typexp env of_tconstr ty =
 		match (repr ty1).desc with
 		| Tconstr(path, [ty], _)
 		  when Path.same path Predef.path_option ->
-		    val_type_of_typexp env of_tconstr ty
+		    val_type_of_type_expr env of_tconstr ty
 		| _ -> raise (Failure "<hidden>")
-	      else val_type_of_typexp env of_tconstr ty1 in
-	    Rtyp_arrow (lab, t1, val_type_of_typexp env of_tconstr ty2) in
+	      else val_type_of_type_expr env of_tconstr ty1 in
+	    Rtyp_arrow (lab, t1, val_type_of_type_expr env of_tconstr ty2) in
 	  pr_arrow l ty1 ty2
     | Ttuple tyl ->
 	  Rtyp_tuple (val_types_of_typlist env of_tconstr tyl)
@@ -410,9 +410,9 @@ let rec val_type_of_typexp env of_tconstr ty =
 	  tree_of_typobject sch ty fi nm
 *)
     | Tsubst ty ->
-	  val_type_of_typexp env of_tconstr ty
+	  val_type_of_type_expr env of_tconstr ty
 	|	Tvariant _ | Tobject (_,_) | Tlink _ | Tnil | Tfield _ ->
-	  fatal_error "Transltype.val_type_of_typexp"
+	  fatal_error "Transltype.val_type_of_type_expr"
    ) in
   if is_aliased px then begin
     raise (Failure "alias type is not supported")
@@ -425,7 +425,7 @@ let rec val_type_of_typexp env of_tconstr ty =
 and tree_of_row_field sch (l, f) =
   match row_field_repr f with
   | Rpresent None | Reither(true, [], _, _) -> (l, false, [])
-  | Rpresent(Some ty) -> (l, false, [val_type_of_typexp env of_tconstr ty])
+  | Rpresent(Some ty) -> (l, false, [val_type_of_type_expr env of_tconstr ty])
   | Reither(c, tyl, _, _) ->
       if c (* contradiction: un constructeur constant qui a un argument *)
       then (l, true, val_types_of_typlist env of_tconstr sch tyl)
@@ -436,7 +436,7 @@ and tree_of_row_field sch (l, f) =
 and val_types_of_typlist env of_tconstr = function
   | [] -> []
   | ty :: tyl ->
-      let tr = val_type_of_typexp env of_tconstr ty in
+      let tr = val_type_of_type_expr env of_tconstr ty in
       tr :: val_types_of_typlist env of_tconstr tyl
 
 (*
@@ -475,7 +475,7 @@ and tree_of_typfields sch rest = function
       in
       ([], rest)
   | (s, t) :: l ->
-      let field = (s, val_type_of_typexp env of_tconstr t) in
+      let field = (s, val_type_of_type_expr env of_tconstr t) in
       let (fields, rest) = tree_of_typfields sch rest l in
       (field :: fields, rest)
 *)
@@ -483,7 +483,7 @@ and tree_of_typfields sch rest = function
 
 let val_type_of_type_scheme env of_tconstr ty = 
   reset_and_mark_loops ty; 
-  val_type_of_typexp env of_tconstr ty
+  val_type_of_type_expr env of_tconstr ty
 ;;
 
 let rec val_of_constraints env of_tconstr params =
@@ -491,8 +491,8 @@ let rec val_of_constraints env of_tconstr params =
     (fun ty list ->
        let ty' = unalias ty in
        if ty != ty' then
-         let tr = val_type_of_typexp env of_tconstr ty in
-         (tr, val_type_of_typexp env of_tconstr ty') :: list
+         let tr = val_type_of_type_expr env of_tconstr ty in
+         (tr, val_type_of_type_expr env of_tconstr ty') :: list
        else list)
     params []
 
@@ -560,11 +560,11 @@ and val_of_type_declaration env of_tconstr id decl =
       (Ident.name id,
        List.combine
          (List.map (fun ty -> 
-	   type_param (val_type_of_typexp env of_tconstr ty)) params)
+	   type_param (val_type_of_type_expr env of_tconstr ty)) params)
          decl.type_variance)
     else
       let ty =
-        val_type_of_typexp env (fun p _ -> run_ident_of_path)
+        val_type_of_type_expr env (fun p _ -> run_ident_of_path)
           (Btype.newgenty (Tconstr(Pident id, params, ref Mnil)))
       in
       match ty with
@@ -577,7 +577,7 @@ and val_of_type_declaration env of_tconstr id decl =
     | None -> ty1
     | Some ty -> 
 	prerr_endline "Rdecl_manifest ???";
-	Rdecl_manifest (val_type_of_typexp env of_tconstr ty, ty1)
+	Rdecl_manifest (val_type_of_type_expr env of_tconstr ty, ty1)
   in
   let (name, args) = type_defined decl in
   let constraints = val_of_constraints env of_tconstr params in
@@ -588,7 +588,7 @@ and val_of_type_declaration env of_tconstr id decl =
         | None -> Rdecl_abstract
         | Some ty -> 
 	    prerr_endline "Rdecl_manifest2???";
-	    Rdecl_manifest (val_type_of_typexp env of_tconstr ty, Rdecl_abstract)
+	    Rdecl_manifest (val_type_of_type_expr env of_tconstr ty, Rdecl_abstract)
         end
     | Type_variant cstrs ->
         val_type_of_manifest decl 
@@ -603,7 +603,7 @@ and val_type_of_constructor env of_tconstr (name, args) =
   (name, val_types_of_typlist env of_tconstr args)
 
 and val_type_of_label env of_tconstr (name, mut, arg) =
-  (name, mut = Mutable, val_type_of_typexp env of_tconstr arg)
+  (name, mut = Mutable, val_type_of_type_expr env of_tconstr arg)
 ;;
 
 let detect_mutual_recursives get_subnodes start =
@@ -830,11 +830,11 @@ let rec type_digest env path =
 type error = Contains_abstract_type of type_expr * Path.t
 exception Error of error
 
-let run_type_of_typexp env ty =
-  val_type_of_typexp env (fun p ty -> 
+let run_type_of_type_expr env ty =
+  val_type_of_type_expr env (fun p ty -> 
     let ri = run_ident_of_path p in
     let ty' = recursive_full_expand env ty in
-    let dty = val_type_of_typexp env (fun p _ ->
+    let dty = val_type_of_type_expr env (fun p _ ->
       let digest = type_digest env p in
       match digest with
       | Digest d -> d
@@ -845,10 +845,41 @@ let run_type_of_typexp env ty =
 
 let run_type_of_type_scheme env ty = 
   reset_and_mark_loops ty; 
-  run_type_of_typexp env ty
+  run_type_of_type_expr env ty
 ;;
 
-let transl_run_type_of_typexp env ty =
+let transl_run_type_of_type_expr env ty =
   reset ();
   transl_run_type (run_type_of_type_scheme env ty)
 ;;
+
+let rec path_of_run_ident = function
+  | Ride_ident (name, stamp) -> Pident (Ident.create_with_stamp name stamp)
+  | Ride_dot (ri, n, x) -> Pdot (path_of_run_ident ri, n, x)
+  | Ride_apply (ri1,ri2) -> 
+      Papply (path_of_run_ident ri1, path_of_run_ident ri2)
+;;
+
+let type_expr_of_run_type env ty =
+  let vtable = ref [] in
+  let lookup_var id =
+    try List.assoc id !vtable with Not_found -> 
+      let v = Ctype.newvar () in
+      vtable := (id,v) :: !vtable;
+      v
+  in
+  let rec aux = function
+    | Rtyp_var id -> lookup_var id
+    | Rtyp_arrow (l,t1,t2) -> Ctype.newty (Tarrow (l,aux t1, aux t2, Cunknown))
+    | Rtyp_tuple tys -> Ctype.newty (Ttuple (List.map aux tys))
+    | Rtyp_constr ((id,digest),tys) ->
+	let path = path_of_run_ident id in
+	try
+	  let tdesc = Env.find_type path env in
+	  Ctype.newty (Tconstr (path,List.map aux tys,ref Mnil))
+	with
+	| _ -> raise Not_found
+  in
+  aux ty
+;;
+

@@ -188,35 +188,23 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
               Oval_tuple (tree_of_val_list 0 depth obj ty_list)
           | Tconstr(path, [], _) when Path.same path Predef.path_exn ->
               tree_of_exception depth obj
-(* GENERIC (dynamic values are not printable)
+(* DYN *)
 	  | Tconstr(path, [], _) 
 	    when Path.same path Predef.path_dyn ->
-	      let rt = (O.magic (O.field obj 1) : rtype) in
-	      let ty = Transltype.type_expr_of_run_type rt in
+	      let rt = (Obj.magic (O.field obj 1) : run_type) in
+	      let ty = Transltype.type_expr_of_run_type env rt in
 	      let oty = Transltype.tree_of_run_type rt in
               (* try to print the content *)
               let v = 
                 try
                   (* run time type check ... *) 
-                  let rt' = Transltype.run_type_of_typexp env ty in
+                  let rt' = Transltype.run_type_of_type_expr env ty in
                   Rtype.import_comp ("",0,0) [|rt'|] ((),rt);
                   Some (tree_of_val depth (O.field obj 0) ty)
                 with
                 | _ -> None
               in
 	      Oval_dynamic (v, oty)
-/GENERIC *)
-(* DYN *)
-	  | Tconstr(path, [], _) 
-	    when Path.same path Predef.path_dyn ->
-	      let rt = (Obj.magic (O.field obj 1) : run_type) in
-	      (* use tree_of_run_type ? *)
-	      let oty = Transltype.tree_of_run_type rt in
-	      Oval_dynamic (oty)
-(* GENERIC
-	      let ty = Transltype.typexp_of_run_type rt in
-	      Oval_dynamic (Printtyp.tree_of_type_scheme ty)
-/GENERIC *)
 (* /DYN *)
           | Tconstr(path, [ty_arg], _)
             when Path.same path Predef.path_list ->
@@ -431,13 +419,11 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
             fprintf ppf "@[<1>{%a}@]" (cautious (print_fields true)) fel
         | Oval_ellipsis -> raise Ellipsis
         | Oval_printer f -> f ppf
-(* GENERIC (now the dynamic values are not printable...
-	| Oval_dynamic (v,t) -> fprintf ppf "dyn (%a : %a)" 
+(* DYN *)
+	| Oval_dynamic (Some v, t) -> fprintf ppf "dyn (%a : %a)" 
 	      print_tree v
 	      !Printtyp.outcome_type t
-/GENERIC *)
-(* DYN *)
-	| Oval_dynamic (t) -> fprintf ppf "<dyn : %a>" 
+	| Oval_dynamic (None, t) -> fprintf ppf "dyn (<abstr> \"%a\")" 
 	      !Printtyp.outcome_type t
 (* /DYN  *)
 	| tree -> fprintf ppf "@[<1>(%a)@]" (cautious print_tree) tree
