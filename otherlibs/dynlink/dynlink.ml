@@ -98,15 +98,7 @@ let check_unsafe_module cu =
 
 (* Load in-core and execute a bytecode object file *)
 
-let loadfile file_name =
-  let ic = open_in_bin file_name in
-  let buffer = String.create (String.length Config.cmo_magic_number) in
-  really_input ic buffer 0 (String.length Config.cmo_magic_number);
-  if buffer <> Config.cmo_magic_number then
-    raise(Error(Not_a_bytecode_file file_name));
-  let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
-  seek_in ic compunit_pos;
-  let compunit = (input_value ic : compilation_unit) in
+let load_compunit ic file_name compunit =
   check_consistency file_name compunit;
   check_unsafe_module compunit;
   seek_in ic compunit.cu_pos;
@@ -114,18 +106,40 @@ let loadfile file_name =
   let code = Meta.static_alloc code_size in
   unsafe_really_input ic code 0 compunit.cu_codesize;
   close_in ic;
-  String.unsafe_set code compunit.cu_codesize
-			     (Char.chr Opcodes.opSTOP);
+  String.unsafe_set code compunit.cu_codesize (Char.chr Opcodes.opSTOP);
   String.unsafe_set code (compunit.cu_codesize + 1) '\000';
   String.unsafe_set code (compunit.cu_codesize + 2) '\000';
   String.unsafe_set code (compunit.cu_codesize + 3) '\000';
+  let initial_symtable = Symtable.current_state() in
   begin try
     Symtable.patch_object code compunit.cu_reloc;
     Symtable.update_global_table()
   with Symtable.Error _ ->
     raise(Error(Linking_error file_name))
   end;
-  Meta.execute_bytecode code code_size; ()
+  begin try
+    Meta.execute_bytecode code code_size; ()
+  with exn ->
+    Symtable.restore_state initial_symtable;
+    raise exn
+  end
+
+let loadfile file_name =
+  let ic = open_in_bin file_name in
+  let buffer = String.create (String.length Config.cmo_magic_number) in
+  really_input ic buffer 0 (String.length Config.cmo_magic_number);
+  if buffer = Config.cmo_magic_number then begin
+    let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
+    seek_in ic compunit_pos;
+    load_compunit ic file_name (input_value ic : compilation_unit)
+  end else
+  if buffer = Config.cmo_magic_number then begin
+    let toc_pos = input_binary_int ic in  (* Go to table of contents *)
+    seek_in ic toc_pos;
+    List.iter (load_compunit ic file_name)
+              (input_value ic : compilation_unit list)
+  end else
+    raise(Error(Not_a_bytecode_file file_name))
 
 (* Error report *)
 
