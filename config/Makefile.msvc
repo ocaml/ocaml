@@ -113,7 +113,7 @@ BIGNUM_ARCH=C
 # Set TK_ROOT to the directory where you installed TCL/TK 8.3
 TK_ROOT=c:/tcl
 TK_DEFS=-I$(TK_ROOT)/include
-TK_LINK=/link /libpath:$(TK_ROOT)/lib tk83.lib tcl83.lib
+TK_LINK=tk83.lib tcl83.lib
 
 ############# Aliases for common commands
 
