@@ -19,8 +19,8 @@ typedef struct regexp_struct * regexp;
 static void free_regexp(expr)
      value expr;
 {
-  expr->re.translate = NULL;
-  regfree(&(((regexp)expr)->re));
+  ((regexp)Bp_val(expr))->re.translate = NULL;
+  regfree(&(((regexp)Bp_val(expr))->re));
 }
 
 static regexp alloc_regexp()
