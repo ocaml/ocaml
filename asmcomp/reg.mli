@@ -41,8 +41,8 @@ val newv: Cmm.machtype -> t array
 val clone: t -> t
 val at_location: Cmm.machtype_component -> location -> t
 
-module Set: Set.S with elt = t
-module Map: Map.S with key = t
+module Set: Set.S with type elt = t
+module Map: Map.S with type key = t
 
 val add_set_array: Set.t -> t array -> Set.t
 val diff_set_array: Set.t -> t array -> Set.t
