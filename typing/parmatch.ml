@@ -781,8 +781,20 @@ let build_other env =  match env with
 
 *)
 
+let rec has_instance p = match p.pat_desc with
+  | Tpat_variant (l,_,r) when is_absent l r -> false
+  | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_variant (_,None,_) -> true
+  | Tpat_alias (p,_) | Tpat_variant (_,Some p,_) -> has_instance p
+  | Tpat_or (p1,p2,_) -> has_instance p1 || has_instance p2
+  | Tpat_construct (_,ps) | Tpat_tuple ps | Tpat_array ps -> has_instances ps
+  | Tpat_record lps -> has_instances (List.map snd lps)
+      
+and has_instances = function
+  | [] -> true
+  | q::rem -> has_instance q && has_instances rem
+  
 let rec satisfiable pss qs = match pss with
-| [] -> true
+| [] -> has_instances qs 
 | _  ->
 match qs with
 | [] -> false
@@ -802,6 +814,7 @@ match qs with
           (fun (p,pss) -> satisfiable pss (simple_match_args p omega @ qs))
           constrs
     end
+| {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> false
 | q::qs ->
     let q0 = discr_pat q pss in
     satisfiable (filter_one q0 pss) (simple_match_args q0 q @ qs)
@@ -865,7 +878,7 @@ let rec exhaust tdefs pss qs = match pss with
     end
 
 
-(* Yet another satifiable fonction *)
+(* Yet another satisfiable fonction *)
 
 (*
    This time every_satisfiable pss qs checks the
@@ -957,10 +970,12 @@ let pretty_matrix pss =
   
 let rec every_satisfiable pss qs = match qs with
 | [] -> begin match pss with [] -> Used | _ -> Unused end
-| {pat_desc = Tpat_or(q1,q2,_); pat_loc = loc}::qs ->
-    if not (satisfiable pss (omega_list (omega::qs))) then
+| {pat_desc = Tpat_or(q1,q2,_); pat_loc = loc}::qs as all ->
+    if loc.Location.loc_ghost then begin
+(* #t patterns, do not check unused pats *)
+      if satisfiable pss all  then Used else Unused
+    end else if not (satisfiable pss (omega_list (omega::qs))) then
       Unused
-    else if loc.Location.loc_ghost then Used
     else
     begin match every_satisfiable pss (q1::qs) with
       | Unused ->
@@ -1007,6 +1022,7 @@ let rec every_satisfiable pss qs = match qs with
           | Used -> Used
           | r    -> try_many r try_non_omega constrs
     end
+| {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> Unused
 | q::qs ->
     let q0 = discr_pat q pss in
     every_satisfiable (filter_one q0 pss) (simple_match_args q0 q @ qs)

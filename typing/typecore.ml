@@ -488,11 +488,13 @@ let finalize_variant pat =
       unify_pat pat.pat_env pat
         (newty(Tvariant{row_fields=[]; row_more=newvar(); row_closed=false;
                         row_bound=[]; row_fixed=false; row_name=None}));
+(*
       (* Eventually post a delayed warning check *)
       if (match row_field_repr field with Reither _ -> true | _ -> false) then
         add_delayed_check
           (fun () -> if row_field_repr field = Rabsent then
             Location.prerr_warning pat.pat_loc Warnings.Unused_match)
+*)
   | _ -> ()
 
 let rec iter_pattern f p =
