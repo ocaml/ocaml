@@ -480,7 +480,7 @@ let compile_phrase expr =
   label_counter := 0;
   lbl_staticfail := 0;
   sz_staticfail := 0;
-  let init_code = comp_expr empty_env expr 0 [Kstop] in
+  let init_code = comp_expr empty_env expr 1 [Kreturn 1] in
   let fun_code = comp_remainder [] in
   (init_code, fun_code)
 
