@@ -20,7 +20,7 @@ CFLAGS=$(FLAGS) -O $(NATIVECCCOMPOPTS)
 DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
 PFLAGS=$(FLAGS) -pg -O -DPROFILING $(NATIVECCCOMPOPTS)
 
-COBJS=startup.o main.o fail.o roots.o signals.o \
+COBJS=startup.o main.o fail.o roots.o globroots.o signals.o \
   misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
   floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
   gc_ctrl.o terminfo.o md5.o obj.o lexing.o printexc.o callback.o weak.o \
@@ -132,11 +132,13 @@ custom.c: ../byterun/custom.c
 	ln -s ../byterun/custom.c custom.c
 meta.c: ../byterun/meta.c
 	ln -s ../byterun/meta.c meta.c
+globroots.c: ../byterun/globroots.c
+	ln -s ../byterun/globroots.c globroots.c
 
 LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
   parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
-  weak.c compact.c finalise.c meta.c custom.c main.c
+  weak.c compact.c finalise.c meta.c custom.c main.c globroots.c
 
 clean::
 	rm -f $(LINKEDFILES)

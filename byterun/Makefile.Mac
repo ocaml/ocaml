@@ -30,7 +30,7 @@ PPCOBJS = :interp.c.x :misc.c.x :stacks.c.x ¶
   :obj.c.x :lexing.c.x :macintosh.c.x ¶
   :rotatecursor.c.x :printexc.c.x :callback.c.x ¶
   :debugger.c.x :weak.c.x :compact.c.x ¶
-  :instrtrace.c.x :finalise.c.x :custom.c.x :backtrace.c.x
+  :instrtrace.c.x :finalise.c.x :custom.c.x :backtrace.c.x :globroots.c.x
 
 PRIMS = alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c ¶
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c ¶

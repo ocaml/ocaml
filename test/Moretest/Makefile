@@ -93,6 +93,15 @@ fftba.out: fftba.ml
 	$(CAMLOPT) $(OPTFLAGS) -o fftba.out -I ../../otherlibs/bigarray \
           bigarray.cmxa fftba.ml
 
+globroots.byt: globroots.ml globrootsprim.o
+	$(CAMLC) -custom -o globroots.byt globroots.ml globrootsprim.o
+
+globroots.out: globroots.ml globrootsprim.o
+	$(CAMLOPT) -o globroots.out globroots.ml globrootsprim.o
+
+globrootsprim.o: globrootsprim.c
+	$(BYTECC) $(BYTECCCOMPOPTS) -I../../byterun -c globrootsprim.c
+
 # Common rules
 
 .SUFFIXES:

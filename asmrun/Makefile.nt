@@ -22,7 +22,7 @@ COBJS=startup.obj main.obj fail.obj roots.obj signals.obj \
   compare.obj ints.obj floats.obj str.obj array.obj io.obj extern.obj \
   intern.obj hash.obj sys.obj parsing.obj gc_ctrl.obj terminfo.obj \
   md5.obj obj.obj lexing.obj win32.obj printexc.obj callback.obj \
-  weak.obj compact.obj finalise.obj custom.obj
+  weak.obj compact.obj finalise.obj custom.obj globroots.obj
 
 ASMOBJS=$(ARCH)nt.obj
 
@@ -97,11 +97,13 @@ custom.c: ../byterun/custom.c
 	cp ../byterun/custom.c custom.c
 meta.c: ../byterun/meta.c
 	cp ../byterun/meta.c meta.c
+globroots.c: ../byterun/globroots.c
+	cp ../byterun/globroots.c globroots.c
 
 LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
   parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
-  weak.c compact.c meta.c
+  weak.c compact.c meta.c custom.c main.c globroots.c
 
 # Need special compilation rule so as not to do -I..\byterun
 win32.obj: ../byterun/win32.c

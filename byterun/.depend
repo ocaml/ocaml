@@ -16,6 +16,18 @@ compact.o: compact.c config.h ../config/m.h ../config/s.h finalise.h \
 compare.o: compare.c custom.h mlvalues.h config.h ../config/m.h \
  ../config/s.h misc.h fail.h memory.h gc.h major_gc.h freelist.h \
  minor_gc.h
+comparegr.o: comparegr.c custom.h mlvalues.h config.h ../config/m.h \
+ ../config/s.h misc.h fail.h memory.h gc.h major_gc.h freelist.h \
+ minor_gc.h
+comparegraph.o: comparegraph.c custom.h mlvalues.h config.h \
+ ../config/m.h ../config/s.h misc.h fail.h memory.h gc.h major_gc.h \
+ freelist.h minor_gc.h
+comparesafe.o: comparesafe.c custom.h mlvalues.h config.h \
+ ../config/m.h ../config/s.h misc.h fail.h memory.h gc.h major_gc.h \
+ freelist.h minor_gc.h
+comparest.o: comparest.c custom.h mlvalues.h config.h ../config/m.h \
+ ../config/s.h misc.h fail.h memory.h gc.h major_gc.h freelist.h \
+ minor_gc.h
 custom.o: custom.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h custom.h fail.h memory.h gc.h major_gc.h freelist.h \
  minor_gc.h
@@ -42,6 +54,8 @@ freelist.o: freelist.c config.h ../config/m.h ../config/s.h freelist.h \
 gc_ctrl.o: gc_ctrl.c alloc.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h compact.h custom.h finalise.h roots.h \
  memory.h gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h stacks.h
+globroots.o: globroots.c memory.h config.h ../config/m.h ../config/s.h \
+ gc.h mlvalues.h misc.h major_gc.h freelist.h minor_gc.h globroots.h
 hash.o: hash.c mlvalues.h config.h ../config/m.h ../config/s.h misc.h \
  custom.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 instrtrace.o: instrtrace.c
@@ -91,7 +105,7 @@ printexc.o: printexc.c backtrace.h mlvalues.h config.h ../config/m.h \
  ../config/s.h misc.h debugger.h fail.h printexc.h
 roots.o: roots.c finalise.h roots.h misc.h config.h ../config/m.h \
  ../config/s.h memory.h gc.h mlvalues.h major_gc.h freelist.h \
- minor_gc.h stacks.h
+ minor_gc.h globroots.h stacks.h
 rotatecursor.o: rotatecursor.c rotatecursor.h
 signals.o: signals.c alloc.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h callback.h fail.h memory.h gc.h major_gc.h \
@@ -132,6 +146,18 @@ compact.d.o: compact.c config.h ../config/m.h ../config/s.h finalise.h \
 compare.d.o: compare.c custom.h mlvalues.h config.h ../config/m.h \
  ../config/s.h misc.h fail.h memory.h gc.h major_gc.h freelist.h \
  minor_gc.h
+comparegr.d.o: comparegr.c custom.h mlvalues.h config.h ../config/m.h \
+ ../config/s.h misc.h fail.h memory.h gc.h major_gc.h freelist.h \
+ minor_gc.h
+comparegraph.d.o: comparegraph.c custom.h mlvalues.h config.h \
+ ../config/m.h ../config/s.h misc.h fail.h memory.h gc.h major_gc.h \
+ freelist.h minor_gc.h
+comparesafe.d.o: comparesafe.c custom.h mlvalues.h config.h \
+ ../config/m.h ../config/s.h misc.h fail.h memory.h gc.h major_gc.h \
+ freelist.h minor_gc.h
+comparest.d.o: comparest.c custom.h mlvalues.h config.h ../config/m.h \
+ ../config/s.h misc.h fail.h memory.h gc.h major_gc.h freelist.h \
+ minor_gc.h
 custom.d.o: custom.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h custom.h fail.h memory.h gc.h major_gc.h freelist.h \
  minor_gc.h
@@ -158,6 +184,8 @@ freelist.d.o: freelist.c config.h ../config/m.h ../config/s.h freelist.h \
 gc_ctrl.d.o: gc_ctrl.c alloc.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h compact.h custom.h finalise.h roots.h \
  memory.h gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h stacks.h
+globroots.d.o: globroots.c memory.h config.h ../config/m.h ../config/s.h \
+ gc.h mlvalues.h misc.h major_gc.h freelist.h minor_gc.h globroots.h
 hash.d.o: hash.c mlvalues.h config.h ../config/m.h ../config/s.h misc.h \
  custom.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 instrtrace.d.o: instrtrace.c instruct.h misc.h config.h ../config/m.h \
@@ -208,7 +236,7 @@ printexc.d.o: printexc.c backtrace.h mlvalues.h config.h ../config/m.h \
  ../config/s.h misc.h debugger.h fail.h printexc.h
 roots.d.o: roots.c finalise.h roots.h misc.h config.h ../config/m.h \
  ../config/s.h memory.h gc.h mlvalues.h major_gc.h freelist.h \
- minor_gc.h stacks.h
+ minor_gc.h globroots.h stacks.h
 rotatecursor.d.o: rotatecursor.c rotatecursor.h
 signals.d.o: signals.c alloc.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h callback.h fail.h memory.h gc.h major_gc.h \

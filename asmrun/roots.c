@@ -15,6 +15,7 @@
 /* To walk the memory roots for garbage collection */
 
 #include "finalise.h"
+#include "globroots.h"
 #include "memory.h"
 #include "major_gc.h"
 #include "minor_gc.h"
@@ -27,40 +28,7 @@
 
 struct caml__roots_block *local_roots = NULL;
 
-struct global_root {
-  value * root;
-  struct global_root * next;
-};
-  
-static struct global_root * global_roots = NULL;
-
 void (*scan_roots_hook) (scanning_action) = NULL;
-
-/* Register a global C root */
-
-void register_global_root(value * r)
-{
-  struct global_root * gr;
-  gr = (struct global_root *) stat_alloc(sizeof(struct global_root));
-  gr->root = r;
-  gr->next = global_roots;
-  global_roots = gr;
-}
-
-/* Un-register a global C root */
-
-void remove_global_root(value * r)
-{
-  struct global_root ** gp, * gr;
-  for (gp = &global_roots; *gp != NULL; gp = &(*gp)->next) {
-    gr = *gp;
-    if (gr->root == r) {
-      *gp = gr->next;
-      stat_free((char *) gr);
-      return;
-    }
-  }
-}
 
 /* The hashtable of frame descriptors */
 
@@ -214,7 +182,7 @@ void oldify_local_roots (void)
     }
   }
   /* Global C roots */
-  for (gr = global_roots; gr != NULL; gr = gr->next) {
+  for (gr = caml_global_roots.forward[0]; gr != NULL; gr = gr->forward[0]) {
     oldify(*(gr->root), gr->root);
   }
   /* Finalised values */
@@ -247,8 +215,8 @@ void do_roots (scanning_action f)
   do_local_roots(f, caml_bottom_of_stack, caml_last_return_address,
                  caml_gc_regs, local_roots);
   /* Global C roots */
-  for (gr = global_roots; gr != NULL; gr = gr->next) {
-    f (*(gr->root), gr->root);
+  for (gr = caml_global_roots.forward[0]; gr != NULL; gr = gr->forward[0]) {
+    f(*(gr->root), gr->root);
   }
   /* Finalised values */
   final_do_strong_roots (f);
