@@ -41,8 +41,8 @@ val rev : 'a list -> 'a list
         (* List reversal. *)
 val append : 'a list -> 'a list -> 'a list
         (* Catenate two lists.  Same function as the infix operator [@].
-           Not tail-recursive.  The [@] operator is not tail-recursive
-           either. *)
+           Not tail-recursive (length of the first argument).  The [@]
+           operator is not tail-recursive either. *)
 val rev_append : 'a list -> 'a list -> 'a list
         (* [List.rev_append l1 l2] reverses [l1] and catenates it to [l2].
            This is equivalent to [List.rev l1 @ l2], but [rev_append] is
