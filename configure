@@ -160,10 +160,6 @@ case "$bytecc,$host" in
     bytecclinkopts="-Wl,-woff,84";;
 esac
 
-echo "BYTECC=$bytecc" >> Makefile
-echo "BYTECCCOMPOPTS=$bytecccompopts" >> Makefile
-echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
-
 # Configure compiler to use in further tests
 
 cc="$bytecc $bytecclinkopts"
@@ -309,16 +305,6 @@ case "$arch,$model,$system" in
   power,ppc,aix)    asflags='-u -m ppc -w'; asppflags="$asflags";;
   power,*,elf)      aspp='gcc'; asppflags='-c';;
 esac
-
-echo "ARCH=$arch" >> Makefile
-echo "MODEL=$model" >> Makefile
-echo "SYSTEM=$system" >> Makefile
-echo "NATIVECC=$nativecc" >> Makefile
-echo "NATIVECCCOMPOPTS=$nativecccompopts" >> Makefile
-echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
-echo "ASFLAGS=$asflags" >> Makefile
-echo "ASPP=$aspp" >> Makefile
-echo "ASPPFLAGS=$asppflags" >> Makefile
 
 # Where is ranlib?
 
@@ -609,6 +595,8 @@ echo "BIGNUM_ARCH=$bignum_arch" >> Makefile
 if test "$posix_threads" = "yes"; then
   echo "Threads library supported (using POSIX system threads)."
   otherlibraries="$otherlibraries systhreads"
+  bytecccompopts="$bytecccompopts -D_REENTRANT"
+  nativecccompopts="$nativecccompopts -D_REENTRANT"
 elif test "$has_select" = "yes" \
 && test "$has_setitimer" = "yes" \
 && test "$has_gettimeofday" = "yes" \
@@ -692,6 +680,21 @@ fi
 # Finish generated files
 
 cclibs="$cclibs -lm"
+
+echo "BYTECC=$bytecc" >> Makefile
+echo "BYTECCCOMPOPTS=$bytecccompopts" >> Makefile
+echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
+
+echo "ARCH=$arch" >> Makefile
+echo "MODEL=$model" >> Makefile
+echo "SYSTEM=$system" >> Makefile
+echo "NATIVECC=$nativecc" >> Makefile
+echo "NATIVECCCOMPOPTS=$nativecccompopts" >> Makefile
+echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
+echo "ASFLAGS=$asflags" >> Makefile
+echo "ASPP=$aspp" >> Makefile
+echo "ASPPFLAGS=$asppflags" >> Makefile
+
 echo "CCLIBS=$cclibs" >> Makefile
 echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
 echo "DEBUGGER=$debugger" >> Makefile
