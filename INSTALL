@@ -68,10 +68,8 @@ The "configure" script accepts the following options:
         as well as bytecode (ocamlc), and also allow more flexibility
         in interfacing with C.  However, you need a strictly
         conformant POSIX 1003.1c implementation on your system.
-        As a rule of thumb, this option works under Solaris 2.5 and later,
-        Digital Unix 4.0, and Linux with the LinuxThreads library.
-        It will *not* work under Digital Unix 3.2 or earlier, SunOS 4,
-        HPUX, AIX, nor Linux without LinuxThreads.
+        For instance, this option works under Solaris 2.5 and later,
+        Digital Unix 4.0, and recent Linux distributions (using glibc 2).
 
 -tkdefs <cpp flags>             (default: none)
 -tklibs <flags and libraries>   (default: determined automatically)
