@@ -151,7 +151,7 @@ void raise_not_found(void)
 
 void raise_sys_blocked_io(void)
 {
-  raise_constant((value) Sys_blocked_io));
+  raise_constant((value) Sys_blocked_io);
 }
 
 /* We allocate statically the bucket for the exception because we can't
