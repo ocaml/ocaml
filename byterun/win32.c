@@ -18,9 +18,7 @@
 #include <windows.h>
 #include <stdlib.h>
 #include <stdio.h>
-#ifndef HAS_UI
 #include <io.h>
-#endif
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -191,8 +189,6 @@ sighandler caml_win32_signal(int sig, sighandler action)
 
 /* Expansion of @responsefile and *? file patterns in the command line */
 
-#ifndef HAS_UI
-
 static int argc;
 static char ** argv;
 static int argvsize;
@@ -330,8 +326,6 @@ CAMLexport void caml_expand_command_line(int * argcp, char *** argvp)
   *argvp = argv;
 }
 
-#endif
-
 /* Add to [contents] the (short) names of the files contained in
    the directory named [dirname].  No entries are added for [.] and [..].
    Return 0 on success, -1 on error; set errno in the case of error. */
@@ -389,4 +383,4 @@ void caml_signal_thread(void * lpParam)
   }
 }
 
-#endif
+#endif /* NATIVE_CODE */

@@ -22,15 +22,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#if !macintosh
 #include <sys/types.h>
 #include <sys/stat.h>
-#endif
-#if !macintosh && !_WIN32
+#if !_WIN32
 #include <sys/wait.h>
-#endif
-#if macintosh
-#include "macintosh.h"
 #endif
 #include "config.h"
 #ifdef HAS_UNISTD
@@ -51,9 +46,6 @@
 #include "signals.h"
 #include "stacks.h"
 #include "sys.h"
-#ifdef HAS_UI
-#include "ui.h"
-#endif
 
 #ifndef _WIN32
 extern int errno;
@@ -121,11 +113,7 @@ CAMLprim value caml_sys_exit(value retcode)
 #ifndef NATIVE_CODE
   caml_debugger(PROGRAM_EXIT);
 #endif
-#ifdef HAS_UI
-  ui_exit(Int_val(retcode));
-#else
   exit(Int_val(retcode));
-#endif
   return Val_unit;
 }
 
@@ -158,11 +146,7 @@ CAMLprim value caml_sys_open(value path, value flags, value perm)
   strcpy(p, String_val(path));
   /* open on a named FIFO can block (PR#1533) */
   caml_enter_blocking_section();
-  fd = open(p, caml_convert_flag_list(flags, sys_open_flags)
-#if !macintosh
-             , Int_val(perm)
-#endif
-                                       );
+  fd = open(p, caml_convert_flag_list(flags, sys_open_flags), Int_val(perm));
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (fd == -1) caml_sys_error(path);
@@ -180,16 +164,8 @@ CAMLprim value caml_sys_close(value fd)
 
 CAMLprim value caml_sys_file_exists(value name)
 {
-#if macintosh
-  int f;
-  f = open (String_val (name), O_RDONLY);
-  if (f == -1) return (Val_bool (0));
-  close (f);
-  return (Val_bool (1));
-#else
   struct stat st;
   return Val_bool(stat(String_val(name), &st) == 0);
-#endif
 }
 
 CAMLprim value caml_sys_remove(value name)

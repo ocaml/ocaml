@@ -19,13 +19,8 @@
 /* <include ../config/m.h> */
 /* <include ../config/s.h> */
 /* <private> */
-#if !macintosh
 #include "../config/m.h"
 #include "../config/s.h"
-#else
-#include <m.h>
-#include <s.h>
-#endif
 /* </private> */
 
 #ifndef CAML_NAME_SPACE

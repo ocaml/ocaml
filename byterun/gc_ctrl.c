@@ -408,11 +408,7 @@ void caml_init_gc (unsigned long minor_size, unsigned long major_size,
   unsigned long major_heap_size = Bsize_wsize (norm_heapincr (major_size));
 
 #ifdef DEBUG
-  caml_gc_message (-1, "### O'Caml runtime: debug mode "
-#ifdef CPU_TYPE_STRING
-                               "(" CPU_TYPE_STRING ") "
-#endif
-                                                       "###\n", 0);
+  caml_gc_message (-1, "### O'Caml runtime: debug mode ###\n", 0);
 #endif
 
   caml_set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));

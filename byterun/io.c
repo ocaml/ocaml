@@ -19,9 +19,7 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <string.h>
-#if !macintosh
 #include <sys/types.h>
-#endif
 #include "config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
@@ -35,9 +33,6 @@
 #include "mlvalues.h"
 #include "signals.h"
 #include "sys.h"
-#ifdef HAS_UI
-#include "ui.h"
-#endif
 
 #ifndef SEEK_SET
 #define SEEK_SET 0
@@ -147,9 +142,6 @@ static int do_write(int fd, char *p, int n)
   int retcode;
 
   Assert(!Is_young((value) p));
-#ifdef HAS_UI
-  retcode = ui_write(fd, p, n);
-#else
 again:
   caml_enter_blocking_section();
   retcode = write(fd, p, n);
@@ -165,7 +157,6 @@ again:
       n = 1; goto again;
     }
   }
-#endif
   if (retcode == -1) caml_sys_error(NO_ARG);
   return retcode;
 }
@@ -265,14 +256,10 @@ CAMLexport int caml_do_read(int fd, char *p, unsigned int n)
 
   /*Assert(!Is_young((value) p)); ** Is_young only applies to a true value */
   caml_enter_blocking_section();
-#ifdef HAS_UI
-  retcode = ui_read(fd, p, n);
-#else
 #ifdef EINTR
   do { retcode = read(fd, p, n); } while (retcode == -1 && errno == EINTR);
 #else
   retcode = read(fd, p, n);
-#endif
 #endif
   caml_leave_blocking_section();
   if (retcode == -1) caml_sys_error(NO_ARG);

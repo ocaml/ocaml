@@ -24,9 +24,6 @@
 #include "fail.h"
 #include "misc.h"
 #include "mlvalues.h"
-#ifdef HAS_UI
-#include "ui.h"
-#endif
 #include "printexc.h"
 
 struct stringbuf {
@@ -119,11 +116,7 @@ void caml_fatal_uncaught_exception(value exn)
   caml_backtrace_pos = saved_backtrace_pos;
 #endif
   /* Display the uncaught exception */
-#ifdef HAS_UI
-  ui_print_stderr("Fatal error: exception %s\n", msg);
-#else
   fprintf(stderr, "Fatal error: exception %s\n", msg);
-#endif
   free(msg);
   /* Display the backtrace if available */
 #ifndef NATIVE_CODE
@@ -132,9 +125,5 @@ void caml_fatal_uncaught_exception(value exn)
   }
 #endif
   /* Terminate the process */
-#ifdef HAS_UI
-  ui_exit(2);
-#else
   exit(2);
-#endif
 }

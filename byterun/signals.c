@@ -25,10 +25,6 @@
 #include "signals.h"
 #include "sys.h"
 
-#if macintosh
-#include "rotatecursor.h"
-#endif /* macintosh */
-
 #ifdef _WIN32
 typedef void (*sighandler)(int sig);
 extern sighandler caml_win32_signal(int sig, sighandler action);
@@ -61,9 +57,6 @@ void caml_process_event(void)
   async_action = caml_async_action_hook;
   caml_async_action_hook = NULL;
   if (async_action != NULL) (*async_action)();
-#if macintosh
-  ROTATECURSOR_MAGIC ();
-#endif
 }
 
 static int rev_convert_signal_number(int signo);

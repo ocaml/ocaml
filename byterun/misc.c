@@ -17,9 +17,6 @@
 #include "config.h"
 #include "misc.h"
 #include "memory.h"
-#ifdef HAS_UI
-#include "ui.h"
-#endif
 
 #ifdef DEBUG
 
@@ -32,55 +29,35 @@ int caml_failed_assert (char * expr, char * file, int line)
   return 1; /* not reached */
 }
 
-#endif
+#endif /* DEBUG */
 
 unsigned long caml_verb_gc = 0;
 
 void caml_gc_message (int level, char *msg, unsigned long arg)
 {
   if (level < 0 || (caml_verb_gc & level) != 0){
-#ifdef HAS_UI
-    ui_print_stderr(msg, (void *) arg);
-#else
     fprintf (stderr, msg, arg);
     fflush (stderr);
-#endif
   }
 }
 
 void caml_fatal_error (char *msg)
 {
-#ifdef HAS_UI
-  ui_print_stderr("%s", msg);
-  ui_exit (2);
-#else
   fprintf (stderr, "%s", msg);
   exit(2);
-#endif
 }
 
 void caml_fatal_error_arg (char *fmt, char *arg)
 {
-#ifdef HAS_UI
-  ui_print_stderr(fmt, arg);
-  ui_exit (2);
-#else
   fprintf (stderr, fmt, arg);
   exit(2);
-#endif
 }
 
 void caml_fatal_error_arg2 (char *fmt1, char *arg1, char *fmt2, char *arg2)
 {
-#ifdef HAS_UI
-  ui_print_stderr(fmt1, arg1);
-  ui_print_stderr(fmt2, arg2);
-  ui_exit (2);
-#else
   fprintf (stderr, fmt1, arg1);
   fprintf (stderr, fmt2, arg2);
   exit(2);
-#endif
 }
 
 char *caml_aligned_malloc (asize_t size, int modulo, void **block)
