@@ -110,8 +110,9 @@ let undefined_exception loc =
                     Const_base(Const_int line);
                     Const_base(Const_int char)]))])
 
-let undefined_function exn_id =
-  Lfunction(Curried, [Ident.create "undef"], Lprim(Praise, [Lvar exn_id]))
+let undefined_function loc =
+  Lfunction(Curried, [Ident.create "undef"],
+            Lprim(Praise, [undefined_exception loc]))
 
 let init_value modl =
   let undef_exn_id = Ident.create "undef_exception" in
@@ -140,7 +141,9 @@ let init_value modl =
     | Tsig_type(id, tdecl) :: rem ->
         init_value_struct (Env.add_type id tdecl env) rem
     | Tsig_exception(id, edecl) :: rem ->
-        Lvar undef_exn_id :: init_value_struct env rem
+        transl_exception
+          id (Some Predef.path_undefined_recursive_module) edecl ::
+        init_value_struct env rem
     | Tsig_module(id, mty) :: rem ->
         init_value_mod env mty ::
         init_value_struct (Env.add_module id mty env) rem
@@ -153,9 +156,8 @@ let init_value modl =
         init_value_struct env rem
   in
   try
-    Some(Llet(Alias, undef_exn_id, undefined_exception modl.mod_loc,
-         Llet(Alias, undef_function_id, undefined_function undef_exn_id,
-              init_value_mod modl.mod_env modl.mod_type)))
+    Some(Llet(Alias, undef_function_id, undefined_function modl.mod_loc,
+              init_value_mod modl.mod_env modl.mod_type))
   with Not_found ->
     None
 
