@@ -755,7 +755,7 @@ let rec transl = function
 
   (* Test block / immediate int *)
   | Uprim(Pisint, [arg]) ->
-      tag_int(Cop(Cand, [transl_arg; Cconst_int 1]))
+      tag_int(Cop(Cand, [transl arg; Cconst_int 1]))
 
   (* Operations on bitvects *)
   | Uprim(Pbittest, [arg1; arg2]) ->
