@@ -135,7 +135,7 @@ val find : f:('a -> bool) -> 'a list -> 'a
 val filter : f:('a -> bool) -> 'a list -> 'a list
 val find_all : f:('a -> bool) -> 'a list -> 'a list
         (* [filter p l] returns all the elements of the list [l]
-           that satisfies the predicate [p].  The order of the elements
+           that satisfy the predicate [p].  The order of the elements
            in the input list is preserved.  [find_all] is another name
            for [filter]. *)
 
