@@ -20,7 +20,7 @@ let rindex c s =
   find (string_length s - 1);;
 
 let first_caml_line = ref true;;
-let in_caml_reply = ref false;;
+let in_caml = ref false;;
 }
 
 rule main = parse
@@ -49,7 +49,7 @@ rule main = parse
 (* Caml programs *)
   | "\\caml"
       	       	{ print_string "<pre>";
-                  first_caml_line := true; in_caml_reply := false;
+                  first_caml_line := true; in_caml := false;
                   camlprog lexbuf; print_string "</pre>"; main lexbuf }
 (* Raw html, latex only *)
   | "\\begin{rawhtml}"
@@ -122,20 +122,21 @@ and camlprog = parse
   | ">"         { print_string "&gt;"; camlprog lexbuf }
   | "&"         { print_string "&amp;"; camlprog lexbuf }
   | "\\?"       { if !first_caml_line then begin
-                    print_string "# ";
+                    print_string "# <FONT COLOR=\"red\">";
                     first_caml_line := false
                   end else
-                    print_string "  ";
+                    print_string "  <FONT COLOR=\"red\">";
+                  in_caml := true;
                   camlprog lexbuf }
-  | "\\:"       { in_caml_reply := true;
-                  print_string "<FONT SIZE=-1>";
+  | "\\:"       { print_string "<FONT SIZE=-1 COLOR=\"green\">";
+                  in_caml := true;
                   camlprog lexbuf }
   | "\\;"       { first_caml_line := true; camlprog lexbuf }
   | "\\\\"      { print_string "\\"; camlprog lexbuf }
   | "\\endcaml" { () }
-  | "\n"        { if !in_caml_reply then begin
-                    in_caml_reply := false;
-                    print_string "</FONT>"
+  | "\n"        { if !in_caml then begin
+                    print_string "</FONT>";
+                    in_caml := false
                   end;
                   print_char `\n`;
                   camlprog lexbuf }
