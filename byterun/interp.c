@@ -126,7 +126,10 @@ value interprete(prog, prog_size)
 #endif
 
 #ifdef THREADED_CODE
-  if (prog[0] <= STOP) thread_code(prog, prog_size, jumptable);
+  if (prog[0] <= STOP) {
+    instr_table = jumptable; 
+    thread_code(prog, prog_size);
+  }
 #endif
 
   sp = extern_sp;

@@ -17,11 +17,16 @@
 #define _fix_code_
 
 
+#include "config.h"
 #include "misc.h"
 #include "mlvalues.h"
 
+#ifdef THREADED_CODE
+void ** instr_table;
+#endif
+
 void fixup_endianness P((code_t code, asize_t len));
-void thread_code P((code_t code, asize_t len, void * instr_table[]));
+void thread_code P((code_t code, asize_t len));
 
 
 #endif

@@ -19,5 +19,6 @@
 void sys_error P((char *));
 void sys_init P((char **));
 void sys_exit P((value)) Noreturn;
+char * searchpath P((char * name));
 
 #endif /* _sys_ */

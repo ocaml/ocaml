@@ -13,6 +13,7 @@
 
 /* Structured input, compact format */
 
+#include <string.h>
 #include "alloc.h"
 #include "fail.h"
 #include "gc.h"

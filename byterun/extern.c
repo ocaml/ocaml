@@ -13,6 +13,7 @@
 
 /* Structured output */
 
+#include <string.h>
 #include "alloc.h"
 #include "fail.h"
 #include "gc.h"

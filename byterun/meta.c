@@ -14,6 +14,7 @@
 /* Primitives for the toplevel */
 
 #include "alloc.h"
+#include "config.h"
 #include "fix_code.h"
 #include "interp.h"
 #include "major_gc.h"
@@ -30,13 +31,19 @@ value get_global_data(unit)     /* ML */
   return global_data;
 }
 
-value execute_bytecode(prog, len) /* ML */
+value reify_bytecode(prog, len) /* ML */
      value prog, len;
 {
-#if defined(BIG_ENDIAN)
+  value clos;
+#ifdef BIG_ENDIAN
   fixup_endianness((code_t) prog, (asize_t) Long_val(len));
 #endif
-  return interprete((code_t) prog, (asize_t) Long_val(len));
+#ifdef THREADED_CODE
+  thread_code((code_t) prog, (asize_t) Long_val(len));
+#endif
+  clos = alloc(1, Closure_tag);
+  Code_val(clos) = (code_t) prog;
+  return clos;
 }
 
 value realloc_global(size)      /* ML */

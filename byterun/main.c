@@ -78,8 +78,6 @@ static int read_trailer(fd, trail)
     return BAD_MAGIC_NUM;
 }
 
-extern char * searchpath();
-
 int attempt_open(name, trail, do_open_script)
      char ** name;
      struct exec_trailer * trail;
@@ -128,6 +126,8 @@ Algorithm:
       and we strip "(whatever) [options]" from the command line.
 
 */
+
+extern void init_ieee_floats();
 
 #ifdef HAS_UI
 int caml_main(argc, argv)

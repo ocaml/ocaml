@@ -41,10 +41,11 @@ void fixup_endianness(code, len)
 
 #ifdef THREADED_CODE
 
-void thread_code(code, len, instr_table)
+void ** instr_table;
+
+void thread_code(code, len)
      code_t code;
      asize_t len;
-     void * instr_table[];
 {
   code_t p;
   len /= sizeof(opcode_t);
@@ -77,7 +78,7 @@ void thread_code(code, len, instr_table)
         break; }
     }
   }
-  Assert(p = code + len);
+  Assert(p == code + len);
 }
 
 #endif
