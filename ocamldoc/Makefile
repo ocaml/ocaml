@@ -310,7 +310,7 @@ installopt_really:
 ###########
 test: dummy
 	$(MKDIR) $@ 
-	./ocamldoc -html -colorize-code -d $@ $(INCLUDES) odoc*.ml odoc*.mli
+	./ocamldoc -html -colorize-code -d $@ $(INCLUDES) -dump $@/ocamldoc.odoc odoc*.ml odoc*.mli
 
 test_stdlib: dummy
 	$(MKDIR) $@ 
