@@ -186,6 +186,10 @@ You will need the following software components to perform the recompilation:
 - Cygwin: http://sourceware.cygnus.com/cygwin/
 - TCL/TK version 8.3 (see above).
 
+Do *not* install the standalone distribution of MinGW, nor the
+companion MSYS tools: these have problems with long command lines.
+Instead, use the version of MinGW that is installed along with Cygwin.
+
 Start a Cygwin shell and unpack the source distribution
 (ocaml-X.YZ.tar.gz) with "tar xzf".  Change to the top-level
 directory of the OCaml distribution.  Then, do
