@@ -532,7 +532,6 @@ let rec tree_of_type_decl id decl =
     | _ -> "?"
   in
   let type_defined decl =
-(* <<<<<<< printtyp.ml *)
     let abstr =
       match decl.type_kind with
         Type_abstract ->
@@ -552,30 +551,6 @@ let rec tree_of_type_decl id decl =
     (Ident.name id,
      List.map2 (fun ty cocn -> type_param (tree_of_typexp false ty), cocn)
        params vari)
-(*
-=======
-    if List.exists2
-        (fun ty x -> x <> (true,true,true) &&
-          (decl.type_kind = Type_abstract && ty_manifest = None
-         || (repr ty).desc <> Tvar))
-        decl.type_params decl.type_variance
-    then
-      let vari = List.map (fun (co,cn,ct) -> (co,cn)) decl.type_variance in
-      (Ident.name id,
-       List.combine
-         (List.map (fun ty -> type_param (tree_of_typexp false ty)) params)
-         vari)
-    else
-      let ty =
-        tree_of_typexp false
-          (Btype.newgenty (Tconstr(Pident id, params, ref Mnil)))
-      in
-      match ty with
-      | Otyp_constr (Oide_ident id, tyl) ->
-          (id, List.map (fun ty -> (type_param ty, (true, true))) tyl)
-      | _ -> ("?", [])
->>>>>>> 1.130.2.2
-*)
   in
   let tree_of_manifest ty1 =
     match ty_manifest with
