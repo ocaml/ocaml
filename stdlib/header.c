@@ -11,7 +11,7 @@
 
 /* $Id$ */
 
-char * runtime_name = "ocamlrun";
+char runtime_name [] = RUNTIME_NAME;
 char errmsg [] = "Cannot exec ocamlrun.\n";
 
 int main(argc, argv)

@@ -35,8 +35,9 @@ stdlib.cmxa: $(OBJS:.cmo=.cmx)
 camlheader: header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); \
 	then echo "#!$(BINDIR)/ocamlrun" > camlheader; \
-	else $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) header.c -o camlheader; \
-	     strip camlheader; fi
+	else $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) '-DRUNTIME_NAME="$(BINDIR)/ocamlrun"' header.c -o camlheader; \
+	     strip camlheader; \
+        fi
 
 clean::
 	rm -f camlheader
