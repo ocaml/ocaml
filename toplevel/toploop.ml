@@ -57,7 +57,7 @@ let print_item env = function
           print_string "external "; Printtyp.ident id;
           print_string " :"; print_space();
           Printtyp.type_scheme decl.val_type; print_space();
-          print_string "= \""; print_string p.prim_name; print_string "\""
+          print_string "= "; Primitive.print_description p
       end;
       close_box()
   | Tsig_type(id, decl) ->
