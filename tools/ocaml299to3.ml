@@ -111,8 +111,8 @@ let convert_file name =
   end;
   if !modified then begin
     let backup = name ^ ".bak" in
-    if Sys.file_exists backup then Sys.remove backup;
-    Sys.rename name backup;
+    if Sys.file_exists backup then Sys.remove name
+    else Sys.rename name backup;
     let oc = open_out name in
     Buffer.output_buffer oc output_buffer;
     close_out oc

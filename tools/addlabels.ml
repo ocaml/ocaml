@@ -401,7 +401,9 @@ let add_labels ~intf ~impl ~file =
           acc
     end;
   if !insertions <> [] then begin
-    Sys.rename file (file ^ ".bak");
+    let backup = file ^ ".bak" in
+    if Sys.file_exists backup then Sys.remove file
+    else Sys.rename file backup;
     let oc = open_out file in
     let last_pos =
       List.fold_left (sort_insertions ()) ~init:0 ~f:
