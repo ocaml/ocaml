@@ -520,7 +520,7 @@ let rec assoc_comments_text_elements module_list t_ele =
 	      match ele with
 		Odoc_search.Res_module _ -> RK_module
 	      | Odoc_search.Res_module_type _ -> RK_module_type
-	      | Odoc_search.Res_class  _ -> RK_class
+	      | Odoc_search.Res_class _ -> RK_class
 	      | Odoc_search.Res_class_type _ -> RK_class_type
 	      | Odoc_search.Res_value _ -> RK_value
 	      | Odoc_search.Res_type _ -> RK_type
