@@ -21,7 +21,7 @@ let _ =
   let top = openTk class:"OCamlBrowser" () in
   Jg_config.init ();
 
-  bind top events:[[], `Destroy] action:(`Set ([], fun _ -> exit 0));
+  bind top events:[`Destroy] action:(fun _ -> exit 0);
   at_exit Shell.kill_all;
   
 

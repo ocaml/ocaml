@@ -27,7 +27,7 @@ let compiler_preferences () =
          "Type on load", type_on_load])
   in
   let buttons = Frame.create tl in
-  let ok = Button.create buttons text:"Ok" padx:(`Pix 20) command:
+  let ok = Button.create buttons text:"Ok" padx:20 command:
       begin fun () ->
         List.iter fun:(fun f -> f ()) setflags;
         destroy tl
@@ -102,12 +102,13 @@ let select_shell txt =
   in
   Listbox.insert box index:`End texts:(List.map fun:fst shells);
   Listbox.configure box height:(List.length shells);
-  bind box events:[[],`KeyPressDetail"Return"]
-    action:(`Setbreakable([], fun _ -> Button.invoke ok; break ()));
-  bind box events:[[`Double],`ButtonPressDetail 1]
-    action:(`Setbreakable([`MouseX;`MouseY], fun ev ->
+  bind box events:[`KeyPressDetail"Return"] breakable:true
+    action:(fun _ -> Button.invoke ok; break ());
+  bind box events:[`Modified([`Double],`ButtonPressDetail 1)] breakable:true
+    fields:[`MouseX;`MouseY]
+    action:(fun ev ->
       Listbox.activate box index:(`Atxy (ev.ev_MouseX, ev.ev_MouseY));
-      Button.invoke ok; break ()));
+      Button.invoke ok; break ());
   pack [label] side:`Top anchor:`W;
   pack [box] side:`Top fill:`Both;
   pack [frame] side:`Bottom fill:`X expand:true;
@@ -308,45 +309,44 @@ class editor :top :menus = object (self)
         structure = []; signature = []; psignature = [] }
     in
     let control c = Char.chr (Char.code c - 96) in
-    bind tw events:[[`Alt], `KeyPress] action:(`Set ([], fun _ -> ()));
-    bind tw events:[[], `KeyPress]
-      action:(`Set ([`Char], fun ev ->
+    bind tw events:[`Modified([`Alt], `KeyPress)] action:ignore;
+    bind tw events:[`KeyPress] fields:[`Char]
+      action:(fun ev ->
         if ev.ev_Char <> "" &
           (ev.ev_Char.[0] >= ' ' or
            List.mem key:ev.ev_Char.[0]
              (List.map fun:control ['d'; 'h'; 'i'; 'k'; 'o'; 't'; 'w'; 'y']))
-        then Textvariable.set txt.modified to:"modified"));
-    bind tw events:[[],`KeyPressDetail"Tab"]
-      action:(`Setbreakable ([], fun _ ->
+        then Textvariable.set txt.modified to:"modified");
+    bind tw events:[`KeyPressDetail"Tab"] breakable:true
+      action:(fun _ ->
         indent_line tw;
         Textvariable.set txt.modified to:"modified";
-        break ()));
-    bind tw events:[[`Control],`KeyPressDetail"k"]
-      action:(`Set ([], fun _ ->
+        break ());
+    bind tw events:[`Modified([`Control],`KeyPressDetail"k")]
+      action:(fun _ ->
         let text =
           Text.get tw start:(`Mark"insert",[]) end:(`Mark"insert",[`Lineend])
         in Str.string_match pat:(Str.regexp "[ \t]*") text pos:0;
         if Str.match_end () <> String.length text then begin
           Clipboard.clear ();
           Clipboard.append data:text ()
-        end));
-    bind tw events:[[], `KeyRelease]
-      action:(`Set ([`Char], fun ev ->
+        end);
+    bind tw events:[`KeyRelease] fields:[`Char]
+      action:(fun ev ->
         if ev.ev_Char <> "" then
           Lexical.tag tw start:(`Mark"insert", [`Linestart])
-            end:(`Mark"insert", [`Lineend])));
-    bind tw events:[[], `Motion] action:(`Set ([], fun _ -> Focus.set tw));
-    bind tw events:[[], `ButtonPressDetail 2]
-      action:(`Set ([], fun _ ->
+            end:(`Mark"insert", [`Lineend]));
+    bind tw events:[`Motion] action:(fun _ -> Focus.set tw);
+    bind tw events:[`ButtonPressDetail 2]
+      action:(fun _ ->
         Textvariable.set txt.modified to:"modified";
         Lexical.tag txt.tw start:(`Mark"insert", [`Linestart])
-          end:(`Mark"insert", [`Lineend])));
-    bind tw events:[[`Double], `ButtonPressDetail 1]
-      action:(`Set ([`MouseX;`MouseY], fun ev ->
-        search_pos_window txt x:ev.ev_MouseX y:ev.ev_MouseY));
-    bind tw events:[[], `ButtonPressDetail 3]
-      action:(`Set ([`MouseX;`MouseY], fun ev ->
-        search_pos_menu txt x:ev.ev_MouseX y:ev.ev_MouseY));
+          end:(`Mark"insert", [`Lineend]));
+    bind tw events:[`Modified([`Double], `ButtonPressDetail 1)]
+      fields:[`MouseX;`MouseY]
+      action:(fun ev -> search_pos_window txt x:ev.ev_MouseX y:ev.ev_MouseY);
+    bind tw events:[`ButtonPressDetail 3] fields:[`MouseX;`MouseY]
+      action:(fun ev -> search_pos_menu txt x:ev.ev_MouseX y:ev.ev_MouseY);
 
     pack [sb] fill:`Y side:`Right;
     pack [tw] fill:`Both expand:true side:`Left;
@@ -468,7 +468,7 @@ class editor :top :menus = object (self)
             with `yes -> self#save_text txt
             | `no -> ()
             | `cancel -> raise Exit);
-      bind top events:[[],`Destroy] action:`Remove;
+      bind top events:[`Destroy];
       destroy top; break ()
     with Exit -> break ()
 
@@ -494,15 +494,14 @@ class editor :top :menus = object (self)
         [`Alt], "l", self#lex;
         [`Alt], "t", self#typecheck ]
       fun:begin fun (modi,key,act) ->
-        bind top events:[modi, `KeyPressDetail key]
-          action:(`Setbreakable ([], fun _ -> act (); break ()))
+        bind top events:[`Modified(modi, `KeyPressDetail key)] breakable:true
+          action:(fun _ -> act (); break ())
       end;
 
-    bind top events:[[],`Destroy]
-      action:(`Setbreakable
-                ([`Widget], fun ev ->
-                  if Widget.name ev.ev_Widget = Widget.name top
-                  then self#quit ()));
+    bind top events:[`Destroy] breakable:true fields:[`Widget]
+      action:(fun ev ->
+        if Widget.name ev.ev_Widget = Widget.name top
+        then self#quit ());
 
     (* File menu *)
     file_menu#add_command "Open File..." command:self#open_file;
@@ -573,7 +572,7 @@ class editor :top :menus = object (self)
     pack (List.map fun:(fun m -> coe m#button)
             [file_menu; edit_menu; compiler_menu; module_menu; window_menu]
           @ [coe label])
-      side:`Left ipadx:(`Pix 5) anchor:`W;
+      side:`Left ipadx:5 anchor:`W;
     pack [menus] before:(List.hd windows).frame side:`Top fill:`X
 end
 

@@ -4,7 +4,7 @@ open Tables
 
 (* CONFIGURE *)
 (* if you set it true, ImagePhoto and ImageBitmap will annoy you... *)
-let safetype = false 
+let safetype = true
 
 let labeloff :at l = match l with
   "",t -> t
@@ -221,37 +221,13 @@ let write_variants :w = function
 
 (* Definition of a type *)          
 let write_type intf:w impl:w' name def:typdef =
-(*  if typdef.subtypes = [] then (* If there is no subtypes *) 
-    begin
-    (* The type itself *)
-    (* Put markers for extraction *)
-    w "(* type *)\n";
-    w ("type "^name^" =\n    ");
-    write_constructors :w (sort_components typdef.constructors);
-    w "\n(* /type *)\n\n"
-    end
-  else
-*)
-    begin
-      if typdef.subtypes = [] then
-        begin
-          w "(* Variant type *)\n";
-          w ("type "^name^" = [\n    ");
-          write_variants :w (sort_components typdef.constructors);
-          w "\n]\n\n"
-        end
-      else
-        begin
-          (* Dynamic Subtyping *)
-          (* All the subtypes *)
-          List.iter typdef.subtypes fun:
-            begin fun (s,l) ->
-              w ("type "^s^"_"^name^" = [\n    ");
-              write_variants w:w (sort_components l);
-              w ("]\n\n")
-            end
-        end
-    end
+  (* Only needed if no subtypes, otherwise use optionals *)
+  if typdef.subtypes = [] then begin
+    w "(* Variant type *)\n";
+    w ("type "^name^" = [\n    ");
+    write_variants :w (sort_components typdef.constructors);
+    w "\n]\n\n"
+  end
 
 (************************************************************)
 (* Converters                                               *)
@@ -447,12 +423,6 @@ let rec converterCAMLtoTK :context_widget argname as:ty =
  |  UserDefined s -> 
        let name = "cCAMLtoTK"^s^" " in
        let args = argname in
-(*
-       let args = 
-           if is_subtyped s then  (* unconstraint subtype *)
-             s^"_any_table "^args
-           else args in
-*)
        let args = 
            if requires_widget_context s then
              context_widget^" "^args
@@ -461,20 +431,11 @@ let rec converterCAMLtoTK :context_widget argname as:ty =
  |  Subtype ("widget",s') ->
        let name = "cCAMLtoTKwidget" in
        let args = "("^argname^" : "^s'^" widget)" in
-(*
-       let args = 
-           if requires_widget_context s then
-             context_widget^" "^args
-           else args in
-*)
        name^args
  |  Subtype (s,s') ->
        let name = "cCAMLtoTK"^s'^"_"^s^" " in
-       let args = if safetype then "("^argname^" : "^s'^"_"^s^")" else argname
+       let args = if safetype then "("^argname^" : #"^s'^"_"^s^")" else argname
        in
-(*
-       let args = s^"_"^s'^"_table "^argname in
-*)
        let args = 
            if requires_widget_context s then
              context_widget^" "^args
@@ -521,8 +482,7 @@ let code_of_template :context_widget ?(func:funtemplate=false) template =
       let lbl = gettklabel (List.hd classdef) in
       catch_opts := (sub^"_"^sup, lbl);
       newvar := newvar2;
-      "TkTokenList (List.map fun:(function x -> "
-      ^ converterCAMLtoTK :context_widget "x" as:ty ^ ") opts)" 
+      "TkTokenList opts"
   | TypeArg (l,List ty) ->
       "TkTokenList (List.map fun:(function x -> "
       ^ converterCAMLtoTK :context_widget "x" as:ty
@@ -600,20 +560,30 @@ let write_CAMLtoTK :w def:typdef ?(safetype:st = true) name =
         end
       else
         "dummy" in
-    if safetype && st then
-      w (" : " ^ name ^ " -> tkArgs ");
+    if st then begin
+      w " : ";
+      if typdef.variant then w "#";
+      w name; w " -> tkArgs "
+    end;
     w(" = function\n    ");
     write_clause :w :context_widget (List.hd constrs);
     List.iter (List.tl constrs)
       fun:(fun c -> w "\n    | "; write_clause :w :context_widget c);
     w "\n\n\n"
   in
-    if typdef.subtypes == [] then
-      write_one name typdef.constructors
-    else
-      List.iter typdef.subtypes fun:begin
-        fun (subname,constrs) -> 
-          write_one (subname^"_"^name) constrs
+  (* Only needed if no subtypes, otherwise use optionals *)
+  if typdef.subtypes == [] then
+    write_one name typdef.constructors
+  else
+    List.iter typdef.constructors fun:
+      begin fun fc ->
+        let code, vars, _, (co, _) =
+          code_of_template context_widget:"dummy" fc.template in
+        if co <> "" then fatal_error "optionals in optionals";
+        let vars = List.map fun:snd vars in
+        w "let ccCAMLtoTK"; w name; w "_"; w (small fc.ml_name);
+        w " ("; w (String.concat sep:"," vars); w ") =\n    ";
+        w code; w "\n\n"
       end
 
 (* Tcl does not really return "lists". It returns sp separated tokens *)
@@ -700,12 +670,12 @@ let write_function :w def =
 
 let write_create :w clas =
   (w  "let create ?:name =\n" : unit);
-  w ("  "^ clas ^ "_options_optionals (fun options parent ->\n");
+  w ("  "^ clas ^ "_options_optionals (fun opts parent ->\n");
   w ("     let w = new_atom \"" ^ clas ^ "\" :parent ?:name in\n");
   w  "     tkEval [|";
   w ("TkToken \"" ^ clas ^ "\";\n");
   w ("              TkToken (Widget.name w);\n");
-  w ("              TkTokenList (List.map fun:(cCAMLtoTK" ^ clas ^ "_options dummy) options) |];\n");
+  w ("              TkTokenList opts |];\n");
   w ("      w)\n\n\n")
 
 (* builtin-code: the file (without suffix) is in .template... *)
@@ -725,58 +695,39 @@ let write_external :w def =
   | _ -> raise (Compiler_Error "invalid external definition")
 
 let write_catch_optionals :w clas def:typdef =
-  if typdef.subtypes = [] then 
-    (* begin Printf.eprintf "No subtypes\n";() end *) ()
-  else 
-    (* Printf.eprintf "Type constructors of %s\n" clas; *)
+  if typdef.subtypes = [] then () else
   List.iter typdef.subtypes fun:
   begin fun (subclass, classdefs) ->
-(*
-      Printf.eprintf "Subclass %s" subclass;
-      List.iter (fun fc -> 
-        Printf.eprintf "  %s\n" fc.ml_name) classdefs;
-*)
     w  ("let " ^ subclass ^"_"^ clas ^ "_optionals f = fun\n");
     let tklabels = List.map fun:gettklabel classdefs in
     let l = 
       List.map classdefs fun:
       begin fun fc ->
-        List.length (types_of_template fc.template),
-        types_of_template fc.template,
-        (* used as names of variants *)
-        fc.var_name,
-        begin let p = gettklabel fc in
-          if count key:p tklabels > 1 then small fc.ml_name else p
-        end,
-        small_ident fc.ml_name (* used as labels *)
+        (*
+        let code, vars, _, (co, _) =
+          code_of_template context_widget:"dummy" fc.template in
+        if co <> "" then fatal_error "optionals in optionals";
+        *)
+        let p = gettklabel fc in
+        (if count key:p tklabels > 1 then small fc.ml_name else p),
+        small_ident fc.ml_name (* used as labels *),
+        small fc.ml_name
       end in
     let p = 
       List.map l fun:
-      begin fun (_,_,_,s,si) ->
+      begin fun (s, si, _) ->
         if s = si then "  ?:" ^ s 
         else "  ?" ^ s ^ ":" ^ si
       end in
     let v =
       List.map l fun:
-      begin fun (i,t,c,s,si) -> 
-        let vars =
-          if i = 0 then "()" else
-          if i = 1 then "x" 
-          else 
-          let s = ref [] in
-          for i=1 to i do
-            s := !s @ ["x" ^ string_of_int i]
-          done;
-          "(" ^ String.concat sep:"," !s ^ ")"
-        in
-        let apvars = 
-          if i = 0 then "" 
-          (* VERY VERY QUICK HACK FOR 'a widget -> any widget *)
-          else if i = 1 && vars = "x" && t = ["",UserDefined "widget"] then
-          "(forget_type x)"
-          else vars
-        in  
-        "(maycons (fun " ^ vars ^ " -> " ^ "`" ^ c ^ " " ^ apvars ^ ") " ^ si
+      begin fun (_, si, s) ->
+        (*
+        let vars = List.map fun:snd vars in
+        let vars = String.concat sep:"," vars in
+        "(maycons (fun (" ^ vars ^ ") -> " ^ code ^ ") " ^ si
+        *)
+        "(maycons ccCAMLtoTK" ^ clas ^ "_" ^ s ^ " " ^ si
       end in
     w (String.concat sep:"\n" p);
     w " ->\n";

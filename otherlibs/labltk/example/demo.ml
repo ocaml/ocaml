@@ -16,8 +16,7 @@ let base = Frame.create top in
 pack [base];
 
 (* Menu bar *)
-let bar =
-  Frame.create base borderwidth: (`Pix 2) relief: `Raised  in 
+let bar = Frame.create base borderwidth: 2 relief: `Raised  in 
 pack [bar] fill: `X;
 
   (* Menu and Menubutton *)
@@ -39,11 +38,11 @@ pack [bar] fill: `X;
     let but = Button.create left text: "Welcome to LablTk" in
     
     (* Canvas *)
-    let can = Canvas.create left width: (`Pix 100) 
-      height: (`Pix 100) borderwidth: (`Pix 1) relief: `Sunken
+    let can = Canvas.create left width: 100
+      height: 100 borderwidth: 1 relief: `Sunken
     in
-    Canvas.create_oval can x1:(`Pix 10) y1:(`Pix 10) 
-                           x2:(`Pix 90) y2:(`Pix 90)
+    Canvas.create_oval can x1: 10 y1: 10 
+                           x2: 90 y2: 90
                            fill:`Red; 
 
     (* Check button *)
@@ -72,7 +71,7 @@ pack [bar] fill: `X;
         ["One"; "Two"; "Three"] in
     
     (* Scale *)
-    let sca = Scale.create right label: "Scale" length: (`Pix 100) 
+    let sca = Scale.create right label: "Scale" length: 100
       showvalue: true in
     
     (* Text and scrollbar *)
@@ -109,10 +108,8 @@ pack [bar] fill: `X;
   let buttons = 
     List.map fun:(fun (w, t, c, a) ->
         let b = Button.create top2 text:t command:c in
-        bind b events: [[], `Enter] 
-               action:(`Set ([], fun _ -> a selcol));
-        bind b events: [[], `Leave] 
-               action:(`Set ([], fun _ -> a defcol));
+        bind b events: [`Enter] action:(fun _ -> a selcol);
+        bind b events: [`Leave] action:(fun _ -> a defcol);
         b)
       [coe bar, "Frame", (fun () -> ()),
        (fun background -> Frame.configure bar :background);

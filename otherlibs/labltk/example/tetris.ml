@@ -198,14 +198,14 @@ class cell t1 t2 t3 :canvas :x :y = object
     if color = col then () else
     if color <> 0 & col = 0 then begin
       Canvas.move canvas tag: t1
-        x:(`Pix (- block_size * (x + 1) -10 - cell_border * 2))
-        y:(`Pix (- block_size * (y + 1) -10 - cell_border * 2));
+        x:(- block_size * (x + 1) -10 - cell_border * 2)
+        y:(- block_size * (y + 1) -10 - cell_border * 2);
       Canvas.move canvas tag: t2
-        x:(`Pix (- block_size * (x + 1) -10 - cell_border * 2))
-        y:(`Pix (- block_size * (y + 1) -10 - cell_border * 2));
+        x:(- block_size * (x + 1) -10 - cell_border * 2)
+        y:(- block_size * (y + 1) -10 - cell_border * 2);
       Canvas.move canvas tag: t3
-        x:(`Pix (- block_size * (x + 1) -10 - cell_border * 2))
-        y:(`Pix (- block_size * (y + 1) -10 - cell_border * 2))
+        x:(- block_size * (x + 1) -10 - cell_border * 2)
+        y:(- block_size * (y + 1) -10 - cell_border * 2)
     end else begin
       Canvas.configure_rectangle canvas tag: t2
         fill: colors.(col - 1)
@@ -218,14 +218,14 @@ class cell t1 t2 t3 :canvas :x :y = object
         outline: (`Color "light gray");
       if color = 0 & col <> 0 then begin
         Canvas.move canvas tag: t1
-          x: (`Pix (block_size * (x+1)+10+ cell_border*2))
-          y: (`Pix (block_size * (y+1)+10+ cell_border*2));
+          x: (block_size * (x+1)+10+ cell_border*2)
+          y: (block_size * (y+1)+10+ cell_border*2);
         Canvas.move canvas tag: t2
-          x: (`Pix (block_size * (x+1)+10+ cell_border*2))
-          y: (`Pix (block_size * (y+1)+10+ cell_border*2));
+          x: (block_size * (x+1)+10+ cell_border*2)
+          y: (block_size * (y+1)+10+ cell_border*2);
         Canvas.move canvas tag: t3
-          x: (`Pix (block_size * (x+1)+10+ cell_border*2))
-          y: (`Pix (block_size * (y+1)+10+ cell_border*2))
+          x: (block_size * (x+1)+10+ cell_border*2)
+          y: (block_size * (y+1)+10+ cell_border*2)
       end     
     end;
     color <- col
@@ -251,19 +251,19 @@ let init fw =
   and levv = Textvariable.create ()
   and namev = Textvariable.create ()
   in
-  let f = Frame.create fw borderwidth: (`Pix 2) in
-  let c = Canvas.create f width: (`Pix (block_size * 10))
-                          height: (`Pix (block_size * 20))
-                          borderwidth: (`Pix cell_border)
+  let f = Frame.create fw borderwidth: 2 in
+  let c = Canvas.create f width: (block_size * 10)
+                          height: (block_size * 20)
+                          borderwidth: cell_border
                           relief: `Sunken
                           background: `Black
   and r = Frame.create f
   and r' = Frame.create f in
 
   let nl = Label.create r text: "Next"  font: "variable" in
-  let nc = Canvas.create r width: (`Pix (block_size * 4))
-                           height: (`Pix (block_size * 4))
-                           borderwidth: (`Pix cell_border)
+  let nc = Canvas.create r width: (block_size * 4)
+                           height: (block_size * 4)
+                           borderwidth: cell_border
                            relief: `Sunken
                            background: `Black in
   let scl = Label.create r text: "Score" font: "variable" in
@@ -287,16 +287,16 @@ let init fw =
          begin fun (x,y) ->
            let t1 =
              Canvas.create_rectangle c 
-               x1:(`Pix (-block_size - 8)) y1:(`Pix (-block_size - 8))
-               x2:(`Pix (-9))              y2:(`Pix (-9))
+               x1:(-block_size - 8) y1:(-block_size - 8)
+               x2:(-9)              y2:(-9)
            and t2 =
              Canvas.create_rectangle c 
-               x1:(`Pix (-block_size - 10)) y1:(`Pix (-block_size - 10))
-               x2:(`Pix (-11))              y2:(`Pix (-11))
+               x1:(-block_size - 10) y1:(-block_size - 10)
+               x2:(-11)              y2:(-11)
            and t3 =
              Canvas.create_rectangle c
-               x1:(`Pix (-block_size - 12)) y1:(`Pix (-block_size - 12))
-               x2:(`Pix (-13))              y2:(`Pix (-13))
+               x1:(-block_size - 12) y1:(-block_size - 12)
+               x2:(-13)              y2:(-13)
            in
            Canvas.raise c tag: t1;
            Canvas.raise c tag: t2;
@@ -311,16 +311,16 @@ let init fw =
          begin fun (x,y) ->
            let t1 =
              Canvas.create_rectangle nc 
-               x1:(`Pix (-block_size - 8)) y1:(`Pix (-block_size - 8))
-               x2:(`Pix (-9))              y2:(`Pix (-9))
+               x1:(-block_size - 8) y1:(-block_size - 8)
+               x2:(-9)              y2:(-9)
            and t2 =
              Canvas.create_rectangle nc 
-               x1:(`Pix (-block_size - 10)) y1:(`Pix (-block_size - 10))
-               x2:(`Pix (-11))              y2:(`Pix (-11))
+               x1:(-block_size - 10) y1:(-block_size - 10)
+               x2:(-11)              y2:(-11)
            and t3 =
              Canvas.create_rectangle nc 
-               x1:(`Pix (-block_size - 12)) y1:(`Pix (-block_size - 12))
-               x2:(`Pix (-13))              y2:(`Pix (-13))
+               x1:(-block_size - 12) y1:(-block_size - 12)
+               x2:(-13)              y2:(-13)
            in
            Canvas.raise nc tag: t1;
            Canvas.raise nc tag: t2;
@@ -532,8 +532,8 @@ let _ =
 
   let image_load =
     let i = Canvas.create_image canvas 
-        x: (`Pix (block_size * 5 + block_size / 2)) 
-        y: (`Pix (block_size * 10 + block_size / 2))
+        x: (block_size * 5 + block_size / 2)
+        y: (block_size * 10 + block_size / 2)
         anchor: `Center in
     Canvas.lower canvas tag: i;
     let img = Imagephoto.create () in
@@ -621,48 +621,48 @@ let _ =
   in
 
   let bind_game w =
-    bind w events:[[],`KeyPress] action:(`Set ([`KeySymString],
-       fun e -> 
-         begin match e.ev_KeySymString with
-         | "h" ->
-             let m = copy_block current in
-             m.x <- m.x - 1;
-             try_to_move m; ()
-         | "j" ->
-             let m = copy_block current in
-             m.d <- m.d + 1;
-             if m.d = List.length m.pattern then m.d <- 0;
-             try_to_move m; ()  
-         | "k" ->
-             let m = copy_block current in
-             m.d <- m.d - 1;
-             if m.d < 0 then m.d <- List.length m.pattern - 1;
-             try_to_move m; ()
-         | "l" ->
-             let m = copy_block current in
-             m.x <- m.x + 1;
-             try_to_move m; ()
-         | "m" ->
-             remove_timer ();
-             loop ()
-         | "space" ->
-             if !current.alive then
-               begin
-                 let m = copy_block current
-                 and n = copy_block current in
-                 while 
-                   m.y <- m.y + 1;
-                   if death_check m then false
-                   else begin n.y <- m.y; true end
-                 do () done;
-                 erase_falling_block !current;
-                 draw_falling_block n;
-                 current := n;
-                 remove_timer ();
-                 loop ()
-               end  
-         | _ -> ()          
-         end))
+    bind w events:[`KeyPress] fields:[`KeySymString] action:
+      begin fun e -> 
+        match e.ev_KeySymString with
+        | "h" ->
+            let m = copy_block current in
+            m.x <- m.x - 1;
+            try_to_move m; ()
+        | "j" ->
+            let m = copy_block current in
+            m.d <- m.d + 1;
+            if m.d = List.length m.pattern then m.d <- 0;
+            try_to_move m; ()  
+        | "k" ->
+            let m = copy_block current in
+            m.d <- m.d - 1;
+            if m.d < 0 then m.d <- List.length m.pattern - 1;
+            try_to_move m; ()
+        | "l" ->
+            let m = copy_block current in
+            m.x <- m.x + 1;
+            try_to_move m; ()
+        | "m" ->
+            remove_timer ();
+            loop ()
+        | "space" ->
+            if !current.alive then
+              begin
+                let m = copy_block current
+                and n = copy_block current in
+                while 
+                  m.y <- m.y + 1;
+                  if death_check m then false
+                  else begin n.y <- m.y; true end
+                do () done;
+                erase_falling_block !current;
+                draw_falling_block n;
+                current := n;
+                remove_timer ();
+                loop ()
+              end  
+        | _ -> ()          
+      end
   in
 
   let game_init () =

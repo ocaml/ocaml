@@ -1,2 +1,4 @@
-val tag_bind: text widget -> tag:textTag ->
-      events:(modifier list * xEvent) list -> action: bindAction -> unit 
+val tag_bind :
+  tag: string -> events: event list ->
+  ?extend: bool -> ?breakable: bool -> ?fields: eventField list ->
+  ?action: (eventInfo -> unit) -> text widget -> unit 

@@ -55,29 +55,14 @@ let put on: w ms: millisec mesg =
         configure_cursor w "hand2"))
   in
 
-  List.iter fun: (fun x ->
-    bind w events: x action: (`Extend ([], (fun _ -> 
-(*      begin
-        match x with
-          [[],Leave] -> prerr_endline " LEAVE reset "
-        | _ -> prerr_endline " Other reset "
-      end; 
-*)
-      reset ()))))
-      [[[], `Leave]; [[], `ButtonPress]; [[], `ButtonRelease]; [[], `Destroy];
-       [[], `KeyPress]; [[], `KeyRelease]];
-  List.iter fun: (fun x ->
-    bind w events:x action: (`Extend ([`RootX; `RootY], (fun ev -> 
-(*
-      begin
-        match x with
-          [[],Enter] -> prerr_endline " Enter set "
-        | [[],Motion] -> prerr_endline " Motion set "
-        | _ -> prerr_endline " ??? set "
-      end;
-*)
-      reset (); set ev))))
-      [[[], `Enter]; [[], `Motion]]
+  List.iter [[`Leave]; [`ButtonPress]; [`ButtonRelease]; [`Destroy];
+             [`KeyPress]; [`KeyRelease]]
+    fun:(fun events -> bind w :events extend:true action:(fun _ -> reset ()));
+  List.iter [[`Enter]; [`Motion]] fun:
+    begin fun events ->
+      bind w :events extend:true fields:[`RootX; `RootY]
+        action:(fun ev -> reset (); set ev)
+    end
 
 let init () =
   let t = Hashtbl.create 101 in
@@ -89,12 +74,11 @@ let init () =
   popupw := Message.create !topw name: "balloon"
               background: (`Color "yellow") aspect: 300;
   pack [!popupw];
-  class_bind "all" 
-    events: [[], `Enter] action: (`Extend ([`Widget], (function w ->
-    try Hashtbl.find t key: w.ev_Widget with
-      Not_found -> begin
+  bind_class "all" events: [`Enter] extend:true fields:[`Widget] action:
+    begin fun w ->
+      try Hashtbl.find t key: w.ev_Widget
+      with Not_found ->
         Hashtbl.add t key:w.ev_Widget data: ();
         let x = Option.get w.ev_Widget name: "balloon" class: "Balloon" in
         if x <> "" then put on: w.ev_Widget ms: 1000 x
-      end)))
-
+    end

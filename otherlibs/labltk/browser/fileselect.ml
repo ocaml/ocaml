@@ -83,7 +83,7 @@ let f :title action:proc ?(:dir = Unix.getcwd ())
   and sync_var = new_var () in
   Textvariable.set filter_var to:deffilter;
 
-  let frm = Frame.create tl borderwidth:(`Pix 1) relief:`Raised in
+  let frm = Frame.create tl borderwidth:1 relief:`Raised in
     let df = Frame.create frm in
       let dfl = Frame.create df in
         let dfll = Label.create dfl text:"Directories" in
@@ -93,7 +93,7 @@ let f :title action:proc ?(:dir = Unix.getcwd ())
         let dfrl = Label.create dfr text:"Files" in
         let dfrf, filter_listbox, filter_scrollbar =
             Jg_box.create_with_scrollbar dfr in
-  let cfrm = Frame.create tl borderwidth:(`Pix 1) relief:`Raised in
+  let cfrm = Frame.create tl borderwidth:1 relief:`Raised in
 
   let configure :filter =
     let filter =
@@ -179,8 +179,7 @@ let f :title action:proc ?(:dir = Unix.getcwd ())
       Setpath.add_update_hook (fun () -> configure filter:!current_pattern);
       let w = Setpath.f dir:!current_dir in
       Grab.set w;
-      bind w events:[[], `Destroy]
-        action:(`Extend ([], fun _ -> Grab.set tl))
+      bind w events:[`Destroy] extend:true action:(fun _ -> Grab.set tl)
     end in
   let toggle_in_path = Checkbutton.create dfl text:"Use load path"
     command:
@@ -210,19 +209,18 @@ let f :title action:proc ?(:dir = Unix.getcwd ())
       command:(fun () -> activate []) in
 
   (* binding *)
-  bind tl events:[[], `KeyPressDetail "Escape"]
-    action:(`Set ([], fun _ -> activate []));
+  bind tl events:[`KeyPressDetail "Escape"] action:(fun _ -> activate []);
   Jg_box.add_completion filter_listbox
     action:(fun index -> activate [Listbox.get filter_listbox :index]);
   if multi then Listbox.configure filter_listbox selectmode:`Multiple else
-  bind filter_listbox events:[[], `ButtonPressDetail 1]
-    action:(`Set ([`MouseY], fun ev ->
+  bind filter_listbox events:[`ButtonPressDetail 1] fields:[`MouseY]
+    action:(fun ev ->
       let name = Listbox.get filter_listbox
           index:(Listbox.nearest filter_listbox y:ev.ev_MouseY) in
       if !load_in_path & usepath then
         try Textvariable.set selection_var to:(search_in_path :name)
         with Not_found -> ()
-      else Textvariable.set selection_var to:(!current_dir ^ "/" ^ name)));
+      else Textvariable.set selection_var to:(!current_dir ^ "/" ^ name));
 
   Jg_box.add_completion directory_listbox action:
     begin fun index ->

@@ -61,8 +61,8 @@ let ask :title ?:master text =
   begin match master with None -> ()
   | Some master -> Wm.transient_set tl :master
   end;
-  let mw = Message.create tl :text padx:(`Pix 20) pady:(`Pix 10)
-           width:(`Pix 250) justify:`Left aspect:400 anchor:`W
+  let mw = Message.create tl :text padx:20 pady:10
+           width:250 justify:`Left aspect:400 anchor:`W
   and fw = Frame.create tl
   and sync = Textvariable.create on:tl ()
   and r = ref (`cancel : [`yes|`no|`cancel]) in
@@ -72,8 +72,8 @@ let ask :title ?:master text =
       command:(fun () -> r := `no; destroy tl)
   and cancel = Jg_button.create_destroyer tl parent:fw text:"Cancel"
   in
-  bind tl events:[[],`Destroy]
-    action:(`Extend([],fun _ -> Textvariable.set sync to:"1"));
+  bind tl events:[`Destroy] extend:true
+    action:(fun _ -> Textvariable.set sync to:"1");
   pack [accept; refuse; cancel] side:`Left fill:`X expand:true;
   pack [mw] side:`Top fill:`Both;
   pack [fw] side:`Bottom fill:`X expand:true;

@@ -57,12 +57,12 @@ type Units external             # builtin_GetPixel.ml
 ##### The subtype is never used
 subtype option(standard) {
    ActiveBackground             ["-activebackground"; Color]
-   ActiveBorderWidth            ["-activeborderwidth"; Units]
+   ActiveBorderWidth            ["-activeborderwidth"; int]
    ActiveForeground             ["-activeforeground"; Color]
    Anchor                       ["-anchor"; Anchor]
    Background                   ["-background"; Color]
    Bitmap                       ["-bitmap"; Bitmap]
-   BorderWidth                  ["-borderwidth"; Units]
+   BorderWidth                  ["-borderwidth"; int]
    Cursor                       ["-cursor";  Cursor]
    DisabledForeground           ["-disabledforeground"; Color]
    ExportSelection              ["-exportselection"; bool]
@@ -71,26 +71,26 @@ subtype option(standard) {
    Geometry                     ["-geometry"; string]  # Too variable to encode
    HighlightBackground          ["-highlightbackground"; Color]
    HighlightColor               ["-highlightcolor"; Color]
-   HighlightThickness           ["-highlightthickness"; Units]
+   HighlightThickness           ["-highlightthickness"; int]
    Image                        ["-image"; Image]
 # it is old   # images are split, to do additionnal static typing
 #   ImageBitmap (ImageBitmap)    ["-image"; ImageBitmap]
 #   ImagePhoto  (ImagePhoto)    ["-image"; ImagePhoto]
    InsertBackground             ["-insertbackground"; Color]
-   InsertBorderWidth            ["-insertborderwidth"; Units]
+   InsertBorderWidth            ["-insertborderwidth"; int]
    InsertOffTime                ["-insertofftime"; int]   # Positive only
    InsertOnTime                 ["-insertontime"; int]    # Idem
-   InsertWidth                  ["-insertwidth"; Units]
+   InsertWidth                  ["-insertwidth"; int]
    Jump                         ["-jump"; bool]
    Justify                      ["-justify"; Justification]
    Orient                       ["-orient"; Orientation]
-   PadX                         ["-padx"; Units]
-   PadY                         ["-pady"; Units]
+   PadX                         ["-padx"; int]
+   PadY                         ["-pady"; int]
    Relief                       ["-relief"; Relief]
    RepeatDelay                  ["-repeatdelay"; int]
    RepeatInterval               ["-repeatinterval"; int]
    SelectBackground             ["-selectbackground"; Color]
-   SelectBorderWidth            ["-selectborderwidth"; Units]
+   SelectBorderWidth            ["-selectborderwidth"; int]
    SelectForeground             ["-selectforeground"; Color]
    SetGrid                      ["-setgrid"; bool]
    # incomplete description of TakeFocus
@@ -99,7 +99,7 @@ subtype option(standard) {
    TextVariable                 ["-textvariable"; TextVariable]
    TroughColor                  ["-troughcolor"; Color]
    UnderlinedChar               ["-underline"; int]
-   WrapLength                   ["-wraplength"; Units]
+   WrapLength                   ["-wraplength"; int]
    # Major incompatibility with Tk3.6 where it was function(int,int,int,int)
    XScrollCommand               ["-xscrollcommand"; function(first:float, last:float)]
    YScrollCommand               ["-yscrollcommand"; function(first:float, last:float)]
@@ -196,9 +196,9 @@ widget button {
    option WrapLength
    # Widget specific options
    option Command ["-command"; function ()]
-   option Height ["-height"; Units]
+   option Height ["-height"; int]
    option State ["-state"; State]
-   option Width ["-width"; Units]
+   option Width ["-width"; int]
 
    function ()  configure [widget(button); "configure"; option(button) list]
    function (string) configure_get [widget(button); "configure"]
@@ -223,10 +223,10 @@ type SearchSpec {
   Above ["above"; TagOrId]
   All   ["all"]
   Below ["below"; TagOrId]
-  Closest ["closest"; Units; Units]
-  ClosestHalo (Closesthalo) ["closest"; Units; Units; Units]
-  ClosestHaloStart (Closesthalostart) ["closest"; Units; Units; Units; TagOrId]
-  Enclosed ["enclosed"; Units;Units;Units;Units]
+  Closest ["closest"; int; int]
+  ClosestHalo (Closesthalo) ["closest"; int; int; int]
+  ClosestHaloStart (Closesthalostart) ["closest"; int; int; int; TagOrId]
+  Enclosed ["enclosed"; int;int;int;int]
   Overlapping ["overlapping"; int;int;int;int]
   Withtag ["withtag"; TagOrId]
 }
@@ -245,14 +245,14 @@ subtype option(postscript) {
    # Fontmap ["-fontmap"; TextVariable]
    Height
    PageAnchor ["-pageanchor"; Anchor]
-   PageHeight ["-pageheight"; Units]
-   PageWidth ["-pagewidth"; Units]
-   PageX ["-pagex"; Units]
-   PageY ["-pagey"; Units]
+   PageHeight ["-pageheight"; int]
+   PageWidth ["-pagewidth"; int]
+   PageX ["-pagex"; int]
+   PageY ["-pagey"; int]
    Rotate ["-rotate"; bool]
    Width
-   X ["-x"; Units]
-   Y ["-y"; Units]
+   X ["-x"; int]
+   Y ["-y"; int]
    }
 
 
@@ -316,7 +316,7 @@ type JoinStyle {
 
 subtype option(line) {
    ArrowStyle ["-arrow"; ArrowStyle]
-   ArrowShape ["-arrowshape"; [Units; Units; Units]]
+   ArrowShape ["-arrowshape"; [int; int; int]]
    CapStyle ["-capstyle"; CapStyle]
    FillColor
    JoinStyle ["-joinstyle"; JoinStyle]
@@ -392,11 +392,11 @@ widget canvas {
    # Widget specific options
    option CloseEnough ["-closeenough"; float]
    option Confine ["-confine"; bool]
-   option Height ["-height"; Units]
-   option ScrollRegion ["-scrollregion"; [Units;Units;Units;Units]]
-   option Width ["-width"; Units]
-   option XScrollIncrement ["-xscrollincrement"; Units]
-   option YScrollIncrement ["-yscrollincrement"; Units]
+   option Height ["-height"; int]
+   option ScrollRegion ["-scrollregion"; [int;int;int;int]]
+   option Width ["-width"; int]
+   option XScrollIncrement ["-xscrollincrement"; int]
+   option YScrollIncrement ["-yscrollincrement"; int]
 
 
    function () addtag [widget(canvas); "addtag"; tag: TagOrId; specs: SearchSpec list]     # Tag only
@@ -404,17 +404,17 @@ widget canvas {
    # will raise protocol__TkError if no items match TagOrId
    function (int,int,int,int) bbox [widget(canvas); "bbox"; tags: TagOrId list]
    external bind "builtin/canvas_bind"
-   function (float) canvasx [widget(canvas); "canvasx"; x:Units; ?spacing:[Units]]
-#   function (float) canvasx [widget(canvas); "canvasx"; x:Units]
-#   function (float) canvasx_grid [widget(canvas); "canvasx"; x:Units; spacing:Units]
-   function (float) canvasy [widget(canvas); "canvasy"; y:Units; ?spacing:[Units]]
-#   function (float) canvasy [widget(canvas); "canvasy"; y:Units]
-#   function (float) canvasy_grid [widget(canvas); "canvasy"; y:Units; spacing:Units]
+   function (float) canvasx [widget(canvas); "canvasx"; x:int; ?spacing:[int]]
+#   function (float) canvasx [widget(canvas); "canvasx"; x:int]
+#   function (float) canvasx_grid [widget(canvas); "canvasx"; x:int; spacing:int]
+   function (float) canvasy [widget(canvas); "canvasy"; y:int; ?spacing:[int]]
+#   function (float) canvasy [widget(canvas); "canvasy"; y:int]
+#   function (float) canvasy_grid [widget(canvas); "canvasy"; y:int; spacing:int]
    function () configure [widget(canvas); "configure"; option(canvas) list]
    function (string) configure_get [widget(canvas); "configure"]
    # TODO: check result
    function (float list) coords_get [widget(canvas); "coords"; tag: TagOrId]
-   function () coords_set [widget(canvas); "coords"; tag: TagOrId; coords: Units list]
+   function () coords_set [widget(canvas); "coords"; tag: TagOrId; coords: int list]
    # create variations (see below)
    function () dchars [widget(canvas); "dchars"; tag: TagOrId; first: Index(canvas); last: Index(canvas)]
    function () delete [widget(canvas); "delete"; tags: TagOrId list]
@@ -432,13 +432,13 @@ widget canvas {
    # configure variations, see below
 #   function () lower_below [widget(canvas); "lower"; tag: TagOrId; below: TagOrId]
 #   function () lower_bot   [widget(canvas); "lower"; tag: TagOrId]
-   function () move [widget(canvas); "move"; tag: TagOrId; x: Units; y: Units]
+   function () move [widget(canvas); "move"; tag: TagOrId; x: int; y: int]
    unsafe function (string) postscript [widget(canvas); "postscript"; option(postscript) list]
    # We use raise... with Module name
    function () raise [widget(canvas); "raise"; tag: TagOrId; ?above:[TagOrId]]
 #   function () raise_above [widget(canvas); "raise"; tag: TagOrId; above: TagOrId]
 #   function () raise_top [widget(canvas); "raise"; tag: TagOrId]
-   function () scale [widget(canvas); "scale"; tag: TagOrId; xorigin: Units; yorigin: Units; xscale: float; yscale: float]
+   function () scale [widget(canvas); "scale"; tag: TagOrId; xorigin: int; yorigin: int; xscale: float; yscale: float]
    # For scan, use x:int and y:int since common usage is with mouse coordinates
    function () scan_mark [widget(canvas); "scan"; "mark"; x: int; y: int]
    function () scan_dragto [widget(canvas); "scan"; "dragto"; x: int; y: int]
@@ -456,15 +456,15 @@ widget canvas {
    function () yview [widget(canvas); "yview"; scroll: ScrollValue]
 
    # create and configure variations
-   function (TagOrId) create_arc [widget(canvas); "create"; "arc"; x1: Units; y1: Units; x2: Units; y2: Units; option(arc) list]
-   function (TagOrId) create_bitmap [widget(canvas); "create"; "bitmap"; x: Units; y: Units; option(bitmap) list]
-   function (TagOrId) create_image [widget(canvas); "create"; "image"; x: Units; y: Units; option(image) list]
-   function (TagOrId) create_line [widget(canvas); "create"; "line"; xys: Units list; option(line) list]
-   function (TagOrId) create_oval [widget(canvas); "create"; "oval"; x1: Units; y1: Units; x2: Units; y2: Units; option(oval) list]
-   function (TagOrId) create_polygon [widget(canvas); "create"; "polygon"; xys: Units list; option(polygon) list]
-   function (TagOrId) create_rectangle [widget(canvas); "create"; "rectangle"; x1: Units; y1: Units; x2: Units; y2: Units; option(rectangle) list]
-   function (TagOrId) create_text [widget(canvas); "create"; "text"; x: Units; y: Units; option(canvastext) list]
-   function (TagOrId) create_window [widget(canvas); "create"; "window"; x: Units; y: Units; option(window) list]
+   function (TagOrId) create_arc [widget(canvas); "create"; "arc"; x1: int; y1: int; x2: int; y2: int; option(arc) list]
+   function (TagOrId) create_bitmap [widget(canvas); "create"; "bitmap"; x: int; y: int; option(bitmap) list]
+   function (TagOrId) create_image [widget(canvas); "create"; "image"; x: int; y: int; option(image) list]
+   function (TagOrId) create_line [widget(canvas); "create"; "line"; xys: int list; option(line) list]
+   function (TagOrId) create_oval [widget(canvas); "create"; "oval"; x1: int; y1: int; x2: int; y2: int; option(oval) list]
+   function (TagOrId) create_polygon [widget(canvas); "create"; "polygon"; xys: int list; option(polygon) list]
+   function (TagOrId) create_rectangle [widget(canvas); "create"; "rectangle"; x1: int; y1: int; x2: int; y2: int; option(rectangle) list]
+   function (TagOrId) create_text [widget(canvas); "create"; "text"; x: int; y: int; option(canvastext) list]
+   function (TagOrId) create_window [widget(canvas); "create"; "window"; x: int; y: int; option(window) list]
 
    function (string) itemconfigure_get [widget(canvas); "itemconfigure"; tag: TagOrId]
 
@@ -689,7 +689,7 @@ module Grab {
 }
 
 subtype option(rowcolumnconfigure) {
-  Minsize ["-minsize"; Units]
+  Minsize ["-minsize"; int]
   Weight  ["-weight"; float]
 }
 
@@ -697,8 +697,8 @@ subtype option(grid) {
    Column ["-column"; int]
    ColumnSpan ["-columnspan"; int]
    In ["-in"; widget]
-   IPadX ["-ipadx"; Units]
-   IPadY ["-ipady"; Units]
+   IPadX ["-ipadx"; int]
+   IPadY ["-ipady"; int]
    PadX
    PadY
    Row ["-row"; int]   
@@ -1112,8 +1112,8 @@ subtype option(pack) {
    Expand ["-expand"; bool]
    Fill ["-fill"; FillMode]
    In ["-in"; widget]
-   IPadX ["-ipadx"; Units]
-   IPadY ["-ipady"; Units]
+   IPadX ["-ipadx"; int]
+   IPadY ["-ipady"; int]
    PadX
    PadY
    Side ["-side"; Side]
@@ -1299,7 +1299,7 @@ function () raise_window ["raise"; widget; ?above:[widget]]
 
 ##### scale(n)
 ## shared with scrollbars
-subtype WidgetElement(scale) {
+type ScaleElement {
   Slider ["slider"]
   Trough1 ["trough1"]
   Trough2 ["trough2"]
@@ -1330,10 +1330,10 @@ widget scale {
    option Digits ["-digits"; int]
    option From ["-from"; float]
    option Label ["-label"; string]
-   option Length ["-length"; Units]
+   option Length ["-length"; int]
    option Resolution ["-resolution"; float]
    option ShowValue ["-showvalue"; bool]
-   option SliderLength ["-sliderlength"; Units]
+   option SliderLength ["-sliderlength"; int]
    option State
    option TickInterval ["-tickinterval"; float]
    option To ["-to"; float]
@@ -1344,19 +1344,19 @@ widget scale {
    function (string) configure_get [widget(scale); "configure"]
    function (float) get [widget(scale); "get"]
    function (float) get_xy [widget(scale); "get"; x: int; y: int]
-   function (WidgetElement(scale)) identify [widget(scale); x: int; y: int]
+   function (ScaleElement) identify [widget(scale); x: int; y: int]
    function () set [widget(scale); "set"; to: float]
    }
 
 
 ##### scrollbar(n)
-subtype WidgetElement(scrollbar) {
+type ScrollbarElement {
   Arrow1 ["arrow1"]
-  Trough1
-  Trough2
-  Slider
+  Trough1 ["through1"]
+  Trough2 ["through2"]
+  Slider ["slider"]
   Arrow2 ["arrow2"]
-  Beyond
+  Beyond [""]
   }
 
 widget scrollbar {
@@ -1378,18 +1378,18 @@ widget scrollbar {
    # Widget specific options
    option ActiveRelief ["-activerelief"; Relief]
    option ScrollCommand ["-command"; function(scroll: ScrollValue)]
-   option ElementBorderWidth ["-elementborderwidth"; Units]
+   option ElementBorderWidth ["-elementborderwidth"; int]
    option Width
 
-   function () activate [widget(scrollbar); "activate"; element: WidgetElement(scrollbar)]
-   function (WidgetElement(scrollbar)) activate_get [widget(scrollbar); "activate"]
+   function () activate [widget(scrollbar); "activate"; element: ScrollbarElement]
+   function (ScrollbarElement) activate_get [widget(scrollbar); "activate"]
    function () configure [widget(scrollbar); "configure"; option(scrollbar) list]
    function (string) configure_get [widget(scrollbar); "configure"]
    function (float) delta [widget(scrollbar); "delta"; x: int; y: int]
    function (float) fraction [widget(scrollbar); "fraction"; x: int; y: int]
    function (float, float) get [widget(scrollbar); "get"]
    function (int, int, int, int) old_get [widget(scrollbar); "get"]
-   function (WidgetElement(scrollbar)) identify [widget(scrollbar); "identify"; x: int; y: int]
+   function (ScrollbarElement) identify [widget(scrollbar); "identify"; x: int; y: int]
    function () set [widget(scrollbar); "set"; first: float; last: float]
    function () old_set [widget(scrollbar); "set"; total:int; window:int; first:int; last:int]
    }
@@ -1439,10 +1439,10 @@ type TextMark external
 
 
 type TabType {
-  TabLeft [Units; "left"]
-  TabRight [Units; "right"]
-  TabCenter [Units; "center"]
-  TabNumeric [Units; "numeric"]
+  TabLeft [int; "left"]
+  TabRight [int; "right"]
+  TabCenter [int; "center"]
+  TabNumeric [int; "numeric"]
   }
 
 type WrapMode { 
@@ -1527,9 +1527,9 @@ widget text {
 
    # Widget specific options
    option TextHeight
-   option Spacing1 ["-spacing1"; Units]
-   option Spacing2 ["-spacing2"; Units]
-   option Spacing3 ["-spacing3"; Units]
+   option Spacing1 ["-spacing1"; int]
+   option Spacing2 ["-spacing2"; int]
+   option Spacing3 ["-spacing3"; int]
    option State
    option Tabs ["-tabs"; [TabType list]]
    option TextWidth
@@ -1605,12 +1605,12 @@ subtype option(texttag) {
    Font
    Foreground
    Justify
-   LMargin1 ["-lmargin1"; Units]
-   LMargin2 ["-lmargin2"; Units]
-   Offset ["-offset"; Units]
+   LMargin1 ["-lmargin1"; int]
+   LMargin2 ["-lmargin2"; int]
+   Offset ["-offset"; int]
    OverStrike ["-overstrike"; bool]
    Relief
-   RMargin ["-rmargin"; Units]
+   RMargin ["-rmargin"; int]
    Spacing1
    Spacing2
    Spacing3

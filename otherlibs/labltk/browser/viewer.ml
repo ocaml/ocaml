@@ -72,7 +72,7 @@ let choose_symbol :title :env ?:signature ?:path l =
   Jg_bind.escape_destroy tl;
   top_widgets := coe tl :: !top_widgets;
   let buttons = Frame.create tl in
-  let all = Button.create buttons text:"Show all" padx:(`Pix 20)
+  let all = Button.create buttons text:"Show all" padx:20
   and ok = Jg_button.create_destroyer tl parent:buttons
   and detach = Button.create buttons text:"Detach"
   and edit = Button.create buttons text:"Impl"
@@ -89,7 +89,7 @@ let choose_symbol :title :env ?:signature ?:path l =
   let box =
     new Jg_multibox.c fb cols:3 texts:nl maxheight:3 width:21 in
   box#init;
-  box#bind_kbd events:[[],`KeyPressDetail"Escape"]
+  box#bind_kbd events:[`KeyPressDetail"Escape"]
     action:(fun _ :index -> destroy tl; break ());
   if List.length nl > 9 then (Jg_multibox.add_scrollbar box; ());
   Jg_multibox.add_completion box action:
@@ -270,8 +270,7 @@ let f ?(:dir=Unix.getcwd()) ?:on () =
 
   let ew = Entry.create tl in
   let buttons = Frame.create tl in
-  let search = Button.create buttons text:"Search" pady:(`Pix 1)
-    command:
+  let search = Button.create buttons text:"Search" pady:1 command:
     begin fun () ->
       let s = Entry.get ew in
       let is_type = ref false and is_long = ref false in
@@ -293,14 +292,13 @@ let f ?(:dir=Unix.getcwd()) ?:on () =
       | _ -> choose_symbol title:"Choose symbol" env:!start_env l
     end
   and close =
-    Button.create buttons text:"Close all" pady:(`Pix 1)
-      command:close_all_views
+    Button.create buttons text:"Close all" pady:1 command:close_all_views
   in
   (* bindings *)
   Jg_bind.enter_focus ew;
   Jg_bind.return_invoke ew button:search;
-  bind close events:[[`Double], `ButtonPressDetail 1]
-    action:(`Set ([], fun _ -> destroy tl));
+  bind close events:[`Modified([`Double], `ButtonPressDetail 1)]
+    action:(fun _ -> destroy tl);
 
   (* File menu *)
   filemenu#add_command "Open..."
@@ -315,7 +313,7 @@ let f ?(:dir=Unix.getcwd()) ?:on () =
     command:(fun () -> reset_modules mbox; Env.reset_cache ());
   modmenu#add_command "Search symbol..." command:search_symbol;
 
-  pack [filemenu#button; modmenu#button] side:`Left ipadx:(`Pix 5) anchor:`W;
+  pack [filemenu#button; modmenu#button] side:`Left ipadx:5 anchor:`W;
   pack [menus] side:`Top fill:`X;      
   pack [close; search] fill:`X side:`Right expand:true;
   pack [coe buttons; coe ew] fill:`X side:`Bottom;

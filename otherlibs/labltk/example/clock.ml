@@ -21,21 +21,20 @@ let pi = acos (-1.)
 class clock :parent = object (self)
 
   (* Instance variables *)
-  val canvas = Canvas.create parent width:(`Pix 100) height:(`Pix 100)
+  val canvas = Canvas.create parent width:100 height:100
   val mutable height = 100
   val mutable width = 100
   val mutable rflag = -1
 
   (* Convert from -1.0 .. 1.0 to actual positions on the canvas *)
-  method x x0 = `Pix (truncate (float width *. (x0 +. 1.) /. 2.))
-  method y y0 = `Pix (truncate (float height *. (y0 +. 1.) /. 2.))
+  method x x0 = truncate (float width *. (x0 +. 1.) /. 2.)
+  method y y0 = truncate (float height *. (y0 +. 1.) /. 2.)
 
   initializer
     (* Create the oval border *)
     Canvas.create_oval canvas tags:[`Tag "cadran"]
-      x1:(`Pix 1) y1:(`Pix 1)
-      x2:(`Pix (width - 2)) y2:(`Pix (height - 2))
-      width:(`Pix 3) outline:(`Yellow) fill:`White;
+      x1:1 y1:1 x2:(width - 2) y2:(height - 2)
+      width:3 outline:`Yellow fill:`White;
     (* Draw the figures *)
     self#draw_figures;
     (* Create the arrows with dummy position *)
@@ -51,22 +50,21 @@ class clock :parent = object (self)
       Timer.add ms:1000 callback:timer; ()
     in timer ();
     (* Redraw when configured (changes size) *)
-    bind canvas events:[[],`Configure]
-      action:(`Set ([], fun _ ->
+    bind canvas events:[`Configure]
+      action:(fun _ ->
         width <- Winfo.width canvas;
         height <- Winfo.height canvas;
-        self#redraw));
+        self#redraw);
     (* Change direction with right button *)
-    bind canvas events:[[],`ButtonPressDetail 3]
-      action:(`Set ([], fun _ -> rflag <- -rflag; self#redraw));
+    bind canvas events:[`ButtonPressDetail 3]
+      action:(fun _ -> rflag <- -rflag; self#redraw);
     (* Pack, expanding in both directions *)
     pack [canvas] fill:`Both expand:true
 
   (* Redraw everything *)
   method redraw =
     Canvas.coords_set canvas tag:(`Tag "cadran")
-      coords:[ `Pix 1; `Pix 1;
-               `Pix (width - 2); `Pix (height - 2) ];
+      coords:[ 1; 1; width - 2; height - 2 ];
     self#draw_figures;
     self#draw_arrows (Unix.localtime (Unix.time ()))
 
@@ -85,7 +83,7 @@ class clock :parent = object (self)
   (* Resize and reposition the arrows *)
   method draw_arrows tm =
     Canvas.configure_line canvas tag:(`Tag "hours")
-      width:(`Pix (min width height / 40));
+      width:(min width height / 40);
     let hangle =
       float (rflag * (tm.Unix.tm_hour * 60 + tm.Unix.tm_min) - 180)
         *. pi /. 360. in
@@ -93,7 +91,7 @@ class clock :parent = object (self)
       coords:[ self#x 0.; self#y 0.;
                self#x (cos hangle /. 2.); self#y (sin hangle /. 2.) ];
     Canvas.configure_line canvas tag:(`Tag "minutes")
-      width:(`Pix (min width height / 50));
+      width:(min width height / 50);
     let mangle = float (rflag * tm.Unix.tm_min - 15) *. pi /. 30. in
     Canvas.coords_set canvas tag:(`Tag "minutes")
       coords:[ self#x 0.; self#y 0.;

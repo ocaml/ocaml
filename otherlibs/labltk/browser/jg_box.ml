@@ -37,20 +37,22 @@ let add_completion ?:action ?:wait ?:nocase lb =
 
   Jg_bind.enter_focus lb;
 
-  bind lb events:[[], `KeyPress] 
-    action:(`Set([`Char], fun ev -> 
+  bind lb events:[`KeyPress] fields:[`Char] action:
+    begin fun ev -> 
       (* consider only keys producing characters. The callback is called
          even if you press Shift. *)
       if ev.ev_Char <> "" then
-        recenter lb index:(`Num (comp#add ev.ev_Char))));
+        recenter lb index:(`Num (comp#add ev.ev_Char))
+    end;
 
   begin match action with 
     Some action ->
-      bind lb events:[[], `KeyPressDetail "Return"]
-        action:(`Set ([], fun _ -> action `Active));
-      bind lb events:[[`Double], `ButtonPressDetail 1]
-        action:(`Setbreakable ([`MouseY], fun ev ->
-          action (Listbox.nearest lb y:ev.ev_MouseY); break ()))
+      bind lb events:[`KeyPressDetail "Return"]
+        action:(fun _ -> action `Active);
+      bind lb events:[`Modified([`Double], `ButtonPressDetail 1)]
+        breakable:true fields:[`MouseY]
+        action:(fun ev ->
+          action (Listbox.nearest lb y:ev.ev_MouseY); break ())
   | None -> ()
   end;
 

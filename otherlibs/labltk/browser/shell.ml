@@ -121,22 +121,23 @@ object (self)
   initializer
     Lexical.init_tags textw;
     let rec bindings =
-      [ ([[],`KeyPress],[`Char],fun ev -> self#keypress ev.ev_Char);
-        ([[],`KeyRelease],[`Char],fun ev -> self#keyrelease ev.ev_Char);
-        (* [[],`KeyPressDetail"Return"],[],fun _ -> self#return; *)
-        ([[],`ButtonPressDetail 2], [`MouseX; `MouseY], self#paste);
-        ([[`Alt],`KeyPressDetail"p"],[],fun _ -> self#history `previous);
-        ([[`Alt],`KeyPressDetail"n"],[],fun _ -> self#history `next);
-        ([[`Meta],`KeyPressDetail"p"],[],fun _ -> self#history `previous);
-        ([[`Meta],`KeyPressDetail"n"],[],fun _ -> self#history `next);
-        ([[`Control],`KeyPressDetail"c"],[],fun _ -> self#interrupt);
-        ([[],`Destroy],[],fun _ -> self#kill) ]
+      [ ([], `KeyPress, [`Char], fun ev -> self#keypress ev.ev_Char);
+        ([], `KeyRelease, [`Char], fun ev -> self#keyrelease ev.ev_Char);
+        (* [], `KeyPressDetail"Return", [], fun _ -> self#return; *)
+        ([], `ButtonPressDetail 2, [`MouseX; `MouseY],  self#paste);
+        ([`Alt], `KeyPressDetail"p", [], fun _ -> self#history `previous);
+        ([`Alt], `KeyPressDetail"n", [], fun _ -> self#history `next);
+        ([`Meta], `KeyPressDetail"p", [], fun _ -> self#history `previous);
+        ([`Meta], `KeyPressDetail"n", [], fun _ -> self#history `next);
+        ([`Control], `KeyPressDetail"c", [], fun _ -> self#interrupt);
+        ([], `Destroy, [], fun _ -> self#kill) ]
     in
-    List.iter bindings
-      fun:(fun (events,fields,f) ->
-        bind textw :events action:(`Set(fields,f)));
-    bind textw events:[[],`KeyPressDetail"Return"]
-      action:(`Setbreakable([], fun _ -> self#return; break()));
+    List.iter bindings fun:
+      begin fun (modif,event,fields,action) ->
+        bind textw events:[`Modified(modif,event)] :fields :action
+      end;
+    bind textw events:[`KeyPressDetail"Return"] breakable:true
+      action:(fun _ -> self#return; break());
     begin try
       List.iter [in1;err1] fun:
         begin fun fd ->
@@ -184,7 +185,7 @@ let f :prog :title =
   and signal_menu = new Jg_menu.c "Signal" parent:menus in
   pack [menus] side:`Top fill:`X;
   pack [file_menu#button; history_menu#button; signal_menu#button]
-    side:`Left ipadx:(`Pix 5) anchor:`W;
+    side:`Left ipadx:5 anchor:`W;
   let frame, tw, sb = Jg_text.create_with_scrollbar tl in
   Text.configure tw background:`White;
   pack [sb] fill:`Y side:`Right;

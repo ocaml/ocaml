@@ -24,8 +24,7 @@ let scroll_link sb lb =
 
 (* focus when enter binding *)
 let bind_enter_focus w = 
-  bind w events: [[], `Enter] 
-         action: (`Set ([], fun _ -> Focus.set w));;
+  bind w events:[`Enter] action:(fun _ -> Focus.set w);;
 
 let myentry_create p :variable =
   let w = Entry.create p relief: `Sunken textvariable: variable in
@@ -146,15 +145,12 @@ let add_completion lb action =
     recenter() in
 
 
-  bind lb events:[[], `KeyPress] 
-      action: (`Set([`Char; `Time], 
-          (function ev -> 
-             (* consider only keys producing characters. The callback is called
-              * even if you press Shift.
-              *)
-             if ev.ev_Char <> "" then complete ev.ev_Time ev.ev_Char)));
+  bind lb events:[`KeyPress] fields:[`Char; `Time]
+    (* consider only keys producing characters. The callback is called
+       if you press Shift. *)
+    action:(fun ev -> if ev.ev_Char <> "" then complete ev.ev_Time ev.ev_Char);
   (* Key specific bindings override KeyPress *)
-  bind lb events:[[], `KeyPressDetail "Return"] action:(`Set([], action));
+  bind lb events:[`KeyPressDetail "Return"] :action;
   (* Finally, we have to set focus, otherwise events dont get through *)
   Focus.set lb;
   recenter()   (* so that first item is selected *);
@@ -184,8 +180,8 @@ let f :title action:proc filter:deffilter file:deffile :multi :sync =
   and selection_var = Textvariable.create on:tl ()
   and sync_var = Textvariable.create on:tl () in
 
-  let frm' = Frame.create tl borderwidth: (`Pix 1) relief: `Raised in
-    let frm = Frame.create frm' borderwidth: (`Pix 8) in
+  let frm' = Frame.create tl borderwidth: 1 relief: `Raised in
+    let frm = Frame.create frm' borderwidth: 8 in
     let fl = Label.create  frm text: "Filter" in
     let df = Frame.create frm in
       let dfl = Frame.create df in
@@ -204,8 +200,8 @@ let f :title action:proc filter:deffilter file:deffile :multi :sync =
     let filter_entry = myentry_create frm variable: filter_var in
     let selection_entry = myentry_create frm variable: selection_var
     in
-  let cfrm' = Frame.create tl borderwidth: (`Pix 1) relief: `Raised in
-    let cfrm = Frame.create cfrm' borderwidth: (`Pix 8) in
+  let cfrm' = Frame.create tl borderwidth: 1 relief: `Raised in
+    let cfrm = Frame.create cfrm' borderwidth: 8 in
     let dumf = Frame.create cfrm in
     let dumf2 = Frame.create cfrm in
 
@@ -281,11 +277,10 @@ let f :title action:proc filter:deffilter file:deffile :multi :sync =
       command: (fun () -> activate [] ()) in
 
   (* binding *)
-  bind selection_entry events:[[], `KeyPressDetail "Return"] 
-    action:(`Setbreakable ([], fun _ -> 
-      activate [Textvariable.get selection_var] () )); 
-  bind filter_entry events:[[], `KeyPressDetail "Return"] action:(`Set ([], 
-    fun _ -> configure (Textvariable.get filter_var) ));
+  bind selection_entry events:[`KeyPressDetail "Return"] breakable:true
+    action:(fun _ -> activate [Textvariable.get selection_var] ()); 
+  bind filter_entry events:[`KeyPressDetail "Return"]
+      action:(fun _ -> configure (Textvariable.get filter_var));
   
   let action _ = 
       let files = 
@@ -294,8 +289,8 @@ let f :title action:proc filter:deffilter file:deffile :multi :sync =
       in
         activate files () 
   in
-  bind filter_listbox events:[[`Double], `ButtonPressDetail 1] 
-                              action:(`Setbreakable ([], action));
+  bind filter_listbox events:[`Modified([`Double], `ButtonPressDetail 1)] 
+    breakable:true :action;
   if multi then Listbox.configure filter_listbox selectmode: `Multiple;
   filter_init_completion := add_completion filter_listbox action;
 
@@ -307,8 +302,8 @@ let f :title action:proc filter:deffilter file:deffile :multi :sync =
             Bell.ring (); raise Not_selected)
        (Listbox.curselection directory_listbox)) ^ "/" ^ !current_pattern) 
     with _ -> () in
-  bind directory_listbox events:[[`Double], `ButtonPressDetail 1]
-                                 action:(`Setbreakable ([], action));
+  bind directory_listbox events:[`Modified([`Double], `ButtonPressDetail 1)]
+    breakable:true :action;
   Listbox.configure directory_listbox selectmode: `Browse;
   directory_init_completion := add_completion directory_listbox action;
 
@@ -317,7 +312,7 @@ let f :title action:proc filter:deffilter file:deffile :multi :sync =
     pack [fl] side: `Top anchor: `W;
     pack [filter_entry] side: `Top fill: `X;
     (* directory + files *)
-    pack [df] side: `Top fill: `X ipadx: (`Pix 8);
+    pack [df] side: `Top fill: `X ipadx: 8;
     (* directory *)
     pack [dfl] side: `Left;
     pack [dfll] side: `Top anchor: `W;

@@ -80,7 +80,7 @@ let m =
 class calculator :parent = object
   inherit calc () as calc
 
-  val label = Label.create anchor:`E relief:`Sunken padx:(`Pix 10) parent
+  val label = Label.create anchor:`E relief:`Sunken padx:10 parent
   val frame = Frame.create parent
 
   initializer
@@ -93,8 +93,8 @@ class calculator :parent = object
     in
     Label.configure textvariable:variable label;
     calc#set to:"0";
-    bind parent events:[[],`KeyPress]
-      action:(`Set([`Char],fun ev -> calc#command ev.ev_Char));
+    bind parent events:[`KeyPress] fields:[`Char]
+      action:(fun ev -> calc#command ev.ev_Char);
     for i = 0 to Array.length m - 1 do
       Grid.configure row:i buttons.(i)
     done;

@@ -3,7 +3,7 @@ open Widget
 (* Events and bindings *)
 (* Builtin types *)
 (* type *)
-type xEvent = [
+type event = [
     `ButtonPress (* also Button, but we omit it *)
   | `ButtonPressDetail (int)
   | `ButtonRelease
@@ -27,12 +27,11 @@ type xEvent = [
   | `Property
   | `Reparent
   | `Unmap
-  | `Visibility 
+  | `Visibility
+  | `Modified modifier list * event
 ]
-(* /type *)
 
-(* type *)
-type modifier = [
+and modifier = [
     `Control
   | `Shift
   | `Lock
@@ -121,7 +120,7 @@ type eventField = [
 ]
 (* /type *)
 
-let filleventInfo ev v = function 
+let filleventInfo ev v : eventField -> unit = function 
     `Above    ->        ev.ev_Above <- int_of_string v
   | `ButtonNumber ->    ev.ev_ButtonNumber <- int_of_string v
   | `Count ->           ev.ev_Count <- int_of_string v
@@ -149,7 +148,7 @@ let filleventInfo ev v = function
   | `RootX ->           ev.ev_RootX <- int_of_string v
   | `RootY ->           ev.ev_RootY <- int_of_string v
 
-let wrapeventInfo f what =
+let wrapeventInfo f (what : eventField list) =
   let ev = {
     ev_Above = 0;
     ev_ButtonNumber = 0;
@@ -188,7 +187,7 @@ let wrapeventInfo f what =
 
 
 
-let rec writeeventField = function
+let rec writeeventField : eventField list -> string = function
     [] -> ""
   | field::rest ->
     begin
@@ -217,20 +216,8 @@ let rec writeeventField = function
       | `RootWindow ->" %R"
       | `SubWindow -> " %S"
       | `Type ->      " %T"
-      | `Widget ->" %W"
+      | `Widget ->    " %W"
       | `RootX ->     " %X"
       | `RootY ->     " %Y"
     end 
     ^ writeeventField rest
-
-
-(* type *)
-type bindAction = [
-   `Set ( eventField list *  (eventInfo -> unit))
-  | `Setbreakable ( eventField list *  (eventInfo -> unit) )
-  | `Remove
-  | `Extend ( eventField list *  (eventInfo -> unit))
-]
-(* /type *)
-
-

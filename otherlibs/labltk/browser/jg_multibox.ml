@@ -58,8 +58,8 @@ class c :cols :texts ?:maxheight ?:width parent = object (self)
     gen_list len:cols fun:
       begin fun () ->
         Listbox.create parent :height ?:width
-          highlightthickness:(`Pix 0)
-          borderwidth:(`Pix 1)
+          highlightthickness:0
+          borderwidth:1
       end
   val mutable current = 0
   method cols = cols
@@ -94,7 +94,7 @@ class c :cols :texts ?:maxheight ?:width parent = object (self)
         Listbox.insert box :texts index:`End
       end;
     pack boxes side:`Left expand:true fill:`Both;
-    self#bind_mouse events:[[],`ButtonPressDetail 1]
+    self#bind_mouse events:[`ButtonPressDetail 1]
       action:(fun _ index:n -> self#recenter n; break ());
     let current_height () =
       let (top,bottom) = Listbox.yview_get (List.hd boxes) in
@@ -111,7 +111,7 @@ class c :cols :texts ?:maxheight ?:width parent = object (self)
         "Home", (fun _ -> 0);
         "End", (fun _ -> List.length texts) ]
       fun:begin fun (key,f) ->
-        self#bind_kbd events:[[],`KeyPressDetail key]
+        self#bind_kbd events:[`KeyPressDetail key]
           action:(fun _ index:n -> self#recenter (f n); break ())
       end;
     self#recenter 0
@@ -120,10 +120,10 @@ class c :cols :texts ?:maxheight ?:width parent = object (self)
     List.iter boxes fun:
       begin fun box ->
         let b = !i in
-        bind box :events
-          action:(`Setbreakable ([`MouseX;`MouseY], fun ev ->
+        bind box :events breakable:true fields:[`MouseX;`MouseY]
+          action:(fun ev ->
             let `Num n = Listbox.nearest box y:ev.ev_MouseY
-            in action ev index:(n * cols + b)));
+            in action ev index:(n * cols + b));
         incr i
       end
   method bind_kbd :events :action =
@@ -131,10 +131,10 @@ class c :cols :texts ?:maxheight ?:width parent = object (self)
     List.iter boxes fun:
       begin fun box ->
         let b = !i in
-        bind box :events
-          action:(`Setbreakable ([`Char], fun ev ->
+        bind box :events breakable:true fields:[`Char]
+          action:(fun ev ->
             let `Num n = Listbox.index box index:`Active in
-            action ev index:(n * cols + b)));
+            action ev index:(n * cols + b));
         incr i
       end
 end
@@ -151,7 +151,7 @@ let add_scrollbar (box : c) =
 
 let add_completion ?:action ?:wait (box : c) =
   let comp = new Jg_completion.timed (box#texts) ?:wait in
-  box#bind_kbd events:[[], `KeyPress]
+  box#bind_kbd events:[`KeyPress]
     action:(fun ev :index -> 
       (* consider only keys producing characters. The callback is called
        * even if you press Shift. *)
@@ -159,11 +159,11 @@ let add_completion ?:action ?:wait (box : c) =
         box#recenter (comp#add ev.ev_Char) aligntop:true);
   match action with
     Some action ->
-      box#bind_kbd events:[[], `KeyPressDetail "space"]
+      box#bind_kbd events:[`KeyPressDetail "space"]
         action:(fun ev :index -> action (box#current));
-      box#bind_kbd events:[[], `KeyPressDetail "Return"]
+      box#bind_kbd events:[`KeyPressDetail "Return"]
         action:(fun ev :index -> action (box#current));
-      box#bind_mouse events:[[], `ButtonPressDetail 1]
+      box#bind_mouse events:[`ButtonPressDetail 1]
         action:(fun ev :index ->
           box#recenter index; action (box#current); break ())
   | None -> ()

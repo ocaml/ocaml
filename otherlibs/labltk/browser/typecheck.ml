@@ -84,8 +84,8 @@ let f txt =
   else begin
     error_messages := tl :: !error_messages;
     Text.configure ew state:`Disabled;
-    bind ew events:[[`Double], `ButtonPressDetail 1]
-      action:(`Set ([], fun _ ->
+    bind ew events:[`Modified([`Double], `ButtonPressDetail 1)]
+      action:(fun _ ->
         let s =
           Text.get ew start:(`Mark "insert", [`Wordstart])
                       end:(`Mark "insert", [`Wordend]) in
@@ -93,6 +93,6 @@ let f txt =
           let n = int_of_string s in
           Text.mark_set txt.tw index:(tpos n) mark:"insert";
           Text.see txt.tw index:(`Mark "insert", [])
-        with Failure "int_of_string" -> ()))
+        with Failure "int_of_string" -> ())
   end;
   !error_messages

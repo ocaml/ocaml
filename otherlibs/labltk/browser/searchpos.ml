@@ -328,19 +328,20 @@ let rec view_signature ?:title ?:path ?(:env = !start_env) sign =
          Jg_text.tag_and_see tw start:(tpos s) end:(tpos e) tag:"error"; []
   in
   Jg_bind.enter_focus tw;
-  bind tw events:[[`Control], `KeyPressDetail"s"]
-    action:(`Set ([], fun _ -> Jg_text.search_string tw));
-  bind tw events:[[`Double], `ButtonPressDetail 1]
-    action:(`Setbreakable ([`MouseX;`MouseY], fun ev ->
+  bind tw events:[`Modified([`Control], `KeyPressDetail"s")]
+    action:(fun _ -> Jg_text.search_string tw);
+  bind tw events:[`Modified([`Double], `ButtonPressDetail 1)]
+    fields:[`MouseX;`MouseY] breakable:true
+    action:(fun ev ->
       let `Linechar (l, c) =
         Text.index tw index:(`Atxy(ev.ev_MouseX,ev.ev_MouseY), []) in
       try try
         search_pos_signature pt pos:(lines_to_chars l in:text + c) :env;
         break ()
       with Found_sig (kind, lid, env) -> view_decl lid :kind :env
-      with Not_found | Env.Error _ -> ()));
-  bind tw events:[[], `ButtonPressDetail 3]
-    action:(`Setbreakable ([`MouseX;`MouseY], fun ev ->
+      with Not_found | Env.Error _ -> ());
+  bind tw events:[`ButtonPressDetail 3] fields:[`MouseX;`MouseY] breakable:true
+    action:(fun ev ->
       let x = ev.ev_MouseX and y = ev.ev_MouseY in
       let `Linechar (l, c) =
         Text.index tw index:(`Atxy(x,y), []) in
@@ -351,7 +352,7 @@ let rec view_signature ?:title ?:path ?(:env = !start_env) sign =
         let menu = view_decl_menu lid :kind :env parent:tw in
         let x = x + Winfo.rootx tw and y = y + Winfo.rooty tw - 10 in
         Menu.popup menu :x :y
-      with Not_found -> ()))
+      with Not_found -> ())
 
 and view_signature_item sign :path :env =
   view_signature sign title:(string_of_path path) ?path:(parent_path path) :env

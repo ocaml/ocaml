@@ -88,19 +88,18 @@ let f :dir =
       renew_dirs dirbox var:var_dir dir:!current_dir
     end;
 
-  bind dir_name events:[[],`KeyPressDetail"Return"]
-    action:(`Set([], fun _ ->
+  bind dir_name events:[`KeyPressDetail"Return"]
+    action:(fun _ ->
       let dir = Textvariable.get var_dir in
       if Useunix.is_directory dir then begin
         current_dir := dir;
         renew_dirs dirbox var:var_dir :dir
-      end));
-
+      end);
+(*
   let bind_space_toggle lb =
-    bind lb events:[[], `KeyPressDetail "space"]
-    action:(`Extend ([], fun _ -> ()))
+    bind lb events:[`KeyPressDetail "space"] extend:true action:ignore
   in bind_space_toggle dirbox; bind_space_toggle pathbox;
-  
+*)
   let add_paths _ =
     add_to_path pathbox base:!current_dir
       dirs:(List.map (Listbox.curselection dirbox)
@@ -111,10 +110,8 @@ let f :dir =
       dirs:(List.map (Listbox.curselection pathbox)
               fun:(fun x -> Listbox.get pathbox index:x))
   in
-  bind dirbox events:[[], `KeyPressDetail "Insert"]
-    action:(`Set ([], add_paths));
-  bind pathbox events:[[], `KeyPressDetail "Delete"]
-    action:(`Set ([], remove_paths));
+  bind dirbox events:[`KeyPressDetail "Insert"] action:add_paths;
+  bind pathbox events:[`KeyPressDetail "Delete"] action:remove_paths;
   
   let dirlab = Label.create dirs text:"Directories"
   and pathlab = Label.create path text:"Load path"
@@ -131,16 +128,16 @@ let f :dir =
   pack [dirbox] side:`Left fill:`Y expand:true;
   pack [pathsb] side:`Right fill:`Y;
   pack [pathbox] side:`Left fill:`Both expand:true;
-  pack [dirlab] side:`Top anchor:`W padx:(`Pix 10);
+  pack [dirlab] side:`Top anchor:`W padx:10;
   pack [addbutton] side:`Bottom fill:`X;
   pack [dirframe] fill:`Y expand:true;
-  pack [pathlab] side:`Top anchor:`W padx:(`Pix 10);
+  pack [pathlab] side:`Top anchor:`W padx:10;
   pack [removebutton; ok] side:`Left fill:`X expand:true;
   pack [pathbuttons] fill:`X side:`Bottom;
   pack [pathframe] fill:`Both expand:true;
   pack [dirs] side:`Left fill:`Y;
   pack [path] side:`Right fill:`Both expand:true;
-  pack [caplab] side:`Top anchor:`W padx:(`Pix 10);
+  pack [caplab] side:`Top anchor:`W padx:10;
   pack [dir_name] side:`Top anchor:`W fill:`X;
   pack [browse] side:`Bottom expand:true fill:`Both;
   tl
