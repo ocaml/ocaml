@@ -120,7 +120,7 @@ let print loc =
 let print_warning loc w =
  if Warnings.is_active w then begin
   print loc;
-  printf "Warning: %s@?" (Warnings.message w);
+  printf "Warning: %s@." (Warnings.message w);
   incr num_loc_lines;
  end
 ;;
