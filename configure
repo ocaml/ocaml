@@ -893,7 +893,8 @@ fi
 # Look for tcl/tk
 
 echo "Configuring LablTk..."
-if test "$x11_include" = "not found" || test "$x11_link" = "not found"
+if test "$ostype" != "Cygwin" && \
+   (test "$x11_include" = "not found" || test "$x11_link" = "not found")
 then
   echo "X11 not found."
   has_tk=false
@@ -922,8 +923,13 @@ else
   fi
 fi
 
+if test $has_tk = true && test "$ostype" != "Cygwin"; then
+  tk_x11_include=$x11_include
+  tk_x11_libs="$x11_libs -lX11"
+fi
+
 if test $has_tk = true; then
-  if sh ./hasgot $x11_include $tk_defs -i tk.h; then
+  if sh ./hasgot $tk_x11_include $tk_defs -i tk.h; then
     echo "tk.h found."
   else
     echo "tk.h not found."
@@ -958,7 +964,7 @@ if test $has_tk = true; then
   fi
 fi
 if test $has_tk = true; then
-  if sh ./hasgot $tk_libs $x11_libs -lX11 $tkauxlibs Tk_SetGrid; then
+  if sh ./hasgot $tk_libs $tk_x11_libs $tkauxlibs Tk_SetGrid; then
     echo "Tcl/Tk libraries found."
   else
     echo "Tcl library found."
