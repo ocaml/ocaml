@@ -53,6 +53,8 @@ val option_some: Typedtree.expression -> Typedtree.expression
 val option_none: type_expr -> Location.t -> Typedtree.expression
 val extract_option_type: Env.t -> type_expr -> type_expr
 
+val self_coercion : (Path.t * Location.t list ref) list ref
+
 type error =
     Unbound_value of Longident.t
   | Unbound_constructor of Longident.t

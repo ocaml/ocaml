@@ -658,6 +658,8 @@ let rec type_approx env sexp =
       end
   | _ -> newvar ()
 
+let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
+
 (* Typing of expressions *)
 
 let unify_exp env exp expected_ty =
@@ -905,12 +907,19 @@ let rec type_exp env sexp =
             let (ty', force) =
               Typetexp.transl_simple_type_delayed env sty'
             in
-            let ty = enlarge_type env ty' in
-            force ();
             let arg = type_exp env sarg in
-            begin try Ctype.unify env arg.exp_type ty with Unify trace ->
-              raise(Error(sarg.pexp_loc,
-                    Coercion_failure(ty', full_expand env ty', trace)))
+            begin match arg.exp_desc, !self_coercion, (repr ty').desc with
+              Texp_ident(_, {val_kind=Val_self _}), (path,r) :: _,
+              Tconstr(path',_,_) when Path.same path path' ->
+                r := sexp.pexp_loc :: !r;
+                force ()
+            | _ ->
+                let ty = enlarge_type env ty' in
+                force ();
+                begin try Ctype.unify env arg.exp_type ty with Unify trace ->
+                  raise(Error(sarg.pexp_loc,
+                        Coercion_failure(ty', full_expand env ty', trace)))
+                end
             end;
             (arg, ty')
         | (Some sty, Some sty') ->
