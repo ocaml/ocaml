@@ -163,12 +163,12 @@ let find proj1 proj2 path env =
       	  Structure_comps c ->
       	    let (data, pos) = Tbl.find s (proj2 c) in data
         | Functor_comps f ->
-      	    fatal_error "Env.find"
+      	    fatal_error "Env.find1"
 	end
     | Papply(p1, p2) ->
-      	fatal_error "Env.find"
+      	fatal_error "Env.find2"
   with Not_found ->
-    fatal_error "Env.find"
+    Printtyp.path path; Format.print_newline(); fatal_error "Env.find3"
 
 let find_value = find (fun env -> env.values) (fun sc -> sc.comp_values)
 and find_type = find (fun env -> env.types) (fun sc -> sc.comp_types)
@@ -335,7 +335,7 @@ let rec prefix_idents root pos sub = function
 
 (* Compute structure descriptions *)
 
-let rec components_of_module env path mty =
+let rec components_of_module env sub path mty =
   match scrape_modtype mty env with
     Tmty_signature sg ->
       let c =
@@ -343,7 +343,7 @@ let rec components_of_module env path mty =
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty } in
-      let (pl, sub) = prefix_idents path 0 Subst.identity sg in
+      let (pl, sub) = prefix_idents path 0 sub sg in
       let env = ref env in
       let pos = ref 0 in
       List.iter2 (fun item path ->
@@ -375,7 +375,7 @@ let rec components_of_module env path mty =
             let mty' = Subst.modtype sub mty in
             c.comp_modules <-
               Tbl.add (Ident.name id) (mty', !pos) c.comp_modules;
-            let comps = components_of_module !env path mty' in
+            let comps = components_of_module !env sub path mty in
             c.comp_components <-
               Tbl.add (Ident.name id) (comps, !pos) c.comp_components;
             env := store_components id path comps !env;
@@ -390,8 +390,8 @@ let rec components_of_module env path mty =
   | Tmty_functor(param, ty_arg, ty_res) ->
       	Functor_comps {
 	  fcomp_param = param;
-	  fcomp_arg = ty_arg;
-	  fcomp_res = ty_res;
+	  fcomp_arg = Subst.modtype sub ty_arg;
+	  fcomp_res = Subst.modtype sub ty_res;
 	  fcomp_env = env }
   | Tmty_ident p ->
       	Structure_comps {
@@ -446,8 +446,9 @@ and store_module id path mty env =
     types = env.types;
     modules = Ident.add id (path, mty) env.modules;
     modtypes = env.modtypes;
-    components = Ident.add id (path, components_of_module env path mty)
-                 env.components }
+    components =
+      Ident.add id (path, components_of_module env Subst.identity path mty)
+                   env.components }
 
 and store_modtype id path info env =
   { values = env.values;
@@ -483,7 +484,7 @@ let _ =
         let mty = 
           Subst.modtype (Subst.add_module f.fcomp_param p2 Subst.identity)
                         f.fcomp_res in
-        let comps = components_of_module f.fcomp_env p mty in
+        let comps = components_of_module f.fcomp_env Subst.identity p mty in
         Hashtbl.add funappl_memo p comps;
         comps)
 
@@ -571,8 +572,8 @@ let save_signature sg modname filename =
     { ps_name = modname;
       ps_sig = sg;
       ps_comps =
-        components_of_module empty (Pident(Ident.new_persistent modname))
-                                   (Tmty_signature sg) } in
+        components_of_module empty Subst.identity
+            (Pident(Ident.new_persistent modname)) (Tmty_signature sg) } in
   let oc = open_out_bin filename in
   output_string oc cmi_magic_number;
   output_value oc ps;
