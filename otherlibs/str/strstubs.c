@@ -23,17 +23,26 @@
 
 /* The backtracking NFA interpreter */
 
-struct backtrack_point {
-  unsigned char * txt;
-  value * pc;
-  int mask, register_mask;
+union backtrack_point {
+  struct {
+    value * pc;                 /* with low bit set */
+    unsigned char * txt;
+  } pos;
+  struct {
+    unsigned char ** loc;       /* with low bit clear */
+    unsigned char * val;
+  } undo;
 };
+
+#define Set_tag(p) ((value *) ((long)(p) | 1))
+#define Clear_tag(p) ((value *) ((long)(p) & ~1))
+#define Test_tag(p) ((long)(p) & 1)
 
 #define BACKTRACK_STACK_BLOCK_SIZE 500
 
 struct backtrack_stack {
   struct backtrack_stack * previous;
-  struct backtrack_point point[BACKTRACK_STACK_BLOCK_SIZE];
+  union backtrack_point point[BACKTRACK_STACK_BLOCK_SIZE];
 };
 
 #define Opcode(x) ((x) & 0xFF)
@@ -60,7 +69,6 @@ enum {
   PUSHBACK,   /* record a backtrack point -- 
                  where to jump in case of failure */
   SETMARK,    /* remember current position in given register # */
-  CLEARMARK,  /* clear given register # */
   CHECKPROGRESS /* backtrack if no progress was made w.r.t. reg # */
 };
 
@@ -72,21 +80,16 @@ enum {
 #define Startchars(re) Int_val(Field(re, 4))
 
 /* Record positions of matched groups */
+#define NUM_GROUPS 32
 struct re_group {
-  unsigned char * tentative_start;
   unsigned char * start;
   unsigned char * end;
 };
-static struct re_group re_group[32];
-
-/* Bitvector recording which groups were fully matched */
-static int re_mask;
+static struct re_group re_group[NUM_GROUPS];
 
 /* Record positions reached during matching */
-static unsigned char * re_register[32];
-
-/* Bitvector recording which registers are vaild */
-static int re_register_mask;
+#define NUM_REGISTERS 32
+static unsigned char * re_register[NUM_REGISTERS];
 
 /* The initial backtracking stack */
 static struct backtrack_stack initial_stack = { NULL, };
@@ -119,23 +122,25 @@ static int re_match(value re,
                     int accept_partial_match)
 {
   register value * pc;
+  long instr;
   struct backtrack_stack * stack;
-  struct backtrack_point * sp;
+  union backtrack_point * sp;
   value cpool;
   value normtable;
   unsigned char c;
+  union backtrack_point back;
 
   pc = &Field(Prog(re), 0);
   stack = &initial_stack;
   sp = stack->point;
   cpool = Cpool(re);
   normtable = Normtable(re);
-  re_mask = 0;
+  memset(re_group, 0, sizeof(re_group));
+  memset(re_register, 0, sizeof(re_register));
   re_group[0].start = txt;
-  re_register_mask = 0;
 
   while (1) {
-    long instr = Long_val(*pc++);
+    instr = Long_val(*pc++);
     switch (Opcode(instr)) {
     case CHAR:
       if (txt == endtxt) goto prefix_match;
@@ -199,22 +204,25 @@ static int re_match(value re,
       }
     case BEGGROUP: {
       int group_no = Arg(instr);
-      re_group[group_no].tentative_start = txt;
-      break;
+      struct re_group * group = &(re_group[group_no]);
+      back.undo.loc = &(group->start);
+      back.undo.val = group->start;
+      group->start = txt;
+      goto push;
     }
     case ENDGROUP: {
       int group_no = Arg(instr);
       struct re_group * group = &(re_group[group_no]);
-      group->start = group->tentative_start;
+      back.undo.loc = &(group->end);
+      back.undo.val = group->start;
       group->end = txt;
-      re_mask |= (1 << group_no);
-      break;
+      goto push;
     }
     case REFGROUP: {
       int group_no = Arg(instr);
       struct re_group * group = &(re_group[group_no]);
       unsigned char * s;
-      if ((re_mask & (1 << group_no)) == 0) goto backtrack;
+      if (group->start == NULL || group->end == NULL) goto backtrack;
       for (s = group->start; s < group->end; s++) {
         if (txt == endtxt) goto prefix_match;
         if (*s != *txt) goto backtrack;
@@ -248,33 +256,20 @@ static int re_match(value re,
       pc = pc + SignedArg(instr);
       break;
     case PUSHBACK:
-      if (sp == stack->point + BACKTRACK_STACK_BLOCK_SIZE) {
-        struct backtrack_stack * newstack = 
-          stat_alloc(sizeof(struct backtrack_stack));
-        newstack->previous = stack;
-        stack = newstack;
-        sp = stack->point;
-      }
-      sp->txt = txt;
-      sp->pc = pc + SignedArg(instr);
-      sp->mask = re_mask;
-      sp->register_mask = re_register_mask;
-      sp++;
-      break;
+      back.pos.pc = Set_tag(pc + SignedArg(instr));
+      back.pos.txt = txt;
+      goto push;
     case SETMARK: {
       int reg_no = Arg(instr);
-      re_register[reg_no] = txt;
-      re_register_mask |= (1 << reg_no);
-      break;
-    }
-    case CLEARMARK: {
-      int reg_no = Arg(instr);
-      re_register_mask &= ~(1 << reg_no);
-      break;
+      unsigned char ** reg = &(re_register[reg_no]);
+      back.undo.loc = reg;
+      back.undo.val = *reg;
+      *reg = txt;
+      goto push;
     }
     case CHECKPROGRESS: {
       int reg_no = Arg(instr);
-      if ((re_register_mask & (1 << reg_no)) && re_register[reg_no] == txt)
+      if (re_register[reg_no] == txt)
         goto backtrack;
       break;
     }
@@ -283,31 +278,52 @@ static int re_match(value re,
     }
     /* Continue with next instruction */
     continue;
+
+  push:
+    /* Push an item on the backtrack stack and continue with next instr */
+    if (sp == stack->point + BACKTRACK_STACK_BLOCK_SIZE) {
+      struct backtrack_stack * newstack = 
+        stat_alloc(sizeof(struct backtrack_stack));
+      newstack->previous = stack;
+      stack = newstack;
+      sp = stack->point;
+    }
+    *sp = back;
+    sp++;
+    continue;
+
   prefix_match:
     /* We get here when matching failed because the end of text
        was encountered. */
     if (accept_partial_match) goto accept;
+
   backtrack:
     /* We get here when matching fails.  Backtrack to most recent saved
-       point. */
-    if (sp == stack->point) {
-      struct backtrack_stack * prevstack = stack->previous;
-      if (prevstack == NULL) return 0;
-      stat_free(stack);
-      stack = prevstack;
-      sp = stack->point + BACKTRACK_STACK_BLOCK_SIZE;
+       program point, undoing variable assignments on the way. */
+    while (1) {
+      if (sp == stack->point) {
+        struct backtrack_stack * prevstack = stack->previous;
+        if (prevstack == NULL) return 0;
+        stat_free(stack);
+        stack = prevstack;
+        sp = stack->point + BACKTRACK_STACK_BLOCK_SIZE;
+      }
+      sp--;
+      if (Test_tag(sp->pos.pc)) {
+        pc = Clear_tag(sp->pos.pc);
+        txt = sp->pos.txt;
+        break;
+      } else {
+        *(sp->undo.loc) = sp->undo.val;
+      }
     }
-    sp--;
-    txt = sp->txt;
-    pc = sp->pc;
-    re_mask = sp->mask;
-    re_register_mask = sp->register_mask;
-  }  
+    continue;
+  }
+
  accept:
   /* We get here when the regexp was successfully matched */
   free_backtrack_stack(stack);
   re_group[0].end = txt;
-  re_mask |= 1;
   return 1;
 }
 
@@ -322,15 +338,17 @@ static value re_alloc_groups(value re, value str)
   unsigned char * starttxt = (unsigned char *) String_val(str);
   int n = Numgroups(re);
   int i;
+  struct re_group * group;
 
   res = alloc(n * 2, 0);
   for (i = 0; i < n; i++) {
-    if ((re_mask & (1 << i)) == 0) {
+    group = &(re_group[i]);
+    if (group->start == NULL || group->end == NULL) {
       Field(res, i * 2) = Val_int(-1);
       Field(res, i * 2 + 1) = Val_int(-1);
     } else {
-      Field(res, i * 2) = Val_long(re_group[i].start - starttxt);
-      Field(res, i * 2 + 1) = Val_long(re_group[i].end - starttxt);
+      Field(res, i * 2) = Val_long(group->start - starttxt);
+      Field(res, i * 2 + 1) = Val_long(group->end - starttxt);
     }
   }
   CAMLreturn(res);

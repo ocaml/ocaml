@@ -138,8 +138,7 @@ let op_SIMPLEPLUS = 14
 let op_GOTO = 15
 let op_PUSHBACK = 16
 let op_SETMARK = 17
-let op_CLEARMARK = 18
-let op_CHECKPROGRESS = 19
+let op_CHECKPROGRESS = 18
 
 (* Encoding of bytecode instructions *)
 
@@ -332,7 +331,6 @@ let compile fold_case re =
   | Plus r ->
       (* Implement longest match semantics for compatibility with old Str *)
       (* General translation:
-                 CLEARMARK regno
            lbl1: <match r>
                  CHECKPROGRESS regno
                  PUSHBACK lbl2
@@ -346,7 +344,6 @@ let compile fold_case re =
            lbl2:
       *)
       let regno = allocate_register_if_nullable r in
-      if regno >= 0 then emit_instr op_CLEARMARK regno;
       let lbl1 = !progpos in
       emit_code r;
       if regno >= 0 then emit_instr op_CHECKPROGRESS regno;
