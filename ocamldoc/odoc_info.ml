@@ -152,6 +152,10 @@ let create_index_lists = Odoc_misc.create_index_lists
 
 let remove_option = Odoc_misc.remove_option
 
+let is_optional = Odoc_misc.is_optional
+
+let label_name = Odoc_misc.label_name
+
 let use_hidden_modules n = 
   Odoc_name.hide_given_modules !Odoc_args.hidden_modules n
 

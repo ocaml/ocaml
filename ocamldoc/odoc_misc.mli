@@ -93,3 +93,10 @@ val create_index_lists : 'a list -> ('a -> string) -> 'a list list
    useful when printing labels, we we then remove the top option contructor
    for optional labels.*)
 val remove_option : Types.type_expr -> Types.type_expr
+
+(** Return [true] if the given label is optional.*)
+val is_optional : string -> bool
+
+(** Return the label name for the given label,
+   i.e. removes the beginning '?' if present.*)
+val label_name : string -> string

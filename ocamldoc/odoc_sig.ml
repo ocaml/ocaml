@@ -1106,7 +1106,7 @@ module Analyser =
 	     let new_param = 
 	       (Simple_name 
 		  {
-		    sn_name = label ;
+		    sn_name = Btype.label_name label ;
 		    sn_type = Odoc_env.subst_type env type_expr ;
 		    sn_text = None ; (* will be updated when the class will be created *)
 		  },
