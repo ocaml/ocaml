@@ -42,6 +42,7 @@ type compilation_unit =
      magic number (Config.cmo_magic_number)
      absolute offset of compilation unit descriptor
      block of relocatable bytecode
+     debugging information if any
      compilation unit descriptor *)
 
 (* Descriptor for libraries *)
