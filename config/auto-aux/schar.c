@@ -12,7 +12,8 @@
 /* $Id$ */
 
 char foo[]="\377";
-main(void)
+
+int main(int argc, char ** argv)
 {
   int i;
   i = foo[0];
