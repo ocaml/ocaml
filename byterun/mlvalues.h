@@ -185,7 +185,7 @@ typedef opcode_t * code_t;
 #define Class_val(val) Field(val, 0)
 #define Oid_val(val) Long_val(Field(val, 1))
 
-/* 2- If tag > No_scan_tag : a sequence of bytes. */
+/* 2- If tag >= No_scan_tag : a sequence of bytes. */
 
 /* Pointer to the first byte */
 #define Bp_val(v) ((char *) (v))
