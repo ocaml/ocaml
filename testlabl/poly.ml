@@ -1,12 +1,7 @@
 (* $Id$ *)
 (*
-   How to check out ocaml with polymorphic methods:
-   Either do 
-    cvs -q update -r poly_meth2 `cat testlabl/dirs_poly`
-   or
-    cvs -q update -r poly_meth2 -f
-   In the second case do not forget to add the -f flag to all ulterior
-   calls to cvs update, otherwise all head files will be deleted!
+   Polymorphic methods are now available in the main branch.
+   Enjoy.
 *)
 
 (* Tests for explicit polymorphism *)
