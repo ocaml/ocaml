@@ -944,7 +944,7 @@ tkauxlibs="$mathlib $dllib"
 tcllib=''
 tklib=''
 if test $has_tk = true; then
-  if sh ./hasgot $tk_libs $tkauxlibs Tcl_DoOneEvent
+  if sh ./hasgot $tk_libs $tk_x11_libs $tkauxlibs Tcl_DoOneEvent
   then tk_libs="$tk_libs $dllib"
   elif sh ./hasgot $tk_libs -ltcl$tclmaj.$tclmin $tkauxlibs Tcl_DoOneEvent
   then
