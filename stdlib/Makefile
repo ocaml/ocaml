@@ -119,12 +119,9 @@ pervasives.p.cmx: pervasives.ml
 camlinternalOO.cmi: camlinternalOO.mli
 	$(CAMLC) $(COMPFLAGS) -nopervasives -c camlinternalOO.mli
 
-camlinternalOO.cmx: camlinternalOO.ml
-	$(CAMLOPT) $(OPTCOMPFLAGS) -inline 0 camlinternalOO.ml
-
-OO_P_CMX=camlinternalOO.p.cmx
-$(OO_P_CMX): camlinternalOO.ml
-	$(MAKE) EXTRAFLAGS="-inline 0" OO_P_CMX=dummy camlinternalOO.p.cmx
+CIOO=camlinternalOO
+$(CIOO).cmx $(CIOO).p.cmx: $(CIOO).ml
+	$(MAKE) EXTRAFLAGS="-inline 0" CIOO=dummy $@
 
 # labelled modules require the -nolabels flag
 labelled.cmo:
