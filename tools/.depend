@@ -1,0 +1,22 @@
+camldep.cmo: ../utils/misc.cmi 
+camldep.cmx: ../utils/misc.cmx 
+cslprof.cmo: ../utils/clflags.cmo ../utils/config.cmi ../parsing/lexer.cmi \
+    ../parsing/location.cmi ../utils/misc.cmi ../parsing/parse.cmi \
+    ../parsing/parsetree.cmi 
+cslprof.cmx: ../utils/clflags.cmx ../utils/config.cmx ../parsing/lexer.cmx \
+    ../parsing/location.cmx ../utils/misc.cmx ../parsing/parse.cmx \
+    ../parsing/parsetree.cmi 
+dumpapprox.cmo: ../asmcomp/clambda.cmi ../asmcomp/compilenv.cmi \
+    ../utils/config.cmi 
+dumpapprox.cmx: ../asmcomp/clambda.cmx ../asmcomp/compilenv.cmx \
+    ../utils/config.cmx 
+dumpobj.cmo: ../parsing/asttypes.cmi ../utils/config.cmi \
+    ../bytecomp/emitcode.cmi ../typing/ident.cmi ../bytecomp/lambda.cmi \
+    ../bytecomp/opcodes.cmo opnames.cmo ../bytecomp/runtimedef.cmi \
+    ../utils/tbl.cmi 
+dumpobj.cmx: ../parsing/asttypes.cmi ../utils/config.cmx \
+    ../bytecomp/emitcode.cmx ../typing/ident.cmx ../bytecomp/lambda.cmx \
+    ../bytecomp/opcodes.cmx opnames.cmx ../bytecomp/runtimedef.cmx \
+    ../utils/tbl.cmx 
+objinfo.cmo: ../utils/config.cmi ../bytecomp/emitcode.cmi 
+objinfo.cmx: ../utils/config.cmx ../bytecomp/emitcode.cmx 

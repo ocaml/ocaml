@@ -176,8 +176,7 @@ install:
 	$(CAMLC) -a -o $(LIBDIR)/toplevellib.cma $(TOPLIB)
 	cp toplevel/topmain.cmo $(LIBDIR)
 	cp toplevel/toploop.cmi toplevel/topdirs.cmi $(LIBDIR)
-	cp tools/camldep $(BINDIR)/csldep
-	cp tools/camlmktop $(BINDIR)/cslmktop
+	cd tools; $(MAKE) install
 
 # Installation of the native-code compiler
 installopt:
