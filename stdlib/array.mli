@@ -22,18 +22,18 @@ external get : 'a array -> int -> 'a = "%array_safe_get"
 (** [Array.get a n] returns the element number [n] of array [a].
    The first element has number 0.
    The last element has number [Array.length a - 1].
+   You can also write [a.(n)] instead of [Array.get a n]. 
 
-   Raise [Invalid_argument "Array.get"]  if [n] is outside the range
-   0 to [(Array.length a - 1)].
-   You can also write [a.(n)] instead of [Array.get a n]. *)
+   Raise [Invalid_argument "index out of bounds"]
+   if [n] is outside the range 0 to [(Array.length a - 1)]. *)
 
 external set : 'a array -> int -> 'a -> unit = "%array_safe_set"
 (** [Array.set a n x] modifies array [a] in place, replacing
    element number [n] with [x].
+   You can also write [a.(n) <- x] instead of [Array.set a n x].
 
-   Raise [Invalid_argument "Array.set"] if [n] is outside the range
-   0 to [Array.length a - 1].
-   You can also write [a.(n) <- x] instead of [Array.set a n x]. *)
+   Raise [Invalid_argument "index out of bounds"]
+   if [n] is outside the range 0 to [Array.length a - 1]. *)
         
 external make : int -> 'a -> 'a array = "make_vect"
 (** [Array.make n x] returns a fresh array of length [n],

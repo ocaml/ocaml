@@ -157,7 +157,8 @@ external of_string : string -> nativeint = "nativeint_of_string"
    octal or binary if the string begins with [0x], [0o] or [0b]
    respectively.
    Raise [Failure "int_of_string"] if the given string is not
-   a valid representation of an integer. *)
+   a valid representation of an integer, or if the integer represented
+   exceeds the range of integers representable in type [nativeint]. *)
 
 val to_string : nativeint -> string
 (** Return the string representation of its argument, in decimal. *)

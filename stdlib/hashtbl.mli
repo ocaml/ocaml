@@ -106,7 +106,10 @@ module type HashedType =
           as computed by [hash].
           Examples: suitable ([equal], [hash]) pairs for arbitrary key
           types include
-          ([(=)], {!Hashtbl.hash}) for comparing objects by structure, and
+          ([(=)], {!Hashtbl.hash}) for comparing objects by structure,
+          ([(fun x y -> compare x y = 0)], {!Hashtbl.hash})
+          for comparing objects by structure and handling {!Pervasives.nan}
+          correctly, and
           ([(==)], {!Hashtbl.hash}) for comparing objects by addresses
           (e.g. for mutable or cyclic keys). *)
    end
@@ -147,7 +150,7 @@ module Make (H : HashedType) : S with type key = H.t
 val hash : 'a -> int
 (** [Hashtbl.hash x] associates a positive integer to any value of
    any type. It is guaranteed that
-   if [x = y], then [hash x = hash y]. 
+   if [x = y] or [Pervasives.compare x y = 0], then [hash x = hash y]. 
    Moreover, [hash] always terminates, even on cyclic
    structures. *)
 

@@ -150,7 +150,8 @@ external of_string : string -> int64 = "int64_of_string"
    octal or binary if the string begins with [0x], [0o] or [0b]
    respectively.
    Raise [Failure "int_of_string"] if the given string is not
-   a valid representation of an integer. *)
+   a valid representation of an integer, or if the integer represented
+   exceeds the range of integers representable in type [int64]. *)
 
 val to_string : int64 -> string
 (** Return the string representation of its argument, in decimal. *)

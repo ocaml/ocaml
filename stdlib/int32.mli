@@ -128,7 +128,8 @@ external of_string : string -> int32 = "int32_of_string"
    octal or binary if the string begins with [0x], [0o] or [0b]
    respectively.
    Raise [Failure "int_of_string"] if the given string is not
-   a valid representation of an integer. *)
+   a valid representation of an integer, or if the integer represented
+   exceeds the range of integers representable in type [int32]. *)
 
 val to_string : int32 -> string
 (** Return the string representation of its argument, in signed decimal. *)

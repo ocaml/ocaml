@@ -48,8 +48,8 @@ external ( = ) : 'a -> 'a -> bool = "%equal"
    Mutable structures (e.g. references and arrays) are equal
    if and only if their current contents are structurally equal,
    even if the two mutable objects are not the same physical object.
-   Equality between functional values may raise [Invalid_argument].
-   Equality between cyclic data structures may not terminate. *)
+   Equality between functional values raises [Invalid_argument].
+   Equality between cyclic data structures does not terminate. *)
 
 external ( <> ) : 'a -> 'a -> bool = "%notequal"
 (** Negation of {!Pervasives.(=)}. *)
@@ -70,14 +70,27 @@ external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
    total ordering over all types.
    The ordering is compatible with [(=)]. As in the case
    of [(=)], mutable structures are compared by contents.
-   Comparison between functional values may raise [Invalid_argument].
-   Comparison between cyclic structures may not terminate. *)
+   Comparison between functional values raises [Invalid_argument].
+   Comparison between cyclic structures does not terminate. *)
 
 external compare : 'a -> 'a -> int = "%compare"
-(** [compare x y] returns [0] if [x=y], a negative integer if
-   [x<y], and a positive integer if [x>y]. The same restrictions
-   as for [=] apply. [compare] can be used as the comparison function
-   required by the {!Set.Make} and {!Map.Make} functors. *)
+(** [compare x y] returns [0] if [x] is equal to [y],
+   a negative integer if [x] is less than [y], and a positive integer
+   if [x] is greater than [y].  The ordering implemented by [compare]
+   is compatible with the comparison predicates [=], [<] and [>]
+   defined above,  with one difference on the treatment of the float value
+   {!Pervasives.nan}.  Namely, the comparison predicates treat [nan]
+   as different from any other float value, including itself;
+   while [compare] treats [nan] as equal to itself and less than any
+   other float value.  This treatment of [nan] ensures that [compare]
+   defines a total ordering relation.
+
+   [compare] applied to functional values may raise [Invalid_argument].
+   [compare] applied to cyclic structures may not terminate.
+
+   The [compare] function can be used as the comparison function
+   required by the {!Set.Make} and {!Map.Make} functors, as well as
+   the {!List.sort} and {!Array.sort} functions. *)
 
 val min : 'a -> 'a -> 'a
 (** Return the smaller of the two arguments. *)
@@ -92,7 +105,7 @@ external ( == ) : 'a -> 'a -> bool = "%eq"
    physical modification of [e1] also affects [e2].
    On non-mutable structures, the behavior of [(==)] is
    implementation-dependent; however, it is guaranteed that
-   [e1 == e2] implies [e1 = e2]. *)
+   [e1 == e2] implies [compare e1 e2 = 0]. *)
 
 external ( != ) : 'a -> 'a -> bool = "%noteq"
 (** Negation of {!Pervasives.(==)}. *)
@@ -334,7 +347,10 @@ val neg_infinity : float
 val nan : float
 (** A special floating-point value denoting the result of an
    undefined operation such as [0.0 /. 0.0].  Stands for
-   ``not a number''. *)
+   ``not a number''.  Any floating-point operation with [nan] as
+   argument returns [nan] as result.  As for floating-point comparisons,
+   [=], [<], [<=], [>] and [>=] return [false] and [<>] returns [true]
+   if one or both of their arguments is [nan]. *)
 
 val max_float : float
 (** The largest positive finite value of type [float]. *)
@@ -412,7 +428,8 @@ external int_of_string : string -> int = "int_of_string"
    begins with [0x] or [0X]), octal (if it begins with [0o] or [0O]),
    or binary (if it begins with [0b] or [0B]).
    Raise [Failure "int_of_string"] if the given string is not
-   a valid representation of an integer. *)
+   a valid representation of an integer, or if the integer represented
+   exceeds the range of integers representable in type [int]. *)
 
 val string_of_float : float -> string
 (** Return the string representation of a floating-point number. *)
