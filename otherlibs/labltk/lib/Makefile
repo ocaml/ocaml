@@ -1,11 +1,11 @@
 include ../support/Makefile.common
 
-all: labltk.cma labltktop$(EXE) labltk
+all: $(LIBNAME).cma $(LIBNAME)top$(EXE) $(LIBNAME)
 
-opt: labltk.cmxa
+opt: $(LIBNAME).cmxa
 
 clean: 
-	rm -f labltk.cma labltk.cmxa labltktop$(EXE) labltk
+	rm -f $(LIBNAME).cma $(LIBNAME).cmxa $(LIBNAME)top$(EXE) $(LIBNAME)
 
 include ../labltk/modules
 LABLTKOBJS=tk.cmo $(WIDGETOBJS)
@@ -22,48 +22,48 @@ TKOBJS=$(SUPPORT) $(LABLTKOBJS) $(CAMLTKOBJS)
 
 TOPDEPS = $(TOPDIR)/toplevel/toplevellib.cma $(TOPDIR)/toplevel/topmain.cmo
 
-labltk.cma: $(SUPPORT)
-	cd ../labltk; make
-	cd ../camltk; make
-	$(MKLIB) -ocamlc '$(CAMLC)' -o labltk -oc labltk41 \
+$(LIBNAME).cma: $(SUPPORT)
+	cd ../labltk; $(MAKE)
+	cd ../camltk; $(MAKE)
+	$(MKLIB) -ocamlc '$(CAMLC)' -o $(LIBNAME) -oc $(LIBNAME) \
           -I ../labltk -I ../camltk $(TKOBJS) \
           $(TK_LINK) $(X11_LINK)
 
-labltk.cmxa: $(SUPPORT:.cmo=.cmx)
-	cd ../labltk; make opt
-	cd ../camltk; make opt
-	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o labltk -oc labltk41 \
+$(LIBNAME).cmxa: $(SUPPORT:.cmo=.cmx)
+	cd ../labltk; $(MAKE) opt
+	cd ../camltk; $(MAKE) opt
+	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o $(LIBNAME) -oc $(LIBNAME) \
           -I ../labltk -I ../camltk $(TKOBJS:.cmo=.cmx) \
           $(TK_LINK) $(X11_LINK)
 
-labltktop$(EXE) : $(TOPDEPS) labltk.cma ../support/liblabltk41.a
-	$(CAMLC) -linkall -o labltktop$(EXE) -I ../support \
+$(LIBNAME)top$(EXE) : $(TOPDEPS) $(LIBNAME).cma ../support/lib$(LIBNAME).a
+	$(CAMLC) -linkall -o $(LIBNAME)top$(EXE) -I ../support \
 	       -I $(TOPDIR)/toplevel toplevellib.cma \
-	       -I ../labltk -I ../camltk labltk.cma \
+	       -I ../labltk -I ../camltk $(LIBNAME).cma \
 	       -I $(OTHERS)/unix unix.cma \
 	       -I $(OTHERS)/str str.cma \
 	       $(DLLPATH) \
 	       topmain.cmo
 
-labltk: Makefile $(TOPDIR)/config/Makefile
+$(LIBNAME): Makefile $(TOPDIR)/config/Makefile
 	@echo Generate $@
 	@echo "#!/bin/sh" > $@
-	@echo 'exec $(MLTKDIR)/labltktop$(EXE) -I $(MLTKDIR) $$*' >> $@
+	@echo 'exec $(INSTALLDIR)/$(LIBNAME)top$(EXE) -I $(INSTALLDIR) $$*' >> $@
 
 install: all
-	if test -d $(MLTKDIR); then : ; else mkdir $(MLTKDIR); fi
-	if test `grep -s -c '^$(MLTKDIR)$$' $(LIBDIR)/ld.conf || :` = 0; \
-        then echo $(MLTKDIR) >> $(LIBDIR)/ld.conf; fi
-	cp labltk.cma labltktop$(EXE) $(MLTKDIR)
-	chmod 644 $(MLTKDIR)/labltk.cma
-	chmod 755 $(MLTKDIR)/labltktop$(EXE)
+	if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
+	if test `grep -s -c '^$(INSTALLDIR)$$' $(LIBDIR)/ld.conf || :` = 0; \
+        then echo $(INSTALLDIR) >> $(LIBDIR)/ld.conf; fi
+	cp $(LIBNAME).cma $(LIBNAME)top$(EXE) $(INSTALLDIR)
+	chmod 644 $(INSTALLDIR)/$(LIBNAME).cma
+	chmod 755 $(INSTALLDIR)/$(LIBNAME)top$(EXE)
 	@if test -d $(BINDIR); then : ; else mkdir $(BINDIR); fi
-	cp labltk $(BINDIR)
-	chmod 755 $(BINDIR)/labltk
+	cp $(LIBNAME) $(BINDIR)
+	chmod 755 $(BINDIR)/$(LIBNAME)
 
 installopt: opt
-	@if test -d $(MLTKDIR); then : ; else mkdir $(MLTKDIR); fi
-	cp labltk.cmxa labltk.a $(MLTKDIR)
-	cd $(MLTKDIR); $(RANLIB) labltk.a
-	chmod 644 $(MLTKDIR)/labltk.cmxa
-	chmod 644 $(MLTKDIR)/labltk.a
+	@if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
+	cp $(LIBNAME).cmxa $(LIBNAME).a $(INSTALLDIR)
+	cd $(INSTALLDIR); $(RANLIB) $(LIBNAME).a
+	chmod 644 $(INSTALLDIR)/$(LIBNAME).cmxa
+	chmod 644 $(INSTALLDIR)/$(LIBNAME).a
