@@ -227,7 +227,7 @@ constant of length one, a character set specification, or an
 alternation of those. Then, the type of @ident@ is "char" (or "char
 option").
 Option types are introduced when overall rule matching does not
-implies matching of the bound sub-pattern. This is in particular the
+imply matching of the bound sub-pattern. This is in particular the
 case of @'(' regexp 'as' indent')' '?'@ and of
 @regexp_1 '|' '(' regexp_2 'as' ident ')'@.
 
