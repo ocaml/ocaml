@@ -66,6 +66,10 @@ let rec typexp s ty =
       ty
   | Tsubst ty ->
       ty
+(* cannot do it, since it would omit subsitution
+  | Tvariant row when not (static_row row) ->
+      ty
+*)
   | _ ->
     let desc = ty.desc in
     save_desc ty desc;
@@ -95,7 +99,12 @@ let rec typexp s ty =
               save_desc more more.desc;
               more.desc <- ty.desc;
               (* Return a new copy *)
-              Tvariant (copy_row (typexp s) row (newgenvar()))
+              let row = copy_row (typexp s) row (newgenvar()) in
+              match row.row_name with
+                Some (p, tl) ->
+                  Tvariant {row with row_name = Some (type_path s p, tl)}
+              | None ->
+                  Tvariant row
           end
       | Tfield(label, kind, t1, t2) ->
           begin match field_kind_repr kind with

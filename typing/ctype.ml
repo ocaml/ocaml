@@ -2475,6 +2475,7 @@ let rec nondep_type_rec env id ty =
   match ty.desc with
     Tvar     -> ty
   | Tsubst ty -> ty
+(*| Tvariant row when not (static_row row) -> ty *)
   | _ ->
     let desc = ty.desc in
     save_desc ty desc;
@@ -2519,18 +2520,11 @@ let rec nondep_type_rec env id ty =
               save_desc more more.desc;
               more.desc <- ty.desc;
               (* Return a new copy *)
-              Tvariant (copy_row (nondep_type_rec env id) row (newgenvar()))
-          end
-      | Tfield(label, kind, t1, t2) ->
-          begin match field_kind_repr kind with
-            Fpresent ->
-              Tfield(label, Fpresent, nondep_type_rec env id t1,
-                                      nondep_type_rec env id t2)
-          | Fvar _ (* {contents = None} *) as k ->
-              Tfield(label, k, nondep_type_rec env id t1,
-                               nondep_type_rec env id t2)
-          | Fabsent ->
-              assert false
+              let row = copy_row (nondep_type_rec env id) row (newgenvar()) in
+              match row.row_name with
+                Some (p, tl) when Path.isfree id p ->
+                  Tvariant {row with row_name = None}
+              | _ -> Tvariant row
           end
       | _ -> copy_type_desc (nondep_type_rec env id) desc
       end;
