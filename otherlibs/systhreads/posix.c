@@ -113,17 +113,21 @@ static void caml_thread_scan_roots(scanning_action action)
 {
   caml_thread_t th;
 
-  /* Scan the stacks, except that of the current thread (already done). */
-  for (th = curr_thread->next; th != curr_thread; th = th->next) {
+  th = curr_thread;
+  do {
     (*action)(th->descr, &th->descr);
+    /* Don't rescan the stack of the current thread, it was done already */
+    if (th != curr_thread) {
 #ifdef NATIVE_CODE
-    if (th->bottom_of_stack == NULL) continue;
-    do_local_roots(action, th->last_return_address,
-                   th->bottom_of_stack, th->local_roots);
+      if (th->bottom_of_stack == NULL) continue;
+      do_local_roots(action, th->last_return_address,
+                     th->bottom_of_stack, th->local_roots);
 #else
-    do_local_roots(action, th->sp, th->stack_high, th->local_roots);
+      do_local_roots(action, th->sp, th->stack_high, th->local_roots);
 #endif
-  }
+    }
+    th = th->next;
+  } while (th != curr_thread);
   /* Hook */
   if (prev_scan_roots_hook != NULL) (*prev_scan_roots_hook)(action);
 }
@@ -260,7 +264,7 @@ static void caml_thread_cleanup(void * arg)
   /* Free the thread descriptor */
   stat_free((char *) th);
   /* Release the main mutex */
-  pthread_mutex_unlock(&caml_mutex);
+  enter_blocking_section();
 }
 
 /* Initialize the thread machinery */

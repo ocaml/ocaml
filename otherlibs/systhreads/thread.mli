@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-(* Module [Thread]: lightweight threads for Win32 *)
+(* Module [Thread]: lightweight threads for Posix 1003.1c and Win32 *)
 
 type t
         (* The type of thread handles. *)
