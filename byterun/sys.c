@@ -241,9 +241,12 @@ char * searchpath(name)
   path = getenv("PATH");
   if (path == NULL) return 0;
   fullname = stat_alloc(strlen(name) + strlen(path) + 6);
+  strcpy(fullname, name);
+  strcat(fullname, ".exe");
+  if (stat(fullname, &st) == 0) return fullname;
   while(1) {
     for (p = fullname; *path != 0 && *path != ';'; p++, path++) *p = *path;
-    if (p != fullname) *p++ = '\\';
+    if (p != fullname && p[-1] != '\\') *p++ = '\\';
     for (q = name; *q != 0; p++, q++) *p = *q;
     *p = 0;
     if (stat(fullname, &st) == 0) break;
