@@ -194,3 +194,21 @@ CAMLprim value oo_get_public_method (value obj, value tag)
   }
   return Field (meths, li+1);
 }
+
+CAMLprim value oo_cache_public_method (value meths, value tag,
+                                       value cache, value index)
+{
+  value n = Int_val(index);
+  value tags = Field (meths, 0);
+  value met;
+  int li = 0, hi = Wosize_val(tags)-1, mi;
+  while (li < hi) {
+    mi = (li+hi+1) >> 1;
+    if (tag < Field(tags,mi)) hi = mi-1;
+    else li = mi;
+  }
+  modify (&Field(cache, n), meths);
+  met = Field (meths, li+1);
+  modify (&Field(cache, n+1), met);
+  return met;
+}

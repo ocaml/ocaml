@@ -457,10 +457,31 @@ let rec close fenv cenv = function
       | ((ufunct, _), uargs) ->
           (Ugeneric_apply(ufunct, uargs), Value_unknown)
       end
-  | Lsend(kind, met, obj, args) ->
+  | Lsend(Self, met, obj, args) ->
       let (umet, _) = close fenv cenv met in
       let (uobj, _) = close fenv cenv obj in
-      (Usend(kind, umet, uobj, close_list fenv cenv args), Value_unknown)
+      (Usend(Self, umet, uobj, close_list fenv cenv args), Value_unknown)
+  | Lsend(Public, met, obj, args) ->
+      let self = Ident.create "obj" in
+      let prim kind arity =
+        {prim_name = "oo_"^kind^"_public_method"; prim_arity = arity;
+         prim_alloc = false; prim_native_name = ""; prim_native_float = false}
+      in
+      let imet = Ident.create "met" and imeths = Ident.create "meths" in
+      let met, args =
+        match args with
+          (Lprim(Pfield n, [cache]) as key) :: args ->
+            (Llet(Alias, imeths, Lprim(Pfield 0, [Lvar self]),
+                  Lifthenelse(
+                  Lprim(Pintcomp Cneq, [key; Lvar imeths]),
+                  Lprim(Pccall (prim "cache" 4),
+                        [Lvar imeths; met; cache; Lconst(Const_pointer n)]),
+                  Lprim(Pfield (n+1), [cache]))),
+             args)
+        | _ ->
+            (Lprim (Pccall (prim "get" 2), [Lvar self; met]), args)
+      in
+      close fenv cenv (Llet(Alias, self, obj, Lapply(met, Lvar self :: args)))
   | Llet(str, id, lam, body) ->
       let (ulam, alam) = close_named fenv cenv id lam in
       begin match (str, alam) with

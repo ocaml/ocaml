@@ -659,12 +659,23 @@ and transl_exp0 e =
         (Lifthenelse(transl_exp cond, event_before body (transl_exp body),
                      staticfail))
   | Texp_send(expr, met) ->
+      (*
       let (kind, met) =
         match met with
           Tmeth_name nm -> (Public, Translobj.meth nm)
         | Tmeth_val id  -> (Self, Lvar id)
       in
       event_after e (Lsend (kind, met, transl_exp expr, []))
+      *)
+      let obj = transl_exp expr in
+      let lam =
+        match met with 
+          Tmeth_val id -> Lsend (Self, Lvar id, obj, [])
+        | Tmeth_name nm ->
+            let (tag, cache) = Translobj.meth nm in
+            Lsend (Public, tag, obj, cache)
+      in
+      event_after e lam
   | Texp_new (cl, _) ->
       Lapply(Lprim(Pfield 0, [transl_path cl]), [lambda_unit])
   | Texp_instvar(path_self, path) ->

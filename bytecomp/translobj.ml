@@ -13,6 +13,7 @@
 (* $Id$ *)
 
 open Misc
+open Primitive
 open Asttypes
 open Longident
 open Lambda
@@ -44,27 +45,30 @@ let share c =
 
 (* Collect labels *)
 
-let used_methods = ref ([] : (string * Ident.t) list);;
+let method_cache = Ident.create "meth_cache"
+let method_count = ref 0
 
-let meth s = Lconst(Const_base(Const_int(Btype.hash_variant s)))
+let meth_tag s = Lconst(Const_base(Const_int(Btype.hash_variant s)))
 
-(*
 let meth lab =
-  try
-    List.assoc lab !used_methods
-  with Not_found ->
-    let id = Ident.create lab in
-    used_methods := (lab, id)::!used_methods;
-    id
-*)
+  let tag = meth_tag lab in
+  if not !Clflags.native_code then (tag, []) else
+  let n = !method_count in
+  incr method_count;
+  (tag, [Lprim(Pfield (2*n), [Lvar method_cache])])
 
 let reset_labels () =
   Hashtbl.clear consts;
-  used_methods := []
+  method_count := 0
 
 (* Insert labels *)
 
 let string s = Lconst (Const_base (Const_string s))
+let int n = Lconst (Const_base (Const_int n))
+
+let prim_makearray =
+  { prim_name = "make_vect"; prim_arity = 2; prim_alloc = true;
+    prim_native_name = ""; prim_native_float = false }
 
 let transl_label_init expr =
   let expr =
@@ -73,14 +77,10 @@ let transl_label_init expr =
       consts expr
   in
   let expr =
-    if !used_methods = [] then expr else
-    let init = Ident.create "new_method" in
-    Llet(StrictOpt, init, oo_prim "new_method",
-         List.fold_right
-           (fun (lab, id) expr ->
-             Llet(StrictOpt, id, Lapply(Lvar init, [string lab]), expr))
-           !used_methods
-           expr)
+    if !method_count = 0 then expr else
+    Llet(StrictOpt, method_cache,
+         Lprim (Pccall prim_makearray, [int (2 * !method_count); int 0]),
+         expr)
   in
   reset_labels ();
   expr

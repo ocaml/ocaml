@@ -671,7 +671,7 @@ let transl_class ids cl_id arity pub_meths cl =
   in
   *)
   let create_arg =
-   if not !Clflags.native_code then lambda_unit else Lconst(Const_pointer 1) in
+   if true || not !Clflags.native_code then lambda_unit else Lconst(Const_pointer 1) in
   let ltable table lam =
     Llet(Strict, table,
          Lapply (oo_prim "create_table",
