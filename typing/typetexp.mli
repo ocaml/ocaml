@@ -24,6 +24,11 @@ val transl_simple_type_delayed:
            the type and a function that binds the type variable. *)
 val transl_type_scheme:
         Env.t -> Parsetree.core_type -> Types.type_expr
+(* GENERIC
+val transl_type_scheme_pattern:
+        Env.t -> Parsetree.core_type -> Types.type_expr
+        (* Used for dynamic value pattern *)
+/GENERIC *)
 val reset_type_variables: unit -> unit
 val enter_type_variable: bool -> string -> Types.type_expr
 val type_variable : Location.t -> string -> Types.type_expr
