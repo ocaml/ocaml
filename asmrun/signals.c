@@ -336,46 +336,38 @@ DECLARE_SIGNAL_HANDLER(trap_handler)
 static char * system_stack_top;
 static char sig_alt_stack[SIGSTKSZ];
 
-static int is_stack_overflow(char * fault_addr)
+DECLARE_SIGNAL_HANDLER(segv_handler)
 {
   struct rlimit limit;
   struct sigaction act;
+  char * fault_addr;
 
   /* Sanity checks:
      - faulting address is word-aligned
-     - faulting address is within the stack */
-  if (((long) fault_addr & (sizeof(long) - 1)) == 0 &&
-      getrlimit(RLIMIT_STACK, &limit) == 0 &&
-      fault_addr < system_stack_top &&
-      fault_addr >= system_stack_top - limit.rlim_cur - 0x2000) {
-    /* OK, caller can turn this into a Stack_overflow exception */
-    return 1;
-  } else {
-    /* Otherwise, deactivate our exception handler.  Caller will
-       return, causing fatal signal to be generated at point of error. */
-    act.sa_handler = SIG_DFL;
-    act.sa_flags = 0;
-    sigemptyset(&act.sa_mask);
-    sigaction(SIGSEGV, &act, NULL);
-    return 0;
-  }
-}
-
-DECLARE_SIGNAL_HANDLER(segv_handler)
-{
-  if (is_stack_overflow(CONTEXT_FAULTING_ADDRESS)) {
-#if defined(CONTEXT_PC) \
- && defined(CONTEXT_YOUNG_PTR) \
- && defined(CONTEXT_EXCEPTION_POINTER)
-    if (In_code_area(CONTEXT_PC)) {
-      caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
-      caml_young_ptr = (char *) CONTEXT_YOUNG_PTR;
-      caml_raise_stack_overflow();
-    }
-#else
-    caml_raise_stack_overflow();
+     - faulting address is within the stack
+     - we are in Caml code */
+  fault_addr = CONTEXT_FAULTING_ADDRESS;
+  if (((long) fault_addr & (sizeof(long) - 1)) == 0
+      && getrlimit(RLIMIT_STACK, &limit) == 0
+      && fault_addr < system_stack_top
+      && fault_addr >= system_stack_top - limit.rlim_cur - 0x2000
+#ifdef CONTEXT_PC
+      && In_code_area(CONTEXT_PC)
 #endif
+      ) {
+    /* Turn this into a Stack_overflow exception */
+#if defined(CONTEXT_YOUNG_PTR) && defined(CONTEXT_EXCEPTION_POINTER)
+    caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
+    caml_young_ptr = (char *) CONTEXT_YOUNG_PTR;
+#endif
+    caml_raise_stack_overflow();
   }
+  /* Otherwise, deactivate our exception handler and return,
+     causing fatal signal to be generated at point of error. */
+  act.sa_handler = SIG_DFL;
+  act.sa_flags = 0;
+  sigemptyset(&act.sa_mask);
+  sigaction(SIGSEGV, &act, NULL);
 }
 
 #endif
