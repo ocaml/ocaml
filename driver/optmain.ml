@@ -15,21 +15,21 @@
 open Config
 open Clflags
 
-let process_interface_file name =
-  Optcompile.interface name
+let process_interface_file ppf name =
+  Optcompile.interface ppf name
 
-let process_implementation_file name =
-  Optcompile.implementation name;
+let process_implementation_file ppf name =
+  Optcompile.implementation ppf name;
   objfiles := (Filename.chop_extension name ^ ".cmx") :: !objfiles
 
-let process_file name =
+let process_file ppf name =
   if Filename.check_suffix name ".ml"
   or Filename.check_suffix name ".mlt" then begin
-    Optcompile.implementation name;
+    Optcompile.implementation ppf name;
     objfiles := (Filename.chop_extension name ^ ".cmx") :: !objfiles
   end
   else if Filename.check_suffix name !Config.interface_suffix then
-    Optcompile.interface name
+    Optcompile.interface ppf name
   else if Filename.check_suffix name ".cmx" 
        or Filename.check_suffix name ".cmxa" then
     objfiles := name :: !objfiles
@@ -56,7 +56,7 @@ let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
 let main () =
   native_code := true;
   c_compiler := Config.native_c_compiler;
-  Formatmsg.set_output Format.err_formatter;
+  let ppf = Format.err_formatter in
   try
     Arg.parse [
        "-a", Arg.Set make_archive, " Build a library";
@@ -72,11 +72,11 @@ let main () =
        "-i", Arg.Set print_types, " Print the inferred types";
        "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
              "<dir>  Add <dir> to the list of include directories";
-       "-impl", Arg.String process_implementation_file,
+       "-impl", Arg.String (process_implementation_file ppf),
              "<file>  Compile <file> as a .ml file";
        "-inline", Arg.Int(fun n -> inline_threshold := n * 8),
              "<n>  Set aggressiveness of inlining to <n>";
-       "-intf", Arg.String process_interface_file,
+       "-intf", Arg.String (process_interface_file ppf),
              "<file>  Compile <file> as a .mli file";
        "-intf-suffix", Arg.String (fun s -> Config.interface_suffix := s),
              "<file>  Suffix for interface file (default: .mli)";
@@ -136,9 +136,9 @@ let main () =
        "-dlinear", Arg.Set dump_linear, " (undocumented)";
        "-dstartup", Arg.Set keep_startup_file, " (undocumented)";
 
-       "-", Arg.String process_file,
+       "-", Arg.String (process_file ppf),
             "<file>  Treat <file> as a file name (even if it starts with `-')"
-      ] process_file usage;
+      ] (process_file ppf) usage;
     if !make_archive then begin
       Optcompile.init_path();
       Asmlibrarian.create_archive (List.rev !objfiles) !archive_name
@@ -149,7 +149,7 @@ let main () =
     end;
     exit 0
   with x ->
-    Opterrors.report_error x;
+    Opterrors.report_error ppf x;
     exit 2
 
 let _ = Printexc.catch main ()

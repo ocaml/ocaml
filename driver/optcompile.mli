@@ -14,8 +14,10 @@
 
 (* Compile a .ml or .mli file *)
 
-val interface: string -> unit
-val implementation: string -> unit
+open Format
+
+val interface: formatter -> string -> unit
+val implementation: formatter -> string -> unit
 val c_file: string -> unit
 
 val initial_env: unit -> Env.t

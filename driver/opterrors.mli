@@ -14,4 +14,4 @@
 
 (* Error report *)
 
-val report_error: exn -> unit
+val report_error: Format.formatter -> exn -> unit
