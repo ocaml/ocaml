@@ -811,7 +811,6 @@ module Analyser =
 	 Typedtree.Tclass_fun (pat, ident_exp_list, tt_class_expr2, partial)) ->
 	   (* we check that this is not an optional parameter with
 	      a default value. In this case, we look for the good parameter pattern *)
-	   prerr_endline ("label="^label);
 	   let (parameter, next_tt_class_exp) =
 	     match pat.Typedtree.pat_desc with
 	       Typedtree.Tpat_var ident when Name.from_ident ident = "*opt*" ->
