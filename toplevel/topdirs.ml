@@ -215,7 +215,9 @@ let dir_trace ppf lid =
     | _ ->
         let clos = eval_path path in
         (* Nothing to do if it's not a closure *)
-        if Obj.is_block clos && Obj.tag clos = Obj.closure_tag then begin
+        if Obj.is_block clos
+        && (Obj.tag clos = Obj.closure_tag || Obj.tag clos = Obj.infix_tag)
+        then begin
         match is_traced clos with
         | Some opath ->
             fprintf ppf "%a is already traced (under the name %a).@."
