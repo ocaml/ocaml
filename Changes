@@ -51,6 +51,7 @@ Standard library:
   quasi-linearly-allocated inputs.
 
 Other libraries:
+- Num: fixed bug in big integer exponentiation (Big_int.power_*).
 
 Windows port:
 - New GUI for interactive toplevel (Jacob Navia).
@@ -58,6 +59,7 @@ Windows port:
   (Jacob Navia).
 - Unix library: improved reporting of system error codes.
 - Fixed error in "globbing" of * and ? patterns on command line.
+
 
 Objective Caml 3.03 ALPHA:
 --------------------------
