@@ -73,10 +73,10 @@ val parse : keywords:(string * spec * string) list ->
     For the user to be able to specify anonymous arguments starting with a
     [-], include for example [("-", String anonfun, doc)] in [speclist].
 
-    By default, [parse] recognizes a unit option [-help], which will
-    display [usage_msg] and the list of options, and exit the program.
-    You can override this behaviour by specifying your own [-help]
-    option in [speclist].
+    By default, [parse] recognizes two unit options, [-help] and [--help],
+    which will display [usage_msg] and the list of options, and exit
+    the program.  You can override this behaviour by specifying your
+    own [-help] and [--help] options in [speclist].
 *)
 
 exception Bad of string

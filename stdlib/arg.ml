@@ -44,6 +44,8 @@ let usage speclist errmsg =
   List.iter (function (key, _, doc) -> eprintf "  %s %s\n" key doc) speclist;
   try ignore (assoc3 "-help" speclist)
   with Not_found -> eprintf "  -help  display this list of options\n";
+  try ignore (assoc3 "--help" speclist)
+  with Not_found -> eprintf "  --help display this list of options\n";
 ;;
 
 let current = ref 0;;
@@ -55,6 +57,7 @@ let parse speclist anonfun errmsg =
       if initpos < Array.length Sys.argv then Sys.argv.(initpos) else "(?)" in
     begin match error with
       | Unknown "-help" -> ()
+      | Unknown "--help" -> ()
       | Unknown s ->
           eprintf "%s: unknown option `%s'.\n" progname s
       | Missing s ->
@@ -66,7 +69,9 @@ let parse speclist anonfun errmsg =
           eprintf "%s: %s.\n" progname s
     end;
     usage speclist errmsg;
-    exit (if error = (Unknown "-help") then 0 else 2);
+    if error = Unknow "-help" || error = Unknown "--help"
+    then exit 0
+    else exit 2
   in
   let l = Array.length Sys.argv in
   incr current;

@@ -61,19 +61,15 @@ let int bound =
 let float bound = rawfloat () *. bound
 
 (* Simple initialisation.  The seed is an integer.
-   Two seeds that are close enough will not produce uncorrelated
-   pseudo-random sequences.
 *)
 let init seed =
-  let st = ref seed in
-  let mdg () =
-    st := !st + 1;
-    let d = Digest.string (string_of_int !st) in
+  let mdg i =
+    let d = Digest.string (string_of_int i ^ string_of_int seed) in
     (Char.code d.[0] + (Char.code d.[1] lsl 8) + (Char.code d.[2] lsl 16))
     lxor (Char.code d.[3] lsl 22)
   in
   for i = 0 to 54 do
-    state.(i) <- (mdg ())
+    state.(i) <- (mdg i)
   done;
   index := 0
 
