@@ -15,6 +15,11 @@ BYTE_EXE=fib.byt takc.byt taku.byt sieve.byt quicksort.byt quicksort.fast.byt \
 
 CODE_EXE=$(BYTE_EXE:.byt=.out)
 
+default:
+	make all
+	make test bytetest
+	#cd Moretest; make
+
 all: $(BYTE_EXE) $(CODE_EXE)
 
 # Nucleic
