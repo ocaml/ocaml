@@ -13,6 +13,7 @@
 (*                                                                       *)
 (*************************************************************************)
 
+(* $Id$ *)
 
 external internal_tracevis : string -> string -> unit
         = "camltk_wait_vis"

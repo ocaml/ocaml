@@ -12,6 +12,8 @@
 (*                                                                       *)
 (*************************************************************************)
 
+(* $Id$ *)
+
 (* Some CamlTk4 Demonstration by JPF *)
 
 (* First, open these modules for convenience *)

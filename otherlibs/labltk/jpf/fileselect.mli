@@ -11,9 +11,9 @@
 (*                                                                       *)
 (*************************************************************************)
 
-open Support
+(* $Id$ *)
 
-(* fileselect.mli *)
+open Support
 
 val f :
   title:string ->

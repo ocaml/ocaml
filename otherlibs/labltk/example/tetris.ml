@@ -12,8 +12,10 @@
 (*                                                                       *)
 (*************************************************************************)
 
-(* tetris.ml : a Tetris game for LablTk *)
-(* written by Jun P. Furuse             *)
+(* $Id$ *)
+
+(* A Tetris game for LablTk *)
+(* written by Jun P. Furuse *)
 
 open Tk
 

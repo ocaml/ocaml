@@ -12,6 +12,8 @@
 (*                                                                       *)
 (*************************************************************************)
 
+(* $Id$ *)
+
 (* LablTk4 Demonstration by JPF *)
 
 (* First, open this modules for convenience *)
