@@ -141,20 +141,16 @@ let primitives_table = create_hashtable 31 [
 ]
 
 let has_base_type exp base_ty =
-  (* Do not expand abbreviations here, to avoid bringing in external
-     interfaces that are not strictly necessary. This results in sligthly
-     suboptimal code. The correct way of doing this would be to
-     consult the type definition (as in array_element_kind below)
-     to return false if exp.exp_type is a variant or record type. *)
-  match ((Ctype.repr exp.exp_type).desc, (Ctype.repr base_ty).desc) with
-    (Tconstr(p1, [], _), Tconstr(p2, [], _)) -> Path.same p1 p2
+  let exp_ty = Ctype.expand_head exp.exp_env exp.exp_type in
+  match (Ctype.repr exp_ty, Ctype.repr base_ty) with
+    {desc = Tconstr(p1, _, _)}, {desc = Tconstr(p2, _, _)} -> Path.same p1 p2
   | (_, _) -> false
 
 let maybe_pointer arg =
   not(has_base_type arg Predef.type_int or has_base_type arg Predef.type_char)
 
-let rec array_element_kind env ty =
-  let ty = Ctype.repr ty in
+let array_element_kind env ty =
+  let ty = Ctype.repr (Ctype.expand_head env ty) in
   match ty.desc with
     Tvar ->
       Pgenarray
@@ -163,19 +159,14 @@ let rec array_element_kind env ty =
         Pintarray
       else if Path.same p Predef.path_float then
         Pfloatarray
-      else if Path.same p Predef.path_string ||
-              Path.same p Predef.path_array then
+      else if Path.same p Predef.path_string
+           || Path.same p Predef.path_array then
         Paddrarray
       else begin
         try
           match Env.find_type p env with
             {type_kind = Type_abstract} ->
-              begin try
-                array_element_kind env
-                  (Ctype.expand_abbrev env p args abbrev ty.level)
-              with Ctype.Cannot_expand ->
-                Pgenarray
-              end
+              Pgenarray
           | {type_kind = Type_variant cstrs}
             when List.for_all (fun (name, args) -> args = []) cstrs ->
               Pintarray
@@ -187,7 +178,8 @@ let rec array_element_kind env ty =
              Maybe we should emit a warning. *)
           Pgenarray
       end
-  | _ -> Paddrarray
+  | _ ->
+      Paddrarray
 
 let array_kind arg =
   let ty = Ctype.correct_levels arg.exp_type in

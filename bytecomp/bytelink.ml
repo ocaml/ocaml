@@ -122,16 +122,19 @@ let crc_interfaces =
 let check_consistency file_name cu =
   List.iter
     (fun (name, crc) ->
-      try
-        let (auth_name, auth_crc) = Hashtbl.find crc_interfaces name in
-        if crc <> auth_crc then
-          raise(Error(Inconsistent_import(name, file_name, auth_name)))
-      with Not_found ->
-        (* Can only happen for unit for which only a .cmi file was used,
-           but no .cmo is provided *)
-        Hashtbl.add crc_interfaces name (file_name, crc))
-    cu.cu_imports;
-  Hashtbl.add crc_interfaces cu.cu_name (file_name, cu.cu_interface)
+      if name = cu.cu_name then begin
+        Hashtbl.add crc_interfaces name (file_name, crc)
+      end else begin
+        try
+          let (auth_name, auth_crc) = Hashtbl.find crc_interfaces name in
+          if crc <> auth_crc then
+            raise(Error(Inconsistent_import(name, file_name, auth_name)))
+        with Not_found ->
+          (* Can only happen for unit for which only a .cmi file was used,
+             but no .cmo is provided *)
+          Hashtbl.add crc_interfaces name (file_name, crc)
+      end)
+    cu.cu_imports
 
 (* Relocate and record compilation events *)
 
@@ -342,7 +345,7 @@ let build_custom_runtime prim_name exec_name =
       raise(Error(File_not_found libname)) in
   match Sys.os_type with
     "Unix" ->
-      Sys.command
+      Ccomp.command
        (Printf.sprintf
           "%s -o %s -I%s %s %s -L%s %s %s %s"
           Config.bytecomp_c_compiler
@@ -355,7 +358,7 @@ let build_custom_runtime prim_name exec_name =
           runtime_lib
           Config.c_libraries)
   | "Win32" ->
-      Sys.command
+      Ccomp.command
        (Printf.sprintf
           "%s /Fe%s -I%s %s %s %s %s %s"
           Config.bytecomp_c_compiler
@@ -386,20 +389,20 @@ let build_custom_runtime prim_name exec_name =
       and objs68k = extract ".o" (List.rev !Clflags.ccobjs)
       and objsppc = extract ".x" (List.rev !Clflags.ccobjs)
       in
-      Sys.command (Printf.sprintf "%s -i \"%s\" %s \"%s\" -o \"%s.o\""
+      Ccomp.command (Printf.sprintf "%s -i \"%s\" %s \"%s\" -o \"%s.o\""
 	c68k
 	Config.standard_library
 	(String.concat " " (List.rev !Clflags.ccopts))
 	prim_name
 	prim_name);
-      Sys.command (Printf.sprintf "%s -i \"%s\" %s \"%s\" -o \"%s.x\""
+      Ccomp.command (Printf.sprintf "%s -i \"%s\" %s \"%s\" -o \"%s.x\""
 	cppc
 	Config.standard_library
 	(String.concat " " (List.rev !Clflags.ccopts))
 	prim_name
 	prim_name);
-      Sys.command ("delete -i \""^exec_name^"\"");
-      Sys.command (Printf.sprintf
+      Ccomp.command ("delete -i \""^exec_name^"\"");
+      Ccomp.command (Printf.sprintf
 	"%s -t MPST -c 'MPS ' -o \"%s\" \"%s.o\" \"%s\" \"%s\" %s"
 	link68k
 	exec_name
@@ -407,7 +410,7 @@ let build_custom_runtime prim_name exec_name =
 	(String.concat "\" \"" objs68k)
 	(Filename.concat Config.standard_library "libcamlrun.o")
         libs68k);
-      Sys.command (Printf.sprintf
+      Ccomp.command (Printf.sprintf
 	"%s -t MPST -c 'MPS ' -o \"%s\" \"%s.x\" \"%s\" \"%s\" %s"
 	linkppc
 	exec_name
@@ -421,11 +424,11 @@ let build_custom_runtime prim_name exec_name =
 let append_bytecode_and_cleanup bytecode_name exec_name prim_name =
   match Sys.os_type with
     "MacOS" ->
-      Sys.command (Printf.sprintf
+      Ccomp.command (Printf.sprintf
           "mergefragment -c -t Caml \"%s\"" bytecode_name);
-      Sys.command (Printf.sprintf
+      Ccomp.command (Printf.sprintf
           "mergefragment \"%s\" \"%s\"" bytecode_name exec_name);
-      Sys.command (Printf.sprintf
+      Ccomp.command (Printf.sprintf
           "delete -i \"%s\" \"%s\" \"%s.o\" \"%s.x\""
           bytecode_name prim_name prim_name prim_name);
       ()

@@ -36,7 +36,6 @@ type compilation_unit =
     mutable cu_pos: int;                (* Absolute position in file *)
     cu_codesize: int;                   (* Size of code block *)
     cu_reloc: (reloc_info * int) list;  (* Relocation information *)
-    cu_interface: Digest.t;             (* CRC of interface implemented *)
     cu_imports: (string * Digest.t) list; (* Names and CRC of intfs imported *)
     cu_primitives: string list;         (* Primitives declared inside *)
     mutable cu_force_link: bool;        (* Must be linked even if unref'ed *)
@@ -297,7 +296,7 @@ let rec emit = function
 
 (* Emission to a file *)
 
-let to_file outchan unit_name crc_interface code =
+let to_file outchan unit_name code =
   init();
   output_string outchan cmo_magic_number;
   let pos_depl = pos_out outchan in
@@ -317,7 +316,6 @@ let to_file outchan unit_name crc_interface code =
       cu_pos = pos_code;
       cu_codesize = !out_position;
       cu_reloc = List.rev !reloc_info;
-      cu_interface = crc_interface;
       cu_imports = Env.imported_units();
       cu_primitives = !Translmod.primitive_declarations;
       cu_force_link = false;
