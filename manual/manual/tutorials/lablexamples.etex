@@ -223,7 +223,23 @@ In practive, such problems appear mostly when using objects whose
 methods have optional arguments, so that writing the type of object
 arguments is often a good idea.
 
-In one specific case, 
+Normally the compiler will report a type error if you attempt to pass
+to a function a parameter whose type is different from the expected
+one, even if the difference is only in the order of labels. However,
+in the specific case where the expected type is a non-labeled function
+type, and the argument is a function expecting optional parameters,
+the compiler will attempt to transform the argument to have it match
+the expected type, by passing "None" for all optional parameters.
+
+\begin{caml_example}
+let twice f x = f(f x);;
+twice bump 2;;
+\end{caml_example}
+
+This transformation is coherent with the intended semantics. That is,
+if the application of optional parameters shall produce side-effects,
+these are delayed until the received function is really applied to an
+non-labeled argument.
 
 \subsection{Suggestions for labeling}
 
@@ -417,3 +433,24 @@ let eval2 eval = function
 let rec eval x = eval2 eval x ;;
 \end{caml_example}
 
+To make this even more confortable, you may use type definitions as
+abbreviations for or-patterns. That is, if you have defined "type
+myvariant = [`Tag1 int | `Tag2 bool]", then the pattern "#myvariant" is
+equivalent to writing "(`Tag1(_ : int) | `Tag2(_ : bool))".
+\begin{caml_eval}
+type myvariant = [`Tag1 int | `Tag2 bool];;
+\end{caml_eval}
+
+Such abbreviations may be used alone,
+\begin{caml_example}
+let f = function
+  | #myvariant -> "myvariant"
+  | `Tag3 -> "Tag3";;
+\end{caml_example}
+or combined with with aliases.
+\begin{caml_example}
+let g1 = function `Tag1 _ -> "Tag1" | `Tag2 _ -> "Tag2";;
+let g = function
+  | #myvariant as x -> g1 x
+  | `Tag3 -> "Tag3";;
+\end{caml_example}

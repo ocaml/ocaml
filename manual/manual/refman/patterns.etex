@@ -13,6 +13,7 @@ pattern:
   | pattern '|' pattern
   | ncconstr pattern
   | "`"tag-name pattern
+  | "#"typeconstr-name
   | pattern { ',' pattern }
   | '{' field '=' pattern { ';' field '=' pattern } '}'
   | '[' pattern { ';' pattern } ']'
@@ -96,9 +97,17 @@ respectively. This pattern behaves like
 
 \subsubsection*{Polymorphic variant patterns}
 
-The pattern @"`"tag-name pattern_1@ matches all polymorphic variants
+The pattern @"`tag-name" pattern_1@ matches all polymorphic variants
 whose tag is equal to @tag-name@, and whose argument matches
 @pattern_1@.
+
+\subsubsection*{Variant abbreviation patterns}
+
+If the type @["('a,'b,...)"] typeconstr = "[`tag"_1 t_1 "|"
+\ldots "|" "`tag"_n t_n"]"@ is defined, then the pattern @\#typeconstr@
+is a shorthand for the or-pattern @"(`tag"_1"(_" ":" t_1")" "|"
+\ldots "|" "`tag"_n"(_" ":" t_n"))"@. It matches all values of type
+@\#typeconstr@.
 
 \subsubsection*{Tuple patterns}
 

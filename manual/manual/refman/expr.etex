@@ -71,6 +71,8 @@ pattern-matching:
     pattern ['when' expr] '->' expr
     { '|' pattern ['when' expr] '->' expr }
 ;
+\end{syntax}
+\begin{syntax}
 multiple-matching:
     {{ parameter }} ['when' expr] '->' expr
 ;
