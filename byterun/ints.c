@@ -263,6 +263,10 @@ CAMLexport int64 Int64_val(value v)
   return buffer.j;
 }
 
+CAMLexport void Store_int64(value v, int64 i)
+{
+}
+
 #endif
 
 static int int64_compare(value v1, value v2)
@@ -286,7 +290,14 @@ static void int64_serialize(value v, unsigned long * wsize_32,
 
 static unsigned long int64_deserialize(void * dst)
 {
+#ifndef ARCH_ALIGN_INT64
   *((int64 *) dst) = deserialize_sint_8();
+#else
+  union { int32 i[2]; int64 j; } buffer;
+  buffer.j = deserialize_sint_8();
+  ((int32 *) dst)[0] = buffer.i[0];
+  ((int32 *) dst)[1] = buffer.i[1];
+#endif
   return 8;
 }
 
