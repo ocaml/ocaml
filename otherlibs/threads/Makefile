@@ -15,7 +15,7 @@
 include ../../config/Makefile
 
 CC=$(BYTECC)
-CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
+CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) -g
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../unix
 
 C_OBJS=scheduler.o
@@ -27,7 +27,7 @@ LIB=../../stdlib
 LIB_OBJS=pervasives.cmo \
   $(LIB)/array.cmo $(LIB)/list.cmo $(LIB)/char.cmo $(LIB)/string.cmo \
   $(LIB)/sys.cmo $(LIB)/hashtbl.cmo $(LIB)/sort.cmo \
-  $(LIB)/marshal.cmo $(LIB)/obj.cmo \
+  marshal.cmo $(LIB)/obj.cmo \
   $(LIB)/lexing.cmo $(LIB)/parsing.cmo \
   $(LIB)/set.cmo $(LIB)/map.cmo $(LIB)/stack.cmo $(LIB)/queue.cmo \
   $(LIB)/stream.cmo $(LIB)/buffer.cmo \
@@ -61,12 +61,21 @@ pervasives.mli: $(LIB)/pervasives.mli
 pervasives.cmi: $(LIB)/pervasives.cmi
 	ln -s $(LIB)/pervasives.cmi pervasives.cmi
 
+marshal.cmo: marshal.mli marshal.cmi marshal.ml
+	$(CAMLC) -c marshal.ml
+
+marshal.mli: $(LIB)/marshal.mli
+	ln -s $(LIB)/marshal.mli marshal.mli
+
+marshal.cmi: $(LIB)/marshal.cmi
+	ln -s $(LIB)/marshal.cmi marshal.cmi
+
 partialclean:
 	rm -f *.cm*
 
 clean: partialclean
 	rm -f libthreads.a *.o
-	rm -f pervasives.mli
+	rm -f pervasives.mli marshal.mli
 
 install:
 	cp libthreads.a $(LIBDIR)/libthreads.a
