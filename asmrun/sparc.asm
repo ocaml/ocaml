@@ -296,9 +296,12 @@ L108:
         Load(Caml_last_return_address, %l1)
         std     %l0, [%sp + 96]
     /* Set up a trap frame to catch exceptions escaping the Caml code */
-        sub     %sp, 8, %sp
+        call    L111
+        mov     %o7, %g4        /* in delay slot */
+        b       L110
+        nop
+L111:   sub     %sp, 8, %sp
         Load(Caml_exception_pointer, %g5)
-        Address(L110, %g4)
         std     %g4, [%sp + 96]
         mov     %sp, %g5
     /* Reload allocation pointers */
