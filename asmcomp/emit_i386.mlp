@@ -442,6 +442,7 @@ let emit_instr i =
             `	fistpl	(%esp)\n`;
             `	movl	(%esp), {emit_reg i.res.(0)}\n`
         end;
+        `	fldcw	4(%esp)\n`;
         `	addl	$8, %esp\n`;
         stack_offset := !stack_offset + 8
     | Lop(Ispecific(Ilea addr)) ->
