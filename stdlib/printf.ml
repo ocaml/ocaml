@@ -41,7 +41,7 @@ let parse_format format =
    on the right if [neg] is true, on the left otherwise. *)
 let pad_string pad_char p neg s i len =
   if p = len && i = 0 then s else
-  if p <= len then String.sub s i p else
+  if p <= len then String.sub s i len else
   let res = String.make p pad_char in
   if neg
   then String.blit s i res 0 len
