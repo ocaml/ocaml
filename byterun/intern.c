@@ -299,7 +299,16 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     intern_color = allocation_color(intern_extra_block);
     intern_dest = intern_extra_block;
   } else {
-    intern_block = alloc(wosize, String_tag);
+    /* this is a specialised version of alloc from alloc.c */
+    if (wosize == 0){
+      intern_block = Atom (String_tag);
+    }else if (wosize <= Max_young_wosize){
+      intern_block = alloc_small (wosize, String_tag);
+    }else{
+      intern_block = alloc_shr (wosize, String_tag);
+      /* do not do the urgent_gc check here because it might darken
+         intern_block into gray and break the Assert 3 lines down */
+    }
     intern_header = Hd_val(intern_block);
     intern_color = Color_hd(intern_header);
     Assert (intern_color == Caml_white || intern_color == Caml_black);
