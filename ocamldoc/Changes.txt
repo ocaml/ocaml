@@ -44,7 +44,11 @@ OK - fix: bad display of type parameters for class and class types
 
 TODO:
  - need to fix display of type parameters for inherited classes/class types
-
+OK - add the kind to module parameters (the way the parameter was build in the parsetree)
+ - generate html from module_kind rather than from module_type
+   + pareil pour les classes et class types 
+OK + utilisation de blocs div pour indenter
+ - latex: style latex pour indenter dans les module kind
 
 
 ======

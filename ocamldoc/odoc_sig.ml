@@ -1085,20 +1085,23 @@ module Analyser =
 	   print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
            match sig_module_type with
              Types.Tmty_functor (ident, param_module_type, body_module_type) ->
+	       let mp_kind = analyse_module_type_kind env 
+		   current_module_name pmodule_type2 param_module_type 
+	       in
                let param = 
                  {
                    mp_name = Name.from_ident ident ;
                    mp_type = Odoc_env.subst_module_type env param_module_type ;
 		   mp_type_code = mp_type_code ;
+		   mp_kind = mp_kind ;
                  } 
                in
-               (
-                match analyse_module_type_kind env current_module_name module_type2 body_module_type with
-                  Module_type_functor (params, k) ->
-                    Module_type_functor (param :: params, k)
-                | k ->
-                    Module_type_functor ([param], k)
-               )
+	       let k = analyse_module_type_kind env 
+		   current_module_name 
+		   module_type2 
+		   body_module_type 
+	       in
+               Module_type_functor (param, k)
 
            | _ ->
                (* if we're here something's wrong *)
@@ -1153,20 +1156,23 @@ module Analyser =
                let loc_end = pmodule_type2.Parsetree.pmty_loc.Location.loc_end.Lexing.pos_cnum in
 	       let mp_type_code = get_string_of_file loc_start loc_end in
 	       print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
+	       let mp_kind = analyse_module_type_kind env 
+		   current_module_name pmodule_type2 param_module_type 
+	       in
                let param = 
                  {
                    mp_name = Name.from_ident ident ;
                    mp_type = Odoc_env.subst_module_type env param_module_type ;
 		   mp_type_code = mp_type_code ;
+		   mp_kind = mp_kind ;
                  } 
                in
-               (
-                match analyse_module_kind env current_module_name module_type2 body_module_type with
-                  Module_functor (params, k) ->
-                    Module_functor (param :: params, k)
-                | k ->
-                    Module_functor ([param], k)
-               )
+               let k = analyse_module_kind env 
+		   current_module_name 
+		   module_type2 
+		   body_module_type 
+	       in
+               Module_functor (param, k)
                      
            | _ ->
                (* if we're here something's wrong *)

@@ -324,6 +324,7 @@ test_latex: dummy
 test_latex_simple: dummy
 	$(MKDIR) $@ 
 	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) \
+	-latextitle 6,subsection -latextitle 7,subsubection \
 	../stdlib/hashtbl.mli \
 	../stdlib/arg.mli \
 	../otherlibs/unix/unix.mli \

@@ -519,25 +519,24 @@ class virtual to_text =
           [Code ((if with_def_syntax then " : " else "")^
                  Odoc_messages.struct_end^" ")]
 
-      | Module_functor (_, k)  ->
+      | Module_functor (p, k)  ->
           (if with_def_syntax then [Code " : "] else []) @
           [Code "functor ... "] @
           [Code " -> "] @
           (self#text_of_module_kind ~with_def_syntax: false k)
 
-    (** Return html code for a [module_type_kind]. *)
+    (** Return html code for a [module_type_kind].*)
     method text_of_module_type_kind ?(with_def_syntax=true) tk =
       match tk with
       | Module_type_struct _ ->
           [Code ((if with_def_syntax then " = " else "")^Odoc_messages.sig_end)]
 
-      | Module_type_functor (params, k) ->
-          let f p = 
-            [Code ("("^p.mp_name^" : ")] @ 
-            (self#text_of_module_type p.mp_type) @
+      | Module_type_functor (p, k) ->
+          let t1 =
+	    [Code ("("^p.mp_name^" : ")] @ 
+            (self#text_of_module_type_kind p.mp_kind) @
             [Code ") -> "]
           in
-          let t1 = List.flatten (List.map f params) in
           let t2 = self#text_of_module_type_kind ~with_def_syntax: false k in
           (if with_def_syntax then [Code " = "] else []) @ t1 @ t2
           

@@ -138,14 +138,6 @@ module Parameter :
     (** A parameter is just a param_info.*)
     type parameter = param_info
 
-    (** A module parameter is just a name and a module type.*)
-    type module_parameter = Odoc_parameter.module_parameter =
-        {
-          mp_name : string ;
-          mp_type : Types.module_type ;
-	  mp_type_code : string ;
-        } 
-    
     (** {3 Functions} *)
     (** Acces to the name as a string. For tuples, parenthesis and commas are added. *)
     val complete_name : parameter -> string
@@ -423,12 +415,19 @@ module Module :
           mutable ma_module : mmt option ; (** The real module or module type if we could associate it. *)
         } 
 
+    and module_parameter = Odoc_module.module_parameter = {
+	mp_name : string ; (** the name *)
+	mp_type : Types.module_type ; (** the type *)
+	mp_type_code : string ; (** the original code *)
+	mp_kind : module_type_kind ; (** the way the parameter was built *)
+      } 
+
     (** Different kinds of a module. *)
     and module_kind = Odoc_module.module_kind = 
       | Module_struct of module_element list (** A complete module structure. *)
       | Module_alias of module_alias (** Complete name and corresponding module if we found it *)
-      | Module_functor of (Parameter.module_parameter list) * module_kind 
-                     (** A functor, with {e all} its parameters and the rest of its definition *)
+      | Module_functor of module_parameter * module_kind 
+                     (** A functor, with its parameter and the rest of its definition *)
       | Module_apply of module_kind * module_kind
                      (** A module defined by application of a functor. *)
       | Module_with of module_type_kind * string
@@ -461,8 +460,8 @@ module Module :
     (** Different kinds of module type. *)
     and module_type_kind = Odoc_module.module_type_kind = 
       | Module_type_struct of module_element list (** A complete module signature. *)
-      | Module_type_functor of (Odoc_parameter.module_parameter list) * module_type_kind
-            (** A functor, with {e all} its parameters and the rest of its definition *)
+      | Module_type_functor of module_parameter * module_type_kind
+            (** A functor, with its parameter and the rest of its definition *)
       | Module_type_alias of module_type_alias
             (** Complete alias name and corresponding module type if we found it. *)
       | Module_type_with of module_type_kind * string
@@ -525,7 +524,7 @@ module Module :
     val module_is_functor : t_module -> bool
 
     (** The list of couples (module parameter, optional description). *)
-    val module_parameters : ?trans:bool-> t_module -> (Parameter.module_parameter * text option) list
+    val module_parameters : ?trans:bool-> t_module -> (module_parameter * text option) list
 
     (** The list of module comments. *)
     val module_comments : ?trans:bool-> t_module -> text list
@@ -572,7 +571,7 @@ module Module :
     val module_type_is_functor : t_module_type -> bool
 
     (** The list of couples (module parameter, optional description). *)
-    val module_type_parameters : ?trans:bool-> t_module_type -> (Parameter.module_parameter * text option) list
+    val module_type_parameters : ?trans:bool-> t_module_type -> (module_parameter * text option) list
 
     (** The list of module comments. *)
     val module_type_comments : ?trans:bool-> t_module_type -> text list

@@ -1425,14 +1425,20 @@ module Analyser =
 	   let loc_start = pmodule_type.Parsetree.pmty_loc.Location.loc_start.Lexing.pos_cnum in
            let loc_end = pmodule_type.Parsetree.pmty_loc.Location.loc_end.Lexing.pos_cnum in
 	   let mp_type_code = get_string_of_file loc_start loc_end in
-	   print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);	   
+	   print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
+	   let mp_name = Name.from_ident ident in
+	   let mp_kind = Sig.analyse_module_type_kind env 
+	       current_module_name pmodule_type mtyp
+	   in
            let param =
              {
-               mp_name = Name.from_ident ident ;
+               mp_name = mp_name ;
                mp_type = Odoc_env.subst_module_type env mtyp ;
-	       mp_type_code = mp_type_code ;	       
+	       mp_type_code = mp_type_code ;
+	       mp_kind = mp_kind ;
              } 
            in
+	   (* TODO: A VOIR CE __ *)
            let dummy_complete_name = Name.concat "__" param.mp_name in
            let new_env = Odoc_env.add_module env dummy_complete_name in
            let m_base2 = analyse_module 
@@ -1443,12 +1449,8 @@ module Analyser =
                p_module_expr2
                tt_module_expr2
            in
-           let kind = 
-             match m_base2.m_kind with
-               Module_functor (params, k) -> Module_functor (param :: params, m_base2.m_kind)
-             | k -> Module_functor ([param], k)
-           in
-           { m_base with m_kind = kind }
+           let kind = m_base2.m_kind in
+           { m_base with m_kind = Module_functor (param, kind) }
 
       | (Parsetree.Pmod_apply (p_module_expr1, p_module_expr2), 
          Typedtree.Tmod_apply (tt_module_expr1, tt_module_expr2, _))

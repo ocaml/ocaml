@@ -45,11 +45,18 @@ and module_alias = {
     mutable ma_module : mmt option ; (** the real module or module type if we could associate it *)
   } 
 
+and module_parameter = {
+    mp_name : string ; (** the name *)
+    mp_type : Types.module_type ; (** the type *)
+    mp_type_code : string ; (** the original code *)
+    mp_kind : module_type_kind ; (** the way the parameter was built *)
+  } 
+
 (** Different kinds of module. *)
 and module_kind =
   | Module_struct of module_element list 
   | Module_alias of module_alias (** complete name and corresponding module if we found it *)
-  | Module_functor of (Odoc_parameter.module_parameter list) * module_kind
+  | Module_functor of module_parameter * module_kind
   | Module_apply of module_kind * module_kind
   | Module_with of module_type_kind * string
   | Module_constraint of module_kind * module_type_kind
@@ -76,7 +83,7 @@ and module_type_alias = {
 (** Different kinds of module type. *)
 and module_type_kind =
   | Module_type_struct of module_element list 
-  | Module_type_functor of (Odoc_parameter.module_parameter list) * module_type_kind
+  | Module_type_functor of module_parameter * module_type_kind
   | Module_type_alias of module_type_alias (** complete name and corresponding module type if we found it *)
   | Module_type_with of module_type_kind * string (** the module type kind and the code of the with constraint *)
 
@@ -313,25 +320,21 @@ let module_comments ?(trans=true) m = comments (module_elements ~trans m)
 let rec module_type_parameters ?(trans=true) mt =
   let rec iter k =
     match k with
-      Some (Module_type_functor (params, _)) -> 
-        (
-         (* we create the couple (parameter, description opt), using
-            the description of the parameter if we can find it in the comment.*)
-         match mt.mt_info with
-           None ->
-             List.map (fun p -> (p, None)) params
-         | Some i ->
-             List.map 
-               (fun p ->
-                 try
-                   let d = List.assoc p.Odoc_parameter.mp_name i.Odoc_types.i_params in
-                   (p, Some d)
-                 with
-                   Not_found ->
-                     (p, None)
-               )
-               params
-        )
+      Some (Module_type_functor (p, k2)) -> 
+        let param =
+           (* we create the couple (parameter, description opt), using
+              the description of the parameter if we can find it in the comment.*)
+          match mt.mt_info with
+            None -> (p, None)
+          | Some i ->
+              try
+                let d = List.assoc p.mp_name i.Odoc_types.i_params in
+                (p, Some d)
+              with
+                Not_found ->
+                  (p, None)
+	in
+        param :: (iter (Some k2))
     | Some (Module_type_alias mta) ->
         if trans then
           match mta.mta_module with
@@ -352,45 +355,44 @@ let rec module_type_parameters ?(trans=true) mt =
   iter mt.mt_kind
 
 (** Access to the parameters, for a functor.
-  @param trans indicates if, for aliased modules, we must perform a transitive search.*)
+   @param trans indicates if, for aliased modules, we must perform a transitive search.*)
 and module_parameters ?(trans=true) m =
-  match m.m_kind with
-    Module_functor (params, _) -> 
-      (
-       (* we create the couple (parameter, description opt), using
-          the description of the parameter if we can find it in the comment.*)
-       match m.m_info with
-         None ->
-           List.map (fun p -> (p, None)) params
-       | Some i ->
-           List.map 
-             (fun p ->
-              try
-                let d = List.assoc p.Odoc_parameter.mp_name i.Odoc_types.i_params in
-                (p, Some d)
+  let rec iter = function
+      Module_functor (p, k) -> 
+	let param = 
+         (* we create the couple (parameter, description opt), using
+            the description of the parameter if we can find it in the comment.*)
+	  match m.m_info with
+            None ->(p, None)
+	  | Some i ->
+	      try
+		let d = List.assoc p.mp_name i.Odoc_types.i_params in
+		(p, Some d)
               with
-                Not_found ->
+		Not_found ->
                   (p, None)
-             )
-             params
-      )
-  | Module_alias ma ->
-      if trans then
-        match ma.ma_module with
-          None -> []
-        | Some (Mod m) -> module_parameters ~trans m
-        | Some (Modtype mt) -> module_type_parameters ~trans mt
-      else
-        []
-  | Module_constraint (k, tk) ->
-      module_type_parameters ~trans: trans
-        { mt_name = "" ; mt_info = None ; mt_type = None ;
-          mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
-          mt_loc = Odoc_types.dummy_loc }
-  | Module_struct _ 
-  | Module_apply _ 
-  | Module_with _ ->
-      []
+	in
+	param :: (iter k)
+
+    | Module_alias ma ->
+	if trans then
+          match ma.ma_module with
+            None -> []
+          | Some (Mod m) -> module_parameters ~trans m
+          | Some (Modtype mt) -> module_type_parameters ~trans mt
+	else
+          []
+    | Module_constraint (k, tk) ->
+	module_type_parameters ~trans: trans
+          { mt_name = "" ; mt_info = None ; mt_type = None ;
+            mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
+            mt_loc = Odoc_types.dummy_loc }
+    | Module_struct _ 
+    | Module_apply _ 
+    | Module_with _ ->
+	[]
+  in
+  iter m.m_kind
 
 (** access to all submodules and sudmobules of submodules ... of the given module.
   @param trans indicates if, for aliased modules, we must perform a transitive search.*)

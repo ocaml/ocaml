@@ -11,8 +11,7 @@
 
 (* $Id$ *)
 
-(** Representation and manipulation of method / function / class parameters,
-   and module parameters.*)
+(** Representation and manipulation of method / function / class parameters. *)
 
 let print_DEBUG s = print_string s ; print_newline ()
 
@@ -33,14 +32,6 @@ type param_info =
 
 (** A parameter is just a param_info.*)
 type parameter = param_info
-
-(** A module parameter is just a name and a module type.*)
-type module_parameter = {
-    mp_name : string ;
-    mp_type : Types.module_type ;
-    mp_type_code : string ;
-  } 
-
 
 (** Functions *)
 

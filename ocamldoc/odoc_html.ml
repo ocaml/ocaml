@@ -670,6 +670,8 @@ class html =
         "tr { background-color : White }" ;
 	"td.typefieldcomment { background-color : #FFFFFF }" ;
 	"pre { margin-bottom: 4px }" ;
+
+	"div.sig_block {margin-left: 2em}" ;
       ] 
       
     (** The style file for all pages. *)
@@ -1033,6 +1035,115 @@ class html =
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_module_idents_links m_name s);
       bs b "</code>"
+
+    (** Print html code to display the given module kind. *)
+    method html_of_module_kind b father ?modu kind =
+      match kind with
+	Module_struct eles ->
+	  self#html_of_text b [Code "sig"];
+	  (
+	   match modu with
+	     None -> 
+	       bs b "<div class=\"sig_block\">";
+	       List.iter (self#html_of_module_element b father) eles;
+	       bs b "</div>"
+	   | Some m ->
+	       let (html_file, _) = Naming.html_files m.m_name in
+	       bp b " <a href=\"%s\">..</a> " html_file	       
+	  );
+	  self#html_of_text b [Code "end"]
+      | Module_alias a ->
+	  bs b "<code class=\"type\">";
+	  bs b (self#create_fully_qualified_module_idents_links father a.ma_name);
+	  bs b "</code>"
+      | Module_functor (p, k) ->
+	  bs b "<div class=\"sig_block\">";
+	  self#html_of_module_parameter b father p;
+	  self#html_of_module_kind b father ?modu k;
+	  bs b "</div>"
+      | Module_apply (k1, k2) ->
+	  (* TODO: l'application n'est pas correcte dans un .mli. 
+	     Que faire ? -> afficher le module_type du typedtree  *)
+	  self#html_of_module_kind b father k1;
+	  self#html_of_text b [Code "("];
+	  self#html_of_module_kind b father k2;
+	  self#html_of_text b [Code ")"]
+      | Module_with (k, s) ->
+	  (* TODO: à modifier quand Module_with sera plus détaillé *)
+	  self#html_of_module_type_kind b father ?modu k;
+	  bs b "<code class=\"type\"> ";
+	  bs b (self#create_fully_qualified_module_idents_links father s);
+	  bs b "</code>"
+      | Module_constraint (k, tk) ->
+	  (* TODO: on affiche quoi ? *)
+	  self#html_of_module_kind b father ?modu k
+
+    method html_of_module_parameter b father p =
+      self#html_of_text b
+	[
+	  Code "functor (";
+	  Code p.mp_name ;
+	  Code " : ";
+	] ;
+      self#html_of_module_type_kind b father p.mp_kind;
+      self#html_of_text b [ Code ") -> "]
+
+    method html_of_module_element b father ele =
+      match ele with
+        Element_module m ->
+          self#html_of_module b ~complete: false m
+      | Element_module_type mt ->
+          self#html_of_modtype b ~complete: false mt
+      | Element_included_module im ->
+          self#html_of_included_module b im
+      | Element_class c ->
+          self#html_of_class b ~complete: false c
+      | Element_class_type ct ->
+          self#html_of_class_type b ~complete: false ct
+      | Element_value v ->
+          self#html_of_value b v
+      | Element_exception e ->
+          self#html_of_exception b e
+      | Element_type t ->
+          self#html_of_type b t
+      | Element_module_comment text ->
+          self#html_of_module_comment b text
+
+    (** Print html code to display the given module type kind. *)
+    method html_of_module_type_kind b father ?modu ?mt kind =
+      match kind with
+	Module_type_struct eles ->
+	  self#html_of_text b [Code "sig"];
+	  (
+	   match mt with
+	     None ->
+	       (
+		match modu with
+		  None ->
+		    bs b "<div class=\"sig_block\">";
+		    List.iter (self#html_of_module_element b father) eles;
+		    bs b "</div>"
+		| Some m ->
+		    let (html_file, _) = Naming.html_files m.m_name in
+		    bp b " <a href=\"%s\">..</a> " html_file
+	       )
+	   | Some mt ->
+	       let (html_file, _) = Naming.html_files mt.mt_name in
+	       bp b " <a href=\"%s\">..</a> " html_file
+	  );
+	  self#html_of_text b [Code "end"]
+      | Module_type_functor (p, k) ->
+	  self#html_of_module_parameter b father p;
+	  self#html_of_module_type_kind b father ?modu ?mt k
+      | Module_type_alias a ->
+	  bs b "<code class=\"type\">";
+	  bs b (self#create_fully_qualified_module_idents_links father a.mta_name);
+	  bs b "</code>"	  
+      | Module_type_with (k, s) ->
+	  self#html_of_module_type_kind b father ?modu ?mt k;
+	  bs b "<code class=\"type\"> ";
+	  bs b (self#create_fully_qualified_module_idents_links father s);
+	  bs b "</code>"
 
     (** Print html code to display the type of a module parameter.. *)
     method html_of_module_parameter_type b m_name p =
@@ -1415,7 +1526,7 @@ class html =
          bs b (Name.simple m.m_name)
       );
       bs b ": ";
-      self#html_of_module_type b father m.m_type;
+      self#html_of_module_kind b father ~modu: m m.m_kind;
       bs b "</pre>";
       if info then
         (
@@ -1439,11 +1550,11 @@ class html =
          else
          bs b (Name.simple mt.mt_name)
       );
-      (match mt.mt_type with
+      (match mt.mt_kind with
         None -> ()
-      | Some mtyp -> 
+      | Some k -> 
 	  bs b " = ";
-	  self#html_of_module_type b father mtyp
+	  self#html_of_module_type_kind b father ~mt k
       );
       bs b "</pre>";
       if info then
@@ -1873,28 +1984,8 @@ class html =
         (* a horizontal line *)
         bs b "<hr width=\"100%\">\n";
         (* module elements *)
-        List.iter 
-          (fun ele ->
-            match ele with
-              Element_module m ->
-                self#html_of_module b ~complete: false m
-            | Element_module_type mt ->
-                self#html_of_modtype b ~complete: false mt
-            | Element_included_module im ->
-                self#html_of_included_module b im
-            | Element_class c ->
-                self#html_of_class b ~complete: false c
-            | Element_class_type ct ->
-                self#html_of_class_type b ~complete: false ct
-            | Element_value v ->
-                self#html_of_value b v
-            | Element_exception e ->
-                self#html_of_exception b e
-            | Element_type t ->
-                self#html_of_type b t
-            | Element_module_comment text ->
-                self#html_of_module_comment b text
-          )
+        List.iter
+	  (self#html_of_module_element b (Name.father mt.mt_name))
           (Module.module_type_elements mt);
 
         bs b "</body></html>";
@@ -1971,28 +2062,7 @@ class html =
 
         (* module elements *)
         List.iter 
-          (fun ele ->
-            print_DEBUG "html#generate_for_module : ele ->";
-            match ele with
-              Element_module m ->
-                self#html_of_module b ~complete: false m
-            | Element_module_type mt ->
-                self#html_of_modtype b ~complete: false mt
-            | Element_included_module im ->
-                self#html_of_included_module b im
-            | Element_class c ->
-                self#html_of_class b ~complete: false c
-            | Element_class_type ct ->
-                self#html_of_class_type b ~complete: false ct
-            | Element_value v ->
-                self#html_of_value b v
-            | Element_exception e ->
-                self#html_of_exception b e
-            | Element_type t ->
-                self#html_of_type b t
-            | Element_module_comment text ->
-                self#html_of_module_comment b text
-          )
+          (self#html_of_module_element b (Name.father modu.m_name))
           (Module.module_elements modu);
 
         bs b "</body></html>";

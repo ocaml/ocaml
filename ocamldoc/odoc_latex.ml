@@ -214,11 +214,11 @@ class text =
     (** Return latex code for the ref to a given label. *)
     method make_ref label = "\\ref{"^label^"}"
 
-    (** Return the LaTeX code corresponding to the [text] parameter.*)
+    (** Print the LaTeX code corresponding to the [text] parameter.*)
     method latex_of_text fmt t = 
       List.iter (self#latex_of_text_element fmt) t
         
-    (** Return the LaTeX code for the [text_element] in parameter. *)
+    (** Print the LaTeX code for the [text_element] in parameter. *)
     method latex_of_text_element fmt te =
       match te with
       | Odoc_info.Raw s -> self#latex_of_Raw fmt s
@@ -388,7 +388,7 @@ class virtual info =
     (** The method used to get a [text] from an optionel info structure. *)
     method virtual text_of_info : ?block: bool -> Odoc_info.info option -> Odoc_info.text 
 
-    (** Return LaTeX code for a description, except for the [i_params] field. *)
+    (** Print LaTeX code for a description, except for the [i_params] field. *)
     method latex_of_info fmt info_opt = 
       self#latex_of_text fmt 
         (self#text_of_info ~block: false info_opt)
@@ -419,7 +419,7 @@ class latex =
                 let (_, rest) = Odoc_info.first_sentence_and_rest_of_text (self#text_of_info ~block: false i_opt) in
                 (Odoc_info.text_no_title_no_list first, rest)
 
-    (** Return LaTeX code for a value. *)
+    (** Print LaTeX code for a value. *)
     method latex_of_value fmt v = 
       Odoc_info.reset_type_names () ;
       let label = self#value_label v.val_name in
@@ -428,19 +428,19 @@ class latex =
         ((Latex latex) :: 
          (to_text#text_of_value v))
 
-    (** Return LaTeX code for a class attribute. *)
+    (** Print LaTeX code for a class attribute. *)
     method latex_of_attribute fmt a =
       self#latex_of_text fmt
         ((Latex (self#make_label (self#attribute_label a.att_value.val_name))) :: 
          (to_text#text_of_attribute a))
 
-    (** Return LaTeX code for a class method. *)
+    (** Print LaTeX code for a class method. *)
     method latex_of_method fmt m = 
       self#latex_of_text fmt
         ((Latex (self#make_label (self#method_label m.met_value.val_name))) :: 
          (to_text#text_of_method m))
 
-    (** Return LaTeX code for the parameters of a type. *)
+    (** Print LaTeX code for the parameters of a type. *)
     method latex_of_type_params fmt m_name t =
       let print_one (p, co, cn) =
 	ps fmt (Odoc_info.string_of_variance t (co,cn));
@@ -454,7 +454,7 @@ class latex =
 	  print_concat fmt ", " print_one t.ty_parameters;
 	  ps fmt ")"
 
-    (** Return LaTeX code for a type. *)
+    (** Print LaTeX code for a type. *)
     method latex_of_type fmt t =
       let s_name = Name.simple t.ty_name in
       let text = 
@@ -564,25 +564,22 @@ class latex =
       self#latex_of_text fmt
         ((Latex (self#make_label (self#type_label t.ty_name))) :: text)
 
-    (** Return LaTeX code for an exception. *)
+    (** Print LaTeX code for an exception. *)
     method latex_of_exception fmt e =
       Odoc_info.reset_type_names () ;
       self#latex_of_text fmt
         ((Latex (self#make_label (self#exception_label e.ex_name))) :: 
          (to_text#text_of_exception e))
 
-    method latex_of_module_parameter_list fmt m_name l =
-      let f p =
-	self#latex_of_text fmt 
-	  [
-	    Code "functor (";
-	    Code p.mp_name ;
-	    Code " : ";
-	    Code (self#normal_module_type ~code: p.mp_type_code m_name p.mp_type);
-	    Code ") -> "
-	  ] 
-      in
-      List.iter f l
+    method latex_of_module_parameter fmt m_name p =
+      self#latex_of_text fmt 
+	[
+	  Code "functor (";
+	  Code p.mp_name ;
+	  Code " : ";
+	] ;
+      self#latex_of_module_type_kind fmt m_name p.mp_kind;
+      self#latex_of_text fmt [ Code ") -> "]
 
 
     method latex_of_module_type_kind fmt father kind =
@@ -591,8 +588,8 @@ class latex =
 	  self#latex_of_text fmt [Code "sig\n"];
 	  List.iter (self#latex_of_module_element fmt father) eles;
 	  self#latex_of_text fmt [Code "end"]
-      | Module_type_functor (l, k) ->
-	  self#latex_of_module_parameter_list fmt father l;
+      | Module_type_functor (p, k) ->
+	  self#latex_of_module_parameter fmt father p;
 	  self#latex_of_module_type_kind fmt father k
       | Module_type_alias a ->
 	  self#latex_of_text fmt 
@@ -613,8 +610,8 @@ class latex =
       | Module_alias a ->
 	  self#latex_of_text fmt 
 	    [Code (self#relative_module_idents father a.ma_name)]
-      | Module_functor (l, k) ->
-	  self#latex_of_module_parameter_list fmt father l;
+      | Module_functor (p, k) ->
+	  self#latex_of_module_parameter fmt father p;
 	  self#latex_of_module_kind fmt father k
       | Module_apply (k1, k2) ->
 	  (* TODO: l'application n'est pas correcte dans un .mli. 
@@ -732,7 +729,7 @@ class latex =
     method latex_for_class_type_label fmt ct =
       ps fmt (self#make_label (self#class_type_label ct.clt_name))
 
-    (** Return the LaTeX code for the given module. *)
+    (** Print the LaTeX code for the given module. *)
     method latex_of_module fmt m =
       let father = Name.father m.m_name in
       let t = 
@@ -780,7 +777,7 @@ class latex =
       p fmt "@]";
 
 
-    (** Return the LaTeX code for the given module type. *)
+    (** Print the LaTeX code for the given module type. *)
     method latex_of_module_type fmt mt =
       let father = Name.father mt.mt_name in
       let t = 
@@ -835,7 +832,7 @@ class latex =
       self#latex_of_info fmt mt.mt_info;
       p fmt "@]";
 
-    (** Return the LaTeX code for the given included module. *)
+    (** Print the LaTeX code for the given included module. *)
     method latex_of_included_module fmt im =
       self#latex_of_text fmt
 	((Code "include ") ::
@@ -848,7 +845,7 @@ class latex =
 	 (self#text_of_info im.im_info)
         )
 
-    (** Return the LaTeX code for the given class. *)
+    (** Print the LaTeX code for the given class. *)
     method latex_of_class fmt c =
       Odoc_info.reset_type_names () ;
       let father = Name.father c.cl_name in
@@ -879,7 +876,7 @@ class latex =
       self#latex_of_info fmt c.cl_info;
       p fmt "@]"
 
-    (** Return the LaTeX code for the given class type. *)
+    (** Print the LaTeX code for the given class type. *)
     method latex_of_class_type fmt ct =
       Odoc_info.reset_type_names () ;
       let father = Name.father ct.clt_name in
@@ -910,7 +907,7 @@ class latex =
       self#latex_of_info fmt ct.clt_info;
       p fmt "@]"
 
-    (** Return the LaTeX code for the given class element. *)
+    (** Print the LaTeX code for the given class element. *)
     method latex_of_class_element fmt class_name class_ele =
       self#latex_of_text fmt [Newline];
       match class_ele with
@@ -922,7 +919,7 @@ class latex =
           | (Title (_,_,_)) :: _ -> self#latex_of_text fmt t
           | _ -> self#latex_of_text fmt [ Title ((Name.depth class_name) + 2, None, t) ]
 
-    (** Return the LaTeX code for the given module element. *)
+    (** Print the LaTeX code for the given module element. *)
     method latex_of_module_element fmt module_name module_ele =
       self#latex_of_text fmt [Newline];
       match module_ele with
@@ -1022,7 +1019,7 @@ class latex =
 	)
         (Module.module_elements ~trans: false m)
 
-    (** Return the header of the TeX document. *)
+    (** Print the header of the TeX document. *)
     method latex_header fmt =
       ps fmt "\\documentclass[11pt]{article} \n";
       ps fmt "\\usepackage[latin1]{inputenc} \n";
