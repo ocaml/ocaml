@@ -2566,8 +2566,9 @@ let rec build_subtype env visited loops posi level t =
               | _ -> raise Not_found
               end
             | None -> assert false in
+          let t'_level = if tl = [] then !current_level else t'.level in
           let ty =
-            subst env t'.level abbrev None cl_abbr.type_params tl body in
+            subst env t'_level abbrev None cl_abbr.type_params tl body in
           let ty = repr ty in
           let ty1, tl1 =
             match ty.desc with

@@ -537,7 +537,7 @@ let tree_of_metho sch concrete csil (lab, kind, ty) =
 let rec prepare_class_type params = function
   | Tcty_constr (p, tyl, cty) ->
       let sty = Ctype.self_type cty in
-      if List.memq sty !visited_objects
+      if List.memq (proxy sty) !visited_objects
       || List.exists (fun ty -> (repr ty).desc <> Tvar) params
       || List.exists (deep_occur sty) tyl
       then prepare_class_type params cty
@@ -545,8 +545,9 @@ let rec prepare_class_type params = function
   | Tcty_signature sign ->
       let sty = repr sign.cty_self in
       (* Self may have a name *)
-      if List.memq sty !visited_objects then add_alias sty
-      else visited_objects := proxy sty :: !visited_objects;
+      let px = proxy sty in
+      if List.memq px !visited_objects then add_alias sty
+      else visited_objects := px :: !visited_objects;
       let (fields, _) =
         Ctype.flatten_fields (Ctype.object_fields sign.cty_self)
       in
@@ -560,7 +561,7 @@ let rec tree_of_class_type sch params =
   function
   | Tcty_constr (p', tyl, cty) ->
       let sty = Ctype.self_type cty in
-      if List.memq sty !visited_objects
+      if List.memq (proxy sty) !visited_objects
       || List.exists (fun ty -> (repr ty).desc <> Tvar) params
       then
         tree_of_class_type sch params cty
