@@ -234,6 +234,7 @@ let call_linker file_list startup_file =
     | _ ->
         if not !Clflags.output_c_object then
           let rpath =
+            if Config.bytecomp_c_rpath = "" then "" else
             String.concat ":"
               (List.filter ((<>) "") 
                  (!Clflags.dllpaths @

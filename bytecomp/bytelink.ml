@@ -406,6 +406,7 @@ let build_custom_runtime prim_name exec_name =
   match Sys.os_type with
     "Unix" | "Cygwin" ->
       let rpath =
+        if Config.bytecomp_c_rpath = "" then "" else
         String.concat ":"
           (List.filter ((<>) "") 
              (!Clflags.dllpaths @
