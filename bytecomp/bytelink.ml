@@ -48,7 +48,7 @@ let remove_required (rel, pos) =
       missing_globals := IdentSet.remove id !missing_globals
   | _ -> ()
 
-let scan_file tolink obj_name =
+let scan_file obj_name tolink =
   let file_name =
     try
       find_in_path !load_path obj_name
@@ -77,8 +77,8 @@ let scan_file tolink obj_name =
       let toc = (input_value ic : compilation_unit list) in
       close_in ic;
       let required =
-        List.fold_left
-          (fun reqd compunit ->
+        List.fold_right
+          (fun compunit reqd ->
             if List.exists is_required compunit.cu_reloc
             or !Clflags.link_everything
             then begin
@@ -87,7 +87,7 @@ let scan_file tolink obj_name =
               compunit :: reqd
             end else
               reqd)
-          [] toc in
+          toc [] in
       Link_archive(file_name, required) :: tolink
     end
     else raise(Error(Not_an_object_file file_name))
@@ -158,7 +158,7 @@ let link_file outchan = function
 let link_bytecode objfiles exec_name copy_header =
   let objfiles = "stdlib.cma" :: objfiles in
   let tolink =
-    List.fold_left scan_file [] (List.rev objfiles) in
+    List.fold_right scan_file objfiles [] in
   let outchan =
     open_out_gen [Open_wronly; Open_trunc; Open_creat; Open_binary] 0o777
                  exec_name in

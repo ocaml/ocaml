@@ -208,7 +208,7 @@ let emit_instr = function
   | Kraise -> out opRAISE
   | Kcheck_signals -> out opCHECK_SIGNALS
   | Kccall(name, n) ->
-      if n <= 4
+      if n <= 5
       then (out (opC_CALL1 + n - 1); slot_for_c_prim name)
       else (out opC_CALLN; out_int n; slot_for_c_prim name)
   | Knegint -> out opNEGINT  | Kaddint -> out opADDINT
