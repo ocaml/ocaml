@@ -47,6 +47,9 @@ val double_array_tag : int
 val custom_tag : int
 val final_tag : int  (* DEPRECATED *)
 
+val int_tag : int
+val out_of_heap_tag : int
+
 (** The following two functions are deprecated.  Use module {!Marshal}
     instead. *)
 

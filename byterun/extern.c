@@ -246,8 +246,15 @@ static void extern_rec(value v)
     asize_t h;
 
     if (tag == Forward_tag) {
-      v = Forward_val (v);
-      goto tailcall;
+      value f = Forward_val (v);
+      if (Is_block (f) && (Is_young (f) || Is_in_heap (f))
+          && (Tag_val (f) == Forward_tag || Tag_val (f) == Lazy_tag
+              || Tag_val (f) == Double_tag)){
+        /* Do not short-circuit the pointer. */
+      }else{
+        v = f;
+        goto tailcall;
+      }
     }
     /* Atoms are treated specially for two reasons: they are not allocated
        in the externed block, and they are automatically shared. */
@@ -347,9 +354,6 @@ static void extern_rec(value v)
       size_64 += 2 + ((sz_64 + 7) >> 3);
       break;
     }
-    case Forward_tag:
-      Assert(0);
-      /*fallthrough*/
     default: {
       mlsize_t i;
       if (tag < 16 && sz < 8) {

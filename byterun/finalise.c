@@ -53,9 +53,16 @@ void final_update (void)
       struct final f;
 
       if (Tag_val (final_table[i].val) == Forward_tag){
-        final_table[i].val = Forward_val (final_table[i].val);
-        if (Is_block (final_table[i].val) && Is_in_heap (final_table[i].val)){
-          goto again;
+        value fv = Forward_val (final_table[i].val);
+        if (Is_block (fv) && (Is_young (fv) || Is_in_heap (fv))
+            && (Tag_val (fv) == Forward_tag || Tag_val (fv) == Lazy_tag
+                || Tag_val (fv) == Double_tag)){
+          /* Do not short-circuit the pointer. */
+        }else{
+          final_table[i].val = fv;
+          if (Is_block (final_table[i].val) && Is_in_heap (final_table[i].val)){
+            goto again;
+          }
         }
       }
       f = final_table[i];

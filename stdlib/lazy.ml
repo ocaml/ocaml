@@ -30,10 +30,15 @@
       type [unit -> 'a] that computes the value.
    2. A block of size 1 with tag [forward_tag].  Its field is the value
       of type ['a] that was computed.
-   3. Anything else.  This has type ['a] and is the value that was computed.
+   3. Anything else except a float.  This has type ['a] and is the value
+      that was computed.
    Exceptions are stored in format (1).
    The GC will magically change things from (2) to (3) according to its
    fancy.
+
+   We cannot use representation (3) for a [float Lazy.t] because
+   [make_array] assumes that only a [float] value can have tag
+   [Double_tag].
 
    We have to use the built-in type constructor [lazy_t] to
    let the compiler implement the special typing and compilation
@@ -45,21 +50,21 @@ exception Undefined;;
 
 let raise_undefined = Obj.repr (fun () -> raise Undefined);;
 
-external is_forward : Obj.t -> bool = "lazy_is_forward";;
 external follow_forward : Obj.t -> 'a = "lazy_follow_forward";;
+external make_forward : 'a -> 'a lazy_t = "lazy_make_forward";;
 
 let force (l : 'arg t) =
   let x = Obj.repr l in
-  if is_forward x then (follow_forward x : 'arg)
-  else if Obj.is_int x then (Obj.obj x : 'arg)
-  else if Obj.tag x <> Obj.lazy_tag then (Obj.obj x : 'arg)
+  let t = Obj.tag x in
+  if t = Obj.forward_tag then (follow_forward x : 'arg)
+  else if t <> Obj.lazy_tag then (Obj.obj x : 'arg)
   else begin
     let closure = (Obj.obj (Obj.field x 0) : unit -> 'arg) in
     Obj.set_field x 0 raise_undefined;
     try
       let result = closure () in
       Obj.set_field x 0 (Obj.repr result);  (* do set_field BEFORE set_tag *)
-      Obj.set_tag x (Obj.forward_tag);
+      Obj.set_tag x Obj.forward_tag;
       result
     with e ->
       Obj.set_field x 0 (Obj.repr (fun () -> raise e));
@@ -69,9 +74,9 @@ let force (l : 'arg t) =
 
 let force_val (l : 'arg t) =
   let x = Obj.repr l in
-  if is_forward x then (follow_forward x : 'arg)
-  else if Obj.is_int x then (Obj.obj x : 'arg)
-  else if Obj.tag x <> Obj.lazy_tag then (Obj.obj x : 'arg)
+  let t = Obj.tag x in
+  if t = Obj.forward_tag then (follow_forward x : 'arg)
+  else if t <> Obj.lazy_tag then (Obj.obj x : 'arg)
   else begin
     let closure = (Obj.obj (Obj.field x 0) : unit -> 'arg) in
     Obj.set_field x 0 raise_undefined;
@@ -88,9 +93,13 @@ let lazy_from_fun (f : unit -> 'arg) =
   (Obj.obj x : 'arg t)
 ;;
 
-let lazy_from_val (v : 'arg) = (Obj.magic v : 'arg t);;
-
-let lazy_is_val (l : 'arg t) =
-  let x = Obj.repr l in
-  is_forward x || Obj.is_int x || Obj.tag x <> Obj.lazy_tag
+let lazy_from_val (v : 'arg) =
+  let t = Obj.tag (Obj.repr v) in
+  if t = Obj.forward_tag || t = Obj.lazy_tag || t = Obj.double_tag then begin
+    make_forward v
+  end else begin
+    (Obj.magic v : 'arg t)
+  end
 ;;
+
+let lazy_is_val (l : 'arg t) = Obj.tag (Obj.repr l) <> Obj.lazy_tag;;

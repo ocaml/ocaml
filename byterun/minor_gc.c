@@ -125,9 +125,8 @@ void oldify_one (value v, value *p)
         if (Is_block (f) && (Is_young (f) || Is_in_heap (f))){
           ft = Tag_val (Hd_val (f) == 0 ? Field (f, 0) : f);
         }
-        if (ft == Forward_tag || ft == Lazy_tag){
-          /* Keep the forward block; copy it as a normal block
-             (no short-circuit). */
+        if (ft == Forward_tag || ft == Lazy_tag || ft == Double_tag){
+          /* Do not short-circuit the pointer.  Copy as a normal block. */
           Assert (Wosize_hd (hd) == 1);
           result = alloc_shr (1, Forward_tag);
           *p = result;
