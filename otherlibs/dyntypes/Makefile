@@ -25,19 +25,20 @@ MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 
 LOCAL_MODULES = dynamics
 ROOT = ../..
-UTILS_MODULES = config misc tbl
+UTILS_MODULES = config clflags misc tbl
 PARSING_MODULES = longident
-TYPING_MODULES = path ident primitive types typedynt btype subst ctype datarepr env predef printtyp
+TYPING_MODULES = ident path primitive types typedynt btype subst predef datarepr env ctype printtyp
 IMPORTED_MODULES = $(UTILS_MODULES) $(PARSING_MODULES) $(TYPING_MODULES)
 IMPORTED_INTERFACES = $(IMPORTED_MODULES) asttypes outcometree
 CMIFILES = $(IMPORTED_MODULES:=.cmi) $(LOCAL_MODULES:=.cmi)
-CAMLOBJS = clflags.cmo $(IMPORTED_MODULES:=.cmo) $(LOCAL_MODULES:=.cmo)
+CAMLOBJS = $(IMPORTED_MODULES:=.cmo) $(LOCAL_MODULES:=.cmo)
 
 default: all
 
 import:
 	set -e; \
 	for x in $(UTILS_MODULES); do \
+	  test $$x = clflags || \
 	  cp -f $(ROOT)/utils/$$x.mli $(ROOT)/utils/$$x.ml .; \
 	done; \
 	for x in $(PARSING_MODULES); do \
@@ -94,9 +95,11 @@ clean: partialclean
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
+# Don't try to make clflags.cmi from clflags.mli as the latter doesn't exist
+clflags.cmi: ;
+
 depend:
 	: >.depend
 	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend
-clflags.cmi: clflags.cmo

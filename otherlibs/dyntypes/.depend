@@ -20,10 +20,10 @@ ctype.cmx: asttypes.cmi btype.cmx clflags.cmx env.cmx ident.cmx longident.cmx \
     misc.cmx path.cmx predef.cmx subst.cmx types.cmx ctype.cmi 
 datarepr.cmo: asttypes.cmi misc.cmi predef.cmi types.cmi datarepr.cmi 
 datarepr.cmx: asttypes.cmi misc.cmx predef.cmx types.cmx datarepr.cmi 
-dynamics.cmo: env.cmi ident.cmi printtyp.cmi typedynt.cmi types.cmi \
-    dynamics.cmi 
-dynamics.cmx: env.cmx ident.cmx printtyp.cmx typedynt.cmx types.cmx \
-    dynamics.cmi 
+dynamics.cmo: ctype.cmi env.cmi ident.cmi path.cmi printtyp.cmi typedynt.cmi \
+    types.cmi dynamics.cmi 
+dynamics.cmx: ctype.cmx env.cmx ident.cmx path.cmx printtyp.cmx typedynt.cmx \
+    types.cmx dynamics.cmi 
 env.cmo: asttypes.cmi btype.cmi config.cmi datarepr.cmi ident.cmi \
     longident.cmi misc.cmi path.cmi predef.cmi subst.cmi tbl.cmi types.cmi \
     env.cmi 
