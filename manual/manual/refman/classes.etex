@@ -22,7 +22,7 @@ specify the general shape and type properties of classes.
 \begin{syntax}
 class-type:
    |  class-body-type
-   |  [['?']label]typexpr '->' class-type
+   |  [['?']label-name':'] typexpr '->' class-type
 ;
 class-body-type:
       'object' ['(' typexpr ')'] {class-field-spec} 'end'
@@ -206,8 +206,8 @@ expressions. Evaluation works as for expression application.
 
 \subsubsection*{Class function}
 
-The expression @'fun' [['?']label]pattern '->' class-expr@ evaluates to a
-function from values to classes.
+The expression @'fun' [['?']label-name':']pattern '->' class-expr@ evaluates
+to a function from values to classes.
 When this function is applied to a value \var{v}, this value is
 matched against the pattern @pattern@ and the result is the result of
 the evaluation of @class-expr@ in the extended environment.

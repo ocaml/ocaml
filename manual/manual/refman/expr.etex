@@ -114,7 +114,7 @@ precedence come first. For infix and prefix symbols, we write
 \begin{tableau}{|l|l|}{Construction or operator}{Associativity}
 \entree{prefix-symbol}{--}
 \entree{".   .(    .["}{--}
-\entree{function application, constructor application, "  assert  lazy"}{left}
+\entree{function application, constructor application, "assert", "lazy"}{left}
 \entree{"-   -." (prefix)}{--}
 \entree{"**"\ldots}{right}
 \entree{"*"\ldots"   /"\ldots"   %"\ldots"   mod"}{left} %% "`"@ident@"`"

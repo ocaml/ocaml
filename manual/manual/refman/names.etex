@@ -5,7 +5,7 @@ Identifiers are used to give names to several classes of language
 objects and refer to these objects by name later:
 \begin{itemize}
 \item value names (syntactic class @value-name@),
-\item value constructors (class @constr-name@),
+\item value constructors and exception constructors (class @constr-name@),
 \item labels (@label-name@),
 \item variant tags (@tag-name@),
 \item type constructors (@typeconstr-name@),
@@ -83,6 +83,7 @@ The capitalization rules  are summarized in the table below.
 \entree{Type constructors}{lowercase}
 \entree{Record fields}{lowercase}
 \entree{Classes}{lowercase}
+\entree{Instance variables}{lowercase}
 \entree{Methods}{lowercase}
 \entree{Modules}{uppercase}
 \entree{Module types}{any}
