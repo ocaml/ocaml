@@ -164,7 +164,8 @@ val to_string : int64 -> string
    64-bit integer [n] in the format specified by [fmt].
    [fmt] is a {!Printf}-style format containing exactly
    one [%d], [%i], [%u], [%x], [%X] or [%o] conversion specification.
-   See the documentation of the {!Printf} module for more information, *)
+   This function is deprecated; use {!Printf.sprintf} with a [%Lx] format
+   instead. *)
 external format : string -> int64 -> string = "int64_format"
 
 (** Return the internal representation of the given float according
