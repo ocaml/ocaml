@@ -59,7 +59,8 @@ Version 1.05:
   correctly even when you write them at the beginning of a line.
 
 * added a Caml menu, and Imenu support. Imenu menu can be disabled
-  by setting the variable caml-imenu-disable to t.
+  by setting the variable caml-imenu-disable to t. 
+  Xemacs support for the Menu, but no Imenu.
 
 * key bindings closer to lisp-mode.
 

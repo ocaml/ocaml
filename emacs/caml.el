@@ -246,6 +246,9 @@ have caml-electric-indent on, which see.")
 (defvar caml-shell-active nil
   "*Non nil when a subshell is running.")
 
+;; is it really ok ? Conform to Xemacs definition
+(if (not (boundp 'running-xemacs)) (setq running-xemacs nil))
+
 (defvar caml-mode-map nil
   "Keymap used in Caml mode.")
 (if caml-mode-map
@@ -280,29 +283,51 @@ have caml-electric-indent on, which see.")
   (define-key caml-mode-map "\M-\C-h" 'caml-mark-phrase)
   (define-key caml-mode-map "\M-\C-q" 'caml-indent-phrase)
   (define-key caml-mode-map "\M-\C-x" 'caml-eval-phrase)
-  (let ((map (make-sparse-keymap "Caml"))
-	(forms (make-sparse-keymap "Forms")))
-    (define-key caml-mode-map [menu-bar] (make-sparse-keymap))
-    (define-key caml-mode-map [menu-bar caml] (cons "Caml" map))
-    (define-key map [run-caml] '("Start subshell..." . run-caml))
-    (define-key map [compile] '("Compile..." . compile))
-    (define-key map [switch-view] '("Switch view" . caml-find-alternate-file))
-    (define-key map [separator-format] '("--"))
-    (define-key map [forms] (cons "Forms" forms))
-    (define-key map [show-subshell] '("Show subshell" . caml-show-subshell))
-    (put 'caml-show-subshell 'menu-enable 'caml-shell-active)
-    (define-key map [eval-phrase] '("Eval phrase" . caml-eval-phrase))
-    (put 'caml-eval-phrase 'menu-enable 'caml-shell-active)
-    (define-key map [indent-phrase] '("Indent phrase" . caml-indent-phrase))
-    (define-key forms [while]
-      '("while .. do .. done" . caml-insert-while-form))
-    (define-key forms [try] '("try .. with .." . caml-insert-try-form))
-    (define-key forms [match] '("match .. with .." . caml-insert-match-form))
-    (define-key forms [let] '("let .. in .." . caml-insert-let-form))
-    (define-key forms [if] '("if .. then .. else .." . caml-insert-if-form))
-    (define-key forms [begin] '("for .. do .. done" . caml-insert-for-form))
-    (define-key forms [begin] '("begin .. end" . caml-insert-begin-form))))
+  (if running-xemacs nil ; if not running xemacs
+    (let ((map (make-sparse-keymap "Caml"))
+	  (forms (make-sparse-keymap "Forms")))
+      (define-key caml-mode-map [menu-bar] (make-sparse-keymap))
+      (define-key caml-mode-map [menu-bar caml] (cons "Caml" map))
+      (define-key map [run-caml] '("Start subshell..." . run-caml))
+      (define-key map [compile] '("Compile..." . compile))
+      (define-key map [switch-view]
+	'("Switch view" . caml-find-alternate-file))
+      (define-key map [separator-format] '("--"))
+      (define-key map [forms] (cons "Forms" forms))
+      (define-key map [show-subshell] '("Show subshell" . caml-show-subshell))
+      (put 'caml-show-subshell 'menu-enable 'caml-shell-active)
+      (define-key map [eval-phrase] '("Eval phrase" . caml-eval-phrase))
+      (put 'caml-eval-phrase 'menu-enable 'caml-shell-active)
+      (define-key map [indent-phrase] '("Indent phrase" . caml-indent-phrase))
+      (define-key forms [while]
+	'("while .. do .. done" . caml-insert-while-form))
+      (define-key forms [try] '("try .. with .." . caml-insert-try-form))
+      (define-key forms [match] '("match .. with .." . caml-insert-match-form))
+      (define-key forms [let] '("let .. in .." . caml-insert-let-form))
+      (define-key forms [if] '("if .. then .. else .." . caml-insert-if-form))
+      (define-key forms [begin] '("for .. do .. done" . caml-insert-for-form))
+      (define-key forms [begin] '("begin .. end" . caml-insert-begin-form)))))
 
+(defvar caml-mode-xemacs-menu
+  (if running-xemacs
+      '("Caml"
+	[ "Indent phrase" caml-indent-phrase :keys "C-M-q" ]
+	[ "Eval phrase" caml-eval-phrase
+	  :active caml-shell-active :keys "C-M-x" ]
+	[ "Show subshell" caml-show-subshell caml-shell-active ]
+	("Forms"
+	 [ "while .. do .. done" caml-insert-while-form t]
+	 [ "try .. with .." caml-insert-try-form t ]
+	 [ "match .. with .." caml-insert-match-form t ]
+	 [ "let .. in .." caml-insert-let-form t ]
+	 [ "if .. then .. else .." caml-insert-if-form t ]
+	 [ "for .. do .. done" caml-insert-for-form t ]
+	 [ "begin .. end" caml-insert-begin-form t ])
+	"---"
+	[ "Switch view" caml-find-alternate t ]
+	[ "Compile..." compile t ]
+	[ "Start subshell..." run-caml t ]))
+  "Menu to add to the menubar when running Xemacs")
 
 (defvar caml-mode-syntax-table nil
   "Syntax table in use in Caml mode buffers.")
@@ -386,12 +411,21 @@ have caml-electric-indent on, which see.")
   (setq caml-last-comment-end (make-marker))
   ;garrigue 27-11-96
   (setq case-fold-search nil)
-  ;imenu support
-  (make-local-variable 'imenu-create-index-function)
-  (setq imenu-create-index-function 'caml-create-index-function)
-  (if caml-imenu-disable nil
-    (require 'imenu)
-    (imenu-add-to-menubar "Defs"))
+  ;garrigue july 97
+  (if running-xemacs ; from Xemacs lisp mode
+      (if (and (featurep 'menubar)
+	       current-menubar)
+	  (progn
+	    ;; make a local copy of the menubar, so our modes don't
+	    ;; change the global menubar
+	    (set-buffer-menubar current-menubar)
+	    (add-submenu nil caml-mode-xemacs-menu)))
+    ;imenu support (not for Xemacs)
+    (make-local-variable 'imenu-create-index-function)
+    (setq imenu-create-index-function 'caml-create-index-function)
+    (if caml-imenu-disable nil
+      (require 'imenu)
+      (imenu-add-to-menubar "Defs")))
   (run-hooks 'caml-mode-hook))
 
 ;;; Auxiliary function. Garrigue 96-11-01.
