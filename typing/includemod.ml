@@ -151,7 +151,7 @@ and try_modtypes env subst mty1 mty2 =
         modtypes env Subst.identity (Subst.modtype subst arg2) arg1
       in
       let cc_res =
-        modtypes (Env.add_module param1 arg1 env)
+        modtypes (Env.add_module param1 arg2 env)
           (Subst.add_module param2 (Pident param1) subst) res1 res2
       in
       begin match (cc_arg, cc_res) with
