@@ -64,6 +64,7 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 
    The optional flags include:
    - [-]: left-justify the output (default is right justification).
+   - [0]: for numerical conversions, pad with zeroes instead of spaces.
    - [+]: for numerical conversions, prefix number with a [+] sign if positive.
    - space: for numerical conversions, prefix number with a space if positive.
    - [#]: request an alternate formatting style for numbers.
