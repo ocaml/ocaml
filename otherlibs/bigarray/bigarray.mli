@@ -32,7 +32,7 @@
      {!Marshal} module). 
 *)
 
-(** {2 Element kinds} *)
+(** {6 Element kinds} *)
 
 (** Big arrays can contain elements of the following kinds:
 - IEEE single precision (32 bits) floating-point numbers
@@ -126,7 +126,7 @@ val char : (char, int8_unsigned_elt) kind
    characters instead of arrays of small integers, by using
    the kind value [char] instead of [int8_unsigned]. *)
 
-(** {2 Array layouts} *)
+(** {6 Array layouts} *)
 
 type c_layout
 (** See {!Bigarray.fortran_layout}.*)
@@ -160,7 +160,7 @@ type 'a layout
    if ['a] is {!Bigarray.fortran_layout}. *)
 
 
-(** {3 Supported layouts}
+(** {7 Supported layouts}
 
    The abstract values [c_layout] and [fortran_layout] represent
    the two supported layouts at the level of values.  
@@ -170,7 +170,7 @@ val c_layout : c_layout layout
 val fortran_layout : fortran_layout layout
 
 
-(** {2 Generic arrays (of arbitrarily many dimensions)} *)
+(** {6 Generic arrays (of arbitrarily many dimensions)} *)
 
 module Genarray :
   sig
@@ -394,7 +394,7 @@ module Genarray :
 
   end
 
-(** {2 One-dimensional arrays} *)
+(** {6 One-dimensional arrays} *)
 
 (** One-dimensional arrays. The [Array1] structure provides operations similar to those of
    {!Bigarray.Genarray}, but specialized to the case of one-dimensional arrays.
@@ -457,7 +457,7 @@ module Array1 : sig
 end
 
 
-(** {2 Two-dimensional arrays} *)
+(** {6 Two-dimensional arrays} *)
 
 (** Two-dimensional arrays. The [Array2] structure provides operations similar to those of
    {!Bigarray.Genarray}, but specialized to the case of two-dimensional arrays. *)
@@ -543,7 +543,7 @@ module Array2 :
 
   end
 
-(** {2 Three-dimensional arrays} *)
+(** {6 Three-dimensional arrays} *)
 
 (** Three-dimensional arrays. The [Array3] structure provides operations similar to those of
    {!Bigarray.Genarray}, but specialized to the case of three-dimensional arrays. *)
@@ -654,7 +654,7 @@ module Array3 :
 
   end
 
-(** {2 Coercions between generic big arrays and fixed-dimension big arrays} *)
+(** {6 Coercions between generic big arrays and fixed-dimension big arrays} *)
 
 external genarray_of_array1 :
   ('a, 'b, 'c) Array1.t -> ('a, 'b, 'c) Genarray.t = "%identity"
@@ -684,7 +684,7 @@ val array3_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array3.t
    does not have exactly three dimensions. *)
 
 
-(** {2 Re-shaping big arrays} *)
+(** {6 Re-shaping big arrays} *)
 
 val reshape : ('a, 'b, 'c) Genarray.t -> int array -> ('a, 'b, 'c) Genarray.t
 (** [reshape b [|d1;...;dN|]] converts the big array [b] to a
