@@ -76,6 +76,13 @@ let size_expr env exp =
         fatal_error "Selection.size_expr"
   in size Tbl.empty exp
 
+(* These are C library functions that are known to be pure
+   (no side effects at all) and worth not pre-computing. *)
+
+let pure_external_functions =
+  ["acos"; "asin"; "atan"; "atan2"; "cos"; "exp"; "log";
+   "log10"; "sin"; "sqrt"; "tan"]
+
 (* Says if an expression is "simple". A "simple" expression has no
    side-effects and its execution can be delayed until its value
    is really needed. In the case of e.g. an [alloc] instruction,
@@ -97,9 +104,15 @@ let rec is_simple_expr = function
   | Cop(op, args) ->
       begin match op with
         (* The following may have side effects *)
-        Capply _ | Cextcall(_, _, _) | Calloc | Cstore _ | Craise -> false
+      | Capply _ | Calloc | Cstore _ | Craise -> false
+        (* External C functions normally have side effects, unless known *)
+      | Cextcall(fn, _, alloc) ->
+          not alloc &&
+          List.mem fn pure_external_functions &&
+          List.for_all is_simple_expr args
         (* The remaining operations are simple if their args are *)
-      | _ -> List.for_all is_simple_expr args
+      | _ ->
+          List.for_all is_simple_expr args
       end
   | _ -> false
 

@@ -272,6 +272,99 @@ let output_epilogue () =
   let n = frame_size() - 4 in
   if n > 0 then `	addl	${emit_int n}, %esp\n`
 
+(* Determine if the given register is the top of the floating-point stack *)
+
+let is_tos = function { loc = Reg _; typ = Float } -> true | _ -> false
+
+(* Emit a "p" suffix if TOS is dead after the given instruction *)
+
+let pop_suffix i = 
+  let r = i.arg.(0) in
+  if not (is_tos r && Reg.Set.mem r i.live) then emit_string "p"
+
+(* Emit the code for a floating-point comparison *)
+
+let emit_float_test cmp neg arg lbl =
+  let actual_cmp =
+    match (is_tos arg.(0), is_tos arg.(1)) with
+      (true, true) ->
+      (* both args on top of FP stack *)
+      `	fcompp\n`;
+      cmp
+    | (true, false) ->
+      (* first arg on top of FP stack *)
+      `	fcompl	{emit_reg arg.(1)}\n`;
+      cmp
+    | (false, true) ->
+      (* second arg on top of FP stack *)
+      `	fcompl	{emit_reg arg.(0)}\n`;
+      Cmm.swap_comparison cmp
+    | (false, false) ->
+      `	fldl	{emit_reg arg.(0)}\n`;
+      `	fcompl	{emit_reg arg.(1)}\n`;
+      cmp
+    in
+  `	fnstsw	%ax\n`;
+  begin match actual_cmp with
+    Ceq ->
+      if neg then begin
+      `	andb	$68, %ah\n`;
+      `	xorb	$64, %ah\n`;
+      `	jne	`
+      end else begin
+      `	andb	$69, %ah\n`;
+      `	cmpb	$64, %ah\n`;
+      `	je	`
+      end
+  | Cne ->
+      if neg then begin
+      `	andb	$69, %ah\n`;
+      `	cmpb	$64, %ah\n`;
+      `	je	`
+      end else begin
+      `	andb	$68, %ah\n`;
+      `	xorb	$64, %ah\n`;
+      `	jne	`
+      end
+  | Cle ->
+      `	andb	$69, %ah\n`;
+      `	decb	%ah\n`;
+      `	cmpb	$64, %ah\n`;
+      if neg
+      then `	jae	`
+      else `	jb	`
+  | Cge ->
+      `	andb	$5, %ah\n`;
+      if neg
+      then `	jne	`
+      else `	je	`
+  | Clt ->
+      `	andb	$69, %ah\n`;
+      `	cmpb	$1, %ah\n`;
+      if neg
+      then `	jne	`
+      else `	je	`
+  | Cgt ->
+      `	andb	$69, %ah\n`;
+      if neg
+      then `	jne	`
+      else `	je	`
+  end;
+  `{emit_label lbl}\n`
+
+(* Emit a Ifloatspecial instruction *)
+
+let emit_floatspecial = function
+    "atan"  -> `	fldl1; fpatan\n`
+  | "atan2" -> `	fpatan\n`
+  | "cos"   -> `	fcos\n`
+  | "log"   -> `	fldln2; fxch; fyl2x\n`
+  | "log10" -> `	fldlg2; fxch; fyl2x\n`
+  | "sin"   -> `	fsin\n`
+  | "sqrt"  -> `	fsqrt\n`
+  | "tan"   -> `	fptan; fstp %st(0)\n`
+  | _ -> assert false
+
 (* Output the assembly code for an instruction *)
 
 (* Name of current function *)
@@ -280,11 +373,8 @@ let function_name = ref ""
 let tailrec_entry_point = ref 0
 (* Label of trap for out-of-range accesses *)
 let range_check_trap = ref 0
-
+(* Record float literals to be emitted later *)
 let float_constants = ref ([] : (int * string) list)
-
-let tos = phys_reg 100
-
 
 let emit_instr fallthrough i =
     match i.desc with
@@ -293,8 +383,10 @@ let emit_instr fallthrough i =
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc <> dst.loc then begin
           if src.typ = Float then
-            if src = tos then
-              `	fstpl	{emit_reg dst}\n`
+            if is_tos src then
+              `	fst{pop_suffix i}l	{emit_reg dst}\n`
+            else if is_tos dst then
+              `	fldl	{emit_reg src}\n`
             else begin
               `	fldl	{emit_reg src}\n`;
               `	fstpl	{emit_reg dst}\n`
@@ -354,6 +446,8 @@ let emit_instr fallthrough i =
     | Lop(Iload(chunk, addr)) ->
         let dest = i.res.(0) in
         begin match chunk with
+          | Word | Thirtytwo_signed | Thirtytwo_unsigned ->
+              `	movl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
           | Byte_unsigned ->
               `	movzbl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
           | Byte_signed ->
@@ -366,8 +460,6 @@ let emit_instr fallthrough i =
             `	flds	{emit_addressing addr i.arg 0}\n`
           | Double | Double_u ->
             `	fldl	{emit_addressing addr i.arg 0}\n`
-          | _ (* Word | Thirtytwo_signed | Thirtytwo_unsigned *) ->
-              `	movl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
         end
     | Lop(Istore(chunk, addr)) ->
         begin match chunk with
@@ -378,15 +470,15 @@ let emit_instr fallthrough i =
           | Sixteen_unsigned | Sixteen_signed ->
             `	movw	{emit_reg16 i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
           | Single ->
-              if i.arg.(0) = tos then
-                `	fstps	{emit_addressing addr i.arg 1}\n`
+              if is_tos i.arg.(0) then
+                `	fst{pop_suffix i}s	{emit_addressing addr i.arg 1}\n`
               else begin
                 `	fldl	{emit_reg i.arg.(0)}\n`;
                 `	fstps	{emit_addressing addr i.arg 1}\n`
               end
           | Double | Double_u ->
-              if i.arg.(0) = tos then
-                `	fstpl	{emit_addressing addr i.arg 1}\n`
+              if is_tos i.arg.(0) then
+                `	fst{pop_suffix i}l	{emit_addressing addr i.arg 1}\n`
               else begin
                 `	fldl	{emit_reg i.arg.(0)}\n`;
                 `	fstpl	{emit_addressing addr i.arg 1}\n`
@@ -444,12 +536,12 @@ let emit_instr fallthrough i =
     | Lop(Iintop op) ->
         (* We have i.arg.(0) = i.res.(0) *)
         `	{emit_string(instr_for_intop op)}	{emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
+    | Lop(Iintop_imm(Iadd, n)) when i.arg.(0).loc <> i.res.(0).loc ->
+        `	leal	{emit_int n}({emit_reg i.arg.(0)}), {emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Iadd, 1) | Iintop_imm(Isub, -1)) ->
         `	incl	{emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Iadd, -1) | Iintop_imm(Isub, 1)) ->
         `	decl	{emit_reg i.res.(0)}\n`
-    | Lop(Iintop_imm(Iadd, n)) when i.arg.(0).loc <> i.res.(0).loc ->
-        `	leal	{emit_int n}({emit_reg i.arg.(0)}), {emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Idiv, n)) ->
         let l = Misc.log2 n in
         let lbl = new_label() in
@@ -470,21 +562,22 @@ let emit_instr fallthrough i =
         (* We have i.arg.(0) = i.res.(0) *)
         `	{emit_string(instr_for_intop op)}	${emit_int n}, {emit_reg i.res.(0)}\n`
     | Lop(Inegf | Iabsf as floatop) ->
-        if i.arg.(0) <> tos then
+        if not (is_tos i.arg.(0)) then
           `	fldl	{emit_reg i.arg.(0)}\n`;
         `	{emit_string(instr_for_floatop floatop)}\n`
     | Lop(Iaddf | Isubf | Imulf | Idivf | Ispecific(Isubfrev | Idivfrev)
           as floatop) ->
-        if i.arg.(0) = tos && i.arg.(1) = tos then
+        begin match (is_tos i.arg.(0), is_tos i.arg.(1)) with
+          (true, true) ->
           (* both operands on top of FP stack *)
           `	{emit_string(instr_for_floatop_pop floatop)}	%st, %st(1)\n`
-        else if i.arg.(0) = tos then
+        | (true, false) ->
           (* first operand on stack *)
           `	{emit_string(instr_for_floatop floatop)}	{emit_reg i.arg.(1)}\n`
-        else if i.arg.(1) = tos then
+        | (false, true) ->
           (* second operand on stack *)
           `	{emit_string(instr_for_floatop_reversed floatop)}	{emit_reg i.arg.(0)}\n`
-        else begin
+        | (false, false) ->
           (* both operands in memory *)
           `	fldl	{emit_reg i.arg.(0)}\n`;
           `	{emit_string(instr_for_floatop floatop)}	{emit_reg i.arg.(1)}\n`
@@ -499,7 +592,7 @@ let emit_instr fallthrough i =
             `	addl	$4, %esp\n`
         end
     | Lop(Iintoffloat) ->
-        if i.arg.(0) <> tos then
+        if not (is_tos i.arg.(0)) then
           `	fldl	{emit_reg i.arg.(0)}\n`;
         stack_offset := !stack_offset - 8;
         `	subl	$8, %esp\n`;
@@ -510,9 +603,9 @@ let emit_instr fallthrough i =
         `	fldcw	(%esp)\n`;
         begin match i.res.(0).loc with
           Stack s ->
-            `	fistpl	{emit_reg i.res.(0)}\n`
+            `	fist{pop_suffix i}l	{emit_reg i.res.(0)}\n`
         | _ ->
-            `	fistpl	(%esp)\n`;
+            `	fist{pop_suffix i}l	(%esp)\n`;
             `	movl	(%esp), {emit_reg i.res.(0)}\n`
         end;
         `	fldcw	4(%esp)\n`;
@@ -558,9 +651,18 @@ let emit_instr fallthrough i =
         `	pushl	{emit_addressing addr i.arg 0}\n`;
         stack_offset := !stack_offset + 8
     | Lop(Ispecific(Ifloatarithmem(double, op, addr))) ->
-        if i.arg.(0) <> tos then
+        if not (is_tos i.arg.(0)) then
           `	fldl	{emit_reg i.arg.(0)}\n`;
         `	{emit_string(instr_for_floatarithmem double op)}	{emit_addressing addr i.arg 1}\n`
+    | Lop(Ispecific(Ifloatspecial s)) ->
+        (* Push args on float stack if necessary *)
+        for k = 0 to Array.length i.arg - 1 do
+          if not (is_tos i.arg.(k)) then `	fldl	{emit_reg i.arg.(k)}\n`
+        done;
+        (* Fix-up for binary instrs whose args were swapped *)
+        if Array.length i.arg = 2 && is_tos i.arg.(1) then
+          `	fxch	%st(1)\n`;
+        emit_floatspecial s
     | Lreloadretaddr ->
         ()
     | Lreturn ->
@@ -591,70 +693,8 @@ let emit_instr fallthrough i =
             `	cmpl	${emit_int n}, {emit_reg i.arg.(0)}\n`;
             let b = name_for_cond_branch cmp in
             `	j{emit_string b}	{emit_label lbl}\n`
-        | Ifloattest((Ceq | Cne as cmp), neg) ->
-            if i.arg.(1) <> tos then
-              `	fldl	{emit_reg i.arg.(1)}\n`;
-            if i.arg.(0) <> tos then
-              `	fldl	{emit_reg i.arg.(0)}\n`;
-            `	fucompp\n`;
-            `	fnstsw	%ax\n`;
-            let neg1 = if cmp = Ceq then neg else not neg in
-            if neg1 then begin          (* branch if different *)
-              `	andb	$68, %ah\n`;
-              `	xorb	$64, %ah\n`;
-              `	jne	{emit_label lbl}\n`
-            end else begin              (* branch if equal *)
-              `	andb	$69, %ah\n`;
-              `	cmpb	$64, %ah\n`;
-              `	je	{emit_label lbl}\n`
-            end
         | Ifloattest(cmp, neg) ->
-            let actual_cmp =
-              if i.arg.(0) = tos && i.arg.(1) = tos then begin
-                (* both args on top of FP stack *)
-                `	fcompp\n`;
-                cmp
-              end else if i.arg.(0) = tos then begin
-                (* first arg on top of FP stack *)
-                `	fcompl	{emit_reg i.arg.(1)}\n`;
-                cmp
-              end else if i.arg.(1) = tos then begin
-                (* second arg on top of FP stack *)
-                `	fcompl	{emit_reg i.arg.(0)}\n`;
-                Cmm.swap_comparison cmp
-              end else begin
-                `	fldl	{emit_reg i.arg.(0)}\n`;
-                `	fcompl	{emit_reg i.arg.(1)}\n`;
-                cmp
-              end in
-            `	fnstsw	%ax\n`;
-            begin match actual_cmp with
-              Cle ->
-                `	andb	$69, %ah\n`;
-                `	decb	%ah\n`;
-                `	cmpb	$64, %ah\n`;
-                if neg
-                then `	jae	`
-                else `	jb	`
-            | Cge ->
-                `	andb	$5, %ah\n`;
-                if neg
-                then `	jne	`
-                else `	je	`
-            | Clt ->
-                `	andb	$69, %ah\n`;
-                `	cmpb	$1, %ah\n`;
-                if neg
-                then `	jne	`
-                else `	je	`
-            | Cgt ->
-                `	andb	$69, %ah\n`;
-                if neg
-                then `	jne	`
-                else `	je	`
-            | _ -> fatal_error "Emit_i386: floattest"
-            end;
-            `{emit_label lbl}\n`
+            emit_float_test cmp neg i.arg lbl
         | Ioddtest ->
             `	testl	$1, {emit_reg i.arg.(0)}\n`;
             `	jne	{emit_label lbl}\n`
