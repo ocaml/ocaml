@@ -367,135 +367,6 @@ value text_of_rule_list loc gmod rtvar rl tvar =
     <:expr< [] >> rl
 ;
 
-value text_of_entry loc gmod e =
-  let ent =
-    let x = e.name in
-    let loc = e.name.loc in
-    <:expr< ($x.expr$ : $uid:gmod$.Entry.e '$x.tvar$) >>
-  in
-  let pos =
-    match e.pos with
-    [ Some pos -> <:expr< Some $pos$ >>
-    | None -> <:expr< None >> ]
-  in
-  let txt =
-    List.fold_right
-      (fun level txt ->
-         let lab =
-           match level.label with
-           [ Some lab -> <:expr< Some $str:lab$ >>
-           | None -> <:expr< None >> ]
-         in
-         let ass =
-           match level.assoc with
-           [ Some ass -> <:expr< Some $ass$ >>
-           | None -> <:expr< None >> ]
-         in
-         let txt =
-           let rl =
-             text_of_rule_list loc gmod e.name.tvar level.rules e.name.tvar
-           in
-           <:expr< [($lab$, $ass$, $rl$) :: $txt$] >>
-         in
-         txt)
-      e.levels <:expr< [] >>
-  in
-  (ent, pos, txt)
-;
-
-value let_in_of_extend loc gmod functor_version gl el args =
-  match gl with
-  [ Some ([n1 :: _] as nl) ->
-      do {
-        check_use nl el;
-        let ll =
-          List.fold_right
-            (fun e ll ->
-               match e.name.expr with
-               [ <:expr< $lid:_$ >> ->
-                   if List.exists (fun n -> e.name.tvar = n.tvar) nl then ll
-                   else [e.name :: ll]
-               | _ -> ll ])
-            el []
-        in
-        let globals =
-          List.map
-            (fun {expr = e; tvar = x; loc = loc} ->
-               (<:patt< _ >>, <:expr< ($e$ : $uid:gmod$.Entry.e '$x$) >>))
-            nl
-        in
-        let locals =
-          List.map
-            (fun {expr = e; tvar = x; loc = loc} ->
-               let i =
-                 match e with
-                 [ <:expr< $lid:i$ >> -> i
-                 | _ -> failwith "internal error in pa_extend" ]
-               in
-               (<:patt< $lid:i$ >>, <:expr<
-                (grammar_entry_create $str:i$ : $uid:gmod$.Entry.e '$x$) >>))
-            ll
-        in
-        let e =
-          if ll = [] then args
-          else if functor_version then
-            <:expr<
-            let grammar_entry_create = $uid:gmod$.Entry.create in
-            let $list:locals$ in $args$ >>
-          else
-            <:expr<
-            let grammar_entry_create s =
-              $uid:gmod$.Entry.create ($uid:gmod$.of_entry $locate n1$) s
-            in
-            let $list:locals$ in $args$ >>
-        in
-        <:expr< let $list:globals$ in $e$ >>
-      }
-  | _ -> args ]
-;
-
-value text_of_extend loc gmod gl el f =
-  if split_ext.val then
-    let args =
-      List.map
-        (fun e ->
-           let (ent, pos, txt) = text_of_entry e.name.loc gmod e in
-           let ent = <:expr< $uid:gmod$.Entry.obj $ent$ >> in
-           let e = <:expr< ($ent$, $pos$, $txt$) >> in
-           <:expr< let aux () = $f$ [$e$] in aux () >>)
-        el
-    in
-    let args = <:expr< do { $list:args$ } >> in
-    let_in_of_extend loc gmod False gl el args
-  else
-    let args =
-      List.fold_right
-        (fun e el ->
-           let (ent, pos, txt) = text_of_entry e.name.loc gmod e in
-           let ent = <:expr< $uid:gmod$.Entry.obj $ent$ >> in
-           let e = <:expr< ($ent$, $pos$, $txt$) >> in
-           <:expr< [$e$ :: $el$] >>)
-        el <:expr< [] >>
-    in
-    let args = let_in_of_extend loc gmod False gl el args in
-    <:expr< $f$ $args$ >>
-;
-
-value text_of_functorial_extend loc gmod gl el =
-  let args =
-    let el =
-      List.map
-        (fun e ->
-           let (ent, pos, txt) = text_of_entry e.name.loc gmod e in
-           let e = <:expr< $uid:gmod$.extend $ent$ $pos$ $txt$ >> in
-           if split_ext.val then <:expr< let aux () = $e$ in aux () >> else e)
-        el
-    in
-    <:expr< do { $list:el$ } >>
-  in
-  let_in_of_extend loc gmod True gl el args
-;
-
 value expr_of_delete_rule loc gmod n sl =
   let sl =
     List.fold_right (fun s e -> <:expr< [$s.text gmod ""$ :: $e$] >>) sl
@@ -621,6 +492,160 @@ value sslist loc min sep s =
   match s.text "" "" with
   [ <:expr< Gramext.$uid:"Sself" | "Snext"$ >> -> slist loc min sep s
   | _ -> sslist_aux loc min sep s ]
+;
+
+value is_global e =
+  fun
+  [ None -> True
+  | Some gl -> List.exists (fun n -> n.tvar = e.name.tvar) gl ]
+;
+
+value text_of_entry loc gmod gl e =
+  let ent =
+    let x = e.name in
+    let loc = e.name.loc in
+    <:expr< ($x.expr$ : $uid:gmod$.Entry.e '$x.tvar$) >>
+  in
+  let pos =
+    match e.pos with
+    [ Some pos -> <:expr< Some $pos$ >>
+    | None -> <:expr< None >> ]
+  in
+  let levels =
+    if quotify.val && is_global e gl then
+      let level =
+        let rule =
+          let psymbol =
+            let s =
+              let n = mk_name loc <:expr< anti_ >> in
+              {used = []; text = snterm loc n None;
+               styp _ = <:ctyp< ast >>}
+            in
+            {pattern = Some <:patt< a >>; symbol = s}
+          in
+          {prod = [psymbol]; action = Some <:expr< a >>}
+        in
+        {label = None; assoc = None; rules = [rule]}
+      in
+      e.levels @ [level]
+    else e.levels
+  in
+  let txt =
+    List.fold_right
+      (fun level txt ->
+         let lab =
+           match level.label with
+           [ Some lab -> <:expr< Some $str:lab$ >>
+           | None -> <:expr< None >> ]
+         in
+         let ass =
+           match level.assoc with
+           [ Some ass -> <:expr< Some $ass$ >>
+           | None -> <:expr< None >> ]
+         in
+         let txt =
+           let rl =
+             text_of_rule_list loc gmod e.name.tvar level.rules e.name.tvar
+           in
+           <:expr< [($lab$, $ass$, $rl$) :: $txt$] >>
+         in
+         txt)
+      levels <:expr< [] >>
+  in
+  (ent, pos, txt)
+;
+
+value let_in_of_extend loc gmod functor_version gl el args =
+  match gl with
+  [ Some ([n1 :: _] as nl) ->
+      do {
+        check_use nl el;
+        let ll =
+          List.fold_right
+            (fun e ll ->
+               match e.name.expr with
+               [ <:expr< $lid:_$ >> ->
+                   if List.exists (fun n -> e.name.tvar = n.tvar) nl then ll
+                   else [e.name :: ll]
+               | _ -> ll ])
+            el []
+        in
+        let globals =
+          List.map
+            (fun {expr = e; tvar = x; loc = loc} ->
+               (<:patt< _ >>, <:expr< ($e$ : $uid:gmod$.Entry.e '$x$) >>))
+            nl
+        in
+        let locals =
+          List.map
+            (fun {expr = e; tvar = x; loc = loc} ->
+               let i =
+                 match e with
+                 [ <:expr< $lid:i$ >> -> i
+                 | _ -> failwith "internal error in pa_extend" ]
+               in
+               (<:patt< $lid:i$ >>, <:expr<
+                (grammar_entry_create $str:i$ : $uid:gmod$.Entry.e '$x$) >>))
+            ll
+        in
+        let e =
+          if ll = [] then args
+          else if functor_version then
+            <:expr<
+            let grammar_entry_create = $uid:gmod$.Entry.create in
+            let $list:locals$ in $args$ >>
+          else
+            <:expr<
+            let grammar_entry_create s =
+              $uid:gmod$.Entry.create ($uid:gmod$.of_entry $locate n1$) s
+            in
+            let $list:locals$ in $args$ >>
+        in
+        <:expr< let $list:globals$ in $e$ >>
+      }
+  | _ -> args ]
+;
+
+value text_of_extend loc gmod gl el f =
+  if split_ext.val then
+    let args =
+      List.map
+        (fun e ->
+           let (ent, pos, txt) = text_of_entry e.name.loc gmod gl e in
+           let ent = <:expr< $uid:gmod$.Entry.obj $ent$ >> in
+           let e = <:expr< ($ent$, $pos$, $txt$) >> in
+           <:expr< let aux () = $f$ [$e$] in aux () >>)
+        el
+    in
+    let args = <:expr< do { $list:args$ } >> in
+    let_in_of_extend loc gmod False gl el args
+  else
+    let args =
+      List.fold_right
+        (fun e el ->
+           let (ent, pos, txt) = text_of_entry e.name.loc gmod gl e in
+           let ent = <:expr< $uid:gmod$.Entry.obj $ent$ >> in
+           let e = <:expr< ($ent$, $pos$, $txt$) >> in
+           <:expr< [$e$ :: $el$] >>)
+        el <:expr< [] >>
+    in
+    let args = let_in_of_extend loc gmod False gl el args in
+    <:expr< $f$ $args$ >>
+;
+
+value text_of_functorial_extend loc gmod gl el =
+  let args =
+    let el =
+      List.map
+        (fun e ->
+           let (ent, pos, txt) = text_of_entry e.name.loc gmod gl e in
+           let e = <:expr< $uid:gmod$.extend $ent$ $pos$ $txt$ >> in
+           if split_ext.val then <:expr< let aux () = $e$ in aux () >> else e)
+        el
+    in
+    <:expr< do { $list:el$ } >>
+  in
+  let_in_of_extend loc gmod True gl el args
 ;
 
 open Pcaml;

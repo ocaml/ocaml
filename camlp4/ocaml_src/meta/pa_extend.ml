@@ -763,251 +763,6 @@ let text_of_rule_list loc gmod rtvar rl tvar =
     (MLast.ExUid (loc, "[]")) rl
 ;;
 
-let text_of_entry loc gmod e =
-  let ent =
-    let x = e.name in
-    let loc = e.name.loc in
-    MLast.ExTyc
-      (loc, x.expr,
-       MLast.TyApp
-         (loc,
-          MLast.TyAcc
-            (loc,
-             MLast.TyAcc
-               (loc, MLast.TyUid (loc, gmod), MLast.TyUid (loc, "Entry")),
-             MLast.TyLid (loc, "e")),
-          MLast.TyQuo (loc, x.tvar)))
-  in
-  let pos =
-    match e.pos with
-      Some pos -> MLast.ExApp (loc, MLast.ExUid (loc, "Some"), pos)
-    | None -> MLast.ExUid (loc, "None")
-  in
-  let txt =
-    List.fold_right
-      (fun level txt ->
-         let lab =
-           match level.label with
-             Some lab ->
-               MLast.ExApp
-                 (loc, MLast.ExUid (loc, "Some"), MLast.ExStr (loc, lab))
-           | None -> MLast.ExUid (loc, "None")
-         in
-         let ass =
-           match level.assoc with
-             Some ass -> MLast.ExApp (loc, MLast.ExUid (loc, "Some"), ass)
-           | None -> MLast.ExUid (loc, "None")
-         in
-         let txt =
-           let rl =
-             text_of_rule_list loc gmod e.name.tvar level.rules e.name.tvar
-           in
-           MLast.ExApp
-             (loc,
-              MLast.ExApp
-                (loc, MLast.ExUid (loc, "::"),
-                 MLast.ExTup (loc, [lab; ass; rl])),
-              txt)
-         in
-         txt)
-      e.levels (MLast.ExUid (loc, "[]"))
-  in
-  ent, pos, txt
-;;
-
-let let_in_of_extend loc gmod functor_version gl el args =
-  match gl with
-    Some (n1 :: _ as nl) ->
-      check_use nl el;
-      let ll =
-        List.fold_right
-          (fun e ll ->
-             match e.name.expr with
-               MLast.ExLid (_, _) ->
-                 if List.exists (fun n -> e.name.tvar = n.tvar) nl then ll
-                 else e.name :: ll
-             | _ -> ll)
-          el []
-      in
-      let globals =
-        List.map
-          (fun {expr = e; tvar = x; loc = loc} ->
-             MLast.PaAny loc,
-             MLast.ExTyc
-               (loc, e,
-                MLast.TyApp
-                  (loc,
-                   MLast.TyAcc
-                     (loc,
-                      MLast.TyAcc
-                        (loc, MLast.TyUid (loc, gmod),
-                         MLast.TyUid (loc, "Entry")),
-                      MLast.TyLid (loc, "e")),
-                   MLast.TyQuo (loc, x))))
-          nl
-      in
-      let locals =
-        List.map
-          (fun {expr = e; tvar = x; loc = loc} ->
-             let i =
-               match e with
-                 MLast.ExLid (_, i) -> i
-               | _ -> failwith "internal error in pa_extend"
-             in
-             MLast.PaLid (loc, i),
-             MLast.ExTyc
-               (loc,
-                MLast.ExApp
-                  (loc, MLast.ExLid (loc, "grammar_entry_create"),
-                   MLast.ExStr (loc, i)),
-                MLast.TyApp
-                  (loc,
-                   MLast.TyAcc
-                     (loc,
-                      MLast.TyAcc
-                        (loc, MLast.TyUid (loc, gmod),
-                         MLast.TyUid (loc, "Entry")),
-                      MLast.TyLid (loc, "e")),
-                   MLast.TyQuo (loc, x))))
-          ll
-      in
-      let e =
-        if ll = [] then args
-        else if functor_version then
-          MLast.ExLet
-            (loc, false,
-             [MLast.PaLid (loc, "grammar_entry_create"),
-              MLast.ExAcc
-                (loc,
-                 MLast.ExAcc
-                   (loc, MLast.ExUid (loc, gmod), MLast.ExUid (loc, "Entry")),
-                 MLast.ExLid (loc, "create"))],
-             MLast.ExLet (loc, false, locals, args))
-        else
-          MLast.ExLet
-            (loc, false,
-             [MLast.PaLid (loc, "grammar_entry_create"),
-              MLast.ExFun
-                (loc,
-                 [MLast.PaLid (loc, "s"), None,
-                  MLast.ExApp
-                    (loc,
-                     MLast.ExApp
-                       (loc,
-                        MLast.ExAcc
-                          (loc,
-                           MLast.ExAcc
-                             (loc, MLast.ExUid (loc, gmod),
-                              MLast.ExUid (loc, "Entry")),
-                           MLast.ExLid (loc, "create")),
-                        MLast.ExApp
-                          (loc,
-                           MLast.ExAcc
-                             (loc, MLast.ExUid (loc, gmod),
-                              MLast.ExLid (loc, "of_entry")),
-                           locate n1)),
-                     MLast.ExLid (loc, "s"))])],
-             MLast.ExLet (loc, false, locals, args))
-      in
-      MLast.ExLet (loc, false, globals, e)
-  | _ -> args
-;;
-
-let text_of_extend loc gmod gl el f =
-  if !split_ext then
-    let args =
-      List.map
-        (fun e ->
-           let (ent, pos, txt) = text_of_entry e.name.loc gmod e in
-           let ent =
-             MLast.ExApp
-               (loc,
-                MLast.ExAcc
-                  (loc,
-                   MLast.ExAcc
-                     (loc, MLast.ExUid (loc, gmod),
-                      MLast.ExUid (loc, "Entry")),
-                   MLast.ExLid (loc, "obj")),
-                ent)
-           in
-           let e = MLast.ExTup (loc, [ent; pos; txt]) in
-           MLast.ExLet
-             (loc, false,
-              [MLast.PaLid (loc, "aux"),
-               MLast.ExFun
-                 (loc,
-                  [MLast.PaUid (loc, "()"), None,
-                   MLast.ExApp
-                     (loc, f,
-                      MLast.ExApp
-                        (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), e),
-                         MLast.ExUid (loc, "[]")))])],
-              MLast.ExApp
-                (loc, MLast.ExLid (loc, "aux"), MLast.ExUid (loc, "()"))))
-        el
-    in
-    let args = MLast.ExSeq (loc, args) in
-    let_in_of_extend loc gmod false gl el args
-  else
-    let args =
-      List.fold_right
-        (fun e el ->
-           let (ent, pos, txt) = text_of_entry e.name.loc gmod e in
-           let ent =
-             MLast.ExApp
-               (loc,
-                MLast.ExAcc
-                  (loc,
-                   MLast.ExAcc
-                     (loc, MLast.ExUid (loc, gmod),
-                      MLast.ExUid (loc, "Entry")),
-                   MLast.ExLid (loc, "obj")),
-                ent)
-           in
-           let e = MLast.ExTup (loc, [ent; pos; txt]) in
-           MLast.ExApp
-             (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), e), el))
-        el (MLast.ExUid (loc, "[]"))
-    in
-    let args = let_in_of_extend loc gmod false gl el args in
-    MLast.ExApp (loc, f, args)
-;;
-
-let text_of_functorial_extend loc gmod gl el =
-  let args =
-    let el =
-      List.map
-        (fun e ->
-           let (ent, pos, txt) = text_of_entry e.name.loc gmod e in
-           let e =
-             MLast.ExApp
-               (loc,
-                MLast.ExApp
-                  (loc,
-                   MLast.ExApp
-                     (loc,
-                      MLast.ExAcc
-                        (loc, MLast.ExUid (loc, gmod),
-                         MLast.ExLid (loc, "extend")),
-                      ent),
-                   pos),
-                txt)
-           in
-           if !split_ext then
-             MLast.ExLet
-               (loc, false,
-                [MLast.PaLid (loc, "aux"),
-                 MLast.ExFun (loc, [MLast.PaUid (loc, "()"), None, e])],
-                MLast.ExApp
-                  (loc, MLast.ExLid (loc, "aux"), MLast.ExUid (loc, "()")))
-           else e)
-        el
-    in
-    MLast.ExSeq (loc, el)
-  in
-  let_in_of_extend loc gmod true gl el args
-;;
-
 let expr_of_delete_rule loc gmod n sl =
   let sl =
     List.fold_right
@@ -1233,6 +988,276 @@ let sslist loc min sep s =
       (_, MLast.ExUid (_, "Gramext"), MLast.ExUid (_, ("Sself" | "Snext"))) ->
       slist loc min sep s
   | _ -> sslist_aux loc min sep s
+;;
+
+let is_global e =
+  function
+    None -> true
+  | Some gl -> List.exists (fun n -> n.tvar = e.name.tvar) gl
+;;
+
+let text_of_entry loc gmod gl e =
+  let ent =
+    let x = e.name in
+    let loc = e.name.loc in
+    MLast.ExTyc
+      (loc, x.expr,
+       MLast.TyApp
+         (loc,
+          MLast.TyAcc
+            (loc,
+             MLast.TyAcc
+               (loc, MLast.TyUid (loc, gmod), MLast.TyUid (loc, "Entry")),
+             MLast.TyLid (loc, "e")),
+          MLast.TyQuo (loc, x.tvar)))
+  in
+  let pos =
+    match e.pos with
+      Some pos -> MLast.ExApp (loc, MLast.ExUid (loc, "Some"), pos)
+    | None -> MLast.ExUid (loc, "None")
+  in
+  let levels =
+    if !quotify && is_global e gl then
+      let level =
+        let rule =
+          let psymbol =
+            let s =
+              let n = mk_name loc (MLast.ExLid (loc, "anti_")) in
+              {used = []; text = snterm loc n None;
+               styp = fun _ -> MLast.TyLid (loc, "ast")}
+            in
+            {pattern = Some (MLast.PaLid (loc, "a")); symbol = s}
+          in
+          {prod = [psymbol]; action = Some (MLast.ExLid (loc, "a"))}
+        in
+        {label = None; assoc = None; rules = [rule]}
+      in
+      e.levels @ [level]
+    else e.levels
+  in
+  let txt =
+    List.fold_right
+      (fun level txt ->
+         let lab =
+           match level.label with
+             Some lab ->
+               MLast.ExApp
+                 (loc, MLast.ExUid (loc, "Some"), MLast.ExStr (loc, lab))
+           | None -> MLast.ExUid (loc, "None")
+         in
+         let ass =
+           match level.assoc with
+             Some ass -> MLast.ExApp (loc, MLast.ExUid (loc, "Some"), ass)
+           | None -> MLast.ExUid (loc, "None")
+         in
+         let txt =
+           let rl =
+             text_of_rule_list loc gmod e.name.tvar level.rules e.name.tvar
+           in
+           MLast.ExApp
+             (loc,
+              MLast.ExApp
+                (loc, MLast.ExUid (loc, "::"),
+                 MLast.ExTup (loc, [lab; ass; rl])),
+              txt)
+         in
+         txt)
+      levels (MLast.ExUid (loc, "[]"))
+  in
+  ent, pos, txt
+;;
+
+let let_in_of_extend loc gmod functor_version gl el args =
+  match gl with
+    Some (n1 :: _ as nl) ->
+      check_use nl el;
+      let ll =
+        List.fold_right
+          (fun e ll ->
+             match e.name.expr with
+               MLast.ExLid (_, _) ->
+                 if List.exists (fun n -> e.name.tvar = n.tvar) nl then ll
+                 else e.name :: ll
+             | _ -> ll)
+          el []
+      in
+      let globals =
+        List.map
+          (fun {expr = e; tvar = x; loc = loc} ->
+             MLast.PaAny loc,
+             MLast.ExTyc
+               (loc, e,
+                MLast.TyApp
+                  (loc,
+                   MLast.TyAcc
+                     (loc,
+                      MLast.TyAcc
+                        (loc, MLast.TyUid (loc, gmod),
+                         MLast.TyUid (loc, "Entry")),
+                      MLast.TyLid (loc, "e")),
+                   MLast.TyQuo (loc, x))))
+          nl
+      in
+      let locals =
+        List.map
+          (fun {expr = e; tvar = x; loc = loc} ->
+             let i =
+               match e with
+                 MLast.ExLid (_, i) -> i
+               | _ -> failwith "internal error in pa_extend"
+             in
+             MLast.PaLid (loc, i),
+             MLast.ExTyc
+               (loc,
+                MLast.ExApp
+                  (loc, MLast.ExLid (loc, "grammar_entry_create"),
+                   MLast.ExStr (loc, i)),
+                MLast.TyApp
+                  (loc,
+                   MLast.TyAcc
+                     (loc,
+                      MLast.TyAcc
+                        (loc, MLast.TyUid (loc, gmod),
+                         MLast.TyUid (loc, "Entry")),
+                      MLast.TyLid (loc, "e")),
+                   MLast.TyQuo (loc, x))))
+          ll
+      in
+      let e =
+        if ll = [] then args
+        else if functor_version then
+          MLast.ExLet
+            (loc, false,
+             [MLast.PaLid (loc, "grammar_entry_create"),
+              MLast.ExAcc
+                (loc,
+                 MLast.ExAcc
+                   (loc, MLast.ExUid (loc, gmod), MLast.ExUid (loc, "Entry")),
+                 MLast.ExLid (loc, "create"))],
+             MLast.ExLet (loc, false, locals, args))
+        else
+          MLast.ExLet
+            (loc, false,
+             [MLast.PaLid (loc, "grammar_entry_create"),
+              MLast.ExFun
+                (loc,
+                 [MLast.PaLid (loc, "s"), None,
+                  MLast.ExApp
+                    (loc,
+                     MLast.ExApp
+                       (loc,
+                        MLast.ExAcc
+                          (loc,
+                           MLast.ExAcc
+                             (loc, MLast.ExUid (loc, gmod),
+                              MLast.ExUid (loc, "Entry")),
+                           MLast.ExLid (loc, "create")),
+                        MLast.ExApp
+                          (loc,
+                           MLast.ExAcc
+                             (loc, MLast.ExUid (loc, gmod),
+                              MLast.ExLid (loc, "of_entry")),
+                           locate n1)),
+                     MLast.ExLid (loc, "s"))])],
+             MLast.ExLet (loc, false, locals, args))
+      in
+      MLast.ExLet (loc, false, globals, e)
+  | _ -> args
+;;
+
+let text_of_extend loc gmod gl el f =
+  if !split_ext then
+    let args =
+      List.map
+        (fun e ->
+           let (ent, pos, txt) = text_of_entry e.name.loc gmod gl e in
+           let ent =
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc,
+                   MLast.ExAcc
+                     (loc, MLast.ExUid (loc, gmod),
+                      MLast.ExUid (loc, "Entry")),
+                   MLast.ExLid (loc, "obj")),
+                ent)
+           in
+           let e = MLast.ExTup (loc, [ent; pos; txt]) in
+           MLast.ExLet
+             (loc, false,
+              [MLast.PaLid (loc, "aux"),
+               MLast.ExFun
+                 (loc,
+                  [MLast.PaUid (loc, "()"), None,
+                   MLast.ExApp
+                     (loc, f,
+                      MLast.ExApp
+                        (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), e),
+                         MLast.ExUid (loc, "[]")))])],
+              MLast.ExApp
+                (loc, MLast.ExLid (loc, "aux"), MLast.ExUid (loc, "()"))))
+        el
+    in
+    let args = MLast.ExSeq (loc, args) in
+    let_in_of_extend loc gmod false gl el args
+  else
+    let args =
+      List.fold_right
+        (fun e el ->
+           let (ent, pos, txt) = text_of_entry e.name.loc gmod gl e in
+           let ent =
+             MLast.ExApp
+               (loc,
+                MLast.ExAcc
+                  (loc,
+                   MLast.ExAcc
+                     (loc, MLast.ExUid (loc, gmod),
+                      MLast.ExUid (loc, "Entry")),
+                   MLast.ExLid (loc, "obj")),
+                ent)
+           in
+           let e = MLast.ExTup (loc, [ent; pos; txt]) in
+           MLast.ExApp
+             (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), e), el))
+        el (MLast.ExUid (loc, "[]"))
+    in
+    let args = let_in_of_extend loc gmod false gl el args in
+    MLast.ExApp (loc, f, args)
+;;
+
+let text_of_functorial_extend loc gmod gl el =
+  let args =
+    let el =
+      List.map
+        (fun e ->
+           let (ent, pos, txt) = text_of_entry e.name.loc gmod gl e in
+           let e =
+             MLast.ExApp
+               (loc,
+                MLast.ExApp
+                  (loc,
+                   MLast.ExApp
+                     (loc,
+                      MLast.ExAcc
+                        (loc, MLast.ExUid (loc, gmod),
+                         MLast.ExLid (loc, "extend")),
+                      ent),
+                   pos),
+                txt)
+           in
+           if !split_ext then
+             MLast.ExLet
+               (loc, false,
+                [MLast.PaLid (loc, "aux"),
+                 MLast.ExFun (loc, [MLast.PaUid (loc, "()"), None, e])],
+                MLast.ExApp
+                  (loc, MLast.ExLid (loc, "aux"), MLast.ExUid (loc, "()")))
+           else e)
+        el
+    in
+    MLast.ExSeq (loc, el)
+  in
+  let_in_of_extend loc gmod true gl el args
 ;;
 
 open Pcaml;;

@@ -135,18 +135,18 @@ value mod_ident = Grammar.Entry.create gram "mod_ident";
 EXTEND
   GLOBAL: interf implem use_file top_phrase;
   interf:
-    [ [ si = sig_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
-      | "#"; n = LIDENT; dp = OPT expr; ";" ->
+    [ [ "#"; n = LIDENT; dp = OPT expr; ";" ->
           ([(<:sig_item< # $n$ $opt:dp$ >>, loc)], True)
+      | si = sig_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
       | EOI -> ([], False) ] ]
   ;
   sig_item_semi:
     [ [ si = sig_item; ";" -> (si, loc) ] ]
   ;
   implem:
-    [ [ si = str_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
-      | "#"; n = LIDENT; dp = OPT expr; ";" ->
+    [ [ "#"; n = LIDENT; dp = OPT expr; ";" ->
           ([(<:str_item< # $n$ $opt:dp$ >>, loc)], True)
+      | si = str_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
       | EOI -> ([], False) ] ]
   ;
   str_item_semi:
@@ -157,15 +157,15 @@ EXTEND
       | EOI -> None ] ]
   ;
   use_file:
-    [ [ si = str_item; ";"; (sil, stopped) = SELF -> ([si :: sil], stopped)
-      | "#"; n = LIDENT; dp = OPT expr; ";" ->
+    [ [ "#"; n = LIDENT; dp = OPT expr; ";" ->
           ([ <:str_item< # $n$ $opt:dp$ >>], True)
+      | si = str_item; ";"; (sil, stopped) = SELF -> ([si :: sil], stopped)
       | EOI -> ([], False) ] ]
   ;
   phrase:
-    [ [ sti = str_item; ";" -> sti
-      | "#"; n = LIDENT; dp = OPT expr; ";" ->
-          <:str_item< # $n$ $opt:dp$ >> ] ]
+    [ [ "#"; n = LIDENT; dp = OPT expr; ";" ->
+          <:str_item< # $n$ $opt:dp$ >>
+      | sti = str_item; ";" -> sti ] ]
   ;
 END;
 

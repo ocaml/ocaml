@@ -29,6 +29,13 @@ type ast =
   | Antiquot of MLast.loc and string ]
 ;
 value list l = List l;
+value antiquot k (bp, ep) x =
+  let shift =
+    if k = "" then String.length "$"
+    else String.length "$" + String.length k + String.length ":"
+  in
+  Antiquot (shift + bp, shift + ep) x
+;
 
 value sig_item = Grammar.Entry.create gram "signature item";
 value str_item = Grammar.Entry.create gram "structure item";
@@ -43,14 +50,6 @@ value class_type = Grammar.Entry.create gram "class type";
 value class_expr = Grammar.Entry.create gram "class expr";
 value class_sig_item = Grammar.Entry.create gram "class signature item";
 value class_str_item = Grammar.Entry.create gram "class structure item";
-
-value antiquot k (bp, ep) x =
-  let shift =
-    if k = "" then String.length "$"
-    else String.length "$" + String.length k + String.length ":"
-  in
-  Antiquot (shift + bp, shift + ep) x
-;
 
 value mkumin f arg =
   match arg with
@@ -109,60 +108,63 @@ EXTEND
   GLOBAL: sig_item str_item ctyp patt expr module_type module_expr
     class_type class_expr class_sig_item class_str_item;
   module_expr:
-    [ [ "functor"; "("; i = anti_UIDENT; ":"; t = module_type; ")"; "->";
+    [ [ "functor"; "("; i = a_UIDENT; ":"; t = module_type; ")"; "->";
         me = SELF ->
           Node "MeFun" [Loc; i; t; me]
       | "struct"; st = SLIST0 [ s = str_item; ";" -> s ]; "end" ->
           Node "MeStr" [Loc; st] ]
     | [ me1 = SELF; me2 = SELF -> Node "MeApp" [Loc; me1; me2] ]
     | [ me1 = SELF; "."; me2 = SELF -> Node "MeAcc" [Loc; me1; me2] ]
-    | [ i = UIDENT -> Node "MeUid" [Loc; Str i]
-      | a = anti_uid -> Node "MeUid" [Loc; a]
-      | a = anti_ -> a
+    | [ a = ANTIQUOT "module_expr" -> antiquot "module_expr" loc a
+      | a = ANTIQUOT "" -> antiquot "" loc a
+      | i = a_UIDENT -> Node "MeUid" [Loc; i]
       | "("; me = SELF; ":"; mt = module_type; ")" ->
           Node "MeTyc" [Loc; me; mt]
       | "("; me = SELF; ")" -> me ] ]
   ;
   str_item:
-    [ [ "declare"; st = SLIST0 [ s = str_item; ";" -> s ]; "end" ->
+    [ [ a = ANTIQUOT "str_item" -> antiquot "str_item" loc a
+      | a = ANTIQUOT "" -> antiquot "" loc a
+      | "declare"; st = SLIST0 [ s = str_item; ";" -> s ]; "end" ->
           Node "StDcl" [Loc; st]
-      | "#"; n = lident; dp = dir_param -> Node "StDir" [Loc; n; dp]
       | "exception"; ctl = constructor_declaration; b = rebind_exn ->
           let (_, c, tl) =
             match ctl with
-            [ Tuple [x1; x2; x3] -> (x1, x2, x3)
+            [ Tuple [xx1; xx2; xx3] -> (xx1, xx2, xx3)
             | _ -> match () with [] ]
           in
           Node "StExc" [Loc; c; tl; b]
-      | "external"; i = lident; ":"; t = ctyp; "="; p = SLIST1 string ->
-          Node "StExt" [Loc; i; t; p]
+      | "external"; i = a_LIDENT; ":"; t = ctyp; "=";
+        pd = SLIST1 a_STRING ->
+          Node "StExt" [Loc; i; t; pd]
       | "include"; me = module_expr -> Node "StInc" [Loc; me]
-      | "module"; i = anti_UIDENT; mb = module_binding ->
+      | "module"; i = a_UIDENT; mb = module_binding ->
           Node "StMod" [Loc; i; mb]
-      | "module"; "type"; i = anti_UIDENT; "="; mt = module_type ->
+      | "module"; "type"; i = a_UIDENT; "="; mt = module_type ->
           Node "StMty" [Loc; i; mt]
-      | "open"; m = mod_ident -> Node "StOpn" [Loc; m]
-      | "type"; l = SLIST1 type_declaration SEP "and" -> Node "StTyp" [Loc; l]
+      | "open"; i = mod_ident -> Node "StOpn" [Loc; i]
+      | "type"; tdl = SLIST1 type_declaration SEP "and" ->
+          Node "StTyp" [Loc; tdl]
       | "value"; r = rec_flag; l = SLIST1 let_binding SEP "and" ->
           Node "StVal" [Loc; r; l]
-      | a = anti_ -> a
-      | e = expr -> Node "StExp" [Loc; e]
-      | e = anti_exp -> Node "StExp" [Loc; e] ] ]
+      | "#"; n = lident; dp = dir_param -> Node "StDir" [Loc; n; dp]
+      | e = expr -> Node "StExp" [Loc; e] ] ]
   ;
+
   rebind_exn:
     [ [ "="; sl = mod_ident -> sl
       | -> List [] ] ]
   ;
   module_binding:
     [ RIGHTA
-      [ "("; m = anti_UIDENT; ":"; mt = module_type; ")"; mb = SELF ->
+      [ "("; m = a_UIDENT; ":"; mt = module_type; ")"; mb = SELF ->
           Node "MeFun" [Loc; m; mt; mb]
       | ":"; mt = module_type; "="; me = module_expr ->
           Node "MeTyc" [Loc; me; mt]
       | "="; me = module_expr -> me ] ]
   ;
   module_type:
-    [ [ "functor"; "("; i = anti_UIDENT; ":"; t = SELF; ")"; "->";
+    [ [ "functor"; "("; i = a_UIDENT; ":"; t = SELF; ")"; "->";
         mt = SELF ->
           Node "MtFun" [Loc; i; t; mt] ]
     | [ mt = SELF; "with"; wcl = SLIST1 with_constr SEP "and" ->
@@ -181,7 +183,6 @@ EXTEND
   sig_item:
     [ [ "declare"; st = SLIST0 [ s = sig_item; ";" -> s ]; "end" ->
           Node "SgDcl" [Loc; st]
-      | "#"; n = lident; dp = dir_param -> Node "SgDir" [Loc; n; dp]
       | "exception"; ctl = constructor_declaration ->
           match ctl with
           [ Tuple [Loc; c; tl] -> Node "SgExc" [Loc; c; tl]
@@ -189,19 +190,20 @@ EXTEND
       | "external"; i = lident; ":"; t = ctyp; "="; p = SLIST1 string ->
           Node "SgExt" [Loc; i; t; p]
       | "include"; mt = module_type -> Node "SgInc" [Loc; mt]
-      | "module"; i = anti_UIDENT; mt = module_declaration ->
+      | "module"; i = a_UIDENT; mt = module_declaration ->
           Node "SgMod" [Loc; i; mt]
-      | "module"; "type"; i = anti_UIDENT; "="; mt = module_type ->
+      | "module"; "type"; i = a_UIDENT; "="; mt = module_type ->
           Node "SgMty" [Loc; i; mt]
       | "open"; m = mod_ident -> Node "SgOpn" [Loc; m]
       | "type"; l = SLIST1 type_declaration SEP "and" -> Node "SgTyp" [Loc; l]
       | "value"; i = lident; ":"; t = ctyp -> Node "SgVal" [Loc; i; t]
+      | "#"; n = lident; dp = dir_param -> Node "SgDir" [Loc; n; dp]
       | a = anti_ -> a ] ]
   ;
   module_declaration:
     [ RIGHTA
       [ ":"; mt = module_type -> mt
-      | "("; i = anti_UIDENT; ":"; t = module_type; ")"; mt = SELF ->
+      | "("; i = a_UIDENT; ":"; t = module_type; ")"; mt = SELF ->
           Node "MtFun" [Loc; i; t; mt] ] ]
   ;
   with_constr:
@@ -216,11 +218,11 @@ EXTEND
       | -> Option None ] ]
   ;
   expr:
-    [ RIGHTA
+    [ "top" RIGHTA
       [ "let"; r = rec_flag; l = SLIST1 let_binding SEP "and"; "in";
         x = SELF ->
           Node "ExLet" [Loc; r; l; x]
-      | "let"; "module"; m = anti_UIDENT; mb = module_binding; "in";
+      | "let"; "module"; m = a_UIDENT; mb = module_binding; "in";
         x = SELF ->
           Node "ExLmd" [Loc; m; mb; x]
       | "fun"; "["; l = SLIST0 match_case SEP "|"; "]" ->
@@ -300,7 +302,9 @@ EXTEND
       [ f = [ "~-" | "~-." ]; e = SELF ->
           Node "ExApp" [Loc; Node "ExLid" [Loc; Str f]; e] ]
     | "simple"
-      [ s = INT -> Node "ExInt" [Loc; Str s]
+      [ a = ANTIQUOT "exp" -> antiquot "exp" loc a
+      | a = ANTIQUOT "" -> antiquot "" loc a
+      | s = INT -> Node "ExInt" [Loc; Str s]
       | s = FLOAT -> Node "ExFlo" [Loc; Str s]
       | s = STRING -> Node "ExStr" [Loc; Str s]
       | s = CHAR -> Node "ExChr" [Loc; Str s]
@@ -332,7 +336,7 @@ EXTEND
       | "("; el = anti_list; ")" -> Node "ExTup" [Loc; el]
       | "("; e = SELF; ")" -> e ] ]
   ;
-  expr:
+  expr: LEVEL "top"
     [ [ "do"; seq = SLIST0 [ e = expr; ";" -> e ]; "return"; e = SELF ->
           let _ = warning_seq () in
           Node "ExSeq" [Loc; Append seq e]
@@ -524,9 +528,9 @@ EXTEND
       | -> List [] ] ]
   ;
   constructor_declaration:
-    [ [ ci = anti_UIDENT; "of"; cal = SLIST1 ctyp SEP "and" ->
+    [ [ ci = a_UIDENT; "of"; cal = SLIST1 ctyp SEP "and" ->
           Tuple [Loc; ci; cal]
-      | ci = anti_UIDENT -> Tuple [Loc; ci; List []] ] ]
+      | ci = a_UIDENT -> Tuple [Loc; ci; List []] ] ]
   ;
   label_declaration:
     [ [ i = lident; ":"; mf = mutable_flag; t = ctyp ->
@@ -539,10 +543,6 @@ EXTEND
   ;
   lident:
     [ [ i = LIDENT -> Str i
-      | a = anti_ -> a ] ]
-  ;
-  anti_UIDENT:
-    [ [ i = UIDENT -> Str i
       | a = anti_ -> a ] ]
   ;
   mod_ident:
@@ -583,6 +583,21 @@ EXTEND
       | "mutable" -> Bool True
       | -> Bool False ] ]
   ;
+  a_UIDENT:
+    [ [ a = ANTIQUOT "uid" -> antiquot "uid" loc a
+      | a = ANTIQUOT "" -> antiquot "" loc a
+      | i = UIDENT -> Str i ] ]
+  ;
+  a_LIDENT:
+    [ [ a = ANTIQUOT "lid" -> antiquot "lid" loc a
+      | a = ANTIQUOT "" -> antiquot "" loc a
+      | i = LIDENT -> Str i ] ]
+  ;
+  a_STRING:
+    [ [ a = ANTIQUOT "str" -> antiquot "str" loc a
+      | a = ANTIQUOT "" -> antiquot "" loc a
+      | i = STRING -> Str i ] ]
+  ;
   anti_:
     [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
   ;
@@ -594,9 +609,6 @@ EXTEND
   ;
   anti_chr:
     [ [ a = ANTIQUOT "chr" -> antiquot "chr" loc a ] ]
-  ;
-  anti_exp:
-    [ [ a = ANTIQUOT "exp" -> antiquot "exp" loc a ] ]
   ;
   anti_flo:
     [ [ a = ANTIQUOT "flo" -> antiquot "flo" loc a ] ]
@@ -811,7 +823,7 @@ EXTEND
   ;
   (* Identifiers *)
   longid:
-    [ [ m = anti_UIDENT; "."; l = SELF -> [m :: l]
+    [ [ m = a_UIDENT; "."; l = SELF -> [m :: l]
       | i = lident -> [i] ] ]
   ;
   clty_longident:
