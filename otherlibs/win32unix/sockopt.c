@@ -12,7 +12,7 @@
 /* $Id$ */
 
 #include <mlvalues.h>
-#include "unixwin.h"
+#include "unixsupport.h"
 #include <winsock.h>
 #include <sys/types.h>
 
@@ -26,7 +26,7 @@ value unix_getsockopt(socket, option)
   int optval, optsize;
   optsize = sizeof(optval);
   if (getsockopt(_get_osfhandle(Int_val(socket)), SOL_SOCKET, 
-                 sockopt[Int_val(option)], &optval, &optsize) == -1)
+                 sockopt[Int_val(option)], (char *) &optval, &optsize) == -1)
     uerror("getsockopt", Nothing);
   return Val_int(optval);
 }
@@ -36,7 +36,8 @@ value unix_setsockopt(socket, option, status)
 {
   int optval = Int_val(status);
   if (setsockopt(_get_osfhandle(Int_val(socket)), SOL_SOCKET,
-                 sockopt[Int_val(option)], &optval, sizeof(optval)) == -1)
+                 sockopt[Int_val(option)],
+		 (char *) &optval, sizeof(optval)) == -1)
     uerror("setsockopt", Nothing);
   return Val_unit;
 }

@@ -1,0 +1,3 @@
+envir.o: envir.c
+errmsg.o: errmsg.c
+startup.o: startup.c

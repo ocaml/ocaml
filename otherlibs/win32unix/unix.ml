@@ -149,6 +149,8 @@ type open_flag =
   | O_CREAT
   | O_TRUNC
   | O_EXCL
+  | O_BINARY
+  | O_TEXT
 
 type file_perm = int
 
@@ -233,14 +235,14 @@ type dir_entry =
   | Dir_read of string
   | Dir_toread
 
-type dir_handle = { handle: int; mutable entry: dir_entry }
+type dir_handle = { handle: int; mutable entry_read: dir_entry }
 
 external findfirst : string -> string * int = "win_findfirst"
 external findnext : int -> string= "win_findnext"
 
 let opendir dirname =
   try
-    let (first_entry, handle) = findfirst (nom^"\\*.*") in
+    let (first_entry, handle) = findfirst (dirname ^ "\\*.*") in
     { handle = handle; entry_read = Dir_read first_entry }
   with End_of_file ->
     { handle = 0; entry_read = Dir_empty }
@@ -260,12 +262,6 @@ let closedir d =
 
 external pipe : unit -> file_descr * file_descr = "unix_pipe"
 
-type process_times =
-  { tms_utime : float;
-    tms_stime : float;
-    tms_cutime : float;
-    tms_cstime : float }
-
 type tm =
   { tm_sec : int;
     tm_min : int;
@@ -280,9 +276,8 @@ type tm =
 external time : unit -> int = "unix_time"
 external gmtime : int -> tm = "unix_gmtime"
 external localtime : int -> tm = "unix_localtime"
+external mktime : tm -> int * tm = "unix_mktime"
 external sleep : int -> unit = "unix_sleep"
-external times : unit -> process_times =
-              "unix_times_bytecode" "unix_times_native"
 external utimes : string -> int -> int -> unit = "unix_utimes"
 
 let getlogin () =
@@ -432,7 +427,7 @@ let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 let open_proc cmd proc input output =
   let shell =
     try Sys.getenv "COMSPEC"
-    with Not_found -> raise(Unix_error(ENOEXEC, "open_proc", cmd) in
+    with Not_found -> raise(Unix_error(ENOEXEC, "open_proc", cmd)) in
   let pid =
     create_process shell [|shell; "/c"; cmd|] input output stderr in
   Hashtbl.add popen_processes proc pid
@@ -440,14 +435,16 @@ let open_proc cmd proc input output =
 let open_process_in cmd =
   let (in_read, in_write) = pipe() in
   let inchan = in_channel_of_descr in_read in
-  open_proc cmd (Process_in inchan) stdin in_write [in_read];
+  set_close_on_exec in_read;
+  open_proc cmd (Process_in inchan) stdin in_write;
   close in_write;
   inchan
 
 let open_process_out cmd =
   let (out_read, out_write) = pipe() in
   let outchan = out_channel_of_descr out_write in
-  open_proc cmd (Process_out outchan) out_read stdout [out_write];
+  set_close_on_exec out_write;
+  open_proc cmd (Process_out outchan) out_read stdout;
   close out_read;
   outchan
 
@@ -456,8 +453,9 @@ let open_process cmd =
   let (out_read, out_write) = pipe() in
   let inchan = in_channel_of_descr in_read in
   let outchan = out_channel_of_descr out_write in
-  open_proc cmd (Process(inchan, outchan))
-            out_read in_write [in_read; out_write];
+  set_close_on_exec in_read;
+  set_close_on_exec out_write;
+  open_proc cmd (Process(inchan, outchan)) out_read in_write;
   (inchan, outchan)
 
 let find_proc_id fun_name proc =

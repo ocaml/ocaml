@@ -202,17 +202,19 @@ static void csl_thread_finalize(vfin)
 
 /* Allocate a new thread descriptor */
 
-static value csl_alloc_thread()
+#define Max_thread_number 100
+
+static csl_thread_t csl_alloc_thread()
 {
-  value th;
+  csl_thread_t th;
   Push_roots(root, 1);
 
   root[0] =
-    alloc_final(sizeof(struct(win32_thread_struct)) / sizeof(value),
+    alloc_final(sizeof(struct win32_thread_struct) / sizeof(value),
                 csl_thread_finalize, 1, Max_thread_number);
   th = (csl_thread_t)
     alloc_shr(sizeof(struct csl_thread_struct) / sizeof(value), 0);
-  th->win32 = root[0];
+  th->win32 = (struct win32_thread_struct *) root[0];
   th->win32->wakeup_event = CreateEvent(NULL, FALSE, FALSE, NULL);
   th->ident = Val_long(thread_next_ident);
   thread_next_ident++;
@@ -222,8 +224,6 @@ static value csl_alloc_thread()
 }
 
 /* Initialize the thread machinery */
-
-#define Max_thread_number 1000
 
 value csl_thread_initialize(unit)   /* ML */
      value unit;

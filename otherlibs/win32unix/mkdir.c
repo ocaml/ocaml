@@ -12,11 +12,11 @@
 /* $Id$ */
 
 #include <mlvalues.h>
-#include "unixwin.h"
+#include "unixsupport.h"
 
 value unix_mkdir(path, perm)     /* ML */
      value path, perm;
 {
-  if (_mkdir(String_val(path) == -1) uerror("mkdir", path);
+  if (_mkdir(String_val(path)) == -1) uerror("mkdir", path);
   return Val_unit;
 }

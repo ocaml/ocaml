@@ -34,10 +34,9 @@ value unix_accept(sock)          /* ML */
              (char *)&optionValue, sizeof(optionValue));
   
   sock_addr_len = sizeof(sock_addr);
-  h = _get_osfhandle(Int_val(sock));
-  if (h == -1) uerror("accept", Nothing);
   enter_blocking_section();
-  s = accept(h, &sock_addr.s_gen, &sock_addr_len);
+  s = accept((SOCKET) _get_osfhandle(Int_val(sock)),
+	     &sock_addr.s_gen, &sock_addr_len);
   leave_blocking_section();
   if (s == INVALID_SOCKET) {
     _dosmaperr(WSAGetLastError());

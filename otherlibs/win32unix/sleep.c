@@ -12,17 +12,14 @@
 /* $Id$ */
 
 #include <mlvalues.h>
-#include <fail.h>
-#include "cst2constr.h"
+#include "unixsupport.h"
+#include <windows.h>
 
-value cst_to_constr(n, tbl, size, deflt)
-     int n;
-     int * tbl;
-     int size;
-     int deflt;
+value unix_sleep(t)              /* ML */
+     value t;
 {
-  int i;
-  for (i = 0; i < size; i++)
-    if (n == tbl[i]) return Val_int(i);
-  return Val_int(deflt);
+  enter_blocking_section();
+  Sleep(Int_val(t) * 1000);
+  leave_blocking_section();
+  return Val_unit;
 }

@@ -13,18 +13,20 @@
 
 #include <mlvalues.h>
 #include <memory.h>
-#include <windows.h>
+#include <errno.h>
 #include <alloc.h>
 #include "unixsupport.h"
 
 value win_findfirst(name)             /* ML */
      value name;
 {
-  HANDLE h;
+  int h;
   value v;
   struct _finddata_t fileinfo;
   Push_roots(r,1);
+
 #define valname r[0] 
+
   h = _findfirst(String_val(name),&fileinfo);
   if (h == -1) {
     if (errno == ENOENT)

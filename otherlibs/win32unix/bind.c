@@ -24,9 +24,3 @@ value unix_bind(socket, address)      /* ML */
   if (ret == -1) uerror("bind", Nothing);
   return Val_unit;
 }
-
-#else
-
-value unix_bind() { invalid_argument("bind not implemented"); }
-  
-#endif

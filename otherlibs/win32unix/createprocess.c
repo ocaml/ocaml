@@ -30,10 +30,10 @@ value win_create_process_native(exe, cmdline, env, fd1, fd2, fd3)
   GetStartupInfo(&si);
   si.dwFlags |= STARTF_USESTDHANDLES;
 
-  if ((si.hStdInput = _get_osfhandle(Int_val(fd1))) == -1 ||
-      (si.hStdOutput = _get_osfhandle(Int_val(fd2))) == -1 ||
-      (si.hStdError = _get_osfhandle(Int_val(fd3))) == -1 ||
-      ! CreateProcess(String_val(exe), String_val(cmdline), NULL, NULL,
+  si.hStdInput = (HANDLE) _get_osfhandle(Int_val(fd1));
+  si.hStdOutput = (HANDLE) _get_osfhandle(Int_val(fd2));
+  si.hStdError = (HANDLE) _get_osfhandle(Int_val(fd3));
+  if (! CreateProcess(String_val(exe), String_val(cmdline), NULL, NULL,
                       TRUE, 0, envp, NULL, &si, &pi)) {
     _dosmaperr(GetLastError());
     uerror("create_process", exe);

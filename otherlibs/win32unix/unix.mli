@@ -142,9 +142,7 @@ external execve : string -> string array -> string array -> unit = "unix_execve"
         (* Same as [execv], except that the third argument provides the
            environment to the program executed. *)
 external execvp : string -> string array -> unit = "unix_execvp"
-external execvpe : string -> string array -> string array -> unit = "unix_execvpe"
-        (* Same as [execv] and [execvp] respectively, except that
-           the program is searched in the path. *)
+        (* Same as [execv], except that the program is searched in the path. *)
 
 external waitpid : wait_flag list -> int -> int * process_status
            = "win_waitpid"
@@ -294,11 +292,11 @@ external dup : file_descr -> file_descr = "unix_dup"
 external dup2 : file_descr -> file_descr -> unit = "unix_dup2"
         (* [dup2 fd1 fd2] duplicates [fd1] to [fd2], closing [fd2] if already
            opened. *)
-external set_nonblock : file_descr -> unit = "unix_set_nonblock"
-external clear_nonblock : file_descr -> unit = "unix_clear_nonblock"
+val set_nonblock : file_descr -> unit
+val clear_nonblock : file_descr -> unit
         (* No-ops *)
-external set_close_on_exec : file_descr -> unit = "unix_set_close_on_exec"
-external clear_close_on_exec : file_descr -> unit = "unix_clear_close_on_exec"
+external set_close_on_exec : file_descr -> unit = "win_set_close_on_exec"
+external clear_close_on_exec : file_descr -> unit = "win_clear_close_on_exec"
         (* Set or clear the ``close-on-exec'' flag on the given descriptor.
            A descriptor with the close-on-exec flag is automatically
            closed when the current process starts another program with
@@ -321,13 +319,13 @@ type dir_handle
 
         (* The type of descriptors over opened directories. *)
 
-external opendir : string -> dir_handle = "unix_opendir"
+val opendir : string -> dir_handle
         (* Open a descriptor on a directory *)
-external readdir : dir_handle -> string = "unix_readdir"
+val readdir : dir_handle -> string
         (* Return the next entry in a directory.
            Raise [End_of_file] when the end of the directory has been 
            reached. *)
-external closedir : dir_handle -> unit = "unix_closedir"
+val closedir : dir_handle -> unit
         (* Close a directory descriptor. *)
 
 
@@ -385,14 +383,6 @@ val close_process: in_channel * out_channel -> process_status
 
 (*** Time functions *)
 
-type process_times =
-  { tms_utime : float;          (* User time for the process *)
-    tms_stime : float;          (* System time for the process *)
-    tms_cutime : float;         (* User time for the children processes *)
-    tms_cstime : float }        (* System time for the children processes *)
-
-        (* The execution times (CPU times) of a process. *)
-
 type tm =
   { tm_sec : int;                       (* Seconds 0..59 *)
     tm_min : int;                       (* Minutes 0..59 *)
@@ -422,9 +412,6 @@ external mktime : tm -> int * tm = "unix_mktime"
            recomputed from the other fields. *)
 external sleep : int -> unit = "unix_sleep"
         (* Stop execution for the given number of seconds. *)
-external times : unit -> process_times =
-              "unix_times_bytecode" "unix_times_native"
-        (* Return the execution times of the process. *)
 external utimes : string -> int -> int -> unit = "unix_utimes"
         (* Set the last access time (second arg) and last modification time
            (third arg) for a file. Times are expressed in seconds from
@@ -432,9 +419,9 @@ external utimes : string -> int -> int -> unit = "unix_utimes"
 
 (*** User id, group id *)
 
-external getuid : unit -> int = "unix_getuid"
+val getuid : unit -> int
         (* Return the user id of the user executing the process. *)
-external getgid : unit -> int = "unix_getgid"
+val getgid : unit -> int
         (* Return the group id of the user executing the process. *)
 
 type passwd_entry =
@@ -454,18 +441,18 @@ type group_entry =
     gr_mem : string array }
         (* Structure of entries in the [groups] database. *)
 
-external getlogin : unit -> string = "unix_getlogin"
+val getlogin : unit -> string
         (* Return the login name of the user executing the process. *)
-external getpwnam : string -> passwd_entry = "unix_getpwnam"
+val getpwnam : string -> passwd_entry
         (* Find an entry in [passwd] with the given name, or raise
            [Not_found]. *)
-external getgrnam : string -> group_entry = "unix_getgrnam"
+val getgrnam : string -> group_entry
         (* Find an entry in [group] with the given name, or raise
            [Not_found]. *)
-external getpwuid : int -> passwd_entry = "unix_getpwuid"
+val getpwuid : int -> passwd_entry
         (* Find an entry in [passwd] with the given user id, or raise
            [Not_found]. *)
-external getgrgid : int -> group_entry = "unix_getgrgid"
+val getgrgid : int -> group_entry
         (* Find an entry in [group] with the given group id, or raise
            [Not_found]. *)
 
@@ -519,10 +506,6 @@ external socket : socket_domain -> socket_type -> int -> file_descr
         (* Create a new socket in the given domain, and with the
            given kind. The third argument is the protocol type; 0 selects
            the default protocol for that kind of sockets. *)
-external socketpair :
-        socket_domain -> socket_type -> int -> file_descr * file_descr
-        = "unix_socketpair"
-        (* Create a pair of unnamed sockets, connected together. *)
 external accept : file_descr -> file_descr * sockaddr = "unix_accept"
         (* Accept connections on the given socket. The returned descriptor
            is a socket connected to the client; the returned address is

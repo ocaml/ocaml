@@ -26,10 +26,10 @@ value win_system(cmd)
 
   enter_blocking_section();
   _flushall();
-  ret = system(String_val(c));;
+  ret = system(String_val(cmd));;
   leave_blocking_section();
   if (ret == -1) uerror("system", Nothing);
-  st = alloc(1, 0); /* 0: Exited */
+  st = alloc(1, 0); /* Tag 0: Exited */
   Field(st, 0) = Val_int(ret);
   return st;
 }

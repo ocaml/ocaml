@@ -2,10 +2,10 @@ include ../../config/Makefile.nt
 
 # Compilation options
 CC=$(BYTECC)
-CFLAGS=-I..\..\byterun -O $(BYTECCCOMPOPTS)
-CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc -I ..\..\boot
+CFLAGS=-I..\..\byterun $(BYTECCCOMPOPTS)
+CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc -I ..\..\boot -I ..\win32unix
 
-C_OBJS=threadstubs.obj
+C_OBJS=win32.obj
 CAML_OBJS=mutex.cmo condition.cmo threadIO.cmo threadPrintexc.cmo \
   thread.cmo event.cmo threadUnix.cmo threadPrintf.cmo 
 
@@ -44,8 +44,8 @@ installopt:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend:
-	gcc -MM $(CFLAGS) *.c > .depend
-	../../tools/csldep *.mli *.ml >> .depend
+#	gcc -MM -I../../byterun *.c > .depend
+	..\..\boot\ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
 
 threadstubs.obj: threadstubs.c
 	$(CC) $(CFLAGS) -c threadstubs.c
