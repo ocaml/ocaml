@@ -594,6 +594,19 @@ let rec update_level env level ty =
           (* +++ Levels should be restored... *)
           raise (Unify [(ty, newvar2 level)])
         end
+    | Tobject(_, ({contents=Some(p, tl)} as nm))
+      when level < Path.binding_time p ->
+        nm := None;
+        update_level env level ty
+    | Tvariant row ->
+        let row = row_repr row in
+        begin match row.row_name with
+        | Some (p, tl) when level < Path.binding_time p ->
+            ty.desc <- Tvariant {row with row_name = None}
+        | _ -> ()
+        end;
+        ty.level <- level;
+        iter_type_expr (update_level env level) ty
     | Tfield(_, k, _, _) ->
         begin match field_kind_repr k with
           Fvar _ (* {contents = None} *) -> raise (Unify [(ty, newvar2 level)])
