@@ -1065,10 +1065,12 @@ let string_out b ppf () =
 let fprintf ppf = fprintf_out false unit_out ppf;;
 let printf f = fprintf_out false unit_out std_formatter f;;
 let eprintf f = fprintf_out false unit_out err_formatter f;;
-let sprintf f =
+let kprintf k f =
  let b = Buffer.create 512 in
  let ppf = formatter_of_buffer b in
- fprintf_out true (string_out b ppf) ppf f;;
+ fprintf_out true (fun () -> k (string_out b ppf ())) ppf f
+;;
+let sprintf f = kprintf (fun x -> x) f;;
 
 let bprintf b =
  let ppf = formatter_of_buffer b in

@@ -593,3 +593,7 @@ val bprintf : Buffer.t -> ('a, formatter, unit) format -> 'a;;
    [fprintf] with a formatter writing to the buffer [b] (as obtained
    by [formatter_of_buffer b]), otherwise the repeated flushes of the
    pretty-printer queue would result in badly formatted output. *)
+
+val kprintf : (string -> string) -> ('a, unit, string) format -> 'a;;
+(** Same as [sprintf] above, but instead of returning the string,
+    pass it to the first argument. *)
