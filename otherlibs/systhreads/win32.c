@@ -445,13 +445,13 @@ static int caml_mutex_compare(value wrapper1, value wrapper2)
 {
   HANDLE h1 = Mutex_val(wrapper1);
   HANDLE h2 = Mutex_val(wrapper2);
-  return mut1 == mut2 ? 0 : mut1 < mut2 ? -1 : 1;
+  return h1 == h2 ? 0 : h1 < h2 ? -1 : 1;
 }
 
 static struct custom_operations caml_mutex_ops = {
   "_mutex",
   caml_mutex_finalize,
-  caml_mutex_condition_compare,
+  caml_mutex_compare,
   custom_hash_default,
   custom_serialize_default,
   custom_deserialize_default
@@ -528,7 +528,7 @@ static int caml_condition_compare(value wrapper1, value wrapper2)
 {
   HANDLE h1 = Condition_val(wrapper1)->sem;
   HANDLE h2 = Condition_val(wrapper2)->sem;
-  return mut1 == mut2 ? 0 : mut1 < mut2 ? -1 : 1;
+  return h1 == h2 ? 0 : h1 < h2 ? -1 : 1;
 }
 
 static struct custom_operations caml_condition_ops = {
