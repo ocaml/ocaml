@@ -910,7 +910,6 @@ type 'a result =
   | Rnone           (* No matching value *)
   | Rsome of 'a     (* This matching value *)
 
-(* boolean argument ``variants'' is unused at present *)
 let rec try_many variants f = function
   | [] -> Rnone
   | x::rest ->
