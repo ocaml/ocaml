@@ -15,6 +15,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <fail.h>
 #include <mlvalues.h>
 #include <signals.h>
 #include "unixsupport.h"

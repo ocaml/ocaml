@@ -13,6 +13,7 @@
 
 /* $Id$ */
 
+#include <fail.h>
 #include <mlvalues.h>
 #include "unixsupport.h"
 #ifdef HAS_UNISTD

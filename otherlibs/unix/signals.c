@@ -17,6 +17,7 @@
 #include <signal.h>
 
 #include <alloc.h>
+#include <fail.h>
 #include <memory.h>
 #include <mlvalues.h>
 #include <signals.h>

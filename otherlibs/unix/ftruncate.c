@@ -14,6 +14,7 @@
 /* $Id$ */
 
 #include <sys/types.h>
+#include <fail.h>
 #include <mlvalues.h>
 #include <io.h>
 #include "unixsupport.h"

@@ -15,6 +15,7 @@
 
 #include <mlvalues.h>
 #include <alloc.h>
+#include <fail.h>
 #include <memory.h>
 #include <signals.h>
 #include "unixsupport.h"
@@ -47,6 +48,7 @@ CAMLprim value unix_accept(value sock)
 
 #else
 
-CAMLprim value unix_accept(value sock) { invalid_argument("accept not implemented"); }
+CAMLprim value unix_accept(value sock)
+{ invalid_argument("accept not implemented"); }
   
 #endif
