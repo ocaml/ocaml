@@ -121,7 +121,7 @@ and action = parse
       action lexbuf }
   | "'{'"
     { action lexbuf }
-  | "'{'"
+  | "'}'"
     { action lexbuf }
   | "(*" 
     { comment_depth := 1;
