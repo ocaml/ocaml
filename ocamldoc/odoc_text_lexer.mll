@@ -671,9 +671,11 @@ rule main = parse
 | end_shortcut_list
     {
       incr_cpts lexbuf ;
-      lexbuf.Lexing.lex_abs_pos <- lexbuf.Lexing.lex_abs_pos - 1;
       lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
-      lexbuf.Lexing.lex_last_pos <- lexbuf.Lexing.lex_last_pos - 1;
+      lexbuf.Lexing.lex_curr_p <- 
+	{ lexbuf.Lexing.lex_curr_p with
+	  pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - 1 ;
+	} ;
       decr line_number ;
       if !shortcut_list_mode then
         (

@@ -216,9 +216,11 @@ and special_comment = parse
         description := remove_blanks s;
         reset_string_buffer ();
         let len = String.length (Lexing.lexeme lexbuf) in
-        lexbuf.Lexing.lex_abs_pos <- lexbuf.Lexing.lex_abs_pos - len;
         lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - len;
-        lexbuf.Lexing.lex_last_pos <- lexbuf.Lexing.lex_last_pos - len;
+        lexbuf.Lexing.lex_curr_p <- 
+	  { lexbuf.Lexing.lex_curr_p with
+	    pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - len
+	  } ;
         (* we don't increment the Odoc_comments_global.nb_chars *)
         special_comment_part2 lexbuf
       } 
