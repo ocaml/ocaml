@@ -158,7 +158,7 @@ let init () =
         while true do
           set_prim_table (input_line ic)
         done
-      with End_of_file -> close_in ic
+      with End_of_file -> remove_file primfile; close_in ic
          | x -> close_in ic; raise x
     with x -> remove_file primfile; raise x
   end else begin
