@@ -20,7 +20,7 @@ include ../../config/Makefile
 CC=$(BYTECC) -g
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
-CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
+CFLAGS=$(DBM_INCLUDES) -I../../byterun -O $(BYTECCCOMPOPTS)
 COBJS=cldbm.o
 
 all: libmldbm.a dbm.cmi dbm.cma

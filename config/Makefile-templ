@@ -224,10 +224,10 @@ BIGNUM_ARCH=alpha
 # For Solaris:
 #PTHREAD_LINK=-cclib -lpthread -cclib -lposix4
 
-### Location of the include directory containing the X11/*.h includes
+### -I options for finding the X11/*.h includes
 # Needed for the "graph" and "labltk" packages
 # Usually:
-#X11_INCLUDES=/usr/include
+#X11_INCLUDES=-I/usr/X11R6/include
 # For SunOS with OpenLook:
 #X11_INCLUDES=/usr/openwin/include
 
@@ -237,6 +237,13 @@ BIGNUM_ARCH=alpha
 #X11_LINK=-cclib -lX11
 # For SunOS with OpenLook:
 #X11_LINK=-cclib -L$(X11_LIB) -cclib -lX11
+
+### -I options for finding the include file ndbm.h
+# Needed for the "dbm" package
+# Usually:
+#DBM_INCLUDES=
+# For recent Linux systems:
+#DBM_INCLUDES=-I/usr/include/gdbm
 
 ### Preprocessor options for finding tcl.h and tk.h
 # Needed for the "labltk" package

@@ -159,7 +159,7 @@ In particular, the version of gcc 2.7.2.1 that comes with
 Linux RedHat 4.x / Intel is affected by this problem.
 Other Linux distributions might also be affected.
 If you are using one of these configurations, you are strongly advised
-to use another version of gcc, such as 2.7.2 or 2.7.2.2, which are
+to use another version of gcc, such as 2.7.2.3 or 2.95, which are
 known to work well with Objective Caml.
 
 Press <enter> to proceed or <interrupt> to stop.
@@ -721,7 +721,11 @@ case "$host" in
   alpha-*-osf*) bignum_arch=alpha;;
   i[3456]86-*-linux) bignum_arch=x86;;
   i[3456]86-*-beos) bignum_arch=x86;;
-  i[3456]86-*-*bsd*) bignum_arch=x86;;
+  i[3456]86-*-*bsd*)
+    case `sh ./runtest elf.c` in
+      elf) bignum_arch=x86;;
+        *) bignum_arch=C;;
+    esac;;
   sparc-*-sunos*) bignum_arch=supersparc;;
   sparc-*-solaris*) bignum_arch=supersparc-solaris;;
   sparc-*-*bsd*) bignum_arch=sparc;;
@@ -821,12 +825,24 @@ fi
 
 # See if we can compile the dbm library
 
-if sh ./hasgot -i ndbm.h
-then
-  echo "NDBM library found."
-  otherlibraries="$otherlibraries dbm"
-else
+dbm_include="not found"
+for dir in /usr/include /usr/include/gdbm; do
+  if test -f $dir/ndbm.h; then
+    dbm_include=$dir
+    break
+  fi
+done
+if test "$dbm_include" = "not found"; then
   echo "NDBM not found, the \"dbm\" library will not be supported."
+else
+  echo "NDBM found (in $dbm_include)"
+  if test "$dbm_include" = "/usr/include"; then
+    dbm_include=""
+  else
+    dbm_include="-I$dbm_include"
+  fi
+  echo "DBM_INCLUDES=$dbm_include" >> Makefile
+  otherlibraries="$otherlibraries dbm"
 fi
 
 # Look for tcl/tk
@@ -989,7 +1005,7 @@ else
 fi
 
 echo "Configuration for the external libraries:"
-echo "        libraries supported....... $otherlibraries"
+echo "        libraries supported ...... $otherlibraries"
 
 echo "The \"num\" library:"
 echo "        target architecture ...... $bignum_arch"
