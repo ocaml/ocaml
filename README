@@ -26,7 +26,7 @@ native-code compiler currently runs on the following platforms:
     Sparc processors: Sun Sparc under SunOS 4.1, Solaris 2, NetBSD, Linux
     Mips processors: SGI workstations and mainframes under IRIX 6
     HP PA-RISC processors: HP 9000/700 under HPUX 10
-    PowerPC processors: IBM RS6000 and PowerPC workstations under AIX 3.2,
+    PowerPC processors: IBM RS6000 and PowerPC workstations under AIX 4.3,
                         PowerMacintosh under MkLinux, LinuxPPC, MacOS X
     Strong ARM processors: Corel Netwinder under Linux
 
