@@ -92,10 +92,6 @@ parameter:
   | '?' '(' label-name [':' typexpr] ['=' expr] ')'
   | '?' label-name ':' pattern
   | '?' label-name ':' '(' pattern [':' typexpr] ['=' expr] ')'
-;
-infix-op:
-    infix-symbol
-  | '*' || '=' || 'or' || '&'
 \end{syntax}
 
 The table below shows the relative precedences and associativity of
@@ -122,7 +118,6 @@ precedence come first. For infix and prefix symbols, we write
 \entree{"::"}{right}
 \entree{{\tt \char64}\ldots "^"\ldots}{right}
 \entree{comparisons ("=  ==  < " etc.), all other infix symbols}{left}
-\entree{"not"}{--}
 \entree{"&   &&"}{left}
 \entree{"or  ||"}{left}
 \entree{","}{--}

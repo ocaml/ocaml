@@ -34,7 +34,12 @@ value-name:
       | '(' operator-name ')'
 ;
 operator-name:
-        prefix-symbol || infix-symbol || '*' || '=' || 'or' || '&' || ':='
+        prefix-symbol || infix-op
+;
+infix-op:
+    infix-symbol
+  | '*' || '=' || 'or' || '&' || ':='
+  | 'mod' || 'land' || 'lor' || 'lxor' || 'lsl' || 'lsr' || 'asr'
 ;
 cconstr-name:
         capitalized-ident
