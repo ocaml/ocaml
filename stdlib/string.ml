@@ -138,7 +138,7 @@ let capitalize s = apply1 Char.uppercase s
 let uncapitalize s = apply1 Char.lowercase s
 
 let rec index_from s i c =
-  if i >= String.length s then raise Not_found
+  if i >= length s then raise Not_found
   else if s.[i] = c then i
   else index_from s (i+1) c
 
@@ -149,4 +149,4 @@ let rec rindex_from s i c =
   else if s.[i] = c then i
   else rindex_from s (i-1) c
 
-let rindex s c = rindex_from s (String.length s - 1) c
+let rindex s c = rindex_from s (length s - 1) c

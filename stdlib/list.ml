@@ -52,8 +52,7 @@ let rec map f = function
   | a::l -> let r = f a in r :: map f l
 
 let rec iter f = function
-  | [] -> ()
-  | [a] -> f a
+    [] -> ()
   | a::l -> f a; iter f l
 
 let rec fold_left f accu l =

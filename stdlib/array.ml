@@ -140,14 +140,14 @@ let of_list = function
 
 let fold_left f x a =
   let r = ref x in
-  for i = 0 to Array.length a - 1 do
+  for i = 0 to length a - 1 do
     r := f !r (unsafe_get a i)
   done;
   !r
 
 let fold_right f a x =
   let r = ref x in
-  for i = Array.length a - 1 downto 0 do
+  for i = length a - 1 downto 0 do
     r := f (unsafe_get a i) !r
   done;
   !r
