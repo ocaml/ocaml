@@ -164,7 +164,7 @@ struct bucket
 /* TABLE_SIZE is the number of entries in the symbol table. */
 /* TABLE_SIZE must be a power of two.			    */
 
-#define	TABLE_SIZE 1024
+#define	TABLE_SIZE 4096
 
 /*  the structure of the LR(0) state machine  */
 
