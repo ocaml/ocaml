@@ -233,8 +233,8 @@ let dir_untrace_all ppf () =
     !traced_functions;
   traced_functions := []
 
-let parse_warnings ppf s =
-  try Warnings.parse_options s
+let parse_warnings ppf iserr s =
+  try Warnings.parse_options iserr s
   with Arg.Bad err -> fprintf ppf "%s.@." err
 
 let _ =
@@ -256,4 +256,7 @@ let _ =
              (Directive_bool(fun b -> Clflags.classic := not b));
 
   Hashtbl.add directive_table "warnings"
-             (Directive_string (parse_warnings std_out))
+             (Directive_string (parse_warnings std_out false));
+
+  Hashtbl.add directive_table "warn_error"
+             (Directive_string (parse_warnings std_out true));

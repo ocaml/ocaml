@@ -158,6 +158,7 @@ let execute_phrase print_outcome ppf phr =
   | Ptop_def sstr ->
       let (str, sg, newenv) = Typemod.type_structure !toplevel_env sstr in
       let lam = Translmod.transl_toplevel_definition str in
+      Warnings.check_fatal ();
       let res = load_lambda ppf lam in
       begin match res with
       | Result v ->

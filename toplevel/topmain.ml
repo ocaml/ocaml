@@ -28,7 +28,7 @@ let main () =
      "-noassert", Arg.Set noassert, " Do not compile assertion checks";
      "-rectypes", Arg.Set recursive_types, " Allow arbitrary recursive types";
      "-unsafe", Arg.Set fast, " No bound checking on array and string access";
-     "-w", Arg.String Warnings.parse_options,
+     "-w", Arg.String (Warnings.parse_options false),
            "<flags>  Enable or disable warnings according to <flags>:\n\
        \032    A/a enable/disable all warnings\n\
        \032    C/c enable/disable suspicious comment\n\
@@ -40,11 +40,15 @@ let main () =
        \032    V/v enable/disable hidden instance variable\n\
        \032    X/x enable/disable all other warnings\n\
        \032    default setting is A (all warnings enabled)";
+     "-warn-error" , Arg.String (Warnings.parse_options true),
+       "<flags>  Enable or disable fatal warnings according to <flags>\n\
+         \032    (see option -w for the list of flags)\n\
+         \032    default setting is a (all warnings are non-fatal)";
 
      "-dparsetree", Arg.Set dump_parsetree, " (undocumented)";
      "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";
      "-dlambda", Arg.Set dump_lambda, " (undocumented)";
-     "-dinstr", Arg.Set dump_instr, " (undocumented)"
+     "-dinstr", Arg.Set dump_instr, " (undocumented)";
     ] file_argument usage;
   Toploop.loop Format.std_formatter
 
