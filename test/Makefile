@@ -2,6 +2,7 @@ CAMLC=../boot/camlrun ../camlc -I ../stdlib
 CAMLYACC=../yacc/camlyacc
 CAMLLEX=../boot/camlrun ../lex/camllex
 CAMLDEP=../tools/camldep
+CAMLRUN=../byterun/camlrun
 
 EXE=fib takc taku sieve quicksort quicksort.fast fft fft.fast \
   soli soli.fast boyer kb nucleic genlex
@@ -32,13 +33,13 @@ clean::
 	rm -f Lex/*.cm[io]
 	rm -f Lex/*~
 
-Lex/grammar.ml Lex/grammar.mli: Lex/grammar.mly $(CAMLYACC)
+Lex/grammar.ml Lex/grammar.mli: Lex/grammar.mly
 	$(CAMLYACC) $(YACCFLAGS) Lex/grammar.mly
 
 clean::
 	rm -f Lex/grammar.ml Lex/grammar.mli
 
-Lex/scanner.ml: Lex/scanner.mll $(CAMLLEX)
+Lex/scanner.ml: Lex/scanner.mll
 	$(CAMLLEX) Lex/scanner.mll
 
 clean::
@@ -71,6 +72,7 @@ clean::
 
 test:
 	set -e; \
+        camlrun=$(CAMLRUN); export camlrun; \
         for prog in $(EXE); do \
           echo $$prog; \
           if test -f Results/$$prog.runtest; then \
@@ -87,11 +89,12 @@ clean::
 
 bench:
 	set -e; \
+        camlrun=$(CAMLRUN); export camlrun; \
         for prog in $(EXE); do \
           echo $$prog; \
           if test -f Results/$$prog.runtest; then \
             sh Results/$$prog.runtest bench; \
           else \
-            xtime -o /dev/null ../byterun/camlrun $$prog; \
+            xtime -o /dev/null $(CAMLRUN) $$prog; \
           fi; \
         done
