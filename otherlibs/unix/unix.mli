@@ -704,7 +704,7 @@ val gettimeofday : unit -> float
 
 val gmtime : float -> tm
 (** Convert a time in seconds, as returned by {!Unix.time}, into a date and
-   a time. Assumes Greenwich meridian time zone, also known as UTC. *)
+   a time. Assumes UTC (Coordinated Universal Time), also known as GMT. *)
 
 val localtime : float -> tm
 (** Convert a time in seconds, as returned by {!Unix.time}, into a date and
