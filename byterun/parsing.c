@@ -111,7 +111,7 @@ value parse_engine(tables, env, cmd, arg) /* ML */
      value arg;
 {
   int state;
-  mlsize_t sp;
+  mlsize_t sp, asp;
   int errflag;
   int n, n1, n2, m, state1;
 
@@ -240,8 +240,12 @@ value parse_engine(tables, env, cmd, arg) /* ML */
     RESTORE;
     Field(env->s_stack, sp) = Val_int(state);
     modify(&Field(env->v_stack, sp), arg);
-    Field(env->symb_end_stack, sp) =
-      Field(env->symb_end_stack, Int_val(env->asp));
+    asp = Int_val(env->asp);
+    Field(env->symb_end_stack, sp) = Field(env->symb_end_stack, asp);
+    if (sp > asp) {
+      /* This is an epsilon production. Take symb_start equal to symb_end. */
+      Field(env->symb_start_stack, sp) = Field(env->symb_end_stack, asp);
+    }
     goto loop;
 
   default:                      /* Should not happen */
