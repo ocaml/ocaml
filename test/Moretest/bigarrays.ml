@@ -32,10 +32,10 @@ let _ =
   let test_setget kind vals =
     let rec set a i = function
         [] -> ()
-      | (v1, v2) :: tl -> Array1.set a i v1; set a (i+1) tl in
+      | (v1, v2) :: tl -> a.{i} <- v1; set a (i+1) tl in
     let rec test a i = function
         [] -> true
-      | (v1, v2) :: tl -> Array1.get a i = v2 && test a (i+1) tl in
+      | (v1, v2) :: tl -> a.{i} = v2 && test a (i+1) tl in
     let ca = Array1.create kind c_layout (List.length vals) in
     let fa = Array1.create kind fortran_layout (List.length vals) in
     set ca 0 vals;
@@ -109,13 +109,13 @@ let _ =
                   Nativeint.of_string "0x12345678",
                     Nativeint.of_string "0x12345678"]);
   test 9 true
-    (test_setget float4
+    (test_setget float32
                  [0.0, 0.0;
                   4.0, 4.0;
                   -0.5, -0.5;
                   655360.0, 655360.0]);
   test 10 true
-    (test_setget float8
+    (test_setget float64
                  [0.0, 0.0;
                   4.0, 4.0;
                   -0.5, -0.5;
@@ -127,14 +127,14 @@ let _ =
     let a = Array1.create kind c_layout (List.length vals) in
     let rec set i = function
         [] -> () 
-      | hd :: tl -> Array1.set a i hd; set (i+1) tl in
+      | hd :: tl -> a.{i} <- hd; set (i+1) tl in
     set 0 vals;
     a in
   let from_list_fortran kind vals =
     let a = Array1.create kind fortran_layout (List.length vals) in
     let rec set i = function
         [] -> () 
-      | hd :: tl -> Array1.set a i hd; set (i+1) tl in
+      | hd :: tl -> a.{i} <- hd; set (i+1) tl in
     set 1 vals;
     a in
 
@@ -227,24 +227,24 @@ let _ =
      (from_list nativeint (List.map Nativeint.of_int [1;2;3;-4;42;-128]))));
 
   test 27 0 (normalize_comparison (compare
-     (from_list float4 [0.0; 0.25; -4.0; 3.141592654])
-     (from_list float4 [0.0; 0.25; -4.0; 3.141592654])));
+     (from_list float32 [0.0; 0.25; -4.0; 3.141592654])
+     (from_list float32 [0.0; 0.25; -4.0; 3.141592654])));
   test 28 (-1) (normalize_comparison (compare
-     (from_list float4 [0.0; 0.25; -4.0])
-     (from_list float4 [0.0; 0.25; 3.14159])));
+     (from_list float32 [0.0; 0.25; -4.0])
+     (from_list float32 [0.0; 0.25; 3.14159])));
   test 29 1 (normalize_comparison (compare
-     (from_list float4 [0.0; 2.718; -4.0])
-     (from_list float4 [0.0; 0.25; 3.14159])));
+     (from_list float32 [0.0; 2.718; -4.0])
+     (from_list float32 [0.0; 0.25; 3.14159])));
 
   test 30 0 (normalize_comparison (compare
-     (from_list float8 [0.0; 0.25; -4.0; 3.141592654])
-     (from_list float8 [0.0; 0.25; -4.0; 3.141592654])));
+     (from_list float64 [0.0; 0.25; -4.0; 3.141592654])
+     (from_list float64 [0.0; 0.25; -4.0; 3.141592654])));
   test 31 (-1) (normalize_comparison (compare
-     (from_list float8 [0.0; 0.25; -4.0])
-     (from_list float8 [0.0; 0.25; 3.14159])));
+     (from_list float64 [0.0; 0.25; -4.0])
+     (from_list float64 [0.0; 0.25; 3.14159])));
   test 32 1 (normalize_comparison (compare
-     (from_list float8 [0.0; 2.718; -4.0])
-     (from_list float8 [0.0; 0.25; 3.14159])));
+     (from_list float64 [0.0; 2.718; -4.0])
+     (from_list float64 [0.0; 0.25; 3.14159])));
 
   testing_function "dim";
   test 1 (Array1.dim (from_list int [1;2;3;4;5])) 5;
@@ -258,20 +258,20 @@ let _ =
          (from_list int [1;2]);
   test 3 (Array1.sub a 0 8)
          (from_list int [1;2;3;4;5;6;7;8]);
-  let a = from_list float8 [1.0;2.0;3.0;4.0;5.0;6.0;7.0;8.0] in
+  let a = from_list float64 [1.0;2.0;3.0;4.0;5.0;6.0;7.0;8.0] in
   test 4 (Array1.sub a 2 5)
-         (from_list float8 [3.0;4.0;5.0;6.0;7.0]);
+         (from_list float64 [3.0;4.0;5.0;6.0;7.0]);
   test 5 (Array1.sub a 0 2)
-         (from_list float8 [1.0;2.0]);
+         (from_list float64 [1.0;2.0]);
   test 6 (Array1.sub a 0 8)
-         (from_list float8 [1.0;2.0;3.0;4.0;5.0;6.0;7.0;8.0]);
-  let a = from_list_fortran float8 [1.0;2.0;3.0;4.0;5.0;6.0;7.0;8.0] in
+         (from_list float64 [1.0;2.0;3.0;4.0;5.0;6.0;7.0;8.0]);
+  let a = from_list_fortran float64 [1.0;2.0;3.0;4.0;5.0;6.0;7.0;8.0] in
   test 7 (Array1.sub a 2 5)
-         (from_list_fortran float8 [2.0;3.0;4.0;5.0;6.0]);
+         (from_list_fortran float64 [2.0;3.0;4.0;5.0;6.0]);
   test 8 (Array1.sub a 1 2)
-         (from_list_fortran float8 [1.0;2.0]);
+         (from_list_fortran float64 [1.0;2.0]);
   test 9 (Array1.sub a 1 8)
-         (from_list_fortran float8 [1.0;2.0;3.0;4.0;5.0;6.0;7.0;8.0]);
+         (from_list_fortran float64 [1.0;2.0;3.0;4.0;5.0;6.0;7.0;8.0]);
   Gc.full_major();  (* test GC of proxies *)
 
   testing_function "blit, fill";
@@ -283,7 +283,7 @@ let _ =
     (Array1.fill (Array1.sub b ofs len) initval;
      let rec check i = function
          [] -> true
-       | hd :: tl -> Array1.get b i = (if i >= ofs && i < ofs + len
+       | hd :: tl -> b.{i} = (if i >= ofs && i < ofs + len
                                        then initval else hd)
                      && check (i+1) tl
      in check 0 data) in
@@ -299,9 +299,9 @@ let _ =
   test 8 true (test_blit_fill nativeint
                              (List.map Nativeint.of_int [1;2;5;8;-100;212])
                              (Nativeint.of_int 7) 3 2);
-  test 9 true (test_blit_fill float4 [1.0;2.0;0.5;0.125;256.0;512.0]
+  test 9 true (test_blit_fill float32 [1.0;2.0;0.5;0.125;256.0;512.0]
                              0.25 3 2);
-  test 10 true (test_blit_fill float8 [1.0;2.0;5.0;8.123;-100.456;212e19]
+  test 10 true (test_blit_fill float64 [1.0;2.0;5.0;8.123;-100.456;212e19]
                              3.1415 3 2);
 
 (* Bi-dimensional arrays *)
@@ -313,7 +313,7 @@ let _ =
     let a = Array2.create kind layout dim1 dim2 in
     for i = ind0 to dim1 - 1 + ind0 do
       for j = ind0 to dim2 - 1 + ind0 do
-        Array2.set a i j (fromint (i * 1000 + j))
+        a.{i,j} <- (fromint (i * 1000 + j))
       done
     done;
     a in
@@ -321,7 +321,7 @@ let _ =
     try
       for i = ind0 to dim1 - 1 + ind0 do
         for j = ind0 to dim2 - 1 + ind0 do
-          if Array2.get a i j <> (fromint (i * 1000 + j)) then raise Exit
+          if a.{i,j} <> (fromint (i * 1000 + j)) then raise Exit
         done
       done;
       true
@@ -335,10 +335,10 @@ let _ =
     (check_array2 (make_array2 int32 c_layout 0 10 20 Int32.of_int)
                   0 10 20 Int32.of_int);
   test 4 true
-    (check_array2 (make_array2 float4 c_layout 0 10 20 float)
+    (check_array2 (make_array2 float32 c_layout 0 10 20 float)
                   0 10 20 float);
   test 5 true
-    (check_array2 (make_array2 float8 c_layout 0 10 20 float)
+    (check_array2 (make_array2 float64 c_layout 0 10 20 float)
                   0 10 20 float);
   test 6 true
     (check_array2 (make_array2 int16_signed fortran_layout 1 10 20 id) 1 10 20 id);
@@ -348,10 +348,10 @@ let _ =
     (check_array2 (make_array2 int32 fortran_layout 1 10 20 Int32.of_int)
                   1 10 20 Int32.of_int);
   test 9 true
-    (check_array2 (make_array2 float4 fortran_layout 1 10 20 float)
+    (check_array2 (make_array2 float32 fortran_layout 1 10 20 float)
                   1 10 20 float);
   test 10 true
-    (check_array2 (make_array2 float8 fortran_layout 1 10 20 float)
+    (check_array2 (make_array2 float64 fortran_layout 1 10 20 float)
                   1 10 20 float);
 
   testing_function "dim";
@@ -366,25 +366,25 @@ let _ =
   let a = make_array2 int c_layout 0 5 3 id in
   let b = Array2.sub_left a 2 2 in
   test 1 true
-         (Array2.get b 0 0 = 2000 &&
-          Array2.get b 0 1 = 2001 &&
-          Array2.get b 0 2 = 2002 &&
-          Array2.get b 1 0 = 3000 &&
-          Array2.get b 1 1 = 3001 &&
-          Array2.get b 1 2 = 3002);
+         (b.{0,0} = 2000 &&
+          b.{0,1} = 2001 &&
+          b.{0,2} = 2002 &&
+          b.{1,0} = 3000 &&
+          b.{1,1} = 3001 &&
+          b.{1,2} = 3002);
   let a = make_array2 int fortran_layout 1 5 3 id in
   let b = Array2.sub_right a 2 2 in
   test 2 true
-         (Array2.get b 1 1 = 1002 &&
-          Array2.get b 1 2 = 1003 &&
-          Array2.get b 2 1 = 2002 &&
-          Array2.get b 2 2 = 2003 &&
-          Array2.get b 3 1 = 3002 &&
-          Array2.get b 3 2 = 3003 &&
-          Array2.get b 4 1 = 4002 &&
-          Array2.get b 4 2 = 4003 &&
-          Array2.get b 5 1 = 5002 &&
-          Array2.get b 5 2 = 5003);
+         (b.{1,1} = 1002 &&
+          b.{1,2} = 1003 &&
+          b.{2,1} = 2002 &&
+          b.{2,2} = 2003 &&
+          b.{3,1} = 3002 &&
+          b.{3,2} = 3003 &&
+          b.{4,1} = 4002 &&
+          b.{4,2} = 4003 &&
+          b.{5,1} = 5002 &&
+          b.{5,2} = 5003);
 
   testing_function "slice";
   let a = make_array2 int c_layout 0 5 3 id in
@@ -408,7 +408,7 @@ let _ =
     for i = ind0 to dim1 - 1 + ind0 do
       for j = ind0 to dim2 - 1 + ind0 do
         for k = ind0 to dim3 - 1 + ind0 do
-          Array3.set a i j k (fromint (i * 100 + j * 10 + k))
+          a.{i, j, k} <- (fromint (i * 100 + j * 10 + k))
         done
       done
     done;
@@ -418,7 +418,7 @@ let _ =
       for i = ind0 to dim1 - 1 + ind0 do
         for j = ind0 to dim2 - 1 + ind0 do
           for k = ind0 to dim3 - 1 + ind0 do
-            if Array3.get a i j k <> (fromint (i * 100 + j * 10 + k))
+            if a.{i, j, k} <> (fromint (i * 100 + j * 10 + k))
             then raise Exit
           done
         done
@@ -434,10 +434,10 @@ let _ =
     (check_array3 (make_array3 int32 c_layout 0 4 5 6 Int32.of_int)
                   0 4 5 6 Int32.of_int);
   test 4 true
-    (check_array3 (make_array3 float4 c_layout 0 4 5 6 float)
+    (check_array3 (make_array3 float32 c_layout 0 4 5 6 float)
                   0 4 5 6 float);
   test 5 true
-    (check_array3 (make_array3 float8 c_layout 0 4 5 6 float)
+    (check_array3 (make_array3 float64 c_layout 0 4 5 6 float)
                   0 4 5 6 float);
   test 6 true
     (check_array3 (make_array3 int16_signed fortran_layout 1 4 5 6 id) 1 4 5 6 id);
@@ -447,10 +447,10 @@ let _ =
     (check_array3 (make_array3 int32 fortran_layout 1 4 5 6 Int32.of_int)
                   1 4 5 6 Int32.of_int);
   test 9 true
-    (check_array3 (make_array3 float4 fortran_layout 1 4 5 6 float)
+    (check_array3 (make_array3 float32 fortran_layout 1 4 5 6 float)
                   1 4 5 6 float);
   test 10 true
-    (check_array3 (make_array3 float8 fortran_layout 1 4 5 6 float)
+    (check_array3 (make_array3 float64 fortran_layout 1 4 5 6 float)
                   1 4 5 6 float);
 
   testing_function "dim";
