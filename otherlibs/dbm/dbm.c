@@ -4,17 +4,11 @@
 #include <memory.h>
 #include <fail.h>
 
-/* This is copied from sys.c, it shouldn't */
 #include <fcntl.h>
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
-#ifndef O_TEXT
-#define O_TEXT 0
-#endif
 
-static int sys_open_flags[] = {
-  O_RDONLY, O_WRONLY, O_APPEND, O_CREAT, O_TRUNC, O_EXCL, O_BINARY, O_TEXT
+/* Quit close to sys_open_flags, but we need RDWR */
+static int dbm_open_flags[] = {
+  O_RDONLY, O_WRONLY, O_RDWR, O_CREAT
 };
 
 static int dbm_flag_table[] = {
@@ -44,7 +38,7 @@ value caml_dbm_open(vfile, vflags, vmode) /* ML */
      value vmode;
 {
   char *file = String_val(vfile);
-  int flags = convert_flag_list(vflags, sys_open_flags);
+  int flags = convert_flag_list(vflags, dbm_open_flags);
   int mode = Int_val(vmode);
   DBM *db = dbm_open(file,flags,mode);
 

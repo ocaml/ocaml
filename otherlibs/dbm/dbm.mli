@@ -2,6 +2,9 @@
 
 type t
 
+type open_flag =
+   Dbm_rdonly | Dbm_wronly | Dbm_rdwr | Dbm_create
+
 type dbm_flag =
    DBM_INSERT
  | DBM_REPLACE
