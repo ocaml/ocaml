@@ -40,7 +40,7 @@ value unix_recv(value sock, value buff, value ofs, value len, value flags) /* ML
                convert_flag_list(flags, msg_flag_table));
     leave_blocking_section();
     if (ret == -1) uerror("recv", Nothing);
-    bcopy(iobuf, &Byte(buff, Long_val(ofs)), ret);
+    memmove (&Byte(buff, Long_val(ofs)), iobuf, ret);
   End_roots();
   return Val_int(ret);
 }
@@ -65,7 +65,7 @@ value unix_recvfrom(value sock, value buff, value ofs, value len, value flags) /
                    &addr.s_gen, &addr_len);
     leave_blocking_section();
     if (ret == -1) uerror("recvfrom", Nothing);
-    bcopy(iobuf, &Byte(buff, Long_val(ofs)), ret);
+    memmove (&Byte(buff, Long_val(ofs)), iobuf, ret);
     adr = alloc_sockaddr(&addr, addr_len);
     res = alloc_small(2, 0);
     Field(res, 0) = Val_int(ret);
@@ -82,7 +82,7 @@ value unix_send(value sock, value buff, value ofs, value len, value flags) /* ML
 
   numbytes = Long_val(len);
   if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
-  bcopy(&Byte(buff, Long_val(ofs)), iobuf, numbytes);
+  memmove (iobuf, &Byte(buff, Long_val(ofs)), numbytes);
   enter_blocking_section();
   ret = send(Int_val(sock), iobuf, (int) numbytes,
              convert_flag_list(flags, msg_flag_table));
@@ -102,7 +102,7 @@ value unix_sendto_native(value sock, value buff, value ofs, value len, value fla
   get_sockaddr(dest, &addr, &addr_len);
   numbytes = Long_val(len);
   if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
-  bcopy(&Byte(buff, Long_val(ofs)), iobuf, numbytes);
+  memmove (iobuf, &Byte(buff, Long_val(ofs)), numbytes);
   enter_blocking_section();
   ret = sendto(Int_val(sock), iobuf, (int) numbytes,
                convert_flag_list(flags, msg_flag_table),

@@ -113,7 +113,7 @@ value caml_db_get(value cdb, value vkey, value vflags) /* ML */
   case 0: /* success */
     {
       value res = alloc_string(data.size);
-      bcopy(data.data, String_val(res), data.size);
+      memmove (String_val (res), data.data, data.size);
       return res;
     }
   case 1: /* not found */
@@ -164,8 +164,8 @@ value caml_db_seq(value cdb, value vkey, value vflags)  /* ML */
       reskey = alloc_string(key.size);
       resdata = alloc_string(data.size);
       res = alloc_small(2, 0);
-      bcopy(key.data, String_val(reskey), key.size);
-      bcopy(data.data, String_val(resdata), data.size);
+      memmove (String_val (reskey), key.data, key.size);
+      memmove (String_val (resdata), data.data, data.size);
       Field(res, 0) = reskey;
       Field(res, 1) = resdata;
       End_roots();

@@ -34,7 +34,7 @@ extern int socket_domain_table[];
 static value alloc_one_addr(char *a)
 {
   struct in_addr addr;
-  bcopy(a, &addr, entry_h_length);
+  memmove (&addr, a, entry_h_length);
   return alloc_inet_addr(addr.s_addr);
 }
 

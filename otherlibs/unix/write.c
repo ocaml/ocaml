@@ -38,7 +38,7 @@ value unix_write(value fd, value buf, value vofs, value vlen) /* ML */
     written = 0;
     while (len > 0) {
       numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
-      bcopy(&Byte(buf, ofs), iobuf, numbytes);
+      memmove (iobuf, &Byte(buf, ofs), numbytes);
       enter_blocking_section();
       ret = write(Int_val(fd), iobuf, numbytes);
       leave_blocking_section();

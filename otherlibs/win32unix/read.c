@@ -35,7 +35,7 @@ value unix_read(value fd, value buf, value ofs, value len) /* ML */
       _dosmaperr(GetLastError());
       uerror("read", Nothing);
     }
-    bcopy(iobuf, &Byte(buf, Long_val(ofs)), numread);
+    memmove (&Byte(buf, Long_val(ofs)), iobuf, numread);
   End_roots();
   return Val_int(numread);
 }

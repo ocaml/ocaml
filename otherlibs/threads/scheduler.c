@@ -14,7 +14,6 @@
 
 /* The thread scheduler */
 
-/* <string.h> must be included before we rededfine bcopy. */
 #include <string.h>
 
 #include "callback.h"

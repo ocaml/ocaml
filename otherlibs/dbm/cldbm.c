@@ -82,7 +82,7 @@ value caml_dbm_fetch(value vdb, value vkey)  /* ML */
   answer = dbm_fetch(extract_dbm(vdb), key);
   if (answer.dptr) {
     value res = alloc_string(answer.dsize);
-    bcopy(answer.dptr,String_val(res),answer.dsize);
+    memmove (String_val (res), answer.dptr, answer.dsize);
     return res;
   }
   else raise_not_found();
@@ -141,7 +141,7 @@ value caml_dbm_firstkey(value vdb)            /* ML */
 
   if (key.dptr) {
     value res = alloc_string(key.dsize);
-    bcopy(key.dptr,String_val(res),key.dsize);
+    memmove (String_val (res), key.dptr, key.dsize);
     return res;
   }
   else raise_not_found();
@@ -153,7 +153,7 @@ value caml_dbm_nextkey(value vdb)             /* ML */
 
   if (key.dptr) {
     value res = alloc_string(key.dsize);
-    bcopy(key.dptr,String_val(res),key.dsize);
+    memmove (String_val (res), key.dptr, key.dsize);
     return res;
   }
   else raise_not_found();

@@ -28,9 +28,9 @@ value unix_putenv(value name, value val) /* ML */
   mlsize_t vallen = string_length(val);
   char * s = (char *) stat_alloc(namelen + 1 + vallen + 1);
 
-  bcopy(String_val(name), s, namelen);
+  memmove (s, String_val(name), namelen);
   s[namelen] = '=';
-  bcopy(String_val(val), s + namelen + 1, vallen);
+  memmove (s + namelen + 1, String_val(val), vallen);
   s[namelen + 1 + vallen] = 0;
   if (putenv(s) == -1) uerror("putenv", name);
   return Val_unit;

@@ -698,8 +698,8 @@ static void caml_pthread_check(int retcode, char *msg)
   msglen = strlen(msg);
   errlen = strlen(err);
   str = alloc_string(msglen + 2 + errlen);
-  bcopy(msg, &Byte(str, 0), msglen);
-  bcopy(": ", &Byte(str, msglen), 2);
-  bcopy(err, &Byte(str, msglen + 2), errlen);
+  memmove (&Byte(str, 0), msg, msglen);
+  memmove (&Byte(str, msglen), ": ", 2);
+  memmove (&Byte(str, msglen + 2), err, errlen);
   raise_sys_error(str);
 }

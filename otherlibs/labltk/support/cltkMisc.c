@@ -50,7 +50,7 @@ char *string_to_c(value s)
 {
   int l = string_length(s);
   char *res = stat_alloc(l + 1);
-  bcopy(String_val(s),res,l);
+  memmove (res, String_val (s), l);
   res[l] = '\0';
   return res;
 }

@@ -31,7 +31,7 @@ value unix_read(value fd, value buf, value ofs, value len) /* ML */
     ret = read(Int_val(fd), iobuf, (int) numbytes);
     leave_blocking_section();
     if (ret == -1) uerror("read", Nothing);
-    bcopy(iobuf, &Byte(buf, Long_val(ofs)), ret);
+    memmove (&Byte(buf, Long_val(ofs)), iobuf, ret);
   End_roots();
   return Val_int(ret);
 }

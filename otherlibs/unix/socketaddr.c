@@ -53,7 +53,7 @@ void get_sockaddr(value mladr,
       if (len >= sizeof(adr->s_unix.sun_path)) {
         unix_error(ENAMETOOLONG, "", path);
       }
-      bcopy(String_val(path), adr->s_unix.sun_path, (int) len + 1);
+      memmove (adr->s_unix.sun_path, String_val(path), len + 1);
       *adr_len =
         ((char *)&(adr->s_unix.sun_path) - (char *)&(adr->s_unix))
         + len;

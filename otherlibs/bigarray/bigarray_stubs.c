@@ -797,7 +797,7 @@ value bigarray_blit(value vsrc, value vdst)
     bigarray_num_elts(src)
     * bigarray_element_size[src->flags & BIGARRAY_KIND_MASK];
   /* Do the copying */
-  bcopy(src->data, dst->data, num_bytes);
+  memmove (dst->data, src->data, num_bytes);
   return Val_unit;
  blit_error:
   invalid_argument("Bigarray.blit: dimension mismatch");
