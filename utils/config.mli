@@ -21,6 +21,10 @@ val cmo_magic_number: string
         (* Magic number for object bytecode files *)
 val cma_magic_number: string
         (* Magic number for archive files *)
+val cmx_magic_number: string
+        (* Magic number for compilation unit descriptions *)
+val cmxa_magic_number: string
+        (* Magic number for libraries of compilation unit descriptions *)
 
 val max_tag: int
         (* Biggest tag that can be stored in the header of a block. *)
