@@ -640,24 +640,25 @@ let correct_abbrev env ident params ty =
        [] [] ty);
   visited := []
 
-let rec occur_rec env ty0 ty =
+let rec occur_rec env visited ty0 ty =
   if ty == ty0  then raise Occur;
   match ty.desc with
     Tconstr(p, tl, abbrev) ->
       begin try
-        iter_type_expr (occur_rec env ty0) ty
+        if List.memq ty visited then raise Occur;
+        iter_type_expr (occur_rec env (ty::visited) ty0) ty
       with Occur -> try
-        occur_rec env ty0 (try_expand_head env ty)
+        occur_rec env visited ty0 (try_expand_head env ty)
       with Cannot_expand ->
         raise Occur
       end
   | Tobject (_, _) ->
       ()
   | _ ->
-      iter_type_expr (occur_rec env ty0) ty
+      iter_type_expr (occur_rec env visited ty0) ty
 
 let occur env ty0 ty =
-  try occur_rec env ty0 ty with Occur -> raise (Unify [])
+  try occur_rec env [] ty0 ty with Occur -> raise (Unify [])
 
 
                               (*****************)
