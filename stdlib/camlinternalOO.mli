@@ -41,6 +41,9 @@ val add_initializer : table -> (obj -> unit) -> unit
 val dummy_table : table
 val create_table : string array -> table
 val init_class : table -> unit
+val inherits :
+    table -> string array -> string array -> string array ->
+    (t * (table -> obj -> Obj.t) * t * obj) -> bool -> Obj.t
 
 (** {6 Objects} *)
 

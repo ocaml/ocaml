@@ -412,6 +412,13 @@ let init_class table =
     compact_buckets table.buckets;
   table.initializers <- List.rev table.initializers
 
+let inherits cla vals virt_meths concr_meths (_, super, _, env) top =
+  narrow cla vals virt_meths concr_meths;
+  let init =
+    if top then super cla env else Obj.repr (super cla) in
+  widen cla;
+  init
+
 (**** Objects ****)
 
 let create_object table =

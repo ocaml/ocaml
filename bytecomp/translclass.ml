@@ -226,11 +226,17 @@ let output_methods tbl vals methods lam =
   in
   transl_vals tbl true vals lam
 
+let rec ignore_cstrs cl =
+  match cl.cl_desc with
+    Tclass_constraint (cl, _, _, _) -> ignore_cstrs cl
+  | Tclass_apply (cl, _) -> ignore_cstrs cl
+  | _ -> cl
+
 let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
   match cl.cl_desc with
     Tclass_ident path ->
       begin match inh_init with
-        (obj_init, env_init, path)::inh_init ->
+        (obj_init, env_init, path')::inh_init ->
 	  let lpath = transl_path path in
           (inh_init,
            Llet (Strict, (if top then obj_init else env_init), 
@@ -305,30 +311,34 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
       let vals = List.map (function (id, _) -> (Ident.name id, id)) vals in
       (inh_init, transl_vals cla true vals cl_init)
   | Tclass_constraint (cl, vals, meths, concr_meths) ->
-      let core cl_init =
-        build_class_init cla pub_meths true inh_init cl_init msubst top cl
-      in
-      if cstr then
-        core cl_init
-      else
-        let virt_meths =
-          List.fold_right
-            (fun lab rem ->
-               if Concr.mem lab concr_meths then rem else lab::rem)
-            meths
-            []
-        in
-        let (inh_init, cl_init) =
-          core (Lsequence (Lapply (oo_prim "widen", [Lvar cla]),
-                           cl_init))
-        in
-        (inh_init,
-         Lsequence(Lapply (oo_prim "narrow",
-                           [Lvar cla;
-                             transl_meth_list vals;
-                             transl_meth_list virt_meths;
-                             transl_meth_list (Concr.elements concr_meths)]),
-                   cl_init))
+      let virt_meths =
+        List.filter (fun lab -> not (Concr.mem lab concr_meths)) meths in
+      let narrow_args =
+	[Lvar cla;
+         transl_meth_list vals;
+         transl_meth_list virt_meths;
+         transl_meth_list (Concr.elements concr_meths)] in
+      let cl = ignore_cstrs cl in
+      begin match cl.cl_desc, inh_init with
+	Tclass_ident path, (obj_init, env_init, path')::inh_init ->
+	  assert (Path.same path path');
+	  let lpath = transl_path path in
+          (inh_init,
+           Llet (Strict, (if top then obj_init else env_init), 
+		 Lapply(oo_prim "inherits", narrow_args @
+			[lpath; Lconst(Const_pointer(if top then 1 else 0))]),
+                 cl_init))
+      | _ ->
+	  let core cl_init =
+            build_class_init cla pub_meths true inh_init cl_init msubst top cl
+	  in
+	  if cstr then core cl_init else
+          let (inh_init, cl_init) =
+            core (Lsequence (Lapply (oo_prim "widen", [Lvar cla]), cl_init))
+          in
+          (inh_init,
+           Lsequence(Lapply (oo_prim "narrow", narrow_args), cl_init))
+      end
 
 
 (*
