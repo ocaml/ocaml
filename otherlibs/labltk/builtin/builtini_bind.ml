@@ -44,11 +44,11 @@ let cCAMLtoTKevent (ev : event) =
   | `Unmap -> "Unmap"
   | `Visibility -> "Visibility"
   | `Modified(ml, ev) ->
-      String.concat sep:"" (List.map f:cCAMLtoTKmodifier ml)
+      String.concat sep:"" (List.map fun:cCAMLtoTKmodifier ml)
       ^ convert ev
   in "<" ^ convert ev ^ ">"
 
 let cCAMLtoTKeventSequence (l : event list) = 
-  TkToken(String.concat sep:"" (List.map f:cCAMLtoTKevent l))
+  TkToken(String.concat sep:"" (List.map fun:cCAMLtoTKevent l))
 
 

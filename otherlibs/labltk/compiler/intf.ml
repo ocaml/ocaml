@@ -24,24 +24,24 @@ let write_create_p :w wname =
   w "val create :\n  ?name:string ->\n";
   begin
     try 
-      let option = Hashtbl.find types_table "options" in
-      let classdefs = List.assoc wname option.subtypes in
-      let tklabels = List.map f:gettklabel classdefs in
-      let l = List.map classdefs f:
+      let option = Hashtbl.find types_table key:"options" in
+      let classdefs = List.assoc key:wname option.subtypes in
+      let tklabels = List.map fun:gettklabel classdefs in
+      let l = List.map classdefs fun:
         begin fun fc ->
           begin let p = gettklabel fc in
             if count item:p tklabels > 1 then small fc.ml_name else p
           end, fc.template
         end in
       w (String.concat sep:" ->\n" 
-         (List.map l f:
+         (List.map l fun:
           begin fun (s, t) ->
             "  ?" ^ s ^ ":"
             ^(ppMLtype
              (match types_of_template t with
               | [t] -> labeloff t at:"write_create_p"
               | [] -> fatal_error "multiple"
-              | l -> Product (List.map f:(labeloff at:"write_create_p") l)))
+              | l -> Product (List.map fun:(labeloff at:"write_create_p") l)))
           end))
     with Not_found -> fatal_error "in write_create_p"
   end;
@@ -72,7 +72,7 @@ let write_function_type :w def =
   in
   let counter = ref 0 in
   List.iter (ls @ os @ us)
-    f:(fun (l, t) -> labelprint :w l; w (ppMLtype t :counter); w " -> ");
+    fun:(fun (l, t) -> labelprint :w l; w (ppMLtype t :counter); w " -> ");
   if (os <> [] || ls = []) && us = [] then w "unit -> ";
   w (ppMLtype any:true return:true def.result); (* RETURN TYPE !!! *)
   w " \n";

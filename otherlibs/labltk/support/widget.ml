@@ -50,7 +50,7 @@ let forget_type w = (Obj.magic (w : 'a widget) : any widget)
 let coe = forget_type
 
 (* table of widgets *)
-let table = (Hashtbl.create 401 : (string, any widget) Hashtbl.t)
+let table = (Hashtbl.create size:401 : (string, any widget) Hashtbl.t)
 
 let name = function
     Untyped s -> s
@@ -75,13 +75,13 @@ let dummy =
   Untyped "dummy"
 
 let remove w =
-  Hashtbl.remove table (name w)
+  Hashtbl.remove table key:(name w)
 
 (* Retype widgets returned from Tk *)
 (* JPF report: sometime s is "", see Protocol.cTKtoCAMLwidget *)
 let get_atom s =
   try
-    Hashtbl.find table s
+    Hashtbl.find table key:s
   with
     Not_found -> Untyped s
 
@@ -103,7 +103,7 @@ let naming_scheme = [
         "toplevel", "top" ]
 
 
-let widget_any_table =  List.map f:fst naming_scheme
+let widget_any_table =  List.map fun:fst naming_scheme
 (* subtypes *)
 let widget_button_table = [ "button" ]
 and widget_canvas_table = [ "canvas" ]
@@ -123,7 +123,7 @@ and widget_toplevel_table = [ "toplevel" ]
 
 let new_suffix clas n =
   try 
-    (List.assoc clas naming_scheme) ^ (string_of_int n)
+    (List.assoc key:clas naming_scheme) ^ (string_of_int n)
   with
     Not_found -> "w" ^ (string_of_int n)
   
@@ -165,11 +165,11 @@ let check_class w clas =
   match w with
     Untyped _ -> () (* assume run-time check by tk*)
   | Typed(_,c) ->
-         if List.mem c clas then ()
+         if List.mem clas item:c then ()
          else raise (IllegalWidgetType c)
 
 
 (* Checking membership of constructor in subtype table *)
 let chk_sub errname table c =
-  if List.mem c table then ()
+  if List.mem table item:c then ()
   else raise (Invalid_argument errname)

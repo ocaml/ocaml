@@ -9,7 +9,7 @@ let create :parent :variable ?:name values =
      tkEval [|TkToken "tk_optionMenu";
               TkToken (Widget.name w);
               cCAMLtoTKtextVariable variable;
-              TkTokenList (List.map f:(fun x -> TkToken x) values)|] in
+              TkTokenList (List.map fun:(fun x -> TkToken x) values)|] in
    if res <> Widget.name mw then
      raise (TkError "internal error in Optionmenu.create")
    else

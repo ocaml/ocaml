@@ -23,7 +23,7 @@ let escape_string s =
    |  _ -> ()
   done;
   if !more = 0 then s else
-  let res = String.create (String.length s + !more) in
+  let res = String.create len:(String.length s + !more) in
   let j = ref 0 in
   for i = 0 to String.length s - 1 do
    let c = s.[i] in
@@ -33,7 +33,7 @@ let escape_string s =
   done;
   res;;
 
-let escape_char c = if c = '\'' then "\\'" else String.make 1 c;;
+let escape_char c = if c = '\'' then "\\'" else String.make len:1 c;;
 
 let print_quoted_string s = printf "\"%s\"" (escape_string s);;
 let print_quoted_char c = printf "'%s'" (escape_char c);;

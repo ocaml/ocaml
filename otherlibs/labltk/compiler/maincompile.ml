@@ -84,7 +84,7 @@ let parse_file filename =
    in an hash table. *)
 let elements t =
  let elems = ref [] in
- Hashtbl.iter f:(fun key:_ data:d -> elems := d :: !elems) t;
+ Hashtbl.iter fun:(fun key:_ data:d -> elems := d :: !elems) t;
  !elems;;
 
 (* Verifies that duplicated clauses are semantically equivalent and
@@ -111,24 +111,24 @@ let uniq_clauses = function
         prerr_endline err;
         fatal_error err
        end in
-     let t = Hashtbl.create 11 in
+     let t = Hashtbl.create size:11 in
      List.iter l
-      f:(fun constr ->
+      fun:(fun constr ->
        let c = constr.var_name in
-       if Hashtbl.mem t c
-       then (check_constr constr (Hashtbl.find t c))
+       if Hashtbl.mem t key:c
+       then (check_constr constr (Hashtbl.find t key:c))
        else Hashtbl.add t key:c data:constr);
      elements t;;
 
 let option_hack oc =
-  if Hashtbl.mem types_table "options" then
-   let typdef = Hashtbl.find types_table "options" in
+  if Hashtbl.mem types_table key:"options" then
+   let typdef = Hashtbl.find types_table key:"options" in
    let hack =
    { parser_arity = OneToken;
      constructors = 
       begin
        let constrs = 
-        List.map typdef.constructors f:
+        List.map typdef.constructors fun:
          begin fun c -> 
          { component = Constructor;
            ml_name = c.ml_name;
@@ -148,7 +148,7 @@ let option_hack oc =
      variant = false }
    in
    write_CAMLtoTK
-     w:(output_string oc) def:hack safetype:false "options_constrs"
+     w:(output_string to:oc) def:hack safetype:false "options_constrs"
 
 let compile () = 
   verbose_endline "Creating tkgen.ml ...";
@@ -157,25 +157,25 @@ let compile () =
   let oc'' = open_out_bin (destfile "tkfgen.ml") in
   let sorted_types = Tsort.sort types_order in
   verbose_endline "  writing types ...";
-  List.iter sorted_types f:
+  List.iter sorted_types fun:
   begin fun typname ->
   verbose_string ("    " ^ typname ^ " ");
   try
-    let typdef = Hashtbl.find types_table typname in
+    let typdef = Hashtbl.find types_table key:typname in
     verbose_string "type ";
-    write_type intf:(output_string oc)
-               impl:(output_string oc')
+    write_type intf:(output_string to:oc)
+               impl:(output_string to:oc')
                typname def:typdef;
     verbose_string "C2T ";
-    write_CAMLtoTK w:(output_string oc') typname def:typdef;
+    write_CAMLtoTK w:(output_string to:oc') typname def:typdef;
     verbose_string "T2C ";
-    if List.mem typname !types_returned then
-    write_TKtoCAML w:(output_string oc') typname def:typdef;
+    if List.mem item:typname !types_returned then
+    write_TKtoCAML w:(output_string to:oc') typname def:typdef;
     verbose_string "CO ";
-    write_catch_optionals w:(output_string oc') typname def:typdef;
+    write_catch_optionals w:(output_string to:oc') typname def:typdef;
     verbose_endline "."
   with Not_found -> 
-    if not (List.mem_assoc typname !types_external) then
+    if not (List.mem_assoc key:typname !types_external) then
     begin
       verbose_string "Type ";
       verbose_string typname;
@@ -186,7 +186,7 @@ let compile () =
   verbose_endline "  option hacking ...";
   option_hack oc';
   verbose_endline "  writing functions ...";
-  List.iter f:(write_function w:(output_string oc'')) !function_table;
+  List.iter fun:(write_function w:(output_string to:oc'')) !function_table;
   close_out oc;
   close_out oc';
   close_out oc'';
@@ -195,21 +195,21 @@ let compile () =
   verbose_endline "Creating tkgen.mli ...";
   let oc = open_out_bin (destfile "tkgen.mli") in
   List.iter (sort_components !function_table)
-    f:(write_function_type w:(output_string oc));
+    fun:(write_function_type w:(output_string to:oc));
   close_out oc;
   verbose_endline "Creating other ml, mli ...";
-  Hashtbl.iter module_table f:
+  Hashtbl.iter module_table fun:
   begin fun key:wname data:wdef ->
     verbose_endline ("  "^wname);
     let modname = wname in
     let oc = open_out_bin (destfile (modname ^ ".ml")) 
     and oc' = open_out_bin (destfile (modname ^ ".mli")) in 
     begin match wdef.module_type with
-      Widget -> output_string oc' ("(* The "^wname^" widget *)\n")
-    | Family -> output_string oc' ("(* The "^wname^" commands  *)\n")
+      Widget -> output_string to:oc' ("(* The "^wname^" widget *)\n")
+    | Family -> output_string to:oc' ("(* The "^wname^" commands  *)\n")
     end;
-    output_string oc "open Protocol\n";
-    List.iter f:(fun s -> output_string oc s; output_string oc' s)
+    output_string to:oc "open Protocol\n";
+    List.iter fun:(fun s -> output_string s to:oc; output_string s to:oc')
     [ "open Tk\n";
       "open Tkintf\n";
       "open Widget\n";
@@ -217,17 +217,17 @@ let compile () =
     ];
     begin match wdef.module_type with
       Widget ->
-        write_create w:(output_string oc) wname;
-        write_create_p w:(output_string oc') wname
+        write_create w:(output_string to:oc) wname;
+        write_create_p w:(output_string to:oc') wname
     | Family -> ()
     end;
-    List.iter f:(write_function w:(output_string oc)) 
+    List.iter fun:(write_function w:(output_string to:oc)) 
           (sort_components wdef.commands);
-    List.iter f:(write_function_type w:(output_string oc'))
+    List.iter fun:(write_function_type w:(output_string to:oc'))
           (sort_components wdef.commands);
-    List.iter f:(write_external w:(output_string oc)) 
+    List.iter fun:(write_external w:(output_string to:oc)) 
            (sort_components wdef.externals);
-    List.iter f:(write_external_type w:(output_string oc'))
+    List.iter fun:(write_external_type w:(output_string to:oc'))
            (sort_components wdef.externals);
     close_out oc;
     close_out oc'
@@ -235,27 +235,27 @@ let compile () =
   (* write the module list for the Makefile *)
   (* and hack to death until it works *)
   let oc = open_out_bin (destfile "modules") in
-    output_string oc "WIDGETOBJS=";
+    output_string to:oc "WIDGETOBJS=";
     Hashtbl.iter module_table
-    f:(fun key:name data:_ ->
-         output_string oc name;
-         output_string oc ".cmo ");
-    output_string oc "\n";
+    fun:(fun key:name data:_ ->
+         output_string to:oc name;
+         output_string to:oc ".cmo ");
+    output_string to:oc "\n";
     Hashtbl.iter module_table
-    f:(fun key:name data:_ ->
-         output_string oc name;
-         output_string oc ".ml ");
-    output_string oc ": tkgen.ml\n\n";
-    Hashtbl.iter module_table f:
+    fun:(fun key:name data:_ ->
+         output_string to:oc name;
+         output_string to:oc ".ml ");
+    output_string to:oc ": tkgen.ml\n\n";
+    Hashtbl.iter module_table fun:
       begin fun key:name data:_ ->
-        output_string oc name;
-        output_string oc ".cmo : ";
-        output_string oc name;
-        output_string oc ".ml\n";
-        output_string oc name;
-        output_string oc ".cmi : ";
-        output_string oc name;
-        output_string oc ".mli\n"
+        output_string to:oc name;
+        output_string to:oc ".cmo : ";
+        output_string to:oc name;
+        output_string to:oc ".ml\n";
+        output_string to:oc name;
+        output_string to:oc ".cmi : ";
+        output_string to:oc name;
+        output_string to:oc ".mli\n"
       end;
     close_out oc
 

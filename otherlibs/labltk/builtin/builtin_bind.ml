@@ -178,7 +178,7 @@ let wrapeventInfo f (what : eventField list) =
     ev_RootY = 0 } in
      function args ->
        let l = ref args in
-         List.iter f:(function field ->
+         List.iter fun:(function field ->
                     match !l with
                     | [] -> ()
                     | v :: rest -> filleventInfo ev v field; l := rest)
