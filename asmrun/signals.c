@@ -36,6 +36,9 @@
 
 extern char * code_area_start, * code_area_end;
 
+#define In_code_area(pc) \
+  ((char *)(pc) >= code_area_start && (char *)(pc) <= code_area_end)
+
 #ifdef _WIN32
 typedef void (*sighandler)(int sig);
 extern sighandler win32_signal(int sig, sighandler action);
@@ -203,10 +206,10 @@ void handle_signal(int sig)
     pending_signal = sig;
     young_limit = young_end;
     /* Some ports cache young_limit in a register.
-       Use the signal context to modify that register too, but not if
-       we are inside C code (i.e. caml_last_return_address != 0). */
+       Use the signal context to modify that register too, but only if
+       we are inside Caml code (not inside C code). */
 #if defined(TARGET_alpha)
-    if (caml_last_return_address == 0) {
+    if (In_code_area(context->sc_pc)) {
       /* Cached in register $14 */
       context->sc_regs[14] = (long) young_limit;
     }
@@ -230,8 +233,7 @@ void handle_signal(int sig)
     }
 #endif
 #if defined(TARGET_power) && defined(SYS_rhapsody)
-    if (CONTEXT_PC(context) >= (unsigned long) code_area_start
-        && CONTEXT_PC(context) <= (unsigned long) code_area_end) {
+    if (In_code_area(CONTEXT_PC(context))) {
       /* Cached in register 30 */
       CONTEXT_GPR(context, 30) = (unsigned long) young_limit;
     }
