@@ -324,7 +324,7 @@ test_texi: dummy
 stdlib_man/Pervasives.o: $(STDLIB_MLIS)
 	$(MKDIR) stdlib_man
 	$(OCAMLDOC_RUN) -man -d stdlib_man $(INCLUDES) \
-	-t "OCaml library" -man-mini \
+	-t "OCaml library" -man-mini -man-suffix 3 \
 	$(STDLIB_MLIS)
 
 # backup, clean and depend :
