@@ -260,7 +260,7 @@ type access_permission =
   | X_OK
   | F_OK
 
-let chmod file perm = invalid_arg "Unix.chmod not implemented"
+external chmod : string -> file_perm -> unit = "unix_chmod"
 let fchmod fd perm = invalid_arg "Unix.fchmod not implemented"
 let chown file perm = invalid_arg "Unix.chown not implemented"
 let fchown fd perm = invalid_arg "Unix.fchown not implemented"

@@ -17,7 +17,7 @@ WIN_OBJS = accept.obj bind.obj channels.obj close.obj \
   unixsupport.obj windir.obj winwait.obj write.obj
 
 # Files from the ..\unix directory
-UNIX_FILES = access.c addrofstr.c chdir.c cst2constr.c \
+UNIX_FILES = access.c addrofstr.c chdir.c chmod.c cst2constr.c \
   cstringv.c envir.c errmsg.c execv.c execve.c execvp.c \
   exit.c getcwd.c gethost.c gethostname.c getproto.c \
   getserv.c gmtime.c putenv.c rename.c rmdir.c \
