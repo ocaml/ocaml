@@ -51,6 +51,7 @@ module Typedtree_search =
       |	E of string
       |	ER of string
       |	P of string
+      |	IM of string
 
     type tab = (ele, Typedtree.structure_item) Hashtbl.t
     type tab_values = (Odoc_module.Name.t, Typedtree.pattern * Typedtree.expression) Hashtbl.t
@@ -100,8 +101,9 @@ module Typedtree_search =
 	    pat_exp_list
       |	Typedtree.Tstr_primitive (ident, _) ->
 	  Hashtbl.add table (P (Name.from_ident ident)) tt
-      |	_ ->
-	  ()
+      |	Typedtree.Tstr_open _ -> ()
+      |	Typedtree.Tstr_include _ -> ()
+      |	Typedtree.Tstr_eval _ -> ()
 
     let tables typedtree =
       let t = Hashtbl.create 13 in
@@ -805,12 +807,14 @@ module Analyser =
     (** This function takes a [module element list] of a module and replaces the "dummy" included modules with
        the ones found in typed tree structure of the module. *)
     let replace_dummy_included_modules module_elements included_modules =
+      prerr_endline "replace_dummy_included_modules";
       let rec f = function
 	| ([], _) ->
 	    []
 	| ((Element_included_module im) :: q, (im_repl :: im_q)) ->
 	    (Element_included_module im_repl) :: (f (q, im_q))
 	| ((Element_included_module im) :: q, []) ->
+	    prerr_endline (Printf.sprintf "module %s not found (empty list)" im.im_name);
 	    (Element_included_module im) :: q
 	| (ele :: q, l) ->
 	    ele :: (f (q, l))
@@ -1377,9 +1381,12 @@ module Analyser =
        (* We create the t_module for this file. *)
        let mod_name = String.capitalize (Filename.basename (Filename.chop_extension source_file)) in
        let (len,info_opt) = My_ir.first_special !file_name !file in
-       let kind = Module_struct
-	   (analyse_structure Odoc_env.empty mod_name len (String.length !file) parsetree tree_structure) 
-       in
+       
+       (* we must complete the included modules *)
+       let elements = analyse_structure Odoc_env.empty mod_name len (String.length !file) parsetree tree_structure in
+       let included_modules_from_tt = tt_get_included_module_list tree_structure in
+       let elements2 = replace_dummy_included_modules elements included_modules_from_tt in
+       let kind = Module_struct elements2 in
        let m =
 	 {
 	   m_name = mod_name ;
