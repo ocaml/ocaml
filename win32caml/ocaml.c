@@ -473,19 +473,23 @@ void SendLastLine(HWND hEdit)
 {
 	int curline = GetCurLineIndex(hEdit);
 	char *p,linebuffer[2048];
+	int n;
 	int linescount = GetNumberOfLines(hEdit);
 
-	memset(linebuffer,0,sizeof(linebuffer));
 	*(unsigned short *)linebuffer = sizeof(linebuffer)-1;
 	if (curline != linescount-1)
-		SendMessage(hEdit,EM_GETLINE,curline,(LPARAM)linebuffer);
+	  n = SendMessage(hEdit,EM_GETLINE,curline,(LPARAM)linebuffer);
 	else
-		SendMessage(hEdit,EM_GETLINE,curline-1,(LPARAM)linebuffer);
-	if (linebuffer[0] == '#' && linebuffer[1] == ' ')
-		memmove(linebuffer,linebuffer+2,strlen(linebuffer)+1);
+	  n = SendMessage(hEdit,EM_GETLINE,curline-1,(LPARAM)linebuffer);
+	if (n >= 2 && linebuffer[0] == '#' && linebuffer[1] == ' ') {
+	  n -= 2;
+	  memmove(linebuffer, linebuffer+2, n);
+	}
+	linebuffer[n] = 0;
 	// Record user input!
 	AddToHistory(linebuffer);
-	strcat(linebuffer,"\n");
+	linebuffer[n] = '\n';
+	linebuffer[n+1] = 0;
 	WriteToPipe(linebuffer);
 	if (curline != linescount-1) {
 		// Copy the line sent to the end of the text
