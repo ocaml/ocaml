@@ -133,7 +133,7 @@ let rec sumsq v i0 i1 =
 
 let chisquare g n r =
   if n <= 10 * r then invalid_arg "chisquare";
-  let f = Array.create r 0 in
+  let f = Array.make r 0 in
   for i = 1 to n do
     let t = g r in
     f.(t) <- f.(t) + 1

@@ -12,7 +12,7 @@
 (* $Id$ *)
 
 type spec =
-  | Unit of (unit -> unit)     (* Call the function with no argument *)
+  | Unit of (unit -> unit)     (* Call the function with unit argument *)
   | Set of bool ref            (* Set the reference to true *)
   | Clear of bool ref          (* Set the reference to false *)
   | String of (string -> unit) (* Call the function with a string argument *)

@@ -18,14 +18,17 @@ external get: 'a array -> int -> 'a = "%array_safe_get"
 external set: 'a array -> int -> 'a -> unit = "%array_safe_set"
 external unsafe_get: 'a array -> int -> 'a = "%array_unsafe_get"
 external unsafe_set: 'a array -> int -> 'a -> unit = "%array_unsafe_set"
+external make: int -> 'a -> 'a array = "make_vect"
 external create: int -> 'a -> 'a array = "make_vect"
 
-let create_matrix sx sy init =
+let make_matrix sx sy init =
   let res = create sx [||] in
   for x = 0 to pred sx do
     unsafe_set res x (create sy init)
   done;
   res
+
+let create_matrix = make_matrix
 
 let copy a =
   let l = length a in

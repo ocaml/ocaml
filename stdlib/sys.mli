@@ -43,6 +43,10 @@ val os_type: string
 val word_size: int
         (* Size of one word on the machine currently executing the Caml
            program, in bits: 32 or 64. *)
+val max_string_length: int
+        (* Maximum length of a string. *)
+val max_array_length: int
+        (* Maximum length of an array. *)
 
 (*** Signal handling *)
 

@@ -52,14 +52,14 @@ val fill : string -> int -> int -> char -> unit
            Raise [Invalid_argument] if [start] and [len] do not
            designate a valid substring of [s]. *)
 val blit : string -> int -> string -> int -> int -> unit
-        (* [String.blit s1 o1 s2 o2 len] copies [len] characters
-           from string [s1], starting at character number [o1], to string [s2],
-           starting at character number [o2]. It works correctly even if
-           [s1] and [s2] are the same string,
+        (* [String.blit src srcoff dst dstoff len] copies [len] characters
+           from string [src], starting at character number [srcoff], to
+           string [dst], starting at character number [dstoff]. It works
+           correctly even if [src] and [dst] are the same string,
            and the source and destination chunks overlap.
-           Raise [Invalid_argument] if [o1] and [len] do not
-           designate a valid substring of [s1], or if [o2] and [len] do not
-           designate a valid substring of [s2]. *)
+           Raise [Invalid_argument] if [srcoff] and [len] do not
+           designate a valid substring of [src], or if [dstoff] and [len]
+           do not designate a valid substring of [dst]. *)
 
 val concat : string -> string list -> string
         (* [String.concat sep sl] catenates the list of strings [sl],

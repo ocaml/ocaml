@@ -12,8 +12,8 @@ digest.cmo: string.cmi digest.cmi
 digest.cmx: string.cmx digest.cmi 
 filename.cmo: string.cmi sys.cmi filename.cmi 
 filename.cmx: string.cmx sys.cmx filename.cmi 
-format.cmo: string.cmi format.cmi 
-format.cmx: string.cmx format.cmi 
+format.cmo: obj.cmi string.cmi format.cmi 
+format.cmx: obj.cmx string.cmx format.cmi 
 gc.cmo: printf.cmi gc.cmi 
 gc.cmx: printf.cmx gc.cmi 
 genlex.cmo: char.cmi hashtbl.cmi list.cmi stream.cmi string.cmi genlex.cmi 
