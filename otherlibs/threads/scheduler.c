@@ -26,7 +26,8 @@
 
 #if ! (defined(HAS_SELECT) && \
        defined(HAS_SETITIMER) && \
-       defined(HAS_GETTIMEOFDAY))
+       defined(HAS_GETTIMEOFDAY) && \
+       (defined(HAS_WAITPID) || defined(HAS_WAIT4)))
 #include "Cannot compile libthreads, system calls missing"
 #endif
 
@@ -48,6 +49,10 @@ typedef int fd_set;
 #define FD_CLR(fd,fds) (*(fds) &= ~(1 << (fd)))
 #define FD_ISSET(fd,fds) (*(fds) & (1 << (fd)))
 #define FD_ZERO(fds) (*(fds) = 0)
+#endif
+
+#ifndef HAS_WAITPID
+#define waitpid(pid,status,opts) wait4(pid,status,opts,NULL)
 #endif
 
 /* Configuration */
