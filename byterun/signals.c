@@ -58,6 +58,8 @@ void process_event(void)
 #endif
 }
 
+static int rev_convert_signal_number(int signo);
+
 void execute_signal(int signal_number, int in_signal_handler)
 {
   value res;
@@ -70,7 +72,7 @@ void execute_signal(int signal_number, int in_signal_handler)
   sigprocmask(SIG_BLOCK, &sigs, &sigs);
 #endif
   res = callback_exn(Field(signal_handlers, signal_number),
-                     Val_int(signal_number));
+                     Val_int(rev_convert_signal_number(signal_number)));
 #ifdef POSIX_SIGNALS
   if (! in_signal_handler) {
     /* Restore the original signal mask */
@@ -217,6 +219,14 @@ int convert_signal_number(int signo)
     return signo;
 }
 
+static int rev_convert_signal_number(int signo)
+{
+  int i;
+  for (i = 0; i < sizeof(posix_signals) / sizeof(int); i++)
+    if (signo == posix_signals[i]) return -i - 1;
+  return signo;
+}
+
 #ifndef NSIG
 #define NSIG 32
 #endif
@@ -242,13 +252,6 @@ value install_signal_handler(value signal_number, value action) /* ML */
     act = SIG_IGN;
     break;
   default:                      /* Signal_handle */
-    if (signal_handlers == 0) {
-      int i;
-      signal_handlers = alloc_tuple(NSIG);
-      for (i = 0; i < NSIG; i++) Field(signal_handlers, i) = Val_int(0);
-      register_global_root(&signal_handlers);
-    }
-    modify(&Field(signal_handlers, sig), Field(action, 0));
     act = handle_signal;
     break;
   }
@@ -270,5 +273,12 @@ value install_signal_handler(value signal_number, value action) /* ML */
     res = Val_int(1);           /* Signal_ignore */
   else
     res = Val_int(0);           /* Signal_default */
+  if (Is_block(action)) {
+    if (signal_handlers == 0) {
+      signal_handlers = alloc(NSIG, 0);
+      register_global_root(&signal_handlers);
+    }
+    modify(&Field(signal_handlers, sig), Field(action, 0));
+  }
   CAMLreturn (res);
 }
