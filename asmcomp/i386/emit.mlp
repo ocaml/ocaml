@@ -495,7 +495,10 @@ let emit_instr fallthrough i =
           let lbl_call_gc = new_label() in
           let lbl_frame = record_frame_label i.live in
           `	jb	{emit_label lbl_call_gc}\n`;
-          `	leal	4(%eax), {emit_reg i.res.(0)}\n`;
+          if i.res.(0).loc = Reg 0 then
+            `	addl    $4, %eax\n`
+          else
+            `	leal	4(%eax), {emit_reg i.res.(0)}\n`;
           call_gc_sites :=
             { gc_lbl = lbl_call_gc;
               gc_return_lbl = lbl_redo;
@@ -508,7 +511,10 @@ let emit_instr fallthrough i =
           | _  -> `	movl	${emit_int n}, %eax\n`;
                   `	call	{emit_symbol "caml_allocN"}\n`
           end;
-          `{record_frame i.live}	leal	4(%eax), {emit_reg i.res.(0)}\n`
+          if i.res.(0).loc = Reg 0 then
+            `{record_frame i.live}	addl    $4, %eax\n`
+          else
+            `{record_frame i.live}	leal	4(%eax), {emit_reg i.res.(0)}\n`
         end
     | Lop(Iintop(Icomp cmp)) ->
         `	cmpl	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`;
@@ -539,10 +545,6 @@ let emit_instr fallthrough i =
         `	{emit_string(instr_for_intop op)}	{emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Iadd, n)) when i.arg.(0).loc <> i.res.(0).loc ->
         `	leal	{emit_int n}({emit_reg i.arg.(0)}), {emit_reg i.res.(0)}\n`
-    | Lop(Iintop_imm(Iadd, 1) | Iintop_imm(Isub, -1)) ->
-        `	incl	{emit_reg i.res.(0)}\n`
-    | Lop(Iintop_imm(Iadd, -1) | Iintop_imm(Isub, 1)) ->
-        `	decl	{emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Idiv, n)) ->
         let l = Misc.log2 n in
         let lbl = new_label() in
@@ -615,18 +617,13 @@ let emit_instr fallthrough i =
     | Lop(Ispecific(Ilea addr)) ->
         begin match addr with
           Iindexed n when i.arg.(0).loc = i.res.(0).loc ->
-            if n = 1 then
-              `	incl	{emit_reg i.res.(0)}\n`
-            else if n = -1 then
-              `	decl	{emit_reg i.res.(0)}\n`
-            else
-              `	addl	${emit_int n}, {emit_reg i.res.(0)}\n`
+            `	addl	${emit_int n}, {emit_reg i.res.(0)}\n`
         | Iindexed2 0 when i.arg.(0).loc = i.res.(0).loc ->
             `	addl	{emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
         | Iindexed2 0 when i.arg.(1).loc = i.res.(0).loc ->
             `	addl	{emit_reg i.arg.(0)}, {emit_reg i.res.(0)}\n`
         | _ ->
-            `	lea	{emit_addressing addr i.arg 0}, {emit_reg i.res.(0)}\n`
+            `	leal	{emit_addressing addr i.arg 0}, {emit_reg i.res.(0)}\n`
         end
     | Lop(Ispecific(Istore_int(n, addr))) ->
         `	movl	${emit_nativeint n}, {emit_addressing addr i.arg 0}\n`
