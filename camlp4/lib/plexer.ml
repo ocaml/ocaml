@@ -398,6 +398,13 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
            | [: :] -> store len '\\' ];
          s :] ->
         quotation bp len s
+    | [: `'\010'; s :] -> do {bolpos.val := bp+1; incr lnum; quotation bp (store len '\010') s}
+    | [: `'\013'; s :] ->
+        let bol =
+          match Stream.peek s with
+            [ Some '\010' -> do { Stream.junk s; bp+2 }
+            | _ -> bp+1 ] in
+        do { bolpos.val := bol; incr lnum; quotation bp (store len '\013') s}
     | [: `c; s :] -> quotation bp (store len c) s
     | [: :] ep -> err (mkloc (bp, ep)) "quotation not terminated" ]
   and maybe_nested_quotation bp len =
@@ -431,7 +438,7 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
             [ Some '\010' -> do { Stream.junk s; ep+1 }
             | _ -> ep ] in
         do { bolpos.val := ep; incr lnum; comment bp s }
-    | [: `c; s :] -> comment bp s
+                    | [: `c; s :] -> comment bp s
     | [: :] ep -> err (mkloc (bp, ep)) "comment not terminated" ]
   and quote_in_comment bp =
     parser
