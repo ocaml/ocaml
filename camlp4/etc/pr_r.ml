@@ -550,8 +550,16 @@ value ifbox b1 b2 b3 e k =
 ;
 
 value rec type_params sl k =
-  let sl = List.map fst sl in
-  list (fun s k -> HVbox [: `S LO "'"; `S LR s; k :]) sl k
+  list
+    (fun (s, vari) k ->
+       let b =
+         match vari with
+         [ (True, False) -> [: `S LO "+" :]
+         | (False, True) -> [: `S LO "-" :]
+         | _ -> [: :] ]
+       in
+       HVbox [: b; `S LO "'"; `S LR s; k :])
+    sl k
 ;
 
 value constrain (t1, t2) k =

@@ -562,7 +562,14 @@ value field_expr (lab, e) dg k =
 value type_params sl _ k =
   match sl with
   [ [] -> k
-  | [(s, _)] -> [: `S LO "'"; `S LR s; k :]
+  | [(s, vari)] ->
+      let b =
+        match vari with
+        [ (True, False) -> [: `S LO "+" :]
+        | (False, True) -> [: `S LO "-" :]
+        | _ -> [: :] ]
+      in
+      [: b; `S LO "'"; `S LR s; k :]
   | sl ->
       [: `S LO "(";
          listws (fun (s, _) _ k -> HVbox [: `S LO "'"; `S LR s; k :])

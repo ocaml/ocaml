@@ -481,7 +481,7 @@ EXTEND
   ;
   type_parameter:
     [ [ "'"; i = ident -> Tuple [i; Tuple [Bool False; Bool False]]
-      | "_"; "'"; i = ident -> Tuple [i; Tuple [Bool True; Bool False]]
+      | "+"; "'"; i = ident -> Tuple [i; Tuple [Bool True; Bool False]]
       | "-"; "'"; i = ident -> Tuple [i; Tuple [Bool False; Bool True]] ] ]
   ;
   ctyp:

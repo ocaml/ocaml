@@ -1899,7 +1899,7 @@ Grammar.extend
       Gramext.action
         (fun (i : 'ident) _ _ (loc : int * int) ->
            (Tuple [i; Tuple [Bool false; Bool true]] : 'type_parameter));
-      [Gramext.Stoken ("", "_"); Gramext.Stoken ("", "'");
+      [Gramext.Stoken ("", "+"); Gramext.Stoken ("", "'");
        Gramext.Snterm (Grammar.Entry.obj (ident : 'ident Grammar.Entry.e))],
       Gramext.action
         (fun (i : 'ident) _ _ (loc : int * int) ->
