@@ -122,7 +122,7 @@ power.o: power-$(SYSTEM).o
 
 .cmm.o:
 	$(CAMLRUN) $(CODEGEN) $*.cmm > $*.s
-	$(AS) $(ASFLAGS) -o $*.o $*.s
+	$(AS) -o $*.o $*.s
 
 .asm.o:
 	$(AS) $(ASFLAGS) -o $*.o $*.asm
