@@ -118,7 +118,8 @@ val bscanf :
      escaped characters follow the lexical conventions of Caml).
    - [c]: reads a single character. To test the current input character
      without reading it, specify a null field width, i.e. use
-     specification [%0c].
+     specification [%0c]. Raise [Invalid_argument], if the field width
+     specification is greater than 1.
    - [C]: reads a single delimited character (delimiters and special
      escaped characters follow the lexical conventions of Caml).
    - [f], [e], [E], [g], [G], [F]: reads an optionally signed
@@ -143,6 +144,7 @@ val bscanf :
      [\[^\]\]] matches any character that is not [\]].
    - [n]: applies [f] to the number of characters read so far.
    - [N]: applies [f] to the number of tokens read so far.
+   - [!]: matches the end of input condition.
    - [%]: matches one [%] character in the input.
 
    Following the [%] character introducing a conversion, there may be
