@@ -68,7 +68,7 @@ let parse_arguments argv =
     else if s = "-cclib" then
       caml_libs := next_arg () :: "-cclib" :: !caml_libs
     else if s = "-ccopt" then
-      caml_opts := next_arg () :: "-cclib" :: !caml_opts
+      caml_opts := next_arg () :: "-ccopt" :: !caml_opts
     else if s = "-custom" then
       dynlink := false
     else if s = "-I" then
@@ -190,10 +190,11 @@ let build_libs () =
   end;
   if !bytecode_objs <> [] then
     scommand
-      (sprintf "%s -a %s -o %s.cma %s -dllib -l%s -cclib -l%s %s %s %s"
+      (sprintf "%s -a %s -o %s.cma %s %s -dllib -l%s -cclib -l%s %s %s %s"
                   !ocamlc
                   (if !dynlink then "" else "-custom")
                   !output
+                  (String.concat " " !caml_opts)
                   (String.concat " " !bytecode_objs)
                   !output_c
                   !output_c
@@ -202,9 +203,10 @@ let build_libs () =
                   (String.concat " " (prefix_list "-cclib " !c_libs)));
   if !native_objs <> [] then
     scommand
-      (sprintf "%s -a -o %s.cmxa %s -cclib -l%s %s %s %s"
+      (sprintf "%s -a -o %s.cmxa %s %s -cclib -l%s %s %s %s"
                   !ocamlopt
                   !output
+                  (String.concat " " !caml_opts)
                   (String.concat " " !native_objs)
                   !output_c
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
