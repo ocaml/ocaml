@@ -1,3 +1,5 @@
+# $Id$
+
 FILES=allfiles.tex biblio.tex foreword.tex version.tex
 TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles:
 TEXFONTS=../../styles:
