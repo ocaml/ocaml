@@ -234,7 +234,7 @@ let loc_exn_bucket = phys_reg 0         (* $o0 *)
 
 let destroyed_at_c_call = (* %l0-%l6, %i0-%i5 preserved ; %l7 used as temp *)
   Array.of_list(List.map phys_reg
-    [0; 1; 2; 3; 4; 5; 19
+    [0; 1; 2; 3; 4; 5; 19;
      100; 101; 102; 103; 104; 105; 106; 107;
      108; 109; 110; 111; 112; 113; 114])
 
@@ -243,7 +243,7 @@ let destroy_l7 = [| phys_reg 19 (* %l7 *) |]
 let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
   | Iop(Iextcall(_, false)) -> destroyed_at_c_call
-  | Iop(Ialloc) -> destroy_l7
+  | Iop(Ialloc _) -> destroy_l7
   | Iswitch(_, _) -> destroy_l7
   | _ -> [||]
 
@@ -257,7 +257,7 @@ let safe_register_pressure = function
 
 let max_register_pressure = function
     Iextcall(_, _) -> [| 13; 0 |]
-  | Ialloc -> [| 19; 15 |]
+  | Ialloc _ -> [| 19; 15 |]
   | _ -> [| 20; 15 |]
 
 (* Reloading *)
