@@ -19,7 +19,8 @@ OTHEROBJS=\
   ../typing/subst.cmo ../typing/predef.cmo \
   ../typing/datarepr.cmo ../typing/env.cmo \
   ../typing/ctype.cmo ../typing/printtyp.cmo ../typing/mtype.cmo \
-  ../bytecomp/runtimedef.cmo ../bytecomp/symtable.cmo
+  ../bytecomp/runtimedef.cmo ../bytecomp/symtable.cmo \
+  ../bytecomp/opcodes.cmo ../otherlibs/dynlink/dynlink.cmo
 
 OBJS=\
 	primitives.cmo \
@@ -46,6 +47,7 @@ OBJS=\
 	program_management.cmo \
 	frames.cmo \
 	show_information.cmo \
+        loadprinter.cmo \
 	parser.cmo \
 	command_line_interpreter.cmo \
 	main.cmo

@@ -90,6 +90,9 @@ open Parser_aux
 %start end_of_line
 %type <unit> end_of_line
 
+%start longident_eol
+%type <Longident.t> longident_eol
+
 %%
 
 /* Raw arguments */

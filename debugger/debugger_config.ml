@@ -70,3 +70,14 @@ let checkpoint_max_count = ref 15
 
 (* Whether to keep checkpoints or not. *)
 let make_checkpoints = ref true
+
+(*** Dynamic loader ***)
+
+(* List of standard library modules *)
+let stdlib_units = [
+  "Pervasives"; "List"; "Char"; "String"; "Array"; "Sys";
+  "Hashtbl"; "Sort"; "Filename"; "Obj"; "Lexing"; "Parsing";
+  "Set"; "Map"; "Stack"; "Queue"; "Stream";
+  "Printf"; "Format"; "Arg"; "Printexc"; "Gc";
+  "Digest"; "Random"; "Oo"; "Genlex"; "Callback"
+]

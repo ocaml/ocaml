@@ -227,11 +227,16 @@ let get_field v n =
   flush !conn.io_out;
   input_remote_value !conn.io_in
 
+exception Marshalling_error
+
 let marshal_obj v =
   output_char !conn.io_out 'M';
   output_remote_value !conn.io_out v;
   flush !conn.io_out;
-  input_value !conn.io_in
+  try
+    input_value !conn.io_in
+  with End_of_file | Failure _ ->
+    raise Marshalling_error
 
 let get_closure_code v =
   output_char !conn.io_out 'C';

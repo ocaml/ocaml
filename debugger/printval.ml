@@ -298,3 +298,24 @@ let print_ident_value max_depth lid obj ty env =
   close_box();
   print_newline()
 
+(* Add, remove a printer *)
+
+let install_printer path ty fn =
+  let print_val remote_val =
+    try
+      fn(Debugcom.marshal_obj remote_val)
+    with
+      Debugcom.Marshalling_error ->
+        print_string "<cannot fetch remote object>"
+    | exn ->
+        print_string "<printer ";
+        Printtyp.path path;
+        print_string " raised an exception>" in
+  printers := (path, ty, print_val) :: !printers
+
+let remove_printer path =
+  let rec remove = function
+    [] -> raise Not_found
+  | (p, ty, fn as printer) :: rem ->
+      if Path.same p path then rem else printer :: remove rem in
+  printers := remove !printers

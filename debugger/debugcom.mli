@@ -89,3 +89,4 @@ val get_field : remote_value -> int -> remote_value
 val marshal_obj : remote_value -> 'a
 val get_closure_code : remote_value -> int
 
+exception Marshalling_error

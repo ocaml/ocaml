@@ -842,6 +842,29 @@ let info_events lexbuf =
              | Event_after _ -> "after"))
       (events_in_module mdle)
 
+(** User-defined printers **)
+
+let instr_load_printer lexbuf =
+  let filename = argument_eol argument lexbuf in
+  try
+    Loadprinter.loadfile filename
+  with Loadprinter.Error e ->
+    Loadprinter.report_error e; raise Toplevel
+
+let instr_install_printer lexbuf =
+  let lid = longident_eol Lexer.lexeme lexbuf in
+  try
+    Loadprinter.install_printer lid
+  with Loadprinter.Error e ->
+    Loadprinter.report_error e; raise Toplevel
+
+let instr_remove_printer lexbuf =
+  let lid = longident_eol Lexer.lexeme lexbuf in
+  try
+    Loadprinter.remove_printer lid
+  with Loadprinter.Error e ->
+    Loadprinter.report_error e; raise Toplevel
+
 (** Initialization. **)
 let _ =
   instruction_list := [
@@ -925,7 +948,7 @@ To delete all breakpoints, give no argument." };
      (* Frames *)
      { instr_name = "frame"; instr_prio = false;
        instr_action = instr_frame; instr_repeat = true; instr_help =
-"Select and print a stack frame.\n\
+"select and print a stack frame.\n\
 With no argument, print the selected stack frame.\n\
 An argument specifies the frame to select." };
      { instr_name = "backtrace"; instr_prio = false;
@@ -949,7 +972,19 @@ An argument says how many frames down to go." };
 "go back to previous time." };
      { instr_name = "list"; instr_prio = false;
        instr_action = instr_list; instr_repeat = true; instr_help =
-"list the source code." }
+"list the source code." };
+     (* User-defined printers *)
+     { instr_name = "load_printer"; instr_prio = false;
+       instr_action = instr_load_printer; instr_repeat = false; instr_help =
+"load in the debugger a .cmo or .cma file containing printing functions." };
+     { instr_name = "install_printer"; instr_prio = false;
+       instr_action = instr_install_printer; instr_repeat = false; instr_help =
+"use the given function for printing values of its input type.\n\
+The code for the function must have previously been loaded in the debugger\n\
+using \"load_printer\"." };
+     { instr_name = "remove_printer"; instr_prio = false;
+       instr_action = instr_remove_printer; instr_repeat = false; instr_help =
+"stop using the given function for printing values of its input type." }
 ];
   variable_list := [
     (* variable name, (writing, reading), help reading, help writing *)

@@ -49,7 +49,9 @@ let generic_exec cmdline = function () ->
     0 ->
       begin try
          match fork () with
-           0 -> (* setsid(); *)
+           0 -> (* Try to detach the process from the controlling terminal,
+                   so that it does not receive SIGINT on ctrl-C. *)
+                begin try setsid() with Invalid_argument _ -> 0 end;
                 execv shell [| shell; "-c"; cmdline() |]
          | _ -> exit 0
        with x ->
