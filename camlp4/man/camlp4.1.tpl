@@ -196,6 +196,7 @@ Parsing files:
 	pa_extend.cmo: syntax extension for grammars
 	pa_extfun.cmo: syntax extension for extensible functions
 	pa_fstream.cmo: syntax extension for functional streams
+	pa_ocamllex.cma: syntax extension for ocamllex files
 	pa_ifdef.cmo: add ifdef instruction (conditional compilation)
 	pa_olabl.cmo: old syntax for labels
 .fi
