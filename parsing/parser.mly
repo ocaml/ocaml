@@ -257,10 +257,10 @@ structure_tail:
   | structure_item structure_tail               { $1 :: $2 }
 ;
 structure_item:
-    LET UNDERSCORE EQUAL expr
-      { mkstr(Pstr_eval $4) }
-  | LET rec_flag let_bindings
-      { mkstr(Pstr_value($2, List.rev $3)) }
+    LET rec_flag let_bindings
+      { match $3 with
+          [{ppat_desc = Ppat_any}, exp] -> mkstr(Pstr_eval exp)
+        | _ -> mkstr(Pstr_value($2, List.rev $3)) }
   | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
       { mkstr(Pstr_primitive($2, {pval_type = $4; pval_prim = $6})) }
   | TYPE type_declarations
