@@ -46,6 +46,22 @@ void register_global_root(r)
   global_roots = gr;
 }
 
+/* Un-register a global C root */
+
+void remove_global_root(r)
+     value * r;
+{
+  struct global_root ** gp, * gr;
+  for (gp = &global_roots; *gp != NULL; gp = &(*gp)->next) {
+    gr = *gp;
+    if (gr->root == r) {
+      *gp = gr->next;
+      stat_free((char *) gr);
+      return;
+    }
+  }
+}
+
 /* The hashtable of frame descriptors */
 
 typedef struct {
