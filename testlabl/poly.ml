@@ -331,3 +331,14 @@ class zero = object (_ : #numeral) method fold f x = x end
 class next (n : #numeral) =
   object (_ : #numeral) method fold f x = n#fold f (f x) end
 ;;
+
+class type node_type =  object
+  method as_variant : [> `Node of node_type]
+end;;
+class node : node_type = object (self)
+  method as_variant : 'a. [> `Node of node_type] as 'a
+                    = `Node (self :>  node_type)
+end;;
+class node = object (self : #node_type)
+  method as_variant = `Node (self :> node_type)
+end;;

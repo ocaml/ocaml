@@ -201,4 +201,7 @@ class c : object method m : d end
 #           class type numeral = object method fold : ('a -> 'a) -> 'a -> 'a end
 class zero : object method fold : ('a -> 'a) -> 'a -> 'a end
 class next : #numeral -> object method fold : ('a -> 'a) -> 'a -> 'a end
+#       class type node_type = object method as_variant : [> `Node of node_type] end
+#       class node : node_type
+#     class node : object method as_variant : [> `Node of node_type] end
 # 
