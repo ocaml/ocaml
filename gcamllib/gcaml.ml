@@ -12,6 +12,7 @@ generic val coerce : {'a} => dyn -> 'a =
     if ty = ty' (* FIXME *) then Obj.obj v
     else raise (Coercion_failure (ty', ty))
 
+(* Use Gprint.print instead! *)
 generic val print : {'a} => 'a -> unit =
   let rec f ty v =
     match ty with

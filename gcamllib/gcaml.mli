@@ -9,5 +9,6 @@ val dyn : {'a} => 'a -> dyn
 val coerce : {'a} => dyn -> 'a
 
 val print : {'a} => 'a -> unit
+(* use Gprint.print instead! *)
 
 val cast : {'a, 'b} => 'a -> 'b

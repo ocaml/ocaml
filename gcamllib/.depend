@@ -1,2 +1,6 @@
 gcaml.cmo: gcaml.cmi 
 gcaml.cmx: gcaml.cmi 
+gcamltest.cmo: gprint.cmi 
+gcamltest.cmx: gprint.cmx 
+gprint.cmo: gprint.cmi 
+gprint.cmx: gprint.cmi 
