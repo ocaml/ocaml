@@ -98,11 +98,11 @@ module Name :
       (** [concat t1 t2] returns the concatenation of [t1] and [t2].*)
       val concat : t -> t -> t
       (** Return the depth of the name, i.e. the numer of levels to the root.
-	 Example : [depth Toto.Tutu.name] = [3]. *)
+	 Example : [depth "Toto.Tutu.name"] = [3]. *)
       val depth : t -> int
       (** Take two names n1 and n2 = n3.n4 and return n4 if n3=n1 or else n2. *)
       val get_relative : t -> t -> t
-      (** Return the name of the 'father' (like dirname for a file name).*)
+      (** Return the name of the 'father' (like [dirname] for a file name).*)
       val father : t -> t
     end
 
