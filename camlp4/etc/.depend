@@ -1,9 +1,3 @@
-ingram.cmo: ../camlp4/mLast.cmi 
-ingram.cmx: ../camlp4/mLast.cmi 
-outgram.cmo: ../camlp4/pcaml.cmi 
-outgram.cmx: ../camlp4/pcaml.cmx 
-pa_cl.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
-pa_cl.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
 pa_extfun.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
 pa_extfun.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
 pa_format.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
@@ -14,6 +8,10 @@ pa_lisp.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi
 pa_lisp.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
 pa_lispr.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
 pa_lispr.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
+pa_ocamllex.cmo: ../../lex/compact.cmi ../../lex/lexgen.cmi \
+    ../camlp4/mLast.cmi ../camlp4/pcaml.cmi ../../lex/syntax.cmi 
+pa_ocamllex.cmx: ../../lex/compact.cmx ../../lex/lexgen.cmx \
+    ../camlp4/mLast.cmi ../camlp4/pcaml.cmx ../../lex/syntax.cmx 
 pa_olabl.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
 pa_olabl.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
 pa_o.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 

@@ -110,6 +110,7 @@ value rec expr =
   | ExInt _ _ -> ()
   | ExFlo _ _ -> ()
   | ExLab _ _ e -> expr e
+  | ExLaz _ e -> expr e
   | ExLet _ _ pel e -> do { list let_binding pel; expr e; }
   | ExLid _ _ -> ()
   | ExLmd _ _ me e -> do { module_expr me; expr e; }
