@@ -43,11 +43,11 @@ OBJS=\
 	history.cmo \
 	program_loading.cmo \
 	printval.cmo \
-	eval.cmo \
 	show_source.cmo \
 	time_travel.cmo \
 	program_management.cmo \
 	frames.cmo \
+	eval.cmo \
 	show_information.cmo \
         loadprinter.cmo \
 	parser.cmo \

@@ -69,10 +69,10 @@ let rec expression event env = function
       end
   | E_result ->
       begin match event.ev_kind with
-        Event_before ->
-          raise(Error(No_result))
-      | Event_after ty ->
+        Event_after ty when !Frames.current_frame = 0 ->
           (Debugcom.get_accu(), ty)
+      | _ ->
+          raise(Error(No_result))
       end
   | E_name n ->
       begin try
