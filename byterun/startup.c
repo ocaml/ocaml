@@ -41,7 +41,6 @@
 #endif
 
 header_t atom_table[256];
-code_t start_code;
 
 /* Initialize the atom table */
 

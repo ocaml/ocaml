@@ -8,11 +8,6 @@
 # To install Objective Caml in your MPW environment, follow this script.
 # Read the comments and execute the commands.  If you run the commands
 # without changing anything, you'll get a reasonable default configuration.
-#
-# Set the shell's stack size to at least 128k because O'Caml uses a lot of
-# stack space.
-
-SetShellSize -s 128k
 
 # Go to the directory where you found this file.
 

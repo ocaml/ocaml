@@ -45,7 +45,7 @@
   import (callback_depth): data
 
 msg       record
-          dc.b       'Fatal error: bad opcode (%lx)', $0D, $00
+          dc.b       'Fatal error in interp: bad opcode (%lx)', $0D, $00
 endr
 
 interprete proc export
@@ -110,12 +110,20 @@ initial_callback_depth_  equ      $00
           LEA.L      -local_var_size_(A7), A7
           Call_restore
 
-          MOVEA.L    local_var_size_+4*10+$4(A7), A0    ; code
-	  CMPI.L     #122, (A0)
-	  BHI.S      nothread                           ; deja tresse
-
+          MOVE.L     local_var_size_+4*10+$4(A7), D0    ; code
+	  BNE.S      noinit                             ; == NULL => init
           LEA.L      table(PC), A0
           MOVE.L     A0, (instr_table).L
+	  MOVEQ.L    #1, D0
+          Call_setup                                    ; 2eme copie: "lbl_1B88"
+          LEA.L      local_var_size_(A7), A7
+          MOVEM.L    (A7)+, D3-D7/A2-A6
+          RTS        
+
+noinit:   MOVEA.L    local_var_size_+4*10+$4(A7), A0    ; code
+	  CMPI.L     #124, (A0)
+	  BHI.S      nothread                           ; deja tresse
+
           MOVE.L     local_var_size_+4*10+$8(A7), -(A7) ; argument 1 (size)
           MOVE.L     local_var_size_+4*10+$8(A7), -(A7) ; argument 0 (code)
           Call_setup
@@ -147,6 +155,7 @@ nothread: LEA.L      i_start(PC), A6
           MOVE.L     initial_local_roots_(A7), (local_roots).L
           MOVE.L     initial_callback_depth_(A7), (callback_depth).L
           MOVEA.L    (exn_bucket).L, accu_
+	  MOVEA.L    (extern_sp).L, sp_
           JMP        i_82-i_base(A6)             ; RAISE
 lbl_78:   LEA.L      raise_buf_(A7), A0
           MOVE.L     A0, (external_raise).L
@@ -157,7 +166,7 @@ lbl_78:   LEA.L      raise_buf_(A7), A0
           Make_table
      lcla &i
 &i   seta 0
-     while &i < 122 do
+     while &i < 124 do
           DC.L       i_&i - i_base
 &i   seta &i + 1
      endw
@@ -908,7 +917,6 @@ i_83:     TST.L      (something_to_do).L
 i_83x:    CLR.L      (something_to_do).L
           TST.L      (force_major_slice).L
           BEQ.S      lbl_1116
-          CLR.L      (force_major_slice).L
           Setup_for_gc
           Call_setup
           JSR        (minor_collection).L
@@ -1184,6 +1192,12 @@ i_121:    MOVE.L     initial_external_raise_(A7), (external_raise).L
           BRA        lbl_1B88
           Nodispatch
 
+; EVENT
+i_122:    Dispatch
+
+; BREAK
+i_123:    Dispatch
+
           Spacer     12100                    ; complete a 64k
           BRA        fatal
 
@@ -1241,7 +1255,7 @@ chk_stks: CMPA.L     (stack_threshold).L, sp_
           MOVE.L     (extern_sp).L, sp_
           BRA        i_83
 
-lbl_1B88: Call_setup
+lbl_1B88: Call_setup                                    ; 2eme copie: "init"
           LEA.L      local_var_size_(A7), A7
           MOVEM.L    (A7)+, D3-D7/A2-A6
           RTS        

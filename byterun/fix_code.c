@@ -16,10 +16,10 @@
 #include "config.h"
 #include "debugger.h"
 #include "fix_code.h"
+#include "instruct.h"
 #include "memory.h"
 #include "misc.h"
 #include "mlvalues.h"
-#include "instruct.h"
 #include "reverse.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
@@ -41,7 +41,7 @@ void load_code(fd, len)
   start_code = (code_t) stat_alloc(code_size);
   if (read(fd, (char *) start_code, code_size) != code_size)
     fatal_error("Fatal error: truncated bytecode file.\n");
-#ifdef BIG_ENDIAN
+#ifdef ARCH_BIG_ENDIAN
   fixup_endianness(start_code, code_size);
 #endif
   if (debugger_in_use) {
@@ -108,7 +108,8 @@ void thread_code (code_t code, asize_t len)
   for (p = code; p < code + len; /*nothing*/) {
     opcode_t instr = *p;
     if (instr < 0 || instr > STOP){
-      fatal_error_arg ("Fatal error: bad opcode (%lx)\n", (void *) instr);
+      fatal_error_arg ("Fatal error in fix_code: bad opcode (%lx)\n",
+                       (void *) instr);
     }
     *p++ = (opcode_t)((unsigned long)(instr_table[instr]));
     if (instr == SWITCH) {
