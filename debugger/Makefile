@@ -57,6 +57,9 @@ all: ocamldebug
 ocamldebug: $(OBJS)
 	$(CAMLC) $(LINKFLAGS) -o ocamldebug $(OTHEROBJS) $(OBJS) ../otherlibs/unix/libunix.a
 
+install:
+	cp ocamldebug $(BINDIR)
+
 clean::
 	rm -f ocamldebug
 	rm -f *.cmo *.cmi
