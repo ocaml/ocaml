@@ -1,5 +1,5 @@
-Camlp4 Version ....
--------------------
+Camlp4 Version 3.04+1
+---------------------
 
 - [04 Jan 02] Fixed bug in pa_sml (SML syntax): the function definitions
   with several currified parameters did not work. It works now, but the
