@@ -418,6 +418,10 @@ value caml_close_channel(value vchannel)      /* ML */
   struct channel * channel = Channel(vchannel);
   close(channel->fd);
   channel->fd = -1;
+  /* Ensure that every read or write on the channel will cause an
+     immediate flush_partial or refill, thus raising a Sys_error
+     exception */
+  channel->curr = channel->max = channel->end;
   return Val_unit;
 }
 
