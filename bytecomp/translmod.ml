@@ -248,7 +248,7 @@ let rec transl_module cc rootpath mexp =
       transl_structure [] cc rootpath str
   | Tmod_functor(param, mty, body) ->
       let bodypath = functor_path rootpath param in
-      oo_wrap mexp.mod_env
+      oo_wrap mexp.mod_env true
         (function
         | Tcoerce_none ->
             Lfunction(Curried, [param],
@@ -262,7 +262,7 @@ let rec transl_module cc rootpath mexp =
             fatal_error "Translmod.transl_module")
         cc
   | Tmod_apply(funct, arg, ccarg) ->
-      oo_wrap mexp.mod_env
+      oo_wrap mexp.mod_env true
         (apply_coercion cc)
         (Lapply(transl_module Tcoerce_none None funct,
                 [transl_module ccarg None arg]))

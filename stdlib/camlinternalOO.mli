@@ -51,6 +51,11 @@ val run_initializers_opt : obj -> obj -> table -> obj
 val create_object_and_run_initializers : obj -> table -> obj
 val send : obj -> label -> t
 
+(** {6 Table cache} *)
+
+type tables
+val lookup_tables : tables -> table array -> tables
+
 (** {6 Parameters} *)
 
 type params =

@@ -67,6 +67,10 @@ let type_module =
   ref ((fun env md -> assert false) :
        Env.t -> Parsetree.module_expr -> Typedtree.module_expr)
 
+(* Forward declaration, to be filled in by Typeclass.class_structure *)
+let type_object =
+  ref (fun env s -> assert false :
+       Env.t -> Parsetree.class_structure -> class_structure * class_signature)
 
 (*
   Saving and outputting type information.
@@ -1318,6 +1322,22 @@ let rec type_exp env sexp =
          exp_type = instance (Predef.type_lazy_t arg.exp_type);
          exp_env = env;
        }
+  | Pexp_object s ->
+      let desc, ({cty_self = sty} as cty) = !type_object env s in
+      hide_private_methods sty;
+      close_object sty;
+      let meths =
+        List.fold_right
+          (fun (s,k,_) l ->
+            if field_kind_repr k = Fpresent then s :: l else l)
+          (fst (flatten_fields (object_fields sty))) []
+      in
+      re {
+        exp_desc = Texp_object (desc, cty, meths);
+        exp_loc = sexp.pexp_loc;
+        exp_type = sty;
+        exp_env = env;
+      }
   | Pexp_poly _ ->
       assert false
 

@@ -879,6 +879,8 @@ expr:
       { mkassert $2 }
   | LAZY simple_expr %prec below_SHARP
       { mkexp (Pexp_lazy ($2)) }
+  | OBJECT class_structure END
+      { mkexp (Pexp_object ($2)) }
 ;
 simple_expr:
     val_longident

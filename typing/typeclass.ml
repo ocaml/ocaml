@@ -1244,6 +1244,11 @@ let class_type_declarations env cls =
      decl,
    env)
 
+let () =
+  Typecore.type_object :=
+    (fun env s ->
+      incr class_num; class_structure (string_of_int !class_num) env env s)
+
 (*******************************)
 
 (* Approximate the class declaration as class ['params] id = object end *)

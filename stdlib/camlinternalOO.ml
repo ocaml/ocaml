@@ -457,6 +457,41 @@ let send obj lab =
   let (buck, elem) = decode lab in
   (magic obj : (obj -> t) array array array).(0).(buck).(elem) obj
 
+(**** table collection access ****)
+
+type tables = Empty | Cons of table * tables * tables
+type mut_tables =
+    {key: table; mutable data: tables; mutable next: tables}
+external mut : tables -> mut_tables = "%identity"
+
+let build_path n keys tables =
+  let res = Cons (Obj.magic 0, Empty, Empty) in
+  let r = ref res in
+  for i = 0 to n do
+    r := Cons (keys.(i), !r, Empty)
+  done;
+  tables.data <- !r;
+  res
+
+let rec lookup_keys i keys tables =
+  if i < 0 then tables else
+  let key = keys.(i) in
+  let rec lookup_key tables =
+    if tables.key == key then lookup_keys (i-1) keys tables.data else
+    if tables.next <> Empty then lookup_key (mut tables.next) else
+    let next = Cons (key, Empty, Empty) in
+    tables.next <- next;
+    build_path (i-1) keys (mut next)
+  in
+  lookup_key (mut tables)
+
+let lookup_tables root keys =
+  let root = mut root in
+  if root.data <> Empty then
+    lookup_keys (Array.length keys - 1) keys root.data
+  else
+    build_path (Array.length keys - 1) keys root
+
 (**** Statistics ****)
 
 type stats =

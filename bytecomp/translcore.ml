@@ -36,6 +36,10 @@ let transl_module =
   ref((fun cc rootpath modl -> assert false) :
       module_coercion -> Path.t option -> module_expr -> lambda)
 
+let transl_object =
+  ref (fun id s cl -> assert false :
+       Ident.t -> string list -> class_expr -> lambda)
+
 (* Translation of primitives *)
 
 let comparisons_table = create_hashtable 11 [
@@ -665,6 +669,16 @@ let rec transl_exp e =
   | Texp_lazy e ->
       let fn = Lfunction (Curried, [Ident.create "param"], transl_exp e) in
       Lprim(Pmakeblock(Config.lazy_tag, Immutable), [fn])
+  | Texp_object (cs, cty, meths) ->
+      let cl = Ident.create "class" in
+      let lam =
+        !transl_object cl meths
+          { cl_desc = Tclass_structure cs;
+            cl_loc = e.exp_loc;
+            cl_type = Tcty_signature cty;
+            cl_env = e.exp_env }
+      in
+      Lapply(Lprim(Pfield 0, [lam]), [lambda_unit])
 
 and transl_list expr_list =
   List.map transl_exp expr_list
@@ -880,13 +894,13 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
 (* Wrapper for class compilation *)
 
 let transl_exp e =
-  Translobj.oo_wrap e.exp_env transl_exp e
+  Translobj.oo_wrap e.exp_env true transl_exp e
 
 let transl_let rec_flag pat_expr_list body =
   match pat_expr_list with
     [] -> body
   | (_, expr) :: _ ->
-      Translobj.oo_wrap expr.exp_env
+      Translobj.oo_wrap expr.exp_env true
         (transl_let rec_flag pat_expr_list) body
 
 (* Compile an exception definition *)

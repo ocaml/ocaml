@@ -76,6 +76,7 @@ and expression_desc =
   | Texp_assert of expression
   | Texp_assertfalse
   | Texp_lazy of expression
+  | Texp_object of class_structure * class_signature * string list
 
 and meth =
     Tmeth_name of string

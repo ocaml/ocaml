@@ -110,6 +110,7 @@ and expression_desc =
   | Pexp_assertfalse
   | Pexp_lazy of expression
   | Pexp_poly of expression * core_type option
+  | Pexp_object of class_structure
 
 (* Value descriptions *)
 

@@ -183,6 +183,7 @@ let rec build_object_init_0 cl_table params cl copy_env subst_env i0 =
       let (inh_init, obj_init) =
         build_object_init cl_table obj params [] (copy_env env) cl in
       let obj_init = subst_lambda (subst_env env) obj_init in
+      let obj_init = lfunction [obj] obj_init in
       let obj_init =
 	if i0 < 0 then obj_init else
 	let i = ref (i0-1) in
@@ -194,7 +195,7 @@ let rec build_object_init_0 cl_table params cl copy_env subst_env i0 =
                         [Lprim(Pfield 3, [Lprim(Pfield !i, [Lvar env])])]),
 		 init))
 	  obj_init inh_init in
-      let obj_init = lfunction [env; obj] obj_init in
+      let obj_init = lfunction [env] obj_init in
       (inh_init, obj_init)
 
 let bind_method tbl public_methods lab id cl_init =
@@ -317,9 +318,9 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
 
 let transl_class ids cl_id arity pub_meths cl =
   let tables = Ident.create (Ident.name cl_id ^ "_tables") in
-  let top_env = oo_add_class tables in
+  let (top_env, req) = oo_add_class tables in
   let new_ids = Env.diff top_env cl.cl_env in
-  let top = (new_ids = []) in
+  let top = (new_ids = []) && not req in
   let replicate id = Ident.create (Ident.name id) in
   let new_ids2 = List.map replicate new_ids in
   let subst self =
@@ -404,30 +405,39 @@ let transl_class ids cl_id arity pub_meths cl =
   let obj_init2 = Ident.create "obj_init"
   and env_init = Ident.create "env_init"
   and env2 = Ident.create "env"
-  and self = Ident.create "self" in
+  and cached = Ident.create "cached" in
+  let inh_keys =
+    List.map (fun (_,_,lpath) -> Lprim(Pfield 2, [lpath])) inh_init in
   let lclass lam =
     Llet(Strict, class_init,
-         Lfunction(Curried, [cla], def_ids cla cl_init),
+         Lfunction(Curried, [cla], def_ids cla cl_init), lam)
+  and lcache lam =
+    if inh_keys = [] then Llet(Alias, cached, Lvar tables, lam) else
+    Llet(Strict, cached,
+         Lapply(oo_prim "lookup_tables",
+                [Lvar tables; Lprim(Pmakeblock(0, Immutable), inh_keys)]),
          lam)
   in
-  lclass (
+  lcache (
   Lsequence(
-  Lifthenelse(Lprim(Pfield 0, [Lvar tables]), Lconst (Const_pointer 0),
+  Lifthenelse(Lprim(Pfield 0, [Lvar cached]), lambda_unit,
               ltable (
+              lclass (
               Llet (Strict, env_init,
                     Lapply(Lvar class_init, [Lvar table]),
                     Lsequence(
                     Lapply (oo_prim "init_class", [Lvar table]),
-                    Lprim(
-                    Psetfield(0, true),
-                    [Lvar tables;
-                     Lprim(Pmakeblock(0,Immutable),
-                           [Lvar table; Lvar env_init])]))))),
+                    Lsequence(
+                    Lprim(Psetfield(0, true), [Lvar cached; Lvar env_init]),
+                    Lsequence(
+                    Lprim(Psetfield(1, true), [Lvar cached; Lvar class_init]),
+                    Lprim(Psetfield(2, true), [Lvar cached; Lvar table])
+                   ))))))),
   make_env (
   Lprim(Pmakeblock(0, Immutable),
-        [Lapply(Lprim(Pfield 1, [Lprim(Pfield 0, [Lvar tables])]), [Lvar env]);
-         Lvar class_init;
-         Lprim(Pfield 0, [Lprim(Pfield 0, [Lvar tables])]);
+        [Lapply(Lprim(Pfield 0, [Lvar cached]), [Lvar env]);
+         Lprim(Pfield 1, [Lvar cached]);
+         Lprim(Pfield 2, [Lvar cached]);
          Lvar env]))))
 
 (* example:
@@ -438,6 +448,10 @@ module M1 = M (struct let x = 3 end);;
 let o = new M1.c;;
 let f (x : int) =
   let module M = struct class c = object method m = x end end in new M.c;;
+module F(X : sig class c : object method x : int end end) =
+  struct class c = object inherit X.c as super method x = super#x + 1 end end;;
+module M0 = struct class c = object method x = 0 end end;;
+module M2 = struct class c = object method x = 2 end end;;
 *)
 
 let class_stub =
@@ -446,10 +460,13 @@ let class_stub =
 let dummy_class undef_fn =
   Lprim(Pmakeblock(0, Mutable), [undef_fn; undef_fn; oo_prim "dummy_table"])
 
+let () =
+  transl_object := (fun id meths cl -> transl_class [] id 0 meths cl)
+
 (* Wrapper for class compilation *)
 
 let transl_class ids cl_id arity pub_meths cl =
-  oo_wrap cl.cl_env (transl_class ids cl_id arity pub_meths) cl
+  oo_wrap cl.cl_env false (transl_class ids cl_id arity pub_meths) cl
 
 (* Error report *)
 
