@@ -480,7 +480,7 @@ the camldebug commands `cd DIR' and `directory'."
     (make-comint (concat "camldebug-" file)
 		 (substitute-in-file-name camldebug-command-name)
 		 nil
-		 "-emacs" "-cd" default-directory file)
+		 "-emacs" "-cd" default-directory path)
     (set-process-filter (get-buffer-process (current-buffer))
 			'camldebug-filter)
     (set-process-sentinel (get-buffer-process (current-buffer))
