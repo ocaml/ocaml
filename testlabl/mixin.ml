@@ -8,11 +8,11 @@ module Names = Set.Make(struct type t = string let compare = compare end)
 
 (* Variables are common to lambda and expr *)
 
-type var = [`Var string]
+type var = [`Var of string]
 
-let subst_var :subst : var -> _ =
+let subst_var ~subst : var -> _ =
   function `Var s as x ->
-    try Subst.find key:s subst
+    try Subst.find s subst
     with Not_found -> x
 
 let free_var : var -> _ = function `Var s -> Names.singleton s
@@ -20,14 +20,14 @@ let free_var : var -> _ = function `Var s -> Names.singleton s
 
 (* The lambda language: free variables, substitutions, and evaluation *)
 
-type 'a lambda = [`Var string | `Abs string * 'a | `App 'a * 'a]
+type 'a lambda = [`Var of string | `Abs of string * 'a | `App of 'a * 'a]
 
-let free_lambda :free_rec : _ lambda -> _ = function
+let free_lambda ~free_rec : _ lambda -> _ = function
     #var as x -> free_var x
-  | `Abs (s, t) -> Names.remove item:s (free_rec t)
+  | `Abs (s, t) -> Names.remove s (free_rec t)
   | `App (t1, t2) -> Names.union (free_rec t1) (free_rec t2)
 
-let map_lambda :map_rec : _ lambda -> _ = function
+let map_lambda ~map_rec : _ lambda -> _ = function
     #var as x -> x
   | `Abs (s, t) as l ->
       let t' = map_rec t in
@@ -40,41 +40,43 @@ let next_id =
   let current = ref 3 in
   fun () -> incr current; !current
 
-let subst_lambda :subst_rec :free :subst : _ lambda -> _ = function
-    #var as x -> subst_var :subst x
+let subst_lambda ~subst_rec ~free ~subst : _ lambda -> _ = function
+    #var as x -> subst_var ~subst x
   | `Abs(s, t) as l ->
       let used = free t in
       let used_expr =
-        Subst.fold subst acc:[]
-          fun:(fun :key :data :acc ->
-                if Names.mem item:s used then data::acc else acc) in
-      if List.exists used_expr pred:(fun t -> Names.mem item:s (free t)) then
+        Subst.fold subst ~init:[]
+          ~f:(fun ~key ~data acc ->
+                if Names.mem s used then data::acc else acc) in
+      if List.exists used_expr ~f:(fun t -> Names.mem s (free t)) then
         let name = s ^ string_of_int (next_id ()) in
-        `Abs(name, subst_rec subst:(Subst.add key:s data:(`Var name) subst) t)
+        `Abs(name,
+             subst_rec ~subst:(Subst.add ~key:s ~data:(`Var name) subst) t)
       else
-        map_lambda map_rec:(subst_rec subst:(Subst.remove key:s subst)) l
+        map_lambda ~map_rec:(subst_rec ~subst:(Subst.remove s subst)) l
   | `App _ as l ->
-      map_lambda map_rec:(subst_rec :subst) l
+      map_lambda ~map_rec:(subst_rec ~subst) l
 
-let eval_lambda :eval_rec :subst l =
-  match map_lambda map_rec:eval_rec l with
+let eval_lambda ~eval_rec ~subst l =
+  match map_lambda ~map_rec:eval_rec l with
     `App(`Abs(s,t1), t2) ->
-      eval_rec (subst subst:(Subst.add key:s data:t2 Subst.empty) t1)
+      eval_rec (subst ~subst:(Subst.add ~key:s ~data:t2 Subst.empty) t1)
   | t -> t
 
 (* Specialized versions to use on lambda *)
 
-let rec free1 x = free_lambda free_rec:free1 x
-let rec subst1 :subst = subst_lambda subst_rec:subst1 free:free1 :subst
-let rec eval1 x = eval_lambda eval_rec:eval1 subst:subst1 x
+let rec free1 x = free_lambda ~free_rec:free1 x
+let rec subst1 ~subst = subst_lambda ~subst_rec:subst1 ~free:free1 ~subst
+let rec eval1 x = eval_lambda ~eval_rec:eval1 ~subst:subst1 x
 
 
 (* The expr language of arithmetic expressions *)
 
 type 'a expr =
-    [`Var string | `Num int | `Add 'a * 'a | `Neg 'a | `Mult 'a * 'a]
+    [`Var of string | `Num of int | `Add of 'a * 'a
+    | `Neg of 'a | `Mult of 'a * 'a]
 
-let free_expr :free_rec : _ expr -> _ = function
+let free_expr ~free_rec : _ expr -> _ = function
     #var as x -> free_var x
   | `Num _ -> Names.empty
   | `Add(x, y) -> Names.union (free_rec x) (free_rec y)
@@ -82,7 +84,7 @@ let free_expr :free_rec : _ expr -> _ = function
   | `Mult(x, y) -> Names.union (free_rec x) (free_rec y)
 
 (* Here map_expr helps a lot *)
-let map_expr :map_rec : _ expr -> _ = function
+let map_expr ~map_rec : _ expr -> _ = function
     #var as x -> x
   | `Num _ as x -> x
   | `Add(x, y) as e ->
@@ -97,12 +99,12 @@ let map_expr :map_rec : _ expr -> _ = function
       if x == x' && y == y' then e
       else `Mult(x', y')
 
-let subst_expr :subst_rec :subst : _ expr -> _ = function
-    #var as x -> subst_var :subst x
-  | #expr as e -> map_expr map_rec:(subst_rec :subst) e
+let subst_expr ~subst_rec ~subst : _ expr -> _ = function
+    #var as x -> subst_var ~subst x
+  | #expr as e -> map_expr ~map_rec:(subst_rec ~subst) e
 
-let eval_expr :eval_rec e =
-  match map_expr map_rec:eval_rec e with
+let eval_expr ~eval_rec e =
+  match map_expr ~map_rec:eval_rec e with
     `Add(`Num m, `Num n) -> `Num (m+n)
   | `Neg(`Num n) -> `Num (-n)
   | `Mult(`Num m, `Num n) -> `Num (m*n)
@@ -110,28 +112,29 @@ let eval_expr :eval_rec e =
 
 (* Specialized versions *)
 
-let rec free2 x = free_expr free_rec:free2 x
-let rec subst2 :subst = subst_expr subst_rec:subst2 :subst
-let rec eval2 x = eval_expr eval_rec:eval2 x
+let rec free2 x = free_expr ~free_rec:free2 x
+let rec subst2 ~subst = subst_expr ~subst_rec:subst2 ~subst
+let rec eval2 x = eval_expr ~eval_rec:eval2 x
 
 
 (* The lexpr language, reunion of lambda and expr *)
 
 type lexpr =
-  [ `Var string | `Abs string * lexpr | `App lexpr * lexpr
-  | `Num int | `Add lexpr * lexpr | `Neg lexpr | `Mult lexpr * lexpr ]
+  [ `Var of string | `Abs of string * lexpr | `App of lexpr * lexpr
+  | `Num of int | `Add of lexpr * lexpr | `Neg of lexpr
+  | `Mult of lexpr * lexpr ]
 
 let rec free : lexpr -> _ = function
-    #lambda as x -> free_lambda free_rec:free x
-  | #expr as x -> free_expr free_rec:free x
+    #lambda as x -> free_lambda ~free_rec:free x
+  | #expr as x -> free_expr ~free_rec:free x
 
-let rec subst subst:s : lexpr -> _ = function
-    #lambda as x -> subst_lambda subst_rec:subst subst:s :free x
-  | #expr as x -> subst_expr subst_rec:subst subst:s x
+let rec subst ~subst:s : lexpr -> _ = function
+    #lambda as x -> subst_lambda ~subst_rec:subst ~subst:s ~free x
+  | #expr as x -> subst_expr ~subst_rec:subst ~subst:s x
 
 let rec eval : lexpr -> _ = function
-    #lambda as x -> eval_lambda eval_rec:eval :subst x
-  | #expr as x -> eval_expr eval_rec:eval x
+    #lambda as x -> eval_lambda ~eval_rec:eval ~subst x
+  | #expr as x -> eval_expr ~eval_rec:eval x
 
 (* A few examples:
 eval1 (`App(`Abs("x",`Var"x"), `Var"y"));;
