@@ -90,11 +90,11 @@ let extend_label_table needed =
   label_table := new_table
 
 let backpatch (pos, orig) =
-  let displ = (!out_position - orig) / 4 in
+  let displ = (!out_position - orig) asr 2 in
   !out_buffer.[pos] <- Char.unsafe_chr displ;
-  !out_buffer.[pos+1] <- Char.unsafe_chr (displ lsr 8);
-  !out_buffer.[pos+2] <- Char.unsafe_chr (displ lsr 16);
-  !out_buffer.[pos+3] <- Char.unsafe_chr (displ lsr 24)
+  !out_buffer.[pos+1] <- Char.unsafe_chr (displ asr 8);
+  !out_buffer.[pos+2] <- Char.unsafe_chr (displ asr 16);
+  !out_buffer.[pos+3] <- Char.unsafe_chr (displ asr 24)
 
 let define_label lbl =
   if lbl >= Array.length !label_table then extend_label_table lbl;
@@ -109,7 +109,7 @@ let out_label_with_orig orig lbl =
   if lbl >= Array.length !label_table then extend_label_table lbl;
   match (!label_table).(lbl) with
     Label_defined def ->
-      out_int((def - orig) / 4)
+      out_int((def - orig) asr 2)
   | Label_undefined patchlist ->
       (!label_table).(lbl) <-
          Label_undefined((!out_position, orig) :: patchlist);
