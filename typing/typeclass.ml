@@ -557,16 +557,18 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
   (* Environment for substructures *)
   let par_env = met_env in
 
-  (* Private self type more method access, with a dummy method preventing
-     it from being closed/escaped. *)
+  (* Self type, with a dummy method preventing it from being closed/escaped. *)
   let self_type = Ctype.newvar () in
   Ctype.unify val_env
     (Ctype.filter_method val_env dummy_method Private self_type)
     (Ctype.newty (Ttuple []));
 
+  (* Private self is used for private method calls *)
+  let private_self = if final then Ctype.newvar () else self_type in
+
   (* Self binder *)
   let (pat, meths, vars, val_env, meth_env, par_env) =
-    type_self_pattern cl_num self_type val_env met_env par_env spat
+    type_self_pattern cl_num private_self val_env met_env par_env spat
   in
   let public_self = pat.pat_type in
 
@@ -609,7 +611,7 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
     List.filter (fun (_,kind,_) -> Btype.field_kind_repr kind <> Fpresent)
       methods in
   if final then begin
-    (* Unify public_self and a copy of self_type. self_type will not
+    (* Unify private_self and a copy of self_type. self_type will not
        be modified after this point *)
     Ctype.close_object self_type;
     let mets = virtual_methods {sign with cty_self = self_type} in
@@ -618,15 +620,17 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
       List.fold_right
         (fun (lab,kind,ty) rem ->
           if lab = dummy_method then
-	    (* allow public self and private self to be unified *)
-	    match Btype.field_kind_repr kind with
-	      Fvar r -> Btype.set_kind r Fabsent; rem
-	    | _ -> rem
-	  else
+            (* allow public self and private self to be unified *)
+            match Btype.field_kind_repr kind with
+              Fvar r -> Btype.set_kind r Fabsent; rem
+            | _ -> rem
+          else
             Ctype.newty(Tfield(lab, Btype.copy_kind kind, ty, rem)))
         methods (Ctype.newty Tnil) in
-    begin try Ctype.unify val_env public_self
-        (Ctype.newty (Tobject(self_methods, ref None)))
+    begin try
+      Ctype.unify val_env private_self
+        (Ctype.newty (Tobject(self_methods, ref None)));
+      Ctype.unify val_env public_self self_type
     with Ctype.Unify trace -> raise(Error(loc, Final_self_clash trace))
     end;
   end;
