@@ -124,7 +124,7 @@ sp is a local copy of the global variable extern_sp. */
 #ifdef __i386__
 #define PC_REG asm("%esi")
 #define SP_REG asm("%edi")
-#define ACCU_REG asm("%ebx")
+#define ACCU_REG
 #endif
 #if defined(PPC) || defined(_POWER) || defined(_IBMR2)
 #define PC_REG asm("26")
