@@ -5,10 +5,10 @@ STDLIB_INTF=arg.tex array.tex char.tex digest.tex filename.tex format.tex \
   lazy.tex lexing.tex list.tex map.tex marshal.tex nativeint.tex oo.tex \
   parsing.tex printexc.tex printf.tex queue.tex random.tex set.tex sort.tex \
   stack.tex stream.tex string.tex sys.tex weak.tex callback.tex lazy.tex \
-  buffer.tex
+  buffer.tex stdLabels.tex
 
 OTHERLIB_INTF=unix.tex str.tex num.tex bigint.tex arithstatus.tex \
-  graphics.tex thread.tex mutex.tex condition.tex event.tex threadUnix.tex \
+  graphics.tex thread.tex mutex.tex condition.tex event.tex \
   dbm.tex dynlink.tex tk.tex bigarray.tex
 
 INTF=$(CORE_INTF) $(STDLIB_INTF) $(OTHERLIB_INTF)

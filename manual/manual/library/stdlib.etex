@@ -37,6 +37,8 @@ Here is a short listing, by theme, of the standard library modules.
 "String" & p.~\pageref{s:String} & string operations \\
 "Array" & p.~\pageref{s:Array} & array operations \\
 "List" & p.~\pageref{s:List} & list operations \\
+"StdLabels" &p.~\pageref{s:StdLabels} & labelized versions of
+the above 3 modules \\
 "Sort" & p.~\pageref{s:Sort} & sorting and merging lists \\
 "Hashtbl" & p.~\pageref{s:Hashtbl} & hash tables and hash functions \\
 "Random" & p.~\pageref{s:Random} & pseudo-random number generator \\
@@ -109,6 +111,7 @@ be called from C \\
 \input{set.tex}
 \input{sort.tex}
 \input{stack.tex}
+\input{stdLabels.tex}
 \input{stream.tex}
 \input{string.tex}
 \input{sys.tex}

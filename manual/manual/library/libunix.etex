@@ -37,6 +37,15 @@ more information on the functions that are not supported under Windows.
 \input{unix.tex}
 \end{library}
 
+\section{Module "UnixLabels": labelized version of the interface}
+\label{s:UnixLabels}
+\index{UnixLabels (module)@\verb~UnixLabels~ (module)}%
+\pdfsection{Module UnixLabels: labelized version of the interface}
+
+This module is identical to "Unix"~(\ref{s:Unix}), and only differs by
+the addition of labels. You may see these labels directly by looking
+at "unixLabels.mli", or by using the "ocamlbrowser" tool.
+
 \newpage
 \begin{macos}
 Under MacOS, the Unix library is only available in the toplevel

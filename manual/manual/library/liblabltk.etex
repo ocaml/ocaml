@@ -24,7 +24,7 @@ If the library was not compiled correctly, try to run again the
 "configure" script with the option "-tkdefs" \var{switches},
 where \var{switches} is a list of C-style inclusion paths leading to
 the right "tcl.h" and "tk.h", for instance
-'"-I/usr/local/include/tcl8.0 -I/usr/local/include/tk8.0"'.
+'"-I/usr/local/include/tcl8.3 -I/usr/local/include/tk8.3"'.
 
 A script is installed, to make easier the use of the "labltk"
 library as toplevel.
@@ -41,9 +41,9 @@ in place of "ocaml".
 The "labltk" library has been precompiled for use with Tcl/Tk 8.0.
 You must first have it installed on your system.
 It can be downloaded from \\
-"http://www.scriptics.com/products/tcltk/8.0.html".
+"http://www.scriptics.com/products/tcltk/8.3.html".
 After installing it, you must put the dynamically loaded libraries
-"tcl80.dll" and "tk80.dll" (from the "bin" directory of the Tcl
+"tcl83.dll" and "tk83.dll" (from the "bin" directory of the Tcl
 installation) in a directory included in you path.
 
 The toplevel, including Unix and Str, is available as "labltk".
