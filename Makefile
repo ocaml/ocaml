@@ -610,7 +610,7 @@ camlp4out: ocamlc
 camlp4opt: ocamlopt
 	cd camlp4; $(MAKE) opt
 camlp4optopt: ocamlopt
-	cd camlp4; $(MAKE)opt.opt
+	cd camlp4; $(MAKE) opt.opt
 partialclean::
 	cd camlp4; $(MAKE) clean
 alldepend::
