@@ -255,6 +255,8 @@ value sys_get_config(value unit)  /* ML */
 
 #ifdef _WIN32
 
+#define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
+
 char * searchpath(char * name)
 {
   char * fullname;
