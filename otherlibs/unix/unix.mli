@@ -213,11 +213,11 @@ external openfile : string -> open_flag list -> file_perm -> file_descr
            a file descriptor on the named file. *)
 external close : file_descr -> unit = "unix_close"
         (* Close a file descriptor. *)
-external read : file_descr -> string -> int -> int -> int = "unix_read"
+val read : file_descr -> string -> int -> int -> int
         (* [read fd buff ofs len] reads [len] characters from descriptor
            [fd], storing them in string [buff], starting at position [ofs]
            in string [buff]. Return the number of characters actually read. *)
-external write : file_descr -> string -> int -> int -> int = "unix_write"
+val write : file_descr -> string -> int -> int -> int
         (* [write fd buff ofs len] writes [len] characters to descriptor
            [fd], taking them from string [buff], starting at position [ofs]
            in string [buff]. Return the number of characters actually
@@ -656,17 +656,13 @@ external getsockname : file_descr -> sockaddr = "unix_getsockname"
         (* Return the address of the given socket. *)
 external getpeername : file_descr -> sockaddr = "unix_getpeername"
         (* Return the address of the host connected to the given socket. *)
-external recv : file_descr -> string -> int -> int -> msg_flag list -> int
-                                  = "unix_recv"
-external recvfrom :
+val recv : file_descr -> string -> int -> int -> msg_flag list -> int
+val recvfrom :
         file_descr -> string -> int -> int -> msg_flag list -> int * sockaddr
-                                  = "unix_recvfrom"
         (* Receive data from an unconnected socket. *)
-external send : file_descr -> string -> int -> int -> msg_flag list -> int
-                                  = "unix_send"
-external sendto :
+val send : file_descr -> string -> int -> int -> msg_flag list -> int
+val sendto :
         file_descr -> string -> int -> int -> msg_flag list -> sockaddr -> int
-                                  = "unix_sendto" "unix_sendto_native"
         (* Send data over an unconnected socket. *)
 
 

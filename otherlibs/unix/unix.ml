@@ -158,8 +158,18 @@ type file_perm = int
 external openfile : string -> open_flag list -> file_perm -> file_descr
            = "unix_open"
 external close : file_descr -> unit = "unix_close"
-external read : file_descr -> string -> int -> int -> int = "unix_read"
-external write : file_descr -> string -> int -> int -> int = "unix_write"
+external unsafe_read : file_descr -> string -> int -> int -> int = "unix_read"
+external unsafe_write : file_descr -> string -> int -> int -> int = "unix_write"
+
+let read fd buf ofs len =
+  if len < 0 or ofs + len >= String.length buf
+  then invalid_arg "Unix.read"
+  else unsafe_read fd buf ofs len
+let write fd buf ofs len =
+  if len < 0 or ofs + len >= String.length buf
+  then invalid_arg "Unix.write"
+  else unsafe_write fd buf ofs len
+
 external in_channel_of_descr : file_descr -> in_channel = "open_descriptor"
 external out_channel_of_descr : file_descr -> out_channel = "open_descriptor"
 external descr_of_in_channel : in_channel -> file_descr = "channel_descriptor"
@@ -349,16 +359,36 @@ external listen : file_descr -> int -> unit = "unix_listen"
 external shutdown : file_descr -> shutdown_command -> unit = "unix_shutdown" 
 external getsockname : file_descr -> sockaddr = "unix_getsockname"
 external getpeername : file_descr -> sockaddr = "unix_getpeername"
-external recv : file_descr -> string -> int -> int -> msg_flag list -> int
+
+external unsafe_recv :
+  file_descr -> string -> int -> int -> msg_flag list -> int
                                   = "unix_recv"
-external recvfrom :
-        file_descr -> string -> int -> int -> msg_flag list -> int * sockaddr
+external unsafe_recvfrom :
+  file_descr -> string -> int -> int -> msg_flag list -> int * sockaddr
                                   = "unix_recvfrom"
-external send : file_descr -> string -> int -> int -> msg_flag list -> int
+external unsafe_send :
+  file_descr -> string -> int -> int -> msg_flag list -> int
                                   = "unix_send"
-external sendto :
-        file_descr -> string -> int -> int -> msg_flag list -> sockaddr -> int
+external unsafe_sendto :
+  file_descr -> string -> int -> int -> msg_flag list -> sockaddr -> int
                                   = "unix_sendto" "unix_sendto_native"
+
+let recv fd buf ofs len flags =
+  if len < 0 or ofs + len >= String.length buf
+  then invalid_arg "Unix.recv"
+  else unsafe_recv fd buf ofs len flags
+let recvfrom fd buf ofs len flags =
+  if len < 0 or ofs + len >= String.length buf
+  then invalid_arg "Unix.recvfrom"
+  else unsafe_recvfrom fd buf ofs len flags
+let send fd buf ofs len flags =
+  if len < 0 or ofs + len >= String.length buf
+  then invalid_arg "Unix.send"
+  else unsafe_send fd buf ofs len flags
+let sendto fd buf ofs len flags addr =
+  if len < 0 or ofs + len >= String.length buf
+  then invalid_arg "Unix.sendto"
+  else unsafe_sendto fd buf ofs len flags addr
 
 type host_entry =
   { h_name : string;
