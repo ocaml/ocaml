@@ -955,11 +955,8 @@ let pretty_matrix pss =
     pss ;
   prerr_endline "end matrix"
   
-let rec every_satisfiable pss qs = match pss with
-| [] -> Used
-| _  ->
-match qs with
-|   [] -> Unused
+let rec every_satisfiable pss qs = match qs with
+| [] -> begin match pss with [] -> Used | _ -> Unused end
 | {pat_desc = Tpat_or(q1,q2,_)}::qs ->
     if not (satisfiable pss (omega_list (omega::qs))) then
       Unused
