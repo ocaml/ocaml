@@ -147,6 +147,7 @@ let rec typexp s ty =
   end
 
 let type_expr s ty =
+  if s = identity then ty else
   let ty' = typexp s ty in
   cleanup_types ();
   unmark_type ty';
