@@ -177,7 +177,14 @@ let direct_apply fundesc funct ufunct uargs =
         List.fold_right2
           (fun param arg body -> Ulet(param, arg, body))
           params app_args body in
-  (if is_pure funct then app else Usequence(ufunct, app))
+  (* If ufunct can contain side-effects or function definitions,
+     we must make sure that it is evaluated exactly once.
+     If the function is not closed, we evaluate ufunct as part of the
+     arguments.
+     If the function is closed, we force the evaluation of ufunct first. *)
+  if not fundesc.fun_closed || is_pure funct
+  then app
+  else Usequence(ufunct, app)
 
 (* Maintain the approximation of the global structure being defined *)
 
