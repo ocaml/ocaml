@@ -37,8 +37,8 @@
 /* Max computation time before rescheduling, in microseconds (50ms) */
 #define Thread_timeout 50000
 
-/* Signal used for timer preemption (any unused signal number) */
-#define SIGTIMER 1
+/* Signal used for timer preemption (any unused, legal signal number) */
+#define SIGTIMER SIGTERM
 
 /* The ML value describing a thread (heap-allocated) */
 
