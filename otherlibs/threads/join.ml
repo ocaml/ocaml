@@ -14,7 +14,7 @@
 
 open Printf
 
-let verbose = true
+let verbose = false
 
 let debug source msg =
   if verbose then begin
@@ -63,7 +63,7 @@ let create_process f =
       exit_thread () in
 
 (* use thread_new, to short-circuit handling of exceptions by Thread *)
-  ignore (thread_new g)
+  debug "FORK" (sprintf "%i" (Thread.id (thread_new g)))
 
 type queue = Obj.t list
 

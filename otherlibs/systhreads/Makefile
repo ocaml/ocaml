@@ -23,9 +23,9 @@ COMPFLAGS=-warn-error A
 BYTECODE_C_OBJS=posix_b.o
 NATIVECODE_C_OBJS=posix_n.o
 
-THREAD_OBJS= thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
+THREAD_OBJS= thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo join.cmo
 
-GENFILES=thread.ml
+GENFILES=thread.ml join.ml join.mli
 
 all: libthreads.a threads.cma
 
@@ -61,6 +61,14 @@ $(THREAD_OBJS:.cmo=.cmx): ../../ocamlopt
 
 thread.ml: thread_posix.ml
 	ln -s thread_posix.ml thread.ml
+
+join.ml: ../threads/join.ml
+	cp ../threads/join.ml .
+
+
+join.mli: ../threads/join.mli
+	cp ../threads/join.mli .
+
 
 partialclean:
 	rm -f *.cm*
