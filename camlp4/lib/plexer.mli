@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -14,7 +14,7 @@
 
 (* Module [Plexer]: a lexical analyzer *)
 
-value make : unit -> Token.lexer;
+value gmake : unit -> Token.glexer Token.t;
     (* Some lexer provided. See the module [Token]. The tokens returned
        follow the Objective Caml and the Revised syntax lexing rules.
 
@@ -36,7 +36,7 @@ value make : unit -> Token.lexer;
        expressions above.
 
        The lexer do not use global (mutable) variables: instantiations
-       of [Plexer.make ()] do not perturb each other.  *)
+       of [Plexer.gmake ()] do not perturb each other.  *)
 
 value dollar_for_antiquotation : ref bool;
     (* When True (default), the next call to [Plexer.make ()] returns a
@@ -47,3 +47,8 @@ value no_quotations : ref bool;
     (* When True, all lexers built by [Plexer.make ()] do not lex the
        quotation syntax any more. Default is False (quotations are
        lexed). *)
+
+(*--*)
+
+(* deprecated since version 3.04+6; use rather function gmake *)
+value make : unit -> Token.lexer;

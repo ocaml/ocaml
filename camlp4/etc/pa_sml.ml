@@ -18,7 +18,7 @@ open Pcaml;
 Pcaml.no_constructors_arity.val := False;
 
 do {
-  Grammar.Unsafe.reinit_gram gram (Plexer.make ());
+  Grammar.Unsafe.gram_reinit gram (Plexer.gmake ());
   Grammar.Unsafe.clear_entry interf;
   Grammar.Unsafe.clear_entry implem;
   Grammar.Unsafe.clear_entry top_phrase;

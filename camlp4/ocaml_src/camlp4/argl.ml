@@ -219,19 +219,18 @@ let initial_spec_list =
    "-impl", Arg.String (fun x -> file_kind := Impl; Pcaml.input_file := x),
    "<file>  Parse <file> as an implementation, whatever its extension.";
    "-unsafe", Arg.Set Ast2pt.fast,
-   "      Generate unsafe accesses to array and strings.";
-   "-noassert", Arg.Set Pcaml.no_assert,
-   "    Don't compile assertion checks.";
+   "Generate unsafe accesses to array and strings.";
+   "-noassert", Arg.Set Pcaml.no_assert, "Don't compile assertion checks.";
    "-verbose", Arg.Set Grammar.error_verbose,
-   "     More verbose in parsing errors.";
+   "More verbose in parsing errors.";
    "-loc", Arg.String (fun x -> Stdpp.loc_name := x),
    "<name>   Name of the location variable (default: " ^ !(Stdpp.loc_name) ^
      ")";
    "-QD", Arg.String (fun x -> Pcaml.quotation_dump_file := Some x),
-   "<file>    Dump quotation expander result in case of syntax error.";
+   "<file> Dump quotation expander result in case of syntax error.";
    "-o", Arg.String (fun x -> Pcaml.output_file := Some x),
-   "<file>     Output on <file> instead of standard output.";
-   "-v", Arg.Unit print_version, "           Print Camlp4 version and exit."]
+   "<file> Output on <file> instead of standard output.";
+   "-v", Arg.Unit print_version, "Print Camlp4 version and exit."]
 ;;
 
 let anon_fun x = Pcaml.input_file := x; file_kind := file_kind_of_name x;;

@@ -19,10 +19,17 @@ exception Error of string;
 
 type location = (int * int);
 type location_function = int -> (int * int);
-type lexer_func = Stream.t char -> (Stream.t t * location_function);
+type lexer_func 'te = Stream.t char -> (Stream.t 'te * location_function);
 
+type glexer 'te =
+  { tok_func : lexer_func 'te;
+    tok_using : pattern -> unit;
+    tok_removing : pattern -> unit;
+    tok_match : pattern -> 'te -> string;
+    tok_text : pattern -> string }
+;
 type lexer =
-  { func : lexer_func;
+  { func : lexer_func t;
     using : pattern -> unit;
     removing : pattern -> unit;
     tparse : pattern -> option (Stream.t t -> string);
@@ -184,4 +191,16 @@ value eval_string s =
         else (store len s.[i], i + 1)
       in
       loop len i
+;
+
+value default_match =
+  fun
+  [ ("ANY", "") -> fun (con, prm) -> prm
+  | ("ANY", v) ->
+      fun (con, prm) -> if v = prm then v else raise Stream.Failure
+  | (p_con, "") ->
+      fun (con, prm) -> if con = p_con then prm else raise Stream.Failure
+  | (p_con, p_prm) ->
+      fun (con, prm) ->
+        if con = p_con && prm = p_prm then prm else raise Stream.Failure ]
 ;

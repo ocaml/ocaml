@@ -138,11 +138,11 @@ value lexer_text (con, prm) =
   else con ^ " \"" ^ prm ^ "\""
 ;
 
-value lexer_make () =
+value lexer_gmake () =
   let kwt = Hashtbl.create 89 in
-  {Token.func = Token.lexer_func_of_parser (lexer kwt);
-   Token.using = lexer_using kwt; Token.removing = fun [];
-   Token.tparse _ = None; Token.text = lexer_text}
+  {Token.tok_func = Token.lexer_func_of_parser (lexer kwt);
+   Token.tok_using = lexer_using kwt; Token.tok_removing = fun [];
+   Token.tok_match = Token.default_match; Token.tok_text = lexer_text}
 ;
 
 (* Building AST *)
@@ -591,7 +591,7 @@ Pcaml.add_option "-phony_quot" (Arg.Set phony_quot) "phony quotations";
 Pcaml.no_constructors_arity.val := False;
 
 do {
-  Grammar.Unsafe.reinit_gram gram (lexer_make ());
+  Grammar.Unsafe.gram_reinit gram (lexer_gmake ());
   Grammar.Unsafe.clear_entry interf;
   Grammar.Unsafe.clear_entry implem;
   Grammar.Unsafe.clear_entry top_phrase;

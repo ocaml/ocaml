@@ -12,7 +12,7 @@
 
 (* $Id$ *)
 
-value gram = Grammar.create (Plexer.make ());
+value gram = Grammar.gcreate (Plexer.gmake ());
 
 module Qast =
   struct

@@ -1,6 +1,14 @@
-Camlp4 Version 3.04+5
+Camlp4 Version 3.04+6
 ---------------------
 
+- [16 Feb 02] Changed interface of grammars: the token type is now
+  customizable, using a new lexer type Token.glexer, parametrized by
+  the token type, and a new functor GMake. This was accompanied by
+  some cleanup. Become deprecated: the type Token.lexer (use Token.glexer),
+  Grammar.create (use Grammar.gcreate), Unsafe.reinit_gram (use
+  Unsafe.gram_reinit), the functor Grammar.Make (use Grammar.GMake).
+  Deprecated means that they are kept during some versions and removed
+  afterwards.
 - [06 Feb 02] Added missing infix "%" in pa_o (normal syntax).
 - [06 Feb 02] Added Grammar.print_entry printing any kind of (obj) entry
   and having the Format.formatter as first parameter (Grammar.Entry.print

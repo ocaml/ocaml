@@ -14,39 +14,42 @@
 
 open Printf;;
 
-type grammar =
+type 'te grammar =
   { gtokens : (Token.pattern, int ref) Hashtbl.t;
-    mutable glexer : Token.lexer }
+    mutable glexer : 'te Token.glexer }
 ;;
 
-type g_entry =
-  { egram : grammar;
+type 'te g_entry =
+  { egram : 'te grammar;
     ename : string;
-    mutable estart : int -> Token.t Stream.t -> Obj.t;
-    mutable econtinue : int -> int -> Obj.t -> Token.t Stream.t -> Obj.t;
-    mutable edesc : g_desc }
-and g_desc = Dlevels of g_level list | Dparser of (Token.t Stream.t -> Obj.t)
-and g_level =
+    mutable estart : int -> 'te Stream.t -> Obj.t;
+    mutable econtinue : int -> int -> Obj.t -> 'te Stream.t -> Obj.t;
+    mutable edesc : 'te g_desc }
+and 'te g_desc =
+  Dlevels of 'te g_level list | Dparser of ('te Stream.t -> Obj.t)
+and 'te g_level =
   { assoc : g_assoc;
     lname : string option;
-    lsuffix : g_tree;
-    lprefix : g_tree }
+    lsuffix : 'te g_tree;
+    lprefix : 'te g_tree }
 and g_assoc = NonA | RightA | LeftA
-and g_symbol =
-    Snterm of g_entry
-  | Snterml of g_entry * string
-  | Slist0 of g_symbol
-  | Slist0sep of g_symbol * g_symbol
-  | Slist1 of g_symbol
-  | Slist1sep of g_symbol * g_symbol
-  | Sopt of g_symbol
+and 'te g_symbol =
+    Snterm of 'te g_entry
+  | Snterml of 'te g_entry * string
+  | Slist0 of 'te g_symbol
+  | Slist0sep of 'te g_symbol * 'te g_symbol
+  | Slist1 of 'te g_symbol
+  | Slist1sep of 'te g_symbol * 'te g_symbol
+  | Sopt of 'te g_symbol
   | Sself
   | Snext
   | Stoken of Token.pattern
-  | Stree of g_tree
+  | Stree of 'te g_tree
 and g_action = Obj.t
-and g_tree = Node of g_node | LocAct of g_action * g_action list | DeadEnd
-and g_node = { node : g_symbol; son : g_tree; brother : g_tree }
+and 'te g_tree =
+  Node of 'te g_node | LocAct of g_action * g_action list | DeadEnd
+and 'te g_node =
+  { node : 'te g_symbol; son : 'te g_tree; brother : 'te g_tree }
 ;;
 
 type position =
@@ -312,7 +315,7 @@ let insert_tokens gram symbols =
     | Stree t -> tinsert t
     | Stoken ("ANY", _) -> ()
     | Stoken tok ->
-        gram.glexer.Token.using tok;
+        gram.glexer.Token.tok_using tok;
         let r =
           try Hashtbl.find gram.gtokens tok with
             Not_found -> let r = ref 0 in Hashtbl.add gram.gtokens tok r; r
@@ -437,7 +440,7 @@ let rec decr_keyw_use gram =
       decr r;
       if !r == 0 then
         begin
-          Hashtbl.remove gram.gtokens tok; gram.glexer.Token.removing tok
+          Hashtbl.remove gram.gtokens tok; gram.glexer.Token.tok_removing tok
         end
   | Slist0 s -> decr_keyw_use gram s
   | Slist1 s -> decr_keyw_use gram s

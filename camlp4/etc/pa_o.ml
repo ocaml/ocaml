@@ -20,7 +20,7 @@ Pcaml.no_constructors_arity.val := True;
 do {
   let odfa = Plexer.dollar_for_antiquotation.val in
   Plexer.dollar_for_antiquotation.val := False;
-  Grammar.Unsafe.reinit_gram gram (Plexer.make ());
+  Grammar.Unsafe.gram_reinit gram (Plexer.gmake ());
   Plexer.dollar_for_antiquotation.val := odfa;
   Grammar.Unsafe.clear_entry interf;
   Grammar.Unsafe.clear_entry implem;

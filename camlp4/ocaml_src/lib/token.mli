@@ -41,62 +41,67 @@ type location = int * int;;
 type location_function = int -> location;;
    (* The type for a function associating a number of a token in a stream
       (starting from 0) to its source location. *)
-type lexer_func = char Stream.t -> t Stream.t * location_function;;
+type 'te lexer_func = char Stream.t -> 'te Stream.t * location_function;;
    (* The type for a lexer function. The character stream is the input
       stream to be lexed. The result is a pair of a token stream and
       a location function for this tokens stream. *)
 
-type lexer =
-  { func : lexer_func;
-    using : pattern -> unit;
-    removing : pattern -> unit;
-    tparse : pattern -> (t Stream.t -> string) option;
-    text : pattern -> string }
+type 'te glexer =
+  { tok_func : 'te lexer_func;
+    tok_using : pattern -> unit;
+    tok_removing : pattern -> unit;
+    tok_match : pattern -> 'te -> string;
+    tok_text : pattern -> string }
 ;;
     (* The type for a lexer used by Camlp4 grammars.
--      The field [func] is the main lexer function. See [lexer_func]
+-      The field [tok_func] is the main lexer function. See [lexer_func]
        type above. This function may be created from a [char stream parser]
        or for an [ocamllex] function using the functions below.
--      The field [using] is a function telling the lexer that the grammar
+-      The field [tok_using] is a function telling the lexer that the grammar
        uses this token (pattern). The lexer can check that its constructor
        is correct, and interpret some kind of tokens as keywords (to record
        them in its tables). Called by [EXTEND] statements.
--      The field [removing] is a function telling the lexer that the grammar
-       does not uses the given token (pattern) any more. If the lexer has a
-       notion of "keywords", it can release it from its tables. Called by
-       [DELETE_RULE] statements.
--      The field [tparse] is a function returning either [Some f], f being
-       the parsing function associated with the pattern, or [None] if it
-       is a standard parsing of the pattern.
--      The field [text] returns the name of some token pattern,
+-      The field [tok_removing] is a function telling the lexer that the
+       grammar does not uses the given token (pattern) any more. If the
+       lexer has a notion of "keywords", it can release it from its tables.
+       Called by [DELETE_RULE] statements.
+-      The field [tok_match] is a function taking a pattern and returning
+       a function matching a token against the pattern. Warning: for
+       efficency, write it as a function returning functions according
+       to the values of the pattern, not a function with two parameters.
+-      The field [tok_text] returns the name of some token pattern,
        used in error messages. *)
 
 val lexer_text : pattern -> string;;
-    (* A simple [text] function for lexers *)
+    (* A simple [tok_text] function for lexers *)
+
+val default_match : pattern -> t -> string;;
+    (* A simple [tok_match] function for lexers, appling to type [t] *)
 
 (*** Lexer from char stream parsers or ocamllex function *)
 
 (* The functions below create lexer functions either from a [char stream]
    parser or for an [ocamllex] function. With the returned function [f],
    the simplest [Token.lexer] can be written:
--  [       { Token.func = f;                    ]
--  [         Token.using = (fun _ -> ());       ]
--  [         Token.removing = (fun _ -> ());    ]
--  [         Token.tparse = (fun _ -> None);    ]
--  [         Token.text = Token.lexer_text }    ]
-   Note that a better [using] function should check the used tokens
+-  [       { Token.tok_func = f;                       ]
+-  [         Token.tok_using = (fun _ -> ());          ]
+-  [         Token.tok_removing = (fun _ -> ());       ]
+-  [         Token.tok_match = Token.default_match;    ]
+-  [         Token.tok_text = Token.lexer_text }       ]
+   Note that a better [tok_using] function should check the used tokens
    and raise [Token.Error] for incorrect ones. The other functions
-   [removing], [tparse] and [text] may have other implementations
+   [tok_removing], [tok_match] and [tok_text] may have other implementations
    as well. *)
 
-val lexer_func_of_parser : (char Stream.t -> t * location) -> lexer_func;;
+val lexer_func_of_parser :
+  (char Stream.t -> 'te * location) -> 'te lexer_func;;
     (* A lexer function from a lexer written as a char stream parser
        returning the next token and its location. *)
-val lexer_func_of_ocamllex : (Lexing.lexbuf -> t) -> lexer_func;;
+val lexer_func_of_ocamllex : (Lexing.lexbuf -> 'te) -> 'te lexer_func;;
     (* A lexer function from a lexer created by [ocamllex] *)
 
 val make_stream_and_location :
-  (unit -> t * location) -> t Stream.t * location_function;;
+  (unit -> 'te * location) -> 'te Stream.t * location_function;;
 
 (*** Useful functions *)
 
@@ -106,3 +111,14 @@ val eval_string : string -> string;;
        been interpreted into a real char or string; raise [Failure] if
        bad backslash sequence found; [Token.eval_char (Char.escaped c)]
        returns [c] and [Token.eval_string (String.escaped s)] returns [s] *)
+
+(*--*)
+
+(* deprecated since version 3.04+6; use rather type glexer *)
+type lexer =
+  { func : t lexer_func;
+    using : pattern -> unit;
+    removing : pattern -> unit;
+    tparse : pattern -> (t Stream.t -> string) option;
+    text : pattern -> string }
+;;

@@ -15,11 +15,12 @@
 let version = Config.version;;
 
 let gram =
-  Grammar.create
-    {Token.func = (fun _ -> failwith "no loaded parsing module");
-     Token.using = (fun _ -> ()); Token.removing = (fun _ -> ());
-     Token.tparse = (fun _ -> raise (Match_failure ("pcaml.ml", 1035, 1041)));
-     Token.text = fun _ -> ""}
+  Grammar.gcreate
+    {Token.tok_func = (fun _ -> failwith "no loaded parsing module");
+     Token.tok_using = (fun _ -> ()); Token.tok_removing = (fun _ -> ());
+     Token.tok_match =
+       (fun _ -> raise (Match_failure ("pcaml.ml", 1030, 1036)));
+     Token.tok_text = fun _ -> ""}
 ;;
 
 let interf = Grammar.Entry.create gram "interf";;
@@ -334,19 +335,19 @@ and kont = pretty Stream.t
 ;;
 
 let pr_str_item =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 11621, 11627)));
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 11613, 11619)));
    pr_levels = []}
 ;;
 let pr_sig_item =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 11676, 11682)));
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 11668, 11674)));
    pr_levels = []}
 ;;
 let pr_expr =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 11727, 11733)));
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 11719, 11725)));
    pr_levels = []}
 ;;
 let pr_patt =
-  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 11778, 11784)));
+  {pr_fun = (fun _ -> raise (Match_failure ("pcaml.ml", 11770, 11776)));
    pr_levels = []}
 ;;
 let pr_expr_fun_args = ref Extfun.empty;;

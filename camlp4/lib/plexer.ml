@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -544,6 +544,24 @@ value after_colon e =
     String.sub e (i + 1) (String.length e - i - 1)
   with
   [ Not_found -> "" ]
+;
+
+value tok_match =
+  fun
+  [ ("ANTIQUOT", p_prm) ->
+      fun
+      [ ("ANTIQUOT", prm) when eq_before_colon p_prm prm -> after_colon prm
+      | _ -> raise Stream.Failure ]
+  | tok ->
+      Token.default_match tok ]
+;
+
+value gmake () =
+  let kwd_table = Hashtbl.create 301 in
+  let id_table = Hashtbl.create 301 in
+  {tok_func = func kwd_table; tok_using = using_token kwd_table id_table;
+   tok_removing = removing_token kwd_table id_table;
+   tok_match = tok_match; tok_text = text}
 ;
 
 value tparse =

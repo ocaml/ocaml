@@ -20,7 +20,7 @@
 
 type g;;
     (* The type for grammars, holding entries. *)
-val create : Token.lexer -> g;;
+val gcreate : Token.t Token.glexer -> g;;
     (* Create a new grammar, without keywords, using the lexer given
        as parameter. *)
 val tokens : g -> string -> (string * int) list;;
@@ -46,7 +46,7 @@ module Entry :
     val of_parser : g -> string -> (Token.t Stream.t -> 'a) -> 'a e;;
     val print : 'a e -> unit;;
     val find : 'a e -> string -> Obj.t e;;
-    external obj : 'a e -> Gramext.g_entry = "%identity";;
+    external obj : 'a e -> Token.t Gramext.g_entry = "%identity";;
   end
 ;;
     (* Module to handle entries.
@@ -79,8 +79,10 @@ val strict_parsing : bool ref;;
 
 module Unsafe :
   sig
-    val reinit_gram : g -> Token.lexer -> unit;;
+    val gram_reinit : g -> Token.t Token.glexer -> unit;;
     val clear_entry : 'a Entry.e -> unit;;
+    (* deprecated since version 3.04+6; use rather function gram_reinit *)
+    val reinit_gram : g -> Token.lexer -> unit;;
   end
 ;;
     (* Module for clearing grammars and entries. To be manipulated with
@@ -95,17 +97,22 @@ module Unsafe :
 
 (*** Functorial interface *)
 
-    (* Alternative for grammars use. Grammars are not yet Ocaml values:
+    (* Alternative for grammars use. Grammars are no more Ocaml values:
        there is no type for them. Modules generated preserve the
        rule "an entry cannot call an entry of another grammar" by
        normal Ocaml typing. *)
 
-module type LexerType = sig val lexer : Token.lexer;; end;;
-    (* The input signature for the functor [Grammar.Make].
-       [lexer] is the lexer used. *)
+module type GLexerType = sig type te;; val lexer : te Token.glexer;; end;;
+    (* The input signature for the functor [Grammar.GMake]: [te] is the
+       type of the tokens, [tematch] is the way a token is matched against
+       a pattern. Must raise [Stream.Failure] if not matched. Warning:
+       write the function [tematch] as a function of pattern returning
+       a function to each pattern case, not a function of two parameters:
+       it may have some performance importance. *)
 
 module type S =
   sig
+    type te;;
     type parsable;;
     val parsable : char Stream.t -> parsable;;
     val tokens : string -> (string * int) list;;
@@ -114,26 +121,29 @@ module type S =
         type 'a e;;
         val create : string -> 'a e;;
         val parse : 'a e -> parsable -> 'a;;
-        val parse_token : 'a e -> Token.t Stream.t -> 'a;;
+        val parse_token : 'a e -> te Stream.t -> 'a;;
         val name : 'a e -> string;;
-        val of_parser : string -> (Token.t Stream.t -> 'a) -> 'a e;;
+        val of_parser : string -> (te Stream.t -> 'a) -> 'a e;;
         val print : 'a e -> unit;;
-        external obj : 'a e -> Gramext.g_entry = "%identity";;
+        external obj : 'a e -> te Gramext.g_entry = "%identity";;
       end
     ;;
     module Unsafe :
       sig
-        val reinit_gram : Token.lexer -> unit;;
+        val gram_reinit : te Token.glexer -> unit;;
         val clear_entry : 'a Entry.e -> unit;;
+        (* deprecated since version 3.04+6; use rather gram_reinit *)
+        val reinit_gram : Token.lexer -> unit;;
       end
     ;;
-    val extend :
+    (* warning: reinit_gram fails if used with GMake *)
+        val extend :
       'a Entry.e -> Gramext.position option ->
         (string option * Gramext.g_assoc option *
-           (Gramext.g_symbol list * Gramext.g_action) list)
+           (te Gramext.g_symbol list * Gramext.g_action) list)
           list ->
         unit;;
-    val delete_rule : 'a Entry.e -> Gramext.g_symbol list -> unit;;
+    val delete_rule : 'a Entry.e -> te Gramext.g_symbol list -> unit;;
   end
 ;;
     (* Signature type of the functor [Grammar.Make]. The types and
@@ -141,24 +151,32 @@ module type S =
 -      * Grammars are not values. Functions holding a grammar as parameter
 -        do not have this parameter yet.
 -      * The type [parsable] is used in function [parse] instead of
--        the char stream, avoiding the possible loss of tokens. *)
+-        the char stream, avoiding the possible loss of tokens.
+-      * The type of tokens (expressions and patterns) can be any
+-        type (instead of (string * string)); the module parameter
+-        must specify a way to show them as (string * string) *)
 
-module Make (L : LexerType) : S;;
+module GMake (L : GLexerType) : S with type te = L.te;;
 
-val print_entry : Format.formatter -> Gramext.g_entry -> unit;;
+val print_entry : Format.formatter -> 'te Gramext.g_entry -> unit;;
     (* General printer for all kinds of entries (obj entries) *)
 
 (*--*)
+
+(*** deprecated since version 3.04+6; use rather the functor GMake *)
+module type LexerType = sig val lexer : Token.lexer;; end;;
+module Make (L : LexerType) : S with type te = Token.t;;
+(*** deprecated since version 3.04+6; use rather the function gcreate *)
+val create : Token.lexer -> g;;
 
 (*** For system use *)
 
 val loc_of_token_interval : int -> int -> int * int;;
 val extend :
-  (Gramext.g_entry * Gramext.position option *
+  ('te Gramext.g_entry * Gramext.position option *
      (string option * Gramext.g_assoc option *
-        (Gramext.g_symbol list * Gramext.g_action) list)
+        ('te Gramext.g_symbol list * Gramext.g_action) list)
        list)
     list ->
     unit;;
-
-val delete_rule : 'a Entry.e -> Gramext.g_symbol list -> unit;;
+val delete_rule : 'a Entry.e -> Token.t Gramext.g_symbol list -> unit;;

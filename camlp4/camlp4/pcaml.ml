@@ -15,10 +15,10 @@
 value version = Config.version;
 
 value gram =
-  Grammar.create
-    {Token.func = fun _ -> failwith "no loaded parsing module";
-     Token.using = fun _ -> (); Token.removing = fun _ -> ();
-     Token.tparse = fun []; Token.text = fun _ -> ""}
+  Grammar.gcreate
+    {Token.tok_func _ = failwith "no loaded parsing module";
+     Token.tok_using _ = (); Token.tok_removing _ = ();
+     Token.tok_match = fun []; Token.tok_text _ = ""}
 ;
 
 value interf = Grammar.Entry.create gram "interf";

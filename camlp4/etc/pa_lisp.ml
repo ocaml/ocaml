@@ -140,15 +140,15 @@
            (if (= prm "") con
              (^ con (^ " \"" (^ prm "\"")))))))
 
-(value lexer_make
+(value lexer_gmake
        (lambda ()
          (let ((kwt (Hashtbl.create 89)))
            ({}
-            (Token.func (Token.lexer_func_of_parser (lexer kwt)))
-            (Token.using (lexer_using kwt))
-            (Token.removing (lambda))
-            (Token.tparse (lambda _ None))
-            (Token.text lexer_text)))))
+            (Token.tok_func (Token.lexer_func_of_parser (lexer kwt)))
+            (Token.tok_using (lexer_using kwt))
+            (Token.tok_removing (lambda))
+            (Token.tok_match Token.default_match)
+            (Token.tok_text lexer_text)))))
 
 ;; Building AST
 
@@ -611,7 +611,7 @@
 (:= Pcaml.no_constructors_arity.val False)
 
 (progn
- (Grammar.Unsafe.reinit_gram gram (lexer_make ()))
+ (Grammar.Unsafe.gram_reinit gram (lexer_gmake ()))
  (Grammar.Unsafe.clear_entry interf)
  (Grammar.Unsafe.clear_entry implem)
  (Grammar.Unsafe.clear_entry top_phrase)

@@ -564,21 +564,11 @@ module Plexer =
       with
       [ Not_found -> "" ]
     ;
-    value tparse =
-      fun
-      [ ("ANTIQUOT", p_prm) ->
-          let p =
-            parser
-              [: `("ANTIQUOT", prm) when eq_before_colon p_prm prm :] ->
-                after_colon prm
-          in
-          Some p
-      | _ -> None ]
-    ;
-    value make () =
+    value gmake () =
       let kwd_table = Hashtbl.create 301 in
-      {func = func kwd_table; using = using_token kwd_table;
-       removing = removing_token kwd_table; tparse = tparse; text = text}
+      {tok_func = func kwd_table; tok_using = using_token kwd_table;
+       tok_removing = removing_token kwd_table;
+       tok_match = Token.default_match; tok_text = text}
     ;
   end
 ;
@@ -589,7 +579,7 @@ open Pcaml;
 Pcaml.no_constructors_arity.val := True;
 
 do {
-  Grammar.Unsafe.reinit_gram gram (Plexer.make ());
+  Grammar.Unsafe.gram_reinit gram (Plexer.gmake ());
   Grammar.Unsafe.clear_entry interf;
   Grammar.Unsafe.clear_entry implem;
   Grammar.Unsafe.clear_entry top_phrase;
