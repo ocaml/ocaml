@@ -31,10 +31,6 @@ let rec map f = function
     [] -> []
   | a::l -> let r = f a in r :: map f l
 
-(* let rec map f = function
-    [] -> []
-  | a::l -> f a :: map f l *)
-
 let rec iter f = function
     [] -> ()
   | a::l -> f a; iter f l

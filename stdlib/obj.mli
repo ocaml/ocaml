@@ -1,4 +1,6 @@
-(* Operations on internal representations of values *)
+(* Module [Obj]: operations on internal representations of values *)
+
+(* Not for the casual user. *)
 
 type t
 

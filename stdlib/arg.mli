@@ -1,4 +1,4 @@
-(* Parsing of command line arguments. *)
+(* Module [Arg]: parsing of command line arguments *)
 
 (* This module provides a general mechanism for extracting options and
    arguments from the command line to the program. *)
@@ -6,10 +6,10 @@
 (* Syntax of command lines:
     A keyword is a character string starting with a [-].
     An option is a keyword alone or followed by an argument.
-    There are four types of keywords: Unit, String, Int, and Float.
-    Unit keywords do not take an argument.
-    String, Int, and Float keywords take the following word on the command line
-    as an argument.
+    There are four types of keywords: [Unit], [String], [Int], and [Float].
+    [Unit] keywords do not take an argument.
+    [String], [Int], and [Float] keywords take the following word on the
+    command line as an argument.
     Arguments not preceded by a keyword are called anonymous arguments. *)
 
 (*  Examples ([cmd] is assumed to be the command name):

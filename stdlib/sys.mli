@@ -1,39 +1,65 @@
-(* System interface *)
+(* Module [Sys]: system interface *)
 
 val argv: string array
+        (* The command line arguments given to the process.
+           The first element is the command name used to invoke the program.
+           The following elements are the arguments given to the program. *)
 external file_exists: string -> bool = "sys_file_exists"
+        (* Test if a file with the given name exists. *)
 external remove: string -> unit = "sys_remove"
+        (* Remove the given file name from the file system. *)
 external getenv: string -> string = "sys_getenv"
+        (* Return the value associated to a variable in the process
+           environment. Raise [Not_found] if the variable is unbound. *)
 external command: string -> int = "sys_system_command"
+        (* Execute the given shell command and return its exit code. *)
 external chdir: string -> unit = "sys_chdir"
+        (* Change the current working directory of the process. *)
+
+(*** Signal handling *)
 
 type signal_behavior =
     Signal_default
   | Signal_ignore
   | Signal_handle of (int -> unit)
+        (* What to do when receiving a signal:
+-          [Signal_default]: take the default behavior
+-          [Signal_ignore]: ignore the signal
+-          [Signal_handle f]: call function [f], giving it the signal
+             number as argument. *)
 
 external signal: int -> signal_behavior -> unit = "install_signal_handler"
+        (* Set the behavior of the system on receipt of a given signal.
+           The first argument is the signal number. *)
 
-val sigabrt: int
-val sigalrm: int
-val sigfpe: int
-val sighup: int
-val sigill: int
-val sigint: int
-val sigkill: int
-val sigpipe: int
-val sigquit: int
-val sigsegv: int
-val sigterm: int
-val sigusr1: int
-val sigusr2: int
-val sigchld: int
-val sigcont: int
-val sigstop: int
-val sigtstp: int
-val sigttin: int
-val sigttou: int
+val sigabrt: int   (* Abnormal termination *)
+val sigalrm: int   (* Timeout *)
+val sigfpe: int    (* Arithmetic exception *)
+val sighup: int    (* Hangup on controlling terminal *)
+val sigill: int    (* Invalid hardware instruction *)
+val sigint: int    (* Interactive interrupt (ctrl-C) *)
+val sigkill: int   (* Termination (cannot be ignored) *)
+val sigpipe: int   (* Broken pipe *)
+val sigquit: int   (* Interactive termination *)
+val sigsegv: int   (* Invalid memory reference *)
+val sigterm: int   (* Termination *)
+val sigusr1: int   (* Application-defined signal 1 *)
+val sigusr2: int   (* Application-defined signal 2 *)
+val sigchld: int   (* Child process terminated *)
+val sigcont: int   (* Continue *)
+val sigstop: int   (* Stop *)
+val sigtstp: int   (* Interactive stop *)
+val sigttin: int   (* Terminal read from background process *)
+val sigttou: int   (* Terminal write from background process *)
+        (* Signal numbers for the standard POSIX signals. *)
 
 exception Break
+        (* Exception raised on interactive interrupt if [catch_break]
+           is on. *)
 
 val catch_break: bool -> unit
+        (* [catch_break] governs whether interactive interrupt (ctrl-C)
+           terminates the program or raises the [Break] exception. 
+           Call [catch_break true] to enable raising [Break],
+           and [catch_break false] to let the system
+	   terminate the program on user interrupt. *)

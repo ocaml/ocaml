@@ -1,4 +1,4 @@
-(* Formatting printing functions *)
+(* Module [Printf]: formatting printing functions *)
 
 val fprintf: out_channel -> ('a, out_channel, unit) format -> 'a
         (* [fprintf outchan format arg1 ... argN] formats the arguments

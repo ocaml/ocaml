@@ -1,4 +1,4 @@
-(* Memory management control and statistics. *)
+(* Module [Gc]: memory management control and statistics *)
 
 type stat = {
   minor_words : int;
@@ -39,7 +39,7 @@ type stat = {
              cannot be inserted in the free list, thus they are not available
              for allocation.
 
--    The total amount of memory allocated by the program is (in words)
+     The total amount of memory allocated by the program is (in words)
      [minor_words + major_words - promoted_words].  Multiply by
      the word size (4 on a 32-bit machine, 8 on a 64-bit machine) to get
      the number of bytes.
@@ -80,7 +80,7 @@ external set : control -> unit = "gc_set"
      The normal usage is:
      [
        let r = Gc.get () in    (* Get the current parameters. *)
-         r.verbose <- true;     (* Change some of them. *)
+         r.verbose <- true;    (* Change some of them. *)
          Gc.set r              (* Set the new values. *)
      ]
   *)

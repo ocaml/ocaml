@@ -1,4 +1,4 @@
-(* A catch-all exception handler *)
+(* Module [Printexc]: a catch-all exception handler *)
 
 val catch: ('a -> 'b) -> 'a -> 'b
         (* [Printexc.catch fn x] applies [fn] to [x] and returns the result.
@@ -6,8 +6,8 @@ val catch: ('a -> 'b) -> 'a -> 'b
            name of the exception is printed on standard error output,
            and the programs aborts with exit code 2.
            Typical use is [Printexc.catch main ()], where [main], with type
-           [unit->unit], is the entry point of a standalone program, to catch
-           and print stray exceptions. *)
+           [unit->unit], is the entry point of a standalone program.
+           This catches and reports any exception that escapes the program. *)
 
 val print: ('a -> 'b) -> 'a -> 'b
         (* Same as [catch], but re-raise the stray exception after

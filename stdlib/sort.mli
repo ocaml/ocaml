@@ -1,4 +1,4 @@
-(* Sorting and merging lists *)
+(* Module [Sort]: sorting and merging lists *)
 
 val list : ('a -> 'a -> bool) -> 'a list -> 'a list
         (* Sort a list in increasing order according to an ordering predicate.

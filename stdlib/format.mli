@@ -1,4 +1,4 @@
-(* Pretty printing *)
+(* Module [Format]: pretty printing *)
 
 (* This module implements a pretty-printing facility to format text
    within ``pretty-printing boxes''. The pretty-printer breaks lines

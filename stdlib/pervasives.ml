@@ -167,10 +167,10 @@ let output oc s ofs len =
 external output_byte : out_channel -> int -> unit = "output_char"
 external output_binary_int : out_channel -> int -> unit = "output_int"
 external output_value : out_channel -> 'a -> unit = "output_value"
-external output_compact_value : out_channel -> 'a -> unit = "output_value"
+
 external seek_out : out_channel -> int -> unit = "seek_out"
 external pos_out : out_channel -> int = "pos_out"
-external size_out : out_channel -> int = "channel_size"
+external out_channel_length : out_channel -> int = "channel_size"
 external close_out : out_channel -> unit = "close_out"
 
 (* General input functions *)

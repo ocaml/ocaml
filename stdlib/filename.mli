@@ -1,4 +1,4 @@
-(* Operations on file names *)
+(* Module [Filename]: operations on file names *)
 
 val current_dir_name : string
         (* The conventional name for the current directory
