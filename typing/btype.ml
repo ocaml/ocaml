@@ -181,6 +181,13 @@ let rec copy_kind = function
 let copy_commu c =
   if commu_repr c = Cok then Cok else Clink (ref Cunknown)
 
+let rec norm_univar ty =
+  match ty.desc with
+    Tunivar | Tsubst _ -> ty
+  | Tlink ty           -> norm_univar ty
+  | Tvariant row       -> norm_univar (row_more row)
+  | _                  -> assert false
+
 let rec copy_type_desc f = function
     Tvar                -> Tvar
   | Tarrow (p, ty1, ty2, c)-> Tarrow (p, f ty1, f ty2, copy_commu c)
@@ -197,7 +204,9 @@ let rec copy_type_desc f = function
   | Tlink ty            -> copy_type_desc f ty.desc
   | Tsubst ty           -> assert false
   | Tunivar             -> Tunivar
-  | Tpoly (ty, tyl)     -> Tpoly (f ty, List.map f tyl)
+  | Tpoly (ty, tyl)     ->
+      let tyl = List.map (fun x -> norm_univar (f x)) tyl in
+      Tpoly (f ty, tyl)
 
 
 (* Utilities for copying *)

@@ -749,16 +749,15 @@ let rec copy ty =
           | _ ->
               (* If the row variable is not generic, we must keep it *)
               let keep = more.level <> generic_level in
-              let desc = more.desc in
+              let more' =
+                match more.desc with Tsubst ty -> ty
+                | _ ->
+                    save_desc more more.desc;
+                    if keep then more else newty more.desc
+              in
               (* Register new type first for recursion *)
-              save_desc more more.desc;
               more.desc <- ty.desc;
               (* Return a new copy *)
-              let more' =
-                if keep then more else
-                match desc with Tsubst ty -> ty
-                | _ -> newty desc
-              in
               Tvariant (copy_row copy true row keep more')
           end
       | _ -> copy_type_desc copy desc

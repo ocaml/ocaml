@@ -66,8 +66,10 @@ let rec typexp s ty =
   let ty = repr ty in
   match ty.desc with
     Tvar | Tunivar ->
-      if s.for_saving then
-        let ty' = newpersty ty.desc in
+      if s.for_saving || ty.id < 0 then
+        let ty' =
+          if s.for_saving then newpersty ty.desc else newty2 ty.level ty.desc
+        in
         save_desc ty ty.desc; ty.desc <- Tsubst ty'; ty'
       else ty
   | Tsubst ty ->
@@ -107,11 +109,11 @@ let rec typexp s ty =
               let more' =
                 match more.desc with Tsubst ty -> ty
                 | _ ->
+                    save_desc more more.desc;
                     if s.for_saving then newpersty more.desc else
                     if static then newgenvar () else more
               in
               (* Register new type first for recursion *)
-              save_desc more more.desc;
               more.desc <- ty.desc;
               (* Return a new copy *)
               let row =
