@@ -13,7 +13,7 @@
 
 type t = { mutable locked: bool; mutable waiting: Thread.t list }
 
-let new () = { locked = false; waiting = [] }
+let create () = { locked = false; waiting = [] }
 
 let rec lock m =
   if m.locked then begin                (* test and set atomic *)

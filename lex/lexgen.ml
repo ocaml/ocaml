@@ -137,7 +137,7 @@ let rec lastpos = function
   | Star r     -> lastpos r
 
 let followpos size entry_list =
-  let v = Array.new size TransSet.empty in
+  let v = Array.create size TransSet.empty in
   let fill_pos first = function
       OnChars pos -> v.(pos) <- TransSet.union first v.(pos)
     | ToAction _  -> () in
@@ -169,7 +169,7 @@ module StateMap =
   Map.Make(struct type t = TransSet.t let compare = TransSet.compare end)
 
 let state_map = ref (StateMap.empty: int StateMap.t)
-let todo = (Stack.new() : (TransSet.t * int) Stack.t)
+let todo = (Stack.create() : (TransSet.t * int) Stack.t)
 let next_state_num = ref 0
 
 let reset_state_mem () =
@@ -203,8 +203,8 @@ let goto_state st =
   if TransSet.is_empty st then Backtrack else Goto (get_state st)
 
 let transition_from chars follow pos_set = 
-  let tr = Array.new 256 TransSet.empty in
-  let shift = Array.new 256 Backtrack in
+  let tr = Array.create 256 TransSet.empty in
+  let shift = Array.create 256 Backtrack in
     List.iter
       (fun pos ->
         List.iter
@@ -235,7 +235,7 @@ let make_dfa lexdef =
           auto_actions = le.lex_actions })
       entry_list in
   let states = map_on_all_states (translate_state chars follow) in
-  let actions = Array.new !next_state_num (Perform 0) in
+  let actions = Array.create !next_state_num (Perform 0) in
   List.iter (fun (act, i) -> actions.(i) <- act) states;
   reset_state_mem();
   (initial_states, actions)

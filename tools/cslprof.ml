@@ -56,7 +56,7 @@ let add_incr_counter mod_name prof_counter =
            "profile_%s_.(%d) <- profile_%s_.(%d) + 1; "
            mod_name prof_counter mod_name prof_counter
 
-let counters = ref (Array.new 0 0)
+let counters = ref (Array.create 0 0)
 
 (* User defined marker *)
 let special_id = ref ""
@@ -98,7 +98,7 @@ let init_rewrite modes mod_name =
   cur_point := 0;
   profile_counter := 0;
   if !instr_mode then begin
-    fprintf !outchan "let profile_%s_ = Array.new 000000" mod_name;
+    fprintf !outchan "let profile_%s_ = Array.create 000000" mod_name;
     pos_len := pos_out !outchan;
     fprintf !outchan 
             " 0;; Profiling.counters := (\"%s\", (\"%s\", profile_%s_)) :: !Profiling.counters;; "
@@ -203,13 +203,24 @@ and rewrite_exp sexp =
     if !instr_loops then insert_profile sbody.pexp_loc;
     rewrite_exp sbody
 
-  | Pexp_constraint(sarg, _) ->
+  | Pexp_constraint(sarg, _, _) ->
     rewrite_exp sarg
 
   | Pexp_when(scond, sbody) ->
     rewrite_exp scond;
     rewrite_exp sbody
-      
+
+  | Pexp_send (sobj, _) ->
+    rewrite_exp sobj
+
+  | Pexp_new _ -> ()
+
+  | Pexp_setinstvar (_, sarg) ->
+    rewrite_exp sarg
+
+  | Pexp_override l ->
+      List.iter (fun (_, sexp) -> rewrite_exp sexp) l
+
 and rewrite_ifbody sifbody =
   if !instr_if then begin
     insert_open sifbody.pexp_loc;
@@ -243,6 +254,18 @@ and rewrite_funmatching l =
 and rewrite_trymatching l =
   rewrite_annotate_exp_list (List.map snd l)
 
+(* Rewrite a class definition *)
+
+let rewrite_class_field =
+  function
+    Pcf_inher (_, _, l, _, _) -> List.iter rewrite_exp l
+  | Pcf_val (_, _, _, Some exp, _) -> rewrite_exp exp
+  | Pcf_val (_, _, _, None, _) | Pcf_virt _ -> ()
+  | Pcf_meth (_, exp, _) -> rewrite_exp exp
+
+let rewrite_class cl =
+  List.iter rewrite_class_field cl.pcl_field
+
 (* Rewrite a module expression or structure expression *)
 
 let rec rewrite_mod smod =
@@ -258,6 +281,7 @@ and rewrite_str_item item =
     Pstr_eval exp -> rewrite_exp exp
   | Pstr_value(_, exps) -> List.iter (function (_,exp) -> rewrite_exp exp) exps
   | Pstr_module(name, smod) -> rewrite_mod smod
+  | Pstr_class classes -> List.iter rewrite_class classes
   | _ -> ()
 
 (* Rewrite a .ml file *)

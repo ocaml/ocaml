@@ -24,8 +24,8 @@ and ('a, 'b) bucketlist =
     Empty
   | Cons of 'a * 'b * ('a, 'b) bucketlist
 
-let new initial_size =
-  { max_len = 2; data = Array.new initial_size Empty }
+let create initial_size =
+  { max_len = 2; data = Array.create initial_size Empty }
 
 let clear h =
   for i = 0 to Array.length h.data - 1 do
@@ -34,7 +34,7 @@ let clear h =
 
 let resize h =
   let n = Array.length h.data in
-  let newdata = Array.new (n+n) Empty in
+  let newdata = Array.create (n+n) Empty in
     Array.blit h.data 0 newdata 0 n;
     Array.blit h.data 0 newdata n n;
     h.data <- newdata;

@@ -15,7 +15,7 @@ type 'a t = { mutable c : 'a list }
 
 exception Empty
 
-let new () = { c = [] }
+let create () = { c = [] }
 
 let clear s = s.c <- []
 

@@ -45,7 +45,7 @@ type unit_infos =
     mutable ui_force_link: bool }               (* Always linked *)
 
 let global_approx_table =
-  (Hashtbl.new 17 : (string, value_approximation) Hashtbl.t)
+  (Hashtbl.create 17 : (string, value_approximation) Hashtbl.t)
 
 let current_unit =
   { ui_name = "";

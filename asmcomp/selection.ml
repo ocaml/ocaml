@@ -259,7 +259,7 @@ let join r1 seq1 r2 seq2 =
   if l1 = 0 then r2
   else if l2 = 0 then r1
   else begin
-    let r = Array.new l1 Reg.dummy in
+    let r = Array.create l1 Reg.dummy in
     for i = 0 to l1-1 do
       if String.length r1.(i).name = 0 then begin
         r.(i) <- r1.(i);
@@ -268,7 +268,7 @@ let join r1 seq1 r2 seq2 =
         r.(i) <- r2.(i);
         insert_move r1.(i) r2.(i) seq1
       end else begin
-        r.(i) <- Reg.new r1.(i).typ;
+        r.(i) <- Reg.create r1.(i).typ;
         insert_move r1.(i) r.(i) seq1;
         insert_move r2.(i) r.(i) seq2
       end
@@ -286,9 +286,9 @@ let join_array rs =
   done;
   let size_res = Array.length !some_res in
   if size_res = 0 then [||] else begin
-    let res = Array.new size_res Reg.dummy in
+    let res = Array.create size_res Reg.dummy in
     for i = 0 to size_res - 1 do
-      res.(i) <- Reg.new (!some_res).(i).typ
+      res.(i) <- Reg.create (!some_res).(i).typ
     done;
     for i = 0 to Array.length rs - 1 do
       let (r, s) = rs.(i) in
@@ -323,16 +323,16 @@ let insert_op op rs rd seq =
 let rec emit_expr env exp seq =
   match exp with
     Cconst_int n ->
-      let r = Reg.newv typ_int in
+      let r = Reg.createv typ_int in
       insert_op (Iconst_int n) [||] r seq
   | Cconst_float n ->
-      let r = Reg.newv typ_float in
+      let r = Reg.createv typ_float in
       insert_op (Iconst_float n) [||] r seq
   | Cconst_symbol n ->
-      let r = Reg.newv typ_addr in
+      let r = Reg.createv typ_addr in
       insert_op (Iconst_symbol n) [||] r seq
   | Cconst_pointer n ->
-      let r = Reg.newv typ_addr in
+      let r = Reg.createv typ_addr in
       insert_op (Iconst_int n) [||] r seq
   | Cvar v ->
       begin try
@@ -383,7 +383,7 @@ let rec emit_expr env exp seq =
           Proc.contains_calls := true;
           let r1 = emit_tuple env new_args seq in
           let rarg = Array.sub r1 1 (Array.length r1 - 1) in
-          let rd = Reg.newv ty in
+          let rd = Reg.createv ty in
           let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
           let loc_res = Proc.loc_results rd in
           insert_move_args rarg loc_arg stack_ofs seq;
@@ -393,7 +393,7 @@ let rec emit_expr env exp seq =
       | Icall_imm lbl ->
           Proc.contains_calls := true;
           let r1 = emit_tuple env new_args seq in
-          let rd = Reg.newv ty in
+          let rd = Reg.createv ty in
           let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
           let loc_res = Proc.loc_results rd in
           insert_move_args r1 loc_arg stack_ofs seq;
@@ -403,7 +403,7 @@ let rec emit_expr env exp seq =
       | Iextcall(lbl, alloc) ->
           Proc.contains_calls := true;
           let r1 = emit_tuple env new_args seq in
-          let rd = Reg.newv ty in
+          let rd = Reg.createv ty in
           let (loc_arg, stack_ofs) = Proc.loc_external_arguments r1 in
           let loc_res = Proc.loc_external_results rd in
           insert_move_args r1 loc_arg stack_ofs seq;
@@ -412,7 +412,7 @@ let rec emit_expr env exp seq =
           rd
       | Iload(Word, addr) ->
           let r1 = emit_tuple env new_args seq in
-          let rd = Reg.newv ty in
+          let rd = Reg.createv ty in
           insert_op (Iload(Word, addr)) r1 rd seq
       | Istore(Word, addr) ->
           begin match new_args with
@@ -424,7 +424,7 @@ let rec emit_expr env exp seq =
           end
       | Ialloc _ ->
           Proc.contains_calls := true;
-          let rd = Reg.newv typ_addr in
+          let rd = Reg.createv typ_addr in
           let size = size_expr env (Ctuple new_args) in
           insert (Iop(Ialloc size)) [||] rd seq;
           emit_stores env new_args seq rd 
@@ -432,7 +432,7 @@ let rec emit_expr env exp seq =
           rd
       | op ->
           let r1 = emit_tuple env new_args seq in
-          let rd = Reg.newv ty in
+          let rd = Reg.createv ty in
           insert_op op r1 rd seq
       end        
   | Csequence(e1, e2) ->
@@ -471,7 +471,7 @@ let rec emit_expr env exp seq =
   | Ctrywith(e1, v, e2) ->
       Proc.contains_calls := true;
       let (r1, s1) = emit_sequence env e1 in
-      let rv = Reg.newv typ_addr in
+      let rv = Reg.createv typ_addr in
       let (r2, s2) = emit_sequence (Tbl.add v rv env) e2 in
       let r = join r1 s1 r2 s2 in
       insert
@@ -492,8 +492,8 @@ and emit_let env v e1 seq =
     name_regs v r1;
     Tbl.add v r1 env
   end else begin
-    let rv = Array.new (Array.length r1) Reg.dummy in
-    for i = 0 to Array.length r1 - 1 do rv.(i) <- Reg.new r1.(i).typ done;
+    let rv = Array.create (Array.length r1) Reg.dummy in
+    for i = 0 to Array.length r1 - 1 do rv.(i) <- Reg.create r1.(i).typ done;
     name_regs v rv;
     insert_moves r1 rv seq;
     Tbl.add v rv env
@@ -517,13 +517,13 @@ and emit_parts env exp seq =
       if Array.length r = 0 then
         (Ctuple [], env)
       else begin
-        let id = Ident.new "bind" in
+        let id = Ident.create "bind" in
         if all_regs_anonymous r then
           (Cvar id, Tbl.add id r env)
         else begin
-          let rv = Array.new (Array.length r) Reg.dummy in
+          let rv = Array.create (Array.length r) Reg.dummy in
           for i = 0 to Array.length r - 1 do
-            rv.(i) <- Reg.new r.(i).typ
+            rv.(i) <- Reg.create r.(i).typ
           done;
           insert_moves r rv seq;
           (Cvar id, Tbl.add id rv env)
@@ -597,7 +597,7 @@ let rec emit_tail env exp seq =
                    (Array.append [|r1.(0)|] loc_arg) [||] seq
           end else begin
             Proc.contains_calls := true;
-            let rd = Reg.newv ty in
+            let rd = Reg.createv ty in
             let loc_res = Proc.loc_results rd in
             insert_move_args rarg loc_arg stack_ofs seq;
             insert (Iop Icall_ind)
@@ -613,7 +613,7 @@ let rec emit_tail env exp seq =
             insert (Iop(Itailcall_imm lbl)) loc_arg [||] seq
           end else begin
             Proc.contains_calls := true;
-            let rd = Reg.newv ty in
+            let rd = Reg.createv ty in
             let loc_res = Proc.loc_results rd in
             insert_move_args r1 loc_arg stack_ofs seq;
             insert (Iop(Icall_imm lbl)) loc_arg loc_res seq;
@@ -648,7 +648,7 @@ let rec emit_tail env exp seq =
   | Ctrywith(e1, v, e2) ->
       Proc.contains_calls := true;
       let (r1, s1) = emit_sequence env e1 in
-      let rv = Reg.newv typ_addr in
+      let rv = Reg.createv typ_addr in
       let s2 = emit_tail_sequence (Tbl.add v rv env) e2 in
       let loc = Proc.loc_results r1 in
       insert
@@ -671,7 +671,7 @@ let fundecl f =
   Proc.contains_calls := false;
   let rargs =
     List.map
-      (fun (id, ty) -> let r = Reg.newv ty in name_regs id r; r)
+      (fun (id, ty) -> let r = Reg.createv ty in name_regs id r; r)
       f.Cmm.fun_args in
   let rarg = Array.concat rargs in
   let loc_arg = Proc.loc_parameters rarg in

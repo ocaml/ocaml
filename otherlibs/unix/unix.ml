@@ -512,7 +512,7 @@ type popen_process =
   | Process_in of in_channel
   | Process_out of out_channel
 
-let popen_processes = (Hashtbl.new 7 : (popen_process, int) Hashtbl.t)
+let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 
 let open_proc cmd proc input output toclose =
   match fork() with

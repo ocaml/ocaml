@@ -21,7 +21,7 @@ type 'a t =
   { mutable head: 'a queue_cell;
     mutable tail: 'a queue_cell }
 
-let new () =
+let create () =
   { head = Nil; tail = Nil }
 
 let clear q =

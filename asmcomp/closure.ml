@@ -59,6 +59,7 @@ let occurs_var var u =
     | Uwhile(cond, body) -> occurs cond or occurs body
     | Ufor(id, lo, hi, dir, body) -> occurs lo or occurs hi or occurs body
     | Uassign(id, u) -> id = var or occurs u
+    | Usend(met, obj, args) -> List.exists occurs (met::obj::args)
   and occurs_array a =
     try
       for i = 0 to Array.length a - 1 do
@@ -101,7 +102,7 @@ let rec close fenv cenv = function
   | Lconst cst ->
       (Uconst cst, Value_unknown)
   | Lfunction(params, body) as funct ->
-      close_one_function fenv cenv (Ident.new "fun") funct
+      close_one_function fenv cenv (Ident.create "fun") funct
   | Lapply(funct, args) ->
       let nargs = List.length args in
       begin match close fenv cenv funct with
@@ -127,6 +128,10 @@ let rec close fenv cenv = function
       | (ufunct, _) ->
           (Ugeneric_apply(ufunct, close_list fenv cenv args), Value_unknown)
       end
+  | Lsend(met, obj, args) ->
+      let (umet, _) = close fenv cenv met in
+      let (uobj, _) = close fenv cenv obj in
+      (Usend(umet, uobj, close_list fenv cenv args), Value_unknown)
   | Llet(str, id, lam, body) ->
       let (ulam, alam) = close_named fenv cenv id lam in
       let (ubody, abody) = close (Tbl.add id alam fenv) cenv body in
@@ -138,7 +143,7 @@ let rec close fenv cenv = function
       then begin
         (* Simple case: only function definitions *)
         let (clos, infos) = close_functions fenv cenv defs in
-        let clos_ident = Ident.new "clos" in
+        let clos_ident = Ident.create "clos" in
         let fenv_body =
           List.fold_right
             (fun (id, pos, approx) fenv -> Tbl.add id approx fenv)
@@ -284,7 +289,7 @@ and close_functions fenv cenv fun_defs =
   let useless_env = ref true in
   (* Translate each function definition *)
   let clos_fundef (id, params, body, fundesc) env_pos =
-    let env_param = Ident.new "env" in
+    let env_param = Ident.create "env" in
     let cenv_fv =
       build_closure_env env_param (fv_pos - env_pos) fv in
     let cenv_body =
@@ -324,7 +329,7 @@ and close_one_function fenv cenv id funct =
 (* Close a switch *)
 
 and close_switch fenv cenv num_keys cases =
-  let index = Array.new num_keys 0 in
+  let index = Array.create num_keys 0 in
   let ucases = ref []
   and num_cases = ref 0 in
   if List.length cases < num_keys then begin
@@ -343,7 +348,7 @@ and close_switch fenv cenv num_keys cases =
 (* The entry point *)
 
 let intro size lam =
-  global_approx := Array.new size Value_unknown;
+  global_approx := Array.create size Value_unknown;
   let (ulam, approx) = close Tbl.empty Tbl.empty lam in
   Compilenv.set_global_approx(Value_tuple !global_approx);
   global_approx := [||];

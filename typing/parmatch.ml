@@ -57,7 +57,7 @@ let record_num_fields p =
   | _ -> fatal_error "Parmatch.record_num_fields"
 
 let set_fields size l =
-  let v = Array.new size omega in
+  let v = Array.create size omega in
   let rec change_rec l = match l with
     (lbl,p)::l ->  v.(lbl.lbl_pos) <- p ;  change_rec l 
   | [] -> () in

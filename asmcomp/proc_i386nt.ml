@@ -68,12 +68,12 @@ let rotate_registers = false
 (* Representation of hard registers by pseudo-registers *)
 
 let hard_int_reg =
-  let v = Array.new 7 Reg.dummy in
+  let v = Array.create 7 Reg.dummy in
   for i = 0 to 6 do v.(i) <- Reg.at_location Int (Reg i) done;
   v
 
 let hard_float_reg =
-  let v = Array.new 5 Reg.dummy in
+  let v = Array.create 5 Reg.dummy in
   for i = 0 to 4 do v.(i) <- Reg.at_location Float (Reg(i + 100)) done;
   v
 
@@ -306,7 +306,7 @@ let word_addressed = false
 
 let calling_conventions first_int last_int first_float last_float make_stack
                         arg =
-  let loc = Array.new (Array.length arg) Reg.dummy in
+  let loc = Array.create (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
   let ofs = ref 0 in
@@ -406,7 +406,7 @@ let reload_operation makereg op arg res =
   | Ispecific(Ifloatarithmem(_, _)) ->
       (* First arg can be either in register or on stack, but remaining
          arguments must be in registers *)
-      let newarg = Array.new (Array.length arg) arg.(0) in
+      let newarg = Array.create (Array.length arg) arg.(0) in
       for i = 1 to Array.length arg - 1 do newarg.(i) <- makereg arg.(i) done;
       (newarg, res)
   | _ -> (* Other operations: all args and results in registers *)

@@ -39,6 +39,7 @@ type ulambda =
   | Uwhile of ulambda * ulambda
   | Ufor of Ident.t * ulambda * ulambda * direction_flag * ulambda
   | Uassign of Ident.t * ulambda
+  | Usend of ulambda * ulambda * ulambda list
 
 and ulambda_switch =
   { us_index_consts: int array;

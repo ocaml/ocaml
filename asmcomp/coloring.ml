@@ -19,20 +19,20 @@ open Reg
 
 let allocate_spilled reg =
   if reg.spill then begin
-    let class = Proc.register_class reg in
-    let nslots = Proc.num_stack_slots.(class) in
-    let conflict = Array.new nslots false in
+    let cl = Proc.register_class reg in
+    let nslots = Proc.num_stack_slots.(cl) in
+    let conflict = Array.create nslots false in
     List.iter
       (fun r ->
         match r.loc with
           Stack(Local n) ->
-            if Proc.register_class r = class then conflict.(n) <- true
+            if Proc.register_class r = cl then conflict.(n) <- true
         | _ -> ())
       reg.interf;
     let slot = ref 0 in
     while !slot < nslots & conflict.(!slot) do incr slot done;
     reg.loc <- Stack(Local !slot);
-    if !slot >= nslots then Proc.num_stack_slots.(class) <- !slot + 1
+    if !slot >= nslots then Proc.num_stack_slots.(cl) <- !slot + 1
   end
 
 (* Compute the degree (= number of neighbours of the same type)
@@ -47,12 +47,12 @@ let constrained = ref Reg.Set.empty
 let find_degree reg =
   if reg.spill then () else begin
     let deg = ref 0 in
-    let class = Proc.register_class reg in
+    let cl = Proc.register_class reg in
     List.iter
-      (fun r -> if not r.spill & Proc.register_class r = class then incr deg)
+      (fun r -> if not r.spill & Proc.register_class r = cl then incr deg)
       reg.interf;
     reg.degree <- !deg;
-    if !deg >= Proc.num_available_registers.(class)
+    if !deg >= Proc.num_available_registers.(cl)
     then constrained := Reg.Set.add reg !constrained
     else unconstrained := Reg.Set.add reg !unconstrained
   end
@@ -61,13 +61,13 @@ let find_degree reg =
 
 let remove_reg reg =
   reg.degree <- 0;   (* 0 means r is no longer part of the graph *)
-  let class = Proc.register_class reg in
+  let cl = Proc.register_class reg in
   List.iter
     (fun r ->
-      if Proc.register_class r = class & r.degree > 0 then begin
+      if Proc.register_class r = cl & r.degree > 0 then begin
         let olddeg = r.degree in
         r.degree <- olddeg - 1;
-        if olddeg = Proc.num_available_registers.(class) then begin
+        if olddeg = Proc.num_available_registers.(cl) then begin
           (* r was constrained and becomes unconstrained *)
           constrained := Reg.Set.remove r !constrained;
           unconstrained := Reg.Set.add r !unconstrained
@@ -127,16 +127,16 @@ let iter_preferred f reg =
    Used to introduce some "randomness" in the choice between registers
    with equal scores. This offers more opportunities for scheduling. *)
 
-let start_register = Array.new Proc.num_register_classes 0
+let start_register = Array.create Proc.num_register_classes 0
 
 (* Assign a location to a register, the best we can *)
 
 let assign_location reg =
-  let class = Proc.register_class reg in
-  let first_reg = Proc.first_available_register.(class) in
-  let num_regs = Proc.num_available_registers.(class) in
+  let cl = Proc.register_class reg in
+  let first_reg = Proc.first_available_register.(cl) in
+  let num_regs = Proc.num_available_registers.(cl) in
   let last_reg = first_reg + num_regs in
-  let score = Array.new num_regs 0 in
+  let score = Array.create num_regs 0 in
   (* Favor the registers that have been assigned to pseudoregs for which
      we have a preference. If these pseudoregs have not been assigned
      already, avoid the registers with which they conflict. *)
@@ -178,7 +178,7 @@ let assign_location reg =
     reg.interf;
   (* Pick the register with the best score *)
   let best_score = ref (-1000000) and best_reg = ref (-1) in
-  let start = start_register.(class) in
+  let start = start_register.(cl) in
   for n = start to num_regs - 1 do
     if score.(n) > !best_score then begin
       best_score := score.(n);
@@ -195,7 +195,7 @@ let assign_location reg =
   if !best_reg >= 0 then begin
     reg.loc <- Reg(first_reg + !best_reg);
     if Proc.rotate_registers then
-      start_register.(class) <- (if start+1 >= num_regs then 0 else start+1)
+      start_register.(cl) <- (if start+1 >= num_regs then 0 else start+1)
   end else begin
     (* Sorry, we must put the pseudoreg in a stack location *)
     (* First, check if we have a preference for an incoming location
@@ -218,20 +218,20 @@ let assign_location reg =
       reg.loc <- Stack(Incoming !best_incoming_loc)
     else begin
       (* Now, look for a location in the local area *)
-      let nslots = Proc.num_stack_slots.(class) in
-      let score = Array.new nslots 0 in
+      let nslots = Proc.num_stack_slots.(cl) in
+      let score = Array.create nslots 0 in
       (* Compute the scores as for registers *)
       List.iter
         (fun (r, w) ->
           match r.loc with
-            Stack(Local n) -> if Proc.register_class r = class then
+            Stack(Local n) -> if Proc.register_class r = cl then
                               score.(n) <- score.(n) + w
           | Unknown ->
               List.iter
                 (fun neighbour ->
                   match neighbour.loc with
                     Stack(Local n) ->
-                      if Proc.register_class neighbour = class
+                      if Proc.register_class neighbour = cl
                       then score.(n) <- score.(n) - w
                   | _ -> ())
                 r.interf
@@ -241,14 +241,14 @@ let assign_location reg =
         (fun neighbour ->
           begin match neighbour.loc with
               Stack(Local n) ->
-                if Proc.register_class neighbour = class then
+                if Proc.register_class neighbour = cl then
                 score.(n) <- (-1000000)
           | _ -> ()
           end;
           List.iter
             (fun (r, w) ->
               match r.loc with
-                Stack(Local n) -> if Proc.register_class r = class then
+                Stack(Local n) -> if Proc.register_class r = cl then
                                   score.(n) <- score.(n) - w
               | _ -> ())
             neighbour.prefer)
@@ -267,7 +267,7 @@ let assign_location reg =
       else begin
         (* Allocate a new stack slot *)
         reg.loc <- Stack(Local nslots);
-        Proc.num_stack_slots.(class) <- nslots + 1
+        Proc.num_stack_slots.(cl) <- nslots + 1
       end
     end
   end;

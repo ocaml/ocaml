@@ -19,10 +19,20 @@ open Typedtree
 val type_binding:
         Env.t -> rec_flag ->
           (Parsetree.pattern * Parsetree.expression) list -> 
-            (Typedtree.pattern * Typedtree.expression) list * Env.t
+            (pattern * expression) list * Env.t
 val type_expression:
-        Env.t -> Parsetree.expression -> Typedtree.expression
-        
+        Env.t -> Parsetree.expression -> expression
+val type_method:
+        Env.t -> Typedtree.type_expr -> string option ->
+        Parsetree.expression -> expression * type_expr
+val type_pattern_list:
+        Env.t -> Parsetree.pattern list -> Typedtree.pattern list * Env.t
+val type_expect:
+        Env.t -> Parsetree.expression -> Typedtree.type_expr ->
+        Typedtree.expression
+val type_exp:
+      	Env.t -> Parsetree.expression -> Typedtree.expression
+
 type error =
     Unbound_value of Longident.t
   | Unbound_constructor of Longident.t
@@ -38,6 +48,14 @@ type error =
   | Label_missing
   | Label_not_mutable of Longident.t
   | Bad_format of string
+  | Undefined_method_err of Label.t
+  | Unbound_class of Longident.t
+  | Virtual_class of Longident.t
+  | Unbound_instance_variable of string
+  | Instance_variable_not_mutable of string
+  | Not_subtype of type_expr * type_expr
+  | Outside_class
+  | Value_multiply_overridden of string
 
 exception Error of Location.t * error
 

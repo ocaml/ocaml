@@ -72,12 +72,15 @@ let rec eliminate_ref id = function
            dir, eliminate_ref id e3)
   | Lassign(v, e) ->
       Lassign(v, eliminate_ref id e)
+  | Lsend(m, o, el) ->
+      Lsend(eliminate_ref id m, eliminate_ref id o,
+            List.map (eliminate_ref id) el)
 
 (* Simplification of lets *)
 
 let simplify_lambda lam =
   (* First pass: count the occurrences of all identifiers *)
-  let occ = Hashtbl.new 83 in
+  let occ = Hashtbl.create 83 in
   let count_var v =
     try
       !(Hashtbl.find occ v)
@@ -126,11 +129,12 @@ let simplify_lambda lam =
       (* Lalias-bound variables are never assigned, so don't increase
          v's refcount *)
       count l
+  | Lsend(m, o, ll) -> List.iter count (m::o::ll)
   in
   count lam;
   (* Second pass: remove Lalias bindings of unused variables,
      and substitute the bindings of variables used exactly once. *)
-  let subst = Hashtbl.new 83 in
+  let subst = Hashtbl.create 83 in
   let rec simplif = function
     Lvar v as l ->
       begin try
@@ -159,6 +163,11 @@ let simplify_lambda lam =
       | 1 -> Hashtbl.add subst v (simplif l1); simplif l2
       | n -> Llet(Alias, v, simplif l1, simplif l2)
       end
+  | Llet(StrictOpt, v, l1, l2) ->
+      begin match count_var v with
+        0 -> simplif l2
+      | n -> Llet(Alias, v, simplif l1, simplif l2)
+      end
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
   | Lprim(p, ll) -> Lprim(p, List.map simplif ll)
@@ -178,8 +187,6 @@ let simplify_lambda lam =
   | Lfor(v, l1, l2, dir, l3) ->
       Lfor(v, simplif l1, simplif l2, dir, simplif l3)
   | Lassign(v, l) -> Lassign(v, simplif l)
+  | Lsend(m, o, ll) -> Lsend(simplif m, simplif o, List.map simplif ll)
   in
   simplif lam
-
-    
-    

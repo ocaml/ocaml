@@ -83,7 +83,7 @@ let label_table  = ref ([| |] : label_definition array)
 let extend_label_table needed =
   let new_size = ref(Array.length !label_table) in
   while needed >= !new_size do new_size := 2 * !new_size done;
-  let new_table = Array.new !new_size (Label_undefined []) in
+  let new_table = Array.create !new_size (Label_undefined []) in
   Array.blit !label_table 0 new_table 0 (Array.length !label_table);
   label_table := new_table
 
@@ -139,7 +139,7 @@ and slot_for_c_prim name =
 
 let init () =
   out_position := 0;
-  label_table := Array.new 16 (Label_undefined []);
+  label_table := Array.create 16 (Label_undefined []);
   reloc_info := []
 
 (* Emission of one instruction *)
@@ -234,6 +234,7 @@ let emit_instr = function
   | Kintcomp Cgt -> out opGTINT      | Kintcomp Cge -> out opGEINT
   | Koffsetint n -> out opOFFSETINT; out_int n
   | Koffsetref n -> out opOFFSETREF; out_int n
+  | Kgetmethod -> out opGETMETHOD
   | Kstop -> out opSTOP
 
 (* Emission of a list of instructions. Include some peephole optimization. *)

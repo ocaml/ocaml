@@ -61,21 +61,23 @@ let load_lambda lam =
 
 (* Print the outcome of an evaluation *)
 
+let hidden = ref 0
+
 let print_item env = function
     Tsig_value(id, decl) ->
       open_hovbox 2;
-      begin match decl.val_prim with
-        None ->
+      begin match decl.val_kind with
+        Val_prim p ->
+          print_string "external "; Printtyp.ident id;
+          print_string " :"; print_space();
+          Printtyp.type_scheme decl.val_type; print_space();
+          print_string "= "; Primitive.print_description p
+      | _ ->
           print_string "val "; Printtyp.ident id;
           print_string " :"; print_space();
           Printtyp.type_scheme decl.val_type;
           print_string " ="; print_space();
           print_value env (Symtable.get_global_value id) decl.val_type
-      | Some p ->
-          print_string "external "; Printtyp.ident id;
-          print_string " :"; print_space();
-          Printtyp.type_scheme decl.val_type; print_space();
-          print_string "= "; Primitive.print_description p
       end;
       close_box()
   | Tsig_type(id, decl) ->
@@ -87,6 +89,9 @@ let print_item env = function
       print_string " :"; print_space(); Printtyp.modtype mty; close_box()
   | Tsig_modtype(id, decl) ->
       Printtyp.modtype_declaration id decl
+  | Tsig_class(id, decl) ->
+      hidden := 2;
+      Printtyp.class_type id decl
 
 (* Print an exception produced by an evaluation *)
 
@@ -106,7 +111,7 @@ let print_exception_outcome = function
 (* The table of toplevel directives. 
    Filled by functions from module topdirs. *)
 
-let directive_table = (Hashtbl.new 13 : (string, directive_fun) Hashtbl.t)
+let directive_table = (Hashtbl.create 13 : (string, directive_fun) Hashtbl.t)
 
 (* Execute a toplevel phrase *)
 
@@ -132,7 +137,12 @@ let execute_phrase phr =
               print_newline()
           | _ ->
               open_vbox 0;
-              List.iter (fun item -> print_item newenv item; print_space()) sg;
+	      hidden := 0;
+              List.iter
+                (fun item ->
+		   if !hidden > 0 then decr hidden
+      	       	   else begin print_item newenv item; print_space() end)
+      	        sg;
               close_box();
               print_flush()
           end;

@@ -126,7 +126,7 @@ and sz_staticfail = ref 0
 (* Function bodies that remain to be compiled *)
 
 let functions_to_compile  =
-  (Stack.new () : (Ident.t list * lambda * label * Ident.t list) Stack.t)
+  (Stack.create () : (Ident.t list * lambda * label * Ident.t list) Stack.t)
 
 (* Compile an expression.
    The value of the expression is left in the accumulator.
@@ -168,6 +168,21 @@ let rec comp_expr env exp sz cont =
           comp_args env args (sz + 3)
             (Kpush :: comp_expr env func (sz + 3 + nargs)
                       (Kapply nargs :: cont1))
+        end
+  | Lsend(met, obj, args) ->
+      let nargs = List.length args + 1 in
+      if is_tailcall cont then
+        comp_args env (met::obj::args) sz
+          (Kgetmethod :: Kappterm(nargs, sz + nargs) :: discard_dead_code cont)
+      else
+        if nargs < 4 then
+          comp_args env (met::obj::args) sz
+            (Kgetmethod :: Kapply nargs :: cont)
+        else begin
+          let (lbl, cont1) = label_code cont in
+          Kpush_retaddr lbl ::
+          comp_args env (met::obj::args) (sz + 3)
+            (Kgetmethod :: Kapply nargs :: cont1)
         end
   | Lfunction(params, body) ->
       let lbl = new_label() in
@@ -355,12 +370,12 @@ let rec comp_expr env exp sz cont =
   | Lswitch(arg, sw) ->
       let (branch, cont1) = make_branch cont in
       let c = ref (discard_dead_code cont1) in
-      let act_consts = Array.new sw.sw_numconsts Lstaticfail in
+      let act_consts = Array.create sw.sw_numconsts Lstaticfail in
       List.iter (fun (n, act) -> act_consts.(n) <- act) sw.sw_consts;
-      let act_blocks = Array.new sw.sw_numblocks Lstaticfail in
+      let act_blocks = Array.create sw.sw_numblocks Lstaticfail in
       List.iter (fun (n, act) -> act_blocks.(n) <- act) sw.sw_blocks;
-      let lbl_consts = Array.new sw.sw_numconsts 0 in
-      let lbl_blocks = Array.new sw.sw_numblocks 0 in
+      let lbl_consts = Array.create sw.sw_numconsts 0 in
+      let lbl_blocks = Array.create sw.sw_numblocks 0 in
       for i = sw.sw_numblocks - 1 downto 0 do
         let (lbl, c1) =
           label_code(comp_expr env act_blocks.(i) sz (branch :: !c)) in

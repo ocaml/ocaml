@@ -18,7 +18,7 @@ type t
 
 (** Thread creation and termination *)
 
-val new : ('a -> 'b) -> 'a -> t
+val create : ('a -> 'b) -> 'a -> t
         (* [new funct arg] creates a new thread of control, in which the
            function application [funct arg] is executed concurrently
            with the other threads of the program. The application of [new]

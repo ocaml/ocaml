@@ -28,6 +28,7 @@ type error =
   | Modtype_infos of Ident.t * modtype_declaration * modtype_declaration
   | Modtype_permutation
   | Interface_mismatch of string * string
+  | Class_type of Ident.t * class_type * class_type
 
 exception Error of error list
 
@@ -57,6 +58,13 @@ let exception_declarations env id decl1 decl2 =
   then ()
   else raise(Error[Exception_declarations(id, decl1, decl2)])
 
+(* Inclusion between class types *)
+
+let class_type env id decl1 decl2 =
+  if Includecore.class_type env decl1 decl2
+  then ()
+  else raise(Error[Class_type(id, decl1, decl2)])
+
 (* Expand a module type identifier when possible *)
 
 exception Dont_match
@@ -77,6 +85,7 @@ type field_desc =
   | Field_exception of string
   | Field_module of string
   | Field_modtype of string
+  | Field_classtype of string
 
 let item_ident_name = function
     Tsig_value(id, _) -> (id, Field_value(Ident.name id))
@@ -84,6 +93,7 @@ let item_ident_name = function
   | Tsig_exception(id, _) -> (id, Field_exception(Ident.name id))
   | Tsig_module(id, _) -> (id, Field_module(Ident.name id))
   | Tsig_modtype(id, _) -> (id, Field_modtype(Ident.name id))
+  | Tsig_class(id, _) -> (id, Field_classtype(Ident.name id))
 
 (* Simplify a structure coercion *)
 
@@ -149,12 +159,13 @@ and signatures env sig1 sig2 =
         let (id, name) = item_ident_name item in
         let nextpos =
           match item with
-            Tsig_value(_,{val_prim = None})
-          | Tsig_exception(_,_)
-          | Tsig_module(_,_) -> pos+1
-          | Tsig_value(_,{val_prim = Some _})
+            Tsig_value(_,{val_kind = Val_prim _})
           | Tsig_type(_,_)
-          | Tsig_modtype(_,_) -> pos in
+          | Tsig_modtype(_,_) -> pos
+          | Tsig_value(_,_)
+          | Tsig_exception(_,_)
+          | Tsig_module(_,_)
+	  | Tsig_class(_, _) -> pos+1 in
         build_component_table nextpos
                               (Tbl.add name (id, item, pos) tbl) rem in
   let comps1 =
@@ -189,9 +200,9 @@ and signature_components env = function
     [] -> []
   | (Tsig_value(id1, valdecl1), Tsig_value(id2, valdecl2), pos) :: rem ->
       let cc = value_descriptions env id1 valdecl1 valdecl2 in
-      begin match valdecl2.val_prim with
-        None -> (pos, cc) :: signature_components env rem
-      | Some p -> signature_components env rem
+      begin match valdecl2.val_kind with
+        Val_prim p -> signature_components env rem
+      | _ -> (pos, cc) :: signature_components env rem
       end
   | (Tsig_type(id1, tydecl1), Tsig_type(id2, tydecl2), pos) :: rem ->
       type_declarations env id1 tydecl1 tydecl2;
@@ -206,6 +217,9 @@ and signature_components env = function
   | (Tsig_modtype(id1, info1), Tsig_modtype(id2, info2), pos) :: rem ->
       modtype_infos env id1 info1 info2;
       signature_components env rem
+  | (Tsig_class(id1, decl1), Tsig_class(id2, decl2), pos) :: rem ->
+      class_type env id1 decl1 decl2;
+      (pos, Tcoerce_none) :: signature_components env rem
   | _ ->
       fatal_error "Includemod.signature_components"
 
@@ -304,6 +318,14 @@ let include_err = function
       print_space(); print_string "does not match the interface ";
       print_string intf_name;
       print_string ":";
+      close_box()
+  | Class_type(id, d1, d2) ->
+      open_hvbox 2;
+      print_string "Class types do not match:"; print_space();
+      Printtyp.class_type id d1; 
+      print_break 1 (-2);
+      print_string "is not included in"; print_space();
+      Printtyp.class_type id d2;
       close_box()
 
 let report_error errlist =

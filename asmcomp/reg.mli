@@ -36,8 +36,8 @@ and stack_location =
   | Outgoing of int
 
 val dummy: t
-val new: Cmm.machtype_component -> t
-val newv: Cmm.machtype -> t array
+val create: Cmm.machtype_component -> t
+val createv: Cmm.machtype -> t array
 val clone: t -> t
 val at_location: Cmm.machtype_component -> location -> t
 

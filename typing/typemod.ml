@@ -31,6 +31,7 @@ type error =
   | With_no_component of Longident.t
   | Repeated_name of string * string
   | Non_generalizable of type_expr
+  | Non_generalizable_class of Ident.t * class_type
 
 exception Error of Location.t * error
 
@@ -142,6 +143,14 @@ and transl_signature env sg =
       let newenv = Env.add_signature sg env in
       let rem = transl_signature newenv srem in
       sg @ rem
+  | {psig_desc = Psig_class cl} :: srem ->
+      let (classes, newenv) = Typeclass.transl_class_types env cl in
+      let rem = transl_signature newenv srem in
+      List.flatten
+        (map_end
+           (fun (i, d, i', d', i'', d'') ->
+              [Tsig_class(i, d); Tsig_type(i', d'); Tsig_type(i'', d'')])
+           classes [rem])
 
 and transl_modtype_info env sinfo =
   match sinfo with
@@ -170,9 +179,9 @@ let check_unique_names sg =
   let type_names = ref StringSet.empty
   and module_names = ref StringSet.empty
   and modtype_names = ref StringSet.empty in
-  let check class loc set_ref name =
+  let check cl loc set_ref name =
     if StringSet.mem name !set_ref
-    then raise(Error(loc, Repeated_name(class, name)))
+    then raise(Error(loc, Repeated_name(cl, name)))
     else set_ref := StringSet.add name !set_ref in
   let check_item item =
     match item.pstr_desc with
@@ -188,12 +197,14 @@ let check_unique_names sg =
         check "module" item.pstr_loc module_names name
     | Pstr_modtype(name, decl) ->
         check "module type" item.pstr_loc modtype_names name
-    | Pstr_open lid -> () in
-  List.iter check_item sg
+    | Pstr_open lid -> ()
+    | Pstr_class decl -> ()
+  in
+    List.iter check_item sg
 
 (* Check that all core type schemes in a structure are closed *)
 
-let check_nongen_schemes str =
+let check_nongen_schemes env str =
   List.iter 
     (function
         Tstr_value(rec_flag, pat_exp_list) ->
@@ -202,8 +213,24 @@ let check_nongen_schemes str =
               if not (Ctype.closed_schema exp.exp_type) then
                 raise(Error(exp.exp_loc, Non_generalizable exp.exp_type)))
             pat_exp_list
+      | Tstr_class cl ->
+          List.iter
+	    (fun (id, imp) ->
+	       let desc = Env.find_class (Pident id) env in
+	       if not
+	         (List.for_all Ctype.closed_schema desc.cty_params
+	             &
+	          List.for_all Ctype.closed_schema desc.cty_args
+	             &
+	          Vars.fold (fun _ (_, ty) -> (or) (Ctype.closed_schema ty))
+                    desc.cty_vars
+      	       	    true)
+	       then
+	         raise(Error(imp.cl_loc,
+      	       	       Non_generalizable_class (id, desc))))
+	    cl
       | _ -> ())  (* Sub-structures have been checked before *)
-  str
+    str
 
 (* Type a module value expression *)
 
@@ -215,8 +242,8 @@ let rec type_module env smod =
         mod_type = Mtype.strengthen env mty path;
         mod_loc = smod.pmod_loc }
   | Pmod_structure sstr ->
-      let (str, sg, _) = type_structure env sstr in
-      check_nongen_schemes str;
+      let (str, sg, finalenv) = type_structure env sstr in
+      check_nongen_schemes finalenv str;
       { mod_desc = Tmod_structure str;
         mod_type = Tmty_signature sg;
         mod_loc = smod.pmod_loc }
@@ -326,6 +353,19 @@ and type_struct env = function
       let (path, mty) = type_module_path env loc lid in
       let sg = extract_sig_open env loc mty in
       type_struct (Env.open_signature path sg env) srem
+  | {pstr_desc = Pstr_class cl; pstr_loc = loc} :: srem ->
+      let (classes, new_env) = Typeclass.transl_classes env cl in
+      let (str_rem, sig_rem, final_env) = type_struct new_env srem in
+      (Tstr_class (List.map (fun (i, _, _, _, _, _, c) -> (i, c)) classes)
+       :: Tstr_type (List.map (fun (_, _, i, d, _, _, _) -> (i, d)) classes)
+       :: Tstr_type (List.map (fun (_, _, _, _, i, d, _) -> (i, d)) classes)
+       :: str_rem,
+       List.flatten
+         (map_end
+      	    (fun (i, d, i', d', i'', d'', _) ->
+               [Tsig_class(i, d); Tsig_type(i', d'); Tsig_type(i'', d'')])
+            classes [sig_rem]),
+       final_env)
 
 (* Error report *)
 
@@ -376,4 +416,11 @@ let report_error = function
       open_hovbox 0;
       print_string "The type of this expression,"; print_space();
       type_scheme typ; print_string ","; print_space();
-      print_string "contains type variables that cannot be generalized"
+      print_string "contains type variables that cannot be generalized";
+      close_box()
+  | Non_generalizable_class (id, desc) ->
+      open_hovbox 0;
+      print_string "The type of this class,"; print_space();
+      class_type id desc; print_string ","; print_space();
+      print_string "contains type variables that cannot be generalized";
+      close_box()

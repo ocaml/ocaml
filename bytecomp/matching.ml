@@ -51,7 +51,7 @@ let rec name_pattern default = function
       | Tpat_alias(p, id) -> id
       | _ -> name_pattern default rem
       end
-  | _ -> Ident.new default
+  | _ -> Ident.create default
 
 (* To remove aliases and bind named components *)
 
@@ -166,7 +166,7 @@ let make_record_matching all_labels = function
           let str =
             match lbl.lbl_mut with
               Immutable -> Alias
-            | Mutable -> Strict in
+            | Mutable -> StrictOpt in
           (Lprim(access, [arg]), str) :: make_args(pos + 1)
         end in
       {cases = []; args = make_args 0}
@@ -174,7 +174,7 @@ let make_record_matching all_labels = function
 let divide_record all_labels {cases = cl; args = al} =
   let num_fields = Array.length all_labels in
   let record_matching_line lbl_pat_list =
-    let patv = Array.new num_fields any_pat in
+    let patv = Array.create num_fields any_pat in
     List.iter (fun (lbl, pat) -> patv.(lbl.lbl_pos) <- pat) lbl_pat_list;
     Array.to_list patv in
   let rec divide = function

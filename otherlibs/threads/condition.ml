@@ -13,7 +13,7 @@
 
 type t = { mutable waiting: Thread.t list }
 
-let new () = { waiting = [] }
+let create () = { waiting = [] }
 
 let wait cond mut =
   Thread.critical_section := true;

@@ -20,7 +20,7 @@ val type_structure:
 val transl_signature:
         Env.t -> Parsetree.signature -> signature
 val check_nongen_schemes:
-        structure -> unit
+        Env.t -> structure -> unit
 
 type error =
     Unbound_module of Longident.t
@@ -33,6 +33,7 @@ type error =
   | With_no_component of Longident.t
   | Repeated_name of string * string
   | Non_generalizable of type_expr
+  | Non_generalizable_class of Ident.t * class_type
 
 exception Error of Location.t * error
 

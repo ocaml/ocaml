@@ -13,6 +13,7 @@
 
 (* To print values *)
 
+open Misc
 open Obj
 open Format
 open Longident
@@ -67,15 +68,15 @@ let rec find_constr tag num_const num_nonconst = function
 (* The user-defined printers. Also used for some builtin types. *)
 
 let printers = ref ([
-  Pident(Ident.new "print_int"), Predef.type_int,
+  Pident(Ident.create "print_int"), Predef.type_int,
     (fun x -> print_int (Obj.magic x : int));
-  Pident(Ident.new "print_float"), Predef.type_float,
+  Pident(Ident.create "print_float"), Predef.type_float,
     (fun x -> print_float(Obj.magic x : float));
-  Pident(Ident.new "print_char"), Predef.type_char,
+  Pident(Ident.create "print_char"), Predef.type_char,
     (fun x -> print_string "'";
               print_string (Char.escaped (Obj.magic x : char));
               print_string "'");
-  Pident(Ident.new "print_string"), Predef.type_string,
+  Pident(Ident.create "print_string"), Predef.type_string,
     (fun x -> print_string "\"";
               print_string (String.escaped (Obj.magic x : string));
               print_string "\"")
@@ -100,8 +101,8 @@ let print_qualified lookup_fun env ty_path name =
       print_string name
   | Pdot(p, s, pos) ->
       if try
-           match lookup_fun (Lident name) env with
-             Tconstr(ty_path', _) -> Path.same ty_path ty_path'
+           match (lookup_fun (Lident name) env).desc with
+             Tconstr(ty_path', _, _) -> Path.same ty_path ty_path'
            | _ -> false
          with Not_found -> false
       then print_string name
@@ -132,8 +133,8 @@ let print_value env obj ty =
     try
       find_printer env ty obj; ()
     with Not_found ->
-      match Ctype.repr ty with
-        Tvar _ ->
+      match (Ctype.repr ty).desc with
+        Tvar ->
           print_string "<poly>"
       | Tarrow(ty1, ty2) ->
           print_string "<fun>"
@@ -144,14 +145,14 @@ let print_value env obj ty =
           print_val_list 1 depth obj ty_list;
           if prio > 0 then print_string ")";
           close_box()
-      | Tconstr(path, []) when Path.same path Predef.path_exn ->
+      | Tconstr(path, [], _) when Path.same path Predef.path_exn ->
           if prio > 1
           then begin open_hovbox 2; print_string "(" end
           else open_hovbox 1;
           print_exception obj;
           if prio > 1 then print_string ")";
           close_box()
-      | Tconstr(path, [ty_arg]) when Path.same path Predef.path_list ->
+      | Tconstr(path, [ty_arg], _) when Path.same path Predef.path_list ->
           let rec print_conses depth cons =
             if Obj.is_block cons then begin
               print_val 0 (depth - 1) (Obj.field cons 0) ty_arg;
@@ -166,7 +167,7 @@ let print_value env obj ty =
           cautious (print_conses depth) obj;
           print_string "]";
           close_box()
-      | Tconstr(path, [ty_arg]) when Path.same path Predef.path_array ->
+      | Tconstr(path, [ty_arg], _) when Path.same path Predef.path_array ->
           let rec print_items depth i =
             if i < Obj.size obj then begin
               if i > 0 then begin print_string ";"; print_space() end;
@@ -178,7 +179,7 @@ let print_value env obj ty =
           cautious (print_items depth) 0;
           print_string "|]";
           close_box()
-      | Tconstr(path, ty_list) ->
+      | Tconstr(path, ty_list, _) ->
           begin try
             let decl = Env.find_type path env in
             match decl with
@@ -186,7 +187,7 @@ let print_value env obj ty =
                 print_string "<abstr>"
             | {type_kind = Type_abstract; type_manifest = Some body} ->
                 print_val prio depth obj
-                          (Ctype.substitute decl.type_params ty_list body)
+                          (Ctype.substitute [] decl.type_params ty_list body)
             | {type_kind = Type_variant constr_list} ->
                 let tag =
                   if Obj.is_block obj
@@ -195,7 +196,7 @@ let print_value env obj ty =
                 let (constr_name, constr_args) =
                   find_constr tag 0 0 constr_list in
                 let ty_args =
-                  List.map (Ctype.substitute decl.type_params ty_list)
+                  List.map (Ctype.substitute [] decl.type_params ty_list)
                       constr_args in
                 begin match ty_args with
                   [] ->
@@ -232,7 +233,7 @@ let print_value env obj ty =
                     print_label env path lbl_name;
                     print_string "="; print_cut();
                     let ty_arg =
-                      Ctype.substitute decl.type_params ty_list lbl_arg in
+                      Ctype.substitute [] decl.type_params ty_list lbl_arg in
                     cautious (print_val 0 (depth - 1) (Obj.field obj pos))
                              ty_arg;
                     close_box();
@@ -248,6 +249,10 @@ let print_value env obj ty =
           | Constr_not_found ->         (* raised by find_constr *)
               print_string "<unknown constructor>"
           end
+      | Tobject (_, _) ->
+      	  print_string "<obj>"
+      | Tfield(_, _, _) | Tnil | Tlink _ ->
+      	  fatal_error "Printval.print_value"
 
   and print_val_list prio depth obj ty_list =
     let rec print_list depth i = function

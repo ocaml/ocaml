@@ -34,6 +34,7 @@ type error =
   | Duplicate_label of string
   | Recursive_abbrev of string
   | Definition_mismatch of type_expr
+  | Illdefined_abbrev of string
 
 exception Error of Location.t * error
 

@@ -34,7 +34,7 @@ let init () =
    the same interfaces as the program itself. In addition, check that
    only authorized compilation units are referenced. *)
 
-let crc_interfaces = (Hashtbl.new 17 : (string, Digest.t) Hashtbl.t)
+let crc_interfaces = (Hashtbl.create 17 : (string, Digest.t) Hashtbl.t)
 
 let check_consistency file_name cu =
   List.iter

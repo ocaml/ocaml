@@ -75,10 +75,10 @@ external parse_engine :
     = "parse_engine"
 
 let env =
-  { s_stack = Array.new 100 0;
-    v_stack = Array.new 100 (Obj.repr ());
-    symb_start_stack = Array.new 100 0;
-    symb_end_stack = Array.new 100 0;
+  { s_stack = Array.create 100 0;
+    v_stack = Array.create 100 (Obj.repr ());
+    symb_start_stack = Array.create 100 0;
+    symb_end_stack = Array.create 100 0;
     stacksize = 100;
     stackbase = 0;
     curr_char = 0;
@@ -95,10 +95,10 @@ let env =
 let grow_stacks() =
   let oldsize = env.stacksize in
   let newsize = oldsize * 2 in
-  let new_s = Array.new newsize 0
-  and new_v = Array.new newsize (Obj.repr ())
-  and new_start = Array.new newsize 0
-  and new_end = Array.new newsize 0 in
+  let new_s = Array.create newsize 0
+  and new_v = Array.create newsize (Obj.repr ())
+  and new_start = Array.create newsize 0
+  and new_end = Array.create newsize 0 in
     Array.blit env.s_stack 0 new_s 0 oldsize;
     env.s_stack <- new_s;
     Array.blit env.v_stack 0 new_v 0 oldsize;

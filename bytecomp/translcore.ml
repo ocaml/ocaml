@@ -20,11 +20,12 @@ open Primitive
 open Path
 open Typedtree
 open Lambda
-
+open Translobj
 
 type error =
     Illegal_letrec_pat
   | Illegal_letrec_expr
+  | Free_super_var
 
 exception Error of Location.t * error
 
@@ -139,8 +140,8 @@ let primitives_table = create_hashtable 31 [
 ]
 
 let same_base_type ty1 ty2 =
-  match (Ctype.repr ty1, Ctype.repr ty2) with
-    (Tconstr(p1, []), Tconstr(p2, [])) -> Path.same p1 p2
+  match ((Ctype.repr ty1).desc, (Ctype.repr ty2).desc) with
+    (Tconstr(p1, [], _), Tconstr(p2, [], _)) -> Path.same p1 p2
   | (_, _) -> false
 
 let maybe_pointer arg =
@@ -148,11 +149,11 @@ let maybe_pointer arg =
       same_base_type arg.exp_type Predef.type_char)
 
 let array_kind arg =
-  match Ctype.repr arg.exp_type with
-    Tconstr(p, [ty]) when Path.same p Predef.path_array ->
-      begin match Ctype.repr ty with
-        Tvar v -> Pgenarray
-      | Tconstr(p, _) ->
+  match (Ctype.repr arg.exp_type).desc with
+    Tconstr(p, [ty], _) when Path.same p Predef.path_array ->
+      begin match (Ctype.repr ty).desc with
+        Tvar -> Pgenarray
+      | Tconstr(p, _, _) ->
           if Path.same p Predef.path_int or Path.same p Predef.path_char then
             Pintarray
           else if Path.same p Predef.path_float then
@@ -216,7 +217,7 @@ let transl_primitive p =
     with Not_found ->
       Pccall p in
   let rec make_params n =
-    if n <= 0 then [] else Ident.new "prim" :: make_params (n-1) in
+    if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
   let params = make_params p.prim_arity in
   Lfunction(params, Lprim(prim, List.map (fun id -> Lvar id) params))
 
@@ -252,7 +253,7 @@ let extract_float = function
 (* To find reasonable names for let-bound and lambda-bound idents *)
 
 let rec name_pattern default = function
-    [] -> Ident.new default
+    [] -> Ident.create default
   | (p, e) :: rem ->
       match p.pat_desc with
         Tpat_var id -> id
@@ -263,8 +264,10 @@ let rec name_pattern default = function
 
 let rec transl_exp e =
   match e.exp_desc with
-    Texp_ident(path, {val_prim = Some p}) ->
+    Texp_ident(path, {val_kind = Val_prim p}) ->
       transl_primitive p
+  | Texp_ident(path, {val_kind = Val_anc _}) ->
+      raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident(path, desc) ->
       transl_path path
   | Texp_constant cst ->
@@ -274,11 +277,18 @@ let rec transl_exp e =
   | Texp_function pat_expr_list ->
       let (params, body) = transl_function e.exp_loc pat_expr_list in
       Lfunction(params, body)
-  | Texp_apply({exp_desc = Texp_ident(path, {val_prim = Some p})}, args)
+  | Texp_apply({exp_desc = Texp_ident(path, {val_kind = Val_prim p})}, args)
     when List.length args = p.prim_arity ->
       Lprim(transl_prim p args, transl_list args)
   | Texp_apply(funct, args) ->
-      Lapply(transl_exp funct, transl_list args)
+      begin match transl_exp funct with
+        Lapply(lfunct, largs) ->
+          Lapply(lfunct, largs @ transl_list args)
+      | Lsend(lmet, lobj, largs) ->
+          Lsend(lmet, lobj, largs @ transl_list args)
+      | lexp ->
+          Lapply(lexp, transl_list args)
+      end
   | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list) ->
       Matching.for_multiple_match e.exp_loc
         (transl_list argl) (transl_cases pat_expr_list)
@@ -286,7 +296,7 @@ let rec transl_exp e =
       Matching.for_function e.exp_loc
         (transl_exp arg) (transl_cases pat_expr_list)
   | Texp_try(body, pat_expr_list) ->
-      let id = Ident.new "exn" in
+      let id = Ident.create "exn" in
       Ltrywith(transl_exp body, id,
                Matching.for_trywith (Lvar id) (transl_cases pat_expr_list))
   | Texp_tuple el ->
@@ -311,7 +321,7 @@ let rec transl_exp e =
           Lprim(Pmakeblock(0, Immutable), transl_path path :: ll)
       end
   | Texp_record ((lbl1, _) :: _ as lbl_expr_list) ->
-      let lv = Array.new (Array.length lbl1.lbl_all) Lstaticfail in
+      let lv = Array.create (Array.length lbl1.lbl_all) Lstaticfail in
       List.iter
         (fun (lbl, expr) -> lv.(lbl.lbl_pos) <- transl_exp expr)
         lbl_expr_list;
@@ -351,7 +361,7 @@ let rec transl_exp e =
       if len <= Config.max_young_wosize then
         Lprim(Pmakearray kind, transl_list expr_list)
       else begin
-        let v = Ident.new "makearray" in
+        let v = Ident.create "makearray" in
         let rec fill_fields pos = function
           [] ->
             Lvar v
@@ -379,6 +389,23 @@ let rec transl_exp e =
       Lfor(param, transl_exp low, transl_exp high, dir, transl_exp body)
   | Texp_when(cond, body) ->
       Lifthenelse(transl_exp cond, transl_exp body, Lstaticfail)
+  | Texp_send(expr, met) ->
+      Lsend(Lvar (meth met), transl_exp expr, [])
+  | Texp_new cl ->
+      Lprim(Pfield 0, [transl_path cl])
+  | Texp_instvar(path_self, path) ->
+      Lprim(Parrayrefu Paddrarray , [transl_path path_self; transl_path path])
+  | Texp_setinstvar(path_self, path, expr) ->
+      transl_setinstvar (transl_path path_self) path expr
+  | Texp_override(path_self, modifs) ->
+      let cpy = Ident.create "copy" in
+      Llet(Strict, cpy, Lapply(oo_prim "copy", [transl_path path_self]),
+      List.fold_right
+      	(fun (path, expr) rem ->
+	   Lsequence(transl_setinstvar (Lvar cpy) path expr,
+	             rem))
+	modifs
+	(Lvar cpy))
   | _ ->
       fatal_error "Translcore.transl"
 
@@ -419,6 +446,10 @@ and transl_let rec_flag pat_expr_list body =
         (id, lam) in
       Lletrec(List.map transl_case pat_expr_list, body)
 
+and transl_setinstvar self var expr =
+  Lprim(Parraysetu (if maybe_pointer expr then Paddrarray else Pintarray),
+                    [self; transl_path var; transl_exp expr])
+
 (* Compile an exception definition *)
 
 let transl_exception id decl =
@@ -436,3 +467,6 @@ let report_error = function
   | Illegal_letrec_expr ->
       print_string
       "This kind of expression is not allowed as right-hand side of `let rec'"
+  | Free_super_var ->
+      print_string
+        "Ancestor names can only be used to select inherited methods"

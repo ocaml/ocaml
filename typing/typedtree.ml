@@ -19,20 +19,30 @@ open Asttypes
 (* Type expressions for the core language *)
 
 type type_expr =
-    Tvar of type_variable
+  { mutable desc: type_desc; 
+    mutable level: int }
+
+and type_desc =
+    Tvar
   | Tarrow of type_expr * type_expr
   | Ttuple of type_expr list
-  | Tconstr of Path.t * type_expr list
-
-and type_variable =
-    { mutable tvar_level: int;
-      mutable tvar_link: type_expr option }
+  | Tconstr of Path.t * type_expr list * (Path.t * type_expr) list ref
+  | Tobject of type_expr * (Path.t * type_expr list) option ref
+  | Tfield of Label.t * type_expr * type_expr
+  | Tnil
+  | Tlink of type_expr
 
 (* Value descriptions *)
 
 type value_description =
   { val_type: type_expr;                       (* Type of the val *)
-    val_prim: Primitive.description option }   (* Is this a primitive? *)
+    val_kind: value_kind }
+
+and value_kind =
+    Val_reg				(* Regular value *)
+  | Val_prim of Primitive.description	(* Primitive *)
+  | Val_ivar of mutable_flag		(* Instance variable (mutable ?) *)
+  | Val_anc of (Label.t * Ident.t) list (* Ancestor *)
 
 (* Constructor descriptions *)
 
@@ -62,6 +72,18 @@ type label_description =
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
   | Record_float                        (* All fields are floats *)
+
+(* Type expressions for classes *)
+
+module Vars = Map.Make(Label)
+
+type class_type =
+  { cty_params: type_expr list;
+    cty_args: type_expr list;
+    cty_vars: (Asttypes.mutable_flag * type_expr) Vars.t;
+    cty_self: type_expr;
+    cty_concr: Label.t list;
+    mutable cty_new: type_expr option }
 
 (* Value expressions for the core language *)
 
@@ -105,6 +127,11 @@ and expression_desc =
   | Texp_for of
       Ident.t * expression * expression * direction_flag * expression
   | Texp_when of expression * expression
+  | Texp_send of expression * Label.t
+  | Texp_new of Path.t
+  | Texp_instvar of Path.t * Path.t
+  | Texp_setinstvar of Path.t * Path.t * expression
+  | Texp_override of Path.t * (Path.t * expression) list
 
 (* Type definitions *)
 
@@ -136,10 +163,25 @@ and signature_item =
   | Tsig_exception of Ident.t * exception_declaration
   | Tsig_module of Ident.t * module_type
   | Tsig_modtype of Ident.t * modtype_declaration
+  | Tsig_class of Ident.t * class_type
 
 and modtype_declaration =
     Tmodtype_abstract
   | Tmodtype_manifest of module_type
+
+(* Value expressions for classes *)
+
+type class_field =
+    Cf_inher of
+      Path.t * expression list * (Label.t * Ident.t) list *
+      (Label.t * Ident.t) list
+  | Cf_val of Label.t * Ident.t * private_flag * expression option
+  | Cf_meth of Label.t * expression
+
+type class_def =
+  { cl_args: pattern list;
+    cl_field: class_field list;
+    cl_loc: Location.t }
 
 (* Value expressions for the module language *)
 
@@ -166,6 +208,7 @@ and structure_item =
   | Tstr_module of Ident.t * module_expr
   | Tstr_modtype of Ident.t * module_type
   | Tstr_open of Path.t
+  | Tstr_class of (Ident.t * class_def) list
 
 and module_coercion =
     Tcoerce_none
@@ -201,5 +244,3 @@ let rev_let_bound_idents pat_expr_list =
 
 let let_bound_idents pat_expr_list =
   List.rev(rev_let_bound_idents pat_expr_list)
-
-      

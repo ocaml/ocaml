@@ -19,11 +19,11 @@ type t = { mutable stamp: int; mutable name: string; mutable global: bool }
 
 let currentstamp = ref 0
 
-let new s =
+let create s =
   incr currentstamp;
   { name = s; stamp = !currentstamp; global = false }
 
-let new_persistent s =
+let create_persistent s =
   { name = s; stamp = 0; global = true }
 
 let name i = i.name

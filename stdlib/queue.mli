@@ -21,7 +21,7 @@ type 'a t
 exception Empty
         (* Raised when [take] is applied to an empty queue. *)
 
-val new: unit -> 'a t
+val create: unit -> 'a t
         (* Return a new queue, initially empty. *)
 val add: 'a -> 'a t -> unit
         (* [add x q] adds the element [x] at the end of the queue [q]. *)

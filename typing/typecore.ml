@@ -35,6 +35,14 @@ type error =
   | Label_missing
   | Label_not_mutable of Longident.t
   | Bad_format of string
+  | Undefined_method_err of Label.t
+  | Unbound_class of Longident.t
+  | Virtual_class of Longident.t
+  | Unbound_instance_variable of string
+  | Instance_variable_not_mutable of string
+  | Not_subtype of type_expr * type_expr
+  | Outside_class
+  | Value_multiply_overridden of string
 
 exception Error of Location.t * error
 
@@ -59,7 +67,7 @@ let pattern_variables = ref ([]: (Ident.t * type_expr) list)
 let enter_variable loc name ty =
   if List.exists (fun (id, ty) -> Ident.name id = name) !pattern_variables
   then raise(Error(loc, Multiply_bound_variable));
-  let id = Ident.new name in
+  let id = Ident.create name in
   pattern_variables := (id, ty) :: !pattern_variables;
   id
 
@@ -89,7 +97,7 @@ let rec type_pat env sp =
       let pl = List.map (type_pat env) spl in
       { pat_desc = Tpat_tuple pl;
         pat_loc = sp.ppat_loc;
-        pat_type = Ttuple(List.map (fun p -> p.pat_type) pl) }
+        pat_type = newty (Ttuple(List.map (fun p -> p.pat_type) pl)) }
   | Ppat_construct(lid, sarg) ->
       let constr =
         try
@@ -154,7 +162,7 @@ let add_pattern_variables env =
   pattern_variables := [];
   List.fold_right
     (fun (id, ty) env ->
-      Env.add_value id {val_type = ty; val_prim = None} env)
+      Env.add_value id {val_type = ty; val_kind = Val_reg} env)
     pv env
 
 let type_pattern env spat =
@@ -188,6 +196,7 @@ let rec is_nonexpansive exp =
               lbl_exp_list
   | Texp_field(exp, lbl) -> is_nonexpansive exp
   | Texp_array [] -> true
+  | Texp_new _ -> true
   | _ -> false
 
 (* Typing of printf formats *)
@@ -212,26 +221,29 @@ let type_format loc fmt =
           '%' ->
             scan_format (j+1)
         | 's' ->
-            Tarrow(Predef.type_string, scan_format (j+1))
+            newty (Tarrow(Predef.type_string, scan_format (j+1)))
         | 'c' ->
-            Tarrow(Predef.type_char, scan_format (j+1))
+            newty (Tarrow(Predef.type_char, scan_format (j+1)))
         | 'd' | 'o' | 'x' | 'X' | 'u' ->
-            Tarrow(Predef.type_int, scan_format (j+1))
+            newty (Tarrow(Predef.type_int, scan_format (j+1)))
         | 'f' | 'e' | 'E' | 'g' | 'G' ->
-            Tarrow(Predef.type_float, scan_format (j+1))
+            newty (Tarrow(Predef.type_float, scan_format (j+1)))
         | 'b' ->
-            Tarrow(Predef.type_bool, scan_format (j+1))
+            newty (Tarrow(Predef.type_bool, scan_format (j+1)))
         | 'a' ->
             let ty_arg = newvar() in
-            Tarrow (Tarrow(ty_input, Tarrow (ty_arg, ty_result)),
-                    Tarrow (ty_arg, scan_format (j+1)))
+            newty (Tarrow (newty (Tarrow(ty_input,
+      	       	       	       	       	 newty (Tarrow (ty_arg, ty_result)))),
+                           newty (Tarrow (ty_arg, scan_format (j+1)))))
         | 't' ->
-            Tarrow(Tarrow(ty_input, ty_result), scan_format (j+1))
+            newty (Tarrow(newty (Tarrow(ty_input, ty_result)),
+      	       	       	  scan_format (j+1)))
         | c ->
             raise(Error(loc, Bad_format(String.sub fmt i (j-i))))
         end
     | _ -> scan_format (i+1) in
-  Tconstr(Predef.path_format, [scan_format 0; ty_input; ty_result])
+  newty
+    (Tconstr(Predef.path_format, [scan_format 0; ty_input; ty_result], ref []))
 
 (* Typing of expressions *)
 
@@ -246,7 +258,16 @@ let rec type_exp env sexp =
     Pexp_ident lid ->
       begin try
         let (path, desc) = Env.lookup_value lid env in
-        { exp_desc = Texp_ident(path, desc);
+        { exp_desc =
+            begin match (desc.val_kind, lid) with
+	      (Val_ivar _, Longident.Lident lab) ->
+      	        let (path_self, _) =
+                  Env.lookup_value (Longident.Lident "*self*") env
+                in
+                Texp_instvar (path_self, path)
+	    | _ ->
+	        Texp_ident(path, desc)
+      	    end;
           exp_loc = sexp.pexp_loc;
           exp_type = instance desc.val_type }
       with Not_found ->
@@ -269,7 +290,7 @@ let rec type_exp env sexp =
       Parmatch.check_partial sexp.pexp_loc cases;
       { exp_desc = Texp_function cases;
         exp_loc = sexp.pexp_loc;
-        exp_type = Tarrow(ty_arg, ty_res) }
+        exp_type = newty (Tarrow(ty_arg, ty_res)) }
   | Pexp_apply(sfunct, sargs) ->
       let funct = type_exp env sfunct in
       let rec type_args ty_fun = function
@@ -309,7 +330,7 @@ let rec type_exp env sexp =
       let expl = List.map (type_exp env) sexpl in
       { exp_desc = Texp_tuple expl;
         exp_loc = sexp.pexp_loc;
-        exp_type = Ttuple(List.map (fun exp -> exp.exp_type) expl) }
+        exp_type = newty (Ttuple(List.map (fun exp -> exp.exp_type) expl)) }
   | Pexp_construct(lid, sarg) ->
       let constr =
         try
@@ -425,24 +446,140 @@ let rec type_exp env sexp =
       let high = type_expect env shigh Predef.type_int in
       let (id, new_env) =
         Env.enter_value param {val_type = Predef.type_int;
-                                val_prim = None} env in
+                                val_kind = Val_reg} env in
       let body = type_statement new_env sbody in
       { exp_desc = Texp_for(id, low, high, dir, body);
         exp_loc = sexp.pexp_loc;
         exp_type = Predef.type_unit }
-  | Pexp_constraint(sarg, sty) ->
-      let ty = Typetexp.transl_simple_type env false sty in
-      let arg = type_expect env sarg ty in
+  | Pexp_constraint(sarg, sty, sty') ->
+      let (ty, ty') =
+        match (sty, sty') with
+      	  (None, None) ->
+	    none, none
+	| (Some sty, None) ->
+            let ty = Typetexp.transl_simple_type env false sty in
+	    (ty, ty)
+	| (None, Some sty') ->
+            let ty' = Typetexp.transl_simple_type env false sty' in
+            (enlarge_type env (Typetexp.type_variable_list ()) ty', ty')
+	| (Some sty, Some sty') ->
+            let ty = Typetexp.transl_simple_type env false sty in
+            let ty' = Typetexp.transl_simple_type env false sty' in
+	    begin try subtype env (Typetexp.type_variable_list ()) ty ty' with
+	      Unify ->
+	        raise(Error(sexp.pexp_loc, Not_subtype(ty, ty')))
+	    end;
+	    (ty, ty')
+      in let arg = type_expect env sarg ty in
       { exp_desc = arg.exp_desc;
         exp_loc = arg.exp_loc;
-        exp_type = ty }
+        exp_type = ty' }
   | Pexp_when(scond, sbody) ->
       let cond = type_expect env scond Predef.type_bool in
       let body = type_exp env sbody in
       { exp_desc = Texp_when(cond, body);
         exp_loc = sexp.pexp_loc;
         exp_type = body.exp_type }
-      
+  | Pexp_send (e, met) ->
+      let object = type_exp env e in
+      begin try
+        let typ = filter_method env met object.exp_type in
+        let exp =
+      	  match object.exp_desc with
+	    Texp_ident(path, {val_kind = Val_anc methods}) ->
+      	      let (path, desc) =
+                Env.lookup_value (Longident.Lident "*self*") env
+              in
+              let method_id = List.assoc met methods in
+	      let method_type = newvar () in
+	      let (obj_ty, res_ty) = filter_arrow env method_type in
+	      unify env obj_ty desc.val_type;
+	      unify env res_ty typ;
+	      Texp_apply({exp_desc = Texp_ident(Path.Pident method_id,
+      	       	       	       	                {val_type = method_type;
+      	       	       	       	                 val_kind = Val_reg});
+      	       	          exp_loc = sexp.pexp_loc;
+      	       	          exp_type = method_type},
+                         [{exp_desc = Texp_ident(path, desc);
+      	       	       	   exp_loc = object.exp_loc;
+      	       	       	   exp_type = desc.val_type}])
+          | _ ->
+	      Texp_send(object, met)
+        in
+          { exp_desc = exp; exp_loc = sexp.pexp_loc; exp_type = typ}
+      with Unify ->
+      	raise(Error(e.pexp_loc,	Undefined_method_err met))
+      end
+  | Pexp_new cl ->
+      let (cl_path, cl_typ) =
+        try Env.lookup_class cl env with Not_found ->
+          raise(Error(sexp.pexp_loc, Unbound_class cl))
+      in
+      	begin match cl_typ.cty_new with
+	  None ->
+	    raise(Error(sexp.pexp_loc, Virtual_class cl))
+        | Some ty ->
+            { exp_desc = Texp_new cl_path;
+      	      exp_loc = sexp.pexp_loc;
+	      exp_type = instance ty }
+        end
+  | Pexp_setinstvar (lab, snewval) ->
+      let name = lab.Label.lab_name in
+      begin try
+        let (path, desc) = Env.lookup_value (Longident.Lident name) env in
+        match desc.val_kind with
+	  Val_ivar Mutable ->
+	    let newval = type_expect env snewval desc.val_type in
+      	    let (path_self, _) =
+              Env.lookup_value (Longident.Lident "*self*") env
+            in
+            { exp_desc = Texp_setinstvar(path_self, path, newval);
+              exp_loc = sexp.pexp_loc;
+              exp_type = Predef.type_unit }
+	| Val_ivar _ ->
+      	    raise(Error(sexp.pexp_loc, Instance_variable_not_mutable name))
+	| _ ->
+            raise(Error(sexp.pexp_loc, Unbound_instance_variable name))
+      with
+	Not_found ->
+          raise(Error(sexp.pexp_loc, Unbound_instance_variable name))
+      end        
+  | Pexp_override lst ->
+      List.fold_right
+      	(fun (lab, _) l ->
+	   if List.exists (Label. (=) lab) l then
+	     raise(Error(sexp.pexp_loc,
+      	       	       	 Value_multiply_overridden lab.Label.lab_name));
+      	   lab::l)
+	lst
+	[];
+      let (path_self, {val_type = self_ty}) =
+      	try
+          Env.lookup_value (Longident.Lident "*self*") env
+	with Not_found ->
+	  raise(Error(sexp.pexp_loc, Outside_class))
+      in
+      let type_override (lab, snewval) =
+        let name = lab.Label.lab_name in
+        begin try
+          let (path, desc) = Env.lookup_value (Longident.Lident name) env in
+          match desc.val_kind with
+	    Val_ivar _ ->
+              (path, type_expect env snewval desc.val_type)
+	  | _ ->
+              raise(Error(sexp.pexp_loc, Unbound_instance_variable name))
+        with
+	  Not_found ->
+            raise(Error(sexp.pexp_loc, Unbound_instance_variable name))
+        end
+      in
+      let modifs = List.map type_override lst in
+      { exp_desc = Texp_override(path_self, modifs);
+      	exp_loc = sexp.pexp_loc;
+	exp_type = self_ty }
+
+      (* let obj = Oo.copy self in obj.x <- e; obj *)
+
 (* Typing of an expression with an expected type.
    Some constructs are treated specially to provide better error messages. *)
 
@@ -454,8 +591,8 @@ and type_expect env sexp ty_expected =
           exp_loc = sexp.pexp_loc;
           exp_type =
             (* Terrible hack for format strings *)
-            match Ctype.repr ty_expected with
-              Tconstr(path, _) when Path.same path Predef.path_format ->
+            match (repr ty_expected).desc with
+              Tconstr(path, _, _) when Path.same path Predef.path_format ->
                 type_format sexp.pexp_loc s
             | _ -> Predef.type_string } in
       unify_exp env exp ty_expected;
@@ -481,7 +618,7 @@ and type_expect env sexp ty_expected =
 
 and type_statement env sexp =
     let exp = type_exp env sexp in
-    match Ctype.repr exp.exp_type with
+    match (repr exp.exp_type).desc with
       Tarrow(_, _) ->
         Location.print_warning sexp.pexp_loc
           "this function application is partial,\n\
@@ -505,7 +642,8 @@ and type_cases env ty_arg ty_res caselist =
 and type_let env rec_flag spat_sexp_list =
   begin_def();
   let (pat_list, new_env) =
-    type_pattern_list env (List.map (fun (spat, sexp) -> spat) spat_sexp_list) in
+    type_pattern_list env (List.map (fun (spat, sexp) -> spat) spat_sexp_list)
+  in
   let exp_env =
     match rec_flag with Nonrecursive -> env | Recursive -> new_env in
   let exp_list =
@@ -527,20 +665,48 @@ and type_let env rec_flag spat_sexp_list =
 (* Typing of toplevel bindings *)
 
 let type_binding env rec_flag spat_sexp_list =
-  reset_def();
   Typetexp.reset_type_variables();
   type_let env rec_flag spat_sexp_list
 
 (* Typing of toplevel expressions *)
 
 let type_expression env sexp =
-  reset_def();
   Typetexp.reset_type_variables();
   begin_def();
   let exp = type_exp env sexp in
   end_def();
   if is_nonexpansive exp then generalize exp.exp_type;
   exp
+
+(* Typing of methods *)
+
+let type_method env self self_name sexp =
+  let (obj, env) =
+    Env.enter_value "*self*" {val_type = self; val_kind = Val_reg} env
+  in
+  let pattern =
+    { pat_desc = Tpat_var obj;
+      pat_loc = Location.none;
+      pat_type = self }
+  in
+  let (pattern, env) =
+    match self_name with
+      None      ->
+        (pattern, env)
+    | Some name ->
+        let (self_name, env) =
+          Env.enter_value name {val_type = self; val_kind = Val_reg} env
+        in
+        ({ pat_desc = Tpat_alias (pattern, self_name);
+	   pat_loc = Location.none;
+	   pat_type = self },
+	 env)
+  in
+  let exp = type_exp env sexp in
+  ({ exp_desc = Texp_function [(pattern, exp)];
+     exp_loc = sexp.pexp_loc;
+     exp_type = newty (Tarrow(pattern.pat_type, exp.exp_type)) },
+   exp.exp_type)
 
 (* Error report *)
 
@@ -563,6 +729,8 @@ let report_error = function
       print_string " argument(s)";
       close_box()
   | Label_mismatch(lid, actual, expected) ->
+      reset ();
+      mark_loops actual; mark_loops expected;
       open_hovbox 0;
       print_string "The label "; longident lid;
       print_space(); print_string "belongs to the type"; print_space();
@@ -571,6 +739,8 @@ let report_error = function
       type_expr expected;
       close_box()
   | Pattern_type_clash(inferred, expected) ->
+      reset ();
+      mark_loops inferred; mark_loops expected;
       open_hovbox 0;
       print_string "This pattern matches values of type"; print_space();
       type_expr inferred; print_space();
@@ -582,6 +752,8 @@ let report_error = function
   | Orpat_not_closed ->
       print_string "A pattern with | must not bind variables"
   | Expr_type_clash(inferred, expected) ->
+      reset ();
+      mark_loops inferred; mark_loops expected;
       open_hovbox 0;
       print_string "This expression has type"; print_space();
       type_expr inferred; print_space();
@@ -589,7 +761,7 @@ let report_error = function
       type_expr expected;
       close_box()
   | Apply_non_function typ ->
-      begin match Ctype.repr typ with
+      begin match (repr typ).desc with
         Tarrow(_, _) ->
           print_string "This function is applied to too many arguments"
       | _ ->
@@ -605,3 +777,30 @@ let report_error = function
       print_string " is not mutable"
   | Bad_format s ->
       print_string "Bad format `"; print_string s; print_string "'"
+  | Undefined_method_err me ->
+      print_string "This expression has no method ";
+      print_string me.Label.lab_name
+  | Unbound_class cl ->
+      print_string "Unbound class "; longident cl
+  | Virtual_class cl ->
+      print_string "One cannot create instances of the virtual class ";
+      longident cl
+  | Unbound_instance_variable v ->
+      print_string "Unbound instance variable ";
+      print_string v
+  | Instance_variable_not_mutable v ->
+      print_string " The instance variable "; print_string v;
+      print_string " is not mutable"
+  | Not_subtype(ty, ty') ->
+      reset ();
+      mark_loops ty; mark_loops ty';
+      open_hovbox 0;
+      type_expr ty; print_space();
+      print_string "is not a subtype of"; print_space ();
+      type_expr ty';
+      close_box()
+  | Outside_class ->
+      print_string "Object duplication outside a class definition."
+  | Value_multiply_overridden v ->
+      print_string "The instance variable "; print_string v;
+      print_string " is overridden several times"

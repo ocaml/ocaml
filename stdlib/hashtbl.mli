@@ -18,12 +18,11 @@
 type ('a, 'b) t
         (* The type of hash tables from type ['a] to type ['b]. *)
 
-val new : int -> ('a,'b) t
-        (* [Hashtbl.new n] creates a new, empty hash table,
-           with initial size [n].
-           The table grows as needed, so [n] is just an initial guess.
-           Better results are said to be achieved when [n] is a prime
-           number. *)
+val create : int -> ('a,'b) t
+        (* [Hashtbl.create n] creates a new, empty hash table, with
+           initial size [n].  The table grows as needed, so [n] is
+           just an initial guess.  Better results are said to be
+           achieved when [n] is a prime number. *)
 
 val clear : ('a, 'b) t -> unit
         (* Empty a hash table. *)

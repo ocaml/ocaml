@@ -826,6 +826,16 @@ value interprete(prog, prog_size)
       pc++;
       Next;
 
+/* Object-oriented operations */
+
+#define Lookup(obj, lab) \
+  Field (Field (Field (obj, 0), ((lab) >> 16) / sizeof (value)), \
+	 ((lab) / sizeof (value)) & 0xFF)
+
+    Instruct(GETMETHOD):
+      accu = Lookup(sp[0], accu);
+      Next;
+
 /* Machine control */
 
     Instruct(STOP):

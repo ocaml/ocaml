@@ -43,7 +43,7 @@ module Make(Ord: OrderedType) = struct
         Empty -> 0
       | Node(_,_,_,_,h) -> h
 
-    let new l x d r =
+    let create l x d r =
       let hl = height l and hr = height r in
       Node(l, x, d, r, (if hl >= hr then hl + 1 else hr + 1))
 
@@ -55,24 +55,24 @@ module Make(Ord: OrderedType) = struct
           Empty -> invalid_arg "Set.bal"
         | Node(ll, lv, ld, lr, _) ->
             if height ll >= height lr then
-              new ll lv ld (new lr x d r)
+              create ll lv ld (create lr x d r)
             else begin
               match lr with
                 Empty -> invalid_arg "Set.bal"
               | Node(lrl, lrv, lrd, lrr, _)->
-                  new (new ll lv ld lrl) lrv lrd (new lrr x d r)
+                  create (create ll lv ld lrl) lrv lrd (create lrr x d r)
             end
       end else if hr > hl + 2 then begin
         match r with
           Empty -> invalid_arg "Set.bal"
         | Node(rl, rv, rd, rr, _) ->
             if height rr >= height rl then
-              new (new l x d rl) rv rd rr
+              create (create l x d rl) rv rd rr
             else begin
               match rl with
                 Empty -> invalid_arg "Set.bal"
               | Node(rll, rlv, rld, rlr, _) ->
-                  new (new l x d rll) rlv rld (new rlr rv rd rr)
+                  create (create l x d rll) rlv rld (create rlr rv rd rr)
             end
       end else
         Node(l, x, d, r, (if hl >= hr then hl + 1 else hr + 1))

@@ -60,6 +60,7 @@ type instruction =
   | Kintcomp of comparison
   | Koffsetint of int
   | Koffsetref of int
+  | Kgetmethod
   | Kstop
 
 let immed_min = -0x40000000

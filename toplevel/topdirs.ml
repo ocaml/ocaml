@@ -149,8 +149,8 @@ let find_printer_type lid =
     let (path, desc) = Env.lookup_value lid !toplevel_env in
     Ctype.begin_def();
     let ty_arg = Ctype.newvar() in
-    Ctype.unify !toplevel_env (Tarrow(ty_arg, Predef.type_unit))
-                               (Ctype.instance desc.val_type);
+    Ctype.unify !toplevel_env (Ctype.newty (Tarrow(ty_arg, Predef.type_unit)))
+                              (Ctype.instance desc.val_type);
     Ctype.end_def();
     Ctype.generalize ty_arg;
     (ty_arg, path)
@@ -218,16 +218,16 @@ let dir_trace lid =
         overwrite_closure clos
          (Obj.repr (fun arg -> Trace.print_trace (current_environment()) arg));
         (* Warn if this is a primitive *)
-        match desc.val_prim with
-          None ->
-            Printtyp.longident lid; print_string " is now traced.";
-            print_newline()
-        | Some p ->
+        match desc.val_kind with
+          Val_prim p ->
             open_hovbox 0;
             print_string "Warning: "; Printtyp.longident lid;
             print_string " is an external function."; print_space();
             print_string "Inlined calls will not be traced.";
             close_box(); print_newline()
+        | _ ->
+            Printtyp.longident lid; print_string " is now traced.";
+            print_newline()
       end else begin
         Printtyp.longident lid; print_string " is not a function.";
         print_newline()

@@ -28,7 +28,7 @@ val value_description: t -> value_description -> value_description
 val type_declaration: t -> type_declaration -> type_declaration
 val exception_declaration:
         t -> exception_declaration -> exception_declaration
+val class_type: t -> class_type -> class_type
 val modtype: t -> module_type -> module_type
 val signature: t -> signature -> signature
 val modtype_declaration: t -> modtype_declaration -> modtype_declaration
-

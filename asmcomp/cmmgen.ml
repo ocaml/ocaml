@@ -27,7 +27,7 @@ open Cmm
 let bind name arg fn =
   match arg with
     Cvar _ | Cconst_int _ | Cconst_symbol _ | Cconst_pointer _ -> fn arg
-  | _ -> let id = Ident.new name in Clet(id, arg, fn (Cvar id))
+  | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
 (* Block headers. Meaning of the tag field:
        0 - 248: regular blocks
@@ -264,7 +264,7 @@ let float_array_set arr ofs newval =
 
 let string_length exp =
   bind "str" exp (fun str ->
-    let tmp_var = Ident.new "tmp" in
+    let tmp_var = Ident.create "tmp" in
     Clet(tmp_var,
          Cop(Csubi,
              [Cop(Clsl,
@@ -275,6 +275,16 @@ let string_length exp =
              [Cvar tmp_var;
               Cop(Cloadchunk Byte_unsigned,
                   [Cop(Cadda, [str; Cvar tmp_var])])])))
+
+(* Message sending *)
+
+let lookup_label obj lab =
+  bind "lab" lab (fun lab ->
+    let table = Cop (Cload typ_addr, [obj]) in
+    let buck_index = Cop(Clsr, [lab; Cconst_int 16]) in
+    let bucket = Cop (Cload typ_addr, [Cop (Cadda, [table; buck_index])]) in
+    let item_index = Cop (Cand, [lab; Cconst_int (255 * size_addr)]) in
+    Cop (Cload typ_addr, [Cop (Cadda, [bucket; item_index])]))
 
 (* To compile "let rec" over values *)
 
@@ -354,7 +364,7 @@ let transl_constant = function
 
 (* Translate an expression *)
 
-let functions = (Queue.new() : (string * Ident.t list * ulambda) Queue.t)
+let functions = (Queue.create() : (string * Ident.t list * ulambda) Queue.t)
 
 let rec transl = function
     Uvar id ->
@@ -397,9 +407,20 @@ let rec transl = function
       Cop(Capply typ_addr,
           Cconst_symbol(apply_function arity) ::
           List.map transl (args @ [clos]))
+  | Usend(met, obj, []) ->
+      bind "obj" (transl obj) (fun obj ->
+      bind "met" (lookup_label obj (transl met)) (fun clos ->
+        Cop(Capply typ_addr, [get_field clos 0; obj; clos])))
+  | Usend(met, obj, args) ->
+      let arity = List.length args + 1 in
+      bind "obj" (transl obj) (fun obj ->
+      bind "met" (lookup_label obj (transl met)) (fun clos ->
+        Cop(Capply typ_addr,
+            Cconst_symbol(apply_function arity) ::
+	    obj :: (List.map transl args) @ [clos])))
   | Ulet(id, exp, body) ->
       if is_unboxed_float exp then begin
-        let unboxed_id = Ident.new (Ident.name id) in
+        let unboxed_id = Ident.create (Ident.name id) in
         let (tr_body, need_boxed, is_assigned) =
           subst_boxed_float id unboxed_id (transl body) in
         if need_boxed & is_assigned then
@@ -817,6 +838,52 @@ let rec transl_all_functions already_translated cont =
   with Queue.Empty ->
     cont
 
+(* Translate a toplevel structure definition *)
+
+let rec transl_structure glob = function
+    Uprim(Pmakeblock(tag, mut), args) ->
+      (* Scan the args, storing those that are not identifiers and
+         returning a hashtable id -> position in block
+         for those that are idents. *)
+      let map = Hashtbl.create 17 in
+      let rec make_stores pos = function
+        [] -> Ctuple []
+      | Uvar v :: rem ->
+          Hashtbl.add map v pos;
+          make_stores (pos+1) rem
+      | ulam :: rem ->
+          Csequence(Cop(Cstore,
+                        [field_address (Cconst_symbol glob) pos; transl ulam]),
+                    make_stores (pos+1) rem) in
+      let c = make_stores 0 args in
+      (c, map, List.length args)
+  | Usequence(e1, e2) ->
+      let (c2, map, size) = transl_structure glob e2 in
+      (Csequence(remove_unit(transl e1), c2), map, size)
+  | Ulet(id, arg, body) ->
+      let (cbody, map, size) = transl_structure glob body in
+      (Clet(id, transl arg, add_store glob id map cbody), map, size)
+  | Uletrec(bindings, body) ->
+      let (cbody, map, size) = transl_structure glob body in
+      (transl_letrec bindings (add_stores glob bindings map cbody), map, size)
+  | Uprim(Psetglobal id, [arg]) ->
+      transl_structure glob arg
+  | _ ->
+      fatal_error "Cmmgen.transl_structure"
+
+and add_store glob id map code =
+  let rec store = function
+    [] -> code
+  | pos :: rem ->
+      Csequence(Cop(Cstore, [field_address (Cconst_symbol glob) pos; Cvar id]),
+                store rem) in
+  store (Hashtbl.find_all map id)
+
+and add_stores glob bindings map code =
+  match bindings with
+    [] -> code
+  | (id, def) :: rem -> add_stores glob rem map (add_store glob id map code) 
+
 (* Emit structured constants *)
 
 let rec emit_constant symb cst cont =
@@ -915,15 +982,15 @@ let compunit size ulam =
 *)
 
 let apply_function arity =
-  let arg = Array.new arity (Ident.new "arg") in
-  for i = 1 to arity - 1 do arg.(i) <- Ident.new "arg" done;
-  let clos = Ident.new "clos" in
+  let arg = Array.create arity (Ident.create "arg") in
+  for i = 1 to arity - 1 do arg.(i) <- Ident.create "arg" done;
+  let clos = Ident.create "clos" in
   let rec app_fun clos n =
     if n = arity-1 then
       Cop(Capply typ_addr,
           [get_field (Cvar clos) 0; Cvar arg.(n); Cvar clos])
     else begin
-      let newclos = Ident.new "clos" in
+      let newclos = Ident.create "clos" in
       Clet(newclos,
            Cop(Capply typ_addr,
                [get_field (Cvar clos) 0; Cvar arg.(n); Cvar clos]),
@@ -958,15 +1025,15 @@ let apply_function arity =
                 clos1.car clos2.car ... closN-2.car clos.car arg clos))) *)
 
 let final_curry_function arity =
-  let last_arg = Ident.new "arg" in
-  let last_clos = Ident.new "clos" in
+  let last_arg = Ident.create "arg" in
+  let last_clos = Ident.create "clos" in
   let rec curry_fun args clos n =
     if n = 0 then
       Cop(Capply typ_addr,
           get_field (Cvar clos) 2 ::
           args @ [Cvar last_arg; Cvar clos])
     else begin
-      let newclos = Ident.new "clos" in
+      let newclos = Ident.create "clos" in
       Clet(newclos,
            get_field (Cvar clos) 3,
            curry_fun (get_field (Cvar clos) 2 :: args) newclos (n-1))
@@ -984,7 +1051,7 @@ let rec intermediate_curry_functions arity num =
   else begin
     let name1 = "caml_curry" ^ string_of_int arity in
     let name2 = if num = 0 then name1 else name1 ^ "_" ^ string_of_int num in
-    let arg = Ident.new "arg" and clos = Ident.new "clos" in
+    let arg = Ident.create "arg" and clos = Ident.create "clos" in
     Cfunction
      {fun_name = name2;
       fun_args = [arg, typ_addr; clos, typ_addr];

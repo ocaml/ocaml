@@ -33,6 +33,8 @@ let mkmod d =
   { pmod_desc = d; pmod_loc = symbol_loc() }
 let mkstr d =
   { pstr_desc = d; pstr_loc = symbol_loc() }
+let mkfield d =
+  { pfield_desc = d; pfield_loc = symbol_loc() }
 
 let mkoperator name pos =
   { pexp_desc = Pexp_ident(Lident name); pexp_loc = rhs_loc pos }
@@ -73,6 +75,7 @@ let rec mkrangepat c1 c2 =
   if c1 = c2 then mkpat(Ppat_constant(Const_char c1)) else
   mkpat(Ppat_or(mkpat(Ppat_constant(Const_char c1)),
                 mkrangepat (Char.chr(Char.code c1 + 1)) c2))
+
 %}
 
 /* Tokens */
@@ -86,10 +89,14 @@ let rec mkrangepat c1 c2 =
 %token BARRBRACKET
 %token BEGIN
 %token <char> CHAR
+%token CLASS
+%token CLOSED
 %token COLON
 %token COLONCOLON
 %token COLONEQUAL
+%token COLONGREATER
 %token COMMA
+%token CONSTRAINT
 %token DO
 %token DONE
 %token DOT
@@ -109,6 +116,7 @@ let rec mkrangepat c1 c2 =
 %token FUN
 %token FUNCTION
 %token FUNCTOR
+%token GREATERRBRACE
 %token GREATERRBRACKET
 %token IF
 %token IN
@@ -117,8 +125,10 @@ let rec mkrangepat c1 c2 =
 %token <string> INFIXOP2
 %token <string> INFIXOP3
 %token <string> INFIXOP4
+%token INHERIT
 %token <int> INT
 %token LBRACE
+%token LBRACELESS
 %token LBRACKET
 %token LBRACKETBAR
 %token LBRACKETLESS
@@ -127,14 +137,17 @@ let rec mkrangepat c1 c2 =
 %token <string> LIDENT
 %token LPAREN
 %token MATCH
+%token METHOD
 %token MINUSGREATER
 %token MODULE
 %token MUTABLE
+%token NEW
 %token OF
 %token OPEN
 %token OR
 %token PARSER
 %token <string> PREFIXOP
+%token PRIVATE
 %token QUESTION
 %token QUOTE
 %token RBRACE
@@ -157,6 +170,7 @@ let rec mkrangepat c1 c2 =
 %token <string> UIDENT
 %token UNDERSCORE
 %token VAL
+%token VIRTUAL
 %token WHEN
 %token WHILE
 %token WITH
@@ -184,6 +198,7 @@ let rec mkrangepat c1 c2 =
 %right prec_unary_minus                 /* - unary */
 %left  prec_appl                        /* function application */
 %right prec_constr_appl                 /* constructor application */
+%left  SHARP				/* method call */
 %left  DOT DOTLPAREN DOTLBRACKET        /* record access, array access */
 %right PREFIXOP                         /* ! */
 
@@ -273,6 +288,8 @@ structure_item:
       { mkstr(Pstr_modtype($3, $5)) }
   | OPEN mod_longident
       { mkstr(Pstr_open $2) }
+  | CLASS class_list
+      { mkstr(Pstr_class (List.rev $2)) }
 ;
 module_binding:
     EQUAL module_expr
@@ -322,6 +339,8 @@ signature_item:
       { mksig(Psig_open $2) }
   | INCLUDE module_type
       { mksig(Psig_include $2) }
+  | CLASS class_type_list
+      { mksig(Psig_class (List.rev $2)) }
 ;
 
 module_declaration:
@@ -396,12 +415,14 @@ expr:
       { mkuminus $1 $2 }
   | simple_expr DOT label_longident LESSMINUS expr
       { mkexp(Pexp_setfield($1, $3, $5)) }
-  | simple_expr DOTLPAREN expr RPAREN LESSMINUS expr
+  | simple_expr DOT LPAREN expr RPAREN LESSMINUS expr
       { mkexp(Pexp_apply(mkexp(Pexp_ident(array_function "Array" "set")),
-                         [$1; $3; $6])) }
-  | simple_expr DOTLBRACKET expr RBRACKET LESSMINUS expr
+                         [$1; $4; $7])) }
+  | simple_expr DOT LBRACKET expr RBRACKET LESSMINUS expr
       { mkexp(Pexp_apply(mkexp(Pexp_ident(array_function "String" "set")),
-                         [$1; $3; $6])) }
+                         [$1; $4; $7])) }
+  | label LESSMINUS expr
+      { mkexp(Pexp_setinstvar($1, $3)) }
 ;
 simple_expr:
     val_longident
@@ -414,16 +435,16 @@ simple_expr:
       { $2 }
   | BEGIN expr END
       { $2 }
-  | LPAREN expr COLON core_type RPAREN
-      { mkexp(Pexp_constraint($2, $4)) }
+  | LPAREN expr type_constraint RPAREN
+      { let (t, t') = $3 in mkexp(Pexp_constraint($2, t, t')) }
   | simple_expr DOT label_longident
       { mkexp(Pexp_field($1, $3)) }
-  | simple_expr DOTLPAREN expr RPAREN
+  | simple_expr DOT LPAREN expr RPAREN
       { mkexp(Pexp_apply(mkexp(Pexp_ident(array_function "Array" "get")),
-                         [$1; $3])) }
-  | simple_expr DOTLBRACKET expr RBRACKET
+                         [$1; $4])) }
+  | simple_expr DOT LBRACKET expr RBRACKET
       { mkexp(Pexp_apply(mkexp(Pexp_ident(array_function "String" "get")),
-                         [$1; $3])) }
+                         [$1; $4])) }
   | LBRACE lbl_expr_list RBRACE
       { mkexp(Pexp_record(List.rev $2)) }
   | LBRACKETLESS stream_expr GREATERRBRACKET
@@ -438,7 +459,15 @@ simple_expr:
       { mklistexp(List.rev $2) }
   | PREFIXOP simple_expr
       { mkexp(Pexp_apply(mkoperator $1 1, [$2])) }
-;      
+  | simple_expr SHARP label
+      { mkexp(Pexp_send($1, $3)) }
+  | NEW class_longident
+      { mkexp(Pexp_new($2)) }
+  | LBRACELESS label_expr_list GREATERRBRACE
+      { mkexp(Pexp_override(List.rev $2)) }
+  | LBRACELESS GREATERRBRACE
+      { mkexp(Pexp_override []) }
+;
 simple_expr_list:
     simple_expr
       { [$1] }
@@ -458,8 +487,8 @@ let_binding:
 fun_binding:
     EQUAL expr %prec prec_let
       { $2 }
-  | COLON core_type EQUAL expr %prec prec_let
-      { mkexp(Pexp_constraint($4,$2)) }
+  | type_constraint EQUAL expr %prec prec_let
+      { let (t, t') = $1 in mkexp(Pexp_constraint($3, t, t')) }
   | simple_pattern fun_binding
       { mkexp(Pexp_function[$1,$2]) }
 ;
@@ -525,9 +554,23 @@ lbl_expr_list:
   | lbl_expr_list SEMI label_longident EQUAL expr %prec prec_list
       { ($3, $5) :: $1 }
 ;
+label_expr_list:
+    label EQUAL expr %prec prec_list
+      { [$1,$3] }
+  | label_expr_list SEMI label EQUAL expr %prec prec_list
+      { ($3, $5) :: $1 }
+;
 expr_semi_list:
     expr %prec prec_list                        { [$1] }
   | expr_semi_list SEMI expr %prec prec_list    { $3 :: $1 }
+;
+type_constraint:
+    COLON core_type
+      { (Some $2, None) }
+  | COLON core_type COLONGREATER core_type
+      { (Some $2, Some $4) }
+  | COLONGREATER core_type
+      { (None, Some $2) }
 ;
 
 /* Patterns */
@@ -585,6 +628,180 @@ lbl_pattern_list:
 primitive_declaration:
     STRING                                      { [$1] }
   | STRING primitive_declaration                { $1 :: $2 }
+;
+
+/* Class definitions */
+
+class_list:
+      	class_list AND class_def
+          { $3 :: $1 }
+      | class_def
+      	  { [$1] }
+;
+class_def:
+        virtual_flag closed_flag
+      	type_parameters LIDENT simple_pattern_list self self_type EQUAL
+        opt_constraints class_fields END
+	  { { pcl_name = $4; pcl_param = $3; pcl_args = List.rev $5;
+      	      pcl_self = $6; pcl_self_ty = $7; pcl_cstr = $9;
+	      pcl_field = List.rev $10;
+	      pcl_kind = $1; pcl_closed = $2;
+      	      pcl_loc = symbol_loc () } }
+;
+simple_pattern_list:
+        simple_pattern
+          { [$1] }
+      | simple_pattern_list simple_pattern
+	  { $2::$1 }
+;
+self:
+      	AS LIDENT
+	  { Some $2 }
+      | /* empty */
+      	  { None }
+;
+class_fields:
+        /* empty */
+	  { [] }
+      | class_fields INHERIT ancestors
+      	  { List.map (function f -> Pcf_inher f) $3 @ $1 }
+      | class_fields VAL values
+      	  { List.map (function f -> Pcf_val   f) $3 @ $1 }
+      | class_fields VIRTUAL method_types
+      	  { List.map (function f -> Pcf_virt  f) $3 @ $1 }
+      | class_fields METHOD methods
+      	  { List.map (function f -> Pcf_meth  f) $3 @ $1 }
+
+ancestors:
+      	ancestors THEN ancestor
+	  { $3 :: $1 }
+      | ancestor
+      	  { [$1] }
+;
+ancestor:
+        LPAREN core_type_comma_list RPAREN class_longident simple_expr_list
+	self
+          { $4, List.rev $2, List.rev $5, $6, symbol_loc () }
+      | LPAREN core_type RPAREN class_longident simple_expr_list self
+      	  { $4, [$2], List.rev $5, $6, symbol_loc () }
+      | class_longident simple_expr_list self
+      	  { $1, [], List.rev $2, $3, symbol_loc () }
+;
+values:
+      	values AND value
+          { $3 :: $1 }
+      | value
+      	  { [$1] }
+;
+value:
+        private_flag mutable_flag label EQUAL expr
+	  { $3, $1, $2, Some $5, symbol_loc () }
+      | private_flag mutable_flag label
+	  { $3, $1, $2, None, symbol_loc () }
+;
+methods :
+      	methods AND method_def
+          { $3 :: $1 }
+      | method_def
+      	  { [$1] }
+;
+method_def :
+        label fun_binding
+	  { $1, $2, symbol_loc () }
+;
+
+/* Class type definitions */
+
+class_type_list:
+      	class_type_list AND class_type
+          { $3 :: $1 }
+      | class_type
+      	  { [$1] }
+;
+class_type:
+        virtual_flag closed_flag type_parameters LIDENT type_list self_type
+	EQUAL
+        opt_constraints class_type_fields END
+	  { { pcty_name = $4; pcty_param = $3; pcty_args = $5;
+      	      pcty_self = $6; pcty_cstr = $8; pcty_field = List.rev $9;
+      	      pcty_kind = $1; pcty_closed = $2;
+      	      pcty_loc = symbol_loc () } }
+;
+type_list:
+      	LPAREN core_type RPAREN type_list
+	  { $2 :: $4 }
+      | LPAREN core_type RPAREN
+      	  { [$2] } 
+;
+self_type:
+      	COLON type_parameter
+	  { Some $2 }
+      | /* empty */
+      	  { None }
+;
+opt_constraints:
+        CONSTRAINT constraints
+	  { List.rev $2 }
+      | /* empty */
+      	  { [] }
+;
+constraints:
+      	constraints AND constrain
+	  { $3 :: $1 }
+      | constrain
+      	  { [$1] }
+;
+constrain:
+      	type_parameter EQUAL core_type
+	  { $1, $3, symbol_loc () }
+;
+class_type_fields:
+        /* empty */
+	  { [] }
+      | class_type_fields INHERIT ancestor_types
+      	  { List.map (function f -> Pctf_inher f) $3 @ $1 }
+      | class_type_fields VAL value_types
+      	  { List.map (function f -> Pctf_val   f) $3 @ $1 }
+      | class_type_fields VIRTUAL method_types
+      	  { List.map (function f -> Pctf_virt  f) $3 @ $1 }
+      | class_type_fields METHOD method_types
+      	  { List.map (function f -> Pctf_meth  f) $3 @ $1 }
+;
+ancestor_types:
+        ancestor_types THEN ancestor_type
+          { $3 :: $1 }
+      | ancestor_type
+      	  { [$1] }
+;
+ancestor_type:
+        LPAREN core_type_comma_list RPAREN class_longident
+          { $4, List.rev $2, symbol_loc () }
+      | LPAREN core_type RPAREN class_longident
+      	  { $4, [$2], symbol_loc () }
+      | class_longident
+      	  { $1, [], symbol_loc () }
+;
+value_types :
+      	value_types AND value_type
+          { $3 :: $1 }
+      | value_type
+      	  { [$1] }
+;
+value_type :
+        private_flag mutable_flag label COLON core_type
+	  { $3, $1, $2, Some $5, symbol_loc () }
+      | private_flag mutable_flag label
+	  { $3, $1, $2, None, symbol_loc () }
+;
+method_types :
+      	method_types AND method_type
+          { $3 :: $1 }
+      | method_type
+      	  { [$1] }
+;
+method_type :
+        label COLON core_type
+	  { $1, $3, symbol_loc () }
 ;
 
 /* Type declarations */
@@ -678,19 +895,45 @@ core_type:
   | core_type_tuple
       { mktyp(Ptyp_tuple(List.rev $1)) }
 ;
+
 simple_core_type:
     QUOTE ident
       { mktyp(Ptyp_var $2) }
-  | type_longident
-      { mktyp(Ptyp_constr($1, [])) }
-  | simple_core_type type_longident %prec prec_constr_appl
-      { mktyp(Ptyp_constr($2, [$1])) }
-  | LPAREN core_type_comma_list RPAREN type_longident %prec prec_constr_appl
-      { mktyp(Ptyp_constr($4, List.rev $2)) }
+  | type_longident alias
+      { mktyp(Ptyp_constr($1, [], $2)) }
+  | simple_core_type type_longident alias %prec prec_constr_appl
+      { mktyp(Ptyp_constr($2, [$1], $3)) }
+  | LPAREN core_type_comma_list RPAREN type_longident alias
+      %prec prec_constr_appl
+      { mktyp(Ptyp_constr($4, List.rev $2, $5)) }
   | LPAREN core_type RPAREN
       { $2 }
+  | less meth_list more alias
+      { mktyp(Ptyp_object($2, $4)) }
+  | less more alias
+      { mktyp(Ptyp_object([], $3)) }
+  | SHARP class_longident alias
+      { mktyp(Ptyp_class($2, [], $3)) }
+  | simple_core_type SHARP class_longident alias %prec prec_constr_appl
+      { mktyp(Ptyp_class($3, [$1], $4)) }
+  | LPAREN core_type_comma_list RPAREN SHARP class_longident alias
+      %prec prec_constr_appl
+      { mktyp(Ptyp_class($5, List.rev $2, $6)) }
 ;
-
+alias:
+    AS type_parameter
+      { Some $2 }
+  | /* empty */
+      {None}
+;
+less:
+    INFIXOP1
+      { if $1 <> "<" then raise Parse_error }
+;
+more:
+    INFIXOP1
+      { if $1 <> ">" then raise Parse_error }
+;
 core_type_tuple:
     simple_core_type STAR simple_core_type
       { [$3; $1] }
@@ -704,6 +947,22 @@ core_type_comma_list:
 core_type_list:
     simple_core_type                            { [$1] }
   | core_type_list STAR simple_core_type        { $3 :: $1 }
+;
+meth_list:
+    field SEMI meth_list
+      { $1 :: $3 }
+  | field
+      { [$1] }
+  | DOTDOT
+      { [mkfield Pfield_var] }
+;
+field:
+    label COLON core_type
+      { mkfield(Pfield($1, $3)) }
+;
+label:
+    LIDENT
+      { { Label.lab_name = $1 } }
 ;
 
 /* Constants */
@@ -719,7 +978,6 @@ signed_constant:
   | SUBTRACTIVE INT                             { Const_int(- $2) }
   | SUBTRACTIVE FLOAT                           { Const_float("-" ^ $2) }
 ;
-
 /* Identifiers and long identifiers */
 
 ident:
@@ -785,6 +1043,11 @@ mod_ext_longident:
 mty_longident:
     ident                                       { Lident $1 }
   | mod_ext_longident DOT ident                 { Ldot($1, $3) }
+;
+class_longident:
+    LIDENT                                      { Lident $1 }
+  | mod_longident DOT LIDENT                	{ Ldot($1, $3) }
+;
 
 /* Toplevel directives */
 
@@ -805,11 +1068,24 @@ direction_flag:
     TO                                          { Upto }
   | DOWNTO                                      { Downto }
 ;
+private_flag:
+    /* empty */					{ Public }
+  | PRIVATE					{ Private }
+;
 mutable_flag:
     /* empty */                                 { Immutable }
   | MUTABLE                                     { Mutable }
 ;
+virtual_flag:
+    /* empty */					{ Concrete }
+  | VIRTUAL					{ Virtual }
+;
+closed_flag:
+    /* empty */					{ Open }
+  | CLOSED					{ Closed }
+;
 opt_bar:
-    /* empty */                                 { () }
-  | BAR                                         { () }
+    /* empty */					{ () }
+  | BAR						{ () }
+;
 %%

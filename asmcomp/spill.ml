@@ -39,7 +39,7 @@ let spill_reg r =
   try
     Reg.Map.find r !spill_env
   with Not_found ->
-    let spill_r = Reg.new r.typ in
+    let spill_r = Reg.create r.typ in
     spill_r.spill <- true;
     if String.length r.name > 0 then spill_r.name <- "spilled-" ^ r.name;
     spill_env := Reg.Map.add r spill_r !spill_env;
@@ -65,7 +65,7 @@ let add_superpressure_regs op live_regs res_regs spilled =
   let max_pressure = Proc.max_register_pressure op in
   let regs = Reg.add_set_array live_regs res_regs in
   (* Compute the pressure in each register class *)
-  let pressure = Array.new Proc.num_register_classes 0 in
+  let pressure = Array.create Proc.num_register_classes 0 in
   Reg.Set.iter
     (fun r ->
       if Reg.Set.mem r spilled then () else begin
@@ -76,18 +76,18 @@ let add_superpressure_regs op live_regs res_regs spilled =
       end)
     regs;
   (* Check if pressure is exceeded for each class. *)
-  let rec check_pressure class spilled =
-    if class >= Proc.num_register_classes then
+  let rec check_pressure cl spilled =
+    if cl >= Proc.num_register_classes then
       spilled
-    else if pressure.(class) <= max_pressure.(class) then
-      check_pressure (class+1) spilled
+    else if pressure.(cl) <= max_pressure.(cl) then
+      check_pressure (cl+1) spilled
     else begin
       (* Find the least recently used, unspilled, unallocated, live register
          in the class *)
       let lru_date = ref 1000000 and lru_reg = ref Reg.dummy in
       Reg.Set.iter
         (fun r ->
-          if Proc.register_class r = class &
+          if Proc.register_class r = cl &
              not (Reg.Set.mem r spilled) &
              r.loc = Unknown then begin
             try
@@ -100,8 +100,8 @@ let add_superpressure_regs op live_regs res_regs spilled =
               ()
           end)
         live_regs;
-      pressure.(class) <- pressure.(class) - 1;
-      check_pressure class (Reg.Set.add !lru_reg spilled)
+      pressure.(cl) <- pressure.(cl) - 1;
+      check_pressure cl (Reg.Set.add !lru_reg spilled)
     end in
   check_pressure 0 spilled
 

@@ -62,6 +62,7 @@ type instruction =
   | Kintcomp of comparison
   | Koffsetint of int
   | Koffsetref of int
+  | Kgetmethod
   | Kstop
 
 val immed_min: int

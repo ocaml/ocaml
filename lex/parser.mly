@@ -26,9 +26,9 @@ let regexp_for_string s =
   in re_string 0
 
 let char_class c1 c2 =
-  let rec class n =
-    if n > (Char.code c2) then [] else (Char.chr n) :: class(succ n)
-  in class (Char.code c1)
+  let rec cl n =
+    if n > (Char.code c2) then [] else (Char.chr n) :: cl(succ n)
+  in cl (Char.code c1)
 
 let all_chars = char_class (Char.chr 1) (Char.chr 255)
 

@@ -40,9 +40,9 @@ let is_traced path =
 
 let copy_closure cls =
   let sz = Obj.size cls in
-  let new = Obj.new_block 250 sz in
-  for i = 0 to sz - 1 do Obj.set_field new i (Obj.field cls i) done;
-  new
+  let nw = Obj.new_block 250 sz in
+  for i = 0 to sz - 1 do Obj.set_field nw i (Obj.field cls i) done;
+  nw
 
 (* Overwrite the code field of a closure by another *)
 
@@ -53,7 +53,7 @@ let overwrite_closure dst src =
    traces its execution. *)
 
 let rec instrument_closure name clos_typ =
-  match Ctype.repr clos_typ with
+  match (Ctype.repr clos_typ).desc with
     Tarrow(t1, t2) ->
       let starred_name =
         match name with

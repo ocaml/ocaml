@@ -144,12 +144,12 @@ let rotate_registers = true
 (* Representation of hard registers by pseudo-registers *)
 
 let hard_int_reg =
-  let v = Array.new 22 Reg.dummy in
+  let v = Array.create 22 Reg.dummy in
   for i = 0 to 21 do v.(i) <- Reg.at_location Int (Reg i) done;
   v
 
 let hard_float_reg =
-  let v = Array.new 30 Reg.dummy in
+  let v = Array.create 30 Reg.dummy in
   for i = 0 to 29 do v.(i) <- Reg.at_location Float (Reg(100 + i)) done;
   v
 
@@ -167,7 +167,7 @@ let stack_slot slot ty =
 
 let calling_conventions first_int last_int first_float last_float make_stack
                         arg =
-  let loc = Array.new (Array.length arg) Reg.dummy in
+  let loc = Array.create (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
   let ofs = ref 0 in
@@ -207,7 +207,7 @@ let loc_results res =
    are passed in %o0..%o5, then on the stack *)
 
 let loc_external_arguments arg =
-  let loc = Array.new (Array.length arg) Reg.dummy in
+  let loc = Array.create (Array.length arg) Reg.dummy in
   let reg = ref 8 (* %o0 *) in
   let ofs = ref (-4) in              (* start at sp + 92 = sp + 96 - 4 *)
   for i = 0 to Array.length arg - 1 do

@@ -98,7 +98,7 @@ let pp_output_string s = current_output.output_function s 0 (String.length s)
 and pp_output_newline () = current_output.output_function "\n" 0 1
 
 (* The pretty-printer queue *)
-let pp_queue = (Queue.new () : pp_queue_elem Queue.t)
+let pp_queue = (Queue.create () : pp_queue_elem Queue.t)
 
 let pp_clear_queue () =
     pp_left_total := 1; pp_right_total := 1;

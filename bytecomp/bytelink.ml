@@ -112,7 +112,8 @@ let scan_file obj_name tolink =
 
 (* Consistency check between interfaces *)
 
-let crc_interfaces = (Hashtbl.new 17 : (string, string * Digest.t) Hashtbl.t)
+let crc_interfaces =
+  (Hashtbl.create 17 : (string, string * Digest.t) Hashtbl.t)
 
 let check_consistency file_name cu =
   List.iter

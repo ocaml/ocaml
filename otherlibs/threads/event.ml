@@ -42,17 +42,18 @@ and 'a communication =
 (* Create a channel *)
 
 let new_channel () =
-  { writes_pending = Queue.new();
-    reads_pending = Queue.new() }
+  { writes_pending = Queue.create();
+    reads_pending = Queue.create() }
 
 (* Basic synchronization function *)
 
-let masterlock = Mutex.new()
+let masterlock = Mutex.create()
 
 let basic_sync genev =
   let performed = ref (-1) in
-  let condition = Condition.new() in
-  let bev = Array.new(Array.length genev) (genev.(0) performed condition 0) in
+  let condition = Condition.create() in
+  let bev = Array.create (Array.length genev)
+                         (genev.(0) performed condition 0) in
   for i = 1 to Array.length genev - 1 do
     bev.(i) <- genev.(i) performed condition i
   done;
@@ -97,8 +98,9 @@ let sync ev =
 
 let basic_poll genev =
   let performed = ref (-1) in
-  let condition = Condition.new() in
-  let bev = Array.new(Array.length genev) (genev.(0) performed condition 0) in
+  let condition = Condition.create() in
+  let bev = Array.create(Array.length genev)
+                        (genev.(0) performed condition 0) in
   for i = 1 to Array.length genev - 1 do
     bev.(i) <- genev.(i) performed condition i
   done;

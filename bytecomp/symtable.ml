@@ -86,7 +86,7 @@ open Printf
 
 let output_primitives prim_file_name =
   let oc = open_out prim_file_name in
-  let prim = Array.new !c_prim_table.num_cnt "" in
+  let prim = Array.create !c_prim_table.num_cnt "" in
   Tbl.iter (fun name number -> prim.(number) <- name) !c_prim_table.num_tbl;
   for i = 0 to Array.length prim - 1 do
     fprintf oc "extern long %s();\n" prim.(i)
@@ -163,7 +163,7 @@ let rec transl_const = function
 (* Build the initial table of globals *)
 
 let initial_global_table () =
-  let glob = Array.new !global_table.num_cnt (Obj.repr 0) in
+  let glob = Array.create !global_table.num_cnt (Obj.repr 0) in
   List.iter
     (fun (slot, cst) -> glob.(slot) <- transl_const cst)
     !literal_table;

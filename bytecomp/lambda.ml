@@ -69,7 +69,9 @@ type structured_constant =
   | Const_block of int * structured_constant list
   | Const_float_array of string list
 
-type let_kind = Strict | Alias
+type let_kind = Strict | Alias | StrictOpt
+
+type shared_code = (int * int) list
 
 type lambda =
     Lvar of Ident.t
@@ -88,6 +90,7 @@ type lambda =
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
   | Lassign of Ident.t * lambda
+  | Lsend of lambda * lambda * lambda list
 
 and lambda_switch =
   { sw_numconsts: int;
@@ -103,7 +106,7 @@ let lambda_unit = Lconst const_unit
 let name_lambda arg fn =
   match arg with
     Lvar id -> fn id
-  | _ -> let id = Ident.new "let" in Llet(Strict, id, arg, fn id)
+  | _ -> let id = Ident.create "let" in Llet(Strict, id, arg, fn id)
 
 let name_lambda_list args fn =
   let rec name_list names = function
@@ -111,7 +114,7 @@ let name_lambda_list args fn =
   | (Lvar id as arg) :: rem ->
       name_list (arg :: names) rem
   | arg :: rem ->
-      let id = Ident.new "let" in
+      let id = Ident.create "let" in
       Llet(Strict, id, arg, name_list (Lvar id :: names) rem) in
   name_list [] args
 
@@ -159,6 +162,8 @@ let free_variables l =
       freevars e1; freevars e2; freevars e3; fv := IdentSet.remove v !fv
   | Lassign(id, e) ->
       fv := IdentSet.add id !fv; freevars e
+  | Lsend (met, obj, args) ->
+      List.iter freevars (met::obj::args)
   in freevars l; !fv
 
 (* Check if an action has a "when" guard *)

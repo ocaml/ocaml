@@ -51,6 +51,8 @@ let report_error exn =
       Asmlibrarian.report_error code
   | Sys_error msg ->
       print_string "I/O error: "; print_string msg
+  | Typeclass.Error(loc, err) ->
+      Location.print loc; Typeclass.report_error err
   | x ->
       close_box(); raise x
   end;

@@ -44,7 +44,7 @@ let dummy =
 let currstamp = ref 0
 let reg_list = ref([] : t list)
 
-let new ty =
+let create ty =
   let r = { name = ""; stamp = !currstamp; typ = ty; loc = Unknown;
             spill = false; interf = []; prefer = []; degree = 0;
             spill_cost = 0; visited = false } in
@@ -52,14 +52,14 @@ let new ty =
   incr currstamp;
   r
 
-let newv tyv =
+let createv tyv =
   let n = Array.length tyv in
-  let rv = Array.new n dummy in
-  for i = 0 to n-1 do rv.(i) <- new tyv.(i) done;
+  let rv = Array.create n dummy in
+  for i = 0 to n-1 do rv.(i) <- create tyv.(i) done;
   rv
 
 let clone r =
-  let nr = new r.typ in
+  let nr = create r.typ in
   nr.name <- r.name;
   nr
 

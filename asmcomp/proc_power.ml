@@ -156,11 +156,11 @@ let rotate_registers = true
 (* Representation of hard registers by pseudo-registers *)
 
 let hard_int_reg =
-  let v = Array.new 25 Reg.dummy in
+  let v = Array.create 25 Reg.dummy in
   for i = 0 to 24 do v.(i) <- Reg.at_location Int (Reg i) done; v
 
 let hard_float_reg =
-  let v = Array.new 31 Reg.dummy in
+  let v = Array.create 31 Reg.dummy in
   for i = 0 to 30 do v.(i) <- Reg.at_location Float (Reg(100 + i)) done; v
 
 let all_phys_regs =
@@ -176,7 +176,7 @@ let stack_slot slot ty =
 
 let calling_conventions first_int last_int first_float last_float make_stack
                         arg =
-  let loc = Array.new (Array.length arg) Reg.dummy in
+  let loc = Array.create (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
   let ofs = ref 24 in
@@ -218,7 +218,7 @@ let loc_results res =
    Also, using a float register automatically reserves two int registers. *)
 
 let external_conventions first_int last_int first_float last_float arg =
-  let loc = Array.new (Array.length arg) Reg.dummy in
+  let loc = Array.create (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
   let ofs = ref 56 in

@@ -37,7 +37,7 @@ let makereg r =
 
 let makeregs rv =
   let n = Array.length rv in
-  let newv = Array.new n Reg.dummy in
+  let newv = Array.create n Reg.dummy in
   for i = 0 to n-1 do newv.(i) <- makereg rv.(i) done;
   newv
 

@@ -18,7 +18,8 @@ open Typedtree
 val longident: Longident.t -> unit
 val ident: Ident.t -> unit
 val path: Path.t -> unit
-val reset_var_names: unit -> unit
+val reset: unit -> unit
+val mark_loops: type_expr -> unit
 val type_expr: type_expr -> unit
 val type_scheme: type_expr -> unit
 val value_description: Ident.t -> value_description -> unit
@@ -28,3 +29,4 @@ val modtype: module_type -> unit
 val signature: signature -> unit
 val signature_item: signature_item -> unit
 val modtype_declaration: Ident.t -> modtype_declaration -> unit
+val class_type: Ident.t -> class_type -> unit

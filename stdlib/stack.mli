@@ -21,7 +21,7 @@ type 'a t
 exception Empty
         (* Raised when [pop] is applied to an empty stack. *)
 
-val new: unit -> 'a t
+val create: unit -> 'a t
         (* Return a new stack, initially empty. *)
 val push: 'a -> 'a t -> unit
         (* [push x s] adds the element [x] at the top of stack [s]. *)

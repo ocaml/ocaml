@@ -56,14 +56,14 @@ module Make(Ord: OrderedType) =
        l and r must be balanced and | height l - height r | <= 2.
        Inline expansion of height for better speed. *)
 
-    let new l x r =
+    let create l x r =
       let hl = match l with Empty -> 0 | Node(_,_,_,h) -> h in
       let hr = match r with Empty -> 0 | Node(_,_,_,h) -> h in
       Node(l, x, r, (if hl >= hr then hl + 1 else hr + 1))
 
-    (* Same as new, but performs one step of rebalancing if necessary.
+    (* Same as create, but performs one step of rebalancing if necessary.
        Assumes l and r balanced.
-       Inline expansion of new for better speed in the most frequent case
+       Inline expansion of create for better speed in the most frequent case
        where no rebalancing is required. *)
 
     let bal l x r =
@@ -74,24 +74,24 @@ module Make(Ord: OrderedType) =
           Empty -> invalid_arg "Set.bal"
         | Node(ll, lv, lr, _) ->
             if height ll >= height lr then
-              new ll lv (new lr x r)
+              create ll lv (create lr x r)
             else begin
               match lr with
                 Empty -> invalid_arg "Set.bal"
               | Node(lrl, lrv, lrr, _)->
-                  new (new ll lv lrl) lrv (new lrr x r)
+                  create (create ll lv lrl) lrv (create lrr x r)
             end
       end else if hr > hl + 2 then begin
         match r with
           Empty -> invalid_arg "Set.bal"
         | Node(rl, rv, rr, _) ->
             if height rr >= height rl then
-              new (new l x rl) rv rr
+              create (create l x rl) rv rr
             else begin
               match rl with
                 Empty -> invalid_arg "Set.bal"
               | Node(rll, rlv, rlr, _) ->
-                  new (new l x rll) rlv (new rlr rv rr)
+                  create (create l x rll) rlv (create rlr rv rr)
             end
       end else
         Node(l, x, r, (if hl >= hr then hl + 1 else hr + 1))

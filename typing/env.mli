@@ -25,6 +25,7 @@ val initial: t
 val find_value: Path.t -> t -> value_description
 val find_type: Path.t -> t -> type_declaration
 val find_modtype: Path.t -> t -> modtype_declaration
+val find_class: Path.t -> t -> class_type
 
 (* Lookup by long identifiers *)
 
@@ -34,6 +35,7 @@ val lookup_label: Longident.t -> t -> label_description
 val lookup_type: Longident.t -> t -> Path.t * type_declaration
 val lookup_module: Longident.t -> t -> Path.t * module_type
 val lookup_modtype: Longident.t -> t -> Path.t * modtype_declaration
+val lookup_class: Longident.t -> t -> Path.t * class_type
 
 (* Insertion by identifier *)
 
@@ -42,6 +44,7 @@ val add_type: Ident.t -> type_declaration -> t -> t
 val add_exception: Ident.t -> exception_declaration -> t -> t
 val add_module: Ident.t -> module_type -> t -> t
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
+val add_class: Ident.t -> class_type -> t -> t
 
 (* Insertion of all fields of a signature. *)
 
@@ -60,6 +63,7 @@ val enter_type: string -> type_declaration -> t -> Ident.t * t
 val enter_exception: string -> exception_declaration -> t -> Ident.t * t
 val enter_module: string -> module_type -> t -> Ident.t * t
 val enter_modtype: string -> modtype_declaration -> t -> Ident.t * t
+val enter_class: string -> class_type -> t -> Ident.t * t
 
 (* Reset the cache of in-core module interfaces.
    To be called in particular when load_path changes. *)

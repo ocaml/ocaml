@@ -31,6 +31,20 @@ let rec for_all2 pred l1 l2 =
   | (hd1::tl1, hd2::tl2) -> pred hd1 hd2 & for_all2 pred tl1 tl2
   | (_, _) -> false
 
+let rec filter pred =
+  function
+    [] ->
+      []
+  | a::l ->
+      if pred a then
+      	a::(filter pred l)
+      else
+      	filter pred l
+
+let rec mem_assq x = function
+    [] -> false
+  | (a,b)::l -> a == x or mem_assq x l
+
 let rec replicate_list elem n =
   if n <= 0 then [] else elem :: replicate_list elem (n-1)
 
@@ -57,7 +71,7 @@ let remove_file filename =
 (* Hashtable functions *)
 
 let create_hashtable size init =
-  let tbl = Hashtbl.new size in
+  let tbl = Hashtbl.create size in
   List.iter (fun (key, data) -> Hashtbl.add tbl key data) init;
   tbl
 

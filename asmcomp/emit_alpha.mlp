@@ -56,11 +56,11 @@ let frame_size () =
     (if !uses_gp then 8 else 0) in
   Misc.align size 16
 
-let slot_offset loc class =
+let slot_offset loc cl =
   match loc with
     Incoming n -> frame_size() + n
   | Local n ->
-      if class = 0
+      if cl = 0
       then !stack_offset + n * 8
       else !stack_offset + (num_stack_slots.(0) + n) * 8
   | Outgoing n -> n

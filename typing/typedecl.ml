@@ -25,6 +25,7 @@ type error =
   | Duplicate_label of string
   | Recursive_abbrev of string
   | Definition_mismatch of type_expr
+  | Illdefined_abbrev of string
 
 exception Error of Location.t * error
 
@@ -52,8 +53,8 @@ module StringSet =
   end)
 
 let transl_declaration env (name, sdecl) id =
-  Ctype.begin_def();
   reset_type_variables();
+  Ctype.begin_def();
   let params =
     try
       List.map enter_type_variable sdecl.ptype_params
@@ -96,17 +97,31 @@ let transl_declaration env (name, sdecl) id =
       type_manifest =
         begin match sdecl.ptype_manifest with
           None -> None
-        | Some sty -> Some(transl_simple_type env true sty)
+        | Some sty ->
+            Some (Ctype.unroll_abbrev id params
+                    (transl_simple_type env true sty))
         end } in
   Ctype.end_def();
   List.iter Ctype.generalize params;
+  begin match decl.type_kind with
+    Type_abstract ->
+      ()
+  | Type_variant v ->
+      List.iter (fun (_, tyl) -> List.iter Ctype.generalize tyl) v
+  | Type_record r ->
+      List.iter (fun (_, _, ty) -> Ctype.generalize ty) r
+  end;
+  begin match decl.type_manifest with
+    None    -> ()
+  | Some ty -> Ctype.generalize ty
+  end;
   (* If both a variant/record definition and a type equation are given,
      need to check that the equation refers to a type of the same kind
      with the same constructors and labels *)
   begin match decl with
     {type_kind = (Type_variant _ | Type_record _); type_manifest = Some ty} ->
-      begin match ty with
-        Tconstr(path, args) ->
+      begin match ty.desc with
+        Tconstr(path, args, _) ->
           begin try
             let decl' = Env.find_type path env in
             if args = params & Includecore.type_declarations env id decl decl'
@@ -121,30 +136,28 @@ let transl_declaration env (name, sdecl) id =
   end;
   (id, decl)
 
-(* Check for recursive abbrevs *)
+(* Check for ill-defined abbrevs *)
 
 let check_recursive_abbrev env (name, sdecl) (id, decl) =
   match decl.type_manifest with
     Some ty ->
-      if Ctype.free_type_ident env [id] ty
-      then raise(Error(sdecl.ptype_loc, Recursive_abbrev name))
-  | _ -> ()
+      begin try Ctype.correct_abbrev env id decl.type_params ty with
+        Ctype.Recursive_abbrev ->
+          raise(Error(sdecl.ptype_loc, Recursive_abbrev name))
+      | Ctype.Nonlinear_abbrev ->
+          raise(Error(sdecl.ptype_loc, Illdefined_abbrev name))
+      end
+  | _ ->
+      ()
 
 (* Translate a set of mutually recursive type declarations *)
 
 let transl_type_decl env name_sdecl_list =
-  Ctype.reset_def();
+  (* Enter the types as abstract *)
+  let (id_list, temp_env) = enter_types env name_sdecl_list in
+  (* Translate each declaration *)
   let decls =
-    match name_sdecl_list with
-      [(name, {ptype_kind = Ptype_abstract}) as name_sdecl] ->
-        (* No recursion involved, use original env for translation *)
-        let id = Ident.new name in
-        [transl_declaration env name_sdecl id]
-    | _ ->
-        (* Enter the types as abstract *)
-        let (id_list, temp_env) = enter_types env name_sdecl_list in
-        (* Translate each declaration *)
-        List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
+    List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
   (* Build the final env *)
   let newenv =
     List.fold_right
@@ -158,25 +171,23 @@ let transl_type_decl env name_sdecl_list =
 (* Translate an exception declaration *)
 
 let transl_exception env excdecl =
-  Ctype.reset_def();
   reset_type_variables();
   List.map (transl_simple_type env true) excdecl
 
 (* Translate a value declaration *)
 
 let transl_value_decl env valdecl =
-  Ctype.reset_def();
   let ty = Typetexp.transl_type_scheme env valdecl.pval_type in
+  let prim = Primitive.parse_declaration (Ctype.arity ty) valdecl.pval_prim in
   { val_type = ty;
-    val_prim = Primitive.parse_declaration (Ctype.arity ty) valdecl.pval_prim }
+    val_kind = match prim with Some p -> Val_prim p | None -> Val_reg }
 
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)
 
 let transl_with_constraint env sdecl =
-  Ctype.reset_def();
-  Ctype.begin_def();
   reset_type_variables();
+  Ctype.begin_def();
   let params =
     try
       List.map enter_type_variable sdecl.ptype_params
@@ -214,4 +225,7 @@ let report_error = function
       print_string
         "The variant or record definition does not match that of type";
       print_space(); Printtyp.type_expr ty
+  | Illdefined_abbrev s ->
+      print_string "The type abbreviation "; print_string s;
+      print_string " is ill-defined"
 

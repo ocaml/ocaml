@@ -297,7 +297,7 @@ let dump_exe ic =
   let debug_size = input_binary_int ic in
   seek_in ic (trailer_pos - debug_size - symbol_size - data_size);
   let init_data = (input_value ic : Obj.t array) in
-  globals := Array.new (Array.length init_data) Empty;
+  globals := Array.create (Array.length init_data) Empty;
   for i = 0 to Array.length init_data - 1 do
     !globals.(i) <- Constant (init_data.(i))
   done;

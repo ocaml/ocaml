@@ -77,7 +77,7 @@ let wait_timed_write fd d = wait_timed_write_aux fd d = Resumed_io
 (* For new, make sure the function passed to thread_new always terminates
    by calling exit. *)
 
-let new fn arg =
+let create fn arg =
   thread_new
     (fun () ->
       try

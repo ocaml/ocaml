@@ -68,8 +68,8 @@ let dummy_node =
    - "results" maps registers to the instructions that produced them;
    - "uses" maps registers to the instructions that use them. *)
 
-let code_results = (Hashtbl.new 31 : (location, code_dag_node) Hashtbl.t)
-let code_uses = (Hashtbl.new 31 : (location, code_dag_node) Hashtbl.t)
+let code_results = (Hashtbl.create 31 : (location, code_dag_node) Hashtbl.t)
+let code_uses = (Hashtbl.create 31 : (location, code_dag_node) Hashtbl.t)
 
 let clear_code_dag () =
   Hashtbl.clear code_results;

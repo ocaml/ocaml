@@ -25,7 +25,17 @@ and core_type_desc =
     Ptyp_var of string
   | Ptyp_arrow of core_type * core_type
   | Ptyp_tuple of core_type list
-  | Ptyp_constr of Longident.t * core_type list
+  | Ptyp_constr of Longident.t * core_type list * string option
+  | Ptyp_object of core_field_type list * string option
+  | Ptyp_class of Longident.t * core_type list * string option
+
+and core_field_type =
+  { pfield_desc: core_field_desc;
+    pfield_loc: Location.t }
+
+and core_field_desc =
+    Pfield of Label.t * core_type
+  | Pfield_var
 
 (* Value expressions for the core language *)
 
@@ -66,8 +76,12 @@ and expression_desc =
   | Pexp_sequence of expression * expression
   | Pexp_while of expression * expression
   | Pexp_for of string * expression * expression * direction_flag * expression
-  | Pexp_constraint of expression * core_type
+  | Pexp_constraint of expression * core_type option * core_type option
   | Pexp_when of expression * expression
+  | Pexp_send of expression * Label.t
+  | Pexp_new of Longident.t
+  | Pexp_setinstvar of Label.t * expression
+  | Pexp_override of (Label.t * expression) list
 
 (* Value descriptions *)
 
@@ -89,6 +103,46 @@ and type_kind =
   | Ptype_record of (string * mutable_flag * core_type) list
 
 type exception_declaration = core_type list
+
+(* Type expressions for the class language *)
+
+type class_type_field =
+    Pctf_inher of (Longident.t * core_type list * Location.t)
+  | Pctf_val of
+      (Label.t * private_flag * mutable_flag * core_type option * Location.t)
+  | Pctf_virt of (Label.t * core_type * Location.t)
+  | Pctf_meth of (Label.t * core_type * Location.t)
+
+type class_type =
+  { pcty_name: string;
+    pcty_param: string list;
+    pcty_args: core_type list;
+    pcty_self: string option;
+    pcty_cstr: (string * core_type * Location.t) list;
+    pcty_field: class_type_field list;
+    pcty_kind: virtual_flag;
+    pcty_closed: closed_flag;
+    pcty_loc: Location.t }
+
+type class_field =
+    Pcf_inher of (Longident.t * core_type list * expression list *
+      	       	  string option * Location.t)
+  | Pcf_val of
+      (Label.t * private_flag * mutable_flag * expression option * Location.t)
+  | Pcf_virt of (Label.t * core_type * Location.t)
+  | Pcf_meth of (Label.t * expression * Location.t)
+
+type class_def =
+  { pcl_name: string;
+    pcl_param: string list;
+    pcl_args: pattern list;
+    pcl_self: string option;
+    pcl_self_ty: string option;
+    pcl_cstr: (string * core_type * Location.t) list;
+    pcl_field: class_field list;
+    pcl_kind: virtual_flag;
+    pcl_closed: closed_flag;
+    pcl_loc: Location.t }
 
 (* Type expressions for the module language *)
 
@@ -116,6 +170,7 @@ and signature_item_desc =
   | Psig_modtype of string * modtype_declaration
   | Psig_open of Longident.t
   | Psig_include of module_type
+  | Psig_class of class_type list
 
 and modtype_declaration =
     Pmodtype_abstract
@@ -153,6 +208,7 @@ and structure_item_desc =
   | Pstr_module of string * module_expr
   | Pstr_modtype of string * module_type
   | Pstr_open of Longident.t
+  | Pstr_class of class_def list
 
 (* Toplevel phrases *)
 

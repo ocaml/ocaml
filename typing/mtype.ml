@@ -50,8 +50,10 @@ and strengthen_sig env sg p =
             { type_params = decl.type_params;
               type_arity = decl.type_arity;
               type_kind = decl.type_kind;
-              type_manifest = Some(Tconstr(Pdot(p, Ident.name id, nopos),
-                                                decl.type_params)) }
+              type_manifest = Some(Ctype.newgenty(
+	       		           Tconstr(Pdot(p, Ident.name id, nopos),
+                                           decl.type_params,
+					   ref []))) }
         | _ -> decl in
       Tsig_type(id, newdecl) :: strengthen_sig env rem p
   | (Tsig_exception(id, d) as sigelt) :: rem ->
@@ -70,6 +72,8 @@ and strengthen_sig env sg p =
       Tsig_modtype(id, newdecl) ::
       strengthen_sig (Env.add_modtype id decl env) rem p
       (* Need to add the module type in case it is manifest *)
+  | (Tsig_class(id, decl) as sigelt) :: rem ->
+      sigelt :: strengthen_sig env rem p
 
 (* In nondep_supertype, env is only used for the type it assigns to id.
    Hence there is no need to keep env up-to-date by adding the bindings
@@ -79,45 +83,47 @@ type variance = Co | Contra | Strict
 
 let nondep_supertype env mid mty =
 
-  let rec nondep_mty var mty =
+  let rec nondep_mty va mty =
     match mty with
       Tmty_ident p ->
         if Path.isfree mid p then begin
           match Env.find_modtype p env with
             Tmodtype_abstract -> raise Not_found
-          | Tmodtype_manifest mty -> nondep_mty var mty      
+          | Tmodtype_manifest mty -> nondep_mty va mty      
         end else mty
     | Tmty_signature sg ->
-        Tmty_signature(nondep_sig var sg)
+        Tmty_signature(nondep_sig va sg)
     | Tmty_functor(param, arg, res) ->
         let var_inv =
-          match var with Co -> Contra | Contra -> Co | Strict -> Strict in
-        Tmty_functor(param, nondep_mty var_inv arg, nondep_mty var res)
+          match va with Co -> Contra | Contra -> Co | Strict -> Strict in
+        Tmty_functor(param, nondep_mty var_inv arg, nondep_mty va res)
 
-  and nondep_sig var = function
+  and nondep_sig va = function
     [] -> []
   | item :: rem ->
-      let rem' = nondep_sig var rem in
+      let rem' = nondep_sig va rem in
       match item with
         Tsig_value(id, d) ->
           Tsig_value(id, {val_type = Ctype.nondep_type env mid d.val_type;
-                          val_prim = d.val_prim}) :: rem'
+                          val_kind = d.val_kind}) :: rem'
       | Tsig_type(id, d) ->
-          Tsig_type(id, nondep_type_decl var d) :: rem'
+          Tsig_type(id, nondep_type_decl va d) :: rem'
       | Tsig_exception(id, d) ->
           Tsig_exception(id, List.map (Ctype.nondep_type env mid) d) :: rem'
       | Tsig_module(id, mty) ->
-          Tsig_module(id, nondep_mty var mty) :: rem'
+          Tsig_module(id, nondep_mty va mty) :: rem'
       | Tsig_modtype(id, d) ->
           begin try
             Tsig_modtype(id, nondep_modtype_decl d) :: rem'
           with Not_found ->
-            match var with
+            match va with
               Co -> Tsig_modtype(id, Tmodtype_abstract) :: rem'
             | _  -> raise Not_found
           end
+      | Tsig_class(id, d) ->
+          Tsig_class(id, Ctype.nondep_class_type env mid d) :: rem'
 
-  and nondep_type_decl var d =
+  and nondep_type_decl va d =
     {type_params = d.type_params;
      type_arity = d.type_arity;
      type_kind =
@@ -134,7 +140,7 @@ let nondep_supertype env mid mty =
                (fun (c, mut, t) -> (c, mut, Ctype.nondep_type env mid t))
                lbls)
        with Not_found ->
-         match var with Co -> Type_abstract | _ -> raise Not_found
+         match va with Co -> Type_abstract | _ -> raise Not_found
        end;
      type_manifest =
        begin try
@@ -142,7 +148,7 @@ let nondep_supertype env mid mty =
            None -> None
          | Some ty -> Some(Ctype.nondep_type env mid ty)
        with Not_found ->
-         match var with Co -> None | _ -> raise Not_found
+         match va with Co -> None | _ -> raise Not_found
        end}
 
   and nondep_modtype_decl = function

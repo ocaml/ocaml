@@ -28,16 +28,16 @@ external set: 'a array -> int -> 'a -> unit = "%array_safe_set"
            Raise [Invalid_argument "Array.set"] if [n] is outside the range
            0 to [Array.length a - 1].
            You can also write [a.(n) <- x] instead of [Array.set a n x]. *)
-external new: int -> 'a -> 'a array = "make_vect"
-        (* [Array.new n x] returns a fresh array of length [n],
+external create: int -> 'a -> 'a array = "make_vect"
+        (* [Array.create n x] returns a fresh array of length [n],
            initialized with [x].
 	   All the elements of this new array are initially
            physically equal to [x] (in the sense of the [==] predicate).
            Consequently, if [x] is mutable, it is shared among all elements
            of the array, and modifying [x] through one of the array entries
            will modify all other entries at the same time. *)
-val new_matrix: int -> int -> 'a -> 'a array array
-        (* [Array.new_matrix dimx dimy e] returns a two-dimensional array
+val create_matrix: int -> int -> 'a -> 'a array array
+        (* [Array.create_matrix dimx dimy e] returns a two-dimensional array
            (an array of arrays) with first dimension [dimx] and
            second dimension [dimy]. All the elements of this new matrix
 	   are initially physically equal to [e].

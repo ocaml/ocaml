@@ -18,7 +18,7 @@ open Lexgen
 (* Determine the integer occurring most frequently in an array *)
 
 let most_frequent_elt v =
-  let frequencies = Hashtbl.new 17 in
+  let frequencies = Hashtbl.create 17 in
   let max_freq = ref 0 in
   let most_freq = ref (v.(0)) in
   for i = 0 to Array.length v - 1 do
@@ -45,21 +45,21 @@ let non_default_elements def v =
 
 (* Compact the transition and check arrays *)
 
-let trans = ref(Array.new 1024 0)
-and check = ref(Array.new 1024 (-1))
+let trans = ref(Array.create 1024 0)
+and check = ref(Array.create 1024 (-1))
 and last_used = ref 0
 
 let grow_transitions () =
   let old_trans = !trans
   and old_check = !check in
   let n = Array.length old_trans in
-  trans := Array.new (2*n) 0;
+  trans := Array.create (2*n) 0;
   Array.blit old_trans 0 !trans 0 !last_used;
-  check := Array.new (2*n) (-1);
+  check := Array.create (2*n) (-1);
   Array.blit old_check 0 !check 0 !last_used
 
 let pack_moves state_num move_t =
-  let move_v = Array.new 256 0 in
+  let move_v = Array.create 256 0 in
   for i = 0 to 255 do
     move_v.(i) <-
       (match move_t.(i) with
@@ -95,9 +95,9 @@ type lex_tables =
 
 let compact_tables state_v =
   let n = Array.length state_v in
-  let base = Array.new n 0
-  and backtrk = Array.new n (-1)
-  and default = Array.new n 0 in
+  let base = Array.create n 0
+  and backtrk = Array.create n (-1)
+  and default = Array.create n 0 in
   for i = 0 to n - 1 do
     match state_v.(i) with
       Perform n ->

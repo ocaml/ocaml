@@ -57,17 +57,108 @@ let type_path s = function
   | Papply(p1, p2) ->
       fatal_error "Subst.type_path"
 
-let rec type_expr s = function
-    Tvar{tvar_link = None} as ty -> ty
-  | Tvar{tvar_link = Some ty} -> type_expr s ty
-  | Tarrow(t1, t2) -> Tarrow(type_expr s t1, type_expr s t2)
-  | Ttuple tl -> Ttuple(List.map (type_expr s) tl)
-  | Tconstr(p, []) -> Tconstr(type_path s p, [])
-  | Tconstr(p, tl) -> Tconstr(type_path s p, List.map (type_expr s) tl)
+(* From Ctype *)
+let rec repr = function
+    {desc = Tlink ty} as t ->
+      let r = repr ty in
+      if r != ty then t.desc <- Tlink r;
+      r
+  | t -> t
+
+(* From Ctype *)
+let rec opened ty =
+  match (repr ty).desc with
+    Tfield(_, _, t) -> opened t
+  | Tvar            -> true
+  | Tnil            -> false
+  | _               -> fatal_error "Subst.opened"
+
+let generic_level = -1
+
+let newgenty desc =
+  {desc = desc; level = generic_level}
+
+let new_val = ref []
+
+type 'a visited = Zero | One | Many of 'a
+
+let rec typexp visited s ty =
+  let ty = repr ty in
+  if ty.desc = Tvar then ty else
+  try
+    match List.assq ty visited with
+      {contents = Zero} as v ->
+      	let t = newgenty Tvar in
+	v := Many t;
+	let ty' = typexp_2 visited s ty v in
+	t.desc <- ty'.desc;
+	t
+    | {contents = One} as v ->
+        let t = newgenty Tvar in
+        v := Many t;
+        t
+    | {contents = Many t} ->
+        t
+  with Not_found ->
+    let v = ref One in
+    let ty' = typexp_2 ((ty, v)::visited) s ty v in
+    match v with
+      {contents = Many t} ->
+      	t.desc <- ty'.desc;
+	t
+    | _ ->
+      	ty'
+
+and typexp_2 visited s ty v =
+  match ty.desc with
+    Tvar ->
+      ty
+  | Tarrow(t1, t2) ->
+      newgenty(Tarrow(typexp visited s t1, typexp visited s t2))
+  | Ttuple tl ->
+      newgenty(Ttuple(List.map (typexp visited s) tl))
+  | Tconstr(p, [], _) ->
+      newgenty(Tconstr(type_path s p, [], ref []))
+  | Tconstr(p, tl, _) ->
+      newgenty(Tconstr(type_path s p, List.map (typexp visited s) tl, ref []))
+  | Tobject (t1, name) ->
+      let ty' () =
+      	let name' =
+          match !name with
+            None -> None
+          | Some (p, tl) ->
+              Some (type_path s p, List.map (typexp visited s) tl)
+	in
+        newgenty(Tobject (typexp visited s t1, ref name'))
+      in
+      if opened t1 then
+        try
+          List.assq ty !new_val
+        with Not_found ->
+          if v = ref One then begin
+            let t = newgenty Tvar in
+    	    v := Many t;
+            new_val := (ty, t):: !new_val
+          end;
+          ty' ()
+      else
+        ty' ()
+  | Tfield(n, t1, t2) ->
+      newgenty(Tfield(n, typexp visited s t1, typexp visited s t2))
+  | Tnil ->
+      newgenty Tnil
+  | Tlink _ ->
+      fatal_error "Subst.typexp"
+
+let type_expr s ty =
+  new_val := [];
+  let ty = typexp [] s ty in
+  new_val := [];
+  ty
 
 let value_description s descr =
   { val_type = type_expr s descr.val_type;
-    val_prim = descr.val_prim }
+    val_kind = descr.val_kind }
 
 let type_declaration s decl =
   { type_params = decl.type_params;
@@ -92,6 +183,26 @@ let type_declaration s decl =
 let exception_declaration s tyl =
   List.map (type_expr s) tyl
 
+let class_type s decl =
+  new_val := [];
+  let params = List.map (function p -> (repr p, ref Zero)) decl.cty_params in
+  let decl =
+    { cty_params = List.map (typexp params s) decl.cty_params;
+      cty_args = List.map (typexp params s) decl.cty_args;
+      cty_vars =
+        Vars.fold (fun l (m, t) -> Vars.add l (m, typexp params s t))
+          decl.cty_vars Vars.empty;
+      cty_self = typexp params s decl.cty_self;
+      cty_concr = decl.cty_concr;
+      cty_new =
+        begin match decl.cty_new with
+      	  None    -> None
+        | Some ty -> Some (typexp params s ty)
+      	end }
+  in
+    new_val := [];
+    decl
+
 let rec modtype s = function
     Tmty_ident p as mty ->
       begin match p with
@@ -115,6 +226,7 @@ and signature_item s = function
   | Tsig_exception(id, d) -> Tsig_exception(id, exception_declaration s d)
   | Tsig_module(id, mty) -> Tsig_module(id, modtype s mty)
   | Tsig_modtype(id, d) -> Tsig_modtype(id, modtype_declaration s d)
+  | Tsig_class(id, d) -> Tsig_class(id, class_type s d)
 
 and modtype_declaration s = function
     Tmodtype_abstract -> Tmodtype_abstract

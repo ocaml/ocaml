@@ -26,7 +26,7 @@
 
 type t
         (* The type of mutexes. *)
-val new: unit -> t
+val create: unit -> t
         (* Return a new mutex. *)
 val lock: t -> unit
         (* Lock the given mutex. Only one thread can have the mutex locked

@@ -49,7 +49,6 @@ CONTENTS:
   INSTALL               instructions for installation
   LICENSE               license and copyright notice
   Makefile              main Makefile
-  Makefile.config       configuration information
   README                this file
   asmcomp/              native-code compiler and linker
   asmrun/               native-code runtime library

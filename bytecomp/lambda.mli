@@ -69,7 +69,9 @@ type structured_constant =
   | Const_block of int * structured_constant list
   | Const_float_array of string list
 
-type let_kind = Strict | Alias
+type let_kind = Strict | Alias | StrictOpt
+
+type shared_code = (int * int) list     (* stack size -> code label *)
 
 type lambda =
     Lvar of Ident.t
@@ -88,6 +90,7 @@ type lambda =
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
   | Lassign of Ident.t * lambda
+  | Lsend of lambda * lambda * lambda list
 
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)

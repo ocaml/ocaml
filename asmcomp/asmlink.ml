@@ -32,9 +32,9 @@ exception Error of error
 (* Consistency check between interfaces and implementations *)
 
 let crc_interfaces =
-      (Hashtbl.new 17 : (string, string * Digest.t) Hashtbl.t)
+      (Hashtbl.create 17 : (string, string * Digest.t) Hashtbl.t)
 let crc_implementations =
-      (Hashtbl.new 17 : (string, string * Digest.t) Hashtbl.t)
+      (Hashtbl.create 17 : (string, string * Digest.t) Hashtbl.t)
 
 let check_consistency file_name unit crc =
   List.iter

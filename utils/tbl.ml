@@ -21,7 +21,7 @@ let height = function
     Empty -> 0
   | Node(_,_,_,_,h) -> h
 
-let new l x d r =
+let create l x d r =
   let hl = height l and hr = height r in
   Node(l, x, d, r, (if hl >= hr then hl + 1 else hr + 1))
 
@@ -30,19 +30,19 @@ let bal l x d r =
   if hl > hr + 1 then
     let (Node(ll, lv, ld, lr, _)) = l in
     if height ll >= height lr then
-      new ll lv ld (new lr x d r)
+      create ll lv ld (create lr x d r)
     else
       let (Node(lrl, lrv, lrd, lrr, _)) = lr in
-      new (new ll lv ld lrl) lrv lrd (new lrr x d r)
+      create (create ll lv ld lrl) lrv lrd (create lrr x d r)
   else if hr > hl + 1 then
     let (Node(rl, rv, rd, rr, _)) = r in
     if height rr >= height rl then
-      new (new l x d rl) rv rd rr
+      create (create l x d rl) rv rd rr
     else
       let (Node(rll, rlv, rld, rlr, _)) = rl in
-      new (new l x d rll) rlv rld (new rlr rv rd rr)
+      create (create l x d rll) rlv rld (create rlr rv rd rr)
   else
-    new l x d r
+    create l x d r
 
 let rec add x data = function
     Empty ->

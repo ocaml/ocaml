@@ -15,8 +15,8 @@
 
 type t
 
-val new: string -> t
-val new_persistent: string -> t
+val create: string -> t
+val create_persistent: string -> t
 val name: t -> string
 val unique_name: t -> string
 val persistent: t -> bool
