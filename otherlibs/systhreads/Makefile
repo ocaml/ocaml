@@ -61,7 +61,7 @@ partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f libthreads*.a *.o
+	rm -f libthreads*.a *.o threads.a
 	rm -f $(GENFILES)
 
 install:

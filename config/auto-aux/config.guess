@@ -354,6 +354,7 @@ EOF
         elif test "${UNAME_MACHINE}" = "osfmach3_ppc" ; then
           echo powerpc-unknown-linux ; exit 0
         elif test "${UNAME_MACHINE}" = "sa110" ||
+             test "${UNAME_MACHINE}" = "armv3l" ||
              test "${UNAME_MACHINE}" = "armv4l" ; then
           echo arm-unknown-linux ; exit 0
         else

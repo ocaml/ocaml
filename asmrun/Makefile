@@ -136,7 +136,7 @@ meta.c: ../byterun/meta.c
 LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
   parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
-  weak.c compact.c finalise.c meta.c
+  weak.c compact.c finalise.c meta.c custom.c main.c
 
 clean::
 	rm -f $(LINKEDFILES)

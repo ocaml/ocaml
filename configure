@@ -883,6 +883,8 @@ for dir in /usr/include /usr/include/gdbm /usr/include/db1; do
       dbm_link=""
     elif sh ./hasgot -lndbm dbm_open; then
       dbm_link="-cclib -lndbm"
+    elif sh ./hasgot -ldb1 dbm_open; then
+      dbm_link="-cclib -ldb1"
     else
       dbm_include="not found"
     fi

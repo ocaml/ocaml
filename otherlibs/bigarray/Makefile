@@ -50,10 +50,10 @@ installopt:
 	cd $(LIBDIR); $(RANLIB) bigarray.a
 
 partialclean:
-	rm -f *.cm*
+	rm -f *.cm* 
 
 clean: partialclean
-	rm -f libbigarray.a *.o
+	rm -f libbigarray.a *.o bigarray.a
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
