@@ -241,8 +241,7 @@ val get_formatter_output_functions :
       unit -> (buf:string -> pos:int -> len:int -> unit) * (unit -> unit);;
         (* Return the current output functions of the pretty-printer. *)
 
-(*** Changing the meaning of pretty printing (indentation, line breaking,
-     and printing material) *)
+(*** Changing the meaning of pretty printing (indentation, line breaking, and printing material) *)
 val set_all_formatter_output_functions :
       out:(buf:string -> pos:int -> len:int -> unit) ->
       flush:(unit -> unit) ->
