@@ -152,6 +152,19 @@ let char_for_decimal_code lexbuf i =
                     Lexing.lexeme_end lexbuf))
   else Char.chr c
 
+let char_for_hexadecimal_code lexbuf i =
+  let d1 = Char.code (Lexing.lexeme_char lexbuf i) in
+  let val1 = if d1 >= 97 then d1 - 87
+             else if d1 >= 65 then d1 - 55
+             else d1 - 48
+  in
+  let d2 = Char.code (Lexing.lexeme_char lexbuf (i+1)) in
+  let val2 = if d2 >= 97 then d2 - 87
+             else if d2 >= 65 then d2 - 55
+             else d2 - 48
+  in
+  Char.chr (val1 * 16 + val2)
+
 (* Error report *)
 
 open Format
@@ -240,6 +253,8 @@ rule token = parse
       { CHAR(char_for_backslash (Lexing.lexeme_char lexbuf 2)) }
   | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { CHAR(char_for_decimal_code lexbuf 2) }
+  | "'" '\\' 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "'"
+      { CHAR(char_for_hexadecimal_code lexbuf 3) }
   | "'" '\\' _
       { let l = Lexing.lexeme lexbuf in
         let esc = String.sub l 1 (String.length l - 1) in
@@ -381,6 +396,9 @@ and string = parse
         string lexbuf }
   | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9']
       { store_string_char(char_for_decimal_code lexbuf 1);
+         string lexbuf }
+  | '\\' 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F']
+      { store_string_char(char_for_hexadecimal_code lexbuf 2);
          string lexbuf }
   | '\\' _
       { if in_comment ()
