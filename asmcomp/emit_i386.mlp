@@ -703,7 +703,7 @@ let fundecl fundecl =
   call_gc_sites := [];
   range_check_trap := 0;
   `	.text\n`;
-  emit_align 16; (* 16-byte alignment is recommended for the 486 *)
+  emit_align 4;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   let n = frame_size() - 4 in
