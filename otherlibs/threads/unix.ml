@@ -259,7 +259,7 @@ external link : string -> string -> unit = "unix_link"
 
 module LargeFile =
   struct
-    external lseek : file_descr -> int64 -> seek_command -> int = "unix_lseek_64"
+    external lseek : file_descr -> int64 -> seek_command -> int64 = "unix_lseek_64"
     external truncate : string -> int64 -> unit = "unix_truncate_64"
     external ftruncate : file_descr -> int64 -> unit = "unix_ftruncate_64"
     type stats =

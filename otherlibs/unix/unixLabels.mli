@@ -347,7 +347,7 @@ val fstat : file_descr -> stats
 
 module LargeFile :
   sig
-    val lseek : file_descr -> int64 -> mode:seek_command -> int
+    val lseek : file_descr -> int64 -> mode:seek_command -> int64
     val truncate : string -> len:int64 -> unit
     val ftruncate : file_descr -> len:int64 -> unit
     type stats = Unix.LargeFile.stats =
