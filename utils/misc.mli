@@ -47,5 +47,9 @@ val log2: int -> int
 val align: int -> int -> int
         (* [align n a] rounds [n] upwards to a multiple of [a]
            (a power of 2). *)
-
-          
+val no_overflow_add: int -> int -> bool
+        (* [no_overflow_add n1 n2] returns [true] if the computation of
+           [n1 + n2] does not overflow. *)
+val no_overflow_sub: int -> int -> bool
+        (* [no_overflow_add n1 n2] returns [true] if the computation of
+           [n1 - n2] does not overflow. *)

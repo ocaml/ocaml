@@ -105,3 +105,8 @@ let rec log2 n =
 
 let align n a =
   (n + a - 1) land (-a)
+
+let no_overflow_add a b = (a lxor b) lor (a lxor (lnot (a+b))) < 0
+
+let no_overflow_sub a b = (a lxor (lnot b)) lor (b lxor (a-b)) < 0
+
