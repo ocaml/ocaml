@@ -58,7 +58,8 @@ $(INTF): $(MLIS)
 	-I $(CSLDIR)/otherlibs/unix \
 	-I +labltk \
 	$(MLIS) \
-	-sepfiles
+	-sepfiles \
+	-latextitle "2,subsection*"
 	mv -f Arith_status.tex Arithstatus.tex
 	mv -f Big_int.tex Bigint.tex
 
