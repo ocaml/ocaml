@@ -412,7 +412,10 @@ and type_structure env sstr =
         let (path, mty) = type_module_path env loc lid in
         let sg = extract_sig_open env loc mty in
         type_struct (Env.open_signature path sg env) srem
-    | {pstr_desc = Pstr_class cl} :: srem ->
+    | {pstr_desc = Pstr_class cl; pstr_loc = loc} :: srem ->
+         List.iter
+           (fun {pci_name = name} -> check "type" loc type_names name)
+           cl;
         let (classes, new_env) = Typeclass.class_declarations env cl in
         let (str_rem, sig_rem, final_env) = type_struct new_env srem in
         (Tstr_class
@@ -432,7 +435,10 @@ and type_structure env sstr =
                   Tsig_type(i'', d''); Tsig_type(i''', d''')])
               classes [sig_rem]),
          final_env)
-    | {pstr_desc = Pstr_class_type cl} :: srem ->
+    | {pstr_desc = Pstr_class_type cl; pstr_loc = loc} :: srem ->
+        List.iter
+          (fun {pci_name = name} -> check "type" loc type_names name)
+          cl;
         let (classes, new_env) = Typeclass.class_type_declarations env cl in
         let (str_rem, sig_rem, final_env) = type_struct new_env srem in
         (Tstr_cltype
