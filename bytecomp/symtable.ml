@@ -126,7 +126,8 @@ let init () =
       literal_table := (c, cst) :: !literal_table)
     Runtimedef.builtin_exceptions;
   (* Enter the known C primitives *)
-  Array.iter (enter_numtable c_prim_table) Runtimedef.builtin_primitives
+  Array.iter (fun x -> enter_numtable c_prim_table x; ())
+             Runtimedef.builtin_primitives
 
 (* Relocate a block of object bytecode *)
 
@@ -216,7 +217,8 @@ let init_toplevel () =
   global_table := (input_value ic : Ident.t numtable);
   close_in ic;
   (* Enter the known C primitives *)
-  Array.iter (enter_numtable c_prim_table) (Meta.available_primitives())
+  Array.iter (fun x -> enter_numtable c_prim_table x; ())
+             (Meta.available_primitives())
 
 (* Find the value of a global identifier *)
 
