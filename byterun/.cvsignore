@@ -10,3 +10,5 @@ libcamlrun-gui.x
 ocamlrun.xcoff
 ocamlrun.dbg
 interp.a.lst
+*.[sd]obj
+*.lib
