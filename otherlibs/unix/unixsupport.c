@@ -238,7 +238,7 @@ int error_table[] = {
   EHOSTUNREACH, ELOOP /*, EUNKNOWNERR */
 };
 
-static value unix_error_exn;
+static value unix_error_exn = 0;
 
 value unix_register_error(exnval)
      value exnval;
@@ -255,6 +255,8 @@ void unix_error(errcode, cmdname, cmdarg)
 {
   value res;
   Push_roots(r, 2);
+  if (unix_error_exn == 0)
+    invalid_argument("Exception Unix.Unix_error not initialized, must link unix.cma");
 #define name r[0]
 #define arg r[1]
   arg = cmdarg == Nothing ? copy_string("") : cmdarg;
