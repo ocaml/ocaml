@@ -82,7 +82,7 @@ EXTEND
      (loc, auto)]];
 
  joinlocation:
-   [[id = joinident ; "def" ; autos = LIST1 joinautomaton SEP "and" ;
+   [[id = joinident ;  "def" ; autos = LIST1 joinautomaton SEP "and" ;
     "do" ; e=expr LEVEL "top" ->
       (loc, id, autos, e)
     | id = joinident ;  "do" ; e=expr LEVEL "top" ->
