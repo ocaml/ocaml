@@ -40,7 +40,7 @@
 % Environnements
 
 \newlength{\versionwidth}
-\setbox0=\hbox{\bf Unix:} \setlength{\versionwidth}{\wd0}
+\setbox0=\hbox{\bf Windows:} \setlength{\versionwidth}{\wd0}
 
 \def\versionspecific#1{
   \list{}{\setlength{\leftmargin}{\versionwidth}
@@ -52,8 +52,8 @@
 \def\endunix{\endlist}
 \def\mac{\versionspecific{Mac}}
 \def\endmac{\endlist}
-\def\pc{\versionspecific{PC}}
-\def\endpc{\endlist}
+\def\windows{\versionspecific{Windows}}
+\def\windows{\endlist}
 
 \def\requirements{\trivlist \item[\hskip\labelsep {\bf Requirements.}]}
 \def\endrequirements{\endtrivlist}

@@ -15,6 +15,18 @@ index of all identifiers defined in the standard library, and an
 index of keywords.
 \end{itemize}
 
+\section*{Conventions}
+
+Caml Special Light runs on several operating systems. The parts of
+this manual that are specific to one operating system are presented as
+shown below:
+
+\begin{unix} This is material specific to Unix.
+\end{unix}
+
+\begin{windows} This is material specific to MS Windows (NT and 95).
+\end{windows}
+
 \section*{License}
 
 The Caml Special Light system is copyright \copyright\ 1995 Institut

@@ -6,7 +6,7 @@ STDLIB_INTF=arg.tex array.tex char.tex digest.tex filename.tex format.tex \
   stack.tex stream.tex string.tex sys.tex
 
 OTHERLIB_INTF=unix.tex str.tex num.tex arithstatus.tex graphics.tex \
-  thread.tex mutex.tex condition.tex event.tex
+  thread.tex mutex.tex condition.tex event.tex threadIO.tex
 
 INTF=$(CORE_INTF) $(STDLIB_INTF) $(OTHERLIB_INTF)
 

@@ -29,4 +29,5 @@ thread-aware.
 \input mutex.tex
 \input condition.tex
 \input event.tex
+\input threadIO.tex
 \end{library}

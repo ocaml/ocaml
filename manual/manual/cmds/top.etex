@@ -1,11 +1,12 @@
 \chapter{The toplevel system (csltop)} \label{c:camllight}
 
-This chapter describes the toplevel system for Caml Special Light,
-that permits interactive use of the Caml Special Light system through a
-read-eval-print loop. In this mode, the system repeatedly reads Caml
-phrases from the input, then typechecks, compile and evaluate
-them, then prints the inferred type and result value, if any. The
-system prints a "#" (sharp) prompt before reading each phrase.
+This chapter describes the toplevel system for Caml Special
+Light, that permits interactive use of the Caml Special Light system
+through a read-eval-print loop. In this mode, the system repeatedly
+reads Caml phrases from the input, then typechecks, compile and
+evaluate them, then prints the inferred type and result value, if
+any. The system prints a "#" (sharp) prompt before reading each
+phrase.
 
 A toplevel phrase can span several lines. It is terminated by ";;" (a
 double-semicolon). The syntax of toplevel phrases is as follows:
@@ -52,6 +53,7 @@ section~\ref{s:toplevel-directives}.
 
 \medskip
 
+\begin{unix}
 The toplevel system is started by the command "csltop". Phrases are
 read on standard input, results are printed on standard output, errors
 on standard error. End-of-file on standard input terminates
@@ -69,6 +71,33 @@ At any point, the parsing, compilation or evaluation of the current
 phrase can be interrupted by pressing "ctrl-C" (or, more precisely,
 by sending the "intr" signal to the "csltop" process). The toplevel
 then immediately returns to the "#" prompt.
+\end{unix}
+
+\begin{windows}
+In addition to the text-only command "csltop.exe", which works exactly
+linke under Unix (see above), a graphical user interface for the
+toplevel is available under the name "cslwin.exe". It should be
+launched from the Windows file manager or program manager.
+
+The ``Terminal'' windows is split in two panes. Phrases are entered
+and edited in the bottom pane. The top pane displays a copy of the
+input phrases as they are processed by the Caml Light toplevel,
+interspersed with the toplevel responses. The ``Return'' key sends the
+contents of the bottom pane to the Caml Light toplevel. The ``Enter''
+key inserts a newline without sending the contents of the Input
+window. (This can be configured with the ``Preferences'' menu item.)
+
+The contents of the input window can be edited at all times, with the
+standard Windows interface. An history of previously entered phrases
+is maintained and displayed in a separate window.
+
+To quit the "Camlwin" application, either select ``Quit'' from
+the ``File'' menu, or use the "quit" function described below.
+
+At any point, the parsing, compilation or evaluation of the current
+phrase can be interrupted by selecting the ``Interrupt Caml Light''
+menu item. This goes back to the "#" prompt.
+\end{windows}
 
 \section{Options} \label{s:toplevel-options}
 

@@ -1,7 +1,7 @@
 \chapter{The graphics library}
 
-The "graphics" library provides a set of portable drawing primitives,
-implemented under the X11 windows system. Drawing takes place
+The "graphics" library provides a set of portable drawing primitives.
+Drawing takes place
 in a separate window that is created when "open_graph" is called.
 
 This library cannot be used in native-code programs compiled with
@@ -9,6 +9,8 @@ This library cannot be used in native-code programs compiled with
 native-code compiler); it can only be used with bytecode programs
 compiled with "cslc".
 
+\begin{unix}
+This library is implemented under the X11 windows system. 
 Programs that use the "graphics" library must be linked as follows:
 \begin{alltt}
         cslc -custom \var{other options} graphics.cma \var{other files} -cclib -lgraphics -cclib -lX11
@@ -18,6 +20,18 @@ For interactive use of the "graphics" library, do:
         cslmktop -custom -o mytop graphics.cma -cclib -lgraphics -cclib -lX11
         ./mytop
 \end{alltt}
+\end{unix}
+
+\begin{windows}
+This library is available only under the toplevel application
+"Cslwin.exe". Before using it, the Caml part of this library must be
+loaded in-core, either by typing
+\begin{alltt}
+        #load "graphics.cmo";;
+\end{alltt}
+in the input windows or by using the ``Load'' entry of the ``File''
+menu.
+\end{windows}
 
 The screen coordinates are interpreted as shown in the figure below.
 Notice that the coordinate system used is the same as in mathematics:
