@@ -283,7 +283,7 @@ let rec find_constructor cname = function
            else find_constructor cname l
 
 (* Enter a type, must not be previously defined *)
-let enter_type typname ?:variant[=false] arity constructors =
+let enter_type typname ?(:variant = false) arity constructors =
   try
       Hashtbl.find types_table key:typname;
       raise (Duplicate_Definition ("type", typname))

@@ -28,7 +28,7 @@ class formatted :parent :width :maxheight :minheight =
 end
 *)
 
-let formatted :title ?:on ?:width[=60] ?:maxheight[=10] ?:minheight[=0] () =
+let formatted :title ?:on ?(:width=60) ?(:maxheight=10) ?(:minheight=0) () =
   let tl, frame =
     match on with
       Some frame -> coe frame, frame

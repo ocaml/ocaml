@@ -74,9 +74,9 @@ let load_in_path = ref false
 
 let search_in_path :name = Misc.find_in_path !Config.load_path name
 
-let f :title action:proc ?:dir[=Unix.getcwd ()]
-    ?filter:deffilter[="*"] ?file:deffile[=""]
-    ?:multi[=false] ?:sync[=false] ?:usepath[=true] () =
+let f :title action:proc ?(:dir = Unix.getcwd ())
+    ?(filter:deffilter ="*") ?(file:deffile ="")
+    ?(:multi=false) ?(:sync=false) ?(:usepath=true) () =
 
   let current_pattern = ref ""
   and current_dir = ref dir in

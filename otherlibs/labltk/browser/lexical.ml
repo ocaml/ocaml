@@ -20,12 +20,12 @@ let init_tags tw =
   Text.tag_configure tw tag:"error" relief:`Raised;
   Text.tag_raise tw tag:"error"
 
-let tag ?:start[=tstart] ?end:pend[=tend] tw =
+let tag ?(:start=tstart) ?(:end=tend) tw =
   let tpos c = (Text.index tw index:start, [`Char c]) in
-  let text = Text.get tw :start end:pend in
+  let text = Text.get tw :start :end in
   let buffer = Lexing.from_string text in
   List.iter tags
-    fun:(fun tag -> Text.tag_remove tw :start end:pend :tag);
+    fun:(fun tag -> Text.tag_remove tw :start :end :tag);
   try
     while true do
     let tag =

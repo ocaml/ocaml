@@ -66,7 +66,7 @@ let rec types_of_template = function
  * Pretty print a type
  *  used to write ML type definitions
  *)
-let ppMLtype ?:any[=false] ?:return[=false] ?:def[=false] ?:counter[=ref 0] =
+let ppMLtype ?(:any=false) ?(:return=false) ?(:def=false) ?(:counter=ref 0) =
   let rec ppMLtype =
   function
     Unit -> "unit"
@@ -492,7 +492,7 @@ let rec converterCAMLtoTK :context_widget argname as:ty =
  *
  *)
  
-let code_of_template :context_widget ?func:funtemplate[=false] template =
+let code_of_template :context_widget ?(func:funtemplate=false) template =
   let catch_opts = ref ("","") in (* class name and first option *)
   let variables = ref [] in
   let variables2 = ref [] in
@@ -591,7 +591,7 @@ let write_clause :w :context_widget comp =
 
 
 (* The full converter *)         
-let write_CAMLtoTK :w def:typdef ?safetype:st[=true] name =
+let write_CAMLtoTK :w def:typdef ?(safetype:st = true) name =
   let write_one name constrs =
     w ("let cCAMLtoTK"^name);
     let context_widget = 

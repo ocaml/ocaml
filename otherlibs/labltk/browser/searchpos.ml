@@ -260,7 +260,7 @@ let edit_source :file :path :sign =
 (* List of windows to destroy by Close All *)
 let top_widgets = ref []
 
-let rec view_signature ?:title ?:path ?:env[= !start_env] sign =
+let rec view_signature ?:title ?:path ?(:env = !start_env) sign =
   let env =
     match path with None -> env
     | Some path -> Env.open_signature path sign env in
@@ -398,7 +398,7 @@ and view_modtype_id li :env =
   view_signature_item :path :env
     [Tsig_modtype(ident_of_path path default:"S", td)]
 
-and view_expr_type ?:title ?:path ?:env ?:name[="noname"] t =
+and view_expr_type ?:title ?:path ?:env ?(:name="noname") t =
   let title =
     match title, path with Some title, _ -> title
     | None, Some path -> string_of_path path

@@ -78,9 +78,9 @@ object (self)
       end;
       self#insert (if dir = `previous then h#previous else h#next)
     end
-  method private lex ?:start[=`Mark"insert",[`Linestart]]
-      ?end:endx[=`Mark"insert",[`Lineend]] () =
-    Lexical.tag textw :start end:endx
+  method private lex ?(:start = `Mark"insert",[`Linestart])
+      ?(:end = `Mark"insert",[`Lineend]) () =
+    Lexical.tag textw :start :end
   method insert text =
     let idx = Text.index textw
         index:(`Mark"insert",[`Char(-1);`Linestart]) in

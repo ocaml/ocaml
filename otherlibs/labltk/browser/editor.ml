@@ -522,7 +522,7 @@ end
 
 let already_open : editor option ref = ref None
 
-let editor ?:file ?:pos[=0] () =
+let editor ?:file ?(:pos=0) () =
 
   if match !already_open with None -> false
   | Some ed ->
@@ -535,7 +535,7 @@ let editor ?:file ?:pos[=0] () =
     already_open := Some ed;
     if file <> None then ed#reopen :file :pos
 
-let f ?:file ?:pos ?:opendialog[=false] () =
+let f ?:file ?:pos ?(:opendialog=false) () =
   if opendialog then
     Fileselect.f title:"Open File"
       action:(function [file] -> editor :file () | _ -> ())

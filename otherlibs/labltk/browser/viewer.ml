@@ -245,7 +245,7 @@ let start_shell () =
   pack [ok;cancel] side:`Left fill:`X expand:true;
   pack [input;buttons] side:`Top fill:`X expand:true
 
-let f ?:dir[=Unix.getcwd()] ?:on () =
+let f ?(:dir=Unix.getcwd()) ?:on () =
   let tl = match on with
     None ->
       let tl = Jg_toplevel.titled "Module viewer" in

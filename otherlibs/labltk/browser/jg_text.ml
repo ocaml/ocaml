@@ -5,9 +5,9 @@ open Jg_tk
 
 let get_all tw = Text.get tw start:tstart end:(tposend 1)
 
-let tag_and_see tw :tag :start end:e =
+let tag_and_see tw :tag :start :end =
   Text.tag_remove tw start:(tpos 0) end:tend :tag;
-  Text.tag_add tw :start end:e :tag;
+  Text.tag_add tw :start :end :tag;
   try
     Text.see tw index:(`Tagfirst tag, []);
     Text.mark_set tw mark:"insert" index:(`Tagfirst tag, [])

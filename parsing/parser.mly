@@ -212,7 +212,6 @@ let unclosed opening_name opening_num closing_name closing_num =
 %token LBRACELESS
 %token LBRACKET
 %token LBRACKETBAR
-%token LBRACKETEQUAL
 %token LBRACKETLESS
 %token LESS
 %token LESSMINUS
@@ -665,16 +664,34 @@ seq_expr:
   | expr SEMI seq_expr            { mkexp(Pexp_sequence($1, $3)) }
 ;
 labeled_simple_pattern:
-    QUESTION label_pattern LBRACKETEQUAL seq_expr RBRACKET
-      { ("?" ^ fst $2, Some $4, snd $2) }
-  | QUESTION label_pattern
+    QUESTION LPAREN label_let_pattern opt_default RPAREN
+      { ("?" ^ fst $3, $4, snd $3) }
+  | QUESTION label_simple_pattern
       { ("?" ^ fst $2, None, snd $2) }
-  | label_pattern
+  | LPAREN label_let_pattern RPAREN
+      { if !Clflags.classic then syntax_error () else (fst $2, None, snd $2) }
+  | label_simple_pattern
       { (fst $1, None, snd $1) }
   | simple_pattern
       { ("", None, $1) }
 ;
+opt_default:
+    /* empty */                         { None }
+  | EQUAL seq_expr                      { Some $2 }
+;
+label_let_pattern:
+    label_pattern
+      { $1 }
+  | label_pattern COLON core_type
+      { let (lab, pat) = $1 in (lab, mkpat(Ppat_constraint(pat, $3))) }
+;
 label_pattern:
+    LABEL pattern
+      { ($1, $2) }
+  | LABELID
+      { ($1, mkpat(Ppat_var $1)) }
+;
+label_simple_pattern:
     LABEL simple_pattern
       { ($1, $2) }
   | LABELID
@@ -1028,12 +1045,8 @@ simple_pattern:
       { unclosed "(" 1 ")" 3 }
   | LPAREN pattern COLON core_type RPAREN
       { mkpat(Ppat_constraint($2, $4)) }
-  | LPAREN LABEL core_type RPAREN
-      { mkpat(Ppat_constraint(mkpat(Ppat_var $2), $3)) }
   | LPAREN pattern COLON core_type error
       { unclosed "(" 1 ")" 5 }
-  | LPAREN LABEL core_type error
-      { unclosed "(" 1 ")" 4 }
 ;
 
 pattern_comma_list:
