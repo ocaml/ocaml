@@ -34,7 +34,8 @@ value getsockopt_int(int *sockopt, value socket, value level, value option)
   int optsize;
 
   optsize = sizeof(optval);
-  if (getsockopt(Int_val(socket), Int_val(level), sockopt[Int_val(option)],
+  if (getsockopt((SOCKET) Handle_val(socket),
+                 Int_val(level), sockopt[Int_val(option)],
 		 (void *) &optval, &optsize) == -1)
     uerror("getsockopt", Nothing);
   return Val_int(optval);
@@ -44,7 +45,8 @@ value setsockopt_int(int *sockopt, value socket, value level,
                      value option, value status)
 {
   int optval = Int_val(status);
-  if (setsockopt(Int_val(socket), Int_val(level), sockopt[Int_val(option)],
+  if (setsockopt((SOCKET) Handle_val(socket),
+                 Int_val(level), sockopt[Int_val(option)],
 		 (void *) &optval, sizeof(optval)) == -1)
     uerror("setsockopt", Nothing);
   return Val_unit;
@@ -75,7 +77,8 @@ value getsockopt_optint(int *sockopt, value socket, value level, value option)
   value res = Val_int(0);			/* None */
 
   optsize = sizeof(optval);
-  if (getsockopt(Int_val(socket), Int_val(level), sockopt[Int_val(option)],
+  if (getsockopt((SOCKET) Handle_val(socket),
+                 Int_val(level), sockopt[Int_val(option)],
 		 (void *) &optval, &optsize) == -1)
     uerror("getsockopt_optint", Nothing);
   if (optval.l_onoff != 0) {
@@ -93,7 +96,8 @@ value setsockopt_optint(int *sockopt, value socket, value level,
   optval.l_onoff = Is_block (status);
   if (optval.l_onoff)
     optval.l_linger = Int_val (Field (status, 0));
-  if (setsockopt(Int_val(socket), Int_val(level), sockopt[Int_val(option)],
+  if (setsockopt((SOCKET) Handle_val(socket),
+                 Int_val(level), sockopt[Int_val(option)],
 		 (void *) &optval, sizeof(optval)) == -1)
     uerror("setsockopt_optint", Nothing);
   return Val_unit;
@@ -101,12 +105,14 @@ value setsockopt_optint(int *sockopt, value socket, value level,
 
 value unix_getsockopt_optint(value socket, value option) /* ML */
 {
-  return getsockopt_optint(sockopt_optint, socket, Val_int(SOL_SOCKET), option);
+  return getsockopt_optint(sockopt_optint, socket,
+                           Val_int(SOL_SOCKET), option);
 }
 
 value unix_setsockopt_optint(value socket, value option, value status) /* ML */
 {
-  return setsockopt_optint(sockopt_optint, socket, Val_int(SOL_SOCKET), option, status);
+  return setsockopt_optint(sockopt_optint, socket,
+                           Val_int(SOL_SOCKET), option, status);
 }
 
 value getsockopt_float(int *sockopt, value socket, value level, value option)
@@ -115,7 +121,8 @@ value getsockopt_float(int *sockopt, value socket, value level, value option)
   int optsize;
 
   optsize = sizeof(tv);
-  if (getsockopt(Int_val(socket), Int_val(level), sockopt[Int_val(option)],
+  if (getsockopt((SOCKET) Handle_val(socket),
+                 Int_val(level), sockopt[Int_val(option)],
 		 (void *) &tv, &optsize) == -1)
     uerror("getsockopt_float", Nothing);
   return copy_double((double) tv.tv_sec + (double) tv.tv_usec / 1e6);
@@ -130,7 +137,8 @@ value setsockopt_float(int *sockopt, value socket, value level,
   tv_f = Double_val(status);
   tv.tv_sec = (int)tv_f;
   tv.tv_usec = (int) (1e6 * (tv_f - tv.tv_sec));
-  if (setsockopt(Int_val(socket), Int_val(level), sockopt[Int_val(option)],
+  if (setsockopt((SOCKET) Handle_val(socket),
+                 Int_val(level), sockopt[Int_val(option)],
 		 (void *) &tv, sizeof(tv)) == -1)
     uerror("setsockopt_float", Nothing);
   return Val_unit;
