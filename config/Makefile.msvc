@@ -28,9 +28,6 @@ LIBDIR=$(PREFIX)/lib
 ### Where to install the info files
 DISTRIB=$(PREFIX)
 
-### Location of MSVC include files
-SYSTEM_INCLUDES=c:/msdev/vc98/include
-
 ########## Toolchain and OS dependencies
 
 TOOLCHAIN=msvc

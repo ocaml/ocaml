@@ -28,9 +28,6 @@ LIBDIR=$(PREFIX)/lib
 ### Where to install the info files
 DISTRIB=$(PREFIX)
 
-### Location of Mingw include files
-SYSTEM_INCLUDES=c:/Mingw/include
-
 ########## Toolchain and OS dependencies
 
 TOOLCHAIN=mingw
@@ -45,6 +42,7 @@ EXE=.exe
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
+# Can also use "gcc -mno-cygwin"
 BYTECC=gcc
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
@@ -61,10 +59,10 @@ BYTECCLIBS=-lm
 NATIVECCLIBS=-lm
 
 ### How to invoke the C preprocessor
-CPP=gcc -E
+CPP=$(BYTECC) -E
 
 ### How to build a DLL
-MKDLL=dllwrap --driver-name=gcc --dllname=$(1) --output-lib=$(2) $(3)
+MKDLL=$(BYTECC) -shared -o $(1) -Wl,--out-implib,$(2) $(3)
 
 ### How to build a static library
 MKLIB=rm -f $(1); ar rcs $(1) $(2)
@@ -87,7 +85,7 @@ MODEL=default
 SYSTEM=mingw
 
 ### Which C compiler to use for the native-code compiler.
-NATIVECC=gcc
+NATIVECC=$(BYTECC)
 
 ### Additional compile-time options for $(NATIVECC).
 NATIVECCCOMPOPTS=-O -Wall -Wno-unused

@@ -53,7 +53,7 @@ stdlib.cmxa: $(OBJS:.cmo=.cmx)
 
 camlheader camlheader_ur: headernt.c ../config/Makefile
 	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o camlheader.exe headernt.c
-	mv camlheader.exe camlheader
+	mv camlheader.exe camlheader.
 	cp camlheader camlheader_ur
 
 clean::

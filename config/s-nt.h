@@ -26,3 +26,4 @@
 #define HAS_GETHOSTNAME
 #define HAS_MKTIME
 #define HAS_PUTENV
+#define HAS_LOCALE

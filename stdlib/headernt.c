@@ -169,7 +169,7 @@ void __declspec(noreturn) __cdecl headerentry()
 #if _MSC_VER >= 1200
     __assume(0); /* Not reached */
 #endif
-#ifdef __MINGW__
+#ifdef __MINGW32__
     return 0;
 #endif
 }
