@@ -306,12 +306,6 @@ CAMLexport void expand_command_line(int * argcp, char *** argvp)
 /* Wrapper around "system" for Win32.  Create a diversion file if
    command line is too long. */
 
-#ifdef __MINGW32__
-int win32_system(char * cmdline)
-{
-  return system(cmdline);
-}
-#else
 int win32_system(char * cmdline)
 {
 #define MAX_CMD_LENGTH 256
@@ -322,7 +316,7 @@ int win32_system(char * cmdline)
   int len, i, j, k, retcode;
 
   len = strlen(cmdline);
-  if (len < 1000) {
+  if (len < 4000) {
     return system(cmdline);
   } else {
     /* Skip initial blanks, if any */
@@ -348,7 +342,6 @@ int win32_system(char * cmdline)
     return retcode;
   }
 }
-#endif
 
 /* Wrapper around "getenv" for Win32.  Look up resources if environment
    variable is not set. Notice that the result is a pointer to static
