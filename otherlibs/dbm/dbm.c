@@ -11,10 +11,6 @@ static int dbm_open_flags[] = {
   O_RDONLY, O_WRONLY, O_RDWR, O_CREAT
 };
 
-static int dbm_flag_table[] = {
-  DBM_INSERT, DBM_REPLACE
-};
-
 /* Exception bucket for DBMError */
 static value dbm_exn;
 value caml_dbm_install_exn(bucket) /* ML */
@@ -73,10 +69,9 @@ value caml_dbm_fetch(vdb,vkey)	/* ML */
   else raise_not_found();
 }
 
-value caml_dbm_store(vdb,vkey,vcontent,vflags) /* ML */
-     value vdb,vkey,vcontent,vflags;
+value caml_dbm_insert(vdb,vkey,vcontent) /* ML */
+     value vdb,vkey,vcontent;
 {
-  int flags = convert_flag_list(vflags, dbm_flag_table);
   datum key, content;
   
   key.dptr = String_val(vkey);
@@ -84,13 +79,32 @@ value caml_dbm_store(vdb,vkey,vcontent,vflags) /* ML */
   content.dptr = String_val(vcontent);
   content.dsize = string_length(vcontent);
 
-  switch(dbm_store((DBM *)vdb, key, content, flags)) {
+  switch(dbm_store((DBM *)vdb, key, content, DBM_INSERT)) {
   case 0:
     return Val_unit;
   case 1:			/* DBM_INSERT and already existing */
-    failwith("dbm_store");
+    raise_dbm("Entry already exists");
   default:
-    raise_dbm("dbm_store");
+    raise_dbm("dbm_store failed");
+  }
+}
+
+
+value caml_dbm_replace(vdb,vkey,vcontent) /* ML */
+     value vdb,vkey,vcontent;
+{
+  datum key, content;
+  
+  key.dptr = String_val(vkey);
+  key.dsize = string_length(vkey);
+  content.dptr = String_val(vcontent);
+  content.dsize = string_length(vcontent);
+
+  switch(dbm_store((DBM *)vdb, key, content, DBM_REPLACE)) {
+  case 0:
+    return Val_unit;
+  default:
+    raise_dbm("dbm_store failed");
   }
 }
 
