@@ -22,7 +22,7 @@
 
 value unix_getgroups()           /* ML */
 {
-  int gidset[NGROUPS];
+  gid_t gidset[NGROUPS];
   int n;
   value res;
   int i;

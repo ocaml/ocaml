@@ -11,6 +11,7 @@
 
 /* $Id$ */
 
+#include <string.h>
 #include <mlvalues.h>
 #include <memory.h>
 #include <signals.h>

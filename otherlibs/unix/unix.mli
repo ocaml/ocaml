@@ -442,18 +442,6 @@ external readlink : string -> string = "unix_readlink"
         (* Read the contents of a link. *)
 
 
-(*** Special files *)
-
-external ioctl_int : file_descr -> int -> int -> int = "unix_ioctl_int"
-        (* Interface to [ioctl] in the case where the argument is an
-           integer. The first integer argument is the command code;
-           the second is the integer parameter. *)
-external ioctl_ptr : file_descr -> int -> string -> int = "unix_ioctl_ptr"
-        (* Interface to [ioctl] in the case where the argument is a pointer.
-           The integer argument is the command code. A pointer to the string
-           argument is passed as argument to the command. *)
-
-
 (*** Polling *)
 
 external select :

@@ -15,7 +15,7 @@ OBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
   geteuid.o getgid.o getgr.o getgroups.o gethost.o gethostname.o \
   getlogin.o getpeername.o getpid.o getppid.o getproto.o getpw.o \
   gettimeofday.o getserv.o getsockname.o getuid.o \
-  gmtime.o ioctl.o itimer.o kill.o link.o listen.o lockf.o lseek.o mkdir.o \
+  gmtime.o itimer.o kill.o link.o listen.o lockf.o lseek.o mkdir.o \
   mkfifo.o nice.o open.o opendir.o pause.o pipe.o read.o \
   readdir.o readlink.o rename.o rewinddir.o rmdir.o select.o sendrecv.o \
   setgid.o setsid.o setuid.o shutdown.o sleep.o socket.o socketaddr.o \

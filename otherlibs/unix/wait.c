@@ -22,12 +22,17 @@
 
 #if !(defined(WIFEXITED) && defined(WEXITSTATUS) && defined(WIFSTOPPED) && \
       defined(WSTOPSIG) && defined(WTERMSIG))
-#define WIFEXITED(status) ((status) & 0xFF == 0)
+/* Assume old-style V7 status word */
+#define WIFEXITED(status) (((status) & 0xFF) == 0)
 #define WEXITSTATUS(status) (((status) >> 8) & 0xFF)
-#define WIFSTOPPED(status) ((status) & 0xFF == 0xFF)
+#define WIFSTOPPED(status) (((status) & 0xFF) == 0xFF)
 #define WSTOPSIG(status) (((status) >> 8) & 0xFF)
 #define WTERMSIG(status) ((status) & 0x3F)
 #endif
+
+#define TAG_WEXITED 0
+#define TAG_WSIGNALED 1
+#define TAG_WSTOPPED 2
 
 static value alloc_process_status(pid, status)
      int pid, status;
@@ -35,15 +40,15 @@ static value alloc_process_status(pid, status)
   value st, res;
 
   if (WIFEXITED(status)) {
-    st = alloc(1, 0);
+    st = alloc(1, TAG_WEXITED);
     Field(st, 0) = Val_int(WEXITSTATUS(status));
   }
   else if (WIFSTOPPED(status)) {
-    st = alloc(1, 2);
+    st = alloc(1, TAG_WSTOPPED);
     Field(st, 0) = Val_int(WSTOPSIG(status));
   }
   else {
-    st = alloc(1, 1);
+    st = alloc(1, TAG_WSIGNALED);
     Field(st, 0) = Val_int(WTERMSIG(status));
   }
   Begin_root (st);

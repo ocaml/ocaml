@@ -44,7 +44,6 @@ getsockname.o: getsockname.c unixsupport.h socketaddr.h
 gettimeofday.o: gettimeofday.c unixsupport.h
 getuid.o: getuid.c unixsupport.h
 gmtime.o: gmtime.c unixsupport.h
-ioctl.o: ioctl.c unixsupport.h
 itimer.o: itimer.c unixsupport.h
 kill.o: kill.c unixsupport.h
 link.o: link.c unixsupport.h

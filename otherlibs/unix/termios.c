@@ -144,7 +144,7 @@ static void encode_terminal_status(dst)
         break; }
     case Speed:
       { int which = *pc++;
-        speed_t speed;
+        speed_t speed = 0;
         switch (which) {
         case Output:
           speed = cfgetospeed(&terminal_status); break;
@@ -198,7 +198,7 @@ static void decode_terminal_status(src)
     case Speed:
       { int which = *pc++;
         int baud = Int_val(*src);
-        int res;
+        int res = 0;
         for (i = 0; i < NSPEEDS; i++) {
           if (baud == speedtable[i].baud) {
             switch (which) {

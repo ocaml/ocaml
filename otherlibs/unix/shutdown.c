@@ -16,6 +16,8 @@
 
 #ifdef HAS_SOCKETS
 
+#include <sys/socket.h>
+
 static int shutdown_command_table[] = {
   0, 1, 2
 };

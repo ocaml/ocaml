@@ -17,6 +17,8 @@
 
 #ifdef HAS_SOCKETS
 
+#include <sys/socket.h>
+
 extern int socket_domain_table[], socket_type_table[];
 
 value unix_socketpair(domain, type, proto) /* ML */

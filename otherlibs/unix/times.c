@@ -31,7 +31,6 @@ value unix_times_bytecode()               /* ML */
 {
   value res;
   struct tms buffer;
-  int i;
   value u = Val_unit, s = Val_unit, cu = Val_unit, cs = Val_unit;
 
   Begin_roots4 (u, s, cu, cs);

@@ -11,6 +11,7 @@
 
 /* $Id$ */
 
+#include <string.h>
 #include <mlvalues.h>
 #include <alloc.h>
 #include <memory.h>
@@ -44,7 +45,7 @@ static value alloc_host_entry(entry)
   value addr_list = Val_unit, addr = Val_unit;
 
   Begin_roots4 (name, aliases, addr_list, addr);
-    name = copy_string(entry->h_name);
+    name = copy_string((char *)(entry->h_name));
     aliases = copy_string_array(entry->h_aliases);
     entry_h_length = entry->h_length;
 #ifdef h_addr

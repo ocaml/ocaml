@@ -242,8 +242,6 @@ external pipe : unit -> file_descr * file_descr = "unix_pipe"
 external symlink : string -> string -> unit = "unix_symlink"
 external readlink : string -> string = "unix_readlink"
 external mkfifo : string -> file_perm -> unit = "unix_mkfifo"
-external ioctl_int : file_descr -> int -> int -> int = "unix_ioctl_int"
-external ioctl_ptr : file_descr -> int -> string -> int = "unix_ioctl_ptr"
 external select :
   file_descr list -> file_descr list -> file_descr list -> float ->
         file_descr list * file_descr list * file_descr list = "unix_select"

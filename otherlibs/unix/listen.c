@@ -16,6 +16,8 @@
 
 #ifdef HAS_SOCKETS
 
+#include <sys/socket.h>
+
 value unix_listen(sock, backlog)
      value sock, backlog;
 {
