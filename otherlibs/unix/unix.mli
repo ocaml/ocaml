@@ -168,7 +168,7 @@ val execvp : string -> string array -> 'a
 (** Same as {!Unix.execv} respectively, except that
    the program is searched in the path. *)
 
-val execvpe : string -> string array -> string array -> unit
+val execvpe : string -> string array -> string array -> 'a
 (** Same as {!Unix.execvp} respectively, except that
    the program is searched in the path. *)
 
