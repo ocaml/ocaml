@@ -869,14 +869,27 @@ let rec type_exp env sexp =
   | Pexp_function _ ->     (* defined in type_expect *)
       type_expect env sexp (newvar())
   | Pexp_apply(sfunct, sargs) ->
+      begin_def (); (* one more level for non-returning functions *)
       if !Clflags.principal then begin_def ();
       let funct = type_exp env sfunct in
       if !Clflags.principal then begin
         end_def ();
         generalize_structure funct.exp_type
       end;
+      let rec lower_args ty_fun =
+        match (expand_head env ty_fun).desc with
+          Tarrow (l, ty, ty_fun, com) ->
+            unify_var env (newvar()) ty;
+            lower_args ty_fun
+        | _ -> ()
+      in
+      let ty = instance funct.exp_type in
+      end_def ();
+      lower_args ty;
+      begin_def ();
       let (args, ty_res) = type_application env funct sargs in
-      let funct = {funct with exp_type = instance funct.exp_type} in
+      end_def ();
+      unify_var env (newvar()) funct.exp_type;
       re {
         exp_desc = Texp_apply(funct, args);
         exp_loc = sexp.pexp_loc;
@@ -1462,9 +1475,20 @@ and type_application env funct sargs =
          instance (result_type omitted ty_fun))
     | (l1, sarg1) :: sargl ->
         let (ty1, ty2) =
-          match (expand_head env ty_fun).desc with
+          let ty_fun = expand_head env ty_fun in
+          match ty_fun.desc with
             Tvar ->
               let t1 = newvar () and t2 = newvar () in
+              let not_identity = function
+                  Texp_ident(_,{val_kind=Val_prim
+                                  {Primitive.prim_name="%identity"}}) ->
+                    false
+                | _ -> true
+              in
+              if ty_fun.level >= t1.level && not_identity funct.exp_desc then
+                Location.prerr_warning sarg1.pexp_loc
+                  (Warnings.Other
+                     "this argument will not be received by the function.");
               unify env ty_fun (newty (Tarrow(l1,t1,t2,Clink(ref Cunknown))));
               (t1, t2)
           | Tarrow (l,t1,t2,_) when l = l1
@@ -1771,18 +1795,24 @@ and type_expect ?in_function env sexp ty_expected =
 (* Typing of statements (expressions whose values are discarded) *)
 
 and type_statement env sexp =
-    let exp = type_exp env sexp in
-    match (expand_head env exp.exp_type).desc with
-    | Tarrow _ ->
-        Location.prerr_warning sexp.pexp_loc Warnings.Partial_application;
-        exp
-    | Tconstr (p, _, _) when Path.same p Predef.path_unit -> exp
-    | Tvar ->
-        add_delayed_check (fun () -> check_partial_application env exp);
-        exp
-    | _ ->
-        Location.prerr_warning sexp.pexp_loc Warnings.Statement_type;
-        exp
+  begin_def();
+  let exp = type_exp env sexp in
+  end_def();
+  let ty = expand_head env exp.exp_type and tv = newvar() in
+  begin match ty.desc with
+  | Tarrow _ ->
+      Location.prerr_warning sexp.pexp_loc Warnings.Partial_application
+  | Tconstr (p, _, _) when Path.same p Predef.path_unit -> ()
+  | Tvar when ty.level > tv.level ->
+      Location.prerr_warning sexp.pexp_loc
+        (Warnings.Other "this statement never returns.")
+  | Tvar ->
+      add_delayed_check (fun () -> check_partial_application env exp)
+  | _ ->
+      Location.prerr_warning sexp.pexp_loc Warnings.Statement_type
+  end;
+  unify_var env tv ty;
+  exp
 
 (* Typing of match cases *)
 

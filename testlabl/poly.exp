@@ -1,4 +1,4 @@
-        Objective Caml version 3.09+dev4 (2004-10-13)
+        Objective Caml version 3.09+dev9 (2004-11-29)
 
 #   * * *       #   type 'a t = { t : 'a; }
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; }
@@ -263,23 +263,23 @@ type 'a u = A of 'a t
 # - : t * [< `A | `B ] -> int = <fun>
 # - : [< `A | `B ] * t -> int = <fun>
 # Characters 0-41:
-Warning: this pattern-matching is not exhaustive.
+Warning P: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 (`AnyExtraTag, `AnyExtraTag)
 - : [> `A | `B ] * [> `A | `B ] -> int = <fun>
 # Characters 0-29:
-Warning: this pattern-matching is not exhaustive.
+Warning P: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 (_, 0)
 Characters 21-24:
-Warning: this match case is unused.
+Warning U: this match case is unused.
 - : [ `B ] * int -> int = <fun>
 # Characters 0-29:
-Warning: this pattern-matching is not exhaustive.
+Warning P: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 (0, _)
 Characters 21-24:
-Warning: this match case is unused.
+Warning U: this match case is unused.
 - : int * [ `B ] -> int = <fun>
 #       Characters 69-135:
 Constraints are not satisfied in this type.
@@ -318,8 +318,8 @@ type bt = 'a ca cb as 'a
 # val f : unit -> c = <fun>
 # val f : unit -> c = <fun>
 # Characters 11-60:
-Warning: the following private methods were made public implicitly:
-  n
+Warning X: the following private methods were made public implicitly:
+  n .
 val f : unit -> < m : int; n : int > = <fun>
 # Characters 11-56:
 This object is expected to have type c but has actually type

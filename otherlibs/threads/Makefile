@@ -19,7 +19,7 @@ CC=$(BYTECC)
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -g
 CAMLC=../../ocamlcomp.sh -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
-COMPFLAGS=-warn-error Ay -w Y
+COMPFLAGS=-warn-error Axy -w Y
 
 C_OBJS=scheduler.o
 

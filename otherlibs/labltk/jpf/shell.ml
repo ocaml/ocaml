@@ -22,7 +22,7 @@ let subshell cmd =
     match fork () with
       0 -> close r; dup2 w stdout; 
            close stderr;
-           execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]; exit 127
+           execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
     | id -> 
         close w; 
         let rc = in_channel_of_descr r in
