@@ -13,6 +13,8 @@
 
 (* $Id$ *)
 
+val lt_string : ?nocase:bool -> string -> string -> bool
+
 class timed :  ?nocase:bool -> ?wait:int -> string list -> object
   val mutable texts : string list
   method add : string -> int

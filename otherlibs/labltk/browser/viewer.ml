@@ -40,7 +40,8 @@ let list_modules ~path =
 
 let reset_modules box =
   Listbox.delete box ~first:(`Num 0) ~last:`End;
-  module_list := Sort.list ~order:(<) (list_modules ~path:!Config.load_path);
+  module_list := Sort.list ~order:(Jg_completion.lt_string ~nocase:true)
+      (list_modules ~path:!Config.load_path);
   Listbox.insert box ~index:`End ~texts:!module_list;
   Jg_box.recenter box ~index:(`Num 0)
 
