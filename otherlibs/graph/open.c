@@ -19,6 +19,9 @@
 #include <callback.h>
 #include <fail.h>
 #include <memory.h>
+#ifdef HAS_UNISTD
+#include <unistd.h>
+#endif
 #ifdef HAS_SETITIMER
 #include <sys/time.h>
 #endif
