@@ -12,10 +12,10 @@
 
 (* $Id$ *)
 
-(* Module [StdLabels]: standard labeled libraries *)
+(** Standard labeled libraries.
 
-(* This meta-module provides labelized version of the [Hashtbl],
-   [Map] and [Set] modules.
+   This meta-module provides labelized version of the {!Hashtbl},
+   {!Map} and {!Set} modules.
 
    They only differ by their labels. They are provided for backwards
    compatibility with previous versions of Objective Caml, and it is

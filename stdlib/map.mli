@@ -24,7 +24,7 @@
 
 (** The input signature of the functor [Map.Make].
    [t] is the type of the map keys.
-   {!Pervasives.compare} is a total ordering function over the keys.
+   [compare] is a total ordering function over the keys.
    This is a two-argument function [f] such that
    [f e1 e2] is zero if the keys [e1] and [e2] are equal,
    [f e1 e2] is strictly negative if [e1] is smaller than [e2],
