@@ -113,7 +113,6 @@ static int do_write(fd, p, n)
   int retcode;
 
   Assert(!Is_young(p));
-  enter_blocking_section();
 #ifdef HAS_UI
   retcode = ui_write(fd, p, n);
 #else
@@ -132,7 +131,6 @@ again:
     }
   }
 #endif
-  leave_blocking_section();
   if (retcode == -1) sys_error(NULL);
   return retcode;
 }
