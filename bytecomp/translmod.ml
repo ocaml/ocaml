@@ -41,12 +41,10 @@ let rec apply_coercion restr arg =
           apply_coercion cc_res
             (Lapply(Lvar id, [apply_coercion cc_arg (Lvar param)]))))
   | Tcoerce_primitive p ->
-      fatal_error "Translmod.apply_coercion"
+      transl_primitive p
 
 and apply_coercion_field id (pos, cc) =
-  match cc with
-    Tcoerce_primitive p -> transl_primitive p
-  | _ -> apply_coercion cc (Lprim(Pfield pos, [Lvar id]))
+  apply_coercion cc (Lprim(Pfield pos, [Lvar id]))
 
 (* Compose two coercions
    apply_coercion c1 (apply_coercion c2 e) behaves like
@@ -59,8 +57,11 @@ let rec compose_coercions c1 c2 =
   | (Tcoerce_structure pc1, Tcoerce_structure pc2) ->
       let v2 = Array.of_list pc2 in
       Tcoerce_structure
-        (List.map (fun (p1, c1) ->
-                let (p2, c2) = v2.(p1) in (p2, compose_coercions c1 c2))
+        (List.map
+          (function (p1, Tcoerce_primitive p) ->
+                      (p1, Tcoerce_primitive p)
+                  | (p1, c1) ->
+                      let (p2, c2) = v2.(p1) in (p2, compose_coercions c1 c2))
              pc1)
   | (Tcoerce_functor(arg1, res1), Tcoerce_functor(arg2, res2)) ->
       Tcoerce_functor(compose_coercions arg2 arg1,
@@ -184,72 +185,90 @@ let transl_implementation module_name (str, cc) =
 (* A variant of transl_structure used to compile toplevel structure definitions
    for the native-code compiler. Store the defined values in the fields
    of the global as soon as they are defined, in order to reduce register
-   pressure.
-   "map" is a table from idents to (position in global block, coercion).
-   "prim" is a list of (position in global block, primitive declaration). *)
+   pressure.  Also rewrites the defining expressions so that they
+   refer to earlier fields of the structure through the fields of
+   the global, not by their names.
+   "map" is a table from defined idents to (pos in global block, coercion).
+   "prim" is a list of (pos in global block, primitive declaration). *)
 
 let transl_store_structure glob map prims str =
-  let rec transl_store = function
+  let rec transl_store subst = function
     [] ->
       lambda_unit
   | Tstr_eval expr :: rem ->
-      Lsequence(transl_exp expr, transl_store rem)
+      Lsequence(subst_lambda subst (transl_exp expr),
+                transl_store subst rem)
   | Tstr_value(rec_flag, pat_expr_list) :: rem ->
-      transl_let rec_flag pat_expr_list
-        (store_idents glob map (let_bound_idents pat_expr_list)
-          (transl_store rem))
+      let ids = let_bound_idents pat_expr_list in
+      let lam = transl_let rec_flag pat_expr_list (store_idents ids) in
+      Lsequence(subst_lambda subst lam,
+                transl_store (add_idents ids subst) rem)
   | Tstr_primitive(id, descr) :: rem ->
       begin match descr.val_kind with
         Val_prim p -> primitive_declarations :=
                         p.Primitive.prim_name :: !primitive_declarations
       | _ -> ()
       end;
-      transl_store rem
+      transl_store subst rem
   | Tstr_type(decls) :: rem ->
-      transl_store rem
+      transl_store subst rem
   | Tstr_exception(id, decl) :: rem ->
-      Llet(Strict, id,
-           transl_exception id (field_path (global_path glob) id) decl,
-           store_ident glob map id (transl_store rem))
+      let lam = transl_exception id (field_path (global_path glob) id) decl in
+      Lsequence(Llet(Strict, id, lam, store_ident id),
+                transl_store (add_ident id subst) rem)
   | Tstr_module(id, modl) :: rem ->
-      Llet(Strict, id,
-           transl_module Tcoerce_none (field_path (global_path glob) id) modl,
-           store_ident glob map id (transl_store rem))
+      let lam =
+        transl_module Tcoerce_none (field_path (global_path glob) id) modl in
+      Lsequence(Llet(Strict, id,
+                     subst_lambda subst lam, store_ident id),
+                transl_store (add_ident id subst) rem)
   | Tstr_modtype(id, decl) :: rem ->
-      transl_store rem
+      transl_store subst rem
   | Tstr_open path :: rem ->
-      transl_store rem
+      transl_store subst rem
   | Tstr_class cl_list :: rem ->
       let ids = List.map (fun (i, _, _, _) -> i) cl_list in
-      Lletrec(List.map
-                (fun (id, arity, meths, cl) ->
-                   (id, transl_class ids id arity meths cl))
-                cl_list,
-              store_idents glob map ids (transl_store rem))
+      let lam =
+        Lletrec(List.map
+                  (fun (id, arity, meths, cl) ->
+                     (id, transl_class ids id arity meths cl))
+                  cl_list,
+                store_idents ids) in
+      Lsequence(subst_lambda subst lam,
+                transl_store (add_idents ids subst) rem)
   | Tstr_cltype cl_list :: rem ->
-      transl_store rem
+      transl_store subst rem
 
-  and store_ident glob map id cont =
+  and store_ident id =
     try
       let (pos, cc) = Ident.find_same id map in
       let init_val = apply_coercion cc (Lvar id) in
-      Lsequence
-       (Lprim(Psetfield(pos, false), [Lprim(Pgetglobal glob, []); init_val]),
-        cont)
+      Lprim(Psetfield(pos, false), [Lprim(Pgetglobal glob, []); init_val])
     with Not_found ->
-      cont
+      fatal_error("Translmod.transl_store_structure: " ^ Ident.unique_name id)
 
-  and store_idents glob map idlist cont =
-    List.fold_right (store_ident glob map) idlist cont
+  and store_idents idlist =
+    make_sequence store_ident idlist
+
+  and add_ident id subst =
+    try
+      let (pos, cc) = Ident.find_same id map in
+      Ident.add id (Lprim(Pfield pos, [Lprim(Pgetglobal glob, [])])) subst
+    with Not_found ->
+      fatal_error("Translmod.transl_store_structure: " ^ Ident.unique_name id)
+
+  and add_idents idlist subst =
+    List.fold_right add_ident idlist subst
 
   and store_primitive (pos, prim) cont =
     Lsequence(Lprim(Psetfield(pos, false),
                     [Lprim(Pgetglobal glob, []); transl_primitive prim]),
               cont)
-  in
-    List.fold_right store_primitive prims (transl_store str)
 
-(* Build the list of value identifiers defined by a toplevel structure *)
+  in List.fold_right store_primitive prims (transl_store Ident.empty str)
+
+(* Build the list of value identifiers defined by a toplevel structure
+   (excluding primitive declarations). *)
 
 let rec defined_idents = function
     [] -> []
@@ -266,39 +285,42 @@ let rec defined_idents = function
       List.map (fun (i, _, _, _) -> i) cl_list @ defined_idents rem
   | Tstr_cltype cl_list :: rem -> defined_idents rem
 
-(* Transform a coercion and the list of value identifiers built above
-   into a table id -> (pos, coercion), with [pos] being the position
-   in the global block where the value of [id] must be stored,
-   and [coercion] the coercion to be applied to it.
+(* Transform a coercion and the list of value identifiers defined by
+   a toplevel structure into a table [id -> (pos, coercion)],
+   with [pos] being the position in the global block where the value of
+   [id] must be stored, and [coercion] the coercion to be applied to it.
    A given identifier may appear several times
    in the coercion (if it occurs several times in the signature); remember
    to assign it the position of its last occurrence.
-   Also buid a list of primitives and their positions in the global block,
-   and the total size of the global block. *)
+   Identifiers that are not exported are assigned positions at the
+   end of the block (beyond the positions of all exported idents).
+   Also compute the total size of the global block,
+   and the list of all primitives exported as values. *)
 
 let build_ident_map restr idlist =
+  let rec natural_map pos map prims = function
+    [] ->
+      (map, prims, pos)
+  | id :: rem ->
+      natural_map (pos+1) (Ident.add id (pos, Tcoerce_none) map) prims rem in
   match restr with
     Tcoerce_none ->
-      let rec build_map pos map = function
-        [] ->
-          (map, [], pos)
-      | id :: rem ->
-          build_map (pos+1) (Ident.add id (pos, Tcoerce_none) map) rem
-      in build_map 0 Ident.empty idlist
+      natural_map 0 Ident.empty [] idlist
   | Tcoerce_structure pos_cc_list ->
       let idarray = Array.of_list idlist in
-      let rec build_map pos map prims = function
+      let rec export_map pos map prims undef = function
         [] ->
-          (map, prims, pos)
+          natural_map pos map prims undef
       | (source_pos, Tcoerce_primitive p) :: rem ->
-          build_map (pos+1) map ((pos, p) :: prims) rem
+          export_map (pos + 1) map ((pos, p) :: prims) undef rem
       | (source_pos, cc) :: rem ->
-          build_map (pos+1) (Ident.add idarray.(source_pos) (pos, cc) map)
-                    prims rem
-      in build_map 0 Ident.empty [] pos_cc_list
+          let id = idarray.(source_pos) in
+          export_map (pos + 1) (Ident.add id (pos, cc) map)
+                     prims (list_remove id undef) rem
+      in export_map 0 Ident.empty [] idlist pos_cc_list
   | _ ->
       fatal_error "Translmod.build_ident_map"
-        
+
 (* Compile an implementation using transl_store_structure 
    (for the native-code compiler). *)
 
@@ -308,14 +330,6 @@ let transl_store_implementation module_name (str, restr) =
   let module_id = Ident.create_persistent module_name in
   let (map, prims, size) = build_ident_map restr (defined_idents str) in
   (size, transl_label_init (transl_store_structure module_id map prims str))
-
-(* Compile a sequence of expressions *)
-
-let rec make_sequence fn = function
-    [] -> lambda_unit
-  | [x] -> fn x
-  | x::rem ->
-      let lam = fn x in Lsequence(lam, make_sequence fn rem)
 
 (* Compile a toplevel phrase *)
 

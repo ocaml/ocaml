@@ -641,7 +641,7 @@ and close_switch fenv cenv num_keys cases =
 
 let intro size lam =
   global_approx := Array.create size Value_unknown;
-  let (ulam, approx) = close Tbl.empty Tbl.empty lam in
   Compilenv.set_global_approx(Value_tuple !global_approx);
+  let (ulam, approx) = close Tbl.empty Tbl.empty lam in
   global_approx := [||];
   ulam

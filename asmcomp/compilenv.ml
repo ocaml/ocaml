@@ -91,23 +91,27 @@ let cmx_not_found_crc =
 
 let global_approx global_ident =
   let modname = Ident.name global_ident in
-  try
-    Hashtbl.find global_approx_table modname
-  with Not_found ->
-    let (approx, crc) =
-      try
-        let filename =
-          find_in_path !load_path (String.uncapitalize modname ^ ".cmx") in
-        let (ui, crc) = read_unit_info filename in
-        if ui.ui_name <> modname then
-          raise(Error(Illegal_renaming(modname, filename)));
-        (ui.ui_approx, crc)
-      with Not_found ->
-        (Value_unknown, cmx_not_found_crc) in
-    current_unit.ui_imports_cmx <-
-      (modname, crc) :: current_unit.ui_imports_cmx;
-    Hashtbl.add global_approx_table modname approx;
-    approx
+  if modname = current_unit.ui_name then
+    current_unit.ui_approx
+  else begin
+    try
+      Hashtbl.find global_approx_table modname
+    with Not_found ->
+      let (approx, crc) =
+        try
+          let filename =
+            find_in_path !load_path (String.uncapitalize modname ^ ".cmx") in
+          let (ui, crc) = read_unit_info filename in
+          if ui.ui_name <> modname then
+            raise(Error(Illegal_renaming(modname, filename)));
+          (ui.ui_approx, crc)
+        with Not_found ->
+          (Value_unknown, cmx_not_found_crc) in
+      current_unit.ui_imports_cmx <-
+        (modname, crc) :: current_unit.ui_imports_cmx;
+      Hashtbl.add global_approx_table modname approx;
+      approx
+  end
 
 (* Register the approximation of the module being compiled *)
 

@@ -192,6 +192,8 @@ let rec is_guarded = function
   | Levent(lam, ev) -> is_guarded lam
   | _ -> false
 
+(* Translate an access path *)
+
 let rec transl_path = function
     Pident id ->
       if Ident.global id then Lprim(Pgetglobal id, []) else Lvar id
@@ -199,3 +201,46 @@ let rec transl_path = function
       Lprim(Pfield pos, [transl_path p])
   | Papply(p1, p2) ->
       fatal_error "Lambda.transl_path"
+
+(* Compile a sequence of expressions *)
+
+let rec make_sequence fn = function
+    [] -> lambda_unit
+  | [x] -> fn x
+  | x::rem ->
+      let lam = fn x in Lsequence(lam, make_sequence fn rem)
+
+(* Apply a substitution to a lambda-term.
+   Assumes that the bound variables of the lambda-term do not
+   belong to the domain of the substitution.
+   Assumes that the image of the substitution is out of reach
+   of the bound variables of the lambda-term (no capture). *)
+
+let subst_lambda s lam =
+  let rec subst = function
+    Lvar id as l ->
+      begin try Ident.find_same id s with Not_found -> l end
+  | Lconst sc as l -> l
+  | Lapply(fn, args) -> Lapply(subst fn, List.map subst args)
+  | Lfunction(kind, params, body) -> Lfunction(kind, params, subst body)
+  | Llet(str, id, arg, body) -> Llet(str, id, subst arg, subst body)
+  | Lletrec(decl, body) -> Lletrec(List.map subst_decl decl, subst body)
+  | Lprim(p, args) -> Lprim(p, List.map subst args)
+  | Lswitch(arg, sw) ->
+      Lswitch(subst arg,
+              {sw with sw_consts = List.map subst_case sw.sw_consts;
+                       sw_blocks = List.map subst_case sw.sw_blocks})
+  | Lstaticfail -> Lstaticfail
+  | Lcatch(e1, e2) -> Lcatch(subst e1, subst e2)
+  | Ltrywith(e1, exn, e2) -> Ltrywith(subst e1, exn, subst e2)
+  | Lifthenelse(e1, e2, e3) -> Lifthenelse(subst e1, subst e2, subst e3)
+  | Lsequence(e1, e2) -> Lsequence(subst e1, subst e2)
+  | Lwhile(e1, e2) -> Lwhile(subst e1, subst e2)
+  | Lfor(v, e1, e2, dir, e3) -> Lfor(v, subst e1, subst e2, dir, subst e3) 
+  | Lassign(id, e) -> Lassign(id, subst e)
+  | Lsend (met, obj, args) -> Lsend (subst met, subst obj, List.map subst args)
+  | Levent (lam, evt) -> Levent (subst lam, evt)
+  | Lifused (v, e) -> Lifused (v, subst e)
+  and subst_decl (id, exp) = (id, subst exp)
+  and subst_case (key, case) = (key, subst case)
+  in subst lam
