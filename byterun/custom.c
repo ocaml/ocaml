@@ -97,7 +97,7 @@ struct custom_operations * final_custom_operations(final_fun fn)
   l = stat_alloc(sizeof(struct custom_operations_list));
   l->ops = ops;
   l->next = custom_ops_final_table;
-  custom_ops_table = l;
+  custom_ops_final_table = l;
   return ops;
 }
 
