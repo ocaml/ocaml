@@ -4,6 +4,7 @@ include config/Makefile.h
 include Makefile.config
 
 CAMLC=boot/camlrun boot/camlc -I boot
+CAMLOPT=boot/camlrun ./camlopt -I stdlib
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=
 CAMLYACC=boot/camlyacc
@@ -208,7 +209,7 @@ clean::
 
 beforedepend:: utils/config.ml
 
-# The parser
+# The parser generator
 
 parsing/parser.mli parsing/parser.ml: parsing/parser.mly
 	$(CAMLYACC) $(YACCFLAGS) parsing/parser.mly
@@ -218,7 +219,7 @@ clean::
 
 beforedepend:: parsing/parser.mli parsing/parser.ml
 
-# The lexer
+# The lexer generator
 
 parsing/lexer.ml: parsing/lexer.mll
 	$(CAMLLEX) parsing/lexer.mll
@@ -227,6 +228,22 @@ clean::
 	rm -f parsing/lexer.ml
 
 beforedepend:: parsing/lexer.ml
+
+# The compiler compiled with the native-code compiler
+
+camlc.opt: $(COMPOBJS:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) -o camlc.opt $(COMPOBJS:.cmo=.cmx)
+
+clean::
+	rm -f camlc.opt
+
+# The native-code compiler compiled with itself
+
+camlopt.opt: $(OPTOBJS:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) -o camlopt $(OPTOBJS:.cmo=.cmx)
+
+clean::
+	rm -f camlopt.opt
 
 # The numeric opcodes
 
@@ -338,7 +355,7 @@ alldepend::
 
 # Default rules
 
-.SUFFIXES: .ml .mli .cmo .cmi
+.SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
 	$(CAMLC) $(COMPFLAGS) -c $<
@@ -346,14 +363,17 @@ alldepend::
 .mli.cmi:
 	$(CAMLC) $(COMPFLAGS) -c $<
 
+.ml.cmx:
+	$(CAMLOPT) $(COMPFLAGS) -c $<
+
 clean::
-	rm -f utils/*.cm[io] utils/*~
-	rm -f parsing/*.cm[io] parsing/*~
-	rm -f typing/*.cm[io] typing/*~
-	rm -f bytecomp/*.cm[io] bytecomp/*~
-	rm -f asmcomp/*.cm[io] asmcomp/*~
-	rm -f driver/*.cm[io] driver/*~
-	rm -f toplevel/*.cm[io] toplevel/*~
+	rm -f utils/*.cm[iox] utils/*~
+	rm -f parsing/*.cm[iox] parsing/*~
+	rm -f typing/*.cm[iox] typing/*~
+	rm -f bytecomp/*.cm[iox] bytecomp/*~
+	rm -f asmcomp/*.cm[iox] asmcomp/*~
+	rm -f driver/*.cm[iox] driver/*~
+	rm -f toplevel/*.cm[iox] toplevel/*~
 	rm -f *~
 
 depend: beforedepend
