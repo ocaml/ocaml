@@ -96,8 +96,10 @@ COMPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(DRIVER)
 TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
 
 TOPOBJS=$(TOPLEVELLIB) $(TOPLEVELMAIN)
+
+JOCAMLLIBS=otherlibs/dyntypes/dynamics.cmo
 JOCAMLEXTRATOPOBJS=toplevel/be_join.cmo \
-  otherlibs/dyntypes/dynamics.cmo \
+  $(JOCAMLLIBS) \
   camlp4/top/camlp4o.cma jocparsing/pa_joc.cmo
 JOCAMLTOPOBJS=$(TOPLEVELLIB) $(JOCAMLEXTRATOPOBJS) $(TOPLEVELMAIN)
 
@@ -297,7 +299,7 @@ toplevel/toplevellib.cma: $(TOPLIB)
 partialclean::
 	rm -f ocaml jocaml toplevel/toplevellib.cma
 
-jocaml: $(JOCAMLTOPOBJS) expunge
+jocaml: $(JOCAMLLIBS) $(JOCAMLTOPOBJS) expunge
 	$(CAMLC) $(LINKFLAGS) -linkall -o jocaml.tmp $(JOCAMLTOPOBJS)
 	- $(CAMLRUN) ./expunge jocaml.tmp jocaml $(PERVASIVES) dynamics
 	rm -f jocaml.tmp
@@ -542,6 +544,14 @@ alldepend::
 
 # The extra libraries
 
+otherlibs/dyntypes/dynamics.cmo: dyntypes
+otherlibs/dyntypes/dynamics.cmx: dyntypes
+otherlibs/dyntypes/dynamics.o: dyntypes
+dyntypes: ocamlc jocp
+	cd otherlibs/dyntypes && $(MAKE)
+dynlink: ocamlc
+	cd otherlibs/dynlink && $(MAKE)
+
 otherlibraries: jocp
 otherlibrariesopt: jocp
 otherlibraries:
@@ -572,7 +582,7 @@ alldepend::
 
 # Camlp4
 
-camlp4out: ocamlc
+camlp4out: ocamlc dynlink
 	cd camlp4; $(MAKE) all
 camlp4opt: ocamlopt
 	cd camlp4; $(MAKE) opt
