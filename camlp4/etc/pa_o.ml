@@ -18,13 +18,12 @@ open Pcaml;
 Pcaml.syntax_name.val := "OCaml";
 Pcaml.no_constructors_arity.val := True;
 
-value (lexer, pos) =
-  Plexer.make_lexer ()
-;
 
 do {
   let odfa = Plexer.dollar_for_antiquotation.val in
   Plexer.dollar_for_antiquotation.val := False;
+  let (lexer, pos) = Plexer.make_lexer () in
+  Pcaml.position.val := pos;
   Grammar.Unsafe.gram_reinit gram lexer;
   Plexer.dollar_for_antiquotation.val := odfa;
   Grammar.Unsafe.clear_entry interf;
@@ -48,7 +47,6 @@ do {
 
 Pcaml.parse_interf.val := Grammar.Entry.parse interf;
 Pcaml.parse_implem.val := Grammar.Entry.parse implem;
-Pcaml.position.val := pos;
 
 value o2b =
   fun
