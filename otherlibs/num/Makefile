@@ -36,7 +36,7 @@ bignum/libbignum.a:
 install:
 	cp libnums.a $(LIBDIR)/libnums.a
 	cd $(LIBDIR); $(RANLIB) libnums.a
-	cp nums.cma $(CMIFILES) $(LIBDIR)
+	cp nums.cma $(CAMLINTF) $(LIBDIR)
 
 installopt:
 	cp nums.cmxa nums.a $(LIBDIR)
