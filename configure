@@ -401,9 +401,10 @@ esac
 # Determine alignment constraints
 
 case "$host" in
-  sparc-*-*)
+  sparc-*-*|hppa*-*-*)
     # On Sparc V9 with certain versions of gcc, determination of double
-    # alignment is not reliable (PR#1521), hence force it
+    # alignment is not reliable (PR#1521), hence force it.
+    # Same goes for hppa.
     echo "Doubles must be doubleword-aligned."
     echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
   *)
