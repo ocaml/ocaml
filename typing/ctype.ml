@@ -2048,8 +2048,26 @@ let rec build_subtype env t =
       else (t, false)
   | Tconstr(p, tl, abbrev) ->
       (t, false)
-  | Tvariant _ ->
-      (t, false)
+  | Tvariant row ->
+      let row = row_repr row in
+      if not (static_row row) then (t, false) else
+      let bound = ref row.row_bound in
+      let fields =
+	List.map
+	  (fun (l,f) -> l, match row_field_repr f with
+	    Rpresent None ->
+	      Reither(true, [], ref None)
+	  | Rpresent(Some t) ->
+	      bound := t :: !bound;
+	      Reither(false, [t], ref None)
+	  | _ -> assert false)
+	  (filter_row_fields false row.row_fields)
+      in
+      if fields = [] then (t, false) else
+      let row =
+	{row with row_fields = fields; row_more = newvar(); row_bound = !bound}
+      in
+      (newty (Tvariant row), true)
   | Tobject (t1, _) when opened_object t1 ->
       (t, false)
   | Tobject (t1, _) ->
@@ -2130,6 +2148,28 @@ let rec subtype_rec env trace t1 t2 cstrs =
         (trace, t1, t2)::cstrs
     | (Tobject (f1, _), Tobject (f2, _)) ->
         subtype_fields env trace f1 f2 cstrs
+    | (Tvariant row1, Tvariant row2) ->
+	let row1 = row_repr row1 and row2 = row_repr row2 in
+	begin try
+	  if not row1.row_closed then raise Exit;
+	  let r1, r2, pairs =
+	    merge_row_fields row1.row_fields row2.row_fields in
+	  if filter_row_fields false r1 <> [] then raise Exit;
+	  List.fold_left
+	    (fun cstrs (_,f1,f2) ->
+	      match row_field_repr f1, row_field_repr f2 with
+		(Rpresent None|Reither(true,_,_)), Rpresent None ->
+		  cstrs
+	      | Rpresent(Some t1), Rpresent(Some t2) ->
+		  subtype_rec env ((t1, t2)::trace) t1 t2 cstrs
+	      | Reither(false, t1::_, _), Rpresent(Some t2) ->
+		  subtype_rec env ((t1, t2)::trace) t1 t2 cstrs
+	      | Rabsent, _ -> cstrs
+	      | _ -> raise Exit)
+	    cstrs pairs
+	with Exit ->
+	  (trace, t1, t2)::cstrs
+	end
     | (_, _) ->
         (trace, t1, t2)::cstrs
   end
