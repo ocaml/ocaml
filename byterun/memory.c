@@ -316,7 +316,8 @@ void * stat_alloc (asize_t sz)
 {
   void * result = malloc (sz);
 
-  if (result == NULL) raise_out_of_memory ();
+  /* malloc() may return NULL if size is 0 */
+  if (result == NULL && sz != 0) raise_out_of_memory ();
 #ifdef DEBUG
   {
     value *p;
