@@ -17,6 +17,7 @@
 {
 let filename = ref ""
 let linenum = ref 0
+let linebeg = ref 0
 
 let parse_sharp_line s =
   try
@@ -42,24 +43,27 @@ rule skip_line = parse
     [^ '\n' '\r'] *
     ('\n' | '\r' | "\r\n")
       { parse_sharp_line(Lexing.lexeme lexbuf);
-        Lexing.lexeme_start lexbuf }
+        linebeg := Lexing.lexeme_start lexbuf;
+        Lexing.lexeme_end lexbuf }
   | [^ '\n' '\r'] *
     ('\n' | '\r' | "\r\n")
       { incr linenum;
-        Lexing.lexeme_start lexbuf }
+        linebeg := Lexing.lexeme_start lexbuf;
+        Lexing.lexeme_end lexbuf }
   | eof
       { raise End_of_file }
 
 {
 
 let for_position file loc =
+  print_int loc; print_newline();
   let ic = open_in_bin file in
   let lb = Lexing.from_channel ic in
   filename := file;
   linenum := 1;
-  let linebeg = ref 0 in
+  linebeg := 0;
   begin try
-    while linebeg := skip_line lb; !linebeg < loc do () done
+    while skip_line lb <= loc do () done
   with End_of_file -> ()
   end;
   close_in ic;
