@@ -115,7 +115,7 @@ defaultentry:
 	@echo "Please refer to the installation instructions in file README.win32."
 
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries ocamldoc camlp4out win32gui
+all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries ocamldoc.byte camlp4out win32gui
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -520,7 +520,7 @@ alldepend::
 
 # OCamldoc
 
-ocamldoc: 
+ocamldoc.byte: 
 	cd ocamldoc & $(MAKEREC) all
 ocamldoc.opt: 
 	cd ocamldoc & $(MAKEREC) opt.opt
