@@ -72,14 +72,17 @@ OCaml.bytecode Ä primitives ::toplevellib.cma ::toplevel:topmain.cmo ¶
        ::toplevellib.cma ::otherlibs:graph:graphics.cma ¶
        ::otherlibs:num:nums.cma ::toplevel:topmain.cmo ¶
        -o OCaml.bytecode
-    mergefragment -c -t Caml OCaml.bytecode
 
-appli ÄÄ ocaml.r OCaml.bytecode OCaml.PPC OCaml.68k
+dummy_fragment Ä dummy_fragment.c.x
+    ppclink -xm l -o dummy_fragment {ppclinkoptions} dummy_fragment.c.x
+
+appli ÄÄ ocaml.r OCaml.bytecode OCaml.PPC OCaml.68k dummy_fragment
     duplicate -y OCaml.68k "Objective Caml"
     rez -a -o "Objective Caml" {RezDefs} {rezincludes} ocaml.r
     mergefragment -a OCaml.PPC "Objective Caml"
+    mergefragment dummy_fragment "Objective Caml"
+    catenate OCaml.bytecode >>"Objective Caml"
     setfile -t APPL -c Caml -a iB "Objective Caml"
-    mergefragment OCaml.bytecode "Objective Caml"
 
 install Ä
     duplicate -y "Objective Caml" "{APPLIDIR}"
@@ -89,8 +92,9 @@ partialclean Ä
 
 clean Ä
     delete -i {OBJS} {PPCOBJS} OCaml.68k OCaml.PPC OCaml.bytecode ¶
-              "Objective Caml" primitives prims.c
-    delete -i "Objective Caml.xcoff" "Objective Caml.dbg"   # XXX
+              "Objective Caml" primitives prims.c null
+    delete -i dummy_fragment dummy_fragment.c.x dummy_fragment.xcoff
+    delete -i "Objective Caml.xcoff" "Objective Caml.dbg"
 
 depend Ä prims.c
     makedepend Å.c > Makefile.Mac.depend

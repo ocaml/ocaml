@@ -12,7 +12,7 @@ set -e LIBDIR "{mpw}User Commands:ocaml-lib:"
 set -e HELPFILE "{mpw}O'Caml.help"
 
 ### Where to install the application and the standard library
-set -e APPLIDIR "{mpw}:O'Caml:"
+set -e APPLIDIR "{mpw}::O'Caml:"
 
 
 ############# Configuration for the contributed libraries
@@ -39,8 +39,8 @@ set -e NATIVECC MrC
 ############# Version numbers (do not change)
 
 set -e OCAMLMAJOR 2
-set -e OCAMLMINOR 01
+set -e OCAMLMINOR 02
 set -e MAJOR 1
 set -e MINOR 0
 set -e STAGE a
-set -e REV 3
+set -e REV 4

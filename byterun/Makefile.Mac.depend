@@ -31,6 +31,7 @@
                              config.h ¶
                              ::config:sm-Mac.h ¶
                              misc.h ¶
+                             fail.h ¶
                              memory.h ¶
                              gc.h ¶
                              major_gc.h ¶
@@ -461,6 +462,7 @@
                             alloc.h ¶
                             misc.h ¶
                             mlvalues.h ¶
+                            callback.h ¶
                             debugger.h ¶
                             exec.h ¶
                             fail.h ¶
@@ -562,6 +564,7 @@
                              config.h ¶
                              ::config:sm-Mac.h ¶
                              misc.h ¶
+                             fail.h ¶
                              memory.h ¶
                              gc.h ¶
                              major_gc.h ¶
@@ -992,6 +995,7 @@
                             alloc.h ¶
                             misc.h ¶
                             mlvalues.h ¶
+                            callback.h ¶
                             debugger.h ¶
                             exec.h ¶
                             fail.h ¶

@@ -1,9 +1,10 @@
 stdlib
 *.c.x
+*.xcoff
 primitives
 prims.c
 Objective*Caml
-Objective*Caml.xcoff
 OCaml.68k
 OCaml.PPC
 OCaml.bytecode
+dummy_fragment
