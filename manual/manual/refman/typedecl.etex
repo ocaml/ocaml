@@ -147,7 +147,7 @@ variance indicated by the constraints. In all other cases each
 parameter's variance is defined by the variances of its occurences in
 the definition, and variance constraints are only checked for
 conformance. Such variance information is used to check the validity
-of coercions (see section \ref{s:coercion}).
+of coercions (see section \ref{s:objects}).
 
 \ikwd{constraint\@\texttt{constraint}}
 The construct @ 'constraint' "'" ident '=' typexpr @ allows to specify
