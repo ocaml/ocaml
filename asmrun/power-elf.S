@@ -221,7 +221,7 @@ raise_caml_exception:
         lwz     0, 0(1)
         lwz     29, 4(1)
         mtlr    0
-        addi    1, 1, 8
+        addi    1, 1, 16
     /* Branch to handler */
         blr
 
@@ -291,7 +291,7 @@ caml_start_program:
         bl      .L103
         b       .L104
 .L103:
-        addi    1, 1, -8
+        addi    1, 1, -16
         mflr    0
         stw     0, 0(1)
         Loadglobal(11, caml_exception_pointer, 11)
@@ -310,7 +310,7 @@ caml_start_program:
     /* Pop the trap frame, restoring caml_exception_pointer */
         lwz     9, 4(1)
         Storeglobal(9, caml_exception_pointer, 11)
-        addi    1, 1, 8
+        addi    1, 1, 16
     /* Pop the callback link, restoring the global variables */
 .L106:
         lwz     9, 0(1)

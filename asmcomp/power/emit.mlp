@@ -29,18 +29,18 @@ open Emitaux
 (* Layout of the stack *)
 
 (* In the TOC-based model:
-     The bottom 24 bytes of the stack are reserved at all times
+     The bottom 32 bytes of the stack are reserved at all times
      for a standard linkage area.
      In this area, the word at offset +20 is used by glue code and others to
      save the TOC register.
      The bottom two words are used as temporaries and for trap frames.
-     The stack is kept 8-aligned.
+     The stack is kept 16-aligned.
    In the absolute-address model:
      No reserved space at the bottom of the stack.
-     The stack is kept 8-aligned. *)
+     The stack is kept 16-aligned. *)
 
-let stack_linkage_area = if toc then 24 else 0
-let trap_frame_size = if toc then 24 else 8
+let stack_linkage_area = if toc then 32 else 0
+let trap_frame_size = if toc then 32 else 16
 
 let stack_offset = ref 0
 
@@ -50,7 +50,7 @@ let frame_size () =
     !stack_offset +                     (* Trap frame, outgoing parameters *)
     4 * num_stack_slots.(0) + 8 * num_stack_slots.(1) + (* Local variables *)
     (if !contains_calls then 4 else 0) in (* The return address *)
-  Misc.align size 8
+  Misc.align size 16
 
 let slot_offset loc cls =
   match loc with

@@ -240,7 +240,7 @@
         lwz     29, 4(1)
         mtlr    0
         lwz     2, 20(1)
-        addi    1, 1, 24
+        addi    1, 1, 32
     # Branch to handler
         blr
 
@@ -295,9 +295,9 @@ L..102:
         stfd 30, -96(1)
         stfd 31, -88(1)
     # Allocate and link stack frame
-        stwu    1, -280(1)
+        stwu    1, -288(1)
     # Set up a callback link
-        addi    1, 1, -24
+        addi    1, 1, -32
         lwz     9, L..caml_bottom_of_stack(2)
         lwz     10, L..caml_last_return_address(2)
         lwz     12, L..caml_gc_regs(2)
@@ -311,7 +311,7 @@ L..102:
         bl      L..103
         b       L..104
 L..103:
-        addi    1, 1, -24
+        addi    1, 1, -32
         lwz     9, L..caml_exception_pointer(2)
         mflr    0
         lwz     29, 0(9)
@@ -339,7 +339,7 @@ L..105:
     # Pop the trap frame, restoring caml_exception_pointer
         lwz     9, 4(1)
         lwz     10, L..caml_exception_pointer(2)
-        addi    1, 1, 24
+        addi    1, 1, 32
         stw     9, 0(10)
     # Pop the callback link, restoring the global variables
 L..106:
@@ -352,12 +352,12 @@ L..106:
         stw     7, 0(10)
         stw     8, 0(11)
         stw     9, 0(12)
-        addi    1, 1, 24
+        addi    1, 1, 32
     # Update allocation pointer
         lwz     11, L..young_ptr(2)
         stw     31, 0(11)
     # Deallocate stack frame
-        addi    1, 1, 280
+        addi    1, 1, 288
     # Restore callee-save registers
         lwz 13, -76(1)
         lwz 14, -72(1)
