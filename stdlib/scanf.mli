@@ -33,11 +33,9 @@ val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
    - [i]: reads an optionally signed integer
      (usual input formats for hexadecimal ([0x\[d\]+] and [0X\[d+\]]),
       octal ([0o\[d\]+]), and binary [0b\[d\]+] notations are understood).
-   - [u]: convert an integer argument to unsigned decimal.
-   - [x]: convert an integer argument to unsigned hexadecimal,
-     using lowercase letters.
-   - [X]: convert an integer argument to unsigned hexadecimal,
-     using uppercase letters.
+   - [u]: reads an unsigned decimal integer.
+   - [x]: reads an unsigned hexadecimal integer with lowercase letters.
+   - [X]: reads an unsigned hexadecimal integer with uppercase letters.
    - [o]: reads an unsigned octal integer.
    - [s]: reads a string argument (string ends with a space).
    - [S]: reads a delimited string argument (delimitors and special
@@ -59,9 +57,9 @@ val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
    - [Ld], [Li], [Lu], [Lx], [LX], [Lo]: reads an [int64] argument to
      the format specified by the second letter.
    - [\[ range \]]: reads characters that maches one of the characters
-     mentioned in the range of characters [range] (or not mentioned in
-     it, if the range started by [^]).
-   - [N]: applied [f] to the number of characters read so far.
+     mentioned in the range of characters [range] (or not mentionned in
+     it, if the range starts by [^]).
+   - [N]: applies [f] to the number of characters read so far.
    - [%]: matches one [%] character in the input.
 
    The field widths are composed of an optional integer literal
