@@ -12,6 +12,7 @@
 /* $Id$ */
 
 #include <mlvalues.h>
+#include <alloc.h>
 #include "unixsupport.h"
 #include <fcntl.h>
 
@@ -22,7 +23,7 @@ static int open_descr_flags[10] = {
 value win_fd_handle(value handle, value flags) /* ML */
 {
   int fd = _open_osfhandle((long) Handle_val(handle),
-			   convert_flag_list(open_descr_flags, flags));
+			   convert_flag_list(flags, open_descr_flags));
   if (fd == -1) uerror("channel_of_descr", Nothing);
   return Val_int(fd);
 }
