@@ -433,6 +433,29 @@ the object contain the values of the instance variables of the object.
 Instance variables are stored in the order in which they appear in the
 class definition (taking inherited classes into account).
 
+\subsection{Variants}
+
+Like constructed terms, values of variant types are represented either
+as integers (for variants without arguments), or as blocks (for
+variants with an argument).  Unlike constructed terms, variant
+constructors are not numbered starting from 0, but identified by a
+hash value (a Caml integer), as computed by the C function
+"hash_variant" (declared in "<caml/mlvalues.h>"):
+the hash value for a variant constructor named, say, "VConstr"
+is "hash_value(\"VConstr\")".
+
+The variant value "`VConstr" is represented by
+"hash_value(\"VConstr\")".  The variant value "`VConstr("\var{v}")" is
+represented by a block of size 2 and tag 0, with field number 0
+containing "hash_value(\"VConstr\")" and field number 1 containing
+\var{v}.
+
+Unlike constructed values, variant values taking several arguments are
+not flattened.  That is, "`VConstr("\var{v}", "\var{v'}")" is
+represented by a block of size 2, whose field number 1 contains
+the representation of the pair "("\var{v}", "\var{v'}")", but not as a
+block of size 3 containing \var{v} and \var{v'} in fields 1 and 2.
+
 \section{Operations on values}
 \pdfsection{Operations on values}
 
@@ -990,6 +1013,8 @@ Finally, to link everything together:
 \begin{verbatim}
         ocamlc -custom -o test test.cmo curses.o -cclib -lcurses
 \end{verbatim}
+(On some machines, you may need to put "-cclib -ltermcap" or
+"-cclib -lcurses -cclib -ltermcap" instead of "-cclib -lcurses".)
 
 \section{Advanced topic: callbacks from C to Caml} \label{s:callback}
 \pdfsection{Advanced topic: callbacks from C to Caml}
@@ -1295,8 +1320,10 @@ int main(int argc, char ** argv)
 
 To build the whole program, just invoke the C compiler as follows:
 \begin{verbatim}
-        cc -o prog main.c mod.a
+        cc -o prog main.c mod.a -lcurses
 \end{verbatim}
+(On some machines, you may need to put "-ltermcap" or
+"-lcurses -ltermcap" instead of "-lcurses".)
 
 \section{Advanced topic: custom blocks} \label{s:custom}
 \pdfsection{Advanced topic: custom blocks}
