@@ -124,6 +124,33 @@ module Win32 = struct
     Buffer.contents b
 end
 
+module Cygwin = struct
+  let current_dir_name = "."
+  let parent_dir_name = ".."
+  let concat dirname filename =
+    let l = String.length dirname in
+    if l = 0 || (let c = dirname.[l-1] in c = '/' || c = '\\' || c = ':')
+    then dirname ^ filename
+    else dirname ^ "/" ^ filename
+  let is_relative = Win32.is_relative
+  let is_implicit = Win32.is_implicit
+  let check_suffix = Win32.check_suffix
+  let basename = Win32.basename
+  let dirname name =
+    try
+      match Win32.rindexsep name with
+        0 -> "/"
+      | n ->
+          let n =
+            if name.[n] = ':' || (n > 0 && name.[n-1] = ':')
+            then n+1 else n in
+          String.sub name 0 n
+    with Not_found ->
+      "."
+  let temporary_directory = Unix.temporary_directory
+  let quote = Unix.quote
+end
+
 module MacOS = struct
   let current_dir_name = "."
   let parent_dir_name = ".."
@@ -156,7 +183,7 @@ end
 let (current_dir_name, parent_dir_name, concat, is_relative, is_implicit,
      check_suffix, basename, dirname, temporary_directory, quote) =
   match Sys.os_type with
-    "Unix" | "Cygwin" ->
+    "Unix" ->
       (Unix.current_dir_name, Unix.parent_dir_name, Unix.concat,
        Unix.is_relative, Unix.is_implicit, Unix.check_suffix,
        Unix.basename, Unix.dirname, Unix.temporary_directory, Unix.quote)
@@ -164,6 +191,11 @@ let (current_dir_name, parent_dir_name, concat, is_relative, is_implicit,
       (Win32.current_dir_name, Win32.parent_dir_name, Win32.concat,
        Win32.is_relative, Win32.is_implicit, Win32.check_suffix,
        Win32.basename, Win32.dirname, Win32.temporary_directory, Win32.quote)
+  | "Cygwin" ->
+      (Cygwin.current_dir_name, Cygwin.parent_dir_name, Cygwin.concat,
+       Cygwin.is_relative, Cygwin.is_implicit, Cygwin.check_suffix,
+       Cygwin.basename, Cygwin.dirname, 
+       Cygwin.temporary_directory, Cygwin.quote)
   | "MacOS" ->
       (MacOS.current_dir_name, MacOS.parent_dir_name, MacOS.concat,
        MacOS.is_relative, MacOS.is_implicit, MacOS.check_suffix,
