@@ -314,11 +314,6 @@ callback3:
 
         .global caml_array_bound_error
 array_bound_error:
-    /* Save the exception handler and alloc ptr */
-        ldr     r6, .Lyoung_ptr
-        ldr     r7, .Lcaml_exception_pointer
-        str     alloc_ptr, [r6, #0]
-        str     trap_ptr, [r7, #0]
     /* Load address of array_bound_error in r10 */
         ldr     r10, .Larray_bound_error
     /* Call that function */

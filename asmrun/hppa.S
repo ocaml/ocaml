@@ -527,12 +527,6 @@ G(callback3):
         EXPORT_CODE(G(caml_array_bound_error))
 G(caml_array_bound_error):
         STARTPROC
-; Save the exception handler
-        LOADHIGH(G(caml_exception_pointer))
-        stw     %r5, LOW(G(caml_exception_pointer))(%r1)
-; Save the allocation pointer
-        LOADHIGH(G(young_ptr))
-        stw     %r3, LOW(G(young_ptr))(%r1)
 ; Load address of array_bound_error in %r22
 #ifdef SYS_hpux
         ldil    LP'array_bound_error, %r22
