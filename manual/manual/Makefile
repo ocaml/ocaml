@@ -1,9 +1,13 @@
-FILES=allfiles.tex biblio.tex foreword.tex version.tex foreword.htex
-DVI2TXT=../tools/dvi2txt
+FILES=allfiles.tex biblio.tex foreword.tex version.tex
 TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles:
 TEXFONTS=../../styles:
 RELEASE=$$HOME/release/$${RELEASENAME}
 CSLDIR=../../csl
+HEVEA=hevea
+HACHA=hacha
+INFO=-info -w 79
+HTML=
+TEXT=-text -w 79
 
 manual: files
 	cd texstuff; \
@@ -21,22 +25,18 @@ index::
 	cd texstuff; makeindex pdfmanual.idx
 	cd texstuff; makeindex pdfmanual.kwd.idx
 
-#plaintext: files
-#	cd texstuff; \
-#	TEXINPUTS=$(TEXINPUTS) TEXFONTS=$(TEXFONTS) latex plaintext.tex
-#	$(DVI2TXT) texstuff/plaintext.dvi > texstuff/plaintext.txt
-#	$(DVI2TXT) -p texstuff/plaintext.dvi > texstuff/plaintext.ipr
-#
-#index::
-#	cd texstuff; makeindex plaintext.idx
-#	cd texstuff; makeindex plaintext.kwd.idx
-
 html: files
 	cd htmlman; \
-        TEXINPUTS=$(TEXINPUTS) ../../tools/texexpand ../manual.htex | \
-        ../../tools/htmlgen > ../manual.html
-	cd htmlman; ../../tools/htmlcut -6 -18 ../manual.html > index.html
-	cd htmlman; ../../tools/htmlthread node*.html
+	${HEVEA} ${HTML} -I .. -I ../refman -I ../library -I ../cmds -I ../tutorials -I ../../styles -I ../texstuff manual.hva -e macros.tex ../manual.tex ;\
+	${HACHA} manual.html
+
+info: files
+	cd infoman; \
+	${HEVEA} ${INFO} -I .. -I ../refman -I ../library -I ../cmds -I ../tutorials -I ../../styles -I ../texstuff ../manual.inf -e macros.tex ../manual.tex
+
+text: files
+	cd textman; \
+	${HEVEA} ${TEXT} -I .. -I ../refman -I ../library -I ../cmds -I ../tutorials -I ../../styles -I ../texstuff ../manual.inf -e macros.tex ../manual.tex
 
 files: $(FILES)
 	cd refman; $(MAKE) all
@@ -49,14 +49,7 @@ all:
 	$(MAKE) manual pdfmanual
 	$(MAKE) index
 	$(MAKE) manual pdfmanual
-	$(MAKE) html
-
-#all:
-#	$(MAKE) manual pdfmanual plaintext
-#	$(MAKE) manual pdfmanual plaintext
-#	$(MAKE) index
-#	$(MAKE) manual pdfmanual plaintext
-#	$(MAKE) html
+	$(MAKE) html text info
 
 clean:
 	rm -f $(FILES)
@@ -64,24 +57,25 @@ clean:
 	cd library; $(MAKE) clean
 	cd cmds; $(MAKE) clean
 	rm -f texstuff/*
-	cd htmlman; rm -f index.html node*.html
+	cd htmlman; rm -f index.html manual*.html
+	cd textman; rm -f manual.txt
+	cd infoman; rm -f manual.info manual.info-*
 
 release:
 	gzip < texstuff/manual.dvi > $(RELEASE)refman.dvi.gz
 	dvips -Php11rv -o '!gzip > $(RELEASE)refman.ps.gz' texstuff/manual.dvi
-#	cp texstuff/plaintext.txt $(RELEASE)refman.txt
-#	cp texstuff/plaintext.ipr $(RELEASE)refman.prn
+	/bin/rm -rf htmlman/manual.html
 	tar cf - htmlman/*.* | gzip > $(RELEASE)refman.html.tar.gz
 	zip -8 $(RELEASE)refman.html.zip htmlman/*.*
 	cp texstuff/pdfmanual.pdf $(RELEASE)refman.pdf
+	cp textman/manual.txt $(RELEASE)refman.txt
+	tar cf - infoman/manual.* | gzip > $(RELEASE)refman.info.tar.gz
 
 .SUFFIXES:
 .SUFFIXES: .tex .etex .htex
 
 .etex.tex:
 	../tools/texquote2 < $*.etex > $*.tex
-.etex.htex:
-	cp $*.etex $*.htex
 
 version.tex: $(CSLDIR)/utils/config.mlp
 	sed -n -e 's/^let version = "\(.*\)".*$$/\\def\\ocamlversion{\1}/p' $(CSLDIR)/utils/config.mlp > version.tex

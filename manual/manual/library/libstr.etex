@@ -19,6 +19,6 @@ For interactive use of the "str" library, do:
 \end{alltt}
 
 \begin{library}
-\input str.tex
+\input{str.tex}
 \end{library}
 

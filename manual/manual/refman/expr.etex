@@ -157,20 +157,12 @@ expr_n@ are evaluated is not specified.
 Two syntactic forms are provided to define functions. The first form
 is introduced by the keyword "function":
 \ikwd{function\@\texttt{function}}
-\begin{latexonly}
+
 $$\begin{array}{rlll}
 \token{function} & {\sl pattern}_1 & \token{->} & {\sl expr}_1 \\
 \token{|}   & \ldots \\
 \token{|}   & {\sl pattern}_n & \token{->} & {\sl expr}_n
 \end{array}$$
-\end{latexonly}
-\begin{rawhtml}
-<pre>
-function <i>pattern</i>1 -&gt; <i>expr</i>1
-       | ...
-       | <i>pattern</i>N -&gt; <i>expr</i>N
-</pre>
-\end{rawhtml}
 This expression evaluates to a functional value with one argument.
 When this function is applied to a value \var{v}, this value is
 matched against each pattern @pattern_1@ to @pattern_n@.
@@ -214,20 +206,14 @@ Cases of a pattern matching (in the "function", "fun", "match" and
 arbitrary boolean expressions that must evaluate to "true" for the
 match case to be selected. Guards occur just before the "->" token and
 are introduced by the "when" keyword:
-\begin{latexonly}
+
 $$\begin{array}{rlll}
 \token{function} & {\sl pattern}_1 \; [\token{when} \; {\sl cond}_1] & \token{->} & {\sl expr}_1 \\
 \token{|}   & \ldots \\
 \token{|}   & {\sl pattern}_n  \; [\token{when} \; {\sl cond}_n] & \token{->} & {\sl expr}_n
 \end{array}$$
-\end{latexonly}
-\begin{rawhtml}
-<pre>
-function <i>pattern</i>1 [when <i>cond</i>1] -&gt; <i>expr</i>1
-       | ...
-       | <i>pattern</i>N [when <i>cond</i>N] -&gt; <i>expr</i>N
-</pre>
-\end{rawhtml}
+
+
 Matching proceeds as described before, except that if the value
 matches some pattern @pattern_i@ which has a guard @cond_i@, then the
 expression @cond_i@ is evaluated (in an environment enriched by the
@@ -328,22 +314,12 @@ The @"else" expr_3@ part can be omitted, in which case it defaults to
 \subsubsection*{Case expression}\ikwd{match\@\texttt{match}}
 
 The expression
-\begin{latexonly}
 $$\begin{array}{rlll}
 \token{match} & {\sl expr} \\
 \token{with} & {\sl pattern}_1 & \token{->} & {\sl expr}_1 \\
 \token{|}     & \ldots \\
 \token{|}     & {\sl pattern}_n & \token{->} & {\sl expr}_n
 \end{array}$$
-\end{latexonly}
-\begin{rawhtml}
-<pre>
-match <i>expr</i> with
-      <i>pattern</i>1 -&gt; <i>expr</i>1
-    | ...
-    | <i>pattern</i>N -&gt; <i>expr</i>N
-</pre>
-\end{rawhtml}
 matches the value of @expr@ against the patterns @pattern_1@ to
 @pattern_n@. If the matching against @pattern_i@ succeeds, the
 associated expression @expr_i@ is evaluated, and its value becomes the
@@ -396,25 +372,15 @@ first evaluates the expressions @expr_1@ and @expr_2@ (the boundaries)
 into integer values \var{n} and \var{p}. Then, the loop body @expr_3@ is
 repeatedly evaluated in an environment where @name@ is successively
 bound to the values
-\begin{latexonly}
    $n$, $n+1$, \ldots, $p-1$, $p$.
    The loop body is never evaluated if $n > p$.
-\end{latexonly}
-\begin{rawhtml}
-   <i>n</i>, <i>n</i>+1, ..., <i>p</i>-1, <i>p</i>.
-   The loop body is never evaluated if <i>n</i> &gt; <i>p</i>.
-\end{rawhtml}
+
 
 The expression @'for' name '=' expr_1 'downto' expr_2 'do' expr_3 'done'@
 evaluates similarly, except that @name@ is successively bound to the values
-\begin{latexonly}
    $n$, $n-1$, \ldots, $p+1$, $p$.
    The loop body is never evaluated if $n < p$.
-\end{latexonly}
-\begin{rawhtml}
-   <i>n</i>, <i>n</i>-1, ..., <i>p</i>+1, <i>p</i>.
-   The loop body is never evaluated if <i>n</i> &lt; <i>p</i>.
-\end{rawhtml}
+
 
 In both cases, the whole @'for'@ expression evaluates to the unit
 value @'()'@.
@@ -423,22 +389,12 @@ value @'()'@.
 \ikwd{try\@\texttt{try}}
 
 The expression
-\begin{latexonly}
 $$\begin{array}{rlll}
 \token{try~} & {\sl expr} \\
 \token{with} & {\sl pattern}_1 & \token{->} & {\sl expr}_1 \\
 \token{|}   & \ldots \\
 \token{|}   & {\sl pattern}_n & \token{->} & {\sl expr}_n
 \end{array}$$
-\end{latexonly}
-\begin{rawhtml}
-<pre>
-try  <i>expr</i>
-with <i>pattern</i>1 -&gt; <i>expr</i>1
-    | ...
-    | <i>pattern</i>N -&gt; <i>expr</i>N
-</pre>
-\end{rawhtml}
 evaluates the expression @expr@ and returns its value if the
 evaluation of @expr@ does not raise any exception. If the evaluation
 of @expr@ raises an exception, the exception value is matched against

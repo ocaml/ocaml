@@ -16,7 +16,7 @@ INTF=$(CORE_INTF) $(STDLIB_INTF) $(OTHERLIB_INTF)
 BLURB=core.tex stdlib.tex libunix.tex libstr.tex libnum.tex libgraph.tex \
   libthreads.tex libdbm.tex libdynlink.tex
 
-FILES=$(BLURB) $(INTF) $(BLURB:.tex=.htex) $(INTF:.tex=.htex)
+FILES=$(BLURB) $(INTF)
 
 FORMAT=../../tools/format-intf
 
@@ -29,22 +29,16 @@ all: $(FILES)
 clean:
 	rm -f $(FILES) arithstatus.mli
 
-$(INTF) $(INTF:.tex=.htex): $(FORMAT)
+$(INTF): $(FORMAT)
 
 .SUFFIXES:
-.SUFFIXES: .tex .etex .mli .htex
+.SUFFIXES: .tex .etex .mli
 
 .etex.tex:
 	../../tools/texquote2 < $*.etex > $*.tex
 
 .mli.tex:
 	$(FORMAT) $< > $*.tex
-
-.etex.htex:
-	cp $*.etex $*.htex
-
-.mli.htex:
-	$(FORMAT) -html $< > $*.htex
 
 # TeX hates underscores in file names
 arithstatus.mli: $(CSLDIR)/otherlibs/num/arith_status.mli

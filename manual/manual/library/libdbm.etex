@@ -28,6 +28,6 @@ This library is not available.
 \end{windows}
 
 \begin{library}
-\input dbm.tex
+\input{dbm.tex}
 \end{library}
 

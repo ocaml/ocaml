@@ -165,13 +165,7 @@ module, are listed below.
 Return the matched string.
 
 \item["Lexing.lexeme_char lexbuf "$n$]
-Return the
-\begin{latexonly}
-$n^{\mbox{\scriptsize th}}$
-\end{latexonly}
-\begin{rawhtml}
-<I>n</I>-th
-\end{rawhtml}
+Return the $n\th$
 character in the matched string. The first character corresponds to $n = 0$.
 
 \item["Lexing.lexeme_start lexbuf"]

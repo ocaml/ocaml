@@ -83,11 +83,13 @@ Drawing is clipped to the screen.
 \end{center}
 \end{latexonly}
 
-\begin{rawhtml}
-<P ALIGN="center"><IMG SRC="libgraph.gif"></P>
-\end{rawhtml}
+\begin{htmlonly}
+\begin{center}
+\imgsrc{libgraph.gif}
+\end{center}
+\end{htmlonly}
 %
 
 \begin{library}
-\input graphics.tex
+\input{graphics.tex}
 \end{library}

@@ -75,35 +75,36 @@ be called from C \\
 \end{tabular}
 \end{latexonly}
 
-
+%HEVEA\cutdef{section}
 \begin{library}
-\input arg.tex
-\input array.tex
-\input buffer.tex
-\input callback.tex
-\input char.tex
-\input digest.tex
-\input filename.tex
-\input format.tex
-\input gc.tex
-\input genlex.tex
-\input hashtbl.tex
-\input lazy.tex
-\input lexing.tex
-\input list.tex
-\input map.tex
-\input marshal.tex
-\input oo.tex
-\input parsing.tex
-\input printexc.tex
-\input printf.tex
-\input queue.tex
-\input random.tex
-\input set.tex
-\input sort.tex
-\input stack.tex
-\input stream.tex
-\input string.tex
-\input sys.tex
-\input weak.tex
+\input{arg.tex}
+\input{array.tex}
+\input{buffer.tex}
+\input{callback.tex}
+\input{char.tex}
+\input{digest.tex}
+\input{filename.tex}
+\input{format.tex}
+\input{gc.tex}
+\input{genlex.tex}
+\input{hashtbl.tex}
+\input{lazy.tex}
+\input{lexing.tex}
+\input{list.tex}
+\input{map.tex}
+\input{marshal.tex}
+\input{oo.tex}
+\input{parsing.tex}
+\input{printexc.tex}
+\input{printf.tex}
+\input{queue.tex}
+\input{random.tex}
+\input{set.tex}
+\input{sort.tex}
+\input{stack.tex}
+\input{stream.tex}
+\input{string.tex}
+\input{sys.tex}
+\input{weak.tex}
 \end{library}
+%HEVEA\cutend

@@ -1,0 +1,134 @@
+\input{book.hva}
+\newcommand{\black}{\htmlcolor{#000000}}
+\newcounter{secnumdepth}
+\newcounter{tocdepth}
+\newcommand{\machine}{\tt}
+\newcommand{\caml}{\begin{alltt}\activebracefalse}
+\newcommand{\endcaml}{\activebracetrue\end{alltt}}
+\newcommand{\?}{\black\#\blue }
+\renewcommand{\:}{\maroon}
+\newcommand{\var}[1]{\textit{#1}}
+\newif\ifspace
+\def\addspace{\ifspace\spacefalse\fi}
+\newcommand{\token}[1]{\texttt{\blue#1}}
+\def\nonterm#1{\addspace\texttt{\sl#1}\spacetrue}
+\def\brepet{\addspace\{}
+\def\erepet{\}}
+\def\boption{\addspace[}
+\def\eoption{]}
+\def\brepets{\addspace\{}
+\def\erepets{\}^+}
+\def\bparen{\addspace(}
+\def\eparen{)}
+\def\orelse{\mid\spacefalse}
+\def\is{ & ::= & \spacefalse }
+\def\alt{ \\ & \mid & \spacefalse }
+\def\sep{ \\[2mm] \spacefalse }
+\def\emptystring{\epsilon}
+\def\syntax{$$\begin{array}{rrl}\spacefalse}
+\def\endsyntax{\end{array}$$}
+\def\synt#1{$\spacefalse#1$}
+
+\newenvironment{library}{}{}
+\newcounter{page}
+\newenvironment{comment}{\begin{quote}}{\end{quote}}
+\newcommand{\nth}[2]{\({#1}_{#2}\)}
+\newenvironment{options}{\begin{description}}{\end{description}}
+
+
+%%venant de macros.tex
+
+\def\versionspecific#1{
+\quad\textsf{#1:}
+\begin{quote}}
+
+\def\unix{\versionspecific{Unix}}
+\def\endunix{\end{quote}}
+\def\mac{\versionspecific{Mac}}
+\def\endmac{\end{quote}}
+\def\windows{\versionspecific{Windows}}
+\def\endwindows{\end{quote}}
+
+\def\requirements{\trivlist \item[\hskip\labelsep {\bf Requirements.}]}
+\def\endrequirements{\endtrivlist}
+\def\installation{\trivlist \item[\hskip\labelsep {\bf Installation.}]}
+\def\endinstallation{\endtrivlist}
+\def\troubleshooting{\trivlist \item[\hskip\labelsep {\bf Troubleshooting.}]}
+\def\endtroubleshooting{\endtrivlist}
+
+\newtheorem{gcrule}{Rule}
+
+% Pour les tables de priorites et autres tableaux a deux colonnes, encadres
+
+%\def\entree#1#2{#1 & #2 \\}
+%\def\tableau#1#2#3{%
+%\par\begin{center}%
+%\begin{tabular}{#1}%
+%\multicolumn{1}{c}{\textbf{#2}} &
+%\multicolumn{1}{c}{\textbf{#3}} \\
+%%#2 & #3 \\%
+%}%
+%\def\endtableau{\end{tabular}\end{center}\par}
+
+% Pour les tables de priorites et autres tableaux a deux colonnes, encadres
+
+\def\tableau#1#2#3{%
+\begin{center}
+\begin{tabular}{#1}
+\hline
+\multicolumn{1}{|c|}{\textbf{#2}} & \multicolumn{1}{c|}{\textbf{#3}} \\
+\hline
+}
+\def\endtableau{\hline\end{tabular}\end{center}}
+\def\entree#1#2{#1 & #2 \\}
+
+
+
+% L'environnement library (pour composer les descriptions des modules
+% de bibliotheque).
+
+
+\def\restoreindent{\begingroup\let\@listI=\@savedlistI}
+\def\endrestoreindent{\endgroup}
+
+
+% PDF stuff
+
+\def\pdfchapterfold#1#2{}
+\def\pdfsection#1{}
+\def\pdfchapter{\pdfchapterfold{0}}
+
+%%% Pour camlidl
+
+\def\transl#1{$[\![\mbox{#1}]\!]$}
+
+% Pour l'index
+\input{multind.hva}
+\let\indexentry=\index
+\renewcommand{\index}[1]{\indexentry{\jobname}{#1}}
+\def\ikwd#1{\indexentry{\jobname.kwd}{#1}}
+
+
+% nth
+\def\th{^{\mbox{\scriptsize th}}}
+\renewcommand{\hbox}[1]{\mbox{#1}}
+
+% Notations pour les metavariables
+\def\nmth#1#2#3{\({#1}_{#2}^{#3}\)}
+\def\optvar#1{[\var{#1}\/]}
+\def\event{§§}
+\def\fromoneto#1#2{$#1 = 1,\ldots{} , #2$}
+
+\newcommand{\jobname}{manual}
+\newcommand{\vfill}{}
+
+\def\number{}
+\def\year{1999}
+
+% Pour alltt
+
+\def\rminalltt#1{{\rm #1}}
+
+\def\goodbreak{\ \\}
+
+\def\@savedlistI{}

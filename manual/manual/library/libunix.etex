@@ -29,7 +29,7 @@ more information on the functions that are not supported under Windows.
 \end{windows}
 
 \begin{library}
-\input unix.tex
+\input{unix.tex}
 \end{library}
 
 \begin{windows}

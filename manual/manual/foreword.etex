@@ -62,10 +62,10 @@ Files:      & see the index in file "README"
 More information on the Caml family of languages is also available on
 the World Wide Web, "http://caml.inria.fr/".
 \end{latexonly}
-\begin{rawhtml}
-Follow <A HREF="ftp://ftp.inria.fr/lang/caml-light/">this link</A>
+\begin{htmlonly}
+Follow \url{ftp://ftp.inria.fr/lang/caml-light/}{this link}
 to access the distribution.
 More information on the Caml family of languages is also available
-<A HREF="http://caml.inria.fr/">here</A>.
-\end{rawhtml}
+\url{http://caml.inria.fr/}{here}.
+\end{htmlonly}
 

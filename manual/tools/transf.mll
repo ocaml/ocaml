@@ -38,18 +38,18 @@ and syntax = parse
   | [`_` `^`] _ {
       print_string (get_lexeme lexbuf);
       syntax lexbuf }
-  | "{" { print_string "\\brepet "; syntax lexbuf }
-  | "}" { print_string "\\erepet "; syntax lexbuf }
-  | "{{" { print_string "\\brepets "; syntax lexbuf }
-  | "}}" { print_string "\\erepets "; syntax lexbuf }
-  | "[" { print_string "\\boption "; syntax lexbuf }
-  | "]" { print_string "\\eoption "; syntax lexbuf }
-  | "(" { print_string "\\bparen "; syntax lexbuf }
-  | ")" { print_string "\\eparen "; syntax lexbuf }
-  | "||" { print_string "\\orelse "; syntax lexbuf }
-  | ":" { print_string "\\is "; syntax lexbuf }
-  | "|" { print_string "\\alt "; syntax lexbuf }
-  | ";" { print_string "\\sep "; syntax lexbuf }
+  | "{" { print_string "\\brepet{}"; syntax lexbuf }
+  | "}" { print_string "\\erepet{}"; syntax lexbuf }
+  | "{{" { print_string "\\brepets{}"; syntax lexbuf }
+  | "}}" { print_string "\\erepets{}"; syntax lexbuf }
+  | "[" { print_string "\\boption{}"; syntax lexbuf }
+  | "]" { print_string "\\eoption{}"; syntax lexbuf }
+  | "(" { print_string "\\bparen{}"; syntax lexbuf }
+  | ")" { print_string "\\eparen{}"; syntax lexbuf }
+  | "||" { print_string "\\orelse{}"; syntax lexbuf }
+  | ":" { print_string "\\is{}"; syntax lexbuf }
+  | "|" { print_string "\\alt{}"; syntax lexbuf }
+  | ";" { print_string "\\sep{}"; syntax lexbuf }
   | _ {
       print_char (get_lexeme_char lexbuf 0);
       syntax lexbuf }

@@ -27,15 +27,17 @@ components. Curly bracket with a trailing plus sign @{{\ldots}}@
 denote one or several repetitions of the enclosed components.
 Parentheses @(\ldots)@ denote grouping.
 
-\input lex
-\input values
-\input names
-\input types
-\input const
-\input patterns
-\input expr
-\input typedecl
-\input classes
-\input modtypes
-\input modules
-\input compunit
+%HEVEA\cutdef{section}
+\input{lex}
+\input{values}
+\input{names}
+\input{types}
+\input{const}
+\input{patterns}
+\input{expr}
+\input{typedecl}
+\input{classes}
+\input{modtypes}
+\input{modules}
+\input{compunit}
+%HEVEA\cutend

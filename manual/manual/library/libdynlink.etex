@@ -15,6 +15,6 @@ available only to bytecode programs compiled with "ocamlc", not to
 native-code programs compiled with "ocamlopt".
 
 \begin{library}
-\input dynlink.tex
+\input{dynlink.tex}
 \end{library}
 
