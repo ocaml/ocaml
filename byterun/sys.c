@@ -262,6 +262,11 @@ value sys_time(value unit)            /* ML */
 #endif
 }
 
+value sys_date (value unit)       /* ML */
+{
+  return copy_double ((double) time (NULL));
+}
+
 value sys_get_config(value unit)  /* ML */
 {
   value result;
