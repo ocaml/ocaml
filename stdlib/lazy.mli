@@ -26,6 +26,14 @@ type 'a t = 'a lazy_t;;
    Note: [lazy_t] is the built-in type constructor used by the compiler
    for the [lazy] keyword.  You should not use it directly.  Always use
    [Lazy.t] instead.
+
+   Note: if the program is compiled with the [-rectypes] option,
+   ill-founded recursive definitions of the form [let rec x = lazy x]
+   or [let rec x = lazy(lazy(...(lazy x)))] are accepted by the type-checker
+   and lead, when forced, to ill-formed values that trigger infinite
+   loops in the garbage collector and other parts of the run-time system.
+   Without the [-rectypes] option, such ill-founded recursive definitions
+   are rejected by the type-checker.
 *)
 
 
