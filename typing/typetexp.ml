@@ -83,7 +83,7 @@ let rec transl_type env policy styp =
   match styp.ptyp_desc with
     Ptyp_any -> new_global_var()
   | Ptyp_var name ->
-      begin try Tbl.find name !aliases with Not_found ->
+      begin
         match policy with
           Fixed ->
             begin try
@@ -150,24 +150,24 @@ let rec transl_type env policy styp =
       if policy = Fixed then
         raise(Error(styp.ptyp_loc, Unbound_row_variable lid));
       let (path, decl, is_variant) =
-	try
-	  let (path, decl) = Env.lookup_type lid env in
-	  match decl.type_manifest with
-	    None -> raise Not_found
-	  | Some ty ->
-	      match (repr ty).desc with
-		Tvariant row when Btype.static_row row -> (path, decl, true)
-	      |	_ -> raise Not_found
+        try
+          let (path, decl) = Env.lookup_type lid env in
+          match decl.type_manifest with
+            None -> raise Not_found
+          | Some ty ->
+              match (repr ty).desc with
+                Tvariant row when Btype.static_row row -> (path, decl, true)
+              | _ -> raise Not_found
         with Not_found -> try
-	  if present <> [] then raise Not_found;
-	  let lid2 =
+          if present <> [] then raise Not_found;
+          let lid2 =
             match lid with
               Longident.Lident s     -> Longident.Lident ("#" ^ s)
             | Longident.Ldot(r, s)   -> Longident.Ldot (r, "#" ^ s)
             | Longident.Lapply(_, _) -> fatal_error "Typetexp.transl_type"
-	  in
+          in
           let (path, decl) = Env.lookup_type lid2 env in
-	  (path, decl, false)
+          (path, decl, false)
         with Not_found ->
           raise(Error(styp.ptyp_loc, Unbound_class lid))
       in
@@ -177,7 +177,7 @@ let rec transl_type env policy styp =
       let args = List.map (transl_type env policy) stl in
       let cstr = newty (Tconstr(path, args, ref Mnil)) in
       let ty =
-	try Ctype.expand_head env cstr
+        try Ctype.expand_head env cstr
         with Unify trace ->
           raise (Error(styp.ptyp_loc, Type_mismatch trace))
       in
@@ -188,38 +188,38 @@ let rec transl_type env policy styp =
              raise (Error(sty.ptyp_loc, Type_mismatch trace)))
         (List.combine stl args) params;
       begin match ty.desc with
-	Tvariant row ->
-	  let row = Btype.row_repr row in
-	  List.iter
-	    (fun l -> if not (List.mem_assoc l row.row_fields) then
-	      raise(Error(styp.ptyp_loc, Present_has_no_type l)))
-	    present;
-	  let bound = ref row.row_bound in
-	  let fields =
-	    List.map
-	      (fun (l,f) -> l,
-		if List.mem l present then f else
-		match Btype.row_field_repr f with
-		| Rpresent (Some ty) ->
-		    bound := ty :: !bound;
-		    Reither(false, [ty], ref None)
-		| Rpresent None ->
-		    Reither (true, [], ref None)
-		| _ -> f)
-	      row.row_fields
-	  in
-	  let row = { row with row_fields = fields; row_bound = !bound;
-		      row_name = Some (path, args) } in
-	  newty (Tvariant row)
-      |	_ ->
-	  ty
+        Tvariant row ->
+          let row = Btype.row_repr row in
+          List.iter
+            (fun l -> if not (List.mem_assoc l row.row_fields) then
+              raise(Error(styp.ptyp_loc, Present_has_no_type l)))
+            present;
+          let bound = ref row.row_bound in
+          let fields =
+            List.map
+              (fun (l,f) -> l,
+                if List.mem l present then f else
+                match Btype.row_field_repr f with
+                | Rpresent (Some ty) ->
+                    bound := ty :: !bound;
+                    Reither(false, [ty], ref None)
+                | Rpresent None ->
+                    Reither (true, [], ref None)
+                | _ -> f)
+              row.row_fields
+          in
+          let row = { row with row_fields = fields; row_bound = !bound;
+                      row_name = Some (path, args) } in
+          newty (Tvariant row)
+      | _ ->
+          ty
       end
   | Ptyp_alias(st, alias) ->
-      if Tbl.mem alias !type_variables || Tbl.mem alias !aliases then
+      if Tbl.mem alias !type_variables then
         raise(Error(styp.ptyp_loc, Bound_type_variable alias))
       else
-        let ty' = newvar () in
-        aliases := Tbl.add alias ty' !aliases;
+        let ty' = new_global_var () in
+        type_variables := Tbl.add alias ty' !type_variables;
         let ty = transl_type env policy st in
         begin try unify env ty ty' with Unify trace ->
           raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
@@ -228,37 +228,37 @@ let rec transl_type env policy styp =
   | Ptyp_variant(fields, closed, present) ->
       let bound = ref [] in
       ignore (List.fold_left
-		(fun (ll,hl) (l,_,_) ->
-		  if List.mem l ll then
-		    raise(Error(styp.ptyp_loc, Multiple_constructor l));
-		  let h = Btype.hash_variant l in
-		  if List.mem h hl then
-		    raise(Ctype.Tags(l, List.assoc h (List.combine hl ll)));
-		  (l::ll, h::hl))
-		([],[])
-		fields);
+                (fun (ll,hl) (l,_,_) ->
+                  if List.mem l ll then
+                    raise(Error(styp.ptyp_loc, Multiple_constructor l));
+                  let h = Btype.hash_variant l in
+                  if List.mem h hl then
+                    raise(Ctype.Tags(l, List.assoc h (List.combine hl ll)));
+                  (l::ll, h::hl))
+                ([],[])
+                fields);
       let fields =
-	List.map
-	  (fun (l, c, stl) ->
-	    l, if List.mem l present then begin
-	      if List.length stl > 1 || c && stl <> [] then
-		raise(Error(styp.ptyp_loc, Present_has_conjunction l));
-	      match stl with [] -> Rpresent None
-	      | st::_ -> Rpresent(Some(transl_type env policy st))
-	    end else begin
-	      let tl = List.map (transl_type env policy) stl in
-	      bound := tl @ !bound;
-	      Reither(c, tl, ref None)
-	    end)
-	  fields
+        List.map
+          (fun (l, c, stl) ->
+            l, if List.mem l present then begin
+              if List.length stl > 1 || c && stl <> [] then
+                raise(Error(styp.ptyp_loc, Present_has_conjunction l));
+              match stl with [] -> Rpresent None
+              | st::_ -> Rpresent(Some(transl_type env policy st))
+            end else begin
+              let tl = List.map (transl_type env policy) stl in
+              bound := tl @ !bound;
+              Reither(c, tl, ref None)
+            end)
+          fields
       in
       List.iter
-	(fun l -> if not (List.mem_assoc l fields) then
-	  raise(Error(styp.ptyp_loc, Present_has_no_type l)))
-	present;
+        (fun l -> if not (List.mem_assoc l fields) then
+          raise(Error(styp.ptyp_loc, Present_has_no_type l)))
+        present;
       let row =
-	{ row_fields = fields; row_more = newvar ();
-	  row_bound = !bound; row_closed = closed; row_name = None } in
+        { row_fields = fields; row_more = newvar ();
+          row_bound = !bound; row_closed = closed; row_name = None } in
       if policy = Fixed && not (Btype.static_row row) then
         raise(Error(styp.ptyp_loc, Unbound_type_variable "[..]"));
       newty (Tvariant row)
@@ -277,18 +277,14 @@ and transl_fields env policy =
         newty (Tfield (s, Fpresent, ty1, ty2))
 
 let transl_simple_type env fixed styp =
-  aliases := Tbl.empty;
   let typ = transl_type env (if fixed then Fixed else Extensible) styp in
-  aliases := Tbl.empty;
   typ
 
 let transl_simple_type_delayed env styp =
-  aliases := Tbl.empty;
   used_variables := Tbl.empty;
   bindings := [];
   let typ = transl_type env Delayed styp in
   let b = !bindings in
-  aliases := Tbl.empty;
   used_variables := Tbl.empty;
   bindings := [];
   (typ,
