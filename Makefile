@@ -110,6 +110,16 @@ PERVASIVES=arg array buffer callback char digest filename format gc hashtbl \
   marshal int32 int64 nativeint outcometree \
   arrayLabels listLabels stringLabels stdLabels
 
+# For users who don't read the INSTALL file
+defaultentry:
+	@echo "Please refer to the installation instructions in file INSTALL."
+	@echo "If you've just unpacked the distribution, something like"
+	@echo "	./configure"
+	@echo "	make world"
+	@echo "	make opt"
+	@echo "	make install"
+	@echo "should work.  But see the file INSTALL for more details."
+
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
   otherlibraries camlp4out $(DEBUGGER)

@@ -108,6 +108,10 @@ PERVASIVES=arg array buffer callback char digest filename format gc hashtbl \
   marshal int32 int64 nativeint outcometree \
   arrayLabels listLabels stringLabels stdLabels
 
+# For users who don't read the INSTALL file
+defaultentry:
+	@echo "Please refer to the installation instructions in file README.win32."
+
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries camlp4out win32gui
 
