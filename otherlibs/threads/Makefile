@@ -43,11 +43,12 @@ pervasives.mli: $(LIB)/pervasives.mli
 pervasives.cmi: $(LIB)/pervasives.cmi
 	ln -s $(LIB)/pervasives.cmi pervasives.cmi
 
-clean:
-	rm -f libthreads.a *.o *.cm*
-	rm -f pervasives.mli
+partialclean:
+	rm -f *.cm*
 
-realclean:
+clean: partialclean
+	rm -f libthreads.a *.o
+	rm -f pervasives.mli
 
 install:
 	cp libthreads.a $(LIBDIR)/libthreads.a

@@ -123,7 +123,7 @@ From the top directory, become superuser and do:
         make install
 
 6- Installation is complete. Time to clean up. From the toplevel
-directory, do "make realclean".
+directory, do "make clean".
 
 
 IF SOMETHING GOES WRONG:

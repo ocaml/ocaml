@@ -88,7 +88,7 @@ all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries
 # Never mind, just do make bootstrap to reach fixpoint again.
 
 # Compile everything the first time
-world: coldstart clean all
+world: coldstart all
 
 # Set up the configuration files
 configure:
@@ -104,14 +104,14 @@ bootstrap:
 # This compiler runs on boot\ocamlrun and produces bytecode for byterun\ocamlrun
 	$(MAKEREC) promote-cross
 # Rebuild ocamlc and ocamllex (run on byterun\ocamlrun)
-	$(MAKEREC) clean
+	$(MAKEREC) partialclean
 	$(MAKEREC) ocamlc ocamllex
 # Rebuild the library (using byterun\ocamlrun .\ocamlc)
 	$(MAKEREC) library-cross
 # Promote the new compiler and the new runtime
 	$(MAKEREC) promote
 # Rebuild everything, including ocaml and the tools
-	$(MAKEREC) clean
+	$(MAKEREC) partialclean
 	$(MAKEREC) all
 # Check if fixpoint reached
 	$(MAKEREC) compare
@@ -198,14 +198,14 @@ installopt:
 	cd stdlib & $(MAKEREC) installopt
 	for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) installopt & cd ..\..)
 
-realclean:: clean
+clean:: partialclean
 
 # The compiler
 
 ocamlc: $(COMPOBJS)
 	$(CAMLC) $(LINKFLAGS) -o ocamlc $(COMPOBJS)
 
-clean::
+partialclean::
 	rm -f ocamlc
 
 # The native-code compiler
@@ -213,7 +213,7 @@ clean::
 ocamlopt: $(OPTOBJS)
 	$(CAMLC) $(LINKFLAGS) -o ocamlopt $(OPTOBJS)
 
-clean::
+partialclean::
 	rm -f ocamlopt
 
 # The toplevel
@@ -223,7 +223,7 @@ ocaml: $(TOPOBJS) expunge
 	- $(CAMLRUN) .\expunge ocaml.tmp ocaml $(PERVASIVES)
 	rm -f ocaml.tmp
 
-clean::
+partialclean::
 	rm -f ocaml
 
 # The configuration file
@@ -243,7 +243,7 @@ utils\config.ml: utils\config.mlp config\Makefile.nt
             utils\config.mlp > utils\config.ml
 	@attrib +r utils\config.ml
 
-clean::
+partialclean::
 	rm -f utils\config.ml
 
 beforedepend:: utils\config.ml
@@ -253,7 +253,7 @@ beforedepend:: utils\config.ml
 parsing\parser.mli parsing\parser.ml: parsing\parser.mly
 	$(CAMLYACC) $(YACCFLAGS) parsing\parser.mly
 
-clean::
+partialclean::
 	rm -f parsing\parser.mli parsing\parser.ml parsing\parser.output
 
 beforedepend:: parsing\parser.mli parsing\parser.ml
@@ -263,7 +263,7 @@ beforedepend:: parsing\parser.mli parsing\parser.ml
 parsing\lexer.ml: parsing\lexer.mll
 	$(CAMLLEX) parsing\lexer.mll
 
-clean::
+partialclean::
 	rm -f parsing\lexer.ml
 
 beforedepend:: parsing\lexer.ml
@@ -273,7 +273,7 @@ beforedepend:: parsing\lexer.ml
 parsing\linenum.ml: parsing\linenum.mll
 	$(CAMLLEX) parsing\linenum.mll
 
-clean::
+partialclean::
 	rm -f parsing\linenum.ml
 
 beforedepend:: parsing\linenum.ml
@@ -285,7 +285,7 @@ beforedepend:: parsing\linenum.ml
 # ocamlc.opt: $(COMPOBJS:.cmo=.cmx)
 #	$(CAMLOPT) $(LINKFLAGS) -o ocamlc.opt $(COMPOBJS:.cmo=.cmx)
 
-clean::
+partialclean::
 	rm -f ocamlc.opt
 
 # The native-code compiler compiled with itself
@@ -293,7 +293,7 @@ clean::
 ocamlopt.opt: $(OPTOBJS:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt $(OPTOBJS:.cmo=.cmx)
 
-clean::
+partialclean::
 	rm -f ocamlopt.opt
 
 $(OPTOBJS:.cmo=.cmx): ocamlopt
@@ -304,7 +304,7 @@ bytecomp\opcodes.ml: byterun\instruct.h
 	sed -n -e "/^enum/p" -e "s|,||g" -e "/^  /p" byterun\instruct.h | \
         gawk -f tools\make-opcodes > bytecomp\opcodes.ml
 
-clean::
+partialclean::
 	rm -f bytecomp\opcodes.ml
 
 beforedepend:: bytecomp\opcodes.ml
@@ -324,7 +324,7 @@ bytecomp\runtimedef.ml: byterun\primitives byterun\fail.h
         >> bytecomp\runtimedef.ml
 	echo ^|^] >> bytecomp\runtimedef.ml
 
-clean::
+partialclean::
 	rm -f bytecomp\runtimedef.ml
 
 beforedepend:: bytecomp\runtimedef.ml
@@ -334,7 +334,7 @@ beforedepend:: bytecomp\runtimedef.ml
 asmcomp\arch.ml: asmcomp\arch_$(ARCH).ml
 	cp asmcomp\arch_$(ARCH).ml asmcomp\arch.ml
 
-clean::
+partialclean::
 	rm -f asmcomp\arch.ml
 
 beforedepend:: asmcomp\arch.ml
@@ -342,7 +342,7 @@ beforedepend:: asmcomp\arch.ml
 asmcomp\proc.ml: asmcomp\proc_$(ARCH)nt.ml
 	cp asmcomp\proc_$(ARCH)nt.ml asmcomp\proc.ml
 
-clean::
+partialclean::
 	rm -f asmcomp\proc.ml
 
 beforedepend:: asmcomp\proc.ml
@@ -352,7 +352,7 @@ beforedepend:: asmcomp\proc.ml
 asmcomp\emit.ml: asmcomp\emit_$(ARCH)nt.mlp tools\cvt_emit
 	boot\ocamlrun tools\cvt_emit < asmcomp\emit_$(ARCH)nt.mlp > asmcomp\emit.ml
 
-clean::
+partialclean::
 	rm -f asmcomp\emit.ml
 
 beforedepend:: asmcomp\emit.ml
@@ -365,7 +365,7 @@ tools\cvt_emit: tools\cvt_emit.mll
 expunge: $(EXPUNGEOBJS)
 	$(CAMLC) $(LINKFLAGS) -o expunge $(EXPUNGEOBJS)
 
-clean::
+partialclean::
 	rm -f expunge
 
 # The runtime system for the bytecode compiler
@@ -376,7 +376,7 @@ makeruntime:
 	cd byterun & $(MAKEREC) all
 stdlib\libcamlrun.lib: asmrun\libcamlrun.lib
 	cp byterun\libcamlrun.lib stdlib\libcamlrun.lib
-realclean::
+clean::
 	cd byterun & $(MAKEREC) clean
 	rm -f stdlib\libcamlrun.lib
 alldepend::
@@ -390,7 +390,7 @@ makeruntimeopt:
 	cd asmrun & $(MAKEREC) all
 stdlib\libasmrun.lib: asmrun\libasmrun.lib
 	cp asmrun\libasmrun.lib stdlib\libasmrun.lib
-realclean::
+clean::
 	cd asmrun & $(MAKEREC) clean
 	rm -f stdlib\libasmrun.lib
 alldepend::
@@ -404,7 +404,7 @@ library-cross:
 	cd stdlib & $(MAKEREC) RUNTIME=..\byterun\ocamlrun all
 libraryopt:
 	cd stdlib & $(MAKEREC) allopt
-clean::
+partialclean::
 	cd stdlib & $(MAKEREC) clean
 alldepend::
 	cd stdlib & $(MAKEREC) depend
@@ -413,21 +413,21 @@ alldepend::
 
 ocamllex:
 	cd lex & $(MAKEREC) all
-clean::
+partialclean::
 	cd lex & $(MAKEREC) clean
 alldepend::
 	cd lex & $(MAKEREC) depend
 
 ocamlyacc:
 	cd yacc & $(MAKEREC) all
-realclean::
+clean::
 	cd yacc & $(MAKEREC) clean
 
 # Tools
 
 ocamltools:
 	cd tools & $(MAKEREC) all
-clean::
+partialclean::
 	cd tools & $(MAKEREC) clean
 alldepend::
 	cd tools & $(MAKEREC) depend
@@ -438,10 +438,10 @@ otherlibraries:
 	-for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) all & cd ..\..)
 otherlibrariesopt:
 	-for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) allopt & cd ..\..)
+partialclean::
+	-for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) partialclean & cd ..\..)
 clean::
 	-for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) clean & cd ..\..)
-realclean::
-	-for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) realclean & cd ..\..)
 alldepend::
 	-for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) depend & cd ..\..)
 
@@ -458,7 +458,7 @@ alldepend::
 .ml.cmx:
 	$(CAMLOPT) $(COMPFLAGS) -c $<
 
-clean::
+partialclean::
 	rm -f utils/*.cm* utils/*.obj utils/*.asm
 	rm -f parsing/*.cm* parsing/*.obj parsing/*.asm
 	rm -f typing/*.cm* typing/*.obj typing/*.asm

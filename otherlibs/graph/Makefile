@@ -23,10 +23,10 @@ libgraphics.a: $(OBJS)
 graphics.cma: graphics.cmo
 	$(CAMLC) -a -o graphics.cma graphics.cmo
 
-clean:
+partialclean:
 	rm -f *.cm*
 
-realclean: clean
+clean: partialclean
 	rm -f *.a *.o
 
 install:

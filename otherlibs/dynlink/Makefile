@@ -25,10 +25,10 @@ install:
 
 installopt:
 
-clean:
+partialclean:
 	rm -f extract_crc *.cm[ioa]
 
-realclean:
+clean: partialclean
 
 .SUFFIXES: .ml .mli .cmo .cmi
 

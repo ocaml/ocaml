@@ -37,10 +37,10 @@ libnums.x Ä :bignum:libbignum.x {PPCCOBJS}
 install Ä
 	duplicate -y libnums.o libnums.x nums.cma {CMIFILES} "{LIBDIR}"
 
-clean Ä
+partialclean Ä
 	delete -i Å.cm[aio] || set status 0
 
-realclean Ä clean
+clean Ä partialclean
 	delete -i Å.[ox] || set status 0
 	directory :bignum; domake scratch; directory ::
 	directory :test; domake clean; directory ::

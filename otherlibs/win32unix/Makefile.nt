@@ -49,10 +49,11 @@ unix.cma: $(CAML_OBJS)
 unix.cmxa: $(CAMLOPT_OBJS)
 	$(CAMLOPT) -a -linkall -o unix.cmxa $(CAMLOPT_OBJS)
 
-clean:
-	rm -f *.lib *.obj *.cm*
+partialclean:
+	rm -f *.cm*
 
-realclean:
+clean: partialclean
+	rm -f *.lib *.obj
 	rm -f $(UNIX_FILES)
 	rm -f io.h
 

@@ -44,10 +44,10 @@ installopt:
 	cp $(CAMLOBJS:.cmo=.cmx) nums.cmxa nums.a $(LIBDIR)
 	cd $(LIBDIR); $(RANLIB) nums.a
 
-clean:
+partialclean:
 	rm -f *.cm*
 
-realclean: clean
+clean: partialclean
 	rm -f *.a *.o
 	cd bignum; $(MAKE) scratch
 	cd test; $(MAKE) clean

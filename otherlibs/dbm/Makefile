@@ -24,10 +24,10 @@ dbm.cma: dbm.cmo
 dbm.cmxa: dbm.cmx
 	$(CAMLOPT) -a -o dbm.cmxa dbm.cmx
 
-clean:
+partialclean:
 	rm -f *.cm*
 
-realclean: clean
+clean: partialclean
 	rm -f *.a *.o
 
 install:

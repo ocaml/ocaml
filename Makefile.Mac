@@ -74,7 +74,6 @@ all Ä runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries
 # Compile everything the first time
 world Ä
     domake coldstart
-    domake clean
     domake all
 
 # Complete bootstrapping cycle
@@ -86,14 +85,14 @@ bootstrap Ä
       # :byterun:ocamlrun
     domake promote-cross
       # Rebuild ocamlc and ocamllex (run on :byterun:ocamlrun)
-    domake clean
+    domake partialclean
     domake ocamlc ocamllex
       # Rebuild the library (using :byterun:ocamlrun :ocamlc)
     domake library-cross
       # Promote the new compiler and the new runtime
     domake promote
       # Rebuild everything, including ocaml and the tools
-    domake clean
+    domake partialclean
     domake all
       # Check if fixpoint reached
     domake compare
@@ -139,7 +138,7 @@ promote-cross Ä
 promote Ä promote-cross
     duplicate -y :byterun:ocamlrun :boot:ocamlrun
 
-realclean ÄÄ
+clean ÄÄ
     delete -i :boot:Å.cm[aio] || set status 0
     delete -i :boot:camlheader :boot:ocamlrun :boot:ocamlyacc
 
@@ -194,14 +193,14 @@ install Ä $OutOfDate
       directory :::
     end
 
-realclean ÄÄ clean
+clean ÄÄ partialclean
 
 # The compiler
 
 ocamlc Ä {COMPOBJS}
     {CAMLC} {LINKFLAGS} -o ocamlc {COMPOBJS}
 
-clean ÄÄ
+partialclean ÄÄ
     delete -i ocamlc
 
 # The toplevel
@@ -214,7 +213,7 @@ ocaml Ä toplevellib.cma {TOPLEVELMAIN} expunge
 toplevellib.cma Ä {TOPLIB}
     {CAMLC} -a -o toplevellib.cma {TOPLIB}
 
-clean ÄÄ
+partialclean ÄÄ
     delete -i ocaml toplevellib.cma
 
 # The configuration file
@@ -227,7 +226,7 @@ clean ÄÄ
                -e "1,$ replace /%%EXT_LIB%%/ '.x'" ¶
                :utils:config.mlp > :utils:config.ml
 
-clean ÄÄ
+partialclean ÄÄ
     delete -i :utils:config.ml
 
 beforedepend ÄÄ :utils:config.ml
@@ -240,7 +239,7 @@ beforedepend ÄÄ :utils:config.ml
 :parsing:parser.ml Ä :parsing:parser.mly
     {CAMLYACC} {YACCFLAGS} :parsing:parser.mly
 
-clean ÄÄ
+partialclean ÄÄ
     delete -i :parsing:parser.mli :parsing:parser.ml :parsing:parser.output
 
 beforedepend ÄÄ :parsing:parser.mli :parsing:parser.ml
@@ -250,7 +249,7 @@ beforedepend ÄÄ :parsing:parser.mli :parsing:parser.ml
 :parsing:lexer.ml Ä :parsing:lexer.mll
     {CAMLLEX} :parsing:lexer.mll
 
-clean ÄÄ
+partialclean ÄÄ
     delete -i :parsing:lexer.ml
 
 beforedepend ÄÄ :parsing:lexer.ml
@@ -260,7 +259,7 @@ beforedepend ÄÄ :parsing:lexer.ml
 :parsing:linenum.ml Ä :parsing:linenum.mll
     {CAMLLEX} :parsing:linenum.mll
 
-clean ÄÄ
+partialclean ÄÄ
     delete -i :parsing:linenum.ml
 
 beforedepend ÄÄ :parsing:linenum.ml
@@ -270,7 +269,7 @@ beforedepend ÄÄ :parsing:linenum.ml
 :bytecomp:opcodes.ml Ä :byterun:instruct.h
     :tools:make-opcodes.Mac :byterun:instruct.h :bytecomp:opcodes.ml
 
-clean ÄÄ
+partialclean ÄÄ
     delete -i :bytecomp:opcodes.ml
 
 beforedepend ÄÄ :bytecomp:opcodes.ml
@@ -290,7 +289,7 @@ beforedepend ÄÄ :bytecomp:opcodes.ml
      streamedit -e "1,$ replace /(Å)¨0/ '  ¶"' ¨0 '¶";'" -e '$ replace /;°/ "|]"' :byterun:primitives; ¶
     ) > :bytecomp:runtimedef.ml
 
-clean ÄÄ
+partialclean ÄÄ
     delete -i :bytecomp:runtimedef.ml
 
 beforedepend ÄÄ :bytecomp:runtimedef.ml
@@ -300,14 +299,14 @@ beforedepend ÄÄ :bytecomp:runtimedef.ml
 expunge Ä {EXPUNGEOBJS}
     {CAMLC} {LINKFLAGS} -o expunge {EXPUNGEOBJS}
 
-clean ÄÄ
+partialclean ÄÄ
     delete -i expunge
 
 # The runtime system for the bytecode compiler
 
 runtime Ä
     directory :byterun:; domake all; directory ::
-realclean ÄÄ
+clean ÄÄ
     directory :byterun:; domake clean; directory ::
 alldepend ÄÄ
     directory :byterun:; domake depend; directory ::
@@ -318,7 +317,7 @@ library Ä
     directory :stdlib; domake all; directory ::
 library-cross Ä
     directory :stdlib; domake -d RUNTIME=::byterun:ocamlrun all; directory ::
-clean ÄÄ
+partialclean ÄÄ
     directory :stdlib; domake clean; directory ::
 alldepend ÄÄ
     directory :stdlib; domake depend; directory ::
@@ -327,21 +326,21 @@ alldepend ÄÄ
 
 ocamllex Ä
     directory :lex; domake all; directory ::
-clean ÄÄ
+partialclean ÄÄ
     directory :lex; domake clean; directory ::
 alldepend ÄÄ
     directory :lex; domake depend; directory ::
 
 ocamlyacc Ä
     directory :yacc; domake all; directory ::
-realclean ÄÄ
+clean ÄÄ
     directory :yacc; domake clean; directory ::
 
 # Tools
 
 ocamltools Ä
     directory :tools; domake all; directory ::
-clean ÄÄ
+partialclean ÄÄ
     directory :tools; domake clean; directory ::
 alldepend ÄÄ
     directory :tools; domake depend; directory ::
@@ -352,13 +351,13 @@ otherlibraries Ä
     for i in {OTHERLIBRARIES}
       directory :otherlibs:{i}; domake all; directory :::
     end
+partialclean ÄÄ
+    for i in {OTHERLIBRARIES}
+      directory :otherlibs:{i}; domake partialclean; directory :::
+    end
 clean ÄÄ
     for i in {OTHERLIBRARIES}
       directory :otherlibs:{i}; domake clean; directory :::
-    end
-realclean ÄÄ
-    for i in {OTHERLIBRARIES}
-      directory :otherlibs:{i}; domake realclean; directory :::
     end
 alldepend ÄÄ
     for i in {OTHERLIBRARIES}
@@ -378,7 +377,7 @@ clean ÄÄ
 .cmi Ä .mli
     {CAMLC} {COMPFLAGS} -c {depdir}{default}.mli
 
-clean ÄÄ
+partialclean ÄÄ
     for i in utils parsing typing bytecomp driver toplevel tools
       delete -i :{i}:Å.cm[io] || set status 0
     end

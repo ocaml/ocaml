@@ -30,10 +30,10 @@ str.cma Ä str.cmo
 {REGEXLIB}regex.c.o Ä {REGEXLIB}regex.c {REGEXLIB}regex.h
 	directory {REGEXLIB}; domake; directory ::
 
-clean Ä
+partialclean Ä
 	delete -i Å.cm[aio] || set status 0
 
-realclean Ä clean
+clean Ä partialclean
 	delete -i Å.[ox] || set status 0
 	directory {REGEXLIB}; domake distclean; directory ::
 

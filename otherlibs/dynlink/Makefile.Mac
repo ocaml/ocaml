@@ -23,11 +23,11 @@ install Ä
 
 installopt Ä
 
-clean Ä
+partialclean Ä
 	delete -i extract_crc
 	delete -i Å.cm[aio] || set status 0
 
-realclean Ä clean
+clean Ä partialclean
 
 .cmi Ä .mli
 	{CAMLC} -c {COMPFLAGS} {default}.mli

@@ -30,10 +30,10 @@ $(REGEXLIB)/regex.o: $(REGEXLIB)/regex.c $(REGEXLIB)/regex.h
 
 str.cmx: ../../ocamlopt
 
-clean:
+partialclean:
 	rm -f *.cm*
 
-realclean: clean
+clean: partialclean
 	rm -f *.a *.o
 	cd $(REGEXLIB); if test -f Makefile; then $(MAKE) distclean; else exit 0; fi
 

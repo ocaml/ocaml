@@ -51,11 +51,12 @@ iolock.cmo: iolock.ml
 iolock.cmi: iolock.mli
 	$(CAMLC) -nopervasives -c iolock.mli
 
-clean:
+partialclean:
+	rm -f *.cm*
+
+clean: partialclean:
 	rm -f libthreads.a *.o *.cm*
 	rm -f $(GENFILES)
-
-realclean:
 
 install:
 	cp libthreads.lib $(LIBDIR)/libthreads.lib

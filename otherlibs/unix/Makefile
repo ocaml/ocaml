@@ -40,10 +40,10 @@ unix.cmxa: unix.cmx
 
 unix.cmx: ../../ocamlopt
 
-clean:
+partialclean:
 	rm -f *.cm*
 
-realclean: clean
+clean: partialclean
 	rm -f *.a *.o
 
 install:

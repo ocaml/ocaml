@@ -9,11 +9,10 @@ all: graphics.cmi graphics.cmo
 
 allopt:
 
-clean:
+partialclean:
 	rm -f *.cm*
 
-realclean: clean
-	rm -f *.a *.o
+clean: partialclean
 
 install:
 	cp graphics.cm[io] $(LIBDIR)

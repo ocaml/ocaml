@@ -40,10 +40,10 @@ install:
 installopt:
 	cp $(CAMLOBJS:.cmo=.cmx) nums.cmxa nums.lib $(LIBDIR)
 
-clean:
+partialclean:
 	rm -f *.cm*
 
-realclean: clean
+clean: partialclean
 	rm -f *.lib *.obj
 	cd bignum & $(MAKEREC) clean
 	cd test & $(MAKEREC) clean
