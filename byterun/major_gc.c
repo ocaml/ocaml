@@ -33,7 +33,7 @@
 #endif
 #endif
 
-int percent_free;
+unsigned long percent_free;
 long major_heap_increment;
 char *heap_start, *heap_end;
 page_table_entry *page_table;
@@ -257,27 +257,29 @@ static void sweep_slice (work)
 /* The main entry point for the GC.  Called at each minor GC. */
 void major_collection_slice ()
 {
-  /* Free memory at the start of the GC cycle (assumed):
-                 FM = stat_heap_size * percent_free / 100 * 2/3
+  /* 
+     Free memory at the start of the GC cycle (garbage + free list) (assumed):
+                 FM = stat_heap_size * percent_free / (100 + percent_free)
+     Garbage at the start of the GC cycle:
+                 G = FM * 2/3
      Proportion of free memory consumed since the previous slice:
-                 PH = allocated_words / FM
+                 PH = allocated_words / G
      Proportion of extra-heap memory consumed since the previous slice:
                  PE = extra_heap_memory / stat_heap_size
      Proportion of total work to do in this slice:
                  P  = PH + PE
      Amount of marking work for the GC cycle:
-                 MW = stat_heap_size * (100 - percent_free) / 100
+                 MW = stat_heap_size * 100 / (100 + percent_free)
      Amount of sweeping work for the GC cycle:
                  SW = stat_heap_size
      Amount of marking work for this slice:
                  MS = MW * P
-                 MS = (100 - percent_free)
-                      * (allocated_words * 3 / percent_free / 2
-                         + 100 * extra_heap_memory)
+                 MS = 3/2 * 100 * allocated_words / percent_free
+                      + extra_heap_memory * 100 / (100 + percent_free)
      Amount of sweeping work for this slice:
                  SS = SW * P
-                 SS = 100 * (allocated_words * 3 / percent_free / 2
-                             + 100 * extra_heap_memory)
+                 SS = 3/2 * (100 + percent_free)/percent_free * allocated_words
+                      + extra_heap_memory
      This slice will either mark 2*MS words or sweep 2*SS words.
   */
 
@@ -286,15 +288,14 @@ void major_collection_slice ()
   if (gc_phase == Phase_idle) start_cycle ();
 
   if (gc_phase == Phase_mark){
-    mark_slice (2 * (100 - percent_free)
-                * (allocated_words * 3 / percent_free / 2
-                   + 100 * extra_heap_memory)
-                + Margin);
+    mark_slice (300 * (allocated_words / percent_free + 1)
+                + 200 * (extra_heap_memory / (100 + percent_free) + 1)
+		+ Margin);
     gc_message ("!", 0);
   }else{
     Assert (gc_phase == Phase_sweep);
-    sweep_slice (200 * (allocated_words * 3 / percent_free / 2
-                        + 100 * extra_heap_memory)
+    sweep_slice (3 * (100 + percent_free) * (allocated_words / percent_free + 1)
+                 + 2 * extra_heap_memory
                  + Margin);
     gc_message ("$", 0);
   }

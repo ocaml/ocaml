@@ -30,9 +30,8 @@ long stat_minor_words = 0,
      stat_compactions = 0;
 
 extern asize_t major_heap_increment;  /* bytes; cf. major_gc.c */
-extern int percent_free;              /*        cf. major_gc.c */
-extern int percent_max;               /*        cf. compact.c */
-extern int verb_gc;                   /*        cf. misc.c */
+extern unsigned long percent_free;    /*        cf. major_gc.c */
+extern unsigned long percent_max;     /*        cf. compact.c */
 
 #define Next(hp) ((hp) + Bhsize_hp (hp))
 
@@ -62,13 +61,14 @@ value gc_stat(v) /* ML */
       case White:
         if (Wosize_hd (cur_hd) == 0){
           ++fragments;
-/* XXX    Assert (prev_hp == NULL
+          Assert (prev_hp == NULL
                   || (Color_hp (prev_hp) != Blue
-                      && Wosize_hp (prev_hp) > 0));
+                      && Wosize_hp (prev_hp) > 0)
+		  || cur_hp == gc_sweep_hp);
           Assert (Next (cur_hp) == chunk_end
                   || (Color_hp (Next (cur_hp)) != Blue
-                      && Wosize_hp (Next (cur_hp)) > 0));
-*/
+                      && Wosize_hp (Next (cur_hp)) > 0)
+		  || Next (cur_hp) == gc_sweep_hp);
           break;
         }
         /* FALLTHROUGH */
@@ -84,13 +84,14 @@ value gc_stat(v) /* ML */
         if (Whsize_hd (cur_hd) > largest_free){
           largest_free = Whsize_hd (cur_hd);
         }
-/* XXX  Assert (prev_hp == NULL
+        Assert (prev_hp == NULL
                 || (Color_hp (prev_hp) != Blue
-                    && Wosize_hp (prev_hp) > 0));
-*/
+                    && Wosize_hp (prev_hp) > 0)
+		|| cur_hp == gc_sweep_hp);
         Assert (Next (cur_hp) == chunk_end
                 || (Color_hp (Next (cur_hp)) != Blue
-                    && Wosize_hp (Next (cur_hp)) > 0));
+                    && Wosize_hp (Next (cur_hp)) > 0)
+		|| Next (cur_hp) == gc_sweep_hp);
         break;
       }
       prev_hp = cur_hp;
@@ -136,22 +137,23 @@ value gc_get(v) /* ML */
 
 #define Max(x,y) ((x) < (y) ? (y) : (x))
 
-static int norm_pfree (p)
-     int p;
+static unsigned long norm_pfree (p)
+     unsigned long p;
 {
   return Max (p, 1);
 }
 
-static int norm_pmax (p)
-     int p;
+static unsigned long norm_pmax (p)
+     unsigned long p;
 {
   return Max (p, 0);
 }
 
 static long norm_heapincr (i)
-     long i;
+     unsigned long i;
 {
-  i = ((i + (1 << Page_log) - 1) >> Page_log) << Page_log;
+#define Psv (Wsize_bsize (Page_size))
+  i = ((i + Psv - 1) / Psv) * Psv;
   if (i < Heap_chunk_min) i = Heap_chunk_min;
   if (i > Heap_chunk_max) i = Heap_chunk_max;
   return i;
@@ -168,7 +170,7 @@ static long norm_minsize (s)
 value gc_set(v) /* ML */
     value v;
 {
-  int newpf, newpm;
+  unsigned long newpf, newpm;
   asize_t newheapincr;
   asize_t newminsize;
 
@@ -242,12 +244,8 @@ value gc_compaction(v) /* ML */
 }
 
 void init_gc (minor_size, major_size, major_incr, percent_fr, percent_m, verb)
-     unsigned long minor_size;
-     unsigned long major_size;
-     unsigned long major_incr;
-     int percent_fr;
-     int percent_m;
-     int verb;
+     unsigned long minor_size, major_size, major_incr;
+     unsigned long percent_fr, percent_m, verb;
 {
   unsigned long major_heap_size = Bsize_wsize (norm_heapincr (major_size));
 #ifdef DEBUG
@@ -262,8 +260,8 @@ void init_gc (minor_size, major_size, major_incr, percent_fr, percent_m, verb)
   init_major_heap (major_heap_size);
   gc_message ("Initial minor heap size: %luk bytes\n", minor_heap_size / 1024);
   gc_message ("Initial major heap size: %luk bytes\n", major_heap_size / 1024);
-  gc_message ("Initial space overhead: %d%%\n", percent_free);
-  gc_message ("Initial max overhead: %d%%\n", percent_max);
-  gc_message ("Initial heap increment: %ldk bytes\n",
+  gc_message ("Initial space overhead: %lu%%\n", percent_free);
+  gc_message ("Initial max overhead: %lu%%\n", percent_max);
+  gc_message ("Initial heap increment: %luk bytes\n",
               major_heap_increment / 1024);
 }

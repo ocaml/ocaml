@@ -101,22 +101,22 @@ typedef char schar;
    Must be greater than or equal to [Bhsize_wosize (Max_wosize)]. */
 #define Heap_chunk_max (Bhsize_wosize (Max_wosize))
 
-/* Default size increment when growing the heap. (bytes)
+/* Default size increment when growing the heap. (words)
    Must be a multiple of [Page_size / sizeof (value)]. */
-#define Heap_chunk_def (62 * Page_size / sizeof (value))
+#define Heap_chunk_def (62 * 1024)
 
-/* Default initial size of the major heap (bytes);
+/* Default initial size of the major heap (words);
    same constraints as for Heap_chunk_def. */
-#define Init_heap_def (62 * Page_size / sizeof (value))
+#define Init_heap_def (62 * 1024)
 
 
 /* Default speed setting for the major GC.  The heap will grow until
    the dead objects and the free list represent this percentage of the
    heap size.  The rest of the heap is live objects. */
-#define Percent_free_def 30
+#define Percent_free_def 40
 
 /* Default setting for the compacter: off */
-#define Max_percent_free_def 0
+#define Max_percent_free_def 1000000
 
 
 #endif /* _config_ */

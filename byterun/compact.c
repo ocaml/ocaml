@@ -23,7 +23,7 @@
 #include "roots.h"
 #include "weak.h"
 
-extern int percent_free;                       /* major_gc.c */
+extern unsigned long percent_free;             /* major_gc.c */
 extern void shrink_heap P((char *));           /* memory.c */
 
 /* Encoded headers: the color is stored in the 2 least significant bits.
@@ -339,14 +339,14 @@ void compact_heap (void)
 
     /* Add up the empty chunks until there are enough, then remove the
        other empty chunks. */
-    wanted = percent_free * live / 100;
+    wanted = percent_free * (live / 100 + 1);
     ch = heap_start;
     while (ch != NULL){
       char *next_chunk = Chunk_next (ch);  /* Chunk_next (ch) will be erased */
 
       if (Chunk_alloc (ch) == 0){
         if (free < wanted){
-          free += Chunk_size (ch);
+          free += Wsize_bsize (Chunk_size (ch));
         }else{
           shrink_heap (ch);
         }
@@ -373,7 +373,7 @@ void compact_heap (void)
   gc_message ("done.\n", 0);
 }
 
-int percent_max;
+unsigned long percent_max;
 
 void compact_heap_maybe ()
 {
@@ -382,11 +382,10 @@ void compact_heap_maybe ()
      We compact the heap if FW > percent_max / 100 * LW
   */
   float fw;
-                                              Assert (gc_phase == Phase_idle);
+                                               Assert (gc_phase == Phase_idle);
+  if (percent_max >= 1000000) return;
   switch (percent_max){
   case 0:
-    return;
-  case 1:
     finish_major_cycle ();
     compact_heap ();
     break;

@@ -142,8 +142,11 @@ char *fl_allocate (wo_sz)
   return NULL;
 }
 
+static char *last_fragment;
+
 void fl_init_merge ()
 {
+  last_fragment = NULL;
   fl_merge = Fl_head;
   fl_cur_size = 0;
 #ifdef DEBUG
@@ -179,13 +182,21 @@ char *fl_merge_block (bp)
 #endif
   prev = fl_merge;
   cur = Next (prev);
-    /* The sweep code makes sure that this is the right place to insert
-       this block: */
-    Assert (prev < bp || prev == Fl_head);
-    Assert (cur > bp || cur == NULL);
+  /* The sweep code makes sure that this is the right place to insert
+     this block: */
+  Assert (prev < bp || prev == Fl_head);
+  Assert (cur > bp || cur == NULL);
 
-    /* If [bp] and [cur] are adjacent, remove [cur] from the free-list
-       and merge them. */
+  /* If [last_fragment] and [bp] are adjacent, merge them. */
+  if (last_fragment == Hp_bp (bp)){
+    hd = Make_header (Whsize_bp (bp), 0, White);
+    bp = last_fragment;
+    Hd_bp (bp) = hd;
+    fl_cur_size += Whsize_wosize (0);
+  }
+
+  /* If [bp] and [cur] are adjacent, remove [cur] from the free-list
+     and merge them. */
   adj = bp + Bosize_hd (hd);
   if (adj == Hp_bp (cur)){
     char *next_cur = Next (cur);
@@ -203,8 +214,8 @@ char *fl_merge_block (bp)
 #endif
     cur = next_cur;
   }
-    /* If [prev] and [bp] are adjacent merge them, else insert [bp] into
-       the free-list if it is big enough. */
+  /* If [prev] and [bp] are adjacent merge them, else insert [bp] into
+     the free-list if it is big enough. */
   if (prev + Bosize_bp (prev) == Hp_bp (bp)){
     Hd_bp (prev) = Make_header (Wosize_bp (prev) + Whsize_hd (hd), 0, Blue);
 #ifdef DEBUG
@@ -216,7 +227,11 @@ char *fl_merge_block (bp)
     Next (bp) = cur;
     Next (prev) = bp;
     fl_merge = bp;
-  } /* Else leave it in white. */
+  }else{
+    /* This is a fragment.  Leave it in white but remember it for eventual
+       merging with the next block. */
+    last_fragment = bp;
+  }
   return adj;
 }
 

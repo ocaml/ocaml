@@ -132,9 +132,9 @@ Algorithm:
 
 /* Configuration parameters and flags */
 
-static int verbose_init = 0;
-static int percent_free_init = Percent_free_def;
-static int max_percent_free_init = Max_percent_free_def;
+static unsigned long verbose_init = 0;
+static unsigned long percent_free_init = Percent_free_def;
+static unsigned long max_percent_free_init = Max_percent_free_def;
 static unsigned long minor_heap_init = Minor_heap_def;
 static unsigned long heap_chunk_init = Heap_chunk_def;
 static unsigned long heap_size_init = Init_heap_def;
@@ -192,9 +192,9 @@ static void parse_camlrunparam()
       case 'i': scanmult (opt, &heap_chunk_init); break;
       case 'h': scanmult (opt, &heap_size_init); break;
       case 'l': scanmult (opt, &max_stack_init); break;
-      case 'o': sscanf (opt, "=%d", &percent_free_init); break;
-      case 'O': sscanf (opt, "=%d", &max_percent_free_init); break;
-      case 'v': sscanf (opt, "=%d", &verbose_init); break;
+      case 'o': scanmult (opt, &percent_free_init); break;
+      case 'O': scanmult (opt, &max_percent_free_init); break;
+      case 'v': scanmult (opt, &verbose_init); break;
       }
     }
   }
