@@ -116,8 +116,9 @@ precedence come first. For infix and prefix symbols, we write
 \entree{".   .(    .["}{--}
 \entree{function application, constructor application, "assert", "lazy"}{left}
 \entree{"-   -." (prefix)}{--}
-\entree{"**"\ldots}{right}
-\entree{"*"\ldots"   /"\ldots"   %"\ldots"   mod"}{left} %% "`"@ident@"`"
+\entree{"**"\ldots"   lsl   lsr   asr"}{right}
+\entree{"*"\ldots"   /"\ldots"   %"\ldots"   mod   land   lor   lxor"}{left}
+ %% "`"@ident@"`"
 \entree{"+"\ldots"   -"\ldots}{left}
 \entree{"::"}{right}
 \entree{{\tt \char64}\ldots "   ^"\ldots}{right}
