@@ -39,12 +39,17 @@ val type_self_pattern:
         (Ident.t * Asttypes.mutable_flag * type_expr) Vars.t ref *
         Env.t * Env.t * Env.t
 val type_expect:
-        Env.t -> Parsetree.expression -> type_expr ->
-        Typedtree.expression
+        Env.t -> Parsetree.expression -> type_expr -> Typedtree.expression
 val type_exp:
         Env.t -> Parsetree.expression -> Typedtree.expression
 val type_approx:
         Env.t -> Parsetree.expression -> type_expr
+val type_argument:
+        Env.t -> Parsetree.expression -> type_expr -> Typedtree.expression
+
+val option_some: Typedtree.expression -> Typedtree.expression
+val option_none: type_expr -> Location.t -> Typedtree.expression
+val extract_option_type: Env.t -> type_expr -> type_expr
 
 type error =
     Unbound_value of Longident.t

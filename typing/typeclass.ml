@@ -621,7 +621,7 @@ and class_expr cl_num val_env met_env scl =
         match ty_fun with
         | Tcty_fun (l, ty, ty_fun) when sargs <> [] || more_sargs <> [] ->
             let name = Btype.label_name l in
-            let sargs, more_sargs, sarg =
+            let sargs, more_sargs, arg =
               if !Clflags.classic && not (Btype.is_optional l) then begin
                 match sargs, more_sargs with
                   (l', sarg0)::_, _ ->
@@ -629,7 +629,7 @@ and class_expr cl_num val_env met_env scl =
                 | _, (l', sarg0)::more_sargs ->
                     if l <> l' && l' <> "" then
                       raise(Error(sarg0.pexp_loc, Apply_wrong_label l'))
-                    else ([], more_sargs, Some sarg0)
+                    else ([], more_sargs, Some(type_argument val_env sarg0 ty))
                 | _ ->
                     assert false
               end else try
@@ -645,25 +645,20 @@ and class_expr cl_num val_env met_env scl =
                 in
                 sargs, more_sargs,
                 if Btype.is_optional l' || not (Btype.is_optional l) then
-                  Some sarg0
+                  Some (type_argument val_env sarg0 ty)
                 else
-                  Some { pexp_loc = sarg0.pexp_loc;
-                         pexp_desc = Pexp_construct (Longident.Lident "Some",
-                                                     Some sarg0, false) }
+                  let arg = type_argument val_env
+                      sarg0 (extract_option_type val_env ty) in
+                  Some (option_some arg)
               with Not_found ->
                 sargs, more_sargs,
                 if Btype.is_optional l &&
                   (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
                 then
-                  Some { pexp_loc = Location.none;
-                         pexp_desc = Pexp_construct (Longident.Lident "None",
-                                                     None, false) }
+                  Some (option_none ty Location.none)
                 else None
             in
-            let arg, omitted =
-              match sarg with None -> None, (l,ty) :: omitted
-              | Some sarg -> Some (type_expect val_env sarg ty), omitted
-            in
+            let omitted = if arg = None then (l,ty) :: omitted else omitted in
             type_args (arg::args) omitted ty_fun sargs more_sargs
         | _ ->
             match sargs @ more_sargs with

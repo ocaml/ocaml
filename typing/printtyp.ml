@@ -175,7 +175,7 @@ let reset () =
 (* disabled in classic mode when printing an unification error *)
 let print_labels = ref true
 let print_label l =
-  if !print_labels && l <> "" then begin
+  if !print_labels && l <> "" || is_optional l then begin
     print_string l;
     print_char ':'
   end
@@ -922,12 +922,19 @@ let unification_error unif tr txt1 txt2 =
       close_box ();
       print_labels := true
     with exn ->
-      print_labels := true
+      print_labels := true;
+      raise exn
+
+let prepare_expansion (t, t') =
+  let t' = hide_variant_name t' in
+  mark_loops t; if t != t' then mark_loops t';
+  (t, t')
 
 let trace fst txt tr =
-(*  match tr with
-    (t1, t1')::(t2, t2')::tr -> *)
-      trace fst txt (filter_trace tr)
-(*  | _ ->
-      ()*)
-
+  print_labels := not !Clflags.classic;
+  try
+    trace fst txt (filter_trace tr);
+    print_labels := true
+  with exn ->
+    print_labels := true;
+    raise exn

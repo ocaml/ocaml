@@ -74,6 +74,21 @@ let type_constant = function
 let type_option ty =
   newty (Tconstr(Predef.path_option,[ty], ref Mnil))
 
+let option_none ty loc =
+  let cnone = Env.lookup_constructor (Longident.Lident "None") Env.initial in
+  { exp_desc = Texp_construct(cnone, []);
+    exp_type = ty; exp_loc = loc; exp_env = Env.initial }
+
+let option_some texp =
+  let csome = Env.lookup_constructor (Longident.Lident "Some") Env.initial in
+  { exp_desc = Texp_construct(csome, [texp]); exp_loc = texp.exp_loc;
+    exp_type = type_option texp.exp_type; exp_env = texp.exp_env }
+
+let extract_option_type env ty =
+  match expand_head env ty with {desc = Tconstr(path, [ty], _)}
+    when Path.same path Predef.path_option -> ty
+  | _ -> assert false
+
 (* Typing of patterns *)
 
 let unify_pat env pat expected_ty =
@@ -835,6 +850,47 @@ let rec type_exp env sexp =
         exp_type = ty;
         exp_env = env }
 
+and type_argument env sarg ty_expected =
+  match expand_head env ty_expected, sarg with
+  | _, {pexp_desc = Pexp_function(l,_,_)} when not (is_optional l) ->
+      type_expect env sarg ty_expected
+  | {desc = Tarrow("",ty_arg,ty_res)}, _ ->
+      (* apply optional arguments when expected type is "" *)
+      let texp = type_exp env sarg in
+      let rec make_args args ty_fun =
+        match (expand_head env ty_fun).desc with
+        | Tarrow (l,ty_arg,ty_fun) when is_optional l ->
+            make_args (Some(option_none ty_arg sarg.pexp_loc) :: args) ty_fun
+        | Tarrow (l,_,_) when l = "" || !Clflags.classic ->
+            args, ty_fun
+        | Tvar ->  args, ty_fun
+        |  _ -> [], texp.exp_type
+      in
+      let args, ty_fun = make_args [] texp.exp_type in
+      unify_exp env {texp with exp_type = ty_fun} ty_expected;
+      if args = [] then texp else
+      (* eta-expand to avoid side effects *)
+      let var_pair name ty =
+        let id = Ident.create name in
+        {pat_desc = Tpat_var id; pat_type = ty_arg;
+         pat_loc = Location.none; pat_env = env},
+        {exp_type = ty_arg; exp_loc = Location.none; exp_env = env; exp_desc =
+         Texp_ident(Path.Pident id,{val_type = ty_arg; val_kind = Val_reg})}
+      in
+      let eta_pat, eta_var = var_pair "eta" ty_arg in
+      let func texp =
+        { texp with exp_type = ty_fun; exp_desc =
+          Texp_function([eta_pat, {texp with exp_type = ty_res; exp_desc =
+                                   Texp_apply (texp, args@[Some eta_var])}],
+                        Total) } in
+      if is_nonexpansive texp then func texp else
+      (* let-expand to have side effects *)
+      let let_pat, let_var = var_pair "let" texp.exp_type in
+      { texp with exp_type = ty_fun; exp_desc =
+        Texp_let (Nonrecursive, [let_pat, texp], func let_var) }
+  | _ ->
+      type_expect env sarg ty_expected
+
 and type_application env funct sargs =
   let result_type omitted ty_fun =
     List.fold_left
@@ -859,62 +915,6 @@ and type_application env funct sargs =
         let arg1 = type_expect env sarg1 ty1 in
         type_unknown_args (Some arg1 :: args) omitted ty2 sargl
   in
-  let option_none ty loc =
-    let cnone = Env.lookup_constructor (Longident.Lident "None") Env.initial in
-    { exp_desc = Texp_construct(cnone, []);
-      exp_type = ty; exp_loc = loc; exp_env = env }
-  and option_some texp =
-    let csome = Env.lookup_constructor (Longident.Lident "Some") Env.initial in
-    { exp_desc = Texp_construct(csome, [texp]); exp_loc = texp.exp_loc;
-      exp_type = type_option texp.exp_type; exp_env = env }
-  and extract_option_type ty =
-    match expand_head env ty with {desc = Tconstr(path, [ty], _)}
-      when Path.same path Predef.path_option -> ty
-    | _ -> assert false
-  in
-  let type_arg sarg ty_expected =
-    match expand_head env ty_expected, sarg with
-    | _, {pexp_desc = Pexp_function(l,_,_)}
-      when not (is_optional l) ->
-        type_expect env sarg ty_expected
-    | {desc = Tarrow("",ty_arg,ty_res)}, _ ->
-        (* apply optional arguments when expected type is "" *)
-        let texp = type_exp env sarg in
-        let rec make_args args ty_fun =
-          match (expand_head env ty_fun).desc with
-          | Tarrow (l,ty_arg,ty_fun) when is_optional l ->
-              make_args (Some(option_none ty_arg sarg.pexp_loc) :: args) ty_fun
-          | Tarrow (l,_,_) when l = "" || !Clflags.classic ->
-              args, ty_fun
-          | Tvar ->  args, ty_fun
-          |  _ -> [], texp.exp_type
-        in
-        let args, ty_fun = make_args [] texp.exp_type in
-        unify_exp env {texp with exp_type = ty_fun} ty_expected;
-        if args = [] then texp else
-        (* eta-expand to avoid side effects *)
-        let var_pair name ty =
-          let id = Ident.create name in
-          {pat_desc = Tpat_var id; pat_type = ty_arg;
-           pat_loc = Location.none; pat_env = env},
-          {exp_type = ty_arg; exp_loc = Location.none;
-           exp_env = env; exp_desc = Texp_ident(
-           Path.Pident id,{val_type = ty_arg; val_kind = Val_reg})}
-        in
-        let eta_pat, eta_var = var_pair "eta" ty_arg in
-        let func texp =
-          { texp with exp_type = ty_fun; exp_desc = Texp_function
-              ([eta_pat, {texp with exp_type = ty_res; exp_desc =
-                          Texp_apply (texp, args@[Some eta_var])}],
-               Total) } in
-        if is_nonexpansive texp then func texp else
-        (* let-expand to have side effects *)
-        let let_pat, let_var = var_pair "let" texp.exp_type in
-        { texp with exp_type = ty_fun; exp_desc =
-          Texp_let (Nonrecursive, [let_pat, texp], func let_var) }
-    | _ ->
-        type_expect env sarg ty_expected
-  in
   let rec type_args args omitted ty_fun ty_old sargs more_sargs =
     match expand_head env ty_fun with
       {desc=Tarrow (l, ty, ty_fun); level=lv} as ty_fun'
@@ -929,7 +929,7 @@ and type_application env funct sargs =
             | _, (l', sarg0) :: more_sargs ->
                 if l <> l' && l' <> "" then
                   raise(Error(sarg0.pexp_loc, Apply_wrong_label(l', ty_fun')))
-                else ([], more_sargs, Some (type_arg sarg0 ty))
+                else ([], more_sargs, Some (type_argument env sarg0 ty))
             | _ ->
                 assert false
           end else try
@@ -943,9 +943,9 @@ and type_application env funct sargs =
             in
             sargs, more_sargs,
             if is_optional l' || not (is_optional l) then
-              Some (type_arg sarg0 ty)
+              Some (type_argument env sarg0 ty)
             else
-              let arg = type_arg sarg0 (extract_option_type ty) in
+              let arg = type_argument env sarg0 (extract_option_type env ty) in
               Some (option_some arg)
           with Not_found ->
             sargs, more_sargs,
@@ -966,6 +966,7 @@ and type_application env funct sargs =
             type_unknown_args args omitted ty_fun (sargs @ more_sargs)
   in
   match funct.exp_desc, sargs with
+    (* Special case for ignore: avoid discarding warning *)
     Texp_ident (_, {val_kind=Val_prim{Primitive.prim_name="%ignore"}}),
     ["", sarg] ->
       let ty_arg, ty_res = filter_arrow env funct.exp_type "" in
@@ -1285,12 +1286,8 @@ let report_error = function
       print_string " is not mutable"
   | Not_subtype(tr1, tr2) ->
       reset ();
-      List.iter
-        (function (t, t') -> mark_loops t; if t != t' then mark_loops t')
-        tr1;
-      List.iter
-        (function (t, t') -> mark_loops t; if t != t' then mark_loops t')
-        tr2;
+      let tr1 = List.map prepare_expansion tr1
+      and tr2 = List.map prepare_expansion tr2 in
       trace true (fun _ -> print_string "is not a subtype of type") tr1;
       trace false (fun _ -> print_string "is not compatible with type") tr2
   | Outside_class ->
@@ -1301,7 +1298,7 @@ let report_error = function
   | Coercion_failure (ty, ty', trace) ->
       unification_error true trace
         (function () ->
-           mark_loops ty; if ty' != ty then mark_loops ty';
+           let ty, ty' = prepare_expansion (ty, ty') in
            print_string "This expression cannot be coerced to type";
            print_break 1 2;
            type_expansion ty ty';
