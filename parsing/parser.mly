@@ -1163,18 +1163,20 @@ constraints:
 type_kind:
     /*empty*/
       { (Ptype_abstract, None) }
-  | EQUAL private_flag core_type
-      { (mktype_kind $2 Ptype_abstract, Some $3) }
-  | EQUAL private_flag constructor_declarations
-      { (mktype_kind $2 (Ptype_variant(List.rev $3)), None) }
+  | EQUAL core_type
+      { (Ptype_abstract, Some $2) }
+  | EQUAL constructor_declarations
+      { (Ptype_variant(List.rev $2), None) }
+  | EQUAL PRIVATE constructor_declarations
+      { (mktype_kind Private (Ptype_variant(List.rev $3)), None) }
   | EQUAL private_flag BAR constructor_declarations
       { (mktype_kind $2 (Ptype_variant(List.rev $4)), None) }
   | EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
       { (mktype_kind $2 (Ptype_record(List.rev $4)), None) }
-  | EQUAL private_flag core_type EQUAL opt_bar constructor_declarations
-      { (mktype_kind $2 (Ptype_variant(List.rev $6)), Some $3) }
-  | EQUAL private_flag core_type EQUAL LBRACE label_declarations opt_semi RBRACE
-      { (mktype_kind $2 (Ptype_record(List.rev $6)), Some $3) }
+  | EQUAL core_type EQUAL private_flag opt_bar constructor_declarations
+      { (mktype_kind $4 (Ptype_variant(List.rev $6)), Some $2) }
+  | EQUAL core_type EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
+      { (mktype_kind $4 (Ptype_record(List.rev $6)), Some $2) }
 ;
 type_parameters:
     /*empty*/                                   { [] }
