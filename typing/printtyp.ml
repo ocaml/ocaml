@@ -304,8 +304,9 @@ let rec type_declaration id decl =
   | Type_variant (cstr1 :: cstrs) ->
       print_string " ="; print_break 1 2;
       constructor cstr1;
-      List.iter (fun cstr -> print_space(); print_string "| "; constructor cstr)
-              cstrs
+      List.iter
+        (fun cstr -> print_space(); print_string "| "; constructor cstr)
+        cstrs
   | Type_record (lbl1 :: lbls as l) ->
       List.iter (fun (_, _, ty) -> mark_loops ty) l;
       print_string " ="; print_space();
@@ -440,7 +441,7 @@ let class_type id cl_ty =
   List.iter mark_loops args;
   List.iter (fun (_, ty) -> mark_loops ty) cstr;
   Vars.iter (fun _ (_, ty) -> mark_loops ty) vars;
-  open_hvbox 2;
+  open_vbox 2;
   open_hovbox 0;
   print_string "class ";
   if cl_ty.cty_new = None then
@@ -461,10 +462,9 @@ let class_type id cl_ty =
   print_string "=";
   close_box ();
   start_list true;
-  open_hvbox 0;
   if cstr <> [] then begin
     list_item ();
-    open_hvbox 0;
+    open_vbox 0;
     start_list false;
     List.iter constrain cstr;
     end_list false;
@@ -472,7 +472,7 @@ let class_type id cl_ty =
   end;
   if vars <> Vars.empty then begin
     list_item ();
-    open_hvbox 0;
+    open_vbox 0;
     start_list false;
     Vars.iter class_var vars;
     end_list false;
@@ -491,7 +491,7 @@ let class_type id cl_ty =
   in
   if meths <> [] then begin
     list_item ();
-    open_hvbox 0;
+    open_vbox 0;
     start_list false;
     List.iter (metho "method ") meths;
     close_box ();
@@ -499,7 +499,7 @@ let class_type id cl_ty =
   end;
   if virt <> [] then begin
     list_item ();
-    open_hvbox 0;
+    open_vbox 0;
     start_list false;
     List.iter (metho "virtual ") virt;
     close_box ();
