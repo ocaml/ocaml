@@ -62,7 +62,8 @@ let rec expression event env = function
     E_ident lid ->
       begin try
         let (p, valdesc) = Env.lookup_value lid env in
-        (path event p, Ctype.instance valdesc.val_type)
+        Ctype.correct_level env valdesc.val_type;
+        (path event p, valdesc.val_type)
       with Not_found ->
         raise(Error(Unbound_long_identifier lid))
       end
@@ -128,15 +129,12 @@ and find_label lbl env ty path tydesc pos = function
       raise(Error(Wrong_label(ty, lbl)))
   | (name, mut, ty_arg) :: rem ->
       if name = lbl then begin
-        let descr =
-          { lbl_res = Ctype.newty(Tconstr(path, tydesc.type_params, ref Mnil));
-            lbl_arg = ty_arg; lbl_mut = mut; lbl_pos = pos;
-            lbl_all = [||]; lbl_repres = Record_regular } in
-        let (ty_arg, ty_res) = Ctype.instance_label descr in
-        Ctype.unify env ty ty_arg;
-        (pos, ty_res)
+        let ty_res =
+          Ctype.newgenty(Tconstr(path, tydesc.type_params, ref Mnil))
+        in
+        (pos, Ctype.substitute env [ty_res] [ty] ty_arg)
       end else
-        find_label lbl env ty path tydesc pos rem
+        find_label lbl env ty path tydesc (pos + 1) rem
 
 (* Error report *)
 
