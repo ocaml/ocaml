@@ -40,26 +40,38 @@ external exit : unit -> unit = "caml_thread_exit"
 external kill : t -> unit = "caml_thread_kill"
         (* Terminate prematurely the thread whose handle is given. *)
 
-(** Thread synchronization *)
-
-external join : t -> unit = "caml_thread_join"
-        (* [join th] suspends the execution of the calling thread
-           until the thread [th] has terminated. *)
-
 (** Suspending threads *)
 
 val delay: float -> unit
         (* [delay d] suspends the execution of the calling thread for
            [d] seconds. The other program threads continue to run during
            this time. *)
-val join : t -> unit
+external join : t -> unit = "caml_thread_join"
         (* [join th] suspends the execution of the calling thread
            until the thread [th] has terminated. *)
 val wait_read : Unix.file_descr -> unit
 val wait_write : Unix.file_descr -> unit
+        (* These functions do nothing in this implementation. *)
 val wait_timed_read : Unix.file_descr -> float -> bool
 val wait_timed_write : Unix.file_descr -> float -> bool
-        (* These functions do nothing in this Win32 implementation. *)
+        (* Suspend the execution of the calling thread until at least
+           one character is available for reading ([wait_read]) or
+           one character can be written without blocking ([wait_write])
+           on the given Unix file descriptor. Wait for at most
+           the amount of time given as second argument (in seconds).
+           Return [true] if the file descriptor is ready for input/output
+           and [false] if the timeout expired. *)
+        (* These functions return immediately [true] in the Win32
+           implementation. *)
+val select :
+  Unix.file_descr list -> Unix.file_descr list ->
+  Unix.file_descr list -> float ->
+    Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
+        (* Suspend the execution of the calling thead until input/output
+           becomes possible on the given Unix file descriptors.
+           The arguments and results have the same meaning as for
+           [Unix.select]. *)
+        (* This function is not implemented yet under Win32. *)
 val wait_pid : int -> int * Unix.process_status
         (* [wait_pid p] suspends the execution of the calling thread
            until the process specified by the process identifier [p]
