@@ -1,7 +1,7 @@
 # Makefile for the parser generator.
 
 C = sc
-COptions = -opt speed -d NDEBUG -model far -w 2
+COptions = -d NDEBUG -model far -w 2
 LinkOptions = -model far -msg nodup -compact -state nouse
 Libs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
        "{clibraries}StdCLib.far.o" "{libraries}MathLib.far.o" ¶

@@ -2,7 +2,7 @@
 
 # Compilation options
 C = sc
-COptions = -model far -opt speed -i {REGEXLIB},:::byterun: -w 7
+COptions = -model far -i {REGEXLIB},:::byterun: -w 7
 
 PPCC = mrc
 PPCCOptions = -i {REGEXLIB},:::byterun: -w 7

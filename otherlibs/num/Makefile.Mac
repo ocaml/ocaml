@@ -2,7 +2,7 @@
 
 # Compilation options
 C = sc
-COptions = -opt speed -model far -i :bignum:h:,:::byterun:
+COptions = -model far -i :bignum:h:,:::byterun:
 CAMLC = :::boot:ocamlrun :::boot:ocamlc -I :::stdlib:
 CAMLOPT = :::boot:ocamlrun :::ocamlopt: -I :::stdlib:
 
