@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -80,9 +80,9 @@ let output_tables oc tbl =
 (* Output the entries *)
 
 let output_entry sourcefile ic oc e =
-  fprintf oc "%s lexbuf = %s_rec lexbuf %d\n"
+  fprintf oc "%s lexbuf = __ocaml_lex_%s_rec lexbuf %d\n"
           e.auto_name e.auto_name e.auto_initial_state;
-  fprintf oc "and %s_rec lexbuf state =\n" e.auto_name;
+  fprintf oc "and __ocaml_lex_%s_rec lexbuf state =\n" e.auto_name;
   fprintf oc "  match Lexing.engine lex_tables state lexbuf with\n    ";
   let first = ref true in
   List.iter
@@ -92,7 +92,8 @@ let output_entry sourcefile ic oc e =
       copy_chunk sourcefile ic oc loc;
       fprintf oc ")\n")
     e.auto_actions;
-  fprintf oc "  | n -> lexbuf.Lexing.refill_buff lexbuf; %s_rec lexbuf n\n\n"
+  fprintf oc "  | n -> lexbuf.Lexing.refill_buff lexbuf; \
+                                __ocaml_lex_%s_rec lexbuf n\n\n"
           e.auto_name
 
 (* Main output function *)
@@ -116,6 +117,7 @@ let output_lexdef sourcefile ic oc header tables entry_points trailer =
       output_string oc "let rec "; output_entry sourcefile ic oc entry1;
       List.iter
         (fun e -> output_string oc "and "; output_entry sourcefile ic oc e)
-        entries
+        entries;
+      output_string oc ";;\n\n";
   end;
   copy_chunk sourcefile ic oc trailer
