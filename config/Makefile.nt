@@ -1,4 +1,4 @@
-# Configuration for Windows NT/95, Visual C++ 4.0
+# Configuration for Windows NT/95, Visual C++ 6.0
 
 ######### General configuration
 
@@ -10,6 +10,9 @@ LIBDIR=c:\ocaml\lib
 
 ### Where to install the info files
 DISTRIB=c:\ocaml
+
+### Location of VC++ include files
+SYSTEM_INCLUDES=c:\msdev\VC98\include
 
 ########## Configuration for the bytecode compiler
 
