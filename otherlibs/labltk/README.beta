@@ -1,0 +1,8 @@
+This version is BETA release
+============================
+This source release is only beta and not well tested in various platforms.
+I would be glad if you try to use mlTk to compile your CamlTk/LablTk 
+applications and report problems at Jun.Furuse@inria.fr, if you have.
+
+As an example, this distribution also contains a mlTk port of MMM
+web browser. Read mmm/README.mltk for the installation.
