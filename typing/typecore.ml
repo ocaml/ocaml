@@ -385,6 +385,15 @@ let type_self_pattern cl_num val_env met_env par_env spat =
   in
   (pat, meths, vars, val_env, met_env, par_env)
 
+let check_unused_variant pat =
+  match pat.pat_desc with
+    Tpat_variant(tag, _, row) ->
+      let row = row_repr row in
+      if try row_field_repr (List.assoc tag row.row_fields) = Rabsent
+         with Not_found -> true
+      then Location.prerr_warning pat.pat_loc Warnings.Unused_match
+  | _ -> ()
+
 let rec iter_pattern f p =
   f p;
   match p.pat_desc with
@@ -1247,11 +1256,15 @@ and type_cases env ty_arg ty_res caselist =
   begin match pat_env_list with [] -> ()
   | (pat, _) :: _ -> unify_pat' env pat ty_arg
   end;
-  List.map2
-    (fun (pat, ext_env) (spat, sexp) ->
-      let exp = type_expect ext_env sexp ty_res in
-      (pat, exp))
-    pat_env_list caselist
+  let cases =
+    List.map2
+      (fun (pat, ext_env) (spat, sexp) ->
+        let exp = type_expect ext_env sexp ty_res in
+        (pat, exp))
+      pat_env_list caselist in
+  (* Check for impossible variant constructors *)
+  List.iter (fun (pat, _) -> iter_pattern check_unused_variant pat) cases;
+  cases
 
 (* Typing of let bindings *)
 
