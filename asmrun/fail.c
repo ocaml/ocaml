@@ -33,13 +33,9 @@ typedef char caml_generated_constant[256];
 extern caml_generated_constant Out_of_memory, Sys_error, Failure,
   Invalid_argument, End_of_file, Division_by_zero, Not_found, Match_failure;
 
-/* Exception raising */
+/* Resetting the signal mask when raising an exception from C */
 
-extern void raise_caml_exception (value bucket) Noreturn;
-
-char * caml_exception_pointer = NULL;
-
-void mlraise(value v)
+static void default_reset_sigmask(void)
 {
 #ifdef POSIX_SIGNALS
   sigset_t mask;
@@ -50,6 +46,19 @@ void mlraise(value v)
   sigsetmask(0);
 #endif
 #endif
+}
+
+void (*caml_reset_sigmask)(void) = default_reset_sigmask;
+
+/* Exception raising */
+
+extern void raise_caml_exception (value bucket) Noreturn;
+
+char * caml_exception_pointer = NULL;
+
+void mlraise(value v)
+{
+  (*caml_reset_sigmask)();
   Unlock_exn();
   if (caml_exception_pointer == NULL) fatal_uncaught_exception(v);
 

@@ -225,6 +225,17 @@ static void caml_io_mutex_unlock_exn(void)
   if (chan != NULL) caml_io_mutex_unlock(chan);
 }
 
+/* Hook for resetting signals in mlraise() (in native-code only) */
+
+#ifdef NATIVE_CODE
+static void caml_thread_reset_sigmask(void)
+{
+  sigset_t mask;
+  sigemptyset(&mask);
+  pthread_sigmask(SIG_SETMASK, &mask, NULL);
+}
+#endif
+
 /* The "tick" thread fakes a SIGVTALRM signal at regular intervals. */
 
 static void * caml_thread_tick(void * arg)
@@ -301,6 +312,9 @@ value caml_thread_initialize(value unit)   /* ML */
     channel_mutex_lock = caml_io_mutex_lock;
     channel_mutex_unlock = caml_io_mutex_unlock;
     channel_mutex_unlock_exn = caml_io_mutex_unlock_exn;
+#ifdef NATIVE_CODE
+    caml_reset_sigmask = caml_thread_reset_sigmask;
+#endif
     /* Fork the tick thread */
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);

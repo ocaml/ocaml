@@ -59,4 +59,6 @@ void raise_not_found (void) Noreturn;
 void fatal_uncaught_exception (value) Noreturn;
 void init_exceptions (void);
 
+extern void (*caml_reset_sigmask)(void);
+
 #endif /* _fail_ */
