@@ -334,13 +334,14 @@ let lookup_tag obj tag =
       | _ ->
           untag_uint31 tag
     in
-    let lab =
-      Cop(Cadda,
-          [Cop(Clsr,
-               [Cop(Clsl, [Cop(Cmuli, [tag; c]);
-                           Cconst_int(size_addr*8 - 31)]);
-                m]);
-           Cconst_int 2]) in
+    let mul =
+      match tag with
+        Cconst_natint n when n < 0x40000000n && size_addr = 4 ->
+          Cop(Cmuli, [Cconst_natint (Nativeint.shift_left n 1); c])
+      | _ ->
+          Cop(Clsl, [Cop(Cmuli, [tag; c]); Cconst_int(size_addr*8 - 31)])
+    in
+    let lab = Cop(Cadda, [Cop(Clsr, [mul; m]); Cconst_int 2]) in
     Clet(table, Cop (Cload Word, [obj]),
          Cop(Cload Word,
              [Cop (Cadda, [Cvar table; lsl_const lab log2_size_addr])])))
