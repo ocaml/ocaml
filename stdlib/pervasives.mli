@@ -38,7 +38,7 @@ external (<) : 'a -> 'a -> bool = "%lessthan"
 external (>) : 'a -> 'a -> bool = "%greaterthan"
 external (<=) : 'a -> 'a -> bool = "%lessequal"
 external (>=) : 'a -> 'a -> bool = "%greaterequal"
-external compare: 'a -> 'a -> int = "compare"
+external compare: 'a -> 'a -> int = "compare" "noalloc"
 val min: 'a -> 'a -> 'a
 val max: 'a -> 'a -> 'a
 external (==) : 'a -> 'a -> bool = "%eq"

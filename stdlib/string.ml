@@ -7,8 +7,9 @@ external create: int -> string = "create_string"
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
 external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"
 external unsafe_blit : string -> int -> string -> int -> int -> unit
-                = "blit_string"
-external unsafe_fill : string -> int -> int -> char -> unit = "fill_string"
+                     = "blit_string" "noalloc"
+external unsafe_fill : string -> int -> int -> char -> unit
+                     = "fill_string" "noalloc"
 
 let make n c =
   let s = create n in

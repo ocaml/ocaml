@@ -52,7 +52,7 @@ val hash : 'a -> int
            Moreover, [hash] always terminates, even on cyclic
            structures. *)
 
-external hash_param : int -> int -> 'a -> int = "hash_univ_param"
+external hash_param : int -> int -> 'a -> int = "hash_univ_param" "noalloc"
         (* [hash_param n m x] computes a hash val for [x], with the
            same properties as for [hash]. The two extra parameters [n] and
            [m] give more precise control over hashing. Hashing performs a

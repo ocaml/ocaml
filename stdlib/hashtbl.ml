@@ -33,7 +33,7 @@ let rec bucket_too_long n bucket =
       Empty -> false
     | Cons(_,_,rest) -> bucket_too_long (pred n) rest
 
-external hash_param : int -> int -> 'a -> int = "hash_univ_param"
+external hash_param : int -> int -> 'a -> int = "hash_univ_param" "noalloc"
 
 let add h key info =
   let i = (hash_param 10 100 key) mod (Array.length h.data) in
