@@ -623,7 +623,8 @@ let open_process_full cmd env =
   let inchan = in_channel_of_descr in_read in
   let outchan = out_channel_of_descr out_write in
   let errchan = in_channel_of_descr err_read in
-  open_proc cmd (Some env) (Process_full(inchan, outchan, errchan))
+  open_proc cmd (Some(String.concat "\000" (Array.to_list env) ^ "\000"))
+                (Process_full(inchan, outchan, errchan))
                 out_read in_write err_write;
   close out_read; close in_write; close err_write;
   (inchan, outchan, errchan)
@@ -649,6 +650,13 @@ let close_process_out outchan =
 let close_process (inchan, outchan) =
   let pid = find_proc_id "close_process" (Process(inchan, outchan)) in
   close_in inchan; close_out outchan;
+  snd(waitpid [] pid)
+
+let close_process_full (inchan, outchan, errchan) =
+  let pid =
+    find_proc_id "close_process_full"
+                 (Process_full(inchan, outchan, errchan)) in
+  close_in inchan; close_out outchan; close_in errchan;
   snd(waitpid [] pid)
 
 (* Polling *)
