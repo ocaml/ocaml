@@ -247,8 +247,9 @@ let build_or_pat env loc lid =
       row_closed = false; row_fixed = false; row_name = Some (path, tyl) }
   in
   let ty = newty (Tvariant row) in
+  let gloc = {loc with Location.loc_ghost=true} in
   let pats =
-    List.map (fun (l,p) -> {pat_desc=Tpat_variant(l,p,row); pat_loc=loc;
+    List.map (fun (l,p) -> {pat_desc=Tpat_variant(l,p,row); pat_loc=gloc;
                             pat_env=env; pat_type=ty})
       pats
   in
@@ -256,7 +257,7 @@ let build_or_pat env loc lid =
     [] -> raise(Error(loc, Not_a_variant_type lid))
   | pat :: pats ->
       List.fold_left
-        (fun pat pat0 -> {pat_desc=Tpat_or(pat0,pat,Some path); pat_loc=loc;
+        (fun pat pat0 -> {pat_desc=Tpat_or(pat0,pat,Some path); pat_loc=gloc;
                           pat_env=env; pat_type=ty})
         pat pats
 
@@ -1682,7 +1683,7 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
         let exp = type_expect ?in_function ext_env sexp ty_res in
         (pat, exp))
       pat_env_list caselist in
-  Parmatch.check_unused env cases;
+  add_delayed_check (fun () -> Parmatch.check_unused env cases);
   cases, partial
 
 (* Typing of let bindings *)

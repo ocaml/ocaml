@@ -957,9 +957,10 @@ let pretty_matrix pss =
   
 let rec every_satisfiable pss qs = match qs with
 | [] -> begin match pss with [] -> Used | _ -> Unused end
-| {pat_desc = Tpat_or(q1,q2,_)}::qs ->
+| {pat_desc = Tpat_or(q1,q2,_); pat_loc = loc}::qs ->
     if not (satisfiable pss (omega_list (omega::qs))) then
       Unused
+    else if loc.Location.loc_ghost then Used
     else
     begin match every_satisfiable pss (q1::qs) with
       | Unused ->
