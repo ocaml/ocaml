@@ -1,6 +1,7 @@
 include ../support/Makefile.common
 
-COMPFLAGS=-I ../../../byterun -I ../support -I ../camltk -I ../../unix -ccopt "$(TK_DEFS)"
+COMPFLAGS=-I ../../../byterun -I ../support -I ../camltk -I ../../unix
+CCFLAGS=-I../../../byterun -I../support $(TK_DEFS) $(X11_INCLUDES) $(SHAREDCCCOMPOPTS)
 
 all: tkanim.cma libtkanim.a
 opt: tkanim.cmxa libtkanim.a
@@ -47,7 +48,7 @@ clean:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 .c.o:
-	$(CAMLCOMP) -c $(X_CFLAGS) $(COMPFLAGS) $(TCLTKINCLUDES) $<
+	$(BYTECC) $(BYTECCCOMPOPTS) $(CCFLAGS) -c $<
 
 
 install: tkanim.cma 
