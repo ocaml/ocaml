@@ -25,7 +25,7 @@ let command cmdline =
 let run_command cmdline = ignore(command cmdline)
 
 (* Build @responsefile to work around Windows limitations on 
-   command-length line *)
+   command-line length *)
 let build_diversion lst =
   let (responsefile, oc) = Filename.open_temp_file "camlresp" "" in
   List.iter

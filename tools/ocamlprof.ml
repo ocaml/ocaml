@@ -22,7 +22,7 @@ open Misc
 open Parsetree
 
 (* User programs must not use identifiers that start with these prefixes. *)
-let idprefix = "__ocaml_prof";;
+let idprefix = "__ocaml_prof_";;
 let modprefix = "OCAML__prof_";;
 
 
@@ -88,10 +88,10 @@ let add_incr_counter modul (kind,pos) =
    | Close -> fprintf !outchan ")";
    | Open ->
          fprintf !outchan
-                 "(%sArray.set %s_cnt_%s %d \
-                               (%sPervasives.succ (%sArray.get %s_cnt_%s %d)); "
-                 modprefix idprefix modul !prof_counter
-                 modprefix modprefix idprefix modul !prof_counter;
+                 "(%sArray.set %s_cnt %d \
+                               (%sPervasives.succ (%sArray.get %s_cnt %d)); "
+                 modprefix idprefix !prof_counter
+                 modprefix modprefix idprefix !prof_counter;
          incr prof_counter;
 ;;
 
@@ -132,12 +132,12 @@ let init_rewrite modes mod_name =
   if !instr_mode then begin
     fprintf !outchan "module %sArray = Array;; " modprefix;
     fprintf !outchan "module %sPervasives = Pervasives;; " modprefix;
-    fprintf !outchan "let %s_cnt_%s = Array.create 0000000" idprefix mod_name;
+    fprintf !outchan "let %s_cnt = Array.create 0000000" idprefix;
     pos_len := pos_out !outchan;
     fprintf !outchan 
             " 0;; Profiling.counters := \
-              (\"%s\", (\"%s\", %s_cnt_%s)) :: !Profiling.counters;; "
-            mod_name modes idprefix mod_name
+              (\"%s\", (\"%s\", %s_cnt)) :: !Profiling.counters;; "
+            mod_name modes idprefix;
   end
 
 let final_rewrite add_function =
