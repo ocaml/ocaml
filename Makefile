@@ -538,7 +538,6 @@ alldepend::
 # Camlp4
 
 camlp4out: ocamlc
-	set -e; cd camlp4/config; EXE=$(EXE) ./configure_batch -bindir $(BINDIR) -libdir $(LIBDIR)/../camlp4 -mandir $(MANDIR) -ocaml-top ../.. > /dev/null
 	set -e; cd camlp4; $(MAKE) all
 camlp4opt: ocamlopt
 	set -e; cd camlp4; $(MAKE) opt

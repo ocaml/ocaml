@@ -1093,6 +1093,13 @@ else
   echo "Configuration failed, LablTk will not be built."
 fi
 
+# Camlp4
+
+(
+cd ../../camlp4/config
+EXE=$exe ./configure_batch -bindir "$bindir" -libdir "$libdir/../camlp4" -mandir "$mandir" -ocaml-top ../.. > /dev/null
+)
+
 # Finish generated files
 
 cclibs="$cclibs $mathlib"
