@@ -185,10 +185,10 @@ let parse_argv argv speclist anonfun errmsg =
   done;
 ;;
 
-let parse =
+let parse l f msg =
   current := 0;
   try
-    parse_argv Sys.argv;
+    parse_argv Sys.argv l f msg;
   with
   | Bad msg -> eprintf "%s" msg; exit 0;
   | Help msg -> eprintf "%s" msg; exit 2;
