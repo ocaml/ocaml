@@ -1321,6 +1321,13 @@ and unify_row env row1 row2 =
   in
   let empty fields =
     List.for_all (fun (_,f) -> row_field_repr f = Rabsent) fields in
+  if (row1.row_closed || row2.row_closed)
+  && (empty r1 || row2.row_closed) && (empty r2 || row1.row_closed)
+  && List.for_all
+      (fun (_,f1,f2) ->
+        row_field_repr f1 = Rabsent || row_field_repr f2 = Rabsent)
+      pairs
+  then raise (Unify []);
   let name =
     if row1.row_name <> None && (row1.row_closed || empty r2) &&
       (not row2.row_closed || keep (fun f1 f2 -> f1, f2) && empty r1)
@@ -1348,7 +1355,7 @@ and unify_row env row1 row2 =
   begin try
     rm1.desc <- Tlink (more row1 r2);
     rm2.desc <- Tlink (more row2 r1);
-    List.iter (fun (l,f1,f2) -> unify_row_field env f1 f2)  pairs
+    List.iter (fun (l,f1,f2) -> unify_row_field env f1 f2) pairs
   with exn ->
     rm1.desc <- md1; rm2.desc <- md2; raise exn
   end
