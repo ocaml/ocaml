@@ -118,7 +118,7 @@ module type HashedType =
           for comparing objects by structure and handling {!Pervasives.nan}
           correctly, and
           ([(==)], {!Hashtbl.hash}) for comparing objects by addresses
-          (e.g. for mutable or cyclic keys). *)
+          (e.g. for cyclic keys). *)
    end
 (** The input signature of the functor {!Hashtbl.Make}. *)
 
