@@ -171,6 +171,10 @@ case "$bytecc,$host" in
     # Almost the same as NeXTStep
     bytecccompopts="-fno-defer-pop -Wall -DSHRINKED_GNUC"
     mathlib="";;
+  *,*-*-beos*)
+    bytecccompopts="-fno-defer-pop -Wall"
+    # No -lm library
+    mathlib="";;
   gcc,alpha-*-osf*)
     bytecccompopts="-fno-defer-pop -Wall"
     # -taso puts code in lower 4GB
@@ -204,7 +208,7 @@ case $? in
   1) echo "The C compiler $cc is not ANSI-compliant."
      echo "You need an ANSI C compiler to build Objective Caml."
      exit 2;;
-  *) echo "Unable to compiler the test program."
+  *) echo "Unable to compile the test program."
      echo "Make sure the C compiler $cc is properly installed."
      exit 2;;
 esac
@@ -297,6 +301,7 @@ case "$host" in
   i[3456]86-*-*bsd*)            arch=i386; system=bsd;;
   i[3456]86-*-nextstep*)        arch=i386; system=nextstep;;
   i[3456]86-*-solaris*)         arch=i386; system=solaris;;
+  i[3456]86-*-beos*)            arch=i386; system=beos;;
   mips-*-irix6*)                arch=mips; system=irix;;
   hppa1.1-*-hpux*)              arch=hppa; system=hpux;;
   hppa1.1-*-nextstep*)          arch=hppa; system=nextstep;;
@@ -642,6 +647,7 @@ case "$host" in
   mips-*-ultrix*) bignum_arch=mips;;
   alpha-*-osf*) bignum_arch=alpha;;
   i[3456]86-*-linux) bignum_arch=x86;;
+  i[3456]86-*-beos) bignum_arch=x86;;
   sparc-*-sunos*) bignum_arch=supersparc;;
   sparc-*-solaris*) bignum_arch=supersparc-solaris;;
   sparc-*-*bsd*) bignum_arch=sparc;;

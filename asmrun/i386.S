@@ -23,7 +23,7 @@
 #define CONCAT(a,b) a##b
 #endif
 
-#if defined(SYS_linux_elf) || defined(SYS_solaris)
+#if defined(SYS_linux_elf) || defined(SYS_solaris) || defined(SYS_beos)
 #define G(x) x
 #define LBL(x) CONCAT(.L,x)
 #define FUNCTION_ALIGN 4

@@ -453,6 +453,9 @@ EOF
     "Power Macintosh":Rhapsody:*:*)
         echo powerpc-apple-rhapsody
         exit 0;;
+    BePC:BeOS:*:*)
+	echo i586-unknown-beos
+	exit 0;;
 esac
 
 #echo '(No uname command or uname output not recognized.)' 1>&2
