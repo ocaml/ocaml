@@ -31,7 +31,7 @@ PPCOBJS = interp.c.x misc.c.x stacks.c.x fix_code.c.x startup.c.x main.c.x ¶
   obj.c.x lexing.c.x macintosh.c.x rotatecursor.c.x printexc.c.x callback.c.x ¶
   debugger.c.x weak.c.x compact.c.x
 
-PRIMS = array.c compare.c extern.c floats.c gc_ctrl.c hash.c ¶
+PRIMS = alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c ¶
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c ¶
   signals.c str.c sys.c terminfo.c callback.c weak.c
 
@@ -60,6 +60,7 @@ install Ä
       newfolder "{LIBDIR}caml:"
     end
     duplicate -y {PUBLIC_INCLUDES} "{LIBDIR}caml:"
+    duplicate -y config.h "{LIBDIR}caml:"
     open -t "{LIBDIR}caml:config.h"
     find ¥ "{LIBDIR}caml:config.h"
     find /Å'#include "'Åsm-Mac.hÅ°/ "{LIBDIR}caml:config.h"
@@ -67,6 +68,7 @@ install Ä
     find ¥ "{LIBDIR}caml:config.h"
     clear -c ° /Å'#include "'Å/  "{LIBDIR}caml:config.h"
     close -y "{LIBDIR}caml:config.h"
+    duplicate -y memory.h "{LIBDIR}caml:"
     open -t "{LIBDIR}caml:memory.h"
     find ¥ "{LIBDIR}caml:memory.h"
     clear -c ° /Å'#include "'Å'gc.h'Å/ "{LIBDIR}caml:memory.h"

@@ -24,6 +24,10 @@
 #define HAS_GETCWD
 #define HAS_UI
 
+#define SIZEOF_INT 4
+#define SIZEOF_LONG 4
+#define SIZEOF_SHORT 2
+
 #if !powerc
 #define THREADED_CODE
 #endif

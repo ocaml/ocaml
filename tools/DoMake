@@ -7,6 +7,15 @@ set echo 0
 
 set tempfile "{TempFolder}temp-domake-`Date -n`"
 
+if "`exists "{tempfile}"`"
+  set i 0
+  loop
+	break if ! "`exists "{tempfile}.{i}"`"
+	evaluate i += 1
+  end
+  set tempfile "{tempfile}.{i}"
+end
+
 if "`exists Makefile.Mac`" != ""
   set domake_main "Makefile.Mac"
 else
@@ -27,7 +36,6 @@ else
   make {domake_files} {"Parameters"} >>"{TempFile}"
 end
 
-unset domake_files
 "{tempfile}"
 
 Delete -i "{tempfile}"

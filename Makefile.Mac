@@ -6,7 +6,7 @@ CAMLC = :boot:ocamlrun :boot:ocamlc -I :boot:
 COMPFLAGS = {INCLUDES}
 LINKFLAGS =
 CAMLYACC = :boot:ocamlyacc
-YACCFLAGS =
+YACCFLAGS = -v
 CAMLLEX = :boot:ocamlrun :boot:ocamllex
 CAMLDEP = :boot:ocamlrun :tools:ocamldep
 DEPFLAGS = {INCLUDES}
@@ -29,6 +29,7 @@ TYPING = :typing:ident.cmo :typing:path.cmo ¶
   :typing:datarepr.cmo :typing:env.cmo ¶
   :typing:typedtree.cmo ¶
   :typing:ctype.cmo :typing:printtyp.cmo ¶
+  :typing:includeclass.cmo ¶
   :typing:mtype.cmo :typing:includecore.cmo ¶
   :typing:includemod.cmo :typing:parmatch.cmo ¶
   :typing:typetexp.cmo :typing:typecore.cmo ¶
@@ -36,8 +37,8 @@ TYPING = :typing:ident.cmo :typing:path.cmo ¶
   :typing:typemod.cmo
 
 COMP = :bytecomp:lambda.cmo :bytecomp:printlambda.cmo ¶
-  :bytecomp:typeopt.cmo :bytecomp:translobj.cmo ¶
-  :bytecomp:matching.cmo :bytecomp:translcore.cmo ¶
+  :bytecomp:typeopt.cmo :bytecomp:matching.cmo ¶
+  :bytecomp:translobj.cmo :bytecomp:translcore.cmo ¶
   :bytecomp:translclass.cmo :bytecomp:translmod.cmo ¶
   :bytecomp:simplif.cmo :bytecomp:runtimedef.cmo
 
@@ -61,7 +62,8 @@ TOPLIB = {UTILS} {PARSING} {TYPING} {COMP} {BYTECOMP} {TOPLEVEL}
 
 EXPUNGEOBJS = :utils:misc.cmo :utils:tbl.cmo ¶
   :utils:config.cmo :utils:clflags.cmo ¶
-  :typing:ident.cmo :typing:types.cmo :typing:btype.cmo :typing:predef.cmo ¶
+  :typing:ident.cmo :typing:path.cmo ¶
+  :typing:types.cmo :typing:btype.cmo :typing:predef.cmo ¶
   :bytecomp:runtimedef.cmo :bytecomp:symtable.cmo ¶
   :toplevel:expunge.cmo
 
@@ -226,6 +228,7 @@ partialclean ÄÄ
 :utils:config.ml Ä :utils:config.mlp :config:config.Mac
     delete -i :utils:config.ml
     streamedit -e "/let version =/ replace /¶¶¶"°/ ¶"/{MacVersion}¶¶¶"¶"" ¶
+               -e "1,$ replace /%%BYTERUN%%/ ¶"{BINDIR}ocamlrun¶"" ¶
                -e "1,$ replace /%%LIBDIR%%/ ¶"{LIBDIR}¶"" ¶
                -e "1,$ replace /%%EXT_OBJ%%/ '.o'" ¶
                -e "1,$ replace /%%EXT_LIB%%/ '.x'" ¶
@@ -318,7 +321,7 @@ alldepend ÄÄ
 
 # The library
 
-library Ä
+library Ä ocamlc
     directory :stdlib; domake all; directory ::
 library-cross Ä
     directory :stdlib; domake -d RUNTIME=::byterun:ocamlrun all; directory ::
@@ -329,7 +332,7 @@ alldepend ÄÄ
 
 # The lexer and parser generators
 
-ocamllex Ä
+ocamllex Ä ocamlyacc ocamlc
     directory :lex; domake all; directory ::
 partialclean ÄÄ
     directory :lex; domake clean; directory ::
@@ -343,7 +346,7 @@ clean ÄÄ
 
 # Tools
 
-ocamltools Ä
+ocamltools Ä ocamlc ocamlyacc ocamllex
     directory :tools; domake all; directory ::
 partialclean ÄÄ
     directory :tools; domake clean; directory ::

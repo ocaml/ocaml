@@ -11,10 +11,11 @@ OBJS = pervasives.cmo list.cmo char.cmo string.cmo array.cmo sys.cmo ¶
   digest.cmo random.cmo oo.cmo genlex.cmo callback.cmo weak.cmo ¶
   lazy.cmo
 
-all Ä stdlib.cma std_exit.cmo camlheader
+all Ä stdlib.cma std_exit.cmo camlheader camlheader_ur
 
 install Ä
-    duplicate -y stdlib.cma std_exit.cmo Å.cmi Å.mli camlheader "{LIBDIR}"
+    duplicate -y stdlib.cma std_exit.cmo Å.cmi Å.mli camlheader camlheader_ur ¶
+	          "{LIBDIR}"
 
 stdlib.cma Ä {OBJS}
     {CAMLC} -a -o stdlib.cma {OBJS}
@@ -24,8 +25,11 @@ camlheader Ä
 	 echo ' "{command}" {"Parameters"}; exit {status}') ¶
 	> camlheader
 
+camlheader_ur Ä
+	echo -n ' ' >camlheader_ur
+
 clean ÄÄ
-    delete -i camlheader
+    delete -i camlheader camlheader_ur
 
 pervasives.cmi Ä pervasives.mli
     {CAMLC} {COMPFLAGS} -nopervasives -c pervasives.mli
