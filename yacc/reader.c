@@ -857,6 +857,8 @@ void declare_tokens(int assoc)
 	    bp->prec = prec;
 	}
 
+        if (strcmp(bp->name, "EOF") == 0)
+            bp->value = 0;
 
 	c = nextc();
 	if (c == EOF) unexpected_EOF();
