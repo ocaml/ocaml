@@ -47,7 +47,7 @@ fully implemented and behave as described previously in this chapter.
 \entree{"lstat", "fstat"}{not implemented}
 \entree{"link", "symlink", "readlink"}{not implemented (no links under
 Windows)}
-\entree{"chmod", "fchmod"}{not implemented}
+\entree{"fchmod"}{not implemented}
 \entree{"chown", "fchown"}{not implemented (make no sense on a DOS
 file system)}
 \entree{"umask"}{not implemented}
