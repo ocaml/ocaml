@@ -19,7 +19,7 @@
 ; Load this file in your emacs, then C-c C-t will show you the
 ; type of the expression (or pattern) that contains the cursor.
 ; The expression is highlighted in the current buffer.
-; The type is highlighted in "foo.types" (if your file is "foo.ml"),
+; The type is highlighted in "foo.annot" (if your file is "foo.ml"),
 ; which is convenient when the type doesn't fit on a line.
 
 
@@ -36,16 +36,43 @@
 ;   in the file, up to where the type checker failed.
 ; . To get rid of the highlighting, put the cursor in a comment
 ;   and type C-c C-t.
-; . The mark in the .types file is set to the beginning of the
+; . The mark in the foo.annot file is set to the beginning of the
 ;   type, so you can type C-x C-x in that file to view the type.
 
 
 
 ; TO DO:
-; - make emacs scroll the .types file to show the type
+; - make emacs scroll the foo.annot file to show the type
 ; - (?) integrate this file into caml.el
 
-      
+
+; Format of the *.annot files:
+
+; file ::= block *
+; block ::= position <SP> position <LF> annotation *
+; position ::= filename <SP> num <SP> num <SP> num
+; annotation ::= keyword open-paren <LF> <SP> <SP> data <LF> close-paren
+
+; <SP> is a space character (ASCII 0x20)
+; <LF> is a line-feed character (ASCII 0x0A)
+; num is a sequence of decimal digits
+; filename is a string with the lexical conventions of O'Caml
+; open-paren is an open parenthesis (ASCII 0x28)
+; close-paren is a closed parenthesis (ASCII 0x29)
+; data is any sequence of characters where <LF> is always followed by
+;      at least two space characters.
+
+; in each block, the two positions are respectively the start and the
+; end of the range described by the block.
+; in a position, the filename is the name of the file, the first num
+; is the line number, the second num is the offset of the beginning
+; of the line, the third num is the offset of the position itself.
+; the char number within the line is the difference between the third
+; and second nums.
+
+; For the moment, the only possible keyword is "type".
+
+
 ; (global-set-key "\C-c\C-t" 'caml-types-show-type)
 
 
@@ -75,7 +102,7 @@
          (target-bol (line-beginning-position))
          (target-cnum (point))
          (type-file (concat (file-name-sans-extension (buffer-file-name))
-                            ".types"))
+                            ".annot"))
          (type-date (nth 5 (file-attributes type-file)))
          (type-buf (caml-types-find-file type-file)))
     (if (caml-types-date< type-date target-date)
@@ -94,7 +121,8 @@
                   (right (caml-types-get-pos target-buf
                                              (nth 2 loc) (nth 3 loc))))
               (move-overlay caml-types-expr-ovl left right target-buf))
-            (forward-line 2)
+            (re-search-forward "^type(")  ;; not strictly correct
+            (forward-line 1)
             (re-search-forward "  \\(\\([^\n)]\\|.)\\|\n[^)]\\)*\\)\n)")
             (move-overlay caml-types-type-ovl (match-beginning 1) (match-end 1)
                           type-buf)

@@ -531,7 +531,7 @@ let type_implementation sourcefile prefixname modulename initial_env ast =
   Typecore.reset_delayed_checks ();
   let (str, sg, finalenv) =
     Misc.try_finally (fun () -> type_structure initial_env ast)
-                     (fun () -> Stypes.dump (prefixname ^ ".types"))
+                     (fun () -> Stypes.dump (prefixname ^ ".annot"))
   in
   Typecore.force_delayed_checks ();
   if !Clflags.print_types then

@@ -89,7 +89,7 @@ let main () =
        "-compact", Arg.Clear optimize_for_speed,
              " Optimize code size rather than speed";
        "-dtypes", Arg.Set save_types,
-             " Save type information in <filename>.types";
+             " Save type information in <filename>.annot";
        "-i", Arg.Set print_types, " Print the types";
        "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
              "<dir>  Add <dir> to the list of include directories";

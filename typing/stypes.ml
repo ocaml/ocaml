@@ -65,6 +65,8 @@ let print_position pp pos =
   fprintf pp "%S %d %d %d" pos.pos_fname pos.pos_lnum pos.pos_bol pos.pos_cnum;
 ;;
 
+(* The format of the annotation file is documented in emacs/caml-types.el. *)
+
 let print_info pp ti =
   match ti with
     Ti_class _ | Ti_mod _ -> ()
@@ -73,7 +75,7 @@ let print_info pp ti =
       print_position pp loc.loc_start;
       fprintf pp " ";
       print_position pp loc.loc_end;
-      fprintf pp "@.(@.  ";
+      fprintf pp "@.type(@.  ";
       Printtyp.type_expr pp typ;
       fprintf pp "@.)@.";
 ;;
@@ -90,4 +92,3 @@ let dump filename =
     List.iter (print_info pp) info
   end;
 ;;
-

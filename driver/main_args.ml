@@ -74,7 +74,7 @@ struct
            "<lib>  Use the dynamically-loaded library <lib>";
     "-dllpath", Arg.String F._dllpath,
            "<dir>  Add <dir> to the run-time search path for shared libraries";
-    "-dtypes", Arg.Unit F._dtypes, " Save type information in <filename>.types";
+    "-dtypes", Arg.Unit F._dtypes, " Save type information in <filename>.annot";
     "-g", Arg.Unit F._g, " Save debugging information";
     "-i", Arg.Unit F._i, " Print the types";
     "-I", Arg.String F._I,
