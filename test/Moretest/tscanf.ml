@@ -228,7 +228,18 @@ let test9 () =
   test_S "poi" &&
   test_S "a\"b" &&
   test_S "a\nb" &&
-  test_S "a\010b";;
+  test_S "a\010b" &&
+  test_S "a\\\n\
+          b \\\n\
+          c\010\\\n\
+          b" &&
+  test_S "a\\\n\
+          \\\n\
+          \\\n\
+          b \\\n\
+          c\010\\\n\
+          b"
+;;
 test (test9 ());;
 
 let unit_S = unit "%S";;
