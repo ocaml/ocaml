@@ -570,7 +570,7 @@ let fundecl fundecl =
   emit_all fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   if !range_check_trap > 0 then
-    `{emit_label !range_check_trap}:	br	call_array_bound_error\n`;
+    `{emit_label !range_check_trap}:	br	$25, call_array_bound_error\n`;
   `	.end	{emit_symbol fundecl.fun_name}\n`
 
 (* Emission of data *)
