@@ -24,7 +24,7 @@
 #define Bad_term Val_int(1)
 #define Good_term_tag 0
 
-#ifdef HAS_TERMCAP
+#if defined (HAS_TERMCAP) && !defined (NATIVE_CODE)
 
 extern int tgetent (char * buffer, char * name);
 extern char * tgetstr (char * id, char ** area);
@@ -100,7 +100,7 @@ value terminfo_resume (value lines)    /* ML */
   return Val_unit;
 }
 
-#else /* HAS_TERMCAP */
+#else /* defined (HAS_TERMCAP) && !defined (NATIVE_CODE) */
 
 value terminfo_setup (value vchan)
 {
@@ -125,4 +125,4 @@ value terminfo_resume (value lines)
   return Val_unit;
 }
 
-#endif /* HAS_TERMCAP */
+#endif /* defined (HAS_TERMCAP) && !defined (NATIVE_CODE) */
