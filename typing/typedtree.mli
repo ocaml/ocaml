@@ -64,6 +64,7 @@ and expression_desc =
   | Texp_instvar of Path.t * Path.t
   | Texp_setinstvar of Path.t * Path.t * expression
   | Texp_override of Path.t * (Path.t * expression) list
+  | Texp_letmodule of Ident.t * module_expr * expression
 
 and meth =
     Tmeth_name of string
@@ -71,14 +72,14 @@ and meth =
 
 (* Value expressions for classes *)
 
-type class_field =
+and class_field =
     Cf_inher of
       Path.t * expression list * (string * Ident.t) list *
       (string * Ident.t) list * string list
   | Cf_val of string * Ident.t * private_flag * expression option
   | Cf_meth of string * expression
 
-type class_def =
+and class_def =
   { cl_args: pattern list;
     cl_field: class_field list;
     cl_pub_meths: string list;
@@ -87,7 +88,7 @@ type class_def =
 
 (* Value expressions for the module language *)
 
-type module_expr =
+and module_expr =
   { mod_desc: module_expr_desc;
     mod_loc: Location.t;
     mod_type: module_type;

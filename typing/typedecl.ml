@@ -191,12 +191,9 @@ let check_abbrev env (_, sdecl) (id, decl) =
         Tconstr(path, args, _) ->
           begin try
             let decl' = Env.find_type path env in
-            if
-              List.length args = List.length decl.type_params
-                      &&
-              Ctype.equal env false args decl.type_params
-                      &&
-              Includecore.type_declarations env id
+            if List.length args = List.length decl.type_params
+            && Ctype.equal env false args decl.type_params
+            && Includecore.type_declarations env id
                 decl'
                 (Subst.type_declaration (Subst.add_type id path Subst.identity)
                                         decl)

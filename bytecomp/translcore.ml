@@ -30,6 +30,10 @@ type error =
 
 exception Error of Location.t * error
 
+(* Forward declaration -- to be filled in by Translmod.transl_module *)
+let transl_module =
+  ref((fun cc modl -> assert false) : module_coercion -> module_expr -> lambda)
+
 (* Translation of primitives *)
 
 let comparisons_table = create_hashtable 11 [
@@ -492,6 +496,8 @@ let rec transl_exp e =
                      rem))
         modifs
         (Lvar cpy))
+  | Texp_letmodule(id, modl, body) ->
+      Llet(Strict, id, !transl_module Tcoerce_none modl, transl_exp body)
   | _ ->
       fatal_error "Translcore.transl"
 

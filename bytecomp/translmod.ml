@@ -151,6 +151,10 @@ and transl_structure fields cc = function
          (transl_structure
             ((List.rev (List.map fst cl_list)) @ fields) cc rem))
 
+(* Update forward declaration in Translcore *)
+let _ =
+  Translcore.transl_module := transl_module
+
 (* Compile an implementation *)
 
 let transl_implementation module_name str cc =

@@ -36,3 +36,6 @@ type error =
 exception Error of Location.t * error
 
 val report_error: error -> unit
+
+(* Forward declaration -- to be filled in by Translmod.transl_module *)
+val transl_module : (module_coercion -> module_expr -> lambda) ref

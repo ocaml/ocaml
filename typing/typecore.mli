@@ -60,7 +60,11 @@ type error =
   | Value_multiply_overridden of string
   | Coercion_failure of type_expr * type_expr * (type_expr * type_expr) list
   | Too_many_arguments
+  | Scoping_let_module of string * type_expr
 
 exception Error of Location.t * error
 
 val report_error: error -> unit
+
+(* Forward declaration, to be filled in by Typemod.type_module *)
+val type_module: (Env.t -> Parsetree.module_expr -> Typedtree.module_expr) ref

@@ -15,6 +15,8 @@
 
 open Types
 
+val type_module:
+        Env.t -> Parsetree.module_expr -> Typedtree.module_expr
 val type_structure:
         Env.t -> Parsetree.structure -> Typedtree.structure * signature * Env.t
 val transl_signature:

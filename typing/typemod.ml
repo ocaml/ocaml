@@ -399,6 +399,10 @@ and type_struct env sstr =
             classes [sig_rem]),
        final_env)
 
+(* Fill in the forward declaration *)
+let _ =
+  Typecore.type_module := type_module
+
 (* Error report *)
 
 open Format

@@ -423,6 +423,8 @@ expr:
       { mkexp(Pexp_apply($1, List.rev $2)) }
   | LET rec_flag let_bindings IN seq_expr %prec prec_let
       { mkexp(Pexp_let($2, List.rev $3, $5)) }
+  | LET MODULE UIDENT module_binding IN seq_expr %prec prec_let
+      { mkexp(Pexp_letmodule($3, $4, $6)) }
   | PARSER opt_pat opt_bar parser_cases %prec prec_fun
       { Pstream.cparser ($2, List.rev $4) }
   | FUNCTION opt_bar match_cases %prec prec_fun

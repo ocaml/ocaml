@@ -84,16 +84,17 @@ and expression_desc =
   | Pexp_new of Longident.t
   | Pexp_setinstvar of string * expression
   | Pexp_override of (string * expression) list
+  | Pexp_letmodule of string * module_expr * expression
 
 (* Value descriptions *)
 
-type value_description =
+and value_description =
   { pval_type: core_type;
     pval_prim: string list }
 
 (* Type declarations *)
 
-type type_declaration =
+and type_declaration =
   { ptype_params: string list;
     ptype_cstrs: (string * core_type * Location.t) list;
     ptype_kind: type_kind;
@@ -105,18 +106,18 @@ and type_kind =
   | Ptype_variant of (string * core_type list) list
   | Ptype_record of (string * mutable_flag * core_type) list
 
-type exception_declaration = core_type list
+and exception_declaration = core_type list
 
 (* Type expressions for the class language *)
 
-type class_type_field =
+and class_type_field =
     Pctf_inher of (Longident.t * core_type list * Location.t)
   | Pctf_val of
       (string * private_flag * mutable_flag * core_type option * Location.t)
   | Pctf_virt of (string * private_flag * core_type * Location.t)
   | Pctf_meth of (string * private_flag * core_type * Location.t)
 
-type class_type =
+and class_type =
   { pcty_name: string;
     pcty_param: string list * Location.t;
     pcty_args: core_type list;
@@ -127,7 +128,7 @@ type class_type =
     pcty_closed: closed_flag;
     pcty_loc: Location.t }
 
-type class_field =
+and class_field =
     Pcf_inher of (Longident.t * core_type list * expression list *
                   string option * Location.t)
   | Pcf_val of
@@ -135,7 +136,7 @@ type class_field =
   | Pcf_virt of (string * private_flag * core_type * Location.t)
   | Pcf_meth of (string * private_flag * expression * Location.t)
 
-type class_def =
+and class_def =
   { pcl_name: string;
     pcl_param: string list * Location.t;
     pcl_args: pattern list;
@@ -149,7 +150,7 @@ type class_def =
 
 (* Type expressions for the module language *)
 
-type module_type =
+and module_type =
   { pmty_desc: module_type_desc;
     pmty_loc: Location.t }
 
@@ -185,7 +186,7 @@ and with_constraint =
 
 (* Value expressions for the module language *)
 
-type module_expr =
+and module_expr =
   { pmod_desc: module_expr_desc;
     pmod_loc: Location.t }
 

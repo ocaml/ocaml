@@ -47,8 +47,15 @@ type error =
   | Value_multiply_overridden of string
   | Coercion_failure of type_expr * type_expr * (type_expr * type_expr) list
   | Too_many_arguments
+  | Scoping_let_module of string * type_expr
 
 exception Error of Location.t * error
+
+(* Forward declaration, to be filled in by Typemod.type_module *)
+
+let type_module =
+  ref ((fun env md -> assert false) :
+       Env.t -> Parsetree.module_expr -> Typedtree.module_expr)
 
 (* Typing of constants *)
 
@@ -655,8 +662,26 @@ let rec type_exp env sexp =
         exp_loc = sexp.pexp_loc;
         exp_type = self_ty;
         exp_env = env }
-
       (* let obj = Oo.copy self in obj.x <- e; obj *)
+  | Pexp_letmodule(name, smodl, sbody) ->
+      let ty = newvar() in
+      let modl = !type_module env smodl in
+      let (id, new_env) = Env.enter_module name modl.mod_type env in
+      let body = type_exp new_env sbody in
+      (* Unification of body.exp_type with the fresh variable ty
+         fails if and only if the prefix condition is violated,
+         i.e. if generative types rooted at id show up in the
+         type body.exp_type.  Thus, this unification enforces the
+         scoping condition on "let module". *)
+      begin try
+        Ctype.unify new_env body.exp_type ty
+      with Unify _ ->
+        raise(Error(sexp.pexp_loc, Scoping_let_module(name, body.exp_type)))
+      end;
+      { exp_desc = Texp_letmodule(id, modl, body);
+        exp_loc = sexp.pexp_loc;
+        exp_type = ty;
+        exp_env = env }
 
 (* Typing of an expression with an expected type.
    Some constructs are treated specially to provide better error messages. *)
@@ -924,3 +949,8 @@ let report_error = function
            print_string "but is here used with type")
   | Too_many_arguments ->
       print_string "This function has too many arguments"
+  | Scoping_let_module(id, ty) ->
+      print_string "This `let module' expression has type";
+      print_space(); type_expr ty; print_space();
+      print_string "In this type, the locally bound module name ";
+      print_string id; print_string " escapes its scope"
