@@ -1008,24 +1008,24 @@ let rec non_recursive_abbrev env ty0 ty =
         begin try
           non_recursive_abbrev env ty0 (try_expand_head env ty)
         with Cannot_expand ->
+          if !Clflags.recursive_types then () else
           iter_type_expr (non_recursive_abbrev env ty0) ty
         end
     | Tobject _ | Tvariant _ ->
         ()
     | _ ->
+        if !Clflags.recursive_types then () else
         iter_type_expr (non_recursive_abbrev env ty0) ty
   end
 
 let correct_abbrev env ident params ty =
-  if not !Clflags.recursive_types then begin
-    let ty0 = newgenvar () in
-    visited := [];
-    non_recursive_abbrev env ty0
-      (subst env generic_level
-         (ref (Mcons (Path.Pident ident, ty0, ty0, Mnil))) None
-         [] [] ty);
-    visited := []
-  end
+  let ty0 = newgenvar () in
+  visited := [];
+  non_recursive_abbrev env ty0
+    (subst env generic_level
+       (ref (Mcons (Path.Pident ident, ty0, ty0, Mnil))) None
+       [] [] ty);
+  visited := []
 
 let rec occur_rec env visited ty0 ty =
   if ty == ty0  then raise Occur;
