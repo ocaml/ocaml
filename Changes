@@ -8,7 +8,7 @@ New ports:
 - Revamped Rhapsody port, now works on MacOS X server.
 
 Syntax:
-- Warning for "*)" outside comment.
+- Warning for "(*)" and "*)" outside comment.
 - Removed "#line LINENO", too ambiguous with a method invocation;
   the equivalent "# LINENO" is still supported.
 
@@ -18,7 +18,7 @@ Typing:
   the pattern-matching.
 - Several bugs in class type matching and in type error reporting fixed.
 - Added an option -rectypes to support general recursive types,
-  not just those that involve through object types.
+  not just those involving object types.
 
 Bytecode compiler:
 - Minor cleanups in the bytecode emitter.

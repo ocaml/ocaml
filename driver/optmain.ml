@@ -95,6 +95,8 @@ let main () =
                \t(not supported on all platforms)";
        "-pp", Arg.String(fun s -> preprocessor := Some s),
              "<command>  Pipe sources through preprocessor <command>";
+       "-rectypes", Arg.Set recursive_types,
+             " Allow arbitrary recursive types";
        "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";
        "-thread", Arg.Set thread_safe, " Use thread-safe standard library";
        "-unsafe", Arg.Set fast,
@@ -131,7 +133,6 @@ let main () =
        "-dscheduling", Arg.Set dump_scheduling, " (undocumented)";
        "-dlinear", Arg.Set dump_linear, " (undocumented)";
        "-dstartup", Arg.Set keep_startup_file, " (undocumented)";
-       "-rectypes", Arg.Set recursive_types, " (undocumented)";
 
        "-", Arg.String process_file,
             "<file>  Treat <file> as a file name (even if it starts with `-')"

@@ -78,6 +78,7 @@ struct
                             "Output a C object file instead of an executable";
      "-pp", Arg.String F._pp,
                      "<command>  Pipe sources through preprocessor <command>";
+     "-rectypes", Arg.Unit F._rectypes, " Allow arbitrary recursive types";
      "-thread", Arg.Unit F._thread, " Use thread-safe standard library";
      "-unsafe", Arg.Unit F._unsafe,
                              " No bounds checking on array and string access";
@@ -106,7 +107,6 @@ struct
      "-dlambda", Arg.Unit F._dlambda, " (undocumented)";
      "-dinstr", Arg.Unit F._dinstr, " (undocumented)";
      "-use-prims", Arg.String F._use_prims, "<file>  (undocumented)";
-     "-rectypes", Arg.Unit F._rectypes, " (undocumented)";
 
      "-", Arg.String F.anonymous,
            "<file>  Treat <file> as a file name (even if it starts with `-')";
