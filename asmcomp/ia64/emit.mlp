@@ -392,7 +392,7 @@ let emit_instr node =
   | F_rr_r ->
         `	{emit_string opc}	{emit_r r.(0)} = {emit_r a.(0)}, {emit_r a.(1)}\n`
   | F_rr_r_pred ->
-        `  ({emit_r a.(0)})	{emit_string opc}	{emit_r r.(0)} = {emit_r a.(0)}, {emit_r a.(1)}\n`
+        `  ({emit_r a.(0)})	{emit_string opc}	{emit_r r.(0)} = {emit_r a.(1)}, {emit_r a.(2)}\n`
   | F_rri_r ->
         `	{emit_string opc}	{emit_r r.(0)} = {emit_r a.(0)}, {emit_r a.(1)}, {emit_string imm}\n`
   | F_rrr_r ->
@@ -440,30 +440,34 @@ let can_issue instr =
    in the ready queue or in the in_progress queue, depending on
    latency. *)
 
-let emit_node node =
-  emit_instr node;
+let emit_node date node =
+  begin try
+    emit_instr node
+  with x ->
+    fatal_error ("Error while emitting " ^ node.instr.opcode)
+  end;
   List.iter
     (fun (son, delay) ->
-      let completion_date = node.date + delay in
+      let completion_date = date + delay in
       if son.date < completion_date then son.date <- completion_date;
       son.emitted_ancestors <- son.emitted_ancestors + 1;
       if son.emitted_ancestors = son.ancestors && son.instr.kind <> KB then
-        if son.date = node.date then add_ready son else add_in_progress son)
+        if son.date = date then add_ready son else add_in_progress son)
     node.sons
 
 (* Emit all ready nodes that we can emit given the architectural 
    constraints. *)
 
-let rec emit_ready_nodes () =
+let rec emit_ready_nodes date =
   match !ready_queue with
     [] -> []
   | node :: rem ->
       ready_queue := rem;
       if can_issue node.instr then begin
-        emit_node node;
-        emit_ready_nodes ()
+        emit_node date node;
+        emit_ready_nodes date
       end else
-        node :: emit_ready_nodes ()
+        node :: emit_ready_nodes date
 
 (* Add all instructions with date <= d to the ready queue, and remove them *)
 
@@ -497,7 +501,7 @@ let rec reschedule date =
   | (_, _) ->
       (* Emit and remove as many ready instructions as we can *)
       reset_issue();
-      ready_queue := emit_ready_nodes ();
+      ready_queue := emit_ready_nodes date;
       (* Special hack: if the only remaining instructions are branches
          and they are all ready now, emit them in the current
          group of instructions *)
@@ -855,13 +859,13 @@ let emit_instr i =
         if !fastcode_flag then begin
           insimm "addi" [| R "r4" |] (string_of_int (-n)) [| R "r4" |];
           insert "cmp.ltu" [| R "r4"; R "r5" |] [| R "p6"; R "p0" |];
-          insimm "mov" [||] (string_of_int n) [| R "r2" |];
+          insimm "movi" [||] (string_of_int n) [| R "r2" |];
           insimm "brcallcond" [| R "p6" |] "caml_call_gc#" [| R "b0" |];
           end_basic_block();
           `{record_frame i.live}\n`;
           insimm "addi" [| R "r4" |] "8" (regs i.res)
         end else begin
-          insimm "mov" [||] (string_of_int n) [| R "r2" |];
+          insimm "movi" [||] (string_of_int n) [| R "r2" |];
           insimm "brcall" [||] "caml_alloc#" [| R "b0" |];
           end_basic_block();
           `{record_frame i.live}\n`;
@@ -891,7 +895,7 @@ let emit_instr i =
         if is_immediate_adds (n-1) then
           insimm "addicond" [| R "p6"; src.(0) |] (string_of_int (n-1)) dst
         else begin
-          let moveop = if is_immediate_addl (n-1) then "mov" else "movil" in
+          let moveop = if is_immediate_addl (n-1) then "movi" else "movil" in
           insimm moveop [||] (string_of_int (n-1)) [| R "r2" |];
           insert "addcond" [| R "p6"; src.(0); R "r2" |] dst
         end;
@@ -906,7 +910,7 @@ let emit_instr i =
         if is_immediate_adds (-n) then
           insimm "addicond" [| R "p6"; dst.(0) |] (string_of_int (-n)) dst
         else begin
-          let moveop = if is_immediate_addl (-n) then "mov" else "movil" in
+          let moveop = if is_immediate_addl (-n) then "movi" else "movil" in
           insimm moveop [||] (string_of_int (-n)) [| R "r2" |];
           insert "addcond" [| R "p6"; dst.(0); R "r2" |] dst
         end
@@ -967,9 +971,10 @@ let emit_instr i =
         let name = name_for_specific_operation sop in
         insert name (regs i.arg) (regs i.res)
     | Lop(Ispecific (Istoreincr n)) ->
-        let op = if i.arg.(0).typ = Float then "stfd+" else "st8+" in
-        insimm op [| reg i.arg.(1); reg i.arg.(0) |]
-                  (string_of_int n) (regs i.res)
+        let op = if i.arg.(1).typ = Float then "stfd+" else "st8+" in
+        insimm op [| reg i.arg.(0); reg i.arg.(1) |]
+                  (string_of_int n)
+	          (regs i.res)
     | Lreloadretaddr ->
         let n = frame_size() + 8 in
         insimm "addi" [| R "sp" |] (string_of_int n) [| R "r2" |];
@@ -1056,7 +1061,7 @@ let emit_instr i =
           let lbl_jumptbl = new_label() in
           let lbl_ip = new_label() in
           `{emit_label lbl_ip}:	mov     r2 = ip ;;\n`;
-          `	add     r2 = {emit_label lbl_jumptbl} - {emit_label lbl_ip} - 16, r2 ;;\n`;
+          `	add     r2 = {emit_label lbl_jumptbl} - {emit_label lbl_ip}, r2 ;;\n`;
           `     shladd  r3 = {emit_reg i.arg.(0)}, 2, r2 ;;\n`;
           `     ld4     r3 = [r3] ;;\n`;
           `     sxt4    r3 = r3 ;;\n`;
@@ -1075,7 +1080,7 @@ let emit_instr i =
         let lbl_ip = new_label() in
         let lbl_next = new_label() in
         `{emit_label lbl_ip}:	mov	r2 = ip ;;\n`;
-        `	add	r2 = {emit_label lbl_next} - {emit_label lbl_ip} - 16, r2\n`;
+        `	add	r2 = {emit_label lbl_next} - {emit_label lbl_ip}, r2\n`;
         `	br.sptk	{emit_label lbl} ;;\n`;
         `{emit_label lbl_next}:\n`
     | Lpushtrap ->
