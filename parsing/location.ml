@@ -39,10 +39,105 @@ let input_lexbuf = ref (None : lexbuf option)
 
 let status = ref Terminfo.Uninitialised
 
-
-(* Print the location using standout mode. *)
-
 let num_loc_lines = ref 0 (* number of lines already printed after input *)
+
+(* Highlight the location using standout mode. *)
+
+let highlight_terminfo ppf num_lines lb loc1 loc2 =
+  (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
+  let pos0 = -lb.lex_abs_pos in
+  (* Do nothing if the buffer does not contain the whole phrase. *)
+  if pos0 < 0 then raise Exit;
+  (* Count number of lines in phrase *)
+  let lines = ref !num_loc_lines in
+  for i = pos0 to lb.lex_buffer_len - 1 do
+    if lb.lex_buffer.[i] = '\n' then incr lines
+  done;
+  (* If too many lines, give up *)
+  if !lines >= num_lines - 2 then raise Exit;
+  (* Move cursor up that number of lines *)
+  flush stdout; Terminfo.backup !lines;
+  (* Print the input, switching to standout for the location *)
+  let bol = ref false in
+  print_string "# ";
+  for pos = 0 to lb.lex_buffer_len - pos0 - 1 do
+    if !bol then (print_string "  "; bol := false);
+    if pos = loc1.loc_start || pos = loc2.loc_start then
+      Terminfo.standout true;
+    if pos = loc1.loc_end || pos = loc2.loc_end then
+      Terminfo.standout false;
+    let c = lb.lex_buffer.[pos + pos0] in
+    print_char c;
+    bol := (c = '\n')
+  done;
+  (* Make sure standout mode is over *)
+  Terminfo.standout false;
+  (* Position cursor back to original location *)
+  Terminfo.resume !num_loc_lines;
+  flush stdout
+
+(* Highlight the location by printing it again. *)
+
+let highlight_dumb ppf lb loc =
+  (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
+  let pos0 = -lb.lex_abs_pos in
+  (* Do nothing if the buffer does not contain the whole phrase. *)
+  if pos0 < 0 then raise Exit;
+  let end_pos = lb.lex_buffer_len - pos0 - 1 in
+  (* Determine line numbers for the start and end points *)
+  let line_start = ref 0 and line_end = ref 0 in
+  for pos = 0 to end_pos do
+    if lb.lex_buffer.[pos + pos0] = '\n' then begin
+      if loc.loc_start > pos then incr line_start;
+      if loc.loc_end   > pos then incr line_end
+    end
+  done;
+  (* Print character location (useful for Emacs) *)
+  Format.fprintf ppf "Characters %i-%i:@." loc.loc_start loc.loc_end;
+  (* Print the input, underlining the location *)
+  print_string "  ";
+  let line = ref 0 in
+  let pos_at_bol = ref 0 in
+  for pos = 0 to end_pos do
+    let c = lb.lex_buffer.[pos + pos0] in
+    if c <> '\n' then begin
+      if !line = !line_start && !line = !line_end then
+        (* loc is on one line: print whole line *)
+        print_char c
+      else if !line = !line_start then
+        (* first line of multiline loc: print ... before loc_start *)
+        if pos < loc.loc_start
+        then print_char '.'
+        else print_char c
+      else if !line = !line_end then
+        (* last line of multiline loc: print ... after loc_end *)
+        if pos < loc.loc_end
+        then print_char c
+        else print_char '.'
+      else if !line > !line_start && !line < !line_end then
+        (* intermediate line of multiline loc: print whole line *)
+        print_char c
+    end else begin
+      if !line = !line_start && !line = !line_end then begin
+        (* loc is on one line: underline location *)
+        print_string "\n  ";
+        for i = !pos_at_bol to loc.loc_start - 1 do
+          print_char ' '
+        done;
+        for i = loc.loc_start to loc.loc_end - 1 do
+          print_char '^'
+        done
+      end;
+      if !line >= !line_start && !line <= !line_end then begin
+        print_char '\n';
+        if pos < loc.loc_end then print_string "  "
+      end;
+      incr line;
+      pos_at_bol := pos + 1;
+    end
+  done
+
+(* Highlight the location using one of the supported modes. *)
 
 let rec highlight_locations ppf loc1 loc2 =
   match !status with
@@ -52,105 +147,19 @@ let rec highlight_locations ppf loc1 loc2 =
       begin match !input_lexbuf with
         None -> false
       | Some lb ->
-          try
-            if Sys.getenv "TERM" = "norepeat" then false else raise Not_found
-          with Not_found ->
-          try
-            (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
-            let pos0 = -lb.lex_abs_pos in
-            (* Do nothing if the buffer does not contain the whole phrase. *)
-            if pos0 < 0 then raise Exit;
-            (* Count number of lines in phrase *)
-            let lines = ref !num_loc_lines in
-            for i = pos0 to lb.lex_buffer_len - 1 do
-              if lb.lex_buffer.[i] = '\n' then incr lines
-            done;
-            let end_pos = lb.lex_buffer_len - pos0 - 1 in
-            let pos_at_bol = ref 0 in
-            Format.fprintf ppf "Characters %i-%i:@."
-              loc1.loc_start loc1.loc_end;
-            print_string "  ";
-            (* Print the input, underlining the location *)
-            for pos = 0 to end_pos do
-              let c = lb.lex_buffer.[pos + pos0] in
-              if c = '\n' then begin
-                if !pos_at_bol <= loc1.loc_start && loc1.loc_end <= pos then
-                begin
-                  print_string "\n  ";
-                  for i = !pos_at_bol to loc1.loc_start - 1 do
-                    print_char ' '
-                  done;
-                  for i = loc1.loc_start to loc1.loc_end - 1 do
-                    print_char '^'
-                  done;
-                  print_char '\n'
-                end
-                else if !pos_at_bol <= loc1.loc_start && loc1.loc_start < pos
-                then begin
-                  print_char '\r';
-                  print_string "  ";
-                  for i = !pos_at_bol to loc1.loc_start - 1 do
-                    print_char '.'
-                  done;
-                  print_char '\n'
-                end
-                else if !pos_at_bol <= loc1.loc_end && loc1.loc_end < pos
-                then begin
-                  for i = pos - 1 downto loc1.loc_end do
-                    print_string "\b.\b";
-                  done;
-                  print_char '\n';
-                end
-                else print_char '\n';
-                pos_at_bol := pos + 1;
-                if pos < end_pos then
-                  print_string "  "
-                else ();
-              end
-              else print_char c;
-            done;
-            flush stdout;
-            true;
-          with Exit -> false
+          let norepeat =
+            try Sys.getenv "TERM" = "norepeat" with Not_found -> false in
+          if norepeat then false else
+            try highlight_dumb ppf lb loc1; true
+            with Exit -> false
       end
   | Terminfo.Good_term num_lines ->
-      match !input_lexbuf with
+      begin match !input_lexbuf with
         None -> false
       | Some lb ->
-          try
-            (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
-            let pos0 = -lb.lex_abs_pos in
-            (* Do nothing if the buffer does not contain the whole phrase. *)
-            if pos0 < 0 then raise Exit;
-            (* Count number of lines in phrase *)
-            let lines = ref !num_loc_lines in
-            for i = pos0 to lb.lex_buffer_len - 1 do
-              if lb.lex_buffer.[i] = '\n' then incr lines
-            done;
-            (* If too many lines, give up *)
-            if !lines >= num_lines - 2 then raise Exit;
-            (* Move cursor up that number of lines *)
-            flush stdout; Terminfo.backup !lines;
-            (* Print the input, switching to standout for the location *)
-            let bol = ref false in
-            print_string "# ";
-            for pos = 0 to lb.lex_buffer_len - pos0 - 1 do
-              if !bol then (print_string "  "; bol := false);
-              if pos = loc1.loc_start || pos = loc2.loc_start then
-                Terminfo.standout true;
-              if pos = loc1.loc_end || pos = loc2.loc_end then
-                Terminfo.standout false;
-              let c = lb.lex_buffer.[pos + pos0] in
-              print_char c;
-              bol := (c = '\n')
-            done;
-            (* Make sure standout mode is over *)
-            Terminfo.standout false;
-            (* Position cursor back to original location *)
-            Terminfo.resume !num_loc_lines;
-            flush stdout;
-            true;
+          try highlight_terminfo ppf num_lines lb loc1 loc2; true
           with Exit -> false
+      end
 
 (* Print the location in some way or another *)
 
