@@ -15,17 +15,19 @@
 
 (** The initially opened module.
 
-   This module provides the built-in types (numbers, booleans,
-   strings, exceptions, references, lists, arrays, input-output channels, ...)
-   and the basic operations over these types.
+   This module provides the basic operations over the built-in types
+   (numbers, booleans, strings, exceptions, references, lists, arrays,
+   input-output channels, ...)
 
    This module is automatically opened at the beginning of each compilation.
    All components of this module can therefore be referred by their short
    name, without prefixing them by [Pervasives].
 *)
 
-(** {6 Predefined types} 
-These are predefined types :
+(** {6 Built-in types} 
+These are built-in types; they are not really part of this module, because
+they are built into the compiler.  As a consequence, they can only be
+referred by their short names, without the [Pervasives] prefix.
 {[ type int]}    The type of integer numbers.
 {[ type char]}   The type of characters.
 {[ type string]} The type of character strings.
@@ -43,6 +45,8 @@ These are predefined types :
                  of the format, ['c] is the result type for the [printf]-style
                  function, and ['b] is the type of the first argument given to
                  [%a] and [%t] printing functions (see module {!Printf}).
+{[type 'a lazy_t]} This type is used to implement the {!Lazy} module.
+                 It should not be used directly.
 *)
 
 (** {6 Exceptions} *)
