@@ -80,6 +80,7 @@ and as a
 \input{libdbm.tex}
 \input{libdynlink.tex}
 \input{liblabltk.tex}
+\input{libbigarray.tex}
 
 \part{Appendix}
 \label{p:appendix}
