@@ -3,11 +3,12 @@
 CC=$(NATIVECC)
 CFLAGS=-I..\byterun -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) $(NATIVECCCOMPOPTS)
 
-COBJS=main.obj fail.obj roots.obj signals.obj \
+COBJS=startup.obj main.obj fail.obj roots.obj signals.obj \
   misc.obj freelist.obj major_gc.obj minor_gc.obj memory.obj alloc.obj \
   compare.obj ints.obj floats.obj str.obj array.obj io.obj extern.obj \
   intern.obj hash.obj sys.obj parsing.obj gc_ctrl.obj terminfo.obj \
-  md5.obj obj.obj lexing.obj
+  md5.obj obj.obj lexing.obj \
+  wincmdline.obj
 
 ASMOBJS=$(ARCH)nt.obj
 
@@ -22,6 +23,8 @@ libasmrun.lib: $(OBJS)
 install:
 	cp libasmrun.lib $(LIBDIR)
 
+main.c: ../byterun/main.c
+	cp ../byterun/main.c main.c
 misc.c: ../byterun/misc.c
 	cp ../byterun/misc.c misc.c
 freelist.c: ../byterun/freelist.c
@@ -64,6 +67,9 @@ obj.c: ../byterun/obj.c
 	cp ../byterun/obj.c obj.c
 lexing.c: ../byterun/lexing.c
 	cp ../byterun/lexing.c lexing.c
+
+wincmdline.obj: ../byterun/wincmdline.c
+	$(CC) /c $(NATIVECCCOMPOPTS) ..\byterun\wincmdline.c
 
 clean::
 	rm -f *.obj *.lib *~
