@@ -40,7 +40,7 @@ Native-code compiler:
 - Better error message when linking incomplete/incorrectly ordered set
   of .cmx files.
 - Optimized scanning of global roots during GC, can reduce total running
-  time by up to 5% on GC-intensive programs.
+  time by up to 8% on GC-intensive programs.
 
 Interactive toplevel:
 - Better printing of exceptions, including arguments, when possible.
@@ -52,7 +52,7 @@ Run-time system:
 - Added support for "custom" heap blocks (heap blocks carrying
   C functions for finalization, comparison, hashing, serialization
   and deserialization).
-- Support for finalization functions written in Caml.
+- Support for finalisation functions written in Caml.
 
 Standard library:
 - New modules Int32, Int64, Nativeint for 32-bit, 64-bit and
