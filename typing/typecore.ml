@@ -462,7 +462,7 @@ let force_delayed_checks () =
   List.iter (fun f -> f ()) (List.rev !delayed_checks);
   reset_delayed_checks ()
 
-let check_unused_variant pat =
+let finalize_variant pat =
   match pat.pat_desc with
     Tpat_variant(tag, opat, row) ->
       let row = row_repr row in
@@ -471,9 +471,7 @@ let check_unused_variant pat =
         with Not_found -> Rabsent
       in
       begin match field with
-      | Rpresent _ -> ()
-      | Rabsent ->
-          Location.prerr_warning pat.pat_loc Warnings.Unused_match
+      | Rabsent -> assert false
       | Reither (true, [], _, e) when not row.row_closed ->
           e := Some (Rpresent None)
       | Reither (false, ty::tl, _, e) when not row.row_closed ->
@@ -1661,6 +1659,7 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
   let partial =
     match partial_loc with None -> Partial
     | Some loc ->
+        (* Build dummy cases, since we cannot type yet *)
         let cases = List.map2
             (fun (pat, _) (_, act) ->
               let dummy = { exp_desc = Texp_tuple [];
@@ -1671,7 +1670,11 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
                   pat, {dummy with exp_desc = Texp_when(dummy, dummy)}
               | _           -> pat, dummy)
             pat_env_list caselist in
-        Parmatch.check_partial env loc cases in
+        let partial = Parmatch.check_partial env loc cases in
+        (* Revert to normal typing of variants *)
+        List.iter (fun (pat, _) -> iter_pattern finalize_variant pat) cases;
+        partial
+  in
   (* `Contaminating' unifications start here *)
   begin match pat_env_list with [] -> ()
   | (pat, _) :: _ -> unify_pat env pat ty_arg
@@ -1683,8 +1686,6 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
         let exp = type_expect ?in_function ext_env sexp ty_res in
         (pat, exp))
       pat_env_list caselist in
-  (* Check for impossible variant constructors, and normalize variant types *)
-  List.iter (fun (pat, _) -> iter_pattern check_unused_variant pat) cases;
   Parmatch.check_unused env cases;
   cases, partial
 
