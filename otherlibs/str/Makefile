@@ -4,9 +4,9 @@ include ../../config/Makefile
 
 # Compilation options
 CC=$(BYTECC)
-CFLAGS=-O -I$(REGEXLIB) -I../../camlrun $(BYTECCCOMPOPTS)
-CAMLC=../../boot/jocamlrun ../../boot/jocamlc -I ../../stdlib
-CAMLOPT=../../boot/jocamlrun ../../jocamlopt -I ../../stdlib
+CFLAGS=-O -I$(REGEXLIB) -I../../byterun $(BYTECCCOMPOPTS)
+CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../stdlib
+CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 REGEXLIB=regex-0.12
 COBJS=strstubs.o $(REGEXLIB)/regex.o
 
@@ -20,7 +20,7 @@ libstr.a: $(COBJS)
 	$(RANLIB) libstr.a
 
 str.cma: str.cmo
-	$(CAMLC) -cca "-lstr" -a -o str.cma str.cmo
+	$(CAMLC) -a -o str.cma str.cmo
 
 str.cmxa: str.cmx
 	$(CAMLOPT) -a -o str.cmxa str.cmx
@@ -28,7 +28,7 @@ str.cmxa: str.cmx
 $(REGEXLIB)/regex.o: $(REGEXLIB)/regex.c $(REGEXLIB)/regex.h
 	cd $(REGEXLIB); CC="$(CC)" sh configure; $(MAKE)
 
-str.cmx: ../../jocamlopt
+str.cmx: ../../ocamlopt
 
 partialclean:
 	rm -f *.cm*
@@ -59,6 +59,6 @@ installopt:
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend
-	../../tools/jocamldep *.mli *.ml >> .depend
+	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend
