@@ -41,7 +41,7 @@ install:
 	cp str.cma str.cmi $(LIBDIR)
 
 installopt:
-	cp str.cmxa str.a $(LIBDIR)
+	cp str.cmx str.cmxa str.a $(LIBDIR)
 	cd $(LIBDIR); $(RANLIB) str.a
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx

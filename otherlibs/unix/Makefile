@@ -50,7 +50,7 @@ install:
 	cp unix.cmi unix.cma $(LIBDIR)
 
 installopt:
-	cp unix.cmxa unix.a $(LIBDIR)
+	cp unix.cmx unix.cmxa unix.a $(LIBDIR)
 	cd $(LIBDIR); $(RANLIB) unix.a
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx

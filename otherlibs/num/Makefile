@@ -39,7 +39,7 @@ install:
 	cp nums.cma $(CAMLINTF) $(LIBDIR)
 
 installopt:
-	cp nums.cmxa nums.a $(LIBDIR)
+	cp $(CAMLOBJS:.cmo=.cmx) nums.cmxa nums.a $(LIBDIR)
 	cd $(LIBDIR); $(RANLIB) nums.a
 
 clean:
