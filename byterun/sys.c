@@ -151,14 +151,17 @@ static int sys_open_flags[] = {
 
 CAMLprim value sys_open(value path, value flags, value perm)
 {
-  int ret;
-  ret = open(String_val(path), convert_flag_list(flags, sys_open_flags)
+  int fd;
+  fd = open(String_val(path), convert_flag_list(flags, sys_open_flags)
 #if !macintosh
              , Int_val(perm)
 #endif
                                        );
-  if (ret == -1) sys_error(path);
-  return Val_long(ret);
+  if (fd == -1) sys_error(path);
+#if defined(F_SETFD) && defined(FD_CLOEXEC)
+  fcntl(fd, F_SETFD, FD_CLOEXEC);
+#endif
+  return Val_long(fd);
 }
 
 CAMLprim value sys_close(value fd)
