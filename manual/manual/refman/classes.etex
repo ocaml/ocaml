@@ -227,6 +227,9 @@ The expression
 a class body. This is the prototype for an object : it lists the
 instance variables and methods of an objet of this class.
 
+A class body is a class value: it is not evaluated at once. Rather,
+its components are evaluated each time an object is created.
+
 In a class body, the pattern @'(' pattern [':' typexpr] ')'@ is
 matched against self, therefore provinding a binding for self and self
 type.  Self can only be used in method and initializers.

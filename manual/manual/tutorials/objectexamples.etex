@@ -76,6 +76,22 @@ p#move 3;;
 p#get_x;;
 \end{caml_example}
 
+The evaluation of the body of a class only takes place at object
+creation time.  Therefore, in the following example, the instance
+variable "x" is initialized to different values for two different
+objects.
+\begin{caml_example}
+let x0 = ref 0;;
+class point =
+  object 
+    val mutable x = incr x0; !x0
+    method get_x = x
+    method move d = x <- x + d
+  end;;
+new point#get_x;;
+new point#get_x;;
+\end{caml_example}
+
 The class "point" can also be abstracted over the initial values of
 points.
 \begin{caml_example} 
