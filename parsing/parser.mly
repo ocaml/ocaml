@@ -184,8 +184,8 @@ let bigarray_set arr arg newval =
                         "", ghexp(Pexp_array coords);
                         "", newval]))
 
-let mktype_kind vflag kind =
-  if vflag = Virtual && kind != Ptype_abstract then Ptype_virtual kind else kind
+let mktype_kind pflag kind =
+  if pflag = Private && kind != Ptype_abstract then Ptype_virtual kind else kind
 
 %}
 
@@ -355,8 +355,9 @@ The precedences must be listed from low to high.
 %nonassoc below_DOT
 %nonassoc DOT
 /* Finally, the first tokens of simple_expr are above everything else. */
-%nonassoc BACKQUOTE BEGIN CHAR FALSE FLOAT INT LBRACE LBRACELESS LBRACKET
-          LBRACKETBAR LIDENT LPAREN NEW PREFIXOP STRING TRUE UIDENT
+%nonassoc BACKQUOTE BEGIN CHAR FALSE FLOAT INT INT32 INT64
+          LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
+          NEW NATIVEINT PREFIXOP STRING TRUE UIDENT
 
 
 /* Entry points */
@@ -1162,17 +1163,17 @@ constraints:
 type_kind:
     /*empty*/
       { (Ptype_abstract, None) }
-  | EQUAL virtual_flag core_type
+  | EQUAL private_flag core_type
       { (mktype_kind $2 Ptype_abstract, Some $3) }
-  | EQUAL virtual_flag constructor_declarations
+  | EQUAL private_flag constructor_declarations
       { (mktype_kind $2 (Ptype_variant(List.rev $3)), None) }
-  | EQUAL virtual_flag BAR constructor_declarations
+  | EQUAL private_flag BAR constructor_declarations
       { (mktype_kind $2 (Ptype_variant(List.rev $4)), None) }
-  | EQUAL virtual_flag LBRACE label_declarations opt_semi RBRACE
+  | EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
       { (mktype_kind $2 (Ptype_record(List.rev $4)), None) }
-  | EQUAL virtual_flag core_type EQUAL opt_bar constructor_declarations
+  | EQUAL private_flag core_type EQUAL opt_bar constructor_declarations
       { (mktype_kind $2 (Ptype_variant(List.rev $6)), Some $3) }
-  | EQUAL virtual_flag core_type EQUAL LBRACE label_declarations opt_semi RBRACE
+  | EQUAL private_flag core_type EQUAL LBRACE label_declarations opt_semi RBRACE
       { (mktype_kind $2 (Ptype_record(List.rev $6)), Some $3) }
 ;
 type_parameters:
