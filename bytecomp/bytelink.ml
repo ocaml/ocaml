@@ -43,12 +43,14 @@ type link_action =
 
 let lib_ccobjs = ref []
 let lib_ccopts = ref []
+let lib_dllibs = ref []
 
 let add_ccobjs l =
   if not !Clflags.no_auto_link then begin
     if l.lib_custom then Clflags.custom_runtime := true;
     lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs;
-    lib_ccopts := l.lib_ccopts @ !lib_ccopts
+    lib_ccopts := l.lib_ccopts @ !lib_ccopts;
+    lib_dllibs := l.lib_dllibs @ !lib_dllibs
   end
 
 (* A note on ccobj ordering:
@@ -278,11 +280,9 @@ let link_bytecode tolink exec_name standalone =
     let start_code = pos_out outchan in
     Symtable.init();
     Hashtbl.clear crc_interfaces;
-    let sharedobjs = Dll.extract_dll_names !Clflags.ccobjs in
+    let sharedobjs = List.map Dll.extract_dll_name !Clflags.dllibs in
     if standalone then begin
       (* Initialize the DLL machinery *)
-      if List.length sharedobjs < List.length !Clflags.ccobjs
-      then raise (Error Require_custom);
       Dll.add_path !load_path;
       try Dll.open_dlls sharedobjs
       with Failure reason -> raise(Error(Cannot_open_dll reason))
@@ -405,17 +405,9 @@ let rec extract suffix l =
 let build_custom_runtime prim_name exec_name =
   match Sys.os_type with
     "Unix" | "Cygwin" ->
-      let rpath =
-        if Config.bytecomp_c_rpath = "" then "" else
-        String.concat ":"
-          (List.filter ((<>) "") 
-             (!Clflags.dllpaths @
-              Dllpath.ld_library_path_contents() @
-              Dllpath.ld_conf_contents()))
-      in
       Ccomp.command
        (Printf.sprintf
-          "%s -o %s -I%s %s %s %s %s %s -lcamlrun %s"
+          "%s -o %s -I%s %s %s %s %s -lcamlrun %s"
           !Clflags.c_linker
           exec_name
           Config.standard_library
@@ -424,7 +416,6 @@ let build_custom_runtime prim_name exec_name =
           (String.concat " "
             (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
                       !load_path))
-          (if rpath <> "" then Config.bytecomp_c_rpath ^ rpath else "")
           (String.concat " " (List.rev !Clflags.ccobjs))
           Config.bytecomp_c_libraries)
   | "Win32" ->
@@ -500,8 +491,9 @@ let link objfiles =
   let objfiles = if !Clflags.nopervasives then objfiles
                  else "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
   let tolink = List.fold_right scan_file objfiles [] in
-  Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
+  Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs; (* put user's libs last *)
   Clflags.ccopts := !lib_ccopts @ !Clflags.ccopts; (* put user's opts first *)
+  Clflags.dllibs := !lib_dllibs @ !Clflags.dllibs; (* put user's DLLs first *)
   if not !Clflags.custom_runtime then
     link_bytecode tolink !Clflags.exec_name true
   else if not !Clflags.output_c_object then begin

@@ -57,7 +57,7 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
   bytecomp/translobj.cmo bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
-  bytecomp/simplif.cmo bytecomp/runtimedef.cmo bytecomp/dllpath.cmo
+  bytecomp/simplif.cmo bytecomp/runtimedef.cmo
 
 BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/printinstr.cmo bytecomp/opcodes.cmo bytecomp/emitcode.cmo \
@@ -102,8 +102,7 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   utils/config.cmo utils/clflags.cmo \
   typing/ident.cmo typing/path.cmo typing/types.cmo typing/btype.cmo \
   typing/predef.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
-  bytecomp/dllpath.cmo bytecomp/dll.cmo \
-  bytecomp/symtable.cmo toplevel/expunge.cmo
+  bytecomp/dll.cmo bytecomp/symtable.cmo toplevel/expunge.cmo
 
 PERVASIVES=arg array buffer callback char digest filename format gc hashtbl \
   lexing list map obj parsing pervasives printexc printf queue random \
@@ -213,6 +212,7 @@ opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt camlp4optopt
 install: FORCE
 	if test -d $(BINDIR); then : ; else $(MKDIR) $(BINDIR); fi
 	if test -d $(LIBDIR); then : ; else $(MKDIR) $(LIBDIR); fi
+	if test -d $(LIBDIR)/shlibs; then : ; else $(MKDIR) $(LIBDIR)/shlibs; fi
 	if test -d $(MANDIR); then : ; else $(MKDIR) $(MANDIR); fi
 	cd byterun; $(MAKE) install
 	if test -r $(LIBDIR)/ld.conf; then :; else echo "$(LIBDIR)" > $(LIBDIR)/ld.conf; fi
@@ -229,7 +229,7 @@ install: FORCE
 	cd tools; $(MAKE) install
 	-cd man; $(MAKE) install
 	for i in $(OTHERLIBRARIES); do \
-          (cd otherlibs/$$i; $(MAKE) install) || exit $?; \
+          (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
         done
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
 	cd camlp4; $(MAKE) install
@@ -240,7 +240,7 @@ installopt:
 	cd asmrun; $(MAKE) install
 	cp ocamlopt $(BINDIR)/ocamlopt$(EXE)
 	cd stdlib; $(MAKE) installopt
-	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) installopt) || exit $?; done
+	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
 	if test -f ocamlc.opt; then cp ocamlc.opt $(BINDIR)/ocamlc.opt$(EXE); else :; fi
 	if test -f ocamlopt.opt; then cp ocamlopt.opt $(BINDIR)/ocamlopt.opt$(EXE); else :; fi
 	if test -f lex/ocamllex.opt; then cp lex/ocamllex.opt $(BINDIR)/ocamllex.opt$(EXE); else :; fi
@@ -284,11 +284,9 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%BYTERUN%%|$(BINDIR)/ocamlrun|' \
             -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)|' \
             -e 's|%%BYTELINK%%|$(BYTECC) $(BYTECCLINKOPTS)|' \
-            -e 's|%%BYTECCRPATH%%|$(BYTECCRPATH)|' \
             -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|' \
             -e 's|%%NATIVELINK%%|$(NATIVECC) $(NATIVECCLINKOPTS)|' \
             -e 's|%%PARTIALLD%%|ld -r $(NATIVECCLINKOPTS)|' \
-            -e 's|%%NATIVECCRPATH%%|$(NATIVECCRPATH)|' \
             -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
             -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
             -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
@@ -519,11 +517,11 @@ alldepend::
 
 otherlibraries:
 	for i in $(OTHERLIBRARIES); do \
-          (cd otherlibs/$$i; $(MAKE) RUNTIME=$(RUNTIME) all) || exit $?; \
+          (cd otherlibs/$$i; $(MAKE) RUNTIME=$(RUNTIME) all) || exit $$?; \
         done
 otherlibrariesopt:
 	for i in $(OTHERLIBRARIES); do \
-          (cd otherlibs/$$i; $(MAKE) allopt) || exit $?; \
+          (cd otherlibs/$$i; $(MAKE) allopt) || exit $$?; \
         done
 partialclean::
 	for i in $(OTHERLIBRARIES); do \

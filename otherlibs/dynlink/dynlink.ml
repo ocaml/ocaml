@@ -181,7 +181,7 @@ let loadfile file_name =
       seek_in ic toc_pos;
       let lib = (input_value ic : library) in
       begin try 
-        Dll.open_dlls (Dll.extract_dll_names lib.lib_ccobjs)
+        Dll.open_dlls lib.lib_dllibs
       with Failure reason ->
         raise(Error(Cannot_open_dll reason))
       end;

@@ -233,15 +233,7 @@ let call_linker file_list startup_file =
             (String.concat " " (List.rev file_list))
     | _ ->
         if not !Clflags.output_c_object then
-          let rpath =
-            if Config.bytecomp_c_rpath = "" then "" else
-            String.concat ":"
-              (List.filter ((<>) "") 
-                 (!Clflags.dllpaths @
-                  Dllpath.ld_library_path_contents() @
-                  Dllpath.ld_conf_contents()))
-          in
-          Printf.sprintf "%s %s -o %s -I%s %s %s %s %s %s %s %s %s"
+          Printf.sprintf "%s %s -o %s -I%s %s %s %s %s %s %s %s"
             !Clflags.c_linker
             (if !Clflags.gprofile then "-pg" else "")
             !Clflags.exec_name
@@ -252,7 +244,6 @@ let call_linker file_list startup_file =
             (String.concat " "
               (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
                         !load_path))
-            (if rpath <> "" then Config.bytecomp_c_rpath ^ rpath else "")
             (String.concat " " (List.rev !Clflags.ccobjs))
             runtime_lib
             c_lib

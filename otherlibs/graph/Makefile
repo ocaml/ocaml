@@ -48,7 +48,7 @@ clean: partialclean
 	rm -f *.a *.so *.o
 
 install:
-	if test -f libgraphics.so; then cp libgraphics.so $(LIBDIR)/libgraphics.so; fi
+	if test -f dllgraphics.so; then cp dllgraphics.so $(LIBDIR)/dllgraphics.so; fi
 	cp libgraphics.a $(LIBDIR)/libgraphics.a
 	cd $(LIBDIR); $(RANLIB) libgraphics.a
 	cp graphics.cm[ia] graphicsX11.cmi graphics.mli graphicsX11.mli $(LIBDIR)

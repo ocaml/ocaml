@@ -47,7 +47,7 @@ clean :
 install: labltk.cma labltktop$(EXE) labltk
 	if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
 	if test `grep -s -c '^$(LABLTKDIR)$$' $(LIBDIR)/ld.conf || :` = 0; \
-	then echo $(LABLTKDIR) >> $(LIBDIR)/ld.conf; fi
+        then echo $(LABLTKDIR) >> $(LIBDIR)/ld.conf; fi
 	cp $(WIDGETOBJS:.cmo=.cmi) tk.cmi $(LABLTKDIR)
 	cp labltk.cma labltktop$(EXE) $(LABLTKDIR)
 	chmod 644 $(LABLTKDIR)/*.cmi

@@ -28,8 +28,8 @@ install: liblabltk41.a $(PUB)
 	if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
 	cp $(PUB) liblabltk41.a $(LABLTKDIR)
 	cd $(LABLTKDIR); $(RANLIB) liblabltk41.a
-	if test -f liblabltk41.so; then cp liblabltk41.so $(LABLTKDIR); fi
-	cd $(LABLTKDIR); chmod 644 $(PUB) liblabltk41.*
+	if test -f dlllabltk41.so; then cp dlllabltk41.so $(LABLTKDIR)/dlllabltk41.so; fi
+	cd $(LABLTKDIR); chmod 644 $(PUB) liblabltk41.a dlllabltk41.so
 
 clean : 
 	rm -f *.cm* *.o *.a

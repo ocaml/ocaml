@@ -368,7 +368,7 @@ shared_libraries_supported=false
 sharedcccompopts=''
 mksharedlib=''
 byteccrpath=''
-sharedldtype='cc'
+mksharedlibrpath=''
 
 if test $withsharedlibs = "yes"; then
   case "$host" in
@@ -377,6 +377,7 @@ if test $withsharedlibs = "yes"; then
       mksharedlib="gcc -shared -o"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
       byteccrpath="-Wl,-rpath,"
+      mksharedlibrpath="-Wl,-rpath,"
       shared_libraries_supported=true;;
     alpha*-*-osf*)
       case "$bytecc" in
@@ -385,7 +386,7 @@ if test $withsharedlibs = "yes"; then
       esac
       mksharedlib="ld -shared -expect_unresolved '*' -o"
       byteccrpath="-Wl,-rpath,"
-      sharedldtype="ld"
+      mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
     *-*-solaris2*)
       case "$bytecc" in
@@ -394,17 +395,18 @@ if test $withsharedlibs = "yes"; then
           if sh ./solaris-ld; then
             mksharedlib="$bytecc -shared -o"
             byteccrpath="-Wl,-R"
+            mksharedlibrpath="-R"
           else
             mksharedlib="$bytecc -shared -o"
             bytecclinkopts="$bytecclinkopts -Wl,-E"
             byteccrpath="-Wl,-rpath,"
+            mksharedlibrpath="-rpath "
           fi
 	  shared_libraries_supported=true;;
         *)
           sharedcccompopts="-KPIC"
           byteccrpath="-Wl,-R"
 	  mksharedlib="/usr/ccs/bin/ld -G -o"
-          sharedldtype="ld"
 	  shared_libraries_supported=true;;
       esac;;
     mips-sgi-irix[56]*)
@@ -414,7 +416,7 @@ if test $withsharedlibs = "yes"; then
       esac
       mksharedlib="ld -shared -rdata_shared -o"
       byteccrpath="-Wl,-rpath,"
-      sharedldtype="ld"
+      mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
   esac
 fi
@@ -1122,8 +1124,7 @@ echo "EXE=$exe" >> Makefile
 echo "SUPPORTS_SHARED_LIBRARIES=$shared_libraries_supported" >> Makefile
 echo "SHAREDCCCOMPOPTS=$sharedcccompopts" >> Makefile
 echo "MKSHAREDLIB=$mksharedlib" >> Makefile
-echo "SHAREDLDTYPE=$sharedldtype" >> Makefile
-
+echo "MKSHAREDLIBRPATH=$mksharedlibrpath" >> Makefile
 echo "ARCH=$arch" >> Makefile
 echo "MODEL=$model" >> Makefile
 echo "SYSTEM=$system" >> Makefile
@@ -1163,7 +1164,7 @@ echo "        options for linking....... $bytecclinkopts $cclibs $dllib $cursesl
 if $shared_libraries_supported; then
 echo "        shared libraries are supported"
 echo "        options for compiling..... $sharedcccompopts $bytecccompopts"
-echo "        command for building...... $mksharedlib <target>.so <objects>"
+echo "        command for building...... $mksharedlib lib.so $mksharedlibrpath/a/path objs"
 else
 echo "        shared libraries not supported"
 fi

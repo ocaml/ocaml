@@ -49,8 +49,9 @@ type compilation_unit =
 type library =
   { lib_units: compilation_unit list;   (* List of compilation units *)
     lib_custom: bool;                   (* Requires custom mode linking? *)
-    lib_ccobjs: string list;            (* C object files needed *)
-    lib_ccopts: string list }           (* Extra opts to C compiler *)
+    lib_ccobjs: string list;            (* C object files needed for -custom *)
+    lib_ccopts: string list;            (* Extra opts to C compiler *)
+    lib_dllibs: string list }           (* DLLs needed *)
 
 (* Format of a .cma file:
      magic number (Config.cma_magic_number)

@@ -41,6 +41,7 @@ let copy_compunit ic oc compunit =
 let lib_sharedobjs = ref []
 let lib_ccobjs = ref []
 let lib_ccopts = ref []
+let lib_dllibs = ref []
 
 (* See Bytelink.add_ccobjs for explanations on how options are ordered.
    Notice that here we scan .cma files given on the command line from
@@ -50,7 +51,8 @@ let add_ccobjs l =
   if not !Clflags.no_auto_link then begin
     if l.lib_custom then Clflags.custom_runtime := true;
     lib_ccobjs := !lib_ccobjs @ l.lib_ccobjs;
-    lib_ccopts := !lib_ccopts @ l.lib_ccopts
+    lib_ccopts := !lib_ccopts @ l.lib_ccopts;
+    lib_dllibs := !lib_dllibs @ l.lib_dllibs
   end
 
 let copy_object_file oc name =
@@ -96,7 +98,8 @@ let create_archive file_list lib_name =
       { lib_units = units;
         lib_custom = !Clflags.custom_runtime;
         lib_ccobjs = !Clflags.ccobjs @ !lib_ccobjs;
-        lib_ccopts = !Clflags.ccopts @ !lib_ccopts } in
+        lib_ccopts = !Clflags.ccopts @ !lib_ccopts;
+        lib_dllibs = !Clflags.dllibs @ !lib_dllibs } in
     let pos_toc = pos_out outchan in
     output_value outchan toc;
     seek_out outchan ofs_pos_toc;

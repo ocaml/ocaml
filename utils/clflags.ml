@@ -15,7 +15,8 @@
 (* Command-line parameters *)
 
 let objfiles = ref ([] : string list)   (* .cmo and .cma files *)
-and ccobjs = ref ([] : string list)     (* .o, .a, .so and -lxxx files *)
+and ccobjs = ref ([] : string list)     (* .o, .a, .so and -cclib -lxxx *)
+and dllibs = ref ([] : string list)     (* .so and -dllib -lxxx *)
 
 let compile_only = ref false            (* -c *)
 and exec_name = ref "a.out"             (* -o *)
