@@ -339,6 +339,8 @@ expr:
       { mkexp(Pexp_let($2, List.rev $3, $5)) }
   | PARSER bp_parser_cases %prec prec_fun
       { Pstream.cparser $2 }
+  | PARSER MATCH expr WITH bp_parser_cases %prec prec_match
+      { mkexp(Pexp_apply(Pstream.cparser $5, [$3])) }
   | FUNCTION opt_bar match_cases %prec prec_fun
       { mkexp(Pexp_function(List.rev $3)) }
   | FUN simple_pattern fun_def %prec prec_fun
