@@ -684,10 +684,14 @@ let instr_list lexbuf =
       let mdle = convert_module mo in
         let beginning =
           match beg with
-            None ->
-              if point = -1 then
-                (prerr_endline "No current point."; raise Toplevel);
-              (max 1 ((snd (line_of_pos (get_buffer mdle) point)) - 10))
+            None when (mo <> None) || (point = -1) ->
+              1
+          | None ->
+              begin try
+                max 1 ((snd (line_of_pos (get_buffer mdle) point)) - 10)
+              with Out_of_range ->
+                1
+              end
           | Some x -> x
         in
           let en =
