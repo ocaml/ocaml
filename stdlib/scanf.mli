@@ -140,11 +140,14 @@ val bscanf :
    - [\[ range \]]: reads characters that matches one of the characters
      mentioned in the range of characters [range] (or not mentioned in
      it, if the range starts with [^]). Returns a [string] that can be
-     empty, if no character in the input matches the range.
+     empty, if no character in the input matches the range. Hence,
+     [\['0'-'9'\]] returns a string representing a decimal number or an empty
+     string if no decimal digit is found. 
      If a closing bracket appears in a range, it must occur as the
      first character of the range (or just after the [^] in case of
      range negation); hence [\[\]\]] matches a [\]] character and
      [\[^\]\]] matches any character that is not [\]].
+   - [l]: applies [f] to the number of lines read so far.
    - [n]: applies [f] to the number of characters read so far.
    - [N]: applies [f] to the number of tokens read so far.
    - [!]: matches the end of input condition.
@@ -170,13 +173,13 @@ val bscanf :
    follow a string conversion, it is ignored and treated as a plain
    [c] character.
 
-   Note:
+   Notes:
 
    - the scanning indications introduce slight differences in the
    syntax of [Scanf] format strings compared to those used by the
    [Printf] module. However, scanning indications are similar to those
    of the [Format] module; hence, when producing formatted text to be
-   scanned by [!Scanf.bscanf], it is advised to use printing functions
+   scanned by [!Scanf.bscanf], it is wise to use printing functions
    from [Format] (or, if you need to use functions from [Printf],
    banish or carefully double check the format strings that contain
    ['@'] characters).
@@ -200,7 +203,7 @@ val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
     Warning: since all scanning functions operate from a scanning
     buffer, be aware that each [fscanf] invocation must allocate a new
     fresh scanning buffer (unless careful use of partial evaluation in
-    the program).  Hence, there are chances that some characters seem
+    the program). Hence, there are chances that some characters seem
     to be skipped (in fact they are pending in the previously used
     buffer). This happens in particular when calling [fscanf] again
     after a scan involving a format that necessitates some look ahead
