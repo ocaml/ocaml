@@ -53,7 +53,11 @@ sp is a local copy of the global variable extern_sp. */
 #  ifdef DEBUG
 #    define Next goto next_instr
 #  else
-#    define Next goto *(void *)(jumptbl_base + *pc++)
+#    ifdef __ia64__
+#      define Next goto *(void *)(jumptbl_base + *((uint32 *) pc)++)
+#    else
+#      define Next goto *(void *)(jumptbl_base + *pc++)
+#    endif
 #  endif
 #else
 #  define Instruct(name) case name
@@ -155,6 +159,12 @@ sp is a local copy of the global variable extern_sp. */
 #define PC_REG asm("r9")
 #define SP_REG asm("r8")
 #define ACCU_REG asm("r7")
+#endif
+#ifdef __ia64__
+#define PC_REG asm("36")
+#define SP_REG asm("37")
+#define ACCU_REG asm("38")
+#define JUMPTBL_BASE_REG asm("39")
 #endif
 #endif
 

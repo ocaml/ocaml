@@ -233,24 +233,29 @@ let emit_instr i =
           `	ld8	r2 = [r2]\n`;
           `	mov	b0 = r2\n`
         end;
-        `	br.dptk.many	b6\n`
+        if n > 0 then
+          `	add	sp = {emit_int n}, sp\n`;
+        `	br.many	b6\n`
     | Lop(Itailcall_imm s) ->
         if s = !function_name then begin
           `	br.sptk	{emit_label !tailrec_entry_point}\n`
         end else begin
-          let n = frame_size() in
           let n = frame_size() in
           if !contains_calls then begin
             `	add	r2 = {emit_int(n + 8)}, sp\n`;
             `	ld8	r2 = [r2]\n`;
             `	mov	b0 = r2\n`
           end;
+          if n > 0 then
+            `	add	sp = {emit_int n}, sp\n`;
           `	br.sptk.many	{emit_symbol s}#\n`
         end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
           `	add	r2 = @ltoff(@fptr({emit_symbol s}#)), gp\n`;
-  	  `	br.call.sptk.many b0 = caml_c_call#\n`
+          `	ld8	r2 = [r2]\n`;
+  	  `	br.call.sptk.many b0 = caml_c_call#\n`;
+          `{record_frame i.live}\n`
         end else begin
           `	mov	r7 = gp\n`;
           `	br.call.sptk.many b0 = {emit_symbol s}#\n`;
@@ -276,11 +281,11 @@ let emit_instr i =
         `	{emit_string load_instr}	{emit_reg dest} = [{emit_reg i.arg.(0)}]\n`;
         begin match chunk with
             Byte_signed ->
-              `	sxtx1	{emit_reg dest} = {emit_reg dest}\n`
+              `	sxt1	{emit_reg dest} = {emit_reg dest}\n`
           | Sixteen_signed ->
-              `	sxtx2	{emit_reg dest} = {emit_reg dest}\n`
+              `	sxt2	{emit_reg dest} = {emit_reg dest}\n`
           | Thirtytwo_signed ->
-              `	sxtx4	{emit_reg dest} = {emit_reg dest}\n`
+              `	sxt4	{emit_reg dest} = {emit_reg dest}\n`
           | _ -> ()
         end
     | Lop(Istore(chunk, addr)) ->
@@ -303,11 +308,11 @@ let emit_instr i =
           `	cmp.ltu	p6, p0 = r4, r5\n`;
           `	mov	r2 = {emit_int n}\n`;
           `	(p6) br.call.spnt b0 = caml_call_gc#\n`;
-          `{record_frame i.live}:	add	{emit_reg i.res.(0)} = 8, r4\n`
+          `{record_frame i.live}	add	{emit_reg i.res.(0)} = 8, r4\n`
         end else begin
           `	mov	r2 = {emit_int n}\n`;
           `	br.call.sptk b0 = caml_alloc#\n`;
-          `{record_frame i.live}:	add	{emit_reg i.res.(0)} = 8, r4\n`
+          `{record_frame i.live}	add	{emit_reg i.res.(0)} = 8, r4\n`
         end
     | Lop(Iintop Imul) ->
         `	setf.sig f64 = {emit_reg i.arg.(0)}\n`;
@@ -578,7 +583,8 @@ let fundecl f =
     `	add	sp = -{emit_int n}, sp\n`;
   tailrec_entry_point := new_label();
   `{emit_label !tailrec_entry_point}:\n`;
-  emit_all f.fun_body
+  emit_all f.fun_body;
+  `	.endp	{emit_symbol f.fun_name}#\n`
 
 (* Emission of data *)
 

@@ -143,7 +143,11 @@ method private select_imul_imm arg n =
 method emit_stores env data regs_addr =
   let t1 = Reg.create Addr and t2 = Reg.create Addr in
   self#insert (Iop(Iintop_imm(Iadd, -8))) regs_addr [|t1|];
-  self#insert (Iop Imove) regs_addr [|t2|];
+  (* We can't put a move from regs_addr to t2 here, because that would
+     allow t2 to be put in the same register as regs_addr.  (The dependency
+     analysis doesn't know that Istoreincr modifies its index register.)
+     So, put an add immediate 0 instead... *)
+  self#insert (Iop(Iintop_imm(Iadd, 0))) regs_addr [|t2|];
   (* Store components by batch of 2 *)
   let backlog = ref None in
   let do_store r =
