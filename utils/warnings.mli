@@ -12,7 +12,7 @@
 (* $Id$ *)
 
 type t =
-  | Partial_match                    (* P *)
+  | Partial_match of string          (* P *)
   | Unused_match                     (* U *)
   | Method_override of string list   (* M *)
   | Hide_instance_variable of string (* V *)

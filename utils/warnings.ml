@@ -12,7 +12,7 @@
 (* $Id$ *)
 
 type t =
-  | Partial_match                    (* P *)
+  | Partial_match of string          (* P *)
   | Unused_match                     (* U *)
   | Method_override of string list   (* M *)
   | Hide_instance_variable of string (* V *)
@@ -57,7 +57,7 @@ let rec parse_options s =
 ;;
 
 let is_active = function
-  | Partial_match -> !pflag
+  | Partial_match _ -> !pflag
   | Unused_match -> !uflag
   | Method_override _ -> !mflag
   | Hide_instance_variable _ -> !vflag
@@ -68,7 +68,10 @@ let is_active = function
 ;;
 
 let message = function
-  | Partial_match -> "this pattern-matching is not exhaustive."
+  | Partial_match "" -> "this pattern-matching is not exhaustive."
+  | Partial_match s ->
+      "this pattern-matching is not exhaustive.\n\
+       Here is an example of a value that is not matched:\n" ^ s
   | Unused_match -> "this match case is unused."
   | Method_override slist ->
       String.concat " "

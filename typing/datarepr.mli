@@ -25,3 +25,8 @@ val exception_descr:
 val label_descrs:
   type_expr -> (string * mutable_flag * type_expr) list ->
     (string * label_description) list
+
+exception Constr_not_found
+
+val find_constr_by_tag:
+  constructor_tag -> (string * type_expr list) list -> string * type_expr list
