@@ -99,11 +99,16 @@ let all_primitives () =
   Tbl.iter (fun name number -> prim.(number) <- name) !c_prim_table.num_tbl;
   prim
 
-let output_primitive_names outchan =
+let data_primitive_names () =
   let prim = all_primitives() in
+  let b = Buffer.create 512 in
   for i = 0 to Array.length prim - 1 do
-    output_string outchan prim.(i); output_char outchan '\000'
-  done
+    Buffer.add_string b prim.(i); Buffer.add_char b '\000'
+  done;
+  Buffer.contents b
+
+let output_primitive_names outchan =
+  output_string outchan (data_primitive_names())
 
 open Printf
 
@@ -232,6 +237,9 @@ let initial_global_table () =
 let output_global_map oc =
   output_value oc !global_table
 
+let data_global_map () =
+  Obj.repr !global_table
+
 (* Functions for toplevel use *)
 
 (* Update the in-core table of globals *)
@@ -245,39 +253,59 @@ let update_global_table () =
     !literal_table;
   literal_table := []
 
+(* Recover data for toplevel initialization.  Data can come either from
+   executable file (normal case) or from linked-in data (-output-obj). *)
+
+type section_reader = { 
+  read_string: string -> string;
+  read_struct: string -> Obj.t;
+  close_reader: unit -> unit
+}
+
+let read_sections () =
+  try
+    let sections = Meta.get_section_table () in
+    { read_string =
+        (fun name -> (Obj.magic(List.assoc name sections) : string));
+      read_struct =
+        (fun name -> List.assoc name sections);
+      close_reader = 
+        (fun () -> ()) }
+  with Not_found ->
+    let ic = open_in_bin Sys.executable_name in
+    Bytesections.read_toc ic;
+    { read_string = Bytesections.read_section_string ic;
+      read_struct = Bytesections.read_section_struct ic;
+      close_reader = fun () -> close_in ic }
+
 (* Initialize the linker for toplevel use *)
 
 let init_toplevel () =
-  (* Read back the known global symbols and the known primitives
-     from the executable file *)
-  let ic = open_in_bin Sys.executable_name in
-  begin try
-    Bytesections.read_toc ic;
-    ignore(Bytesections.seek_section ic "SYMB");
-    global_table := (input_value ic : Ident.t numtable);
-    let prims = Bytesections.read_section ic "PRIM" in
+  try
+    let sect = read_sections () in
+    (* Locations of globals *)
+    global_table := (Obj.magic (sect.read_struct "SYMB") : Ident.t numtable);
+    (* Primitives *)
+    let prims = sect.read_string "PRIM" in
     c_prim_table := empty_numtable;
     let pos = ref 0 in
     while !pos < String.length prims do
       let i = String.index_from prims !pos '\000' in
       set_prim_table (String.sub prims !pos (i - !pos));
       pos := i + 1
-    done
+    done;
+    (* DLL initialization *)
+    let dllpath = try sect.read_string "DLPT" with Not_found -> "" in
+    Dll.init_toplevel dllpath;
+    (* Recover CRC infos for interfaces *)
+    let crcintfs =
+      try (Obj.magic (sect.read_struct "CRCS") : (string * Digest.t) list)
+      with Not_found -> [] in
+    (* Done *)
+    sect.close_reader();
+    crcintfs
   with Bytesections.Bad_magic_number | Not_found | Failure _ ->
     fatal_error "Toplevel bytecode executable is corrupted"
-  end;
-  (* Initialize the Dll machinery for toplevel use *)
-  let dllpath =
-    try Bytesections.read_section ic "DLPT" with Not_found -> "" in
-  Dll.init_toplevel dllpath;
-  (* Recover CRC infos for interfaces *)
-  let crcintfs =
-    try
-      ignore(Bytesections.seek_section ic "CRCS");
-      (input_value ic : (string * Digest.t) list)
-    with Not_found -> [] in
-  close_in ic;
-  crcintfs
 
 (* Find the value of a global identifier *)
 

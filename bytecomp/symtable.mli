@@ -25,6 +25,8 @@ val initial_global_table: unit -> Obj.t array
 val output_global_map: out_channel -> unit
 val output_primitive_names: out_channel -> unit
 val output_primitive_table: out_channel -> unit
+val data_global_map: unit -> Obj.t
+val data_primitive_names: unit -> string
 
 (* Functions for the toplevel *)
 

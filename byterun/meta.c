@@ -20,6 +20,7 @@
 #include "fail.h"
 #include "fix_code.h"
 #include "interp.h"
+#include "intext.h"
 #include "major_gc.h"
 #include "memory.h"
 #include "minor_gc.h"
@@ -33,6 +34,16 @@
 CAMLprim value caml_get_global_data(value unit)
 {
   return caml_global_data;
+}
+
+char * caml_section_table = NULL;
+asize_t caml_section_table_size;
+
+CAMLprim value caml_get_section_table(value unit)
+{
+  if (caml_section_table == NULL) caml_raise_not_found();
+  return caml_input_value_from_block(caml_section_table,
+                                     caml_section_table_size);
 }
 
 CAMLprim value caml_reify_bytecode(value prog, value len)
@@ -122,6 +133,12 @@ CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
 value caml_get_global_data(value unit)
 {
   caml_invalid_argument("Meta.get_global_data");
+  return Val_unit; /* not reached */
+}
+
+value caml_get_section_table(value unit)
+{
+  caml_invalid_argument("Meta.get_section_table");
   return Val_unit; /* not reached */
 }
 

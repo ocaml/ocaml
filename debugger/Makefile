@@ -38,8 +38,8 @@ OTHEROBJS=\
   ../typing/datarepr.cmo ../typing/env.cmo ../typing/oprint.cmo \
   ../typing/ctype.cmo ../typing/printtyp.cmo ../typing/mtype.cmo \
   ../bytecomp/runtimedef.cmo ../bytecomp/bytesections.cmo \
-  ../bytecomp/dll.cmo ../bytecomp/symtable.cmo \
-  ../bytecomp/opcodes.cmo ../bytecomp/meta.cmo \
+  ../bytecomp/dll.cmo ../bytecomp/meta.cmo ../bytecomp/symtable.cmo \
+  ../bytecomp/opcodes.cmo \
   ../toplevel/genprintval.cmo \
   ../otherlibs/dynlink/dynlink.cmo
 

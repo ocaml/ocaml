@@ -16,12 +16,16 @@
 #ifndef CAML_STARTUP_H
 #define CAML_STARTUP_H
 
-#include "misc.h"
+#include "mlvalues.h"
 #include "exec.h"
 
 CAMLextern void caml_main(char **argv);
-CAMLextern void caml_startup_code(code_t code, asize_t code_size,
-                                  char *data, char **argv);
+
+CAMLextern void caml_startup_code(
+           code_t code, asize_t code_size,
+           char *data, asize_t data_size,
+           char *section_table, asize_t section_table_size,
+           char **argv);
 
 enum { FILE_NOT_FOUND = -1, BAD_BYTECODE  = -2 };
 

@@ -30,4 +30,7 @@ extern struct ext_table caml_prim_name_table;
 
 #define Primitive(n) ((c_primitive)(caml_prim_table.contents[n]))
 
+extern char * caml_section_table;
+extern asize_t caml_section_table_size;
+
 #endif /* CAML_PRIMS_H */

@@ -379,6 +379,13 @@ let link_bytecode_as_c tolink outfile =
   let outchan = open_out outfile in
   try
     (* The bytecode *)
+    output_string outchan "#include <caml/mlvalues.h>\n";
+    output_string outchan "\
+CAMLextern void caml_startup_code(
+           code_t code, asize_t code_size,
+           char *data, asize_t data_size,
+           char *section_table, asize_t section_table_size,
+           char **argv);\n";
     output_string outchan "static int caml_code[] = {\n";
     Symtable.init();
     Consistbl.clear crc_interfaces;
@@ -391,15 +398,26 @@ let link_bytecode_as_c tolink outfile =
     output_string outchan "static char caml_data[] = {\n";
     output_data_string outchan
       (Marshal.to_string (Symtable.initial_global_table()) []);
-    Printf.fprintf outchan "\n};\n\n";
+    output_string outchan "\n};\n\n";
+    (* The sections *)
+    let sections =
+      [ "SYMB", Symtable.data_global_map();
+        "PRIM", Obj.repr(Symtable.data_primitive_names());
+        "CRCS", Obj.repr(extract_crc_interfaces()) ] in
+    output_string outchan "static char caml_sections[] = {\n";
+    output_data_string outchan
+      (Marshal.to_string sections []);
+    output_string outchan "\n};\n\n";
     (* The table of primitives *)
     Symtable.output_primitive_table outchan;
     (* The entry point *)
     output_string outchan "\n
-void caml_startup(argv)
-        char ** argv;
+void caml_startup(char ** argv)
 {
-  caml_startup_code(caml_code, sizeof(caml_code), caml_data, argv);
+  caml_startup_code(caml_code, sizeof(caml_code),
+                    caml_data, sizeof(caml_data),
+                    caml_sections, sizeof(caml_sections),
+                    argv);
 }\n";
     close_out outchan
   with x ->

@@ -415,8 +415,11 @@ CAMLexport void caml_main(char **argv)
 
 /* Main entry point when code is linked in as initialized data */
 
-CAMLexport void caml_startup_code(code_t code, asize_t code_size,
-                                  char *data, char **argv)
+CAMLexport void caml_startup_code(
+           code_t code, asize_t code_size,
+           char *data, asize_t data_size,
+           char *section_table, asize_t section_table_size,
+           char **argv)
 {
   value res;
 
@@ -440,13 +443,15 @@ CAMLexport void caml_startup_code(code_t code, asize_t code_size,
   caml_thread_code(caml_start_code, code_size);
 #endif
   /* Use the builtin table of primitives */
-  caml_prim_table.size = caml_prim_table.capacity = -1;
-  caml_prim_table.contents = (void **) caml_builtin_cprim;
+  caml_build_primitive_table_builtin();
   /* Load the globals */
-  caml_global_data = caml_input_val_from_string((value)data, 0);
+  caml_global_data = caml_input_value_from_block(data, data_size);
   /* Ensure that the globals are in the major heap. */
   caml_oldify_one (caml_global_data, &caml_global_data);
   caml_oldify_mopup ();
+  /* Record the sections (for caml_get_section_table in meta.c) */
+  caml_section_table = section_table;
+  caml_section_table_size = section_table_size;
   /* Run the code */
   caml_init_exceptions();
   caml_sys_init("", argv);
