@@ -2283,25 +2283,26 @@ let rec normalize_type_rec env ty =
       let row = row_repr row in
       let fields = List.map
           (fun (l,f) ->
-	    let f = row_field_repr f in
-	    begin match f with Reither(b, ty::(_::_ as tyl), e) ->
+            let f = row_field_repr f in l,
+            match f with Reither(b, ty::(_::_ as tyl), e) ->
               let tyl' =
-		List.fold_left
+                List.fold_left
                   (fun tyl ty ->
                     if List.exists (fun ty' -> equal env false [ty] [ty']) tyl
                     then tyl else ty::tyl)
                   [ty] tyl
               in
               if List.length tyl' < List.length tyl + 1 then
-		e := Some(Reither(b, List.rev tyl', ref None))
-            | _ -> ()
-	    end;
-	    l,f)
+                let f = Reither(b, List.rev tyl', ref None) in
+                e := Some f;
+                f
+              else f
+            | _ -> f)
           row.row_fields
       and bound = List.fold_left
-	  (fun tyl ty ->
-	    let ty = repr ty in if List.memq ty tyl then tyl else ty :: tyl)
-	  [] row.row_bound
+          (fun tyl ty ->
+            let ty = repr ty in if List.memq ty tyl then tyl else ty :: tyl)
+          [] row.row_bound
       in ty.desc <- Tvariant {row with row_fields = fields; row_bound = bound}
     | _ -> ()
     end;

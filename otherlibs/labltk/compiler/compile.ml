@@ -721,7 +721,7 @@ let write_external :w def =
         end
       with
       | Not_found ->
-	  raise (Compiler_Error ("can't find external file: " ^ fname))
+          raise (Compiler_Error ("can't find external file: " ^ fname))
       end
 | _ -> raise (Compiler_Error "invalid external definition")
 

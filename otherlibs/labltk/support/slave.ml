@@ -19,7 +19,7 @@
  * NOTE: camltk has not fully been initialised yet
  *)
 external tcl_eval : string -> string
-      	=  "camltk_tcl_eval"
+        =  "camltk_tcl_eval"
 let tcl_command s = ignore (tcl_eval s);;
 open Printf
 

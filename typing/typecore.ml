@@ -948,11 +948,11 @@ and type_application env funct sargs =
           try
             filter_arrow env ty_fun l1
           with Unify _ ->
-	    let ty_fun =
-	      match expand_head env ty_fun with
-		{desc=Tarrow _} as ty -> ty
-	      |	_ -> ty_fun
-	    in
+            let ty_fun =
+              match expand_head env ty_fun with
+                {desc=Tarrow _} as ty -> ty
+              | _ -> ty_fun
+            in
             let ty_res = result_type (omitted @ !ignored) ty_fun in
             match ty_res with
               {desc=Tarrow _} ->
@@ -1001,7 +1001,7 @@ and type_application env funct sargs =
             if is_optional l &&
               (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
             then begin
-	      ignored := (l,ty,lv) :: !ignored;
+              ignored := (l,ty,lv) :: !ignored;
               Some (option_none ty Location.none)
             end else None
         in

@@ -237,7 +237,7 @@ let rec typexp sch prio0 ppf ty =
             fields in
         let all_present = List.length present = List.length fields in
         let pr_present =
-	  print_list (fun ppf (s, _) -> fprintf ppf "`%s" s)
+          print_list (fun ppf (s, _) -> fprintf ppf "`%s" s)
                      (fun () -> fprintf ppf "@ |")
         in
         begin match row.row_name with
@@ -248,7 +248,7 @@ let rec typexp sch prio0 ppf ty =
               | [] -> ()
               | l ->
                  if not all_present then
-		   fprintf ppf "@[<hov>[>%a]@]" pr_present l in
+                   fprintf ppf "@[<hov>[>%a]@]" pr_present l in
             fprintf ppf "@[%a%s%a%a@]"
               (typargs sch) tyl sharp_mark path p print_present present
         | _ ->
@@ -267,7 +267,7 @@ let rec typexp sch prio0 ppf ty =
               | [] -> ()
               | l ->
                  if not all_present then
-		   fprintf ppf "@ @[<hov>>%a@]" pr_present l in
+                   fprintf ppf "@ @[<hov>>%a@]" pr_present l in
             let print_fields =
               print_list (row_field sch) (fun () -> fprintf ppf "@ |") in
 
@@ -419,7 +419,7 @@ let rec type_decl kwd id ppf decl =
         print_constraints params
   | Type_record lbls ->
       fprintf ppf "@[<2>@[<hv 2>%a = {%a@;<1 -2>}@]@ %a@]"
-	print_name_args decl
+        print_name_args decl
         (print_list_init label (fun () -> fprintf ppf "@ ")) lbls
         print_constraints params
   end

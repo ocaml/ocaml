@@ -115,8 +115,8 @@ object (self)
       let buf = String.create :len in
       let len = Unix.read fd :buf pos:0 :len in
       if len > 0 then begin
-	self#insert (String.sub buf pos:0 :len);
-	Text.mark_set textw mark:"input" index:(`Mark"insert",[`Char(-1)])
+        self#insert (String.sub buf pos:0 :len);
+        Text.mark_set textw mark:"input" index:(`Mark"insert",[`Char(-1)])
       end;
       len
     with Unix.Unix_error _ -> 0
@@ -207,7 +207,7 @@ object (self)
           self#insert (Str.global_replace pat:~"\r\n" with:"\n"
                          (Buffer.contents ibuffer));
           Buffer.reset ibuffer;
-	  Text.mark_set textw mark:"input" index:(`Mark"insert",[`Char(-1)])
+          Text.mark_set textw mark:"input" index:(`Mark"insert",[`Char(-1)])
         end;
         Mutex.unlock imutex;
         Timer.set ms:100 callback:read_buffer
@@ -215,7 +215,7 @@ object (self)
       read_buffer ()
     end else begin
       try
-	List.iter [in1;err1] fun:
+        List.iter [in1;err1] fun:
           begin fun fd ->
             Fileevent.add_fileinput :fd
               callback:(fun () -> ignore (self#read :fd len:1024))

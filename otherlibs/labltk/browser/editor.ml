@@ -35,7 +35,7 @@ let compiler_preferences () =
   in
   let chkbuttons, setflags = List.split
       (List.map
-	 fun:(fun (text, ref, invert) -> mk_chkbutton :text :ref :invert)
+         fun:(fun (text, ref, invert) -> mk_chkbutton :text :ref :invert)
          [ "No pervasives", Clflags.nopervasives, false;
            "No warnings", Typecheck.nowarnings, false;
            "Modern", Clflags.classic, true;

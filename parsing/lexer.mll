@@ -172,6 +172,7 @@ let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
 let symbolchar2 =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' '<' '=' '>' '?' '@' '^' '|' '~']
+(*  ['!' '$' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *)
 let decimal_literal = ['0'-'9']+
 let hex_literal = '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
 let oct_literal = '0' ['o' 'O'] ['0'-'7']+
@@ -186,13 +187,18 @@ rule token = parse
       { UNDERSCORE }
   | lowercase identchar * ':' [ ^ ':' '=' '>']
       { let s = Lexing.lexeme lexbuf in
-      	lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
-      	LABEL (String.sub s 0 (String.length s - 2)) }
+        lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
+        LABEL (String.sub s 0 (String.length s - 2)) }
+(*
+  | lowercase identchar * ':'
+      { let s = Lexing.lexeme lexbuf in
+        LABEL (String.sub s 0 (String.length s - 1)) }
+  | '%' lowercase identchar *
+*)
   | ':' lowercase identchar *
       { let s = Lexing.lexeme lexbuf in
-      	let l = String.length s - 1 in
-      	(* lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - l; *)
-	LABELID (String.sub s 1 l) }
+        let l = String.length s - 1 in
+        LABELID (String.sub s 1 l) }
   | lowercase identchar *
       { let s = Lexing.lexeme lexbuf in
           try
