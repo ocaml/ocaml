@@ -158,7 +158,7 @@ class-expr:
    |  '(' class-expr ')'
    |  '(' class-expr ':' class-type ')'
    |  class-expr expr
-   |  'fun' {pattern}+ '->' class-expr
+   |  'fun' {{pattern}} '->' class-expr
    |  'let' ['rec'] let-binding {'and' let-binding} 'in' class-expr
    |  'object' ['(' pattern [':' typexpr] ')'] { class-field } 'end'
 ;
@@ -208,7 +208,7 @@ the evaluation of @class-expr@ in the extended environment.
 
 The expression
 \begin{center}
-@"fun" pattern_1 \ldots pattern_n "->" class-expr@@
+@"fun" pattern_1 \ldots pattern_n "->" class-expr@
 \end{center}
 is a short form for
 \begin{center}
