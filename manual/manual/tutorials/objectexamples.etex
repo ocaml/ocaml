@@ -578,12 +578,12 @@ Sometimes, a change in the class-type definition can also solve the problem
 class type c2 =  object ('a) method m : 'a end;;
 fun (x:c0) -> (x :> c2);;
 \end{caml_example}
-Note that, while classe types "c1" and "c2" are different, both object types
+While class types "c1" and "c2" are different, both object types
 "c1" and "c2" expand to the same object type (same method names and types).
-When the domain of a coercion is left implicit and its co-domain is an
-abbreviation of a known class type, then the class type, rather than
-the object type, is used to derive the coercion function. This allows
-to leave the domain implicit in most cases when coercing form a
+Yet, when the domain of a coercion is left implicit and its co-domain
+is an abbreviation of a known class type, then the class type, rather
+than the object type, is used to derive the coercion function. This
+allows to leave the domain implicit in most cases when coercing form a
 subclass to its superclass.
 %
 The type of a coercion can always be seen as below: 
@@ -595,8 +595,9 @@ Note the difference between the two coercions: in the second case, the type
 "#c2 = < m : 'a; .. > as 'a" is polymorphically recursive (according
 to the explicit recursion in the class type of "c2"); hence the
 success of applying this coercion to an object of class "c0".
-On the other, in the first case, "c1" was expanded twice to obtain
-"< m : < m : c1; .. >; .. >" (remember "#c1 = < m : c1; .. >").
+On the other hand, in the first case, "c1" was only expanded and
+unrolled twice to obtain "< m : < m : c1; .. >; .. >" (remember "#c1 =
+< m : c1; .. >"), without introducing recursion.
 You may also note that the type of "to_c2" is "#c2 -> c2" while
 the type of "to_c1" is more general than "#c1 -> c1". This is not always true,
 since there are class types for which some instances of "#c" are not subtypes
@@ -622,7 +623,7 @@ function x -> (x :> 'a);;
 As a consequence, if the coercion is applied to "self", as in the
 following example, the type of "self" is unified with the closed type
 "c" (a closed object type is an object type without ellipsis).  This
-would constrains the type of self be closed and is thus rejected.
+would constrain the type of self be closed and is thus rejected.
 Indeed, the type of self cannot be closed: this would prevent any
 further extension of the class. Therefore, a type error is generated
 when the unification of this type with another type would result in a
@@ -635,14 +636,37 @@ and d = object (self)
   method as_c = (self :> c)
 end;;
 \end{caml_example}
-Remark that the most common instance of the problem, coercing self to
+However, the most common instance of this problem, coercing self to
 its current class, is detected as a special case by the type checker,
 and properly typed.
 \begin{caml_example}
 class c = object (self) method m = (self :> c) end;;
 \end{caml_example}
-Such problems can sometimes be avoided by first defining the
-abbreviation, using a class type:
+This allows the following idiom, keeping a list of all objects
+belonging to a class or its subclasses:
+\begin{caml_example}
+let all_c = ref [];;
+class c (m : int) =
+  object (self)
+    method m = m
+    initializer all_c := (self :> c) :: !all_c
+  end;;
+\end{caml_example}
+This idiom can in turn be used to retrieve an object whose type has
+been weakened:
+\begin{caml_example}
+let rec lookup_obj obj = function [] -> raise Not_found
+  | obj' :: l ->
+     if (obj :> < >) = (obj' :> < >) then obj' else lookup_obj obj l ;;
+let lookup_c obj = lookup_obj obj !all_c;;
+\end{caml_example}
+The type "< m : int >" we see here is just the expansion of "c", due
+to the use of a reference; we have succeeded in getting back an object
+of type "c".
+
+\medskip
+The previous coercion problem can often be avoided by first
+defining the abbreviation, using a class type:
 \begin{caml_example}
 class type c' = object method m : int end;;
 class c : c' = object method m = 1 end
