@@ -769,6 +769,7 @@ let package_units objfiles cmifile modulename =
          (modname, Env.read_signature modname (pref ^ ".cmi")))
       objfiles in
   (* Compute signature of packaged unit *)
+  Ident.reinit();
   let sg = package_signatures Subst.identity units in
   (* See if explicit interface is provided *)
   let mlifile =
