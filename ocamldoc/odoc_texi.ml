@@ -1,7 +1,7 @@
 (***********************************************************************)
 (*                           OCamldoc                                  *)
 (*                                                                     *)
-(*      Olivier Andrieu, basé sur du code de Maxence Guesdon           *)
+(*      Olivier Andrieu, base sur du code de Maxence Guesdon           *)
 (*                                                                     *)
 (*  Copyright 2001 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
