@@ -542,8 +542,6 @@ let skip_whites ib =
   if not (Scanning.end_of_input ib) then
   loop (Scanning.cautious_peek_char ib);;
 
-external string_of_format : ('a, 'b, 'c) format -> string = "%identity";;
-
 (* Main scanning function:
    it takes an input buffer, a format and a function.
    Then it scans the format and the buffer in parallel to find out

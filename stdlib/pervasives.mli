@@ -764,7 +764,6 @@ module LargeFile :
 
 (** {6 References} *)
 
-
 type 'a ref = { mutable contents : 'a }
 (** The type of references (mutable indirection cells) containing
    a value of type ['a]. *)
@@ -788,6 +787,14 @@ external decr : int ref -> unit = "%decr"
 (** Decrement the integer contained in the given reference.
    Equivalent to [fun r -> r := pred !r]. *)
 
+(** {6 Operations on format strings} *)
+
+external format_of_string :
+ ('a, 'b, 'c, 'd) format -> ('a, 'b, 'c, 'd) format = "%identity"
+(** Converts a string constant into a format string.*)
+external string_of_format :
+ ('a, 'b, 'c, 'd) format -> string = "%identity"
+(** Converts a format string into a string.*)
 
 (** {6 Program termination} *)
 

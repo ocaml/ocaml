@@ -65,8 +65,9 @@ value rec parse_aux spec_list anon_fun =
 value loc_fmt =
   match Sys.os_type with
   [ "MacOS" ->
-      ("File \"%s\"; line %d; characters %d to %d\n### " : format 'a 'b 'c)
-  | _ -> ("File \"%s\", line %d, characters %d-%d:\n" : format 'a 'b 'c) ]
+     format_of_string "File \"%s\"; line %d; characters %d to %d\n### "
+  | _ ->
+     format_of_string "File \"%s\", line %d, characters %d-%d:\n" ]
 ;
 
 value print_location loc =

@@ -497,6 +497,12 @@ module LargeFile =
     external in_channel_length : in_channel -> int64 = "caml_channel_size_64"
   end
 
+(* Formats *)
+external format_of_string :
+ ('a, 'b, 'c, 'd) format -> ('a, 'b, 'c, 'd) format = "%identity"
+external string_of_format :
+ ('a, 'b, 'c, 'd) format -> string = "%identity"
+
 (* Miscellaneous *)
 
 external sys_exit : int -> 'a = "sys_exit"

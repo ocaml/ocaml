@@ -236,7 +236,7 @@ let scan_format fmt pos cont_s cont_a cont_t =
 (* Application to [fprintf], etc.  See also [Format.*printf]. *)
 
 let fprintf chan fmt =
-  let fmt = (Obj.magic fmt : string) in
+  let fmt = string_of_format fmt in
   let len = String.length fmt in
   let rec doprn i =
     if i >= len then Obj.magic () else
@@ -255,7 +255,7 @@ let printf fmt = fprintf stdout fmt
 let eprintf fmt = fprintf stderr fmt
 
 let kprintf kont fmt =
-  let fmt = (Obj.magic fmt : string) in
+  let fmt = string_of_format fmt in
   let len = String.length fmt in
   let dest = Buffer.create (len + 16) in
   let rec doprn i =
@@ -278,7 +278,7 @@ let kprintf kont fmt =
 let sprintf fmt = kprintf (fun x -> x) fmt;;
 
 let bprintf dest fmt =
-  let fmt = (Obj.magic fmt : string) in
+  let fmt = string_of_format fmt in
   let len = String.length fmt in
   let rec doprn i =
     if i >= len then Obj.magic () else

@@ -105,8 +105,9 @@ value copy_quot cs = do { copy cs; flush stdout; };
 value loc_fmt =
   match Sys.os_type with
   [ "MacOS" ->
-      ("File \"%s\"; line %d; characters %d to %d\n### " : format 'a 'b 'c)
-  | _ -> ("File \"%s\", line %d, characters %d-%d:\n" : format 'a 'b 'c) ]
+      format_of_string "File \"%s\"; line %d; characters %d to %d\n### "
+  | _ ->
+      format_of_string "File \"%s\", line %d, characters %d-%d:\n" ]
 ;
 
 value print_location loc file =

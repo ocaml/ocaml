@@ -17,9 +17,10 @@ open Printf;;
 
 let locfmt =
   match Sys.os_type with
-  | "MacOS" -> ("File \"%s\"; line %d; characters %d to %d ### %s"
-                : ('a, 'b, 'c) format)
-  | _ -> ("File \"%s\", line %d, characters %d-%d: %s" : ('a, 'b, 'c) format)
+  | "MacOS" ->
+      format_of_string "File \"%s\"; line %d; characters %d to %d ### %s"
+  | _ ->
+      format_of_string "File \"%s\", line %d, characters %d-%d: %s"
 ;;
 
 let field x i =

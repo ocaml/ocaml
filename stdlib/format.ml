@@ -907,9 +907,6 @@ let implode_rev s0 = function
   | [] -> s0
   | l -> String.concat "" (List.rev (s0 :: l));;
 
-(* Safe coercion from a format to a string. *)
-external string_of_format : ('a, 'b, 'c) format -> string = "%identity";;
-
 (* [fprintf_out] is the printf-like function generator: given the
    - [str] flag that tells if we are printing into a string,
    - the [out] function that has to be called at the end of formatting,

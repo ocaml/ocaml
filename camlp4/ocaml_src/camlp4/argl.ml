@@ -69,9 +69,9 @@ let rec parse_aux spec_list anon_fun =
 let loc_fmt =
   match Sys.os_type with
     "MacOS" ->
-      ("File \"%s\"; line %d; characters %d to %d\n### " :
-       ('a, 'b, 'c) format)
-  | _ -> ("File \"%s\", line %d, characters %d-%d:\n" : ('a, 'b, 'c) format)
+      format_of_string "File \"%s\"; line %d; characters %d to %d\n### "
+  | _ ->
+      format_of_string "File \"%s\", line %d, characters %d-%d:\n"
 ;;
 
 let print_location loc =
