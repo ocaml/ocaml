@@ -1,74 +1,15 @@
-color.o: color.c libgraph.h /usr/X11R6/include/X11/Xlib.h \
-  /usr/X11R6/include/X11/X.h /usr/X11R6/include/X11/Xfuncproto.h \
-  /usr/X11R6/include/X11/Xosdefs.h /usr/X11R6/include/X11/Xutil.h \
-  ../../byterun/mlvalues.h ../../byterun/config.h ../../config/m.h \
-  ../../config/s.h ../../byterun/misc.h /usr/X11R6/include/X11/Xatom.h
-draw.o: draw.c libgraph.h /usr/X11R6/include/X11/Xlib.h \
-  /usr/X11R6/include/X11/X.h /usr/X11R6/include/X11/Xfuncproto.h \
-  /usr/X11R6/include/X11/Xosdefs.h /usr/X11R6/include/X11/Xutil.h \
-  ../../byterun/mlvalues.h ../../byterun/config.h ../../config/m.h \
-  ../../config/s.h ../../byterun/misc.h ../../byterun/alloc.h
-dump_img.o: dump_img.c libgraph.h /usr/X11R6/include/X11/Xlib.h \
-  /usr/X11R6/include/X11/X.h /usr/X11R6/include/X11/Xfuncproto.h \
-  /usr/X11R6/include/X11/Xosdefs.h /usr/X11R6/include/X11/Xutil.h \
-  ../../byterun/mlvalues.h ../../byterun/config.h ../../config/m.h \
-  ../../config/s.h ../../byterun/misc.h image.h ../../byterun/alloc.h \
-  ../../byterun/memory.h ../../byterun/gc.h ../../byterun/major_gc.h \
-  ../../byterun/freelist.h ../../byterun/minor_gc.h
-events.o: events.c libgraph.h /usr/X11R6/include/X11/Xlib.h \
-  /usr/X11R6/include/X11/X.h /usr/X11R6/include/X11/Xfuncproto.h \
-  /usr/X11R6/include/X11/Xosdefs.h /usr/X11R6/include/X11/Xutil.h \
-  ../../byterun/mlvalues.h ../../byterun/config.h ../../config/m.h \
-  ../../config/s.h ../../byterun/misc.h ../../byterun/alloc.h \
-  ../../byterun/signals.h
-fill.o: fill.c libgraph.h /usr/X11R6/include/X11/Xlib.h \
-  /usr/X11R6/include/X11/X.h /usr/X11R6/include/X11/Xfuncproto.h \
-  /usr/X11R6/include/X11/Xosdefs.h /usr/X11R6/include/X11/Xutil.h \
-  ../../byterun/mlvalues.h ../../byterun/config.h ../../config/m.h \
-  ../../config/s.h ../../byterun/misc.h ../../byterun/memory.h \
-  ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/freelist.h \
-  ../../byterun/minor_gc.h
-image.o: image.c libgraph.h /usr/X11R6/include/X11/Xlib.h \
-  /usr/X11R6/include/X11/X.h /usr/X11R6/include/X11/Xfuncproto.h \
-  /usr/X11R6/include/X11/Xosdefs.h /usr/X11R6/include/X11/Xutil.h \
-  ../../byterun/mlvalues.h ../../byterun/config.h ../../config/m.h \
-  ../../config/s.h ../../byterun/misc.h image.h ../../byterun/alloc.h \
-  ../../byterun/custom.h
-make_img.o: make_img.c libgraph.h /usr/X11R6/include/X11/Xlib.h \
-  /usr/X11R6/include/X11/X.h /usr/X11R6/include/X11/Xfuncproto.h \
-  /usr/X11R6/include/X11/Xosdefs.h /usr/X11R6/include/X11/Xutil.h \
-  ../../byterun/mlvalues.h ../../byterun/config.h ../../config/m.h \
-  ../../config/s.h ../../byterun/misc.h image.h ../../byterun/memory.h \
-  ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/freelist.h \
-  ../../byterun/minor_gc.h
-open.o: open.c libgraph.h /usr/X11R6/include/X11/Xlib.h \
-  /usr/X11R6/include/X11/X.h /usr/X11R6/include/X11/Xfuncproto.h \
-  /usr/X11R6/include/X11/Xosdefs.h /usr/X11R6/include/X11/Xutil.h \
-  ../../byterun/mlvalues.h ../../byterun/config.h ../../config/m.h \
-  ../../config/s.h ../../byterun/misc.h ../../byterun/alloc.h \
-  ../../byterun/callback.h ../../byterun/fail.h ../../byterun/memory.h \
-  ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/freelist.h \
-  ../../byterun/minor_gc.h
-point_col.o: point_col.c libgraph.h /usr/X11R6/include/X11/Xlib.h \
-  /usr/X11R6/include/X11/X.h /usr/X11R6/include/X11/Xfuncproto.h \
-  /usr/X11R6/include/X11/Xosdefs.h /usr/X11R6/include/X11/Xutil.h \
-  ../../byterun/mlvalues.h ../../byterun/config.h ../../config/m.h \
-  ../../config/s.h ../../byterun/misc.h
-sound.o: sound.c libgraph.h /usr/X11R6/include/X11/Xlib.h \
-  /usr/X11R6/include/X11/X.h /usr/X11R6/include/X11/Xfuncproto.h \
-  /usr/X11R6/include/X11/Xosdefs.h /usr/X11R6/include/X11/Xutil.h \
-  ../../byterun/mlvalues.h ../../byterun/config.h ../../config/m.h \
-  ../../config/s.h ../../byterun/misc.h
-subwindow.o: subwindow.c libgraph.h /usr/X11R6/include/X11/Xlib.h \
-  /usr/X11R6/include/X11/X.h /usr/X11R6/include/X11/Xfuncproto.h \
-  /usr/X11R6/include/X11/Xosdefs.h /usr/X11R6/include/X11/Xutil.h \
-  ../../byterun/mlvalues.h ../../byterun/config.h ../../config/m.h \
-  ../../config/s.h ../../byterun/misc.h
-text.o: text.c libgraph.h /usr/X11R6/include/X11/Xlib.h \
-  /usr/X11R6/include/X11/X.h /usr/X11R6/include/X11/Xfuncproto.h \
-  /usr/X11R6/include/X11/Xosdefs.h /usr/X11R6/include/X11/Xutil.h \
-  ../../byterun/mlvalues.h ../../byterun/config.h ../../config/m.h \
-  ../../config/s.h ../../byterun/misc.h ../../byterun/alloc.h
+color.o: color.c libgraph.h
+draw.o: draw.c libgraph.h
+dump_img.o: dump_img.c libgraph.h image.h
+events.o: events.c libgraph.h
+fill.o: fill.c libgraph.h
+image.o: image.c libgraph.h image.h
+make_img.o: make_img.c libgraph.h image.h
+open.o: open.c libgraph.h
+point_col.o: point_col.c libgraph.h
+sound.o: sound.c libgraph.h
+subwindow.o: subwindow.c libgraph.h
+text.o: text.c libgraph.h
 graphics.cmo: graphics.cmi 
 graphics.cmx: graphics.cmi 
 graphicsX11.cmo: graphics.cmi graphicsX11.cmi 
