@@ -23,6 +23,7 @@ module Make_options (F :
      val _I : string -> unit
      val _impl : string -> unit
      val _intf : string -> unit
+     val _intf_suffix : string -> unit
      val _linkall : unit -> unit
      val _make_runtime : unit -> unit
      val _noassert : unit -> unit
@@ -54,6 +55,8 @@ struct
                         "<dir>  Add <dir> to the list of include directories";
      "-impl", Arg.String F._impl, "<file>  Compile <file> as a .ml file";
      "-intf", Arg.String F._intf, "<file>  Compile <file> as a .mli file";
+     "-intf_suffix", Arg.String F._intf_suffix,
+            "<file>  Suffix for interface file (default: .mli)";
      "-linkall", Arg.Unit F._linkall, " Link all modules, even unused ones";
      "-make_runtime", Arg.Unit F._make_runtime,
             " Build a runtime system with given C objects and libraries";

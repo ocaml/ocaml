@@ -27,7 +27,7 @@ let process_file name =
     Compile.implementation name;
     objfiles := (Filename.chop_extension name ^ ".cmo") :: !objfiles
   end
-  else if Filename.check_suffix name ".mli" then
+  else if Filename.check_suffix name !Config.interface_suffix then
     Compile.interface name
   else if Filename.check_suffix name ".cmo" 
        or Filename.check_suffix name ".cma" then
@@ -63,6 +63,7 @@ module Options = Main_args.Make_options (struct
   let _I s = include_dirs := s :: !include_dirs
   let _impl = process_implementation_file
   let _intf = process_interface_file
+  let _intf_suffix s = Config.interface_suffix := s
   let _linkall = set link_everything
   let _make_runtime () =
     custom_runtime := true; make_runtime := true; link_everything := true

@@ -23,6 +23,7 @@ module Make_options (F :
       val _I : string -> unit
       val _impl : string -> unit
       val _intf : string -> unit
+      val _intf_suffix : string -> unit
       val _linkall : unit -> unit
       val _make_runtime : unit -> unit
       val _noassert : unit -> unit

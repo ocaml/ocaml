@@ -37,6 +37,8 @@ and ast_intf_magic_number = "Caml1999N005"
 
 let load_path = ref ([] : string list)
 
+let interface_suffix = ref ".mli"
+
 let max_tag = 248
 let max_young_wosize = 256
 

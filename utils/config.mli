@@ -35,6 +35,9 @@ val ranlib: string
 val load_path: string list ref
         (* Directories in the search path for .cmi and .cmo files *)
 
+val interface_suffix: string ref
+        (* Suffix for interface file names *)
+
 val exec_magic_number: string
         (* Magic number for bytecode executable files *)
 val cmi_magic_number: string

@@ -27,7 +27,7 @@ let process_file name =
     Optcompile.implementation name;
     objfiles := (Filename.chop_extension name ^ ".cmx") :: !objfiles
   end
-  else if Filename.check_suffix name ".mli" then
+  else if Filename.check_suffix name !Config.interface_suffix then
     Optcompile.interface name
   else if Filename.check_suffix name ".cmx" 
        or Filename.check_suffix name ".cmxa" then
@@ -72,6 +72,8 @@ let main () =
              "<n>  Set aggressiveness of inlining to <n>";
        "-intf", Arg.String process_interface_file,
              "<file>  Compile <file> as a .mli file";
+        "-intf_suffix", Arg.String (fun s -> Config.interface_suffix := s),
+             "<file>  Suffix for interface file (default: .mli)";
        "-linkall", Arg.Set link_everything,
              " Link all modules, even unused ones";
        "-noassert", Arg.Set noassert, " Don't compile assertion checks";
