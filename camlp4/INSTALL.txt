@@ -6,8 +6,7 @@ everything in the OCaml directory above.
 Except for the native win32 compilation using Visual C++!!!
 
 If you are compiling OCaml for this distribution, you need to compile
-Camlp4 afterwards, following the instructions below. Otherwise nothing
-has to be done.
+Camlp4 afterwards, following the instructions below.
 
 INSTALLATIONS INSTRUCTIONS FOR NATIVE WIN32
 
