@@ -812,20 +812,20 @@ tcllib=''
 tklib=''
 if test $has_tk = true; then
   if sh ./hasgot $tk_libs $tkauxlibs Tcl_DoOneEvent
-  then :
+  then tk_libs="$tk_libs $dllib"
   elif sh ./hasgot $tk_libs -ltcl$tclmaj.$tclmin $tkauxlibs Tcl_DoOneEvent
   then
-    tk_libs="$tk_libs -ltcl$tclmaj.$tclmin -ltk$tkmaj.$tkmin"
+    tk_libs="$tk_libs -ltcl$tclmaj.$tclmin -ltk$tkmaj.$tkmin $dllib"
   elif sh ./hasgot $tk_libs -ltcl$tclmaj$tclmin $tkauxlibs Tcl_DoOneEvent
   then
-    tk_libs="$tk_libs -ltcl$tclmaj$tclmin -ltk$tkmaj$tkmin"
+    tk_libs="$tk_libs -ltcl$tclmaj$tclmin -ltk$tkmaj$tkmin $dllib"
   elif test -z "$tk_libs" && tk_libs=-L/usr/local/lib && \
     sh ./hasgot $tk_libs -ltcl$tclmaj.$tclmin $tkauxlibs Tcl_DoOneEvent
   then
-    tk_libs="$tk_libs -ltcl$tclmaj.$tclmin -ltk$tkmaj.$tkmin"
+    tk_libs="$tk_libs -ltcl$tclmaj.$tclmin -ltk$tkmaj.$tkmin $dllib"
   elif sh ./hasgot $tk_libs -ltcl$tclmaj$tclmin $tkauxlibs Tcl_DoOneEvent
   then
-    tk_libs="$tk_libs -ltcl$tclmaj$tclmin -ltk$tkmaj$tkmin"
+    tk_libs="$tk_libs -ltcl$tclmaj$tclmin -ltk$tkmaj$tkmin $dllib"
 # elif sh ./hasgot $tk_libs -ltcl $tkauxlibs Tcl_DoOneEvent; then
 #   tk_libs="$tk_libs -ltcl -ltk"
   else
