@@ -462,12 +462,15 @@ main ()
 #endif
 
 #if defined (NeXT)
-#if !defined (__ARCHITECTURE__)
-#define __ARCHITECTURE__ "m68k"
-#endif
+  char * architecture;
   int version;
+#if !defined (__ARCHITECTURE__)
+  arch = "m68k"
+#else
+  arch = __ARCHITECTURE__;
+  if (strcmp(arch, "hppa") == 0) arch = "hppa1.1";
   version=`(hostinfo | sed -n 's/.*NeXT Mach \([0-9]*\).*/\1/p') 2>/dev/null`;
-  printf ("%s-next-nextstep%s\n", __ARCHITECTURE__,  version==2 ? "2" : "3");
+  printf ("%s-next-nextstep%s\n", arch,  version==2 ? "2" : "3");
   exit (0);
 #endif
 
