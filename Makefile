@@ -520,7 +520,7 @@ alldepend::
 # The extra libraries
 
 otherlibraries:
-	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) RUNTIME=$(RUNTIME) all); done
+	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) all); done
 otherlibrariesopt:
 	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) allopt); done
 partialclean::

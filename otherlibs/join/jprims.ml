@@ -15,6 +15,11 @@ TODO:
   - remove location spools, use weak sets instead.
 *)
 
+(* TODO: when Thread.get_context and Thread.set_context are implemented,
+   s/thread_TODO_/Thread./ *)
+let thread_TODO_set_context _ _ = assert false
+let thread_TODO_get_context _ = assert false
+
 (*
   Abstract type of join-definitions.
   Basically, a join-definition contains
@@ -137,11 +142,11 @@ let self_id () =
   Thread.id (Thread.self ())
 
 let _ = 
-  Thread.set_context (Thread.self ()) super_thread;
+  thread_TODO_set_context (Thread.self ()) super_thread;
   (internal_location super_location).threads <- [super_thread]
   
 let unsafe_self_location () =
-  (internal_thread ((Thread.get_context (Thread.self ())) : thread)).th_loc
+  (internal_thread ((thread_TODO_get_context (Thread.self ())) : thread)).th_loc
   
 let self_location () =
   Mutex.lock join_lock;
@@ -233,7 +238,7 @@ let create_process_location l f =
           in
           
           thread.thread <- th;
-          Thread.set_context th thread;
+          thread_TODO_set_context th thread;
           location.threads <- t :: location.threads;
           thread.running <- true;
           Condition.signal thread.condition;
