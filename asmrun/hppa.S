@@ -295,7 +295,7 @@ G(caml_c_call):
 	EXPORT_CODE(G(caml_start_program))
 G(caml_start_program):
         STARTPROC
-        LOADHIGH(G(caml_program
+        LOADHIGH(G(caml_program))
         ldo     LOW(G(caml_program))(%r1), %r22
 
 ; Code shared with callback*
