@@ -128,7 +128,7 @@ value neg_float(f)              /* ML */
   return copy_double(- Double_val(f));
 }
 
-value abs_float(f)              /* ML */
+value fabs_float(f)              /* ML */
      value f;
 {
   return copy_double(fabs(Double_val(f)));
@@ -165,10 +165,66 @@ value exp_float(f)              /* ML */
   return copy_double(exp(Double_val(f)));
 }
 
+value floor_float(f)              /* ML */
+     value f;
+{
+  return copy_double(floor(Double_val(f)));
+}
+
+value fmod_float(f1, f2)              /* ML */
+     value f1, f2;
+{
+  return copy_double(fmod(Double_val(f1), Double_val(f2)));
+}
+
+value frexp_float(f)              /* ML */
+     value f;
+{
+  int i;
+  value res;
+  Push_roots(r, 1);
+
+  r[0] = copy_double(frexp (Double_val(f), &i));
+  res = alloc_tuple(2);
+  Field(res, 0) = r[0];
+  Field(res, 1) = Val_int(i);
+  Pop_roots();
+  return res;
+}
+
+value ldexp_float(f, i)              /* ML */
+     value f, i;
+{
+  return copy_double(ldexp(Double_val(f), Int_val(i)));
+}
+
 value log_float(f)              /* ML */
      value f;
 {
   return copy_double(log(Double_val(f)));
+}
+
+value log10_float(f)              /* ML */
+     value f;
+{
+  return copy_double(log10(Double_val(f)));
+}
+
+value modf_float(f)              /* ML */
+     value f;
+{
+  double fres;
+  value res;
+  Push_roots(r, 2);
+
+  r[0] = copy_double(modf (Double_val(f), &fres));
+  r[1] = copy_double(fres);
+
+  res = alloc_tuple(2);
+  Field(res, 0) = r[0];
+  Field(res, 1) = r[1];
+  Pop_roots();
+  return res;
 }
 
 value sqrt_float(f)             /* ML */
@@ -189,16 +245,34 @@ value sin_float(f)              /* ML */
   return copy_double(sin(Double_val(f)));
 }
 
+value sinh_float(f)              /* ML */
+     value f;
+{
+  return copy_double(sinh(Double_val(f)));
+}
+
 value cos_float(f)              /* ML */
      value f;
 {
   return copy_double(cos(Double_val(f)));
 }
 
+value cosh_float(f)              /* ML */
+     value f;
+{
+  return copy_double(cosh(Double_val(f)));
+}
+
 value tan_float(f)              /* ML */
      value f;
 {
   return copy_double(tan(Double_val(f)));
+}
+
+value tanh_float(f)              /* ML */
+     value f;
+{
+  return copy_double(tanh(Double_val(f)));
 }
 
 value asin_float(f)             /* ML */
@@ -223,6 +297,12 @@ value atan2_float(f, g)        /* ML */
      value f, g;
 {
   return copy_double(atan2(Double_val(f), Double_val(g)));
+}
+
+value ceil_float(f)              /* ML */
+     value f;
+{
+  return copy_double(ceil(Double_val(f)));
 }
 
 value eq_float(f, g)        /* ML */

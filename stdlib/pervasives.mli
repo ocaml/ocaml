@@ -217,18 +217,46 @@ external (/.) : float -> float -> float = "%divfloat"
 external ( ** ) : float -> float -> float = "power_float" "pow" "float"
         (* Exponentiation *)
 external exp : float -> float = "exp_float" "exp" "float"
-external log : float -> float = "log_float" "log" "float"
-external sqrt : float -> float = "sqrt_float" "sqrt" "float"
-external sin : float -> float = "sin_float" "sin" "float"
-external cos : float -> float = "cos_float" "cos" "float"
-external tan : float -> float = "tan_float" "tan" "float"
-external asin : float -> float = "asin_float" "asin" "float"
+
 external acos : float -> float = "acos_float" "acos" "float"
+external asin : float -> float = "asin_float" "asin" "float"
 external atan : float -> float = "atan_float" "atan" "float"
 external atan2 : float -> float -> float = "atan2_float" "atan2" "float"
+external cos : float -> float = "cos_float" "cos" "float"
+external cosh : float -> float = "cosh_float" "cosh" "float"
+
+external log : float -> float = "log_float" "log" "float"
+external log10 : float -> float = "log10_float" "log10" "float"
+
+external sin : float -> float = "sin_float" "sin" "float"
+external sinh : float -> float = "sinh_float" "sinh" "float"
+external sqrt : float -> float = "sqrt_float" "sqrt" "float"
+external tan : float -> float = "tan_float" "tan" "float"
+external tanh : float -> float = "tanh_float" "tanh" "float"
         (* Usual transcendental functions on floating-point numbers. *)
+external ceil : float -> float = "ceil_float" "ceil" "float"
+external floor : float -> float = "floor_float" "floor" "float"
+          (* Round the given float to an integer value.
+             [floor f] returns the greatest integer value less than or
+             equal to [f].
+             [ceil f] returns the least integer value greater than or
+             equal to [f]. *)
 external abs_float : float -> float = "%absfloat"
         (* Return the absolute value of the argument. *)
+external mod_float : float -> float -> float = "fmod_float" "fmod" "float"
+          (* [fmod a b] returns the remainder of [a] with respect to
+             [b]. *)
+external frexp : float -> float * int = "frexp_float"
+          (* [frexp f] returns the pair of the significant
+             and the exponent of [f] (when [f] is zero, the
+             significant [x] and the exponent [n] of [f] are equal to
+             zero; when [f] is non-zero, they are defined by
+             [f = x *. 2 ** n]). *)
+external ldexp : float -> int -> float = "ldexp_float"
+           (* [ldexp x n] returns [x *. 2 ** n]. *)
+external modf : float -> float * float = "modf_float" "modf"
+           (* [modf f] returns the pair of the fractional and integral
+              part of [f]. *)
 external float : int -> float = "%floatofint"
         (* Convert an integer to floating-point. *)
 external truncate : float -> int = "%intoffloat"
