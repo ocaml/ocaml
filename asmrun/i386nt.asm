@@ -23,21 +23,16 @@
         EXTERN  _caml_program: PROC
         EXTERN  _young_limit: DWORD
         EXTERN  _young_ptr: DWORD
+        EXTERN	_caml_bottom_of_stack: DWORD
+        EXTERN	_caml_last_return_address: DWORD
+	EXTERN	_caml_exception_pointer: DWORD
 
         PUBLIC	_gc_entry_regs
-        PUBLIC	_caml_bottom_of_stack
-        PUBLIC	_caml_top_of_stack
-        PUBLIC	_caml_last_return_address
-	PUBLIC	_caml_exception_pointer
 
 	.DATA
 	ALIGN	4
 
 _gc_entry_regs			DWORD 7 DUP(?)
-_caml_bottom_of_stack		DWORD 0
-_caml_top_of_stack		DWORD 0
-_caml_last_return_address	DWORD 0
-_caml_exception_pointer		DWORD 0
 
 ; Allocation 
 
