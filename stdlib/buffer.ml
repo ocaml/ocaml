@@ -133,13 +133,13 @@ let bprintf b format =
 
   let rec doprn start i =
     if i >= String.length format then begin
-      if i > start then output b format start (i-start);
+      if i > start then output b format start (i - start);
       (Obj.magic ())
     end else
       if format.[i] != '%' then
-        doprn start (i+1)
+        doprn start (succ i)
       else begin
-        if i > start then output b format start (i-start);
+        if i > start then output b format start (i - start);
         let j = skip_args (succ i) in
         match format.[j] with
         | '%' ->
@@ -172,23 +172,21 @@ let bprintf b format =
 
   and skip_args j =
     match format.[j] with
-      '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' |
-      ' ' | '.' | '-' ->
-        skip_args (succ j)
-    | c ->
-        j
+    | '0' .. '9' | ' ' | '.' | '-' -> skip_args (succ j)
+    | c -> j
     
   and dostring i j s =
-    if j <= i+1 then
+    if j <= succ i then
       output_string b s
     else begin
       let p =
         try
-          int_of_string (String.sub format (i+1) (j-i-1))
+          int_of_string (String.sub format (succ i) (j - i - 1))
         with _ ->
           invalid_arg "bprintf: bad %s format" in
       if p > 0 && String.length s < p then begin
-        output_string b (String.make (p - String.length s) ' ')
+        output_string b (String.make (p - String.length s) ' ');
+        output_string b s
       end else if p < 0 && String.length s < -p then begin
         output_string b s;
         output_string b (String.make (-p - String.length s) ' ')
@@ -198,8 +196,8 @@ let bprintf b format =
     doprn (succ j) (succ j)
 
   and doint i j n =
-    let len = j-i in
-    let fmt = String.create (len+2) in
+    let len = j - i in
+    let fmt = String.create (len + 2) in
     String.blit format i fmt 0 len;
     fmt.[len] <- 'l';
     fmt.[len + 1] <- format.[j];
@@ -207,7 +205,7 @@ let bprintf b format =
     doprn (succ j) (succ j)
 
   and dofloat i j f =
-    output_string b (format_float (String.sub format i (j-i+1)) f);
+    output_string b (format_float (String.sub format i (j - i + 1)) f);
     doprn (succ j) (succ j)
 
   in doprn 0 0
