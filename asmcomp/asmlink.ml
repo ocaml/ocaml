@@ -35,7 +35,8 @@ exception Error of error
 
 let crc_interfaces = Consistbl.create ()
 let crc_implementations = Consistbl.create ()
-let extra_implementations = ref []
+let extra_implementations = ref ([] : string list)
+let implementations_defined = ref ([] : (string * string) list)
 
 let check_consistency file_name unit crc =
   begin try
@@ -60,11 +61,13 @@ let check_consistency file_name unit crc =
     raise(Error(Inconsistent_implementation(name, user, auth)))
   end;
   begin try
-    let source = Consistbl.source crc_implementations unit.ui_name in
+    let source = List.assoc unit.ui_name !implementations_defined in
     raise (Error(Multiple_definition(unit.ui_name, file_name, source)))
   with Not_found -> ()
   end;
-  Consistbl.set crc_implementations unit.ui_name crc file_name
+  Consistbl.set crc_implementations unit.ui_name crc file_name;
+  implementations_defined := 
+    (unit.ui_name, file_name) :: !implementations_defined
 
 let extract_crc_interfaces () =
   Consistbl.extract crc_interfaces
