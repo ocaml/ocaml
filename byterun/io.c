@@ -47,12 +47,21 @@
 
 /* Common functions. */
 
+static void finalize_channel(vchan)
+     value vchan;
+{
+  struct channel * chan = (struct channel *) vchan;
+  close(chan->fd);
+}
+
 struct channel * open_descr(fd)
      int fd;
 {
   struct channel * channel;
 
-  channel = (struct channel *) stat_alloc(sizeof(struct channel));
+  channel = (struct channel *)
+              alloc_final(sizeof(struct channel) / sizeof(value), 
+                          finalize_channel, 0, 1);
   channel->fd = fd;
   channel->offset = 0;
   channel->end = channel->buff + IO_BUFFER_SIZE;
@@ -77,7 +86,7 @@ value close_channel(channel)      /* ML */
 {
   /* For output channels, must have flushed before */
   close(channel->fd);
-  stat_free((char *) channel);
+  channel->fd = -1;
   return Val_unit;
 }  
 

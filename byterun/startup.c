@@ -209,30 +209,32 @@ void caml_main(argc, argv)
   if (sigsetjmp(raise_buf.buf, 1) == 0) {
 
     external_raise = &raise_buf;
-
     init_gc (minor_heap_init, heap_chunk_init, percent_free_init,
 	     verbose_init);
     init_stack();
     init_atoms();
-
+    /* Load the code */
     lseek(fd, - (long) (TRAILER_SIZE + trail.code_size + trail.data_size
                         + trail.symbol_size + trail.debug_size), 2);
-
     code_size = trail.code_size;
     start_code = (code_t) stat_alloc(code_size);
     if (read(fd, (char *) start_code, code_size) != code_size)
       fatal_error("Fatal error: truncated bytecode file.\n");
-
 #ifdef ARCH_BIG_ENDIAN
     fixup_endianness(start_code, code_size);
 #endif
-
-    chan = open_descr(fd);
-    global_data = input_value(chan);
-    close_channel(chan);
+    /* Load the globals */
+    { struct channel * chan;
+      Push_roots(r, 1);
+      chan = open_descr(fd);
+      r[0] = (value) chan;
+      global_data = input_value(chan);
+      close_channel(chan);
+      Pop_roots();
+    }
     /* Ensure that the globals are in the major heap. */
     oldify(global_data, &global_data);
-
+    /* Run the code */
     sys_init(argv + i);
     interprete(start_code, code_size);
 
