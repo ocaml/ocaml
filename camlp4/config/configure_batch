@@ -70,8 +70,8 @@ echo "O=o" >> Makefile.cnf
 echo "A=a" >> Makefile.cnf
 echo "OPT=" >> Makefile.cnf
 echo "OTOP=$ocaml_top" >> Makefile.cnf
-if test -r ../../config/auto_aux/Makefile; then
-    grep '^RANLIB' ../../config/auto_aux/Makefile >> Makefile.cnf
+if test -r ../../config/auto-aux/Makefile; then
+    grep '^RANLIB' ../../config/auto-aux/Makefile >> Makefile.cnf
 elif test -r ../../config/Makefile; then
     grep '^RANLIB' ../../config/Makefile >> Makefile.cnf
 else
