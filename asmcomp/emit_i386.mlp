@@ -370,7 +370,7 @@ let emit_instr i =
             `	fldl	{emit_addressing addr i.arg 0}\n`;
             incr fp_offset
         end
-    | Lop(Istore(Word, addr)) ->
+    | Lop(Istore(Word, addr, assign)) ->
         begin match i.arg.(0).typ with
           Int | Addr ->
             `	movl	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
@@ -386,7 +386,7 @@ let emit_instr i =
                 `	fstpl	{emit_addressing addr i.arg 1}\n`
             end
         end
-    | Lop(Istore(chunk, addr)) ->
+    | Lop(Istore(chunk, addr, assign)) ->
         (* i.arg.(0) is guaranteed to be in %edx, actually *)
         begin match chunk with
           Word -> fatal_error "Emit_i386: store word"

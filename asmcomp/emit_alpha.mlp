@@ -196,7 +196,7 @@ let rec instr_uses_gp i =
   | Lop(Iconst_symbol s) -> true
   | Lop(Iextcall(_, _)) -> true
   | Lop(Iload(_, Ibased(_, _))) -> true
-  | Lop(Istore(_, Ibased(_, _))) -> true
+  | Lop(Istore(_, Ibased(_, _), _)) -> true
   | Lop(Iintop(Idiv | Imod)) -> true    (* divq and remq can be turned into *)
   | Lop(Iintop_imm((Idiv | Imod), _)) -> true (* a function call *)
   | Lop(Iintop_imm(_, n)) ->
@@ -353,7 +353,7 @@ let emit_instr i =
           | Sixteen_unsigned -> "ldwu"
           | Sixteen_signed -> "ldw" in
         `	{emit_string load_instr}	{emit_reg i.res.(0)}, {emit_addressing addr i.arg 0}\n`
-    | Lop(Istore(chunk, addr)) ->
+    | Lop(Istore(chunk, addr, assign)) ->
         let store_instr =
           match chunk with
             Word -> if i.arg.(0).typ = Float then "stt" else "stq"

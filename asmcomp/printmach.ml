@@ -125,11 +125,11 @@ let operation op arg res =
       print_string "[";
       Arch.print_addressing reg addr arg;
       print_string "]"
-  | Istore(chunk, addr) ->
+  | Istore(chunk, addr, assign) ->
       Printcmm.chunk chunk;
       print_string "[";
       Arch.print_addressing reg addr (Array.sub arg 1 (Array.length arg - 1));
-      print_string "] := ";
+      if assign then print_string "] :=! " else print_string "] := ";
       reg arg.(0)
   | Ialloc n -> print_string "alloc "; print_int n
   | Iintop(op) -> reg arg.(0); intop op; reg arg.(1)
