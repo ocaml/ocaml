@@ -11,7 +11,8 @@ The class "point" has one instance variable "x" and two methods
 "get_x" and "move". The initial value of the instance variable is
 given here by the class parameter "x_init".  The variable "x" is
 declared mutable, so the method "move" can change its value.
-\begin{caml_example} class point x_init =
+\begin{caml_example} 
+class point x_init =
   val mutable x = x_init
   method get_x = x
   method move d = x <- x + d
@@ -168,7 +169,11 @@ class 'a color_circle c =
 end;;
 \end{caml_example}
 
-Methods can be sent to self. For that, self must be explicitly bound,
+
+\subsection *{Self reference}
+
+A method can also send messages to the object that invoked the method. 
+For that, self must be explicitly bound, 
 here to the variable "s".
 \begin{caml_example}
 class printable_point y as s =
@@ -178,6 +183,11 @@ end;;
 let p = new printable_point 7;;
 p#print;;
 \end{caml_example}
+The variable "s" is bound at the invocation of a method. In particular, if
+the class "printable_point" is inherited, the variable "s" will correctly 
+be bound to an object of the subclass. 
+
+
 
 \subsection*{Multiple inheritance}
 
