@@ -20,6 +20,10 @@ module type SCANNING = sig
 
 type scanbuf;;
 
+val stdib : scanbuf;;
+(** The scanning buffer reading from [stdin].
+    [stdib] is equivalent to [Scanning.from_channel stdin]. *)
+
 val next_char : scanbuf -> unit;;
 (** [Scanning.next_char scanbuf] advance the scanning buffer for
     one character.
@@ -159,6 +163,9 @@ let from_channel ic =
   create next;;
 
 let from_function f = create f;;
+
+let stdib = from_channel stdin;;
+(** The scanning buffer reading form [stdin].*)
 
 end;;
 
@@ -673,6 +680,4 @@ let fscanf ic = bscanf (Scanning.from_channel ic);;
 
 let sscanf s = bscanf (Scanning.from_string s);;
 
-let stdib = Scanning.from_channel stdin;;
-
-let scanf fmt = bscanf stdib fmt;;
+let scanf fmt = bscanf Scanning.stdib fmt;;

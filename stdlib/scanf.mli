@@ -25,6 +25,10 @@ type scanbuf;;
    a function to get the next char from the input, and a token buffer
    to store the string matched so far. *)
 
+val stdib : scanbuf;;
+(** The scanning buffer reading from [stdin].
+    [stdib] is equivalent to [Scanning.from_channel stdin]. *)
+
 val from_string : string -> scanbuf;;
 (** [Scanning.from_string s] returns a scanning buffer which reads
     from the given string.
