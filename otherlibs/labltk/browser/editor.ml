@@ -409,7 +409,9 @@ class editor ~top ~menus = object (self)
         end else begin
           match Jg_message.ask ~master:top ~title:"Save"
               ("File `" ^ name ^ "' exists. Overwrite it?")
-          with `Yes -> Sys.remove name | `No | `Cancel -> raise Exit
+          with `Yes -> Sys.remove name
+          | `No -> raise (Sys_error "")
+          | `Cancel -> raise Exit
         end;
       let file = open_out name in
       let text = Text.get txt.tw ~start:tstart ~stop:(tposend 1) in
@@ -419,7 +421,10 @@ class editor ~top ~menus = object (self)
       Checkbutton.deselect label;
       txt.name <- name
     with
-      Sys_error _ | Exit -> ()
+      Sys_error _ ->
+        Jg_message.info ~master:top ~title:"Error"
+          ("Could not save `" ^ name ^ "'.")
+    | Exit -> ()
 
   method load_text l =
     if l = [] then () else

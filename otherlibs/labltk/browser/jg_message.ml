@@ -88,7 +88,8 @@ let ask ~title ?master ?(no=true) ?(cancel=true) text =
   and fw = Frame.create tl
   and sync = Textvariable.create ~on:tl ()
   and r = ref (`Cancel : [`Yes|`No|`Cancel]) in
-  let accept = Button.create fw ~text:(if no then "Yes" else "Dismiss")
+  let accept = Button.create fw
+      ~text:(if no || cancel then "Yes" else "Dismiss")
       ~command:(fun () -> r := `Yes; destroy tl) 
   and refuse = Button.create fw ~text:"No"
       ~command:(fun () -> r := `No; destroy tl)
@@ -105,3 +106,6 @@ let ask ~title ?master ?(no=true) ?(cancel=true) text =
   Grab.set tl;
   Tkwait.variable sync;
   !r
+
+let info ~title ?master text =
+  ignore (ask ~title ?master ~no:false ~cancel:false text)

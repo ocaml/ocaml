@@ -28,3 +28,6 @@ val formatted :
 val ask :
     title:string -> ?master:toplevel widget ->
     ?no:bool -> ?cancel:bool -> string -> [`Cancel|`No|`Yes]
+
+val info :
+    title:string -> ?master:toplevel widget -> string -> unit

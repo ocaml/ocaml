@@ -257,10 +257,8 @@ let path_sep = if is_win32 then ";" else ":"
 let warnings = ref "Al"
 
 let program_not_found prog =
-  ignore begin
-    Jg_message.ask ~cancel:false ~no:false ~title:"Error"
-      ("Program \"" ^ String.escaped prog ^ "\"\nwas not found in path")
-  end
+  Jg_message.info ~title:"Error"
+    ("Program \"" ^ prog ^ "\"\nwas not found in path")
 
 let f ~prog ~title =
   let progargs =
