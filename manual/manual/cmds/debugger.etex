@@ -356,7 +356,7 @@ expressions, as described by the following grammar:
 \begin{syntax}
 expr:
     lowercase-ident
-  | { uppercase-ident '.' } lowercase-ident
+  | { capitalized-ident '.' } lowercase-ident
   | '*'
   | '$' integer
   | expr '.' lowercase-ident
