@@ -116,18 +116,6 @@ let emit_reg16 r =
     Reg r when r < 7 -> emit_string (reg_low_half_name.(r))
   | _ -> fatal_error "Emit_i386.emit_reg16"
 
-(* Check if the given register overlaps (same location) with the given
-   array of registers *)
-
-let register_overlap reg arr =
-  try
-    for i = 0 to Array.length arr - 1 do
-      if reg.loc = arr.(i).loc then raise Exit
-    done;
-    false
-  with Exit ->
-    true
-
 (* Output an addressing mode *)
 
 let emit_addressing addr r n =
@@ -357,16 +345,10 @@ let emit_instr i =
             begin match (chunk, dest.loc) with
               (Word, _) ->
                 `	movl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
-            | (Byte_unsigned, Reg r) when r < 4 & not (register_overlap dest i.arg) ->
-                `	xorl	{emit_reg dest}, {emit_reg dest}\n`;
-                `	movb	{emit_addressing addr i.arg 0}, {emit_reg8 dest}\n`
             | (Byte_unsigned, _) ->
                 `	movzbl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
             | (Byte_signed, _) ->
                 `	movsbl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
-            | (Sixteen_unsigned, Reg r) when not (register_overlap dest i.arg) ->
-                `	xorl	{emit_reg dest}, {emit_reg dest}\n`;
-                `	movw	{emit_addressing addr i.arg 0}, {emit_reg16 dest}\n`
             | (Sixteen_unsigned, _) ->
                 `	movzwl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
             | (Sixteen_signed, _) ->
