@@ -63,7 +63,7 @@ unix.cma: $(UNIXLIB_OBJS)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o unix -linkall $(UNIXLIB_OBJS)
 
 pervasives.cmo: pervasives.mli pervasives.cmi pervasives.ml
-	$(CAMLC) -nopervasives -c pervasives.ml
+	$(CAMLC) ${COMPFLAGS} -nopervasives -c pervasives.ml
 
 pervasives.mli: $(LIB)/pervasives.mli
 	ln -s $(LIB)/pervasives.mli pervasives.mli
@@ -72,7 +72,7 @@ pervasives.cmi: $(LIB)/pervasives.cmi
 	ln -s $(LIB)/pervasives.cmi pervasives.cmi
 
 marshal.cmo: marshal.mli marshal.cmi marshal.ml
-	$(CAMLC) -c marshal.ml
+	$(CAMLC) ${COMPFLAGS} -c marshal.ml
 
 marshal.mli: $(LIB)/marshal.mli
 	ln -s $(LIB)/marshal.mli marshal.mli
@@ -81,7 +81,7 @@ marshal.cmi: $(LIB)/marshal.cmi
 	ln -s $(LIB)/marshal.cmi marshal.cmi
 
 unix.cmo: unix.mli unix.cmi unix.ml
-	$(CAMLC) -c unix.ml
+	$(CAMLC) ${COMPFLAGS} -c unix.ml
 
 unix.mli: $(UNIXLIB)/unix.mli
 	ln -s $(UNIXLIB)/unix.mli unix.mli
