@@ -33,6 +33,10 @@ pervasives.cmi Ä pervasives.mli
 pervasives.cmo Ä pervasives.ml
     {CAMLC} {COMPFLAGS} -nopervasives -c pervasives.ml
 
+# oo.cmi must be compiled with -nopervasives for applets
+oo.cmi Ä oo.mli
+	{CAMLC} {COMPFLAGS} -nopervasives -c oo.mli
+
 .cmi Ä .mli
     {CAMLC} {COMPFLAGS} -c {default}.mli
 

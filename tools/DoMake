@@ -1,19 +1,22 @@
 # domake
 # Execute the output of "Make -f Makefile.Mac -f Makefile.Mac.depend"
-# usage : domake [-quiet] <make arguments>
+# or "Make -f Makefile -f Makefile.depend" if "Makefile.Mac" does not exist.
+# usage: domake [-quiet] <make arguments>
 
 set echo 0
 
 set tempfile "{TempFolder}temp-domake-`Date -n`"
 
 if "`exists Makefile.Mac`" != ""
-  set domake_files "-f Makefile.Mac"
+  set domake_main "Makefile.Mac"
 else
-  set domake_files "-f Makefile"
+  set domake_main "Makefile"
 end
 
-if "`exists Makefile.Mac.depend`" != ""
-  set domake_files "{domake_files} -f Makefile.Mac.depend"
+if "`exists "{domake_main}".depend`" != ""
+  set domake_files "-f {domake_main} -f {domake_main}.depend"
+else
+  set domake_files "-f {domake_main}"
 end
 
 if "{1}" == "-quiet"

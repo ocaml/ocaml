@@ -1,6 +1,6 @@
 # The main Makefile
 
-MacVersion = "mac.3"
+MacVersion = "Mac0.3"
 
 CAMLC = :boot:ocamlrun :boot:ocamlc -I :boot:
 COMPFLAGS = {INCLUDES}
