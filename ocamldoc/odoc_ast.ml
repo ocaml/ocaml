@@ -372,127 +372,6 @@ module Analyser =
 	   (* something else, we don't care ? A VOIR *)
 	   []
 
-    (** This function converts a Types.type_kind into a Odoc_type.type_kind,
-       by analysing the comment of each constructor/field, if any.
-       @param pos_start is the start position of the type definition.
-       @param pos_end is the end position of the type definition.
-       @param pos_limit is the position of the last character which can be
-       used for a comment, for the variant types, where [pos_end] is not enough
-       since we can have comments after this position.
-       @return the type kind and the position of the last used character,
-       that is the end position of the last character of the comment
-       for the last constructor, if the type is a variant. If the type is
-       not a variant, then the last position is the [pos_end] parameter.
-    *)
-    let tt_get_type_kind env pos_start pos_end pos_limit type_kind =
-      match type_kind with
-	Types.Type_abstract ->
-	  (Odoc_type.Type_abstract, pos_end)
-
-      | Types.Type_variant l (*(string * type_expr list) list*) ->
-	  let rec f acc last_pos l =
-	    match l with
-	      [] ->
-		(acc, last_pos)
-	    | (constructor_name, type_expr_list) :: q ->
-                (* we don't have location info, so we try to
-		   get it by searching for regexp "constructor_name(blank)*(of)?" from the
-		   last location. *)
-		let loc_start = 
-		  try Str.search_forward (Str.regexp (constructor_name^blank^"*\\(of\\)?")) !file last_pos
-		  with
-		    Not_found -> 
-		      print_DEBUG3 (constructor_name^blank^"*\\(of\\)? n'a rien donné.");
-		      last_pos
-		in
-		let loc_end =
-		  match q with
-		    [] -> pos_limit 
-		  | (constructor_name2, type_expr_list2) :: _ ->
-		      try Str.search_forward (Str.regexp ("|"^blank^"*"^constructor_name2^blank^"*\\(of\\)?")) !file loc_start
-		      with 
-			Not_found -> 
-			  print_DEBUG3 (blank^"+|"^constructor_name2^blank^"*\\(of\\)? n'a rien donné.");
-			  loc_start
-		in
-                (* get the comment *)
-		let s = get_string_of_file loc_start loc_end in
-		let (len, info_opt) = My_ir.just_after_special !file_name  s in
-		let new_acc = 
-		  acc @ [
-			{
-			  vc_name = constructor_name ;
-			  vc_args = List.map (Odoc_env.subst_type env) type_expr_list ;
-			  vc_text = 
-			  (match info_opt with 
-			    None -> 
-			     print_DEBUG3 ("Pas de description pour le constructeur "^constructor_name);
-			      None
-			  | Some d ->
-			      d.Odoc_types.i_desc)
-			} 
-		      ]
-		in
-		f new_acc (loc_start + len) q
-	  in
-	  let (l_cons, new_last_pos) = f [] pos_start l in
-	  (Odoc_type.Type_variant l_cons, new_last_pos)
-
-      | Types.Type_record (l, _) ->
-          (*(string * mutable_flag * type_expr) list * record_representation *)
-	  let rec f acc last_pos l =
-	    match l with
-	      [] ->
-		acc
-	    | (field_name, mutable_flag, type_expr) :: q ->
-                (* we don't have location info, so we try to
-		get it by searching for regexp "(mutable)?blank*field_name(blank)*:" from the
-		last location. *)
-		let loc_start = 
-		  (
-		   let regexp = "\\(mutable\\)?"^blank^"*"^field_name^blank^"*:" in
-		   try 
-		     Str.search_forward (Str.regexp regexp) !file last_pos
-		   with Not_found -> 
-		     print_DEBUG3 (regexp^" n'a rien donné.");
-		     last_pos
-		  ) 
-		in
-		let loc_end = 
-		  match q with
-		    [] -> pos_end
-		  | (field_name2, mutable_flag2, type_expr2) :: _ ->
-		      let regexp = "\\(mutable\\)?"^blank^"*"^field_name2^blank^"*:" in
-		      try 
-			Str.search_forward (Str.regexp regexp) !file loc_start
-		      with Not_found -> 
-			print_DEBUG3 (regexp^" n'a rien donné.");
-			loc_start
-		in
-                (* get the comment *)
-		let s = get_string_of_file loc_start loc_end in
-		let (len, info_opt) = My_ir.just_after_special !file_name  s in
-		let new_acc = 
-		  acc @ [
-			{
-			  rf_name = field_name ;
-			  rf_mutable = mutable_flag = Mutable ;
-			  rf_type = Odoc_env.subst_type env type_expr ; 
-			  rf_text = 
-			      (match info_opt with 
-				None -> 
-				  print_DEBUG3 ("Pas de description pour le champ "^field_name);
-				  None
-			      | Some d ->
-				  d.Odoc_types.i_desc)
-			} 
-		      ]
-		in
-		f new_acc (loc_start + len) q
-	  in
-	  (Odoc_type.Type_record (f [] pos_start l), pos_end)
-
-
     (** This function takes a Typedtree.class_expr and returns a string which can stand for the class name.
        The name can be "object ... end" if the class expression is not an ident or a class constraint or a class apply. *)
     let rec tt_name_of_class_expr clexp =
@@ -1095,6 +974,12 @@ module Analyser =
 		    [] -> pos_limit
 		  | (_, td) :: _ -> td.Parsetree.ptype_loc.Location.loc_start
 		in
+		let (maybe_more, name_comment_list) = 
+		    Sig.name_comment_from_type_kind
+		      loc_start loc_end
+		      pos_limit2
+		      type_decl.Parsetree.ptype_kind
+		in
 		let tt_type_decl = 
 		  try Typedtree_search.search_type_declaration table name 
 		  with Not_found -> raise (Failure (Odoc_messages.type_not_found_in_typedtree complete_name))
@@ -1105,11 +990,8 @@ module Analyser =
 		  else
 		    get_comments_in_module last_pos loc_start
 		in
-		let (kind, last_pos2) = tt_get_type_kind
-		    new_env
-		    loc_start
-		    loc_end
-		    pos_limit2
+		let kind = Sig.get_type_kind
+		    new_env name_comment_list
 		    tt_type_decl.Types.type_kind
 		in
 		let t =
@@ -1127,8 +1009,15 @@ module Analyser =
 		    ty_loc = { loc_impl = Some (!file_name, loc_start) ; loc_inter = None } ;
 		  } 
 		in
-		let (maybe_more, eles) = f (last_pos2 -loc_end) last_pos2 q in
-		(maybe_more, ele_comments @ ((Element_type t) :: eles))
+		let new_end = loc_end + maybe_more in
+		let (maybe_more2, info_after_opt) = 
+		  My_ir.just_after_special
+		    !file_name
+		    (get_string_of_file new_end pos_limit2)
+		in
+		t.ty_info <- Sig.merge_infos t.ty_info info_after_opt ;
+		let (maybe_more3, eles) = f (maybe_more + maybe_more2) (new_end + maybe_more2) q in
+		(maybe_more3, ele_comments @ ((Element_type t) :: eles))
 	  in
 	  let (maybe_more, eles) = f ~first: true 0 loc.Location.loc_start name_typedecl_list in
 	  (maybe_more, new_env, eles)
