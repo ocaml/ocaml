@@ -40,7 +40,7 @@ static char *down = NULL;
 static char *standout = NULL;
 static char *standend = NULL;
 
-value terminfo_setup (value vchan)      /* ML */
+CAMLprim value terminfo_setup (value vchan)
 {
   value result;
   static char buffer[1024];
@@ -74,7 +74,7 @@ static int terminfo_putc (int c)
   return c;
 }
 
-value terminfo_backup (value lines)    /* ML */
+CAMLprim value terminfo_backup (value lines)
 {
   int i;
 
@@ -84,13 +84,13 @@ value terminfo_backup (value lines)    /* ML */
   return Val_unit;
 }
 
-value terminfo_standout (value start)  /* ML */
+CAMLprim value terminfo_standout (value start)
 {
   tputs (Bool_val (start) ? standout : standend, 1, terminfo_putc);
   return Val_unit;
 }
 
-value terminfo_resume (value lines)    /* ML */
+CAMLprim value terminfo_resume (value lines)
 {
   int i;
 
@@ -102,24 +102,24 @@ value terminfo_resume (value lines)    /* ML */
 
 #else /* defined (HAS_TERMCAP) && !defined (NATIVE_CODE) */
 
-value terminfo_setup (value vchan)
+CAMLexport value terminfo_setup (value vchan)
 {
   return Bad_term;
 }
 
-value terminfo_backup (value lines)
+CAMLexport value terminfo_backup (value lines)
 {
   invalid_argument("Terminfo.backup");
   return Val_unit;
 }
 
-value terminfo_standout (value start)
+CAMLexport value terminfo_standout (value start)
 {
   invalid_argument("Terminfo.standout");
   return Val_unit;
 }
 
-value terminfo_resume (value lines)
+CAMLexport value terminfo_resume (value lines)
 {
   invalid_argument("Terminfo.resume");
   return Val_unit;

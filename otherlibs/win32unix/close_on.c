@@ -24,7 +24,7 @@ int win_set_inherit(value fd, BOOL inherit)
   if (! DuplicateHandle(GetCurrentProcess(), oldh,
                         GetCurrentProcess(), &newh,
                         0L, inherit, DUPLICATE_SAME_ACCESS)) {
-    _dosmaperr(GetLastError());
+    win32_maperr(GetLastError());
     return -1;
   }
   Handle_val(fd) = newh;
@@ -32,13 +32,13 @@ int win_set_inherit(value fd, BOOL inherit)
   return 0;
 }
 
-value win_set_close_on_exec(value fd)             /* ML */
+CAMLprim value win_set_close_on_exec(value fd)
 {
   if (win_set_inherit(fd, FALSE) == -1) uerror("set_close_on_exec", Nothing);
   return Val_unit;
 }
 
-value win_clear_close_on_exec(value fd)             /* ML */
+CAMLprim value win_clear_close_on_exec(value fd)
 {
   if (win_set_inherit(fd, TRUE) == -1) uerror("clear_close_on_exec", Nothing);
   return Val_unit;

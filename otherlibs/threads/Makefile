@@ -15,8 +15,9 @@
 include ../../config/Makefile
 
 CC=$(BYTECC)
-CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) -g
+CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -g
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../unix
+MKLIB=../../tools/ocamlmklib
 
 C_OBJS=scheduler.o
 
@@ -46,18 +47,16 @@ all: libthreads.a threads.cma stdlib.cma unix.cma
 allopt:
 
 libthreads.a: $(C_OBJS)
-	rm -f libthreads.a
-	ar rc libthreads.a $(C_OBJS)
-	$(RANLIB) libthreads.a
+	$(MKLIB) -o threads $(C_OBJS)
 
 threads.cma: $(CAML_OBJS)
-	$(CAMLC) -a -o threads.cma -custom $(CAML_OBJS) -cclib -lthreads
+	$(MKLIB) -ocamlc '$(CAMLC)' -o threads $(CAML_OBJS)
 
 stdlib.cma: $(LIB_OBJS)
 	$(CAMLC) -a -o stdlib.cma $(LIB_OBJS)
 
 unix.cma: $(UNIXLIB_OBJS)
-	$(CAMLC) -a -linkall -custom -o unix.cma $(UNIXLIB_OBJS) -cclib -lunix
+	$(MKLIB) -ocamlc '$(CAMLC)' -o unix -linkall $(UNIXLIB_OBJS)
 
 pervasives.cmo: pervasives.mli pervasives.cmi pervasives.ml
 	$(CAMLC) -nopervasives -c pervasives.ml
@@ -94,6 +93,7 @@ clean: partialclean
 	rm -f pervasives.mli marshal.mli unix.mli
 
 install:
+	test -f libthreads.so && cp libthreads.so $(LIBDIR)/libthreads.so
 	cp libthreads.a $(LIBDIR)/libthreads.a
 	cd $(LIBDIR); $(RANLIB) libthreads.a
 	if test -d $(LIBDIR)/threads; then : ; else mkdir $(LIBDIR)/threads; fi

@@ -17,7 +17,7 @@
 
 #ifdef HAS_TRUNCATE
 
-value unix_truncate(value path, value len)   /* ML */
+CAMLprim value unix_truncate(value path, value len)
 {
   if (truncate(String_val(path), Long_val(len)) == -1)
     uerror("truncate", path);
@@ -26,7 +26,7 @@ value unix_truncate(value path, value len)   /* ML */
 
 #else
 
-value unix_truncate(value path, value len)
+CAMLprim value unix_truncate(value path, value len)
 { invalid_argument("truncate not implemented"); }
 
 #endif

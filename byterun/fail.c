@@ -28,7 +28,7 @@
 struct longjmp_buffer * external_raise = NULL;
 value exn_bucket;
 
-void mlraise(value v)
+CAMLexport void mlraise(value v)
 {
 #ifdef DEBUG
   extern int volatile async_signal_mode;  /* from signals.c */
@@ -40,7 +40,7 @@ void mlraise(value v)
   siglongjmp(external_raise->buf, 1);
 }
 
-void raise_constant(value tag)
+CAMLexport void raise_constant(value tag)
 {
   CAMLparam1 (tag);
   CAMLlocal1 (bucket);
@@ -50,7 +50,7 @@ void raise_constant(value tag)
   mlraise(bucket);
 }
 
-void raise_with_arg(value tag, value arg)
+CAMLexport void raise_with_arg(value tag, value arg)
 {
   CAMLparam2 (tag, arg);
   CAMLlocal1 (bucket);
@@ -61,7 +61,7 @@ void raise_with_arg(value tag, value arg)
   mlraise(bucket);
 }
 
-void raise_with_string(value tag, char *msg)
+CAMLexport void raise_with_string(value tag, char *msg)
 {
   CAMLparam1 (tag);
   CAMLlocal1 (vmsg);
@@ -70,12 +70,12 @@ void raise_with_string(value tag, char *msg)
   raise_with_arg(tag, vmsg);
 }
 
-void failwith (char *msg)
+CAMLexport void failwith (char *msg)
 {
   raise_with_string(Field(global_data, FAILURE_EXN), msg);
 }
 
-void invalid_argument (char *msg)
+CAMLexport void invalid_argument (char *msg)
 {
   raise_with_string(Field(global_data, INVALID_EXN), msg);
 }
@@ -89,39 +89,39 @@ static struct {
   value exn;
 } out_of_memory_bucket = { 0, 0 };
 
-void raise_out_of_memory(void)
+CAMLexport void raise_out_of_memory(void)
 {
   if (out_of_memory_bucket.exn == 0) 
     fatal_error("Fatal error: out of memory while raising Out_of_memory\n");
   mlraise((value) &(out_of_memory_bucket.exn));
 }
 
-void raise_stack_overflow(void)
+CAMLexport void raise_stack_overflow(void)
 {
   raise_constant(Field(global_data, STACK_OVERFLOW_EXN));
 }
 
-void raise_sys_error(value msg)
+CAMLexport void raise_sys_error(value msg)
 {
   raise_with_arg(Field(global_data, SYS_ERROR_EXN), msg);
 }
 
-void raise_end_of_file(void)
+CAMLexport void raise_end_of_file(void)
 {
   raise_constant(Field(global_data, END_OF_FILE_EXN));
 }
 
-void raise_zero_divide(void)
+CAMLexport void raise_zero_divide(void)
 {
   raise_constant(Field(global_data, ZERO_DIVIDE_EXN));
 }
 
-void raise_not_found(void)
+CAMLexport void raise_not_found(void)
 {
   raise_constant(Field(global_data, NOT_FOUND_EXN));
 }
 
-void raise_sys_blocked_io(void)
+CAMLexport void raise_sys_blocked_io(void)
 {
   raise_constant(Field(global_data, SYS_BLOCKED_IO));
 }

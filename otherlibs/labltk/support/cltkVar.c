@@ -25,7 +25,7 @@
 #include <callback.h>
 #include "camltk.h"
 
-value camltk_getvar(value var) /* ML */
+CAMLprim value camltk_getvar(value var)
 {
   char *s;
   char *stable_var = NULL;
@@ -42,7 +42,7 @@ value camltk_getvar(value var) /* ML */
     return(copy_string(s));
 }
 
-value camltk_setvar(value var, value contents) /* ML */
+CAMLprim value camltk_setvar(value var, value contents)
 {
   char *s;
   char *stable_var = NULL;
@@ -82,7 +82,7 @@ static char * tracevar(ClientData clientdata, Tcl_Interp *interp,
 }
 
 /* Sets up a callback upon modification of a variable */
-value camltk_trace_var(value var, value cbid) /* ML */
+CAMLprim value camltk_trace_var(value var, value cbid)
 {
   char *cvar = NULL;
 
@@ -103,7 +103,7 @@ value camltk_trace_var(value var, value cbid) /* ML */
   return Val_unit;
 }
 
-value camltk_untrace_var(value var, value cbid) /* ML */
+CAMLprim value camltk_untrace_var(value var, value cbid)
 {
   char *cvar = NULL;
 

@@ -48,7 +48,7 @@ static value alloc_service_entry(struct servent *entry)
   return res;
 }
 
-value unix_getservbyname(value name, value proto)  /* ML */
+CAMLprim value unix_getservbyname(value name, value proto)
 {
   struct servent * entry;
   entry = getservbyname(String_val(name), String_val(proto));
@@ -56,7 +56,7 @@ value unix_getservbyname(value name, value proto)  /* ML */
   return alloc_service_entry(entry);
 }
 
-value unix_getservbyport(value port, value proto)  /* ML */
+CAMLprim value unix_getservbyport(value port, value proto)
 {
   struct servent * entry;
   entry = getservbyport(htons(Int_val(port)), String_val(proto));
@@ -66,10 +66,10 @@ value unix_getservbyport(value port, value proto)  /* ML */
 
 #else
 
-value unix_getservbyport(value port, value proto)
+CAMLprim value unix_getservbyport(value port, value proto)
 { invalid_argument("getservbyport not implemented"); }
   
-value unix_getservbyname(value name, value proto)
+CAMLprim value unix_getservbyname(value name, value proto)
 { invalid_argument("getservbyname not implemented"); }
 
 #endif

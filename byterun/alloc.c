@@ -28,7 +28,7 @@
 #define Setup_for_gc
 #define Restore_after_gc
 
-value alloc (mlsize_t wosize, tag_t tag)
+CAMLexport value alloc (mlsize_t wosize, tag_t tag)
 {
   value result;
   mlsize_t i;
@@ -48,7 +48,7 @@ value alloc (mlsize_t wosize, tag_t tag)
   return result;
 }
 
-value alloc_small (mlsize_t wosize, tag_t tag)
+CAMLexport value alloc_small (mlsize_t wosize, tag_t tag)
 {
   value result;
 
@@ -59,12 +59,12 @@ value alloc_small (mlsize_t wosize, tag_t tag)
   return result;
 }
 
-value alloc_tuple(mlsize_t n)
+CAMLexport value alloc_tuple(mlsize_t n)
 {
   return alloc(n, 0);
 }
 
-value alloc_string (mlsize_t len)
+CAMLexport value alloc_string (mlsize_t len)
 {
   value result;
   mlsize_t offset_index;
@@ -82,13 +82,14 @@ value alloc_string (mlsize_t len)
   return result;
 }
 
-value alloc_final (mlsize_t len, final_fun fun, mlsize_t mem, mlsize_t max)
+CAMLexport value alloc_final (mlsize_t len, final_fun fun,
+                              mlsize_t mem, mlsize_t max)
 {
   return alloc_custom(final_custom_operations(fun),
                       len * sizeof(value), mem, max);
 }
 
-value copy_string(char const *s)
+CAMLexport value copy_string(char const *s)
 {
   int len;
   value res;
@@ -99,7 +100,7 @@ value copy_string(char const *s)
   return res;
 }
 
-value alloc_array(value (*funct)(char const *), char const ** arr)
+CAMLexport value alloc_array(value (*funct)(char const *), char const ** arr)
 {
   CAMLparam0 ();
   mlsize_t nbr, n;
@@ -122,12 +123,12 @@ value alloc_array(value (*funct)(char const *), char const ** arr)
   }
 }
 
-value copy_string_array(char const ** arr)
+CAMLexport value copy_string_array(char const ** arr)
 {
   return alloc_array(copy_string, arr);
 }
 
-int convert_flag_list(value list, int *flags)
+CAMLexport int convert_flag_list(value list, int *flags)
 {
   int res;
   res = 0;
@@ -140,7 +141,7 @@ int convert_flag_list(value list, int *flags)
 
 /* For compiling let rec over values */
 
-value alloc_dummy(value size) /* ML */
+CAMLprim value alloc_dummy(value size)
 {
   mlsize_t wosize = Int_val(size);
 
@@ -148,7 +149,7 @@ value alloc_dummy(value size) /* ML */
   return alloc (wosize, 0);
 }
 
-value update_dummy(value dummy, value newval) /* ML */
+CAMLprim value update_dummy(value dummy, value newval)
 {
   mlsize_t size, i;
   size = Wosize_val(newval);

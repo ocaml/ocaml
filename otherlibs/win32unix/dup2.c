@@ -15,7 +15,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_dup2(value fd1, value fd2)        /* ML */
+CAMLprim value unix_dup2(value fd1, value fd2)
 {
   HANDLE oldh, newh;
 
@@ -23,7 +23,7 @@ value unix_dup2(value fd1, value fd2)        /* ML */
   if (! DuplicateHandle(GetCurrentProcess(), Handle_val(fd1),
                         GetCurrentProcess(), &newh,
                         0L, TRUE, DUPLICATE_SAME_ACCESS)) {
-    _dosmaperr(GetLastError());
+    win32_maperr(GetLastError());
     return -1;
   }
   Handle_val(fd2) = newh;

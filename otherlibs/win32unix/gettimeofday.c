@@ -21,7 +21,7 @@
 static time_t initial_time = 0; /* 0 means uninitialized */
 static DWORD initial_tickcount;
 
-value unix_gettimeofday(value unit)                /* ML */
+CAMLprim value unix_gettimeofday(value unit)
 {
   if (initial_time == 0) {
     initial_tickcount = GetTickCount();

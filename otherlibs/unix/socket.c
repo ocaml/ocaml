@@ -28,7 +28,7 @@ int socket_type_table[] = {
   SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET
 };
 
-value unix_socket(value domain, value type, value proto) /* ML */
+CAMLprim value unix_socket(value domain, value type, value proto)
 {
   int retcode;
   retcode = socket(socket_domain_table[Int_val(domain)],
@@ -41,7 +41,7 @@ value unix_socket(value domain, value type, value proto) /* ML */
 
 #else
 
-value unix_socket(value domain, value type, value proto)
+CAMLprim value unix_socket(value domain, value type, value proto)
 { invalid_argument("socket not implemented"); }
 
 #endif

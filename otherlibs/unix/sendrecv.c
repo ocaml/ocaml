@@ -26,7 +26,7 @@ static int msg_flag_table[] = {
   MSG_OOB, MSG_DONTROUTE, MSG_PEEK
 };
 
-value unix_recv(value sock, value buff, value ofs, value len, value flags) /* ML */
+CAMLprim value unix_recv(value sock, value buff, value ofs, value len, value flags)
 {
   int ret;
   long numbytes;
@@ -45,7 +45,7 @@ value unix_recv(value sock, value buff, value ofs, value len, value flags) /* ML
   return Val_int(ret);
 }
 
-value unix_recvfrom(value sock, value buff, value ofs, value len, value flags) /* ML */
+CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len, value flags)
 {
   int ret;
   long numbytes;
@@ -74,7 +74,7 @@ value unix_recvfrom(value sock, value buff, value ofs, value len, value flags) /
   return res;
 }
 
-value unix_send(value sock, value buff, value ofs, value len, value flags) /* ML */
+CAMLprim value unix_send(value sock, value buff, value ofs, value len, value flags)
 {
   int ret;
   long numbytes;
@@ -91,7 +91,7 @@ value unix_send(value sock, value buff, value ofs, value len, value flags) /* ML
   return Val_int(ret);
 }
 
-value unix_sendto_native(value sock, value buff, value ofs, value len, value flags, value dest)
+CAMLprim value unix_sendto_native(value sock, value buff, value ofs, value len, value flags, value dest)
 {
   int ret;
   long numbytes;
@@ -112,7 +112,7 @@ value unix_sendto_native(value sock, value buff, value ofs, value len, value fla
   return Val_int(ret);
 }
 
-value unix_sendto(value *argv, int argc)    /* ML */
+CAMLprim value unix_sendto(value *argv, int argc)
 {
   return unix_sendto_native
            (argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
@@ -120,19 +120,19 @@ value unix_sendto(value *argv, int argc)    /* ML */
 
 #else
 
-value unix_recv(value sock, value buff, value ofs, value len, value flags)
+CAMLprim value unix_recv(value sock, value buff, value ofs, value len, value flags)
 { invalid_argument("recv not implemented"); }
 
-value unix_recvfrom(value sock, value buff, value ofs, value len, value flags)
+CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len, value flags)
 { invalid_argument("recvfrom not implemented"); }
 
-value unix_send(value sock, value buff, value ofs, value len, value flags)
+CAMLprim value unix_send(value sock, value buff, value ofs, value len, value flags)
 { invalid_argument("send not implemented"); }
 
-value unix_sendto_native(value sock, value buff, value ofs, value len, value flags, value dest)
+CAMLprim value unix_sendto_native(value sock, value buff, value ofs, value len, value flags, value dest)
 { invalid_argument("sendto not implemented"); }
 
-value unix_sendto(value *argv, int argc)
+CAMLprim value unix_sendto(value *argv, int argc)
 { invalid_argument("sendto not implemented"); }
 
 #endif

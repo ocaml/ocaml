@@ -229,7 +229,7 @@ static void decode_terminal_status(value *src)
   }
 }
 
-value unix_tcgetattr(value fd) /* ML */
+CAMLprim value unix_tcgetattr(value fd)
 {
   value res;
 
@@ -244,7 +244,7 @@ static int when_flag_table[] = {
   TCSANOW, TCSADRAIN, TCSAFLUSH
 };
 
-value unix_tcsetattr(value fd, value when, value arg) /* ML */
+CAMLprim value unix_tcsetattr(value fd, value when, value arg)
 {
   if (tcgetattr(Int_val(fd), &terminal_status) == -1)
     uerror("tcsetattr", Nothing);
@@ -256,14 +256,14 @@ value unix_tcsetattr(value fd, value when, value arg) /* ML */
   return Val_unit;
 }
 
-value unix_tcsendbreak(value fd, value delay) /* ML */
+CAMLprim value unix_tcsendbreak(value fd, value delay)
 {
   if (tcsendbreak(Int_val(fd), Int_val(delay)) == -1)
     uerror("tcsendbreak", Nothing);
   return Val_unit;
 }
 
-value unix_tcdrain(value fd) /* ML */
+CAMLprim value unix_tcdrain(value fd)
 {
   if (tcdrain(Int_val(fd)) == -1) uerror("tcdrain", Nothing);
   return Val_unit;
@@ -273,7 +273,7 @@ static int queue_flag_table[] = {
   TCIFLUSH, TCOFLUSH, TCIOFLUSH
 };
 
-value unix_tcflush(value fd, value queue) /* ML */
+CAMLprim value unix_tcflush(value fd, value queue)
 {
   if (tcflush(Int_val(fd), queue_flag_table[Int_val(queue)]) == -1)
     uerror("tcflush", Nothing);
@@ -284,7 +284,7 @@ static int action_flag_table[] = {
   TCOOFF, TCOON, TCIOFF, TCION
 };
 
-value unix_tcflow(value fd, value action) /* ML */
+CAMLprim value unix_tcflow(value fd, value action)
 {
   if (tcflow(Int_val(fd), action_flag_table[Int_val(action)]) == -1)
     uerror("tcflow", Nothing);
@@ -293,22 +293,22 @@ value unix_tcflow(value fd, value action) /* ML */
 
 #else
 
-value unix_tcgetattr(value fd)
+CAMLprim value unix_tcgetattr(value fd)
 { invalid_argument("tcgetattr not implemented"); }
 
-value unix_tcsetattr(value fd, value when, value arg)
+CAMLprim value unix_tcsetattr(value fd, value when, value arg)
 { invalid_argument("tcsetattr not implemented"); }
 
-value unix_tcsendbreak(value fd, value delay)
+CAMLprim value unix_tcsendbreak(value fd, value delay)
 { invalid_argument("tcsendbreak not implemented"); }
 
-value unix_tcdrain(value fd)
+CAMLprim value unix_tcdrain(value fd)
 { invalid_argument("tcdrain not implemented"); }
 
-value unix_tcflush(value fd, value queue)
+CAMLprim value unix_tcflush(value fd, value queue)
 { invalid_argument("tcflush not implemented"); }
 
-value unix_tcflow(value fd, value action)
+CAMLprim value unix_tcflow(value fd, value action)
 { invalid_argument("tcflow not implemented"); }
 
 #endif

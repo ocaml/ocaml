@@ -15,7 +15,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_chdir(value path)           /* ML */
+CAMLprim value unix_chdir(value path)
 {
   int ret;
   ret = chdir(String_val(path));

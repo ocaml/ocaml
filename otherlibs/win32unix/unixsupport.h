@@ -27,6 +27,7 @@ extern value win_alloc_handle(HANDLE);
 
 #define Nothing ((value) 0)
 
+extern void win32_maperr(unsigned long errcode);
 extern void unix_error (int errcode, char * cmdname, value arg);
 extern void uerror (char * cmdname, value arg);
 extern value unix_freeze_buffer (value);

@@ -21,7 +21,7 @@
 #include <sys/dir.h>
 #endif
 
-value unix_opendir(value path)         /* ML */
+CAMLprim value unix_opendir(value path)
 {
   DIR * d;
   d = opendir(String_val(path));

@@ -26,25 +26,118 @@
 #include <ctype.h>
 #include <string.h>
 #include <signal.h>
+#include "memory.h"
+#include "misc.h"
+#include "osdeps.h"
 #include "signals.h"
 
-/* Path searching function */
+#ifndef S_ISREG
+#define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
+#endif
 
-char * searchpath(char * name)
+char * decompose_path(struct ext_table * tbl, char * path)
 {
-#define MAX_PATH_LENGTH 1024
-  static char fullname[MAX_PATH_LENGTH];
+  char * p, * q;
+  int n;
+
+  if (path == NULL) return NULL;
+  p = stat_alloc(strlen(path) + 1);
+  strcpy(p, path);
+  q = p;
+  while (1) {
+    for (n = 0; q[n] != 0 && q[n] != ';'; n++) /*nothing*/;
+    ext_table_add(tbl, q);
+    q = q + n;
+    if (*q == 0) break;
+    *q = 0;
+    q += 1;
+  }
+  return p;
+}
+
+char * search_in_path(struct ext_table * path, char * name)
+{
+  char * p, * fullname;
+  int i;
+  struct stat st;
+
+  for (p = name; *p != 0; p++) {
+    if (*p == '/' || *p == '\\') goto not_found;
+  }
+  for (i = 0; i < path->size; i++) {
+    fullname = stat_alloc(strlen((char *)(path->contents[i])) +
+                          strlen(name) + 2);
+    strcpy(fullname, (char *)(path->contents[i]));
+    strcat(fullname, "\\");
+    strcat(fullname, name);
+    gc_message(0x100, "Searching %s\n", (unsigned long) fullname);
+    if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) return fullname;
+    stat_free(fullname);
+  }
+ not_found:
+  gc_message(0x100, "%s not found in search path\n", (unsigned long) name);
+  fullname = stat_alloc(strlen(name) + 1);
+  strcpy(fullname, name);
+  return fullname;
+}
+  
+CAMLexport char * search_exe_in_path(char * name)
+{
+#define MAX_PATH_LENGTH 512
+  char * fullname = stat_alloc(512);
   char * filepart;
 
-  if (SearchPath(NULL,              /* use system search path */
-                 name,
-                 ".exe",            /* add .exe extension if needed */
-                 MAX_PATH_LENGTH,   /* size of buffer */
-                 fullname,
-                 &filepart))
-    return fullname;
+  if (! SearchPath(NULL,              /* use system search path */
+                   name,
+                   ".exe",            /* add .exe extension if needed */
+                   MAX_PATH_LENGTH,   /* size of buffer */
+                   fullname,
+                   &filepart))
+    strcpy(fullname, name);
+  return fullname;
+}
+
+char * search_dll_in_path(struct ext_table * path, char * name)
+{
+  char * dllname = stat_alloc(strlen(name) + 5);
+  char * res;
+  strcpy(dllname, name);
+  strcat(dllname, ".dll");
+  res = search_in_path(path, dllname);
+  stat_free(dllname);
+  return res;
+}
+
+void * caml_dlopen(char * libname)
+{
+  return (void *) LoadLibrary(libname);
+}
+
+void caml_dlclose(void * handle)
+{
+  FreeLibrary((HMODULE) handle);
+}
+
+void * caml_dlsym(void * handle, char * name)
+{
+  return (void *) GetProcAddress((HMODULE) handle, name);
+}
+
+char * caml_dlerror(void)
+{
+  static char dlerror_buffer[256];
+  DWORD msglen =
+    FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                  NULL,         /* message source */
+                  GetLastError(), /* error number */
+                  0,            /* default language */
+                  dlerror_buffer, /* destination */
+                  sizeof(dlerror_buffer), /* size of destination */
+                  NULL);         /* no inserts */
+  if (msglen == 0)
+    return "unknown error";
   else
-    return name;
+    return dlerror_buffer;
 }
 
 /* Expansion of @responsefile and *? file patterns in the command line */
@@ -138,7 +231,7 @@ static void expand_diversion(char * filename)
   }
 }
 
-void expand_command_line(int * argcp, char *** argvp)
+CAMLexport void expand_command_line(int * argcp, char *** argvp)
 {
   int i;
   argc = 0;
@@ -155,8 +248,6 @@ void expand_command_line(int * argcp, char *** argvp)
 
 /* Wrapper around "system" for Win32.  Create a diversion file if
    command line is too long. */
-
-extern char * mktemp(char *);
 
 int win32_system(char * cmdline)
 {

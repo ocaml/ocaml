@@ -25,7 +25,7 @@ typedef struct dirent directory_entry;
 typedef struct direct directory_entry;
 #endif
 
-value unix_readdir(value d)            /* ML */
+CAMLprim value unix_readdir(value d)
 {
   directory_entry * e;
 

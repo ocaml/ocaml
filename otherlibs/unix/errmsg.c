@@ -22,7 +22,7 @@ extern int error_table[];
 
 extern char * strerror(int);
 
-value unix_error_message(value err)   /* ML */
+CAMLprim value unix_error_message(value err)
 {
   int errnum;
   errnum = Is_block(err) ? Int_val(Field(err, 0)) : error_table[Int_val(err)];
@@ -34,7 +34,7 @@ value unix_error_message(value err)   /* ML */
 extern int sys_nerr;
 extern char *sys_errlist[];
 
-value unix_error_message(value err)
+CAMLprim value unix_error_message(value err)
 {
   int errnum;
   errnum = Is_block(err) ? Int_val(Field(err, 0)) : error_table[Int_val(err)];

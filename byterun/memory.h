@@ -25,14 +25,14 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-value alloc_shr (mlsize_t, tag_t);
+CAMLextern value alloc_shr (mlsize_t, tag_t);
 void adjust_gc_speed (mlsize_t, mlsize_t);
-void modify (value *, value);
-void initialize (value *, value);
-value check_urgent_gc (value);
-void * stat_alloc (asize_t);              /* Size in bytes. */
-void stat_free (void *);
-void * stat_resize (void *, asize_t);     /* Size in bytes. */
+CAMLextern void modify (value *, value);
+CAMLextern void initialize (value *, value);
+CAMLextern value check_urgent_gc (value);
+CAMLextern void * stat_alloc (asize_t);              /* Size in bytes. */
+CAMLextern void stat_free (void *);
+CAMLextern void * stat_resize (void *, asize_t);     /* Size in bytes. */
 header_t *alloc_for_heap (asize_t request);   /* Size in bytes. */
 void free_for_heap (header_t *mem);
 int add_to_heap (header_t *mem);
@@ -94,7 +94,7 @@ struct caml__roots_block {
   value *tables [5];
 };
 
-extern struct caml__roots_block *local_roots;  /* defined in roots.c */
+CAMLextern struct caml__roots_block *local_roots;  /* defined in roots.c */
 
 /* The following macros are used to declare C local variables and
    function parameters of type [value].
@@ -351,12 +351,12 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.c */
    for the duration of the program, or until [remove_global_root] is
    called. */
 
-void register_global_root (value *);
+CAMLextern void register_global_root (value *);
 
 /* [remove_global_root] removes a memory root registered on a global C
    variable with [register_global_root]. */
 
-void remove_global_root (value *);
+CAMLextern void remove_global_root (value *);
 
 
 #endif /* _memory_ */

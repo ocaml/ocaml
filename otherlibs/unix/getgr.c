@@ -38,7 +38,7 @@ static value alloc_group_entry(struct group *entry)
   return res;
 }
 
-value unix_getgrnam(value name)        /* ML */
+CAMLprim value unix_getgrnam(value name)
 {
   struct group * entry;
   entry = getgrnam(String_val(name));
@@ -46,7 +46,7 @@ value unix_getgrnam(value name)        /* ML */
   return alloc_group_entry(entry);
 }
 
-value unix_getgrgid(value gid)         /* ML */
+CAMLprim value unix_getgrgid(value gid)
 {
   struct group * entry;
   entry = getgrgid(Int_val(gid));

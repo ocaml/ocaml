@@ -50,6 +50,11 @@
 
 /* Define HAS_STRERROR if you have strerror(). */
 
+#define SUPPORT_DYNAMIC_LINKING
+
+/* Define SUPPORT_DYNAMIC_LINKING if dynamic loading of C stub code
+   via dlopen() is available. */
+
 /* 2. For the Unix library. */
 
 #define HAS_SOCKETS

@@ -22,7 +22,7 @@ static int msg_flag_table[] = {
   MSG_OOB, MSG_DONTROUTE, MSG_PEEK
 };
 
-value unix_recv(value sock, value buff, value ofs, value len, value flags)
+CAMLprim value unix_recv(value sock, value buff, value ofs, value len, value flags)
 {
   int ret;
   long numbytes;
@@ -41,7 +41,7 @@ value unix_recv(value sock, value buff, value ofs, value len, value flags)
   return Val_int(ret);
 }
 
-value unix_recvfrom(value sock, value buff, value ofs, value len, value flags) /* ML */
+CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len, value flags)
 {
   int ret;
   long numbytes;
@@ -71,7 +71,7 @@ value unix_recvfrom(value sock, value buff, value ofs, value len, value flags) /
   return res;
 }
 
-value unix_send(value sock, value buff, value ofs, value len, value flags) /* ML */
+CAMLprim value unix_send(value sock, value buff, value ofs, value len, value flags)
 {
   int ret;
   long numbytes;
@@ -110,7 +110,7 @@ value unix_sendto_native(value sock, value buff, value ofs, value len, value fla
   return Val_int(ret);
 }
 
-value unix_sendto(argv, argc)    /* ML */
+CAMLprim value unix_sendto(argv, argc)
      value * argv;
      int argc;
 {

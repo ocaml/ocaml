@@ -15,10 +15,10 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_close(value fd)             /* ML */
+CAMLprim value unix_close(value fd)
 {
   if (! CloseHandle(Handle_val(fd))) {
-    _dosmaperr(GetLastError());
+    win32_maperr(GetLastError());
     uerror("close", Nothing);
   }
   return Val_unit;

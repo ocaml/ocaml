@@ -18,35 +18,41 @@ include ../../config/Makefile.nt
 CAMLC=..\..\boot\ocamlrun ..\..\ocamlc -I ..\..\stdlib -I ..\win32unix
 CAMLOPT=..\..\boot\ocamlrun ..\..\ocamlopt -I ..\..\stdlib -I ..\win32unix
 
-BYTECODE_C_OBJS=win32_b.obj
-NATIVECODE_C_OBJS=win32_n.obj
-
 THREAD_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 
 GENFILES=thread.ml
 
-all: libthreads.lib threads.cma
+all: libthreads.dll libthreads.lib threads.cma
 
 allopt: libthreadsnat.lib threads.cmxa
 
-libthreads.lib: $(BYTECODE_C_OBJS)
+libthreads.dll: win32_b.dobj
+	link /nologo /dll /out:libthreads.dll /implib:tmp.lib \
+          win32_b.dobj ..\..\byterun\ocamlrun.lib
+	rm tmp.*
+
+libthreads.lib: win32_b.sobj
 	rm -f libthreads.lib
-	$(MKLIB)libthreads.lib $(BYTECODE_C_OBJS)
+	$(MKLIB)libthreads.lib win32_b.sobj
 
-win32_b.obj: win32.c
-	$(BYTECC) -O -I..\..\byterun $(BYTECCCOMPOPTS) -c win32.c
-	mv win32.obj win32_b.obj
+win32_b.dobj: win32.c
+	$(BYTECC) -I..\..\byterun $(DLLCCCOMPOPTS) -c win32.c
+	mv win32.obj win32_b.dobj
 
-libthreadsnat.lib: $(NATIVECODE_C_OBJS)
+win32_b.sobj: win32.c
+	$(BYTECC) -I..\..\byterun $(BYTECCCOMPOPTS) -c win32.c
+	mv win32.obj win32_b.sobj
+
+libthreadsnat.lib: win32_n.obj
 	rm -f libthreadsnat.lib
-	$(MKLIB)libthreadsnat.lib $(NATIVECODE_C_OBJS)
+	$(MKLIB)libthreadsnat.lib win32_n.obj
 
 win32_n.obj: win32.c
 	$(NATIVECC) -DNATIVE_CODE -O -I..\..\asmrun -I..\..\byterun $(NATIVECCCOMPOPTS) -c win32.c
 	mv win32.obj win32_n.obj
 
 threads.cma: $(THREAD_OBJS)
-	$(CAMLC) -a -custom -o threads.cma $(THREAD_OBJS) -cclib -lthreads
+	$(CAMLC) -a -o threads.cma $(THREAD_OBJS) -cclib -lthreads
 
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
@@ -61,10 +67,11 @@ partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f libthreads*.lib *.obj
+	rm -f *.dll *.lib *.obj *.dobj *.sobj
 	rm -f $(GENFILES)
 
 install:
+	cp libthreads.dll $(LIBDIR)/libthreads.dll
 	cp libthreads.lib $(LIBDIR)/libthreads.lib
 	if not exist $(LIBDIR)\threads mkdir $(LIBDIR)\threads
 	cp $(THREAD_OBJS:.cmo=.cmi) threads.cma $(LIBDIR)/threads
@@ -86,7 +93,5 @@ installopt:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend:
-#	gcc -MM -I../../byterun *.c > .depend
-	..\..\boot\ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend

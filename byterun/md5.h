@@ -21,8 +21,8 @@
 #include "mlvalues.h"
 #include "io.h"
 
-value md5_string (value str, value ofs, value len);
-value md5_chan (value vchan, value len);
+CAMLextern value md5_string (value str, value ofs, value len);
+CAMLextern value md5_chan (value vchan, value len);
 
 struct MD5Context {
         uint32 buf[4];

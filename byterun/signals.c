@@ -107,7 +107,7 @@ void urge_major_slice (void)
   something_to_do = 1;
 }
 
-void enter_blocking_section(void)
+CAMLexport void enter_blocking_section(void)
 {
   int temp;
 
@@ -124,7 +124,7 @@ void enter_blocking_section(void)
   if (enter_blocking_section_hook != NULL) enter_blocking_section_hook();
 }
 
-void leave_blocking_section(void)
+CAMLexport void leave_blocking_section(void)
 {
   if (leave_blocking_section_hook != NULL) leave_blocking_section_hook();
   Assert(async_signal_mode);
@@ -201,7 +201,7 @@ static int posix_signals[] = {
   SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU, SIGVTALRM, SIGPROF
 };
 
-int convert_signal_number(int signo)
+CAMLexport int convert_signal_number(int signo)
 {
   if (signo < 0 && signo >= -(sizeof(posix_signals) / sizeof(int)))
     return posix_signals[-signo-1];
@@ -221,7 +221,7 @@ static int rev_convert_signal_number(int signo)
 #define NSIG 64
 #endif
 
-value install_signal_handler(value signal_number, value action) /* ML */
+CAMLprim value install_signal_handler(value signal_number, value action)
 {
   CAMLparam2 (signal_number, action);
   int sig;

@@ -16,7 +16,7 @@
 #include <alloc.h>
 #include "unixsupport.h"
 
-value unix_pipe(void)                /* ML */
+CAMLprim value unix_pipe(void)
 {
   int fd[2];
   value res;

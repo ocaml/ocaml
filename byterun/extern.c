@@ -415,7 +415,7 @@ void output_val(struct channel *chan, value v, value flags)
   stat_free(block);
 }
 
-value output_value(value vchan, value v, value flags) /* ML */
+CAMLprim value output_value(value vchan, value v, value flags)
 {
   CAMLparam3 (vchan, v, flags);
   struct channel * channel = Channel(vchan);
@@ -426,7 +426,7 @@ value output_value(value vchan, value v, value flags) /* ML */
   CAMLreturn (Val_unit);
 }
 
-value output_value_to_string(value v, value flags) /* ML */
+CAMLprim value output_value_to_string(value v, value flags)
 {
   long len;
   value res;
@@ -438,7 +438,8 @@ value output_value_to_string(value v, value flags) /* ML */
   return res;
 }
 
-value output_value_to_buffer(value buf, value ofs, value len, value v, value flags) /* ML */
+CAMLprim value output_value_to_buffer(value buf, value ofs, value len,
+                                      value v, value flags)
 {
   long len_res;
   extern_block = &Byte(buf, Long_val(ofs));
@@ -449,8 +450,8 @@ value output_value_to_buffer(value buf, value ofs, value len, value v, value fla
   return Val_long(len_res);
 }
 
-void output_value_to_malloc(value v, value flags,
-                            /*out*/ char ** buf, /*out*/ long * len)
+CAMLexport void output_value_to_malloc(value v, value flags,
+                                       /*out*/ char ** buf, /*out*/ long * len)
 {
   long len_res;
   alloc_extern_block();
@@ -461,14 +462,14 @@ void output_value_to_malloc(value v, value flags,
 
 /* Functions for writing user-defined marshallers */
 
-void serialize_int_1(int i)
+CAMLexport void serialize_int_1(int i)
 {
   if (extern_ptr + 1 > extern_limit) resize_extern_block(1);
   extern_ptr[0] = i;
   extern_ptr += 1;
 }
 
-void serialize_int_2(int i)
+CAMLexport void serialize_int_2(int i)
 {
   if (extern_ptr + 2 > extern_limit) resize_extern_block(2);
   extern_ptr[0] = i >> 8;
@@ -476,7 +477,7 @@ void serialize_int_2(int i)
   extern_ptr += 2;
 }
 
-void serialize_int_4(int32 i)
+CAMLexport void serialize_int_4(int32 i)
 {
   if (extern_ptr + 4 > extern_limit) resize_extern_block(4);
   extern_ptr[0] = i >> 24;
@@ -486,29 +487,29 @@ void serialize_int_4(int32 i)
   extern_ptr += 4;
 }
 
-void serialize_int_8(int64 i)
+CAMLexport void serialize_int_8(int64 i)
 {
   serialize_block_8(&i, 1);
 }
 
-void serialize_float_4(float f)
+CAMLexport void serialize_float_4(float f)
 {
   serialize_block_4(&f, 1);
 }
 
-void serialize_float_8(double f)
+CAMLexport void serialize_float_8(double f)
 {
   serialize_block_8(&f, 1);
 }
 
-void serialize_block_1(void * data, long len)
+CAMLexport void serialize_block_1(void * data, long len)
 {
   if (extern_ptr + len > extern_limit) resize_extern_block(len);
   memmove(extern_ptr, data, len);
   extern_ptr += len;
 }
 
-void serialize_block_2(void * data, long len)
+CAMLexport void serialize_block_2(void * data, long len)
 {
   unsigned char * p;
   char * q;
@@ -523,7 +524,7 @@ void serialize_block_2(void * data, long len)
 #endif
 }
 
-void serialize_block_4(void * data, long len)
+CAMLexport void serialize_block_4(void * data, long len)
 {
   unsigned char * p;
   char * q;
@@ -538,7 +539,7 @@ void serialize_block_4(void * data, long len)
 #endif
 }
 
-void serialize_block_8(void * data, long len)
+CAMLexport void serialize_block_8(void * data, long len)
 {
   unsigned char * p;
   char * q;

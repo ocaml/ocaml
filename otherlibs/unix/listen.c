@@ -19,7 +19,7 @@
 
 #include <sys/socket.h>
 
-value unix_listen(value sock, value backlog) /* ML */
+CAMLprim value unix_listen(value sock, value backlog)
 {
   if (listen(Int_val(sock), Int_val(backlog)) == -1) uerror("listen", Nothing);
   return Val_unit;
@@ -27,7 +27,7 @@ value unix_listen(value sock, value backlog) /* ML */
 
 #else
 
-value unix_listen(value sock, value backlog)
+CAMLprim value unix_listen(value sock, value backlog)
 { invalid_argument("listen not implemented"); }
 
 #endif

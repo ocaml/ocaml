@@ -17,7 +17,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_umask(value perm)           /* ML */
+CAMLprim value unix_umask(value perm)
 {
   return Val_int(umask(Int_val(perm)));
 }

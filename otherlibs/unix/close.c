@@ -15,7 +15,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_close(value fd)             /* ML */
+CAMLprim value unix_close(value fd)
 {
   if (close(Int_val(fd)) == -1) uerror("close", Nothing);
   return Val_unit;

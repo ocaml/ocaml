@@ -23,7 +23,7 @@
 
 #ifdef HAS_REWINDDIR
 
-value unix_rewinddir(value d)          /* ML */
+CAMLprim value unix_rewinddir(value d)
 {
   rewinddir((DIR *) d);
   return Val_unit;
@@ -31,7 +31,7 @@ value unix_rewinddir(value d)          /* ML */
 
 #else
 
-value unix_rewinddir(value d)
+CAMLprim value unix_rewinddir(value d)
 { invalid_argument("rewinddir not implemented"); }
 
 #endif

@@ -23,7 +23,7 @@ static int shutdown_command_table[] = {
   0, 1, 2
 };
 
-value unix_shutdown(value sock, value cmd)   /* ML */
+CAMLprim value unix_shutdown(value sock, value cmd)
 {
   if (shutdown(Int_val(sock), shutdown_command_table[Int_val(cmd)]) == -1)
     uerror("shutdown", Nothing);
@@ -32,7 +32,7 @@ value unix_shutdown(value sock, value cmd)   /* ML */
 
 #else
 
-value unix_shutdown(value sock, value cmd)
+CAMLprim value unix_shutdown(value sock, value cmd)
 { invalid_argument("shutdown not implemented"); }
 
 #endif

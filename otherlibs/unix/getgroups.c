@@ -24,7 +24,7 @@
 #include <limits.h>
 #include "unixsupport.h"
 
-value unix_getgroups(value unit)           /* ML */
+CAMLprim value unix_getgroups(value unit)
 {
   gid_t gidset[NGROUPS_MAX];
   int n;
@@ -41,7 +41,7 @@ value unix_getgroups(value unit)           /* ML */
 
 #else
 
-value unix_getgroups(value unit)
+CAMLprim value unix_getgroups(value unit)
 { invalid_argument("getgroups not implemented"); }
 
 #endif

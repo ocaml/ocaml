@@ -75,7 +75,7 @@ static long parse_long(char * p)
   return sign < 0 ? -((long) res) : (long) res;
 }
 
-value int_of_string(value s)          /* ML */
+CAMLprim value int_of_string(value s)
 {
   return Val_long(parse_long(String_val(s)));
 }
@@ -117,7 +117,7 @@ static char * parse_format(value fmt,
     return stat_alloc(prec + 1);
 }
 
-value format_int(value fmt, value arg)      /* ML */
+CAMLprim value format_int(value fmt, value arg)
 {
   char format_string[FORMAT_BUFFER_SIZE];
   char default_format_buffer[FORMAT_BUFFER_SIZE];
@@ -158,7 +158,7 @@ static unsigned long int32_deserialize(void * dst)
   return 4;
 }
 
-struct custom_operations int32_ops = {
+CAMLexport struct custom_operations int32_ops = {
   "_i",
   custom_finalize_default,
   int32_compare,
@@ -167,70 +167,70 @@ struct custom_operations int32_ops = {
   int32_deserialize
 };
 
-value copy_int32(int32 i)
+CAMLexport value copy_int32(int32 i)
 {
   value res = alloc_custom(&int32_ops, 4, 0, 1);
   Int32_val(res) = i;
   return res;
 }
 
-value int32_neg(value v)        /* ML */
+CAMLprim value int32_neg(value v)
 { return copy_int32(- Int32_val(v)); }
 
-value int32_add(value v1, value v2)  /* ML */
+CAMLprim value int32_add(value v1, value v2)
 { return copy_int32(Int32_val(v1) + Int32_val(v2)); }
 
-value int32_sub(value v1, value v2)  /* ML */
+CAMLprim value int32_sub(value v1, value v2)
 { return copy_int32(Int32_val(v1) - Int32_val(v2)); }
 
-value int32_mul(value v1, value v2)  /* ML */
+CAMLprim value int32_mul(value v1, value v2)
 { return copy_int32(Int32_val(v1) * Int32_val(v2)); }
 
-value int32_div(value v1, value v2)  /* ML */
+CAMLprim value int32_div(value v1, value v2)
 {
   int32 divisor = Int32_val(v2);
   if (divisor == 0) raise_zero_divide();
   return copy_int32(Int32_val(v1) / divisor);
 }
 
-value int32_mod(value v1, value v2)  /* ML */
+CAMLprim value int32_mod(value v1, value v2)
 {
   int32 divisor = Int32_val(v2);
   if (divisor == 0) raise_zero_divide();
   return copy_int32(Int32_val(v1) % divisor);
 }
 
-value int32_and(value v1, value v2)  /* ML */
+CAMLprim value int32_and(value v1, value v2)
 { return copy_int32(Int32_val(v1) & Int32_val(v2)); }
 
-value int32_or(value v1, value v2)  /* ML */
+CAMLprim value int32_or(value v1, value v2)
 { return copy_int32(Int32_val(v1) | Int32_val(v2)); }
 
-value int32_xor(value v1, value v2)  /* ML */
+CAMLprim value int32_xor(value v1, value v2)
 { return copy_int32(Int32_val(v1) ^ Int32_val(v2)); }
 
-value int32_shift_left(value v1, value v2)  /* ML */
+CAMLprim value int32_shift_left(value v1, value v2)
 { return copy_int32(Int32_val(v1) << Int_val(v2)); }
 
-value int32_shift_right(value v1, value v2)  /* ML */
+CAMLprim value int32_shift_right(value v1, value v2)
 { return copy_int32(Int32_val(v1) >> Int_val(v2)); }
 
-value int32_shift_right_unsigned(value v1, value v2)  /* ML */
+CAMLprim value int32_shift_right_unsigned(value v1, value v2)
 { return copy_int32((uint32)Int32_val(v1) >> Int_val(v2)); }
 
-value int32_of_int(value v) /* ML */
+CAMLprim value int32_of_int(value v)
 { return copy_int32(Long_val(v)); }
 
-value int32_to_int(value v) /* ML */
+CAMLprim value int32_to_int(value v)
 { return Val_long(Int32_val(v)); }
 
-value int32_of_float(value v) /* ML */
+CAMLprim value int32_of_float(value v)
 { return copy_int32((int32)(Double_val(v))); }
 
-value int32_to_float(value v) /* ML */
+CAMLprim value int32_to_float(value v)
 { return copy_double((double)(Int32_val(v))); }
 
-value int32_format(value fmt, value arg)      /* ML */
+CAMLprim value int32_format(value fmt, value arg)
 {
   char format_string[FORMAT_BUFFER_SIZE];
   char default_format_buffer[FORMAT_BUFFER_SIZE];
@@ -244,7 +244,7 @@ value int32_format(value fmt, value arg)      /* ML */
   return res;
 }
 
-value int32_of_string(value s)          /* ML */
+CAMLprim value int32_of_string(value s)
 {
   return copy_int32(parse_long(String_val(s)));
 }
@@ -255,7 +255,7 @@ value int32_of_string(value s)          /* ML */
 
 #ifdef ARCH_ALIGN_INT64
 
-int64 Int64_val(value v)
+CAMLexport int64 Int64_val(value v)
 {
   union { int32 i[2]; int64 j; } buffer;
   buffer.i[0] = ((int32 *) Data_custom_val(v))[0];
@@ -290,7 +290,7 @@ static unsigned long int64_deserialize(void * dst)
   return 8;
 }
 
-struct custom_operations int64_ops = {
+CAMLexport struct custom_operations int64_ops = {
   "_j",
   custom_finalize_default,
   int64_compare,
@@ -299,7 +299,7 @@ struct custom_operations int64_ops = {
   int64_deserialize
 };
 
-value copy_int64(int64 i)
+CAMLexport value copy_int64(int64 i)
 {
   value res = alloc_custom(&int64_ops, 8, 0, 1);
 #ifndef ARCH_ALIGN_INT64
@@ -313,75 +313,75 @@ value copy_int64(int64 i)
   return res;
 }
 
-value int64_neg(value v)        /* ML */
+CAMLprim value int64_neg(value v)
 { return copy_int64(- Int64_val(v)); }
 
-value int64_add(value v1, value v2)  /* ML */
+CAMLprim value int64_add(value v1, value v2)
 { return copy_int64(Int64_val(v1) + Int64_val(v2)); }
 
-value int64_sub(value v1, value v2)  /* ML */
+CAMLprim value int64_sub(value v1, value v2)
 { return copy_int64(Int64_val(v1) - Int64_val(v2)); }
 
-value int64_mul(value v1, value v2)  /* ML */
+CAMLprim value int64_mul(value v1, value v2)
 { return copy_int64(Int64_val(v1) * Int64_val(v2)); }
 
-value int64_div(value v1, value v2)  /* ML */
+CAMLprim value int64_div(value v1, value v2)
 {
   int64 divisor = Int64_val(v2);
   if (divisor == 0) raise_zero_divide();
   return copy_int64(Int64_val(v1) / divisor);
 }
 
-value int64_mod(value v1, value v2)  /* ML */
+CAMLprim value int64_mod(value v1, value v2)
 {
   int64 divisor = Int64_val(v2);
   if (divisor == 0) raise_zero_divide();
   return copy_int64(Int64_val(v1) % divisor);
 }
 
-value int64_and(value v1, value v2)  /* ML */
+CAMLprim value int64_and(value v1, value v2)
 { return copy_int64(Int64_val(v1) & Int64_val(v2)); }
 
-value int64_or(value v1, value v2)  /* ML */
+CAMLprim value int64_or(value v1, value v2)
 { return copy_int64(Int64_val(v1) | Int64_val(v2)); }
 
-value int64_xor(value v1, value v2)  /* ML */
+CAMLprim value int64_xor(value v1, value v2)
 { return copy_int64(Int64_val(v1) ^ Int64_val(v2)); }
 
-value int64_shift_left(value v1, value v2)  /* ML */
+CAMLprim value int64_shift_left(value v1, value v2)
 { return copy_int64(Int64_val(v1) << Int_val(v2)); }
 
-value int64_shift_right(value v1, value v2)  /* ML */
+CAMLprim value int64_shift_right(value v1, value v2)
 { return copy_int64(Int64_val(v1) >> Int_val(v2)); }
 
-value int64_shift_right_unsigned(value v1, value v2)  /* ML */
+CAMLprim value int64_shift_right_unsigned(value v1, value v2)
 { return copy_int64((uint64)Int64_val(v1) >> Int_val(v2)); }
 
-value int64_of_int(value v) /* ML */
+CAMLprim value int64_of_int(value v)
 { return copy_int64(Long_val(v)); }
 
-value int64_to_int(value v) /* ML */
+CAMLprim value int64_to_int(value v)
 { return Val_long((long) Int64_val(v)); }
 
-value int64_of_float(value v) /* ML */
+CAMLprim value int64_of_float(value v)
 { return copy_int64((int64)(Double_val(v))); }
 
-value int64_to_float(value v) /* ML */
+CAMLprim value int64_to_float(value v)
 { return copy_double((double)(Int64_val(v))); }
 
-value int64_of_int32(value v) /* ML */
+CAMLprim value int64_of_int32(value v)
 { return copy_int64(Int32_val(v)); }
 
-value int64_to_int32(value v) /* ML */
+CAMLprim value int64_to_int32(value v)
 { return copy_int32((int32) Int64_val(v)); }
 
-value int64_of_nativeint(value v) /* ML */
+CAMLprim value int64_of_nativeint(value v)
 { return copy_int64(Nativeint_val(v)); }
 
-value int64_to_nativeint(value v) /* ML */
+CAMLprim value int64_to_nativeint(value v)
 { return copy_nativeint((long) Int64_val(v)); }
 
-value int64_format(value fmt, value arg)      /* ML */
+CAMLprim value int64_format(value fmt, value arg)
 #ifdef ARCH_INT64_PRINTF_FORMAT
 {
   char format_string[FORMAT_BUFFER_SIZE];
@@ -400,7 +400,7 @@ value int64_format(value fmt, value arg)      /* ML */
 { invalid_argument ("Int64.format is not implemented on this platform"); }
 #endif
 
-value int64_of_string(value s)          /* ML */
+CAMLprim value int64_of_string(value s)
 {
   char * p;
   uint64 res;
@@ -418,14 +418,14 @@ value int64_of_string(value s)          /* ML */
   return copy_int64(sign < 0 ? -((int64) res) : (int64) res);
 }
 
-value int64_bits_of_float(value vd)   /* ML */
+CAMLprim value int64_bits_of_float(value vd)
 {
   union { double d; int64 i; } u;
   u.d = Double_val(vd);
   return copy_int64(u.i);
 }
 
-value int64_float_of_bits(value vi)   /* ML */
+CAMLprim value int64_float_of_bits(value vi)
 {
   union { double d; int64 i; } u;
   u.i = Int64_val(vi);
@@ -567,7 +567,7 @@ static unsigned long nativeint_deserialize(void * dst)
   return sizeof(long);
 }
 
-struct custom_operations nativeint_ops = {
+CAMLexport struct custom_operations nativeint_ops = {
   "_n",
   custom_finalize_default,
   nativeint_compare,
@@ -576,76 +576,76 @@ struct custom_operations nativeint_ops = {
   nativeint_deserialize
 };
 
-value copy_nativeint(long i)
+CAMLexport value copy_nativeint(long i)
 {
   value res = alloc_custom(&nativeint_ops, sizeof(long), 0, 1);
   Nativeint_val(res) = i;
   return res;
 }
 
-value nativeint_neg(value v)        /* ML */
+CAMLprim value nativeint_neg(value v)
 { return copy_nativeint(- Nativeint_val(v)); }
 
-value nativeint_add(value v1, value v2)  /* ML */
+CAMLprim value nativeint_add(value v1, value v2)
 { return copy_nativeint(Nativeint_val(v1) + Nativeint_val(v2)); }
 
-value nativeint_sub(value v1, value v2)  /* ML */
+CAMLprim value nativeint_sub(value v1, value v2)
 { return copy_nativeint(Nativeint_val(v1) - Nativeint_val(v2)); }
 
-value nativeint_mul(value v1, value v2)  /* ML */
+CAMLprim value nativeint_mul(value v1, value v2)
 { return copy_nativeint(Nativeint_val(v1) * Nativeint_val(v2)); }
 
-value nativeint_div(value v1, value v2)  /* ML */
+CAMLprim value nativeint_div(value v1, value v2)
 {
   long divisor = Nativeint_val(v2);
   if (divisor == 0) raise_zero_divide();
   return copy_nativeint(Nativeint_val(v1) / divisor);
 }
 
-value nativeint_mod(value v1, value v2)  /* ML */
+CAMLprim value nativeint_mod(value v1, value v2)
 {
   long divisor = Nativeint_val(v2);
   if (divisor == 0) raise_zero_divide();
   return copy_nativeint(Nativeint_val(v1) % divisor);
 }
 
-value nativeint_and(value v1, value v2)  /* ML */
+CAMLprim value nativeint_and(value v1, value v2)
 { return copy_nativeint(Nativeint_val(v1) & Nativeint_val(v2)); }
 
-value nativeint_or(value v1, value v2)  /* ML */
+CAMLprim value nativeint_or(value v1, value v2)
 { return copy_nativeint(Nativeint_val(v1) | Nativeint_val(v2)); }
 
-value nativeint_xor(value v1, value v2)  /* ML */
+CAMLprim value nativeint_xor(value v1, value v2)
 { return copy_nativeint(Nativeint_val(v1) ^ Nativeint_val(v2)); }
 
-value nativeint_shift_left(value v1, value v2)  /* ML */
+CAMLprim value nativeint_shift_left(value v1, value v2)
 { return copy_nativeint(Nativeint_val(v1) << Int_val(v2)); }
 
-value nativeint_shift_right(value v1, value v2)  /* ML */
+CAMLprim value nativeint_shift_right(value v1, value v2)
 { return copy_nativeint(Nativeint_val(v1) >> Int_val(v2)); }
 
-value nativeint_shift_right_unsigned(value v1, value v2)  /* ML */
+CAMLprim value nativeint_shift_right_unsigned(value v1, value v2)
 { return copy_nativeint((unsigned long)Nativeint_val(v1) >> Int_val(v2)); }
 
-value nativeint_of_int(value v) /* ML */
+CAMLprim value nativeint_of_int(value v)
 { return copy_nativeint(Long_val(v)); }
 
-value nativeint_to_int(value v) /* ML */
+CAMLprim value nativeint_to_int(value v)
 { return Val_long(Nativeint_val(v)); }
 
-value nativeint_of_float(value v) /* ML */
+CAMLprim value nativeint_of_float(value v)
 { return copy_nativeint((long)(Double_val(v))); }
 
-value nativeint_to_float(value v) /* ML */
+CAMLprim value nativeint_to_float(value v)
 { return copy_double((double)(Nativeint_val(v))); }
 
-value nativeint_of_int32(value v) /* ML */
+CAMLprim value nativeint_of_int32(value v)
 { return copy_nativeint(Int32_val(v)); }
 
-value nativeint_to_int32(value v) /* ML */
+CAMLprim value nativeint_to_int32(value v)
 { return copy_int32(Nativeint_val(v)); }
 
-value nativeint_format(value fmt, value arg)      /* ML */
+CAMLprim value nativeint_format(value fmt, value arg)
 {
   char format_string[FORMAT_BUFFER_SIZE];
   char default_format_buffer[FORMAT_BUFFER_SIZE];
@@ -659,7 +659,7 @@ value nativeint_format(value fmt, value arg)      /* ML */
   return res;
 }
 
-value nativeint_of_string(value s)          /* ML */
+CAMLprim value nativeint_of_string(value s)
 {
   return copy_nativeint(parse_long(String_val(s)));
 }

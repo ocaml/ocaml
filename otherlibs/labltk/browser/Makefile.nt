@@ -32,10 +32,10 @@ JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
 all: ocamlbrowser
 
 ocamlbrowser: $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ) winmain.obj
-	$(LABLC) -o ocamlbrowser $(INCLUDES) \
+	$(LABLC) -o ocamlbrowser -custom $(INCLUDES) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
 		unix.cma threads.cma str.cma labltk.cma jglib.cma $(OBJ) \
-		$(TKLINKOPT) winmain.obj
+		$(TK_LINK) winmain.obj
 
 jglib.cma: $(JG)
 	$(LABLCOMP) -a -o jglib.cma $(JG) 

@@ -15,7 +15,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_setgid(value gid)           /* ML */
+CAMLprim value unix_setgid(value gid)
 {
   if (setgid(Int_val(gid)) == -1) uerror("setgid", Nothing);
   return Val_unit;

@@ -43,10 +43,10 @@
 
 /* Hooks for locking channels */
 
-void (*channel_mutex_free) (struct channel *) = NULL;
-void (*channel_mutex_lock) (struct channel *) = NULL;
-void (*channel_mutex_unlock) (struct channel *) = NULL;
-void (*channel_mutex_unlock_exn) (void) = NULL;
+CAMLexport void (*channel_mutex_free) (struct channel *) = NULL;
+CAMLexport void (*channel_mutex_lock) (struct channel *) = NULL;
+CAMLexport void (*channel_mutex_unlock) (struct channel *) = NULL;
+CAMLexport void (*channel_mutex_unlock_exn) (void) = NULL;
 
 /* Basic functions over type struct channel *.
    These functions can be called directly from C.
@@ -54,7 +54,7 @@ void (*channel_mutex_unlock_exn) (void) = NULL;
 
 /* Functions shared between input and output */
 
-struct channel * open_descriptor(int fd)
+CAMLexport struct channel * open_descriptor(int fd)
 {
   struct channel * channel;
 
@@ -67,14 +67,14 @@ struct channel * open_descriptor(int fd)
   return channel;
 }
 
-void close_channel(struct channel *channel)
+CAMLexport void close_channel(struct channel *channel)
 {
   close(channel->fd);
   if (channel_mutex_free != NULL) (*channel_mutex_free)(channel);
   stat_free(channel);
 }
 
-long channel_size(struct channel *channel)
+CAMLexport long channel_size(struct channel *channel)
 {
   long end;
 
@@ -86,7 +86,7 @@ long channel_size(struct channel *channel)
   return end;
 }
 
-int channel_binary_mode(struct channel *channel)
+CAMLexport int channel_binary_mode(struct channel *channel)
 {
 #ifdef _WIN32
   int oldmode = setmode(channel->fd, O_BINARY);
@@ -141,7 +141,7 @@ again:
    at least one character. Returns true if the buffer is empty at the
    end of the flush, or false if some data remains in the buffer. */
 
-int flush_partial(struct channel *channel)
+CAMLexport int flush_partial(struct channel *channel)
 {
   int towrite, written;
 
@@ -158,14 +158,14 @@ int flush_partial(struct channel *channel)
 
 /* Flush completely the buffer. */
 
-void flush(struct channel *channel)
+CAMLexport void flush(struct channel *channel)
 {
   while (! flush_partial(channel)) /*nothing*/;
 }
 
 /* Output data */
 
-void putword(struct channel *channel, uint32 w)
+CAMLexport void putword(struct channel *channel, uint32 w)
 {
   if (! channel_binary_mode(channel))
     failwith("output_binary_int: not a binary channel");
@@ -175,7 +175,7 @@ void putword(struct channel *channel, uint32 w)
   putch(channel, w);
 }
 
-int putblock(struct channel *channel, char *p, long int len)
+CAMLexport int putblock(struct channel *channel, char *p, long int len)
 {
   int n, free, towrite, written;
 
@@ -201,7 +201,7 @@ int putblock(struct channel *channel, char *p, long int len)
   }
 }
 
-void really_putblock(struct channel *channel, char *p, long int len)
+CAMLexport void really_putblock(struct channel *channel, char *p, long int len)
 {
   int written;
   while (len > 0) {
@@ -211,14 +211,14 @@ void really_putblock(struct channel *channel, char *p, long int len)
   }
 }
 
-void seek_out(struct channel *channel, long int dest)
+CAMLexport void seek_out(struct channel *channel, long int dest)
 {
   flush(channel);
   if (lseek(channel->fd, dest, 0) != dest) sys_error(NO_ARG);
   channel->offset = dest;
 }
 
-long pos_out(struct channel *channel)
+CAMLexport long pos_out(struct channel *channel)
 {
   return channel->offset + channel->curr - channel->buff;
 }
@@ -245,7 +245,7 @@ static int do_read(int fd, char *p, unsigned int n)
   return retcode;
 }
 
-unsigned char refill(struct channel *channel)
+CAMLexport unsigned char refill(struct channel *channel)
 {
   int n;
 
@@ -257,7 +257,7 @@ unsigned char refill(struct channel *channel)
   return (unsigned char)(channel->buff[0]);
 }
 
-uint32 getword(struct channel *channel)
+CAMLexport uint32 getword(struct channel *channel)
 {
   int i;
   uint32 res;
@@ -271,7 +271,7 @@ uint32 getword(struct channel *channel)
   return res;
 }
 
-int getblock(struct channel *channel, char *p, long int len)
+CAMLexport int getblock(struct channel *channel, char *p, long int len)
 {
   int n, avail, nread;
 
@@ -296,7 +296,7 @@ int getblock(struct channel *channel, char *p, long int len)
   }
 }
 
-int really_getblock(struct channel *chan, char *p, long int n)
+CAMLexport int really_getblock(struct channel *chan, char *p, long int n)
 {
   int r;
   while (n > 0) {
@@ -308,7 +308,7 @@ int really_getblock(struct channel *chan, char *p, long int n)
   return (n == 0);
 }
 
-void seek_in(struct channel *channel, long int dest)
+CAMLexport void seek_in(struct channel *channel, long int dest)
 {
   if (dest >= channel->offset - (channel->max - channel->buff) &&
       dest <= channel->offset) {
@@ -320,12 +320,12 @@ void seek_in(struct channel *channel, long int dest)
   }
 }
 
-long pos_in(struct channel *channel)
+CAMLexport long pos_in(struct channel *channel)
 {
   return channel->offset - (channel->max - channel->curr);
 }
 
-long input_scan_line(struct channel *channel)
+CAMLexport long input_scan_line(struct channel *channel)
 {
   char * p;
   int n;
@@ -400,19 +400,19 @@ static value alloc_channel(struct channel *chan)
   return res;
 }
 
-value caml_open_descriptor(value fd)       /* ML */
+CAMLprim value caml_open_descriptor(value fd)
 {
   return alloc_channel(open_descriptor(Int_val(fd)));
 }
 
-value channel_descriptor(value vchannel)   /* ML */
+CAMLprim value channel_descriptor(value vchannel)
 {
   int fd = Channel(vchannel)->fd;
   if (fd == -1) { errno = EBADF; sys_error(NO_ARG); }
   return Val_int(fd);
 }
 
-value caml_close_channel(value vchannel)      /* ML */
+CAMLprim value caml_close_channel(value vchannel)
 {
   /* For output channels, must have flushed before */
   struct channel * channel = Channel(vchannel);
@@ -425,12 +425,12 @@ value caml_close_channel(value vchannel)      /* ML */
   return Val_unit;
 }
 
-value caml_channel_size(value vchannel)      /* ML */
+CAMLprim value caml_channel_size(value vchannel)
 {
   return Val_long(channel_size(Channel(vchannel)));
 }
 
-value caml_set_binary_mode(value vchannel, value mode) /* ML */
+CAMLprim value caml_set_binary_mode(value vchannel, value mode)
 {
 #ifdef _WIN32
   struct channel * channel = Channel(vchannel);
@@ -440,7 +440,7 @@ value caml_set_binary_mode(value vchannel, value mode) /* ML */
   return Val_unit;
 }
 
-value caml_flush_partial(value vchannel)            /* ML */
+CAMLprim value caml_flush_partial(value vchannel)
 {
   struct channel * channel = Channel(vchannel);
   int res;
@@ -453,7 +453,7 @@ value caml_flush_partial(value vchannel)            /* ML */
   return Val_bool(res);
 }
 
-value caml_flush(value vchannel)            /* ML */
+CAMLprim value caml_flush(value vchannel)
 {
   struct channel * channel = Channel(vchannel);
   /* Don't fail if channel is closed, this causes problem with flush on
@@ -465,7 +465,7 @@ value caml_flush(value vchannel)            /* ML */
   return Val_unit;
 }
 
-value caml_output_char(value vchannel, value ch)  /* ML */
+CAMLprim value caml_output_char(value vchannel, value ch)
 {
   struct channel * channel = Channel(vchannel);
   Lock(channel);
@@ -474,7 +474,7 @@ value caml_output_char(value vchannel, value ch)  /* ML */
   return Val_unit;
 }
 
-value caml_output_int(value vchannel, value w)    /* ML */
+CAMLprim value caml_output_int(value vchannel, value w)
 {
   struct channel * channel = Channel(vchannel);
   Lock(channel);
@@ -483,7 +483,7 @@ value caml_output_int(value vchannel, value w)    /* ML */
   return Val_unit;
 }
 
-value caml_output_partial(value vchannel, value buff, value start, value length) /* ML */
+CAMLprim value caml_output_partial(value vchannel, value buff, value start, value length)
 {
   CAMLparam4 (vchannel, buff, start, length);
   struct channel * channel = Channel(vchannel);
@@ -495,7 +495,7 @@ value caml_output_partial(value vchannel, value buff, value start, value length)
   CAMLreturn (Val_int(res));
 }
 
-value caml_output(value vchannel, value buff, value start, value length) /* ML */
+CAMLprim value caml_output(value vchannel, value buff, value start, value length)
 {
   CAMLparam4 (vchannel, buff, start, length);
   struct channel * channel = Channel(vchannel);
@@ -512,7 +512,7 @@ value caml_output(value vchannel, value buff, value start, value length) /* ML *
   CAMLreturn (Val_unit);
 }
 
-value caml_seek_out(value vchannel, value pos)    /* ML */
+CAMLprim value caml_seek_out(value vchannel, value pos)
 {
   struct channel * channel = Channel(vchannel);
   Lock(channel);
@@ -521,12 +521,12 @@ value caml_seek_out(value vchannel, value pos)    /* ML */
   return Val_unit;
 }
 
-value caml_pos_out(value vchannel)          /* ML */
+CAMLprim value caml_pos_out(value vchannel)
 {
   return Val_long(pos_out(Channel(vchannel)));
 }
 
-value caml_input_char(value vchannel)       /* ML */
+CAMLprim value caml_input_char(value vchannel)
 {
   struct channel * channel = Channel(vchannel);
   unsigned char c;
@@ -537,7 +537,7 @@ value caml_input_char(value vchannel)       /* ML */
   return Val_long(c);
 }
 
-value caml_input_int(value vchannel)        /* ML */
+CAMLprim value caml_input_int(value vchannel)
 {
   struct channel * channel = Channel(vchannel);
   long i;
@@ -551,7 +551,7 @@ value caml_input_int(value vchannel)        /* ML */
   return Val_long(i);
 }
 
-value caml_input(value vchannel,value buff,value vstart,value vlength) /* ML */
+CAMLprim value caml_input(value vchannel,value buff,value vstart,value vlength)
 {
   CAMLparam4 (vchannel, buff, vstart, vlength);
   struct channel * channel = Channel(vchannel);
@@ -583,7 +583,7 @@ value caml_input(value vchannel,value buff,value vstart,value vlength) /* ML */
   CAMLreturn (Val_long(n));
 }
 
-value caml_seek_in(value vchannel, value pos)     /* ML */
+CAMLprim value caml_seek_in(value vchannel, value pos)
 {
   struct channel * channel = Channel(vchannel);
   Lock(channel);
@@ -592,12 +592,12 @@ value caml_seek_in(value vchannel, value pos)     /* ML */
   return Val_unit;
 }
 
-value caml_pos_in(value vchannel)           /* ML */
+CAMLprim value caml_pos_in(value vchannel)
 {
   return Val_long(pos_in(Channel(vchannel)));
 }
 
-value caml_input_scan_line(value vchannel)       /* ML */
+CAMLprim value caml_input_scan_line(value vchannel)
 {
   struct channel * channel = Channel(vchannel);
   long res;

@@ -51,7 +51,7 @@ static void thread_callback(void)
 
 #endif
 
-value callbackN_exn(value closure, int narg, value args[])
+CAMLexport value callbackN_exn(value closure, int narg, value args[])
 {
   int i;
 
@@ -68,14 +68,14 @@ value callbackN_exn(value closure, int narg, value args[])
   return interprete(callback_code, sizeof(callback_code));
 }
 
-value callback_exn(value closure, value arg1)
+CAMLexport value callback_exn(value closure, value arg1)
 {
   value arg[1];
   arg[0] = arg1;
   return callbackN_exn(closure, 1, arg);
 }
 
-value callback2_exn(value closure, value arg1, value arg2)
+CAMLexport value callback2_exn(value closure, value arg1, value arg2)
 {
   value arg[2];
   arg[0] = arg1;
@@ -83,7 +83,8 @@ value callback2_exn(value closure, value arg1, value arg2)
   return callbackN_exn(closure, 2, arg);
 }
 
-value callback3_exn(value closure, value arg1, value arg2, value arg3)
+CAMLexport value callback3_exn(value closure,
+                               value arg1, value arg2, value arg3)
 {
   value arg[3];
   arg[0] = arg1;
@@ -96,7 +97,7 @@ value callback3_exn(value closure, value arg1, value arg2, value arg3)
 
 /* Native-code callbacks.  callback[123]_exn are implemented in asm. */
 
-value callbackN_exn(value closure, int narg, value args[])
+CAMLexport value callbackN_exn(value closure, int narg, value args[])
 {
   CAMLparam1 (closure);
   CAMLxparamN (args, narg);
@@ -131,28 +132,28 @@ value callbackN_exn(value closure, int narg, value args[])
 
 /* Exception-propagating variants of the above */
 
-value callback (value closure, value arg)
+CAMLexport value callback (value closure, value arg)
 {
   value res = callback_exn(closure, arg);
   if (Is_exception_result(res)) mlraise(Extract_exception(res));
   return res;
 }
 
-value callback2 (value closure, value arg1, value arg2)
+CAMLexport value callback2 (value closure, value arg1, value arg2)
 {
   value res = callback2_exn(closure, arg1, arg2);
   if (Is_exception_result(res)) mlraise(Extract_exception(res));
   return res;
 }
 
-value callback3 (value closure, value arg1, value arg2, value arg3)
+CAMLexport value callback3 (value closure, value arg1, value arg2, value arg3)
 {
   value res = callback3_exn(closure, arg1, arg2, arg3);
   if (Is_exception_result(res)) mlraise(Extract_exception(res));
   return res;
 }
 
-value callbackN (value closure, int narg, value args[])
+CAMLexport value callbackN (value closure, int narg, value args[])
 {
   value res = callbackN_exn(closure, narg, args);
   if (Is_exception_result(res)) mlraise(Extract_exception(res));
@@ -178,7 +179,7 @@ static unsigned int hash_value_name(char *name)
   return h % Named_value_size;
 }
 
-value register_named_value(value vname, value val) /* ML */
+CAMLprim value register_named_value(value vname, value val)
 {
   struct named_value * nv;
   char * name = String_val(vname);
@@ -194,7 +195,7 @@ value register_named_value(value vname, value val) /* ML */
   return Val_unit;
 }
 
-value * caml_named_value(char *name)
+CAMLexport value * caml_named_value(char *name)
 {
   struct named_value * nv;
   for (nv = named_value_table[hash_value_name(name)];

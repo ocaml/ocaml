@@ -18,7 +18,7 @@
 
 value val_process_id;
 
-value win_startup(unit)         /* ML */
+CAMLprim value win_startup(unit)
      value unit;
 {
   WSADATA wsaData;
@@ -34,7 +34,7 @@ value win_startup(unit)         /* ML */
   return Val_unit;
 }
 
-value win_cleanup(unit)         /* ML */
+CAMLprim value win_cleanup(unit)
      value unit;
 {
   (void) WSACleanup();
@@ -45,7 +45,7 @@ static int std_handles[3] = {
   STD_INPUT_HANDLE, STD_OUTPUT_HANDLE, STD_ERROR_HANDLE
 };
 
-value win_stdhandle(value nhandle) /* ML */
+CAMLprim value win_stdhandle(value nhandle)
 {
   return win_alloc_handle(GetStdHandle(std_handles[Int_val(nhandle)]));
 }

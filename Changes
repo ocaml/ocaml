@@ -8,15 +8,17 @@ Type-checker:
         module A: sig module type T = sig module T: M end end
         module B: A.T
 - Improved efficiency of module type-checking via lazy computation of
-  certain summary information.
+  certain signature summary information.
 
 Byte-code compiler:
 - Protect against VM stack overflow caused by module initialization code
   with many local variables.
+- Support for dynamic loading of the C part of mixed Caml/C libraries.
 
 Native-code compiler:
 - Attempt to recover gracefully from system stack overflow.  Currently
   works on x86 under Linux and BSD.
+- Alpha: work around "as" bug in Tru64 5.1.
 
 Toplevel environment:
 - Revised printing of inferred types and evaluation results
@@ -26,10 +28,15 @@ Tools:
 - ocamldep: added -pp option to handle preprocessed source files.
 
 Run-time system:
+- Support for dynamic loading of the C part of mixed Caml/C libraries.
+  Currently works under Linux, FreeBSD, Windows, Tru64, Solaris and Irix.
+- Implemented registration of global C roots with a skip list,
+  runs much faster when there are many global C roots.
 - Autoconfiguration script: fixed wrong detection of Mac OS X; problem
   with the Sparc, gcc 3.0, and float alignment fixed.
 
 Other libraries:
+- All libraries revised to allow dynamic loading of the C part.
 - Graphics under X Windows: revised event handling, should no longer lose
     mouse events between two calls to wait_next_event(); wait_next_event()
     now interruptible by signals.

@@ -38,31 +38,31 @@ static struct custom_operations nat_operations = {
   deserialize_nat
 };
 
-value initialize_nat(value unit)
+CAMLprim value initialize_nat(value unit)
 {
   register_custom_operations(&nat_operations);
   return Val_unit;
 }
 
-value create_nat(value size)
+CAMLprim value create_nat(value size)
 {
   mlsize_t sz = Long_val(size);
 
   return alloc_custom(&nat_operations, sz * sizeof(value), 0, 1);
 }
 
-value length_nat(value nat)
+CAMLprim value length_nat(value nat)
 {
   return Val_long(Wosize_val(nat) - 1);
 }
 
-value set_to_zero_nat(value nat, value ofs, value len)
+CAMLprim value set_to_zero_nat(value nat, value ofs, value len)
 {
   BnSetToZero(Bignum_val(nat), Long_val(ofs), Long_val(len));
   return Val_unit;
 }
 
-value blit_nat(value nat1, value ofs1, value nat2, value ofs2, value len)
+CAMLprim value blit_nat(value nat1, value ofs1, value nat2, value ofs2, value len)
 {
   BnAssign(Bignum_val(nat1), Long_val(ofs1),
            Bignum_val(nat2), Long_val(ofs2),
@@ -70,49 +70,49 @@ value blit_nat(value nat1, value ofs1, value nat2, value ofs2, value len)
   return Val_unit;
 }
 
-value set_digit_nat(value nat, value ofs, value digit)
+CAMLprim value set_digit_nat(value nat, value ofs, value digit)
 {
   BnSetDigit(Bignum_val(nat), Long_val(ofs), Long_val(digit));
   return Val_unit;
 }
 
-value nth_digit_nat(value nat, value ofs)
+CAMLprim value nth_digit_nat(value nat, value ofs)
 {
   return Val_long(BnGetDigit(Bignum_val(nat), Long_val(ofs)));
 }
 
-value num_digits_nat(value nat, value ofs, value len)
+CAMLprim value num_digits_nat(value nat, value ofs, value len)
 {
   return Val_long(BnNumDigits(Bignum_val(nat), Long_val(ofs), Long_val(len)));
 }
 
-value num_leading_zero_bits_in_digit(value nat, value ofs)
+CAMLprim value num_leading_zero_bits_in_digit(value nat, value ofs)
 {
   return
     Val_long(BnNumLeadingZeroBitsInDigit(Bignum_val(nat), Long_val(ofs)));
 }
 
-value is_digit_int(value nat, value ofs)
+CAMLprim value is_digit_int(value nat, value ofs)
 {
   return Val_bool(BnDoesDigitFitInWord(Bignum_val(nat), Long_val(ofs)));
 }
 
-value is_digit_zero(value nat, value ofs)
+CAMLprim value is_digit_zero(value nat, value ofs)
 {
   return Val_bool(BnIsDigitZero(Bignum_val(nat), Long_val(ofs)));
 }
 
-value is_digit_normalized(value nat, value ofs)
+CAMLprim value is_digit_normalized(value nat, value ofs)
 {
   return Val_bool(BnIsDigitNormalized(Bignum_val(nat), Long_val(ofs)));
 }
 
-value is_digit_odd(value nat, value ofs)
+CAMLprim value is_digit_odd(value nat, value ofs)
 {
   return Val_bool(BnIsDigitOdd(Bignum_val(nat), Long_val(ofs)));
 }
 
-value incr_nat(value nat, value ofs, value len, value carry_in)
+CAMLprim value incr_nat(value nat, value ofs, value len, value carry_in)
 {
   return Val_long(BnAddCarry(Bignum_val(nat), Long_val(ofs),
                              Long_val(len), Long_val(carry_in)));
@@ -125,19 +125,19 @@ value add_nat_native(value nat1, value ofs1, value len1, value nat2, value ofs2,
                         Long_val(carry_in)));
 }
 
-value add_nat(value *argv, int argn)
+CAMLprim value add_nat(value *argv, int argn)
 {
   return add_nat_native(argv[0], argv[1], argv[2], argv[3],
                         argv[4], argv[5], argv[6]);
 }
 
-value complement_nat(value nat, value ofs, value len)
+CAMLprim value complement_nat(value nat, value ofs, value len)
 {
   BnComplement(Bignum_val(nat), Long_val(ofs), Long_val(len));
   return Val_unit;
 }
 
-value decr_nat(value nat, value ofs, value len, value carry_in)
+CAMLprim value decr_nat(value nat, value ofs, value len, value carry_in)
 {
   return Val_long(BnSubtractBorrow(Bignum_val(nat), Long_val(ofs),
                                    Long_val(len), Long_val(carry_in)));
@@ -150,7 +150,7 @@ value sub_nat_native(value nat1, value ofs1, value len1, value nat2, value ofs2,
                              Long_val(carry_in)));
 }
 
-value sub_nat(value *argv, int argn)
+CAMLprim value sub_nat(value *argv, int argn)
 {
   return sub_nat_native(argv[0], argv[1], argv[2], argv[3],
                         argv[4], argv[5], argv[6]);
@@ -164,7 +164,7 @@ value mult_digit_nat_native(value nat1, value ofs1, value len1, value nat2, valu
                              Bignum_val(nat3), Long_val(ofs3)));
 }
 
-value mult_digit_nat(value *argv, int argn)
+CAMLprim value mult_digit_nat(value *argv, int argn)
 {
   return mult_digit_nat_native(argv[0], argv[1], argv[2], argv[3],
                                argv[4], argv[5], argv[6], argv[7]);
@@ -178,7 +178,7 @@ value mult_nat_native(value nat1, value ofs1, value len1, value nat2, value ofs2
                         Bignum_val(nat3), Long_val(ofs3), Long_val(len3)));
 }
 
-value mult_nat(value *argv, int argn)
+CAMLprim value mult_nat(value *argv, int argn)
 {
   return mult_nat_native(argv[0], argv[1], argv[2], argv[3],
                          argv[4], argv[5], argv[6], argv[7], argv[8]);
@@ -191,7 +191,7 @@ value shift_left_nat_native(value nat1, value ofs1, value len1, value nat2, valu
   return Val_unit;
 }
 
-value shift_left_nat(value *argv, int argn)
+CAMLprim value shift_left_nat(value *argv, int argn)
 {
   return shift_left_nat_native(argv[0], argv[1], argv[2],
                                argv[3], argv[4], argv[5]);
@@ -206,7 +206,7 @@ value div_digit_nat_native(value natq, value ofsq, value natr, value ofsr, value
   return Val_unit;
 }
 
-value div_digit_nat(value *argv, int argn)
+CAMLprim value div_digit_nat(value *argv, int argn)
 {
   return div_digit_nat_native(argv[0], argv[1], argv[2], argv[3],
                               argv[4], argv[5], argv[6], argv[7], argv[8]);
@@ -219,7 +219,7 @@ value div_nat_native(value nat1, value ofs1, value len1, value nat2, value ofs2,
   return Val_unit;
 }
 
-value div_nat(value *argv, int argn)
+CAMLprim value div_nat(value *argv, int argn)
 {
   return div_nat_native(argv[0], argv[1], argv[2],
                         argv[3], argv[4], argv[5]);
@@ -232,13 +232,13 @@ value shift_right_nat_native(value nat1, value ofs1, value len1, value nat2, val
   return Val_unit;
 }
 
-value shift_right_nat(value *argv, int argn)
+CAMLprim value shift_right_nat(value *argv, int argn)
 {
   return shift_right_nat_native(argv[0], argv[1], argv[2],
                                argv[3], argv[4], argv[5]);
 }
 
-value compare_digits_nat(value nat1, value ofs1, value nat2, value ofs2)
+CAMLprim value compare_digits_nat(value nat1, value ofs1, value nat2, value ofs2)
 {
   return Val_long(BnCompareDigits(Bignum_val(nat1), Long_val(ofs1),
                                   Bignum_val(nat2), Long_val(ofs2)));
@@ -250,27 +250,27 @@ value compare_nat_native(value nat1, value ofs1, value len1, value nat2, value o
                             Bignum_val(nat2), Long_val(ofs2), Long_val(len2)));
 }
 
-value compare_nat(value *argv, int argn)
+CAMLprim value compare_nat(value *argv, int argn)
 {
   return compare_nat_native(argv[0], argv[1], argv[2],
                             argv[3], argv[4], argv[5]);
 }
 
-value land_digit_nat(value nat1, value ofs1, value nat2, value ofs2)
+CAMLprim value land_digit_nat(value nat1, value ofs1, value nat2, value ofs2)
 {
   BnAndDigits(Bignum_val(nat1), Long_val(ofs1),
               Bignum_val(nat2), Long_val(ofs2));
   return Val_unit;
 }
 
-value lor_digit_nat(value nat1, value ofs1, value nat2, value ofs2)
+CAMLprim value lor_digit_nat(value nat1, value ofs1, value nat2, value ofs2)
 {
   BnOrDigits(Bignum_val(nat1), Long_val(ofs1),
               Bignum_val(nat2), Long_val(ofs2));
   return Val_unit;
 }
 
-value lxor_digit_nat(value nat1, value ofs1, value nat2, value ofs2)
+CAMLprim value lxor_digit_nat(value nat1, value ofs1, value nat2, value ofs2)
 {
   BnXorDigits(Bignum_val(nat1), Long_val(ofs1),
               Bignum_val(nat2), Long_val(ofs2));

@@ -1,6 +1,36 @@
-envir.o: envir.c
-
-errmsg.o: errmsg.c
-
-startup.o: startup.c
-
+accept.dobj accept.sobj: accept.c unixsupport.h socketaddr.h
+bind.dobj bind.sobj: bind.c unixsupport.h socketaddr.h
+channels.dobj channels.sobj: channels.c unixsupport.h 
+close.dobj close.sobj: close.c unixsupport.h 
+close_on.o: close_on.c unixsupport.h 
+connect.dobj connect.sobj: connect.c unixsupport.h socketaddr.h
+createprocess.dobj createprocess.sobj: createprocess.c unixsupport.h 
+dup.dobj dup.sobj: dup.c unixsupport.h 
+dup2.o: dup2.c unixsupport.h 
+errmsg.dobj errmsg.sobj: errmsg.c unixsupport.h 
+getpeername.dobj getpeername.sobj: getpeername.c unixsupport.h \
+ socketaddr.h
+getpid.dobj getpid.sobj: getpid.c unixsupport.h 
+getsockname.dobj getsockname.sobj: getsockname.c unixsupport.h \
+ socketaddr.h
+gettimeofday.dobj gettimeofday.sobj: gettimeofday.c unixsupport.h 
+link.dobj link.sobj: link.c unixsupport.h 
+listen.dobj listen.sobj: listen.c unixsupport.h 
+lseek.dobj lseek.sobj: lseek.c unixsupport.h 
+mkdir.dobj mkdir.sobj: mkdir.c unixsupport.h 
+open.dobj open.sobj: open.c unixsupport.h 
+pipe.dobj pipe.sobj: pipe.c unixsupport.h 
+read.dobj read.sobj: read.c unixsupport.h 
+select.dobj select.sobj: select.c unixsupport.h 
+sendrecv.dobj sendrecv.sobj: sendrecv.c unixsupport.h socketaddr.h
+shutdown.dobj shutdown.sobj: shutdown.c unixsupport.h 
+sleep.dobj sleep.sobj: sleep.c unixsupport.h 
+socket.dobj socket.sobj: socket.c unixsupport.h 
+sockopt.dobj sockopt.sobj: sockopt.c unixsupport.h 
+startup.dobj startup.sobj: startup.c
+system.dobj system.sobj: system.c unixsupport.h 
+unixsupport.dobj unixsupport.sobj: unixsupport.c unixsupport.h \
+ ../unix/cst2constr.h
+windir.dobj windir.sobj: windir.c unixsupport.h 
+winwait.dobj winwait.sobj: winwait.c unixsupport.h 
+write.dobj write.sobj: write.c unixsupport.h 

@@ -22,12 +22,12 @@
 #include "mlvalues.h"
 #include "memory.h"
 
-extern value * stack_low;
-extern value * stack_high;
-extern value * stack_threshold;
-extern value * extern_sp;
-extern value * trapsp;
-extern value * trap_barrier;
+CAMLextern value * stack_low;
+CAMLextern value * stack_high;
+CAMLextern value * stack_threshold;
+CAMLextern value * extern_sp;
+CAMLextern value * trapsp;
+CAMLextern value * trap_barrier;
 
 #define Trap_pc(tp) (((code_t *)(tp))[0])
 #define Trap_link(tp) (((value **)(tp))[1])

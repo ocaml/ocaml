@@ -21,7 +21,7 @@
 #include <alloc.h>
 #include "camltk.h"
 
-value camltk_tk_mainloop(void) /* ML */
+CAMLprim value camltk_tk_mainloop(void)
 {
   CheckInit();
 
@@ -43,7 +43,7 @@ static int event_flag_table[] = {
   TK_ALL_EVENTS
 };
 
-value camltk_dooneevent(value flags) /* ML */
+CAMLprim value camltk_dooneevent(value flags)
 {
   int ret;
 

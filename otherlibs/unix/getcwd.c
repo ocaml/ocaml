@@ -30,7 +30,7 @@
 
 #ifdef HAS_GETCWD
 
-value unix_getcwd(value unit)     /* ML */
+CAMLprim value unix_getcwd(value unit)
 {
   char buff[PATH_MAX];
   if (getcwd(buff, sizeof(buff)) == 0) uerror("getcwd", Nothing);
@@ -40,7 +40,7 @@ value unix_getcwd(value unit)     /* ML */
 #else
 #ifdef HAS_GETWD
 
-value unix_getcwd(value unit)
+CAMLprim value unix_getcwd(value unit)
 {
   char buff[PATH_MAX];
   if (getwd(buff) == 0) uerror("getcwd", copy_string(buff));
@@ -49,7 +49,7 @@ value unix_getcwd(value unit)
 
 #else
 
-value unix_getcwd(value unit)
+CAMLprim value unix_getcwd(value unit)
 { invalid_argument("getcwd not implemented"); }
 
 #endif

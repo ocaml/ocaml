@@ -55,7 +55,7 @@ value copy_string_list(int argc, char **argv)
  *   this version works on an arbitrary Tcl command,
  *   and does parsing and substitution
  */
-value camltk_tcl_eval(value str) /* ML */
+CAMLprim value camltk_tcl_eval(value str)
 {
   int code;
   char *cmd = NULL;
@@ -167,7 +167,7 @@ int fill_args (char **argv, int where, value v)
 }
 
 /* v is an array of TkArg */
-value camltk_tcl_direct_eval(value v) /* ML */
+CAMLprim value camltk_tcl_direct_eval(value v)
 {
   int i;
   int size;                     /* size of argv */

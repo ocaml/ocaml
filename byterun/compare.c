@@ -182,7 +182,7 @@ static long compare_val(value v1, value v2)
   }
 }
 
-value compare(value v1, value v2)           /* ML */
+CAMLprim value compare(value v1, value v2)
 {
   long res = compare_val(v1, v2);
   /* Free stack if needed */
@@ -195,42 +195,42 @@ value compare(value v1, value v2)           /* ML */
     return Val_int(0);
 }
 
-value equal(value v1, value v2)            /* ML */
+CAMLprim value equal(value v1, value v2)
 {
   long res = compare_val(v1, v2);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res == 0);
 }
 
-value notequal(value v1, value v2)            /* ML */
+CAMLprim value notequal(value v1, value v2)
 {
   long res = compare_val(v1, v2);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res != 0);
 }
 
-value lessthan(value v1, value v2)            /* ML */
+CAMLprim value lessthan(value v1, value v2)
 {
   long res = compare_val(v1, v2);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res < 0);
 }
 
-value lessequal(value v1, value v2)          /* ML */
+CAMLprim value lessequal(value v1, value v2)
 {
   long res = compare_val(v1, v2);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res <= 0);
 }
 
-value greaterthan(value v1, value v2)        /* ML */
+CAMLprim value greaterthan(value v1, value v2)
 {
   long res = compare_val(v1, v2);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res > 0);
 }
 
-value greaterequal(value v1, value v2)       /* ML */
+CAMLprim value greaterequal(value v1, value v2)
 {
   long res = compare_val(v1, v2);
   if (compare_stack != compare_stack_init) compare_free_stack();

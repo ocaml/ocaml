@@ -19,7 +19,7 @@
 
 #include "socketaddr.h"
 
-value unix_getsockname(value sock)          /* ML */
+CAMLprim value unix_getsockname(value sock)
 {
   int retcode;
   union sock_addr_union addr;
@@ -33,7 +33,7 @@ value unix_getsockname(value sock)          /* ML */
 
 #else
 
-value unix_getsockname(value sock)
+CAMLprim value unix_getsockname(value sock)
 { invalid_argument("getsockname not implemented"); }
   
 #endif

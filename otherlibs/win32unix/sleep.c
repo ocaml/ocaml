@@ -16,7 +16,7 @@
 #include "unixsupport.h"
 #include <windows.h>
 
-value unix_sleep(t)              /* ML */
+CAMLprim value unix_sleep(t)
      value t;
 {
   enter_blocking_section();

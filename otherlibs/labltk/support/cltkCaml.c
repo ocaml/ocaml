@@ -51,7 +51,7 @@ int CamlCBCmd(ClientData clientdata, Tcl_Interp *interp, int argc, char **argv)
  * using the following. TCL_VOLATILE ensures that Tcl will make
  * a copy of the string
  */
-value camltk_return (value v) /* ML */
+CAMLprim value camltk_return (value v)
 {
   CheckInit();
 
@@ -71,7 +71,7 @@ void tk_error(char *errmsg)
    takes place during loading of the protocol module
  */
 
-value camltk_init(value v) /* ML */
+CAMLprim value camltk_init(value v)
 {
   /* Initialize the Caml pointers */
   if (tkerror_exn == NULL)

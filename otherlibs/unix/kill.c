@@ -18,7 +18,7 @@
 #include <signal.h>
 #include <signals.h>
 
-value unix_kill(value pid, value signal)     /* ML */
+CAMLprim value unix_kill(value pid, value signal)
 {
   int sig;
   sig = convert_signal_number(Int_val(signal));

@@ -11,14 +11,12 @@ opt: support.cmx widget.cmx protocol.cmx \
 COBJS=cltkCaml.o cltkEval.o cltkEvent.o cltkFile.o cltkMain.o \
       cltkMisc.o cltkTimer.o cltkVar.o cltkWait.o
 
-CCFLAGS=-I../../../byterun $(TK_DEFS) $(X11_INCLUDES)
+CCFLAGS=-I../../../byterun $(TK_DEFS) $(X11_INCLUDES) $(SHAREDCCCOMPOPTS)
 
 COMPFLAGS=-I $(OTHERS)/unix
 
 liblabltk41.a : $(COBJS)
-	rm -f liblabltk41.a
-	ar rc liblabltk41.a $(COBJS)
-	$(RANLIB) liblabltk41.a
+	$(MKLIB) -o labltk41 $(COBJS) $(TK_LINK) $(X11_LINK)
 
 PUB=fileevent.cmi fileevent.mli \
     protocol.cmi protocol.mli \
@@ -29,7 +27,9 @@ PUB=fileevent.cmi fileevent.mli \
 install: liblabltk41.a $(PUB)
 	if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
 	cp $(PUB) liblabltk41.a $(LABLTKDIR)
-	cd $(LABLTKDIR); chmod 644 $(PUB) liblabltk41.a
+	cd $(LABLTKDIR); $(RANLIB) liblabltk41.a
+	if test -f liblabltk41.so; then cp liblabltk41.so $(LABLTKDIR); fi
+	cd $(LABLTKDIR); chmod 644 $(PUB) liblabltk41.*
 
 clean : 
 	rm -f *.cm* *.o *.a

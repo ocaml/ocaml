@@ -22,7 +22,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-value unix_nice(value incr)   /* ML */
+CAMLprim value unix_nice(value incr)
 {
   int prio;
   errno = 0;
@@ -37,7 +37,7 @@ value unix_nice(value incr)   /* ML */
 
 #else
 
-value unix_nice(value incr)
+CAMLprim value unix_nice(value incr)
 {
   int ret;
   errno = 0;

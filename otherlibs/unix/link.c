@@ -15,7 +15,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_link(value path1, value path2)    /* ML */
+CAMLprim value unix_link(value path1, value path2)
 {
   if (link(String_val(path1), String_val(path2)) == -1) uerror("link", path2);
   return Val_unit;

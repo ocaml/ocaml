@@ -24,7 +24,7 @@ BOOL (WINAPI *tCreateHardLink)(
   LPSECURITY_ATTRIBUTES lpSecurityAttributes  
 );
   
-value unix_link(value path1, value path2)    /* ML */
+CAMLprim value unix_link(value path1, value path2)
 { 
   HMODULE hModKernel32;
   tCreateHardLink pCreateHardLink; 
@@ -34,7 +34,7 @@ value unix_link(value path1, value path2)    /* ML */
   if (pCreateHardLink == NULL)
     invalid_argument("Unix.link not implemented");
   if (! pCreateHardLink(String_val(path2), String_val(path1), NULL)) {
-    _dosmaperr(GetLastError());
+    win32_maperr(GetLastError());
     uerror("link", path2);
   }
   return Val_unit;

@@ -1,48 +1,87 @@
 !include ..\..\..\config\Makefile.nt
 
 CC = $(BYTECC)
-LIB = libbignum.lib
-OBJECT = o\KerN.obj o\bnInit.obj o\bnMult.obj o\bnDivide.obj o\bnCmp.obj o\bzf.obj o\bz.obj 
+CFLAGS = -c -I.\h -DCAML_LIGHT
 KERNH = h\BigNum.h 
-CFLAGS = -c -I.\h -DCAML_LIGHT $(BYTECCCOMPOPTS)
+OBJS = o\KerN.obj o\bnInit.obj o\bnMult.obj o\bnDivide.obj \
+       o\bnCmp.obj o\bzf.obj o\bz.obj 
 
-all: $(LIB)
+all: dbignum.lib sbignum.lib
 
 scratch:
-	rm -f o/*.obj libbignum.lib
+	rm -f *.lib o/*.dobj o/*.sobj
 
-# build the BigNum library
-$(LIB): $(OBJECT)
-	lib /out:$(LIB) $(OBJECT)
+# DLL
 
-o\KerN.obj: c\KerN.c 
-	$(CC) $(CFLAGS) c\KerN.c
-	mv KerN.obj o
+dbignum.lib: $(OBJS:.obj=.dobj)
+	$(MKLIB)dbignum.lib $(OBJS:.obj=.dobj)
 
-o\bnInit.obj: c\bn\bnInit.c $(KERNH)
-	$(CC) $(CFLAGS) c\bn\bnInit.c
-	mv bnInit.obj o
+o\KerN.dobj: c\KerN.c 
+	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c\KerN.c
+	mv KerN.obj o\KerN.dobj
 
-o\bnMult.obj: c\bn\bnMult.c $(KERNH)
-	$(CC) $(CFLAGS) c\bn\bnMult.c
-	mv bnMult.obj o
+o\bnInit.dobj: c\bn\bnInit.c $(KERNH)
+	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c\bn\bnInit.c
+	mv bnInit.obj o\bnInit.dobj
 
-o\bnDivide.obj: c\bn\bnDivide.c $(KERNH)
-	$(CC) $(CFLAGS) c\bn\bnDivide.c
-	mv bnDivide.obj o
+o\bnMult.dobj: c\bn\bnMult.c $(KERNH)
+	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c\bn\bnMult.c
+	mv bnMult.obj o\bnMult.dobj
 
-o\bnCmp.obj: c\bn\bnCmp.c $(KERNH)
-	$(CC) $(CFLAGS) c\bn\bnCmp.c
-	mv bnCmp.obj o
+o\bnDivide.dobj: c\bn\bnDivide.c $(KERNH)
+	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c\bn\bnDivide.c
+	mv bnDivide.obj o\bnDivide.dobj
 
-o\bz.obj: c\bz.c h/BigZ.h $(KERNH)
-	$(CC) $(CFLAGS) c\bz.c
-	mv bz.obj o
+o\bnCmp.dobj: c\bn\bnCmp.c $(KERNH)
+	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c\bn\bnCmp.c
+	mv bnCmp.obj o\bnCmp.dobj
 
-o\br.obj: c\br.c h/BigR.h h/BigZ.h $(KERNH)
-	$(CC) $(CFLAGS) c\br.c
-	mv br.obj o
+o\bz.dobj: c\bz.c h/BigZ.h $(KERNH)
+	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c\bz.c
+	mv bz.obj o\bz.dobj
 
-o\bzf.obj: c\bzf.c h/BigZ.h $(KERNH)
-	$(CC) $(CFLAGS) c\bzf.c
-	mv bzf.obj o
+o\br.dobj: c\br.c h/BigR.h h/BigZ.h $(KERNH)
+	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c\br.c
+	mv br.obj o\br.dobj
+
+o\bzf.dobj: c\bzf.c h/BigZ.h $(KERNH)
+	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) c\bzf.c
+	mv bzf.obj o\bzf.dobj
+
+# Static
+
+sbignum.lib: $(OBJS:.obj=.sobj)
+	$(MKLIB)sbignum.lib $(OBJS:.obj=.sobj)
+
+o\KerN.sobj: c\KerN.c 
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c\KerN.c
+	mv KerN.obj o\KerN.sobj
+
+o\bnInit.sobj: c\bn\bnInit.c $(KERNH)
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c\bn\bnInit.c
+	mv bnInit.obj o\bnInit.sobj
+
+o\bnMult.sobj: c\bn\bnMult.c $(KERNH)
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c\bn\bnMult.c
+	mv bnMult.obj o\bnMult.sobj
+
+o\bnDivide.sobj: c\bn\bnDivide.c $(KERNH)
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c\bn\bnDivide.c
+	mv bnDivide.obj o\bnDivide.sobj
+
+o\bnCmp.sobj: c\bn\bnCmp.c $(KERNH)
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c\bn\bnCmp.c
+	mv bnCmp.obj o\bnCmp.sobj
+
+o\bz.sobj: c\bz.c h/BigZ.h $(KERNH)
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c\bz.c
+	mv bz.obj o\bz.sobj
+
+o\br.sobj: c\br.c h/BigR.h h/BigZ.h $(KERNH)
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c\br.c
+	mv br.obj o\br.sobj
+
+o\bzf.sobj: c\bzf.c h/BigZ.h $(KERNH)
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) c\bzf.c
+	mv bzf.obj o\bzf.sobj
+

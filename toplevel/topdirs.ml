@@ -35,8 +35,9 @@ let _ = Hashtbl.add directive_table "quit" (Directive_none dir_quit)
 (* To add a directory to the load path *)
 
 let dir_directory s =
-  Config.load_path :=
-    expand_directory Config.standard_library s :: !Config.load_path;
+  let d = expand_directory Config.standard_library s in
+  Config.load_path := d :: !Config.load_path;
+  Dll.add_path [d];
   Env.reset_cache()
 
 let _ = Hashtbl.add directive_table "directory" (Directive_string dir_directory)
@@ -107,8 +108,14 @@ let dir_load ppf name =
       if buffer = Config.cma_magic_number then begin
         let toc_pos = input_binary_int ic in  (* Go to table of contents *)
         seek_in ic toc_pos;
-        List.iter (load_compunit ic filename ppf)
-                  (input_value ic : library).lib_units
+        let lib = (input_value ic : library) in
+        begin try
+          Dll.open_dlls (Dll.extract_dll_names lib.lib_ccobjs)
+        with Failure reason ->
+          fprintf ppf "Cannot load required shared library: %s.@." reason;
+          raise Load_failed
+        end;
+        List.iter (load_compunit ic filename ppf) lib.lib_units
       end else fprintf ppf "File %s is not a bytecode object file.@." name
     with Load_failed -> ()
     end;

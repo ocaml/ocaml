@@ -134,7 +134,7 @@ void final_empty_young (void)
 }
 
 /* Put (f,v) in the recent set. */
-value final_register (value f, value v)       /* ML */
+CAMLprim value final_register (value f, value v)
 {
   if (!(Is_block (v) && (Is_in_heap (v) || Is_young (v)))){
     invalid_argument ("Gc.finalise");

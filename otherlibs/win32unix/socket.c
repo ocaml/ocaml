@@ -25,7 +25,7 @@ int socket_type_table[] = {
   SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET
 };
 
-value unix_socket(domain, type, proto) /* ML */
+CAMLprim value unix_socket(domain, type, proto)
      value domain, type, proto;
 {
   SOCKET s;

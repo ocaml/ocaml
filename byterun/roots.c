@@ -24,7 +24,7 @@
 #include "roots.h"
 #include "stacks.h"
 
-struct caml__roots_block *local_roots = NULL;
+CAMLexport struct caml__roots_block *local_roots = NULL;
 
 void (*scan_roots_hook) (scanning_action f) = NULL;
 

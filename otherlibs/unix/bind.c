@@ -19,7 +19,7 @@
 
 #include "socketaddr.h"
   
-value unix_bind(value socket, value address)      /* ML */
+CAMLprim value unix_bind(value socket, value address)
 {
   int ret;
   union sock_addr_union addr;
@@ -33,7 +33,7 @@ value unix_bind(value socket, value address)      /* ML */
 
 #else
 
-value unix_bind(value socket, value address)
+CAMLprim value unix_bind(value socket, value address)
 { invalid_argument("bind not implemented"); }
   
 #endif

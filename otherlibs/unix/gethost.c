@@ -64,7 +64,7 @@ static value alloc_host_entry(struct hostent *entry)
   return res;
 }
 
-value unix_gethostbyaddr(value a)   /* ML */
+CAMLprim value unix_gethostbyaddr(value a)
 {
   uint32 adr;
   struct hostent * entry;
@@ -76,7 +76,7 @@ value unix_gethostbyaddr(value a)   /* ML */
   return alloc_host_entry(entry);
 }
 
-value unix_gethostbyname(value name)   /* ML */
+CAMLprim value unix_gethostbyname(value name)
 {
   char hostname[256];
   struct hostent * entry;
@@ -91,10 +91,10 @@ value unix_gethostbyname(value name)   /* ML */
 
 #else
 
-value unix_gethostbyaddr(value name)
+CAMLprim value unix_gethostbyaddr(value name)
 { invalid_argument("gethostbyaddr not implemented"); }
   
-value unix_gethostbyname(value name)
+CAMLprim value unix_gethostbyname(value name)
 { invalid_argument("gethostbyname not implemented"); }
  
 #endif

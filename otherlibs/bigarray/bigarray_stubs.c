@@ -126,7 +126,7 @@ value alloc_bigarray_dims(int flags, int num_dims, void * data, ...)
 
 /* Allocate a bigarray from Caml */
 
-value bigarray_create(value vkind, value vlayout, value vdim)
+CAMLprim value bigarray_create(value vkind, value vlayout, value vdim)
 {
   long dim[MAX_NUM_DIMS];
   mlsize_t num_dims;
@@ -215,19 +215,19 @@ value bigarray_get_N(value vb, value * vind, int nind)
   }
 }
 
-value bigarray_get_1(value vb, value vind1)
+CAMLprim value bigarray_get_1(value vb, value vind1)
 {
   return bigarray_get_N(vb, &vind1, 1);
 }
 
-value bigarray_get_2(value vb, value vind1, value vind2)
+CAMLprim value bigarray_get_2(value vb, value vind1, value vind2)
 {
   value vind[2];
   vind[0] = vind1; vind[1] = vind2;
   return bigarray_get_N(vb, vind, 2);
 }
 
-value bigarray_get_3(value vb, value vind1, value vind2, value vind3)
+CAMLprim value bigarray_get_3(value vb, value vind1, value vind2, value vind3)
 {
   value vind[3];
   vind[0] = vind1; vind[1] = vind2; vind[2] = vind3;
@@ -235,7 +235,7 @@ value bigarray_get_3(value vb, value vind1, value vind2, value vind3)
 }
 
 #if 0
-value bigarray_get_4(value vb, value vind1, value vind2, 
+CAMLprim value bigarray_get_4(value vb, value vind1, value vind2, 
                      value vind3, value vind4)
 {
   value vind[4];
@@ -243,7 +243,7 @@ value bigarray_get_4(value vb, value vind1, value vind2,
   return bigarray_get_N(vb, vind, 4);
 }
 
-value bigarray_get_5(value vb, value vind1, value vind2, 
+CAMLprim value bigarray_get_5(value vb, value vind1, value vind2, 
                      value vind3, value vind4, value vind5)
 {
   value vind[5];
@@ -252,7 +252,7 @@ value bigarray_get_5(value vb, value vind1, value vind2,
   return bigarray_get_N(vb, vind, 5);
 }
 
-value bigarray_get_6(value vb, value vind1, value vind2, 
+CAMLprim value bigarray_get_6(value vb, value vind1, value vind2, 
                      value vind3, value vind4, value vind5, value vind6)
 {
   value vind[6];
@@ -262,7 +262,7 @@ value bigarray_get_6(value vb, value vind1, value vind2,
 }
 #endif
 
-value bigarray_get_generic(value vb, value vind)
+CAMLprim value bigarray_get_generic(value vb, value vind)
 {
   return bigarray_get_N(vb, &Field(vind, 0), Wosize_val(vind));
 }
@@ -309,19 +309,19 @@ static value bigarray_set_aux(value vb, value * vind, long nind, value newval)
   return Val_unit;
 }
 
-value bigarray_set_1(value vb, value vind1, value newval)
+CAMLprim value bigarray_set_1(value vb, value vind1, value newval)
 {
   return bigarray_set_aux(vb, &vind1, 1, newval);
 }
 
-value bigarray_set_2(value vb, value vind1, value vind2, value newval)
+CAMLprim value bigarray_set_2(value vb, value vind1, value vind2, value newval)
 {
   value vind[2];
   vind[0] = vind1; vind[1] = vind2;
   return bigarray_set_aux(vb, vind, 2, newval);
 }
 
-value bigarray_set_3(value vb, value vind1, value vind2, value vind3,
+CAMLprim value bigarray_set_3(value vb, value vind1, value vind2, value vind3,
                      value newval)
 {
   value vind[3];
@@ -330,7 +330,7 @@ value bigarray_set_3(value vb, value vind1, value vind2, value vind3,
 }
 
 #if 0
-value bigarray_set_4(value vb, value vind1, value vind2, 
+CAMLprim value bigarray_set_4(value vb, value vind1, value vind2, 
                      value vind3, value vind4, value newval)
 {
   value vind[4];
@@ -338,7 +338,7 @@ value bigarray_set_4(value vb, value vind1, value vind2,
   return bigarray_set_aux(vb, vind, 4, newval);
 }
 
-value bigarray_set_5(value vb, value vind1, value vind2, 
+CAMLprim value bigarray_set_5(value vb, value vind1, value vind2, 
                      value vind3, value vind4, value vind5, value newval)
 {
   value vind[5];
@@ -347,7 +347,7 @@ value bigarray_set_5(value vb, value vind1, value vind2,
   return bigarray_set_aux(vb, vind, 5, newval);
 }
 
-value bigarray_set_6(value vb, value vind1, value vind2, 
+CAMLprim value bigarray_set_6(value vb, value vind1, value vind2, 
                      value vind3, value vind4, value vind5,
                      value vind6, value newval)
 {
@@ -363,14 +363,14 @@ value bigarray_set_N(value vb, value * vind, int nargs)
 }
 #endif
 
-value bigarray_set_generic(value vb, value vind, value newval)
+CAMLprim value bigarray_set_generic(value vb, value vind, value newval)
 {
   return bigarray_set_aux(vb, &Field(vind, 0), Wosize_val(vind), newval);
 }
 
 /* Return the number of dimensions of a big array */
 
-value bigarray_num_dims(value vb)
+CAMLprim value bigarray_num_dims(value vb)
 {
   struct caml_bigarray * b = Bigarray_val(vb);
   return Val_long(b->num_dims);
@@ -378,7 +378,7 @@ value bigarray_num_dims(value vb)
 
 /* Return the n-th dimension of a big array */
 
-value bigarray_dim(value vb, value vn)
+CAMLprim value bigarray_dim(value vb, value vn)
 {
   struct caml_bigarray * b = Bigarray_val(vb);
   long n = Long_val(vn);
@@ -700,7 +700,7 @@ static void bigarray_update_proxy(struct caml_bigarray * b1,
 
 /* Slicing */
 
-value bigarray_slice(value vb, value vind)
+CAMLprim value bigarray_slice(value vb, value vind)
 {
   struct caml_bigarray * b = Bigarray_val(vb);
   long index[MAX_NUM_DIMS];
@@ -742,7 +742,7 @@ value bigarray_slice(value vb, value vind)
 
 /* Extracting a sub-array of same number of dimensions */
 
-value bigarray_sub(value vb, value vofs, value vlen)
+CAMLprim value bigarray_sub(value vb, value vofs, value vlen)
 {
   struct caml_bigarray * b = Bigarray_val(vb);
   long ofs = Long_val(vofs);
@@ -782,7 +782,7 @@ value bigarray_sub(value vb, value vofs, value vlen)
 
 /* Copying a big array into another one */
 
-value bigarray_blit(value vsrc, value vdst)
+CAMLprim value bigarray_blit(value vsrc, value vdst)
 {
   struct caml_bigarray * src = Bigarray_val(vsrc);
   struct caml_bigarray * dst = Bigarray_val(vdst);
@@ -807,7 +807,7 @@ value bigarray_blit(value vsrc, value vdst)
 
 /* Filling a big array with a given value */
 
-value bigarray_fill(value vb, value vinit)
+CAMLprim value bigarray_fill(value vb, value vinit)
 {
   struct caml_bigarray * b = Bigarray_val(vb);
   long num_elts = bigarray_num_elts(b);
@@ -872,7 +872,7 @@ value bigarray_fill(value vb, value vinit)
 /* Reshape an array: change dimensions and number of dimensions, preserving
    array contents */
 
-value bigarray_reshape(value vb, value vdim)
+CAMLprim value bigarray_reshape(value vb, value vdim)
 {
   struct caml_bigarray * b = Bigarray_val(vb);
   long dim[MAX_NUM_DIMS];
@@ -904,7 +904,7 @@ value bigarray_reshape(value vb, value vdim)
 
 /* Initialization */
 
-value bigarray_init(value unit)
+CAMLprim value bigarray_init(value unit)
 {
   register_custom_operations(&bigarray_ops);
   return Val_unit;

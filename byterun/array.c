@@ -22,14 +22,14 @@
 
 #ifndef NATIVE_CODE
 
-value array_get_addr(value array, value index) /* ML */
+CAMLprim value array_get_addr(value array, value index)
 {
   long idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array)) invalid_argument("Array.get");
   return Field(array, idx);
 }
 
-value array_get_float(value array, value index) /* ML */
+CAMLprim value array_get_float(value array, value index)
 {
   long idx = Long_val(index);
   double d;
@@ -47,7 +47,7 @@ value array_get_float(value array, value index) /* ML */
   return res;
 }
 
-value array_get(value array, value index)   /* ML */
+CAMLprim value array_get(value array, value index)
 {
   if (Tag_val(array) == Double_array_tag)
     return array_get_float(array, index);
@@ -55,7 +55,7 @@ value array_get(value array, value index)   /* ML */
     return array_get_addr(array, index);
 }
 
-value array_set_addr(value array, value index, value newval)   /* ML */
+CAMLprim value array_set_addr(value array, value index, value newval)
 {
   long idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array)) invalid_argument("Array.set");
@@ -63,7 +63,7 @@ value array_set_addr(value array, value index, value newval)   /* ML */
   return Val_unit;
 }
 
-value array_set_float(value array, value index, value newval)   /* ML */
+CAMLprim value array_set_float(value array, value index, value newval)
 {
   long idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
@@ -72,7 +72,7 @@ value array_set_float(value array, value index, value newval)   /* ML */
   return Val_unit;
 }
 
-value array_set(value array, value index, value newval)   /* ML */
+CAMLprim value array_set(value array, value index, value newval)
 {
   if (Tag_val(array) == Double_array_tag)
     return array_set_float(array, index, newval);
@@ -80,7 +80,7 @@ value array_set(value array, value index, value newval)   /* ML */
     return array_set_addr(array, index, newval);
 }
 
-value array_unsafe_get_float(value array, value index) /* ML */
+CAMLprim value array_unsafe_get_float(value array, value index)
 {
   double d;
   value res;
@@ -95,7 +95,7 @@ value array_unsafe_get_float(value array, value index) /* ML */
   return res;
 }
 
-value array_unsafe_get(value array, value index)   /* ML */
+CAMLprim value array_unsafe_get(value array, value index)
 {
   if (Tag_val(array) == Double_array_tag)
     return array_unsafe_get_float(array, index);
@@ -103,20 +103,20 @@ value array_unsafe_get(value array, value index)   /* ML */
     return Field(array, Long_val(index));
 }
 
-value array_unsafe_set_addr(value array, value index, value newval)   /* ML */
+CAMLprim value array_unsafe_set_addr(value array, value index, value newval)
 {
   long idx = Long_val(index);
   Modify(&Field(array, idx), newval);
   return Val_unit;
 }
 
-value array_unsafe_set_float(value array, value index, value newval)   /* ML */
+CAMLprim value array_unsafe_set_float(value array, value index, value newval)
 {
   Store_double_field(array, Long_val(index), Double_val(newval));
   return Val_unit;
 }
 
-value array_unsafe_set(value array, value index, value newval)   /* ML */
+CAMLprim value array_unsafe_set(value array, value index, value newval)
 {
   if (Tag_val(array) == Double_array_tag)
     return array_unsafe_set_float(array, index, newval);
@@ -126,7 +126,7 @@ value array_unsafe_set(value array, value index, value newval)   /* ML */
 
 #endif
 
-value make_vect(value len, value init) /* ML */
+CAMLprim value make_vect(value len, value init)
 {
   CAMLparam2 (len, init);
   CAMLlocal1 (res);
@@ -168,7 +168,7 @@ value make_vect(value len, value init) /* ML */
   CAMLreturn (res);
 }
 
-value make_array(value init)    /* ML */
+CAMLprim value make_array(value init)
 {
   CAMLparam1 (init);
   mlsize_t wsize, size, i;

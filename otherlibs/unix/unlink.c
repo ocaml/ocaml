@@ -15,7 +15,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_unlink(value path)          /* ML */
+CAMLprim value unix_unlink(value path)
 {
   if (unlink(String_val(path)) == -1) uerror("unlink", path);
   return Val_unit;

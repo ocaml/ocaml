@@ -23,7 +23,7 @@
 #include "camltk.h"
 
 /* Parsing results */
-value camltk_splitlist (value v) /* ML */
+CAMLprim value camltk_splitlist (value v)
 {
   int argc;
   char **argv;

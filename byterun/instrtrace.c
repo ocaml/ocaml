@@ -23,7 +23,7 @@
 #include "opnames.h"
 
 extern code_t start_code;
-extern char * names_of_cprim[];
+extern char * names_of_builtin_cprim[];
 
 long icount = 0;
 
@@ -59,9 +59,9 @@ void disasm_instr(pc)
     printf(" %d, %d\n", pc[0], pc[1]); break;
     /* Instructions with a C primitive as operand */
   case C_CALL1: case C_CALL2: case C_CALL3: case C_CALL4: case C_CALL5:
-    printf(" %s\n", names_of_cprim[pc[0]]); break;
+    printf(" %s\n", names_of_builtin_cprim[pc[0]]); break; /* REVISE */
   case C_CALLN:
-    printf(" %d, %s\n", pc[0], names_of_cprim[pc[1]]); break;
+    printf(" %d, %s\n", pc[0], names_of_builtin_cprim[pc[1]]); break;
   default:
     printf("\n");
   }

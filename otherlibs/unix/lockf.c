@@ -19,7 +19,7 @@
 
 #if defined(F_GETLK) && defined(F_SETLK) && defined(F_SETLKW)
 
-value unix_lockf(value fd, value cmd, value span)  /* ML */
+CAMLprim value unix_lockf(value fd, value cmd, value span)
 {
   struct flock l;
   int ret;
@@ -93,7 +93,7 @@ static int lock_command_table[] = {
   F_ULOCK, F_LOCK, F_TLOCK, F_TEST, F_LOCK, F_TLOCK
 };
 
-value unix_lockf(value fd, value cmd, value span)
+CAMLprim value unix_lockf(value fd, value cmd, value span)
 {
   if (lockf(Int_val(fd), lock_command_table[Int_val(cmd)], Long_val(span))
       == -1) uerror("lockf", Nothing);
@@ -102,7 +102,7 @@ value unix_lockf(value fd, value cmd, value span)
 
 #else
 
-value unix_lockf(value fd, value cmd, value span)
+CAMLprim value unix_lockf(value fd, value cmd, value span)
 { invalid_argument("lockf not implemented"); }
 
 #endif

@@ -20,7 +20,7 @@
 
 #include "socketaddr.h"
 
-value unix_connect(value socket, value address)   /* ML */
+CAMLprim value unix_connect(value socket, value address)
 {
   int retcode;
   union sock_addr_union addr;
@@ -36,7 +36,7 @@ value unix_connect(value socket, value address)   /* ML */
 
 #else
 
-value unix_connect(value socket, value address)
+CAMLprim value unix_connect(value socket, value address)
 { invalid_argument("connect not implemented"); }
   
 #endif

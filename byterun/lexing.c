@@ -46,7 +46,8 @@ struct lexing_table {
 #define Short(tbl,n) (((short *)(tbl))[(n)])
 #endif
 
-value lex_engine(struct lexing_table *tbl, value start_state, struct lexer_buffer *lexbuf)     /* ML */
+CAMLprim value lex_engine(struct lexing_table *tbl, value start_state,
+                          struct lexer_buffer *lexbuf)
 {
   int state, base, backtrk, c;
 

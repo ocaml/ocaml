@@ -36,8 +36,8 @@ extern int bigarray_element_size[];  /* from bigarray_stubs.c */
 #define MAP_FAILED ((void *) -1)
 #endif
 
-value bigarray_map_file(value vfd, value vkind, value vlayout,
-                        value vshared, value vdim)
+CAMLprim value bigarray_map_file(value vfd, value vkind, value vlayout,
+                                 value vshared, value vdim)
 {
   int fd, flags, major_dim, shared;
   long num_dims, i;

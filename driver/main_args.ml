@@ -20,6 +20,7 @@ module Make_options (F :
      val _cclib : string -> unit
      val _ccopt : string -> unit
      val _custom : unit -> unit
+     val _dllpath : string -> unit
      val _g : unit -> unit
      val _i : unit -> unit
      val _I : string -> unit
@@ -62,6 +63,7 @@ struct
     "-ccopt", Arg.String F._ccopt,
                       "<opt>  Pass option <opt> to the C compiler and linker";
     "-custom", Arg.Unit F._custom, " Link in custom mode";
+    "-dllpath", Arg.String F._dllpath, "<dir>  Add <dir> to the run-time search path for shared libraries";
     "-g", Arg.Unit F._g, " Save debugging information";
     "-i", Arg.Unit F._i, " Print the types";
     "-I", Arg.String F._I,

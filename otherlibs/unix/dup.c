@@ -15,7 +15,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_dup(value fd)               /* ML */
+CAMLprim value unix_dup(value fd)
 {
   int ret;
   ret = dup(Int_val(fd));

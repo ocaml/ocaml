@@ -27,7 +27,10 @@ default:
 #all: testKerN bztest 
 #	@echo All is done
 
-all: $(LIB)
+#all: $(LIB)
+#	@echo All is done
+
+all: $(OBJECT)
 	@echo All is done
 
 tidy:

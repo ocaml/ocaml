@@ -33,11 +33,11 @@ clean:
 
 {..\..\threads\Tests}.ml{}.byt:
 	cp ../../threads/Tests/$*.ml $*.ml
-	$(CAMLC) -custom -o $*.byt unix.cma threads.cma $*.ml ..\libthreads.lib ..\..\win32unix\libunix.lib wsock32.lib
+	$(CAMLC) -o $*.byt unix.cma threads.cma $*.ml
 
 {..\..\threads\Tests}.ml{}.out:
 	cp ../../threads/Tests/$*.ml $*.ml
-	$(CAMLOPT) -o $*.out unix.cmxa threads.cmxa $*.ml ..\libthreadsnat.lib ..\..\win32unix\libunix.lib wsock32.lib
+	$(CAMLOPT) -o $*.out unix.cmxa threads.cmxa $*.ml
 
 $(PROGS): ../threads.cma ../libthreads.lib
 $(PROGS:.byt=.out): ../threads.cmxa ../libthreadsnat.lib

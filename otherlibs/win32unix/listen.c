@@ -16,7 +16,7 @@
 #include "unixsupport.h"
 #include <winsock.h>
 
-value unix_listen(sock, backlog) /* ML */
+CAMLprim value unix_listen(sock, backlog)
      value sock, backlog;
 {
   if (listen((SOCKET) Handle_val(sock), Int_val(backlog)) == -1)

@@ -17,7 +17,7 @@
 
 #ifdef HAS_DUP2
 
-value unix_dup2(value fd1, value fd2)        /* ML */
+CAMLprim value unix_dup2(value fd1, value fd2)
 {
   if (dup2(Int_val(fd1), Int_val(fd2)) == -1) uerror("dup2", Nothing);
   return Val_unit;
@@ -38,7 +38,7 @@ static int do_dup2(int fd1, int fd2)
   return res;
 }
 
-value unix_dup2(value fd1, value fd2)
+CAMLprim value unix_dup2(value fd1, value fd2)
 {
   close(Int_val(fd2));
   if (do_dup2(Int_val(fd1), Int_val(fd2)) == -1) uerror("dup2", Nothing);

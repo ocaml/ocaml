@@ -15,7 +15,7 @@
 (* Command-line parameters *)
 
 let objfiles = ref ([] : string list)   (* .cmo and .cma files *)
-and ccobjs = ref ([] : string list)     (* .o, .a and -lxxx files *)
+and ccobjs = ref ([] : string list)     (* .o, .a, .so and -lxxx files *)
 
 let compile_only = ref false            (* -c *)
 and exec_name = ref "a.out"             (* -o *)
@@ -44,6 +44,7 @@ and gprofile = ref false                (* -p *)
 and c_compiler = ref Config.bytecomp_c_compiler (* -cc *)
 and c_linker = ref Config.bytecomp_c_linker (* -cc *)
 and no_auto_link = ref false            (* -noautolink *)
+and dllpaths = ref ([] : string list)   (* -dllpath *)
 let dump_parsetree = ref false          (* -dparsetree *)
 and dump_rawlambda = ref false          (* -drawlambda *)
 and dump_lambda = ref false             (* -dlambda *)

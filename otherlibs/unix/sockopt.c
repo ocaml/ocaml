@@ -84,7 +84,7 @@ static int sockopt_optint[] = { SO_LINGER };
 
 static int sockopt_float[] = { SO_RCVTIMEO, SO_SNDTIMEO };
 
-value getsockopt_int(int *sockopt, value socket, value level, value option)
+CAMLprim value getsockopt_int(int *sockopt, value socket, value level, value option)
 {
   int optval;
   socklen_param_type optsize;
@@ -96,7 +96,7 @@ value getsockopt_int(int *sockopt, value socket, value level, value option)
   return Val_int(optval);
 }
 
-value setsockopt_int(int *sockopt, value socket, value level,
+CAMLprim value setsockopt_int(int *sockopt, value socket, value level,
                      value option, value status)
 {
   int optval = Int_val(status);
@@ -106,25 +106,25 @@ value setsockopt_int(int *sockopt, value socket, value level,
   return Val_unit;
 }
 
-value unix_getsockopt_bool(value socket, value option) { /* ML */
+CAMLprim value unix_getsockopt_bool(value socket, value option) { /* ML */
   return getsockopt_int(sockopt_bool, socket, Val_int(SOL_SOCKET), option);
 }
 
-value unix_setsockopt_bool(value socket, value option, value status) /* ML */
+CAMLprim value unix_setsockopt_bool(value socket, value option, value status)
 {
  return setsockopt_int(sockopt_bool, socket, Val_int(SOL_SOCKET), option, status);
 }
 
-value unix_getsockopt_int(value socket, value option) { /* ML */
+CAMLprim value unix_getsockopt_int(value socket, value option) { /* ML */
   return getsockopt_int(sockopt_int, socket, Val_int(SOL_SOCKET), option);
 }
 
-value unix_setsockopt_int(value socket, value option, value status) /* ML */
+CAMLprim value unix_setsockopt_int(value socket, value option, value status)
 {
  return setsockopt_int(sockopt_int, socket, Val_int(SOL_SOCKET), option, status);
 }
 
-value getsockopt_optint(int *sockopt, value socket, value level, value option)
+CAMLprim value getsockopt_optint(int *sockopt, value socket, value level, value option)
 {
   struct linger optval;
   socklen_param_type optsize;
@@ -141,7 +141,7 @@ value getsockopt_optint(int *sockopt, value socket, value level, value option)
   return res;
 }
 
-value setsockopt_optint(int *sockopt, value socket, value level,
+CAMLprim value setsockopt_optint(int *sockopt, value socket, value level,
                         value option, value status)
 {
   struct linger optval;
@@ -155,17 +155,17 @@ value setsockopt_optint(int *sockopt, value socket, value level,
   return Val_unit;
 }
 
-value unix_getsockopt_optint(value socket, value option) /* ML */
+CAMLprim value unix_getsockopt_optint(value socket, value option)
 {
   return getsockopt_optint(sockopt_optint, socket, Val_int(SOL_SOCKET), option);
 }
 
-value unix_setsockopt_optint(value socket, value option, value status) /* ML */
+CAMLprim value unix_setsockopt_optint(value socket, value option, value status)
 {
   return setsockopt_optint(sockopt_optint, socket, Val_int(SOL_SOCKET), option, status);
 }
 
-value getsockopt_float(int *sockopt, value socket, value level, value option)
+CAMLprim value getsockopt_float(int *sockopt, value socket, value level, value option)
 {
   struct timeval tv;
   socklen_param_type optsize;
@@ -177,7 +177,7 @@ value getsockopt_float(int *sockopt, value socket, value level, value option)
   return copy_double((double) tv.tv_sec + (double) tv.tv_usec / 1e6);
 }
 
-value setsockopt_float(int *sockopt, value socket, value level,
+CAMLprim value setsockopt_float(int *sockopt, value socket, value level,
                        value option, value status)
 {
   struct timeval tv;
@@ -192,40 +192,40 @@ value setsockopt_float(int *sockopt, value socket, value level,
   return Val_unit;
 }
 
-value unix_getsockopt_float(value socket, value option) /* ML */
+CAMLprim value unix_getsockopt_float(value socket, value option)
 {
   return getsockopt_float(sockopt_float, socket, Val_int(SOL_SOCKET), option);
 }
 
-value unix_setsockopt_float(value socket, value option, value status) /* ML */
+CAMLprim value unix_setsockopt_float(value socket, value option, value status)
 {
   return setsockopt_float(sockopt_float, socket, Val_int(SOL_SOCKET), option, status);
 }
 
 #else
 
-value unix_getsockopt(value socket, value option)
+CAMLprim value unix_getsockopt(value socket, value option)
 { invalid_argument("getsockopt not implemented"); }
 
-value unix_setsockopt(value socket, value option, value status)
+CAMLprim value unix_setsockopt(value socket, value option, value status)
 { invalid_argument("setsockopt not implemented"); }
 
-value unix_getsockopt_int(value socket, value option)
+CAMLprim value unix_getsockopt_int(value socket, value option)
 { invalid_argument("getsockopt_int not implemented"); }
 
-value unix_setsockopt_int(value socket, value option, value status)
+CAMLprim value unix_setsockopt_int(value socket, value option, value status)
 { invalid_argument("setsockopt_int not implemented"); }
 
-value unix_getsockopt_optint(value socket, value option)
+CAMLprim value unix_getsockopt_optint(value socket, value option)
 { invalid_argument("getsockopt_optint not implemented"); }
 
-value unix_setsockopt_optint(value socket, value option, value status)
+CAMLprim value unix_setsockopt_optint(value socket, value option, value status)
 { invalid_argument("setsockopt_optint not implemented"); }
 
-value unix_getsockopt_float(value socket, value option)
+CAMLprim value unix_getsockopt_float(value socket, value option)
 { invalid_argument("getsockopt_float not implemented"); }
 
-value unix_setsockopt_float(value socket, value option, value status)
+CAMLprim value unix_setsockopt_float(value socket, value option, value status)
 { invalid_argument("setsockopt_float not implemented"); }
 
 #endif

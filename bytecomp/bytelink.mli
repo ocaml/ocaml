@@ -25,6 +25,8 @@ type error =
   | Inconsistent_import of string * string * string
   | Custom_runtime
   | File_exists of string
+  | Cannot_open_dll of string
+  | Require_custom
 
 exception Error of error
 

@@ -23,7 +23,7 @@
 
 value weak_list_head = 0;
 
-value weak_create (value len)        /* ML */
+CAMLprim value weak_create (value len)
 {
   mlsize_t size, i;
   value res;
@@ -40,7 +40,7 @@ value weak_create (value len)        /* ML */
 #define None_val (Val_int(0))
 #define Some_tag 0
 
-value weak_set (value ar, value n, value el)     /* ML */
+CAMLprim value weak_set (value ar, value n, value el)
 {
   mlsize_t offset = Long_val (n) + 1;
                                                    Assert (Is_in_heap (ar));
@@ -55,7 +55,7 @@ value weak_set (value ar, value n, value el)     /* ML */
 #define Setup_for_gc
 #define Restore_after_gc
 
-value weak_get (value ar, value n)        /* ML */
+CAMLprim value weak_get (value ar, value n)
 {
   CAMLparam2 (ar, n);
   mlsize_t offset = Long_val (n) + 1;
@@ -76,7 +76,7 @@ value weak_get (value ar, value n)        /* ML */
 #undef Setup_for_gc
 #undef Restore_after_gc
 
-value weak_get_copy (value ar, value n)        /* ML */
+CAMLprim value weak_get_copy (value ar, value n)
 {
   CAMLparam2 (ar, n);
   mlsize_t offset = Long_val (n) + 1;
@@ -104,7 +104,7 @@ value weak_get_copy (value ar, value n)        /* ML */
   CAMLreturn (res);
 }
 
-value weak_check (value ar, value n)        /* ML */
+CAMLprim value weak_check (value ar, value n)
 {
   mlsize_t offset = Long_val (n) + 1;
                                                    Assert (Is_in_heap (ar));

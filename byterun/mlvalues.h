@@ -177,7 +177,7 @@ typedef opcode_t * code_t;
 #define Oid_val(val) Long_val(Field((val), 1))
 
 /* Another special case: variants */
-extern value hash_variant(char * tag);
+CAMLextern value hash_variant(char * tag);
 
 /* 2- If tag >= No_scan_tag : a sequence of bytes. */
 
@@ -196,7 +196,7 @@ extern value hash_variant(char * tag);
 /* Strings. */
 #define String_tag 252
 #define String_val(x) ((char *) Bp_val(x))
-mlsize_t string_length (value);
+CAMLextern mlsize_t string_length (value);
 
 /* Floating-point numbers. */
 #define Double_tag 253
@@ -205,8 +205,8 @@ mlsize_t string_length (value);
 #define Double_val(v) (* (double *)(v))
 #define Store_double_val(v,d) (* (double *)(v) = (d))
 #else
-double Double_val (value);
-void Store_double_val (value,double);
+CAMLextern double Double_val (value);
+CAMLextern void Store_double_val (value,double);
 #endif
 
 /* Arrays of floating-point numbers. */
@@ -234,12 +234,12 @@ struct custom_operations;       /* defined in [custom.h] */
 #ifndef ARCH_ALIGN_INT64
 #define Int64_val(v) (*((int64 *) Data_custom_val(v)))
 #else
-extern int64 Int64_val(value v);
+CAMLextern int64 Int64_val(value v);
 #endif
 
 /* 3- Atoms are 0-tuples.  They are statically allocated once and for all. */
 
-extern header_t atom_table[];
+CAMLextern header_t atom_table[];
 #define Atom(tag) (Val_hp (&(atom_table [(tag)])))
 
 /* Is_atom tests whether a well-formed block is statically allocated
@@ -251,7 +251,7 @@ extern header_t atom_table[];
 #ifndef NATIVE_CODE
 #define Is_atom(v) ((v) >= Atom(0) && (v) <= Atom(255))
 #else
-extern char * static_data_start, * static_data_end;
+CAMLextern char * static_data_start, * static_data_end;
 #define Is_atom(v) \
   ((((char *)(v) >= static_data_start && (char *)(v) < static_data_end) || \
    ((v) >= Atom(0) && (v) <= Atom(255))))

@@ -16,6 +16,7 @@ include ../../config/Makefile
 
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../unix
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../unix
+MKLIB=../../tools/ocamlmklib
 
 BYTECODE_C_OBJS=posix_b.o
 NATIVECODE_C_OBJS=posix_n.o
@@ -29,28 +30,27 @@ all: libthreads.a threads.cma
 allopt: libthreadsnat.a threads.cmxa
 
 libthreads.a: $(BYTECODE_C_OBJS)
-	rm -f libthreads.a
-	ar rc libthreads.a $(BYTECODE_C_OBJS)
+	$(MKLIB) -o threads $(BYTECODE_C_OBJS) $(PTHREAD_LINK)
 
 posix_b.o: posix.c
-	$(BYTECC) -O -I../../byterun $(BYTECCCOMPOPTS) -c posix.c
+	$(BYTECC) -O -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
+	   -c posix.c
 	mv posix.o posix_b.o
 
 libthreadsnat.a: $(NATIVECODE_C_OBJS)
-	rm -f libthreadsnat.a
-	ar rc libthreadsnat.a $(NATIVECODE_C_OBJS)
+	$(MKLIB) -o threadsnat $(NATIVECODE_C_OBJS) $(PTHREAD_LINK)
 
 posix_n.o: posix.c
 	$(NATIVECC) -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -c posix.c
 	mv posix.o posix_n.o
 
 threads.cma: $(THREAD_OBJS)
-	$(CAMLC) -a -o threads.cma -custom $(THREAD_OBJS) \
-          -cclib -lthreads -cclib -lunix $(PTHREAD_LINK)
+	$(MKLIB) -ocamlc '$(CAMLC)' -o threads $(THREAD_OBJS) \
+          -cclib -lunix $(PTHREAD_LINK)
 
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
-          -cclib -lthreadsnat -cclib -lunix $(PTHREAD_LINK)
+	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o threads -oc threadsnat \
+          $(THREAD_OBJS:.cmo=.cmx) -cclib -lunix $(PTHREAD_LINK)
 
 $(THREAD_OBJS:.cmo=.cmx): ../../ocamlopt
 
@@ -65,15 +65,20 @@ clean: partialclean
 	rm -f $(GENFILES)
 
 install:
+	test -f libthreads.so && cp libthreads.so $(LIBDIR)/libthreads.so
 	cp libthreads.a $(LIBDIR)/libthreads.a
+	cd $(LIBDIR); $(RANLIB) libthreads.a
 	if test -d $(LIBDIR)/threads; then :; else mkdir $(LIBDIR)/threads; fi
 	cp $(THREAD_OBJS:.cmo=.cmi) threads.cma $(LIBDIR)/threads
 	rm -f $(LIBDIR)/threads/stdlib.cma
 	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)
 
 installopt:
+	test -f libthreadsnat.so && cp libthreadsnat.so $(LIBDIR)/libthreadsnat.so
 	cp libthreadsnat.a $(LIBDIR)/libthreadsnat.a
+	cd $(LIBDIR); $(RANLIB) libthreadsnat.a
 	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.a $(LIBDIR)/threads
+	cd $(LIBDIR)/threads; $(RANLIB) threads.a
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 

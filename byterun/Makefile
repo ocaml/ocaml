@@ -23,13 +23,15 @@ OBJS=interp.o misc.o stacks.o fix_code.o startup.o main.o \
   fail.o signals.o printexc.o backtrace.o \
   compare.o ints.o floats.o str.o array.o io.o extern.o intern.o \
   hash.o sys.o meta.o parsing.o gc_ctrl.o terminfo.o md5.o obj.o \
-  lexing.o callback.o debugger.o weak.o compact.o finalise.o custom.o
+  lexing.o callback.o debugger.o weak.o compact.o finalise.o custom.o \
+  dynlink.o unix.o
 
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
 
 PRIMS=alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
-  signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c
+  signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c \
+  dynlink.c
 
 PUBLIC_INCLUDES=mlvalues.h alloc.h misc.h callback.h fail.h custom.h
 
@@ -69,17 +71,17 @@ clean:
 	rm -f primitives prims.c opnames.h jumptbl.h
 
 primitives : $(PRIMS)
-	sed -n -e '/\/\* ML \*\//s/.* \([a-z0-9_][a-z0-9_]*\) *(.*/\1/p' \
+	sed -n -e "s/CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p" \
 	    $(PRIMS) > primitives
 
 prims.c : primitives
 	(echo '#include "mlvalues.h"'; \
 	 echo '#include "prims.h"'; \
 	 sed -e 's/.*/extern value &();/' primitives; \
-	 echo 'c_primitive cprim[] = {'; \
+	 echo 'c_primitive builtin_cprim[] = {'; \
 	 sed -e 's/.*/	&,/' primitives; \
 	 echo '	 0 };'; \
-	 echo 'char * names_of_cprim[] = {'; \
+	 echo 'char * names_of_builtin_cprim[] = {'; \
 	 sed -e 's/.*/	"&",/' primitives; \
 	 echo '	 0 };') > prims.c
 

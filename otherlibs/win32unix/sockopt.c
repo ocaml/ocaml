@@ -52,20 +52,20 @@ value setsockopt_int(int *sockopt, value socket, value level,
   return Val_unit;
 }
 
-value unix_getsockopt_bool(value socket, value option) { /* ML */
+CAMLprim value unix_getsockopt_bool(value socket, value option) {
   return getsockopt_int(sockopt_bool, socket, Val_int(SOL_SOCKET), option);
 }
 
-value unix_setsockopt_bool(value socket, value option, value status) /* ML */
+CAMLprim value unix_setsockopt_bool(value socket, value option, value status)
 {
  return setsockopt_int(sockopt_bool, socket, Val_int(SOL_SOCKET), option, status);
 }
 
-value unix_getsockopt_int(value socket, value option) { /* ML */
+CAMLprim value unix_getsockopt_int(value socket, value option) {
   return getsockopt_int(sockopt_int, socket, Val_int(SOL_SOCKET), option);
 }
 
-value unix_setsockopt_int(value socket, value option, value status) /* ML */
+CAMLprim value unix_setsockopt_int(value socket, value option, value status)
 {
  return setsockopt_int(sockopt_int, socket, Val_int(SOL_SOCKET), option, status);
 }
@@ -103,13 +103,13 @@ value setsockopt_optint(int *sockopt, value socket, value level,
   return Val_unit;
 }
 
-value unix_getsockopt_optint(value socket, value option) /* ML */
+CAMLprim value unix_getsockopt_optint(value socket, value option)
 {
   return getsockopt_optint(sockopt_optint, socket,
                            Val_int(SOL_SOCKET), option);
 }
 
-value unix_setsockopt_optint(value socket, value option, value status) /* ML */
+CAMLprim value unix_setsockopt_optint(value socket, value option, value status)
 {
   return setsockopt_optint(sockopt_optint, socket,
                            Val_int(SOL_SOCKET), option, status);
@@ -144,12 +144,12 @@ value setsockopt_float(int *sockopt, value socket, value level,
   return Val_unit;
 }
 
-value unix_getsockopt_float(value socket, value option) /* ML */
+CAMLprim value unix_getsockopt_float(value socket, value option)
 {
   return getsockopt_float(sockopt_float, socket, Val_int(SOL_SOCKET), option);
 }
 
-value unix_setsockopt_float(value socket, value option, value status) /* ML */
+CAMLprim value unix_setsockopt_float(value socket, value option, value status)
 {
   return setsockopt_float(sockopt_float, socket, Val_int(SOL_SOCKET), option, status);
 }

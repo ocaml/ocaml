@@ -29,12 +29,12 @@
 
 #ifndef NATIVE_CODE
 
-value get_global_data(value unit)     /* ML */
+CAMLprim value get_global_data(value unit)
 {
   return global_data;
 }
 
-value reify_bytecode(value prog, value len) /* ML */
+CAMLprim value reify_bytecode(value prog, value len)
 {
   value clos;
 #ifdef ARCH_BIG_ENDIAN
@@ -48,7 +48,7 @@ value reify_bytecode(value prog, value len) /* ML */
   return clos;
 }
 
-value realloc_global(value size)      /* ML */
+CAMLprim value realloc_global(value size)
 {
   mlsize_t requested_size, actual_size, i;
   value new_global_data;
@@ -69,17 +69,12 @@ value realloc_global(value size)      /* ML */
   return Val_unit;
 }
     
-value available_primitives(value unit)    /* ML */
-{
-  return copy_string_array((char const **) names_of_cprim);
-}
-
-value get_current_environment(value unit) /* ML */
+CAMLprim value get_current_environment(value unit)
 {
   return *extern_sp;
 }
 
-value invoke_traced_function(value codeptr, value env, value arg) /* ML */
+CAMLprim value invoke_traced_function(value codeptr, value env, value arg)
 {
   /* Stack layout on entry:
        return frame into instrument_closure function

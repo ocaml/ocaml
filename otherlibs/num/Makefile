@@ -18,9 +18,10 @@ include ../../config/Makefile
 
 # Compilation options
 CC=$(BYTECC)
-CFLAGS=-O -I./bignum/h -I../../byterun $(BYTECCCOMPOPTS)
+CFLAGS=-O -I./bignum/h -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -w s
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -w s
+MKLIB=../../tools/ocamlmklib
 
 CAMLOBJS=int_misc.cmo string_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \
   ratio.cmo num.cmo arith_status.cmo
@@ -28,28 +29,29 @@ CAMLOBJS=int_misc.cmo string_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \
 CMIFILES=big_int.cmi nat.cmi num.cmi ratio.cmi arith_status.cmi
 
 COBJS=nat_stubs.o
+BIGNUM_OBJS=bignum/o/KerN.o bignum/o/bnInit.o bignum/o/bnMult.o \
+  bignum/o/bnDivide.o bignum/o/bnCmp.o bignum/o/bzf.o bignum/o/bz.o
 
 all: libnums.a nums.cma $(CMIFILES)
 
 allopt: libnums.a nums.cmxa $(CMIFILES)
 
 nums.cma: $(CAMLOBJS)
-	$(CAMLC) -a -o nums.cma -custom $(CAMLOBJS) -cclib -lnums
+	$(MKLIB) -ocamlc '$(CAMLC)' -o nums $(CAMLOBJS)
 
 nums.cmxa: $(CAMLOBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o nums.cmxa $(CAMLOBJS:.cmo=.cmx) -cclib -lnums
+	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o nums $(CAMLOBJS:.cmo=.cmx)
 
-libnums.a: bignum/libbignum.a $(COBJS)
-	cp bignum/libbignum.a libnums.a
-	ar r libnums.a $(COBJS)
-	$(RANLIB) libnums.a
+libnums.a: $(BIGNUM_OBJS) $(COBJS)
+	$(MKLIB) -o nums $(BIGNUM_OBJS) $(COBJS)
 
-bignum/libbignum.a:
-	cd bignum; $(MAKE) $(BIGNUM_ARCH) CC="$(CC) $(BYTECCCOMPOPTS)"
+$(BIGNUM_OBJS):
+	cd bignum; $(MAKE) $(BIGNUM_ARCH) CC="$(CC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)"
 
 $(CAMLOBJS:.cmo=.cmx): ../../ocamlopt
 
 install:
+	test -f libnums.so && cp libnums.so $(LIBDIR)
 	cp libnums.a $(LIBDIR)/libnums.a
 	cd $(LIBDIR); $(RANLIB) libnums.a
 	cp nums.cma $(CMIFILES) $(CMIFILES:.cmi=.mli) $(LIBDIR)
@@ -62,7 +64,7 @@ partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f *.a *.o
+	rm -f *.a *.o *.so
 	cd bignum; $(MAKE) scratch
 	cd test; $(MAKE) clean
 

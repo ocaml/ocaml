@@ -59,7 +59,7 @@ static value fdset_to_fdlist(file_descr_set *fdset)
   return res;
 }
 
-value unix_select(value readfds, value writefds, value exceptfds, value timeout) /* ML */
+CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value timeout)
 {
   file_descr_set read, write, except;
   double tm;
@@ -98,7 +98,7 @@ value unix_select(value readfds, value writefds, value exceptfds, value timeout)
 
 #else
 
-value unix_select(value readfds, value writefds, value exceptfds, value timeout)
+CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value timeout)
 { invalid_argument("select not implemented"); }
 
 #endif

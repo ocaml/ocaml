@@ -16,7 +16,7 @@
 #include "unixsupport.h"
 #include "socketaddr.h"
 
-value unix_getsockname(sock)          /* ML */
+CAMLprim value unix_getsockname(sock)
      value sock;
 {
   int retcode;

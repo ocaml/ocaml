@@ -16,7 +16,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_rename(value path1, value path2)  /* ML */
+CAMLprim value unix_rename(value path1, value path2)
 {
   if (rename(String_val(path1), String_val(path2)) == -1)
     uerror("rename", path1);

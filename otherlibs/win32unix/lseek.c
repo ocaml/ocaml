@@ -27,13 +27,13 @@ static int seek_command_table[] = {
   FILE_BEGIN, FILE_CURRENT, FILE_END
 };
 
-value unix_lseek(value fd, value ofs, value cmd)   /* ML */
+CAMLprim value unix_lseek(value fd, value ofs, value cmd)
 {
   long ret;
   ret = SetFilePointer(Handle_val(fd), Long_val(ofs), NULL,
                        seek_command_table[Int_val(cmd)]);
   if (ret == -1) {
-    _dosmaperr(GetLastError());
+    win32_maperr(GetLastError());
     uerror("lseek", Nothing);
   }
   return Val_long(ret);

@@ -19,7 +19,7 @@
 
 #ifdef HAS_FCHMOD
 
-value unix_fchmod(value fd, value perm)      /* ML */
+CAMLprim value unix_fchmod(value fd, value perm)
 {
   if (fchmod(Int_val(fd), Int_val(perm)) == -1) uerror("fchmod", Nothing);
   return Val_unit;
@@ -27,7 +27,7 @@ value unix_fchmod(value fd, value perm)      /* ML */
 
 #else
 
-value unix_fchmod(value fd, value perm)
+CAMLprim value unix_fchmod(value fd, value perm)
 { invalid_argument("fchmod not implemented"); }
   
 #endif

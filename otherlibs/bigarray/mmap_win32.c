@@ -13,6 +13,7 @@
 /* $Id$ */
 
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 #include "bigarray.h"
 #include "custom.h"
@@ -23,8 +24,10 @@
 
 extern int bigarray_element_size[];  /* from bigarray_stubs.c */
 
-value bigarray_map_file(value vfd, value vkind, value vlayout,
-                        value vshared, value vdim)
+static void bigarray_sys_error(void);
+
+CAMLprim value bigarray_map_file(value vfd, value vkind, value vlayout,
+                                 value vshared, value vdim)
 {
   HANDLE fd, fmap;
   int flags, major_dim, mode, perm;
@@ -51,9 +54,9 @@ value bigarray_map_file(value vfd, value vkind, value vlayout,
   }
   /* Determine file size */
   currpos = SetFilePointer(fd, 0, NULL, FILE_CURRENT);
-  if (currpos == -1) { _dosmaperr(GetLastError()); sys_error(NO_ARG); }
+  if (currpos == -1) bigarray_sys_error();
   file_size = SetFilePointer(fd, 0, NULL, FILE_END);
-  if (file_size == -1) { _dosmaperr(GetLastError()); sys_error(NO_ARG); }
+  if (file_size == -1) bigarray_sys_error();
   /* Determine array size in bytes (or size of array without the major
      dimension if that dimension wasn't specified) */
   array_size = bigarray_element_size[flags & BIGARRAY_KIND_MASK];
@@ -78,14 +81,10 @@ value bigarray_map_file(value vfd, value vkind, value vlayout,
     mode = FILE_MAP_COPY;
   }
   fmap = CreateFileMapping(fd, NULL, perm, 0, array_size, NULL);
-  if (fmap == NULL) { 
-    printf("CreateFileMapping failed, err %d\n", GetLastError());
-    _dosmaperr(GetLastError()); sys_error(NO_ARG); }  
+  if (fmap == NULL) bigarray_sys_error();
   /* Map the mapping in memory */
   addr = MapViewOfFile(fmap, mode, 0, 0, array_size);
-  if (addr == NULL) {
-    printf("MapViewOfFile failed, err %d\n", GetLastError());
-    _dosmaperr(GetLastError()); sys_error(NO_ARG); }
+  if (addr == NULL) bigarray_sys_error();
   /* Close the file mapping */
   CloseHandle(fmap);
   /* Build and return the Caml bigarray */
@@ -97,6 +96,19 @@ void bigarray_unmap_file(void * addr, unsigned long len)
   UnmapViewOfFile(addr);
 }
 
-
-
+static void bigarray_sys_error(void)
+{
+  char buffer[512];
+  unsigned long errnum;
   
+  errnum = GetLastError();
+  if (!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
+                     NULL,
+                     errnum,
+                     0,
+                     buffer,
+                     sizeof(buffer),
+                     NULL))
+    sprintf(buffer, "Unknown error %d\n", errnum);
+  raise_sys_error(copy_string(buffer));
+}

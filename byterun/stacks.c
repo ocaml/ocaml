@@ -21,12 +21,12 @@
 #include "mlvalues.h"
 #include "stacks.h"
 
-value * stack_low;
-value * stack_high;
-value * stack_threshold;
-value * extern_sp;
-value * trapsp;
-value * trap_barrier;
+CAMLexport value * stack_low;
+CAMLexport value * stack_high;
+CAMLexport value * stack_threshold;
+CAMLexport value * extern_sp;
+CAMLexport value * trapsp;
+CAMLexport value * trap_barrier;
 value global_data;
 
 unsigned long max_stack_size;            /* also used in gc_ctrl.c */
@@ -81,7 +81,7 @@ void realloc_stack(asize_t required_space)
 #undef shift
 }
 
-value ensure_stack_capacity(value required_space) /* ML */
+CAMLprim value ensure_stack_capacity(value required_space)
 {
   asize_t req = Long_val(required_space);
   if (extern_sp - req < stack_low) realloc_stack(req);

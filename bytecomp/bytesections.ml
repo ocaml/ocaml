@@ -78,6 +78,14 @@ let seek_section ic name =
   seek_sec (in_channel_length ic - 16 - 8 * List.length !section_table)
            !section_table
 
+(* Return the contents of a section, as a string *)
+
+let read_section ic name =
+  let len = seek_section ic name in
+  let res = String.create len in
+  really_input ic res 0 len;
+  res
+
 (* Return the position of the beginning of the first section *)
 
 let pos_first_section ic =

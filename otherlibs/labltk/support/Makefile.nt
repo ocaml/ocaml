@@ -2,7 +2,7 @@
 
 all: support.cmo widget.cmo protocol.cmo \
      textvariable.cmo timer.cmo fileevent.cmo \
-     liblabltk41.lib
+     liblabltk41.dll liblabltk41.lib
 
 opt: support.cmx widget.cmx protocol.cmx \
      textvariable.cmx timer.cmx fileevent.cmx \
@@ -11,13 +11,19 @@ opt: support.cmx widget.cmx protocol.cmx \
 COBJS=cltkCaml.obj cltkEval.obj cltkEvent.obj cltkFile.obj cltkMain.obj \
       cltkMisc.obj cltkTimer.obj cltkVar.obj cltkWait.obj
 
-CCFLAGS=-I..\..\..\byterun /Zi $(TK_DEFS)
+CCFLAGS=-I..\..\..\byterun $(TK_DEFS)
 
 COMPFLAGS=-I $(OTHERS)/win32unix
 
-liblabltk41.lib : $(COBJS)
+liblabltk41.dll : $(COBJS:.obj=.dobj)
+	link /nologo /dll /out:liblabltk41.dll /implib:tmp.lib \
+	  $(COBJS:.obj=.dobj) ..\..\..\byterun\ocamlrun.lib \
+          $(TK_LINK) wsock32.lib
+	rm tmp.*
+
+liblabltk41.lib : $(COBJS:.obj=.sobj)
 	rm -f liblabltk41.lib
-	$(MKLIB)liblabltk41.lib $(COBJS)
+	$(MKLIB)liblabltk41.lib $(COBJS:.obj=.sobj)
 
 PUB=fileevent.cmi fileevent.mli \
     protocol.cmi protocol.mli \
@@ -25,16 +31,17 @@ PUB=fileevent.cmi fileevent.mli \
     timer.cmi timer.mli \
     widget.cmi widget.mli
 
-install: liblabltk41.lib $(PUB)
+install: liblabltk41.dll liblabltk41.lib $(PUB)
 	@if not exist $(LABLTKDIR) mkdir $(LABLTKDIR)
 	cp $(PUB) $(LABLTKDIR)
-	cp liblabltk41.lib $(LABLTKDIR)
+	cp liblabltk41.dll liblabltk41.lib $(LABLTKDIR)
+	echo $(LABLTKDIR)>> $(LIBDIR)\ld.conf
 
 clean : 
-	rm -f *.cm* *.obj *.lib
+	rm -f *.cm* *.dobj *.sobj *.dll *.lib
 
 .SUFFIXES :
-.SUFFIXES : .mli .ml .cmi .cmo .cmx .mlp .c .obj
+.SUFFIXES : .mli .ml .cmi .cmo .cmx .mlp .c .dobj .sobj
 
 .mli.cmi:
 	$(LABLCOMP) $(COMPFLAGS) $<
@@ -45,8 +52,13 @@ clean :
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
-.c.obj:
+.c.dobj:
+	$(BYTECC) $(DLLCCCOMPOPTS) $(CCFLAGS) -c $<
+	mv $*.obj $*.dobj
+
+.c.sobj:
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CCFLAGS) -c $<
+	mv $*.obj $*.sobj
 
 depend:
 	$(LABLDEP) *.mli *.ml > .depend

@@ -45,7 +45,7 @@ static regexp alloc_regexp(void)
 
 static char * case_fold_table = NULL;
 
-value str_compile_regexp(value src, value fold) /* ML */
+CAMLprim value str_compile_regexp(value src, value fold)
 {
   regexp expr;
   char * msg;
@@ -78,7 +78,7 @@ static regoff_t start_regs[10], end_regs[10];
 
 static struct re_registers match_regs = { 10, start_regs, end_regs };
 
-value str_string_match(regexp expr, value text, value pos) /* ML */
+CAMLprim value str_string_match(regexp expr, value text, value pos)
 {
   int len = string_length(text);
   int start = Int_val(pos);
@@ -96,7 +96,7 @@ value str_string_match(regexp expr, value text, value pos) /* ML */
   }
 }
 
-value str_string_partial_match(regexp expr, value text, value pos) /* ML */
+CAMLprim value str_string_partial_match(regexp expr, value text, value pos)
 {
   int len = string_length(text);
   int start = Int_val(pos);
@@ -113,7 +113,7 @@ value str_string_partial_match(regexp expr, value text, value pos) /* ML */
   }
 }
 
-value str_search_forward(regexp expr, value text, value pos) /* ML */
+CAMLprim value str_search_forward(regexp expr, value text, value pos)
 {
   int res;
   int len = string_length(text);
@@ -132,7 +132,7 @@ value str_search_forward(regexp expr, value text, value pos) /* ML */
   }
 }
 
-value str_search_backward(regexp expr, value text, value pos) /* ML */
+CAMLprim value str_search_backward(regexp expr, value text, value pos)
 {
   int res;
   int len = string_length(text);
@@ -151,17 +151,17 @@ value str_search_backward(regexp expr, value text, value pos) /* ML */
   }
 }
 
-value str_beginning_group(value ngroup) /* ML */
+CAMLprim value str_beginning_group(value ngroup)
 {
   return Val_int(start_regs[Int_val(ngroup)]);
 }
 
-value str_end_group(value ngroup)     /* ML */
+CAMLprim value str_end_group(value ngroup)
 {
   return Val_int(end_regs[Int_val(ngroup)]);
 }
 
-value str_replacement_text(value repl, value orig) /* ML */
+CAMLprim value str_replacement_text(value repl, value orig)
 {
   value res;
   mlsize_t len, n;

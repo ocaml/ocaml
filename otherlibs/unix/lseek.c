@@ -27,7 +27,7 @@ static int seek_command_table[] = {
   SEEK_SET, SEEK_CUR, SEEK_END
 };
 
-value unix_lseek(value fd, value ofs, value cmd)   /* ML */
+CAMLprim value unix_lseek(value fd, value ofs, value cmd)
 {
   long ret;
   ret = lseek(Int_val(fd), Long_val(ofs),

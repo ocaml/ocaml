@@ -15,7 +15,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_chroot(value path)           /* ML */
+CAMLprim value unix_chroot(value path)
 {
   int ret;
   ret = chroot(String_val(path));

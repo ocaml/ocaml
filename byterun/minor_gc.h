@@ -18,8 +18,8 @@
 
 #include "misc.h"
 
-extern char *young_start, *young_ptr, *young_end, *young_limit;
-extern value **ref_table_ptr, **ref_table_limit;
+CAMLextern char *young_start, *young_ptr, *young_end, *young_limit;
+CAMLextern value **ref_table_ptr, **ref_table_limit;
 extern asize_t minor_heap_size;
 extern int in_minor_collection;
 
@@ -28,8 +28,8 @@ extern int in_minor_collection;
 
 extern void set_minor_heap_size (asize_t);
 extern void empty_minor_heap (void);
-extern void minor_collection (void);
-extern void garbage_collection (void); /* for the native-code system */
+CAMLextern void minor_collection (void);
+CAMLextern void garbage_collection (void); /* for the native-code system */
 extern void realloc_ref_table (void);
 extern void oldify (value, value *);
 

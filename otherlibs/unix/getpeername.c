@@ -19,7 +19,7 @@
 
 #include "socketaddr.h"
 
-value unix_getpeername(value sock)          /* ML */
+CAMLprim value unix_getpeername(value sock)
 {
   int retcode;
   union sock_addr_union addr;
@@ -33,7 +33,7 @@ value unix_getpeername(value sock)          /* ML */
 
 #else
 
-value unix_getpeername(value sock)
+CAMLprim value unix_getpeername(value sock)
 { invalid_argument("getpeername not implemented"); }
   
 #endif

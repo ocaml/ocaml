@@ -25,7 +25,7 @@
 
 #ifdef ARCH_ALIGN_DOUBLE
 
-double Double_val(value val)
+CAMLexport double Double_val(value val)
 {
   union { value v[2]; double d; } buffer;
 
@@ -35,7 +35,7 @@ double Double_val(value val)
   return buffer.d;
 }
 
-void Store_double_val(value val, double dbl)
+CAMLexport void Store_double_val(value val, double dbl)
 {
   union { value v[2]; double d; } buffer;
 
@@ -47,7 +47,7 @@ void Store_double_val(value val, double dbl)
 
 #endif
 
-value copy_double(double d)
+CAMLexport value copy_double(double d)
 {
   value res;
 
@@ -60,7 +60,7 @@ value copy_double(double d)
   return res;
 }
 
-value format_float(value fmt, value arg)    /* ML */
+CAMLprim value format_float(value fmt, value arg)
 {
 #define MAX_DIGITS 350
 /* Max number of decimal digits in a "natural" (not artificially padded)
@@ -101,67 +101,67 @@ value format_float(value fmt, value arg)    /* ML */
   return res;
 }
 
-value float_of_string(value s)        /* ML */
+CAMLprim value float_of_string(value s)
 {
   return copy_double(atof(String_val(s)));
 }
 
-value int_of_float(value f)           /* ML */
+CAMLprim value int_of_float(value f)
 {
   return Val_long((long) Double_val(f));
 }
 
-value float_of_int(value n)           /* ML */
+CAMLprim value float_of_int(value n)
 {
   return copy_double((double) Long_val(n));
 }
 
-value neg_float(value f)              /* ML */
+CAMLprim value neg_float(value f)
 {
   return copy_double(- Double_val(f));
 }
 
-value abs_float(value f)              /* ML */
+CAMLprim value abs_float(value f)
 {
   return copy_double(fabs(Double_val(f)));
 }
 
-value add_float(value f, value g)         /* ML */
+CAMLprim value add_float(value f, value g)
 {
   return copy_double(Double_val(f) + Double_val(g));
 }
 
-value sub_float(value f, value g)         /* ML */
+CAMLprim value sub_float(value f, value g)
 {
   return copy_double(Double_val(f) - Double_val(g));
 }
 
-value mul_float(value f, value g)         /* ML */
+CAMLprim value mul_float(value f, value g)
 {
   return copy_double(Double_val(f) * Double_val(g));
 }
 
-value div_float(value f, value g)         /* ML */
+CAMLprim value div_float(value f, value g)
 {
   return copy_double(Double_val(f) / Double_val(g));
 }
 
-value exp_float(value f)              /* ML */
+CAMLprim value exp_float(value f)
 {
   return copy_double(exp(Double_val(f)));
 }
 
-value floor_float(value f)              /* ML */
+CAMLprim value floor_float(value f)
 {
   return copy_double(floor(Double_val(f)));
 }
 
-value fmod_float(value f1, value f2)              /* ML */
+CAMLprim value fmod_float(value f1, value f2)
 {
   return copy_double(fmod(Double_val(f1), Double_val(f2)));
 }
 
-value frexp_float(value f)              /* ML */
+CAMLprim value frexp_float(value f)
 {
   CAMLparam1 (f);
   CAMLlocal2 (res, mantissa);
@@ -174,22 +174,22 @@ value frexp_float(value f)              /* ML */
   CAMLreturn (res);
 }
 
-value ldexp_float(value f, value i)              /* ML */
+CAMLprim value ldexp_float(value f, value i)
 {
   return copy_double(ldexp(Double_val(f), Int_val(i)));
 }
 
-value log_float(value f)              /* ML */
+CAMLprim value log_float(value f)
 {
   return copy_double(log(Double_val(f)));
 }
 
-value log10_float(value f)              /* ML */
+CAMLprim value log10_float(value f)
 {
   return copy_double(log10(Double_val(f)));
 }
 
-value modf_float(value f)              /* ML */
+CAMLprim value modf_float(value f)
 {
 #if __SC__
   _float_eval frem;       /* Problem with Apple's <math.h> */
@@ -207,102 +207,102 @@ value modf_float(value f)              /* ML */
   CAMLreturn (res);
 }
 
-value sqrt_float(value f)             /* ML */
+CAMLprim value sqrt_float(value f)
 {
   return copy_double(sqrt(Double_val(f)));
 }
 
-value power_float(value f, value g)         /* ML */
+CAMLprim value power_float(value f, value g)
 {
   return copy_double(pow(Double_val(f), Double_val(g)));
 }
 
-value sin_float(value f)              /* ML */
+CAMLprim value sin_float(value f)
 {
   return copy_double(sin(Double_val(f)));
 }
 
-value sinh_float(value f)              /* ML */
+CAMLprim value sinh_float(value f)
 {
   return copy_double(sinh(Double_val(f)));
 }
 
-value cos_float(value f)              /* ML */
+CAMLprim value cos_float(value f)
 {
   return copy_double(cos(Double_val(f)));
 }
 
-value cosh_float(value f)              /* ML */
+CAMLprim value cosh_float(value f)
 {
   return copy_double(cosh(Double_val(f)));
 }
 
-value tan_float(value f)              /* ML */
+CAMLprim value tan_float(value f)
 {
   return copy_double(tan(Double_val(f)));
 }
 
-value tanh_float(value f)              /* ML */
+CAMLprim value tanh_float(value f)
 {
   return copy_double(tanh(Double_val(f)));
 }
 
-value asin_float(value f)             /* ML */
+CAMLprim value asin_float(value f)
 {
   return copy_double(asin(Double_val(f)));
 }
 
-value acos_float(value f)             /* ML */
+CAMLprim value acos_float(value f)
 {
   return copy_double(acos(Double_val(f)));
 }
 
-value atan_float(value f)             /* ML */
+CAMLprim value atan_float(value f)
 {
   return copy_double(atan(Double_val(f)));
 }
 
-value atan2_float(value f, value g)        /* ML */
+CAMLprim value atan2_float(value f, value g)
 {
   return copy_double(atan2(Double_val(f), Double_val(g)));
 }
 
-value ceil_float(value f)              /* ML */
+CAMLprim value ceil_float(value f)
 {
   return copy_double(ceil(Double_val(f)));
 }
 
-value eq_float(value f, value g)        /* ML */
+CAMLprim value eq_float(value f, value g)
 {
   return Val_bool(Double_val(f) == Double_val(g));
 }
 
-value neq_float(value f, value g)        /* ML */
+CAMLprim value neq_float(value f, value g)
 {
   return Val_bool(Double_val(f) != Double_val(g));
 }
 
-value le_float(value f, value g)        /* ML */
+CAMLprim value le_float(value f, value g)
 {
   return Val_bool(Double_val(f) <= Double_val(g));
 }
 
-value lt_float(value f, value g)        /* ML */
+CAMLprim value lt_float(value f, value g)
 {
   return Val_bool(Double_val(f) < Double_val(g));
 }
 
-value ge_float(value f, value g)        /* ML */
+CAMLprim value ge_float(value f, value g)
 {
   return Val_bool(Double_val(f) >= Double_val(g));
 }
 
-value gt_float(value f, value g)        /* ML */
+CAMLprim value gt_float(value f, value g)
 {
   return Val_bool(Double_val(f) > Double_val(g));
 }
 
-value float_of_bytes(value s)   /* ML */
+CAMLprim value float_of_bytes(value s)
 {
   value d = copy_double(0.0);
 #ifdef ARCH_BIG_ENDIAN
@@ -315,7 +315,7 @@ value float_of_bytes(value s)   /* ML */
 
 enum { FP_normal, FP_subnormal, FP_zero, FP_infinite, FP_nan };
 
-value classify_float(value vd)   /* ML */
+CAMLprim value classify_float(value vd)
 {
 #ifdef fpclassify
   switch (fpclassify(Double_val(vd))) {

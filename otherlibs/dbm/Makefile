@@ -20,7 +20,9 @@ include ../../config/Makefile
 CC=$(BYTECC) -g
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
-CFLAGS=$(DBM_INCLUDES) -I../../byterun -O $(BYTECCCOMPOPTS)
+MKLIB=../../tools/ocamlmklib
+
+CFLAGS=$(DBM_INCLUDES) -I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 COBJS=cldbm.o
 
 all: libmldbm.a dbm.cmi dbm.cma
@@ -28,15 +30,13 @@ all: libmldbm.a dbm.cmi dbm.cma
 allopt: libmldbm.a dbm.cmi dbm.cmxa
 
 libmldbm.a: $(COBJS)
-	rm -rf libmldbm.a
-	ar rc libmldbm.a $(COBJS)
-	$(RANLIB) libmldbm.a
+	$(MKLIB) -oc mldbm $(COBJS) $(DBM_LINK)
 
 dbm.cma: dbm.cmo
-	$(CAMLC) -a -o dbm.cma -custom dbm.cmo -cclib -lmldbm $(DBM_LINK)
+	$(MKLIB) -ocamlc '$(CAMLC)' -o dbm -oc mldbm dbm.cmo $(DBM_LINK)
 
 dbm.cmxa: dbm.cmx
-	$(CAMLOPT) -a -o dbm.cmxa dbm.cmx -cclib -lmldbm $(DBM_LINK)
+	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o dbm dbm.cmx $(DBM_LINK)
 
 partialclean:
 	rm -f *.cm*
@@ -45,6 +45,7 @@ clean: partialclean
 	rm -f *.a *.o
 
 install:
+	test -f libmldbm.so && cp libmldbm.so $(LIBDIR)/libmldbm.so
 	cp libmldbm.a $(LIBDIR)/libmldbm.a
 	cd $(LIBDIR); $(RANLIB) libmldbm.a
 	cp dbm.cma dbm.cmi dbm.mli $(LIBDIR)

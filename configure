@@ -25,6 +25,7 @@ ccoption=''
 cclibs=''
 curseslibs=''
 mathlib='-lm'
+dllib=''
 x11_include_dir=''
 x11_lib_dir=''
 tk_defs=''
@@ -32,6 +33,7 @@ tk_libs=''
 posix_threads=no
 verbose=no
 withcurses=yes
+withsharedlibs=yes
 
 gcc_warnings="-Wall -Wno-unused"
 
@@ -56,7 +58,10 @@ while : ; do
         ccoption="$2"; shift;;
     -lib*)
         cclibs="$2 $cclibs"; shift;;
-    -no-curses) withcurses=no;;
+    -no-curses)
+        withcurses=no;;
+    -no-shared-libs)
+        withsharedlibs=no;;
     -x11include*|--x11include*)
         x11_include_dir=$2; shift;;
     -x11lib*|--x11lib*)
@@ -354,6 +359,61 @@ if $int64_supported; then
   esac
 fi
 
+# Shared library support
+
+shared_libraries_supported=false
+sharedcccompopts=''
+mksharedlib=''
+byteccrpath=''
+
+if test $withsharedlibs = "yes"; then
+  case "$host" in
+    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*)
+      sharedcccompopts="-fPIC"
+      mksharedlib="gcc -shared -o"
+      bytecclinkopts="$bytecclinkopts -Wl,-E"
+      byteccrpath="-Wl,-rpath,"
+      shared_libraries_supported=true;;
+    alpha*-*-osf*)
+      case "$bytecc" in
+        cc*) sharedcccompopts="";;
+        gcc*) sharedcccompopts="-fPIC";;
+      esac
+      mksharedlib="ld -shared -expect_unresolved '*' -o"
+      byteccrpath="-Wl,-rpath,"
+      shared_libraries_supported=true;;
+    sparc-sun-solaris2*)
+      case "$bytecc" in
+        gcc*)
+	  if sh ./solaris-ld; then :; else
+          sharedcccompopts="-fPIC"
+	  mksharedlib="$bytecc -shared -o"
+          bytecclinkopts="$bytecclinkopts -Wl,-E"
+          byteccrpath="-Wl,-rpath,";
+	  shared_libraries_supported=true
+	  fi;;
+        *)
+          sharedcccompopts="-KPIC"
+          byteccrpath="-Wl,-R,"
+	  mksharedlib="/usr/ccs/bin/ld -G -o"
+	  shared_libraries_supported=true;;
+      esac;;
+    mips-sgi-irix[56]*)
+      case "$bytecc" in
+        cc*) sharedcccompopts="";;
+        gcc*) sharedcccompopts="-fPIC";;
+      esac
+      mksharedlib="ld -shared -rdata_shared -o"
+      byteccrpath="-Wl,-rpath,"
+      shared_libraries_supported=true;;
+  esac
+fi
+
+if $shared_libraries_supported; then
+  echo "Dynamic loading of shared libraries is supported."
+  echo "#define SUPPORT_DYNAMIC_LINKING" >> s.h
+fi
+
 # Configure the native-code compiler
 
 arch=none
@@ -400,6 +460,7 @@ fi
 
 nativecccompopts=''
 nativecclinkopts=''
+nativeccrpath="$byteccrpath"
 
 case "$arch,$nativecc,$system,$host_type" in
   alpha,cc*,digital,*) nativecccompopts=-std1;;
@@ -493,6 +554,7 @@ fi
 # Write the OS type (Unix or Cygwin)
 
 echo "#define OCAML_OS_TYPE \"$ostype\"" >> s.h
+echo "#define OCAML_STDLIB_DIR \"$libdir\"" >> s.h
 
 # Check the semantics of signal handlers
 
@@ -804,18 +866,18 @@ if test "$posix_threads" = "yes"; then
   nativecccompopts="$nativecccompopts -D_REENTRANT"
   case "$host" in
     *-*-solaris*)
-        pthread_link="-cclib -lpthread -cclib -lposix4";;
+        pthread_link="-lpthread -lposix4";;
     *-*-freebsd*)
-        pthread_link="-ccopt -pthread"
+        pthread_link="-pthread"
         bytecccompopts="$bytecccompopts -D_THREAD_SAFE"
         nativecccompopts="$nativecccompopts -D_THREAD_SAFE";;
     *-*-openbsd*)
-        pthread_link="-ccopt -pthread"
+        pthread_link="-pthread"
         bytecccompopts="$bytecccompopts -pthread"
         asppflags="$asppflags -pthread"
         nativecccompopts="$nativecccompopts -pthread";;
     *)
-        pthread_link="-cclib -lpthread";;
+        pthread_link="-lpthread";;
   esac
   echo "Options for linking with POSIX threads: $pthread_link"
   echo "PTHREAD_LINK=$pthread_link" >> Makefile
@@ -868,9 +930,9 @@ do
      test -f $dir/libX11.so || \
      test -f $dir/libX11.sa; then
     if test $dir = /usr/lib; then
-      x11_link="-cclib -lX11"
+      x11_link="-lX11"
     else
-      x11_link="-ccopt -L$dir -cclib -lX11"
+      x11_link="-L$dir -lX11"
       x11_libs="-L$dir"
     fi
     break
@@ -905,9 +967,9 @@ for dir in /usr/include /usr/include/gdbm /usr/include/db1; do
     if sh ./hasgot dbm_open; then
       dbm_link=""
     elif sh ./hasgot -lndbm dbm_open; then
-      dbm_link="-cclib -lndbm"
+      dbm_link="-lndbm"
     elif sh ./hasgot -ldb1 dbm_open; then
-      dbm_link="-cclib -ldb1"
+      dbm_link="-ldb1"
     else
       dbm_include="not found"
     fi
@@ -1020,7 +1082,6 @@ if test $has_tk = true; then
 fi
 
 if test $has_tk = true; then
-  tk_libs=`echo $tk_libs | sed -e 's/-l/-cclib &/g' -e 's/-[LW]/-ccopt &/g' `
   echo "TK_DEFS=$tk_defs" >> Makefile
   echo "TK_LINK=$tk_libs" >> Makefile
   otherlibraries="$otherlibraries labltk"
@@ -1035,8 +1096,12 @@ cclibs="$cclibs $mathlib"
 echo "BYTECC=$bytecc" >> Makefile
 echo "BYTECCCOMPOPTS=$bytecccompopts" >> Makefile
 echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
-echo "BYTECCLIBS=$cclibs $curseslibs" >> Makefile
+echo "BYTECCLIBS=$cclibs $dllib $curseslibs" >> Makefile
+echo "BYTECCRPATH=$byteccrpath" >> Makefile
 echo "EXE=$exe" >> Makefile
+echo "SUPPORTS_SHARED_LIBRARIES=$shared_libraries_supported" >> Makefile
+echo "SHAREDCCCOMPOPTS=$sharedcccompopts" >> Makefile
+echo "MKSHAREDLIB=$mksharedlib" >> Makefile
 
 echo "ARCH=$arch" >> Makefile
 echo "MODEL=$model" >> Makefile
@@ -1044,6 +1109,7 @@ echo "SYSTEM=$system" >> Makefile
 echo "NATIVECC=$nativecc" >> Makefile
 echo "NATIVECCCOMPOPTS=$nativecccompopts" >> Makefile
 echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
+echo "NATIVECCRPATH=$nativeccrpath" >> Makefile
 echo "NATIVECCLIBS=$cclibs" >> Makefile
 echo "ASFLAGS=$asflags" >> Makefile
 echo "ASPP=$aspp" >> Makefile
@@ -1072,7 +1138,14 @@ echo "        manual pages.............. $mandir (with extension .$manext)"
 echo "Configuration for the bytecode compiler:"
 echo "        C compiler used........... $bytecc"
 echo "        options for compiling..... $bytecccompopts"
-echo "        options for linking....... $bytecclinkopts $cclibs $curseslibs"
+echo "        options for linking....... $bytecclinkopts $cclibs $dllib $curseslibs"
+if $shared_libraries_supported; then
+echo "        shared libraries are supported"
+echo "        options for compiling..... $sharedcccompopts $bytecccompopts"
+echo "        command for building...... $mksharedlib <target>.so <objects>"
+else
+echo "        shared libraries not supported"
+fi
 
 echo "Configuration for the native-code compiler:"
 if test "$arch" = "none"; then

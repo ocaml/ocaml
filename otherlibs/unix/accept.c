@@ -22,7 +22,7 @@
 
 #include "socketaddr.h"
 
-value unix_accept(value sock)          /* ML */
+CAMLprim value unix_accept(value sock)
 {
   int retcode;
   value res;
@@ -46,6 +46,6 @@ value unix_accept(value sock)          /* ML */
 
 #else
 
-value unix_accept(value sock) { invalid_argument("accept not implemented"); }
+CAMLprim value unix_accept(value sock) { invalid_argument("accept not implemented"); }
   
 #endif

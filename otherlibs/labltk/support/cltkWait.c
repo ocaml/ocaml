@@ -57,7 +57,7 @@ static void WaitVisibilityProc(ClientData clientData, XEvent *eventPtr)
 }
 
 /* Sets up a callback upon Visibility of a window */
-value camltk_wait_vis(value win, value cbid) /* ML */
+CAMLprim value camltk_wait_vis(value win, value cbid)
 {
   struct WinCBData *vis =
     (struct WinCBData *)stat_alloc(sizeof(struct WinCBData));
@@ -84,7 +84,7 @@ static void WaitWindowProc(ClientData clientData, XEvent *eventPtr)
 }
 
 /* Sets up a callback upon window destruction */
-value camltk_wait_des(value win, value cbid) /* ML */
+CAMLprim value camltk_wait_des(value win, value cbid)
 {
   struct WinCBData *vis =
     (struct WinCBData *)stat_alloc(sizeof(struct WinCBData));

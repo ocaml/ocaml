@@ -17,7 +17,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_chmod(value path, value perm)     /* ML */
+CAMLprim value unix_chmod(value path, value perm)
 {
   int ret;
   ret = chmod(String_val(path), Int_val(perm));

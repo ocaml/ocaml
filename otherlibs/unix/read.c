@@ -18,7 +18,7 @@
 #include <signals.h>
 #include "unixsupport.h"
 
-value unix_read(value fd, value buf, value ofs, value len) /* ML */
+CAMLprim value unix_read(value fd, value buf, value ofs, value len)
 {
   long numbytes;
   int ret;

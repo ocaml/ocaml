@@ -58,7 +58,7 @@ static Tcl_File tcl_filehandle(value fd)
 #define Tcl_File int
 #endif
 
-value camltk_add_file_input(value fd, value cbid)    /* ML */
+CAMLprim value camltk_add_file_input(value fd, value cbid)
 {
   CheckInit();
   Tcl_CreateFileHandler(tcl_filehandle(fd), TCL_READABLE, 
@@ -73,7 +73,7 @@ value camltk_add_file_input(value fd, value cbid)    /* ML */
  * in rem_file (it doesn't close the fd anyway). For fds for which we
  * repeatedly add/rem, this will cause some overhead.
  */
-value camltk_rem_file_input(value fd, value cbid) /* ML */
+CAMLprim value camltk_rem_file_input(value fd, value cbid)
 {
   Tcl_File fh = tcl_filehandle(fd);
   Tcl_DeleteFileHandler(fh);
@@ -83,7 +83,7 @@ value camltk_rem_file_input(value fd, value cbid) /* ML */
   return Val_unit;
 }
 
-value camltk_add_file_output(value fd, value cbid)    /* ML */
+CAMLprim value camltk_add_file_output(value fd, value cbid)
 {
   CheckInit();
   Tcl_CreateFileHandler(tcl_filehandle(fd), TCL_WRITABLE, 
@@ -91,7 +91,7 @@ value camltk_add_file_output(value fd, value cbid)    /* ML */
   return Val_unit;
 }
 
-value camltk_rem_file_output(value fd, value cbid) /* ML */
+CAMLprim value camltk_rem_file_output(value fd, value cbid)
 {
   Tcl_File fh = tcl_filehandle(fd);
   Tcl_DeleteFileHandler(fh);
@@ -122,7 +122,7 @@ static Tcl_Channel tcl_channel(value fd, int flags)
     return Tcl_MakeFileChannel((ClientData) h, flags);
 }
 
-value camltk_add_file_input(value fd, value cbid)    /* ML */
+CAMLprim value camltk_add_file_input(value fd, value cbid)
 {
   CheckInit();
   Tcl_CreateChannelHandler(tcl_channel(fd, TCL_READABLE),
@@ -131,14 +131,14 @@ value camltk_add_file_input(value fd, value cbid)    /* ML */
   return Val_unit;
 }
 
-value camltk_rem_file_input(value fd, value cbid) /* ML */
+CAMLprim value camltk_rem_file_input(value fd, value cbid)
 {
   Tcl_DeleteChannelHandler(tcl_channel(fd, TCL_READABLE),
                            FileProc, (ClientData) (Int_val(cbid)));
   return Val_unit;
 }
 
-value camltk_add_file_output(value fd, value cbid)    /* ML */
+CAMLprim value camltk_add_file_output(value fd, value cbid)
 {
   CheckInit();
   Tcl_CreateChannelHandler(tcl_channel(fd, TCL_WRITABLE),
@@ -147,7 +147,7 @@ value camltk_add_file_output(value fd, value cbid)    /* ML */
   return Val_unit;
 }
 
-value camltk_rem_file_output(value fd, value cbid) /* ML */
+CAMLprim value camltk_rem_file_output(value fd, value cbid)
 {
   Tcl_DeleteChannelHandler(tcl_channel(fd, TCL_WRITABLE),
                            FileProc, (ClientData) (Int_val(cbid)));

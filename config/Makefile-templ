@@ -54,7 +54,10 @@ SHARPBANGSCRIPTS=true
 
 ### Additional link-time options for $(BYTECC)
 ### If using GCC on a Dec Alpha under OSF1:
-#BYTECCLINKOPTS=-Xlinker -taso
+#BYTECCLINKOPTS=-Wl,-T,12000000 -Wl,-D,14000000
+# To support dynamic loading of shared libraries (they need to look at
+# our own symbols):
+#BYTECCLINKOPTS=-Wl,-E
 # Otherwise:
 #BYTECCLINKOPTS=
 
@@ -78,6 +81,22 @@ SHARPBANGSCRIPTS=true
 # If ranlib is not needed:
 #RANLIB=ar rs
 #RANLIBCMD=
+
+### Shared library support
+# Extension for shared libraries: so if supported, a if not supported
+#SO=so
+#SO=a
+# Set to nothing if shared libraries supported, and to -custom if not supported
+#CUSTOM_IF_NOT_SHARED=
+#CUSTOM_IF_NOT_SHARED=-custom
+# Options to $(BYTECC) to produce shared objects (e.g. PIC)
+#SHAREDCCCOMPOPTS=-fPIC
+# How to build a shared library, invoked with output .so as first arg
+# and object files as remaining args
+#MKSHAREDLIB=gcc -shared -o
+# Compile-time option to $(BYTECC) to add a directory to be searched
+# at run-time for shared libraries
+#BYTECCRPATH=-Wl,-rpath
 
 ############# Configuration for the native-code compiler
 
@@ -159,6 +178,10 @@ SHARPBANGSCRIPTS=true
 ### Additional link-time options for $(NATIVECC)
 #NATIVECCLINKOPTS=
 
+# Compile-time option to $(NATIVECC) to add a directory to be searched
+# at run-time for shared libraries
+#NATIVECCRPATH=-Wl,-rpath
+
 ### Flags for the assembler
 # For the Alpha or the Mips:
 #ASFLAGS=-O2
@@ -234,9 +257,9 @@ BIGNUM_ARCH=alpha
 ### Link-time options to ocamlc or ocamlopt for linking with X11 libraries
 # Needed for the "graph" and "labltk" packages
 # Usually:
-#X11_LINK=-cclib -lX11
+#X11_LINK=-lX11
 # For SunOS with OpenLook:
-#X11_LINK=-cclib -L$(X11_LIB) -cclib -lX11
+#X11_LINK=-L$(X11_LIB) -lX11
 
 ### -I options for finding the include file ndbm.h
 # Needed for the "dbm" package

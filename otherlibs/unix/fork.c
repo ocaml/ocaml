@@ -15,7 +15,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_fork(value unit)               /* ML */
+CAMLprim value unix_fork(value unit)
 {
   int ret;
   ret = fork();

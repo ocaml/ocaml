@@ -44,5 +44,8 @@ val seek_section: in_channel -> string -> int
        and return the length of that section.  Raise Not_found if no
        such section exists. *)
 
+val read_section: in_channel -> string -> string
+    (* Return the contents of a section, as a string *)
+
 val pos_first_section: in_channel -> int
    (* Return the position of the beginning of the first section *)

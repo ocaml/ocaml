@@ -18,7 +18,7 @@
 #include <signals.h>
 #include "unixsupport.h"
 
-value unix_read(value fd, value buf, value ofs, value len) /* ML */
+CAMLprim value unix_read(value fd, value buf, value ofs, value len)
 {
   DWORD numbytes, numread;
   BOOL ret;
@@ -32,7 +32,7 @@ value unix_read(value fd, value buf, value ofs, value len) /* ML */
     ret = ReadFile(h, iobuf, numbytes, &numread, NULL);
     leave_blocking_section();
     if (! ret) {
-      _dosmaperr(GetLastError());
+      win32_maperr(GetLastError());
       uerror("read", Nothing);
     }
     memmove (&Byte(buf, Long_val(ofs)), iobuf, numread);

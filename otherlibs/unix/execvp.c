@@ -17,9 +17,11 @@
 #include "unixsupport.h"
 
 extern char ** cstringvect();
+#ifndef _WIN32
 extern char ** environ;
+#endif
 
-value unix_execvp(value path, value args)     /* ML */
+CAMLprim value unix_execvp(value path, value args)
 {
   char ** argv;
   argv = cstringvect(args);
@@ -30,7 +32,7 @@ value unix_execvp(value path, value args)     /* ML */
                                 /* from smart compilers */
 }
 
-value unix_execvpe(value path, value args, value env)     /* ML */
+CAMLprim value unix_execvpe(value path, value args, value env)
 {
   char ** argv;
   char ** saved_environ;

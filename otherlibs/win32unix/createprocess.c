@@ -14,10 +14,8 @@
 
 #include <windows.h>
 #include <mlvalues.h>
+#include <osdeps.h>
 #include "unixsupport.h"
-
-/* From the Caml runtime */
-extern char * searchpath(char * name);
 
 static int win_has_console(void);
 
@@ -29,8 +27,7 @@ value win_create_process_native(value cmd, value cmdline, value env,
   char * exefile, * envp;
   int flags;
 
-  exefile = searchpath(String_val(cmd));
-  if (exefile == NULL) exefile = String_val(cmd);
+  exefile = search_exe_in_path(String_val(cmd));
   if (env != Val_int(0)) {
     envp = String_val(Field(env, 0));
   } else {
@@ -54,7 +51,7 @@ value win_create_process_native(value cmd, value cmdline, value env,
   /* Create the process */
   if (! CreateProcess(exefile, String_val(cmdline), NULL, NULL,
                       TRUE, flags, envp, NULL, &si, &pi)) {
-    _dosmaperr(GetLastError());
+    win32_maperr(GetLastError());
     uerror("create_process", cmd);
   }
   CloseHandle(pi.hThread);
@@ -63,7 +60,7 @@ value win_create_process_native(value cmd, value cmdline, value env,
   return Val_int(pi.hProcess);
 }
 
-value win_create_process(value * argv, int argn) /* ML */
+CAMLprim value win_create_process(value * argv, int argn)
 {
   return win_create_process_native(argv[0], argv[1], argv[2],
                                    argv[3], argv[4], argv[5]);

@@ -18,7 +18,7 @@
 #include "unixsupport.h"
 #include "socketaddr.h"
 
-value unix_accept(sock)          /* ML */
+CAMLprim value unix_accept(sock)
      value sock;
 {
   SOCKET sconn = (SOCKET) Handle_val(sock);

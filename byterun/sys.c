@@ -53,11 +53,15 @@
 #include "ui.h"
 #endif
 
+#ifndef _WIN32
 extern int errno;
+#endif
 
 #ifdef HAS_STRERROR
 
+#ifndef _WIN32
 extern char * strerror(int);
+#endif
 
 char * error_message(void)
 {
@@ -86,7 +90,7 @@ char * error_message(void)
 #define EWOULDBLOCK (-1)
 #endif
 
-void sys_error(value arg)
+CAMLexport void sys_error(value arg)
 {
   CAMLparam1 (arg);
   char * err;
@@ -110,7 +114,7 @@ void sys_error(value arg)
   }
 }
 
-value sys_exit(value retcode)          /* ML */
+CAMLprim value sys_exit(value retcode)
 {
 #ifndef NATIVE_CODE
   debugger(PROGRAM_EXIT);
@@ -142,7 +146,7 @@ static int sys_open_flags[] = {
   O_BINARY, O_TEXT, O_NONBLOCK
 };
 
-value sys_open(value path, value flags, value perm) /* ML */
+CAMLprim value sys_open(value path, value flags, value perm)
 {
   int ret;
   ret = open(String_val(path), convert_flag_list(flags, sys_open_flags)
@@ -154,13 +158,13 @@ value sys_open(value path, value flags, value perm) /* ML */
   return Val_long(ret);
 }
 
-value sys_close(value fd)             /* ML */
+CAMLprim value sys_close(value fd)
 {
   close(Int_val(fd));
   return Val_unit;
 }
 
-value sys_file_exists(value name)     /* ML */
+CAMLprim value sys_file_exists(value name)
 {
 #if macintosh
   int f;
@@ -174,7 +178,7 @@ value sys_file_exists(value name)     /* ML */
 #endif
 }
 
-value sys_remove(value name)          /* ML */
+CAMLprim value sys_remove(value name)
 {
   int ret;
   ret = unlink(String_val(name));
@@ -182,20 +186,20 @@ value sys_remove(value name)          /* ML */
   return Val_unit;
 }
 
-value sys_rename(value oldname, value newname) /* ML */
+CAMLprim value sys_rename(value oldname, value newname)
 {
   if (rename(String_val(oldname), String_val(newname)) != 0)
     sys_error(oldname);
   return Val_unit;
 }
 
-value sys_chdir(value dirname)        /* ML */
+CAMLprim value sys_chdir(value dirname)
 {
   if (chdir(String_val(dirname)) != 0) sys_error(dirname);
   return Val_unit;
 }
 
-value sys_getcwd(value unit)          /* ML */
+CAMLprim value sys_getcwd(value unit)
 {
   char buff[4096];
 #ifdef HAS_GETCWD
@@ -206,7 +210,7 @@ value sys_getcwd(value unit)          /* ML */
   return copy_string(buff);
 }
 
-value sys_getenv(value var)           /* ML */
+CAMLprim value sys_getenv(value var)
 {
   char * res;
 
@@ -217,7 +221,7 @@ value sys_getenv(value var)           /* ML */
 
 char ** caml_main_argv;
 
-value sys_get_argv(value unit)        /* ML */
+CAMLprim value sys_get_argv(value unit)
 {
   return copy_string_array((char const **) caml_main_argv);
 }
@@ -237,7 +241,7 @@ void sys_init(char **argv)
 extern int win32_system(char * command);
 #endif
 
-value sys_system_command(value command)   /* ML */
+CAMLprim value sys_system_command(value command)
 {
   int status, retcode;
   
@@ -256,7 +260,7 @@ value sys_system_command(value command)   /* ML */
   return Val_int(retcode);
 }
 
-value sys_time(value unit)            /* ML */
+CAMLprim value sys_time(value unit)
 {
 #ifdef HAS_TIMES
 #ifndef CLK_TCK
@@ -275,7 +279,7 @@ value sys_time(value unit)            /* ML */
 #endif
 }
 
-value sys_random_seed (value unit)       /* ML */
+CAMLprim value sys_random_seed (value unit)
 {
 #ifdef HAS_GETTIMEOFDAY
   struct timeval tv;
@@ -286,7 +290,7 @@ value sys_random_seed (value unit)       /* ML */
 #endif
 }
 
-value sys_get_config(value unit)  /* ML */
+CAMLprim value sys_get_config(value unit)
 {
   CAMLparam0 ();   /* unit is unused */
   CAMLlocal2 (result, ostype);
@@ -297,94 +301,4 @@ value sys_get_config(value unit)  /* ML */
   Field(result, 1) = Val_long (8 * sizeof(value));
   CAMLreturn (result);
 }
-
-/* Search path function */
-/* For Win32: defined in win32.c */
-/* For MacOS: defined in macintosh.c */
-
-#if !defined(_WIN32) && !defined(macintosh)
-
-#ifndef S_ISREG
-#define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
-#endif
-
-#ifndef __CYGWIN32__
-
-char * searchpath(char * name)
-{
-  char * fullname;
-  char * path;
-  char * p;
-  char * q;
-  struct stat st;
-
-  for (p = name; *p != 0; p++) {
-    if (*p == '/') return name;
-  }
-  path = getenv("PATH");
-  if (path == NULL) return 0;
-  fullname = stat_alloc(strlen(name) + strlen(path) + 2);
-  while(1) {
-    for (p = fullname; *path != 0 && *path != ':'; p++, path++) *p = *path;
-    if (p != fullname) *p++ = '/';
-    for (q = name; *q != 0; p++, q++) *p = *q;
-    *p = 0;
-    if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) break;
-    if (*path == 0) return 0;
-    path++;
-  }
-  return fullname;
-}
-
-#else
-
-/* Cygwin needs special treatment because of the implicit ".exe" at the
-   end of executable file names */
-
-static int searchpath_file_ok(char * name)
-{
-  int fd;
-  /* Cannot use stat() here because it adds ".exe" implicitly */
-  fd = open(name, O_RDONLY);
-  if (fd == -1) return 0;
-  close(fd);
-  return 1;
-}
-
-char * searchpath(char * name)
-{
-  char * path, * fullname, * p;
-
-  path = getenv("PATH");
-  fullname = malloc(strlen(name) + (path == NULL ? 0 : strlen(path)) + 6);
-  /* 6 = "/" plus ".exe" plus final "\0" */
-  if (fullname == NULL) return name;
-  /* Check for absolute path name */
-  for (p = name; *p != 0; p++) {
-    if (*p == '/' || *p == '\\') {
-      if (searchpath_file_ok(name)) return name;
-      strcpy(fullname, name);
-      strcat(fullname, ".exe");
-      if (searchpath_file_ok(name)) return fullname;
-      return name;
-    }
-  }
-  /* Search in path */
-  if (path == NULL) return 0;
-  while(1) {
-    for (p = fullname; *path != 0 && *path != ':'; p++, path++) *p = *path;
-    if (p != fullname) *p++ = '/';
-    strcpy(p, name);
-    if (searchpath_file_ok(fullname)) return fullname;
-    strcat(fullname, ".exe");
-    if (searchpath_file_ok(fullname)) return fullname;
-    if (*path == 0) break;
-    path++;
-  }
-  return 0;
-}
-
-#endif /* __CYGWIN32__ */
-
-#endif /* _WIN32, macintosh, ... */
 

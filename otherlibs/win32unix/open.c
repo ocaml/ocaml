@@ -25,7 +25,7 @@ static int open_create_flags[8] = {
   0, 0, 0, 0, 0, O_CREAT, O_TRUNC, O_EXCL
 };
 
-value unix_open(value path, value flags, value perm) /* ML */
+CAMLprim value unix_open(value path, value flags, value perm)
 {
   int fileaccess, createflags, fileattrib, filecreate;
   SECURITY_ATTRIBUTES attr;
@@ -58,7 +58,7 @@ value unix_open(value path, value flags, value perm) /* ML */
                  FILE_SHARE_READ | FILE_SHARE_WRITE, &attr,
                  filecreate, fileattrib, NULL);
   if (h == INVALID_HANDLE_VALUE) {
-    _dosmaperr(GetLastError());
+    win32_maperr(GetLastError());
     uerror("open", path);
   }
   return win_alloc_handle(h);

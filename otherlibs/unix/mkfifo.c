@@ -19,7 +19,7 @@
 
 #ifdef HAS_MKFIFO
 
-value unix_mkfifo(value path, value mode) /* ML */
+CAMLprim value unix_mkfifo(value path, value mode)
 {
   if (mkfifo(String_val(path), Int_val(mode)) == -1)
     uerror("mkfifo", path);
@@ -33,7 +33,7 @@ value unix_mkfifo(value path, value mode) /* ML */
 
 #ifdef S_IFIFO
 
-value unix_mkfifo(value path, value mode)
+CAMLprim value unix_mkfifo(value path, value mode)
 {
   if (mknod(String_val(path), (Int_val(mode) & 07777) | S_IFIFO, 0) == -1)
     uerror("mkfifo", path);
@@ -42,7 +42,7 @@ value unix_mkfifo(value path, value mode)
 
 #else
 
-value unix_mkfifo() { invalid_argument("mkfifo not implemented"); }
+CAMLprim value unix_mkfifo() { invalid_argument("mkfifo not implemented"); }
 
 #endif
 #endif

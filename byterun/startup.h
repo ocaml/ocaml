@@ -4,9 +4,9 @@
 #include "misc.h"
 #include "exec.h"
 
-extern void caml_main(char **argv);
-extern void caml_startup_code(code_t code, asize_t code_size,
-                              char *data, char **argv);
+CAMLextern void caml_main(char **argv);
+CAMLextern void caml_startup_code(code_t code, asize_t code_size,
+                                  char *data, char **argv);
 
 enum { FILE_NOT_FOUND = -1, BAD_BYTECODE  = -2 };
 

@@ -73,6 +73,8 @@ let main () =
              "<opt>  Pass option <opt> to the C compiler and linker";
        "-compact", Arg.Clear optimize_for_speed,
              " Optimize code size rather than speed";
+       "-dllpath", Arg.String (fun s -> dllpaths := !dllpaths @ [s]),
+             "<dir>  Add <dir> to the run-time search path for shared libraries";
        "-i", Arg.Set print_types, " Print the types";
        "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
              "<dir>  Add <dir> to the list of include directories";

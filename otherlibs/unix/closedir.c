@@ -21,7 +21,7 @@
 #include <sys/dir.h>
 #endif
 
-value unix_closedir(value d)           /* ML */
+CAMLprim value unix_closedir(value d)
 {
   closedir((DIR *) d);
   return Val_unit;

@@ -19,7 +19,7 @@
 #include <process.h>
 #include <stdio.h>
 
-value win_system(cmd)           /* ML */
+CAMLprim value win_system(cmd)
      value cmd;
 {
   int ret;

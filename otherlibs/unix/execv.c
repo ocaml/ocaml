@@ -18,7 +18,7 @@
 
 extern char ** cstringvect();
 
-value unix_execv(value path, value args)     /* ML */
+CAMLprim value unix_execv(value path, value args)
 {
   char ** argv;
   argv = cstringvect(args);

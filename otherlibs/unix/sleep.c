@@ -16,7 +16,7 @@
 #include <signals.h>
 #include "unixsupport.h"
 
-value unix_sleep(value t)              /* ML */
+CAMLprim value unix_sleep(value t)
 {
   enter_blocking_section();
   sleep(Int_val(t));

@@ -26,7 +26,7 @@
 #define EWOULDBLOCK (-1)
 #endif
 
-value unix_write(value fd, value buf, value vofs, value vlen) /* ML */
+CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
 {
   long ofs, len, written;
   int numbytes, ret;

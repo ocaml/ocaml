@@ -15,7 +15,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_alarm(t)              /* ML */
+CAMLprim value unix_alarm(t)
      value t;
 {
   return Val_int(alarm((unsigned int) Long_val(t)));

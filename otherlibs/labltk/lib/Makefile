@@ -18,15 +18,17 @@ include ./modules
 WIDGETOBJSX = $(WIDGETOBJS:.cmo=.cmx)
 
 labltk.cma : $(SUPPORT) $(WIDGETOBJS) tk.cmo 
-	$(LABLLIBR) -custom -o labltk.cma $(SUPPORT) tk.cmo $(WIDGETOBJS) \
-          -cclib -llabltk41 $(TK_LINK) $(X11_LINK)
+	$(MKLIB) -ocamlc '$(LABLC)' -o labltk -oc labltk41 \
+          $(SUPPORT) tk.cmo $(WIDGETOBJS) \
+          $(TK_LINK) $(X11_LINK)
 
 labltk.cmxa : $(SUPPORTX) $(WIDGETOBJSX) tk.cmx
-	$(CAMLOPTLIBR) -o labltk.cmxa $(SUPPORTX) tk.cmx $(WIDGETOBJSX) \
-          -cclib -llabltk41 $(TK_LINK) $(X11_LINK)
+	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o labltk -oc labltk41 \
+          $(SUPPORTX) tk.cmx $(WIDGETOBJSX) \
+          $(TK_LINK) $(X11_LINK)
 
 labltktop$(EXE) : $(TOPDEPS) $(WIDGETOBJS) $(SUPPORT) ../support/liblabltk41.a
-	$(LABLC) -custom -linkall -o labltktop$(EXE) -I ../support \
+	$(LABLC) -linkall -o labltktop$(EXE) -I ../support \
 	       -I $(TOPDIR)/toplevel toplevellib.cma labltk.cma \
 	       -I $(OTHERS)/unix unix.cma \
 	       -I $(OTHERS)/str str.cma \
@@ -57,6 +59,7 @@ installopt: labltk.cmxa
 	@if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
 	cp $(SUPPORTX) $(WIDGETOBJSX) tk.cmx $(LABLTKDIR)
 	cp labltk.cmxa labltk.a $(LABLTKDIR)
+	cd $(LABLTKDIR); $(RANLIB) labltk.a
 	chmod 644 $(LABLTKDIR)/*.cmx
 	chmod 644 $(LABLTKDIR)/labltk.cmxa
 	chmod 644 $(LABLTKDIR)/labltk.a

@@ -42,7 +42,7 @@ static value alloc_proto_entry(struct protoent *entry)
   return res;
 }
 
-value unix_getprotobyname(value name)  /* ML */
+CAMLprim value unix_getprotobyname(value name)
 {
   struct protoent * entry;
   entry = getprotobyname(String_val(name));
@@ -50,7 +50,7 @@ value unix_getprotobyname(value name)  /* ML */
   return alloc_proto_entry(entry);
 }
 
-value unix_getprotobynumber(value proto) /* ML */
+CAMLprim value unix_getprotobynumber(value proto)
 {
   struct protoent * entry;
   entry = getprotobynumber(Int_val(proto));
@@ -60,10 +60,10 @@ value unix_getprotobynumber(value proto) /* ML */
 
 #else
 
-value unix_getprotobynumber(value proto)
+CAMLprim value unix_getprotobynumber(value proto)
 { invalid_argument("getprotobynumber not implemented"); }
   
-value unix_getprotobyname(value name)
+CAMLprim value unix_getprotobyname(value name)
 { invalid_argument("getprotobyname not implemented"); }
 
 #endif

@@ -18,7 +18,7 @@
 #include <alloc.h>
 #include "unixsupport.h"
 
-value win_findfirst(name)             /* ML */
+CAMLprim value win_findfirst(name)
      value name;
 {
   int h;
@@ -42,7 +42,7 @@ value win_findfirst(name)             /* ML */
   return v;
 }
 
-value win_findnext(valh)        /* ML */
+CAMLprim value win_findnext(valh)
      value valh;
 {
   int retcode;
@@ -53,7 +53,7 @@ value win_findnext(valh)        /* ML */
   return copy_string(fileinfo.name);
 }
 
-value win_findclose(valh)       /* ML */
+CAMLprim value win_findclose(valh)
      value valh;
 {
   if (_findclose(Int_val(valh)) != 0) uerror("closedir", Nothing);

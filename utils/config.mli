@@ -29,6 +29,9 @@ val bytecomp_c_linker: string
            with the bytecode compiler *)
 val bytecomp_c_libraries: string
         (* The C libraries to link with custom runtimes *)
+val bytecomp_c_rpath: string
+        (* Option to [bytecomp_c_compiler] for specifying a
+           directory to search shared libraries at run-time *)
 val native_c_compiler: string
         (* The C compiler to use for compiling C files 
            with the native-code compiler *)
@@ -39,6 +42,9 @@ val native_c_libraries: string
         (* The C libraries to link with native-code programs *)
 val native_partial_linker: string
         (* The linker to use for partial links (-output-obj option) *)
+val native_c_rpath: string
+        (* Option to [native_c_compiler] for specifying a
+           directory to search shared libraries at run-time *)
 val ranlib: string
         (* Command to randomize a library, or "" if not needed *)
 
@@ -87,3 +93,5 @@ val ext_asm: string
         (* Extension for assembler files, e.g. [.s] under Unix. *)
 val ext_lib: string
         (* Extension for library files, e.g. [.a] under Unix. *)
+val ext_dll: string
+        (* Extension for dynamically-loaded libraries, e.g. [.so] under Unix.*)

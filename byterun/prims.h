@@ -19,7 +19,11 @@
 
 typedef value (*c_primitive)();
 
-extern c_primitive cprim[];
-extern char * names_of_cprim[];
+extern c_primitive builtin_cprim[];
+extern char * names_of_builtin_cprim[];
+
+extern struct ext_table prim_table;
+
+#define Primitive(n) ((c_primitive)(prim_table.contents[n]))
 
 #endif /* _prims_ */

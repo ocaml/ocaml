@@ -22,7 +22,7 @@
 
 extern int socket_domain_table[], socket_type_table[];
 
-value unix_socketpair(value domain, value type, value proto) /* ML */
+CAMLprim value unix_socketpair(value domain, value type, value proto)
 {
   int sv[2];
   value res;
@@ -38,7 +38,7 @@ value unix_socketpair(value domain, value type, value proto) /* ML */
 
 #else
 
-value unix_socketpair(value domain, value type, value proto)
+CAMLprim value unix_socketpair(value domain, value type, value proto)
 { invalid_argument("socketpair not implemented"); }
 
 #endif

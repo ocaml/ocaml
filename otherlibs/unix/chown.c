@@ -15,7 +15,7 @@
 #include <mlvalues.h>
 #include "unixsupport.h"
 
-value unix_chown(value path, value uid, value gid) /* ML */
+CAMLprim value unix_chown(value path, value uid, value gid)
 {
   int ret;
   ret = chown(String_val(path), Int_val(uid), Int_val(gid));

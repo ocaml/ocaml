@@ -59,7 +59,7 @@ static value alloc_process_status(int pid, int status)
   return res;
 }
 
-value unix_wait(void)                /* ML */
+CAMLprim value unix_wait(void)
 {
   int pid, status;
 
@@ -80,7 +80,7 @@ static int wait_flag_table[] = {
   WNOHANG, WUNTRACED
 };
 
-value unix_waitpid(value flags, value pid_req)   /* ML */
+CAMLprim value unix_waitpid(value flags, value pid_req)
 {
   int pid, status;
   
@@ -94,7 +94,7 @@ value unix_waitpid(value flags, value pid_req)   /* ML */
 
 #else
 
-value unix_waitpid(value flags, value pid_req)
+CAMLprim value unix_waitpid(value flags, value pid_req)
 { invalid_argument("waitpid not implemented"); }
 
 #endif

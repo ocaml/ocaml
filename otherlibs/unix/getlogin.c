@@ -19,7 +19,7 @@
 
 extern char * getlogin(void);
 
-value unix_getlogin(void)            /* ML */
+CAMLprim value unix_getlogin(void)
 {
   char * name;
   name = getlogin();

@@ -15,7 +15,7 @@
 !include ..\config\Makefile.nt
 
 CC=$(BYTECC)
-CFLAGS=$(BYTECCCOMPOPTS)
+CFLAGS=-DIN_OCAMLRUN -DOCAML_STDLIB_DIR="\"$(LIBDIR:\=\\)\""
 
 OBJS=interp.obj misc.obj stacks.obj fix_code.obj startup.obj main.obj \
   fail.obj signals.obj freelist.obj major_gc.obj minor_gc.obj \
@@ -23,15 +23,16 @@ OBJS=interp.obj misc.obj stacks.obj fix_code.obj startup.obj main.obj \
   str.obj array.obj io.obj extern.obj intern.obj hash.obj sys.obj \
   meta.obj parsing.obj gc_ctrl.obj terminfo.obj md5.obj obj.obj lexing.obj \
   win32.obj printexc.obj callback.obj debugger.obj weak.obj compact.obj \
-  finalise.obj custom.obj backtrace.obj globroots.obj
+  finalise.obj custom.obj backtrace.obj globroots.obj dynlink.obj
 
 PRIMS=alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
-  signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c
+  signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c \
+  dynlink.c
 
 PUBLIC_INCLUDES=mlvalues.h alloc.h misc.h callback.h fail.h custom.h
 
-all: ocamlrun.exe
+all: ocamlrun.exe libcamlrun.lib
 	if not exist ..\stdlib\caml mkdir ..\stdlib\caml
 	cp $(PUBLIC_INCLUDES) ..\stdlib\caml
 	sed -e "/#include .*\/m.h/r ..\config\m.h" \
@@ -41,11 +42,15 @@ all: ocamlrun.exe
 	    -e "/#define Alloc_small/,/^}/d" \
 	    -e "/Modify/,/^}/d" memory.h > ..\stdlib\caml\memory.h
 
-ocamlrun.exe: libcamlrun.lib prims.obj
-	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrun.exe prims.obj libcamlrun.lib $(CCLIBS)
+ocamlrun.exe: $(OBJS:.obj=.dobj) prims.dobj
+	link /nologo /out:ocamlrun.exe $(OBJS:.obj=.dobj) prims.dobj $(CCLIBS)
+
+libcamlrun.lib: $(OBJS:.obj=.sobj)
+	$(MKLIB)libcamlrun.lib $(OBJS:.obj=.sobj)
 
 install:
 	cp ocamlrun.exe $(BINDIR)\ocamlrun.exe
+	cp ocamlrun.lib $(LIBDIR)\ocamlrun.lib
 	cp libcamlrun.lib $(LIBDIR)\libcamlrun.lib
 	if not exist $(LIBDIR)\caml mkdir $(LIBDIR)\caml
 	cp $(PUBLIC_INCLUDES) $(LIBDIR)\caml
@@ -56,25 +61,22 @@ install:
 	    -e "/#define Alloc_small/,/^}/d" \
 	    -e "/Modify/,/^}/d" memory.h > $(LIBDIR)\caml\memory.h
 
-libcamlrun.lib: $(OBJS)
-	$(MKLIB)libcamlrun.lib $(OBJS)
-
 clean:
-	rm -f ocamlrun.exe *.obj *.lib
+	rm -f *.exe *.dobj *.sobj *.lib
 	rm -f primitives prims.c opnames.h jumptbl.h
 
 primitives : $(PRIMS)
-	sed -n -e "/\/\* ML \*\//s/.* \([a-z0-9_][a-z0-9_]*\) *(.*/\1/p" \
+	sed -n -e "s/CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p" \
 	    $(PRIMS) > primitives
 
 prims.c : primitives
         echo #include "mlvalues.h" > prims.c
         echo #include "prims.h" >> prims.c
         sed -e "s/.*/extern value &();/" primitives >> prims.c
-        echo c_primitive cprim[] = { >> prims.c
+        echo c_primitive builtin_cprim[] = { >> prims.c
         sed -e "s/.*/   &,/" primitives >> prims.c
         echo     0 }; >> prims.c
-        echo char * names_of_cprim[] = { >> prims.c
+        echo char * names_of_builtin_cprim[] = { >> prims.c
         sed -e "s/.*/   \"^&\",/" primitives >> prims.c
         echo     0 }; >> prims.c
 
@@ -89,7 +91,17 @@ jumptbl.h : instruct.h
 	sed -n -e "/^  /s/ \([A-Z]\)/ \&\&lbl_\1/gp" \
 	       -e "/^}/q" instruct.h > jumptbl.h
 
+.SUFFIXES: .dobj .sobj
+
+.c.dobj:
+	$(CC) $(CFLAGS) $(DLLCCCOMPOPTS) -c $<
+	mv $*.obj $*.dobj
+.c.sobj:
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) -c $<
+	mv $*.obj $*.sobj
+
 depend:
-	sed -e "s/\.o/.obj/g" .depend > .depend.nt
+	sed -e "s/\.o/.dobj/g" .depend > .depend.nt
+	sed -e "s/\.o/.sobj/g" .depend >> .depend.nt
 
 !include .depend.nt

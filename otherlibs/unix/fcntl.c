@@ -23,7 +23,7 @@
 #define O_NONBLOCK O_NDELAY
 #endif
 
-value unix_set_nonblock(value fd) /* ML */
+CAMLprim value unix_set_nonblock(value fd)
 {
   int retcode;
   retcode = fcntl(Int_val(fd), F_GETFL, 0);
@@ -33,7 +33,7 @@ value unix_set_nonblock(value fd) /* ML */
   return Val_unit;
 }
 
-value unix_clear_nonblock(value fd) /* ML */
+CAMLprim value unix_clear_nonblock(value fd)
 {
   int retcode;
   retcode = fcntl(Int_val(fd), F_GETFL, 0);
@@ -45,7 +45,7 @@ value unix_clear_nonblock(value fd) /* ML */
 
 #ifdef FD_CLOEXEC
 
-value unix_set_close_on_exec(value fd) /* ML */
+CAMLprim value unix_set_close_on_exec(value fd)
 {
   int retcode;
   retcode = fcntl(Int_val(fd), F_GETFD, 0);
@@ -55,7 +55,7 @@ value unix_set_close_on_exec(value fd) /* ML */
   return Val_unit;
 }
 
-value unix_clear_close_on_exec(value fd) /* ML */
+CAMLprim value unix_clear_close_on_exec(value fd)
 {
   int retcode;
   retcode = fcntl(Int_val(fd), F_GETFD, 0);
@@ -67,10 +67,10 @@ value unix_clear_close_on_exec(value fd) /* ML */
 
 #else
 
-value unix_set_close_on_exec(value fd)
+CAMLprim value unix_set_close_on_exec(value fd)
 { invalid_argument("set_close_on_exec not implemented"); }
 
-value unix_clear_close_on_exec(value fd)
+CAMLprim value unix_clear_close_on_exec(value fd)
 { invalid_argument("clear_close_on_exec not implemented"); }
 
 #endif

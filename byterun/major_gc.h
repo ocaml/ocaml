@@ -46,10 +46,10 @@ typedef int page_table_entry;
 typedef char page_table_entry;
 #endif
 
-extern char *heap_start;
-extern char *heap_end;
+CAMLextern char *heap_start;
+CAMLextern char *heap_end;
 extern unsigned long total_heap_size;
-extern page_table_entry *page_table;
+CAMLextern page_table_entry *page_table;
 extern asize_t page_low, page_high;
 extern char *gc_sweep_hp;
 

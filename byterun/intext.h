@@ -81,38 +81,42 @@
 
 /* The entry points */
 
-void output_val (struct channel * chan, value v, value flags);
-value input_val (struct channel * chan);
-value input_val_from_string (value str, long ofs);
+CAMLextern void output_val (struct channel * chan, value v, value flags);
+CAMLextern void output_value_to_malloc(value v, value flags,
+                                       /*out*/ char ** buf,
+                                       /*out*/ long * len);
+CAMLextern value input_val (struct channel * chan);
+CAMLextern value input_val_from_string (value str, long ofs);
+CAMLextern value input_value_from_malloc(char * data, long ofs);
 
 /* Functions for writing user-defined marshallers */
 
-extern void serialize_int_1(int i);
-extern void serialize_int_2(int i);
-extern void serialize_int_4(int32 i);
-extern void serialize_int_8(int64 i);
-extern void serialize_float_4(float f);
-extern void serialize_float_8(double f);
-extern void serialize_block_1(void * data, long len);
-extern void serialize_block_2(void * data, long len);
-extern void serialize_block_4(void * data, long len);
-extern void serialize_block_8(void * data, long len);
+CAMLextern void serialize_int_1(int i);
+CAMLextern void serialize_int_2(int i);
+CAMLextern void serialize_int_4(int32 i);
+CAMLextern void serialize_int_8(int64 i);
+CAMLextern void serialize_float_4(float f);
+CAMLextern void serialize_float_8(double f);
+CAMLextern void serialize_block_1(void * data, long len);
+CAMLextern void serialize_block_2(void * data, long len);
+CAMLextern void serialize_block_4(void * data, long len);
+CAMLextern void serialize_block_8(void * data, long len);
 
-extern int deserialize_uint_1(void);
-extern int deserialize_sint_1(void);
-extern int deserialize_uint_2(void);
-extern int deserialize_sint_2(void);
-extern uint32 deserialize_uint_4(void);
-extern int32 deserialize_sint_4(void);
-extern uint64 deserialize_uint_8(void);
-extern int64 deserialize_sint_8(void);
-extern float deserialize_float_4(void);
-extern double deserialize_float_8(void);
-extern void deserialize_block_1(void * data, long len);
-extern void deserialize_block_2(void * data, long len);
-extern void deserialize_block_4(void * data, long len);
-extern void deserialize_block_8(void * data, long len);
-extern void deserialize_error(char * msg);
+CAMLextern int deserialize_uint_1(void);
+CAMLextern int deserialize_sint_1(void);
+CAMLextern int deserialize_uint_2(void);
+CAMLextern int deserialize_sint_2(void);
+CAMLextern uint32 deserialize_uint_4(void);
+CAMLextern int32 deserialize_sint_4(void);
+CAMLextern uint64 deserialize_uint_8(void);
+CAMLextern int64 deserialize_sint_8(void);
+CAMLextern float deserialize_float_4(void);
+CAMLextern double deserialize_float_8(void);
+CAMLextern void deserialize_block_1(void * data, long len);
+CAMLextern void deserialize_block_2(void * data, long len);
+CAMLextern void deserialize_block_4(void * data, long len);
+CAMLextern void deserialize_block_8(void * data, long len);
+CAMLextern void deserialize_error(char * msg);
 
 /* Auxiliary stuff for sending code pointers */
 unsigned char * code_checksum (void);

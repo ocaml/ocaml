@@ -19,7 +19,7 @@
 #include <signals.h>
 #include "unixsupport.h"
 
-value unix_write(value fd, value buf, value vofs, value vlen) /* ML */
+CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
 {
   long ofs, len, written;
   DWORD numbytes, numwritten;
@@ -38,7 +38,7 @@ value unix_write(value fd, value buf, value vofs, value vlen) /* ML */
       ret = WriteFile(h, iobuf, numbytes, &numwritten, NULL);
       leave_blocking_section();
       if (! ret) {
-        _dosmaperr(GetLastError());
+        win32_maperr(GetLastError());
         uerror("write", Nothing);
       }
       written += numwritten;

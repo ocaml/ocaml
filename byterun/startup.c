@@ -30,6 +30,7 @@
 #include "callback.h"
 #include "custom.h"
 #include "debugger.h"
+#include "dynlink.h"
 #include "exec.h"
 #include "fail.h"
 #include "fix_code.h"
@@ -42,6 +43,7 @@
 #include "minor_gc.h"
 #include "misc.h"
 #include "mlvalues.h"
+#include "osdeps.h"
 #include "prims.h"
 #include "printexc.h"
 #include "reverse.h"
@@ -58,7 +60,7 @@
 #define SEEK_END 2
 #endif
 
-header_t atom_table[256];
+CAMLexport header_t atom_table[256];
 
 /* Initialize the atom table */
 
@@ -97,8 +99,8 @@ int attempt_open(char **name, struct exec_trailer *trail,
   int err;
   char buf [2];
 
-  truename = searchpath(*name);
-  if (truename == 0) truename = *name; else *name = truename;
+  truename = search_exe_in_path(*name);
+  *name = truename;
   gc_message(0x100, "Opening bytecode executable %s\n",
              (unsigned long) truename);
   fd = open(truename, O_RDONLY | O_BINARY);
@@ -170,28 +172,21 @@ int32 seek_section(int fd, struct exec_trailer *trail, char *name)
   return len;
 }
 
-/* Check the primitives used by the bytecode file against the table of
-   primitives linked in this interpreter */
+/* Read and return the contents of the section having the given name.
+   Add a terminating 0.  Return NULL if no such section. */
 
-static void check_primitives(int fd, int prim_size)
+static char * read_section(int fd, struct exec_trailer *trail, char *name)
 {
-  char * prims = stat_alloc(prim_size);
-  char * p;
-  int idx;
+  int32 len;
+  char * data;
 
-  if (read(fd, prims, prim_size) != prim_size)
-    fatal_error("Fatal error: cannot read primitive table\n");
-  /* prims contains 0-terminated strings, concatenated. */
-  for (p = prims, idx = 0;
-       p < prims + prim_size;
-       p = p + strlen(p) + 1, idx++) {
-    if (names_of_cprim[idx] == NULL ||
-        strcmp(p, names_of_cprim[idx]) != 0)
-      fatal_error_arg("Fatal error: this bytecode file cannot run "
-                      "on this bytecode interpreter\n"
-                      "Mismatch on primitive `%s'\n", p);
-  }
-  stat_free(prims);
+  len = seek_optional_section(fd, trail, name);
+  if (len == -1) return NULL;
+  data = stat_alloc(len + 1);
+  if (read(fd, data, len) != len)
+    fatal_error_arg("Fatal error: error reading section %s\n", name);
+  data[len] = 0;
+  return data;
 }
 
 /* Invocation of ocamlrun: 4 cases.
@@ -249,12 +244,18 @@ static int parse_command_line(char **argv)
       verb_gc = 1+4+8+16+32;
       break;
     case 'p':
-      for (j = 0; names_of_cprim[j] != NULL; j++)
-        printf("%s\n", names_of_cprim[j]);
+      for (j = 0; names_of_builtin_cprim[j] != NULL; j++)
+        printf("%s\n", names_of_builtin_cprim[j]);
       exit(0);
       break;
     case 'b':
       backtrace_active = 1;
+      break;
+    case 'I':
+      if (argv[i + 1] != NULL) {
+        ext_table_add(&shared_libs_path, argv[i + 1]);
+        i++;
+      }
       break;
     default:
       fatal_error_arg("Unknown option %s.\n", argv[i]);
@@ -308,18 +309,20 @@ extern void caml_signal_thread(void * lpParam);
 
 /* Main entry point when loading code from a file */
 
-void caml_main(char **argv)
+CAMLexport void caml_main(char **argv)
 {
   int fd, pos;
   struct exec_trailer trail;
   asize_t prog_size;
   struct channel * chan;
   value res;
+  char * shared_lib_path, * shared_libs, * req_prims;
 
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
   init_ieee_floats();
   init_custom_operations();
+  ext_table_init(&shared_libs_path, 8);
   external_raise = NULL;
   /* Determine options and position of bytecode file */
 #ifdef DEBUG
@@ -358,8 +361,15 @@ void caml_main(char **argv)
   /* Load the code */
   code_size = seek_section(fd, &trail, "CODE");
   load_code(fd, code_size);
-  /* Check the primitives */
-  check_primitives(fd, seek_section(fd, &trail, "PRIM"));
+  /* Build the table of primitives */
+  shared_lib_path = read_section(fd, &trail, "DLPT");
+  shared_libs = read_section(fd, &trail, "DLLS");
+  req_prims = read_section(fd, &trail, "PRIM");
+  if (req_prims == NULL) fatal_error("Fatal error: no PRIM section\n");
+  build_primitive_table(shared_lib_path, shared_libs, req_prims);
+  stat_free(shared_lib_path);
+  stat_free(shared_libs);
+  stat_free(req_prims);
   /* Load the globals */
   seek_section(fd, &trail, "DATA");
   chan = open_descriptor(fd);
@@ -391,7 +401,8 @@ void caml_main(char **argv)
 
 /* Main entry point when code is linked in as initialized data */
 
-void caml_startup_code(code_t code, asize_t code_size, char *data, char **argv)
+CAMLexport void caml_startup_code(code_t code, asize_t code_size,
+                                  char *data, char **argv)
 {
   value res;
 
@@ -413,6 +424,9 @@ void caml_startup_code(code_t code, asize_t code_size, char *data, char **argv)
 #ifdef THREADED_CODE
   thread_code(start_code, code_size);
 #endif
+  /* Use the builtin table of primitives */
+  prim_table.size = prim_table.capacity = -1;
+  prim_table.contents = (void **) builtin_cprim;
   /* Load the globals */
   global_data = input_val_from_string((value)data, 0);
   /* Ensure that the globals are in the major heap. */

@@ -22,6 +22,9 @@ custom.o: custom.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
 debugger.o: debugger.c config.h ../config/m.h ../config/s.h debugger.h \
  misc.h mlvalues.h fail.h fix_code.h instruct.h intext.h io.h stacks.h \
  memory.h gc.h major_gc.h freelist.h minor_gc.h sys.h
+dynlink.o: dynlink.c config.h ../config/m.h ../config/s.h alloc.h \
+ misc.h mlvalues.h dynlink.h fail.h memory.h gc.h major_gc.h \
+ freelist.h minor_gc.h osdeps.h prims.h
 extern.o: extern.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h custom.h fail.h gc.h intext.h io.h fix_code.h memory.h \
  major_gc.h freelist.h minor_gc.h reverse.h
@@ -80,7 +83,8 @@ meta.o: meta.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
 minor_gc.o: minor_gc.c config.h ../config/m.h ../config/s.h fail.h \
  misc.h mlvalues.h finalise.h roots.h memory.h gc.h major_gc.h \
  freelist.h minor_gc.h gc_ctrl.h signals.h
-misc.o: misc.c config.h ../config/m.h ../config/s.h misc.h
+misc.o: misc.c config.h ../config/m.h ../config/s.h misc.h memory.h \
+ gc.h mlvalues.h major_gc.h freelist.h minor_gc.h
 mpwtool.o: mpwtool.c
 obj.o: obj.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h gc.h major_gc.h freelist.h memory.h minor_gc.h \
@@ -101,10 +105,10 @@ signals.o: signals.c alloc.h misc.h config.h ../config/m.h \
 stacks.o: stacks.c config.h ../config/m.h ../config/s.h fail.h misc.h \
  mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 startup.o: startup.c config.h ../config/m.h ../config/s.h alloc.h \
- misc.h mlvalues.h backtrace.h callback.h custom.h debugger.h exec.h \
- fail.h fix_code.h gc_ctrl.h instrtrace.h interp.h intext.h io.h \
- memory.h gc.h major_gc.h freelist.h minor_gc.h prims.h printexc.h \
- reverse.h signals.h stacks.h sys.h startup.h
+ misc.h mlvalues.h backtrace.h callback.h custom.h debugger.h \
+ dynlink.h exec.h fail.h fix_code.h gc_ctrl.h instrtrace.h interp.h \
+ intext.h io.h memory.h gc.h major_gc.h freelist.h minor_gc.h osdeps.h \
+ prims.h printexc.h reverse.h signals.h stacks.h sys.h startup.h
 str.o: str.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h
 sys.o: sys.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
@@ -112,10 +116,12 @@ sys.o: sys.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
  gc.h major_gc.h freelist.h minor_gc.h sys.h
 terminfo.o: terminfo.c config.h ../config/m.h ../config/s.h alloc.h \
  misc.h mlvalues.h fail.h io.h
+unix.o: unix.c config.h ../config/m.h ../config/s.h memory.h gc.h \
+ mlvalues.h misc.h major_gc.h freelist.h minor_gc.h osdeps.h
 weak.o: weak.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h
-win32.o: win32.c signals.h misc.h config.h ../config/m.h ../config/s.h \
- mlvalues.h
+win32.o: win32.c memory.h config.h ../config/m.h ../config/s.h gc.h \
+ mlvalues.h misc.h major_gc.h freelist.h minor_gc.h osdeps.h signals.h
 alloc.d.o: alloc.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h custom.h major_gc.h freelist.h memory.h gc.h minor_gc.h \
  stacks.h
@@ -140,6 +146,9 @@ custom.d.o: custom.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
 debugger.d.o: debugger.c config.h ../config/m.h ../config/s.h debugger.h \
  misc.h mlvalues.h fail.h fix_code.h instruct.h intext.h io.h stacks.h \
  memory.h gc.h major_gc.h freelist.h minor_gc.h sys.h
+dynlink.d.o: dynlink.c config.h ../config/m.h ../config/s.h alloc.h \
+ misc.h mlvalues.h dynlink.h fail.h memory.h gc.h major_gc.h \
+ freelist.h minor_gc.h osdeps.h prims.h
 extern.d.o: extern.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h custom.h fail.h gc.h intext.h io.h fix_code.h memory.h \
  major_gc.h freelist.h minor_gc.h reverse.h
@@ -199,7 +208,8 @@ meta.d.o: meta.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
 minor_gc.d.o: minor_gc.c config.h ../config/m.h ../config/s.h fail.h \
  misc.h mlvalues.h finalise.h roots.h memory.h gc.h major_gc.h \
  freelist.h minor_gc.h gc_ctrl.h signals.h
-misc.d.o: misc.c config.h ../config/m.h ../config/s.h misc.h
+misc.d.o: misc.c config.h ../config/m.h ../config/s.h misc.h memory.h \
+ gc.h mlvalues.h major_gc.h freelist.h minor_gc.h
 mpwtool.d.o: mpwtool.c
 obj.d.o: obj.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h gc.h major_gc.h freelist.h memory.h minor_gc.h \
@@ -220,10 +230,10 @@ signals.d.o: signals.c alloc.h misc.h config.h ../config/m.h \
 stacks.d.o: stacks.c config.h ../config/m.h ../config/s.h fail.h misc.h \
  mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 startup.d.o: startup.c config.h ../config/m.h ../config/s.h alloc.h \
- misc.h mlvalues.h backtrace.h callback.h custom.h debugger.h exec.h \
- fail.h fix_code.h gc_ctrl.h instrtrace.h interp.h intext.h io.h \
- memory.h gc.h major_gc.h freelist.h minor_gc.h prims.h printexc.h \
- reverse.h signals.h stacks.h sys.h startup.h
+ misc.h mlvalues.h backtrace.h callback.h custom.h debugger.h \
+ dynlink.h exec.h fail.h fix_code.h gc_ctrl.h instrtrace.h interp.h \
+ intext.h io.h memory.h gc.h major_gc.h freelist.h minor_gc.h osdeps.h \
+ prims.h printexc.h reverse.h signals.h stacks.h sys.h startup.h
 str.d.o: str.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h
 sys.d.o: sys.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
@@ -231,7 +241,9 @@ sys.d.o: sys.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
  gc.h major_gc.h freelist.h minor_gc.h sys.h
 terminfo.d.o: terminfo.c config.h ../config/m.h ../config/s.h alloc.h \
  misc.h mlvalues.h fail.h io.h
+unix.d.o: unix.c config.h ../config/m.h ../config/s.h memory.h gc.h \
+ mlvalues.h misc.h major_gc.h freelist.h minor_gc.h osdeps.h
 weak.d.o: weak.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h
-win32.d.o: win32.c signals.h misc.h config.h ../config/m.h ../config/s.h \
- mlvalues.h
+win32.d.o: win32.c memory.h config.h ../config/m.h ../config/s.h gc.h \
+ mlvalues.h misc.h major_gc.h freelist.h minor_gc.h osdeps.h signals.h

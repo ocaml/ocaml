@@ -64,7 +64,7 @@ static value stat_aux(struct stat *buf)
   return v;
 }
 
-value unix_stat(value path)             /* ML */
+CAMLprim value unix_stat(value path)
 {
   int ret;
   struct stat buf;
@@ -73,7 +73,7 @@ value unix_stat(value path)             /* ML */
   return stat_aux(&buf);
 }
 
-value unix_lstat(value path)             /* ML */
+CAMLprim value unix_lstat(value path)
 {
   int ret;
   struct stat buf;
@@ -86,7 +86,7 @@ value unix_lstat(value path)             /* ML */
   return stat_aux(&buf);
 }
 
-value unix_fstat(value fd)             /* ML */
+CAMLprim value unix_fstat(value fd)
 {
   int ret;
   struct stat buf;

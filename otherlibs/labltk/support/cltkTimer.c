@@ -28,7 +28,7 @@ void TimerProc (ClientData clientdata)
   callback2(*handler_code,Val_long(clientdata),Val_int(0));
 }
 
-value camltk_add_timer(value milli, value cbid) /* ML */
+CAMLprim value camltk_add_timer(value milli, value cbid)
 {
   CheckInit();
   /* look at tkEvent.c , Tk_Token is an int */ 
@@ -36,7 +36,7 @@ value camltk_add_timer(value milli, value cbid) /* ML */
                                        (ClientData) (Int_val(cbid)))));
 }
 
-value camltk_rem_timer(value token) /* ML */
+CAMLprim value camltk_rem_timer(value token)
 {
   Tcl_DeleteTimerHandler((Tcl_TimerToken) Int_val(token));
   return Val_unit;

@@ -35,7 +35,7 @@ static value alloc_tm(struct tm *tm)
   return res;
 }
 
-value unix_gmtime(value t)             /* ML */
+CAMLprim value unix_gmtime(value t)
 {
   time_t clock;
   struct tm * tm;
@@ -45,7 +45,7 @@ value unix_gmtime(value t)             /* ML */
   return alloc_tm(tm);
 }
 
-value unix_localtime(value t)          /* ML */
+CAMLprim value unix_localtime(value t)
 {
   time_t clock;
   struct tm * tm;
@@ -57,7 +57,7 @@ value unix_localtime(value t)          /* ML */
 
 #ifdef HAS_MKTIME
 
-value unix_mktime(value t)            /* ML */
+CAMLprim value unix_mktime(value t)
 {
   struct tm tm;
   time_t clock;
@@ -87,6 +87,6 @@ value unix_mktime(value t)            /* ML */
 
 #else
 
-value unix_mktime(value t) { invalid_argument("mktime not implemented"); }
+CAMLprim value unix_mktime(value t) { invalid_argument("mktime not implemented"); }
 
 #endif

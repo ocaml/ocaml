@@ -242,13 +242,13 @@ void heap_check (void)
 }
 #endif
 
-value gc_stat(value v) /* ML */
+CAMLprim value gc_stat(value v)
 {
   Assert (v == Val_unit);
   return heap_stats (1);
 }
 
-value gc_counters(value v) /* ML */
+CAMLprim value gc_counters(value v)
 {
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
@@ -266,7 +266,7 @@ value gc_counters(value v) /* ML */
   CAMLreturn (res);
 }
 
-value gc_get(value v) /* ML */
+CAMLprim value gc_get(value v)
 {
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
@@ -313,7 +313,7 @@ static long norm_minsize (long int s)
   return s;
 }
 
-value gc_set(value v) /* ML */
+CAMLprim value gc_set(value v)
 {
   unsigned long newpf, newpm;
   asize_t newheapincr;
@@ -354,13 +354,13 @@ value gc_set(value v) /* ML */
   return Val_unit;
 }
 
-value gc_minor(value v) /* ML */
+CAMLprim value gc_minor(value v)
 {                                                    Assert (v == Val_unit);
   minor_collection ();
   return Val_unit;
 }
 
-value gc_major(value v) /* ML */
+CAMLprim value gc_major(value v)
 {                                                    Assert (v == Val_unit);
   empty_minor_heap ();
   finish_major_cycle ();
@@ -368,7 +368,7 @@ value gc_major(value v) /* ML */
   return Val_unit;
 }
 
-value gc_full_major(value v) /* ML */
+CAMLprim value gc_full_major(value v)
 {                                                    Assert (v == Val_unit);
   empty_minor_heap ();
   finish_major_cycle ();
@@ -379,7 +379,7 @@ value gc_full_major(value v) /* ML */
   return Val_unit;
 }
 
-value gc_compaction(value v) /* ML */
+CAMLprim value gc_compaction(value v)
 {                                                    Assert (v == Val_unit);
   empty_minor_heap ();
   finish_major_cycle ();

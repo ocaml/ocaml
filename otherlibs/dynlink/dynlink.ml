@@ -29,6 +29,7 @@ type error =
   | Linking_error of string * linking_error
   | Corrupted_interface of string
   | File_not_found of string
+  | Cannot_open_dll of string
 
 exception Error of error
 
@@ -178,8 +179,13 @@ let loadfile file_name =
     if buffer = Config.cma_magic_number then begin
       let toc_pos = input_binary_int ic in  (* Go to table of contents *)
       seek_in ic toc_pos;
-      let toc = (input_value ic : library) in
-      List.iter (load_compunit ic file_name) toc.lib_units
+      let lib = (input_value ic : library) in
+      begin try 
+        Dll.open_dlls (Dll.extract_dll_names lib.lib_ccobjs)
+      with Failure reason ->
+        raise(Error(Cannot_open_dll reason))
+      end;
+      List.iter (load_compunit ic file_name) lib.lib_units
     end else
       raise(Error(Not_a_bytecode_file file_name));
     close_in ic
@@ -219,3 +225,5 @@ let error_message = function
       "corrupted interface file " ^ name
   | File_not_found name ->
       "cannot find file " ^ name ^ " in search path"
+  | Cannot_open_dll reason ->
+      "error loading shared library: " ^ reason

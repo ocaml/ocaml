@@ -35,11 +35,14 @@ SYSTEM_INCLUDES=c:\Msdev\VC98\Include
 ### Which C compiler to use for the bytecode interpreter.
 BYTECC=cl /nologo
 
-### Additional compile-time options for $(BYTECC).
+### Additional compile-time options for $(BYTECC).  (For static linking.)
 BYTECCCOMPOPTS=/Ox /MT
 
-### Additional link-time options for $(BYTECC)
+### Additional link-time options for $(BYTECC).  (For static linking.)
 BYTECCLINKOPTS=/MT
+
+### Additional compile-time options for $(BYTECC).  (For building a DLL.)
+DLLCCCOMPOPTS=/Ox /MD
 
 ### Libraries needed
 BYTECCLIBS=wsock32.lib
@@ -50,6 +53,7 @@ CPP=cl /nologo /EP
 
 ### How to invoke the librarian
 MKLIB=lib /nologo /debugtype:CV /out:
+MKDLL=cl /nologo /MD /LD
 
 ############# Configuration for the native-code compiler
 
@@ -77,7 +81,7 @@ AFLAGS=/coff /Cp
 
 ############# Configuration for the contributed libraries
 
-OTHERLIBRARIES=win32unix systhreads str num graph dynlink labltk bigarray
+OTHERLIBRARIES=win32unix systhreads str num graph dynlink bigarray #labltk
 
 ### Name of the target architecture for the "num" library
 BIGNUM_ARCH=C

@@ -16,7 +16,7 @@
 #include "unixsupport.h"
 #include "socketaddr.h"
 
-value unix_connect(socket, address)   /* ML */
+CAMLprim value unix_connect(socket, address)
      value socket, address;
 {
   SOCKET s = (SOCKET) Handle_val(socket);

@@ -105,7 +105,8 @@ int parser_trace = 0;
 
 /* The pushdown automata */
 
-value parse_engine(struct parser_tables *tables, struct parser_env *env, value cmd, value arg) /* ML */
+CAMLprim value parse_engine(struct parser_tables *tables,
+                            struct parser_env *env, value cmd, value arg)
 {
   int state;
   mlsize_t sp, asp;

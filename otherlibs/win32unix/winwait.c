@@ -37,7 +37,7 @@ enum { CAML_WNOHANG = 1, CAML_WUNTRACED = 2 };
 
 static int wait_flag_table[] = { CAML_WNOHANG, CAML_WUNTRACED };
 
-value win_waitpid(value vflags, value vpid_req) /* ML */
+CAMLprim value win_waitpid(value vflags, value vpid_req)
 {
   int status, flags;
   HANDLE pid_req = (HANDLE) Long_val(vpid_req);
@@ -45,12 +45,12 @@ value win_waitpid(value vflags, value vpid_req) /* ML */
   flags = convert_flag_list(vflags, wait_flag_table);
   if ((flags & CAML_WNOHANG) == 0) {
     if (WaitForSingleObject(pid_req, INFINITE) == WAIT_FAILED) {
-      _dosmaperr(GetLastError());
+      win32_maperr(GetLastError());
       uerror("waitpid", Nothing);
     }
   }
   if (! GetExitCodeProcess(pid_req, &status)) {
-    _dosmaperr(GetLastError());
+    win32_maperr(GetLastError());
     uerror("waitpid", Nothing);
   }
   if (status == STILL_ACTIVE)

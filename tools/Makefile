@@ -22,7 +22,7 @@ INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: ocamldep ocamlprof ocamlcp ocamlmktop
+all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib
 
 # The dependency generator
 
@@ -72,6 +72,22 @@ install::
 
 clean::
 	rm -f ocamlmktop
+
+# To help building mixed-mode libraries (Caml + C)
+
+ocamlmklib: ocamlmklib.tpl ../config/Makefile
+	sed -e 's|%%BINDIR%%|$(BINDIR)|' \
+            -e 's|%%SUPPORTS_SHARED_LIBRARIES%%|$(SUPPORTS_SHARED_LIBRARIES)|' \
+            -e 's|%%MKSHAREDLIB%%|$(MKSHAREDLIB)|' \
+            -e 's|%%RANLIB%%|$(RANLIB)|' \
+          ocamlmklib.tpl > ocamlmklib
+	chmod +x ocamlmklib
+
+install::
+	cp ocamlmklib $(BINDIR)/ocamlmklib
+
+clean::
+	rm -f ocamlmklib
 
 # Converter ocaml 2.04 to 3
 

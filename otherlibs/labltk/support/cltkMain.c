@@ -64,7 +64,7 @@ Tk_Window cltk_mainWindow;
 int cltk_slave_mode = 0;
 
 /* Initialisation, based on tkMain.c */
-value camltk_opentk(value display, value name) /* ML */
+CAMLprim value camltk_opentk(value display, value name)
 {
   if (!cltk_slave_mode) {
     /* Create an interpreter, dies if error */

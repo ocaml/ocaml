@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include "config.h"
 #include "misc.h"
+#include "memory.h"
 #ifdef HAS_UI
 #include "ui.h"
 #endif
@@ -67,6 +68,19 @@ void fatal_error_arg (char *fmt, char *arg)
 #endif
 }
 
+void fatal_error_arg2 (char *fmt1, char *arg1, char *fmt2, char *arg2)
+{
+#ifdef HAS_UI
+  ui_print_stderr(fmt1, arg1);
+  ui_print_stderr(fmt2, arg2);
+  ui_exit (2);
+#else
+  fprintf (stderr, fmt1, arg1);
+  fprintf (stderr, fmt2, arg2);
+  exit(2);
+#endif
+}
+
 char *aligned_malloc (asize_t size, int modulo, void **block)
 {
   char *raw_mem;
@@ -91,4 +105,33 @@ char *aligned_malloc (asize_t size, int modulo, void **block)
   }
 #endif
   return (char *) (aligned_mem - modulo);
+}
+
+void ext_table_init(struct ext_table * tbl, int init_capa)
+{
+  tbl->size = 0;
+  tbl->capacity = init_capa;
+  tbl->contents = stat_alloc(sizeof(void *) * init_capa);
+}
+
+int ext_table_add(struct ext_table * tbl, void * data)
+{
+  int res;
+  if (tbl->size >= tbl->capacity) {
+    tbl->capacity *= 2;
+    tbl->contents =
+      stat_resize(tbl->contents, sizeof(void *) * tbl->capacity);
+  }
+  res = tbl->size;
+  tbl->contents[res] = data;
+  tbl->size++;
+  return res;
+}
+
+void ext_table_free(struct ext_table * tbl, int free_entries)
+{
+  int i;
+  if (free_entries)
+    for (i = 0; i < tbl->size; i++) stat_free(tbl->contents[i]);
+  stat_free(tbl->contents);
 }

@@ -47,7 +47,7 @@ static value alloc_passwd_entry(struct passwd *entry)
   return res;
 }
 
-value unix_getpwnam(value name)        /* ML */
+CAMLprim value unix_getpwnam(value name)
 {
   struct passwd * entry;
   entry = getpwnam(String_val(name));
@@ -55,7 +55,7 @@ value unix_getpwnam(value name)        /* ML */
   return alloc_passwd_entry(entry);
 }
 
-value unix_getpwuid(value uid)         /* ML */
+CAMLprim value unix_getpwuid(value uid)
 {
   struct passwd * entry;
   entry = getpwuid(Int_val(uid));

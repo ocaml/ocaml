@@ -17,7 +17,7 @@
 
 extern value val_process_id;
 
-value unix_getpid(value unit)              /* ML */
+CAMLprim value unix_getpid(value unit)
 {
   return val_process_id;
 }

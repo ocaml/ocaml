@@ -20,7 +20,7 @@
 
 #include "socketaddr.h"
 
-value unix_inet_addr_of_string(value s) /* ML */
+CAMLprim value unix_inet_addr_of_string(value s)
 {
 #ifdef HAS_INET_ATON
   struct in_addr address;
@@ -37,7 +37,7 @@ value unix_inet_addr_of_string(value s) /* ML */
 
 #else
 
-value unix_inet_addr_of_string(value s)
+CAMLprim value unix_inet_addr_of_string(value s)
 { invalid_argument("inet_addr_of_string not implemented"); }
   
 #endif

@@ -20,7 +20,7 @@
 
 #define SIZEBUF 1024
 
-value unix_pipe(value unit)                /* ML */
+CAMLprim value unix_pipe(value unit)
 {
   SECURITY_ATTRIBUTES attr;
   HANDLE readh, writeh;
@@ -30,7 +30,7 @@ value unix_pipe(value unit)                /* ML */
   attr.lpSecurityDescriptor = NULL;
   attr.bInheritHandle = TRUE;
   if (! CreatePipe(&readh, &writeh, &attr, SIZEBUF)) {
-    _dosmaperr(GetLastError());
+    win32_maperr(GetLastError());
     uerror("pipe", Nothing);
   }
   Begin_roots2(readfd, writefd)

@@ -19,7 +19,6 @@ open Asttypes
 open Lambda
 open Emitcode
 
-
 (* Functions for batch linking *)
 
 type error =
@@ -33,7 +32,7 @@ exception Error of error
 
 type 'a numtable =
   { num_cnt: int;               (* The next number *)
-    num_tbl: ('a, int) Tbl.t } (* The table of already numbered objects *)
+    num_tbl: ('a, int) Tbl.t }  (* The table of already numbered objects *)
 
 let empty_numtable = { num_cnt = 0; num_tbl = Tbl.empty }
 
@@ -80,9 +79,16 @@ let num_of_prim name =
   try
     find_numtable !c_prim_table name
   with Not_found ->
-    if !Clflags.custom_runtime
-    then enter_numtable c_prim_table name
-    else raise(Error(Unavailable_primitive name))
+    if !Clflags.custom_runtime then
+      enter_numtable c_prim_table name
+    else begin
+      let symb =
+        try Dll.find_primitive name
+        with Not_found -> raise(Error(Unavailable_primitive name)) in
+      let num = enter_numtable c_prim_table name in
+      Dll.synchronize_primitive num symb;
+      num
+    end
 
 let require_primitive name =
   if name.[0] <> '%' then ignore(num_of_prim name)
@@ -110,12 +116,12 @@ let output_primitive_table outchan =
     fprintf outchan "extern long %s();\n" prim.(i)
   done;
   fprintf outchan "typedef long (*primitive)();\n";
-  fprintf outchan "primitive cprim[] = {\n";
+  fprintf outchan "primitive builtin_cprim[] = {\n";
   for i = 0 to Array.length prim - 1 do
     fprintf outchan "  %s,\n" prim.(i)
   done;
   fprintf outchan "  (primitive) 0 };\n";
-  fprintf outchan "char * names_of_cprim[] = {\n";
+  fprintf outchan "char * names_of_builtin_cprim[] = {\n";
   for i = 0 to Array.length prim - 1 do
     fprintf outchan "  \"%s\",\n" prim.(i)
   done;
@@ -138,33 +144,8 @@ let init () =
       let cst = Const_block(0, [Const_base(Const_string name)]) in
       literal_table := (c, cst) :: !literal_table)
     Runtimedef.builtin_exceptions;
-  (* Enter the known C primitives *)
-  if String.length !Clflags.use_prims > 0 then begin
-      let ic = open_in !Clflags.use_prims in
-      try
-        while true do
-          set_prim_table (input_line ic)
-        done
-      with End_of_file -> close_in ic
-         | x -> close_in ic; raise x
-  end else if String.length !Clflags.use_runtime > 0 then begin
-    let primfile = Filename.temp_file "camlprims" "" in
-    try
-      if Sys.command(Printf.sprintf "%s -p > %s"
-                                    !Clflags.use_runtime primfile) <> 0
-      then raise(Error(Wrong_vm !Clflags.use_runtime));
-      let ic = open_in primfile in
-      try
-        while true do
-          set_prim_table (input_line ic)
-        done
-      with End_of_file -> remove_file primfile; close_in ic
-         | x -> close_in ic; raise x
-    with x -> remove_file primfile; raise x
-  end else begin
-    Array.iter set_prim_table
-               Runtimedef.builtin_primitives
-  end
+  (* Initialize the known C primitives *)
+  Array.iter set_prim_table Runtimedef.builtin_primitives
 
 (* Relocate a block of object bytecode *)
 
@@ -239,19 +220,28 @@ let update_global_table () =
 (* Initialize the linker for toplevel use *)
 
 let init_toplevel () =
-  (* Read back the known global symbols from the executable file *)
+  (* Read back the known global symbols and the known primitives
+     from the executable file *)
   let ic = open_in_bin Sys.argv.(0) in
   begin try
     Bytesections.read_toc ic;
     ignore(Bytesections.seek_section ic "SYMB");
-    global_table := (input_value ic : Ident.t numtable)
+    global_table := (input_value ic : Ident.t numtable);
+    let prims = Bytesections.read_section ic "PRIM" in
+    let pos = ref 0 in
+    while !pos < String.length prims do
+      let i = String.index_from prims !pos '\000' in
+      set_prim_table (String.sub prims !pos (i - !pos));
+      pos := i + 1
+    done
   with Bytesections.Bad_magic_number | Not_found | Failure _ ->
     fatal_error "Toplevel bytecode executable is corrupted"
   end;
+  let dllpath =
+    try Bytesections.read_section ic "DLPT" with Not_found -> "" in
   close_in ic;
-  (* Enter the known C primitives *)
-  Array.iter set_prim_table
-             (Meta.available_primitives())
+  (* Initialize the Dll machinery for toplevel use *)
+  Dll.init_toplevel dllpath
 
 (* Find the value of a global identifier *)
 

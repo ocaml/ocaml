@@ -12,11 +12,13 @@
 
 # $Id$
 
+include ../../../config/Makefile
+
 CAMLC=../../../boot/ocamlrun ../../../ocamlc -I ../../../stdlib
 CAMLOPT=../../../boot/ocamlrun ../../../ocamlopt -I ../../../stdlib
 
 test: test.byt test.opt
-	./test.byt
+	if $(SUPPORTS_SHARED_LIBRARIES); then ../../../byterun/ocamlrun -I .. ./test.byt; else ./test.byt; fi
 	./test.opt
 
 TESTFILES=test.cmo \
@@ -26,7 +28,7 @@ TESTFILES=test.cmo \
 TESTOPTFILES=$(TESTFILES:.cmo=.cmx)
 
 test.byt: $(TESTFILES) ../nums.cma ../libnums.a
-	$(CAMLC) -ccopt -L.. -o test.byt -custom ../nums.cma $(TESTFILES)
+	$(CAMLC) -ccopt -L.. -o test.byt ../nums.cma $(TESTFILES)
 
 test.opt: $(TESTOPTFILES) ../nums.cmxa ../libnums.a
 	$(CAMLOPT) -ccopt -L.. -o test.opt ../nums.cmxa $(TESTOPTFILES)

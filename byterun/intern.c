@@ -371,7 +371,7 @@ value input_val(struct channel *chan)
   return res;
 }
 
-value input_value(value vchan)        /* ML */
+CAMLprim value input_value(value vchan)
 {
   CAMLparam1 (vchan);
   struct channel * chan = Channel(vchan);
@@ -383,7 +383,7 @@ value input_value(value vchan)        /* ML */
   CAMLreturn (res);
 }
 
-value input_val_from_string(value str, long int ofs)
+CAMLexport value input_val_from_string(value str, long int ofs)
 {
   CAMLparam1 (str);
   mlsize_t num_objects, size_32, size_64, whsize;
@@ -410,12 +410,12 @@ value input_val_from_string(value str, long int ofs)
   CAMLreturn (obj);
 }
 
-value input_value_from_string(value str, value ofs) /* ML */
+CAMLprim value input_value_from_string(value str, value ofs)
 {
   return input_val_from_string(str, Long_val(ofs));
 }
 
-value input_value_from_malloc(char * data, long ofs)
+CAMLexport value input_value_from_malloc(char * data, long ofs)
 {
   mlsize_t num_objects, size_32, size_64, whsize;
   value obj;
@@ -442,7 +442,7 @@ value input_value_from_malloc(char * data, long ofs)
   return obj;
 }
 
-value marshal_data_size(value buff, value ofs) /* ML */
+CAMLprim value marshal_data_size(value buff, value ofs)
 {
   uint32 magic;
   mlsize_t block_len;
@@ -491,71 +491,71 @@ unsigned char * code_checksum(void)
 
 /* Functions for writing user-defined marshallers */
 
-int deserialize_uint_1(void)
+CAMLexport int deserialize_uint_1(void)
 {
   return read8u();
 }
 
-int deserialize_sint_1(void)
+CAMLexport int deserialize_sint_1(void)
 {
   return read8s();
 }
 
-int deserialize_uint_2(void)
+CAMLexport int deserialize_uint_2(void)
 {
   return read16u();
 }
 
-int deserialize_sint_2(void)
+CAMLexport int deserialize_sint_2(void)
 {
   return read16s();
 }
 
-uint32 deserialize_uint_4(void)
+CAMLexport uint32 deserialize_uint_4(void)
 {
   return read32u();
 }
 
-int32 deserialize_sint_4(void)
+CAMLexport int32 deserialize_sint_4(void)
 {
   return read32s();
 }
 
-uint64 deserialize_uint_8(void)
+CAMLexport uint64 deserialize_uint_8(void)
 {
   uint64 i;
   deserialize_block_8(&i, 1);
   return i;
 }
 
-int64 deserialize_sint_8(void)
+CAMLexport int64 deserialize_sint_8(void)
 {
   int64 i;
   deserialize_block_8(&i, 1);
   return i;
 }
 
-float deserialize_float_4(void)
+CAMLexport float deserialize_float_4(void)
 {
   float f;
   deserialize_block_4(&f, 1);
   return f;
 }
 
-double deserialize_float_8(void)
+CAMLexport double deserialize_float_8(void)
 {
   double f;
   deserialize_block_8(&f, 1);
   return f;
 }
 
-void deserialize_block_1(void * data, long len)
+CAMLexport void deserialize_block_1(void * data, long len)
 {
   memmove(data, intern_src, len);
   intern_src += len;
 }
 
-void deserialize_block_2(void * data, long len)
+CAMLexport void deserialize_block_2(void * data, long len)
 {
   unsigned char * p, * q;
 #ifndef ARCH_BIG_ENDIAN
@@ -568,7 +568,7 @@ void deserialize_block_2(void * data, long len)
 #endif
 }
 
-void deserialize_block_4(void * data, long len)
+CAMLexport void deserialize_block_4(void * data, long len)
 {
   unsigned char * p, * q;
 #ifndef ARCH_BIG_ENDIAN
@@ -581,7 +581,7 @@ void deserialize_block_4(void * data, long len)
 #endif
 }
 
-void deserialize_block_8(void * data, long len)
+CAMLexport void deserialize_block_8(void * data, long len)
 {
   unsigned char * p, * q;
 #ifndef ARCH_BIG_ENDIAN
@@ -594,7 +594,7 @@ void deserialize_block_8(void * data, long len)
 #endif
 }
 
-void deserialize_error(char * msg)
+CAMLexport void deserialize_error(char * msg)
 {
   intern_cleanup();
   failwith(msg);

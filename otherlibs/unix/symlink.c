@@ -17,7 +17,7 @@
 
 #ifdef HAS_SYMLINK
 
-value unix_symlink(value path1, value path2) /* ML */
+CAMLprim value unix_symlink(value path1, value path2)
 {
   if (symlink(String_val(path1), String_val(path2)) == -1)
     uerror("symlink", path2);
@@ -26,7 +26,7 @@ value unix_symlink(value path1, value path2) /* ML */
 
 #else
 
-value unix_symlink(value path1, value path2)
+CAMLprim value unix_symlink(value path1, value path2)
 { invalid_argument("symlink not implemented"); }
 
 #endif

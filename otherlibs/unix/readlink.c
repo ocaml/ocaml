@@ -28,7 +28,7 @@
 #endif
 #endif
 
-value unix_readlink(value path)        /* ML */
+CAMLprim value unix_readlink(value path)
 {
   char buffer[PATH_MAX];
   int len;
@@ -40,7 +40,7 @@ value unix_readlink(value path)        /* ML */
 
 #else
 
-value unix_readlink(value path)
+CAMLprim value unix_readlink(value path)
 { invalid_argument("readlink not implemented"); }
 
 #endif

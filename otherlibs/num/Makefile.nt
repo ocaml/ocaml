@@ -18,7 +18,7 @@
 
 # Compilation options
 CC=$(BYTECC)
-CFLAGS=-O -I.\bignum\h -I..\..\byterun $(BYTECCCOMPOPTS)
+CFLAGS=-O -I.\bignum\h -I..\..\byterun
 CAMLC=..\..\boot\ocamlrun ..\..\ocamlc -I ..\..\boot -w s
 CAMLOPT=..\..\boot\ocamlrun ..\..\ocamlopt -I ..\..\stdlib -w s
 
@@ -29,25 +29,31 @@ CMIFILES=big_int.cmi nat.cmi num.cmi ratio.cmi arith_status.cmi
 
 COBJS=nat_stubs.obj
 
-all: libnums.lib nums.cma $(CMIFILES)
+all: libnums.dll libnums.lib nums.cma $(CMIFILES)
 
 allopt: libnums.lib nums.cmxa $(CMIFILES)
 
 nums.cma: $(CAMLOBJS)
-	$(CAMLC) -a -o nums.cma -custom $(CAMLOBJS) -cclib -lnums
+	$(CAMLC) -a -o nums.cma $(CAMLOBJS) -cclib -lnums
 
 nums.cmxa: $(CAMLOBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o nums.cmxa $(CAMLOBJS:.cmo=.cmx) -cclib -lnums
 
-libnums.lib: bignum\libbignum.lib $(COBJS)
-	$(MKLIB)libnums.lib bignum\libbignum.lib $(COBJS)
+libnums.dll: bignum\dbignum.lib $(COBJS:.obj=.dobj)
+	link /nologo /dll /out:libnums.dll /implib:tmp.lib \
+	  bignum\dbignum.lib $(COBJS:.obj=.dobj) ..\..\byterun\ocamlrun.lib
+	rm tmp.*
 
-bignum\libbignum.lib:
+libnums.lib: bignum\sbignum.lib $(COBJS:.obj=.sobj)
+	$(MKLIB)libnums.lib bignum\sbignum.lib $(COBJS:.obj=.sobj)
+
+bignum\dbignum.lib bignum\sbignum.lib:
 	cd bignum & $(MAKEREC)
 
 $(CAMLOBJS:.cmo=.cmx): ..\..\ocamlopt
 
 install:
+	cp libnums.dll $(LIBDIR)\libnums.dll
 	cp libnums.lib $(LIBDIR)\libnums.lib
 	cp nums.cma $(CMIFILES) $(LIBDIR)
 
@@ -58,11 +64,11 @@ partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f *.lib *.obj
+	rm -f *.dll *.lib *.dobj *.sobj
 	cd bignum & $(MAKEREC) scratch
 	cd test & $(MAKEREC) clean
 
-.SUFFIXES: .ml .mli .cmi .cmo .cmx
+.SUFFIXES: .ml .mli .cmi .cmo .cmx .dobj .sobj
 
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
@@ -73,9 +79,18 @@ clean: partialclean
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
+.c.dobj:
+	$(BYTECC) $(DLLCCCOMPOPTS) $(CFLAGS) -c $<
+	mv $*.obj $*.dobj
+
+.c.sobj:
+	$(BYTECC) $(BYTECCCOMPOPTS) $(CFLAGS) -c $<
+	mv $*.obj $*.sobj
+
 nat_stubs.obj: nat.h
 
 depend:
-	sed -e "s/\.o/.obj/g" .depend > .depend.nt
+	sed -e "s/\.o/.dobj/g" .depend > .depend.nt
+	sed -e "s/\.o/.sobj/g" .depend >> .depend.nt
 
 !include .depend.nt

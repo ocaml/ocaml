@@ -54,20 +54,20 @@ struct channel {
    ? refill(channel)                                                        \
    : (unsigned char) *((channel))->curr++)
 
-struct channel * open_descriptor (int);
-void close_channel (struct channel *);
-int channel_binary_mode (struct channel *);
+CAMLextern struct channel * open_descriptor (int);
+CAMLextern void close_channel (struct channel *);
+CAMLextern int channel_binary_mode (struct channel *);
 
-int flush_partial (struct channel *);
-void flush (struct channel *);
-void putword (struct channel *, uint32);
-int putblock (struct channel *, char *, long);
-void really_putblock (struct channel *, char *, long);
+CAMLextern int flush_partial (struct channel *);
+CAMLextern void flush (struct channel *);
+CAMLextern void putword (struct channel *, uint32);
+CAMLextern int putblock (struct channel *, char *, long);
+CAMLextern void really_putblock (struct channel *, char *, long);
 
-unsigned char refill (struct channel *);
-uint32 getword (struct channel *);
-int getblock (struct channel *, char *, long);
-int really_getblock (struct channel *, char *, long);
+CAMLextern unsigned char refill (struct channel *);
+CAMLextern uint32 getword (struct channel *);
+CAMLextern int getblock (struct channel *, char *, long);
+CAMLextern int really_getblock (struct channel *, char *, long);
 
 /* Extract a struct channel * from the heap object representing it */
 
@@ -75,10 +75,10 @@ int really_getblock (struct channel *, char *, long);
 
 /* The locking machinery */
 
-extern void (*channel_mutex_free) (struct channel *);
-extern void (*channel_mutex_lock) (struct channel *);
-extern void (*channel_mutex_unlock) (struct channel *);
-extern void (*channel_mutex_unlock_exn) (void);
+CAMLextern void (*channel_mutex_free) (struct channel *);
+CAMLextern void (*channel_mutex_lock) (struct channel *);
+CAMLextern void (*channel_mutex_unlock) (struct channel *);
+CAMLextern void (*channel_mutex_unlock_exn) (void);
 
 #define Lock(channel) \
   if (channel_mutex_lock != NULL) (*channel_mutex_lock)(channel)

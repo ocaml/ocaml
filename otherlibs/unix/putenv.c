@@ -22,7 +22,7 @@
 
 #ifdef HAS_PUTENV
 
-value unix_putenv(value name, value val) /* ML */
+CAMLprim value unix_putenv(value name, value val)
 {
   mlsize_t namelen = string_length(name);
   mlsize_t vallen = string_length(val);
@@ -38,7 +38,7 @@ value unix_putenv(value name, value val) /* ML */
 
 #else
 
-value unix_putenv(value name, value val)
+CAMLprim value unix_putenv(value name, value val)
 { invalid_argument("putenv not implemented"); }
 
 #endif

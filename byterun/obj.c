@@ -24,33 +24,33 @@
 #include "mlvalues.h"
 #include "prims.h"
 
-value static_alloc(value size)        /* ML */
+CAMLprim value static_alloc(value size)
 {
   return (value) stat_alloc((asize_t) Long_val(size));
 }
 
-value static_free(value blk)          /* ML */
+CAMLprim value static_free(value blk)
 {
   stat_free((void *) blk);
   return Val_unit;
 }
 
-value static_resize(value blk, value new_size) /* ML */
+CAMLprim value static_resize(value blk, value new_size)
 {
   return (value) stat_resize((char *) blk, (asize_t) Long_val(new_size));
 }
 
-value obj_is_block(value arg)             /* ML */
+CAMLprim value obj_is_block(value arg)
 {
   return Val_bool(Is_block(arg));
 }
 
-value obj_tag(value arg)                 /* ML */
+CAMLprim value obj_tag(value arg)
 {
   return Val_int(Tag_val(arg));
 }
 
-value obj_block(value tag, value size) /* ML */
+CAMLprim value obj_block(value tag, value size)
 {
   value res;
   mlsize_t sz, i;
@@ -66,7 +66,7 @@ value obj_block(value tag, value size) /* ML */
   return res;
 }
 
-value obj_dup(value arg) /* ML */
+CAMLprim value obj_dup(value arg)
 {
   CAMLparam1 (arg);
   CAMLlocal1 (res);
@@ -93,7 +93,7 @@ value obj_dup(value arg) /* ML */
    with the leftover part of the object: this is needed in the major
    heap and harmless in the minor heap.
 */
-value obj_truncate (value v, value newsize)  /* ML */
+CAMLprim value obj_truncate (value v, value newsize)
 {
   mlsize_t new_wosize = Long_val (newsize);
   header_t hd = Hd_val (v);

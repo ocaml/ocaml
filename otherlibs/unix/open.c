@@ -25,7 +25,7 @@ static int open_flag_table[] = {
   O_RDONLY, O_WRONLY, O_RDWR, O_NONBLOCK, O_APPEND, O_CREAT, O_TRUNC, O_EXCL
 };
 
-value unix_open(value path, value flags, value perm) /* ML */
+CAMLprim value unix_open(value path, value flags, value perm)
 {
   int ret;
 

@@ -367,7 +367,6 @@ let empty_lexbuf lb =
 let _ =
   Sys.interactive := true;
   Symtable.init_toplevel();
-  Clflags.thread_safe := true;
   Compile.init_path()
 
 let load_ocamlinit ppf =
@@ -383,6 +382,7 @@ let loop ppf =
      but keep the directories that user code linked in with ocamlmktop
      may have added to load_path. *)
   load_path := "" :: (List.rev !Clflags.include_dirs @ !load_path);
+  Dll.add_path !load_path;
   toplevel_env := Compile.initial_env();
   let lb = Lexing.from_function refill_lexbuf in
   Location.input_name := "";

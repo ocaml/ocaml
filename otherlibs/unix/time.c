@@ -17,7 +17,7 @@
 #include <alloc.h>
 #include "unixsupport.h"
 
-value unix_time(void)                /* ML */
+CAMLprim value unix_time(void)
 {
   return copy_double((double) time((time_t *) NULL));
 }

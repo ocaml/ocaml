@@ -19,8 +19,8 @@
 #include "config.h"
 #include "misc.h"
 
-void compact_heap (void);
-void compact_heap_maybe (void);
+extern void compact_heap (void);
+extern void compact_heap_maybe (void);
 
 
 #endif /* _compact_ */

@@ -20,10 +20,10 @@
 #include "memory.h"
 #include "mlvalues.h"
 
-value alloc_custom(struct custom_operations * ops,
-                   unsigned long size,
-                   mlsize_t mem,
-                   mlsize_t max)
+CAMLextern value alloc_custom(struct custom_operations * ops,
+                              unsigned long size,
+                              mlsize_t mem,
+                              mlsize_t max)
 {
   mlsize_t wosize;
   value result;
@@ -41,14 +41,14 @@ value alloc_custom(struct custom_operations * ops,
   return result;
 }
 
-int custom_compare_default(value v1, value v2)
+CAMLextern int custom_compare_default(value v1, value v2)
 {
   failwith("equal: abstract value");
   return 0;
 }
 
-void custom_serialize_default(value v, unsigned long * wsize_32,
-                              unsigned long * wsize_64)
+CAMLextern void custom_serialize_default(value v, unsigned long * wsize_32,
+                                         unsigned long * wsize_64)
 {
   failwith("output_value: abstract value");
 }
@@ -60,7 +60,7 @@ struct custom_operations_list {
 
 static struct custom_operations_list * custom_ops_table = NULL;
 
-void register_custom_operations(struct custom_operations * ops)
+CAMLextern void register_custom_operations(struct custom_operations * ops)
 {
   struct custom_operations_list * l =
     stat_alloc(sizeof(struct custom_operations_list));

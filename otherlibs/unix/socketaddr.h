@@ -36,8 +36,8 @@ typedef int socklen_param_type;
 void get_sockaddr (value mladdr,
                    union sock_addr_union * addr /*out*/,
                    socklen_param_type * addr_len /*out*/);
-value alloc_sockaddr (union sock_addr_union * addr /*in*/,
+CAMLprim value alloc_sockaddr (union sock_addr_union * addr /*in*/,
                       socklen_param_type addr_len);
-value alloc_inet_addr (uint32 inaddr);
+CAMLprim value alloc_inet_addr (uint32 inaddr);
 
 #define GET_INET_ADDR(v) (*((uint32 *) (v)))
