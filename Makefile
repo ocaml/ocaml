@@ -17,7 +17,7 @@ CAMLRUN=byterun/camlrun
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver -I toplevel
 
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
-  utils/clflags.cmo utils/terminfo.cmo utils/digest.cmo
+  utils/clflags.cmo utils/terminfo.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/parser.cmo parsing/lexer.cmo parsing/parse.cmo
@@ -75,7 +75,7 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   bytecomp/runtimedef.cmo bytecomp/symtable.cmo \
   toplevel/expunge.cmo
 
-PERVASIVES=arg array char filename format gc hashtbl lexing list map \
+PERVASIVES=arg array char digest filename format gc hashtbl lexing list map \
   obj parsing pervasives printexc printf queue random set sort stack \
   string sys
 
