@@ -15,6 +15,12 @@ PREREQUISITES
   are all *required*.  The vendor-provided compiler, assembler and make
   have major problems.
 
+* Under MacOS X, before you begin, you must raise the limit on the
+  stack size with one of the following commands:
+
+    limit stacksize 64M  # if your shell is zsh or tcsh
+    ulimit -s 65536      # if your shell is bash
+
 
 INSTALLATION INSTRUCTIONS
 
