@@ -888,7 +888,7 @@ Note: Existing command line options can be redefined using this function.
 \subsubsection{Defining a custom generator class in one file}
 Let "custom.ml" be the file defining a new generator class.
 Compilation of "custom.ml" can be performed by the following command~:\\
-"ocamlc -I +ocamldoc custom.ml"\\
+"ocamlc -I +ocamldoc -c custom.ml"\\
 The file "custom.cmo" is created and can be used this way~:\\
 {\tt ocamldoc -g custom.cmo {\em other_options} {\em source_files}}\\
 It is important not to give the {\bf\tt -html} or any other option selecting a
