@@ -14,7 +14,6 @@
 open Misc
 open Path
 open Asttypes
-open Typedtree
 
 type primitive =
     Pidentity

@@ -17,6 +17,7 @@ open Misc
 open Location
 open Asttypes
 open Primitive
+open Types
 open Typedtree
 open Lambda
 

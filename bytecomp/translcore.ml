@@ -18,6 +18,7 @@ open Misc
 open Asttypes
 open Primitive
 open Path
+open Types
 open Typedtree
 open Lambda
 open Translobj
@@ -139,31 +140,35 @@ let primitives_table = create_hashtable 31 [
   "%obj_set_field", Parraysetu Paddrarray
 ]
 
-let same_base_type ty1 ty2 =
-  match ((Ctype.repr ty1).desc, (Ctype.repr ty2).desc) with
+let has_base_type exp base_ty =
+  let ty = Ctype.expand_root exp.exp_env exp.exp_type in
+  match ((Ctype.repr ty).desc, (Ctype.repr base_ty).desc) with
     (Tconstr(p1, [], _), Tconstr(p2, [], _)) -> Path.same p1 p2
   | (_, _) -> false
 
 let maybe_pointer arg =
-  not(same_base_type arg.exp_type Predef.type_int or
-      same_base_type arg.exp_type Predef.type_char)
+  not(has_base_type arg Predef.type_int or has_base_type arg Predef.type_char)
 
 let array_kind arg =
-  match (Ctype.repr arg.exp_type).desc with
+  let ty = Ctype.expand_root arg.exp_env arg.exp_type in
+  match (Ctype.repr ty).desc with
     Tconstr(p, [ty], _) when Path.same p Predef.path_array ->
-      begin match (Ctype.repr ty).desc with
+      begin match (Ctype.repr(Ctype.expand_root arg.exp_env ty)).desc with
         Tvar -> Pgenarray
       | Tconstr(p, _, _) ->
           if Path.same p Predef.path_int or Path.same p Predef.path_char then
             Pintarray
           else if Path.same p Predef.path_float then
             Pfloatarray
-          else
-            Paddrarray
+          else begin
+            match Env.find_type p arg.exp_env with
+              {type_kind = Type_abstract} -> Pgenarray
+            | {type_kind = _} -> Paddrarray
+          end
       | _ -> Paddrarray
       end
-  | _ -> Pgenarray (* This can happen with abbreviations that we can't expand
-                      here because the typing environment is lost *)
+  | _ ->
+    fatal_error "Translcore.array_kind"
 
 let prim_makearray =
   { prim_name = "make_vect"; prim_arity = 2; prim_alloc = true;
@@ -178,12 +183,12 @@ let transl_prim prim args =
         intcomp
     | [{exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}; arg2] ->
         intcomp
-    | [arg1; arg2] when same_base_type arg1.exp_type Predef.type_int
-                     or same_base_type arg1.exp_type Predef.type_char ->
+    | [arg1; arg2] when has_base_type arg1 Predef.type_int
+                     or has_base_type arg1 Predef.type_char ->
         intcomp
-    | [arg1; arg2] when same_base_type arg1.exp_type Predef.type_float ->
+    | [arg1; arg2] when has_base_type arg1 Predef.type_float ->
         floatcomp
-    | [arg1; arg2] when same_base_type arg1.exp_type Predef.type_string ->
+    | [arg1; arg2] when has_base_type arg1 Predef.type_string ->
         stringcomp
     | _ ->
         gencomp

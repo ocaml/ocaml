@@ -14,7 +14,7 @@
 open Format
 open Asttypes
 open Primitive
-open Typedtree
+open Types
 open Lambda
 
 

@@ -14,7 +14,6 @@
 (* The "lambda" intermediate code *)
 
 open Asttypes
-open Typedtree
 
 type primitive =
     Pidentity

@@ -16,7 +16,7 @@
 open Misc
 open Asttypes
 open Primitive
-open Typedtree
+open Types
 open Lambda
 open Instruct
 
