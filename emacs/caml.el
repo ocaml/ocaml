@@ -988,7 +988,8 @@ Used to distinguish it from toplevel let construct.")
              (aref caml-kwop-regexps caml-max-indent-priority)))
     (cond
      ; special case for ;;
-     ((and (= (preceding-char) ?\;) (= (following-char) ?\;)))
+     ((and (= (preceding-char) ?\;) (= (following-char) ?\;))
+      (setq in-expr nil))
      ((looking-at caml-before-expr-prefix)
       (goto-char (match-end 0))
       (skip-chars-forward " \t\n")
@@ -1083,7 +1084,8 @@ keywords."
     ("\["               t       8       caml-lb-indent)
     ("{"                t       8       caml-lc-indent)
     ("\("               t       8       caml-lp-indent)
-    ("|"                nil     2       caml-no-indent))
+    ("|"                nil     2       caml-no-indent)
+    (";;"               nil     0       caml-no-indent))
 ; if-else and let-in are not keywords but idioms
 ; "|" is not in the regexps
 ; all these 3 values correspond to hard-coded names
@@ -1106,7 +1108,7 @@ the line where the governing keyword occurs.")
 (aset caml-kwop-regexps 0
       (concat
        "\\<\\(begin\\|object\\|for\\|s\\(ig\\|truct\\)\\|while\\)\\>"
-       "\\|:begin\\>\\|[[({]"))
+       "\\|:begin\\>\\|[[({]\\|;;"))
 (aset caml-kwop-regexps 1
       (concat (aref caml-kwop-regexps 0) "\\|\\<\\(class\\|module\\)\\>"))
 (aset caml-kwop-regexps 2
@@ -1306,6 +1308,10 @@ the line where the governing keyword occurs.")
        ((not kwop) (setq done t))
        ((caml-at-sexp-close-p)
         (caml-find-paren-match (following-char)))
+       ((and (string= kwop ";") (= (preceding-char) ?\;))
+        (backward-char)
+        (setq kwop ";;")
+        (setq done t))
        ((and (>= prio 2) (string= kwop "|")) (setq done t))
        ((string= kwop "end") (caml-find-end-match))
        ((string= kwop "done") (caml-find-done-match))
@@ -1384,7 +1390,7 @@ Does not preserve point."
               (- (symbol-value (nth 3 kwop-info))
                  (if (looking-at "|") caml-|-extra-indent 0))))))
          (extra (if in-expr caml-apply-extra-indent 0)))
-         (+ indent-diff extra (current-column))))
+         (+ indent-diff extra (if (string= kwop ";;") 0 (current-column)))))
 
 (defconst caml-leading-kwops-regexp
   (concat
@@ -1419,8 +1425,8 @@ matching nodes to determine KEYWORD's final indentation.")
   (save-excursion
     (back-to-indentation)
     (cond
-     ((looking-at comment-start-skip)
-      (current-column))
+     ((looking-at ";;") 0)
+     ((looking-at comment-start-skip) (current-column))
      ((caml-in-comment-p)
       (let ((closing (looking-at "\\*)"))
             (comment-mark (looking-at "\\*")))
