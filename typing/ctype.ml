@@ -2108,6 +2108,7 @@ let all_distinct_vars env vars =
 let matches env ty ty' =
   let snap = snapshot () in
   let vars = rigidify ty in
+  cleanup_abbrev ();
   let ok =
     try unify env ty ty'; all_distinct_vars env vars
     with Unify _ -> false
