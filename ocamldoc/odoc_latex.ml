@@ -406,11 +406,15 @@ class latex =
           s_type1
           s_name;
         let s_type2 = 
-          match t.ty_manifest with
-            None -> Format.flush_str_formatter ()
-          | Some typ -> 
-              Format.fprintf Format.str_formatter " = ";
-              self#normal_type mod_name typ
+	  (
+           match t.ty_manifest with
+             None -> ()
+           | Some typ -> 
+               Format.fprintf Format.str_formatter 
+		 " = %s"
+		 (self#normal_type mod_name typ)
+	  );
+	  Format.flush_str_formatter ()
         in
         let s_type3 = 
           Format.fprintf Format.str_formatter 
@@ -436,11 +440,15 @@ class latex =
                       Format.fprintf Format.str_formatter 
                         "@[<hov 6>  | %s"
                         constr.vc_name;
-                      match constr.vc_args with
-                        [] -> Format.flush_str_formatter ()
-                      | l -> 
-                          Format.fprintf Format.str_formatter " %s@ " "of";
-                          self#normal_type_list mod_name " * " l
+                      (
+		       match constr.vc_args with
+                         [] -> ()
+                       | l -> 
+                           Format.fprintf Format.str_formatter " %s@ %s" 
+			     "of"
+                             (self#normal_type_list mod_name " * " l)
+		      );
+		      Format.flush_str_formatter ()
                     in
                     [ CodePre s_cons ] @
                     (match constr.vc_text with
@@ -462,10 +470,11 @@ class latex =
                     (fun r ->
                       let s_field = 
                         Format.fprintf Format.str_formatter 
-                          "@[<hov 6>  %s%s :@ "
+                          "@[<hov 6>  %s%s :@ %s ;"
                           (if r.rf_mutable then "mutable " else "")
-                          r.rf_name;
-                        (self#normal_type mod_name r.rf_type)^" ;"
+                          r.rf_name
+                          (self#normal_type mod_name r.rf_type);
+			Format.flush_str_formatter ()
                       in
                       [ CodePre s_field ] @
                       (match r.rf_text with

@@ -459,7 +459,7 @@ class man =
       (
        match c.cl_type_parameters with
          [] -> ()
-       | l -> p buf "[%s.I] " (Odoc_str.string_of_type_list ", " l)
+       | l -> p buf "[%s] " (Odoc_str.string_of_type_list ", " l)
       );
       p buf "%s : %s" 
         (Name.simple c.cl_name)
@@ -477,7 +477,7 @@ class man =
       (
        match ct.clt_type_parameters with
         [] -> ()
-      | l -> p buf "[%s.I ] " (Odoc_str.string_of_type_list ", " l)
+      | l -> p buf "[%s] " (Odoc_str.string_of_type_list ", " l)
       );
       p buf "%s = %s" 
         (Name.simple ct.clt_name)

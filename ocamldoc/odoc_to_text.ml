@@ -234,10 +234,11 @@ class virtual to_text =
     (** @return [text] value for a value. *)
     method text_of_value v =
       let s_name = Name.simple v.val_name in
-      Format.fprintf Format.str_formatter "@[<hov 2>val %s :@ "
-        s_name;
       let s = 
-        (self#normal_type (Name.father v.val_name) v.val_type)
+	Format.fprintf Format.str_formatter "@[<hov 2>val %s :@ %s"
+          s_name
+          (self#normal_type (Name.father v.val_name) v.val_type);
+	Format.flush_str_formatter ()
       in
       [ CodePre s ] @ 
       [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
@@ -246,11 +247,14 @@ class virtual to_text =
     (** @return [text] value for a class attribute. *)
     method text_of_attribute a =
       let s_name = Name.simple a.att_value.val_name in
-      Format.fprintf Format.str_formatter "@[<hov 2>val %s%s :@ "
-        (if a.att_mutable then "mutable " else "")
-        s_name;
       let mod_name = Name.father a.att_value.val_name in
-      let s = self#normal_type mod_name a.att_value.val_type in
+      let s = 
+	Format.fprintf Format.str_formatter "@[<hov 2>val %s%s :@ %s"
+          (if a.att_mutable then "mutable " else "")
+          s_name
+	  (self#normal_type mod_name a.att_value.val_type);
+	Format.flush_str_formatter ()
+      in
       (CodePre s) :: 
       [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
       (self#text_of_info a.att_value.val_info)
@@ -258,12 +262,15 @@ class virtual to_text =
     (** @return [text] value for a class method. *)
     method text_of_method m =
       let s_name = Name.simple m.met_value.val_name in
-      Format.fprintf Format.str_formatter "@[<hov 2>method %s%s%s :@ "
-        (if m.met_private then "private " else "")
-        (if m.met_virtual then "virtual " else "")
-        s_name ; 
       let mod_name = Name.father m.met_value.val_name in
-      let s = self#normal_type mod_name m.met_value.val_type in
+      let s = 
+	Format.fprintf Format.str_formatter "@[<hov 2>method %s%s%s :@ %s"
+          (if m.met_private then "private " else "")
+          (if m.met_virtual then "virtual " else "")
+          s_name 
+	  (self#normal_type mod_name m.met_value.val_type);
+	Format.flush_str_formatter ()
+      in
       (CodePre s) ::
       [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
       (self#text_of_info m.met_value.val_info)

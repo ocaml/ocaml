@@ -26,6 +26,8 @@ let string_of_variance t (co,cn) =
     ""
 
 let raw_string_of_type_list sep type_list =
+  let buf = Buffer.create 256 in
+  let fmt = Format.formatter_of_buffer buf in
   let rec need_parent t =
     match t.Types.desc with
       Types.Tarrow _ | Types.Ttuple _ -> true
@@ -39,31 +41,32 @@ let raw_string_of_type_list sep type_list =
     Printtyp.mark_loops t;
     if need_parent t then
       ( 
-       Format.fprintf Format.str_formatter "(%s" variance;
-       Printtyp.type_scheme_max ~b_reset_names: false Format.str_formatter t;
-       Format.fprintf Format.str_formatter ")"
+       Format.fprintf fmt "(%s" variance;
+       Printtyp.type_scheme_max ~b_reset_names: false fmt t;
+       Format.fprintf fmt ")"
       )
     else
       (
-       Format.fprintf Format.str_formatter "%s" variance;
-       Printtyp.type_scheme_max ~b_reset_names: false Format.str_formatter t
+       Format.fprintf fmt "%s" variance;
+       Printtyp.type_scheme_max ~b_reset_names: false fmt t
       )
   in
   begin match type_list with
     [] -> ()
   | [(variance, ty)] -> print_one_type variance ty
   | (variance, ty) :: tyl ->
-      Format.fprintf Format.str_formatter "@[<hov 2>(";
+      Format.fprintf fmt "@[<hov 2>(";
       print_one_type variance ty;
       List.iter
         (fun (variance, t) -> 
-	  Format.fprintf Format.str_formatter "@,%s" sep; 
+	  Format.fprintf fmt "@,%s" sep; 
 	  print_one_type variance t
 	)
         tyl;
-      Format.fprintf Format.str_formatter ")@]"
+      Format.fprintf fmt ")@]"
   end;
-  Format.flush_str_formatter()
+  Format.pp_print_flush fmt ();
+  Buffer.contents buf
 
 let string_of_type_list sep type_list =
   raw_string_of_type_list sep (List.map (fun t -> ("", t)) type_list)

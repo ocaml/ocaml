@@ -604,16 +604,15 @@ val reset_type_names : unit -> unit
    for the variance to be printed.*)
 val string_of_variance : Type.t_type -> (bool * bool) -> string
 
-(** This function returns a string representing a Types.type_expr. 
-   It writes in and flushes [Format.str_formatter]. *)
+(** This function returns a string representing a Types.type_expr. *)
 val string_of_type_expr : Types.type_expr -> string
 
 (** This function returns a string to represent the given list of types,
-   with a given separator. It writes in and flushes [Format.str_formatter].*)
+   with a given separator. *)
 val string_of_type_list : string -> Types.type_expr list -> string
 
 (** This function returns a string to represent the list of type parameters
-   for the given type. It writes in and flushes [Format.str_formatter].*)
+   for the given type. *)
 val string_of_type_param_list : Type.t_type -> string
 
 (** This function returns a string representing a [Types.module_type]. 
