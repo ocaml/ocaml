@@ -148,4 +148,3 @@ void raise_not_found(void)
 {
   raise_constant((value) Not_found);
 }
-
