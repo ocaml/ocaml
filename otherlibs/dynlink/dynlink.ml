@@ -148,14 +148,21 @@ let check_unsafe_module cu =
    initialized already *)
 
 let check_global_references file_name patchlist =
-  List.iter
-    (function
+  (* First determine the globals we will define *)
+  let defined_globals = ref [] in
+  let add_defined = function
+      (Reloc_setglobal id, pos) -> defined_globals := id :: !defined_globals
+    | _ -> () in
+  List.iter add_defined patchlist;
+  (* Then check that all referenced, not defined globals have a value *)
+  let check_reference = function
       (Reloc_getglobal id, pos) ->
-        if Obj.is_int (Symtable.get_global_value id) then
+        if not (List.mem id !defined_globals)
+        && Obj.is_int (Symtable.get_global_value id) then
           raise(Error(Linking_error(file_name,
                                     Uninitialized_global(Ident.name id))))
-    | _ -> ())
-    patchlist
+    | _ -> () in
+  List.iter check_reference patchlist
 
 (* Load in-core and execute a bytecode object file *)
 
