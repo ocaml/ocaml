@@ -4,6 +4,8 @@ pa_extend_m.cmo: pa_extend.cmo
 pa_extend_m.cmx: pa_extend.cmx 
 pa_ifdef.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
 pa_ifdef.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
+pa_macro.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
+pa_macro.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
 pa_r.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
 pa_r.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
 pa_rp.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 

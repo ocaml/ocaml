@@ -22,7 +22,7 @@ val gmake : unit -> Token.t Token.glexer;;
 -      * [("", s)] is the keyword [s].
 -      * [("LIDENT", s)] is the ident [s] starting with a lowercase letter.
 -      * [("UIDENT", s)] is the ident [s] starting with an uppercase letter.
--      * [("INT", s)]  (resp. ["INT32"], ["INT64"] and ["NATIVEINT"])
+-      * [("INT", s)] (resp. ["INT32"], ["INT64"] and ["NATIVEINT"])
          is an integer constant whose string source is [s].
 -      * [("FLOAT", s)] is a float constant whose string source is [s].
 -      * [("STRING", s)] is the string constant [s].

@@ -55,6 +55,7 @@ compare:
 
 install:
 	-$(MKDIR) "$(LIBDIR)/camlp4" "$(BINDIR)"
-	cp odyl.cmo odyl.cma "$(LIBDIR)/camlp4/."
+	cp odyl.cmo odyl.cma odyl_main.cmi $(LIBDIR)/camlp4/.
+	if test -f odyl.cmxa; then cp odyl.cmxa odyl.a $(LIBDIR)/camlp4/.; fi
 
 include .depend

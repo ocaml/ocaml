@@ -8,5 +8,7 @@ camlp4_top.cmx: ../camlp4/ast2pt.cmx ../camlp4/mLast.cmi \
     $(OTOP)/utils/warnings.cmx 
 oprint.cmo: $(OTOP)/typing/outcometree.cmi $(OTOP)/toplevel/toploop.cmi 
 oprint.cmx: $(OTOP)/typing/outcometree.cmi $(OTOP)/toplevel/toploop.cmx 
-rprint.cmo: $(OTOP)/typing/outcometree.cmi $(OTOP)/toplevel/toploop.cmi 
-rprint.cmx: $(OTOP)/typing/outcometree.cmi $(OTOP)/toplevel/toploop.cmx 
+rprint.cmo: $(OTOP)/parsing/asttypes.cmi $(OTOP)/typing/outcometree.cmi \
+    $(OTOP)/toplevel/toploop.cmi 
+rprint.cmx: $(OTOP)/parsing/asttypes.cmi $(OTOP)/typing/outcometree.cmi \
+    $(OTOP)/toplevel/toploop.cmx 
