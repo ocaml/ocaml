@@ -1,4 +1,5 @@
 Current :
+OK - fix: bug preventing to get the code in a .mli
 OK - fix: missing spaces after carriage return in types (Odoc_misc.string_of_type_expr)
 OK - fixes: some bugs in the text parser 
      ( ]} meaning end of code and somehting else instead of end of precode)

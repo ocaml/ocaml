@@ -557,7 +557,7 @@ module Analyser =
 		ex_code = 
 		   (
                     if !Odoc_args.keep_code then
-                      Some (get_string_of_file pos_start_ele (pos_end_ele + pos_limit))
+                      Some (get_string_of_file pos_start_ele pos_end_ele)
                     else
                       None
                    ) ;
