@@ -51,31 +51,10 @@
 extern int errno;
 #endif
 
-#ifdef HAS_STRERROR
-
-#ifndef _WIN32
-extern char * strerror(int);
-#endif
-
 static char * error_message(void)
 {
   return strerror(errno);
 }
-
-#else
-
-extern int sys_nerr;
-extern char * sys_errlist [];
-
-static char * error_message(void)
-{
-  if (errno < 0 || errno >= sys_nerr)
-    return "unknown error";
-  else
-    return sys_errlist[errno];
-}
-
-#endif /* HAS_STRERROR */
 
 #ifndef EAGAIN
 #define EAGAIN (-1)
