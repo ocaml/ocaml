@@ -17,7 +17,7 @@ TKLINKOPT=$(STATIC) -cclib ../support/liblabltk41.lib \
 
 CAMLRUN=$(EXEDIR)\boot\ocamlrun
 LABLC=$(CAMLRUN) $(TOPDIR)/ocamlc -I $(TOPDIR)/stdlib
-LABLCOMP=$(LABLC) -w s -modern -c
+LABLCOMP=$(LABLC) -modern -c
 LABLYACC=$(EXEDIR)\boot\ocamlyacc -v
 LABLLEX=$(CAMLRUN) $(TOPDIR)/boot/ocamllex
 LABLLIBR=$(LABLC) -a
@@ -25,5 +25,5 @@ LABLDEP=$(CAMLRUN) $(TOPDIR)/tools/ocamldep
 COMPFLAGS=
 LINKFLAGS=
 
-CAMLOPT=$(CAMLRUN) $(TOPDIR)/ocamlopt -I $(TOPDIR)/stdlib -modern -w s
+CAMLOPT=$(CAMLRUN) $(TOPDIR)/ocamlopt -I $(TOPDIR)/stdlib -modern
 CAMLOPTLIBR=$(CAMLOPT) -a
