@@ -74,8 +74,7 @@ let load_compunit ic filename compunit =
   let code_size = compunit.cu_codesize + 4 in
   let code = Meta.static_alloc code_size in
   unsafe_really_input ic code 0 compunit.cu_codesize;
-  String.unsafe_set code compunit.cu_codesize
-                             (Char.chr Opcodes.opSTOP);
+  String.unsafe_set code compunit.cu_codesize (Char.chr Opcodes.opSTOP);
   String.unsafe_set code (compunit.cu_codesize + 1) '\000';
   String.unsafe_set code (compunit.cu_codesize + 2) '\000';
   String.unsafe_set code (compunit.cu_codesize + 3) '\000';

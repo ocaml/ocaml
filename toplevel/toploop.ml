@@ -15,6 +15,7 @@
 
 open Lexing
 open Format
+open Config
 open Misc
 open Parsetree
 open Typedtree
@@ -188,6 +189,10 @@ let loop() =
   print_string "\tCaml Special Light version ";
   print_string Config.version;
   print_newline(); print_newline();
+  (* Add whatever -I options have been specified on the command line,
+     but keep the directories that user code linked in with cslmktop
+     may have added to load_path. *)
+  load_path := "" :: (List.rev !Clflags.include_dirs @ !load_path);
   toplevel_env := Compile.initial_env();
   let lb = Lexing.from_function refill_lexbuf in
   Location.input_name := "";
