@@ -385,11 +385,11 @@ void finish_major_cycle (void)
 */
 static asize_t clip_heap_chunk_size (asize_t request)
 {                             Assert (Heap_chunk_max >= Heap_chunk_min);
-  if (request < Heap_chunk_min){
-    request = Heap_chunk_min;
+  if (request < Bsize_wsize (Heap_chunk_min)){
+    request = Bsize_wsize (Heap_chunk_min);
   }
-  if (request > Heap_chunk_max){
-    request = Heap_chunk_max;
+  if (request > Bsize_wsize (Heap_chunk_max)){
+    request = Bsize_wsize (Heap_chunk_max);
   }
   return ((request + Page_size - 1) >> Page_log) << Page_log;
 }

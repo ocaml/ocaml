@@ -338,7 +338,7 @@ CAMLprim value gc_set(value v)
     gc_message (0x20, "New max overhead: %d%%\n", percent_max);
   }
 
-  newheapincr = norm_heapincr (Bsize_wsize (Long_val (Field (v, 1))));
+  newheapincr = Bsize_wsize (norm_heapincr (Long_val (Field (v, 1))));
   if (newheapincr != major_heap_increment){
     major_heap_increment = newheapincr;
     gc_message (0x20, "New heap increment size: %luk bytes\n",

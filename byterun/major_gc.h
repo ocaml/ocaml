@@ -62,8 +62,8 @@ extern char *gc_sweep_hp;
    (addr)(p) >= (addr)heap_start && (addr)(p) < (addr)heap_end \
    && page_table [Page (p)])
 
-void init_major_heap (asize_t);
-asize_t round_heap_chunk_size (asize_t);
+void init_major_heap (asize_t);           /* size in bytes */
+asize_t round_heap_chunk_size (asize_t);  /* size in bytes */
 void darken (value, value *);
 long major_collection_slice (long);
 void major_collection (void);

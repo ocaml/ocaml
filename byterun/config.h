@@ -123,16 +123,16 @@ typedef struct { uint32 l, h; } uint64, int64;
 
 /* Maximum size of a contiguous piece of the heap (words).
    Must be greater than or equal to [Heap_chunk_min].
-   Must be greater than or equal to [Bhsize_wosize (Max_wosize)]. */
-#define Heap_chunk_max (Bhsize_wosize (Max_wosize))
+   Must be greater than or equal to [Whsize_wosize (Max_wosize)]. */
+#define Heap_chunk_max (Whsize_wosize (Max_wosize))
 
 /* Default size increment when growing the heap. (words)
    Must be a multiple of [Page_size / sizeof (value)]. */
-#define Heap_chunk_def (62 * 1024)
+#define Heap_chunk_def (15 * Page_size)
 
 /* Default initial size of the major heap (words);
    same constraints as for Heap_chunk_def. */
-#define Init_heap_def (62 * 1024)
+#define Init_heap_def (15 * Page_size)
 
 
 /* Default speed setting for the major GC.  The heap will grow until
