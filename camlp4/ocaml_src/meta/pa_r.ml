@@ -1935,29 +1935,17 @@ Grammar.extend
       Gramext.action
         (fun (id : 'clty_longident) (loc : int * int) ->
            (MLast.CtCon (loc, id, []) : 'class_type));
-      [Gramext.Stoken ("", "[");
-       Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
-       Gramext.Stoken ("", "]");
-       Gramext.Snterm
+      [Gramext.Snterm
          (Grammar.Entry.obj
-            (clty_longident : 'clty_longident Grammar.Entry.e))],
-      Gramext.action
-        (fun (id : 'clty_longident) _ (t : 'ctyp) _ (loc : int * int) ->
-           (MLast.CtCon (loc, id, [t]) : 'class_type));
-      [Gramext.Stoken ("", "[");
-       Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
-       Gramext.Stoken ("", ",");
+            (clty_longident : 'clty_longident Grammar.Entry.e));
+       Gramext.Stoken ("", "[");
        Gramext.Slist1sep
          (Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e)),
           Gramext.Stoken ("", ","));
-       Gramext.Stoken ("", "]");
-       Gramext.Snterm
-         (Grammar.Entry.obj
-            (clty_longident : 'clty_longident Grammar.Entry.e))],
+       Gramext.Stoken ("", "]")],
       Gramext.action
-        (fun (id : 'clty_longident) _ (tl : 'ctyp list) _ (t : 'ctyp) _
-           (loc : int * int) ->
-           (MLast.CtCon (loc, id, (t :: tl)) : 'class_type));
+        (fun _ (tl : 'ctyp list) _ (id : 'clty_longident) (loc : int * int) ->
+           (MLast.CtCon (loc, id, tl) : 'class_type));
       [Gramext.Stoken ("", "[");
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
        Gramext.Stoken ("", "]"); Gramext.Stoken ("", "->"); Gramext.Sself],

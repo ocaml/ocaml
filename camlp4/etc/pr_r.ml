@@ -758,8 +758,8 @@ and class_signature cs k =
   [ MLast.CtCon _ id [] -> clty_longident id k
   | MLast.CtCon _ id tl ->
       HVbox
-        [: `S LO "["; listws ctyp (S RO ",") tl [: `S RO "]" :];
-           `clty_longident id k :]
+        [: `clty_longident id [: :]; `S LO "[";
+           listws ctyp (S RO ",") tl [: `S RO "]"; k :] :]
   | MLast.CtSig _ cst csf ->
       class_self_type [: `S LR "object" :] cst
         [: `HVbox [: `HVbox [: :]; list class_sig_item csf [: :] :];

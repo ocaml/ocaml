@@ -2776,18 +2776,10 @@ Grammar.extend
       Gramext.action
         (fun (id : 'clty_longident) (loc : int * int) ->
            (Node ("CtCon", [id; List []]) : 'class_type));
-      [Gramext.Stoken ("", "[");
-       Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
-       Gramext.Stoken ("", "]");
-       Gramext.Snterm
+      [Gramext.Snterm
          (Grammar.Entry.obj
-            (clty_longident : 'clty_longident Grammar.Entry.e))],
-      Gramext.action
-        (fun (id : 'clty_longident) _ (t : 'ctyp) _ (loc : int * int) ->
-           (Node ("CtCon", [id; List [t]]) : 'class_type));
-      [Gramext.Stoken ("", "[");
-       Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
-       Gramext.Stoken ("", ",");
+            (clty_longident : 'clty_longident Grammar.Entry.e));
+       Gramext.Stoken ("", "[");
        Gramext.srules
          [[Gramext.Slist1sep
              (Gramext.Snterm
@@ -2799,14 +2791,10 @@ Grammar.extend
              (Grammar.Entry.obj (anti_list : 'anti_list Grammar.Entry.e))],
           Gramext.action
             (fun (a : 'anti_list) (loc : int * int) -> (a : 'anti))];
-       Gramext.Stoken ("", "]");
-       Gramext.Snterm
-         (Grammar.Entry.obj
-            (clty_longident : 'clty_longident Grammar.Entry.e))],
+       Gramext.Stoken ("", "]")],
       Gramext.action
-        (fun (id : 'clty_longident) _ (tl : ast) _ (t : 'ctyp) _
-           (loc : int * int) ->
-           (Node ("CtCon", [id; Cons (t, tl)]) : 'class_type));
+        (fun _ (tl : ast) _ (id : 'clty_longident) (loc : int * int) ->
+           (Node ("CtCon", [id; tl]) : 'class_type));
       [Gramext.Stoken ("", "[");
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
        Gramext.Stoken ("", "]"); Gramext.Stoken ("", "->"); Gramext.Sself],

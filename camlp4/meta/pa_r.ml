@@ -659,11 +659,8 @@ EXTEND
   class_type:
     [ [ "["; t = ctyp; "]"; "->"; ct = SELF ->
           <:class_type< [ $t$ ] -> $ct$ >>
-      | "["; t = ctyp; ","; tl = LIST1 ctyp SEP ","; "]";
-        id = clty_longident ->
-          <:class_type< [ $t$ , $list:tl$ ] $list:id$ >>
-      | "["; t = ctyp; "]"; id = clty_longident ->
-          <:class_type< [ $t$ ] $list:id$ >>
+      | id = clty_longident; "["; tl = LIST1 ctyp SEP ","; "]" ->
+          <:class_type< $list:id$ [ $list:tl$ ] >>
       | id = clty_longident -> <:class_type< $list:id$ >>
       | "object"; cst = OPT class_self_type;
         csf = LIST0 [ csf = class_sig_item; ";" -> csf ]; "end" ->

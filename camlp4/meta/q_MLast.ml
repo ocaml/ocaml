@@ -720,10 +720,8 @@ EXTEND
   class_type:
     [ [ a = anti_ -> a
       | "["; t = ctyp; "]"; "->"; ct = SELF -> Node "CtFun" [t; ct]
-      | "["; t = ctyp; ","; tl = SLIST1 ctyp SEP ","; "]";
-        id = clty_longident ->
-          Node "CtCon" [id; Cons t tl]
-      | "["; t = ctyp; "]"; id = clty_longident -> Node "CtCon" [id; List [t]]
+      | id = clty_longident; "["; tl = SLIST1 ctyp SEP ","; "]" ->
+          Node "CtCon" [id; tl]
       | id = clty_longident -> Node "CtCon" [id; List []]
       | "object"; cst = class_self_type_opt;
         csf = SLIST0 [ csf = class_sig_item; ";" -> csf ]; "end" ->

@@ -994,11 +994,8 @@ EXTEND
       | cs = class_signature -> cs ] ]
   ;
   class_signature:
-    [ [ "["; t = ctyp; ","; tl = LIST1 ctyp SEP ","; "]";
-        id = clty_longident ->
-          <:class_type< [ $t$ , $list:tl$ ] $list:id$ >>
-      | "["; t = ctyp; "]"; id = clty_longident ->
-          <:class_type< [ $t$ ] $list:id$ >>
+    [ [ "["; tl = LIST1 ctyp SEP ","; "]"; id = clty_longident ->
+          <:class_type< $list:id$ [ $list:tl$ ] >>
       | id = clty_longident -> <:class_type< $list:id$ >>
       | "object"; cst = OPT class_self_type; csf = LIST0 class_sig_item;
         "end" ->
