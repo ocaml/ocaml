@@ -123,16 +123,13 @@ bootstrap_sources:
 		 sed 's/# $$Id.*\$$/# Id/' ../../$$i/Makefile | \
 		 sed 's-include ../config-include ../../config-g' | \
 		 sed 's-../boot-../../boot-g' > Makefile; \
-		 sed -e 's/# $$Id.*\$$/# Id/' -e 's/::boot/:::boot/g' \
-		     ../../$$i/Makefile.Mac > Makefile.Mac; \
 		 cp ../../$$i/.depend .; \
-		 cp ../../$$i/Makefile.Mac.depend .) \
 	 done
 	@-for i in $(FDIRS); do \
 		for j in $$i/*.ml*; do \
 			echo ============================================; \
 			echo ocaml_src.new/$$j; \
-			./tools/conv.sh $$j | \
+			OTOP=.. ./tools/conv.sh $$j | \
 			sed 's/$$Id.*\$$/Id/' > ocaml_src.new/$$j; \
 		done; \
 	done

@@ -19,7 +19,7 @@ let gram =
     {Token.func = (fun _ -> failwith "no loaded parsing module");
      Token.using = (fun _ -> ()); Token.removing = (fun _ -> ());
      Token.tparse =
-       (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 1034, 1040)));
+       (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 1033, 1039)));
      Token.text = fun _ -> ""}
 ;;
 
@@ -333,22 +333,22 @@ and kont = pretty Stream.t
 
 let pr_str_item =
   {pr_fun =
-     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11509, 11515)));
+     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11508, 11514)));
    pr_levels = []}
 ;;
 let pr_sig_item =
   {pr_fun =
-     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11564, 11570)));
+     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11563, 11569)));
    pr_levels = []}
 ;;
 let pr_expr =
   {pr_fun =
-     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11615, 11621)));
+     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11614, 11620)));
    pr_levels = []}
 ;;
 let pr_patt =
   {pr_fun =
-     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11666, 11672)));
+     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11665, 11671)));
    pr_levels = []}
 ;;
 let pr_expr_fun_args = ref Extfun.empty;;
