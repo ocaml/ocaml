@@ -1,18 +1,13 @@
-posix.o: posix.c ../../byterun/alloc.h ../../byterun/misc.h \
- ../../byterun/config.h ../../byterun/../config/m.h \
- ../../byterun/../config/s.h ../../byterun/mlvalues.h \
- ../../byterun/callback.h ../../byterun/fail.h ../../byterun/io.h \
- ../../byterun/memory.h ../../byterun/gc.h ../../byterun/major_gc.h \
- ../../byterun/freelist.h ../../byterun/minor_gc.h \
- ../../byterun/roots.h ../../byterun/signals.h ../../byterun/stacks.h \
- ../../byterun/sys.h
-win32.o: win32.c ../../byterun/alloc.h ../../byterun/misc.h \
- ../../byterun/config.h ../../byterun/../config/m.h \
- ../../byterun/../config/s.h ../../byterun/mlvalues.h \
- ../../byterun/fail.h ../../byterun/memory.h ../../byterun/gc.h \
- ../../byterun/major_gc.h ../../byterun/freelist.h \
- ../../byterun/minor_gc.h ../../byterun/roots.h \
- ../../byterun/signals.h ../../byterun/stacks.h ../../byterun/sys.h
+posix.o : posix.c ../../byterun/alloc.h ../../byterun/misc.h ../../byterun/config.h \
+  ../../byterun/../config/m.h ../../byterun/../config/s.h ../../byterun/mlvalues.h \
+  ../../byterun/callback.h ../../byterun/fail.h ../../byterun/io.h ../../byterun/memory.h \
+  ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/freelist.h ../../byterun/minor_gc.h \
+  ../../byterun/roots.h ../../byterun/signals.h ../../byterun/stacks.h ../../byterun/sys.h 
+win32.o : win32.c ../../byterun/alloc.h ../../byterun/misc.h ../../byterun/config.h \
+  ../../byterun/../config/m.h ../../byterun/../config/s.h ../../byterun/mlvalues.h \
+  ../../byterun/callback.h ../../byterun/fail.h ../../byterun/io.h ../../byterun/memory.h \
+  ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/freelist.h ../../byterun/minor_gc.h \
+  ../../byterun/roots.h ../../byterun/signals.h ../../byterun/stacks.h ../../byterun/sys.h 
 condition.cmi: mutex.cmi 
 condition.cmo: mutex.cmi condition.cmi 
 condition.cmx: mutex.cmx condition.cmi 

@@ -13,6 +13,7 @@
 
 /* Thread interface for POSIX 1003.1c threads */
 
+#include <errno.h>
 #include <string.h>
 #include <pthread.h>
 #include <signal.h>

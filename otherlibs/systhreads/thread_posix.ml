@@ -42,38 +42,22 @@ let preempt signal = yield()
 
 (* Initialization of the scheduler *)
 
-#ifdef WIN32
-#define PREEMPT_SIGNAL 1
-#else
-#define PREEMPT_SIGNAL Sys.sigvtalrm
-#endif
-
 let _ =
-  Sys.signal PREEMPT_SIGNAL (Sys.Signal_handle preempt);
+  Sys.signal Sys.sigvtalrm (Sys.Signal_handle preempt);
   thread_initialize()
 
 (* Wait functions *)
 
-#ifdef WIN32
-external delay: float -> unit = "caml_thread_delay"
-#else
 let delay time = Unix.select [] [] [] time; ()
-#endif
 
 let wait_read fd = ()
 let wait_write fd = ()
 
-#ifdef WIN32
-let wait_timed_read fd delay = true
-let wait_timed_write fd delay = true
-let select rd wr ex delay = invalid_arg "Thread.select: not implemented"
-#else
 let wait_timed_read fd d =
   match Unix.select [fd] [] [] d with ([], _, _) -> false | (_, _, _) -> true
 let wait_timed_write fd d =
   match Unix.select [] [fd] [] d with (_, [], _) -> false | (_, _, _) -> true
 let select = Unix.select
-#endif
 
 let wait_pid p = Unix.waitpid [] p
 

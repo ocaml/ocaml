@@ -3,7 +3,6 @@ include ../../config/Makefile.nt
 # Compilation options
 CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc -I ..\..\stdlib -I ..\win32unix
 CAMLOPT=..\..\boot\ocamlrun ..\..\ocamlopt -I ..\..\stdlib -I ..\win32unix
-CPPFLAGS=/DWIN32
 
 BYTECODE_C_OBJS=win32_b.obj
 NATIVECODE_C_OBJS=win32_n.obj
@@ -38,6 +37,9 @@ threads.cma: $(THREAD_OBJS)
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx)
 
+thread.ml: thread_win32.ml
+	cp thread_win32.ml thread.ml
+
 partialclean:
 	rm -f *.cm*
 
@@ -52,7 +54,7 @@ install:
 
 installopt:
 
-.SUFFIXES: .ml .mli .mlp .cmo .cmi .cmx
+.SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
@@ -62,14 +64,6 @@ installopt:
 
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
-
-.mlp.ml:
-	@rm -f $*.ml
-	$(CPP) $(CPPFLAGS) $*.mlp > $*.ml
-	@attrib +r $*.ml
-
-thread.ml: thread.mlp
-condition.ml: condition.mlp
 
 depend:
 #	gcc -MM -I../../byterun *.c > .depend

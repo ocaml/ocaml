@@ -2,7 +2,6 @@ include ../../config/Makefile
 
 CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../stdlib -I ../unix
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../unix
-CPP=/lib/cpp -P -traditional
 
 BYTECODE_C_OBJS=posix_b.o
 NATIVECODE_C_OBJS=posix_n.o
@@ -37,6 +36,9 @@ threads.cma: $(THREAD_OBJS)
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx)
 
+thread.ml: thread_posix.ml
+	ln -s thread_posix.ml thread.ml
+
 partialclean:
 	rm -f *.cm*
 
@@ -51,7 +53,7 @@ install:
 
 installopt:
 
-.SUFFIXES: .ml .mli .mlp .cmo .cmi .cmx
+.SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
@@ -62,14 +64,7 @@ installopt:
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
-.mlp.ml:
-	@rm -f $*.ml
-	$(CPP) $(CPPFLAGS) $*.mlp > $*.ml
-	@chmod -w $*.ml
-
-thread.ml: thread.mlp
-
-depend:
+depend: $(GENFILES)
 	gcc -MM -I../../byterun *.c > .depend
 	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
 
