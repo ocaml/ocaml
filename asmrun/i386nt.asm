@@ -23,6 +23,7 @@
         EXTERN  _caml_apply2: PROC
         EXTERN  _caml_apply3: PROC
         EXTERN  _caml_program: PROC
+        EXTERN  _array_bound_error: PROC
         EXTERN  _young_limit: DWORD
         EXTERN  _young_ptr: DWORD
         EXTERN	_caml_bottom_of_stack: DWORD
@@ -250,6 +251,21 @@ _callback3_exn:
         mov	ecx, [esp+32]   ; third argument 
         mov	esi, offset _caml_apply3   ; code pointer 
         jmp	L106
+
+        PUBLIC  _caml_array_bound_error
+        ALIGN   4
+_caml_array_bound_error:
+    ; Empty the floating-point stack
+        ffree   st(0)
+        ffree   st(1)
+        ffree   st(2)
+        ffree   st(3)
+        ffree   st(4)
+        ffree   st(5)
+        ffree   st(6)
+        ffree   st(7)
+    ; Branch to array_bound_error
+        jmp     _array_bound_error
 
         .DATA
         PUBLIC  _system__frametable
