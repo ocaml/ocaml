@@ -472,7 +472,7 @@ echo "BIGNUM_ARCH=$bignum_arch" >> Makefile
 # Determine the location of X include files and libraries
 
 x11_include="not found"
-x11_lib="not found"
+x11_link="not found"
 
 for dir in \
   /usr/X11R6/include /usr/X11R5/include /usr/X11R4/include \
@@ -505,69 +505,78 @@ do
   if test -f $dir/libX11.a || \
      test -f $dir/libX11.so || \
      test -f $dir/libX11.sa; then
-    x11_lib=$dir
+    x11_link="-cclib -L$dir -cclib -lX11"
     break
   fi
 done
 
 
-if test "$x11_include" = "not found" || test "$x11_lib" = "not found"
+if test "$x11_include" = "not found" || test "$x11_link" = "not found"
 then
   echo "X11 not found, the \"graph\" library will not be supported"
 else
-  x11_link="-cclib -L$x11_lib -cclib -lX11"
   echo "X11_INCLUDES=$x11_include" >> Makefile
-  echo "X11_LIB=$x11_lib" >> Makefile
   echo "X11_LINK=$x11_link" >> Makefile
   echo "Location of X11 include files: $x11_include"
-  echo "Location of X11 libraries: $x11_lib"
-  echo "Link-time options for the \"graph\" library: $x11_link"
+  echo "Options for linking with X11: $x11_link"
   otherlibraries="$otherlibraries graph"
 fi
 
 # Determine the location of POSIX threads
 
 pthreads_include="not found"
-pthreads_lib="not found"
+pthreads_link="not found"
 
-for dir in \
-  /usr/include /usr/local/include /usr/local/pthreads/include \
-  /usr/local/lib/pthreads/include
-do
-  if test -f $dir/pthread.h; then
-    pthreads_include=$dir
-    break
-  fi
-done
+case "$host" in
+  alpha-*-osf*)
+    # Dec OSF/1 has its own non-standard-but-quite threads
+    pthreads_include=/usr/include
+    pthreads_link="-cclib -lpthreads -cclib -lmach -cclib -lc_r"
+    pthreads_ld="-lpthreads -lmach -lc_r"
+    ;;
+  *)
+    for dir in \
+      /usr/include /usr/local/include /usr/local/pthreads/include \
+      /usr/local/lib/pthreads/include
+    do
+      if test -f $dir/pthread.h; then
+        pthreads_include=$dir
+        break
+      fi
+    done
+    for dir in \
+      /usr/lib /usr/local/lib /usr/local/pthreads/lib /usr/local/lib/pthreads
+    do
+      if test -f $dir/libpthread.a || \
+         test -f $dir/libpthread.so || \
+         test -f $dir/libpthread.sa; then
+        pthreads_link="-cclib -L$dir -cclib -lpthread"
+        pthreads_ld="-L$dir -lpthread"
+        break
+      fi
+    done
+    ;;
+esac
 
-for dir in \
-  /usr/lib /usr/local/lib /usr/local/pthreads/lib /usr/local/lib/pthreads
-do
-  if test -f $dir/libpthreads.a || \
-     test -f $dir/libpthreads.so || \
-     test -f $dir/libpthreads.sa; then
-    pthreads_lib=$dir
-    break
-  fi
-done
-
-if test "$pthreads_include" = "not found" || test "$pthreads_lib" = "not found"
+if test "$pthreads_include" = "not found" || \
+   test "$pthreads_link" = "not found"
 then
   echo "POSIX threads not found, the \"threads\" library will not be supported"
 else
-  case "$host" in
-    alpha-*-osf*)
-      pthreads_link="-cclib -lpthreads -cclib -lmach -cclib -lc_r";;
-    *)
-      pthreads_link="-cclib -L$pthreads_lib -cclib -lpthreads";;
-  esac
   echo "PTHREADS_INCLUDES=$pthreads_include" >> Makefile
-  echo "PTHREADS_LIB=$pthreads_lib" >> Makefile
   echo "PTHREADS_LINK=$pthreads_link" >> Makefile
   echo "Location of POSIX threads include files: $pthreads_include"
-  echo "Location of POSIX threads libraries: $pthreads_lib"
-  echo "Link-time options for the \"threads\" library: $pthreads_link"
+  echo "Options for linking with POSIX threads: $pthreads_link"
   otherlibraries="$otherlibraries threads"
+
+  # Test for pthread_yield
+  if sh hasgot $pthreads_ld pthread_yield; then
+    echo "pthread_yield() found"
+    echo "#define HAS_PTHREAD_YIELD" >> s.h
+  elif sh hasgot $pthreads_ld thr_yield; then
+    echo "thr_yield() found"
+    echo "#define HAS_THR_YIELD" >> s.h
+  fi
 fi
 
 # Finish generated files
