@@ -88,6 +88,8 @@ let main () =
              "<opt>  Pass option <opt> to the C compiler and linker";
        "-compact", Arg.Clear optimize_for_speed,
              " Optimize code size rather than speed";
+       "-dtypes", Arg.Set save_types,
+             " Save type information in <filename>.types";
        "-i", Arg.Set print_types, " Print the types";
        "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
              "<dir>  Add <dir> to the list of include directories";
@@ -126,7 +128,6 @@ let main () =
        "-rectypes", Arg.Set recursive_types,
              " Allow arbitrary recursive types";
        "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";
-       "-stypes", Arg.Set save_types, " Save types in <filename>.types";
        "-thread", Arg.Set thread_safe, " Use thread-safe standard library";
        "-unsafe", Arg.Set fast,
              " No bounds checking on array and string access";

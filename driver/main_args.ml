@@ -22,6 +22,7 @@ module Make_options (F :
      val _custom : unit -> unit
      val _dllib : string -> unit
      val _dllpath : string -> unit
+     val _dtypes : unit -> unit
      val _g : unit -> unit
      val _i : unit -> unit
      val _I : string -> unit
@@ -41,7 +42,6 @@ module Make_options (F :
      val _pp : string -> unit
      val _principal : unit -> unit
      val _rectypes : unit -> unit
-     val _stypes : unit -> unit
      val _thread : unit -> unit
      val _unsafe : unit -> unit
      val _use_prims : string -> unit
@@ -74,6 +74,7 @@ struct
            "<lib>  Use the dynamically-loaded library <lib>";
     "-dllpath", Arg.String F._dllpath,
            "<dir>  Add <dir> to the run-time search path for shared libraries";
+    "-dtypes", Arg.Unit F._dtypes, " Save type information in <filename>.types";
     "-g", Arg.Unit F._g, " Save debugging information";
     "-i", Arg.Unit F._i, " Print the types";
     "-I", Arg.String F._I,
@@ -107,7 +108,6 @@ struct
     "-principal", Arg.Unit F._principal,
            " Check principality of type inference";
     "-rectypes", Arg.Unit F._rectypes, " Allow arbitrary recursive types";
-    "-stypes", Arg.Unit F._stypes, " Save types in <filename>.types";
     "-thread", Arg.Unit F._thread, " Use thread-safe standard library";
     "-unsafe", Arg.Unit F._unsafe,
            " No bounds checking on array and string access";

@@ -52,6 +52,7 @@ module Options = Main_args.Make_options (struct
   let _custom = option "-custom"
   let _dllib = option_with_arg "-dllib"
   let _dllpath = option_with_arg "-dllpath"
+  let _dtypes = option "-dtypes"
   let _g = option "-g"
   let _i = option "-i"
   let _I s = option_with_arg "-I" s
@@ -71,7 +72,6 @@ module Options = Main_args.Make_options (struct
   let _pp s = incompatible "-pp"
   let _principal = option "-principal"
   let _rectypes = option "-rectypes"
-  let _stypes = option "-stypes"
   let _thread () = ismultithreaded := "-thread"; option "-thread" ()
   let _unsafe = option "-unsafe"
   let _use_prims s = option_with_arg "-use-prims" s

@@ -15,15 +15,15 @@
 (* Recording and dumping (partial) type information *)
 
 (*
-  Saving and dumping type information.
   We record all types in a list as they are created.
   This means we can dump type information even if type inference fails,
   which is extremely important, since type information is most
   interesting in case of errors.
 *)
 
-(* TO DO:
-   (?) reset type names between toplevel phrases
+(*
+  TO DO:
+   - (?) reset type names between toplevel phrases
 *)
 
 open Format;;

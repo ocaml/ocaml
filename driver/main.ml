@@ -80,6 +80,7 @@ module Options = Main_args.Make_options (struct
   let _custom = set custom_runtime
   let _dllib s = dllibs := Misc.rev_split_words s @ !dllibs
   let _dllpath s = dllpaths := !dllpaths @ [s]
+  let _dtypes = set save_types
   let _g = set debug
   let _i = set print_types
   let _I s = include_dirs := s :: !include_dirs
@@ -100,7 +101,6 @@ module Options = Main_args.Make_options (struct
   let _pp s = preprocessor := Some s
   let _principal = set principal
   let _rectypes = set recursive_types
-  let _stypes = set save_types
   let _thread = set thread_safe
   let _unsafe = set fast
   let _use_prims s = use_prims := s
