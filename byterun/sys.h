@@ -21,9 +21,9 @@
 #define NO_ARG Val_int(0)
 
 CAMLextern void sys_error (value);
-extern void sys_init (char **);
+extern void sys_init (char * exe_name, char ** argv);
 CAMLextern value sys_exit (value);
 
-extern char ** caml_main_argv;
+extern char * caml_exe_name;
 
 #endif /* _sys_ */

@@ -220,15 +220,24 @@ CAMLprim value sys_getenv(value var)
   return copy_string(res);
 }
 
-char ** caml_main_argv;
+char * caml_exe_name;
+static char ** caml_main_argv;
 
 CAMLprim value sys_get_argv(value unit)
 {
-  return copy_string_array((char const **) caml_main_argv);
+  CAMLparam0 ();   /* unit is unused */
+  CAMLlocal3 (exe_name, argv, res);
+  exe_name = copy_string(caml_exe_name);
+  argv = copy_string_array((char const **) caml_main_argv);
+  res = alloc_small(2, 0);
+  Field(res, 0) = exe_name;
+  Field(res, 1) = argv;
+  CAMLreturn(res);
 }
 
-void sys_init(char **argv)
+void sys_init(char * exe_name, char **argv)
 {
+  caml_exe_name = exe_name;
   caml_main_argv = argv;
 }
 

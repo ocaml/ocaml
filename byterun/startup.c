@@ -317,6 +317,11 @@ CAMLexport void caml_main(char **argv)
   struct channel * chan;
   value res;
   char * shared_lib_path, * shared_libs, * req_prims;
+  char * exe_name;
+#ifdef __linux__
+  static char proc_self_exe[256];
+  int retcode;
+#endif
 
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
@@ -330,12 +335,22 @@ CAMLexport void caml_main(char **argv)
 #endif
   parse_camlrunparam();
   pos = 0;
-  fd = attempt_open(&argv[0], &trail, 0);
+  exe_name = argv[0];
+#ifdef __linux__
+  /* Recover executable name from /proc/self/exe, much more reliable */
+  retcode = readlink("/proc/self/exe", proc_self_exe, sizeof(proc_self_exe));
+  if (retcode != -1 && retcode < sizeof(proc_self_exe)) {
+    proc_self_exe[retcode] = 0;
+    exe_name = proc_self_exe;
+  }
+#endif
+  fd = attempt_open(&exe_name, &trail, 0);
   if (fd < 0) {
     pos = parse_command_line(argv);
     if (argv[pos] == 0)
       fatal_error("No bytecode file specified.\n");
-    fd = attempt_open(&argv[pos], &trail, 1);
+    exe_name = argv[pos];
+    fd = attempt_open(&exe_name, &trail, 1);
     switch(fd) {
     case FILE_NOT_FOUND:
       fatal_error_arg("Fatal error: cannot find file %s\n", argv[pos]);
@@ -381,7 +396,7 @@ CAMLexport void caml_main(char **argv)
   oldify_mopup ();
   /* Initialize system libraries */
   init_exceptions();
-  sys_init(argv + pos);
+  sys_init(exe_name, argv + pos);
 #ifdef _WIN32
   /* Start a thread to handle signals */
   if (getenv("CAMLSIGPIPE"))
@@ -435,7 +450,7 @@ CAMLexport void caml_startup_code(code_t code, asize_t code_size,
   oldify_mopup ();
   /* Run the code */
   init_exceptions();
-  sys_init(argv);
+  sys_init("", argv);
   res = interprete(start_code, code_size);
   if (Is_exception_result(res))
     fatal_uncaught_exception(Extract_exception(res));

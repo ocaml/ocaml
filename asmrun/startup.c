@@ -113,6 +113,11 @@ extern void init_signals (void);
 
 void caml_main(char **argv)
 {
+  char * exe_name;
+#ifdef __linux__
+  static char proc_self_exe[256];
+  int retcode;
+#endif
   value res;
 
   init_ieee_floats();
@@ -125,7 +130,16 @@ void caml_main(char **argv)
            percent_free_init, max_percent_free_init);
   init_atoms();
   init_signals();
-  sys_init(argv);
+  exe_name = argv[0];
+#ifdef __linux__
+  /* Recover executable name from /proc/self/exe, much more reliable */
+  retcode = readlink("/proc/self/exe", proc_self_exe, sizeof(proc_self_exe));
+  if (retcode != -1 && retcode < sizeof(proc_self_exe)) {
+    proc_self_exe[retcode] = 0;
+    exe_name = proc_self_exe;
+  }
+#endif
+  sys_init(exe_name, argv);
   res = caml_start_program();
   if (Is_exception_result(res))
     fatal_uncaught_exception(Extract_exception(res));

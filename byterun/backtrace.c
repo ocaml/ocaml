@@ -101,7 +101,7 @@ static value read_debug_info(void)
   uint32 num_events, orig, i;
   value evl, l;
 
-  exec_name = caml_main_argv[0];
+  exec_name = caml_exe_name;
   fd = attempt_open(&exec_name, &trail, 1);
   if (fd < 0) CAMLreturn(Val_false);
   read_section_descriptors(fd, &trail);

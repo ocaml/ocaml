@@ -16,9 +16,9 @@
 (* System interface *)
 
 external get_config: unit -> string * int = "sys_get_config"
-external get_argv: unit -> string array = "sys_get_argv"
+external get_argv: unit -> string * string array = "sys_get_argv"
 
-let argv = get_argv()
+let (executable_name, argv) = get_argv()
 let (os_type, word_size) = get_config()
 let max_array_length = (1 lsl (word_size - 10)) - 1;;
 let max_string_length = word_size / 8 * max_array_length - 1;;

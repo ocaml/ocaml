@@ -21,6 +21,9 @@ val argv : string array
    The following elements are the command-line arguments
    given to the program. *)
 
+val executable_name : string
+(** The name of the file containing the executable currently running. *)
+
 external file_exists : string -> bool = "sys_file_exists"
 (** Test if a file with the given name exists. *)
 
