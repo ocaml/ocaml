@@ -121,3 +121,6 @@ and modtype_declaration =
     Tmodtype_abstract
   | Tmodtype_manifest of module_type
 
+(* Iteration on types *)
+
+val iter_type_expr: (type_expr -> unit) -> type_expr -> unit

@@ -484,8 +484,11 @@ let rec type_exp env sexp =
             let ty = Typetexp.transl_simple_type env false sty in
             (type_expect env sarg ty, ty)
 	| (None, Some sty') ->
-            let ty' = Typetexp.transl_simple_type env false sty' in
-            let ty = enlarge_type env (Typetexp.type_variable_list ()) ty' in
+            let (ty', force) =
+              Typetexp.transl_simple_type_delayed env sty'
+            in
+            let ty = enlarge_type env ty' in
+            force ();
             let arg = type_exp env sarg in
             begin try Ctype.unify env arg.exp_type ty with Unify trace ->
               raise(Error(sarg.pexp_loc,
@@ -493,12 +496,17 @@ let rec type_exp env sexp =
             end;
             (arg, ty')
 	| (Some sty, Some sty') ->
-            let ty = Typetexp.transl_simple_type env false sty in
-            let ty' = Typetexp.transl_simple_type env false sty' in
-	    begin try subtype env (Typetexp.type_variable_list ()) ty ty' with
-	      Subtype (tr1, tr2) ->
-	        raise(Error(sexp.pexp_loc, Not_subtype(tr1, tr2)))
-	    end;
+            let (ty, force) =
+              Typetexp.transl_simple_type_delayed env sty
+            and (ty', force') =
+              Typetexp.transl_simple_type_delayed env sty'
+            in
+            begin try
+              let force'' = subtype env ty ty' in
+              force (); force' (); force'' ()
+            with Subtype (tr1, tr2) ->
+	      raise(Error(sexp.pexp_loc, Not_subtype(tr1, tr2)))
+            end;
 	    (type_expect env sarg ty, ty')
       in
       { exp_desc = arg.exp_desc;

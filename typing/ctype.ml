@@ -17,7 +17,34 @@ open Misc
 open Asttypes
 open Types
 
-exception Unify of (type_expr * type_expr) list
+(******* Notes
+
+   - As much sharing as possible should be kept : it makes types
+     smaller and better abbreviated.
+     When necessary, some sharing can be lost. Types will still be
+     printed correctly (XXX a faire...), and types defined for a class
+     do not depend on sharing thanks to constrained abbreviations (XXX
+     a faire...).
+   - All nodes of a type must have a level : that way, one know
+     whether a node must be duplicated or not when instantiating a
+     type.
+   - Levels of a type must be decreasing.
+   - The level of a type constructor must be superior to the binding
+     time of its path.
+
+*)
+
+(****** A faire
+
+   - Revoir affichage des types.
+   - Abreviations avec contraintes.
+   - Revoir [copy].
+   - Types recursifs sans limitation.
+   - #-type implementes comme de vraies abreviations.
+   - Effacer les abreviations memorisees plus tot ?
+
+*)
+
 exception Subtype of
         (type_expr * type_expr) list * (type_expr * type_expr) list
 
@@ -47,15 +74,11 @@ let rec repr = function
       r
   | t -> t
 
-let rec repr2 = function                (* No path compression *)
-                                        (* during unification *)
-    {desc = Tlink ty} ->
-      repr2 ty
-  | t -> t
-
 let none = newty (Ttuple [])                (* Clearly ill-formed type *)
 
 (* --- *)
+
+(**** Object field manipulation. ****)
 
 let flatten_fields ty =
   let rec flatten l ty =
@@ -94,59 +117,40 @@ let associate_fields fields1 fields2 =
   in let sort = Sort.list (fun (n, _) (n', _) -> n < n') in
   associate [] [] [] (sort fields1, sort fields2)
 
-(* Check whether an object is open *)
+(**** Check whether an object is open ****)
 
-let rec opened ty =
+(* XXX Faudra penser a eventuellement expanser l'abreviation *)
+let rec opened_object ty =
   match (repr ty).desc with
-    Tfield(_, _, t) -> opened t
+    Tobject (t, _)  -> opened_object t
+  | Tfield(_, _, t) -> opened_object t
   | Tvar            -> true
-  | Tnil            -> false
-  | _               -> fatal_error "Ctype.opened"
+  | _               -> false
 
-let opened_object ty =
-  match (repr ty).desc with
-    Tobject (ty', _)  -> opened ty'
-  | Tconstr (_, _, _) -> false
-  | _                 -> fatal_error "Ctype.opened_object"
+(**** Type generalization ****)
 
-(* Type generalization *)
-
+(* XXX Probablement pas le bon endroit pour effacer l'abreviation *)
 let rec generalize ty =
   let ty = repr ty in
   if ty.level > !current_level then begin
     ty.level <- generic_level;
-    match ty.desc with
-      Tvar               -> ()
-    | Tarrow(t1, t2)     -> generalize t1; generalize t2
-    | Ttuple tl          -> List.iter generalize tl
-    | Tconstr(_, tl, ab) -> ab := []; List.iter generalize tl
-    | Tobject(f, {contents = Some (_, p)})
-                         -> generalize f; List.iter generalize p
-    | Tobject(f, _)      -> generalize f
-    | Tfield(_, t1, t2)  -> generalize t1; generalize t2
-    | Tnil               -> ()
-    | Tlink _            -> fatal_error "Ctype.generalize"
+    begin match ty.desc with
+      Tconstr(_, tl, ab) -> ab := []
+    | _                  -> ()
+    end;
+    iter_type_expr generalize ty
   end
 
 let rec make_nongen ty =
   let ty = repr ty in
   if ty.level > !current_level then begin
     ty.level <- !current_level;
-    match ty.desc with
-      Tvar              -> ()
-    | Tarrow(t1, t2)    ->  make_nongen t1; make_nongen t2
-    | Ttuple tl         -> List.iter make_nongen tl
-    | Tconstr(p, tl, _) -> List.iter make_nongen tl
-    | Tobject(f, {contents = Some (_, p)})
-                        -> make_nongen f; List.iter make_nongen p
-    | Tobject(f, _)      -> make_nongen f
-    | Tfield(_, t1, t2) -> make_nongen t1; make_nongen t2
-    | Tnil              -> ()
-    | Tlink _           -> fatal_error "Ctype.make_nongen"
+    iter_type_expr make_nongen ty
   end
 
-(* Remove abbreviations from generalized types *)
+(**** Remove abbreviations from generalized types ****)
 
+(* XXX Plutot ne jamais laisser trainer d'abbrev ? *)
 let visited = ref ([] : type_expr list)
 
 let remove_abbrev ty =
@@ -170,7 +174,11 @@ let remove_abbrev ty =
     visited := []; remove ty; visited := []
 
 
-(* Taking instances of type schemes *)
+                              (*******************)
+                              (*  Instantiation  *)
+                              (*******************)
+
+(* XXX HUGE simplification ? *) 
 
 type 'a visited = Zero | One | Many of 'a
 
@@ -314,28 +322,33 @@ let instance_class cl =
   inst_subst := [];
   (params, args, vars, self)
 
-(* Unification *)
+                              (*****************)
+                              (*  Unification  *)
+                              (*****************)
+
+
+(**** Unification errors ****)
+
+exception Unify of (type_expr * type_expr) list
+
+(**** Lower the levels of a type ****)
 
 let rec update_level level ty =
-  let ty = repr2 ty in
+  let ty = repr ty in
   if ty.level > level then begin
     ty.level <- level;
-    match ty.desc with
-      Tvar               -> ()
-    | Tarrow(t1,t2)      -> update_level level t1; update_level level t2
-    | Ttuple(ty_list)    -> List.iter (update_level level) ty_list
-    | Tconstr(_, tl, _)  -> List.iter (update_level level) tl
-    | Tobject(f, {contents = Some (_, p)})
-                         -> update_level level f;
-                            List.iter (update_level level) p
-    | Tobject (f, _)     -> update_level level f
-    | Tfield(_, t1, t2)  -> update_level level t1; update_level level t2
-    | Tnil               -> ()
-    | Tlink _            -> fatal_error "Ctype.update_level"
+    begin match ty.desc with
+      Tconstr(p, tl, _)  when level < Path.binding_time p -> raise (Unify [])
+    | _ -> ()
+    end;
+    iter_type_expr (update_level level) ty
   end
+
+(**** Abbreviation expansion ****)
 
 exception Cannot_expand
 
+(* Search whether the abbreviation has been memorized. *)
 let rec find_expans p1 =
   function
     [] ->
@@ -346,6 +359,8 @@ let rec find_expans p1 =
       else
         find_expans p1 l
 
+(* Expand an abbreviation.
+   The expansion is memorized. *)
 let expand_abbrev env path args abbrev level =
   match find_expans path !abbrev with
     Some ty ->
@@ -367,6 +382,7 @@ let expand_abbrev env path args abbrev level =
       | _ ->
           raise Cannot_expand
 
+(* Recursively expand the root of a type. *)
 let rec expand_root env ty =
   let ty = repr ty in
   match ty.desc with
@@ -379,6 +395,9 @@ let rec expand_root env ty =
   | _ ->
       ty
 
+(* Recursively expand the root of a type.
+   Also expand #-types. *)
+(* XXX This is a hack ! *)
 let rec full_expand env ty =
   let ty = repr (expand_root env ty) in
   match ty.desc with
@@ -387,6 +406,9 @@ let rec full_expand env ty =
   | _ ->
       ty
 
+(* Check whether the abbreviation expands to a well-defined type.
+   During the typing of a class, abbreviations for correspondings
+   types expand to non-generic types. *)
 let generic_abbrev env path =
   try
     let decl = Env.find_type path env in
@@ -399,54 +421,9 @@ let generic_abbrev env path =
     Not_found ->
       false
 
-let check_level env level ty =
-  let visited = ref [] in
-  let rec check ty =
-    let ty = repr ty in
-    match ty.desc with
-      Tvar ->
-        ()
-    | Tarrow(t1, t2) ->
-        check t1; check t2
-    | Ttuple tl ->
-        List.iter check tl
-    | Tconstr(p, [], abbrev) ->
-        if level < Path.binding_time p then begin
-          if not (List.memq ty !visited) then begin
-            visited := ty::!visited;
-            let ty' =
-              try expand_abbrev env p [] abbrev ty.level with
-                Cannot_expand -> raise (Unify [])
-            in
-            check ty'
-          end;
-        end
-    | Tconstr(p, tl, abbrev) ->
-        if not (List.memq ty !visited) then begin
-          visited := ty::!visited;
-          if level < Path.binding_time p then begin
-            let ty' =
-              try expand_abbrev env p tl abbrev ty.level with
-                Cannot_expand -> raise (Unify [])
-            in
-            check ty'
-          end;
-          List.iter check tl
-        end
-    | Tobject(f, _) ->
-        if not (List.memq ty !visited) then begin
-          visited := ty::!visited;
-          check f
-        end
-    | Tfield(_, t1, t2) ->
-        check t1; check t2
-    | Tnil ->
-        ()
-    | Tlink _ ->
-        fatal_error "Ctype.check_level"
-  in
-    check ty
+(**** Occur check ****)
 
+(* XXX A supprimer *)
 let occur env ty0 ty =
   let visited = ref ([] : type_expr list) in
   let rec occur_rec ty =
@@ -470,17 +447,38 @@ let occur env ty0 ty =
             occur_rec ty'
           with Cannot_expand -> ()
         end
-    | Tobject (_, _) ->
+    | Tobject (_, _) | Tfield (_, _, _) | Tnil ->
         ()
-    | _ (* Tfield (_, _, _) | Tnil | Tlink _ *) ->
+    | Tlink _ ->
         fatal_error "Ctype.occur"
   in
     occur_rec ty
 
+(**** Transform error trace ****)
+
+let expand_trace env trace =
+  List.fold_right
+    (fun (t1, t2) rem ->
+       (repr t1, full_expand env t1)::(repr t2, full_expand env t2)::rem)
+    trace []
+
+let rec filter_trace =
+  function
+    (t1, t1')::(t2, t2')::rem ->
+      let rem' = filter_trace rem in
+      if (t1 == t1') & (t2 == t2') then
+        rem'
+      else
+        (t1, t1')::(t2, t2')::rem
+  | _ ->
+      []
+
+(**** Unification ****)
+
 let rec unify_rec env a1 a2 t1 t2 =     (* Variables and abbreviations *)
   if t1 == t2 then () else
-  let t1 = repr2 t1 in
-  let t2 = repr2 t2 in
+  let t1 = repr t1 in
+  let t2 = repr t2 in
   if t1 == t2 then () else
   try
     match (t1.desc, t2.desc) with
@@ -488,17 +486,17 @@ let rec unify_rec env a1 a2 t1 t2 =     (* Variables and abbreviations *)
          update_level t1.level t2;
          begin match a2 with
            None    ->
-             occur env t1 t2; check_level env t1.level t2; t1.desc <- Tlink t2
+             occur env t1 t2; t1.desc <- Tlink t2
          | Some l2 ->
-             occur env t1 l2; check_level env t1.level l2; t1.desc <- Tlink l2
+             occur env t1 l2; t1.desc <- Tlink l2
          end
     | (_, Tvar) ->
          update_level t2.level t1;
          begin match a1 with
            None    ->
-             occur env t2 t1; check_level env t2.level t1; t2.desc <- Tlink t1
+             occur env t2 t1; t2.desc <- Tlink t1
          | Some l1 ->
-             occur env t2 l1; check_level env t2.level l1; t2.desc <- Tlink l1
+             occur env t2 l1; t2.desc <- Tlink l1
          end
     | (Tconstr (p1, tl1, abbrev1), Tconstr (p2, tl2, abbrev2))
             when Path.same p1 p2 ->
@@ -582,6 +580,10 @@ and unify_core env a1 a2 t1 t2 =        (* Other cases *)
           Some (_, va::_) when (repr va).desc = Tvar -> ()
         | _                                          -> nm2 := !nm1
         end
+    | (Tfield _, Tfield _) ->
+        unify_fields env t1 t2
+    | (Tnil, Tnil) ->
+        ()
     | (_, _) ->
         raise (Unify [])
   with
@@ -599,16 +601,14 @@ and unify_list env tl1 tl2 =
     raise (Unify []);
   List.iter2 (unify_rec env None None) tl1 tl2
 
-and unify_fields env ty1 ty2 =
+and unify_fields env ty1 ty2 =          (* Optimization *)
   let (fields1, rest1) = flatten_fields ty1
   and (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
   let va = newvar () in
     begin match rest1.desc with
       Tvar ->
-        let nr = build_fields miss2 va in
-        update_level rest1.level nr;
-        rest1.desc <- Tlink nr
+        unify_rec env None None rest1 (build_fields miss2 va)
     | Tnil ->
         if miss2 <> [] then raise (Unify []);
         va.desc <- Tlink {desc = Tnil; level = va.level}
@@ -617,9 +617,7 @@ and unify_fields env ty1 ty2 =
     end;
     begin match rest2.desc with
       Tvar ->
-        let nr = build_fields miss1 va in
-        update_level rest2.level nr;
-        rest2.desc <- Tlink nr
+        unify_rec env None None (build_fields miss1 va) rest2
     | Tnil ->
         if miss1 <> [] then raise (Unify []);
         va.desc <- Tlink {desc = Tnil; level = va.level}
@@ -627,23 +625,6 @@ and unify_fields env ty1 ty2 =
         fatal_error "Ctype.unify_fields (2)"
     end;
     List.iter (fun (t1, t2) -> unify_rec env None None t1 t2) pairs
-
-let expand_trace env trace =
-  List.fold_right
-    (fun (t1, t2) rem ->
-       (t1, full_expand env t1)::(t2, full_expand env t2)::rem)
-    trace []
-
-let rec filter_trace =
-  function
-    (t1, t1')::(t2, t2')::rem ->
-      let rem' = filter_trace rem in
-      if (t1 == t1') & (t2 == t2') then
-        rem'
-      else
-        (t1, t1')::(t2, t2')::rem
-  | _ ->
-      []
 
 let unify env ty1 ty2 =
   try
@@ -656,6 +637,9 @@ let unify env ty1 ty2 =
     | _ ->
         fatal_error "Ctype.unify"
 
+(**** Special cases of unification ****)
+
+(* Unify [t] and ['a -> 'b]. Return ['a] and ['b]. *)
 let rec filter_arrow env t =
   let t = repr t in
   match t.desc with
@@ -676,6 +660,7 @@ let rec filter_arrow env t =
   | _ ->
       raise (Unify [])
 
+(* Used by [filter_method]. *)
 let rec filter_method_field name ty =
   let ty = repr ty in
   match ty.desc with
@@ -693,11 +678,12 @@ let rec filter_method_field name ty =
   | _ ->
       raise (Unify [])
 
+(* Unify [ty] and [< name : 'a; .. >]. Return ['a]. *)
 let rec filter_method env name ty =
   let ty = repr ty in
   match ty.desc with
     Tvar ->
-      let ty1 = newvar ()in
+      let ty1 = newvar () in
       let ty' = newobj ty1 in
       update_level ty.level ty';
       ty.desc <- Tlink ty';
@@ -713,47 +699,37 @@ let rec filter_method env name ty =
   | _ ->
       raise (Unify [])
 
-(* Matching between type schemes *)
+(**** Matching between type schemes ****)
 
+(* XXX This is not really an occur check !!! *)
 let moregen_occur env ty0 ty =
   let visited = ref [] in
   let rec occur_rec ty =
     let ty = repr ty in
-    match ty.desc with
-      Tvar ->
-        (* ty0 has level = !current_level iff it is generic
-           in the original type scheme. In this case, it can be freely
-           instantiated. Otherwise, ty0 is not generic
-           and cannot be instantiated by a type that contains
-           generic variables. *)
-        if ty.level = generic_level & ty0.level < !current_level
-        then raise (Unify [])
-    | Tarrow(t1, t2) ->
-        occur_rec t1; occur_rec t2
-    | Ttuple tl ->
-        List.iter occur_rec tl
-    | Tconstr(p, tl, abbrev) ->
-        if not (List.memq ty !visited) then begin
-          visited := ty::!visited;
-          try
+    if not (List.memq ty !visited) then begin
+      visited := ty::!visited;
+      begin match ty.desc with
+        Tvar when ty.level = generic_level & ty0.level < !current_level ->
+          (* ty0 has level = !current_level iff it is generic
+             in the original type scheme. In this case, it can be freely
+             instantiated. Otherwise, ty0 is not generic
+             and cannot be instantiated by a type that contains
+             generic variables. *)
+          raise (Unify [])
+      | Tconstr(p, tl, abbrev) ->
+          (* XXX Pourquoi expanser ? *)
+          begin try
             List.iter occur_rec tl
           with Unify lst ->
             let ty' =
               try expand_abbrev env p tl abbrev ty.level
               with Cannot_expand -> raise (Unify lst) in
             occur_rec ty'
-        end
-    | Tobject(f, _) ->
-        if not (List.memq ty !visited) then begin
-          visited := ty::!visited;
-          occur_rec f
-        end
-    | Tfield(_, t1, t2) ->
-        occur_rec t1; occur_rec t2
-    | Tnil ->
-        ()
-    | Tlink _ ->
-        fatal_error "Ctype.moregen_occur"
+          end
+      | _ ->
+          iter_type_expr occur_rec ty
+      end
+    end
   in
     occur_rec ty
 
@@ -854,7 +830,7 @@ let moregeneral env sch1 sch2 =
     end_def();
     false
 
-(* Equivalence between parameterized types *)
+(**** Equivalence between parameterized types ****)
 
 let equal env params1 ty1 params2 ty2 =
   let subst = ref (List.combine params1 params2) in
@@ -935,25 +911,30 @@ let equal env params1 ty1 params2 ty2 =
     remove_abbrev ty1; remove_abbrev ty2;
     eq
 
-(* Subtyping *)
+                              (***************)
+                              (*  Subtyping  *)
+                              (***************)
+
+
+(**** Build a subtype for a given type. ****)
 
 let subtypes = ref []
 
-let rec build_subtype env vars t =
-  if List.memq t vars then (t, false) else
+let rec build_subtype env t =
+  let t = repr t in
   match t.desc with
-    Tlink t' ->
-      build_subtype env vars t'
+    Tlink t' ->                         (* Redundant ! *)
+      build_subtype env t'
   | Tvar ->
       (t, false)
   | Tarrow(t1, t2) ->
       let (t1', c1) = (t1, false) in
-      let (t2', c2) = build_subtype env vars t2 in
+      let (t2', c2) = build_subtype env t2 in
       if c1 or c2 then (new_global_ty (Tarrow(t1', t2')), true)
       else (t, false)
   | Ttuple tlist ->
       let (tlist', clist) =
-        List.split (List.map (build_subtype env vars) tlist)
+        List.split (List.map (build_subtype env) tlist)
       in
       if List.exists (function c -> c) clist then
         (new_global_ty (Ttuple tlist'), true)
@@ -961,13 +942,13 @@ let rec build_subtype env vars t =
   | Tconstr(p, tl, abbrev) ->
       if generic_abbrev env p then begin
         let t' = expand_abbrev env p tl abbrev t.level in
-        let (t'', c) = build_subtype env vars t' in
+        let (t'', c) = build_subtype env t' in
         if c then (t'', true)
         else (t, false)
       end else
         (t, false)
   | Tobject (t1, _) ->
-      if opened t1 then
+      if opened_object t1 then
         (t, false)
       else
         (begin try
@@ -975,148 +956,124 @@ let rec build_subtype env vars t =
          with Not_found ->
            let t' = new_global_var () in
            subtypes := (t, t')::!subtypes;
-           let (t1', _) = build_subtype env vars t1 in
+           let (t1', _) = build_subtype env t1 in
            t'.desc <- Tobject (t1', ref None);
            t'
          end,
          true)
   | Tfield(s, t1, t2) ->
-      let (t1', _) = build_subtype env vars t1 in
-      let (t2', _) = build_subtype env vars t2 in
+      let (t1', _) = build_subtype env t1 in
+      let (t2', _) = build_subtype env t2 in
       (new_global_ty (Tfield(s, t1', t2')), true)
   | Tnil ->
       let v = new_global_var () in
       (v, true)
 
-let enlarge_type env vars ty =
+let enlarge_type env ty =
   subtypes := [];
-  let (ty', _) = build_subtype env vars ty in
+  let (ty', _) = build_subtype env ty in
   subtypes := [];
   ty'
 
+(**** Check that a type is a subtype of another type. ****)
+
 let subtypes = ref [];;
-let known_subtype t1 t2 =
-  List.exists (fun (t1', t2') -> t1 == t1' & t2 == t2') !subtypes
 
-let unify_failure trace =
-  match trace with
-    (t1, t1')::(t2, t2')::rem ->
-      raise (Subtype ([], rem))
-  | _ ->
-      fatal_error "Ctype.unify_failure"
+let subtype_error env trace =
+  raise (Subtype (expand_trace env (List.rev trace), []))
 
-let rec subtype_rec env vars t1 t2 =
-  if t1 == t2 then () else
-  if List.memq t1 vars or List.memq t2 vars then begin
-    try unify env t1 t2 with Unify trace ->
-      unify_failure trace
-  end else
-  try
+let rec subtype_rec env trace t1 t2 =
+  let t1 = repr t1 in
+  let t2 = repr t2 in
+  if t1 == t2 then [] else
+  if List.exists (fun (t1', t2') -> t1 == t1' & t2 == t2') !subtypes then
+    []
+  else begin
+    subtypes := (t1, t2) :: !subtypes;
     match (t1.desc, t2.desc) with
-      (Tlink t1', _) ->
-        begin try subtype_rec env vars t1' t2 with Subtype (tr1, tr2) ->
-          raise (Subtype (List.tl tr1, tr2))
-        end
-    | (_, Tlink t2') ->
-        begin try subtype_rec env vars t1 t2' with Subtype (tr1, tr2) ->
-          raise (Subtype (List.tl tr1, tr2))
-        end
-    | (Tvar, _) | (_, Tvar) ->
-        begin try unify env t1 t2 with Unify trace ->
-          unify_failure trace
-        end
+      (Tvar, _) | (_, Tvar) ->
+        [(trace, t1, t2)]
     | (Tarrow(t1, u1), Tarrow(t2, u2)) ->
-        subtype_rec env vars t2 t1; subtype_rec env vars u1 u2
+        (subtype_rec env ((t2, t1)::trace) t2 t1) @
+        (subtype_rec env ((u1, u2)::trace) u1 u2)
     | (Ttuple tl1, Ttuple tl2) ->
-        subtype_list env vars tl1 tl2
+        subtype_list env trace tl1 tl2
     | (Tconstr(p1, tl1, abbrev1), Tconstr(p2, tl2, abbrev2)) ->
-        if generic_abbrev env p1 then begin
-          try
-            subtype_rec env vars (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
-          with Subtype (tr1, tr2) ->
-            raise (Subtype (List.tl tr1, tr2))
-        end else if generic_abbrev env p2 then begin
-          try
-            subtype_rec env vars t1 (expand_abbrev env p2 tl2 abbrev2 t2.level)
-          with Subtype (tr1, tr2) ->
-            raise (Subtype (List.tl tr1, tr2))
-        end else begin
-          try unify env t1 t2 with Unify trace ->
-            unify_failure trace
-        end
+        if generic_abbrev env p1 then
+          subtype_rec env trace
+            (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
+        else if generic_abbrev env p2 then
+          subtype_rec env trace t1
+            (expand_abbrev env p2 tl2 abbrev2 t2.level)
+        else
+          [(trace, t1, t2)]
     | (Tconstr(p1, tl1, abbrev1), _) ->
-        if generic_abbrev env p1 then begin
-          try
-            subtype_rec env vars (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
-          with Subtype (tr1, tr2) ->
-            raise (Subtype (List.tl tr1, tr2))
-        end else begin
-          try unify env t1 t2 with Unify trace ->
-            unify_failure trace
-        end
+        if generic_abbrev env p1 then
+          subtype_rec env trace
+            (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
+        else
+          [(trace, t1, t2)]
     | (_, Tconstr(p2, tl2, abbrev2)) ->
-        if generic_abbrev env p2 then begin
-          try
-            subtype_rec env vars t1 (expand_abbrev env p2 tl2 abbrev2 t2.level)
-          with Subtype (tr1, tr2) ->
-            raise (Subtype (List.tl tr1, tr2))
-       end else begin
-          try unify env t1 t2 with Unify trace ->
-            unify_failure trace
-        end
+        if generic_abbrev env p2 then
+          subtype_rec env trace t1
+            (expand_abbrev env p2 tl2 abbrev2 t2.level)
+        else
+          [(trace, t1, t2)]
     | (Tobject (f1, _), Tobject (f2, _)) ->
-        if not (known_subtype t1 t2) then begin
-          if opened f1 & opened f2 then begin
-            try unify env t1 t2 with Unify trace ->
-              unify_failure trace
-          end else begin
-            subtypes := (t1, t2) :: !subtypes;
-            subtype_fields env vars f1 f2
-          end
-        end
+        if opened_object f1 & opened_object f2 then
+          [(trace, t1, t2)]
+        else
+          subtype_fields env trace f1 f2
     | (_, _) ->
-        raise (Subtype ([], []))
-  with
-    Subtype (tr1, tr2) ->
-      raise (Subtype ((t1, t2)::tr1, tr2))
+        subtype_error env trace
+  end
 
-and subtype_list env vars tl1 tl2 =
+and subtype_list env trace tl1 tl2 =
   if List.length tl1 <> List.length tl2 then
-    raise (Subtype ([], []));
-  List.iter2 (subtype_rec env vars) tl1 tl2
+    subtype_error env trace;
+  List.fold_left2
+    (fun cstrs t1 t2 -> cstrs @ (subtype_rec env ((t1, t2)::trace) t1 t2))
+    [] tl1 tl2
 
-and subtype_fields env vars ty1 ty2 =
+and subtype_fields env trace ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1 in
   let (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
   begin match rest1.desc with
     Tvar ->
-      let nr = build_fields miss2 (newvar ()) in
-      update_level rest1.level nr;
-      rest1.desc <- Tlink nr
-  | Tnil   -> if miss2 <> [] then raise (Subtype ([], []))
+      [(trace, rest1, build_fields miss2 (newvar ()))]
+  | Tnil   -> if miss2 = [] then [] else subtype_error env trace
   | _      -> fatal_error "Ctype.subtype_fields (1)"
-  end;
+  end
+    @
   begin match rest2.desc with
     Tvar ->
-      let nr = build_fields miss1 (newvar ()) in
-      update_level rest2.level nr;
-      rest2.desc <- Tlink nr
-  | Tnil   -> ()
+      [(trace, build_fields miss1 (rest1), rest2)]
+  | Tnil   -> []
   | _      -> fatal_error "Ctype.subtype_fields (2)"
-  end;
-  List.iter (fun (t1, t2) -> subtype_rec env vars t1 t2) pairs
+  end
+    @
+  (List.fold_left
+     (fun cstrs (t1, t2) ->
+        cstrs @ (subtype_rec env ((t1, t2)::trace) t1 t2))
+     [] pairs)
 
-let subtype env vars ty1 ty2 =
+(* XXX Supporte les types recursifs sans limitation *)
+let subtype env ty1 ty2 =
   subtypes := [];
-  begin try
-    subtype_rec env vars ty1 ty2
-  with Subtype (tr1, tr2) ->
-    raise (Subtype (expand_trace env tr1, tr2))
-  end;
-  subtypes := []
+  (* Build constraint set. *)
+  let cstrs = subtype_rec env [(ty1, ty2)] ty1 ty2 in
+  (* Enforce constraints. *)
+  function () ->
+    List.iter
+      (function (trace0, t1, t2) ->
+         try unify env t1 t2 with Unify trace ->
+           raise (Subtype (expand_trace env (List.rev trace0),
+                           List.tl (List.tl trace))))
+      cstrs;
+    subtypes := []
 
-(* Remove dependencies *)
+(**** Remove dependencies ****)
 
 let inst_subst = ref ([] : (type_expr * type_expr) list)
 
@@ -1185,7 +1142,7 @@ let nondep_class_type env id decl =
   inst_subst := [];
   decl
 
-(* Type pruning *)
+(**** Type pruning ****)
 
 let inst_subst = ref ([] : (type_expr * type_expr) list)
 
@@ -1319,7 +1276,7 @@ let remove_object_name ty =
   | Tconstr (_, _, _) -> ()
   | _                 -> fatal_error "Ctype.remove_object_name"
 
-(* Abbreviation correctness *)
+(**** Abbreviation correctness ****)
 
 exception Nonlinear_abbrev
 exception Recursive_abbrev
@@ -1418,7 +1375,7 @@ let correct_abbrev env ident params ty =
   end;
   remove_abbrev ty
 
-(* Miscellaneous *)
+(**** Miscellaneous ****)
 
 let unroll_abbrev id tl ty =
   let ty = repr ty in
@@ -1438,42 +1395,32 @@ let visited = ref []
 
 let rec closed_schema_rec ty =
   let ty = repr ty in
-  match ty.desc with
-    Tvar -> if ty.level != generic_level then raise (Failed (Var ty))
-  | Tarrow(t1, t2) -> closed_schema_rec t1; closed_schema_rec t2
-  | Ttuple tl -> List.iter closed_schema_rec tl
-  | Tconstr(p, tl, _) ->
-      if not (List.memq ty !visited) then begin
-        visited := ty::!visited;
-        List.iter closed_schema_rec tl
-      end
-  | Tobject(f, {contents = Some (_, p)}) ->
-      if not (List.memq ty !visited) then begin
-        visited := ty::!visited;
+  if not (List.memq ty !visited) then begin
+    visited := ty::!visited;
+    match ty.desc with
+      Tvar when ty.level != generic_level -> raise (Failed (Var ty))
+    | Tobject(f, {contents = Some (_, p)}) ->
         begin try closed_schema_rec f with
           Failed (Row_var v) -> raise (Failed (Var v))
         | Failed (Var v) -> raise (Failed (Row_var v))
         end;
         List.iter closed_schema_rec p
-      end
-  | Tobject(f, _) ->
-      if not (List.memq ty !visited) then begin
-        visited := ty::!visited;
-        try closed_schema_rec f with
+    | Tobject(f, _) ->
+        begin try closed_schema_rec f with
           Failed (Row_var v) -> raise (Failed (Var v))
         | Failed (Var v) -> raise (Failed (Row_var v))
-      end
-  | Tfield(_, t1, t2) ->
-      begin try
-        closed_schema_rec t1
-      with
-        Failed (Row_var v) -> raise (Failed (Var v))
-      | Failed (Var v) -> raise (Failed (Row_var v))
-      end;
-      closed_schema_rec t2
-  | Tnil ->
-      ()
-  | Tlink _           -> fatal_error "Ctype.closed_schema"
+        end
+    | Tfield(_, t1, t2) ->
+        begin try
+          closed_schema_rec t1
+        with
+          Failed (Row_var v) -> raise (Failed (Var v))
+        | Failed (Var v) -> raise (Failed (Row_var v))
+        end;
+        closed_schema_rec t2
+    | _ ->
+        iter_type_expr closed_schema_rec ty
+  end
 
 let closed_schema ty =
   visited := [];

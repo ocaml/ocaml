@@ -78,9 +78,13 @@ val equal: Env.t -> type_expr list -> type_expr ->
            checks whether the parameterized types
            [/\x1.../\xn.tau] and [/\y1.../\yn.sigma] are equivalent. *)
 val opened_object: type_expr -> bool
-val enlarge_type: Env.t -> type_expr list -> type_expr -> type_expr
+val enlarge_type: Env.t -> type_expr -> type_expr
       	(* Make a type larger *)
-val subtype : Env.t -> type_expr list -> type_expr -> type_expr -> unit
+val subtype : Env.t -> type_expr -> type_expr -> unit -> unit
+        (* [subtype env t1 t2] checks that [t1] is a subtype of [t2].
+           It accumulates the constraints the type variables must
+           enforce and returns a function that inforce this
+           constraints. *)
 val closed_schema: type_expr -> bool
 type closed_schema_result = Var of type_expr | Row_var of type_expr
 val closed_schema_verbose: type_expr -> closed_schema_result option

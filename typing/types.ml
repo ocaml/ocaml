@@ -123,3 +123,15 @@ and modtype_declaration =
     Tmodtype_abstract
   | Tmodtype_manifest of module_type
 
+let iter_type_expr f ty =
+  match ty.desc with
+    Tvar               -> ()
+  | Tarrow (ty1, ty2) -> f ty1; f ty2
+  | Ttuple l           -> List.iter f l
+  | Tconstr (_, l, _)          -> List.iter f l
+  | Tobject(ty, {contents = Some (_, p)})
+                         -> f ty; List.iter f p
+  | Tobject (ty, _)    -> f ty
+  | Tfield (_, ty1, ty2) -> f ty1; f ty2
+  | Tnil               -> ()
+  | Tlink ty           -> f ty

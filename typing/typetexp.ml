@@ -35,13 +35,15 @@ exception Error of Location.t * error
 (* Translation of type expressions *)
 
 let type_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
+let aliases        = ref (Tbl.empty : (string, type_expr) Tbl.t)
 
-let true_type_variables = ref []
+let used_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
+let bindings       = ref ([] : (type_expr * type_expr) list)
+        (* These two variables are used for the "delayed" policy. *)
 
 let reset_type_variables () =
   reset_global_level ();
-  type_variables := Tbl.empty;
-  true_type_variables := []
+  type_variables := Tbl.empty
 
 let enter_type_variable strict name =
   try
@@ -59,30 +61,49 @@ let type_variable loc name =
   with Not_found ->
     raise(Error(loc, Unbound_type_variable name))
 
-let type_variable_list () =
-  !true_type_variables
+type policy = Fixed | Extensible | Delayed
 
-let rec transl_simple_type env fixed styp =
+let rec transl_type env policy styp =
   match styp.ptyp_desc with
     Ptyp_var name ->
-      begin try
-        Tbl.find name !type_variables
-      with Not_found ->
-        if fixed then
-          raise(Error(styp.ptyp_loc, Unbound_type_variable name))
-        else begin
-          let v = new_global_var() in
-          type_variables := Tbl.add name v !type_variables;
-          true_type_variables := v :: !true_type_variables;
-          v
-        end
+      begin try Tbl.find name !aliases with Not_found ->
+        match policy with
+          Fixed ->
+            begin try
+              Tbl.find name !type_variables
+            with Not_found ->
+              raise(Error(styp.ptyp_loc, Unbound_type_variable name))
+            end
+        | Extensible ->
+            begin try
+              Tbl.find name !type_variables
+            with Not_found ->
+              let v = new_global_var () in
+              type_variables := Tbl.add name v !type_variables;
+              v
+            end
+        | Delayed ->
+            begin try
+              Tbl.find name !used_variables
+            with Not_found -> try
+              let v1 = Tbl.find name !type_variables in
+              let v2 = new_global_var () in
+              used_variables := Tbl.add name v2 !used_variables;
+              bindings := (v1, v2)::!bindings;
+              v2
+            with Not_found ->
+              let v = new_global_var () in
+              type_variables := Tbl.add name v !type_variables;
+              used_variables := Tbl.add name v !used_variables;
+              v
+            end
       end
   | Ptyp_arrow(st1, st2) ->
-      let ty1 = transl_simple_type env fixed st1 in
-      let ty2 = transl_simple_type env fixed st2 in
+      let ty1 = transl_type env policy st1 in
+      let ty2 = transl_type env policy st2 in
         Ctype.newty (Tarrow(ty1, ty2))
   | Ptyp_tuple stl ->
-      Ctype.newty (Ttuple(List.map (transl_simple_type env fixed) stl))
+      Ctype.newty (Ttuple(List.map (transl_type env policy) stl))
   | Ptyp_constr(lid, stl, alias) ->
       let (path, decl) =
         try
@@ -95,17 +116,20 @@ let rec transl_simple_type env fixed styp =
       let (cstr, params) =
         begin match alias with
       	  None ->
-	    let tl = List.map (transl_simple_type env fixed) stl in
+	    let tl = List.map (transl_type env policy) stl in
               (newty (Tconstr(path, tl, ref [])), tl)
         | Some alias ->
             let cstr = newvar () in
-      	    begin try
+            begin try
               Tbl.find alias !type_variables;
-	      raise(Error(styp.ptyp_loc, Bound_type_variable alias))
+              raise(Error(styp.ptyp_loc, Bound_type_variable alias))
+            with Not_found -> try
+              Tbl.find alias !aliases;
+              raise(Error(styp.ptyp_loc, Bound_type_variable alias))
             with Not_found ->
-      	      type_variables := Tbl.add alias cstr !type_variables
+      	      aliases := Tbl.add alias cstr !aliases
 	    end;
-	    let tl = List.map (transl_simple_type env fixed) stl in
+	    let tl = List.map (transl_type env policy) stl in
 	    begin try
               occur env cstr
       	       	(Ctype.expand_abbrev env path tl (ref []) cstr.level)
@@ -130,25 +154,28 @@ let rec transl_simple_type env fixed styp =
       end;
       cstr
   | Ptyp_object(fields, None) ->
-      newobj (transl_fields env fixed fields)
+      newobj (transl_fields env policy fields)
   | Ptyp_object(fields, Some alias) ->
       begin try
         Tbl.find alias !type_variables;
 	raise(Error(styp.ptyp_loc, Bound_type_variable alias))
+      with Not_found -> try
+        Tbl.find alias !aliases;
+	raise(Error(styp.ptyp_loc, Bound_type_variable alias))
       with Not_found ->
         let obj = newvar () in
-      	  type_variables := Tbl.add alias obj !type_variables;
-	  obj.desc <- Tobject (transl_fields env fixed fields, ref None);
+      	  aliases := Tbl.add alias obj !aliases;
+	  obj.desc <- Tobject (transl_fields env policy fields, ref None);
 	  obj
       end
   | Ptyp_class(lid, stl, alias) ->
-      if fixed then
+      if policy = Fixed then
         raise(Error(styp.ptyp_loc, Unbound_row_variable lid));
       let lid2 =
         match lid with
           Longident.Lident s     -> Longident.Lident ("#" ^ s)
 	| Longident.Ldot(r, s)   -> Longident.Ldot (r, "#" ^ s)
-	| Longident.Lapply(_, _) -> fatal_error "Typetexp.transl_simple_type"
+	| Longident.Lapply(_, _) -> fatal_error "Typetexp.transl_type"
       in
       let (path, decl) =
         try
@@ -162,16 +189,19 @@ let rec transl_simple_type env fixed styp =
       let (ty, params) =
         begin match alias with
       	  None ->
-	    let tl = List.map (transl_simple_type env fixed) stl in
+	    let tl = List.map (transl_type env policy) stl in
 	    (expand_abbrev env path tl (ref []) v.level, tl)
         | Some alias ->
-      	    begin try
+            begin try
               Tbl.find alias !type_variables;
 	      raise(Error(styp.ptyp_loc, Bound_type_variable alias))
+            with Not_found -> try
+              Tbl.find alias !aliases;
+              raise(Error(styp.ptyp_loc, Bound_type_variable alias))
             with Not_found ->
-      	      type_variables := Tbl.add alias v !type_variables
+      	      aliases := Tbl.add alias v !aliases
 	    end;
-	    let tl = List.map (transl_simple_type env fixed) stl in
+	    let tl = List.map (transl_type env policy) stl in
 	    let cstr = expand_abbrev env path tl (ref []) v.level in
 	    v.desc <- Tlink cstr;
 	    (v, tl)
@@ -190,18 +220,36 @@ let rec transl_simple_type env fixed styp =
       end;
       ty
 
-and transl_fields env fixed =
+and transl_fields env policy =
   function
     [] ->
       newty Tnil
   | {pfield_desc = Pfield_var} as field::_ ->
-      if fixed then
+      if policy = Fixed then
         raise(Error(field.pfield_loc, Unbound_type_variable ".."));
       newvar ()
   | {pfield_desc = Pfield(s, e)}::l ->
-      let ty1 = transl_simple_type env fixed e in
-      let ty2 = transl_fields env fixed l in
+      let ty1 = transl_type env policy e in
+      let ty2 = transl_fields env policy l in
 	newty (Tfield (s, ty1, ty2))
+
+let transl_simple_type env fixed styp =
+  aliases := Tbl.empty;
+  let typ = transl_type env (if fixed then Fixed else Extensible) styp in
+  aliases := Tbl.empty;
+  typ
+
+let transl_simple_type_delayed env styp =
+  aliases := Tbl.empty;
+  used_variables := Tbl.empty;
+  bindings := [];
+  let typ = transl_type env Delayed styp in
+  let b = !bindings in
+  aliases := Tbl.empty;
+  used_variables := Tbl.empty;
+  bindings := [];
+  (typ,
+   function () -> List.iter (function (t1, t2) -> Ctype.unify env t1 t2) b)
 
 let transl_type_scheme env styp =
   reset_type_variables();

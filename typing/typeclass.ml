@@ -46,6 +46,11 @@ type error =
 
 exception Error of Location.t * error
 
+let bind_type_idents cl =
+  (cl,
+   Ident.create cl.pcl_name,
+   Ident.create ("#" ^ cl.pcl_name))
+
 let check_mutable loc lab mut mut' =
   match mut, mut' with
     (Immutable, Mutable) ->
@@ -78,7 +83,7 @@ let equalize_methods env self obj =
   | _ ->
       fatal_error "Typeclass.equalize_methods"
 
-let make_stub env cl =
+let make_stub env (cl, obj_id, cl_id) =
   Ctype.begin_def ();
 
   (* Create self (class type) *)
@@ -130,7 +135,7 @@ let make_stub env cl =
       type_arity = List.length temp_obj_params;
       type_kind = Type_abstract;
       type_manifest = Some temp_obj }
-  in let (obj_id, temp_env) = Env.enter_type cl.pcl_name obj_temp_abbrev env
+  in let temp_env = Env.add_type obj_id obj_temp_abbrev env
   in let abbrev =
     Ctype.newty (Tconstr (Path.Pident obj_id, temp_obj_params, ref []))
   in
@@ -152,8 +157,7 @@ let make_stub env cl =
       type_arity = List.length temp_cl_params;
       type_kind = Type_abstract;
       type_manifest = Some temp_cl }
-  in let (cl_id, temp_env) =
-    Env.enter_type ("#" ^ cl.pcl_name) cl_temp_abbrev temp_env
+  in let temp_env = Env.add_type cl_id cl_temp_abbrev temp_env
   in let cl_abbrev =
     Ctype.newty (Tconstr (Path.Pident cl_id, temp_cl_params, ref []))
   in
@@ -586,8 +590,10 @@ let rec iter f env =
       (cl'::cl_rem', env'')
 
 let transl_classes env cl =
+  let info = List.map bind_type_idents cl in
+  Ctype.init_def (Ident.current_time());
   Ctype.begin_def ();
-  let (info, temp_env) = iter make_stub env cl in
+  let (info, temp_env) = iter make_stub env info in
   let (info, _) = iter (transl_class temp_env) env info in
   let (info, new_env) = iter (build_new_type temp_env) env info in
   Ctype.end_def ();
@@ -607,7 +613,8 @@ let enter_class env cl =
       type_manifest = None }
   in
   let (obj_id, ext_env) = Env.enter_type cl.pcty_name abstr_type env in
-  ((cl, obj_id), ext_env)
+  let cl_id = Ident.create ("#" ^ cl.pcty_name) in
+  ((cl, obj_id, cl_id), ext_env)
 
 let insert_value env lab priv mut ty loc val_sig val_redef =
   let val_sig' =
@@ -720,7 +727,7 @@ let type_class_type_field env temp_env cl self
       (val_sig, val_redef, meth_redef)
 
 (* Build class and object types *)
-let build_abbrevs temp_env env (cl, obj_id) =
+let build_abbrevs temp_env env (cl, obj_id, cl_id) =
   reset_type_variables ();
   Ctype.begin_def ();
 
@@ -837,9 +844,7 @@ let build_abbrevs temp_env env (cl, obj_id) =
 	  self
 	end) }
   in
-  let (cl_id, ext_env) =
-    Env.enter_type ("#" ^ cl.pcty_name) cl_abbrev ext_env
-  in
+  let ext_env = Env.add_type cl_id cl_abbrev ext_env in
 
   (* Set class type name *)
 
