@@ -1,6 +1,11 @@
 # PREREQUISITES
 #
-# You need MPW 3.4.1 (with SC and MrC).
+# You need MPW 3.4.1 or 3.4.2 (with SC and MrC).
+#
+# MPW 3.4.2 is available from Apple's FTP site at:
+# <ftp://ftp.apple.com/devworld/Tool_Chest/Core_Mac_OS_Tools/MPW-3.4.2.sit.hqx>
+# <ftp://ftp.apple.com/devworld/Tool_Chest/Interfaces-Libraries/Libraries/>
+# <ftp://ftp.apple.com/devworld/Tool_Chest/Core_Mac_OS_Tools/Interfaces_Libraries-3.01.sit.hqx>
 #
 #
 # INSTALLATION INSTRUCTIONS
