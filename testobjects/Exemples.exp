@@ -12,9 +12,9 @@ end
 #           class color_point (int) (string) =
   val c : string
   val mutable x : int
+  method color : string
   method get_x : int
   method move : int -> unit
-  method color : string
 end
 #   val p' : color_point = <obj>
 #   - : int * string = 5, "red"
@@ -41,15 +41,15 @@ end
   constraint 'a = < move : int -> unit; .. >
   val mutable center : 'a
   method center : 'a
-  method set_center : 'a -> unit
   method move : int -> unit
+  method set_center : 'a -> unit
 end
 #               class 'a circle ('a) =
   constraint 'a = #point
   val mutable center : 'a
   method center : 'a
-  method set_center : 'a -> unit
   method move : int -> unit
+  method set_center : 'a -> unit
 end
 #   val c : point circle = <obj>
 val c' : color_point circle = <obj>
@@ -57,9 +57,9 @@ val c' : color_point circle = <obj>
   constraint 'a = #color_point
   val mutable center : 'a
   method center : 'a
-  method set_center : 'a -> unit
-  method move : int -> unit
   method color : string
+  method move : int -> unit
+  method set_center : 'a -> unit
 end
 #   Characters 28-29:
 This expression has type point = < get_x : int; move : int -> unit >
@@ -102,9 +102,9 @@ end
 #                     class printable_color_point (int) (string) =
   val c : string
   val mutable x : int
+  method color : string
   method get_x : int
   method move : int -> unit
-  method color : string
   method print : unit
 end
 #   val p' : printable_color_point = <obj>
@@ -120,30 +120,30 @@ end
 # - : int = 7
 #   - : (< get_x : int; move : int -> 'a; .. > as 'a) -> functional_point = <fun>
 #                                                                       class virtual 'a lst (unit) =
-  method map : ('a -> 'a) -> 'a lst
-  method iter : ('a -> unit) -> unit
-  method print : ('a -> unit) -> unit
-  virtual null : bool
   virtual hd : 'a
+  method iter : ('a -> unit) -> unit
+  method map : ('a -> 'a) -> 'a lst
+  virtual null : bool
+  method print : ('a -> unit) -> unit
   virtual tl : 'a lst
 end
 class 'a nil (unit) =
-  method null : bool
   method hd : 'a
-  method tl : 'a lst
-  method map : ('a -> 'a) -> 'a lst
   method iter : ('a -> unit) -> unit
+  method map : ('a -> 'a) -> 'a lst
+  method null : bool
   method print : ('a -> unit) -> unit
+  method tl : 'a lst
 end
 class 'a cons ('a) ('a lst) =
   val h : 'a
   val t : 'a lst
-  method null : bool
   method hd : 'a
-  method tl : 'a lst
-  method map : ('a -> 'a) -> 'a lst
   method iter : ('a -> unit) -> unit
+  method map : ('a -> 'a) -> 'a lst
+  method null : bool
   method print : ('a -> unit) -> unit
+  method tl : 'a lst
 end
 #   val l1 : int cons = <obj>
 #   (3::10::[])- : unit = ()
@@ -160,8 +160,8 @@ end
 end
 #           class int_comparable2 (int) : 'a =
   method leq : 'a -> bool
-  method x : int
   method set_x : int -> unit
+  method x : int
 end
 #                         class 'a sorted_list (unit) =
   constraint 'a = #comparable
@@ -190,8 +190,8 @@ is not compatible with type
 #             class int_comparable3 (int) =
   val mutable x : int
   method leq : int_comparable -> bool
-  method x : int
   method setx : int -> unit
+  method x : int
 end
 #   val c3 : int_comparable3 = <obj>
 # - : unit = ()
@@ -223,32 +223,32 @@ is not compatible with type
 #                                 class 'a link ('a) : 'b =
   val mutable next : 'b option
   val mutable x : 'a
-  method x : 'a
-  method next : 'b option
-  method set_x : 'a -> unit
-  method set_next : 'b option -> unit
   method append : 'b option -> unit
+  method next : 'b option
+  method set_next : 'b option -> unit
+  method set_x : 'a -> unit
+  method x : 'a
 end
 #                   class 'a double_link ('a) : 'b =
   val mutable next : 'b option
   val mutable prev : 'b option
   val mutable x : 'a
-  method x : 'a
-  method next : 'b option
-  method set_x : 'a -> unit
-  method set_next : 'b option -> unit
   method append : 'b option -> unit
+  method next : 'b option
   method prev : 'b option
+  method set_next : 'b option -> unit
   method set_prev : 'b option -> unit
+  method set_x : 'a -> unit
+  method x : 'a
 end
 #           val fold_right : ('a -> 'b -> 'b) -> 'a #link option -> 'b -> 'b = <fun>
 #                                       class calculator (unit) : 'a =
   val mutable acc : float
   val mutable arg : float
   val mutable equals : 'a -> float
-  method arg : float
   method acc : float
   method add : 'a
+  method arg : float
   method enter : float -> 'a
   method equals : float
   method sub : 'a
@@ -260,9 +260,9 @@ end
   val mutable acc : float
   val mutable arg : float
   val mutable equals : 'a -> float
-  method arg : float
   method acc : float
   method add : 'a
+  method arg : float
   method enter : float -> 'a
   method equals : float
   method sub : 'a
@@ -273,26 +273,26 @@ end
 #                                 class calculator (float) (float) =
   val acc : float
   val arg : float
-  method enter : float -> calculator
   method add : calculator_add
-  method sub : calculator_sub
+  method enter : float -> calculator
   method equals : float
+  method sub : calculator_sub
 end
 class calculator_add (float) (float) =
   val acc : float
   val arg : float
-  method enter : float -> calculator
   method add : calculator_add
-  method sub : calculator_sub
+  method enter : float -> calculator
   method equals : float
+  method sub : calculator_sub
 end
 class calculator_sub (float) (float) =
   val acc : float
   val arg : float
-  method enter : float -> calculator
   method add : calculator_add
-  method sub : calculator_sub
+  method enter : float -> calculator
   method equals : float
+  method sub : calculator_sub
 end
 #   val calculator : calculator = <obj>
 #   - : float = 5

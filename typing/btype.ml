@@ -44,6 +44,10 @@ let rec repr =
       repr t'
   | t -> t
 
+let rec field_kind_repr =
+  function
+    Fvar {contents = Some kind} -> field_kind_repr kind
+  | kind                        -> kind
 
                   (**********************************)
                   (*  Utilities for type traversal  *)
@@ -59,7 +63,7 @@ let iter_type_expr f ty =
   | Tobject(ty, {contents = Some (_, p)})
                          -> f ty; List.iter f p
   | Tobject (ty, _)    -> f ty
-  | Tfield (_, ty1, ty2) -> f ty1; f ty2
+  | Tfield (_, _, ty1, ty2) -> f ty1; f ty2
   | Tnil               -> ()
   | Tlink ty           -> f ty
 

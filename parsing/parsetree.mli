@@ -113,8 +113,8 @@ type class_type_field =
     Pctf_inher of (Longident.t * core_type list * Location.t)
   | Pctf_val of
       (string * private_flag * mutable_flag * core_type option * Location.t)
-  | Pctf_virt of (string * core_type * Location.t)
-  | Pctf_meth of (string * core_type option * Location.t)
+  | Pctf_virt of (string * private_flag * core_type * Location.t)
+  | Pctf_meth of (string * private_flag * core_type * Location.t)
 
 type class_type =
   { pcty_name: string;
@@ -132,8 +132,8 @@ type class_field =
       	       	  string option * Location.t)
   | Pcf_val of
       (string * private_flag * mutable_flag * expression option * Location.t)
-  | Pcf_virt of (string * core_type * Location.t)
-  | Pcf_meth of (string * expression * Location.t)
+  | Pcf_virt of (string * private_flag * core_type * Location.t)
+  | Pcf_meth of (string * private_flag * expression * Location.t)
 
 type class_def =
   { pcl_name: string;

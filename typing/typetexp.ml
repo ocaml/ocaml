@@ -181,7 +181,7 @@ and transl_fields env policy =
   | {pfield_desc = Pfield(s, e)}::l ->
       let ty1 = transl_type env policy e in
       let ty2 = transl_fields env policy l in
-        newty (Tfield (s, ty1, ty2))
+        newty (Tfield (s, Fpresent, ty1, ty2))
 
 let transl_simple_type env fixed styp =
   aliases := Tbl.empty;

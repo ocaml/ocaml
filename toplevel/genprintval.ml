@@ -328,7 +328,7 @@ module Make(Obj : Obj) = struct
               end
           | Tobject (_, _) ->
               print_string "<obj>"
-          | Tfield(_, _, _) | Tnil | Tlink _ ->
+          | Tfield(_, _, _, _) | Tnil | Tlink _ ->
               fatal_error "Printval.print_value"
 
       and print_val_list prio depth obj ty_list =

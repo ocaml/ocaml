@@ -27,7 +27,7 @@ let bucket_small_size = ref 16
 
 let step = Sys.word_size / 16
 
-let first_label = 0
+let first_bucket = 0
 
 let bucket_size = 32			(* Must be 256 or less *)
 
@@ -172,6 +172,8 @@ let compact_buckets buckets =
 
 (**** Labels ****)
 
+let first_label = first_bucket * 65536 * step
+
 let last_label = ref first_label
 let methods = Hashtbl.create 101
 
@@ -188,15 +190,23 @@ let new_method met =
     Hashtbl.add methods met label;
     label
 
+let new_anonymous_method =
+  new_label
+
 (**** Sparse array ****)
 
 module Vars = Map.Make(struct type t = string let compare = compare end)
 type vars = int Vars.t
 
+module Meths = Map.Make(struct type t = string let compare = compare end)
+type meths = label list Meths.t
+
 type obj_init
 type table =
  { mutable buckets: bucket array;
-   mutable methods: (label * item) list;
+   mutable methods: meths;
+   mutable saved_methods: meths list;
+   mutable meth_defs: (label * item) list;
    mutable vars: vars;
    mutable saved_vars: vars list;
    mutable saved_var_lst: int option list;
@@ -210,7 +220,9 @@ let initial_size = 1
 let new_table () =
   incr table_count;
   { buckets = [| |];
-    methods = [];
+    methods = Meths.empty;
+    saved_methods = [];
+    meth_defs = [];
     vars = Vars.empty;
     saved_vars = [];
     saved_var_lst = [];
@@ -221,6 +233,8 @@ let copy_table array1 array2 =
   incr version;
   array1.buckets <- Array.copy array2.buckets;
   array1.methods <- array2.methods;
+  array1.saved_methods <- [];
+  array1.meth_defs <- array2.meth_defs;
   array1.vars <- array2.vars;
   array1.saved_vars <- [];
   array1.saved_var_lst <- array1.saved_var_lst;
@@ -250,7 +264,7 @@ let put array label element =
       (!bucket.(elem) != dummy_item)
     then begin
       if !clean_when_copying then
-        bucket := new_filled_bucket buck array.methods
+        bucket := new_filled_bucket buck array.meth_defs
       else
         bucket := copy_bucket !bucket;
       array.buckets.(buck) <- !bucket
@@ -278,10 +292,11 @@ let set_initializer table init =
   | _ ->
       invalid_arg "Fatal error in Oo.set_initializer."
 
-let inheritance table cl vars =
+let inheritance table cl vars meths =
   if
-    !copy_parent & (table.methods = []) & (table.size = initial_size)
-    & (table.init = [[]; []])
+    !copy_parent
+    && (table.methods = Meths.empty) && (table.size = initial_size)
+    && (table.init = [[]; []])
   then begin
     copy_table table cl.table;
     table.init <- table.init@[[]];
@@ -290,7 +305,13 @@ let inheritance table cl vars =
         (fun s v ->
            try Vars.add v (Vars.find v table.vars) s with Not_found -> s)
         Vars.empty
-        vars
+        vars;
+    table.methods <-
+      List.fold_left
+        (fun s m ->
+           try Meths.add m (Meths.find m table.methods) s with Not_found -> s)
+        Meths.empty
+        meths
   end else begin
     table.init <- []::table.init;
     table.saved_vars <- table.vars::table.saved_vars;
@@ -300,6 +321,13 @@ let inheritance table cl vars =
            try Vars.add v (Vars.find v table.vars) s with Not_found -> s)
         Vars.empty
         vars;
+    table.saved_methods <- table.methods::table.saved_methods;
+    table.methods <-
+      List.fold_left
+        (fun s m ->
+           try Meths.add m (Meths.find m table.methods) s with Not_found -> s)
+        Meths.empty
+        meths;
     cl.class_init table;
     table.vars <-
       List.fold_left
@@ -307,12 +335,33 @@ let inheritance table cl vars =
            try Vars.add v (Vars.find v table.vars) s with Not_found -> s)
         (List.hd table.saved_vars)
         vars;
-    table.saved_vars <- List.tl table.saved_vars
+    table.saved_vars <- List.tl table.saved_vars;
+    table.methods <-
+      List.fold_left
+        (fun s m ->
+           try Meths.add m (Meths.find m table.methods) s with Not_found -> s)
+        (List.hd table.saved_methods)
+        meths;
+    table.saved_methods <- List.tl table.saved_methods
   end
 
-let set_method table label element =
-  table.methods <- (label, element) :: table.methods;
-  put table label element
+let get_method_labels table name =
+  try
+    Meths.find name table.methods
+  with Not_found ->
+    let label = new_anonymous_method () in
+    table.methods <- Meths.add name [label] table.methods;
+    [label]
+
+let get_method_label table name =
+  List.hd (get_method_labels table name)
+
+let set_method table name element =
+  List.iter
+    (function label ->
+       table.meth_defs <- (label, element) :: table.meth_defs;
+       put table label element)
+    (get_method_labels table name)
 
 let get_method table label =
   let (buck, elem) = decode label in
@@ -369,10 +418,14 @@ let new_object table =
   obj.(0) <- (magic table.buckets : t);
   obj
 
-let create_class class_info class_init =
+let create_class class_info public_methods class_init =
   let table = new_table () in
+  List.iter
+    (function met ->
+       table.methods <- Meths.add met [new_method met] table.methods)
+    public_methods;
   class_init table;
-  method_count := !method_count + List.length table.methods;
+  method_count := !method_count + List.length table.meth_defs;
   if !compact_table then
     compact_buckets table.buckets;
   inst_var_count := !inst_var_count + table.size - 1;

@@ -541,37 +541,49 @@ let rec type_exp env sexp =
   | Pexp_send (e, met) ->
       let object = type_exp env e in
       begin try
-        let typ = filter_method env met object.exp_type in
-        let exp =
-      	  match object.exp_desc with
-	    Texp_ident(path, {val_kind = Val_anc methods}) ->
-      	      let (path, desc) =
+        let (exp, typ) =
+          match object.exp_desc with
+            Texp_ident(path, {val_kind = Val_self meths}) ->
+              begin try                 (* Private method *)
+                let (id, typ) = Meths.find met !meths in
+                (Texp_send(object, Tmeth_val id), typ)
+              with Not_found ->         (* Implicitely defined method *)
+                let id = Ident.create met in
+                let typ = filter_method env met Private object.exp_type in
+                meths := Meths.add met (id, typ) !meths;
+                (Texp_send(object, Tmeth_val id), typ)
+              end
+          | Texp_ident(path, {val_kind = Val_anc methods}) ->
+              let typ = filter_method env met Public object.exp_type in
+              let (path, desc) =
                 Env.lookup_value (Longident.Lident "*self*") env
               in
               let method_id = List.assoc met methods in
-	      let method_type = newvar () in
-	      let (obj_ty, res_ty) = filter_arrow env method_type in
-	      unify env obj_ty desc.val_type;
-	      unify env res_ty typ;
-	      Texp_apply({exp_desc = Texp_ident(Path.Pident method_id,
-      	       	       	       	                {val_type = method_type;
-      	       	       	       	                 val_kind = Val_reg});
-      	       	          exp_loc = sexp.pexp_loc;
-      	       	          exp_type = method_type;
-                          exp_env = env },
-                         [{exp_desc = Texp_ident(path, desc);
-      	       	       	   exp_loc = object.exp_loc;
-      	       	       	   exp_type = desc.val_type;
-                           exp_env = env }])
+              let method_type = newvar () in
+              let (obj_ty, res_ty) = filter_arrow env method_type in
+              unify env obj_ty desc.val_type;
+              unify env res_ty typ;
+              (Texp_apply({exp_desc = Texp_ident(Path.Pident method_id,
+                                                 {val_type = method_type;
+                                                  val_kind = Val_reg});
+                           exp_loc = sexp.pexp_loc;
+                           exp_type = method_type;
+                           exp_env = env },
+                          [{exp_desc = Texp_ident(path, desc);
+                            exp_loc = object.exp_loc;
+                            exp_type = desc.val_type;
+                            exp_env = env }]),
+               typ)
           | _ ->
-	      Texp_send(object, met)
+              (Texp_send(object, Tmeth_name met),
+               filter_method env met Public object.exp_type)
         in
           { exp_desc = exp;
             exp_loc = sexp.pexp_loc;
             exp_type = typ;
             exp_env = env }
       with Unify _ ->
-      	raise(Error(e.pexp_loc,	Undefined_method_err met))
+        raise(Error(e.pexp_loc, Undefined_method_err met))
       end
   | Pexp_new cl ->
       let (cl_path, cl_typ) =
@@ -776,7 +788,8 @@ let rec type_expect_fun env sexp ty_expected =
   | _ ->
       type_expect env sexp ty_expected
 
-let type_method env self self_name sexp ty_expected =
+let type_method env self self_name meths sexp ty_expected =
+  let meths = ref meths in
   let (obj, env) =
     Env.enter_value "*self*" {val_type = self; val_kind = Val_reg} env
   in
@@ -791,7 +804,7 @@ let type_method env self self_name sexp ty_expected =
         (pattern, env)
     | Some name ->
         let (self_name, env) =
-          Env.enter_value name {val_type = self; val_kind = Val_reg} env
+          Env.enter_value name {val_type = self; val_kind = Val_self meths} env
         in
         ({ pat_desc = Tpat_alias (pattern, self_name);
 	   pat_loc = Location.none;
@@ -802,7 +815,8 @@ let type_method env self self_name sexp ty_expected =
   { exp_desc = Texp_function [(pattern, exp)];
     exp_loc = sexp.pexp_loc;
     exp_type = newty (Tarrow(pattern.pat_type, exp.exp_type));
-    exp_env = env }
+    exp_env = env },
+  !meths
 
 (* Error report *)
 

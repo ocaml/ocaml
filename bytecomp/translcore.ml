@@ -480,7 +480,12 @@ let rec transl_exp e =
         (Lifthenelse(transl_exp cond, event_before body (transl_exp body),
                      Lstaticfail))
   | Texp_send(expr, met) ->
-      event_after e (Lsend(Lvar (meth met), transl_exp expr, []))
+      let met_id =
+        match met with
+          Tmeth_name nm -> meth nm
+        | Tmeth_val id  -> id
+      in
+      event_after e (Lsend(Lvar met_id, transl_exp expr, []))
   | Texp_new cl ->
       Lprim(Pfield 0, [transl_path cl])
   | Texp_instvar(path_self, path) ->

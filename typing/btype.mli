@@ -27,6 +27,10 @@ val newmarkedgenvar: unit -> type_expr
 val repr: type_expr -> type_expr
         (* Return the canonical representative of a type. *)
 
+val field_kind_repr: field_kind -> field_kind
+        (* Return the canonical representative of an object field
+           kind. *)
+
 (**** Utilities for type traversal ****)
 
 val iter_type_expr: (type_expr -> unit) -> type_expr -> unit

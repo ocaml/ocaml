@@ -31,13 +31,14 @@ type item
 type obj_init
 type class_info
 val set_initializer: table -> obj_init -> unit
-val inheritance: table -> class_info -> string list -> unit
+val inheritance: table -> class_info -> string list -> string list -> unit
 val get_method: table -> label -> item
-val set_method: table -> label -> item -> unit
+val set_method: table -> string -> item -> unit
+val get_method_label: table -> string -> label
 val get_variable: table -> string -> int
 val hide_variable: table -> string -> unit
 val get_private_variable: table -> string -> int
-val create_class: class_info -> (table -> unit) -> unit
+val create_class: class_info -> string list -> (table -> unit) -> unit
 
 (* Objects *)
 type t

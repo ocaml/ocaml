@@ -300,3 +300,17 @@ class 'a c () =
   constraint 'a = unit -> < .. >
   method m (f : 'a) = f ()
 end;;
+
+class c () as self =
+  private method m = 1
+  method n = self#m
+end;;
+
+class d () as self =
+  inherit c ()
+  method o = self#m
+end;;
+
+let x = new d () in x#n, x#o;;
+
+class c () = virtual m : int private method m = 1 end;;

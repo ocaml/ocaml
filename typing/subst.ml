@@ -98,8 +98,13 @@ let rec typexp s ty =
                         None -> None
                       | Some (p, tl) ->
                           Some (type_path s p, List.map (typexp s) tl)))
-      | Tfield(label, t1, t2) ->
-          Tfield(label, typexp s t1, typexp s t2)
+      | Tfield(label, kind, t1, t2) ->
+          begin match field_kind_repr kind with
+            Fpresent ->
+              Tfield(label, Fpresent, typexp s t1, typexp s t2)
+          | _ ->
+              Tlink(typexp s t2)
+          end
       | Tnil ->
           Tnil
       end;
@@ -158,9 +163,8 @@ let class_type s decl =
   let decl =
     { cty_params = List.map (typexp s) decl.cty_params;
       cty_args = List.map (typexp s) decl.cty_args;
-      cty_vars =
-        Vars.fold (fun l (m, t) -> Vars.add l (m, typexp s t))
-          decl.cty_vars Vars.empty;
+      cty_vars = Vars.map (function (m, t) -> (m, typexp s t)) decl.cty_vars;
+      cty_meths = Meths.map (typexp s) decl.cty_meths;
       cty_self = typexp s decl.cty_self;
       cty_concr = decl.cty_concr;
       cty_new =
@@ -173,6 +177,7 @@ let class_type s decl =
   List.iter unmark_type decl.cty_params;
   List.iter unmark_type decl.cty_args;
   Vars.iter (fun l (m, t) -> unmark_type t) decl.cty_vars;
+  Meths.iter (fun l t -> unmark_type t) decl.cty_meths;
   unmark_type decl.cty_self;
   begin match decl.cty_new with
     None    -> ()

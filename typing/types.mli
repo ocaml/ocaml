@@ -27,7 +27,7 @@ and type_desc =
   | Ttuple of type_expr list
   | Tconstr of Path.t * type_expr list * abbrev_memo ref
   | Tobject of type_expr * (Path.t * type_expr list) option ref
-  | Tfield of string * type_expr * type_expr
+  | Tfield of string * field_kind * type_expr * type_expr
   | Tnil
   | Tlink of type_expr
 
@@ -35,6 +35,15 @@ and abbrev_memo =
     Mnil
   | Mcons of Path.t * type_expr * abbrev_memo
   | Mlink of abbrev_memo ref
+
+and field_kind =
+    Fvar of field_kind option ref
+  | Fpresent
+  | Fabsent
+
+(* A set of methods, with their types *)
+
+module Meths : Map.S with type key = string
 
 (* Value descriptions *)
 
@@ -46,6 +55,8 @@ and value_kind =
     Val_reg				(* Regular value *)
   | Val_prim of Primitive.description	(* Primitive *)
   | Val_ivar of mutable_flag		(* Instance variable (mutable ?) *)
+  | Val_self of (Ident.t * type_expr) Meths.t ref
+                                        (* Self *)
   | Val_anc of (string * Ident.t) list  (* Ancestor *)
 
 (* Constructor descriptions *)
@@ -79,13 +90,14 @@ and record_representation =
 
 (* Type expressions for classes *)
 
-module Vars : Map.S with type key = string
+module Vars  : Map.S with type key = string
 module Concr : Set.S with type elt = string
 
 type class_type =
   { cty_params: type_expr list;
     cty_args: type_expr list;
     cty_vars: (mutable_flag * type_expr) Vars.t;
+    cty_meths: type_expr Meths.t;
     cty_self: type_expr;
     cty_concr: Concr.t;
     mutable cty_new: type_expr option }

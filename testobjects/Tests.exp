@@ -131,13 +131,13 @@ end
   val x : int
   val y : int
   val z : int
+  method a : int
+  method b : int
+  method t : int
+  method u : int
   method x : int
   method y : int
   method z : int
-  method t : int
-  method u : int
-  method a : int
-  method b : int
 end
 # val e : e = <obj>
 # - : int * int * int * int * int * int * int = 1, 3, 2, 2, 3, 5, 7
@@ -175,7 +175,7 @@ end
 end
 # - : int * int * int * int = 2, 1, 1, 1
 #                           module M : sig class c (unit) = method xc : int end end
-#         class d (unit) = val x : int method xd : int method xc : int end
+#         class d (unit) = val x : int method xc : int method xd : int end
 # - : int * int = 1, 2
 #         Characters 7-143:
 The type variable 'a is not bound in implicit type definition
@@ -221,4 +221,8 @@ Type bool is not a subtype of type int
 # type 'a t = < x : 'a >
 # - : (< x : 'a > as 'a) t -> unit = <fun>
 # - : (< x : 'a > as 'a) t -> unit = <fun>
+#         class c (unit) = private method m : int method n : int end
+#         class d (unit) = private method m : int method n : int method o : int end
+#   - : int * int = 1, 1
+#   class c (unit) = method m : int end
 # 

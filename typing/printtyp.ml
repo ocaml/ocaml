@@ -126,7 +126,7 @@ let rec mark_loops_rec visited ty =
               List.iter (mark_loops_rec visited) l
           end
         end
-    | Tfield(_, ty1, ty2) ->
+    | Tfield(_, kind, ty1, ty2) when field_kind_repr kind = Fpresent ->
         mark_loops_rec visited ty1; mark_loops_rec visited ty2
     | Tnil                -> ()
     | Tlink _             -> fatal_error "Printtyp.mark_loops_rec (2)"
@@ -220,7 +220,17 @@ and typobject sch ty fi nm =
       open_box 2;
       print_string "< ";
       (let (fields, rest) = flatten_fields fi in
-         typfields sch rest fields);
+       let present_fields =
+         List.fold_right
+           (fun (n, k, t) l ->
+              match field_kind_repr k with
+                Fpresent ->
+                  (n, t)::l
+              | _ ->
+                  l)
+           fields []
+       in
+       typfields sch rest present_fields);
       print_string " >";
       close_box ()
   | Some (p, {desc = Tvar}::tyl) ->
@@ -400,25 +410,26 @@ let class_var l (m, t) =
   type_sch t;
   close_box()
 
-let metho kind (l, t) =
+let metho public concrete lab ty =
   print_space ();
   open_box 2;
-  print_string kind;
-  print_string l;
+  if not (List.mem_assoc lab public) then print_string "private ";
+  if Concr.mem lab concrete then print_string "method "
+  else print_string "virtual ";
+  print_string lab;
   print_string " :";
-  print_space();
-  type_sch t;
-  close_box()
+  print_space ();
+  type_sch ty;
+  close_box ()
 
 let methods_of_type ty =
   match (repr ty).desc with
     Tobject (m, _) -> m
   | _              -> fatal_error "Printtyp.methods_of_type"
 
-let rec list_meths ty =
-  match (repr ty).desc with
-    Tfield(lab, ty, ty') -> (lab, ty) :: (list_meths ty')
-  | _                    -> []
+let rec list_public_methods ty =
+  let (fields, _) = flatten_fields ty in
+  List.map (function (m, _, t) -> (m, t)) fields
 
 let class_type id cl_ty =
   let self = repr cl_ty.cty_self in
@@ -437,6 +448,7 @@ let class_type id cl_ty =
   List.iter mark_loops params;
   List.iter mark_loops args;
   Vars.iter (fun _ (_, ty) -> mark_loops ty) vars;
+  Meths.iter (fun _ ty -> mark_loops ty) cl_ty.cty_meths;
   List.iter name_of_type params;
   open_hvbox 2;
   open_box 0;
@@ -458,18 +470,12 @@ let class_type id cl_ty =
   close_box ();
   List.iter constrain params;
   Vars.iter class_var vars;
-  let meths = list_meths (methods_of_type self) in
-  let (meths, virt) =
-    List.fold_right
-      (fun ((lab, ty) as m) (ml, vl) ->
-         if Concr.mem lab cl_ty.cty_concr then
-           (m::ml, vl)
-         else
-           (ml, m::vl))
-      meths
-      ([], []) in
-  List.iter (metho "method ") meths;
-  List.iter (metho "virtual ") virt;
+  let public_methods = list_public_methods (methods_of_type self) in
+  let methods =
+    List.fold_left (fun m (lab, ty) -> Meths.add lab ty m)
+      cl_ty.cty_meths public_methods
+  in
+  Meths.iter (metho public_methods cl_ty.cty_concr) methods;
   print_break 1 (-2);
   print_string "end";
   close_box()

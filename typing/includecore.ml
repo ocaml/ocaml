@@ -86,6 +86,17 @@ let encode_val (mut, ty) rem =
   end
   ::ty::rem
 
+let meths meths1 meths2 =
+  Meths.fold
+    (fun nam t2 (ml1, ml2) ->
+       (begin try
+          Meths.find nam meths1 :: ml1
+        with Not_found ->
+          ml1
+        end,
+        t2 :: ml2))
+    meths2 ([], [])
+
 let vars vars1 vars2 =
   Vars.fold
     (fun lab v2 (vl1, vl2) ->
@@ -102,14 +113,26 @@ let class_types env d1 d2 =
   Ctype.equal env true
     (d1.cty_self::d1.cty_params) (d2.cty_self::d2.cty_params)
       &&
-  (* Same concretes methods *)
-  Concr.equal d1.cty_concr d2.cty_concr
+  (* Fewer concretes methods *)
+  Concr.subset d2.cty_concr d1.cty_concr
       &&
   (* If virtual, stays virtual *)
   (d1.cty_new <> None or d2.cty_new = None)
       &&
+  (* Virtual methods cannot be hidden *)
+  Meths.fold
+    (fun lab ty res ->
+       res &&
+       (Concr.mem lab d1.cty_concr ||
+        try Meths.find lab d2.cty_meths; true with Not_found -> false))
+    d1.cty_meths
+    true
+      &&
   (* Less general *)
+  let (m1, m2) = meths d1.cty_meths d2.cty_meths in
   let (v1, v2) = vars d1.cty_vars d2.cty_vars in
-  let t1 = Ctype.newgenty (Ttuple (d1.cty_self::v1@d1.cty_args)) in
-  let t2 = Ctype.newgenty (Ttuple (d2.cty_self::v2@d2.cty_args)) in
+  let t1 = Ctype.newgenty (Ttuple (d1.cty_self::m1@v1@d1.cty_args)) in
+  let t2 = Ctype.newgenty (Ttuple (d2.cty_self::m2@v2@d2.cty_args)) in
+  List.length d1.cty_args = List.length d2.cty_args
+      &&
   Ctype.moregeneral env true t1 t2
