@@ -128,16 +128,16 @@ BUG REPORTS AND USER FEEDBACK:
 
 Send your bug reports by E-mail to:
 
-          caml-light@inria.fr
+              caml@inria.fr
 
 To be effective, bug reports should include a complete program
 (preferably small) that exhibits the unexpected behavior, and the
 configuration you are using (machine type, etc).
 
-The mailing list caml-light@inria.fr is forwarded to
+The mailing list caml@inria.fr is forwarded to
 a small group of implementors at INRIA. For general questions and
 discussions, caml-list@inria.fr is better; for bug reports
-and very specific technical questions, caml-light@inria.fr
+and very specific technical questions, caml@inria.fr
 is preferred. We often redirect messages from one list to the other,
 anyway.
 
