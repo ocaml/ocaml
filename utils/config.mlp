@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-let version = "1.02+3"
+let version = "1.02+4"
 
 let standard_library =
   try
@@ -29,7 +29,7 @@ let exec_magic_number = "Caml1999X001"
 and cmi_magic_number = "Caml1999I002"
 and cmo_magic_number = "Caml1999O003"
 and cma_magic_number = "Caml1999A003"
-and cmx_magic_number = "Caml1999X003"
+and cmx_magic_number = "Caml1999X003"  (* X a changer (conflit avec exec) *)
 and cmxa_magic_number = "Caml1999Z003"
 and ast_impl_magic_number = "Caml1999M002"
 and ast_intf_magic_number = "Caml1999N002"
