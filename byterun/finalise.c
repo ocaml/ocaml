@@ -40,6 +40,7 @@ static unsigned long old = 0, young = 0, active = 0, size = 0;
 void final_update (void)
 {
   unsigned long i;
+  unsigned long oldactive = active;
   
   Assert (young == old);
   Assert (young <= active);
@@ -47,13 +48,13 @@ void final_update (void)
     Assert (Is_block (final_table[i].val) && Is_in_heap (final_table[i].val));
     if (Is_white_val (final_table[i].val)){
       struct final f = final_table[i];
-      darken (f.val, NULL);
       final_table[i] = final_table[--old];
       final_table[--active] = f;
       -- i;
     }
   }
   young = old;
+  for (i = active; i < oldactive; i++) darken (final_table[i].val, NULL);
 }
 
 /* Call the finalisation functions for the finalising set.
