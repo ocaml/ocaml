@@ -252,11 +252,12 @@ let rec build_as_type env p =
   | Tpat_record lpl ->
       let lbl = fst(List.hd lpl) in
       let ty = newvar () in
+      let ppl = List.map (fun (l,p) -> l.lbl_pos, p) lpl in
       let do_label lbl =
         let _, ty_arg, ty_res = instance_label false lbl in
         unify_pat env {p with pat_type = ty} ty_res;
-        if lbl.lbl_mut = Immutable && List.mem_assoc lbl lpl then begin
-          let arg = List.assoc lbl lpl in
+        if lbl.lbl_mut = Immutable && List.mem_assoc lbl.lbl_pos ppl then begin
+          let arg = List.assoc lbl.lbl_pos ppl in
           unify_pat env {arg with pat_type = build_as_type env arg} ty_arg
         end else begin
           let _, ty_arg', ty_res' = instance_label false lbl in
