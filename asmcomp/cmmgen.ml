@@ -143,8 +143,6 @@ let is_unboxed_float = function
       end
   | _ -> false
 
-exception Cannot_subst_float
-
 let subst_boxed_float boxed_id unboxed_id exp =
   let need_boxed = ref false in
   let assigned = ref false in
@@ -158,10 +156,10 @@ let subst_boxed_float boxed_id unboxed_id exp =
           Cassign(unboxed_id, subst(unbox_float arg))
         end else
           Cassign(id, subst arg)
-    | Ctuple argl -> Ctuple(List.map subst argl)
+    | Ctuple argv -> Ctuple(List.map subst argv)
     | Cop(Cload _, [Cvar id]) as e ->
         if Ident.same id boxed_id then Cvar unboxed_id else e
-    | Cop(op, argl) -> Cop(op, List.map subst argl)
+    | Cop(op, argv) -> Cop(op, List.map subst argv)
     | Csequence(e1, e2) -> Csequence(subst e1, subst e2)
     | Cifthenelse(e1, e2, e3) -> Cifthenelse(subst e1, subst e2, subst e3)
     | Cswitch(arg, index, cases) ->
@@ -193,9 +191,9 @@ let rec remove_unit = function
   | Clet(id, c1, c2) ->
       Clet(id, c1, remove_unit c2)
   | Cop(Capply mty, args) ->
-      Cop(Capply [||], args)
+      Cop(Capply typ_void, args)
   | Cop(Cextcall(proc, mty, alloc), args) ->
-      Cop(Cextcall(proc, [||], alloc), args)
+      Cop(Cextcall(proc, typ_void, alloc), args)
   | Cexit -> Cexit
   | Ctuple [] as c -> c
   | c -> Csequence(c, Ctuple [])
@@ -234,8 +232,11 @@ let log2_size_float = Misc.log2 size_float
 let wordsize_shift = 9
 let numfloat_shift = 9 + log2_size_float - log2_size_addr
 
-let is_addr_array hdr =
+let is_addr_array_hdr hdr =
   Cop(Ccmpi Cne, [Cop(Cand, [hdr; Cconst_int 255]); floatarray_tag])
+
+let is_addr_array_ptr ptr =
+  Cop(Ccmpi Cne, [get_tag ptr; floatarray_tag])
 
 let addr_array_length hdr = Cop(Clsr, [hdr; Cconst_int wordsize_shift])
 let float_array_length hdr = Cop(Clsr, [hdr; Cconst_int numfloat_shift])
@@ -252,10 +253,10 @@ let array_indexing log2size ptr ofs =
       Cop(Cadda, [ptr; lsl_const c log2size])
   | Cop(Caddi, [c; Cconst_int n]) ->
       Cop(Cadda, [Cop(Cadda, [ptr; lsl_const c (log2size - 1)]);
-                  Cconst_int((n-1) lsl (log2size - 1))])
+                   Cconst_int((n-1) lsl (log2size - 1))])
   | _ ->
       Cop(Cadda, [Cop(Cadda, [ptr; lsl_const ofs (log2size - 1)]);
-                  Cconst_int((-1) lsl (log2size - 1))])
+                   Cconst_int((-1) lsl (log2size - 1))])
 
 let addr_array_ref arr ofs =
   Cop(Cload typ_addr, [array_indexing log2_size_addr arr ofs])
@@ -280,13 +281,13 @@ let string_length exp =
     Clet(tmp_var,
          Cop(Csubi,
              [Cop(Clsl,
-                  [Cop(Clsr, [get_field str (-1); Cconst_int 10]);
-                   Cconst_int log2_size_addr]);
+                   [Cop(Clsr, [header str; Cconst_int 10]);
+                     Cconst_int log2_size_addr]);
               Cconst_int 1]),
          Cop(Csubi,
              [Cvar tmp_var;
-              Cop(Cloadchunk Byte_unsigned,
-                  [Cop(Cadda, [str; Cvar tmp_var])])])))
+               Cop(Cloadchunk Byte_unsigned,
+                     [Cop(Cadda, [str; Cvar tmp_var])])])))
 
 (* Message sending *)
 
@@ -294,8 +295,8 @@ let lookup_label obj lab =
   bind "lab" lab (fun lab ->
     let table = Cop (Cload typ_addr, [obj]) in
     let buck_index = Cop(Clsr, [lab; Cconst_int 16]) in
-    let bucket = Cop (Cload typ_addr, [Cop (Cadda, [table; buck_index])]) in
-    let item_index = Cop (Cand, [lab; Cconst_int (255 * size_addr)]) in
+    let bucket = Cop(Cload typ_addr, [Cop (Cadda, [table; buck_index])]) in
+    let item_index = Cop(Cand, [lab; Cconst_int (255 * size_addr)]) in
     Cop (Cload typ_addr, [Cop (Cadda, [bucket; item_index])]))
 
 (* To compile "let rec" over values *)
@@ -308,45 +309,19 @@ let fundecls_size fundecls =
     fundecls;
   !sz
 
-let rec expr_size_and_tag = function
+let rec expr_size = function
     Uclosure(fundecls, clos_vars) ->
-      (fundecls_size fundecls + List.length clos_vars, 250)
+      fundecls_size fundecls + List.length clos_vars
   | Uprim(Pmakeblock(tag, mut), args) ->
-      (List.length args, tag)
+      List.length args
   | Uprim(Pmakearray(Paddrarray | Pintarray), args) ->
-      (List.length args, 0)
+      List.length args
   | Ulet(id, exp, body) ->
-      expr_size_and_tag body
+      expr_size body
   | Uletrec(bindings, body) ->
-      expr_size_and_tag body
+      expr_size body
   | _ ->
-      fatal_error "Cmmgen.expr_size_and_tag"
-
-let dummy_block (size, tag) =
-  let rec init_val i =
-    if i >= size then [] else Cconst_int 0 :: init_val(i+1) in
-  Cop(Calloc, alloc_block_header tag size :: init_val 0)
-
-let rec store_contents ptr = function
-    Cop(Calloc, header :: fields) ->
-      store_fields ptr 0 fields
-  | Clet(id, exp, body) ->
-      Clet(id, exp, store_contents ptr body)
-  | _ ->
-      fatal_error "Cmmgen.store_contents"
-
-and store_fields ptr pos = function
-    [] -> Ctuple []
-  | c :: rem ->
-      let store =
-        match c with
-          Cconst_int _ | Cconst_symbol _ | Cconst_pointer _ ->
-            Cop(Cstore, [field_address ptr pos; c])
-        | _ ->
-            Cop(Cextcall("modify", typ_void, false),
-                [field_address ptr pos; c]) in
-      Csequence(store, store_fields ptr (pos + 1) rem)
-            
+      fatal_error "Cmmgen.expr_size"
 
 (* Record application and currying functions *)
 
@@ -442,9 +417,9 @@ let rec transl = function
         Cop(Capply typ_addr, [get_field clos 0; transl arg; clos]))
   | Ugeneric_apply(clos, args) ->
       let arity = List.length args in
-      Cop(Capply typ_addr,
-          Cconst_symbol(apply_function arity) ::
-          List.map transl (args @ [clos]))
+      let cargs = Cconst_symbol(apply_function arity) ::
+                  List.map transl (args @ [clos]) in
+      Cop(Capply typ_addr, cargs)
   | Usend(met, obj, []) ->
       bind "obj" (transl obj) (fun obj ->
       bind "met" (lookup_label obj (transl met)) (fun clos ->
@@ -453,9 +428,9 @@ let rec transl = function
       let arity = List.length args + 1 in
       bind "obj" (transl obj) (fun obj ->
       bind "met" (lookup_label obj (transl met)) (fun clos ->
-        Cop(Capply typ_addr,
-            Cconst_symbol(apply_function arity) ::
-            obj :: (List.map transl args) @ [clos])))
+        let cargs = Cconst_symbol(apply_function arity) ::
+                    obj :: (List.map transl args) @ [clos] in
+        Cop(Capply typ_addr, cargs)))
   | Ulet(id, exp, body) ->
       if is_unboxed_float exp then begin
         let unboxed_id = Ident.create (Ident.name id) in
@@ -495,14 +470,16 @@ let rec transl = function
         return_unit(set_field (transl loc) n (transl newval))
   | Uprim(Pfloatfield n, [arg]) ->
       let ptr = transl arg in
-      box_float(Cop(Cload typ_float,
-                [if n = 0 then ptr
-                          else Cop(Cadda, [ptr; Cconst_int(n * size_float)])]))
+      box_float(
+        Cop(Cload typ_float,
+            [if n = 0 then ptr
+                       else Cop(Cadda, [ptr; Cconst_int(n * size_float)])]))
   | Uprim(Psetfloatfield n, [loc; newval]) ->
       let ptr = transl loc in
-      return_unit(Cop(Cstore,
-                  [if n = 0 then ptr
-                            else Cop(Cadda, [ptr; Cconst_int(n * size_float)]);
+      return_unit(
+        Cop(Cstore,
+            [if n = 0 then ptr
+                       else Cop(Cadda, [ptr; Cconst_int(n * size_float)]);
                    transl_unbox_float newval]))
 
   (* External call *)
@@ -516,7 +493,8 @@ let rec transl = function
           if prim.prim_native_name <> ""
           then prim.prim_native_name
           else prim.prim_name in
-        Cop(Cextcall(name, typ_addr, prim.prim_alloc), List.map transl args)
+        Cop(Cextcall(name, typ_addr, prim.prim_alloc),
+            List.map transl args)
       end
   (* Exceptions *)
   | Uprim(Praise, [arg]) ->
@@ -553,10 +531,10 @@ let rec transl = function
       incr_int(Cop(Clsl, [decr_int(transl arg1); untag_int(transl arg2)]))
   | Uprim(Plsrint, [arg1; arg2]) ->
       Cop(Cor, [Cop(Clsr, [transl arg1; untag_int(transl arg2)]);
-                Cconst_int 1])
+                 Cconst_int 1])
   | Uprim(Pasrint, [arg1; arg2]) ->
       Cop(Cor, [Cop(Casr, [transl arg1; untag_int(transl arg2)]);
-                Cconst_int 1])
+                 Cconst_int 1])
   | Uprim(Pintcomp cmp, [arg1; arg2]) ->
       tag_int(Cop(Ccmpi(transl_comparison cmp), [transl arg1; transl arg2]))
   | Uprim(Poffsetint n, [arg]) ->
@@ -577,13 +555,17 @@ let rec transl = function
   | Uprim(Pabsfloat, [arg]) ->
       box_float(Cop(Cabsf, [transl_unbox_float arg]))
   | Uprim(Paddfloat, [arg1; arg2]) ->
-      box_float(Cop(Caddf, [transl_unbox_float arg1; transl_unbox_float arg2]))
+      box_float(Cop(Caddf,
+                    [transl_unbox_float arg1; transl_unbox_float arg2]))
   | Uprim(Psubfloat, [arg1; arg2]) ->
-      box_float(Cop(Csubf, [transl_unbox_float arg1; transl_unbox_float arg2]))
+      box_float(Cop(Csubf,
+                    [transl_unbox_float arg1; transl_unbox_float arg2]))
   | Uprim(Pmulfloat, [arg1; arg2]) ->
-      box_float(Cop(Cmulf, [transl_unbox_float arg1; transl_unbox_float arg2]))
+      box_float(Cop(Cmulf,
+                    [transl_unbox_float arg1; transl_unbox_float arg2]))
   | Uprim(Pdivfloat, [arg1; arg2]) ->
-      box_float(Cop(Cdivf, [transl_unbox_float arg1; transl_unbox_float arg2]))
+      box_float(Cop(Cdivf,
+                    [transl_unbox_float arg1; transl_unbox_float arg2]))
   | Uprim(Pfloatcomp cmp, [arg1; arg2]) ->
       tag_int(Cop(Ccmpf(transl_comparison cmp),
                   [transl_unbox_float arg1; transl_unbox_float arg2]))
@@ -597,7 +579,7 @@ let rec transl = function
   | Uprim(Pstringsetu, [arg1; arg2; arg3]) ->
       return_unit(Cop(Cstorechunk Byte_unsigned,
                       [add_int (transl arg1) (untag_int(transl arg2));
-                       untag_int(transl arg3)]))
+                        untag_int(transl arg3)]))
   | Uprim(Pstringrefs, [arg1; arg2]) ->
       tag_int
         (bind "str" (transl arg1) (fun str ->
@@ -622,7 +604,7 @@ let rec transl = function
         Pgenarray ->
           Cop(Cextcall("make_array", typ_addr, true),
               [Cop(Calloc, alloc_block_header 0 (List.length args) ::
-                           List.map transl args)])
+                            List.map transl args)])
       | Paddrarray | Pintarray ->
           Cop(Calloc, alloc_block_header 0 (List.length args) ::
                       List.map transl args)
@@ -638,7 +620,7 @@ let rec transl = function
               Cop(Clsr, [header(transl arg); Cconst_int wordsize_shift])
             else
               bind "header" (header(transl arg)) (fun hdr ->
-                Cifthenelse(is_addr_array hdr,
+                Cifthenelse(is_addr_array_hdr hdr,
                             Cop(Clsr, [hdr; Cconst_int wordsize_shift]),
                             Cop(Clsr, [hdr; Cconst_int numfloat_shift]))) in
           Cop(Cor, [len; Cconst_int 1])
@@ -652,7 +634,7 @@ let rec transl = function
         Pgenarray ->
           bind "arr" (transl arg1) (fun arr ->
             bind "index" (transl arg2) (fun idx ->
-              Cifthenelse(is_addr_array(header arr),
+              Cifthenelse(is_addr_array_ptr arr,
                           addr_array_ref arr idx,
                           float_array_ref arr idx)))
       | Paddrarray | Pintarray ->
@@ -666,7 +648,7 @@ let rec transl = function
           bind "newval" (transl arg3) (fun newval ->
             bind "index" (transl arg2) (fun index ->
               bind "arr" (transl arg1) (fun arr ->
-                Cifthenelse(is_addr_array(header arr),
+                Cifthenelse(is_addr_array_ptr arr,
                             addr_array_set arr index newval,
                             float_array_set arr index (unbox_float newval)))))
       | Paddrarray ->
@@ -682,7 +664,7 @@ let rec transl = function
           bind "index" (transl arg2) (fun idx ->
             bind "arr" (transl arg1) (fun arr ->
               bind "header" (header arr) (fun hdr ->
-                Cifthenelse(is_addr_array hdr,
+                Cifthenelse(is_addr_array_hdr hdr,
                   Csequence(Cop(Ccheckbound, [addr_array_length hdr; idx]),
                             addr_array_ref arr idx),
                   Csequence(Cop(Ccheckbound, [float_array_length hdr; idx]),
@@ -707,7 +689,7 @@ let rec transl = function
             bind "index" (transl arg2) (fun idx ->
               bind "arr" (transl arg1) (fun arr ->
                 bind "header" (header arr) (fun hdr ->
-                  Cifthenelse(is_addr_array hdr,
+                  Cifthenelse(is_addr_array_hdr hdr,
                     Csequence(Cop(Ccheckbound, [addr_array_length hdr; idx]),
                               addr_array_set arr idx newval),
                     Csequence(Cop(Ccheckbound, [float_array_length hdr; idx]),
@@ -796,12 +778,12 @@ let rec transl = function
         (Clet(id, transl low,
           bind "bound" (transl high) (fun high ->
             Ccatch(
-              Cloop(Cifthenelse(
-                Cop(Ccmpi tst, [Cvar id; high]),
-                Cexit,
-                 Csequence(remove_unit(transl body),
-                           Cassign(id, Cop(inc, 
-                                           [Cvar id; Cconst_int 2]))))),
+              Cifthenelse(Cop(Ccmpi tst, [Cvar id; high]), Cexit,
+                Cloop(
+                  Csequence(remove_unit(transl body),
+                    Csequence(Cassign(id, Cop(inc, [Cvar id; Cconst_int 2])),
+                      Cifthenelse(Cop(Ccmpi tst, [Cvar id; high]),
+                                  Cexit, Ctuple []))))),
               Ctuple []))))
   | Uassign(id, exp) ->
       return_unit(Cassign(id, transl exp))
@@ -862,11 +844,15 @@ and transl_letrec bindings cont =
   let rec init_blocks = function
       [] -> fill_blocks bindings
     | (id, exp) :: rem ->
-        Clet(id, dummy_block(expr_size_and_tag exp), init_blocks rem)
+        Clet(id, Cop(Cextcall("alloc_dummy", typ_addr, true),
+                     [int_const(expr_size exp)]),
+             init_blocks rem)
   and fill_blocks = function
       [] -> cont
     | (id, exp) :: rem ->
-        Csequence(store_contents (Cvar id) (transl exp), fill_blocks rem)
+        Csequence(Cop(Cextcall("update_dummy", typ_void, false),
+                      [Cvar id; transl exp]),
+                  fill_blocks rem)
   in init_blocks bindings
 
 (* Translate a function definition *)
