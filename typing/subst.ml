@@ -126,6 +126,7 @@ let rec typexp s ty =
           | Fabsent ->
               Tlink (typexp s t2)
           | Fvar _ (* {contents = None} *) as k ->
+              let k = if s.for_saving then Fvar(ref None) else k in
               Tfield(label, k, typexp s t1, typexp s t2)
           end
       | _ -> copy_type_desc (typexp s) desc

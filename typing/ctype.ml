@@ -2430,12 +2430,15 @@ let rec normalize_type_rec env ty =
                 f
               else f
             | _ -> f)
-          row.row_fields
+          row.row_fields in
+      let fields =
+        List.sort (fun (p,_) (q,_) -> compare p q)
+          (List.filter (fun (_,fi) -> fi <> Rabsent) fields)
       and bound = List.fold_left
           (fun tyl ty -> if List.memq ty tyl then tyl else ty :: tyl)
           [] (List.map repr row.row_bound)
       in ty.desc <- Tvariant {row with row_fields = fields; row_bound = bound}
-    | Tobject (_, nm) ->
+    | Tobject (fi, nm) ->
         begin match !nm with
         | None -> ()
         | Some (n, v :: l) ->
@@ -2447,7 +2450,12 @@ let rec normalize_type_rec env ty =
             end
         | _ ->
             fatal_error "Ctype.normalize_type_rec"
-        end
+        end;
+        let fi = repr fi in
+        if fi.level < lowest_level then () else
+        let fields, row = flatten_fields fi in
+        let fi' = build_fields fi.level fields row in
+        fi.desc <- fi'.desc
     | _ -> ()
     end;
     iter_type_expr (normalize_type_rec env) ty
