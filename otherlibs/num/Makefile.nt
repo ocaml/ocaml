@@ -34,7 +34,7 @@ all: dllnums.dll libnums.lib nums.cma $(CMIFILES)
 allopt: libnums.lib nums.cmxa $(CMIFILES)
 
 nums.cma: $(CAMLOBJS)
-	$(CAMLC) -a -o nums.cma $(CAMLOBJS) -cclib -lnums
+	$(CAMLC) -a -o nums.cma $(CAMLOBJS) -dllib -lnums -cclib -lnums
 
 nums.cmxa: $(CAMLOBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o nums.cmxa $(CAMLOBJS:.cmo=.cmx) -cclib -lnums

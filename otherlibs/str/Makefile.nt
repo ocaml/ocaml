@@ -37,7 +37,7 @@ libstr.lib: $(COBJS:.obj=.sobj)
 	$(MKLIB)libstr.lib $(COBJS:.obj=.sobj)
 
 str.cma: str.cmo
-	$(CAMLC) -a -o str.cma str.cmo -cclib -lstr
+	$(CAMLC) -a -o str.cma str.cmo -dllib -lstr -cclib -lstr
 
 str.cmxa: str.cmx
 	$(CAMLOPT) -a -o str.cmxa str.cmx -cclib -lstr

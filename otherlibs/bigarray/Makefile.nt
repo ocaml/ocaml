@@ -37,7 +37,8 @@ libbigarray.lib: $(C_OBJS:.obj=.sobj)
 	$(MKLIB)libbigarray.lib $(C_OBJS:.obj=.sobj)
 
 bigarray.cma: $(CAML_OBJS)
-	$(CAMLC) -a -linkall -o bigarray.cma $(CAML_OBJS) -cclib -lbigarray
+	$(CAMLC) -a -linkall -o bigarray.cma $(CAML_OBJS) \
+           -dllib -lbigarray -cclib -lbigarray
 
 bigarray.cmxa: $(CAML_OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -linkall -o bigarray.cmxa \

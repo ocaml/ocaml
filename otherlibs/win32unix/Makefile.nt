@@ -66,7 +66,7 @@ io.h: "$(SYSTEM_INCLUDES)\io.h"
 
 unix.cma: $(CAML_OBJS)
 	$(CAMLC) -a -linkall -o unix.cma $(CAML_OBJS) \
-          -cclib -lunix
+          -dllib -lunix -cclib -lunix wsock32.lib
 
 unix.cmxa: $(CAMLOPT_OBJS)
 	$(CAMLOPT) -a -linkall -o unix.cmxa $(CAMLOPT_OBJS) \
@@ -90,6 +90,9 @@ installopt:
 
 unixLabels.cmo: unixLabels.ml
 	$(CAMLC) -c $(COMPFLAGS) -nolabels unixLabels.ml
+
+unixLabels.cmx: unixLabels.ml
+	$(CAMLOPT) -c $(COMPFLAGS) -nolabels unixLabels.ml
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx .dobj .sobj
 

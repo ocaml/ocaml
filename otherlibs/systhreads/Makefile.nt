@@ -52,7 +52,8 @@ win32_n.obj: win32.c
 	mv win32.obj win32_n.obj
 
 threads.cma: $(THREAD_OBJS)
-	$(CAMLC) -a -o threads.cma $(THREAD_OBJS) -cclib -lthreads
+	$(CAMLC) -a -o threads.cma $(THREAD_OBJS) \
+          -dllib -lthreads -cclib -lthreads
 
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
