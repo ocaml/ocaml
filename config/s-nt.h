@@ -16,7 +16,9 @@
 #define HAS_MEMMOVE
 #define BSD_SIGNALS
 #define HAS_STRERROR
+#define HAS_SOCKETS
 #define HAS_GETCWD
+#define HAS_UTIME
 #define HAS_DUP2
-#define HAS_SELECT
 #define HAS_GETHOSTNAME
+#define HAS_MKTIME
