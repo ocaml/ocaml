@@ -567,6 +567,7 @@ binutils_objcopy=''
 binutils_nm=''
 
 if test "$arch" != "none"; then
+  old_IFS="$IFS"
   IFS=':'
   for d in ${binutils_dir}:${PATH}; do
     if test -z "$d"; then continue; fi
@@ -585,7 +586,7 @@ if test "$arch" != "none"; then
       break
     fi
   done
-  unset IFS
+  IFS="$old_IFS"
 fi
 
 # Where is ranlib?
