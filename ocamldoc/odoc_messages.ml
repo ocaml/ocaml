@@ -29,6 +29,7 @@ let texi_only = "(TeXinfo only)"
 let latex_texi_only = "(LaTeX and TeXinfo only)"
 let html_only = "(HTML only)"
 let html_latex_only = "(HTML and LaTeX only)"
+let html_latex_texi_only = "(HTML, LaTeX and TeXinfo only)"
 let man_only = "(man only)"
 let verbose_mode = " verbose mode"
 let include_dirs = "<dir>  Add <dir> to the list of include directories"
@@ -74,7 +75,7 @@ let man_suffix = "<suffix>  use <suffix> for man page files "^
 
 let option_title = "<title>  use <title> as title for the generated documentation"
 let option_intro = 
-  "<file>  use content of <file> as ocamldoc text to use as introduction "^(html_latex_only)
+  "<file>  use content of <file> as ocamldoc text to use as introduction "^(html_latex_texi_only)
 let with_parameter_list = " display the complete list of parameters for functions and methods "^html_only
 let hide_modules = " <M1,M2.M3,...> Hide the given complete module names in generated doc"
 let no_header = " Suppress header in generated documentation "^latex_texi_only

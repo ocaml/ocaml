@@ -1016,7 +1016,7 @@ class texi =
 
 
 
-    (** Writes the header of the TeX document. *)
+    (** Writes the header of the TeXinfo document. *)
     method generate_texi_header chan texi_filename m_list =
       let title = match !Args.title with
       | None -> ""
@@ -1068,14 +1068,22 @@ class texi =
                "@node Top, , , (dir)" ;
                "@top "^ title ; ]
            ] ) ;
-      if title <> ""
-      then begin
-        puts_nl chan "@ifinfo" ; 
-        puts_nl chan ("Documentation for " ^ title) ; 
-        puts_nl chan "@end ifinfo" 
-      end 
-      else puts_nl chan "@c no title given" ;
-      
+
+      (* insert the intro file *)
+      begin
+	match !Odoc_info.Args.intro_file with
+	| None when title <> "" ->
+            puts_nl chan "@ifinfo" ; 
+            puts_nl chan ("Documentation for " ^ title) ; 
+            puts_nl chan "@end ifinfo"
+	| None ->
+	    puts_nl chan "@c no title given"
+	| Some f ->
+	    nl chan ;
+	    puts_nl chan
+	      (self#texi_of_info (Some (Odoc_info.info_of_comment_file f)))
+      end ;
+
       (* write a top menu *)
       Texi.generate_menu chan 
         ((List.map (fun m -> `Module m) m_list) @
@@ -1093,7 +1101,7 @@ class texi =
          else [] ))
       
 
-    (** Writes the header of the TeX document. *)
+    (** Writes the trailer of the TeXinfo document. *)
     method generate_texi_trailer chan = 
       nl chan ; 
       if !Args.with_index
@@ -1134,7 +1142,7 @@ class texi =
 	  List.iter self#scan_for_index_in_class c_ele
 	    
     method scan_for_index_in_mod = function
-	(* no recusrion *)
+	(* no recursion *)
       | Element_value _ -> self#do_index `Value
       | Element_exception _ -> self#do_index `Exception
       | Element_type _ -> self#do_index `Type
