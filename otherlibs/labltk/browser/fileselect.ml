@@ -116,7 +116,6 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
       then !current_dir ^ "/" ^ filter
       else filter
     in
-    prerr_endline filter;
     let dir, pattern = parse_filter filter in
     let dir = if !load_in_path & usepath then "" else
               (current_dir := Filename.dirname dir; dir)
