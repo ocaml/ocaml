@@ -16,12 +16,12 @@
 #include <CursorCtl.h>
 #include <Files.h>
 #include <IntEnv.h>
+#include <MacTypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <Strings.h>
 #include <TextUtils.h>
 #include <Timer.h>
-#include <Types.h>
 
 /* The user interface defaults to MPW tool.  The standalone application
    overrides the ui_* functions, as well as [main], [InitCursorCtl],
