@@ -23,7 +23,7 @@ BYTECCCOMPOPTS=/Ox /MT
 BYTECCLINKOPTS=/MT
 
 ### Libraries needed
-CCLIBS=
+CCLIBS=wsock32.lib
 
 ### How to invoke the C preprocessor
 CPP=cl /nologo /EP
