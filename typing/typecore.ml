@@ -744,7 +744,8 @@ let type_expression env sexp =
   begin_def();
   let exp = type_exp env sexp in
   end_def();
-  if is_nonexpansive exp then generalize exp.exp_type;
+  if is_nonexpansive exp then generalize exp.exp_type
+  else make_nongen exp.exp_type;
   exp
 
 (* Typing of methods *)
