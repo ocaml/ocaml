@@ -1,7 +1,7 @@
 #!/bin/sh
 # $Id$
 
-OLIB=OLIBDIR
+OLIB=`ocamlc -where`
 LIB=LIBDIR
 
 INTERFACES=
@@ -26,7 +26,7 @@ done
 CRC=crc_$$
 set -e
 trap 'rm -f $CRC.ml $CRC.cmi $CRC.cmo' 0 2
-$LIB/extract_crc -I $OLIB $INCL $INTERFACES > $CRC.ml
+$OLIB/extract_crc -I $OLIB $INCL $INTERFACES > $CRC.ml
 echo "let _ = Dynlink.add_available_units crc_unit_list" >> $CRC.ml
 ocamlc -I $LIB odyl.cma camlp4.cma $CRC.ml $INCL $OPTS odyl.cmo -linkall
 rm -f $CRC.ml $CRC.cmi $CRC.cmo
