@@ -1,5 +1,5 @@
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 15:46:09 on 23 juin 2000 by MakeDepend
+# These dependencies were produced at 23:41:57 on 27 fŽv 2001 by MakeDepend
 
 :alloc.c.x Ä  ¶
  :alloc.c ¶
@@ -43,6 +43,38 @@
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"WCharTDef.h
+
+:backtrace.c.x Ä  ¶
+ :backtrace.c ¶
+ "{CIncludes}"stdio.h ¶
+ "{CIncludes}"fcntl.h ¶
+ :config.h ¶
+ :mlvalues.h ¶
+ :alloc.h ¶
+ :io.h ¶
+ :instruct.h ¶
+ :intext.h ¶
+ :exec.h ¶
+ :fix_code.h ¶
+ :startup.h ¶
+ :stacks.h ¶
+ :sys.h ¶
+ :backtrace.h ¶
+ "{CIncludes}"NullDef.h ¶
+ "{CIncludes}"SizeTDef.h ¶
+ "{CIncludes}"SeekDefs.h ¶
+ "{CIncludes}"VaListTDef.h ¶
+ ::config:m.h ¶
+ ::config:s.h ¶
+ :misc.h ¶
+ :memory.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"stdlib.h ¶
+ :gc.h ¶
+ :major_gc.h ¶
+ :minor_gc.h ¶
+ "{CIncludes}"WCharTDef.h ¶
+ :freelist.h
 
 :callback.c.x Ä  ¶
  :callback.c ¶
@@ -95,24 +127,25 @@
 
 :compare.c.x Ä  ¶
  :compare.c ¶
+ "{CIncludes}"string.h ¶
+ "{CIncludes}"stdlib.h ¶
  :custom.h ¶
  :fail.h ¶
  :memory.h ¶
  :misc.h ¶
  :mlvalues.h ¶
+ "{CIncludes}"NullDef.h ¶
+ "{CIncludes}"SizeTDef.h ¶
+ "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"setjmp.h ¶
  :config.h ¶
  :gc.h ¶
  :major_gc.h ¶
  :minor_gc.h ¶
  "{CIncludes}"stddef.h ¶
- "{CIncludes}"stdlib.h ¶
  ::config:m.h ¶
  ::config:s.h ¶
- :freelist.h ¶
- "{CIncludes}"NullDef.h ¶
- "{CIncludes}"SizeTDef.h ¶
- "{CIncludes}"WCharTDef.h
+ :freelist.h
 
 :custom.c.x Ä  ¶
  :custom.c ¶
@@ -273,6 +306,7 @@
  :memory.h ¶
  :mlvalues.h ¶
  :misc.h ¶
+ :reverse.h ¶
  :stacks.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
@@ -398,7 +432,9 @@
 
 :interp.c.x Ä  ¶
  :interp.c ¶
+ "{CIncludes}"stdio.h ¶
  :alloc.h ¶
+ :backtrace.h ¶
  :callback.h ¶
  :debugger.h ¶
  :fail.h ¶
@@ -413,6 +449,10 @@
  :prims.h ¶
  :signals.h ¶
  :stacks.h ¶
+ "{CIncludes}"NullDef.h ¶
+ "{CIncludes}"SizeTDef.h ¶
+ "{CIncludes}"SeekDefs.h ¶
+ "{CIncludes}"VaListTDef.h ¶
  "{CIncludes}"setjmp.h ¶
  :config.h ¶
  :freelist.h ¶
@@ -422,8 +462,6 @@
  "{CIncludes}"stdlib.h ¶
  ::config:m.h ¶
  ::config:s.h ¶
- "{CIncludes}"NullDef.h ¶
- "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"WCharTDef.h
 
 :ints.c.x Ä  ¶
@@ -768,6 +806,8 @@
  "{CIncludes}"stdio.h ¶
  "{CIncludes}"stdlib.h ¶
  "{CIncludes}"string.h ¶
+ :backtrace.h ¶
+ :debugger.h ¶
  :fail.h ¶
  :misc.h ¶
  :mlvalues.h ¶
@@ -880,6 +920,7 @@
  :config.h ¶
  "{CIncludes}"windows.h ¶
  :alloc.h ¶
+ :backtrace.h ¶
  :callback.h ¶
  :custom.h ¶
  :debugger.h ¶
@@ -887,6 +928,7 @@
  :fail.h ¶
  :fix_code.h ¶
  :gc_ctrl.h ¶
+ :instrtrace.h ¶
  :interp.h ¶
  :intext.h ¶
  :io.h ¶
@@ -899,6 +941,7 @@
  :signals.h ¶
  :stacks.h ¶
  :sys.h ¶
+ :startup.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -1017,10 +1060,13 @@
 
 :weak.c.x Ä  ¶
  :weak.c ¶
+ "{CIncludes}"string.h ¶
  :alloc.h ¶
  :fail.h ¶
  :memory.h ¶
  :mlvalues.h ¶
+ "{CIncludes}"NullDef.h ¶
+ "{CIncludes}"SizeTDef.h ¶
  :misc.h ¶
  "{CIncludes}"setjmp.h ¶
  :config.h ¶
@@ -1032,8 +1078,6 @@
  ::config:m.h ¶
  ::config:s.h ¶
  :freelist.h ¶
- "{CIncludes}"NullDef.h ¶
- "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"WCharTDef.h
 
 :win32.c.x Ä  ¶
@@ -1090,7 +1134,7 @@
  "{CIncludes}"DateTimeUtils.h
 
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 15:46:23 on 23 juin 2000 by MakeDepend
+# These dependencies were produced at 23:42:11 on 27 fŽv 2001 by MakeDepend
 
 :alloc.c.o Ä  ¶
  :alloc.c ¶
@@ -1134,6 +1178,38 @@
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"WCharTDef.h
+
+:backtrace.c.o Ä  ¶
+ :backtrace.c ¶
+ "{CIncludes}"stdio.h ¶
+ "{CIncludes}"fcntl.h ¶
+ :config.h ¶
+ :mlvalues.h ¶
+ :alloc.h ¶
+ :io.h ¶
+ :instruct.h ¶
+ :intext.h ¶
+ :exec.h ¶
+ :fix_code.h ¶
+ :startup.h ¶
+ :stacks.h ¶
+ :sys.h ¶
+ :backtrace.h ¶
+ "{CIncludes}"NullDef.h ¶
+ "{CIncludes}"SizeTDef.h ¶
+ "{CIncludes}"SeekDefs.h ¶
+ "{CIncludes}"VaListTDef.h ¶
+ ::config:m.h ¶
+ ::config:s.h ¶
+ :misc.h ¶
+ :memory.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"stdlib.h ¶
+ :gc.h ¶
+ :major_gc.h ¶
+ :minor_gc.h ¶
+ "{CIncludes}"WCharTDef.h ¶
+ :freelist.h
 
 :callback.c.o Ä  ¶
  :callback.c ¶
@@ -1186,24 +1262,25 @@
 
 :compare.c.o Ä  ¶
  :compare.c ¶
+ "{CIncludes}"string.h ¶
+ "{CIncludes}"stdlib.h ¶
  :custom.h ¶
  :fail.h ¶
  :memory.h ¶
  :misc.h ¶
  :mlvalues.h ¶
+ "{CIncludes}"NullDef.h ¶
+ "{CIncludes}"SizeTDef.h ¶
+ "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"setjmp.h ¶
  :config.h ¶
  :gc.h ¶
  :major_gc.h ¶
  :minor_gc.h ¶
  "{CIncludes}"stddef.h ¶
- "{CIncludes}"stdlib.h ¶
  ::config:m.h ¶
  ::config:s.h ¶
- :freelist.h ¶
- "{CIncludes}"NullDef.h ¶
- "{CIncludes}"SizeTDef.h ¶
- "{CIncludes}"WCharTDef.h
+ :freelist.h
 
 :custom.c.o Ä  ¶
  :custom.c ¶
@@ -1364,6 +1441,7 @@
  :memory.h ¶
  :mlvalues.h ¶
  :misc.h ¶
+ :reverse.h ¶
  :stacks.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
@@ -1489,7 +1567,9 @@
 
 :interp.c.o Ä  ¶
  :interp.c ¶
+ "{CIncludes}"stdio.h ¶
  :alloc.h ¶
+ :backtrace.h ¶
  :callback.h ¶
  :debugger.h ¶
  :fail.h ¶
@@ -1504,6 +1584,10 @@
  :prims.h ¶
  :signals.h ¶
  :stacks.h ¶
+ "{CIncludes}"NullDef.h ¶
+ "{CIncludes}"SizeTDef.h ¶
+ "{CIncludes}"SeekDefs.h ¶
+ "{CIncludes}"VaListTDef.h ¶
  "{CIncludes}"setjmp.h ¶
  :config.h ¶
  :freelist.h ¶
@@ -1513,8 +1597,6 @@
  "{CIncludes}"stdlib.h ¶
  ::config:m.h ¶
  ::config:s.h ¶
- "{CIncludes}"NullDef.h ¶
- "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"WCharTDef.h
 
 :ints.c.o Ä  ¶
@@ -1859,6 +1941,8 @@
  "{CIncludes}"stdio.h ¶
  "{CIncludes}"stdlib.h ¶
  "{CIncludes}"string.h ¶
+ :backtrace.h ¶
+ :debugger.h ¶
  :fail.h ¶
  :misc.h ¶
  :mlvalues.h ¶
@@ -1971,6 +2055,7 @@
  :config.h ¶
  "{CIncludes}"windows.h ¶
  :alloc.h ¶
+ :backtrace.h ¶
  :callback.h ¶
  :custom.h ¶
  :debugger.h ¶
@@ -1978,6 +2063,7 @@
  :fail.h ¶
  :fix_code.h ¶
  :gc_ctrl.h ¶
+ :instrtrace.h ¶
  :interp.h ¶
  :intext.h ¶
  :io.h ¶
@@ -1990,6 +2076,7 @@
  :signals.h ¶
  :stacks.h ¶
  :sys.h ¶
+ :startup.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -2108,10 +2195,13 @@
 
 :weak.c.o Ä  ¶
  :weak.c ¶
+ "{CIncludes}"string.h ¶
  :alloc.h ¶
  :fail.h ¶
  :memory.h ¶
  :mlvalues.h ¶
+ "{CIncludes}"NullDef.h ¶
+ "{CIncludes}"SizeTDef.h ¶
  :misc.h ¶
  "{CIncludes}"setjmp.h ¶
  :config.h ¶
@@ -2123,8 +2213,6 @@
  ::config:m.h ¶
  ::config:s.h ¶
  :freelist.h ¶
- "{CIncludes}"NullDef.h ¶
- "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"WCharTDef.h
 
 :win32.c.o Ä  ¶

@@ -9,6 +9,7 @@ bigarray_get_generic
 bigarray_init
 bigarray_map_file
 bigarray_num_dims
+bigarray_reshape
 bigarray_set_1
 bigarray_set_2
 bigarray_set_3

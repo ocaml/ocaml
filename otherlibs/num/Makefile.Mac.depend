@@ -1,5 +1,5 @@
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 15:47:35 on 23 juin 2000 by MakeDepend
+# These dependencies were produced at 23:43:21 on 27 fv 2001 by MakeDepend
 
 :nat_stubs.c.x Ä  ¶
  :nat_stubs.c ¶
@@ -11,7 +11,7 @@
  "{CIncludes}"MixedMode.h
 
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 15:47:37 on 23 juin 2000 by MakeDepend
+# These dependencies were produced at 23:43:23 on 27 fv 2001 by MakeDepend
 
 :nat_stubs.c.o Ä  ¶
  :nat_stubs.c ¶

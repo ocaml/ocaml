@@ -4,8 +4,8 @@ parsing.cmiÄ lexing.cmi obj.cmi
 printf.cmiÄ buffer.cmi 
 arg.cmoÄ array.cmi list.cmi printf.cmi string.cmi sys.cmi arg.cmi 
 arg.cmxÄ array.cmx list.cmx printf.cmx string.cmx sys.cmx arg.cmi 
-array.cmoÄ pervasives.cmi array.cmi 
-array.cmxÄ pervasives.cmx array.cmi 
+array.cmoÄ array.cmi 
+array.cmxÄ array.cmi 
 buffer.cmoÄ string.cmi sys.cmi buffer.cmi 
 buffer.cmxÄ string.cmx sys.cmx buffer.cmi 
 callback.cmoÄ obj.cmi callback.cmi 
@@ -14,8 +14,8 @@ char.cmoÄ char.cmi
 char.cmxÄ char.cmi 
 digest.cmoÄ string.cmi digest.cmi 
 digest.cmxÄ string.cmx digest.cmi 
-filename.cmoÄ buffer.cmi pervasives.cmi string.cmi sys.cmi filename.cmi 
-filename.cmxÄ buffer.cmx pervasives.cmx string.cmx sys.cmx filename.cmi 
+filename.cmoÄ buffer.cmi string.cmi sys.cmi filename.cmi 
+filename.cmxÄ buffer.cmx string.cmx sys.cmx filename.cmi 
 format.cmoÄ buffer.cmi obj.cmi string.cmi format.cmi 
 format.cmxÄ buffer.cmx obj.cmx string.cmx format.cmi 
 gc.cmoÄ printf.cmi sys.cmi gc.cmi 

@@ -1,5 +1,5 @@
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 15:47:42 on 23 juin 2000 by MakeDepend
+# These dependencies were produced at 23:43:28 on 27 fv 2001 by MakeDepend
 
 :strstubs.c.x Ä  ¶
  :strstubs.c ¶
@@ -13,7 +13,7 @@
  "{CIncludes}"MixedMode.h
 
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 15:47:43 on 23 juin 2000 by MakeDepend
+# These dependencies were produced at 23:43:29 on 27 fv 2001 by MakeDepend
 
 :strstubs.c.o Ä  ¶
  :strstubs.c ¶

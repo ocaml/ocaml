@@ -1,5 +1,5 @@
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 15:48:11 on 23 juin 2000 by MakeDepend
+# These dependencies were produced at 23:43:56 on 27 fv 2001 by MakeDepend
 
 :aboutbox.c.x Ä  ¶
  :aboutbox.c ¶
@@ -1691,7 +1691,7 @@
  "{CIncludes}"DriverSynchronization.h
 
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 15:48:21 on 23 juin 2000 by MakeDepend
+# These dependencies were produced at 23:44:07 on 27 fv 2001 by MakeDepend
 
 :aboutbox.c.o Ä  ¶
  :aboutbox.c ¶

@@ -53,7 +53,7 @@ SysLibs = "{libraries}sio.far.o" ¶
           "{Libraries}OpenTptInet.o"
 Libs = {camlrunlibs} {welibs} {gusilibs} {syslibs}
 
-PPCC = mrc -proto strict
+PPCC = mrc -proto strict -w 6
 PPCCplus = mrcpp
 PPCCOptions = {XIncludes} {cdbgflag}
 PPCLinkOptions = -d {ldbgflag}

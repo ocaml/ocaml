@@ -31,7 +31,7 @@ static int entry_h_length;
 
 extern int socket_domain_table[];
 
-static value alloc_one_addr(char *a)
+static value alloc_one_addr(char const *a)
 {
   struct in_addr addr;
   memmove (&addr, a, entry_h_length);
