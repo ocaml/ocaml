@@ -291,7 +291,7 @@ let rec make_sequence fn = function
     [] -> lambda_unit
   | [x] -> fn x
   | x::rem ->
-      Lsequence(fn x, make_sequence fn rem)
+      let lam = fn x in Lsequence(lam, make_sequence fn rem)
 
 (* Compile a toplevel phrase *)
 
