@@ -32,26 +32,27 @@ let conj x = { re = x.re; im = -. x.im }
 let mul x y = { re = x.re *. y.re -. x.im *. y.im;
                 im = x.re *. y.im +. x.im *. y.re }
 
-let inv x =
-  (* Watch out for overflow in computing re^2 + im^2 *)
-  if abs_float x.re >= abs_float x.im then begin
-    let q = x.im /. x.re in
-    let d = 1.0 +. q *. q in
-    { re = (1.0 /. d) /. x.re; im = -. (q /. d) /. x.re }
-  end else begin
-    let q = x.re /. x.im in
-    let d = 1.0 +. q *. q in
-    { re = (q /. d) /. x.im; im = (-1.0 /. d) /. x.im }
-  end
+let div x y =
+  if abs_float y.re >= abs_float y.im then
+    let r = y.im /. y.re in
+    let d = y.re +. r *. y.im in
+    { re = (x.re +. r *. x.im) /. d;
+      im = (x.im -. r *. x.re) /. d }
+  else
+    let r = y.re /. y.im in
+    let d = y.im +. r *. y.re in
+    { re = (r *. x.re +. x.im) /. d;
+      im = (r *. x.im -. x.re) /. d }
 
-let div x y = mul x (inv y)
+let inv x = div one x
 
 let norm2 x = x.re *. x.re +. x.im *. x.im
 
 let norm x =
   (* Watch out for overflow in computing re^2 + im^2 *)
   let r = abs_float x.re and i = abs_float x.im in
-  if r = 0.0 && i = 0.0 then 0.0
+  if r = 0.0 then i
+  else if i = 0.0 then r
   else if r >= i then
     let q = i /. r in r *. sqrt(1.0 +. q *. q)
   else
