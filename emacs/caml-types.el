@@ -164,7 +164,8 @@
 
 ; find-file-read-only-noselect seems to be missing from emacs...
 (defun caml-types-find-file (name)
-  (or (get-file-buffer name)
+  (or (and (get-file-buffer name)
+           (find-file-noselect name))
       (let ((buf (find-file-noselect name)))
         (save-excursion
           (set-buffer buf)
