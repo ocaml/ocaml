@@ -29,8 +29,13 @@ let read_info name =
       find_in_path !load_path name
     with Not_found ->
       raise(Error(File_not_found name)) in
-  (Filename.chop_suffix filename ".cmx" ^ ".o",
-   Compilenv.read_unit_info filename)
+  let (info, crc) = Compilenv.read_unit_info filename in
+  (* There is no need to keep the approximation in the .cmxa file,
+     since the compiler will go looking directly for .cmx files.
+     The linker, which is the only one that reads .cmxa files, does not
+     need the approximation. *)
+  info.ui_approx <- Clambda.Value_unknown;
+  (Filename.chop_suffix filename ".cmx" ^ ".o", (info, crc))
 
 let create_archive file_list lib_name =
   let archive_name = Filename.chop_suffix lib_name ".cmxa" ^ ".a" in

@@ -279,7 +279,7 @@ let fundecls_size fundecls =
 let rec expr_size = function
     Uclosure(fundecls, clos_vars) ->
       fundecls_size fundecls + List.length clos_vars
-  | Uprim(Pmakeblock tag, args) ->
+  | Uprim(Pmakeblock(tag, mut), args) ->
       List.length args
   | Ulet(id, exp, body) ->
       expr_size body
@@ -408,9 +408,9 @@ let rec transl = function
       Cconst_symbol(Ident.name id)
 
   (* Heap blocks *)
-  | Uprim(Pmakeblock tag, []) ->
+  | Uprim(Pmakeblock(tag, mut), []) ->
       transl_constant(Const_block(tag, []))
-  | Uprim(Pmakeblock tag, args) ->
+  | Uprim(Pmakeblock(tag, mut), args) ->
       Cop(Calloc, alloc_block_header tag (List.length args) ::
                   List.map transl args)
   | Uprim(Pfield n, [arg]) ->
@@ -799,7 +799,7 @@ let rec transl_all_functions already_translated cont =
 (* Translate a toplevel structure definition *)
 
 let rec transl_structure glob = function
-    Uprim(Pmakeblock tag, args) ->
+    Uprim(Pmakeblock(tag, mut), args) ->
       (* Scan the args, storing those that are not identifiers and
          returning a map id -> position in block for those that are idents. *)
       let rec make_stores pos map = function

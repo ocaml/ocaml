@@ -14,6 +14,7 @@
 (* Introduction of closures, uncurrying, recognition of direct calls *)
 
 open Misc
+open Asttypes
 open Lambda
 open Clambda
 
@@ -167,9 +168,13 @@ let rec close fenv cenv = function
       let (ulam, approx) = close fenv cenv lam in
       Compilenv.set_global_approx approx;
       (Uprim(Psetglobal id, [ulam]), Value_unknown)
-  | Lprim(Pmakeblock tag, lams) ->
+  | Lprim(Pmakeblock(tag, mut) as prim, lams) ->
       let (ulams, approxs) = List.split (List.map (close fenv cenv) lams) in
-      (Uprim(Pmakeblock tag, ulams), Value_tuple(Array.of_list approxs))
+      (Uprim(prim, ulams),
+       begin match mut with
+           Immutable -> Value_tuple(Array.of_list approxs)
+         | Mutable -> Value_unknown
+       end)
   | Lprim(Pfield n, [lam]) ->
       let (ulam, approx) = close fenv cenv lam in
       (Uprim(Pfield n, [ulam]),

@@ -86,23 +86,26 @@ let read_unit_info filename =
 
 (* Return the approximation of a global identifier *)
 
+let cmx_not_found_crc =
+  "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000"
+
 let global_approx global_ident =
   let modname = Ident.name global_ident in
   try
     Hashtbl.find global_approx_table modname
   with Not_found ->
-    let approx =
+    let (approx, crc) =
       try
         let filename =
           find_in_path !load_path (lowercase modname ^ ".cmx") in
         let (ui, crc) = read_unit_info filename in
         if ui.ui_name <> modname then
           raise(Error(Illegal_renaming(modname, filename)));
-        current_unit.ui_imports_cmx <-
-          (modname, crc) :: current_unit.ui_imports_cmx;
-        ui.ui_approx
+        (ui.ui_approx, crc)
       with Not_found ->
-        Value_unknown in
+        (Value_unknown, cmx_not_found_crc) in
+    current_unit.ui_imports_cmx <-
+      (modname, crc) :: current_unit.ui_imports_cmx;
     Hashtbl.add global_approx_table modname approx;
     approx
 

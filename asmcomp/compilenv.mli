@@ -47,6 +47,10 @@ val read_unit_info: string -> unit_infos * Digest.t
 val save_unit_info: string -> unit
         (* Save the infos for the current unit in the given file *)
 
+val cmx_not_found_crc: Digest.t
+        (* Special digest used in the [ui_imports_cmx] list to signal
+           that no [.cmx] file was found and used for the imported unit *)
+
 type error =
     Not_a_unit_info of string
   | Corrupted_unit_info of string

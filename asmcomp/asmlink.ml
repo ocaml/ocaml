@@ -51,12 +51,14 @@ let check_consistency file_name unit crc =
   Hashtbl.add crc_interfaces unit.ui_name (file_name, unit.ui_interface);
   List.iter
     (fun (name, crc) ->
+      if crc <> cmx_not_found_crc then begin
       try
         let (auth_name, auth_crc) = Hashtbl.find crc_implementations name in
         if crc <> auth_crc then
           raise(Error(Inconsistent_implementation(name, file_name, auth_name)))
       with Not_found ->
-        Hashtbl.add crc_implementations name (file_name, crc))
+        Hashtbl.add crc_implementations name (file_name, crc)
+      end)
     unit.ui_imports_cmx;
   Hashtbl.add crc_implementations unit.ui_name (file_name, crc)
 
@@ -197,6 +199,7 @@ let object_file_name name =
 let link objfiles =
   let objfiles = "stdlib.cmxa" :: (objfiles @ ["std_exit.cmx"]) in
   let units_tolink = List.fold_right scan_file objfiles [] in
+  Array.iter remove_required Runtimedef.builtin_exceptions;
   if not (StringSet.is_empty !missing_globals) then
     raise(Error(Missing_implementations(StringSet.elements !missing_globals)));
   let startup = temp_file "camlstartup" ".s" in
