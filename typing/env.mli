@@ -28,6 +28,9 @@ val find_module: Path.t -> t -> module_type
 val find_modtype: Path.t -> t -> modtype_declaration
 val find_class: Path.t -> t -> class_type
 
+val find_type_expansion: Path.t -> t -> type_expr list * type_expr
+val find_modtype_expansion: Path.t -> t -> Types.module_type
+
 (* Lookup by long identifiers *)
 
 val lookup_value: Longident.t -> t -> Path.t * value_description

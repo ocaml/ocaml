@@ -85,12 +85,12 @@ let empty = {
 type pers_struct =
   { ps_name: string;
     ps_sig: signature;
-    ps_comps: module_components }
+    ps_comps: module_components;
+    ps_crc: Digest.t;
+    mutable ps_used: bool }
 
 let persistent_structures =
   (Hashtbl.create 17 : (string, pers_struct) Hashtbl.t)
-
-let imported_units = ref ([] : (string * Digest.t) list)
 
 let read_pers_struct modname filename =
   let ic = open_in_bin filename in
@@ -101,12 +101,17 @@ let read_pers_struct modname filename =
       close_in ic;
       raise(Error(Not_an_interface filename))
     end;
-    let ps = (input_value ic : pers_struct) in
-    let crc = Digest.input ic in
+    let (name, sign, comps) = input_value ic in
+    let ps = { ps_name = name;
+               ps_sig = sign;
+               ps_comps = comps;
+               ps_crc = Digest.input ic;
+               ps_used = false }
+    in
     close_in ic;
     if ps.ps_name <> modname then
       raise(Error(Illegal_renaming(ps.ps_name, filename)));
-    (ps, crc)
+    ps
   with End_of_file | Failure _ ->
     close_in ic;
     raise(Error(Corrupted_interface(filename)))
@@ -115,16 +120,16 @@ let find_pers_struct name =
   try
     Hashtbl.find persistent_structures name
   with Not_found ->
-    let (ps, crc) =
+    let ps =
       read_pers_struct name
         (find_in_path !load_path (String.uncapitalize name ^ ".cmi")) in
     Hashtbl.add persistent_structures name ps;
-    imported_units := (name, crc) :: !imported_units;
     ps
 
+let mark_used = function None -> () | Some ps -> ps.ps_used <- true
+
 let reset_cache() =
-  Hashtbl.clear persistent_structures;
-  imported_units := []
+  Hashtbl.clear persistent_structures
 
 (* Forward declarations *)
 
@@ -144,47 +149,66 @@ let rec find_module_descr path env =
     Pident id ->
       begin try
         let (p, desc) = Ident.find_same id env.components
-        in desc
+        in (desc, None)
       with Not_found ->
-        if Ident.persistent id
-        then (find_pers_struct (Ident.name id)).ps_comps
+        if Ident.persistent id then
+          let ps = find_pers_struct (Ident.name id) in (ps.ps_comps, Some ps)
         else raise Not_found
       end
   | Pdot(p, s, pos) ->
       begin match find_module_descr p env with
-      	Structure_comps c ->
+      	(Structure_comps c, ps) ->
 	  let (descr, pos) = Tbl.find s c.comp_components in
-          descr
-      | Functor_comps f ->
+          (descr, ps)
+      | (Functor_comps f, _) ->
       	 raise Not_found
       end
   | Papply(p1, p2) ->
       begin match find_module_descr p1 env with
-      	Functor_comps f ->
-          !components_of_functor_appl f p1 p2
-      | Structure_comps c ->
+      	(Functor_comps f, ps) ->
+          (!components_of_functor_appl f p1 p2, ps)
+      | (Structure_comps c, _) ->
       	  raise Not_found
       end
 
-let find proj1 proj2 path env =
+let find proj1 proj2 filter path env =
   match path with
     Pident id ->
       let (p, data) = Ident.find_same id (proj1 env)
-      in data
+      in filter data None
   | Pdot(p, s, pos) ->
       begin match find_module_descr p env with
-        Structure_comps c ->
-          let (data, pos) = Tbl.find s (proj2 c) in data
-      | Functor_comps f ->
+        (Structure_comps c, ps) ->
+          let (data, pos) = Tbl.find s (proj2 c) in filter data ps
+      | (Functor_comps f, _) ->
           raise Not_found
       end
   | Papply(p1, p2) ->
       raise Not_found
 
-let find_value = find (fun env -> env.values) (fun sc -> sc.comp_values)
-and find_type = find (fun env -> env.types) (fun sc -> sc.comp_types)
-and find_modtype = find (fun env -> env.modtypes) (fun sc -> sc.comp_modtypes)
-and find_class = find (fun env -> env.classes) (fun sc -> sc.comp_classes)
+let strict_filter data ps =
+  mark_used ps; data
+
+let find_value =
+  find (fun env -> env.values) (fun sc -> sc.comp_values) strict_filter
+and find_type =
+  find (fun env -> env.types) (fun sc -> sc.comp_types) strict_filter
+and find_modtype =
+  find (fun env -> env.modtypes) (fun sc -> sc.comp_modtypes) strict_filter
+and find_class =
+  find (fun env -> env.classes) (fun sc -> sc.comp_classes) strict_filter
+and find_type_expansion =
+  find (fun env -> env.types) (fun sc -> sc.comp_types)
+    (fun decl ps ->
+       match decl.type_manifest with
+         None      -> raise Not_found
+       | Some body -> mark_used ps; (decl.type_params, body))
+and find_modtype_expansion =
+  find (fun env -> env.modtypes) (fun sc -> sc.comp_modtypes)
+    (fun def ps ->
+       match def with
+         Tmodtype_abstract     -> raise Not_found
+       | Tmodtype_manifest mty -> mark_used ps; mty)
 
 let find_module path env =
   match path with
@@ -193,15 +217,17 @@ let find_module path env =
         let (p, data) = Ident.find_same id env.modules
         in data
       with Not_found ->
-        if Ident.persistent id
-        then Tmty_signature((find_pers_struct (Ident.name id)).ps_sig)
+        if Ident.persistent id then
+          let ps = find_pers_struct (Ident.name id) in
+          ps.ps_used <- true; Tmty_signature(ps.ps_sig)
         else raise Not_found
       end
   | Pdot(p, s, pos) ->
       begin match find_module_descr p env with
-        Structure_comps c ->
+        (Structure_comps c, ps) ->
+          mark_used ps;
           let (data, pos) = Tbl.find s c.comp_modules in data
-      | Functor_comps f ->
+      | (Functor_comps f, _) ->
           raise Not_found
       end
   | Papply(p1, p2) ->
@@ -215,7 +241,9 @@ let rec lookup_module_descr lid env =
       begin try
         Ident.find_name s env.components
       with Not_found ->
-        (Pident(Ident.create_persistent s), (find_pers_struct s).ps_comps)
+        let ps = find_pers_struct s in
+        ps.ps_used <- true;
+        (Pident(Ident.create_persistent s), ps.ps_comps)
       end
   | Ldot(l, s) ->
       let (p, descr) = lookup_module_descr l env in
@@ -243,8 +271,9 @@ and lookup_module lid env =
       begin try
         Ident.find_name s env.modules
       with Not_found ->
-        (Pident(Ident.create_persistent s), 
-         Tmty_signature(find_pers_struct s).ps_sig)
+        let ps = find_pers_struct s in
+        ps.ps_used <- true;
+        (Pident(Ident.create_persistent s), Tmty_signature ps.ps_sig)
       end
   | Ldot(l, s) ->
       let (p, descr) = lookup_module_descr l env in
@@ -310,15 +339,16 @@ and lookup_modtype =
   lookup (fun env -> env.modtypes) (fun sc -> sc.comp_modtypes)
 and lookup_class =
   lookup (fun env -> env.classes) (fun sc -> sc.comp_classes)
-
+  
 (* Scrape a module type *)
 
 let rec scrape_modtype mty env =
   match mty with
     Tmty_ident path ->
-      begin match find_modtype path env with
-          Tmodtype_manifest mty -> scrape_modtype mty env
-        | Tmodtype_abstract -> mty
+      begin try
+        scrape_modtype (find_modtype_expansion path env) env
+      with Not_found ->
+        mty
       end
   | _ -> mty
 
@@ -654,26 +684,26 @@ let open_signature root sg env =
 
 let open_pers_signature name env =
   let ps = find_pers_struct name in
+  ps.ps_used <- true;
   open_signature (Pident(Ident.create_persistent name)) ps.ps_sig env
 
 (* Read a signature from a file *)
 
 let read_signature modname filename =
-  let (ps, crc) = read_pers_struct modname filename in (ps.ps_sig, crc)
+  let ps = read_pers_struct modname filename in (ps.ps_sig, ps.ps_crc)
 
 (* Save a signature to a file *)
 
+let dummy_crc = Digest.string ""
+
 let save_signature sg modname filename =
   Btype.cleanup_abbrev ();
-  let ps =
-    { ps_name = modname;
-      ps_sig = sg;
-      ps_comps =
-        components_of_module empty Subst.identity
-	    (Pident(Ident.create_persistent modname)) (Tmty_signature sg) } in
   let oc = open_out_bin filename in
   output_string oc cmi_magic_number;
-  output_value oc ps;
+  output_value oc
+    (modname, sg,
+     components_of_module empty Subst.identity
+       (Pident(Ident.create_persistent modname)) (Tmty_signature sg));
   flush oc;
   let crc = Digest.file filename in
   Digest.output oc crc;
@@ -686,7 +716,14 @@ let initial = Predef.build_initial_env add_type add_exception empty
 
 (* Return the list of imported interfaces with their CRCs *)
 
-let imported_units() = !imported_units
+let imported_units() =
+  let imported_units = ref [] in
+  Hashtbl.iter
+    (fun _ ps ->
+       if ps.ps_used then
+         imported_units := (ps.ps_name, ps.ps_crc) :: !imported_units)
+    persistent_structures;
+  !imported_units
 
 (* Return the environment summary *)
 

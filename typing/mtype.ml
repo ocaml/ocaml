@@ -21,9 +21,7 @@ let rec scrape env mty =
   match mty with
     Tmty_ident p ->
       begin try
-        match Env.find_modtype p env with
-          Tmodtype_abstract -> mty
-        | Tmodtype_manifest mty' -> scrape env mty'
+        Env.find_modtype_expansion p env
       with Not_found ->
         mty
       end
@@ -86,11 +84,9 @@ let nondep_supertype env mid mty =
   let rec nondep_mty va mty =
     match mty with
       Tmty_ident p ->
-        if Path.isfree mid p then begin
-          match Env.find_modtype p env with
-            Tmodtype_abstract -> raise Not_found
-          | Tmodtype_manifest mty -> nondep_mty va mty      
-        end else mty
+        if Path.isfree mid p then
+          nondep_mty va (Env.find_modtype_expansion p env)
+        else mty
     | Tmty_signature sg ->
         Tmty_signature(nondep_sig va sg)
     | Tmty_functor(param, arg, res) ->

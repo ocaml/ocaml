@@ -75,9 +75,7 @@ exception Dont_match
 
 let expand_module_path env path =
   try
-    match Env.find_modtype path env with
-      Tmodtype_abstract -> raise Dont_match
-    | Tmodtype_manifest mty -> mty
+    Env.find_modtype_expansion path env
   with Not_found ->
     raise Dont_match
 
