@@ -370,7 +370,7 @@ let simplify_lets lam =
   | Llet(StrictOpt, v, l1, l2) ->
       begin match count_var v with
         0 -> simplif l2
-      | n -> Llet(Alias, v, simplif l1, simplif l2)
+      | n -> Llet(StrictOpt, v, simplif l1, simplif l2)
       end
   | Llet(kind, v, l1, l2) -> Llet(kind, v, simplif l1, simplif l2)
   | Lletrec(bindings, body) ->

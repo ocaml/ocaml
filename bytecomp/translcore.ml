@@ -903,19 +903,29 @@ and transl_simple_proc die sync p = match p.exp_desc with
 (* Parameter list for a guarded process *)
 
 and transl_reaction  = function
-  | Joinmatch.Dispatcher (chan, z, patids, partial) ->
-      let cls =
-        List.fold_right
-          (fun (pat, id) r ->
-              (pat, Transljoin.tail_send_async (Lvar id) (Lvar z))::r)
-          patids
-          (match partial with
-          | Partial -> [Parmatch.omega, lambda_unit]
-          | _ -> []) in
+  | Joinmatch.Dispatcher (sync, chan, z, patids, partial) ->
       let body =
-        Matching.for_function
-          Location.none None
-          (Lvar z) cls Total in
+        if sync then
+          let cls =
+            List.map
+              (fun (pat, id) ->
+                (pat,
+                 Lapply (Lvar id, [Lvar z])))
+              patids in
+          Matching.for_function Location.none None (Lvar z) cls partial
+        else
+          let cls =
+            List.fold_right
+              (fun (pat, id) r ->
+                (pat,
+                 Transljoin.tail_send_async (Lvar id) (Lvar z))::r)
+              patids
+              (match partial with
+              | Partial -> [Parmatch.omega, lambda_unit]
+              | _ -> []) in
+          Matching.for_function
+            Location.none None
+            (Lvar z) cls Total in
       let x = Ident.create "guard" in
       let params = [z ; Ident.create "_x"] in
       let lam =  Lfunction (Curried, params, body) in

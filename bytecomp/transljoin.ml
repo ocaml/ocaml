@@ -522,7 +522,7 @@ let build_lets bds r =
    (fun (oid, lam) r ->
      match oid with
      | None -> r
-     | Some y -> Llet (StrictOpt, y, lam, r))
+     | Some y -> Llet (Strict, y, lam, r))
    bds r
 
 let build_mask names jpats =
@@ -562,19 +562,33 @@ let create_table some_loc auto1 gs r =
       let g,sync,_ = gs.(i)
       and reac = auto1.jauto_desc.(i) in
       match reac with
-      | Dispatcher (c, z, _, _) ->
+      | Dispatcher (sync, c, z, _, _) ->
           let num = get_num "(do_guard, dispatcher)" names c in
+          let ipri = if sync then num else -1 in
           let goid = Ident.create "_go" in          
           let lam =
-            Lfunction
-              (Curried, [goid],
-               Lapply
-                 (Lvar goid,
-                  [Lvar name ;
-                    Lapply (Lvar g, [do_get_queue (Lvar name) num])])) in
+            if sync then
+              let y = Ident.create "_y" in
+              Lfunction
+                (Curried, [goid],
+                 Llet
+                   (Strict, y, do_get_queue (Lvar name) num,
+                    Lapply
+                      (Lvar goid,
+                       [Lprim (Pfield 0,[Lvar y]) ;                       
+                         Lapply
+                           (Lvar g,
+                            [Lprim (Pfield 1, [Lvar y])])])))
+            else
+              Lfunction
+                (Curried, [goid],
+                 Lapply
+                   (Lvar goid,
+                    [Lvar name ;
+                      Lapply (Lvar g, [do_get_queue (Lvar name) num])])) in
           Lprim
             (Pmakeblock (0, Immutable),
-             [lambda_int (1 lsl num); lambda_int (-1); lam])
+             [lambda_int (1 lsl num); lambda_int ipri; lam])
           ::do_guard (i+1)
       | Reaction (pats, _) ->
           let pats = explode pats in

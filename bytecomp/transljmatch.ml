@@ -49,14 +49,18 @@ let collect cls =
      
     joinpattern -> () 
   *)
-  let rec collect_jpat jpat =
+
+  let collect_jpat jpat =
     let (jid,arg) = jpat.jpat_desc in
-    let former_args = 
-      try
-	Hashtbl.find tbl_id_args jid.jident_desc
-      with Not_found -> []
-    in
-    Hashtbl.replace tbl_id_args jid.jident_desc (arg::former_args) in
+    try 
+      let sync, former_args = Hashtbl.find tbl_id_args jid.jident_desc in
+      Hashtbl.replace tbl_id_args jid.jident_desc (sync,arg::former_args)
+    with
+    | Not_found ->
+        let sync =
+          match jpat.jpat_kont with Some _ -> true | None -> false in
+        Hashtbl.add tbl_id_args jid.jident_desc (sync, [arg]) in
+
   (*joinclause -> ()*)
   let collect_clause cl =
     let (jpats,ex) = cl.jclause_desc in
@@ -72,11 +76,11 @@ let collect cls =
     Ident.t -> pattern Agraph.t -> partial -> 
     (dispatcher *  (pattern Agraph.node * (Ident.t option)) list 
 
-make_disp id_ch2be_dispatched dag is_partial
+make_disp id_ch2be_dispatched is_synchronous dag is_partial
 
 **************************************************************************)
 
-let make_disp id dag par =
+let make_disp id sync dag par =
   let fresh_id = fun () -> Ident.create (Ident.name id) in
   (*tbl_node2id: hash table from node in dag to new channel id*)
   (*ns_sorted: nodes in dag sorted in a queue*)
@@ -84,22 +88,20 @@ let make_disp id dag par =
     try
       Agraph.top_sort dag
     with Agraph.Cyclic -> assert false in
-  let sorted_pats = List.fold_left 
-      (fun pats node -> pats @ [Agraph.info dag node])
-      [] sorted_ns in
+  let sorted_pats = List.map (Agraph.info dag) sorted_ns in
   let usage_pats = Parmatch.useful sorted_pats in
   let newid_opts = List.map 
       (fun b -> if b then Some (fresh_id ()) else None)
       usage_pats in
   let tbl_node2id = List.combine sorted_ns newid_opts in
-  let rules = List.fold_left2 
-      (fun rls pat id_opt ->
+  let rules = List.fold_right2
+      (fun pat id_opt rls ->
 	match id_opt with
 	| None -> rls
-	| Some newid -> rls @ [(pat,newid)])
-      [] sorted_pats newid_opts in
+	| Some newid -> (Parmatch.remove_binders pat,newid)::rls)
+      sorted_pats newid_opts [] in
   let z = Ident.create "_z" in
-  ((id, z, rules, par), tbl_node2id)
+  ((sync, id, z, rules, par), tbl_node2id)
 
 
 (*************************************************************************)
@@ -233,13 +235,13 @@ let build_dag pats =
      Compile join defintion from and to match_automaton format 
   according to one channel. 
 
-     match_automaton -> Ident.t -> pattern list -> match_automaton
+     match_automaton -> Ident.t -> bool -> pattern list -> match_automaton
 
-  y match_auto id_ch2be_compiled pat_args
+  y match_auto id_ch2be_compiled is_synchornous pat_args
 
 *********************************************************************************)
 
-let y mauto id args =
+let y mauto id sync args =
   (*trim_eq_pat gets rid of equivalent patterns in a pattern list*)
   (*trim_eq_pat: pattern list -> pattern list*)
   let rec trim_eq_pat pats =
@@ -273,7 +275,7 @@ let y mauto id args =
 	  {mauto with jauto_desc = new_mcls; }
       |	Partial ->
 	  let dag = build_dag pi' in
-	  let (disp,tbl_node2id) = make_disp id dag par in
+	  let (disp,tbl_node2id) = make_disp id sync dag par in
 	  let mcls' = rewrite id mauto.jauto_desc (Some (dag, tbl_node2id)) in
 	  let new_mcls = Array.append mcls' (Array.make 1 (Dispatcher disp)) in
 	  let old_jc = List.assoc id mauto.jauto_names in
@@ -314,7 +316,7 @@ let y mauto id args =
       let gamma = compute_lubs pi' in
       let gamma' = trim_eq_pat gamma in
       let dag = build_dag gamma' in
-      let (disp, tbl_node2id) = make_disp id dag par in
+      let (disp, tbl_node2id) = make_disp id sync dag par in
       let mcls' = rewrite id mauto.jauto_desc (Some (dag, tbl_node2id)) in
       let new_mcls = Array.append mcls' (Array.make 1 (Dispatcher disp)) in
       let old_jc = List.assoc id mauto.jauto_names in
@@ -363,7 +365,7 @@ let transl_jmatch auto =
   let rec do_transl_jmatch mauto names =
     match names with
     | [] -> mauto
-    | (id,args)::names' ->
-	do_transl_jmatch (y mauto id args) names' in
+    | (id,(sync, args))::names' ->
+	do_transl_jmatch (y mauto id sync args) names' in
   do_transl_jmatch mauto names
 

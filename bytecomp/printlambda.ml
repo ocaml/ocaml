@@ -172,6 +172,12 @@ let primitive ppf = function
   | Pbigarrayref(n, kind, layout) -> print_bigarray "get" kind ppf layout
   | Pbigarrayset(n, kind, layout) -> print_bigarray "set" kind ppf layout
 
+let pstr = function
+  | Strict -> "S"
+  | StrictOpt -> "SO"
+  | Alias -> "A"
+  | Variable -> "V"
+
 let rec lam ppf = function
   | Lvar id ->
       Ident.print ppf id
@@ -199,10 +205,12 @@ let rec lam ppf = function
   | Llet(str, id, arg, body) ->
       let rec letbody = function
         | Llet(str, id, arg, body) ->
-            fprintf ppf "@ @[<2>%a@ %a@]" Ident.print id lam arg;
+            fprintf ppf "@ @[<2>%a(%s)@ %a@]"
+              Ident.print id (pstr str) lam arg;
             letbody body
         | expr -> expr in
-      fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a@ %a@]" Ident.print id lam arg;
+      fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a(%s)@ %a@]"
+        Ident.print id (pstr str) lam arg;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
   | Lletrec(id_arg_list, body) ->

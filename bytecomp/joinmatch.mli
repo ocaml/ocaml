@@ -24,14 +24,15 @@ type match_clause =
 and guard =
     (Ident.t * Typedtree.pattern) list * Typedtree.expression
 
-(* c, z, [pat_i * c_i] list means reaction
+(* b, c, z, [pat_i * c_i] list means reaction
 
    c(z) = match z with
           ...
          | pat_i -> c_i(z)
          ...
+  b true/false means synchronous/asyncronous channel
 *)
 and dispatcher =
-    Ident.t * Ident.t * (Typedtree.pattern * Ident.t) list * Typedtree.partial
+    bool * Ident.t * Ident.t * (Typedtree.pattern * Ident.t) list * Typedtree.partial
 
 type automaton = match_clause Typedtree.joinautomaton_gen

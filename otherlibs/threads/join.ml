@@ -244,8 +244,7 @@ type automaton = {
 
 and reaction = status * int * (Obj.t -> Obj.t)
 
-let put_queue auto idx a =
-  auto.queues.(idx) <- a :: auto.queues.(idx)
+let put_queue auto idx a = auto.queues.(idx) <- a :: auto.queues.(idx)
 
 let get_queue auto idx = match auto.queues.(idx) with
 | [] -> assert false
@@ -417,8 +416,12 @@ let kont_suspend k =
 (*DEBUG*)decr_locked suspended ;
   Mutex.unlock k.kmutex ;
   match k.kval with
-  | Go f -> f ()
-  | Ret v -> v
+  | Go f ->
+(*DEBUG*)debug3 "REACTIVATED" (tasks_status ()) ;
+      f ()
+  | Ret v ->
+(*DEBUG*)debug3 "REPLIED" (tasks_status ()) ;
+      v
   | Start -> assert false
 
 (* Suspend current thread when some match was found *)
@@ -445,11 +448,12 @@ let kont_go_suspend kme kpri f =
   suspend_for_reply kme
 
 let just_go k f =
+(*DEBUG*)debug3 "JUST_GO" "" ;
   Mutex.unlock k.kmutex ;
   f ()
 
 (* Fire process and suspend : no principal name *)
-let fire_suspend k auto f =
+let fire_suspend k _ f =
 (*DEBUG*)  debug2 "FIRE_SUSPEND" "" ;
   create_process f ;
   suspend_for_reply k
@@ -463,9 +467,9 @@ let rec attempt_match_sync idx kont auto reactions i =
     if ipat land auto.status = ipat then begin
       if ipri < 0 then
         f (fire_suspend kont)   (* will create other thread *)
-      else if ipri = idx then
+      else if ipri = idx then begin
         f just_go               (* will continue evaluation *)
-      else begin
+      end else begin
         f (kont_go_suspend kont) (* will awake principal thread *)
       end
     end else attempt_match_sync idx kont auto reactions (i+1)
@@ -517,8 +521,8 @@ let reply_to v k =
 (* Called when all active tasks are waiting in thread pool *)
 let from_pool () =
   if !in_pool > 0 then begin
-(*DEBUG*)debug1 "HOOK" "SIGNAL" ;    
-    Condition.signal pool_condition ;
+(*DEBUG*)debug1 "HOOK" "SHOULD PERPHAPS SIGNAL" ;    
+(*    Condition.signal pool_condition  *) ()
   end else begin (* Create a new thread to enter pool *)
 (*DEBUG*)debug1 "HOOK" "CREATE" ;    
     incr_active () ;
