@@ -532,7 +532,7 @@ class man =
 	   cl.cl_name^" "^
 	   "\""^(Odoc_misc.string_of_date ~hour: false date)^"\" "^ 
 	   "OCamldoc "^
-	   "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\n");
+	   "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\"\n");
 
 	output_string chanout
 	  (
@@ -584,7 +584,7 @@ class man =
 	   ct.clt_name^" "^
 	   "\""^(Odoc_misc.string_of_date ~hour: false date)^"\" "^ 
 	   "OCamldoc "^
-	   "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\n");
+	   "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\"\n");
 
 	output_string chanout
 	  (
@@ -632,7 +632,7 @@ class man =
 	   mt.mt_name^" "^
 	   "\""^(Odoc_misc.string_of_date ~hour: false date)^"\" "^ 
 	   "OCamldoc "^
-	   "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\n");
+	   "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\"\n");
 
 	output_string chanout
 	  (
@@ -702,7 +702,7 @@ class man =
 	   m.m_name^" "^
 	   "\""^(Odoc_misc.string_of_date ~hour: false date)^"\" "^ 
 	   "OCamldoc "^
-	   "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\n");
+	   "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\"\n");
 
 	output_string chanout
 	  (
@@ -821,7 +821,7 @@ class man =
 	   "man "^
 	   "\""^(Odoc_misc.string_of_date ~hour: false date)^"\" "^ 
 	   "OCamldoc "^
-	   "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\n");
+	   "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\"\n");
 
 	let f ele =
 	  match ele with
@@ -877,7 +877,10 @@ class man =
 	| [Res_class cl] -> self#generate_for_class cl
 	| [Res_class_type ct] -> self#generate_for_class_type ct
 	| l ->
-	    self#generate_for_group l
+	    if !Odoc_args.man_mini then 
+	      ()
+	    else
+	      self#generate_for_group l
       in
       List.iter f groups 
   end

@@ -30,7 +30,7 @@ OCAMLPP=-pp 'grep -v DEBUG'
 # For installation 
 ##############
 MKDIR=mkdir -p
-CP=cp -fr
+CP=cp -f
 OCAMLDOC=ocamldoc
 OCAMLDOC_OPT=$(OCAMLDOC).opt
 OCAMLDOC_LIBCMA=odoc_info.cma 
@@ -297,7 +297,8 @@ install: dummy
 	$(CP) $(OCAMLDOC) $(INSTALL_BINDIR)
 	$(CP) ocamldoc.sty ocamldoc.hva *.cmi $(GENERATORS) $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
-	$(CP) stdlib_man $(INSTALL_MANDIR)/mano
+	if test -d $(INSTALL_MANDIR)/mano; then : ; else $(MKDIR) $(INSTALL_MANDIR)/mano; fi
+	$(CP) stdlib_man/* $(INSTALL_MANDIR)/mano
 
 installopt:
 	if test -f $(OCAMLDOC_OPT) ; then $(MAKE) installopt_really ; fi
@@ -340,6 +341,7 @@ test_texi: dummy
 stdlib_man: dummy
 	$(MKDIR) $@ 
 	./ocamldoc -man -d $@ $(INCLUDES) ../stdlib/*.mli \
+	-t "OCaml library" -man-mini \
 	../otherlibs/unix/unix.mli \
 	../otherlibs/str/str.mli \
 	../otherlibs/bigarray/bigarray.mli \

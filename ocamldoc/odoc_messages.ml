@@ -26,6 +26,7 @@ let option_version = " Print version and exit"
 let latex_only = "(LaTeX only)"
 let texi_only = "(TeXinfo only)"
 let html_only = "(HTML only)"
+let man_only = "(man only)"
 let verbose_mode = " verbose mode"
 let include_dirs = "<dir>  Add <dir> to the list of include directories"
 let rectypes = " Allow arbitrary recursive types"
@@ -60,9 +61,11 @@ let dot_colors = "<c1,c2,...,cn>  use colors c1,c1,...,cn in the dot output\n"^
   "        (default list is "^(String.concat "," default_dot_colors)^")"
 let dot_reduce = " perform a transitive reduction on the selected dependency graph before the dot output\n"
 
+let man_mini = " Generate man pages only for modules, module types,\n"^
+  "        classes and class types "^man_only
 let default_man_suffix = "o"
 let man_suffix = "<suffix>  use <suffix> for man page files "^
-  "(default is "^default_man_suffix^")\n"
+  "(default is "^default_man_suffix^") "^man_only^"\n"
 
 let option_title = "<title>  use <title> as title for the generated documentation"
 let with_parameter_list = " display the complete list of parameters for functions and methods "^html_only
