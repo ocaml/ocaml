@@ -293,10 +293,15 @@ if test $2 = 8; then
 else
   sh ./runtest longlong.c
   case $? in
-  0) echo "64-bit \"long long\" integer type found."
+  0) echo "64-bit \"long long\" integer type found (printf with ll)."
      echo "#define ARCH_INT64_TYPE long long" >> m.h
      echo "#define ARCH_UINT64_TYPE unsigned long long" >> m.h
      echo '#define ARCH_INT64_PRINTF_FORMAT "ll"' >> m.h
+     int64_supported=true;;
+  1) echo "64-bit \"long long\" integer type found (printf with q)."
+     echo "#define ARCH_INT64_TYPE long long" >> m.h
+     echo "#define ARCH_UINT64_TYPE unsigned long long" >> m.h
+     echo '#define ARCH_INT64_PRINTF_FORMAT "q"' >> m.h
      int64_supported=true;;
   *) echo "No suitable 64-bit integer type found, Int64.t will not be supported."
      int64_supported=false;;

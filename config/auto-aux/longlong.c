@@ -27,6 +27,10 @@ int main(int argc, char **argv)
   l = 123456789123456789LL;
   buffer[0] = 0;
   sprintf(buffer, "%lld", l);
-  if (strcmp(buffer, "123456789123456789") != 0) return 1;
-  return 0;
+  if (strcmp(buffer, "123456789123456789") == 0) return 0;
+  /* the MacOS X library uses qd to format long longs */
+  buffer[0] = '\0';
+  sprintf (buffer, "%qd", l);
+  if (strcmp (buffer, "123456789123456789") == 0) return 1;
+  return 100;
 }
