@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-(* Module [Thread]: user-level lightweight threads *)
+(* Module [Thread]: lightweight threads *)
 
 type t
         (* The type of thread handles. *)
