@@ -18,6 +18,7 @@ type t =
   initial_buffer : string}
 
 let create n =
+ if n <= 0 then invalid_arg "Buffer.create";
  let s = String.create n in
  {buffer = s; position = 0; length = String.length s; initial_buffer = s}
 
