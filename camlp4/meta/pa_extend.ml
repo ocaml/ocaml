@@ -583,7 +583,7 @@ value ssopt loc symb =
     in
     [r1; r2]
   in
-  srules loc "pouet" rl
+  srules loc "anti" rl
 ;
 
 value sslist_aux loc min sep s =
