@@ -23,7 +23,7 @@ let frame_size () =
   let size =
     !stack_offset +
     4 * num_stack_slots.(0) + 8 * num_stack_slots.(1) +
-    (if !contains_calls then 8 else 0) in
+    (if !contains_calls then 4 else 0) in
   Misc.align size 8
 
 let slot_offset loc class =
@@ -31,8 +31,8 @@ let slot_offset loc class =
     Incoming n -> frame_size() + n + 96
   | Local n ->
       if class = 0
-      then !stack_offset + n * 4 + 96
-      else !stack_offset + num_stack_slots.(0) * 4 + n * 8 + 96
+      then !stack_offset + num_stack_slots.(1) * 8 + n * 4 + 96
+      else !stack_offset + n * 8 + 96
   | Outgoing n -> n + 96
 
 (* Return the other register in a register pair *)
@@ -378,11 +378,12 @@ let emit_instr i =
         let l = Misc.log2 n in
         if n = 1 lsl l then begin
           let lbl = new_label() in
-          `	tst	{emit_reg i.arg.(0)}\n`;
+          `	cmp	{emit_reg i.arg.(0)}, 0\n`;
           `	bge	{emit_label lbl}\n`;
-          `	mov	{emit_reg i.arg.(0)}, %g1\n` (* in delay slot *)
-          `	add	%g1, {emit_int (n-1)}, %g1\n`
-          `{emit_label lbl}:	sra	%g1, {emit_int n}, {emit_reg i.res.(0)}\n`
+          `	mov	{emit_reg i.arg.(0)}, %g1\n`; (* in delay slot *)
+          `	add	%g1, {emit_int (n-1)}, %g1\n`;
+          `{emit_label lbl}:\n`;
+          `	sra	%g1, {emit_int l}, {emit_reg i.res.(0)}\n`
         end else begin
           `	sra	{emit_reg i.arg.(0)}, 31, %g1\n`;
           `	wr	%g0, %g1, %y\n`;
