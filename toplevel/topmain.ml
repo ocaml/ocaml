@@ -54,6 +54,7 @@ let main () =
      "-labels", Arg.Clear classic, " Labels commute (default)";
      "-noassert", Arg.Set noassert, " Do not compile assertion checks";
      "-nolabels", Arg.Set classic, " Ignore labels and do not commute";
+     "-noprompt", Arg.Set noprompt, " Suppress all prompts";
      "-nostdlib", Arg.Set no_std_include,
            " do not add default directory to the list of include directories";
      "-principal", Arg.Set principal, " Check principality of type inference";

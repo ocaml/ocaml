@@ -339,7 +339,8 @@ let read_interactive_input = ref read_input_default
 let refill_lexbuf buffer len =
   if !got_eof then (got_eof := false; 0) else begin
     let prompt =
-      if !first_line then "# "
+      if !Clflags.noprompt then ""
+      else if !first_line then "# "
       else if Lexer.in_comment () then "* "
       else "  "
     in
