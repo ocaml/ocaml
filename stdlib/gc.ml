@@ -90,10 +90,9 @@ let rec call_alarm arec =
 ;;
 
 let create_alarm f =
-  let a = ref true in
   let arec = { active = ref true; f = f } in
   finalise call_alarm arec;
-  a
+  arec.active
 ;;
 
 let delete_alarm a = a := false;;
