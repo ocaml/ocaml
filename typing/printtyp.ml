@@ -614,31 +614,17 @@ let class_var sch ppf l (m, t) =
   fprintf ppf
     "@ @[<2>val %s%s :@ %a@]" (string_of_mutable m) l (typexp sch 0) t
 
-let metho sch concrete ppf (lab, kind, ty) =
-  if lab <> dummy_method then begin
-    let priv =
-      match field_kind_repr kind with
-      | Fvar _ (* {contents = None} *) -> "private "
-      | _ (* Fpresent *) -> "" in
-    let virt =
-      if Concr.mem lab concrete then "" else "virtual " in
-    fprintf ppf "@ @[<2>method %s%s%s :@ %a@]" priv virt lab (typexp sch 0) ty
-  end
-
-let method_type ty =
-  let ty = repr ty in
-  match ty.desc with
-    Tpoly(ty, _) -> ty
-  | _            -> ty
+let method_type (_, kind, ty) =
+  match field_kind_repr kind, repr ty with
+    Fpresent, {desc=Tpoly(ty, _)} -> ty
+  | _       , ty                  -> ty
 
 let tree_of_metho sch concrete csil (lab, kind, ty) =
   if lab <> dummy_method then begin
-    let priv =
-      match field_kind_repr kind with
-      | Fvar _ (* {contents = None} *) -> true
-      | _ (* Fpresent *) -> false in
+    let kind = field_kind_repr kind in
+    let priv = kind <> Fpresent in
     let virt = not (Concr.mem lab concrete) in
-    let ty = method_type ty in
+    let ty = method_type (lab, kind, ty) in
     Ocsg_method (lab, priv, virt, tree_of_typexp sch ty) :: csil
   end
   else csil
@@ -660,7 +646,7 @@ let rec prepare_class_type params = function
       let (fields, _) =
         Ctype.flatten_fields (Ctype.object_fields sign.cty_self)
       in
-      List.iter (fun (_, _, ty) -> mark_loops (method_type ty)) fields;
+      List.iter (fun met -> mark_loops (method_type met)) fields;
       Vars.iter (fun _ (_, ty) -> mark_loops ty) sign.cty_vars
   | Tcty_fun (_, ty, cty) ->
       mark_loops ty;

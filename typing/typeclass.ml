@@ -247,8 +247,8 @@ let declare_method val_env meths self_type lab priv sty loc =
      Ctype.filter_self_method val_env lab priv meths self_type
   in
   let ty =
-    match sty.ptyp_desc with
-      Ptyp_poly ([],sty) -> transl_simple_type_univars val_env sty
+    match sty.ptyp_desc, priv with
+      Ptyp_poly ([],sty), Public -> transl_simple_type_univars val_env sty
     | _                  -> transl_simple_type val_env false sty
   in
   begin try Ctype.unify val_env ty ty' with Ctype.Unify trace ->
