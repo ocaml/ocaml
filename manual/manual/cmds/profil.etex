@@ -14,6 +14,9 @@ profiling mode, using the "ocamlcp" front-end to the "ocamlc" compiler
 of ".cmo" files), and can also be used (though this is not strictly
 necessary) when linking them together.
 
+To make sure your programs can be compiled in profiling mode, avoid
+using any identifier that begins with "__ocaml_prof".
+
 The amount of profiling information can be controlled through the "-p"
 option to "ocamlcp", followed by one or several letters indicating which
 parts of the program should be profiled:
@@ -33,11 +36,16 @@ body of each branch
 beginning of the body of each branch
 \end{options}
 
-For instance, compiling with "ocamlcp -pfilm" profiles function calls,
+For instance, compiling with "ocamlcp -p film" profiles function calls,
 if\ldots then\ldots else\ldots, loops and pattern matching.
 
 Calling "ocamlcp" without the "-p" option defaults to "-p fm", meaning
 that only function calls and pattern matching are profiled.
+
+{\bf Warning:} Although it is possible to use profiling and the
+"-thread" option together, in most cases the combination prevents
+tail-call optimisations.  As a result, some programs may fail with a
+"Stack_overflow" exception.
 
 \section{Profiling an execution}
 
