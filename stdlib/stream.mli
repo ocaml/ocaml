@@ -32,12 +32,12 @@ val from : (int -> 'a option) -> 'a t
            [Some <value>] for a value or [None] to specify the end of the
            stream. *)
 val of_list : 'a list -> 'a t
-        (* Returns the stream holding the elements of the list in the same
+        (* Return the stream holding the elements of the list in the same
            order. *)
 val of_string : string -> char t
-        (* Returns the character stream of the string parameter. *)
+        (* Return the stream of the characters of the string parameter. *)
 val of_channel : in_channel -> char t
-	(* Returns the characters stream read from the input channel. *)
+	(* Return the stream of the characters read from the input channel. *)
 
 (** Stream iterator *)
 
@@ -48,25 +48,27 @@ val iter : ('a -> 'b) -> 'a t -> unit
 (** Predefined parsers *)
 
 val next : 'a t -> 'a
-	(* Returns the first element of the stream and removes it from the
-           stream. Raises [Parse_failure] if the stream is empty. *)
+	(* Return the first element of the stream and remove it from the
+           stream. Raise [Parse_failure] if the stream is empty. *)
 val empty : 'a t -> unit
-	(* Returns [()] if the stream is empty, else raises [Parse_failure]. *)
+	(* Return [()] if the stream is empty, else raise [Parse_failure]. *)
 
 (** Usefull functions *)
 
 val peek : 'a t -> 'a option
-        (* Returns [Some] "the first element" of the stream, or [None] if the
-           stream is empty. *)
+        (* Return [Some] of "the first element" of the stream, or [None] if
+           the stream is empty. *)
+val junk : 'a t -> unit
+        (* Remove the first element of the stream, possibly unfreezing
+           it before. *)
 val count : 'a t -> int
-	(* Returns the current count of the stream elements, i.e. the number
+	(* Return the current count of the stream elements, i.e. the number
            of the stream elements discarded. *)
 
 (*--*)
 
 (*** For system use only, not for the casual user *)
 
-val junk : 'a t -> unit
 val sempty : 'a t
 val scons : (unit -> 'a) -> 'a t -> 'a t
 val sapp : (unit -> 'a t) -> 'a t -> 'a t

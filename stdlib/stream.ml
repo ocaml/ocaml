@@ -11,7 +11,11 @@
 
 (* $Id$ *)
 
-type 'a t = {mutable count : int; mutable data : 'a data}
+(* The fields of type t are not mutable to preserve polymorphism of
+   the empty stream. This is type safe because the empty stream is never
+   patched. *)
+
+type 'a t = {(*mutable*) count : int; (*mutable*) data : 'a data}
 and 'a data =
     Sempty
   | Scons of 'a * 'a data
@@ -19,15 +23,17 @@ and 'a data =
   | Sfunc of (int -> 'a data)
   | Sbuffio of buffio
 and buffio =
-  {ic : in_channel; buff : string; mutable len : int; mutable ind : int}
+  {ic : in_channel; buff : string;
+   (*mutable*) len : int; (*mutable*) ind : int}
 exception Parse_failure
 exception Parse_error of string
 
 let count s = s.count
 
 let fill_buff b =
-  b.len <- input b.ic b.buff 0 (String.length b.buff);
-  b.ind <- 0
+  Obj.set_field (Obj.repr b) 2
+    (Obj.repr (input b.ic b.buff 0 (String.length b.buff)));
+  Obj.set_field (Obj.repr b) 3 (Obj.repr 0)
 
 let rec get_data cnt =
   function
@@ -49,22 +55,32 @@ let rec peek s =
   | Scons (a, _) -> Some a
   | Sapp (d1, d2) ->
       begin match get_data s.count d1 with
-        Some (a, d) -> s.data <- Scons (a, Sapp (d, d2)); Some a
-      | None -> s.data <- d2; peek s
+        Some (a, d) ->
+          Obj.set_field (Obj.repr s) 1 (Obj.repr (Scons (a, Sapp (d, d2))));
+          Some a
+      | None ->
+          Obj.set_field (Obj.repr s) 1 (Obj.repr d2);
+          peek s
       end
   | Sfunc f ->
-      s.data <- f s.count;
+      Obj.set_field (Obj.repr s) 1 (Obj.repr (f s.count));
       peek s
   | Sbuffio b ->
       if b.ind >= b.len then fill_buff b;
-      if b.len == 0 then begin s.data <- Sempty; None end
+      if b.len == 0 then begin
+        Obj.set_field (Obj.repr s) 1 (Obj.repr Sempty); None
+      end
       else Some (Obj.magic b.buff.[b.ind])
 
 let rec junk s =
   match s.data with
-    Scons (_, s') -> s.count <- succ s.count; s.data <- s'
-  | Sbuffio b -> s.count <- succ s.count; b.ind <- succ b.ind
-  | _ -> ()
+    Scons (_, s') ->
+      Obj.set_field (Obj.repr s) 0 (Obj.repr (succ s.count));
+      Obj.set_field (Obj.repr s) 1 (Obj.repr s')
+  | Sbuffio b ->
+      Obj.set_field (Obj.repr s) 0 (Obj.repr (succ s.count));
+      Obj.set_field (Obj.repr b) 3 (Obj.repr (succ b.ind))
+  | _ -> match peek s with None -> () | Some _ -> junk s
 
 let next s =
   match peek s with
