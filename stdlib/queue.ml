@@ -123,6 +123,9 @@ let copy q =
       tail = tail'
     } 
 
+let is_empty q =
+  q.length = 0
+
 let length q =
   q.length
 

@@ -45,6 +45,9 @@ val clear : 'a t -> unit
 val copy : 'a t -> 'a t
 (** Return a copy of the given stack. *)
 
+val is_empty : 'a t -> bool
+(** Return [true] if the given stack is empty, [false] otherwise. *)
+
 val length : 'a t -> int
 (** Return the number of elements in a stack. *)
 
