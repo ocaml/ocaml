@@ -15,6 +15,7 @@ Automatique
 \begin{rawhtml}
 <HR>
 This manual is also available in
+<A HREF="ftp://ftp.inria.fr/lang/caml-light/ocaml-\end{rawhtml}\ocamlversion\begin{rawhtml}-refman.pdf">PDF</A>,
 <A HREF="ftp://ftp.inria.fr/lang/caml-light/ocaml-\end{rawhtml}\ocamlversion\begin{rawhtml}-refman.ps.gz">Postscript</A>,
 <A HREF="ftp://ftp.inria.fr/lang/caml-light/ocaml-\end{rawhtml}\ocamlversion\begin{rawhtml}-refman.dvi.gz">DVI</A>,
 and as a
