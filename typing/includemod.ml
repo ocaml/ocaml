@@ -289,7 +289,7 @@ and check_modtype_equiv env mty1 mty2 =
 
 let check_modtype_inclusion env mty1 mty2 =
   try
-    let _ = modtypes env Subst.identity mty1 mty2 in ()
+    ignore(modtypes env Subst.identity mty1 mty2)
   with Error reasons ->
     raise Not_found
 

@@ -85,6 +85,7 @@ let comparisons_table = create_hashtable 11 [
 
 let primitives_table = create_hashtable 31 [
   "%identity", Pidentity;
+  "%ignore", Pignore;
   "%field0", Pfield 0;
   "%field1", Pfield 1;
   "%setfield0", Psetfield(0, true);

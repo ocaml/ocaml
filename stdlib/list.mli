@@ -107,15 +107,17 @@ val find : ('a -> bool) -> 'a list -> 'a
            Raise [Not_found] if there is no value that satisfies [p] in the
            list [l]. *)
 
+val filter : ('a -> bool) -> 'a list -> 'a list
 val find_all : ('a -> bool) -> 'a list -> 'a list
-        (* [find_all p l] returns all the elements of the list [l]
-           that satisfies the predicate [p]. *)
+        (* [filter p l] returns all the elements of the list [l]
+           that satisfies the predicate [p].  [find_all] is another name
+           for [filter]. *)
 
 val partition : ('a -> bool) -> 'a list -> 'a list * 'a list
-        (* [partition p l] returns a pair of lists [(l1, l2)], such
-        that [l1] is the list of all the elements of [l] that
-        satisfy the predicate [p], and [l2] is the list of all the
-        elements of [l] that do not satisfy [p]. *)
+        (* [partition p l] returns a pair of lists [(l1, l2)], where
+           [l1] is the list of all the elements of [l] that
+           satisfy the predicate [p], and [l2] is the list of all the
+           elements of [l] that do not satisfy [p]. *)
 
 (** Association lists *)
 
@@ -134,16 +136,16 @@ val mem_assoc : 'a -> ('a * 'b) list -> bool
         (* Same as [assoc], but simply return true if a binding exists,
            and false if no bindings exist for the given key. *)
 val mem_assq : 'a -> ('a * 'b) list -> bool
-        (* Same as [mem_assoc], but uses physical equality instead of structural
-           equality to compare keys. *)
+        (* Same as [mem_assoc], but uses physical equality instead of
+           structural equality to compare keys. *)
 
-val remove : 'a -> ('a * 'b) list -> ('a * 'b) list
-        (* [remove a l] returns the list of
+val remove_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
+        (* [remove_assoc a l] returns the list of
            pairs [l] without the first pair with key [a], if any. *)
 
-val removeq : 'a -> ('a * 'b) list -> ('a * 'b) list
-        (* Same as [remove], but uses physical equality instead of structural
-           equality to compare keys. *)
+val remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
+        (* Same as [remove_assq], but uses physical equality instead
+           of structural equality to compare keys. *)
 
 (** Lists of pairs *)
 

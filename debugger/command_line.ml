@@ -215,7 +215,7 @@ let instr_cd lexbuf =
 
 let instr_pwd lexbuf =
   eol lexbuf;
-  let _ = system "/bin/pwd" in ()
+  ignore(system "/bin/pwd")
 
 let instr_dir lexbuf =
   let new_directory = argument_list_eol argument lexbuf in

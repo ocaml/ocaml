@@ -68,7 +68,7 @@ let load_compunit ic filename compunit =
   Symtable.patch_object code compunit.cu_reloc;
   Symtable.update_global_table();
   begin try
-    let _ = (Meta.reify_bytecode code code_size) () in ()
+    ignore((Meta.reify_bytecode code code_size) ())
   with exn ->
     Symtable.restore_state initial_symtable;
     print_exception_outcome exn;
@@ -106,7 +106,7 @@ let _ = Hashtbl.add directive_table "load" (Directive_string dir_load)
 
 (* Load commands from a file *)
 
-let dir_use name = let _ = Toploop.use_file name in ()
+let dir_use name = ignore(Toploop.use_file name)
 
 let _ = Hashtbl.add directive_table "use" (Directive_string dir_use)
 

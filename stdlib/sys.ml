@@ -40,8 +40,7 @@ type signal_behavior =
 external signal: int -> signal_behavior -> signal_behavior
         = "install_signal_handler"
 
-let set_signal sig_num sig_beh =
-  let _ = signal sig_num sig_beh in ()
+let set_signal sig_num sig_beh = ignore(signal sig_num sig_beh)
 
 let sigabrt = -1
 let sigalrm = -2

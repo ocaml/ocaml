@@ -159,10 +159,10 @@ let rindex_from s i c =
 
 let contains_from s i c =
   if i < 0 || i >= length s then invalid_arg "String.contains_from" else
-  try let _ = index_rec s (length s) i c in true with Not_found -> false;;
+  try ignore(index_rec s (length s) i c); true with Not_found -> false;;
 
 let rcontains_from s i c =
   if i < 0 || i >= length s then invalid_arg "String.rcontains_from" else
-  try let _ = rindex_rec s i c in true with Not_found -> false;;
+  try ignore(rindex_rec s i c); true with Not_found -> false;;
 
 let contains s c = s <> "" && contains_from s 0 c;;

@@ -137,7 +137,7 @@ let load_compunit ic file_name compunit =
     raise(Error(Linking_error (file_name, new_error)))
   end;
   begin try
-    let _ = (Meta.reify_bytecode code code_size) () in ()
+    ignore((Meta.reify_bytecode code code_size) ())
   with exn ->
     Symtable.restore_state initial_symtable;
     raise exn

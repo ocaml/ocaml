@@ -524,7 +524,7 @@ let finish () =
         raise Toplevel
       end;
       begin
-        try let _ = Symbols.any_event_at_pc pc in ()
+        try ignore(Symbols.any_event_at_pc pc)
         with Not_found ->
                prerr_endline "Calling function has no debugging information.";
                raise Toplevel

@@ -52,7 +52,6 @@ static void thread_callback(void)
 
 value callbackN_exn(value closure, int narg, value args[])
 {
-  value res;
   int i;
 
   Assert(narg + 4 <= 256);

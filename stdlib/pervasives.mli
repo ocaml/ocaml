@@ -302,6 +302,14 @@ val char_of_int : int -> char
            Raise [Invalid_argument "char_of_int"] if the argument is
            outside the range 0--255. *)
 
+(*** Unit operations *)
+
+external ignore : 'a -> unit = "%ignore"
+        (* Discard the value of its argument and return [()].
+           For instance, [ignore(f x)] discards the result of
+           the side-effecting function [f].  It is equivalent to
+           [f x; ()], except that no warning is generated. *)
+
 (*** String conversion functions *)
 
 val string_of_bool : bool -> string

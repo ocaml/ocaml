@@ -336,6 +336,8 @@ let rec comp_expr env exp sz cont =
       end
   | Lprim(Pidentity, [arg]) ->
       comp_expr env arg sz cont
+  | Lprim(Pignore, [arg]) ->
+      comp_expr env arg sz (add_const_unit cont)
   | Lprim(Pnot, [arg]) ->
       let newcont =
         match cont with

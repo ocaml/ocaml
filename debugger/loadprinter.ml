@@ -80,7 +80,7 @@ let loadfile name =
     Dynlink.add_interfaces stdlib_units [Config.standard_library];
     Dynlink.allow_unsafe_modules true
   end;
-  let _ = loadfiles name in ()
+  ignore(loadfiles name)
 
 (* Return the value referred to by a path (as in toplevel/topdirs) *)
 (* Note: evaluation proceeds in the debugger memory space, not in

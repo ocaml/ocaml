@@ -21,8 +21,7 @@ let command cmdline =
   end;
   Sys.command cmdline
 
-let run_command cmdline =
-  let _ = command cmdline in ()
+let run_command cmdline = ignore(command cmdline)
 
 let compile_file name =
   command

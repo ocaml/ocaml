@@ -208,7 +208,7 @@ let use_file name =
     (* Skip initial #! line if any *)
     let buffer = String.create 2 in
     if input ic buffer 0 2 = 2 && buffer = "#!"
-    then let _ = input_line ic in ()
+    then ignore(input_line ic)
     else seek_in ic 0;
     let success =
       protect Location.input_name filename (fun () ->
@@ -272,8 +272,7 @@ let _ =
   Compile.init_path()
 
 let load_ocamlinit () =
-  if Sys.file_exists ".ocamlinit" then let _ = use_silently ".ocamlinit" in ()
-
+  if Sys.file_exists ".ocamlinit" then ignore(use_silently ".ocamlinit")
 
 (* The interactive loop *)
 
@@ -299,7 +298,7 @@ let loop() =
       Location.reset();
       first_line := true;
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
-      let _ = execute_phrase true phr in ()
+      ignore(execute_phrase true phr)
     with
       End_of_file -> exit 0
     | Sys.Break ->

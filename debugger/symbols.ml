@@ -115,7 +115,7 @@ let event_at_pc pc =
   | _            -> ev
 
 let set_event_at_pc pc =
- try let _ = event_at_pc pc in Debugcom.set_event pc
+ try ignore(event_at_pc pc); Debugcom.set_event pc
  with Not_found -> ()
 
 (* List all events in module *)

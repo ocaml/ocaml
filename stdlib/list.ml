@@ -136,13 +136,13 @@ let rec mem_assq x = function
   | [] -> false
   | (a, b) :: l -> a == x || mem_assq x l
 
-let rec remove x = function
+let rec remove_assoc x = function
   | [] -> []
-  | (a, b as pair) :: l -> if a = x then l else pair :: remove x l
+  | (a, b as pair) :: l -> if a = x then l else pair :: remove_assoc x l
 
-let rec removeq x = function
+let rec remove_assq x = function
   | [] -> []
-  | (a, b as pair) :: l -> if a == x then l else pair :: removeq x l
+  | (a, b as pair) :: l -> if a == x then l else pair :: remove_assq x l
 
 let rec find p = function
   | [] -> raise Not_found
@@ -153,6 +153,8 @@ let find_all p =
   | [] -> rev accu
   | x :: l -> if p x then find (x :: accu) l else find accu l in
   find []
+
+let filter = find_all
 
 let rec partition p l =
   let rec part yes no = function

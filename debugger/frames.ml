@@ -114,7 +114,7 @@ let do_backtrace action =
           event := any_event_at_pc pc
         done
       with Exit -> ()
-         | Not_found -> let _ = action None in ()
+         | Not_found -> ignore (action None)
       end;
       set_frame initial_sp
 

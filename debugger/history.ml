@@ -39,4 +39,4 @@ let previous_time_1 () =
 let rec previous_time n =
   if n = 1
   then previous_time_1()
-  else begin let _ = previous_time_1() in previous_time(n-1) end
+  else begin ignore(previous_time_1()); previous_time(n-1) end

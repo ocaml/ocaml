@@ -120,7 +120,7 @@ let empty s =
 let iter f strm =
   let rec do_rec () =
     match peek strm with
-      Some a -> junk strm; let _ = f a in do_rec ()
+      Some a -> junk strm; ignore(f a); do_rec ()
     | None -> ()
   in
   do_rec ()

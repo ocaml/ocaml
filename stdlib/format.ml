@@ -303,7 +303,7 @@ let rec advance_left state =
         (size < 0 &&
          (state.pp_right_total - state.pp_left_total < state.pp_space_left))
         then begin
-         let _ = take_queue state.pp_queue in
+         ignore(take_queue state.pp_queue);
          format_pp_token state (if size < 0 then pp_infinity else size) tok;
          state.pp_left_total <- len + state.pp_left_total;
          advance_left state

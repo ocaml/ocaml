@@ -74,7 +74,7 @@ let merge_constraint initial_env loc sg lid constr =
       when Ident.name id = s ->
         let (path, mty') = type_module_path initial_env loc lid in
         let newmty = Mtype.strengthen env mty' path in
-        let _ = Includemod.modtypes env newmty mty in
+        ignore(Includemod.modtypes env newmty mty);
         Tsig_module(id, newmty) :: rem
     | (Tsig_module(id, mty) :: rem, s :: namelist, _) when Ident.name id = s ->
         let newsg = merge env (extract_sig env loc mty) namelist in

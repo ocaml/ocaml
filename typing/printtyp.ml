@@ -76,10 +76,10 @@ let print_name_of_type t =
   print_string (name_of_type t)
 
 let check_name_of_type t =
-  let _ = name_of_type t in ()
+  ignore(name_of_type t)
 
 let remove_name_of_type t =
-  names := List.removeq t !names
+  names := List.remove_assq t !names
 
 let visited_objects = ref ([] : type_expr list)
 let aliased = ref ([] : type_expr list)

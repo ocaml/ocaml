@@ -500,7 +500,7 @@ method emit_expr env exp =
               alloc_state <- None;
               rd
           | Some(ralloc, ofs) ->
-              self#insert_op (Iintop_imm(Iadd, ofs)) ralloc rd;
+              ignore(self#insert_op (Iintop_imm(Iadd, ofs)) ralloc rd);
               alloc_state <- Some(ralloc, ofs + size);
               self#emit_stores env new_args ralloc
                                (Arch.offset_addressing header_addressing ofs);
@@ -512,7 +512,7 @@ method emit_expr env exp =
           self#insert_op op r1 rd
       end        
   | Csequence(e1, e2) ->
-      let _ = self#emit_expr env e1 in
+      ignore(self#emit_expr env e1);
       self#emit_expr env e2
   | Cifthenelse(econd, eif, eelse) ->
       let (cond, earg) = self#select_condition econd in
@@ -688,7 +688,7 @@ method emit_tail env exp =
       self#insert (Iop Imove) r1 rd;
       self#insert Iraise rd [||]
   | Csequence(e1, e2) ->
-      let _ = self#emit_expr env e1 in
+      ignore(self#emit_expr env e1);
       self#emit_tail env e2
   | Cifthenelse(econd, eif, eelse) ->
       let (cond, earg) = self#select_condition econd in

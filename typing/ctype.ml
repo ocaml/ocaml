@@ -1268,7 +1268,7 @@ let rec filter_method env name priv ty =
       raise (Unify [])
 
 let check_filter_method env name priv ty =
- let _ = filter_method env name priv ty in ()
+  ignore(filter_method env name priv ty)
 
 let filter_self_method env lab priv meths ty =
   let ty' = filter_method env lab priv ty in

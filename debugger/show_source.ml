@@ -61,7 +61,7 @@ let show_point mdle point before selected =
     begin try
       let buffer = get_buffer mdle in
       let (start, line_number) = line_of_pos buffer point in
-        let _ = print_line buffer line_number start point before in ()
+      ignore(print_line buffer line_number start point before)
     with
       Out_of_range -> (* line_of_pos *)
         prerr_endline "Position out of range."

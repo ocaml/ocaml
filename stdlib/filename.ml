@@ -65,9 +65,7 @@ let wnt_is_implicit n =
   && (String.length n < 3 || String.sub n 0 3 <> "..\\")
 ;;
 
-let contains_colon n =
-  try let _ = String.index n ':' in true
-  with Not_found ->                 false
+let contains_colon n = String.contains n ':'
 ;;
 
 let mac_is_relative n =

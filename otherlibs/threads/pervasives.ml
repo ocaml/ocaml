@@ -132,6 +132,10 @@ external unsafe_char_of_int : int -> char = "%identity"
 let char_of_int n =
   if n < 0 or n > 255 then invalid_arg "char_of_int" else unsafe_char_of_int n
 
+(* Unit operations *)
+
+external ignore : 'a -> unit = "%ignore"
+
 (* Pair operations *)
 
 external fst : 'a * 'b -> 'a = "%field0"

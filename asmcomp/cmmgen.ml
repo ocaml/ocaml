@@ -483,6 +483,8 @@ let rec transl = function
   (* Primitives *)
   | Uprim(Pidentity, [arg]) ->
       transl arg
+  | Uprim(Pignore, [arg]) ->
+      return_unit(transl arg)
   | Uprim(Pgetglobal id, []) ->
       Cconst_symbol(Ident.name id)
 

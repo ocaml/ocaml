@@ -73,8 +73,7 @@ let slot_for_literal cst =
 let c_prim_table = ref(empty_numtable : string numtable)
 
 let set_prim_table name =
- let _ = enter_numtable c_prim_table name in
- ()
+  ignore(enter_numtable c_prim_table name)
 
 let num_of_prim name =
   try
@@ -85,7 +84,7 @@ let num_of_prim name =
     else raise(Error(Unavailable_primitive name))
 
 let require_primitive name =
-  if name.[0] <> '%' then begin let _ = num_of_prim name in () end
+  if name.[0] <> '%' then ignore(num_of_prim name)
 
 let all_primitives () =
   let prim = Array.create !c_prim_table.num_cnt "" in

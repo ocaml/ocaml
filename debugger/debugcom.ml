@@ -119,7 +119,7 @@ let initial_frame () =
   (stack_pos, pc)
 
 let set_initial_frame () =
- let _ = initial_frame () in ()
+  ignore(initial_frame ())
 
 (* Move up one frame *)
 (* Return stack position and current pc.

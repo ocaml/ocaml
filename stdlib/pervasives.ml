@@ -128,6 +128,10 @@ external unsafe_char_of_int : int -> char = "%identity"
 let char_of_int n =
   if n < 0 or n > 255 then invalid_arg "char_of_int" else unsafe_char_of_int n
 
+(* Unit operations *)
+
+external ignore : 'a -> unit = "%ignore"
+
 (* Pair operations *)
 
 external fst : 'a * 'b -> 'a = "%field0"
@@ -264,12 +268,12 @@ let rec input_line chan =
     raise End_of_file
   else if n > 0 then begin              (* n > 0: newline found in buffer *)
     let res = string_create (n-1) in
-    let _ = unsafe_input chan res 0 (n-1) in
-    let _ = input_char chan in          (* skip the newline *)
+    ignore (unsafe_input chan res 0 (n-1));
+    ignore (input_char chan);           (* skip the newline *)
     res
   end else begin                        (* n < 0: newline not found *)
     let beg = string_create (-n) in
-    let _ = unsafe_input chan beg 0 (-n) in
+    ignore(unsafe_input chan beg 0 (-n));
     try
       beg ^ input_line chan
     with End_of_file ->

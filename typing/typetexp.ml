@@ -130,10 +130,11 @@ let rec transl_type env policy styp =
       let args = List.map (transl_type env policy) stl in
       let params = List.map (fun _ -> Ctype.newvar ()) args in
       let cstr = newty (Tconstr(path, params, ref Mnil)) in
-      let _ =
-        try Ctype.expand_head env cstr with Unify trace ->
-          raise (Error(styp.ptyp_loc, Type_mismatch trace))
-      in
+      begin try
+        ignore(Ctype.expand_head env cstr)
+      with Unify trace ->
+        raise (Error(styp.ptyp_loc, Type_mismatch trace))
+      end;
       List.iter2
         (fun (sty, ty) ty' ->
            try unify env ty ty' with Unify trace ->

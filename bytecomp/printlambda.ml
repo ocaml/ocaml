@@ -53,6 +53,7 @@ let rec structured_constant = function
 
 let primitive = function
     Pidentity -> print_string "id"
+  | Pignore -> print_string "ignore"
   | Pgetglobal id -> print_string "global "; Ident.print id
   | Psetglobal id -> print_string "setglobal "; Ident.print id
   | Pmakeblock(tag, Immutable) -> print_string "makeblock "; print_int tag
