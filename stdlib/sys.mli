@@ -68,7 +68,7 @@ val max_array_length : int
 (** Maximum length of an array. *)
 
 
-(** {2 Signal handling} *)
+(** {6 Signal handling} *)
 
 
 type signal_behavior =
@@ -92,7 +92,7 @@ val set_signal : int -> signal_behavior -> unit
 (** Same as {!Sys.signal} but return value is ignored. *)
 
 
-(** {3 Signal numbers for the standard POSIX signals.} *) 
+(** {7 Signal numbers for the standard POSIX signals.} *) 
 
 val sigabrt : int
 (** Abnormal termination *)
