@@ -187,8 +187,8 @@ let rec alpha_pat env p = match p.pat_desc with
     {p with pat_desc =
      try Tpat_var (alpha_var env id) with
      | Not_found -> Tpat_any}
-| Tpat_alias (p, id) ->
-    let new_p =  alpha_pat env p in
+| Tpat_alias (p1, id) ->
+    let new_p =  alpha_pat env p1 in
     begin try
       {p with pat_desc = Tpat_alias (new_p, alpha_var env id)}
     with
@@ -206,9 +206,9 @@ let rec alpha_pat env p = match p.pat_desc with
 | Tpat_array pats ->
     {p with pat_desc =
     Tpat_array (List.map (alpha_pat env) pats)}
-| Tpat_variant (x1, Some p, x2) ->
+| Tpat_variant (x1, Some p1, x2) ->
     {p with pat_desc =
-    Tpat_variant (x1, Some (alpha_pat env p), x2)}
+    Tpat_variant (x1, Some (alpha_pat env p1), x2)}
 | Tpat_or (p1,p2,path) ->
     {p with pat_desc =
     Tpat_or (alpha_pat env p1, alpha_pat env p2, path)}

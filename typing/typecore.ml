@@ -486,7 +486,7 @@ let check_unused_variant pat =
       | _ -> ()
       end;
       (* Force check of well-formedness *)
-      unify_pat pat.pat_env {pat with pat_type = newty(Tvariant row)}
+      unify_pat pat.pat_env pat
         (newty(Tvariant{row_fields=[]; row_more=newvar(); row_closed=false;
                         row_bound=[]; row_fixed=false; row_name=None}));
       (* Eventually post a delayed warning check *)
@@ -1280,10 +1280,10 @@ and type_argument env sarg ty_expected' =
       (* eta-expand to avoid side effects *)
       let var_pair name ty =
         let id = Ident.create name in
-        {pat_desc = Tpat_var id; pat_type = ty_arg;
+        {pat_desc = Tpat_var id; pat_type = ty;
          pat_loc = Location.none; pat_env = env},
-        {exp_type = ty_arg; exp_loc = Location.none; exp_env = env; exp_desc =
-         Texp_ident(Path.Pident id,{val_type = ty_arg; val_kind = Val_reg})}
+        {exp_type = ty; exp_loc = Location.none; exp_env = env; exp_desc =
+         Texp_ident(Path.Pident id,{val_type = ty; val_kind = Val_reg})}
       in
       let eta_pat, eta_var = var_pair "eta" ty_arg in
       let func texp =
