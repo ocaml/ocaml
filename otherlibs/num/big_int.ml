@@ -341,11 +341,18 @@ let string_of_big_int bi =
 
 let sys_big_int_of_string s ofs len =
   let (sign, nat) =
-    if String.get s ofs = '-'
-    then (-1, sys_nat_of_string 10 s (ofs+1) (len-1))
-    else ( 1, sys_nat_of_string 10 s ofs len) in
-  { sign =  if is_zero_nat nat 0 (length_nat nat) then 0 else sign;
-    abs_value = nat }
+    match nth_char s ofs with
+      `-` -> if len > 1
+                then (-1, sys_nat_of_string 10 s (ofs+1) (len-1))
+                else failwith "sys_big_int_of_string"
+    | `+` -> if len > 1
+                then (1, sys_nat_of_string 10 s (ofs+1) (len-1))
+                else failwith "sys_big_int_of_string"
+    | _ -> if len > 0
+              then (1, sys_nat_of_string 10 s ofs len)
+              else failwith "sys_big_int_of_string" in
+  { Sign = if is_zero_nat nat 0 (length_nat nat) then 0 else sign;
+    Abs_Value = nat }
 
 let big_int_of_string s =
   sys_big_int_of_string s 0 (String.length s)
