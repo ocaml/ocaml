@@ -34,12 +34,7 @@ installopt:
 	cd lib; $(MAKE) installopt
 	cd jpf; $(MAKE) installopt
 
-clean : 
-	-rm -f config.cache
+partialclean clean: 
 	for d in $(SUBDIRS); do \
 	cd $$d; $(MAKE) clean; cd ..; \
 	done
-
-distclean:  clean
-	-rm -f config.log config.status config.cache
-	-rm -f Makefile.config labltklink labltk labltkopt
