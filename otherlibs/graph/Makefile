@@ -56,7 +56,7 @@ install:
 	cp graphics.cm[ia] graphicsX11.cmi graphics.mli graphicsX11.mli $(LIBDIR)
 
 installopt:
-	cp graphics.cmxa graphics.a $(LIBDIR)
+	cp graphics.cmx graphics.cmxa graphics.a $(LIBDIR)
 	cd $(LIBDIR); $(RANLIB) graphics.a
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
