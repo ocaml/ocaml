@@ -1531,15 +1531,21 @@ and unify_fields env ty1 ty2 =          (* Optimization *)
     else if miss2 = [] then rest1
     else newvar ()
   in
-  unify env (build_fields (repr ty1).level miss1 va) rest2;
-  unify env rest1 (build_fields (repr ty2).level miss2 va);
-  List.iter
-    (fun (n, k1, t1, k2, t2) ->
-       unify_kind k1 k2;
-       try unify env t1 t2 with Unify trace ->
-         raise (Unify ((newty (Tfield(n, k1, t1, va)),
-                        newty (Tfield(n, k2, t2, va)))::trace)))
-    pairs
+  let d1 = rest1.desc and d2 = rest2.desc in
+  try
+    unify env (build_fields (repr ty1).level miss1 va) rest2;
+    unify env rest1 (build_fields (repr ty2).level miss2 va);
+    List.iter
+      (fun (n, k1, t1, k2, t2) ->
+        unify_kind k1 k2;
+        try unify env t1 t2 with Unify trace ->
+          raise (Unify ((newty (Tfield(n, k1, t1, va)),
+                         newty (Tfield(n, k2, t2, va)))::trace)))
+      pairs
+  with exn ->
+    rest1.desc <- d1;
+    rest2.desc <- d2;
+    raise exn
 
 and unify_kind k1 k2 =
   let k1 = field_kind_repr k1 in
