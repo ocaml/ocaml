@@ -18,8 +18,8 @@ type automaton
 
 val get_queue : automaton -> int -> Obj.t
 
-val create_automaton : int -> int -> automaton
-(* create_automaton nchans nmatches *)
+val create_automaton : int -> automaton
+(* create_automaton nchans *)
 
 type reaction
 

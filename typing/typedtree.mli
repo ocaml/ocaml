@@ -115,7 +115,8 @@ and  joinclause =
      jclause_loc : Location.t}
 
 and joinpattern =
-    { jpat_desc: joinident * pattern ;
+    { jpat_desc: joinident * pattern ; (* as given in source *)
+      jpat_kont : Ident.t option ;     (* For synchronous channels *)
       jpat_loc: Location.t}
 
 and joinident =

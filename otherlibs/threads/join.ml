@@ -232,7 +232,7 @@ let get_queue auto idx = match auto.queues.(idx) with
     end ;
     a
 
-let create_automaton nchans nmatches =
+let create_automaton nchans =
   {
     status = 0 ;
     mutex = Mutex.create () ;
@@ -295,20 +295,23 @@ let just_go_async auto f =
   f ()
 
 let rec attempt_match tail auto reactions i =
-  if i >= Obj.size reactions then Mutex.unlock auto.mutex
-  else begin
+  if i >= Obj.size reactions then begin
+    (*DEBUG*)debug3 "ATTEMPT FAILED" "" ;
+    Mutex.unlock auto.mutex
+  end else begin
     let (ipat, iprim, f) = Obj.magic (Obj.field reactions i) in
     if ipat land auto.status = ipat then
-      if iprim < 0 then
+      if iprim < 0 then begin
         f (if tail then just_go_async else fire_go) (* f will unlock auto's mutex *)
-      else
+      end else begin
         f kont_go
+      end
     else
       attempt_match tail auto reactions (i+1)
   end
 
 let direct_send_async auto idx a =
-(*DEBUG*)  debug3 "SEND_ASYNC" (sprintf "channel %i" idx) ;
+(*DEBUG*)  debug3 "SEND_ASYNC" (sprintf "channel %i, status=%x" idx auto.status ) ;
 (* Acknowledge new message by altering queue and status *)
   Mutex.lock auto.mutex ;
   let old_status = auto.status in
@@ -343,7 +346,7 @@ let tail_direct_send_async auto idx a =
   put_queue auto idx a ;
   auto.status <- new_status ;
   if old_status = new_status then begin
-(*DEBUG*)    debug3 "SEND_ASYNC" (sprintf "Return: %i" auto.status) ;
+(*DEBUG*)    debug3 "TAIL_ASYNC" (sprintf "Return: %i" auto.status) ;
     Mutex.unlock auto.mutex
   end else begin
     attempt_match true auto (Obj.magic auto.matches) 0

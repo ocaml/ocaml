@@ -31,9 +31,11 @@ val tail_direct_send_async :
   Ident.t -> int -> int option -> Lambda.lambda -> Lambda.lambda
 val tail_send_async : Lambda.lambda -> Lambda.lambda -> Lambda.lambda
 
+(*
 val create_automaton : Ident.t option -> int -> int -> Lambda.lambda
 val patch_match : Ident.t -> int -> int list -> Lambda.lambda
 val patch_guard : Ident.t -> int -> Lambda.lambda -> Lambda.lambda
+*)
 val reply_to : Lambda.lambda -> Lambda.lambda -> Lambda.lambda
 val do_spawn : Ident.t option -> Lambda.lambda -> Lambda.lambda
 
@@ -47,29 +49,22 @@ val as_procs :
   Typedtree.expression ->
   Typedtree.expression option * Typedtree.expression list * Typedtree.expression list
 
-(* Building definitions and locations *)
-type phase1
+val principal : Typedtree.expression -> Ident.t option
 
-type comp_guard =
-    Location.t -> (* Location of reaction *)
-    Ident.t option -> (* principal name *)
-    (Ident.t * bool * int option * Typedtree.pattern) list -> (* join pattern *)
-    Typedtree.expression -> (* guarded process *)
-    Ident.t list * Lambda.lambda
+(* Building definitions and locations *)
 
 val create_auto : 
-  Ident.t option ->
-    phase1 -> Lambda.lambda -> Lambda.lambda
+  Ident.t option -> 'a Typedtree.joinautomaton_gen ->
+    Lambda.lambda -> Lambda.lambda
 
-val build_matches : Typedtree.joinautomaton -> phase1
+val create_channels :
+  'a Typedtree.joinautomaton_gen -> Lambda.lambda -> Lambda.lambda
 
-val build_auto :
-  comp_guard -> (* to compile guarded processes *)
-    Ident.t option -> (* join-location of automaton *)
-      phase1 -> (* pre-compiled automaton *)
-        Lambda.lambda -> (* continuation *)
-          Lambda.lambda
 
-val build_channels :
-  Typedtree.joinautomaton -> Lambda.lambda -> Lambda.lambda
-
+val create_table:
+    Ident.t option ->
+      Joinmatch.automaton ->
+        (Ident.t * Ident.t option * 'a) array ->
+          Lambda.lambda ->
+            Lambda.lambda
+            

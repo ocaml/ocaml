@@ -589,15 +589,8 @@ let mk_jident id loc ty env =
     jident_env = env;
   }
 
-let rec look_alone name i = function
-  | [] -> None
-  | {pjclause_desc=[{pjpat_desc=({pjident_desc=id},_)}],_}::rem ->
-      if name=id then Some i
-      else look_alone name (i+1) rem
-  | _::rem -> look_alone name (i+1) rem
-
 let add_alone sauto (id, (ty, num)) =
-  (id,(ty, num, look_alone (Ident.name id) 0 sauto))
+  (id,(ty, num, None))
 
 let type_auto_lhs env {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
   reset_auto () ;
@@ -615,6 +608,7 @@ let type_auto_lhs env {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
               let chan = mk_jident id schan.pjident_loc ty env
               and arg = type_pat env sarg in
               {jpat_desc = chan, arg;
+               jpat_kont = None ;
                jpat_loc  = sjpat.pjpat_loc;})
             sjpats in
         jpats, get_ref pattern_variables, get_ref pattern_force)
@@ -2272,16 +2266,7 @@ and type_clause env names (jpats,pat_vars,pat_force) scl =
               | (Path.Pident id,_) -> id
               | _ -> assert false
             with Not_found -> assert false in
-          let cont_pat =
-            {pat_desc=Tpat_var cont_id ; pat_loc=Location.none ;
-              pat_type=Ctype.none ; pat_env=Env.empty;} in
-          {jpat with jpat_desc =
-           chan,
-           {
-             pat_desc=Tpat_tuple [cont_pat;arg] ; pat_loc=Location.none ;
-             pat_type=Ctype.none ; pat_env=Env.empty;
-            } 
-        }
+          {jpat with jpat_kont = Some cont_id }
         else
           jpat)
     jpats !conts in

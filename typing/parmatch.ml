@@ -255,6 +255,27 @@ let prerr_pat v =
 (* Utilities for matching   *)
 (****************************)
 
+let rec remove_binders p = match p.pat_desc with
+| Tpat_any|Tpat_constant _|Tpat_variant (_, None, _) -> p
+| Tpat_var _ -> { p with  pat_desc = Tpat_any }
+| Tpat_alias (p, _) -> remove_binders p
+| Tpat_tuple ps ->
+    { p with pat_desc = Tpat_tuple (remove_binders_list ps) }
+| Tpat_construct (c, ps) ->
+    { p with pat_desc = Tpat_construct (c, remove_binders_list ps) }
+| Tpat_variant (lab, Some p, row) ->
+    { p with pat_desc = Tpat_variant (lab, Some (remove_binders p), row) }
+| Tpat_record lblps ->
+    { p with pat_desc =
+     Tpat_record (List.map (fun (lbl,p) -> lbl, remove_binders p) lblps) }
+| Tpat_array ps ->
+    { p with pat_desc = Tpat_array (remove_binders_list ps) }
+| Tpat_or (p1, p2, patho) ->
+    { p with pat_desc =
+      Tpat_or (remove_binders p1, remove_binders p2, patho) }
+
+and remove_binders_list ps = List.map remove_binders ps
+
 (* Check top matching *)
 let simple_match p1 p2 = 
   match p1.pat_desc, p2.pat_desc with

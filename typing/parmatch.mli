@@ -24,6 +24,7 @@ val pretty_matrix : pattern list list -> unit
 val omega : pattern
 val omegas : int -> pattern list
 val omega_list : 'a list -> pattern list
+val remove_binders : pattern -> pattern
 val normalize_pat : pattern -> pattern
 val all_record_args :
     (label_description * pattern) list -> (label_description * pattern) list

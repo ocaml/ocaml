@@ -112,11 +112,12 @@ and joinchannel =
      jchannel_type : type_expr;}
 
 and joinclause =
-    {jclause_desc : joinpattern list * expression ;
-      jclause_loc : Location.t}
+    {jclause_desc : joinpattern list * expression ;   
+     jclause_loc : Location.t}
 
 and joinpattern =
     { jpat_desc: joinident * pattern ;
+      jpat_kont : Ident.t option ;
       jpat_loc: Location.t}
 
 and joinident =
@@ -277,7 +278,7 @@ let do_def_bound_idents autos r =
       List.fold_right
         (fun (name,_) r -> name::r)
         names
-        (name::r))
+        r)
     autos r
 
 let do_loc_bound_idents locs r =

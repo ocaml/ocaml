@@ -82,7 +82,7 @@ let make_disp id dag tbl_node2id par =
     try
       Agraph.top_sort dag
     with Agraph.Cyclic -> assert false in
-  let z = Ident.create "z" in
+  let z = Ident.create "_z" in
   (*build the (pattern, newid) list from a queue of nodes*)
   let rec build_rules q =
     if Queue.is_empty q
@@ -153,7 +153,7 @@ let rewrite id mcls is_weighty =
 	| None -> mcl
 	| Some (remains, jpat) ->
 	    let (jid, pat) = jpat.jpat_desc in
-	    let xi = Ident.create "xi" in
+	    let xi = Ident.create ("_"^Ident.name jid.jident_desc) in
 	    let xi_pat = {pat with pat_desc = Tpat_var xi} in
 	    let (id2pat_ls, ex) = gd in
 	    match is_weighty with
@@ -212,9 +212,10 @@ let build_dag id pats =
 	  match oldns with
 	  | [] -> ()
 	  | hd_n::tl_ns ->
-	      if Parmatch.le_pat (Agraph.info dag hd_n) pat
-	      then Agraph.new_edge dag newn hd_n
-	      else Agraph.new_edge dag hd_n newn;
+	      if Parmatch.le_pat (Agraph.info dag hd_n) pat then
+                Agraph.new_edge dag newn hd_n
+	      else  if Parmatch.le_pat pat (Agraph.info dag hd_n) then
+                Agraph.new_edge dag hd_n newn;
 	      draw_edge newn tl_ns in
 	draw_edge newnode oldnodes) in
   do_build_dag pats;

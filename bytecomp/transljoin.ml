@@ -20,6 +20,23 @@ open Asttypes
 open Typedtree
 open Env
 open Lambda
+open Joinmatch
+
+(* DEBUG stuff *)
+open Printf
+
+let dump_pat fp jpat =
+  let jid,_ = jpat.jpat_desc in
+  fprintf fp "%s()" (Ident.unique_name jid.jident_desc)
+
+let dump_list pf fp xs =
+  fprintf fp "[" ;
+  List.iter (fun x -> fprintf fp "%a; " pf x) xs ;
+  fprintf fp "]"
+
+let dump_pats fp jpats = dump_list dump_pat fp jpats
+
+let dump_patss fp xs = dump_list dump_pats fp xs
 
 (*
   This first section builds lambda expr needed by jocaml constructs.
@@ -91,26 +108,26 @@ let exit () = mk_apply lambda_exit [lambda_unit]
 let create_location () = mk_apply lambda_create_location [lambda_unit]
 let create_process p =  mk_apply lambda_create_process [p]
 let create_process_location id_loc p =
-  mk_apply lambda_create_process_location [Lvar id_loc ; p]
+ mk_apply lambda_create_process_location [Lvar id_loc ; p]
 
 let do_send send auto num arg =
-  mk_apply send [Lvar auto ; lambda_int  num ; arg]
+ mk_apply send [Lvar auto ; lambda_int  num ; arg]
 
 let create_async auto num alone = match alone with
 | None -> mk_apply lambda_create_async [Lvar auto ; lambda_int num]
 | Some g -> mk_apply lambda_create_async_alone [Lvar auto ; lambda_int g]
 
 let direct_send_async auto num alone arg = match alone with
-  | None ->
-      do_send lambda_direct_send_async auto num  arg
-  | Some g ->
-      do_send lambda_direct_send_async_alone auto g arg
+ | None ->
+     do_send lambda_direct_send_async auto num  arg
+ | Some g ->
+     do_send lambda_direct_send_async_alone auto g arg
 
 and tail_direct_send_async auto num alone arg = match alone with
-  | None ->
-      do_send lambda_tail_direct_send_async auto num  arg
-  | Some g ->
-      do_send lambda_tail_direct_send_async_alone auto g arg
+ | None ->
+     do_send lambda_tail_direct_send_async auto num  arg
+ | Some g ->
+     do_send lambda_tail_direct_send_async_alone auto g arg
 
 and send_async chan arg = mk_apply lambda_send_async [chan ; arg]
 
@@ -118,56 +135,54 @@ and tail_send_async chan arg = mk_apply lambda_tail_send_async [chan ; arg]
 
 
 and send_sync auto num alone arg = match alone with
-  | None ->
-      do_send lambda_send_sync auto num  arg
-  | Some g ->
-      do_send lambda_send_sync_alone auto g arg
+ | None ->
+     do_send lambda_send_sync auto num  arg
+ | Some g ->
+     do_send lambda_send_sync_alone auto g arg
 
-let create_automaton some_loc nchans nguards = match some_loc with
+let create_automaton some_loc nchans = match some_loc with
 | None ->
-    mk_apply lambda_create_automaton
-      [lambda_int nchans ; lambda_int nguards]
-| Some id_loc ->
-    mk_apply lambda_create_automaton_location
-      [Lvar id_loc ; lambda_int nchans ; lambda_int nguards]
-    
+   mk_apply lambda_create_automaton
+     [lambda_int nchans ]
+| Some id_loc -> failwith "NotYet"
+
 
 let patch_match auto i this_match =
-  mk_apply lambda_patch_match
-    [Lvar auto ; lambda_int i ;
-    Lconst (Const_block (0, List.map (fun x -> Const_base (Const_int x)) this_match))]
+ mk_apply lambda_patch_match
+   [Lvar auto ; lambda_int i ;
+   Lconst (Const_block (0, List.map (fun x -> Const_base (Const_int x)) this_match))]
 
 let patch_guard auto i lam =
-  mk_apply lambda_patch_guard
-    [Lvar auto ; lambda_int i ; lam]
+ mk_apply lambda_patch_guard
+   [Lvar auto ; lambda_int i ; lam]
 
 let reply_to lam1 lam2 =
-  mk_apply lambda_reply_to [lam1; lam2]
+ mk_apply lambda_reply_to [lam1; lam2]
 
 let do_spawn some_loc p =
-  if p = lambda_unit then
-    p
-  else
-    let param = Ident.create "_x" in
-    match some_loc with
-    | None ->
-        create_process (Lfunction (Curried, [param], p))
-    | Some id_loc ->
-        create_process_location id_loc (Lfunction (Curried, [param], p))
+ if p = lambda_unit then
+   p
+ else
+   let param = Ident.create "_x" in
+   match some_loc with
+   | None ->
+       create_process (Lfunction (Curried, [param], p))
+   | Some id_loc ->
+       create_process_location id_loc (Lfunction (Curried, [param], p))
 
-let get_queue auto num = mk_apply lambda_get_queue [auto ; lambda_int num]
+let do_get_queue auto num = mk_apply lambda_get_queue [auto ; lambda_int num]
 
 let unlock_automaton lam = mk_apply lambda_unlock_automaton [lam]
 
 (*
 
-  All about synchronous threads.
+ All about synchronous threads.
 
-  Synchronous threads are guarded processes, when one of matched names
-  at least is synchronous.
-    In such case the guarded process is compliled into a function,
-    whose result is the answer to a distinguished synchronous name
-    (principal name)
+ Synchronous threads are guarded processes, when one of matched names
+ at least is synchronous.
+   In such case the guarded process is compliled into a function,
+   whose result is the answer to a distinguished synchronous name
+   (principal name)
 *)
 let id_lt x y = Ident.name x < Ident.name y
 
@@ -176,42 +191,42 @@ let rec delta xs ys = match xs, ys with
 | [],_  -> ys
 | _, [] -> xs
 | x::rx, y::ry ->
-    if id_lt x y then
-      x::delta rx ys
-    else if id_lt y x then
-      y::delta xs ry
-    else (* x=y *)
-      delta rx ry
+   if id_lt x y then
+     x::delta rx ys
+   else if id_lt y x then
+     y::delta xs ry
+   else (* x=y *)
+     delta rx ry
 
 let rec inter xs ys = match xs, ys with
 | [],_  -> []
 | _, [] -> []
 | x::rx, y::ry ->
-    if id_lt x y then
-      inter rx ys
-    else if id_lt y x then
-      inter xs ry
-    else (* x=y *)
-      x::inter rx ry
+   if id_lt x y then
+     inter rx ys
+   else if id_lt y x then
+     inter xs ry
+   else (* x=y *)
+     x::inter rx ry
 
 
 
 let rec do_principal p = match p.exp_desc with
 (* Base cases processes *)
 | Texp_asyncsend (_,_) | Texp_exec (_) | Texp_null 
-  -> []
+ -> []
 | Texp_reply (_, Path.Pident id) -> [id]
 (* Recursion *)
 | Texp_par (p1, p2) -> delta (do_principal p1) (do_principal p2)
 | Texp_let (_,_,p) | Texp_def (_,p) | Texp_loc (_,p)
 | Texp_sequence (_,p) | Texp_when (_,p)
-  -> do_principal p
+ -> do_principal p
 | Texp_match (_,(_,p)::cls,_) ->
-    List.fold_right
-      (fun (_, p) r -> inter (do_principal p) r)
-      cls (do_principal p)
+   List.fold_right
+     (fun (_, p) r -> inter (do_principal p) r)
+     cls (do_principal p)
 | Texp_ifthenelse (_,pifso, Some pifno) ->
-    inter (do_principal pifso) (do_principal pifno)
+   inter (do_principal pifso) (do_principal pifno)
 | Texp_ifthenelse (_,_,None) -> []
 (* Errors *)
 | _ -> assert false
@@ -223,41 +238,41 @@ let principal p = match do_principal p with
 (* Once again for finding back parts of princpal threads *)
 let rec is_principal id p = match p.exp_desc with
 |  Texp_asyncsend (_,_) | Texp_exec (_) | Texp_null 
-  -> false
+ -> false
 | Texp_reply (_, Path.Pident kont) -> kont=id
 | Texp_par (p1, p2) ->
-    is_principal id p1 || is_principal id p2
+   is_principal id p1 || is_principal id p2
 | Texp_let (_,_,p) | Texp_def (_,p) | Texp_loc (_,p)
 | Texp_sequence (_,p) | Texp_when (_,p) -> 
-    is_principal id p
+   is_principal id p
 | Texp_match (_,(_,p)::cls,_) ->
-    is_principal id p &&
-    List.for_all (fun (_,p) -> is_principal id p) cls
+   is_principal id p &&
+   List.for_all (fun (_,p) -> is_principal id p) cls
 | Texp_ifthenelse (_,pifso, Some pifno) ->
-    is_principal id pifso && is_principal id pifno
+   is_principal id pifso && is_principal id pifno
 | Texp_ifthenelse (_,_,None) -> false
 | _ -> assert false
 
 (*
-  The simple_proc predicates decides whether a new thread is needed
-  to execute a process p or not.
-  More specifically, the execution of p must terminate and does not
-  raise an exception.
+ The simple_proc predicates decides whether a new thread is needed
+ to execute a process p or not.
+ More specifically, the execution of p must terminate and does not
+ raise an exception.
 
-  Note :
-  -There are connections beetween the answers of
-   simple_proc and the way threads are introduced by
-   transl_simple_proc and transl_proc in Translcore
+ Note :
+ -There are connections beetween the answers of
+  simple_proc and the way threads are introduced by
+  transl_simple_proc and transl_proc in Translcore
 
-  -Interaction of predicate/compilation can be quadratic, I do
-   not think it harms on real programs
+ -Interaction of predicate/compilation can be quadratic, I do
+  not think it harms on real programs
 *)
 
 (*
-  simple_pat checks irrefutabililty  for let patterns.
+ simple_pat checks irrefutabililty  for let patterns.
 
-  Idealy one should use some Partial/Total field, but this
-  information is lost.. Does not matter much anyway.
+ Idealy one should use some Partial/Total field, but this
+ information is lost.. Does not matter much anyway.
 *)
 let rec simple_pat p = match p.pat_desc with
 | Tpat_any | Tpat_var _ -> true
@@ -271,67 +286,67 @@ let rec simple_pat p = match p.pat_desc with
 let rec simple_exp e = match e.exp_desc with
 (* Mixed cases *)
 | Texp_sequence (e1,e2) | Texp_when (e1,e2) ->
-    simple_exp e1 && simple_exp e2
+   simple_exp e1 && simple_exp e2
 | Texp_let (_, pes,e) ->
-    List.for_all (fun (pat,e) -> simple_pat pat && simple_exp e) pes &&
-    simple_exp e
+   List.for_all (fun (pat,e) -> simple_pat pat && simple_exp e) pes &&
+   simple_exp e
 | Texp_match (e,pes,Total) ->
-    simple_exp e &&
-    List.for_all (fun (_,e) -> simple_exp e) pes
+   simple_exp e &&
+   List.for_all (fun (_,e) -> simple_exp e) pes
 | Texp_match (_, _, Partial) -> false
 | Texp_ifthenelse (e, eifso, eo) ->
-    simple_exp e && simple_exp eifso && simple_exp_option eo
+   simple_exp e && simple_exp eifso && simple_exp_option eo
 | Texp_def (_,e)|Texp_loc(_,e) -> simple_exp e
 (* Simple simple expressions *)
 | Texp_ident _ | Texp_constant _ | Texp_function (_,_)
 | Texp_variant (_,None) 
 | Texp_instvar (_,_) | Texp_setinstvar (_, _, _) | Texp_spawn (_)
-  -> true
+ -> true
 (* Recursion *)
 | Texp_construct (_,es) | Texp_tuple (es) | Texp_array (es)
-  -> List.for_all simple_exp es
+ -> List.for_all simple_exp es
 | Texp_variant (_, Some e) | Texp_field (e,_)
-    -> simple_exp e
+   -> simple_exp e
 | Texp_setfield (e1,_,e2) -> simple_exp e1 && simple_exp e2
 | Texp_apply ({exp_desc=Texp_ident (_, {val_kind=Val_prim p})}, args)
-  when p.prim_name <> "%raise" ->
-    List.length args <= p.prim_arity &&
-    List.for_all (fun (eo,_) -> simple_exp_option eo) args
+ when p.prim_name <> "%raise" ->
+   List.length args <= p.prim_arity &&
+   List.for_all (fun (eo,_) -> simple_exp_option eo) args
 | Texp_apply (_,_) -> false
 | Texp_for (_,e1,e2,_,e3) ->
-    simple_exp e1 && simple_exp e2 && simple_exp e3
+   simple_exp e1 && simple_exp e2 && simple_exp e3
 | Texp_record (les,eo) ->
-    List.for_all (fun (_,e) -> simple_exp e) les &&
-    simple_exp_option eo
+   List.for_all (fun (_,e) -> simple_exp e) les &&
+   simple_exp_option eo
 (* Asserts are special *)
 | Texp_assert e -> !Clflags.noassert || simple_exp e
 | Texp_assertfalse -> !Clflags.noassert
 (* Who knows ? *)
 | Texp_letmodule (_,_,_) | Texp_override (_,_)
 | Texp_send (_,_) | Texp_while (_,_) | Texp_new (_,_)
-  -> false
+ -> false
 (* Process constructs are errors *)
 | _ -> fatal_error "Transljoin.simple_proc"
 
 and simple_exp_option = function
-  | None -> true
-  | Some e -> simple_exp e
+ | None -> true
+ | Some e -> simple_exp e
 
 and simple_proc p = match p.exp_desc with
 (* Mixed cases *)
 | Texp_sequence (e,p) | Texp_when (e,p) ->
-    simple_exp e && simple_proc p
+   simple_exp e && simple_proc p
 | Texp_let (_, pes,e) ->
-    List.for_all (fun (pat,e) -> simple_pat pat && simple_exp e) pes &&
-    simple_proc e
+   List.for_all (fun (pat,e) -> simple_pat pat && simple_exp e) pes &&
+   simple_proc e
 | Texp_match (e,pps,Total) ->
-    simple_exp e &&
-    List.for_all (fun (_,p) -> simple_proc e) pps
+   simple_exp e &&
+   List.for_all (fun (_,p) -> simple_proc e) pps
 | Texp_match (_,_,Partial) -> false
 | Texp_ifthenelse (e, pifso, Some pifno) ->
-    simple_exp e && simple_proc pifso && simple_proc pifno
+   simple_exp e && simple_proc pifso && simple_proc pifno
 | Texp_ifthenelse (e, pifso, None) ->
-    simple_exp e && simple_proc pifso    
+   simple_exp e && simple_proc pifso    
 | Texp_def (_,p)|Texp_loc(_,p) -> simple_proc p
 (* Process constructs *)
 | Texp_reply (e, _) -> simple_exp e
@@ -350,206 +365,325 @@ let partition_procs procs = List.partition simple_proc procs
 let rec do_as_procs r e = match e.exp_desc with
 | Texp_null -> r
 | Texp_par (e1,e2) ->
-    do_as_procs (do_as_procs r e2) e1
+   do_as_procs (do_as_procs r e2) e1
 | _ -> e::r
 
 let rec get_principal id = function
-  | [] -> assert false (* one thread must be principal *)
-  | p::rem ->
-      if is_principal id p then
-        p,rem
-      else
-        let r,rrem = get_principal id rem in
-        r,p::rrem
+ | [] -> assert false (* one thread must be principal *)
+ | p::rem ->
+     if is_principal id p then
+       p,rem
+     else
+       let r,rrem = get_principal id rem in
+       r,p::rrem
 
 let as_procs sync e =
-  let ps = do_as_procs [] e in
-  let psync,  ps = match sync with
-  | None -> None, ps
-  | Some id ->
-      let psync, ps = get_principal id ps in
-      Some psync, ps in
-  let seqs, forks = partition_procs ps in
-  psync,
-  List.map
-    (fun p -> match p.exp_desc with
-    | Texp_exec e -> e
-    | _ -> p) seqs,
-  forks
+ let ps = do_as_procs [] e in
+ let psync,  ps = match sync with
+ | None -> None, ps
+ | Some id ->
+     let psync, ps = get_principal id ps in
+     Some psync, ps in
+ let seqs, forks = partition_procs ps in
+ psync,
+ List.map
+   (fun p -> match p.exp_desc with
+   | Texp_exec e -> e
+   | _ -> p) seqs,
+ forks
 
 
 (*
-  This section is for compiling automata.
-  Most material is here, other is in Translcore
+ This section is for compiling automata.
+ Most material is here, other is in Translcore
 *)
 
-let rec get_num_rec name = function
-  | [] -> raise Not_found
-  | (id,x)::rem ->
-      if Ident.name id = name then x else get_num_rec name rem
+let rec get_num_rec id = function
+ | [] -> raise Not_found
+ | (oid,x)::rem ->
+     if id = oid then x else get_num_rec id rem
 
-let get_num names id =
-  try
-    let {jchannel_id=num} = get_num_rec (Ident.name id) names in
-    num
-  with
-  | Not_found ->
-      fatal_error
-        (Printf.sprintf "Transljoin.get_num: %s" (Ident.unique_name id))
+let dump_idx fp (id, _) = fprintf fp "%s" (Ident.unique_name id)
+
+let get_num msg names id =
+  eprintf "GETNUM%s %s: %a\n" msg (Ident.unique_name id)
+    (dump_list dump_idx)
+    names ;
+ try
+   let {jchannel_id=num} = get_num_rec id names in
+   num
+ with
+ | Not_found ->
+     fatal_error
+       (Printf.sprintf "Transljoin.get_num: %s" (Ident.unique_name id))
 
 and get_alone names id =
-  try
-    let {jchannel_alone=alone} = get_num_rec (Ident.name id) names in
-    alone
-  with
-  | Not_found ->
-      fatal_error
-        (Printf.sprintf "Transljoin.get_alone: %s" (Ident.unique_name id))
-
-and get_sync names id =
-  try
-    let {jchannel_sync=sync} = get_num_rec (Ident.name id) names in
-    sync
-  with
-  | Not_found ->
-      fatal_error
-        (Printf.sprintf "Transljoin.get_sync: %s" (Ident.unique_name id))
-  
-(* Not so nice way to supress the continuation argument for principal names *)
-
-let transl_jpat names {jpat_desc=chan,arg} =
-    let id =  chan.jident_desc in
-    id, get_sync names id, get_alone names id, arg
-      
+ try
+   let {jchannel_alone=alone} = get_num_rec (Ident.name id) names in
+   alone
+ with
+ | Not_found ->
+     fatal_error
+       (Printf.sprintf "Transljoin.get_alone: %s" (Ident.unique_name id))
 
 
-let transl_jpats names jpats = List.map (transl_jpat names) jpats
+
+
+
+
+(* Intermediate representation of a join-automaton *)
+type clause1 =
+ { principal : Ident.t option ; (* Principal name, if any *)
+   me : Joinmatch.match_clause ; }
 
 type phase1 =
-  Ident.t * (Ident.t * Typedtree.joinchannel) list *
-  (Location.t * Ident.t option * int * int list *
-   (Ident.t * bool * int option * Typedtree.pattern) list * Typedtree.expression) array
+ {name1 : Ident.t ;
+  names1 : (Ident.t * Typedtree.joinchannel) list ;
+  clauses1 : clause1 array ; } 
+(*
+ Ident.t * (Ident.t * Typedtree.joinchannel) list *
+ (Location.t * Ident.t option * int * int list *
+  (Ident.t * bool * int option * Typedtree.pattern) list * Typedtree.expression) array
+*)
 
+
+(*
 let build_matches {jauto_name=name ; jauto_names=names ; jauto_desc = cls} =
 
-  let build_clause i {jclause_desc = (jpats,e); jclause_loc=cl_loc} =
-    (* compute principal name -> later *)
-    let sync = principal e in
-    (* Sort jpats by channel indexes *)
-    let jpats =
-       List.sort
-         (fun
-            {jpat_desc=({jident_desc=id1}, _)}
-            {jpat_desc=({jident_desc=id2}, _)} ->
-             get_num names id1 - get_num names id2)
-         jpats in
-      (* collect channel indexes *)
-      let nums =
-        List.map
-          (fun {jpat_desc=({jident_desc=id}, _)} -> get_num names id)
-          jpats in
-      (* compute bitfield for jpats *)
-      let base_pat =
-        List.fold_left
-          (fun r num -> r lor (1 lsl num))
-          0
-          nums in
-          (* add automaton entries for jpats *)
-        (cl_loc, sync, base_pat, nums,
-         transl_jpats names jpats, e) in
+ let build_clause cl =
+   let sync = match cl with
+   | Reaction (_, (_, p)) -> principal p
+   | Dispatcher (c,_,_,_) ->
+       if get_sync names c then Some c else None in
+   { principal = sync ; me = cl; } in
 
-  let guarded = Array.mapi build_clause cls in
-  (name, names, guarded)
+ let guarded = Array.map build_clause cls in
+ { name1 = name ;  names1 = names ; clauses1 = guarded ; }
 
-type comp_guard =
-    Location.t -> (* Location of reaction *)
-    Ident.t option -> (* principal name *)
-    (Ident.t * bool * int option * Typedtree.pattern) list -> (* join pattern *)
-    Typedtree.expression -> (* guarded process *)
-    Ident.t list * Lambda.lambda
-              
+*)
 let patch_table auto t =
-  mk_apply
-    lambda_patch_table
-    [Lvar auto ; Lprim (Pmakeblock (0,Immutable), t)]
+ mk_apply
+   lambda_patch_table
+   [Lvar auto ; Lprim (Pmakeblock (0,Immutable), t)]
 
 let rec principal_param ipri params nums = match params, nums with
 | param::params, num::nums ->
-    if num=ipri then param
-    else principal_param ipri params nums
+   if num=ipri then param
+   else principal_param ipri params nums
 | _,_ -> assert false
 
-let some_sync names =
-  List.exists
-    (fun (_,{jchannel_sync=b}) -> b)
-    names
-
-let create_auto some_loc (auto_name, names, cls) k =
-  let nguards = Array.length cls
-  and nchans = List.length names in
+let create_auto some_loc
+   { jauto_name=auto_name ; jauto_names = names ; jauto_desc = cls} k =
+  let nchans = List.length names in
   Llet
-    (Strict, auto_name , create_automaton some_loc nchans nguards, k)
+    (Strict, auto_name , create_automaton some_loc nchans, k)
 
-let build_auto comp_fun some_loc (auto_name, names, cls) k =
-  let nguards = Array.length cls in
-  let rec params_from_queues params nums k = match params, nums with
-  | [],[] -> k      
-  | param::params, num::nums ->
-      Llet
-        (Strict,
-         param, get_queue (Lvar auto_name) num,
-         params_from_queues params nums k)
-  | _,_ -> assert false in
+(*      
+let pat_as_id p = match p.pat_desc with
+| Tpat_var id -> id
+| _ -> assert false
+
+let build_auto some_loc
+   { name1 = auto_name ; names1 = names ; clauses1 = cls }
+   k =
+ let nguards = Array.length cls in
+
+ let rec params_from_queues params nums k = match params, nums with
+ | [],[] -> k      
+ | param::params, num::nums ->
+     Llet
+       (Strict,
+        param, get_queue (Lvar auto_name) num,
+        params_from_queues params nums k)
+ | _,_ -> assert false in
+
+ let rec build_table i = 
+   if i >= nguards then []
+   else
+     let cl_loc, sync, ipat, nums, jpats, e = cls.(i) in
+     let params, body = comp_fun sync jpats e in
+     let iprincipal =
+       match sync with Some id -> get_num names id | None -> -1 in
+     let bgo = Ident.create "_go" in          
+     let body =
+       if iprincipal >= 0 then match params with
+       | [param] -> Lfunction (Curried, [param], body)
+       | _ ->
+         Lapply (Lvar bgo,
+                 [Lprim
+                     (Pfield 0,
+                      [Lvar (principal_param iprincipal params nums)]) ;
+                   Lfunction (Curried, [Ident.create "_x"], body)])
+       else match params with
+       | [param] -> Lfunction (Curried, [param], body)
+       | _   ->
+         Lapply (Lvar bgo,
+                 [Lvar auto_name ;
+                  Lfunction (Curried, [Ident.create "_x"], body)]) in
+     let final = match params with
+     | [ _ ] -> body
+     | _     ->
+         Lfunction (Curried, [bgo],
+                    params_from_queues params nums body) in
+     Lprim
+       (Pmakeblock (0, Immutable),
+        [lambda_int ipat ; lambda_int iprincipal ; final])::
+         build_table (i+1) in
+ Lsequence (patch_table auto_name (build_table 0), k)
+*) 
+
+ let create_channels {jauto_name=name ; jauto_names=names} k =
+   List.fold_right
+     (fun (id,
+           {jchannel_sync=sync ; jchannel_alone=alone ; jchannel_id=num}) k ->
+             let jparam = Ident.create "jparam" in
+             Llet
+               (StrictOpt, id,
+                begin if sync then
+                  Lfunction
+                    (Curried,[jparam], send_sync name num alone (Lvar jparam))
+                else
+                  create_async name num alone
+                end,
+                k))
+     names k
+
+let get_queue name names jpat =
+ let jid,_ = jpat.jpat_desc in
+ let id = jid.jident_desc in
+ let i = get_num "(get_queue)" names id in
+ let k = jpat.jpat_kont in
+ match k with
+ | None ->
+     None, do_get_queue (Lvar name) i
+ | Some kid ->
+     let y = Ident.create "_y" in
+     Some y, do_get_queue (Lvar name) i
 
 
-  let rec build_table i = 
-    if i >= nguards then []
+
+let build_lets bds r =
+ List.fold_right
+   (fun (oid, lam) r ->
+     match oid with
+     | None -> r
+     | Some y -> Llet (StrictOpt, y, lam, r))
+   bds r
+
+let build_mask names jpats =
+  let rec do_rec mask = function
+    | [] -> mask
+    | jpat::rem ->
+        let jid,_ = jpat.jpat_desc in
+        let i = get_num "(build_mask)" names jid.jident_desc in
+        do_rec (mask lor (1 lsl i)) rem in
+  do_rec 0 jpats
+
+
+let rec explode = function
+  | [] -> []
+  | [xs] -> List.map (fun x -> [x]) xs
+  | xs::rem ->
+      let rem = explode rem in      
+      List.fold_right
+        (fun x r ->
+          List.fold_right
+            (fun xs r -> (x::xs)::r)
+            rem r)
+        xs
+        []
+
+
+
+
+let create_table some_loc auto1 gs r =
+  let ngs = Array.length gs
+  and name = auto1.jauto_name
+  and names = auto1.jauto_names in
+
+  let rec do_guard i =
+    if i >= ngs then []
     else
-      let cl_loc, sync, ipat, nums, jpats, e = cls.(i) in
-      let params, body = comp_fun cl_loc sync jpats e in
-      let iprincipal =
-        match sync with Some id -> get_num names id | None -> -1 in
-      let bgo = Ident.create "_go" in          
-      let body =
-        if iprincipal >= 0 then match params with
-        | [param] -> Lfunction (Curried, [param], body)
-        | _ ->
-          Lapply (Lvar bgo,
-                  [Lprim
-                      (Pfield 0,
-                       [Lvar (principal_param iprincipal params nums)]) ;
-                    Lfunction (Curried, [Ident.create "_x"], body)])
-        else match params with
-        | [param] -> Lfunction (Curried, [param], body)
-        | _   ->
-          Lapply (Lvar bgo,
-                  [Lvar auto_name ;
-                   Lfunction (Curried, [Ident.create "_x"], body)]) in
-      let final = match params with
-      | [ _ ] -> body
-      | _     ->
-          Lfunction (Curried, [bgo],
-                     params_from_queues params nums body) in
-      Lprim
-        (Pmakeblock (0, Immutable),
-         [lambda_int ipat ; lambda_int iprincipal ; final])::
-          build_table (i+1) in
-  Lsequence (patch_table auto_name (build_table 0), k)
+      let g,sync,_ = gs.(i)
+      and reac = auto1.jauto_desc.(i) in
+      match reac with
+      | Dispatcher (c, z, _, _) ->
+          let num = get_num "(do_guard, dispatcher)" names c in
+          let goid = Ident.create "_go" in          
+          let lam =
+            Lfunction
+              (Curried, [goid],
+               Lapply
+                 (Lvar goid,
+                  [Lvar name ;
+                    Lapply (Lvar g, [do_get_queue (Lvar name) num])])) in
+          Lprim
+            (Pmakeblock (0, Immutable),
+             [lambda_int (1 lsl num); lambda_int (-1); lam])
+          ::do_guard (i+1)
+      | Reaction (pats, _) ->
+          Printf.eprintf
+            "Guard: %s, pats=%a\n"
+            (Ident.unique_name g) dump_patss pats ;
+          let pats = explode pats in
+          let create_reaction jpats r =
 
-let build_channels {jauto_name=name ; jauto_names=names} k =
-  List.fold_right
-    (fun (id,
-          {jchannel_sync=sync ; jchannel_alone=alone ; jchannel_id=num}) k ->
-      let jparam = Ident.create "jparam" in
-      Llet
-        (StrictOpt, id,
-         begin if sync then
-           Lfunction
-             (Curried,[jparam], send_sync name num alone (Lvar jparam))
-         else
-           create_async name num alone
-         end,
-         k))
-    names k
+            let ipri = match sync with
+            | None -> -1
+            | Some _ ->
+                let rec find_rec = function
+                  | [] -> -1
+                  | jpat::rem ->
+                      if jpat.jpat_kont = sync then
+                        let jid,_ = jpat.jpat_desc in
+                        get_num "(real_ipri)" names jid.jident_desc
+                      else
+                        find_rec rem in
+                find_rec jpats in
+            
+            let bds = List.map (get_queue name names) jpats in
+            let args =
+              List.fold_right2
+                (fun bd jpat r -> match bd with
+                | None,lam -> lam::r
+                | Some y,_ ->
+                    let k = jpat.jpat_kont in
+                    if k = sync then
+                      Lprim (Pfield 1, [Lvar y])::r
+                    else
+                      Lprim (Pfield 0, [Lvar y])::
+                      Lprim (Pfield 1, [Lvar y])::r)
+                bds jpats [] in
+            let goid = Ident.create "_go" in
+            let real_g =
+              if ipri < 0 then
+                Lfunction
+                  (Curried, [goid],
+                   build_lets bds
+                     (Lapply
+                        (Lvar goid, [Lvar name ; Lapply (Lvar g, args)])))
+              else
+                let pri_kont =
+                  let rec find_rec bds jpats = match bds, jpats with
+                  | (Some y,_)::bds, jpat::jpats
+                    when jpat.jpat_kont = sync ->
+                     Lprim (Pfield 0, [Lvar y])
+                  | _::bds, _::jpats ->
+                      find_rec bds jpats
+                  | _, _ -> assert false in
+                  find_rec bds jpats in
+                Lfunction
+                  (Curried, [goid],
+                   build_lets bds
+                     (Lapply
+                        (Lvar goid, [pri_kont ; Lapply (Lvar g, args)]))) in
+            Lprim
+              (Pmakeblock (0, Immutable),
+               [lambda_int (build_mask names jpats) ;
+                 lambda_int ipri ; real_g])::r in
 
-
+          List.fold_right create_reaction pats (do_guard (i+1)) in
+  
+  Lsequence
+    (patch_table name (do_guard 0),
+     r)
