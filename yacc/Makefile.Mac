@@ -2,7 +2,7 @@
 
 C = sc
 COptions = -d NDEBUG -model far -w 2
-LinkOptions = -model far -msg nodup -compact -state nouse
+LinkOptions = -model far -msg nodup -compact -state nouse -br 68k
 Libs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
        "{clibraries}StdCLib.far.o" "{libraries}MathLib.far.o" ¶
        "{libraries}ToolLibs.o" "{libraries}Interface.o"

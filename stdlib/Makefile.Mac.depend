@@ -12,14 +12,16 @@ digest.cmoÄ string.cmi digest.cmi
 digest.cmxÄ string.cmx digest.cmi 
 filename.cmoÄ string.cmi sys.cmi filename.cmi 
 filename.cmxÄ string.cmx sys.cmx filename.cmi 
-format.cmoÄ string.cmi format.cmi 
-format.cmxÄ string.cmx format.cmi 
+format.cmoÄ obj.cmi string.cmi format.cmi 
+format.cmxÄ obj.cmx string.cmx format.cmi 
 gc.cmoÄ printf.cmi gc.cmi 
 gc.cmxÄ printf.cmx gc.cmi 
 genlex.cmoÄ char.cmi hashtbl.cmi list.cmi stream.cmi string.cmi genlex.cmi 
 genlex.cmxÄ char.cmx hashtbl.cmx list.cmx stream.cmx string.cmx genlex.cmi 
 hashtbl.cmoÄ array.cmi hashtbl.cmi 
 hashtbl.cmxÄ array.cmx hashtbl.cmi 
+lazy.cmoÄ lazy.cmi 
+lazy.cmxÄ lazy.cmi 
 lexing.cmoÄ string.cmi lexing.cmi 
 lexing.cmxÄ string.cmx lexing.cmi 
 list.cmoÄ list.cmi 
@@ -28,8 +30,8 @@ map.cmoÄ map.cmi
 map.cmxÄ map.cmi 
 marshal.cmoÄ string.cmi marshal.cmi 
 marshal.cmxÄ string.cmx marshal.cmi 
-obj.cmoÄ obj.cmi 
-obj.cmxÄ obj.cmi 
+obj.cmoÄ marshal.cmi obj.cmi 
+obj.cmxÄ marshal.cmx obj.cmi 
 oo.cmoÄ array.cmi hashtbl.cmi list.cmi map.cmi obj.cmi random.cmi sort.cmi ¶
     sys.cmi oo.cmi 
 oo.cmxÄ array.cmx hashtbl.cmx list.cmx map.cmx obj.cmx random.cmx sort.cmx ¶

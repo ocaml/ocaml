@@ -20,6 +20,7 @@
 :parsing:parsetree.cmiÄ :parsing:asttypes.cmi :parsing:location.cmi ¶
     :parsing:longident.cmi 
 :parsing:pstream.cmiÄ :parsing:parsetree.cmi 
+:parsing:syntaxerr.cmiÄ :parsing:location.cmi 
 :parsing:lexer.cmoÄ :utils:misc.cmi :parsing:parser.cmi :parsing:lexer.cmi 
 :parsing:lexer.cmxÄ :utils:misc.cmx :parsing:parser.cmx :parsing:lexer.cmi 
 :parsing:linenum.cmoÄ :utils:misc.cmi :parsing:linenum.cmi 
@@ -31,19 +32,21 @@
 :parsing:longident.cmoÄ :utils:misc.cmi :parsing:longident.cmi 
 :parsing:longident.cmxÄ :utils:misc.cmx :parsing:longident.cmi 
 :parsing:parse.cmoÄ :parsing:lexer.cmi :parsing:location.cmi ¶
-    :parsing:parser.cmi :parsing:parse.cmi 
+    :parsing:parser.cmi :parsing:syntaxerr.cmi :parsing:parse.cmi 
 :parsing:parse.cmxÄ :parsing:lexer.cmx :parsing:location.cmx ¶
-    :parsing:parser.cmx :parsing:parse.cmi 
+    :parsing:parser.cmx :parsing:syntaxerr.cmx :parsing:parse.cmi 
 :parsing:parser.cmoÄ :parsing:asttypes.cmi :utils:clflags.cmo ¶
     :parsing:location.cmi :parsing:longident.cmi :parsing:parsetree.cmi ¶
-    :parsing:pstream.cmi :parsing:parser.cmi 
+    :parsing:pstream.cmi :parsing:syntaxerr.cmi :parsing:parser.cmi 
 :parsing:parser.cmxÄ :parsing:asttypes.cmi :utils:clflags.cmx ¶
     :parsing:location.cmx :parsing:longident.cmx :parsing:parsetree.cmi ¶
-    :parsing:pstream.cmx :parsing:parser.cmi 
+    :parsing:pstream.cmx :parsing:syntaxerr.cmx :parsing:parser.cmi 
 :parsing:pstream.cmoÄ :parsing:asttypes.cmi :parsing:location.cmi ¶
     :parsing:longident.cmi :parsing:parsetree.cmi :parsing:pstream.cmi 
 :parsing:pstream.cmxÄ :parsing:asttypes.cmi :parsing:location.cmx ¶
     :parsing:longident.cmx :parsing:parsetree.cmi :parsing:pstream.cmi 
+:parsing:syntaxerr.cmoÄ :parsing:location.cmi :parsing:syntaxerr.cmi 
+:parsing:syntaxerr.cmxÄ :parsing:location.cmx :parsing:syntaxerr.cmi 
 :typing:btype.cmiÄ :typing:path.cmi :typing:types.cmi 
 :typing:ctype.cmiÄ :parsing:asttypes.cmi :typing:env.cmi :typing:ident.cmi ¶
     :typing:types.cmi 
@@ -361,13 +364,13 @@
     :driver:compile.cmi 
 :driver:errors.cmoÄ :bytecomp:bytelibrarian.cmi :bytecomp:bytelink.cmi ¶
     :typing:env.cmi :typing:includemod.cmi :parsing:lexer.cmi ¶
-    :parsing:location.cmi :parsing:parse.cmi :bytecomp:symtable.cmi ¶
+    :parsing:location.cmi :bytecomp:symtable.cmi :parsing:syntaxerr.cmi ¶
     :bytecomp:translcore.cmi :typing:typeclass.cmi :typing:typecore.cmi ¶
     :typing:typedecl.cmi :typing:typemod.cmi :typing:typetexp.cmi ¶
     :driver:errors.cmi 
 :driver:errors.cmxÄ :bytecomp:bytelibrarian.cmx :bytecomp:bytelink.cmx ¶
     :typing:env.cmx :typing:includemod.cmx :parsing:lexer.cmx ¶
-    :parsing:location.cmx :parsing:parse.cmx :bytecomp:symtable.cmx ¶
+    :parsing:location.cmx :bytecomp:symtable.cmx :parsing:syntaxerr.cmx ¶
     :bytecomp:translcore.cmx :typing:typeclass.cmx :typing:typecore.cmx ¶
     :typing:typedecl.cmx :typing:typemod.cmx :typing:typetexp.cmx ¶
     :driver:errors.cmi 
@@ -388,12 +391,12 @@
     :typing:printtyp.cmx :bytecomp:simplif.cmx :bytecomp:translmod.cmx ¶
     :typing:typedtree.cmx :typing:typemod.cmx :driver:optcompile.cmi 
 :driver:opterrors.cmoÄ :typing:env.cmi :typing:includemod.cmi ¶
-    :parsing:lexer.cmi :parsing:location.cmi :parsing:parse.cmi ¶
+    :parsing:lexer.cmi :parsing:location.cmi :parsing:syntaxerr.cmi ¶
     :bytecomp:translcore.cmi :typing:typeclass.cmi :typing:typecore.cmi ¶
     :typing:typedecl.cmi :typing:typemod.cmi :typing:typetexp.cmi ¶
     :driver:opterrors.cmi 
 :driver:opterrors.cmxÄ :typing:env.cmx :typing:includemod.cmx ¶
-    :parsing:lexer.cmx :parsing:location.cmx :parsing:parse.cmx ¶
+    :parsing:lexer.cmx :parsing:location.cmx :parsing:syntaxerr.cmx ¶
     :bytecomp:translcore.cmx :typing:typeclass.cmx :typing:typecore.cmx ¶
     :typing:typedecl.cmx :typing:typemod.cmx :typing:typetexp.cmx ¶
     :driver:opterrors.cmi 

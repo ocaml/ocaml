@@ -112,6 +112,7 @@
                          ::config:sm-Mac.h ¶
                          mlvalues.h ¶
                          fail.h ¶
+                         io.h ¶
                          gc.h ¶
                          memory.h ¶
                          major_gc.h ¶
@@ -306,6 +307,8 @@
                              gc_ctrl.h ¶
                              major_gc.h ¶
                              roots.h ¶
+                             memory.h ¶
+                             minor_gc.h ¶
                              weak.h
 
 "md5.c.x" Ä  md5.c ¶
@@ -644,6 +647,7 @@
                          ::config:sm-Mac.h ¶
                          mlvalues.h ¶
                          fail.h ¶
+                         io.h ¶
                          gc.h ¶
                          memory.h ¶
                          major_gc.h ¶
@@ -838,6 +842,8 @@
                              gc_ctrl.h ¶
                              major_gc.h ¶
                              roots.h ¶
+                             memory.h ¶
+                             minor_gc.h ¶
                              weak.h
 
 "md5.c.o" Ä  md5.c ¶

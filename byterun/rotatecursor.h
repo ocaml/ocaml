@@ -21,9 +21,9 @@
 */
 void rotatecursor_init (int volatile *p1, int volatile *p2);
 
-/* [direction] is 1 to rotate the cursor clockwise, 0 to rotate
-   counterclockwise.  This function always returns 0.
+/* [reverse] is 0 to rotate the cursor clockwise, anything else to
+   rotate counterclockwise.  This function always returns 0.
  */
-int rotatecursor_action (int direction);
+int rotatecursor_action (int reverse);
 
 #endif /* _rotatecursor_ */

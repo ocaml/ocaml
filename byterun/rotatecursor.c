@@ -70,9 +70,9 @@ void rotatecursor_init (int volatile *p1, int volatile *p2)
   atexit (remove_task);
 }
 
-int rotatecursor_action (int direction)
+int rotatecursor_action (int reverse)
 {
   PrimeTime ((QElemPtr) &mytmtask, 50);     /* 20 Hz */
-  RotateCursor (direction ? 32 : -32);
+  RotateCursor (reverse ? -32 : 32);
   return 0;
 }

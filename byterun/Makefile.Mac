@@ -1,7 +1,7 @@
 C = sc
 COptions = -model far
 AOptions = -model far -wb
-LinkOptions = -model far -msg nodup -compact -pad 0 -state nouse
+LinkOptions = -model far -msg nodup -compact -pad 0 -state nouse -br 68k
 Libs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
        "{clibraries}StdCLib.far.o" "{libraries}MathLib.far.o" ¶
        "{libraries}ToolLibs.o" "{libraries}Interface.o"
