@@ -212,6 +212,27 @@ rule token = parse
       { comment_start_pos := [Lexing.lexeme_start lexbuf];
         comment lexbuf;
         token lexbuf }
+  | "(*)"
+      { let loc = { Location.loc_start = Lexing.lexeme_start lexbuf;
+                    Location.loc_end = Lexing.lexeme_end lexbuf - 1;
+                    Location.loc_ghost = false }
+        and warn = Warnings.Comment "the start of a comment"
+        in
+        Location.print_warning loc warn;
+        comment_start_pos := [Lexing.lexeme_start lexbuf];
+        comment lexbuf;
+        token lexbuf
+      }
+  | "*)"
+      { let loc = { Location.loc_start = Lexing.lexeme_start lexbuf;
+                    Location.loc_end = Lexing.lexeme_end lexbuf;
+                    Location.loc_ghost = false }
+        and warn = Warnings.Comment "not the end of a comment"
+        in
+        Location.print_warning loc warn;
+        lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
+        STAR
+      }
   | "#" ("line")? [' ' '\t']* ['0'-'9']+ [^ '\n' '\r'] *
     ('\n' | '\r' | "\r\n")
       (* # linenum ... or #line linenum ... *)

@@ -18,6 +18,7 @@ type t =
   | Hide_instance_variable of string (* V *)
   | Partial_application              (* F *)
   | Statement_type                   (* S *)
+  | Comment of string                (* C *)
   | Other of string                  (* X *)
 ;;
 

@@ -18,6 +18,7 @@ type t =
   | Hide_instance_variable of string (* V *)
   | Partial_application              (* F *)
   | Statement_type                   (* S *)
+  | Comment of string                (* C *)
   | Other of string                  (* X *)
 ;;
 
@@ -27,6 +28,7 @@ let mflag = ref true;;
 let vflag = ref true;;
 let fflag = ref true;;
 let sflag = ref true;;
+let cflag = ref true;;
 let xflag = ref true;;
 
 let rec parse_options s =
@@ -44,6 +46,8 @@ let rec parse_options s =
     | 'f' -> fflag := false
     | 'S' -> sflag := true
     | 's' -> sflag := false
+    | 'C' -> cflag := true
+    | 'c' -> cflag := false
     | 'X' -> xflag := true
     | 'x' -> xflag := false
     | 'A' -> parse_options "PUMVFSX"
@@ -55,10 +59,11 @@ let rec parse_options s =
 let is_active = function
   | Partial_match -> !pflag
   | Unused_match -> !uflag
-  | Method_override slist -> !mflag
-  | Hide_instance_variable string -> !vflag
+  | Method_override _ -> !mflag
+  | Hide_instance_variable _ -> !vflag
   | Partial_application -> !fflag
   | Statement_type -> !sflag
+  | Comment _ -> !cflag
   | Other _ -> !xflag
 ;;
 
@@ -77,5 +82,6 @@ let message = function
        maybe some arguments are missing."
   | Statement_type ->
       "this expression should have type unit."
+  | Comment s -> "this is " ^ s ^ "."
   | Other s -> s
 ;;
