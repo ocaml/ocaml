@@ -193,14 +193,14 @@ let build_object_init_0 cl_table params cl copy_env subst_env top ids =
   let obj_init = subst_env env obj_init in
   let obj_init =
     if top then obj_init else
-    let i = ref 0 in
-    List.fold_left
-      (fun init (obj_init, env_init, _) ->
-	incr i;
+    let i = ref (List.length inh_init + 1) in
+    List.fold_right
+      (fun (obj_init, env_init, _) init ->
+	decr i;
 	Llet(Strict, obj_init,
 	     Lapply(Lvar env_init, [Lprim(Pfield !i, [Lvar env])]),
 	     init))
-      obj_init inh_init
+      inh_init obj_init
   in
   (inh_init, lfunction [env] obj_init)
 
