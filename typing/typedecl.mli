@@ -55,6 +55,7 @@ type error =
   | Unbound_exception of Longident.t
   | Not_an_exception of Longident.t
   | Bad_variance
+  | Unavailable_type_constructor of Path.t
 
 exception Error of Location.t * error
 

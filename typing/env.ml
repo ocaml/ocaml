@@ -27,7 +27,6 @@ type error =
   | Corrupted_interface of string
   | Illegal_renaming of string * string
   | Inconsistent_import of string * string * string
-  | File_not_found of string
 
 exception Error of error
 
@@ -147,11 +146,8 @@ let find_pers_struct name =
   try
     Hashtbl.find persistent_structures name
   with Not_found ->
-    let file = String.uncapitalize name ^ ".cmi" in
-    try
-      read_pers_struct name (find_in_path !load_path file)
-    with Not_found ->
-      raise(Error(File_not_found file))
+    read_pers_struct name
+      (find_in_path !load_path (String.uncapitalize name ^ ".cmi"))
 
 let reset_cache() =
   Hashtbl.clear persistent_structures
@@ -772,7 +768,4 @@ let report_error ppf = function
   | Inconsistent_import(name, source1, source2) -> fprintf ppf
       "@[<hov>The compiled interfaces %s@ and %s@ \
               make inconsistent assumptions over interface %s@]"
-      source1 source2  name
-  | File_not_found filename ->
-      fprintf ppf "%s@ was not found in compiler's load path" filename
-;;
+      source1 source2  name;;

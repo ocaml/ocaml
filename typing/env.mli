@@ -118,7 +118,6 @@ type error =
   | Corrupted_interface of string
   | Illegal_renaming of string * string
   | Inconsistent_import of string * string * string
-  | File_not_found of string
 
 exception Error of error
 

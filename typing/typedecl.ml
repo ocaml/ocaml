@@ -39,6 +39,7 @@ type error =
   | Unbound_exception of Longident.t
   | Not_an_exception of Longident.t
   | Bad_variance
+  | Unavailable_type_constructor of Path.t
 
 exception Error of Location.t * error
 
@@ -193,6 +194,7 @@ let rec check_constraints_rec env loc visited ty =
       let ty' = Ctype.newconstr path args' in
       begin try Ctype.enforce_constraints env ty'
       with Ctype.Unify _ -> assert false
+      | Not_found -> raise (Error(loc, Unavailable_type_constructor path))
       end;
       Ctype.end_def ();
       Ctype.generalize ty';
@@ -262,7 +264,7 @@ let check_abbrev env (_, sdecl) (id, decl) =
             then ()
             else raise(Error(sdecl.ptype_loc, Definition_mismatch ty))
           with Not_found ->
-            raise(Error(sdecl.ptype_loc, Definition_mismatch ty))
+            raise(Error(sdecl.ptype_loc, Unavailable_type_constructor path))
           end
       | _ -> raise(Error(sdecl.ptype_loc, Definition_mismatch ty))
       end
@@ -344,15 +346,19 @@ let compute_variance env tvl nega posi ty =
       | Ttuple tl ->
           List.iter (compute_variance_rec posi nega) tl
       | Tconstr (path, tl, _) ->
-          if tl = [] then () else
-          let decl = Env.find_type path env in
-          List.iter2
-            (fun ty (co,cn) ->
-              compute_variance_rec
-                (posi && co || nega && cn)
-                (posi && cn || nega && co)
-                ty)
-            tl decl.type_variance
+          if tl = [] then () else begin
+            try
+              let decl = Env.find_type path env in
+              List.iter2
+                (fun ty (co,cn) ->
+                  compute_variance_rec
+                    (posi && co || nega && cn)
+                    (posi && cn || nega && co)
+                    ty)
+                tl decl.type_variance
+            with Not_found ->
+              List.iter (compute_variance_rec true true) tl
+          end
       | Tobject (ty, _) ->
           compute_variance_rec posi nega ty
       | Tfield (_, _, ty1, ty2) ->
@@ -635,3 +641,5 @@ let report_error ppf = function
   | Bad_variance ->
       fprintf ppf
         "In this definition, expected parameter variances are not satisfied"
+  | Unavailable_type_constructor p ->
+      fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p

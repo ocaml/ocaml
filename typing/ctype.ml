@@ -2177,22 +2177,26 @@ let rec build_subtype env visited loops posi onlyloop t =
       with Not_found -> build_subtype env visited loops posi onlyloop t'
       end
   | Tconstr(p, tl, abbrev) ->
-      let decl = Env.find_type p env in
-      let tl' =
-        List.map2
-          (fun (co,cn) t ->
-            if cn then
-              if co then (t, false)
-              else build_subtype env visited loops (not posi) onlyloop t
-            else
-              if co then build_subtype env visited loops posi onlyloop t
-              else (newvar(), true))
-          decl.type_variance tl
-      in
-      if List.exists snd tl' then
-        (newconstr p (List.map fst tl'), true)
-      else
+      begin try
+        let decl = Env.find_type p env in
+        let tl' =
+          List.map2
+            (fun (co,cn) t ->
+              if cn then
+                if co then (t, false)
+                else build_subtype env visited loops (not posi) onlyloop t
+              else
+                if co then build_subtype env visited loops posi onlyloop t
+                else (newvar(), true))
+            decl.type_variance tl
+        in
+        if List.exists snd tl' then
+          (newconstr p (List.map fst tl'), true)
+        else
+          (t, false)
+      with Not_found ->
         (t, false)
+      end
   | Tvariant row ->
       if List.memq t visited then (t, false) else
       let visited = t :: visited in
@@ -2303,18 +2307,22 @@ let rec subtype_rec env trace t1 t2 cstrs =
     | (_, Tconstr(p2, tl2, abbrev2)) when generic_abbrev env p2 ->
         subtype_rec env trace t1 (expand_abbrev env t2) cstrs
     | (Tconstr(p1, tl1, _), Tconstr(p2, tl2, _)) when Path.same p1 p2 ->
-        let decl = Env.find_type p1 env in
-        List.fold_left2
-          (fun cstrs (co, cn) (t1, t2) ->
-            if co then
-              if cn then
-                (trace, newty2 t1.level (Ttuple[t1]),
-                 newty2 t2.level (Ttuple[t2])) :: cstrs 
-              else subtype_rec env ((t1, t2)::trace) t1 t2 cstrs
-            else
-              if cn then subtype_rec env ((t2, t1)::trace) t2 t1 cstrs
-              else cstrs)
-          cstrs decl.type_variance (List.combine tl1 tl2)
+        begin try
+          let decl = Env.find_type p1 env in
+          List.fold_left2
+            (fun cstrs (co, cn) (t1, t2) ->
+              if co then
+                if cn then
+                  (trace, newty2 t1.level (Ttuple[t1]),
+                   newty2 t2.level (Ttuple[t2])) :: cstrs 
+                else subtype_rec env ((t1, t2)::trace) t1 t2 cstrs
+              else
+                if cn then subtype_rec env ((t2, t1)::trace) t2 t1 cstrs
+                else cstrs)
+            cstrs decl.type_variance (List.combine tl1 tl2)
+        with Not_found ->
+          (trace, t1, t2)::cstrs
+        end
     | (Tobject (f1, _), Tobject (f2, _))
               when opened_object f1 && opened_object f2 ->
         (* Same row variable implies same object. *)
