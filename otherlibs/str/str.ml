@@ -21,6 +21,19 @@ external beginning_group: int -> int = "str_beginning_group"
 external end_group: int -> int = "str_end_group"
 external replacement_text: string -> string -> string = "str_replacement_text"
 
+let quote s =
+  let len = String.length s in
+  let buf = String.create (2 * len) in
+  let pos = ref 0 in
+  for i = 0 to len - 1 do
+    match s.[i] with
+      '[' | ']' | '*' | '.' | '\\' | '?' | '+' | '^' | '$' as c ->
+        buf.[!pos] <- '\\'; buf.[!pos + 1] <- c; pos := !pos + 2
+    | c ->
+        buf.[!pos] <- c; pos := !pos + 1
+  done;
+  String.sub buf 0 !pos
+
 let string_before s n = String.sub s 0 n
 
 let string_after s n = String.sub s n (String.length s - n)
@@ -32,6 +45,10 @@ let last_chars s n = String.sub s (String.length s - n) n
 let regexp e = compile_regexp e false
 
 let regexp_case_fold e = compile_regexp e true
+
+let regexp_string s = compile_regexp (quote s) false
+
+let regexp_string_case_fold s = compile_regexp (quote s) true
 
 let group_beginning n =
   if n < 0 or n >= 10 then invalid_arg "Str.group_beginning" else
