@@ -698,7 +698,7 @@ label_simple_pattern:
       { ($1, mkpat(Ppat_var $1)) }
 ;
 expr:
-    simple_expr %prec SHARP
+    simple_expr
       { $1 }
   | simple_expr simple_labeled_expr_list %prec prec_appl
       { mkexp(Pexp_apply($1, List.rev $2)) }
@@ -720,7 +720,7 @@ expr:
       { mkexp(Pexp_try($2, List.rev $5)) }
   | TRY seq_expr WITH error %prec prec_try
       { syntax_error() }
-  | expr_comma_list %prec COMMA
+  | expr_comma_list
       { mkexp(Pexp_tuple(List.rev $1)) }
   | constr_longident simple_expr %prec prec_constr_appl
       { mkexp(Pexp_construct($1, Some $2, false)) }
@@ -1339,7 +1339,7 @@ val_longident:
   | mod_longident DOT val_ident                 { Ldot($1, $3) }
 ;
 constr_longident:
-    mod_longident       %prec DOT               { $1 }
+    mod_longident                               { $1 }
   | LBRACKET RBRACKET                           { Lident "[]" }
   | LPAREN RPAREN                               { Lident "()" }
   | FALSE                                       { Lident "false" }
