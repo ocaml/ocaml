@@ -4,7 +4,7 @@
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -30,7 +30,7 @@
    at compile-type.  The programmer should explicitly give the expected
    type of the returned value, using the following syntax:
                      [(Marshal.from_channel chan : type)].
-   The behavior is unspecified if the object in the file does not
+   Anything can happen at run-time if the object in the file does not
    belong to the given type.
 
    The representation of marshaled values is not human-readable,
@@ -106,19 +106,24 @@ val from_string: string -> int -> 'a
 
 val header_size : int
 val data_size : string -> int -> int
+val total_size : string -> int -> int
         (* The bytes representing a marshaled value are composed of
            a fixed-size header and a variable-sized data part,
            whose size can be determined from the header.
            [Marshal.header_size] is the size, in characters, of the header.
            [Marshal.data_size buff ofs] is the size, in characters,
            of the data part, assuming a valid header is stored in
-           [buff] starting at position [ofs].  It raises [Failure]
+           [buff] starting at position [ofs].
+           Finally, [Marshal.total_size buff ofs] is the total size,
+           in characters, of the marshaled value.
+           Both [Marshal.data_size] and [Marshal.total_size] raise [Failure]
            if [buff], [ofs] does not contain a valid header.
 
            To read the byte representation of a marshaled value into
-           a string buffer, one needs to read first [Marshal.header_size]
-           characters into the buffer, then determine the length of the
-           remainder of the representation using [Marshal.data_size],
+           a string buffer, the program needs to read first
+           [Marshal.header_size] characters into the buffer,
+           then determine the length of the remainder of the
+           representation using [Marshal.data_size],
            make sure the buffer is large enough to hold the variable
            size, then read it, and finally call [Marshal.from_string]
            to unmarshal the value. *)

@@ -4,7 +4,7 @@
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -17,7 +17,8 @@ type extern_flags =
 
 external to_channel: out_channel -> 'a -> extern_flags list -> unit
     = "output_value"
-external to_string: 'a -> extern_flags list -> string = "output_value_to_string"
+external to_string: 'a -> extern_flags list -> string
+    = "output_value_to_string"
 external to_buffer_unsafe:
       string -> int -> int -> 'a -> extern_flags list -> unit
     = "output_value_to_buffer"
@@ -36,6 +37,7 @@ let data_size buff ofs =
   if ofs < 0 || ofs + header_size > String.length buff
   then invalid_arg "Marshal.data_size"
   else data_size_unsafe buff ofs
+let total_size buff ofs = header_size + data_size buff ofs
 
 let from_string buff ofs =
   if ofs < 0 || ofs + header_size > String.length buff
