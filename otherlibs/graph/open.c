@@ -29,7 +29,7 @@ Colormap grcolormap;
 int grwhite, grblack;
 struct canvas grwindow;
 struct canvas grbstore;
-Bool grautoflush ;
+Bool grauto_flush ;
 int grx, gry;
 unsigned long grcolor;
 extern XFontStruct * grfont;
@@ -140,7 +140,7 @@ value gr_open_graph(value arg)
     XSetForeground(grdisplay, grbstore.gc, grcolor);
     
     /* Set the auto-flush flag */
-    grautoflush = True ;
+    grauto_flush = True ;
 
     /* The global data structures are now correctly initialized.
        In particular, gr_sigio_handler can now handle events safely. */
@@ -216,7 +216,7 @@ value gr_clear_graph(void)
   XFillRectangle(grdisplay, grbstore.win, grbstore.gc,
                  0, 0, grbstore.w, grbstore.h);
   XSetForeground(grdisplay, grbstore.gc, grcolor);
-  if(grautoflush) {
+  if(grauto_flush) {
     XSetForeground(grdisplay, grwindow.gc, grwhite);
     XFillRectangle(grdisplay, grwindow.win, grwindow.gc,
 		   0, 0, grwindow.w, grwindow.h);
@@ -249,11 +249,11 @@ value gr_flush(void)
   return Val_unit ;
 }
 
-value gr_autoflush(value v)
+value gr_auto_flush(value v)
 {
-  Bool old = grautoflush ;
-  grautoflush = Bool_val(v) ;
-  if(old == False && grautoflush == True)
+  Bool old = grauto_flush ;
+  grauto_flush = Bool_val(v) ;
+  if(old == False && grauto_flush == True)
     return gr_flush() ;
   else
     return Val_unit ;

@@ -75,7 +75,7 @@ value gr_draw_image(value im, value vx, value vy)
   if (Mask_im(im) != None) {
     XSetClipOrigin(grdisplay, grbstore.gc, x, by);
     XSetClipMask(grdisplay, grbstore.gc, Mask_im(im));
-    if(grautoflush) {
+    if(grauto_flush) {
       XSetClipOrigin(grdisplay, grwindow.gc, x, wy);
       XSetClipMask(grdisplay, grwindow.gc, Mask_im(im));
     }
@@ -84,17 +84,17 @@ value gr_draw_image(value im, value vx, value vy)
             0, 0,
             Width_im(im), Height_im(im),
             x, by);
-  if(grautoflush)
+  if(grauto_flush)
     XCopyArea(grdisplay, Data_im(im), grwindow.win, grwindow.gc,
 	      0, 0,
 	      Width_im(im), Height_im(im),
 	      x, wy);
   if (Mask_im(im) != None) {
     XSetClipMask(grdisplay, grbstore.gc, None);
-    if(grautoflush)
+    if(grauto_flush)
       XSetClipMask(grdisplay, grwindow.gc, None);
   }
-  if(grautoflush)
+  if(grauto_flush)
     XFlush(grdisplay);
   return Val_unit;
 }

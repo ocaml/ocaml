@@ -45,7 +45,7 @@ external size_y : unit -> int = "gr_size_y"
 
 (* Double-buffering *)
 
-external autoflush : bool -> unit = "gr_autoflush"
+external auto_flush : bool -> unit = "gr_auto_flush"
 external flush : unit -> unit = "gr_flush"
 
 (* Colors *)

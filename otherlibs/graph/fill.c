@@ -25,7 +25,7 @@ value gr_fill_rect(value vx, value vy, value vw, value vh)
   gr_check_open();
   XFillRectangle(grdisplay, grbstore.win, grbstore.gc,
 		 x, Bcvt(y) - h + 1, w, h);
-  if(grautoflush) {
+  if(grauto_flush) {
     XFillRectangle(grdisplay, grwindow.win, grwindow.gc,
 		   x, Wcvt(y) - h + 1, w, h);
     XFlush(grdisplay);
@@ -47,7 +47,7 @@ value gr_fill_poly(value array)
   }
   XFillPolygon(grdisplay, grbstore.win, grbstore.gc, points,
 	       npoints, Complex, CoordModeOrigin);
-  if(grautoflush) {
+  if(grauto_flush) {
     for (i = 0; i < npoints; i++)
       points[i].y = BtoW(points[i].y);
     XFillPolygon(grdisplay, grwindow.win, grwindow.gc, points,
@@ -70,7 +70,7 @@ value gr_fill_arc_nat(value vx, value vy, value vrx, value vry, value va1, value
   gr_check_open();
   XFillArc(grdisplay, grbstore.win, grbstore.gc,
 	   x - rx, Bcvt(y) - ry, rx * 2, ry * 2, a1 * 64, (a2 - a1) * 64);
-  if(grautoflush) {
+  if(grauto_flush) {
     XFillArc(grdisplay, grwindow.win, grwindow.gc,
 	     x - rx, Wcvt(y) - ry, rx * 2, ry * 2, a1 * 64, (a2 - a1) * 64);
     XFlush(grdisplay);

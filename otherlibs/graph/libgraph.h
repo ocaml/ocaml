@@ -29,7 +29,7 @@ extern Colormap grcolormap;     /* The color map */
 extern struct canvas grwindow;  /* The graphics window */
 extern struct canvas grbstore;  /* The pixmap used for backing store */
 extern int grwhite, grblack;    /* Black and white pixels */
-extern Bool grautoflush;        /* Auto-flush flag */
+extern Bool grauto_flush;        /* Auto-flush flag */
 extern int grx, gry;            /* Coordinates of the current point */
 extern unsigned long grcolor;   /* Current drawing color */
 extern XFontStruct * grfont;    /* Current font */

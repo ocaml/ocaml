@@ -44,7 +44,7 @@ static void gr_draw_text(char *txt, int len)
   if (grfont == NULL) gr_font(DEFAULT_FONT);
   XDrawString(grdisplay, grbstore.win, grbstore.gc,
               grx, Bcvt(gry) - grfont->descent + 1, txt, len);
-  if(grautoflush) {
+  if(grauto_flush) {
     XDrawString(grdisplay, grwindow.win, grwindow.gc,
 		grx, Wcvt(gry) - grfont->descent + 1, txt, len);
     XFlush(grdisplay);

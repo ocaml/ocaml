@@ -38,21 +38,21 @@ external size_y : unit -> int = "gr_size_y"
            Drawings outside of this rectangle are clipped, without causing
            an error. The origin (0,0) is at the lower left corner. *)
 
-(*** Double-buffering *)
+(*** Double buffering *)
 
-external autoflush : bool -> unit = "gr_autoflush"
+external auto_flush : bool -> unit = "gr_auto_flush"
         (* Set auto-flush mode on/off.  When turned off, drawings are done
 	   in the backing store window but no more in the graphics window
-	   itself.  This creates a simple effect of double-buffering, by
+	   itself.  This creates a simple effect of double buffering, by
 	   allowing the user to do complex drawings in the backing store
 	   while keeping older drawings on the screen.  The contents
-	   of the backing-store is copied onto the graphics window by
+	   of the backing store is copied onto the graphics window by
 	   a call to [flush] (see below).  By default, auto-flush mode is
-	   on, and all drawings are done both in the backing-store and in
+	   on, and all drawings are done both in the backing store and in
 	   the graphics window. *)
 
 external flush : unit -> unit = "gr_flush"
-        (* Flush the contents of the backing-store onto the graphics
+        (* Flush the contents of the backing store onto the graphics
 	   window.  This function is automatically called each time
 	   auto-flush mode is enabled. *)
 

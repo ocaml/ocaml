@@ -21,7 +21,7 @@ value gr_plot(value vx, value vy)
   int y = Int_val(vy);
   gr_check_open();
   XDrawPoint(grdisplay, grbstore.win, grbstore.gc, x, Bcvt(y));
-  if(grautoflush) {
+  if(grauto_flush) {
     XDrawPoint(grdisplay, grwindow.win, grwindow.gc, x, Wcvt(y));
     XFlush(grdisplay);
   }
@@ -51,7 +51,7 @@ value gr_lineto(value vx, value vy)
   gr_check_open();
   XDrawLine(grdisplay, grbstore.win, grbstore.gc,
 	    grx, Bcvt(gry), x, Bcvt(y));
-  if(grautoflush) {
+  if(grauto_flush) {
     XDrawLine(grdisplay, grwindow.win, grwindow.gc,
 	      grx, Wcvt(gry), x, Wcvt(y));
     XFlush(grdisplay);
@@ -73,7 +73,7 @@ value gr_draw_arc_nat(value vx, value vy, value vrx, value vry, value va1, value
   gr_check_open();
   XDrawArc(grdisplay, grbstore.win, grbstore.gc,
 	   x - rx, Bcvt(y) - ry, rx * 2, ry * 2, a1 * 64, (a2 - a1) * 64);
-  if(grautoflush) {
+  if(grauto_flush) {
     XDrawArc(grdisplay, grwindow.win, grwindow.gc,
 	     x - rx, Wcvt(y) - ry, rx * 2, ry * 2, a1 * 64, (a2 - a1) * 64);
     XFlush(grdisplay);
