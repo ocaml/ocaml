@@ -1,6 +1,6 @@
 # The main Makefile
 
-MacVersion = "mac.0x2"
+MacVersion = "mac.3"
 
 CAMLC = :boot:ocamlrun :boot:ocamlc -I :boot:
 COMPFLAGS = {INCLUDES}
@@ -367,7 +367,9 @@ alldepend ÄÄ
 # Clean up the test directory
 
 clean ÄÄ
-    directory :test; domake clean; directory ::
+    if `exists :test`
+      directory :test; domake clean; directory ::
+    end
 
 # Default rules
 

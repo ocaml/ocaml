@@ -13,7 +13,7 @@
 
 (* Weak array operations *)
 
-type 'a t
+type 'a t;;
 
 external create: int -> 'a t = "weak_create";;
 
