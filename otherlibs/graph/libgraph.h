@@ -12,8 +12,8 @@
 /* $Id$ */
 
 #include <stdio.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
+#include <Xlib.h>
+#include <Xutil.h>
 #include <mlvalues.h>
 
 struct canvas {
