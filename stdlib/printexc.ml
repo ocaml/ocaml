@@ -16,7 +16,7 @@ let print_exn = function
           let arg = Obj.field (Obj.repr x) i in
           if not (Obj.is_block arg) then
             prerr_int (Obj.magic arg : int)
-          else if Obj.tag arg = 253 then begin
+          else if Obj.tag arg = 252 then begin
             prerr_char '"';
             prerr_string (Obj.magic arg : string);
             prerr_char '"'
