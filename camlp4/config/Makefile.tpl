@@ -8,7 +8,7 @@ MKDIR=mkdir -p
 
 # Uncomment this for systematically building profiled versions of
 # Camlp4 libraries
-#PROFILING=prof
+PROFILING=prof
 
 TESTDIRECTORY= test `basename "$<"` != "$<" && { echo "You are not in the right directory"; exit 1; }
 
