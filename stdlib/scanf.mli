@@ -113,11 +113,12 @@ val bscanf :
    and [%4f] reads a float with 4 characters.
 
    The scanning indications are introduced by a [@] character, followed
-   by any character [c], that matches a plain [c] character in the
-   input. If a scanning indication immediately follows a [s]
+   by any character [c].  The effect of [@c] is to skip input characters
+   until a matching [c] is found.  
+   If a scanning indication immediately follows a [s]
    conversion specification, it specifies the boundary of the token
    (that is the character immediately after the end of the token). For
-   instance, ["%s@\t"] reads the string preceding the next tabulation
+   instance, ["%s@\t"] reads a string up to the next tabulation
    character.
 
    Note: the [scanf] facility is not intended for heavy duty
