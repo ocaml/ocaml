@@ -187,12 +187,12 @@ external filedescr_of_fd : int -> file_descr = "win_handle_fd"
 let in_channel_of_descr_gen flags handle =
   open_read_descriptor(open_handle handle flags)
 let in_channel_of_descr handle =
-  in_channel_of_descr_gen [O_TEXT] handle
+  in_channel_of_descr_gen [O_BINARY] handle
 
 let out_channel_of_descr_gen flags handle =
   open_write_descriptor(open_handle handle flags)
 let out_channel_of_descr handle =
-  out_channel_of_descr_gen [O_TEXT] handle
+  out_channel_of_descr_gen [O_BINARY] handle
 
 let descr_of_in_channel inchan =
   filedescr_of_fd(fd_of_in_channel inchan)

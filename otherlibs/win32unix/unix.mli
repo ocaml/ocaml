@@ -211,10 +211,10 @@ val write : file_descr -> string -> int -> int -> int
 
 val in_channel_of_descr : file_descr -> in_channel 
         (* Create an input channel reading from the given descriptor.
-           The input channel is opened in text mode. *)
+           The input channel is opened in binary mode. *)
 val out_channel_of_descr : file_descr -> out_channel
         (* Create an output channel writing on the given descriptor.
-           The output channel is opened in text mode. *)
+           The output channel is opened in binary mode. *)
 val in_channel_of_descr_gen : open_flag list -> file_descr -> in_channel 
 val out_channel_of_descr_gen : open_flag list -> file_descr -> out_channel
         (* Same as [in_channel_of_descr] and [out_channel_of_descr],
