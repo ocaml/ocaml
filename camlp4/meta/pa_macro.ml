@@ -9,22 +9,22 @@ Added statements:
      DEFINE <uident>
      DEFINE <uident> = <expression>
      DEFINE <uident> (<parameters>) = <expression>
-     IFDEF <uident> THEN <structure_items> END
-     IFDEF <uident> THEN <structure_items> ELSE <structure_items> END
-     IFNDEF <uident> THEN <structure_items> END
-     IFNDEF <uident> THEN <structure_items> ELSE <structure_items> END
+     IFDEF <uident> THEN <structure_items> (END | ENDIF)
+     IFDEF <uident> THEN <structure_items> ELSE <structure_items> (END | ENDIF)
+     IFNDEF <uident> THEN <structure_items> (END | ENDIF)
+     IFNDEF <uident> THEN <structure_items> ELSE <structure_items> (END | ENDIF)
 
   In expressions:
 
-     IFDEF <uident> THEN <expression> ELSE <expression> END
-     IFNDEF <uident> THEN <expression> ELSE <expression> END
+     IFDEF <uident> THEN <expression> ELSE <expression> (END | ENDIF)
+     IFNDEF <uident> THEN <expression> ELSE <expression> (END | ENDIF)
      __FILE__
      __LOCATION__
 
   In patterns:
 
-     IFDEF <uident> THEN <pattern> ELSE <pattern> END
-     IFNDEF <uident> THEN <pattern> ELSE <pattern> END
+     IFDEF <uident> THEN <pattern> ELSE <pattern> (END | ENDIF)
+     IFNDEF <uident> THEN <pattern> ELSE <pattern> (END | ENDIF)
 
   As Camlp4 options:
 
@@ -203,17 +203,21 @@ EXTEND
   macro_def:
     [ [ "DEFINE"; i = uident; def = opt_macro_value -> SdDef i def
       | "UNDEF"; i = uident -> SdUnd i
-      | "IFDEF"; i = uident; "THEN"; d = str_item_or_macro; "END" ->
+      | "IFDEF"; i = uident; "THEN"; d = str_item_or_macro; _ = endif ->
           if is_defined i then d else SdNop
       | "IFDEF"; i = uident; "THEN"; d1 = str_item_or_macro; "ELSE";
-        d2 = str_item_or_macro; "END" ->
+        d2 = str_item_or_macro; _ = endif ->
           if is_defined i then d1 else d2
-      | "IFNDEF"; i = uident; "THEN"; d = str_item_or_macro; "END" ->
+      | "IFNDEF"; i = uident; "THEN"; d = str_item_or_macro; _ = endif ->
           if is_defined i then SdNop else d
       | "IFNDEF"; i = uident; "THEN"; d1 = str_item_or_macro; "ELSE";
-        d2 = str_item_or_macro; "END" ->
+        d2 = str_item_or_macro; _ = endif ->
           if is_defined i then d2 else d1 ] ]
   ;
+    endif:
+      [ [ "END" -> ()
+        | "ENDIF" -> () ] ]
+    ;
   str_item_or_macro:
     [ [ d = macro_def -> d
       | si = LIST1 str_item -> SdStr si ] ]
@@ -224,9 +228,9 @@ EXTEND
       | -> None ] ]
   ;
   expr: LEVEL "top"
-    [ [ "IFDEF"; i = uident; "THEN"; e1 = expr; "ELSE"; e2 = expr; "END" ->
+    [ [ "IFDEF"; i = uident; "THEN"; e1 = expr; "ELSE"; e2 = expr; _ = endif ->
           if is_defined i then e1 else e2
-      | "IFNDEF"; i = uident; "THEN"; e1 = expr; "ELSE"; e2 = expr; "END" ->
+      | "IFNDEF"; i = uident; "THEN"; e1 = expr; "ELSE"; e2 = expr; _ = endif ->
           if is_defined i then e2 else e1 ] ]
   ;
   expr: LEVEL "simple"
@@ -237,9 +241,9 @@ EXTEND
           <:expr< ($int:bp$, $int:ep$) >> ] ]
   ;
   patt:
-    [ [ "IFDEF"; i = uident; "THEN"; p1 = patt; "ELSE"; p2 = patt; "END" ->
+    [ [ "IFDEF"; i = uident; "THEN"; p1 = patt; "ELSE"; p2 = patt; _ = endif ->
           if is_defined i then p1 else p2
-      | "IFNDEF"; i = uident; "THEN"; p1 = patt; "ELSE"; p2 = patt; "END" ->
+      | "IFNDEF"; i = uident; "THEN"; p1 = patt; "ELSE"; p2 = patt; _ = endif ->
           if is_defined i then p2 else p1 ] ]
   ;
   uident:

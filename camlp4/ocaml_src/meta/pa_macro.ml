@@ -9,22 +9,22 @@ Added statements:
      DEFINE <uident>
      DEFINE <uident> = <expression>
      DEFINE <uident> (<parameters>) = <expression>
-     IFDEF <uident> THEN <structure_items> END
-     IFDEF <uident> THEN <structure_items> ELSE <structure_items> END
-     IFNDEF <uident> THEN <structure_items> END
-     IFNDEF <uident> THEN <structure_items> ELSE <structure_items> END
+     IFDEF <uident> THEN <structure_items> (END | ENDIF)
+     IFDEF <uident> THEN <structure_items> ELSE <structure_items> (END | ENDIF)
+     IFNDEF <uident> THEN <structure_items> (END | ENDIF)
+     IFNDEF <uident> THEN <structure_items> ELSE <structure_items> (END | ENDIF)
 
   In expressions:
 
-     IFDEF <uident> THEN <expression> ELSE <expression> END
-     IFNDEF <uident> THEN <expression> ELSE <expression> END
+     IFDEF <uident> THEN <expression> ELSE <expression> (END | ENDIF)
+     IFNDEF <uident> THEN <expression> ELSE <expression> (END | ENDIF)
      __FILE__
      __LOCATION__
 
   In patterns:
 
-     IFDEF <uident> THEN <pattern> ELSE <pattern> END
-     IFNDEF <uident> THEN <pattern> ELSE <pattern> END
+     IFDEF <uident> THEN <pattern> ELSE <pattern> (END | ENDIF)
+     IFNDEF <uident> THEN <pattern> ELSE <pattern> (END | ENDIF)
 
   As Camlp4 options:
 
@@ -217,6 +217,7 @@ Grammar.extend
    in
    let macro_def : 'macro_def Grammar.Entry.e =
      grammar_entry_create "macro_def"
+   and endif : 'endif Grammar.Entry.e = grammar_entry_create "endif"
    and str_item_or_macro : 'str_item_or_macro Grammar.Entry.e =
      grammar_entry_create "str_item_or_macro"
    and opt_macro_value : 'opt_macro_value Grammar.Entry.e =
@@ -248,10 +249,11 @@ Grammar.extend
        Gramext.Snterm
          (Grammar.Entry.obj
             (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e));
-       Gramext.Stoken ("", "END")],
+       Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
-        (fun _ (d2 : 'str_item_or_macro) _ (d1 : 'str_item_or_macro) _
-           (i : 'uident) _ (loc : Lexing.position * Lexing.position) ->
+        (fun (_ : 'endif) (d2 : 'str_item_or_macro) _
+           (d1 : 'str_item_or_macro) _ (i : 'uident) _
+           (loc : Lexing.position * Lexing.position) ->
            (if is_defined i then d2 else d1 : 'macro_def));
       [Gramext.Stoken ("", "IFNDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
@@ -259,9 +261,9 @@ Grammar.extend
        Gramext.Snterm
          (Grammar.Entry.obj
             (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e));
-       Gramext.Stoken ("", "END")],
+       Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
-        (fun _ (d : 'str_item_or_macro) _ (i : 'uident) _
+        (fun (_ : 'endif) (d : 'str_item_or_macro) _ (i : 'uident) _
            (loc : Lexing.position * Lexing.position) ->
            (if is_defined i then SdNop else d : 'macro_def));
       [Gramext.Stoken ("", "IFDEF");
@@ -274,10 +276,11 @@ Grammar.extend
        Gramext.Snterm
          (Grammar.Entry.obj
             (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e));
-       Gramext.Stoken ("", "END")],
+       Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
-        (fun _ (d2 : 'str_item_or_macro) _ (d1 : 'str_item_or_macro) _
-           (i : 'uident) _ (loc : Lexing.position * Lexing.position) ->
+        (fun (_ : 'endif) (d2 : 'str_item_or_macro) _
+           (d1 : 'str_item_or_macro) _ (i : 'uident) _
+           (loc : Lexing.position * Lexing.position) ->
            (if is_defined i then d1 else d2 : 'macro_def));
       [Gramext.Stoken ("", "IFDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
@@ -285,9 +288,9 @@ Grammar.extend
        Gramext.Snterm
          (Grammar.Entry.obj
             (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e));
-       Gramext.Stoken ("", "END")],
+       Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
-        (fun _ (d : 'str_item_or_macro) _ (i : 'uident) _
+        (fun (_ : 'endif) (d : 'str_item_or_macro) _ (i : 'uident) _
            (loc : Lexing.position * Lexing.position) ->
            (if is_defined i then d else SdNop : 'macro_def));
       [Gramext.Stoken ("", "UNDEF");
@@ -304,6 +307,14 @@ Grammar.extend
         (fun (def : 'opt_macro_value) (i : 'uident) _
            (loc : Lexing.position * Lexing.position) ->
            (SdDef (i, def) : 'macro_def))]];
+    Grammar.Entry.obj (endif : 'endif Grammar.Entry.e), None,
+    [None, None,
+     [[Gramext.Stoken ("", "ENDIF")],
+      Gramext.action
+        (fun _ (loc : Lexing.position * Lexing.position) -> (() : 'endif));
+      [Gramext.Stoken ("", "END")],
+      Gramext.action
+        (fun _ (loc : Lexing.position * Lexing.position) -> (() : 'endif))]];
     Grammar.Entry.obj
       (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e),
     None,
@@ -348,18 +359,18 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
        Gramext.Stoken ("", "THEN"); Gramext.Sself;
        Gramext.Stoken ("", "ELSE"); Gramext.Sself;
-       Gramext.Stoken ("", "END")],
+       Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
-        (fun _ (e2 : 'expr) _ (e1 : 'expr) _ (i : 'uident) _
+        (fun (_ : 'endif) (e2 : 'expr) _ (e1 : 'expr) _ (i : 'uident) _
            (loc : Lexing.position * Lexing.position) ->
            (if is_defined i then e2 else e1 : 'expr));
       [Gramext.Stoken ("", "IFDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
        Gramext.Stoken ("", "THEN"); Gramext.Sself;
        Gramext.Stoken ("", "ELSE"); Gramext.Sself;
-       Gramext.Stoken ("", "END")],
+       Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
-        (fun _ (e2 : 'expr) _ (e1 : 'expr) _ (i : 'uident) _
+        (fun (_ : 'endif) (e2 : 'expr) _ (e1 : 'expr) _ (i : 'uident) _
            (loc : Lexing.position * Lexing.position) ->
            (if is_defined i then e1 else e2 : 'expr))]];
     Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
@@ -383,18 +394,18 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
        Gramext.Stoken ("", "THEN"); Gramext.Sself;
        Gramext.Stoken ("", "ELSE"); Gramext.Sself;
-       Gramext.Stoken ("", "END")],
+       Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
-        (fun _ (p2 : 'patt) _ (p1 : 'patt) _ (i : 'uident) _
+        (fun (_ : 'endif) (p2 : 'patt) _ (p1 : 'patt) _ (i : 'uident) _
            (loc : Lexing.position * Lexing.position) ->
            (if is_defined i then p2 else p1 : 'patt));
       [Gramext.Stoken ("", "IFDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
        Gramext.Stoken ("", "THEN"); Gramext.Sself;
        Gramext.Stoken ("", "ELSE"); Gramext.Sself;
-       Gramext.Stoken ("", "END")],
+       Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
-        (fun _ (p2 : 'patt) _ (p1 : 'patt) _ (i : 'uident) _
+        (fun (_ : 'endif) (p2 : 'patt) _ (p1 : 'patt) _ (i : 'uident) _
            (loc : Lexing.position * Lexing.position) ->
            (if is_defined i then p1 else p2 : 'patt))]];
     Grammar.Entry.obj (uident : 'uident Grammar.Entry.e), None,
