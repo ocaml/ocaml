@@ -46,6 +46,8 @@ val directive_table : (string, directive_fun) Hashtbl.t
         (* Table of known directives, with their execution function *)
 val toplevel_env : Env.t ref
         (* Typing environment for the toplevel *)
+val initialize_toplevel_env : unit -> unit
+        (* Initialize the typing environment for the toplevel *)
 val print_exception_outcome : formatter -> exn -> unit
         (* Print an exception resulting from the evaluation of user code. *)
 val execute_phrase : bool -> formatter -> Parsetree.toplevel_phrase -> bool

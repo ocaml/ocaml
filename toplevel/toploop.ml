@@ -357,13 +357,16 @@ let set_paths () =
   load_path := "" :: (List.rev !Clflags.include_dirs @ !load_path);
   Dll.add_path !load_path
 
+let initialize_toplevel_env () =
+  toplevel_env := Compile.initial_env()
+
 (* The interactive loop *)
 
 exception PPerror
 
 let loop ppf =
   fprintf ppf "        Objective Caml version %s@.@." Config.version;
-  toplevel_env := Compile.initial_env();
+  initialize_toplevel_env ();
   let lb = Lexing.from_function refill_lexbuf in
   Location.input_name := "";
   Location.input_lexbuf := Some lb;
