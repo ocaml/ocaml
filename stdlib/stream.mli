@@ -64,7 +64,7 @@ val peek : 'a t -> 'a option;;
 val junk : 'a t -> unit;;
         (* Remove the first element of the stream, possibly unfreezing
            it before. *)
-external count : 'a t -> int = "%field0";;
+val count : 'a t -> int;;
 	(* Return the current count of the stream elements, i.e. the number
            of the stream elements discarded. *)
 
