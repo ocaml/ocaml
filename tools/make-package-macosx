@@ -1,0 +1,32 @@
+#!/bin/sh
+
+#########################################################################
+#                                                                       #
+#                            Objective Caml                             #
+#                                                                       #
+#          Damien Doligez, projet Moscova, INRIA Rocquencourt           #
+#                                                                       #
+#   Copyright 2003 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the Q Public License version 1.0.                #
+#                                                                       #
+#########################################################################
+
+# $Id$
+
+cd package-macosx
+rm -f ocaml.pkg ocaml.dmg
+
+package root ocaml.info
+
+size=`du -s ocaml.pkg | cut -f 1`
+size=`expr \( $size \* 11 \) / 10 + 500`
+
+hdiutil create -sectors $size ocaml.dmg
+name=`hdid -nomount ocaml.dmg | grep Apple_HFS | cut -d ' ' -f 1`
+newfs_hfs -v 'Objective Caml' $name
+hdiutil detach $name
+
+name=`hdid ocaml.dmg | grep Apple_HFS | cut -d ' ' -f 1`
+ditto -rsrcFork ocaml.pkg "/Volumes/Objective Caml/ocaml.pkg"
+hdiutil detach $name
