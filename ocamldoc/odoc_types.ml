@@ -133,3 +133,21 @@ let all_merge_options = [
   Merge_custom ;
 ] 
 
+(** Type of magic numbers. *)
+type magic = string
+
+(** The magic number for the dumps of this version of ocamldoc. *)
+let magic = Odoc_messages.magic
+
+(** A dump of a structure. *)
+type 'a dump = Dump of magic * 'a
+
+(** Create a dump structure. *)
+let make_dump a = Dump (magic, a)
+
+(** Verify that a dump has the correct magic number
+   and return its content. *)
+let open_dump = function
+    Dump (m, a) ->
+      if m = magic then a
+      else raise (Failure Odoc_messages.bad_magic_number)

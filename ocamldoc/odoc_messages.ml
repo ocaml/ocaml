@@ -15,6 +15,7 @@
 let ok = "Ok"
 let software = "OCamldoc"
 let version = "3.04-Pre4"
+let magic = "3.04+9+0"
 let message_version = software^" "^version
 
 (** Messages for command line *)
@@ -124,6 +125,10 @@ let warning = "Warning"
 let pwarning s = 
   prerr_endline (warning^": "^s);
   if !Odoc_global.warn_error then incr Odoc_global.errors
+
+let bad_magic_number = 
+  "Bad magic number for this ocamldoc dump!\n"^
+  "This dump was not created by this version of OCamldoc."
 
 let not_a_module_name s = s^" is not a valid module name"
 let load_file_error f e = "Error while loading file "^f^":\n"^e^"\n"

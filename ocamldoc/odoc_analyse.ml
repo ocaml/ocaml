@@ -433,7 +433,8 @@ let analyse_files ?(init=[]) files =
 let dump_modules file (modules : Odoc_module.t_module list) =
   try
     let chanout = open_out_bin file in
-    output_value chanout modules;
+    let dump = Odoc_types.make_dump modules in
+    output_value chanout dump;
     close_out chanout
   with
     Sys_error s ->
@@ -442,8 +443,9 @@ let dump_modules file (modules : Odoc_module.t_module list) =
 let load_modules file =
   try
     let chanin = open_in_bin file in
-    let (l : Odoc_module.t_module list) = input_value chanin in
+    let dump = input_value chanin in
     close_in chanin ;
+    let (l : Odoc_module.t_module list) = Odoc_types.open_dump dump in
     l
   with
     Sys_error s ->

@@ -1,7 +1,3 @@
-iso_check.cmo: ../stdlib/arg.cmi ../stdlib/list.cmi odoc_args.cmi \
-    odoc_info.cmi ../stdlib/string.cmi 
-iso_check.cmx: ../stdlib/arg.cmx ../stdlib/list.cmx odoc_args.cmx \
-    odoc_info.cmx ../stdlib/string.cmx 
 odoc.cmo: ../stdlib/array.cmi ../utils/clflags.cmo ../utils/config.cmi \
     ../otherlibs/dynlink/dynlink.cmi ../stdlib/filename.cmi \
     ../stdlib/format.cmi ../stdlib/list.cmi ../utils/misc.cmi \
@@ -110,12 +106,6 @@ odoc_env.cmx: ../stdlib/list.cmx odoc_name.cmx ../typing/path.cmx \
     odoc_env.cmi 
 odoc_exception.cmo: odoc_name.cmi odoc_types.cmo ../typing/types.cmi 
 odoc_exception.cmx: odoc_name.cmx odoc_types.cmx ../typing/types.cmx 
-odoc_fhtml.cmo: ../stdlib/arg.cmi ../stdlib/filename.cmi ../stdlib/list.cmi \
-    odoc_args.cmi odoc_dag2html.cmi odoc_html.cmo odoc_info.cmi \
-    odoc_messages.cmo ../stdlib/string.cmi 
-odoc_fhtml.cmx: ../stdlib/arg.cmx ../stdlib/filename.cmx ../stdlib/list.cmx \
-    odoc_args.cmx odoc_dag2html.cmx odoc_html.cmx odoc_info.cmx \
-    odoc_messages.cmx ../stdlib/string.cmx 
 odoc_global.cmo: odoc_global.cmi 
 odoc_global.cmx: odoc_global.cmi 
 odoc_html.cmo: ../stdlib/array.cmi ../stdlib/buffer.cmi ../stdlib/char.cmi \
