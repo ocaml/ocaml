@@ -51,7 +51,7 @@ let usage speclist errmsg =
 
 let current = ref 0;;
 
-let parse_array argv speclist anonfun errmsg =
+let parse_argv argv speclist anonfun errmsg =
   let initpos = !current in
   let stop error =
     let progname =
@@ -120,4 +120,4 @@ let parse_array argv speclist anonfun errmsg =
   done;
 ;;
 
-let parse = parse_array Sys.argv;;
+let parse = parse_argv Sys.argv;;
