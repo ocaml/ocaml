@@ -327,6 +327,8 @@ EOF
 	  echo "${UNAME_MACHINE}-unknown-linuxcoff" ; exit 0
 	elif test "${UNAME_MACHINE}" = "alpha" ; then
 	  echo alpha-unknown-linux ; exit 0
+	elif test "${UNAME_MACHINE}" = "osfmach3_ppc" ; then
+	  echo powerpc-unknown-linux ; exit 0
 	else
 	  # Either a pre-BFD a.out linker (linuxoldld) or one that does not give us
 	  # useful --help.  Gcc wants to distinguish between linuxoldld and linuxaout.
