@@ -56,6 +56,11 @@ let first_available_register = [| 0; 100 |]
 let register_name r =
   if r < 100 then int_reg_name.(r) else float_reg_name.(r - 100)
 
+(* There is little scheduling, and some operations are more efficient when
+   %eax or %st(0) are arguments *)
+
+let rotate_registers = false
+
 (* Representation of hard registers by pseudo-registers *)
 
 let hard_int_reg =

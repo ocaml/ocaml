@@ -194,7 +194,8 @@ let assign_location reg =
   (* Found a register? *)
   if !best_reg >= 0 then begin
     reg.loc <- Reg(first_reg + !best_reg);
-    start_register.(class) <- (if start + 1 >= num_regs then 0 else start + 1)
+    if Proc.rotate_registers then
+      start_register.(class) <- (if start+1 >= num_regs then 0 else start+1)
   end else begin
     (* Sorry, we must put the pseudoreg in a stack location *)
     (* First, check if we have a preference for an incoming location

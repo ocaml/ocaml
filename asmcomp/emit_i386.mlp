@@ -91,6 +91,18 @@ let emit_reg16 r =
     Reg r when r < 7 -> emit_string (reg_low_half_name.(r))
   | _ -> fatal_error "Emit_i386.emit_reg16"
 
+(* Check if the given register overlaps (same location) with the given
+   array of registers *)
+
+let register_overlap reg arr =
+  try
+    for i = 0 to Array.length arr - 1 do
+      if reg.loc = arr.(i).loc then raise Exit
+    done;
+    false
+  with Exit ->
+    true
+
 (* Output an addressing mode *)
 
 let emit_addressing addr r n =
@@ -172,12 +184,12 @@ let name_for_cond_branch = function
   | Iunsigned Cle -> "be"  | Iunsigned Cgt -> "a"
   | Iunsigned Clt -> "b"  | Iunsigned Cge -> "ae"
     
-(* Output a comparison with a constant *)
+(* Output an = 0 or <> 0 test. *)
 
-let output_comparison arg n =
+let output_test_zero arg =
   match arg.loc with
-    Reg r when n = 0 -> `	testl	{emit_reg arg}, {emit_reg arg}\n`
-  | _                -> `	cmpl	${emit_int n}, {emit_reg arg}\n`
+    Reg r -> `	testl	{emit_reg arg}, {emit_reg arg}\n`
+  | _     -> `	cmpl	$0, {emit_reg arg}\n`
 
 (* Deallocate the stack frame before a return or tail call *)
 
@@ -271,14 +283,14 @@ let emit_instr i =
             begin match (chunk, dest.loc) with
               (Word, _) ->
                 `	movl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
-            | (Byte_unsigned, Reg r) when r < 4 ->
+            | (Byte_unsigned, Reg r) when r < 4 & not (register_overlap dest i.arg) ->
                 `	xorl	{emit_reg dest}, {emit_reg dest}\n`;
                 `	movb	{emit_addressing addr i.arg 0}, {emit_reg8 dest}\n`
             | (Byte_unsigned, _) ->
                 `	movzbl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
             | (Byte_signed, _) ->
                 `	movsbl	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
-            | (Sixteen_unsigned, Reg r) ->
+            | (Sixteen_unsigned, Reg r) when not (register_overlap dest i.arg) ->
                 `	xorl	{emit_reg dest}, {emit_reg dest}\n`;
                 `	movw	{emit_addressing addr i.arg 0}, {emit_reg16 dest}\n`
             | (Sixteen_unsigned, _) ->
@@ -338,7 +350,7 @@ let emit_instr i =
         `	set{emit_string b}	%al\n`;
         `	movzbl	%al, {emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Icomp cmp, n)) ->
-        output_comparison i.arg.(0) n;
+        `	cmpl	${emit_int n}, {emit_reg i.arg.(0)}\n`;
         let b = name_for_cond_branch cmp in
         `	set{emit_string b}	%al\n`;
         `	movzbl	%al, {emit_reg i.res.(0)}\n`
@@ -433,17 +445,22 @@ let emit_instr i =
     | Lcondbranch(tst, lbl) ->
         begin match tst with
           Itruetest ->
-            output_comparison i.arg.(0) 0;
+            output_test_zero i.arg.(0);
             `	jne	{emit_label lbl}\n`
         | Ifalsetest ->
-            output_comparison i.arg.(0) 0;
+            output_test_zero i.arg.(0);
             `	je	{emit_label lbl}\n`
         | Iinttest cmp ->
             `	cmpl	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`;
             let b = name_for_cond_branch cmp in
             `	j{emit_string b}	{emit_label lbl}\n`
+        | Iinttest_imm((Isigned Ceq | Isigned Cne | 
+                        Iunsigned Ceq | Iunsigned Cne) as cmp, 0) ->
+            output_test_zero i.arg.(0);
+            let b = name_for_cond_branch cmp in
+            `	j{emit_string b}	{emit_label lbl}\n`
         | Iinttest_imm(cmp, n) ->
-            output_comparison i.arg.(0) n;
+            `	cmpl	${emit_int n}, {emit_reg i.arg.(0)}\n`;
             let b = name_for_cond_branch cmp in
             `	j{emit_string b}	{emit_label lbl}\n`
         | Ifloattest cmp ->
@@ -547,7 +564,7 @@ let fundecl fundecl =
   float_constants := [];
   range_check_trap := 0;
   `	.text\n`;
-  `	.align	2\n`;
+  `	.align	4\n`; (* 16-byte alignment is recommended for the 486 *)
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   let n = frame_size() - 4 in
