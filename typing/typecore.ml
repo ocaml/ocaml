@@ -590,14 +590,19 @@ let rec is_nonexpansive exp =
   | Texp_new (_, cl_decl) when Ctype.class_type_arity cl_decl.cty_type > 0 ->
       true
   (* Note: nonexpansive only means no _observable_ side effects *)
-  | Texp_lazy e -> true
-  | Texp_object ({cl_field=fields}, _, _) ->
+  | Texp_lazy e -> is_nonexpansive e
+  | Texp_object ({cl_field=fields}, {cty_vars=vars}, _) ->
+      let count = ref 0 in
       List.for_all
         (function
             Cf_meth _ -> true
-          | Cf_val (_,_,e) | Cf_init e -> is_nonexpansive e
+          | Cf_val (_,_,e) -> incr count; is_nonexpansive e
+          | Cf_init e -> is_nonexpansive e
           | Cf_inher _ | Cf_let _ -> false)
-        fields
+        fields &&
+      Vars.fold (fun _ (mut,_) b -> decr count; b && mut = Immutable)
+        vars true &&
+      !count = 0
   | _ -> false
 
 and is_nonexpansive_opt = function
