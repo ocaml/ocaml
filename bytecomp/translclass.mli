@@ -15,7 +15,6 @@
 open Typedtree
 open Lambda
 
-val class_stub : lambda
 val dummy_class : lambda -> lambda
 val transl_class :
   Ident.t list -> Ident.t -> int -> string list -> class_expr -> lambda;;

@@ -723,11 +723,8 @@ module F(X:sig end) = struct
 end;;
 *)
 
-let class_stub =
-  Lprim(Pmakeblock(0, Mutable), [lambda_unit; lambda_unit; lambda_unit])
-
 let dummy_class undef_fn =
-  Lprim(Pmakeblock(0, Mutable), [undef_fn; undef_fn; oo_prim "dummy_table"])
+  Lprim(Pmakeblock(0, Mutable), [undef_fn; undef_fn; undef_fn; lambda_unit])
 
 (* Wrapper for class compilation *)
 
