@@ -127,6 +127,12 @@ let poll ev =
 
 (* Event construction *)
 
+let always data =
+  Communication(fun performed condition evnum ->
+    { poll = (fun () -> performed := evnum; true);
+      suspend = (fun () -> ());
+      result = (fun () -> data) })
+
 let send channel data =
   Communication(fun performed condition evnum ->
     let wcomm =

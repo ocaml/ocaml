@@ -32,6 +32,9 @@ val receive: 'a channel -> 'a event
         (* [receive ch] returns the event consisting in receiving a value
            from the channel [ch]. The result value of this event is the
            value received. *) 
+val always: 'a -> 'a event
+        (* [always v] returns an event that is always ready for
+           synchronization.  The result value of this event is [v]. *)
 val choose: 'a event list -> 'a event
         (* [choose evl] returns the event that is the alternative of
            all the events in the list [evl]. *)
