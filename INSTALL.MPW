@@ -13,20 +13,13 @@
 # PREREQUISITES
 
 # You need MPW 3.5 (with MrC) and Universal Interfaces version 3.3.2
-# You need ToolServer (which comes with MPW by default).
 # You need WASTE version 1.3
-# You also need:
-# + GUSI version 2.1.5
-# + SFIO version 04Aug99
 #
 # MPW is available from Apple's FTP site at:
 # <ftp://ftp.apple.com/devworld/Tool_Chest/Core_Mac_OS_Tools/MPW_etc./>
 #
 # WASTE 1.3 is available from:
 # <ftp://ftp.boingo.com/dan/WASTE/>
-#
-# GUSI 2.1.5 and SFIO 04Aug99 are available from:
-# <ftp://sunsite.cnlab-switch.ch/software/platform/macos/src/mw_c/>
 
 
 # INSTALLATION INSTRUCTIONS
@@ -35,11 +28,8 @@
 # Read the comments and execute the commands.  If you run the commands
 # without changing anything, you'll get a reasonable default configuration.
 
-# Before you start, you should put the WASTE 1.3 distribution folder
+# Before you start, you must put the WASTE 1.3 distribution folder
 # into the :maccaml:WASTE: folder.
-
-# You also need to install GUSI and SFIO (follow their installation
-# procedures).
 
 
 # Go to the directory where you found this file.
@@ -65,7 +55,7 @@ Duplicate :tools:DoMake :tools:Characters "{MPW}User Commands:"
 # Build the WASTE libraries:
 
 Directory ":maccaml:WASTE:WASTE 1.3 Distribution:"
-DoMake -f ::Makefile WASTELib.o WASTELib.x ·· "{worksheet}"
+DoMake -f ::Makefile WASTELib.x ·· "{worksheet}"
 Directory ::::
 
 # Edit ":config:config.Mac" to change the configuration.
@@ -85,12 +75,6 @@ Set -e CAMLLIB "{LIBDIR}"
 # Make it persistent.
 
 Set CAMLLIB > "{MPW}Startup Items:OCaml"
-
-# Launch ToolServer and make sure it gets launched each time MPW is started.
-
-rshell -b ''
-echo "rshell -b ''" >> "{MPW}Startup Items:OCaml"
-echo "rshell -b -q" >> "{MPW}Quit Items:OCaml"
 
 # Now you're all set.  Build the files and install everything.
 # For more explanations on these steps, see the file INSTALL.

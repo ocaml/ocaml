@@ -277,14 +277,14 @@
 :bytecomp:translobj.cmiÄ :typing:ident.cmi :bytecomp:lambda.cmi 
 :bytecomp:typeopt.cmiÄ :bytecomp:lambda.cmi :typing:path.cmi ¶
     :typing:typedtree.cmi 
-:bytecomp:bytegen.cmoÄ :parsing:asttypes.cmi :typing:ident.cmi ¶
-    :bytecomp:instruct.cmi :bytecomp:lambda.cmi :utils:misc.cmi ¶
-    :typing:primitive.cmi :bytecomp:switch.cmi :typing:types.cmi ¶
-    :bytecomp:bytegen.cmi 
-:bytecomp:bytegen.cmxÄ :parsing:asttypes.cmi :typing:ident.cmx ¶
-    :bytecomp:instruct.cmx :bytecomp:lambda.cmx :utils:misc.cmx ¶
-    :typing:primitive.cmx :bytecomp:switch.cmx :typing:types.cmx ¶
-    :bytecomp:bytegen.cmi 
+:bytecomp:bytegen.cmoÄ :parsing:asttypes.cmi :utils:config.cmi ¶
+    :typing:ident.cmi :bytecomp:instruct.cmi :bytecomp:lambda.cmi ¶
+    :utils:misc.cmi :typing:primitive.cmi :bytecomp:switch.cmi ¶
+    :typing:types.cmi :bytecomp:bytegen.cmi 
+:bytecomp:bytegen.cmxÄ :parsing:asttypes.cmi :utils:config.cmx ¶
+    :typing:ident.cmx :bytecomp:instruct.cmx :bytecomp:lambda.cmx ¶
+    :utils:misc.cmx :typing:primitive.cmx :bytecomp:switch.cmx ¶
+    :typing:types.cmx :bytecomp:bytegen.cmi 
 :bytecomp:bytelibrarian.cmoÄ :utils:clflags.cmo :utils:config.cmi ¶
     :bytecomp:emitcode.cmi :utils:misc.cmi :bytecomp:bytelibrarian.cmi 
 :bytecomp:bytelibrarian.cmxÄ :utils:clflags.cmx :utils:config.cmx ¶
@@ -349,8 +349,8 @@
     :typing:ident.cmi :bytecomp:lambda.cmi :bytecomp:simplif.cmi 
 :bytecomp:simplif.cmxÄ :parsing:asttypes.cmi :utils:clflags.cmx ¶
     :typing:ident.cmx :bytecomp:lambda.cmx :bytecomp:simplif.cmi 
-:bytecomp:switch.cmoÄ :utils:misc.cmi :bytecomp:switch.cmi 
-:bytecomp:switch.cmxÄ :utils:misc.cmx :bytecomp:switch.cmi 
+:bytecomp:switch.cmoÄ :bytecomp:switch.cmi 
+:bytecomp:switch.cmxÄ :bytecomp:switch.cmi 
 :bytecomp:symtable.cmoÄ :parsing:asttypes.cmi :bytecomp:bytesections.cmi ¶
     :utils:clflags.cmo :bytecomp:emitcode.cmi :typing:ident.cmi ¶
     :bytecomp:lambda.cmi :bytecomp:meta.cmi :utils:misc.cmi ¶
@@ -451,21 +451,23 @@
     :typing:env.cmi :parsing:location.cmi :utils:misc.cmi :parsing:parse.cmi ¶
     :parsing:printast.cmi :bytecomp:printlambda.cmi :typing:printtyp.cmi ¶
     :bytecomp:simplif.cmi :bytecomp:translmod.cmi :typing:typedtree.cmi ¶
-    :typing:typemod.cmi :driver:optcompile.cmi 
+    :typing:typemod.cmi :utils:warnings.cmi :driver:optcompile.cmi 
 :driver:optcompile.cmxÄ :utils:ccomp.cmx :utils:clflags.cmx :utils:config.cmx ¶
     :typing:env.cmx :parsing:location.cmx :utils:misc.cmx :parsing:parse.cmx ¶
     :parsing:printast.cmx :bytecomp:printlambda.cmx :typing:printtyp.cmx ¶
     :bytecomp:simplif.cmx :bytecomp:translmod.cmx :typing:typedtree.cmx ¶
-    :typing:typemod.cmx :driver:optcompile.cmi 
-:driver:opterrors.cmoÄ :typing:env.cmi :typing:includemod.cmi ¶
-    :parsing:lexer.cmi :parsing:location.cmi :parsing:syntaxerr.cmi ¶
-    :bytecomp:translcore.cmi :typing:typeclass.cmi :typing:typecore.cmi ¶
-    :typing:typedecl.cmi :typing:typemod.cmi :typing:typetexp.cmi ¶
+    :typing:typemod.cmx :utils:warnings.cmx :driver:optcompile.cmi 
+:driver:opterrors.cmoÄ :typing:ctype.cmi :typing:env.cmi ¶
+    :typing:includemod.cmi :parsing:lexer.cmi :parsing:location.cmi ¶
+    :parsing:syntaxerr.cmi :bytecomp:translclass.cmi :bytecomp:translcore.cmi ¶
+    :typing:typeclass.cmi :typing:typecore.cmi :typing:typedecl.cmi ¶
+    :typing:typemod.cmi :typing:typetexp.cmi :utils:warnings.cmi ¶
     :driver:opterrors.cmi 
-:driver:opterrors.cmxÄ :typing:env.cmx :typing:includemod.cmx ¶
-    :parsing:lexer.cmx :parsing:location.cmx :parsing:syntaxerr.cmx ¶
-    :bytecomp:translcore.cmx :typing:typeclass.cmx :typing:typecore.cmx ¶
-    :typing:typedecl.cmx :typing:typemod.cmx :typing:typetexp.cmx ¶
+:driver:opterrors.cmxÄ :typing:ctype.cmx :typing:env.cmx ¶
+    :typing:includemod.cmx :parsing:lexer.cmx :parsing:location.cmx ¶
+    :parsing:syntaxerr.cmx :bytecomp:translclass.cmx :bytecomp:translcore.cmx ¶
+    :typing:typeclass.cmx :typing:typecore.cmx :typing:typedecl.cmx ¶
+    :typing:typemod.cmx :typing:typetexp.cmx :utils:warnings.cmx ¶
     :driver:opterrors.cmi 
 :driver:optmain.cmoÄ :utils:clflags.cmo :utils:config.cmi ¶
     :driver:optcompile.cmi :driver:opterrors.cmi :utils:warnings.cmi ¶
@@ -498,16 +500,16 @@
     :utils:config.cmi :typing:ctype.cmi :bytecomp:emitcode.cmi ¶
     :typing:env.cmi :typing:ident.cmi :parsing:longident.cmi ¶
     :bytecomp:meta.cmi :utils:misc.cmi :bytecomp:opcodes.cmo :typing:path.cmi ¶
-    :typing:predef.cmi :typing:printtyp.cmi :bytecomp:symtable.cmi ¶
-    :toplevel:toploop.cmi :toplevel:trace.cmi :typing:types.cmi ¶
-    :utils:warnings.cmi :toplevel:topdirs.cmi 
+    :typing:printtyp.cmi :bytecomp:symtable.cmi :toplevel:toploop.cmi ¶
+    :toplevel:trace.cmi :typing:types.cmi :utils:warnings.cmi ¶
+    :toplevel:topdirs.cmi 
 :toplevel:topdirs.cmxÄ :bytecomp:bytelink.cmx :utils:clflags.cmx ¶
     :utils:config.cmx :typing:ctype.cmx :bytecomp:emitcode.cmx ¶
     :typing:env.cmx :typing:ident.cmx :parsing:longident.cmx ¶
     :bytecomp:meta.cmx :utils:misc.cmx :bytecomp:opcodes.cmx :typing:path.cmx ¶
-    :typing:predef.cmx :typing:printtyp.cmx :bytecomp:symtable.cmx ¶
-    :toplevel:toploop.cmx :toplevel:trace.cmx :typing:types.cmx ¶
-    :utils:warnings.cmx :toplevel:topdirs.cmi 
+    :typing:printtyp.cmx :bytecomp:symtable.cmx :toplevel:toploop.cmx ¶
+    :toplevel:trace.cmx :typing:types.cmx :utils:warnings.cmx ¶
+    :toplevel:topdirs.cmi 
 :toplevel:toploop.cmoÄ :bytecomp:bytegen.cmi :utils:clflags.cmo ¶
     :driver:compile.cmi :utils:config.cmi :bytecomp:emitcode.cmi ¶
     :typing:env.cmi :driver:errors.cmi :toplevel:genprintval.cmi ¶

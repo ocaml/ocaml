@@ -1,5 +1,5 @@
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 17:40:40 on Mar 13 mars 2001 by MakeDepend
+# These dependencies were produced at 14:49:24 on Thu, Jul 12, 2001 by MakeDepend
 
 :alloc.c.x Ä  ¶
  :alloc.c ¶
@@ -47,6 +47,7 @@
 :backtrace.c.x Ä  ¶
  :backtrace.c ¶
  "{CIncludes}"stdio.h ¶
+ "{CIncludes}"stdlib.h ¶
  "{CIncludes}"fcntl.h ¶
  :config.h ¶
  :mlvalues.h ¶
@@ -64,16 +65,15 @@
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
  "{CIncludes}"VaListTDef.h ¶
+ "{CIncludes}"WCharTDef.h ¶
  ::config:m.h ¶
  ::config:s.h ¶
  :misc.h ¶
  :memory.h ¶
  "{CIncludes}"stddef.h ¶
- "{CIncludes}"stdlib.h ¶
  :gc.h ¶
  :major_gc.h ¶
  :minor_gc.h ¶
- "{CIncludes}"WCharTDef.h ¶
  :freelist.h
 
 :callback.c.x Ä  ¶
@@ -234,6 +234,7 @@
  :memory.h ¶
  :misc.h ¶
  :mlvalues.h ¶
+ :printexc.h ¶
  :signals.h ¶
  :stacks.h ¶
  "{CIncludes}"setjmp.h ¶
@@ -821,6 +822,7 @@
  :misc.h ¶
  :mlvalues.h ¶
  :ui.h ¶
+ :printexc.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -927,7 +929,6 @@
  "{CIncludes}"string.h ¶
  "{CIncludes}"fcntl.h ¶
  :config.h ¶
- "{CIncludes}"windows.h ¶
  :alloc.h ¶
  :backtrace.h ¶
  :callback.h ¶
@@ -946,6 +947,7 @@
  :misc.h ¶
  :mlvalues.h ¶
  :prims.h ¶
+ :printexc.h ¶
  :reverse.h ¶
  :signals.h ¶
  :stacks.h ¶
@@ -958,41 +960,11 @@
  "{CIncludes}"WCharTDef.h ¶
  ::config:m.h ¶
  ::config:s.h ¶
- "{CIncludes}"ConditionalMacros.h ¶
- "{CIncludes}"MacWindows.h ¶
  "{CIncludes}"setjmp.h ¶
  :gc.h ¶
  :major_gc.h ¶
  "{CIncludes}"stddef.h ¶
- "{CIncludes}"MacTypes.h ¶
- "{CIncludes}"Aliases.h ¶
- "{CIncludes}"AppleEvents.h ¶
- "{CIncludes}"Collections.h ¶
- "{CIncludes}"Drag.h ¶
- "{CIncludes}"Events.h ¶
- "{CIncludes}"Menus.h ¶
- "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"QDOffscreen.h ¶
- "{CIncludes}"QuickDraw.h ¶
- "{CIncludes}"TextCommon.h ¶
- "{CIncludes}"Icons.h ¶
- "{CIncludes}"MacErrors.h ¶
- :freelist.h ¶
- "{CIncludes}"Files.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"AEDataModel.h ¶
- "{CIncludes}"OSUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Fonts.h ¶
- "{CIncludes}"Processes.h ¶
- "{CIncludes}"Components.h ¶
- "{CIncludes}"QuickdrawText.h ¶
- "{CIncludes}"CodeFragments.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"Finder.h ¶
- "{CIncludes}"MacMemory.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"DateTimeUtils.h
+ :freelist.h
 
 :str.c.x Ä  ¶
  :str.c ¶
