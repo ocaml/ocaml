@@ -1,6 +1,6 @@
 FILES=allfiles.tex biblio.tex foreword.tex version.tex foreword.htex
 DVI2TXT=../tools/dvi2txt
-TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles::/usr/lib/texmf/texmf/tex
+TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles:
 TEXFONTS=../../styles:
 RELEASE=$$HOME/release/$${RELEASENAME}
 CSLDIR=../../csl
