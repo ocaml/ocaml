@@ -11,7 +11,7 @@ mmap_unix.o : bigarray.h ../../byterun/mlvalues.h ../../byterun/config.h \
   ../../byterun/sys.h 
 mmap_win32.o : bigarray.h ../../byterun/mlvalues.h ../../byterun/config.h \
   ../../byterun/../config/m.h ../../byterun/../config/s.h \
-  ../../byterun/misc.h ../../byterun/custom.h ../../byterun/fail.h \
-  ../../byterun/sys.h ../unix/unixsupport.h 
+  ../../byterun/misc.h ../../byterun/alloc.h ../../byterun/custom.h \
+  ../../byterun/fail.h ../../byterun/sys.h ../unix/unixsupport.h 
 bigarray.cmo: bigarray.cmi 
 bigarray.cmx: bigarray.cmi 
