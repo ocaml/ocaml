@@ -225,6 +225,31 @@ val get_formatter_output_functions :
         unit -> (string -> int -> int -> unit) * (unit -> unit);;
         (* Return the current output functions of the pretty-printer. *)
 
+(*** Changing the meaning of indentation and line breaking ***)
+val set_all_formatter_output_functions :
+      (string -> int -> int -> unit) -> (unit -> unit) ->
+      (unit -> unit) -> (int -> unit) -> unit;;
+        (* [set_all_formatter_output_functions out flush outnewline outspace]
+           redirects the pretty-printer output to the functions
+           [out] and [flush] as described in
+           [set_formatter_output_functions]. In addition, the pretty-printer
+           function that outputs a newline is set to the function [outnewline]
+           and the function that outputs indentation spaces is set to the
+           function [outspace].
+           This way, you can change the meaning of indentation (which
+           can be something else than just printing a space character) and
+           the meaning of new lines opening (which can be connected to
+           any other action needed by the application at hand).
+           The two functions [outspace] and [outnewline] are normally
+           connected to [out] and [flush]: respective default values for
+           [outspace] and [outnewline] are [out (String.make n ' ') 0 n]
+           and [out "\n" 0 1]. *)
+val get_all_formatter_output_functions : unit ->
+        (string -> int -> int -> unit) * (unit -> unit) *
+        (unit -> unit) * (int -> unit);;
+        (* Return the current output functions of the pretty-printer,
+           including line breaking and indentation functions. *)
+
 (*** Multiple formatted output *)
 type formatter;;
         (* Abstract data type corresponding to a pretty-printer and
@@ -295,6 +320,12 @@ val pp_set_formatter_output_functions : formatter ->
         (string -> int -> int -> unit) -> (unit -> unit) -> unit;;
 val pp_get_formatter_output_functions :
         formatter -> unit -> (string -> int -> int -> unit) * (unit -> unit);;
+val pp_set_all_formatter_output_functions : formatter ->
+      (string -> int -> int -> unit) -> (unit -> unit) ->
+      (formatter -> unit -> unit) -> (formatter -> int -> unit) -> unit;;
+val pp_get_all_formatter_output_functions : formatter -> unit ->
+      (string -> int -> int -> unit) * (unit -> unit) *
+      (formatter -> unit -> unit) * (formatter -> int -> unit);;
         (* The basic functions to use with formatters.
            These functions are the basic ones: usual functions
            operating on the standard formatter are defined via partial

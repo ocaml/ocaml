@@ -101,6 +101,10 @@ type formatter =
  mutable pp_output_function : string -> int -> int -> unit;
  (* Flushing function *)
  mutable pp_flush_function : unit -> unit;
+ (* Output of new lines *)
+ mutable pp_output_newline : formatter -> unit -> unit;
+ (* Output of indentation spaces *)
+ mutable pp_output_spaces : formatter -> int -> unit;
  (* The pretty-printer queue *)
  mutable pp_queue : pp_queue_elem queue
 };;
@@ -130,6 +134,15 @@ let take_queue = function
     x
  | _ -> raise Empty_queue;;
 
+(* Enter a token in the pretty-printer queue *)
+let pp_enqueue state ({length = len} as token) =
+    state.pp_right_total <- state.pp_right_total + len;
+    add_queue token state.pp_queue;;
+
+let pp_clear_queue state =
+    state.pp_left_total <- 1; state.pp_right_total <- 1;
+    clear_queue state.pp_queue;;
+
 (* Large value for default tokens size *)
 (* Could be 1073741823 that is 2^30 - 1, that is the minimal upper bound
    of integers *)
@@ -137,23 +150,9 @@ let pp_infinity = 999999999;;
 
 (* Output functions for the formatter *)
 let pp_output_string state s = state.pp_output_function s 0 (String.length s)
-and pp_output_newline state = state.pp_output_function "\n" 0 1;;
+and pp_output_newline state = state.pp_output_newline state ();;
 
-let pp_clear_queue state =
-    state.pp_left_total <- 1; state.pp_right_total <- 1;
-    clear_queue state.pp_queue;;
-
-(* Enter a token in the pretty-printer queue *)
-let pp_enqueue state ({length = len} as token) =
-    state.pp_right_total <- state.pp_right_total + len;
-    add_queue token state.pp_queue;;
-
-(* To output spaces *)
-let blank_line = String.make 80 ' ';;
-let display_blanks state n =
-    if n > 0 then
-    if n <= 80 then state.pp_output_function blank_line 0 n
-    else pp_output_string state (String.make n ' ');;
+let pp_display_blanks state n = state.pp_output_spaces state n;;
 
 (* To format a break, indenting a new line *)
 let break_new_line state offset width =
@@ -164,7 +163,7 @@ let break_new_line state offset width =
     let real_indent = min state.pp_max_indent indent in
     state.pp_current_indent <- real_indent;
     state.pp_space_left <- state.pp_margin - state.pp_current_indent;
-    display_blanks state state.pp_current_indent;;
+    pp_display_blanks state state.pp_current_indent;;
 
 (* To force a line break inside a block: no offset is added *)
 let break_line state width = break_new_line state 0 width;;
@@ -172,7 +171,7 @@ let break_line state width = break_new_line state 0 width;;
 (* To format a break that fits on the current line *)
 let break_same_line state width =
     state.pp_space_left <- state.pp_space_left - width;
-    display_blanks state width;;
+    pp_display_blanks state width;;
 
 (* To indent no more than pp_max_indent, if one tries to open a block
    beyond pp_max_indent, then the block is rejected on the left
@@ -563,13 +562,21 @@ let pp_get_margin state () = state.pp_margin;;
 
 let pp_set_formatter_output_functions state f g =
   state.pp_output_function <- f; state.pp_flush_function <- g;;
-let pp_set_formatter_out_channel state os = 
-  state.pp_output_function <- output os;
-  state.pp_flush_function <- (fun () -> flush os);;
 let pp_get_formatter_output_functions state () = 
   (state.pp_output_function, state.pp_flush_function);;
 
-let make_formatter f g = 
+let pp_set_all_formatter_output_functions state f g h i =
+  pp_set_formatter_output_functions state f g;
+  state.pp_output_newline <- h; state.pp_output_spaces <- i;;
+let pp_get_all_formatter_output_functions state () = 
+  (state.pp_output_function, state.pp_flush_function,
+   state.pp_output_newline, state.pp_output_spaces);;
+
+let pp_set_formatter_out_channel state os =
+  state.pp_output_function <- output os;
+  state.pp_flush_function <- (fun () -> flush os);;
+
+let pp_make_formatter f g h i = 
  (* The initial state of the formatter contains a dummy box *)
  let pp_q = make_queue () in
  let sys_tok =
@@ -593,14 +600,28 @@ let make_formatter f g =
   pp_ellipsis = ".";
   pp_output_function = f;
   pp_flush_function = g;
+  pp_output_newline = h;
+  pp_output_spaces = i;
   pp_queue = pp_q
  };;
 
-let std_formatter =
-    make_formatter (output stdout) (fun () -> flush stdout);;
+(* Default function to output spaces *)
+let blank_line = String.make 80 ' ';;
+let display_blanks state n =
+    if n > 0 then
+    if n <= 80 then state.pp_output_function blank_line 0 n
+    else pp_output_string state (String.make n ' ');;
 
-let err_formatter =
-    make_formatter (output stderr) (fun () -> flush stderr);;
+(* Default function to output new lines *)
+let display_newline state () = state.pp_output_function "\n" 0  1;;
+
+let make_formatter f g = pp_make_formatter f g display_newline display_blanks;;
+
+let formatter_of_channel oc = make_formatter (output oc) (fun () -> flush oc);;
+
+let std_formatter = formatter_of_channel stdout;;
+
+let err_formatter = formatter_of_channel stderr;;
 
 let open_hbox = pp_open_hbox std_formatter
 and open_vbox = pp_open_vbox std_formatter
@@ -621,26 +642,41 @@ and force_newline = pp_force_newline std_formatter
 and print_flush = pp_print_flush std_formatter
 and print_newline = pp_print_newline std_formatter
 and print_if_newline = pp_print_if_newline std_formatter
+
 and open_tbox = pp_open_tbox std_formatter
 and close_tbox = pp_close_tbox std_formatter
 and print_tbreak = pp_print_tbreak std_formatter
+
 and set_tab = pp_set_tab std_formatter
 and print_tab = pp_print_tab std_formatter
+
 and set_margin = pp_set_margin std_formatter
 and get_margin = pp_get_margin std_formatter
+
 and set_max_indent = pp_set_max_indent std_formatter
 and get_max_indent = pp_get_max_indent std_formatter
+
 and set_max_boxes = pp_set_max_boxes std_formatter
 and get_max_boxes = pp_get_max_boxes std_formatter
 and over_max_boxes = pp_over_max_boxes std_formatter
+
 and set_ellipsis_text = pp_set_ellipsis_text std_formatter
 and get_ellipsis_text = pp_get_ellipsis_text std_formatter
+
 and set_formatter_out_channel =
     pp_set_formatter_out_channel std_formatter
+
 and set_formatter_output_functions =
     pp_set_formatter_output_functions std_formatter
 and get_formatter_output_functions =
-    pp_get_formatter_output_functions std_formatter;;
+    pp_get_formatter_output_functions std_formatter
+
+and set_all_formatter_output_functions f g h i =
+    pp_set_all_formatter_output_functions std_formatter
+    f g (fun _ -> h) (fun _ -> i)
+and get_all_formatter_output_functions () =
+    let f, g, h, i = pp_get_all_formatter_output_functions std_formatter () in
+    (f, g, h std_formatter, i std_formatter);;
 
 external format_int: string -> int -> string = "format_int"
 external format_float: string -> float -> string = "format_float"
