@@ -70,6 +70,12 @@ color_t allocation_color (void *hp);
    unless you are sure the value being overwritten is not a shared block and
    the value being written is not a young block. */
 /* [Modify] never calls the GC. */
+/* [Modify] can also be used to do assignment on data structures that are
+   not in the (major) heap.  In this case, it is a bit slower than
+   simple assignment.
+   In particular, you can use [Modify] when you don't know whether the
+   block being changed is in the minor heap or the major heap.
+*/
 
 #define Modify(fp, val) do{                                                 \
   value _old_ = *(fp);                                                      \

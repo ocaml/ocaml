@@ -387,7 +387,7 @@ void init_major_heap (asize_t heap_size)
     page_table [i] = In_heap;
   }
 
-  Hd_hp (heap_start) = Make_header (Wosize_bhsize (stat_heap_size), 0, Caml_blue);
+  Hd_hp (heap_start) = Make_header (Wosize_bhsize(stat_heap_size),0,Caml_blue);
   fl_init_merge ();
   fl_merge_block (Bp_hp (heap_start));
   gc_phase = Phase_idle;

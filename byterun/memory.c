@@ -56,10 +56,10 @@ void free_for_heap (header_t *mem)
 
 /* Take a block of memory as argument, which must be the result of a
    call to [alloc_for_heap], and insert it into the heap chaining.
-   The contents of the block must be a sequence of valid objects and
-   fragments: no space between objects and no trailing garbage.  If
-   some objects are blue, they must be added to the free list by the
-   caller.  All other objects must have the color [allocation_color(mem)].
+   The contents of the block must be a sequence of valid blocks and
+   fragments: no space between blocks and no trailing garbage.  If
+   some blocks are blue, they must be added to the free list by the
+   caller.  All other blocks must have the color [allocation_color(mem)].
    The caller must update [allocated_words] if applicable.
    Return value: 0 if no error; -1 in case of error.
 */
@@ -291,7 +291,7 @@ void adjust_gc_speed (mlsize_t mem, mlsize_t max)
    A block value [v] is a shared block if and only if [Is_in_heap (v)]
    is true.
 */
-/* [initialize] never calls the GC, so you may call it while an object is
+/* [initialize] never calls the GC, so you may call it while an block is
    unfinished (i.e. just after a call to [alloc_shr].) */
 void initialize (value *fp, value val)
 {
