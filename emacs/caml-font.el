@@ -65,9 +65,9 @@
          'font-lock-reference-face)
    '("\\<raise\\>" . font-lock-comment-face)
 ;labels (and open)
-   '("\\(\\([~?]\\|\\<\\)[a-z][a-z0-9_']*:\\)[^:=]" 1
+   '("\\(\\([~?]\\|\\<\\)[a-z][a-zA-Z0-9_']*:\\)[^:=]" 1
      font-lock-variable-name-face)
-   '("\\<\\(assert\\|open\\|include\\)\\>\\|[~?][ (]*[a-z][a-z0-9_']*"
+   '("\\<\\(assert\\|open\\|include\\)\\>\\|[~?][ (]*[a-z][a-zA-Z0-9_']*"
      . font-lock-variable-name-face)))
 
 (defconst inferior-caml-font-lock-keywords

@@ -16,8 +16,8 @@
          nil
          'string)
 ;labels
-   '("\\(\\([~?]\\|\\<\\)[a-z][a-z0-9_']*:\\)[^:=]" 1 brown)
-   '("[~?][ (]*[a-z][a-z0-9_']*" nil brown)
+   '("\\(\\([~?]\\|\\<\\)[a-z][a-zA-Z0-9_']*:\\)[^:=]" 1 brown)
+   '("[~?][ (]*[a-z][a-zA-Z0-9_']*" nil brown)
 ;modules
    '("\\<\\(assert\\|open\\|include\\)\\>" nil brown)
    '("`?\\<[A-Z][A-Za-z0-9_\']*\\>" nil MidnightBlue)
