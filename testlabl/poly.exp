@@ -1,4 +1,4 @@
-        Objective Caml version 3.04+15 (2002-06-18)
+        Objective Caml version 3.05
 
 #   * * *       #   type 'a t = { t : 'a; } 
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; } 
@@ -204,4 +204,13 @@ class next : #numeral -> object method fold : ('a -> 'a) -> 'a -> 'a end
 #       class type node_type = object method as_variant : [> `Node of node_type] end
 #       class node : node_type
 #     class node : object method as_variant : [> `Node of node_type] end
+#   type bad = { bad : 'a. 'a option ref; } 
+# Characters 17-25:
+This field value has type 'a option ref which is less general than
+  'b. 'b option ref
+# type bad2 = { mutable bad2 : 'a. 'a option ref option; } 
+# val bad2 : bad2 = {bad2 = None}
+# Characters 13-28:
+This field value has type 'a option ref option which is less general than
+  'b. 'b option ref option
 # 

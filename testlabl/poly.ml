@@ -342,3 +342,9 @@ end;;
 class node = object (self : #node_type)
   method as_variant = `Node (self :> node_type)
 end;;
+
+type bad = {bad : 'a. 'a option ref};;
+let bad = {bad = ref None};;
+type bad2 = {mutable bad2 : 'a. 'a option ref option};;
+let bad2 = {bad2 = None};;
+bad2.bad2 <- Some (ref None);;
