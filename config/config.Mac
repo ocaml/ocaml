@@ -39,11 +39,8 @@ set -e APPLIDIR "{mpw}:OCaml-distrib:"
 #       macosunix       Unix emulation (application only)
 #       num             Arbitrary-precision rational arithmetic
 #       str             Regular expressions and high-level string processing
-#       systhreads      Threads
+#       systhreads      Lightweight processes
 #
-# NOTE: remove macosunix and systhreads from this list if you do not
-# have GUSI installed.
-# 
 set -e OTHERLIBRARIES "bigarray dynlink graph macosunix num str systhreads"
 
 
@@ -69,8 +66,8 @@ set -e NATIVECC MrC
 
 ############# Version numbers (do not change)
 
-set -e OCAMLMAJOR 2
-set -e OCAMLMINOR "99+18"
+set -e OCAMLMAJOR 3
+set -e OCAMLMINOR "00"
 set -e MAJOR 1
 set -e MINOR 0
 set -e BUGFIX 0
