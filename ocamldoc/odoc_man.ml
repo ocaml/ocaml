@@ -139,11 +139,14 @@ class virtual info =
 
 (** This class is used to create objects which can generate a simple html documentation. *)
 class man =
+  let re_slash = Str.regexp_string "/" in
   object (self)
     inherit info
 
-    (** Get a file name from a module or class complete name. *)
-    method file_name name = name^".man"
+    (** Get a file name from a complete name. *)
+    method file_name name = 
+      let s = Printf.sprintf "%s.%s" name !Odoc_args.man_suffix in
+      Str.global_replace re_slash "slash" s
 
     (** Escape special sequences of characters in a string. *)
     method escape (s : string) = s
@@ -580,7 +583,7 @@ class man =
 	  (".TH \""^Odoc_messages.class_type^"\" "^
 	   ct.clt_name^" "^
 	   "\""^(Odoc_misc.string_of_date ~hour: false date)^"\" "^ 
-	   "Odoc "^
+	   "OCamldoc "^
 	   "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\n");
 
 	output_string chanout
