@@ -233,8 +233,8 @@ class text =
     method latex_of_Latex s = s
 
     method latex_of_Link s t =
-      let s1 = "\\url{"^s^"} " in
-      let s2 = self#latex_of_text t in
+      let s1 = self#latex_of_text t in
+      let s2 = "[\\url{"^s^"}]" in
       s1^s2
 
     method latex_of_Ref name ref_opt =
