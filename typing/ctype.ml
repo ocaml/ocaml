@@ -370,14 +370,19 @@ let rec free_vars_rec real ty =
     begin match ty.desc with
       Tvar ->
         free_variables := (ty, real) :: !free_variables
+(* Do not count "virtual" free variables
     | Tobject(ty, {contents = Some (_, p)}) ->
         free_vars_rec false ty; List.iter (free_vars_rec true) p
+*)
     | Tobject (ty, _) ->
         free_vars_rec false ty
     | Tfield (_, _, ty1, ty2) ->
         free_vars_rec true ty1; free_vars_rec false ty2
-    | Tvariant row when static_row row ->
-        iter_row (free_vars_rec true) row
+    | Tvariant row ->
+        let row = row_repr row in
+        iter_row (free_vars_rec true) {row with row_bound = []};
+        if not (static_row row) then
+          free_variables := (row_more row, false) :: !free_variables
     | _    ->
         iter_type_expr (free_vars_rec true) ty
     end;
@@ -2278,7 +2283,8 @@ let rec normalize_type_rec env ty =
   let ty = repr ty in
   if ty.level >= lowest_level then begin
     mark_type_node ty;
-    begin match ty.desc with Tvariant row ->
+    begin match ty.desc with
+    | Tvariant row ->
       let row = row_repr row in
       let fields = List.map
           (fun (l,f) ->
@@ -2303,6 +2309,19 @@ let rec normalize_type_rec env ty =
             let ty = repr ty in if List.memq ty tyl then tyl else ty :: tyl)
           [] row.row_bound
       in ty.desc <- Tvariant {row with row_fields = fields; row_bound = bound}
+    | Tobject (_, nm) ->
+        begin match !nm with
+        | None -> ()
+        | Some (n, v :: l) ->
+            let v' = repr v in
+            begin match v'.desc with
+            | Tvar -> if v' != v then nm := Some (n, v' :: l)
+            | Tnil -> ty.desc <- Tconstr (n, l, ref Mnil)
+            | _ -> nm := None
+            end
+        | _ ->
+            fatal_error "Ctype.normalize_type_rec"
+        end
     | _ -> ()
     end;
     iter_type_expr (normalize_type_rec env) ty

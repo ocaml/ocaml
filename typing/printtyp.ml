@@ -82,8 +82,9 @@ let print_name_of_type ppf t = fprintf ppf "%s" (name_of_type t)
 let visited_objects = ref ([] : type_expr list)
 let aliased = ref ([] : type_expr list)
 
-let add_alias px =
-  if not (List.memq px !aliased) then aliased := px :: !aliased
+let is_aliased ty = List.memq ty !aliased
+let add_alias ty =
+  if not (is_aliased ty) then aliased := ty :: !aliased
 
 let proxy ty =
   let ty = repr ty in
@@ -129,19 +130,6 @@ let rec mark_loops_rec visited ty =
          begin
           if opened_object ty then
             visited_objects := px :: !visited_objects;
-          let name =
-            match !nm with
-            | None -> None
-            | Some (n, v :: l) ->
-                let v' = repr v in
-                begin match v'.desc with
-                | Tvar -> Some (n, v' :: l)
-                | _ -> None
-                end
-            | _ ->
-                fatal_error "Printtyp.mark_loops_rec"
-          in
-          nm := name;
           begin match !nm with
           | None ->
               mark_loops_rec visited fi
@@ -284,7 +272,7 @@ let rec typexp sch prio0 ppf ty =
     | _ ->
         fatal_error "Printtyp.typexp"
    ) in
-  if List.memq px !aliased then begin
+  if is_aliased px then begin
     check_name_of_type px;
     if prio0 >= 1
     then fprintf ppf "@[<1>(%a as '%a)@]" pr_typ 0 print_name_of_type px
@@ -494,11 +482,8 @@ let rec prepare_class_type = function
   | Tcty_signature sign ->
       let sty = repr sign.cty_self in
       (* Self may have a name *)
-      if List.memq sty !visited_objects then begin
-        if not (List.memq sty !aliased) then
-          aliased := sty :: !aliased
-      end else
-        visited_objects := sty :: !visited_objects;
+      if List.memq sty !visited_objects then add_alias sty
+      else visited_objects := sty :: !visited_objects;
       let (fields, _) =
         Ctype.flatten_fields (Ctype.object_fields sign.cty_self)
       in
@@ -521,7 +506,7 @@ let rec perform_class_type sch params ppf = function
   | Tcty_signature sign ->
       let sty = repr sign.cty_self in
       let pr_param ppf sty =
-       if List.memq sty !aliased then
+       if is_aliased sty then
         fprintf ppf "@ @[('%a)@]" print_name_of_type sty in
 
       fprintf ppf "@[<hv 2>@[<2>object%a@]%a"
@@ -561,8 +546,7 @@ let class_declaration id ppf cl =
   List.iter mark_loops params;
 
   List.iter check_name_of_type params;
-  if List.memq sty !aliased then
-    check_name_of_type sty;
+  if is_aliased sty then check_name_of_type sty;
 
   let vir_mark = if cl.cty_new = None then " virtual" else "" in
   fprintf ppf "@[<2>class%s@ %a%a@ :@ %a@]" vir_mark
@@ -578,8 +562,7 @@ let cltype_declaration id ppf cl =
   List.iter mark_loops params;
 
   List.iter check_name_of_type params;
-  if List.memq sty !aliased then
-    check_name_of_type sty;
+  if is_aliased sty then check_name_of_type sty;
 
   let sign = Ctype.signature_of_class_type cl.clty_type in
 
