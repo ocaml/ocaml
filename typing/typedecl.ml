@@ -75,6 +75,7 @@ let rec cyclic_abbrev env id ty =
   | _ ->
       false
 
+(* First pass: parameters, constraints and expansion *)
 let transl_declaration env (name, sdecl) (id, decl) =
   reset_type_variables();
   begin try
@@ -98,6 +99,48 @@ let transl_declaration env (name, sdecl) (id, decl) =
 
   let decl' =
     { type_params = decl.type_params;
+      type_arity = decl.type_arity;
+      type_kind =
+        Type_abstract;
+      type_manifest =
+        begin match (decl.type_manifest, sdecl.ptype_manifest) with
+          (None, None) -> None
+        | (Some ty, Some sty) ->
+            let ty' =
+              Ctype.unroll_abbrev id decl.type_params
+                (transl_simple_type env true sty)
+            in
+            if cyclic_abbrev env id ty' then
+              raise(Error(sdecl.ptype_loc, Recursive_abbrev name));
+            begin try Ctype.unify env ty' ty with Ctype.Unify trace ->
+              raise(Error(sdecl.ptype_loc, Type_clash trace))
+            end;
+            Some ty
+        | _ ->
+            fatal_error "Typedecl.transl_declaration"
+        end } in
+  (id, decl')
+
+(* Second pass: representation *)
+let transl_declaration2 env (name, sdecl) (id, decl) =
+  let (params, typ) =
+    match decl.type_manifest with
+      None -> (Ctype.instance_list decl.type_params, None)
+    | Some typ ->
+        let (params, typ) =
+          Ctype.instance_parameterized_type decl.type_params typ
+        in
+        (params, Some typ)
+  in
+
+  (* Bind type parameters *)
+  reset_type_variables();
+  List.iter2
+    (fun ty sty -> Ctype.unify env ty (enter_type_variable true sty))
+    params sdecl.ptype_params;
+
+  let decl' =
+    { type_params = params;
       type_arity = decl.type_arity;
       type_kind =
         begin match sdecl.ptype_kind with
@@ -130,23 +173,7 @@ let transl_declaration env (name, sdecl) (id, decl) =
                       (name, mut, transl_simple_type env true arg))
               lbls)
         end;
-      type_manifest =
-        begin match (decl.type_manifest, sdecl.ptype_manifest) with
-          (None, None) -> None
-        | (Some ty, Some sty) ->
-            let ty' =
-              Ctype.unroll_abbrev id decl.type_params
-                (transl_simple_type env true sty)
-            in
-            if cyclic_abbrev env id ty' then
-              raise(Error(sdecl.ptype_loc, Recursive_abbrev name));
-            begin try Ctype.unify env ty' ty with Ctype.Unify trace ->
-              raise(Error(sdecl.ptype_loc, Type_clash trace))
-            end;
-            Some ty
-        | _ ->
-            fatal_error "Typedecl.transl_declaration"
-        end } in
+      type_manifest = typ } in
   (id, decl')
 
 (* Generalize a type declaration *)
@@ -198,6 +225,7 @@ let check_abbrev env (_, sdecl) (id, decl) =
 
 (* Check for ill-defined abbrevs *)
 
+(* XXX Obsolete... (occur-check) *)
 let check_recursive_abbrev env (name, sdecl) (id, decl) =
   match decl.type_manifest with
     Some ty ->
@@ -227,7 +255,21 @@ let transl_type_decl env name_sdecl_list =
   (* Translate each declaration. *)
   let decls =
     List.map2 (transl_declaration temp_env) name_sdecl_list temp_decl in
-  (* Generalize types. *)
+  (* Generalize intermediate type declarations. *)
+  Ctype.end_def();
+  List.iter (function (_, decl) -> generalize_decl decl) decls;
+  (* Build an env. containing type expansions *)
+  let temp_env =
+    List.fold_right
+      (fun (id, decl) env -> Env.add_type id decl env)
+      decls env
+  in
+  (* Check for recursive abbrevs *)
+  List.iter2 (check_recursive_abbrev temp_env) name_sdecl_list decls;
+  Ctype.begin_def();
+  let decls =
+    List.map2 (transl_declaration2 temp_env) name_sdecl_list decls in
+  (* Generalize final type declarations. *)
   Ctype.end_def();
   List.iter (function (_, decl) -> generalize_decl decl) decls;
   (* Build the final env. *)
@@ -238,8 +280,6 @@ let transl_type_decl env name_sdecl_list =
   in
   (* Check re-exportation *)
   List.iter2 (check_abbrev newenv) name_sdecl_list decls;
-  (* Check for recursive abbrevs *)
-  List.iter2 (check_recursive_abbrev newenv) name_sdecl_list decls;
   (* Done *)
   (decls, newenv)
 
