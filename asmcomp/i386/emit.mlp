@@ -42,11 +42,12 @@ let slot_offset loc cl =
       else !stack_offset + num_stack_slots.(0) * 4 + n * 8
   | Outgoing n -> n
 
-(* Symbols are prefixed with _, except under Linux with ELF binaries *)
+(* Prefixing of symbols with "_" *)
 
 let symbol_prefix =
   match Config.system with
     "linux_elf" -> ""
+  | "bsd_elf" -> ""
   | "solaris" -> ""
   | "beos" -> ""
   | _ -> "_"
@@ -59,6 +60,7 @@ let emit_symbol s =
 let label_prefix =
   match Config.system with
     "linux_elf" -> ".L"
+  | "bsd_elf" -> ".L"
   | "solaris" -> ".L"
   | "beos" -> ".L"
   | _ -> "L"
@@ -87,7 +89,7 @@ let use_ascii_dir =
 
 let emit_align =
   match Config.system with
-    "linux_elf" | "solaris" | "beos" ->
+    "linux_elf" | "bsd_elf" | "solaris" | "beos" ->
       (fun n -> `	.align	{emit_int n}\n`)
   | _ ->
       (fun n -> `	.align	{emit_int(Misc.log2 n)}\n`)

@@ -14,8 +14,8 @@
 /* Asm part of the runtime system, Intel 386 processor */
 /* Must be preprocessed by cpp */
 
-/* Linux with ELF binaries and Solaris do not prefix identifiers with _.
-   Linux with a.out binaries, FreeBSD, and NextStep do. */
+/* Linux/BSD with ELF binaries and Solaris do not prefix identifiers with _.
+   Linux/BSD with a.out binaries and NextStep do. */
 
 #if defined(SYS_solaris)
 #define CONCAT(a,b) a/**/b
@@ -23,7 +23,8 @@
 #define CONCAT(a,b) a##b
 #endif
 
-#if defined(SYS_linux_elf) || defined(SYS_solaris) || defined(SYS_beos)
+#if defined(SYS_linux_elf) || defined(SYS_bsd_elf) \
+ || defined(SYS_solaris) || defined(SYS_beos)
 #define G(x) x
 #define LBL(x) CONCAT(.L,x)
 #define FUNCTION_ALIGN 4
