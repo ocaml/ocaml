@@ -68,18 +68,58 @@ static int RegistryError(void)
 	return 0;
 }
 
-static int DoCreateKey(HANDLE hkey,char *name,HKEY *hresult)
+static int ReadRegistry(HKEY hroot,
+			char * p1, char * p2, char * p3,
+			char dest[1024])
 {
-	unsigned long disp;
+  HKEY h1, h2;
+  DWORD dwType;
+  unsigned long size;
+  LONG ret;
 
-	return  RegCreateKeyEx(hkey,name,0,NULL,0,KEY_ALL_ACCESS,NULL,hresult,&disp);
+  if (RegOpenKeyExA(hroot, p1, 0, KEY_QUERY_VALUE, &h1) != ERROR_SUCCESS)
+    return 0;
+  if (RegOpenKeyExA(h1, p2, 0, KEY_QUERY_VALUE, &h2) != ERROR_SUCCESS) {
+    RegCloseKey(h1);
+    return 0;
+  }
+  dwType = REG_SZ;
+  size = 1024;
+  ret = RegQueryValueExA(h2, p3, 0, &dwType, dest, &size);
+  RegCloseKey(h2);
+  RegCloseKey(h1);
+  return ret == ERROR_SUCCESS;
+}
+
+static int WriteRegistry(HKEY hroot,
+			  char * p1, char * p2, char * p3,
+			  char data[1024])
+{
+  HKEY h1, h2;
+  DWORD disp;
+  LONG ret;
+
+  if (RegOpenKeyExA(hroot, p1, 0, KEY_QUERY_VALUE, &h1) != ERROR_SUCCESS)
+    return 0;
+  if (RegCreateKeyExA(h1, p2, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &h2, &disp)
+      != ERROR_SUCCESS) {
+    RegCloseKey(h1);
+    return 0;
+  }
+  ret = RegSetValueEx(h2, p3, 0, REG_SZ, data, strlen(data) + 1);
+  RegCloseKey(h2);
+  RegCloseKey(h1);
+  return ret == ERROR_SUCCESS;
 }
 
 /*------------------------------------------------------------------------
  Procedure:     GetOcamlPath ID:1
- Purpose:       Reads the registry key
-                HKEY_CURRENT_USER\Software\Ocaml, and  creates it if
-                it doesn't exists. If any error occurs, i.e. the
+ Purpose:       Read the registry key 
+                HKEY_LOCAL_MACHINE\Software\Objective Caml
+		or
+                HKEY_CURRENT_USER\Software\Objective Caml,
+		and creates it if it doesn't exists.
+		If any error occurs, i.e. the
                 given path doesn't exist, or the key didn't exist, it
                 will put up a browse dialog box to allow the user to
                 enter the path. The path will be verified that it
@@ -93,58 +133,50 @@ static int DoCreateKey(HANDLE hkey,char *name,HKEY *hresult)
 ------------------------------------------------------------------------*/
 int GetOcamlPath(void)
 {
-	HKEY hkeySoftware,hkeyOcaml;
-	DWORD dwType;
-	unsigned long siz;
-	char *p,buf[512];
-	FILE *f;
+  char path[1024], *p;
 
-	if (RegOpenKeyExA(HKEY_CURRENT_USER,"Software",0,KEY_QUERY_VALUE,&hkeySoftware) != ERROR_SUCCESS)
-		return 0;
-	if (DoCreateKey(hkeySoftware,"ocaml",&hkeyOcaml) != ERROR_SUCCESS) {
-		return RegistryError();
-	}
-	dwType = REG_SZ;
-	siz = sizeof(buf);
-	memset(buf,0,sizeof(buf));
-	RegQueryValueExA(hkeyOcaml,"InterpreterPath",0,&dwType,buf,&siz);
-	if (buf[0] == 0) {
-		if (!BrowseForFile("Ocaml interpreter|ocaml.exe",buf)) {
-			ShowDbgMsg("Impossible to find ocaml.exe. I quit");
-			RegCloseKey(hkeyOcaml);
-			RegCloseKey(hkeySoftware);
-			exit(0);
-		}
-		RegSetValueEx(hkeyOcaml,"InterpreterPath",0,REG_SZ,buf,strlen(buf)+1);
-	}
-	f = fopen(buf,"r");
-	if (f == NULL) {
-		char *errormsg = malloc(1024);
-		wsprintf(errormsg,"Incorrect path for ocaml.exe:\n%s",buf);
-		ShowDbgMsg(errormsg);
-		free(errormsg);
-		buf[0] = 0;
-		RegSetValueEx(hkeyOcaml,"InterpreterPath",0,REG_SZ,buf,1);
-		RegCloseKey(hkeyOcaml);
-		RegCloseKey(hkeySoftware);
-		return GetOcamlPath();
-	}
-	else fclose(f);
-	RegCloseKey(hkeyOcaml);
-	RegCloseKey(hkeySoftware);
-	strcpy(OcamlPath,buf);
-	p = strrchr(OcamlPath,'\\');
-	if (p) {
-		*p = 0;
-		strcpy(LibDir,OcamlPath);
-		*p = '\\';
-		p = strrchr(LibDir,'\\');
-		if (p && !stricmp(p,"\\bin")) {
-			*p = 0;
-			strcat(LibDir,"\\lib");
-		}
-	}
-	return 1;
+ again:
+  if (! ReadRegistry(HKEY_CURRENT_USER,
+		     "Software", "Objective Caml",
+		     "InterpreterPath", path)
+      &&
+      ! ReadRegistry(HKEY_LOCAL_MACHINE,
+		     "Software", "Objective Caml",
+		     "InterpreterPath", path)) {
+    /* Key doesn't exist?  Ask user */
+    if (!BrowseForFile("Ocaml interpreter|ocaml.exe", path)) {
+      ShowDbgMsg("Impossible to find ocaml.exe. I quit");
+      exit(0);
+    }
+    WriteRegistry(HKEY_CURRENT_USER,
+		  "Software", "Objective Caml",
+		  "InterpreterPath", path);
+  }
+  /* Check if file exists */
+  if (_access(path, 0) != 0) {
+    char *errormsg = malloc(1024);
+    wsprintf(errormsg,"Incorrect path for ocaml.exe:\n%s", path);
+    ShowDbgMsg(errormsg);
+    free(errormsg);
+    path[0] = 0;
+    WriteRegistry(HKEY_CURRENT_USER,
+		  "Software", "Objective Caml",
+		  "InterpreterPath", path);
+    goto again;
+  }
+  strcpy(OcamlPath, path);
+  p = strrchr(OcamlPath,'\\');
+  if (p) {
+    *p = 0;
+    strcpy(LibDir,OcamlPath);
+    *p = '\\';
+    p = strrchr(LibDir,'\\');
+    if (p && !stricmp(p,"\\bin")) {
+      *p = 0;
+      strcat(LibDir,"\\lib");
+    }
+  }
+  return 1;
 }
 
 static HANDLE hChildStdinRd, hChildStdinWr,hChildStdoutRd, hChildStdoutWr;
