@@ -99,6 +99,7 @@ NATIVECCLINKOPTS=
 
 ### Build partially-linked object file
 PARTIALLD=ld -r $(NATIVECCLINKOPTS)
+PACKLD=$(PARTIALLD)
 
 ### nm and objcopy from GNU binutils
 BINUTILS_NM=nm

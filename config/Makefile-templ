@@ -226,6 +226,10 @@ SHARPBANGSCRIPTS=true
 #CC_PROFILE=-pg
 #CC_PROFILE=-xpg
 
+### How to perform a partial link
+PARTIALLD=ld -r $(NATIVECCLINKOPTS)
+PACKLD=$(PARTIALLD)
+
 ### Path to the "objcopy" program from GNU binutils.
 # You need a sufficiently recent version of the binutils so that
 # the option --redefine-sym is supported by objcopy.

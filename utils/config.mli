@@ -43,7 +43,9 @@ val native_c_linker: string
 val native_c_libraries: string
         (* The C libraries to link with native-code programs *)
 val native_partial_linker: string
-        (* The linker to use for partial links (-output-obj option) *)
+        (* The linker to use for partial links (ocamlopt -output-obj) *)
+val native_pack_linker: string
+        (* The linker to use for packaging (ocamlopt -pack) *)
 val ranlib: string
         (* Command to randomize a library, or "" if not needed *)
 val binutils_nm: string

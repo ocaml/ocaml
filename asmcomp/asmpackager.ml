@@ -70,7 +70,8 @@ let extract_symbols units symbolfile =
                      with Not_found -> search_substring " D " l 0) in
         let j = try search_substring "__" l i
                 with Not_found -> String.length l in
-        if List.mem (String.sub l i (j - i)) units then
+        let k = if l.[i] = '_' then i + 1 else i in
+        if List.mem (String.sub l k (j - k)) units then
           symbs := (String.sub l i (String.length l - i)) :: !symbs
       with Not_found ->
         ()
@@ -81,6 +82,16 @@ let extract_symbols units symbolfile =
   !symbs
 
 let max_cmdline_length = 3500 (* safe approximation *)
+
+let remove_leading_underscore s =
+  if String.length s > 0 && s.[0] = '_'
+  then String.sub s 1 (String.length s - 1)
+  else s
+
+let prefix_symbol p s =
+  if String.length s > 0 && s.[0] = '_'
+  then "_" ^ p ^ "__" ^ String.sub s 1 (String.length s - 1)
+  else p ^ "__" ^ s
 
 let rename_in_object_file units pref objfile =
   let symbolfile = Filename.temp_file "camlsymbols" "" in
@@ -109,12 +120,12 @@ let rename_in_object_file units pref objfile =
           Buffer.reset cmdline;
           Buffer.add_string cmdline Config.binutils_objcopy
         end;
-        bprintf cmdline " --redefine-sym '%s=%s__%s'" s pref s;
+        bprintf cmdline " --redefine-sym '%s=%s'" s (prefix_symbol pref s);
         call_objcopy rem in
     Buffer.add_string cmdline Config.binutils_objcopy;
     call_objcopy symbols_to_rename;
     remove_file symbolfile;
-    symbols_to_rename
+    List.map remove_leading_underscore symbols_to_rename
   with x ->
     remove_file symbolfile;
     raise x
