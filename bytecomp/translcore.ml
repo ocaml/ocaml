@@ -429,6 +429,14 @@ let event_function exp lam =
   else
     lam None
 
+let primitive_is_ccall = function
+  (* Determine if a primitive is a Pccall or will be turned later into
+     a C function call that may raise an exception *)
+  | Pccall _ | Pstringrefs | Pstringsets | Parrayrefs _ | Parraysets _ |
+    Pbigarrayref _ | Pbigarrayset _ -> true
+  | _ -> false
+
+(* Assertions *)
 
 let assert_failed loc =
   let fname = match loc.Location.loc_start.Lexing.pos_fname with
@@ -477,10 +485,10 @@ let rec transl_exp e =
       begin match (prim, args) with
         (Praise, [arg1]) ->
           Lprim(Praise, [event_after arg1 (transl_exp arg1)])
-      | (Pccall _, _) ->
-          event_after e (Lprim(prim, transl_list args))
       | (_, _) ->
-          Lprim(prim, transl_list args)
+          if primitive_is_ccall prim
+          then event_after e (Lprim(prim, transl_list args))
+          else Lprim(prim, transl_list args)
       end
   | Texp_apply(funct, oargs) ->
       event_after e (transl_apply (transl_exp funct) oargs)
