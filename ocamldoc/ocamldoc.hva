@@ -3,7 +3,7 @@
 \newenvironment{ocamldocdescription}{\begin{quote}}{\end{quote}}
 \newenvironment{ocamldoccomment}{\begin{quote}}{\end{quote}}
 \newcommand\textbar{|}
-\newcommand\textbackslash{\\}
+\newcommand\textbackslash{\begin{rawhtml}\\end{rawhtml}}
 \newcommand\textasciicircum{\^{}}
 \newcommand\sharp{#}
 
