@@ -21,6 +21,14 @@ external unsafe_set: 'a array -> int -> 'a -> unit = "%array_unsafe_set"
 external make: int -> 'a -> 'a array = "make_vect"
 external create: int -> 'a -> 'a array = "make_vect"
 
+let init l f =
+  if l = 0 then [||] else
+   let res = create l (f 0) in
+   for i = 1 to pred l do
+     unsafe_set res i (f i)
+   done;
+   res 
+
 let make_matrix sx sy init =
   let res = create sx [||] in
   for x = 0 to pred sx do
@@ -33,11 +41,11 @@ let create_matrix = make_matrix
 let copy a =
   let l = length a in
   if l = 0 then [||] else begin
-    let r = create l (unsafe_get a 0) in
-    for i = 1 to l-1 do
-      unsafe_set r i (unsafe_get a i)
+    let res = create l (unsafe_get a 0) in
+    for i = 1 to pred l do
+      unsafe_set res i (unsafe_get a i)
     done;
-    r
+    res
   end
 
 let append a1 a2 =

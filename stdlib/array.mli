@@ -37,6 +37,9 @@ external create: int -> 'a -> 'a array = "make_vect"
            Consequently, if [x] is mutable, it is shared among all elements
            of the array, and modifying [x] through one of the array entries
            will modify all other entries at the same time. *)
+val init: int -> (int -> 'a) -> 'a array
+        (* [Array.init n f] returns a fresh array of length [n],
+           with element number [i] equal to [f i]. *)
 val make_matrix: int -> int -> 'a -> 'a array array
 val create_matrix: int -> int -> 'a -> 'a array array
         (* [Array.make_matrix dimx dimy e] returns a two-dimensional array
