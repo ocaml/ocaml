@@ -142,6 +142,48 @@ let unify_pat env pat expected_ty =
   | Tags(l1,l2) ->
       raise(Typetexp.Error(pat.pat_loc, Typetexp.Variant_tags (l1, l2)))
 
+(* make all Reither present in open variants *)
+let finalize_variant pat =
+  match pat.pat_desc with
+    Tpat_variant(tag, opat, row) ->
+      let row = row_repr row in
+      let field =
+        try row_field_repr (List.assoc tag row.row_fields)
+        with Not_found -> Rabsent
+      in
+      begin match field with
+      | Rabsent -> assert false
+      | Reither (true, [], _, e) when not row.row_closed ->
+          set_row_field e (Rpresent None)
+      | Reither (false, ty::tl, _, e) when not row.row_closed ->
+          set_row_field e (Rpresent (Some ty));
+          begin match opat with None -> assert false
+          | Some pat -> List.iter (unify_pat pat.pat_env pat) (ty::tl)
+          end
+      | Reither (c, l, true, e) when not row.row_fixed ->
+          set_row_field e (Reither (c, [], false, ref None))
+      | _ -> ()
+      end;
+      (* Force check of well-formedness *)
+      unify_pat pat.pat_env pat
+        (newty(Tvariant{row_fields=[]; row_more=newvar(); row_closed=false;
+                        row_bound=[]; row_fixed=false; row_name=None}));
+  | _ -> ()
+
+let rec iter_pattern f p =
+  f p;
+  iter_pattern_desc (iter_pattern f) p.pat_desc
+
+let has_variants p =
+  try
+    iter_pattern (function {pat_desc=Tpat_variant _} -> raise Exit | _ -> ())
+      p;
+    false
+  with Exit ->
+    true
+
+
+(* pattern environment *)
 let pattern_variables = ref ([]: (Ident.t * type_expr) list)
 let pattern_force = ref ([] : (unit -> unit) list)
 let reset_pattern () =
@@ -460,6 +502,10 @@ let type_pattern_list env spatl =
 let type_class_arg_pattern cl_num val_env met_env l spat =
   reset_pattern ();
   let pat = type_pat val_env spat in
+  if has_variants pat then begin
+    Parmatch.pressure_variants val_env [pat];
+    iter_pattern finalize_variant pat
+  end;
   List.iter (fun f -> f()) (get_ref pattern_force);
   if is_optional l then unify_pat val_env pat (type_option (newvar ()));
   let (pv, met_env) =
@@ -507,43 +553,6 @@ let force_delayed_checks () =
   List.iter (fun f -> f ()) (List.rev !delayed_checks);
   reset_delayed_checks ()
 
-let finalize_variant pat =
-  match pat.pat_desc with
-    Tpat_variant(tag, opat, row) ->
-      let row = row_repr row in
-      let field =
-        try row_field_repr (List.assoc tag row.row_fields)
-        with Not_found -> Rabsent
-      in
-      begin match field with
-      | Rabsent -> assert false
-      | Reither (true, [], _, e) when not row.row_closed ->
-          set_row_field e (Rpresent None)
-      | Reither (false, ty::tl, _, e) when not row.row_closed ->
-          set_row_field e (Rpresent (Some ty));
-          begin match opat with None -> assert false
-          | Some pat -> List.iter (unify_pat pat.pat_env pat) (ty::tl)
-          end
-      | Reither (c, l, true, e) when not row.row_fixed ->
-          set_row_field e (Reither (c, [], false, ref None))
-      | _ -> ()
-      end;
-      (* Force check of well-formedness *)
-      unify_pat pat.pat_env pat
-        (newty(Tvariant{row_fields=[]; row_more=newvar(); row_closed=false;
-                        row_bound=[]; row_fixed=false; row_name=None}));
-(*
-      (* Eventually post a delayed warning check *)
-      if (match row_field_repr field with Reither _ -> true | _ -> false) then
-        add_delayed_check
-          (fun () -> if row_field_repr field = Rabsent then
-            Location.prerr_warning pat.pat_loc Warnings.Unused_match)
-*)
-  | _ -> ()
-
-let rec iter_pattern f p =
-  f p;
-  iter_pattern_desc (iter_pattern f) p.pat_desc
 
 (* Generalization criterion for expressions *)
 
@@ -1739,22 +1748,12 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
         unify_pat env pat ty_arg';
         (pat, ext_env))
       caselist in
-  (* Build dummy cases, since we cannot type yet *)
-  let dummy_cases = List.map2
-      (fun (pat, _) (_, act) ->
-        let dummy = { exp_desc = Texp_tuple []; exp_type = newty (Ttuple[]);
-                      exp_env = env; exp_loc = act.pexp_loc } in
-        match act.pexp_desc with
-          Pexp_when _ ->
-            pat, {dummy with exp_desc = Texp_when(dummy, dummy)}
-        | _           -> pat, dummy)
-      pat_env_list caselist in
-  (* Check partial matches here (required for polymorphic variants) *)
-  let partial =
-    match partial_loc with None -> Partial
-    | Some loc -> Parmatch.check_partial env loc dummy_cases in
-  (* Revert to normal typing of variants (also register checks) *)
-  List.iter (fun (pat, _) -> iter_pattern finalize_variant pat) dummy_cases;
+  (* Check for polymorphic variants to close *)
+  let patl = List.map fst pat_env_list in
+  if List.exists has_variants patl then begin
+    Parmatch.pressure_variants env patl;
+    List.iter (iter_pattern finalize_variant) patl
+  end;
   (* `Contaminating' unifications start here *)
   List.iter (fun f -> f()) !pattern_force;
   begin match pat_env_list with [] -> ()
@@ -1766,7 +1765,12 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
       (fun (pat, ext_env) (spat, sexp) ->
         let exp = type_expect ?in_function ext_env sexp ty_res in
         (pat, exp))
-      pat_env_list caselist in
+      pat_env_list caselist
+  in
+  let partial =
+    match partial_loc with None -> Partial
+    | Some loc -> Parmatch.check_partial loc cases
+  in
   add_delayed_check (fun () -> Parmatch.check_unused env cases);
   cases, partial
 
@@ -1791,6 +1795,14 @@ and type_let env rec_flag spat_sexp_list =
           {pat with pat_type = instance pat.pat_type})
         pat_list
     end else pat_list in
+  (* Polymoprhic variant processing *)
+  List.iter
+    (fun pat ->
+      if has_variants pat then begin
+        Parmatch.pressure_variants env [pat];
+        iter_pattern finalize_variant pat
+      end)
+    pat_list;
   (* Only bind pattern variables after generalizing *)
   List.iter (fun f -> f()) force;
   let exp_env =
@@ -1800,7 +1812,7 @@ and type_let env rec_flag spat_sexp_list =
       (fun (spat, sexp) pat -> type_expect exp_env sexp pat.pat_type)
       spat_sexp_list pat_list in
   List.iter2
-    (fun pat exp -> ignore(Parmatch.check_partial env pat.pat_loc [pat, exp]))
+    (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [pat, exp]))
     pat_list exp_list;
   end_def();
   List.iter2

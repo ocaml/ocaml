@@ -577,7 +577,7 @@ let close_variant env row =
   not.
 *)      
 
-let full_match tdefs closing env =  match env with
+let full_match closing env =  match env with
 | ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _},_)},_)::_ ->
     false
 | ({pat_desc = Tpat_construct(c,_)},_) :: _ ->
@@ -590,22 +590,17 @@ let full_match tdefs closing env =  match env with
         env
     in
     let row = Btype.row_repr row in
-    if closing && not row.row_fixed then begin
-      (* force=true, we are called from check_partial, and must close *)
-      let ok =
-        List.for_all
-          (fun (tag,f) ->
-            match Btype.row_field_repr f with
-              Rabsent | Reither(_, _, false, _) -> true
-            | Reither (_, _, true, _)
-                (* m=true, do not discard matched tags, rather warn *)
-            | Rpresent _ -> List.mem tag fields)
-          row.row_fields in
-      begin match tdefs with None -> ()
-      | Some env -> close_variant env row
-      end;
-      ok
-    end else
+    if closing && not row.row_fixed then
+      (* closing=true, we are considering the variant as closed *)
+      List.for_all
+        (fun (tag,f) ->
+          match Btype.row_field_repr f with
+            Rabsent | Reither(_, _, false, _) -> true
+          | Reither (_, _, true, _)
+              (* m=true, do not discard matched tags, rather warn *)
+          | Rpresent _ -> List.mem tag fields)
+        row.row_fields
+    else
       row.row_closed &&
       List.for_all
         (fun (tag,f) ->
@@ -865,7 +860,7 @@ let rec satisfiable pss qs = match pss with
           (* first column of pss is made of variables only *)
         | [] -> satisfiable (filter_extra pss) qs
         | constrs  ->
-            (not (full_match None false constrs) &&
+            (not (full_match false constrs) &&
              satisfiable (filter_extra pss) qs) ||
              List.exists
                (fun (p,pss) -> satisfiable pss (simple_match_args p omega @ qs))
@@ -937,24 +932,21 @@ and try_many_extra some qs = function
   supplies an example of a matching value.
 
   This function should be called for exhaustiveness check only.
-  It impacts variant typing
 *)
 
 type 'a result = 
   | Rnone           (* No matching value *)
   | Rsome of 'a     (* This matching value *)
 
-let rec try_many variants f = function
+let rec try_many f = function
   | [] -> Rnone
   | x::rest ->
       begin match f x with
-      | Rnone -> try_many variants f rest
-      | r ->
-          if variants then ignore (try_many variants f rest);
-          r
+      | Rnone -> try_many f rest
+      | r -> r
       end
 
-let rec exhaust variants tdefs pss n = match pss with
+let rec exhaust pss n = match pss with
 | []    ->  Rsome (omegas n)
 | []::_ ->  Rnone
 | pss   ->
@@ -962,20 +954,19 @@ let rec exhaust variants tdefs pss n = match pss with
     begin match filter_all q0 pss with
           (* first column of pss is made of variables only *)
     | [] ->
-        begin match exhaust variants tdefs (filter_extra pss) (n-1) with
+        begin match exhaust (filter_extra pss) (n-1) with
         | Rsome r -> Rsome (q0::r)
         | r -> r
       end
     | constrs ->          
         let try_non_omega (p,pss) =
           match
-            exhaust variants tdefs pss
-              (List.length (simple_match_args p omega) + n - 1)
+            exhaust pss (List.length (simple_match_args p omega) + n - 1)
           with
           | Rsome r -> Rsome (set_args p r)
           | r       -> r in
-        if full_match None false constrs
-        then try_many variants try_non_omega constrs
+        if full_match false constrs
+        then try_many try_non_omega constrs
         else
           (*
              D = filter_extra pss is the default matrix
@@ -985,11 +976,7 @@ let rec exhaust variants tdefs pss n = match pss with
              * D exhaustive => pss exhaustive
              * D non-exhaustive => we have a non-filtered value
           *)
-          let r =  exhaust variants tdefs (filter_extra pss) (n-1) in
-           (* but we try all constructors anyway, for variant typing ! *)
-           (* Note: it may impact dramatically on cost *)
-          if variants then
-            ignore (try_many variants try_non_omega constrs) ;
+          let r =  exhaust (filter_extra pss) (n-1) in
           match r with
           | Rnone -> Rnone
           | Rsome r ->
@@ -999,6 +986,18 @@ let rec exhaust variants tdefs pss n = match pss with
       (* cannot occur, since constructors don't make a full signature *)
               | Empty -> fatal_error "Parmatch.exhaust"
     end
+
+(*
+   Another exhaustiveness check, enforcing variant typing.
+   Note that it does not check exact exhaustiveness, but whether a
+   matching could be made exhaustive by closing all variant types.
+   When this is true of all other columns, the current column is left
+   open (even if it means that the whole matching is not exhaustive as
+   a result).
+   When this is false for the matrix minus the current column, and the
+   current column is composed of variant tags, we close the variant
+   (even if it doesn't help in making the matching exhaustive).
+*)
 
 let rec pressure_variants tdefs = function
   | []    -> false
@@ -1014,37 +1013,27 @@ let rec pressure_variants tdefs = function
                 try_non_omega rem && ok
             | [] -> true
           in
-          if full_match None false constrs then try_non_omega constrs else
-          let ok =
-            if tdefs = None || full_match None true constrs then
-              try_non_omega constrs
-            else try_non_omega (filter_all q0 (mark_partial pss))
-          in
-          begin
-            if tdefs <> None && full_match None true constrs then
-              ok && pressure_variants None (filter_extra pss)
-            else
-              pressure_variants tdefs (filter_extra pss)
-          end ||
-          full_match tdefs true constrs && ok
+          if full_match (tdefs=None) constrs then
+            try_non_omega constrs
+          else if tdefs = None then
+            pressure_variants None (filter_extra pss)
+          else
+            let full = full_match true constrs in
+            let ok =
+              if full then try_non_omega constrs
+              else try_non_omega (filter_all q0 (mark_partial pss))
+            in
+            begin match constrs, tdefs with
+              ({pat_desc=Tpat_variant(_,_,row)},_):: _, Some env ->
+                let row = Btype.row_repr row in
+                if row.row_fixed
+                || pressure_variants None (filter_extra pss) then ()
+                else close_variant env row
+            | _ -> ()
+            end;
+            ok
       end
 
-(*
-let rec pressure_variants tdefs pss =
-  if pss = [] || List.hd pss = [] then () else
-  let fstcol, pss' =
-    List.split (List.map (function p::ps -> [p], ps | [] -> assert false) pss)
-  in
-  if filter_extra fstcol = [] then begin
-    let q0 = discr_pat omega fstcol in
-    match filter_all q0 pss with
-      [] -> ()
-    | constrs ->
-        ignore (full_match tdefs true constrs);
-        List.iter (fun (q,qss) -> pressure_variants tdefs qss) constrs
-  end;
-  pressure_variants tdefs pss'
-*)    
 
 (* Yet another satisfiable fonction *)
 
@@ -1356,27 +1345,6 @@ let get_mins le ps =
         else select_rec (p::r) ps in
   select_rec [] (select_rec [] ps)
 
-let rec flatten_or_pat pat =
-  match pat.pat_desc with
-    Tpat_or (p1, p2, _) -> flatten_or_pat p1 @ flatten_or_pat p2
-  | Tpat_alias (p, _) -> flatten_or_pat p
-  | _ -> [pat]
-
-(* Remove redundant cases from or-patterns *)
-let rec simplify_or_pat pat =
-  match pat.pat_desc with
-    Tpat_or (p1, p2, e) ->
-      let pats = flatten_or_pat pat in
-      let pats = List.map simplify_or_pat pats in
-      let pats' = get_mins le_pat pats in
-      List.fold_left
-        (fun orpat p -> {pat with pat_desc = Tpat_or (orpat, p, e)})
-        (List.hd pats') (List.tl pats')
-  | pd ->
-      let pd' = map_pattern_desc simplify_or_pat pat.pat_desc in
-      if pd == pd' then pat
-      else {pat with pat_desc = pd'}
-
 
 (*
   lub p q is a pattern that matches all values matched by p and q
@@ -1445,24 +1413,17 @@ and lubs ps qs = match ps,qs with
       
 (******************************)
 (* Entry points               *)
+(*    - Variant closing       *)
 (*    - Partial match         *)
 (*    - Unused match case     *)
 (******************************)
 
+(* Apply pressure to variants *)
 
-(*
-  A small cvs commit/commit discussion....
-  JG: 
-  Exhaustiveness of matching MUST be checked, even
-  when the warning is excluded explicitely by user.
-  LM: 
-  Why such a strange thing ? 
-  JG:
-  Because the typing of variants depends on it.
-  LM:    
-  Ok, note that by contrast, unused clause check still can be avoided at
-  user request.
-  *)
+let pressure_variants tdefs patl =
+  let pss = List.map (fun p -> [p;omega]) patl in
+  ignore (pressure_variants (Some tdefs) pss)
+
 (*
   Build up a working pattern matrix.
    - Forget about guarded patterns
@@ -1545,31 +1506,8 @@ let check_partial_all v casel =
   with
   | NoGuard -> None
 
-(* look for variants *)
-let rec look_variant p = match p.pat_desc with
-  | Tpat_variant (_,_,_) -> true
-  | Tpat_any | Tpat_var _ | Tpat_constant _ -> false
-  | Tpat_alias (p,_)  -> look_variant p
-  | Tpat_or (p1,p2,_) -> look_variant p1 || look_variant p2
-  | Tpat_construct (_,ps) | Tpat_tuple ps | Tpat_array ps -> look_variants ps
-  | Tpat_record lps -> look_variants (List.map snd lps)
-      
-and look_variants = function
-  | [] -> false
-  | q::rem -> look_variant q || look_variants rem
-
-let pressure_variants tdefs casel =
-  if List.exists (fun (p,_) -> look_variant p) casel then begin
-    let pss = List.map (fun (p,e) -> [p;omega]) casel in
-    ignore (pressure_variants (Some tdefs) pss)
-  end
-
-let check_partial tdefs loc casel =
-  pressure_variants tdefs casel;
-  let variant_inside = false
-      (* List.exists (fun (p,_) -> look_variant p) casel *) in
+let check_partial loc casel =
   let pss = initial_matrix casel in
-  (* let pss = List.map (List.map simplify_or_pat) pss in *)
   let pss = get_mins le_pats pss in
   match pss with
   | [] ->
@@ -1590,7 +1528,7 @@ let check_partial tdefs loc casel =
       end ;
       Partial
   | ps::_  ->      
-      begin match exhaust variant_inside tdefs pss (List.length ps) with
+      begin match exhaust pss (List.length ps) with
       | Rnone -> Total
       | Rsome [v] ->
           let errmsg =

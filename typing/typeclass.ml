@@ -664,7 +664,7 @@ and class_expr cl_num val_env met_env scl =
         | _ -> true
       in
       let partial =
-        Parmatch.check_partial val_env pat.pat_loc
+        Parmatch.check_partial pat.pat_loc
           [pat, (* Dummy expression *)
            {exp_desc = Texp_constant (Asttypes.Const_int 1);
             exp_loc = Location.none;
