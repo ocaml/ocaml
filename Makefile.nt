@@ -2,8 +2,7 @@
 
 !include config\Makefile.nt
 
-### Which libraries to compile and install
-OTHERLIBRARIES=str num dynlink
+OTHERLIBRARIES=str num
 
 CAMLC=boot\cslrun boot\cslc -I boot
 CAMLOPT=boot\cslrun .\cslopt -I stdlib
@@ -94,6 +93,7 @@ world: coldstart clean all
 configure:
 	cp config\m-nt.h config\m.h
 	cp config\s-nt.h config\s.h
+	cp config\Makefile.nt config\Makefile
 
 # Complete bootstrapping cycle
 bootstrap:
@@ -132,8 +132,8 @@ backup:
 	mv boot\Saved boot\Saved.prev
 	mkdir boot\Saved
 	mv boot\Saved.prev boot\Saved\Saved.prev
-	cp boot\cslrun.exe boot\Saved
-	mv boot\cslc boot\csllex boot\cslyacc.exe boot\Saved
+	cp boot\cslrun.exe boot\Saved\cslrun.exe
+	cd boot & mv cslc csllex cslyacc.exe Saved
 	cd boot & cp $(LIBFILES) Saved
 
 # Promote the newly compiled system to the rank of cross compiler
@@ -169,10 +169,9 @@ cleanboot:
 opt: runtimeopt cslopt libraryopt otherlibrariesopt
 
 # Installation
-install:
-	if not exist $(BINDIR) mkdir $(BINDIR)
-	if not exist $(LIBDIR) mkdir $(LIBDIR)
-	if not exist $(MANDIR) mkdir $(MANDIR)
+install: installbyt installopt
+
+installbyt:
 	cd byterun & $(MAKEREC) install
 	cp cslc $(BINDIR)\cslc.exe
 	cp csltop $(BINDIR)\csltop.exe
@@ -180,17 +179,19 @@ install:
 	cp lex\csllex $(BINDIR)\csllex.exe
 	cp yacc\cslyacc.exe $(BINDIR)\cslyacc.exe
 	$(CAMLC) -a -o $(LIBDIR)\toplevellib.cma $(TOPLIB)
-	cp toplevel\topmain.cmo $(LIBDIR)
-	cp toplevel\toploop.cmi toplevel\topdirs.cmi $(LIBDIR)
+	cp toplevel\topmain.cmo $(LIBDIR)\topmain.cmo
+	cp toplevel\toploop.cmi $(LIBDIR)\toploop.cmi
+	cp toplevel\topdirs.cmi $(LIBDIR)\topdirs.cmi
 	cd tools & $(MAKEREC) install
-	for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) install)
+	cd otherlibs\str & $(MAKEREC) install
+	for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) installopt & cd ..\..)
 
 # Installation of the native-code compiler
 installopt:
 	cd asmrun & $(MAKEREC) install
-	cp cslopt $(BINDIR)\cslopt
+	cp cslopt $(BINDIR)\cslopt.exe
 	cd stdlib & $(MAKEREC) installopt
-	for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) installopt)
+	for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) installopt & cd ..\..)
 
 realclean:: clean
 
@@ -323,7 +324,7 @@ clean::
 
 beforedepend:: asmcomp\arch.ml
 
-asmcomp\proc.ml: asmcomp\proc_$(ARCH).ml
+asmcomp\proc.ml: asmcomp\proc_$(ARCH)nt.ml
 	cp asmcomp\proc_$(ARCH)nt.ml asmcomp\proc.ml
 
 clean::
@@ -410,15 +411,15 @@ alldepend::
 # The extra libraries
 
 otherlibraries:
-        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) all)
+        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) all & cd ..\..)
 otherlibrariesopt:
-        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) allopt)
+        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) allopt & cd ..\..)
 clean::
-        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) clean)
+        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) clean & cd ..\..)
 realclean::
-        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) realclean)
+        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) realclean & cd ..\..)
 alldepend::
-        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) depend)
+        -for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) depend & cd ..\..)
 
 # Default rules
 
@@ -434,15 +435,14 @@ alldepend::
 	$(CAMLOPT) $(COMPFLAGS) -c $<
 
 clean::
-	rm -f utils\*.cm[iox] utils\*.[so] utils\*~
-	rm -f parsing\*.cm[iox] parsing\*.[so] parsing\*~
-	rm -f typing\*.cm[iox] typing\*.[so] typing\*~
-	rm -f bytecomp\*.cm[iox] bytecomp\*.[so] bytecomp\*~
-	rm -f asmcomp\*.cm[iox] asmcomp\*.[so] asmcomp\*~
-	rm -f driver\*.cm[iox] driver\*.[so] driver\*~
-	rm -f toplevel\*.cm[iox] toplevel\*.[so] toplevel\*~
-	rm -f tools\*.cm[iox] tools\*.[so] tools\*~
-	rm -f *~
+	rm -f utils\*.cm[iox] utils\*.obj utils\*.asm
+	rm -f parsing\*.cm[iox] parsing\*.obj parsing\*.asm
+	rm -f typing\*.cm[iox] typing\*.obj typing\*.asm
+	rm -f bytecomp\*.cm[iox] bytecomp\*.obj bytecomp\*.asm
+	rm -f asmcomp\*.cm[iox] asmcomp\*.obj asmcomp\*.asm
+	rm -f driver\*.cm[iox] driver\*.obj driver\*.asm
+	rm -f toplevel\*.cm[iox] toplevel\*.obj toplevel\*.asm
+	rm -f tools\*.cm[iox] tools\*.obj tools\*.asm
 
 depend: beforedepend
 	echo > .depend
