@@ -39,6 +39,10 @@ withsharedlibs=yes
 
 gcc_warnings="-Wall -Wno-unused"
 
+# Try to turn internationalization off, can cause config.guess to malfunction!
+unset LANG
+unset LC_ALL LC_CTYPE LC_COLLATE LC_MESSAGES LC_MONETARY LC_NUMERIC LC_TIME 
+
 # Parse command-line arguments
 
 while : ; do
