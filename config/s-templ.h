@@ -196,3 +196,8 @@
 
 /* Define HAS_LOCALE if you have the include file <locale.h> and the 
    setlocale() function. */
+
+#define HAS_MMAP
+
+/* Define HAS_MMAP if you have the include file <sys/mman.h> and the
+   functions mmap() and munmap(). */
