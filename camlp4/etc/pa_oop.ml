@@ -130,7 +130,7 @@ EXTEND
   ;
   stream_patt_comp_err:
     [ [ spc = stream_patt_comp;
-        eo = OPT [ "?"; e = expr LEVEL "expr1" -> e ] ->
+        eo = OPT [ "??"; e = expr LEVEL "expr1" -> e ] ->
           (spc, eo) ] ]
   ;
   stream_patt_comp:

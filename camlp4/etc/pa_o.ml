@@ -140,7 +140,7 @@ value symbolchar =
 
 value prefixop =
   let list = ['!'; '?'; '~'] in
-  let excl = ["!="] in
+  let excl = ["!="; "??"] in
   Grammar.Entry.of_parser gram "prefixop"
     (parser
        [: `("", x)
