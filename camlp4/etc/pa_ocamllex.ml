@@ -31,6 +31,15 @@ let output_array v =
   let s = Buffer.contents b in
   <:expr< $str:s$ >>
 
+let output_byte_array v =
+  let b =  Buffer.create (Array.length v * 2) in
+  for i = 0 to Array.length v - 1 do
+    output_byte b (v.(i) land 0xFF);
+    if i land 15 = 15 then Buffer.add_string b  "\\\n    "
+  done;
+  let s = Buffer.contents b in
+  <:expr< $str:s$ >>
+
 (* Output the tables *)
 
 let output_tables tbl =
@@ -39,7 +48,13 @@ let output_tables tbl =
     Lexing.lex_backtrk = $output_array tbl.tbl_backtrk$;
     Lexing.lex_default = $output_array tbl.tbl_default$;
     Lexing.lex_trans = $output_array tbl.tbl_trans$;
-    Lexing.lex_check = $output_array tbl.tbl_check$
+    Lexing.lex_check = $output_array tbl.tbl_check$;
+    Lexing.lex_base_code = $output_array tbl.tbl_base_code$;
+    Lexing.lex_backtrk_code = $output_array tbl.tbl_backtrk_code$;
+    Lexing.lex_default_code = $output_array tbl.tbl_default_code$;
+    Lexing.lex_trans_code = $output_array tbl.tbl_trans_code$;
+    Lexing.lex_check_code = $output_array tbl.tbl_check_code$;
+    Lexing.lex_code = $output_byte_array tbl.tbl_code$
   } >>
 
 (* Output the entries *)
@@ -101,6 +116,15 @@ let output_lexdef tables entry_points =
     (2 * (Array.length tables.tbl_base + Array.length tables.tbl_backtrk +
           Array.length tables.tbl_default + Array.length tables.tbl_trans +
           Array.length tables.tbl_check));
+  let size_groups =
+    (2 * (Array.length tables.tbl_base_code +
+          Array.length tables.tbl_backtrk_code +
+          Array.length tables.tbl_default_code +
+          Array.length tables.tbl_trans_code +
+          Array.length tables.tbl_check_code) +
+    Array.length tables.tbl_code) in
+  if  size_groups > 0 then
+    Printf.eprintf "%d additional bytes used for bindings\n" size_groups ;
   flush stderr;
   if Array.length tables.tbl_trans > 0x8000 then raise Table_overflow;
 
@@ -162,8 +186,11 @@ EXTEND
           let tables = compact_tables transitions in
           let output = output_lexdef tables entries in
           <:str_item< declare $list: output$ end >> 
-        with Table_overflow ->
-          failwith "Transition table overflow in lexer, automaton is too big")
+        with
+       | Table_overflow ->
+          failwith "Transition table overflow in lexer, automaton is too big"
+       | Lexgen.Memory_overflow ->
+          failwith "Position memory overflow in lexer, to many as variables")
    ]
  ];
 
