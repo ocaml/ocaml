@@ -162,7 +162,8 @@ val sort : ('a -> 'a -> int) -> 'a array -> unit
    compare as equal, a positive integer if the first is greater,
    and a negative integer if the first is smaller (see below for a
    complete specification).  For example, {!Pervasives.compare} is
-   a suitable comparison function.  After calling [Array.sort], the
+   a suitable comparison function, provided there are no floating-point
+   NaN values in the data.  After calling [Array.sort], the
    array is sorted in place in increasing order.
    [Array.sort] is guaranteed to run in constant heap space
    and (at most) logarithmic stack space.
