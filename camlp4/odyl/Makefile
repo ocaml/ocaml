@@ -42,6 +42,7 @@ depend:
 	> .depend
 	@for i in *.mli *.ml; do \
 	  ../tools/apply.sh pr_depend.cmo -- $(INCLUDES) $$i | \
+	  sed -e 's| $(OTOP)/otherlibs/dynlink/dynlink.cmx||' | \
 	  sed -e 's| \.\./\.\.| $$(OTOP)|g' >> .depend; \
 	done
 
