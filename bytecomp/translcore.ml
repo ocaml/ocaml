@@ -514,7 +514,7 @@ let rec transl_exp e =
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
-        None -> Lconst(Const_base(Const_int tag))
+        None -> Lconst(Const_pointer tag)
       | Some arg ->
           let lam = transl_exp arg in
           try
