@@ -138,6 +138,9 @@ void empty_minor_heap (void)
     in_minor_collection = 0;
   }
   final_empty_young ();
+#ifdef DEBUG
+  memset(young_start, 0, young_end - young_start);
+#endif
 }
 
 /* Do a minor collection and a slice of major collection, call finalisation
