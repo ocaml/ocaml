@@ -43,14 +43,17 @@ let crc_interfaces = (Hashtbl.create 17 : (string, Digest.t) Hashtbl.t)
 let check_consistency file_name cu =
   List.iter
     (fun (name, crc) ->
-      try
-        let auth_crc = Hashtbl.find crc_interfaces name in
-        if crc <> auth_crc then
-          raise(Error(Inconsistent_import name))
-      with Not_found ->
-        raise(Error(Unavailable_unit name)))
-    cu.cu_imports;
-  Hashtbl.add crc_interfaces cu.cu_name cu.cu_interface
+      if name = cu.cu_name then begin
+        Hashtbl.add crc_interfaces name crc
+      end else begin
+        try
+          let auth_crc = Hashtbl.find crc_interfaces name in
+          if crc <> auth_crc then
+            raise(Error(Inconsistent_import name))
+        with Not_found ->
+          raise(Error(Unavailable_unit name))
+      end)
+    cu.cu_imports
 
 (* Reset the crc_interfaces table *)
 
