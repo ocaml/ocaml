@@ -11,7 +11,7 @@ type expression =
   | Ssequence of expression * expression
   | Sifthenelse of Mach.test * expression * expression * expression
   | Sswitch of expression * int array * expression array
-  | Sloop of expression * Mach.test * expression
+  | Sloop of expression
   | Scatch of expression * expression
   | Sexit
   | Strywith of expression * Ident.t * expression

@@ -224,9 +224,8 @@ let rec emit_expr env exp seq =
                       Array.map (fun (r, s) -> extract_sequence s) rscases))
              rsel [||] seq;
       r
-  | Sloop(ebody, tst, econd) ->
-      let (rarg, sbody) = emit_sequence env (Ssequence(ebody, econd)) in
-      insert (Iop(Ilooptest tst)) rarg [||] sbody;
+  | Sloop(ebody) ->
+      let (rarg, sbody) = emit_sequence env ebody in
       insert (Iloop(extract_sequence sbody)) [||] [||] seq;
       [||]
   | Scatch(e1, e2) ->

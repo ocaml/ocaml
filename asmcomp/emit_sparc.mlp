@@ -407,8 +407,6 @@ let emit_instr i =
         `	st	%f30, [%sp + 96]\n`;
         `	ld	[%sp + 96], {emit_reg i.res.(0)}\n`;
         `	add	%sp, 4, %sp\n`
-    | Lop(Ilooptest tst) ->
-        fatal_error "Emit: looptest"
     | Lop(Ispecific sop) ->
         fatal_error "Emit: specific"
     | Lreturn ->
@@ -427,11 +425,7 @@ let emit_instr i =
         `	nop\n`
     | Lcondbranch(tst, lbl) ->
         begin match tst with
-          Ialwaystrue ->
-            `	b	{emit_label lbl}\n`;
-            `	nop\n`
-        | Ialwaysfalse -> ()
-        | Itruetest ->
+          Itruetest ->
             `	tst	{emit_reg i.arg.(0)}\n`;
             `	bne	{emit_label lbl}\n`;
             `	nop\n`

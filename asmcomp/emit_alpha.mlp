@@ -411,8 +411,6 @@ let emit_instr i =
         `	stt	$f30, 0($sp)\n`;
         `	ldq	{emit_reg i.res.(0)}, 0($sp)\n`;
         `	lda	$sp, 8($sp)\n`
-    | Lop(Ilooptest tst) ->
-        fatal_error "Emit_alpha: looptest"
     | Lop(Ispecific sop) ->
         let instr = name_for_specific_operation sop in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
@@ -430,10 +428,7 @@ let emit_instr i =
         `	br	{emit_label lbl}\n`
     | Lcondbranch(tst, lbl) ->
         begin match tst with
-          Ialwaystrue ->
-            `	br	{emit_label lbl}\n`
-        | Ialwaysfalse -> ()
-        | Itruetest ->
+          Itruetest ->
             `	bne	{emit_reg i.arg.(0)}, {emit_label lbl}\n`
         | Ifalsetest ->
             `	beq	{emit_reg i.arg.(0)}, {emit_label lbl}\n`

@@ -1,4 +1,4 @@
-ARCH=sparc
+ARCH=alpha
 
 include ../Makefile.config
 

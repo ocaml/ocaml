@@ -15,7 +15,7 @@ type expression =
   | Ssequence of expression * expression
   | Sifthenelse of test * expression * expression * expression
   | Sswitch of expression * int array * expression array
-  | Sloop of expression * test * expression
+  | Sloop of expression
   | Scatch of expression * expression
   | Sexit
   | Strywith of expression * Ident.t * expression
@@ -155,8 +155,6 @@ let sel_condition = function
       (Iinttest(Iunsigned cmp), Ctuple args)
   | Cop(Ccmpf cmp, args) ->
       (Ifloattest cmp, Ctuple args)
-  | Cconst(Const_int n) ->
-      ((if n <> 0 then Ialwaystrue else Ialwaysfalse), Ctuple [])
   | arg ->
       (Itruetest, arg)
 
@@ -234,16 +232,19 @@ let rec sel_expr = function
         let (_, n) = scases.(i) in need := max !need n
       done;
       (Sswitch(ssel, index, Array.map (fun (s, n) -> s) scases), !need)
+  | Cwhile(Cconst(Const_int 1), ebody) ->
+      let (sbody, nbody) = sel_expr ebody in
+      (Sloop sbody, nbody)
   | Cwhile(econd, ebody) ->
       let (cond, earg) = sel_condition econd in
       let (sarg, narg) = sel_expr earg in
       let (sbody, nbody) = sel_expr ebody in
-      (Sifthenelse(cond, sarg, Sloop(sbody, cond, sarg), Stuple([||], [])),
+      (Scatch(Sloop(Sifthenelse(cond, sarg, sbody, Sexit)), Stuple([||], [])),
        max narg nbody)
   | Ccatch(e1, e2) ->
       let (s1, n1) = sel_expr e1 in
       let (s2, n2) = sel_expr e2 in
-      (Ssequence(s1, s2), max n1 n2)
+      (Scatch(s1, s2), max n1 n2)
   | Cexit ->
       (Sexit, 0)
   | Ctrywith(e1, v, e2) ->

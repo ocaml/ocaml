@@ -4,6 +4,7 @@
 open Mach
 
 let live_at_exit = ref Reg.Set.empty
+let live_at_break = ref Reg.Set.empty
 let live_at_raise = ref Reg.Set.empty
 
 let rec live i finally =
@@ -34,21 +35,19 @@ let rec live i finally =
       i.live <- !at_fork;
       Reg.add_set_array !at_fork i.arg
   | Iloop(body) ->
-      let at_exit = live i.next finally in
-      let at_entrance = ref at_exit in
+      let at_top = ref Reg.Set.empty in
       (* Yes, there are better algorithms, but we'll just iterate till
          reaching a fixpoint. *)
       begin try
         while true do
-          let new_at_entrance =
-            Reg.Set.union !at_entrance (live body !at_entrance) in
-          if Reg.Set.equal !at_entrance new_at_entrance then raise Exit;
-          at_entrance := new_at_entrance
+          let new_at_top = Reg.Set.union !at_top (live body !at_top) in
+          if Reg.Set.equal !at_top new_at_top then raise Exit;
+          at_top := new_at_top
         done
       with Exit -> ()
       end;
-      i.live <- !at_entrance;
-      !at_entrance
+      i.live <- !at_top;
+      !at_top
   | Icatch(body, handler) ->
       let at_join = live i.next finally in
       let before_handler = live handler at_join in

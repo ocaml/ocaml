@@ -39,9 +39,7 @@ let invert_integer_test = function
   | Iunsigned cmp -> Iunsigned(Cmm.negate_comparison cmp)
 
 let invert_test = function
-    Ialwaystrue -> Ialwaysfalse
-  | Ialwaysfalse -> Ialwaystrue
-  | Itruetest -> Ifalsetest
+    Itruetest -> Ifalsetest
   | Ifalsetest -> Itruetest
   | Iinttest(cmp) -> Iinttest(invert_integer_test cmp)
   | Iinttest_imm(cmp, n) -> Iinttest_imm(invert_integer_test cmp, n)
@@ -97,10 +95,9 @@ let add_branch lbl n =
     Llabel lbl1 when lbl1 = lbl -> n1
   | _ -> cons_instr (Lbranch lbl) n1
 
-(* Current label for exit handler and for loop entry *)
+(* Current label for exit handler *)
 
 let exit_label = ref 99
-let loop_label = ref 99
 
 (* Linearize an instruction [i]: add it in front of the continuation [n] *)
 
@@ -109,38 +106,28 @@ let rec linear i n =
     Iend -> n
   | Iop(Itailcall_ind | Itailcall_imm _ as op) ->
       copy_instr (Lop op) i (discard_dead_code n)
-  | Iop(Ilooptest Ialwaystrue) ->
-      add_branch !loop_label n
-  | Iop(Ilooptest Ialwaysfalse) ->
-      n
-  | Iop(Ilooptest test) ->
-      copy_instr (Lcondbranch(test, !loop_label)) i n
   | Iop op ->
       copy_instr (Lop op) i (linear i.Mach.next n)
   | Ireturn ->
       copy_instr Lreturn i (discard_dead_code n)
-  | Iifthenelse(Ialwaystrue, ifso, ifnot) ->
-      linear ifso (linear i.Mach.next n)
-  | Iifthenelse(Ialwaysfalse, ifso, ifnot) ->
-      linear ifnot (linear i.Mach.next n)
   | Iifthenelse(test, ifso, ifnot) ->
       let n1 = linear i.Mach.next n in
       begin match (ifso.Mach.desc, ifnot.Mach.desc) with
-        (Iend, _) ->
+        Iexit, _ ->
+          copy_instr (Lcondbranch(test, !exit_label)) i
+            (linear ifnot n1)
+      | _,  Iexit ->
+          copy_instr (Lcondbranch(invert_test test, !exit_label)) i
+            (linear ifso n1)
+      | Iend, _ ->
           let (lbl_end, n2) = get_label n1 in
           copy_instr (Lcondbranch(test, lbl_end)) i
             (linear ifnot n2)
-      | (_, Iend) ->
+      | _,  Iend ->
           let (lbl_end, n2) = get_label n1 in
           copy_instr (Lcondbranch(invert_test test, lbl_end)) i
             (linear ifso n2)
-      | (Iexit, _) ->
-          copy_instr (Lcondbranch(test, !exit_label)) i
-            (linear ifnot n1)
-      | (_, Iexit) ->
-          copy_instr (Lcondbranch(invert_test test, !exit_label)) i
-            (linear ifso n1)
-      | _ ->
+      | _, _ ->
         (* Should attempt branch prediction here *)
           let (lbl_end, n2) = get_label n1 in
           let (lbl_else, nelse) = get_label (linear ifnot n2) in
@@ -161,10 +148,7 @@ let rec linear i n =
   | Iloop body ->
       let lbl_head = new_label() in
       let n1 = linear i.Mach.next n in
-      let saved_loop_label = !loop_label in
-      loop_label := lbl_head;
-      let n2 = linear body n1 in
-      loop_label := saved_loop_label;
+      let n2 = linear body (cons_instr (Lbranch lbl_head) n1) in
       cons_instr (Llabel lbl_head) n2
   | Icatch(body, handler) ->
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in

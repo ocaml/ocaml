@@ -328,8 +328,6 @@ let emit_instr i =
         `	neg	{emit_reg i.res.(0)}\n`
     | Lop(Ispecific(Ilea addr)) ->
         `	lea	{emit_addressing addr i.arg 0}, {emit_reg i.res.(0)}\n`
-    | Lop(Ilooptest tst) ->
-        fatal_error "Emit_i386: looptest"
     | Lreturn ->
         let n = frame_size() - 4 in
         if n > 0 then
@@ -341,10 +339,7 @@ let emit_instr i =
         `	jmp	{emit_label lbl}\n`
     | Lcondbranch(tst, lbl) ->
         begin match tst with
-          Ialwaystrue ->
-            `	jmp	{emit_label lbl}\n`
-        | Ialwaysfalse -> ()
-        | Itruetest ->
+          Itruetest ->
             `	cmpl	$0, {emit_reg i.arg.(0)}\n`;
             `	jne	{emit_label lbl}\n`
         | Ifalsetest ->

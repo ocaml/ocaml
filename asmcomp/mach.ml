@@ -10,9 +10,7 @@ type integer_operation =
   | Icomp of integer_comparison
 
 type test =
-    Ialwaystrue
-  | Ialwaysfalse
-  | Itruetest
+    Itruetest
   | Ifalsetest
   | Iinttest of integer_comparison
   | Iinttest_imm of integer_comparison * int
@@ -37,7 +35,6 @@ type operation =
   | Iintop_imm of integer_operation * int
   | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
-  | Ilooptest of test
   | Ispecific of Arch.specific_operation
 
 type instruction =

@@ -33,6 +33,7 @@ let add_reloads regset i =
     regset i
 
 let reload_at_exit = ref Reg.Set.empty
+let reload_at_break = ref Reg.Set.empty
 
 let rec reload i before =
   match i.desc with
@@ -76,22 +77,21 @@ let rec reload i before =
                                i.arg i.res new_next),
        finally)
   | Iloop(body) ->
-      let (initial_new_body, initial_at_exit) = reload body before in
-      let at_exit = ref initial_at_exit in
-      let final_body = ref initial_new_body in
+      let at_head = ref before in
+      let final_body = ref body in
       begin try
         while true do
-          let (new_body, new_at_exit) = reload body !at_exit in
-          let merged_at_exit = Reg.Set.union !at_exit new_at_exit in
-          if Reg.Set.equal merged_at_exit !at_exit then begin
+          let (new_body, new_at_head) = reload body !at_head in
+          let merged_at_head = Reg.Set.union !at_head new_at_head in
+          if Reg.Set.equal merged_at_head !at_head then begin
             final_body := new_body;
             raise Exit
           end;
-          at_exit := merged_at_exit
+          at_head := merged_at_head
         done
       with Exit -> ()
       end;
-      let (new_next, finally) = reload i.next !at_exit in
+      let (new_next, finally) = reload i.next Reg.Set.empty in
       (instr_cons (Iloop(!final_body)) i.arg i.res new_next,
        finally)
   | Icatch(body, handler) ->
@@ -173,22 +173,22 @@ let rec spill i finally =
       (instr_cons (Iswitch(index, new_cases)) i.arg i.res new_next,
        !before)
   | Iloop(body) ->
-      let (new_next, at_exit) = spill i.next finally in
-      let at_entrance = ref at_exit in
+      let (new_next, _) = spill i.next finally in
+      let at_head = ref Reg.Set.empty in
       let final_body = ref body in
       begin try
         while true do
-          let (new_body, before_body) = spill body !at_entrance in
-          let new_at_entrance = Reg.Set.union !at_entrance before_body in
-          if Reg.Set.equal new_at_entrance !at_entrance then begin
+          let (new_body, before_body) = spill body !at_head in
+          let new_at_head = Reg.Set.union !at_head before_body in
+          if Reg.Set.equal new_at_head !at_head then begin
             final_body := new_body; raise Exit
           end;
-          at_entrance := new_at_entrance
+          at_head := new_at_head
         done
       with Exit -> ()
       end;
       (instr_cons (Iloop(!final_body)) i.arg i.res new_next,
-       !at_entrance)
+       !at_head)
   | Icatch(body, handler) ->
       let (new_next, at_join) = spill i.next finally in
       let (new_handler, at_exit) = spill handler at_join in

@@ -246,7 +246,6 @@ let destroyed_at_oper = function
   | Iop(Imodify) -> [| phys_reg 0 |] (* eax *)
   | Iop(Iintop(Icomp _) | Iintop_imm(Icomp _, _)) -> [| phys_reg 0 |] (* eax *)
   | Iop(Iintoffloat) -> [| phys_reg 0 |] (* eax *)
-  | Iop(Ilooptest(Ifloattest _)) -> [| phys_reg 0 |] (* eax *)
   | Iifthenelse(Ifloattest _, _, _) -> [| phys_reg 0 |] (* eax *)
   | _ -> [||]
 
@@ -272,14 +271,13 @@ let reload_test makereg tst arg =
 
 let reload_operation makereg op arg res =
   match op with
-    Iintop(Iadd|Isub|Imul|Iand|Ior|Ixor|Icomp _) | Ilooptest(Iinttest _) ->
+    Iintop(Iadd|Isub|Imul|Iand|Ior|Ixor|Icomp _) ->
       (* One of the two arguments can reside in the stack *)
       if stackp arg.(0) & stackp arg.(1)
       then ([|arg.(0); makereg arg.(1)|], res)
       else (arg, res)
   | Iintop(Ilsl|Ilsr|Iasr) | Iintop_imm(_, _) | Ispecific Ineg |
-    Iaddf | Isubf | Imulf | Idivf | Ifloatofint | Iintoffloat |
-    Ilooptest _ ->
+    Iaddf | Isubf | Imulf | Idivf | Ifloatofint | Iintoffloat ->
       (* The argument(s) can be either in register or on stack *)
       (arg, res)
   | _ -> (* Other operations: all args and results in registers *)

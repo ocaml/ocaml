@@ -62,9 +62,7 @@ let intop = function
     
 let test tst arg =
   match tst with
-    Ialwaystrue -> print_string "true"
-  | Ialwaysfalse -> print_string "false"
-  | Itruetest -> reg arg.(0)
+    Itruetest -> reg arg.(0)
   | Ifalsetest -> print_string "not "; reg arg.(0)
   | Iinttest cmp -> reg arg.(0); intcomp cmp; reg arg.(1)
   | Iinttest_imm(cmp, n) -> reg arg.(0); intcomp cmp; print_int n
@@ -109,7 +107,6 @@ let operation op arg res =
   | Idivf -> reg arg.(0); print_string " /f "; reg arg.(1)
   | Ifloatofint -> print_string "floatofint "; reg arg.(0)
   | Iintoffloat -> print_string "intoffloat "; reg arg.(0)
-  | Ilooptest tst -> print_string "while "; test tst arg
   | Ispecific op -> Arch.print_specific_operation reg op arg
 
 let rec instr i =
