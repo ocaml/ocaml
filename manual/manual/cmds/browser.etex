@@ -42,6 +42,9 @@ Allow arbitrary recursive types during type-checking.  By default,
 only recursive types where the recursion goes through an object type
 are supported.
 
+\item["-version"]
+Print version and exit.
+
 \item["-w" \var{warning-list}]
 Enable or disable warnings according to the argument \var{warning-list}.
 

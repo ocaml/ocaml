@@ -176,6 +176,9 @@ Turn bound checking off on array and string accesses (the "v.(i)" and
 slightly faster, but unsafe: anything can happen if the program
 accesses an array or string outside of its bounds.
 
+\item["-version"]
+Print version and exit.
+
 \item["-w" \var{warning-list}]
 Enable or disable warnings according to the argument \var{warning-list}.
 

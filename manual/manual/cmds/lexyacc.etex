@@ -62,6 +62,9 @@ production lexers is not recommended.
 \item["-q"]
 Quiet mode.  "ocamllex" normally outputs informational messages
 to standard output.  They are suppressed if option "-q" is used.
+
+\item["-version"] 
+Print version and exit.
 \end{options}
 
 \section{Syntax of lexer definitions}
@@ -489,14 +492,18 @@ to use error recovery.
 The "ocamlyacc" command recognizes the following options:
 
 \begin{options}
+
+\item["-b"{\it prefix}]
+Name the output files {\it prefix}".ml", {\it prefix}".mli",
+{\it prefix}".output", instead of the default naming convention.
+
 \item["-v"]
 Generate a description of the parsing tables and a report on conflicts
 resulting from ambiguities in the grammar. The description is put in
 file \var{grammar}".output".
 
-\item["-b"{\it prefix}]
-Name the output files {\it prefix}".ml", {\it prefix}".mli",
-{\it prefix}".output", instead of the default naming convention.
+\item["-version"] 
+Print version and exit.
 
 \end{options}
 

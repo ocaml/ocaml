@@ -60,6 +60,9 @@ instead of the current directory. (See also the "cd" command.)
 Tell the debugger it is executed under Emacs. (See
 section~\ref{s:inf-debugger} for information on how to run the
 debugger under Emacs.)
+
+\item["-version"]
+Print version and exit.
 \end{options}
 
 \subsection{Exiting the debugger}

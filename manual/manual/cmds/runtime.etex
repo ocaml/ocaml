@@ -68,6 +68,8 @@ section~\ref{s-ocamlrun-dllpath}).
 Direct the memory manager to print some progress messages on
 standard error.  This is equivalent to setting "v=63" in the
 "OCAMLRUNPARAM" environment variable (see below).
+\item["-version"] 
+Print version and exit.
 
 \end{options}
 
