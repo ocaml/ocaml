@@ -197,7 +197,7 @@ module Make(H: HashedType): (S with type key = H.t) =
       let bucket = Cons(key, info, h.data.(i)) in
       h.data.(i) <- bucket;
       h.size <- succ h.size;
-      if h.size > Array.length h.data lsl 1 then resize hash h
+      if h.size > Array.length h.data lsl 1 then resize H.hash h
 
     let remove h key =
       let rec remove_bucket = function
@@ -255,7 +255,7 @@ module Make(H: HashedType): (S with type key = H.t) =
       with Not_found ->
         h.data.(i) <- Cons(key, info, l);
         h.size <- succ h.size;
-        if h.size > Array.length h.data lsl 1 then resize hash h
+        if h.size > Array.length h.data lsl 1 then resize H.hash h
 
     let mem h key =
       let rec mem_in_bucket = function
