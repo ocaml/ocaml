@@ -355,7 +355,7 @@ let emit_float_test cmp neg arg lbl =
 (* Emit a Ifloatspecial instruction *)
 
 let emit_floatspecial = function
-    "atan"  -> `	fldl1; fpatan\n`
+    "atan"  -> `	fld1; fpatan\n`
   | "atan2" -> `	fpatan\n`
   | "cos"   -> `	fcos\n`
   | "log"   -> `	fldln2; fxch; fyl2x\n`
