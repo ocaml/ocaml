@@ -48,19 +48,43 @@ let share c =
 let cache_required = ref false
 let method_cache = ref lambda_unit
 let method_count = ref 0
+let method_table = ref []
 
 let meth_tag s = Lconst(Const_base(Const_int(Btype.hash_variant s)))
 
-let meth lab =
-  let tag = meth_tag lab in
-  if not (!cache_required && !Clflags.native_code) then (tag, []) else
+let next_cache tag =
   let n = !method_count in
   incr method_count;
   (tag, [Lprim(Pfield n, [!method_cache])])
 
+let rec is_path = function
+    Lvar _ | Lprim (Pgetglobal _, []) | Lconst _ -> true
+  | Lprim (Pfield _, [lam]) -> is_path lam
+  | Lprim ((Parrayrefu _ | Parrayrefs _), [lam1; lam2]) ->
+      is_path lam1 && is_path lam2
+  | _ -> false
+
+let meth obj lab =
+  let tag = meth_tag lab in
+  if not (!cache_required && !Clflags.native_code) then (tag, []) else
+  if not (is_path obj) then next_cache tag else
+  try
+    let r = List.assoc obj !method_table in
+    try
+      (tag, List.assoc tag !r)
+    with Not_found ->
+      let p = next_cache tag in
+      r := p :: !r;
+      p
+  with Not_found ->
+    let p = next_cache tag in
+    method_table := (obj, ref [p]) :: !method_table;
+    p
+
 let reset_labels () =
   Hashtbl.clear consts;
-  method_count := 0
+  method_count := 0;
+  method_table := []
 
 (* Insert labels *)
 

@@ -664,7 +664,7 @@ and transl_exp0 e =
         match met with 
           Tmeth_val id -> Lsend (Self, Lvar id, obj, [])
         | Tmeth_name nm ->
-            let (tag, cache) = Translobj.meth nm in
+            let (tag, cache) = Translobj.meth obj nm in
 	    let kind = if cache = [] then Public else Cached in
             Lsend (kind, tag, obj, cache)
       in
