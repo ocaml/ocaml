@@ -184,7 +184,7 @@ extern struct caml__roots_block *local_roots;  /* defined in roots.h */
 #define Push_roots(name, size) \
   value name [(size)]; \
   struct caml__roots_block caml__roots_block; \
-  { long _; for (_ = 0; _ < (size); name [_++] = Val_unit; } \
+  { long _; for (_ = 0; _ < (size); name [_++] = Val_unit); } \
   caml__roots_block.next = local_roots; \
   local_roots = &caml__roots_block; \
   caml__roots_block.nitems = (size); \
