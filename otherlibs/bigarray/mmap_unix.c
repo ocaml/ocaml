@@ -87,7 +87,7 @@ value bigarray_map_file(value vfd, value vkind, value vlayout,
   /* Do the mmap */
   shared = Bool_val(vshared) ? MAP_SHARED : MAP_PRIVATE;
   addr = mmap(NULL, array_size, PROT_READ | PROT_WRITE, shared, fd, 0);
-  if (addr == MAP_FAILED) sys_error(NO_ARG);
+  if (addr == (void *) MAP_FAILED) sys_error(NO_ARG);
   /* Build and return the Caml bigarray */
   return alloc_bigarray(flags | BIGARRAY_MAPPED_FILE, num_dims, addr, dim);
 }
