@@ -465,7 +465,7 @@ let rec find_last_breakpoint max_time =
 (* --- Assume 0 <= time < time_max *)
 let rec back_to time time_max =
   let
-    {c_time = t} as checkpoint = find_checkpoint_before (pre64 time_max)
+    {c_time = t} = find_checkpoint_before (pre64 time_max)
   in
     go_to (max time t);
     let (new_time, break) = find_last_breakpoint time_max in
