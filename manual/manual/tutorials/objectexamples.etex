@@ -565,17 +565,18 @@ The  type of the coercion to type "c" can be seen here:
 \begin{caml_example}
 function x -> (x :> c);;
 \end{caml_example}
-As class "c'"
-inherits from class "c", its method "m" must have type "c". On the
-other hand, in expression "(self :> c)"  the type of "self"
-and the domain of the coercion above must be unified. 
-That is, the type of the method "m" in "self" (i.e. "c") is
-also the type of "self". So, the type of "self" is "c". 
-This is a contradiction, as the type of "self" has a
-method "m'", whereas type "c" does not.
-
-The desired coercion of type "<m : c;..> -> c" can be obtained by
-using a fully explicit coercion:
+% As class "c'"
+% inherits from class "c", its method "m" must have type "c". On the
+% other hand, in expression "(self :> c)"  the type of "self"
+% and the domain of the coercion above must be unified. 
+% That is, the type of the method "m" in "self" (i.e. "c") is
+% also the type of "self". So, the type of "self" is "c". 
+% This is a contradiction, as the type of "self" has a
+% method "m'", whereas type "c" does not.
+% The desired coercion of type "<m : c;..> -> c" can 
+% be obtained by
+% using a fully explicit coercion:
+It can also be obtained by using a fully explicit coercion:
 \begin{caml_example}
 function x -> (x : #c :> c);;
 \end{caml_example}
