@@ -22,7 +22,7 @@ open Compact
 
 let copy_buffer = String.create 1024
 
-let copy_chunk ic oc (Location(start,stop)) =
+let copy_chunk_unix ic oc (Location(start,stop)) =
   seek_in ic start;
   let n = ref (stop - start) in
   while !n > 0 do
@@ -30,6 +30,18 @@ let copy_chunk ic oc (Location(start,stop)) =
     output oc copy_buffer 0 m;
     n := !n - m
   done
+
+let copy_chunk_win32 ic oc (Location(start,stop)) =
+  seek_in ic start;
+  for i = start to stop - 1 do
+    let c = input_char ic in
+    if c <> '\r' then output_char oc c
+  done
+
+let copy_chunk =
+  match Sys.os_type with
+    "Win32" -> copy_chunk_win32
+  | _       -> copy_chunk_unix
 
 (* To output an array of short ints, encoded as a string *)
 

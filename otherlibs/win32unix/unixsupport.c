@@ -12,6 +12,7 @@
 /* $Id$ */
 
 #include <mlvalues.h>
+#include <callback.h>
 #include <alloc.h>
 #include <memory.h>
 #include <fail.h>
@@ -103,7 +104,7 @@ void unix_error(errcode, cmdname, cmdarg)
   Field(res, 3) = arg;
   Pop_roots();
 #undef name
-#under arg
+#undef arg
   mlraise(res);
 }
 

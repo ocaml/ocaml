@@ -249,9 +249,6 @@ char * searchpath(name)
   char * q;
   struct stat st;
 
-  for (p = name; *p != 0; p++) {
-    if (*p == '/' || *p == '\\' || *p == ':') return name;
-  }
   if (stat(name, &st) == 0) return name;
   path = getenv("PATH");
   if (path == NULL) return 0;
@@ -259,6 +256,9 @@ char * searchpath(name)
   strcpy(fullname, name);
   strcat(fullname, ".exe");
   if (stat(fullname, &st) == 0) return fullname;
+  for (p = name; *p != 0; p++) {
+    if (*p == '/' || *p == '\\' || *p == ':') return name;
+  }
   while(1) {
     for (p = fullname; *path != 0 && *path != ';'; p++, path++) *p = *path;
     if (p != fullname && p[-1] != '\\') *p++ = '\\';

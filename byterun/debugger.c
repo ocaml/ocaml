@@ -28,10 +28,9 @@
 int debugger_in_use = 0;
 unsigned long event_count;
 
-#ifndef HAS_SOCKETS
+#if !defined(HAS_SOCKETS) || defined(_WIN32)
 
 void debugger_init()
-     char * address;
 {
 }
 

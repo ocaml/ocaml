@@ -26,8 +26,7 @@ BYTECCLINKOPTS=/MT
 CCLIBS=
 
 ### How to invoke the C preprocessor
-# We don't need it anymore
-#CPP=cl /nologo /EP
+CPP=cl /nologo /EP
 
 ### How to invoke the librarian
 MKLIB=lib /nologo /debugtype:CV /out:
@@ -47,10 +46,10 @@ SYSTEM=win32
 NATIVECC=cl /nologo
 
 ### Additional compile-time options for $(NATIVECC).
-NATIVECCCOMPOPTS=/Ox
+NATIVECCCOMPOPTS=/Ox /MT
 
 ### Additional link-time options for $(NATIVECC)
-NATIVECCLINKOPTS=
+NATIVECCLINKOPTS=/MT
 
 ### Flags for the assembler
 AS=ml /nologo
@@ -58,7 +57,7 @@ AFLAGS=/coff /Cp
 
 ############# Configuration for the contributed libraries
 
-OTHERLIBRARIES=win32unix systhreads str num graph
+OTHERLIBRARIES=win32unix systhreads str num graph dynlink
 
 ### Name of the target architecture for the "num" library
 BIGNUM_ARCH=C
