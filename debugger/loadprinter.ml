@@ -134,7 +134,7 @@ let report_error error =
   open_box 0;
   begin match error with
     Load_failure e ->
-      print_string "Error during code loading:"; print_space();
+      print_string "Error during code loading: ";
       print_string (Dynlink.error_message e)
   | Unbound_identifier lid ->
       print_string "Unbound identifier ";

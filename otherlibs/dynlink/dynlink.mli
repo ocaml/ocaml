@@ -58,12 +58,15 @@ val allow_unsafe_modules : bool -> unit
            By default, dynamic linking of unsafe object files is
            not allowed. *)
 
+type linking_error =
+    Undefined_global of string
+  | Unavailable_primitive of string
 type error =
     Not_a_bytecode_file of string
   | Inconsistent_import of string
   | Unavailable_unit of string
   | Unsafe_file
-  | Linking_error of string
+  | Linking_error of string * linking_error
   | Corrupted_interface of string
 exception Error of error
         (* Errors in dynamic linking are reported by raising the [Error]

@@ -15,12 +15,16 @@
 
 open Emitcode
 
+type linking_error = Symtable.error =
+    Undefined_global of string
+  | Unavailable_primitive of string
+
 type error =
     Not_a_bytecode_file of string
   | Inconsistent_import of string
   | Unavailable_unit of string
   | Unsafe_file
-  | Linking_error of string
+  | Linking_error of string * linking_error
   | Corrupted_interface of string
 
 exception Error of error
@@ -117,8 +121,8 @@ let load_compunit ic file_name compunit =
   begin try
     Symtable.patch_object code compunit.cu_reloc;
     Symtable.update_global_table()
-  with Symtable.Error _ ->
-    raise(Error(Linking_error file_name))
+  with Symtable.Error error ->
+    raise(Error(Linking_error (file_name, error)))
   end;
   begin try
     (Meta.reify_bytecode code code_size) (); ()
@@ -168,8 +172,12 @@ let error_message = function
       "no implementation available for " ^ name
   | Unsafe_file ->
       "this object file uses unsafe features"
-  | Linking_error name ->
-      "error while linking " ^ name
+  | Linking_error (name, Undefined_global s) ->
+      "error while linking " ^ name ^ ".\n" ^
+      "Reference to undefined global `" ^ s ^ "'"
+  | Linking_error (name, Unavailable_primitive s) ->
+      "error while linking " ^ name ^ ".\n" ^
+      "The external function `" ^ s ^ "' is not available"
   | Corrupted_interface name ->
       "corrupted interface file " ^ name
 
