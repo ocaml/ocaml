@@ -47,14 +47,16 @@
 
       
 
-(defvar ocaml-info-alist 'ocaml-info-default-function
+(defvar ocaml-info-alist 'ocaml-info-default-function-old
   "A-list binding module names to info entries: 
 
   nil means do not use info.
 
   A function to build the list lazily (at the first call). The result of
 the function call will be assign permanently to this variable for future
-uses. We provide a default function \\[ocaml-info-default-function]. 
+uses. We provide two default functions \\[ocaml-info-default-function]
+(info produced by HeVeA is the default) and \\[ocaml-info-default-function] 
+(info produced by ocamldoc). 
 
   Otherwise, this value should be an alist binding module names to info
 entries of the form to \"(entry)section\" be taken by the \\[info] 
@@ -274,8 +276,7 @@ If Module is defined, it does completion for identifier in Module.
 
 If Module is undefined, it does completion in visible modules. 
 Then, if completion fails, it does completion among  all modules 
-where identifier is defined. 
-"
+where identifier is defined."
   (interactive "p")
   (let* ((module-entry (ocaml-qualified-identifier))
          (module)
@@ -375,7 +376,9 @@ where identifier is defined.
 (defun ocaml-info-default-function-old ()
   "The default way to create an info data base from the value 
 of \\[Info-default-directory-list] and the base name \\[ocaml-info-name] 
-of files to look for."
+of files to look for.
+
+This uses info files produced by HeVeA."
   (let ((collect) (seen))
     (iter '(lambda (d)
              (if (member d seen) nil
@@ -412,7 +415,9 @@ of files to look for."
 (defun ocaml-info-default-function ()
   "The default way to create an info data base from the value 
 of \\[Info-default-directory-list] and the base name \\[ocaml-info-name] 
-of files to look for."
+of files to look for.
+
+This uses info files produced by ocamldoc."
   (let ((collect) (seen))
     (iter '(lambda (d)
              (if (member d seen) nil
