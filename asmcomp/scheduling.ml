@@ -18,24 +18,34 @@ open Reg
 open Mach
 open Linearize
 
-(* Determine whether an operation ends a basic block or not *)
+(* Determine whether an instruction ends a basic block or not *)
 
-let in_basic_block = function
-    Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _ -> false
-  | Iextcall(_, _) -> false
-  | Istackoffset _ -> false
-  | Istore(_, _) -> false
-  | Ialloc _ -> false
-  | op -> Proc.oper_latency op >= 0
-    (* The processor description can return a latency of -1 to signal
-       a specific instruction that terminates a basic block, e.g.
-       Istore_symbol for the I386. *)
+let in_basic_block instr =
+  match instr.desc with
+    Lop op ->
+      begin match op with
+        Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _ -> false
+      | Iextcall(_, _) -> false
+      | Istackoffset _ -> false
+      | Istore(_, _) -> false
+      | Ialloc _ -> false
+      | op -> Proc.oper_latency op >= 0
+        (* The processor description can return a latency of -1 to signal
+           a specific instruction that terminates a basic block, e.g.
+           Istore_symbol for the I386. *)
+      end
+  | Lreloadretaddr -> true
+  | _ -> false
 
 (* Estimate the delay needed to evaluate an instruction. *)
+
+let reload_retaddr_latency =
+  Proc.oper_latency (Iload(Cmm.Word, Arch.identity_addressing))
 
 let instr_latency instr =
   match instr.desc with
     Lop op -> Proc.oper_latency op
+  | Lreloadretaddr -> reload_retaddr_latency
   | _ -> fatal_error "Scheduling.instr_latency"
 
 (* Representation of the code DAG. *)
@@ -138,6 +148,7 @@ let rec longest_path critical_outputs node =
       [] ->
         node.length <-
           if is_critical critical_outputs node.instr.res
+          or node.instr.desc = Lreloadretaddr (* alway critical *)
           then node.delay
           else 0
     | sons ->
@@ -170,37 +181,6 @@ let rec remove_instr node = function
     [] -> []
   | instr :: rem ->
       if instr == node then rem else instr :: remove_instr node rem
-
-(* Print the dag *)
-
-(****
-open Format
-
-let printed = ref ([] : (code_dag_node * int) list)
-let print_counter = ref 0
-
-let rec print_node n =
-  try
-    List.assq n !printed
-  with Not_found ->
-    let i = !print_counter in
-    incr print_counter;
-    printed := (n, i) :: !printed;
-    let num_sons =
-      List.map (fun (son, delay) -> (print_node son, delay)) n.sons in
-    print_int i; print_string ": "; 
-    let (Lop op) = n.instr.desc in
-      Printmach.operation op n.instr.arg n.instr.res; print_newline();
-    print_string "  Distance to output: ";
-    print_int n.length; print_newline();
-    print_string "  Sons: ";
-    List.iter 
-      (fun (son, delay) ->
-          print_int son; print_string "/"; print_int delay; print_space())
-      num_sons;
-    print_newline();
-    i
-***)
 
 (* Schedule a basic block, adding its instructions in front of the given
    instruction sequence *)
@@ -235,30 +215,26 @@ let rec reschedule ready_queue date cont =
 let rec schedule i =
   match i.desc with
     Lend -> i
-  | Lop op when in_basic_block op ->
-      clear_code_dag();
-      schedule_block [] i
-  | op ->
-      { desc = op; arg = i.arg; res = i.res; live = i.live;
-        next = schedule i.next }
+  | _ ->
+      if in_basic_block i then begin
+        clear_code_dag();
+        schedule_block [] i
+      end else
+        { desc = i.desc; arg = i.arg; res = i.res; live = i.live;
+          next = schedule i.next }
 
 and schedule_block ready_queue i =
-  match i.desc with
-    Lop op when in_basic_block op ->
-      schedule_block (add_instruction ready_queue i) i.next
-  | _ ->
-      let critical_outputs =
-        match i.desc with
-          Lop(Icall_ind | Itailcall_ind) -> [| i.arg.(0) |]
-        | Lop(Icall_imm _ | Itailcall_imm _ | Iextcall(_, _)) -> [||]
-        | _ -> i.arg in
-      List.iter (longest_path critical_outputs) ready_queue;
-(***
-      print_string "******"; print_newline();
-      printed := []; print_counter := 0;
-      List.iter print_node ready_queue;
-***)
-      reschedule ready_queue 0 (schedule i)
+  if in_basic_block i then
+    schedule_block (add_instruction ready_queue i) i.next
+  else begin
+    let critical_outputs =
+      match i.desc with
+        Lop(Icall_ind | Itailcall_ind) -> [| i.arg.(0) |]
+      | Lop(Icall_imm _ | Itailcall_imm _ | Iextcall(_, _)) -> [||]
+      | _ -> i.arg in
+    List.iter (longest_path critical_outputs) ready_queue;
+    reschedule ready_queue 0 (schedule i)
+  end
 
 (* Entry point *)
 (* Don't bother to schedule for initialization code and the like. *)

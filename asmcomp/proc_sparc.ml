@@ -255,13 +255,6 @@ let contains_calls = ref false
 (* Calling the assembler and the archiver *)
 
 let assemble_file infile outfile =
-  (****
-  try
-    let sched = find_in_path !Config.load_path "scheduler_sparc" in
-    Sys.command
-      (sched ^ " -dli " ^ infile ^ " && as -o " ^ outfile ^ " " ^ infile)
-  with Not_found ->
-  ****)
   Sys.command ("as -o " ^ outfile ^ " " ^ infile)
 
 let create_archive archive file_list =

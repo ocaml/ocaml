@@ -36,6 +36,8 @@ let instr i =
       | _ -> ()
       end;
       operation op i.arg i.res
+  | Lreloadretaddr ->
+      print_string "reload retaddr"
   | Lreturn ->
       print_string "return "; regs i.arg
   | Llabel lbl ->

@@ -26,6 +26,7 @@ type instruction =
 and instruction_desc =
     Lend
   | Lop of Mach.operation
+  | Lreloadretaddr
   | Lreturn
   | Llabel of label
   | Lbranch of label

@@ -466,11 +466,11 @@ let rec emit_instr i dslot =
         `	add	%sp, 4, %sp\n`
     | Lop(Ispecific sop) ->
         fatal_error "Emit: specific"
+    | Lreloadretaddr ->
+        let n = frame_size() in
+        `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`
     | Lreturn ->
         let n = frame_size() in
-        if !contains_calls then
-          `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`;
-        emit_delay_slot dslot;
         (* Must and the return address even if this is a leaf routine,
            because it may have been tail-called with a marked retaddr. *)
         `	andn	%o7, 1, %o7\n`;
@@ -603,8 +603,7 @@ let no_interference res arg =
 let rec emit_all i =
   match i with
     {desc = Lend} -> ()
-  | {next = {desc = Lop(Icall_imm _) | Lop(Iextcall(_, false))
-                  | Lbranch _ | Lreturn}}
+  | {next = {desc = Lop(Icall_imm _) | Lop(Iextcall(_, false)) | Lbranch _}}
     when is_one_instr i ->
       emit_instr i.next (Some i);
       emit_all i.next.next

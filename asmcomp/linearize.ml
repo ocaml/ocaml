@@ -32,6 +32,7 @@ type instruction =
 and instruction_desc =
     Lend
   | Lop of operation
+  | Lreloadretaddr
   | Lreturn
   | Llabel of label
   | Lbranch of label
@@ -135,7 +136,10 @@ let rec linear i n =
   | Iop op ->
       copy_instr (Lop op) i (linear i.Mach.next n)
   | Ireturn ->
-      copy_instr Lreturn i (discard_dead_code n)
+      let n1 = copy_instr Lreturn i (discard_dead_code n) in
+      if !Proc.contains_calls
+      then cons_instr Lreloadretaddr n1
+      else n1
   | Iifthenelse(test, ifso, ifnot) ->
       let n1 = linear i.Mach.next n in
       begin match (ifso.Mach.desc, ifnot.Mach.desc) with

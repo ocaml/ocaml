@@ -459,10 +459,11 @@ let emit_instr i =
     | Lop(Ispecific sop) ->
         let instr = name_for_specific_operation sop in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
+    | Lreloadretaddr ->
+        let n = frame_size() in
+        `	ldq	$26, {emit_int(n - 8)}($sp)\n`
     | Lreturn ->
         let n = frame_size() in
-        if !contains_calls then
-          `	ldq	$26, {emit_int(n - 8)}($sp)\n`;
         if !uses_gp then
           `	ldq	$gp, {emit_int(n - 16)}($sp)\n`;
         if n > 0 then
@@ -479,10 +480,6 @@ let emit_instr i =
             `	bne	{emit_reg i.arg.(0)}, {emit_label lbl}\n`
         | Ifalsetest ->
             `	beq	{emit_reg i.arg.(0)}, {emit_label lbl}\n`
-        | Iinttest(Isigned _ | Iunsigned Ceq | Iunsigned Cne as cmp) ->
-            `	subq	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, $25\n`;
-            let branch = name_for_int_cond_branch cmp in
-            `	{emit_string branch}	$25, {emit_label lbl}\n`
         | Iinttest cmp ->
             let (comp, test) = name_for_int_comparison cmp in
             `	{emit_string comp}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, $25\n`;
@@ -493,10 +490,6 @@ let emit_instr i =
         | Iinttest_imm(cmp, 0) ->
             let branch = name_for_int_cond_branch cmp in
             `	{emit_string branch}	{emit_reg i.arg.(0)}, {emit_label lbl}\n`
-        | Iinttest_imm(Isigned _ | Iunsigned Ceq | Iunsigned Cne as cmp, n) ->
-            `	subq	{emit_reg i.arg.(0)}, {emit_int n}, $25\n`;
-            let branch = name_for_int_cond_branch cmp in
-            `	{emit_string branch}	$25, {emit_label lbl}\n`
         | Iinttest_imm(cmp, n) ->
             let (comp, test) = name_for_int_comparison cmp in
             `	{emit_string comp}	{emit_reg i.arg.(0)}, {emit_int n}, $25\n`;

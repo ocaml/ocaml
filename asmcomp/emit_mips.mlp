@@ -351,15 +351,16 @@ let emit_instr i =
         `	mfc1	{emit_reg i.res.(0)}, $f10\n`
     | Lop(Ispecific sop) ->
         fatal_error "Emit_mips: Ispecific"
+    | Lreloadretaddr
+        let n = frame_size() in
+        `	lw	$31, {emit_int(n - 4)}($sp)\n`
     | Lreturn ->
         let n = frame_size() in
-        if !contains_calls then
-          `	lw	$31, {emit_int(n - 4)}($sp)\n`;
+        if n > 0 then
+          `	addu	$sp, $sp, {emit_int n}\n`;
         (* Must and the return address even if this is a leaf routine,
            because it may have been tail-called with a marked retaddr. *)
         `	and	$31, $31, -2\n`;
-        if n > 0 then
-          `	addu	$sp, $sp, {emit_int n}\n`;
         liveregs i 0;
         `	j	$31\n`
     | Llabel lbl ->
