@@ -287,6 +287,8 @@ let output oc s ofs len =
   then invalid_arg "output"
   else unsafe_output oc s ofs len
 
+let output' oc ~buf ~pos ~len = output oc buf pos len
+
 let rec output_byte oc b =
   try
     output_byte_blocking oc b
@@ -349,6 +351,8 @@ let input ic s ofs len =
   if ofs < 0 || len < 0 || ofs + len > string_length s
   then invalid_arg "input"
   else unsafe_input ic s ofs len
+
+let input' ic ~buf ~pos ~len = input ic buf pos len
 
 let rec unsafe_really_input ic s ofs len =
   if len <= 0 then () else begin

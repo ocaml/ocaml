@@ -22,6 +22,7 @@
    makes things a little bit awkward.
 *)
 
+open StdLabels
 open Tk
 
 let mem_string ~elt:c s =

@@ -66,10 +66,10 @@ stdlib.cma: $(OBJS)
 	$(CAMLC) -a -o stdlib.cma $(ALLOBJS)
 
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -o stdlib.cmxa $(ALLOBJS:.cmo=.cmx)
 
 stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
-	$(CAMLOPT) -a -o stdlib.p.cmxa $(OBJS:.cmo=.p.cmx)
+	$(CAMLOPT) -a -o stdlib.p.cmxa $(ALLOBJS:.cmo=.p.cmx)
 
 camlheader camlheader_ur: header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); then \
@@ -115,7 +115,7 @@ labelled-cmx: $(LABELLED)
 	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.cmx)
 	touch $@
 labelled-p.cmx: $(LABELLED)
-	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:ml=.p.cmx)
+	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.p.cmx)
 	touch $@
 
 stdLabels.cmo: labelled-cmo
@@ -136,7 +136,7 @@ stdLabels.p.cmx: labelled-p.cmx
 .ml.p.cmx:
 	@if test -f $*.cmx; then mv $*.cmx $*.n.cmx; else :; fi
 	@if test -f $*.o; then mv $*.o $*.n.o; else :; fi
-	$(CAMLOPT) $(OPTCOMPFLAGS) -p -c $<
+	$(CAMLOPT) $(OPTCOMPFLAGS) $(EXTRAFLAGS) -p -c $<
 	mv $*.cmx $*.p.cmx
 	mv $*.o $*.p.o
 	@if test -f $*.n.cmx; then mv $*.n.cmx $*.cmx; else :; fi

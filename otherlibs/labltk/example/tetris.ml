@@ -17,6 +17,7 @@
 (* A Tetris game for LablTk *)
 (* written by Jun P. Furuse *)
 
+open StdLabels
 open Tk
 
 exception Done
@@ -643,21 +644,21 @@ let _ =
         | "h" ->
             let m = copy_block current in
             m.x <- m.x - 1;
-            try_to_move m; ()
+            ignore (try_to_move m)
         | "j" ->
             let m = copy_block current in
             m.d <- m.d + 1;
             if m.d = List.length m.pattern then m.d <- 0;
-            try_to_move m; ()  
+            ignore (try_to_move m)
         | "k" ->
             let m = copy_block current in
             m.d <- m.d - 1;
             if m.d < 0 then m.d <- List.length m.pattern - 1;
-            try_to_move m; ()
+            ignore (try_to_move m)
         | "l" ->
             let m = copy_block current in
             m.x <- m.x + 1;
-            try_to_move m; ()
+            ignore (try_to_move m)
         | "m" ->
             remove_timer ();
             loop ()

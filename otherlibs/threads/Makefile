@@ -35,7 +35,9 @@ LIB_OBJS=pervasives.cmo \
   $(LIB)/printexc.cmo $(LIB)/gc.cmo $(LIB)/digest.cmo $(LIB)/random.cmo \
   $(LIB)/oo.cmo $(LIB)/genlex.cmo $(LIB)/callback.cmo $(LIB)/weak.cmo \
   $(LIB)/lazy.cmo $(LIB)/filename.cmo $(LIB)/int32.cmo $(LIB)/int64.cmo \
-  $(LIB)/nativeint.cmo
+  $(LIB)/nativeint.cmo \
+  $(LIB)/arrayLabels.cmo $(LIB)/listLabels.cmo $(LIB)/stringLabels.cmo \
+  $(LIB)/stdLabels.cmo
 
 all: libthreads.a threads.cma stdlib.cma
 
