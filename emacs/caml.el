@@ -1256,14 +1256,19 @@ the line where the governing keyword occurs.")
   (let ((unbalanced 1) (kwop t))
     (while (and (not (= 0 unbalanced)) kwop)
       (setq kwop
-            (caml-find-kwop
-             "\\<\\(with\\|try\\|m\\(atch\\|odule\\)\\|functor\\)\\>\\|{\\|}"))
+        (caml-find-kwop
+         "\\<\\(with\\|try\\|m\\(atch\\|odule\\)\\|functor\\)\\>\\|[{}()]"))
       (cond
        ((not kwop))
-       ((or (string= kwop "module") (string= kwop "functor"))
-        (setq unbalanced 0))
-       ((or (string= kwop "with") (string= kwop "}"))
+       ((caml-at-sexp-close-p)
+        (caml-find-paren-match (following-char)))
+       ((string= kwop "with")
         (setq unbalanced (1+ unbalanced)))
+       ((or (string= kwop "module")
+            (string= kwop "functor")
+            (string= kwop "{")
+            (string= kwop "("))
+        (setq unbalanced 0))
        (t (setq unbalanced (1- unbalanced)))))
     kwop))
 
