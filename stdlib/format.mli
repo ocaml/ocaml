@@ -39,7 +39,7 @@
    than the [fprintf] concise formats.
 
    For instance, the sequence 
-   [open_box (); print_string "x ="; print_space (); print_int 1; close_box ()]
+   [open_box 0; print_string "x ="; print_space (); print_int 1; close_box ()]
    that prints [x = 1] within a pretty-printing box, can be
    abbreviated as [printf "@[%s@ %i@]" "x =" 1], or even shorter
    [printf "@[x =@ %i@]" 1].
@@ -552,7 +552,7 @@ val pp_get_formatter_tag_functions :
 
 (** {6 [printf] like functions for pretty-printing.} *)
 
-val fprintf : formatter -> ('a, formatter, unit, unit) format -> 'a;;
+val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
 (** [fprintf ff format arg1 ... argN] formats the arguments
    [arg1] to [argN] according to the format string [format],
    and outputs the resulting string on the formatter [ff].
@@ -611,13 +611,13 @@ val fprintf : formatter -> ('a, formatter, unit, unit) format -> 'a;;
    It prints [x = 1] within a pretty-printing box.
 *)
 
-val printf : ('a, formatter, unit, unit) format -> 'a;;
+val printf : ('a, formatter, unit) format -> 'a;;
 (** Same as [fprintf] above, but output on [std_formatter]. *)
 
-val eprintf : ('a, formatter, unit, unit) format -> 'a;;
+val eprintf : ('a, formatter, unit) format -> 'a;;
 (** Same as [fprintf] above, but output on [err_formatter]. *)
 
-val sprintf : ('a, unit, string, string) format -> 'a;;
+val sprintf : ('a, unit, string) format -> 'a;;
 (** Same as [printf] above, but instead of printing on a formatter,
    returns a string containing the result of formatting the arguments.
    Note that the pretty-printer queue is flushed at the end of each
@@ -630,7 +630,7 @@ val sprintf : ('a, unit, string, string) format -> 'a;;
    the predefined formatter [str_formatter] and call
    [flush_str_formatter ()] to get the result. *)
 
-val bprintf : Buffer.t -> ('a, formatter, unit, unit) format -> 'a;;
+val bprintf : Buffer.t -> ('a, formatter, unit) format -> 'a;;
 (** Same as [sprintf] above, but instead of printing on a string,
    writes into the given extensible buffer.
    As for [sprintf], the pretty-printer queue is flushed at the end of each
@@ -643,6 +643,6 @@ val bprintf : Buffer.t -> ('a, formatter, unit, unit) format -> 'a;;
    pretty-printer queue would result in unexpected and badly formatted
    output. *)
 
-val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format -> 'b;;
+val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
 (** Same as [sprintf] above, but instead of returning the string,
    passes it to the first argument. *)

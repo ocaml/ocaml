@@ -72,7 +72,7 @@ exception Scan_failure of string;;
    cannot be read according to the given format. *)
 
 val bscanf :
-  Scanning.scanbuf -> ('a, Scanning.scanbuf, 'b, 'b) format -> 'a -> 'b;;
+  Scanning.scanbuf -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
 (** [bscanf ib format f] reads tokens from the scanning buffer [ib] according
    to the format string [format], converts these tokens to values, and
    applies the function [f] to these values.
@@ -171,22 +171,22 @@ val bscanf :
    (module [Str]), stream parsers, [ocamllex]-generated lexers,
    [ocamlyacc]-generated parsers. *)
 
-val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b, 'b) format -> 'a -> 'b;;
+val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
 (** Same as {!Scanf.bscanf}, but inputs from the given channel.
     If efficiency is a concern, when scanning a file [fname],
     consider using [bscanf] in conjonction with fast bufferized reading,
     as obtained by [bscanf (Scanning.from_file fname)]. *)
 
-val sscanf : string -> ('a, Scanning.scanbuf, 'b, 'b) format -> 'a -> 'b;;
+val sscanf : string -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
 (** Same as {!Scanf.bscanf}, but inputs from the given string. *)
 
-val scanf : ('a, Scanning.scanbuf, 'b, 'b) format -> 'a -> 'b;;
+val scanf : ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
 (** Same as {!Scanf.bscanf}, but inputs from [stdin]
     (the standard input channel). *)
 
 val kscanf :
   Scanning.scanbuf -> (Scanning.scanbuf -> exn -> 'a) ->
-  ('b, Scanning.scanbuf, 'a, 'a) format -> 'b -> 'a;;
+  ('b, Scanning.scanbuf, 'a) format -> 'b -> 'a;;
 (** Same as {!Scanf.bscanf}, but takes an additional function argument
   [ef] that is called in case of error: if the scanning process or
   some conversion fails, the scanning function aborts and applies the

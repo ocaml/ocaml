@@ -15,7 +15,7 @@
 
 (** Formatted output functions. *)
 
-val fprintf : out_channel -> ('a, out_channel, unit, unit) format -> 'a
+val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 (** [fprintf outchan format arg1 ... argN] formats the arguments
    [arg1] to [argN] according to the format string [format],
    and outputs the resulting string on the channel [outchan].
@@ -94,23 +94,23 @@ val fprintf : out_channel -> ('a, out_channel, unit, unit) format -> 'a
    [x=1 y=2 x=1 y=3].  To get the expected behavior, do
    [List.iter (fun y -> printf "x=%d y=%d " 1 y) [2;3]]. *)
 
-val printf : ('a, out_channel, unit, unit) format -> 'a
+val printf : ('a, out_channel, unit) format -> 'a
 (** Same as {!Printf.fprintf}, but output on [stdout]. *)
 
-val eprintf : ('a, out_channel, unit, unit) format -> 'a
+val eprintf : ('a, out_channel, unit) format -> 'a
 (** Same as {!Printf.fprintf}, but output on [stderr]. *)
 
-val sprintf : ('a, unit, string, string) format -> 'a
+val sprintf : ('a, unit, string) format -> 'a
 (** Same as {!Printf.fprintf}, but instead of printing on an output channel,
    return a string containing the result of formatting
    the arguments. *)
 
-val bprintf : Buffer.t -> ('a, Buffer.t, unit, unit) format -> 'a
+val bprintf : Buffer.t -> ('a, Buffer.t, unit) format -> 'a
 (** Same as {!Printf.fprintf}, but instead of printing on an output channel,
    append the formatted arguments to the given extensible buffer
    (see module {!Buffer}). *)
 
-val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format -> 'b
+val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b
 (** [kprintf k format arguments] is the same as [sprintf format arguments],
     except that the resulting string is passed as argument to [k]; the
     result of [k] is then returned as the result of [kprintf]. *)

@@ -19,7 +19,7 @@ val emit_string: string -> unit
 val emit_int: int -> unit
 val emit_nativeint: nativeint -> unit
 val emit_symbol: char -> string -> unit
-val emit_printf: ('a, out_channel, unit, unit) format -> 'a
+val emit_printf: ('a, out_channel, unit) format -> 'a
 val emit_char: char -> unit
 val emit_string_literal: string -> unit
 val emit_string_directive: string -> string -> unit

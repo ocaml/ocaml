@@ -784,21 +784,33 @@ external decr : int ref -> unit = "%decr"
 (** Decrement the integer contained in the given reference.
    Equivalent to [fun r -> r := pred !r]. *)
 
+
 (** {6 Operations on format strings} *)
 
+(** See modules {!Printf} and {!Scanf} for more operations on 
+    format strings. *)
+
+type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
+(** Simplified type for format strings, included for backward compatibility
+    with earlier releases of Objective Caml.
+    ['a] is the type of the parameters of the format,
+    ['c] is the result type for the "printf"-style function,
+    and ['b] is the type of the first argument given to
+    [%a] and [%t] printing functions. *)
+
 external string_of_format :
- ('a, 'b, 'c, 'd) format -> string = "%identity"
+  ('a, 'b, 'c, 'd) format4 -> string = "%identity"
 (** Converts a format string into a string.*)
 external format_of_string :
- ('a, 'b, 'c, 'd) format -> ('a, 'b, 'c, 'd) format = "%identity"
+  ('a, 'b, 'c, 'd) format4 -> ('a, 'b, 'c, 'd) format4 = "%identity"
 (** [format_of_string s] returns a format string read from the string
-   constant [s]. *)
+    literal [s]. *)
 
 val ( ^^ ) :
-  ('a, 'b, 'c, 'd) format -> ('d, 'b, 'c, 'e) format ->
-  ('a, 'b, 'c, 'e) format;;
-(** [f1 ^^ f2] catenates formats [f1] and [f2], leading to a format
-  that accepts arguments from [f1] then arguments from [f2] in turn. *)
+  ('a, 'b, 'c, 'd) format4 -> ('d, 'b, 'c, 'e) format4 ->
+  ('a, 'b, 'c, 'e) format4;;
+(** [f1 ^^ f2] catenates formats [f1] and [f2].  The result is a format
+  that accepts arguments from [f1], then arguments from [f2]. *)
 
 
 (** {6 Program termination} *)

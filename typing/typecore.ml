@@ -700,7 +700,7 @@ let type_format loc fmt =
 
   let ty_ares, ty_res = scan_format 0 in
   newty
-    (Tconstr(Predef.path_format,
+    (Tconstr(Predef.path_format4,
              [ty_res; ty_input; ty_ares; ty_result],
              ref Mnil))
 
@@ -1604,7 +1604,7 @@ and type_expect ?in_function env sexp ty_expected =
           exp_type =
             (* Terrible hack for format strings *)
             begin match (repr (expand_head env ty_expected)).desc with
-              Tconstr(path, _, _) when Path.same path Predef.path_format ->
+              Tconstr(path, _, _) when Path.same path Predef.path_format4 ->
                 type_format sexp.pexp_loc s
             | _ -> instance Predef.type_string
             end;
