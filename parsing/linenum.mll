@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -50,8 +50,10 @@ rule skip_line = parse
       { incr linenum;
         linebeg := Lexing.lexeme_start lexbuf;
         Lexing.lexeme_end lexbuf }
-  | eof
-      { raise End_of_file }
+  | [^ '\n' '\r'] * eof
+      { incr linenum;
+        linebeg := Lexing.lexeme_start lexbuf;
+        raise End_of_file }
 
 {
 
