@@ -29,7 +29,8 @@ all: ocamlbrowser$(EXE)
 
 ocamlbrowser$(EXE): $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ) \
 			../support/liblabltk41.a
-	$(LABLC) -o ocamlbrowser$(EXE) $(INCLUDES) -dllpath $(LABLTKDIR) \
+	$(LABLC) -o ocamlbrowser$(EXE) $(INCLUDES) \
+		$(DLLPATH) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
 		unix.cma str.cma labltk.cma jglib.cma $(OBJ)
 
