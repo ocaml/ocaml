@@ -81,6 +81,9 @@ let simple_match p1 p2 =
   | Tpat_tuple _, Tpat_tuple _ -> true
   | Tpat_record _ , Tpat_record _ -> true
   | Tpat_array p1s, Tpat_array p2s -> List.length p1s = List.length p2s
+(* GENERIC
+  | Tpat_dynamic (_,_), Tpat_dynamic (_,_) -> true
+/GENERIC *)
   | _, (Tpat_any | Tpat_var(_)) -> true
   | _, _ -> false
 
@@ -157,6 +160,9 @@ let simple_match_args p1 p2 =
   | Tpat_tuple(args)  -> args
   | Tpat_record(args) ->  extract_fields (record_arg p1) args
   | Tpat_array(args) -> args
+(* GENERIC
+  | Tpat_dynamic (p,scm) -> [p] (* ??? *)
+/GENERIC *)
   | (Tpat_any | Tpat_var(_)) ->
       begin match p1.pat_desc with
         Tpat_construct(_, args) -> omega_list args
@@ -164,6 +170,9 @@ let simple_match_args p1 p2 =
       | Tpat_tuple(args) -> omega_list args
       | Tpat_record(args) ->  omega_list args
       | Tpat_array(args) ->  omega_list args
+(* GENERIC
+      |	Tpat_dynamic (arg,_) -> [omega]
+/GENERIC *)
       | _ -> []
       end
   | _ -> []
@@ -190,7 +199,11 @@ let rec normalize_pat q = match q.pat_desc with
       make_pat (Tpat_record (List.map (fun (lbl,_) -> lbl,omega) largs))
         q.pat_type q.pat_env
   | Tpat_or _ -> fatal_error "Parmatch.normalize_pat"
-
+(* GENERIC
+  | Tpat_dynamic (p,scm) ->
+      make_pat (Tpat_dynamic (normalize_pat p,scm)) q.pat_type q.pat_env 
+      (* ??? *)
+/GENERIC *)
 
 (*
   Build normalized (cf. supra) discriminating pattern,
@@ -274,6 +287,16 @@ let set_args q r = match q with
     rest
 | {pat_desc=Tpat_constant _|Tpat_any} ->
     q::r (* case any is used in matching.ml *)
+(* GENERIC
+| {pat_desc = Tpat_dynamic (omega,scm)} ->
+    let args,rest = read_args [omega] r in
+    begin match args with 
+    | [arg] -> 
+	make_pat
+	  (Tpat_dynamic (arg,scm)) q.pat_type q.pat_env:: rest
+    | _ -> assert false
+    end
+/GENERIC *)
 | _ -> fatal_error "Parmatch.set_args"
 
 
@@ -415,6 +438,9 @@ let full_match tdefs force env =  match env with
 | ({pat_desc = Tpat_tuple(_)},_) :: _ -> true
 | ({pat_desc = Tpat_record(_)},_) :: _ -> true
 | ({pat_desc = Tpat_array(_)},_) :: _ -> false
+(* GENERIC
+| ({pat_desc = Tpat_dynamic(_,_)},_) :: _ -> false (* ??? *)
+/GENERIC *)
 | _ -> fatal_error "Parmatch.full_match"
 
 (* complement constructor tags *)
@@ -603,6 +629,11 @@ let build_other env =  match env with
           (Tpat_array (omegas l))
           p.pat_type p.pat_env in
     try_arrays 0
+(* GENERIC
+| ({pat_desc=Tpat_dynamic (arg, scm)} as p,_) :: _ ->
+    (* incorrect ... *)
+    make_pat (Tpat_dynamic (omega, Btype.newgenvar ())) p.pat_type p.pat_env
+/GENERIC *)
 | [] -> omega
 | _ -> omega  
 
@@ -686,7 +717,7 @@ let has_guard act =
   | _ -> false
 
 
-(* p less_equal means, forall B,  V matches q implies V mactches p *)
+(* p less_equal q means, forall B,  V matches q implies V mactches p *)
 let rec le_pat p q =
   match (p.pat_desc, q.pat_desc) with
   | Tpat_var _,_ -> true | Tpat_any, _ -> true
@@ -705,6 +736,19 @@ let rec le_pat p q =
       le_pats ps qs
   | Tpat_array(ps), Tpat_array(qs) ->
      List.length ps = List.length qs && le_pats ps qs
+(* GENERIC
+  | Tpat_dynamic (p1,scm1), Tpat_dynamic (p2,scm2) ->
+(*
+      Ctype.moregeneral p1.pat_env true scm1 scm2 && le_pat p1 p2
+*)(* debugging version *)
+Format.fprintf Format.err_formatter "le_pat (before) %a ?>=? %a" Printtyp.type_scheme scm1 Printtyp.type_scheme scm2;
+Format.pp_print_newline Format.err_formatter ();
+      if Ctype.moregeneral p1.pat_env true scm1 scm2 then begin
+Format.fprintf Format.err_formatter "le_pat (done) %a >= %a" Printtyp.type_scheme scm1 Printtyp.type_scheme scm2;
+Format.pp_print_newline Format.err_formatter ();
+	le_pat p1 p2
+      end else false
+/GENERIC *)
 (* In all other cases, enumeration is performed *)
   | _,_  ->
       begin match satisfiable Env.empty false [[p]] [q] with
@@ -718,6 +762,7 @@ and le_pats ps qs =
     p::ps, q::qs -> le_pat p q && le_pats ps qs
   | _, _         -> true
 
+(* JPF: get the minimum pattern set for checking non-exhaustiveness *)
 let get_mins le ps =
   let rec select_rec r = function
     [] -> r
@@ -790,6 +835,10 @@ let rec pretty_val ppf v = match v.pat_desc with
       fprintf ppf "@[(%a@ as %a)@]" pretty_val v Ident.print x
   | Tpat_or (v,w,_)    ->
       fprintf ppf "@[(%a|@,%a)@]" pretty_or v pretty_or w
+(* GENERIC
+  | Tpat_dynamic (p,scm) ->
+      fprintf ppf "@[dyn (%a : %a)]@" pretty_val p Printtyp.type_scheme scm
+/GENERIC *)
 
 and pretty_car ppf v = match v.pat_desc with
 | Tpat_construct ({cstr_tag=tag}, [_ ; _])
@@ -856,6 +905,14 @@ let rec compat p q =
   | Tpat_array ps, Tpat_array qs ->
       List.length ps = List.length qs &&
       compats ps qs
+(* GENERIC
+(*
+  | Tpat_dynamic (p1,scm1), Tpat_dynamic (p2,scm2) ->
+      if ??? then begin
+	compat p1 p2
+      end else false
+*)
+/GENERIC *)
   | _,_  ->
       assert false
         
@@ -898,6 +955,12 @@ let rec lub p q = match p.pat_desc,q.pat_desc with
     when List.length ps = List.length qs ->
     let rs = lubs ps qs in
     make_pat (Tpat_array rs) p.pat_type p.pat_env
+(* GENERIC
+| Tpat_dynamic (p1,scm1), Tpat_dynamic (p2,scm2) ->
+    (* incorrect... *)
+    let r = lub p1 p2 in 
+    make_pat (Tpat_dynamic (r, Btype.newgenvar ())) p.pat_type p.pat_env
+/GENERIC *)
 | _,_  ->
     raise Empty
 
@@ -956,6 +1019,7 @@ and lubs ps qs = match ps,qs with
     2- Forget about guarded patterns
 *)
 
+(* JPF : get patterns without guards *)
 let rec initial_matrix = function
     [] -> []
   | (pat, act) :: rem ->
