@@ -28,8 +28,24 @@ let has_base_type exp base_ty =
     {desc = Tconstr(p1, _, _)}, {desc = Tconstr(p2, _, _)} -> Path.same p1 p2
   | (_, _) -> false
 
-let maybe_pointer arg =
-  not(has_base_type arg Predef.type_int or has_base_type arg Predef.type_char)
+let maybe_pointer exp =
+  let exp_ty =
+    Ctype.expand_head exp.exp_env (Ctype.correct_levels exp.exp_type) in
+  match (Ctype.repr exp_ty).desc with
+    Tconstr(p, args, abbrev) ->
+      not (Path.same p Predef.path_int) &&
+      not (Path.same p Predef.path_char) &&
+      begin try
+        match Env.find_type p exp.exp_env with
+          {type_kind = Type_variant cstrs} ->
+            List.exists (fun (name, args) -> args <> []) cstrs
+        | _ -> true
+      with Not_found -> true
+        (* This can happen due to e.g. missing -I options,
+           causing some .cmi files to be unavailable.
+           Maybe we should emit a warning. *)
+      end
+  | _ -> true
 
 let array_element_kind env ty =
   let ty = Ctype.repr (Ctype.expand_head env ty) in
