@@ -190,6 +190,7 @@ let rec array_element_kind env ty =
   | _ -> Paddrarray
 
 let array_kind arg =
+  Ctype.correct_level arg.exp_env arg.exp_type;
   let array_ty = Ctype.expand_head arg.exp_env arg.exp_type in
   match (Ctype.repr array_ty).desc with
     Tconstr(p, [elt_ty], _) when Path.same p Predef.path_array ->
