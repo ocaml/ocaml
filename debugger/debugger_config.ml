@@ -79,5 +79,6 @@ let stdlib_units = [
   "Hashtbl"; "Sort"; "Filename"; "Obj"; "Lexing"; "Parsing";
   "Set"; "Map"; "Stack"; "Queue"; "Stream";
   "Printf"; "Format"; "Arg"; "Printexc"; "Gc";
-  "Digest"; "Random"; "Oo"; "Genlex"; "Callback"
+  "Digest"; "Random"; "Oo"; "Genlex"; "Callback"; "Buffer";
+  "Weak"; "Lazy"; "Marshal"; "Unix"
 ]
