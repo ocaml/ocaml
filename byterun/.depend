@@ -34,10 +34,12 @@ interp.o: interp.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
 ints.o: ints.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
  str.h
-io.o: io.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
+io.o: io.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
  mlvalues.h fail.h io.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
  signals.h sys.h
-main.o: main.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
+lexing.o: lexing.c mlvalues.h config.h ../config/m.h ../config/s.h \
+ misc.h stacks.h memory.h gc.h major_gc.h freelist.h minor_gc.h str.h
+main.o: main.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
  mlvalues.h exec.h fail.h fix_code.h gc_ctrl.h interp.h intext.h io.h \
  minor_gc.h stacks.h memory.h gc.h major_gc.h freelist.h sys.h
 major_gc.o: major_gc.c config.h ../config/m.h ../config/s.h fail.h \
@@ -111,10 +113,12 @@ interp.d.o: interp.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
 ints.d.o: ints.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
  str.h
-io.d.o: io.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
+io.d.o: io.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
  mlvalues.h fail.h io.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
  signals.h sys.h
-main.d.o: main.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
+lexing.d.o: lexing.c mlvalues.h config.h ../config/m.h ../config/s.h \
+ misc.h stacks.h memory.h gc.h major_gc.h freelist.h minor_gc.h str.h
+main.d.o: main.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
  mlvalues.h exec.h fail.h fix_code.h gc_ctrl.h interp.h intext.h io.h \
  minor_gc.h stacks.h memory.h gc.h major_gc.h freelist.h sys.h
 major_gc.d.o: major_gc.c config.h ../config/m.h ../config/s.h fail.h \

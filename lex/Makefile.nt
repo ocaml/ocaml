@@ -9,7 +9,7 @@ CAMLLEX=..\boot\cslrun ..\boot\csllex
 CAMLDEP=..\boot\cslrun ..\tools\csldep
 DEPFLAGS=
 
-OBJS=syntax.cmo parser.cmo lexer.cmo lexgen.cmo output.cmo main.cmo
+OBJS=parser.cmo lexer.cmo lexgen.cmo compact.cmo output.cmo main.cmo
 
 all: csllex
 

@@ -4,9 +4,11 @@ CC=$(NATIVECC)
 CFLAGS=-I..\byterun -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) $(NATIVECCCOMPOPTS)
 
 COBJS=main.obj fail.obj roots.obj signals.obj \
-  misc.obj freelist.obj major_gc.obj minor_gc.obj memory.obj alloc.obj compare.obj ints.obj \
-  floats.obj str.obj array.obj io.obj extern.obj intern.obj hash.obj sys.obj parsing.obj \
-  gc_ctrl.obj terminfo.obj md5.obj obj.obj
+  misc.obj freelist.obj major_gc.obj minor_gc.obj memory.obj alloc.obj \
+  compare.obj ints.obj floats.obj str.obj array.obj io.obj extern.obj \
+  intern.obj hash.obj sys.obj parsing.obj gc_ctrl.obj terminfo.obj \
+  md5.obj obj.obj lexing.obj
+
 ASMOBJS=$(ARCH)nt.obj
 
 OBJS=$(COBJS) $(ASMOBJS)
@@ -20,46 +22,48 @@ libasmrun.lib: $(OBJS)
 install:
 	cp libasmrun.lib $(LIBDIR)
 
-misc.c: ..\byterun\misc.c
-	cp ..\byterun\misc.c misc.c
-freelist.c: ..\byterun\freelist.c
-	cp ..\byterun\freelist.c freelist.c
-major_gc.c: ..\byterun\major_gc.c
-	cp ..\byterun\major_gc.c major_gc.c
-minor_gc.c: ..\byterun\minor_gc.c
-	cp ..\byterun\minor_gc.c minor_gc.c
-memory.c: ..\byterun\memory.c
-	cp ..\byterun\memory.c memory.c
-alloc.c: ..\byterun\alloc.c
-	cp ..\byterun\alloc.c alloc.c
-compare.c: ..\byterun\compare.c
-	cp ..\byterun\compare.c compare.c
-ints.c: ..\byterun\ints.c
-	cp ..\byterun\ints.c ints.c
-floats.c: ..\byterun\floats.c
-	cp ..\byterun\floats.c floats.c
-str.c: ..\byterun\str.c
-	cp ..\byterun\str.c str.c
-io.c: ..\byterun\io.c
-	cp ..\byterun\io.c io.c
-extern.c: ..\byterun\extern.c
-	cp ..\byterun\extern.c extern.c
-intern.c: ..\byterun\intern.c
-	cp ..\byterun\intern.c intern.c
-hash.c: ..\byterun\hash.c
-	cp ..\byterun\hash.c hash.c
-sys.c: ..\byterun\sys.c
-	cp ..\byterun\sys.c sys.c
-parsing.c: ..\byterun\parsing.c
-	cp ..\byterun\parsing.c parsing.c
-gc_ctrl.c: ..\byterun\gc_ctrl.c
-	cp ..\byterun\gc_ctrl.c gc_ctrl.c
-terminfo.c: ..\byterun\terminfo.c
-	cp ..\byterun\terminfo.c terminfo.c
-md5.c: ..\byterun\md5.c
-	cp ..\byterun\md5.c md5.c
-obj.c: ..\byterun\obj.c
-	cp ..\byterun\obj.c obj.c
+misc.c: ../byterun/misc.c
+	cp ../byterun/misc.c misc.c
+freelist.c: ../byterun/freelist.c
+	cp ../byterun/freelist.c freelist.c
+major_gc.c: ../byterun/major_gc.c
+	cp ../byterun/major_gc.c major_gc.c
+minor_gc.c: ../byterun/minor_gc.c
+	cp ../byterun/minor_gc.c minor_gc.c
+memory.c: ../byterun/memory.c
+	cp ../byterun/memory.c memory.c
+alloc.c: ../byterun/alloc.c
+	cp ../byterun/alloc.c alloc.c
+compare.c: ../byterun/compare.c
+	cp ../byterun/compare.c compare.c
+ints.c: ../byterun/ints.c
+	cp ../byterun/ints.c ints.c
+floats.c: ../byterun/floats.c
+	cp ../byterun/floats.c floats.c
+str.c: ../byterun/str.c
+	cp ../byterun/str.c str.c
+io.c: ../byterun/io.c
+	cp ../byterun/io.c io.c
+extern.c: ../byterun/extern.c
+	cp ../byterun/extern.c extern.c
+intern.c: ../byterun/intern.c
+	cp ../byterun/intern.c intern.c
+hash.c: ../byterun/hash.c
+	cp ../byterun/hash.c hash.c
+sys.c: ../byterun/sys.c
+	cp ../byterun/sys.c sys.c
+parsing.c: ../byterun/parsing.c
+	cp ../byterun/parsing.c parsing.c
+gc_ctrl.c: ../byterun/gc_ctrl.c
+	cp ../byterun/gc_ctrl.c gc_ctrl.c
+terminfo.c: ../byterun/terminfo.c
+	cp ../byterun/terminfo.c terminfo.c
+md5.c: ../byterun/md5.c
+	cp ../byterun/md5.c md5.c
+obj.c: ../byterun/obj.c
+	cp ../byterun/obj.c obj.c
+lexing.c: ../byterun/lexing.c
+	cp ../byterun/lexing.c lexing.c
 
 clean::
 	rm -f *.obj *.lib *~

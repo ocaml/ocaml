@@ -141,7 +141,7 @@ backup:
 promote-cross:
 	cp cslc boot\cslc
 	cp lex\csllex boot\csllex
-	cp yacc\cslyacc boot\cslyacc
+	cp yacc\cslyacc.exe boot\cslyacc.exe
 	cd stdlib & cp $(LIBFILES) ..\boot
 
 # Promote the newly compiled system to the rank of bootstrap compiler
@@ -151,7 +151,7 @@ promote: promote-cross
 
 # Restore the saved bootstrap compiler if a problem arises
 restore:
-	mv boot\Saved\* boot
+	cd boot\Saved & mv * ..
 	rmdir boot\Saved
 	mv boot\Saved.prev boot\Saved
 
@@ -403,7 +403,7 @@ realclean::
 
 csltools:
 	cd tools & $(MAKEREC) all
-realclean::
+clean::
 	cd tools & $(MAKEREC) clean
 alldepend::
 	cd tools & $(MAKEREC) depend
@@ -435,14 +435,14 @@ alldepend::
 	$(CAMLOPT) $(COMPFLAGS) -c $<
 
 clean::
-	rm -f utils\*.cm[iox] utils\*.obj utils\*.asm
-	rm -f parsing\*.cm[iox] parsing\*.obj parsing\*.asm
-	rm -f typing\*.cm[iox] typing\*.obj typing\*.asm
-	rm -f bytecomp\*.cm[iox] bytecomp\*.obj bytecomp\*.asm
-	rm -f asmcomp\*.cm[iox] asmcomp\*.obj asmcomp\*.asm
-	rm -f driver\*.cm[iox] driver\*.obj driver\*.asm
-	rm -f toplevel\*.cm[iox] toplevel\*.obj toplevel\*.asm
-	rm -f tools\*.cm[iox] tools\*.obj tools\*.asm
+	rm -f utils/*.cm* utils/*.obj utils/*.asm
+	rm -f parsing/*.cm* parsing/*.obj parsing/*.asm
+	rm -f typing/*.cm* typing/*.obj typing/*.asm
+	rm -f bytecomp/*.cm* bytecomp/*.obj bytecomp/*.asm
+	rm -f asmcomp/*.cm* asmcomp/*.obj asmcomp/*.asm
+	rm -f driver/*.cm* driver/*.obj driver/*.asm
+	rm -f toplevel/*.cm* toplevel/*.obj toplevel/*.asm
+	rm -f tools/*.cm* tools/*.obj tools/*.asm
 
 depend: beforedepend
 	echo > .depend
