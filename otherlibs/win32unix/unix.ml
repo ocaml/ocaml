@@ -121,7 +121,7 @@ let handle_unix_error f arg =
     exit 2
 
 external environment : unit -> string array = "unix_environment"
-external getenv: string -> string = "sys_getenv"
+external getenv: string -> string = "caml_sys_getenv"
 external putenv: string -> string -> unit = "unix_putenv"
 
 type process_status =
@@ -135,10 +135,10 @@ type wait_flag =
 
 type file_descr
 
-external execv : string -> string array -> unit = "unix_execv"
-external execve : string -> string array -> string array -> unit = "unix_execve"
-external execvp : string -> string array -> unit = "unix_execvp"
-external execvpe : string -> string array -> string array -> unit = "unix_execvpe"
+external execv : string -> string array -> 'a = "unix_execv"
+external execve : string -> string array -> string array -> 'a = "unix_execve"
+external execvp : string -> string array -> 'a = "unix_execvp"
+external execvpe : string -> string array -> string array -> 'a = "unix_execvpe"
 
 external waitpid : wait_flag list -> int -> int * process_status
                  = "win_waitpid"
