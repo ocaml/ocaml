@@ -193,7 +193,7 @@ static void mark_slice (long work)
               if (Tag_val (curfield) == Forward_tag){
                 Field (cur, i) = Forward_val (curfield);
               }
-              else if (Is_white_val (curfield){
+              else if (Is_white_val (curfield)){
                 Field (cur, i) = 0;
               }
             }
