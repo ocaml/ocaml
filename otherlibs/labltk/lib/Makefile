@@ -28,14 +28,16 @@ TKOBJS=$(SUPPORT) $(LABLTKOBJS) $(CAMLTKOBJS)
 
 TOPDEPS = $(TOPDIR)/toplevel/toplevellib.cma $(TOPDIR)/toplevel/topmain.cmo
 
-$(LIBNAME).cma: superclean $(SUPPORT)
+$(LIBNAME).cma: $(SUPPORT)
+	$(MAKE) superclean
 	cd ../labltk; $(MAKE)
 	cd ../camltk; $(MAKE)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o $(LIBNAME) -oc $(LIBNAME) \
           -I ../labltk -I ../camltk $(TKOBJS) \
           $(TK_LINK) $(X11_LINK)
 
-$(LIBNAME).cmxa: superclean $(SUPPORT:.cmo=.cmx)
+$(LIBNAME).cmxa: $(SUPPORT:.cmo=.cmx)
+	$(MAKE) superclean
 	cd ../labltk; $(MAKE) opt
 	cd ../camltk; $(MAKE) opt
 	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o $(LIBNAME) -oc $(LIBNAME) \
@@ -56,7 +58,7 @@ $(LIBNAME): Makefile $(TOPDIR)/config/Makefile
 	@echo "#!/bin/sh" > $@
 	@echo 'exec $(INSTALLDIR)/$(LIBNAME)top$(EXE) -I $(INSTALLDIR) $$*' >> $@
 
-install: all
+install:
 	if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
 	if test `grep -s -c '^$(INSTALLDIR)$$' $(LIBDIR)/ld.conf || :` = 0; \
         then echo $(INSTALLDIR) >> $(LIBDIR)/ld.conf; fi
@@ -67,7 +69,7 @@ install: all
 	cp $(LIBNAME) $(BINDIR)
 	chmod 755 $(BINDIR)/$(LIBNAME)
 
-installopt: opt
+installopt:
 	@if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
 	cp $(LIBNAME).cmxa $(LIBNAME).a $(INSTALLDIR)
 	cd $(INSTALLDIR); $(RANLIB) $(LIBNAME).a
