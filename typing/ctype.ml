@@ -399,6 +399,54 @@ let generic_abbrev env path =
     Not_found ->
       false
 
+let check_level env level ty =
+  let visited = ref [] in
+  let rec check ty =
+    let ty = repr ty in
+    match ty.desc with
+      Tvar ->
+        ()
+    | Tarrow(t1, t2) ->
+        check t1; check t2
+    | Ttuple tl ->
+        List.iter check tl
+    | Tconstr(p, [], abbrev) ->
+        if level < Path.binding_time p then begin
+          if not (List.memq ty !visited) then begin
+            visited := ty::!visited;
+            let ty' =
+              try expand_abbrev env p [] abbrev ty.level with
+                Cannot_expand -> raise (Unify [])
+            in
+            check ty'
+          end;
+        end
+    | Tconstr(p, tl, abbrev) ->
+        if not (List.memq ty !visited) then begin
+          visited := ty::!visited;
+          if level < Path.binding_time p then begin
+            let ty' =
+              try expand_abbrev env p tl abbrev ty.level with
+                Cannot_expand -> raise (Unify [])
+            in
+            check ty'
+          end;
+          List.iter check tl
+        end
+    | Tobject(f, _) ->
+        if not (List.memq ty !visited) then begin
+          visited := ty::!visited;
+          check f
+        end
+    | Tfield(_, t1, t2) ->
+        check t1; check t2
+    | Tnil ->
+        ()
+    | Tlink _ ->
+        fatal_error "Ctype.check_level"
+  in
+    check ty
+
 let occur env ty0 ty =
   let visited = ref ([] : type_expr list) in
   let rec occur_rec ty =
@@ -412,32 +460,15 @@ let occur env ty0 ty =
     | Ttuple tl ->
         List.iter occur_rec tl
     | Tconstr(p, [], abbrev) ->
-        if ty0.level < Path.binding_time p then begin
-          if not (List.memq ty !visited) then begin
-            visited := ty :: !visited;
-            let ty' =
-              try expand_abbrev env p [] abbrev ty.level
-              with Cannot_expand -> raise (Unify []) in
-            occur_rec ty'
-          end
-        end
+        ()
     | Tconstr(p, tl, abbrev) ->
         if not (List.memq ty !visited) then begin
           visited := ty :: !visited;
-          if ty0.level < Path.binding_time p then begin
-            let ty' =
-              try expand_abbrev env p [] abbrev ty.level
-              with Cannot_expand -> raise (Unify []) in
+          try List.iter occur_rec tl with Unify _ ->
+          try
+            let ty' = expand_abbrev env p tl abbrev ty.level in
             occur_rec ty'
-          end else begin
-            try
-              List.iter occur_rec tl
-            with Unify lst ->
-            try
-              let ty' = expand_abbrev env p tl abbrev ty.level in
-              occur_rec ty'
-            with Cannot_expand -> ()
-          end
+          with Cannot_expand -> ()
         end
     | Tobject (_, _) ->
         ()
@@ -456,14 +487,18 @@ let rec unify_rec env a1 a2 t1 t2 =     (* Variables and abbreviations *)
       (Tvar, _) ->
          update_level t1.level t2;
          begin match a2 with
-           None    -> occur env t1 t2; t1.desc <- Tlink t2
-         | Some l2 -> occur env t1 l2; t1.desc <- Tlink l2
+           None    ->
+             occur env t1 t2; check_level env t1.level t2; t1.desc <- Tlink t2
+         | Some l2 ->
+             occur env t1 l2; check_level env t1.level l2; t1.desc <- Tlink l2
          end
     | (_, Tvar) ->
          update_level t2.level t1;
          begin match a1 with
-           None    -> occur env t2 t1; t2.desc <- Tlink t1
-         | Some l1 -> occur env t2 l1; t2.desc <- Tlink l1
+           None    ->
+             occur env t2 t1; check_level env t2.level t1; t2.desc <- Tlink t1
+         | Some l1 ->
+             occur env t2 l1; check_level env t2.level l1; t2.desc <- Tlink l1
          end
     | (Tconstr (p1, tl1, abbrev1), Tconstr (p2, tl2, abbrev2))
             when Path.same p1 p2 ->
