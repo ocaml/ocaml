@@ -624,7 +624,7 @@ let rec transl_exp e =
   | Texp_assertfalse -> assert_failed e.exp_loc
   | Texp_lazy e ->
       let fn = Lfunction (Curried, [Ident.create "param"], transl_exp e) in
-      Lprim(Pmakeblock(Obj.lazy_tag, Immutable), [fn])
+      Lprim(Pmakeblock(Config.lazy_tag, Immutable), [fn])
 
 and transl_list expr_list =
   List.map transl_exp expr_list

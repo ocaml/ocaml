@@ -78,6 +78,9 @@ val ast_impl_magic_number: string
 
 val max_tag: int
         (* Biggest tag that can be stored in the header of a regular block. *)
+val lazy_tag : int
+        (* Normally the same as Obj.lazy_tag.  Separate definition because
+           of technical reasons for bootstrapping. *)
 val max_young_wosize: int
         (* Maximal size of arrays that are directly allocated in the
            minor heap *)
