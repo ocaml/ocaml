@@ -32,7 +32,7 @@ type control = {
   mutable minor_heap_size : int;
   mutable major_heap_increment : int;
   mutable space_overhead : int;
-  mutable verbose : bool;
+  mutable verbose : int;
   mutable max_overhead : int;
   mutable stack_limit : int
 };;

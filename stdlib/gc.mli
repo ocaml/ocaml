@@ -67,7 +67,7 @@ type control = {
   mutable minor_heap_size : int;
   mutable major_heap_increment : int;
   mutable space_overhead : int;
-  mutable verbose : bool;
+  mutable verbose : int;
   mutable max_overhead : int;
   mutable stack_limit : int
 }
@@ -92,8 +92,17 @@ type control = {
              (this setting is intended for testing purposes only).
 	     If [max_overhead >= 1000000], compaction is never triggered.
              Default: 1000000.
--     [verbose]  This flag controls the GC messages on standard error output.
-             Default: false.
+-     [verbose]  This value controls the GC messages on standard error output.
+             It is a sum of some of the following flags, to print messages
+             on the corresponding events:
+-            [1 ] Start of major GC cycle.
+-            [2 ] Minor collection and major GC slice.
+-            [4 ] Growing and shrinking of the heap.
+-            [8 ] Resizing of stacks and memory manager tables.
+-            [16] Heap compaction.
+-            [32] Change of GC parameters.
+-            [64] Computation of major GC slice size.
+             Default: 0.
 -     [stack_limit]  The maximum size of the stack (in words).  This is only
              relevant to the byte-code runtime, as the native code runtime
              uses the operating system's stack.  Default: 256k.
@@ -112,7 +121,7 @@ external set : control -> unit = "gc_set"
      The normal usage is:
      [
        let r = Gc.get () in    (* Get the current parameters. *)
-         r.verbose <- true;    (* Change some of them. *)
+         r.verbose <- 13;      (* Change some of them. *)
          Gc.set r              (* Set the new values. *)
      ]
   *)
