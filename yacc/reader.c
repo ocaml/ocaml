@@ -1165,6 +1165,7 @@ void add_symbol(void)
     register int c;
     register bucket *bp;
     int s_lineno = lineno;
+    char *ecptr = cptr;
 
     c = *cptr;
     if (c == '\'' || c == '"')
@@ -1181,8 +1182,7 @@ void add_symbol(void)
 	return;
     }
 
-    if (last_was_action)
-	insert_empty_rule();
+    if (last_was_action) syntax_error (lineno, line, ecptr);
     last_was_action = 0;
 
     if (++nitems > maxitems)
@@ -1204,8 +1204,7 @@ void copy_action(void)
     char *a_line = dup_line();
     char *a_cptr = a_line + (cptr - line);
 
-    if (last_was_action)
-	insert_empty_rule();
+    if (last_was_action) syntax_error (lineno, line, cptr);
     last_was_action = 1;
 
     /*
