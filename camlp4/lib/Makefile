@@ -4,7 +4,7 @@ include ../config/Makefile
 
 INCLUDES=
 OCAMLCFLAGS=-warn-error A $(INCLUDES)
-OBJS=stdpp.cmo token.cmo plexer.cmo gramext.cmo grammar.cmo extfun.cmo fstream.cmo
+OBJS=stdpp.cmo token.cmo plexer.cmo gramext.cmo grammar.cmo extfold.cmo extfun.cmo fstream.cmo
 SHELL=/bin/sh
 TARGET=gramlib.cma
 

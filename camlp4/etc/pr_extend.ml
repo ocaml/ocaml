@@ -419,7 +419,8 @@ value level_list ll k =
 
 value entry (e, pos, ll) k =
   BEbox
-    [: `HVbox [: `expr e "" [: `S RO ":" :]; position pos :];
+    [: `LocInfo (MLast.loc_of_expr e)
+          (HVbox [: `expr e "" [: `S RO ":" :]; position pos :]);
        `level_list  ll [: :];
        `HVbox [: `S RO ";"; k :] :]
 ;

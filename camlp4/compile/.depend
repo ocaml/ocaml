@@ -1,0 +1,2 @@
+compile.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
+compile.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 

@@ -38,7 +38,8 @@ and g_assoc =
   | RightA
   | LeftA ]
 and g_symbol 'te =
-  [ Snterm of g_entry 'te
+  [ Smeta of string and list (g_symbol 'te) and Obj.t
+  | Snterm of g_entry 'te
   | Snterml of g_entry 'te and string
   | Slist0 of g_symbol 'te
   | Slist0sep of g_symbol 'te and g_symbol 'te
@@ -74,13 +75,15 @@ value rec derive_eps =
   | Slist0sep _ _ -> True
   | Sopt _ -> True
   | Stree t -> tree_derive_eps t
-  | _ -> False ]
+  | Smeta _ _ _ | Slist1 _ | Slist1sep _ _ | Snterm _ | Snterml _ _ | Snext |
+    Sself | Stoken _ ->
+      False ]
 and tree_derive_eps =
   fun
   [ LocAct _ _ -> True
   | Node {node = s; brother = bro; son = son} ->
       derive_eps s && tree_derive_eps son || tree_derive_eps bro
-  | _ -> False ]
+  | DeadEnd -> False ]
 ;
 
 value rec eq_symbol s1 s2 =
@@ -154,7 +157,7 @@ value insert_tree entry_name gsymbols action tree =
               let t = Node {node = s1; son = son; brother = bro} in
               Some t
           | None -> None ]
-    | _ -> None ]
+    | LocAct _ _ | DeadEnd -> None ]
   and insert_new =
     fun
     [ [s :: sl] -> Node {node = s; son = insert_new sl; brother = DeadEnd}
@@ -221,7 +224,7 @@ value change_lev lev n lname assoc =
           eprintf "<W> Level label \"%s\" ignored\n" n; flush stderr
         }
         else ()
-    | _ -> () ];
+    | None -> () ];
     {assoc = a; lname = lev.lname; lsuffix = lev.lsuffix;
      lprefix = lev.lprefix}
   }
@@ -308,13 +311,14 @@ Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
         failwith "Grammar.extend error"
       }
       else ()
+  | Smeta _ sl _ -> List.iter (check_gram entry) sl
   | Slist0sep s t -> do { check_gram entry t; check_gram entry s }
   | Slist1sep s t -> do { check_gram entry t; check_gram entry s }
   | Slist0 s -> check_gram entry s
   | Slist1 s -> check_gram entry s
   | Sopt s -> check_gram entry s
   | Stree t -> tree_check_gram entry t
-  | _ -> () ]
+  | Snext | Sself | Stoken _ -> () ]
 and tree_check_gram entry =
   fun
   [ Node {node = n; brother = bro; son = son} ->
@@ -323,7 +327,7 @@ and tree_check_gram entry =
         tree_check_gram entry bro;
         tree_check_gram entry son
       }
-  | _ -> () ]
+  | LocAct _ _ | DeadEnd -> () ]
 ;
 
 value change_to_self entry =
@@ -341,7 +345,8 @@ value get_initial entry =
 value insert_tokens gram symbols =
   let rec insert =
     fun
-    [ Slist0 s -> insert s
+    [ Smeta _ sl _ -> List.iter insert sl
+    | Slist0 s -> insert s
     | Slist1 s -> insert s
     | Slist0sep s t -> do { insert s; insert t }
     | Slist1sep s t -> do { insert s; insert t }
@@ -359,12 +364,12 @@ value insert_tokens gram symbols =
           in
           incr r
         }
-    | _ -> () ]
+    | Snterm _ | Snterml _ _ | Snext | Sself -> () ]
   and tinsert =
     fun
     [ Node {node = s; brother = bro; son = son} ->
         do { insert s; tinsert bro; tinsert son }
-    | _ -> () ]
+    | LocAct _ _ | DeadEnd -> () ]
   in
   List.iter insert symbols
 ;
@@ -484,13 +489,14 @@ value rec decr_keyw_use gram =
         }
         else ()
       }
+  | Smeta _ sl _ -> List.iter (decr_keyw_use gram) sl
   | Slist0 s -> decr_keyw_use gram s
   | Slist1 s -> decr_keyw_use gram s
   | Slist0sep s1 s2 -> do { decr_keyw_use gram s1; decr_keyw_use gram s2 }
   | Slist1sep s1 s2 -> do { decr_keyw_use gram s1; decr_keyw_use gram s2 }
   | Sopt s -> decr_keyw_use gram s
   | Stree t -> decr_keyw_use_in_tree gram t
-  | _ -> () ]
+  | Sself | Snext | Snterm _ | Snterml _ _ -> () ]
 and decr_keyw_use_in_tree gram =
   fun
   [ DeadEnd | LocAct _ _ -> ()

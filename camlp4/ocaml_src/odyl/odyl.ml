@@ -30,7 +30,8 @@ let apply_load () =
     else if s = "--" then begin incr i; stop := true; () end
     else if String.length s > 0 && s.[0] == '-' then stop := true
     else if
-      Filename.check_suffix s ".cmo" || Filename.check_suffix s ".cma" then
+      Filename.check_suffix s ".cmo" || Filename.check_suffix s ".cma"
+    then
       begin Odyl_main.loadfile s; incr i end
     else stop := true
   done

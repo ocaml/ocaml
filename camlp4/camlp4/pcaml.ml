@@ -5,14 +5,31 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
 
 (* $Id$ *)
 
-value version = Config.version;
+value version = "3.04+15";
+
+let ov = Sys.ocaml_version in
+try
+  let oi = String.index ov ' ' in
+  let ov = String.sub ov 0 oi in
+  if String.sub version 0 (String.length ov) = ov then ()
+  else failwith "bad version"
+with
+[ Not_found | Invalid_argument _ | Failure _ ->
+  do {
+    Printf.eprintf "This OCaml and this Camlp4 are incompatible:\n";
+    Printf.eprintf "- OCaml version is %s\n" ov;
+    Printf.eprintf "- Camlp4 version is %s\n" version;
+    flush stderr;
+    failwith "bad versions";
+  } ]
+;
 
 value gram =
   Grammar.gcreate
@@ -349,6 +366,8 @@ value pr_str_item = {pr_fun = fun []; pr_levels = []};
 value pr_sig_item = {pr_fun = fun []; pr_levels = []};
 value pr_expr = {pr_fun = fun []; pr_levels = []};
 value pr_patt = {pr_fun = fun []; pr_levels = []};
+value pr_ctyp = {pr_fun = fun []; pr_levels = []};
+value pr_class_str_item = {pr_fun = fun []; pr_levels = []};
 value pr_expr_fun_args = ref Extfun.empty;
 
 value not_impl name x =
@@ -376,6 +395,8 @@ pr_str_item.pr_fun := pr_fun "str_item" pr_str_item;
 pr_sig_item.pr_fun := pr_fun "sig_item" pr_sig_item;
 pr_expr.pr_fun := pr_fun "expr" pr_expr;
 pr_patt.pr_fun := pr_fun "patt" pr_patt;
+pr_ctyp.pr_fun := pr_fun "ctyp" pr_ctyp;
+pr_class_str_item.pr_fun := pr_fun "class_str_item" pr_class_str_item;
 
 value rec find_pr_level lab =
   fun
@@ -393,7 +414,7 @@ value top_printer pr x =
     Format.force_newline ();
     Spretty.print_pretty Format.print_char Format.print_string
       Format.print_newline "<< " "   " 78
-      (fun _ -> ()) (pr.pr_fun "top" x "" [: :]);
+      (fun _ _ -> ("", 0, 0, 0)) 0 (pr.pr_fun "top" x "" [: :]);
     Format.print_string " >>";
   }
 ;

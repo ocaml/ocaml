@@ -4,7 +4,7 @@ include config/Makefile
 
 DIRS=odyl camlp4 meta etc top ocpp lib man
 FDIRS=odyl camlp4 meta lib
-OPTDIRS=lib odyl camlp4 meta etc
+OPTDIRS= lib odyl camlp4 meta compile
 SHELL=/bin/sh
 COLD_FILES=ocaml_src/camlp4/argl.ml ocaml_src/camlp4/ast2pt.ml ocaml_src/camlp4/ast2pt.mli ocaml_src/camlp4/mLast.mli ocaml_src/camlp4/pcaml.ml ocaml_src/camlp4/pcaml.mli ocaml_src/camlp4/quotation.ml ocaml_src/camlp4/quotation.mli ocaml_src/camlp4/reloc.ml ocaml_src/camlp4/reloc.mli ocaml_src/camlp4/spretty.ml ocaml_src/camlp4/spretty.mli ocaml_src/lib/extfun.ml ocaml_src/lib/extfun.mli ocaml_src/lib/fstream.ml ocaml_src/lib/fstream.mli ocaml_src/lib/gramext.ml ocaml_src/lib/gramext.mli ocaml_src/lib/grammar.ml ocaml_src/lib/grammar.mli ocaml_src/lib/plexer.ml ocaml_src/lib/plexer.mli ocaml_src/lib/stdpp.ml ocaml_src/lib/stdpp.mli ocaml_src/lib/token.ml ocaml_src/lib/token.mli ocaml_src/meta/pa_extend.ml ocaml_src/meta/pa_extend_m.ml ocaml_src/meta/pa_ifdef.ml ocaml_src/meta/pa_r.ml ocaml_src/meta/pa_rp.ml ocaml_src/meta/pr_dump.ml ocaml_src/meta/q_MLast.ml ocaml_src/odyl/odyl_main.ml ocaml_src/odyl/odyl_main.mli ocaml_src/odyl/odyl.ml
 
@@ -23,13 +23,17 @@ boot/camlp4$(EXE): $(COLD_FILES)
 	$(MAKE) clean_cold clean_hot library
 
 clean_hot:
-	for i in $(DIRS); do (cd $$i; $(MAKE) clean); done
+	for i in $(DIRS) compile; do (cd $$i; $(MAKE) clean); done
 
 depend:
-	for i in $(DIRS); do (cd $$i; $(MAKE) depend); done
+	for i in $(DIRS) compile; do (cd $$i; $(MAKE) depend); done
 
 install:
-	for i in $(DIRS); do (cd $$i; $(MAKE) install BINDIR=$(BINDIR) LIBDIR=$(LIBDIR) MANDIR=$(MANDIR)); done
+	for i in $(DIRS) compile; do (cd $$i; $(MAKE) install BINDIR=$(BINDIR) LIBDIR=$(LIBDIR) MANDIR=$(MANDIR)); done
+
+uninstall:
+	rm -rf $(LIBDIR)/camlp4
+	cd $(BINDIR); rm -f *camlp4* odyl ocpp
 
 clean::
 	$(MAKE) clean_hot clean_cold
@@ -72,15 +76,18 @@ cleanboot:
 	rm -rf boot/SAVED/SAVED
 
 
-# Fast bootstrap
+# Core and core bootstrap
 
-bootstrap_fast: backup promote clean_hot fast compare
+bootstrap_core: backup promote clean_hot core compare
 
-fast: boot/camlp4$(EXE)
+core: boot/camlp4$(EXE)
 	set -e; for i in $(FDIRS); do cd $$i; $(MAKE) all; cd ..; done
 
-clean_fast:
+clean_core:
 	for i in $(FDIRS); do (cd $$i; $(MAKE) clean); done
+
+fast: core
+bootstrap_fast: bootstrap_core
 
 
 # The very beginning

@@ -170,14 +170,23 @@ Pcaml.sync.val := sync;
 
 value ipatt = Grammar.Entry.create gram "ipatt";
 
+value not_yet_warned_variant = ref True;
+value warn_variant () =
+  if not_yet_warned_variant.val then do {
+    not_yet_warned_variant.val := False;
+    Printf.eprintf "\
+*** warning: use of syntax of variants types deprecated since version 3.05\n";
+    flush stderr
+  }
+  else ()
+;
+
 value not_yet_warned = ref True;
-value warning_seq () =
+value warn_sequence () =
   if not_yet_warned.val then do {
     not_yet_warned.val := False;
     Printf.eprintf "\
-*** warning: use of old syntax
-*** type \"camlp4r -help_seq\" in a shell for explanations
-";
+*** warning: use of syntax of sequences deprecated since version 3.01.1\n";
     flush stderr
   }
   else ()
@@ -246,6 +255,7 @@ EXTEND
     | "simple"
       [ i = UIDENT -> <:module_type< $uid:i$ >>
       | i = LIDENT -> <:module_type< $lid:i$ >>
+      | "'"; i = ident -> <:module_type< ' $i$ >>
       | "("; mt = SELF; ")" -> <:module_type< $mt$ >> ] ]
   ;
   sig_item:
@@ -276,8 +286,8 @@ EXTEND
   with_constr:
     [ [ "type"; i = mod_ident; tpl = LIST0 type_parameter; "="; t = ctyp ->
           MLast.WcTyp loc i tpl t
-      | "module"; i = mod_ident; "="; mt = module_type ->
-          MLast.WcMod loc i mt ] ]
+      | "module"; i = mod_ident; "="; me = module_expr ->
+          MLast.WcMod loc i me ] ]
   ;
   expr:
     [ "top" RIGHTA
@@ -509,6 +519,9 @@ EXTEND
       [ t1 = SELF; "=="; t2 = SELF -> <:ctyp< $t1$ == $t2$ >> ]
     | LEFTA
       [ t1 = SELF; "as"; t2 = SELF -> <:ctyp< $t1$ as $t2$ >> ]
+    | LEFTA
+      [ "!"; pl = LIST1 typevar; "."; t = ctyp ->
+          <:ctyp< ! $list:pl$ . $t$ >> ]
     | "arrow" RIGHTA
       [ t1 = SELF; "->"; t2 = SELF -> <:ctyp< $t1$ -> $t2$ >> ]
     | LEFTA
@@ -618,8 +631,12 @@ EXTEND
           <:class_str_item< method virtual private $l$ : $t$ >>
       | "method"; "virtual"; l = label; ":"; t = ctyp ->
           <:class_str_item< method virtual $l$ : $t$ >>
+      | "method"; "private"; l = label; ":"; t = ctyp; "="; e = expr ->
+          <:class_str_item< method private $l$ : $t$ = $e$ >>
       | "method"; "private"; l = label; fb = fun_binding ->
           <:class_str_item< method private $l$ = $fb$ >>
+      | "method"; l = label; ":"; t = ctyp; "="; e = expr ->
+          <:class_str_item< method $l$ : $t$ = $e$ >>
       | "method"; l = label; fb = fun_binding ->
           <:class_str_item< method $l$ = $fb$ >>
       | "type"; t1 = ctyp; "="; t2 = ctyp ->
@@ -718,6 +735,9 @@ EXTEND
   field:
     [ [ lab = LIDENT; ":"; t = ctyp -> (lab, t) ] ]
   ;
+  typevar:
+    [ [ "'"; i = ident -> i ] ]
+  ;
   clty_longident:
     [ [ m = UIDENT; "."; l = SELF -> [m :: l]
       | i = LIDENT -> [i] ] ]
@@ -733,17 +753,17 @@ EXTEND
       | i = QUESTIONIDENT; ":"; t = SELF -> <:ctyp< ? $i$ : $t$ >> ] ]
   ;
   ctyp: LEVEL "simple"
-    [ [ "[|"; rfl = LIST0 row_field SEP "|"; "|]" ->
-          <:ctyp< [| $list:rfl$ |] >>
-      | "[|"; ">"; rfl = row_field_list; "|]" ->
-          <:ctyp< [| > $list:rfl$ |] >>
-      | "[|"; "<"; rfl = row_field_list; "|]" ->
-          <:ctyp< [| < $list:rfl$ |] >>
-      | "[|"; "<"; rfl = row_field_list; ">"; ntl = LIST1 name_tag; "|]" ->
-          <:ctyp< [| < $list:rfl$ > $list:ntl$ |] >> ] ]
+    [ [ "["; "="; rfl = row_field_list; "]" ->
+          <:ctyp< [ = $list:rfl$ ] >>
+      | "["; ">"; rfl = row_field_list; "]" ->
+          <:ctyp< [ > $list:rfl$ ] >>
+      | "["; "<"; rfl = row_field_list; "]" ->
+          <:ctyp< [ < $list:rfl$ ] >>
+      | "["; "<"; rfl = row_field_list; ">"; ntl = LIST1 name_tag; "]" ->
+          <:ctyp< [ < $list:rfl$ > $list:ntl$ ] >> ] ]
   ;
   row_field_list:
-    [ [ rfl = LIST1 row_field SEP "|" -> rfl ] ]
+    [ [ rfl = LIST0 row_field SEP "|" -> rfl ] ]
   ;
   row_field:
     [ [ "`"; i = ident -> MLast.RfTag i True []
@@ -824,6 +844,21 @@ EXTEND
     [ [ "virtual" -> True
       | -> False ] ]
   ;
+  (* Compatibility old syntax of variant types definitions *)
+  ctyp: LEVEL "simple"
+    [ [ "[|"; warning_variant; rfl = row_field_list; "|]" ->
+          <:ctyp< [ = $list:rfl$ ] >>
+      | "[|"; warning_variant; ">"; rfl = row_field_list; "|]" ->
+          <:ctyp< [ > $list:rfl$ ] >>
+      | "[|"; warning_variant; "<"; rfl = row_field_list; "|]" ->
+          <:ctyp< [ < $list:rfl$ ] >>
+      | "[|"; warning_variant; "<"; rfl = row_field_list; ">";
+        ntl = LIST1 name_tag; "|]" ->
+          <:ctyp< [ < $list:rfl$ > $list:ntl$ ] >> ] ]
+  ;
+  warning_variant:
+    [ [ -> warn_variant () ] ]
+  ;
   (* Compatibility old syntax of sequences *)
   expr: LEVEL "top"
     [ [ "do"; seq = LIST0 [ e = expr; ";" -> e ]; "return"; warning_sequence;
@@ -837,7 +872,7 @@ EXTEND
           <:expr< while $e$ do { $list:seq$ } >> ] ]
   ;
   warning_sequence:
-    [ [ -> warning_seq () ] ]
+    [ [ -> warn_sequence () ] ]
   ;
 END;
 

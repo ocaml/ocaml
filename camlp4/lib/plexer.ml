@@ -147,12 +147,12 @@ value next_token_fun dfa find_kwd =
     | [: `'''; s :] ->
         match Stream.npeek 2 s with
         [ [_; '''] | ['\\'; _] ->
-            let tok = ("CHAR", char bp 0 s) in
+            let tok = ("CHAR", get_buff (char bp 0 s)) in
             let loc = (bp, Stream.count s) in
             (tok, loc)
         | _ -> keyword_or_error (bp, Stream.count s) "'" ]
     | [: `'"'; s :] ->
-        let tok = ("STRING", string bp 0 s) in
+        let tok = ("STRING", get_buff (string bp 0 s)) in
         let loc = (bp, Stream.count s) in
         (tok, loc)
     | [: `'$'; s :] ->
@@ -241,14 +241,13 @@ value next_token_fun dfa find_kwd =
           keyword_or_error (bp, ep) id ]
   and string bp len =
     parser
-    [ [: `'"' :] -> get_buff len
+    [ [: `'"' :] -> len
     | [: `'\\'; `c; s :] -> string bp (store (store len '\\') c) s
     | [: `c; s :] -> string bp (store len c) s
     | [: :] ep -> err (bp, ep) "string not terminated" ]
   and char bp len =
     parser
-    [ [: `'''; s :] ->
-        if len = 0 then char bp (store len ''') s else get_buff len
+    [ [: `'''; s :] -> if len = 0 then char bp (store len ''') s else len
     | [: `'\\'; `c; s :] -> char bp (store (store len '\\') c) s
     | [: `c; s :] -> char bp (store len c) s
     | [: :] ep -> err (bp, ep) "char not terminated" ]
@@ -336,8 +335,35 @@ value next_token_fun dfa find_kwd =
     parser
     [ [: `'('; s :] -> left_paren_in_comment bp s
     | [: `'*'; s :] -> star_in_comment bp s
+    | [: `'"'; _ = string bp 0; s :] -> comment bp s
+    | [: `'''; s :] -> quote_in_comment bp s
     | [: `c; s :] -> comment bp s
     | [: :] ep -> err (bp, ep) "comment not terminated" ]
+  and quote_in_comment bp =
+    parser
+    [ [: `'''; s :] -> comment bp s
+    | [: `'\\'; s :] -> quote_antislash_in_comment bp 0 s
+    | [: `_; s :] -> quote_any_in_comment bp s
+    | [: s :] -> comment bp s ]
+  and quote_any_in_comment bp =
+    parser
+    [ [: `'''; s :] -> comment bp s
+    | [: s :] -> comment bp s ]
+  and quote_antislash_in_comment bp len =
+    parser
+    [ [: `'''; s :] -> comment bp s
+    | [: `('\\' | '"' | 'n' | 't' | 'b' | 'r'); s :] ->
+        quote_any_in_comment bp s
+    | [: `('0'..'9'); s :] -> quote_antislash_digit_in_comment bp s
+    | [: s :] -> comment bp s ]
+  and quote_antislash_digit_in_comment bp =
+    parser
+    [ [: `('0'..'9'); s :] -> quote_antislash_digit2_in_comment bp s
+    | [: s :] -> comment bp s ]
+  and quote_antislash_digit2_in_comment bp =
+    parser
+    [ [: `('0'..'9'); s :] -> quote_any_in_comment bp s
+    | [: s :] -> comment bp s ]
   and left_paren_in_comment bp =
     parser
     [ [: `'*'; s :] -> do { comment bp s; comment bp s }

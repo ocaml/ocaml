@@ -1,6 +1,9 @@
+extfold.cmi: gramext.cmi 
 gramext.cmi: token.cmi 
 grammar.cmi: gramext.cmi token.cmi 
 plexer.cmi: token.cmi 
+extfold.cmo: gramext.cmi grammar.cmi extfold.cmi 
+extfold.cmx: gramext.cmx grammar.cmx extfold.cmi 
 extfun.cmo: extfun.cmi 
 extfun.cmx: extfun.cmi 
 fstream.cmo: fstream.cmi 

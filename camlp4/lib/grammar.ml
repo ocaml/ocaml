@@ -28,7 +28,9 @@ value print_str ppf s = fprintf ppf "\"%s\"" (String.escaped s);
 
 value rec print_symbol ppf =
   fun
-  [ Slist0 s ->
+  [ Smeta n sl _ ->
+      print_meta ppf n sl
+  | Slist0 s ->
       fprintf ppf "LIST0 %a" print_symbol1 s
   | Slist0sep s t ->
       fprintf ppf "LIST0 %a SEP %a" print_symbol1 s print_symbol1 t
@@ -42,8 +44,25 @@ value rec print_symbol ppf =
       fprintf ppf "%s@ %a" con print_str prm
   | Snterml e l ->
       fprintf ppf "%s@ LEVEL@ %a" e.ename print_str l
-  | s ->
+  | Snterm _ | Snext | Sself | Stoken _ | Stree _ as s ->
       print_symbol1 ppf s ]
+and print_meta ppf n sl =
+  loop 0 sl where rec loop i =
+    fun
+    [ [] -> ()
+    | [s :: sl] ->
+        let j =
+          try String.index_from n i ' ' with
+          [ Not_found -> String.length n ]
+        in
+        do {
+          fprintf ppf "%s %a" (String.sub n i (j - i)) print_symbol1 s;
+          if sl = [] then ()
+          else do {
+            fprintf ppf " ";
+            loop (min (j + 1) (String.length n)) sl
+          }
+        } ]
 and print_symbol1 ppf =
   fun
   [ Snterm e -> pp_print_string ppf e.ename
@@ -52,7 +71,9 @@ and print_symbol1 ppf =
   | Stoken ("", s) -> print_str ppf s
   | Stoken (con, "") -> pp_print_string ppf con
   | Stree t -> print_level ppf pp_print_space (flatten_tree t)
-  | s -> fprintf ppf "(%a)" print_symbol s ]
+  | Smeta _ _ _ | Snterml _ _ | Slist0 _ | Slist0sep _ _ | Slist1 _ |
+    Slist1sep _ _  | Sopt _ | Stoken _ as s ->
+      fprintf ppf "(%a)" print_symbol s ]
 and print_rule ppf symbols =
   do {
     fprintf ppf "@[<hov 0>";
@@ -95,7 +116,7 @@ value print_levels ppf elev =
            fprintf ppf "%t@[<hov 2>" sep;
            match lev.lname with
            [ Some n -> fprintf ppf "%a@;<1 2>" print_str n
-           | _ -> () ];
+           | None -> () ];
            match lev.assoc with
            [ LeftA -> fprintf ppf "LEFTA"
            | RightA -> fprintf ppf "RIGHTA"
@@ -182,7 +203,7 @@ and name_of_tree_failed entry =
           let txt =
             match bro with
             [ DeadEnd | LocAct _ _ -> txt
-            | _ -> txt ^ " or " ^ name_of_tree_failed entry bro ]
+            | Node _ -> txt ^ " or " ^ name_of_tree_failed entry bro ]
           in
           txt
       | Some (tokl, last_tok, son) ->
@@ -221,7 +242,7 @@ value search_tree_in_entry prev_symb tree =
                   [ Some t ->
                       Some (Node {node = n.node; son = t; brother = DeadEnd})
                   | None -> search_tree n.brother ] ]
-          | _ -> None ]
+          | LocAct _ _ | DeadEnd -> None ]
       and search_symbol symb =
         match symb with
         [ Snterm _ | Snterml _ _ | Slist0 _ | Slist0sep _ _ | Slist1 _ |
@@ -261,7 +282,7 @@ value search_tree_in_entry prev_symb tree =
         | _ -> None ]
       in
       search_levels levels
-  | _ -> tree ]
+  | Dparser _ -> tree ]
 ;
 
 value error_verbose = ref False;
@@ -358,7 +379,7 @@ value top_tree entry =
   fun
   [ Node {node = s; brother = bro; son = son} ->
       Node {node = top_symb entry s; brother = bro; son = son}
-  | _ -> raise Stream.Failure ]
+  | LocAct _ _ | DeadEnd -> raise Stream.Failure ]
 ;
 
 value skip_if_empty bp p strm =
@@ -390,15 +411,20 @@ value recover parser_of_tree entry nlevn alevn bp a s son strm =
   else do_recover parser_of_tree entry nlevn alevn bp a s son strm
 ;
 
+value token_count = ref 0;
+
 value peek_nth n strm =
   let list = Stream.npeek n strm in
-  let rec loop list n =
-    match (list, n) with
-    [ ([x :: _], 1) -> Some x
-    | ([_ :: l], n) -> loop l (n - 1)
-    | ([], _) -> None ]
-  in
-  loop list n
+  do {
+    token_count.val := Stream.count strm + n;
+    let rec loop list n =
+      match (list, n) with
+      [ ([x :: _], 1) -> Some x
+      | ([_ :: l], n) -> loop l (n - 1)
+      | ([], _) -> None ]
+    in
+    loop list n
+  }
 ;
 
 value rec parser_of_tree entry nlevn alevn =
@@ -468,10 +494,10 @@ and parser_of_token_list gram p1 tokl =
               [ Some tok ->
                   let r = tematch tok in
                   do { for i = 1 to n do { Stream.junk strm }; Obj.repr r }
-              | _ -> raise Stream.Failure ]
+              | None -> raise Stream.Failure ]
             in
             parser bp [: a = ps; act = p1 bp a :] -> app act a
-       | _ ->
+        | _ ->
             let ps strm =
               match peek_nth n strm with
               [ Some tok -> tematch tok
@@ -485,7 +511,13 @@ and parser_of_token_list gram p1 tokl =
     | [] -> invalid_arg "parser_of_token_list" ]
 and parser_of_symbol entry nlevn =
   fun
-  [ Slist0 s ->
+  [ Smeta _ symbl act ->
+      let act = Obj.magic act entry symbl in
+      Obj.magic
+        (List.fold_left
+           (fun act symb -> Obj.magic act (parser_of_symbol entry nlevn symb))
+           act symbl)
+  | Slist0 s ->
       let ps = parser_of_symbol entry nlevn s in
       let rec loop al =
         parser
@@ -522,9 +554,7 @@ and parser_of_symbol entry nlevn =
              a =
                parser
                [ [: a = ps :] -> a
-               | [: a =
-                      parser_of_symbol entry nlevn (top_symb entry symb) :] ->
-                   a
+               | [: a = parse_top_symb entry symb :] -> a
                | [: :] ->
                    raise (Stream.Error (symb_failed entry v sep symb)) ];
              s :] ->
@@ -553,7 +583,11 @@ and parser_of_symbol entry nlevn =
         match Stream.peek strm with
         [ Some tok -> let r = f tok in do { Stream.junk strm; Obj.repr r }
         | None -> raise Stream.Failure ] ]
+and parse_top_symb entry symb =
+  parser_of_symbol entry 0 (top_symb entry symb)
 ;
+
+value symb_failed_txt e s1 s2 = symb_failed e 0 s1 s2;
 
 value rec continue_parser_of_levels entry clevn =
   fun
@@ -636,29 +670,38 @@ value start_parser_of_entry entry =
 value parse_parsable entry efun (cs, (ts, fun_loc)) =
   let restore =
     let old_floc = floc.val in
-    fun () -> floc.val := old_floc
+    let old_tc = token_count.val in
+    fun () ->
+      do {
+        floc.val := old_floc;
+        token_count.val := old_tc;
+      }
+  in
+  let get_loc () =
+    try
+      let cnt = Stream.count ts in
+      let loc = fun_loc cnt in
+      if token_count.val - 1 <= cnt then loc
+      else (fst loc, snd (fun_loc (token_count.val - 1)))
+    with _ ->
+      (Stream.count cs, Stream.count cs + 1)
   in
   do {
     floc.val := fun_loc;
+    token_count.val := 0;
     try
       let r = efun ts in
       do { restore (); r }
     with
     [ Stream.Failure ->
-        let loc =
-          try fun_loc (Stream.count ts) with _ ->
-            (Stream.count cs, Stream.count cs + 1)
-        in
+        let loc = get_loc () in
         do {
           restore ();
           raise_with_loc loc
             (Stream.Error ("illegal begin of " ^ entry.ename))
         }
     | Stream.Error _ as exc ->
-        let loc =
-          try fun_loc (Stream.count ts) with _ ->
-            (Stream.count cs, Stream.count cs + 1)
-        in
+        let loc = get_loc () in
         do { restore (); raise_with_loc loc exc }
     | exc ->
         let loc = (Stream.count cs, Stream.count cs + 1) in
@@ -751,7 +794,7 @@ value delete_rule entry sl =
             let f = continue_parser_of_entry entry in
             do { entry.econtinue := f; f lev bp a strm }
       }
-  | _ -> () ]
+  | Dparser _ -> () ]
 ;
 
 (* Unsafe *)
@@ -797,13 +840,21 @@ value find_entry e s =
     fun
     [ Snterm e -> if e.ename = s then Some e else None
     | Snterml e _ -> if e.ename = s then Some e else None
+    | Smeta _ sl _ -> find_symbol_list sl
     | Slist0 s -> find_symbol s
     | Slist0sep s _ -> find_symbol s
     | Slist1 s -> find_symbol s
     | Slist1sep s _ -> find_symbol s
     | Sopt s -> find_symbol s
     | Stree t -> find_tree t
-    | _ -> None ]
+    | Sself | Snext | Stoken _ -> None ]
+  and find_symbol_list =
+    fun
+    [ [s :: sl] ->
+        match find_symbol s with
+        [ None -> find_symbol_list sl
+        | x -> x ]
+    | [] -> None ]
   and find_tree =
     fun
     [ Node {node = s; brother = bro; son = son} ->
@@ -813,7 +864,7 @@ value find_entry e s =
             [ None -> find_tree son
             | x -> x ]
         | x -> x ]
-    | _ -> None ]
+    | LocAct _ _ | DeadEnd -> None ]
   in
   match e.edesc with
   [ Dlevels levs ->

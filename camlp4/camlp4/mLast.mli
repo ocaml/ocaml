@@ -28,6 +28,7 @@ type ctyp =
   | TyMan of loc and ctyp and ctyp
   | TyObj of loc and list (string * ctyp) and bool
   | TyOlb of loc and string and ctyp
+  | TyPol of loc and list string and ctyp
   | TyQuo of loc and string
   | TyRec of loc and list (loc * string * bool * ctyp)
   | TySum of loc and list (loc * string * list ctyp)
@@ -108,6 +109,7 @@ and module_type =
   | MtApp of loc and module_type and module_type
   | MtFun of loc and string and module_type and module_type
   | MtLid of loc and string
+  | MtQuo of loc and string
   | MtSig of loc and list sig_item
   | MtUid of loc and string
   | MtWit of loc and module_type and list with_constr ]
@@ -126,7 +128,7 @@ and sig_item =
   | SgVal of loc and string and ctyp ]
 and with_constr =
   [ WcTyp of loc and list string and list (string * (bool * bool)) and ctyp
-  | WcMod of loc and list string and module_type ]
+  | WcMod of loc and list string and module_expr ]
 and module_expr =
   [ MeAcc of loc and module_expr and module_expr
   | MeApp of loc and module_expr and module_expr
@@ -173,7 +175,7 @@ and class_str_item =
   | CrDcl of loc and list class_str_item
   | CrInh of loc and class_expr and option string
   | CrIni of loc and expr
-  | CrMth of loc and string and bool and expr
+  | CrMth of loc and string and bool and expr and option ctyp
   | CrVal of loc and string and bool and expr
   | CrVir of loc and string and bool and ctyp ]
 ;

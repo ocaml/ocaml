@@ -26,15 +26,20 @@ type 'te g_entry =
     mutable econtinue : int -> int -> Obj.t -> 'te Stream.t -> Obj.t;
     mutable edesc : 'te g_desc }
 and 'te g_desc =
-  Dlevels of 'te g_level list | Dparser of ('te Stream.t -> Obj.t)
+    Dlevels of 'te g_level list
+  | Dparser of ('te Stream.t -> Obj.t)
 and 'te g_level =
   { assoc : g_assoc;
     lname : string option;
     lsuffix : 'te g_tree;
     lprefix : 'te g_tree }
-and g_assoc = NonA | RightA | LeftA
+and g_assoc =
+    NonA
+  | RightA
+  | LeftA
 and 'te g_symbol =
-    Snterm of 'te g_entry
+    Smeta of string * 'te g_symbol list * Obj.t
+  | Snterm of 'te g_entry
   | Snterml of 'te g_entry * string
   | Slist0 of 'te g_symbol
   | Slist0sep of 'te g_symbol * 'te g_symbol
@@ -47,13 +52,19 @@ and 'te g_symbol =
   | Stree of 'te g_tree
 and g_action = Obj.t
 and 'te g_tree =
-  Node of 'te g_node | LocAct of g_action * g_action list | DeadEnd
+    Node of 'te g_node
+  | LocAct of g_action * g_action list
+  | DeadEnd
 and 'te g_node =
   { node : 'te g_symbol; son : 'te g_tree; brother : 'te g_tree }
 ;;
 
 type position =
-  First | Last | Before of string | After of string | Level of string
+    First
+  | Last
+  | Before of string
+  | After of string
+  | Level of string
 ;;
 
 let warning_verbose = ref true;;
@@ -64,13 +75,15 @@ let rec derive_eps =
   | Slist0sep (_, _) -> true
   | Sopt _ -> true
   | Stree t -> tree_derive_eps t
-  | _ -> false
+  | Smeta (_, _, _) | Slist1 _ | Slist1sep (_, _) | Snterm _ |
+    Snterml (_, _) | Snext | Sself | Stoken _ ->
+      false
 and tree_derive_eps =
   function
     LocAct (_, _) -> true
   | Node {node = s; brother = bro; son = son} ->
       derive_eps s && tree_derive_eps son || tree_derive_eps bro
-  | _ -> false
+  | DeadEnd -> false
 ;;
 
 let rec eq_symbol s1 s2 =
@@ -139,7 +152,7 @@ let insert_tree entry_name gsymbols action tree =
               let t = Node {node = s1; son = son; brother = bro} in Some t
           | None -> None
           end
-    | _ -> None
+    | LocAct (_, _) | DeadEnd -> None
   and insert_new =
     function
       s :: sl -> Node {node = s; son = insert_new sl; brother = DeadEnd}
@@ -201,7 +214,7 @@ let change_lev lev n lname assoc =
     Some n ->
       if lname <> lev.lname && !warning_verbose then
         begin eprintf "<W> Level label \"%s\" ignored\n" n; flush stderr end
-  | _ -> ()
+  | None -> ()
   end;
   {assoc = a; lname = lev.lname; lsuffix = lev.lsuffix; lprefix = lev.lprefix}
 ;;
@@ -278,18 +291,19 @@ Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
           flush stderr;
           failwith "Grammar.extend error"
         end
+  | Smeta (_, sl, _) -> List.iter (check_gram entry) sl
   | Slist0sep (s, t) -> check_gram entry t; check_gram entry s
   | Slist1sep (s, t) -> check_gram entry t; check_gram entry s
   | Slist0 s -> check_gram entry s
   | Slist1 s -> check_gram entry s
   | Sopt s -> check_gram entry s
   | Stree t -> tree_check_gram entry t
-  | _ -> ()
+  | Snext | Sself | Stoken _ -> ()
 and tree_check_gram entry =
   function
     Node {node = n; brother = bro; son = son} ->
       check_gram entry n; tree_check_gram entry bro; tree_check_gram entry son
-  | _ -> ()
+  | LocAct (_, _) | DeadEnd -> ()
 ;;
 
 let change_to_self entry =
@@ -307,7 +321,8 @@ let get_initial entry =
 let insert_tokens gram symbols =
   let rec insert =
     function
-      Slist0 s -> insert s
+      Smeta (_, sl, _) -> List.iter insert sl
+    | Slist0 s -> insert s
     | Slist1 s -> insert s
     | Slist0sep (s, t) -> insert s; insert t
     | Slist1sep (s, t) -> insert s; insert t
@@ -321,12 +336,12 @@ let insert_tokens gram symbols =
             Not_found -> let r = ref 0 in Hashtbl.add gram.gtokens tok r; r
         in
         incr r
-    | _ -> ()
+    | Snterm _ | Snterml (_, _) | Snext | Sself -> ()
   and tinsert =
     function
       Node {node = s; brother = bro; son = son} ->
         insert s; tinsert bro; tinsert son
-    | _ -> ()
+    | LocAct (_, _) | DeadEnd -> ()
   in
   List.iter insert symbols
 ;;
@@ -442,13 +457,14 @@ let rec decr_keyw_use gram =
         begin
           Hashtbl.remove gram.gtokens tok; gram.glexer.Token.tok_removing tok
         end
+  | Smeta (_, sl, _) -> List.iter (decr_keyw_use gram) sl
   | Slist0 s -> decr_keyw_use gram s
   | Slist1 s -> decr_keyw_use gram s
   | Slist0sep (s1, s2) -> decr_keyw_use gram s1; decr_keyw_use gram s2
   | Slist1sep (s1, s2) -> decr_keyw_use gram s1; decr_keyw_use gram s2
   | Sopt s -> decr_keyw_use gram s
   | Stree t -> decr_keyw_use_in_tree gram t
-  | _ -> ()
+  | Sself | Snext | Snterm _ | Snterml (_, _) -> ()
 and decr_keyw_use_in_tree gram =
   function
     DeadEnd | LocAct (_, _) -> ()

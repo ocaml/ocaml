@@ -12,19 +12,19 @@
 
 (* $Id$ *)
 
-(* Module [Grammar]: extensible grammars *)
+(** Extensible grammars.
 
-(* This module implements the Camlp4 extensible grammars system.
-   Grammars entries can be extended using the [EXTEND] statement,
-   added by loading the Camlp4 [pa_extend.cmo] file. *)
+    This module implements the Camlp4 extensible grammars system.
+    Grammars entries can be extended using the [EXTEND] statement,
+    added by loading the Camlp4 [pa_extend.cmo] file. *)
 
 type g = 'x;
-    (* The type for grammars, holding entries. *)
+   (** The type for grammars, holding entries. *)
 value gcreate : Token.glexer Token.t -> g;
-    (* Create a new grammar, without keywords, using the lexer given
+   (** Create a new grammar, without keywords, using the lexer given
        as parameter. *)
 value tokens : g -> string -> list (string * int);
-    (* Given a grammar and a token pattern constructor, returns the list of
+   (** Given a grammar and a token pattern constructor, returns the list of
        the corresponding values currently used in all entries of this grammar.
        The integer is the number of times this pattern value is used.
 
@@ -49,70 +49,56 @@ module Entry :
     external obj : e 'a -> Gramext.g_entry Token.t = "%identity";
   end
 ;
-    (* Module to handle entries.
--      * [Entry.e] is the type for entries returning values of type ['a].
--      * [Entry.create g n] creates a new entry named [n] in the grammar [g].
--      * [Entry.parse e] returns the stream parser of the entry [e].
--      * [Entry.parse_token e] returns the token parser of the entry [e].
--      * [Entry.name e] returns the name of the entry [e].
--      * [Entry.of_parser g n p] makes an entry from a token stream parser.
--      * [Entry.print e] displays the entry [e] using [Format].
--      * [Entry.find e s] finds the entry named [s] in [e]'s rules.
--      * [Entry.obj e] converts an entry into a [Gramext.g_entry] allowing
--        to see what it holds ([Gramext] is visible, but not documented). *)
+   (** Module to handle entries.
+-      [Entry.e] is the type for entries returning values of type ['a].
+-      [Entry.create g n] creates a new entry named [n] in the grammar [g].
+-      [Entry.parse e] returns the stream parser of the entry [e].
+-      [Entry.parse_token e] returns the token parser of the entry [e].
+-      [Entry.name e] returns the name of the entry [e].
+-      [Entry.of_parser g n p] makes an entry from a token stream parser.
+-      [Entry.print e] displays the entry [e] using [Format].
+-      [Entry.find e s] finds the entry named [s] in [e]'s rules.
+-      [Entry.obj e] converts an entry into a [Gramext.g_entry] allowing
+-      to see what it holds ([Gramext] is visible, but not documented). *)
 
 value of_entry : Entry.e 'a -> g;
-    (* Return the grammar associated with an entry. *)
+   (** Return the grammar associated with an entry. *)
 
-value error_verbose : ref bool;
-    (* Flag for displaying more information in case of parsing error;
-       default = [False] *)
-
-value warning_verbose : ref bool;
-    (* Flag for displaying warnings while extension; default = [True] *)
-
-value strict_parsing : ref bool;
-    (* Flag to apply strict parsing, without trying to recover errors;
-       default = [False] *)
-
-(*** Clearing grammars and entries *)
+(** {6 Clearing grammars and entries} *)
 
 module Unsafe :
   sig
     value gram_reinit : g -> Token.glexer Token.t -> unit;
     value clear_entry : Entry.e 'a -> unit;
-    (* deprecated since version 3.04+6; use rather function gram_reinit *)
+    (**/**)
+    (* deprecated since version 3.05; use rather function [gram_reinit] *)
     value reinit_gram : g -> Token.lexer -> unit;
   end
 ;
-    (* Module for clearing grammars and entries. To be manipulated with
+   (** Module for clearing grammars and entries. To be manipulated with
        care, because: 1) reinitializing a grammar destroys all tokens
        and there may have problems with the associated lexer if it has
        a notion of keywords; 2) clearing an entry does not destroy the
        tokens used only by itself.
--      * [Unsafe.reinit_gram g lex] removes the tokens of the grammar
--        and sets [lex] as a new lexer for [g]. Warning: the lexer
--        itself is not reinitialized.
--      * [Unsafe.clear_entry e] removes all rules of the entry [e]. *)
+-      [Unsafe.reinit_gram g lex] removes the tokens of the grammar
+-      and sets [lex] as a new lexer for [g]. Warning: the lexer
+-      itself is not reinitialized.
+-      [Unsafe.clear_entry e] removes all rules of the entry [e]. *)
 
-(*** Functorial interface *)
+(** {6 Functorial interface} *)
 
-    (* Alternative for grammars use. Grammars are no more Ocaml values:
+   (** Alternative for grammars use. Grammars are no more Ocaml values:
        there is no type for them. Modules generated preserve the
        rule "an entry cannot call an entry of another grammar" by
-       normal Ocaml typing. *)
+       normal OCaml typing. *)
 
 module type GLexerType =
   sig
     type te = 'x;
     value lexer : Token.glexer te;
   end;
-    (* The input signature for the functor [Grammar.GMake]: [te] is the
-       type of the tokens, [tematch] is the way a token is matched against
-       a pattern. Must raise [Stream.Failure] if not matched. Warning:
-       write the function [tematch] as a function of pattern returning
-       a function to each pattern case, not a function of two parameters:
-       it may have some performance importance. *)
+   (** The input signature for the functor [Grammar.GMake]: [te] is the
+       type of the tokens. *)
 
 module type S =
   sig
@@ -136,8 +122,9 @@ module type S =
       sig
         value gram_reinit : Token.glexer te -> unit;
         value clear_entry : Entry.e 'a -> unit;
-        (* deprecated since version 3.04+6; use rather gram_reinit *)
-        (* warning: reinit_gram fails if used with GMake *)
+        (**/**)
+        (* deprecated since version 3.05; use rather [gram_reinit] *)
+        (* warning: [reinit_gram] fails if used with GMake *)
         value reinit_gram : Token.lexer -> unit;
       end
     ;
@@ -150,27 +137,40 @@ module type S =
     value delete_rule : Entry.e 'a -> list (Gramext.g_symbol te) -> unit;
   end
 ;
-    (* Signature type of the functor [Grammar.Make]. The types and
+   (** Signature type of the functor [Grammar.GMake]. The types and
        functions are almost the same than in generic interface, but:
--      * Grammars are not values. Functions holding a grammar as parameter
--        do not have this parameter yet.
--      * The type [parsable] is used in function [parse] instead of
--        the char stream, avoiding the possible loss of tokens.
--      * The type of tokens (expressions and patterns) can be any
--        type (instead of (string * string)); the module parameter
--        must specify a way to show them as (string * string) *)
+-      Grammars are not values. Functions holding a grammar as parameter
+         do not have this parameter yet.
+-      The type [parsable] is used in function [parse] instead of
+         the char stream, avoiding the possible loss of tokens.
+-      The type of tokens (expressions and patterns) can be any
+         type (instead of (string * string)); the module parameter
+         must specify a way to show them as (string * string) *)
 
 module GMake (L : GLexerType) : S with type te = L.te;
 
+(** {6 Miscellaneous} *)
+
+value error_verbose : ref bool;
+   (** Flag for displaying more information in case of parsing error;
+       default = [False] *)
+
+value warning_verbose : ref bool;
+   (** Flag for displaying warnings while extension; default = [True] *)
+
+value strict_parsing : ref bool;
+   (** Flag to apply strict parsing, without trying to recover errors;
+       default = [False] *)
+
 value print_entry : Format.formatter -> Gramext.g_entry 'te -> unit;
-    (* General printer for all kinds of entries (obj entries) *)
+   (** General printer for all kinds of entries (obj entries) *)
 
-(*--*)
+(**/**)
 
-(*** deprecated since version 3.04+6; use rather the functor GMake *)
+(*** deprecated since version 3.05; use rather the functor GMake *)
 module type LexerType = sig value lexer : Token.lexer; end;
 module Make (L : LexerType) : S with type te = Token.t;
-(*** deprecated since version 3.04+6; use rather the function gcreate *)
+(*** deprecated since version 3.05; use rather the function gcreate *)
 value create : Token.lexer -> g;
 
 (*** For system use *)
@@ -185,3 +185,9 @@ value extend :
     unit;
 value delete_rule :
   Entry.e 'a -> list (Gramext.g_symbol Token.t) -> unit;
+
+value parse_top_symb :
+  Gramext.g_entry 'te -> Gramext.g_symbol 'te -> Stream.t 'te -> Obj.t;
+value symb_failed_txt :
+  Gramext.g_entry 'te -> Gramext.g_symbol 'te -> Gramext.g_symbol 'te ->
+    string;

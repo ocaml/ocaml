@@ -20,7 +20,8 @@ type spat_comp =
   | SpStr of MLast.loc * MLast.patt
 ;;
 type sexp_comp =
-  SeTrm of MLast.loc * MLast.expr | SeNtr of MLast.loc * MLast.expr
+    SeTrm of MLast.loc * MLast.expr
+  | SeNtr of MLast.loc * MLast.expr
 ;;
 
 let strm_n = "strm__";;
@@ -159,7 +160,8 @@ let stream_pattern_component skont ckont =
         MLast.ExLet (loc, false, [p, e], skont)
       else if
         pattern_eq_expression
-          (MLast.PaApp (loc, MLast.PaUid (loc, "Some"), p)) skont then
+          (MLast.PaApp (loc, MLast.PaUid (loc, "Some"), p)) skont
+      then
         MLast.ExTry
           (loc, MLast.ExApp (loc, MLast.ExUid (loc, "Some"), e),
            [MLast.PaAcc

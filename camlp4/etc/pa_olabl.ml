@@ -984,8 +984,8 @@ EXTEND
   with_constr:
     [ [ "type"; tp = type_parameters; i = mod_ident; "="; t = ctyp ->
           MLast.WcTyp loc i tp t
-      | "module"; i = mod_ident; "="; mt = module_type ->
-          MLast.WcMod loc i mt ] ]
+      | "module"; i = mod_ident; "="; me = module_expr ->
+          MLast.WcMod loc i me ] ]
   ;
   (* Core expressions *)
   expr:
@@ -1627,14 +1627,14 @@ EXTEND
   ;
   ctyp: LEVEL "simple"
     [ [ "["; OPT "|"; rfl = LIST0 row_field SEP "|"; "]" ->
-          <:ctyp< [| $list:rfl$ |] >>
+          <:ctyp< [ = $list:rfl$ ] >>
       | "["; ">"; OPT "|"; rfl = LIST1 row_field SEP "|"; "]" ->
-          <:ctyp< [| > $list:rfl$ |] >>
+          <:ctyp< [ > $list:rfl$ ] >>
       | "[<"; OPT "|"; rfl = LIST1 row_field SEP "|"; "]" ->
-          <:ctyp< [| < $list:rfl$ |] >>
+          <:ctyp< [ < $list:rfl$ ] >>
       | "[<"; OPT "|"; rfl = LIST1 row_field SEP "|"; ">";
         ntl = LIST1 name_tag; "]" ->
-          <:ctyp< [| < $list:rfl$ > $list:ntl$ |] >> ] ]
+          <:ctyp< [ < $list:rfl$ > $list:ntl$ ] >> ] ]
   ;
   row_field:
     [ [ "`"; i = ident -> MLast.RfTag i False []

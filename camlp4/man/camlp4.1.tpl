@@ -194,10 +194,11 @@ Parsing files:
 	pa_rp.cmo: streams and parsers
 	pa_lisp.cmo: lisp syntax
 	pa_extend.cmo: syntax extension for grammars
+	pa_extfold.cmo: extension of pa_extend with FOLD0 and FOLD1
 	pa_extfun.cmo: syntax extension for extensible functions
 	pa_fstream.cmo: syntax extension for functional streams
-	pa_ocamllex.cma: syntax extension for ocamllex files
 	pa_ifdef.cmo: add ifdef instruction (conditional compilation)
+	pa_lefteval.cmo: left-to-right evaluation of parameters
 	pa_olabl.cmo: old syntax for labels
 .fi
 .LP

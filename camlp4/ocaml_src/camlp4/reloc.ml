@@ -35,6 +35,7 @@ let rec ctyp floc sh =
     | TyObj (loc, x1, x2) ->
         TyObj (floc loc, List.map (fun (x1, x2) -> x1, self x2) x1, x2)
     | TyOlb (loc, x1, x2) -> TyOlb (floc loc, x1, self x2)
+    | TyPol (loc, x1, x2) -> TyPol (floc loc, x1, self x2)
     | TyQuo (loc, x1) -> TyQuo (floc loc, x1)
     | TyRec (loc, x1) ->
         TyRec
@@ -166,6 +167,7 @@ and module_type floc sh =
     | MtApp (loc, x1, x2) -> MtApp (floc loc, self x1, self x2)
     | MtFun (loc, x1, x2, x3) -> MtFun (floc loc, x1, self x2, self x3)
     | MtLid (loc, x1) -> MtLid (floc loc, x1)
+    | MtQuo (loc, x1) -> MtQuo (floc loc, x1)
     | MtSig (loc, x1) -> MtSig (floc loc, List.map (sig_item floc sh) x1)
     | MtUid (loc, x1) -> MtUid (floc loc, x1)
     | MtWit (loc, x1, x2) ->
@@ -203,7 +205,7 @@ and with_constr floc sh =
   let rec self =
     function
       WcTyp (loc, x1, x2, x3) -> WcTyp (floc loc, x1, x2, ctyp floc sh x3)
-    | WcMod (loc, x1, x2) -> WcMod (floc loc, x1, module_type floc sh x2)
+    | WcMod (loc, x1, x2) -> WcMod (floc loc, x1, module_expr floc sh x2)
   in
   self
 and module_expr floc sh =
@@ -301,7 +303,9 @@ and class_str_item floc sh =
         CrDcl (floc loc, List.map (class_str_item floc sh) x1)
     | CrInh (loc, x1, x2) -> CrInh (floc loc, class_expr floc sh x1, x2)
     | CrIni (loc, x1) -> CrIni (floc loc, expr floc sh x1)
-    | CrMth (loc, x1, x2, x3) -> CrMth (floc loc, x1, x2, expr floc sh x3)
+    | CrMth (loc, x1, x2, x3, x4) ->
+        CrMth
+          (floc loc, x1, x2, expr floc sh x3, option_map (ctyp floc sh) x4)
     | CrVal (loc, x1, x2, x3) -> CrVal (floc loc, x1, x2, expr floc sh x3)
     | CrVir (loc, x1, x2, x3) -> CrVir (floc loc, x1, x2, ctyp floc sh x3)
   in

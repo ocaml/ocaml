@@ -1,5 +1,60 @@
-Camlp4 Version 3.04+6
----------------------
+Camlp4s Version 3.04+10
+-----------------------
+
+- [12 Jul 02] Better treatment of comments in option -cip (add comments
+  in phrases) for both printers pr_o.cmo (normal syntax) and pr_r.cmo
+  (revised syntax); added comments before let binding and class
+  structure items; treat comments inside sum and record type definitions;
+  the option -tc is now deprecated and equivalent to -cip.
+- [13 Jun 02] Added pa_lefteval.cmo: add let..in expressions to guarantee
+  left evaluation of functions parameters, t-uples, and so on (instead of
+  the default non-specified-but-in-fact-right-to-left evaluation).
+- [06 Jun 02] Changed revised syntax (pa_r) of variants types definition;
+  (Jacques Garrigue's idea):
+        old syntax      new syntax
+        [| ... |]       [ = ... ]
+        [| < ... |]     [ < ... ]     
+        [| > ... |]     [ > ... ]     
+  This applies also in predefined quotations of syntax tree for types
+  <:ctyp< ... >>
+- [05 Jun 02] Added option -ss in pr_o.cmo: print with double semicolons;
+  and the option -no_ss is now by default.
+- [30 May 02] Improved SML syntax (pa_sml).
+- [30 May 02] Changed the AST for the "with module" construct (was with
+  type "module_type"; changed into type "module_expr").
+- [26 May 02] Added missing abstract module types.
+- [21 Apr 02] Added polymorphic types for polymorphic methods:
+      revised syntax (example): ! 'a 'b . type
+      ctyp quotation: <:ctyp< ! $list:pl$ . $t$ >>
+- [17 Apr 02] Fixed bug: in normal syntax (pa_o.cmo) made a parse error on
+  the "dot" on (in interface file file):
+       class c : a * B.c  -> object val x : int end
+- [03 Apr 02] Fixed bug: (* "(*" *) resulted in "comment not terminated".
+- [03 Apr 02] Fixed incompatibility with ocaml: ''' and '"' must be
+  displayed as '\'' and '\"' in normal syntax printer (pr_o.cmo).
+- [03 Apr 02] When there are several tokens parsed together (locally LL(n)),
+  the location error now highlights all tokens, resulting in a more clear
+  error message (e.g. "for i let" would display "illegal begin of expr"
+  and highlight the 3 tokens, not just "for").
+- [30 Mar 02] Added pa_extfold.cmo extending pa_extend.cmo by grammar
+  symbols FOLD0 and FOLD1. Work like LIST0 and LIST1 but have two initial
+  parameters: a function of type 'a -> 'b -> 'b doing the fold and an
+  initial value of type 'b. Actually, LIST0 now is like
+     FOLD0 (fun x y -> x :: y) []
+  with an reverse of the resulting list.
+- [20 Mar 02] Fixed problem: when running a toplevel linked with camlp4
+  as a script, the camlp4 welcome message was displayed.
+- [14 Mar 02] The configure shell and the program now test the consistency
+  of OCaml and Camlp4. Therefore 1/ if trying to compile this version with
+  an incompatible OCaml version or 2/ trying to run an installed Camlp4 with
+  a incompatible OCaml version: in both cases, camlp4 fails.
+- [14 Mar 02] When make opt.opt is done, the very fast version is made for
+  the normal syntax ("compiled" version). The installed camlp4o.opt is that
+  version.
+- [05 Mar 02] Changed the conversion to OCaml syntax tree for <:expr< x.val >>
+  and <:expr< x.val := e >> which generates now the tree of !x and x := e,
+  no more x.contents and x.contents <- e. This change was necessary because
+  of a problem if a record has been defined with a field named "contents".
 
 - [16 Feb 02] Changed interface of grammars: the token type is now
   customizable, using a new lexer type Token.glexer, parametrized by

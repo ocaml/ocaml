@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -105,10 +105,20 @@ value wrap f shfn lb =
       } ]
 ;
 
+value first_phrase = ref True;
+
 value toplevel_phrase cs =
-  match Grammar.Entry.parse Pcaml.top_phrase cs with
-  [ Some phr -> Ast2pt.phrase phr
-  | None -> raise End_of_file ]
+  do {
+    if Sys.interactive.val && first_phrase.val then do {
+      first_phrase.val := False;
+      Printf.eprintf "\tCamlp4 Parsing version %s\n\n" Pcaml.version;
+      flush stderr;
+    }
+    else ();
+    match Grammar.Entry.parse Pcaml.top_phrase cs with
+    [ Some phr -> Ast2pt.phrase phr
+    | None -> raise End_of_file ];
+  }
 ;
 
 value use_file cs =
@@ -160,6 +170,3 @@ Pcaml.warning.val :=
   fun loc txt ->
     Toploop.print_warning (Ast2pt.mkloc loc) Format.err_formatter
       (Warnings.Other txt);
-
-Printf.eprintf "\tCamlp4 Parsing version %s\n\n" Pcaml.version;
-flush stderr;

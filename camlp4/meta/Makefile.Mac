@@ -32,7 +32,7 @@ clean ÄÄ
 {dependrule}
 
 promote Ä
-    duplicate -y {OUT} ::boot:
+    duplicate -y {OUT} pa_extend.cmi ::boot:
 
 compare Ä
     for i in {OUT}

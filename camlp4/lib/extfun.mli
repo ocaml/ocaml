@@ -1,24 +1,25 @@
 (* camlp4r *)
 (* $Id$ *)
 
-(* Module [Extfun]: extensible functions *)
+(** Extensible functions.
 
-(* This module implements pattern matching extensible functions.
+   This module implements pattern matching extensible functions.
    To extend, use syntax [pa_extfun.cmo]:
--      [extfun e with [ pattern_matching ]] *)
+
+      [extfun e with [ pattern_matching ]] *)
 
 type t 'a 'b = 'x;
-    (* The type of the extensible functions of type ['a -> 'b] *)
+   (** The type of the extensible functions of type ['a -> 'b] *)
 value empty : t 'a 'b;
-    (* Empty extensible function *)
+   (** Empty extensible function *)
 value apply : t 'a 'b -> 'a -> 'b;
-    (* Apply an extensible function *)
+   (** Apply an extensible function *)
 exception Failure;
-    (* Match failure while applying an extensible function *)
+   (** Match failure while applying an extensible function *)
 value print : t 'a 'b -> unit;
-    (* Print patterns in the order they are recorded *)
+   (** Print patterns in the order they are recorded *)
 
-(*--*)
+(**/**)
 
 type matching 'a 'b = { patt : patt; has_when : bool; expr : expr 'a 'b }
 and patt =

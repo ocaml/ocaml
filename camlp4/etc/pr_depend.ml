@@ -195,7 +195,8 @@ and class_str_item =
   fun
   [ CrInh _ ce _ -> class_expr ce
   | CrIni _ e -> expr e
-  | CrMth _ _ _ e -> expr e
+  | CrMth _ _ _ e None -> expr e
+  | CrMth _ _ _ e (Some t) -> do { expr e; ctyp t }
   | CrVal _ _ _ e -> expr e
   | CrVir _ _ _ t -> ctyp t
   | x -> not_impl "class_str_item" x ]

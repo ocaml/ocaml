@@ -27,7 +27,12 @@
    by dt.val spaces, except if first element of the box is empty: to not
    indent, put HVbox [: :] as first element *)
 
-type glue = LO | RO | LR | NO;;
+type glue =
+    LO
+  | RO
+  | LR
+  | NO
+;;
 type pretty =
     S of glue * string
   | Hbox of pretty Stream.t
@@ -39,11 +44,11 @@ type pretty =
   | BEVbox of pretty Stream.t
   | LocInfo of (int * int) * pretty
 ;;
-type warnloc = int * int -> unit;;
+type getcomm = int -> int -> string * int * int * int;;
 
 val print_pretty :
   (char -> unit) -> (string -> unit) -> (unit -> unit) -> string -> string ->
-    int -> warnloc -> pretty -> unit;;
+    int -> getcomm -> int -> pretty -> unit;;
 val quiet : bool ref;;
 
 val dt : int ref;;

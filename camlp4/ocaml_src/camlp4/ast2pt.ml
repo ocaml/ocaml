@@ -51,6 +51,11 @@ let mkstr loc d = {pstr_desc = d; pstr_loc = mkloc loc};;
 let mkfield loc d = {pfield_desc = d; pfield_loc = mkloc loc};;
 let mkcty loc d = {pcty_desc = d; pcty_loc = mkloc loc};;
 let mkpcl loc d = {pcl_desc = d; pcl_loc = mkloc loc};;
+let mkpolytype t =
+  match t with
+    TyPol (_, _, _) -> t
+  | _ -> TyPol (MLast.loc_of_ctyp t, [], t)
+;;
 
 let lident s = Lident s;;
 let ldot l s = Ldot (l, s);;
@@ -151,6 +156,7 @@ let rec ctyp =
   | TyLid (loc, s) -> mktyp loc (Ptyp_constr (lident s, []))
   | TyMan (loc, _, _) -> error loc "type manifest not allowed here"
   | TyOlb (loc, lab, _) -> error loc "labeled type not allowed here"
+  | TyPol (loc, pl, t) -> mktyp loc (Ptyp_poly (pl, ctyp t))
   | TyQuo (loc, s) -> mktyp loc (Ptyp_var s)
   | TyRec (loc, _) -> error loc "record type not allowed here"
   | TySum (loc, _) -> error loc "sum type not allowed here"
@@ -174,7 +180,8 @@ let rec ctyp =
 and meth_list loc fl v =
   match fl with
     [] -> if v then [mkfield loc Pfield_var] else []
-  | (lab, t) :: fl -> mkfield loc (Pfield (lab, ctyp t)) :: meth_list loc fl v
+  | (lab, t) :: fl ->
+      mkfield loc (Pfield (lab, ctyp (mkpolytype t))) :: meth_list loc fl v
 ;;
 
 let mktype loc tl cl tk tm =
@@ -184,7 +191,7 @@ let mktype loc tl cl tk tm =
 ;;
 let mkmutable m = if m then Mutable else Immutable;;
 let mkprivate m = if m then Private else Public;;
-let mktrecord (_, n, m, t) = n, mkmutable m, ctyp t;;
+let mktrecord (_, n, m, t) = n, mkmutable m, ctyp (mkpolytype t);;
 let mkvariant (_, c, tl) = c, List.map ctyp tl;;
 let type_decl tl cl =
   function
@@ -271,7 +278,7 @@ let mkwithc =
          ptype_manifest = Some (ctyp ct); ptype_loc = mkloc loc;
          ptype_variance = variance}
   | WcMod (loc, id, m) ->
-      long_id_of_string_list loc id, Pwith_module (module_type_long_id m)
+      long_id_of_string_list loc id, Pwith_module (module_expr_long_id m)
 ;;
 
 let rec patt_fa al =
@@ -426,7 +433,10 @@ let class_info class_expr ci =
 
 let rec expr =
   function
-    ExAcc (loc, _, _) as e ->
+    ExAcc (loc, x, ExLid (_, "val")) ->
+      mkexp loc
+        (Pexp_apply (mkexp loc (Pexp_ident (Lident "!")), ["", expr x]))
+  | ExAcc (loc, _, _) as e ->
       let (e, l) =
         match sep_expr_acc [] e with
           (loc, ml, ExUid (_, s)) :: l ->
@@ -484,7 +494,10 @@ let rec expr =
   | ExAss (loc, e, v) ->
       let e =
         match e with
-          ExAcc (loc, _, _) ->
+          ExAcc (loc, x, ExLid (_, "val")) ->
+            Pexp_apply
+              (mkexp loc (Pexp_ident (Lident ":=")), ["", expr x; "", expr v])
+        | ExAcc (loc, _, _) ->
             begin match (expr e).pexp_desc with
               Pexp_field (e, lab) -> Pexp_setfield (e, lab, expr v)
             | _ -> error loc "bad record access"
@@ -595,6 +608,7 @@ and module_type =
   | MtFun (loc, n, nt, mt) ->
       mkmty loc (Pmty_functor (n, module_type nt, module_type mt))
   | MtLid (loc, s) -> mkmty loc (Pmty_ident (lident s))
+  | MtQuo (loc, _) -> error loc "abstract module type not allowed here"
   | MtSig (loc, sl) ->
       mkmty loc (Pmty_signature (List.fold_right sig_item sl []))
   | MtUid (loc, s) -> mkmty loc (Pmty_ident (lident s))
@@ -614,7 +628,12 @@ and sig_item s l =
   | SgInc (loc, mt) -> mksig loc (Psig_include (module_type mt)) :: l
   | SgMod (loc, n, mt) -> mksig loc (Psig_module (n, module_type mt)) :: l
   | SgMty (loc, n, mt) ->
-      mksig loc (Psig_modtype (n, Pmodtype_manifest (module_type mt))) :: l
+      let si =
+        match mt with
+          MtQuo (_, _) -> Pmodtype_abstract
+        | _ -> Pmodtype_manifest (module_type mt)
+      in
+      mksig loc (Psig_modtype (n, si)) :: l
   | SgOpn (loc, id) ->
       mksig loc (Psig_open (long_id_of_string_list loc id)) :: l
   | SgTyp (loc, tdl) -> mksig loc (Psig_type (List.map mktype_decl tdl)) :: l
@@ -683,10 +702,11 @@ and class_sig_item c l =
   | CgDcl (loc, cl) -> List.fold_right class_sig_item cl l
   | CgInh (loc, ct) -> Pctf_inher (class_type ct) :: l
   | CgMth (loc, s, pf, t) ->
-      Pctf_meth (s, mkprivate pf, ctyp t, mkloc loc) :: l
+      Pctf_meth (s, mkprivate pf, ctyp (mkpolytype t), mkloc loc) :: l
   | CgVal (loc, s, b, t) ->
       Pctf_val (s, mkmutable b, Some (ctyp t), mkloc loc) :: l
-  | CgVir (loc, s, b, t) -> Pctf_virt (s, mkprivate b, ctyp t, mkloc loc) :: l
+  | CgVir (loc, s, b, t) ->
+      Pctf_virt (s, mkprivate b, ctyp (mkpolytype t), mkloc loc) :: l
 and class_expr =
   function
     CeApp (loc, _, _) as c ->
@@ -724,9 +744,13 @@ and class_str_item c l =
   | CrDcl (loc, cl) -> List.fold_right class_str_item cl l
   | CrInh (loc, ce, pb) -> Pcf_inher (class_expr ce, pb) :: l
   | CrIni (loc, e) -> Pcf_init (expr e) :: l
-  | CrMth (loc, s, b, e) -> Pcf_meth (s, mkprivate b, expr e, mkloc loc) :: l
+  | CrMth (loc, s, b, e, t) ->
+      let t = option (fun t -> ctyp (mkpolytype t)) t in
+      let e = mkexp loc (Pexp_poly (expr e, t)) in
+      Pcf_meth (s, mkprivate b, e, mkloc loc) :: l
   | CrVal (loc, s, b, e) -> Pcf_val (s, mkmutable b, expr e, mkloc loc) :: l
-  | CrVir (loc, s, b, t) -> Pcf_virt (s, mkprivate b, ctyp t, mkloc loc) :: l
+  | CrVir (loc, s, b, t) ->
+      Pcf_virt (s, mkprivate b, ctyp (mkpolytype t), mkloc loc) :: l
 ;;
 
 let interf ast = List.fold_right sig_item ast [];;

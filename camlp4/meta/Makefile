@@ -34,7 +34,7 @@ depend:
 	done
 
 promote:
-	cp $(COUT) ../boot/.
+	cp $(COUT) pa_extend.cmi ../boot/.
 
 compare:
 	@for j in $(COUT); do \
@@ -44,7 +44,7 @@ compare:
 install:
 	-$(MKDIR) $(LIBDIR)/camlp4 $(BINDIR)
 	cp $(OBJS) $(LIBDIR)/camlp4/.
-	cp pa_ifdef.cmi $(LIBDIR)/camlp4/.
+	cp pa_ifdef.cmi pa_extend.cmi $(LIBDIR)/camlp4/.
 	cp camlp4r$(EXE) $(BINDIR)/.
 	if test -f $(COPT); then cp $(COPT) $(BINDIR)/.; fi
 

@@ -36,7 +36,8 @@ and g_assoc =
   | RightA
   | LeftA ]
 and g_symbol 'te =
-  [ Snterm of g_entry 'te
+  [ Smeta of string and list (g_symbol 'te) and Obj.t
+  | Snterm of g_entry 'te
   | Snterml of g_entry 'te and string
   | Slist0 of g_symbol 'te
   | Slist0sep of g_symbol 'te and g_symbol 'te

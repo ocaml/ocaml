@@ -237,13 +237,23 @@ value mkassert _ e =
 
 value append_elem el e = Qast.Apply "@" [el; Qast.List [e]];
 
+value not_yet_warned_variant = ref True;
+value warn_variant () =
+  if not_yet_warned_variant.val then do {
+    not_yet_warned_variant.val := False;
+    Printf.eprintf "\
+*** warning: use of syntax of variants types deprecated since version 3.05\n";
+    flush stderr
+  }
+  else ()
+;
+
 value not_yet_warned = ref True;
-value warning_seq () =
+value warn_sequence () =
   if not_yet_warned.val then do {
     not_yet_warned.val := False;
-    Printf.eprintf
-      "\
-*** warning: use of old syntax for sequences in expr quotation\n";
+    Printf.eprintf "\
+*** warning: use of syntax of sequences deprecated since version 3.01.1\n";
     flush stderr
   }
   else ()
@@ -316,6 +326,7 @@ EXTEND
     | "simple"
       [ i = a_UIDENT -> Qast.Node "MtUid" [Qast.Loc; i]
       | i = a_LIDENT -> Qast.Node "MtLid" [Qast.Loc; i]
+      | "'"; i = ident -> Qast.Node "MtQuo" [Qast.Loc; i]
       | "("; mt = SELF; ")" -> mt ] ]
   ;
   sig_item:
@@ -351,8 +362,8 @@ EXTEND
   with_constr:
     [ [ "type"; i = mod_ident; tpl = SLIST0 type_parameter; "="; t = ctyp ->
           Qast.Node "WcTyp" [Qast.Loc; i; tpl; t]
-      | "module"; i = mod_ident; "="; mt = module_type ->
-          Qast.Node "WcMod" [Qast.Loc; i; mt] ] ]
+      | "module"; i = mod_ident; "="; me = module_expr ->
+          Qast.Node "WcMod" [Qast.Loc; i; me] ] ]
   ;
   expr:
     [ "top" RIGHTA
@@ -754,6 +765,9 @@ EXTEND
       [ t1 = SELF; "=="; t2 = SELF -> Qast.Node "TyMan" [Qast.Loc; t1; t2] ]
     | LEFTA
       [ t1 = SELF; "as"; t2 = SELF -> Qast.Node "TyAli" [Qast.Loc; t1; t2] ]
+    | LEFTA
+      [ "!"; pl = SLIST1 typevar; "."; t = SELF ->
+          Qast.Node "TyPol" [Qast.Loc; pl; t] ]
     | "arrow" RIGHTA
       [ t1 = SELF; "->"; t2 = SELF -> Qast.Node "TyArr" [Qast.Loc; t1; t2] ]
     | LEFTA
@@ -872,10 +886,18 @@ EXTEND
           Qast.Node "CrVir" [Qast.Loc; l; Qast.Bool True; t]
       | "method"; "virtual"; l = label; ":"; t = ctyp ->
           Qast.Node "CrVir" [Qast.Loc; l; Qast.Bool False; t]
+      | "method"; "private"; l = label; ":"; t = ctyp; "="; e = expr ->
+          Qast.Node "CrMth"
+            [Qast.Loc; l; Qast.Bool True; e; Qast.Option (Some t)]
       | "method"; "private"; l = label; fb = fun_binding ->
-          Qast.Node "CrMth" [Qast.Loc; l; Qast.Bool True; fb]
+          Qast.Node "CrMth"
+            [Qast.Loc; l; Qast.Bool True; fb; Qast.Option None]
+      | "method"; l = label; ":"; t = ctyp; "="; e = expr ->
+          Qast.Node "CrMth"
+            [Qast.Loc; l; Qast.Bool False; e; Qast.Option (Some t)]
       | "method"; l = label; fb = fun_binding ->
-          Qast.Node "CrMth" [Qast.Loc; l; Qast.Bool False; fb]
+          Qast.Node "CrMth"
+            [Qast.Loc; l; Qast.Bool False; fb; Qast.Option None]
       | "type"; t1 = ctyp; "="; t2 = ctyp ->
           Qast.Node "CrCtr" [Qast.Loc; t1; t2]
       | "initializer"; se = expr -> Qast.Node "CrIni" [Qast.Loc; se] ] ]
@@ -992,6 +1014,9 @@ EXTEND
   field:
     [ [ lab = a_LIDENT; ":"; t = ctyp -> Qast.Tuple [lab; t] ] ]
   ;
+  typevar:
+    [ [ "'"; i = ident -> i ] ]
+  ;
   clty_longident:
     [ [ m = a_UIDENT; "."; l = SELF -> Qast.Cons m l
       | i = a_LIDENT -> Qast.List [i] ] ]
@@ -1008,21 +1033,21 @@ EXTEND
           Qast.Node "TyOlb" [Qast.Loc; i; t] ] ]
   ;
   ctyp: LEVEL "simple"
-    [ [ "[|"; rfl = SLIST0 row_field SEP "|"; "|]" ->
+    [ [ "["; "="; rfl = row_field_list; "]" ->
           Qast.Node "TyVrn" [Qast.Loc; rfl; Qast.Option None]
-      | "[|"; ">"; rfl = row_field_list; "|]" ->
+      | "["; ">"; rfl = row_field_list; "]" ->
           Qast.Node "TyVrn"
             [Qast.Loc; rfl; Qast.Option (Some (Qast.Option None))]
-      | "[|"; "<"; rfl = row_field_list; "|]" ->
+      | "["; "<"; rfl = row_field_list; "]" ->
           Qast.Node "TyVrn"
             [Qast.Loc; rfl;
              Qast.Option (Some (Qast.Option (Some (Qast.List []))))]
-      | "[|"; "<"; rfl = row_field_list; ">"; ntl = SLIST1 name_tag; "|]" ->
+      | "["; "<"; rfl = row_field_list; ">"; ntl = SLIST1 name_tag; "]" ->
           Qast.Node "TyVrn"
             [Qast.Loc; rfl; Qast.Option (Some (Qast.Option (Some ntl)))] ] ]
   ;
   row_field_list:
-    [ [ rfl = SLIST1 row_field SEP "|" -> rfl ] ]
+    [ [ rfl = SLIST0 row_field SEP "|" -> rfl ] ]
   ;
   row_field:
     [ [ "`"; i = ident -> Qast.Node "RfTag" [i; Qast.Bool True; Qast.List []]
@@ -1124,6 +1149,25 @@ EXTEND
     [ [ "virtual" -> Qast.Bool True
       | -> Qast.Bool False ] ]
   ;
+  (* Compatibility old syntax of variant types definitions *)
+  ctyp: LEVEL "simple"
+    [ [ "[|"; warning_variant; rfl = row_field_list; "|]" ->
+          Qast.Node "TyVrn" [Qast.Loc; rfl; Qast.Option None]
+      | "[|"; warning_variant; ">"; rfl = row_field_list; "|]" ->
+          Qast.Node "TyVrn"
+            [Qast.Loc; rfl; Qast.Option (Some (Qast.Option None))]
+      | "[|"; warning_variant; "<"; rfl = row_field_list; "|]" ->
+          Qast.Node "TyVrn"
+            [Qast.Loc; rfl;
+             Qast.Option (Some (Qast.Option (Some (Qast.List []))))]
+      | "[|"; warning_variant; "<"; rfl = row_field_list; ">";
+        ntl = SLIST1 name_tag; "|]" ->
+          Qast.Node "TyVrn"
+            [Qast.Loc; rfl; Qast.Option (Some (Qast.Option (Some ntl)))] ] ]
+  ;
+  warning_variant:
+    [ [ -> warn_variant () ] ]
+  ;
   (* Compatibility old syntax of sequences *)
   expr: LEVEL "top"
     [ [ "do"; seq = SLIST0 [ e = expr; ";" -> e ]; "return"; warning_sequence;
@@ -1137,7 +1181,7 @@ EXTEND
           Qast.Node "ExWhi" [Qast.Loc; e; seq] ] ]
   ;
   warning_sequence:
-    [ [ -> warning_seq () ] ]
+    [ [ -> warn_sequence () ] ]
   ;
   (* Antiquotations for local entries *)
   sequence:

@@ -162,13 +162,13 @@ let next_token_fun dfa find_kwd =
         let s = strm__ in
         begin match Stream.npeek 2 s with
           [_; '\''] | ['\\'; _] ->
-            let tok = "CHAR", char bp 0 s in
+            let tok = "CHAR", get_buff (char bp 0 s) in
             let loc = bp, Stream.count s in tok, loc
         | _ -> keyword_or_error (bp, Stream.count s) "'"
         end
-    | Some '"' ->
+    | Some '\"' ->
         Stream.junk strm__;
-        let tok = "STRING", string bp 0 strm__ in
+        let tok = "STRING", get_buff (string bp 0 strm__) in
         let loc = bp, Stream.count strm__ in tok, loc
     | Some '$' ->
         Stream.junk strm__;
@@ -327,7 +327,7 @@ let next_token_fun dfa find_kwd =
           let id = get_buff len in keyword_or_error (bp, ep) id
   and string bp len (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
-      Some '"' -> Stream.junk strm__; get_buff len
+      Some '\"' -> Stream.junk strm__; len
     | Some '\\' ->
         Stream.junk strm__;
         begin match Stream.peek strm__ with
@@ -342,8 +342,7 @@ let next_token_fun dfa find_kwd =
     match Stream.peek strm__ with
       Some '\'' ->
         Stream.junk strm__;
-        let s = strm__ in
-        if len = 0 then char bp (store len '\'') s else get_buff len
+        let s = strm__ in if len = 0 then char bp (store len '\'') s else len
     | Some '\\' ->
         Stream.junk strm__;
         begin match Stream.peek strm__ with
@@ -506,9 +505,44 @@ let next_token_fun dfa find_kwd =
     match Stream.peek strm__ with
       Some '(' -> Stream.junk strm__; left_paren_in_comment bp strm__
     | Some '*' -> Stream.junk strm__; star_in_comment bp strm__
+    | Some '\"' ->
+        Stream.junk strm__;
+        let _ =
+          try string bp 0 strm__ with
+            Stream.Failure -> raise (Stream.Error "")
+        in
+        comment bp strm__
+    | Some '\'' -> Stream.junk strm__; quote_in_comment bp strm__
     | Some c -> Stream.junk strm__; comment bp strm__
     | _ ->
         let ep = Stream.count strm__ in err (bp, ep) "comment not terminated"
+  and quote_in_comment bp (strm__ : _ Stream.t) =
+    match Stream.peek strm__ with
+      Some '\'' -> Stream.junk strm__; comment bp strm__
+    | Some '\\' -> Stream.junk strm__; quote_antislash_in_comment bp 0 strm__
+    | Some _ -> Stream.junk strm__; quote_any_in_comment bp strm__
+    | _ -> comment bp strm__
+  and quote_any_in_comment bp (strm__ : _ Stream.t) =
+    match Stream.peek strm__ with
+      Some '\'' -> Stream.junk strm__; comment bp strm__
+    | _ -> comment bp strm__
+  and quote_antislash_in_comment bp len (strm__ : _ Stream.t) =
+    match Stream.peek strm__ with
+      Some '\'' -> Stream.junk strm__; comment bp strm__
+    | Some ('\\' | '\"' | 'n' | 't' | 'b' | 'r') ->
+        Stream.junk strm__; quote_any_in_comment bp strm__
+    | Some ('0'..'9') ->
+        Stream.junk strm__; quote_antislash_digit_in_comment bp strm__
+    | _ -> comment bp strm__
+  and quote_antislash_digit_in_comment bp (strm__ : _ Stream.t) =
+    match Stream.peek strm__ with
+      Some ('0'..'9') ->
+        Stream.junk strm__; quote_antislash_digit2_in_comment bp strm__
+    | _ -> comment bp strm__
+  and quote_antislash_digit2_in_comment bp (strm__ : _ Stream.t) =
+    match Stream.peek strm__ with
+      Some ('0'..'9') -> Stream.junk strm__; quote_any_in_comment bp strm__
+    | _ -> comment bp strm__
   and left_paren_in_comment bp (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '*' ->
@@ -531,7 +565,7 @@ let next_token_fun dfa find_kwd =
             Stream.Failure -> raise (Stream.Error "")
         in
         begin match Stream.peek strm__ with
-          Some '"' ->
+          Some '\"' ->
             Stream.junk strm__;
             let _ =
               try any_to_nl strm__ with

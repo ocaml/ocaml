@@ -24,8 +24,8 @@ let first_arg_no_load () =
       | "-where" -> loop (i + 1)
       | "--" -> i + 1
       | s ->
-          if Filename.check_suffix s ".cmo" ||
-             Filename.check_suffix s ".cma" then
+          if Filename.check_suffix s ".cmo" || Filename.check_suffix s ".cma"
+          then
             loop (i + 1)
           else i
     else i

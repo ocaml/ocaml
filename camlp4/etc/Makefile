@@ -4,7 +4,7 @@ include ../config/Makefile
 
 INCLUDES=-I ../camlp4 -I ../boot -I $(OTOP)/lex
 OCAMLCFLAGS=-warn-error A $(INCLUDES)
-OBJS=q_phony.cmo pa_o.cmo pa_op.cmo pa_oop.cmo pa_ru.cmo pa_format.cmo pa_olabl.cmo pa_sml.cmo pa_lisp.cmo pa_extfun.cmo pa_fstream.cmo pa_ocamllex.cma pr_r.cmo pr_rp.cmo pr_o.cmo pr_op.cmo pr_extend.cmo pr_extfun.cmo pr_null.cmo pr_depend.cmo
+OBJS=q_phony.cmo pa_o.cmo pa_op.cmo pa_oop.cmo pa_ru.cmo pa_format.cmo pa_olabl.cmo pa_sml.cmo pa_lisp.cmo pa_extfold.cmo pa_extfun.cmo pa_fstream.cmo pa_ocamllex.cma pa_lefteval.cmo pr_r.cmo pr_rp.cmo pr_o.cmo pr_op.cmo pr_extend.cmo pr_extfun.cmo pr_null.cmo pr_depend.cmo
 INTF=pa_o.cmi
 CAMLP4OM=pa_o.cmo pa_op.cmo ../meta/pr_dump.cmo
 CAMLP4OMX=pa_o.cmx pa_op.cmx ../meta/pr_dump.cmx

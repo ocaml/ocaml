@@ -28,13 +28,15 @@ type name 'e = { expr : 'e; tvar : string; loc : (int * int) };
 
 type styp =
   [ STlid of loc and string
-  | STapp of loc and string and styp
+  | STapp of loc and styp and styp
   | STquo of loc and string
-  | STprm of loc and string ]
+  | STself of loc and string
+  | STtyp of MLast.ctyp ]
 ;
 
 type text 'e =
-  [ TXlist of loc and bool and text 'e and option (text 'e)
+  [ TXmeta of loc and string and list (text 'e) and 'e and styp
+  | TXlist of loc and bool and text 'e and option (text 'e)
   | TXnext of loc
   | TXnterm of loc and name 'e and option string
   | TXopt of loc and text 'e
@@ -49,14 +51,14 @@ and level 'e 'p =
   { label : option string; assoc : option 'e; rules : list (rule 'e 'p) }
 and rule 'e 'p = { prod : list (psymbol 'e 'p); action : option 'e }
 and psymbol 'e 'p = { pattern : option 'p; symbol : symbol 'e 'p }
-and symbol 'e 'p = { used : list (name 'e); text : text 'e; styp : styp }
+and symbol 'e 'p = { used : list string; text : text 'e; styp : styp }
 ;
 
 type used = [ Unused | UsedScanned | UsedNotScanned ];
 
 value mark_used modif ht n =
   try
-    let rll = Hashtbl.find_all ht n.tvar in
+    let rll = Hashtbl.find_all ht n in
     List.iter
       (fun (r, _) ->
          if r.val == Unused then do {
@@ -375,18 +377,27 @@ value quotify_action psl act =
 value rec make_ctyp styp tvar =
   match styp with
   [ STlid loc s -> <:ctyp< $lid:s$ >>
-  | STapp loc s t -> <:ctyp< $lid:s$ $make_ctyp t tvar$ >>
+  | STapp loc t1 t2 -> <:ctyp< $make_ctyp t1 tvar$ $make_ctyp t2 tvar$ >>
   | STquo loc s -> <:ctyp< '$s$ >>
-  | STprm loc x ->
+  | STself loc x ->
       if tvar = "" then
         Stdpp.raise_with_loc loc
           (Stream.Error ("'" ^ x ^  "' illegal in anonymous entry level"))
-      else <:ctyp< '$tvar$ >> ]
+      else <:ctyp< '$tvar$ >>
+  | STtyp t -> t ]
 ;
 
 value rec make_expr gmod tvar =
   fun
-  [ TXlist loc min t ts ->
+  [ TXmeta loc n tl e t ->
+      let el =
+        List.fold_right
+          (fun t el -> <:expr< [$make_expr gmod "" t$ :: $el$] >>)
+          tl <:expr< [] >>
+      in
+      <:expr<
+        Gramext.Smeta $str:n$ $el$ (Obj.repr ($e$ : $make_ctyp t tvar$)) >>
+  | TXlist loc min t ts ->
       let txt = make_expr gmod "" t in
       match (min, ts) with
       [ (False, None) -> <:expr< Gramext.Slist0 $txt$ >>
@@ -510,7 +521,7 @@ value mk_psymbol p s t =
   {pattern = Some p; symbol = symb}
 ;
 
-value sslist_aux loc min sep s =
+value sslist loc min sep s =
   let rl =
     let r1 =
       let prod =
@@ -523,20 +534,22 @@ value sslist_aux loc min sep s =
     let r2 =
       let prod =
         [mk_psymbol <:patt< a >> (slist loc min sep s)
-           (STapp loc "list" s.styp)]
+           (STapp loc (STlid loc "list") s.styp)]
       in
       let act = <:expr< Qast.List a >> in
       {prod = prod; action = Some act}
     in
     [r1; r2]
   in
-  TXrules loc (srules loc "a_list" rl "")
-;
-
-value sslist loc min sep s =
-  match s.text with
-  [ TXself _ | TXnext _ -> slist loc min sep s
-  | _ -> sslist_aux loc min sep s ]
+  let used =
+    match sep with
+    [ Some symb -> symb.used @ s.used
+    | None -> s.used ]
+  in
+  let used = ["a_list" :: used] in
+  let text = TXrules loc (srules loc "a_list" rl "") in
+  let styp = STquo loc "a_list" in
+  {used = used; text = text; styp = styp}
 ;
 
 value ssopt loc s =
@@ -564,14 +577,17 @@ value ssopt loc s =
       in
       let prod =
         [mk_psymbol <:patt< a >> (TXopt loc s.text)
-           (STapp loc "option" s.styp)]
+           (STapp loc (STlid loc "option") s.styp)]
       in
       let act = <:expr< Qast.Option a >> in
       {prod = prod; action = Some act}
     in
     [r1; r2]
   in
-  TXrules loc (srules loc "a_opt" rl "")
+  let used = ["a_opt" :: s.used] in
+  let text = TXrules loc (srules loc "a_opt" rl "") in
+  let styp = STquo loc "a_opt" in
+  {used = used; text = text; styp = styp}
 ;
 
 value text_of_entry loc gmod e =
@@ -781,7 +797,7 @@ EXTEND
           let name = mk_name loc <:expr< $lid:i$ >> in
           let text = TXnterm loc name lev in
           let styp = STquo loc i in
-          let symb = {used = [name]; text = text; styp = styp} in
+          let symb = {used = [i]; text = text; styp = styp} in
           {pattern = None; symbol = symb}
       | p = pattern; "="; s = symbol -> {pattern = Some p; symbol = s}
       | s = symbol -> {pattern = None; symbol = s} ] ]
@@ -790,38 +806,38 @@ EXTEND
     [ "top" NONA
       [ UIDENT "LIST0"; s = SELF;
         sep = OPT [ UIDENT "SEP"; t = symbol -> t ] ->
-          let used =
-            match sep with
-            [ Some symb -> symb.used @ s.used
-            | None -> s.used ]
-          in
-          let styp = STapp loc "list" s.styp in
-          let text =
-            if quotify.val then sslist loc False sep s
-            else slist loc False sep s
-          in
-          {used = used; text = text; styp = styp}
+          if quotify.val then sslist loc False sep s
+          else
+            let used =
+              match sep with
+              [ Some symb -> symb.used @ s.used
+              | None -> s.used ]
+            in
+            let styp = STapp loc (STlid loc "list") s.styp in
+            let text = slist loc False sep s in
+            {used = used; text = text; styp = styp}
       | UIDENT "LIST1"; s = SELF;
         sep = OPT [ UIDENT "SEP"; t = symbol -> t ] ->
-          let used =
-            match sep with
-            [ Some symb -> symb.used @ s.used
-            | None -> s.used ]
-          in
-          let styp = STapp loc "list" s.styp in
-          let text =
-            if quotify.val then sslist loc True sep s
-            else slist loc True sep s
-          in
-          {used = used; text = text; styp = styp}
+          if quotify.val then sslist loc True sep s
+          else
+            let used =
+              match sep with
+              [ Some symb -> symb.used @ s.used
+              | None -> s.used ]
+            in
+            let styp = STapp loc (STlid loc "list") s.styp in
+            let text = slist loc True sep s in
+            {used = used; text = text; styp = styp}
       | UIDENT "OPT"; s = SELF ->
-          let styp = STapp loc "option" s.styp in
-          let text = if quotify.val then ssopt loc s else TXopt loc s.text in
-          {used = s.used; text = text; styp = styp} ]
+          if quotify.val then ssopt loc s
+          else
+            let styp = STapp loc (STlid loc "option") s.styp in
+            let text = TXopt loc s.text in
+            {used = s.used; text = text; styp = styp} ]
     | [ UIDENT "SELF" ->
-          {used = []; text = TXself loc; styp = STprm loc "SELF"}
+          {used = []; text = TXself loc; styp = STself loc "SELF"}
       | UIDENT "NEXT" ->
-          {used = []; text = TXnext loc; styp = STprm loc "NEXT"}
+          {used = []; text = TXnext loc; styp = STself loc "NEXT"}
       | "["; rl = LIST0 rule SEP "|"; "]" ->
           let rl = retype_rule_list_without_patterns loc rl in
           let t = new_type_var () in
@@ -843,9 +859,11 @@ EXTEND
       | i = UIDENT; "."; e = qualid;
         lev = OPT [ UIDENT "LEVEL"; s = STRING -> s ] ->
           let n = mk_name loc <:expr< $uid:i$ . $e$ >> in
-          {used = [n]; text = TXnterm loc n lev; styp = STquo loc n.tvar}
+          {used = [n.tvar]; text = TXnterm loc n lev;
+           styp = STquo loc n.tvar}
       | n = name; lev = OPT [ UIDENT "LEVEL"; s = STRING -> s ] ->
-          {used = [n]; text = TXnterm loc n lev; styp = STquo loc n.tvar}
+          {used = [n.tvar]; text = TXnterm loc n lev;
+           styp = STquo loc n.tvar}
       | "("; s_t = SELF; ")" -> s_t ] ]
   ;
   pattern:

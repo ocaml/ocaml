@@ -137,7 +137,10 @@ let process_impl () =
   process !(Pcaml.parse_implem) !(Pcaml.print_implem) gimd
 ;;
 
-type file_kind = Intf | Impl;;
+type file_kind =
+    Intf
+  | Impl
+;;
 let file_kind = ref Intf;;
 let file_kind_of_name name =
   if Filename.check_suffix name ".mli" then Intf

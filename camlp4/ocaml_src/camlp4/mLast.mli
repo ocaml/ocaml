@@ -28,13 +28,16 @@ type ctyp =
   | TyMan of loc * ctyp * ctyp
   | TyObj of loc * (string * ctyp) list * bool
   | TyOlb of loc * string * ctyp
+  | TyPol of loc * string list * ctyp
   | TyQuo of loc * string
   | TyRec of loc * (loc * string * bool * ctyp) list
   | TySum of loc * (loc * string * ctyp list) list
   | TyTup of loc * ctyp list
   | TyUid of loc * string
   | TyVrn of loc * row_field list * string list option option
-and row_field = RfTag of string * bool * ctyp list | RfInh of ctyp
+and row_field =
+    RfTag of string * bool * ctyp list
+  | RfInh of ctyp
 ;;
 
 type 'a class_infos =
@@ -106,6 +109,7 @@ and module_type =
   | MtApp of loc * module_type * module_type
   | MtFun of loc * string * module_type * module_type
   | MtLid of loc * string
+  | MtQuo of loc * string
   | MtSig of loc * sig_item list
   | MtUid of loc * string
   | MtWit of loc * module_type * with_constr list
@@ -124,7 +128,7 @@ and sig_item =
   | SgVal of loc * string * ctyp
 and with_constr =
     WcTyp of loc * string list * (string * (bool * bool)) list * ctyp
-  | WcMod of loc * string list * module_type
+  | WcMod of loc * string list * module_expr
 and module_expr =
     MeAcc of loc * module_expr * module_expr
   | MeApp of loc * module_expr * module_expr
@@ -171,7 +175,7 @@ and class_str_item =
   | CrDcl of loc * class_str_item list
   | CrInh of loc * class_expr * string option
   | CrIni of loc * expr
-  | CrMth of loc * string * bool * expr
+  | CrMth of loc * string * bool * expr * ctyp option
   | CrVal of loc * string * bool * expr
   | CrVir of loc * string * bool * ctyp
 ;;

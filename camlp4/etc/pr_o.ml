@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -16,8 +16,7 @@ open Pcaml;
 open Spretty;
 open Stdpp;
 
-value no_ss = ref False;
-value input_file_ic = ref None;
+value no_ss = ref True;
 
 value not_impl name x =
   let desc =
@@ -89,23 +88,27 @@ value is_keyword =
   let keywords = Hashtbl.create 301 in
   do {
     List.iter (fun s -> Hashtbl.add keywords s True)
-      ["<>"; "<="; "struct"; "asr"; "<-"; ";;"; ":="; "type"; "::"; "true";
-       "for"; "to"; "and"; "false"; "rec"; "or"; "of"; "with"; "while";
-       "module"; "when"; "exception"; "lsr"; "lsl"; "done"; "function"; "/.";
-       ".."; "->"; "in"; "-."; "if"; "lor"; "external"; "sig"; "+."; "then";
-       "*."; "**"; "match"; "try"; "do"; "else"; "land"; "&&"; "as"; "open";
-       "}"; "|"; "end"; "{"; "lxor"; "_"; "^"; "]"; "["; "let"; "!="; "||";
-       "@"; ">"; "="; "<"; ";"; ":"; "mutable"; "/"; "[|"; "."; "-"; ","; "+";
-       "begin"; "downto"; "*"; ")"; "|]"; "("; "'"; "&"; "functor"; ">="; "#";
-       "~-."; "!"; "~-"; "fun"; "mod"; "=="; "val"; "lazy"; "assert"];
+      ["!"; "!="; "#"; "$"; "%"; "&"; "&&"; "'"; "("; ")"; "*"; "**"; "+";
+       ","; "-"; "-."; "->"; "."; ".."; "/"; ":"; "::"; ":="; ":>"; ";"; ";;";
+       "<"; "<-"; "<="; "<>"; "="; "=="; ">"; ">="; ">]"; ">}"; "?"; "??";
+       "@"; "["; "[<"; "[|"; "]"; "^"; "_"; "`"; "and"; "as"; "asr"; "assert";
+       "begin"; "class"; "constraint"; "do"; "done"; "downto"; "else"; "end";
+       "exception"; "external"; "false"; "for"; "fun"; "function"; "functor";
+       "if"; "in"; "include"; "inherit"; "initializer"; "land"; "lazy"; "let";
+       "lor"; "lsl"; "lsr"; "lxor"; "match"; "method"; "mod"; "module";
+       "mutable"; "new"; "object"; "of"; "open"; "or"; "parser"; "private";
+       "rec"; "sig"; "struct"; "then"; "to"; "true"; "try"; "type"; "val";
+       "virtual"; "when"; "while"; "with"; "{"; "{<"; "|"; "|]"; "||"; "}";
+       "~"; "~-"; "~-."];
     fun s -> try Hashtbl.find keywords s with [ Not_found -> False ]
   }
 ;
 
 value has_special_chars v =
   match v.[0] with
-  [ 'a'..'z' | 'A'..'Z' | '\192'..'\214' | '\216'..'\246'
-  | '\248'..'\255' | '_' -> False
+  [ 'a'..'z' | 'A'..'Z' | '\192'..'\214' | '\216'..'\246' | '\248'..'\255' |
+    '_' ->
+      False
   | _ ->
       if String.length v >= 2 && v.[0] == '<' &&
          (v.[1] == '<' || v.[1] == ':')
@@ -131,10 +134,11 @@ value conv_con =
   | " False" -> "False"
   | x -> x ]
 ;
+
 value conv_lab =
   fun
   [ "val" -> "contents"
-  | x -> x ]
+  | x -> var_escaped x ]
 ;
 
 (* default global loc *)
@@ -176,15 +180,12 @@ value expr1 e dg k = pr_expr.pr_fun "expr1" e dg k;
 value simple_expr e dg k = pr_expr.pr_fun "simple" e dg k;
 value patt1 e dg k = pr_patt.pr_fun "patt1" e dg k;
 value simple_patt e dg k = pr_patt.pr_fun "simple" e dg k;
+value ctyp e dg k = pr_ctyp.pr_fun "top" e dg k;
+value simple_ctyp e dg k = pr_ctyp.pr_fun "simple" e dg k;
 value expr_fun_args ge = Extfun.apply pr_expr_fun_args.val ge;
+value class_str_item x dg k = pr_class_str_item.pr_fun "" x "" k;
 
 (* type core *)
-
-value ctyp_f = ref (fun []);
-value simple_ctyp_f = ref (fun []);
-
-value ctyp t _ k = ctyp_f.val t "" k;
-value simple_ctyp t _ k = simple_ctyp_f.val t "" k;
 
 value mutable_flag =
   fun
@@ -198,97 +199,41 @@ value private_flag =
   | _ -> [: :] ]
 ;
 
-value input_from_source bp ep =
-  match input_file_ic.val with
-  [ Some ic when ep > bp ->
-      do {
-        seek_in ic bp;
-        let len = ep - bp in
-        let buff = Buffer.create 20 in
-        loop 0 where rec loop i =
-          if i < len then do {
-            let c = input_char ic in
-            Buffer.add_char buff c;
-            loop (i + 1)
-          }
-          else Buffer.contents buff
-      }
-  | _ -> "" ]
-;
-
 value rec labels loc b vl _ k =
   match vl with
   [ [] -> [: b; k :]
-  | [v] -> [: `label True (snd loc) b v "" k :]
-  | [v :: ([(nloc, _, _, _) :: _] as l)] ->
-      [: `label False (fst nloc) b v "" [: :]; labels loc [: :] l "" k :] ]
-and label is_last bp_next b (loc, f, m, t) _ k =
+  | [v] ->
+      [: `label True b v "" k; `LocInfo (snd loc, snd loc) (HVbox [: :]) :]
+  | [v :: l] ->
+      [: `label False b v "" [: :]; labels loc [: :] l "" k :] ]
+and label is_last b (loc, f, m, t) _ k =
   let m = flag "mutable" m in
-  let txt =
-    let s = input_from_source (snd loc) bp_next in
-    let s =
-      try
-        let i = String.index s ';' in
-        String.sub s (i + 1) (String.length s - i - 1)
-      with
-      [ Not_found -> "" ]
-    in
-    try
-      let i = String.rindex s '\n' in
-      String.sub s 0 i
-    with
-    [ Not_found -> s ]
-  in
-  let k =
-    [: if is_last && txt = "" then [: :] else [: `S RO ";" :]; `S RO txt; k :]
-  in
+  let k = [: if is_last then [: :] else [: `S RO ";" :]; k :] in
   Hbox
-    [: `HVbox
-         [: `HVbox [: b; m; `S LR (conv_lab f); `S LR ":" :];
-            `ctyp t "" [: :] :];
+    [: `LocInfo loc
+          (HVbox
+             [: `HVbox [: b; m; `S LR (conv_lab f); `S LR ":" :];
+                `ctyp t "" [: :] :]);
        k :]
 ;
 
 value rec ctyp_list tel _ k = listws simple_ctyp (S LR "*") tel "" k;
 
-value include_comment_of_last_constructor ep =
-  match input_file_ic.val with
-  [ Some ic ->
-     do {
-       seek_in ic ep;
-       loop ep where rec loop ep =
-         let c = input_char ic in
-         if c = '\n' then ep + 1
-         else loop (ep + 1)
-     }
-  | None -> ep ]
-;
-
 value rec variants loc b vl dg k =
-  let ep = include_comment_of_last_constructor (snd loc) in
-  variants_loop (fst loc, ep) b vl dg k
-and variants_loop loc b vl _ k =
   match vl with
   [ [] -> [: b; k :]
-  | [v] -> [: `variant (snd loc) b v "" k :]
-  | [v :: ([(nloc, _, _) :: _] as l)] ->
-      [: `variant (fst nloc) b v "" [: :];
-         variants_loop loc [: `S LR "|" :] l "" k :] ]
-and variant bp_next b (loc, c, tl) _ k =
-  let txt =
-    let s = input_from_source (snd loc) bp_next in
-    try
-      let i = String.rindex s '\n' in
-      String.sub s 0 i
-    with
-    [ Not_found -> "" ]
-  in
-  let k = [: `S RO txt; k :] in
+  | [v] ->
+      [: `variant b v "" k; `LocInfo (snd loc, snd loc) (HVbox [: :]) :]
+  | [v :: l] ->
+      [: `variant b v "" [: :]; variants loc [: `S LR "|" :] l "" k :] ]
+and variant b (loc, c, tl) _ k =
   match tl with
-  [ [] -> HVbox [: b; `HOVbox [: `S LR c; k :] :]
+  [ [] ->
+      HVbox [: `LocInfo loc (HVbox b); `HOVbox [: `S LR c; k :] :]
   | _ ->
       HVbox
-        [: b; `HOVbox [: `S LR c; `S LR "of"; ctyp_list tl "" [: :]; k :] :] ]
+        [: `LocInfo loc (HVbox b);
+           `HOVbox [: `S LR c; `S LR "of"; ctyp_list tl "" k :] :] ]
 ;
 
 value rec row_fields b rfl _ k = listwbws row_field b (S LR "|") rfl "" k
@@ -301,9 +246,9 @@ and row_field b rf _ k =
       | _ ->
           let ao = if ao then [: `S LR "&" :] else [: :] in
           HVbox
-            [: b; `HOVbox [: `S LR c; `S LR "of"; ao; ctyp_list tl "" k :] :] ]
-  | MLast.RfInh t ->
-      HVbox [: b; `ctyp t "" k :] ]
+            [: b;
+               `HOVbox [: `S LR c; `S LR "of"; ao; ctyp_list tl "" k :] :] ]
+  | MLast.RfInh t -> HVbox [: b; `ctyp t "" k :] ]
 ;
 
 value rec get_type_args t tl =
@@ -350,118 +295,8 @@ value rec meth_list (ml, v) dg k =
   | ([], _) -> [: `S LR ".."; k :]
   | ([f :: ml], v) ->
       [: `field f "" [: `S RO ";" :]; meth_list (ml, v) dg k :] ]
-and field (lab, t) dg k = HVbox [: `S LR lab; `S LR ":"; `ctyp t dg k :];
-
-simple_ctyp_f.val :=
-  apply_it
-    [level (fun x -> HOVbox x)
-       (fun curr next t _ k ->
-          match t with
-          [ <:ctyp< $t1$ == $t2$ >> ->
-              [: curr t1 "=" [: `S LR "=" :]; `next t2 "" k :]
-          | t -> [: `next t "" k :] ]);
-     level (fun x -> HOVbox x)
-       (fun curr next t _ k ->
-          match t with
-          [ <:ctyp< ? $lab$ : $t$ >> ->
-              [: `S LO "?"; `S LR lab; `S RO ":"; `next t "" k :]
-          | <:ctyp< ~ $lab$ : $t$ >> -> [: `S LO (lab ^ ":"); `next t "" k :]
-          | t -> [: `next t "" k :] ]);
-     level (fun x -> HOVbox x)
-       (fun curr next t _ k ->
-          match t with
-          [ <:ctyp< $t1$ $t2$ >> ->
-              let (t, tl) = get_type_args t1 [t2] in
-              match tl with
-              [ [<:ctyp< $_$ $_$ >>] -> [: curr t2 "" [: :]; curr t1 "" k :]
-              | [_] -> [: `next t2 "" [: :]; curr t1 "" k :]
-              | _ ->
-                  [: `S LO "(";
-                     listws (fun x _ k -> HOVbox [: curr x "" k :]) (S RO ",")
-                       tl "" [: `S RO ")" :];
-                     curr t "" k :] ]
-          | t -> [: `next t "" k :] ]);
-     level (fun x -> HOVbox x)
-       (fun curr next t _ k ->
-          match t with
-          [ <:ctyp< $t1$ . $t2$ >> ->
-              [: `module_pref t1 "" [: `S NO "." :]; `next t2 "" k :]
-          | t -> [: `next t "" k :] ]);
-     level (fun x -> HOVbox x)
-       (fun curr next t _ k ->
-          match t with
-          [ <:ctyp< '$s$ >> -> [: `S LO "'"; `S LR (var_escaped s); k :]
-          | <:ctyp< $lid:s$ >> -> [: `S LR s; k :]
-          | <:ctyp< $uid:s$ >> -> [: `S LR s; k :]
-          | <:ctyp< _ >> -> [: `S LR "_"; k :]
-          | <:ctyp< { $list:ftl$ } >> ->
-              let loc = MLast.loc_of_ctyp t in
-              [: `HVbox
-                    [: labels loc [: `S LR "{" :] ftl "" [: `S LR "}" :];
-                       k :] :]
-          | <:ctyp< [ $list:ctl$ ] >> ->
-              let loc = MLast.loc_of_ctyp t in
-              [: `BEbox [: `HVbox [: :];
-                 variants loc [: :] ctl "" [: :]; k :] :]
-          | <:ctyp< [| $list:rfl$ |] >> ->
-              [: `HVbox
-                    [: `HVbox [: :];
-                       row_fields [: `S LR "[" :] rfl "" [: `S LR "]" :];
-                       k :] :]
-          | <:ctyp< [| > $list:rfl$ |] >> ->
-              [: `HVbox
-                    [: `HVbox [: :];
-                       row_fields [: `S LR "[>" :] rfl "" [: `S LR "]" :];
-                       k :] :]
-          | <:ctyp< [| < $list:rfl$ > $list:sl$ |] >> ->
-              let k1 = [: `S LR "]" :] in
-              let k1 =
-                match sl with
-                [ [] -> k1
-                | l ->
-                    [: `S LR ">";
-                       list (fun x _ k -> HVbox [: `S LR x; k :]) l "" k1 :] ]
-              in
-              [: `HVbox
-                    [: `HVbox [: :]; row_fields [: `S LR "[<" :] rfl "" k1;
-                       k :] :]
-          | <:ctyp< $_$ -> $_$ >> | <:ctyp< $_$ $_$ >> |
-            <:ctyp< $_$ == $_$ >> | <:ctyp< $_$ . $_$ >> |
-            <:ctyp< ($list:_$) >> | <:ctyp< $_$ as $_$ >> |
-            <:ctyp< ~ $_$ : $_$ >> | <:ctyp< ? $_$ : $_$ >> as t ->
-              [: `S LO "("; `ctyp t "" [: `HVbox [: `S RO ")"; k :] :] :]
-          | MLast.TyCls _ id -> [: `S LO "#"; `class_longident id "" k :]
-          | MLast.TyObj _ [] False -> [: `S LR "<>"; k :]
-          | MLast.TyObj _ ml v ->
-              [: `S LR "<"; meth_list (ml, v) "" [: `S LR ">"; k :] :] ])]
-    (fun t _ k -> not_impl "ctyp" t);
-
-ctyp_f.val :=
-  apply_it
-    [level (fun x -> HOVbox x)
-       (fun curr next t _ k ->
-          match t with
-          [ <:ctyp< $x$ as $y$ >> ->
-              [: curr x "" [: `S LR "as" :]; `next y "" k :]
-          | t -> [: `next t "" k :] ]);
-     level (fun x -> HOVbox x)
-       (fun curr next t _ k ->
-          match t with
-          [ <:ctyp< $x$ -> $y$ >> ->
-              [: `next x "" [: `S LR "->" :]; curr y "" k :]
-          | t -> [: `next t "" k :] ]);
-     level (fun x -> HOVbox x)
-       (fun curr next t _ k ->
-          match t with
-          [ <:ctyp< ? $lab$ : $t$ >> ->
-              [: `S LO "?"; `S LR lab; `S RO ":"; `next t "" k :]
-          | t -> [: `next t "" k :] ]);
-     level (fun x -> HOVbox x)
-       (fun curr next t _ k ->
-          match t with
-          [ <:ctyp< ($list:tl$) >> -> listws next (S LR "*") tl "" k
-          | t -> [: `next t "" k :] ])]
-    simple_ctyp;
+and field (lab, t) dg k =
+  HVbox [: `S LR (var_escaped lab); `S LR ":"; `ctyp t dg k :];
 
 (* patterns *)
 
@@ -476,7 +311,7 @@ value rec is_irrefut_patt =
   [ <:patt< $lid:_$ >> -> True
   | <:patt< () >> -> True
   | <:patt< _ >> -> True
-  | <:patt< ($x$ as $_$) >> -> is_irrefut_patt x
+  | <:patt< ($x$ as $y$) >> -> is_irrefut_patt x && is_irrefut_patt y
   | <:patt< { $list:fpl$ } >> ->
       List.for_all (fun (_, p) -> is_irrefut_patt p) fpl
   | <:patt< ($p$ : $_$) >> -> is_irrefut_patt p
@@ -512,25 +347,29 @@ value rec bind_list b pel _ k =
   | pel ->
       Vbox [: `HVbox [: :]; listwbws let_binding b (S LR "and") pel "" k :] ]
 and let_binding b (p, e) _ k =
+  let loc =
+    let (bp1, ep1) = MLast.loc_of_patt p in
+    let (bp2, ep2) = MLast.loc_of_expr e in
+    (min bp1 bp2, max ep1 ep2)
+  in
+  LocInfo loc (BEbox (let_binding0 b p e k))
+and let_binding0 b p e k =
   let (pl, e) =
     match p with
     [ <:patt< ($_$ : $_$) >> -> ([], e)
     | _ -> expr_fun_args e ]
   in
+  let b = [: b; `simple_patt p "" [: :] :] in
   match (p, e) with
   [ (<:patt< $lid:_$ >>, <:expr< ($e$ : $t$) >>) ->
-      BEbox
-        [: `HVbox
-              [: `HVbox b;
-                 `HVbox (list simple_patt [p :: pl] "" [: `S LR ":" :]);
-                 `ctyp t "" [: `S LR "=" :] :];
-           `expr e "" [: :]; k :]
+      [: `HVbox
+            [: `HVbox b; `HVbox (list simple_patt pl "" [: `S LR ":" :]);
+               `ctyp t "" [: `S LR "=" :] :];
+         `expr e "" [: :]; k :]
   | _ ->
-      BEbox
-        [: `HVbox
-              [: `HVbox b;
-                 `HVbox (list simple_patt [p :: pl] "" [: `S LR "=" :]) :];
-           `expr e "" [: :]; k :] ]
+      [: `HVbox
+            [: `HVbox b; `HOVbox (list simple_patt pl "" [: `S LR "=" :]) :];
+         `expr e "" [: :]; k :] ]
 and match_assoc_list loc pel dg k =
   match pel with
   [ [] ->
@@ -557,7 +396,7 @@ value rec get_expr_args a al =
   | _ -> (a, al) ]
 ;
 
-value label lab = S LR lab;
+value label lab = S LR (var_escaped lab);
 
 value field_expr (lab, e) dg k =
   HVbox [: `label lab; `S LR "="; `expr e dg k :]
@@ -589,6 +428,7 @@ value type_list b tdl _ k =
     [: `HVbox [: :];
        listwbws
          (fun b ((_, tn), tp, te, cl) _ k ->
+            let tn = var_escaped tn in
             let cstr = list constrain cl "" k in
             match te with
             [ <:ctyp< '$s$ >> when not (List.mem_assoc s tp) ->
@@ -619,6 +459,8 @@ value value_description (s, t) _ k =
        `ctyp t "" k :]
 ;
 
+value typevar s _ k = HVbox [: `S LR ("'" ^ s); k :];
+
 value rec mod_ident sl _ k =
   match sl with
   [ [] -> k
@@ -628,31 +470,41 @@ value rec mod_ident sl _ k =
 
 value rec module_type mt k =
   let next = module_type1 in
-  match mt with
-  [ <:module_type< functor ( $s$ : $mt1$ ) -> $mt2$ >> ->
-      let head =
-        HVbox
-          [: `S LR "functor"; `S LO "("; `S LR s; `S LR ":";
-             `module_type mt1 [: `S RO ")" :]; `S LR "->" :]
-      in
-      HVbox [: `head; `module_type mt2 k :]
-  | _ -> next mt k ]
+  let rec curr mt k =
+    match mt with
+    [ <:module_type< functor ( $s$ : $mt1$ ) -> $mt2$ >> ->
+        let head =
+          HVbox
+            [: `S LR "functor"; `S LO "("; `S LR s; `S LR ":";
+               `HVbox (curr mt1 [: `S RO ")" :]); `S LR "->" :]
+        in
+        [: `head; `module_type mt2 k :]
+    | _ -> [: `next mt k :] ]
+  in
+  HVbox (curr mt k)
 and module_type1 mt k =
   let curr = module_type1 in
   let next = module_type2 in
   match mt with
   [ <:module_type< $mt$ with $list:icl$ >> ->
-      HVbox [: `curr mt [: :]; `with_constraints [: `S LR "with" :] icl "" k :]
+      HVbox
+        [: `curr mt [: :]; `with_constraints [: `S LR "with" :] icl "" k :]
   | _ -> next mt k ]
 and module_type2 mt k =
-  let curr = module_type2 in
   let next = module_type3 in
-  match mt with
-  [ <:module_type< sig $list:s$ end >> ->
-      BEbox
-        [: `S LR "sig"; `HVbox [: `HVbox [: :]; list sig_item s "" [: :] :];
-           `HVbox [: `S LR "end"; k :] :]
-  | _ -> next mt k ]
+  let rec curr mt k =
+    match mt with
+    [ <:module_type< sig $list:s$ end >> ->
+        let ep = snd (MLast.loc_of_module_type mt) in
+        [: `BEbox
+              [: `S LR "sig";
+                 `HVbox
+                    [: `HVbox [: :]; list sig_item s "" [: :];
+                       `LocInfo (ep, ep) (HVbox [: :]) :];
+                 `HVbox [: `S LR "end"; k :] :] :]
+    | _ -> [: `next mt k :] ]
+  in
+  HVbox (curr mt k)
 and module_type3 mt k =
   let curr = module_type3 in
   let next = module_type5 in
@@ -671,7 +523,11 @@ and module_declaration b mt k =
   match mt with
   [ <:module_type< functor ( $i$ : $t$ ) -> $mt$ >> ->
       module_declaration
-        [: b; `S LO "("; `S LR i; `S LR ":"; `module_type t [: `S RO ")" :] :]
+        [: `HVbox
+             [: b;
+                `HVbox
+                  [: `S LO "("; `S LR i; `S LR ":";
+                     `module_type t [: `S RO ")" :] :] :] :]
         mt k
   | _ ->
       HVbox
@@ -679,12 +535,16 @@ and module_declaration b mt k =
            `HVbox [: `HVbox [: b; `S LR ":" :]; `module_type mt [: :] :];
            k :] ]
 and modtype_declaration (s, mt) _ k =
-  HVbox
-    [: `HVbox [: :];
-       `HVbox
-          [: `HVbox [: `S LR "module"; `S LR "type"; `S LR s; `S LR "=" :];
-             `module_type mt [: :] :];
-       k :]
+  match mt with
+  [ <:module_type< ' $_$ >> ->
+      HVbox [: `HVbox [: `S LR "module"; `S LR "type"; `S LR s; k :] :]
+  | _ ->
+      HVbox
+        [: `HVbox [: :];
+           `HVbox
+              [: `HVbox [: `S LR "module"; `S LR "type"; `S LR s; `S LR "=" :];
+                 `module_type mt [: :] :];
+           k :] ]
 and with_constraints b icl _ k =
   HVbox [: `HVbox [: :]; listwbws with_constraint b (S LR "and") icl "" k :]
 and with_constraint b wc _ k =
@@ -701,31 +561,41 @@ and with_constraint b wc _ k =
               [: `HVbox b; `S LR "type"; params;
                  mod_ident p "" [: `S LR "=" :] :];
            `ctyp e "" k :]
-  | MLast.WcMod _ sl mt ->
+  | MLast.WcMod _ sl me ->
       HVbox
         [: b; `S LR "module"; mod_ident sl "" [: `S LR "=" :];
-           `module_type mt k :] ]
+           `module_expr me "" k :] ]
 and module_expr me _ k =
-  match me with
-  [ <:module_expr< struct $list:s$ end >> ->
-      let s = HVbox [: `S LR "struct"; list str_item s "" [: :] :] in
-      HVbox [: `HVbox [: :]; `s; `HVbox [: `S LR "end"; k :] :]
-  | <:module_expr< functor ($s$ : $mt$) -> $me$ >> ->
-      let head =
-        HVbox
-          [: `S LR "functor"; `S LO "("; `S LR s; `S LR ":";
-             `module_type mt [: `S RO ")" :]; `S LR "->" :]
-      in
-      HVbox [: `head; `module_expr me "" k :]
-  | _ -> module_expr1 me "" k ]
+  let next = module_expr1 in
+  let rec curr me dg k =
+    match me with
+    [ <:module_expr< struct $list:s$ end >> ->
+        let ep = snd (MLast.loc_of_module_expr me) in
+        [: `HVbox [: :];
+           `HVbox
+              [: `S LR "struct"; list str_item s "" [: :];
+                 `LocInfo (ep, ep) (HVbox [: :]) :];
+           `HVbox [: `S LR "end"; k :] :]
+    | <:module_expr< functor ($s$ : $mt$) -> $me$ >> ->
+        let head =
+          HVbox
+            [: `S LR "functor"; `S LO "("; `S LR s; `S LR ":";
+               `module_type mt [: `S RO ")" :]; `S LR "->" :]
+        in
+        [: `head; curr me "" k :]
+    | _ -> [: `next me "" k :] ]
+  in
+  HVbox (curr me "" k)
 and module_expr1 me _ k =
-  let curr = module_expr1 in
   let next = module_expr2 in
-  match me with
-  [ <:module_expr< $me1$ $me2$ >> ->
-      HVbox
-        [: `curr me1 "" [: :]; `S LO "("; `next me2 "" [: `S RO ")"; k :] :]
-  | _ -> next me "" k ]
+  let rec curr me dg k =
+    match me with
+    [ <:module_expr< $me1$ $me2$ >> ->
+        [: curr me1 "" [: :];
+           `HVbox [: `S LO "("; `module_expr me2 "" [: `S RO ")"; k :] :] :]
+    | _ -> [: `next me "" k :] ]
+  in
+  HOVbox (curr me "" k)
 and module_expr2 me _ k =
   let curr = module_expr2 in
   let next = module_expr3 in
@@ -748,8 +618,10 @@ and module_binding b me k =
   [ <:module_expr< functor ($s$ : $mt$) -> $mb$ >> ->
       module_binding
         [: `HVbox
-              [: b; `S LO "("; `S LR s; `S LR ":";
-                 `module_type mt [: `S RO ")" :] :] :]
+              [: b;
+                 `HVbox
+                    [: `HVbox [: `S LO "("; `S LR s; `S LR ":" :];
+                       `module_type mt [: `S RO ")" :] :] :] :]
         mb k
   | <:module_expr< ( $me$ : $mt$ ) >> ->
       HVbox
@@ -807,8 +679,14 @@ and class_expr2 ce k =
         [: `S LO "["; listws ctyp (S RO ",") ctcl "" [: `S RO "]" :];
            `class_longident ci "" k :]
   | MLast.CeStr _ csp cf ->
-      class_structure [: `S LR "object"; `class_self_patt_opt csp :] cf
-        [: `S LR "end"; k :]
+      let ep = snd (MLast.loc_of_class_expr ce) in
+      BEbox
+        [: `HVbox [: `S LR "object"; `class_self_patt_opt csp :];
+           `HVbox
+              [: `HVbox [: :];
+                 list class_str_item cf "" [: :];
+                 `LocInfo (ep, ep) (HVbox [: :]) :];
+           `HVbox [: `S LR "end"; k :] :]
   | MLast.CeTyc _ ce ct ->
       HVbox
         [: `S LO "("; `class_expr ce [: `S LR ":" :];
@@ -816,39 +694,13 @@ and class_expr2 ce k =
   | MLast.CeFun _ _ _ ->
       HVbox [: `S LO "("; `class_expr ce [: `S RO ")"; k :] :]
   | _ -> HVbox [: `not_impl "class_expr" ce; k :] ]
-and class_structure b cf k =
-  BEbox
-    [: `HVbox b; `HVbox [: `HVbox [: :]; list class_str_item cf "" [: :] :];
-       `HVbox k :]
 and class_self_patt_opt csp =
   match csp with
   [ Some p -> HVbox [: `S LO "("; `patt p "" [: `S RO ")" :] :]
   | None -> HVbox [: :] ]
-and class_str_item cf dg k =
-  match cf with
-  [ MLast.CrDcl _ s ->
-      HVbox [: `HVbox [: :]; list class_str_item s "" [: :] :]
-  | MLast.CrInh _ ce pb ->
-      HVbox
-        [: `S LR "inherit"; `class_expr ce [: :];
-           match pb with
-           [ Some i -> [: `S LR "as"; `S LR i :]
-           | _ -> [: :] ];
-           k :]
-  | MLast.CrVal _ lab mf e -> HVbox [: `S LR "val"; `cvalue (lab, mf, e) k :]
-  | MLast.CrVir _ lab pf t ->
-      HVbox
-        [: `S LR "method"; `S LR "virtual"; private_flag pf; `label lab;
-           `S LR ":"; `ctyp t "" k :]
-  | MLast.CrMth _ lab pf fb ->
-      fun_binding [: `S LR "method"; private_flag pf; `label lab :] fb k
-  | MLast.CrCtr _ t1 t2 ->
-      HVbox
-        [: `HVbox [: `S LR "constraint"; `ctyp t1 "" [: `S LR "=" :] :];
-           `ctyp t2 "" k :]
-  | MLast.CrIni _ se -> HVbox [: `S LR "initializer"; `expr se "" k :] ]
-and cvalue (lab, mf, e) k =
-  HVbox [: mutable_flag mf; `label lab; `S LR "="; `expr e "" k :]
+and cvalue b (lab, mf, e) k =
+  HVbox
+    [: `HVbox [: b; mutable_flag mf; `label lab; `S LR "=" :]; `expr e "" k :]
 and fun_binding b fb k =
   match fb with
   [ <:expr< fun $p$ -> $e$ >> ->
@@ -867,8 +719,12 @@ and class_signature cs k =
         [: `S LO "["; listws ctyp (S RO ",") tl "" [: `S RO "]" :];
            `clty_longident id "" k :]
   | MLast.CtSig _ cst csf ->
+      let ep = snd (MLast.loc_of_class_type cs) in
       class_self_type [: `S LR "object" :] cst
-        [: `HVbox [: `HVbox [: :]; list class_sig_item csf "" [: :] :];
+        [: `HVbox
+              [: `HVbox [: :];
+                 list class_sig_item csf "" [: :];
+                 `LocInfo (ep, ep) (HVbox [: :]) :];
            `HVbox [: `S LR "end"; k :] :]
   | _ -> HVbox [: `not_impl "class_signature" cs; k :] ]
 and class_self_type b cst k =
@@ -880,29 +736,27 @@ and class_self_type b cst k =
              | Some t -> [: `S LO "("; `ctyp t "" [: `S RO ")" :] :] ] :];
        k :]
 and class_sig_item csf dg k =
-  match csf with
-  [ MLast.CgCtr _ t1 t2 ->
-      HVbox
+  let rec curr csf dg k =
+    match csf with
+    [ MLast.CgCtr _ t1 t2 ->
         [: `S LR "constraint"; `ctyp t1 "" [: `S LR "=" :]; `ctyp t2 "" k :]
-  | MLast.CgDcl _ s ->
-      HVbox [: `HVbox [: :]; list class_sig_item s "" [: :] :]
-  | MLast.CgInh _ ce ->
-      HVbox [: `S LR "inherit"; `class_type ce k :]
-  | MLast.CgMth _ lab pf t ->
-      HVbox
+    | MLast.CgDcl _ s ->
+        [: `HVbox [: :]; list class_sig_item s "" [: :] :]
+    | MLast.CgInh _ ce -> [: `S LR "inherit"; `class_type ce k :]
+    | MLast.CgMth _ lab pf t ->
         [: `HVbox
               [: `S LR "method"; private_flag pf; `label lab; `S LR ":" :];
            `ctyp t "" k :]
-  | MLast.CgVal _ lab mf t ->
-      HVbox
+    | MLast.CgVal _ lab mf t ->
         [: `HVbox [: `S LR "val"; mutable_flag mf; `label lab; `S LR ":" :];
            `ctyp t "" k :]
-  | MLast.CgVir _ lab pf t ->
-      HVbox
+    | MLast.CgVir _ lab pf t ->
         [: `HVbox
               [: `S LR "method"; `S LR "virtual"; private_flag pf;
                  `label lab; `S LR ":" :];
            `ctyp t "" k :] ]
+  in
+  LocInfo (MLast.loc_of_class_sig_item csf) (HVbox (curr csf dg k))
 and class_description b ci _ k =
   HVbox
     [: `HVbox
@@ -927,12 +781,14 @@ pr_sig_item.pr_levels :=
       [ <:sig_item< type $list:stl$ >> ->
           fun curr next dg k -> [: `type_list [: `S LR "type" :] stl "" k :]
       | <:sig_item< declare $list:s$ end >> ->
-          fun curr next dg k -> [: `HVbox [: :]; list sig_item s "" [: :] :]
+          fun curr next dg k ->
+            if s = [] then [: `S LR "(* *)" :]
+            else [: `HVbox [: :]; list sig_item s "" [: :] :]
       | MLast.SgDir _ _ _ as si ->
           fun curr next dg k -> [: `not_impl "sig_item" si :]
       | <:sig_item< exception $c$ of $list:tl$ >> ->
           fun curr next dg k ->
-            [: `variant 0 [: `S LR "exception" :] (loc, c, tl) "" k :]
+            [: `variant [: `S LR "exception" :] (loc, c, tl) "" k :]
       | <:sig_item< value $s$ : $t$ >> ->
           fun curr next dg k -> [: `value_description (s, t) "" k :]
       | <:sig_item< external $s$ : $t$ = $list:pl$ >> ->
@@ -959,7 +815,8 @@ pr_sig_item.pr_levels :=
                  k :] ]}];
 
 pr_str_item.pr_levels :=
-  [{pr_label = "top"; pr_box _ x = HVbox x;
+  [{pr_label = "top";
+    pr_box s x = LocInfo (MLast.loc_of_str_item s) (HVbox x);
     pr_rules =
       extfun Extfun.empty with
       [ <:str_item< open $i$ >> ->
@@ -971,7 +828,9 @@ pr_str_item.pr_levels :=
                  `expr e "" k :]
             else [: `HVbox [: :]; `expr e "" k :]
       | <:str_item< declare $list:s$ end >> ->
-          fun curr next dg k -> [: `HVbox [: :]; list str_item s "" [: :] :]
+          fun curr next dg k ->
+            if s = [] then [: `S LR "(* *)" :]
+            else [: `HVbox [: :]; list str_item s "" [: :] :]
       | <:str_item< # $s$ $opt:x$ >> ->
           fun curr next dg k ->
             let s =
@@ -984,11 +843,11 @@ pr_str_item.pr_levels :=
             [: `S LR s :]
       | <:str_item< exception $c$ of $list:tl$ = $b$ >> ->
           fun curr next dg k ->
-             match b with
-            [ [] -> [: `variant 0 [: `S LR "exception" :] (loc, c, tl) "" k :]
+            match b with
+            [ [] -> [: `variant [: `S LR "exception" :] (loc, c, tl) "" k :]
             | _ ->
-                [: `variant 0 [: `S LR "exception" :] (loc, c, tl) ""
-                     [: `S LR "=" :];
+                [: `variant [: `S LR "exception" :] (loc, c, tl) ""
+                      [: `S LR "=" :];
                    mod_ident b "" k :] ]
       | <:str_item< include $me$ >> ->
           fun curr next dg k -> [: `S LR "include"; `module_expr me "" k :]
@@ -1025,15 +884,22 @@ pr_str_item.pr_levels :=
                  [: `S LR "class"; `S LR "type" :] (S LR "and") cd ""
                  k :] ]}];
 
+value ocaml_char =
+  fun
+  [ "'" -> "\\'"
+  | "\"" -> "\\\""
+  | c -> c ]
+;
+
 pr_expr.pr_levels :=
-  [{pr_label = "top"; pr_box _ x = HOVbox x;
+  [{pr_label = "top"; pr_box e x = LocInfo (MLast.loc_of_expr e) (HOVbox x);
     pr_rules =
       extfun Extfun.empty with
       [ <:expr< do { $list:el$ } >> ->
           fun curr next dg k ->
             [: `HVbox [: `HVbox [: :]; listws next (S RO ";") el dg k :] :]
       | e -> fun curr next dg k -> [: `next e dg k :] ]};
-   {pr_label = "expr1"; pr_box _ x = HOVbox x;
+   {pr_label = "expr1"; pr_box e x = LocInfo (MLast.loc_of_expr e) (HOVbox x);
     pr_rules =
       extfun Extfun.empty with
       [ <:expr< let $rec:r$ $p1$ = $e1$ in $e$ >> ->
@@ -1188,7 +1054,7 @@ pr_expr.pr_levels :=
             if not (List.mem dg ["else"]) then
               match eel_e with
               [ ([], <:expr< () >>) ->
-                  [: `HOVbox [: `S LR "if"; `expr e1 "" [: `S LR "then" :] :];
+                  [: `BEbox [: `S LR "if"; `expr e1 "" [: :]; `S LR "then" :];
                      `expr1 e2 dg k :]
               | (eel, <:expr< () >>) ->
                   let (eel, (e1f, e2f)) =
@@ -1198,37 +1064,42 @@ pr_expr.pr_levels :=
                   [: `HVbox
                         [: `HVbox [: :];
                            `HVbox
-                              [: `HOVbox
-                                    [: `S LR "if";
-                                       `expr e1 "" [: `S LR "then" :] :];
+                              [: `BEbox
+                                    [: `S LR "if"; `expr e1 "" [: :];
+                                       `S LR "then" :];
                                  `expr1 e2 "else" [: :] :];
                            list
                              (fun (e1, e2) _ k ->
                                 HVbox
-                                  [: `HOVbox
-                                        [: `S LR "else"; `S LR "if";
-                                           `expr e1 "" [: `S LR "then" :] :];
+                                  [: `BEbox
+                                        [: `HVbox
+                                              [: `S LR "else"; `S LR "if" :];
+                                           `expr e1 "" [: :];
+                                           `S LR "then" :];
                                      `expr1 e2 "else" k :])
                              eel "" [: :];
                            `HVbox
-                              [: `HOVbox
-                                    [: `S LR "else"; `S LR "if";
-                                       `expr e1f "" [: `S LR "then" :] :];
+                              [: `BEbox
+                                    [: `HVbox [: `S LR "else"; `S LR "if" :];
+                                       `expr e1f "" [: :];
+                                       `S LR "then" :];
                                  `expr1 e2f dg k :] :] :]
               | (eel, e) ->
                   [: `HVbox
                         [: `HVbox [: :];
                            `HVbox
-                              [: `HOVbox
-                                    [: `S LR "if";
-                                       `expr e1 "" [: `S LR "then" :] :];
+                              [: `BEbox
+                                    [: `S LR "if"; `expr e1 "" [: :];
+                                       `S LR "then" :];
                                  `expr1 e2 "else" [: :] :];
                            list
                              (fun (e1, e2) _ k ->
                                 HVbox
-                                  [: `HOVbox
-                                        [: `S LR "else"; `S LR "if";
-                                           `expr e1 "" [: `S LR "then" :] :];
+                                  [: `BEbox
+                                        [: `HVbox
+                                              [: `S LR "else"; `S LR "if" :];
+                                           `expr e1 "" [: :];
+                                           `S LR "then" :];
                                      `expr1 e2 "else" k :])
                              eel "" [: :];
                            `HVbox [: `S LR "else"; `expr1 e dg k :] :] :] ]
@@ -1239,16 +1110,18 @@ pr_expr.pr_levels :=
                   [: `HVbox
                         [: `HVbox [: :];
                            `HVbox
-                              [: `HOVbox
-                                    [: `S LR "if";
-                                       `expr e1 "" [: `S LR "then" :] :];
+                              [: `BEbox
+                                    [: `S LR "if"; `expr e1 "" [: :];
+                                       `S LR "then" :];
                                  `expr1 e2 "" [: :] :];
                            list
                              (fun (e1, e2) _ k ->
                                 HVbox
-                                  [: `HOVbox
-                                        [: `S LR "else"; `S LR "if";
-                                           `expr e1 "" [: `S LR "then" :] :];
+                                  [: `BEbox
+                                        [: `HVbox
+                                              [: `S LR "else"; `S LR "if" :];
+                                           `expr e1 "" [: :];
+                                           `S LR "then" :];
                                      `expr1 e2 "" [: :] :])
                              eel "" [: :];
                            `HVbox [: `S LR "else"; `expr1 e "" k :] :] :] ]
@@ -1313,8 +1186,8 @@ pr_expr.pr_levels :=
       [ <:expr< $lid:op$ $x$ $y$ >> as e ->
           fun curr next dg k ->
             match op with
-            [ "=" | "<>" | "<" | "<." | "<=" | ">" | ">=" | ">=." | "=="
-            | "!=" ->
+            [ "=" | "<>" | "<" | "<." | "<=" | ">" | ">=" | ">=." | "==" |
+              "!=" ->
                 [: curr x "" [: `S LR op :]; `next y "" k :]
             | _ -> [: `next e "" k :] ]
       | e -> fun curr next dg k -> [: `next e dg k :] ]};
@@ -1435,6 +1308,9 @@ pr_expr.pr_levels :=
       | <:expr< $e1$ . $e2$ >> ->
           fun curr next dg k ->
             [: curr e1 "" [: :]; `S NO "."; curr e2 "" k :]
+      | <:expr< $e$ # $lab$ >> ->
+          fun curr next dg k ->
+            [: curr e "" [: :]; `S NO "#"; `label lab; k :]
       | e -> fun curr next dg k -> [: `next e "" k :] ]};
    {pr_label = ""; pr_box _ x = HOVbox x;
     pr_rules =
@@ -1456,7 +1332,8 @@ pr_expr.pr_levels :=
                    listws expr (S RO ";") el "" [: `S RO "]"; k :] :]
             | Some x -> [: `next e "" k :] ]
       | e -> fun curr next dg k -> [: `next e dg k :] ]};
-   {pr_label = "simple"; pr_box _ x = HOVbox x;
+   {pr_label = "simple";
+    pr_box e x = LocInfo (MLast.loc_of_expr e) (HOVbox x);
     pr_rules =
       extfun Extfun.empty with
       [ <:expr< $int:x$ >> ->
@@ -1471,15 +1348,12 @@ pr_expr.pr_levels :=
           fun curr next dg k -> [: `S LR ("\"" ^ s ^ "\""); k :]
       | <:expr< $chr:c$ >> ->
           fun curr next dg k ->
-            let c = if c = "'" then "\'" else c in
+            let c = ocaml_char c in
             [: `S LR ("'" ^ c ^ "'"); k :]
       | <:expr< $uid:s$ >> ->
           fun curr next dg k -> [: `S LR (conv_con s); k :]
       | <:expr< $lid:s$ >> ->
           fun curr next dg k -> [: `S LR (var_escaped s); k :]
-      | <:expr< $e$ # $lab$ >> ->
-          fun curr next dg k ->
-            [: curr e "" [: :]; `S NO "#"; `label lab; k :]
       | <:expr< ` $i$ >> -> fun curr next dg k -> [: `S LR ("`" ^ i); k :]
       | <:expr< ~ $i$ : $lid:j$ >> when i = j ->
           fun curr next dg k -> [: `S LR ("~" ^ i); k :]
@@ -1543,13 +1417,15 @@ pr_expr.pr_levels :=
         <:expr< while $_$ do { $list:_$ } >> | <:expr< ($list: _$) >> |
         <:expr< $_$ . $_$ >> | <:expr< $_$ . ( $_$ ) >> |
         <:expr< $_$ . [ $_$ ] >> | <:expr< $_$ := $_$ >> |
-        MLast.ExNew _ _ as e ->
+        <:expr< $_$ # $_$ >> |
+        <:expr< let module $_$ = $_$ in $_$ >> |
+        <:expr< new $list:_$ >> as e ->
           fun curr next dg k ->
             [: `S LO "("; `expr e "" [: `HVbox [: `S RO ")"; k :] :] :]
       | e -> fun curr next dg k -> [: `next e "" k :] ]}];
 
 pr_patt.pr_levels :=
-  [{pr_label = "top"; pr_box _ x = HOVCbox x;
+  [{pr_label = "top"; pr_box p x = LocInfo (MLast.loc_of_patt p) (HOVCbox x);
     pr_rules =
       extfun Extfun.empty with
       [ <:patt< ($x$ as $lid:y$) >> ->
@@ -1622,7 +1498,8 @@ pr_patt.pr_levels :=
       [ <:patt< $x$ . $y$ >> ->
           fun curr next dg k -> [: curr x "" [: :]; `S NO "."; `next y "" k :]
       | p -> fun curr next dg k -> [: `next p "" k :] ]};
-   {pr_label = "simple"; pr_box _ x = HOVbox x;
+   {pr_label = "simple";
+    pr_box p x = LocInfo (MLast.loc_of_patt p) (HOVbox x);
     pr_rules =
       extfun Extfun.empty with
       [ <:patt< [| $list:pl$ |] >> ->
@@ -1664,7 +1541,7 @@ pr_patt.pr_levels :=
           fun curr next dg k -> [: `S LR ("\"" ^ s ^ "\""); k :]
       | <:patt< $chr:c$ >> ->
           fun curr next dg k ->
-            let c = if c = "'" then "\'" else c in
+            let c = ocaml_char c in
             [: `S LR ("'" ^ c ^ "'"); k :]
       | <:patt< $lid:i$ >> -> fun curr next dg k -> [: `id_var i; k :]
       | <:patt< $uid:i$ >> ->
@@ -1709,6 +1586,173 @@ pr_patt.pr_levels :=
             [: `S LO "("; `patt p "" [: `HVbox [: `S RO ")"; k :] :] :]
       | p -> fun curr next dg k -> [: `next p "" k :] ]}];
 
+pr_ctyp.pr_levels :=
+  [{pr_label = "top"; pr_box t x = LocInfo (MLast.loc_of_ctyp t) (HOVbox x);
+    pr_rules =
+      extfun Extfun.empty with
+      [ <:ctyp< $x$ as $y$ >> ->
+          fun curr next dg k -> [: curr x "" [: `S LR "as" :]; `next y "" k :]
+      | t -> fun curr next dg k -> [: `next t "" k :] ]};
+   {pr_label = ""; pr_box _ x = HOVbox x;
+    pr_rules =
+      extfun Extfun.empty with
+      [ <:ctyp< $x$ -> $y$ >> ->
+          fun curr next dg k -> [: `next x "" [: `S LR "->" :]; curr y "" k :]
+      | t -> fun curr next dg k -> [: `next t "" k :] ]};
+   {pr_label = ""; pr_box _ x = HOVbox x;
+    pr_rules =
+      extfun Extfun.empty with
+      [ <:ctyp< ? $lab$ : $t$ >> ->
+          fun curr next dg k ->
+            [: `S LO "?"; `S LR lab; `S RO ":"; `next t "" k :]
+      | t -> fun curr next dg k -> [: `next t "" k :] ]};
+   {pr_label = ""; pr_box _ x = HOVbox x;
+    pr_rules =
+      extfun Extfun.empty with
+      [ <:ctyp< ($list:tl$) >> ->
+          fun curr next dg k -> listws next (S LR "*") tl "" k
+      | t -> fun curr next dg k -> [: `next t "" k :] ]};
+   {pr_label = "simple";
+    pr_box t x = LocInfo (MLast.loc_of_ctyp t) (HOVbox x);
+    pr_rules =
+      extfun Extfun.empty with
+      [ <:ctyp< $t1$ == $t2$ >> ->
+          fun curr next dg k ->
+            [: curr t1 "=" [: `S LR "=" :]; `next t2 "" k :]
+      | t -> fun curr next dg k -> [: `next t "" k :] ]};
+   {pr_label = ""; pr_box _ x = HOVbox x;
+    pr_rules =
+      extfun Extfun.empty with
+      [ <:ctyp< ? $lab$ : $t$ >> ->
+          fun curr next dg k ->
+            [: `S LO "?"; `S LR lab; `S RO ":"; `next t "" k :]
+      | <:ctyp< ~ $lab$ : $t$ >> ->
+          fun curr next dg k -> [: `S LO (lab ^ ":"); `next t "" k :]
+      | t -> fun curr next dg k -> [: `next t "" k :] ]};
+   {pr_label = ""; pr_box _ x = HOVbox x;
+    pr_rules =
+      extfun Extfun.empty with
+      [ <:ctyp< $t1$ $t2$ >> ->
+          fun curr next dg k ->
+            let (t, tl) = get_type_args t1 [t2] in
+            match tl with
+            [ [<:ctyp< $_$ $_$ >>] -> [: curr t2 "" [: :]; curr t1 "" k :]
+            | [_] -> [: `next t2 "" [: :]; curr t1 "" k :]
+            | _ ->
+                [: `S LO "(";
+                   listws (fun x _ k -> HOVbox [: curr x "" k :]) (S RO ",")
+                     tl "" [: `S RO ")" :];
+                   curr t "" k :] ]
+      | t -> fun curr next dg k -> [: `next t "" k :] ]};
+   {pr_label = ""; pr_box _ x = HOVbox x;
+    pr_rules =
+      extfun Extfun.empty with
+      [ <:ctyp< $t1$ . $t2$ >> ->
+          fun curr next dg k ->
+            [: `module_pref t1 "" [: `S NO "." :]; `next t2 "" k :]
+      | t -> fun curr next dg k -> [: `next t "" k :] ]};
+   {pr_label = ""; pr_box _ x = HOVbox x;
+    pr_rules =
+      extfun Extfun.empty with
+      [ <:ctyp< '$s$ >> ->
+          fun curr next dg k -> [: `S LO "'"; `S LR (var_escaped s); k :]
+      | <:ctyp< $lid:s$ >> ->
+          fun curr next dg k -> [: `S LR (var_escaped s); k :]
+      | <:ctyp< $uid:s$ >> -> fun curr next dg k -> [: `S LR s; k :]
+      | <:ctyp< _ >> -> fun curr next dg k -> [: `S LR "_"; k :]
+      | <:ctyp< { $list:ftl$ } >> as t ->
+          fun curr next dg k ->
+            let loc = MLast.loc_of_ctyp t in
+            [: `HVbox
+                  [: labels loc [: `S LR "{" :] ftl "" [: `S LR "}" :];
+                     k :] :]
+      | <:ctyp< [ $list:ctl$ ] >> as t ->
+          fun curr next dg k ->
+            let loc = MLast.loc_of_ctyp t in
+            [: `Vbox
+                  [: `HVbox [: :];
+                     variants loc [: `S LR " " :] ctl "" [: :]; k :] :]
+      | <:ctyp< [ = $list:rfl$ ] >> ->
+          fun curr next dg k ->
+            [: `HVbox
+                  [: `HVbox [: :];
+                     row_fields [: `S LR "[" :] rfl "" [: `S LR "]" :];
+                     k :] :]
+      | <:ctyp< [ > $list:rfl$ ] >> ->
+          fun curr next dg k ->
+            [: `HVbox
+                  [: `HVbox [: :];
+                     row_fields [: `S LR "[>" :] rfl "" [: `S LR "]" :];
+                     k :] :]
+      | <:ctyp< [ < $list:rfl$ > $list:sl$ ] >> ->
+          fun curr next dg k ->
+            let k1 = [: `S LR "]" :] in
+            let k1 =
+              match sl with
+              [ [] -> k1
+              | l ->
+                  [: `S LR ">";
+                     list (fun x _ k -> HVbox [: `S LR x; k :]) l "" k1 :] ]
+            in
+            [: `HVbox
+                  [: `HVbox [: :]; row_fields [: `S LR "[<" :] rfl "" k1;
+                     k :] :]
+      | MLast.TyCls _ id ->
+          fun curr next dg k -> [: `S LO "#"; `class_longident id "" k :]
+      | MLast.TyObj _ [] False -> fun curr next dg k -> [: `S LR "<>"; k :]
+      | MLast.TyObj _ ml v ->
+          fun curr next dg k ->
+            [: `S LR "<"; meth_list (ml, v) "" [: `S LR ">"; k :] :]
+      | MLast.TyPol _ pl t ->
+          fun curr next dg k ->
+            if pl = [] then [: `ctyp t "" k :]
+            else [: list typevar pl "" [: `S LR "." :]; `ctyp t "" k :]
+      | <:ctyp< $_$ -> $_$ >> | <:ctyp< $_$ $_$ >> | <:ctyp< $_$ == $_$ >> |
+        <:ctyp< $_$ . $_$ >> | <:ctyp< ($list:_$) >> | <:ctyp< $_$ as $_$ >> |
+        <:ctyp< ~ $_$ : $_$ >> | <:ctyp< ? $_$ : $_$ >> as t ->
+          fun curr next dg k ->
+            [: `S LO "("; `ctyp t "" [: `HVbox [: `S RO ")"; k :] :] :]
+      | t -> fun curr next dg k -> [: `next t "" k :] ]}];
+
+pr_class_str_item.pr_levels :=
+  [{pr_label = "";
+    pr_box s x = LocInfo (MLast.loc_of_class_str_item s) (HVbox x);
+    pr_rules =
+      extfun Extfun.empty with
+      [ MLast.CrDcl _ s ->
+          fun curr next dg k ->
+            [: `HVbox [: :]; list class_str_item s "" [: :] :]
+      | MLast.CrInh _ ce pb ->
+          fun curr next dg k ->
+            [: `S LR "inherit"; `class_expr ce [: :];
+               match pb with
+               [ Some i -> [: `S LR "as"; `S LR i :]
+               | _ -> [: :] ];
+               k :]
+      | MLast.CrVal _ lab mf e ->
+          fun curr next dg k -> [: `cvalue [: `S LR "val" :] (lab, mf, e) k :]
+      | MLast.CrVir _ lab pf t ->
+          fun curr next dg k ->
+            [: `S LR "method"; `S LR "virtual"; private_flag pf; `label lab;
+               `S LR ":"; `ctyp t "" k :]
+      | MLast.CrMth _ lab pf fb None ->
+          fun curr next dg k ->
+            [: `fun_binding [: `S LR "method"; private_flag pf; `label lab :]
+                  fb k :]
+      | MLast.CrMth _ lab pf fb (Some t) ->
+          fun curr next dg k ->
+            [: `HOVbox
+                 [: `S LR "method"; private_flag pf; `label lab; `S LR ":";
+                     `ctyp t "" [: `S LR "=" :] :];
+               `expr fb "" k :]
+      | MLast.CrCtr _ t1 t2 ->
+          fun curr next dg k ->
+            [: `HVbox [: `S LR "constraint"; `ctyp t1 "" [: `S LR "=" :] :];
+               `ctyp t2 "" k :]
+      | MLast.CrIni _ se ->
+          fun curr next dg k -> [: `S LR "initializer"; `expr se "" k :]
+      | csi -> fun curr next dg k -> [: `next csi "" k :] ]}];
+
 value output_string_eval oc s =
   loop 0 where rec loop i =
     if i == String.length s then ()
@@ -1721,20 +1765,19 @@ value output_string_eval oc s =
 
 value maxl = ref 78;
 value sep = Pcaml.inter_phrases;
-value ncip = ref False;
-value type_comm = ref False;
+value ncip = ref True;
 
-value input_source ic dont_skip_to_next_bol len =
+value input_source ic len =
   let buff = Buffer.create 20 in
-  loop dont_skip_to_next_bol 0 where rec loop bol_found i =
+  let rec loop i =
     if i = len then Buffer.contents buff
-    else
+    else do {
       let c = input_char ic in
-      let bol_found = bol_found || c = '\n' in
-      do {
-        if bol_found then Buffer.add_char buff c else ();
-        loop bol_found (i + 1)
-      }
+      Buffer.add_char buff c;
+      loop (i + 1)
+    }
+  in
+  loop 0
 ;
 
 value copy_source ic oc first bp ep =
@@ -1746,15 +1789,14 @@ value copy_source ic oc first bp ep =
   | None ->
       do {
         seek_in ic bp;
-        let s = input_source ic (first || not type_comm.val) (ep - bp) in
-        output_string oc s;
+        let s = input_source ic (ep - bp) in
+        output_string oc s
       } ]
 ;
 
 value copy_to_end ic oc first bp =
   let ilen = in_channel_length ic in
-  if bp < ilen then copy_source ic oc first bp ilen
-  else output_string oc "\n"
+  if bp < ilen then copy_source ic oc first bp ilen else output_string oc "\n"
 ;
 
 module Buff =
@@ -1779,51 +1821,69 @@ module Buff =
 ;
 
 value extract_comment strm =
-  let rec find_comm sp_cnt =
+  let rec find_comm nl_bef tab_bef =
     parser
-    [ [: `'('; a = find_star sp_cnt :] -> a
-    | [: `' '; s :] -> find_comm (sp_cnt + 1) s
-    | [: `_; s :] -> find_comm 0 s
-    | [: :] -> "" ]
-  and find_star sp_cnt =
+    [ [: `'('; a = find_star nl_bef tab_bef :] -> a
+    | [: `' '; s :] -> find_comm nl_bef (tab_bef + 1) s
+    | [: `'\t'; s :] -> find_comm nl_bef (tab_bef + 8) s
+    | [: `'\n'; s :] -> find_comm (nl_bef + 1) 0 s
+    | [: `_; s :] -> find_comm 0 0 s
+    | [: :] -> ("", nl_bef, tab_bef) ]
+  and find_star nl_bef tab_bef =
     parser
-    [ [: `'*'; a = insert (Buff.mstore 0 "(*") :] -> a
-    | [: a = find_comm 0 :] -> a ]
+    [ [: `'*'; a = insert (Buff.mstore 0 "(*") :] -> (a, nl_bef, tab_bef)
+    | [: a = find_comm 0 0 :] -> a ]
   and insert len =
     parser
     [ [: `'*'; a = rparen (Buff.store len '*') :] -> a
+    | [: `'('; len = find_star2 (Buff.store len '('); s :] -> insert len s
+    | [: `'\t'; s :] -> insert (Buff.mstore len (String.make 8 ' ')) s
     | [: `x; s :] -> insert (Buff.store len x) s
     | [: :] -> "" ]
   and rparen len =
     parser
-    [ [: `')'; s :] -> if_newline (Buff.store len ')') s
+    [ [: `')'; s :] -> while_space (Buff.store len ')') s
     | [: a = insert len :] -> a ]
-  and if_newline len =
-    parser
-    [ [: `'\n'; a = while_space (Buff.store len '\n') :] -> a
-    | [: :] -> " " ^ Buff.get len ]
   and while_space len =
     parser
-    [ [: `(' ' as c); a = while_space (Buff.store len c) :] -> a
-    | [: `'\n'; a = while_space len :] -> a
+    [ [: `' '; a = while_space (Buff.store len ' ') :] -> a
+    | [: `'\t'; a = while_space (Buff.mstore len (String.make 8 ' ')) :] -> a
+    | [: `'\n'; a = while_space (Buff.store len '\n') :] -> a
+    | [: `'('; a = find_star_again len :] -> a
     | [: :] -> Buff.get len ]
+  and find_star_again len =
+    parser
+    [ [: `'*'; a = insert (Buff.mstore len "(*") :] -> a
+    | [: :] -> Buff.get len ]
+  and find_star2 len =
+    parser
+    [ [: `'*'; len = insert2 (Buff.store len '*'); s :] -> len
+    | [: :] -> len ]
+  and insert2 len =
+    parser
+    [ [: `'*'; a = rparen2 (Buff.store len '*') :] -> a
+    | [: `'('; len = find_star2 (Buff.store len '('); s :] -> insert2 len s
+    | [: `x; s :] -> insert2 (Buff.store len x) s
+    | [: :] -> 0 ]
+  and rparen2 len =
+    parser
+    [ [: `')'; s :] -> Buff.store len ')'
+    | [: a = insert2 len :] -> a ]
   in
-  find_comm 0 strm
+  find_comm 0 0 strm
 ;
 
-value print_comment ic oc last_ep (bp, ep) =
-  if bp > last_ep.val then do {
-    seek_in ic last_ep.val;
+value get_no_comment _ _ = ("", 0, 0, 0);
+
+value get_comment ic beg len =
+  do {
+    seek_in ic beg;
     let strm =
-      Stream.from
-        (fun i -> if i = bp - last_ep.val then None else Some (input_char ic))
+      Stream.from (fun i -> if i >= len then None else Some (input_char ic))
     in
-    match extract_comment strm with
-    [ "" -> ()
-    | s -> output_string oc s ];
-    last_ep.val := last_ep.val + Stream.count strm
+    let (s, nl_bef, tab_bef) = extract_comment strm in
+    (s, nl_bef, tab_bef, Stream.count strm)
   }
-  else ()
 ;
 
 value apply_printer printer ast =
@@ -1842,22 +1902,19 @@ value apply_printer printer ast =
   let pr_nl () = output_char oc '\n' in
   if Pcaml.input_file.val <> "-" && Pcaml.input_file.val <> "" then do {
     let ic = open_in_bin Pcaml.input_file.val in
-    let last_ep = ref 0 in
-    let prcom =
-      if not ncip.val && sep.val = None then print_comment ic oc last_ep
-      else fun _ -> ()
+    let getcom =
+      if not ncip.val && sep.val = None then get_comment ic
+      else get_no_comment
     in
     try
       do {
-        input_file_ic.val := if type_comm.val then Some ic else None;
         let (first, last_pos) =
           List.fold_left
             (fun (first, last_pos) (si, (bp, ep)) ->
                do {
                  copy_source ic oc first last_pos bp;
                  flush oc;
-                 last_ep.val := bp;
-                 print_pretty pr_ch pr_str pr_nl "" "" maxl.val prcom
+                 print_pretty pr_ch pr_str pr_nl "" "" maxl.val getcom bp
                    (printer si "" [: :]);
                  flush oc;
                  (False, ep)
@@ -1868,16 +1925,15 @@ value apply_printer printer ast =
         flush oc
       }
     with x ->
-      do { close_in ic; input_file_ic.val := None; cleanup (); raise x };
+      do { close_in ic; cleanup (); raise x };
     close_in ic;
-    input_file_ic.val := None;
     cleanup ()
   }
   else do {
     List.iter
       (fun (si, _) ->
          do {
-           print_pretty pr_ch pr_str pr_nl "" "" maxl.val (fun _ -> ())
+           print_pretty pr_ch pr_str pr_nl "" "" maxl.val get_no_comment 0
              (printer si "" [: :]);
            match sep.val with
            [ Some str -> output_string_eval oc str
@@ -1895,14 +1951,20 @@ Pcaml.print_implem.val := apply_printer str_item;
 Pcaml.add_option "-l" (Arg.Int (fun x -> maxl.val := x))
   "<length> line length for pretty printing.";
 
+Pcaml.add_option "-ss" (Arg.Clear no_ss) "Print double semicolons.";
+
 Pcaml.add_option "-no_ss" (Arg.Set no_ss)
-  "Do not print double semicolons.";
+  "Do not print double semicolons (default).";
 
 Pcaml.add_option "-sep_src" (Arg.Unit (fun () -> sep.val := None))
-  "Read source file for text between phrases.";
+  "Read source file for text between phrases (default).";
 
 Pcaml.add_option "-sep" (Arg.String (fun x -> sep.val := Some x))
   "<string> Use this string between phrases instead of reading source.";
 
-Pcaml.add_option "-tc" (Arg.Set type_comm)
-  "Add the comments inside sum and record types.";
+Pcaml.add_option "-cip" (Arg.Clear ncip) "Add comments in phrases.";
+
+Pcaml.add_option "-ncip" (Arg.Set ncip) "No comments in phrases (default).";
+
+Pcaml.add_option "-tc" (Arg.Clear ncip)
+  "Deprecated since version 3.05; equivalent to -cip.";

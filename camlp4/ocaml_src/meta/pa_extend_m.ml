@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -20,10 +20,7 @@ Grammar.extend
    [None, Some Gramext.NonA,
     [[Gramext.Stoken ("UIDENT", "SOPT"); Gramext.Sself],
      Gramext.action
-       (fun (s : 'symbol) _ (loc : int * int) ->
-          (let used = mk_name loc (MLast.ExLid (loc, "a_opt")) :: s.used in
-           {used = used; text = ssopt loc s; styp = STquo (loc, "a_opt")} :
-           'symbol));
+       (fun (s : 'symbol) _ (loc : int * int) -> (ssopt loc s : 'symbol));
      [Gramext.srules
         [[Gramext.Stoken ("UIDENT", "SLIST1")],
          Gramext.action (fun _ (loc : int * int) -> (true : 'e__1));
@@ -40,12 +37,4 @@ Grammar.extend
      Gramext.action
        (fun (sep : 'e__2 option) (s : 'symbol) (min : 'e__1)
           (loc : int * int) ->
-          (let used =
-             match sep with
-               Some symb -> symb.used @ s.used
-             | None -> s.used
-           in
-           let used = mk_name loc (MLast.ExLid (loc, "a_list")) :: used in
-           {used = used; text = sslist loc min sep s;
-            styp = STquo (loc, "a_list")} :
-           'symbol))]]];;
+          (sslist loc min sep s : 'symbol))]]];;

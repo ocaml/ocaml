@@ -233,6 +233,9 @@ and parse_symbol entry nlevn s rkont fkont ending_act =
   | Sself ->
       let n = entry.ename ^ "_0" in
       parse_standard_symbol <:expr< $lid:n$ >> rkont fkont ending_act
+  | Snext ->
+      let n = entry.ename ^ "_" ^ string_of_int nlevn in
+      parse_standard_symbol <:expr< $lid:n$ >> rkont fkont ending_act
   | Stoken tok ->
       let _ =
         do {
@@ -260,7 +263,7 @@ and parse_symbol entry nlevn s rkont fkont ending_act =
         | _ -> $fkont$ ]
       >>
   | _ ->
-      parse_standard_symbol <:expr< ps >> rkont fkont ending_act ]
+      parse_standard_symbol <:expr< not_impl >> rkont fkont ending_act ]
 and symbol_parser entry nlevn =
   fun
   [ Snterm e ->
@@ -488,7 +491,7 @@ and scan_symbol list =
   | Slist1sep s sep -> scan_symbol (scan_symbol list s) sep
   | Sopt s -> scan_symbol list s
   | Stree t -> scan_tree list t
-  | Sself | Snext | Stoken _ -> list ]
+  | Smeta _ _ _ | Sself | Snext | Stoken _ -> list ]
 and scan_level list lev =
   let list = scan_tree list lev.lsuffix in
   let list = scan_tree list lev.lprefix in

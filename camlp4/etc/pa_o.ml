@@ -265,6 +265,21 @@ value test_label_eq =
        | _ -> raise Stream.Failure ])
 ;
 
+value test_typevar_list_dot =
+  Grammar.Entry.of_parser gram "test_typevar_list_dot"
+    (let rec test lev strm =
+       match stream_peek_nth lev strm with
+       [ Some ("", "'") -> test2 (lev + 1) strm
+       | Some ("", ".") -> ()
+       | _ -> raise Stream.Failure ]
+    and test2 lev strm =
+       match stream_peek_nth lev strm with
+       [ Some ("UIDENT" | "LIDENT", _) -> test (lev + 1) strm
+       | _ -> raise Stream.Failure ]
+    in
+    test 1)
+;
+
 value constr_arity = ref [("Some", 1); ("Match_Failure", 1)];
 
 value rec constr_expr_arity =
@@ -451,6 +466,8 @@ EXTEND
           <:sig_item< module $i$ : $mt$ >>
       | "module"; "type"; i = UIDENT; "="; mt = module_type ->
           <:sig_item< module type $i$ = $mt$ >>
+      | "module"; "type"; i = UIDENT ->
+          <:sig_item< module type $i$ = 'abstract >>
       | "open"; i = mod_ident -> <:sig_item< open $i$ >>
       | "type"; tdl = LIST1 type_declaration SEP "and" ->
           <:sig_item< type $list:tdl$ >>
@@ -469,8 +486,8 @@ EXTEND
   with_constr:
     [ [ "type"; tpl = type_parameters; i = mod_ident; "="; t = ctyp ->
           MLast.WcTyp loc i tpl t
-      | "module"; i = mod_ident; "="; mt = module_type ->
-          MLast.WcMod loc i mt ] ]
+      | "module"; i = mod_ident; "="; me = module_expr ->
+          MLast.WcMod loc i me ] ]
   ;
   (* Core expressions *)
   expr:
@@ -827,15 +844,16 @@ EXTEND
       | ld = label_declaration -> [ld] ] ]
   ;
   label_declaration:
-    [ [ i = LIDENT; ":"; t = ctyp -> (loc, i, False, t)
-      | "mutable"; i = LIDENT; ":"; t = ctyp -> (loc, i, True, t) ] ]
+    [ [ i = LIDENT; ":"; t = poly_type -> (loc, i, False, t)
+      | "mutable"; i = LIDENT; ":"; t = poly_type -> (loc, i, True, t) ] ]
   ;
   (* Core types *)
   ctyp:
     [ [ t1 = SELF; "as"; "'"; i = ident -> <:ctyp< $t1$ as '$i$ >> ]
     | "arrow" RIGHTA
       [ t1 = SELF; "->"; t2 = SELF -> <:ctyp< $t1$ -> $t2$ >> ]
-    | [ t = SELF; "*"; tl = LIST1 (ctyp LEVEL "ctyp1") SEP "*" ->
+    | "star"
+      [ t = SELF; "*"; tl = LIST1 (ctyp LEVEL "ctyp1") SEP "*" ->
           <:ctyp< ( $list:[t :: tl]$ ) >> ]
     | "ctyp1"
       [ t1 = SELF; t2 = SELF -> <:ctyp< $t2$ $t1$ >> ]
@@ -939,16 +957,20 @@ EXTEND
           <:class_str_item< inherit $ce$ $as:pb$ >>
       | "val"; (lab, mf, e) = cvalue ->
           <:class_str_item< value $mut:mf$ $lab$ = $e$ >>
-      | "method"; "private"; "virtual"; l = label; ":"; t = ctyp ->
+      | "method"; "private"; "virtual"; l = label; ":"; t = poly_type ->
           <:class_str_item< method virtual private $l$ : $t$ >>
-      | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
+      | "method"; "virtual"; "private"; l = label; ":"; t = poly_type ->
           <:class_str_item< method virtual private $l$ : $t$ >>
-      | "method"; "virtual"; l = label; ":"; t = ctyp ->
+      | "method"; "virtual"; l = label; ":"; t = poly_type ->
           <:class_str_item< method virtual $l$ : $t$ >>
-      | "method"; "private"; l = label; fb = fun_binding ->
-          <:class_str_item< method private $l$ = $fb$ >>
-      | "method"; l = label; fb = fun_binding ->
-          <:class_str_item< method $l$ = $fb$ >>
+      | "method"; "private"; l = label; ":"; t = poly_type; "="; e = expr ->
+          MLast.CrMth loc l True e (Some t)
+      | "method"; "private"; l = label; sb = fun_binding ->
+          MLast.CrMth loc l True sb None
+      | "method"; l = label; ":"; t = poly_type; "="; e = expr ->
+          MLast.CrMth loc l False e (Some t)
+      | "method"; l = label; sb = fun_binding ->
+          MLast.CrMth loc l False sb None
       | "constraint"; t1 = ctyp; "="; t2 = ctyp ->
           <:class_str_item< type $t1$ = $t2$ >>
       | "initializer"; se = expr -> <:class_str_item< initializer $se$ >> ] ]
@@ -968,11 +990,8 @@ EXTEND
   ;
   (* Class types *)
   class_type:
-    [ [ test_ctyp_minusgreater; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
+    [ [ test_ctyp_minusgreater; t = ctyp LEVEL "star"; "->"; ct = SELF ->
           <:class_type< [ $t$ ] -> $ct$ >>
-      | test_ctyp_minusgreater; t = ctyp LEVEL "ctyp1"; "*";
-        tl = LIST1 ctyp LEVEL "simple" SEP "*"; "->"; ct = SELF ->
-          <:class_type< [ ($t$ * $list:tl$) ] -> $ct$ >>
       | cs = class_signature -> cs ] ]
   ;
   class_signature:
@@ -990,15 +1009,15 @@ EXTEND
     [ [ "inherit"; cs = class_signature -> <:class_sig_item< inherit $cs$ >>
       | "val"; mf = OPT "mutable"; l = label; ":"; t = ctyp ->
           <:class_sig_item< value $mut:o2b mf$ $l$ : $t$ >>
-      | "method"; "private"; "virtual"; l = label; ":"; t = ctyp ->
+      | "method"; "private"; "virtual"; l = label; ":"; t = poly_type ->
           <:class_sig_item< method virtual private $l$ : $t$ >>
-      | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
+      | "method"; "virtual"; "private"; l = label; ":"; t = poly_type ->
           <:class_sig_item< method virtual private $l$ : $t$ >>
-      | "method"; "virtual"; l = label; ":"; t = ctyp ->
+      | "method"; "virtual"; l = label; ":"; t = poly_type ->
           <:class_sig_item< method virtual $l$ : $t$ >>
-      | "method"; "private"; l = label; ":"; t = ctyp ->
+      | "method"; "private"; l = label; ":"; t = poly_type ->
           <:class_sig_item< method private $l$ : $t$ >>
-      | "method"; l = label; ":"; t = ctyp ->
+      | "method"; l = label; ":"; t = poly_type ->
           <:class_sig_item< method $l$ : $t$ >>
       | "constraint"; t1 = ctyp; "="; t2 = ctyp ->
           <:class_sig_item< type $t1$ = $t2$ >> ] ]
@@ -1049,7 +1068,16 @@ EXTEND
       | ".." -> ([], True) ] ]
   ;
   field:
-    [ [ lab = LIDENT; ":"; t = ctyp -> (lab, t) ] ]
+    [ [ lab = LIDENT; ":"; t = poly_type -> (lab, t) ] ]
+  ;
+  (* Polymorphic types *)
+  typevar:
+    [ [ "'"; i = ident -> i ] ]
+  ;
+  poly_type:
+    [ [ test_typevar_list_dot; tpl = LIST1 typevar; "."; t2 = ctyp ->
+          <:ctyp< ! $list:tpl$ . $t2$ >>
+      | t = ctyp -> t ] ]
   ;
   (* Identifiers *)
   clty_longident:
@@ -1068,14 +1096,14 @@ EXTEND
   ;
   ctyp: LEVEL "simple"
     [ [ "["; OPT "|"; rfl = LIST0 row_field SEP "|"; "]" ->
-          <:ctyp< [| $list:rfl$ |] >>
+          <:ctyp< [ = $list:rfl$ ] >>
       | "["; ">"; OPT "|"; rfl = LIST1 row_field SEP "|"; "]" ->
-          <:ctyp< [| > $list:rfl$ |] >>
+          <:ctyp< [ > $list:rfl$ ] >>
       | "[<"; OPT "|"; rfl = LIST1 row_field SEP "|"; "]" ->
-          <:ctyp< [| < $list:rfl$ |] >>
+          <:ctyp< [ < $list:rfl$ ] >>
       | "[<"; OPT "|"; rfl = LIST1 row_field SEP "|"; ">";
         ntl = LIST1 name_tag; "]" ->
-          <:ctyp< [| < $list:rfl$ > $list:ntl$ |] >> ] ]
+          <:ctyp< [ < $list:rfl$ > $list:ntl$ ] >> ] ]
   ;
   row_field:
     [ [ "`"; i = ident -> MLast.RfTag i True []

@@ -3,7 +3,10 @@
 (* Copyright 2001 INRIA *)
 
 type 'a t = { count : int; data : 'a data Lazy.t }
-and 'a data = Nil | Cons of 'a * 'a t | App of 'a t * 'a t
+and 'a data =
+    Nil
+  | Cons of 'a * 'a t
+  | App of 'a t * 'a t
 ;;
 
 let from f =
