@@ -269,13 +269,23 @@ let is_simple_argument = function
   | Uconst(Const_pointer _) -> true
   | _ -> false
 
+let no_effects = function
+    Uclosure _ -> true
+  | Uconst(Const_base(Const_string _)) -> true
+  | u -> is_simple_argument u
+
 let rec bind_params subst params args body =
   match (params, args) with
     ([], []) -> substitute subst body
   | (p1 :: pl, a1 :: al) ->
-      if is_simple_argument a1
-      then bind_params (Tbl.add p1 a1 subst) pl al body
-      else Ulet(p1, a1, bind_params subst pl al body)
+      if is_simple_argument a1 then
+        bind_params (Tbl.add p1 a1 subst) pl al body
+      else begin
+        let body' = bind_params subst pl al body in
+        if occurs_var p1 body then Ulet(p1, a1, body')
+        else if no_effects a1 then body'
+        else Usequence(a1, body')
+      end
   | (_, _) -> assert false
 
 (* Check if a lambda term is ``pure'',
