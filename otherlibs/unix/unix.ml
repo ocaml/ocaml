@@ -332,6 +332,8 @@ external bind : file_descr -> sockaddr -> unit = "unix_bind"
 external connect : file_descr -> sockaddr -> unit = "unix_connect"
 external listen : file_descr -> int -> unit = "unix_listen"
 external shutdown : file_descr -> shutdown_command -> unit = "unix_shutdown" 
+external getsockname : file_descr -> sockaddr = "unix_getsockname"
+external getpeername : file_descr -> sockaddr = "unix_getpeername"
 external recv : file_descr -> string -> int -> int -> msg_flag list -> int
                                   = "unix_recv"
 external recvfrom :
