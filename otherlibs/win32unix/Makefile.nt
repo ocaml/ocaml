@@ -4,7 +4,7 @@
 SYSTEM_INCLUDES=\msdev\include
 CC=$(BYTECC)
 CFLAGS=-I..\..\byterun -I..\unix $(BYTECCCOMPOPTS)
-CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc -I ..\..\boot
+CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc -I ..\..\stdlib
 CAMLOPT=..\..\boot\ocamlrun ..\..\ocamlopt -I ..\..\stdlib
 
 # Files in this directory
