@@ -472,8 +472,12 @@ pattern-matching over streams, which facilitate the writing of
 recursive-descent parsers for LL(1) languages. An example using
 "ocamllex" and "ocamlyacc" is given in
 chapter~\ref{c:ocamlyacc}. Here, we will use stream parsers.
+The syntactic support for stream parsers is provided by the Camlp4
+preprocessor, which can be loaded into the interactive toplevel via
+the "#load" directive below.
 
 \begin{caml_example}
+#load "camlp4o.cma";;
 open Genlex;;
 let lexer = make_lexer ["("; ")"; "+"; "-"; "*"; "/"];;
 \end{caml_example}

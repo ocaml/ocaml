@@ -285,37 +285,32 @@ Finally (step 3), execute the "ocamlc" command with
 \item the names of the desired Caml object files (".cmo" and ".cma" files) ;
 \item the names of the C shared libraries (".so" or ".dll" files) that
 implement the required primitives.  Under Unix and Windows, 
-a library named "lib"\var{name}".so" (respectively, ".dll") residing
+a library named "dll"\var{name}".so" (respectively, ".dll") residing
 in one of the standard library directories can also be specified as
-"-cclib -l"\var{name}.
+"-dllib -l"\var{name}.
 \end{itemize}
 Do {\em not} set the "-custom" flag, otherwise you're back to static linking
 as described in section~\ref{staticlink-c-code}.
 Under Unix, the "ocamlmklib" tool (see section~\ref{s-ocamlmklib})
 automates steps 2 and 3.
 
-If you are using the native-code compiler "ocamlopt", you can also
-provide shared libraries (".so" or ".dll" files) during the final
-linking phase of "ocamlopt"; these will be linked with the produced
-executable, and dynamically loaded at program start-up.
-
 As in the case of static linking, it is possible (and recommended) to
 record the names of C libraries in a Caml ".cmo" library archive.  
 Consider again a Caml library
 "mylib.cma", built from the Caml object files "a.cmo" and "b.cmo",
-which reference C code in "libmylib.so".  If the library is
+which reference C code in "dllmylib.so".  If the library is
 built as follows:
 \begin{alltt}
-        ocamlc -a -o mylib.cma a.cmo b.cmo -cclib -lmylib
+        ocamlc -a -o mylib.cma a.cmo b.cmo -dllib -lmylib
 \end{alltt}
 users of the library can simply link with "mylib.cma":
 \begin{alltt}
         ocamlc -o myprog mylib.cma ...
 \end{alltt}
-and the system will automatically add the "-cclib -lmylib" option,
+and the system will automatically add the "-dllib -lmylib" option,
 achieving the same effect as
 \begin{alltt}
-        ocamlc -o myprog a.cmo b.cmo ... -cclib -lmylib
+        ocamlc -o myprog a.cmo b.cmo ... -dllib -lmylib
 \end{alltt}
 Using this mechanism, users of the library "mylib.cma" do not need to
 known that it references C code, nor whether this C code must be
@@ -369,6 +364,41 @@ be considered for mature, frequently used libraries because it
 enhances platform-independence of bytecode executables.  For new or
 rarely-used libraries, static linking is much simpler to set up in a
 portable way.
+
+\subsection{Building standalone custom runtime systems}
+\label{s:custom-runtime}
+
+It is sometimes inconvenient to build a custom runtime system each
+time Caml code is linked with C libraries, like "ocamlc -custom" does.
+For one thing, the building of the runtime system is slow on some
+systems (that have bad linkers or slow remote file systems); for
+another thing, the platform-independence of bytecode files is lost,
+forcing to perform one "ocamlc -custom" link per platform of interest.
+
+An alternative to "ocamlc -custom" is to build separately a custom
+runtime system integrating the desired C libraries, then generate
+``pure'' bytecode executables (not containing their own runtime
+system) that can run on this custom runtime.  This is achieved by the
+"-make_runtime" and "-use_runtime" flags to "ocamlc".  For example,
+to build a custom runtime system integrating the C parts of the
+``Unix'' and ``Threads'' libraries, do:
+\begin{verbatim}
+        ocamlc -make-runtime -o /home/me/ocamlunixrun unix.cma threads.cma
+\end{verbatim}
+To generate a bytecode executable that runs on this runtime system,
+do:
+\begin{alltt}
+        ocamlc -use-runtime /home/me/ocamlunixrun -o myprog \char92
+                unix.cma threads.cma {\it{your .cmo and .cma files}}
+\end{alltt}
+The bytecode executable "myprog" can then be launched as usual:
+"myprog" \var{args} or "/home/me/ocamlunixrun myprog" \var{args}.
+
+Notice that the bytecode libraries "unix.cma" and "threads.cma" must
+be given twice: when building the runtime system (so that "ocamlc"
+knows which C primitives are required) and also when building the
+bytecode executable (so that the bytecode from "unix.cma" and
+"threads.cma" is actually linked in).
 
 \section{The "value" type}
 \pdfsection{The value type}
@@ -1731,16 +1761,18 @@ library resides in "/usr/local/zlib".  This interface is
 composed of a Caml part "zip.cmo"/"zip.cmx" and a C part "zipstubs.o"
 containing the stub code around the "libz" entry points.  The
 following command builds the Caml libraries "zip.cma" and "zip.cmxa",
-as well as the companion C libraries "libzip.so" and "libzip.a":
+as well as the companion C libraries "dllzip.so" and "libzip.a":
 \begin{verbatim}
 ocamlmklib -o zip zip.cmo zip.cmx zipstubs.o -lz -L/usr/local/zlib
 \end{verbatim}
 If shared libraries are supported, this performs the following
 commands:
 \begin{verbatim}
-ocamlc -a -o zip.cma zip.cmo -cclib -lzip
-ocamlopt -a -o zip.cmxa zip.cmx -cclib -lzip
-gcc -shared -o libzip.so zipstubs.o -lz -L/usr/local/zlib
+ocamlc -a -o zip.cma zip.cmo -dllib -lzip \
+        -cclib -lzip -cclib -lz -ccopt -L/usr/local/zlib
+ocamlopt -a -o zip.cmxa zip.cmx -cclib -lzip \
+        -cclib -lzip -cclib -lz -ccopt -L/usr/local/zlib
+gcc -shared -o dllzip.so zipstubs.o -lz -L/usr/local/zlib
 ar rc libzip.a zipstubs.o
 \end{verbatim}
 If shared libraries are not supported, the following commands are
@@ -1766,10 +1798,10 @@ builds the native-code library "zip.cmxa", and
 \begin{verbatim}
 ocamlmklib -o zip zipstubs.o -lz -L/usr/local/zlib
 \end{verbatim}
-builds the C libraries "libzip.so" and "libzip.a".  Notice that the
+builds the C libraries "dllzip.so" and "libzip.a".  Notice that the
 support libraries ("-lz") and the corresponding options
-("-L/usr/local/zlib") must be given every time, because they are
-needed at different times depending on whether shared libraries are
-supported.
+("-L/usr/local/zlib") must be given on all three invocations of "ocamlmklib",
+because they are needed at different times depending on whether shared
+libraries are supported.
 
 

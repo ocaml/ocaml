@@ -44,7 +44,7 @@ to always give ".exe" names to bytecode executables, e.g. compile
 with "ocamlc -o myprog.exe ..." rather than "ocamlc -o myprog ...".
 \end{windows}
 
-\section{Options}
+\section{Options} \label{ocamlrun-options}
 
 The following command-line options are recognized by "ocamlrun".
 
@@ -56,7 +56,7 @@ When the program aborts due to an uncaught exception, print a detailed
 raised and which function calls were outstanding at this point.  The
 back trace is printed only if the bytecode executable contains
 debugging information, i.e. was compiled and linked with the "-g"
-option to "ocamlc" set.  This is equivalent to setting "b=1"
+option to "ocamlc" set.  This is equivalent to setting the "b" flag
 in the "OCAMLRUNPARAM" environment variable (see below).
 \item["-I" \var{dir}]
 Search the directory \var{dir} for dynamically-loaded libraries,
@@ -76,8 +76,9 @@ The following environment variables are also consulted:
 \item["CAML_LD_LIBRARY_PATH"]  Additional directories to search for
   dynamically-loaded libraries (see section~\ref{s-ocamlrun-dllpath}).
 
-\item["CAMLLIB"] The directory containing the Objective Caml standard
-  library.  Used to locate the "ld.conf" configuration file for
+\item["OCAMLLIB"] The directory containing the Objective Caml standard
+  library.  (If "OCAMLLIB" is not set, "CAMLLIB" will be used instead.)
+  Used to locate the "ld.conf" configuration file for
   dynamic loading (see section~\ref{s-ocamlrun-dllpath}).  If not set,
   default to the library directory specified when compiling Objective Caml.
 
@@ -87,7 +88,7 @@ The following environment variables are also consulted:
   This variable must be a sequence of parameter specifications.
   A parameter specification is an option letter followed by an "="
   sign, a decimal number, and an optional multiplier.  There are
-  eight options, six of which correspond to the fields of the
+  nine options, six of which correspond to the fields of the
   "control" record documented in 
 \ifouthtml
  \begin{rawhtml}<a HREF=libref/Gc.html>Module <tt>Gc</tt></a>.
@@ -96,10 +97,13 @@ The following environment variables are also consulted:
  section~\ref{Gc}.
 \fi
   \begin{options}
-  \item[b] (backtrace) Control the printing of a stack backtrace 
-        when an uncaught exception aborts the program.  A non-zero
-        argument turns the backtrace facility on; a zero argument turns
-        it off.
+  \item[b] (backtrace) Trigger the printing of a stack backtrace 
+        when an uncaught exception aborts the program.
+        This option takes no argument.
+  \item[p] (parser trace) Turn on debugging support for
+        "ocamlyacc"-generated parsers.  When this option is on,
+        the pushdown automaton that executes the parsers prints a
+        trace of its actions.  This option takes no argument.
   \item[s] ("minor_heap_size")  Size of the minor heap.
   \item[i] ("major_heap_increment")  Minimum size increment for the
   major heap.
@@ -127,7 +131,7 @@ The following environment variables are also consulted:
   $2^{20}$, and $2^{30}$ respectively.
   For example, on a 32-bit machine, under "bash" the command
 \begin{alltt}
-        export OCAMLRUNPARAM='b=1,s=256k,v=1'
+        export OCAMLRUNPARAM='b,s=256k,v=1'
 \end{alltt}
   tells a subsequent "ocamlrun" to print backtraces for uncaught exceptions,
   set its initial minor heap size to 1~megabyte and
@@ -154,7 +158,7 @@ directories, in the order indicated:
 "-I" option.
 \item Directories specified in the "CAML_LD_LIBRARY_PATH" environment
 variable.
-\item Directories specified at link-time via the "-rpath" option to
+\item Directories specified at link-time via the "-dllpath" option to
 "ocamlc".  (These directories are recorded in the bytecode executable
 file.)
 \item Directories specified in the file "ld.conf".  This file resides
