@@ -1,5 +1,5 @@
 C = sc
-COptions = -model far -w 7
+COptions = -model far
 AOptions = -model far -wb
 LinkOptions = -model far -msg nodup -compact -pad 0 -state nouse
 Libs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
@@ -7,7 +7,7 @@ Libs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
        "{libraries}ToolLibs.o" "{libraries}Interface.o"
 
 PPCC = mrc
-PPCCOptions = -w 7 -w 29 -w 35
+PPCCOptions = -w 35
 PPCLinkOptions = -d
 PPCLibs = "{sharedlibraries}MathLib" "{ppclibraries}PPCCRuntime.o" ¶
           "{ppclibraries}PPCToolLibs.o" "{sharedlibraries}StdCLib" ¶

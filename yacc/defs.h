@@ -18,7 +18,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#if macintosh
+#include "::config:sm-Mac.h"
+#else
 #include "../config/s.h"
+#endif
 
 #if macintosh
 #include "::byterun:rotatecursor.h"

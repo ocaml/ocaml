@@ -4,12 +4,10 @@ dumpapprox.cmxÄ ::asmcomp:clambda.cmx ::asmcomp:compilenv.cmx ¶
     ::utils:config.cmx 
 dumpobj.cmoÄ ::parsing:asttypes.cmi ::utils:config.cmi ¶
     ::bytecomp:emitcode.cmi ::typing:ident.cmi ::bytecomp:lambda.cmi ¶
-    ::bytecomp:opcodes.cmo opnames.cmo ::bytecomp:runtimedef.cmi ¶
-    ::utils:tbl.cmi 
+    ::bytecomp:opcodes.cmo opnames.cmo ::utils:tbl.cmi 
 dumpobj.cmxÄ ::parsing:asttypes.cmi ::utils:config.cmx ¶
     ::bytecomp:emitcode.cmx ::typing:ident.cmx ::bytecomp:lambda.cmx ¶
-    ::bytecomp:opcodes.cmx opnames.cmx ::bytecomp:runtimedef.cmx ¶
-    ::utils:tbl.cmx 
+    ::bytecomp:opcodes.cmx opnames.cmx ::utils:tbl.cmx 
 objinfo.cmoÄ ::utils:config.cmi ::bytecomp:emitcode.cmi 
 objinfo.cmxÄ ::utils:config.cmx ::bytecomp:emitcode.cmx 
 ocamldep.cmoÄ ::utils:misc.cmi 

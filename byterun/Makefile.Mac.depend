@@ -462,12 +462,13 @@
                             interp.h ¶
                             intext.h ¶
                             io.h ¶
-                            minor_gc.h ¶
-                            stacks.h ¶
                             memory.h ¶
                             gc.h ¶
                             major_gc.h ¶
                             freelist.h ¶
+                            minor_gc.h ¶
+                            prims.h ¶
+                            stacks.h ¶
                             sys.h
 
 "str.c.x" Ä  str.c ¶
@@ -986,12 +987,13 @@
                             interp.h ¶
                             intext.h ¶
                             io.h ¶
-                            minor_gc.h ¶
-                            stacks.h ¶
                             memory.h ¶
                             gc.h ¶
                             major_gc.h ¶
                             freelist.h ¶
+                            minor_gc.h ¶
+                            prims.h ¶
+                            stacks.h ¶
                             sys.h
 
 "str.c.o" Ä  str.c ¶
