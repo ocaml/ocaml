@@ -86,11 +86,12 @@ let implementation sourcefile =
         (Tcoerce_none, crc)
       end in
     Compilenv.reset modulename crc;
-    Asmgen.compile_implementation prefixname
+    let (compunit_size, lam) =
+      Translmod.transl_store_implementation modulename str coercion in
+    Asmgen.compile_implementation prefixname compunit_size
       (print_if Clflags.dump_lambda Printlambda.lambda
         (Simplif.simplify_lambda
-          (print_if Clflags.dump_rawlambda Printlambda.lambda
-            (Translmod.transl_implementation modulename str coercion))));
+          (print_if Clflags.dump_rawlambda Printlambda.lambda lam)));
     Compilenv.save_unit_info (prefixname ^ ".cmx");
     close_in ic
   with x ->
