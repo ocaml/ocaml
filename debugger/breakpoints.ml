@@ -15,10 +15,11 @@
 
 (******************************* Breakpoints ***************************)
 
+open Checkpoints
+open Debugcom
 open Instruct
 open Primitives
-open Debugcom
-open Checkpoints
+open Printf
 open Source
 
 (*** Debugging. ***)
@@ -169,24 +170,8 @@ let rec new_breakpoint =
            incr breakpoint_number;
            insert_position event.ev_pos;
            breakpoints := (!breakpoint_number, event) :: !breakpoints);
-      print_string "Breakpoint ";
-      print_int !breakpoint_number;
-      print_string " at ";
-      print_int event.ev_pos;
-      print_string " : file ";
-      print_string event.ev_module;
-      begin try
-        let (start, line) =
-          line_of_pos (get_buffer event.ev_module) event.ev_char.Lexing.pos_cnum
-        in
-        print_string ", line ";
-        print_int line;
-        print_string ", character ";
-        print_int (event.ev_char.Lexing.pos_cnum - start + 1)
-      with Not_found | Out_of_range ->
-        print_string ", character ";
-        print_int event.ev_char.Lexing.pos_cnum
-      end;
+      printf "Breakpoint %d at %d : %s" !breakpoint_number event.ev_pos
+             (Pos.get_desc event);
       print_newline ()
 
 (* Remove a breakpoint from lists. *)

@@ -9,9 +9,10 @@ events.cmi: ../bytecomp/instruct.cmi
 frames.cmi: ../bytecomp/instruct.cmi primitives.cmi 
 input_handling.cmi: primitives.cmi 
 loadprinter.cmi: ../otherlibs/dynlink/dynlink.cmi ../parsing/longident.cmi 
-parser_aux.cmi: ../parsing/longident.cmi primitives.cmi 
 parser.cmi: ../parsing/longident.cmi parser_aux.cmi 
+parser_aux.cmi: ../parsing/longident.cmi primitives.cmi 
 pattern_matching.cmi: debugcom.cmi parser_aux.cmi ../typing/typedtree.cmi 
+pos.cmi: ../bytecomp/instruct.cmi 
 primitives.cmi: ../otherlibs/unix/unix.cmi 
 printval.cmi: debugcom.cmi ../typing/env.cmi parser_aux.cmi \
     ../typing/path.cmi ../typing/types.cmi 
@@ -21,10 +22,10 @@ symbols.cmi: ../bytecomp/instruct.cmi
 time_travel.cmi: primitives.cmi 
 unix_tools.cmi: ../otherlibs/unix/unix.cmi 
 breakpoints.cmo: checkpoints.cmi debugcom.cmi exec.cmi \
-    ../bytecomp/instruct.cmi primitives.cmi source.cmi symbols.cmi \
+    ../bytecomp/instruct.cmi pos.cmi primitives.cmi source.cmi symbols.cmi \
     breakpoints.cmi 
 breakpoints.cmx: checkpoints.cmx debugcom.cmx exec.cmx \
-    ../bytecomp/instruct.cmx primitives.cmx source.cmx symbols.cmx \
+    ../bytecomp/instruct.cmx pos.cmx primitives.cmx source.cmx symbols.cmx \
     breakpoints.cmi 
 checkpoints.cmo: debugcom.cmi int64ops.cmi primitives.cmi checkpoints.cmi 
 checkpoints.cmx: debugcom.cmx int64ops.cmx primitives.cmx checkpoints.cmi 
@@ -33,7 +34,7 @@ command_line.cmo: breakpoints.cmi checkpoints.cmi ../utils/config.cmi \
     events.cmi frames.cmi history.cmi input_handling.cmi \
     ../bytecomp/instruct.cmi int64ops.cmi ../parsing/lexer.cmi \
     loadprinter.cmi ../utils/misc.cmi parameters.cmi parser.cmi \
-    parser_aux.cmi primitives.cmi printval.cmi program_loading.cmi \
+    parser_aux.cmi pos.cmi primitives.cmi printval.cmi program_loading.cmi \
     program_management.cmi show_information.cmi show_source.cmi source.cmi \
     symbols.cmi time_travel.cmi ../typing/types.cmi \
     ../otherlibs/unix/unix.cmi unix_tools.cmi command_line.cmi 
@@ -42,7 +43,7 @@ command_line.cmx: breakpoints.cmx checkpoints.cmx ../utils/config.cmx \
     events.cmx frames.cmx history.cmx input_handling.cmx \
     ../bytecomp/instruct.cmx int64ops.cmx ../parsing/lexer.cmx \
     loadprinter.cmx ../utils/misc.cmx parameters.cmx parser.cmx \
-    parser_aux.cmi primitives.cmx printval.cmx program_loading.cmx \
+    parser_aux.cmi pos.cmx primitives.cmx printval.cmx program_loading.cmx \
     program_management.cmx show_information.cmx show_source.cmx source.cmx \
     symbols.cmx time_travel.cmx ../typing/types.cmx \
     ../otherlibs/unix/unix.cmx unix_tools.cmx command_line.cmi 
@@ -126,6 +127,8 @@ pattern_matching.cmo: ../typing/ctype.cmi debugcom.cmi debugger_config.cmi \
 pattern_matching.cmx: ../typing/ctype.cmx debugcom.cmx debugger_config.cmx \
     ../utils/misc.cmx parser_aux.cmi ../typing/typedtree.cmx \
     pattern_matching.cmi 
+pos.cmo: ../bytecomp/instruct.cmi primitives.cmi source.cmi pos.cmi 
+pos.cmx: ../bytecomp/instruct.cmx primitives.cmx source.cmx pos.cmi 
 primitives.cmo: ../otherlibs/unix/unix.cmi primitives.cmi 
 primitives.cmx: ../otherlibs/unix/unix.cmx primitives.cmi 
 printval.cmo: debugcom.cmi ../toplevel/genprintval.cmi ../utils/misc.cmi \

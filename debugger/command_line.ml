@@ -812,16 +812,18 @@ let info_checkpoints ppf lexbuf =
                Printf.printf "%19Ld %5d\n" time pid)
           !checkpoints))
 
+let info_one_breakpoint ppf (num, ev) =
+  fprintf ppf "%3d %10d  %s@." num ev.ev_pos (Pos.get_desc ev);
+;;
+
 let info_breakpoints ppf lexbuf =
   eol lexbuf;
-  if !breakpoints = [] then fprintf ppf "No breakpoint.@."
-  else
-    (fprintf ppf "Num    Address  Where@.";
-     List.iter
-       (function (num, {ev_pos = pc; ev_module = md; ev_char = char}) ->
-          fprintf ppf "%3d %10d  in %s, character %d@." num pc md
-                  char.Lexing.pos_cnum)
-       (List.rev !breakpoints))
+  if !breakpoints = [] then fprintf ppf "No breakpoints.@."
+  else begin
+    fprintf ppf "Num    Address  Where@.";
+    List.iter (info_one_breakpoint ppf) (List.rev !breakpoints);
+  end
+;;
 
 let info_events ppf lexbuf =
   ensure_loaded ();

@@ -55,6 +55,7 @@ OBJS=\
 	debugcom.cmo \
 	exec.cmo \
 	source.cmo \
+	pos.cmo \
 	checkpoints.cmo \
 	symbols.cmo \
 	events.cmo \
