@@ -6,6 +6,23 @@
 #include "misc.h"
 #include "mlvalues.h"
 
+value array_get(array, index)   /* ML */
+     value array, index;
+{
+  long idx = Long_val(index);
+  if (idx < 0 || idx >= Wosize_val(array)) invalid_argument("Array.get");
+  return Field(array, idx);
+}
+
+value array_set(array, index, newval)   /* ML */
+     value array, index, newval;
+{
+  long idx = Long_val(index);
+  if (idx < 0 || idx >= Wosize_val(array)) invalid_argument("Array.set");
+  Modify(&Field(array, idx), newval);
+  return Val_unit;
+}
+
 value make_vect(len, init)      /* ML */
      value len, init;
 {

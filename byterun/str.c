@@ -32,6 +32,23 @@ value create_string(len)        /* ML */
   return alloc_string(size);
 }
 
+value string_get(str, index)    /* ML */
+     value str, index;
+{
+  long idx = Long_val(index);
+  if (idx < 0 || idx >= string_length(str)) invalid_argument("String.get");
+  return Val_int(Byte_u(str, idx));
+}
+
+value string_set(str, index, newval)    /* ML */
+     value str, index, newval;
+{
+  long idx = Long_val(index);
+  if (idx < 0 || idx >= string_length(str)) invalid_argument("String.set");
+  Byte_u(str, idx) = Int_val(newval);
+  return Val_unit;
+}
+
 value blit_string(argv, argc)   /* ML */
      value * argv;
      int argc;
