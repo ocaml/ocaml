@@ -36,8 +36,8 @@ val chop_suffix : string -> string -> string
            the filename [name]. The behavior is undefined if [name] does not
            end with the suffix [suff]. *)
 val chop_extension : string -> string
-        (* Return the given file name without its extension. An extension
-           is a suffix starting with a period, [.xyz] for instance.
+        (* Return the given file name without its extension. The extension
+           is the shortest suffix starting with a period, [.xyz] for instance.
            Raise [Invalid_argument] if the given name does not contain
            a period. *)
 val basename : string -> string
