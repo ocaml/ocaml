@@ -105,7 +105,7 @@ let find_pers_struct name =
   with Not_found ->
     let (ps, crc) =
       read_pers_struct name
-        (find_in_path !load_path (lowercase name ^ ".cmi")) in
+        (find_in_path !load_path (String.uncapitalize name ^ ".cmi")) in
     Hashtbl.add persistent_structures name ps;
     imported_units := (name, crc) :: !imported_units;
     ps

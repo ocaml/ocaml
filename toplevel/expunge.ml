@@ -37,7 +37,7 @@ let main () =
     (fun exn -> to_keep := StringSet.add exn !to_keep)
     Runtimedef.builtin_exceptions;
   for i = 3 to Array.length Sys.argv - 1 do
-    to_keep := StringSet.add (capitalize Sys.argv.(i)) !to_keep
+    to_keep := StringSet.add (String.capitalize Sys.argv.(i)) !to_keep
   done;
   let ic = open_in_bin input_name in
   let pos_trailer =

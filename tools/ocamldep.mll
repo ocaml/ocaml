@@ -97,7 +97,7 @@ let load_path = ref [""]
 let opt_flag = ref true
 
 let find_dependency modname (byt_deps, opt_deps) =
-  let name = Misc.lowercase modname in
+  let name = String.uncapitalize modname in
   try
     let filename = Misc.find_in_path !load_path (name ^ ".mli") in
     let basename = Filename.chop_suffix filename ".mli" in

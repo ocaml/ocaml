@@ -92,7 +92,7 @@ let parse_file inputfile parse_fun ast_magic =
 let interface sourcefile =
   init_path();
   let prefixname = Filename.chop_extension sourcefile in
-  let modulename = capitalize(Filename.basename prefixname) in
+  let modulename = String.capitalize(Filename.basename prefixname) in
   let inputfile = preprocess sourcefile (prefixname ^ ".ppi") in
   let ast = parse_file inputfile Parse.interface ast_intf_magic_number in
   let sg = Typemod.transl_signature (initial_env()) ast in
@@ -109,7 +109,7 @@ let print_if flag printer arg =
 let implementation sourcefile =
   init_path();
   let prefixname = Filename.chop_extension sourcefile in
-  let modulename = capitalize(Filename.basename prefixname) in
+  let modulename = String.capitalize(Filename.basename prefixname) in
   let inputfile = preprocess sourcefile (prefixname ^ ".ppo") in
   let ast = parse_file inputfile Parse.implementation ast_impl_magic_number in
   let objfile = prefixname ^ ".cmo" in
