@@ -406,10 +406,6 @@ let reload_operation makereg round op arg res =
       if stackp arg.(0) & stackp arg.(1)
       then ([|arg.(0); makereg arg.(1)|], res)
       else (arg, res)
-  | Imove | Ireload | Ispill ->
-      (* Stack-to-stack moves are possible, but costly.
-         Don't support them on the first round. *)
-      if round <= 1 then raise Use_default else (arg, res)
   | Iintop(Ilsl|Ilsr|Iasr) | Iintop_imm(_, _) | Ifloatofint | Iintoffloat |
     Ispecific(Ipush) ->
       (* The argument(s) can be either in register or on stack *)
