@@ -46,38 +46,47 @@ let empty = {
 
 type pers_struct =
   { ps_name: string;
-    ps_crc: int;
     ps_sig: signature;
     ps_comps: structure_components }
 
 let persistent_structures =
   (Hashtbl.new 17 : (string, pers_struct) Hashtbl.t)
 
+let imported_units = ref ([] : (string * int) list)
+
 let read_pers_struct modname filename =
   let ic = open_in_bin filename in
   try
     let buffer = String.create (String.length cmi_magic_number) in
     really_input ic buffer 0 (String.length cmi_magic_number);
-    if buffer <> cmi_magic_number then raise(Error(Not_an_interface filename));
+    if buffer <> cmi_magic_number then begin
+      close_in ic;
+      raise(Error(Not_an_interface filename))
+    end;
     let ps = (input_value ic : pers_struct) in
+    let crc = input_binary_int ic in
+    close_in ic;
     if ps.ps_name <> modname then
       raise(Error(Illegal_renaming(modname, filename)));
-    ps
+    (ps, crc)
   with End_of_file | Failure _ ->
+    close_in ic;
     raise(Error(Corrupted_interface(filename)))
 
 let find_pers_struct name =
   try
     Hashtbl.find persistent_structures name
   with Not_found ->
-    let ps =
+    let (ps, crc) =
       read_pers_struct name
         (find_in_path !load_path (lowercase name ^ ".cmi")) in
     Hashtbl.add persistent_structures name ps;
+    imported_units := (name, crc) :: !imported_units;
     ps
 
 let reset_cache() =
-  Hashtbl.clear persistent_structures
+  Hashtbl.clear persistent_structures;
+  imported_units := []
 
 (* Lookup by identifier *)
 
@@ -476,14 +485,13 @@ let open_pers_signature name env =
 (* Read a signature from a file *)
 
 let read_signature modname filename =
-  let ps = read_pers_struct modname filename in (ps.ps_sig, ps.ps_crc)
+  let (ps, crc) = read_pers_struct modname filename in (ps.ps_sig, crc)
 
 (* Save a signature to a file *)
 
-let save_signature sg modname crc filename =
+let save_signature sg modname filename =
   let ps =
     { ps_name = modname;
-      ps_crc = crc;
       ps_sig = sg;
       ps_comps =
         components_of_module empty (Pident(Ident.new_persistent modname))
@@ -491,7 +499,14 @@ let save_signature sg modname crc filename =
   let oc = open_out_bin filename in
   output_string oc cmi_magic_number;
   output_value oc ps;
-  close_out oc
+  flush oc;
+  let pos = pos_out oc in
+  let ic = open_in_bin filename in
+  let crc = Crc.for_channel ic pos in
+  close_in ic;
+  output_binary_int oc crc;
+  close_out oc;
+  crc
 
 (* Make the initial environment *)
 
@@ -499,11 +514,7 @@ let initial = Predef.build_initial_env add_type add_exception empty
 
 (* Return the list of imported interfaces with their CRCs *)
 
-let imported_units() =
-  let l = ref [] in
-  Hashtbl.iter
-    (fun name ps -> l := (ps.ps_name, ps.ps_crc) :: !l) persistent_structures;
-  !l
+let imported_units() = !imported_units
 
 (* Error report *)
 

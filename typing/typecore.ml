@@ -506,7 +506,7 @@ and type_let env rec_flag spat_sexp_list =
   List.iter
     (fun exp -> generalize exp.exp_type)
     exp_list;
-  (List.combine(pat_list, exp_list), new_env)
+  (List.combine pat_list exp_list, new_env)
 
 (* Typing of toplevel bindings *)
 

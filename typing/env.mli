@@ -58,8 +58,9 @@ val reset_cache: unit -> unit
 val read_signature: string -> string -> signature * int
         (* Arguments: module name, file name.
            Results: signature, CRC. *)
-val save_signature: signature -> string -> int -> string -> unit
-        (* Arguments: signature, module name, CRC, file name. *)
+val save_signature: signature -> string -> string -> int
+        (* Arguments: signature, module name, file name.
+           Result: CRC. *)
 
 (* Return the set of compilation units imported, with their CRC *)
 

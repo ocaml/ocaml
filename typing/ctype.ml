@@ -92,7 +92,7 @@ let instance_label lbl =
   (ty_arg, ty_res)
 
 let substitute params args body =
-  inst_subst := List.combine(params, args);
+  inst_subst := List.combine params args;
   let ty = copy body in
   inst_subst := [];
   ty
@@ -242,7 +242,7 @@ let moregeneral env sch1 sch2 =
     false
 
 let equal env params1 ty1 params2 ty2 =
-  let subst = List.combine (params1, params2) in
+  let subst = List.combine params1 params2 in
   let rec eqtype t1 t2 =
     let t1 = repr t1 in
     let t2 = repr t2 in
