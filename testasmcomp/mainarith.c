@@ -246,9 +246,6 @@ void do_test(void)
 }
 
 #ifdef __i386__
-#ifdef __linux__
-#include <i386/fpu_control.h>
-#endif
 #ifdef __FreeBSD__
 #include <floatingpoint.h>
 #endif
@@ -257,9 +254,6 @@ void do_test(void)
 void init_ieee_floats(void)
 {
 #ifdef __i386__
-#ifdef __linux__
-  __setfpucw(_FPU_IEEE);
-#endif
 #ifdef __FreeBSD__
   fpsetmask(0);
 #endif
