@@ -260,6 +260,9 @@ let program_not_found prog =
   Jg_message.info ~title:"Error"
     ("Program \"" ^ prog ^ "\"\nwas not found in path")
 
+let protect_arg s =
+  if String.contains s ' ' then "\"" ^ s ^ "\"" else s
+
 let f ~prog ~title =
   let progargs =
     List.filter ~f:((<>) "") (Str.split ~!" " prog) in
@@ -294,6 +297,8 @@ let f ~prog ~title =
       end in
   let load_path =
     List2.flat_map !Config.load_path ~f:(fun dir -> ["-I"; dir]) in
+  let load_path =
+    if is_win32 then List.map ~f:protect_arg load_path else load_path in
   let labels = if !Clflags.classic then ["-nolabels"] else [] in
   let rectypes = if !Clflags.recursive_types then ["-rectypes"] else [] in
   let warnings =
