@@ -61,6 +61,12 @@ module type S =
            as second argument. The order in which the bindings are passed to
            [f] is unspecified. Only current bindings are presented to [f]:
            bindings hidden by more recent bindings are not passed to [f]. *)
+    val map: ('a -> 'b) -> 'a t -> 'b t
+        (* [map f m] returns a map with same domain as [m], where the
+           associated value [a] of all bindings of [m] has been
+           replaced by the result of the application of [f] to [a].
+           The order in which the associated values are passed to [f]
+           is unspecified. *)
     val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
         (* [fold f m a] computes [(f kN dN ... (f k1 d1 a)...)],
            where [k1 ... kN] are the keys of all bindings in [m],
