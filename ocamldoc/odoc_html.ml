@@ -702,24 +702,22 @@ class html =
     method create_fully_qualified_idents_links m_name s =
       let f str_t = 
 	let match_s = Str.matched_string str_t in
+	let rel = Name.get_relative m_name match_s in
+	let s_final = Odoc_info.apply_if_equal 
+	    Odoc_info.use_hidden_modules 
+	    match_s
+	    rel
+	in
 	if List.mem match_s known_types_names then
-	  "<a href=\""^(Naming.complete_target Naming.mark_type match_s)^"\">"^
-	  (Odoc_info.apply_if_equal 
-	     Odoc_info.use_hidden_modules 
-	     match_s
-	     (Name.get_relative m_name match_s)
-	  )^"</a>"
+	   "<a href=\""^(Naming.complete_target Naming.mark_type match_s)^"\">"^
+	   s_final^
+	   "</a>"
 	else
 	  if List.mem match_s known_classes_names then
 	    let (html_file, _) = Naming.html_files match_s in
-	    "<a href=\""^html_file^"\">"^
-	    (Odoc_info.apply_if_equal 
-	       Odoc_info.use_hidden_modules 
-	       match_s
-	       (Name.get_relative m_name match_s)
-	    )^"</a>"
+	    "<a href=\""^html_file^"\">"^s_final^"</a>"
 	  else
-	    match_s
+	    s_final
       in
       let s2 = Str.global_substitute
 	  (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([a-z][a-zA-Z_'0-9]*\\)")
