@@ -1074,12 +1074,14 @@ class latex =
     (** Generate the LaTeX file from a module list, in the {!Odoc_info.Args.out_file} file. *)
     method generate module_list =
       self#generate_style_file ;
+      let main_file = !Args.out_file in
+      let dir = Filename.dirname main_file in
       if !Args.separate_files then
         (
          let f m =
            try
              let chanout = 
-               open_out ((Filename.concat !Args.target_dir (Name.simple m.m_name))^".tex")
+               open_out ((Filename.concat dir (Name.simple m.m_name))^".tex")
              in
 	     let fmt = Format.formatter_of_out_channel chanout in
              self#generate_for_top_module fmt m ;
@@ -1095,7 +1097,7 @@ class latex =
         );
       
       try
-        let chanout = open_out !Args.out_file in
+        let chanout = open_out main_file in
 	let fmt = Format.formatter_of_out_channel chanout in
         if !Args.with_header then self#latex_header fmt;
         List.iter 
