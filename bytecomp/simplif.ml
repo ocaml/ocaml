@@ -164,7 +164,7 @@ let simplify_lambda lam =
       with Real_reference ->
         Llet(Strict, v, Lprim(Pmakeblock(0, Mutable), [slinit]), slbody)
       end
-  | Llet(Alias, v, l1, l2) ->
+  | Llet(Alias, v, l1, l2) when not !Clflags.debug ->
       begin match count_var v with
         0 -> simplif l2
       | 1 -> Hashtbl.add subst v (simplif l1); simplif l2
