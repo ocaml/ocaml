@@ -40,8 +40,9 @@ while :; do
         native_objs="$native_objs $1";;
     *.o|*.a)
         c_objs="$c_objs $1";;
-    -cclib)
-        caml_libs="$caml_libs $1 $2";;
+    -cclib|-dllpath)
+        caml_libs="$caml_libs $1 $2"
+        shift;;
     -l*)
         c_libs="$c_libs $1"
         c_libs_caml="$c_libs_caml -cclib $1";;
@@ -94,11 +95,11 @@ if %%SUPPORTS_SHARED_LIBRARIES%%; then
 else
     if test "$bytecode_objs" != ""; then
         $ocamlc -a -custom -o $output.cma $caml_opts $bytecode_objs \
-            -cclib -l$output_c $caml_libs $c_opts $c_libs
+            -cclib -l$output_c $caml_libs $c_opts_caml $c_libs_caml
     fi
     if test "$native_objs" != ""; then
         $ocamlopt -a -o $output.cmxa $caml_opts $native_objs \
-            -cclib -l$output_c $caml_libs $c_opts $c_libs
+            -cclib -l$output_c $caml_libs $c_opts_caml $c_libs_caml
     fi
     if test "$c_objs" != ""; then
         rm -f lib$output_c.a
