@@ -481,6 +481,8 @@ let rec builtin_meths self env env2 body =
   | Lsend(Lvar n, Lvar s, [arg]) when List.mem s self ->
       let s, args = conv arg in
       ("meth_app_"^s, Lvar n :: args)
+  | Lsend(Lvar n, Lvar s, []) when List.mem s self ->
+      ("get_meth", [Lvar n])
   | Lsend(Lvar n, arg, []) ->
       let s, args = conv arg in
       ("send_"^s, Lvar n :: args)
