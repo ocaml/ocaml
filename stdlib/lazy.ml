@@ -4,8 +4,8 @@
 (*                                                                     *)
 (*            Damien Doligez, projet Para, INRIA Rocquencourt          *)
 (*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -19,9 +19,7 @@ type 'a status =
   | Exception of exn
 ;;
 
-type 'a delayed = 'a status ref;;
-
-let _lazy f = ref (Delayed f);;
+type 'a t = 'a status ref;;
 
 let force l =
   match !l with

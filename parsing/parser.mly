@@ -58,9 +58,12 @@ let mkassert e =
 ;;
 
 let mklazy e =
-  let f = mkexp (Pexp_ident (Ldot (Lident "Lazy", "_lazy"))) in
   let void_pat = mkpat (Ppat_construct (Lident "()", None, false)) in
-  mkexp (Pexp_apply (f, [mkexp (Pexp_function ([void_pat, e]))]))
+  let f = mkexp (Pexp_function ([void_pat, e])) in
+  let delayed = Ldot (Lident "Lazy", "Delayed") in
+  let df = mkexp (Pexp_construct (delayed, Some f, false)) in
+  let r = mkexp (Pexp_ident (Ldot (Lident "Pervasives", "ref"))) in
+  mkexp (Pexp_apply (r, [df]))
 ;;
 
 let mkinfix arg1 name arg2 =

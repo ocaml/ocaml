@@ -4,8 +4,8 @@
 (*                                                                     *)
 (*            Damien Doligez, projet Para, INRIA Rocquencourt          *)
 (*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -13,19 +13,21 @@
 
 (* Module [Lazy]: deferred computations. *)
 
-type 'a delayed;;
-(* A value of type ['a delayed] is a deferred computation (called a
-   suspension) that computes a result of type ['a].
+type 'a status =
+  | Delayed of (unit -> 'a)
+  | Value of 'a
+  | Exception of exn
+;;
+
+type 'a t = 'a status ref;;
+(* A value of type ['a Lazy.t] is a deferred computation (called a
+   suspension) that computes a result of type ['a].  The expression
+   [lazy (expr)] returns a suspension that computes [expr].
 *)
 
-val _lazy : (unit -> 'a) -> 'a delayed;;
-(* [_lazy f] is the suspension that computes [f ()].  The expression
-   [lazy (expr)] is equivalent to [_lazy (fun () -> expr)].
-*)
-
-val force: 'a delayed -> 'a;;
-(* [force x] computes the suspension [x] and returns its result.  If
-   the suspension was already computed, [force x] returns the same
-   value again.  If the suspension was already computed and raised an
-   exception, the same exception is raised again.
+val force: 'a t -> 'a;;
+(* [Lazy.force x] computes the suspension [x] and returns its result.
+   If the suspension was already computed, [Lazy.force x] returns the
+   same value again.  If it raised an exception, the same exception is
+   raised again.
 *)
