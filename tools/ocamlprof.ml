@@ -25,7 +25,6 @@ open Parsetree
 let idprefix = "__ocaml_prof_";;
 let modprefix = "OCAML__prof_";;
 
-
 (* Errors specific to the profiler *)
 exception Profiler of string
 
@@ -85,14 +84,11 @@ let insert_action st en =
 let add_incr_counter modul (kind,pos) =
    copy pos;
    match kind with
-   | Close -> fprintf !outchan ")";
    | Open ->
-         fprintf !outchan
-                 "(%sArray.set %s_cnt %d \
-                               (%sPervasives.succ (%sArray.get %s_cnt %d)); "
-                 modprefix idprefix !prof_counter
-                 modprefix modprefix idprefix !prof_counter;
+         fprintf !outchan "(%sProfiling.incr %s%s_cnt %d; "
+                 modprefix idprefix modul !prof_counter;
          incr prof_counter;
+   | Close -> fprintf !outchan ")";
 ;;
 
 let counters = ref (Array.create 0 0)
@@ -130,14 +126,13 @@ let pos_len = ref 0
 let init_rewrite modes mod_name =
   cur_point := 0;
   if !instr_mode then begin
-    fprintf !outchan "module %sArray = Array;; " modprefix;
-    fprintf !outchan "module %sPervasives = Pervasives;; " modprefix;
-    fprintf !outchan "let %s_cnt = Array.create 0000000" idprefix;
+    fprintf !outchan "module %sProfiling = Profiling;; " modprefix;
+    fprintf !outchan "let %s%s_cnt = Array.create 000000000" idprefix mod_name;
     pos_len := pos_out !outchan;
     fprintf !outchan 
             " 0;; Profiling.counters := \
-              (\"%s\", (\"%s\", %s_cnt)) :: !Profiling.counters;; "
-            mod_name modes idprefix;
+              (\"%s\", (\"%s\", %s%s_cnt)) :: !Profiling.counters;; "
+            mod_name modes idprefix mod_name;
   end
 
 let final_rewrite add_function =
@@ -147,7 +142,7 @@ let final_rewrite add_function =
   copy (in_channel_length !inchan);
   if !instr_mode then begin
     let len = string_of_int !prof_counter in
-    if String.length len > 7 then raise (Profiler "too many counters");
+    if String.length len > 9 then raise (Profiler "too many counters");
     seek_out !outchan (!pos_len - String.length len);
     output_string !outchan len
   end;

@@ -78,4 +78,4 @@ let catch_break on =
 
 (* OCaml version string, must be in the format described in sys.mli. *)
 
-let ocaml_version = "3.08.1+4 (2004-11-03)";;
+let ocaml_version = "3.08.1+5 (2004-11-18)";;
