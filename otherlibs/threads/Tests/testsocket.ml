@@ -5,7 +5,7 @@ let engine number address =
   print_int number; print_string "> connecting"; print_newline();
   let (ic, oc) = open_connection (ADDR_INET(address, 80)) in
   print_int number; print_string "> connected"; print_newline();
-  output_string oc "GET / HTTP1.0\n\n"; flush oc;
+  output_string oc "GET / HTTP1.0\r\n\r\n"; flush oc;
   try
     while true do
       let s = input_line ic in
