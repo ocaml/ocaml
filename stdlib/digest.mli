@@ -37,8 +37,8 @@ external channel : in_channel -> int -> t = "md5_chan"
    characters from channel [ic] and returns their digest, or raises
    [End_of_file] if end-of-file is reached before [len] characters
    are read.  If [len] is negative, [Digest.channel ic len] reads
-   characters from [ic] until end-of-file is reached and return their
-   digest. *)
+   all characters from [ic] until end-of-file is reached and return
+   their digest. *)
 
 val file : string -> t
 (** Return the digest of the file whose name is given. *)
