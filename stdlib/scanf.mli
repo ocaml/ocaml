@@ -181,7 +181,14 @@ val bscanf :
    analysis and parsing. If it appears not expressive enough for your
    needs, several alternative exists: regular expressions (module
    [Str]), stream parsers, [ocamllex]-generated lexers,
-   [ocamlyacc]-generated parsers. *)
+   [ocamlyacc]-generated parsers. 
+
+   - Scanning indications are similar those in the [Format] module;
+   hence it is advised to use [!Format.fprintf] (and not
+   [!Printf.fprintf]) and related functions to produce formatted text
+   to be scanned by [!Scanf.bscanf] ...
+
+*)
 
 val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
 
