@@ -86,6 +86,7 @@ let rec discard_dead_code = function
 let rec is_tailcall = function
     Kreturn _ :: _ -> true
   | Klabel _ :: c -> is_tailcall c
+  | Kpop _ :: c -> is_tailcall c
   | _ -> false
 
 (* Add a Kpop N instruction in front of a continuation *)
