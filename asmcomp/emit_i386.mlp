@@ -199,6 +199,19 @@ let emit_frame fd =
     fd.fd_live_offset;
   emit_align 4
 
+(* Record calls to the GC -- we've moved them out of the way *)
+
+type gc_call =
+  { gc_lbl: label;                      (* Entry label *)
+    gc_return_lbl: label;               (* Where to branch after GC *)
+    gc_frame: label }                   (* Label of frame descriptor *)
+
+let call_gc_sites = ref ([] : gc_call list)
+
+let emit_call_gc gc =
+  `{emit_label gc.gc_lbl}:	call	{emit_symbol "caml_call_gc"}\n`;
+  `{emit_label gc.gc_frame}:	jmp	{emit_label gc.gc_return_lbl}\n`
+
 (* Names for instructions *)
 
 let instr_for_intop = function
@@ -413,15 +426,19 @@ let emit_instr i =
         end
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
-          `	movl	{emit_symbol "young_ptr"}, %eax\n`;
+          let lbl_redo = new_label() in
+          `{emit_label lbl_redo}:	movl	{emit_symbol "young_ptr"}, %eax\n`;
           `	subl	${emit_int n}, %eax\n`;
           `	movl	%eax, {emit_symbol "young_ptr"}\n`;
           `	cmpl	{emit_symbol "young_limit"}, %eax\n`;
-          let lbl_cont = record_frame_label i.live in
-          `	jae	{emit_label lbl_cont}\n`;
-          `	call	{emit_symbol "caml_call_gc"}\n`;
-          `	.word	{emit_int n}\n`;
-          `{emit_label lbl_cont}:	leal	4(%eax), {emit_reg i.res.(0)}\n`
+          let lbl_call_gc = new_label() in
+          let lbl_frame = record_frame_label i.live in
+          `	jb	{emit_label lbl_call_gc}\n`;
+          `	leal	4(%eax), {emit_reg i.res.(0)}\n`;
+          call_gc_sites :=
+            { gc_lbl = lbl_call_gc;
+              gc_return_lbl = lbl_redo;
+              gc_frame = lbl_frame } :: !call_gc_sites
         end else begin
           begin match n with
             8  -> `	call	{emit_symbol "caml_alloc1"}\n`
@@ -714,6 +731,7 @@ let fundecl fundecl =
   tailrec_entry_point := new_label();
   stack_offset := 0;
   float_constants := [];
+  call_gc_sites := [];
   range_check_trap := 0;
   `	.text\n`;
   emit_align 16; (* 16-byte alignment is recommended for the 486 *)
@@ -724,6 +742,7 @@ let fundecl fundecl =
     `	subl	${emit_int n}, %esp\n`;
   `{emit_label !tailrec_entry_point}:`;
   emit_all fundecl.fun_body;
+  List.iter emit_call_gc !call_gc_sites;
   if !range_check_trap > 0 then
     `{emit_label !range_check_trap}:	jmp	{emit_symbol "array_bound_error"}\n`;
   List.iter emit_float_constant !float_constants
