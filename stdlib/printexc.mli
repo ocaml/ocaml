@@ -12,26 +12,27 @@
 
 (* $Id$ *)
 
-(* Module [Printexc]: facilities for printing exceptions *)
+(** Facilities for printing exceptions. *)
 
+(** [Printexc.to_string e] returns a string representation of
+   the exception [e]. *)
 val to_string : exn -> string
-        (* [Printexc.to_string e] returns a string representation of
-           the exception [e]. *)
 
+(** [Printexc.print fn x] applies [fn] to [x] and returns the result.
+   If the evaluation of [fn x] raises any exception, the
+   name of the exception is printed on standard error output,
+   and the exception is raised again.
+   The typical use is to catch and report exceptions that
+   escape a function application. *)
 val print: ('a -> 'b) -> 'a -> 'b
-        (* [Printexc.print fn x] applies [fn] to [x] and returns the result.
-           If the evaluation of [fn x] raises any exception, the
-           name of the exception is printed on standard error output,
-           and the exception is raised again.
-           The typical use is to catch and report exceptions that
-           escape a function application. *)
 
+(** [Printexc.catch fn x] is similar to {!Printexc.print}, but
+   aborts the program with exit code 2 after printing the
+   uncaught exception.  This function is deprecated: the runtime
+   system is now able to print uncaught exceptions as precisely
+   as [Printexc.catch] does.  Moreover, calling [Printexc.catch]
+   makes it harder to track the location of the exception
+   using the debugger or the stack backtrace facility.
+   So, do not use [Printexc.catch] in new code.  *)
 val catch: ('a -> 'b) -> 'a -> 'b
-        (* [Printexc.catch fn x] is similar to [Printexc.print], but
-           aborts the program with exit code 2 after printing the
-           uncaught exception.  This function is deprecated: the runtime
-           system is now able to print uncaught exceptions as precisely
-           as [Printexc.catch] does.  Moreover, calling [Printexc.catch]
-           makes it harder to track the location of the exception
-           using the debugger or the stack backtrace facility.
-           So, do not use [Printexc.catch] in new code.  *)
+

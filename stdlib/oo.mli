@@ -12,21 +12,24 @@
 
 (* $Id$ *)
 
-(* Module [Oo]: object-oriented extension *)
+(** Object-oriented extension *)
 
+(** [Oo.copy o] returns a copy of object [o], that is a fresh
+   object with the same methods and instance variables as [o]  *)
 val copy : (< .. > as 'a) -> 'a
-        (* [Oo.copy o] returns a copy of object [o], that is a fresh
-           object with the same methods and instance variables as [o]  *)
+        
 
 (*--*)
 
-(*** For system use only, not for the casual user *)
+(** {2 For system use only, not for the casual user} *)
 
-(* Methods *)
+(** {2 Methods} *)
+
 type label
 val new_method: string -> label
 
-(* Classes *)
+(** {2 Classes} *)
+
 type table
 type meth
 type t
@@ -42,12 +45,14 @@ val add_initializer: table -> (obj -> unit) -> unit
 val create_table: string list -> table
 val init_class: table -> unit
 
-(* Objects *)
+(** {2 Objects} *)
+
 val create_object: table -> obj
 val run_initializers: obj -> table -> unit
 val send:   obj -> label -> t
 
-(* Parameters *)
+(** {2 Parameters} *)
+
 type params = {
     mutable compact_table : bool;
     mutable copy_parent : bool;
@@ -58,7 +63,8 @@ type params = {
 
 val params : params
 
-(* Statistics *)
+(** {2 Statistics} *)
+
 type stats =
   { classes: int; labels: int; methods: int; inst_vars: int; buckets: int;
     distrib : int array; small_bucket_count: int; small_bucket_max: int }
