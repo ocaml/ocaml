@@ -15,7 +15,7 @@
 
 case $1 in
   "") cc=cc;;
-   *) cc=$1;;
+   *) cc="$1";;
 esac
 export cc
 
@@ -45,7 +45,7 @@ case "$1,$2,$3" in
          echo "Caml Special Light won't run on this architecture."
          exit 2;;
       *) echo "Unable to compile the test program."
-         echo "Make sure the C compiler is properly installed."
+         echo "Make sure the C compiler $cc is properly installed."
          exit 2;;
 esac
 
@@ -114,6 +114,10 @@ fi
 
 if sh hasgot socket socketpair bind listen accept connect; then
   echo "You have BSD sockets."
+  echo "#define HAS_SOCKETS" >> s.h
+elif sh hasgot -lnsl -lsocket socket socketpair bind listen accept connect; then
+  echo "You have BSD sockets (with the additional libraries -lnsl -lsocket)"
+  echo "SOCKETLIBS=-lnsl -lsocket" >> Makefile.h
   echo "#define HAS_SOCKETS" >> s.h
 fi
 
