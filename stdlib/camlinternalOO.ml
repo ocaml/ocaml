@@ -327,10 +327,13 @@ let get_method table label =
   let (buck, elem) = decode label in
   table.buckets.(buck).(elem)
 
+let to_list arr =
+  if arr == magic 0 then [] else Array.to_list arr
+
 let narrow table vars virt_meths concr_meths =
-  let vars = Array.to_list vars
-  and virt_meths = Array.to_list virt_meths
-  and concr_meths = Array.to_list concr_meths in
+  let vars = to_list vars
+  and virt_meths = to_list virt_meths
+  and concr_meths = to_list concr_meths in
   let virt_meth_labs = List.map (get_method_label table) virt_meths in
   let concr_meth_labs = List.map (get_method_label table) concr_meths in
   table.previous_states <-
@@ -398,12 +401,13 @@ let add_initializer table f =
 
 let create_table public_methods =
   let table = new_table () in
-  Array.iter
-    (function met ->
-       let lab = new_method met in
-       table.methods_by_name  <- Meths.add met lab table.methods_by_name;
-       table.methods_by_label <- Labs.add lab true table.methods_by_label)
-    public_methods;
+  if public_methods != magic 0 then
+    Array.iter
+      (function met ->
+        let lab = new_method met in
+        table.methods_by_name  <- Meths.add met lab table.methods_by_name;
+        table.methods_by_label <- Labs.add lab true table.methods_by_label)
+      public_methods;
   table
 
 let init_class table =
@@ -418,6 +422,21 @@ let inherits cla vals virt_meths concr_meths (_, super, _, env) top =
     if top then super cla env else Obj.repr (super cla) in
   widen cla;
   init
+
+let make_class pub_meths class_init =
+  let table = create_table pub_meths in
+  let env_init = class_init table in
+  init_class table;
+  (env_init (Obj.repr 0), class_init, env_init, Obj.repr 0)
+
+type init_table = { mutable env_init: t; mutable class_init: table -> t }
+
+let make_class_store pub_meths class_init init_table =
+  let table = create_table pub_meths in
+  let env_init = class_init table in
+  init_class table;
+  init_table.class_init <- class_init;
+  init_table.env_init <- env_init
 
 (**** Objects ****)
 

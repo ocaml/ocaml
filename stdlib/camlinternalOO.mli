@@ -44,6 +44,12 @@ val init_class : table -> unit
 val inherits :
     table -> string array -> string array -> string array ->
     (t * (table -> obj -> Obj.t) * t * obj) -> bool -> Obj.t
+val make_class :
+    string array -> (table -> Obj.t -> t) ->
+    (t * (table -> Obj.t -> t) * (Obj.t -> t) * Obj.t)
+type init_table
+val make_class_store :
+    string array -> (table -> t) -> init_table -> unit
 
 (** {6 Objects} *)
 

@@ -49,6 +49,7 @@ let lfield v i = Lprim(Pfield i, [Lvar v])
 let transl_label l = Lconst (Const_base (Const_string l))
 
 let rec transl_meth_list lst =
+  if lst = [] then Lconst (Const_pointer 0) else
   Lconst (Const_block
             (0, List.map (fun lab -> Const_base (Const_string lab)) lst))
 
@@ -603,18 +604,12 @@ let transl_class ids cl_id arity pub_meths cl =
 
   let lclass lam =
     Llet(Strict, class_init, Lfunction(Curried, [cla], cl_init), lam)
-  and lbody obj_init =
-    Llet(Strict, env_init, Lapply(Lvar class_init, [Lvar table]),
-    Llet(Strict, obj_init, Lapply(Lvar env_init, [lambda_unit]),
-         Lsequence(Lapply (oo_prim "init_class", [Lvar table]),
-                   Lprim(Pmakeblock(0, Immutable),
-                         [Lvar obj_init;
-                          Lvar class_init;
-                          Lvar env_init;
-                          lambda_unit]))))
+  and lbody =
+    Lapply (oo_prim "make_class",
+            [transl_meth_list pub_meths; Lvar class_init])
   in
   (* Still easy: a class defined at toplevel *)
-  if top then ltable table (lclass (lbody obj_init)) else
+  if top then lclass lbody else
 
   (* Now for the hard stuff: prepare for table cacheing *)
   let env_index = Ident.create "env_index"
@@ -662,28 +657,25 @@ let transl_class ids cl_id arity pub_meths cl =
     Lprim(Psetfield(i, true), [Lvar cached; lam])
   in
   let ldirect () =
-    ltable cla (Lsequence (lset cached 0 (def_ids cla cl_init),
-                           Lapply (oo_prim "init_class", [Lvar cla])))
+    ltable cla
+      (Llet(Strict, env_init, def_ids cla cl_init,
+            Lsequence(Lapply (oo_prim "init_class", [Lvar cla]),
+                      lset cached 0 (Lvar env_init))))
   in
   lcache (
   Lsequence(
   Lifthenelse(lfield cached 0, lambda_unit,
               if ids = [] then ldirect () else
-              ltable table (
               lclass (
-              Lsequence(
-              lset cached 1 (Lapply(Lvar class_init, [Lvar table])),
-              Lsequence (
-              Lapply (oo_prim "init_class", [Lvar table]),
-              (* field 0 must be set last to avoid race conditions *)
-              lset cached 0 (Lvar class_init)
-             ))))),
+              Lapply (oo_prim "make_class_store",
+                      [transl_meth_list pub_meths;
+                       Lvar class_init; Lvar cached]))),
   make_envs (
   if ids = [] then Lapply(lfield cached 0, [lenvs]) else
   Lprim(Pmakeblock(0, Immutable),
-        [Lapply(lfield cached 1, [lenvs]);
-         lfield cached 0;
+        [Lapply(lfield cached 0, [lenvs]);
          lfield cached 1;
+         lfield cached 0;
          lenvs]))))
 
 (* example:
