@@ -27,9 +27,6 @@ let idprefix = "__ocaml_prof";;
 (* Errors specific to the profiler *)
 exception Profiler of string
 
-(* For use with the thread package *)
-let multithreaded = ref false
-
 (* Modes *)
 let instr_fun    = ref false
 and instr_match  = ref false
@@ -94,16 +91,10 @@ let add_incr_counter modul (kind,pos) =
    copy pos;
    match kind with
    | Close -> fprintf !outchan ")";
-   | Open
-      -> if !multithreaded
-         then fprintf !outchan "(Mutex.lock %s_lck_%s_;" idprefix modul
-         else fprintf !outchan "(";
+   | Open ->
          fprintf !outchan
-                 "%s_cnt_%s_.(%d) <- Pervasives.succ %s_cnt_%s_.(%d); "
+                 "(%s_cnt_%s_.(%d) <- Pervasives.succ %s_cnt_%s_.(%d); "
                  idprefix modul !prof_counter idprefix modul !prof_counter;
-         if !multithreaded then begin
-           fprintf !outchan "Mutex.unlock %s_lck_%s_;" idprefix modul
-         end;
          incr prof_counter;
 ;;
 
@@ -142,9 +133,6 @@ let pos_len = ref 0
 let init_rewrite modes mod_name =
   cur_point := 0;
   if !instr_mode then begin
-    if !multithreaded then begin
-      fprintf !outchan "let %s_lck_%s_ = Mutex.create ();;" idprefix mod_name
-    end;
     fprintf !outchan "let %s_cnt_%s_ = Array.create 0000000" idprefix mod_name;
     pos_len := pos_out !outchan;
     fprintf !outchan 
@@ -447,7 +435,6 @@ let main () =
              "<file>  Use <file> as dump file (default ocamlprof.dump)";
        "-F", Arg.String (fun s -> special_id := s),
              "<s>  Insert string <s> with the counts";
-       "-thread", Arg.Set multithreaded,  " (undocumented)";
        "-instrument", Arg.Set instr_mode, " (undocumented)";
        "-m", Arg.String (fun s -> modes := s), "<flags>  (undocumented)"
       ] process_file usage;
