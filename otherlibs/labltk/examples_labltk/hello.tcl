@@ -1,4 +1,4 @@
-#!/usr/local/bin/wish4.0
+#!/usr/bin/wish
 
 button .hello -text "Hello, TclTk!"
 
