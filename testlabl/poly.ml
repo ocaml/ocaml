@@ -348,3 +348,22 @@ let bad = {bad = ref None};;
 type bad2 = {mutable bad2 : 'a. 'a option ref option};;
 let bad2 = {bad2 = None};;
 bad2.bad2 <- Some (ref None);;
+
+(* PR#1374 *)
+
+type 'a t= [`A of 'a];;
+class c = object (self)
+  method m :  'a. ([> 'a t] as 'a) -> unit
+    = fun x -> self#m x
+end;;
+class c = object (self)
+  method m : 'a. ([> 'a t] as 'a) -> unit = function
+    | `A x' -> self#m x'
+    | _ -> failwith "c#m"
+end;;
+class c = object (self)
+  method m :  'a. ([> 'a t] as 'a) -> 'a = fun x -> self#m x
+end;;
+
+(* usage avant instance *)
+class c = object method m : 'a. 'a option -> ([> `A] as 'a) = fun x -> `A end;;

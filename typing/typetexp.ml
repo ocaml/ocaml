@@ -47,7 +47,7 @@ type variable_context = int * (string, type_expr) Tbl.t
 (* Translation of type expressions *)
 
 let type_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
-let univars        = ref ([] : (string * type_expr) list)
+let univars        = ref ([] : (string * (type_expr * type_expr ref)) list)
 let pre_univars    = ref ([] : type_expr list)
 
 let used_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
@@ -106,7 +106,7 @@ let rec transl_type env policy rowvar styp =
       if policy = Univars then new_pre_univar () else newvar ()
   | Ptyp_var name ->
       begin try
-        List.assoc name !univars
+        instance (fst (List.assoc name !univars))
       with Not_found ->
         match policy with
           Fixed ->
@@ -280,11 +280,11 @@ let rec transl_type env policy rowvar styp =
   | Ptyp_alias(st, alias) ->
       if List.mem_assoc alias !univars then
         match List.assoc alias !univars with
-          {desc=Tlink({desc=Tunivar} as tc)} as tr ->
-            let ty = transl_type env policy (Some tc) st in
-            tr.level <- tc.level;
-            tr.desc <- Tvar;
-            begin try unify_var env tr ty with Unify trace ->
+          ({desc=Tunivar} as tc), tr when tc == !tr ->
+            tr := Btype.newty2 tc.level Tunivar;
+            tc.desc <- Tvar;
+            let ty = transl_type env policy (Some !tr) st in
+            begin try unify_var env tc ty with Unify trace ->
               let trace = swap_list trace in
               raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
             end;
@@ -434,13 +434,14 @@ let rec transl_type env policy rowvar styp =
       newty (Tvariant row)
   | Ptyp_poly(vars, st) ->
       (* aliases are stubs, in case one wants to redefine them *)
-      let ty_list = List.map (fun _ -> newty Tunivar) vars in
+      let tr_list = List.map (fun _ -> ref (newty Tunivar)) vars in
       let new_univars =
-        List.map2 (fun name ty -> name, newty (Tlink ty)) vars ty_list in
+        List.map2 (fun name tr -> name, (!tr, tr)) vars tr_list in
       let old_univars = !univars in
       univars := new_univars @ !univars;
       let ty = transl_type env policy None st in
       univars := old_univars;
+      let ty_list = List.map (!) tr_list in
       let ty_list = List.filter (fun tu -> deep_occur (repr tu) ty) ty_list in
       newty (Tpoly(ty, ty_list))
 

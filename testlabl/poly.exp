@@ -213,4 +213,9 @@ This field value has type 'a option ref which is less general than
 # Characters 13-28:
 This field value has type 'a option ref option which is less general than
   'b. 'b option ref option
+#       type 'a t = [ `A of 'a]
+#       class c : object method m : ([> 'a t] as 'a) -> unit end
+#         class c : object method m : ([> 'a t] as 'a) -> unit end
+#     class c : object method m : ([> 'a t] as 'a) -> 'a end
+#     class c : object method m : ([> `A] as 'a) option -> 'a end
 # 
