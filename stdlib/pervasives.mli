@@ -802,6 +802,8 @@ val at_exit : (unit -> unit) -> unit
 
 (** {6 For system use only, not for the casual user} *)
 
+val valid_float_lexem : string -> string
+
 val unsafe_really_input : in_channel -> string -> int -> int -> unit
 
 val do_at_exit : unit -> unit

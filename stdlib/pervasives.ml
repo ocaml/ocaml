@@ -185,8 +185,7 @@ module String = struct
   external get : string -> int -> char = "%string_safe_get"
 end
 
-let string_of_float f =
-  let s = format_float "%.12g" f in
+let valid_float_lexem s =
   let l = string_length s in
   let rec loop i =
     if i >= l then s ^ "." else
@@ -195,6 +194,8 @@ let string_of_float f =
   in
   loop 0
 ;;
+
+let string_of_float f = valid_float_lexem (format_float "%.12g" f);;
 
 external float_of_string : string -> float = "float_of_string"
 
