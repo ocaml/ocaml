@@ -408,22 +408,27 @@ let for_trywith param pat_act_list =
 let for_let loc param pat body =
   compile_matching (partial_function loc) param [pat, body]
 
+exception Cannot_flatten
+
+let rec flatten_patterns size = function
+    ({pat_desc = Tpat_tuple args} :: _, action) :: rem ->
+      (args, action) :: flatten_patterns size rem
+  | ({pat_desc = Tpat_any} :: patl, action) :: rem ->
+      (replicate_list any_pat size, action) :: flatten_patterns size rem
+  | _ ->
+      raise Cannot_flatten
+
 let for_multiple_match loc paraml pat_act_list =
   let pm1 =
     { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
       args = [Lprim(Pmakeblock(0, Immutable), paraml), Strict] } in
   let pm2 =
     simplify_matching pm1 in
-  let rec flatten_patterns = function
-      ({pat_desc = Tpat_tuple args} :: _, action) :: rem ->
-        (args, action) :: flatten_patterns rem
-    | ({pat_desc = Tpat_any} :: patl, action) :: rem ->
-        (replicate_list any_pat (List.length paraml), action) ::
-        flatten_patterns rem
-    | _ ->
-        [] in
   let pm3 =
-    { cases = flatten_patterns pm2.cases;
-      args = List.map (fun lam -> (lam, Strict)) paraml } in
+    try
+      { cases = flatten_patterns (List.length paraml) pm2.cases;
+        args = List.map (fun lam -> (lam, Strict)) paraml }
+    with Cannot_flatten ->
+      pm2 in
   let (lambda, total) = compile_match pm3 in
   if total then lambda else Lcatch(lambda, partial_function loc ())
