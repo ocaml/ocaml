@@ -106,7 +106,7 @@ let rec transl_type env policy styp =
       newty (Tarrow(ty1, ty2))
   | Ptyp_tuple stl ->
       newty (Ttuple(List.map (transl_type env policy) stl))
-  | Ptyp_constr(lid, stl, alias) ->
+  | Ptyp_constr(lid, stl) ->
       let (path, decl) =
         try
           Env.lookup_type lid env
@@ -115,30 +115,8 @@ let rec transl_type env policy styp =
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                            List.length stl)));
-      let (cstr, args) =
-        begin match alias with
-          None ->
-            let tl = List.map (transl_type env policy) stl in
-              (newty (Tconstr(path, tl, ref Mnil)), tl)
-        | Some alias ->
-            let cstr = newvar () in
-            begin try
-              Tbl.find alias !type_variables;
-              raise(Error(styp.ptyp_loc, Bound_type_variable alias))
-            with Not_found -> try
-              Tbl.find alias !aliases;
-              raise(Error(styp.ptyp_loc, Bound_type_variable alias))
-            with Not_found ->
-              aliases := Tbl.add alias cstr !aliases
-            end;
-            let tl = List.map (transl_type env policy) stl in
-            let cstr' = newty (Tconstr(path, tl, ref Mnil)) in
-            begin try unify env cstr' cstr with Unify trace ->
-              raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
-            end;
-            (cstr, tl)
-        end
-      in
+      let args = List.map (transl_type env policy) stl in
+      let cstr = newty (Tconstr(path, args, ref Mnil)) in
       let params = Ctype.instance_list decl.type_params in
       List.iter2
         (fun (sty, ty) ty' ->
@@ -146,26 +124,9 @@ let rec transl_type env policy styp =
              raise (Error(sty.ptyp_loc, Type_mismatch trace)))
         (List.combine stl args) params;
       cstr
-  | Ptyp_object(fields, None) ->
+  | Ptyp_object fields ->
       newobj (transl_fields env policy fields)
-  | Ptyp_object(fields, Some alias) ->
-      begin try
-        Tbl.find alias !type_variables;
-        raise(Error(styp.ptyp_loc, Bound_type_variable alias))
-      with Not_found -> try
-        Tbl.find alias !aliases;
-        raise(Error(styp.ptyp_loc, Bound_type_variable alias))
-      with Not_found ->
-        let obj = newvar () in
-        aliases := Tbl.add alias obj !aliases;
-        let obj' =
-          newty (Tobject (transl_fields env policy fields, ref None)) in
-        begin try unify env obj' obj with Unify trace ->
-          raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
-        end;
-        obj
-      end
-  | Ptyp_class(lid, stl, alias) ->
+  | Ptyp_class(lid, stl) ->
       if policy = Fixed then
         raise(Error(styp.ptyp_loc, Unbound_row_variable lid));
       let lid2 =
@@ -182,30 +143,9 @@ let rec transl_type env policy styp =
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                            List.length stl)));
-      let cstr = new_global_var () in
-      let (ty, args) =
-        begin match alias with
-          None ->
-            let tl = List.map (transl_type env policy) stl in
-            (expand_abbrev env path tl (ref Mnil) cstr.level, tl)
-        | Some alias ->
-            begin try
-              Tbl.find alias !type_variables;
-              raise(Error(styp.ptyp_loc, Bound_type_variable alias))
-            with Not_found -> try
-              Tbl.find alias !aliases;
-              raise(Error(styp.ptyp_loc, Bound_type_variable alias))
-            with Not_found ->
-              aliases := Tbl.add alias cstr !aliases
-            end;
-            let tl = List.map (transl_type env policy) stl in
-            let cstr' = expand_abbrev env path tl (ref Mnil) cstr.level in
-            begin try unify env cstr' cstr with Unify trace ->
-              raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
-            end;
-            (cstr, tl)
-        end
-      in
+      let cstr' = new_global_var () in
+      let args = List.map (transl_type env policy) stl in
+      let ty = expand_abbrev env path args (ref Mnil) cstr'.level in
       let params = Ctype.instance_list decl.type_params in
       List.iter2
         (fun (sty, ty') ty ->
@@ -213,6 +153,22 @@ let rec transl_type env policy styp =
              raise (Error(sty.ptyp_loc, Type_mismatch trace)))
         (List.combine stl args) params;
       ty
+  | Ptyp_alias(st, alias) ->
+      begin try
+        Tbl.find alias !type_variables;
+        raise(Error(styp.ptyp_loc, Bound_type_variable alias))
+      with Not_found -> try
+        Tbl.find alias !aliases;
+        raise(Error(styp.ptyp_loc, Bound_type_variable alias))
+      with Not_found ->
+        let ty' = newvar () in
+        aliases := Tbl.add alias ty' !aliases;
+        let ty = transl_type env policy st in
+        begin try unify env ty ty' with Unify trace ->
+          raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
+        end;
+        ty
+      end 
 
 and transl_fields env policy =
   function

@@ -885,6 +885,8 @@ core_type:
       { mktyp(Ptyp_arrow($1, $3)) }
   | core_type_tuple
       { mktyp(Ptyp_tuple(List.rev $1)) }
+  | core_type AS type_parameter
+      { mktyp(Ptyp_alias($1, $3)) }
 ;
 
 simple_core_type:
@@ -892,32 +894,26 @@ simple_core_type:
       { mktyp(Ptyp_var $2) }
   | UNDERSCORE
       { mktyp(Ptyp_any) }
-  | type_longident alias
-      { mktyp(Ptyp_constr($1, [], $2)) }
-  | simple_core_type type_longident alias %prec prec_constr_appl
-      { mktyp(Ptyp_constr($2, [$1], $3)) }
-  | LPAREN core_type_comma_list RPAREN type_longident alias
+  | type_longident
+      { mktyp(Ptyp_constr($1, [])) }
+  | simple_core_type type_longident %prec prec_constr_appl
+      { mktyp(Ptyp_constr($2, [$1])) }
+  | LPAREN core_type_comma_list RPAREN type_longident
       %prec prec_constr_appl
-      { mktyp(Ptyp_constr($4, List.rev $2, $5)) }
+      { mktyp(Ptyp_constr($4, List.rev $2)) }
   | LPAREN core_type RPAREN
       { $2 }
-  | LESS meth_list GREATER alias
-      { mktyp(Ptyp_object($2, $4)) }
-  | LESS GREATER alias
-      { mktyp(Ptyp_object([], $3)) }
-  | SHARP class_longident alias
-      { mktyp(Ptyp_class($2, [], $3)) }
-  | simple_core_type SHARP class_longident alias %prec prec_constr_appl
-      { mktyp(Ptyp_class($3, [$1], $4)) }
-  | LPAREN core_type_comma_list RPAREN SHARP class_longident alias
+  | LESS meth_list GREATER
+      { mktyp(Ptyp_object $2) }
+  | LESS GREATER
+      { mktyp(Ptyp_object []) }
+  | SHARP class_longident
+      { mktyp(Ptyp_class($2, [])) }
+  | simple_core_type SHARP class_longident %prec prec_constr_appl
+      { mktyp(Ptyp_class($3, [$1])) }
+  | LPAREN core_type_comma_list RPAREN SHARP class_longident
       %prec prec_constr_appl
-      { mktyp(Ptyp_class($5, List.rev $2, $6)) }
-;
-alias:
-    AS type_parameter
-      { Some $2 }
-  | /* empty */
-      {None}
+      { mktyp(Ptyp_class($5, List.rev $2)) }
 ;
 core_type_tuple:
     simple_core_type STAR simple_core_type

@@ -139,66 +139,73 @@ let reset_loop_marks () =
 let reset () =
   reset_names (); reset_loop_marks ()
 
-let rec typexp sch prio ty =
+let rec typexp sch prio0 ty =
   let ty = repr ty in
   try
     List.assq ty !names;
     print_string "'";
     print_string (name_of_type ty)
   with Not_found ->
-    match ty.desc with
+    let alias = List.memq ty !aliased in
+    if alias then begin
+      name_of_type ty;
+      if prio0 >= 1 then begin open_box 1; print_string "(" end
+      else open_box 0
+    end;
+    let prio = if alias then 0 else prio0 in
+    begin match ty.desc with
       Tvar ->
         if (not sch) or ty.level = generic_level
         then print_string "'"
         else print_string "'_";
         print_string(name_of_type ty)
     | Tarrow(ty1, ty2) ->
-        if prio >= 1 then begin open_box 1; print_string "(" end
-                     else open_box 0;
-        typexp sch 1 ty1;
-        print_string " ->"; print_space();
-        typexp sch 0 ty2;
-        if prio >= 1 then print_string ")";
-        close_box()
-    | Ttuple tyl ->
         if prio >= 2 then begin open_box 1; print_string "(" end
                      else open_box 0;
-        typlist sch 2 " *" tyl;
+        typexp sch 2 ty1;
+        print_string " ->"; print_space();
+        typexp sch 1 ty2;
         if prio >= 2 then print_string ")";
         close_box()
+    | Ttuple tyl ->
+        if prio >= 3 then begin open_box 1; print_string "(" end
+                     else open_box 0;
+        typlist sch 3 " *" tyl;
+        if prio >= 3 then print_string ")";
+        close_box()
     | Tconstr(p, tyl, abbrev) ->
-        open_box 0;
-        if List.memq ty !aliased then begin
-          name_of_type ty;
-          if prio >= 1 then begin open_box 1; print_string "(" end
-        end;
         open_box 0;
         begin match tyl with
           [] -> ()
         | [ty1] ->
-            typexp sch 2 ty1; print_space()
+            typexp sch 3 ty1; print_space()
         | tyl ->
             open_box 1; print_string "("; typlist sch 0 "," tyl;
             print_string ")"; close_box(); print_space()
         end;
         path p;
         close_box();
-        if List.memq ty !aliased then begin
-          print_string " as ";
-          print_string "'";
-          print_string (name_of_type ty);
-          remove_name_of_type ty;
-          if prio >= 1 then begin print_string ")"; close_box () end
-        end;
-        close_box()
     | Tobject (fi, nm) ->
-        typobject sch prio ty fi nm
+        typobject sch ty fi nm
 (*
-| Tfield _ -> typobject sch prio ty ty (ref None)
-| Tnil -> typobject sch prio ty ty (ref None)
+| Tfield _ -> typobject sch ty ty (ref None)
+| Tnil -> typobject sch ty ty (ref None)
 *)
     | _ ->
         fatal_error "Printtyp.typexp"
+    end;
+    if alias then begin
+      print_string " as ";
+      print_string "'";
+      print_string (name_of_type ty);
+      if not (opened_object ty) then
+        remove_name_of_type ty;
+      if prio0 >= 1 then print_string ")";
+      close_box()
+    end
+;    print_string "[";
+    print_int ty.level;
+    print_string "]"
 
 and typlist sch prio sep = function
     [] -> ()
@@ -207,11 +214,7 @@ and typlist sch prio sep = function
       typexp sch prio ty; print_string sep; print_space();
       typlist sch prio sep tyl
 
-and typobject sch prio ty fi nm =
-  if List.memq ty !aliased then begin
-    name_of_type ty;
-    if prio >= 1 then begin open_box 1; print_string "(" end
-  end;
+and typobject sch ty fi nm =
   begin match !nm with
     None ->
       open_box 2;
@@ -225,7 +228,7 @@ and typobject sch prio ty fi nm =
       begin match tyl with
         [] -> ()
       | [ty1] ->
-          typexp sch 2 ty1; print_space()
+          typexp sch 3 ty1; print_space()
       | tyl ->
           open_box 1; print_string "("; typlist sch 0 "," tyl;
           print_string ")"; close_box(); print_space()
@@ -237,14 +240,6 @@ and typobject sch prio ty fi nm =
       close_box()
   | _ ->
         fatal_error "Printtyp.typobject"
-  end;
-  if List.memq ty !aliased then begin
-    print_string " as ";
-    print_string "'";
-    print_string (name_of_type ty);
-    if not (opened_object ty) then
-        remove_name_of_type ty;
-    if prio >= 1 then begin print_string ")"; close_box () end
   end
 
 and typfields sch rest =
@@ -353,7 +348,7 @@ and constructor (name, args) =
   match args with
     [] -> ()
   | _  -> print_string " of ";
-          open_box 2; typlist false 2 " *" args; close_box()
+          open_box 2; typlist false 3 " *" args; close_box()
 
 and label (name, mut, arg) =
   begin match mut with
