@@ -53,25 +53,25 @@ module Make(Ord: OrderedType) = struct
       let hr = match r with Empty -> 0 | Node(_,_,_,_,h) -> h in
       if hl > hr + 2 then begin
         match l with
-          Empty -> invalid_arg "Set.bal"
+          Empty -> invalid_arg "Map.bal"
         | Node(ll, lv, ld, lr, _) ->
             if height ll >= height lr then
               create ll lv ld (create lr x d r)
             else begin
               match lr with
-                Empty -> invalid_arg "Set.bal"
+                Empty -> invalid_arg "Map.bal"
               | Node(lrl, lrv, lrd, lrr, _)->
                   create (create ll lv ld lrl) lrv lrd (create lrr x d r)
             end
       end else if hr > hl + 2 then begin
         match r with
-          Empty -> invalid_arg "Set.bal"
+          Empty -> invalid_arg "Map.bal"
         | Node(rl, rv, rd, rr, _) ->
             if height rr >= height rl then
               create (create l x d rl) rv rd rr
             else begin
               match rl with
-                Empty -> invalid_arg "Set.bal"
+                Empty -> invalid_arg "Map.bal"
               | Node(rll, rlv, rld, rlr, _) ->
                   create (create l x d rll) rlv rld (create rlr rv rd rr)
             end
