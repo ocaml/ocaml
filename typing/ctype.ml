@@ -1255,6 +1255,10 @@ let rec unify_univar t1 t2 = function
 
 module TypeMap = Map.Make (TypeOps)
 
+
+(* A list of univars which may appear free in a type, but only if generic *)
+let allowed_univars = ref TypeSet.empty
+
 (* Test the occurence of free univars in a type *)
 (* that's way too expansive. Must do some kind of cacheing *)
 let occur_univar ty =
@@ -1276,7 +1280,12 @@ let occur_univar ty =
     then
       match ty.desc with
         Tunivar ->
-          if not (TypeSet.mem ty bound) then raise (Unify [ty, newgenvar()])
+          if TypeSet.mem ty bound then () else
+          if TypeSet.mem ty !allowed_univars &&
+            (ty.level = generic_level ||
+             ty.level = pivot_level - generic_level)
+          then ()
+          else raise (Unify [ty, newgenvar()])
       | Tpoly (ty, tyl) ->
           let bound = List.fold_right TypeSet.add (List.map repr tyl) bound in
           occur_rec bound  ty
@@ -1288,6 +1297,7 @@ let occur_univar ty =
     unmark_type ty; raise exn
 
 let univar_pairs = ref []
+let delayed_conditionals = ref []
 
 
                               (*****************)
@@ -1366,12 +1376,14 @@ let rec unify env t1 t2 =
     | (Tconstr _, Tvar) when deep_occur t2 t1 ->
         unify2 env t1 t2
     | (Tvar, _) ->
-        occur env t1 t2; occur_univar t2;
+        occur env t1 t2;
         update_level env t1.level t2;
+        occur_univar t2;
         link_type t1 t2
     | (_, Tvar) ->
-        occur env t2 t1; occur_univar t1;
+        occur env t2 t1;
         update_level env t2.level t1;
+        occur_univar t1;
         link_type t2 t1
     | (Tunivar, Tunivar) ->
         unify_univar t1 t2 !univar_pairs;
@@ -1424,16 +1436,17 @@ and unify3 env t1 t1' t2 t2' =
     | (_, Tvar) ->
         let td1 = newgenty d1 in
         occur env t2' td1;
-        occur_univar td1;
         if t1 == t1' then begin
           (* The variable must be instantiated... *)
           let ty = newty2 t1'.level d1 in
           update_level env t2'.level ty;
+          occur_univar td1;
           link_type t2' ty
         end else begin
           log_type t1';
           t1'.desc <- d1;
           update_level env t2'.level t1;
+          occur_univar td1;
           link_type t2' t1
         end
     | (Tarrow (l1, t1, u1, c1), Tarrow (l2, t2, u2, c2)) when l1 = l2
@@ -1590,9 +1603,11 @@ and unify_row env row1 row2 =
               with Not_found -> (h,l)::hl)
             (List.map (fun (l,_) -> (hash_variant l, l)) row1.row_fields)
             (List.map fst r2));
+  let fixed1 = row1.row_fixed || rm1.desc <> Tvar
+  and fixed2 = row2.row_fixed || rm2.desc <> Tvar in
   let more =
-    if row1.row_fixed then rm1 else
-    if row2.row_fixed then rm2 else
+    if fixed1 then rm1 else
+    if fixed2 then rm2 else
     newgenvar ()
   in update_level env (min rm1.level rm2.level) more;
   let fixed = row1.row_fixed || row2.row_fixed
@@ -1630,18 +1645,18 @@ and unify_row env row1 row2 =
   let bound = row1.row_bound @ row2.row_bound in
   let row0 = {row_fields = []; row_more = more; row_bound = bound;
               row_closed = closed; row_fixed = fixed; row_name = name} in
-  let set_more row rest =
+  let set_more row row_fixed rest =
     let rest =
       if closed then
         filter_row_fields row.row_closed rest
       else rest in
-    if rest <> [] && (row.row_closed || row.row_fixed)
-    || closed && row.row_fixed && not row.row_closed then begin
+    if rest <> [] && (row.row_closed || row_fixed)
+    || closed && row_fixed && not row.row_closed then begin
       let t1 = mkvariant [] true and t2 = mkvariant rest false in
       raise (Unify [if row == row1 then (t1,t2) else (t2,t1)])
     end;
     let rm = row_more row in
-    if row.row_fixed then
+    if row_fixed then
       if row0.row_more == rm then () else begin
         link_type rm row0.row_more
       end
@@ -1652,11 +1667,11 @@ and unify_row env row1 row2 =
   in
   let md1 = rm1.desc and md2 = rm2.desc in
   begin try
-    set_more row1 r2;
-    set_more row2 r1;
+    set_more row1 fixed1 r2;
+    set_more row2 fixed2 r1;
     List.iter
       (fun (l,f1,f2) ->
-        unify_row_field env row1.row_fixed row2.row_fixed f1 f2)
+        unify_row_field env fixed1 fixed2 row1 row2 l f1 f2)
       pairs;
     (* Special case when there is only one field left *)
     if row0.row_closed then begin
@@ -1681,7 +1696,7 @@ and unify_row env row1 row2 =
     log_type rm1; rm1.desc <- md1; log_type rm2; rm2.desc <- md2; raise exn
   end
 
-and unify_row_field env fixed1 fixed2 f1 f2 =
+and unify_row_field env fixed1 fixed2 row1 row2 l f1 f2 =
   let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
   if f1 == f2 then () else
   match f1, f2 with
@@ -1698,18 +1713,13 @@ and unify_row_field env fixed1 fixed2 f1 f2 =
             !e1 <> None || !e2 <> None
         end in
       let redo =
-        redo || (fixed1 || fixed2) &&
-        (begin match tp1, tp2 with
-        | _, [] when fixed2 -> unify_pairs env tp1
-        | [], _ when fixed1 -> unify_pairs env tp2
-        | (t1,t1')::tp1', (t2, t2')::tp2' ->
-            unify env t1 t2; unify env t1' t2';
-            if fixed2 then unify_pairs env tp1';
-            if fixed1 then unify_pairs env tp2'
-        | _ -> ()
-        end; !e1 <> None || !e2 <> None)
+        redo || begin
+          if tp1 = [] && fixed1 then unify_pairs env tp2;
+          if tp2 = [] && fixed2 then unify_pairs env tp1;
+          !e1 <> None || !e2 <> None
+        end
       in
-      if redo then unify_row_field env fixed1 fixed2 f1 f2 else
+      if redo then unify_row_field env fixed1 fixed2 row1 row2 l f1 f2 else
       let tl1 = List.map repr tl1 and tl2 = List.map repr tl2 in
       let rec remq tl = function [] -> []
         | ty :: tl' ->
@@ -1724,10 +1734,22 @@ and unify_row_field env fixed1 fixed2 f1 f2 =
               rempq tp tp'
             else p :: rempq tp tp'
       in
-      let tp1' = rempq tp2 tp1 and tp2' = rempq tp1 tp2 in
+      let tp1' =
+        if fixed2 then begin
+          delayed_conditionals :=
+            (!univar_pairs, tp1, l, row2) :: !delayed_conditionals;
+          []
+        end else rempq tp2 tp1
+      and tp2' =
+        if fixed1 then begin
+          delayed_conditionals :=
+            (!univar_pairs, tp2, l, row1) :: !delayed_conditionals;
+          []
+        end else rempq tp1 tp2
+      in
       let e = ref None in
-      let f1 = Reither(c1 || c2, tl1', m1 || m2, tp2, e)
-      and f2 = Reither(c1 || c2, tl2', m1 || m2, tp1, e) in
+      let f1 = Reither(c1 || c2, tl1', m1 || m2, tp2', e)
+      and f2 = Reither(c1 || c2, tl2', m1 || m2, tp1', e) in
       set_row_field e1 f1; set_row_field e2 f2
   | Reither(_, _, false, _, e1), Rabsent -> set_row_field e1 f2
   | Rabsent, Reither(_, _, false, _, e2) -> set_row_field e2 f1
@@ -1870,6 +1892,167 @@ let filter_self_method env lab priv meths ty =
                         (*  Matching between type schemes  *)
                         (***********************************)
 
+(* Forward declaration (order should be reversed...) *)
+let equal' = ref (fun _ -> failwith "Ctype.equal'")
+
+let make_generics_univars tyl =
+  let polyvars = ref TypeSet.empty in
+  let rec make_rec ty =
+    let ty = repr ty in
+    if ty.level = generic_level then begin
+      if ty.desc = Tvar  then begin
+        log_type ty;
+        ty.desc <- Tunivar;
+        polyvars := TypeSet.add ty !polyvars
+      end
+      else if ty.desc = Tunivar then set_level ty (generic_level - 1);
+      ty.level <- pivot_level - generic_level;
+      iter_type_expr make_rec ty
+    end
+  in
+  List.iter make_rec tyl;
+  List.iter unmark_type tyl;
+  !polyvars
+
+(* New version of moregeneral, using unification *)
+
+let copy_cond (p,tpl,l,row) =
+  let row =
+    match repr (copy (newgenty (Tvariant row))) with
+      {desc=Tvariant row} -> row
+    | _ -> assert false
+  and pairs =
+    List.map (fun (t1,t2) -> copy t1, copy t2) tpl in
+  (p, pairs, l, row)
+
+let get_row_field l row =
+  try row_field_repr (List.assoc l (row_repr row).row_fields)
+  with Not_found -> Rabsent
+
+let rec check_conditional_list env cdtls pattvars tpls =
+  match cdtls with
+    [] ->
+      let finished =
+        List.for_all (fun (_,t1,t2) -> !equal' env false [t1] [t2]) tpls in
+      if not finished then begin
+        let polyvars = make_generics_univars pattvars in
+        delayed_conditionals := [];
+        allowed_univars := polyvars;
+        List.iter (fun (pairs, ty1, ty2) -> unify_pairs env ty1 ty2 pairs)
+          tpls;
+        check_conditionals env polyvars !delayed_conditionals
+      end
+  | (pairs, tpl1, l, row2 as cond) :: cdtls ->
+      let cont = check_conditional_list env cdtls pattvars in
+      let tpl1 =
+        List.filter (fun (t1,t2) -> not (!equal' env false [t1] [t2])) tpl1 in
+      let included =
+        List.for_all
+          (fun (t1,t2) ->
+            List.exists
+              (fun (_,t1',t2') -> !equal' env false [t1;t2] [t1';t2'])
+              tpls)
+          tpl1 in
+      if included then cont tpls else
+      match get_row_field l row2 with
+        Rpresent _ ->
+          cont (List.map (fun (t1,t2) -> (pairs,t1,t2)) tpl1 @ tpls)
+      | Rabsent -> cont tpls
+      | Reither (c, tl2, _, _, _) ->
+          cont tpls;
+          if c && tl2 <> [] then () (* cannot succeed *) else
+          let (pairs, tpl1, l, row2) = copy_cond cond
+          and tpls = List.map (fun (p,t1,t2) -> p, copy t1, copy t2) tpls
+          and pattvars = List.map copy pattvars
+          and cdtls = List.map copy_cond cdtls in
+          cleanup_types ();
+          let tl2, tpl2, e2 =
+            match get_row_field l row2 with
+              Reither (c, tl2, _, tpl2, e2) -> tl2, tpl2, e2
+            | _ -> assert false
+          in
+          let snap = Btype.snapshot () in
+          let ok =
+            try
+              begin match tl2 with
+                [] ->
+                  set_row_field e2 (Rpresent None)
+              | t::tl ->
+                  set_row_field e2 (Rpresent (Some t));
+                  List.iter (unify env t) tl
+              end;
+              List.iter (fun (t1,t2) -> unify_pairs env t1 t2 pairs) tpl2;
+              true
+            with exn ->
+              Btype.backtrack snap;
+              false
+          in
+            (* This is not [cont] : types have been copied *)
+          if ok then
+            check_conditional_list env cdtls pattvars
+              (List.map (fun (t1,t2) -> (pairs,t1,t2)) tpl1 @ tpls)
+
+and check_conditionals env polyvars cdtls =
+  let cdtls = List.map copy_cond cdtls in
+  let pattvars = ref [] in
+  TypeSet.iter
+    (fun ty ->
+      let ty = repr ty in
+      match ty.desc with
+        Tsubst ty ->
+          let ty = repr ty in
+          begin match ty.desc with
+            Tunivar ->
+              log_type ty;
+              ty.desc <- Tvar;
+              pattvars := ty :: !pattvars
+          | Tvariant row ->
+              let tv = row_more row in
+              if tv.desc = Tunivar then
+                (log_type tv; tv.desc <- Tvar; pattvars := ty :: !pattvars)
+              else if tv.desc <> Tvar then assert false
+          | Tvar -> ()
+          | _ -> assert false
+          end
+      | _ -> ())
+    polyvars;
+  cleanup_types ();
+  check_conditional_list env cdtls !pattvars []
+  
+
+(* Must empty univar_pairs first *)
+let unify_poly env polyvars subj patt =
+  let old_level = !current_level in
+  current_level := generic_level;
+  delayed_conditionals := [];
+  allowed_univars := polyvars;
+  try
+    unify env subj patt;
+    check_conditionals env polyvars !delayed_conditionals;
+    current_level := old_level;
+    allowed_univars := TypeSet.empty;
+    delayed_conditionals := []
+  with exn ->
+    current_level := old_level;
+    allowed_univars := TypeSet.empty;
+    delayed_conditionals := [];
+    raise exn
+
+let moregeneral env _ subj patt =
+  let old_level = !current_level in
+  current_level := generic_level;
+  let subj = instance subj
+  and patt = instance patt in
+  let polyvars = make_generics_univars [patt] in
+  current_level := old_level;
+  let snap = Btype.snapshot () in
+  try
+    unify_poly env polyvars subj patt;
+    true
+  with Unify _ ->
+    Btype.backtrack snap;
+    false
+
 (*
    Update the level of [ty]. First check that the levels of generic
    variables from the subject are not lowered.
@@ -1892,14 +2075,9 @@ let moregen_occur env level ty =
   with Occur ->
     unmark_type ty; raise (Unify [])
   end;
+  update_level env level ty;
   (* also check for free univars *)
-  occur_univar ty;
-  update_level env level ty
-
-(* Forward declaration (order should be reversed...) *)
-let equal' = ref (fun _ -> failwith "Ctype.equal'")
-
-let delayed_conditionals = ref []
+  occur_univar ty
 
 let rec moregen inst_nongen type_pairs env t1 t2 =
   if t1 == t2 then () else
@@ -2052,7 +2230,8 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
                 List.iter2 (moregen inst_nongen type_pairs env) tl1 tl2
             end;
             if tpl1 <> [] then
-              delayed_conditionals := (tpl1, f2) :: !delayed_conditionals
+              delayed_conditionals :=
+                (!univar_pairs, tpl1, l, row2) :: !delayed_conditionals
           end
       | Reither(true, [], _, [], e1), Rpresent None when not univ ->
           set_row_field e1 f2
@@ -2062,7 +2241,7 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
       | _ -> raise (Unify []))
     pairs
 
-let check_conditional env tpl1 f2 tpls cont =
+let check_conditional env (pairs, tpl1, l, row2) tpls cont =
   let tpl1 =
     List.filter (fun (t1,t2) -> not (!equal' env false [t1] [t2])) tpl1 in
   let included =
@@ -2072,7 +2251,7 @@ let check_conditional env tpl1 f2 tpls cont =
           tpls)
       tpl1 in
   if tpl1 = [] || included then cont tpls else
-  match row_field_repr f2 with
+  match get_row_field l row2 with
     Rpresent _ -> cont (tpl1 @ tpls)
   | Rabsent -> cont tpls
   | Reither (c, tl2, _, tpl2, e2) ->
@@ -2087,7 +2266,7 @@ let check_conditional env tpl1 f2 tpls cont =
                 set_row_field e2 (Rpresent (Some t));
                 List.iter (unify env t) tl
             end;
-            List.iter (fun (t1,t2) -> unify env t1 t2) tpl2;
+            List.iter (fun (t1,t2) -> unify_pairs env t1 t2 pairs) tpl2;
             true
           with Unify _ -> false
         in
@@ -2108,8 +2287,8 @@ let rec check_conditionals inst_nongen env cdtls tpls =
         List.iter2 (moregen false type_pairs env) tl2 tl1;
         check_conditionals inst_nongen env !delayed_conditionals []
       end
-  | (tpl1, f2) :: cdtls ->
-      check_conditional env tpl1 f2 tpls
+  | cdtl :: cdtls ->
+      check_conditional env cdtl tpls
         (check_conditionals inst_nongen env cdtls)
 
 
@@ -2127,6 +2306,8 @@ let moregen inst_nongen type_pairs env patt subj =
     delayed_conditionals := [];
     raise exn
 
+
+(* old implementation
 (*
    Non-generic variable can be instanciated only if [inst_nongen] is
    true. So, [inst_nongen] should be set to false if the subject might
@@ -2154,6 +2335,7 @@ let moregeneral env inst_nongen pat_sch subj_sch =
   in
   current_level := old_level;
   res
+*)
 
 
                  (*********************************************)
