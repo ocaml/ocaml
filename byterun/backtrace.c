@@ -46,6 +46,14 @@ enum { EV_POS = 0,
        EV_CHAR = 2,
        EV_KIND = 3 };
 
+/* Location of fields in the Lexing.position record. */
+enum {
+  POS_FNAME = 0,
+  POS_LNUM = 1,
+  POS_BOL = 2,
+  POS_CNUM = 3,
+};
+
 /* Initialize the backtrace machinery */
 
 void init_backtrace(void)
@@ -173,9 +181,12 @@ static void print_location(value events, int index)
   if (ev == Val_false) {
     fprintf(stderr, "%s unknown location\n", info);
   } else {
-    fprintf(stderr, "%s module %s, character %d\n", info,
-            String_val(Field(ev, EV_MODULE)),
-            Int_val(Field(ev, EV_CHAR)));
+    value ev_char = Field (ev, EV_CHAR);
+    char *fname = String_val (Field (ev_char, POS_FNAME));
+    int lnum = Int_val (Field (ev_char, POS_LNUM));
+    int chr = Int_val (Field (ev_char, POS_CNUM))
+              - Int_val (Field (ev_char, POS_BOL));
+    fprintf(stderr, "%s module %s, line %d, char %d\n", info, fname, lnum, chr);
   }
 }
 
