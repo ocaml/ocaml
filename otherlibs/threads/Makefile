@@ -42,7 +42,7 @@ LIB_OBJS=pervasives.cmo \
   $(LIB)/lazy.cmo $(LIB)/filename.cmo $(LIB)/int32.cmo $(LIB)/int64.cmo \
   $(LIB)/nativeint.cmo \
   $(LIB)/arrayLabels.cmo $(LIB)/listLabels.cmo $(LIB)/stringLabels.cmo \
-  $(LIB)/stdLabels.cmo
+  $(LIB)/stdLabels.cmo $(LIB)/moreLabels.cmo
 
 UNIXLIB=../unix
 
