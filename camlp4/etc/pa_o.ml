@@ -207,24 +207,29 @@ value test_constr_decl =
        | _ -> raise Stream.Failure ])
 ;
 
-value test_not_class_signature =
-  Grammar.Entry.of_parser gram "test_not_class_signature"
-    (fun strm ->
-       match Stream.npeek 1 strm with
-       [ [("", "object")] -> raise Stream.Failure
-       | [("", "[")] ->
-           match Stream.npeek 2 strm with
-           [ [_; ("", "'")] -> raise Stream.Failure
-           | _ -> () ]
-       | _ -> () ])
-;
-
 value stream_peek_nth n strm =
   loop n (Stream.npeek n strm) where rec loop n =
     fun
     [ [] -> None
     | [x] -> if n == 1 then Some x else None
     | [_ :: l] -> loop (n - 1) l ]
+;
+
+value test_not_class_signature =
+  Grammar.Entry.of_parser gram "test_not_class_signature"
+    (fun strm ->
+       match Stream.npeek 1 strm with
+       [ [("", "object")] -> raise Stream.Failure
+       | [("", "[")] ->
+           test 2 where rec test lev =
+             match stream_peek_nth lev strm with
+             [ Some ("", "]") ->
+                 match stream_peek_nth (lev + 1) strm with
+                 [ Some ("UIDENT" | "LIDENT", _) -> raise Stream.Failure
+                 | _ -> () ]
+             | Some _ -> test (lev + 1)
+             | None -> raise Stream.Failure ]
+       | _ -> () ])
 ;
 
 value test_label_eq =
