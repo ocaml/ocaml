@@ -24,8 +24,8 @@ INCLUDES=-I ../utils -I ../typing -I ../asmcomp
 OTHEROBJS=../utils/misc.cmo ../utils/tbl.cmo \
   ../utils/clflags.cmo ../utils/config.cmo \
   ../parsing/location.cmo \
-  ../typing/ident.cmo ../typing/path.cmo \
-  ../typing/typedtree.cmo ../typing/subst.cmo ../typing/primitive.cmo \
+  ../typing/ident.cmo ../typing/path.cmo ../typing/types.cmo \
+  ../typing/subst.cmo ../typing/primitive.cmo \
   ../typing/predef.cmo ../typing/datarepr.cmo ../typing/env.cmo \
   ../bytecomp/lambda.cmo \
   ../asmcomp/arch.cmo ../asmcomp/cmm.cmo ../asmcomp/printcmm.cmo \
