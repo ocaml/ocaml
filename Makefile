@@ -152,8 +152,8 @@ coldstart:
 	cd stdlib; cp $(LIBFILES) ../boot
 	if test -f boot/libcamlrun.a; then :; else \
           ln -s ../byterun/libcamlrun.a boot/libcamlrun.a; fi
-	if test -d boot/caml; then :; else \
-          ln -s ../byterun boot/caml; fi
+	if test -d stdlib/caml; then :; else \
+          ln -s ../byterun stdlib/caml; fi
 
 # Save the current bootstrap compiler
 MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
