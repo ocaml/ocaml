@@ -70,7 +70,7 @@ let build_initial_env add_type add_exception empty_env =
   and decl_format =
     {type_params = [newvar(); newvar(); newvar()]; type_arity = 3;
      type_kind = Type_abstract} in
-  add_exception ident_match_failure [type_string; type_int; type_int] (
+  add_exception ident_match_failure [Ttuple[type_string; type_int; type_int]] (
   add_exception ident_out_of_memory [] (
   add_exception ident_invalid_argument [type_string] (
   add_exception ident_failure [type_string] (
