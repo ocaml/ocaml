@@ -18,7 +18,7 @@ OCAMLOPT=@OTOP=$(OTOP) OPT=$(OPT) EXE=$(EXE) ../tools/ocamlopt.sh
 OCAMLCFLAGS=
 MKDIR=mkdir -p
 
-TESTDIRECTORY= test `basename "$<"` != "$<" && { echo "You are not in the right directory"; exit 1; }
+TEST_DIRECTORY=test `basename "$<"` = "$<" || { echo "You are not in the right directory"; exit 1; }
 
 .SUFFIXES: .cmx .cmo .cmi .ml .mli .p.cmx
 
