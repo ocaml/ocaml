@@ -78,7 +78,11 @@ let digest_interface unit loadpath =
       raise(Error(Corrupted_interface filename))
     end;
     input_value ic;
-    let crc = Digest.input ic in
+    let crc =
+      match input_value ic with
+        (_, crc) :: _ -> crc
+      | _             -> raise(Error(Corrupted_interface filename))
+    in
     close_in ic;
     crc
   with End_of_file | Failure _ ->
