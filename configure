@@ -22,6 +22,7 @@ manext=1
 host_type=unknown
 cc=''
 cclibs=''
+curseslibs=''
 mathlib='-lm'
 x11_include_dir=''
 x11_lib_dir=''
@@ -29,6 +30,7 @@ tk_defs=''
 tk_libs=''
 posix_threads=no
 verbose=no
+withcurses=yes
 
 gcc_warnings="-Wall -Wno-unused"
 
@@ -52,7 +54,8 @@ while : ; do
     -cc*)
         cc="$2"; shift;;
     -lib*)
-        cclibs="$2 "; shift;;
+        cclibs="$2 $cclibs"; shift;;
+    -nocurses) withcurses=no; shift;;
     -x11include*|--x11include*)
         x11_include_dir=$2; shift;;
     -x11lib*|--x11lib*)
@@ -518,14 +521,16 @@ fi
 
 # For the terminfo module
 
-for libs in "" "-lcurses" "-ltermcap" "-lcurses -ltermcap"; do
-  if sh ./hasgot $libs tgetent tgetstr tgetnum tputs; then
-    echo "termcap functions found (with libraries '$libs')"
-    echo "#define HAS_TERMCAP" >> s.h
-    cclibs="${cclibs}${libs}"
-    break
-  fi
-done
+if test "$withcurses" = "yes"; then
+  for libs in "" "-lcurses" "-ltermcap" "-lcurses -ltermcap"; do
+    if sh ./hasgot $libs tgetent tgetstr tgetnum tputs; then
+      echo "termcap functions found (with libraries '$libs')"
+      echo "#define HAS_TERMCAP" >> s.h
+      curseslibs="${libs}"
+      break
+    fi
+  done
+fi
 
 # Configuration for the libraries
 
@@ -989,6 +994,7 @@ cclibs="$cclibs $mathlib"
 echo "BYTECC=$bytecc" >> Makefile
 echo "BYTECCCOMPOPTS=$bytecccompopts" >> Makefile
 echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
+echo "BYTECCLIBS=$cclibs $curseslibs" >> Makefile
 echo "EXE=$exe" >> Makefile
 
 echo "ARCH=$arch" >> Makefile
@@ -997,13 +1003,13 @@ echo "SYSTEM=$system" >> Makefile
 echo "NATIVECC=$nativecc" >> Makefile
 echo "NATIVECCCOMPOPTS=$nativecccompopts" >> Makefile
 echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
+echo "NATIVECCLIBS=$cclibs" >> Makefile
 echo "ASFLAGS=$asflags" >> Makefile
 echo "ASPP=$aspp" >> Makefile
 echo "ASPPFLAGS=$asppflags" >> Makefile
 echo "ASPPPROFFLAGS=$asppprofflags" >> Makefile
 echo "PROFILING=$profiling" >> Makefile
 
-echo "CCLIBS=$cclibs" >> Makefile
 echo "DYNLINKOPTS=$dllib" >> Makefile
 echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
 echo "DEBUGGER=$debugger" >> Makefile
@@ -1025,7 +1031,7 @@ echo "        manual pages.............. $mandir (with extension .$manext)"
 echo "Configuration for the bytecode compiler:"
 echo "        C compiler used........... $bytecc"
 echo "        options for compiling..... $bytecccompopts"
-echo "        options for linking....... $bytecclinkopts $cclibs"
+echo "        options for linking....... $bytecclinkopts $cclibs $curseslibs"
 
 echo "Configuration for the native-code compiler:"
 if test "$arch" = "none"; then

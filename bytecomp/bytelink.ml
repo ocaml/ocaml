@@ -409,7 +409,7 @@ let build_custom_runtime prim_name exec_name =
             (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
                       !load_path))
           (String.concat " " (List.rev !Clflags.ccobjs))
-          Config.c_libraries)
+          Config.bytecomp_c_libraries)
   | "Win32" ->
       let retcode =
       Ccomp.command
@@ -423,7 +423,7 @@ let build_custom_runtime prim_name exec_name =
           (String.concat " "
                          (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
           (Ccomp.expand_libname "-lcamlrun")
-          Config.c_libraries) in
+          Config.bytecomp_c_libraries) in
       (* C compiler doesn't clean up after itself *)
       remove_file (Filename.chop_suffix prim_name ".c" ^ ".obj");
       retcode

@@ -209,7 +209,7 @@ let call_linker file_list startup_file =
       else find_in_path !load_path libname
     with Not_found ->
       raise(Error(File_not_found libname)) in
-  let c_lib = if !Clflags.nopervasives then "" else Config.c_libraries in
+  let c_lib = if !Clflags.nopervasives then "" else Config.native_c_libraries in
   let cmd =
     match Config.system with
       "win32" ->

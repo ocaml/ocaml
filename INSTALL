@@ -46,6 +46,9 @@ The "configure" script accepts the following options:
 -libs <extra libraries>         (default: none)
         Extra libraries to link with the system
 
+-nocurses
+        Do not link the curses library.
+
 -host <hosttype>                (default: determined automatically)
         The type of the host machine, in GNU's "configuration name"
         format (CPU-COMPANY-SYSTEM). This info is generally determined

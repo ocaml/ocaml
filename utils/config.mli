@@ -27,16 +27,18 @@ val bytecomp_c_compiler: string
 val bytecomp_c_linker: string
         (* The C compiler to use for building custom runtime systems
            with the bytecode compiler *)
+val bytecomp_c_libraries: string
+        (* The C libraries to link with custom runtimes *)
 val native_c_compiler: string
         (* The C compiler to use for compiling C files 
            with the native-code compiler *)
 val native_c_linker: string
         (* The C compiler to use for the final linking step
            in the native code compiler *)
+val native_c_libraries: string
+        (* The C libraries to link with native-code programs *)
 val native_partial_linker: string
         (* The linker to use for partial links (-output-obj option) *)
-val c_libraries: string
-        (* The C libraries to link with custom runtimes *)
 val ranlib: string
         (* Command to randomize a library, or "" if not needed *)
 
