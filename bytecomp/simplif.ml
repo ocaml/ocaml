@@ -101,7 +101,7 @@ let simplify_lambda lam =
   | Lconst cst -> ()
   | Lapply(l1, ll) -> count l1; List.iter count ll
   | Lfunction(kind, params, l) -> count l
-  | Llet(str, v, Lvar w, l2) ->
+  | Llet(str, v, Lvar w, l2) when not !Clflags.debug ->
       (* v will be replaced by w in l2, so each occurrence of v in l2
          increases w's refcount *)
       count l2;
