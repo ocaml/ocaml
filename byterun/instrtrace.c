@@ -25,6 +25,7 @@
 #include "mlvalues.h"
 #include "opnames.h"
 #include "prims.h"
+#include "stacks.h"
 
 extern code_t caml_start_code;
 
