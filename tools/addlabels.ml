@@ -33,8 +33,18 @@ let rec labels_of_sty sty =
 
 let rec labels_of_cty cty =
   match cty.pcty_desc with
-    Pcty_fun (lab, _, rem) -> lab :: labels_of_cty rem
-  |  _                     -> []
+    Pcty_fun (lab, _, rem) ->
+      let (labs, meths) = labels_of_cty rem in
+      (lab :: labs, meths)
+  | Pcty_signature (_, fields) ->
+      ([],
+       List.fold_left fields ~init:[] ~f:
+          begin fun meths -> function
+              Pctf_meth (s, _, sty, _) -> (s, labels_of_sty sty)::meths
+            | _ -> meths
+          end)
+  |  _ ->
+      ([],[])
 
 let rec pattern_vars pat =
   match pat.ppat_desc with
@@ -174,7 +184,8 @@ let rec insert_labels_app ~labels ~text args =
       ()
 
 let rec add_labels_expr ~text ~values ~classes expr =
-  let add_labels_rec = add_labels_expr ~text ~values ~classes in
+  let add_labels_rec ?(values=values) expr =
+    add_labels_expr ~text ~values ~classes expr in
   match expr.pexp_desc with
     Pexp_apply ({pexp_desc=Pexp_ident(Longident.Lident s)}, args) ->
       begin try
@@ -183,6 +194,14 @@ let rec add_labels_expr ~text ~values ~classes expr =
       with Not_found -> ()
       end;
       List.iter args ~f:(fun (_,e) -> add_labels_rec e)
+  | Pexp_apply ({pexp_desc=Pexp_send
+                   ({pexp_desc=Pexp_ident(Longident.Lident s)},meth)}, args) ->
+      begin try
+        if SMap.find s values = ["<object>"] then
+          let labels = SMap.find (s ^ "#" ^ meth) values in
+          insert_labels_app ~labels ~text args
+      with Not_found -> ()
+      end
   | Pexp_apply ({pexp_desc=Pexp_new (Longident.Lident s)}, args) ->
       begin try
         let labels = SMap.find s classes in
@@ -194,25 +213,20 @@ let rec add_labels_expr ~text ~values ~classes expr =
       let vals = SMap.removes vars values in
       List.iter lst ~f:
         begin fun (_,e) ->
-          add_labels_expr e ~text ~classes
-            ~values:(if recp = Recursive then vals else values)
+          add_labels_rec e ~values:(if recp = Recursive then vals else values)
         end;
-      add_labels_expr expr ~text ~classes ~values:vals
+      add_labels_rec expr ~values:vals
   | Pexp_function (_, None, lst) ->
       List.iter lst ~f:
-        begin fun (p,e) ->
-          add_labels_expr e ~text ~classes
-            ~values:(SMap.removes (pattern_vars p) values)
-        end
+        (fun (p,e) ->
+          add_labels_rec e ~values:(SMap.removes (pattern_vars p) values))
   | Pexp_function (_, Some e, lst)
   | Pexp_match (e, lst)
   | Pexp_try (e, lst) ->
       add_labels_rec e;
       List.iter lst ~f:
-        begin fun (p,e) ->
-          add_labels_expr e ~text ~classes
-            ~values:(SMap.removes (pattern_vars p) values)
-        end
+        (fun (p,e) ->
+          add_labels_rec e ~values:(SMap.removes (pattern_vars p) values))
   | Pexp_apply (e, args) ->
       List.iter add_labels_rec (e :: List.map snd args)
   | Pexp_tuple l | Pexp_array l ->
@@ -239,24 +253,39 @@ let rec add_labels_expr ~text ~values ~classes expr =
       add_labels_rec e1; add_labels_rec e2; add_labels_rec e3
   | Pexp_for (s, e1, e2, _, e3) ->
       add_labels_rec e1; add_labels_rec e2;
-      add_labels_expr e3 ~text ~classes ~values:(SMap.removes [s] values)
+      add_labels_rec e3 ~values:(SMap.removes [s] values)
   | Pexp_override lst ->
       List.iter lst ~f:(fun (_,e) -> add_labels_rec e)
   | Pexp_ident _ | Pexp_constant _ | Pexp_construct _ | Pexp_variant _
   | Pexp_new _ | Pexp_assertfalse ->
       ()
 
-let rec add_labels_class ~text ~classes ~values cl =
+let rec add_labels_class ~text ~classes ~values ~methods cl =
   match cl.pcl_desc with
     Pcl_constr _ -> ()
   | Pcl_structure (p, l) ->
       let values = SMap.removes (pattern_vars p) values in
+      let values =
+        match pattern_name p with None -> values
+        | Some s ->
+            List.fold_left methods
+              ~init:(SMap.add s ["<object>"] values)
+              ~f:(fun m (k,l) -> SMap.add (s^"#"^k) l m)
+      in
       List.fold_left l ~init:values ~f:
         begin fun values -> function
           | Pcf_val (s, _, e, _) ->
               add_labels_expr ~text ~classes ~values e;
               SMap.removes [s] values
-          | Pcf_meth (_, _, e, _) | Pcf_init e ->
+          | Pcf_meth (s, _, e, _) ->
+              begin try
+                let labels = List.assoc s ~map:methods in
+                insert_labels ~labels ~text e
+              with Not_found -> ()
+              end;
+              add_labels_expr ~text ~classes ~values e;
+              values
+          | Pcf_init e ->
               add_labels_expr ~text ~classes ~values e;
               values
           | Pcf_inher _ | Pcf_virt _ | Pcf_cstr _ -> values
@@ -268,10 +297,10 @@ let rec add_labels_class ~text ~classes ~values cl =
       | Some e -> add_labels_expr ~text ~classes ~values e
       end;
       let values = SMap.removes (pattern_vars pat) values in
-      add_labels_class ~text ~classes ~values cl
+      add_labels_class ~text ~classes ~values ~methods cl
   | Pcl_apply (cl, args) ->
       List.map args ~f:(fun (_,e) -> add_labels_expr ~text ~classes ~values e);
-      add_labels_class ~text ~classes ~values cl
+      add_labels_class ~text ~classes ~values ~methods cl
   | Pcl_let (recp, lst, cl) ->
       let vars = List.concat (List.map lst ~f:(fun (p,_) -> pattern_vars p)) in
       let vals = SMap.removes vars values in
@@ -280,9 +309,9 @@ let rec add_labels_class ~text ~classes ~values cl =
           add_labels_expr e ~text ~classes
             ~values:(if recp = Recursive then vals else values)
         end;
-      add_labels_class cl ~text ~classes ~values:vals
+      add_labels_class cl ~text ~classes ~values:vals ~methods
   | Pcl_constraint (cl, _) ->
-      add_labels_class ~text ~classes ~values cl
+      add_labels_class ~text ~classes ~values ~methods cl
 
 let add_labels ~intf ~impl ~file =
   insertions := [];
@@ -341,15 +370,16 @@ let add_labels ~intf ~impl ~file =
           List.iter l ~f:
             begin fun {pci_name=name; pci_expr=expr} ->
               try
-                let labels = SMap.find name classes in
+                let (labels, methods) = SMap.find name classes in
                 insert_labels_class ~labels ~text expr;
                 if !norec then () else
                 let classes =
                   SMap.fold
-                    (fun s l m ->
+                    (fun s (l,_) m ->
                       if List.mem s names then SMap.add s l m else m)
                     classes SMap.empty in
-                add_labels_class ~text ~values:SMap.empty ~classes expr
+                add_labels_class expr ~text ~classes ~methods
+                  ~values:SMap.empty
               with Not_found -> ()
             end;
           (values, SMap.removes names classes)
