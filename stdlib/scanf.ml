@@ -574,43 +574,161 @@ let read_char_set fmt i =
 
   find_set_sign i;;
 
+let set_bit_of_byte byte idx b =
+  (b lsl idx) lor (byte land (* mask idx *) (lnot (1 lsl idx)));;
+
+let get_bit_of_byte byte idx = (byte lsr idx) land 1;;
+
+let set_bit_of_range r c b =
+  let idx = c land 0x7 in
+  let ydx = c lsr 3 in
+  let byte = r.[ydx] in
+  r.[ydx] <- char_of_int (set_bit_of_byte (int_of_char byte) idx b);;
+
+let get_bit_of_range r c =
+  let idx = c land 0x7 in
+  let ydx = c lsr 3 in
+  let byte = r.[ydx] in
+  get_bit_of_byte (int_of_char byte) idx;;
+
+let make_range bit =
+  let c = char_of_int (if bit = 0 then 0 else 0xFF) in
+  String.make 32 c;;
+
+let bit_not b = (lnot b) land 1;;
+
+let get_char_in_range r c = get_bit_of_range r (int_of_char c);;
+
+let make_bv bit set =
+  let r = make_range (bit_not bit) in
+  let lim = String.length set - 1 in
+  let rec loop bit rp i =
+    if i <= lim then
+    match set.[i] with
+    | '-' when rp ->
+       (* if i = 0 then rp is false (since the initial call is loop false 0)
+          hence i >= 1 and the following is safe. *)
+       let c1 = set.[i - 1] in
+       let i = i + 1 in
+       if i > lim then loop bit false (i - 1) else
+       let c2 = set.[i] in
+       for j = int_of_char c1 to int_of_char c2 do
+         set_bit_of_range r j bit done;
+       loop bit false (i + 1)
+    | c -> 
+       set_bit_of_range r (int_of_char set.[i]) bit;
+       loop bit true (i + 1) in
+  loop bit false 0;
+  r;;
+
+let make_pred bit set stp =
+  let r = make_bv bit set in
+  List.iter
+    (fun c -> set_bit_of_range r (int_of_char c) (bit_not bit)) stp;
+  (fun c -> get_char_in_range r c);;
+
 let make_setp stp char_set =
-  let make_predv set =
-    let v = Array.make 256 false in
-    let lim = String.length set - 1 in
-    let rec loop b i =
-      if i <= lim then
-      match set.[i] with
-      | '-' when b ->
-         (* if i = 0 then b is false (since the initial call is loop false 0)
-            hence i >= 1 and the following is safe. *)
-         let c1 = set.[i - 1] in
-         let i = i + 1 in
-         if i > lim then loop false (i - 1) else
-         let c2 = set.[i] in
-         for j = int_of_char c1 to int_of_char c2 do v.(j) <- true done;
-         loop false (i + 1)
-      | c -> v.(int_of_char set.[i]) <- true; loop true (i + 1) in
-    loop false 0;
-    v in
   match char_set with
   | Pos_set set ->
-      let v = make_predv set in
-      List.iter (fun c -> v.(int_of_char c) <- false) stp;
-      (fun c -> v.(int_of_char c))
+      begin match String.length set with
+      | 0 -> (fun c -> 0)
+      | 1 ->
+          let p = set.[0] in
+          (fun c -> if c == p then 1 else 0)
+      | 2 ->
+          let p1 = set.[0] and p2 = set.[1] in
+          (fun c -> if c == p1 || c == p2 then 1 else 0)
+      | n -> make_pred 1 set stp
+      end
   | Neg_set set ->
-      let v = make_predv set in
-      List.iter (fun c -> v.(int_of_char c) <- true) stp;
-      (fun c -> not (v.(int_of_char c)));;
+      begin match String.length set with
+      | 0 -> (fun c -> 1)
+      | 1 ->
+          let p = set.[0] in
+          (fun c -> if c != p then 1 else 0)
+      | 2 ->
+          let p1 = set.[0] and p2 = set.[1] in
+          (fun c -> if c != p1 && c != p2 then 1 else 0)
+      | n -> make_pred 0 set stp
+      end;;
+
+let setp_table = Hashtbl.create 7;;
+
+let add_setp stp char_set setp =
+  let char_set_tbl =
+    try Hashtbl.find setp_table char_set with
+    | Not_found ->
+        let char_set_tbl = Hashtbl.create 3 in
+        Hashtbl.add setp_table char_set char_set_tbl;
+        char_set_tbl in
+  Hashtbl.add char_set_tbl stp setp;;
+
+let find_setp stp char_set =
+  try Hashtbl.find (Hashtbl.find setp_table char_set) stp with
+  | Not_found ->
+     let setp = make_setp stp char_set in
+     add_setp stp char_set setp;
+     setp;;
 
 let scan_chars_in_char_set stp char_set max ib =
-  let setp = make_setp stp char_set in
-  let rec loop max =
+  let rec loop_pos1 cp1 max =
     let c = Scanning.cautious_peek_char ib in
-    if max = 0 || Scanning.eof ib then max else
-    if setp c then loop (Scanning.store_char ib c max) else
+    if max = 0 || Scanning.end_of_input ib then max else
+    if c = cp1
+    then loop_pos1 cp1 (Scanning.store_char ib c max)
+    else max
+  and loop_pos2 cp1 cp2 max =
+    let c = Scanning.cautious_peek_char ib in
+    if max = 0 || Scanning.end_of_input ib then max else
+    if c = cp1 || c = cp2
+    then loop_pos2 cp1 cp2 (Scanning.store_char ib c max)
+    else max
+  and loop_pos3 cp1 cp2 cp3 max =
+    let c = Scanning.cautious_peek_char ib in
+    if max = 0 || Scanning.end_of_input ib then max else
+    if c = cp1 || c = cp2 || c = cp3
+    then loop_pos3 cp1 cp2 cp3 (Scanning.store_char ib c max)
+    else max
+  and loop_neg1 cp1 max =
+    let c = Scanning.cautious_peek_char ib in
+    if max = 0 || Scanning.end_of_input ib then max else
+    if c <> cp1
+    then loop_neg1 cp1 (Scanning.store_char ib c max)
+    else max
+  and loop_neg2 cp1 cp2 max =
+    let c = Scanning.cautious_peek_char ib in
+    if max = 0 || Scanning.end_of_input ib then max else
+    if c <> cp1 || c <> cp2
+    then loop_neg2 cp1 cp2 (Scanning.store_char ib c max)
+    else max
+  and loop_neg3 cp1 cp2 cp3 max =
+    let c = Scanning.cautious_peek_char ib in
+    if max = 0 || Scanning.end_of_input ib then max else
+    if c <> cp1 || c <> cp2 || c <> cp3
+    then loop_neg3 cp1 cp2 cp3 (Scanning.store_char ib c max)
+    else max
+  and loop setp max =
+    let c = Scanning.cautious_peek_char ib in
+    if max = 0 || Scanning.end_of_input ib then max else
+    if setp c = 1 then loop setp (Scanning.store_char ib c max) else
     max in
-  let max = loop max in
+
+  let max =
+    match char_set with
+    | Pos_set set ->
+        begin match String.length set with
+        | 0 -> loop (fun c -> 0) max
+        | 1 -> loop_pos1 set.[0] max
+        | 2 -> loop_pos2 set.[0] set.[1] max
+        | 3 -> loop_pos3 set.[0] set.[1] set.[2] max
+        | n -> loop (find_setp stp char_set) max end
+    | Neg_set set ->
+        begin match String.length set with
+        | 0 -> loop (fun c -> 1) max
+        | 1 -> loop_neg1 set.[0] max
+        | 2 -> loop_neg2 set.[0] set.[1] max
+        | 3 -> loop_neg3 set.[0] set.[1] set.[2] max
+        | n -> loop (find_setp stp char_set) max end in
   if stp <> [] then check_char_in ib stp;
   max;;
 
