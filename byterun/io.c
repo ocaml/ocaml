@@ -86,6 +86,8 @@ static void really_write(fd, p, n)
      int n;
 {
   int retcode;
+  Assert(!Is_young(p));
+  enter_blocking_section();
   while (n > 0) {
 #ifdef HAS_UI
     retcode = ui_write(fd, p, n);
@@ -100,6 +102,7 @@ static void really_write(fd, p, n)
     p += retcode;
     n -= retcode;
   }
+  leave_blocking_section();
 }   
 
 value flush(channel)            /* ML */
@@ -227,6 +230,7 @@ static int really_read(fd, p, n)
 {
   int retcode;
 
+  Assert(!Is_young(p));
   enter_blocking_section();
 #ifdef HAS_UI
   retcode = ui_read(fd, p, n);

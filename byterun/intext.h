@@ -22,7 +22,7 @@
 
 /* Magic number */
 
-#define Intext_magic_number 0x8495A6BD
+#define Intext_magic_number 0x8495A6BE
 
 /* Codes for the compact format */
 
@@ -57,6 +57,10 @@
 #endif
 
 /* Initial sizes of data structures for extern */
+
+#ifndef INITIAL_EXTERN_BLOCK_SIZE
+#define INITIAL_EXTERN_BLOCK_SIZE 8192
+#endif
 
 #ifndef INITIAL_EXTERN_TABLE_SIZE
 #define INITIAL_EXTERN_TABLE_SIZE 2039

@@ -23,7 +23,9 @@
 #include "misc.h"
 #include "reverse.h"
 
-static header_t * intern_ptr;
+static unsigned char * intern_input, * intern_src;
+static int intern_input_malloced;
+static header_t * intern_dest;
 static asize_t obj_counter;
 static value * intern_obj_table;
 static unsigned int intern_color;
@@ -33,69 +35,46 @@ static value intern_block;
 #define Sign_extend_shift ((sizeof(long) - 1) * 8)
 #define Sign_extend(x) (((long)(x) << Sign_extend_shift) >> Sign_extend_shift)
 
-static long input8u(chan)
-     struct channel * chan;
-{
-  return getch(chan);
-}
-
-static long input8s(chan)
-     struct channel * chan;
-{
-  long b1 = getch(chan);
-  return Sign_extend(b1);
-}
-
-static long input16u(chan)
-     struct channel * chan;
-{
-  long b1 = getch(chan);
-  long b2 = getch(chan);
-  return (b1 << 8) + b2;
-}
-
-static long input16s(chan)
-     struct channel * chan;
-{
-  long b1 = getch(chan);
-  long b2 = getch(chan);
-  return (Sign_extend(b1) << 8) + b2;
-}
-
-static long input32u(chan)
-     struct channel * chan;
-{
-  long b1 = getch(chan);
-  long b2 = getch(chan);
-  long b3 = getch(chan);
-  long b4 = getch(chan);
-  return (b1 << 24) + (b2 << 16) + (b3 << 8) + b4;
-}
-
-static long input32s(chan)
-     struct channel * chan;
-{
-  long b1 = getch(chan);
-  long b2 = getch(chan);
-  long b3 = getch(chan);
-  long b4 = getch(chan);
-  return (Sign_extend(b1) << 24) + (b2 << 16) + (b3 << 8) + b4;
-}
+#define read8u() (*intern_src++)
+#define read8s() Sign_extend(*intern_src++)
+#define read16u() \
+  (intern_src += 2, \
+   (intern_src[-2] << 8) + intern_src[-1])
+#define read16s() \
+  (intern_src += 2, \
+   (Sign_extend(intern_src[-2]) << 8) + intern_src[-1])
+#define read32u() \
+  (intern_src += 4, \
+   (intern_src[-4] << 24) + (intern_src[-3] << 16) + \
+   (intern_src[-2] << 8) + intern_src[-1])
+#define read32s() \
+  (intern_src += 4, \
+   (Sign_extend(intern_src[-4]) << 24) + (intern_src[-3] << 16) + \
+   (intern_src[-2] << 8) + intern_src[-1])
 
 #ifdef SIXTYFOUR
-static long input64s(chan)
-     struct channel * chan;
+static long read64s()
 {
   long res;
   int i;
   res = 0;
-  for (i = 0; i < 8; i++) res = (res << 8) + getch(chan);
+  for (i = 0; i < 8; i++) res = (res << 8) + intern_src[i];
+  intern_src += 8;
   return res;
 }
 #endif
 
-static void read_compact(chan, dest)
-     struct channel * chan;
+#define readblock(dest,len) \
+  (bcopy(intern_src, dest, len), intern_src += len)
+
+static void intern_cleanup()
+{
+  if (intern_input_malloced) stat_free((char *) intern_input);
+  if (intern_obj_table != NULL) stat_free((char *) intern_obj_table);
+  Hd_val(intern_block) = intern_header; /* Don't confuse the GC */
+}
+
+static void intern_rec(dest)
      value * dest;
 {
   unsigned int code;
@@ -106,7 +85,7 @@ static void read_compact(chan, dest)
   header_t header;
 
  tailcall:
-  code = getch(chan);
+  code = read8u();
   if (code >= PREFIX_SMALL_INT) {
     if (code >= PREFIX_SMALL_BLOCK) {
       /* Small block */
@@ -116,14 +95,14 @@ static void read_compact(chan, dest)
       if (size == 0) {
         v = Atom(tag);
       } else {
-        v = Val_hp(intern_ptr);
+        v = Val_hp(intern_dest);
         *dest = v;
         intern_obj_table[obj_counter++] = v;
-        dest = (value *) (intern_ptr + 1);
-        *intern_ptr = Make_header(size, tag, intern_color);
-        intern_ptr += 1 + size;
+        dest = (value *) (intern_dest + 1);
+        *intern_dest = Make_header(size, tag, intern_color);
+        intern_dest += 1 + size;
         for(/*nothing*/; size > 1; size--, dest++)
-          read_compact(chan, dest);
+          intern_rec(dest);
         goto tailcall;
       }
     } else {
@@ -136,87 +115,84 @@ static void read_compact(chan, dest)
       len = (code & 0x1F);
     read_string:
       size = (len + sizeof(value)) / sizeof(value);
-      v = Val_hp(intern_ptr);
+      v = Val_hp(intern_dest);
       intern_obj_table[obj_counter++] = v;
-      *intern_ptr = Make_header(size, String_tag, intern_color);
-      intern_ptr += 1 + size;
+      *intern_dest = Make_header(size, String_tag, intern_color);
+      intern_dest += 1 + size;
       Field(v, size - 1) = 0;
       ofs_ind = Bsize_wsize(size) - 1;
       Byte(v, ofs_ind) = ofs_ind - len;
-      really_getblock(chan, String_val(v), len);
+      readblock(String_val(v), len);
     } else {
       switch(code) {
       case CODE_INT8:
-        v = Val_long(input8s(chan));
+        v = Val_long(read8s());
         break;
       case CODE_INT16:
-        v = Val_long(input16s(chan));
+        v = Val_long(read16s());
         break;
       case CODE_INT32:
-        v = Val_long(input32s(chan));
+        v = Val_long(read32s());
         break;
       case CODE_INT64:
 #ifdef SIXTYFOUR
-        v = Val_long(input64s(chan));
+        v = Val_long(read64s());
         break;
 #else
-        stat_free((char *) intern_obj_table);
-        Hd_val(intern_block) = intern_header; /* Don't confuse the GC */
+        intern_cleanup();
         failwith("input_value: integer too large");
         break;
 #endif
       case CODE_SHARED8:
-        ofs = input8u(chan);
+        ofs = read8u();
       read_shared:
         Assert(ofs > 0 && ofs <= obj_counter); 
         v = intern_obj_table[obj_counter - ofs];
         break;
       case CODE_SHARED16:
-        ofs = input16u(chan);
+        ofs = read16u();
         goto read_shared;
       case CODE_SHARED32:
-        ofs = input32u(chan);
+        ofs = read32u();
         goto read_shared;
       case CODE_BLOCK32:
-        header = (header_t) input32u(chan);
+        header = (header_t) read32u();
         tag = Tag_hd(header);
         size = Wosize_hd(header);
         goto read_block;
       case CODE_STRING8:
-        len = input8u(chan);
+        len = read8u();
         goto read_string;
       case CODE_STRING32:
-        len = input32u(chan);
+        len = read32u();
         goto read_string;
       case CODE_DOUBLE_LITTLE:
       case CODE_DOUBLE_BIG:
         if (sizeof(double) != 8) {
-          stat_free((char *) intern_obj_table);
-          Hd_val(intern_block) = intern_header; /* Don't confuse the GC */
+          intern_cleanup();
           invalid_argument("input_value: non-standard floats");
         }
-        v = Val_hp(intern_ptr);
+        v = Val_hp(intern_dest);
         intern_obj_table[obj_counter++] = v;
-        *intern_ptr = Make_header(Double_wosize, Double_tag, intern_color);
-        intern_ptr += 1 + Double_wosize;
-        really_getblock(chan, (char *) v, 8);
+        *intern_dest = Make_header(Double_wosize, Double_tag, intern_color);
+        intern_dest += 1 + Double_wosize;
+        readblock((char *) v, 8);
         if (code != CODE_DOUBLE_NATIVE) Reverse_double(v);
         break;
       case CODE_DOUBLE_ARRAY8_LITTLE:
       case CODE_DOUBLE_ARRAY8_BIG:
-        len = input8u(chan);
+        len = read8u();
       read_double_array:
         if (sizeof(double) != 8) {
-          stat_free((char *) intern_obj_table);
-          Hd_val(intern_block) = intern_header; /* Don't confuse the GC */
+          intern_cleanup();
           invalid_argument("input_value: non-standard floats");
         }
         size = len * Double_wosize;
-        v = Val_hp(intern_ptr);
+        v = Val_hp(intern_dest);
         intern_obj_table[obj_counter++] = v;
-        *intern_ptr = Make_header(size, Double_array_tag, intern_color);
-        intern_ptr += 1 + size;
-        really_getblock(chan, (char *) v, len * 8);
+        *intern_dest = Make_header(size, Double_array_tag, intern_color);
+        intern_dest += 1 + size;
+        readblock((char *) v, len * 8);
         if (code != CODE_DOUBLE_ARRAY8_NATIVE && 
             code != CODE_DOUBLE_ARRAY32_NATIVE) {
           mlsize_t i;
@@ -225,7 +201,7 @@ static void read_compact(chan, dest)
         break;
       case CODE_DOUBLE_ARRAY32_LITTLE:
       case CODE_DOUBLE_ARRAY32_BIG:
-        len = input32u(chan);
+        len = read32u();
         goto read_double_array;
       }
     }
@@ -233,25 +209,13 @@ static void read_compact(chan, dest)
   *dest = v;
 }
 
-value input_value(chan)         /* ML */
-     struct channel * chan;
+static void intern_alloc(whsize, num_objects)
+     mlsize_t whsize, num_objects;
 {
-  uint32 magic;
-  mlsize_t num_objects, size_32, size_64, whsize, wosize;
-  value res;
+  mlsize_t wosize;
 
-  magic = getword(chan);
-  if (magic != Intext_magic_number) failwith("input_value: bad object");
-  num_objects = getword(chan);
-  size_32 = getword(chan);
-  size_64 = getword(chan);
-#ifdef SIXTYFOUR
-  whsize = size_64;
-#else
-  whsize = size_32;
-#endif
   if (whsize == 0) {
-    read_compact(chan, &res);
+    intern_obj_table = NULL;
   } else {
     wosize = Wosize_whsize(whsize);
     if (wosize > Max_wosize) failwith("intern: structure too big");
@@ -262,11 +226,83 @@ value input_value(chan)         /* ML */
     intern_header = Hd_val(intern_block);
     intern_color = Color_hd(intern_header);
     Assert (intern_color == White || intern_color == Black);
-    intern_ptr = (header_t *) Hp_val(intern_block);
+    intern_dest = (header_t *) Hp_val(intern_block);
     obj_counter = 0;
     intern_obj_table = (value *) stat_alloc(num_objects * sizeof(value));
-    read_compact(chan, &res);
-    stat_free((char *) intern_obj_table);
   }
+}
+
+value input_value(chan)         /* ML */
+     struct channel * chan;
+{
+  uint32 magic;
+  mlsize_t block_len, num_objects, size_32, size_64, whsize;
+  value res;
+
+  magic = getword(chan);
+  if (magic != Intext_magic_number) failwith("input_value: bad object");
+  block_len = getword(chan);
+  num_objects = getword(chan);
+  size_32 = getword(chan);
+  size_64 = getword(chan);
+  /* Read block from channel */
+  intern_input = (unsigned char *) stat_alloc(block_len);
+  intern_input_malloced = 1;
+  if (really_getblock(chan, (char *)intern_input, block_len) == 0) {
+    stat_free((char *) intern_input);
+    failwith("input_value: truncated object");
+  }
+  intern_src = intern_input;
+  /* Allocate result */
+#ifdef SIXTYFOUR
+  whsize = size_64;
+#else
+  whsize = size_32;
+#endif
+  intern_alloc(whsize, num_objects);
+  /* Fill it in */
+  intern_rec(&res);
+  /* Free everything */
+  stat_free((char *) intern_input);
+  if (intern_obj_table != NULL) stat_free((char *) intern_obj_table);
+  return res;
+}
+
+value input_value_from_string(str, ofs) /* ML */
+     value str, ofs;
+{
+  uint32 magic;
+  mlsize_t block_len, num_objects, size_32, size_64, whsize;
+  value res;
+  Push_roots(r, 1);
+
+  intern_input = &Byte_u(str, Long_val(ofs));
+  intern_input_malloced = 0;
+  magic = read32u();
+  if (magic != Intext_magic_number) failwith("input_value: bad object");
+  block_len = read32u();
+  num_objects = read32u();
+  size_32 = read32u();
+  size_64 = read32u();
+  /* Allocate result */
+#ifdef SIXTYFOUR
+  whsize = size_64;
+#else
+  whsize = size_32;
+#endif
+  r[0] = str;
+  intern_alloc(whsize, num_objects);
+  str = r[0];
+  intern_input = &Byte_u(str, Long_val(ofs) + 5*4); /* If a GC occurred */
+  /* Fill it in */
+  intern_rec(&res);
+  /* Free everything */
+  if (intern_obj_table != NULL) stat_free((char *) intern_obj_table);
+  /* Build result */
+  r[0] = res;
+  res = alloc_tuple(2);
+  Field(res, 0) = r[0];
+  Field(res, 1) = Val_long(Long_val(ofs) + 5*4 + block_len);
+  Pop_roots();
   return res;
 }

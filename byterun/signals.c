@@ -26,6 +26,8 @@ Volatile int pending_signal = 0;
 Volatile int something_to_do = 0;
 Volatile int force_major_slice = 0;
 value signal_handlers = 0;
+void (*enter_blocking_section_hook)() = NULL;
+void (*leave_blocking_section_hook)() = NULL;
 
 static void execute_signal(signal_number)
      int signal_number;
@@ -72,11 +74,13 @@ void enter_blocking_section()
     if (!pending_signal) break;
     async_signal_mode = 0;
   }
+  if (enter_blocking_section_hook != NULL) enter_blocking_section_hook();
 }
 
 /* This function may be called from outside a blocking section. */
 void leave_blocking_section()
 {
+  if (leave_blocking_section_hook != NULL) leave_blocking_section_hook();
   async_signal_mode = 0;
 }
 
