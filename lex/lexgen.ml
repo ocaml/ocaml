@@ -55,13 +55,15 @@ let encode_casedef =
      Alt(reg, Seq(encode_regexp expr, Action act_num)))
   Empty
 
-let encode_lexdef (Lexdef(_, ld)) =
+let encode_lexdef def =
   chars := [];
   chars_count := 0;
   actions := [];
   actions_count := 0;
   let name_regexp_list =
-    List.map (fun (name, casedef) -> (name, encode_casedef casedef)) ld in
+    List.map
+      (fun (name, casedef) -> (name, encode_casedef casedef))
+      def.entrypoints in
   let chr = Array.of_list (List.rev !chars)
   and act = !actions in
   chars := [];

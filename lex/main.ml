@@ -32,7 +32,7 @@ let main () =
   oc := open_out dest_name;
   let lexbuf =
     Lexing.from_channel !ic in
-  let (Lexdef(header,_) as def) =
+  let def =
     try
       Parser.lexer_definition Lexer.main lexbuf
     with exn ->
@@ -53,7 +53,7 @@ let main () =
       end;
       exit 2 in
   let ((init, states, acts) as dfa) = make_dfa def in
-  output_lexdef header dfa;
+  output_lexdef def.header dfa def.trailer;
   close_in !ic;
   close_out !oc
 

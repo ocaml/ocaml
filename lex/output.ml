@@ -137,12 +137,12 @@ let rec output_entries = function
       output_string !oc "  start_lexing lexbuf;\n";
       output_string !oc ("  state_" ^ string_of_int state_num ^ " lexbuf\n");
       match rest with
-        [] -> output_string !oc "\n"; ()
+        [] -> output_string !oc "\n\n"; ()
       | _  -> output_string !oc "\nand "; output_entries rest
 
 (* All together *)
 
-let output_lexdef header (initial_st, st, actions) =
+let output_lexdef header (initial_st, st, actions) trailer =
   print_int (Array.length st); print_string " states, ";
   print_int (List.length actions); print_string " actions.";
   print_newline();
@@ -154,6 +154,8 @@ let output_lexdef header (initial_st, st, actions) =
   for i = 0 to Array.length st - 1 do
     output_state i st.(i)
   done;
-  output_entries initial_st
+  output_entries initial_st;
+  copy_chunk trailer
+
 
 

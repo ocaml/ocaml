@@ -57,8 +57,10 @@ let rec subtract l1 l2 =
 %%
 
 lexer_definition:
-    header Trule definition other_definitions Tend
-        { Lexdef($1, $3::(List.rev $4)) }
+    header Trule definition other_definitions header Tend
+        { {header = $1;
+           entrypoints = $3::(List.rev $4);
+           trailer = $5} }
 ;
 header:
     Taction

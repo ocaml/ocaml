@@ -24,7 +24,9 @@ type regular_expression =
   | Repetition of regular_expression
 
 type lexer_definition =
-    Lexdef of location * (string * (regular_expression * location) list) list
+    { header: location;
+      entrypoints: (string * (regular_expression * location) list) list;
+      trailer: location }
 
 (* Representation of automata *)
 
