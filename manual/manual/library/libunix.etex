@@ -1,14 +1,15 @@
 \chapter{The unix library: Unix system calls}
 
 The "unix" library makes many Unix
-system calls and system-related library functions available to Caml
-Light programs. This chapter describes briefly the functions provided.
-Refer to sections 2~and~3 of the Unix manual for more details on the
-behavior of these functions. 
+system calls and system-related library functions available to
+Objective Caml programs. This chapter describes briefly the functions
+provided.  Refer to sections 2~and~3 of the Unix manual for more
+details on the behavior of these functions.
 
 Not all functions are provided by all Unix variants. If some functions
 are not available, they will raise "Invalid_arg" when called.
 
+\begin{unix}
 Programs that use the "unix" library must be linked in ``custom
 runtime'' mode, as follows:
 \begin{alltt}
@@ -20,8 +21,71 @@ For interactive use of the "unix" library, do:
         ocamlmktop -custom -o mytop unix.cma -cclib -lunix
         ./mytop
 \end{alltt}
+\end{unix}
+
+\begin{windows}
+A fairly complete emulation of the Unix system calls is provided in
+the Windows version of Objective Caml. The end of this chapter gives
+more information on the functions that are not supported under Windows.
+
+Programs that use the "unix" library must be linked in ``custom
+runtime'' mode, as follows:
+\begin{alltt}
+        ocamlc -custom \var{other options} unix.cma \var{other files} \char92
+                %camllib%/libunix.lib wsock32.lib
+        ocamlopt \var{other options} unix.cmxa \var{other files} \char92
+                %camllib%/libunix.lib wsock32.lib
+\end{alltt}
+For interactive use of the "unix" library, do:
+\begin{alltt}
+        ocamlmktop -custom -o mytop.exe unix.cma \char92
+                %camllib%/libunix.lib wsock32.lib
+        mytop.exe
+\end{alltt}
+\end{windows}
 
 \begin{library}
 \input unix.tex
 \end{library}
 
+\begin{windows}
+Below is a list of the functions that are not implemented, or only
+partially implemented, under Windows. Functions not mentioned are
+fully implemented and behave as described previously in this chapter.
+
+\begin{tableau}{|l|p{8cm}|}{Functions}{Comment}
+\entree{"fork"}{not implemented, use "create_process" or threads}
+\entree{"wait"}{not implemented, use "waitpid"}
+\entree{"waitpid"}{can only wait for a given PID, not any child process}
+\entree{"getppid"}{not implemented (meaningless under Windows)}
+\entree{"nice"}{not implemented}
+\entree{"truncate", "ftruncate"}{not implemented}
+\entree{"lstat", "fstat"}{not implemented}
+\entree{"link", "symlink", "readlink"}{not implemented (no links under
+Windows)}
+\entree{"chmod", "fchmod"}{not implemented}
+\entree{"chown", "fchown"}{not implemented (make no sense on a DOS
+file system)}
+\entree{"umask"}{not implemented}
+\entree{"set_nonblock", "clear_nonblock"}{implemented as dummy
+functions; use threads instead of non-blocking I/O}
+\entree{"rewinddir"}{not implemented; re-open the directory instead}
+\entree{"mkfifo"}{not implemented}
+\entree{"ioctl_int", "ioctl_ptr"}{not implemented (no "ioctl" in Windows)}
+\entree{"select"}{not implemented; use threads instead}
+\entree{"lockf"}{not implemented}
+\entree{"kill", "pause"}{not implemented (no inter-process signals in Windows)}
+\entree{"gettimeofday", "alarm", "times"}{not implemented}
+\entree{"getitimer", "setitimer"}{not implemented}
+\entree{"getuid", "getgid"}{always return 1}
+\entree{"getgid", "getegid", "getgroups"}{not implemented}
+\entree{"setuid", "setgid"}{not implemented}
+\entree{"getpwnam", "getpwuid"}{always raise "Not_found"}
+\entree{"getgrnam", "getgrgid"}{always raise "Not_found"}
+\entree{type "socket_domain"}{the domain "PF_UNIX" is not supported;
+"PF_INET" is fully supported}
+\entree{"establish_server"}{not implemented; use threads}
+\entree{terminal functions ("tc*")}{not implemented}
+\end{tableau}
+
+\end{windows}

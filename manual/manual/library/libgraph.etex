@@ -24,7 +24,7 @@ For interactive use of the "graphics" library, do:
 
 \begin{windows}
 This library is available only under the toplevel application
-"Cslwin.exe". Before using it, the Caml part of this library must be
+"ocamlwin.exe". Before using it, the Caml part of this library must be
 loaded in-core, either by typing
 \begin{alltt}
         #load "graphics.cmo";;

@@ -1,0 +1,32 @@
+\chapter{The dbm library: access to NDBM databases}
+
+The "dbm" library provides access to NDBM databases under Unix.
+NDBM databases maintain key/data associations, where both the key and
+the data are arbitrary strings. They support fairly large databases
+(several gigabytes) and can retrieve a keyed item in one or two file
+system accesses. Refer to the Unix manual pages for more information.
+
+\begin{unix}
+Programs that use the "dbm" library must be linked in ``custom
+runtime'' mode, as follows:
+\begin{alltt}
+        ocamlc -custom \var{other options} dbm.cma \var{other files} -cclib -lmldbm -cclib -lndbm
+        ocamlopt \var{other options} dbm.cmxa \var{other files} -cclib -lmldbm -cclib -lndbm
+\end{alltt}
+For interactive use of the "dbm" library, do:
+\begin{alltt}
+        ocamlmktop -custom -o mytop dbm.cma -cclib -lmldbm -cclib -lndbm
+        ./mytop
+\end{alltt}
+Depending on the Unix system used, the "-cclib -lndbm" option is not
+always necessary, or the library may have another name than "-lndbm".
+\end{unix}
+
+\begin{windows}
+This library is not available.
+\end{windows}
+
+\begin{library}
+\input dbm.tex
+\end{library}
+
