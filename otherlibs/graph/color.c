@@ -20,11 +20,11 @@ struct color_cache_entry {
   unsigned long pixel;          /* Pixel value */
 };
 
-#define Color_cache_size 64
+#define Color_cache_size 256
 static struct color_cache_entry color_cache[Color_cache_size];
 #define Empty (-1)
 #define Hash_rgb(r,g,b) \
-  ((((r) & 0xC0) >> 2) + (((g) & 0xC0) >> 4) + (((b) & 0xC0) >> 6))
+  (((r) & 0xE0) + (((g) & 0xE0) >> 3) + (((b) & 0xC0) >> 6))
 
 void gr_init_color_cache(void)
 {
