@@ -517,14 +517,27 @@ and parse_simple = parser
   | [< 'Int i >] -> Const(float i)
   | [< 'Float f >] -> Const f
   | [< 'Kwd "("; e = parse_expr; 'Kwd ")" >] -> e;;
+let parse_expression = parser [< e = parse_expr; _ = Stream.empty >] -> e;;
 \end{caml_example}
 
 Composing the lexer and parser, we finally obtain a function to read
 an expression from a character string:
 \begin{caml_example}
-let read_expr s = parse_expr(lexer(Stream.of_string s));;
-read_expr "2*(x+y)";;
+let read_expression s = parse_expression(lexer(Stream.of_string s));;
+read_expression "2*(x+y)";;
 \end{caml_example}
+A small puzzle: why do we get different results in the following two
+examples?
+\begin{caml_example}
+read_expression "x - 1";;
+read_expression "x-1";;
+\end{caml_example}
+Answer: the generic lexer provided by "Genlex" recognizes negative
+integer literals as one integer token.  Hence, "x-1" is read as
+the token "Ident \"x\"" followed by the token "Int(-1)"; this sequence
+does not match any of the parser rules.  On the other hand, 
+the second space in "x - 1" causes the lexer to return the three
+expected tokens: "Ident \"x\"", then "Kwd \"-\"", then "Int(1)".
 
 \section{Standalone Caml programs}
 \pdfsection{Standalone Caml programs}

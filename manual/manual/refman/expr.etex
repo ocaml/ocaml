@@ -116,7 +116,7 @@ precedence come first. For infix and prefix symbols, we write
 \entree{constructor application}{--}
 \entree{"-   -." (prefix)}{--}
 \entree{"**"\ldots}{right}
-\entree{"*"\ldots"   /"\ldots"   %"\ldots"   mod"}{left}
+\entree{"*"\ldots"   /"\ldots"   %"\ldots"   mod   `"@ident@"`"}{left}
 \entree{"+"\ldots"   -"\ldots}{left}
 \entree{"::"}{right}
 \entree{{\tt \char64}\ldots "^"\ldots}{right}
@@ -574,6 +574,10 @@ corresponding to the symbols.  The expression @prefix-symbol expr@ is
 interpreted as the application @'(' prefix-symbol ')'
 expr@. Similarly, the expression @expr_1 infix-symbol expr_2@ is
 interpreted as the application @'(' infix-symbol ')' expr_1 expr_2@.
+
+Conversely, a regular function identifier can also be used as an infix
+operator by enclosing it in backquotes: @expr_1 '`' ident '`' expr_2@
+is interpreted as the application @ident expr_1 expr_2@.
 
 The table below lists the symbols defined in the initial environment
 and their initial meaning. (See the description of the standard

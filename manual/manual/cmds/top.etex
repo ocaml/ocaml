@@ -234,12 +234,18 @@ the first error encountered.
 
 \item["#install_printer "\var{printer-name}";;"]
 This directive registers the function named \var{printer-name} (a
-value path) as a printer for objects whose types match the argument
+value path) as a printer for values whose types match the argument
 type of the function. That is, the toplevel loop will call
-\var{printer-name} when it has such an object to print.
-The printing function \var{printer-name} must use the "Format" library
-module to produce its output, otherwise its output will not be
-correctly located in the values printed by the toplevel loop.
+\var{printer-name} when it has such a value to print.
+
+The printing function \var{printer-name} should have type
+@"Format.formatter" "->" t "->" "unit"@, where \var{t} is the
+type for the values to be printed, and should output its textual
+representation for the value of type \var{t} on the given formatter,
+using the functions provided by the "Format" library.  For backward
+compatibility, \var{printer-name} can also have type
+@t "->" "unit"@ and should then output on the standard
+formatter, but this usage is deprecated.
 
 \item["#remove_printer "\var{printer-name}";;"]
 Remove the named function from the table of toplevel printers.

@@ -153,7 +153,7 @@ first character, either "~" or "?".
 infix-symbol:
         ('=' || '<' || '>' || '@' || '^' || '|' || '&' ||
          '+' || '-' || '*' || '/' || '$' || '%') { operator-char } ||
-        '`' ident '`'
+        '`' lowercase-ident '`'
 ;
 prefix-symbol:
         ('!' || '?' || '~') { operator-char }
@@ -168,9 +168,10 @@ operator-char:
 Sequences of ``operator characters'', such as "<=>" or "!!",
 are read as a single token from the @infix-symbol@ or @prefix-symbol@
 class. These symbols are parsed as prefix and infix operators inside
-expressions, but otherwise behave much as identifiers. Idents enclosed
-in "`" characters are parsed as infix operators with the same associativity
-and precedence as "*".
+expressions, but otherwise behave much as identifiers. Identifiers
+starting with a lowercase letter and enclosed
+between backquote characters @'`' lowercase-ident '`'@ are also parsed
+as infix operators.
 
 \subsubsection*{Keywords}
 

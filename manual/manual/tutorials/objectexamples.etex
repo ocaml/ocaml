@@ -43,7 +43,7 @@ Objective Caml.
 \pdfsection{Classes and objects}
 \label{ss:classes-and-objects} 
 
-The class "point" has one instance variable "x" and two methods
+The class "point" below defines one instance variable "x" and two methods
 "get_x" and "move". The initial value of the instance variable is "0".
 The variable "x" is declared mutable, so the method "move" can change
 its value.
@@ -56,7 +56,7 @@ class point =
   end;;
 \end{caml_example}
 
-We now create a new point "p".
+We now create a new point "p", instance of the "point" class.
 \begin{caml_example}
 let p = new point;;
 \end{caml_example}
@@ -65,7 +65,7 @@ automatically defined by the class definition above. It stands for the
 object type "<get_x : int; move : int -> unit>", listing the methods
 of class "point" along with their types.
 
-Let us apply some methods to "p":
+We now invoke some methods to "p":
 \begin{caml_example}
 p#get_x;;
 p#move 3;;
@@ -89,7 +89,7 @@ new point#get_x;;
 \end{caml_example}
 
 The class "point" can also be abstracted over the initial values of
-points.
+the "x" coordinate.
 \begin{caml_example} 
 class point = fun x_init -> 
   object 
@@ -98,7 +98,7 @@ class point = fun x_init ->
     method move d = x <- x + d
   end;;
 \end{caml_example}
-As for declaration of functions, the above definition can be
+Like in function definitions, the definition above can be
 abbreviated as:
 \begin{caml_example}
 class point x_init =
@@ -108,7 +108,7 @@ class point x_init =
     method move d = x <- x + d
   end;;
 \end{caml_example}
-An instance of the class point is now a function that expects an
+An instance of the class "point" is now a function that expects an
 initial parameter to create a point object:
 \begin{caml_example}
 new point;;
@@ -116,7 +116,8 @@ let p = new point 7;;
 \end{caml_example}
 The parameter "x_init" is, of course, visible in the whole body of the
 definition, including methods. For instance, the method "get_offset"
-in the class below returns the position of the object to the origin.
+in the class below returns the position of the object relative to its 
+initial position.
 \begin{caml_example}
 class point x_init =
   object 
@@ -139,7 +140,8 @@ class point x_init =
 %\end{caml_example}
 Expressions can be evaluated and bound before defining the object body
 of the class. This is useful to enforce invariants. For instance,
-points can be automatically adjusted to grid as follows:
+points can be automatically adjusted to the nearest point on a grid,
+as follows:
 \begin{caml_example}
 class adjusted_point x_init =
   let origin = (x_init / 10) * 10 in
@@ -191,7 +193,7 @@ let p = new printable_point 7;;
 p#print;;
 \end{caml_example}
 Dynamically, the variable "s" is bound at the invocation of a method.  In
-particular, when the class "printable_point" will be inherited, the variable
+particular, when the class "printable_point" is inherited, the variable
 "s" will be correctly bound to the object of the subclass.  
 
 \section{Initializers}
@@ -226,10 +228,10 @@ Another example can be seen in section \ref{ss:bank-accounts}.
 \label{ss:virtual-methods}
 
 It is possible to declare a method without actually defining it, using
-the keyword "virtual".  This method will be provided latter in
+the keyword "virtual".  This method will be provided later in
 subclasses. A class containing virtual methods must be flagged
-virtual, and cannot be instantiated (that is, no object of this class
-can be created). It still defines abbreviations (treating virtual methods
+"virtual", and cannot be instantiated (that is, no object of this class
+can be created). It still defines type abbreviations (treating virtual methods
 as other methods.)
 \begin{caml_example}
 class virtual abstract_point x_init =
@@ -276,7 +278,7 @@ class point_again x =
     method virtual move : _
   end;;
 \end{caml_example}
-The annotation "virtual" here is only used to mentioned a method without
+The annotation "virtual" here is only used to mention a method without
 providing its definition. An alternative definition is
 \begin{caml_example} 
 class point_again x =
@@ -286,7 +288,7 @@ class point_again x =
 \end{caml_example}
 One could think that a private method should remain private in a subclass. 
 However, since the method is visible in a subclass, it is always possible
-pick it's code and define a method of the same name that run that code, so
+pick its code and define a method of the same name that run that code, so
 yet another (heavier) solution would be:
 \begin{caml_example} 
 class point_again x =
@@ -307,8 +309,8 @@ appear in this order "method private virtual".
 %XXX Differencier class type et interface de classe ?
 
 Class interfaces are inferred from class definitions.  They may also
-be defined directly and used to restrict the type of a class. As class
-declarations, they also define a new type constructor.
+be defined directly and used to restrict the type of a class.  Like class
+declarations, they also define a new type abbreviation.
 \begin{caml_example}
 class type restricted_point_type = 
   object
@@ -317,7 +319,7 @@ class type restricted_point_type =
 end;;
 fun (x : restricted_point_type) -> x;;
 \end{caml_example}
-In addition to documentation, these class interfaces can be used to
+In addition to program documentation, class interfaces can be used to
 constrain the type of a class. Both instance variables and concrete
 private methods can be hidden by a class type constraint. Public and
 virtual methods, however, cannot. 
@@ -385,8 +387,8 @@ is kept: the redefinition in a subclass of a method that was visible in
 the parent class overrides the definition in the parent class.
 Previous definitions of a method can be reused by binding the related
 ancestor. Below, "super" is bound to the ancestor "printable_point".
-The name "super" is not actually a variable and can only be used to
-select a method as in "super#print".
+The name "super" is a pseudo value identifier that can only be used to
+invoke a super-class method, as in "super#print".
 \begin{caml_example}
 class printable_colored_point y c = 
   object (self)
@@ -403,7 +405,7 @@ class printable_colored_point y c =
 let p' = new printable_colored_point 17 "red";;
 p'#print;;
 \end{caml_example}
-A private method that has been hidden in the parent class is no more
+A private method that has been hidden in the parent class is no longer
 visible, and is thus not overridden. Since initializers are treated as
 private methods, all initializers along the class hierarchy are evaluated,
 in the order they are introduced.
@@ -423,9 +425,9 @@ class ref x_init =
   end;;
 \end{caml_example}
 The reason is that at least one of the methods has a polymorphic type
-(here, the type of the value stored in the reference cell), thus the
-class should be parametric, or the method type should be constrained
-to a monomorphic type.  A monomorphic instance of the class could
+(here, the type of the value stored in the reference cell), thus 
+eother the class should be parametric, or the method type should be
+constrained to a monomorphic type.  A monomorphic instance of the class could
 be defined by:
 \begin{caml_example}
 class ref (x_init:int) =
@@ -460,8 +462,8 @@ class ['a] ref_succ (x_init:'a) =
   end;;
 \end{caml_example}
 Let us consider a more realistic example.  We put an additional type
-constraint in method "move", since no free variables must remain uncaptured
-by a type parameter.
+constraint in method "move", since no free variables must remain 
+unaccounted for by the class type parameters.
 \begin{caml_example}
 class ['a] circle (c : 'a) =
   object 
@@ -491,10 +493,10 @@ class ['a] circle (c : 'a) =
   end;;
 \end{caml_example}
 The class "colored_circle" is a specialized version of class
-"circle" which requires the type of the center to unify with
+"circle" that requires the type of the center to unify with
 "#colored_point", and adds a method "color". Note that when specializing a
 parameterized class, the instance of type parameter must always be
-explicitly given. It is again written inside "[" and "]". 
+explicitly given. It is again written between "[" and "]". 
 \begin{caml_example}
 class ['a] colored_circle c =
   object
@@ -526,7 +528,7 @@ seen as a colored point.
 \begin{caml_example}
 (p : point :> colored_point);;
 \end{caml_example}
-Indeed, backward coercions would be unsafe, and could only be combined with
+Indeed, narrowing coercions would be unsafe, and could only be combined with
 a type case, possibly raising a runtime error.  However, there is no such
 operation available in the language. 
 
@@ -577,11 +579,12 @@ class type c2 =  object ('a) method m : 'a end;;
 fun (x:c0) -> (x :> c2);;
 \end{caml_example}
 Note that, while classe types "c1" and "c2" are different, both object types
-"c1" and "c2" define the same abbreviation. When the domain of a coercion is
-left implicit and its co-domain is an abbreviation of a known class type,
-then the class type, rather than the object type, is used to derive the
-coercion function. This allows to leave the domain implicit in most cases
-when coercing form a subclass to its superclass. 
+"c1" and "c2" expand to the same object type (same method names and types).
+When the domain of a coercion is left implicit and its co-domain is an
+abbreviation of a known class type, then the class type, rather than
+the object type, is used to derive the coercion function. This allows
+to leave the domain implicit in most cases when coercing form a
+subclass to its superclass.
 %
 The type of a coercion can always be seen as below: 
 \begin{caml_example}

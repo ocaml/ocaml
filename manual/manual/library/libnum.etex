@@ -1,17 +1,14 @@
 \chapter{The num library: arbitrary-precision rational arithmetic}
-\pdfchapterfold{-2}{The num library: arbitrary-precision rational arithmetic}
+\pdfchapterfold{-3}{The num library: arbitrary-precision integer and rational arithmetic}
 
-The "num" library implements
-exact-precision rational arithmetic. It is built upon the
-BigNum arbitrary-precision integer arithmetic
-package, and therefore achieves fairly high performance.
+The "num" library implements integer arithmetic and rational
+arithmetic in arbitrary precision.
 
-The functions provided in this library are fully documented in
-{\em The CAML Numbers Reference Manual\/} by 
+More documentation on the functions provided in this library can be found
+in {\em The CAML Numbers Reference Manual\/} by 
 Valérie Ménissier-Morain, technical report 141, INRIA, july 1992
 (available electronically,
 "ftp://ftp.inria.fr/INRIA/publication/RT/RT-0141.ps.gz").
-A summary of the functions is given below.
 
 Programs that use the "num" library must be linked as follows:
 \begin{alltt}
@@ -26,6 +23,7 @@ For interactive use of the "nums" library, do:
 
 \begin{library}
 \input{num.tex}
+\input{bigint.tex}
 \input{arithstatus.tex}
 \end{library}
 

@@ -7,8 +7,8 @@ STDLIB_INTF=arg.tex array.tex char.tex digest.tex filename.tex format.tex \
   stack.tex stream.tex string.tex sys.tex weak.tex callback.tex lazy.tex \
   buffer.tex
 
-OTHERLIB_INTF=unix.tex str.tex num.tex arithstatus.tex graphics.tex \
-  thread.tex mutex.tex condition.tex event.tex threadUnix.tex \
+OTHERLIB_INTF=unix.tex str.tex num.tex bigint.tex arithstatus.tex \
+  graphics.tex thread.tex mutex.tex condition.tex event.tex threadUnix.tex \
   dbm.tex dynlink.tex tk.tex bigarray.tex
 
 INTF=$(CORE_INTF) $(STDLIB_INTF) $(OTHERLIB_INTF)
@@ -28,7 +28,7 @@ VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLD
 all: $(FILES)
 
 clean:
-	rm -f $(FILES) arithstatus.mli
+	rm -f $(FILES) arithstatus.mli bigint.mli
 
 $(INTF): $(FORMAT)
 
@@ -44,3 +44,5 @@ $(INTF): $(FORMAT)
 # TeX hates underscores in file names
 arithstatus.mli: $(CSLDIR)/otherlibs/num/arith_status.mli
 	cp $(CSLDIR)/otherlibs/num/arith_status.mli arithstatus.mli
+bigint.mli: $(CSLDIR)/otherlibs/num/big_int.mli
+	cp $(CSLDIR)/otherlibs/num/big_int.mli bigint.mli

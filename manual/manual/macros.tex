@@ -189,27 +189,31 @@
   \pdfsection{#2}
   \@input{#1.ind}}
 
-% PDF stuff
+% PDF stuff -- no longer needed, Hyperref does the job
 
-\ifpdf
-\newcount\pdflabel
-\pdflabel=1
-\def\pdfchapterfold#1#2{
-\pdfdest num \pdflabel fit
-\pdfoutline goto num \pdflabel count #1 {\arabic{chapter}. #2}
-\global\advance\pdflabel by 1
-}
-\def\pdfsection#1{
-\pdfdest num \pdflabel fit
-\pdfoutline goto num \pdflabel {#1}
-\global\advance\pdflabel by 1
-}
-\else
 \def\pdfchapterfold#1#2{}
+\def\pdfchapter#1{}
 \def\pdfsection#1{}
-\fi
 
-\def\pdfchapter{\pdfchapterfold{0}}
+%\ifpdf
+%\newcount\pdflabel
+%\pdflabel=1
+%\def\pdfchapterfold#1#2{
+%\pdfdest num \pdflabel fit
+%\pdfoutline goto num \pdflabel count #1 {\arabic{chapter}. #2}
+%\global\advance\pdflabel by 1
+%}
+%\def\pdfsection#1{
+%\pdfdest num \pdflabel fit
+%\pdfoutline goto num \pdflabel {#1}
+%\global\advance\pdflabel by 1
+%}
+%\else
+%\def\pdfchapterfold#1#2{}
+%\def\pdfsection#1{}
+%\fi
+%
+%\def\pdfchapter{\pdfchapterfold{0}}
 
 %%% Pour camlidl
 
