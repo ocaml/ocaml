@@ -29,7 +29,8 @@ CAMLRUN=byterun/ocamlrun
 SHELL=/bin/sh
 MKDIR=mkdir -p
 
-INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver -I toplevel
+INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
+         -I toplevel
 
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
   utils/clflags.cmo utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo
@@ -222,7 +223,7 @@ opt-core:runtimeopt ocamlopt libraryopt
 opt: runtimeopt ocamlopt libraryopt otherlibrariesopt camlp4opt
 
 # Native-code versions of the tools
-opt.opt: core ocaml opt-core ocamlc.opt otherlibraries camlp4out \
+opt.opt: checkstack core ocaml opt-core ocamlc.opt otherlibraries camlp4out \
 	 $(DEBUGGER) ocamldoc ocamlopt.opt otherlibrariesopt \
 	 camlp4opt ocamllex.opt ocamltoolsopt.opt camlp4optopt ocamldoc.opt
 
@@ -603,6 +604,15 @@ partialclean::
 	cd camlp4; $(MAKE) clean
 alldepend::
 	cd camlp4; $(MAKE) depend
+
+# Check that the stack limit is reasonable.
+
+checkstack:
+	@if $(BYTECC) -o tools/checkstack tools/checkstack.c; \
+	  then tools/checkstack; \
+	  else :; \
+	fi
+	@rm -f tools/checkstack
 
 # Default rules
 
