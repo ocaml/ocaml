@@ -37,7 +37,7 @@ let print_line buffer line_number start point before =
 
 (* Tell Emacs we are nowhere in the source. *)
 let show_no_point () =
-  if !emacs then printf "\026\026H@."
+  if !emacs then printf "\026\026H\n"
 
 (* Print the line containing the point *)
 let show_point mdle point before selected =
@@ -45,7 +45,7 @@ let show_point mdle point before selected =
     begin try
       let source = source_of_module mdle in
         printf "\026\026M%s:%i" source point;
-        printf "%s@." (if before then ":before" else ":after")
+        printf "%s\n" (if before then ":before" else ":after")
     with
       Not_found    -> (* get_buffer *)
         prerr_endline ("No source file for " ^ mdle ^ ".");
