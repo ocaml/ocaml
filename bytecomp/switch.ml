@@ -562,7 +562,11 @@ let rec c_test konst ctx ({cases=cases ; actions=actions} as s) =
         let left = {s with cases=left}
         and right = {s with cases=right} in
 
-        if less_tests cright cleft then
+        if i=1 && (lim+ctx.off)=1 && get_low cases 0+ctx.off=0 then
+          make_if_ne konst
+            ctx.arg 0
+            (c_test konst ctx right) (c_test konst ctx left)
+        else if less_tests cright cleft then
           make_if_lt konst
             ctx.arg (lim+ctx.off)
             (c_test konst ctx left) (c_test konst ctx right)
