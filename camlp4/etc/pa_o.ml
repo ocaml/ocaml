@@ -157,7 +157,7 @@ value infixop0 =
     (parser
        [: `("", x)
            when
-             not (List.mem x excl) && String.length x >= 1 &&
+             not (List.mem x excl) && String.length x >= 2 &&
              List.mem x.[0] list && symbolchar x 1 :] ->
          x)
 ;
@@ -557,6 +557,7 @@ EXTEND
       | e1 = SELF; "<>"; e2 = SELF -> <:expr< $e1$ <> $e2$ >>
       | e1 = SELF; "=="; e2 = SELF -> <:expr< $e1$ == $e2$ >>
       | e1 = SELF; "!="; e2 = SELF -> <:expr< $e1$ != $e2$ >>
+      | e1 = SELF; "$"; e2 = SELF -> <:expr< $lid:"\$"$ $e1$ $e2$ >>
       | e1 = SELF; op = infixop0; e2 = SELF -> <:expr< $lid:op$ $e1$ $e2$ >> ]
     | "^" RIGHTA
       [ e1 = SELF; "^"; e2 = SELF -> <:expr< $e1$ ^ $e2$ >>

@@ -551,9 +551,10 @@ value compile () =
   let pel = List.flatten pell in
   let si1 = <:str_item< value rec $list:pel$ >> in
   let si2 =
+    let list = List.sort compare keywords.val in
     <:str_item<
       List.iter (fun kw -> P.lexer.Token.using ("", kw))
-        $expr_list keywords.val$
+        $expr_list list$
     >>
   in
   let loc = (1, 1) in
