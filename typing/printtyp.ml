@@ -534,15 +534,11 @@ let prepare_class_field ty =
 let rec prepare_class_type params = function
   | Tcty_constr (p, tyl, cty) ->
       let sty = Ctype.self_type cty in
-      begin try
-        if List.memq sty !visited_objects
-        || List.exists (fun ty -> (repr ty).desc <> Tvar) params
-        then raise (Unify []);
-        List.iter (occur Env.empty sty) tyl;
-        List.iter mark_loops tyl
-      with Unify _ ->
-        prepare_class_type params cty
-      end
+      if List.memq sty !visited_objects
+      || List.exists (fun ty -> (repr ty).desc <> Tvar) params
+      || List.exists (deep_occur sty) tyl
+      then prepare_class_type params cty
+      else List.iter mark_loops tyl
   | Tcty_signature sign ->
       let sty = repr sign.cty_self in
       (* Self may have a name *)

@@ -695,7 +695,7 @@ let rec type_approx env sexp =
 (* List labels in a function type, and whether return type is a variable *)
 let rec list_labels_aux env visited ls ty_fun =
   let ty = expand_head env ty_fun in
-  if !Clflags.recursive_types && List.memq ty visited then
+  if List.memq ty visited then
     List.rev ls, false
   else match ty.desc with
     Tarrow (l, _, ty_res, _) ->

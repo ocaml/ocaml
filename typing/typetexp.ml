@@ -241,9 +241,9 @@ let rec transl_type env policy rowvar styp =
             present;
           let bound = ref row.row_bound in
           let fixed = rowvar <> None || policy = Univars in
-          let static = List.length row.row_fields = 1 in
+          let single = List.length row.row_fields = 1 in
           let fields =
-            if static then row.row_fields else
+            if single then row.row_fields else
             List.map
               (fun (l,f) -> l,
                 if List.mem l present then f else
@@ -256,22 +256,17 @@ let rec transl_type env policy rowvar styp =
                 | _ -> f)
               row.row_fields
           in
-          let row = { row_closed = true;
-                      row_fields = fields;
-                      row_bound = !bound;
-                      row_name = Some (path, args);
-                      row_fixed = fixed;
-                      row_more = match rowvar with
-                        Some v ->
-                          if static then
-                            raise(Error(styp.ptyp_loc,
-                                        No_row_variable "variant "));
-                          v
-                      | None ->
-                          if static then newty Tnil else
-                          if policy = Univars then new_pre_univar ()
-                          else newvar () }
-          in newty (Tvariant row)
+          let row = { row_closed = true; row_fields = fields;
+                      row_bound = !bound; row_name = Some (path, args);
+                      row_fixed = fixed; row_more = newvar () } in
+          let static = Btype.static_row row in
+          let row =
+            if static then row else
+            { row with row_more = match rowvar with Some v -> v
+              | None ->
+                  if policy = Univars then new_pre_univar ()
+                  else newvar () } in
+          newty (Tvariant row)
       | Tobject (fi, _) ->
           let _, tv = flatten_fields fi in
           if policy = Univars then pre_univars := tv :: !pre_univars;
@@ -335,10 +330,12 @@ let rec transl_type env policy rowvar styp =
           instance t
       end
   | Ptyp_variant(fields, closed, present) ->
+      if rowvar <> None && present = None && closed then
+	raise (Error(styp.ptyp_loc, No_row_variable "variant "));
       let bound = ref [] and name = ref None in
       let fixed = rowvar <> None || policy = Univars in
       let mkfield l f =
-        newty (Tvariant {row_fields=[l,f]; row_more=newty Tnil;
+        newty (Tvariant {row_fields=[l,f]; row_more=newvar();
                          row_bound=[]; row_closed=true;
                          row_fixed=fixed; row_name=None}) in
       let add_typed_field loc l f fields =
@@ -429,14 +426,9 @@ let rec transl_type env policy rowvar styp =
           row_fixed = fixed; row_name = !name } in
       let static = Btype.static_row row in
       let row =
-        { row with row_more =
-            match rowvar with
-              Some v ->
-                if static then
-                  raise(Error(styp.ptyp_loc, No_row_variable "variant "));
-                v
+        if static then row else
+        { row with row_more = match rowvar with Some v -> v
             | None ->
-	        if static then newty Tnil else
 	        if policy = Univars then new_pre_univar () else
                 if policy = Fixed && not static then
                   raise(Error(styp.ptyp_loc, Unbound_type_variable "[..]"))
@@ -452,6 +444,7 @@ let rec transl_type env policy rowvar styp =
       univars := new_univars @ !univars;
       let ty = transl_type env policy None st in
       univars := old_univars;
+      let ty_list = List.filter (fun tu -> deep_occur (repr tu) ty) ty_list in
       newty (Tpoly(ty, ty_list))
 
 and transl_fields env policy rowvar =
@@ -493,6 +486,13 @@ let transl_simple_type_univars env styp =
       [] !pre_univars
   in
   pre_univars := [];
+  (* add this code to allow reuse of variable names
+  Tbl.iter
+    (fun name ty ->
+      if List.exists (fun tu -> repr ty == repr tu) univs
+      then type_variables := Tbl.remove name !type_variables)
+    !type_variables;
+  *)
   instance (Btype.newgenty (Tpoly (typ, univs)))
 
 let transl_simple_type_delayed env styp =
