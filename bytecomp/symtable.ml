@@ -124,21 +124,23 @@ let init () =
 
 (* Must use the unsafe String.set here because the block may be
    a "fake" string as returned by Meta.static_alloc. *)
-let patch_short buff pos n =
+let patch_int buff pos n =
   String.unsafe_set buff pos (Char.unsafe_chr n);
-  String.unsafe_set buff (succ pos) (Char.unsafe_chr (n asr 8))
+  String.unsafe_set buff (pos + 1) (Char.unsafe_chr (n asr 8));
+  String.unsafe_set buff (pos + 2) (Char.unsafe_chr (n asr 16));
+  String.unsafe_set buff (pos + 3) (Char.unsafe_chr (n asr 24))
 
 let patch_object buff patchlist = 
   List.iter
     (function
         (Reloc_literal sc, pos) ->
-          patch_short buff pos (slot_for_literal sc)
+          patch_int buff pos (slot_for_literal sc)
       | (Reloc_getglobal id, pos) ->
-          patch_short buff pos (slot_for_getglobal id)
+          patch_int buff pos (slot_for_getglobal id)
       | (Reloc_setglobal id, pos) ->
-          patch_short buff pos (slot_for_setglobal id)
+          patch_int buff pos (slot_for_setglobal id)
       | (Reloc_primitive name, pos) ->
-          patch_short buff pos (num_of_prim name))
+          patch_int buff pos (num_of_prim name))
     patchlist
 
 (* Translate structured constants *)
@@ -181,7 +183,7 @@ let output_global_map oc =
 
 let update_global_table () =
   let ng = !global_table.num_cnt in
-  if ng >= Array.length(Meta.global_data()) then Meta.realloc_global_data ng;
+  if ng > Array.length(Meta.global_data()) then Meta.realloc_global_data ng;
   let glob = Meta.global_data() in
   List.iter
     (fun (slot, cst) -> glob.(slot) <- transl_const cst)
