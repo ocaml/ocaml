@@ -1,6 +1,6 @@
 include ../support/Makefile.common
 
-LABLTKLIB=-I ../lib -I ../support
+LABLTKLIB=-I ../labltk -I ../lib -I ../support
 OTHERSLIB=-I $(OTHERS)/unix -I $(OTHERS)/str
 OCAMLTOPLIB=-I $(TOPDIR)/parsing -I $(TOPDIR)/utils -I $(TOPDIR)/typing
 INCLUDES=$(OTHERSLIB) $(LABLTKLIB) $(OCAMLTOPLIB)
