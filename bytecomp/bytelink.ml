@@ -113,8 +113,6 @@ let scan_file obj_name tolink =
 
 (* Second pass: link in the required units *)
 
-let debug_info = ref ([] : debug_event list list)
-
 (* Consistency check between interfaces *)
 
 let crc_interfaces =
@@ -137,22 +135,9 @@ let check_consistency file_name cu =
       end)
     cu.cu_imports
 
-(* Relocate and record compilation events *)
+(* Record compilation events *)
 
-let debug_info = ref ([] : debug_event list list)
-
-let record_events orig evl =
-  if evl <> [] then begin
-    List.iter
-      (fun ev ->
-         ev.ev_pos <- orig + ev.ev_pos;
-         begin match ev.ev_repr with
-           Event_parent repr -> repr := ev.ev_pos
-         | _                 -> ()
-         end)
-      evl;
-    debug_info := evl :: !debug_info
-  end
+let debug_info = ref ([] : (int * string) list)
 
 (* Link in a compilation unit *)
 
@@ -164,7 +149,9 @@ let link_compunit output_fun currpos_fun inchan file_name compunit =
   Symtable.patch_object code_block compunit.cu_reloc;
   if !Clflags.debug && compunit.cu_debug > 0 then begin
     seek_in inchan compunit.cu_debug;
-    record_events (currpos_fun()) (input_value inchan : debug_event list)
+    let buffer = String.create compunit.cu_debugsize in
+    really_input inchan buffer 0 compunit.cu_debugsize;
+    debug_info := (currpos_fun(), buffer) :: !debug_info
   end;
   output_fun code_block;
   if !Clflags.link_everything then
@@ -206,6 +193,22 @@ let link_file output_fun currpos_fun = function
       link_object output_fun currpos_fun file_name unit
   | Link_archive(file_name, units) ->
       link_archive output_fun currpos_fun file_name units
+
+(* Output the debugging information *)
+(* Format is:
+      <int32>          number of event lists
+      <int32>          offset of first event list
+      <output_value>   first event list
+      ...
+      <int32>          offset of last event list
+      <output_value>   last event list *)
+
+let output_debug_info oc =
+  output_binary_int oc (List.length !debug_info);
+  List.iter
+    (fun (ofs, evl) -> output_binary_int oc ofs; output_string oc evl)
+    !debug_info;
+  debug_info := []
 
 (* Transform a file name into an absolute file name *)
 
@@ -264,7 +267,7 @@ let link_bytecode objfiles exec_name copy_header =
     Symtable.output_global_map outchan;
     (* Debug info *)
     let pos5 = pos_out outchan in
-    if !Clflags.debug then output_value outchan !debug_info;
+    if !Clflags.debug then output_debug_info outchan;
     (* The trailer *)
     let pos6 = pos_out outchan in
     output_binary_int outchan (pos1 - pos0);
