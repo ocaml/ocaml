@@ -1,0 +1,124 @@
+INSTALLATION INSTRUCTIONS
+
+1- Edit the file Makefile.config, following the comments in that file.
+
+2- Configure the system. Change to the config/ subdirectory and do:
+
+        make
+
+This generates the two configuration files "m.h" and "s.h" in the
+config/ subdirectory.  If something goes wrong during the make,
+or if the generated "m.h" and "s.h" files cause errors later on, then do
+
+        cp m-templ.h m.h
+        cp s-templ.h s.h
+
+and edit "m.h" and "s.h" by hand, following the guidelines in the
+comments.
+
+3- From the top directory, do:
+
+        make world
+
+This builds the Caml Special Light bytecode compiler for the first time.
+This phase is fairly verbose; consider redirecting the output to a file:
+
+        make world > log.world 2>&1     # in sh
+        make world >& log.world         # in csh
+
+4- To be sure everything works well, you can try to bootstrap the
+system --- that is, to recompile all Caml Special Light sources with
+the newly created compiler. From the top directory, do:
+
+        make bootstrap
+
+or, better:
+
+        make bootstrap > log.bootstrap 2>&1     # in sh
+        make bootstrap >& log.bootstrap         # in csh
+
+The "make bootstrap" checks that the bytecode programs compiled with
+the new compiler are identical to the bytecode programs compiled with
+the old compiler. If this is the case, you can be pretty sure the
+system has been correctly compiled. Otherwise, this does not
+necessarily means something went wrong. The best thing to do is to try
+a second bootstrapping phase: just do "make bootstrap" again.  It will
+either crash almost immediately, or re-re-compile everything correctly
+and reach the fixpoint.
+
+5- If your platform is supported by the native-code compiler (that is,
+Makefile.config sets ARCH to a value other than "none"), you can now
+build the native-code compiler. From the top directory, do:
+
+        make opt
+or:
+        make opt > log.opt 2>&1     # in sh
+        make opt >& log.opt         # in csh
+
+6- You can now install the Caml Special Light system. This will create the
+following commands (in the directory set to BINDIR in Makefile.config):
+
+        cslc           the batch bytecode compiler
+        cslopt         the batch native-code compiler (if supported)
+        cslrun         the runtime system for the bytecode compiler
+        cslyacc        the parser generator
+        csllex         the lexer generator
+        csltop         the interactive, toplevel-based system
+        cslmktop       a tool to make toplevel systems that integrate
+                        user-defined C primitives
+        csldep         output "make" dependencies for Caml sources
+
+From the top directory, become superuser and do "make install".
+Also do "make installopt" to install the native-code compiler, if you
+have compiled it.
+
+7- Installation is complete. Time to clean up. From the toplevel
+directory, do "make realclean".
+
+
+IF SOMETHING GOES WRONG:
+
+Read the "common problems" and "machine-specific hints" section at the
+end of this file.
+
+Check the files m.h and s.h in config/. Wrong endianness or alignment
+constraints in m.h will immediately crash the bytecode interpreter.
+
+If you get a "segmentation violation" signal, check the limits on the
+stack size and data segment size (type "limit" under csh or
+"ulimit -a" under bash). Make sure the limit on the stack size is
+at least 2M.
+
+Try recompiling the runtime system with optimizations turned off
+(change CFLAGS in byterun/Makefile and asmrun/Makefile).
+The runtime system contains some complex, atypical pieces of C code
+that can uncover bugs in optimizing compilers. Alternatively, try
+another C compiler (e.g. gcc instead of the vendor-supplied cc).
+
+You can also build a debug version of the runtime system. Go to the
+byterun/ directory and do "make camlrund". Then, copy camlrund to
+../boot/camlrun, and try again. This version of the runtime system
+contains lots of assertions and sanity checks that could help you
+pinpoint the problem.
+
+
+COMMON PROBLEMS:
+
+* The Makefiles assume that make execute commands by calling /bin/sh. They
+won't work if /bin/csh is called instead. You may have to unset the SHELL
+environment variable, or set it to /bin/sh.
+
+* gcc 2.6.0 has been reported to generate incorrect code for the
+runtime system in -O mode. Upgrade to 2.6.3.
+
+
+MACHINE-SPECIFIC HINTS:
+
+* On HP 9000/700 machines under HP/UX 9.  Some versions of cc are
+unable to compile correctly the runtime system (wrong code is
+generated for (x - y) where x is a pointer and y an integer).
+Fix: use gcc.
+
+* On some Next machines. cc pretends to be gcc but is not quite gcc.
+If the compilation of byterun/interp.c causes syntax errors, insert
+#undef __GNUC__ at the very beginning of byterun/misc.h.

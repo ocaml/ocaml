@@ -1,0 +1,139 @@
+This is the first public release of the Caml Special Light system.
+
+OVERVIEW:
+
+Caml Special Light is an implementation of the ML language, based on
+the Caml Light dialect extended with a powerful module system in the
+style of Standard ML.
+
+Though close to Caml Light in many ways, Caml Special Light is not the
+latest release of Caml Light: the language implemented has changed in
+significant ways, source-level compatibility is not ensured, and the
+implementation has been almost completely rewritten from scratch.
+
+Caml Special Light comprises two compilers. One generates bytecode
+which is then interpreted by a C program. This compiler runs quickly,
+generates compact code with moderate memory requirements, and is
+portable to essentially any 32 or 64 bit Unix platform. Performance of
+generated programs is quite good for a bytecoded implementation:
+almost twice as fast as Caml Light 0.7. This compiler can be used
+either as a standalone, batch-oriented compiler that produces
+standalone programs, or as an interactive, toplevel-based system.
+
+The other compiler generates high-performance native code for a number
+of processors. Compilation takes longer and generates bigger code, but
+the generated programs deliver excellent performance (our tests show
+that this compiler consistently outperforms Standard ML of New Jersey
+1.08), while retaining the moderate memory requirements of the
+bytecode compiler. The native-code compiler currently runs on the
+following platforms:
+
+        Alpha processors: DecStation 3000 under OSF1
+        Sparc processors: Sun Sparcstation under SunOS 4.1 or Solaris 2
+        Intel 386 / 486 / Pentium processors: PCs under Linux
+        Mips processors: DecStation 3100 and 5000 under Ultrix 4
+
+Other operating systems for the processors above have not been tested,
+but the compiler may work under other operating systems with no or
+little work.
+
+This distribution has been tested on the following platforms:
+
+        DecStation 3000/300, OSF/1 2.0, cc and gcc 2.5.8
+        SparcStation 10, SunOS 4.1.3, gcc 2.5.8
+        PC 486 DX2/66, Linux 1.2.13, gcc 2.5.8
+        DecStation 5000/200, Ultrix 4.1, cc and gcc 2.4.5
+
+CONTENTS:
+
+  INSTALL               instructions for installation
+  LICENSE               license and copyright notice
+  Makefile              main Makefile
+  Makefile.config       configuration information
+  README                this file
+  asmcomp/              native-code compiler and linker
+  asmrun/               native-code runtime library
+  boot/                 bootstrap compiler
+  bytecomp/             bytecode compiler and linker
+  byterun/              bytecode interpreter and runtime system
+  config/               autoconfiguration stuff
+  driver/               driver code for the compilers
+  lex/                  lexer generator
+  parsing/              syntax analysis
+  stdlib/               standard library
+  tools/                various utilities
+  toplevel/             interactive system
+  typing/               typechecking
+  utils/                utility libraries
+  yacc/                 parser generator
+
+COPYRIGHT:
+
+All files in this distribution are copyright 1995 Institut National de
+Recherche en Informatique et Automatique (INRIA) and distributed under
+the conditions stated in file LICENSE.
+They can be freely redistributed for non-commercial purposes, provided
+the copyright notice remains attached.
+
+INSTALLATION:
+
+See the file INSTALL for installation instructions on Unix machines. 
+
+DOCUMENTATION:
+
+The Caml Special Light manual is distributed in Postscript, DVI, and
+plain text. It can be obtained by anonymous FTP from ftp.inria.fr as
+described below. It is also available on the World Wide Web, at
+
+        http://pauillac.inria.fr/caml/
+
+AVAILABILITY:
+
+The complete Caml Special Light distribution resides on ftp.inria.fr,
+and can be accessed by anonymous FTP:
+
+        host:       ftp.inria.fr (192.93.2.54)
+        directory:  lang/caml-light
+
+or through a Web browser at ftp://ftp.inria.fr/lang/caml-light/.
+
+KEEPING IN TOUCH WITH THE CAML COMMUNITY:
+
+There exists a mailing list of users of the Caml implementations
+developed at INRIA. The purpose of this list is to share
+experience, exchange ideas (and even code), and report on applications
+of the Caml language. This list is moderated; messages can be
+written in English or in French. The list has about 200 subscribers.
+
+Messages to the list should be sent to:
+
+              caml-list@pauillac.inria.fr
+
+If you wish to subscribe to this list, please send a message
+(including your email address) to:
+
+              caml-list-request@pauillac.inria.fr
+
+Archives of the list are available on the World Wide Web at URL
+http://pauillac.inria.fr/caml/.
+
+The Usenet news group comp.lang.ml also contains discussions about
+the ML family of programming languages, including Caml. The newsgroup
+is moderated.
+
+BUG REPORTS AND USER FEEDBACK:
+
+Send your bug reports by E-mail to:
+
+          caml-light@pauillac.inria.fr
+
+To be effective, bug reports should include a complete program
+(preferably small) that exhibits the unexpected behavior, and the
+configuration you are using (machine type, etc).
+
+The mailing list caml-light@pauillac.inria.fr is forwarded to
+a small group of implementors at INRIA. For general questions and
+discussions, caml-list@pauillac.inria.fr is better; for bug reports
+and very specific technical questions, caml-light@pauillac.inria.fr
+is preferred. We often cross-post from one list to the other, anyway.
+
