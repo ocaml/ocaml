@@ -1,4 +1,0 @@
-compile.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
-compile.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
-pa_o_fast.cmo: ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
-pa_o_fast.cmx: ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 
