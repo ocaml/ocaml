@@ -90,9 +90,9 @@ extern code_t start_code;
 #define ACCU_REG
 #endif
 #if defined(PPC) || defined(_POWER) || defined(_IBMR2)
-#define PC_REG asm("31")
-#define SP_REG asm("30")
-#define ACCU_REG asm("29")
+#define PC_REG asm("26")
+#define SP_REG asm("27")
+#define ACCU_REG asm("28")
 #endif
 #endif
 
