@@ -147,6 +147,17 @@ let rec insert_labels_class ~labels ~text expr =
   | _ ->
       ()
 
+let rec insert_labels_type ~labels ~text ty =
+  match labels, ty.ptyp_desc with
+    l::labels, Ptyp_arrow(l', _, rem) ->
+      if l <> "" && l.[0] <> '?' && l' = "" then begin
+        let pos = insertion_point ty.ptyp_loc.Location.loc_start ~text in
+        add_insertion pos (l ^ ":")
+      end;
+      insert_labels_type ~labels ~text rem
+  | _ ->
+      ()
+
 let rec insert_labels_app ~labels ~text args =
   match labels, args with
     l::labels, (l',arg)::args ->
@@ -296,6 +307,8 @@ let add_labels ~intf ~impl ~file =
     begin fun item (values, classes as acc) ->
       match item.pstr_desc with
         Pstr_value (recp, l) ->
+          let names =
+            List.concat (List.map l ~f:(fun (p,_) -> pattern_vars p)) in
           List.iter l ~f:
             begin fun (pat, expr) ->
               begin match pattern_name pat with
@@ -303,25 +316,42 @@ let add_labels ~intf ~impl ~file =
                   begin try
                     let labels = SMap.find s values in
                     insert_labels ~labels ~text expr;
-                    add_labels_expr ~text ~values ~classes expr
+                    if !norec then () else
+                    let values =
+                      SMap.fold
+                        (fun s l m ->
+                          if List.mem s names then SMap.add s l m else m)
+                        values SMap.empty in
+                    add_labels_expr expr ~text ~values ~classes:SMap.empty
                   with Not_found -> ()
                   end
               | None -> ()
               end;
             end;
-          let names =
-            List.concat (List.map l ~f:(fun (p,_) -> pattern_vars p)) in
           (SMap.removes names values, classes)
+      | Pstr_primitive (s, {pval_type=sty}) ->
+          begin try
+            let labels = SMap.find s values in
+            insert_labels_type ~labels ~text sty;
+            (SMap.removes [s] values, classes)
+          with Not_found -> acc
+          end
       | Pstr_class l ->
+          let names = List.map l ~f:(fun pci -> pci.pci_name) in
           List.iter l ~f:
             begin fun {pci_name=name; pci_expr=expr} ->
               try
                 let labels = SMap.find name classes in
                 insert_labels_class ~labels ~text expr;
-                add_labels_class ~text ~values ~classes expr
+                if !norec then () else
+                let classes =
+                  SMap.fold
+                    (fun s l m ->
+                      if List.mem s names then SMap.add s l m else m)
+                    classes SMap.empty in
+                add_labels_class ~text ~values:SMap.empty ~classes expr
               with Not_found -> ()
             end;
-          let names = List.map l ~f:(fun pci -> pci.pci_name) in
           (values, SMap.removes names classes)
       | _ ->
           acc
