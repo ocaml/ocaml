@@ -195,7 +195,7 @@ let object_file_name name =
 (* Main entry point *)
 
 let link objfiles =
-  let objfiles = "stdlib.cmxa" :: objfiles in
+  let objfiles = "stdlib.cmxa" :: (objfiles @ ["std_exit.cmx"]) in
   let units_tolink = List.fold_left scan_file [] (List.rev objfiles) in
   if not (StringSet.is_empty !missing_globals) then
     raise(Error(Missing_implementations(StringSet.elements !missing_globals)));

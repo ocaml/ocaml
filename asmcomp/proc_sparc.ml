@@ -180,24 +180,26 @@ let loc_parameters arg =
 let loc_results res =
   let (loc, ofs) = calling_conventions 8 13 100 105 not_supported res in loc
 
-(* On the Sparc, all arguments to C functions are passed in %o..%o5,
-   even floating-point arguments *)
-
-let ext_calling_conventions arg =
-  let loc = Array.new (Array.length arg) Reg.dummy in
-  let reg = ref 8 in
-  for i = 0 to Array.length arg - 1 do
-    if !reg > 13 then
-      fatal_error "Proc.ext_calling_conventions: cannot call";
-    loc.(i) <- phys_reg !reg;    
-    match arg.(i).typ with
-      Int | Addr -> incr reg
-    | Float -> reg := !reg + 2
-  done;
-  loc
+(* On the Sparc, all arguments to C functions, even floating-point arguments,
+   are passed in %o..%o5, then on the stack *)
 
 let loc_external_arguments arg =
-  (ext_calling_conventions arg, 0)
+  let loc = Array.new (Array.length arg) Reg.dummy in
+  let reg = ref 8 (* %o0 *) in
+  let ofs = ref (-4) in              (* start at sp + 92 = sp + 96 - 4 *)
+  for i = 0 to Array.length arg - 1 do
+    if !reg <= 13 (* %o5 *) then begin
+      loc.(i) <- phys_reg !reg;
+      match arg.(i).typ with
+        Int | Addr -> incr reg
+      | Float -> reg := !reg + 2
+    end else begin
+      loc.(i) <- stack_slot (outgoing !ofs) arg.(i).typ;
+      ofs := !ofs + size_component arg.(i).typ
+    end
+  done;
+  (loc, Misc.align (!ofs + 4) 8)     (* Keep stack 8-aligned *)
+
 let loc_external_results res =
   let (loc, ofs) = calling_conventions 8 8 100 100 not_supported res in loc
 

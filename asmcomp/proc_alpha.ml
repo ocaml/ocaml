@@ -182,29 +182,35 @@ let loc_results res =
    taking a float f1 and two ints i2 and i3 will put f1 in the
    first float reg, i2 in the second int reg and i3 in the third int reg. *)
 
-let ext_calling_conventions first_int last_int first_float last_float arg =
+let ext_calling_conventions first_int last_int first_float last_float
+                            make_stack arg =
   let loc = Array.new (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
+  let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i).typ with
-      Int | Addr ->
+      Int | Addr as ty ->
         if !int <= last_int then begin
           loc.(i) <- phys_reg !int; incr int; incr float
-        end else 
-          fatal_error "Proc.ext_calling_conventions: cannot call"
+        end else begin
+          loc.(i) <- stack_slot (make_stack !ofs) ty;
+          ofs := !ofs + size_int
+        end
     | Float ->
         if !float <= last_float then begin
           loc.(i) <- phys_reg !float; incr int; incr float
-        end else
-          fatal_error "Proc.ext_calling_conventions: cannot call"
+        end else begin
+          loc.(i) <- stack_slot (make_stack !ofs) Float;
+          ofs := !ofs + size_float
+        end
   done;
-  loc
+  (loc, Misc.align !ofs 16)             (* Keep stack 16-aligned *)
 
 let loc_external_arguments arg =
-  (ext_calling_conventions 13 18 116 121 arg, 0)
+  ext_calling_conventions 13 18 116 121 outgoing arg
 let loc_external_results res =
-  ext_calling_conventions 0 0 100 100 res
+  let (loc, ofs) = ext_calling_conventions 0 0 100 100 not_supported res in loc
 
 let loc_exn_bucket = phys_reg 0         (* $0 *)
 
