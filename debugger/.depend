@@ -160,10 +160,10 @@ show_source.cmx: debugger_config.cmx ../utils/misc.cmx parameters.cmx \
     primitives.cmx source.cmx show_source.cmi 
 source.cmo: ../utils/config.cmi ../utils/misc.cmi primitives.cmi source.cmi 
 source.cmx: ../utils/config.cmx ../utils/misc.cmx primitives.cmx source.cmi 
-symbols.cmo: ../utils/config.cmi debugcom.cmi debugger_config.cmi \
+symbols.cmo: ../bytecomp/bytesections.cmi debugcom.cmi debugger_config.cmi \
     ../bytecomp/instruct.cmi primitives.cmi ../bytecomp/symtable.cmi \
     symbols.cmi 
-symbols.cmx: ../utils/config.cmx debugcom.cmx debugger_config.cmx \
+symbols.cmx: ../bytecomp/bytesections.cmx debugcom.cmx debugger_config.cmx \
     ../bytecomp/instruct.cmx primitives.cmx ../bytecomp/symtable.cmx \
     symbols.cmi 
 time_travel.cmo: breakpoints.cmi checkpoints.cmi debugcom.cmi \

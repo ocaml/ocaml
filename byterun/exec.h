@@ -14,33 +14,43 @@
 
 /* exec.h : format of executable bytecode files */
 
-/*  offset 0 --->  initial junk
-                   path to runtime (if needed)
-                   code block
-                   names of primitives
-                   data block
-                   symbol table
-                   debug infos
-                   trailer
+/* Executable bytecode files are composed of a number of sections,
+   identified by 4-character names.  A table of contents at the
+   end of the file lists the section names along with their sizes,
+   in the order in which they appear in the file:
+
+   offset 0 --->  initial junk
+                  data for section 1
+                  data for section 2
+                  ...
+                  data for section N
+                  table of contents:
+                    descriptor for section 1
+                    ...
+                    descriptor for section N
+                  trailer
  end of file --->
 */
 
-/* Structure of the trailer.
-   Sizes are 32-bit unsigned integers, big endian */
+/* Structure of t.o.c. entries
+   Numerical quantities are 32-bit unsigned integers, big endian */
 
-#define TRAILER_SIZE (6*4+12)
+struct section_descriptor {
+  char name[4];                 /* Section name */
+  uint32 len;                   /* Length of data in bytes */
+};
+
+/* Structure of the trailer. */
 
 struct exec_trailer {
-  unsigned int path_size;      /* Length of path to runtime (w. final \n) */
-  unsigned int code_size;      /* Size of the code block (in bytes) */
-  unsigned int prim_size;      /* Size of the primitive table (in bytes) */
-  unsigned int data_size;      /* Size of the global data table (bytes) */
-  unsigned int symbol_size;    /* Size of the symbol table (bytes) */
-  unsigned int debug_size;     /* Size of the debug infos (bytes) */
-  char magic[12];              /* A magic string */
+  uint32 num_sections;          /* Number of sections */
+  char magic[12];               /* The magic number */
+  struct section_descriptor * section; /* Not part of file */
 };
+
+#define TRAILER_SIZE (4+12)
 
 /* Magic number for this release */
 
-#define EXEC_MAGIC "Caml1999X005"
+#define EXEC_MAGIC "Caml1999X006"
 

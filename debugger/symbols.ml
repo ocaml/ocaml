@@ -38,27 +38,20 @@ let relocate_event orig ev =
 
 let read_symbols' bytecode_file =
   let ic = open_in_bin bytecode_file in
-  let pos_trailer =
-    in_channel_length ic - 24 - String.length Config.exec_magic_number in
-  seek_in ic pos_trailer;
-  let path_size = input_binary_int ic in
-  let code_size = input_binary_int ic in
-  let prim_size = input_binary_int ic in
-  let data_size = input_binary_int ic in
-  let symbol_size = input_binary_int ic in
-  let debug_size = input_binary_int ic in
-  let magic = String.create (String.length Config.exec_magic_number) in
-  really_input ic magic 0 (String.length Config.exec_magic_number);
-  if magic <> Config.exec_magic_number then begin
+  begin try
+    Bytesections.read_toc ic;
+    ignore(Bytesections.seek_section ic "SYMB");
+  with Bytesections.Bad_magic_number | Not_found ->
     prerr_string bytecode_file; prerr_endline " is not a bytecode file.";
     exit 2
   end;
-  if debug_size = 0 then begin
+  Symtable.restore_state (input_value ic);
+  begin try
+    ignore (Bytesections.seek_section ic "DBUG")
+  with Not_found ->
     prerr_string bytecode_file; prerr_endline " has no debugging info.";
     exit 2
   end;
-  seek_in ic (pos_trailer - debug_size - symbol_size);
-  Symtable.restore_state (input_value ic);
   let num_eventlists = input_binary_int ic in
   let eventlists = ref [] in
   for i = 1 to num_eventlists do

@@ -453,31 +453,19 @@ let read_primitive_table ic len =
 exception Not_exec
 
 let dump_exe ic =
-  seek_in ic (in_channel_length ic - 12);
-  if (let buff = String.create 12 in ignore (input ic buff 0 12); buff)
-     <> exec_magic_number
-  then raise Not_exec;
-  let trailer_pos = in_channel_length ic - 36 in
-  seek_in ic trailer_pos;
-  let path_size = input_binary_int ic in
-  let code_size = input_binary_int ic in
-  let prim_size = input_binary_int ic in
-  let data_size = input_binary_int ic in
-  let symbol_size = input_binary_int ic in
-  let debug_size = input_binary_int ic in
-  seek_in ic (trailer_pos - debug_size - symbol_size - data_size - prim_size);
+  Bytesections.read_toc ic;
+  let prim_size = Bytesections.seek_section ic "PRIM" in
   primitives := read_primitive_table ic prim_size;
+  ignore(Bytesections.seek_section ic "DATA");
   let init_data = (input_value ic : Obj.t array) in
   globals := Array.create (Array.length init_data) Empty;
   for i = 0 to Array.length init_data - 1 do
     !globals.(i) <- Constant (init_data.(i))
   done;
-  if symbol_size > 0 then begin
-    let (_, sym_table) = (input_value ic : int * (Ident.t, int) Tbl.t) in
-    Tbl.iter (fun id pos -> !globals.(pos) <- Global id) sym_table
-  end;
-  seek_in ic (trailer_pos - debug_size - symbol_size -
-              data_size - prim_size - code_size);
+  ignore(Bytesections.seek_section ic "SYMB");
+  let (_, sym_table) = (input_value ic : int * (Ident.t, int) Tbl.t) in
+  Tbl.iter (fun id pos -> !globals.(pos) <- Global id) sym_table;
+  let code_size = Bytesections.seek_section ic "CODE" in
   print_code ic code_size
 
 let main() =
@@ -485,7 +473,7 @@ let main() =
     let ic = open_in_bin Sys.argv.(i) in
     begin try
       objfile := false; dump_exe ic
-    with Not_exec ->
+    with Bytesections.Bad_magic_number ->
       objfile := true; seek_in ic 0; dump_obj (Sys.argv.(i)) ic
     end;
     close_in ic

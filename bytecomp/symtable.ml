@@ -241,17 +241,13 @@ let update_global_table () =
 let init_toplevel () =
   (* Read back the known global symbols from the executable file *)
   let ic = open_in_bin Sys.argv.(0) in
-  let pos_trailer =
-    in_channel_length ic - 24 - String.length Config.exec_magic_number in
-  seek_in ic pos_trailer;
-  let path_size = input_binary_int ic in
-  let code_size = input_binary_int ic in
-  let prim_size = input_binary_int ic in
-  let data_size = input_binary_int ic in
-  let symbol_size = input_binary_int ic in
-  let debug_size = input_binary_int ic in
-  seek_in ic (pos_trailer - debug_size - symbol_size);
-  global_table := (input_value ic : Ident.t numtable);
+  begin try
+    Bytesections.read_toc ic;
+    ignore(Bytesections.seek_section ic "SYMB");
+    global_table := (input_value ic : Ident.t numtable)
+  with Bytesections.Bad_magic_number | Not_found | Failure _ ->
+    fatal_error "Toplevel bytecode executable is corrupted"
+  end;
   close_in ic;
   (* Enter the known C primitives *)
   Array.iter set_prim_table

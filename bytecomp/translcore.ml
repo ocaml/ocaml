@@ -206,6 +206,12 @@ let primitives_table = create_hashtable 57 [
   "%int64_lsl", Plslbint Pint64;
   "%int64_lsr", Plsrbint Pint64;
   "%int64_asr", Pasrbint Pint64;
+  "%nativeint_of_int32", Pcvtbint(Pint32, Pnativeint);
+  "%nativeint_to_int32", Pcvtbint(Pnativeint, Pint32);
+  "%int64_of_int32", Pcvtbint(Pint32, Pint64);
+  "%int64_to_int32", Pcvtbint(Pint64, Pint32);
+  "%int64_of_nativeint", Pcvtbint(Pnativeint, Pint64);
+  "%int64_to_nativeint", Pcvtbint(Pint64, Pnativeint);
   "%bigarray_ref_1", Pbigarrayref(1, Pbigarray_unknown, Pbigarray_c_layout);
   "%bigarray_ref_2", Pbigarrayref(2, Pbigarray_unknown, Pbigarray_c_layout);
   "%bigarray_ref_3", Pbigarrayref(3, Pbigarray_unknown, Pbigarray_c_layout);

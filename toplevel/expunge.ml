@@ -41,21 +41,11 @@ let main () =
     to_keep := StringSet.add (String.capitalize Sys.argv.(i)) !to_keep
   done;
   let ic = open_in_bin input_name in
-  let pos_trailer = in_channel_length ic - 36 in
-  seek_in ic pos_trailer;
-  let path_size = input_binary_int ic in
-  let code_size = input_binary_int ic in
-  let prim_size = input_binary_int ic in
-  let data_size = input_binary_int ic in
-  let symbol_size = input_binary_int ic in
-  let debug_size = input_binary_int ic in
-  let header = String.create(String.length Config.exec_magic_number) in
-  really_input ic header 0 (String.length Config.exec_magic_number);
-  if header <> Config.exec_magic_number then begin
-    prerr_endline "Wrong magic number"; exit 2
-  end;
+  Bytesections.read_toc ic;
+  let toc = Bytesections.toc() in
+  let pos_first_section = Bytesections.pos_first_section ic in
   if Sys.os_type = "MacOS" then begin
-    (* Create it as a text file for bytecode scripts *)
+    (* Create output as a text file for bytecode scripts *)
     let c = open_out_gen [Open_wronly; Open_creat] 0o777 output_name in
     close_out c
   end;
@@ -64,20 +54,21 @@ let main () =
                  output_name in
   (* Copy the file up to the symbol section as is *)
   seek_in ic 0;
-  copy_file_chunk ic oc (pos_trailer - symbol_size - debug_size);
-  (* Read, expunge and rewrite the symbol section *)
-  let global_map = (input_value ic : Symtable.global_map) in
-  let pos1 = pos_out oc in
-  output_value oc (expunge_map global_map);
-  let pos2 = pos_out oc in
-  (* Rewrite the trailer *)
-  output_binary_int oc path_size;
-  output_binary_int oc code_size;
-  output_binary_int oc prim_size;
-  output_binary_int oc data_size;
-  output_binary_int oc (pos2 - pos1);
-  output_binary_int oc 0;
-  output_string oc Config.exec_magic_number;
+  copy_file_chunk ic oc pos_first_section;
+  (* Copy each section, modifying the symbol section in passing *)
+  Bytesections.init_record oc;
+  List.iter
+    (fun (name, len) ->
+      if name = "SYMB" then begin
+        let global_map = (input_value ic : Symtable.global_map) in
+        output_value oc (expunge_map global_map)
+      end else begin
+        copy_file_chunk ic oc len
+      end;
+      Bytesections.record oc name)
+    toc;
+  (* Rewrite the toc and trailer *)
+  Bytesections.write_toc_and_trailer oc;
   (* Done *)
   close_in ic;
   close_out oc

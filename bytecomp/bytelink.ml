@@ -241,43 +241,40 @@ let link_bytecode objfiles exec_name copy_header =
         close_in inchan
       with Not_found | Sys_error _ -> ()
     end;
+    Bytesections.init_record outchan;
     (* The path to the bytecode interpreter (in use_runtime mode) *)
-    let pos0 = pos_out outchan in
     if String.length !Clflags.use_runtime > 0 then begin
       output_string outchan (make_absolute !Clflags.use_runtime);
-      output_char outchan '\n'
+      output_char outchan '\n';
+      Bytesections.record outchan "RNTM"
     end;
     (* The bytecode *)
-    let pos1 = pos_out outchan in
+    let start_code = pos_out outchan in
     Symtable.init();
     Hashtbl.clear crc_interfaces;
     let output_fun = output_string outchan
-    and currpos_fun () = pos_out outchan - pos1 in
+    and currpos_fun () = pos_out outchan - start_code in
     List.iter (link_file output_fun currpos_fun) tolink;
     (* The final STOP instruction *)
     output_byte outchan Opcodes.opSTOP;
     output_byte outchan 0; output_byte outchan 0; output_byte outchan 0;
+    Bytesections.record outchan "CODE";
     (* The names of all primitives *)
-    let pos2 = pos_out outchan in
     Symtable.output_primitive_names outchan;
+    Bytesections.record outchan "PRIM";
     (* The table of global data *)
-    let pos3 = pos_out outchan in
     output_value outchan (Symtable.initial_global_table());
+    Bytesections.record outchan "DATA";
     (* The map of global identifiers *)
-    let pos4 = pos_out outchan in
     Symtable.output_global_map outchan;
+    Bytesections.record outchan "SYMB";
     (* Debug info *)
-    let pos5 = pos_out outchan in
-    if !Clflags.debug then output_debug_info outchan;
-    (* The trailer *)
-    let pos6 = pos_out outchan in
-    output_binary_int outchan (pos1 - pos0);
-    output_binary_int outchan (pos2 - pos1);
-    output_binary_int outchan (pos3 - pos2);
-    output_binary_int outchan (pos4 - pos3);
-    output_binary_int outchan (pos5 - pos4);
-    output_binary_int outchan (pos6 - pos5);
-    output_string outchan exec_magic_number;
+    if !Clflags.debug then begin
+      output_debug_info outchan;
+      Bytesections.record outchan "DBUG"
+    end;
+    (* The table of contents and the trailer *)
+    Bytesections.write_toc_and_trailer outchan;
     close_out outchan
   with x ->
     close_out outchan;

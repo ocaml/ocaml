@@ -268,8 +268,8 @@ bytecomp/translcore.cmi: parsing/asttypes.cmi typing/ident.cmi \
     typing/primitive.cmi typing/typedtree.cmi typing/types.cmi 
 bytecomp/translmod.cmi: bytecomp/lambda.cmi typing/typedtree.cmi 
 bytecomp/translobj.cmi: typing/ident.cmi bytecomp/lambda.cmi 
-bytecomp/typeopt.cmi: bytecomp/lambda.cmi typing/typedtree.cmi \
-    typing/types.cmi 
+bytecomp/typeopt.cmi: bytecomp/lambda.cmi typing/path.cmi \
+    typing/typedtree.cmi 
 bytecomp/bytegen.cmo: parsing/asttypes.cmi typing/ident.cmi \
     bytecomp/instruct.cmi bytecomp/lambda.cmi utils/misc.cmi \
     typing/primitive.cmi typing/types.cmi bytecomp/bytegen.cmi 
@@ -282,14 +282,16 @@ bytecomp/bytelibrarian.cmo: utils/clflags.cmo utils/config.cmi \
 bytecomp/bytelibrarian.cmx: utils/clflags.cmx utils/config.cmx \
     bytecomp/emitcode.cmx utils/formatmsg.cmx utils/misc.cmx \
     bytecomp/bytelibrarian.cmi 
-bytecomp/bytelink.cmo: utils/ccomp.cmi utils/clflags.cmo utils/config.cmi \
-    bytecomp/emitcode.cmi utils/formatmsg.cmi typing/ident.cmi \
-    bytecomp/instruct.cmi utils/misc.cmi bytecomp/opcodes.cmo \
-    bytecomp/symtable.cmi bytecomp/bytelink.cmi 
-bytecomp/bytelink.cmx: utils/ccomp.cmx utils/clflags.cmx utils/config.cmx \
-    bytecomp/emitcode.cmx utils/formatmsg.cmx typing/ident.cmx \
-    bytecomp/instruct.cmx utils/misc.cmx bytecomp/opcodes.cmx \
-    bytecomp/symtable.cmx bytecomp/bytelink.cmi 
+bytecomp/bytelink.cmo: bytecomp/bytesections.cmi utils/ccomp.cmi \
+    utils/clflags.cmo utils/config.cmi bytecomp/emitcode.cmi \
+    utils/formatmsg.cmi typing/ident.cmi bytecomp/instruct.cmi utils/misc.cmi \
+    bytecomp/opcodes.cmo bytecomp/symtable.cmi bytecomp/bytelink.cmi 
+bytecomp/bytelink.cmx: bytecomp/bytesections.cmx utils/ccomp.cmx \
+    utils/clflags.cmx utils/config.cmx bytecomp/emitcode.cmx \
+    utils/formatmsg.cmx typing/ident.cmx bytecomp/instruct.cmx utils/misc.cmx \
+    bytecomp/opcodes.cmx bytecomp/symtable.cmx bytecomp/bytelink.cmi 
+bytecomp/bytesections.cmo: utils/config.cmi bytecomp/bytesections.cmi 
+bytecomp/bytesections.cmx: utils/config.cmx bytecomp/bytesections.cmi 
 bytecomp/emitcode.cmo: parsing/asttypes.cmi typing/btype.cmi \
     utils/clflags.cmo utils/config.cmi typing/env.cmi typing/ident.cmi \
     bytecomp/instruct.cmi bytecomp/lambda.cmi bytecomp/meta.cmi \
@@ -340,13 +342,13 @@ bytecomp/simplif.cmo: parsing/asttypes.cmi utils/clflags.cmo typing/ident.cmi \
     bytecomp/lambda.cmi bytecomp/simplif.cmi 
 bytecomp/simplif.cmx: parsing/asttypes.cmi utils/clflags.cmx typing/ident.cmx \
     bytecomp/lambda.cmx bytecomp/simplif.cmi 
-bytecomp/symtable.cmo: parsing/asttypes.cmi utils/clflags.cmo \
-    utils/config.cmi bytecomp/emitcode.cmi utils/formatmsg.cmi \
+bytecomp/symtable.cmo: parsing/asttypes.cmi bytecomp/bytesections.cmi \
+    utils/clflags.cmo bytecomp/emitcode.cmi utils/formatmsg.cmi \
     typing/ident.cmi bytecomp/lambda.cmi bytecomp/meta.cmi utils/misc.cmi \
     typing/predef.cmi bytecomp/runtimedef.cmi utils/tbl.cmi \
     bytecomp/symtable.cmi 
-bytecomp/symtable.cmx: parsing/asttypes.cmi utils/clflags.cmx \
-    utils/config.cmx bytecomp/emitcode.cmx utils/formatmsg.cmx \
+bytecomp/symtable.cmx: parsing/asttypes.cmi bytecomp/bytesections.cmx \
+    utils/clflags.cmx bytecomp/emitcode.cmx utils/formatmsg.cmx \
     typing/ident.cmx bytecomp/lambda.cmx bytecomp/meta.cmx utils/misc.cmx \
     typing/predef.cmx bytecomp/runtimedef.cmx utils/tbl.cmx \
     bytecomp/symtable.cmi 
@@ -387,13 +389,13 @@ bytecomp/translobj.cmx: parsing/asttypes.cmi typing/env.cmx typing/ident.cmx \
     bytecomp/lambda.cmx parsing/longident.cmx utils/misc.cmx \
     bytecomp/translobj.cmi 
 bytecomp/typeopt.cmo: parsing/asttypes.cmi typing/ctype.cmi typing/env.cmi \
-    bytecomp/lambda.cmi utils/misc.cmi typing/path.cmi typing/predef.cmi \
-    typing/primitive.cmi typing/typedtree.cmi typing/types.cmi \
-    bytecomp/typeopt.cmi 
+    typing/ident.cmi bytecomp/lambda.cmi utils/misc.cmi typing/path.cmi \
+    typing/predef.cmi typing/primitive.cmi typing/typedtree.cmi \
+    typing/types.cmi bytecomp/typeopt.cmi 
 bytecomp/typeopt.cmx: parsing/asttypes.cmi typing/ctype.cmx typing/env.cmx \
-    bytecomp/lambda.cmx utils/misc.cmx typing/path.cmx typing/predef.cmx \
-    typing/primitive.cmx typing/typedtree.cmx typing/types.cmx \
-    bytecomp/typeopt.cmi 
+    typing/ident.cmx bytecomp/lambda.cmx utils/misc.cmx typing/path.cmx \
+    typing/predef.cmx typing/primitive.cmx typing/typedtree.cmx \
+    typing/types.cmx bytecomp/typeopt.cmi 
 asmcomp/asmgen.cmi: asmcomp/cmm.cmi bytecomp/lambda.cmi 
 asmcomp/clambda.cmi: parsing/asttypes.cmi typing/ident.cmi \
     bytecomp/lambda.cmi 
@@ -422,8 +424,8 @@ asmcomp/selectgen.cmi: asmcomp/arch.cmo asmcomp/cmm.cmi typing/ident.cmi \
 asmcomp/selection.cmi: asmcomp/cmm.cmi asmcomp/mach.cmi 
 asmcomp/spill.cmi: asmcomp/mach.cmi 
 asmcomp/split.cmi: asmcomp/mach.cmi 
-asmcomp/arch.cmo: utils/formatmsg.cmi 
-asmcomp/arch.cmx: utils/formatmsg.cmx 
+asmcomp/arch.cmo: utils/config.cmi utils/formatmsg.cmi utils/misc.cmi 
+asmcomp/arch.cmx: utils/config.cmx utils/formatmsg.cmx utils/misc.cmx 
 asmcomp/asmgen.cmo: utils/clflags.cmo asmcomp/closure.cmi asmcomp/cmm.cmi \
     asmcomp/cmmgen.cmi asmcomp/coloring.cmi asmcomp/comballoc.cmi \
     utils/config.cmi asmcomp/emit.cmi asmcomp/emitaux.cmi utils/formatmsg.cmi \
@@ -500,14 +502,14 @@ asmcomp/compilenv.cmo: asmcomp/clambda.cmi utils/config.cmi typing/env.cmi \
     utils/formatmsg.cmi typing/ident.cmi utils/misc.cmi asmcomp/compilenv.cmi 
 asmcomp/compilenv.cmx: asmcomp/clambda.cmx utils/config.cmx typing/env.cmx \
     utils/formatmsg.cmx typing/ident.cmx utils/misc.cmx asmcomp/compilenv.cmi 
-asmcomp/emit.cmo: asmcomp/arch.cmo utils/clflags.cmo asmcomp/cmm.cmi \
-    asmcomp/compilenv.cmi utils/config.cmi asmcomp/emitaux.cmi \
-    asmcomp/linearize.cmi asmcomp/mach.cmi utils/misc.cmi asmcomp/proc.cmi \
-    asmcomp/reg.cmi asmcomp/emit.cmi 
-asmcomp/emit.cmx: asmcomp/arch.cmx utils/clflags.cmx asmcomp/cmm.cmx \
-    asmcomp/compilenv.cmx utils/config.cmx asmcomp/emitaux.cmx \
-    asmcomp/linearize.cmx asmcomp/mach.cmx utils/misc.cmx asmcomp/proc.cmx \
-    asmcomp/reg.cmx asmcomp/emit.cmi 
+asmcomp/emit.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/compilenv.cmi \
+    utils/config.cmi asmcomp/emitaux.cmi asmcomp/linearize.cmi \
+    asmcomp/mach.cmi utils/misc.cmi asmcomp/proc.cmi asmcomp/reg.cmi \
+    asmcomp/emit.cmi 
+asmcomp/emit.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/compilenv.cmx \
+    utils/config.cmx asmcomp/emitaux.cmx asmcomp/linearize.cmx \
+    asmcomp/mach.cmx utils/misc.cmx asmcomp/proc.cmx asmcomp/reg.cmx \
+    asmcomp/emit.cmi 
 asmcomp/emitaux.cmo: asmcomp/emitaux.cmi 
 asmcomp/emitaux.cmx: asmcomp/emitaux.cmi 
 asmcomp/interf.cmo: asmcomp/mach.cmi utils/misc.cmi asmcomp/proc.cmi \
@@ -543,17 +545,15 @@ asmcomp/printmach.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx utils/formatmsg.cmx \
     asmcomp/mach.cmx asmcomp/printcmm.cmx asmcomp/proc.cmx asmcomp/reg.cmx \
     asmcomp/printmach.cmi 
 asmcomp/proc.cmo: asmcomp/arch.cmo utils/ccomp.cmi asmcomp/cmm.cmi \
-    utils/formatmsg.cmi asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi \
+    utils/config.cmi asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi \
     asmcomp/proc.cmi 
 asmcomp/proc.cmx: asmcomp/arch.cmx utils/ccomp.cmx asmcomp/cmm.cmx \
-    utils/formatmsg.cmx asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx \
+    utils/config.cmx asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx \
     asmcomp/proc.cmi 
 asmcomp/reg.cmo: asmcomp/cmm.cmi asmcomp/reg.cmi 
 asmcomp/reg.cmx: asmcomp/cmm.cmx asmcomp/reg.cmi 
-asmcomp/reload.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
-    asmcomp/reg.cmi asmcomp/reloadgen.cmi asmcomp/reload.cmi 
-asmcomp/reload.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
-    asmcomp/reg.cmx asmcomp/reloadgen.cmx asmcomp/reload.cmi 
+asmcomp/reload.cmo: asmcomp/reloadgen.cmi asmcomp/reload.cmi 
+asmcomp/reload.cmx: asmcomp/reloadgen.cmx asmcomp/reload.cmi 
 asmcomp/reloadgen.cmo: asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi \
     asmcomp/reloadgen.cmi 
 asmcomp/reloadgen.cmx: asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx \
@@ -562,8 +562,10 @@ asmcomp/schedgen.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/linearize.cmi \
     asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi asmcomp/schedgen.cmi 
 asmcomp/schedgen.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/linearize.cmx \
     asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx asmcomp/schedgen.cmi 
-asmcomp/scheduling.cmo: asmcomp/schedgen.cmi asmcomp/scheduling.cmi 
-asmcomp/scheduling.cmx: asmcomp/schedgen.cmx asmcomp/scheduling.cmi 
+asmcomp/scheduling.cmo: asmcomp/arch.cmo asmcomp/mach.cmi \
+    asmcomp/schedgen.cmi asmcomp/scheduling.cmi 
+asmcomp/scheduling.cmx: asmcomp/arch.cmx asmcomp/mach.cmx \
+    asmcomp/schedgen.cmx asmcomp/scheduling.cmi 
 asmcomp/selectgen.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi typing/ident.cmi \
     asmcomp/mach.cmi utils/misc.cmi asmcomp/proc.cmi asmcomp/reg.cmi \
     utils/tbl.cmi asmcomp/selectgen.cmi 
@@ -571,10 +573,10 @@ asmcomp/selectgen.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx typing/ident.cmx \
     asmcomp/mach.cmx utils/misc.cmx asmcomp/proc.cmx asmcomp/reg.cmx \
     utils/tbl.cmx asmcomp/selectgen.cmi 
 asmcomp/selection.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
-    utils/misc.cmi asmcomp/proc.cmi asmcomp/reg.cmi asmcomp/selectgen.cmi \
+    utils/misc.cmi asmcomp/reg.cmi asmcomp/selectgen.cmi \
     asmcomp/selection.cmi 
 asmcomp/selection.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
-    utils/misc.cmx asmcomp/proc.cmx asmcomp/reg.cmx asmcomp/selectgen.cmx \
+    utils/misc.cmx asmcomp/reg.cmx asmcomp/selectgen.cmx \
     asmcomp/selection.cmi 
 asmcomp/spill.cmo: asmcomp/mach.cmi asmcomp/proc.cmi asmcomp/reg.cmi \
     asmcomp/spill.cmi 
@@ -657,10 +659,10 @@ toplevel/toploop.cmi: typing/env.cmi parsing/location.cmi \
     parsing/longident.cmi parsing/parsetree.cmi utils/warnings.cmi 
 toplevel/trace.cmi: typing/env.cmi parsing/longident.cmi typing/path.cmi \
     typing/types.cmi 
-toplevel/expunge.cmo: utils/config.cmi typing/ident.cmi utils/misc.cmi \
-    bytecomp/runtimedef.cmi bytecomp/symtable.cmi 
-toplevel/expunge.cmx: utils/config.cmx typing/ident.cmx utils/misc.cmx \
-    bytecomp/runtimedef.cmx bytecomp/symtable.cmx 
+toplevel/expunge.cmo: bytecomp/bytesections.cmi typing/ident.cmi \
+    utils/misc.cmi bytecomp/runtimedef.cmi bytecomp/symtable.cmi 
+toplevel/expunge.cmx: bytecomp/bytesections.cmx typing/ident.cmx \
+    utils/misc.cmx bytecomp/runtimedef.cmx bytecomp/symtable.cmx 
 toplevel/genprintval.cmo: typing/btype.cmi typing/ctype.cmi \
     typing/datarepr.cmi typing/env.cmi utils/formatmsg.cmi typing/ident.cmi \
     parsing/longident.cmi utils/misc.cmi typing/path.cmi typing/predef.cmi \

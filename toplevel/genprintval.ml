@@ -98,7 +98,19 @@ module Make(O : OBJ) = struct
       Pident(Ident.create "print_string"), Predef.type_string,
         (fun x -> print_string "\"";
                   print_string (String.escaped (O.obj x : string));
-                  print_string "\"")
+                  print_string "\"");
+      Pident(Ident.create "print_int32"), Predef.type_int32,
+        (fun x -> print_string "<int32 ";
+                  print_string (Int32.to_string (O.obj x : int32));
+                  print_string ">");
+      Pident(Ident.create "print_nativeint"), Predef.type_nativeint,
+        (fun x -> print_string "<nativeint ";
+                  print_string (Nativeint.to_string (O.obj x : nativeint));
+                  print_string ">");
+      Pident(Ident.create "print_int64"), Predef.type_int64,
+        (fun x -> print_string "<int64 ";
+                  print_string (Int64.to_string (O.obj x : int64));
+                  print_string ">")
     ] : (Path.t * type_expr * (O.t -> unit)) list)
 
     let install_printer path ty fn =

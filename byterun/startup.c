@@ -62,36 +62,31 @@ static void init_atoms(void)
 
 /* Read the trailer of a bytecode file */
 
-static unsigned long read_size(char * ptr)
-{
-  unsigned char * p = (unsigned char *) ptr;
-  return ((unsigned long) p[0] << 24) + ((unsigned long) p[1] << 16) +
-         ((unsigned long) p[2] << 8) + p[3];
-}
-
 #define FILE_NOT_FOUND (-1)
 #define TRUNCATED_FILE (-2)
 #define BAD_MAGIC_NUM (-3)
 
+static void fixup_endianness_trailer(uint32 * p)
+{
+#ifndef ARCH_BIG_ENDIAN
+  Reverse_32(p, p);
+#endif
+}
+
 static int read_trailer(int fd, struct exec_trailer *trail)
 {
-  char buffer[TRAILER_SIZE];
-
   lseek(fd, (long) -TRAILER_SIZE, SEEK_END);
-  if (read(fd, buffer, TRAILER_SIZE) < TRAILER_SIZE) return TRUNCATED_FILE;
-  trail->path_size = read_size(buffer);
-  trail->code_size = read_size(buffer + 4);
-  trail->prim_size = read_size(buffer + 8);
-  trail->data_size = read_size(buffer + 12);
-  trail->symbol_size = read_size(buffer + 16);
-  trail->debug_size = read_size(buffer + 20);
-  if (strncmp(buffer + 24, EXEC_MAGIC, 12) == 0)
+  if (read(fd, (char *) trail, TRAILER_SIZE) < TRAILER_SIZE)
+    return TRUNCATED_FILE;
+  fixup_endianness_trailer(&trail->num_sections);
+  if (strncmp(trail->magic, EXEC_MAGIC, 12) == 0)
     return 0;
   else
     return BAD_MAGIC_NUM;
 }
 
-static int attempt_open(char **name, struct exec_trailer *trail, int do_open_script)
+static int attempt_open(char **name, struct exec_trailer *trail,
+                        int do_open_script)
 {
   char * truename;
   int fd;
@@ -112,6 +107,42 @@ static int attempt_open(char **name, struct exec_trailer *trail, int do_open_scr
   return fd;
 }
 
+/* Read the section descriptors */
+
+static void read_section_descriptors(int fd, struct exec_trailer *trail)
+{
+  int toc_size, i;
+
+  toc_size = trail->num_sections * 8;
+  trail->section = stat_alloc(toc_size);
+  lseek(fd, - (long) (TRAILER_SIZE + toc_size), SEEK_END);
+  if (read(fd, (char *) trail->section, toc_size) != toc_size)
+    fatal_error("Fatal error: cannot read section table\n");
+  /* Fixup endianness of lengths */
+  for (i = 0; i < trail->num_sections; i++)
+    fixup_endianness_trailer(&(trail->section[i].len));
+}
+
+/* Position fd at the beginning of the section having the given name.
+   Return the length of the section data in bytes. */
+
+static int32 seek_section(int fd, struct exec_trailer *trail, char *name)
+{
+  long ofs;
+  int i;
+
+  ofs = TRAILER_SIZE + trail->num_sections * 8;
+  for (i = trail->num_sections - 1; i >= 0; i--) {
+    ofs += trail->section[i].len;
+    if (strncmp(trail->section[i].name, name, 4) == 0) {
+      lseek(fd, -ofs, SEEK_END);
+      return trail->section[i].len;
+    }
+  }
+  fatal_error_arg("Fatal_error: section `%s' is missing\n", name);
+  return 0; /* not reached */
+}
+
 /* Check the primitives used by the bytecode file against the table of
    primitives linked in this interpreter */
 
@@ -129,7 +160,9 @@ static void check_primitives(int fd, int prim_size)
        p = p + strlen(p) + 1, idx++) {
     if (names_of_cprim[idx] == NULL ||
         strcmp(p, names_of_cprim[idx]) != 0)
-      fatal_error_arg("Fatal error: this bytecode file cannot run on this bytecode interpreter\nMismatch on primitive `%s'\n", p);
+      fatal_error_arg("Fatal error: this bytecode file cannot run"
+                      "on this bytecode interpreter\n"
+                      "Mismatch on primitive `%s'\n", p);
   }
   stat_free(prims);
 }
@@ -249,9 +282,9 @@ extern DWORD WINAPI caml_signal_thread(LPVOID lpParam);
 
 void caml_main(char **argv)
 {
-  int fd;
+  int fd, pos;
   struct exec_trailer trail;
-  int pos;
+  asize_t prog_size;
   struct channel * chan;
   value res;
 
@@ -284,6 +317,8 @@ void caml_main(char **argv)
       break;
     }
   }
+  /* Read the table of contents (section descriptors) */
+  read_section_descriptors(fd, &trail);
   /* Initialize the abstract machine */
   init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
            percent_free_init, max_percent_free_init, verbose_init);
@@ -294,23 +329,23 @@ void caml_main(char **argv)
   /* Initialize the debugger, if needed */
   debugger_init();
   /* Load the code */
-  lseek(fd, - (long) (TRAILER_SIZE + trail.code_size + trail.prim_size
-                      + trail.data_size + trail.symbol_size
-                      + trail.debug_size), SEEK_END);
-  load_code(fd, trail.code_size);
+  code_size = seek_section(fd, &trail, "CODE");
+  load_code(fd, code_size);
   /* Check the primitives */
-  check_primitives(fd, trail.prim_size);
+  check_primitives(fd, seek_section(fd, &trail, "PRIM"));
   /* Load the globals */
+  seek_section(fd, &trail, "DATA");
   chan = open_descriptor(fd);
   global_data = input_val(chan);
-  close_channel(chan);
+  close_channel(chan); /* this also closes fd */
+  stat_free(trail.section);
   /* Ensure that the globals are in the major heap. */
   oldify(global_data, &global_data);
   /* Initialize system libraries */
   init_exceptions();
   sys_init(argv + pos);
 #ifdef _WIN32
-  /* Startup a thread for signals */
+  /* Start a thread to handle signals */
   if (getenv("CAMLSIGPIPE")) {
     int lpThreadId;
     CreateThread(NULL, 0, caml_signal_thread, NULL, 0, &lpThreadId);
@@ -318,7 +353,7 @@ void caml_main(char **argv)
 #endif
   /* Execute the program */
   debugger(PROGRAM_START);
-  res = interprete(start_code, trail.code_size);
+  res = interprete(start_code, code_size);
   if (Is_exception_result(res)) {
     exn_bucket = Extract_exception(res);
     extern_sp = &exn_bucket; /* The debugger needs the exception value. */
