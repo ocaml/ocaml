@@ -438,7 +438,7 @@ caml_array_bound_error:
         .set    reorder
 #endif
         la      $24, array_bound_error
-        b       caml_c_call             /* never returns */
+        jal     caml_c_call             /* never returns */
         .end    caml_array_bound_error
 
         .rdata
