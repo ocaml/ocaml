@@ -91,12 +91,14 @@ L103:   popl    %eax
         jmp     L105
 
 G(caml_call_gc):
-    /* Adjust return address */
+    /* Adjust return address and recover desired size in %eax */
         popl    %eax
         addl    $2, %eax
+        pushl   %eax
+        movzwl  -2(%eax), %eax
 L105:
     /* Record lowest stack address and return address */
-        movl    %eax, G(caml_last_return_address)
+        popl    G(caml_last_return_address)
         movl    %esp, G(caml_bottom_of_stack)
     /* Save all regs used by the code generator */
         movl    %ebx, G(gc_entry_regs) + 4
@@ -105,6 +107,8 @@ L105:
         movl    %esi, G(gc_entry_regs) + 16
         movl    %edi, G(gc_entry_regs) + 20
         movl    %ebp, G(gc_entry_regs) + 24
+    /* Save desired size */
+        pushl   %eax
     /* Call the garbage collector */
         call    G(minor_collection)
     /* Restore all regs used by the code generator */
@@ -115,8 +119,7 @@ L105:
         movl    G(gc_entry_regs) + 20, %edi
         movl    G(gc_entry_regs) + 24, %ebp
     /* Recover desired size */
-        movl    G(caml_last_return_address), %eax
-	movzwl	-2(%eax), %eax
+        popl    %eax
     /* Decrement young_ptr by desired size */
         subl    %eax, G(young_ptr)
     /* Reload result of allocation in %eax */
