@@ -44,6 +44,7 @@ module Options = Main_args.Make_options (struct
   let _impl s = option_with_arg "-impl" s
   let _intf s = option_with_arg "-intf" s
   let _intf_suffix s = option_with_arg "-intf-suffix" s
+  let _labelize = option "-labelize"
   let _linkall = option "-linkall"
   let _make_runtime = option "-make-runtime"
   let _noassert = option "-noassert"

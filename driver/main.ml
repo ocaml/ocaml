@@ -65,6 +65,7 @@ module Options = Main_args.Make_options (struct
   let _impl = process_implementation_file
   let _intf = process_interface_file
   let _intf_suffix s = Config.interface_suffix := s
+  let _labelize = set labelize
   let _linkall = set link_everything
   let _make_runtime () =
     custom_runtime := true; make_runtime := true; link_everything := true

@@ -80,6 +80,8 @@ let main () =
              "<file>  Suffix for interface file (default: .mli)";
        "-intf_suffix", Arg.String (fun s -> Config.interface_suffix := s),
              "<file>  same as -intf-suffix";
+       "-labelize", Arg.Set labelize,
+    	    " Compile an implementation again a labelized interface";
        "-linkall", Arg.Set link_everything,
              " Link all modules, even unused ones";
        "-noassert", Arg.Set noassert, " Don't compile assertion checks";

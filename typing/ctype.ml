@@ -1467,7 +1467,8 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
                                           else t1'.level =  generic_level ->
               moregen_occur env t1'.level t2;
               t1'.desc <- Tlink t2
-          | (Tarrow (l1, t1, u1), Tarrow (l2, t2, u2)) when l1 = l2 ->
+          | (Tarrow (l1, t1, u1), Tarrow (l2, t2, u2))
+	    when !Clflags.labelize || l1 = l2 ->
               moregen inst_nongen type_pairs env t1 t2;
               moregen inst_nongen type_pairs env u1 u2
           | (Ttuple tl1, Ttuple tl2) ->
