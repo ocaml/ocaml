@@ -409,8 +409,9 @@ let closed_class params sign =
     (fun (lab, _, ty) -> if lab = "*dummy method*" then mark_type ty)
     fields;
   try
+(*
     List.iter
-      (fun (lab, _, ty) ->
+      (fun (lab, kind, ty) ->
         try closed_type ty with Non_closed ty0 ->
           raise (Failure (CC_Method (ty0, lab, ty))))
       fields;
@@ -419,6 +420,13 @@ let closed_class params sign =
         try closed_type ty with Non_closed ty0 ->
           raise (Failure (CC_Value (ty0, lab, ty))))
       sign.cty_vars;
+*)
+    List.iter
+      (fun (lab, kind, ty) ->
+        if field_kind_repr kind = Fpresent then
+        try closed_type ty with Non_closed ty0 ->
+          raise (Failure (CC_Method (ty0, lab, ty))))
+      fields;
     mark_type sign.cty_self;
     List.iter unmark_type params;
     unmark_class_signature sign;
