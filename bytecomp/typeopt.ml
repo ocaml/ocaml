@@ -59,7 +59,10 @@ let array_element_kind env ty =
       else if Path.same p Predef.path_float then
         Pfloatarray
       else if Path.same p Predef.path_string
-           || Path.same p Predef.path_array then
+           || Path.same p Predef.path_array 
+           || Path.same p Predef.path_nativeint
+           || Path.same p Predef.path_int32
+           || Path.same p Predef.path_int64 then
         Paddrarray
       else begin
         try
