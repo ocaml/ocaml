@@ -177,8 +177,8 @@ val finalise : ('a -> unit) -> 'a -> unit;;
      the exception will interrupt whatever the program was doing when
      the function was called.
      
-     [Gc.finalise] will raise [Invalid_argument "Gc.finalise"] if [v]
-     is not heap-allocated.  Some examples of values that are not
+     [Gc.finalise] will raise [Invalid_argument] if [v] is not
+     heap-allocated.  Some examples of values that are not
      heap-allocated are integers, constant constructors, booleans,
      the empty array, the empty list, the unit value.  The exact list
      of what is heap-allocated or not is implementation-dependent.
