@@ -362,10 +362,12 @@ external sys_exit : int -> 'a = "sys_exit"
 
 let exit_function = ref (fun () -> flush stdout; flush stderr)
 
-let exit retcode =
-  (!exit_function)();
-  sys_exit retcode
-
 let at_exit f =
   let g = !exit_function in
   exit_function := (fun () -> f(); g())
+
+let do_at_exit () = (!exit_function) ()
+
+let exit retcode =
+  do_at_exit ();
+  sys_exit retcode
