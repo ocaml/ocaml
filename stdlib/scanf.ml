@@ -252,10 +252,14 @@ let scanf_bad_input ib = function
       bad_input (Printf.sprintf "scanf: bad input at char number %i: %s" i s)
   | x -> raise x;;
 
-let bad_format fmt i fc =
+let incomplete_format fmt =
+  invalid_arg
+   (Printf.sprintf "scanf: premature end of format string ``%s''" fmt);;
+
+let bad_conversion fmt i c =
   invalid_arg
     (Printf.sprintf
-       "scanf: bad conversion %%%c, at char number %i in format %S" fc i fmt);;
+       "scanf: bad conversion %%%c, at char number %i in format %S" c i fmt);;
 
 let bad_float () = bad_input "no dot or exponent part found in float token";;
 
@@ -612,18 +616,18 @@ let read_char_set fmt i =
   let lim = String.length fmt - 1 in
 
   let rec find_in_set j =
-    if j > lim then bad_format fmt j fmt.[lim - 1] else
+    if j > lim then incomplete_format fmt else
     match fmt.[j] with
     | ']' -> j
     | c -> find_in_set (j + 1)
 
   and find_set i =
-    if i > lim then bad_format fmt i fmt.[lim - 1] else
+    if i > lim then incomplete_format fmt else
     match fmt.[i] with
     | ']' -> find_in_set (i + 1)
     | c -> find_in_set i in
 
-  if i > lim then bad_format fmt i fmt.[lim - 1] else
+  if i > lim then incomplete_format fmt else
   match fmt.[i] with
   | '^' ->
      let i = i + 1 in
@@ -860,11 +864,11 @@ let kscanf ib ef fmt f =
     match fmt.[i] with
     | ' ' -> skip_whites ib; scan_fmt f (i + 1)
     | '%' ->
-        if i > lim then bad_format fmt i '%' else
+        if i > lim then incomplete_format fmt else
         scan_conversion false max_int f (i + 1)
-    | '@' as t ->
+    | '@' ->
         let i = i + 1 in
-        if i > lim then bad_format fmt (i - 1) t else begin
+        if i > lim then incomplete_format fmt else begin
         check_char ib fmt.[i];
         scan_fmt f (i + 1) end
     | c -> check_char ib c; scan_fmt f (i + 1)
@@ -878,7 +882,7 @@ let kscanf ib ef fmt f =
         let c = Scanning.checked_peek_char ib in
         scan_fmt (stack f c) (i + 1)
     | 'c' | 'C' as conv ->
-        if max <> 1 && max <> max_int then bad_format fmt i conv else
+        if max <> 1 && max <> max_int then bad_conversion fmt i conv else
         let _x =
           if conv = 'c' then scan_char max ib else scan_Char max ib in
         scan_fmt (stack f (token_char ib)) (i + 1)
@@ -923,7 +927,7 @@ let kscanf ib ef fmt f =
         if Scanning.end_of_input ib then scan_fmt f (i + 1)
         else bad_input "end of input not found"
     | '_' ->
-        if i > lim then bad_format fmt i fmt.[lim - 1] else
+        if i > lim then incomplete_format fmt else
         scan_conversion true max f (i + 1)
     | '0' .. '9' as conv ->
         let rec read_width accu i =
@@ -934,7 +938,7 @@ let kscanf ib ef fmt f =
              read_width accu (i + 1)
           | _ -> accu, i in
         let max, i = read_width (int_value_of_char conv) (i + 1) in
-        if i > lim then bad_format fmt i fmt.[lim - 1] else begin
+        if i > lim then incomplete_format fmt else begin
         match fmt.[i] with
         | '.' ->
           let p, i = read_width 0 (i + 1) in
@@ -942,22 +946,23 @@ let kscanf ib ef fmt f =
         | _ -> scan_conversion skip max f i end
     | '(' | '{' as conv ->
         let i = succ i in
-        let j = Printf.sub_format conv fmt i + 1 in
+        let j =
+          Printf.sub_format incomplete_format bad_conversion conv fmt i + 1 in
         let mf = String.sub fmt i (j - i - 2) in
         let _x = scan_String max ib in
         let rf = token_string ib in
-        if Printf.summarize_format mf <> Printf.summarize_format rf
-          then format_mismatch mf rf ib else 
+        if Printf.summarize_format_type mf <>
+           Printf.summarize_format_type rf then format_mismatch mf rf ib else 
         if conv = '{' then scan_fmt (stack f rf) j else
         let nf = scan_fmt (Obj.magic rf) 0 in
         scan_fmt (stack f nf) j
-    | c -> bad_format fmt i c
+    | c -> bad_conversion fmt i c
 
   and scan_fmt_stoppers i =
     if i > lim then i - 1, [] else
     match fmt.[i] with
     | '@' when i < lim -> let i = i + 1 in i, [fmt.[i]]
-    | '@' as c when i = lim -> bad_format fmt i c
+    | '@' when i = lim -> incomplete_format fmt
     | _ -> i - 1, [] in
 
   Scanning.reset_token ib;
