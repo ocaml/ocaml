@@ -56,11 +56,13 @@ struct
                         "<dir>  Add <dir> to the list of include directories";
      "-impl", Arg.String F._impl, "<file>  Compile <file> as a .ml file";
      "-intf", Arg.String F._intf, "<file>  Compile <file> as a .mli file";
-     "-intf_suffix", Arg.String F._intf_suffix,
+     "-intf-suffix", Arg.String F._intf_suffix,
             "<file>  Suffix for interface file (default: .mli)";
+     "-intf_suffix", Arg.String F._intf_suffix, "<file>  same as -intf-suffix";
      "-linkall", Arg.Unit F._linkall, " Link all modules, even unused ones";
-     "-make_runtime", Arg.Unit F._make_runtime,
+     "-make-runtime", Arg.Unit F._make_runtime,
             " Build a runtime system with given C objects and libraries";
+     "-make_runtime", Arg.Unit F._make_runtime, " same as -make-runtime";
      "-noassert", Arg.Unit F._noassert, " Do not compile assertion checks";
      "-o", Arg.String F._o, "<file>  Set output file name to <file>";
      "-output-obj", Arg.Unit F._output_obj,
@@ -70,8 +72,9 @@ struct
      "-thread", Arg.Unit F._thread, " Use thread-safe standard library";
      "-unsafe", Arg.Unit F._unsafe,
                              " No bounds checking on array and string access";
-     "-use_runtime", Arg.String F._use_runtime,
+     "-use-runtime", Arg.String F._use_runtime,
                    "<path>  Generate bytecode for the given runtime system";
+     "-use_runtime", Arg.String F._use_runtime, "<path>  same as -use-runtime";
      "-v", Arg.Unit F._v, " Print compiler version number";
      "-verbose", Arg.Unit F._verbose, " Print calls to external commands";
 
@@ -79,7 +82,7 @@ struct
      "-drawlambda", Arg.Unit F._drawlambda, " (undocumented)";
      "-dlambda", Arg.Unit F._dlambda, " (undocumented)";
      "-dinstr", Arg.Unit F._dinstr, " (undocumented)";
-     "-use_prims", Arg.String F._use_prims, " <file>  (undocumented)";
+     "-use-prims", Arg.String F._use_prims, "<file>  (undocumented)";
 
      "-", Arg.String F.anonymous,
            "<file>  Treat <file> as a file name (even if it starts with `-')";

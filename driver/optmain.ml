@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -72,8 +72,10 @@ let main () =
              "<n>  Set aggressiveness of inlining to <n>";
        "-intf", Arg.String process_interface_file,
              "<file>  Compile <file> as a .mli file";
-        "-intf_suffix", Arg.String (fun s -> Config.interface_suffix := s),
+       "-intf-suffix", Arg.String (fun s -> Config.interface_suffix := s),
              "<file>  Suffix for interface file (default: .mli)";
+       "-intf_suffix", Arg.String (fun s -> Config.interface_suffix := s),
+             "<file>  same as -intf-suffix";
        "-linkall", Arg.Set link_everything,
              " Link all modules, even unused ones";
        "-noassert", Arg.Set noassert, " Don't compile assertion checks";
