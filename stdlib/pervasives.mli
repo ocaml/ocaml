@@ -228,7 +228,7 @@ external (or) : bool -> bool -> bool = "%sequor"
 (** {2 Integer arithmetic} *)
 
 (** Integers are 31 bits wide (or 63 bits on 64-bit processors).
-   All operations are taken modulo $2^{31}$ (or $2^{63}$).
+   All operations are taken modulo 2{^31} (or 2{^63}).
    They do not fail on overflow. *)
 
 (** Unary negation. You can also write [-e] instead of [~-e]. *)
@@ -305,10 +305,9 @@ external (lsr) : int -> int -> int = "%lsrint"
 external (asr) : int -> int -> int = "%asrint"
     
 
-(** {2 Floating-point arithmetic} *)
+(** {2 Floating-point arithmetic}
 
-
-(** Caml's floating-point numbers follow the
+   Caml's floating-point numbers follow the
    IEEE 754 standard, using double precision (64 bits) numbers.
    Floating-point operations never raise an exception on overflow,
    underflow, division by zero, etc.  Instead, special IEEE numbers
@@ -317,7 +316,8 @@ external (asr) : int -> int -> int = "%asrint"
    for [0.0 /. 0.0].  These special numbers then propagate through
    floating-point computations as expected: for instance,
    [1.0 /. infinity] is [0.0], and any operation with [nan] as 
-   argument returns [nan] as result. *)
+   argument returns [nan] as result. 
+*)
 
 (** Unary negation. You can also write [-.e] instead of [~-.e]. *)
 external (~-.) : float -> float = "%negfloat"
@@ -435,15 +435,19 @@ type fpclass =
 external classify_float: float -> fpclass = "classify_float"
 
 
-(** {2 String operations} *)
-(** More string operations are provided in module {!String}. *)
+(** {2 String operations}
+
+   More string operations are provided in module {!String}.
+*)
 
 (** String concatenation. *)
 val (^) : string -> string -> string
 
 
-(** {2 Character operations} *)
-(** More character operations are provided in module {!Char}. *)
+(** {2 Character operations}
+
+   More character operations are provided in module {!Char}.
+*)
 
 (** Return the ASCII code of the argument. *)
 external int_of_char : char -> int = "%identity"
@@ -506,8 +510,10 @@ external fst : 'a * 'b -> 'a = "%field0"
 external snd : 'a * 'b -> 'b = "%field1"
 
 
-(** {2 List operations} *)
-(** More list operations are provided in module {!List}. *)
+(** {2 List operations}
+
+   More list operations are provided in module {!List}. 
+*)
 
 (** List concatenation. *)
 val (@) : 'a list -> 'a list -> 'a list
@@ -595,21 +601,18 @@ val read_float : unit -> float
 
 (** {3 General output functions} *)
 
-(** Opening modes for [open_out_gen] and [open_in_gen].
-   -          [Open_rdonly]: open for reading.
-   -          [Open_wronly]: open for writing.
-   -          [Open_append]: always write at end of file (needs [Open_wronly]).
-   -          [Open_append]: open for appending.
-   -          [Open_creat]: create the file if it does not exist.
-   -          [Open_trunc]: empty the file if it already exists.
-   -          [Open_excl]: fail if the file already exists.
-   -          [Open_binary]: open in binary mode (no conversion).
-   -          [Open_text]: open in text mode (may perform conversions).
-   -          [Open_nonblock]: open in non-blocking mode. *)
+
+(** Opening modes for {!Pervasives.open_out_gen} and {!Pervasives.open_in_gen}. *)
 type open_flag =
-    Open_rdonly | Open_wronly | Open_append
-  | Open_creat | Open_trunc | Open_excl
-  | Open_binary | Open_text | Open_nonblock
+    Open_rdonly      (** open for reading. *)
+  | Open_wronly      (** open for writing. *)
+  | Open_append      (** open for appending. always write at end of file (needs [Open_wronly]. *)
+  | Open_creat       (** create the file if it does not exist. *)
+  | Open_trunc       (** empty the file if it already exists. *)
+  | Open_excl        (** fail if the file already exists. *)
+  | Open_binary      (** open in binary mode (no conversion). *)
+  | Open_text        (** open in text mode (may perform conversions). *)
+  | Open_nonblock    (** open in non-blocking mode. *)
            
 (** Open the named file for writing, and return a new output channel
    on that file, positionned at the beginning of the file. The
