@@ -1028,75 +1028,66 @@ let moregeneral env inst_nongen pat_sch subj_sch =
                  (*********************************************)
 
 
-(* +++ A voir... *)
-
-(* Deux modes : avec ou sans substitution *)
-(* Egalite de deux listes de types :    *)
-(*   [Ctype.equal env rename tyl1 tyl2]  *)
+(* Two modes: with or without renaming of variables *)
 
 let equal env rename tyl1 tyl2 =
   let subst = ref [] in
   let type_pairs = ref [] in
 
   let rec eqtype t1 t2 =
+    if t1 == t2 then true else
     let t1 = repr t1 in
     let t2 = repr t2 in
-    List.exists (function (t1', t2') -> t1 == t1' & t2 == t2') !type_pairs
-          (* XXX Possibly slow... *)
-      ||
-    begin
-      type_pairs := (t1, t2) :: !type_pairs;
-      match (t1.desc, t2.desc) with
-        (Tvar, Tvar) ->
-          if rename then begin
-            try
-              List.assq t1 !subst == t2
-            with Not_found ->
-              subst := (t1, t2) :: !subst;
-              true
-          end else
-            t1 == t2
-      | (Tarrow(t1, u1), Tarrow(t2, u2)) ->
-          eqtype t1 t2 & eqtype u1 u2
-      | (Ttuple tl1, Ttuple tl2) ->
-          eqtype_list tl1 tl2
-      | (Tconstr(p1, tl1, abbrev1), Tconstr(p2, tl2, abbrev2)) ->
-          (Path.same p1 p2 && eqtype_list tl1 tl2)
-            ||
-          begin
-            try
-              eqtype (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
-            with Cannot_expand ->
-            try
-              eqtype t1 (expand_abbrev env p2 tl2 abbrev2 t2.level)
-            with Cannot_expand ->
-              false
-          end
-      | (Tobject (f1, _), Tobject (f2, _)) ->
-          eqtype_fields f1 f2
-      | (Tconstr(p1, tl1, abbrev1), _) ->
-          begin try
-            eqtype (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
-          with Cannot_expand ->
-            false
-          end
-      | (_, Tconstr(p2, tl2, abbrev2)) ->
-          begin try
-            eqtype t1 (expand_abbrev env p2 tl2 abbrev2 t2.level)
-          with Cannot_expand ->
-            false
-          end
-      | (Tfield _, Tfield _) ->
-          eqtype_fields t1 t2
-      | (Tnil, Tnil) ->
+    if t1 == t2 then true else
+    match (t1.desc, t2.desc) with
+    | (Tvar, Tvar) when rename ->
+        begin try
+          List.assq t1 !subst == t2
+        with Not_found ->
+          subst := (t1, t2) :: !subst;
           true
-      | (_, _) ->
-          false
-    end
+        end
+    | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
+        true
+    | _ ->
+        let t1 = expand_head env t1 in
+        let t2 = expand_head env t2 in
+        (* Expansion may have changed the representative of the types... *)
+        let t1 = repr t1 and t2 = repr t2 in
+        if t1 == t2 then true else
+        List.exists (function (t1', t2') -> t1 == t1' & t2 == t2') !type_pairs
+              (* XXX Possibly slow... *)
+          ||
+        begin
+          type_pairs := (t1, t2) :: !type_pairs;
+          match (t1.desc, t2.desc) with
+            (Tvar, Tvar) when rename ->
+              begin try
+                List.assq t1 !subst == t2
+              with Not_found ->
+                subst := (t1, t2) :: !subst;
+                true
+              end
+          | (Tarrow (t1, u1), Tarrow (t2, u2)) ->
+              eqtype t1 t2 && eqtype u1 u2
+          | (Ttuple tl1, Ttuple tl2) ->
+              eqtype_list tl1 tl2
+          | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
+                when Path.same p1 p2 ->
+              eqtype_list tl1 tl2
+          | (Tobject (fi1, nm1), Tobject (fi2, nm2)) ->
+              eqtype_fields fi1 fi2
+          | (Tfield _, Tfield _) ->       (* Actually unused *)
+              eqtype_fields t1 t2
+          | (Tnil, Tnil) ->
+              true
+          | (_, _) ->
+              false
+        end
 
   and eqtype_list tl1 tl2 =
     List.length tl1 = List.length tl2
-                    &&
+                   &&
     List.for_all2 eqtype tl1 tl2
 
   and eqtype_fields ty1 ty2 =           (* Optimization *)
@@ -1108,6 +1099,7 @@ let equal env rename tyl1 tyl2 =
     (miss1 = []) && (miss2 = [])
       &&
     List.for_all (function (t1, t2) -> eqtype t1 t2) pairs
+
   in
     eqtype_list tyl1 tyl2
 
