@@ -411,7 +411,7 @@ static void test_and_compact (void)
   if (fp > 1000000.0) fp = 1000000.0;
   caml_gc_message (0x200, "Estimated overhead (lower bound) = %lu%%\n",
                    (unsigned long) fp);
-  if (fp >= caml_percent_max){
+  if (fp >= caml_percent_max && caml_stat_heap_chunks > 1){
     caml_gc_message (0x200, "Automatic compaction triggered.\n", 0);
     caml_compact_heap ();
   }
