@@ -417,4 +417,5 @@ let run_script ppf name args =
   Arg.current := 0;
   Compile.init_path();
   toplevel_env := Compile.initial_env();
+  Sys.interactive := false;
   use_silently ppf name
