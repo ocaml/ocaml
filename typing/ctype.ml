@@ -28,7 +28,8 @@ open Types
      course, typing will still be correct.)
    - All nodes of a type have a level : that way, one know whether a
      node need to be duplicated or not when instantiating a type.
-   - Levels of a type are decreasing.
+   - Levels of a type are decreasing (generic level being considered
+     as greatest).
    - The level of a type constructor is superior to the binding
      time of its path.
 
@@ -37,6 +38,8 @@ open Types
 (*
    A faire
    =======
+   - Ordonner ctype.mli comme ctype.ml.
+   - Se debarasser de [Ident.identify] (utiliser plutot des substitutions).
    - Revoir affichage des types.
    - Types recursifs sans limitation.
    - Etendre la portee d'un alias [... as 'a] a tout le type englobant.
@@ -105,10 +108,14 @@ let none = newty (Ttuple [])                (* Clearly ill-formed type *)
 
 let rec repr =
   function
-    {desc = Tlink t'} as t ->
-      let r = repr t' in
-      if r != t' then t.desc <- Tlink r;
-      r
+    {desc = Tlink t'} ->
+      (* 
+         We do no path compression. Path compression does not seem to
+         improve notably efficiency, and it prevents from changing a
+         [Tlink] into another type (for instance, for undoing a
+         unification).
+      *)
+      repr t'
   | t -> t
 
 
@@ -125,10 +132,8 @@ let flatten_fields ty =
     match ty.desc with
       Tfield(s, ty1, ty2) ->
         flatten ((s, ty1)::l) ty2
-    | Tvar | Tnil ->
-        (l, ty)
     | _ ->
-      fatal_error "Ctype.flatten_fields"
+        (l, ty)
   in
     let (l, r) = flatten [] ty in
       (List.rev l, r)
@@ -267,29 +272,31 @@ and ungeneralize_expans =
 let expand_abbrev' = (* Forward declaration *)
   ref (fun env path args abbrev level -> raise Cannot_expand)
 
-(* Lower the levels of a type. *)
-(* Assume [level] is not [generic_level]. *)
 (*
-    The level of a type constructor must be higher than its binding
+   Lower the levels of a type (assume [level] is not
+   [generic_level]).
+*)
+(*
+    The level of a type constructor must be greater than its binding
     time. That way, a type constructor cannot escape the scope of its
     definition, as would be the case in
       let x = ref []
       module M = struct type t let _ = (x : t list ref) end
+    (without this constraint, the type system would even be unsafe.)
 *)
 let rec update_level env level ty =
   let ty = repr ty in
   if ty.level > level then begin
+    let old_level = ty.level in
     ty.level <- level;
     begin match ty.desc with
       Tconstr(p, tl, abbrev)  when level < Path.binding_time p ->
         (* Try first to replace an abbreviation by its expansion. *)
         begin try
-          ty.desc <- Tlink (!expand_abbrev' env p tl abbrev ty.level)
-          (* 
-             [expand_abbrev] has already checked the level, so no need
-             to recurse further.
-           *)
+          ty.desc <- Tlink (!expand_abbrev' env p tl abbrev old_level);
+          update_level env level ty
         with Cannot_expand ->
+          (* XXX Levels should be restored... *)
           raise (Unify [])
         end
     | _ ->
@@ -299,11 +306,19 @@ let rec update_level env level ty =
 
 (* 
    Function [update_level] will never try to expand an abbreviation in
-   this case ([current_level] is higher than the binding time of any
+   this case ([current_level] is greater than the binding time of any
    type constructor path). So, it can be called with the empty
    environnement.
 *)
 let make_nongen ty = update_level Env.empty !current_level ty
+
+(* Remove marks from a type. *)
+let rec unmark_type ty =
+  let ty = repr ty in
+  if ty.level < -1 then begin
+    ty.level <- -10 - ty.level;
+    iter_type_expr unmark_type ty
+  end
 
 
                               (*******************)
@@ -326,56 +341,55 @@ let saved_desc = ref []
 let abbreviations = ref (ref Mnil)
   (* Abbreviation memorized. *)
 
-let rec copy =
-  function  (* [repr] cannot be used here. *)
-    {desc = Tlink ty'} ->
-      copy ty'
-  | ty when ty.level <> generic_level ->
-      ty
-  | ty ->
-      let desc = ty.desc in
-      saved_desc := (ty, desc)::!saved_desc;
-      let t = newvar () in              (* Stub *)
-      ty.desc <- Tlink t;
-      t.desc <-
-        begin match desc with
-          Tvar ->
-            Tvar
-        | Tarrow (t1, t2) ->
-            Tarrow (copy t1, copy t2)
-        | Ttuple tl ->
-            Ttuple (List.map copy tl)
-        | Tconstr (p, tl, _) ->
-            (*
-               One must allocate a new reference, so that abbrevia-
-               tions belonging to different branches of a type are
-               independent.
-               Moreover, a reference containing a [Mcons] must be
-               shared, so that the memorized expansion of an abbrevi-
-               ation can be released by changing the content of just
-               one reference.
-            *)
-            Tconstr (p, List.map copy tl,
-                     ref (match ! !abbreviations with
-                            Mcons _ -> Mlink !abbreviations
-                          | abbrev  -> abbrev))
-        | Tobject (t1, {contents = name}) ->
-            let name' =
-              match name with
-                None ->
-                  None
-              | Some (p, tl) ->
-                  Some (p, List.map copy tl)
-            in
-            Tobject (copy t1, ref name')
-        | Tfield (label, t1, t2) ->
-            Tfield (label, copy t1, copy t2)
-        | Tnil ->
-            Tnil
-        | Tlink t -> (* Actually unused *)
-            Tlink (copy t)
-        end;
-      t
+let rec copy ty =
+  let ty = repr ty in
+  if ty.level <> generic_level then
+    ty
+  else begin
+    let desc = ty.desc in
+    saved_desc := (ty, desc)::!saved_desc;
+    let t = newvar () in              (* Stub *)
+    ty.desc <- Tlink t;
+    t.desc <-
+      begin match desc with
+        Tvar ->
+          Tvar
+      | Tarrow (t1, t2) ->
+          Tarrow (copy t1, copy t2)
+      | Ttuple tl ->
+          Ttuple (List.map copy tl)
+      | Tconstr (p, tl, _) ->
+          (*
+             One must allocate a new reference, so that abbrevia-
+             tions belonging to different branches of a type are
+             independent.
+             Moreover, a reference containing a [Mcons] must be
+             shared, so that the memorized expansion of an abbrevi-
+             ation can be released by changing the content of just
+             one reference.
+          *)
+          Tconstr (p, List.map copy tl,
+                   ref (match ! !abbreviations with
+                          Mcons _ -> Mlink !abbreviations
+                        | abbrev  -> abbrev))
+      | Tobject (t1, {contents = name}) ->
+          let name' =
+            match name with
+              None ->
+                None
+            | Some (p, tl) ->
+                Some (p, List.map copy tl)
+          in
+          Tobject (copy t1, ref name')
+      | Tfield (label, t1, t2) ->
+          Tfield (label, copy t1, copy t2)
+      | Tnil ->
+          Tnil
+      | Tlink t -> (* Actually unused *)
+          Tlink (copy t)
+      end;
+    t
+  end
 
 let cleanup_types () =
   List.iter (fun (ty, desc) -> ty.desc <- desc) !saved_desc;
@@ -463,6 +477,7 @@ let rec subst env level abbrev path params args body =
     let ty = subst env !current_level abbrev path params args body in
     end_def ();
     generalize ty;
+    List.iter generalize args;
     ty
   end
 
@@ -496,6 +511,10 @@ let rec find_expans p1 =
 let previous_env = ref Env.empty
 
 (* Expand an abbreviation. The expansion is memorized. *)
+(* 
+   Assume the level is greater than the path binding time of the
+   expanded abbreviation.
+*)
 let expand_abbrev env path args abbrev level =
   (* 
      If the environnement has changed, memorized expansions might not
@@ -515,7 +534,18 @@ let expand_abbrev env path args abbrev level =
       ty
   | None ->
       let decl =
-        (* XXX Do we really need a [try ... with] here ? *)
+        (*
+           The type constructor is always in the environnement during
+           typing. This is not true anymore at a latter stage (code
+           generation and debugger), as a non-generic type variable
+           can be instanciated afterwards to a previously undefined
+           type constructor.
+           (XXX actually, it is still true for the moment, due to the
+           strong constraint on type levels and constructor binding
+           time.)
+           (XXX except that moregeneral can bind variables to out of
+           context types...)
+        *)
         try Env.find_type path env with Not_found -> raise Cannot_expand in
       match decl.type_manifest with
         Some body ->
@@ -525,24 +555,24 @@ let expand_abbrev env path args abbrev level =
 
 let _ = expand_abbrev' := expand_abbrev
 
-(* Recursively expand the root of a type. *)
-let rec expand_root env ty =
+(* Fully expand the head of a type. *)
+let rec expand_head env ty =
   let ty = repr ty in
   match ty.desc with
     Tconstr(p, tl, abbrev) ->
       begin try
-        expand_root env (expand_abbrev env p tl abbrev ty.level)
+        expand_head env (expand_abbrev env p tl abbrev ty.level)
       with Cannot_expand ->
         ty
       end
   | _ ->
       ty
 
-(* Recursively expand the root of a type.
+(* Recursively expand the head of a type.
    Also expand #-types. *)
-(* XXX This is a hack ! *)
+(* XXX Bricolage ! *)
 let rec full_expand env ty =
-  let ty = repr (expand_root env ty) in
+  let ty = repr (expand_head env ty) in
   match ty.desc with
     Tobject (fi, {contents = Some (_, v::_)}) when (repr v).desc = Tvar ->
       { desc = Tobject (fi, ref None); level = ty.level }
@@ -573,36 +603,27 @@ let generic_abbrev env path =
 
 (**** Occur check ****)
 
-(* XXX A supprimer *)
 exception Occur
 
+(* XXX A supprimer (?) *)
 let occur env ty0 ty =
   let visited = ref ([] : type_expr list) in
   let rec occur_rec ty =
-    let ty = repr ty in
     if ty == ty0 then raise Occur;
     match ty.desc with
-      Tvar ->
-        ()
-    | Tarrow(t1, t2) ->
-        occur_rec t1; occur_rec t2
-    | Ttuple tl ->
-        List.iter occur_rec tl
-    | Tconstr(p, [], abbrev) ->
-        ()
-    | Tconstr(p, tl, abbrev) ->
+      Tconstr(p, tl, abbrev) ->
         if not (List.memq ty !visited) then begin
           visited := ty :: !visited;
-          try List.iter occur_rec tl with Unify _ ->
+          try List.iter occur_rec tl with Occur ->
           try
             let ty' = expand_abbrev env p tl abbrev ty.level in
             occur_rec ty'
           with Cannot_expand -> ()
         end
-    | Tobject (_, _) | Tfield (_, _, _) | Tnil ->
+    | Tobject (_, _) ->
         ()
-    | Tlink _ ->
-        fatal_error "Ctype.occur"
+    | _ ->
+        iter_type_expr occur_rec ty
   in
     occur_rec ty
 
@@ -627,41 +648,20 @@ let rec filter_trace =
 
 (**** Unification ****)
 
-(* Return whether [t0] occurs in [ty]. *)
-(* XXX Renommer en occur ? *)
+(* Return whether [t0] occurs in [ty]. Objects are also traversed. *)
 let deep_occur t0 ty =
   let rec occur_rec ty =
     let ty = repr ty in
-    if ty.level >= 0 then begin
+    if ty.level >= -1 then begin
       if ty == t0 then raise Occur;
-      ty.level <- -1 - ty.level;
+      ty.level <- -10 - ty.level;
       iter_type_expr occur_rec ty
-    end
-  and cleanup ty =
-    let ty = repr ty in
-    if ty.level < 0 then begin
-      ty.level <- -1 - ty.level;
-      iter_type_expr cleanup ty
     end
   in
   try
-    occur_rec ty; cleanup ty; false
+    occur_rec ty; unmark_type ty; false
   with Occur ->
-    cleanup ty; true
-
-(* Fully expand the head of a type. *)
-(* XXX Deplacer vers expand_abbrev... *)
-let rec expand env ty =
-  let ty = repr ty in
-  match ty.desc with
-    Tconstr(p, tl, abbrev) ->
-      begin try
-        expand env (expand_abbrev env p tl abbrev ty.level)
-      with Cannot_expand ->
-        ty
-      end
-  | _ ->
-      ty
+    unmark_type ty; true
 
 (*
    1. When unifying two non-abbreviated types, one type is made a link
@@ -721,8 +721,8 @@ let rec unify env t1 t2 =
 
 and unify2 env t1 t2 =
   (* Second step: expansion of abbreviations *)
-  let t1' = expand env t1 in
-  let t2' = expand env t2 in
+  let t1' = expand_head env t1 in
+  let t2' = expand_head env t2 in
   if t1' == t2' then () else
 
   if (t1 == t1') || (t2 != t2') then
@@ -906,41 +906,26 @@ let rec filter_method env name ty =
                         (*  Matching between type schemes  *)
                         (***********************************)
 
-(* XXX A voir... *)
 
-
-(* XXX This is not really an occur check !!! *)
-let moregen_occur env ty0 ty =
-  let visited = ref [] in
+(* XXX Remplacer -10 par une variable *)
+(* Check that no generic variable occur in the type. *)
+let moregen_occur ty =
   let rec occur_rec ty =
     let ty = repr ty in
-    if not (List.memq ty !visited) then begin
-      visited := ty::!visited;
-      begin match ty.desc with
-        Tvar when ty.level = generic_level & ty0.level < !current_level ->
-          (* ty0 has level = !current_level iff it is generic
-             in the original type scheme. In this case, it can be freely
-             instantiated. Otherwise, ty0 is not generic
-             and cannot be instantiated by a type that contains
-             generic variables. *)
-          raise (Unify [])
-      | Tconstr(p, tl, abbrev) ->
-          (* XXX Pourquoi expanser ? *)
-          begin try
-            List.iter occur_rec tl
-          with Unify lst ->
-            let ty' =
-              try expand_abbrev env p tl abbrev ty.level
-              with Cannot_expand -> raise (Unify lst) in
-            occur_rec ty'
-          end
-      | _ ->
-          iter_type_expr occur_rec ty
-      end
+    if ty.level >= -1 then begin
+      if (ty.desc = Tvar) && (ty.level = !current_level) then raise Occur;
+      ty.level <- -10 - ty.level;
+      iter_type_expr occur_rec ty
     end
   in
-    occur_rec ty
+  try
+    occur_rec ty; unmark_type ty
+  with Occur ->
+    unmark_type ty; raise (Unify [])
 
+(* XXX On veut que le motif reste inchange *)
+(*     Le motif n'est pas necessairement completement polymorphe *)
+(* XXX Undo complet en cas d'erreur ? *)
 let rec moregen env t1 t2 =
   if t1 == t2 then () else
   let t1 = repr t1 in
@@ -951,8 +936,18 @@ let rec moregen env t1 t2 =
     begin match (t1.desc, t2.desc) with
       (Tvar, _) ->
         if t1.level = generic_level then raise (Unify []);
-        moregen_occur env t1 t2;
-        t1.desc <- Tlink t2
+        (* t1 has level = !current_level iff it is generic
+           in the original type scheme. In this case, it can be freely
+           instantiated. Otherwise, t1 is not generic
+           and cannot be instantiated by a type that contains
+           generic variables. *)
+        if t1.level < !current_level then begin
+          let t2' = instance t2 in
+          moregen_occur t2';
+          update_level env t1.level t2';
+          t1.desc <- Tlink t2'
+        end else
+          t1.desc <- Tlink t2
     | (Tarrow(t1, u1), Tarrow(t2, u2)) ->
         moregen env t1 t2; moregen env u1 u2
     | (Ttuple tl1, Ttuple tl2) ->
@@ -1012,12 +1007,14 @@ and moregen_fields env ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1
   and (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
+  (* Combiner avec [moregen]... *)
   if miss1 <> [] then raise (Unify []);
   begin match rest1.desc with
     Tvar ->
       if rest1.level = generic_level then raise (Unify []);
       let fi = build_fields miss2 rest2 in
-      moregen_occur env rest1 fi
+      (* XXX ??? *)
+      if rest1.level < !current_level then moregen_occur fi
   | Tnil ->
       if miss2 <> [] then raise (Unify []);
       if rest2.desc <> Tnil then raise (Unify [])
@@ -1259,17 +1256,27 @@ and subtype_fields env trace ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1 in
   let (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
+  (* XXX A verifier... *)
+  [(trace, rest1, build_fields miss2 (newvar ()))]
+(*
   begin match rest1.desc with
     Tvar   -> [(trace, rest1, build_fields miss2 (newvar ()))]
   | Tnil   -> if miss2 = [] then [] else subtype_error env trace
   | _      -> fatal_error "Ctype.subtype_fields (1)"
   end
+*)
     @
+  begin match rest2.desc with
+    Tnil   -> []
+  | _      -> [(trace, build_fields miss1 rest1, rest2)]
+  end
+(*
   begin match rest2.desc with
     Tvar   -> [(trace, build_fields miss1 (rest1), rest2)]
   | Tnil   -> []
   | _      -> fatal_error "Ctype.subtype_fields (2)"
   end
+*)
     @
   (List.fold_left
      (fun cstrs (t1, t2) -> cstrs @ (subtype_rec env ((t1, t2)::trace) t1 t2))
@@ -1307,6 +1314,7 @@ let rec nondep_type_rec env id ty =
   if ty.desc = Tvar then ty else
   try newgenty (Tlink (List.assq ty !inst_subst)) with Not_found ->
             (* Tlink important permet de ne pas modifier la variable *)
+            (* XXX (???) *)
     let ty' = newgenvar () in
     inst_subst := (ty, ty') :: !inst_subst;
     ty'.desc <-
@@ -1338,8 +1346,8 @@ let rec nondep_type_rec env id ty =
            Tfield(label, nondep_type_rec env id t1, nondep_type_rec env id t2)
        | Tnil ->
            Tnil
-       | Tlink _ ->
-           fatal_error "Ctype.nondep_type"
+       | Tlink ty ->                    (* Actually unused *)
+           Tlink(nondep_type_rec env id ty)
        end;
      ty'
 
@@ -1374,10 +1382,9 @@ let nondep_class_type env id decl =
                               (******************************)
 
 
-exception Nonlinear_abbrev
+(* XXX A supprimer... (occur-check) *)
 exception Recursive_abbrev
 
-(* XXX A supprimer... *)
 let rec non_recursive_abbrev env path constrs ty =
   let ty = repr ty in
   match ty.desc with
@@ -1406,6 +1413,68 @@ let correct_abbrev env ident params ty =
   non_recursive_abbrev env path [] ty
 
 
+                    (**************************************)
+                    (*  Check genericity of type schemes  *)
+                    (**************************************)
+
+
+type closed_schema_result = Var of type_expr | Row_var of type_expr
+exception Failed of closed_schema_result
+
+let rec closed_schema_rec fullgen row ty =
+  let ty = repr ty in
+  if ty.level >= -1 then begin
+    let level = ty.level in
+    if fullgen then
+      ty.level <- -10 - generic_level   (* Generalize type *)
+    else
+      ty.level <- -10 - level;
+    match ty.desc with
+      Tvar when level != generic_level ->
+        raise (Failed (if row then Row_var ty else Var ty))
+    | Tobject(f, {contents = Some (_, p)}) ->
+        closed_schema_rec fullgen true f;
+        List.iter (closed_schema_rec fullgen false) p
+    | Tobject(f, _) ->
+        closed_schema_rec fullgen true f
+    | Tfield(_, t1, t2) ->
+        closed_schema_rec fullgen false t1;
+        closed_schema_rec fullgen true t2
+    | _ ->
+        iter_type_expr (closed_schema_rec fullgen false) ty
+  end
+
+(*
+    Return whether all variables of type [ty] are generic. The type is
+    also generalized if [fullgen] is true.
+    A file interface should be fully generic. On the other hand, class
+    abbreviation expansion cannot be made fully generic (this could
+    break type level invariant).
+*)
+let closed_schema fullgen ty =
+  try
+    closed_schema_rec fullgen false ty;
+    unmark_type ty;
+    true
+  with Failed _ ->
+    unmark_type ty;
+    false
+
+(*
+    Check that all variables of type [ty] are generic. If this is not
+    the case, the non-generic variable is returned. The type is never
+    generalized.
+*)
+let closed_schema_verbose ty =
+  try
+    closed_schema_rec false false ty;
+    unmark_type ty;
+    None
+  with Failed status ->
+    unmark_type ty;
+    Some status
+
+
                               (*******************)
                               (*  Miscellaneous  *)
                               (*******************)
@@ -1426,70 +1495,12 @@ let unroll_abbrev id tl ty =
       ty
   | _ ->
       let ty' = {desc = ty.desc; level = ty.level} in
+(*      let ty' = {desc = ty.desc; level = generic_level} in *)
       ty.desc <- Tlink {desc = Tconstr (Path.Pident id, tl, ref Mnil);
                         level = ty.level};
       ty'
 
-type closed_schema_result = Var of type_expr | Row_var of type_expr
-exception Failed of closed_schema_result
-
-let visited = ref []
-
-let rec closed_schema_rec ty =
-  let ty = repr ty in
-  if not (List.memq ty !visited) then begin
-    visited := ty::!visited;
-    match ty.desc with
-      Tvar when ty.level != generic_level -> raise (Failed (Var ty))
-    | Tobject(f, {contents = Some (_, p)}) ->
-        begin try closed_schema_rec f with
-          Failed (Row_var v) -> raise (Failed (Var v))
-        | Failed (Var v) -> raise (Failed (Row_var v))
-        end;
-        List.iter closed_schema_rec p
-    | Tobject(f, _) ->
-        begin try closed_schema_rec f with
-          Failed (Row_var v) -> raise (Failed (Var v))
-        | Failed (Var v) -> raise (Failed (Row_var v))
-        end
-    | Tfield(_, t1, t2) ->
-        begin try
-          closed_schema_rec t1
-        with
-          Failed (Row_var v) -> raise (Failed (Var v))
-        | Failed (Var v) -> raise (Failed (Row_var v))
-        end;
-        closed_schema_rec t2
-    | _ ->
-        iter_type_expr closed_schema_rec ty
-  end
-
-let closed_schema ty =
-  visited := [];
-  try
-    closed_schema_rec ty;
-    visited := [];
-    true
-  with Failed _ ->
-    visited := [];
-    false
-
-let closed_schema_verbose ty =
-  visited := [];
-  try
-    closed_schema_rec ty;
-    visited := [];
-    None
-  with Failed status ->
-    visited := [];
-    Some status
-
-let is_generic ty =
-  let ty = repr ty in
-  match ty.desc with
-    Tvar -> ty.level = generic_level
-  | _ -> fatal_error "Ctype.is_generic"
-
+(* Return the arity (as for curried functions) of the given type. *)
 let rec arity ty =
   match (repr ty).desc with
     Tarrow(t1, t2) -> 1 + arity t2
