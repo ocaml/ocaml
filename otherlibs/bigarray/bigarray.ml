@@ -40,6 +40,7 @@ let int32 = 6
 let int64 = 7
 let int = 8
 let nativeint = 9
+let char = int8_unsigned
 
 type 'a layout = int
 
@@ -88,6 +89,11 @@ module Array1 = struct
   external sub: ('a, 'b, 'c) t -> int -> int -> ('a, 'b, 'c) t = "bigarray_sub"
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit = "bigarray_blit"
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "bigarray_fill"
+  let of_array kind layout data =
+    let ba = create kind layout (Array.length data) in
+    let ofs = if (Obj.magic layout : 'a layout) = c_layout then 0 else 1 in
+    for i = 0 to Array.length data - 1 do set ba (i + ofs) data.(i) done;
+    ba
 end
 
 module Array2 = struct
@@ -104,6 +110,20 @@ module Array2 = struct
   let slice_right a n = Genarray.slice_right a [|n|]
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit = "bigarray_blit"
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "bigarray_fill"
+  let of_array kind layout data =
+    let dim1 = Array.length data in
+    let dim2 = if dim1 = 0 then 0 else Array.length data.(0) in
+    let ba = create kind layout dim1 dim2 in
+    let ofs = if (Obj.magic layout : 'a layout) = c_layout then 0 else 1 in
+    for i = 0 to dim1 - 1 do
+      let row = data.(i) in
+      if Array.length row <> dim2 then
+        invalid_arg("Bigarray.Array2.of_array: non-rectangular data");
+      for j = 0 to dim2 - 1 do
+        set ba (i + ofs) (j + ofs) row.(j)
+      done
+    done;
+    ba
 end
 
 module Array3 = struct
@@ -123,6 +143,26 @@ module Array3 = struct
   let slice_right_2 a n = Genarray.slice_right a [|n|]
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit = "bigarray_blit"
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "bigarray_fill"
+  let of_array kind layout data =
+    let dim1 = Array.length data in
+    let dim2 = if dim1 = 0 then 0 else Array.length data.(0) in
+    let dim3 = if dim2 = 0 then 0 else Array.length data.(0).(0) in
+    let ba = create kind layout dim1 dim2 dim3 in
+    let ofs = if (Obj.magic layout : 'a layout) = c_layout then 0 else 1 in
+    for i = 0 to dim1 - 1 do
+      let row = data.(i) in
+      if Array.length row <> dim2 then
+        invalid_arg("Bigarray.Array3.of_array: non-cubic data");
+      for j = 0 to dim2 - 1 do
+        let col = row.(j) in
+        if Array.length col <> dim3 then
+          invalid_arg("Bigarray.Array3.of_array: non-cubic data");
+        for k = 0 to dim3 - 1 do
+          set ba (i + ofs) (j + ofs) (k + ofs) col.(j)
+        done
+      done
+    done;
+    ba
 end
 
 external genarray_of_array1: ('a, 'b, 'c) Array1.t -> ('a, 'b, 'c) Genarray.t = "%identity"

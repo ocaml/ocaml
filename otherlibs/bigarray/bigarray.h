@@ -65,7 +65,7 @@ struct caml_bigarray {
 
 extern value alloc_bigarray(int flags, int num_dims, void * data, long * dim);
 extern value alloc_bigarray_dims(int flags, int num_dims, void * data,
-                                 /*dimensions, with type long */);
+                                 ... /*dimensions, with type long */);
 
 
 #endif

@@ -83,6 +83,7 @@ val int: (int, int_elt) kind
 val int32: (int32, int32_elt) kind
 val int64: (int64, int64_elt) kind
 val nativeint: (nativeint, nativeint_elt) kind
+val char: (char, int8_unsigned_elt) kind
       (* As shown by the types of the values above,
          big arrays of kind [float32_elt] and [float64_elt] are
          accessed using the Caml type [float].  Big arrays of
@@ -91,7 +92,10 @@ val nativeint: (nativeint, nativeint_elt) kind
          [int] for 8- and 16-bit integer bigarrays, as well as Caml-integer
          bigarrays; [int32] for 32-bit integer bigarrays; [int64]
          for 64-bit integer bigarrays; and [nativeint] for
-         platform-native integer bigarrays. *)
+         platform-native integer bigarrays.  Finally, big arrays of
+         kind [int8_unsigned_elt] can also be accessed as arrays of
+         characters instead of arrays of small integers, by using
+         the kind value [char] instead of [int8_unsigned]. *)
 
 (*** Array layouts *)
 
@@ -352,6 +356,9 @@ module Array1: sig
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "bigarray_fill"
         (* Fill the given big array with the given value.
            See [Genarray.fill] for more details. *)
+  val of_array: ('a, 'b) kind -> 'c layout -> 'a array -> ('a, 'b, 'c) t
+        (* Build a one-dimensional big array initialized from the
+           given array.  *)
 end
 
 (*** Two-dimensional arrays *)
@@ -422,6 +429,9 @@ module Array2: sig
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "bigarray_fill"
         (* Fill the given big array with the given value.
            See [Genarray.fill] for more details. *)
+  val of_array: ('a, 'b) kind -> 'c layout -> 'a array array -> ('a, 'b, 'c) t
+        (* Build a two-dimensional big array initialized from the
+           given array of arrays.  *)
 end
 
 (*** Three-dimensional arrays *)
@@ -503,7 +513,7 @@ module Array3: sig
     ('a, 'b, fortran_layout) t -> z:int -> ('a, 'b, fortran_layout) Array2.t
         (* Extract a two-dimensional slice of the given
            three-dimensional big array by fixing the last coordinate.
-           The integer parameter is the first coordinate of the slice
+           The integer parameter is the coordinate of the slice
            to extract.  See [Genarray.slice_right] for more details.
            [Array3.slice_right_2] applies only to arrays with Fortran
            layout. *)
@@ -514,6 +524,10 @@ module Array3: sig
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "bigarray_fill"
         (* Fill the given big array with the given value.
            See [Genarray.fill] for more details. *)
+  val of_array:
+        ('a, 'b) kind -> 'c layout -> 'a array array array -> ('a, 'b, 'c) t
+        (* Build a three-dimensional big array initialized from the
+           given array of arrays of arrays.  *)
 end
 
 (*** Coercions between generic big arrays and fixed-dimension big arrays *)
