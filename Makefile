@@ -137,8 +137,8 @@ world: coldstart all
 # Compile also native code compiler and libraries, fast
 world.opt: coldstart opt.opt
 
-# Simple bootstrapping cycle
-boots:
+# Core bootstrapping cycle
+coreboot:
 # Save the original bootstrap compiler
 	$(MAKE) backup
 # Promote the new compiler but keep the old runtime
@@ -152,15 +152,15 @@ boots:
 	$(MAKE) library-cross
 # Promote the new compiler and the new runtime
 	$(MAKE) promote
-# Rebuild ocamlc and ocamllex
+# Rebuild the core system
 	$(MAKE) partialclean
-	$(MAKE) ocamlc ocamllex
+	$(MAKE) core
 # Check if fixpoint reached
 	$(MAKE) compare
 
-# Complete bootstrapping cycle
+# Bootstrap and rebuild the whole system.
 bootstrap:
-	$(MAKE) boots
+	$(MAKE) coreboot
 	$(MAKE) all
 	$(MAKE) compare
 
