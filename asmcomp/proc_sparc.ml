@@ -74,7 +74,7 @@ let word_addressed = false
     %l0 - %l7   0 - 7       general purpose, preserved by C
     %o0 - %o5   8 - 13      function results, C functions args / res
     %i0 - %i5   14 - 19     function arguments, preserved by C
-    %g2 - %g3   20 - 21     general purpose
+    %g2 - %g3   20 - 21     more function arguments, general purpose
 
     %g1, %g4                temporary
     %g5                     exception pointer
@@ -176,9 +176,9 @@ let outgoing ofs = Outgoing ofs
 let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
 
 let loc_arguments arg =
-  calling_conventions 14 19 100 105 outgoing arg
+  calling_conventions 14 21 100 105 outgoing arg
 let loc_parameters arg =
-  let (loc, ofs) = calling_conventions 14 19 100 105 incoming arg in loc
+  let (loc, ofs) = calling_conventions 14 21 100 105 incoming arg in loc
 let loc_results res =
   let (loc, ofs) = calling_conventions 8 13 100 105 not_supported res in loc
 
