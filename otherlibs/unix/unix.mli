@@ -142,7 +142,9 @@ external execve : string -> string array -> string array -> unit = "unix_execve"
         (* Same as [execv], except that the third argument provides the
            environment to the program executed. *)
 external execvp : string -> string array -> unit = "unix_execvp"
-        (* Same as [execv], except that the program is searched in the path. *)
+external execvpe : string -> string array -> string array -> unit = "unix_execvpe"
+        (* Same as [execv] and [execvp] respectively, except that
+           the program is searched in the path. *)
 external fork : unit -> int = "unix_fork"
         (* Fork a new process. The returned integer is 0 for the child
            process, the pid of the child process for the parent process. *)
@@ -407,6 +409,13 @@ val create_process :
            All file descriptors of the current process are closed in the
            new process, except those redirected to standard input and
            outputs. *)
+
+val create_process_env :
+  string -> string array -> string array -> 
+  file_descr -> file_descr -> file_descr -> int
+        (* [create_process_env prog args env new_stdin new_stdout new_stderr]
+           works as [create_process], except that the extra argument
+           [env] specifies the environment passed to the program. *)
 
 val open_process_in: string -> in_channel
 val open_process_out: string -> out_channel

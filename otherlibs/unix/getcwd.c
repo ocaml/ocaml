@@ -13,11 +13,15 @@
 
 #include <mlvalues.h>
 #include <alloc.h>
-#include "unix.h"
+#include "unixsupport.h"
 
 #ifdef HAS_GETCWD
 
+#ifndef _WIN32
 #include <sys/param.h>
+#else
+#define MAXPATHLEN 512
+#endif
 
 value unix_getcwd()     /* ML */
 {

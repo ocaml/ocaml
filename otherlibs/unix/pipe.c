@@ -13,7 +13,7 @@
 
 #include <mlvalues.h>
 #include <alloc.h>
-#include "unix.h"
+#include "unixsupport.h"
 
 value unix_pipe()                /* ML */
 {

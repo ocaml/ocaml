@@ -16,7 +16,7 @@
 #include <memory.h>
 #include <str.h>
 #include <errno.h>
-#include "unix.h"
+#include "unixsupport.h"
 
 #ifdef HAS_SOCKETS
 
@@ -35,6 +35,7 @@ void get_sockaddr(a)
      value a;
 {
   switch(Tag_val(a)) {
+#ifndef _WIN32
   case 0:                       /* ADDR_UNIX */
     { value path;
       mlsize_t len;
@@ -50,6 +51,7 @@ void get_sockaddr(a)
         + len;
       break;
     }
+#endif
   case 1:                       /* ADDR_INET */
     {
       char * p;
@@ -70,6 +72,7 @@ value alloc_sockaddr()
 {
   value res;
   switch(sock_addr.s_gen.sa_family) {
+#ifndef _WIN32
   case AF_UNIX:
     { Push_roots(n, 1);
       n[0] = copy_string(sock_addr.s_unix.sun_path);
@@ -78,6 +81,7 @@ value alloc_sockaddr()
       Pop_roots();
       break;
     }
+#endif
   case AF_INET:
     { Push_roots(a, 1);
       a[0] = alloc_inet_addr(sock_addr.s_inet.sin_addr.s_addr);

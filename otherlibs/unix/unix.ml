@@ -120,6 +120,7 @@ type wait_flag =
 external execv : string -> string array -> unit = "unix_execv"
 external execve : string -> string array -> string array -> unit = "unix_execve"
 external execvp : string -> string array -> unit = "unix_execvp"
+external execvpe : string -> string array -> string array -> unit = "unix_execvpe"
 external fork : unit -> int = "unix_fork"
 external wait : unit -> int * process_status = "unix_wait"
 external waitpid : wait_flag list -> int -> int * process_status = "unix_waitpid"
@@ -520,6 +521,16 @@ let create_process cmd args new_stdin new_stdout new_stderr =
       if new_stdout <> stdout then dup2 new_stdout stdout;
       if new_stderr <> stderr then dup2 new_stderr stderr;
       execvp cmd args;
+      exit 127
+  | id -> id
+
+let create_process_env cmd args env new_stdin new_stdout new_stderr =
+  match fork() with
+    0 ->
+      if new_stdin  <> stdin  then dup2 new_stdin stdin;
+      if new_stdout <> stdout then dup2 new_stdout stdout;
+      if new_stderr <> stderr then dup2 new_stderr stderr;
+      execvpe cmd args env;
       exit 127
   | id -> id
 

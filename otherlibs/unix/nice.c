@@ -12,7 +12,7 @@
 /* $Id$ */
 
 #include <mlvalues.h>
-#include "unix.h"
+#include "unixsupport.h"
 #include <errno.h>
 
 #ifdef HAS_GETPRIORITY

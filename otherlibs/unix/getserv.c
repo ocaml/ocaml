@@ -15,14 +15,19 @@
 #include <alloc.h>
 #include <memory.h>
 #include <fail.h>
-#include "unix.h"
+#include "unixsupport.h"
 
 #ifdef HAS_SOCKETS
 
 #include <sys/types.h>
+
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#else
+#include <winsock.h>
+#endif
 
 static value alloc_service_entry(entry)
      struct servent * entry;

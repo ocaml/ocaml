@@ -15,11 +15,15 @@
 #include <alloc.h>
 #include <memory.h>
 #include <fail.h>
-#include "unix.h"
+#include "unixsupport.h"
 
 #ifdef HAS_SOCKETS
 
+#ifndef _WIN32
 #include <netdb.h>
+#else
+#include <winsock.h>
+#endif
 
 static value alloc_proto_entry(entry)
      struct protoent * entry;

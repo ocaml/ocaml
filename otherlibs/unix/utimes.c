@@ -12,12 +12,16 @@
 /* $Id$ */
 
 #include <mlvalues.h>
-#include "unix.h"
+#include "unixsupport.h"
 
 #ifdef HAS_UTIME
 
 #include <sys/types.h>
+#ifndef _WIN32
 #include <utime.h>
+#else
+#include <sys/utime.h>
+#endif
 
 value unix_utimes(path, atime, mtime) /* ML */
      value path, atime, mtime;

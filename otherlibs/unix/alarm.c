@@ -12,7 +12,7 @@
 /* $Id$ */
 
 #include <mlvalues.h>
-#include "unix.h"
+#include "unixsupport.h"
 
 value unix_alarm(t)              /* ML */
      value t;

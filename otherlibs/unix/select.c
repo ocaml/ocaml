@@ -15,7 +15,7 @@
 #include <alloc.h>
 #include <memory.h>
 #include <signals.h>
-#include "unix.h"
+#include "unixsupport.h"
 
 #ifdef HAS_SELECT
 

@@ -15,7 +15,7 @@
 #include <fail.h>
 #include <alloc.h>
 #include <memory.h>
-#include "unix.h"
+#include "unixsupport.h"
 #include <stdio.h>
 #include <grp.h>
 

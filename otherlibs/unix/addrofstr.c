@@ -13,13 +13,11 @@
 
 #include <mlvalues.h>
 #include <fail.h>
-#include "unix.h"
+#include "unixsupport.h"
 
 #ifdef HAS_SOCKETS
 
 #include "socketaddr.h"
-
-extern unsigned long inet_addr();
 
 value unix_inet_addr_of_string(s) /* ML */
      value s;

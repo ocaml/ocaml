@@ -13,7 +13,7 @@
 
 #include <mlvalues.h>
 #include <alloc.h>
-#include "unix.h"
+#include "unixsupport.h"
 #include "cst2constr.h"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -26,6 +26,9 @@
 #endif
 #ifndef S_IFSOCK
 #define S_IFSOCK 0
+#endif
+#ifndef S_IFBLK
+#define S_IFBLK 0
 #endif
 
 static int file_kind_table[] = {

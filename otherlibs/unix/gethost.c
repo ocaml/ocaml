@@ -15,12 +15,14 @@
 #include <alloc.h>
 #include <memory.h>
 #include <fail.h>
-#include "unix.h"
+#include "unixsupport.h"
 
 #ifdef HAS_SOCKETS
 
 #include "socketaddr.h"
+#ifndef _WIN32
 #include <netdb.h>
+#endif
 
 static int entry_h_length;
 

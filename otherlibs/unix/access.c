@@ -13,7 +13,7 @@
 
 #include <mlvalues.h>
 #include <alloc.h>
-#include "unix.h"
+#include "unixsupport.h"
 
 #ifdef HAS_UNISTD
 #include <unistd.h>

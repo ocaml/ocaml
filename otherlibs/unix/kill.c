@@ -13,7 +13,7 @@
 
 #include <mlvalues.h>
 #include <fail.h>
-#include "unix.h"
+#include "unixsupport.h"
 #include <signal.h>
 
 extern int posix_signals[];     /* defined in byterun/signals.c */

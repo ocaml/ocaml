@@ -12,7 +12,7 @@
 /* $Id$ */
 
 #include <mlvalues.h>
-#include "unix.h"
+#include "unixsupport.h"
 
 value unix_chown(path, uid, gid) /* ML */
      value path, uid, gid;

@@ -15,7 +15,7 @@
 #include <alloc.h>
 #include <memory.h>
 #include <fail.h>
-#include "unix.h"
+#include "unixsupport.h"
 #include <pwd.h>
 
 static value alloc_passwd_entry(entry)

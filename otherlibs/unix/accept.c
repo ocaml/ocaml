@@ -14,7 +14,7 @@
 #include <mlvalues.h>
 #include <alloc.h>
 #include <memory.h>
-#include "unix.h"
+#include "unixsupport.h"
 
 #ifdef HAS_SOCKETS
 

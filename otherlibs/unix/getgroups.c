@@ -18,7 +18,7 @@
 
 #include <sys/types.h>
 #include <sys/param.h>
-#include "unix.h"
+#include "unixsupport.h"
 
 value unix_getgroups()           /* ML */
 {

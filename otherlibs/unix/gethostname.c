@@ -13,8 +13,12 @@
 
 #include <mlvalues.h>
 #include <alloc.h>
+#ifndef _WIN32
 #include <sys/param.h>
-#include "unix.h"
+#else
+#include <winsock.h>
+#endif
+#include "unixsupport.h"
 
 #ifdef HAS_GETHOSTNAME
 

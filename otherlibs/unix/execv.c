@@ -13,7 +13,7 @@
 
 #include <mlvalues.h>
 #include <memory.h>
-#include "unix.h"
+#include "unixsupport.h"
 
 extern char ** cstringvect();
 

@@ -17,7 +17,7 @@
 #ifdef HAS_SYMLINK
 
 #include <sys/param.h>
-#include "unix.h"
+#include "unixsupport.h"
 
 value unix_readlink(path)        /* ML */
      value path;

@@ -13,13 +13,11 @@
 
 #include <mlvalues.h>
 #include <alloc.h>
-#include "unix.h"
+#include "unixsupport.h"
 
 #ifdef HAS_SOCKETS
 
 #include "socketaddr.h"
-
-extern char * inet_ntoa();
 
 value unix_string_of_inet_addr(a) /* ML */
      value a;
