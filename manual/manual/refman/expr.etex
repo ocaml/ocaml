@@ -611,9 +611,9 @@ The expression @'(' expr ':' typexpr_1 ':>' typexpr_2 ')'@ coerces the
 expression @expr@ from type @typexpr_1@ to type @typexpr_2@.
 %
 The former operator will sometimes fail to coerce an expression @expr@
-from a type @t@ to a type @t'@ even if type @t@ is a subtype of type
-@t'@. In this case, the latter operator should be used.
-%
+from a type @t_1@ to a type @t_2@ even if type @t_1@ is a subtype of type
+@t_2@. In this case, the latter operator should be used.
+
 In a class definition, coercion to the type this class defines is the
 identity, as this type abbreviation is not yet completely defined.
 
