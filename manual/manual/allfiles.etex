@@ -12,7 +12,7 @@
                 release \ocamlversion \\[1cm]
 \Large          Documentation and user's manual \\[1cm]
 \large          Xavier Leroy \\
-                (with Didier Rémy, Jérôme Vouillon and Damien Doligez) \\[1cm]
+                (with Damien Doligez, Jacques Garrigue, Didier Rémy and Jérôme Vouillon) \\[1cm]
                 \today
 \vfill
 \normalsize     Copyright \copyright\ \number\year\ Institut National de
