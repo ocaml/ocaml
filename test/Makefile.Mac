@@ -3,7 +3,6 @@ CAMLYACC = ::yacc:ocamlyacc
 CAMLLEX = ::boot:ocamlrun ::lex:ocamllex
 CAMLDEP = ::boot:ocamlrun ::tools:ocamldep
 CAMLRUN = ::byterun:ocamlrun
-CODERUNPARAMS = 'o=100'
 
 BYTE_EXE = fib.byt takc.byt taku.byt sieve.byt quicksort.byt quicksort.fast.byt ¶
   fft.byt fft.fast.byt soli.byt soli.fast.byt boyer.byt kb.byt ¶
@@ -70,8 +69,9 @@ beforedepend ÄÄ :Lex:scanner.ml
 {BYTE_EXE} Ä ::stdlib:stdlib.cma
 
 clean ÄÄ
-	delete -i Å.byt || set status 0
-	delete -i Å.cm[io] || set status 0
+  delete -i Å.byt || set status 0
+  delete -i Å.cm[io] || set status 0
+  directory :Moretest; domake clean; directory ::
 
 # Regression test
 
@@ -87,7 +87,7 @@ test Ä {BYTE_EXE}
 	end
 
 clean ÄÄ
-	delete -i :Lex:testscanner.ml {tempfolder}ocaml-test
+	delete -i :Lex:testscanner.ml "{tempfolder}ocaml-test"
 
 # Benchmark
 
