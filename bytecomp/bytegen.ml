@@ -620,7 +620,7 @@ and comp_binary_test env cond ifso ifnot sz cont =
       let cont = comp_expr env ifso sz cont in
       match !lbl_staticfail with
         None -> cont
-      | Some label -> Kbranchif label :: cont
+      | Some label -> Kbranchifnot label :: cont
     else begin
       let (branch_end, cont1) = make_branch cont in
       let (lbl_not, cont2) = label_code(comp_expr env ifnot sz cont1) in
