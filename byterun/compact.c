@@ -5,7 +5,7 @@
 /*             Damien Doligez, projet Para, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -35,6 +35,12 @@ extern void shrink_heap (char *);              /* memory.c */
    1: integer or (unencoded) infix header
    2: inverted pointer for infix header
    3: integer or encoded (noninfix) header
+   
+  XXX Should be fixed:
+  XXX The above assumes that all roots are aligned on a 4-byte boundary,
+  XXX which is not always guaranteed by C.
+  XXX (see [register_global_roots] and [init_exceptions])
+  XXX Should be able to fix it to only assume 2-byte alignment.
 */
 #define Make_ehd(s,t,c) (((s) << 10) | (t) << 2 | (c))
 #define Whsize_ehd(h) Whsize_hd (h)
@@ -47,6 +53,7 @@ typedef unsigned long word;
 static void invert_pointer_at (word *p)
 {
   word q = *p;
+                                              Assert (Ecolor ((long) p) == 0);
 
   /* Use Ecolor (q) == 0 instead of Is_block (q) because q could be an
      inverted pointer for an infix header (with Ecolor == 2). */
@@ -66,6 +73,7 @@ static void invert_pointer_at (word *p)
         value val = (value) q - Infix_offset_val (q);
         /* Get the block header. */
         word *hp = (word *) Hp_val (val);
+
         while (Ecolor (*hp) == 0) hp = (word *) *hp;
                                                    Assert (Ecolor (*hp) == 3);
         if (Tag_ehd (*hp) == Closure_tag){
@@ -138,6 +146,11 @@ void compact_heap (void)
   char *ch, *chend;
                                                Assert (gc_phase == Phase_idle);
   gc_message (0x10, "Compacting heap...\n", 0);
+
+#ifdef DEBUG
+  heap_check ();
+#endif
+
   /* First pass: encode all noninfix headers. */
   {
     ch = heap_start;
