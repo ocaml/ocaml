@@ -68,7 +68,7 @@ value camltk_opentk(value display, value name) /* ML */
 {
   if (!cltk_slave_mode) {
     /* Create an interpreter, dies if error */
-#if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION >= 1
+#if TCL_MAJOR_VERSION >= 8
     Tcl_FindExecutable(String_val(name));
 #endif
     cltclinterp = Tcl_CreateInterp();
