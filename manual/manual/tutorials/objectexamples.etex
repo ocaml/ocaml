@@ -592,14 +592,18 @@ Note the difference between the two coercions: in the second case, the type
 "c2" has been unfolded once (according to the explicit recursion in the class
 type of "c2"); hence the success of applying this coercion to an object of
 class "c0".  You may also note that the type of "to_c1" is "#c1 -> c1" while
-the type of "to_c2" is more general than "#c2 -> c2". Unfortunately, it is
-not always true that the coercion "(_ : > c)" has a more general type than
-"#c -> c", in particular, when the type of self appears in the type of a
-method at rank 2 under the left arm of an arrow, as in:
-\begin{caml_example}
-class type c = object ('a) method m : ('a -> unit) -> unit end;;
-let to_c x = (x :> c);;
-\end{caml_example}
+the type of "to_c2" is more general than "#c2 -> c2". This is not always true,
+since there are class types for which some instances of "#c" are not subtypes
+of "c", as explained in section~\ref{ss:binary-methods}. Yet, for
+parameterless classes the coercion "(_ :> c)" is always more general than
+"(_ : #c :> c)".
+%If a class type exposes the type of self through one of its parameters, this
+%is no longer true. Here is a counter-example.
+%\begin{caml_example}
+%class type ['a] c = object ('a) method m : 'a end;;
+%let to_c x = (x :> _ c);;
+%\end{caml_example}
+
 
 A common problem may occur when one tries to define a coercion to a
 class "c" inside the definition of class "c". The problem is due to the type
