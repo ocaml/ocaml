@@ -415,6 +415,20 @@ CAMLprim value bigarray_dim(value vb, value vn)
   return Val_long(b->dim[n]);
 }
 
+/* Return the kind of a big array */
+
+CAMLprim value bigarray_kind(value vb)
+{
+  return Val_int(Bigarray_val(vb)->flags & BIGARRAY_KIND_MASK);
+}
+
+/* Return the layout of a big array */
+
+CAMLprim value bigarray_layout(value vb)
+{
+  return Val_int(Bigarray_val(vb)->flags & BIGARRAY_LAYOUT_MASK);
+}
+
 /* Finalization of a big array */
 
 static void bigarray_finalize(value v)

@@ -309,6 +309,14 @@ let _ =
   test 1 (Array1.dim (from_list int [1;2;3;4;5])) 5;
   test 2 (Array1.dim (from_list_fortran int [1;2;3])) 3;
 
+  testing_function "kind & layout";
+  let a = from_list int [1;2;3] in
+  test 1 (Array1.kind a) int;
+  test 2 (Array1.layout a) c_layout;
+  let a = from_list_fortran float32 [1.0;2.0;3.0] in
+  test 1 (Array1.kind a) float32;
+  test 2 (Array1.layout a) fortran_layout;
+
   testing_function "sub";
   let a = from_list int [1;2;3;4;5;6;7;8] in
   test 1 (Array1.sub a 2 5)

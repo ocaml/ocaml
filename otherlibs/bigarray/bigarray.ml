@@ -72,6 +72,9 @@ module Genarray = struct
      = "bigarray_set_generic"
   external num_dims: ('a, 'b, 'c) t -> int = "bigarray_num_dims"
   external nth_dim: ('a, 'b, 'c) t -> int -> int = "bigarray_dim"
+  external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "bigarray_kind"
+  external layout: ('a, 'b, 'c) t -> 'c layout = "bigarray_layout"
+
   external sub_left: ('a, 'b, c_layout) t -> int -> int -> ('a, 'b, c_layout) t
      = "bigarray_sub"
   external sub_right: ('a, 'b, fortran_layout) t -> int -> int ->
@@ -98,6 +101,8 @@ module Array1 = struct
   external get: ('a, 'b, 'c) t -> int -> 'a = "%bigarray_ref_1"
   external set: ('a, 'b, 'c) t -> int -> 'a -> unit = "%bigarray_set_1"
   let dim a = Genarray.nth_dim a 0
+  external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "bigarray_kind"
+  external layout: ('a, 'b, 'c) t -> 'c layout = "bigarray_layout"
   external sub: ('a, 'b, 'c) t -> int -> int -> ('a, 'b, 'c) t = "bigarray_sub"
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit = "bigarray_blit"
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "bigarray_fill"
@@ -118,6 +123,8 @@ module Array2 = struct
   external set: ('a, 'b, 'c) t -> int -> int -> 'a -> unit = "%bigarray_set_2"
   let dim1 a = Genarray.nth_dim a 0
   let dim2 a = Genarray.nth_dim a 1
+  external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "bigarray_kind"
+  external layout: ('a, 'b, 'c) t -> 'c layout = "bigarray_layout"
   external sub_left: ('a, 'b, c_layout) t -> int -> int -> ('a, 'b, c_layout) t = "bigarray_sub"
   external sub_right: ('a, 'b, fortran_layout) t -> int -> int -> ('a, 'b, fortran_layout) t = "bigarray_sub"
   let slice_left a n = Genarray.slice_left a [|n|]
@@ -151,6 +158,8 @@ module Array3 = struct
   let dim1 a = Genarray.nth_dim a 0
   let dim2 a = Genarray.nth_dim a 1
   let dim3 a = Genarray.nth_dim a 2
+  external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "bigarray_kind"
+  external layout: ('a, 'b, 'c) t -> 'c layout = "bigarray_layout"
   external sub_left: ('a, 'b, c_layout) t -> int -> int -> ('a, 'b, c_layout) t = "bigarray_sub"
   external sub_right: ('a, 'b, fortran_layout) t -> int -> int -> ('a, 'b, fortran_layout) t = "bigarray_sub"
   let slice_left_1 a n m = Genarray.slice_left a [|n; m|]

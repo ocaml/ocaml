@@ -242,6 +242,12 @@ module Genarray :
      Raise [Invalid_arg] if [n] is less than 0 or greater or equal than
      [Genarray.num_dims a]. *)
 
+  external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "bigarray_kind"
+  (** Return the kind of the given big array. *)
+
+  external layout: ('a, 'b, 'c) t -> 'c layout = "bigarray_layout"
+  (** Return the layout of the given big array. *)
+
   external get: ('a, 'b, 'c) t -> int array -> 'a = "bigarray_get_generic"
   (** Read an element of a generic big array.
      [Genarray.get a [|i1; ...; iN|]] returns the element of [a]
@@ -431,6 +437,12 @@ module Array1 : sig
   (** Return the size (dimension) of the given one-dimensional 
      big array. *)
 
+  external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "bigarray_kind"
+  (** Return the kind of the given big array. *)
+
+  external layout: ('a, 'b, 'c) t -> 'c layout = "bigarray_layout"
+  (** Return the layout of the given big array. *)
+
   external get: ('a, 'b, 'c) t -> int -> 'a = "%bigarray_ref_1"
   (** [Array1.get a x], or alternatively [a.{x}], 
      returns the element of [a] at index [x].
@@ -493,6 +505,12 @@ module Array2 :
 
   val dim2: ('a, 'b, 'c) t -> int
   (** Return the second dimension of the given two-dimensional big array. *)
+
+  external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "bigarray_kind"
+  (** Return the kind of the given big array. *)
+
+  external layout: ('a, 'b, 'c) t -> 'c layout = "bigarray_layout"
+  (** Return the layout of the given big array. *)
 
   external get: ('a, 'b, 'c) t -> int -> int -> 'a = "%bigarray_ref_2"
   (** [Array2.get a x y], also written [a.{x,y}],
@@ -583,6 +601,12 @@ module Array3 :
   val dim3: ('a, 'b, 'c) t -> int
   (** Return the third dimension of the given three-dimensional big array. *)
  
+  external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "bigarray_kind"
+  (** Return the kind of the given big array. *)
+
+  external layout: ('a, 'b, 'c) t -> 'c layout = "bigarray_layout"
+  (** Return the layout of the given big array. *)
+
   external get: ('a, 'b, 'c) t -> int -> int -> int -> 'a = "%bigarray_ref_3"
   (** [Array3.get a x y z], also written [a.{x,y,z}],
      returns the element of [a] at coordinates ([x], [y], [z]).
