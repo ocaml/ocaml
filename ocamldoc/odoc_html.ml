@@ -910,8 +910,8 @@ class html =
       (match t.ty_manifest with None -> "" | Some typ -> "= "^(self#html_of_type_expr father typ)^" ")^
       (match t.ty_kind with
         Type_abstract -> "</pre>"
-      | Type_variant l ->
-          "="^
+      | Type_variant (l, priv) ->
+          "= "^(if priv then "private" else "")^
           "</pre><table class=\"typetable\">\n"^ 
           (String.concat "\n"
              (List.map 
@@ -954,8 +954,8 @@ class html =
           )^
           "</table>\n"
 
-      | Type_record l ->
-          "= {"^
+      | Type_record (l, priv) ->
+          "= "^(if priv then "private " else "")^"{"^
           "</pre><table class=\"typetable\">\n"^ 
           (String.concat "\n"
              (List.map 

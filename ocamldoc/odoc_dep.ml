@@ -145,7 +145,7 @@ let type_deps t =
   in
   (match t.T.ty_kind with
     T.Type_abstract -> ()
-  | T.Type_variant cl ->
+  | T.Type_variant (cl, _) ->
       List.iter
         (fun c ->
           List.iter 
@@ -156,7 +156,7 @@ let type_deps t =
             c.T.vc_args
         )
         cl
-  | T.Type_record rl ->
+  | T.Type_record (rl, _) ->
       List.iter
         (fun r ->
           let s = Odoc_misc.string_of_type_expr r.T.rf_type in

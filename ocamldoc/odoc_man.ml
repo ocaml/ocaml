@@ -314,11 +314,12 @@ class man =
       )^
       (match t.ty_parameters with [] -> "" | _ -> ".I ")^(Name.simple t.ty_name)^" \n"^
       (match t.ty_manifest with None -> "" | Some typ -> "= "^(self#man_of_type_expr father typ))^
-      (match t.ty_kind with
+      (
+       match t.ty_kind with
         Type_abstract -> 
           ""
-      | Type_variant l ->
-          "=\n "^
+      | Type_variant (l, priv) ->
+          "="^(if priv then " private" else "")^"\n "^
           (String.concat ""
              (List.map 
                 (fun constr ->
@@ -337,8 +338,8 @@ class man =
                 l
              )
           )
-      | Type_record l ->
-          "= {"^
+      | Type_record (l, priv) ->
+          "= "^(if priv then "private " else "")^"{"^
           (String.concat ""
              (List.map 
                 (fun r ->

@@ -129,6 +129,9 @@ Emacs mode:
 
 OCamldoc:
 - new ty_code field for types, to keep code of type (with option -keep-code)
+- handling recursive modules
+- handling private types
+- some fixes in html generation
 
 
 Objective Caml 3.06:

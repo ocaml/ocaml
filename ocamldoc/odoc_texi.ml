@@ -614,38 +614,40 @@ class texi =
           | Some typ -> 
               (Raw " = ") :: (self#text_of_short_type_expr 
                                 (Name.father ty.ty_name) typ) ) @
-          ( match ty.ty_kind with
-          | Type_abstract -> [ Newline ]
-          | Type_variant l ->
-              (Raw " =\n") ::
-              (List.flatten 
-                 (List.map 
-                    (fun constr ->
-                      (Raw ("  | " ^ constr.vc_name)) ::
-                      (Raw (self#string_of_type_args constr.vc_args)) ::
-                      (match constr.vc_text with
-                      | None -> [ Newline ]
-                      | Some t -> 
-                          ((Raw (indent 5 "\n(* ")) :: (self#soft_fix_linebreaks 8 t)) @ 
-                          [ Raw " *)" ; Newline ]
-                      ) ) l ) )
-          | Type_record l ->
-              (Raw " = {\n") ::
-              (List.flatten 
-                 (List.map 
-                    (fun r -> 
-                      [ Raw ("  " ^ r.rf_name ^ " : ") ] @
-                      (self#text_of_short_type_expr 
-                         (Name.father r.rf_name)
-                         r.rf_type) @ 
-                      [ Raw " ;" ] @
-                      (match r.rf_text with
-                      | None -> [ Newline ]
-                      | Some t -> 
-                          ((Raw (indent 5 "\n(* ")) :: (self#soft_fix_linebreaks 8 t)) @ 
-                          [ Raw " *)" ; Newline ] ) ) 
-                    l ) )
-              @  [ Raw " }" ] ) ) ;
+          ( 
+	   match ty.ty_kind with
+           | Type_abstract -> [ Newline ]
+           | Type_variant (l, priv) ->
+               (Raw (" ="^(if priv then " private" else "")^"\n")) ::
+               (List.flatten 
+                  (List.map 
+                     (fun constr ->
+                       (Raw ("  | " ^ constr.vc_name)) ::
+                       (Raw (self#string_of_type_args constr.vc_args)) ::
+                       (match constr.vc_text with
+                       | None -> [ Newline ]
+                       | Some t -> 
+                           ((Raw (indent 5 "\n(* ")) :: (self#soft_fix_linebreaks 8 t)) @ 
+                           [ Raw " *)" ; Newline ]
+                       ) ) l ) )
+           | Type_record (l, priv) ->
+               (Raw (" = "^(if priv then "private " else "")^"{\n")) ::
+               (List.flatten 
+                  (List.map 
+                     (fun r -> 
+                       [ Raw ("  " ^ r.rf_name ^ " : ") ] @
+                       (self#text_of_short_type_expr 
+                          (Name.father r.rf_name)
+                          r.rf_type) @ 
+                       [ Raw " ;" ] @
+                       (match r.rf_text with
+                       | None -> [ Newline ]
+                       | Some t -> 
+                           ((Raw (indent 5 "\n(* ")) :: (self#soft_fix_linebreaks 8 t)) @ 
+                           [ Raw " *)" ; Newline ] ) ) 
+                     l ) )
+               @  [ Raw " }" ] 
+	  ) ) ;
           self#index `Type ty.ty_name ; Newline ] @
         (self#text_of_info ty.ty_info) in
       self#texi_of_text t

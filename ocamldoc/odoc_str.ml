@@ -31,8 +31,8 @@ let string_of_type t =
   (match t.M.ty_kind with
     M.Type_abstract -> 
       ""
-  | M.Type_variant l ->
-      "=\n"^
+  | M.Type_variant (l, priv) ->
+      "="^(if priv then " private" else "")^"\n"^
       (String.concat ""
          (List.map 
             (fun cons ->
@@ -53,8 +53,8 @@ let string_of_type t =
             l
          )
       )
-  | M.Type_record l ->
-      "= {\n"^
+  | M.Type_record (l, priv) ->
+      "= "^(if priv then "private " else "")^"{\n"^
       (String.concat ""
          (List.map 
             (fun record ->

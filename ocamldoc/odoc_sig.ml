@@ -256,7 +256,7 @@ module Analyser =
               vc_text = comment_opt
             } 
           in
-          Odoc_type.Type_variant (List.map f l)
+          Odoc_type.Type_variant (List.map f l, priv = Asttypes.Private)
 
       | Types.Type_record (l, _, priv) ->
           let f (field_name, mutable_flag, type_expr) =
@@ -274,7 +274,7 @@ module Analyser =
               rf_text = comment_opt
             } 
           in
-          Odoc_type.Type_record (List.map f l)
+          Odoc_type.Type_record (List.map f l, priv = Asttypes.Private)
 
     (** Analysis of the elements of a class, from the information in the parsetree and in the class
        signature. @return the couple (inherited_class list, elements).*)

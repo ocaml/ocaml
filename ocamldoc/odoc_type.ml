@@ -32,8 +32,10 @@ type record_field = {
 (** The various kinds of type. *)
 type type_kind = 
     Type_abstract
-  | Type_variant of variant_constructor list
-  | Type_record of record_field list
+  | Type_variant of variant_constructor list * bool
+                   (** constructors * bool *)
+  | Type_record of record_field list * bool
+	           (** fields * bool *)
 
 (** Representation of a type. *)
 type t_type = {

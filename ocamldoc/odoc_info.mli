@@ -203,8 +203,10 @@ module Type :
     (** The various kinds of a type. *)
     type type_kind = Odoc_type.type_kind = 
         Type_abstract (** Type is abstract, for example [type t]. *)
-      | Type_variant of variant_constructor list
-      | Type_record of record_field list
+      | Type_variant of variant_constructor list * bool
+                   (** constructors * bool *)
+      | Type_record of record_field list * bool
+	           (** fields * bool *)
 
     (** Representation of a type. *)
     type t_type = Odoc_type.t_type = 
@@ -217,6 +219,7 @@ module Type :
           mutable ty_loc : location ;
           mutable ty_code : string option;
         } 
+
   end
 
 (** Representation and manipulation of values, class attributes and class methods. *)

@@ -732,11 +732,11 @@ and assoc_comments_type module_list t =
   t.ty_info <- ao (assoc_comments_info module_list) t.ty_info ;
   (match t.ty_kind with
     Type_abstract -> ()
-  | Type_variant vl ->
+  | Type_variant (vl, _) ->
       List.iter 
         (fun vc -> vc.vc_text <- ao (assoc_comments_text module_list) vc.vc_text)
         vl 
-  | Type_record fl ->
+  | Type_record (fl, _) ->
       List.iter 
         (fun rf -> rf.rf_text <- ao (assoc_comments_text module_list) rf.rf_text)
         fl

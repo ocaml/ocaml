@@ -406,17 +406,19 @@ class latex =
           Format.fprintf Format.str_formatter 
             ("%s %s")
             s_type2
-            (match t.ty_kind with
-              Type_abstract -> ""
-            | Type_variant _ -> "="
-            | Type_record _ -> "= {" ) ;
+            (
+	     match t.ty_kind with
+               Type_abstract -> ""
+             | Type_variant (_, priv) -> "="^(if priv then " private" else "")
+             | Type_record (_, priv) -> "= "^(if priv then "private " else "")^"{" 
+	    ) ;
           Format.flush_str_formatter ()
         in
         
         let defs = 
           match t.ty_kind with
             Type_abstract -> []
-          | Type_variant l ->
+          | Type_variant (l, _) ->
               (List.flatten
                (List.map
                   (fun constr ->
@@ -444,7 +446,7 @@ class latex =
                   l
                )
               )
-          | Type_record l ->
+          | Type_record (l, _) ->
               (List.flatten
                  (List.map
                     (fun r ->
@@ -911,7 +913,7 @@ class latex =
         );
       
       try
-        let chanout = open_out (Filename.concat !Args.target_dir !Args.out_file) in
+        let chanout = open_out !Args.out_file in
         let _ = if !Args.with_header then output_string chanout self#latex_header else () in
         List.iter 
           (fun m -> if !Args.separate_files then
