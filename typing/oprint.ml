@@ -55,13 +55,12 @@ let print_out_value ppf tree =
     | Oval_int i ->
        if i < 0 then fprintf ppf "(%i)" i else fprintf ppf "%i" i
     | Oval_float f ->
-       let s = string_of_float f in
-       if f < 0.0 then fprintf ppf "(%s)" s else fprintf ppf "%s" s
+       if f < 0.0 then fprintf ppf "(%F)" f else fprintf ppf "%F" f
     | tree -> print_simple_tree ppf tree
   and print_simple_tree ppf =
     function
       Oval_int i -> fprintf ppf "%i" i
-    | Oval_float f -> fprintf ppf "%s" (string_of_float f)
+    | Oval_float f -> fprintf ppf "%F" f
     | Oval_char c -> fprintf ppf "%C" c
     | Oval_string s ->
         begin try fprintf ppf "%S" s with

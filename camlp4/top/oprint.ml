@@ -60,10 +60,10 @@ value print_out_value ppf tree =
   and print_simple_tree ppf =
     fun
     [ Oval_int i -> fprintf ppf "%i" i
-    | Oval_float f -> fprintf ppf "%s" (string_of_float f)
-    | Oval_char c -> fprintf ppf "'%s'" (Char.escaped c)
+    | Oval_float f -> fprintf ppf "%F" f
+    | Oval_char c -> fprintf ppf "%C" c
     | Oval_string s ->
-        try fprintf ppf "\"%s\"" (String.escaped s) with
+        try fprintf ppf "%S" s with
         [ Invalid_argument "String.create" -> fprintf ppf "<huge string>" ]
     | Oval_list tl ->
         fprintf ppf "@[<1>[%a]@]" (print_tree_list print_tree_1 ";") tl
