@@ -64,7 +64,7 @@ while : ; do
     -tklibs*|--tklibs*)
         tk_libs=$2; shift;;
     -verbose|--verbose)
-	verbose=yes; shift;;
+	verbose=yes;;
     *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
   esac
   shift
@@ -819,19 +819,19 @@ if test $has_tk = true; then
   then tk_libs="$tk_libs $dllib"
   elif sh ./hasgot $tk_libs -ltcl$tclmaj.$tclmin $tkauxlibs Tcl_DoOneEvent
   then
-    tk_libs="$tk_libs -ltcl$tclmaj.$tclmin -ltk$tkmaj.$tkmin $dllib"
+    tk_libs="$tk_libs -ltk$tkmaj.$tkmin -ltcl$tclmaj.$tclmin $dllib"
   elif sh ./hasgot $tk_libs -ltcl$tclmaj$tclmin $tkauxlibs Tcl_DoOneEvent
   then
-    tk_libs="$tk_libs -ltcl$tclmaj$tclmin -ltk$tkmaj$tkmin $dllib"
+    tk_libs="$tk_libs -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin $dllib"
   elif test -z "$tk_libs" && tk_libs=-L/usr/local/lib && \
     sh ./hasgot $tk_libs -ltcl$tclmaj.$tclmin $tkauxlibs Tcl_DoOneEvent
   then
-    tk_libs="$tk_libs -ltcl$tclmaj.$tclmin -ltk$tkmaj.$tkmin $dllib"
+    tk_libs="$tk_libs -ltk$tkmaj.$tkmin -ltcl$tclmaj.$tclmin $dllib"
   elif sh ./hasgot $tk_libs -ltcl$tclmaj$tclmin $tkauxlibs Tcl_DoOneEvent
   then
-    tk_libs="$tk_libs -ltcl$tclmaj$tclmin -ltk$tkmaj$tkmin $dllib"
+    tk_libs="$tk_libs -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin $dllib"
 # elif sh ./hasgot $tk_libs -ltcl $tkauxlibs Tcl_DoOneEvent; then
-#   tk_libs="$tk_libs -ltcl -ltk"
+#   tk_libs="$tk_libs -ltk -ltcl"
   else
     echo "Tcl library not found."
     has_tk=false
