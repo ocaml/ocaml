@@ -32,7 +32,7 @@ stdlib.cmxa: $(OBJS:.cmo=.cmx)
 cslheader: header.c ../Makefile.config
 	if $(SHARPBANGSCRIPTS); \
 	then echo "#!$(BINDIR)/cslrun" > cslheader; \
-	else $(CC) $(CCCOMPOPTS) $(CCLINKOPTS) header.c -o cslheader; \
+	else $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) header.c -o cslheader; \
 	     strip cslheader; fi
 
 pervasives.cmi: pervasives.mli
