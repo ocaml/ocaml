@@ -1,6 +1,6 @@
 #!/usr/local/bin/perl
 
-$camllight = "TERM=dumb csltop";
+$camllight = "TERM=dumb ocaml";
 $camlbegin = "\\caml\n";
 $camlend = "\\endcaml\n";
 $camlin = "\\?";
@@ -77,7 +77,7 @@ foreach $infile (@ARGV) {
         while(1) {
           s/\\/\\\\/g;
           print OUT $camlin, $_;
-          last if m/;;\s*$/;
+          last if m/;; *$/;
           $_ = <IN>;
         }
 	while ($lastread =~ s/^#//) { }
@@ -110,7 +110,7 @@ foreach $infile (@ARGV) {
     elsif (m/^\\begin{caml_eval}\s*$/) {
       while(<IN>) {
         last if m/^\\end{caml_eval}\s*$/;
-        if (m/;;\s*$/) {
+        if (m/;; *$/) {
 	  while ($lastread =~ s/^#//) { }
 	  while($lastread) {
 	    last if $lastread =~ s/^#//;
