@@ -69,8 +69,10 @@ let add_superpressure_regs op live_regs res_regs spilled =
   Reg.Set.iter
     (fun r ->
       if Reg.Set.mem r spilled then () else begin
-        let c = Proc.register_class r in
-        pressure.(c) <- pressure.(c) + 1
+        match r.loc with
+          Stack s -> ()
+        | _ -> let c = Proc.register_class r in
+               pressure.(c) <- pressure.(c) + 1
       end)
     regs;
   (* Check if pressure is exceeded for each class. *)
