@@ -1,5 +1,4 @@
 *.x
-copy-files
 byterun
 config
 accept.c

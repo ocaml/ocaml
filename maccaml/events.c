@@ -14,10 +14,19 @@
 
 #include "main.h"
 
+/* [quit_requested] becomes true when the user chooses File:Quit */
+int quit_requested = 0;
+
+/* [intr_requested] is true if the user typed command-period and the
+   SIGINT signal was not yet delivered.
+*/
+int intr_requested = 0;
+
+UInt32 last_event_date = 0;
+
 UInt32 evtSleep = 0;
 static RgnHandle mouseRegion = NULL;
 static RgnHandle pointRegion = NULL;
-static long cursor_timeout;
 
 static void AdjustCursor (Point mouse, RgnHandle mouseRegion)
 {
@@ -26,12 +35,12 @@ static void AdjustCursor (Point mouse, RgnHandle mouseRegion)
   int k = WinGetKind (w);
   Boolean res;
 
-  if (caml_at_work && TickCount () > cursor_timeout){
-    DisplayRotatingCursor ();
-    return;
-  }
   SetRectRgn (mouseRegion, -SHRT_MAX, -SHRT_MAX, SHRT_MAX, SHRT_MAX);
   if (we != NULL && k != kWinAbout){
+    if (w == winToplevel){
+      res = AdjustRotatingCursor ();
+      if (res) return;
+    }
     res = WEAdjustCursor (mouse, mouseRegion, we);
     if (res) return;
   }
@@ -91,7 +100,8 @@ static void DoKeyDown (EventRecord *evt)
   if (isCmdKey && chr == '.'
       && FrontWindow () == winToplevel
       && evt->what != autoKey){
-    intr_requested = 1;
+    FlushUnreadInput ();
+    raise (SIGINT);
   }
   if (isCmdKey && chr >= 0x20){
     UpdateMenus ();
@@ -230,16 +240,9 @@ static void DoDialogEvent (EventRecord *evt)
   }
 }
 
-Point latestpos = {-1, -1};
-
 static pascal Boolean ProcessEvent (EventRecord *evt, long *sleep,
                                     RgnHandle *rgn)
 {
-  if (evt->what != nullEvent
-      || evt->where.h != latestpos.h || evt->where.v != latestpos.v){
-    latestpos = evt->where;
-    cursor_timeout = TickCount () + 60;
-  }
   if (evt->what <= osEvt) AdjustCursor (evt->where, mouseRegion);
   if (IsDialogEvent (evt)){
     DoDialogEvent (evt);

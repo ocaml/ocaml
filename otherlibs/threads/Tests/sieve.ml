@@ -29,3 +29,5 @@ let go max =
      print_primes ch max;;
 
 let _ = go 1000
+
+;;

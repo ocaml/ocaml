@@ -66,7 +66,7 @@ void ReadPrefs (void)
   if (prefsH == NULL) goto cantread;
   if (GetHandleSize (prefsH) != sizeof (prefs)) goto cantread;
   if (**(long **)prefsH != PREF_VERSION) goto cantread;
-  memcpy (&prefs, *prefsH, sizeof (prefs));
+  memmove (&prefs, *prefsH, sizeof (prefs));
   CloseResFile (refnum);
   return;
 
@@ -108,7 +108,7 @@ void WritePrefs (void)
   }
   SetHandleSize (prefsH, sizeof (prefs));
   if (MemError () != noErr) goto cantwrite;
-  memcpy (*prefsH, &prefs, sizeof (prefs));
+  memmove (*prefsH, &prefs, sizeof (prefs));
   ChangedResource (prefsH);
 
   h = GetResource ('STR ', kPrefsDescriptionStr);

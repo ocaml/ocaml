@@ -31,6 +31,6 @@ let main() =
   for i = 1 to nprocs - 1 do conds.(i) <- Condition.create() done;
   niter := iter;
   for i = 0 to nprocs - 1 do Thread.create process (i, conds, nprocs) done;
-  Thread.sleep()
+  Thread.delay 3600.
 
 let _ = main()

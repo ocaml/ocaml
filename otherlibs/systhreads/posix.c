@@ -251,8 +251,8 @@ static void * caml_thread_tick(void * arg)
     timeout.tv_usec = Thread_timeout;
     select(0, NULL, NULL, NULL, &timeout);
     /* This signal should never cause a callback, so don't go through
-       handle_signal(), tweak the global variables directly. */
-    pending_signal = SIGVTALRM;
+       handle_signal(), tweak the global variable directly. */
+    if (pending_signal == 0) pending_signal = SIGVTALRM;
 #ifdef NATIVE_CODE
     young_limit = young_end;
 #else
@@ -315,7 +315,6 @@ value caml_thread_initialize(value unit)   /* ML */
     caml_pthread_check(
         pthread_create(&tick_pthread, &attr, caml_thread_tick, NULL),
         "Thread.init");
-    pthread_detach(tick_pthread);
   End_roots();
   return Val_unit;
 }

@@ -4,8 +4,8 @@ parsing.cmiÄ lexing.cmi obj.cmi
 printf.cmiÄ buffer.cmi 
 arg.cmoÄ array.cmi list.cmi printf.cmi string.cmi sys.cmi arg.cmi 
 arg.cmxÄ array.cmx list.cmx printf.cmx string.cmx sys.cmx arg.cmi 
-array.cmoÄ list.cmi array.cmi 
-array.cmxÄ list.cmx array.cmi 
+array.cmoÄ pervasives.cmi array.cmi 
+array.cmxÄ pervasives.cmx array.cmi 
 buffer.cmoÄ string.cmi sys.cmi buffer.cmi 
 buffer.cmxÄ string.cmx sys.cmx buffer.cmi 
 callback.cmoÄ obj.cmi callback.cmi 
@@ -32,8 +32,8 @@ lazy.cmoÄ lazy.cmi
 lazy.cmxÄ lazy.cmi 
 lexing.cmoÄ string.cmi lexing.cmi 
 lexing.cmxÄ string.cmx lexing.cmi 
-list.cmoÄ list.cmi 
-list.cmxÄ list.cmi 
+list.cmoÄ array.cmi list.cmi 
+list.cmxÄ array.cmx list.cmi 
 map.cmoÄ map.cmi 
 map.cmxÄ map.cmi 
 marshal.cmoÄ string.cmi marshal.cmi 

@@ -17,24 +17,15 @@
 
 extern "C" {
 #include "main.h"
+#include <rotatecursor.h>
 }
 
 static void spin_hook_for_gusi (bool wait)
 {
-  RotateCursor (32);
-  if (wait) GetAndProcessEvents (waitEvent, 0, 0);
-}
-
-extern "C" void InitialiseGUSI (void)
-{
-  GUSISetHook (GUSI_SpinHook, (GUSIHook) spin_hook_for_gusi);
-}
-
-void GUSIConfiguration::CheckInterrupt ()
-{
-  if (intr_requested){
-    intr_requested = 0;
-    raise (SIGINT);
+#pragma unused (wait)
+  if (rotatecursor_flag){
+    rotatecursor_rearm ();
+    RotateCursor (32);
   }
 }
 
@@ -78,6 +69,7 @@ void GUSISetupFactories()
 #ifdef GUSISetupFactories_EndHook
     GUSISetupFactories_EndHook
 #endif
+    GUSISetHook (GUSI_SpinHook, (GUSIHook) spin_hook_for_gusi);
 }
 
 /* Declarations of File Devices */
@@ -99,6 +91,7 @@ void GUSISetupDevices()
 #ifdef GUSISetupDevices_EndHook
     GUSISetupDevices_EndHook
 #endif
+    GUSISetHook (GUSI_SpinHook, (GUSIHook) spin_hook_for_gusi);
 }
 
 #ifndef __cplusplus
@@ -120,8 +113,9 @@ extern "C" void GUSISetupConfig()
         sizeof(sSuffices)/sizeof(GUSIConfiguration::FileSuffix)-1, sSuffices);
     config->ConfigureAutoInitGraf(false);
     config->ConfigureAutoSpin(false);
-    config->ConfigureSigPipe(true);
     config->ConfigureSigInt(false);
+    config->ConfigureSigPipe(true);
+    GUSISetHook (GUSI_SpinHook, (GUSIHook) spin_hook_for_gusi);
 }
 
 /**************** E N D GUSI CONFIGURATION *************************/

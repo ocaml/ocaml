@@ -51,6 +51,7 @@ let rec consume () =
   print_string "-->"; print_int n; print_newline();
   if n < 10000 then consume ()
 
-let _ =
-  Thread.create produce 0;
-  consume ()
+let t1 = Thread.create produce 0
+let _ = consume ()
+
+;;

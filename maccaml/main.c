@@ -77,8 +77,6 @@ static OSErr Initialise (void)
     if (err != noErr) goto problem;
   }
 
-  InitialiseGUSI ();
-
   err = InitialiseEvents ();
   if (err != noErr) goto problem;
 
@@ -120,8 +118,8 @@ int main (void)
     GetAndProcessEvents (waitEvent, 0, 0);
     if (quit_requested) exit (0);
   }
-  err = launch_caml_main ();
+  err = launch_caml_main (); /* launch bytecode interp and event loop */
   if (err != noErr) ErrorAlertGeneric (err);
   exit (0);
-  return 0;
+  return 0; /* not reached */
 }

@@ -48,8 +48,8 @@ resource 'SIZE' (-1) {
     reserved,
     reserved,
     reserved,
-    4000 * 1024,
-    1500 * 1024
+    6000 * 1024,
+    2000 * 1024
 };
 
 data 'Line' (kCommandLineTemplate) {

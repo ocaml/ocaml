@@ -53,6 +53,8 @@
 
 #include "WASTE.h"
 
+#include "../byterun/signals.h"
+
 #include "constants.h"
 
 #if DEBUG
@@ -108,10 +110,6 @@ struct prefs {
   TextStyle errors;
 };
 
-/* from ::byterun:signals.c */
-extern int async_signal_mode;
-extern void handle_signal (int);
-
 /* aboutbox.c */
 void OpenAboutBox (void);
 void CloseAboutBox (WindowPtr w);
@@ -138,6 +136,9 @@ void ErrorAlertGeneric (OSErr err);
 OSErr InitialiseErrors (void);
 
 /* events.c */
+extern int quit_requested;
+extern int intr_requested;
+extern UInt32 last_event_date;
 extern UInt32 evtSleep;
 void GetAndProcessEvents (WaitEventOption wait, short oldx, short oldy);
 OSErr InitialiseEvents (void);
@@ -152,16 +153,14 @@ void FileRevert (WindowPtr w);
 OSErr FileDoSave (WindowPtr w, int saveasflag);
 
 /* glue.c */
-extern int intr_requested;
-extern int quit_requested;
-extern int exit_called;
-extern int caml_at_work;
-void Caml_working (int newstate);
 OSErr launch_caml_main (void);
-pascal void RotateCursor (long);
-void DisplayRotatingCursor (void);
+int AdjustRotatingCursor (void);
+pascal void RotateCursor (long counter);
+void FlushUnreadInput (void);
 
 /* graph.c */
+extern int motion_requested;
+extern short motion_oldx, motion_oldy;
 void GraphGotEvent (EventRecord *evt);
 void GraphNewSizePos (void);
 void GraphScroll (long dx, long dy);

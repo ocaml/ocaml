@@ -31,6 +31,6 @@ let main() =
   niter := iter;
   for i = 0 to nprocs - 1 do Thread.create process (i, ins, outs, nprocs) done;
   ThreadUnix.write outs.(0) "X" 0 1;
-  Thread.sleep()
+  Thread.delay 3600.
 
 let _ = main()

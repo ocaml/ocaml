@@ -6,8 +6,10 @@ let print_message c =
     if !yield then Thread.yield()
   done
 
-let _ =
-  yield := (Array.length Sys.argv > 1);
-  let t1 = Thread.create print_message 'a' in
-  let t2 = Thread.create print_message 'b' in
-  Thread.join t1; Thread.join t2; exit 0
+let _ = yield := (Array.length Sys.argv > 1)
+let t1 = Thread.create print_message 'a'
+let t2 = Thread.create print_message 'b'
+let _ = Thread.join t1
+let _ = Thread.join t2
+
+;;

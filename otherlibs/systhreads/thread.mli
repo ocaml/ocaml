@@ -79,6 +79,7 @@ val wait_pid : int -> int * Unix.process_status
            until the process specified by the process identifier [p]
            terminates. Returns the pid of the child caught and
            its termination status, as per [Unix.wait]. *)
+        (* This function is not implemented under MacOS. *)
 val wait_signal : int list -> int
         (* [wait_signal sigs] suspends the execution of the calling thread
            until the process receives one of the signals specified in the

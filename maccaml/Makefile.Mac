@@ -93,15 +93,15 @@ RezDefs = -d SystemSevenOrLater=1 -d MAJORVNUM={MAJOR} ¶
 OBJS = aboutbox.c.o appleevents.c.o clipboard.c.o ¶
        drag.c.o errors.c.o ¶
        events.c.o files.c.o glue.c.o ¶
-       graph.c.o lcontrols.c.o lib.c.o main.c.o memory.c.o ¶
-       menus.c.o misc.c.o modalfilter.c.o prefs.c.o prims.c.o ¶
+       graph.c.o lcontrols.c.o lib.c.o main.c.o mcmemory.c.o ¶
+       menus.c.o mcmisc.c.o modalfilter.c.o prefs.c.o prims.c.o ¶
        print.c.o scroll.c.o windows.c.o gusistuff.cp.o
 
 PPCOBJS = aboutbox.c.x appleevents.c.x clipboard.c.x ¶
           drag.c.x errors.c.x ¶
           events.c.x files.c.x glue.c.x ¶
-          graph.c.x lcontrols.c.x lib.c.x main.c.x memory.c.x ¶
-          menus.c.x misc.c.x modalfilter.c.x prefs.c.x prims.c.x ¶
+          graph.c.x lcontrols.c.x lib.c.x main.c.x mcmemory.c.x ¶
+          menus.c.x mcmisc.c.x modalfilter.c.x prefs.c.x prims.c.x ¶
           print.c.x scroll.c.x windows.c.x gusistuff.cp.x
 
 all Ä appli
@@ -129,11 +129,11 @@ gusistuff.cp.o Ä gusistuff.cp
     {cplus} {coptions} -bool on -includes unix -i "{gusi}include" ¶
             gusistuff.cp -w 2
 
-OCaml.PPC Ä {PPCOBJS}
+OCaml.PPC Ä {PPCOBJS} {ppccamlrunlibs}
     ppclink -o OCaml.PPC {ppclinkoptions} {PPCOBJS} {ppclibs}
     rename -y OCaml.PPC.xcoff "Objective Caml.xcoff" || set status 0
 
-OCaml.68k Ä {OBJS}
+OCaml.68k Ä {OBJS} {camlrunlibs}
     ilink -o OCaml.68k {linkoptions} {OBJS} {libs}
 
 OCaml.bytecode Ä primitives ::toplevellib.cma ::toplevel:topmain.cmo ¶
@@ -154,8 +154,11 @@ appli ÄÄ OCaml.PPC OCaml.68k OCaml.bytecode ocaml.r dummy_fragment
     setfile -t APPL -c Caml -a iB "Objective Caml"
 
 install Ä
-    duplicate -y "Objective Caml" `exists "objective caml.xcoff"` "{APPLIDIR}"
-    duplicate -y ::test:Moretest:graph_example.ml "{APPLIDIR}"
+    duplicate -y "Objective Caml" ¶
+                 `exists "objective caml.xcoff" ¶
+                         "::test:Moretest:graph_example.ml" ¶
+                         ` ¶
+              "{APPLIDIR}"
 
 partialclean Ä
     delete -i OCaml.bytecode "Objective Caml"

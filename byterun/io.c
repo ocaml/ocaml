@@ -534,7 +534,7 @@ value caml_input_int(value vchannel)        /* ML */
   return Val_long(i);
 }
 
-value caml_input(value vchannel, value buff, value vstart, value vlength) /* ML */
+value caml_input(value vchannel,value buff,value vstart,value vlength) /* ML */
 {
   CAMLparam4 (vchannel, buff, vstart, vlength);
   struct channel * channel = Channel(vchannel);

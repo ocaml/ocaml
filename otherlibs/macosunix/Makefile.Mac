@@ -95,9 +95,12 @@ CAML_OBJS = macosunix_startup.cmo unix.cmo
 
 all Ä
     domake copy-files
+    directory :byterun:
+    domake libcamlrun.x libcamlrun.o
+    directory ::
     domake libcamlrun-unix.x libcamlrun-unix.o unix.cma
 
-### WATCH OUT: ocamlrun.[ox] must be linked last to override getcwd
+### WATCH OUT: libcamlrun.[ox] must be linked last to override getcwd
 
 libcamlrun-unix.x Ä {C_OBJSPPC} :byterun:libcamlrun.x
     ppclink {ldbgflag} -xm library -o libcamlrun-unix.x ¶
@@ -106,17 +109,7 @@ libcamlrun-unix.x Ä {C_OBJSPPC} :byterun:libcamlrun.x
 libcamlrun-unix.o Ä {C_OBJS} :byterun:libcamlrun.o
     lib {ldbgflag} -o libcamlrun-unix.o {C_OBJS} :byterun:libcamlrun.o
 
-:byterun:libcamlrun.x Ä
-    directory :byterun:
-    domake libcamlrun.x
-    directory ::
-
-:byterun:libcamlrun.o Ä
-    directory :byterun:
-    domake libcamlrun.o
-    directory ::
-
-copy-files Ä
+copy-files Ä $OutOfDate
     directory ::unix:
     duplicate -y {UNIX_FILES} ::macosunix:
     directory ::macosunix:
@@ -127,9 +120,8 @@ copy-files Ä
       catenate :::byterun:Makefile.Mac
     end > :byterun:Makefile.Mac
     duplicate -y :::config: :
-    echo > copy-files
 
-unix.cma Ä copy-files {CAML_OBJS}
+unix.cma Ä {CAML_OBJS}
     {CAMLC} -a -linkall -o unix.cma {CAML_OBJS}
 
 partialclean Ä
@@ -137,8 +129,7 @@ partialclean Ä
 
 clean Ä partialclean
     delete -i Å.[xo] || set status 0
-    delete -i {UNIX_FILES} copy-files
-    delete -i -y :byterun :config
+    delete -i -y {UNIX_FILES} :byterun :config
 
 install Ä
     duplicate -y libcamlrun-unix.o libcamlrun-unix.x unix.cmi unix.cma ¶

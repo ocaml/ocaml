@@ -376,8 +376,7 @@ void init_gc (unsigned long minor_size, unsigned long major_size,
                                "(" CPU_TYPE_STRING ") "
 #endif
                                                        "###\n", 0);
-#endif /* DEBUG */
-/* FIXME remove comments in preprocessor lines (ANSI C wart) */
+#endif
 
   verb_gc = verb;
   set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));

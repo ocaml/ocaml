@@ -126,96 +126,30 @@ void GraphScroll (long dx, long dy)
   SetPort (port);
 }
 
-/* keyboard event queue */
-typedef struct {
-  short mouse_x, mouse_y;
-  short button;
-  char key;
-} GraphEvent;
+/* Graphics event queue */
+#define GraphQsize 15
+static EventRecord graphQ[GraphQsize];
+static int graphQlen = 0;
 
-#define Queue_length 256
-static GraphEvent graphQ [Queue_length];
-static long graphQhd = 0, graphQtl = 0;
-
-#define Incr(x){ \
-  ++ (x); \
-  if ((x) >= Queue_length) (x) = 0; \
-}
-
-static void GraphQPush (GraphEvent *evt)
-{
-  graphQ [graphQtl] = *evt;
-  Incr (graphQtl);
-  if (graphQtl == graphQhd) { Incr (graphQhd); }
-}
-
-static GraphEvent *GraphQPop (void)
-{
-  if (graphQhd == graphQtl){
-    return NULL;
-  }else{
-    GraphEvent *result = &graphQ [graphQhd];
-    Incr (graphQhd);
-    return result;
-  }
-}
-
-static GraphEvent *GraphQHead (void)
-{
-  if (graphQhd == graphQtl){
-    return NULL;
-  }else{
-    return &graphQ [graphQhd];
-  }
-}
-
-#define Button_down_val 0
-#define Button_up_val 1
-#define Key_pressed_val 2
-#define Mouse_motion_val 3
-#define Poll_val 4
-
-/* The latest mouse event that took place in the graphics window. */
-static struct {
-  int valid;
-  long type;
-  long mouse_x;
-  long mouse_y;
-} latestevent;
+#define Succ(x) ((x) >= GraphQsize ? 0 : (x)+1)
 
 void GraphGotEvent (EventRecord *evt)
 {
-  GrafPtr saveport;
-  Point pt = evt->where;
-  GraphEvent grevt;
+  GrafPort *saveport;
+
+  if (graphQlen < GraphQsize) ++ graphQlen;
+  memmove (&(graphQ[1]), &(graphQ[0]), (graphQlen - 1) * sizeof (graphQ[0]));
+
+  graphQ[0] = *evt;
 
   PushWindowPort (winGraphics);
-  GlobalToLocal (&pt);
+  GlobalToLocal (&(graphQ[0].where));
   PopPort;
-
-  switch (evt->what){
-  case mouseDown:
-    latestevent.type = Button_down_val;
-    latestevent.valid = 1;
-    latestevent.mouse_x = Cx (pt.h);
-    latestevent.mouse_y = Cy (pt.v);
-    break;
-  case mouseUp:
-    latestevent.type = Button_up_val;
-    latestevent.valid = 1;
-    latestevent.mouse_x = Cx (pt.h);
-    latestevent.mouse_y = Cy (pt.v);
-    break;
-  case keyDown:
-  case autoKey:
-    grevt.mouse_x = Cx (pt.h);
-    grevt.mouse_y = Cy (pt.v);
-    grevt.button = evt->modifiers & btnState;
-    grevt.key = evt->message & charCodeMask;
-    GraphQPush (&grevt);
-    break;
-  default: Assert (0);
-  }
+}
+static void DequeueEvent (int i)
+{
+  -- graphQlen;
+  memmove (&(graphQ[i]), &(graphQ[i+1]), (graphQlen - i) * sizeof (graphQ[0]));
 }
 
 /***********************************************************************/
@@ -1056,18 +990,25 @@ value gr_blit_image (value vimage, value vx, value vy)
   return Val_unit;
 }
 
-static long oldx = SHRT_MAX - 1, oldy = SHRT_MAX - 1;
+int motion_requested = 0;
+short motion_oldx, motion_oldy;
+/* local coord versions of motion_oldx, motion_oldy */
+static Point lastpt = {SHRT_MAX - 1, SHRT_MAX - 1};
+
+#define Button_down_val 0
+#define Button_up_val 1
+#define Key_pressed_val 2
+#define Mouse_motion_val 3
+#define Poll_val 4
 
 value gr_wait_event (value veventlist)
 {
   int askmousedown = 0, askmouseup = 0, askkey = 0, askmotion = 0, askpoll = 0;
-  long mouse_x, mouse_y;
-  int button, keypressed;
-  char key = 0;
-  GraphEvent *evt;
   GrafPtr saveport;
   value result;
+  int mouse_x, mouse_y, button, keypressed, key;
   Point pt;
+  int i;
 
   gr_check_open();
   PushWindowPort (winGraphics);
@@ -1079,105 +1020,91 @@ value gr_wait_event (value veventlist)
     case Key_pressed_val:  askkey = 1;       break;
     case Mouse_motion_val: askmotion = 1;    break;
     case Poll_val:         askpoll = 1;      break;
+    default: Assert (0);
     }
     veventlist = Field (veventlist, 1);
   }
 
-  if (askpoll){
-    GetMouse (&pt);
-    mouse_x = Cx (pt.h);
-    mouse_y = Cy (pt.v);
-    button = Button ();
-    evt = GraphQHead ();
-    if (evt != NULL) {
-      keypressed = 1;
-      key = evt->key;
-    }else{
-      keypressed = 0;
-    }
-    goto gotevent;
-  }
-  if (askkey && (evt = GraphQPop ()) != NULL){
-    mouse_x = evt->mouse_x;
-    mouse_y = evt->mouse_y;
-    button = evt->button;
-    keypressed = 1;
-    key = evt->key;
-    goto gotevent;
-  }
-  /* Change from Caml coordinates to global QD coordinates. */
-  pt.h = Wx (oldx);
-  pt.v = Wy (oldy);
-  LocalToGlobal (&pt);
-  /* Restore the grafport now because handle_signal may longjmp
-     directly out of here.
-  */
-  PopPort;
+  enter_blocking_section ();
+
   while (1){
-    latestevent.valid = 0;
-    enter_blocking_section ();
-    Caml_working (0);
-    GetAndProcessEvents (askmotion ? waitMove : waitEvent, pt.h, pt.v);
-    if (quit_requested) exit (0);
-    if (intr_requested){
-      intr_requested = 0;
-      Caml_working (1);
-      async_signal_mode = 1;
-      handle_signal (SIGINT);
-      async_signal_mode = 0;
-      Caml_working (0);
+    while (graphQlen > 0 && graphQ[0].when + 300 < TickCount ()){
+      DequeueEvent (0);
     }
-    Caml_working (1);
-    leave_blocking_section ();
-    if (askkey && (evt = GraphQPop ()) != NULL){
-      mouse_x = evt->mouse_x;
-      mouse_y = evt->mouse_y;
-      button = evt->button;
-      keypressed = 1;
-      key = evt->key;
+    for (i = graphQlen - 1; i >= 0; i--){
+      int what = graphQ[i].what;
+      if (askpoll){
+        if (what == keyDown || what == autoKey){
+          GetMouse (&pt);
+          mouse_x = pt.h;
+          mouse_y = pt.v;
+          button = Button ();
+          keypressed = 1;
+          key = graphQ[i].message & charCodeMask;
+          goto gotevent;
+        }
+      }else if (   askmousedown && what == mouseDown
+                || askmouseup && what == mouseUp){
+        mouse_x = graphQ[i].where.h;
+        mouse_y = graphQ[i].where.v;
+        button = graphQ[i].what = mouseDown;
+        keypressed = 0;
+        DequeueEvent (i);
+        goto gotevent;
+      }else if (askkey && (what == keyDown || what == autoKey)){
+        mouse_x = graphQ[i].where.h;
+        mouse_y = graphQ[i].where.v;
+        button = Button ();
+        keypressed = 1;
+        key = graphQ[i].message & charCodeMask;
+        DequeueEvent (i);
+        goto gotevent;
+      }
+    }
+    GetMouse (&pt);
+    if (askpoll || askmotion && (pt.h != lastpt.h || pt.v != lastpt.v)){
+      mouse_x = pt.h;
+      mouse_y = pt.v;
+      button = Button ();
+      keypressed = 0;
       goto gotevent;
     }
-    if (latestevent.valid){
-      if (askmousedown && latestevent.type == Button_down_val){
-        mouse_x = latestevent.mouse_x;
-        mouse_y = latestevent.mouse_y;
-        button = 1;
-        keypressed = 0;
-        goto gotevent;
-      }
-      if (askmouseup && latestevent.type == Button_up_val){
-        mouse_x = latestevent.mouse_x;
-        mouse_y = latestevent.mouse_y;
-        button = 0;
-        keypressed = 0;
-        goto gotevent;
-      }
-    }
     if (askmotion){
-      SetPort (winGraphics);
-      GetMouse (&pt);
-      SetPort (saveport);
-      mouse_x = Cx (pt.h);
-      mouse_y = Cy (pt.v);
-      if (mouse_x != oldx || mouse_y != oldy){
-        button = Button ();
-        keypressed = 0;
-        goto gotevent;
-      }
+      motion_requested = 1;
+      pt = lastpt;
+      LocalToGlobal (&pt);
+      motion_oldx = pt.h;
+      motion_oldy = pt.v;
     }
     sched_yield ();
+    if (pending_signal != 0 && pending_signal != SIGVTALRM){
+      /* handle signals, but not the tick thread stuff because:
+         1. We don't hold the master lock so it is not needed.
+         2. It would execute some Caml code and prevent processor idle.
+      */
+      PopPort;
+      intr_requested = 0;
+      raise (SIGINT);
+      leave_blocking_section ();
+      enter_blocking_section ();
+      PushWindowPort (winGraphics);
+    }
   }
-  gotevent:
-  oldx = mouse_x;
-  oldy = mouse_y;
 
-  result = alloc_tuple (5);
-  Field (result, 0) = Val_int (mouse_x);
-  Field (result, 1) = Val_int (mouse_y);
-  Field (result, 2) = Val_bool (button);
-  Field (result, 3) = Val_bool (keypressed);
-  Field (result, 4) = Val_int (key);
-  return result;
+  gotevent:
+    PopPort;
+    leave_blocking_section ();  /* acquire master lock, handle signals */
+    lastpt.h = mouse_x;
+    lastpt.v = mouse_y;
+    motion_requested = 0;
+  
+    result = alloc_tuple (5);
+    Field (result, 0) = Val_int (Cx (mouse_x));
+    Field (result, 1) = Val_int (Cy (mouse_y));
+    Field (result, 2) = Val_bool (button);
+    Field (result, 3) = Val_bool (keypressed);
+    Field (result, 4) = Val_int (key);
+    return result;
 }
 
 value gr_sound (value vfreq, value vdur)

@@ -224,3 +224,5 @@ let animate() =
   close_graph()
 
 let _ = if !Sys.interactive then () else begin animate(); exit 0 end
+
+;;

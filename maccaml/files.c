@@ -365,7 +365,6 @@ static OSErr SaveDocument (WindowPtr w, int saveasflag)
       Assert ((*st)->resrefnum == -1);
       FreeUntitledTitle ();
     }else{
-      Assert ((*st)->resrefnum != -1);
       FSClose ((*st)->datarefnum);
       if ((*st)->resrefnum != -1) CloseResFile ((*st)->resrefnum);
       (*st)->datarefnum = (*st)->resrefnum = -1;

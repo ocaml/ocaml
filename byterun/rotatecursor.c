@@ -15,7 +15,7 @@
 /* rotatecursor library, written by <Damien.Doligez@inria.fr>
    This file is in the public domain.
 
-   version 1.12.2
+   version 1.13
    
    See rotatecursor.h for documentation.
 */
@@ -100,12 +100,20 @@ void rotatecursor_options (int volatile *p1, int period, pascal void (*f) (long)
   rotatecursor_action = (f == NULL) ? &RotateCursor : f;
 }
 
+int rotatecursor_rearm (void)
+{
+  if (!rotatecursor_inited) rotatecursor_init ();
+  
+  rotatecursor_flag = 0;
+  PrimeTime ((QElemPtr) &rotatecursor_tmtask, rotatecursor_period);
+  return 0;
+}
+
 int rotatecursor_ticker (void)
 {
   if (!rotatecursor_inited) rotatecursor_init ();
 
-  rotatecursor_flag = 0;
-  PrimeTime ((QElemPtr) &rotatecursor_tmtask, rotatecursor_period);
+  rotatecursor_rearm ();
   (*rotatecursor_action) (32);
   return 0;
 }

@@ -43,7 +43,6 @@ OSErr DoQuit ()
   }
   done:
   quit_requested = 1;
-  intr_requested = 1;
   return noErr;
 }
 

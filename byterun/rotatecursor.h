@@ -15,7 +15,7 @@
 /* rotatecursor library, written by <Damien.Doligez@inria.fr>
    This file is in the public domain.
 
-   version 1.12.2
+   version 1.13
 
    The goal of this library is to help implement cooperative multitasking
    for MPW tools: to make sure that your program calls RotateCursor often
@@ -86,12 +86,21 @@ void rotatecursor_options (int volatile *p1, int period,
      the default function, [RotateCursor], will be called.
 */
 
+int rotatecursor_rearm (void);
+/*
+  [rotatecursor_rearm] resets [rotatecursor_flag] to 0 and rearms the
+  Time Manager task that will set [rotatecursor_flag] to 1 after the
+  appropriate delay.
+  You can use [rotatecursor_rearm] if some part of your program needs
+  to perform a periodic action that is not the normal one set up
+  with [rotatecursor_options].
+  This function always returns 0.
+*/
+
 int rotatecursor_ticker (void);
 /*
-  [rotatecursor_ticker] calls your [action] function (or [RotateCursor]),
-  resets [rotatecursor_flag] to 0, and rearms the Time Manager task that
-  will set [rotatecursor_flag] to 1 after the appropriate delay.
-
+  [rotatecursor_ticker] calls [rotatecursor_rearm] (see below) and your
+  [action] function (or [RotateCursor]).
   This function always returns 0.  It returns an int so you can use
   it in an expression as well as a statement.
  */
@@ -105,7 +114,7 @@ int rotatecursor_ticker (void);
 
 void rotatecursor_final (void);
 /*
-  This function is set up (with [atexit]) to be called before your
+  [rotatecursor_final] is set up (with [atexit]) to be called before your
   program finishes.  If for any reason the [atexit] functions are not
   called before your program exits, you should call this function by hand.
   It is harmless to call [rotatecursor_final] twice.
