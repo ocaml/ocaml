@@ -43,7 +43,7 @@ let add_var id pos env =
 let rec add_vars idlist pos env =
   match idlist with
     [] -> env
-  | id :: rem ->  add_vars rem (pos + 1) (add_var id pos env)
+  | id :: rem -> add_vars rem (pos + 1) (add_var id pos env)
 
 (**** Examination of the continuation ****)
 
