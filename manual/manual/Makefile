@@ -111,4 +111,4 @@ release:
 	../tools/texquote2 < $*.etex > $*.tex
 
 version.tex: $(CSLDIR)/stdlib/sys.ml
-	sed -n -e 's/^let ocaml_version = "\([^ ]+\).*$$/\\def\\ocamlversion{\1}/p' $(CSLDIR)/stdlib/sys.ml > version.tex
+	sed -n -e 's/^let ocaml_version = "\([0-9.]*\).*$$/\\def\\ocamlversion{\1}/p' $(CSLDIR)/stdlib/sys.ml > version.tex
