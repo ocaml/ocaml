@@ -67,17 +67,17 @@ beforedepend:: Lex/scanner.ml
 	$(CAMLC) -o $*.byt $<
 
 .ml.fast.byt:
-	cp $*.ml $*.fast.ml
-	$(CAMLC) -fast -o $*.fast.byt $*.fast.ml
-	rm -f $*.fast.ml
+	cp $*.ml $*_fast.ml
+	$(CAMLC) -fast -o $*.fast.byt $*_fast.ml
+	rm -f $*_fast.ml
 
 .ml.out:
 	$(CAMLOPT) $(OPTFLAGS) -o $*.out $<
 
 .ml.fast.out:
-	cp $*.ml $*.fast.ml
-	$(CAMLOPT) $(OPTFLAGS) -fast -o $*.fast.out $*.fast.ml
-	rm -f $*.fast.ml
+	cp $*.ml $*_fast.ml
+	$(CAMLOPT) $(OPTFLAGS) -fast -o $*.fast.out $*_fast.ml
+	rm -f $*_fast.ml
 
 .mli.cmi:
 	$(CAMLC) -c $<

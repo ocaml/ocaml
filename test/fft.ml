@@ -27,15 +27,14 @@ let fft px py np =
     n2 := !n2 / 2; 
     let n4 = !n2 / 4 in
     let e  = tpi /. float !n2 in
-    let a = ref 0.0 in
 
     for j = 1 to n4 do
-      let a3 = 3.0 *. !a in
-      let cc1 = cos(!a) in
-      let ss1 = sin(!a) in
+      let a = e *. float(j - 1) in
+      let a3 = 3.0 *. a in
+      let cc1 = cos(a) in
+      let ss1 = sin(a) in
       let cc3 = cos(a3) in
       let ss3 = sin(a3) in
-      a := e *. float j;
       let is = ref j in
       let id = ref(2 * !n2) in
 	  
@@ -144,11 +143,11 @@ let test np =
   done;
 (**
   print_newline();
-  for i=0 to 15 do printf "%d  %f  %f\n" i pxr.(i+1) pxi.(i+1) done;
+  for i=0 to 15 do Printf.printf "%d  %f  %f\n" i pxr.(i+1) pxi.(i+1) done;
 **)
   fft pxr pxi np;
 (**
-  for i=0 to 15 do printf "%d  %f  %f\n" i pxr.(i+1) pxi.(i+1) done;
+  for i=0 to 15 do Printf.printf "%d  %f  %f\n" i pxr.(i+1) pxi.(i+1) done;
 **)
   let zr = ref 0.0 in
   let zi = ref 0.0 in
