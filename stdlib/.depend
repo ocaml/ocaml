@@ -1,6 +1,6 @@
 format.cmi: buffer.cmi 
 genlex.cmi: stream.cmi 
-moreLabels.cmi: hashtbl.cmi 
+moreLabels.cmi: hashtbl.cmi map.cmi set.cmi 
 parsing.cmi: lexing.cmi obj.cmi 
 printf.cmi: buffer.cmi 
 arg.cmo: array.cmi list.cmi printf.cmi string.cmi sys.cmi arg.cmi 
@@ -17,6 +17,8 @@ char.cmo: char.cmi
 char.cmx: char.cmi 
 digest.cmo: string.cmi digest.cmi 
 digest.cmx: string.cmx digest.cmi 
+dynamics.cmo: obj.cmi dynamics.cmi 
+dynamics.cmx: obj.cmx dynamics.cmi 
 filename.cmo: buffer.cmi string.cmi sys.cmi filename.cmi 
 filename.cmx: buffer.cmx string.cmx sys.cmx filename.cmi 
 format.cmo: buffer.cmi obj.cmi string.cmi format.cmi 
