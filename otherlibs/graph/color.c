@@ -29,6 +29,11 @@ static struct color_cache_entry color_cache[Color_cache_size];
 
 static int num_overflows = 0;
 
+Bool direct_rgb = False;
+int byte_order;
+int bitmap_unit;
+int bits_per_pixel;
+
 void gr_init_color_cache(void)
 {
   int i;
@@ -46,10 +51,22 @@ unsigned long gr_pixel_rgb(int rgb)
   unsigned int r, g, b;
   int h, i;
   XColor color;
+  unsigned short tmp;
 
   r = (rgb >> 16) & 0xFF;
   g = (rgb >> 8) & 0xFF;
   b = rgb & 0xFF;
+
+  if (direct_rgb){
+    switch ( bits_per_pixel ){
+    case 16:
+	tmp = ((r >> 3) << 11) + ((g >> 2) << 5) + ((b >> 3) << 0);
+	return (unsigned long) tmp;
+    case 32:
+      return (r << 16) + (g << 8) + (b << 0);
+    }
+  }
+
   h = Hash_rgb(r, g, b);
   i = h;
   while(1) {
@@ -57,13 +74,13 @@ unsigned long gr_pixel_rgb(int rgb)
     if (color_cache[i].rgb == rgb) return color_cache[i].pixel;
     i = (i + 1) & (Color_cache_size - 1);
     if (i == h) {
-      /* Cache is full.  Instead of inserting at slot h, which causes
-         thrasing if many colors hash to the same value,
-         insert at h + n where n is pseudo-random and
-         smaller than Color_cache_slack */
-      int slack = num_overflows++ & (Color_cache_slack - 1);
-      i = (i + slack) & (Color_cache_size - 1);
-      break;
+	/* Cache is full.  Instead of inserting at slot h, which causes
+	   thrasing if many colors hash to the same value,
+	   insert at h + n where n is pseudo-random and
+	   smaller than Color_cache_slack */
+	int slack = num_overflows++ & (Color_cache_slack - 1);
+	i = (i + slack) & (Color_cache_size - 1);
+	break;
     }
   }
   color.red = r * 0x101;

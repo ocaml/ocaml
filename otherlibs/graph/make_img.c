@@ -40,6 +40,22 @@ value gr_make_image(value m)
                  XDefaultDepth(grdisplay, grscreen),
                  ZPixmap, 0, NULL, width, height,
                  BitmapPad(grdisplay), 0);
+
+  /* To optimize RGB => color id calculation */
+  if( !direct_rgb ){
+    /* they are declared in color.c */
+    byte_order = idata->byte_order;
+    bitmap_unit = idata->bitmap_unit;
+    bits_per_pixel = idata->bits_per_pixel;
+#ifdef DIRECT_RGB_DEBUG
+    fprintf(stderr, "Byte_order: %d = %s\n", byte_order,
+	    byte_order ? "LSBFirst" : "MSBFirst");
+    fprintf(stderr, "Bitmp_unit: %d\n", bitmap_unit);
+    fprintf(stderr, "Bits per pixel: %d\n", idata->bits_per_pixel);
+#endif
+    direct_rgb = True;
+  }
+
   bdata = (char *) stat_alloc(height * idata->bytes_per_line);
   idata->data = bdata;
   has_transp = False;

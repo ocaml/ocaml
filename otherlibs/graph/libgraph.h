@@ -32,6 +32,11 @@ extern int grx, gry;            /* Coordinates of the current point */
 extern unsigned long grcolor;   /* Current drawing color */
 extern XFontStruct * grfont;    /* Current font */
 
+extern Bool direct_rgb;
+extern int byte_order;
+extern int bitmap_unit;
+extern int bits_per_pixel;
+
 #define Wcvt(y) (grwindow.h - 1 - (y))
 #define Bcvt(y) (grbstore.h - 1 - (y))
 #define WtoB(y) ((y) + grbstore.h - grwindow.h)
