@@ -34,10 +34,7 @@
 #include "Cannot compile libthreads, system calls missing"
 #endif
 
-#ifdef __OpenBSD__
 #include <string.h>
-#endif
-
 #include <errno.h>
 #include <sys/time.h>
 #include <sys/types.h>
