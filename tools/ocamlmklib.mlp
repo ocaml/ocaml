@@ -111,6 +111,10 @@ let parse_arguments argv =
       rpath := chop_prefix s "-Wl,-R" :: !rpath
     else if s = "-v" || s = "-verbose" then
       verbose := true
+    else if starts_with s "-F" then
+      c_opts := s :: !c_opts
+    else if s = "-framework" then
+      (let a = next_arg() in c_opts := a :: s :: !c_opts)
     else if starts_with s "-" then
       prerr_endline ("Unknown option " ^ s)
     else
@@ -120,7 +124,7 @@ let parse_arguments argv =
   List.iter
     (fun r -> r := List.rev !r)
     [ bytecode_objs; native_objs; c_objs; caml_libs; caml_opts; 
-      c_libs; c_objs; ld_opts; rpath ];
+      c_libs; c_objs; c_opts; ld_opts; rpath ];
   if !output_c = "" then output_c := !output
 
 let usage = "\
@@ -146,6 +150,8 @@ Options are:
   -Wl,-rpath,<dir>     Same as -dllpath <dir>
   -Wl,-rpath -Wl,<dir> Same as -dllpath <dir>
   -Wl,-R<dir>          Same as -dllpath <dir>
+  -F<dir>        Specify a framework directory (MacOSX)
+  -framework <name>    Use framework <name> (MacOSX)
 "
 
 let command cmd =

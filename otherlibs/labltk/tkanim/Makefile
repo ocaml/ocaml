@@ -1,7 +1,7 @@
 include ../support/Makefile.common
 
 COMPFLAGS=-I ../../../byterun -I ../support -I ../camltk -I ../../unix
-CCFLAGS=-I../../../byterun -I../support $(TK_DEFS) $(X11_INCLUDES) $(SHAREDCCCOMPOPTS)
+CCFLAGS=-I../../../byterun -I../support $(TK_DEFS) $(SHAREDCCCOMPOPTS)
 
 all: tkanim.cma libtkanim.a
 opt: tkanim.cmxa libtkanim.a
@@ -12,14 +12,14 @@ COBJS= cltkaniminit.o tkAnimGIF.o
 
 tkanim.cma: $(OBJS)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o tkanim -oc tkanim \
-          $(OBJS) $(TK_LINK) $(X11_LINK)
+          $(OBJS) $(TK_LINK)
 
 tkanim.cmxa: $(OBJS:.cmo=.cmx)
 	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o tkanim -oc tkanim \
-          $(OBJS:.cmo=.cmx) $(TK_LINK) $(X11_LINK)
+          $(OBJS:.cmo=.cmx) $(TK_LINK)
 
 libtkanim.a: $(COBJS)
-	$(MKLIB) -o tkanim $(COBJS) $(TK_LINK) $(X11_LINK)
+	$(MKLIB) -o tkanim $(COBJS) $(TK_LINK)
 
 gifanimtest: all gifanimtest.cmo
 	$(CAMLC) -o $@ -I ../lib -I ../support -dllpath ../support -dllpath . unix.cma $(LIBNAME).cma tkanim.cma gifanimtest.cmo

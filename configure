@@ -32,6 +32,7 @@ x11_lib_dir=''
 tk_wanted=yes
 tk_defs=''
 tk_libs=''
+tk_x11=yes
 posix_threads=no
 verbose=no
 withcurses=yes
@@ -80,12 +81,14 @@ while : ; do
         x11_lib_dir=$2; shift;;
     -with-pthread*|--with-pthread*)
         posix_threads=yes;;
-    -notk|--notk)
+    -no-tk|--no-tk)
         tk_wanted=no;;
     -tkdefs*|--tkdefs*)
         tk_defs=$2; shift;;
     -tklibs*|--tklibs*)
         tk_libs=$2; shift;;
+    -tk-no-x11|--tk-no-x11)
+	tk_x11=no;;
     -binutils*|--binutils*)
         binutils_dir=$2; shift;;
     -verbose|--verbose)
@@ -1194,7 +1197,7 @@ echo "Configuring LablTk..."
 
 if test $tk_wanted = no; then
   has_tk=false
-elif test "$ostype" = "Cygwin"; then
+elif test $tk_x11 = no; then
   has_tk=true
 elif test "$x11_include" = "not found" || test "$x11_link" = "not found"; then
   echo "X11 not found."
@@ -1233,6 +1236,7 @@ if test $has_tk = true; then
     8.1) tclmaj=8 tclmin=1 tkmaj=8 tkmin=1 ;;
     8.2) tclmaj=8 tclmin=2 tkmaj=8 tkmin=2 ;;
     8.3) tclmaj=8 tclmin=3 tkmaj=8 tkmin=3 ;;
+    8.4) tclmaj=8 tclmin=4 tkmaj=8 tkmin=4 ;;
     *) echo "This version is not known."; has_tk=false ;;
     esac
   else
@@ -1290,8 +1294,13 @@ if test $has_tk = true; then
 fi
 
 if test $has_tk = true; then
-  echo "TK_DEFS=$tk_defs" >> Makefile
-  echo "TK_LINK=$tk_libs" >> Makefile
+  if test $tk_x11 = yes; then
+    echo "TK_DEFS=$tk_defs "'$(X11_INCLUDES)' >> Makefile
+    echo "TK_LINK=$tk_libs "'$(X11_LINK)' >> Makefile
+  else
+    echo "TK_DEFS=$tk_defs" >> Makefile
+    echo "TK_LINK=$tk_libs" >> Makefile
+  fi
   otherlibraries="$otherlibraries labltk"
 else
   echo "Configuration failed, LablTk will not be built."

@@ -34,7 +34,7 @@ $(LIBNAME).cma: $(SUPPORT)
 	cd ../camltk; $(MAKE)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o $(LIBNAME) -oc $(LIBNAME) \
           -I ../labltk -I ../camltk $(TKOBJS) \
-          $(TK_LINK) $(X11_LINK)
+          $(TK_LINK)
 
 $(LIBNAME).cmxa: $(SUPPORT:.cmo=.cmx)
 	$(MAKE) superclean
@@ -42,10 +42,10 @@ $(LIBNAME).cmxa: $(SUPPORT:.cmo=.cmx)
 	cd ../camltk; $(MAKE) opt
 	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o $(LIBNAME) -oc $(LIBNAME) \
           -I ../labltk -I ../camltk $(TKOBJS:.cmo=.cmx) \
-          $(TK_LINK) $(X11_LINK)
+          $(TK_LINK)
 
 $(LIBNAME)top$(EXE) : $(TOPDEPS) $(LIBNAME).cma ../support/lib$(LIBNAME).a
-	$(CAMLC) -linkall -o $(LIBNAME)top$(EXE) -I ../support \
+	$(CAMLC) -verbose -linkall -o $(LIBNAME)top$(EXE) -I ../support \
 	       -I $(TOPDIR)/toplevel toplevellib.cma \
 	       -I ../labltk -I ../camltk $(LIBNAME).cma \
 	       -I $(OTHERS)/unix unix.cma \

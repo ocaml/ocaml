@@ -11,12 +11,12 @@ opt: support.cmx rawwidget.cmx widget.cmx protocol.cmx \
 COBJS=cltkCaml.o cltkUtf.o cltkEval.o cltkEvent.o cltkFile.o cltkMain.o \
       cltkMisc.o cltkTimer.o cltkVar.o cltkWait.o cltkImg.o
 
-CCFLAGS=-I../../../byterun $(TK_DEFS) $(X11_INCLUDES) $(SHAREDCCCOMPOPTS)
+CCFLAGS=-I../../../byterun $(TK_DEFS)$(SHAREDCCCOMPOPTS)
 
 COMPFLAGS=-I $(OTHERS)/unix
 
 lib$(LIBNAME).a : $(COBJS)
-	$(MKLIB) -o $(LIBNAME) $(COBJS) $(TK_LINK) $(X11_LINK)
+	$(MKLIB) -o $(LIBNAME) $(COBJS) $(TK_LINK)
 
 PUB=fileevent.cmi fileevent.mli \
     protocol.cmi protocol.mli \
