@@ -17,10 +17,10 @@ DISTRIB=c:\ocaml
 BYTECC=cl /nologo
 
 ### Additional compile-time options for $(BYTECC).
-BYTECCCOMPOPTS=/Ox
+BYTECCCOMPOPTS=/Ox /MT
 
 ### Additional link-time options for $(BYTECC)
-BYTECCLINKOPTS=
+BYTECCLINKOPTS=/MT
 
 ### Libraries needed
 CCLIBS=
@@ -57,7 +57,7 @@ AFLAGS=/coff /Cp
 
 ############# Configuration for the contributed libraries
 
-OTHERLIBRARIES=str num graph
+OTHERLIBRARIES=win32unix systhreads str num graph
 
 ### Name of the target architecture for the "num" library
 BIGNUM_ARCH=C
