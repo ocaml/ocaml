@@ -17,22 +17,23 @@ let bind name arg fn =
   | _ -> let id = Ident.new name in Clet(id, arg, fn (Cvar id))
 
 (* Block headers. Meaning of the tag field:
-       0 - 249: regular blocks
-       250: closures
-       251: infix closure
-       252: abstract
-       253: string
-       254: float
+       0 - 248: regular blocks
+       249: closures
+       250: infix closure
+       251: abstract
+       252: string
+       253: float
+       254: float array
        255: finalized *)
 
-let float_tag = Cconst_int 254
+let float_tag = Cconst_int 253
 
 let block_header tag sz = (sz lsl 10) + tag
-let closure_header sz = block_header 250 sz
-let infix_header ofs = block_header 251 ofs
-let float_header = block_header 254 (size_float / size_addr)
+let closure_header sz = block_header 249 sz
+let infix_header ofs = block_header 250 ofs
+let float_header = block_header 253 (size_float / size_addr)
 let floatarray_header len = block_header 254 (len * size_float / size_addr)
-let string_header len = block_header 253 ((len + size_addr) / size_addr)
+let string_header len = block_header 252 ((len + size_addr) / size_addr)
 
 let alloc_block_header tag sz = Cconst_int(block_header tag sz)
 let alloc_floatarray_header len = Cconst_int(floatarray_header len)
@@ -577,7 +578,7 @@ let rec transl = function
               bind "arr" (transl arg1) (fun arr ->
                 Cifthenelse(is_addr_array(header arr),
                             addr_array_set arr index newval,
-                            float_array_set arr index newval))))
+                            float_array_set arr index (unbox_float newval)))))
       | Paddrarray ->
           addr_array_set (transl arg1) (transl arg2) (transl arg3)
       | Pintarray ->
@@ -620,7 +621,8 @@ let rec transl = function
                     Csequence(Cop(Ccheckbound, [addr_array_length hdr; idx]),
                               addr_array_set arr idx newval),
                     Csequence(Cop(Ccheckbound, [float_array_length hdr; idx]),
-                              float_array_set arr idx newval))))))
+                              float_array_set arr idx
+                                              (unbox_float newval)))))))
       | Paddrarray ->
           bind "index" (transl arg2) (fun idx ->
             bind "arr" (transl arg1) (fun arr ->

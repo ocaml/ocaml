@@ -5,7 +5,7 @@ type machtype_component =
 
 type machtype = machtype_component array
 
-let typ_void = ([||] : machtype)
+let typ_void = ([||] : machtype_component array)
 let typ_addr = [|Addr|]
 let typ_int = [|Int|]
 let typ_float = [|Float|]
