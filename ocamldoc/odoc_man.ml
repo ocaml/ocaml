@@ -541,7 +541,7 @@ class man =
 
 	let abstract = 
 	  match cl.cl_info with
-	    None | Some { i_desc = None } -> ""
+	    None | Some { i_desc = None } -> "no description"
 	  | Some { i_desc = Some t } ->
 	      let s = Odoc_info.string_of_text (Odoc_info.first_sentence_of_text t) in
 	      self#remove_newlines s
@@ -603,7 +603,7 @@ class man =
 
 	let abstract = 
 	  match ct.clt_info with
-	    None | Some { i_desc = None } -> ""
+	    None | Some { i_desc = None } -> "no description"
 	  | Some { i_desc = Some t } ->
 	      let s = Odoc_info.string_of_text (Odoc_info.first_sentence_of_text t) in
 	      self#remove_newlines s
@@ -661,7 +661,7 @@ class man =
 
 	let abstract = 
 	  match mt.mt_info with
-	    None | Some { i_desc = None } -> ""
+	    None | Some { i_desc = None } -> "no description"
 	  | Some { i_desc = Some t } ->
 	      let s = Odoc_info.string_of_text (Odoc_info.first_sentence_of_text t) in
 	      self#remove_newlines s
@@ -740,7 +740,7 @@ class man =
 
 	let abstract = 
 	  match m.m_info with
-	    None | Some { i_desc = None } -> ""
+	    None | Some { i_desc = None } -> "no description"
 	  | Some { i_desc = Some t } ->
 	      let s = Odoc_info.string_of_text (Odoc_info.first_sentence_of_text t) in
 	      self#remove_newlines s
@@ -868,7 +868,7 @@ class man =
            "OCamldoc "^
            "\""^(match !Args.title with Some t -> t | None -> "")^"\"\n"^
 	   ".SH NAME\n"^
-	   name^" \\- \n\n"
+	   name^" \\- all "^name^" elements\n\n"
 	  );
 
         let f ele =
