@@ -51,7 +51,8 @@ let norm2 x = x.re *. x.re +. x.im *. x.im
 let norm x =
   (* Watch out for overflow in computing re^2 + im^2 *)
   let r = abs_float x.re and i = abs_float x.im in
-  if r >= i then
+  if r = 0.0 && i = 0.0 then 0.0
+  else if r >= i then
     let q = i /. r in r *. sqrt(1.0 +. q *. q)
   else
     let q = r /. i in i *. sqrt(1.0 +. q *. q)
