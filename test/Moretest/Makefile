@@ -47,7 +47,7 @@ cm.out: cmcaml.ml cmstub.c cmmain.c
 
 bigarrays.byt: ../../otherlibs/bigarray/bigarray.cma \
                ../../otherlibs/bigarray/libbigarray.a bigarrays.ml
-	$(CAMLC) -custom -o bigarrays.byt \
+	$(CAMLC) -o bigarrays.byt \
                 -I ../../otherlibs/bigarray \
                 -I ../../otherlibs/unix \
                 unix.cma bigarray.cma bigarrays.ml \
@@ -92,6 +92,16 @@ bigarrf.o: bigarrf.f
 
 bigarrfstub.o: bigarrfstub.c
 	$(NATIVECC) $(NATIVECCCOMPOPTS) -I../../byterun -I../../otherlibs/bigarray -c bigarrfstub.c
+
+fftba.byt: fftba.ml
+	$(CAMLC) -o fftba.byt -I ../../otherlibs/bigarray \
+          bigarray.cma fftba.ml \
+          -ccopt -L../../otherlibs/bigarray
+
+fftba.out: fftba.ml
+	$(CAMLOPT) $(OPTFLAGS) -o fftba.out -I ../../otherlibs/bigarray \
+          bigarray.cmxa fftba.ml \
+          -ccopt -L../../otherlibs/bigarray
 
 # Common rules
 
