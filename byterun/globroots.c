@@ -45,7 +45,6 @@ static int random_level(void)
      so consume most significant bits first */
   while ((r & 0xC0000000U) == 0xC0000000U) { level++; r = r << 2; }
   Assert(level <= MAX_LEVEL);
-  printf("%d\n", level);
   return level;
 }
 
