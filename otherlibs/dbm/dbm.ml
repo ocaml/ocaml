@@ -22,10 +22,12 @@ type dbm_flag =
 
 exception Dbm_error of string
 
-external install_exn : exn -> unit
-              = "caml_dbm_install_exn"
 external opendbm : string -> open_flag list -> int -> t 
               = "caml_dbm_open"
+ (* this one is exported as val, so that we are sure to link in this
+    file (we must register the exception). Since t is abstract, programs
+    have to call it in order to do anything *)
+
 external close : t -> unit = "caml_dbm_close"
 external find : t -> string -> string = "caml_dbm_fetch"
 external add : t -> string -> string -> unit = "caml_dbm_insert"
@@ -34,7 +36,7 @@ external remove : t -> string -> unit = "caml_dbm_delete"
 external firstkey : t -> string = "caml_dbm_firstkey"
 external nextkey : t -> string = "caml_dbm_nextkey"
 
-let _ = install_exn (Dbm_error "")
+let _ = Callback.register_exception "dbmerror" (Dbm_error "")
 
 (* Usual iterator *)
 let iter f t =

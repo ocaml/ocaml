@@ -7,7 +7,7 @@ CC=$(BYTECC) -g
 CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../stdlib
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
-COBJS=dbm.o
+COBJS=cldbm.o
 
 all: libmldbm.a dbm.cmi dbm.cma
 

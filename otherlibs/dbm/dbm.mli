@@ -23,8 +23,7 @@ type open_flag =
 exception Dbm_error of string
         (* Raised by the following functions when an error is encountered. *)
 
-external opendbm : string -> open_flag list -> int -> t 
-      	      = "caml_dbm_open"
+val opendbm : string -> open_flag list -> int -> t 
         (* Open a descriptor on an NDBM database. The first argument is
            the name of the database (without the [.dir] and [.pag] suffixes).
            The second argument is a list of flags: [Dbm_rdonly] opens

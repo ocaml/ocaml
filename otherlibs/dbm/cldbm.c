@@ -19,28 +19,22 @@
 #include <memory.h>
 #include <fail.h>
 #include <str.h>
+#include <callback.h>
 
 /* Quite close to sys_open_flags, but we need RDWR */
 static int dbm_open_flags[] = {
   O_RDONLY, O_WRONLY, O_RDWR, O_CREAT
 };
 
-/* Exception bucket for DBMError */
-static value dbm_exn;
-value caml_dbm_install_exn(bucket) /* ML */
-     value bucket;
-{
-  dbm_exn = Field(bucket,0);
-  register_global_root(&dbm_exn);
-  return Val_unit;
-}
-
 static void raise_dbm P((char *errmsg)) Noreturn;
 
 static void raise_dbm(errmsg)
      char *errmsg;
 {
-  raise_with_string(dbm_exn, errmsg);
+  static value * dbm_exn = NULL;
+  if (dbm_exn == NULL)
+    dbm_exn = caml_named_value("dbmerror");
+  raise_with_string(*dbm_exn, errmsg);
 }
 
 /* Dbm.open : string -> Sys.open_flag list -> int -> t */
