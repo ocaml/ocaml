@@ -580,7 +580,7 @@ val mktime : tm -> float * tm
            and [tm_isdst] fields recomputed from the other fields.
            The [tm] argument is interpreted in the local time zone. *)
 val alarm : int -> int
-        (* Schedule a [SIGALRM] signals after the given number of seconds. *)
+        (* Schedule a [SIGALRM] signal after the given number of seconds. *)
 val sleep : int -> unit
         (* Stop execution for the given number of seconds. *)
 val times : unit -> process_times
