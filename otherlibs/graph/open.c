@@ -216,6 +216,7 @@ value gr_clear_graph(void)
                  0, 0, grbstore.w, grbstore.h);
   XSetForeground(grdisplay, grbstore.gc, grcolor);
   XFlush(grdisplay);
+  gr_init_color_cache();
   return Val_unit;
 }
 
