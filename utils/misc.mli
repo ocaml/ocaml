@@ -20,9 +20,9 @@ exception Fatal_error
 val map_end: ('a -> 'b) -> 'a list -> 'b list -> 'b list
         (* [map_end f l t] is [map f l @ t], just more efficient. *)
 val for_all2: ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
-        (* Same as [List.for_all] but for a binary predicate. *)
-val filter: ('a -> bool) -> 'a list -> 'a list
-val mem_assq: 'a -> ('a * 'b) list -> bool
+        (* Same as [List.for_all] but for a binary predicate.
+           In addition, this [for_all2] never fails: given two lists
+           with different lengths, it returns false. *)
 val replicate_list: 'a -> int -> 'a list
         (* [replicate_list elem n] is the list with [n] elements
            all identical to [elem]. *)
