@@ -109,7 +109,7 @@ oo.cmi: oo.mli
 
 # labelled modules require the -nolabels flag
 labelled.cmo:
-	$(MAKE) EXTRAFLAGS=-nolabels COMPILER=$(COMPILER) $(LABELLED:.ml=.cmo)
+	$(MAKE) EXTRAFLAGS=-nolabels RUNTIME=$(RUNTIME) COMPILER=$(COMPILER) $(LABELLED:.ml=.cmo)
 	touch $@
 labelled.cmx:
 	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.cmx)
