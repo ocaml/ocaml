@@ -2096,19 +2096,21 @@ let check_conditional env tpl1 f2 tpls cont =
       end;
       cont tpls
 
-let rec check_conditionals inst_nongen tp env cdtls tpls =
+let rec check_conditionals inst_nongen env cdtls tpls =
   match cdtls with
     [] ->
       let tpls =
         List.filter (fun (t1,t2) -> not (!equal' env false [t1] [t2])) tpls in
       if tpls = [] then () else begin
         delayed_conditionals := [];
-        List.iter (fun (t1, t2) -> moregen inst_nongen tp env t2 t1) tpls;
-        check_conditionals inst_nongen tp env !delayed_conditionals []
+        let tl1, tl2 = List.split tpls in
+        let type_pairs = TypePairs.create 13 in
+        List.iter2 (moregen false type_pairs env) tl2 tl1;
+        check_conditionals inst_nongen env !delayed_conditionals []
       end
   | (tpl1, f2) :: cdtls ->
       check_conditional env tpl1 f2 tpls
-        (check_conditionals inst_nongen tp env cdtls)
+        (check_conditionals inst_nongen env cdtls)
 
 
 (* Must empty univar_pairs first *)
@@ -2117,7 +2119,7 @@ let moregen inst_nongen type_pairs env patt subj =
   delayed_conditionals := [];
   try
     moregen inst_nongen type_pairs env patt subj;
-    check_conditionals inst_nongen type_pairs env !delayed_conditionals [];
+    check_conditionals inst_nongen env !delayed_conditionals [];
     univar_pairs := [];
     delayed_conditionals := []
   with exn ->
