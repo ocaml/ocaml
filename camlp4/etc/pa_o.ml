@@ -569,7 +569,10 @@ EXTEND
         "do"; e = SELF; "done" ->
           <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $list:get_seq e$ } >>
       | "while"; e1 = SELF; "do"; e2 = SELF; "done" ->
-          <:expr< while $e1$ do { $list:get_seq e2$ } >> ]
+          <:expr< while $e1$ do { $list:get_seq e2$ } >>
+      | "object"; cspo = OPT class_self_patt; cf = class_structure; "end" ->
+          (* <:expr< object $opt:cspo$ $list:cf$ end >> *)
+          MLast.ExObj loc cspo cf ]
     | [ e = SELF; ","; el = LIST1 NEXT SEP "," ->
           <:expr< ( $list:[e :: el]$ ) >> ]
     | ":=" NONA

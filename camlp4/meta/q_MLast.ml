@@ -126,6 +126,9 @@ value a_opt = Grammar.Entry.create gram "a_opt";
 value a_UIDENT = Grammar.Entry.create gram "a_UIDENT";
 value a_LIDENT = Grammar.Entry.create gram "a_LIDENT";
 value a_INT = Grammar.Entry.create gram "a_INT";
+value a_INT32 = Grammar.Entry.create gram "a_INT32";
+value a_INT64 = Grammar.Entry.create gram "a_INT64";
+value a_NATIVEINT = Grammar.Entry.create gram "a__NATIVEINT";
 value a_FLOAT = Grammar.Entry.create gram "a_FLOAT";
 value a_STRING = Grammar.Entry.create gram "a_STRING";
 value a_CHAR = Grammar.Entry.create gram "a_CHAR";
@@ -626,6 +629,9 @@ EXTEND
             [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "~-."]; e] ]
     | "simple"
       [ s = a_INT -> Qast.Node "ExInt" [Qast.Loc; s]
+      | s = a_INT32 -> Qast.Node  "ExInt32" [Qast.Loc; s]
+      | s = a_INT64 -> Qast.Node  "ExInt64" [Qast.Loc; s]
+      | s = a_NATIVEINT -> Qast.Node  "ExNativeInt" [Qast.Loc; s]
       | s = a_FLOAT -> Qast.Node "ExFlo" [Qast.Loc; s]
       | s = a_STRING -> Qast.Node "ExStr" [Qast.Loc; s]
       | s = a_CHAR -> Qast.Node "ExChr" [Qast.Loc; s]
@@ -715,10 +721,16 @@ EXTEND
       [ s = a_LIDENT -> Qast.Node "PaLid" [Qast.Loc; s]
       | s = a_UIDENT -> Qast.Node "PaUid" [Qast.Loc; s]
       | s = a_INT -> Qast.Node "PaInt" [Qast.Loc; s]
+      | s = a_INT32 -> Qast.Node  "PaInt32" [Qast.Loc; s]
+      | s = a_INT64 -> Qast.Node  "PaInt64" [Qast.Loc; s]
+      | s = a_NATIVEINT -> Qast.Node  "PaNativeInt" [Qast.Loc; s]
       | s = a_FLOAT -> Qast.Node "PaFlo" [Qast.Loc; s]
       | s = a_STRING -> Qast.Node "PaStr" [Qast.Loc; s]
       | s = a_CHAR -> Qast.Node "PaChr" [Qast.Loc; s]
       | "-"; s = a_INT -> mkuminpat Qast.Loc (Qast.Str "-") (Qast.Bool True) s
+      | "-"; s = a_INT32 -> mkuminpat Qast.Loc (Qast.Str "-") (Qast.Bool True) s
+      | "-"; s = a_INT64 -> mkuminpat Qast.Loc (Qast.Str "-") (Qast.Bool True) s
+      | "-"; s = a_NATIVEINT -> mkuminpat Qast.Loc (Qast.Str "-") (Qast.Bool True) s
       | "-"; s = a_FLOAT ->
           mkuminpat Qast.Loc (Qast.Str "-") (Qast.Bool False) s
       | "["; "]" -> Qast.Node "PaUid" [Qast.Loc; Qast.Str "[]"]
@@ -1334,6 +1346,21 @@ EXTEND
     [ [ a = ANTIQUOT "int" -> antiquot "int" loc a
       | a = ANTIQUOT -> antiquot "" loc a
       | s = INT -> Qast.Str s ] ]
+  ;
+  a_INT32:
+    [ [ a = ANTIQUOT "int32" -> antiquot "int32" loc a
+      | a = ANTIQUOT -> antiquot "" loc a
+      | s = INT32 -> Qast.Str s ] ]
+  ;
+  a_INT64:
+    [ [ a = ANTIQUOT "int64" -> antiquot "int64" loc a
+      | a = ANTIQUOT -> antiquot "" loc a
+      | s = INT64 -> Qast.Str s ] ]
+  ;
+  a_NATIVEINT:
+    [ [ a = ANTIQUOT "nativeint" -> antiquot "nativeint" loc a
+      | a = ANTIQUOT -> antiquot "" loc a
+      | s = NATIVEINT -> Qast.Str s ] ]
   ;
   a_FLOAT:
     [ [ a = ANTIQUOT "flo" -> antiquot "flo" loc a

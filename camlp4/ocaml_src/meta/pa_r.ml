@@ -722,7 +722,20 @@ Grammar.extend
            (MLast.WcTyp (loc, i, tpl, t) : 'with_constr))]];
     Grammar.Entry.obj (expr : 'expr Grammar.Entry.e), None,
     [Some "top", Some Gramext.RightA,
-     [[Gramext.Stoken ("", "while"); Gramext.Sself; Gramext.Stoken ("", "do");
+     [[Gramext.Stoken ("", "object");
+       Gramext.Sopt
+         (Gramext.Snterm
+            (Grammar.Entry.obj
+               (class_self_patt : 'class_self_patt Grammar.Entry.e)));
+       Gramext.Snterm
+         (Grammar.Entry.obj
+            (class_structure : 'class_structure Grammar.Entry.e));
+       Gramext.Stoken ("", "end")],
+      Gramext.action
+        (fun _ (cf : 'class_structure) (cspo : 'class_self_patt option) _
+           (loc : Lexing.position * Lexing.position) ->
+           (MLast.ExObj (loc, cspo, cf) : 'expr));
+      [Gramext.Stoken ("", "while"); Gramext.Sself; Gramext.Stoken ("", "do");
        Gramext.Stoken ("", "{");
        Gramext.Snterm
          (Grammar.Entry.obj (sequence : 'sequence Grammar.Entry.e));

@@ -323,7 +323,10 @@ EXTEND
         "do"; "{"; seq = sequence; "}" ->
           <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $list:seq$ } >>
       | "while"; e = SELF; "do"; "{"; seq = sequence; "}" ->
-          <:expr< while $e$ do { $list:seq$ } >> ]
+          <:expr< while $e$ do { $list:seq$ } >>
+      | "object"; cspo = OPT class_self_patt; cf = class_structure; "end" ->
+          (* <:expr< object $opt:cspo$ $list:cf$ end >> *)
+          MLast.ExObj loc cspo cf ]
     | "where"
       [ e = SELF; "where"; rf = OPT "rec"; lb = let_binding ->
           <:expr< let $opt:o2b rf$ $list:[lb]$ in $e$ >> ]
@@ -392,9 +395,8 @@ EXTEND
           mklistexp loc last el
       | "[|"; el = LIST0 expr SEP ";"; "|]" -> <:expr< [| $list:el$ |] >>
       | "{"; lel = LIST1 label_expr SEP ";"; "}" -> <:expr< { $list:lel$ } >>
-      | "{"; "("; e = SELF; ")"; "with"; lel = LIST1 label_expr SEP ";";
-        "}" ->
-          <:expr< { ($e$) with $list:lel$ } >>
+      | "{"; "("; e = SELF; ")"; "with"; lel = LIST1 label_expr SEP ";"; "}"
+        -> <:expr< { ($e$) with $list:lel$ } >>
       | "("; ")" -> <:expr< () >>
       | "("; e = SELF; ":"; t = ctyp; ")" -> <:expr< ($e$ : $t$) >>
       | "("; e = SELF; ","; el = LIST1 expr SEP ","; ")" ->

@@ -158,6 +158,9 @@ let a_opt = Grammar.Entry.create gram "a_opt";;
 let a_UIDENT = Grammar.Entry.create gram "a_UIDENT";;
 let a_LIDENT = Grammar.Entry.create gram "a_LIDENT";;
 let a_INT = Grammar.Entry.create gram "a_INT";;
+let a_INT32 = Grammar.Entry.create gram "a_INT32";;
+let a_INT64 = Grammar.Entry.create gram "a_INT64";;
+let a_NATIVEINT = Grammar.Entry.create gram "a__NATIVEINT";;
 let a_FLOAT = Grammar.Entry.create gram "a_FLOAT";;
 let a_STRING = Grammar.Entry.create gram "a_STRING";;
 let a_CHAR = Grammar.Entry.create gram "a_CHAR";;
@@ -656,7 +659,7 @@ Grammar.extend
            (let (_, c, tl) =
               match ctl with
                 Qast.Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
-              | _ -> match () with _ -> raise (Match_failure ("", 305, 19))
+              | _ -> match () with _ -> raise (Match_failure ("", 308, 19))
             in
             Qast.Node ("StExc", [Qast.Loc; c; tl; b]) :
             'str_item));
@@ -950,7 +953,7 @@ Grammar.extend
            (let (_, c, tl) =
               match ctl with
                 Qast.Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
-              | _ -> match () with _ -> raise (Match_failure ("", 363, 19))
+              | _ -> match () with _ -> raise (Match_failure ("", 366, 19))
             in
             Qast.Node ("SgExc", [Qast.Loc; c; tl]) :
             'sig_item));
@@ -1838,6 +1841,21 @@ Grammar.extend
       Gramext.action
         (fun (s : 'a_FLOAT) (loc : Lexing.position * Lexing.position) ->
            (Qast.Node ("ExFlo", [Qast.Loc; s]) : 'expr));
+      [Gramext.Snterm
+         (Grammar.Entry.obj (a_NATIVEINT : 'a_NATIVEINT Grammar.Entry.e))],
+      Gramext.action
+        (fun (s : 'a_NATIVEINT) (loc : Lexing.position * Lexing.position) ->
+           (Qast.Node ("ExNativeInt", [Qast.Loc; s]) : 'expr));
+      [Gramext.Snterm
+         (Grammar.Entry.obj (a_INT64 : 'a_INT64 Grammar.Entry.e))],
+      Gramext.action
+        (fun (s : 'a_INT64) (loc : Lexing.position * Lexing.position) ->
+           (Qast.Node ("ExInt64", [Qast.Loc; s]) : 'expr));
+      [Gramext.Snterm
+         (Grammar.Entry.obj (a_INT32 : 'a_INT32 Grammar.Entry.e))],
+      Gramext.action
+        (fun (s : 'a_INT32) (loc : Lexing.position * Lexing.position) ->
+           (Qast.Node ("ExInt32", [Qast.Loc; s]) : 'expr));
       [Gramext.Snterm (Grammar.Entry.obj (a_INT : 'a_INT Grammar.Entry.e))],
       Gramext.action
         (fun (s : 'a_INT) (loc : Lexing.position * Lexing.position) ->
@@ -2179,6 +2197,24 @@ Grammar.extend
         (fun (s : 'a_FLOAT) _ (loc : Lexing.position * Lexing.position) ->
            (mkuminpat Qast.Loc (Qast.Str "-") (Qast.Bool false) s : 'patt));
       [Gramext.Stoken ("", "-");
+       Gramext.Snterm
+         (Grammar.Entry.obj (a_NATIVEINT : 'a_NATIVEINT Grammar.Entry.e))],
+      Gramext.action
+        (fun (s : 'a_NATIVEINT) _ (loc : Lexing.position * Lexing.position) ->
+           (mkuminpat Qast.Loc (Qast.Str "-") (Qast.Bool true) s : 'patt));
+      [Gramext.Stoken ("", "-");
+       Gramext.Snterm
+         (Grammar.Entry.obj (a_INT64 : 'a_INT64 Grammar.Entry.e))],
+      Gramext.action
+        (fun (s : 'a_INT64) _ (loc : Lexing.position * Lexing.position) ->
+           (mkuminpat Qast.Loc (Qast.Str "-") (Qast.Bool true) s : 'patt));
+      [Gramext.Stoken ("", "-");
+       Gramext.Snterm
+         (Grammar.Entry.obj (a_INT32 : 'a_INT32 Grammar.Entry.e))],
+      Gramext.action
+        (fun (s : 'a_INT32) _ (loc : Lexing.position * Lexing.position) ->
+           (mkuminpat Qast.Loc (Qast.Str "-") (Qast.Bool true) s : 'patt));
+      [Gramext.Stoken ("", "-");
        Gramext.Snterm (Grammar.Entry.obj (a_INT : 'a_INT Grammar.Entry.e))],
       Gramext.action
         (fun (s : 'a_INT) _ (loc : Lexing.position * Lexing.position) ->
@@ -2197,6 +2233,21 @@ Grammar.extend
       Gramext.action
         (fun (s : 'a_FLOAT) (loc : Lexing.position * Lexing.position) ->
            (Qast.Node ("PaFlo", [Qast.Loc; s]) : 'patt));
+      [Gramext.Snterm
+         (Grammar.Entry.obj (a_NATIVEINT : 'a_NATIVEINT Grammar.Entry.e))],
+      Gramext.action
+        (fun (s : 'a_NATIVEINT) (loc : Lexing.position * Lexing.position) ->
+           (Qast.Node ("PaNativeInt", [Qast.Loc; s]) : 'patt));
+      [Gramext.Snterm
+         (Grammar.Entry.obj (a_INT64 : 'a_INT64 Grammar.Entry.e))],
+      Gramext.action
+        (fun (s : 'a_INT64) (loc : Lexing.position * Lexing.position) ->
+           (Qast.Node ("PaInt64", [Qast.Loc; s]) : 'patt));
+      [Gramext.Snterm
+         (Grammar.Entry.obj (a_INT32 : 'a_INT32 Grammar.Entry.e))],
+      Gramext.action
+        (fun (s : 'a_INT32) (loc : Lexing.position * Lexing.position) ->
+           (Qast.Node ("PaInt32", [Qast.Loc; s]) : 'patt));
       [Gramext.Snterm (Grammar.Entry.obj (a_INT : 'a_INT Grammar.Entry.e))],
       Gramext.action
         (fun (s : 'a_INT) (loc : Lexing.position * Lexing.position) ->
@@ -4917,6 +4968,48 @@ Grammar.extend
      Gramext.action
        (fun (a : string) (loc : Lexing.position * Lexing.position) ->
           (antiquot "int" loc a : 'a_INT))]];
+   Grammar.Entry.obj (a_INT32 : 'a_INT32 Grammar.Entry.e), None,
+   [None, None,
+    [[Gramext.Stoken ("INT32", "")],
+     Gramext.action
+       (fun (s : string) (loc : Lexing.position * Lexing.position) ->
+          (Qast.Str s : 'a_INT32));
+     [Gramext.Stoken ("ANTIQUOT", "")],
+     Gramext.action
+       (fun (a : string) (loc : Lexing.position * Lexing.position) ->
+          (antiquot "" loc a : 'a_INT32));
+     [Gramext.Stoken ("ANTIQUOT", "int32")],
+     Gramext.action
+       (fun (a : string) (loc : Lexing.position * Lexing.position) ->
+          (antiquot "int32" loc a : 'a_INT32))]];
+   Grammar.Entry.obj (a_INT64 : 'a_INT64 Grammar.Entry.e), None,
+   [None, None,
+    [[Gramext.Stoken ("INT64", "")],
+     Gramext.action
+       (fun (s : string) (loc : Lexing.position * Lexing.position) ->
+          (Qast.Str s : 'a_INT64));
+     [Gramext.Stoken ("ANTIQUOT", "")],
+     Gramext.action
+       (fun (a : string) (loc : Lexing.position * Lexing.position) ->
+          (antiquot "" loc a : 'a_INT64));
+     [Gramext.Stoken ("ANTIQUOT", "int64")],
+     Gramext.action
+       (fun (a : string) (loc : Lexing.position * Lexing.position) ->
+          (antiquot "int64" loc a : 'a_INT64))]];
+   Grammar.Entry.obj (a_NATIVEINT : 'a_NATIVEINT Grammar.Entry.e), None,
+   [None, None,
+    [[Gramext.Stoken ("NATIVEINT", "")],
+     Gramext.action
+       (fun (s : string) (loc : Lexing.position * Lexing.position) ->
+          (Qast.Str s : 'a_NATIVEINT));
+     [Gramext.Stoken ("ANTIQUOT", "")],
+     Gramext.action
+       (fun (a : string) (loc : Lexing.position * Lexing.position) ->
+          (antiquot "" loc a : 'a_NATIVEINT));
+     [Gramext.Stoken ("ANTIQUOT", "nativeint")],
+     Gramext.action
+       (fun (a : string) (loc : Lexing.position * Lexing.position) ->
+          (antiquot "nativeint" loc a : 'a_NATIVEINT))]];
    Grammar.Entry.obj (a_FLOAT : 'a_FLOAT Grammar.Entry.e), None,
    [None, None,
     [[Gramext.Stoken ("FLOAT", "")],

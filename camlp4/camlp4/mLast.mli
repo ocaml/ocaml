@@ -104,6 +104,7 @@ and expr =
   | ExLmd of loc and string and module_expr and expr
   | ExMat of loc and expr and list (patt * option expr * expr)
   | ExNew of loc and list string
+  | ExObj of loc and option patt and list class_str_item
   | ExOlb of loc and string and option expr
   | ExOvr of loc and list (string * expr)
   | ExRec of loc and list (patt * expr) and option expr

@@ -640,6 +640,14 @@ let rec expr =
       mkexp loc (Pexp_letmodule (i, module_expr me, expr e))
   | ExMat (loc, e, pel) -> mkexp loc (Pexp_match (expr e, List.map mkpwe pel))
   | ExNew (loc, id) -> mkexp loc (Pexp_new (long_id_of_string_list loc id))
+  | ExObj (loc, po, cfl) ->
+      let p =
+        match po with
+          Some p -> p
+        | None -> PaAny loc
+      in
+      let cil = List.fold_right class_str_item cfl [] in
+      mkexp loc (Pexp_object (patt p, cil))
   | ExOlb (loc, _, _) -> error loc "labeled expression not allowed here"
   | ExOvr (loc, iel) -> mkexp loc (Pexp_override (List.map mkideexp iel))
   | ExRec (loc, lel, eo) ->

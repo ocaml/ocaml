@@ -224,6 +224,9 @@ and expr floc sh =
                 (patt floc sh x1, option_map self x2, self x3))
              x2)
     | ExNew loc x1 -> let nloc = floc loc in ExNew nloc x1
+    | ExObj loc x1 x2 ->
+        let nloc = floc loc in ExObj nloc (option_map (patt floc sh) x1)
+          (List.map (class_str_item floc sh) x2)
     | ExOlb loc x1 x2 -> let nloc = floc loc in ExOlb nloc x1 (option_map self x2)
     | ExOvr loc x1 ->
         let nloc = floc loc in
