@@ -18,7 +18,7 @@
    add [module Unix = UnixLabels] in your implementation.
 *)
 
-(** {2 Error report} *)
+(** {6 Error report} *)
 
 type error =
   Unix.error =
@@ -114,7 +114,7 @@ val handle_unix_error : ('a -> 'b) -> 'a -> 'b
    describing the error and exits with code 2. *)
 
 
-(** {2 Access to the process environment} *)
+(** {6 Access to the process environment} *)
 
 
 val environment : unit -> string array
@@ -132,7 +132,7 @@ val putenv : string -> string -> unit
    [name] is the name of the environment variable,
    and [value] its new associated value. *)
 
-(** {2 Process handling} *)
+(** {6 Process handling} *)
 
 type process_status =
   Unix.process_status =
@@ -207,7 +207,7 @@ val nice : int -> int
    lower priorities.) Return the new nice value. *)
 
 
-(** {2 Basic file input/output} *)
+(** {6 Basic file input/output} *)
 
 
 type file_descr = Unix.file_descr
@@ -258,7 +258,7 @@ val write : file_descr -> buf:string -> pos:int -> len:int -> int
    written. *)
 
 
-(** {2 Interfacing with the standard input/output library} *)
+(** {6 Interfacing with the standard input/output library} *)
 
 
 val in_channel_of_descr : file_descr -> in_channel
@@ -279,7 +279,7 @@ val descr_of_out_channel : out_channel -> file_descr
 
 
 
-(** {2 Seeking and truncating} *)
+(** {6 Seeking and truncating} *)
 
 type seek_command =
   Unix.seek_command =
@@ -300,7 +300,7 @@ val ftruncate : file_descr -> len:int -> unit
 
 
 
-(** {2 File statistics} *)
+(** {6 File statistics} *)
 
 type file_kind =
   Unix.file_kind =
@@ -343,7 +343,7 @@ val fstat : file_descr -> stats
 
 
 
-(** {2 Operations on file names} *)
+(** {6 Operations on file names} *)
 
 
 val unlink : string -> unit
@@ -358,7 +358,7 @@ val link : src:string -> dst:string -> unit
 
 
 
-(** {2 File permissions and ownership} *)
+(** {6 File permissions and ownership} *)
 
 
 type access_permission =
@@ -391,7 +391,7 @@ val access : string -> perm:access_permission list -> unit
 
 
 
-(** {2 Operations on file descriptors} *)
+(** {6 Operations on file descriptors} *)
 
 
 val dup : file_descr -> file_descr
@@ -426,7 +426,7 @@ val clear_close_on_exec : file_descr -> unit
 
 
 
-(** {2 Directories} *)
+(** {6 Directories} *)
 
 
 val mkdir : string -> perm:file_perm -> unit
@@ -462,7 +462,7 @@ val closedir : dir_handle -> unit
 
 
 
-(** {2 Pipes and redirections} *)
+(** {6 Pipes and redirections} *)
 
 
 val pipe : unit -> file_descr * file_descr
@@ -474,7 +474,7 @@ val mkfifo : string -> perm:file_perm -> unit
 (** Create a named pipe with the given permissions. *)
 
 
-(** {2 High-level process and redirection management} *)
+(** {6 High-level process and redirection management} *)
 
 
 val create_process :
@@ -548,7 +548,7 @@ val close_process_full :
    and return its termination status. *)
 
 
-(** {2 Symbolic links} *)
+(** {6 Symbolic links} *)
 
 
 val symlink : src:string -> dst:string -> unit
@@ -560,7 +560,7 @@ val readlink : string -> string
 
 
 
-(** {2 Polling} *)
+(** {6 Polling} *)
 
 
 val select :
@@ -578,7 +578,7 @@ val select :
    component). *)
 
 
-(** {2 Locking} *)
+(** {6 Locking} *)
 
 type lock_command =
   Unix.lock_command =
@@ -603,7 +603,7 @@ val lockf : file_descr -> mode:lock_command -> len:int -> unit
    other processes acquire read locks on it. *)
 
 
-(** {2 Signals}
+(** {6 Signals}
    Note: installation of signal handlers is performed via
    the functions {!Sys.signal} and {!Sys.set_signal}. 
 *)
@@ -642,7 +642,7 @@ val pause : unit -> unit
 (** Wait until a non-ignored, non-blocked signal is delivered. *)
 
 
-(** {2 Time functions} *)
+(** {6 Time functions} *)
 
 type process_times =
   Unix.process_times =
@@ -738,7 +738,7 @@ val setitimer :
    after its next expiration. *)
 
 
-(** {2 User id, group id} *)
+(** {6 User id, group id} *)
 
 
 val getuid : unit -> int
@@ -806,7 +806,7 @@ val getgrgid : int -> group_entry
 
 
 
-(** {2 Internet addresses} *)
+(** {6 Internet addresses} *)
 
 
 type inet_addr = Unix.inet_addr
@@ -825,7 +825,7 @@ val inet_addr_any : inet_addr
    all the Internet addresses that the host machine possesses. *)
 
 
-(** {2 Sockets} *)
+(** {6 Sockets} *)
 
 
 type socket_domain =
@@ -926,7 +926,7 @@ val sendto :
 (** Send data over an unconnected socket. *)
 
 
-(** {2 Socket options} *)
+(** {6 Socket options} *)
 
 
 type socket_bool_option =
@@ -1002,7 +1002,7 @@ external setsockopt_float :
 (** Same as {!UnixLabels.setsockopt} for a socket option whose value is a floating-point number. *)
 
 
-(** {2 High-level network connection functions} *)
+(** {6 High-level network connection functions} *)
 
 
 val open_connection : sockaddr -> in_channel * out_channel
@@ -1025,7 +1025,7 @@ val establish_server :
    never returns normally. *)
 
 
-(** {2 Host and protocol databases} *)
+(** {6 Host and protocol databases} *)
 
 
 type host_entry =
@@ -1084,7 +1084,7 @@ val getservbyport : int -> protocol:string -> service_entry
 
 
 
-(** {2 Terminal interface} *)
+(** {6 Terminal interface} *)
 
 (** The following functions implement the POSIX standard terminal
    interface. They provide control over asynchronous communication ports
