@@ -32,14 +32,14 @@ let state = [|
   440266690
 |]
 
-let j = ref 0
+let index = ref 0
 
 (* Returns 30 random bits as an integer 0 <= x < 1073741824 *)
 let bits () =
-  j := (!j + 1) mod 55;
+  index := (!index + 1) mod 55;
   let newval =
-    Array.unsafe_get state ((!j+24) mod 55) + Array.unsafe_get state !j in
-  Array.unsafe_set state !j newval;
+    state.((!index + 24) mod 55) + state.(!index) in
+  state.(!index) <- newval;
   newval land 0x3FFFFFFF
 
 (* Returns a float 0 <= x < 1 with at most 90 bits of precision. *)
@@ -73,17 +73,16 @@ let init seed =
     lxor (Char.code d.[3] lsl 22)
   in
   for i = 0 to 54 do
-    Array.unsafe_set state i (mdg ())
+    state.(i) <- (mdg ())
   done;
-  j := 0
+  index := 0
 
 (* Full initialisation.  The seed is an array of integers. *)
 let full_init seed =
   init 27182818;
   for i = 0 to Array.length (seed) - 1 do
     let j = i mod 55 in
-    Array.unsafe_set state j
-      (Array.unsafe_get state j + Array.unsafe_get seed i)
+    state.(j) <- state.(j) + seed.(i)
   done
 
 (* Low-entropy system-dependent initialisation. *)
@@ -95,13 +94,13 @@ let self_init () = init (random_seed());;
 
 (* Manipulating the current state. *)
 
-type state = { state_array : int array; j : int };;
+type state = { st : int array; idx : int };;
 
-let get_state () = { state_array = state; j = !j };;
+let get_state () = { st = Array.copy state; idx = !index };;
 
 let set_state s =
-  Array.blit s.state_array 0 state 0 (Array.length state);
-  j := s.j;
+  Array.blit s.st 0 state 0 55;
+  index := s.idx;
 ;;
 
 (********************
