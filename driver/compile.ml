@@ -24,8 +24,12 @@ open Typedtree
    then the standard library directory. *)
 
 let init_path () =
-  load_path :=
-    "" :: List.rev (Config.standard_library :: !Clflags.include_dirs);
+  let dirs =
+    if !Clflags.thread_safe then
+     Filename.concat Config.standard_library "threads" :: !Clflags.include_dirs
+    else
+     !Clflags.include_dirs in
+  load_path := "" :: List.rev (Config.standard_library :: dirs);
   Env.reset_cache()
 
 (* Return the initial environment in which compilation proceeds. *)

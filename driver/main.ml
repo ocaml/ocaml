@@ -69,6 +69,7 @@ let main () =
        "-v", Arg.Unit print_version_number;
        "-intf", Arg.String process_interface_file;
        "-impl", Arg.String process_implementation_file;
+       "-thread", Arg.Set thread_safe;
        "-", Arg.String process_file]
       process_file;
     if !make_archive then begin
