@@ -75,24 +75,14 @@ static void check_head (value v)
 
 static void check_block (char *hp)
 {
-  mlsize_t nfields = Wosize_hp (hp);
   mlsize_t i;
   value v = Val_hp (hp);
   value f;
-  mlsize_t lastbyte;
   
   check_head (v);
   switch (Tag_hp (hp)){
   case Abstract_tag: break;
   case String_tag:
-    /* not true when [caml_check_urgent_gc] is called by [caml_alloc]
-       or caml_alloc_string:
-       lastbyte = Bosize_val (v) - 1;
-       i = Byte (v, lastbyte);
-       Assert (i >= 0);
-       Assert (i < sizeof (value));
-       Assert (Byte (v, lastbyte - i) == 0);
-    */
     break;
   case Double_tag:
     Assert (Wosize_val (v) == Double_wosize);
