@@ -281,6 +281,7 @@ let set_initializer table init =
 let inheritance table cl vars =
   if
     !copy_parent & (table.methods = []) & (table.size = initial_size)
+    & (table.init = [[]; []])
   then begin
     copy_table table cl.table;
     table.init <- table.init@[[]]
