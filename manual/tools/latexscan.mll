@@ -128,7 +128,7 @@ and camlprog = parse
                     print_string "  <FONT COLOR=\"blue\">";
                   in_caml := true;
                   camlprog lexbuf }
-  | "\\:"       { print_string "<FONT SIZE=-1 COLOR=\"green\">";
+  | "\\:"       { print_string "<FONT COLOR=\"green\">";
                   in_caml := true;
                   camlprog lexbuf }
   | "\\;"       { first_caml_line := true; camlprog lexbuf }
