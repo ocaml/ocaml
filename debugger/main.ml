@@ -125,8 +125,14 @@ let main () =
     toplevel_loop ();                   (* Toplevel. *)
     kill_program ();
     exit 0
-  with Toplevel ->
-    exit 2
+  with 
+    Toplevel ->
+      exit 2
+  | Env.error e -> 
+      eprintf "Debugger [version %s] environment error:@[@;" Config.version;
+      Env.report_error err_formatter e;
+      eprintf "@]@.";
+      exit 2
 
 let _ =
   Printexc.catch (Unix.handle_unix_error main) ()
