@@ -99,6 +99,7 @@ clean:
 release:
 	gzip < texstuff/manual.dvi > $(RELEASE)refman.dvi.gz
 	dvips -Php11rv -o '!gzip > $(RELEASE)refman.ps.gz' texstuff/manual.dvi
+	cp htmlman/manual.html $(RELEASE)refman.html
 	rm -f htmlman/manual.html
 	tar cf - htmlman/*.* htmlman/libref | gzip > $(RELEASE)refman.html.tar.gz
 	zip -8 $(RELEASE)refman.html.zip htmlman/*.* htmlman/libref/*.*
