@@ -263,11 +263,13 @@ let check_nongen_schemes env str =
 
 (* Extract the list of "value" identifiers bound by a signature.
    "Value" identifiers are identifiers for signature components that
-   correspond to a run-time value: values, exceptions, modules, classes *)
+   correspond to a run-time value: values, exceptions, modules, classes.
+   Note: manifest primitives do not correspond to a run-time value! *)
 
 let rec bound_value_identifiers = function
     [] -> []
-  | Tsig_value(id, decl) :: rem -> id :: bound_value_identifiers rem
+  | Tsig_value(id, {val_kind = Val_reg}) :: rem ->
+      id :: bound_value_identifiers rem
   | Tsig_exception(id, decl) :: rem -> id :: bound_value_identifiers rem
   | Tsig_module(id, mty) :: rem -> id :: bound_value_identifiers rem
   | Tsig_class(id, decl) :: rem -> id :: bound_value_identifiers rem
