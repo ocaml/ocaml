@@ -30,6 +30,7 @@ OCAMLPP=-pp "grep -v DEBUG"
 MKDIR=mkdir
 CP=cp
 OCAMLDOC=ocamldoc
+OCAMLDOC_RUN=$(CAMLRUN) $(OCAMLDOC)
 OCAMLDOC_OPT=$(OCAMLDOC).opt
 OCAMLDOC_LIBCMA=odoc_info.cma 
 OCAMLDOC_LIBCMI=odoc_info.cmi

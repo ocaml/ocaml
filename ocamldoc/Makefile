@@ -32,6 +32,7 @@ OCAMLPP=-pp 'grep -v DEBUG'
 MKDIR=mkdir -p
 CP=cp -f
 OCAMLDOC=ocamldoc
+OCAMLDOC_RUN=$(CAMLRUN) $(OCAMLDOC)
 OCAMLDOC_OPT=$(OCAMLDOC).opt
 OCAMLDOC_LIBCMA=odoc_info.cma 
 OCAMLDOC_LIBCMI=odoc_info.cmi
@@ -314,33 +315,33 @@ installopt_really:
 ###########
 test: dummy
 	$(MKDIR) $@ 
-	./ocamldoc -html -colorize-code -d $@ $(INCLUDES) -dump $@/ocamldoc.odoc odoc*.ml odoc*.mli
+	$(OCAMLDOC_RUN) -html -colorize-code -d $@ $(INCLUDES) -dump $@/ocamldoc.odoc odoc*.ml odoc*.mli
 
 test_stdlib: dummy
 	$(MKDIR) $@ 
-	./ocamldoc -html -colorize-code -d $@ $(INCLUDES) -dump $@/stdlib.odoc ../stdlib/*.mli \
+	$(OCAMLDOC_RUN) -html -colorize-code -d $@ $(INCLUDES) -dump $@/stdlib.odoc ../stdlib/*.mli \
 	../otherlibs/unix/unix.mli \
 	../otherlibs/str/str.mli
 
 test_framed: dummy
 	$(MKDIR) $@ 
-	./ocamldoc -g odoc_fhtml.cmo -colorize-code -d $@ $(INCLUDES) odoc*.ml odoc*.mli
+	$(OCAMLDOC_RUN) -g odoc_fhtml.cmo -colorize-code -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
 test_latex: dummy
 	$(MKDIR) $@ 
-	./ocamldoc -latex -d $@ $(INCLUDES) odoc*.ml odoc*.mli
+	$(OCAMLDOC_RUN) -latex -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
 test_man: dummy
 	$(MKDIR) $@ 
-	./ocamldoc -man -d $@ $(INCLUDES) odoc*.ml odoc*.mli
+	$(OCAMLDOC_RUN) -man -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
 test_texi: dummy
 	$(MKDIR) $@ 
-	./ocamldoc -texi -d $@ $(INCLUDES) odoc*.ml odoc*.mli
+	$(OCAMLDOC_RUN) -texi -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
 stdlib_man: dummy
 	$(MKDIR) $@ 
-	./ocamldoc -man -d $@ $(INCLUDES) ../stdlib/*.mli \
+	$(OCAMLDOC_RUN) -man -d $@ $(INCLUDES) ../stdlib/*.mli \
 	-t "OCaml library" -man-mini \
 	../otherlibs/unix/unix.mli \
 	../otherlibs/str/str.mli \
