@@ -95,8 +95,7 @@ let rec generalize_class_type =
       generalize_class_type cty
 
 (* Return the virtual methods of a class type *)
-let virtual_methods cty =
-  let sign = Ctype.signature_of_class_type cty in
+let virtual_methods sign =
   let (fields, _) = Ctype.flatten_fields (Ctype.object_fields sign.cty_self) in
   List.fold_left
     (fun virt (lab, _, _) ->
@@ -1041,7 +1040,7 @@ let class_infos define_class kind
   in
 
   if cl.pci_virt = Concrete then begin
-    match virtual_methods typ with
+    match virtual_methods (Ctype.signature_of_class_type typ) with
       []   -> ()
     | mets -> raise(Error(cl.pci_loc, Virtual_class(define_class, mets)))
   end;
@@ -1244,10 +1243,22 @@ let class_type_declarations env cls =
      decl,
    env)
 
+let type_object env loc s =
+  incr class_num;
+  let (desc, sign) = class_structure (string_of_int !class_num) env env s in
+  let sty = Ctype.expand_head env sign.cty_self in
+  begin match virtual_methods sign with
+    [] -> ()
+  | mets -> raise(Error(loc, Virtual_class(true, mets)))
+  end;
+  Ctype.hide_private_methods sty;
+  Ctype.close_object sty;
+  let (fields, _) = Ctype.flatten_fields (Ctype.object_fields sty) in
+  let meths = List.map (fun (s,_,_) -> s) fields in
+  (desc, sign, meths)
+
 let () =
-  Typecore.type_object :=
-    (fun env s ->
-      incr class_num; class_structure (string_of_int !class_num) env env s)
+  Typecore.type_object := type_object
 
 (*******************************)
 
@@ -1330,9 +1341,9 @@ let report_error ppf = function
   | Virtual_class (cl, mets) ->
       let print_mets ppf mets =
         List.iter (function met -> fprintf ppf "@ %s" met) mets in
-      let cl_mark = if cl then " type" else "" in
+      let cl_mark = if cl then "" else " type" in
       fprintf ppf
-        "@[This class %s should be virtual@ \
+        "@[This class%s should be virtual@ \
            @[<2>The following methods are undefined :%a@]
          @]"
         cl_mark print_mets mets

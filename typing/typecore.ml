@@ -70,7 +70,8 @@ let type_module =
 (* Forward declaration, to be filled in by Typeclass.class_structure *)
 let type_object =
   ref (fun env s -> assert false :
-       Env.t -> Parsetree.class_structure -> class_structure * class_signature)
+       Env.t -> Location.t -> Parsetree.class_structure ->
+	 class_structure * class_signature * string list)
 
 (*
   Saving and outputting type information.
@@ -1323,19 +1324,11 @@ let rec type_exp env sexp =
          exp_env = env;
        }
   | Pexp_object s ->
-      let desc, ({cty_self = sty} as cty) = !type_object env s in
-      hide_private_methods sty;
-      close_object sty;
-      let meths =
-        List.fold_right
-          (fun (s,k,_) l ->
-            if field_kind_repr k = Fpresent then s :: l else l)
-          (fst (flatten_fields (object_fields sty))) []
-      in
+      let desc, sign, meths = !type_object env sexp.pexp_loc s in
       re {
-        exp_desc = Texp_object (desc, cty, meths);
+        exp_desc = Texp_object (desc, sign, meths);
         exp_loc = sexp.pexp_loc;
-        exp_type = sty;
+        exp_type = sign.cty_self;
         exp_env = env;
       }
   | Pexp_poly _ ->

@@ -104,5 +104,5 @@ val report_error: formatter -> error -> unit
 val type_module: (Env.t -> Parsetree.module_expr -> Typedtree.module_expr) ref
 (* Forward declaration, to be filled in by Typeclass.class_structure *)
 val type_object:
-  (Env.t -> Parsetree.class_structure ->
-   Typedtree.class_structure * class_signature) ref
+  (Env.t -> Location.t -> Parsetree.class_structure ->
+   Typedtree.class_structure * class_signature * string list) ref
