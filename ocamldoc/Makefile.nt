@@ -193,7 +193,7 @@ odoc_crc.ml: $(CMIFILES)
 	Arg Arith_status Array Big_int Buffer Callback Char Digest Dynlink \
 	Filename Format Gc Genlex Hashtbl \
 	Lazy Lexing List Map Marshal Nat\
-	Num Obj Oo Outcometree Parsing Pervasives Printexc\
+	Num Obj CamlinternalOO Outcometree Parsing Pervasives Printexc\
 	Printf Profiling Queue Random Ratio\
 	Set Sort Stack Std_exit Str Stream\
 	String Sys Topdirs Toploop Unix Weak\
