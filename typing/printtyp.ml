@@ -305,7 +305,7 @@ let constrain ty =
     close_box()
   end
 
-let rec type_declaration id decl =
+let rec type_decl kwd id decl =
   reset();
 
   let params = List.map repr decl.type_params in
@@ -328,7 +328,7 @@ let rec type_declaration id decl =
   end;
 
   open_hvbox 2;
-  print_string "type ";
+  print_string kwd;
   type_expr {desc = Tconstr(Pident id, params, ref Mnil);
              level = generic_level};
   begin match decl.type_manifest with
@@ -372,6 +372,8 @@ and label (name, mut, arg) =
   print_string name;
   print_string ": ";
   type_expr arg
+
+let type_declaration id decl = type_decl "type " id decl
 
 (* Print an exception declaration *)
 
@@ -512,7 +514,14 @@ and signature_body spc = function
           Tsig_value(id, decl) ->
             value_description id decl; rem
         | Tsig_type(id, decl)  ->
-            type_declaration id decl; rem
+            type_declaration id decl;
+            let rec more_type_declarations = function
+              Tsig_type(id, decl) :: rem ->
+                print_space();
+                type_decl "and " id decl;
+                more_type_declarations rem
+            | rem -> rem in
+            more_type_declarations rem
         | Tsig_exception(id, decl)  ->
             exception_declaration id decl; rem
         | Tsig_module(id, mty)  ->
