@@ -1045,8 +1045,6 @@ pr_expr.pr_levels :=
                              `S LR "with" :];
                        `match_assoc_list loc pel "" [: :];
                        `HVbox [: `S LR "end"; k :] :] :]
-      | <:expr< if $_$ then () else raise (Assert_failure $_$) >> as e ->
-          fun curr next dg k -> [: `next e dg k :]
       | <:expr< if $e1$ then $e2$ else $e3$ >> as e ->
           fun curr next dg k ->
             let eel_e =
@@ -1277,10 +1275,10 @@ pr_expr.pr_levels :=
           fun curr next dg k -> [: `next e "" k :]
       | <:expr< lazy ($x$) >> ->
           fun curr next dg k -> [: `S LR "lazy"; `next x "" k :]
-      | <:expr< if $e$ then () else raise (Assert_failure $_$) >> ->
-          fun curr next dg k -> [: `S LR "assert"; `next e "" k :]
-      | <:expr<  raise (Assert_failure $_$) >> ->
+      | <:expr< assert False >> ->
           fun curr next dg k -> [: `S LR "assert"; `S LR "false"; k :]
+      | <:expr< assert ($e$) >> ->
+          fun curr next dg k -> [: `S LR "assert"; `next e "" k :]
       | <:expr< $lid:n$ $x$ $y$ >> as e ->
           fun curr next dg k ->
             let loc = MLast.loc_of_expr e in

@@ -61,8 +61,9 @@ val add_option : string -> Arg.spec -> string -> unit;;
    (** Add an option to the command line options. *)
 val no_constructors_arity : bool ref;;
    (** [True]: dont generate constructor arity. *)
-val no_assert : bool ref;;
+(*value no_assert : ref bool;
    (** [True]: dont generate assertion checks. *)
+*)
 
 val sync : (char Stream.t -> unit) ref;;
 

@@ -216,23 +216,9 @@ value mkexprident loc i j =
 ;
 
 value mkassert _ e =
-  let f = Qast.Node "ExStr" [Qast.Loc; Qast.Str ""] in
-  let bp = Qast.Node "ExInt" [Qast.Loc; Qast.Str "0"] in
-  let ep = Qast.Node "ExInt" [Qast.Loc; Qast.Str "0"] in
-  let raiser =
-    Qast.Node "ExApp"
-      [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "raise"];
-       Qast.Node "ExApp"
-         [Qast.Loc; Qast.Node "ExUid" [Qast.Loc; Qast.Str "Assert_failure"];
-          Qast.Node "ExTup" [Qast.Loc; Qast.List [f; bp; ep]]]]
-  in
   match e with
-  [ Qast.Node "ExUid" [_; Qast.Str "False"] -> raiser
-  | _ ->
-      if Pcaml.no_assert.val then Qast.Node "ExUid" [Qast.Loc; Qast.Str "()"]
-      else
-        Qast.Node "ExIfe"
-          [Qast.Loc; e; Qast.Node "ExUid" [Qast.Loc; Qast.Str "()"]; raiser] ]
+  [ Qast.Node "ExUid" [_; Qast.Str "False"] -> Qast.Node "ExAsf" [Qast.Loc]
+  | _ -> Qast.Node "ExAsr" [Qast.Loc; e] ]
 ;
 
 value append_elem el e = Qast.Apply "@" [el; Qast.List [e]];

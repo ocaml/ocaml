@@ -50,11 +50,11 @@ value o2b =
 ;
 
 value mkumin loc f arg =
-  match arg with
-  [ <:expr< $int:n$ >> when int_of_string n > 0 ->
+  match (f, arg) with
+  [ ("-", <:expr< $int:n$ >>) when int_of_string n > 0 ->
       let n = "-" ^ n in
       <:expr< $int:n$ >>
-  | <:expr< $flo:n$ >> when float_of_string n > 0.0 ->
+  | (_, <:expr< $flo:n$ >>) when float_of_string n > 0.0 ->
       let n = "-" ^ n in
       <:expr< $flo:n$ >>
   | _ ->
@@ -584,15 +584,9 @@ EXTEND
                   List.fold_left (fun e1 e2 -> <:expr< $e1$ $e2$ >>) e1 el
               | _ -> <:expr< $e1$ $e2$ >> ] ]
       | "assert"; e = SELF ->
-          let f = <:expr< $str:input_file.val$ >> in
-          let bp = <:expr< $int:string_of_int (fst loc)$ >> in
-          let ep = <:expr< $int:string_of_int (snd loc)$ >> in
-          let raiser = <:expr< raise (Assert_failure ($f$, $bp$, $ep$)) >> in
           match e with
-          [ <:expr< False >> -> raiser
-          | _ ->
-              if no_assert.val then <:expr< () >>
-              else <:expr< if $e$ then () else $raiser$ >> ]
+          [ <:expr< False >> -> <:expr< assert False >>
+          | _ -> <:expr< assert ($e$) >> ]
       | "lazy"; e = SELF ->
           <:expr< lazy ($e$) >> ]
     | "." LEFTA

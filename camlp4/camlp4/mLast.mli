@@ -76,7 +76,9 @@ and expr =
   | ExApp of loc and expr and expr
   | ExAre of loc and expr and expr
   | ExArr of loc and list expr
-  | ExAss of loc and expr and expr
+  | ExAsf of loc                       (* assert False *)
+  | ExAsr of loc and expr              (* assert *)
+  | ExAss of loc and expr and expr     (* assignment *)
   | ExChr of loc and string
   | ExCoe of loc and expr and option ctyp and ctyp
   | ExFlo of loc and string

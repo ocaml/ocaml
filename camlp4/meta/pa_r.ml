@@ -139,15 +139,9 @@ value mkexprident loc i j =
 ;
 
 value mkassert loc e =
-  let f = <:expr< $str:input_file.val$ >> in
-  let bp = <:expr< $int:string_of_int (fst loc)$ >> in
-  let ep = <:expr< $int:string_of_int (snd loc)$ >> in
-  let raiser = <:expr< raise (Assert_failure ($f$, $bp$, $ep$)) >> in
   match e with
-  [ <:expr< False >> -> raiser
-  | _ ->
-      if no_assert.val then <:expr< () >>
-      else <:expr< if $e$ then () else $raiser$ >> ]
+  [ <:expr< False >> -> <:expr< assert False >>
+  | _ -> <:expr< assert ($e$) >> ]
 ;
 
 value append_elem el e = el @ [e];

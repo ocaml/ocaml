@@ -61,8 +61,9 @@ value add_option : string -> Arg.spec -> string -> unit;
    (** Add an option to the command line options. *)
 value no_constructors_arity : ref bool;
    (** [True]: dont generate constructor arity. *)
-value no_assert : ref bool;
+(*value no_assert : ref bool;
    (** [True]: dont generate assertion checks. *)
+*)
 
 value sync : ref (Stream.t char -> unit);
 

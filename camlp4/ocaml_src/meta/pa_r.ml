@@ -136,21 +136,9 @@ let mkexprident loc i j =
 ;;
 
 let mkassert loc e =
-  let f = MLast.ExStr (loc, !input_file) in
-  let bp = MLast.ExInt (loc, string_of_int (fst loc)) in
-  let ep = MLast.ExInt (loc, string_of_int (snd loc)) in
-  let raiser =
-    MLast.ExApp
-      (loc, MLast.ExLid (loc, "raise"),
-       MLast.ExApp
-         (loc, MLast.ExUid (loc, "Assert_failure"),
-          MLast.ExTup (loc, [f; bp; ep])))
-  in
   match e with
-    MLast.ExUid (_, "False") -> raiser
-  | _ ->
-      if !no_assert then MLast.ExUid (loc, "()")
-      else MLast.ExIfe (loc, e, MLast.ExUid (loc, "()"), raiser)
+    MLast.ExUid (_, "False") -> MLast.ExAsf loc
+  | _ -> MLast.ExAsr (loc, e)
 ;;
 
 let append_elem el e = el @ [e];;

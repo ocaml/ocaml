@@ -320,7 +320,7 @@ value warning_default_function (bp, ep) txt =
 value warning = ref warning_default_function;
 
 value no_constructors_arity = Ast2pt.no_constructors_arity;
-value no_assert = ref False;
+(*value no_assert = ref False;*)
 
 value arg_spec_list_ref = ref [];
 value arg_spec_list () = arg_spec_list_ref.val;

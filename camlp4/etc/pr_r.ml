@@ -989,8 +989,6 @@ pr_expr.pr_levels :=
             [: `HVbox [: :];
                `BEbox [: `S LR "try"; `expr e [: :]; `S LR "with" :];
                `match_assoc_list pel k :]
-      | <:expr< if $_$ then () else raise (Assert_failure $_$) >> as e ->
-          fun curr next _ k -> [: `next e "" k :]
       | <:expr< if $e1$ then $e2$ else $e3$ >> ->
           fun curr next _ k ->
             let (eel, e) =
@@ -1157,10 +1155,10 @@ pr_expr.pr_levels :=
           fun curr next _ k -> [: `next e "" k :]
       | <:expr< lazy ($x$) >> ->
           fun curr next _ k -> [: `S LR "lazy"; `next x "" k :]
-      | <:expr< if $e$ then () else raise (Assert_failure $_$) >> ->
-          fun curr next _ k -> [: `S LR "assert"; `next e "" k :]
-      | <:expr< raise (Assert_failure $_$) >> ->
+      | <:expr< assert False >> ->
           fun curr next _ k -> [: `S LR "assert"; `S LR "False"; k :]
+      | <:expr< assert ($e$) >> ->
+          fun curr next _ k -> [: `S LR "assert"; `next e "" k :]
       | <:expr< $lid:n$ $x$ $y$ >> as e ->
           fun curr next _ k ->
             if is_infix n then [: `next e "" k :]

@@ -514,6 +514,7 @@ value rec expr =
         (Pexp_apply (mkexp loc (Pexp_ident (array_function "Array" "get")))
            [("", expr e1); ("", expr e2)])
   | ExArr loc el -> mkexp loc (Pexp_array (List.map expr el))
+  | ExAsf loc -> mkexp loc Pexp_assertfalse
   | ExAss loc e v ->
       let e =
         match e with
@@ -535,6 +536,7 @@ value rec expr =
         | _ -> error loc "bad left part of assignment" ]
       in
       mkexp loc e
+  | ExAsr loc e -> mkexp loc (Pexp_assert (expr e))
   | ExChr loc s ->
       mkexp loc (Pexp_constant (Const_char (char_of_char_token loc s)))
   | ExCoe loc e t1 t2 ->

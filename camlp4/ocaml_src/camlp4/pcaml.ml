@@ -309,7 +309,7 @@ let warning_default_function (bp, ep) txt =
 let warning = ref warning_default_function;;
 
 let no_constructors_arity = Ast2pt.no_constructors_arity;;
-let no_assert = ref false;;
+(*value no_assert = ref False;*)
 
 let arg_spec_list_ref = ref [];;
 let arg_spec_list () = !arg_spec_list_ref;;

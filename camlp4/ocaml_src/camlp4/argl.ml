@@ -258,6 +258,13 @@ Other options:
     end
 ;;
 
+let warn_noassert () =
+  eprintf "\
+camlp4 warning: option -noassert is obsolete
+You should give the -noassert option to the ocaml compiler instead.
+"
+;;
+
 let initial_spec_list =
   ["-intf", Arg.String (fun x -> file_kind := Intf; Pcaml.input_file := x),
    "<file>  Parse <file> as an interface, whatever its extension.";
@@ -265,7 +272,7 @@ let initial_spec_list =
    "<file>  Parse <file> as an implementation, whatever its extension.";
    "-unsafe", Arg.Set Ast2pt.fast,
    "Generate unsafe accesses to array and strings.";
-   "-noassert", Arg.Set Pcaml.no_assert, "Don't compile assertion checks.";
+   "-noassert", Arg.Unit warn_noassert, "Obsolete, do not use this option.";
    "-verbose", Arg.Set Grammar.error_verbose,
    "More verbose in parsing errors.";
    "-loc", Arg.String (fun x -> Stdpp.loc_name := x),
