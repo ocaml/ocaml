@@ -99,7 +99,7 @@ void leave_blocking_section(void)
     (defined(TARGET_power) && defined(_AIX))
 void handle_signal(int sig, int code, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(__linux)
-void handle_signal(int sig, sutrct pt_regs * context)
+void handle_signal(int sig, struct pt_regs * context)
 #else
 void handle_signal(int sig)
 #endif
