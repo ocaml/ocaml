@@ -22,7 +22,7 @@
 #define Already_scanned(sp, retaddr) (retaddr & 1)
 #define Mark_scanned(sp, retaddr) (*((long *)(sp - 8)) = retaddr | 1)
 #define Mask_already_scanned(retaddr) (retaddr & ~1)
-#define Callback_link(sp) ((struct callback_link *)sp)
+#define Callback_link(sp) ((struct callback_link *)(sp + 16))
 #endif
 
 #ifdef TARGET_sparc
@@ -30,12 +30,12 @@
 #define Already_scanned(sp, retaddr) (retaddr & 1)
 #define Mark_scanned(sp, retaddr) (*((long *)(sp + 92)) = retaddr | 1)
 #define Mask_already_scanned(retaddr) (retaddr & ~1)
-#define Callback_link(sp) ((struct callback_link *)(sp + 96))
+#define Callback_link(sp) ((struct callback_link *)(sp + 104))
 #endif
 
 #ifdef TARGET_i386
 #define Saved_return_address(sp) *((long *)(sp - 4))
-#define Callback_link(sp) ((struct callback_link *)sp)
+#define Callback_link(sp) ((struct callback_link *)(sp + 8))
 #endif
 
 #ifdef TARGET_mips
@@ -43,7 +43,7 @@
 #define Already_scanned(sp, retaddr) (retaddr & 1)
 #define Mark_scanned(sp, retaddr) (*((long *)(sp - 4)) = retaddr | 1)
 #define Mask_already_scanned(retaddr) (retaddr & ~1)
-#define Callback_link(sp) ((struct callback_link *)sp)
+#define Callback_link(sp) ((struct callback_link *)(sp + 8))
 #endif
 
 #ifdef TARGET_hppa
@@ -52,7 +52,7 @@
 #define Already_scanned(sp, retaddr) (retaddr & 0x80000000)
 #define Mark_scanned(sp, retaddr) (*((long *)sp) = retaddr | 0x80000000)
 #define Mask_already_scanned(retaddr) (retaddr & ~0x80000000)
-#define Callback_link(sp) ((struct callback_link *)(sp - 8))
+#define Callback_link(sp) ((struct callback_link *)(sp - 16))
 #endif
 
 #ifdef TARGET_power
@@ -62,5 +62,6 @@
 #define Mask_already_scanned(retaddr) (retaddr & ~1)
 #define Callback_link(sp) ((struct callback_link *)(sp + 24))
 #endif
+
 
 #endif /* _stack_ */

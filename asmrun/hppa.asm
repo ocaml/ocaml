@@ -400,6 +400,14 @@ L102:
 	fstds,ma %fr29, -8(%r1)
 	fstds,ma %fr30, -8(%r1)
 	fstds,ma %fr31, -8(%r1)
+; Set up a callback link
+        ldo     8(%r30), %r30
+        ldil    L`_caml_bottom_of_stack, %r1
+        ldw     R`_caml_bottom_of_stack(%r1), %r1
+        stw     %r1, -8(%r30)
+        ldil    L`_caml_last_return_address, %r1
+        ldw     R`_caml_last_return_address(%r1), %r1
+        stw     %r1, -4(%r30)
 ; Set up a trap frame to catch exceptions escaping the Caml code
         ldo     8(%r30), %r30
         ldil    L`_caml_exception_pointer, %r1
@@ -409,14 +417,6 @@ L102:
         ldo     R`L103(%r1), %r1
         stw     %r1, -4(%r30)
         copy    %r30, %r5
-; Set up a callback link
-        ldo     8(%r30), %r30
-        ldil    L`_caml_bottom_of_stack, %r1
-        ldw     R`_caml_bottom_of_stack(%r1), %r1
-        stw     %r1, -8(%r30)
-        ldil    L`_caml_last_return_address, %r1
-        ldw     R`_caml_last_return_address(%r1), %r1
-        stw     %r1, -4(%r30)
 ; Reload allocation pointers
         ldil    L`_young_ptr, %r1
         ldw     R`_young_ptr(%r1), %r3
@@ -426,6 +426,11 @@ L102:
         ble     0(4, %r22)
         copy    %r31, %r2        
 L104:
+; Pop the trap frame
+        ldw     -8(%r30), %r31
+        ldil    L`_caml_exception_pointer, %r1
+        stw     %r31, R`_caml_exception_pointer(%r1)
+        ldo     -8(%r30), %r30
 ; Pop the callback link
         ldw     -8(%r30), %r31
         ldil    L`_caml_bottom_of_stack, %r1
@@ -433,11 +438,6 @@ L104:
         ldw     -4(%r30), %r31
         ldil    L`_caml_last_return_address, %r1
         stw     %r31, R`_caml_last_return_address(%r1)
-        ldo     -8(%r30), %r30
-; Pop the trap frame
-        ldw     -8(%r30), %r31
-        ldil    L`_caml_exception_pointer, %r1
-        stw     %r31, R`_caml_exception_pointer(%r1)
         ldo     -8(%r30), %r30
 ; Save allocation pointer
         ldil    L`_young_ptr, %r1

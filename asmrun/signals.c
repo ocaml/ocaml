@@ -286,6 +286,14 @@ static void trap_handler(sig, info, context)
 }
 #endif
 
+#if defined(TARGET_power)
+static void trap_handler(sig)
+     int sig;
+{
+  array_bound_error();
+}
+#endif
+
 /* Initialization of signal stuff */
 
 void init_signals()
@@ -299,6 +307,9 @@ void init_signals()
   sigemptyset(&act.sa_mask);
   act.sa_flags = SA_SIGINFO;
   sigaction(SIGILL, &act, NULL);
+#endif
+#if defined(TARGET_power)
+  signal(SIGTRAP, trap_handler);
 #endif
 }
 

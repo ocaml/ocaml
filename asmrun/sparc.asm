@@ -290,32 +290,32 @@ Callback:
         mov     %g1, %i1        /* environment */
         ld      [%g1], %l2      /* code pointer */
 L108:
+    /* Set up a callback link on the stack. */
+        sub     %sp, 8, %sp
+        Load(Caml_bottom_of_stack, %l0)
+        Load(Caml_last_return_address, %l1)
+        std     %l0, [%sp + 96]
     /* Set up a trap frame to catch exceptions escaping the Caml code */
         sub     %sp, 8, %sp
         Load(Caml_exception_pointer, %g5)
         Address(L110, %g4)
         std     %g4, [%sp + 96]
         mov     %sp, %g5
-    /* Set up a callback link on the stack. */
-        sub     %sp, 8, %sp
-        Load(Caml_bottom_of_stack, %l0)
-        Load(Caml_last_return_address, %l1)
-        std     %l0, [%sp + 96]
     /* Reload allocation pointers */
         Load(Young_ptr, %g6)
         Address(Young_limit, %g7)
     /* Call the Caml code */
 L109:   call    %l2
         nop
-    /* Restore the global variables used by caml_c_call */
-        ldd     [%sp + 96], %l0
-        add     %sp, 8, %sp
-        Store(%l0, Caml_bottom_of_stack)
-        Store(%l1, Caml_last_return_address)
     /* Pop trap frame and restore caml_exception_pointer */
         ld      [%sp + 100], %g5
         add     %sp, 8, %sp
         Store(%g5, Caml_exception_pointer)
+    /* Pop callback link, restoring the global variables used by caml_c_call */
+        ldd     [%sp + 96], %l0
+        add     %sp, 8, %sp
+        Store(%l0, Caml_bottom_of_stack)
+        Store(%l1, Caml_last_return_address)
     /* Save allocation pointer */
         Store(%g6, Young_ptr)
     /* Move result where the C function expects it */

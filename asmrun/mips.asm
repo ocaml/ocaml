@@ -302,6 +302,12 @@ $103:
         s.d     $f26, 60($sp)
         s.d     $f28, 68($sp)
         s.d     $f30, 76($sp)
+    /* Set up a callback link on the stack. */
+        subu    $sp, $sp, 8
+        lw      $2, caml_bottom_of_stack
+        sw      $2, 0($sp)
+        lw      $3, caml_last_return_address
+        sw      $3, 4($sp)
     /* Set up a trap frame to catch exceptions escaping the Caml code */
         subu    $sp, $sp, 8
         lw      $30, caml_exception_pointer
@@ -309,12 +315,6 @@ $103:
         la      $2, $105
         sw      $2, 4($sp)
         move    $30, $sp
-    /* Set up a callback link on the stack. */
-        subu    $sp, $sp, 8
-        lw      $2, caml_bottom_of_stack
-        sw      $2, 0($sp)
-        lw      $3, caml_last_return_address
-        sw      $3, 4($sp)
     /* Reload allocation pointers */
 	lw	$22, young_ptr
 	lw	$23, young_limit
@@ -322,16 +322,16 @@ $103:
         sw      $0, caml_last_return_address
     /* Call the Caml code */
 $104:   jal     $24
+    /* Pop the trap frame, restoring caml_exception_pointer */
+        lw      $24, 0($sp)
+        sw      $24, caml_exception_pointer
+        addu    $sp, $sp, 8
     /* Pop the callback link,
        restoring the global variables used by caml_c_call */
         lw      $24, 0($sp)
         sw      $24, caml_bottom_of_stack
         lw      $25, 4($sp)
         sw      $25, caml_last_return_address
-        addu    $sp, $sp, 8
-    /* Pop the trap frame, restoring caml_exception_pointer */
-        lw      $24, 0($sp)
-        sw      $24, caml_exception_pointer
         addu    $sp, $sp, 8
     /* Update allocation pointer */
         sw      $22, young_ptr

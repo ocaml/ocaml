@@ -203,23 +203,23 @@ G(callback):
         movl    24(%esp), %eax   /* argument */
         movl    0(%ebx), %esi    /* code pointer */
 L106:
+    /* Build a callback link */
+        pushl   G(caml_last_return_address)
+        pushl   G(caml_bottom_of_stack)
     /* Build an exception handler */
         pushl   $L108
         pushl   G(caml_exception_pointer)
         movl    %esp, G(caml_exception_pointer)
-    /* Build a callback link */
-        pushl   G(caml_last_return_address)
-        pushl   G(caml_bottom_of_stack)
     /* Call the Caml code */
         call    *%esi
 L107:
+    /* Pop the exception handler */
+        popl    G(caml_exception_pointer)
+        popl    %esi    /* dummy register */
     /* Pop the callback link, restoring the global variables
        used by caml_c_call */
         popl    G(caml_bottom_of_stack)
         popl    G(caml_last_return_address)
-    /* Pop the exception handler */
-        popl    G(caml_exception_pointer)
-        popl    %esi    /* dummy register */
     /* Restore callee-save registers.
        In parallel, free the floating-point registers
        that may have been used by Caml. */
@@ -234,10 +234,13 @@ L107:
     /* Return to caller. */
         ret
 L108:
-    /* Exception handler: re-raise the exception through mlraise,
-       so that local C roots are cleaned up correctly. */
+    /* Exception handler*/
+    /* Pop the callback link, restoring the global variables
+       used by caml_c_call */
         popl    G(caml_bottom_of_stack)
         popl    G(caml_last_return_address)
+    /* Re-raise the exception through mlraise,
+       so that local C roots are cleaned up correctly. */
         pushl   %eax            /* exn bucket is the argument */
         call    G(mlraise)      /* never returns */
 
