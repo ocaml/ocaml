@@ -2,7 +2,7 @@ include ../../config/Makefile
 
 # Compilation options
 CC=$(BYTECC)
-CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
+CFLAGS=-I$(PTHREADS_INCLUDES) -I../../byterun -O $(BYTECCCOMPOPTS)
 CAMLC=../../boot/cslrun ../../boot/cslc -I ../../boot -I ../unix
 
 C_OBJS=threadstubs.o
