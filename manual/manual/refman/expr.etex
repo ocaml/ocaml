@@ -92,7 +92,7 @@ precedence come first. For infix and prefix symbols, we write
 \begin{tableau}{|l|l|}{Construction or operator}{Associativity}
 \entree{prefix-symbol}{--}
 \entree{".   .(    .["}{--}
-\entree{function application}{right}
+\entree{function application}{left}
 \entree{constructor application}{--}
 \entree{"-   -." (prefix)}{--}
 \entree{"**"\ldots}{right}
