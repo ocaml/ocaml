@@ -1,2 +1,3 @@
 *.x
 thread.ml
+so_locations
