@@ -103,7 +103,7 @@ let select_shell txt =
   let tl = Jg_toplevel.titled "Select Shell" in
   Jg_bind.escape_destroy tl;
   Wm.transient_set tl ~master:(Winfo.toplevel txt.tw);
-  let label = Label.create tl ~text:"Send ~to:"
+  let label = Label.create tl ~text:"Send to:"
   and box = Listbox.create tl
   and frame = Frame.create tl in
   Jg_bind.enter_focus box;
