@@ -178,8 +178,9 @@ To link in ``custom runtime'' mode, execute the "ocamlc" command with:
 \item the "-custom" option
 \item the names of the desired Caml object files (".cmo" files) 
 \item the names of the C object files and libraries (".o" and ".a"
-files) that implement the required primitives. (Libraries can also be
-specified with the "-cclib" syntax.)
+files) that implement the required primitives. (Under Unix, a library
+named "lib"\var{name}".a" residing in one of the standard library
+directories can also be specified as "-cclib -l"\var{name}.)
 \end{itemize}
 
 \section{The "value" type}
@@ -292,7 +293,7 @@ As a convenience, "caml/mlvalues.h" defines the macros "Val_unit",
 \subsection{Kind tests}
 
 \begin{itemize}
-\item "Is_int("\var{v}")" is true if value \var{v} is an immediate integer,
+\item "Is_long("\var{v}")" is true if value \var{v} is an immediate integer,
 false otherwise
 \item "Is_block("\var{v}")" is true if value \var{v} is a pointer to a block,
 and false if it is an immediate integer.
@@ -529,10 +530,10 @@ value alloc_list_int(i1, i2)
 {
   value result;
   Push_roots(r, 1);
-  r[0] = alloc(2, 1);                     /* Allocate a cons cell */
+  r[0] = alloc(2, 0);                     /* Allocate a cons cell */
   Field(r[0], 0) = Val_int(i2);           /* car = the integer i2 */
   Field(r[0], 1) = Val_int(0);            /* cdr = the empty list [] */
-  result = alloc(2, 1);                   /* Allocate the other cons cell */
+  result = alloc(2, 0);                   /* Allocate the other cons cell */
   Field(result, 0) = Val_int(i1);         /* car = the integer i1 */
   Field(result, 1) = r[0];                /* cdr = the first cons cell */
   Pop_roots();
@@ -554,10 +555,10 @@ value alloc_list_int(i1, i2)
 {
   value tail;
   Push_roots(r, 1);
-  r[0] = alloc(2, 1);                     /* Allocate a cons cell */
+  r[0] = alloc(2, 0);                     /* Allocate a cons cell */
   Field(r[0], 0) = Val_int(i1);           /* car = the integer i1 */
   Field(r[0], 1) = Val_int(0);            /* A dummy value
-  tail = alloc(2, 1);                     /* Allocate the other cons cell */
+  tail = alloc(2, 0);                     /* Allocate the other cons cell */
   Field(tail, 0) = Val_int(i2);           /* car = the integer i2 */
   Field(tail, 1) = Val_int(0);            /* cdr = the empty list [] */
   modify(&Field(r[0], 1), tail);          /* cdr of the result = tail */
@@ -645,14 +646,14 @@ used.)
 
 The file "curses.c" can be compiled with:
 \begin{verbatim}
-        cc -c -I/usr/local/lib/caml-light curses.c
+        cc -c -I/usr/local/lib/ocaml curses.c
 \end{verbatim}
 or, even simpler,
 \begin{verbatim}
         ocamlc -c curses.c
 \end{verbatim}
-(When passed a ".c" file, the "ocamlc" command simply calls "cc" on
-that file, with the right "-I" option.)
+(When passed a ".c" file, the "ocamlc" command simply calls the C
+compiler on that file, with the right "-I" option.)
 
 Now, here is a sample Caml program "test.ml" that uses the "curses"
 module:
@@ -672,5 +673,5 @@ To compile this program, run:
 \end{verbatim}
 Finally, to link everything together:
 \begin{verbatim}
-        ocamlc -custom -o test test.zo curses.o -cclib curses
+        ocamlc -custom -o test test.cmo curses.o -cclib -lcurses
 \end{verbatim}
