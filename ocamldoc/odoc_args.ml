@@ -102,6 +102,8 @@ let inverse_merge_ml_mli = ref false
 
 let title = ref (None : string option)
 
+let intro_file = ref (None : string option)
+
 let with_parameter_list = ref false
 
 let hidden_modules = ref ([] : string list)
@@ -219,6 +221,7 @@ let options = ref [
   "-load", Arg.String (fun s -> load := !load @ [s]), M.load^"\n" ;
 
   "-t", Arg.String (fun s -> title := Some s), M.option_title ;
+  "-intro", Arg.String (fun s -> intro_file := Some s), M.option_intro ;
   "-hide", Arg.String add_hidden_modules, M.hide_modules ;
   "-m", Arg.String (fun s -> merge_options := !merge_options @ (analyse_merge_options s)), M.merge_options^"\n" ;
 

@@ -1788,6 +1788,14 @@ class html =
            (self#header self#title) ^
            "<body>\n"^
            "<center><h1>"^title^"</h1></center>\n"^
+	   (
+	    let info = Odoc_info.apply_opt
+		Odoc_info.info_of_comment_file !Odoc_info.Args.intro_file 
+	    in
+	    Printf.sprintf "%s%s"
+	      (self#html_of_info info)
+	      (match info with None -> "" | Some _ -> "<br/>")
+	   )^
            (index_if_not_empty list_types index_types Odoc_messages.index_of_types)^
            (index_if_not_empty list_exceptions index_exceptions Odoc_messages.index_of_exceptions)^
            (index_if_not_empty list_values index_values Odoc_messages.index_of_values)^

@@ -723,6 +723,15 @@ val apply_opt : ('a -> 'b) -> 'a option -> 'b option
    are different, return the second one.*)
 val apply_if_equal : ('a -> 'a) -> 'a -> 'a -> 'a
 
+(** [info_of_comment_file file] parses the given file
+   and return an info structure. The content of the file
+   must have the same syntax as the content of a special comment.
+   @raise Failure is the file could not be opened or there is a
+   syntax error.
+*)
+val info_of_comment_file : string -> info
+
+
 (** Research in elements *)
 module Search :
     sig
@@ -895,6 +904,9 @@ module Args :
       (** The optional title to use in the generated documentation. *)
       val title : string option ref
     
+      (** The optional file whose content can be used as intro text. *)
+      val intro_file : string option ref
+
       (** Flag to indicate whether we must display the complete list of parameters
 	 for functions and methods. *)
       val with_parameter_list : bool ref

@@ -910,7 +910,17 @@ class latex =
       )^
       "\\begin{document}\n"^
       (match !Args.title with None -> "" | Some _ -> "\\maketitle\n")^
-      (if !Args.with_toc then "\\tableofcontents\n" else "")
+      (if !Args.with_toc then "\\tableofcontents\n" else "")^
+      (
+       let info = Odoc_info.apply_opt
+	   Odoc_info.info_of_comment_file !Odoc_info.Args.intro_file 
+       in
+       Printf.sprintf "%s%s%s"
+	 (match info with None -> "" | Some _ -> "\\vspace{0.2cm}")
+	 (self#latex_of_info info)
+	 (match info with None -> "" | Some _ -> "\n\n")
+      )
+	
 
     (** Generate the LaTeX style file, if it does not exists. *)
     method generate_style_file =

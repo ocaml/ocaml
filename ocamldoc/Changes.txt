@@ -1,4 +1,6 @@
 Current :
+OK - add: -intro option to use a file content as ocamldoc comment to use as
+OK   introduction for LaTeX document and HTML index page
 OK - add: the HTML generator generates the code of the module if available
 OK - add: field m_code for modules, to keep the code of top modules
 OK - fix: display "include Foo" instead of "include module Foo" in Latex, Man, Texi

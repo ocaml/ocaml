@@ -175,6 +175,35 @@ let apply_if_equal f v1 v2 =
   else
     v2
 
+let info_of_comment_file f =
+  let dummy =
+    {
+      i_desc = None ;
+      i_authors = [] ;
+      i_version = None ;
+      i_sees = [] ;
+      i_since = None ;
+      i_deprecated = None ;
+      i_params = [] ;
+      i_raised_exceptions = [] ;
+      i_return_value = None ;
+      i_custom = [] ;
+    } 
+  in
+  try
+    let s = Printf.sprintf "(** %s *)" (Odoc_misc.input_file_as_string f) in
+    let (_, i_opt) = Odoc_comments.Basic_info_retriever.first_special f s in
+    (
+     match i_opt with
+       None -> dummy
+     | Some i -> i
+    )
+  with
+    Sys_error s -> 
+      prerr_endline s;
+      incr errors;
+      dummy
+
 module Search = 
   struct 
     type result_element = Odoc_search.result_element =
