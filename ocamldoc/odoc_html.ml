@@ -549,23 +549,23 @@ class html =
     val mutable index_module_types = "index_module_types.html"
 
 
-    (** The list of attributes. Filled in the generate method. *)
+    (** The list of attributes. Filled in the [generate] method. *)
     val mutable list_attributes = []
-    (** The list of methods. Filled in the generate method. *)
+    (** The list of methods. Filled in the [generate] method. *)
     val mutable list_methods = []
-    (** The list of values. Filled in the generate method. *)
+    (** The list of values. Filled in the [generate] method. *)
     val mutable list_values = []
-    (** The list of exceptions. Filled in the generate method. *)
+    (** The list of exceptions. Filled in the [generate] method. *)
     val mutable list_exceptions = []
-    (** The list of types. Filled in the generate method. *)
+    (** The list of types. Filled in the [generate] method. *)
     val mutable list_types = []
-    (** The list of modules. Filled in the generate method. *)
+    (** The list of modules. Filled in the [generate] method. *)
     val mutable list_modules = []
-    (** The list of module types. Filled in the generate method. *)
+    (** The list of module types. Filled in the [generate] method. *)
     val mutable list_module_types = []
-    (** The list of classes. Filled in the generate method. *)
+    (** The list of classes. Filled in the [generate] method. *)
     val mutable list_classes = []
-    (** The list of class types. Filled in the generate method. *)
+    (** The list of class types. Filled in the [generate] method. *)
     val mutable list_class_types = []
 
     (** The header of pages. Must be prepared by the [prepare_header] method.*)
@@ -659,8 +659,8 @@ class html =
       header <- f
 
     (** Html code for navigation bar. 
-       @param pre optional name for optinal previous module/class 
-       @param post optional name for optinal next module/class
+       @param pre optional name for optional previous module/class 
+       @param post optional name for optional next module/class
        @param name name of current module/class *)
     method navbar pre post name =
       "<div class=\"navbar\">"^

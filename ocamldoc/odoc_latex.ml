@@ -126,6 +126,7 @@ class text =
       List.fold_right
        (fun (s, s2) -> fun acc -> Str.global_replace (Str.regexp_string s) s2 acc)
 	[ 
+	  "~", "X" ;
 	  "@", "\"@" ;
 	  "!", "\"!" ;
 	  "|", "\"|" ;

@@ -375,7 +375,7 @@ class virtual to_text =
 		   (self#text_of_module_type p.mp_type) @
 		   (match desc_opt with
 		     None -> []
-		   | Some t -> t)
+		   | Some t -> (Raw " ") :: t)
 		 )
 		 l
 	      )

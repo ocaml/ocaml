@@ -30,7 +30,7 @@ type param_info =
   | Simple_name of simple_name
   | Tuple of param_info list * Types.type_expr
 
-(** A parameter is just a param_info value. *)
+(** A parameter is just a param_info value and a label. *)
 type parameter = param_info * Asttypes.label
 
 (** A module parameter is just a name and a module type.*)
