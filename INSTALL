@@ -122,6 +122,10 @@ bug in gcc that causes the bytecode interpreter to push stack frames
 without popping them, causing stack overflows for long-running
 bytecode programs.
 
+* Under NeXTStep, cc pretends to be gcc but is not quite
+gcc.  Be sure to add the -U__GNUC__ option in $(BYTECCCOMPOPTS).
+
+
 MACHINE-SPECIFIC HINTS:
 
 * On SparcStations 1, 1+, 2 (and other models with Sparc version 7
@@ -137,7 +141,4 @@ unable to compile correctly the runtime system (wrong code is
 generated for (x - y) where x is a pointer and y an integer).
 Fix: use gcc.
 
-* On some versions of NeXTStep, cc pretends to be gcc but is not quite
-gcc.  If the compilation of byterun/interp.c causes syntax errors,
-insert #undef __GNUC__ at the very beginning of config/s.h
 

@@ -29,6 +29,7 @@ compiler currently runs on the following platforms:
     Sparc processors: Sun Sparcstation under SunOS 4.1 or Solaris 2
     Intel 386 / 486 / Pentium processors: PCs under Linux, NextStep, FreeBSD
     Mips processors: DecStation 3100 and 5000 under Ultrix 4
+    HP PA-RISC processors: HP 9000/700 under NextStep (sorry, no HPUX yet)
 
 Other operating systems for the processors above have not been tested,
 but the compiler may work under other operating systems with no or
@@ -40,6 +41,7 @@ This distribution has been tested on the following platforms:
         SparcStation 10, SunOS 4.1.3, gcc 2.5.8
         PC 486 DX2/66, Linux 1.2.13, gcc 2.5.8
         DecStation 5000/200, Ultrix 4.1, cc and gcc 2.4.5
+        HP 9000/712, NextStep 3.2, cc
 
 CONTENTS:
 
