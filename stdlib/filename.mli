@@ -76,10 +76,7 @@ val temp_file : string -> string -> string
    Under Unix, the temporary directory is [/tmp] by default; if set,
    the value of the environment variable [TMPDIR] is used instead.
    Under Windows, the name of the temporary directory is the
-   value of the environment variable [TEMP], or [C:\temp] by default.
-   Under MacOS 9, the name of the temporary directory is given
-   by the environment variable [TempFolder]; if not set,
-   temporary files are created in the current directory. *)
+   value of the environment variable [TEMP], or [C:\temp] by default. *)
 
 val open_temp_file :
       ?mode: open_flag list -> string -> string -> string * out_channel

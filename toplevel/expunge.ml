@@ -47,11 +47,6 @@ let main () =
   Bytesections.read_toc ic;
   let toc = Bytesections.toc() in
   let pos_first_section = Bytesections.pos_first_section ic in
-  if Sys.os_type = "MacOS" then begin
-    (* Create output as a text file for bytecode scripts *)
-    let c = open_out_gen [Open_wronly; Open_creat] 0o777 output_name in
-    close_out c
-  end;
   let oc =
     open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o777
                  output_name in

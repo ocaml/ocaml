@@ -151,35 +151,6 @@ module Cygwin = struct
   let quote = Unix.quote
 end
 
-module MacOS = struct
-  let current_dir_name = "."
-  let parent_dir_name = ".."
-  let concat dirname filename =
-    let l = String.length dirname in
-    if l = 0 || dirname.[l-1] = ':'
-    then dirname ^ filename
-    else dirname ^ ":" ^ filename
-  let contains_colon n = String.contains n ':'
-  let is_relative n =
-    (String.length n >= 1 && n.[0] = ':')
-    || not (contains_colon n)
-  let is_implicit n = not (contains_colon n)
-  let check_suffix = Unix.check_suffix
-  let basename name =
-    try
-      let p = String.rindex name ':' + 1 in
-      String.sub name p (String.length name - p)
-    with Not_found -> name
-  let dirname name =
-    try match String.rindex name ':' with
-        | 0 -> ":"
-        | n -> String.sub name 0 n
-    with Not_found -> ":"
-  let temporary_directory =
-    try Sys.getenv "TempFolder" with Not_found -> ":"
-  let quote = generic_quote "'\182''"
-end
-
 let (current_dir_name, parent_dir_name, concat, is_relative, is_implicit,
      check_suffix, basename, dirname, temporary_directory, quote) =
   match Sys.os_type with
@@ -196,10 +167,6 @@ let (current_dir_name, parent_dir_name, concat, is_relative, is_implicit,
        Cygwin.is_relative, Cygwin.is_implicit, Cygwin.check_suffix,
        Cygwin.basename, Cygwin.dirname, 
        Cygwin.temporary_directory, Cygwin.quote)
-  | "MacOS" ->
-      (MacOS.current_dir_name, MacOS.parent_dir_name, MacOS.concat,
-       MacOS.is_relative, MacOS.is_implicit, MacOS.check_suffix,
-       MacOS.basename, MacOS.dirname, MacOS.temporary_directory, MacOS.quote)
   | _ -> assert false
 
 let chop_suffix name suff =

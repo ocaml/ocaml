@@ -139,7 +139,6 @@ let ld_library_path_contents () =
     match Sys.os_type with
     | "Unix" | "Cygwin" -> ':'
     | "Win32" -> ';'
-    | "MacOS" -> ','
     | _ -> assert false in
   try
     split (Sys.getenv "CAML_LD_LIBRARY_PATH") path_separator

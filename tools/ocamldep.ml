@@ -73,11 +73,7 @@ let find_dependency modname (byt_deps, opt_deps) =
   with Not_found ->
     (byt_deps, opt_deps)
 
-let (depends_on, escaped_eol) =
-  match Sys.os_type with
-  | "Unix" | "Win32" | "Cygwin" -> (": ", "\\\n    ")
-  | "MacOS" -> ("\196 ", "\182\n    ")
-  | _ -> assert false
+let (depends_on, escaped_eol) = (": ", "\\\n    ")
 
 let print_dependencies target_file deps =
   match deps with

@@ -471,27 +471,14 @@ let scan_string stp max ib =
 let scan_char max ib =
   Scanning.store_char ib (Scanning.checked_peek_char ib) max;;
 
-let char_for_backslash =
-  match Sys.os_type with
-  | "Unix" | "Win32" | "Cygwin" ->
-      begin function
-      | 'n' -> '\010'
-      | 'r' -> '\013'
-      | 'b' -> '\008'
-      | 't' -> '\009'
-      | c   -> c
-      end
-  | "MacOS" ->
-      begin function
-      | 'n' -> '\013'
-      | 'r' -> '\010'
-      | 'b' -> '\008'
-      | 't' -> '\009'
-      | c   -> c
-      end
-  | x -> assert false;;
+let char_for_backslash = function
+  | 'n' -> '\010'
+  | 'r' -> '\013'
+  | 'b' -> '\008'
+  | 't' -> '\009'
+  | c   -> c
 
-(* The integervalue correspondingt to the facial value of a valid
+(* The integer value corresponding to the facial value of a valid
    decimal digit character. *)
 let int_value_of_char c = int_of_char c - 48;;
 

@@ -189,9 +189,7 @@ let reset () =
   num_loc_lines := 0
 
 let (msg_file, msg_line, msg_chars, msg_to, msg_colon, msg_head) =
-  match Sys.os_type with
-  | "MacOS" -> ("File \"", "\"; line ", "; characters ", " to ", "", "### ")
-  | _ -> ("File \"", "\", line ", ", characters ", "-", ":", "")
+  ("File \"", "\", line ", ", characters ", "-", ":", "")
 
 (* return file, line, char from the given position *)
 let get_pos_info pos =

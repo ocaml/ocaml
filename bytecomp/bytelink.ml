@@ -264,11 +264,6 @@ let make_absolute file =
 (* Create a bytecode executable file *)
 
 let link_bytecode tolink exec_name standalone =
-  if Sys.os_type = "MacOS" then begin
-    (* Create it as a text file for bytecode scripts *)
-    let c = open_out_gen [Open_wronly; Open_creat] 0o777 exec_name in
-    close_out c
-  end;
   let outchan = open_out_gen [Open_wronly; Open_trunc; Open_creat; Open_binary]
                              0o777 exec_name in
   try

@@ -15,13 +15,7 @@
 
 open Printf;;
 
-let locfmt =
-  match Sys.os_type with
-  | "MacOS" ->
-      format_of_string "File \"%s\"; line %d; characters %d to %d ### %s"
-  | _ ->
-      format_of_string "File \"%s\", line %d, characters %d-%d: %s"
-;;
+let locfmt = format_of_string "File \"%s\", line %d, characters %d-%d: %s";;
 
 let field x i =
   let f = Obj.field x i in
