@@ -1,3 +1,14 @@
+Objective Caml 2.03:
+
+* Bug fixes:
+  - Big_int.square_big_int now gives the proper sign to its result.
+
+* Profiler:
+  - Compatible with threads
+  - Handles .mli files, so ocamlcp can be used to replace ocamlc (e.g. in a
+    makefile).
+
+
 Objective Caml 2.02:
 --------------------
 
