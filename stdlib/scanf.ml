@@ -18,10 +18,10 @@
 let bad_input ib s =
   let i = Scanning.char_count ib in
   failwith
-    (Printf.sprintf
-      "scanf: bad input at char number %i, while scanning %s" i s);;
+    (Printf.sprintf "scanf: bad input at char number %i%s"
+       i (if s = "" then s else Printf.sprintf ", while scanning %s" s));;
 
-let bad_input_buff ib = failwith "scanf: bad input";;
+let bad_input_buff ib = bad_input ib (Scanning.token ib);;
 
 let bad_format fmt i fc =
   invalid_arg
@@ -158,7 +158,7 @@ let scan_int conv max ib =
   match conv with
   | 'd' -> scan_optionally_signed_decimal_int max ib
   | 'i' -> scan_optionally_signed_int max ib
-  | 'o' -> scan_octal_digits max ib 
+  | 'o' -> scan_octal_digits max ib
   | 'u' -> scan_unsigned_decimal_int max ib
   | 'x' -> scan_hexadecimal_digits max ib
   | 'X' -> scan_Hexadecimal_digits max ib
@@ -196,7 +196,7 @@ let scan_string stp max ib =
       match c with
       | ' ' | '\t' | '\n' | '\r' -> max
       | c -> loop (Scanning.store_char ib c max) else
-    if List.mem c stp then max else loop (Scanning.store_char ib c max) in 
+    if List.mem c stp then max else loop (Scanning.store_char ib c max) in
   loop max;;
 
 (* Scan a char: peek strictly one character in the input, whatsoever. *)
@@ -328,7 +328,7 @@ let make_setp stp char_set =
       match set.[i] with
       | '-' when b ->
          (* if i = 0 then b is false (since the initial call is loop false 0)
-          hence i >= 1 and the following is safe. *) 
+          hence i >= 1 and the following is safe. *)
           let c1 = set.[i - 1] in
           let i = i + 1 in
           if i > lim then loop false (i - 1) else
@@ -368,7 +368,7 @@ external string_of_format : ('a, 'b, 'c) format -> string = "%identity";;
    it takes an input buffer, a format and a function.
    Then it scans the format and the buffer in parallel to find out
    values as specified by the format. When it founds some it applies it
-   to the function f and continue. *) 
+   to the function f and continue. *)
 let bscanf ib (fmt : ('a, Scanning.scanbuf, 'c) format) f =
   let fmt = string_of_format fmt in
   let lim = String.length fmt - 1 in
