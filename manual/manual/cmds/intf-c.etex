@@ -288,7 +288,7 @@ bytecode executable (so that the bytecode from "unix.cma" and
 "threads.cma" is actually linked in).
 
 \section{The "value" type}
-\pdfsection{The "value" type}
+\pdfsection{The value type}
 
 All Caml objects are represented by the C type "value",
 defined in the include file "caml/mlvalues.h", along with macros to
