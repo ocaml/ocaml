@@ -126,7 +126,8 @@ val bscanf :
      floating-point number in decimal notation, in the style [dddd.ddd
      e/E+-dd].
    - [F]: reads a floating point number according to the lexical
-     conventions of Caml (hence the decimal point is mandatory).
+     conventions of Caml (hence the decimal point is mandatory if the
+     exponent part is not mentioned).
    - [B]: reads a boolean argument ([true] or [false]).
    - [b]: reads a boolean argument (for backward compatibility; do not use
      in new programs).
@@ -169,24 +170,45 @@ val bscanf :
    follow a string conversion, it is ignored and treated as a plain
    [c] character.
 
-   Note: the [scanf] facility is not intended for heavy duty
-   lexical analysis and parsing. If it appears not expressive
-   enough for your needs, several alternative exists: regular expressions
-   (module [Str]), stream parsers, [ocamllex]-generated lexers,
+   Note:
+
+   - in addition to relevant digits, ['_'] characters may appear
+   inside numbers (this is reminiscent to the usual Caml
+   conventions). If stricter scanning is desired, use the range
+   conversion facility instead of the number conversions.
+
+   - the [scanf] facility is not intended for heavy duty lexical
+   analysis and parsing. If it appears not expressive enough for your
+   needs, several alternative exists: regular expressions (module
+   [Str]), stream parsers, [ocamllex]-generated lexers,
    [ocamlyacc]-generated parsers. *)
 
 val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
+
 (** Same as {!Scanf.bscanf}, but inputs from the given channel.
-    If efficiency is a concern, when scanning a file [fname],
-    consider using [bscanf] in conjonction with fast bufferized reading,
-    as obtained by [bscanf (Scanning.from_file fname)]. *)
+
+    Warning: since all scanning functions operate from a scanning
+    buffer, be aware that each [fscanf] invocation must allocate a new
+    fresh scanning buffer (unless careful use of partial evaluation in
+    the program).  Hence, there are chances that some characters seem
+    to be skipped (in fact they are pending in the previously used
+    buffer). This happens in particular when calling [fscanf] again
+    after a scan involving a format that necessitates some look ahead
+    (such as a format that ends by skipping whitespace in the input).
+
+    To avoid confusion, consider using [bscanf] with an explicitely
+    created scanning buffer. Use for instance [Scanning.from_file f]
+    to allocate the scanning buffer reading from file [f].
+
+    This method is not only clearer it is also faster, since scanning
+    buffers to files are optimized for fast bufferized reading. *)
 
 val sscanf : string -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
 (** Same as {!Scanf.bscanf}, but inputs from the given string. *)
 
 val scanf : ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
-(** Same as {!Scanf.bscanf}, but inputs from [stdin]
-    (the standard input channel). *)
+(** Same as {!Scanf.bscanf}, but reads from the predefined scanning
+    buffer [Scanning.stdib] that is connected to [stdin]. *)
 
 val kscanf :
   Scanning.scanbuf -> (Scanning.scanbuf -> exn -> 'a) ->
@@ -195,4 +217,4 @@ val kscanf :
   [ef] that is called in case of error: if the scanning process or
   some conversion fails, the scanning function aborts and applies the
   error handling function [ef] to the scanning buffer and the
-  exception that aborted evaluation. *)
+  exception that aborted the scanning process. *)

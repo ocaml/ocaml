@@ -48,6 +48,10 @@ val store_char : scanbuf -> char -> int -> int;;
     character and returns [lim - 1], indicating that there
     is one less character to read. *)
 
+val skip_char : scanbuf -> char -> int -> int;;
+(** [Scanning.skip_char scanbuf c lim] is similar to [store_char] but
+    it ignores (does not store in the token buffer) the character [c]. *)
+
 val char_count : scanbuf -> int;;
 (** [Scanning.char_count scanbuf] returns the number of characters read
     from the given buffer. *)
@@ -144,6 +148,10 @@ let token_count ib = ib.token_count;;
 
 let store_char ib c max =
   Buffer.add_char ib.tokbuf c;
+  next_char ib;
+  max - 1;;
+
+let skip_char ib c max =
   next_char ib;
   max - 1;;
 
@@ -268,12 +276,6 @@ let token_int_literal conv ib =
 (* All the functions that convert a string to a number raise the exception
    Failure when the conversion is not possible.
    This exception is then trapped in kscanf. *)
-let signed_int_of_string s =
-  let tok =
-    let l = String.length s in
-    if l = 0 || s.[0] <> '+' then s else String.sub s 1 (l - 1) in
-  int_of_string tok;;
-
 let token_int conv ib = int_of_string (token_int_literal conv ib);;
 let token_float ib = float_of_string (Scanning.token ib);;
 
@@ -294,22 +296,32 @@ let token_int64 conv ib = int64_of_string (token_int_literal conv ib);;
 (* Scanning numbers. *)
 
 (* The decimal case is optimized. *)
-let rec scan_decimal_digits max ib =
-  if max = 0 || Scanning.eof ib then max else
-  match Scanning.checked_peek_char ib with
-  | '0' .. '9' as c ->
-      let max = Scanning.store_char ib c max in
-      scan_decimal_digits max ib
-  | c -> max;;
+let scan_decimal_digits max ib =
+  let rec loop inside max =
+    if max = 0 || Scanning.eof ib then max else
+    match Scanning.checked_peek_char ib with
+    | '0' .. '9' as c ->
+        let max = Scanning.store_char ib c max in
+        loop true max
+    | '_' as c when inside ->
+       let max = Scanning.skip_char ib c max in
+       loop true max
+    | c -> max in
+  loop false max;;
 
 (* Other cases uses a predicate argument to scan_digits. *)
-let rec scan_digits digitp max ib =
-  if max = 0 || Scanning.eof ib then max else
-  match Scanning.checked_peek_char ib with
-  | c when digitp c ->
-     let max = Scanning.store_char ib c max in
-     scan_digits digitp max ib
-  | _ -> max;;
+let scan_digits digitp max ib =
+  let rec loop inside max =
+    if max = 0 || Scanning.eof ib then max else
+    match Scanning.checked_peek_char ib with
+    | c when digitp c ->
+       let max = Scanning.store_char ib c max in
+       loop true max
+    | '_' as c when inside ->
+       let max = Scanning.skip_char ib c max in
+       loop true max
+    | _ -> max in
+  loop false max;;
 
 let scan_binary_digits =
   let is_binary = function
@@ -389,7 +401,7 @@ let scan_exp_part max ib =
   let c = Scanning.peek_char ib in
   match c with
   | 'e' | 'E' as c ->
-     scan_optionally_signed_int (Scanning.store_char ib c max) ib
+     scan_optionally_signed_decimal_int (Scanning.store_char ib c max) ib
   | _ -> max;;
 
 let scan_float max ib =
@@ -412,6 +424,8 @@ let scan_Float max ib =
   | '.' ->
      let max = Scanning.store_char ib c max in
      let max = scan_frac_part max ib in
+     scan_exp_part max ib
+  | 'e' | 'E' ->
      scan_exp_part max ib
   | c -> bad_float ();;
 
