@@ -32,6 +32,8 @@ let emit_symbol esc s =
     match c with
       'A'..'Z' | 'a'..'z' | '0'..'9' | '_' ->
         output_char !output_channel c
+    | '.' ->
+        output_char !output_channel '_'
     | _ ->
         Printf.fprintf !output_channel "%c%02x" esc (Char.code c)
   done
