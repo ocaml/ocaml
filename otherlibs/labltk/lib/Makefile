@@ -10,7 +10,7 @@ SUPPORTX = $(SUPPORT:.cmo=.cmx)
 
 TOPDEPS = $(TOPDIR)/toplevel/toplevellib.cma $(TOPDIR)/toplevel/topmain.cmo
 
-all : labltk.cma labltktop labltk
+all : labltk.cma labltktop$(EXE) labltk
 
 opt : labltk.cmxa
 
@@ -25,8 +25,8 @@ labltk.cmxa : $(SUPPORTX) $(WIDGETOBJSX) tk.cmx
 	$(CAMLOPTLIBR) -o labltk.cmxa $(SUPPORTX) tk.cmx $(WIDGETOBJSX) \
           -cclib -llabltk41 $(TK_LINK) $(X11_LINK)
 
-labltktop : $(TOPDEPS) $(WIDGETOBJS) $(SUPPORT)
-	$(LABLC) -custom -linkall -o labltktop -I ../support \
+labltktop$(EXE) : $(TOPDEPS) $(WIDGETOBJS) $(SUPPORT) ../support/liblabltk41.a
+	$(LABLC) -custom -linkall -o labltktop$(EXE) -I ../support \
 	       -I $(TOPDIR)/toplevel toplevellib.cma labltk.cma \
 	       -I $(OTHERS)/unix unix.cma \
 	       -I $(OTHERS)/str str.cma \
@@ -35,18 +35,18 @@ labltktop : $(TOPDEPS) $(WIDGETOBJS) $(SUPPORT)
 labltk: Makefile $(TOPDIR)/config/Makefile
 	@echo Generate $@
 	@echo "#!/bin/sh" > $@
-	@echo 'exec $(LABLTKDIR)/labltktop -I $(LABLTKDIR) $$*' >> $@
+	@echo 'exec $(LABLTKDIR)/labltktop$(EXE) -I $(LABLTKDIR) $$*' >> $@
 
 # All .{ml,mli} files are generated in this directory
 clean : 
-	rm -f *.cm* *.ml *.mli *.o *.a labltktop
+	rm -f *.cm* *.ml *.mli *.o *.a labltktop$(EXE)
 
-install: labltk.cma labltktop labltk
+install: labltk.cma labltktop$(EXE) labltk
 	@if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
-	cp *.cmi labltk.cma labltktop $(LABLTKDIR)
+	cp *.cmi labltk.cma labltktop$(EXE) $(LABLTKDIR)
 	chmod 644 $(LABLTKDIR)/*.cmi
 	chmod 644 $(LABLTKDIR)/labltk.cma
-	chmod 755 $(LABLTKDIR)/labltktop
+	chmod 755 $(LABLTKDIR)/labltktop$(EXE)
 	@if test -d $(BINDIR); then : ; else mkdir $(BINDIR); fi
 	cp labltk $(BINDIR)
 	chmod 755 $(BINDIR)/labltk

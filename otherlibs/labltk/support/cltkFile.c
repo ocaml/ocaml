@@ -15,6 +15,10 @@
 
 /* $Id$ */
 
+#ifdef __CYGWIN__
+#define _WIN32
+#endif
+
 #ifdef _WIN32
 #include <wtypes.h>
 #include <winbase.h>
