@@ -1,5 +1,5 @@
 C = sc
-COptions = -opt speed -model far -w 7
+COptions = -model far -d _STDC_ -w 7
 AOptions = -model far -wb
 LinkOptions = -model far -msg nodup -compact -state nouse
 Libs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
@@ -7,11 +7,11 @@ Libs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
        "{libraries}ToolLibs.o" "{libraries}Interface.o"
 
 PPCC = mrc
-PPCCOptions = -w 7 -w 35
+PPCCOptions = -w 7 -w 29 -w 35
 PPCLinkOptions = -d
 PPCLibs = "{sharedlibraries}MathLib" "{ppclibraries}PPCCRuntime.o" ¶
           "{ppclibraries}PPCToolLibs.o" "{sharedlibraries}StdCLib" ¶
-		  "{ppclibraries}StdCRuntime.o" "{sharedlibraries}InterfaceLib"
+          "{ppclibraries}StdCRuntime.o" "{sharedlibraries}InterfaceLib"
 
 OBJS = interp.a.o misc.c.o stacks.c.o fix_code.c.o startup.c.o main.c.o ¶
   freelist.c.o major_gc.c.o minor_gc.c.o memory.c.o alloc.c.o roots.c.o ¶
@@ -40,7 +40,7 @@ ocamlrun ÄÄ libcamlrun.o prims.c.o
 	      libcamlrun.o {Libs}
 
 ocamlrun ÄÄ libcamlrun.x prims.c.x
-	PPCLink -c 'MPS ' -t MPST {PPCLinkOptions} -o ocamlrun prims.c.x ¶
+	ppclink -c 'MPS ' -t MPST {PPCLinkOptions} -o ocamlrun prims.c.x ¶
 	        libcamlrun.x {PPCLibs}
 
 libcamlrun.o Ä {OBJS}
@@ -98,10 +98,10 @@ opnames.h Ä instruct.h
 			   instruct.h > opnames.h
 
 rotatecursor.c.o Ä
-	{C} rotatecursor.c -o rotatecursor.c.o {COptions} -b
+	{C} -b rotatecursor.c -o rotatecursor.c.o {COptions}
 
 md5.c.x Ä
-	{PPCC} md5.c -o md5.c.x {PPCCOptions} -opt off
+	{PPCC} -opt off md5.c -o md5.c.x {PPCCOptions}
 
 depend Ä prims.c opnames.h
-	MakeDepend Å.c > Makefile.Mac.depend
+	makedepend Å.c > Makefile.Mac.depend

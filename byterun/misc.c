@@ -47,7 +47,7 @@ void gc_message (msg, arg)
 {
   if (verb_gc){
 #ifdef HAS_UI
-    ui_print_stderr(msg, arg);
+    ui_print_stderr(msg, (void *) arg);
 #else
     fprintf (stderr, msg, arg);
     fflush (stderr);
