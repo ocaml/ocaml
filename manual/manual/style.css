@@ -1,0 +1,22 @@
+a:visited {color : #416DFF; text-decoration : none; }
+a:link {color : #416DFF; text-decoration : none;}
+a:hover {color : Red; text-decoration : underline; }
+a:active {color : Red; text-decoration : underline; }
+.keyword { font-weight : bold ; color : Red }
+.keywordsign { color : #C04600 }
+.superscript { font-size : 4 }
+.subscript { font-size : 4 }
+.comment { color : Green }
+.constructor { color : Blue }
+.string { color : Maroon }
+.warning { color : Red ; font-weight : bold }
+.info { margin-left : 3em; margin-right : 3em }
+.title1 { font-size : 20pt ; background-color : #416DFF }
+.title2 { font-size : 20pt ; background-color : #418DFF }
+.title3 { font-size : 20pt ; background-color : #41ADFF }
+.title4 { font-size : 20pt ; background-color : #41CDFF }
+.title5 { font-size : 20pt ; background-color : #41EDFF }
+.title6 { font-size : 20pt ; background-color : #418DFF }
+.title7 { font-size : 20pt ; background-color : #41ADFF }
+body { background-color : White }
+tr { background-color : White }
