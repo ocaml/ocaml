@@ -52,9 +52,8 @@ type error =
   | Constructor_mismatch of Types.type_expr * Types.type_expr
   | Not_a_variant of Types.type_expr
   | Variant_tags of string * string
-  | No_row_variable of string
-  | Bad_alias of string
   | Invalid_variable_name of string
+  | Cannot_quantify of string * Types.type_expr
 
 exception Error of Location.t * error
 

@@ -54,6 +54,10 @@ val static_row: row_desc -> bool
 val hash_variant: label -> int
         (* Hash function for variant tags *)
 
+val proxy: type_expr -> type_expr
+        (* Return the proxy representative of the type: either itself
+           or a row variable *)
+
 (**** Utilities for type traversal ****)
 
 val iter_type_expr: (type_expr -> unit) -> type_expr -> unit

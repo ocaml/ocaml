@@ -99,20 +99,6 @@ let non_gen_mark sch ty =
 let print_name_of_type sch ppf t =
   fprintf ppf "'%s%s" (non_gen_mark sch t) (name_of_type t)
 
-let proxy ty =
-  let ty = repr ty in
-  match ty.desc with
-  | Tvariant row -> Btype.row_more row
-  | Tobject (ty, _) ->
-      let rec proxy_obj ty =
-        let ty = repr ty in
-        match ty.desc with
-          Tfield (_, _, _, ty)  -> proxy_obj ty
-        | Tvar | Tnil | Tunivar -> ty
-        | _ -> assert false
-      in proxy_obj ty
-  | _ -> ty
-
 let visited_objects = ref ([] : type_expr list)
 let aliased = ref ([] : type_expr list)
 let delayed = ref ([] : type_expr list)
