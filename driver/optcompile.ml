@@ -38,6 +38,7 @@ let init_path () =
 
 let initial_env () =
   init_path();
+  Ident.reinit();
   try
     if !Clflags.nopervasives
     then Env.initial

@@ -33,7 +33,7 @@ val same: t -> t -> bool
            name. *)
 val hide: t -> t
         (* Return an identifier with same name as the given identifier,
-           but stamp different from any stamp returns by new.
+           but stamp different from any stamp returned by new.
            When put in a 'a tbl, this identifier can only be looked
            up by name. *)
 
@@ -43,6 +43,7 @@ val global: t -> bool
 val binding_time: t -> int
 val current_time: unit -> int
 val set_current_time: int -> unit
+val reinit: unit -> unit
 
 val print: Format.formatter -> t -> unit
 

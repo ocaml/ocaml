@@ -52,6 +52,13 @@ let binding_time i = i.stamp
 let current_time() = !currentstamp
 let set_current_time t = currentstamp := max !currentstamp t
 
+let reinit_level = ref (-1)
+
+let reinit () = 
+  if !reinit_level < 0
+  then reinit_level := !currentstamp
+  else currentstamp := !reinit_level
+
 let hide i =
   { i with stamp = -1 }
 
