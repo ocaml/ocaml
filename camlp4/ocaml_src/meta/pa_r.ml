@@ -2387,18 +2387,19 @@ Grammar.extend
 
 (* Old syntax for sequences *)
 
-let not_yet_warned = ref false;;
+let not_yet_warned = ref true;;
 let warning_seq () =
   if !not_yet_warned then
     begin
       not_yet_warned := false;
       Printf.eprintf "\
-*** warning: use of old syntax; do \"camlp4r -help_seq\" for explanations
+*** warning: use of old syntax
+*** type \"camlp4r -help_seq\" in a shell for explanations
 ";
       flush stderr
     end
 ;;
-Pcaml.add_option "-warn_seq" (Arg.Set not_yet_warned)
+Pcaml.add_option "-no_warn_seq" (Arg.Clear not_yet_warned)
   "    Warn when using old syntax for sequences.";;
 
 Grammar.extend

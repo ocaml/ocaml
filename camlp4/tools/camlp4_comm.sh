@@ -15,9 +15,6 @@ head -1 $FILE >/dev/null || exit 1
 
 set - `head -1 $FILE`
 if test "$2" = "camlp4r" -o "$2" = "camlp4"; then
-        if test "$2" = "camlp4r"; then
-            ARGS1="$ARGS1 -warn_seq"
-        fi
 	COMM="ocamlrun$EXE ../boot/$2$EXE -nolib -I ../boot"
         if test "`basename $OTOP`" != "ocaml_stuff"; then
             COMM="$OTOP/boot/$COMM"

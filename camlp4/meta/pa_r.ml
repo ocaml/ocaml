@@ -815,7 +815,7 @@ value warning_seq () =
   }
   else ()
 ;
-Pcaml.add_option "-no-warn_seq" (Arg.Clear not_yet_warned)
+Pcaml.add_option "-no_warn_seq" (Arg.Clear not_yet_warned)
   "    Warn when using old syntax for sequences.";
 
 EXTEND
