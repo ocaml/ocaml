@@ -52,7 +52,7 @@ let transl_init kind labels expr =
     Llet(Alias, init, oo_prim kind,
     List.fold_right
       (fun (lab, id) expr ->
-         Llet(Strict, id, Lapply(Lvar init, [string lab]), expr))
+         Llet(Alias, id, Lapply(Lvar init, [string lab]), expr))
       labels
       expr)
 
