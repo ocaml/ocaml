@@ -108,7 +108,7 @@ method select_operation op args =
       (Iintop_imm(Idiv, n), [arg])
   | (Cdivi, _) -> 
       (Iextcall("__divdi3", false), args)
-  | (Cmodi, [arg; Cconst_int n]) when n = 1 lsl (Misc.log2 n) ->
+  | (Cmodi, [arg; Cconst_int n]) when n = 1 lsl (Misc.log2 n) && n <> 1 ->
       (Iintop_imm(Imod, n), [arg])
   | (Cmodi, _) ->
       (Iextcall("__moddi3", false), args)
