@@ -125,6 +125,13 @@ value sys_open(path, flags, perm) /* ML */
   return Val_long(ret);
 }
 
+value sys_close(fd)             /* ML */
+     value fd;
+{
+  close(Int_val(fd));
+  return Val_unit;
+}
+
 value sys_file_exists(name)     /* ML */
      value name;
 {
@@ -203,15 +210,15 @@ value sys_system_command(command)   /* ML */
 value sys_get_config(unit)  /* ML */
      value unit;
 {
-#define result (r[0])
+  value result;
   Push_roots (r, 1);
 
-  result = alloc_tuple (2);
-  Modify (&Field (result, 0), copy_string (OCAML_OS_TYPE));
-  Modify (&Field (result, 1), Val_long (8*sizeof(value)));
+  r[0] = copy_string(OCAML_OS_TYPE);
+  result = alloc_tuple(2);
+  Field(result, 0) = r[0];
+  Field(result, 1) = Val_long (8 * sizeof(value));
   Pop_roots ();
   return result;
-#undef result
 }
 
 /* Search path function */
