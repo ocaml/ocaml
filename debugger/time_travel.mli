@@ -31,3 +31,5 @@ val back_run : unit -> unit
 val step : int -> unit
 val finish : unit -> unit
 val next : int -> unit
+val start : unit -> unit
+val previous : int -> unit

@@ -54,3 +54,4 @@ val current_checkpoint : checkpoint ref
 val current_time : unit -> int
 val current_report : unit -> report option
 val current_pc : unit -> int option
+val current_pc_sp : unit -> (int * int) option

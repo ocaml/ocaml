@@ -243,10 +243,24 @@ let duplicate_current_checkpoint () =
              checkpoint_max_count := List.length !checkpoints - 1;
              remove_checkpoint new_checkpoint)
 
+(* Was the movement interrupted ? *)
+(* --- An exception could have been used instead, *)
+(* --- but it is not clear where it should be caught. *)
+(* --- For instance, it should not be caught in `step' *)
+(* --- (as `step' is used in `next_1'). *)
+(* --- On the other side, other modules does not need to know *)
+(* --- about this exception. *)
+let interrupted = ref false
+
+(* Informations about last breakpoint encountered *)
+let last_breakpoint = ref None
+
 (* Ensure we stop on an event. *)
 let rec stop_on_event report =
   match report with
-    {rep_type = Breakpoint; rep_program_pointer = pc} ->
+    {rep_type = Breakpoint; rep_program_pointer = pc;
+     rep_stack_pointer = sp} ->
+      last_breakpoint := Some (pc, sp);
       update_current_event ();
       begin match !current_event with
         None   -> find_event ()
@@ -266,15 +280,6 @@ and find_event () =
   let report = do_go 1 in
   !current_checkpoint.c_report <- Some report;
   stop_on_event report
-
-(* Was the movement interrupted ? *)
-(* --- An exception could have been used instead, *)
-(* --- but it is not clear where it should be caught. *)
-(* --- For instance, we can't caught it should not be caught in `step' *)
-(* --- (as `step' is used in `next_1'). *)
-(* --- On the other side, other modules does not need to know *)
-(* --- about this exception. *)
-let interrupted = ref false
 
 (* Internal function for running debugged program.
  * Requires `duration > 0'.
@@ -298,13 +303,15 @@ let internal_step duration =
              if report.rep_type = Event then begin
                !current_checkpoint.c_time <-
                  !current_checkpoint.c_time + duration;
-               interrupted := false
+               interrupted := false;
+               last_breakpoint := None
                end
              else begin
                !current_checkpoint.c_time <-
                   !current_checkpoint.c_time + duration
                   - report.rep_event_count + 1;
                interrupted := true;
+               last_breakpoint := None;
                stop_on_event report
                end;
              (try
@@ -440,20 +447,22 @@ let go_to time =
 (* Return the time of the last breakpoint *)
 (* between current time and `max_time'. *)
 let rec find_last_breakpoint max_time =
-  let on_breakpoint () =
-    match current_pc () with
-      None    -> false
-    | Some pc -> breakpoint_at_pc pc
+  let rec find break =
+    let time = current_time () in
+    step_forward (max_time - time);
+    match !last_breakpoint, !temporary_breakpoint_position with
+      (Some _, _) when current_time () < max_time ->
+        find !last_breakpoint
+    | (Some (pc, _), Some pc') when pc = pc' ->
+        (max_time, !last_breakpoint)
+    | _ ->
+        (time, break)
   in
-    let rec find break =
-      let time = current_time () in
-        step_forward (max_time - time);
-        if ((on_breakpoint ()) & (current_time () < max_time)) then
-          find true
-        else
-          (time, break)
-    in
-      find (on_breakpoint ())
+    find
+      (match current_pc_sp () with
+         (Some (pc, _)) as state when breakpoint_at_pc pc -> state
+       | _                                                -> None)
+
 
 (* Run from `time_max' back to `time'. *)
 (* --- Assume 0 <= time < time_max *)
@@ -463,10 +472,12 @@ let rec back_to time time_max =
   in
     go_to (max time t);
     let (new_time, break) = find_last_breakpoint time_max in
-      if break or (new_time <= time) then
-        go_to new_time
-      else
-        back_to time new_time
+    if break <> None or (new_time <= time) then begin
+      go_to new_time;
+      interrupted := break <> None;
+      last_breakpoint := break
+    end else
+      back_to time new_time
 
 (* Backward stepping. *)
 (* --- Assume duration > 1 *)
@@ -503,12 +514,17 @@ let finish () =
   update_current_event ();
   match !current_event with
     None ->
-      prerr_endline "Program is currently not running."; raise Toplevel
+      prerr_endline "`finish' not meaningful in outermost frame.";
+      raise Toplevel
   | Some curr_event ->
       initial_frame();
       let (frame, pc) = up_frame curr_event.ev_stacksize in
       if frame < 0 then begin
         prerr_endline "`finish' not meaningful in outermost frame.";
+        raise Toplevel
+      end;
+      begin try Symbols.any_event_at_pc pc with Not_found ->
+        prerr_endline "Calling function has no debugging information.";
         raise Toplevel
       end;
       exec_with_trap_barrier
@@ -519,11 +535,10 @@ let finish () =
              (fun () ->
                 while
                   run ();
-                  match current_report () with
-                    Some {rep_type = Breakpoint;
-                          rep_stack_pointer = sp;
-                          rep_program_pointer = pc2} ->
-                      (pc = pc2) && (frame <> sp)
+                  match !last_breakpoint with
+                    Some (pc', frame') when pc = pc' ->
+                      interrupted := false;
+                      frame <> frame'
                   | _ ->
                       false
                 do
@@ -538,15 +553,17 @@ let next_1 () =
   | Some event1 ->
       let (frame1, pc1) = initial_frame() in
       step 1;
-      update_current_event ();
-      match !current_event with
-        None -> ()
-      | Some event2 ->
-          let (frame2, pc2) = initial_frame() in
-          (* Call `finish' if we've entered a function. *)
-          if frame1 >= 0 && frame2 >= 0 &&
-             frame2 - event2.ev_stacksize > frame1 - event1.ev_stacksize
-          then finish()
+      if not !interrupted then begin
+        update_current_event ();
+        match !current_event with
+          None -> ()
+        | Some event2 ->
+            let (frame2, pc2) = initial_frame() in
+            (* Call `finish' if we've entered a function. *)
+            if frame1 >= 0 && frame2 >= 0 &&
+               frame2 - event2.ev_stacksize > frame1 - event1.ev_stacksize
+            then finish()
+      end
 
 (* Same as `step' (forward) but skip over function calls. *)
 let rec next =
@@ -556,3 +573,71 @@ let rec next =
       next_1 ();
       if not !interrupted then
         next (n - 1)
+
+(* Run backward until just before current function. *)
+let start () =
+  update_current_event ();
+  match !current_event with
+    None ->
+      prerr_endline "`start not meaningful in outermost frame.";
+      raise Toplevel
+  | Some curr_event ->
+      let (frame, _) = initial_frame() in
+      let (frame', pc) = up_frame curr_event.ev_stacksize in
+      if frame' < 0 then begin
+        prerr_endline "`start not meaningful in outermost frame.";
+        raise Toplevel
+      end;
+      let offset =
+        match
+          try Symbols.any_event_at_pc pc with Not_found ->
+            prerr_endline "Calling function has no debugging information.";
+            raise Toplevel
+        with
+          {ev_kind = Event_after (_, o)} when o > 0 -> o
+        | {ev_kind = Event_return o} when o > 0     -> o
+        | _ -> Misc.fatal_error "Time_travel.start"
+      in
+      let pc = pc - 4 * offset in
+      while
+        exec_with_temporary_breakpoint pc back_run;
+        match !last_breakpoint with
+          Some (pc', frame') when pc = pc' ->
+            step (-1);
+            (not !interrupted)
+              &&
+            (frame' >= frame - curr_event.ev_stacksize)
+        | _ ->
+            false
+      do
+        ()
+      done
+
+let previous_1 () =
+  update_current_event ();
+  match !current_event with
+    None ->                             (* End of the program. *)
+      step (-1)
+  | Some event1 ->
+      let (frame1, pc1) = initial_frame() in
+      step (-1);
+      if not !interrupted then begin
+        update_current_event ();
+        match !current_event with
+          None -> ()
+        | Some event2 ->
+            let (frame2, pc2) = initial_frame() in
+            (* Call `start' if we've entered a function. *)
+            if frame1 >= 0 && frame2 >= 0 &&
+               frame2 - event2.ev_stacksize > frame1 - event1.ev_stacksize
+            then start()
+      end
+
+(* Same as `step' (backward) but skip over function calls. *)
+let rec previous =
+  function
+    0 -> ()
+  | n ->
+      previous_1 ();
+      if not !interrupted then
+        previous (n - 1)

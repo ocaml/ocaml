@@ -76,3 +76,8 @@ let current_pc () =
   match current_report () with
     None | Some {rep_type = Exited | Uncaught_exc} -> None
   | Some {rep_program_pointer = pc } -> Some pc
+
+let current_pc_sp () =
+  match current_report () with
+    None | Some {rep_type = Exited | Uncaught_exc} -> None
+  | Some {rep_program_pointer = pc; rep_stack_pointer = sp } -> Some (pc, sp)
