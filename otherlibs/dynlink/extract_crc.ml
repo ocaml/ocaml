@@ -20,7 +20,8 @@ let print_crc unit =
   try
     let crc = Dynlink.digest_interface unit !load_path in
     if !first then first := false else print_string ";\n";
-    print_string "  \""; print_string unit; print_string "\",\n    \"";
+    print_string "  \""; print_string (String.capitalize unit);
+    print_string "\",\n    \"";
     for i = 0 to String.length crc - 1 do
       Printf.printf "\\%03d" (Char.code crc.[i])
     done;
