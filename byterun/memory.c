@@ -11,6 +11,7 @@
 
 /* $Id$ */
 
+#include <stdlib.h>
 #include <string.h>
 #include "fail.h"
 #include "freelist.h"
