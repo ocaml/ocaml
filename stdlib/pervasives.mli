@@ -126,17 +126,16 @@ Exception raised by input functions to signal that the
 Exception raised by division and remainder operations
    when their second argument is null.
 }
-{- [exception Exit]
-
-This exception is not raised by any library function.  It is
-   provided for use in your programs.
-}
 {- [exception Sys_blocked_io]
 
 A special case of [Sys_error] raised when no I/O is possible
    on a non-blocking I/O channel.
 }}
 *)
+
+(** The [Exit] exception is not raised by any library function.  It is
+    provided for use in your programs.*)
+exception Exit
 
 (** Raise exception [Invalid_argument] with the given string. *)
 val invalid_arg: string -> 'a
@@ -599,6 +598,7 @@ val read_float : unit -> float
 (** Opening modes for [open_out_gen] and [open_in_gen].
    -          [Open_rdonly]: open for reading.
    -          [Open_wronly]: open for writing.
+   -          [Open_append]: always write at end of file (needs [Open_wronly]).
    -          [Open_append]: open for appending.
    -          [Open_creat]: create the file if it does not exist.
    -          [Open_trunc]: empty the file if it already exists.
