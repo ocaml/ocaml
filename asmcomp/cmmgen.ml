@@ -323,9 +323,9 @@ let lookup_tag_cache obj tag cache n =
     let meths = Ident.create "meths" and cached = Ident.create "cached" in
     let mask = get_field (Cvar meths) 1 in
     let cached_pos = Cvar cached in
-    let tag_pos = Cop(Cadda, [cached_pos; Cconst_int(2*size_addr)]) in
+    let tag_pos = Cop(Cadda, [cached_pos; Cconst_int(2*size_addr-1)]) in
     let tag' = Cop(Cload Word, [tag_pos]) in
-    let meth_pos = Cop(Cadda, [cached_pos; Cconst_int size_addr]) in
+    let meth_pos = Cop(Cadda, [cached_pos; Cconst_int(size_addr-1)]) in
     Clet(meths, Cop(Cload Word, [obj]),
     Clet(cached,
 	 Cop(Cadda,
