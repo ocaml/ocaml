@@ -2,3 +2,4 @@ basic.cmo: p4_dyntest.cmo ../../ocamlc ../../otherlibs/dyntypes/dynamics.cma
 higher_order_types.cmo: p4_dyntest.cmo ../../ocamlc ../../otherlibs/dyntypes/dynamics.cma
 type_substitutions.cmo: p4_dyntest.cmo ../../ocamlc ../../otherlibs/dyntypes/dynamics.cma
 sharing_in_types.cmo: p4_dyntest.cmo ../../ocamlc ../../otherlibs/dyntypes/dynamics.cma
+variants.cmo: p4_dyntest.cmo ../../ocamlc ../../otherlibs/dyntypes/dynamics.cma
