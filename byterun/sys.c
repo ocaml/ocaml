@@ -145,7 +145,7 @@ CAMLprim value sys_exit(value retcode)
 #endif
 
 static int sys_open_flags[] = {
-  O_RDONLY, O_WRONLY, O_APPEND, O_CREAT, O_TRUNC, O_EXCL,
+  O_RDONLY, O_WRONLY, O_APPEND | O_WRONLY, O_CREAT, O_TRUNC, O_EXCL,
   O_BINARY, O_TEXT, O_NONBLOCK
 };
 
