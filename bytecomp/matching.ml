@@ -450,11 +450,11 @@ let combine_constructor arg cstr partial
       | (n, 1, [], [0, act2]) ->
           mkifthenelse arg act2 1 Lstaticfail
       | (_, _, _, _) ->
-	  if List.for_all (fun (n,_) -> n < cstr.cstr_consts & n >= 0) consts
+	  if cstr.cstr_nonconsts > 1
+          || List.for_all (fun (n,_) -> n < cstr.cstr_consts & n >= 0) consts
 	  && List.for_all (fun (n,_) -> n < cstr.cstr_nonconsts & n >= 0)
 	       nonconsts
-	  && (cstr.cstr_nonconsts > 1 ||
-              List.length consts > 1 + cstr.cstr_consts / 4)
+	  && List.length consts > 1 + cstr.cstr_consts / 4
 	  then
 	    Lswitch(arg, {sw_numconsts = cstr.cstr_consts;
 			  sw_consts = consts;
@@ -463,12 +463,13 @@ let combine_constructor arg cstr partial
 			  sw_checked = false})
 	  else
 	  let cases = List.map (fun (n, act) -> Const_int n, act) consts in
-	  match nonconsts with
-      	    [] -> make_switch_or_test_sequence (not total) arg cases consts
-      	  | [0, act] ->
-	      mkifthenelse arg act 1
-      	       	(make_switch_or_test_sequence (not total) arg cases consts)
-	  | _ -> fatal_error "Matching.combine_constructor"
+	  if cstr.cstr_nonconsts = 0 then
+      	    make_switch_or_test_sequence (not total) arg cases consts
+	  else
+	    let act =
+	      match nonconsts with [_, act] -> act | _ -> Lstaticfail in
+	    mkifthenelse arg act 1
+      	      (make_switch_or_test_sequence (not total) arg cases consts)
     in
     if total then (lambda1, true)
     else (Lcatch(lambda1, lambda2), total2)
