@@ -225,7 +225,7 @@ let check_abbrev env (_, sdecl) (id, decl) =
 
 (* Check for ill-defined abbrevs *)
 
-(* XXX Obsolete... (occur-check) *)
+(* Occur check *)
 let check_recursive_abbrev env (name, sdecl) (id, decl) =
   match decl.type_manifest with
     Some ty ->
