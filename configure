@@ -419,18 +419,19 @@ if test $withsharedlibs = "yes"; then
           sharedcccompopts="-fPIC"
           if sh ./solaris-ld; then
             mksharedlib="$bytecc -shared -o"
-            byteccrpath="-Wl,-R"
+            byteccrpath="-R"
             mksharedlibrpath="-R"
           else
             mksharedlib="$bytecc -shared -o"
             bytecclinkopts="$bytecclinkopts -Wl,-E"
             byteccrpath="-Wl,-rpath,"
-            mksharedlibrpath="-rpath "
+            mksharedlibrpath="-Wl,-rpath,"
           fi
 	  shared_libraries_supported=true;;
         *)
           sharedcccompopts="-KPIC"
-          byteccrpath="-Wl,-R"
+          byteccrpath="-R"
+          mksharedlibrpath="-R"
 	  mksharedlib="/usr/ccs/bin/ld -G -o"
 	  shared_libraries_supported=true;;
       esac;;
