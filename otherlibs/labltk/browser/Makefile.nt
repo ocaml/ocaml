@@ -48,6 +48,11 @@ ocamlbrowser.exe: jglib.cma $(OBJS) winmain.$(O)
 jglib.cma: $(JG)
 	$(CAMLCOMP) -a -o jglib.cma $(JG) 
 
+help.ml:
+	echo 'let text = "\\' > $@
+	sed -e 's/^ /\\032/' -e 's/$$/\\n\\/' help.txt >> $@
+	echo '";;' >> $@
+
 install:
 	if test -f ocamlbrowser.exe; then cp ocamlbrowser.exe $(BINDIR); fi
 

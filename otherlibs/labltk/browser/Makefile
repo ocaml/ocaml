@@ -37,10 +37,10 @@ ocamlbrowser$(EXE): $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ) \
 jglib.cma: $(JG)
 	$(CAMLCOMP) -a -o jglib.cma $(JG)
 
-#help.ml: help.txt
-#	printf 'let text = "' > $@
-#	cat help.txt >> $@
-#	printf '";;\n' >> $@
+help.ml:
+	echo 'let text = "\\' > $@
+	sed -e 's/^ /\\032/' -e 's/$$/\\n\\/' help.txt >> $@
+	echo '";;' >> $@
 
 install:
 	if test -f ocamlbrowser$(EXE); then : ; \
