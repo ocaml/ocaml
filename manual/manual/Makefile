@@ -57,7 +57,7 @@ clean:
 	cd refman; $(MAKE) clean
 	cd library; $(MAKE) clean
 	cd cmds; $(MAKE) clean
-	rm -f texstuff/*
+	-rm -f texstuff/*
 	cd htmlman; rm -f index.html manual*.html
 	cd textman; rm -f manual.txt
 	cd infoman; rm -f manual.info manual.info-*
