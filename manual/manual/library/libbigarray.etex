@@ -51,8 +51,9 @@ or (if dynamic linking of C libraries is supported on your platform),
 start "ocaml" and type "#load \"bigarray.cma\";;".
 
 \ifouthtml
+\section{Module {\tt Bigarray}: large, multi-dimensional, numerical arrays}
 \begin{rawhtml}
-<a HREF=libref/Bigarray.html> Module <tt>Bigarray</tt>: large, multi-dimensional, numerical arrays</a>
+<br><a HREF=libref/Bigarray.html>Module <tt>Bigarray</tt></a>
 \end{rawhtml}
 
 \else
