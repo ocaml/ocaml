@@ -11,7 +11,7 @@ CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 CAMLOBJS=int_misc.cmo string_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \
   ratio.cmo num.cmo arith_status.cmo
 
-CAMLINTF=big_int.cmi nat.cmi num.cmi ratio.cmi arith_status.cmi
+CMIFILES=big_int.cmi nat.cmi num.cmi ratio.cmi arith_status.cmi
 
 COBJS=nat_stubs.o
 
@@ -38,7 +38,7 @@ $(CAMLOBJS:.cmo=.cmx): ../../ocamlopt
 install:
 	cp libnums.a $(LIBDIR)/libnums.a
 	cd $(LIBDIR); $(RANLIB) libnums.a
-	cp nums.cma $(CAMLINTF) $(LIBDIR)
+	cp nums.cma $(CMIFILES) $(LIBDIR)
 
 installopt:
 	cp $(CAMLOBJS:.cmo=.cmx) nums.cmxa nums.a $(LIBDIR)
