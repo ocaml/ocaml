@@ -27,9 +27,16 @@ let (~!) = Jg_memo.fast ~f:Str.regexp
 
 (************************************************************ Path name *)
 
-let parse_filter src = 
+(* Convert Windows-style directory separator '\' to caml-style '/' *)
+let caml_dir path =
+  if Sys.os_type = "Win32" then
+    global_replace ~pat:(regexp "\\\\") ~templ:"/" path
+  else path
+
+let parse_filter s = 
+  let s = caml_dir s in
   (* replace // by / *)
-  let s = global_replace ~pat:~!"/+" ~templ:"/" src in
+  let s = global_replace ~pat:~!"/+" ~templ:"/" s in
   (* replace /./ by / *)
   let s = global_replace ~pat:~!"/\./" ~templ:"/" s in
   (* replace hoge/../ by "" *)
@@ -38,7 +45,7 @@ let parse_filter src =
   (* replace hoge/..$ by *)
   let s = global_replace s
       ~pat:~!"\([^/]\|[^\./][^/]\|[^/][^\./]\|[^/][^/]+\)/\.\.$" ~templ:"" in
-  (* replace ^/../../ by / *)
+  (* replace ^/hoge/../ by / *)
   let s = global_replace ~pat:~!"^\(/\.\.\)+/" ~templ:"/" s in
   if string_match s ~pat:~!"^\([^\*?[]*/\)\(.*\)" ~pos:0 then 
     let dirs = matched_group 1 s
@@ -70,11 +77,6 @@ let ls ~dir ~pattern =
   let regexp = unix_regexp pattern in
   List.filter files ~f:(exact_match ~pat:regexp)
 
-(*
-let ls ~dir ~pattern =
-  subshell ~cmd:("cd " ^ dir ^ ";/bin/ls -ad " ^ pattern ^" 2>/dev/null")
-*)
- 
 (********************************************* Creation *)
 let load_in_path = ref false
 
@@ -85,7 +87,7 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
     ?(multi=false) ?(sync=false) ?(usepath=true) () =
 
   let current_pattern = ref ""
-  and current_dir = ref dir in
+  and current_dir = ref (caml_dir dir) in
   
   let tl = Jg_toplevel.titled title in
   Focus.set tl;
