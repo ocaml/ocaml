@@ -988,31 +988,32 @@ exception Occur
 (* The marks are already used by [expand_abbrev]... *)
 let visited = ref []
 
-let rec non_recursive_abbrev env ty =
+let rec non_recursive_abbrev env ty0 ty =
   let ty = repr ty in
-  if ty == none then raise Recursive_abbrev;
+  if ty == repr ty0 then raise Recursive_abbrev;
   if not (List.memq ty !visited) then begin
     let level = ty.level in
     visited := ty :: !visited;
     match ty.desc with
       Tconstr(p, args, abbrev) ->
         begin try
-          non_recursive_abbrev env (try_expand_head env ty)
+          non_recursive_abbrev env ty0 (try_expand_head env ty)
         with Cannot_expand ->
-          iter_type_expr (non_recursive_abbrev env) ty
+          iter_type_expr (non_recursive_abbrev env ty0) ty
         end
     | Tobject _ | Tvariant _ ->
         ()
     | _ ->
-        iter_type_expr (non_recursive_abbrev env) ty
+        iter_type_expr (non_recursive_abbrev env ty0) ty
   end
 
 let correct_abbrev env ident params ty =
   if not !Clflags.recursive_types then begin
+    let ty0 = newgenvar () in
     visited := [];
-    non_recursive_abbrev env
+    non_recursive_abbrev env ty0
       (subst env generic_level
-         (ref (Mcons (Path.Pident ident, none, none, Mnil))) None
+         (ref (Mcons (Path.Pident ident, ty0, ty0, Mnil))) None
          [] [] ty);
     visited := []
   end

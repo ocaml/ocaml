@@ -48,9 +48,21 @@ let enter_type env (name, sdecl) id =
         List.map (fun _ -> Btype.newgenvar ()) sdecl.ptype_params;
       type_arity = List.length sdecl.ptype_params;
       type_kind = Type_abstract;
-      type_manifest = None }
+      type_manifest =
+        match sdecl.ptype_manifest with None -> None
+        | Some _ -> Some(Ctype.newvar ()) }
   in
   Env.add_type id decl env
+
+let update_type temp_env env id loc =
+  let path = Path.Pident id in
+  let decl = Env.find_type path temp_env in
+  match decl.type_manifest with None -> ()
+  | Some ty ->
+      let params = List.map (fun _ -> Ctype.newvar ()) decl.type_params in
+      try Ctype.unify env (Ctype.newconstr path params) ty
+      with Ctype.Unify trace ->
+        raise (Error(loc, Type_clash trace))
 
 (* Determine if a type is (an abbreviation for) the type "float" *)
 
@@ -178,9 +190,7 @@ let rec check_constraints_rec env loc visited ty =
       end;
       Ctype.end_def ();
       Ctype.generalize ty';
-      let targs = Btype.newgenty (Ttuple args)
-      and targs' = Btype.newgenty (Ttuple args') in
-      if not (Ctype.moregeneral env false targs' targs) then
+      if not (List.for_all2 (Ctype.moregeneral env false) args' args) then
         raise (Error(loc, Constraint_failed (ty, ty')));
       List.iter (check_constraints_rec env loc visited) args
   | _ ->
@@ -321,15 +331,19 @@ let transl_type_decl env name_sdecl_list =
   (* Translate each declaration. *)
   let decls =
     List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
-  (* Generalize type declarations. *)
-  Ctype.end_def();
-  List.iter (function (_, decl) -> generalize_decl decl) decls;
   (* Build the final env. *)
   let newenv =
     List.fold_right
       (fun (id, decl) env -> Env.add_type id decl env)
       decls env
   in
+  (* Update stubs *)
+  List.iter2
+    (fun id (_, sdecl) -> update_type temp_env newenv id sdecl.ptype_loc)
+    id_list name_sdecl_list;
+  (* Generalize type declarations. *)
+  Ctype.end_def();
+  List.iter (fun (_, decl) -> generalize_decl decl) decls;
   (* Check for recursive abbrevs *)
   List.iter2 (check_recursive_abbrev newenv) name_sdecl_list decls;
   (* Check that all type variable are closed *)
