@@ -29,7 +29,8 @@ definition:
         | 'external' value-name ':' typexpr '=' external-declaration
         | type-definition
         | exception-definition
-        | 'class' class-definition { 'and' class-definition } 'end'
+        | class-definition
+        | classtype-definition
         | 'module' module-name { '(' module-name ':' module-type ')' }
                                [ ':' module-type ] '=' module-expr
         | 'module' 'type' modtype-name '=' module-type
@@ -105,10 +106,18 @@ Exceptions are defined with the syntax @'exception' constr-decl@.
 
 \subsubsection*{Class definitions}
 
-\ikwd{class\@\verb`class`}
+A definition of one or several classes is written @'class'
+class-binding { 'and' class-binding }@ and consists of a sequence of
+mutually recursive definitions of class names. Class definitions are
+described more precisely in section~\ref{s:classdef}.
 
-The @'class'@ keyword introduces one or several mutually recursive
-class definitions, as described in section~\ref{s:classdef}.
+\subsubsection*{Class type definitions}
+
+A definition of one or several classes is written
+@'class' 'type' classtype-def { 'and' classtype-def }@ and consists of
+a sequence of mutually recursive definitions of class type names.
+Class type definitions are described more precisely in
+section~\ref{s:classtype}.
 
 \subsubsection*{Module definitions}
 

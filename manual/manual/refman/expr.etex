@@ -592,9 +592,14 @@ details). Their meaning may be changed at any time using
 \subsubsection*{Object creation} \label{s:objects}
 
 \ikwd{new\@\verb`new`}
-The expression @'new' class-path@ denotes a function that takes some
-initialization arguments and returns a new object of class
-@class-path@.
+
+When @class-path@ evaluates to a class body, @'new' class-path@
+evaluates to an object containing the instance variables and
+methods of this class.
+
+When @class-path@ evaluates to a class function, @'new' class-path@
+evaluates to a function expecting the same number of arguments and
+returning a new object of this class.
 
 \subsubsection*{Message sending}
 

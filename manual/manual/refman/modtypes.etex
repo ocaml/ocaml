@@ -28,7 +28,8 @@ specification:
         | 'external' value-name ':' typexpr '=' external-declaration
         | type-definition
         | exception-definition
-        | 'class' class-type { 'and' class-type } 'end'
+        | class-specification
+        | classtype-definition
         | 'module' module-name ':' module-type
         | 'module' module-name { '(' module-name ':' module-type ')' }
           ':' module-type
@@ -141,10 +142,20 @@ users of the structure.
 
 \subsubsection*{Class specifications}
 
-\ikwd{class\@\verb`class`}
+A specification of one or several classes in a signature is written
+@'class' class-spec { 'and' class-spec }@ and consists of a sequence
+of mutually recursive definitions of class names.
 
-A class specification is composed of one or several mutually recursive
-class types, as described in section~\ref{s:classtype}.
+Class specifications are described more precisely in
+section~\ref{s:class-spec}.
+
+\subsubsection*{Class type specifications}
+
+A specification of one or several classe types in a signature is
+written @'class' 'type' classtype-def { 'and' classtype-def }@ and
+consists of a sequence of mutually recursive definitions of class type
+names. Class type specifications are described more precisely in
+section~\ref{s:classtype}.
 
 \subsubsection*{Module specifications}
 
