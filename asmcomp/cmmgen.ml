@@ -1703,7 +1703,7 @@ CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
     if (tag < Field(meths,mi)) hi = mi-2;
     else li = mi;
   }
-  *cache = (li-2)*sizeof(value)+1;
+  *cache = (li-3)*sizeof(value)+1;
   return Field (meths, li-1);
 }
 *)
@@ -1740,7 +1740,7 @@ let cache_public_method meths tag cache =
      Ctuple []),
   Clet (
   tagged, Cop(Cadda, [lsl_const (Cvar li) log2_size_addr;
-                      Cconst_int(1 - 2 * size_addr)]),
+                      Cconst_int(1 - 3 * size_addr)]),
   Csequence(Cop (Cstore Word, [cache; Cvar tagged]),
             Cvar tagged)))))
 
@@ -1792,7 +1792,7 @@ let send_function arity =
     let mask = get_field (Cvar meths) 1 in
     let cached_pos = Cvar cached in
     let tag_pos = Cop(Cadda, [Cop (Cadda, [cached_pos; Cvar meths]);
-                              Cconst_int(2*size_addr-1)]) in
+                              Cconst_int(3*size_addr-1)]) in
     let tag' = Cop(Cload Word, [tag_pos]) in
     Clet (
     meths, Cop(Cload Word, [obj]),
@@ -1804,7 +1804,7 @@ let send_function arity =
 	        cache_public_method (Cvar meths) tag cache,
                 cached_pos),
     Cop(Cload Word, [Cop(Cadda, [Cop (Cadda, [Cvar real; Cvar meths]);
-                                 Cconst_int(size_addr-1)])]))))
+                                 Cconst_int(2*size_addr-1)])]))))
     
   in
   let body = Clet(clos', clos, body) in

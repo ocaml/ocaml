@@ -223,15 +223,15 @@ value caml_cache_public_method (value meths, value tag, value *cache)
     if (tag < Field(meths,mi)) hi = mi-2;
     else li = mi;
   }
-  *cache = (li-2)*sizeof(value)+1;
+  *cache = (li-3)*sizeof(value)+1;
   return Field (meths, li-1);
 }
 
 value caml_cache_public_method2 (value *meths, value tag, value *cache)
 {
   value ofs = *cache & meths[1];
-  if (*(value*)(((char*)(meths+2)) + ofs - 1) == tag)
-    return *(value*)(((char*)(meths+1)) + ofs - 1);
+  if (*(value*)(((char*)(meths+3)) + ofs - 1) == tag)
+    return *(value*)(((char*)(meths+2)) + ofs - 1);
   {
     int li = 3, hi = meths[0], mi;
     while (li < hi) {
@@ -239,7 +239,7 @@ value caml_cache_public_method2 (value *meths, value tag, value *cache)
       if (tag < meths[mi]) hi = mi-2;
       else li = mi;
     }
-    *cache = (li-2)*sizeof(value)+1;
+    *cache = (li-3)*sizeof(value)+1;
     return meths[li-1];
   }
 }

@@ -1055,11 +1055,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
       *--sp = accu;
       accu = Val_int(*pc++);
       ofs = *pc & Field(meths,1);
-      if (*(value*)(((char*)&Field(meths,2)) + ofs) == accu) {
+      if (*(value*)(((char*)&Field(meths,3)) + ofs) == accu) {
 #ifdef CAML_TEST_CACHE
         hits++;
 #endif
-        accu = *(value*)(((char*)&Field(meths,1)) + ofs);
+        accu = *(value*)(((char*)&Field(meths,2)) + ofs);
       }
       else
       {
@@ -1069,7 +1069,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
           if (accu < Field(meths,mi)) hi = mi-2;
           else li = mi;
         }
-        *pc = (li-2)*sizeof(value);
+        *pc = (li-3)*sizeof(value);
         accu = Field (meths, li-1);
       }
       pc++;
