@@ -16,12 +16,11 @@
          nil
          'string)
 ;labels
-   '("[?]?\\<[A-Za-z][A-Za-z0-9_\']*:" nil brown)
-   '("[?]?\\<:[A-Za-z][A-Za-z0-9_\']*\\>" nil brown)
+   '("\\(\\([~?]\\|\\<\\)[a-z][a-z0-9_']*:\\)[^:=]" 1 brown)
+   '("[~?][ (]*[a-z][a-z0-9_']*" nil brown)
 ;modules
    '("\\<\\(assert\\|open\\|include\\)\\>" nil brown)
-   '("\\<[A-Z][A-Za-z0-9_\']*\\>" nil MidnightBlue)
-   '("`[A-Za-z][A-Za-z0-9_\']*\\>" nil MidnightBlue)
+   '("`?\\<[A-Z][A-Za-z0-9_\']*\\>" nil MidnightBlue)
 ;definition
    (list (concat
           "\\<\\(a\\(nd\\|s\\)\\|c\\(onstraint\\|lass\\)"
@@ -49,9 +48,7 @@
  (append
   (list
 ;inferior
-   '("^[#-]"    nil     firebrick)
-   '("`[A-Za-z][A-Za-z0-9_\']*\\>" nil MidnightBlue)
-   '("[? \t]:[A-Za-z][A-Za-z0-9_\']*\\>" nil brown))
+   '("^[#-]"    nil     firebrick))
   caml-mode-patterns))
 
 (provide 'caml-hilit)

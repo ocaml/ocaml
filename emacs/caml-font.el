@@ -42,15 +42,8 @@
                  "[0-9][0-9][0-9]\\)\\|.\\)" caml-quote-char
                  "\\|\"[^\"\\]*\\(\\\\\\(.\\|\n\\)[^\"\\]*\\)*\"")
          'font-lock-string-face)
-;labels (and open)
-   '("\\(\\([~?]\\|\\<\\)[a-z][a-z0-9_']*:\\)[^:=]" 1
-     font-lock-variable-name-face)
-   '("\\<\\(assert\\|open\\|include\\)\\>\\|[~?][ (]*[a-z][a-z0-9_']*"
-     . font-lock-variable-name-face)
 ;modules and constructors
-   '("\\(\\<\\|:\\)\\([A-Z][A-Za-z0-9_']*\\)\\>"
-     2 font-lock-function-name-face)
-   '("`[A-Za-z][A-Za-z0-9_']*\\>" . font-lock-function-name-face)
+   '("`?\\<[A-Z][A-Za-z0-9_']*\\>" . font-lock-function-name-face)
 ;definition
    (cons (concat
           "\\<\\(a\\(nd\\|s\\)\\|c\\(onstraint\\|lass\\)"
@@ -61,8 +54,7 @@
           "\\|v\\(al\\(ue\\)?\\|irtual\\)\\)\\>")
          'font-lock-type-face)
 ;blocking
-   '("\\(\\<\\|:\\)\\(begin\\|end\\|object\\|s\\(ig\\|truct\\)\\)\\>"
-     2 font-lock-keyword-face)
+   '("\\<begin\\|end\\|object\\|s\\(ig\\|truct\\)\\>" . font-lock-keyword-face)
 ;control
    (cons (concat
           "\\<\\(do\\(ne\\|wnto\\)?\\|else\\|for\\|if"
@@ -70,15 +62,18 @@
           "\\|w\\(h\\(en\\|ile\\)\\|ith\\)\\)\\>"
           "\\|\|\\|->\\|&\\|#")
          'font-lock-reference-face)
-   '("\\<raise\\>" . font-lock-comment-face)))
+   '("\\<raise\\>" . font-lock-comment-face)
+;labels (and open)
+   '("\\(\\([~?]\\|\\<\\)[a-z][a-z0-9_']*:\\)[^:=]" 1
+     font-lock-variable-name-face)
+   '("\\<\\(assert\\|open\\|include\\)\\>\\|[~?][ (]*[a-z][a-z0-9_']*"
+     . font-lock-variable-name-face)))
 
 (defconst inferior-caml-font-lock-keywords
   (append
    (list
 ;inferior
-    '("^[#-]" . font-lock-comment-face)
-;labels
-    '("[? \t]:[A-Za-z][A-Za-z0-9_']*\\>" . font-lock-variable-name-face))
+    '("^[#-]" . font-lock-comment-face))
    caml-font-lock-keywords))
 
 ;; font-lock commands are similar for caml-mode and inferior-caml-mode
