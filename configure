@@ -20,7 +20,7 @@ libdir=''
 mandir=''
 manext=1
 host_type=unknown
-cc=''
+ccoption=''
 cclibs=''
 curseslibs=''
 mathlib='-lm'
@@ -52,7 +52,7 @@ while : ; do
     -host*|--host*)
         host_type=$2; shift;;
     -cc*)
-        cc="$2"; shift;;
+        ccoption="$2"; shift;;
     -lib*)
         cclibs="$2 $cclibs"; shift;;
     -no-curses) withcurses=no;;
@@ -138,13 +138,15 @@ echo "Configuring for a $host ..."
 
 # Do we have gcc?
 
-if test -z "$cc"; then
+if test -z "$ccoption"; then
   if sh ./searchpath gcc; then
     echo "gcc found"
     cc=gcc
   else
     cc=cc
   fi
+else
+  cc="$ccoption"
 fi
 
 # Check for buggy versions of GCC
@@ -376,11 +378,15 @@ case "$host" in
   ia64-*-linux*)                arch=ia64; system=linux;;
 esac
 
-case "$arch,$system,$cc" in
-  alpha,digital,gcc*) nativecc=cc;;
-  mips,*,gcc*) nativecc=cc;;
-  *) nativecc="$bytecc";;
-esac
+if test -z "$ccoption"; then
+  case "$arch,$system,$cc" in
+    alpha,digital,gcc*) nativecc=cc;;
+    mips,*,gcc*) nativecc=cc;;
+    *) nativecc="$bytecc";;
+  esac
+else
+  nativecc="$ccoption"
+fi
 
 nativecccompopts=''
 nativecclinkopts=''
