@@ -13,6 +13,17 @@
 
 (* Module [List]: list operations *)
 
+(* Some functions are flagged as not tail-recursive.  A tail-recursive
+   function uses constant stack space, while a non-tail-recursive function
+   uses stack space proportional to the length of its list argument, which
+   can be a problem with very long lists.  When the function takes several
+   list arguments, an approximate formula giving stack usage (in unknown
+   units) is shown in parentheses.
+
+   The above considerations can usually be ignored if your lists are not
+   longer than about 10000 elements.
+*)
+
 val length : 'a list -> int
         (* Return the length (number of elements) of the given list. *)
 val hd : 'a list -> 'a
@@ -28,14 +39,17 @@ val nth : 'a list -> int -> 'a
 val rev : 'a list -> 'a list
         (* List reversal. *)
 val append : 'a list -> 'a list -> 'a list
-        (* Catenate two lists.  Same function as the infix operator [@]. *)
+        (* Catenate two lists.  Same function as the infix operator [@].
+           Not tail-recursive.  The [@] operator is not tail-recursive
+           either. *)
 val rev_append : 'a list -> 'a list -> 'a list
         (* [List.rev_append l1 l2] reverses [l1] and catenates it to [l2].
-           This is equivalent to [List.rev l1 @ l2], but is more efficient
-           as no intermediate lists are built. *)
+           This is equivalent to [List.rev l1 @ l2], but [rev_append] is
+           tail-recursive and more efficient. *)
 val concat  : 'a list list -> 'a list
 val flatten : 'a list list -> 'a list
-        (* Catenate (flatten) a list of lists. *)
+        (* Catenate (flatten) a list of lists.  Not tail-recursive
+           (length of the argument + length of the longest sub-list). *)
 
 (** Iterators *)
 
@@ -46,13 +60,17 @@ val iter : ('a -> unit) -> 'a list -> unit
 val map : ('a -> 'b) -> 'a list -> 'b list
         (* [List.map f [a1; ...; an]] applies function [f] to [a1, ..., an],
            and builds the list [[f a1; ...; f an]]
-           with the results returned by [f]. *)
+           with the results returned by [f].  Not tail-recursive. *)
+val rev_map : ('a -> 'b) -> 'a list -> 'b list
+        (* [List.rev_map f l] gives the same result as
+           [List.rev (List.map f l)], but is tail-recursive and
+           more efficient. *)
 val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
         (* [List.fold_left f a [b1; ...; bn]] is
            [f (... (f (f a b1) b2) ...) bn]. *)
 val fold_right : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
         (* [List.fold_right f [a1; ...; an] b] is
-           [f a1 (f a2 (... (f an b) ...))]. *)
+           [f a1 (f a2 (... (f an b) ...))].  Not tail-recursive. *)
 
 (** Iterators on two lists *)
 
@@ -65,7 +83,11 @@ val map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
         (* [List.map2 f [a1; ...; an] [b1; ...; bn]] is
            [[f a1 b1; ...; f an bn]].
            Raise [Invalid_argument] if the two lists have
-           different lengths. *)
+           different lengths.  Not tail-recursive. *)
+val rev_map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
+        (* [List.rev_map2 f l] gives the same result as
+           [List.rev (List.map2 f l)], but is tail-recursive and
+           more efficient. *)
 val fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b list -> 'c list -> 'a
         (* [List.fold_left2 f a [b1; ...; bn] [c1; ...; cn]] is
            [f (... (f (f a b1 c1) b2 c2) ...) bn cn].
@@ -75,7 +97,7 @@ val fold_right2 : ('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> 'c -> 'c
         (* [List.fold_right2 f [a1; ...; an] [b1; ...; bn] c] is
            [f a1 b1 (f a2 b2 (... (f an bn c) ...))].
            Raise [Invalid_argument] if the two lists have
-           different lengths. *)
+           different lengths.  Not tail-recursive. *)
 
 (** List scanning *)
 
@@ -141,22 +163,23 @@ val mem_assq : 'a -> ('a * 'b) list -> bool
 
 val remove_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
         (* [remove_assoc a l] returns the list of
-           pairs [l] without the first pair with key [a], if any. *)
+           pairs [l] without the first pair with key [a], if any.
+           Not tail-recursive. *)
 
 val remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
         (* Same as [remove_assq], but uses physical equality instead
-           of structural equality to compare keys. *)
+           of structural equality to compare keys.  Not tail-recursive. *)
 
 (** Lists of pairs *)
 
 val split : ('a * 'b) list -> 'a list * 'b list
         (* Transform a list of pairs into a pair of lists:
-           [split [(a1,b1); ...; (an,bn)]] is [([a1; ...; an], [b1; ...; bn])]
+           [split [(a1,b1); ...; (an,bn)]] is [([a1; ...; an], [b1; ...; bn])].
+           Not tail-recursive.
         *)
 val combine : 'a list -> 'b list -> ('a * 'b) list
         (* Transform a pair of lists into a list of pairs:
            [combine ([a1; ...; an], [b1; ...; bn])] is
               [[(a1,b1); ...; (an,bn)]].
            Raise [Invalid_argument] if the two lists
-           have different lengths. *)
-
+           have different lengths.  Not tail-recursive. *)

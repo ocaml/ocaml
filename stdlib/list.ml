@@ -54,6 +54,14 @@ let rec map f = function
     [] -> []
   | a::l -> let r = f a in r :: map f l
 
+let rev_map f l =
+  let rec rmap_f accu = function
+    | [] -> accu
+    | a::l -> rmap_f (f a :: accu) l
+  in
+  rmap_f [] l
+;;
+
 let rec iter f = function
     [] -> ()
   | a::l -> f a; iter f l
@@ -73,6 +81,16 @@ let rec map2 f l1 l2 =
     ([], []) -> []
   | (a1::l1, a2::l2) -> let r = f a1 a2 in r :: map2 f l1 l2
   | (_, _) -> invalid_arg "List.map2"
+
+let rev_map2 f l1 l2 =
+  let rec rmap2_f accu l1 l2 =
+    match (l1, l2) with
+    | ([], []) -> []
+    | (a1::l1, a2::l2) -> rmap2_f (f a1 a2 :: accu) l1 l2
+    | (_, _) -> invalid_arg "List.rev_map2"
+  in
+  rmap2_f [] l1 l2
+;;
 
 let rec iter2 f l1 l2 =
   match (l1, l2) with
