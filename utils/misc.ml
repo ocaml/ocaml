@@ -104,7 +104,7 @@ let rec log2 n =
   if n <= 1 then 0 else 1 + log2(n asr 1)
 
 let align n a =
-  (n + a - 1) land (-a)
+  if n >= 0 then (n + a - 1) land (-a) else n land (-a)
 
 let no_overflow_add a b = (a lxor b) lor (a lxor (lnot (a+b))) < 0
 
