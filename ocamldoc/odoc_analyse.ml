@@ -145,6 +145,7 @@ let process_interface_file ppf sourcefile =
 
 (** The module used to analyse the parsetree and signature of an implementation file.*)
 module Ast_analyser = Odoc_ast.Analyser (Odoc_comments.Basic_info_retriever)
+
 (** The module used to analyse the parse tree and typed tree of an interface file.*)
 module Sig_analyser = Odoc_sig.Analyser (Odoc_comments.Basic_info_retriever)
 

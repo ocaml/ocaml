@@ -24,6 +24,19 @@ open Odoc_parameter
 (*** Replacements of aliases : if e1 = e2 and e2 = e3, then replace e2 by e3 to have e1 = e3, 
    in order to associate the element with complete information. *)
 
+(** The module used to keep what refs were modified. *)
+module S = Set.Make 
+    (
+     struct type t = string * ref_kind option
+       let compare = Pervasives.compare
+     end
+    )
+
+let verified_refs = ref S.empty
+
+let add_verified v = verified_refs := S.add v !verified_refs
+let was_verified v = S.mem v !verified_refs
+
 (** The module with the predicates used to get the aliased modules, classes and exceptions. *)
 module P_alias =
   struct
@@ -85,8 +98,10 @@ let rec build_alias_list (acc_m, acc_mt, acc_ex) = function
 
 (** Couples of module name aliases. *)
 let module_aliases = ref [] ;;
+
 (** Couples of module type name aliases. *)
 let module_type_aliases = ref [] ;;
+
 (** Couples of exception name aliases. *)
 let exception_aliases = ref [] ;;
 
@@ -530,44 +545,54 @@ let rec assoc_comments_text_elements module_list t_ele =
                | Odoc_search.Res_method _ -> RK_method
                | Odoc_search.Res_section (_ ,t)-> RK_section t
              in
-             Ref (name, Some kind)
+             add_verified (name, Some kind) ;
+	     Ref (name, Some kind)
 	)
     | Ref (name, Some kind) -> 
+	let v = (name, Some kind) in
 	(** we just verify that we find an element of this kind with this name *)
 	let re = Str.regexp ("^"^(Str.quote name)^"$") in
         let res = Odoc_search.Search_by_name.search module_list re in
-	match kind with
-	| RK_section _ ->
-	    (
-	     try
-	       let t = Odoc_search.find_section module_list re in
-	       Ref (name, Some (RK_section t))
-	     with
-	       Not_found ->
-		 Odoc_messages.pwarning (Odoc_messages.cross_section_not_found name);
-		 Ref (name, None)
-	    )
-	| _ ->
-	    let (f,f_mes) = 
-	      match kind with
-		RK_module -> Odoc_search.module_exists, Odoc_messages.cross_module_not_found
-	      | RK_module_type -> Odoc_search.module_type_exists, Odoc_messages.cross_module_type_not_found
-	      | RK_class -> Odoc_search.class_exists, Odoc_messages.cross_class_not_found
-	      | RK_class_type -> Odoc_search.class_type_exists, Odoc_messages.cross_class_type_not_found
-	      | RK_value -> Odoc_search.value_exists, Odoc_messages.cross_value_not_found
-	      | RK_type -> Odoc_search.type_exists, Odoc_messages.cross_type_not_found
-	      | RK_exception -> Odoc_search.exception_exists, Odoc_messages.cross_exception_not_found
-	      | RK_attribute -> Odoc_search.attribute_exists, Odoc_messages.cross_attribute_not_found
-	      | RK_method -> Odoc_search.method_exists, Odoc_messages.cross_method_not_found
-	      |	RK_section _ -> assert false
-	    in
-	    if f module_list re then
-	      Ref (name, Some kind)
-	    else
+	if was_verified v then
+	  Ref (name, Some kind)
+	else
+	  match kind with
+	  | RK_section _ ->
 	      (
-	       Odoc_messages.pwarning (f_mes name);
-	       Ref (name, None)
+	       try
+		 let t = Odoc_search.find_section module_list re in
+		 let v2 = (name, Some (RK_section t)) in
+		 add_verified v2 ;
+		 Ref (name, Some (RK_section t))
+	       with
+		 Not_found ->
+		   Odoc_messages.pwarning (Odoc_messages.cross_section_not_found name);
+		   Ref (name, None)
 	      )
+	  | _ ->
+	      let (f,f_mes) = 
+		match kind with
+		  RK_module -> Odoc_search.module_exists, Odoc_messages.cross_module_not_found
+		| RK_module_type -> Odoc_search.module_type_exists, Odoc_messages.cross_module_type_not_found
+		| RK_class -> Odoc_search.class_exists, Odoc_messages.cross_class_not_found
+		| RK_class_type -> Odoc_search.class_type_exists, Odoc_messages.cross_class_type_not_found
+		| RK_value -> Odoc_search.value_exists, Odoc_messages.cross_value_not_found
+		| RK_type -> Odoc_search.type_exists, Odoc_messages.cross_type_not_found
+		| RK_exception -> Odoc_search.exception_exists, Odoc_messages.cross_exception_not_found
+		| RK_attribute -> Odoc_search.attribute_exists, Odoc_messages.cross_attribute_not_found
+		| RK_method -> Odoc_search.method_exists, Odoc_messages.cross_method_not_found
+		| RK_section _ -> assert false
+	      in
+	      if f module_list re then
+		(
+		 add_verified v ;
+		 Ref (name, Some kind)
+		)
+	      else
+		(
+		 Odoc_messages.pwarning (f_mes name);
+		 Ref (name, None)
+		)
 	
 
 and assoc_comments_text module_list text =
