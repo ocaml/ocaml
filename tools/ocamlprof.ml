@@ -282,6 +282,9 @@ and rw_exp iflag sexp =
 
   | Pexp_poly (sexp, _) -> rewrite_exp iflag sexp
 
+  | Pexp_object (_, fieldl) ->
+      List.iter (rewrite_class_field iflag) fieldl
+
 and rewrite_ifbody iflag ghost sifbody =
   if !instr_if && not ghost then
     insert_profile rw_exp sifbody
