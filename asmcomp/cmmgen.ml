@@ -1766,6 +1766,58 @@ let get_cached_method () =
     fun_body = body;
     fun_fast = true}  
 
+(*
+CAMLprim value oo_cache_public_method (value meths, value tag, value *cache)
+{
+  int li = 3, hi = Field(meths,0), mi;
+  while (li < hi) { // no need to check the 1st time
+    mi = ((li+hi) >> 1) | 1;
+    if (tag < Field(meths,mi)) hi = mi-2;
+    else li = mi;
+  }
+  *cache = (li-2)*sizeof(value)+1;
+  return Field (meths, li-1);
+}
+*)
+
+let cache_public_method meths tag cache =
+  let raise_num = next_raise_count () in
+  let li = Ident.create "li" and hi = Ident.create "hi"
+  and mi = Ident.create "mi"in
+  Clet (
+  li, Cconst_int 3,
+  Clet (
+  hi, Cop(Cload Word, [meths]),
+  Csequence(
+  Ccatch
+    (raise_num, [],
+     Cloop
+       (Clet(
+	mi,
+	Cop(Cor,
+	    [Cop(Clsr, [Cop(Caddi, [Cvar li; Cvar hi]); Cconst_int 1]);
+	     Cconst_int 1]),
+	Csequence(
+	Cifthenelse
+	  (Cop (Ccmpi Clt,
+		[tag;
+		 Cop(Cload Word,
+		     [Cop(Cadda,
+			  [meths; lsl_const (Cvar mi) log2_size_addr])])]),
+	   Cassign(hi, Cop(Csubi, [Cvar mi; Cconst_int 2])),
+	   Cassign(li, Cvar mi)),
+	Cifthenelse
+	  (Cop(Ccmpi Cge, [Cvar li; Cvar hi]), Cexit (raise_num, []),
+	   Ctuple [])))),
+     Ctuple []),
+  Csequence(
+  Cop (Cstore Word, [cache; Cop(Cadda, [lsl_const (Cvar li) log2_size_addr;
+					Cconst_int(1 - 2 * size_addr)])]),
+  Cop(Cload Word,
+      [Cop(Cadda, [Cop(Cadda,
+		       [meths; lsl_const (Cvar li) log2_size_addr]);
+		   Cconst_int(-size_addr)])])))))
+
 (* Generate an application function:
      (defun caml_applyN (a1 ... aN clos)
        (if (= clos.arity N)
@@ -1820,8 +1872,9 @@ let call_cached_method arity =
 	 Cop(Cadda,
 	     [Cop(Cand, [Cop(Cload Word, [cache]); mask]); Cvar meths]),
     Cifthenelse(Cop(Ccmpa Cne, [tag'; tag]),
-		Cop(Cextcall("oo_cache_public_method", typ_addr, false),
-		    [Cvar meths; tag; cache]),
+		(* Cop(Cextcall("oo_cache_public_method", typ_addr, false),
+		    [Cvar meths; tag; cache]), *)
+		cache_public_method (Cvar meths) tag cache,
                 Cop(Cload Word, [meth_pos]))
         ))
   in
