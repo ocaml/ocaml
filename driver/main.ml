@@ -38,8 +38,11 @@ let process_file name =
     ccobjs := name :: !ccobjs
   else if Filename.check_suffix name ".c" then begin
     Compile.c_file name;
-    ccobjs := (Filename.chop_suffix (Filename.basename name) ".c" ^ ext_obj)
-    :: !ccobjs
+	match Sys.os_type with
+	| "MacOS" -> ccobjs := (name ^ ".o") :: (name ^ ".x") :: !ccobjs
+	| _ ->
+       ccobjs := (Filename.chop_suffix (Filename.basename name) ".c" ^ ext_obj)
+                 :: !ccobjs
   end
   else
     raise(Arg.Bad("don't know what to do with " ^ name))
