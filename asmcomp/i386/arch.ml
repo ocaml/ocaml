@@ -109,7 +109,7 @@ let print_specific_operation printreg op arg =
   | Ipush_int n ->
       printf "push %s" (Nativeint.to_string n)
   | Ipush_symbol s ->
-      print_string "push \"%s\"" s
+      printf "push \"%s\"" s
   | Ipush_load addr ->
       print_string "push ["; print_addressing printreg addr arg;
       print_string "]"
