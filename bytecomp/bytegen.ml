@@ -43,7 +43,7 @@ let add_var id pos env =
 let rec add_vars idlist pos env =
   match idlist with
     [] -> env
-  | id :: rem -> add_vars rem (pos + 1) (add_var id pos env)
+  | id :: rem ->  add_vars rem (pos + 1) (add_var id pos env)
 
 (**** Examination of the continuation ****)
 
@@ -79,6 +79,12 @@ let make_branch cont =
   | Klabel lbl :: _ -> make_branch_2 (Some lbl) 0 cont cont
   | _ ->  make_branch_2 (None) 0 cont cont
 
+(* Avoid a branch to a label that follows immediately *)
+
+let branch_to label cont = match cont with
+| Klabel label0::_ when label = label0 -> cont
+| _ -> Kbranch label::cont
+
 (* Discard all instructions up to the next label.
    This function is to be applied to the continuation before adding a
    non-terminating instruction (branch, raise, return) in front of it. *)
@@ -106,6 +112,25 @@ let rec add_pop n cont =
     | Kraise :: _ -> cont
     | _ -> Kpop n :: cont
 
+(* Translates the accumulator + n-1 positions, m places down on the stack *)
+let rec squeeze_rec i n m cont =
+  if i <= 1 then
+    Kacc 0::add_pop  (if m <= n then m+1 else  m-n+1) (Kpush::cont)
+  else
+    Kacc (i-1)::
+    Kassign (m+i-1)::
+    squeeze_rec (i-1) n m cont
+    
+
+let add_squeeze n m cont =
+  if n=0 then add_pop m cont
+  else if n=1 then add_pop m (Kpush::cont)
+  else if m=0 then Kpush::cont    
+  else
+    Kpush::
+    squeeze_rec n n m cont
+      
+    
 (* Add the constant "unit" in front of a continuation *)
 
 let add_const_unit = function
@@ -204,6 +229,30 @@ and sz_staticfail = ref 0
 
 (* Same information as a stack for Lstaticraise *)
 let sz_static_raises = ref []
+let find_raise_label i =
+  try
+    List.assoc i !sz_static_raises
+  with
+  | Not_found ->
+      Misc.fatal_error
+        ("exit("^string_of_int i^") outside appropriated catch")
+
+(* Will the translation of l lead to a jump to label ? *)
+let code_as_jump l sz = match l with
+|  Lstaticfail ->
+    if sz = !sz_staticfail then
+      match !lbl_staticfail with
+      | Some label -> Some label
+      | None -> Misc.fatal_error "exit outside appropriated catch"
+    else
+      None
+| Lstaticraise (i,[]) ->
+    let label,size = find_raise_label i in
+    if sz = size then
+      Some label
+    else
+      None
+| _ -> None
 
 (* Function bodies that remain to be compiled *)
 
@@ -290,6 +339,7 @@ let comp_primitive p args =
   | Parraysetu Pfloatarray -> Kccall("array_unsafe_set_float", 3)
   | Parraysetu _ -> Ksetvectitem
   | Pisint -> Kisint
+  | Pisout -> Kisout
   | Pbittest -> Kccall("bitvect_test", 2)
   | Pbintofint bi -> comp_bint_primitive bi "of_int" args
   | Pintofbint bi -> comp_bint_primitive bi "to_int" args
@@ -320,6 +370,14 @@ let comp_primitive p args =
   | Pbigarrayref(n, _, _) -> Kccall("bigarray_get_" ^ string_of_int n, n + 1)
   | Pbigarrayset(n, _, _) -> Kccall("bigarray_set_" ^ string_of_int n, n + 2)
   | _ -> fatal_error "Bytegen.comp_primitive"
+
+let is_immed n = immed_min <= n && n <= immed_max
+
+let explode_isout arg l h =
+  Lprim
+    (Psequor,
+    [Lprim (Pintcomp Clt,[arg ; Lconst (Const_base (Const_int 0))]) ;
+     Lprim (Pintcomp Cgt,[arg ; Lconst (Const_base (Const_int h))])])
 
 (* Compile an expression.
    The value of the expression is left in the accumulator.
@@ -478,10 +536,18 @@ let rec comp_expr env exp sz cont =
       end
   | Lprim(Praise, [arg]) ->
       comp_expr env arg sz (Kraise :: discard_dead_code cont)
-  | Lprim((Paddint | Psubint as prim), [arg; Lconst(Const_base(Const_int n))])
-    when n >= immed_min & n <= immed_max ->
-      let ofs = if prim == Paddint then n else -n in
-      comp_expr env arg sz (Koffsetint ofs :: cont)
+  | Lprim(Paddint, [arg; Lconst(Const_base(Const_int n))])
+    when is_immed n ->
+      comp_expr env arg sz (Koffsetint n :: cont)
+  | Lprim(Psubint, [arg; Lconst(Const_base(Const_int n))])
+    when is_immed (-n) ->
+      comp_expr env arg sz (Koffsetint (-n) :: cont)
+  | Lprim (Poffsetint n, [arg])
+    when not (is_immed n) ->
+      comp_expr env arg sz
+        (Kpush::
+         Kconst (Const_base (Const_int n))::
+         Kaddint::cont)
   | Lprim(Pmakearray kind, args) ->
       begin match kind with
         Pintarray | Paddrarray ->
@@ -495,6 +561,11 @@ let rec comp_expr env exp sz cont =
                  (Kmakeblock(List.length args, 0) ::
                   Kccall("make_array", 1) :: cont)
       end
+(* Integer first for enabling futher optimization (cf. emitcode.ml)  *)
+  | Lprim (Pintcomp c, [arg ; (Lconst _ as k)]) ->
+      let p = Pintcomp (commute_comparison c)
+      and args = [k ; arg] in
+      comp_args env args sz (comp_primitive p args :: cont)
   | Lprim(p, args) ->
       comp_args env args sz (comp_primitive p args :: cont)
   | Lcatch(body, Lstaticfail) ->
@@ -511,24 +582,24 @@ let rec comp_expr env exp sz cont =
       sz_staticfail := saved_sz_staticfail;
       cont3
   | Lstaticfail -> comp_static_fail sz cont
-  | Lstaticcatch (body, i, handler) ->
-      let branch1, cont1 = make_branch cont in
+  | Lstaticcatch (body, (i, vars) , handler) ->
+      let branch1, cont1 = make_branch cont
+      and nvars = List.length vars in
       let lbl_handler, cont2 =
-        label_code (comp_expr env handler sz cont1) in
-      sz_static_raises := (i, (lbl_handler, sz)) :: !sz_static_raises ;
+        label_code
+          (comp_expr
+             (add_vars vars (sz+1) env)
+             handler (sz+nvars) (add_pop nvars cont1)) in
+      sz_static_raises := (i, (lbl_handler, sz+nvars)) :: !sz_static_raises ;
       let cont3 = comp_expr env body sz (branch1 :: cont2) in
       sz_static_raises := List.tl !sz_static_raises ;
       cont3
-  | Lstaticraise i ->
+  | Lstaticraise (i, args) ->
       let cont = discard_dead_code cont in
-      let label, size =
-        try
-          List.assoc i !sz_static_raises
-        with
-        | Not_found ->
-            Misc.fatal_error
-              ("exit("^string_of_int i^") outside appropriated catch") in
-      add_pop (sz-size) (Kbranch label :: cont)
+      let label,size = find_raise_label i in
+      comp_expr_list env args sz
+      (add_squeeze (List.length args) (sz+List.length args-size)
+         (branch_to label cont))
   | Ltrywith(body, id, handler) ->
       let (branch1, cont1) = make_branch cont in
       let lbl_handler = new_label() in
@@ -656,7 +727,7 @@ and comp_static_fail sz cont =
   | None ->
       Misc.fatal_error "exit outside appropriated catch"
   | Some label ->
-      add_pop (sz - !sz_staticfail) (Kbranch label :: cont)
+      add_pop (sz - !sz_staticfail) (branch_to label cont)
   end
 
 (* Compile a list of arguments [e1; ...; eN] to a primitive operation.
@@ -681,24 +752,21 @@ and comp_binary_test env cond ifso ifnot sz cont =
       let (lbl_end, cont1) = label_code cont in
       Kstrictbranchifnot lbl_end :: comp_expr env ifso sz cont1
     end else
-    if ifso = Lstaticfail && sz = !sz_staticfail
-    then
+    match code_as_jump ifso sz with
+    | Some label ->
       let cont = comp_expr env ifnot sz cont in
-      match !lbl_staticfail with
-      | None ->  Misc.fatal_error "exit outside appropriated catch"
-      | Some label -> Kbranchif label :: cont
-    else
-    if ifnot = Lstaticfail && sz = !sz_staticfail 
-    then
-      let cont = comp_expr env ifso sz cont in
-      match !lbl_staticfail with
-      | None -> Misc.fatal_error "exit outside appropriated catch"
-      | Some label -> Kbranchifnot label :: cont
-    else begin
-      let (branch_end, cont1) = make_branch cont in
-      let (lbl_not, cont2) = label_code(comp_expr env ifnot sz cont1) in
-      Kbranchifnot lbl_not :: comp_expr env ifso sz (branch_end :: cont2)
-    end in
+      Kbranchif label :: cont
+    | _ ->
+        match code_as_jump ifnot sz with
+        | Some label ->
+            let cont = comp_expr env ifso sz cont in
+            Kbranchifnot label :: cont
+        | _ ->
+            let (branch_end, cont1) = make_branch cont in
+            let (lbl_not, cont2) = label_code(comp_expr env ifnot sz cont1) in
+            Kbranchifnot lbl_not ::
+            comp_expr env ifso sz (branch_end :: cont2) in
+
   comp_expr env cond sz cont_cond
 
 (**** Compilation of functions ****)
@@ -737,6 +805,7 @@ let compile_implementation modulename expr =
   label_counter := 0;
   lbl_staticfail := None;
   sz_staticfail := 0;
+  sz_static_raises := [] ;
   compunit_name := modulename;
   let init_code = comp_expr empty_env expr 0 [] in
   if Stack.length functions_to_compile > 0 then begin

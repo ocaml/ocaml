@@ -57,6 +57,8 @@ type primitive =
   | Parraysets of array_kind
   (* Test if the argument is a block or an immediate integer *)
   | Pisint
+  (* Test if the (integer) argument is outside an interval *)
+  | Pisout
   (* Bitvect operations *)
   | Pbittest
   (* Operations on boxed integers (Nativeint.t, Int32.t, Int64.t) *)
@@ -134,8 +136,8 @@ type lambda =
   | Lswitch of lambda * lambda_switch
   | Lstaticfail
   | Lcatch of lambda * lambda
-  | Lstaticraise of int
-  | Lstaticcatch of lambda * int * lambda
+  | Lstaticraise of int * lambda list
+  | Lstaticcatch of lambda * (int * Ident.t list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
   | Lifthenelse of lambda * lambda * lambda
   | Lsequence of lambda * lambda
@@ -177,3 +179,9 @@ val transl_path: Path.t -> lambda
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 
 val subst_lambda: lambda Ident.tbl -> lambda -> lambda
+val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda
+
+val commute_comparison : comparison -> comparison
+val negate_comparison : comparison -> comparison
+
+val next_raise_count : unit -> int

@@ -79,4 +79,6 @@ and command = parse
 
 {
 let _ = main(Lexing.from_channel stdin)
+
+let _ = exit (0)
 }

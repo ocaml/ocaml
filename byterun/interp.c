@@ -13,7 +13,7 @@
 /* $Id$ */
 
 /* The bytecode interpreter */
-
+#include<stdio.h>
 #include "alloc.h"
 #include "callback.h"
 #include "debugger.h"
@@ -928,16 +928,35 @@ value interprete(code_t prog, asize_t prog_size)
     Instruct(ASRINT):
       accu = (value)((((long) accu - 1) >> Long_val(*sp++)) | 1); Next;
 
-#define Integer_comparison(opname,tst) \
+#define Integer_comparison(sign,opname,tst) \
     Instruct(opname): \
-      accu = Val_int((long) accu tst (long) *sp++); Next;
+      accu = Val_int((sign long) accu tst (sign long) *sp++); Next;
 
-    Integer_comparison(EQ, ==)
-    Integer_comparison(NEQ, !=)
-    Integer_comparison(LTINT, <)
-    Integer_comparison(LEINT, <=)
-    Integer_comparison(GTINT, >)
-    Integer_comparison(GEINT, >=)
+    Integer_comparison(signed,EQ, ==)
+    Integer_comparison(signed,NEQ, !=)
+    Integer_comparison(signed,LTINT, <)
+    Integer_comparison(signed,LEINT, <=)
+    Integer_comparison(signed,GTINT, >)
+    Integer_comparison(signed,GEINT, >=)
+    Integer_comparison(unsigned,ULTINT, <)
+    Integer_comparison(unsigned,UGEINT, >=)
+
+#define Integer_branch_comparison(sign,opname,tst,debug) \
+    Instruct(opname): \
+      if ( *pc++ tst ((sign long)Long_val(accu))) { \
+        pc += *pc ; \
+      } else { \
+        pc++ ; \
+      } ; Next;
+
+    Integer_branch_comparison(signed,BEQ, ==, "==")
+    Integer_branch_comparison(signed,BNEQ, !=, "!=")
+    Integer_branch_comparison(signed,BLTINT, <, "<")
+    Integer_branch_comparison(signed,BLEINT, <=, "<=")
+    Integer_branch_comparison(signed,BGTINT, >, ">")
+    Integer_branch_comparison(signed,BGEINT, >=, ">=")
+    Integer_branch_comparison(unsigned,BULTINT, <, "<")
+    Integer_branch_comparison(unsigned,BUGEINT, >=, ">=")
 
     Instruct(OFFSETINT):
       accu += *pc << 1;
@@ -951,7 +970,7 @@ value interprete(code_t prog, asize_t prog_size)
     Instruct(ISINT):
       accu = Val_long(accu & 1);
       Next;
-
+    
 /* Object-oriented operations */
 
 #define Lookup(obj, lab) \

@@ -73,8 +73,32 @@ let out_word b1 b2 b3 b4 =
 let out opcode =
   out_word opcode 0 0 0
 
+
+exception AsInt
+
+let const_as_int = function
+  | Const_base(Const_int i) -> i
+  | Const_base(Const_char c) -> Char.code c
+  | Const_pointer i -> i
+  | _ -> raise AsInt
+
+let is_immed i = immed_min <= i && i <= immed_max
+let is_immed_const k =
+  try
+    is_immed (const_as_int k)
+  with
+  | AsInt -> false
+
+
 let out_int n =
   out_word n (n asr 8) (n asr 16) (n asr 24)
+
+let out_const c =
+  try
+    out_int (const_as_int c)
+  with
+  | AsInt -> Misc.fatal_error "Emitcode.const_as_int"
+  
 
 (* Handling of local labels and backpatching *)
 
@@ -157,6 +181,16 @@ let init () =
 
 (* Emission of one instruction *)
 
+let emit_comp = function
+| Ceq -> out opEQ    | Cneq -> out opNEQ
+| Clt -> out opLTINT | Cle -> out opLEINT
+| Cgt -> out opGTINT | Cge -> out opGEINT
+
+and emit_branch_comp = function
+| Ceq -> out opBEQ    | Cneq -> out opBNEQ
+| Clt -> out opBLTINT | Cle -> out opBLEINT
+| Cgt -> out opBGTINT | Cge -> out opBGEINT
+
 let emit_instr = function
     Klabel lbl -> define_label lbl
   | Kacc n ->
@@ -193,7 +227,7 @@ let emit_instr = function
   | Ksetglobal q -> out opSETGLOBAL; slot_for_setglobal q
   | Kconst sc ->
       begin match sc with
-        Const_base(Const_int i) when i >= immed_min & i <= immed_max ->
+        Const_base(Const_int i) when is_immed i ->
           if i >= 0 & i <= 3
           then out (opCONST0 + i)
           else (out opCONSTINT; out_int i)
@@ -252,12 +286,11 @@ let emit_instr = function
   | Kandint -> out opANDINT  | Korint -> out opORINT
   | Kxorint -> out opXORINT  | Klslint -> out opLSLINT
   | Klsrint -> out opLSRINT  | Kasrint -> out opASRINT
-  | Kintcomp Ceq -> out opEQ         | Kintcomp Cneq -> out opNEQ
-  | Kintcomp Clt -> out opLTINT      | Kintcomp Cle -> out opLEINT
-  | Kintcomp Cgt -> out opGTINT      | Kintcomp Cge -> out opGEINT
+  | Kintcomp c -> emit_comp c
   | Koffsetint n -> out opOFFSETINT; out_int n
   | Koffsetref n -> out opOFFSETREF; out_int n
   | Kisint -> out opISINT
+  | Kisout -> out opULTINT
   | Kgetmethod -> out opGETMETHOD
   | Kevent ev -> record_event ev
   | Kstop -> out opSTOP
@@ -267,6 +300,33 @@ let emit_instr = function
 let rec emit = function
     [] -> ()
   (* Peephole optimizations *)
+(* optimization of integer tests *)
+  | Kpush::Kconst k::Kintcomp c::Kbranchif lbl::rem
+      when is_immed_const k ->
+        emit_branch_comp c ;
+        out_const k ;
+        out_label lbl ;
+        emit rem
+  | Kpush::Kconst k::Kintcomp c::Kbranchifnot lbl::rem
+      when is_immed_const k ->
+        emit_branch_comp (negate_comparison c) ;
+        out_const k ;
+        out_label lbl ;
+        emit rem
+(* same for range tests *)
+  | Kpush::Kconst k::Kisout::Kbranchif lbl::rem
+      when is_immed_const k ->
+        out opBULTINT ;
+        out_const k ;
+        out_label lbl ;
+        emit rem
+  | Kpush::Kconst k::Kisout::Kbranchifnot lbl::rem
+      when is_immed_const k ->
+        out opBUGEINT ;
+        out_const k ;
+        out_label lbl ;
+        emit rem
+
   | Kpush :: Kacc n :: c ->
       if n < 8 then out(opPUSHACC0 + n) else (out opPUSHACC; out_int n);
       emit c
@@ -286,7 +346,7 @@ let rec emit = function
       out opPUSHGETGLOBAL; slot_for_getglobal id; emit c
   | Kpush :: Kconst sc :: c ->
       begin match sc with
-        Const_base(Const_int i) when i >= immed_min & i <= immed_max ->
+        Const_base(Const_int i) when is_immed i ->
           if i >= 0 & i <= 3
           then out (opPUSHCONST0 + i)
           else (out opPUSHCONSTINT; out_int i)

@@ -710,35 +710,6 @@ let get_mins ps =
       else select_rec (p::r) ps in
   select_rec [] (select_rec [] ps)
 
-let rec compat p q = match p.pat_desc,q.pat_desc with
-| Tpat_alias (p,_),_     -> compat p q
-| _,Tpat_alias (q,_)     -> compat p q
-| (Tpat_any|Tpat_var _),_ -> true
-| _,(Tpat_any|Tpat_var _) -> true
-| Tpat_or (p1,p2),_       -> compat p1 q || compat p2 q
-| _,Tpat_or (q1,q2)       -> compat p q1 || compat p q2    
-| Tpat_constant c1, Tpat_constant c2 -> c1=c2
-| Tpat_tuple ps, Tpat_tuple qs -> compats ps qs
-| Tpat_construct (c1,ps1), Tpat_construct (c2,ps2) ->
-    c1.cstr_tag = c2.cstr_tag && compats ps1 ps2
-| Tpat_variant(l1,Some p1,_), Tpat_variant(l2,Some p2,_) ->
-    l1=l2 && compat p1 p2
-| Tpat_variant (l1,None,_), Tpat_variant(l2,None,_) -> l1 = l2
-| Tpat_variant (_, None, _), Tpat_variant (_,Some _, _) -> false
-| Tpat_variant (_, Some _, _), Tpat_variant (_, None, _) -> false
-| Tpat_record l1,Tpat_record l2 ->
-    let ps,qs = records_args l1 l2 in
-    compats ps qs
-| Tpat_array ps, Tpat_array qs ->
-    List.length ps = List.length qs &&
-    compats ps qs
-| _,_  -> assert false
-    
-and compats ps qs = match ps,qs with
-| [], [] -> true
-| p::ps, q::qs -> compat p q && compats ps qs
-| _,_    -> assert false
-    
 (*************************************)
 (* Values as patterns pretty printer *)
 (*************************************)
@@ -840,6 +811,41 @@ and pretty_lvals lbls ppf = function
 let top_pretty ppf v =
   fprintf ppf "@[%a@]@?" pretty_val v
 
+
+let rec compat p q = match p.pat_desc,q.pat_desc with
+| Tpat_alias (p,_),_     -> compat p q
+| _,Tpat_alias (q,_)     -> compat p q
+| (Tpat_any|Tpat_var _),_ -> true
+| _,(Tpat_any|Tpat_var _) -> true
+| Tpat_or (p1,p2),_       -> compat p1 q || compat p2 q
+| _,Tpat_or (q1,q2)       -> compat p q1 || compat p q2    
+| Tpat_constant c1, Tpat_constant c2 -> c1=c2
+| Tpat_tuple ps, Tpat_tuple qs -> compats ps qs
+| Tpat_construct (c1,ps1), Tpat_construct (c2,ps2) ->
+    c1.cstr_tag = c2.cstr_tag && compats ps1 ps2
+| Tpat_variant(l1,Some p1,_), Tpat_variant(l2,Some p2,_) ->
+    l1=l2 && compat p1 p2
+| Tpat_variant (l1,None,_), Tpat_variant(l2,None,_) -> l1 = l2
+| Tpat_variant (_, None, _), Tpat_variant (_,Some _, _) -> false
+| Tpat_variant (_, Some _, _), Tpat_variant (_, None, _) -> false
+| Tpat_record l1,Tpat_record l2 ->
+    let ps,qs = records_args l1 l2 in
+    compats ps qs
+| Tpat_array ps, Tpat_array qs ->
+    List.length ps = List.length qs &&
+    compats ps qs
+| _,_  ->
+    top_pretty Format.str_formatter p ;
+    prerr_endline (Format.flush_str_formatter ()) ;
+    top_pretty Format.str_formatter q ;
+    prerr_endline (Format.flush_str_formatter ()) ;
+    assert false
+    
+and compats ps qs = match ps,qs with
+| [], [] -> true
+| p::ps, q::qs -> compat p q && compats ps qs
+| _,_    -> assert false
+    
 
 (******************************)
 (* Entry points               *)

@@ -161,7 +161,9 @@ let rec bound_idents pat =
   | Tpat_record lbl_pat_list ->
       List.iter (fun (lbl, pat) -> bound_idents pat) lbl_pat_list
   | Tpat_array patl -> List.iter bound_idents patl
-  | Tpat_or(p1, p2) -> bound_idents p1; bound_idents p2
+  | Tpat_or(p1, _) ->
+      (* Invariant : both arguments binds the same variables *)
+      bound_idents p1
 
 let pat_bound_idents pat =
   idents := []; bound_idents pat; let res = !idents in idents := []; res
@@ -173,3 +175,38 @@ let rev_let_bound_idents pat_expr_list =
 
 let let_bound_idents pat_expr_list =
   List.rev(rev_let_bound_idents pat_expr_list)
+
+let alpha_var env id = List.assoc id env
+
+let rec alpha_pat env p = match p.pat_desc with
+| Tpat_var id -> (* note the ``Not_found'' case *)
+    {p with pat_desc =
+     try Tpat_var (alpha_var env id) with
+     | Not_found -> Tpat_any}
+| Tpat_alias (p, id) ->
+    let new_p =  alpha_pat env p in
+    begin try
+      {p with pat_desc = Tpat_alias (new_p, alpha_var env id)}
+    with
+    | Not_found -> new_p
+    end
+| Tpat_tuple pats ->
+    {p with pat_desc =
+    Tpat_tuple (List.map (alpha_pat env) pats)}
+| Tpat_record lpats ->
+    {p with pat_desc =
+    Tpat_record (List.map (fun (l,p) -> l,alpha_pat env p) lpats)}
+| Tpat_construct (c,pats) ->
+    {p with pat_desc =
+    Tpat_construct (c,List.map (alpha_pat env) pats)}
+| Tpat_array pats ->
+    {p with pat_desc =
+    Tpat_array (List.map (alpha_pat env) pats)}
+| Tpat_variant (x1, Some p, x2) ->
+    {p with pat_desc =
+    Tpat_variant (x1, Some (alpha_pat env p), x2)}
+| Tpat_or (p1,p2) ->
+    {p with pat_desc =
+    Tpat_or (alpha_pat env p1, alpha_pat env p2)}
+| Tpat_constant _|Tpat_any|Tpat_variant (_,None,_) -> p
+

@@ -31,7 +31,7 @@ type error =
   | Label_mismatch of Longident.t * (type_expr * type_expr) list
   | Pattern_type_clash of (type_expr * type_expr) list
   | Multiply_bound_variable
-  | Orpat_not_closed
+  | Orpat_vars of Ident.t
   | Expr_type_clash of (type_expr * type_expr) list
   | Apply_non_function of type_expr
   | Apply_wrong_label of label * type_expr
@@ -110,11 +110,46 @@ let unify_pat' env pat expected_ty =
 let pattern_variables = ref ([]: (Ident.t * type_expr) list)
 
 let enter_variable loc name ty =
-  if List.exists (fun (id, ty) -> Ident.name id = name) !pattern_variables
+  if List.exists (fun (id, _) -> Ident.name id = name) !pattern_variables
   then raise(Error(loc, Multiply_bound_variable));
   let id = Ident.create name in
   pattern_variables := (id, ty) :: !pattern_variables;
   id
+
+let sort_pattern_variables vs =
+  List.sort
+    (fun (x,_) (y,_) -> Pervasives.compare (Ident.name x) (Ident.name y))
+    vs
+
+let enter_orpat_variables loc env  p1_vs p2_vs =
+  (* unify_vars operate on sorted lists *)
+  
+  let p1_vs = sort_pattern_variables p1_vs
+  and p2_vs = sort_pattern_variables p2_vs in
+
+  let rec unify_vars p1_vs p2_vs = match p1_vs, p2_vs with  
+      | (x1,t1)::rem1, (x2,t2)::rem2 when Ident.equal x1 x2 ->
+          if x1==x2 then
+            unify_vars rem1 rem2
+          else begin
+            begin try
+              unify_strict env t1 t2
+            with
+            | Unify trace ->
+                raise(Error(loc, Pattern_type_clash(trace)))
+            end ;
+          (x2,x1)::unify_vars rem1 rem2
+          end
+      | [],[] -> []
+      | (x,_)::_, [] -> raise (Error (loc, Orpat_vars x))
+      | [],(x,_)::_  -> raise (Error (loc, Orpat_vars x))
+      | (x,_)::_, (y,_)::_ ->
+          let min_var =
+            if Ident.name x < Ident.name y then x
+            else y in
+          raise (Error (loc, Orpat_vars min_var)) in
+  unify_vars p1_vs p2_vs
+
 
 let rec build_as_type env p =
   match p.pat_desc with
@@ -216,16 +251,16 @@ let rec type_pat env sp =
         pat_loc = sp.ppat_loc;
         pat_type = ty;
         pat_env = env }
-  | Ppat_alias(sp, name) ->
-      let p = type_pat env sp in
+  | Ppat_alias(sq, name) ->
+      let q = type_pat env sq in
       begin_def ();
-      let ty_var = build_as_type env p in
+      let ty_var = build_as_type env q in
       end_def ();
       generalize ty_var;
       let id = enter_variable sp.ppat_loc name ty_var in
-      { pat_desc = Tpat_alias(p, id);
+      { pat_desc = Tpat_alias(q, id);
         pat_loc = sp.ppat_loc;
-        pat_type = p.pat_type;
+        pat_type = q.pat_type;
         pat_env = env }
   | Ppat_constant cst ->
       { pat_desc = Tpat_constant cst;
@@ -314,11 +349,15 @@ let rec type_pat env sp =
   | Ppat_or(sp1, sp2) ->
       let initial_pattern_variables = !pattern_variables in
       let p1 = type_pat env sp1 in
+      let p1_variables = !pattern_variables in
+      pattern_variables := initial_pattern_variables ;
       let p2 = type_pat env sp2 in
-      if !pattern_variables != initial_pattern_variables then
-        raise(Error(sp.ppat_loc, Orpat_not_closed));
+      let p2_variables = !pattern_variables in
       unify_pat env p2 p1.pat_type;
-      { pat_desc = Tpat_or(p1, p2);
+      let alpha_env =
+        enter_orpat_variables sp.ppat_loc env p1_variables p2_variables in
+      pattern_variables := p1_variables ;
+      { pat_desc = Tpat_or(p1, alpha_pat alpha_env p2);
         pat_loc = sp.ppat_loc;
         pat_type = p1.pat_type;
         pat_env = env }
@@ -1361,8 +1400,9 @@ let report_error ppf = function
            fprintf ppf "but is here used to match values of type")
   | Multiply_bound_variable ->
       fprintf ppf "This variable is bound several times in this matching"
-  | Orpat_not_closed ->
-      fprintf ppf "A pattern with | must not bind variables"
+  | Orpat_vars id ->
+      fprintf ppf "Variable %s must occur on both sides of this | pattern"
+        (Ident.name id)
   | Expr_type_clash trace ->
       report_unification_error ppf trace
         (function ppf ->

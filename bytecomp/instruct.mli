@@ -114,6 +114,7 @@ type instruction =
   | Koffsetint of int
   | Koffsetref of int
   | Kisint
+  | Kisout
   | Kgetmethod
   | Kevent of debug_event
   | Kstop

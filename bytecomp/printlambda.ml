@@ -144,6 +144,7 @@ let primitive ppf = function
   | Parrayrefs _ -> fprintf ppf "array.get"
   | Parraysets _ -> fprintf ppf "array.set"
   | Pisint -> fprintf ppf "isint"
+  | Pisout -> fprintf ppf "isout"
   | Pbittest -> fprintf ppf "testbit"
   | Pbintofint bi -> print_boxed_integer "of_int" ppf bi
   | Pintofbint bi -> print_boxed_integer "to_int" ppf bi
@@ -236,13 +237,23 @@ let rec lam ppf = function
        lam larg switch sw
   | Lstaticfail ->
       fprintf ppf "exit"
-  | Lstaticraise i  ->
-      fprintf ppf "exit(%d)" i
+  | Lstaticraise (i, ls)  ->
+      let lams ppf largs =
+        List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
+      fprintf ppf "@[<2>(exit@ %d%a)@]" i lams ls;
   | Lcatch(lbody, lhandler) ->
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with@ %a)@]" lam lbody lam lhandler
-  | Lstaticcatch(lbody, i, lhandler) ->
-      fprintf ppf "@[<2>(catch@ %a@;<1 -1>with(%d)@ %a)@]"
-        lam lbody i lam lhandler
+  | Lstaticcatch(lbody, (i, vars), lhandler) ->
+      fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%d%a)@ %a)@]"
+        lam lbody i
+        (fun ppf vars -> match vars with
+          | [] -> ()
+          | _ ->
+              List.iter
+                (fun x -> fprintf ppf " %a" Ident.print x)
+                vars)
+        vars
+        lam lhandler
   | Ltrywith(lbody, param, lhandler) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
         lam lbody Ident.print param lam lhandler

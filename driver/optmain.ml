@@ -146,6 +146,9 @@ let main () =
        "-dlinear", Arg.Set dump_linear, " (undocumented)";
        "-dstartup", Arg.Set keep_startup_file, " (undocumented)";
 
+       "-switch", Arg.Int (fun i -> limit_switch := i), " (undocumented)";
+       "-tree", Arg.Int (fun i -> limit_tree := i), " (undocumented)";
+
        "-", Arg.String (process_file ppf),
             "<file>  Treat <file> as a file name (even if it starts with `-')"
       ] (process_file ppf) usage;

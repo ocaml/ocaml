@@ -108,8 +108,9 @@ void thread_code (code_t code, asize_t len)
 
   /* Instructions with two operands */
   l[APPTERM] = l[CLOSURE] = l[PUSHGETGLOBALFIELD] =
-  l[GETGLOBALFIELD] = l[MAKEBLOCK] = l[C_CALLN] = 2;
-
+  l[GETGLOBALFIELD] = l[MAKEBLOCK] = l[C_CALLN] =
+  l[BEQ] = l[BNEQ] = l[BLTINT] = l[BLEINT] = l[BGTINT] = l[BGEINT] =
+  l[BULTINT] = l[BUGEINT] = 2;
   len /= sizeof(opcode_t);
   for (p = code; p < code + len; /*nothing*/) {
     opcode_t instr = *p;
@@ -117,6 +118,7 @@ void thread_code (code_t code, asize_t len)
       fatal_error_arg ("Fatal error in fix_code: bad opcode (%lx)\n",
                        (char *)(long)instr);
     }
+
     *p++ = (opcode_t)(instr_table[instr] - instr_base);
     if (instr == SWITCH) {
       uint32 sizes = *p++;

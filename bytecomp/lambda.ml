@@ -57,6 +57,8 @@ type primitive =
   | Parraysets of array_kind
   (* Test if the argument is a block or an immediate integer *)
   | Pisint
+  (* Test if the (integer) argument is outside an interval *)
+  | Pisout
   (* Bitvect operations *)
   | Pbittest
   (* Operations on boxed integers (Nativeint.t, Int32.t, Int64.t) *)
@@ -125,8 +127,8 @@ type lambda =
   | Lswitch of lambda * lambda_switch
   | Lstaticfail
   | Lcatch of lambda * lambda
-  | Lstaticraise of int
-  | Lstaticcatch of lambda * int * lambda
+  | Lstaticraise of int * lambda list
+  | Lstaticcatch of lambda * (int * Ident.t list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
   | Lifthenelse of lambda * lambda * lambda
   | Lsequence of lambda * lambda
@@ -207,9 +209,11 @@ let free_variables l =
   | Lstaticfail  -> ()
   | Lcatch(e1, e2) ->
       freevars e1; freevars e2
-  | Lstaticraise _ -> ()
-  | Lstaticcatch(e1, _, e2) ->
-      freevars e1; freevars e2
+  | Lstaticraise (_,args) ->
+      List.iter freevars args
+  | Lstaticcatch(e1, (_,vars), e2) ->
+      freevars e1; freevars e2 ;
+      List.iter (fun id -> fv := IdentSet.remove id !fv) vars        
   | Ltrywith(e1, exn, e2) ->
       freevars e1; freevars e2; fv := IdentSet.remove exn !fv
   | Lifthenelse(e1, e2, e3) ->
@@ -278,7 +282,7 @@ let subst_lambda s lam =
                        sw_blocks = List.map subst_case sw.sw_blocks})
   | Lstaticfail as l -> l
   | Lcatch(e1, e2) -> Lcatch(subst e1, subst e2)
-  | Lstaticraise i as l -> l
+  | Lstaticraise _ as l -> l
   | Lstaticcatch(e1, io, e2) -> Lstaticcatch(subst e1, io, subst e2)
   | Ltrywith(e1, exn, e2) -> Ltrywith(subst e1, exn, subst e2)
   | Lifthenelse(e1, e2, e3) -> Lifthenelse(subst e1, subst e2, subst e3)
@@ -292,3 +296,27 @@ let subst_lambda s lam =
   and subst_decl (id, exp) = (id, subst exp)
   and subst_case (key, case) = (key, subst case)
   in subst lam
+
+
+(* To let-bind expressions to variables *)
+
+let bind str var exp body =
+  match exp with
+    Lvar var' when Ident.same var var' -> body
+  | _ -> Llet(str, var, exp, body)
+
+and commute_comparison = function
+| Ceq -> Ceq| Cneq -> Cneq
+| Clt -> Cgt | Cle -> Cge
+| Cgt -> Clt | Cge -> Cle
+
+and negate_comparison = function
+| Ceq -> Cneq| Cneq -> Ceq
+| Clt -> Cge | Cle -> Cgt
+| Cgt -> Cle | Cge -> Clt
+
+let raise_count = ref 0
+
+let next_raise_count () =
+  incr raise_count ; (* Done before, since 0 is for partial matches *)
+  !raise_count

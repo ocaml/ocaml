@@ -70,3 +70,6 @@ let dump_combine = ref false            (* -dcombine *)
 let native_code = ref false             (* set to true under ocamlopt *)
 
 let inline_threshold = ref 10
+
+let limit_tree = ref 3
+and limit_switch = ref 2
