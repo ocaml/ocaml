@@ -410,7 +410,7 @@ let report_error = function
   | Unbound_modtype lid ->
       print_string "Unbound module type "; longident lid
   | Cannot_apply mty ->
-      open_hovbox 0;
+      open_box 0;
       print_string "This module is not a functor; it has type";
       print_space(); modtype mty;
       close_box()
@@ -420,7 +420,7 @@ let report_error = function
       Includemod.report_error errs;
       close_box()
   | Cannot_eliminate_dependency mty ->
-      open_hovbox 0;
+      open_box 0;
       print_string "This functor has type";
       print_space(); modtype mty; print_space();
       print_string "The parameter cannot be eliminated in the result type.";
@@ -430,18 +430,18 @@ let report_error = function
   | Signature_expected ->
       print_string "This module type is not a signature"
   | Structure_expected mty ->
-      open_hovbox 0;
+      open_box 0;
       print_string "This module is not a structure; it has type";
       print_space(); modtype mty;
       close_box()
   | With_no_component lid ->
-      open_hovbox 0;
+      open_box 0;
       print_string "The signature constrained by `with' has no component named";
       print_space(); longident lid;
       close_box()
   | With_mismatch(lid, explanation) ->
       open_vbox 0;
-      open_hovbox 0;
+      open_box 0;
       print_string "In this `with' constraint, the new definition of";
       print_space(); longident lid; print_space();
       print_string "does not match its original definition";
@@ -451,26 +451,26 @@ let report_error = function
       Includemod.report_error explanation;
       close_box()
   | Repeated_name(kind, name) ->
-      open_hovbox 0;
+      open_box 0;
       print_string "Multiple definition of the "; print_string kind;
       print_string " name "; print_string name; print_string ".";
       print_space();
       print_string "Names must be unique in a given structure.";
       close_box()
   | Non_generalizable typ ->
-      open_hovbox 0;
+      open_box 0;
       print_string "The type of this expression,"; print_space();
       type_scheme typ; print_string ","; print_space();
       print_string "contains type variables that cannot be generalized";
       close_box()
   | Non_generalizable_class (id, desc) ->
-      open_hovbox 0;
+      open_box 0;
       print_string "The type of this class,"; print_space();
       class_type id desc; print_string ","; print_space();
       print_string "contains type variables that cannot be generalized";
       close_box()
   | Non_generalizable_module mty ->
-      open_hovbox 0;
+      open_box 0;
       print_string "The type of this module,"; print_space();
       modtype mty; print_string ","; print_space();
       print_string "contains type variables that cannot be generalized";

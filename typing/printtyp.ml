@@ -147,21 +147,21 @@ let rec typexp sch prio ty =
       else print_string "'_";
       print_string(name_of_type ty)
   | Tarrow(ty1, ty2) ->
-      if prio >= 1 then begin open_hovbox 1; print_string "(" end
-                   else open_hovbox 0;
+      if prio >= 1 then begin open_box 1; print_string "(" end
+                   else open_box 0;
       typexp sch 1 ty1;
       print_string " ->"; print_space();
       typexp sch 0 ty2;
       if prio >= 1 then print_string ")";
       close_box()
   | Ttuple tyl ->
-      if prio >= 2 then begin open_hovbox 1; print_string "(" end
-                   else open_hovbox 0;
+      if prio >= 2 then begin open_box 1; print_string "(" end
+                   else open_box 0;
       typlist sch 2 " *" tyl;
       if prio >= 2 then print_string ")";
       close_box()
   | Tconstr(p, tyl, abbrev) ->
-      open_hovbox 0;
+      open_box 0;
       begin try
         List.assq ty !names;
         print_string "'";
@@ -169,15 +169,15 @@ let rec typexp sch prio ty =
       with Not_found ->
         if List.memq ty !aliased then begin
           name_of_type ty;
-          if prio >= 1 then begin open_hovbox 1; print_string "(" end
+          if prio >= 1 then begin open_box 1; print_string "(" end
 	end;
-        open_hovbox 0;
+        open_box 0;
         begin match tyl with
           [] -> ()
         | [ty1] ->
             typexp sch 2 ty1; print_space()
         | tyl ->
-            open_hovbox 1; print_string "("; typlist sch 0 "," tyl;
+            open_box 1; print_string "("; typlist sch 0 "," tyl;
             print_string ")"; close_box(); print_space()
         end;
         path p;
@@ -211,24 +211,24 @@ and typobject sch prio ty fi nm =
   with Not_found ->
     if List.memq ty !aliased then begin
       name_of_type ty;
-      if prio >= 1 then begin open_hovbox 1; print_string "(" end
+      if prio >= 1 then begin open_box 1; print_string "(" end
     end;
     begin match !nm with
       None ->
-        open_hovbox 2;
+        open_box 2;
         print_string "< ";
         (let (fields, rest) = flatten_fields fi in
            typfields sch rest fields);
         print_string " >";
         close_box ()
     | Some (p, {desc = Tvar}::tyl) ->
-        open_hovbox 0;
+        open_box 0;
         begin match tyl with
           [] -> ()
         | [ty1] ->
             typexp sch 2 ty1; print_space()
         | tyl ->
-            open_hovbox 1; print_string "("; typlist sch 0 "," tyl;
+            open_box 1; print_string "("; typlist sch 0 "," tyl;
             print_string ")"; close_box(); print_space()
         end;
 	if sch & ty.level <> generic_level then
@@ -323,7 +323,7 @@ and constructor (name, args) =
   match args with
     [] -> ()
   | _  -> print_string " of ";
-          open_hovbox 2; typlist false 2 " *" args; close_box()
+          open_box 2; typlist false 2 " *" args; close_box()
 
 and label (name, mut, arg) =
   begin match mut with
@@ -342,7 +342,7 @@ let exception_declaration id decl =
 (* Print a value declaration *)
 
 let value_description id decl =
-  open_hovbox 2;
+  open_box 2;
   print_string "val "; ident id; print_string " :"; print_space();
   type_scheme decl.val_type;
   begin match decl.val_kind with
@@ -356,13 +356,13 @@ let value_description id decl =
 
 let class_arg arg =
   print_space ();
-  open_hovbox 1; print_string "(";
+  open_box 1; print_string "(";
   type_sch arg;
   print_string ")"; close_box ()
 
 let constrain (v, ty) =
   print_space ();
-  open_hovbox 2;
+  open_box 2;
   print_string "constraint ";
   type_sch v;
   print_string " =";
@@ -372,7 +372,7 @@ let constrain (v, ty) =
 
 let class_var l (m, t) =
   print_space ();
-  open_hovbox 2;
+  open_box 2;
   print_string "val ";
   begin match m with
     Immutable -> ()
@@ -386,7 +386,7 @@ let class_var l (m, t) =
 
 let metho kind (l, t) =
   print_space ();
-  open_hovbox 2;
+  open_box 2;
   print_string kind;
   print_string l;
   print_string " :";
@@ -430,7 +430,7 @@ let class_type id cl_ty =
   List.iter (fun (_, ty) -> mark_loops ty) cstr;
   Vars.iter (fun _ (_, ty) -> mark_loops ty) vars;
   open_hvbox 2;
-  open_hovbox 0;
+  open_box 0;
   print_string "class ";
   if cl_ty.cty_new = None then
     print_string "virtual ";
@@ -476,7 +476,7 @@ let rec modtype = function
       print_break 1 (-2); print_string "end";
       close_box()
   | Tmty_functor(param, ty_arg, ty_res) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "functor"; print_cut();
       print_string "("; ident param; print_string " : ";
       modtype ty_arg;
@@ -497,7 +497,7 @@ and signature_body spc = function
         | Tsig_exception(id, decl)  ->
             exception_declaration id decl; rem
         | Tsig_module(id, mty)  ->
-            open_hovbox 2; print_string "module "; ident id; print_string " :";
+            open_box 2; print_string "module "; ident id; print_string " :";
             print_space(); modtype mty; close_box(); rem
         | Tsig_modtype(id, decl)  ->
             modtype_declaration id decl; rem
@@ -507,7 +507,7 @@ and signature_body spc = function
       in signature_body true cont
 
 and modtype_declaration id decl =
-  open_hovbox 2; print_string "module type "; ident id;
+  open_box 2; print_string "module type "; ident id;
   begin match decl with
     Tmodtype_abstract -> ()
   | Tmodtype_manifest mty ->
@@ -529,7 +529,7 @@ let type_expansion t t' =
   if t == t' then
     type_expr t
   else begin
-    open_hovbox 2;
+    open_box 2;
     type_expr t;
     print_space (); print_string "="; print_space ();
     type_expr t';

@@ -40,7 +40,7 @@ let instruction = function
   | Kgetglobal id -> print_string "\tgetglobal "; Ident.print id
   | Ksetglobal id -> print_string "\tsetglobal "; Ident.print id
   | Kconst cst ->
-      open_hovbox 10; print_string "\tconst"; print_space();
+      open_box 10; print_string "\tconst"; print_space();
       Printlambda.structured_constant cst; close_box()
   | Kmakeblock(n, m) ->
       print_string "\tmakeblock "; print_int n; print_string ", "; print_int m
@@ -60,7 +60,7 @@ let instruction = function
   | Kstrictbranchifnot lbl ->
       print_string "\tstrictbranchifnot L"; print_int lbl
   | Kswitch(consts, blocks) ->
-      open_hovbox 10;
+      open_box 10;
       print_string "\tswitch";
       Array.iter (fun lbl -> print_space(); print_int lbl) consts;
       print_string "/";

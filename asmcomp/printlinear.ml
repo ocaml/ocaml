@@ -27,7 +27,7 @@ let instr i =
   | Lop op ->
       begin match op with
         Ialloc _ | Icall_ind | Icall_imm _ | Iextcall(_, _) ->
-          open_hovbox 1;
+          open_box 1;
           print_string "{";
           regsetaddr i.live;
           print_string "}";

@@ -19,7 +19,7 @@ open Location
 (* Report an error *)
 
 let report_error exn =
-  open_hovbox 0;
+  open_box 0;
   begin match exn with
     Lexer.Error(err, start, stop) ->
       Location.print {loc_start = start; loc_end = stop};

@@ -25,7 +25,7 @@ let print_digest d =
 
 let rec print_approx = function
     Value_closure(fundesc, approx) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "function "; print_string fundesc.fun_label;
       print_space(); print_string "arity "; print_int fundesc.fun_arity;
       if fundesc.fun_closed then begin
@@ -54,24 +54,24 @@ let print_infos (ui, crc) =
   print_string "Name: "; print_string ui.ui_name; print_newline();
   print_string "CRC of implementation: "; print_digest crc; print_newline();
   print_string "CRC of interface: "; print_digest ui.ui_interface; print_newline();
-  open_hovbox 2;
+  open_box 2;
   print_string "Interfaces imported:";
   List.iter print_name_crc ui.ui_imports_cmi;
   close_box(); print_newline();
-  open_hovbox 2;
+  open_box 2;
   print_string "Implementations imported:";
   List.iter print_name_crc ui.ui_imports_cmx;
   close_box(); print_newline();
-  open_hovbox 2;
+  open_box 2;
   print_string "Approximation:"; print_space(); print_approx ui.ui_approx;
   close_box(); print_newline();
-  open_hovbox 2;
+  open_box 2;
   print_string "Currying functions:";
   List.iter
     (fun arity -> print_space(); print_int arity)
     ui.ui_curry_fun;
   close_box(); print_newline();
-  open_hovbox 2;
+  open_box 2;
   print_string "Apply functions:";
   List.iter
     (fun arity -> print_space(); print_int arity)

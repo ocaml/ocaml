@@ -30,10 +30,10 @@ let rec structured_constant = function
   | Const_block(tag, []) ->
       print_string "["; print_int tag; print_string "]"
   | Const_block(tag, sc1::scl) ->
-      open_hovbox 1;
+      open_box 1;
       print_string "["; print_int tag; print_string ":";
       print_space();
-      open_hovbox 0;
+      open_box 0;
       structured_constant sc1;
       List.iter (fun sc -> print_space(); structured_constant sc) scl;
       close_box();
@@ -42,9 +42,9 @@ let rec structured_constant = function
   | Const_float_array [] ->
       print_string "[| |]"
   | Const_float_array (f1 :: fl) ->
-      open_hovbox 1;
+      open_box 1;
       print_string "[|";
-      open_hovbox 0;
+      open_box 0;
       print_string f1;
       List.iter (fun f -> print_space(); print_string f) fl;
       close_box();
@@ -119,14 +119,14 @@ let rec lambda = function
   | Lconst cst ->
       structured_constant cst
   | Lapply(lfun, largs) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(apply"; print_space();
       lambda lfun;
       List.iter (fun l -> print_space(); lambda l) largs;
       print_string ")";
       close_box()
   | Lfunction(kind, params, body) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(function";
       begin match kind with
         Curried ->
@@ -144,16 +144,16 @@ let rec lambda = function
       end;
       print_space(); lambda body; print_string ")"; close_box()
   | Llet(str, id, arg, body) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(let"; print_space();
       open_hvbox 1;
       print_string "(";
-      open_hovbox 2; Ident.print id; print_space(); lambda arg; close_box();
+      open_box 2; Ident.print id; print_space(); lambda arg; close_box();
       letbody body;
       print_string ")";
       close_box()
   | Lletrec(id_arg_list, body) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(letrec"; print_space();
       print_string "(";
       open_hvbox 1;
@@ -161,7 +161,7 @@ let rec lambda = function
       List.iter
         (fun (id, l) ->
           if !spc then print_space() else spc := true;
-          open_hovbox 2;
+          open_box 2;
           Ident.print id; print_space(); lambda l;
           close_box())
         id_arg_list;
@@ -170,13 +170,13 @@ let rec lambda = function
       print_space(); lambda body;
       print_string ")"; close_box()
   | Lprim(prim, largs) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "("; primitive prim;
       List.iter (fun l -> print_space(); lambda l) largs;
       print_string ")";
       close_box()
   | Lswitch(larg, sw) ->
-      open_hovbox 1;
+      open_box 1;
       print_string (if sw.sw_checked then "(switch-checked " else "(switch ");
       lambda larg; print_space();
       open_vbox 0;
@@ -203,14 +203,14 @@ let rec lambda = function
   | Lstaticfail ->
       print_string "exit"
   | Lcatch(lbody, lhandler) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(catch"; print_space();
       lambda lbody; print_break 1 (-1);
       print_string "with"; print_space(); lambda lhandler;
       print_string ")";
       close_box()
   | Ltrywith(lbody, param, lhandler) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(try"; print_space();
       lambda lbody; print_break 1 (-1);
       print_string "with "; Ident.print param; print_space();
@@ -218,25 +218,25 @@ let rec lambda = function
       print_string ")";
       close_box()
   | Lifthenelse(lcond, lif, lelse) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(if"; print_space();
       lambda lcond; print_space();
       lambda lif; print_space();
       lambda lelse; print_string ")";
       close_box()
   | Lsequence(l1, l2) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(seq"; print_space();
       lambda l1; print_space(); sequence l2; print_string ")";
       close_box()
   | Lwhile(lcond, lbody) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(while"; print_space();
       lambda lcond; print_space();
       lambda lbody; print_string ")";
       close_box()
   | Lfor(param, lo, hi, dir, body) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(for "; Ident.print param; print_space();
       lambda lo; print_space();
       print_string(match dir with Upto -> "to" | Downto -> "downto");
@@ -245,13 +245,13 @@ let rec lambda = function
       lambda body; print_string ")";
       close_box()
   | Lassign(id, expr) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(assign"; print_space();
       Ident.print id; print_space();
       lambda expr; print_string ")";
       close_box()
   | Lsend (met, obj, largs) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(send"; print_space();
       lambda obj; print_space();
       lambda met;
@@ -259,7 +259,7 @@ let rec lambda = function
       print_string ")";
       close_box()
   | Levent(lam, ev) ->
-      open_hovbox 2;
+      open_box 2;
       begin match ev.lev_kind with
         Lev_before  -> print_string "(before "
       | Lev_after _ -> print_string "(after "
@@ -279,7 +279,7 @@ and sequence = function
 and letbody = function
     Llet(str, id, arg, body) ->
       print_space();
-      open_hovbox 2; Ident.print id; print_space(); lambda arg;
+      open_box 2; Ident.print id; print_space(); lambda arg;
       close_box();
       letbody body
   | l ->

@@ -257,7 +257,7 @@ let report_error = function
       print_string "The file "; print_string name;
       print_string " is not a compilation unit description"
   | Missing_implementations l ->
-      open_hovbox 0;
+      open_box 0;
       print_string
         "No implementation(s) provided for the following module(s):";
       List.iter (fun s -> print_space(); print_string s) l;

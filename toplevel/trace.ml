@@ -63,17 +63,17 @@ let rec instrument_closure env name clos_typ =
       let trace_res = instrument_closure env starred_name t2 in
       (fun clos_val ->
         Obj.repr(fun arg ->
-          open_hovbox 2;
+          open_box 2;
           Printtyp.longident name; print_string " <--"; print_space();
           print_value !toplevel_env arg t1; close_box(); print_newline();
           try
             let res = (Obj.magic clos_val : Obj.t -> Obj.t)(arg) in
-            open_hovbox 2;
+            open_box 2;
             Printtyp.longident name; print_string " -->"; print_space();
             print_value !toplevel_env res t2; close_box(); print_newline();
             trace_res res
           with exn ->
-            open_hovbox 2;
+            open_box 2;
             Printtyp.longident name; print_string " raises"; print_space();
             print_exception (Obj.repr exn); close_box(); print_newline();
             raise exn))

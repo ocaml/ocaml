@@ -64,7 +64,7 @@ let load_lambda lam =
 
 let rec print_items env = function
     Tsig_value(id, decl)::rem ->
-      open_hovbox 2;
+      open_box 2;
       begin match decl.val_kind with
         Val_prim p ->
           print_string "external "; Printtyp.ident id;
@@ -87,7 +87,7 @@ let rec print_items env = function
       Printtyp.exception_declaration id decl;
       print_space (); print_items env rem
   | Tsig_module(id, mty)::rem ->
-      open_hovbox 2; print_string "module "; Printtyp.ident id;
+      open_box 2; print_string "module "; Printtyp.ident id;
       print_string " :"; print_space(); Printtyp.modtype mty; close_box();
       print_space (); print_items env rem
   | Tsig_modtype(id, decl)::rem ->
@@ -109,7 +109,7 @@ let print_exception_outcome = function
       print_string "Out of memory during evaluation";
       print_newline()
   | exn ->
-      open_hovbox 0;
+      open_box 0;
       print_string "Uncaught exception: ";
       print_exception (Obj.repr exn);
       print_newline()
@@ -133,7 +133,7 @@ let execute_phrase phr =
         Result v ->
           begin match str with
             [Tstr_eval exp] ->
-              open_hovbox 0;
+              open_box 0;
               print_string "- : ";
               Printtyp.type_scheme exp.exp_type;
               print_space(); print_string "="; print_space();

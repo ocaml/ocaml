@@ -94,7 +94,7 @@ let print print_key print_data tbl =
   open_hvbox 2;
   print_string "[[";
   iter (fun k d ->
-          open_hovbox 2;
+          open_box 2;
           print_key k; print_string " ->"; print_space();
           print_data d; print_string ";";
           close_box(); print_space())

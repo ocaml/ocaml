@@ -270,7 +270,7 @@ let report_error = function
   | Unbound_type_constructor lid ->
       print_string "Unbound type constructor "; longident lid
   | Type_arity_mismatch(lid, expected, provided) ->
-      open_hovbox 0;
+      open_box 0;
       print_string "The type constructor "; longident lid;
       print_space(); print_string "expects "; print_int expected;
       print_string " argument(s),"; print_space();
@@ -288,7 +288,7 @@ let report_error = function
   | Type_mismatch (ty, ty') ->
       Printtyp.reset ();
       Printtyp.mark_loops ty; Printtyp.mark_loops ty';
-      open_hovbox 0;
+      open_box 0;
       print_string "This parameter ";
       Printtyp.type_expr ty';
       print_string " should be an instance of ";

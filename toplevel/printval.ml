@@ -29,7 +29,7 @@ open Types
 let print_exception obj =
   print_string (Obj.magic(Obj.field(Obj.field obj 0) 0) : string);
   if Obj.size obj > 1 then begin
-    open_hovbox 1;
+    open_box 1;
     print_string "(";
     for i = 1 to Obj.size obj - 1 do
       if i > 1 then begin print_string ","; print_space() end;
@@ -140,15 +140,15 @@ let print_value env obj ty =
           print_string "<fun>"
       | Ttuple(ty_list) ->
           if prio > 0
-          then begin open_hovbox 1; print_string "(" end
-          else open_hovbox 0;
+          then begin open_box 1; print_string "(" end
+          else open_box 0;
           print_val_list 1 depth obj ty_list;
           if prio > 0 then print_string ")";
           close_box()
       | Tconstr(path, [], _) when Path.same path Predef.path_exn ->
           if prio > 1
-          then begin open_hovbox 2; print_string "(" end
-          else open_hovbox 1;
+          then begin open_box 2; print_string "(" end
+          else open_box 1;
           print_exception obj;
           if prio > 1 then print_string ")";
           close_box()
@@ -162,7 +162,7 @@ let print_value env obj ty =
                 print_conses (depth - 1) next_obj
               end
             end in
-          open_hovbox 1;
+          open_box 1;
           print_string "[";
           cautious (print_conses depth) obj;
           print_string "]";
@@ -174,7 +174,7 @@ let print_value env obj ty =
               print_val 0 (depth - 1) (Obj.field obj i) ty_arg;
               print_items (depth - 1) (i + 1)
             end in
-          open_hovbox 2;
+          open_box 2;
           print_string "[|";
           cautious (print_items depth) 0;
           print_string "|]";
@@ -203,8 +203,8 @@ let print_value env obj ty =
                     print_constr env path constr_name
                 | [ty1] ->
                     if prio > 1
-                    then begin open_hovbox 2; print_string "(" end
-                    else open_hovbox 1;
+                    then begin open_box 2; print_string "(" end
+                    else open_box 1;
                     print_constr env path constr_name;
                     print_space();
                     cautious (print_val 2 (depth - 1) (Obj.field obj 0)) ty1;
@@ -212,11 +212,11 @@ let print_value env obj ty =
                     close_box()
                 | tyl ->
                     if prio > 1
-                    then begin open_hovbox 2; print_string "(" end
-                    else open_hovbox 1;
+                    then begin open_box 2; print_string "(" end
+                    else open_box 1;
                     print_constr env path constr_name;
                     print_space();
-                    open_hovbox 1;
+                    open_box 1;
                     print_string "(";
                     print_val_list 1 depth obj tyl;
                     print_string ")";
@@ -229,7 +229,7 @@ let print_value env obj ty =
                   [] -> ()
                 | (lbl_name, _, lbl_arg) :: remainder ->
                     if pos > 0 then begin print_string ";"; print_space() end;
-                    open_hovbox 1;
+                    open_box 1;
                     print_label env path lbl_name;
                     print_string "="; print_cut();
                     let ty_arg =
@@ -238,7 +238,7 @@ let print_value env obj ty =
                              ty_arg;
                     close_box();
                     print_fields (depth - 1) (pos + 1) remainder in
-                open_hovbox 1;
+                open_box 1;
                 print_string "{";
                 cautious (print_fields depth 0) lbl_list;
                 print_string "}";

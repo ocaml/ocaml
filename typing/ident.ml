@@ -167,10 +167,10 @@ and iter_node fn k =
   match k.previous with None -> () | Some prev_k -> iter_node fn prev_k
 
 let print_tbl print_elt tbl =
-  open_hovbox 2;
+  open_box 2;
   print_string "[[";
   iter (fun id data -> 
-          open_hovbox 2;
+          open_box 2;
           print id; print_string " ->"; print_space(); print_elt data;
           print_string ";"; close_box(); print_space())
        tbl;

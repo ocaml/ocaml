@@ -313,7 +313,7 @@ let include_err = function
   | Modtype_permutation ->
       print_string "Illegal permutation of structure fields"
   | Interface_mismatch(impl_name, intf_name) ->
-      open_hovbox 0;
+      open_box 0;
       print_string "The implementation "; print_string impl_name;
       print_space(); print_string "does not match the interface ";
       print_string intf_name;

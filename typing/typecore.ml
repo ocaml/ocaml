@@ -796,7 +796,7 @@ let report_error = function
   | Unbound_label lid ->
       print_string "Unbound label "; longident lid
   | Constructor_arity_mismatch(lid, expected, provided) ->
-      open_hovbox 0;
+      open_box 0;
       print_string "The constructor "; longident lid;
       print_space(); print_string "expects "; print_int expected;
       print_string " argument(s),"; print_space();

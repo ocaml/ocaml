@@ -147,7 +147,7 @@ let operation op arg res =
 
 let rec instr i =
   if !print_live then begin
-    open_hovbox 1;
+    open_box 1;
     print_string "{";
     regsetaddr i.live;
     if Array.length i.arg > 0 then begin
@@ -178,7 +178,7 @@ let rec instr i =
       for i = 0 to Array.length cases - 1 do
         print_cut();
         open_vbox 2;
-        open_hovbox 0;
+        open_box 0;
         for j = 0 to Array.length index - 1 do
           if index.(j) = i then begin
             print_string "case "; print_int j; print_string ":";
@@ -235,7 +235,7 @@ let phase msg f =
   fundecl f; print_newline()
 
 let interference r =
-  open_hovbox 2;
+  open_box 2;
   reg r; print_string ":";
   List.iter
     (fun r -> print_space(); reg r)
@@ -248,7 +248,7 @@ let interferences () =
   List.iter interference (Reg.all_registers())
 
 let preference r =
-  open_hovbox 2;
+  open_box 2;
   reg r; print_string ": ";
   List.iter
     (fun (r, w) -> print_space(); reg r; print_string " weight " ; print_int w)

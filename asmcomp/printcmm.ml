@@ -90,17 +90,17 @@ let rec expression = function
   | Cconst_pointer n -> print_int n; print_string "a"
   | Cvar id -> Ident.print id
   | Clet(id, def, (Clet(_, _, _) as body)) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(let"; print_space();
-      open_hovbox 1;
+      open_box 1;
       print_string "(";
-      open_hovbox 2;
+      open_box 2;
       Ident.print id; print_space(); expression def;
       close_box();
       let rec letdef = function
         Clet(id, def, body) ->
           print_space();
-          open_hovbox 2;
+          open_box 2;
           Ident.print id; print_space(); expression def;
           close_box();
           letdef body
@@ -110,22 +110,22 @@ let rec expression = function
       in letdef body;
       print_string ")"; close_box()
   | Clet(id, def, body) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(let"; print_space();
-      open_hovbox 2;
+      open_box 2;
       Ident.print id; print_space(); expression def;
       close_box(); print_space();
       sequence body;
       print_string ")"; close_box()
   | Cassign(id, exp) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(assign ";
-      open_hovbox 2;
+      open_box 2;
       Ident.print id; print_space(); expression exp;
       close_box();
       print_string ")"; close_box()
   | Ctuple el ->
-      open_hovbox 1;
+      open_box 1;
       print_string "[";
       let first = ref true in
       List.iter
@@ -136,7 +136,7 @@ let rec expression = function
       print_string "]";
       close_box()
   | Cop(op, el) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "("; operation op;
       List.iter (fun e -> print_space(); expression e) el;
       begin match op with
@@ -148,12 +148,12 @@ let rec expression = function
       print_string ")";
       close_box()
   | Csequence(e1, e2) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(seq "; print_space();
       sequence e1; print_space();
       sequence e2; print_string ")"; close_box()
   | Cifthenelse(e1, e2, e3) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(if";
       print_space(); expression e1;
       print_space(); expression e2;
@@ -161,12 +161,12 @@ let rec expression = function
       print_string ")"; close_box()
   | Cswitch(e1, index, cases) ->
       open_vbox 0;
-      open_hovbox 2;
+      open_box 2;
       print_string "(switch"; print_space(); expression e1; print_space();
       close_box();
       for i = 0 to Array.length cases - 1 do
         print_space();
-        open_hovbox 2;
+        open_box 2;
         for j = 0 to Array.length index - 1 do
           if index.(j) = i then begin
             print_string "case "; print_int j; print_string ":"; print_space()
@@ -177,12 +177,12 @@ let rec expression = function
       done;
       close_box()
   | Cloop e ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(loop";
       print_space(); sequence e;
       print_string ")"; close_box()
   | Ccatch(e1, e2) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(catch";
       print_space(); sequence e1;
       print_break 1 (-2); print_string "with";
@@ -191,7 +191,7 @@ let rec expression = function
   | Cexit ->
       print_string "exit"
   | Ctrywith(e1, id, e2) ->
-      open_hovbox 2;
+      open_box 2;
       print_string "(try";
       print_space(); sequence e1;
       print_break 1 (-2); print_string "with "; Ident.print id;
@@ -205,9 +205,9 @@ and sequence = function
       expression e
 
 let fundecl f =
-  open_hovbox 1;
+  open_box 1;
   print_string "(function "; print_string f.fun_name; print_break 1 4;
-  open_hovbox 1;
+  open_box 1;
   print_string "(";
   let first = ref true in
   List.iter
@@ -216,7 +216,7 @@ let fundecl f =
       Ident.print id; print_string ": "; machtype ty)
     f.fun_args;
   print_string ")"; close_box(); print_space();
-  open_hovbox 0;
+  open_box 0;
   sequence f.fun_body;
   print_string ")";
   close_box(); close_box(); print_newline()
