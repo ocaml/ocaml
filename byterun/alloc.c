@@ -54,6 +54,7 @@ value alloc_string (len)
     Alloc_small (result, wosize, String_tag);
   }else{
     result = alloc_shr (wosize, String_tag);
+    result = check_urgent_gc (result);
   }
   Field (result, wosize - 1) = 0;
   offset_index = Bsize_wsize (wosize) - 1;
@@ -70,6 +71,7 @@ value alloc_final (len, fun, mem, max)
 
   Field (result, 0) = (value) fun;
   adjust_gc_speed (mem, max);
+  result = check_urgent_gc (result);
   return result;
 }
 

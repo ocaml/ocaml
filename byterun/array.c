@@ -63,12 +63,14 @@ value make_vect(len, init)      /* ML */
     res = alloc_shr(size, 0);
     init = root[0];
     for (i = 0; i < size; i++) Field(res, i) = init;
+    res = check_urgent_gc (res);
   }
   else {
     root[0] = init;
     res = alloc_shr(size, 0);
     init = root[0];
     for (i = 0; i < size; i++) initialize(&Field(res, i), init);
+    res = check_urgent_gc (res);
   }
   Pop_roots();
   return res;

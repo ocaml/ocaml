@@ -28,6 +28,7 @@ value alloc_shr P((mlsize_t, tag_t));
 void adjust_gc_speed P((mlsize_t, mlsize_t));
 void modify P((value *, value));
 void initialize P((value *, value));
+value check_urgent_gc P((value));
 char * stat_alloc P((asize_t));	             /* Size in bytes. */
 void stat_free P((char *));
 char * stat_resize P((char *, asize_t));     /* Size in bytes. */

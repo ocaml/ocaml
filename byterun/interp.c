@@ -691,7 +691,6 @@ value interprete(prog, prog_size)
     process_signal:
       something_to_do = 0;
       if (force_major_slice){
-	force_major_slice = 0;
 	Setup_for_gc;
 	minor_collection ();
 	Restore_after_gc;

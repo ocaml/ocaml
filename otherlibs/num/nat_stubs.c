@@ -29,7 +29,7 @@ value create_nat(size)	/* ML */
   if (sz < Max_young_wosize) {
     return alloc(sz, Nat_tag);
   } else {
-    return alloc_shr(sz, Nat_tag);
+    return check_urgent_gc(alloc_shr(sz, Nat_tag));
   }
 }
 

@@ -142,6 +142,19 @@ void minor_collection ()
   force_major_slice = 0;
 }
 
+value check_urgent_gc (extra_root)
+     value extra_root;
+{
+  if (force_major_slice) {
+    Push_roots(r, 1);
+    r[0] = extra_root;
+    minor_collection();
+    extra_root = r[0];
+    Pop_roots();
+  }
+  return extra_root;
+}
+
 void realloc_ref_table ()
 {                                 Assert (ref_table_ptr == ref_table_limit);
                                   Assert (ref_table_limit <= ref_table_end);
