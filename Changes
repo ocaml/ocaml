@@ -76,10 +76,11 @@ Runtime System:
   with "caml" to avoid name clashes with other libraries.
 
 Ports:
-- Removed support for MacOS9.  Mac OS 9 port is obsolete and the port
-  was not updated since 3.05.
-- Native-code compilation supported for HPPA/Linux.
-  (Contributed by Guy Martin.)
+- Windows ports: many improvements in the OCamlWin toplevel application
+  (history, save inputs to file, etc).  Contributed by Christopher A. Watford.
+- Native-code compilation supported for HPPA/Linux. Contributed by Guy Martin.
+- Removed support for MacOS9.  Mac OS 9 is obsolete and the port was not
+  updated since 3.05.
 - Removed ocamlopt support for HPPA/Nextstep.
 
 Ocamllex:

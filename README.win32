@@ -149,7 +149,8 @@ The initial port of Caml Special Light (the ancestor of Objective Caml)
 to Windows NT was done by Kevin Gallo at Microsoft Research, who
 kindly contributed his changes to the Caml project.
 
-The graphical user interface for the toplevel is due to Jacob Navia.
+The graphical user interface for the toplevel was initially developed
+by Jacob Navia, then significantly improved by Christopher A. Watford.
 
 ------------------------------------------------------------------------------
 
