@@ -354,6 +354,12 @@ allocation in the heap. That is, if a signal is delivered while in a
 piece of code that does not allocate, its handler will not be called
 until the next heap allocation.
 
+\item The exception raised by an out-of-bounds array or string
+access is not the same.  Currently, in bytecode it is
+"Invalid_argument(\"Array.get\")"
+or "Invalid_argument(\"String.get\")", while in native code it
+is "Invalid_argument(\"out-of-bound array or string access\")".
+
 \end{itemize}
 
 The best way to avoid running into those incompatibilities is to {\em
