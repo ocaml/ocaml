@@ -523,8 +523,8 @@ let make_setp stp char_set =
 let scan_chars_in_char_set stp char_set max ib =
   let setp = make_setp stp char_set in
   let rec loop max =
+    let c = Scanning.cautious_peek_char ib in
     if max = 0 || Scanning.end_of_input ib then max else
-    let c = Scanning.checked_peek_char ib in
     if setp c then loop (Scanning.store_char ib c max) else
     max in
   let max = loop max in
