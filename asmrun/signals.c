@@ -35,6 +35,18 @@
   (((unsigned long *)((ctx)->sc_regs))[2 + (regno)])
 #endif
 
+#if defined(TARGET_power) && defined(SYS_aix)
+#ifdef _AIXVERSION_430
+#define STRUCT_SIGCONTEXT struct __sigcontext
+#define CONTEXT_GPR(ctx, regno) \
+  ((ctx)->__sc_jmpbuf.__jmp_context.__gpr[regno])
+#else
+#define STRUCT_SIGCONTEXT struct sigcontext
+#define CONTEXT_GPR(ctx, regno) \
+  ((ctx)->sc_jmpbuf.jmp_context.gpr[regno])
+#endif
+#endif
+
 volatile int async_signal_mode = 0;
 volatile int pending_signal = 0;
 volatile int force_major_slice = 0;
@@ -127,7 +139,7 @@ void leave_blocking_section(void)
 #if defined(TARGET_alpha) || defined(TARGET_mips)
 void handle_signal(int sig, int code, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(SYS_aix)
-void handle_signal(int sig, int code, struct sigcontext * context)
+void handle_signal(int sig, int code, STRUCT_SIGCONTEXT * context)
 #elif defined(TARGET_power) && defined(SYS_elf)
 void handle_signal(int sig, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(SYS_rhapsody)
@@ -165,7 +177,7 @@ void handle_signal(int sig)
 #endif
 #if defined(TARGET_power) && defined(SYS_aix)
       /* Cached in register 30 */
-      context->sc_jmpbuf.jmp_context.gpr[30] = (ulong_t) young_limit;
+      CONTEXT_GPR(context, 30) = (ulong_t) young_limit;
 #endif
 #if defined(TARGET_power) && defined(SYS_elf)
       /* Cached in register 30 */
@@ -367,7 +379,7 @@ static void trap_handler(int sig)
 #endif
 
 #if defined(TARGET_power) && defined(SYS_aix)
-static void trap_handler(int sig, int code, struct sigcontext * context)
+static void trap_handler(int sig, int code, STRUCT_SIGCONTEXT * context)
 {
   /* Unblock SIGTRAP */
   sigset_t mask;
@@ -375,8 +387,8 @@ static void trap_handler(int sig, int code, struct sigcontext * context)
   sigaddset(&mask, SIGTRAP);
   sigprocmask(SIG_UNBLOCK, &mask, NULL);
   /* Recover young_ptr and caml_exception_pointer from registers 31 and 29 */
-  caml_exception_pointer = (char *) context->sc_jmpbuf.jmp_context.gpr[29];
-  young_ptr = (char *) context->sc_jmpbuf.jmp_context.gpr[31];
+  caml_exception_pointer = (char *) CONTEXT_GPR(context, 29);
+  young_ptr = (char *) CONTEXT_GPR(context, 31);
   array_bound_error();
 }
 #endif

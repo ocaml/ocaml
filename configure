@@ -193,8 +193,6 @@ case "$bytecc,$host" in
     bytecclinkopts="-Wl,-T,12000000 -Wl,-D,14000000"
     # Tell gcc that we can use 32-bit code addresses for threaded code
     echo "#define ARCH_CODE32" >> m.h;;
-  gcc*)
-    bytecccompopts="-fno-defer-pop $gcc_warnings";;
   cc,mips-*-irix6*)
     # Add -n32 flag to ensure compatibility with native-code compiler
     bytecccompopts="-n32"
@@ -207,6 +205,13 @@ case "$bytecc,$host" in
   *,alpha-*-unicos*)
     # For the Cray T3E
     bytecccompopts="-DUMK";;
+  gcc*,powerpc-*-aix4.3*)
+    # Avoid name-space pollution by requiring Unix98-conformant includes
+    bytecccompopts="-fno-defer-pop $gcc_warnings -D_XOPEN_SOURCE=500";;
+  *,powerpc-*-aix4.3*)
+    bytecccompopts="-D_XOPEN_SOURCE=500";;
+  gcc*)
+    bytecccompopts="-fno-defer-pop $gcc_warnings";;
 esac
 
 # Configure compiler to use in further tests
@@ -371,6 +376,10 @@ case "$arch,$nativecc,$system,$host_type" in
   hppa,gcc*,hpux,*hpux10*)
                        nativecccompopts="$gcc_warnings"
                        nativecclinkopts="-Wl,+vnocompatwarnings";;
+  power,gcc*,aix,*aix4.3*)
+                       nativecccompopts="$gcc_warnings -D_XOPEN_SOURCE=500";;
+  power,*,aix,*aix4.3*)
+                       nativecccompopts="-D_XOPEN_SOURCE=500";;
   *,*,nextstep,*)      nativecccompopts="$gcc_warnings -U__GNUC__ -posix"
                        nativecclinkopts="-posix";;
   *,*,rhapsody,*)      nativecccompopts="$gcc_warnings -DSHRINKED_GNUC";;

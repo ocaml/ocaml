@@ -21,6 +21,10 @@
 #include <signals.h>
 #include "unixsupport.h"
 
+#ifndef NSIG
+#define NSIG 32
+#endif
+
 #ifdef POSIX_SIGNALS
 
 static void decode_sigset(value vset, sigset_t * set)

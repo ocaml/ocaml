@@ -48,16 +48,6 @@
 #include <sys/select.h>
 #endif
 
-#ifndef FD_ISSET
-/* Assume old-style BSD 4.2 fd sets */
-typedef int fd_set;
-#define FD_SETSIZE (sizeof(int) * 8)
-#define FD_SET(fd,fds) (*(fds) |= 1 << (fd))
-#define FD_CLR(fd,fds) (*(fds) &= ~(1 << (fd)))
-#define FD_ISSET(fd,fds) (*(fds) & (1 << (fd)))
-#define FD_ZERO(fds) (*(fds) = 0)
-#endif
-
 #ifndef HAS_WAITPID
 #define waitpid(pid,status,opts) wait4(pid,status,opts,NULL)
 #endif
