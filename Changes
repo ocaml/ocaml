@@ -1,13 +1,17 @@
 Language features:
-- Introduction of a new kind of data types: the virtual data types.
-  Virtual types are intended to modelize non free algebraic types that
+- Introduction of a new kind of data types: the concrete data types
+  with private constructors or labels, private types for short.
+  Private types are intended to modelize non free algebraic types that
   must verify semantic relations that were not enforceable in
   previously available Caml data types.
-  Values from virtual types can be freely used in pattern matching but
-  the creation of values is reserved to special purpose functions
-  provided in the type definition module.
+  Values from private types can be freely used in pattern matching but
+  the creation of values for private types is reserved to special
+  purpose functions provided in the module implementation where the
+  private type definition occurs.
   That way, the construction functions can enforce any required invariant for
-  the datatype.
+  the datatype. Private types are semi-concrete (since they allow
+  pattern matching as concrete types do) and semi-abstract (since they
+  forbid direct construction of values as abstract types do).
 - Added integer literals of types int32, nativeint, int64
   (written with an 'l', 'n' or 'L' suffix respectively).
 
