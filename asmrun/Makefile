@@ -86,13 +86,10 @@ LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c \
 clean::
 	rm -f $(LINKEDFILES)
 
-.SUFFIXES: .asm .S .d.o
-
-.asm.o:
-	$(AS) $(ASFLAGS) -o $*.o $*.asm
+.SUFFIXES: .S .d.o
 
 .S.o:
-	$(CC) -c $(ASFLAGS) $*.S
+	$(ASPP) $(ASPPFLAGS) -o $*.o $*.S
 
 .c.d.o:
 	@ if test -f $*.o; then mv $*.o $*.f.o; else :; fi
