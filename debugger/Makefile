@@ -81,7 +81,7 @@ install:
 	cp ocamldebug$(EXE) $(BINDIR)/ocamldebug$(EXE)
 
 clean::
-	rm -f ocamldebug
+	rm -f ocamldebug$(EXE)
 	rm -f *.cmo *.cmi
 
 .SUFFIXES:

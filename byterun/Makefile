@@ -36,10 +36,10 @@ PUBLIC_INCLUDES=mlvalues.h alloc.h misc.h callback.h fail.h custom.h
 all: ocamlrun$(EXE)
 
 ocamlrun$(EXE): libcamlrun.a prims.o
-	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrun prims.o libcamlrun.a $(CCLIBS)
+	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrun$(EXE) prims.o libcamlrun.a $(CCLIBS)
 
 ocamlrund$(EXE): libcamlrund.a prims.o
-	$(BYTECC) -g $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrund prims.o libcamlrund.a $(CCLIBS)
+	$(BYTECC) -g $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrund$(EXE) prims.o libcamlrund.a $(CCLIBS)
 
 install:
 	cp ocamlrun$(EXE) $(BINDIR)/ocamlrun$(EXE)
@@ -63,7 +63,7 @@ libcamlrund.a: $(DOBJS)
 	$(RANLIB) libcamlrund.a
 
 clean:
-	rm -f ocamlrun ocamlrund *.o lib*.a
+	rm -f ocamlrun$(EXE) ocamlrund$(EXE) *.o lib*.a
 	rm -f primitives prims.c opnames.h jumptbl.h
 
 primitives : $(PRIMS)
