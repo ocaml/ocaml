@@ -279,7 +279,7 @@ struct custom_operations int64_ops = {
 
 value copy_int64(int64 i)
 {
-  value res = alloc_custom(&int64_ops, 4, 0, 1);
+  value res = alloc_custom(&int64_ops, 8, 0, 1);
   Int64_val(res) = i;
   return res;
 }
