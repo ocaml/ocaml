@@ -124,6 +124,8 @@ static void init_frame_descriptors(void)
 char * caml_bottom_of_stack = NULL; /* no stack initially */
 unsigned long caml_last_return_address = 1; /* not in Caml code initially */
 value * caml_gc_regs;
+long caml_globals_inited = 0;
+static long caml_globals_scanned = 0;
 
 /* Call [oldify] on all stack roots, C roots and global roots */
 
@@ -142,11 +144,15 @@ void oldify_local_roots (void)
   struct caml__roots_block *lr;
 
   /* The global roots */
-  for (i = 0; caml_globals[i] != 0; i++) {
+  for (i = caml_globals_scanned;
+       i <= caml_globals_inited && caml_globals[i] != 0;
+       i++) {
     glob = caml_globals[i];
-    for (j = 0; j < Wosize_val(glob); j++)
+    for (j = 0; j < Wosize_val(glob); j++){
       oldify(Field(glob, j), &Field(glob, j));
+    }
   }
+  caml_globals_scanned = caml_globals_inited;
 
   /* The stack and local roots */
   if (frame_descriptors == NULL) init_frame_descriptors();

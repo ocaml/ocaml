@@ -1175,12 +1175,17 @@ let curry_function arity =
 (* Generate the entry point *)
 
 let entry_point namelist =
+  let incr_global_inited =
+    Cop(Cstore, [Cconst_symbol "caml_globals_inited";
+                 Cop(Caddi, [Cop(Cload typ_int,
+                                   [Cconst_symbol "caml_globals_inited"]);
+                             Cconst_int 1])]) in
   let body =
     List.fold_right
       (fun name next ->
         Csequence(Cop(Capply typ_void, [Cconst_symbol(name ^ "_entry")]),
-                  next))
-      namelist (Ctuple []) in
+                  Csequence(incr_global_inited, next)))
+      namelist (Cconst_int 1) in
   Cfunction {fun_name = "caml_program";
              fun_args = [];
              fun_body = body;

@@ -84,6 +84,7 @@ extern unsigned long caml_last_return_address;
 extern value * caml_gc_regs;
 extern char * caml_exception_pointer;
 extern value caml_globals[];
+extern long caml_globals_inited;
 extern long * caml_frametable[];
 
 
