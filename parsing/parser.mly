@@ -838,9 +838,12 @@ expr:
   | LAZY simple_expr %prec prec_appl
       { mklazy $2 }
 /* DYN */
- | DYNAMIC expr
-      { mkexp(Pexp_dynamic($2)) }
-/* coerce is simple_expr */
+ | DYNAMIC seq_expr OF core_type END
+      { mkexp(Pexp_dynamic($2,Some $4)) }
+ | DYNAMIC seq_expr END
+      { mkexp(Pexp_dynamic($2,None)) }
+ | COERCE seq_expr AS core_type END { mkexp(Pexp_coerce($2,Some $4)) } 
+ | COERCE simple_expr END { mkexp(Pexp_coerce($2,None)) } 
 /* /DYN */
 /* GENERIC
  | COERCE seq_expr WITH opt_bar coerce_cases %prec prec_match
@@ -910,9 +913,6 @@ simple_expr:
       { mkexp(Pexp_override []) }
   | simple_expr SHARP label
       { mkexp(Pexp_send($1, $3)) }
-/* DYN */
- | COERCE simple_expr { mkexp(Pexp_coerce($2)) }
-/* /DYN */
 ;
 simple_labeled_expr_list:
     labeled_simple_expr
