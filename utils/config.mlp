@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-let version = "1.06-1/7"
+let version = "1.06-1/8"
 
 let standard_library =
   try
