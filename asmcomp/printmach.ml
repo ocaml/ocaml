@@ -42,7 +42,7 @@ let regs ppf v =
   | 0 -> ()
   | 1 -> reg ppf v.(0)
   | n -> reg ppf v.(0);
-         for i = 1 to n-1 do fprintf ppf "@ %a" reg v.(i) done
+         for i = 1 to n-1 do fprintf ppf " %a" reg v.(i) done
 
 let regset ppf s =
   let first = ref true in
