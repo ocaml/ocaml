@@ -13,6 +13,7 @@
 
 /* The launcher for bytecode executables (if #! is not working) */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "../config/s.h"
