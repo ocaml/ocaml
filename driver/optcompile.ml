@@ -109,6 +109,7 @@ let interface ppf sourcefile =
   let sg = Typemod.transl_signature (initial_env()) ast in
   if !Clflags.print_types then
     fprintf std_formatter "%a@." Printtyp.signature sg;
+  Warnings.check_fatal ();
   Env.save_signature sg modulename (prefixname ^ ".cmi");
   remove_preprocessed inputfile
 
@@ -136,6 +137,7 @@ let implementation ppf sourcefile =
   +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
   ++ Asmgen.compile_implementation prefixname ppf;
   Compilenv.save_unit_info (prefixname ^ ".cmx");
+  Warnings.check_fatal ();
   remove_preprocessed inputfile
 
 let c_file name =
