@@ -20,6 +20,8 @@ let create () = { c = [] }
 
 let clear s = s.c <- []
 
+let copy s = { c = s.c }
+
 let push x s = s.c <- x :: s.c
 
 let pop s =

@@ -34,6 +34,8 @@ val top: 'a t -> 'a
            or raises [Empty] if the stack is empty. *)
 val clear: 'a t -> unit
         (* Discard all elements from a stack. *)
+val copy: 'a t -> 'a t
+        (* Return a copy of the given stack. *)
 val length: 'a t -> int
         (* Return the number of elements in a stack. *)
 val iter: ('a -> unit) -> 'a t -> unit
