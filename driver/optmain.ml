@@ -74,6 +74,7 @@ let main () =
              "<file>  Compile <file> as a .mli file";
        "-linkall", Arg.Set link_everything,
              " Link all modules, even unused ones";
+       "-noassert", Arg.Set noassert, " Don't compile assertion checks";
        "-o", Arg.String(fun s -> exec_name := s;
                                  archive_name := s;
                                  object_name := s),
@@ -83,8 +84,9 @@ let main () =
        "-pp", Arg.String(fun s -> preprocessor := Some s),
              "<command>  Pipe sources through preprocessor <command>";
        "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";
+       "-unsafe", Arg.Set fast,
+             " No bounds checking on array and string access";
        "-v", Arg.Unit print_version_number, " Print compiler version number";
-       "-unsafe", Arg.Set fast, " No bounds checking on array and string access";
 
        "-nopervasives", Arg.Set nopervasives, " (undocumented)";
        "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";

@@ -34,6 +34,7 @@ let keyword_table =
   create_hashtable 149 [
     "and", AND;
     "as", AS;
+    "assert", ASSERT;
     "begin", BEGIN;
     "class", CLASS;
     "closed", CLOSED;

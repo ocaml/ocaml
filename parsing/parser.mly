@@ -39,6 +39,24 @@ let mkfield d =
 let mkoperator name pos =
   { pexp_desc = Pexp_ident(Lident name); pexp_loc = rhs_loc pos }
 
+let mkassert e =
+  let {loc_start = st; loc_end = en} = symbol_loc () in
+  let triple = mkexp (Pexp_tuple
+	               [mkexp (Pexp_constant (Const_string !input_name));
+	                mkexp (Pexp_constant (Const_int st));
+	                mkexp (Pexp_constant (Const_int en))]) in
+  let ex = Ldot (Lident "Pervasives", "Assert_failure") in
+  let bucket = mkexp (Pexp_construct (ex, Some triple)) in
+  let ra = Ldot (Lident "Pervasives", "raise") in
+  let raiser = mkexp (Pexp_apply (mkexp (Pexp_ident ra), [bucket])) in
+  let un = mkexp (Pexp_construct (Lident "()", None)) in
+  match e with
+  | {pexp_desc = Pexp_construct (Lident "false", None) } -> raiser
+  | _ -> if !Clflags.noassert
+         then un
+         else mkexp (Pexp_ifthenelse (e, un, Some raiser))
+;;
+
 let mkinfix arg1 name arg2 =
   mkexp(Pexp_apply(mkoperator name 2, [arg1; arg2]))
 
@@ -84,6 +102,7 @@ let rec mkrangepat c1 c2 =
 %token AMPERSAND
 %token AND
 %token AS
+%token ASSERT
 %token BAR
 %token BARBAR
 %token BARRBRACKET
@@ -440,6 +459,8 @@ expr:
                          [$1; $4; $7])) }
   | label LESSMINUS expr
       { mkexp(Pexp_setinstvar($1, $3)) }
+  | ASSERT simple_expr %prec prec_appl
+      { mkassert $2 }
 ;
 simple_expr:
     val_longident
@@ -586,12 +607,9 @@ expr_semi_list:
   | expr_semi_list SEMI expr %prec prec_list    { $3 :: $1 }
 ;
 type_constraint:
-    COLON core_type
-      { (Some $2, None) }
-  | COLON core_type COLONGREATER core_type
-      { (Some $2, Some $4) }
-  | COLONGREATER core_type
-      { (None, Some $2) }
+    COLON core_type                             { (Some $2, None) }
+  | COLON core_type COLONGREATER core_type      { (Some $2, Some $4) }
+  | COLONGREATER core_type                      { (None, Some $2) }
 ;
 
 /* Patterns */
@@ -654,10 +672,8 @@ primitive_declaration:
 /* Class definitions */
 
 class_list:
-        class_list AND class_def
-          { $3 :: $1 }
-      | class_def
-          { [$1] }
+        class_list AND class_def                { $3 :: $1 }
+      | class_def                               { [$1] }
 ;
 class_def:
         virtual_flag closed_flag
@@ -670,32 +686,22 @@ class_def:
               pcl_loc = symbol_loc () } }
 ;
 class_type_parameters:
-        type_parameters
-          { $1, symbol_loc () }
+        type_parameters                         { $1, symbol_loc () }
 ;
 simple_pattern_list:
-        simple_pattern
-          { [$1] }
-      | simple_pattern_list simple_pattern
-          { $2::$1 }
+        simple_pattern                          { [$1] }
+      | simple_pattern_list simple_pattern      { $2::$1 }
 ;
 self:
-        AS LIDENT
-          { Some $2 }
-      | /* empty */
-          { None }
+        AS LIDENT                               { Some $2 }
+      | /* empty */                             { None }
 ;
 class_fields:
-        /* empty */
-          { [] }
-      | class_fields INHERIT ancestor
-          { Pcf_inher $3 :: $1 }
-      | class_fields VAL value
-          { Pcf_val $3 :: $1 }
-      | class_fields virtual_method
-          { Pcf_virt $2 :: $1 }
-      | class_fields method_def
-          { Pcf_meth $2 :: $1 }
+        /* empty */                             { [] }
+      | class_fields INHERIT ancestor           { Pcf_inher $3 :: $1 }
+      | class_fields VAL value                  { Pcf_val $3 :: $1 }
+      | class_fields virtual_method             { Pcf_virt $2 :: $1 }
+      | class_fields method_def                 { Pcf_meth $2 :: $1 }
 ;
 ancestor:
         LPAREN core_type_comma_list RPAREN class_longident simple_expr_list
@@ -724,10 +730,8 @@ method_def :
 /* Class type definitions */
 
 class_type_list:
-        class_type_list AND class_type
-          { $3 :: $1 }
-      | class_type
-          { [$1] }
+        class_type_list AND class_type          { $3 :: $1 }
+      | class_type                              { [$1] }
 ;
 class_type:
         virtual_flag closed_flag class_type_parameters LIDENT type_list
@@ -741,38 +745,26 @@ class_type:
               pcty_loc = symbol_loc () } }
 ;
 type_list:
-        LPAREN core_type RPAREN type_list
-          { $2 :: $4 }
-      | LPAREN core_type RPAREN
-          { [$2] } 
+        LPAREN core_type RPAREN type_list       { $2 :: $4 }
+      | LPAREN core_type RPAREN                 { [$2] }
 ;
 self_type:
-        COLON type_parameter
-          { Some $2 }
-      | /* empty */
-          { None }
+        COLON type_parameter                    { Some $2 }
+      | /* empty */                             { None }
 ;
 constraints:
-        constraints CONSTRAINT constrain
-          { $3 :: $1 }
-      | /* empty */
-          { [] }
+        constraints CONSTRAINT constrain        { $3 :: $1 }
+      | /* empty */                             { [] }
 ;
 constrain:
-        type_parameter EQUAL core_type
-          { $1, $3, symbol_loc () }
+        type_parameter EQUAL core_type          { $1, $3, symbol_loc () }
 ;
 class_type_fields:
-        /* empty */
-          { [] }
-      | class_type_fields INHERIT ancestor_type
-          { Pctf_inher $3 :: $1 }
-      | class_type_fields VAL value_type
-          { Pctf_val $3 :: $1 }
-      | class_type_fields virtual_method
-          { Pctf_virt $2 :: $1 }
-      | class_type_fields method_type
-          { Pctf_meth $2 :: $1 }
+        /* empty */                             { [] }
+      | class_type_fields INHERIT ancestor_type { Pctf_inher $3 :: $1 }
+      | class_type_fields VAL value_type        { Pctf_val $3 :: $1 }
+      | class_type_fields virtual_method        { Pctf_virt $2 :: $1 }
+      | class_type_fields method_type           { Pctf_meth $2 :: $1 }
 ;
 ancestor_type:
         LPAREN core_type_comma_list RPAREN class_longident
