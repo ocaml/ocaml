@@ -56,7 +56,7 @@ BYTECCCOMPOPTS=/Ox /MT
 BYTECCLINKOPTS=/MT
 
 ### Additional compile-time options for $(BYTECC).  (For building a DLL.)
-DLLCCCOMPOPTS=/Ox /MD
+DLLCCCOMPOPTS=/Ox /MD -DCAML_DLL
 
 ### Libraries needed
 BYTECCLIBS=advapi32.lib
