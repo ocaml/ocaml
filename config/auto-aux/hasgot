@@ -7,6 +7,7 @@ rm -f hasgot.c
 while : ; do
   case "$1" in
     -i) echo "#include <$2>" >> hasgot.c; shift;;
+    -t) echo "$2 the_$2;" >> hasgot.c; shift;;
     -l*|-L*) libs="$libs $1";;
     -*) opts="$opts $1";;
      *) break;;
