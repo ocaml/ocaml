@@ -1,3 +1,12 @@
 #!/bin/sh
 
-exec ocamlc -linkall toplevellib.cma $* topmain.cmo
+# Dual script.  Works under Bourne Shell and MPW Shell.
+
+if : == x
+then # Bourne Shell
+     exec ocamlc -linkall toplevellib.cma $* topmain.cmo
+else # MPW Shell
+     ocamlc-custom -linkall toplevellib.cma {"parameters"} topmain.cmo
+     exit {status}
+end
+fi

@@ -114,11 +114,18 @@ let find_dependency modname (byt_deps, opt_deps) =
   with Not_found ->
     (byt_deps, opt_deps)
 
+let (depends_on, escaped_eol) =
+  match (Sys.get_config ()).Sys.os_type with
+  | "Unix" | "Win32" -> (": ", "\\\n    ")
+  | "MacOS" -> ("\196 ", "\182\n    ")
+  | x -> failwith ("Ocamldep: unknown system type" ^ x)
+;;
+
 let print_dependencies target_file deps =
   match deps with
     [] -> ()
   | _ ->
-    print_string target_file; print_string ": ";
+    print_string target_file; print_string depends_on;
     let rec print_items pos = function
       [] -> print_string "\n"
     | dep :: rem ->
@@ -126,7 +133,7 @@ let print_dependencies target_file deps =
           print_string dep; print_string " ";
           print_items (pos + String.length dep + 1) rem
         end else begin
-          print_string "\\\n    "; print_string dep; print_string " ";
+          print_string escaped_eol; print_string dep; print_string " ";
           print_items (String.length dep + 5) rem
         end in
     print_items (String.length target_file + 2) deps

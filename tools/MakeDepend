@@ -1,0 +1,18 @@
+# MakeDepend
+# Generate the Make dependency rules for a set of C files.
+# The rules are printed on standard output.
+# Usage: MakeDepend files…
+
+set echo 0
+
+set tmp MakeDepend.tempfile
+
+createmake -fat -depends {tmp} {"parameters"} ∑dev:null
+open -t {tmp}.make
+clear ∆(∞:\{tmp}\):/∂n∂n/:• {tmp}.make
+close -y {tmp}.make
+streamedit -e '1,$ replace /"{ObjDir•"???"}"/ ""' ∂
+           -e '1,$ replace /"{•MondoBuild•}"/ ""' ∂
+	   -e '/•∂t/ delete' ∂
+           {tmp}.make
+delete -i {tmp}.make

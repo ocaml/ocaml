@@ -1,0 +1,14 @@
+set echo 0
+exit 1 if {#} != 2
+
+catenate "{1}" >"{2}"
+open -t "{2}"
+replace ¥:/¥  / 'let op' "{2}"
+set i 0
+loop
+  replace /,[ ¶n]+/ " = {i}¶nlet op" "{2}" || break
+  evaluate i += 1
+end
+replace /¥[Â ]/:° " = {i}¶n" "{2}"
+
+close -y "{2}"
