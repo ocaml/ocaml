@@ -199,8 +199,8 @@ let make_startup_file ppf filename units_list =
     (Cmmgen.globals_map
       (List.map
         (fun (unit,_,_) ->
-          let (auth_name,crc) = Hashtbl.find crc_interfaces unit.ui_name in
-          (unit.ui_name,crc))
+          try (unit.ui_name, List.assoc unit.ui_name unit.ui_imports_cmi)
+          with Not_found -> assert false)
         units_list));
   compile_phrase(Cmmgen.data_segment_table ("startup" :: name_list));
   compile_phrase(Cmmgen.code_segment_table ("startup" :: name_list));
