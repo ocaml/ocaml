@@ -412,7 +412,7 @@ let emit_instr i =
                 `	fcomp	{emit_shift i.arg.(1)}\n`
             end;
             `	fnstsw	%ax\n`;
-            match cmp with
+            begin match cmp with
               Ceq ->
                 `	andb	$69, %al\n`;
                 `	cmpb	$64, %al\n`;
@@ -436,6 +436,13 @@ let emit_instr i =
             | Cgt ->
                 `	andb	$69, %al\n`;
                 `	je	{emit_label lbl}\n`
+            end
+        | Ioddtest ->
+            `	testl	$1, {emit_reg i.arg.(0)}\n`;
+            `	jne	{emit_label lbl}\n`
+        | Ieventest ->
+            `	testl	$1, {emit_reg i.arg.(0)}\n`;
+            `	je	{emit_label lbl}\n`
         end
     | Lswitch jumptbl ->
         (* Switches with 1 or 2 cases have normally been eliminated before *)

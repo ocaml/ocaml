@@ -443,6 +443,14 @@ let emit_instr i =
             `	fcmpd	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
             `	{emit_string comp}	{emit_label lbl}\n`;
             `	nop\n`
+        | Ioddtest ->
+            `	andcc	{emit_reg i.arg.(0)}, 1, %g0\n`;
+            `	bne	{emit_label lbl}\n`;
+            `	nop\n`
+        | Ifalsetest ->
+            `	andcc	{emit_reg i.arg.(0)}, 1, %g0\n`;
+            `	be	{emit_label lbl}\n`;
+            `	nop\n`
         end
     | Lswitch jumptbl ->
         let lbl_jumptbl = new_label() in

@@ -345,6 +345,12 @@ let emit_instr i =
             let (comp, test) = name_for_float_comparison cmp in
             `	c.{emit_string comp}.d	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
             `	bc1{emit_string test}	{emit_label lbl}\n`
+        | Ioddtest ->
+            `	and	$25, {emit_reg i.arg.(0)}, 1\n`;
+            `	bne	$25, 0, {emit_label lbl}\n`
+        | Ieventest ->
+            `	and	$25, {emit_reg i.arg.(0)}, 1\n`;
+            `	beq	$25, 0, {emit_label lbl}\n`
         end
     | Lswitch jumptbl ->
         (* Switches with 1 or 2 cases have normally been eliminated before *)

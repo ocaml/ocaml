@@ -300,22 +300,11 @@ let rec transl = function
   | Ulet(id, exp, body) ->
       Clet(id, transl exp, transl body)
   | Uletrec(bindings, body) ->
-      let rec init_blocks = function
-          [] -> fill_blocks bindings
-        | (id, exp) :: rem ->
-            Clet(id, dummy_block(expr_size exp), init_blocks rem)
-      and fill_blocks = function
-          [] -> transl body
-        | (id, exp) :: rem ->
-            Csequence(store_contents (Cvar id) (transl exp),
-                      fill_blocks rem)
-      in init_blocks bindings
+      transl_letrec bindings (transl body)
   | Uprim(Pidentity, [arg]) ->
       transl arg
   | Uprim(Pgetglobal id, []) ->
-      Cop(Cload typ_addr, [Cconst_symbol(Ident.name id)])
-  | Uprim(Psetglobal id, [arg]) ->
-      Cop(Cstore, [Cconst_symbol(Ident.name id); transl arg])
+      Cconst_symbol(Ident.name id)
   | Uprim(Pmakeblock tag, []) ->
       transl_constant(Const_block(tag, []))
   | Uprim(Pmakeblock tag, args) ->
@@ -546,6 +535,17 @@ and transl_switch arg index cases =
   | 2 -> Cifthenelse(arg, transl cases.(index.(1)), transl cases.(index.(0)))
   | _ -> Cswitch(arg, index, Array.map transl cases)
 
+and transl_letrec bindings cont =
+  let rec init_blocks = function
+      [] -> fill_blocks bindings
+    | (id, exp) :: rem ->
+        Clet(id, dummy_block(expr_size exp), init_blocks rem)
+  and fill_blocks = function
+      [] -> cont
+    | (id, exp) :: rem ->
+        Csequence(store_contents (Cvar id) (transl exp), fill_blocks rem)
+  in init_blocks bindings
+
 (* Translate a function definition *)
 
 let transl_function lbl params body =
@@ -572,6 +572,51 @@ let rec transl_all_functions already_translated cont =
                            (transl_function lbl params body :: cont)
   with Queue.Empty ->
     cont
+
+(* Translate a toplevel structure definition *)
+
+let rec transl_structure glob = function
+    Uprim(Pmakeblock tag, args) ->
+      (* Scan the args, storing those that are not identifiers and
+         returning a map id -> position in block for those that are idents. *)
+      let rec make_stores pos = function
+        [] -> (Ctuple [], Tbl.empty)
+      | Uvar v :: rem ->
+          let (c, map) = make_stores (pos+1) rem in
+          (c, Tbl.add v pos map)
+      | ulam :: rem ->
+          let (c, map) = make_stores (pos+1) rem in
+          (Csequence(Cop(Cstore, [field_address (Cconst_symbol glob) pos;
+                                  transl ulam]), c),
+           map) in
+      let (c, map) = make_stores 0 args in
+      (c, map, List.length args)
+  | Usequence(e1, e2) ->
+      let (c2, map, size) = transl_structure glob e2 in
+      (Csequence(remove_unit(transl e1), c2), map, size)
+  | Ulet(id, arg, body) ->
+      let (cbody, map, size) = transl_structure glob body in
+      (Clet(id, transl arg, add_store glob id map cbody), map, size)
+  | Uletrec(bindings, body) ->
+      let (cbody, map, size) = transl_structure glob body in
+      (transl_letrec bindings (add_stores glob bindings map cbody), map, size)
+  | Uprim(Psetglobal id, [arg]) ->
+      transl_structure glob arg
+  | _ ->
+      fatal_error "Cmmgen.transl_structure"
+
+and add_store glob id map code =
+  try
+    let pos = Tbl.find id map in
+    Csequence(Cop(Cstore, [field_address (Cconst_symbol glob) pos; Cvar id]),
+              code)
+  with Not_found ->
+    code
+
+and add_stores glob bindings map code =
+  match bindings with
+    [] -> code
+  | (id, def) :: rem -> add_stores glob rem map (add_store glob id map code) 
 
 (* Emit structured constants *)
 
@@ -639,13 +684,14 @@ let rec emit_all_constants cont =
 
 let compunit ulam =
   let glob = Compilenv.current_unit_name () in
-  Queue.clear functions;
-  structured_constants := [];
+  let (init_code, _, compunit_size) = transl_structure glob ulam in
   let c1 = [Cfunction {fun_name = glob ^ "_entry"; fun_args = [];
-                       fun_body = transl ulam; fun_fast = false}] in
+                       fun_body = init_code; fun_fast = false}] in
   let c2 = transl_all_functions StringSet.empty c1 in
   let c3 = emit_all_constants c2 in
-  Cdata [Cdefine_symbol glob; Cint 0] :: c3
+  Cdata [Cint(block_header 0 compunit_size);
+         Cdefine_symbol glob;
+         Cskip(compunit_size * size_addr)] :: c3
 
 (* Generate an application function:
      (defun caml_applyN (a1 ... aN clos)

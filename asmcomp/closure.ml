@@ -117,13 +117,13 @@ let rec close fenv cenv = function
           List.fold_right
             (fun (id, pos, approx) fenv -> Tbl.add id approx fenv)
             infos fenv in
-        let cenv_body =
-          List.fold_right
-            (fun (id, pos, approx) cenv ->
-              Tbl.add id (Uoffset(Uvar clos_ident, pos)) cenv)
-            infos cenv in
-        let (ubody, approx) = close fenv_body cenv_body body in
-        (Ulet(clos_ident, clos, ubody), approx)
+        let (ubody, approx) = close fenv_body cenv body in
+        (Ulet(clos_ident, clos,
+              List.fold_right
+                (fun (id, pos, approx) body ->
+                    Ulet(id, Uoffset(Uvar clos_ident, pos), body))
+                infos ubody),
+         approx)
       end else begin
         (* General case: recursive definition of values *)
         let rec clos_defs = function

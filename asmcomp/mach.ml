@@ -16,6 +16,8 @@ type test =
   | Iinttest of integer_comparison
   | Iinttest_imm of integer_comparison * int
   | Ifloattest of Cmm.comparison
+  | Ioddtest
+  | Ieventest
 
 type operation =
     Imove

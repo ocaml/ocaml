@@ -77,6 +77,8 @@ let test tst arg =
   | Iinttest cmp -> reg arg.(0); intcomp cmp; reg arg.(1)
   | Iinttest_imm(cmp, n) -> reg arg.(0); intcomp cmp; print_int n
   | Ifloattest cmp -> reg arg.(0); floatcomp cmp; reg arg.(1)
+  | Ieventest -> reg arg.(0); print_string " & 1 == 0"
+  | Ioddtest -> reg arg.(0); print_string " & 1 == 1"
 
 let print_live = ref false
 

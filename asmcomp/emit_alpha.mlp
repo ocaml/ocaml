@@ -225,6 +225,12 @@ let name_for_int_operation = function
   | Iasr -> "sra"
   | _ -> Misc.fatal_error "Emit.name_for_int_operation"
 
+let name_for_float_operation = function
+    Iaddf -> "addt"
+  | Isubf -> "subt"
+  | Imulf -> "mult"
+  | Idivf -> "divt"
+
 let name_for_specific_operation = function
     Iadd4 -> "s4addq"
   | Iadd8 -> "s8addq"
@@ -329,8 +335,8 @@ let emit_instr i =
         end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
-          `	lda	$25, {emit_symbol s}\n`;
-          liveregs i live_25;
+          `	lda	$27, {emit_symbol s}\n`;
+          liveregs i live_27;
           `{record_frame i.live}	bsr	caml_c_call\n`
         end else begin
           `	jsr	{emit_symbol s}\n`
@@ -424,14 +430,9 @@ let emit_instr i =
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`
-    | Lop(Iaddf) ->
-        `	addt	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
-    | Lop(Isubf) ->
-        `	subt	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
-    | Lop(Imulf) ->
-        `	mult	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
-    | Lop(Idivf) ->
-        `	divt	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
+    | Lop(Iaddf | Isubf | Imulf | Idivf as op) ->
+        let instr = name_for_float_operation op in
+        `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
     | Lop(Ifloatofint) ->
         `	lda	$sp, -8($sp)\n`;
         `	stq	{emit_reg i.arg.(0)}, 0($sp)\n`;
@@ -491,6 +492,10 @@ let emit_instr i =
               `	fbne	$f30, {emit_label lbl}\n`
             else
               `	fbeq	$f30, {emit_label lbl}\n`
+        | Ioddtest ->
+            `	blbs	{emit_reg i.arg.(0)}, {emit_label lbl}\n`
+        | Ieventest ->
+            `	blbc	{emit_reg i.arg.(0)}, {emit_label lbl}\n`
         end
     | Lswitch jumptbl ->
         (* Switches with 1 or 2 cases have normally been eliminated before *)
