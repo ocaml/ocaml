@@ -161,7 +161,6 @@ value interprete(code_t prog, asize_t prog_size)
   struct longjmp_buffer * initial_external_raise;
   int initial_sp_offset;
   struct caml__roots_block *initial_local_roots;
-  int initial_callback_depth;
   struct longjmp_buffer raise_buf;
   value * modify_dest, modify_newval;
 #ifndef THREADED_CODE
@@ -188,11 +187,10 @@ value interprete(code_t prog, asize_t prog_size)
   initial_local_roots = local_roots;
   initial_sp_offset = (char *) stack_high - (char *) extern_sp;
   initial_external_raise = external_raise;
-  initial_callback_depth = callback_depth;
+  callback_depth++;
 
   if (sigsetjmp(raise_buf.buf, 1)) {
     local_roots = initial_local_roots;
-    callback_depth = initial_callback_depth;
     accu = exn_bucket;
     goto raise_exception;
   }
@@ -745,6 +743,7 @@ value interprete(code_t prog, asize_t prog_size)
       if ((char *) sp >= (char *) stack_high - initial_sp_offset) {
         exn_bucket = accu;
         external_raise = initial_external_raise;
+        callback_depth--;
         siglongjmp(external_raise->buf, 1);
       }
       pc = Trap_pc(sp);
@@ -950,6 +949,7 @@ value interprete(code_t prog, asize_t prog_size)
     Instruct(STOP):
       external_raise = initial_external_raise;
       extern_sp = sp;
+      callback_depth--;
       return accu;
 
     Instruct(EVENT):

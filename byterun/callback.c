@@ -60,9 +60,7 @@ value callback(value closure, value arg)
   extern_sp -= 2;
   extern_sp[0] = arg;
   extern_sp[1] = closure;
-  callback_depth++;
   res = interprete(callback1_code, sizeof(callback1_code));
-  callback_depth--;
   return res;
 }
 
@@ -74,9 +72,7 @@ value callback2(value closure, value arg1, value arg2)
   extern_sp[0] = arg1;
   extern_sp[1] = arg2;
   extern_sp[2] = closure;
-  callback_depth++;
   res = interprete(callback2_code, sizeof(callback2_code));
-  callback_depth--;
   return res;
 }
 
@@ -89,9 +85,7 @@ value callback3(value closure, value arg1, value arg2, value arg3)
   extern_sp[1] = arg2;
   extern_sp[2] = arg3;
   extern_sp[3] = closure;
-  callback_depth++;
   res = interprete(callback3_code, sizeof(callback3_code));
-  callback_depth--;
   return res;
 }
 
