@@ -506,37 +506,41 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
     | _ ->
         let ep = Stream.count strm__ in
         err (mkloc (bp, ep)) "char not terminated"
-  and dollar bp len (strm__ : _ Stream.t) =
-    match Stream.peek strm__ with
-      Some '$' -> Stream.junk strm__; "ANTIQUOT", ":" ^ get_buff len
-    | Some ('a'..'z' | 'A'..'Z' as c) ->
-        Stream.junk strm__; antiquot bp (store len c) strm__
-    | Some ('0'..'9' as c) ->
-        Stream.junk strm__; maybe_locate bp (store len c) strm__
-    | Some ':' ->
-        Stream.junk strm__;
-        let k = get_buff len in
-        "ANTIQUOT", k ^ ":" ^ locate_or_antiquot_rest bp 0 strm__
-    | Some '\\' ->
-        Stream.junk strm__;
-        begin match Stream.peek strm__ with
-          Some c ->
-            Stream.junk strm__;
-            "ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) strm__
-        | _ -> raise (Stream.Error "")
-        end
-    | _ ->
-        let s = strm__ in
-        if dfa then
-          let (strm__ : _ Stream.t) = s in
-          match Stream.peek strm__ with
+  and dollar bp len s =
+    if !no_quotations then "", get_buff (ident2 (store 0 '$') s)
+    else
+      let (strm__ : _ Stream.t) = s in
+      match Stream.peek strm__ with
+        Some '$' -> Stream.junk strm__; "ANTIQUOT", ":" ^ get_buff len
+      | Some ('a'..'z' | 'A'..'Z' as c) ->
+          Stream.junk strm__; antiquot bp (store len c) strm__
+      | Some ('0'..'9' as c) ->
+          Stream.junk strm__; maybe_locate bp (store len c) strm__
+      | Some ':' ->
+          Stream.junk strm__;
+          let k = get_buff len in
+          "ANTIQUOT", k ^ ":" ^ locate_or_antiquot_rest bp 0 strm__
+      | Some '\\' ->
+          Stream.junk strm__;
+          begin match Stream.peek strm__ with
             Some c ->
               Stream.junk strm__;
-              "ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s
-          | _ ->
-              let ep = Stream.count strm__ in
-              err (mkloc (bp, ep)) "antiquotation not terminated"
-        else "", get_buff (ident2 (store 0 '$') s)
+              "ANTIQUOT",
+              ":" ^ locate_or_antiquot_rest bp (store len c) strm__
+          | _ -> raise (Stream.Error "")
+          end
+      | _ ->
+          let s = strm__ in
+          if dfa then
+            let (strm__ : _ Stream.t) = s in
+            match Stream.peek strm__ with
+              Some c ->
+                Stream.junk strm__;
+                "ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s
+            | _ ->
+                let ep = Stream.count strm__ in
+                err (mkloc (bp, ep)) "antiquotation not terminated"
+          else "", get_buff (ident2 (store 0 '$') s)
   and maybe_locate bp len (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '$' -> Stream.junk strm__; "ANTIQUOT", ":" ^ get_buff len
@@ -1069,11 +1073,11 @@ let make_lexer () =
   let id_table = Hashtbl.create 301 in
   let glexr =
     ref
-      {tok_func = (fun _ -> raise (Match_failure ("", 760, 17)));
-       tok_using = (fun _ -> raise (Match_failure ("", 760, 37)));
-       tok_removing = (fun _ -> raise (Match_failure ("", 760, 60)));
-       tok_match = (fun _ -> raise (Match_failure ("", 761, 18)));
-       tok_text = (fun _ -> raise (Match_failure ("", 761, 37)));
+      {tok_func = (fun _ -> raise (Match_failure ("", 762, 17)));
+       tok_using = (fun _ -> raise (Match_failure ("", 762, 37)));
+       tok_removing = (fun _ -> raise (Match_failure ("", 762, 60)));
+       tok_match = (fun _ -> raise (Match_failure ("", 763, 18)));
+       tok_text = (fun _ -> raise (Match_failure ("", 763, 37)));
        tok_comm = None}
   in
   let (f, pos) = func kwd_table glexr in
@@ -1105,11 +1109,11 @@ let make () =
   let id_table = Hashtbl.create 301 in
   let glexr =
     ref
-      {tok_func = (fun _ -> raise (Match_failure ("", 794, 17)));
-       tok_using = (fun _ -> raise (Match_failure ("", 794, 37)));
-       tok_removing = (fun _ -> raise (Match_failure ("", 794, 60)));
-       tok_match = (fun _ -> raise (Match_failure ("", 795, 18)));
-       tok_text = (fun _ -> raise (Match_failure ("", 795, 37)));
+      {tok_func = (fun _ -> raise (Match_failure ("", 796, 17)));
+       tok_using = (fun _ -> raise (Match_failure ("", 796, 37)));
+       tok_removing = (fun _ -> raise (Match_failure ("", 796, 60)));
+       tok_match = (fun _ -> raise (Match_failure ("", 797, 18)));
+       tok_text = (fun _ -> raise (Match_failure ("", 797, 37)));
        tok_comm = None}
   in
   {func = fst (func kwd_table glexr); using = using_token kwd_table id_table;
