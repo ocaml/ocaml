@@ -28,9 +28,10 @@ x11_lib_dir=''
 while : ; do
   case "$1" in
     "") break;;
-    -bin*|--bin*) bindir=$2;;
-    -lib*|--lib*) libdir=$2;;
-    -man*|--man*) mandir=$2; manext=`echo $mandir | sed -e 's/^.*\(.\)$/\1/'`;;
+    -bindir|--bindir) bindir=$2;;
+    -libdir|--libdir) libdir=$2;;
+    -mandir|--mandir) mandir=$2
+                      manext=`echo $mandir | sed -e 's/^.*\(.\)$/\1/'`;;
     -host*|--host*) host_type=$2;;
     -cc*) cc="$2";;
     -lib*) cclibs="$2 ";;
