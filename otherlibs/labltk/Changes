@@ -1,96 +1,17 @@
-* camltk + labltk
+mlTk version 1.0a1
+
+General Changes
+* Merging CamlTk and LablTk API interfaces
+* Activate and Deactivate Events are added
+* Virtual events support
+* Added UTF conversion
 
 Camltk
 * bind_tag and bind_class superseded tag_bind and class_bind.
-* Activate and Deactivate Events are added
-* virtual event is added
 * added optional arguments to some functions
+* The library name libfrx is changed to frxlib, to avoid the library name 
+  confusion.
  
 Labltk
-* Activate and Deactivate Events are added
-* virtual event is added
-
-mlTk = LablTk + CamlTk
-======================
-
-mlTk library supports two API's: LablTk and CamlTk. Historically LablTk is 
-developed from CamlTk. It has better typing thanks to newer features of
-O'Caml: labeled optional function arguments and polymorphic variants.
-CamlTk has the "classical" interface for Tcl/Tk and free from these new 
-gadgets. LablTk and CamlTk were maintained independently as two different
-libraries, but in mlTk, they are unified.
-
-LablTk API
-----------
-LablTk API is 100% compatible with the original LablTk library,
-which has been available in the O'Caml distribution. All the LablTk
-applications can be compiled also under mlTk without any modifications.
-
-CamlTk API
-----------
-The CamlTk applications are easily ported to mlTk, with the following 
-modifications:
-
- - To use CamlTk API, first open the module Camltk, instead of Tk.
-   It provides the module space for the CamlTk modules:
-
-      open Camltk (* instead of open Tk *)
-      
-      let t = openTk ();;
-      let b = Button.create t [];;
-
- - Widget and the other Tcl/Tk related types are now under Camltk.
-   (e.g. Widget.widget is now Camltk.Widget.widget)
-   Add open Camltk at the beginning of .mli files, if these types are
-   used:
-
-      open Camltk (* added for compiling under mlTk *)
-
-      val create_progress_bar : Widget.widget -> Widget.widget
-
- - Some functions have additional optional arguments. Higher order uses of
-   these functions may require eta-expansions. For example, the function
-   Bell.ring had a type unit -> unit, but now has 
-   
-     ?displayof: widget -> unit -> unit
-
-   Therefore the following callback registering:
-
-      Button.create top [Text "Ring!"; Command Bell.ring]
-
-   must be rewritten as follows, to flush the optional argument:
-
-      Button.create top [Text "Ring!"; Command (fun () -> Bell.ring ())]
-
-Use the both API's at the same time
-===================================
-It is possible to use the both API's in one program. If you want to use
-a widget library written in the different API from you use, you need to
-do it. (It will be confusing, but easier than porting the library itself
-from one to the other API.)
-
-For the users who mainly use LablTk API, CamlTk API is available 
-in the modules start with 'C'. For example, the source file of 
-the CamlTk button widget functions is CButton (and exported as Camltk.Button).
-
-For the users who mainly use CamlTk API, LablTk API modules are exported
-inside Labltk module. For example, LablTk's Button module can be also
-accessible as Labltk.Button.
-
-In CamlTk, we have only one widget type, [widget]. This type is equivalent
-to the LablTk's type [any widget]. Therefore, if you want to apply CamlTk
-functions to LablTk widget, you can use [coe] function to coerce it to
-[any widget].
-
-To do the converse, the "widget-typers" are available inside the module Labltk.
-For example, to recover the type of a button widget, use Labltk.button.
-These widget-typers checks the types of widgets at run-time. If the widget
-type is different from the context type, a run-time exception is raised.
-
-  open Tk (* open LablTk API *)
-
-  let t = openTk ();; (* t is LablTk widget, toplevel widget *)
-  let caml_b = CButton.create (coe t) [];; 
-  (* CButton.create takes [any widget]; [t] must be coerced to the type. *)
-  let b = Labltk.button caml_b in (* recover the type [button widget] *)
-  ...   
+* The library name libjpf is changed to jpflib, to avoid the library name 
+  confusion.

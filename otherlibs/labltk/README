@@ -1,5 +1,5 @@
 INTRODUCTION
-------------
+============
 mlTk is a library for interfacing Objective Caml with the scripting
 language Tcl/Tk (all versions since 8.0.3, but no betas).
 
@@ -12,16 +12,16 @@ In addition to the basic interface with Tcl/Tk, this package contains
  * the "tkanim" library, which supports animated gif loading/display
 
 mlTk = CamlTk + LablTk
-----------------------
-There existed two parallele Tcl/Tk interfaces for O'Caml, CamlTk and LablTk.
+======================
+There existed two parallel Tcl/Tk interfaces for O'Caml, CamlTk and LablTk.
 
 CamlTk uses classical features only, therefore it is easy to understand for 
-the beginners of ML. It makes many converbative O'Caml gurus also happy.
+the beginners of ML. It makes many conservative O'Caml gurus also happy.
 LablTk, on the other hand, uses rather newer features of O'Caml, the labeled 
 optional arguments and polymorphic variants. Its syntax has much more Tcl/Tk
-script flavour, but provides more powerful typing than CamlTk at the same time
+script flavor, but provides more powerful typing than CamlTk at the same time
 (i.e. less run time type checking of widgets). 
-Until now, these two interfaces have been distributed and maintenanced 
+Until now, these two interfaces have been distributed and maintained 
 independently. 
 
 mlTk unifies these libraries into one. Since mlTk provides the both API's,
@@ -29,13 +29,13 @@ both CamlTk and LablTk users can compile their applications with mlTk,
 just with little fixes.
 
 This version is BETA release
-----------------------------
+============================
 This source release is only beta and not well tested in various platforms.
 I would be glad if you try to use mlTk to compile your CamlTk/LablTk 
 applications and report problems at Jun.Furuse@inria.fr, if you have.
 
 REQUIREMENTS
-------------
+============
 You must have already installed
  * Objective Caml source, version 3.04+8 or later
 
@@ -48,7 +48,7 @@ releases on Linux (ELF x86), FreeBSD (x86), SunOS4.1.x (sparc), DEC
 OSF/1 V4.0 (alpha), DGUX SVR4 (m88k) and Windows (VC++ and Cygwin).
 
 INSTALLATION
-------------
+============
 
 0. Check-out the O'Caml CVS source code tree.
 
@@ -68,7 +68,12 @@ support/Makefile.common.
  
 
 Compile your CamlTk/LablTk applications with mlTk
--------------------------------------------------
+=================================================
+
+* General
+
+The names of the additional libraries libjpf and libfrx are changed 
+to jpflib and frxlib respectively, to avoid the library name space confusion.
 
 * LablTk users
 
@@ -83,12 +88,25 @@ your .ml files.
 
   - open Camltk : The API modules and functions are stored in the modules 
     Camltk. Therefore you need to replace the module name Tk to Camltk.
-    For example, open Tk => open Camltk. You may also need to open the Camltk
-    module explicitly, when your original module source contain no open Tk
-    phrase.
+    For example, open Tk => open Camltk. 
+
+      open Camltk (* instead of open Tk *)
+      
+      let t = openTk ();;
+      let b = Button.create t [];;
     
+   - You may also need to open the Camltk module explicitly, when your 
+    original module source contain no open Tk phrase. Widget and the other 
+    Tcl/Tk related types are now under Camltk. (e.g. Widget.widget is now 
+    Camltk.Widget.widget) Add open Camltk at the beginning of .mli files, 
+    if these types are used:
+
+      open Camltk (* added for compiling under mlTk *)
+
+      val create_progress_bar : Widget.widget -> Widget.widget
+
   - Eta expansion to flush optional arguments at registering callbacks.
-    Functions with _displayof suffix are unified with their non-displayof
+    Functions with the _displayof suffix are unified with their non-displayof
     versions, using optional labeled arguments. For example, Bell.ring 
     had/have the following types:
 
@@ -101,4 +119,40 @@ your .ml files.
 	Button.create w [Command Bell.ring]
 
              => Button.create w [Command (fun () -> Bell.ring ())]
+
+Use the both API's at the same time
+===================================
+It is possible to use the both API's in one program. If you want to use
+a widget library written in the different API from you use, you need to
+do it. (It will be confusing, but easier than porting the library itself
+from one to the other API.)
+
+For the users who mainly use LablTk API, CamlTk API is available 
+in the modules start with 'C'. For example, the source file of 
+the CamlTk button widget functions is CButton (and exported also as 
+Camltk.Button).
+
+For the users who mainly use CamlTk API, LablTk API modules are exported
+inside Labltk module. For example, LablTk's Button module can be also
+accessible as Labltk.Button.
+
+In CamlTk, we have only one widget type, [widget]. This type is equivalent
+to the LablTk's type [any widget]. Therefore, if you want to apply CamlTk
+functions to LablTk widget, you can use [coe] function to coerce it to
+[any widget].
+
+To do the converse, the "widget-typers" are available inside the module Labltk.
+For example, to recover the type of a button widget, use Labltk.button.
+These widget-typers checks the types of widgets at run-time. If the widget
+type is different from the context type, a run-time exception is raised.
+
+  open Tk (* open LablTk API *)
+
+  let t = openTk ();; (* t is LablTk widget, toplevel widget *)
+  (* CButton.create takes [any widget]; [t] must be coerced to the type. *)
+  let caml_b = CButton.create (coe t) [];; 
+  (* caml_b is [any widget], must be explicitly typed as [button widget],
+     when it is used with LablTk API functions *)
+  let b = Labltk.button caml_b in (* recover the type [button widget] *)
+  ...   
 

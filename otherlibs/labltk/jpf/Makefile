@@ -6,25 +6,25 @@ OBJS= fileselect.cmo balloon.cmo shell.cmo jpf_font.cmo
 
 OBJSX = $(OBJS:.cmo=.cmx)
 
-all: libjpf.cma
+all: jpflib.cma
 
-opt: libjpf.cmxa
+opt: jpflib.cmxa
 
 test: balloontest
 
 testopt: balloontest.opt
 
-libjpf.cma: $(OBJS)
-	$(CAMLLIBR) -o libjpf.cma $(OBJS)
+jpflib.cma: $(OBJS)
+	$(CAMLLIBR) -o jpflib.cma $(OBJS)
 
-libjpf.cmxa: $(OBJSX)
-	$(CAMLOPTLIBR) -o libjpf.cmxa $(OBJSX)
+jpflib.cmxa: $(OBJSX)
+	$(CAMLOPTLIBR) -o jpflib.cmxa $(OBJSX)
 
-install: libjpf.cma
-	cp $(OBJS:.cmo=.cmi) $(OBJS:.cmo=.mli) libjpf.cma $(INSTALLDIR)
+install: jpflib.cma
+	cp $(OBJS:.cmo=.cmi) $(OBJS:.cmo=.mli) jpflib.cma $(INSTALLDIR)
 
-installopt: libjpf.cmxa
-	cp libjpf.cmxa libjpf.a $(OBJS:.cmo=.cmx) $(INSTALLDIR)
+installopt: jpflib.cmxa
+	cp jpflib.cmxa jpflib.a $(OBJS:.cmo=.cmx) $(INSTALLDIR)
 
 clean:
 	rm -f *.cm* *.o *.a *~ *test
@@ -37,15 +37,15 @@ $(OBJSX): ../lib/$(LIBNAME).cmxa
 
 balloontest: balloontest.cmo 
 	$(CAMLC) -o balloontest -I ../support -I ../lib \
-	        -custom $(LIBNAME).cma libjpf.cma balloontest.cmo
+	        -custom $(LIBNAME).cma jpflib.cma balloontest.cmo
 
 balloontest.opt: balloontest.cmx
 	$(CAMLOPT) -o balloontest.opt -I ../support -I ../lib \
-	        $(LIBNAME).cmxa libjpf.cmxa balloontest.cmx
+	        $(LIBNAME).cmxa jpflib.cmxa balloontest.cmx
 
-balloontest.cmo : balloon.cmo libjpf.cma
+balloontest.cmo : balloon.cmo jpflib.cma
 
-balloontest.cmx : balloon.cmx libjpf.cmxa
+balloontest.cmx : balloon.cmx jpflib.cmxa
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmx .cmo

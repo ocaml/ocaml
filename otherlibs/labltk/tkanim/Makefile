@@ -57,7 +57,7 @@ install: tkanim.cma
 	fi
 
 installopt: tkanim.cmxa
-	cp tkanim.cmxa $(INSTALLDIR)
+	cp tkanim.cmxa tkanim.a $(INSTALLDIR)
 
 depend: tkanim.ml
 	$(CAMLDEP) *.mli *.ml > .depend

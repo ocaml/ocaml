@@ -9,21 +9,21 @@ OBJS= frx_misc.cmo frx_widget.cmo frx_font.cmo frx_entry.cmo frx_text.cmo \
 
 OBJSX = $(OBJS:.cmo=.cmx)
 
-all: libfrx.cma
+all: frxlib.cma
 
-opt: libfrx.cmxa
+opt: frxlib.cmxa
 
-libfrx.cma: $(OBJS)
-	$(CAMLLIBR) -o libfrx.cma $(OBJS)
+frxlib.cma: $(OBJS)
+	$(CAMLLIBR) -o frxlib.cma $(OBJS)
 
-libfrx.cmxa: $(OBJSX)
-	$(CAMLOPTLIBR) -o libfrx.cmxa $(OBJSX)
+frxlib.cmxa: $(OBJSX)
+	$(CAMLOPTLIBR) -o frxlib.cmxa $(OBJSX)
 
-install: libfrx.cma
-	cp *.cmi *.mli libfrx.cma $(INSTALLDIR)
+install: frxlib.cma
+	cp *.cmi *.mli frxlib.cma $(INSTALLDIR)
 
-installopt: libfrx.cmxa
-	cp libfrx.cmxa libfrx.a $(INSTALLDIR)
+installopt: frxlib.cmxa
+	cp frxlib.cmxa frxlib.a $(INSTALLDIR)
 
 clean:
 	rm -f *.cm* *.o *.a
