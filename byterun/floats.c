@@ -304,13 +304,13 @@ value gt_float(value f, value g)        /* ML */
 
 value float_of_bytes(value s)   /* ML */
 {
-  union { char bytes[8]; double d; } u;
+  value d = copy_double(0.0);
 #ifdef ARCH_BIG_ENDIAN
-  memcpy(u.bytes, String_val(s), 8);
+  memcpy(String_val(d), String_val(s), 8);
 #else
-  Reverse_64(u.bytes, String_val(s));
+  Reverse_64(String_val(d), String_val(s));
 #endif
-  return copy_double(u.d);
+  return d;
 }
 
 enum { FP_normal, FP_subnormal, FP_zero, FP_infinite, FP_nan };
