@@ -236,63 +236,88 @@ let name_lambda_list args fn =
       Llet(Strict, id, arg, name_list (Lvar id :: names) rem) in
   name_list [] args
 
+let rec iter f = function
+    Lvar _
+  | Lconst _ -> ()
+  | Lapply(fn, args) ->
+      f fn; List.iter f args
+  | Lfunction(kind, params, body) ->
+      f body
+  | Llet(str, id, arg, body) ->
+      f arg; f body
+  | Lletrec(decl, body) ->
+      f body;
+      List.iter (fun (id, exp) -> f exp) decl
+  | Lprim(p, args) ->
+      List.iter f args
+  | Lswitch(arg, sw) ->
+      f arg; 
+      List.iter (fun (key, case) -> f case) sw.sw_consts;
+      List.iter (fun (key, case) -> f case) sw.sw_blocks;
+      begin match sw.sw_failaction with
+      | None -> ()
+      | Some l -> f l
+      end
+  | Lstaticraise (_,args) ->
+      List.iter f args
+  | Lstaticcatch(e1, (_,vars), e2) ->
+      f e1; f e2
+  | Ltrywith(e1, exn, e2) ->
+      f e1; f e2
+  | Lifthenelse(e1, e2, e3) ->
+      f e1; f e2; f e3
+  | Lsequence(e1, e2) ->
+      f e1; f e2
+  | Lwhile(e1, e2) ->
+      f e1; f e2
+  | Lfor(v, e1, e2, dir, e3) -> 
+      f e1; f e2; f e3
+  | Lassign(id, e) ->
+      f e
+  | Lsend (k, met, obj, args) ->
+      List.iter f (met::obj::args)
+  | Levent (lam, evt) ->
+      f lam
+  | Lifused (v, e) ->
+      f e
+
 module IdentSet =
   Set.Make(struct
     type t = Ident.t
     let compare = compare
   end)
 
-let free_variables l =
+let free_ids get l =
   let fv = ref IdentSet.empty in
-  let rec freevars = function
-    Lvar id ->
-      fv := IdentSet.add id !fv
-  | Lconst sc -> ()
-  | Lapply(fn, args) ->
-      freevars fn; List.iter freevars args
-  | Lfunction(kind, params, body) ->
-      freevars body;
-      List.iter (fun param -> fv := IdentSet.remove param !fv) params
-  | Llet(str, id, arg, body) ->
-      freevars arg; freevars body; fv := IdentSet.remove id !fv
-  | Lletrec(decl, body) ->
-      freevars body;
-      List.iter (fun (id, exp) -> freevars exp) decl;
-      List.iter (fun (id, exp) -> fv := IdentSet.remove id !fv) decl
-  | Lprim(p, args) ->
-      List.iter freevars args
-  | Lswitch(arg, sw) ->
-      freevars arg; 
-      List.iter (fun (key, case) -> freevars case) sw.sw_consts;
-      List.iter (fun (key, case) -> freevars case) sw.sw_blocks;
-      begin match sw.sw_failaction with
-      | None -> ()
-      | Some l -> freevars l
-      end
-  | Lstaticraise (_,args) ->
-      List.iter freevars args
-  | Lstaticcatch(e1, (_,vars), e2) ->
-      freevars e1; freevars e2 ;
-      List.iter (fun id -> fv := IdentSet.remove id !fv) vars        
-  | Ltrywith(e1, exn, e2) ->
-      freevars e1; freevars e2; fv := IdentSet.remove exn !fv
-  | Lifthenelse(e1, e2, e3) ->
-      freevars e1; freevars e2; freevars e3
-  | Lsequence(e1, e2) ->
-      freevars e1; freevars e2
-  | Lwhile(e1, e2) ->
-      freevars e1; freevars e2
-  | Lfor(v, e1, e2, dir, e3) -> 
-      freevars e1; freevars e2; freevars e3; fv := IdentSet.remove v !fv
-  | Lassign(id, e) ->
-      fv := IdentSet.add id !fv; freevars e
-  | Lsend (k, met, obj, args) ->
-      List.iter freevars (met::obj::args)
-  | Levent (lam, evt) ->
-      freevars lam
-  | Lifused (v, e) ->
-      freevars e
-  in freevars l; !fv
+  let rec free l =
+    iter free l;
+    fv := List.fold_right IdentSet.add (get l) !fv;
+    match l with
+      Lfunction(kind, params, body) ->
+        List.iter (fun param -> fv := IdentSet.remove param !fv) params
+    | Llet(str, id, arg, body) ->
+        fv := IdentSet.remove id !fv
+    | Lletrec(decl, body) ->
+        List.iter (fun (id, exp) -> fv := IdentSet.remove id !fv) decl
+    | Lstaticcatch(e1, (_,vars), e2) ->
+        List.iter (fun id -> fv := IdentSet.remove id !fv) vars        
+    | Ltrywith(e1, exn, e2) ->
+        fv := IdentSet.remove exn !fv
+    | Lfor(v, e1, e2, dir, e3) -> 
+        fv := IdentSet.remove v !fv
+    | Lassign(id, e) ->
+        fv := IdentSet.add id !fv
+    | Lvar _ | Lconst _ | Lapply _
+    | Lprim _ | Lswitch _ | Lstaticraise _
+    | Lifthenelse _ | Lsequence _ | Lwhile _
+    | Lsend _ | Levent _ | Lifused _ -> ()
+  in free l; !fv
+
+let free_variables l =
+  free_ids (function Lvar id -> [id] | _ -> []) l
+
+let free_methods l =
+  free_ids (function Lsend(Self, Lvar meth, obj, _) -> [meth] | _ -> []) l
 
 (* Check if an action has a "when" guard *)
 let raise_count = ref 0

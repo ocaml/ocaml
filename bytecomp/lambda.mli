@@ -175,8 +175,10 @@ val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 val is_guarded: lambda -> bool
 val patch_guarded : lambda -> lambda -> lambda
 
+val iter: (lambda -> unit) -> lambda -> unit
 module IdentSet: Set.S with type elt = Ident.t
 val free_variables: lambda -> IdentSet.t
+val free_methods: lambda -> IdentSet.t
 
 val transl_path: Path.t -> lambda
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
