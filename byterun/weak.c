@@ -5,7 +5,7 @@
 /*             Damien Doligez, projet Para, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1997 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -34,7 +34,7 @@ value weak_create (value len)        /* ML */
   return res;
 }
 
-#define None_val 1
+#define None_val Val_int(0)
 #define Some_tag 0
 
 value weak_set (value ar, value n, value el)     /* ML */

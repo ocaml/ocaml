@@ -5,7 +5,7 @@
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
+/*  en Automatique.  Distributed only by permission.                   */
 /*                                                                     */
 /***********************************************************************/
 
@@ -19,6 +19,10 @@
 #include "io.h"
 #include "mlvalues.h"
 
+#define Uninitialised Val_int(0)
+#define Bad_term Val_int(1)
+#define Good_term_tag 0
+
 #ifdef HAS_TERMCAP
 
 extern int tgetent (char * buffer, char * name);
@@ -26,67 +30,97 @@ extern char * tgetstr (char * id, char ** area);
 extern int tgetnum (char * id);
 extern int tputs (char * str, int count, int (*outchar)(int c));
 
-value terminfo_setup(value unit)      /* ML */
+static struct channel *chan;
+static char area [1024];
+static char *area_p = area;
+static int num_lines;
+static char *up = NULL;
+static char *down = NULL;
+static char *standout = NULL;
+static char *standend = NULL;
+
+value terminfo_setup (value vchan)      /* ML */
 {
+  value result;
   static char buffer[1024];
-  if (tgetent(buffer, getenv("TERM")) != 1) failwith("Terminfo.setupterm");
-  return Val_unit;
+
+  chan = Channel (vchan);
+
+  if (tgetent(buffer, getenv("TERM")) != 1) return Bad_term;
+
+  num_lines = tgetnum ("li");
+  up = tgetstr ("up", &area_p);
+  down = tgetstr ("do", &area_p);
+  standout = tgetstr ("us", &area_p);
+  standend = tgetstr ("ue", &area_p);
+  if (standout == NULL || standend == NULL){
+    standout = tgetstr ("so", &area_p);
+    standend = tgetstr ("se", &area_p);
+  }
+  Assert (area_p <= area + 1024);
+  if (num_lines == -1 || up == NULL || down == NULL
+      || standout == NULL || standend == NULL){
+    return Bad_term;
+  }
+  result = alloc (1, Good_term_tag);
+  Field (result, 0) = Val_int (num_lines);
+  return result;
 }
 
-value terminfo_getstr(value capa)     /* ML */
+static int terminfo_putc (int c)
 {
-  char buff[1024];
-  char * p = buff;
-  char * s = tgetstr(String_val(capa), &p);
-  if (s == NULL) raise_not_found();
-  return copy_string(s);
-}
-
-value terminfo_getnum(value capa)     /* ML */
-{
-  int res = tgetnum(String_val(capa));
-  if (res == -1) raise_not_found();
-  return Val_int(res);
-}
-
-static struct channel * terminfo_putc_channel;
-
-static int terminfo_putc(int c)
-{
-  putch(terminfo_putc_channel, c);
+  putch (chan, c);
   return c;
 }
 
-value terminfo_puts(value vchan, value str, value count) /* ML */
+value terminfo_backup (value lines)    /* ML */
 {
-  terminfo_putc_channel = Channel(vchan);
-  tputs(String_val(str), Int_val(count), terminfo_putc);
+  int i;
+
+  for (i = 0; i < Int_val (lines); i++){
+    tputs (up, 1, terminfo_putc);
+  }
+  return Val_unit;
+}
+
+value terminfo_standout (value start)  /* ML */
+{
+  tputs (Bool_val (start) ? standout : standend, 1, terminfo_putc);
+  return Val_unit;
+}
+
+value terminfo_resume (value lines)    /* ML */
+{
+  int i;
+
+  for (i = 0; i < Int_val (lines); i++){
+    tputs (down, 1, terminfo_putc);
+  }
   return Val_unit;
 }
 
 #else
 
-value terminfo_setup(value unit)
+value terminfo_setup (value unit)
 {
-  failwith("Terminfo.setupterm");
+  return Bad_term;
+}
+
+value terminfo_backup (value lines)
+{
+  invalid_argument("Terminfo.backup");
   return Val_unit;
 }
 
-value terminfo_getstr(value capa)
+value terminfo_standout (value start)
 {
-  raise_not_found();
+  invalid_argument("Terminfo.standout");
   return Val_unit;
 }
 
-value terminfo_getnum(value capa)
+value terminfo_resume (value lines)
 {
-  raise_not_found();
-  return Val_unit;
-}
-
-value terminfo_puts(value vchan, value str, value count)
-{
-  invalid_argument("Terminfo.puts");
+  invalid_argument("Terminfo.resume");
   return Val_unit;
 }
 
