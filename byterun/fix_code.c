@@ -22,7 +22,7 @@
 
 /* This code is needed only if the processor is big endian */
 
-#ifdef BIG_ENDIAN
+#ifdef ARCH_BIG_ENDIAN
 
 void fixup_endianness(code, len)
      code_t code;

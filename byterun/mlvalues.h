@@ -104,7 +104,7 @@ bits  63    10 9     8 7   0
 #define Bp_hp(hp) ((char *) Val_hp (hp))
 
 #define Num_tags (1 << 8)
-#ifdef SIXTYFOUR
+#ifdef ARCH_SIXTYFOUR
 #define Max_wosize ((1L << 54) - 1)
 #else
 #define Max_wosize ((1 << 22) - 1)
@@ -132,7 +132,7 @@ bits  63    10 9     8 7   0
 #define Bhsize_hp(hp) (Bsize_wsize (Whsize_hp (hp)))
 #define Bhsize_hd(hd) (Bsize_wsize (Whsize_hd (hd)))
 
-#ifdef BIG_ENDIAN
+#ifdef ARCH_BIG_ENDIAN
 #define Tag_val(val) (((unsigned char *) (val)) [-1])
                                                  /* Also an l-value. */
 #define Tag_hp(hp) (((unsigned char *) (hp)) [sizeof(value)-1])
@@ -195,7 +195,7 @@ value callback3 P((value closure, value arg1, value arg2, value arg3));
 /* Floating-point numbers. */
 #define Double_tag 253
 #define Double_wosize ((sizeof(double) / sizeof(value)))
-#ifndef ALIGN_DOUBLE
+#ifndef ARCH_ALIGN_DOUBLE
 #define Double_val(v) (* (double *)(v))
 #define Store_double_val(v,d) (* (double *)(v) = (d))
 #else

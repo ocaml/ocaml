@@ -21,7 +21,7 @@
 #include "misc.h"
 #include "stacks.h"
 
-#ifdef ALIGN_DOUBLE
+#ifdef ARCH_ALIGN_DOUBLE
 
 double Double_val(val)
      value val;

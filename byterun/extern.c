@@ -37,7 +37,7 @@ struct extern_obj {
 static struct extern_obj * extern_table;
 static unsigned long extern_table_size;
 
-#ifdef SIXTYFOUR
+#ifdef ARCH_SIXTYFOUR
 #define Hash(v) (((unsigned long) ((v) >> 3)) % extern_table_size)
 #else
 #define Hash(v) (((unsigned long) ((v) >> 2)) % extern_table_size)
@@ -163,7 +163,7 @@ static void writecode32(code, val)
   extern_ptr += 5;
 }
 
-#ifdef SIXTYFOUR
+#ifdef ARCH_SIXTYFOUR
 static void writecode64(code, val)
      int code;
      long val;
@@ -199,7 +199,7 @@ static void extern_rec(v)
       writecode8(CODE_INT8, n);
     } else if (n >= -(1 << 15) && n < (1 << 15)) {
       writecode16(CODE_INT16, n);
-#ifdef SIXTYFOUR
+#ifdef ARCH_SIXTYFOUR
     } else if (n < -(1L << 31) || n >= (1L << 31)) {
       writecode64(CODE_INT64, n);
 #endif
@@ -334,7 +334,7 @@ static long extern_value(v)
   /* Free the table of shared objects */
   stat_free((char *) extern_table);
   /* Write the sizes */
-#ifdef SIXTYFOUR
+#ifdef ARCH_SIXTYFOUR
   if (size_32 >= (1L << 32) || size_64 >= (1L << 32)) {
     /* The object is so big its size cannot be written in the header.
        Besides, some of the block sizes or string lengths or shared offsets

@@ -56,7 +56,7 @@
   _p[4] = _a;                                                                 \
 }
 
-#ifdef SIXTYFOUR
+#ifdef ARCH_SIXTYFOUR
 #define Reverse_word Reverse_int64
 #else
 #define Reverse_word Reverse_int32

@@ -117,7 +117,9 @@ static int do_write(fd, p, n)
   retcode = ui_write(fd, p, n);
 #else
 again:
+  enter_blocking_section();
   retcode = write(fd, p, n);
+  leave_blocking_section();
   if (retcode == -1) {
     if (errno == EINTR) goto again;
     if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -342,7 +344,7 @@ value input_int(channel)        /* ML */
 {
   long i;
   i = getword(channel);
-#ifdef SIXTYFOUR
+#ifdef ARCH_SIXTYFOUR
   i = (i << 32) >> 32;          /* Force sign extension */
 #endif
   return Val_long(i);

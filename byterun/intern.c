@@ -53,7 +53,7 @@ static value intern_block;
    (Sign_extend(intern_src[-4]) << 24) + (intern_src[-3] << 16) + \
    (intern_src[-2] << 8) + intern_src[-1])
 
-#ifdef SIXTYFOUR
+#ifdef ARCH_SIXTYFOUR
 static long read64s()
 {
   long res;
@@ -136,7 +136,7 @@ static void intern_rec(dest)
         v = Val_long(read32s());
         break;
       case CODE_INT64:
-#ifdef SIXTYFOUR
+#ifdef ARCH_SIXTYFOUR
         v = Val_long(read64s());
         break;
 #else
@@ -255,7 +255,7 @@ value input_value(chan)         /* ML */
   }
   intern_src = intern_input;
   /* Allocate result */
-#ifdef SIXTYFOUR
+#ifdef ARCH_SIXTYFOUR
   whsize = size_64;
 #else
   whsize = size_32;
@@ -286,7 +286,7 @@ value input_value_from_string(str, ofs) /* ML */
   size_32 = read32u();
   size_64 = read32u();
   /* Allocate result */
-#ifdef SIXTYFOUR
+#ifdef ARCH_SIXTYFOUR
   whsize = size_64;
 #else
   whsize = size_32;

@@ -24,7 +24,7 @@
 #ifdef __STDC__
 #include <limits.h>
 #else
-#ifdef SIXTYFOUR
+#ifdef ARCH_SIXTYFOUR
 #define LONG_MAX 0x7FFFFFFFFFFFFFFF
 #else
 #define LONG_MAX 0x7FFFFFFF

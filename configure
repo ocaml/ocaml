@@ -99,9 +99,9 @@ echo "Checking the sizes of integers and pointers..."
 set `sh runtest sizes.c`
 case "$1,$2,$3" in
   4,4,4) echo "OK, this is a regular 32 bit architecture."
-         echo "#undef SIXTYFOUR" >> m.h;;
+         echo "#undef ARCH_SIXTYFOUR" >> m.h;;
   4,8,8) echo "Wow! A 64 bit architecture!"
-         echo "#define SIXTYFOUR" >> m.h;;
+         echo "#define ARCH_SIXTYFOUR" >> m.h;;
   8,*,*) echo "Wow! A 64 bit architecture!"
          echo "Unfortunately, Objective Caml does not handle the case"
          echo "sizeof(int) = 8."
@@ -125,15 +125,15 @@ esac
 sh runtest endian.c
 case $? in
   0) echo "This is a big-endian architecture."
-     echo "#define BIG_ENDIAN" >> m.h;;
+     echo "#define ARCH_BIG_ENDIAN" >> m.h;;
   1) echo "This is a little-endian architecture."
-     echo "#undef BIG_ENDIAN" >> m.h;;
+     echo "#undef ARCH_BIG_ENDIAN" >> m.h;;
   2) echo "This architecture seems to be neither big endian nor little endian."
      echo "Objective Caml won't run on this architecture."
      exit 2;;
   *) echo "Something went wrong during endianness determination."
      echo "You'll have to figure out endianness yourself"
-     echo "(option BIG_ENDIAN in m.h).";;
+     echo "(option ARCH_BIG_ENDIAN in m.h).";;
 esac
 
 # Determine alignment constraints
@@ -141,14 +141,14 @@ esac
 sh runtest dblalign.c
 case $? in
   0) echo "Doubles can be word-aligned."
-     echo "#undef ALIGN_DOUBLE" >> m.h;;
+     echo "#undef ARCH_ALIGN_DOUBLE" >> m.h;;
   1) echo "Doubles must be doubleword-aligned."
-     echo "#define ALIGN_DOUBLE" >> m.h;;
+     echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
   *) echo "Something went wrong during alignment determination for doubles."
      echo "I'm going to assume this architecture has alignment constraints over doubles."
      echo "That's a safe bet: Objective Caml will work even if"
      echo "this architecture has actually no alignment constraints."
-     echo "#define ALIGN_DOUBLE" >> m.h;;
+     echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
 esac
 
 # Configure the bytecode compiler

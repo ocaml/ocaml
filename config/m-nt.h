@@ -13,7 +13,7 @@
 
 /* Machine configuration, Intel x86 processors, Windows NT */
 
-#undef SIXTYFOUR
-#undef BIG_ENDIAN
-#undef ALIGN_DOUBLE
+#undef ARCH_SIXTYFOUR
+#undef ARCH_BIG_ENDIAN
+#undef ARCH_ALIGN_DOUBLE
 

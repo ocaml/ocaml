@@ -83,7 +83,7 @@ value md5_chan(chan, len)       /* ML */
  * will fill a supplied 16-byte array with the digest.
  */
 
-#ifndef BIG_ENDIAN
+#ifndef ARCH_BIG_ENDIAN
 #define byteReverse(buf, len)	/* Nothing */
 #else
 void byteReverse(buf, longs)

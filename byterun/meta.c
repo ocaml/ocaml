@@ -35,7 +35,7 @@ value reify_bytecode(prog, len) /* ML */
      value prog, len;
 {
   value clos;
-#ifdef BIG_ENDIAN
+#ifdef ARCH_BIG_ENDIAN
   fixup_endianness((code_t) prog, (asize_t) Long_val(len));
 #endif
 #ifdef THREADED_CODE
