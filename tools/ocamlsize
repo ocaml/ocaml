@@ -10,9 +10,13 @@ foreach $f (@ARGV) {
   $symbol_size = do read_int();
   $debug_size = do read_int();
   read(FILE, $magic, 12);
-  seek(FILE, -($path_size + $code_size + $prim_size + $data_size +
-               $symbol_size + $debug_size + 36), 2);
-  read(FILE, $path, $path_size);
+  if ($path_size > 0) {
+      seek(FILE, -($path_size + $code_size + $prim_size + $data_size +
+                   $symbol_size + $debug_size + 36), 2);
+      read(FILE, $path, $path_size);
+  } else {
+      $path = "(default runtime)\n";
+  }
   print $f, ":\n" if ($#ARGV > 0);
   printf ("\tcode: %d    data: %d    symbols: %d    debug: %d\n",
           $code_size, $data_size, $symbol_size, $debug_size);
