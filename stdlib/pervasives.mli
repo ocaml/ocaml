@@ -226,7 +226,7 @@ external acos : float -> float = "acos_float" "acos" "float"
 external atan : float -> float = "atan_float" "atan" "float"
 external atan2 : float -> float -> float = "atan2_float" "atan2" "float"
         (* Usual transcendental functions on floating-point numbers. *)
-val abs_float : float -> float
+external abs_float : float -> float = "%absfloat"
         (* Return the absolute value of the argument. *)
 external float : int -> float = "%floatofint"
         (* Convert an integer to floating-point. *)

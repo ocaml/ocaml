@@ -90,9 +90,7 @@ external asin : float -> float = "asin_float" "asin" "float"
 external acos : float -> float = "acos_float" "acos" "float"
 external atan : float -> float = "atan_float" "atan" "float"
 external atan2 : float -> float -> float = "atan2_float" "atan2" "float"
-
-let abs_float f = if f >= 0.0 then f else -. f
-
+external abs_float : float -> float = "%absfloat"
 external float : int -> float = "%floatofint"
 external truncate : float -> int = "%intoffloat"
 
