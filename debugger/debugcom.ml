@@ -6,7 +6,7 @@
 (*          Objective Caml port by John Malecki and Xavier Leroy       *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -167,73 +167,91 @@ exception Marshalling_error
 
 module Remote_value =
   struct
-    type t = string
+    type t = Remote of string | Local of Obj.t
     
-    let obj v =
-      output_char !conn.io_out 'M';
-      output_remote_value !conn.io_out v;
-      flush !conn.io_out;
-      try
-        input_value !conn.io_in
-      with End_of_file | Failure _ ->
-        raise Marshalling_error
+    let obj = function
+      Local obj -> Obj.obj obj
+    | Remote v ->
+        output_char !conn.io_out 'M';
+        output_remote_value !conn.io_out v;
+        flush !conn.io_out;
+        try
+          input_value !conn.io_in
+        with End_of_file | Failure _ ->
+          raise Marshalling_error
 
-    let is_block v =
-      Obj.is_block (Array.unsafe_get (Obj.magic v : Obj.t array) 0)
+    let is_block = function
+      Local obj -> Obj.is_block obj
+    | Remote v -> Obj.is_block (Array.unsafe_get (Obj.magic v : Obj.t array) 0)
 
-    let tag v =
-      output_char !conn.io_out 'H';
-      output_remote_value !conn.io_out v;
-      flush !conn.io_out;
-      let header = input_binary_int !conn.io_in in
-      header land 0xFF
+    let tag = function
+      Local obj -> Obj.tag obj
+    | Remote v ->
+        output_char !conn.io_out 'H';
+        output_remote_value !conn.io_out v;
+        flush !conn.io_out;
+        let header = input_binary_int !conn.io_in in
+        header land 0xFF
 
-    let size v =
-      output_char !conn.io_out 'H';
-      output_remote_value !conn.io_out v;
-      flush !conn.io_out;
-      let header = input_binary_int !conn.io_in in
-      header lsr 10
+    let size = function
+      Local obj -> Obj.size obj
+    | Remote v ->
+        output_char !conn.io_out 'H';
+        output_remote_value !conn.io_out v;
+        flush !conn.io_out;
+        let header = input_binary_int !conn.io_in in
+        header lsr 10
 
     let field v n =
-      output_char !conn.io_out 'F';
-      output_remote_value !conn.io_out v;
-      output_binary_int !conn.io_out n;
-      flush !conn.io_out;
-      input_remote_value !conn.io_in
+      match v with
+        Local obj -> Local(Obj.field obj n)
+      | Remote v ->
+          output_char !conn.io_out 'F';
+          output_remote_value !conn.io_out v;
+          output_binary_int !conn.io_out n;
+          flush !conn.io_out;
+          if input_byte !conn.io_in = 0 then
+            Remote(input_remote_value !conn.io_in)
+          else begin
+            let buf = String.create 8 in
+            really_input !conn.io_in buf 0 8;
+            let floatbuf = float n (* force allocation of a new float *) in
+            String.unsafe_blit buf 0 (Obj.magic floatbuf) 0 8;
+            Local(Obj.repr floatbuf)
+          end
 
     let of_int n =
-      let v = String.create value_size in
-      Array.unsafe_set (Obj.magic v : int array) 0 n;
-      v
+      Local(Obj.repr n)
 
     let local pos =
       output_char !conn.io_out 'L';
       output_binary_int !conn.io_out pos;
       flush !conn.io_out;
-      input_remote_value !conn.io_in
+      Remote(input_remote_value !conn.io_in)
 
     let from_environment pos =
       output_char !conn.io_out 'E';
       output_binary_int !conn.io_out pos;
       flush !conn.io_out;
-      input_remote_value !conn.io_in
+      Remote(input_remote_value !conn.io_in)
 
     let global pos =
       output_char !conn.io_out 'G';
       output_binary_int !conn.io_out pos;
       flush !conn.io_out;
-      input_remote_value !conn.io_in
+      Remote(input_remote_value !conn.io_in)
 
     let accu () =
       output_char !conn.io_out 'A';
       flush !conn.io_out;
-      input_remote_value !conn.io_in
+      Remote(input_remote_value !conn.io_in)
 
-    let closure_code v =
-      output_char !conn.io_out 'C';
-      output_remote_value !conn.io_out v;
-      flush !conn.io_out;
-      input_binary_int !conn.io_in
+    let closure_code = function
+      Local obj -> assert false
+    | Remote v ->
+        output_char !conn.io_out 'C';
+        output_remote_value !conn.io_out v;
+        flush !conn.io_out;
+        input_binary_int !conn.io_in
 
   end
