@@ -122,12 +122,11 @@ let reset_global_level () =
   global_level := !current_level + 1;
   saved_global_level := []
 let increase_global_level () =
-  saved_global_level := !global_level :: !saved_global_level;
-  global_level := !current_level
-let restore_global_level () =
-  match !saved_global_level with
-    gl::rem -> global_level := gl; saved_global_level := rem
-  | []      -> assert false
+  let gl = !global_level in
+  global_level := !current_level;
+  gl
+let restore_global_level gl =
+  global_level := gl
 
 (* Abbreviations without parameters *)
 (* Shall reset after generalizing *)
@@ -946,6 +945,7 @@ let unify' = (* Forward declaration *)
   ref (fun env ty1 ty2 -> raise (Unify []))
 
 let rec subst env level abbrev ty params args body =
+  if List.length params <> List.length args then raise (Unify []);
   let old_level = !current_level in
   current_level := level;
   try
