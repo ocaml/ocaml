@@ -498,9 +498,6 @@ EXTEND
       | s = a_CHAR -> Node "PaChr" [Loc; s]
       | "-"; s = a_INT -> mkuminpat loc "-" (Node "PaInt" [Loc; s])
       | "-"; s = a_FLOAT -> mkuminpat loc "-" (Node "PaFlo" [Loc; s])
-      | "#"; a = anti_list -> Node "PaTyp" [Loc; a]
-      | "#"; s = mod_ident -> Node "PaTyp" [Loc; s]
-      | a = anti_anti -> Node "PaAnt" [Loc; a]
       | "["; "]" -> Node "PaUid" [Loc; Str "[]"]
       | "["; pl = SLIST1 patt SEP ";"; last = SOPT [ "::"; p = patt -> p ];
         "]" ->
@@ -514,7 +511,8 @@ EXTEND
       | "("; p = SELF; ","; pl = SLIST1 patt SEP ","; ")" ->
           Node "PaTup" [Loc; Cons p pl]
       | "("; pl = anti_list; ")" -> Node "PaTup" [Loc; pl]
-      | "_" -> Node "PaAny" [Loc] ] ]
+      | "_" -> Node "PaAny" [Loc]
+      | a = anti_anti -> Node "PaAnt" [Loc; a] ] ]
   ;
   label_patt:
     [ [ i = patt_label_ident; "="; p = patt -> Tuple [i; p] ] ]
@@ -538,8 +536,8 @@ EXTEND
           Node "PaTup" [Loc; Cons p pl]
       | "("; pl = anti_list; ")" -> Node "PaTup" [Loc; pl]
       | s = a_LIDENT -> Node "PaLid" [Loc; s]
-      | a = anti_anti -> Node "PaAnt" [Loc; a]
-      | "_" -> Node "PaAny" [Loc] ] ]
+      | "_" -> Node "PaAny" [Loc]
+      | a = anti_anti -> Node "PaAnt" [Loc; a] ] ]
   ;
   label_ipatt:
     [ [ i = patt_label_ident; "="; p = ipatt -> Tuple [i; p] ] ]
@@ -839,6 +837,10 @@ EXTEND
           let p = Node "PaTyc" [Loc; Node "PaLid" [Loc; i]; t] in
           Node "PaOlb" [Loc; i; p; Option (Some e)]
       | "`"; s = ident -> Node "PaVrn" [Loc; s] ] ]
+  ;
+  patt: LEVEL "simple"
+    [ [ "#"; a = anti_list -> Node "PaTyp" [Loc; a]
+      | "#"; s = mod_ident -> Node "PaTyp" [Loc; s] ] ]
   ;
   expr: AFTER "apply"
     [ "label" NONA

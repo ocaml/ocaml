@@ -483,7 +483,7 @@ Grammar.extend
                 Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 5892, 5908))
+                  _ -> raise (Match_failure ("q_MLast.ml", 5896, 5912))
             in
             Node ("StExc", [Loc; c; tl; b]) :
             'str_item));
@@ -718,7 +718,7 @@ Grammar.extend
                 Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 7955, 7971))
+                  _ -> raise (Match_failure ("q_MLast.ml", 7959, 7975))
             in
             Node ("SgExc", [Loc; c; tl]) :
             'sig_item));
@@ -1630,7 +1630,12 @@ Grammar.extend
         (fun (p2 : 'patt) _ (p1 : 'patt) (loc : int * int) ->
            (Node ("PaAcc", [Loc; p1; p2]) : 'patt))];
      Some "simple", None,
-     [[Gramext.Stoken ("", "_")],
+     [[Gramext.Snterm
+         (Grammar.Entry.obj (anti_anti : 'anti_anti Grammar.Entry.e))],
+      Gramext.action
+        (fun (a : 'anti_anti) (loc : int * int) ->
+           (Node ("PaAnt", [Loc; a]) : 'patt));
+      [Gramext.Stoken ("", "_")],
       Gramext.action
         (fun _ (loc : int * int) -> (Node ("PaAny", [Loc]) : 'patt));
       [Gramext.Stoken ("", "(");
@@ -1741,23 +1746,6 @@ Grammar.extend
       Gramext.action
         (fun _ _ (loc : int * int) ->
            (Node ("PaUid", [Loc; Str "[]"]) : 'patt));
-      [Gramext.Snterm
-         (Grammar.Entry.obj (anti_anti : 'anti_anti Grammar.Entry.e))],
-      Gramext.action
-        (fun (a : 'anti_anti) (loc : int * int) ->
-           (Node ("PaAnt", [Loc; a]) : 'patt));
-      [Gramext.Stoken ("", "#");
-       Gramext.Snterm
-         (Grammar.Entry.obj (mod_ident : 'mod_ident Grammar.Entry.e))],
-      Gramext.action
-        (fun (s : 'mod_ident) _ (loc : int * int) ->
-           (Node ("PaTyp", [Loc; s]) : 'patt));
-      [Gramext.Stoken ("", "#");
-       Gramext.Snterm
-         (Grammar.Entry.obj (anti_list : 'anti_list Grammar.Entry.e))],
-      Gramext.action
-        (fun (a : 'anti_list) _ (loc : int * int) ->
-           (Node ("PaTyp", [Loc; a]) : 'patt));
       [Gramext.Stoken ("", "-");
        Gramext.Snterm
          (Grammar.Entry.obj (a_FLOAT : 'a_FLOAT Grammar.Entry.e))],
@@ -1833,14 +1821,14 @@ Grammar.extend
         (fun (a : 'anti_) (loc : int * int) -> (a : 'patt_label_ident))]];
     Grammar.Entry.obj (ipatt : 'ipatt Grammar.Entry.e), None,
     [None, None,
-     [[Gramext.Stoken ("", "_")],
-      Gramext.action
-        (fun _ (loc : int * int) -> (Node ("PaAny", [Loc]) : 'ipatt));
-      [Gramext.Snterm
+     [[Gramext.Snterm
          (Grammar.Entry.obj (anti_anti : 'anti_anti Grammar.Entry.e))],
       Gramext.action
         (fun (a : 'anti_anti) (loc : int * int) ->
            (Node ("PaAnt", [Loc; a]) : 'ipatt));
+      [Gramext.Stoken ("", "_")],
+      Gramext.action
+        (fun _ (loc : int * int) -> (Node ("PaAny", [Loc]) : 'ipatt));
       [Gramext.Snterm
          (Grammar.Entry.obj (a_LIDENT : 'a_LIDENT Grammar.Entry.e))],
       Gramext.action
@@ -3208,6 +3196,21 @@ Grammar.extend
       Gramext.action
         (fun (p : 'patt) _ (i : 'a_LIDENT) _ (loc : int * int) ->
            (Node ("PaLab", [Loc; i; p]) : 'patt))]];
+    Grammar.Entry.obj (patt : 'patt Grammar.Entry.e),
+    Some (Gramext.Level "simple"),
+    [None, None,
+     [[Gramext.Stoken ("", "#");
+       Gramext.Snterm
+         (Grammar.Entry.obj (mod_ident : 'mod_ident Grammar.Entry.e))],
+      Gramext.action
+        (fun (s : 'mod_ident) _ (loc : int * int) ->
+           (Node ("PaTyp", [Loc; s]) : 'patt));
+      [Gramext.Stoken ("", "#");
+       Gramext.Snterm
+         (Grammar.Entry.obj (anti_list : 'anti_list Grammar.Entry.e))],
+      Gramext.action
+        (fun (a : 'anti_list) _ (loc : int * int) ->
+           (Node ("PaTyp", [Loc; a]) : 'patt))]];
     Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
     Some (Gramext.After "apply"),
     [Some "label", Some Gramext.NonA,
