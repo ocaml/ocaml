@@ -95,22 +95,22 @@ let mkuminus name arg =
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, [arg]))
 
-let rec mklistexp point = function
+let rec mktailexp point = function
     [] ->
       ghexp(Pexp_construct(Lident "[]", None, false)) point
   | e1 :: el ->
-      let exp_el = mklistexp point el in
+      let exp_el = mktailexp point el in
       let l = {loc_start = e1.pexp_loc.loc_start;
                loc_end = exp_el.pexp_loc.loc_end}
       in
       let arg = {pexp_desc = Pexp_tuple [e1; exp_el]; pexp_loc = l} in
       {pexp_desc = Pexp_construct(Lident "::", Some arg, false); pexp_loc = l}
 
-let rec mklistpat point = function
+let rec mktailpat point = function
     [] ->
       ghpat(Ppat_construct(Lident "[]", None, false)) point
   | p1 :: pl ->
-      let pat_pl = mklistpat point pl in
+      let pat_pl = mktailpat point pl in
       let l = {loc_start = p1.ppat_loc.loc_start;
                loc_end = pat_pl.ppat_loc.loc_end}
       in
@@ -782,7 +782,7 @@ simple_expr:
   | LBRACKETBAR BARRBRACKET
       { mkexp(Pexp_array []) }
   | LBRACKET expr_semi_list opt_semi RBRACKET
-      { mklistexp (rhs_loc 4).loc_end (List.rev $2) }
+      { mkexp (mktailexp (rhs_loc 4).loc_end (List.rev $2)).pexp_desc }
   | LBRACKET expr_semi_list opt_semi error
       { unclosed "[" 1 "]" 4 }
   | PREFIXOP simple_expr
@@ -942,7 +942,7 @@ simple_pattern:
   | LBRACE lbl_pattern_list opt_semi error
       { unclosed "{" 1 "}" 4 }
   | LBRACKET pattern_semi_list opt_semi RBRACKET
-      { mklistpat (rhs_loc 4).loc_end (List.rev $2) }
+      { mkpat (mktailpat (rhs_loc 4).loc_end (List.rev $2)).ppat_desc }
   | LBRACKET pattern_semi_list opt_semi error
       { unclosed "[" 1 "]" 4 }
   | LBRACKETBAR pattern_semi_list opt_semi BARRBRACKET
