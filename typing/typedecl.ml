@@ -105,14 +105,12 @@ let transl_declaration env (name, sdecl) id =
      with the same constructors and labels *)
   begin match decl with
       {type_kind = Type_variant _ | Type_record _; type_manifest = Some ty} ->
-        if match ty with
-            Tconstr(path, args) ->
-              args = params &
-              Includecore.type_declarations
-                env id decl (Env.find_type path env)
-          | _ -> false
-        then ()
-        else raise(Error(sdecl.ptype_loc, Definition_mismatch ty))
+        if not (match ty with
+          Tconstr(path, args) ->
+            args = params &
+            Includecore.type_declarations env id decl (Env.find_type path env)
+        | _ -> false)
+        then raise(Error(sdecl.ptype_loc, Definition_mismatch ty))
     | _ -> ()
   end;
   (id, decl)
@@ -129,11 +127,17 @@ let check_recursive_abbrev env (name, sdecl) (id, decl) =
 (* Translate a set of mutually recursive type declarations *)
 
 let transl_type_decl env name_sdecl_list =
-  (* Enter the types as abstract *)
-  let (id_list, temp_env) = enter_types env name_sdecl_list in
-  (* Translate each declaration *)
   let decls =
-    List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
+    match name_sdecl_list with
+      [(name, {ptype_kind = Ptype_abstract}) as name_sdecl] ->
+        (* No recursion involved, may use original env for translation *)
+        let id = Ident.new name in
+        [transl_declaration env name_sdecl id]
+    | _ ->
+        (* Enter the types as abstract *)
+        let (id_list, temp_env) = enter_types env name_sdecl_list in
+        (* Translate each declaration *)
+        List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
   (* Build the final env *)
   let newenv =
     List.fold_right
