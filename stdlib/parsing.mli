@@ -23,7 +23,7 @@ val symbol_end : unit -> int
            in a file is at position 0. *)
 val rhs_start: int -> int
 val rhs_end: int -> int
-        (* Same as [symbol_start] and [symbol_end], but return then
+        (* Same as [symbol_start] and [symbol_end], but return the
            position of the string matching the [n]th item on the
            right-hand side of the rule, where [n] is the integer parameter
            to [lhs_start] and [lhs_end]. [n] is 1 for the leftmost item. *)
