@@ -26,6 +26,8 @@ OBJS=open.o draw.o fill.o color.o text.o \
   image.o make_img.o dump_img.o point_col.o sound.o events.o \
   subwindow.o draws.o
 
+CAMLOBJS=graphics.cmo graphicsX11.cmo
+
 all: libgraphics.a graphics.cmi graphics.cma
 
 allopt: libgraphics.a graphics.cmi graphics.cmxa
@@ -35,12 +37,13 @@ libgraphics.a: $(OBJS)
 	ar rc libgraphics.a $(OBJS)
 	$(RANLIB) libgraphics.a
 
-graphics.cma: graphics.cmo
+graphics.cma: $(CAMLOBJS)
 	$(CAMLC) -a -o graphics.cma -custom \
-          graphics.cmo -cclib -lgraphics $(X11_LINK)
+          $(CAMLOBJS) -cclib -lgraphics $(X11_LINK)
 
-graphics.cmxa: graphics.cmx
-	$(CAMLOPT) -a -o graphics.cmxa graphics.cmx -cclib -lgraphics $(X11_LINK)
+graphics.cmxa: $(CAMLOBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -o graphics.cmxa \
+          $(CAMLOBJS:.cmo=.cmx) -cclib -lgraphics $(X11_LINK)
 
 partialclean:
 	rm -f *.cm*
@@ -51,7 +54,7 @@ clean: partialclean
 install:
 	cp libgraphics.a $(LIBDIR)/libgraphics.a
 	cd $(LIBDIR); $(RANLIB) libgraphics.a
-	cp graphics.cm[ia] graphics.mli $(LIBDIR)
+	cp graphics.cm[ia] graphicsX11.cmi graphics.mli graphicsX11.mli $(LIBDIR)
 
 installopt:
 	cp graphics.cmxa graphics.a $(LIBDIR)
@@ -65,9 +68,6 @@ installopt:
 	$(CAMLC) -c $<
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
-
-test: essai.cmo
-	$(CAMLC) -custom -o essai graphics.cma essai.cmo -I .
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend

@@ -39,16 +39,6 @@ let (open_graph, close_graph) =
   | "MacOS" -> (raw_open_graph, raw_close_graph)
   | _ -> invalid_arg ("Graphics: unknown OS type: " ^ Sys.os_type)
 
-type window_id = string
-external window_id : unit -> window_id = "gr_window_id"
-
-let window_id = 
-  match Sys.os_type with
-  | "Unix" -> window_id
-  | "Win32" -> (fun () -> "unknown") 
-  | "MacOS" -> (fun () -> "unknown")
-  | _ -> invalid_arg ("Graphics: unknown OS type: " ^ Sys.os_type)
-
 external set_window_title : string -> unit = "gr_set_window_title"
 external clear_graph : unit -> unit = "gr_clear_graph"
 external size_x : unit -> int = "gr_size_x"
@@ -198,28 +188,6 @@ let key_pressed () =
 (*** Sound *)
 
 external sound : int -> int -> unit = "gr_sound"
-
-(*** Sub window *)
-
-let subwindows = Hashtbl.create 13
-
-external open_subwindow : int -> int -> int -> int -> window_id 
-    = "gr_open_subwindow"
-external close_subwindow : window_id -> unit
-    = "gr_close_subwindow"
-
-let open_subwindow ~x ~y ~width ~height =
-  let wid = open_subwindow x y width height in
-  Hashtbl.add subwindows wid ();
-  wid
-;;
-  
-let close_subwindow wid =
-  if Hashtbl.mem subwindows wid then begin
-    close_subwindow wid;
-    Hashtbl.remove subwindows wid
-  end else raise (Graphic_failure ("Graphics: no such subwindow: " ^ wid))
-;;
 
 (* Splines *)
 let add (x1, y1) (x2, y2) = (x1 +. x2, y1 +. y2)

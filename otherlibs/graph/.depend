@@ -1,6 +1,5 @@
 color.o: color.c libgraph.h
 draw.o: draw.c libgraph.h
-draws.o: draws.c libgraph.h
 dump_img.o: dump_img.c libgraph.h image.h
 events.o: events.c libgraph.h
 fill.o: fill.c libgraph.h
@@ -11,7 +10,7 @@ point_col.o: point_col.c libgraph.h
 sound.o: sound.c libgraph.h
 subwindow.o: subwindow.c libgraph.h
 text.o: text.c libgraph.h
-essai.cmo: graphics.cmi 
-essai.cmx: graphics.cmx 
 graphics.cmo: graphics.cmi 
 graphics.cmx: graphics.cmi 
+graphicsX11.cmo: graphics.cmi graphicsX11.cmi 
+graphicsX11.cmx: graphics.cmx graphicsX11.cmi 

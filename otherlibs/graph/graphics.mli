@@ -40,13 +40,6 @@ external size_y : unit -> int = "gr_size_y"
            Drawings outside of this rectangle are clipped, without causing
            an error. The origin (0,0) is at the lower left corner. *)
 
-type window_id = string
-val window_id : unit -> window_id
-        (* Return the unique identifier of the window allocated by
-           the library, where Caml graphics are drawn. Under X Windows, 
-           the returned string is an unsigned 32 bits integer 
-           in decimal form. *)
-
 (*** Colors *)
 
 type color = int
@@ -129,8 +122,9 @@ val draw_poly : (int * int) array -> unit
            The current point is unchanged. *)
 val draw_segments : (int * int * int * int) array -> unit
         (* [draw_segments segments] draws the segments given in the array
-           argument. Each segment is specified as two points, whose
-           coordinates are two integer values.
+           argument. Each segment is specified as a quadruple
+           [(x0, y0, x1, y1)] where [(x0, y0)] and [(x1, y1)] are
+           the coordinates of the end points of the segment.
            The current point is unchanged. *)
 external draw_arc :
         x:int -> y:int -> rx:int -> ry:int -> start:int -> stop:int -> unit
@@ -318,8 +312,3 @@ external remember_mode : bool -> unit = "gr_remember_mode"
            onto the graphics window (see the function [display_mode] above).
            Default remember mode is on.  *)
 
-(* subwindow creation *)
-val open_subwindow : x:int -> y:int -> width:int -> height:int -> window_id
-         (* Open a subwindow of the current Graphics window. *)
-val close_subwindow : window_id -> unit
-         (* Close the subwindow with identifier [window_id]. *)
