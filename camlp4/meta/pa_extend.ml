@@ -404,6 +404,16 @@ value expr_of_delete_rule loc gmod n sl =
   (<:expr< $n.expr$ >>, sl)
 ;
 
+value rec ident_of_expr =
+  fun
+  [ <:expr< $lid:s$ >> -> s
+  | <:expr< $uid:s$ >> -> s
+  | <:expr< $e1$ . $e2$ >> -> ident_of_expr e1 ^ "__" ^ ident_of_expr e2
+  | _ -> failwith "internal error in pa_extend" ]
+;
+
+value mk_name loc e = {expr = e; tvar = ident_of_expr e; loc = loc};
+
 value sself loc gmod n = <:expr< Gramext.Sself >>;
 value snext loc gmod n = <:expr< Gramext.Snext >>;
 value snterm loc n lev gmod tvar =
@@ -439,15 +449,36 @@ value srules loc t rl gmod tvar =
   <:expr< Gramext.srules $e$ >>
 ;
 
-value rec ident_of_expr =
-  fun
-  [ <:expr< $lid:s$ >> -> s
-  | <:expr< $uid:s$ >> -> s
-  | <:expr< $e1$ . $e2$ >> -> ident_of_expr e1 ^ "__" ^ ident_of_expr e2
-  | _ -> failwith "internal error in pa_extend" ]
+value sslist loc min sep s gmod n =
+  let psymbol p s t =
+    let symb = {used = []; text = s; styp = fun _ -> t} in
+    {pattern = Some p; symbol = symb}
+  in
+  let rl =
+    let r1 =
+      let prod =
+        let n = mk_name loc <:expr< anti_list >> in
+        [psymbol <:patt< a >> (snterm loc n None)
+           <:ctyp< 'anti_list >>]
+      in
+      let act = <:expr< a >> in {prod = prod; action = Some act}
+    in
+    let r2 =
+      let psymb =
+        let symb =
+          {used = []; text = slist loc min sep s;
+           styp = fun n -> <:ctyp< list $s.styp n$ >>}
+        in
+        let patt = <:patt< l >> in
+        {pattern = Some patt; symbol = symb}
+      in
+      let act = <:expr< list l >> in
+      {prod = [psymb]; action = Some act}
+    in
+    [r1; r2]
+  in
+  srules loc "anti" rl gmod n
 ;
-
-value mk_name loc e = {expr = e; tvar = ident_of_expr e; loc = loc};
 
 open Pcaml;
 value symbol = Grammar.Entry.create gram "symbol";
@@ -541,7 +572,8 @@ EXTEND
             | None -> s.used ]
           in
           let styp n = let t = s.styp n in <:ctyp< list $t$ >> in
-          {used = used; text = slist loc False sep s; styp = styp}
+          let text = slist loc False sep s in
+          {used = used; text = text; styp = styp}
       | UIDENT "LIST1"; s = SELF;
         sep = OPT [ UIDENT "SEP"; t = symbol -> t ] ->
           let used =
@@ -550,7 +582,8 @@ EXTEND
             | None -> s.used ]
           in
           let styp n = let t = s.styp n in <:ctyp< list $t$ >> in
-          {used = used; text = slist loc True sep s; styp = styp}
+          let text = slist loc True sep s in
+          {used = used; text = text; styp = styp}
       | UIDENT "OPT"; s = SELF ->
           let styp n = let t = s.styp n in <:ctyp< option $t$ >> in
           {used = s.used; text = sopt loc s; styp = styp} ]

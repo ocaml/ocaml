@@ -14,11 +14,6 @@
 
 open Pa_extend;;
 
-let psymbol p s t =
-  let symb = {used = []; text = s; styp = fun _ -> t} in
-  {pattern = Some p; symbol = symb}
-;;
-
 Grammar.extend
   [Grammar.Entry.obj (symbol : 'symbol Grammar.Entry.e),
    Some (Gramext.Level "top"),
@@ -46,39 +41,6 @@ Grammar.extend
                    (symb.used @ s.used)
              | None -> s.used
            in
-           let text n =
-             let rl =
-               let r1 =
-                 let prod =
-                   let n = mk_name loc (MLast.ExLid (loc, "anti_list")) in
-                   [psymbol (MLast.PaLid (loc, "a")) (snterm loc n None)
-                      (MLast.TyQuo (loc, "anti_list"))]
-                 in
-                 let act = MLast.ExLid (loc, "a") in
-                 {prod = prod; action = Some act}
-               in
-               let r2 =
-                 let psymb =
-                   let symb =
-                     {used = []; text = slist loc min sep s;
-                      styp =
-                        fun n ->
-                          MLast.TyApp
-                            (loc, MLast.TyLid (loc, "list"), s.styp n)}
-                   in
-                   let patt = MLast.PaLid (loc, "l") in
-                   {pattern = Some patt; symbol = symb}
-                 in
-                 let act =
-                   MLast.ExApp
-                     (loc, MLast.ExLid (loc, "list"), MLast.ExLid (loc, "l"))
-                 in
-                 {prod = [psymb]; action = Some act}
-               in
-               [r1; r2]
-             in
-             srules loc "anti" rl n
-           in
-           {used = used; text = text;
+           {used = used; text = sslist loc min sep s;
             styp = fun _ -> MLast.TyLid (loc, "ast")} :
            'symbol))]]];;

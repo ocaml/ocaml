@@ -883,6 +883,16 @@ let expr_of_delete_rule loc gmod n sl =
   n.expr, sl
 ;;
 
+let rec ident_of_expr =
+  function
+    MLast.ExLid (_, s) -> s
+  | MLast.ExUid (_, s) -> s
+  | MLast.ExAcc (_, e1, e2) -> ident_of_expr e1 ^ "__" ^ ident_of_expr e2
+  | _ -> failwith "internal error in pa_extend"
+;;
+
+let mk_name loc e = {expr = e; tvar = ident_of_expr e; loc = loc};;
+
 let sself loc gmod n =
   MLast.ExAcc (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Sself"))
 ;;
@@ -1000,15 +1010,39 @@ let srules loc t rl gmod tvar =
      e)
 ;;
 
-let rec ident_of_expr =
-  function
-    MLast.ExLid (_, s) -> s
-  | MLast.ExUid (_, s) -> s
-  | MLast.ExAcc (_, e1, e2) -> ident_of_expr e1 ^ "__" ^ ident_of_expr e2
-  | _ -> failwith "internal error in pa_extend"
+let sslist loc min sep s gmod n =
+  let psymbol p s t =
+    let symb = {used = []; text = s; styp = fun _ -> t} in
+    {pattern = Some p; symbol = symb}
+  in
+  let rl =
+    let r1 =
+      let prod =
+        let n = mk_name loc (MLast.ExLid (loc, "anti_list")) in
+        [psymbol (MLast.PaLid (loc, "a")) (snterm loc n None)
+           (MLast.TyQuo (loc, "anti_list"))]
+      in
+      let act = MLast.ExLid (loc, "a") in {prod = prod; action = Some act}
+    in
+    let r2 =
+      let psymb =
+        let symb =
+          {used = []; text = slist loc min sep s;
+           styp =
+             fun n -> MLast.TyApp (loc, MLast.TyLid (loc, "list"), s.styp n)}
+        in
+        let patt = MLast.PaLid (loc, "l") in
+        {pattern = Some patt; symbol = symb}
+      in
+      let act =
+        MLast.ExApp (loc, MLast.ExLid (loc, "list"), MLast.ExLid (loc, "l"))
+      in
+      {prod = [psymb]; action = Some act}
+    in
+    [r1; r2]
+  in
+  srules loc "anti" rl gmod n
 ;;
-
-let mk_name loc e = {expr = e; tvar = ident_of_expr e; loc = loc};;
 
 open Pcaml;;
 let symbol = Grammar.Entry.create gram "symbol";;
@@ -1378,7 +1412,8 @@ Grammar.extend
               let t = s.styp n in
               MLast.TyApp (loc, MLast.TyLid (loc, "list"), t)
             in
-            {used = used; text = slist loc true sep s; styp = styp} :
+            let text = slist loc true sep s in
+            {used = used; text = text; styp = styp} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "LIST0"); Gramext.Sself;
        Gramext.Sopt
@@ -1399,7 +1434,8 @@ Grammar.extend
               let t = s.styp n in
               MLast.TyApp (loc, MLast.TyLid (loc, "list"), t)
             in
-            {used = used; text = slist loc false sep s; styp = styp} :
+            let text = slist loc false sep s in
+            {used = used; text = text; styp = styp} :
             'symbol))];
      None, None,
      [[Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ")")],
