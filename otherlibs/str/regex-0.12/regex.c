@@ -27,7 +27,11 @@
 #define _GNU_SOURCE
 
 /* We need this for `regex.h', and perhaps for the Emacs include files.  */
+#if !macintosh
 #include <sys/types.h>
+#else
+#include <SizeTDef.h>
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

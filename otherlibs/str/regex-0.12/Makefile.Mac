@@ -1,0 +1,51 @@
+# Makefile for regex.
+# 
+# Copyright (C) 1992, 1993 Free Software Foundation, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+version = 0.12
+
+# You can define CPPFLAGS on the command line.  Aside from system-specific
+# flags, you can define:
+#   -d DEBUG to enable the compiled pattern disassembler and execution
+#           tracing; code runs substantially slower.
+#   -d EXTRACT_MACROS to use the macros EXTRACT_* (as opposed to
+#           the corresponding C procedures).  If not -d DEBUG, the macros
+#           are used.
+CPPFLAGS = 
+
+C = sc
+COptions = -model far
+
+PPCC = mrc
+PPCCOptions = -w 29 -w 35
+
+DEFS = -d STDC_HEADERS -d STRING_H -d REGEX_MALLOC
+
+default all Ä regex.c.o regex.c.x
+
+regex.c.o Ä regex.c regex.h
+	{C} {COptions} {CPPFLAGS} {DEFS} regex.c -o regex.c.o
+
+regex.c.x Ä regex.c regex.h
+	{PPCC} {PPCCOptions} {CPPFLAGS} {DEFS} regex.c -o regex.c.x
+
+clean mostlyclean Ä
+	delete -i regex.c.o regex.c.x
+
+distclean Ä clean
+
+extraclean Ä distclean
