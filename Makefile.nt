@@ -179,6 +179,7 @@ installbyt:
 	cp lex\csllex $(BINDIR)\csllex.exe
 	cp yacc\cslyacc.exe $(BINDIR)\cslyacc.exe
 	$(CAMLC) -a -o $(LIBDIR)\toplevellib.cma $(TOPLIB)
+	cp expunge $(LIBDIR)\expunge.exe
 	cp toplevel\topmain.cmo $(LIBDIR)\topmain.cmo
 	cp toplevel\toploop.cmi $(LIBDIR)\toploop.cmi
 	cp toplevel\topdirs.cmi $(LIBDIR)\topdirs.cmi
