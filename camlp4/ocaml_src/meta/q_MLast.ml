@@ -360,8 +360,6 @@ Grammar.extend
      grammar_entry_create "class_fun_def"
    and class_structure : 'class_structure Grammar.Entry.e =
      grammar_entry_create "class_structure"
-   and class_self_patt : 'class_self_patt Grammar.Entry.e =
-     grammar_entry_create "class_self_patt"
    and cvalue : 'cvalue Grammar.Entry.e = grammar_entry_create "cvalue"
    and label : 'label Grammar.Entry.e = grammar_entry_create "label"
    and class_self_type : 'class_self_type Grammar.Entry.e =
@@ -389,6 +387,8 @@ Grammar.extend
      grammar_entry_create "when_expr_opt"
    and mod_ident : 'mod_ident Grammar.Entry.e =
      grammar_entry_create "mod_ident"
+   and class_self_patt_opt : 'class_self_patt_opt Grammar.Entry.e =
+     grammar_entry_create "class_self_patt_opt"
    and as_lident_opt : 'as_lident_opt Grammar.Entry.e =
      grammar_entry_create "as_lident_opt"
    and meth_list : 'meth_list Grammar.Entry.e =
@@ -2458,24 +2458,16 @@ Grammar.extend
         (fun _ (ct : 'class_type) _ (ce : 'class_expr) _ (loc : int * int) ->
            (Qast.Node ("CeTyc", [Qast.Loc; ce; ct]) : 'class_expr));
       [Gramext.Stoken ("", "object");
-       Gramext.srules
-         [[Gramext.Sopt
-             (Gramext.Snterm
-                (Grammar.Entry.obj
-                   (class_self_patt : 'class_self_patt Grammar.Entry.e)))],
-          Gramext.action
-            (fun (a : 'class_self_patt option) (loc : int * int) ->
-               (Qast.Option a : 'a_opt));
-          [Gramext.Snterm
-             (Grammar.Entry.obj (a_opt : 'a_opt Grammar.Entry.e))],
-          Gramext.action
-            (fun (a : 'a_opt) (loc : int * int) -> (a : 'a_opt))];
+       Gramext.Snterm
+         (Grammar.Entry.obj
+            (class_self_patt_opt : 'class_self_patt_opt Grammar.Entry.e));
        Gramext.Snterm
          (Grammar.Entry.obj
             (class_structure : 'class_structure Grammar.Entry.e));
        Gramext.Stoken ("", "end")],
       Gramext.action
-        (fun _ (cf : 'class_structure) (cspo : 'a_opt) _ (loc : int * int) ->
+        (fun _ (cf : 'class_structure) (cspo : 'class_self_patt_opt) _
+           (loc : int * int) ->
            (Qast.Node ("CeStr", [Qast.Loc; cspo; cf]) : 'class_expr));
       [Gramext.Snterm
          (Grammar.Entry.obj
@@ -2525,22 +2517,28 @@ Grammar.extend
             (fun (a : 'a_list) (loc : int * int) -> (a : 'a_list))]],
       Gramext.action
         (fun (cf : 'a_list) (loc : int * int) -> (cf : 'class_structure))]];
-    Grammar.Entry.obj (class_self_patt : 'class_self_patt Grammar.Entry.e),
+    Grammar.Entry.obj
+      (class_self_patt_opt : 'class_self_patt_opt Grammar.Entry.e),
     None,
     [None, None,
-     [[Gramext.Stoken ("", "(");
+     [[],
+      Gramext.action
+        (fun (loc : int * int) -> (Qast.Option None : 'class_self_patt_opt));
+      [Gramext.Stoken ("", "(");
        Gramext.Snterm (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e));
        Gramext.Stoken ("", ":");
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
        Gramext.Stoken ("", ")")],
       Gramext.action
         (fun _ (t : 'ctyp) _ (p : 'patt) _ (loc : int * int) ->
-           (Qast.Node ("PaTyc", [Qast.Loc; p; t]) : 'class_self_patt));
+           (Qast.Option (Some (Qast.Node ("PaTyc", [Qast.Loc; p; t]))) :
+            'class_self_patt_opt));
       [Gramext.Stoken ("", "(");
        Gramext.Snterm (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e));
        Gramext.Stoken ("", ")")],
       Gramext.action
-        (fun _ (p : 'patt) _ (loc : int * int) -> (p : 'class_self_patt))]];
+        (fun _ (p : 'patt) _ (loc : int * int) ->
+           (Qast.Option (Some p) : 'class_self_patt_opt))]];
     Grammar.Entry.obj (class_str_item : 'class_str_item Grammar.Entry.e),
     None,
     [None, None,
@@ -2598,7 +2596,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 32464, 32480))
+                  _ -> raise (Match_failure ("q_MLast.ml", 32535, 32551))
             in
             Qast.Node ("CrVal", [Qast.Loc; lab; mf; e]) :
             'class_str_item));
@@ -2993,7 +2991,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2] -> xx1, xx2
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 37031, 37047))
+                  _ -> raise (Match_failure ("q_MLast.ml", 37102, 37118))
             in
             Qast.Node ("TyObj", [Qast.Loc; ml; v]) :
             'ctyp));
@@ -3028,7 +3026,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2] -> xx1, xx2
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 37378, 37394))
+                  _ -> raise (Match_failure ("q_MLast.ml", 37449, 37465))
             in
             Qast.Tuple [Qast.Cons (f, ml); v] :
             'meth_list))]];
@@ -3640,6 +3638,18 @@ Grammar.extend
       Gramext.action
         (fun (a : string) (loc : int * int) ->
            (antiquot "" loc a : 'mod_ident))]];
+    Grammar.Entry.obj
+      (class_self_patt_opt : 'class_self_patt_opt Grammar.Entry.e),
+    None,
+    [None, None,
+     [[Gramext.Stoken ("ANTIQUOT", "")],
+      Gramext.action
+        (fun (a : string) (loc : int * int) ->
+           (antiquot "" loc a : 'class_self_patt_opt));
+      [Gramext.Stoken ("ANTIQUOT", "opt")],
+      Gramext.action
+        (fun (a : string) (loc : int * int) ->
+           (antiquot "opt" loc a : 'class_self_patt_opt))]];
     Grammar.Entry.obj (as_lident_opt : 'as_lident_opt Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("ANTIQUOT", "as")],
@@ -3693,7 +3703,19 @@ Grammar.extend
      [[Gramext.Stoken ("ANTIQUOT", "virt")],
       Gramext.action
         (fun (a : string) (loc : int * int) ->
-           (antiquot "virt" loc a : 'virtual_flag))]]]);;
+           (antiquot "virt" loc a : 'virtual_flag))]];
+    Grammar.Entry.obj (class_expr : 'class_expr Grammar.Entry.e),
+    Some (Gramext.Level "simple"),
+    [None, None,
+     [[Gramext.Stoken ("", "object"); Gramext.Stoken ("ANTIQUOT", "");
+       Gramext.Snterm
+         (Grammar.Entry.obj
+            (class_structure : 'class_structure Grammar.Entry.e));
+       Gramext.Stoken ("", "end")],
+      Gramext.action
+        (fun _ (cf : 'class_structure) (cspo : string) _ (loc : int * int) ->
+           (Qast.Node ("CeStr", [Qast.Loc; antiquot "" loc cspo; cf]) :
+            'class_expr))]]]);;
 
 Grammar.extend
   (let _ = (str_item : 'str_item Grammar.Entry.e)

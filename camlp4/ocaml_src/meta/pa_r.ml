@@ -263,8 +263,8 @@ Grammar.extend
      grammar_entry_create "class_fun_def"
    and class_structure : 'class_structure Grammar.Entry.e =
      grammar_entry_create "class_structure"
-   and class_self_patt : 'class_self_patt Grammar.Entry.e =
-     grammar_entry_create "class_self_patt"
+   and class_self_patt_opt : 'class_self_patt_opt Grammar.Entry.e =
+     grammar_entry_create "class_self_patt_opt"
    and as_lident_opt : 'as_lident_opt Grammar.Entry.e =
      grammar_entry_create "as_lident_opt"
    and cvalue : 'cvalue Grammar.Entry.e = grammar_entry_create "cvalue"
@@ -1706,16 +1706,15 @@ Grammar.extend
         (fun _ (ct : 'class_type) _ (ce : 'class_expr) _ (loc : int * int) ->
            (MLast.CeTyc (loc, ce, ct) : 'class_expr));
       [Gramext.Stoken ("", "object");
-       Gramext.Sopt
-         (Gramext.Snterm
-            (Grammar.Entry.obj
-               (class_self_patt : 'class_self_patt Grammar.Entry.e)));
+       Gramext.Snterm
+         (Grammar.Entry.obj
+            (class_self_patt_opt : 'class_self_patt_opt Grammar.Entry.e));
        Gramext.Snterm
          (Grammar.Entry.obj
             (class_structure : 'class_structure Grammar.Entry.e));
        Gramext.Stoken ("", "end")],
       Gramext.action
-        (fun _ (cf : 'class_structure) (cspo : 'class_self_patt option) _
+        (fun _ (cf : 'class_structure) (cspo : 'class_self_patt_opt) _
            (loc : int * int) ->
            (MLast.CeStr (loc, cspo, cf) : 'class_expr));
       [Gramext.Snterm
@@ -1751,22 +1750,26 @@ Grammar.extend
       Gramext.action
         (fun (cf : 'e__6 list) (loc : int * int) ->
            (cf : 'class_structure))]];
-    Grammar.Entry.obj (class_self_patt : 'class_self_patt Grammar.Entry.e),
+    Grammar.Entry.obj
+      (class_self_patt_opt : 'class_self_patt_opt Grammar.Entry.e),
     None,
     [None, None,
-     [[Gramext.Stoken ("", "(");
+     [[],
+      Gramext.action (fun (loc : int * int) -> (None : 'class_self_patt_opt));
+      [Gramext.Stoken ("", "(");
        Gramext.Snterm (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e));
        Gramext.Stoken ("", ":");
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
        Gramext.Stoken ("", ")")],
       Gramext.action
         (fun _ (t : 'ctyp) _ (p : 'patt) _ (loc : int * int) ->
-           (MLast.PaTyc (loc, p, t) : 'class_self_patt));
+           (Some (MLast.PaTyc (loc, p, t)) : 'class_self_patt_opt));
       [Gramext.Stoken ("", "(");
        Gramext.Snterm (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e));
        Gramext.Stoken ("", ")")],
       Gramext.action
-        (fun _ (p : 'patt) _ (loc : int * int) -> (p : 'class_self_patt))]];
+        (fun _ (p : 'patt) _ (loc : int * int) ->
+           (Some p : 'class_self_patt_opt))]];
     Grammar.Entry.obj (class_str_item : 'class_str_item Grammar.Entry.e),
     None,
     [None, None,

@@ -834,7 +834,7 @@ EXTEND
       [ ci = class_longident; "["; ctcl = SLIST0 ctyp SEP ","; "]" ->
           Qast.Node "CeCon" [Qast.Loc; ci; ctcl]
       | ci = class_longident -> Qast.Node "CeCon" [Qast.Loc; ci; Qast.List []]
-      | "object"; cspo = SOPT class_self_patt; cf = class_structure; "end" ->
+      | "object"; cspo = class_self_patt_opt; cf = class_structure; "end" ->
           Qast.Node "CeStr" [Qast.Loc; cspo; cf]
       | "("; ce = SELF; ":"; ct = class_type; ")" ->
           Qast.Node "CeTyc" [Qast.Loc; ce; ct]
@@ -843,10 +843,11 @@ EXTEND
   class_structure:
     [ [ cf = SLIST0 [ cf = class_str_item; ";" -> cf ] -> cf ] ]
   ;
-  class_self_patt:
-    [ [ "("; p = patt; ")" -> p
+  class_self_patt_opt:
+    [ [ "("; p = patt; ")" -> Qast.Option (Some p)
       | "("; p = patt; ":"; t = ctyp; ")" ->
-          Qast.Node "PaTyc" [Qast.Loc; p; t] ] ]
+          Qast.Option (Some (Qast.Node "PaTyc" [Qast.Loc; p; t]))
+      | -> Qast.Option None ] ]
   ;
   class_str_item:
     [ [ "declare"; st = SLIST0 [ s = class_str_item; ";" -> s ]; "end" ->
@@ -1147,6 +1148,10 @@ EXTEND
   mod_ident:
     [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
   ;
+  class_self_patt_opt:
+    [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a
+      | a = ANTIQUOT -> antiquot "" loc a ] ]
+  ;
   as_lident_opt:
     [ [ a = ANTIQUOT "as" -> antiquot "as" loc a ] ]
   ;
@@ -1171,6 +1176,11 @@ EXTEND
   ;
   virtual_flag:
     [ [ a = ANTIQUOT "virt" -> antiquot "virt" loc a ] ]
+  ;
+  (* compatibility hack with version 3.04 *)
+  class_expr: LEVEL "simple"
+    [ [ "object"; cspo = ANTIQUOT; cf = class_structure; "end" ->
+          Qast.Node "CeStr" [Qast.Loc; antiquot "" loc cspo; cf] ] ]
   ;
 END;
 

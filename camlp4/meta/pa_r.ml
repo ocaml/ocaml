@@ -593,7 +593,7 @@ EXTEND
       [ ci = class_longident; "["; ctcl = LIST0 ctyp SEP ","; "]" ->
           <:class_expr< $list:ci$ [ $list:ctcl$ ] >>
       | ci = class_longident -> <:class_expr< $list:ci$ >>
-      | "object"; cspo = OPT class_self_patt; cf = class_structure; "end" ->
+      | "object"; cspo = class_self_patt_opt; cf = class_structure; "end" ->
           <:class_expr< object $opt:cspo$ $list:cf$ end >>
       | "("; ce = SELF; ":"; ct = class_type; ")" ->
           <:class_expr< ($ce$ : $ct$) >>
@@ -602,9 +602,10 @@ EXTEND
   class_structure:
     [ [ cf = LIST0 [ cf = class_str_item; ";" -> cf ] -> cf ] ]
   ;
-  class_self_patt:
-    [ [ "("; p = patt; ")" -> p
-      | "("; p = patt; ":"; t = ctyp; ")" -> <:patt< ($p$ : $t$) >> ] ]
+  class_self_patt_opt:
+    [ [ "("; p = patt; ")" -> Some p
+      | "("; p = patt; ":"; t = ctyp; ")" -> Some <:patt< ($p$ : $t$) >>
+      | -> None ] ]
   ;
   class_str_item:
     [ [ "declare"; st = LIST0 [ s= class_str_item; ";" -> s ]; "end" ->
