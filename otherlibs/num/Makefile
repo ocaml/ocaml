@@ -1,3 +1,14 @@
+#(***********************************************************************)
+#(*                                                                     *)
+#(*                           Objective Caml                            *)
+#(*                                                                     *)
+#(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+#(*                                                                     *)
+#(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+#(*  en Automatique.  Distributed only by permission.                   *)
+#(*                                                                     *)
+#(***********************************************************************)
+
 # Makefile for the "num" (exact rational arithmetic) library
 
 include ../../config/Makefile
@@ -6,7 +17,7 @@ include ../../config/Makefile
 CC=$(BYTECC)
 CFLAGS=-O -I./bignum/h -I../../byterun $(BYTECCCOMPOPTS)
 CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../stdlib -w s
-CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
+CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -w s
 
 CAMLOBJS=int_misc.cmo string_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \
   ratio.cmo num.cmo arith_status.cmo

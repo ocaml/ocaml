@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -340,7 +340,8 @@ method schedule_fundecl f =
         | Lop(Icall_imm _ | Itailcall_imm _ | Iextcall(_, _)) -> [||]
         | Lreturn -> [||]
         | _ -> i.arg in
-      List.iter (fun x -> longest_path critical_outputs x; ()) ready_queue;
+      List.iter (fun x -> let len = longest_path critical_outputs x in ())
+                ready_queue;
       self#reschedule ready_queue 0 (schedule i)
     end in
 

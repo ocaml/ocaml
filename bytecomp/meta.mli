@@ -20,7 +20,6 @@ external static_free : string -> unit = "static_free"
 external static_resize : string -> int -> string = "static_resize"
 type closure = unit -> Obj.t
 external reify_bytecode : string -> int -> closure = "reify_bytecode"
-val run_bytecode :  string -> int -> unit
 external available_primitives : unit -> string array = "available_primitives"
 external invoke_traced_function : Obj.t -> Obj.t -> Obj.t -> Obj.t
                                 = "invoke_traced_function"

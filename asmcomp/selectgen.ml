@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -458,7 +458,7 @@ method emit_expr env exp =
           self#insert_op op r1 rd
       end        
   | Csequence(e1, e2) ->
-      self#emit_expr env e1;
+      let _ = self#emit_expr env e1 in
       self#emit_expr env e2
   | Cifthenelse(econd, eif, eelse) ->
       let (cond, earg) = self#select_condition econd in
@@ -634,7 +634,7 @@ method emit_tail env exp =
       self#insert (Iop Imove) r1 rd;
       self#insert Iraise rd [||]
   | Csequence(e1, e2) ->
-      self#emit_expr env e1;
+      let _ = self#emit_expr env e1 in
       self#emit_tail env e2
   | Cifthenelse(econd, eif, eelse) ->
       let (cond, earg) = self#select_condition econd in

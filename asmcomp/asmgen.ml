@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -27,10 +27,12 @@ let liveness phrase =
   Liveness.fundecl phrase; phrase
 
 let dump_if flag message phrase =
-  if !flag then Printmach.phase message phrase;
-  phrase
+  if !flag then Printmach.phase message phrase
 
-let dump_linear_if flag message phrase =
+let pass_dump_if flag message phrase =
+  dump_if flag message phrase; phrase
+
+let pass_dump_linear_if flag message phrase =
   if !flag then begin
     print_string "*** "; print_string message; print_newline();
     Printlinear.fundecl phrase; print_newline()
@@ -59,20 +61,20 @@ let compile_fundecl fd_cmm =
   Reg.reset();
   fd_cmm
   ++ Selection.fundecl
-  ++ dump_if dump_selection "After instruction selection"
+  ++ pass_dump_if dump_selection "After instruction selection"
   ++ liveness
-  ++ dump_if dump_live "Liveness analysis"
+  ++ pass_dump_if dump_live "Liveness analysis"
   ++ Spill.fundecl
   ++ liveness
-  ++ dump_if dump_spill "After spilling"
+  ++ pass_dump_if dump_spill "After spilling"
   ++ Split.fundecl
-  ++ dump_if dump_split "After live range splitting"
+  ++ pass_dump_if dump_split "After live range splitting"
   ++ liveness
   ++ regalloc 1
   ++ Linearize.fundecl
-  ++ dump_linear_if dump_linear "Linearized code"
+  ++ pass_dump_linear_if dump_linear "Linearized code"
   ++ Scheduling.fundecl
-  ++ dump_linear_if dump_scheduling "After instruction scheduling"
+  ++ pass_dump_linear_if dump_scheduling "After instruction scheduling"
   ++ Emit.fundecl
 
 let compile_phrase p =

@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -702,7 +702,7 @@ let emit_fundecl (fundecl, needs_gp) =
     `	.fmask	0x0, 0\n`
   end;
   `	.frame	$sp, {emit_int n}, $26\n`;
-  `	.prologue {if needs_gp then 1 else 0}\n`;
+  `	.prologue {emit_int(if needs_gp then 1 else 0)}\n`;
   tailrec_entry_point := new_label();
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all fundecl.fun_body;
