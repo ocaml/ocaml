@@ -1092,6 +1092,8 @@ void advance_to_start()
 }
 
 
+int at_first;
+
 void start_rule(bp, s_lineno)
         register bucket *bp;
         int s_lineno;
@@ -1104,6 +1106,7 @@ void start_rule(bp, s_lineno)
     plhs[nrules] = bp;
     rprec[nrules] = UNDEFINED;
     rassoc[nrules] = TOKEN;
+    at_first = 1;
 }
 
 
@@ -1398,6 +1401,11 @@ void read_grammar()
     for (;;)
     {
 	c = nextc();
+	if (c == '|' && at_first){
+	  ++cptr;
+	  c = nextc();
+	}
+	at_first = 0;
 	if (c == EOF) break;
 	if (isalpha(c) || c == '_' || c == '.' || c == '$' || c == '\'' ||
 		c == '"')
@@ -1723,7 +1731,7 @@ void pack_grammar()
 void print_grammar()
 {
     register int i, j, k;
-    int spacing;
+    int spacing = 0;
     register FILE *f = verbose_file;
 
     if (!vflag) return;
