@@ -182,7 +182,7 @@ let rec build_object_init_0 cl_table params cl copy_env subst_env top =
       let obj = Ident.create "self" and env = Ident.create "env" in
       let (inh_init, obj_init) =
         build_object_init cl_table obj params [] (copy_env env) cl in
-      let obj_init = subst_lambda (subst_env env) obj_init in
+      let obj_init = subst_env env obj_init in
       let obj_init = lfunction [obj] obj_init in
       let obj_init =
 	if top then obj_init else
@@ -320,24 +320,21 @@ let transl_class ids cl_id arity pub_meths cl =
   let tables = Ident.create (Ident.name cl_id ^ "_tables") in
   let (top_env, req) = oo_add_class tables in
   let new_ids = Env.diff top_env cl.cl_env in
-  let new_ids =
-    List.filter
-      (fun id ->
-        let s = Ident.name id in
-        String.length s < 8 || String.sub s 0 8 <> "selfpat-")
-      new_ids in
   let top = (new_ids = []) && not req in
   let env2 = Ident.create "env" in
-  let subst env =
-    match new_ids with
-      [id] -> Ident.add id env Ident.empty
-    | _ ->
-        let i = ref (-1) in
-        List.fold_left
-          (fun subst id ->
-            incr i; Ident.add id (Lprim (Pfield !i, [env]))  subst)
-          Ident.empty new_ids
+  let subst env lam i0 new_ids' =
+    let fv = free_variables lam in
+    let fv = List.fold_right IdentSet.remove !new_ids' fv in
+    let fv =
+      IdentSet.filter (fun id -> List.exists (Ident.same id) new_ids) fv in
+    new_ids' := !new_ids' @ IdentSet.elements fv;
+    let i = ref (i0-1) in
+    List.fold_left
+      (fun subst id ->
+        incr i; Ident.add id (Lprim (Pfield !i, [env]))  subst)
+      Ident.empty !new_ids'
   in
+  let new_ids_meths = ref [] in
   let msubst =
     if new_ids = [] then fun x -> x else
     function
@@ -347,16 +344,18 @@ let transl_class ids cl_id arity pub_meths cl =
           Curried, self :: args,
           Llet(Alias, env,
                Lprim(Parrayrefu Paddrarray, [Lvar self; Lvar env2]),
-               subst_lambda (subst (Lvar env)) body))
+               subst_lambda (subst (Lvar env) body 0 new_ids_meths) body))
       | _ -> assert false
   in
+  let new_ids_init = ref [] in
   let copy_env envs self =
     if top then lambda_unit else
     Lifused(env2, Lprim(
             Parraysetu Paddrarray,
-            [Lvar self; Lvar env2; Lprim(Pfield 0, [Lvar envs])]))
-  and subst_env envs =
-    subst (Lprim(Pfield 0, [Lvar envs]))
+            [Lvar self; Lvar env2;
+             Lprim(Pfield 0, [Lprim(Pfield 0, [Lvar envs])])]))
+  and subst_env envs lam =
+    subst_lambda (subst (Lprim(Pfield 0, [Lvar envs])) lam 1 new_ids_init) lam
   in
 
   let cla = Ident.create "class" in
@@ -389,14 +388,20 @@ let transl_class ids cl_id arity pub_meths cl =
   if top then ltable (lclass lbody) else
   let env_index = Ident.create "env_index"
   and envs = Ident.create "envs" in
+  let lenvs =
+    if !new_ids_meths = [] && !new_ids_init = [] && inh_init = []
+    then lambda_unit
+    else Lvar envs in
   let lenv =
-    match new_ids with
-      [] -> lambda_unit
-    | [id] -> Lvar id
-    | _ -> Lprim(Pmakeblock(0,Immutable), List.map (fun id -> Lvar id) new_ids)
+    if !new_ids_meths = [] && !new_ids_init = [] then lambda_unit else
+    Lprim(Pmakeblock(0, Immutable),
+          (if !new_ids_meths = [] then lambda_unit else
+           Lprim(Pmakeblock(0, Immutable),
+                 List.map (fun id -> Lvar id) !new_ids_meths)) ::
+          List.map (fun id -> Lvar id) !new_ids_init)
   in
   let make_envs lam =
-    Llet(Strict, envs,
+    Llet(StrictOpt, envs,
          Lprim(Pmakeblock(0, Immutable),
                lenv :: List.map (fun (_, _, lpath) -> lpath) inh_init),
          lam)
@@ -437,10 +442,10 @@ let transl_class ids cl_id arity pub_meths cl =
                    ))))))),
   make_envs (
   Lprim(Pmakeblock(0, Immutable),
-        [Lapply(Lprim(Pfield 0, [Lvar cached]), [Lvar envs]);
+        [Lapply(Lprim(Pfield 0, [Lvar cached]), [lenvs]);
          Lprim(Pfield 1, [Lvar cached]);
          Lprim(Pfield 2, [Lvar cached]);
-         Lvar envs]))))
+         lenvs]))))
 
 (* example:
 module M(X : sig val x : int end) = struct
