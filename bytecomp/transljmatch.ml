@@ -98,35 +98,35 @@ let make_disp id dag tbl_node2id par =
 
 (*************************************************************************)
 (*  Rewrite reaction rules from match_clause format to match_clause format
-    Ident.t -> match_clause Array.t -> pattern Agraph.t -> 
-    (pattern Agraph.node * Ident.t) Hashtbl.t
+    Ident.t -> match_clause Array.t -> 
+    (pattern Agraph.t * (pattern Agraph.node * Ident.t) Hashtbl.t) optional
     -> match_clause Array.t 
     
-rewrtite id_ch2be_rewrite match_clauses dag tbl_node2newchid
+rewrtite id_ch2be_rewrite match_clauses (None | Some (dag, tbl_node2id))
 
 **************************************************************************)
 
-let rewrite id mcls dag tbl_node2id =
+let rewrite id mcls is_weighty =
   (*rewrite one reaction rule*)
   let rewrite_mclause mcl =
     match mcl with
     | Dispatcher _ -> mcl
-    | Reaction (jpats_ls,gd) ->
+    | Reaction (jpats_ls, gd) ->
 	let jpat_has_id jpat id =
 	  let (jid, _) = jpat.jpat_desc in
-	  Ident.unique_name jid.jident_desc == Ident.unique_name id in
-	(* has_id: joinpattern list list -> Ident.t -> 
+	  Ident.unique_name jid.jident_desc = Ident.unique_name id in
+        (* has_id: joinpattern list list -> Ident.t -> 
 	   (joinpattern list list * joinpattern) option
-
+	   
 	   has_id [[jpat_11;...];...;[jpat_n1;...]] id means:
 	   if there exists a jpat_ij such that (jpat_has_id jpat_ij id) is true,
 	   then return Some 
-	                ([[jpat_11;...;jpat_1n];
-	                  ...;
-	                  [jpat_(i-1)1;...;jpat_(i_1)n];
-	                  ...;
-	                  [jpat_(i+1)1;...;jpat_(i+1)n];
-	                  [jpat_n1;...;jpat_nm]], jpat_ij)
+	   ([[jpat_11;...;jpat_1n];
+	   ...;
+	   [jpat_(i-1)1;...;jpat_(i_1)n];
+	   ...;
+	   [jpat_(i+1)1;...;jpat_(i+1)n];
+	   [jpat_n1;...;jpat_nm]], jpat_ij)
 	   else return None 
 	   
 	   By linearity of join patterns, such an i is unique.
@@ -138,7 +138,7 @@ let rewrite id mcls dag tbl_node2id =
 	  | jpats::jpats_ls' ->
 	      let result = has_id jpats_ls' id in
 	      match result with
-	      |	None -> 
+	      | None -> 
 		  let r =
 		    try
 		      let jpat =
@@ -148,37 +148,43 @@ let rewrite id mcls dag tbl_node2id =
 		  (match r with
 		  | None -> None
 		  | Some (_,jpat) -> Some (jpats_ls',jpat))
-	      |	Some (remains, jpat) -> Some (jpats::remains, jpat) in
+	      | Some (remains, jpat) -> Some (jpats::remains, jpat) in
 	match has_id jpats_ls id with
 	| None -> mcl
 	| Some (remains, jpat) ->
 	    let (jid, pat) = jpat.jpat_desc in
 	    let xi = Ident.create "xi" in
 	    let xi_pat = {pat with pat_desc = Tpat_var xi} in
-	    let nodes = Agraph.nodes dag in
-	    let has_info n =
-	      (Parmatch.le_pat (Agraph.info dag n) pat) &&
-	      (Parmatch.le_pat pat (Agraph.info dag n)) in
-	    let pat_node = List.find has_info nodes in
-	    let preds = Agraph.prec dag pat_node in
-	    let rec build_or nds =
-	      match nds with
-	      | [nd] ->
-		  [{jpat with jpat_desc = 
-                      ({jid with jident_desc = (Hashtbl.find tbl_node2id nd)}, 
-		      xi_pat)}]
-	      | hd::tl ->
-		  {jpat with jpat_desc = 
-                      ({jid with jident_desc = (Hashtbl.find tbl_node2id hd)}, 
-		      xi_pat)} ::
-		  build_or tl
-	      | [] -> assert false in
-	    let new_or_jpats = build_or (pat_node::preds) in
 	    let (id2pat_ls, ex) = gd in
-	    Reaction (new_or_jpats::remains, ((xi, pat)::id2pat_ls, ex)) in
+	    match is_weighty with
+	    | None -> 
+		let new_or_jpats = [{jpat with jpat_desc = (jid, xi_pat)}] in
+		Reaction (new_or_jpats::remains, ((xi, pat)::id2pat_ls, ex))
+	    | Some (dag, tbl_node2id) ->
+		let new_or_jpats =
+		  let nodes = Agraph.nodes dag in
+		  let has_info n =
+		    (Parmatch.le_pat (Agraph.info dag n) pat) &&
+		    (Parmatch.le_pat pat (Agraph.info dag n)) in
+		  let pat_node = List.find has_info nodes in
+		  let preds = Agraph.prec dag pat_node in
+		  let rec build_or nds =
+		    match nds with
+		    | [nd] ->
+			[{jpat with jpat_desc = 
+                          ({jid with jident_desc = (Hashtbl.find tbl_node2id nd)}, 
+			   xi_pat)}]
+		    | hd::tl ->
+			{jpat with jpat_desc = 
+                         ({jid with jident_desc = (Hashtbl.find tbl_node2id hd)}, 
+			  xi_pat)} ::
+			build_or tl
+		    | [] -> assert false in
+		  build_or (pat_node::preds) in
+		Reaction (new_or_jpats::remains, ((xi, pat)::id2pat_ls, ex)) in
   Array.map rewrite_mclause mcls
-
-
+    
+    
 (*******************************************************************************)
 (*      Build the dag from a pairwise distinct list of patterns
         Ident.t -> pattern list -> 
@@ -255,7 +261,9 @@ let y mauto id args =
   | [] -> assert false         (*every channel takes a pat arg*)
   | [pat] ->
       (match par with
-      |	Total -> mauto
+      |	Total -> 
+	  let new_mcls = rewrite id mauto.jauto_desc None in
+	  {mauto with jauto_desc = new_mcls; }
       |	Partial ->
 	  let (dag, tbl_node2id) = build_dag id pi' in
 	  let old_jc = List.assoc id mauto.jauto_names in
@@ -268,7 +276,7 @@ let y mauto id args =
 	      (Hashtbl.fold 
 		 (fun node id ids -> id::ids) tbl_node2id []) in
 	  let disp = make_disp id dag tbl_node2id par in
-	  let mcls' = rewrite id mauto.jauto_desc dag tbl_node2id in
+	  let mcls' = rewrite id mauto.jauto_desc (Some (dag, tbl_node2id)) in
 	  let new_mcls = Array.append mcls' (Array.make 1 (Dispatcher disp)) in
 	  {mauto with jauto_desc = new_mcls; 
              jauto_names = mauto.jauto_names @ new_jauto_names;
@@ -305,7 +313,7 @@ let y mauto id args =
 	  (Hashtbl.fold 
 	     (fun node id ids -> id::ids) tbl_node2id []) in
       let disp = make_disp id dag tbl_node2id par in
-      let mcls' = rewrite id mauto.jauto_desc dag tbl_node2id in
+      let mcls' = rewrite id mauto.jauto_desc (Some (dag, tbl_node2id)) in
       let new_mcls = Array.append mcls' (Array.make 1 (Dispatcher disp)) in
       {mauto with jauto_desc = new_mcls; 
          jauto_names = mauto.jauto_names @ new_jauto_names;
