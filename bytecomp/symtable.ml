@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -127,10 +127,15 @@ let init () =
       literal_table := (c, cst) :: !literal_table)
     Runtimedef.builtin_exceptions;
   (* Enter the known C primitives *)
-  if String.length !Clflags.use_runtime = 0 then 
-    Array.iter (fun x -> enter_numtable c_prim_table x; ())
-               Runtimedef.builtin_primitives
-  else begin
+  if String.length !Clflags.use_prims > 0 then begin
+      let ic = open_in !Clflags.use_prims in
+      try
+        while true do
+          enter_numtable c_prim_table (input_line ic)
+        done
+      with End_of_file -> close_in ic
+         | x -> close_in ic; raise x
+  end else if String.length !Clflags.use_runtime > 0 then begin
     let primfile = Filename.temp_file "camlprims" "" in
     try
       if Sys.command(Printf.sprintf "%s -p > %s"
@@ -144,6 +149,9 @@ let init () =
       with End_of_file -> close_in ic
          | x -> close_in ic; raise x
     with x -> remove_file primfile; raise x
+  end else begin
+    Array.iter (fun x -> enter_numtable c_prim_table x; ())
+               Runtimedef.builtin_primitives
   end
 
 (* Relocate a block of object bytecode *)

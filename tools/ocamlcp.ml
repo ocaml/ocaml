@@ -49,6 +49,7 @@ module Options = Main_args.Make_options (struct
   let _pp s = incompatible "-pp"
   let _thread () = incompatible "-thread"
   let _unsafe = option "-unsafe"
+  let _use_prims s = option_with_arg "-use_prims" s
   let _use_runtime s = option_with_arg "-use_runtime" s
   let _v = option "-v"
   let _verbose = option "-verbose"

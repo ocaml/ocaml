@@ -32,6 +32,7 @@ module Make_options (F :
      val _pp : string -> unit
      val _thread : unit -> unit
      val _unsafe : unit -> unit
+     val _use_prims : string -> unit
      val _use_runtime : string -> unit
      val _v : unit -> unit
      val _verbose : unit -> unit
@@ -70,7 +71,7 @@ struct
      "-unsafe", Arg.Unit F._unsafe,
                              " No bounds checking on array and string access";
      "-use_runtime", Arg.String F._use_runtime,
-                   "<path> Generate bytecode for the given runtime system";
+                   "<path>  Generate bytecode for the given runtime system";
      "-v", Arg.Unit F._v, " Print compiler version number";
      "-verbose", Arg.Unit F._verbose, " Print calls to external commands";
 
@@ -78,6 +79,7 @@ struct
      "-drawlambda", Arg.Unit F._drawlambda, " (undocumented)";
      "-dlambda", Arg.Unit F._dlambda, " (undocumented)";
      "-dinstr", Arg.Unit F._dinstr, " (undocumented)";
+     "-use_prims", Arg.String F._use_prims, " <file>  (undocumented)";
 
      "-", Arg.String F.anonymous,
            "<file>  Treat <file> as a file name (even if it starts with `-')";

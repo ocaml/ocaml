@@ -32,6 +32,7 @@ module Make_options (F :
       val _pp : string -> unit
       val _thread : unit -> unit
       val _unsafe : unit -> unit
+      val _use_prims : string -> unit
       val _use_runtime : string -> unit
       val _v : unit -> unit
       val _verbose : unit -> unit

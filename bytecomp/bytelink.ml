@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -237,7 +237,7 @@ let link_bytecode objfiles exec_name copy_header =
         close_in inchan
       with Not_found | Sys_error _ -> ()
     end;
-    (* The path to the bytecode interpreter (in use_vn mode) *)
+    (* The path to the bytecode interpreter (in use_runtime mode) *)
     let pos0 = pos_out outchan in
     if String.length !Clflags.use_runtime > 0 then begin
       output_string outchan (make_absolute !Clflags.use_runtime);

@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -73,6 +73,7 @@ module Options = Main_args.Make_options (struct
   let _pp s = preprocessor := Some s
   let _thread = set thread_safe
   let _unsafe = set fast
+  let _use_prims s = use_prims := s
   let _use_runtime s = use_runtime := s
   let _v = print_version_number
   let _verbose = set verbose
