@@ -29,6 +29,8 @@ let report_error ppf exn =
       Lexer.report_error ppf err
   | Syntaxerr.Error err ->
       Syntaxerr.report_error ppf err
+  | Pparse.Error ->
+      fprintf ppf "Preprocessor error"
   | Env.Error err ->
       Env.report_error ppf err
   | Ctype.Tags(l, l') -> fprintf ppf
