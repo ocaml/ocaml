@@ -87,6 +87,12 @@ val wait_signal : int list -> int
            Signal handlers attached to the signals in [sigs] will not
            be invoked.  Do not call [wait_signal] concurrently 
            from several threads on the same signals. *)
+val yield : unit -> unit
+        (* Re-schedule the calling thread without suspending it.
+           This function can be used to give scheduling hints,
+           telling the scheduler that now is a good time to
+           switch to other threads. *)
+
 (*--*)
 
 (* The following primitives provide the basis for implementing 
