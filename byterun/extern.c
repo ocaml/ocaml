@@ -15,6 +15,8 @@
 
 /* Structured output */
 
+/* The interface of this file is "intext.h" */
+
 #include <string.h>
 #include "alloc.h"
 #include "custom.h"

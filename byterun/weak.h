@@ -15,7 +15,12 @@
 
 /* Operations on weak arrays */
 
+#ifndef CAML_WEAK_H
+#define CAML_WEAK_H
+
 #include "mlvalues.h"
 
 extern value weak_list_head;
 extern value weak_none;
+
+#endif /* CAML_WEAK_H */

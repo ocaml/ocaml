@@ -6,7 +6,8 @@ bng_ia32.o: bng_ia32.c
 bng_mips.o: bng_mips.c
 bng_ppc.o: bng_ppc.c
 bng_sparc.o: bng_sparc.c
-nat_stubs.o: nat_stubs.c ../../byterun/alloc.h ../../byterun/misc.h \
+nat_stubs.o: nat_stubs.c ../../byterun/alloc.h \
+  ../../byterun/compatibility.h ../../byterun/misc.h \
   ../../byterun/config.h ../../config/m.h ../../config/s.h \
   ../../byterun/mlvalues.h ../../byterun/custom.h ../../byterun/intext.h \
   ../../byterun/io.h ../../byterun/fix_code.h ../../byterun/fail.h \

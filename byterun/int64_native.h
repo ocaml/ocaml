@@ -17,6 +17,9 @@
    so that it has the same interface as the software emulation
    provided in int64_emul.h */
 
+#ifndef CAML_INT64_NATIVE_H
+#define CAML_INT64_NATIVE_H
+
 #define I64_literal(hi,lo) ((int64)(hi) << 32 | (lo))
 #define I64_compare(x,y) (((x) > (y)) - ((x) < (y)))
 #define I64_ult(x,y) ((uint64)(x) < (uint64)(y))
@@ -44,3 +47,4 @@
 #define I64_to_double(x) ((double)(x))
 #define I64_of_double(x) ((int64)(x))
 
+#endif /* CAML_INT64_NATIVE_H */

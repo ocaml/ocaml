@@ -18,13 +18,12 @@
 #include <string.h>
 #include "alloc.h"
 #include "bigarray.h"
+#include "compare.h"
 #include "custom.h"
 #include "fail.h"
 #include "intext.h"
 #include "memory.h"
 #include "mlvalues.h"
-
-CAMLextern int compare_unordered;         /* from byterun/compare.c */
 
 extern void bigarray_unmap_file(void * addr, unsigned long len);
                                           /* from mmap_xxx.c */

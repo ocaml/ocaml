@@ -74,4 +74,4 @@ void disasm_instr(pc)
   fflush (stdout);
 }
 
-#endif
+#endif /* DEBUG */

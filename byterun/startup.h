@@ -1,5 +1,20 @@
-#ifndef _startup_
-#define _startup_
+/***********************************************************************/
+/*                                                                     */
+/*                           Objective Caml                            */
+/*                                                                     */
+/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
+/*                                                                     */
+/*  Copyright 2001 Institut National de Recherche en Informatique et   */
+/*  en Automatique.  All rights reserved.  This file is distributed    */
+/*  under the terms of the GNU Library General Public License, with    */
+/*  the special exception on linking described in file ../LICENSE.     */
+/*                                                                     */
+/***********************************************************************/
+
+/* $Id$ */
+
+#ifndef CAML_STARTUP_H
+#define CAML_STARTUP_H
 
 #include "misc.h"
 #include "exec.h"
@@ -18,4 +33,4 @@ extern int32 seek_optional_section(int fd, struct exec_trailer *trail,
 extern int32 seek_section(int fd, struct exec_trailer *trail, char *name);
 
 
-#endif
+#endif /* CAML_STARTUP_H */

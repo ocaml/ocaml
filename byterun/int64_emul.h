@@ -16,6 +16,9 @@
 /* Software emulation of 64-bit integer arithmetic, for C compilers
    that do not support it.  */
 
+#ifndef CAML_INT64_EMUL_H
+#define CAML_INT64_EMUL_H
+
 #include <math.h>
 
 #if ARCH_BIG_ENDIAN
@@ -265,3 +268,5 @@ static int64 I64_of_double(double f)
   if (neg) res = I64_neg(res);
   return res;
 }
+
+#endif /* CAML_INT64_EMUL_H */

@@ -88,7 +88,7 @@
 
 /* The entry points */
 
-CAMLextern void output_val (struct channel * chan, value v, value flags);
+void output_val (struct channel * chan, value v, value flags);
   /* Output [v] with flags [flags] on the channel [chan]. */
 
 /* </private> */
@@ -107,7 +107,7 @@ CAMLextern long output_value_to_block(value v, value flags,
      Raise [Failure] if buffer is too short. */
 
 /* <private> */
-CAMLextern value input_val (struct channel * chan);
+value input_val (struct channel * chan);
   /* Read a structured value from the channel [chan]. */
 /* </private> */
 

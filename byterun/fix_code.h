@@ -15,8 +15,8 @@
 
 /* Handling of blocks of bytecode (endianness switch, threading). */
 
-#ifndef _fix_code_
-#define _fix_code_
+#ifndef CAML_FIX_CODE_H
+#define CAML_FIX_CODE_H
 
 
 #include "config.h"
@@ -39,4 +39,4 @@ extern char * instr_base;
 void thread_code (code_t code, asize_t len);
 #endif
 
-#endif
+#endif /* CAML_FIX_CODE_H */

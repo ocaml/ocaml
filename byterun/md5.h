@@ -15,8 +15,8 @@
 
 /* MD5 message digest */
 
-#ifndef _md5
-#define _md5
+#ifndef CAML_MD5_H
+#define CAML_MD5_H
 
 
 #include "mlvalues.h"
@@ -38,4 +38,4 @@ CAMLextern void MD5Final (unsigned char *digest, struct MD5Context *ctx);
 CAMLextern void MD5Transform (uint32 *buf, uint32 *in);
 
 
-#endif
+#endif /* CAML_MD5_H */

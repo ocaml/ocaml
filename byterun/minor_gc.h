@@ -13,8 +13,8 @@
 
 /* $Id$ */
 
-#ifndef _minor_gc_
-#define _minor_gc_
+#ifndef CAML_MINOR_GC_H
+#define CAML_MINOR_GC_H
 
 
 #include "misc.h"
@@ -43,4 +43,4 @@ extern void oldify_mopup (void);
     } \
   }while(0)
 
-#endif /* _minor_gc_ */
+#endif /* CAML_MINOR_GC_H */

@@ -15,8 +15,8 @@
 
 /* structure of the stacks */
 
-#ifndef _stacks_
-#define _stacks_
+#ifndef CAML_STACKS_H
+#define CAML_STACKS_H
 
 
 #include "misc.h"
@@ -39,5 +39,4 @@ void realloc_stack (asize_t required_size);
 void change_max_stack_size (unsigned long new_max_size);
 
 
-#endif /* _stacks_ */
-
+#endif /* CAML_STACKS_H */

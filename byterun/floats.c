@@ -13,6 +13,8 @@
 
 /* $Id$ */
 
+/* The interface of this file is in "mlvalues.h" and "alloc.h" */
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

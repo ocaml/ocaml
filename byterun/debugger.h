@@ -15,8 +15,8 @@
 
 /* Interface with the debugger */
 
-#ifndef _debugger_
-#define _debugger_
+#ifndef CAML_DEBUGGER_H
+#define CAML_DEBUGGER_H
 
 #include "misc.h"
 #include "mlvalues.h"
@@ -107,6 +107,4 @@ enum debugger_reply {
   /* Program exited due to a stray exception. */
 };
 
-#endif
-
-
+#endif /* CAML_DEBUGGER_H */

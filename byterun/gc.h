@@ -13,8 +13,8 @@
 
 /* $Id$ */
 
-#ifndef _gc_
-#define _gc_
+#ifndef CAML_GC_H
+#define CAML_GC_H
 
 
 #include "mlvalues.h"
@@ -52,4 +52,4 @@
 #define Is_black_val(val) (Color_val(val) == Caml_black)
 
 
-#endif /* _gc_ */
+#endif /* CAML_GC_H */

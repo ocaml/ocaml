@@ -13,6 +13,9 @@
 
 /* $Id$ */
 
+#ifndef CAML_FINALISE_H
+#define CAML_FINALISE_H
+
 #include "roots.h"
 
 void final_update (void);
@@ -22,3 +25,5 @@ void final_do_weak_roots (scanning_action f);
 void final_do_young_roots (scanning_action f);
 void final_empty_young (void);
 value final_register (value f, value v);
+
+#endif /* CAML_FINALISE_H */

@@ -15,8 +15,8 @@
 
 /* Dynamic loading of C primitives. */
 
-#ifndef _dynlink_
-#define _dynlink_
+#ifndef CAML_DYNLINK_H
+#define CAML_DYNLINK_H
 
 #include "misc.h"
 
@@ -31,4 +31,4 @@ extern void build_primitive_table(char * lib_path,
 /* The search path for shared libraries */
 extern struct ext_table shared_libs_path;
 
-#endif
+#endif /* CAML_DYNLINK_H */

@@ -15,6 +15,8 @@
 
 /* The generic hashing primitive */
 
+/* The interface of this file is in "mlvalues.h" */
+
 #include "mlvalues.h"
 #include "custom.h"
 #include "memory.h"

@@ -15,8 +15,8 @@
 
 /* The bytecode interpreter */
 
-#ifndef _interp_
-#define _interp_
+#ifndef CAML_INTERP_H
+#define CAML_INTERP_H
 
 
 #include "misc.h"
@@ -25,4 +25,4 @@
 value interprete (code_t prog, asize_t prog_size);
 
 
-#endif
+#endif /* CAML_INTERP_H */

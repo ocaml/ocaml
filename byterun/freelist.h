@@ -15,8 +15,8 @@
 
 /* Free lists of heap blocks. */
 
-#ifndef _freelist_
-#define _freelist_
+#ifndef CAML_FREELIST_H
+#define CAML_FREELIST_H
 
 
 #include "misc.h"
@@ -32,4 +32,4 @@ void fl_add_block (char *);
 void make_free_blocks (value *, mlsize_t, int);
 
 
-#endif /* _freelist_ */
+#endif /* CAML_FREELIST_H */

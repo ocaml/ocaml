@@ -13,8 +13,8 @@
 
 /* $Id$ */
 
-#ifndef _compact_
-#define _compact_
+#ifndef CAML_COMPACT_H
+#define CAML_COMPACT_H
 
 
 #include "config.h"
@@ -24,4 +24,4 @@ extern void compact_heap (void);
 extern void compact_heap_maybe (void);
 
 
-#endif /* _compact_ */
+#endif /* CAML_COMPACT_H */

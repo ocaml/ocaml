@@ -15,8 +15,8 @@
 
 /* Buffered input/output */
 
-#ifndef _io_
-#define _io_
+#ifndef CAML_IO_H
+#define CAML_IO_H
 
 #include "misc.h"
 #include "mlvalues.h"
@@ -109,4 +109,4 @@ CAMLextern value Val_file_offset(file_offset fofs);
 CAMLextern file_offset File_offset_val(value v);
 #endif
 
-#endif /* _io_ */
+#endif /* CAML_IO_H */

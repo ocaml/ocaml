@@ -13,8 +13,8 @@
 
 /* $Id$ */
 
-#ifndef _gc_ctrl_
-#define _gc_ctrl_
+#ifndef CAML_GC_CTRL_H
+#define CAML_GC_CTRL_H
 
 #include "misc.h"
 
@@ -39,4 +39,4 @@ void init_gc (unsigned long, unsigned long, unsigned long,
 void heap_check (void);
 #endif
 
-#endif /* _gc_ctrl_ */
+#endif /* CAML_GC_CTRL_H */

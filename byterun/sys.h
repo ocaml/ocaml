@@ -13,8 +13,8 @@
 
 /* $Id$ */
 
-#ifndef _sys_
-#define _sys_
+#ifndef CAML_SYS_H
+#define CAML_SYS_H
 
 #include "misc.h"
 
@@ -26,4 +26,4 @@ CAMLextern value sys_exit (value);
 
 extern char * caml_exe_name;
 
-#endif /* _sys_ */
+#endif /* CAML_SYS_H */

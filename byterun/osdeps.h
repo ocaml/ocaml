@@ -15,9 +15,8 @@
 
 /* Operating system - specific stuff */
 
-#ifndef _osdeps_
-
-#define _osdeps_
+#ifndef CAML_OSDEPS_H
+#define CAML_OSDEPS_H
 
 #include "misc.h"
 
@@ -60,5 +59,5 @@ extern int caml_read_directory(char * dirname, struct ext_table * contents);
 extern int executable_name(char * name, int name_len);
 #endif
 
-#endif
+#endif /* CAML_OSDEPS_H */
 

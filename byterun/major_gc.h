@@ -13,8 +13,8 @@
 
 /* $Id$ */
 
-#ifndef _major_gc_
-#define _major_gc_
+#ifndef CAML_MAJOR_GC_H
+#define CAML_MAJOR_GC_H
 
 
 #include "freelist.h"
@@ -70,4 +70,4 @@ void major_collection (void);
 void finish_major_cycle (void);
 
 
-#endif /* _major_gc_ */
+#endif /* CAML_MAJOR_GC_H */

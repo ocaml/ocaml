@@ -13,8 +13,8 @@
 
 /* $Id$ */
 
-#ifndef _roots_
-#define _roots_
+#ifndef CAML_ROOTS_H
+#define CAML_ROOTS_H
 
 #include "misc.h"
 #include "memory.h"
@@ -35,4 +35,4 @@ CAMLextern void do_local_roots(scanning_action f, char * bottom_of_stack,
 
 CAMLextern void (*scan_roots_hook) (scanning_action);
 
-#endif /* _roots_ */
+#endif /* CAML_ROOTS_H */
