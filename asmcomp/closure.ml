@@ -274,8 +274,10 @@ let rec substitute sb ulam =
                 us_cases_consts = Array.map (substitute sb) sw.us_cases_consts;
                 us_cases_blocks = Array.map (substitute sb) sw.us_cases_blocks;
                })
-  | Ustaticfail (nfail, args) -> Ustaticfail (nfail, List.map (substitute sb) args)
-  | Ucatch(nfail, ids, u1, u2) -> Ucatch(nfail, ids, substitute sb u1, substitute sb u2)
+  | Ustaticfail (nfail, args) ->
+      Ustaticfail (nfail, List.map (substitute sb) args)
+  | Ucatch(nfail, ids, u1, u2) ->
+      Ucatch(nfail, ids, substitute sb u1, substitute sb u2)
   | Utrywith(u1, id, u2) ->
       let id' = Ident.rename id in
       Utrywith(substitute sb u1, id', substitute (Tbl.add id (Uvar id') sb) u2)
@@ -322,8 +324,9 @@ let rec bind_params subst params args body =
       if is_simple_argument a1 then
         bind_params (Tbl.add p1 a1 subst) pl al body
       else begin
-        let body' = bind_params subst pl al body in
-        if occurs_var p1 body then Ulet(p1, a1, body')
+        let p1' = Ident.rename p1 in
+        let body' = bind_params (Tbl.add p1 (Uvar p1') subst) pl al body in
+        if occurs_var p1 body then Ulet(p1', a1, body')
         else if no_effects a1 then body'
         else Usequence(a1, body')
       end
