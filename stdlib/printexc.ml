@@ -45,6 +45,7 @@ let print fct arg =
     fct arg
   with x ->
     print_exn x;
+    flush stderr;
     raise x
 
 let catch fct arg =
