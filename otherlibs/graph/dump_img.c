@@ -38,42 +38,36 @@ value gr_dump_image(image)
 {
   int width, height, i, j;
   XImage * idata, * imask;
-  Push_roots(root, 2);
+  value m = Val_unit;
 
-#define im root[0]
-#define m root[1]
+  Begin_roots2(image, m);
+    gr_check_open();
+    width = Width_im(image);
+    height = Height_im(image);
+    m = gr_alloc_int_vect(height);
+    for (i = 0; i < height; i++) {
+      value v = gr_alloc_int_vect(width);
+      modify(&Field(m, i), v);
+    }
 
-  gr_check_open();
-  im = image;
-  width = Width_im(im);
-  height = Height_im(im);
-  m = gr_alloc_int_vect(height);
-  for (i = 0; i < height; i++) {
-    value v = gr_alloc_int_vect(width);
-    modify(&Field(m, i), v);
-  }
-  
-  idata =
-    XGetImage(grdisplay, Data_im(im), 0, 0, width, height, (-1), ZPixmap);
-  for (i = 0; i < height; i++)
-    for (j = 0; j < width; j++)
-      Field(Field(m, i), j) = Val_int(gr_rgb_pixel(XGetPixel(idata, j, i)));
-  XDestroyImage(idata);
-
-  if (Mask_im(im) != None) {
-    imask =
-      XGetImage(grdisplay, Mask_im(im), 0, 0, width, height, 1, ZPixmap);
+    idata =
+      XGetImage(grdisplay, Data_im(image), 0, 0, width, height, (-1), ZPixmap);
     for (i = 0; i < height; i++)
       for (j = 0; j < width; j++)
-        if (XGetPixel(imask, j, i) == 0)
-          Field(Field(m, i), j) = Val_int(Transparent);
-    XDestroyImage(imask);
-  }
-  Pop_roots();
-  return m;
+	Field(Field(m, i), j) = Val_int(gr_rgb_pixel(XGetPixel(idata, j, i)));
+    XDestroyImage(idata);
 
-#undef im
-#undef m
+    if (Mask_im(image) != None) {
+      imask =
+	XGetImage(grdisplay, Mask_im(image), 0, 0, width, height, 1, ZPixmap);
+      for (i = 0; i < height; i++)
+	for (j = 0; j < width; j++)
+	  if (XGetPixel(imask, j, i) == 0)
+	    Field(Field(m, i), j) = Val_int(Transparent);
+      XDestroyImage(imask);
+    }
+  End_roots();
+  return m;
 }
 
 

@@ -23,17 +23,18 @@ static value alloc_group_entry(entry)
      struct group * entry;
 {
   value res;
-  Push_roots(s, 3);
+  value name = Val_unit, pass = Val_unit, mem = Val_unit;
 
-  s[0] = copy_string(entry->gr_name);
-  s[1] = copy_string(entry->gr_passwd);
-  s[2] = copy_string_array(entry->gr_mem);
-  res = alloc_tuple(4);
-  Field(res,0) = s[0];
-  Field(res,1) = s[1];
-  Field(res,2) = Val_int(entry->gr_gid);
-  Field(res,3) = s[2];
-  Pop_roots();
+  Begin_roots3 (name, pass, mem);
+    name = copy_string(entry->gr_name);
+    pass = copy_string(entry->gr_passwd);
+    mem = copy_string_array(entry->gr_mem);
+    res = alloc_tuple(4);
+    Field(res,0) = name;
+    Field(res,1) = pass;
+    Field(res,2) = Val_int(entry->gr_gid);
+    Field(res,3) = mem;
+  End_roots();
   return res;
 }
 

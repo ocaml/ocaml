@@ -59,18 +59,19 @@ value weak_get (ar, n)        /* ML */
 {
   mlsize_t offset = Long_val (n) + 1;
   value res;
-  Push_roots (r, 1);
+  value elt;
                                                    Assert (Is_in_heap (ar));
   if (offset < 1 || offset >= Wosize_val (ar)) invalid_argument ("Weak.get");
   if (Field (ar, offset) == 0){
     res = None_val;
   }else{
-    r[0] = Field (ar, offset);
-    darken (r[0], NULL);
-    Alloc_small (res, 1, Some_tag);
-    Field (res, 0) = r[0];
+    elt = Field (ar, offset);
+    darken (elt, NULL);
+    Begin_root(elt);
+      res = alloc (1, Some_tag);
+    End_roots ();
+    Field (res, 0) = elt;
   }
-  Pop_roots ();
   return res;
 }
 

@@ -22,12 +22,13 @@
 #include "stacks.h"
 
 value * local_roots = NULL;
+struct caml__roots_block *local_roots_new = NULL;
 
 struct global_root {
   value * root;
   struct global_root * next;
 };
-  
+
 static struct global_root * global_roots = NULL;
 
 void (*scan_roots_hook) P((scanning_action)) = NULL;
@@ -67,12 +68,23 @@ void oldify_local_roots ()
   register value * sp;
   value * block;
   struct global_root * gr;
+  struct caml__roots_block *lr;
+  long i, j;
 
   /* The stack */
   for (sp = extern_sp; sp < stack_high; sp++) {
     oldify (*sp, sp);
   }
   /* Local C roots */
+  for (lr = local_roots_new; lr != NULL; lr = lr->next) {
+    for (i = 0; i < lr->ntables; i++){
+      for (j = 0; j < lr->nitems; j++){
+        sp = &(lr->tables[i][j]);
+        oldify (*sp, sp);
+      }
+    }
+  }
+  /* Local C roots, old style */
   for (block = local_roots; block != NULL; block = (value *) block [1]){
     for (sp = block - (long) block [0]; sp < block; sp++){
       oldify (*sp, sp);
@@ -99,6 +111,8 @@ void do_roots (f)
   register value * sp;
   value * block;
   struct global_root * gr;
+  struct caml__roots_block *lr;
+  long i, j;
 
   /* Global variables */
   f(global_data, &global_data);
@@ -108,6 +122,15 @@ void do_roots (f)
     f (*sp, sp);
   }
   /* Local C roots */
+  for (lr = local_roots_new; lr != NULL; lr = lr->next) {
+    for (i = 0; i < lr->ntables; i++){
+      for (j = 0; j < lr->nitems; j++){
+        sp = &(lr->tables[i][j]);
+        f (*sp, sp);
+      }
+    }
+  }
+  /* Local C roots, old style */
   for (block = local_roots; block != NULL; block = (value *) block [1]){
     for (sp = block - (long) block [0]; sp < block; sp++){
       f (*sp, sp);

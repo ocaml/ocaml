@@ -40,22 +40,23 @@ value unix_recvfrom(sock, buff, ofs, len, flags) /* ML */
 {
   int retcode;
   value res;
-  Push_roots(a, 1);
+  value adr = Val_unit;
 
-  buff = unix_freeze_buffer(buff);
-  sock_addr_len = sizeof(sock_addr);
-  enter_blocking_section();
-  retcode = recvfrom((SOCKET) _get_osfhandle(Int_val(sock)),
-                     &Byte(buff, Long_val(ofs)), Int_val(len),
-                     convert_flag_list(flags, msg_flag_table),
-                     &sock_addr.s_gen, &sock_addr_len);
-  leave_blocking_section();
-  if (retcode == -1) uerror("recvfrom", Nothing);
-  a[0] = alloc_sockaddr();
-  res = alloc_tuple(2);
-  Field(res, 0) = Val_int(retcode);
-  Field(res, 1) = a[0];
-  Pop_roots();
+  Begin_root (adr);
+    buff = unix_freeze_buffer(buff);     /* XXX Xavier regarde ca */
+    sock_addr_len = sizeof(sock_addr);
+    enter_blocking_section();
+    retcode = recvfrom((SOCKET) _get_osfhandle(Int_val(sock)),
+                       &Byte(buff, Long_val(ofs)), Int_val(len),
+                       convert_flag_list(flags, msg_flag_table),
+                       &sock_addr.s_gen, &sock_addr_len);
+    leave_blocking_section();
+    if (retcode == -1) uerror("recvfrom", Nothing);
+    adr = alloc_sockaddr();
+    res = alloc_tuple(2);
+    Field(res, 0) = Val_int(retcode);
+    Field(res, 1) = adr;
+  End_roots();
   return res;
 }
 

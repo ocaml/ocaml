@@ -60,6 +60,7 @@ struct caml_thread_struct {
   value * trapsp;               /* Saved value of trapsp for this thread */
   struct longjmp_buffer * external_raise; /* Saved value of external_raise */
   value * local_roots;          /* Saved value of local_roots */
+  value * local_roots_new;      /* Saved value of local_roots_new */
   struct caml_thread_struct * next;  /* Double linking of threads */
   struct caml_thread_struct * prev;
 };
@@ -92,6 +93,8 @@ static void caml_thread_scan_roots(action)
   caml_thread_t th;
   register value * sp;
   value * block;
+  struct caml_roots_block *lr;
+  long i;
 
   /* Scan all thread descriptors */
   (*action)((value) thread_list, (value *) &thread_list);
@@ -104,6 +107,12 @@ static void caml_thread_scan_roots(action)
       (*action)(*sp, sp);
     }
     /* Scan local C roots for that thread */
+    for (lr = th->local_roots_new; lr != NULL; lr = lr->next) {
+      for (i = 0; i < lr->len; i++){
+        sp = lr->roots[i];
+        (*action)(*sp, sp);
+      }
+    }
     for (block = th->local_roots; block != NULL; block = (value *) block [1]) {
       for (sp = block - (long) block [0]; sp < block; sp++) {
         (*action)(*sp, sp);
@@ -132,6 +141,7 @@ static void caml_thread_enter_blocking_section()
   curr_thread->trapsp = trapsp;
   curr_thread->external_raise = external_raise;
   curr_thread->local_roots = local_roots;
+  curr_thread->local_roots_new = local_roots_new;
   /* Release the global mutex */
   AssertEv(ReleaseMutex(caml_mutex));
 }
@@ -149,6 +159,7 @@ static void caml_thread_leave_blocking_section()
   trapsp = curr_thread->trapsp;
   external_raise = curr_thread->external_raise;
   local_roots = curr_thread->local_roots;
+  local_roots_new = curr_thread->local_roots_new;
   if (prev_leave_blocking_section_hook != NULL)
     (*prev_leave_blocking_section_hook)();
 }
@@ -190,6 +201,7 @@ static void caml_thread_cleanup(th)
   th->trapsp = NULL;
   th->external_raise = NULL;
   th->local_roots = NULL;
+  th->local_roots_new = NULL;
 }
 
 static void caml_thread_finalize(vfin)
@@ -207,19 +219,20 @@ static void caml_thread_finalize(vfin)
 static caml_thread_t caml_alloc_thread()
 {
   caml_thread_t th;
-  Push_roots(root, 1);
+  value w32 =
+      alloc_final(sizeof(struct win32_thread_struct) / sizeof(value),
+                  caml_thread_finalize, 1, Max_thread_number);
 
-  root[0] =
-    alloc_final(sizeof(struct win32_thread_struct) / sizeof(value),
-                caml_thread_finalize, 1, Max_thread_number);
-  th = (caml_thread_t)
-    alloc_shr(sizeof(struct caml_thread_struct) / sizeof(value), 0);
-  th->win32 = (struct win32_thread_struct *) root[0];
-  th->win32->wakeup_event = CreateEvent(NULL, FALSE, FALSE, NULL);
-  th->ident = Val_long(thread_next_ident);
-  thread_next_ident++;
-  th->next = NULL;
-  th->prev = NULL;
+  Begin_root (w32);
+    th = (caml_thread_t)
+      alloc_shr(sizeof(struct caml_thread_struct) / sizeof(value), 0);
+    th->win32 = (struct win32_thread_struct *) w32;
+    th->win32->wakeup_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+    th->ident = Val_long(thread_next_ident);
+    thread_next_ident++;
+    th->next = NULL;
+    th->prev = NULL;
+  End_root ();
   return th;
 }
 
@@ -249,6 +262,7 @@ value caml_thread_initialize(unit)   /* ML */
   thread_list->trapsp = trapsp;
   thread_list->external_raise = external_raise;
   thread_list->local_roots = local_roots;
+  thread_list->local_roots_new = local_roots_new;
   /* Associate the thread descriptor with the current thread */
   curr_thread = thread_list;
   /* Set up the hooks */
@@ -287,6 +301,7 @@ static void caml_thread_start(th)
   trapsp = th->trapsp;
   external_raise = th->external_raise;
   local_roots = th->local_roots;
+  local_roots_new = th->local_roots_new;
   /* Callback the closure */
   clos = *extern_sp++;
   callback(clos, Val_unit);
@@ -301,32 +316,32 @@ value caml_thread_new(clos)          /* ML */
 {
   caml_thread_t th;
   unsigned long th_id;
-  Push_roots(root, 1);
 
-  root[0] = clos;
-  /* Allocate the thread and its stack */
-  th = caml_alloc_thread();
-  th->stack_low = (value *) stat_alloc(Thread_stack_size);
-  th->stack_high = th->stack_low + Thread_stack_size / sizeof(value);
-  th->stack_threshold = th->stack_low + Stack_threshold / sizeof(value);
-  th->sp = th->stack_high;
-  th->trapsp = th->stack_high;
-  th->external_raise = NULL;
-  th->local_roots = NULL;
-  /* Add it to the list of threads */
-  th->next = thread_list;
-  Assign(thread_list->prev, th);
-  thread_list = th;
-  /* Pass the closure in the newly created stack, so that it will be
-     preserved by garbage collection */
-  *--(th->sp) = root[0];
-  /* Fork the new thread */
-  th->win32->thread =
-    CreateThread(NULL,0, (LPTHREAD_START_ROUTINE) caml_thread_start,
-                 (void *) th, 0, &th_id);
-  if (th->win32->thread == NULL || th->win32->wakeup_event == NULL)
-    sys_error("Thread.new");
-  Pop_roots();
+  Begin_root (clos);
+    /* Allocate the thread and its stack */
+    th = caml_alloc_thread();
+    th->stack_low = (value *) stat_alloc(Thread_stack_size);
+    th->stack_high = th->stack_low + Thread_stack_size / sizeof(value);
+    th->stack_threshold = th->stack_low + Stack_threshold / sizeof(value);
+    th->sp = th->stack_high;
+    th->trapsp = th->stack_high;
+    th->external_raise = NULL;
+    th->local_roots = NULL;
+    th->local_roots_new = NULL;
+    /* Add it to the list of threads */
+    th->next = thread_list;
+    Assign(thread_list->prev, th);
+    thread_list = th;
+    /* Pass the closure in the newly created stack, so that it will be
+       preserved by garbage collection */
+    *--(th->sp) = clos;
+    /* Fork the new thread */
+    th->win32->thread =
+      CreateThread(NULL,0, (LPTHREAD_START_ROUTINE) caml_thread_start,
+                   (void *) th, 0, &th_id);
+    if (th->win32->thread == NULL || th->win32->wakeup_event == NULL)
+      sys_error("Thread.new");
+  End_roots();
   return (value) th;
 }
 

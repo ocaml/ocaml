@@ -51,20 +51,19 @@ static value fdset_to_fdlist(fdset)
      file_descr_set * fdset;
 {
   int i;
-  Push_roots(roots, 1)
-#define res roots[0]
-  res = Val_int(0);
-  for (i = FD_SETSIZE - 1; i >= 0; i--) {
-    if (FD_ISSET(i, fdset)) {
-      value newres = alloc(2, 0);
-      Field(newres, 0) = Val_int(i);
-      Field(newres, 1) = res;
-      res = newres;
+  value res = Val_int(0);
+
+  Begin_root(res);
+    for (i = FD_SETSIZE - 1; i >= 0; i--) {
+      if (FD_ISSET(i, fdset)) {
+	value newres = alloc(2, 0);
+	Field(newres, 0) = Val_int(i);
+	Field(newres, 1) = res;
+	res = newres;
+      }
     }
-  }
-  Pop_roots();
+  End_roots();
   return res;
-#undef res
 }
 
 value unix_select(readfds, writefds, exceptfds, timeout) /* ML */
@@ -76,38 +75,33 @@ value unix_select(readfds, writefds, exceptfds, timeout) /* ML */
   struct timeval * tvp;
   int retcode;
   value res;
-  Push_roots(roots, 3)
-#define read_list roots[0]
-#define write_list roots[1]
-#define except_list roots[2]
+  value read_list = Val_unit, write_list = Val_unit, except_list = Val_unit;
 
-  fdlist_to_fdset(readfds, &read);
-  fdlist_to_fdset(writefds, &write);
-  fdlist_to_fdset(exceptfds, &except);
-  tm = Double_val(timeout);
-  if (tm < 0.0)
-    tvp = (struct timeval *) NULL;
-  else {
-    tv.tv_sec = (int) tm;
-    tv.tv_usec = (int) (1e6 * (tm - (int) tm));
-    tvp = &tv;
-  }
-  enter_blocking_section();
-  retcode = select(FD_SETSIZE, &read, &write, &except, tvp);
-  leave_blocking_section();
-  if (retcode == -1) uerror("select", Nothing);
-  read_list = fdset_to_fdlist(&read);
-  write_list = fdset_to_fdlist(&write);
-  except_list = fdset_to_fdlist(&except);
-  res = alloc_tuple(3);
-  Field(res, 0) = read_list;
-  Field(res, 1) = write_list;
-  Field(res, 2) = except_list;
-  Pop_roots();
+  Begin_roots3 (read_list, write_list, except_list);
+    fdlist_to_fdset(readfds, &read);
+    fdlist_to_fdset(writefds, &write);
+    fdlist_to_fdset(exceptfds, &except);
+    tm = Double_val(timeout);
+    if (tm < 0.0)
+      tvp = (struct timeval *) NULL;
+    else {
+      tv.tv_sec = (int) tm;
+      tv.tv_usec = (int) (1e6 * (tm - (int) tm));
+      tvp = &tv;
+    }
+    enter_blocking_section();
+    retcode = select(FD_SETSIZE, &read, &write, &except, tvp);
+    leave_blocking_section();
+    if (retcode == -1) uerror("select", Nothing);
+    read_list = fdset_to_fdlist(&read);
+    write_list = fdset_to_fdlist(&write);
+    except_list = fdset_to_fdlist(&except);
+    res = alloc_tuple(3);
+    Field(res, 0) = read_list;
+    Field(res, 1) = write_list;
+    Field(res, 2) = except_list;
+  End_roots();
   return res;
-#undef read_list
-#undef write_list
-#undef except_list
 }
 
 #else

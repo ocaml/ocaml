@@ -23,22 +23,21 @@ value win_findfirst(name)             /* ML */
   int h;
   value v;
   struct _finddata_t fileinfo;
-  Push_roots(r,1);
+  value valname = Val_unit;
 
-#define valname r[0] 
-
-  h = _findfirst(String_val(name),&fileinfo);
-  if (h == -1) {
-    if (errno == ENOENT)
-      raise_end_of_file();
-    else
-      uerror("opendir", Nothing);
-  }
-  valname = copy_string(fileinfo.name);
-  v = alloc_tuple(2);
-  Field(v,0) = valname;
-  Field(v,1) = Val_int(h);
-  Pop_roots();
+  Begin_root (valname);
+    h = _findfirst(String_val(name),&fileinfo);
+    if (h == -1) {
+      if (errno == ENOENT)
+        raise_end_of_file();
+      else
+        uerror("opendir", Nothing);
+    }
+    valname = copy_string(fileinfo.name);
+    v = alloc_tuple(2);
+    Field(v,0) = valname;
+    Field(v,1) = Val_int(h);
+  End_roots();
   return v;
 }
 

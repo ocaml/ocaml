@@ -33,17 +33,18 @@ static value alloc_service_entry(entry)
      struct servent * entry;
 {
   value res;
-  Push_roots(r, 3);
+  value name = Val_unit, aliases = Val_unit, proto = Val_unit;
 
-  r[0] = copy_string(entry->s_name);
-  r[1] = copy_string_array(entry->s_aliases);
-  r[2] = copy_string(entry->s_proto);
-  res = alloc_tuple(4);
-  Field(res,0) = r[0];
-  Field(res,1) = r[1];
-  Field(res,2) = Val_int(ntohs(entry->s_port));
-  Field(res,3) = r[2];
-  Pop_roots();
+  Begin_roots3 (name, aliases, proto);
+    name = copy_string(entry->s_name);
+    aliases = copy_string_array(entry->s_aliases);
+    proto = copy_string(entry->s_proto);
+    res = alloc_tuple(4);
+    Field(res,0) = name;
+    Field(res,1) = aliases;
+    Field(res,2) = Val_int(ntohs(entry->s_port));
+    Field(res,3) = proto;
+  End_roots();
   return res;
 }
 

@@ -42,11 +42,9 @@ value str_compile_regexp(src, fold) /* ML */
   regexp expr;
   char * msg;
 
-  Push_roots(root, 1);
-  root[0] = src;
+  Begin_root(src);
   expr = alloc_regexp();
-  src = root[0];
-  Pop_roots();
+  End_roots();
   re_syntax_options = RE_SYNTAX;
   if (Bool_val(fold) && case_fold_table == NULL) {
     int i;
@@ -165,15 +163,9 @@ value str_replacement_text(repl, orig) /* ML */
       }
     }
   }
-  {
-    Push_roots(r, 2);
-    r[0] = orig;
-    r[1] = repl;
+  Begin_roots2(orig,repl);
     res = alloc_string(len);
-    orig = r[0];
-    repl = r[1];
-    Pop_roots();
-  }
+  End_roots();
   p = String_val(repl);
   q = String_val(res);
   n = string_length(repl);

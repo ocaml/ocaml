@@ -246,11 +246,9 @@ value install_signal_handler(signal_number, action) /* ML */
   default:                      /* Signal_handle */
     if (signal_handlers == 0) {
       int i;
-      Push_roots(r, 1);
-      r[0] = action;
-      signal_handlers = alloc_tuple(NSIG);
-      action = r[0];
-      Pop_roots();
+      Begin_root (action);
+        signal_handlers = alloc_tuple(NSIG);
+      End_roots();
       for (i = 0; i < NSIG; i++) Field(signal_handlers, i) = Val_int(0);
       register_global_root(&signal_handlers);
     }

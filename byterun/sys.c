@@ -76,14 +76,12 @@ void sys_error(arg)
   } else {
     int err_len = strlen(err);
     int arg_len = string_length(arg);
-    Push_roots(r, 1);
-    r[0] = arg;
-    str = alloc_string(arg_len + 2 + err_len);
-    arg = r[0];
+    Begin_root(arg);
+      str = alloc_string(arg_len + 2 + err_len);
+    End_roots();
     bcopy(String_val(arg), &Byte(str, 0), arg_len);
     bcopy(": ", &Byte(str, arg_len), 2);
     bcopy(err, &Byte(str, arg_len + 2), err_len);
-    Pop_roots();
   }
   raise_sys_error(str);
 }
@@ -228,13 +226,14 @@ value sys_get_config(unit)  /* ML */
      value unit;
 {
   value result;
-  Push_roots (r, 1);
+  value ostype;
 
-  r[0] = copy_string(OCAML_OS_TYPE);
-  result = alloc_tuple(2);
-  Field(result, 0) = r[0];
-  Field(result, 1) = Val_long (8 * sizeof(value));
-  Pop_roots ();
+  ostype = copy_string(OCAML_OS_TYPE);
+  Begin_root(ostype);
+    result = alloc_tuple(2);
+    Field(result, 0) = ostype;
+    Field(result, 1) = Val_long (8 * sizeof(value));
+  End_roots ();
   return result;
 }
 

@@ -32,17 +32,20 @@ value unix_times_bytecode()               /* ML */
   value res;
   struct tms buffer;
   int i;
-  Push_roots(t,4);
+  value u = Val_unit, s = Val_unit, cu = Val_unit, cs = Val_unit;
 
-  times(&buffer);
-  t[0] = copy_double((double) buffer.tms_utime / CLK_TCK);
-  t[1] = copy_double((double) buffer.tms_stime / CLK_TCK);
-  t[2] = copy_double((double) buffer.tms_cutime / CLK_TCK);
-  t[3] = copy_double((double) buffer.tms_cstime / CLK_TCK);
-  res = alloc_tuple(4);
-  for (i = 0; i < 4; i++)
-    Field(res, i) = t[i];
-  Pop_roots();
+  Begin_roots4 (u, s, cu, cs);
+    times(&buffer);
+    u = copy_double((double) buffer.tms_utime / CLK_TCK);
+    s = copy_double((double) buffer.tms_stime / CLK_TCK);
+    cu = copy_double((double) buffer.tms_cutime / CLK_TCK);
+    cs = copy_double((double) buffer.tms_cstime / CLK_TCK);
+    res = alloc_tuple(4);
+    Field (res, 0) = u;
+    Field (res, 1) = s;
+    Field (res, 2) = cu;
+    Field (res, 3) = cs;
+  End_roots();
   return res;
 }
 

@@ -259,14 +259,14 @@ value output(channel, buff, start, length) /* ML */
 {
   long pos = Long_val(start);
   long len = Long_val(length);
-  Push_roots(r, 1);
-  r[0] = buff;
-  while (len > 0) {
-    int written = putblock((struct channel *) channel, &Byte(r[0], pos), len);
-    pos += written;
-    len -= written;
-  }
-  Pop_roots();
+
+  Begin_root(buff);
+    while (len > 0) {
+      int written = putblock((struct channel *) channel, &Byte(buff, pos), len);
+      pos += written;
+      len -= written;
+    }
+  End_roots();
   return Val_unit;
 }
 

@@ -281,35 +281,33 @@ value input_value_from_string(str, ofs) /* ML */
   uint32 magic;
   mlsize_t block_len, num_objects, size_32, size_64, whsize;
   value res;
-  Push_roots(r, 1);
+  value obj = Val_unit;
 
-  intern_src = &Byte_u(str, Long_val(ofs));
-  intern_input_malloced = 0;
-  magic = read32u();
-  if (magic != Intext_magic_number) failwith("input_value: bad object");
-  block_len = read32u();
-  num_objects = read32u();
-  size_32 = read32u();
-  size_64 = read32u();
-  /* Allocate result */
+  Begin_roots2(str, obj);
+    intern_src = &Byte_u(str, Long_val(ofs));
+    intern_input_malloced = 0;
+    magic = read32u();
+    if (magic != Intext_magic_number) failwith("input_value: bad object");
+    block_len = read32u();
+    num_objects = read32u();
+    size_32 = read32u();
+    size_64 = read32u();
+    /* Allocate result */
 #ifdef ARCH_SIXTYFOUR
-  whsize = size_64;
+    whsize = size_64;
 #else
-  whsize = size_32;
+    whsize = size_32;
 #endif
-  r[0] = str;
-  intern_alloc(whsize, num_objects);
-  str = r[0];
-  intern_src = &Byte_u(str, Long_val(ofs) + 5*4); /* If a GC occurred */
-  /* Fill it in */
-  intern_rec(&res);
-  /* Free everything */
-  if (intern_obj_table != NULL) stat_free((char *) intern_obj_table);
-  /* Build result */
-  r[0] = res;
-  res = alloc_tuple(2);
-  Field(res, 0) = r[0];
-  Field(res, 1) = Val_long(Long_val(ofs) + 5*4 + block_len);
-  Pop_roots();
+    intern_alloc(whsize, num_objects);
+    intern_src = &Byte_u(str, Long_val(ofs) + 5*4); /* If a GC occurred */
+    /* Fill it in */
+    intern_rec(&obj);
+    /* Free everything */
+    if (intern_obj_table != NULL) stat_free((char *) intern_obj_table);
+    /* Build result */
+    res = alloc_tuple(2);
+    Field(res, 0) = obj;
+    Field(res, 1) = Val_long(Long_val(ofs) + 5*4 + block_len);
+  End_roots();
   return res;
 }

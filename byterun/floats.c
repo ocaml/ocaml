@@ -180,15 +180,15 @@ value fmod_float(f1, f2)              /* ML */
 value frexp_float(f)              /* ML */
      value f;
 {
-  int i;
+  int exponent;
   value res;
-  Push_roots(r, 1);
+  value mantissa = copy_double(frexp (Double_val(f), &exponent));
 
-  r[0] = copy_double(frexp (Double_val(f), &i));
-  res = alloc_tuple(2);
-  Field(res, 0) = r[0];
-  Field(res, 1) = Val_int(i);
-  Pop_roots();
+  Begin_root(mantissa);
+    res = alloc_tuple(2);
+    Field(res, 0) = mantissa;
+    Field(res, 1) = Val_int(exponent);
+  End_roots();
   return res;
 }
 
@@ -214,20 +214,20 @@ value modf_float(f)              /* ML */
      value f;
 {
 #if macintosh
-  _float_eval fres;
+  _float_eval frem;
 #else
-  double fres;
+  double frem;
 #endif
   value res;
-  Push_roots(r, 2);
+  value quo = Val_unit, rem = Val_unit;
 
-  r[0] = copy_double(modf (Double_val(f), &fres));
-  r[1] = copy_double(fres);
-
-  res = alloc_tuple(2);
-  Field(res, 0) = r[0];
-  Field(res, 1) = r[1];
-  Pop_roots();
+  Begin_roots2(quo,rem);
+    quo = copy_double(modf (Double_val(f), &frem));
+    rem = copy_double(frem);
+    res = alloc_tuple(2);
+    Field(res, 0) = quo;
+    Field(res, 1) = rem;
+  End_roots();
   return res;
 }
 

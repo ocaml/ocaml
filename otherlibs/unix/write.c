@@ -30,26 +30,25 @@ value unix_write(fd, buf, vofs, vlen) /* ML */
   long ofs, len, written;
   int numbytes, ret;
   char iobuf[UNIX_BUFFER_SIZE];
-  Push_roots(r, 1);
 
-  r[0] = buf;
-  ofs = Long_val(vofs);
-  len = Long_val(vlen);
-  written = 0;
-  while (len > 0) {
-    numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
-    bcopy(&Byte(r[0], ofs), iobuf, numbytes);
-    enter_blocking_section();
-    ret = write(Int_val(fd), iobuf, numbytes);
-    leave_blocking_section();
-    if (ret == -1) {
-      if ((errno == EAGAIN || errno == EWOULDBLOCK) && written > 0) break;
-      uerror("write", Nothing);
+  Begin_root (buf);
+    ofs = Long_val(vofs);
+    len = Long_val(vlen);
+    written = 0;
+    while (len > 0) {
+      numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
+      bcopy(&Byte(buf, ofs), iobuf, numbytes);
+      enter_blocking_section();
+      ret = write(Int_val(fd), iobuf, numbytes);
+      leave_blocking_section();
+      if (ret == -1) {
+        if ((errno == EAGAIN || errno == EWOULDBLOCK) && written > 0) break;
+        uerror("write", Nothing);
+      }
+      written += ret;
+      ofs += ret;
+      len -= ret;
     }
-    written += ret;
-    ofs += ret;
-    len -= ret;
-  }
-  Pop_roots();
+  End_roots();
   return Val_long(written);
 }

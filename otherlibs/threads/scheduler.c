@@ -182,11 +182,9 @@ value thread_new(clos)          /* ML */
 {
   thread_t th;
   /* Allocate the thread and its stack */
-  Push_roots(r, 1);
-  r[0] = clos;
-  th = (thread_t) alloc_shr(sizeof(struct thread_struct) / sizeof(value), 0);
-  clos = r[0];
-  Pop_roots();
+  Begin_root(clos);
+    th = (thread_t) alloc_shr(sizeof(struct thread_struct) / sizeof(value), 0);
+  End_roots();
   th->ident = next_ident;
   next_ident = Val_int(Int_val(next_ident) + 1);
   th->stack_low = (value *) stat_alloc(Thread_stack_size);
@@ -350,20 +348,21 @@ try_again:
          Mark the corresponding threads runnable. */
       FOREACH_THREAD(th)
         if (th->status & (BLOCKED_IO - 1)) {
-          Push_roots(r, 3);
-          r[0] = inter_fdlist_set(th->readfds, &readfds);
-          r[1] = inter_fdlist_set(th->writefds, &writefds);
-          r[2] = inter_fdlist_set(th->exceptfds, &exceptfds);
-          if (r[0] != NO_FDS || r[1] != NO_FDS || r[2] != NO_FDS) {
-            value retval = alloc(3, TAG_RESUMED_IO);
-            Field(retval, 0) = r[0];
-            Field(retval, 1) = r[1];
-            Field(retval, 2) = r[2];
-            Assign(th->retval, retval);
-            th->status = RUNNABLE;
-            if (run_thread == NULL) run_thread = th; /* Found one. */
-          }
-          Pop_roots();
+	  value r = Val_unit, w = Val_unit, e = Val_unit;
+          Begin_roots3(r,w,e);
+            r = inter_fdlist_set(th->readfds, &readfds);
+	    w = inter_fdlist_set(th->writefds, &writefds);
+	    e = inter_fdlist_set(th->exceptfds, &exceptfds);
+	    if (r != NO_FDS || w != NO_FDS || e != NO_FDS) {
+	      value retval = alloc(3, TAG_RESUMED_IO);
+	      Field(retval, 0) = r;
+	      Field(retval, 1) = w;
+	      Field(retval, 2) = e;
+	      Assign(th->retval, retval);
+	      th->status = RUNNABLE;
+	      if (run_thread == NULL) run_thread = th; /* Found one. */
+	    }
+          End_roots();
         }
       END_FOREACH(th);
     }
@@ -591,24 +590,21 @@ static value inter_fdlist_set(fdl, set)
      value fdl;
      fd_set * set;
 {
-  value res, cons;
+  value res = Val_unit;
+  value cons;
 
-  for (res = NO_FDS; fdl != NO_FDS; fdl = Field(fdl, 1)) {
-    int fd = Int_val(Field(fdl, 0));
-    if (FD_ISSET(fd, set)) {
-      Push_roots(r, 2);
-      r[0] = fdl;
-      r[1] = res;
-      cons = alloc(2, 0);
-      fdl = r[0];
-      res = r[1];
-      Pop_roots();
-      Field(cons, 0) = Val_int(fd);
-      Field(cons, 1) = res;
-      res = cons;
-      FD_CLR(fd, set); /* wake up only one thread per fd ready */
+  Begin_roots2(fdl, res);
+    for (res = NO_FDS; fdl != NO_FDS; fdl = Field(fdl, 1)) {
+      int fd = Int_val(Field(fdl, 0));
+      if (FD_ISSET(fd, set)) {
+        cons = alloc(2, 0);
+	Field(cons, 0) = Val_int(fd);
+	Field(cons, 1) = res;
+	res = cons;
+	FD_CLR(fd, set); /* wake up only one thread per fd ready */
+      }
     }
-  }
+  End_roots();
   return res;
 }
 
@@ -632,7 +628,6 @@ static value alloc_process_status(pid, status)
      int pid, status;
 {
   value st, res;
-  Push_roots(r, 1);
 
   if (WIFEXITED(status)) {
     st = alloc(1, TAG_WEXITED);
@@ -646,10 +641,10 @@ static value alloc_process_status(pid, status)
     st = alloc(1, TAG_WSIGNALED);
     Field(st, 0) = Val_int(WTERMSIG(status));
   }
-  r[0] = st;
-  res = alloc(2, TAG_RESUMED_WAIT);
-  Field(res, 0) = Val_int(pid);
-  Field(res, 1) = r[0];
-  Pop_roots();
+  Begin_root(st);
+    res = alloc(2, TAG_RESUMED_WAIT);
+    Field(res, 0) = Val_int(pid);
+    Field(res, 1) = st;
+  End_roots();
   return res;
 }

@@ -36,11 +36,10 @@ void raise_constant(tag)
      value tag;
 {
   value bucket;
-  Push_roots (a, 1);
-  a[0] = tag;
-  bucket = alloc (1, 0);
-  Field(bucket, 0) = a[0];
-  Pop_roots ();
+  Begin_root (tag);
+    bucket = alloc (1, 0);
+    Field(bucket, 0) = tag;
+  End_roots ();
   mlraise(bucket);
 }
 
@@ -49,13 +48,11 @@ void raise_with_arg(tag, arg)
      value arg;
 {
   value bucket;
-  Push_roots (a, 2);
-  a[0] = tag;
-  a[1] = arg;
-  bucket = alloc (2, 0);
-  Field(bucket, 0) = a[0];
-  Field(bucket, 1) = a[1];
-  Pop_roots ();
+  Begin_roots2 (tag, arg);
+    bucket = alloc (2, 0);
+    Field(bucket, 0) = tag;
+    Field(bucket, 1) = arg;
+  End_roots ();
   mlraise(bucket);
 }
 
@@ -64,11 +61,9 @@ void raise_with_string(tag, msg)
      char * msg;
 {
   value vmsg;
-  Push_roots(r, 1);
-  r[0] = tag;
-  vmsg = copy_string(msg);
-  tag = r[0];
-  Pop_roots();
+  Begin_root(tag);
+    vmsg = copy_string(msg);
+  End_roots();
   raise_with_arg(tag, vmsg);
 }
 

@@ -74,6 +74,101 @@ char * stat_resize P((char *, asize_t));     /* Size in bytes. */
   }                                                                         \
 }                                                                           \
 
+/*
+   [Begin_roots] and [End_roots] are used for C variables that are GC roots.
+   It must contain all values in C local variables and function parameters
+   at the time the minor GC is called.
+   Usage:
+   After initialising your local variables to legal Caml values, but before
+   calling allocation functions, insert [Begin_roots_n(v1, ... vn)], where
+   v1 ... vn are your variables of type [value] that you want to be updated
+   across allocations.
+   At the end, insert [End_roots()].
+
+   Note that [Begin_roots] opens a new block, and [End_roots] closes it.
+   Thus they must occur in matching pairs at the same brace nesting level.
+
+   You can use [Val_unit] as a dummy initial value for your variables.
+*/
+
+
+struct caml__roots_block {
+  struct caml__roots_block *next;
+  long ntables;
+  long nitems;
+  value *tables [5];
+};
+
+extern struct caml__roots_block *local_roots_new;  /* defined in roots.h */
+
+#define Begin_root Begin_roots1
+
+#define Begin_roots1(r0) { \
+  struct caml__roots_block caml__roots_block; \
+  caml__roots_block.next = local_roots_new; \
+  local_roots_new = &caml__roots_block; \
+  caml__roots_block.nitems = 1; \
+  caml__roots_block.ntables = 1; \
+  caml__roots_block.tables[0] = &(r0);
+
+#define Begin_roots2(r0, r1) { \
+  struct caml__roots_block caml__roots_block; \
+  caml__roots_block.next = local_roots_new; \
+  local_roots_new = &caml__roots_block; \
+  caml__roots_block.nitems = 1; \
+  caml__roots_block.ntables = 2; \
+  caml__roots_block.tables[0] = &(r0); \
+  caml__roots_block.tables[1] = &(r1);
+
+#define Begin_roots3(r0, r1, r2) { \
+  struct caml__roots_block caml__roots_block; \
+  caml__roots_block.next = local_roots_new; \
+  local_roots_new = &caml__roots_block; \
+  caml__roots_block.nitems = 1; \
+  caml__roots_block.ntables = 3; \
+  caml__roots_block.tables[0] = &(r0); \
+  caml__roots_block.tables[1] = &(r1); \
+  caml__roots_block.tables[2] = &(r2);
+
+#define Begin_roots4(r0, r1, r2, r3) { \
+  struct caml__roots_block caml__roots_block; \
+  caml__roots_block.next = local_roots_new; \
+  local_roots_new = &caml__roots_block; \
+  caml__roots_block.nitems = 1; \
+  caml__roots_block.ntables = 4; \
+  caml__roots_block.tables[0] = &(r0); \
+  caml__roots_block.tables[1] = &(r1); \
+  caml__roots_block.tables[2] = &(r2); \
+  caml__roots_block.tables[3] = &(r3);
+
+#define Begin_roots5(r0, r1, r2, r3, r4) { \
+  struct caml__roots_block caml__roots_block; \
+  caml__roots_block.next = local_roots_new; \
+  local_roots_new = &caml__roots_block; \
+  caml__roots_block.nitems = 1; \
+  caml__roots_block.ntables = 5; \
+  caml__roots_block.tables[0] = &(r0); \
+  caml__roots_block.tables[1] = &(r1); \
+  caml__roots_block.tables[2] = &(r2); \
+  caml__roots_block.tables[3] = &(r3); \
+  caml__roots_block.tables[4] = &(r4);
+
+#define Begin_roots_block(table, size) { \
+  struct caml__roots_block caml__roots_block; \
+  caml__roots_block.next = local_roots_new; \
+  local_roots_new = &caml__roots_block; \
+  caml__roots_block.nitems = (size); \
+  caml__roots_block.ntables = 1; \
+  caml__roots_block.tables[0] = (table);
+
+#define End_roots() local_roots_new = caml__roots_block.next; }
+
+
+/*
+   [Push_roots] and [Pop_roots] are obsolete.
+   Use [Begin_roots] and [End_roots] instead.
+*/
+
 /* [Push_roots] and [Pop_roots] are used for C variables that are GC roots.
  * It must contain all values in C local variables at the time the minor GC is
  * called.

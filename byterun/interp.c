@@ -163,6 +163,7 @@ value interprete(prog, prog_size)
   struct longjmp_buffer * initial_external_raise;
   int initial_sp_offset;
   value * initial_local_roots;
+  struct caml__roots_block *initial_local_roots_new;
   int initial_callback_depth;
   struct longjmp_buffer raise_buf;
   value * modify_dest, modify_newval;
@@ -191,11 +192,13 @@ value interprete(prog, prog_size)
   env = Atom(0);
   accu = Val_int(0);
   initial_local_roots = local_roots;
+  initial_local_roots_new = local_roots_new;
   initial_sp_offset = stack_high - sp;
   initial_external_raise = external_raise;
   initial_callback_depth = callback_depth;
   if (sigsetjmp(raise_buf.buf, 1)) {
     local_roots = initial_local_roots;
+    local_roots_new = initial_local_roots_new;
     callback_depth = initial_callback_depth;
     accu = exn_bucket;
     sp = extern_sp;

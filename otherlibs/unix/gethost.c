@@ -40,24 +40,26 @@ static value alloc_host_entry(entry)
      struct hostent * entry;
 {
   value res;
-  Push_roots(r, 4);
+  value name = Val_unit, aliases = Val_unit;
+  value addr_list = Val_unit, addr = Val_unit;
 
-  r[0] = copy_string(entry->h_name);
-  r[1] = copy_string_array(entry->h_aliases);
-  entry_h_length = entry->h_length;
+  Begin_roots4 (name, aliases, addr_list, addr);
+    name = copy_string(entry->h_name);
+    aliases = copy_string_array(entry->h_aliases);
+    entry_h_length = entry->h_length;
 #ifdef h_addr
-  r[2] = alloc_array(alloc_one_addr, entry->h_addr_list);
+    addr_list = alloc_array(alloc_one_addr, entry->h_addr_list);
 #else
-  r[3] = alloc_one_addr(entry->h_addr);
-  r[2] = alloc_tuple(1);
-  Field(r[2], 0) = r[3];
+    addr = alloc_one_addr(entry->h_addr);
+    addr_list = alloc_tuple(1);
+    Field(addr_list, 0) = addr;
 #endif
-  res = alloc_tuple(4);
-  Field(res, 0) = r[0];
-  Field(res, 1) = r[1];
-  Field(res, 2) = entry->h_addrtype == PF_UNIX ? Val_int(0) : Val_int(1);
-  Field(res, 3) = r[2];
-  Pop_roots();
+    res = alloc_tuple(4);
+    Field(res, 0) = name;
+    Field(res, 1) = aliases;
+    Field(res, 2) = entry->h_addrtype == PF_UNIX ? Val_int(0) : Val_int(1);
+    Field(res, 3) = addr_list;
+  End_roots();
   return res;
 }
 

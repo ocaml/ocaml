@@ -46,6 +46,7 @@ struct caml_thread_struct {
   value * sp;                   /* Saved value of extern_sp for this thread */
   value * trapsp;               /* Saved value of trapsp for this thread */
   value * local_roots;          /* Saved value of local_roots for this thr. */
+  value * local_roots_new;      /* Saved value of local_roots_new */
   struct longjmp_buffer * external_raise; /* Saved external_raise */
   struct caml_thread_struct * next;  /* Double linking of running threads */
   struct caml_thread_struct * prev;
@@ -83,6 +84,8 @@ static void caml_thread_scan_roots(action)
   caml_thread_t curr_thread, new_curr_thread, th;
   register value * sp;
   value * block;
+  struct caml_roots_block *lr;
+  long i;
 
   curr_thread = pthread_getspecific(thread_descriptor_key);
   /* Scan all thread descriptors */
@@ -92,6 +95,12 @@ static void caml_thread_scan_roots(action)
   for (th = curr_thread->next; th != curr_thread; th = th->next) {
     for (sp = th->sp; sp < th->stack_high; sp++) {
       (*action)(*sp, sp);
+    }
+    for (lr = th->local_roots_new; lr != NULL; lr = lr->next) {
+      for (i = 0; i < lr->len; i++){
+        sp = lr->roots[i];
+        (*action)(*sp, sp);
+      }
     }
     for (block = th->local_roots; block != NULL; block = (value *) block [1]){
       for (sp = block - (long) block [0]; sp < block; sp++){
@@ -122,6 +131,7 @@ static void caml_thread_enter_blocking_section()
   curr_thread->sp = extern_sp;
   curr_thread->trapsp = trapsp;
   curr_thread->local_roots = local_roots;
+  curr_thread->local_roots_new = local_roots_new;
   curr_thread->external_raise = external_raise;
   /* Release the global mutex */
   pthread_mutex_unlock(&caml_mutex);
@@ -140,6 +150,7 @@ static void caml_thread_leave_blocking_section()
   extern_sp = curr_thread->sp;
   trapsp = curr_thread->trapsp;
   local_roots = curr_thread->local_roots;
+  local_roots_new = curr_thread->local_roots_new;
   external_raise = curr_thread->external_raise;
   if (prev_leave_blocking_section_hook != NULL)
     (*prev_leave_blocking_section_hook)();
@@ -182,6 +193,7 @@ static void caml_thread_cleanup(th)
   th->sp = NULL;
   th->trapsp = NULL;
   th->local_roots = NULL;
+  th->local_roots_new = NULL;
   th->external_raise = NULL;
   /* Release the main mutex */
   pthread_mutex_unlock(&caml_mutex);
@@ -195,47 +207,48 @@ value caml_thread_initialize(unit)   /* ML */
   pthread_t tick_pthread;
   pthread_attr_t attr;
   caml_thread_t th;
-  Push_roots(r, 1);
+  value mu = Val_unit;
 
-  /* Initialize the main mutex */
-  caml_pthread_check(pthread_mutex_init(&caml_mutex, NULL),
-                     "Thread.init");
-  pthread_mutex_lock(&caml_mutex);
-  /* Initialize the key */
-  pthread_key_create(&thread_descriptor_key, NULL);
-  /* Create and acquire a termination lock for the current thread */
-  r[0] = caml_mutex_new(Val_unit);
-  caml_mutex_lock(r[0]);
-  /* Create a descriptor for the current thread */
-  th = (caml_thread_t)
-    alloc_shr(sizeof(struct caml_thread_struct) / sizeof(value), 0);
-  th->pthread = pthread_self();
-  th->ident = Val_long(thread_next_ident);
-  th->terminated = r[0];
-  thread_next_ident++;
-  /* The stack-related fields will be filled in at the next
-     enter_blocking_section */
-  th->next = th;
-  th->prev = th;
-  /* Associate the thread descriptor with the thread */
-  pthread_setspecific(thread_descriptor_key, (void *) th);
-  /* Allow cancellation */
-  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-  /* Set up the hooks */
-  prev_scan_roots_hook = scan_roots_hook;
-  scan_roots_hook = caml_thread_scan_roots;
-  prev_enter_blocking_section_hook = enter_blocking_section_hook;
-  enter_blocking_section_hook = caml_thread_enter_blocking_section;
-  prev_leave_blocking_section_hook = leave_blocking_section_hook;
-  leave_blocking_section_hook = caml_thread_leave_blocking_section;
-  /* Fork the tick thread */
-  pthread_attr_init(&attr);
-  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-  caml_pthread_check(
-     pthread_create(&tick_pthread, &attr, caml_thread_tick, NULL),
-     "Thread.init");
-  pthread_detach(tick_pthread);
-  Pop_roots();
+  Begin_root (mu);
+    /* Initialize the main mutex */
+    caml_pthread_check(pthread_mutex_init(&caml_mutex, NULL),
+                       "Thread.init");
+    pthread_mutex_lock(&caml_mutex);
+    /* Initialize the key */
+    pthread_key_create(&thread_descriptor_key, NULL);
+    /* Create and acquire a termination lock for the current thread */
+    mu = caml_mutex_new(Val_unit);
+    caml_mutex_lock(mu);
+    /* Create a descriptor for the current thread */
+    th = (caml_thread_t)
+      alloc_shr(sizeof(struct caml_thread_struct) / sizeof(value), 0);
+    th->pthread = pthread_self();
+    th->ident = Val_long(thread_next_ident);
+    th->terminated = mu;
+    thread_next_ident++;
+    /* The stack-related fields will be filled in at the next
+       enter_blocking_section */
+    th->next = th;
+    th->prev = th;
+    /* Associate the thread descriptor with the thread */
+    pthread_setspecific(thread_descriptor_key, (void *) th);
+    /* Allow cancellation */
+    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+    /* Set up the hooks */
+    prev_scan_roots_hook = scan_roots_hook;
+    scan_roots_hook = caml_thread_scan_roots;
+    prev_enter_blocking_section_hook = enter_blocking_section_hook;
+    enter_blocking_section_hook = caml_thread_enter_blocking_section;
+    prev_leave_blocking_section_hook = leave_blocking_section_hook;
+    leave_blocking_section_hook = caml_thread_leave_blocking_section;
+    /* Fork the tick thread */
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    caml_pthread_check(
+        pthread_create(&tick_pthread, &attr, caml_thread_tick, NULL),
+        "Thread.init");
+    pthread_detach(tick_pthread);
+  End_roots();
   return Val_unit;
 }
 
@@ -266,40 +279,42 @@ value caml_thread_new(clos)          /* ML */
 {
   pthread_attr_t attr;
   caml_thread_t th, curr_thread;
-  Push_roots(r, 1);
+  value mu = Val_unit;
 
-  /* Create and acquire the termination lock */
-  r[0] = caml_mutex_new(Val_unit);
-  caml_mutex_lock(r[0]);
-  /* Allocate the thread and its stack */
-  th = (caml_thread_t)
-    alloc_shr(sizeof(struct caml_thread_struct) / sizeof(value), 0);
-  th->ident = Val_long(thread_next_ident);
-  thread_next_ident++;
-  th->terminated = r[0];
-  th->stack_low = (value *) stat_alloc(Thread_stack_size);
-  th->stack_high = th->stack_low + Thread_stack_size / sizeof(value);
-  th->stack_threshold = th->stack_low + Stack_threshold / sizeof(value);
-  th->sp = th->stack_high;
-  th->trapsp = th->stack_high;
-  th->local_roots = NULL;
-  th->external_raise = NULL;
-  /* Add it to the list of threads */
-  curr_thread = pthread_getspecific(thread_descriptor_key);
-  th->next = curr_thread->next;
-  th->prev = curr_thread;
-  Assign(curr_thread->next->prev, th);
-  Assign(curr_thread->next, th);
-  /* Pass the closure in the newly created stack, so that it will be
-     preserved by garbage collection */
-  *--(th->sp) = clos;
-  /* Fork the new thread */
-  pthread_attr_init(&attr);
-  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-  caml_pthread_check(
-     pthread_create(&th->pthread, &attr, caml_thread_start, (void *) th),
-     "Thread.new");
-  Pop_roots();
+  Begin_root (mu);
+    /* Create and acquire the termination lock */
+    mu = caml_mutex_new(Val_unit);
+    caml_mutex_lock(mu);
+    /* Allocate the thread and its stack */
+    th = (caml_thread_t)
+      alloc_shr(sizeof(struct caml_thread_struct) / sizeof(value), 0);
+    th->ident = Val_long(thread_next_ident);
+    thread_next_ident++;
+    th->terminated = mu;
+    th->stack_low = (value *) stat_alloc(Thread_stack_size);
+    th->stack_high = th->stack_low + Thread_stack_size / sizeof(value);
+    th->stack_threshold = th->stack_low + Stack_threshold / sizeof(value);
+    th->sp = th->stack_high;
+    th->trapsp = th->stack_high;
+    th->local_roots = NULL;
+    th->local_roots_new = NULL;
+    th->external_raise = NULL;
+    /* Add it to the list of threads */
+    curr_thread = pthread_getspecific(thread_descriptor_key);
+    th->next = curr_thread->next;
+    th->prev = curr_thread;
+    Assign(curr_thread->next->prev, th);
+    Assign(curr_thread->next, th);
+    /* Pass the closure in the newly created stack, so that it will be
+       preserved by garbage collection */
+    *--(th->sp) = clos;
+    /* Fork the new thread */
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    caml_pthread_check(
+        pthread_create(&th->pthread, &attr, caml_thread_start, (void *) th),
+        "Thread.new");
+  End_roots();
   return (value) th;
 }
 

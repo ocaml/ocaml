@@ -58,23 +58,24 @@ value unix_mktime(t)            /* ML */
   struct tm tm;
   time_t clock;
   value res;
-  Push_roots(r, 1);
+  value tmval = Val_unit;
 
-  tm.tm_sec = Int_val(Field(t, 0));
-  tm.tm_min = Int_val(Field(t, 1));
-  tm.tm_hour = Int_val(Field(t, 2));
-  tm.tm_mday = Int_val(Field(t, 3));
-  tm.tm_mon = Int_val(Field(t, 4));
-  tm.tm_year = Int_val(Field(t, 5));
-  tm.tm_wday = Int_val(Field(t, 6));
-  tm.tm_yday = Int_val(Field(t, 7));
-  tm.tm_isdst = Bool_val(Field(t, 8));
-  clock = mktime(&tm);
-  r[0] = alloc_tm(&tm);
-  res = alloc_tuple(2);
-  Field(res, 0) = Val_long(clock);
-  Field(res, 1) = r[0];
-  Pop_roots();
+  Begin_root (tmval);
+    tm.tm_sec = Int_val(Field(t, 0));
+    tm.tm_min = Int_val(Field(t, 1));
+    tm.tm_hour = Int_val(Field(t, 2));
+    tm.tm_mday = Int_val(Field(t, 3));
+    tm.tm_mon = Int_val(Field(t, 4));
+    tm.tm_year = Int_val(Field(t, 5));
+    tm.tm_wday = Int_val(Field(t, 6));
+    tm.tm_yday = Int_val(Field(t, 7));
+    tm.tm_isdst = Bool_val(Field(t, 8));
+    clock = mktime(&tm);
+    tmval = alloc_tm(&tm);
+    res = alloc_tuple(2);
+    Field(res, 0) = Val_long(clock);
+    Field(res, 1) = tmval;
+  End_roots ();
   return res;
 }
 

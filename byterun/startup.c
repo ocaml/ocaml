@@ -256,13 +256,11 @@ void caml_main(argv)
                         + trail.symbol_size + trail.debug_size), 2);
     load_code(fd, trail.code_size);
     /* Load the globals */
-    { struct channel * chan;
-      Push_roots(r, 1);
-      chan = open_descr(fd);
-      r[0] = (value) chan;
-      global_data = input_value(chan);
-      close_channel(chan);
-      Pop_roots();
+    { value chan = (value) open_descr(fd);
+      Begin_root(chan);
+        global_data = input_value((struct channel *) chan);
+	close_channel((struct channel *) chan);
+      End_roots();
     }
     /* Ensure that the globals are in the major heap. */
     oldify(global_data, &global_data);

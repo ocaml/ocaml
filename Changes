@@ -7,6 +7,8 @@ Objective Caml 1.06:
   - A heap compacter was implemented, so long-running programs can now
     fight fragmentation.
   - The meaning of the "space_overhead" parameter has changed.
+  - The macros Push_roots and Pop_roots are superseded by Begin_roots* and
+    End_roots.
 
 * Language: a new keyword was added: "assert".
 

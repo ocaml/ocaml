@@ -26,18 +26,19 @@ value unix_accept(sock)          /* ML */
 {
   int retcode;
   value res;
-  Push_roots(a,1);
+  value a;
 
   sock_addr_len = sizeof(sock_addr);
   enter_blocking_section();
   retcode = accept(Int_val(sock), &sock_addr.s_gen, &sock_addr_len);
   leave_blocking_section();
   if (retcode == -1) uerror("accept", Nothing);
-  a[0] = alloc_sockaddr();
-  res = alloc_tuple(2);
-  Field(res, 0) = Val_int(retcode);
-  Field(res, 1) = a[0];
-  Pop_roots();
+  a = alloc_sockaddr();
+  Begin_root (a);
+    res = alloc_tuple(2);
+    Field(res, 0) = Val_int(retcode);
+    Field(res, 1) = a;
+  End_roots();
   return res;
 }
 

@@ -92,24 +92,24 @@ value alloc_array(funct, arr)
      char ** arr;
 {
   mlsize_t nbr, n;
-  value v;
+  value v, result;
 
   nbr = 0;
   while (arr[nbr] != 0) nbr++;
   if (nbr == 0) {
     return Atom(0);
   } else {
-    Push_roots(r, 1);
-    r[0] = nbr < Max_young_wosize ? alloc(nbr, 0) : alloc_shr(nbr, 0);
-    for (n = 0; n < nbr; n++)
-      Field(r[0], n) = Val_int(0);
-    for (n = 0; n < nbr; n++) {
-      v = funct(arr[n]);
-      modify(&Field(r[0], n), v);
-    }
-    v = r[0];
-    Pop_roots();
-    return v;
+    result = nbr < Max_young_wosize ? alloc(nbr, 0) : alloc_shr(nbr, 0);
+    for (n = 0; n < nbr; n++) Field(result, n) = Val_int(0);
+    Begin_root(result);
+      for (n = 0; n < nbr; n++) {
+	/* The two statements below must be separate because of evaluation
+           order. */
+	v = funct(arr[n]);
+	modify(&Field(result, n), v);
+      }
+    End_roots();
+    return result;
   }
 }
 

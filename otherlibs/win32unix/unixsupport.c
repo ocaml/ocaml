@@ -85,26 +85,24 @@ void unix_error(errcode, cmdname, cmdarg)
      value cmdarg;
 {
   value res;
-  Push_roots(r, 2);
-#define name r[0]
-#define arg r[1]
-  if (unix_error_exn == NULL) {
-    unix_error_exn = caml_named_value("Unix.Unix_error");
-    if (unix_error_exn == NULL)
-      invalid_argument("Exception Unix.Unix_error not initialized, must link unix.cma");
-  }
-  arg = cmdarg == Nothing ? copy_string("") : cmdarg;
-  name = copy_string(cmdname);
-  res = alloc(4, 0);
-  Field(res, 0) = *unix_error_exn;
-  Field(res, 1) =
-    cst_to_constr(errcode, error_table, sizeof(error_table)/sizeof(int),
-                  sizeof(error_table)/sizeof(int));
-  Field(res, 2) = name;
-  Field(res, 3) = arg;
-  Pop_roots();
-#undef name
-#undef arg
+  value name = Val_unit, arg = Val_unit;
+
+  Begin_roots2 (name, arg);
+    if (unix_error_exn == NULL) {
+      unix_error_exn = caml_named_value("Unix.Unix_error");
+      if (unix_error_exn == NULL)
+        invalid_argument("Exception Unix.Unix_error not initialized, must link unix.cma");
+    }
+    arg = cmdarg == Nothing ? copy_string("") : cmdarg;
+    name = copy_string(cmdname);
+    res = alloc(4, 0);
+    Field(res, 0) = *unix_error_exn;
+    Field(res, 1) =
+      cst_to_constr(errcode, error_table, sizeof(error_table)/sizeof(int),
+                    sizeof(error_table)/sizeof(int));
+    Field(res, 2) = name;
+    Field(res, 3) = arg;
+  End_roots();
   mlraise(res);
 }
 
@@ -113,17 +111,4 @@ void uerror(cmdname, cmdarg)
      value cmdarg;
 {
   unix_error(errno, cmdname, cmdarg);
-}
-
-value unix_freeze_buffer(buf)
-     value buf;
-{
-  if (Is_young(buf)) {
-    Push_roots(r, 1);
-    r[0] = buf;
-    minor_collection();
-    buf = r[0];
-    Pop_roots();
-  }
-  return buf;
 }

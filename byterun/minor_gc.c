@@ -146,11 +146,9 @@ value check_urgent_gc (extra_root)
      value extra_root;
 {
   if (force_major_slice) {
-    Push_roots(r, 1);
-    r[0] = extra_root;
-    minor_collection();
-    extra_root = r[0];
-    Pop_roots();
+    Begin_root(extra_root);
+      minor_collection();
+    End_roots();
   }
   return extra_root;
 }

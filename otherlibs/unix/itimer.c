@@ -30,13 +30,15 @@ static value unix_convert_itimer(tp)
      struct itimerval * tp;
 {
   value res;
-  Push_roots(r, 2);
-  r[0] = copy_double(Get_timeval(tp->it_interval));
-  r[1] = copy_double(Get_timeval(tp->it_value));
-  res = alloc_tuple(2);
-  Field(res, 0) = r[0];
-  Field(res, 1) = r[1];
-  Pop_roots();
+  value interval = Val_unit, v = Val_unit;
+
+  Begin_roots2(interval, v);
+    interval = copy_double(Get_timeval(tp->it_interval));
+    v = copy_double(Get_timeval(tp->it_value));
+    res = alloc_tuple(2);
+    Field(res, 0) = interval;
+    Field(res, 1) = v;
+  End_roots();
   return res;
 }
 

@@ -113,7 +113,7 @@ typedef char schar;
 /* Default speed setting for the major GC.  The heap will grow until
    the dead objects and the free list represent this percentage of the
    heap size.  The rest of the heap is live objects. */
-#define Percent_free_def 40
+#define Percent_free_def 42
 
 /* Default setting for the compacter: off */
 #define Max_percent_free_def 1000000

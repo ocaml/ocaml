@@ -78,21 +78,21 @@ value alloc_sockaddr()
   switch(sock_addr.s_gen.sa_family) {
 #ifndef _WIN32
   case AF_UNIX:
-    { Push_roots(n, 1);
-      n[0] = copy_string(sock_addr.s_unix.sun_path);
-      res = alloc(1, 0);
-      Field(res,0) = n[0];
-      Pop_roots();
+    { value n = copy_string(sock_addr.s_unix.sun_path);
+      Begin_root (n);
+        res = alloc(1, 0);
+	Field(res,0) = n;
+      End_roots();
       break;
     }
 #endif
   case AF_INET:
-    { Push_roots(a, 1);
-      a[0] = alloc_inet_addr(sock_addr.s_inet.sin_addr.s_addr);
-      res = alloc(2, 1);
-      Field(res,0) = a[0];
-      Field(res,1) = Val_int(ntohs(sock_addr.s_inet.sin_port));
-      Pop_roots();
+    { value a = alloc_inet_addr(sock_addr.s_inet.sin_addr.s_addr);
+      Begin_root (a);
+        res = alloc(2, 1);
+	Field(res,0) = a;
+	Field(res,1) = Val_int(ntohs(sock_addr.s_inet.sin_port));
+      End_roots();
       break;
     }
   default:

@@ -29,15 +29,16 @@ static value alloc_proto_entry(entry)
      struct protoent * entry;
 {
   value res;
-  Push_roots(r, 2);
+  value name = Val_unit, aliases = Val_unit;
 
-  r[0] = copy_string(entry->p_name);
-  r[1] = copy_string_array(entry->p_aliases);
-  res = alloc_tuple(3);
-  Field(res,0) = r[0];
-  Field(res,1) = r[1];
-  Field(res,2) = Val_int(entry->p_proto);
-  Pop_roots();
+  Begin_roots2 (name, aliases);
+    name = copy_string(entry->p_name);
+    aliases = copy_string_array(entry->p_aliases);
+    res = alloc_tuple(3);
+    Field(res,0) = name;
+    Field(res,1) = aliases;
+    Field(res,2) = Val_int(entry->p_proto);
+  End_roots();
   return res;
 }
 

@@ -33,7 +33,6 @@ static value alloc_process_status(pid, status)
      int pid, status;
 {
   value st, res;
-  Push_roots(r, 1);
 
   if (WIFEXITED(status)) {
     st = alloc(1, 0);
@@ -47,11 +46,11 @@ static value alloc_process_status(pid, status)
     st = alloc(1, 1);
     Field(st, 0) = Val_int(WTERMSIG(status));
   }
-  r[0] = st;
-  res = alloc_tuple(2);
-  Field(res, 0) = Val_int(pid);
-  Field(res, 1) = r[0];
-  Pop_roots();
+  Begin_root (st);
+    res = alloc_tuple(2);
+    Field(res, 0) = Val_int(pid);
+    Field(res, 1) = st;
+  End_roots();
   return res;
 }
 

@@ -52,15 +52,22 @@ void mlraise(v)
 #endif
   leave_blocking_section();
   if (caml_exception_pointer == NULL) fatal_uncaught_exception(v);
+
 #ifndef Stack_grows_upwards
-  while (local_roots != NULL && 
-         (char *) local_roots < caml_exception_pointer) {
+#define PUSHED_AFTER <
 #else
-  while (local_roots != NULL && 
-         (char *) local_roots > caml_exception_pointer) {
+#define PUSHED_AFTER >
 #endif
+  while (local_roots != NULL && 
+         (char *) local_roots PUSHED_AFTER caml_exception_pointer) {
     local_roots = (value *) local_roots[1];
   }
+  while (local_roots_new != NULL && 
+         (char *) local_roots_new PUSHED_AFTER caml_exception_pointer) {
+    local_roots_new = local_roots_new->next;
+  }
+#undef PUSHED_AFTER
+
   raise_caml_exception(v);
 }
 
@@ -68,11 +75,10 @@ void raise_constant(tag)
      value tag;
 {
   value bucket;
-  Push_roots (a, 1);
-  a[0] = tag;
-  bucket = alloc (1, 0);
-  Field(bucket, 0) = a[0];
-  Pop_roots ();
+  Begin_root (tag);
+    bucket = alloc (1, 0);
+    Field(bucket, 0) = tag;
+  End_roots ();
   mlraise(bucket);
 }
 
@@ -81,13 +87,11 @@ void raise_with_arg(tag, arg)
      value arg;
 {
   value bucket;
-  Push_roots (a, 2);
-  a[0] = tag;
-  a[1] = arg;
-  bucket = alloc (2, 0);
-  Field(bucket, 0) = a[0];
-  Field(bucket, 1) = a[1];
-  Pop_roots ();
+  Begin_roots2 (tag, arg);
+    bucket = alloc (2, 0);
+    Field(bucket, 0) = tag;
+    Field(bucket, 1) = arg;
+  End_roots ();
   mlraise(bucket);
 }
 
