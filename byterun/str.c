@@ -14,10 +14,14 @@
 /* Operations on strings */
 
 #include <string.h>
+#include <ctype.h>
 #include "alloc.h"
 #include "fail.h"
 #include "mlvalues.h"
 #include "misc.h"
+#ifdef HAS_LOCALE
+#include <locale.h>
+#endif
 
 mlsize_t string_length(value s)
 {
@@ -92,36 +96,31 @@ value fill_string(value s, value offset, value len, value init) /* ML */
   return Val_unit;
 }
 
-static unsigned char printable_chars_ascii[] = { /* 0x20-0x7E */
-  0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF,
-  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F,
-  0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0
-};
-static unsigned char printable_chars_iso[] = { /* 0x20-0x7E 0xA1-0xFF */
-  0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF,
-  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F,
-  0, 0, 0, 0, 0xFE, 0xFF, 0xFF, 0xFF,
-  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
-};
-
 value is_printable(value chr) /* ML */
 {
   int c;
-  unsigned char * printable_chars;
 
 #ifdef _WIN32
-  printable_chars = printable_chars_iso;
+  /* FIXME: is this necessary?  Wouldn't isprint() do what we want? */
+  static unsigned char printable_chars_iso[] = { /* 0x20-0x7E 0xA1-0xFF */
+    0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F,
+    0, 0, 0, 0, 0xFE, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+  };
+  c = Int_val(chr);
+  return Val_bool(printable_chars_iso[c >> 3] & (1 << (c & 7)));
 #else
-  static int iso_charset = -1;
-  if (iso_charset == -1) {
-    char * lc_ctype = (char *) getenv("LC_CTYPE");
-    iso_charset = (lc_ctype != 0 && strcmp(lc_ctype, "iso_8859_1") == 0);
+#ifdef HAS_LOCALE
+  static int locale_is_set = 0;
+  if (! locale_is_set) {
+    setlocale(LC_CTYPE, "");
+    locale_is_set = 1;
   }
-  printable_chars = iso_charset ? printable_chars_iso : printable_chars_ascii;
 #endif
   c = Int_val(chr);
-  return Val_bool(printable_chars[c >> 3] & (1 << (c & 7)));
+  return Val_bool(isprint(c));
+#endif
 }
 
 value bitvect_test(value bv, value n)       /* ML */
