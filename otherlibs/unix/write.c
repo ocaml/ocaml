@@ -60,7 +60,6 @@ CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
    In this case, it would be better to discard the error and return the
    number of bytes written, since most likely, unix_write will be call again,
    and the error will be reproduced and this time will be reported.
-
    This problem is avoided in unix_single_write, which is faithful to the
    Unix system call. */
 
@@ -73,13 +72,14 @@ CAMLprim value unix_single_write(value fd, value buf, value vofs, value vlen)
   Begin_root (buf);
     ofs = Long_val(vofs);
     len = Long_val(vlen);
+    ret = 0;
     if (len > 0) {
       numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
       memmove (iobuf, &Byte(buf, ofs), numbytes);
       enter_blocking_section();
       ret = write(Int_val(fd), iobuf, numbytes);
       leave_blocking_section();
-      if (ret == -1) uerror("write", Nothing);
+      if (ret == -1) uerror("single_write", Nothing);
     }
   End_roots();
   return Val_int(ret);

@@ -72,6 +72,7 @@ CAMLprim value unix_single_write(value fd, value buf, value vofs, value vlen)
   Begin_root (buf);
     ofs = Long_val(vofs);
     len = Long_val(vlen);
+    written = 0;
     if (len > 0) {
       numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
       memmove (iobuf, &Byte(buf, ofs), numbytes);
@@ -83,7 +84,7 @@ CAMLprim value unix_single_write(value fd, value buf, value vofs, value vlen)
         leave_blocking_section();
         if (ret == SOCKET_ERROR) {
           win32_maperr(WSAGetLastError());
-          uerror("write", Nothing);
+          uerror("single_write", Nothing);
         }
         numwritten = ret;
       } else {
@@ -94,7 +95,7 @@ CAMLprim value unix_single_write(value fd, value buf, value vofs, value vlen)
         leave_blocking_section();
         if (! ret) {
           win32_maperr(GetLastError());
-          uerror("write", Nothing);
+          uerror("single_write", Nothing);
         }
       }
       written = numwritten;

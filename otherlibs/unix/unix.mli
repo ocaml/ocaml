@@ -260,16 +260,13 @@ val write : file_descr -> string -> int -> int -> int
 (** [write fd buff ofs len] writes [len] characters to descriptor
    [fd], taking them from string [buff], starting at position [ofs]
    in string [buff]. Return the number of characters actually
-   written.
-
-   When an error is reported some characters might have already been
-   written.  Use [single_write] instead to ensure that this is not the
-   case. *)
+   written.  [write] repeats the writing operation until all characters
+   have been written or an error occurs.  *)
 
 val single_write : file_descr -> string -> int -> int -> int
-(** Same as [write] but ensures that all errors are reported and
-   that no character has ever been written when an error is reported. *)
-
+(** Same as [write], but attempts to write only once.
+   Thus, if an error occurs, [single_write] guarantees that no data
+   has been written. *)
 
 (** {6 Interfacing with the standard input/output library} *)
 
