@@ -272,7 +272,7 @@ external frexp : float -> float * int = "frexp_float"
            [f = x *. 2 ** n] and [0.5 <= x < 1.0]. *)
 external ldexp : float -> int -> float = "ldexp_float"
         (* [ldexp x n] returns [x *. 2 ** n]. *)
-external modf : float -> float * float = "modf_float" "modf"
+external modf : float -> float * float = "modf_float"
         (* [modf f] returns the pair of the fractional and integral
            part of [f]. *)
 external float : int -> float = "%floatofint"

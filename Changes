@@ -26,6 +26,7 @@ Objective Caml 2.01:
   - I386: fixed bug in profiled code (ocamlopt -p).
   - Mips: switched to -n32 model under IRIX; dropped the Ultrix port.
   - Sparc: simplified the addressing modes, allows for better scheduling.
+  - Fixed calling convention bug for Pervasives.modf.
 
 * Toplevel:
   - #trace works again.
