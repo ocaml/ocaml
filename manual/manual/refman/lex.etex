@@ -109,7 +109,7 @@ The two single quotes enclose either one character different from
 \entree{"\\t"}{horizontal tabulation (TAB)}
 \entree{"\\b"}{backspace (BS)}
 \entree{"\\"\var{ddd}}{the character with ASCII code \var{ddd} in decimal}
-\entree{"\\x"\var{hh}}{the caracter with ASCII code \var{hh} in hexadecimal}
+\entree{"\\x"\var{hh}}{the character with ASCII code \var{hh} in hexadecimal}
 \end{tableau}
 
 \subsubsection*{String literals}
@@ -188,21 +188,21 @@ otherwise:
       closed      constraint  do          done        downto      else
       end         exception   external    false       for         fun
       function    functor     if          in          include     inherit
-      land        lazy        let         lor         lsl         lsr
-      lxor        match       method      mod         module      mutable
-      new         of          open        or          parser      private
-      rec         sig         struct      then        to          true
-      try         type        val         virtual     when        while
-      with        
+      initializer land        lazy        let         lor         lsl
+      lsr         lxor        match       method      mod         module
+      mutable     new         object      of          open        or
+      parser      private     rec         sig         struct      then
+      to          true        try         type        val         virtual
+      when        while       with        
 \end{verbatim}
 %
 The following character sequences are also keywords:
 %
 \begin{verbatim}
-    #     &     '     (     )     *     ,     ->    ?
-    ??    .     ..    .(    .[    :     ::    :=    ;
-    ;;    <-    =     [     [|    [<    {<    ]     |]
-    >]    >}    _     `     {     |     }     ~
+    !=    #     &     &&    '     (     )     *     +     ,     -
+    -.    ->    .     ..    :     ::    :=    :>    ;     ;;    <
+    <-    =     >     >]    >}    ?     ??    [     [<    [|    ]
+    _     `     {     {<    |]    }     ~
 \end{verbatim}
 
 \subsubsection*{Ambiguities}
