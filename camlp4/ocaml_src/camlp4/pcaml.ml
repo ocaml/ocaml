@@ -12,14 +12,14 @@
 
 (* Id *)
 
-let version = "3.02.1-exp";;
+let version = Config.version;;
 
 let gram =
   Grammar.create
     {Token.func = (fun _ -> failwith "no loaded parsing module");
      Token.using = (fun _ -> ()); Token.removing = (fun _ -> ());
      Token.tparse =
-       (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 1033, 1039)));
+       (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 1035, 1041)));
      Token.text = fun _ -> ""}
 ;;
 
@@ -333,22 +333,22 @@ and kont = pretty Stream.t
 
 let pr_str_item =
   {pr_fun =
-     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11508, 11514)));
+     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11510, 11516)));
    pr_levels = []}
 ;;
 let pr_sig_item =
   {pr_fun =
-     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11563, 11569)));
+     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11565, 11571)));
    pr_levels = []}
 ;;
 let pr_expr =
   {pr_fun =
-     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11614, 11620)));
+     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11616, 11622)));
    pr_levels = []}
 ;;
 let pr_patt =
   {pr_fun =
-     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11665, 11671)));
+     (fun _ -> raise (Match_failure ("camlp4/pcaml.ml", 11667, 11673)));
    pr_levels = []}
 ;;
 let pr_expr_fun_args = ref Extfun.empty;;
