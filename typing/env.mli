@@ -86,6 +86,10 @@ val read_signature: string -> string -> signature
         (* Arguments: module name, file name. Results: signature. *)
 val save_signature: signature -> string -> string -> unit
         (* Arguments: signature, module name, file name. *)
+val save_signature_with_imports:
+            signature -> string -> string -> (string * Digest.t) list -> unit
+        (* Arguments: signature, module name, file name, 
+           imported units with their CRCs. *)
 
 (* Return the CRC of the interface of the given compilation unit *)
 

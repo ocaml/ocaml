@@ -709,7 +709,7 @@ let imported_units() =
 
 (* Save a signature to a file *)
 
-let save_signature sg modname filename =
+let save_signature_with_imports sg modname filename imports =
   Btype.cleanup_abbrev ();
   Subst.reset_for_saving ();
   let sg = Subst.signature (Subst.for_saving Subst.identity) sg in
@@ -719,7 +719,7 @@ let save_signature sg modname filename =
     output_value oc (modname, sg);
     flush oc;
     let crc = Digest.file filename in
-    let crcs = (modname, crc) :: imported_units() in
+    let crcs = (modname, crc) :: imports in
     output_value oc crcs;
     close_out oc;
     (* Enter signature in persistent table so that imported_unit()
@@ -738,6 +738,9 @@ let save_signature sg modname filename =
     close_out oc;
     remove_file filename;
     raise exn
+
+let save_signature sg modname filename =
+  save_signature_with_imports sg modname filename (imported_units())
 
 (* Make the initial environment *)
 
