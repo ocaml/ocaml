@@ -15,15 +15,16 @@
 #include <sys/types.h>
 #include <winsock.h>
 
-union {
+union sock_addr_union {
   struct sockaddr s_gen;
   struct sockaddr_in s_inet;
-} sock_addr;
+};
 
-int sock_addr_len;
+extern union sock_addr_union sock_addr;
+extern int sock_addr_len;
 
-void get_sockaddr P((value));
-value alloc_sockaddr P((void));
-value alloc_inet_addr P((unsigned int));
+void get_sockaddr (value);
+value alloc_sockaddr (void);
+value alloc_inet_addr (unsigned int);
 
 #define GET_INET_ADDR(v) (*((uint32 *) (v)))

@@ -26,6 +26,7 @@ PARSING=parsing\linenum.cmo parsing\location.cmo parsing\longident.cmo \
 
 TYPING=typing\ident.cmo typing\path.cmo \
   typing\primitive.cmo typing\types.cmo \
+  typing\btype.cmo \
   typing\subst.cmo typing\predef.cmo \
   typing\datarepr.cmo typing\env.cmo \
   typing\typedtree.cmo \
@@ -63,6 +64,7 @@ DRIVER=driver\errors.cmo driver\compile.cmo driver\main.cmo
 OPTDRIVER=driver\opterrors.cmo driver\optcompile.cmo driver\optmain.cmo
 
 TOPLEVEL=driver\errors.cmo driver\compile.cmo \
+  toplevel\genprintval.cmo \
   toplevel\printval.cmo toplevel\toploop.cmo \
   toplevel\trace.cmo toplevel\topdirs.cmo
 
@@ -78,7 +80,7 @@ OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
 EXPUNGEOBJS=utils\misc.cmo utils\tbl.cmo \
   utils\config.cmo utils\clflags.cmo \
-  typing\ident.cmo typing\predef.cmo \
+  typing\ident.cmo typing\types.cmo typing\btype.cmo typing\predef.cmo \
   bytecomp\runtimedef.cmo bytecomp\symtable.cmo \
   toplevel\expunge.cmo
 
@@ -340,7 +342,7 @@ beforedepend:: bytecomp\runtimedef.ml
 # Choose the right machine-dependent files
 
 asmcomp\arch.ml: asmcomp\$(ARCH)\arch.ml
-	cp $(ARCH)\arch.ml asmcomp\arch.ml
+	cp asmcomp\$(ARCH)\arch.ml asmcomp\arch.ml
 
 partialclean::
 	rm -f asmcomp\arch.ml
@@ -348,7 +350,7 @@ partialclean::
 beforedepend:: asmcomp\arch.ml
 
 asmcomp\proc.ml: asmcomp\$(ARCH)\proc_nt.ml
-	cp $(ARCH)\proc_nt.ml asmcomp\proc.ml
+	cp asmcomp\$(ARCH)\proc_nt.ml asmcomp\proc.ml
 
 partialclean::
 	rm -f asmcomp\proc.ml
@@ -356,7 +358,7 @@ partialclean::
 beforedepend:: asmcomp\proc.ml
 
 asmcomp\selection.ml: asmcomp\$(ARCH)\selection.ml
-	cp $(ARCH)\selection.ml asmcomp\selection.ml
+	cp asmcomp\$(ARCH)\selection.ml asmcomp\selection.ml
 
 partialclean::
 	rm -f asmcomp\selection.ml
@@ -364,7 +366,7 @@ partialclean::
 beforedepend:: asmcomp\selection.ml
 
 asmcomp\reload.ml: asmcomp\$(ARCH)\reload.ml
-	cp $(ARCH)\reload.ml asmcomp\reload.ml
+	cp asmcomp\$(ARCH)\reload.ml asmcomp\reload.ml
 
 partialclean::
 	rm -f asmcomp\reload.ml
@@ -372,7 +374,7 @@ partialclean::
 beforedepend:: asmcomp\reload.ml
 
 asmcomp\scheduling.ml: asmcomp\$(ARCH)\scheduling.ml
-	cp $(ARCH)\scheduling.ml asmcomp\scheduling.ml
+	cp asmcomp\$(ARCH)\scheduling.ml asmcomp\scheduling.ml
 
 partialclean::
 	rm -f asmcomp\scheduling.ml

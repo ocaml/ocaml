@@ -1,8 +1,6 @@
 include ../../config/Makefile.nt
 
 # Compilation options
-CC=$(BYTECC)
-CFLAGS=-I..\..\byterun $(BYTECCCOMPOPTS)
 CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc -I ..\..\stdlib -I ..\win32unix
 CAMLOPT=..\..\boot\ocamlrun ..\..\ocamlopt -I ..\..\stdlib -I ..\win32unix
 CPPFLAGS=/DWIN32
@@ -14,16 +12,16 @@ THREAD_OBJS=thread.cmo condition.cmo event.cmo threadUnix.cmo
 
 GENFILES=thread.ml
 
-all: libthreads.lib threads.cma stdlib.cma
+all: libthreads.lib threads.cma
 
-allopt: libthreadsnat.a threads.cmxa
+allopt: libthreadsnat.lib threads.cmxa
 
 libthreads.lib: $(BYTECODE_C_OBJS)
 	rm -f libthreads.lib
 	$(MKLIB)libthreads.lib $(BYTECODE_C_OBJS)
 
 win32_b.obj: win32.c
-	$(BYTECC) -O -I..\..\byterun $(BYTECCCOMPOPTS) -c win32.c
+	$(BYTECC) -O -I..\..\byterun $(BYTECCCOMPOPTS) /Zi -c win32.c
 	mv win32.obj win32_b.obj
 
 libthreadsnat.lib: $(NATIVECODE_C_OBJS)

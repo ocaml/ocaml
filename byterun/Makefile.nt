@@ -1,6 +1,6 @@
 !include ..\config\Makefile.nt
 
-CC=$(BYTECC)
+CC=$(BYTECC) /Zi
 CFLAGS=$(BYTECCCOMPOPTS)
 
 OBJS=interp.obj misc.obj stacks.obj fix_code.obj startup.obj main.obj \

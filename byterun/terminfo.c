@@ -78,7 +78,6 @@ value terminfo_getstr(value capa)
 }
 
 value terminfo_getnum(value capa)
-     value capa;
 {
   raise_not_found();
   return Val_unit;

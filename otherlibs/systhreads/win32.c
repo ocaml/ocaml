@@ -79,7 +79,7 @@ typedef struct caml_thread_struct * caml_thread_t;
 
 /* The descriptor for the currently executing thread (thread-specific) */
 
-static __declspec( thread ) HANDLE caml_thread_t curr_thread = NULL;
+static __declspec( thread ) caml_thread_t curr_thread = NULL;
 
 /* The global mutex used to ensure that at most one thread is running
    Caml code */
@@ -186,14 +186,13 @@ static void caml_io_mutex_free(struct channel * chan)
   HANDLE mutex = chan->mutex;
   if (mutex != NULL) {
     CloseHandle(mutex);
-    stat_free((char *) mutex);
   }
 }
 
 static void caml_io_mutex_lock(struct channel * chan)
 {
   if (chan->mutex == NULL) {
-    HANDLE mutex = CreateMutex(NULL, TRUE, NULL);
+    HANDLE mutex = CreateMutex(NULL, FALSE, NULL);
     if (mutex == NULL) caml_wthread_error("Thread.iolock");
     chan->mutex = (void *) mutex;
   }
@@ -254,18 +253,15 @@ static void caml_thread_finalize(value vthread)
 
 value caml_thread_initialize(value unit)   /* ML */
 {
-  pthread_t tick_pthread;
-  pthread_attr_t attr;
   value vthread = Val_unit;
   value descr;
   HANDLE tick_thread;
   unsigned long tick_id;
 
   Begin_root (vthread);
-    /* Initialize the main mutex */
+    /* Initialize the main mutex and acquire it */
     caml_mutex = CreateMutex(NULL, TRUE, NULL);
     if (caml_mutex == NULL) caml_wthread_error("Thread.init");
-    WaitForSingleObject(caml_mutex, INFINITE);
     /* Create a finalized value to hold thread handle */
     vthread = alloc_final(2, caml_thread_finalize, 1, 1000);
     ((struct caml_thread_handle *)vthread)->handle = NULL;
@@ -273,7 +269,7 @@ value caml_thread_initialize(value unit)   /* ML */
     descr = alloc_tuple(3);
     Ident(descr) = Val_long(thread_next_ident);
     Start_closure(descr) = Val_unit;
-    Vhandle(descr) = vthread;
+    Threadhandle(descr) = (struct caml_thread_handle *) vthread;
     thread_next_ident++;
     /* Create an info block for the current thread */
     curr_thread =
@@ -315,6 +311,9 @@ static void caml_thread_start(caml_thread_t th)
 {
   value clos;
 
+  /* Initialize the per-thread variables */
+  curr_thread = th;
+  last_channel_locked = NULL;
   /* Acquire the global mutex and set up the stack variables */
   leave_blocking_section();
   /* Callback the closure */
@@ -329,7 +328,6 @@ static void caml_thread_start(caml_thread_t th)
 
 value caml_thread_new(value clos)          /* ML */
 {
-  pthread_attr_t attr;
   caml_thread_t th;
   value vthread = Val_unit;
   value descr;
@@ -343,7 +341,7 @@ value caml_thread_new(value clos)          /* ML */
     descr = alloc_tuple(3);
     Ident(descr) = Val_long(thread_next_ident);
     Start_closure(descr) = clos;
-    Vhandle(descr) = vthread;
+    Threadhandle(descr) = (struct caml_thread_handle *) vthread;
     thread_next_ident++;
     /* Create an info block for the current thread */
     th = (caml_thread_t) stat_alloc(sizeof(struct caml_thread_struct));
@@ -428,8 +426,6 @@ value caml_thread_kill(value target)       /* ML */
 {
   caml_thread_t th;
 
-  if (target == curr_thread->descr)
-    raise_sys_error("Thread.kill: cannot kill self");
   if (TerminateThread(Threadhandle(target)->handle, 1) == 0)
     caml_wthread_error("Thread.kill");
   for (th = curr_thread; th->descr != target; th = th->next) /*nothing*/;
@@ -501,7 +497,7 @@ value caml_thread_delay(value val)        /* ML */
 struct caml_condvar {
   void (*final_fun)();          /* Finalization function */
   unsigned long count;          /* Number of waiting threads */
-  HANDLE event;           /* Auto-reset event on which threads are waiting */
+  HANDLE sem;                   /* Semaphore on which threads are waiting */
 };
 
 #define Condition_val(v) ((struct caml_condvar *)(v))
@@ -509,7 +505,7 @@ struct caml_condvar {
 
 static void caml_condition_finalize(value cond)
 {
-  CloseHandle(Condition_val(cond)->event);
+  CloseHandle(Condition_val(cond)->sem);
 }
 
 value caml_condition_new(value unit)        /* ML */
@@ -517,8 +513,8 @@ value caml_condition_new(value unit)        /* ML */
   value cond;
   cond = alloc_final(sizeof(struct caml_condvar) / sizeof(value),
                      caml_condition_finalize, 1, Max_condition_number);
-  Condition_val(cond)->event = CreateEvent(NULL, FALSE, FALSE, NULL);
-  if (Condition_val(cond)->event == NULL)
+  Condition_val(cond)->sem = CreateSemaphore(NULL, 0, 0x7FFFFFFF, NULL);
+  if (Condition_val(cond)->sem == NULL)
     caml_wthread_error("Condition.create");
   Condition_val(cond)->count = 0;
   return cond;
@@ -528,14 +524,14 @@ value caml_condition_wait(value cond, value mut)           /* ML */
 {
   int retcode1, retcode2;
   HANDLE m = Mutex_val(mut);
-  HANDLE e = Condition_val(cond)->event;
+  HANDLE s = Condition_val(cond)->sem;
 
   Condition_val(cond)->count ++;
   enter_blocking_section();
   /* Release mutex */
   ReleaseMutex(m);
-  /* Wait for event to be toggled */
-  retcode1 = WaitForSingleObject(e, INFINITE);
+  /* Wait for semaphore to be non-null, and decrement it */
+  retcode1 = WaitForSingleObject(s, INFINITE);
   /* Re-acquire mutex */
   retcode2 = WaitForSingleObject(m, INFINITE);
   leave_blocking_section();
@@ -546,13 +542,13 @@ value caml_condition_wait(value cond, value mut)           /* ML */
 
 value caml_condition_signal(value cond)           /* ML */
 {
-  HANDLE e = Condition_val(cond)->event;
+  HANDLE s = Condition_val(cond)->sem;
 
   if (Condition_val(cond)->count > 0) {
     Condition_val(cond)->count --;
     enter_blocking_section();
-    /* Toggle event once, waking up one waiter */
-    SetEvent(e);
+    /* Increment semaphore by 1, waking up one waiter */
+    ReleaseSemaphore(s, 1, NULL);
     leave_blocking_section();
   }
   return Val_unit;
@@ -560,14 +556,14 @@ value caml_condition_signal(value cond)           /* ML */
 
 value caml_condition_broadcast(value cond)           /* ML */
 {
-  HANDLE e = Condition_val(cond)->event;
+  HANDLE s = Condition_val(cond)->sem;
   unsigned long c = Condition_val(cond)->count;
 
   if (c > 0) {
     Condition_val(cond)->count = 0;
     enter_blocking_section();
-    /* Toggle event c times, waking up all waiters */
-    for (/*nothing*/; c > 0; c--) SetEvent(e);
+    /* Increment semaphore by c, waking up all waiters */
+    ReleaseSemaphore(s, c, NULL);
     leave_blocking_section();
   }
   return Val_unit;
@@ -577,6 +573,7 @@ value caml_condition_broadcast(value cond)           /* ML */
 
 static void caml_wthread_error(char * msg)
 {
-  _dosmaperr(GetLastError());
-  sys_error(msg, NO_ARG);
+  char errmsg[1024];
+  sprintf(errmsg, "%s: error code %x\n", msg, GetLastError());
+  raise_sys_error(copy_string(errmsg));
 }

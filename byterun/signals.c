@@ -160,7 +160,7 @@ int posix_signals[] = {
 value install_signal_handler(value signal_number, value action) /* ML */
 {
   int sig;
-  void (*act)();
+  void (*act)(int signo);
 #ifdef POSIX_SIGNALS
   struct sigaction sigact;
 #endif

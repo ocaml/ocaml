@@ -770,7 +770,7 @@ let begin_assembly() =
   let lbl_begin = Compilenv.current_unit_name() ^ "_data_begin" in
   add_def_symbol lbl_begin;
   `	PUBLIC	{emit_symbol lbl_begin}\n`;
-  `{emit_symbol lbl_begin}	LABEL	DWORD\n`
+  `{emit_symbol lbl_begin}	LABEL	DWORD\n`;
   `	.CODE\n`;
   let lbl_begin = Compilenv.current_unit_name() ^ "_code_begin" in
   add_def_symbol lbl_begin;

@@ -67,7 +67,7 @@ let wait_write fd = ()
 #ifdef WIN32
 let wait_timed_read fd delay = true
 let wait_timed_write fd delay = true
-let select rd wr ex delay = invalid_argument "Thread.select: not implemented"
+let select rd wr ex delay = invalid_arg "Thread.select: not implemented"
 #else
 let wait_timed_read fd d =
   match Unix.select [fd] [] [] d with ([], _, _) -> false | (_, _, _) -> true

@@ -41,7 +41,7 @@ value win_create_process_native(cmd, cmdline, env, fd1, fd2, fd3)
   if (! CreateProcess(exefile, String_val(cmdline), NULL, NULL,
                       TRUE, 0, envp, NULL, &si, &pi)) {
     _dosmaperr(GetLastError());
-    uerror("create_process", exefile);
+    uerror("create_process", cmd);
   }
   return Val_int(pi.hProcess);
 }
