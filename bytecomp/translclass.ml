@@ -86,24 +86,25 @@ let transl_field_obj obj field (obj_init, anc_id) =
   | Cf_meth (name, exp) ->
       (obj_init, anc_id)
 
-let transl_field_cl tbl meths field cl_init =
+let transl_field_cl tbl meths bind_meths field cl_init =
   match field with
     Cf_inher (name, args, vals, inh_meths, meths') ->
       Lsequence(Lapply (oo_prim "inheritance",
                         [Lvar tbl; transl_path name;
                          inherited_values vals;
                          inherited_meths meths']),
+                bind_meths (
                 transl_vals tbl vals (
-                transl_super tbl meths inh_meths cl_init))
-  | Cf_val (name, id, priv, exp) ->
-      if priv = Private then
-        transl_private_val tbl name id cl_init
-      else
-        transl_val tbl name id cl_init
+                transl_super tbl meths inh_meths cl_init)))
+  | Cf_val (name, id, Private, exp) ->
+      bind_meths (transl_private_val tbl name id cl_init)
+  | Cf_val (name, id, Public, exp) ->
+      bind_meths (transl_val tbl name id cl_init)
   | Cf_meth (name, exp) ->
+      bind_meths (
       Lsequence(Lapply (oo_prim "set_method",
                         [Lvar tbl; transl_label name; transl_exp exp]),
-                cl_init)
+                cl_init))
 
 let transl_val_hiding tbl cl_init =
   function
@@ -114,7 +115,7 @@ let transl_val_hiding tbl cl_init =
                         [Lvar tbl; transl_label name]),
                 cl_init)
 
-let bind_methods tbl public_methods lab id cl_init =
+let bind_method tbl public_methods lab id cl_init =
   if List.mem lab public_methods then
     Llet(Alias, id, Lvar (meth lab), cl_init)
   else
@@ -122,15 +123,17 @@ let bind_methods tbl public_methods lab id cl_init =
                                 [Lvar tbl; transl_label lab]),
     cl_init)
 
+let bind_methods tbl public_methods meths cl_init =
+  Meths.fold (bind_method tbl public_methods) meths cl_init
+
 let transl_fields tbl public_methods meths fields cl_init =
   match fields with
-    Cf_inher _ as inh :: fields ->
-      transl_field_cl tbl meths inh 
-        (Meths.fold (bind_methods tbl public_methods) meths
-           (List.fold_right (transl_field_cl tbl meths) fields cl_init))
-  | fields ->
-      Meths.fold (bind_methods tbl public_methods) meths
-        (List.fold_right (transl_field_cl tbl meths) fields cl_init)
+    field :: fields ->
+      let no_op x = x in
+      transl_field_cl tbl meths (bind_methods tbl public_methods meths) field
+        (List.fold_right (transl_field_cl tbl meths no_op) fields cl_init)
+  | [] ->
+      cl_init
 
 let creator args =
   let table = Ident.create "table" in
