@@ -171,18 +171,23 @@ let execute_phrase phr =
 (* Reading function *)
 
 let first_line = ref true
+let got_eof = ref false;;
 
 let refill_lexbuf buffer len =
-  output_string stdout (if !first_line then "# " else "  "); flush stdout;
-  first_line := false;
-  let i = ref 0 in
-  try
-    while !i < len && (let c = input_char stdin in buffer.[!i] <- c; c <> '\n')
-    do incr i done;
-    !i + 1
-  with End_of_file ->
-    Location.echo_eof ();
-    !i
+  if !got_eof then (got_eof := false; 0) else begin
+    output_string stdout (if !first_line then "# " else "  "); flush stdout;
+    first_line := false;
+    let i = ref 0 in
+    try
+      while !i < len && (let c = input_char stdin in buffer.[!i] <- c; c<>'\n')
+      do incr i done;
+      !i + 1
+    with End_of_file ->
+      Location.echo_eof ();
+      if !i > 0
+      then (got_eof := true; !i)
+      else 0
+  end
 
 (* Discard everything already in a lexer buffer *)
 
@@ -206,7 +211,7 @@ let _ =
 let parse_toplevel_phrase = ref Parse.toplevel_phrase
 
 let loop() =
-  print_string "\tObjective Caml version ";
+  print_string "        Objective Caml version ";
   print_string Config.version;
   print_newline(); print_newline();
   (* Add whatever -I options have been specified on the command line,
