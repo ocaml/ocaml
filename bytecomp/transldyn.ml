@@ -97,8 +97,10 @@ let extract_type_definitions whole_env ty0 =
     path'
   in
   all ty0;
-  let clean = false in
-  let vars = if clean then List.map fst (Ctype.free_vars ty0) else [] in
+  let clean = true in
+  let vars = if clean then Ctype.free_type_variables ty0 else [] in
+  if vars <> [] then raise (Unimplemented "dynamic of a polymorphic value cannot be typed in core Caml");
+  (* TODO: check that each of the [vars] is generalisable (i.e., not '_a) *)
   let decl =
     { type_params = if clean then vars else [];
       type_arity = if clean then 0 else List.length vars;
