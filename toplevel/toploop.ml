@@ -107,13 +107,12 @@ let pr_item env ppf = function
       rem
   | _ -> []
 
-let rec pr_items space env ppf = function
+let rec print_items env ppf = function
   | [] -> ()
   | items ->
-     if space then fprintf ppf "@ ";
-     pr_items true env ppf (pr_item env ppf items)
-
-let print_items = pr_items false
+     match pr_item env ppf items with
+     | [] -> ()
+     | items -> fprintf ppf "@ %a" (print_items env) items;;
 
 (* The current typing environment for the toplevel *)
 
@@ -130,7 +129,7 @@ let print_exception_outcome ppf = function
   | Stack_overflow ->
       fprintf ppf "Stack overflow during evaluation (looping recursion?).@."
   | exn ->
-      fprintf ppf "@[Uncaught exception: %a.@."
+      fprintf ppf "@[Uncaught exception:@ %a.@]@."
               (print_value !toplevel_env (Obj.repr exn)) Predef.type_exn
 
 (* The table of toplevel directives. 
@@ -154,6 +153,7 @@ let execute_phrase print_outcome ppf phr =
                 fprintf ppf "@[- : %a@ =@ %a@]@."
                 Printtyp.type_scheme exp.exp_type
                 (print_value newenv v) exp.exp_type
+            | [] -> ()
             | _ ->
                 fprintf ppf "@[<v>%a@]@."
                 (print_items newenv) sg
