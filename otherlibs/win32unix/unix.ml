@@ -303,8 +303,8 @@ external access : string -> access_permission list -> unit = "unix_access"
 external dup : file_descr -> file_descr = "unix_dup"
 external dup2 : file_descr -> file_descr -> unit = "unix_dup2"
 
-let set_nonblock fd = ()
-let clear_nonblock fd = ()
+external set_nonblock : file_descr -> unit = "unix_set_nonblock"
+external clear_nonblock : file_descr -> unit = "unix_clear_nonblock"
 
 external set_close_on_exec : file_descr -> unit = "win_set_close_on_exec"
 external clear_close_on_exec : file_descr -> unit = "win_clear_close_on_exec"

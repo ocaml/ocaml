@@ -57,27 +57,38 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
 
   Begin_roots3 (readfds, writefds, exceptfds)
   Begin_roots3 (read_list, write_list, except_list)
-    fdlist_to_fdset(readfds, &read);
-    fdlist_to_fdset(writefds, &write);
-    fdlist_to_fdset(exceptfds, &except);
-    tm = Double_val(timeout);
-    if (tm < 0.0)
-      tvp = (struct timeval *) NULL;
-    else {
-      tv.tv_sec = (int) tm;
-      tv.tv_usec = (int) (1e6 * (tm - (int) tm));
-      tvp = &tv;
+    if (readfds == Val_int(0)
+	&& writefds == Val_int(0)
+	&& exceptfds == Val_int(0)) {
+      if ( tm > 0.0 ) {
+	enter_blocking_section();
+	Sleep( (int)(tm * 1000));
+	leave_blocking_section();
+      }
+      read_list = write_list = except_list = Val_int(0);
+    } else {      
+      fdlist_to_fdset(readfds, &read);
+      fdlist_to_fdset(writefds, &write);
+      fdlist_to_fdset(exceptfds, &except);
+      tm = Double_val(timeout);
+      if (tm < 0.0)
+	tvp = (struct timeval *) NULL;
+      else {
+	tv.tv_sec = (int) tm;
+	tv.tv_usec = (int) (1e6 * (tm - (int) tm));
+	tvp = &tv;
+      }
+      enter_blocking_section();
+      retcode = select(FD_SETSIZE, &read, &write, &except, tvp);
+      leave_blocking_section();
+      if (retcode == -1) {
+	win32_maperr(WSAGetLastError());
+	uerror("select", Nothing);
+      }
+      read_list = fdset_to_fdlist(readfds, &read);
+      write_list = fdset_to_fdlist(writefds, &write);
+      except_list = fdset_to_fdlist(exceptfds, &except);
     }
-    enter_blocking_section();
-    retcode = select(FD_SETSIZE, &read, &write, &except, tvp);
-    leave_blocking_section();
-    if (retcode == -1) {
-      win32_maperr(WSAGetLastError());
-      uerror("select", Nothing);
-    }
-    read_list = fdset_to_fdlist(readfds, &read);
-    write_list = fdset_to_fdlist(writefds, &write);
-    except_list = fdset_to_fdlist(exceptfds, &except);
     res = alloc_small(3, 0);
     Field(res, 0) = read_list;
     Field(res, 1) = write_list;
