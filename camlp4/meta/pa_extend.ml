@@ -538,6 +538,18 @@ value ssopt loc s =
       {prod = prod; action = Some act}
     in
     let r2 =
+      let s =
+        match s.text with
+        [ TXtok loc "" <:expr< $str:_$ >> ->
+            let rl =
+              [{prod = [{pattern = Some <:patt< x >>; symbol = s}];
+                action = Some <:expr< Qast.Str x >>}]
+            in
+            let t = new_type_var () in
+            {used = []; text = TXrules loc (srules loc t rl "");
+             styp = STquo loc t}
+        | _ -> s ]
+      in
       let prod =
         [mk_psymbol <:patt< a >> (TXopt loc s.text)
            (STapp loc "option" s.styp)]

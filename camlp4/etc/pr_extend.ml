@@ -345,6 +345,14 @@ value rec symbol s k =
        ([(Some <:patt< a >>, Sopt s)], Some <:expr< Qast.Option a >>)]
     when not no_slist.val
     ->
+      let s =
+        match s with
+        [ Srules
+            [([(Some <:patt< x >>, Stoken ("", str))],
+              Some <:expr< Qast.Str x >>)] ->
+            Stoken ("", str)
+        | s -> s ]
+      in
       HVbox [: `S LR "SOPT"; `simple_symbol s k :]
   | Srules rl ->
       let rl = simplify_rules rl in
@@ -502,4 +510,4 @@ lev.pr_rules :=
       fun curr next _ k -> [: `gextend e "" k :] ];
 
 Pcaml.add_option "-no_slist" (Arg.Set no_slist)
-  "    Don't reconstruct SLIST";
+  "    Don't reconstruct SLIST and SOPT";
