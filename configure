@@ -391,14 +391,14 @@ if test $withsharedlibs = "yes"; then
       case "$bytecc" in
         gcc*)
           sharedcccompopts="-fPIC"
-	  if sh ./solaris-ld; then
-	  mksharedlib="$bytecc -shared -o"
-          byteccrpath="-Wl,-R"
+          if sh ./solaris-ld; then
+            mksharedlib="$bytecc -shared -o"
+            byteccrpath="-Wl,-R"
           else
-	  mksharedlib="$bytecc -shared -o"
-          bytecclinkopts="$bytecclinkopts -Wl,-E"
-          byteccrpath="-Wl,-rpath,"
-	  fi
+            mksharedlib="$bytecc -shared -o"
+            bytecclinkopts="$bytecclinkopts -Wl,-E"
+            byteccrpath="-Wl,-rpath,"
+          fi
 	  shared_libraries_supported=true;;
         *)
           sharedcccompopts="-KPIC"
