@@ -153,7 +153,7 @@ See `caml-types-location-re' for annotation file format.
              (not (window-live-p (get-buffer-window caml-types-buffer))))
         (display-buffer caml-types-buffer))
     (unwind-protect
-        (sit-for 60)
+        (caml-sit-for 60)
       (delete-overlay caml-types-expr-ovl)
       )))
 
@@ -388,11 +388,23 @@ See `caml-types-location-re' for annotation file format.
   (interactive "e")
   nil)
 
+(defun caml-types-time ()
+  (let ((time (current-time)))
+     (+ (* (mod (cadr time) 1000) 1000)
+                  (/ (cadr (cdr time)) 1000))))
+
 (defun caml-types-explore (event)
   "Explore type annotations by mouse dragging.
 
-The expression under the mouse is highlighted
-and its type is displayed in the minibuffer, until the move is released."
+The expression under the mouse is highlighted and its type is displayed 
+in the minibuffer, until the move is released, much as `caml-types-show-type'.
+The function uses two overlays. 
+
+ . One overlay delimits the largest region whose all subnodes 
+   are well-typed. 
+ . Another overlay delimits the current node under the mouse (whose type
+   annotation is beeing displayed).
+"
   (interactive "e")
   (set-buffer (window-buffer (caml-event-window event)))
   (let* ((target-buf (current-buffer))
@@ -403,8 +415,13 @@ and its type is displayed in the minibuffer, until the move is released."
          target-pos
          Left Right limits cnum node mes type
          region
+         (window (caml-event-window event))
          target-tree
+         (speed 100)
+         (last-time (caml-types-time))
+         (original-event event)
          )
+    (select-window window)
     (unwind-protect
         (progn
           (caml-types-preprocess type-file)
@@ -415,66 +432,111 @@ and its type is displayed in the minibuffer, until the move is released."
           ;; (message "Drag the mouse to explore types")
           (unwind-protect
               (caml-track-mouse
-               (setq region
-                     (caml-types-typed-make-overlay
-                      target-buf (caml-event-point-start event)))
-               (while (and event
-                           (integer-or-marker-p
-                            (setq cnum (caml-event-point-end event))))
-                 (if (and region (<= (car region) cnum) (< cnum (cdr region)))
-                     (if (and limits
-                              (>= cnum (car limits)) (< cnum (cdr limits)))
-                         (message mes)
-                       (setq target-bol
-                             (save-excursion
-                               (goto-char cnum) (caml-line-beginning-position))
-                             target-line (1+ (count-lines (point-min)
-                                                          target-bol))
-                             target-pos
-                             (vector target-file target-line target-bol cnum))
-                       (save-excursion
-                         (setq node (caml-types-find-location
-                                     target-pos () target-tree))
-                         (set-buffer caml-types-buffer)
-                         (erase-buffer)
-                         (cond
-                          (node
-                           (setq Left
-                                 (caml-types-get-pos target-buf (elt node 0))
-                                 Right
-                                 (caml-types-get-pos target-buf (elt node 1)))
-                           (move-overlay
-                            caml-types-expr-ovl Left Right target-buf)
-                           (setq limits
-                                 (caml-types-find-interval target-buf
-                                                           target-pos node)
-                                 type (elt node 2))
-                           )
-                          (t
-                           (delete-overlay caml-types-expr-ovl)
-                           (setq type "*no type information*")
-                           (setq limits
-                                 (caml-types-find-interval
-                                  target-buf target-pos target-tree))
-                           ))
-                         (message (setq mes (format "type: %s" type)))
-                         (insert type)
-                         )))
-                 (setq event (caml-read-event))
-                 (unless (mouse-movement-p event) (setq event nil))
+               (while event
+                 (message nil)
+                 (message "%S" event)
+                 (cond
+                  ;; In emacs eliminate 
+                  ((caml-ignore-event-p event))
+                  ((caml-release-event-p original-event event)
+                   (setq event nil))
+                  ((and (caml-mouse-movement-p event)
+                        (not (and (equal window (caml-event-window event))
+                                  (integer-or-marker-p
+                                   (caml-event-point-end event)))))
+                   (let* ((win (caml-window-edges window))
+                          (top (nth 1 win))
+                          (bottom (- (nth 3 win) 1))
+                          mouse
+                          time
+                          )
+                     (while (and
+                             (caml-sit-for 0 (/ 500 speed))
+                             (setq time (caml-types-time)) 
+                             (> (- time last-time) (/ 500 speed))
+                             (setq mouse (caml-mouse-vertical-position))
+                             (or (< mouse top) (>= mouse bottom))
+                             )
+                       (setq last-time time)
+                       (cond
+                        ((< mouse top)
+                         (setq speed (- top mouse))
+                         (condition-case nil
+                             (scroll-down 1)
+                           (error (message "Beginning of buffer!"))))
+                        ((>= mouse bottom)
+                         (setq speed (+ 1 (- mouse bottom)))
+                         (condition-case nil
+                             (scroll-up 1)
+                           (error (message "End of buffer!"))))
+                        )                         
+                       (setq speed (* speed speed))
+                       )))
+                  ((or (caml-mouse-movement-p event)
+                       (equal original-event event))
+                   (setq cnum (caml-event-point-end event))
+                   (if (and region
+                            (<= (car region) cnum) (< cnum (cdr region)))
+                       nil
+                     (setq region
+                           (caml-types-typed-make-overlay
+                            target-buf (caml-event-point-start event))))
+                   (if (and limits
+                            (>= cnum (car limits)) (< cnum (cdr limits)))
+                       (message mes)
+                     (setq target-bol
+                           (save-excursion
+                             (goto-char cnum) (caml-line-beginning-position))
+                           target-line (1+ (count-lines (point-min)
+                                                        target-bol))
+                           target-pos
+                           (vector target-file target-line target-bol cnum))
+                     (save-excursion
+                       (setq node (caml-types-find-location
+                                   target-pos () target-tree))
+                       (set-buffer caml-types-buffer)
+                       (erase-buffer)
+                       (cond
+                        (node
+                         (setq Left
+                               (caml-types-get-pos target-buf (elt node 0))
+                               Right
+                               (caml-types-get-pos target-buf (elt node 1)))
+                         (move-overlay
+                          caml-types-expr-ovl Left Right target-buf)
+                         (setq limits
+                               (caml-types-find-interval target-buf
+                                                         target-pos node)
+                               type (elt node 2))
+                         )
+                        (t
+                         (delete-overlay caml-types-expr-ovl)
+                         (setq type "*no type information*")
+                         (setq limits
+                               (caml-types-find-interval
+                                target-buf target-pos target-tree))
+                         ))
+                       ;; (message (setq mes (format "type: %s" type)))
+                       (insert type)
+                       ))
+                   )
+                  )
+                 (if event (setq event (caml-read-event)))
                  )
                )
             (delete-overlay caml-types-expr-ovl)
             (delete-overlay caml-types-typed-ovl)
             ))
-      ;; the mouse is down. One should prevent against mouse release,
-      ;; which could do something undesirable.
-      ;; In most common cases, next event will be mouse release.
+      ;; When an error occurs, the mouse release event has not been read.
+      ;; We could wait for mouse release to prevent execution of
+      ;; a binding of mouse release, such as cut or paste.
+      ;; In most common cases, next event will be the mouse release.
       ;; However, it could also be a key stroke before mouse release.
-      ;; Will then execute the action for mouse release (if bound).
       ;; Emacs does not allow to test whether mouse is up or down.
-      ;; Same problem may happen above while exploring
-      (if (and event (caml-read-event)))
+      ;; Not sure it is robust to loop for mouse release after an error
+      ;; occured, as is done for exploration. 
+      ;; So far, we just ignore next event. (Next line also be uncommenting.)
+      (if event (caml-read-event))
       )))
 
 (defun caml-types-typed-make-overlay (target-buf pos)

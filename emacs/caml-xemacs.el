@@ -9,12 +9,31 @@
 (defun caml-line-beginning-position ()
   (save-excursion (beginning-of-line) (point)))
 
-(defun caml-event-window (e) (event-window e))
+(defalias 'caml-read-event 'next-event)
+(defalias 'caml-window-edges 'window-pixel-edges)
+(defun caml-mouse-vertical-position ()
+  (let ((e  (mouse-position-as-motion-event)))
+    (and e (event-y-pixel e))))
+(defalias 'caml-mouse-movement-p 'motion-event-p)
+(defun caml-event-window (e)
+  (and (mouse-event-p e) (event-window e)))
 (defun caml-event-point-start (e) (event-closest-point e))
 (defun caml-event-point-end (e) (event-closest-point e))
-(defalias 'caml-read-event 'next-event)
+(defun caml-ignore-event-p (e)
+  (if (and (key-press-event-p e) (equal (key-binding e) 'keyboard-quit))
+      (keyboard-quit))
+  (not (mouse-event-p e)))
+
+
+(defun caml-sit-for (sec &optional mili)
+  (sit-for (+ sec (if mili (* 0.001 mili)))))
+                  
+
+
 (defmacro caml-track-mouse (&rest body) (cons 'progn body))
 
-(defun mouse-movement-p (e) (equal (event-type e) 'motion))
+(defun caml-release-event-p (original event)
+  (and (button-release-event-p event)
+       (equal (event-button original) (event-button event))))
 
 (provide 'caml-xemacs)
