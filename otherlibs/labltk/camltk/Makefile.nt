@@ -1,0 +1,60 @@
+!include ..\support\Makefile.common.nt
+
+COMPFLAGS= -I ../support
+
+SUPPORT=../support/support.cmo ../support/widget.cmo ../support/protocol.cmo \
+        ../support/textvariable.cmo ../support/timer.cmo \
+        ../support/fileevent.cmo
+
+SUPPORTX = $(SUPPORT:.cmo=.cmx)
+
+TOPDEPS = $(TOPDIR)/toplevel/toplevellib.cma $(TOPDIR)/toplevel/topmain.cmo
+
+all : labltk.cma
+
+opt : labltk.cmxa
+
+include ./modules
+WIDGETOBJSX = $(WIDGETOBJS:.cmo=.cmx)
+
+labltk.cma : $(SUPPORT) $(WIDGETOBJS) tk.cmo 
+	$(LABLLIBR) -o labltk.cma $(SUPPORT) tk.cmo $(WIDGETOBJS) \
+	  -dllib -llabltk41 -cclib -llabltk41 $(TK_LINK)
+
+labltk.cmxa : $(SUPPORTX) $(WIDGETOBJSX) tk.cmx
+	$(CAMLOPTLIBR) -o labltk.cmxa $(SUPPORTX) tk.cmx $(WIDGETOBJSX) \
+	  -cclib -llabltk41 $(TK_LINK)
+
+#labltk : $(TOPDEPS) $(WIDGETOBJS) $(SUPPORT)
+#	$(LABLC) -linkall -o $@ -I ../support $(TKLINKOPT) \
+#	       -I $(TOPDIR)/toplevel toplevellib.cma labltk.cma \
+#	       -I $(OTHERS)/win32unix unix.cma -I $(OTHERS)/str str.cma \
+#	       topmain.cmo
+
+# All .{ml,mli} files are generated in this directory
+clean : 
+	rm -f *.cm* *.ml *.mli *.o *.a labltktop
+
+install: labltk.cma #labltk
+	@if not exist $(LABLTKDIR) mkdir $(LABLTKDIR)
+	cp *.cmi labltk.cma $(LABLTKDIR)
+#	@if not exist $(BINDIR) mkdir $(BINDIR)
+#	cp labltk.exe $(BINDIR)
+
+installopt: labltk.cmxa
+	@if not exist $(LABLTKDIR) mkdir $(LABLTKDIR)
+	cp labltk.cmxa labltk.lib $(LABLTKDIR)
+
+.SUFFIXES :
+.SUFFIXES : .mli .ml .cmi .cmx .cmo .mlp
+
+.mli.cmi:
+	$(LABLCOMP) $(COMPFLAGS) $<
+
+.ml.cmo:
+	$(LABLCOMP) $(COMPFLAGS) $<
+
+.ml.cmx:
+	$(CAMLOPT) -c $(COMPFLAGS) $<
+
+!include .depend
