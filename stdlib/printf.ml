@@ -23,6 +23,37 @@ let bad_format fmt pos =
   invalid_arg
     ("printf: bad format " ^ String.sub fmt pos (String.length fmt - pos))
 
+(* Parses a format to return the specified length and the padding direction. *)
+let parse_format format =
+  let rec parse neg i =
+    if i >= String.length format then (0, neg) else
+    match String.unsafe_get format i with
+    | '1'..'9' ->
+        (int_of_string (String.sub format i (String.length format - i - 1)),
+         neg)
+    | '-' ->
+        parse true (succ i)
+    | _ ->
+        parse neg (succ i) in
+    try parse false 1 with Failure _ -> bad_format format 0
+
+(* Pad a (sub) string into a blank string of length [p],
+   on the right if [neg] is true, on the left otherwise. *)
+let pad_string pad_char p neg s i len =
+  if p = len && i = 0 then s else
+  if p <= len then String.sub s i p else
+  let res = String.make p pad_char in
+  if neg
+  then String.blit s i res 0 len
+  else String.blit s i res (p - len) len;
+  res
+
+(* Format a string given a %s format, e.g. %40s or %-20s.
+   To do: ignore other flags (#, +, etc)? *)
+let format_string format s =
+  let (p, neg) = parse_format format in
+  pad_string ' ' p neg s 0 (String.length s)
+
 (* Format a string given a %s format, e.g. %40s or %-20s.
    To do: ignore other flags (#, +, etc)? *)
 
@@ -41,12 +72,51 @@ let format_string format s =
     try parse_format false 1 with Failure _ -> bad_format format 0 in
   if String.length s < p then begin
     let res = String.make p ' ' in
-    if neg 
+    if neg
     then String.blit s 0 res 0 (String.length s)
     else String.blit s 0 res (p - String.length s) (String.length s);
     res
   end else
     s
+
+(* Format a [%b] format: write a binary representation of an integer. *)
+let format_binary_int format n =
+  let sharp = String.contains format '#' in
+  let add_sharp_len l = if sharp then l + 2 else l in
+  (* Max length of a Caml int + 1 for a minus sign. *)
+  let maxlen = Sys.word_size - 1 + 1 in
+  let len = add_sharp_len maxlen in
+  let b = String.make len ' ' in
+  let rec format_bin i n =
+    if n = 0 then i else
+    let c = char_of_int (int_of_char '0' + n land 1) in
+    String.unsafe_set b i c;
+    format_bin (i - 1) (n lsr 1) in
+  let rec find_pad_char i len =
+    if i >= len then ' ' else
+    match String.unsafe_get format i with
+    | '0' -> '0'
+    | '1' .. '9' -> ' '
+    | _ ->  find_pad_char (i + 1) len in
+  let add_sharp s i =
+    String.unsafe_set s i '0';
+    String.unsafe_set s (i + 1) 'b' in
+  let add_bin pad_char s i =
+    match pad_char with
+    | ' ' -> add_sharp s i; s
+    | _ -> add_sharp s 0; s in
+  let i =
+     match n with
+     | 0 ->
+        String.unsafe_set b (len - 1) '0';
+        len - 2
+     | n -> format_bin (len - 1) n in
+  let p, neg = parse_format format in
+  let blen = len - 1 - i in
+  let pad_char = find_pad_char 0 (String.length format) in
+  let p = add_sharp_len (max p blen) in
+  let s = pad_string pad_char p neg b (i + 1) blen in
+  if sharp then add_bin pad_char s (i - 1) else s;;
 
 (* Extract a %format from [fmt] between [start] and [stop] inclusive.
    '*' in the format are replaced by integers taken from the [widths] list.
@@ -69,7 +139,7 @@ let extract_format fmt start stop widths =
       in fill_format start (List.rev widths)
 
 (* Decode a %format and act on it.
-   [fmt] is the printf format style, and [pos] points to a [%] character.  
+   [fmt] is the printf format style, and [pos] points to a [%] character.
    After consuming the appropriate number of arguments and formatting
    them, one of the three continuations is called:
    [cont_s] for outputting a string (args: string, next pos)
@@ -83,7 +153,7 @@ let extract_format fmt start stop widths =
    rely on the fact that we'll get a "nul" character if we access
    one past the end of the string.  These "nul" characters are then
    caught by the [_ -> bad_format] clauses below.
-   Don't do this at home, kids. *) 
+   Don't do this at home, kids. *)
 
 let scan_format fmt pos cont_s cont_a cont_t =
   let rec scan_flags widths i =
@@ -108,7 +178,11 @@ let scan_format fmt pos cont_s cont_a cont_t =
           if conv = 'c'
           then cont_s (String.make 1 c) (succ i)
           else cont_s ("'" ^ Char.escaped c ^ "'") (succ i))
-    | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
+    | 'b' ->
+        Obj.magic(fun (n: int) ->
+          cont_s (format_binary_int
+                    (extract_format fmt pos i widths) n) (succ i))
+    | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' as conv ->
         Obj.magic(fun (n: int) ->
           cont_s (format_int (extract_format fmt pos i widths) n) (succ i))
     | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' as conv ->
@@ -117,7 +191,7 @@ let scan_format fmt pos cont_s cont_a cont_t =
             if conv = 'F' then string_of_float f else
             format_float (extract_format fmt pos i widths) f in
           cont_s s (succ i))
-    | 'b' | 'B' ->
+    | 'B' ->
         Obj.magic(fun (b: bool) ->
           cont_s (string_of_bool b) (succ i))
     | 'a' ->

@@ -35,6 +35,7 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    - [X]: convert an integer argument to unsigned hexadecimal,
      using uppercase letters.
    - [o]: convert an integer argument to unsigned octal.
+   - [b]: convert an integer argument to unsigned binary.
    - [s]: insert a string argument.
    - [S]: insert a string argument in Caml syntax (double quotes, escapes).
    - [c]: insert a character argument.
@@ -47,7 +48,6 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
      in the style [d.ddd e+-dd] (mantissa and exponent).
    - [g] or [G]: convert a floating-point argument to decimal notation,
      in style [f] or [e], [E] (whichever is more compact).
-   - [b]: convert a boolean argument to the string [true] or [false]
    - [B]: convert a boolean argument to the string [true] or [false]
    - [ld], [li], [lu], [lx], [lX], [lo]: convert an [int32] argument to
      the format specified by the second letter (decimal, hexadecimal, etc).
