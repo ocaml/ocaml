@@ -21,9 +21,6 @@ value unix_bind(socket, address)      /* ML */
   int ret;
   get_sockaddr(address);
   ret = bind((SOCKET) Handle_val(socket), &sock_addr.s_gen, sock_addr_len);
-  if (ret == -1) {
-    _dosmaperr(WSAGetLastError());
-    uerror("bind", Nothing);
-  }
+  if (ret == -1) unix_error(WSAGetLastError(), "bind", Nothing);
   return Val_unit;
 }

@@ -23,9 +23,7 @@ value unix_shutdown(sock, cmd)   /* ML */
      value sock, cmd;
 {
   if (shutdown((SOCKET) Handle_val(sock),
-               shutdown_command_table[Int_val(cmd)]) == -1) {
-    _dosmaperr(WSAGetLastError());
-    uerror("shutdown", Nothing);
-  }
+               shutdown_command_table[Int_val(cmd)]) == -1)
+    unix_error(WSAGetLastError(), "shutdown", Nothing);
   return Val_unit;
 }

@@ -18,9 +18,7 @@
 value unix_listen(sock, backlog) /* ML */
      value sock, backlog;
 {
-  if (listen((SOCKET) Handle_val(sock), Int_val(backlog)) == -1) {
-    _dosmaperr(WSAGetLastError());
-    uerror("listen", Nothing);
-  }
+  if (listen((SOCKET) Handle_val(sock), Int_val(backlog)) == -1)
+    unix_error(WSAGetLastError(), "listen", Nothing);
   return Val_unit;
 }

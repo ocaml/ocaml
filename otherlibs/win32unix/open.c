@@ -26,10 +26,12 @@ static int open_create_flags[10] = {
 
 value unix_open(value path, value flags, value perm) /* ML */
 {
-  int fileaccess, createflags, fileattrib;
+  int fileaccess, createflags, fileattrib, filecreate;
+  SECURITY_ATTRIBUTES attr;
   HANDLE h;
 
   fileaccess = convert_flag_list(flags, open_access_flags);
+
   createflags = convert_flag_list(flags, open_create_flags);
   if ((createflags & (O_CREAT | O_EXCL)) == (O_CREAT | O_EXCL))
     filecreate = CREATE_NEW;
@@ -41,12 +43,21 @@ value unix_open(value path, value flags, value perm) /* ML */
     filecreate = OPEN_ALWAYS;
   else
     filecreate = OPEN_EXISTING;
+
   if ((createflags & O_CREAT) && (Int_val(perm) & 0200) == 0)
     fileattrib = FILE_ATTRIBUTE_READONLY;
   else
     fileattrib = FILE_ATTRIBUTE_NORMAL;
-  h = CreateFile(String_val(path), fileaccess, 0, NULL,
+
+  attr.nLength = sizeof(attr);
+  attr.lpSecurityDescriptor = NULL;
+  attr.bInheritHandle = TRUE;
+
+  h = CreateFile(String_val(path), fileaccess, 0, &attr,
                  filecreate, fileattrib, NULL);
-  if (h == INVALID_HANDLE_VALUE) uerror("open", path);
+  if (h == INVALID_HANDLE_VALUE) {
+    _dosmaperr(GetLastError());
+    uerror("open", path);
+  }
   return win_alloc_handle(h);
 }

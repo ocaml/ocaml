@@ -34,10 +34,8 @@ value unix_accept(sock)          /* ML */
   enter_blocking_section();
   snew = accept(sconn, &sock_addr.s_gen, &sock_addr_len);
   leave_blocking_section();
-  if (snew == INVALID_SOCKET) {
-    _dosmaperr(WSAGetLastError());
-    uerror("accept", Nothing);
-  }
+  if (snew == INVALID_SOCKET)
+    unix_error(WSAGetLastError(), "accept", Nothing);
   Begin_roots2 (fd, adr)
     fd = win_alloc_handle((HANDLE) snew);
     adr = alloc_sockaddr();

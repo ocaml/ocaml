@@ -25,9 +25,6 @@ value unix_connect(socket, address)   /* ML */
   enter_blocking_section();
   retcode = connect(s, &sock_addr.s_gen, sock_addr_len);
   leave_blocking_section();
-  if (retcode == -1) {
-    _dosmaperr(WSAGetLastError());
-    uerror("connect", Nothing);
-  }
+  if (retcode == -1) unix_error(WSAGetLastError(), "connect", Nothing);
   return Val_unit;
 }

@@ -21,8 +21,10 @@ static int open_descr_flags[10] = {
 
 value win_fd_handle(value handle, value flags) /* ML */
 {
-  return Val_int(_open_osfhandle(Handle_val(handle),
-                                 convert_flag_list(open_descr_flags, flags)));
+  int fd = _open_osfhandle((long) Handle_val(handle),
+			   convert_flag_list(open_descr_flags, flags));
+  if (fd == -1) uerror("channel_of_descr", Nothing);
+  return Val_int(fd);
 }
 
 value win_handle_fd(value fd)   /* ML */

@@ -23,9 +23,6 @@ value unix_getpeername(sock)          /* ML */
   sock_addr_len = sizeof(sock_addr);
   retcode = getpeername((SOCKET) Handle_val(sock),
                         &sock_addr.s_gen, &sock_addr_len);
-  if (retcode == -1) {
-    _dosmaperr(WSAGetLastError());
-    uerror("getpeername", Nothing);
-  }
+  if (retcode == -1) unix_error(WSAGetLastError(), "getpeername", Nothing);
   return alloc_sockaddr();
 }

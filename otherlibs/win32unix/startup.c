@@ -40,7 +40,11 @@ value win_cleanup(unit)         /* ML */
   return Val_unit;
 }
 
+static int std_handles[3] = {
+  STD_INPUT_HANDLE, STD_OUTPUT_HANDLE, STD_ERROR_HANDLE
+};
+
 value win_stdhandle(value nhandle) /* ML */
 {
-  return win_alloc_handle(GetStdHandle(Int_val(nhandle)));
+  return win_alloc_handle(GetStdHandle(std_handles[Int_val(nhandle)]));
 }

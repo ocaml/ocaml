@@ -21,7 +21,7 @@ value unix_dup2(value fd1, value fd2)        /* ML */
   oldh = Handle_val(fd2);
   if (! DuplicateHandle(GetCurrentProcess(), Handle_val(fd1),
                         GetCurrentProcess(), &newh,
-                        0L, inherit, DUPLICATE_SAME_ACCESS)) {
+                        0L, TRUE, DUPLICATE_SAME_ACCESS)) {
     _dosmaperr(GetLastError());
     return -1;
   }

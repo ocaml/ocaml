@@ -19,7 +19,7 @@ value unix_dup(value fd)               /* ML */
   HANDLE newh;
   if (! DuplicateHandle(GetCurrentProcess(), Handle_val(fd),
                         GetCurrentProcess(), &newh,
-                        0L, inherit, DUPLICATE_SAME_ACCESS)) {
+                        0L, TRUE, DUPLICATE_SAME_ACCESS)) {
     _dosmaperr(GetLastError());
     return -1;
   }

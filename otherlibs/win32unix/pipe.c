@@ -12,6 +12,7 @@
 /* $Id$ */
 
 #include <mlvalues.h>
+#include <memory.h>
 #include <alloc.h>
 #include "unixsupport.h"
 #include <fcntl.h>
@@ -20,10 +21,14 @@
 
 value unix_pipe(value unit)                /* ML */
 {
+  SECURITY_ATTRIBUTES attr;
   HANDLE readh, writeh;
   value readfd = Val_unit, writefd = Val_unit, res;
 
-  if (! CreatePipe(&readh, &writeh, NULL, SIZEBUF)) {
+  attr.nLength = sizeof(attr);
+  attr.lpSecurityDescriptor = NULL;
+  attr.bInheritHandle = TRUE;
+  if (! CreatePipe(&readh, &writeh, &attr, SIZEBUF)) {
     _dosmaperr(GetLastError());
     uerror("pipe", Nothing);
   }

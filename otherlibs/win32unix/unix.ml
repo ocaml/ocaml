@@ -135,11 +135,13 @@ external waitpid : wait_flag list -> int -> int * process_status
                  = "win_waitpid"
 external getpid : unit -> int = "unix_getpid"
 
-external stdhandle : int -> file_descr = "win_stdhandle"
+type standard_handle = STD_INPUT | STD_OUTPUT | STD_ERROR
 
-let stdin = stdhandle 0
-let stdout = stdhandle 1
-let stderr = stdhandle 2
+external stdhandle : standard_handle -> file_descr = "win_stdhandle"
+
+let stdin = stdhandle STD_INPUT
+let stdout = stdhandle STD_OUTPUT
+let stderr = stdhandle STD_ERROR
 
 type open_flag =
     O_RDONLY
@@ -174,19 +176,21 @@ let write fd buf ofs len =
 
 external open_read_descriptor : int -> in_channel = "caml_open_descriptor"
 external open_write_descriptor : int -> out_channel = "caml_open_descriptor"
-external fd_of_in_channel : in_channel -> file_descr = "channel_descriptor"
-external fd_of_out_channel : out_channel -> file_descr = "channel_descriptor"
+external fd_of_in_channel : in_channel -> int = "channel_descriptor"
+external fd_of_out_channel : out_channel -> int = "channel_descriptor"
 
-external open_handle : file_descr -> open_flags list -> int = "win_fd_handle"
+external open_handle : file_descr -> open_flag list -> int = "win_fd_handle"
 external filedescr_of_fd : int -> file_descr = "win_handle_fd"
 
 let in_channel_of_descr_gen flags handle =
   open_read_descriptor(open_handle handle flags)
-let in_channel_of_descr handle = in_channel_of_descr_gen [O_TEXT]
+let in_channel_of_descr handle =
+  in_channel_of_descr_gen [O_TEXT] handle
 
 let out_channel_of_descr_gen flags handle =
   open_write_descriptor(open_handle handle flags)
-let out_channel_of_descr handle = out_channel_of_descr_gen [O_TEXT]
+let out_channel_of_descr handle =
+  out_channel_of_descr_gen [O_TEXT] handle
 
 let descr_of_in_channel inchan =
   filedescr_of_fd(fd_of_in_channel inchan)
@@ -292,6 +296,7 @@ type tm =
     tm_isdst : bool }
 
 external time : unit -> int = "unix_time"
+external gettimeofday : unit -> float = "unix_gettimeofday"
 external gmtime : int -> tm = "unix_gmtime"
 external localtime : int -> tm = "unix_localtime"
 external mktime : tm -> int * tm = "unix_mktime"
@@ -498,6 +503,12 @@ let close_process (inchan, outchan) =
   let pid = find_proc_id "close_process" (Process(inchan, outchan)) in
   close_in inchan; close_out outchan;
   snd(waitpid [] pid)
+
+(* Polling *)
+
+external select :
+  file_descr list -> file_descr list -> file_descr list -> float ->
+        file_descr list * file_descr list * file_descr list = "unix_select"
 
 (* High-level network functions *)
 

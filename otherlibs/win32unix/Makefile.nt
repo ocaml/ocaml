@@ -10,8 +10,9 @@ CAMLOPT=..\..\boot\ocamlrun ..\..\ocamlopt -I ..\..\stdlib
 # Files in this directory
 WIN_OBJS = accept.obj bind.obj channels.obj close.obj \
   close_on.obj connect.obj createprocess.obj dup.obj dup2.obj \
-  getpeername.obj getpid.obj getsockname.obj listen.obj lseek.obj \
-  mkdir.obj open.obj pipe.obj read.obj sendrecv.obj \
+  getpeername.obj getpid.obj getsockname.obj gettimeofday.obj \
+  listen.obj lseek.obj \
+  mkdir.obj open.obj pipe.obj read.obj select.obj sendrecv.obj \
   shutdown.obj sleep.obj socket.obj sockopt.obj startup.obj system.obj \
   unixsupport.obj windir.obj winwait.obj write.obj
 

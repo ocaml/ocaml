@@ -209,14 +209,14 @@ val write : file_descr -> string -> int -> int -> int
 
 (*** Interfacing with the standard input/output library. *)
 
-value in_channel_of_descr : file_descr -> in_channel 
+val in_channel_of_descr : file_descr -> in_channel 
         (* Create an input channel reading from the given descriptor.
            The input channel is opened in text mode. *)
-value out_channel_of_descr : file_descr -> out_channel
+val out_channel_of_descr : file_descr -> out_channel
         (* Create an output channel writing on the given descriptor.
            The output channel is opened in text mode. *)
-value in_channel_of_descr_gen : open_flags list -> file_descr -> in_channel 
-value out_channel_of_descr_gen : open_flags list -> file_descr -> out_channel
+val in_channel_of_descr_gen : open_flag list -> file_descr -> in_channel 
+val out_channel_of_descr_gen : open_flag list -> file_descr -> out_channel
         (* Same as [in_channel_of_descr] and [out_channel_of_descr],
            except that the first argument (a list of flags) specifies
            the opening mode.  The following flags are recognized:
@@ -224,9 +224,9 @@ value out_channel_of_descr_gen : open_flags list -> file_descr -> out_channel
            and [O_APPEND] (all writes go at the end of the file).
            Other flags are ignored. *)
 
-value descr_of_in_channel : in_channel -> file_descr
+val descr_of_in_channel : in_channel -> file_descr
         (* Return the descriptor corresponding to an input channel. *)
-value descr_of_out_channel : out_channel -> file_descr
+val descr_of_out_channel : out_channel -> file_descr
         (* Return the descriptor corresponding to an output channel. *)
 
 (*** Seeking and truncating *)
@@ -394,6 +394,24 @@ val close_process: in_channel * out_channel -> process_status
            and [open_process], respectively, wait for the associated
            command to terminate, and return its termination status. *)
 
+(*** Polling *)
+
+external select :
+  file_descr list -> file_descr list -> file_descr list -> float ->
+        file_descr list * file_descr list * file_descr list = "unix_select"
+
+        (* Wait until some input/output operations become possible on
+           some sockets. The three list arguments are, respectively, a set
+           of descriptors to check for reading (first argument), for writing
+           (second argument), or for exceptional conditions (third argument).
+           The fourth argument is the maximal timeout, in seconds; a
+           negative fourth argument means no timeout (unbounded wait).
+           The result is composed of three sets of descriptors: those ready
+           for reading (first component), ready for writing (second component),
+           and over which an exceptional condition is pending (third
+           component). Unlike under Unix, the Win32 [select] works only
+	   for descriptors opened on sockets, but not on pipes or files. *)
+
 (*** Time functions *)
 
 type tm =
@@ -412,6 +430,8 @@ type tm =
 external time : unit -> int = "unix_time"
         (* Return the current time since 00:00:00 GMT, Jan. 1, 1970,
            in seconds. *)
+external gettimeofday : unit -> float = "unix_gettimeofday"
+        (* Same as [time], but with resolution better than 1 second. *)
 external gmtime : int -> tm = "unix_gmtime"
         (* Convert a time in seconds, as returned by [time], into a date and
            a time. Assumes Greenwich meridian time zone. *)

@@ -11,6 +11,7 @@
 
 /* $Id$ */
 
+#include <wtypes.h>
 #include <winbase.h>
 #include <stdlib.h>
 /* Include io.h in current dir, which is a copy of the system's io.h,

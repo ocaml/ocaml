@@ -38,9 +38,6 @@ value unix_socket(domain, type, proto) /* ML */
   s = socket(socket_domain_table[Int_val(domain)],
                    socket_type_table[Int_val(type)],
                    Int_val(proto));
-  if (s == INVALID_SOCKET) {
-    _dosmaperr(WSAGetLastError());
-    uerror("socket", Nothing);
-  }
+  if (s == INVALID_SOCKET) unix_error(WSAGetLastError(), "socket", Nothing);
   return win_alloc_handle((HANDLE) s);
 }

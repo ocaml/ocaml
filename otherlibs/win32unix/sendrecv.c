@@ -34,10 +34,7 @@ value unix_recv(value sock, value buff, value ofs, value len, value flags)
     ret = recv((SOCKET) Handle_val(sock), iobuf, (int) numbytes,
 	       convert_flag_list(flags, msg_flag_table));
     leave_blocking_section();
-    if (ret == -1) {
-      _dosmaperr(WSAGetLastError());
-      uerror("recv", Nothing);
-    }
+    if (ret == -1) unix_error(WSAGetLastError(), "recv", Nothing);
     bcopy(iobuf, &Byte(buff, Long_val(ofs)), ret);
   End_roots();
   return Val_int(ret);
@@ -61,10 +58,7 @@ value unix_recvfrom(value sock, value buff, value ofs, value len, value flags) /
 		   convert_flag_list(flags, msg_flag_table),
 		   &sock_addr.s_gen, &sock_addr_len);
     leave_blocking_section();
-    if (ret == -1) {
-      _dosmaperr(WSAGetLastError());
-      uerror("recvfrom", Nothing);
-    }
+    if (ret == -1) unix_error(WSAGetLastError(), "recvfrom", Nothing);
     bcopy(iobuf, &Byte(buff, Long_val(ofs)), ret);
     adr = alloc_sockaddr();
     res = alloc_tuple(2);
@@ -87,10 +81,7 @@ value unix_send(value sock, value buff, value ofs, value len, value flags) /* ML
   ret = send((SOCKET) Handle_val(sock), iobuf, (int) numbytes,
              convert_flag_list(flags, msg_flag_table));
   leave_blocking_section();
-  if (ret == -1) {
-    _dosmaperr(WSAGetLastError());
-    uerror("send", Nothing);
-  }
+  if (ret == -1) unix_error(WSAGetLastError(), "send", Nothing);
   return Val_int(ret);
 }
 
@@ -110,10 +101,7 @@ value unix_sendto_native(value sock, value buff, value ofs, value len, value fla
                convert_flag_list(flags, msg_flag_table),
                &sock_addr.s_gen, sock_addr_len);
   leave_blocking_section();
-  if (ret == -1) {
-    _dosmaperr(WSAGetLastError());
-    uerror("sendto", Nothing);
-  }
+  if (ret == -1) unix_error(WSAGetLastError(), "sendto", Nothing);
   return Val_int(ret);
 }
 
