@@ -195,6 +195,7 @@ case "$host" in
   rs6000-*-aix*)                arch=power; model=rs6000; system=aix;;
   powerpc-*-aix*)               arch=power; model=ppc; system=aix;;
   powerpc-*-linux*)             arch=power; model=ppc; system=elf;;
+  m68k-*-sunos*)                arch=m68k; system=sunos;;
 esac
 
 case "$arch" in
@@ -501,6 +502,7 @@ case "$host" in
   sparc-*-sunos*) bignum_arch=supersparc;;
   sparc-*-solaris*) bignum_arch=supersparc-solaris;;
   sparc-*-*bsd*) bignum_arch=sparc;;
+  m68k-*-sunos*) bignum_arch=68K;;
   *) bignum_arch=C
 esac
 

@@ -59,5 +59,10 @@
 #define Callback_link(sp) ((struct callback_link *)(sp + Trap_frame_size))
 #endif
 
+#ifdef TARGET_m68k
+#define Saved_return_address(sp) *((long *)(sp - 4))
+#define Callback_link(sp) ((struct callback_link *)(sp + 8))
+#endif
+
 
 #endif /* _stack_ */
