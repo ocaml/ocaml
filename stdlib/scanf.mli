@@ -61,9 +61,9 @@ val from_channel : in_channel -> scanbuf;;
 val end_of_input : scanbuf -> bool;;
 (** [Scanning.end_of_input scanbuf] tests the end of input condition
     of the given buffer. *)
-val begin_of_input : scanbuf -> bool;;
-(** [Scanning.begin_of_input scanbuf] tests the begin of input condition
-    of the given buffer. *)
+val beginning_of_input : scanbuf -> bool;;
+(** [Scanning.beginning_of_input scanbuf] tests the beginning of input
+    condition of the given buffer. *)
 
 end;;
 

@@ -69,9 +69,9 @@ val end_of_input : scanbuf -> bool;;
 (** [Scanning.end_of_input scanbuf] tests the end of input condition
     of the given buffer. *)
 
-val begin_of_input : scanbuf -> bool;;
-(** [Scanning.begin_of_input scanbuf] tests the begin of input condition
-    of the given buffer. *)
+val beginning_of_input : scanbuf -> bool;;
+(** [Scanning.beginning_of_input scanbuf] tests the beginning of input
+    condition of the given buffer. *)
 
 val from_string : string -> scanbuf;;
 val from_channel : in_channel -> scanbuf;;
@@ -95,7 +95,7 @@ type scanbuf = {
 };;
 
 (* Reads a new character from input buffer, sets the end of file
-   condition is necessary. *)
+   condition if necessary. *)
 let next_char ib =
   try
    ib.cur_char <- ib.get_next_char ();
@@ -104,23 +104,23 @@ let next_char ib =
    ib.cur_char <- '\000';
    ib.eof <- true;;
 
-(* Returns a valid current char for the input buffer.
-   In particular no irrelevant null character (as set by [next_char] in
-   case of end of input) is returned since [End_of_file] is raised if
-   [next_char] set the end of file condition while trying to read a new
-   character. *)
-let checked_peek_char ib =
-  if ib.bof then begin next_char ib; ib.bof <- false end;
-  if ib.eof then raise End_of_file;
-  ib.cur_char;;
-
 let cautious_peek_char ib =
   if ib.bof then begin next_char ib; ib.bof <- false end;
   ib.cur_char;;
 
+(* Returns a valid current char for the input buffer.  In particular
+   no irrelevant null character (as set by [next_char] in case of end
+   of input) is returned, since [End_of_file] is raised when
+   [next_char] sets the end of file condition while trying to read a
+   new character. *)
+let checked_peek_char ib =
+  let c = cautious_peek_char ib in
+  if ib.eof then raise End_of_file;
+  c;;
+
 let peek_char ib = ib.cur_char;;
 let end_of_input ib = ib.eof;;
-let begin_of_input ib = ib.bof;;
+let beginning_of_input ib = ib.bof;;
 let char_count ib = ib.char_count;;
 let reset_token ib = Buffer.reset ib.tokbuf;;
 
@@ -486,21 +486,21 @@ let scan_String max ib =
     | '"', false (* '"' helping Emacs *) ->
        Scanning.next_char ib; max - 1
     | '\\', false ->
-       Scanning.next_char ib;
-       skip_spaces true (max - 1)
+       Scanning.next_char ib; skip_spaces true (max - 1)
     | c, false -> loop false (Scanning.store_char ib c max)
     | c, _ -> bad_input_char c
   and skip_spaces s max =
     if max = 0 || Scanning.end_of_input ib then bad_input "a string" else
     let c = Scanning.checked_peek_char ib in
     match c, s with
-    | '\n', true ->
-       Scanning.next_char ib;
-       skip_spaces false (max - 1)
-    | ' ', false -> skip_spaces false (max - 1)
-    | '\\', false -> loop true max
+    | '\n', true
+    | ' ', false ->
+       Scanning.next_char ib; skip_spaces false (max - 1)
+    | '\\', false -> loop false max
+(*    | '\\', true*)
     | c, false -> loop false (Scanning.store_char ib c max)
-    | _ -> loop false (scan_backslash_char (max - 1) ib) in
+(*    | ' ', _ -> bad_input_char c*)
+    | _, _ -> loop false (scan_backslash_char (max - 1) ib) in
   loop true max;;
 
 let scan_bool max ib =
@@ -577,8 +577,7 @@ let scan_chars_in_char_set stp char_set max ib =
     max in
   let max = loop max in
   if stp <> [] then check_char_in ib stp;
-  max
-;;
+  max;;
 
 let skip_whites ib =
   let rec loop = function
@@ -653,9 +652,12 @@ let kscanf ib ef fmt f =
     match fmt.[i] with
     | '%' as c ->
         check_input c f i
+    | 'c' when max = 0 ->
+        let c = Scanning.checked_peek_char ib in
+        scan_fmt (stack f c) (i + 1)
     | 'c' | 'C' as conv ->
         let x =
-          if conv = 'c' then scan_char max ib else scan_Char max ib in
+          if conv = 'c' then scan_char max ib else scan_Char max ib in        
         scan_fmt (stack f (token_char ib)) (i + 1)
     | 'b' | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
         let x = scan_int conv max ib in
