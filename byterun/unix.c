@@ -217,7 +217,7 @@ char * caml_dlerror(void)
   const char *fileName, *errorString;
   if (dlerror_string != NULL) return dlerror_string;
   NSLinkEditError(&c,&errnum,&fileName,&errorString);
-  return errorString;
+  return (char *) errorString;
 }
 
 #else
