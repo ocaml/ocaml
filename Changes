@@ -1,3 +1,17 @@
+Objective Caml 2.04:
+--------------------
+
+- C interface: corrected inconsistent change in the CAMLparam* macros.
+- Fixed internal error in ocamlc -g.
+- Fixed type-checking of "S with ...", where S is a module type name
+  abbreviating another module type name.
+- ocamldep: fixed stdout/stderr mismatch after failing on one file.
+- Random.self_init more random.
+- Windows port:
+  - Toplevel application: fixed spurious crash on exit.
+  - Native-code compiler: fixed bug in assembling certain
+    floating-point constants (masm doesn't grok 2e5, wants 2.0e5).
+
 Objective Caml 2.03:
 --------------------
 
@@ -47,7 +61,6 @@ Standard library:
 - Added Random.self_init, which initializes the PRNG from the system date.
 - Sort.array: serious bugs fixed.
 - Stream.count: fixed incorrect behavior with ocamlopt.
-- Added Sys.date.
 
 Run-time system and external interface:
 - Fixed weird behavior of signal handlers w.r.t. signal masks and exceptions
