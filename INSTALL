@@ -194,6 +194,10 @@ or
 In the latter case, the destination directory defaults to the
 "site-lisp" directory of your Emacs installation.
 
+9- After installation, do *not* strip the ocamldebug and ocamlbrowser
+executables.  (These are mixed-mode executables, containing both
+compiled C code and Caml bytecode; stripping erases the bytecode!)
+Other executables such as ocamlrun can safely be stripped.
 
 IF SOMETHING GOES WRONG:
 
