@@ -1048,6 +1048,8 @@ module Analyser =
               raise (Failure (Odoc_messages.exception_not_found_in_typedtree complete_name))
           in
           let new_env = Odoc_env.add_exception env complete_name in
+          let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
+          let loc_end =  loc.Location.loc_end.Lexing.pos_cnum in
           let new_ex = 
             {
               ex_name = complete_name ;
@@ -1055,6 +1057,13 @@ module Analyser =
               ex_args = List.map (Odoc_env.subst_type new_env) tt_excep_decl ;
               ex_alias = None ;
               ex_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
+	      ex_code = 
+                (
+		 if !Odoc_args.keep_code then
+                   Some (get_string_of_file loc_start loc_end)
+                 else
+                   None
+		) ;
             } 
           in
           (0, new_env, [ Element_exception new_ex ])
@@ -1077,6 +1086,7 @@ module Analyser =
               ex_alias = Some { ea_name = (Odoc_env.full_exception_name env (Name.from_path tt_path)) ;
                                 ea_ex = None ; } ;
               ex_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
+              ex_code = None ;
             } 
           in
           (0, new_env, [ Element_exception new_ex ])

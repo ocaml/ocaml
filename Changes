@@ -128,7 +128,8 @@ Emacs mode:
   saved by option -dtypes.
 
 OCamldoc:
-- new ty_code field for types, to keep code of type (with option -keep-code)
+- new ty_code field for types, to keep code of a type (with option -keep-code)
+- new ex_code field for types, to keep code of an exception (with option -keep-code)
 - handling recursive modules
 - handling private types
 - some fixes in html generation

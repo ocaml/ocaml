@@ -177,6 +177,7 @@ module Exception :
           ex_args : Types.type_expr list ; (** The types of the parameters. *)
           ex_alias : exception_alias option ; (** [None] when the exception is not a rebind. *)
           mutable ex_loc : location ; 
+          mutable ex_code : string option ;
         } 
   end
 

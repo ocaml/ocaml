@@ -474,6 +474,7 @@ let rec merge_module_types merge_options mli ml =
                     (
                      ex.ex_info <- merge_info_opt merge_options ex.ex_info ex2.ex_info;
                      ex.ex_loc <- { ex.ex_loc with loc_impl = ex2.ex_loc.loc_impl } ;
+                     ex.ex_code <- (match ex.ex_code with None -> ex2.ex_code | _ -> ex.ex_code) ;
                      true
                     )
                   else
@@ -694,6 +695,7 @@ and merge_modules merge_options mli ml =
                     (
                      ex.ex_info <- merge_info_opt merge_options ex.ex_info ex2.ex_info;
                      ex.ex_loc <- { ex.ex_loc with loc_impl = ex.ex_loc.loc_impl } ;
+                     ex.ex_code <- (match ex.ex_code with None -> ex2.ex_code | _ -> ex.ex_code) ;
                      true
                     )
                   else

@@ -25,5 +25,6 @@ and t_exception = {
     ex_args : Types.type_expr list ; (** the types of the parameters *)
     ex_alias : exception_alias option ;
     mutable ex_loc : Odoc_types.location ;
+    mutable ex_code : string option ;
   } 
 

@@ -552,7 +552,14 @@ module Analyser =
                 ex_info = comment_opt ;
                 ex_args = List.map (Odoc_env.subst_type env) types_excep_decl ;
                 ex_alias = None ;
-                ex_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) }
+                ex_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
+		ex_code = 
+		   (
+                    if !Odoc_args.keep_code then
+                      Some (get_string_of_file pos_start_ele (pos_end_ele + pos_limit))
+                    else
+                      None
+                   ) ;
               } 
             in
             let (maybe_more, info_after_opt) = 
