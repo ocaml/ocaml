@@ -1,4 +1,4 @@
-        Objective Caml version 3.07+4 (2003-11-07)
+        Objective Caml version 3.07+18 (2004-05-17)
 
 #   * * *       #   type 'a t = { t : 'a; }
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; }
@@ -329,11 +329,16 @@ Warning: the following private methods were made public implicitly:
   n
 val f : unit -> < m : int; n : int > = <fun>
 # Characters 11-56:
-This object is expected to have type c = < m : int > but has actually type
+This object is expected to have type c but has actually type
   < m : int; n : 'a >
 Only the second object type has a method n
 # Characters 11-69:
 This object is expected to have type < n : int > but has actually type
   < m : 'a >
 Only the first object type has a method n
+#         Characters 80-81:
+This expression has type < m : 'b. 'b * < m : 'b * 'a > > as 'a
+but is here used with type
+  < m : 'b. 'b * (< m : 'b * < m : 'd. 'd * 'c > > as 'c) >
+Types for method m are incompatible
 # 
