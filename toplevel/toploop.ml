@@ -316,6 +316,26 @@ let use_silently ppf name =
 let first_line = ref true
 let got_eof = ref false;;
 
+let read_input_default prompt buffer len =
+  output_string stdout prompt; flush stdout;
+  let i = ref 0 in
+  try
+    while true do
+      if !i >= len then raise Exit;
+      let c = input_char stdin in
+      buffer.[!i] <- c;
+      incr i;
+      if c = '\n' then raise Exit;
+    done;
+    (!i, false)
+  with
+  | End_of_file ->
+      (!i, true)
+  | Exit ->
+      (!i, false)
+
+let read_interactive_input = ref read_input_default
+
 let refill_lexbuf buffer len =
   if !got_eof then (got_eof := false; 0) else begin
     let prompt =
@@ -323,23 +343,14 @@ let refill_lexbuf buffer len =
       else if Lexer.in_comment () then "* "
       else "  "
     in
-    output_string stdout prompt; flush stdout;
     first_line := false;
-    let i = ref 0 in
-    try
-      while true do
-        if !i >= len then raise Exit;
-        let c = input_char stdin in
-        buffer.[!i] <- c;
-        incr i;
-        if c = '\n' then raise Exit;
-      done;
-      !i
-    with
-    | End_of_file ->
-        Location.echo_eof ();
-        if !i > 0 then (got_eof := true; !i) else 0
-    | Exit -> !i
+    let (len, eof) = !read_interactive_input prompt buffer len in
+    if eof then begin
+      Location.echo_eof ();
+      if len > 0 then got_eof := true;
+      len
+    end else
+      len
   end
 
 (* Toplevel initialization. Performed here instead of at the
