@@ -46,15 +46,22 @@ let constrained = ref Reg.Set.empty
 
 let find_degree reg =
   if reg.spill then () else begin
-    let deg = ref 0 in
     let cl = Proc.register_class reg in
-    List.iter
-      (fun r -> if not r.spill & Proc.register_class r = cl then incr deg)
-      reg.interf;
-    reg.degree <- !deg;
-    if !deg >= Proc.num_available_registers.(cl)
-    then constrained := Reg.Set.add reg !constrained
-    else unconstrained := Reg.Set.add reg !unconstrained
+    let avail_regs = Proc.num_available_registers.(cl) in
+    if avail_regs = 0 then
+      (* Don't bother computing the degree if there are no regs 
+         in this class *)
+      unconstrained := Reg.Set.add reg !unconstrained
+    else begin
+      let deg = ref 0 in
+      List.iter
+        (fun r -> if not r.spill & Proc.register_class r = cl then incr deg)
+        reg.interf;
+      reg.degree <- !deg;
+      if !deg >= avail_regs
+      then constrained := Reg.Set.add reg !constrained
+      else unconstrained := Reg.Set.add reg !unconstrained
+    end
   end
 
 (* Remove a register from the interference graph *)
@@ -137,60 +144,62 @@ let assign_location reg =
   let num_regs = Proc.num_available_registers.(cl) in
   let last_reg = first_reg + num_regs in
   let score = Array.create num_regs 0 in
-  (* Favor the registers that have been assigned to pseudoregs for which
-     we have a preference. If these pseudoregs have not been assigned
-     already, avoid the registers with which they conflict. *)
-  iter_preferred
-    (fun r w ->
-      match r.loc with
-        Reg n -> if n >= first_reg & n < last_reg then
-                   score.(n - first_reg) <- score.(n - first_reg) + w
-      | Unknown ->
-          List.iter
-            (fun neighbour ->
-              match neighbour.loc with
-                Reg n -> if n >= first_reg & n < last_reg then
-                         score.(n - first_reg) <- score.(n - first_reg) - w
-              | _ -> ())
-            r.interf
-      | _ -> ())
-    reg;
-  List.iter
-    (fun neighbour ->
-      (* Prohibit the registers that have been assigned
-         to our neighbours *)
-      begin match neighbour.loc with
-        Reg n -> if n >= first_reg & n < last_reg then
-                   score.(n - first_reg) <- (-1000000)
-      | _ -> ()
-      end;
-      (* Avoid the registers that have been assigned to pseudoregs
-         for which our neighbours have a preference *)
-      iter_preferred
-        (fun r w ->
-          match r.loc with
-            Reg n -> if n >= first_reg & n < last_reg then
-                       score.(n - first_reg) <- score.(n - first_reg) - (w - 1)
-                     (* w-1 to break the symmetry when two conflicting regs
-                        have the same preference for a third reg. *)
-          | _ -> ())
-        neighbour)
-    reg.interf;
-  (* Pick the register with the best score *)
   let best_score = ref (-1000000) and best_reg = ref (-1) in
   let start = start_register.(cl) in
-  for n = start to num_regs - 1 do
-    if score.(n) > !best_score then begin
-      best_score := score.(n);
-      best_reg := n
-    end
-  done;
-  for n = 0 to start - 1 do
-    if score.(n) > !best_score then begin
-      best_score := score.(n);
-      best_reg := n
-    end
-  done;
+  if num_regs > 0 then begin
+    (* Favor the registers that have been assigned to pseudoregs for which
+       we have a preference. If these pseudoregs have not been assigned
+       already, avoid the registers with which they conflict. *)
+    iter_preferred
+      (fun r w ->
+        match r.loc with
+          Reg n -> if n >= first_reg & n < last_reg then
+                     score.(n - first_reg) <- score.(n - first_reg) + w
+        | Unknown ->
+            List.iter
+              (fun neighbour ->
+                match neighbour.loc with
+                  Reg n -> if n >= first_reg & n < last_reg then
+                           score.(n - first_reg) <- score.(n - first_reg) - w
+                | _ -> ())
+              r.interf
+        | _ -> ())
+      reg;
+    List.iter
+      (fun neighbour ->
+        (* Prohibit the registers that have been assigned
+           to our neighbours *)
+        begin match neighbour.loc with
+          Reg n -> if n >= first_reg & n < last_reg then
+                     score.(n - first_reg) <- (-1000000)
+        | _ -> ()
+        end;
+        (* Avoid the registers that have been assigned to pseudoregs
+           for which our neighbours have a preference *)
+        iter_preferred
+          (fun r w ->
+            match r.loc with
+              Reg n -> if n >= first_reg & n < last_reg then
+                         score.(n - first_reg) <- score.(n - first_reg) - (w - 1)
+                       (* w-1 to break the symmetry when two conflicting regs
+                          have the same preference for a third reg. *)
+            | _ -> ())
+          neighbour)
+      reg.interf;
+    (* Pick the register with the best score *)
+    for n = start to num_regs - 1 do
+      if score.(n) > !best_score then begin
+        best_score := score.(n);
+        best_reg := n
+      end
+    done;
+    for n = 0 to start - 1 do
+      if score.(n) > !best_score then begin
+        best_score := score.(n);
+        best_reg := n
+      end
+    done
+  end;
   (* Found a register? *)
   if !best_reg >= 0 then begin
     reg.loc <- Reg(first_reg + !best_reg);

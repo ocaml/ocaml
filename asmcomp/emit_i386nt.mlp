@@ -45,7 +45,8 @@ let slot_offset loc cl =
       else !stack_offset + num_stack_slots.(0) * 4 + n * 8
   | Outgoing n -> n
 
-(* Record symbols used and defined - at the end generate extern for those used but not defined *)
+(* Record symbols used and defined - at the end generate extern for those 
+   used but not defined *)
 
 let symbols_defined = ref StringSet.empty
 let symbols_used = ref StringSet.empty
@@ -68,23 +69,10 @@ let emit_label lbl =
 
 let emit_align n = `	ALIGN	{emit_int n}\n`
   
-(* Track the position of the floating-point stack *)
-
-let fp_offset = ref 0
-
-let push_fp () =
-  incr fp_offset;
-  if !fp_offset > 4 then fatal_error "Emit: float expression too complex"
-
-let pop_fp () =
-  decr fp_offset
-
 (* Output a pseudo-register *)
 
 let emit_reg = function
-    { loc = Reg r; typ = Float } ->
-      emit_string (register_name(r + !fp_offset))
-  | { loc = Reg r } ->
+    { loc = Reg r } ->
       emit_string (register_name r)
   | { loc = Stack s; typ = Float } as r ->
       let ofs = slot_offset s (register_class r) in
@@ -122,17 +110,6 @@ let register_overlap reg arr =
   with Exit ->
     true
 
-(* Check if a set of registers contains a float *)
-
-let contains_floats arr =
-  try
-    for i = 0 to Array.length arr - 1 do
-      if arr.(i).typ = Float then raise Exit
-    done;
-    false
-  with Exit ->
-    true
-
 (* Output an addressing mode *)
 
 let emit_signed_int d =
@@ -152,13 +129,6 @@ let emit_addressing addr r n =
       `[{emit_reg r.(n)}*{emit_int scale}{emit_signed_int d}]`
   | Iindexed2scaled(scale, d) ->
       `[{emit_reg r.(n)}+{emit_reg r.(n+1)}*{emit_int scale}{emit_signed_int d}]`
-
-(* Emit the operand of a floating-point operation *)
-
-let emit_float_operand r =
-  match r.loc with
-    Reg _   -> `st, {emit_reg r}`
-  | _       -> `{emit_reg r}`
 
 (* Record live pointers at call points *)
 
@@ -286,27 +256,23 @@ let range_check_trap = ref 0
 
 let float_constants = ref ([] : (int * string) list)
 
+let tos = phys_reg 100
+
 let emit_instr i =
     match i.desc with
       Lend -> ()
     | Lop(Imove | Ispill | Ireload) ->
-        if i.arg.(0).loc <> i.res.(0).loc then begin
-          match i.arg.(0).typ with
-            Int | Addr ->
-              `	mov	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
-          | Float ->
-              begin match i.arg.(0).loc with
-                Reg 100 ->              (* top of FP stack *)
-                  `	fstp	{emit_reg i.res.(0)}\n`;
-                  pop_fp()
-              | Reg 101 when !fp_offset = 0 -> (* %st(0) *)
-                  `	fst	{emit_reg i.res.(0)}\n`
-              | _ ->
-                  `	fld	{emit_reg i.arg.(0)}\n`;
-                  push_fp();
-                  `	fstp	{emit_reg i.res.(0)}\n`;
-                  pop_fp()
-              end
+        let src = i.arg.(0) and dst = i.res.(0) in
+        if src.loc <> dst.loc then begin
+          if src.typ = Float then
+            if src = tos then
+              `	fstp	{emit_reg dst}\n`
+            else begin
+              `	fld	{emit_reg src}\n`;
+              `	fstp	{emit_reg dst}\n`
+            end
+          else
+            `	movl	{emit_reg dst}, {emit_reg src}\n`
         end
     | Lop(Iconst_int 0) ->
         begin match i.res.(0).loc with
@@ -325,8 +291,7 @@ let emit_instr i =
           let lbl = new_label() in
           float_constants := (lbl, s) :: !float_constants;
           `	fld	{emit_label lbl}\n`
-        end;
-        push_fp()
+        end
     | Lop(Iconst_symbol s) ->
         add_used_symbol s;
         `	mov	{emit_reg i.res.(0)}, OFFSET {emit_symbol s}\n`
@@ -355,12 +320,6 @@ let emit_instr i =
           `	call	_caml_c_call\n`;
           record_frame i.live
         end else begin
-          if contains_floats i.arg or contains_floats i.res then begin
-            `	ffree	st(0)\n`;
-            `	ffree	st(1)\n`;
-            `	ffree	st(2)\n`;
-            `	ffree	st(3)\n`
-          end;
           `	call	{emit_symbol s}\n`
         end
     | Lop(Istackoffset n) ->
@@ -391,21 +350,16 @@ let emit_instr i =
                 `	movsx	{emit_reg dest}, WORD PTR {emit_addressing addr i.arg 0}\n`
             end
         | Float ->
-            `	fld	REAL8 PTR {emit_addressing addr i.arg 0}\n`;
-            push_fp()
+            `	fld	REAL8 PTR {emit_addressing addr i.arg 0}\n`
         end
     | Lop(Istore(Word, addr)) ->
         begin match i.arg.(0).typ with
           Int | Addr ->
             `	mov	DWORD PTR {emit_addressing addr i.arg 1}, {emit_reg i.arg.(0)}\n`
         | Float ->
-            begin match i.arg.(0).loc with
-              Reg 100 ->                (* top of FP stack *)
-                `	fstp	REAL8 PTR {emit_addressing addr i.arg 1}\n`;
-                pop_fp()
-            | Reg 101 when !fp_offset = 0 -> (* %st(0) *)
-                `	fst	REAL8 PTR {emit_addressing addr i.arg 1}\n`
-            | _ ->
+            if i.arg.(0) = tos then
+                `	fstp	REAL8 PTR {emit_addressing addr i.arg 1}\n`
+            else begin
                 `	fld	{emit_reg i.arg.(0)}\n`;
                 `	fstp	REAL8 PTR {emit_addressing addr i.arg 1}\n`
             end
@@ -495,25 +449,24 @@ let emit_instr i =
         (* We have i.arg.(0) = i.res.(0) *)
         `	{emit_string(instr_for_intop op)}	{emit_reg i.res.(0)}, {emit_int n}\n`
     | Lop(Inegf | Iabsf as floatop) ->
-        if i.arg.(0).loc <> Reg 100 then begin
+        if i.arg.(0) <> tos then begin
           `	fld	{emit_reg i.arg.(0)}\n`;
-          push_fp()
-        end;
         `	{emit_string(instr_for_floatop floatop)}\n`
     | Lop(Iaddf | Isubf | Imulf | Idivf | Ispecific(Isubfrev | Idivfrev)
           as floatop) ->
-        begin match (i.arg.(0).loc, i.arg.(1).loc) with
-          (Reg 100, Reg 100) ->         (* both operands on top of FP stack *)
-            `	{emit_string(instr_for_floatop_reversed floatop)}\n`;
-            pop_fp()
-        | (Reg 100, _) ->               (* first operand on stack *)
-            `	{emit_string(instr_for_floatop floatop)}	{emit_float_operand i.arg.(1)}\n`
-        | (_, Reg 100) ->               (* second operand on stack *)
-            `	{emit_string(instr_for_floatop_reversed floatop)}	{emit_float_operand i.arg.(0)}\n`
-        | (_, _) ->                     (* both in regs or on stack *)
-            `	fld	{emit_reg i.arg.(0)}\n`;
-            push_fp();
-            `	{emit_string(instr_for_floatop floatop)}	{emit_float_operand i.arg.(1)}\n`
+        if i.arg.(0) = tos && i.arg.(1) = tos then
+          (* both operands on top of FP stack *)
+          `	{emit_string(instr_for_floatop_reversed floatop)}\n`
+        else if i.arg.(0) = tos then
+          (* first operand on stack *)
+          `	{emit_string(instr_for_floatop floatop)}	{emit_reg i.arg.(1)}\n`
+        else if i.arg.(1) = tos then
+          (* second operand on stack *)
+          `	{emit_string(instr_for_floatop_reversed floatop)}	{emit_reg i.arg.(0)}\n`
+        else begin
+          (* both operands in memory *)
+          `	fld	{emit_reg i.arg.(0)}\n`;
+          `	{emit_string(instr_for_floatop floatop)}	{emit_reg i.arg.(1)}\n`
         end
     | Lop(Ifloatofint) ->
         begin match i.arg.(0).loc with
@@ -523,13 +476,10 @@ let emit_instr i =
             `	push	{emit_reg i.arg.(0)}\n`;
             `	fild	DWORD PTR [esp]\n`;
             `	add	esp, 4\n`
-        end;
-        push_fp()
+        end
     | Lop(Iintoffloat) ->
-        if i.arg.(0).loc <> Reg 100 then begin
+        if i.arg.(0) <> tos then
           `	fld	{emit_reg i.arg.(0)}\n`;
-          push_fp()
-        end;
         stack_offset := !stack_offset - 8;
         `	sub	esp, 8\n`;
         `	fnstcw	[esp+4]\n`;
@@ -544,7 +494,6 @@ let emit_instr i =
             `	fistp	DWORD PTR [esp]\n`;
             `	mov	{emit_reg i.res.(0)}, [esp]\n`
         end;
-        pop_fp();
         `	fldcw	[esp+4]\n`;
         `	add	esp, 8\n`;
         stack_offset := !stack_offset + 8
@@ -564,17 +513,8 @@ let emit_instr i =
           match r with
             {loc = Reg rn; typ = Float} ->
               `	sub	esp, 8\n`;
-              stack_offset := !stack_offset + 8;
-              begin match rn with
-                100 ->
-                  `	fstp	REAL8 PTR 0[esp]\n`;
-                  pop_fp()
-              | 101 when !fp_offset = 0 ->
-                  `	fst	REAL8 PTR 0[esp]\n`
-              | _ ->
-                  `	fld	{emit_reg r}\n`;
-                  `	fstp	REAL8 PTR 0[esp]\n`
-              end
+              `	fstp	REAL8 PTR 0[esp]\n`;
+              stack_offset := !stack_offset + 8
           | {loc = Stack sl; typ = Float} ->
               let ofs = slot_offset sl 1 in
               `	push	DWORD PTR {emit_int (ofs + 4)}[esp]\n`;
@@ -598,10 +538,8 @@ let emit_instr i =
         `	push	DWORD PTR {emit_addressing addr i.arg 0}\n`;
         stack_offset := !stack_offset + 4
     | Lop(Ispecific(Ifloatarithmem(op, addr))) ->
-        if i.arg.(0).loc <> Reg 100 then begin
+        if i.arg.(0) <> tos then
           `	fld	{emit_reg i.arg.(0)}\n`;
-          push_fp()
-        end;
         `	{emit_string(instr_for_floatarithmem op)}	REAL8 PTR {emit_addressing addr i.arg 1}\n`
     | Lreloadretaddr ->
         ()
@@ -633,54 +571,45 @@ let emit_instr i =
             `	cmp	{emit_reg i.arg.(0)}, {emit_int n}\n`;
             let b = name_for_cond_branch cmp in
             `	j{emit_string b}	{emit_label lbl}\n`
+        | Ifloattest((Ceq | Cne as cmp), neg) ->
+            if i.arg.(1) <> tos then
+              `	fld	{emit_reg i.arg.(1)}\n`;
+            if i.arg.(0) <> tos then
+              `	fld	{emit_reg i.arg.(0)}\n`;
+            `	fucompp\n`;
+            `	fnstsw	ax\n`;
+            let neg1 = if cmp = Ceq then neg else not neg in
+            if neg1 then begin          (* branch if different *)
+              `	and	ah, 68\n`;
+              `	xor	ah, 64\n`;
+              `	jne	{emit_label lbl}\n`
+            end else begin              (* branch if equal *)
+              `	and	ah, 69\n`;
+              `	cmp	ah, 64\n`;
+              `	je	{emit_label lbl}\n`
+            end
         | Ifloattest(cmp, neg) ->
-            let instr =
-              match cmp with
-                Ceq | Cne -> "fucom"
-              | _         -> "fcom" in
             let actual_cmp =
-              match (i.arg.(0).loc, i.arg.(1).loc) with
-                (Reg 100, Reg 100) ->     (* both args on top of FP stack *)
-                  `	{emit_string instr}pp\n`;
-                  fp_offset := !fp_offset - 2;
-                  cmp
-              | (Reg 100, _) ->           (* first arg on top of FP stack *)
-                  `	{emit_string instr}p	{emit_reg i.arg.(1)}\n`;
-                  pop_fp();
-                  cmp
-              | (_, Reg 100) ->           (* second arg on top of FP stack *)
-                  `	{emit_string instr}p	{emit_reg i.arg.(0)}\n`;
-                  pop_fp();
-                  Cmm.swap_comparison cmp
-              | (_, _) ->
-                  `	fld	{emit_reg i.arg.(0)}\n`;
-                  push_fp();
-                  `	{emit_string instr}p	{emit_reg i.arg.(1)}\n`;
-                  pop_fp();
-                  cmp in
+              if i.arg.(0) = tos && i.arg.(1) = tos then begin
+                (* both args on top of FP stack *)
+                `	fcompp\n`;
+                cmp
+              end else if i.arg.(0) = tos then begin
+                (* first arg on top of FP stack *)
+                `	fcomp	{emit_reg i.arg.(1)}\n`;
+                cmp
+              end else if i.arg.(1) = tos then begin
+                (* second arg on top of FP stack *)
+                `	fcomp	{emit_reg i.arg.(0)}\n`;
+                Cmm.swap_comparison cmp
+              end else begin
+                `	fld	{emit_reg i.arg.(0)}\n`;
+                `	fcomp	{emit_reg i.arg.(1)}\n`;
+                cmp
+              end in
             `	fnstsw	ax\n`;
             begin match actual_cmp with
-              Ceq ->
-                if neg then begin
-                `	and	ah, 68\n`;
-                `	xor	ah, 64\n`;
-                `	jne	`
-                end else begin
-                `	and	ah, 69\n`;
-                `	cmp	ah, 64\n`;
-                `	je	`
-                end
-            | Cne ->
-                if neg then begin
-                `	and	ah, 69\n`;
-                `	cmp	ah, 64\n`;
-                `	je	`
-                end else begin
-                `	and	ah, 68\n`;
-                `	xor	ah, 64\n`;
-                `	jne	`
-                end
-            | Cle ->
+              Cle ->
                 `	and	ah, 69\n`;
                 `	dec	ah\n`;
                 `	cmp	ah, 64\n`;
@@ -703,6 +632,7 @@ let emit_instr i =
                 if neg
                 then `	jne	`
                 else `	je	`
+            | _ -> fatal_error "Emit_i386: floattest"
             end;
             `{emit_label lbl}\n`
         | Ioddtest ->

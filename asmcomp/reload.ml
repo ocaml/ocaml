@@ -33,7 +33,10 @@ let makereg r =
   match r.loc with
     Unknown -> fatal_error "Reload.makereg"
   | Reg _ -> r
-  | Stack _ -> redo_regalloc := true; Reg.clone r
+  | Stack _ ->
+      if Proc.num_available_registers.(Proc.register_class r) = 0
+      then r
+      else begin redo_regalloc := true; Reg.clone r end
 
 let makeregs rv =
   let n = Array.length rv in

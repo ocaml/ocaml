@@ -138,16 +138,10 @@ L103:   subl	G(young_ptr), %eax      /* eax = - size */
         .align  FUNCTION_ALIGN
 G(caml_c_call):
     /* Record lowest stack address and return address */
-    /* In parallel, free the floating point registers */
-    /* (Pairing is expected on the Pentium.) */
         movl    (%esp), %edx
-        ffree   %st(0)
         movl    %edx, G(caml_last_return_address)
-        ffree   %st(1)
         leal    4(%esp), %edx
-        ffree   %st(2)
         movl    %edx, G(caml_bottom_of_stack)
-        ffree   %st(3)
     /* Call the function (address in %eax) */
         jmp     *%eax
 
@@ -223,17 +217,11 @@ L107:
        used by caml_c_call */
         popl    G(caml_bottom_of_stack)
         popl    G(caml_last_return_address)
-    /* Restore callee-save registers.
-       In parallel, free the floating-point registers
-       that may have been used by Caml. */
+    /* Restore callee-save registers. */
         popl    %ebp
-        ffree   %st(0)
         popl    %edi
-        ffree   %st(1)
         popl    %esi
-        ffree   %st(2)
         popl    %ebx
-        ffree   %st(3)
     /* Return to caller. */
         ret
 L108:

@@ -31,19 +31,13 @@ open Mach
     edi         5
     ebp         6
 
-    f0 - f3     101-104         function arguments and results
-                                f0: C function results
-                                not preserved by C
-
-   The other 4 floating-point registers are treated as a stack.
-   We use the pseudo-register %tos (100) to represent the top of that stack. *)
+    tos         100             top of floating-point stack. *)
 
 let int_reg_name =
   [| "%eax"; "%ebx"; "%ecx"; "%edx"; "%esi"; "%edi"; "%ebp" |]
 
 let float_reg_name =
-  [| "%tos"; "%st(0)"; "%st(1)"; "%st(2)"; "%st(3)";
-     "%st(4)"; "%st(5)"; "%st(6)"; "%st(7)" |]
+  [| "%tos" |]
 
 let num_register_classes = 2
 
@@ -53,15 +47,15 @@ let register_class r =
   | Addr -> 0
   | Float -> 1
 
-let num_available_registers = [| 7; 4 |]
+let num_available_registers = [| 7; 0 |]
 
-let first_available_register = [| 0; 101 |]
+let first_available_register = [| 0; 100 |]
 
 let register_name r =
   if r < 100 then int_reg_name.(r) else float_reg_name.(r - 100)
 
-(* There is little scheduling, and some operations are more efficient when
-   %eax or %st(0) are arguments *)
+(* There is little scheduling, and some operations are more compact
+   when their argument is %eax. *)
 
 let rotate_registers = false
 
@@ -72,10 +66,7 @@ let hard_int_reg =
   for i = 0 to 6 do v.(i) <- Reg.at_location Int (Reg i) done;
   v
 
-let hard_float_reg =
-  let v = Array.create 5 Reg.dummy in
-  for i = 0 to 4 do v.(i) <- Reg.at_location Float (Reg(i + 100)) done;
-  v
+let hard_float_reg = [| Reg.at_location Float (Reg 100) |]
 
 let all_phys_regs =
   Array.append hard_int_reg hard_float_reg
@@ -346,23 +337,23 @@ let outgoing ofs = Outgoing ofs
 let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
 
 let loc_arguments arg =
-  calling_conventions 0 5 101 104 outgoing arg
+  calling_conventions 0 5 100 99 outgoing arg
 let loc_parameters arg =
-  let (loc, ofs) = calling_conventions 0 5 101 104 incoming arg in loc
+  let (loc, ofs) = calling_conventions 0 5 100 99 incoming arg in loc
 let loc_results res =
-  let (loc, ofs) = calling_conventions 0 5 101 104 not_supported res in loc
+  let (loc, ofs) = calling_conventions 0 5 100 100 not_supported res in loc
 let extcall_use_push = true
 let loc_external_arguments arg =
   fatal_error "Proc.loc_external_arguments"
 let loc_external_results res =
-  let (loc, ofs) = calling_conventions 0 0 101 101 not_supported res in loc
+  let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
 
 let loc_exn_bucket = eax
 
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_call =               (* ebx, esi, edi, ebp preserved *)
-  Array.of_list(List.map phys_reg [0;2;3;100;101;102;103;104])
+  Array.of_list(List.map phys_reg [0;2;3])
 
 let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
@@ -382,13 +373,13 @@ let destroyed_at_raise = all_phys_regs
 let safe_register_pressure op = 4
 
 let max_register_pressure = function
-    Iextcall(_, _) -> [| 4; 0 |]
-  | Iintop(Idiv | Imod) -> [| 5; 4 |]
+    Iextcall(_, _) -> [| 4; max_int |]
+  | Iintop(Idiv | Imod) -> [| 5; max_int |]
   | Ialloc _ | Iintop(Icomp _) | Iintop_imm(Icomp _, _) |
-    Iintoffloat -> [| 6; 4 |]
-  | _ -> [|7; 4|]
+    Iintoffloat -> [| 6; max_int |]
+  | _ -> [|7; max_int |]
 
-(* Reloading of instruction arguments, storing of instruction results *)
+(* Reloading of instruction arguments, storing of instruction results. *)
 
 let stackp r =
   match r.loc with
@@ -403,6 +394,10 @@ let reload_test makereg tst arg =
       else arg
   | _ -> arg
 
+(* Since #floatregs = 0, pseudoregs of type float will never be reloaded.
+   Hence there is no need to make special cases for
+   floating-point operations. *)
+
 let reload_operation makereg op arg res =
   match op with
     Iintop(Iadd|Isub|Imul|Iand|Ior|Ixor|Icomp _|Icheckbound) ->
@@ -411,21 +406,16 @@ let reload_operation makereg op arg res =
       then ([|arg.(0); makereg arg.(1)|], res)
       else (arg, res)
   | Iintop(Ilsl|Ilsr|Iasr) | Iintop_imm(_, _) | Ifloatofint | Iintoffloat |
-    Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf | Ispecific(Ipush) ->
+    Ispecific(Ipush) ->
       (* The argument(s) can be either in register or on stack *)
       (arg, res)
-  | Ispecific(Ifloatarithmem(_, _)) ->
-      (* First arg can be either in register or on stack, but remaining
-         arguments must be in registers *)
-      let newarg = Array.create (Array.length arg) arg.(0) in
-      for i = 1 to Array.length arg - 1 do newarg.(i) <- makereg arg.(i) done;
-      (newarg, res)
   | _ -> (* Other operations: all args and results in registers *)
       raise Use_default
 
 (* Scheduling is turned off because our model does not fit the 486
    nor Pentium very well. In particular, it messes up with the
-   float reg stack. *)
+   float reg stack. The Pentium Pro schedules at run-time much better 
+   than what we could do. *)
 
 let need_scheduling = false
 

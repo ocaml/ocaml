@@ -48,71 +48,19 @@ _caml_exception_pointer		DWORD 0
         PUBLIC  _caml_alloc
 	PUBLIC  _caml_call_gc
 
-        ALIGN  4
-_caml_alloc1:
-        mov	eax, _young_ptr
-        sub	eax, 8
-        mov	_young_ptr, eax
-        cmp	eax, _young_limit
-        jb	L100
-        ret	
-L100:   mov	eax, 8
-        jmp	L105
-
-        ALIGN  4
-_caml_alloc2:
-        mov	eax, _young_ptr
-        sub	eax, 12
-        mov	_young_ptr, eax
-        cmp	eax, _young_limit
-        jb	L101
-        ret	
-L101:   mov	eax, 12
-        jmp	L105
-
-        ALIGN  4
-_caml_alloc3:
-        mov	eax, _young_ptr
-        sub	eax, 16
-        mov	_young_ptr, eax
-        cmp	eax, _young_limit
-        jb	L102
-        ret	
-L102:   mov	eax, 16
-        jmp	L105
-
-        ALIGN  4
-_caml_alloc:
-        push	eax
-        mov	eax, _young_ptr
-        sub	eax, [esp]
-        mov	_young_ptr, eax
-        cmp	eax, _young_limit
-        jb	L103
-        add	esp, 4
-        ret	
-L103:   pop	eax
-        jmp	L105
-
 _caml_call_gc:
-    ; Adjust return address and recover desired size in eax 
-        pop	eax
-        add	eax, 2
-        push	eax
-        movzx	eax, WORD PTR [eax-2]
-L105:
     ; Record lowest stack address and return address 
-        pop	_caml_last_return_address
-        mov	_caml_bottom_of_stack, esp
+        mov	eax, [esp]
+        mov     _caml_last_return_address, eax
+        lea     eax, [esp+4]
+        mov     _caml_bottom_of_stack, eax
     ; Save all regs used by the code generator 
-        mov	_gc_entry_regs + 4, ebx
+L105:   mov	_gc_entry_regs + 4, ebx
         mov	_gc_entry_regs + 8, ecx
         mov	_gc_entry_regs + 12, edx
         mov	_gc_entry_regs + 16, esi
         mov	_gc_entry_regs + 20, edi
         mov	_gc_entry_regs + 24, ebp
-    ; Save desired size 
-        push	eax
     ; Call the garbage collector 
         call	_garbage_collection
     ; Restore all regs used by the code generator 
@@ -122,15 +70,73 @@ L105:
         mov	esi, _gc_entry_regs + 16
         mov	edi, _gc_entry_regs + 20
         mov	ebp, _gc_entry_regs + 24
-    ; Recover desired size 
-        pop	eax
-    ; Decrement young_ptr by desired size 
-        sub	_young_ptr, eax
-    ; Reload result of allocation in %eax 
-        mov	eax, _young_ptr
     ; Return to caller 
         push	_caml_last_return_address
         ret	
+
+        ALIGN  4
+_caml_alloc1:
+        mov	eax, _young_ptr
+        sub	eax, 8
+        mov	_young_ptr, eax
+        cmp	eax, _young_limit
+        jb	L100
+        ret	
+L100:   mov	eax, [esp]
+        mov     _caml_last_return_address, eax
+        lea     eax, [esp+4]
+        mov     _caml_bottom_of_stack, eax
+        call    L105
+        jmp     _caml_alloc1
+
+        ALIGN  4
+_caml_alloc2:
+        mov	eax, _young_ptr
+        sub	eax, 12
+        mov	_young_ptr, eax
+        cmp	eax, _young_limit
+        jb	L101
+        ret	
+L101:   mov	eax, [esp]
+        mov     _caml_last_return_address, eax
+        lea     eax, [esp+4]
+        mov     _caml_bottom_of_stack, eax
+        call    L105
+        jmp     _caml_alloc2
+
+        ALIGN  4
+_caml_alloc3:
+        mov	eax, _young_ptr
+        sub	eax, 16
+        mov	_young_ptr, eax
+        cmp	eax, _young_limit
+        jb	L102
+        ret	
+L102:   mov	eax, [esp]
+        mov     _caml_last_return_address, eax
+        lea     eax, [esp+4]
+        mov     _caml_bottom_of_stack, eax
+        call    L105
+        jmp     _caml_alloc3
+
+        ALIGN  4
+_caml_alloc:
+        sub     eax, _young_ptr         ; eax = size - young_ptr
+        neg     eax                     ; eax = young_ptr - size
+        cmp     eax, _young_limit
+        jb      L103
+        mov     _young_ptr, eax
+        ret
+L103:   sub     eax, _young_ptr         ; eax = - size
+        neg     eax                     ; eax = size
+        push    eax                     ; save desired size
+        mov	eax, [esp+4]
+        mov     _caml_last_return_address, eax
+        lea     eax, [esp+8]
+        mov     _caml_bottom_of_stack, eax
+        call    L105
+        pop     eax                     ; recover desired size
+        jmp     _caml_alloc
 
 ; Call a C function from Caml 
 
@@ -138,16 +144,10 @@ L105:
         ALIGN  4
 _caml_c_call:
     ; Record lowest stack address and return address 
-    ; In parallel, free the floating point registers 
-    ; (Pairing is expected on the Pentium.) 
         mov	edx, [esp]
-        ffree	st(0)
         mov	_caml_last_return_address, edx
-        ffree	st(1)
         lea	edx, [esp+4]
-        ffree	st(2)
         mov	_caml_bottom_of_stack, edx
-        ffree	st(3)
     ; Call the function (address in %eax) 
         jmp	eax
 
@@ -224,16 +224,10 @@ L107:
         pop	_caml_bottom_of_stack
         pop	_caml_last_return_address
     ; Restore callee-save registers.
-    ; In parallel, free the floating-point registers
-    ; that may have been used by Caml.
         pop	ebp
-        ffree	st(0)
         pop	edi
-        ffree	st(1)
         pop	esi
-        ffree	st(2)
         pop	ebx
-        ffree	st(3)
     ; Return to caller. 
         ret	
 L108:
