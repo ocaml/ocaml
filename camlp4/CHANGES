@@ -1,6 +1,7 @@
 Camlp4 Version 3.04+5
 ---------------------
 
+- [06 Feb 02] Added missing infix "%" in pa_o (normal syntax).
 - [06 Feb 02] Added Grammar.print_entry printing any kind of (obj) entry
   and having the Format.formatter as first parameter (Grammar.Entry.print
   and its equivalent in functorial interface call it).

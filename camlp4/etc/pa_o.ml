@@ -538,14 +538,11 @@ EXTEND
     | "+" LEFTA
       [ e1 = SELF; "+"; e2 = SELF -> <:expr< $e1$ + $e2$ >>
       | e1 = SELF; "-"; e2 = SELF -> <:expr< $e1$ - $e2$ >>
-      | e1 = SELF; "+."; e2 = SELF -> <:expr< $e1$ +. $e2$ >>
-      | e1 = SELF; "-."; e2 = SELF -> <:expr< $e1$ -. $e2$ >>
       | e1 = SELF; op = infixop2; e2 = SELF -> <:expr< $lid:op$ $e1$ $e2$ >> ]
     | "*" LEFTA
       [ e1 = SELF; "*"; e2 = SELF -> <:expr< $e1$ * $e2$ >>
       | e1 = SELF; "/"; e2 = SELF -> <:expr< $e1$ / $e2$ >>
-      | e1 = SELF; "*."; e2 = SELF -> <:expr< $e1$ *. $e2$ >>
-      | e1 = SELF; "/."; e2 = SELF -> <:expr< $e1$ /. $e2$ >>
+      | e1 = SELF; "%"; e2 = SELF -> <:expr< $lid:"%"$ $e1$ $e2$ >>
       | e1 = SELF; "land"; e2 = SELF -> <:expr< $e1$ land $e2$ >>
       | e1 = SELF; "lor"; e2 = SELF -> <:expr< $e1$ lor $e2$ >>
       | e1 = SELF; "lxor"; e2 = SELF -> <:expr< $e1$ lxor $e2$ >>
