@@ -139,7 +139,7 @@ void caml_main(char **argv)
   caml_init_signals();
   exe_name = argv[0];
 #ifdef __linux__
-  if (executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
+  if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
     exe_name = proc_self_exe;
 #endif
   caml_sys_init(exe_name, argv);
