@@ -1,0 +1,56 @@
+!include ..\support\Makefile.common.nt
+
+COMPFLAGS= -I ../support
+
+SUPPORT=../support/support.cmo ../support/widget.cmo ../support/protocol.cmo \
+        ../support/textvariable.cmo ../support/timer.cmo \
+        ../support/fileevent.cmo
+
+SUPPORTX = $(SUPPORT:.cmo=.cmx)
+
+TOPDEPS = $(TOPDIR)/toplevel/toplevellib.cma $(TOPDIR)/toplevel/topmain.cmo
+
+all : tk41.cma labltk
+
+opt : tk41.cmxa
+
+include ./modules
+WIDGETOBJSX = $(WIDGETOBJS:.cmo=.cmx)
+
+tk41.cma : $(SUPPORT) $(WIDGETOBJS) tk.cmo 
+	$(LABLLIBR) -o tk41.cma $(SUPPORT) tk.cmo $(WIDGETOBJS)
+
+tk41.cmxa : $(SUPPORTX) $(WIDGETOBJSX) tk.cmx
+	$(CAMLOPTLIBR) -o tk41.cmxa $(SUPPORTX) tk.cmx $(WIDGETOBJSX)
+
+labltk : $(TOPDEPS) $(WIDGETOBJS) $(SUPPORT)
+	$(LABLC) -custom -linkall -o $@ -I ../support $(TKLINKOPT) \
+	       -I $(TOPDIR)/toplevel toplevellib.cma tk41.cma topmain.cmo
+
+# All .{ml,mli} files are generated in this directory
+clean : 
+	rm -f *.cm* *.ml *.mli *.o *.a labltktop
+
+install: tk41.cma labltk
+	@if not exist $(LABLTKDIR) mkdir $(LABLTKDIR)
+	cp *.cmi tk41.cma $(LABLTKDIR)
+	@if not exist $(BINDIR) mkdir $(BINDIR)
+	cp labltk.exe $(BINDIR)
+
+installopt: tk41.cmxa
+	@if not exist $(LABLTKDIR) mkdir $(LABLTKDIR)
+	cp tk41.cmxa tk41.a $(LABLTKDIR)
+
+.SUFFIXES :
+.SUFFIXES : .mli .ml .cmi .cmx .cmo .mlp
+
+.mli.cmi:
+	$(LABLCOMP) $(COMPFLAGS) $<
+
+.ml.cmo:
+	$(LABLCOMP) $(COMPFLAGS) $<
+
+.ml.cmx:
+	$(CAMLOPT) -c $(COMPFLAGS) $<
+
+!include .depend

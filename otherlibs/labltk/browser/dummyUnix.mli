@@ -2,9 +2,9 @@
 (*                                                                       *)
 (*                Objective Caml LablTk library                          *)
 (*                                                                       *)
-(*         Jun Furuse, projet Cristal, INRIA Rocquencourt                *)
+(*            Jacques Garrigue, Kyoto University RIMS                    *)
 (*                                                                       *)
-(*   Copyright 1999 Institut National de Recherche en Informatique et    *)
+(*   Copyright 2000 Institut National de Recherche en Informatique et    *)
 (*   en Automatique and Kyoto University.  All rights reserved.          *)
 (*   This file is distributed under the terms of the GNU Library         *)
 (*   General Public License.                                             *)
@@ -13,17 +13,20 @@
 
 (* $Id$ *)
 
-open Tk
-open Widget
-open Balloon
-open Protocol
+module Mutex : sig
+  type t
+  external create : unit -> t = "%ignore"
+  external lock : t -> unit = "%ignore"
+  external unlock : t -> unit = "%ignore"
+end
 
-let _ =
-  let t = openTk () in
-  Balloon.init ();
-  let b = Button.create t text: "hello" in
-  Button.configure b command: (fun () -> destroy b);
-  pack [b];
-  Balloon.put on: b ms: 1000 "Balloon";
-  Printexc.catch mainLoop ()
- 
+module Thread : sig
+  type t
+  external create : ('a -> 'b) -> 'a -> t = "caml_input"
+end
+
+module ThreadUnix : sig
+  open Unix
+  external read : file_descr -> buf:string -> pos:int -> len:int -> int
+      = "caml_input"
+end

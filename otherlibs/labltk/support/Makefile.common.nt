@@ -1,0 +1,29 @@
+## Paths are relative to subdirectories
+## Where you compiled Objective Caml
+TOPDIR=../../..
+TOPDIRNT=..\..\..
+## Where to find OCaml binaries
+EXEDIR=$(TOPDIRNT)
+## Path to the otherlibs subdirectory
+OTHERS=../..
+
+!include $(TOPDIRNT)\config\Makefile.nt
+
+LABLTKDIR=$(LIBDIR)\labltk
+TKLINKOPT=$(STATIC) -cclib ../support/liblabltk41.lib \
+	  -cclib "$(TK_LINK)" $(X11_LINK) -cclib "$(CCLIBS) $(DLLIB)"
+
+## Tools from the Objective Caml distribution
+
+CAMLRUN=$(EXEDIR)\boot\ocamlrun
+LABLC=$(CAMLRUN) $(TOPDIR)/ocamlc -I $(TOPDIR)/stdlib
+LABLCOMP=$(LABLC) -w s -modern -c
+LABLYACC=$(EXEDIR)\boot\ocamlyacc -v
+LABLLEX=$(CAMLRUN) $(TOPDIR)/boot/ocamllex
+LABLLIBR=$(LABLC) -a
+LABLDEP=$(CAMLRUN) $(TOPDIR)/tools/ocamldep
+COMPFLAGS=
+LINKFLAGS=
+
+CAMLOPT=$(CAMLRUN) $(TOPDIR)/ocamlopt -I $(TOPDIR)/stdlib -modern -w s
+CAMLOPTLIBR=$(CAMLOPT) -a

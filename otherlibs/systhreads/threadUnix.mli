@@ -32,8 +32,8 @@ val system : string -> Unix.process_status
 
 (*** Basic input/output *)
 
-val read : Unix.file_descr -> buffer:string -> pos:int -> len:int -> int
-val write : Unix.file_descr -> buffer:string -> pos:int -> len:int -> int
+val read : Unix.file_descr -> buf:string -> pos:int -> len:int -> int
+val write : Unix.file_descr -> buf:string -> pos:int -> len:int -> int
 
 (*** Polling *)
 
@@ -46,10 +46,10 @@ val select :
 
 val timed_read :
       Unix.file_descr ->
-      buffer:string -> pos:int -> len:int -> timeout:float -> int
+      buf:string -> pos:int -> len:int -> timeout:float -> int
 val timed_write :
       Unix.file_descr ->
-      buffer:string -> pos:int -> len:int -> timeout:float -> int
+      buf:string -> pos:int -> len:int -> timeout:float -> int
       (* Behave as [read] and [write], except that 
          [Unix_error(ETIMEDOUT,_,_)] is raised if no data is
          available for reading or ready for writing after [d] seconds.
@@ -72,12 +72,12 @@ val socket : domain:Unix.socket_domain ->
       	     type:Unix.socket_type -> proto:int -> Unix.file_descr
 val accept : Unix.file_descr -> Unix.file_descr * Unix.sockaddr
 external connect : Unix.file_descr -> Unix.sockaddr -> unit = "unix_connect"
-val recv : Unix.file_descr -> buffer:string ->
+val recv : Unix.file_descr -> buf:string ->
       	   pos:int -> len:int -> flags:Unix.msg_flag list -> int
-val recvfrom : Unix.file_descr -> buffer:string -> pos:int -> len:int ->
+val recvfrom : Unix.file_descr -> buf:string -> pos:int -> len:int ->
                flags:Unix.msg_flag list -> int * Unix.sockaddr
-val send : Unix.file_descr -> buffer:string -> pos:int -> len:int ->
+val send : Unix.file_descr -> buf:string -> pos:int -> len:int ->
            flags:Unix.msg_flag list -> int
-val sendto : Unix.file_descr -> buffer:string -> pos:int -> len:int ->
+val sendto : Unix.file_descr -> buf:string -> pos:int -> len:int ->
              flags:Unix.msg_flag list -> addr:Unix.sockaddr -> int
 val open_connection : Unix.sockaddr -> in_channel * out_channel

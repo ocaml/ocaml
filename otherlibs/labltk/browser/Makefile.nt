@@ -1,10 +1,10 @@
-include ../support/Makefile.common
+!include ..\support\Makefile.common.nt
 
 LABLTKLIB=-I ../lib -I ../support
-OTHERSLIB=-I $(OTHERS)/unix -I $(OTHERS)/str
+OTHERSLIB=-I $(OTHERS)/unix -I $(OTHERS)/str -I $(OTHERS)/systhreads
 OCAMLTOPLIB=-I $(TOPDIR)/parsing -I $(TOPDIR)/utils -I $(TOPDIR)/typing
 INCLUDES=$(OTHERSLIB) $(LABLTKLIB) $(OCAMLTOPLIB)
-CLIBS=-L../support -llabltk41 -L$(OTHERS)/str -lstr -L$(OTHERS)/unix -lunix
+CLIBS=../support/liblabltk41.lib $(OTHERS)/str/libstr.lib $(OTHERS)/win32unix/libunix.lib $(OTHERS)/systhreads/libthreads.lib
 
 OBJ =	list2.cmo	useunix.cmo	setpath.cmo	lexical.cmo	\
 	fileselect.cmo	searchid.cmo	searchpos.cmo	shell.cmo	\
@@ -30,14 +30,14 @@ all: ocamlbrowser
 ocamlbrowser: $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ)
 	$(LABLC) -custom -o ocamlbrowser $(INCLUDES) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
-		unix.cma str.cma tk41.cma jglib.cma $(OBJ) \
+		unix.cma threads.cma str.cma tk41.cma jglib.cma $(OBJ) \
 		-cclib "$(CLIBS)" $(TKLINKOPT)
 
 jglib.cma: $(JG)
 	$(LABLCOMP) -a -o jglib.cma $(JG) 
 
 install:
-	if test -f ocamlbrowser; then : ; cp ocamlbrowser $(BINDIR); fi
+	if exist ocamlbrowser.exe cp ocamlbrowser.exe $(BINDIR)
 
 clean:
 	rm -f *.cm? ocamlbrowser dummy.mli *~ *.orig
@@ -46,7 +46,7 @@ depend:
 	$(LABLDEP) *.ml *.mli > .depend
 
 dummy.mli:
-	ln -sf dummyUnix.mli dummy.mli
+	cp dummyWin.mli dummy.mli
 shell.cmo: dummy.cmi
 
-include	.depend
+!include	.depend

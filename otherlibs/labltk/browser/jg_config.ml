@@ -13,14 +13,21 @@
 
 (* $Id$ *)
 
+let fixed =
+  if Sys.os_type = "Win32" then "{Courier New} 8" else "fixed"
+let variable =
+  if Sys.os_type = "Win32" then "Arial 9" else "variable"
+
 let init () =
+  if Sys.os_type = "Win32" then Option.add path:"*font" fixed;
   let font =
     let font =
       Option.get Widget.default_toplevel name:"variableFont" class:"Font" in
-    if font = "" then "variable" else font
+    if font = "" then variable else font
   in
   List.iter ["Button"; "Label"; "Menu"; "Menubutton"; "Radiobutton"]
     fun:(fun cl -> Option.add path:("*" ^ cl ^ ".font") font);
+  Option.add path:"*Menu.tearOff" "0" priority:`StartupFile;
   Option.add path:"*Button.padY" "0" priority:`StartupFile;
   Option.add path:"*Text.highlightThickness" "0" priority:`StartupFile;
   Option.add path:"*interface.background" "gray85" priority:`StartupFile;

@@ -1,0 +1,40 @@
+# Top Makefile for LablTk
+
+!include ..\..\config\Makefile.nt
+
+SUBDIRS=compiler support lib jpf example browser
+
+all:
+	cd support & $(MAKEREC)
+	cd compiler & $(MAKEREC)
+	cd lib & $(MAKE) -nologo -f Makefile.gen.nt & $(MAKEREC)
+	cd jpf & $(MAKEREC)
+	cd browser & $(MAKEREC)
+
+allopt:
+	cd support & $(MAKEREC) opt
+	cd lib & $(MAKE) -nologo -f Makefile.gen.nt & $(MAKEREC) opt
+	cd jpf & $(MAKEREC) opt
+
+lib: Widgets.src
+	compiler/tkcompiler
+	cd lib & $(MAKEREC)
+
+example: example/all
+
+example/all:
+	cd example & $(MAKEREC) all
+
+install: 
+	cd lib & $(MAKEREC) install
+	cd support & $(MAKEREC) install
+	cd compiler & $(MAKEREC) install
+	cd jpf & $(MAKEREC) install
+	cd browser & $(MAKEREC) install
+
+installopt:
+	cd lib & $(MAKEREC) installopt
+	cd jpf & $(MAKEREC) installopt
+
+partialclean clean: 
+	for %d in ($(SUBDIRS)) do (cd %d & $(MAKEREC) clean & cd ..)
