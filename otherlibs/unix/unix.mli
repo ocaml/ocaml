@@ -498,6 +498,8 @@ type tm =
 external time : unit -> int = "unix_time"
         (* Return the current time since 00:00:00 GMT, Jan. 1, 1970,
            in seconds. *)
+external gettimeofday : unit -> float = "unix_gettimeofday"
+        (* Same as [time], but with resolution better than 1 second. *)
 external gmtime : int -> tm = "unix_gmtime"
         (* Convert a time in seconds, as returned by [time], into a date and
            a time. Assumes Greenwich meridian time zone. *)

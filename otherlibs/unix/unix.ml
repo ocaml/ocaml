@@ -269,6 +269,7 @@ type tm =
     tm_isdst : bool }
 
 external time : unit -> int = "unix_time"
+external gettimeofday : unit -> float = "unix_gettimeofday"
 external gmtime : int -> tm = "unix_gmtime"
 external localtime : int -> tm = "unix_localtime"
 external alarm : int -> int = "unix_alarm"
