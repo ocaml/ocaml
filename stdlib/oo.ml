@@ -28,21 +28,10 @@ let set_id o id =
 
 (**** Object copy ****)
 
-(*
-let copy o =
-  let o = (Obj.obj (Obj.dup (Obj.repr o))) in
-  let id = (Obj.magic last_id : int ref) in
-  let id0 = !id in
-  Array.unsafe_set (Obj.magic o : int array) 1 id0;
-  id := id0 + 1;
-  o
-*)
 let copy o =
   let o = (Obj.obj (Obj.dup (Obj.repr o))) in
   set_id o last_id;
   o
-
-let f x = (x, x, x, x)
 
 (**** Compression options ****)
 (* Parameters *)
@@ -406,23 +395,6 @@ let copy_variables class_info table =
 
 let add_initializer table f =
   table.initializers <- f::table.initializers
-
-let create_class class_info public_methods class_init creator =
-  let table = new_table () in
-  List.iter
-    (function met ->
-       let lab = new_method met in
-       table.methods_by_name  <- Meths.add met lab table.methods_by_name;
-       table.methods_by_label <-  Labs.add lab true table.methods_by_label)
-    public_methods;
-  let obj_init = class_init table true in
-  inst_var_count := !inst_var_count + table.size - 1;
-  if params.compact_table then
-    compact_buckets table.buckets;
-  table.initializers <- List.rev table.initializers;
-  class_info.class_init <- class_init;
-  class_info.table <- table;
-  class_info.obj_init <- creator table obj_init
 
 let create_table public_methods =
   let table = new_table () in

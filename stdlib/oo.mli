@@ -38,9 +38,6 @@ val set_method: table -> label -> meth -> unit
 val narrow: table -> string list -> string list -> string list -> unit
 val widen: table -> unit
 val add_initializer: table -> (obj -> unit) -> unit
-val create_class:
-        class_info -> string list -> (table -> bool -> obj_init) ->
-        (table -> obj_init -> t) -> unit
 val create_table: string list -> table
 val init_class: table -> unit
 
@@ -49,7 +46,7 @@ val create_object: table -> obj
 val run_initializers: obj -> table -> unit
 val object_from_struct: class_info -> obj
 val send:   obj -> label -> t
-val copy : obj -> obj
+val copy : < .. > as 'a -> 'a
 
 (* Parameters *)
 type params = {
