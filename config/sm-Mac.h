@@ -27,7 +27,3 @@
 #if !powerc
 #define THREADED_CODE
 #endif
-
-#if sizeof(int) != 4
-   *** Error : an int must be 32 bits; change your compiler options ***
-#endif
