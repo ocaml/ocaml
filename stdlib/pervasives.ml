@@ -181,6 +181,10 @@ let string_of_int n =
 
 external int_of_string : string -> int = "int_of_string"
 
+module String = struct
+  external get : string -> int -> char = "%string_safe_get"
+end
+
 let string_of_float f =
   let s = format_float "%.12g" f in
   let l = string_length s in
