@@ -10,6 +10,6 @@
   r ../config/s.h
   d
 }
-/\/\* <private> \*\//, /\/\* <\/private> \*\//d
+/\/\* <private> \*\//,/\/\* <\/private> \*\//d
 
 
