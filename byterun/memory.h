@@ -60,8 +60,8 @@ color_t caml_allocation_color (void *hp);
 #define DEBUG_clear(result, wosize)
 #endif
 
-#define Alloc_small(result, wosize, tag) do{      CAMLassert (wosize >= 1); \
-                                            CAMLassert ((tag_t) tag < 256); \
+#define Alloc_small(result, wosize, tag) do{    CAMLassert ((wosize) >= 1); \
+                                          CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
   caml_young_ptr -= Bhsize_wosize (wosize);                                 \
   if (caml_young_ptr < caml_young_limit){                                   \

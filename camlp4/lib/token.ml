@@ -219,22 +219,26 @@ value eval_string  (bp, ep) s =
       let (len, i) =
         if s.[i] = '\\' then
           let i = i + 1 in
-          if i = String.length s then failwith "invalid string token"
-          else if s.[i] = '"' then (store len '"', i + 1)
-          else
-            match s.[i] with
-            [ '\010' -> (len, skip_indent s (i + 1))
-            | '\013' -> (len, skip_indent s (skip_opt_linefeed s (i + 1)))
-            | c ->
-                try
-                  let (c, i) = backslash s i in
-                  (store len c, i)
-                with
+          if i = String.length s then failwith "invalid string token" else
+          if s.[i] = '"' then (store len '"', i + 1) else
+          match s.[i] with
+          [ '\010' -> (len, skip_indent s (i + 1))
+          | '\013' -> (len, skip_indent s (skip_opt_linefeed s (i + 1)))
+          | c ->
+              try
+                let (c, i) = backslash s i in
+                (store len c, i)
+              with
                 [ Not_found -> do {
-                    Printf.eprintf
-                     "Warning: char %d, Invalid backslash escape in string\n%!"
-                     (bp.Lexing.pos_cnum + i + 1);
-                    (store (store len '\\') c, i + 1) } ] ]
+                  let txt = "Invalid backslash escape in string" in
+                  let pos = bp.Lexing.pos_cnum - bp.Lexing.pos_bol + i in
+                  if  bp.Lexing.pos_fname = "" then
+                    Printf.eprintf "Warning: line %d, chars %d-%d: %s\n"
+                      bp.Lexing.pos_lnum pos (pos + 1) txt
+                  else
+                    Printf.eprintf "Warning: File \"%s\", line %d, chars %d-%d: %s\n"
+                      bp.Lexing.pos_fname bp.Lexing.pos_lnum pos (pos + 1) txt;
+                  (store (store len '\\') c, i + 1) } ] ]
         else (store len s.[i], i + 1)
       in
       loop len i

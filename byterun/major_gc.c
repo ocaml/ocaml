@@ -86,6 +86,7 @@ void caml_darken (value v, value *p /* not used */)
 {
   if (Is_block (v) && Is_in_heap (v)) {
     if (Tag_val(v) == Infix_tag) v -= Infix_offset_val(v);
+    CAMLassert (!Is_blue_val (v));
     if (Is_white_val (v)){
       Hd_val (v) = Grayhd_hd (Hd_val (v));
       *gray_vals_cur++ = v;

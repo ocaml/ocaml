@@ -606,7 +606,7 @@ let fundecl fundecl =
     `{emit_label !range_check_trap}:	call	{emit_symbol "caml_ml_array_bound_error"}\n`;
     (* Never returns, but useful to have retaddr on stack for debugging *)
   if !float_constants <> [] then begin
-    `	.section	.rodata.cst8,\"aM\",@progbits,8\n`;
+    `	.section	.rodata.cst8,\"a\",@progbits\n`;
     List.iter emit_float_constant !float_constants
   end
 

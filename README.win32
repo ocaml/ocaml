@@ -103,8 +103,7 @@ You will need the following software components to perform the recompilation:
 - Windows NT, 2000, or XP (we advise against compiling under Windows 95/98/ME)
 - Visual C++ version 6 or 7
 - MASM version 6.11 (see above)
-- The CygWin port of GNU tools, available from
-      http://sourceware.cygnus.com/cygwin/
+- The Cygwin port of GNU tools, available from http://cygwin.com/
 - TCL/TK version 8.3 (for the LablTK GUI) (see above).
 
 Remember to add the directory where the libraries tk83.lib and
@@ -176,8 +175,32 @@ available from http://prdownloads.sourceforge.net/tcl/tcl832.exe.
 
 INSTALLATION:
 
-There is no binary distribution yet, so please follow the compilation
-instructions below.
+The binary distribution is a self-installing executable archive.
+Just run it and it should install OCaml automatically.
+
+If you are using Windows 95, 98 or ME, you need to adjust environment
+variables as follows:
+  - add the "bin" subdirectory of the OCaml installation directory
+    to the PATH variable;
+  - set the OCAMLLIB variable to the "lib" subdirectory of the
+    OCaml installation directory.
+For instance, if you installed OCaml in C:\Program Files\Objective Caml,
+add the following two lines at the end of C:\autoexec.bat:
+
+    set PATH=%PATH%;"C:\Program Files\Objective Caml\bin"
+    set OCAMLLIB=C:\Program Files\Objective Caml\lib
+
+No such tweaking of environment variables is needed under NT, 2000 and XP.
+
+To run programs that use the LablTK GUI, the directory where the
+DLLs tk83.dll and tcl83.dll were installed (by the Tcl/Tk
+installer) must be added to the PATH environment variable.
+
+To compile programs that use the LablTK GUI, the directory where the
+libraries tk83.lib and tcl83.lib were installed (by the Tcl/Tk
+installer) must be added to the library search path in the LIB
+environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
+"C:\tcl\lib" to the LIB environment variable.
 
 
 RECOMPILATION FROM THE SOURCES:
@@ -236,7 +259,7 @@ This port runs under all versions of MS Windows supported by Cygwin.
 
 INSTALLATION:
 
-For various reasons, no binary distribution of this port is available.
+For technical reasons, no binary distribution of this port is available.
 You need to recompile from the source distribution.
 
 
@@ -248,6 +271,6 @@ Just follow the instructions for Unix machines given in the file INSTALL.
 NOTES:
 
 The libraries available in this port are "num", "str", "threads",
-"unix" and "labltk".  "graph" is not available yet.
+"unix" and "labltk".  "graph" is not available.
 The replay debugger is supported.
 

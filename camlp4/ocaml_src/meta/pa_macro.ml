@@ -9,32 +9,42 @@ Added statements:
      DEFINE <uident>
      DEFINE <uident> = <expression>
      DEFINE <uident> (<parameters>) = <expression>
-     IFDEF <uident> THEN <structure_items> END
-     IFDEF <uident> THEN <structure_items> ELSE <structure_items> END
-     IFNDEF <uident> THEN <structure_items> END
-     IFNDEF <uident> THEN <structure_items> ELSE <structure_items> END
+     IFDEF <uident> THEN <structure_items> (END | ENDIF)
+     IFDEF <uident> THEN <structure_items> ELSE <structure_items> (END | ENDIF)
+     IFNDEF <uident> THEN <structure_items> (END | ENDIF)
+     IFNDEF <uident> THEN <structure_items> ELSE <structure_items> (END | ENDIF)
+     INCLUDE <string>
 
   In expressions:
 
-     IFDEF <uident> THEN <expression> ELSE <expression> END
-     IFNDEF <uident> THEN <expression> ELSE <expression> END
+     IFDEF <uident> THEN <expression> ELSE <expression> (END | ENDIF)
+     IFNDEF <uident> THEN <expression> ELSE <expression> (END | ENDIF)
      __FILE__
      __LOCATION__
 
   In patterns:
 
-     IFDEF <uident> THEN <pattern> ELSE <pattern> END
-     IFNDEF <uident> THEN <pattern> ELSE <pattern> END
+     IFDEF <uident> THEN <pattern> ELSE <pattern> (END | ENDIF)
+     IFNDEF <uident> THEN <pattern> ELSE <pattern> (END | ENDIF)
 
   As Camlp4 options:
 
-     -D<uident>
-     -U<uident>
+     -D<uident>                      define <uident>
+     -U<uident>                      undefine it
+     -I<dir>                         add <dir> to the search path for INCLUDE'd files
 
   After having used a DEFINE <uident> followed by "= <expression>", you
   can use it in expressions *and* in patterns. If the expression defining
   the macro cannot be used as a pattern, there is an error message if
   it is used in a pattern.
+
+  
+
+  The toplevel statement INCLUDE <string> can be used to include a
+  file containing macro definitions; note that files included in such
+  a way can not have any non-macro toplevel items.  The included files
+  are looked up in directories passed in via the -I option, falling
+  back to the current directory.
 
   The expression __FILE__ returns the current compiled file name.
   The expression __LOCATION__ returns the current location of itself.
@@ -50,7 +60,8 @@ type 'a item_or_def =
     SdStr of 'a
   | SdDef of string * (string list * MLast.expr) option
   | SdUnd of string
-  | SdNop
+  | SdITE of string * 'a item_or_def list * 'a item_or_def list
+  | SdInc of string
 ;;
 
 let rec list_remove x =
@@ -80,15 +91,32 @@ let subst mloc env =
     | MLast.ExIfe (_, e1, e2, e3) ->
         MLast.ExIfe (loc, loop e1, loop e2, loop e3)
     | MLast.ExApp (_, e1, e2) -> MLast.ExApp (loc, loop e1, loop e2)
+    | MLast.ExFun (_, [args, None, e]) ->
+        MLast.ExFun (loc, [args, None, loop e])
+    | MLast.ExFun (_, peoel) -> MLast.ExFun (loc, List.map loop_peoel peoel)
     | MLast.ExLid (_, x) | MLast.ExUid (_, x) as e ->
         begin try MLast.ExAnt (loc, List.assoc x env) with
           Not_found -> e
         end
     | MLast.ExTup (_, x) -> MLast.ExTup (loc, List.map loop x)
+    | MLast.ExSeq (_, x) -> MLast.ExSeq (loc, List.map loop x)
     | MLast.ExRec (_, pel, None) ->
         let pel = List.map (fun (p, e) -> p, loop e) pel in
         MLast.ExRec (loc, pel, None)
+    | MLast.ExMat (_, e, peoel) ->
+        MLast.ExMat (loc, loop e, List.map loop_peoel peoel)
+    | MLast.ExTry (_, e, pel) ->
+        let loop' =
+          function
+            p, Some e1, e2 -> p, Some (loop e1), loop e2
+          | p, None, e2 -> p, None, loop e2
+        in
+        MLast.ExTry (loc, loop e, List.map loop' pel)
     | e -> e
+  and loop_peoel =
+    function
+      p, Some e1, e2 -> p, Some (loop e1), loop e2
+    | p, None, e2 -> p, None, loop e2
   in
   loop
 ;;
@@ -106,6 +134,7 @@ let substp mloc env =
           Not_found -> MLast.PaUid (loc, x)
         end
     | MLast.ExInt (_, x) -> MLast.PaInt (loc, x)
+    | MLast.ExStr (_, s) -> MLast.PaStr (loc, s)
     | MLast.ExTup (_, x) -> MLast.PaTup (loc, List.map loop x)
     | MLast.ExRec (_, pel, None) ->
         let ppl = List.map (fun (p, e) -> p, loop e) pel in
@@ -206,16 +235,61 @@ let undef x =
     Not_found -> ()
 ;;
 
+(* This is a list of directories to search for INCLUDE statements. *)
+let include_dirs = ref [];;
+
+(* Add something to the above, make sure it ends with a slash. *)
+let add_include_dir str =
+  if str <> "" then
+    let str =
+      if String.get str (String.length str - 1) = '/' then str else str ^ "/"
+    in
+    include_dirs := !include_dirs @ [str]
+;;
+
+let smlist = Grammar.Entry.create Pcaml.gram "smlist";;
+
+let parse_include_file =
+  let dir_ok file dir = Sys.file_exists (dir ^ file) in
+  fun file ->
+    let file =
+      try List.find (dir_ok file) (!include_dirs @ ["./"]) ^ file with
+        Not_found -> file
+    in
+    let st = Stream.of_channel (open_in file) in
+    let old_input = !(Pcaml.input_file) in
+    Pcaml.input_file := file;
+    let items = Grammar.Entry.parse smlist st in
+    Pcaml.input_file := old_input; items
+;;
+
+let rec execute_macro =
+  function
+    SdStr i -> [i]
+  | SdDef (x, eo) -> define eo x; []
+  | SdUnd x -> undef x; []
+  | SdITE (i, l1, l2) -> execute_macro_list (if is_defined i then l1 else l2)
+  | SdInc f -> execute_macro_list (parse_include_file f)
+and execute_macro_list =
+  function
+    [] -> []
+  | hd :: tl ->
+      let il1 = execute_macro hd in
+      let il2 = execute_macro_list tl in il1 @ il2
+;; 
+
 Grammar.extend
   (let _ = (expr : 'expr Grammar.Entry.e)
    and _ = (patt : 'patt Grammar.Entry.e)
    and _ = (str_item : 'str_item Grammar.Entry.e)
-   and _ = (sig_item : 'sig_item Grammar.Entry.e) in
+   and _ = (sig_item : 'sig_item Grammar.Entry.e)
+   and _ = (smlist : 'smlist Grammar.Entry.e) in
    let grammar_entry_create s =
      Grammar.Entry.create (Grammar.of_entry expr) s
    in
    let macro_def : 'macro_def Grammar.Entry.e =
      grammar_entry_create "macro_def"
+   and endif : 'endif Grammar.Entry.e = grammar_entry_create "endif"
    and str_item_or_macro : 'str_item_or_macro Grammar.Entry.e =
      grammar_entry_create "str_item_or_macro"
    and opt_macro_value : 'opt_macro_value Grammar.Entry.e =
@@ -228,67 +302,56 @@ Grammar.extend
          (Grammar.Entry.obj (macro_def : 'macro_def Grammar.Entry.e))],
       Gramext.action
         (fun (x : 'macro_def) (loc : Lexing.position * Lexing.position) ->
-           (match x with
-              SdStr [si] -> si
-            | SdStr sil -> MLast.StDcl (loc, sil)
-            | SdDef (x, eo) -> define eo x; MLast.StDcl (loc, [])
-            | SdUnd x -> undef x; MLast.StDcl (loc, [])
-            | SdNop -> MLast.StDcl (loc, []) :
+           (match execute_macro x with
+              [si] -> si
+            | sil -> MLast.StDcl (loc, sil) :
             'str_item))]];
     Grammar.Entry.obj (macro_def : 'macro_def Grammar.Entry.e), None,
     [None, None,
-     [[Gramext.Stoken ("", "IFNDEF");
-       Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
-       Gramext.Stoken ("", "THEN");
-       Gramext.Snterm
-         (Grammar.Entry.obj
-            (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e));
-       Gramext.Stoken ("", "ELSE");
-       Gramext.Snterm
-         (Grammar.Entry.obj
-            (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e));
-       Gramext.Stoken ("", "END")],
+     [[Gramext.Stoken ("", "INCLUDE"); Gramext.Stoken ("STRING", "")],
       Gramext.action
-        (fun _ (d2 : 'str_item_or_macro) _ (d1 : 'str_item_or_macro) _
-           (i : 'uident) _ (loc : Lexing.position * Lexing.position) ->
-           (if is_defined i then d2 else d1 : 'macro_def));
+        (fun (fname : string) _ (loc : Lexing.position * Lexing.position) ->
+           (SdInc fname : 'macro_def));
       [Gramext.Stoken ("", "IFNDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
        Gramext.Stoken ("", "THEN");
-       Gramext.Snterm
-         (Grammar.Entry.obj
-            (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e));
-       Gramext.Stoken ("", "END")],
-      Gramext.action
-        (fun _ (d : 'str_item_or_macro) _ (i : 'uident) _
-           (loc : Lexing.position * Lexing.position) ->
-           (if is_defined i then SdNop else d : 'macro_def));
-      [Gramext.Stoken ("", "IFDEF");
-       Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
-       Gramext.Stoken ("", "THEN");
-       Gramext.Snterm
-         (Grammar.Entry.obj
-            (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e));
+       Gramext.Snterm (Grammar.Entry.obj (smlist : 'smlist Grammar.Entry.e));
        Gramext.Stoken ("", "ELSE");
-       Gramext.Snterm
-         (Grammar.Entry.obj
-            (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e));
-       Gramext.Stoken ("", "END")],
+       Gramext.Snterm (Grammar.Entry.obj (smlist : 'smlist Grammar.Entry.e));
+       Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
-        (fun _ (d2 : 'str_item_or_macro) _ (d1 : 'str_item_or_macro) _
-           (i : 'uident) _ (loc : Lexing.position * Lexing.position) ->
-           (if is_defined i then d1 else d2 : 'macro_def));
+        (fun (_ : 'endif) (dl2 : 'smlist) _ (dl1 : 'smlist) _ (i : 'uident) _
+           (loc : Lexing.position * Lexing.position) ->
+           (SdITE (i, dl2, dl1) : 'macro_def));
+      [Gramext.Stoken ("", "IFNDEF");
+       Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
+       Gramext.Stoken ("", "THEN");
+       Gramext.Snterm (Grammar.Entry.obj (smlist : 'smlist Grammar.Entry.e));
+       Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
+      Gramext.action
+        (fun (_ : 'endif) (dl : 'smlist) _ (i : 'uident) _
+           (loc : Lexing.position * Lexing.position) ->
+           (SdITE (i, [], dl) : 'macro_def));
       [Gramext.Stoken ("", "IFDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
        Gramext.Stoken ("", "THEN");
-       Gramext.Snterm
-         (Grammar.Entry.obj
-            (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e));
-       Gramext.Stoken ("", "END")],
+       Gramext.Snterm (Grammar.Entry.obj (smlist : 'smlist Grammar.Entry.e));
+       Gramext.Stoken ("", "ELSE");
+       Gramext.Snterm (Grammar.Entry.obj (smlist : 'smlist Grammar.Entry.e));
+       Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
-        (fun _ (d : 'str_item_or_macro) _ (i : 'uident) _
+        (fun (_ : 'endif) (dl2 : 'smlist) _ (dl1 : 'smlist) _ (i : 'uident) _
            (loc : Lexing.position * Lexing.position) ->
-           (if is_defined i then d else SdNop : 'macro_def));
+           (SdITE (i, dl1, dl2) : 'macro_def));
+      [Gramext.Stoken ("", "IFDEF");
+       Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
+       Gramext.Stoken ("", "THEN");
+       Gramext.Snterm (Grammar.Entry.obj (smlist : 'smlist Grammar.Entry.e));
+       Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
+      Gramext.action
+        (fun (_ : 'endif) (dl : 'smlist) _ (i : 'uident) _
+           (loc : Lexing.position * Lexing.position) ->
+           (SdITE (i, dl, []) : 'macro_def));
       [Gramext.Stoken ("", "UNDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e))],
       Gramext.action
@@ -303,16 +366,32 @@ Grammar.extend
         (fun (def : 'opt_macro_value) (i : 'uident) _
            (loc : Lexing.position * Lexing.position) ->
            (SdDef (i, def) : 'macro_def))]];
+    Grammar.Entry.obj (smlist : 'smlist Grammar.Entry.e), None,
+    [None, None,
+     [[Gramext.Slist1
+         (Gramext.Snterm
+            (Grammar.Entry.obj
+               (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e)))],
+      Gramext.action
+        (fun (sml : 'str_item_or_macro list)
+           (loc : Lexing.position * Lexing.position) ->
+           (sml : 'smlist))]];
+    Grammar.Entry.obj (endif : 'endif Grammar.Entry.e), None,
+    [None, None,
+     [[Gramext.Stoken ("", "ENDIF")],
+      Gramext.action
+        (fun _ (loc : Lexing.position * Lexing.position) -> (() : 'endif));
+      [Gramext.Stoken ("", "END")],
+      Gramext.action
+        (fun _ (loc : Lexing.position * Lexing.position) -> (() : 'endif))]];
     Grammar.Entry.obj
       (str_item_or_macro : 'str_item_or_macro Grammar.Entry.e),
     None,
     [None, None,
-     [[Gramext.Slist1
-         (Gramext.Snterm
-            (Grammar.Entry.obj (str_item : 'str_item Grammar.Entry.e)))],
+     [[Gramext.Snterm
+         (Grammar.Entry.obj (str_item : 'str_item Grammar.Entry.e))],
       Gramext.action
-        (fun (si : 'str_item list)
-           (loc : Lexing.position * Lexing.position) ->
+        (fun (si : 'str_item) (loc : Lexing.position * Lexing.position) ->
            (SdStr si : 'str_item_or_macro));
       [Gramext.Snterm
          (Grammar.Entry.obj (macro_def : 'macro_def Grammar.Entry.e))],
@@ -347,18 +426,18 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
        Gramext.Stoken ("", "THEN"); Gramext.Sself;
        Gramext.Stoken ("", "ELSE"); Gramext.Sself;
-       Gramext.Stoken ("", "END")],
+       Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
-        (fun _ (e2 : 'expr) _ (e1 : 'expr) _ (i : 'uident) _
+        (fun (_ : 'endif) (e2 : 'expr) _ (e1 : 'expr) _ (i : 'uident) _
            (loc : Lexing.position * Lexing.position) ->
            (if is_defined i then e2 else e1 : 'expr));
       [Gramext.Stoken ("", "IFDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
        Gramext.Stoken ("", "THEN"); Gramext.Sself;
        Gramext.Stoken ("", "ELSE"); Gramext.Sself;
-       Gramext.Stoken ("", "END")],
+       Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
-        (fun _ (e2 : 'expr) _ (e1 : 'expr) _ (i : 'uident) _
+        (fun (_ : 'endif) (e2 : 'expr) _ (e1 : 'expr) _ (i : 'uident) _
            (loc : Lexing.position * Lexing.position) ->
            (if is_defined i then e1 else e2 : 'expr))]];
     Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
@@ -382,18 +461,18 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
        Gramext.Stoken ("", "THEN"); Gramext.Sself;
        Gramext.Stoken ("", "ELSE"); Gramext.Sself;
-       Gramext.Stoken ("", "END")],
+       Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
-        (fun _ (p2 : 'patt) _ (p1 : 'patt) _ (i : 'uident) _
+        (fun (_ : 'endif) (p2 : 'patt) _ (p1 : 'patt) _ (i : 'uident) _
            (loc : Lexing.position * Lexing.position) ->
            (if is_defined i then p2 else p1 : 'patt));
       [Gramext.Stoken ("", "IFDEF");
        Gramext.Snterm (Grammar.Entry.obj (uident : 'uident Grammar.Entry.e));
        Gramext.Stoken ("", "THEN"); Gramext.Sself;
        Gramext.Stoken ("", "ELSE"); Gramext.Sself;
-       Gramext.Stoken ("", "END")],
+       Gramext.Snterm (Grammar.Entry.obj (endif : 'endif Grammar.Entry.e))],
       Gramext.action
-        (fun _ (p2 : 'patt) _ (p1 : 'patt) _ (i : 'uident) _
+        (fun (_ : 'endif) (p2 : 'patt) _ (p1 : 'patt) _ (i : 'uident) _
            (loc : Lexing.position * Lexing.position) ->
            (if is_defined i then p1 else p2 : 'patt))]];
     Grammar.Entry.obj (uident : 'uident Grammar.Entry.e), None,
@@ -407,3 +486,5 @@ Pcaml.add_option "-D" (Arg.String (define None))
   "<string> Define for IFDEF instruction.";;
 Pcaml.add_option "-U" (Arg.String undef)
   "<string> Undefine for IFDEF instruction.";;
+Pcaml.add_option "-I" (Arg.String add_include_dir)
+  "<string> Add a directory to INCLUDE search path.";;

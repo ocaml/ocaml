@@ -586,6 +586,7 @@ case "$host" in
   ia64-*-freebsd*)              arch=ia64; system=freebsd;;
   x86_64-*-linux*)              arch=amd64; system=linux;;
   x86_64-*-freebsd*)            arch=amd64; system=freebsd;;
+  x86_64-*-openbsd*)            arch=amd64; system=openbsd;;
 esac
 
 if test -z "$ccoption"; then
@@ -608,9 +609,10 @@ case "$arch,$nativecc,$system,$host_type" in
                        nativecclinkopts="-n32 -Wl,-woff,84";;
   *,*,nextstep,*)      nativecccompopts="$gcc_warnings -U__GNUC__ -posix"
                        nativecclinkopts="-posix";;
-  *,*,rhapsody,*darwin6*)
+  *,*,rhapsody,*darwin[1-5].*)
+                       nativecccompopts="$gcc_warnings -DSHRINKED_GNUC";;
+  *,*,rhapsody,*)
                  nativecccompopts="$gcc_warnings -DDARWIN_VERSION_6 $dl_defs";;
-  *,*,rhapsody,*)      nativecccompopts="$gcc_warnings -DSHRINKED_GNUC";;
   *,gcc*,cygwin,*)     nativecccompopts="$gcc_warnings -U_WIN32";;
   *,gcc*,*,*)          nativecccompopts="$gcc_warnings";;
 esac
@@ -1061,37 +1063,37 @@ echo "BNG_ASM_LEVEL=$bng_asm_level" >> Makefile
 
 # Determine if the POSIX threads library is supported
 
-case "$host" in
-  *-*-solaris*)  pthread_link="-lpthread -lposix4";;
-  *-*-freebsd*)  pthread_link="-pthread";;
-  *-*-openbsd*)  pthread_link="-pthread";;
-  *)             pthread_link="-lpthread";;
-esac
-
 if test "$pthread_wanted" = "yes"; then
-if ./hasgot -i pthread.h $pthread_link pthread_self; then
-  echo "POSIX threads library supported."
-  otherlibraries="$otherlibraries systhreads"
-  bytecccompopts="$bytecccompopts -D_REENTRANT"
-  nativecccompopts="$nativecccompopts -D_REENTRANT"
   case "$host" in
-    *-*-freebsd*)
-        bytecccompopts="$bytecccompopts -D_THREAD_SAFE"
-        nativecccompopts="$nativecccompopts -D_THREAD_SAFE";;
-    *-*-openbsd*)
-        bytecccompopts="$bytecccompopts -pthread"
-        asppflags="$asppflags -pthread"
-        nativecccompopts="$nativecccompopts -pthread";;
+    *-*-solaris*)  pthread_link="-lpthread -lposix4";;
+    *-*-freebsd*)  pthread_link="-pthread";;
+    *-*-openbsd*)  pthread_link="-pthread";;
+    *)             pthread_link="-lpthread";;
   esac
-  echo "Options for linking with POSIX threads: $pthread_link"
-  echo "PTHREAD_LINK=$pthread_link" >> Makefile
-  if sh ./hasgot $pthread_link sigwait; then
-    echo "sigwait() found"
-    echo "#define HAS_SIGWAIT" >> s.h
+  if ./hasgot -i pthread.h $pthread_link pthread_self; then
+    echo "POSIX threads library supported."
+    otherlibraries="$otherlibraries systhreads"
+    bytecccompopts="$bytecccompopts -D_REENTRANT"
+    nativecccompopts="$nativecccompopts -D_REENTRANT"
+    case "$host" in
+      *-*-freebsd*)
+          bytecccompopts="$bytecccompopts -D_THREAD_SAFE"
+          nativecccompopts="$nativecccompopts -D_THREAD_SAFE";;
+      *-*-openbsd*)
+          bytecccompopts="$bytecccompopts -pthread"
+          asppflags="$asppflags -pthread"
+          nativecccompopts="$nativecccompopts -pthread";;
+    esac
+    echo "Options for linking with POSIX threads: $pthread_link"
+    echo "PTHREAD_LINK=$pthread_link" >> Makefile
+    if sh ./hasgot $pthread_link sigwait; then
+      echo "sigwait() found"
+      echo "#define HAS_SIGWAIT" >> s.h
+    fi
+  else
+    echo "POSIX threads not found."
+    pthread_link=""
   fi
-else
-  echo "POSIX threads not found."
-fi
 fi
 
 # Determine if the bytecode thread library is supported

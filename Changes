@@ -5,7 +5,7 @@ Objective Caml 3.08:
 
 Language features:
 - Support for immediate objects, i.e. objects defined without going
-  through a class.  (Syntax is "object <field and methods> end".)
+  through a class.  (Syntax is "object <fields and methods> end".)
 
 Type-checking:
 - When typing record construction and record patterns, can omit
@@ -16,19 +16,19 @@ Both compilers:
 - More compact compilation of classes.
 - Much more efficient handling of class definitions inside functors
   or local modules.
-- Simpler represention for method tables. Objects can now be marshalled
+- Simpler representation for method tables. Objects can now be marshaled
   between identical programs with the flag Marshal.Closures.
 - Improved error messages for objects and variants.
 - Improved printing of inferred module signatures (toplevel and ocamlc -i).
   Recursion between type, class, class type and module definitions is now
   correctly printed.
 - The -pack option now accepts compiled interfaces (.cmi files) in addition
-  to compiled implementations.
+  to compiled implementations (.cmo or .cmx).
 * A compile-time error is signaled if an integer literal exceeds the
   range of representable integers.
 - Fixed code generation error for "module rec" definitions.
 - The combination of options -c -o sets the name of the generated
-  .cm[iox] files.
+  .cmi / .cmo / .cmx files.
 
 Bytecode compiler:
 - Option -output-obj is now compatible with Dynlink and 
@@ -67,8 +67,10 @@ Other libraries:
 - The Num library: complete reimplementation of the C/asm lowest
   layer to work around potential licensing problems.
   Improved speed on the PowerPC and AMD64 architectures.
+- The Graphics library: improved event handling under MS Windows.
 - The Str library: fixed bug in "split" functions with nullable regexps.
 - The Unix library:
+   . Added Unix.single_write.
    . Added support for IPv6.
    . Bug fixes in Unix.closedir.
    . Allow thread switching on Unix.lockf.
@@ -130,7 +132,7 @@ Type-checking:
   type of any subexpression in the source file.  Works even in the case
   of a type error (all the types computed up to the error are available).
   This new feature is also supported by ocamlbrowser.
-- Disable "method is overriden" warning when the method was explicitely
+- Disable "method is overriden" warning when the method was explicitly
   redefined as virtual beforehand (i.e. not through inheritance). Typing
   and semantics are unchanged.
 

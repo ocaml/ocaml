@@ -398,7 +398,10 @@ let go () =
           Stdpp.Exc_located ((bp, ep), exc) -> print_location (bp, ep); exc
         | _ -> exc
       in
-      report_error exc; Format.close_box (); Format.print_newline (); exit 2
+      report_error exc;
+      Format.close_box ();
+      Format.print_newline ();
+      raise exc
 ;;
 
 Odyl_main.name := "camlp4";;

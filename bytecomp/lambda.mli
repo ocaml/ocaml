@@ -166,6 +166,7 @@ and lambda_event_kind =
   | Lev_after of Types.type_expr
   | Lev_function
 
+val same: lambda -> lambda -> bool
 val const_unit: structured_constant
 val lambda_unit: lambda
 val name_lambda: lambda -> (Ident.t -> lambda) -> lambda

@@ -18,23 +18,35 @@ CAMLP4=camlp4$(EXE)
 CAMLP4OPT=phony
 
 all: $(CAMLP4)
-opt: $(OBJS:.cma=.cmxa)
+
+opt: opt$(PROFILING)
+
+optnoprof: $(OBJS:.cma=.cmxa)
+
+optprof: optnoprof $(OBJS:.cma=.p.cmxa)
+
 optp4: $(CAMLP4OPT)
 
 $(CAMLP4): $(OBJS) ../odyl/odyl.cmo
-	$(OCAMLC) -g $(OBJS) $(CAMLP4M) ../odyl/odyl.cmo -linkall -o $(CAMLP4)
+	$(OCAMLC) -linkall -o $@ $(OBJS) $(CAMLP4M) ../odyl/odyl.cmo
 
 $(CAMLP4OPT): $(OBJS:.cma=.cmxa) ../odyl/odyl.cmx
-	$(OCAMLOPT) $(OBJS:.cma=.cmxa) $(CAMLP4M) ../odyl/odyl.cmx -linkall -o $(CAMLP4OPT)
+	$(OCAMLOPT) -o $@ $(OBJS:.cma=.cmxa) $(CAMLP4M) ../odyl/odyl.cmx
 
 $(OTOP)/utils/config.cmx: $(OTOP)/utils/config.ml
-	$(OCAMLOPT) -c $(OTOP)/utils/config.ml
+	$(OCAMLOPT) -I $(OTOP)/utils -c $(OTOP)/utils/config.ml
+
+$(OTOP)/utils/config.p.cmx: $(OTOP)/utils/config.ml
+	$(OCAMLOPT) -I $(OTOP)/utils -p -c -o $@ $(OTOP)/utils/config.ml
 
 camlp4.cma: $(CAMLP4_OBJS)
-	$(OCAMLC) $(LINKFLAGS) $(CAMLP4_OBJS) -a -o camlp4.cma
+	$(OCAMLC) $(LINKFLAGS) -a -o $@ $(CAMLP4_OBJS)
 
 camlp4.cmxa: $(CAMLP4_XOBJS)
-	$(OCAMLOPT) $(LINKFLAGS) $(CAMLP4_XOBJS) -a -o camlp4.cmxa
+	$(OCAMLOPT) $(LINKFLAGS) -a  -o $@ $(CAMLP4_XOBJS)
+
+camlp4.p.cmxa: $(CAMLP4_XOBJS:.cmx=.p.cmx)
+	$(OCAMLOPT) $(LINKFLAGS) -a  -o $@ $(CAMLP4_XOBJS:.cmx=.p.cmx)
 
 clean::
 	rm -f *.cm* *.pp[io] *.$(O) *.$(A) *.bak .*.bak *.out *.opt
@@ -63,9 +75,8 @@ install:
 	cp mLast.mli quotation.mli ast2pt.mli pcaml.mli spretty.mli "$(LIBDIR)/camlp4/."
 	cp mLast.cmi quotation.cmi ast2pt.cmi pcaml.cmi spretty.cmi "$(LIBDIR)/camlp4/."
 	cp camlp4.cma $(LIBDIR)/camlp4/.
-	if [ -f camlp4.cmxa ]; \
-	  then cp camlp4.cmxa camlp4.$(A) $(LIBDIR)/camlp4/.; \
-	  else : ; \
-	fi
+	for f in  camlp4.$(A)  camlp4.p.$(A) camlp4.cmxa camlp4.p.cmxa; do \
+	  test -f $$f && cp $$f "$(LIBDIR)/camlp4/." || true; \
+	done
 
 include .depend

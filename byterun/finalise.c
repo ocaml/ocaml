@@ -102,7 +102,10 @@ void caml_final_update (void)
   }
   old = young = j;
   to_do_tl->size = k;
-  for (i = 0; i < k; i++) caml_darken (to_do_tl->item[i++].val, NULL);
+  for (i = 0; i < k; i++){
+    CAMLassert (Is_white_val (to_do_tl->item[i].val));
+    caml_darken (to_do_tl->item[i].val, NULL);
+  }
 }
 
 static int running_finalisation_function = 0;
@@ -116,19 +119,22 @@ void caml_final_do_calls (void)
 
   if (running_finalisation_function) return;
 
-  while (to_do_hd != NULL && to_do_hd->size == 0){
-    to_do_hd = to_do_hd->next;
-    if (to_do_hd == NULL) to_do_tl = NULL;
-  }
   if (to_do_hd != NULL){
-    Assert (to_do_hd->size > 0);
-    -- to_do_hd->size;
-    f = to_do_hd->item[to_do_hd->size];
-    caml_gc_message (0x80, "Calling finalisation function.\n", 0);
-    running_finalisation_function = 1;
-    caml_callback (f.fun, f.val);
-    running_finalisation_function = 0;
-    caml_gc_message (0x80, "Return from finalisation function.\n", 0);
+    caml_gc_message (0x80, "Calling finalisation functions.\n", 0);
+    while (1){
+      while (to_do_hd != NULL && to_do_hd->size == 0){
+        to_do_hd = to_do_hd->next;
+        if (to_do_hd == NULL) to_do_tl = NULL;
+      }
+      if (to_do_hd == NULL) break;
+      Assert (to_do_hd->size > 0);
+      -- to_do_hd->size;
+      f = to_do_hd->item[to_do_hd->size];
+      running_finalisation_function = 1;
+      caml_callback (f.fun, f.val);
+      running_finalisation_function = 0;
+    }
+    caml_gc_message (0x80, "Done calling finalisation functions.\n", 0);
   }
 }
 

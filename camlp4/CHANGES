@@ -1,4 +1,15 @@
-- [12 may 2004] Added to the camlp4 tools the -version option that prints
+- [05 Jul 04] creation of the `unmaintained' directory:
+  pa_format, pa_lefteval, pa_ocamllex, pa_olabl, pa_scheme and pa_sml
+  go there, each in its own subdir. Currently, they compile fine.
+- [05 Jul 04] pa_ifdef, subsumed by pa_macro since 3.07, prints a warning
+  when loaded, encouraging use of pa_macro.
+- [01 July 04] profiled versions of Camlp4 libs are *NOT* installed
+  by default (not even built). To build and install them, uncomment
+  the line PROFILING=prof in camlp4/config/Makefile.tpl, and then
+  make opt.opt && make install
+- [22-23 June 04] `make install' now installs also pa_[or].cmx, pa_[or]p.cmx,
+  pa_[or]_fast.cmx, and odyl.cmx
+- [12 may 04] Added to the camlp4 tools the -version option that prints
   the version number, in the same way as the other ocaml tools.
 - [12 may 04] Locations are now handled as in OCaml. The main benefit
   is that line numbers are now correct in error messages. However, this

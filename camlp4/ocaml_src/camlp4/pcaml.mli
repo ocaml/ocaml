@@ -76,9 +76,6 @@ val add_option : string -> Arg.spec -> string -> unit;;
    (** Add an option to the command line options. *)
 val no_constructors_arity : bool ref;;
    (** [True]: dont generate constructor arity. *)
-(*value no_assert : ref bool;
-   (** [True]: dont generate assertion checks. *)
-*)
 
 val sync : (char Stream.t -> unit) ref;;
 
@@ -88,10 +85,45 @@ val handle_expr_locate : MLast.loc -> Lexing.position * string -> MLast.expr;;
 val handle_patt_quotation : MLast.loc -> string * string -> MLast.patt;;
 val handle_patt_locate : MLast.loc -> Lexing.position * string -> MLast.patt;;
 
+(** Relocation functions for abstract syntax trees *)
 val expr_reloc :
   (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.expr -> MLast.expr;;
 val patt_reloc :
   (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.patt -> MLast.patt;;
+
+val ctyp_reloc : (MLast.loc -> MLast.loc) -> 'a -> MLast.ctyp -> MLast.ctyp;;
+val row_field_reloc :
+  (MLast.loc -> MLast.loc) -> 'a -> MLast.row_field -> MLast.row_field;;
+val class_infos_reloc :
+  ((MLast.loc -> MLast.loc) -> 'a -> 'b -> 'c) -> (MLast.loc -> MLast.loc) ->
+    'a -> 'b MLast.class_infos -> 'c MLast.class_infos;;
+val module_type_reloc :
+  (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.module_type ->
+    MLast.module_type;;
+val sig_item_reloc :
+  (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.sig_item ->
+    MLast.sig_item;;
+val with_constr_reloc :
+  (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.with_constr ->
+    MLast.with_constr;;
+val module_expr_reloc :
+  (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.module_expr ->
+    MLast.module_expr;;
+val str_item_reloc :
+  (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.str_item ->
+    MLast.str_item;;
+val class_type_reloc :
+  (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.class_type ->
+    MLast.class_type;;
+val class_sig_item_reloc :
+  (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.class_sig_item ->
+    MLast.class_sig_item;;
+val class_expr_reloc :
+  (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.class_expr ->
+    MLast.class_expr;;
+val class_str_item_reloc :
+  (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.class_str_item ->
+    MLast.class_str_item;;
 
 (** To possibly rename identifiers; parsers may call this function
     when generating their identifiers; default = identity *)

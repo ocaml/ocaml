@@ -71,8 +71,6 @@ io.o: io.c config.h ../config/m.h ../config/s.h compatibility.h alloc.h \
 lexing.o: lexing.c fail.h compatibility.h misc.h config.h ../config/m.h \
   ../config/s.h mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h \
   minor_gc.h
-macintosh.o: macintosh.c misc.h compatibility.h config.h ../config/m.h \
-  ../config/s.h rotatecursor.h mlvalues.h prims.h
 main.o: main.c misc.h compatibility.h config.h ../config/m.h \
   ../config/s.h mlvalues.h sys.h
 major_gc.o: major_gc.c compact.h config.h ../config/m.h ../config/s.h \
@@ -84,17 +82,16 @@ memory.o: memory.c fail.h compatibility.h misc.h config.h ../config/m.h \
   ../config/s.h mlvalues.h freelist.h gc.h gc_ctrl.h major_gc.h memory.h \
   minor_gc.h signals.h
 meta.o: meta.c alloc.h compatibility.h misc.h config.h ../config/m.h \
-  ../config/s.h mlvalues.h fail.h fix_code.h interp.h major_gc.h \
-  freelist.h memory.h gc.h minor_gc.h prims.h stacks.h
+  ../config/s.h mlvalues.h fail.h fix_code.h interp.h intext.h io.h \
+  major_gc.h freelist.h memory.h gc.h minor_gc.h prims.h stacks.h
 minor_gc.o: minor_gc.c config.h ../config/m.h ../config/s.h \
   compatibility.h fail.h misc.h mlvalues.h finalise.h roots.h memory.h \
   gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h signals.h
 misc.o: misc.c config.h ../config/m.h ../config/s.h compatibility.h \
   misc.h memory.h gc.h mlvalues.h major_gc.h freelist.h minor_gc.h
-mpwtool.o: mpwtool.c
 obj.o: obj.c alloc.h compatibility.h misc.h config.h ../config/m.h \
-  ../config/s.h mlvalues.h fail.h gc.h major_gc.h freelist.h memory.h \
-  minor_gc.h prims.h
+  ../config/s.h mlvalues.h fail.h gc.h interp.h major_gc.h freelist.h \
+  memory.h minor_gc.h prims.h
 parsing.o: parsing.c config.h ../config/m.h ../config/s.h compatibility.h \
   mlvalues.h misc.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
   alloc.h
@@ -106,7 +103,6 @@ printexc.o: printexc.c backtrace.h mlvalues.h compatibility.h config.h \
 roots.o: roots.c finalise.h roots.h misc.h compatibility.h config.h \
   ../config/m.h ../config/s.h memory.h gc.h mlvalues.h major_gc.h \
   freelist.h minor_gc.h globroots.h stacks.h
-rotatecursor.o: rotatecursor.c rotatecursor.h
 signals.o: signals.c alloc.h compatibility.h misc.h config.h \
   ../config/m.h ../config/s.h mlvalues.h callback.h fail.h memory.h gc.h \
   major_gc.h freelist.h minor_gc.h roots.h signals.h sys.h
@@ -191,7 +187,8 @@ hash.d.o: hash.c mlvalues.h compatibility.h config.h ../config/m.h \
   ../config/s.h misc.h custom.h memory.h gc.h major_gc.h freelist.h \
   minor_gc.h
 instrtrace.d.o: instrtrace.c instruct.h misc.h compatibility.h config.h \
-  ../config/m.h ../config/s.h mlvalues.h opnames.h prims.h
+  ../config/m.h ../config/s.h mlvalues.h opnames.h prims.h stacks.h \
+  memory.h gc.h major_gc.h freelist.h minor_gc.h
 intern.d.o: intern.c alloc.h compatibility.h misc.h config.h ../config/m.h \
   ../config/s.h mlvalues.h custom.h fail.h gc.h intext.h io.h fix_code.h \
   memory.h major_gc.h freelist.h minor_gc.h reverse.h
@@ -208,8 +205,6 @@ io.d.o: io.c config.h ../config/m.h ../config/s.h compatibility.h alloc.h \
 lexing.d.o: lexing.c fail.h compatibility.h misc.h config.h ../config/m.h \
   ../config/s.h mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h \
   minor_gc.h
-macintosh.d.o: macintosh.c misc.h compatibility.h config.h ../config/m.h \
-  ../config/s.h rotatecursor.h mlvalues.h prims.h
 main.d.o: main.c misc.h compatibility.h config.h ../config/m.h \
   ../config/s.h mlvalues.h sys.h
 major_gc.d.o: major_gc.c compact.h config.h ../config/m.h ../config/s.h \
@@ -221,17 +216,16 @@ memory.d.o: memory.c fail.h compatibility.h misc.h config.h ../config/m.h \
   ../config/s.h mlvalues.h freelist.h gc.h gc_ctrl.h major_gc.h memory.h \
   minor_gc.h signals.h
 meta.d.o: meta.c alloc.h compatibility.h misc.h config.h ../config/m.h \
-  ../config/s.h mlvalues.h fail.h fix_code.h interp.h major_gc.h \
-  freelist.h memory.h gc.h minor_gc.h prims.h stacks.h
+  ../config/s.h mlvalues.h fail.h fix_code.h interp.h intext.h io.h \
+  major_gc.h freelist.h memory.h gc.h minor_gc.h prims.h stacks.h
 minor_gc.d.o: minor_gc.c config.h ../config/m.h ../config/s.h \
   compatibility.h fail.h misc.h mlvalues.h finalise.h roots.h memory.h \
   gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h signals.h
 misc.d.o: misc.c config.h ../config/m.h ../config/s.h compatibility.h \
   misc.h memory.h gc.h mlvalues.h major_gc.h freelist.h minor_gc.h
-mpwtool.d.o: mpwtool.c
 obj.d.o: obj.c alloc.h compatibility.h misc.h config.h ../config/m.h \
-  ../config/s.h mlvalues.h fail.h gc.h major_gc.h freelist.h memory.h \
-  minor_gc.h prims.h
+  ../config/s.h mlvalues.h fail.h gc.h interp.h major_gc.h freelist.h \
+  memory.h minor_gc.h prims.h
 parsing.d.o: parsing.c config.h ../config/m.h ../config/s.h compatibility.h \
   mlvalues.h misc.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
   alloc.h
@@ -243,7 +237,6 @@ printexc.d.o: printexc.c backtrace.h mlvalues.h compatibility.h config.h \
 roots.d.o: roots.c finalise.h roots.h misc.h compatibility.h config.h \
   ../config/m.h ../config/s.h memory.h gc.h mlvalues.h major_gc.h \
   freelist.h minor_gc.h globroots.h stacks.h
-rotatecursor.d.o: rotatecursor.c rotatecursor.h
 signals.d.o: signals.c alloc.h compatibility.h misc.h config.h \
   ../config/m.h ../config/s.h mlvalues.h callback.h fail.h memory.h gc.h \
   major_gc.h freelist.h minor_gc.h roots.h signals.h sys.h

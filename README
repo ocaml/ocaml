@@ -8,10 +8,10 @@ Objective Caml comprises two compilers. One generates bytecode
 which is then interpreted by a C program. This compiler runs quickly,
 generates compact code with moderate memory requirements, and is
 portable to essentially any 32 or 64 bit Unix platform. Performance of
-generated programs is quite good for a bytecoded implementation:
-almost twice as fast as Caml Light 0.7. This compiler can be used
-either as a standalone, batch-oriented compiler that produces
-standalone programs, or as an interactive, toplevel-based system.
+generated programs is quite good for a bytecoded implementation.
+This compiler can be used either as a standalone, batch-oriented
+compiler that produces standalone programs, or as an interactive,
+toplevel-based system.
 
 The other compiler generates high-performance native code for a number
 of processors. Compilation takes longer and generates bigger code, but
@@ -19,17 +19,23 @@ the generated programs deliver excellent performance, while retaining
 the moderate memory requirements of the bytecode compiler. The
 native-code compiler currently runs on the following platforms:
 
-    Intel/AMD Pentium processors: PCs under Linux, FreeBSD, NetBSD, 
-      OpenBSD, Windows, NextStep, Solaris 2, BeOS.
-    PowerPC processors: PowerMacintosh under MacOS X and LinuxPPC.
-    AMD64 (Opteron) processors: PCs under Linux.
-    Alpha processors: Digital/Compaq/HP Alpha machines under
-      Digital Unix/Compaq Tru64, Linux, NetBSD and OpenBSD.
-    Sparc processors: Sun Sparc machines under Solaris 2, NetBSD, Linux
-    Mips processors: SGI workstations and mainframes under IRIX 6
-    Intel IA64 processors: HP stations under Linux
-    HP PA-RISC processors: HP 9000/700 under HPUX 10 and Linux
-    Strong ARM processors: Corel Netwinder under Linux
+Tier 1 (actively used and maintained by the core Caml team):
+
+    AMD64 (Opteron)    Linux
+    IA32 (Pentium)     Linux, FreeBSD, MS Windows
+    PowerPC            MacOS X
+
+Tier 2 (maintained but less actively, with help from users):
+
+    Alpha              Digital Unix/Compaq Tru64, Linux, all BSD
+    AMD64              FreeBSD, OpenBSD
+    HP PA-RISC         HPUX 11, Linux
+    IA32 (Pentium)     NetBSD, OpenBSD, Solaris 9
+    IA64               Linux, FreeBSD
+    MIPS               IRIX 6
+    PowerPC            Linux, NetBSD
+    SPARC              Solaris 9, Linux, NetBSD
+    Strong ARM         Linux
 
 Other operating systems for the processors above have not been tested,
 but the compiler may work under other operating systems with little work.
@@ -43,16 +49,16 @@ CONTENTS:
 
   Changes               what's new with each release
   INSTALL               instructions for installation
-  INSTALL.MPW           infos on the Macintosh MPW port of Objective Caml
   LICENSE               license and copyright notice
   Makefile              main Makefile
   README                this file
-  README.win32          infos on the MS Windows 98/ME/NT/2000 ports of O.Caml
+  README.win32          infos on the MS Windows ports of O.Caml
   asmcomp/              native-code compiler and linker
   asmrun/               native-code runtime library
   boot/                 bootstrap compiler
   bytecomp/             bytecode compiler and linker
   byterun/              bytecode interpreter and runtime system
+  camlp4/               the Camlp4 preprocessor
   config/               autoconfiguration stuff
   debugger/             source-level replay debugger
   driver/               driver code for the compilers
@@ -72,7 +78,7 @@ CONTENTS:
 COPYRIGHT:
 
 All files marked "Copyright INRIA" in this distribution are copyright
-1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003 Institut National de
+1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004 Institut National de
 Recherche en Informatique et en Automatique (INRIA) and distributed
 under the conditions stated in file LICENSE.
 
@@ -80,7 +86,6 @@ INSTALLATION:
 
 See the file INSTALL for installation instructions on Unix, Linux and 
 MacOS X machines.  For MS Windows, see README.win32.
-For the MacOS 7, 8, 9, see INSTALL.MPW.
 
 DOCUMENTATION:
 
@@ -91,15 +96,9 @@ DVI, and Emacs Info files.  It is available on the World Wide Web, at
 
 AVAILABILITY:
 
-The complete Objective Caml distribution can be accessed through a Web
-browser at
+The complete Objective Caml distribution can be accessed at
 
         http://caml.inria.fr/
-
-or by anonymous FTP:
-
-        host:       ftp.inria.fr
-        directory:  INRIA/caml-light
 
 KEEPING IN TOUCH WITH THE CAML COMMUNITY:
 
@@ -107,7 +106,7 @@ There exists a mailing list of users of the Caml implementations
 developed at INRIA. The purpose of this list is to share
 experience, exchange ideas (and even code), and report on applications
 of the Caml language. Messages can be written in English or in
-French. The list has about 500 subscribers.
+French. The list has about 750 subscribers.
 
 Messages to the list should be sent to:
 
@@ -119,8 +118,7 @@ If you wish to subscribe to this list, please send a message to:
 
 with the single word "subscribe" in the body of the message.
 
-Archives of the list are available on the World Wide Web at URL
-http://caml.inria.fr/
+Archives of the list are available on the Web site http://caml.inria.fr/
 
 The Usenet news groups comp.lang.ml and comp.lang.functional
 also contains discussions about the ML family of programming languages,

@@ -12,20 +12,32 @@ OBJS=odyl_config.cmo odyl_main.cmo
 
 all: odyl$(EXE)
 
-opt: odyl.cmxa odyl.cmx
+opt: opt$(PROFILING)
+
+optnoprof: odyl.cmx odyl.cmxa
+
+optprof: optnoprof odyl.p.cmx odyl.p.cmxa
 
 odyl$(EXE): odyl.cma odyl.cmo
-	$(OCAMLC) odyl.cma odyl.cmo -o odyl$(EXE)
+	$(OCAMLC) odyl.cma odyl.cmo -o $@
 
 odyl.cma: $(OBJS)
-	$(OCAMLC) $(LINKFLAGS) dynlink.cma $(OBJS) -a -o odyl.cma
+	$(OCAMLC) $(LINKFLAGS) dynlink.cma $(OBJS) -a -o $@
 
 odyl.cmxa: $(OBJS:.cmo=.cmx)
-	$(OCAMLOPT) $(LINKFLAGS) $(OBJS:.cmo=.cmx) -a -o odyl.cmxa
+	$(OCAMLOPT) $(LINKFLAGS) $(OBJS:.cmo=.cmx) -a -o $@
+
+odyl.p.cmxa: $(OBJS:.cmo=.p.cmx)
+	$(OCAMLOPT) $(LINKFLAGS) $(OBJS:.cmo=.p.cmx) -a -o $@
 
 odyl_main.cmx: odyl_main.ml
 	$(CAMLP4_COMM) -nolib -DOPT -o odyl_main.ppo odyl_main.ml
 	$(OCAMLOPT) -c -impl odyl_main.ppo
+	rm -f odyl_main.ppo
+
+odyl_main.p.cmx: odyl_main.ml
+	$(CAMLP4_COMM) -nolib -DOPT -o odyl_main.ppo odyl_main.ml
+	$(OCAMLOPT) -p -c -o $@ -impl odyl_main.ppo
 	rm -f odyl_main.ppo
 
 odyl_config.ml:
@@ -56,6 +68,8 @@ compare:
 install:
 	-$(MKDIR) "$(LIBDIR)/camlp4" "$(BINDIR)"
 	cp odyl.cmo odyl.cma odyl_main.cmi $(LIBDIR)/camlp4/.
-	if test -f odyl.cmxa; then cp odyl.cmxa odyl.$(A) $(LIBDIR)/camlp4/.; fi
+	for f in odyl.$(A) odyl.p.$(A) odyl.cmx odyl.o odyl.p.cmx odyl.p.o odyl.cmxa odyl.p.cmxa ; do \
+	   test -f $$f && cp $$f "$(LIBDIR)/camlp4/." || true; \
+	done
 
 include .depend
