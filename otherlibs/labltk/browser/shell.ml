@@ -51,8 +51,9 @@ let dump_handle (h : Unix.file_descr) =
 
 let protect f x = try f x with _ -> ()
 
-let use_threads = Sys.os_type = "Win32"
-let use_sigpipe = Sys.os_type = "Win32"
+let is_win32 = Sys.os_type = "Win32"
+let use_threads = is_win32
+let use_sigpipe = is_win32
 
 class shell ~textw ~prog ~args ~env ~history =
   let (in2,out1) = Unix.pipe ()
@@ -238,16 +239,20 @@ let get_all () =
   all
 
 let may_exec_unix prog =
-  try Unix.access prog ~perm:[Unix.X_OK]; true
-  with Unix.Unix_error _ -> false
+  try Unix.access prog ~perm:[Unix.X_OK]; prog
+  with Unix.Unix_error _ -> ""
 
 let may_exec_win prog =
-  List.exists ~f:may_exec_unix [prog; prog^".exe"; prog^".com"; prog^".bat"]
+  let has_ext =
+    List.exists ~f:(Filename.check_suffix prog) ["exe"; "com"; "bat"] in
+  if has_ext then may_exec_unix prog else
+  List.fold_left [prog^".bat"; prog^".exe"; prog^".com"] ~init:""
+    ~f:(fun res prog -> if res = "" then may_exec_unix prog else res)
 
 let may_exec =
-  if Sys.os_type = "Win32" then may_exec_win else may_exec_unix
+  if is_win32 then may_exec_win else may_exec_unix
 
-let path_sep = if Sys.os_type = "Win32" then ";" else ":"
+let path_sep = if is_win32 then ";" else ":"
 
 let warnings = ref "Al"
 
@@ -265,13 +270,13 @@ let f ~prog ~title =
   let path =
     try Sys.getenv "PATH" with Not_found -> "/bin" ^ path_sep ^ "/usr/bin" in
   let exec_path = Str.split ~!path_sep path in
-  let exec_path =
-    if Sys.os_type = "Win32" then "."::exec_path else exec_path in
-  let exists =
+  let exec_path = if is_win32 then "."::exec_path else exec_path in
+  let progpath =
     if not (Filename.is_implicit prog) then may_exec prog else
-    List.exists exec_path
-      ~f:(fun dir -> may_exec (Filename.concat dir prog)) in
-  if not exists then program_not_found prog else
+    List.fold_left exec_path ~init:"" ~f:
+      (fun res dir ->
+        if res = "" then may_exec (Filename.concat dir prog) else res) in
+  if progpath = "" then program_not_found prog else
   let tl = Jg_toplevel.titled title in
   let menus = Frame.create tl ~name:"menubar" in
   let file_menu = new Jg_menu.c "File" ~parent:menus
@@ -301,7 +306,7 @@ let f ~prog ~title =
     Array.of_list (progargs @ labels @ warnings @ rectypes @ load_path) in
   let history = new history () in
   let start_shell () =
-    let sh = new shell ~textw:tw ~prog ~env ~args ~history in
+    let sh = new shell ~textw:tw ~prog:progpath ~env ~args ~history in
     shells := (title, sh) :: !shells;
     sh
   in
@@ -326,7 +331,7 @@ let f ~prog ~title =
           current_dir := Filename.dirname name;
           if Filename.check_suffix name ".ml"
           then
-            let cmd = "#use \"" ^ name ^ "\";;\n" in
+            let cmd = "#use \"" ^ String.escaped name ^ "\";;\n" in
             (!sh)#insert cmd; (!sh)#send cmd)
     end;
   file_menu#add_command "Load..." ~command:
@@ -340,13 +345,14 @@ let f ~prog ~title =
           if Filename.check_suffix name ".cmo" ||
             Filename.check_suffix name ".cma"
           then
-            let cmd = "#load \"" ^ name ^ "\";;\n" in
+            let cmd = "#load \"" ^ String.escaped name ^ "\";;\n" in
             (!sh)#insert cmd; (!sh)#send cmd)
     end;
   file_menu#add_command "Import path" ~command:
     begin fun () ->
-      List.iter (List.rev !Config.load_path)
-        ~f:(fun dir -> (!sh)#send ("#directory \"" ^ dir ^ "\";;\n"))
+      List.iter (List.rev !Config.load_path) ~f:
+        (fun dir ->
+          (!sh)#send ("#directory \"" ^ String.escaped dir ^ "\";;\n"))
     end;
   file_menu#add_command "Close" ~command:(fun () -> destroy tl);
   history_menu#add_command "Previous  " ~accelerator:"M-p"
