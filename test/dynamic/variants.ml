@@ -58,20 +58,17 @@ module L = struct type 'a t = N | C of 'a * 'a t;;
 module L' = struct type 'a t = N | C of 'a * 'a t;;
                    type 'a tr = A of ('a tr) t;; end;;
 
- 
-DYNTEST L.A L.N as (int L.t) L.tr to (int L'.t) L'.tr for true in failures;;
 
-DYNTEST L.A L.N as (int L.t) L.tr to int L'.tr for false in failures;;
-DYNTEST L'.A L'.N as (int L'.t) L'.tr to int L.tr for false in failures;;
-DYNTEST L.A L.N as (int L.t) L.tr to int L.tr for false in failures;;
-DYNTEST L'.A L'.N as (int L'.t) L'.tr to int L'.tr for false in failures;;
+DYNTEST L.A L.N as int L.t L.tr to int L'.t L'.tr for true in failures;;
 
-DYNTEST L.A L.N as int L.tr to (int L'.t) L'.tr for false in failures;;
-DYNTEST L'.A L'.N as int L'.tr to (int  L.t) L.tr for false in failures;;
-DYNTEST L.A L.N as int L.tr to (int  L.t) L.tr for false in failures;;
-DYNTEST L'.A L'.N as int L'.tr to (int  L'.t) L'.tr for false in failures;;
+DYNTEST L.A L.N as int L.t L.tr to int L'.tr for true in failures;;
+DYNTEST L.A L.N as int L.tr to int L'.t L'.tr for true in failures;;
 
-(* (fun x -> x : (int L.t) L.tr -> int L.tr);; *)
+module L2 = struct type 'a t = N | C of 'a * 'a t;;
+                   type 'a tr = A of ('a tr) t | B of 'a;; end;;
+
+DYNTEST L2.B (L2.C (3, L2.N)) as int L2.t L2.tr to int L2.t L2.tr for true in failures;;
+DYNTEST L2.B 3 as int L2.tr to int L2.t L2.tr for false in failures;;
 
 
 SUMMARY in failures;;
