@@ -289,10 +289,10 @@ $ ocamlc -o theprogram aux.cmo main.cmo
 The program behaves exactly as if the following phrases were entered
 at top-level:
 \begin{alltt}
-module Aux: sig (* \hbox{contents of} aux.mli *)
-          = struct (* \hbox{contents of} aux.ml *);;
-module Main: sig (* \hbox{contents of} main.mli *)
-           = struct (* \hbox{contents of} main.ml *);;
+module Aux: sig (*{\rm contents of} aux.mli *) end
+          = struct (*{\rm contents of} aux.ml *) end;;
+module Main: sig (*{\rm contents of} main.mli *) end
+           = struct (*{\rm contents of} main.ml *) end;;
 \end{alltt}
 In particular, "Main" can refer to "Aux": the definitions and
 declarations contained in "main.ml" and "main.mli" can refer to

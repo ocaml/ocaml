@@ -462,7 +462,7 @@ recursive-descent parsers for LL(1) languages. An example using
 chapter~\ref{c:ocamlyacc}. Here, we will use stream parsers.
 
 \begin{caml_example}
-open Genlex;;	
+open Genlex;;
 let lexer = make_lexer ["("; ")"; "+"; "-"; "*"; "/"];;
 \end{caml_example}
 For the lexical analysis phase (transformation of the input text into
@@ -518,13 +518,13 @@ read_expr "2*(x+y)";;
 
 All examples given so far were executed under the interactive system.
 Caml code can also be compiled separately and executed
-non-interactively using the batch compiler "ocamlc". The source code
-must be put in a file with extension ".ml". It consists of a sequence
-of phrases, which will be evaluated at runtime in their order of
-appearance in the source file. Unlike in interactive mode, types and
-values are not printed automatically; the program must call printing
-functions explicitly to produce some output. Here is a sample
-standalone program to print Fibonacci numbers:
+non-interactively using the batch compilers "ocamlc" or "ocamlopt".
+The source code must be put in a file with extension ".ml". It
+consists of a sequence of phrases, which will be evaluated at runtime
+in their order of appearance in the source file. Unlike in interactive
+mode, types and values are not printed automatically; the program must
+call printing functions explicitly to produce some output. Here is a
+sample standalone program to print Fibonacci numbers:
 \begin{verbatim}
 (* File fib.ml *)
 let rec fib n =
