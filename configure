@@ -1309,40 +1309,21 @@ fi
 if test $has_tk = true; then
   tcl_version=''
   tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
-  if test -z "$tcl_version" && test -z "$tk_defs"; then
-    tk_defs=-I/usr/local/include
+  for tk_incs in \
+    "-I/usr/local/include" \
+    "-I/usr/local/include/tcl8.4 -I/usr/local/include/tk8.4" \
+    "-I/usr/include/tcl8.4 -I/usr/include/tk8.4" \
+    "-I/usr/local/include/tcl8.3 -I/usr/local/include/tk8.3" \
+    "-I/usr/include/tcl8.3 -I/usr/include/tk8.3" \
+    "-I/usr/local/include/tcl8.2 -I/usr/local/include/tk8.2" \
+    "-I/usr/include/tcl8.2 -I/usr/include/tk8.2" \
+    "-I/sw/include"
+  do if test -z "$tcl_version"; then
+    tk_defs="$tk_incs"
     tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
-  fi
-  if test -z "$tcl_version"; then
-    tk_defs="-I/usr/local/include/tcl8.2 -I/usr/local/include/tk8.2"
-    tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
-  fi
-  if test -z "$tcl_version"; then
-    tk_defs="-I/usr/local/include/tcl8.3 -I/usr/local/include/tk8.3"
-    tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
-  fi
-  if test -z "$tcl_version"; then
-    tk_defs="-I/usr/local/include/tcl8.4 -I/usr/local/include/tk8.4"
-    tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
-  fi
-  if test -z "$tcl_version"; then
-    tk_defs="-I/usr/include/tcl8.2 -I/usr/include/tk8.2"
-    tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
-  fi
-  if test -z "$tcl_version"; then
-    tk_defs="-I/usr/include/tcl8.3 -I/usr/include/tk8.3"
-    tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
-  fi
-  if test -z "$tcl_version"; then
-    tk_defs="-I/usr/include/tcl8.4 -I/usr/include/tk8.4"
-    tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
-  fi
-  if test -z "$tcl_version"; then
-    tk_defs="-I/sw/include"
-    tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
-  fi
-  if test -n "$tcl_version"; then
-    echo "tcl.h version $tcl_version found with \"$tk_defs\"."
+  fi; done
+  if test -n "$tcl_version" && test "x$tcl_version" != "xnone"; then
+    echo "tcl.h and tk.h version $tcl_version found with \"$tk_defs\"."
     case $tcl_version in
     7.5) tclmaj=7 tclmin=5 tkmaj=4 tkmin=1 ;;
     7.6) tclmaj=7 tclmin=6 tkmaj=4 tkmin=2 ;;
@@ -1354,16 +1335,7 @@ if test $has_tk = true; then
     *) echo "This version is not known."; has_tk=false ;;
     esac
   else
-    echo "tcl.h not found."
-    has_tk=false
-  fi
-fi
-
-if test $has_tk = true; then
-  if sh ./hasgot $tk_x11_include $tk_defs -i tk.h; then
-    echo "tk.h found."
-  else
-    echo "tk.h not found."
+    echo "tcl.h and tk.h not found."
     has_tk=false
   fi
 fi
@@ -1372,7 +1344,8 @@ tkauxlibs="$mathlib $dllib"
 tcllib=''
 tklib=''
 if test $has_tk = true; then
-  if sh ./hasgot $tk_libs $tk_x11_libs $tkauxlibs Tcl_DoOneEvent
+  if test -n "$tk_libs" && \
+     sh ./hasgot $tk_libs $tk_x11_libs $tkauxlibs Tcl_DoOneEvent
   then tk_libs="$tk_libs $dllib"
   elif sh ./hasgot $tk_libs -ltcl$tclmaj.$tclmin $tkauxlibs Tcl_DoOneEvent
   then
@@ -1387,8 +1360,6 @@ if test $has_tk = true; then
   elif sh ./hasgot $tk_libs -ltcl$tclmaj$tclmin $tkauxlibs Tcl_DoOneEvent
   then
     tk_libs="$tk_libs -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin $dllib"
-# elif sh ./hasgot $tk_libs -ltcl $tkauxlibs Tcl_DoOneEvent; then
-#   tk_libs="$tk_libs -ltk -ltcl"
   elif sh ./hasgot -L/sw/lib $tk_libs -ltcl$tclmaj.$tclmin $tkauxlibs \
                    Tcl_DoOneEvent
   then tk_libs="-L/sw/lib -ltk$tkmaj.$tkmin -ltcl$tclmaj.$tclmin $dllib"
