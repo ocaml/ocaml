@@ -14,7 +14,7 @@
 
 #ifdef SYS_hpux
 #define G(x) x
-#define CODE .code
+#define CODESPACE .code
 #define CODE_ALIGN 4
 #define EXPORT_CODE(x) .export x, entry, priv_lev=3
 #define STARTPROC .proc ! .callinfo frame=0, no_calls ! .entry
@@ -23,7 +23,7 @@
 
 #ifdef SYS_nextstep
 #define G(x) _##x
-#define CODE .text
+#define CODESPACE .text
 #define CODE_ALIGN 2
 #define EXPORT_CODE(x) .globl x
 #define STARTPROC
@@ -41,7 +41,7 @@
         .import $$dyncall, millicode
 #endif
 
-        CODE
+        CODESPACE
         .align  CODE_ALIGN
         EXPORT_CODE(G(call_gen_code))
 G(call_gen_code):
@@ -93,7 +93,7 @@ G(call_gen_code):
         copy    %r24, %r25
         copy    %r23, %r24
         fcpy,dbl %fr5, %fr4
-#ifdef HPUX
+#ifdef SYS_hpux
         bl      $$dyncall, %r2
         nop
 #else

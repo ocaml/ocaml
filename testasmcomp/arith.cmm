@@ -14,12 +14,12 @@
 (* Regression test for arithmetic instructions *)
 
 (function "testarith" ()
-   (let r "r"
-   (let d "d"
-   (let x (load "x" int)
-   (let y (load "y" int)
-   (let f (load "f" float)
-   (let g (load "g" float)
+   (let r "R"
+   (let d "D"
+   (let x (load "X" int)
+   (let y (load "Y" int)
+   (let f (load "F" float)
+   (let g (load "G" float)
       (addraset r 0 0)
       (addraset r 1 1)
       (addraset r 2 -1)
@@ -34,15 +34,15 @@
       (addraset r 10 (+ x 1))
       (addraset r 11 (+ x -1))
 
-      (addraset r 12 (+a "r" 8))
-      (addraset r 13 (+a "r" y))
+      (addraset r 12 (+a "R" 8))
+      (addraset r 13 (+a "R" y))
 
       (addraset r 14 (- x y))
       (addraset r 15 (- x 1))
       (addraset r 16 (- x -1))
 
-      (addraset r 17 (-a "r" 8))
-      (addraset r 18 (-a "r" y))
+      (addraset r 17 (-a "R" 8))
+      (addraset r 18 (-a "R" y))
 
       (addraset r 19 ( * x 2))
       (addraset r 20 ( * 2 x))
@@ -194,23 +194,23 @@
       (floataset d 20 (+f (floatofint x) 1.0))
       (addraset r 115 (intoffloat (+f f 1.0)))
 
-      (floataset d 21 (+f f (load "g" float)))
-      (floataset d 22 (+f (load "g" float) f))
-      (floataset d 23 (-f f (load "g" float)))
-      (floataset d 24 (-f (load "g" float) f))
-      (floataset d 25 ( *f f (load "g" float)))
-      (floataset d 26 ( *f (load "g" float) f))
-      (floataset d 27 (/f f (load "g" float)))
-      (floataset d 28 (/f (load "g" float) f))
+      (floataset d 21 (+f f (load "G" float)))
+      (floataset d 22 (+f (load "G" float) f))
+      (floataset d 23 (-f f (load "G" float)))
+      (floataset d 24 (-f (load "G" float) f))
+      (floataset d 25 ( *f f (load "G" float)))
+      (floataset d 26 ( *f (load "G" float) f))
+      (floataset d 27 (/f f (load "G" float)))
+      (floataset d 28 (/f (load "G" float) f))
 
-      (floataset d 29 (+f ( *f f 2.0) (load "g" float)))
-      (floataset d 30 (+f (load "g" float) ( *f f 2.0)))
-      (floataset d 31 (-f ( *f f 2.0) (load "g" float)))
-      (floataset d 32 (-f (load "g" float) ( *f f 2.0)))
-      (floataset d 33 ( *f ( +f f 2.0) (load "g" float)))
-      (floataset d 34 ( *f (load "g" float) ( +f f 2.0)))
-      (floataset d 35 (/f ( *f f 2.0) (load "g" float)))
-      (floataset d 36 (/f (load "g" float) ( *f f 2.0)))
+      (floataset d 29 (+f ( *f f 2.0) (load "G" float)))
+      (floataset d 30 (+f (load "G" float) ( *f f 2.0)))
+      (floataset d 31 (-f ( *f f 2.0) (load "G" float)))
+      (floataset d 32 (-f (load "G" float) ( *f f 2.0)))
+      (floataset d 33 ( *f ( +f f 2.0) (load "G" float)))
+      (floataset d 34 ( *f (load "G" float) ( +f f 2.0)))
+      (floataset d 35 (/f ( *f f 2.0) (load "G" float)))
+      (floataset d 36 (/f (load "G" float) ( *f f 2.0)))
 
       (floataset d 37 (-f f))
       (floataset d 38 (absf f))

@@ -212,11 +212,11 @@ case "$arch" in
   alpha|mips)   asflags='-O2';;
   sparc)
     case "$system" in
-      bsd)      as='gcc -x assembler-with-cpp -c'; asflags='-DSYS_$(SYSTEM)';;
+      bsd)      as='gcc'; asflags='-x assembler-with-cpp -c -DSYS_$(SYSTEM)';;
         *)      asflags='-P -DSYS_$(SYSTEM)';;
     esac;;
   i386)         asflags='-DSYS_$(SYSTEM)';;
-  hppa)         as='gcc'; asflags='-DSYS_$(SYSTEM)';;
+  hppa)         as='gcc'; asflags='-c -DSYS_$(SYSTEM)';;
   power)
     case "$model" in
       rs6000)   asflags='-u -m pwr -w';;

@@ -291,9 +291,11 @@ let emit_frame fd =
 let float_constants = ref ([] : (int * string) list)
 
 let emit_float_constant (lbl, cst) =
-  if hpux
-  then `	.lit\n`
-  else `	.literal8\n`;
+  if hpux then begin
+    `	.space	$TEXT$\n`;
+    `	.subspa	$LIT$\n`
+  end else
+    `	.literal8\n`;
   emit_align 8;
   `{emit_label lbl}:	.double	{emit_string cst}\n`
 
@@ -438,6 +440,7 @@ let rec emit_instr i dslot =
         `	ldo	{emit_string low_prefix}{emit_label lbl}(%r1), %r1\n`;
         `	fldds	0(%r1), {emit_reg i.res.(0)}\n`
     | Lop(Iconst_symbol s) ->
+        use_symbol s;
         load_symbol_high s;
         `	ldo	{emit_symbol_low s}(%r1), {emit_reg i.res.(0)}\n`
     | Lop(Icall_ind) ->
@@ -450,21 +453,23 @@ let rec emit_instr i dslot =
         record_frame i.live
     | Lop(Itailcall_ind) ->
         let n = frame_size() in
-        if !contains_calls then
-          `	ldw	{emit_int(-n)}(%r30), %r2\n`;
         `	bv	0({emit_reg i.arg.(0)})\n`;
-        `	ldo	{emit_int(-n)}(%r30), %r30\n` (* in delay slot *)
+        if !contains_calls (* in delay slot *)
+        then `	ldwm	{emit_int(-n)}(%r30), %r2\n`
+        else `	ldo	{emit_int(-n)}(%r30), %r30\n`
     | Lop(Itailcall_imm s) ->
         let n = frame_size() in
         if s = !function_name then begin
           `	b,n	{emit_label !tailrec_entry_point}\n`
         end else begin
-          if !contains_calls then
-            `	ldw	{emit_int(-n)}(%r30), %r2\n`;
-          emit_call s "%r0"
+          emit_call s "%r0";
+          if !contains_calls (* in delay slot *)
+          then `	ldwm	{emit_int(-n)}(%r30), %r2\n`
+          else `	ldo	{emit_int(-n)}(%r30), %r30\n`
         end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
+          call_symbol s;
           if hpux then begin
             `	ldil	LP'{emit_symbol s}, %r22\n`;
             emit_call "caml_c_call" "%r2";
@@ -547,7 +552,7 @@ let rec emit_instr i dslot =
           `	ldil	L\`$$divI, %r1\n`;
           `	ble	R\`$$divI(4, %r1)\n`
         end;
-        `	nop\n`
+        fill_delay_slot dslot
     | Lop(Iintop Imod) ->
         (* Arguments are assumed to be in %r26 and %r25, result in %r29 *)
         if hpux then
@@ -556,7 +561,7 @@ let rec emit_instr i dslot =
           `	ldil	L\`$$remI, %r1\n`;
           `	ble	R\`$$remI(4, %r1)\n`
         end;
-        `	nop\n`
+        fill_delay_slot dslot
     | Lop(Iintop Ilsl) ->
         `	subi	31, {emit_reg i.arg.(1)}, %r1\n`;
         `	mtsar	%r1\n`;
@@ -761,6 +766,7 @@ let rec emit_all i =
     {desc = Lend} -> ()
   | {next = {desc = Lop(Icall_imm _)
                   | Lop(Iextcall(_, false))
+                  | Lop(Iintop(Idiv | Imod))
                   | Lbranch _
                   | Lsetuptrap _ }}
     when is_one_instr i ->
@@ -888,7 +894,7 @@ let begin_assembly() =
     `	.subspa $CODE$,quad=0,align=8,access=44,code_only\n`;
     `	.import $global$, data\n`;
     `	.import $$divI, millicode\n`;
-    `	.import $$modI, millicode\n`
+    `	.import $$remI, millicode\n`
   end;
   used_symbols := StringSet.empty;
   defined_symbols := StringSet.empty;

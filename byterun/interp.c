@@ -94,6 +94,11 @@ int callback_depth = 0;
 #define SP_REG asm("27")
 #define ACCU_REG asm("28")
 #endif
+#ifdef __hppa__
+#define PC_REG asm("%r18")
+#define SP_REG asm("%r17")
+#define ACCU_REG asm("%r16")
+#endif
 #endif
 
 /* The interpreter itself */

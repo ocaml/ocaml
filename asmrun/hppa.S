@@ -16,11 +16,10 @@
 
 #ifdef SYS_hpux
 #define G(x) x
-#define CODE .code
+#define CODESPACE .code
 #define CODE_ALIGN 4
 #define EXPORT_CODE(x) .export x, entry, priv_lev=3
 #define EXPORT_DATA(x) .export x, data
-#define COMM(x,size) x .comm size
 #define STARTPROC .proc ! .callinfo frame=0, no_calls ! .entry
 #define ENDPROC .exit ! .procend
 #define LOADHIGH(x) addil LR%x-$global$, %r27
@@ -32,11 +31,10 @@
 
 #ifdef SYS_nextstep
 #define G(x) _##x
-#define CODE .text
+#define CODESPACE .text
 #define CODE_ALIGN 2
 #define EXPORT_CODE(x) .globl x
 #define EXPORT_DATA(x) .globl x
-#define COMM(x,size) .comm x, size
 #define STARTPROC
 #define ENDPROC
 #define LOADHIGH(x) ldil L`x, %r1
@@ -62,21 +60,33 @@
 	.import mlraise, code
 	.import caml_apply2, code
 	.import caml_apply3, code
+
+young_limit                  .comm 8
+young_ptr                    .comm 8
+gc_entry_regs                .comm 32 * 4
+gc_entry_float_regs          .comm 32 * 8
+caml_top_of_stack            .comm 8
+caml_bottom_of_stack         .comm 8
+caml_last_return_address     .comm 8
+caml_exception_pointer       .comm 8
+caml_required_size           .comm 8
 #endif
 
-COMM(G(young_limit), 8)
-COMM(G(young_ptr), 8)
-COMM(G(gc_entry_regs), 32 * 4)
-COMM(G(gc_entry_float_regs), 32 * 8)
-COMM(G(caml_top_of_stack), 8)
-COMM(G(caml_bottom_of_stack), 8)
-COMM(G(caml_last_return_address), 8)
-COMM(G(caml_exception_pointer), 8)
-COMM(G(caml_required_size), 8)
+#ifdef SYS_nextstep
+	.comm	G(young_limit), 8
+	.comm	G(young_ptr), 8
+	.comm	G(gc_entry_regs), 32 * 4
+	.comm	G(gc_entry_float_regs), 32 * 8
+	.comm	G(caml_top_of_stack), 8
+	.comm	G(caml_bottom_of_stack), 8
+	.comm	G(caml_last_return_address), 8
+	.comm	G(caml_exception_pointer), 8
+	.comm	G(caml_required_size), 8
+#endif
 
 ; Allocation functions
 
-        CODE
+        CODESPACE
 	.align	CODE_ALIGN
         EXPORT_CODE(G(caml_alloc))
 G(caml_alloc):
