@@ -106,6 +106,8 @@ let handle_unix_error f arg =
     exit 2
 
 external environment : unit -> string array = "unix_environment"
+external getenv: string -> string = "sys_getenv"
+external putenv: string -> string -> unit = "unix_putenv"
 
 type process_status =
     WEXITED of int

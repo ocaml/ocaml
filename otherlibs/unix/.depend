@@ -57,6 +57,7 @@ open.o: open.c unixsupport.h
 opendir.o: opendir.c unixsupport.h
 pause.o: pause.c unixsupport.h
 pipe.o: pipe.c unixsupport.h
+putenv.o: putenv.c unixsupport.h
 read.o: read.c unixsupport.h
 readdir.o: readdir.c unixsupport.h
 readlink.o: readlink.c unixsupport.h

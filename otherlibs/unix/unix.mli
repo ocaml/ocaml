@@ -105,11 +105,20 @@ val handle_unix_error : ('a -> 'b) -> 'a -> 'b
            describing the error and exits with code 2. *)
 
 
-(*** Interface with the parent process *)
+(*** Access to the process environment *)
 
 external environment : unit -> string array = "unix_environment"
         (* Return the process environment, as an array of strings
-           with the format ``variable=value''. See also [Sys.getenv]. *)
+           with the format ``variable=value''. *)
+external getenv: string -> string = "sys_getenv"
+        (* Return the value associated to a variable in the process
+           environment. Raise [Not_found] if the variable is unbound.
+           (This function is identical to [Sys.getenv].) *)
+external putenv: string -> string -> unit = "unix_putenv"
+        (* [Unix.putenv name value] sets the value associated to a
+           variable in the process environment.
+           [name] is the name of the environment variable,
+           and [value] its new associated value. *)
 
 (*** Process handling *)
 
@@ -519,15 +528,16 @@ external gettimeofday : unit -> float = "unix_gettimeofday"
         (* Same as [time], but with resolution better than 1 second. *)
 external gmtime : int -> tm = "unix_gmtime"
         (* Convert a time in seconds, as returned by [time], into a date and
-           a time. Assumes Greenwich meridian time zone. *)
+           a time. Assumes Greenwich meridian time zone, also known as UTC. *)
 external localtime : int -> tm = "unix_localtime"
         (* Convert a time in seconds, as returned by [time], into a date and
            a time. Assumes the local time zone. *)
 external mktime : tm -> int * tm = "unix_mktime"
         (* Convert a date and time, specified by the [tm] argument, into
            a time in seconds, as returned by [time]. Also return a normalized
-           copy of the given [tm] record, with the [tm_wday] and [tm_yday]
-           recomputed from the other fields. *)
+           copy of the given [tm] record, with the [tm_wday], [tm_yday],
+           and [tm_isdst] fields recomputed from the other fields.
+           The [tm] argument is interpreted in the local time zone. *)
 external alarm : int -> int = "unix_alarm"
         (* Schedule a [SIGALRM] signals after the given number of seconds. *)
 external sleep : int -> unit = "unix_sleep"
