@@ -20,11 +20,14 @@ struct color_cache_entry {
   unsigned long pixel;          /* Pixel value */
 };
 
-#define Color_cache_size 256
+#define Color_cache_size 512
 static struct color_cache_entry color_cache[Color_cache_size];
 #define Empty (-1)
 #define Hash_rgb(r,g,b) \
-  (((r) & 0xE0) + (((g) & 0xE0) >> 3) + (((b) & 0xC0) >> 6))
+  ((((r) & 0xE0) << 1) + (((g) & 0xE0) >> 2) + (((b) & 0xE0) >> 5))
+#define Color_cache_slack 16
+
+static int num_overflows = 0;
 
 void gr_init_color_cache(void)
 {
@@ -53,7 +56,15 @@ unsigned long gr_pixel_rgb(int rgb)
     if (color_cache[i].rgb == Empty) break;
     if (color_cache[i].rgb == rgb) return color_cache[i].pixel;
     i = (i + 1) & (Color_cache_size - 1);
-    if (i == h) break;
+    if (i == h) {
+      /* Cache is full.  Instead of inserting at slot h, which causes
+         thrasing if many colors hash to the same value,
+         insert at h + n where n is pseudo-random and
+         smaller than Color_cache_slack */
+      int slack = num_overflows++ & (Color_cache_slack - 1);
+      i = (i + slack) & (Color_cache_size - 1);
+      break;
+    }
   }
   color.red = r * 0x101;
   color.green = g * 0x101;
