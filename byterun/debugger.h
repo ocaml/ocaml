@@ -82,11 +82,9 @@ enum debugger_request {
   REQ_MARSHAL_OBJ = 'M',        /* mlvalue v */
   /* Send a copy of the data structure rooted at v, using the same
      format as output_value. */
-  REQ_GET_CLOSURE_CODE = 'C',   /* mlvalue v */
+  REQ_GET_CLOSURE_CODE = 'C'    /* mlvalue v */
   /* Send the code address of the given closure.
      Reply is one uint32. */
-  REQ_PROFILING = 'P'       /* no args */
-  /* Switch to profiler mode. */
 };
 
 /* Replies to a REQ_GO request. All replies are followed by three uint32:
