@@ -5,8 +5,8 @@ include ../../Makefile.config
 # Compilation options
 CC=$(BYTECC)
 CFLAGS=-O -I$(REGEXLIB) -I../../byterun $(BYTECCCOMPOPTS)
-CAMLC=../../boot/camlrun ../../boot/camlc -I ../../boot
-CAMLOPT=../../boot/camlrun ../../camlopt -I ../../stdlib
+CAMLC=../../boot/cslrun ../../boot/cslc -I ../../boot
+CAMLOPT=../../boot/cslrun ../../cslopt -I ../../stdlib
 REGEXLIB=regex-0.12
 COBJS=strstubs.o $(REGEXLIB)/regex.o
 
@@ -29,7 +29,7 @@ $(REGEXLIB)/regex.o: $(REGEXLIB)/regex.c $(REGEXLIB)/regex.h
 	cd $(REGEXLIB); CC="$(CC)" sh configure; make
 
 clean:
-	rm -f libstr.a *.o *.cm* camlstr
+	rm -f libstr.a *.o *.cm* cslstr
 	cd $(REGEXLIB); if test -f Makefile; then make distclean; else exit 0; fi
 
 install:
@@ -54,6 +54,6 @@ installopt:
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend
-	../../tools/camldep *.mli *.ml >> .depend
+	../../tools/csldep *.mli *.ml >> .depend
 
 include .depend

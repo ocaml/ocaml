@@ -16,16 +16,16 @@ PRIMS=array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c md5.c meta.c obj.c parsing.c \
   signals.c str.c sys.c terminfo.c
 
-all: camlrun
+all: cslrun
 
-camlrun: $(OBJS) prims.o
-	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) $(LOWADDRESSES) -o camlrun prims.o $(OBJS) $(CCLIBS)
+cslrun: $(OBJS) prims.o
+	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) $(LOWADDRESSES) -o cslrun prims.o $(OBJS) $(CCLIBS)
 
-camlrund: $(DOBJS) prims.o
-	$(BYTECC) -g $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) $(LOWADDRESSES) -o camlrund prims.o $(DOBJS) $(CCLIBS)
+cslrund: $(DOBJS) prims.o
+	$(BYTECC) -g $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) $(LOWADDRESSES) -o cslrund prims.o $(DOBJS) $(CCLIBS)
 
 install:
-	cp camlrun $(BINDIR)/cslrun
+	cp cslrun $(BINDIR)/cslrun
 	rm -f $(LIBDIR)/libcamlrun.a
 	ar rc $(LIBDIR)/libcamlrun.a $(OBJS)
 	cd $(LIBDIR); $(RANLIB) libcamlrun.a
@@ -39,7 +39,7 @@ install:
 	    -e '/Modify/,/^}/d' memory.h > $(LIBDIR)/caml/memory.h
 
 clean:
-	rm -f camlrun camlrund *.o *.a
+	rm -f cslrun cslrund *.o *.a
 	rm -f primitives prims.c opnames.h jumptbl.h
 
 primitives : $(PRIMS)

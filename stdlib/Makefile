@@ -1,11 +1,11 @@
 include ../Makefile.config
 
-RUNTIME=../boot/camlrun
-COMPILER=../camlc
+RUNTIME=../boot/cslrun
+COMPILER=../cslc
 CAMLC=$(RUNTIME) $(COMPILER)
-OPTCOMPILER=../camlopt
+OPTCOMPILER=../cslopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
-CAMLDEP=../boot/camlrun ../tools/camldep
+CAMLDEP=../boot/cslrun ../tools/csldep
 
 OBJS=pervasives.cmo list.cmo string.cmo char.cmo array.cmo sys.cmo \
   hashtbl.cmo sort.cmo filename.cmo obj.cmo lexing.cmo parsing.cmo \

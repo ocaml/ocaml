@@ -5,7 +5,7 @@ include ../../Makefile.config
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
 
-CAMLC=../../boot/camlrun ../../boot/camlc -I ../../boot
+CAMLC=../../boot/cslrun ../../boot/cslc -I ../../boot
 
 OBJS=open.o draw.o fill.o color.o text.o \
   image.o make_img.o dump_img.o point_col.o sound.o events.o
@@ -37,6 +37,6 @@ install:
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend
-	../../tools/camldep *.mli *.ml >> .depend
+	../../tools/csldep *.mli *.ml >> .depend
 
 include .depend

@@ -22,7 +22,7 @@
 value unix_getcwd()     /* ML */
 {
   char buff[MAXPATHLEN];
-  if (getcwd(buff, sizeof(buff)) == 0) uerror("getcwd", NULL);
+  if (getcwd(buff, sizeof(buff)) == 0) uerror("getcwd", Nothing);
   return copy_string(buff);
 }
 

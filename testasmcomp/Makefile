@@ -1,14 +1,14 @@
 include ../Makefile.config
 
-CAMLC=../boot/camlrun ../boot/camlc -I ../boot
+CAMLC=../boot/cslrun ../boot/cslc -I ../boot
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=
-CAMLYACC=../boot/camlyacc
+CAMLYACC=../boot/cslyacc
 YACCFLAGS=
-CAMLLEX=../boot/camlrun ../boot/camllex
-CAMLDEP=../boot/camlrun ../tools/camldep
+CAMLLEX=../boot/cslrun ../boot/csllex
+CAMLDEP=../boot/cslrun ../tools/csldep
 DEPFLAGS=$(INCLUDES)
-CAMLRUN=../boot/camlrun
+CAMLRUN=../boot/cslrun
 
 CODEGEN=./codegen
 CFLAGS=-g

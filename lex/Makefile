@@ -1,24 +1,24 @@
 # The lexer generator
 
-CAMLC=../boot/camlrun ../boot/camlc -I ../boot
+CAMLC=../boot/cslrun ../boot/cslc -I ../boot
 COMPFLAGS=
 LINKFLAGS=
-CAMLYACC=../boot/camlyacc
+CAMLYACC=../boot/cslyacc
 YACCFLAGS=
-CAMLLEX=../boot/camlrun ../boot/camllex
-CAMLDEP=../boot/camlrun ../tools/camldep
+CAMLLEX=../boot/cslrun ../boot/csllex
+CAMLDEP=../boot/cslrun ../tools/csldep
 DEPFLAGS=
 
 OBJS=syntax.cmo parser.cmo lexer.cmo lexgen.cmo output.cmo main.cmo
 
-all: camllex
+all: csllex
 
-camllex: $(OBJS)
-	$(CAMLC) $(LINKFLAGS) -o camllex $(OBJS)
+csllex: $(OBJS)
+	$(CAMLC) $(LINKFLAGS) -o csllex $(OBJS)
 
 clean::
-	rm -f camllex
-	rm -f *.cmo *.cmi camllex
+	rm -f csllex
+	rm -f *.cmo *.cmi csllex
 
 parser.ml parser.mli: parser.mly
 	$(CAMLYACC) $(YACCFLAGS) parser.mly

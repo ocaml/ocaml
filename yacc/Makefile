@@ -8,13 +8,13 @@ CFLAGS=-O -DNDEBUG $(BYTECCCOMPOPTS)
 OBJS= closure.o error.o lalr.o lr0.o main.o mkpar.o output.o reader.o \
   skeleton.o symtab.o verbose.o warshall.o
 
-all: camlyacc
+all: cslyacc
 
-camlyacc: $(OBJS)
-	$(CC) $(CFLAGS) $(CCLINKFLAGS) -o camlyacc $(OBJS)
+cslyacc: $(OBJS)
+	$(CC) $(CFLAGS) $(CCLINKFLAGS) -o cslyacc $(OBJS)
 
 clean:
-	rm -f *.o camlyacc *~
+	rm -f *.o cslyacc *~
 
 depend:
 

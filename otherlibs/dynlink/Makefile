@@ -2,12 +2,12 @@
 
 include ../../Makefile.config
 
-CAMLC=../../boot/camlrun ../../boot/camlc
+CAMLC=../../boot/cslrun ../../boot/cslc
 INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp
 COMPFLAGS=-I ../../boot $(INCLUDES)
 
 OBJS=dynlink.cmo
-COMPILEROBJS=misc.cmo tbl.cmo clflags.cmo config.cmo digest.cmo ident.cmo \
+COMPILEROBJS=misc.cmo tbl.cmo clflags.cmo config.cmo ident.cmo \
   predef.cmo runtimedef.cmo symtable.cmo opcodes.cmo
 
 all: dynlink.cma extract_crc
@@ -33,6 +33,6 @@ clean:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 depend:
-	../../tools/camldep *.mli *.ml > .depend
+	../../tools/csldep *.mli *.ml > .depend
 
 include .depend

@@ -1,34 +1,34 @@
 include ../Makefile.config
 
-CAMLRUN=../boot/camlrun
-CAMLC=$(CAMLRUN) ../boot/camlc -I ../boot
-CAMLLEX=$(CAMLRUN) ../boot/camllex
+CAMLRUN=../boot/cslrun
+CAMLC=$(CAMLRUN) ../boot/cslc -I ../boot
+CAMLLEX=$(CAMLRUN) ../boot/csllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: camldep cslprof
+all: csldep cslprof
 
 # The dependency generator
 
-CAMLDEP=camldep.cmo
+CAMLDEP=csldep.cmo
 
-camldep: $(CAMLDEP)
-	$(CAMLC) $(LINKFLAGS) -o camldep misc.cmo $(CAMLDEP)
-
-clean::
-	rm -f camldep
-
-camldep.ml: camldep.mll
-	$(CAMLLEX) camldep.mll
+csldep: $(CAMLDEP)
+	$(CAMLC) $(LINKFLAGS) -o csldep misc.cmo $(CAMLDEP)
 
 clean::
-	rm -f camldep.ml
+	rm -f csldep
+
+csldep.ml: csldep.mll
+	$(CAMLLEX) csldep.mll
+
+clean::
+	rm -f csldep.ml
 
 install::
-	cp camldep $(BINDIR)/csldep
+	cp csldep $(BINDIR)/csldep
 
-beforedepend:: camldep
+beforedepend:: csldep
 
 # The profiler
 
@@ -49,7 +49,7 @@ clean::
 # To make custom toplevels
 
 install::
-	cp camlmktop $(BINDIR)/cslmktop
+	cp cslmktop $(BINDIR)/cslmktop
 
 # The bytecode disassembler
 
@@ -105,6 +105,6 @@ clean::
 	rm -f *.cmo *.cmi
 
 depend: beforedepend
-	$(CAMLRUN) ./camldep $(INCLUDES) *.mli *.ml > .depend
+	$(CAMLRUN) ./csldep $(INCLUDES) *.mli *.ml > .depend
 
 include .depend

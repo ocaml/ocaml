@@ -3,16 +3,16 @@
 include config/Makefile.h
 include Makefile.config
 
-CAMLC=boot/camlrun boot/camlc -I boot
-CAMLOPT=boot/camlrun ./camlopt -I stdlib
+CAMLC=boot/cslrun boot/cslc -I boot
+CAMLOPT=boot/cslrun ./cslopt -I stdlib
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=
-CAMLYACC=boot/camlyacc
+CAMLYACC=boot/cslyacc
 YACCFLAGS=
-CAMLLEX=boot/camlrun boot/camllex
-CAMLDEP=boot/camlrun tools/camldep
+CAMLLEX=boot/cslrun boot/csllex
+CAMLDEP=boot/cslrun tools/csldep
 DEPFLAGS=$(INCLUDES)
-CAMLRUN=byterun/camlrun
+CAMLRUN=byterun/cslrun
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver -I toplevel
 
@@ -80,9 +80,9 @@ PERVASIVES=arg array char digest filename format gc hashtbl lexing list map \
   stack string sys
 
 # Recompile the system using the bootstrap compiler
-all: runtime camlc camllex camlyacc camltools library camltop
+all: runtime cslc csllex cslyacc csltools library csltop
 
-# The compilation of camltop will fail if the runtime has changed.
+# The compilation of csltop will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
 
 # Compile everything the first time
@@ -93,16 +93,16 @@ bootstrap:
 # Save the original bootstrap compiler
 	$(MAKE) backup
 # Promote the new compiler but keep the old runtime
-# This compiler runs on boot/camlrun and produces bytecode for byterun/camlrun
+# This compiler runs on boot/cslrun and produces bytecode for byterun/cslrun
 	$(MAKE) promote-cross
-# Rebuild camlc and camllex (run on byterun/camlrun)
+# Rebuild cslc and csllex (run on byterun/cslrun)
 	$(MAKE) clean
-	$(MAKE) camlc camllex
-# Rebuild the library (using byterun/camlrun ./camlc)
+	$(MAKE) cslc csllex
+# Rebuild the library (using byterun/cslrun ./cslc)
 	$(MAKE) library-cross
 # Promote the new compiler and the new runtime
 	$(MAKE) promote
-# Rebuild everything, including camltop and the tools
+# Rebuild everything, including csltop and the tools
 	$(MAKE) clean
 	$(MAKE) all
 # Check if fixpoint reached
@@ -113,10 +113,10 @@ LIBFILES=stdlib.cma std_exit.cmo *.cmi cslheader
 # Start up the system from the distribution compiler
 coldstart:
 	cd byterun; $(MAKE) all
-	cp byterun/camlrun boot/camlrun
+	cp byterun/cslrun boot/cslrun
 	cd yacc; $(MAKE) all
-	cp yacc/camlyacc boot/camlyacc
-	cd stdlib; $(MAKE) COMPILER=../boot/camlc all
+	cp yacc/cslyacc boot/cslyacc
+	cd stdlib; $(MAKE) COMPILER=../boot/cslc all
 	cd stdlib; cp $(LIBFILES) ../boot
 
 # Save the current bootstrap compiler
@@ -125,22 +125,22 @@ backup:
 	mv boot/Saved boot/Saved.prev
 	mkdir boot/Saved
 	mv boot/Saved.prev boot/Saved/Saved.prev
-	cp boot/camlrun boot/Saved
-	mv boot/camlc boot/camllex boot/camlyacc boot/Saved
+	cp boot/cslrun boot/Saved
+	mv boot/cslc boot/csllex boot/cslyacc boot/Saved
 	cd boot; cp $(LIBFILES) Saved
 
 # Promote the newly compiled system to the rank of cross compiler
 # (Runs on the old runtime, produces code for the new runtime)
 promote-cross:
-	cp camlc boot/camlc
-	cp lex/camllex boot/camllex
-	cp yacc/camlyacc boot/camlyacc
+	cp cslc boot/cslc
+	cp lex/csllex boot/csllex
+	cp yacc/cslyacc boot/cslyacc
 	cd stdlib; cp $(LIBFILES) ../boot
 
 # Promote the newly compiled system to the rank of bootstrap compiler
 # (Runs on the new runtime, produces code for the new runtime)
 promote: promote-cross
-	cp byterun/camlrun boot/camlrun
+	cp byterun/cslrun boot/cslrun
 
 # Restore the saved bootstrap compiler if a problem arises
 restore:
@@ -150,7 +150,7 @@ restore:
 
 # Check if fixpoint reached
 compare:
-	@if cmp boot/camlc camlc && cmp boot/camllex lex/camllex; \
+	@if cmp boot/cslc cslc && cmp boot/csllex lex/csllex; \
 	then echo "Fixpoint reached, bootstrap succeeded."; \
         else echo "Fixpoint not reached, try one more bootstrapping cycle."; \
 	fi
@@ -160,7 +160,7 @@ cleanboot:
 	rm -rf boot/Saved/Saved.prev/*
 
 # Compile the native-code compiler
-opt: runtimeopt camlopt libraryopt
+opt: runtimeopt cslopt libraryopt
 
 # Installation
 install:
@@ -168,11 +168,11 @@ install:
 	if test -d $(LIBDIR); then : ; else mkdir $(LIBDIR); fi
 	if test -d $(MANDIR); then : ; else mkdir $(MANDIR); fi
 	cd byterun; $(MAKE) install
-	cp camlc $(BINDIR)/cslc
-	cp camltop $(BINDIR)/csltop
+	cp cslc $(BINDIR)/cslc
+	cp csltop $(BINDIR)/csltop
 	cd stdlib; $(MAKE) install
-	cp lex/camllex $(BINDIR)/csllex
-	cp yacc/camlyacc $(BINDIR)/cslyacc
+	cp lex/csllex $(BINDIR)/csllex
+	cp yacc/cslyacc $(BINDIR)/cslyacc
 	$(CAMLC) -a -o $(LIBDIR)/toplevellib.cma $(TOPLIB)
 	cp toplevel/topmain.cmo $(LIBDIR)
 	cp toplevel/toploop.cmi toplevel/topdirs.cmi $(LIBDIR)
@@ -181,36 +181,36 @@ install:
 # Installation of the native-code compiler
 installopt:
 	cd asmrun; $(MAKE) install
-	cp camlopt $(BINDIR)/cslopt
+	cp cslopt $(BINDIR)/cslopt
 	cd stdlib; $(MAKE) installopt
 
 realclean:: clean
 
 # The compiler
 
-camlc: $(COMPOBJS)
-	$(CAMLC) $(LINKFLAGS) -o camlc $(COMPOBJS)
+cslc: $(COMPOBJS)
+	$(CAMLC) $(LINKFLAGS) -o cslc $(COMPOBJS)
 
 clean::
-	rm -f camlc
+	rm -f cslc
 
 # The native-code compiler
 
-camlopt: $(OPTOBJS)
-	$(CAMLC) $(LINKFLAGS) -o camlopt $(OPTOBJS)
+cslopt: $(OPTOBJS)
+	$(CAMLC) $(LINKFLAGS) -o cslopt $(OPTOBJS)
 
 clean::
-	rm -f camlopt
+	rm -f cslopt
 
 # The toplevel
 
-camltop: $(TOPOBJS) expunge
-	$(CAMLC) $(LINKFLAGS) -linkall -o camltop.tmp $(TOPOBJS)
-	- $(CAMLRUN) ./expunge camltop.tmp camltop $(PERVASIVES)
-	rm -f camltop.tmp
+csltop: $(TOPOBJS) expunge
+	$(CAMLC) $(LINKFLAGS) -linkall -o csltop.tmp $(TOPOBJS)
+	- $(CAMLRUN) ./expunge csltop.tmp csltop $(PERVASIVES)
+	rm -f csltop.tmp
 
 clean::
-	rm -f camltop
+	rm -f csltop
 
 # The configuration file
 
@@ -254,19 +254,19 @@ beforedepend:: parsing/lexer.ml
 # Currently not working because it requires C primitives from byterun/meta.c
 # which are not provided by asmrun/libasmrun.a
 
-# camlc.opt: $(COMPOBJS:.cmo=.cmx)
-#	$(CAMLOPT) $(LINKFLAGS) -o camlc.opt $(COMPOBJS:.cmo=.cmx)
+# cslc.opt: $(COMPOBJS:.cmo=.cmx)
+#	$(CAMLOPT) $(LINKFLAGS) -o cslc.opt $(COMPOBJS:.cmo=.cmx)
 
 clean::
-	rm -f camlc.opt
+	rm -f cslc.opt
 
 # The native-code compiler compiled with itself
 
-camlopt.opt: $(OPTOBJS:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) -o camlopt.opt $(OPTOBJS:.cmo=.cmx)
+cslopt.opt: $(OPTOBJS:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) -o cslopt.opt $(OPTOBJS:.cmo=.cmx)
 
 clean::
-	rm -f camlopt.opt
+	rm -f cslopt.opt
 
 # The numeric opcodes
 
@@ -360,7 +360,7 @@ alldepend::
 library:
 	cd stdlib; $(MAKE) all
 library-cross:
-	cd stdlib; $(MAKE) RUNTIME=../byterun/camlrun all
+	cd stdlib; $(MAKE) RUNTIME=../byterun/cslrun all
 libraryopt:
 	cd stdlib; $(MAKE) allopt
 clean::
@@ -370,21 +370,21 @@ alldepend::
 
 # The lexer and parser generators
 
-camllex:
+csllex:
 	cd lex; $(MAKE) all
 clean::
 	cd lex; $(MAKE) clean
 alldepend::
 	cd lex; $(MAKE) depend
 
-camlyacc:
+cslyacc:
 	cd yacc; $(MAKE) all
 realclean::
 	cd yacc; $(MAKE) clean
 
 # Tools
 
-camltools:
+csltools:
 	cd tools; $(MAKE) all
 realclean::
 	cd tools; $(MAKE) clean

@@ -1,10 +1,10 @@
-CAMLC=../boot/camlrun ../camlc -I ../stdlib -I KB -I Lex
-CAMLOPT=../boot/camlrun ../camlopt -I ../stdlib -I KB -I Lex
+CAMLC=../boot/cslrun ../cslc -I ../stdlib -I KB -I Lex
+CAMLOPT=../boot/cslrun ../cslopt -I ../stdlib -I KB -I Lex
 OPTFLAGS=-S
-CAMLYACC=../yacc/camlyacc
-CAMLLEX=../boot/camlrun ../lex/camllex
-CAMLDEP=../boot/camlrun ../tools/camldep
-CAMLRUN=../byterun/camlrun
+CAMLYACC=../yacc/cslyacc
+CAMLLEX=../boot/cslrun ../lex/csllex
+CAMLDEP=../boot/cslrun ../tools/csldep
+CAMLRUN=../byterun/cslrun
 CODERUNPARAMS=CAMLRUNPARAM='o=100'
 
 BYTE_EXE=fib.byt takc.byt taku.byt sieve.byt quicksort.byt quicksort.fast.byt \
@@ -88,9 +88,9 @@ beforedepend:: Lex/scanner.ml
 .ml.cmx:
 	$(CAMLOPT) $(OPTFLAGS) -c $<
 
-$(BYTE_EXE) $(BYTE_KB) $(BYTE_GENLEX): ../camlc
+$(BYTE_EXE) $(BYTE_KB) $(BYTE_GENLEX): ../cslc
 $(BYTE_EXE): ../stdlib/stdlib.cma
-$(CODE_EXE) $(CODE_KB) $(CODE_GENLEX): ../camlopt
+$(CODE_EXE) $(CODE_KB) $(CODE_GENLEX): ../cslopt
 $(CODE_EXE): ../stdlib/stdlib.cmxa ../stdlib/libasmrun.a
 
 clean::

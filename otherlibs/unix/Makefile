@@ -5,8 +5,8 @@ include ../../Makefile.config
 # Compilation options
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
-CAMLC=../../boot/camlrun ../../boot/camlc -I ../../boot
-CAMLOPT=../../boot/camlrun ../../camlopt -I ../../stdlib
+CAMLC=../../boot/cslrun ../../boot/cslc -I ../../boot
+CAMLOPT=../../boot/cslrun ../../cslopt -I ../../stdlib
 
 OBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
   chown.o chroot.o close.o closedir.o connect.o cst2constr.o cstringv.o \
@@ -63,6 +63,6 @@ installopt:
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend
-	../../tools/camldep *.mli *.ml >> .depend
+	../../tools/csldep *.mli *.ml >> .depend
 
 include .depend
