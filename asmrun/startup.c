@@ -24,6 +24,8 @@
 header_t atom_table[256];
 char * static_data_start, * static_data_end;
 
+/* Initialize the atom table */
+
 static void init_atoms()
 {
   int i;
@@ -40,24 +42,18 @@ static void init_atoms()
   }
 }
 
-extern value caml_start_program P((void));
+/* Configuration parameters flags */
 
-void caml_main(argc, argv)
-     int argc;
-     char * argv[];
+static int verbose_init = 0, percent_free_init = Percent_free_def;
+static long minor_heap_init = Minor_heap_def, heap_chunk_init = Heap_chunk_def;
+
+/* Parse the CAMLRUNPARAM variable */
+/* The option letter for each runtime option is the first letter of the
+   last word of the ML name of the option (see [stdlib/gc.mli]). */
+
+static void parse_camlrunparam()
 {
-  int verbose_init = 0, percent_free_init = Percent_free_def;
-  long minor_heap_init = Minor_heap_def, heap_chunk_init = Heap_chunk_def;
-  char * opt;
-  value retcode;
-
-  init_ieee_floats();
-#ifdef DEBUG
-  verbose_init = 1;
-#endif
-  /* Runtime options.  The option letter is the first letter of the
-     last word of the ML name of the option (see [lib/gc.mli]). */
-  opt = getenv ("CAMLRUNPARAM");
+  char *opt = getenv ("CAMLRUNPARAM");
   if (opt != NULL){
     while (*opt != '\0'){
       switch (*opt++){
@@ -68,6 +64,22 @@ void caml_main(argc, argv)
       }
     }
   }
+}
+
+extern value caml_start_program P((void));
+extern void init_ieee_floats P((void));
+extern void init_signals P((void));
+
+void caml_main(argv)
+     char ** argv;
+{
+  value retcode;
+
+  init_ieee_floats();
+#ifdef DEBUG
+  verbose_init = 1;
+#endif
+  parse_camlrunparam();
   init_gc (minor_heap_init, heap_chunk_init, percent_free_init, verbose_init);
   init_atoms();
   init_signals();
@@ -79,3 +91,8 @@ void caml_main(argc, argv)
   }
 }
 
+void caml_startup(argv)
+     char ** argv;
+{
+  caml_main(argv);
+}
