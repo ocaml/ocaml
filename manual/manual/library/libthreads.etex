@@ -13,10 +13,6 @@ Using this library will therefore never make programs run
 faster. However, many programs are easier to write when structured as
 several communicating processes.
 
-This library cannot be used in native-code programs compiled with
-"ocamlopt"; it can only be used with bytecode programs
-compiled with "ocamlc".
-
 \begin{unix}
 Programs that use the "threads" library must be linked as follows:
 \begin{alltt}
@@ -25,6 +21,20 @@ Programs that use the "threads" library must be linked as follows:
 All object files on the command line must also have been compiled with
 the "-thread" option, which selects a special, thread-safe version of
 the standard library (see chapter~\ref{c:camlc}).
+
+The default thread implementation cannot be used in native-code
+programs compiled with "ocamlopt".  If your operating system provides
+POSIX 1003.1c compliant threads, you can select an alternate
+implementation when configuring Objective Caml (use the
+"-with-pthread" option to "configure") which also supports native-code
+programs.  Programs that use this alternate implementation of the
+"threads" library must be linked as follows:
+\begin{alltt}
+        ocamlc -thread -custom \var{other options} threads.cma \var{other files} \char92
+                -cclib -lthreads -cclib -lpthread
+        ocamlopt -thread \var{other options} threads.cmxa \var{other files} \char92
+                -cclib -lthreadsnat -cclib -lpthread
+\end{alltt}
 \end{unix}
 
 \begin{windows}
@@ -32,15 +42,13 @@ Programs that use the "threads" library must be linked as follows:
 \begin{alltt}
         ocamlc -thread -custom \var{other options} threads.cma \var{other files} \char92
                 \%CAMLLIB\%/libthreads.lib
+        ocamlopt -thread -custom \var{other options} threads.cmxa \var{other files} \char92
+                \%CAMLLIB\%/libthreadsnat.lib
 \end{alltt}
 All object files on the command line must also have been compiled with
 the "-thread" option, which selects a special, thread-safe version of
 the standard library (see chapter~\ref{c:camlc}).
 \end{windows}
-
-Interactive use through a toplevel built with "ocamlmktop" is
-impractical, because the Objective Caml toplevel itself is not
-thread-aware.
 
 \begin{library}
 \input thread.tex
