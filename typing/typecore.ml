@@ -834,6 +834,8 @@ and type_statement env sexp =
         exp
     | Tconstr (p, _, _) when Path.same p Predef.path_unit ->
         exp
+    | Tvar ->
+        exp
     | _ ->
         Location.print_warning sexp.pexp_loc Warnings.Statement_type;
         exp
