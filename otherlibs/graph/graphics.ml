@@ -200,7 +200,7 @@ and norm (x1, y1) = sqrt (x1 *. x1 +. y1 *. y1);;
 let test a b c d =
  let v = sub d a in
  let s = norm v in
- area v (sub a b) < s && area v (sub a c) < s;;
+ area v (sub a b) <= s && area v (sub a c) <= s;;
 
 let spline a b c d =
   let rec spl accu a b c d =
@@ -215,9 +215,9 @@ let spline a b c d =
   spl [a] a b c d;;
 
 let curveto b c (x, y as d) =
- let float_point (x, y) = float_of_int x, float_of_int y in
+ let float_point (x, y) = (float_of_int x, float_of_int y) in
  let round f = int_of_float (f +. 0.5) in
- let int_point (x, y) = round x, round y in
+ let int_point (x, y) = (round x, round y) in
  let points =
    spline
     (float_point (current_point ()))
