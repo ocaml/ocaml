@@ -280,7 +280,7 @@ static int rev_convert_signal_number(int signo)
 }
 
 #ifndef NSIG
-#define NSIG 32
+#define NSIG 64
 #endif
 
 value install_signal_handler(value signal_number, value action) /* ML */
