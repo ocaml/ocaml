@@ -14,7 +14,7 @@ ASMOBJS=$(ARCH).o
 OBJS=$(COBJS) $(ASMOBJS)
 DOBJS=$(COBJS:.o=.d.o) $(ASMOBJS)
 
-all: libasmrun.a libasmrund.a
+all: libasmrun.a
 
 libasmrun.a: $(OBJS)
 	rm -f libasmrun.a
@@ -25,6 +25,10 @@ libasmrund.a: $(DOBJS)
 	rm -f libasmrund.a
 	ar rc libasmrund.a $(DOBJS)
 	$(RANLIB) libasmrund.a
+
+install:
+	cp libasmrun.a $(LIBDIR)
+	cd $(LIBDIR); $(RANLIB) libasmrun.a
 
 misc.c: ../byterun/misc.c
 	ln -s ../byterun/misc.c misc.c
@@ -84,8 +88,8 @@ clean::
 	rm -f *.o *.s *.a *~
 
 depend:
-	gcc -MM $(CFLAGS) *.c ../byterun/*.c > .depend
-	gcc -MM $(CFLAGS) -DDEBUG *.c ../byterun/*.c | sed -e 's/\.o/.d.o/' >> .depend
+	gcc -MM *.c ../byterun/*.c > .depend
+	gcc -MM -DDEBUG *.c ../byterun/*.c | sed -e 's/\.o/.d.o/' >> .depend
 
 include .depend
 

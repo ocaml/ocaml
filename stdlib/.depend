@@ -23,8 +23,8 @@ map.cmo: map.cmi set.cmi
 map.cmx: map.cmi set.cmx 
 obj.cmo: obj.cmi 
 obj.cmx: obj.cmi 
-parsing.cmo: parsing.cmi array.cmi lexing.cmi obj.cmi 
-parsing.cmx: parsing.cmi array.cmx lexing.cmx obj.cmx 
+parsing.cmo: parsing.cmi array.cmi obj.cmi lexing.cmi 
+parsing.cmx: parsing.cmi array.cmx obj.cmx lexing.cmx 
 pervasives.cmo: pervasives.cmi 
 pervasives.cmx: pervasives.cmi 
 printexc.cmo: printexc.cmi obj.cmi 

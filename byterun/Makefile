@@ -77,7 +77,7 @@ jumptbl.h : instruct.h
 	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
 
 depend : prims.c opnames.h jumptbl.h
-	gcc -MM $(CFLAGS) *.c > .depend
-	gcc -MM $(DFLAGS) *.c | sed -e 's/\.o/.d.o/' >> .depend
+	gcc -MM *.c > .depend
+	gcc -MM -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
 
 include .depend

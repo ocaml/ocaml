@@ -14,15 +14,20 @@ OBJS=pervasives.cmo list.cmo string.cmo char.cmo array.cmo sys.cmo \
 
 all: stdlib.cma cslheader
 
+allopt: stdlib.cmxa
+
 install:
 	cp stdlib.cma *.cmi *.mli cslheader $(LIBDIR)
+
+installopt:
+	cp stdlib.cmxa stdlib.a *.cmx $(LIBDIR)
+	cd $(LIBDIR); $(RANLIB) stdlib.a
 
 stdlib.cma: $(OBJS)
 	$(CAMLC) -a -o stdlib.cma $(OBJS)
 
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
-# optlib: $(OBJS:.cmo=.cmx)
 
 cslheader: header.c ../Makefile.config
 	if $(SHARPBANGSCRIPTS); \

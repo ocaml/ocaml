@@ -26,7 +26,7 @@ interp.o : interp.c alloc.h misc.h config.h ../config/m.h ../config/s.h mlvalues
   fail.h fix_code.h instruct.h interp.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
   prims.h signals.h stacks.h str.h instrtrace.h jumptbl.h 
 ints.o : ints.c alloc.h misc.h config.h ../config/m.h ../config/s.h mlvalues.h \
-  fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h 
+  fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h str.h 
 io.o : io.c alloc.h misc.h config.h ../config/m.h ../config/s.h mlvalues.h fail.h \
   io.h memory.h gc.h major_gc.h freelist.h minor_gc.h signals.h sys.h 
 main.o : main.c alloc.h misc.h config.h ../config/m.h ../config/s.h mlvalues.h \
@@ -87,7 +87,7 @@ interp.d.o : interp.c alloc.h misc.h config.h ../config/m.h ../config/s.h mlvalu
   fail.h fix_code.h instruct.h interp.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
   prims.h signals.h stacks.h str.h instrtrace.h 
 ints.d.o : ints.c alloc.h misc.h config.h ../config/m.h ../config/s.h mlvalues.h \
-  fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h 
+  fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h str.h 
 io.d.o : io.c alloc.h misc.h config.h ../config/m.h ../config/s.h mlvalues.h fail.h \
   io.h memory.h gc.h major_gc.h freelist.h minor_gc.h signals.h sys.h 
 main.d.o : main.c alloc.h misc.h config.h ../config/m.h ../config/s.h mlvalues.h \
