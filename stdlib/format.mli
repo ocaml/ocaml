@@ -45,15 +45,15 @@
    [printf "@[x =@ %i@]" 1].
 
    Rule of thumb for casual users of this library:
--   use simple boxes (as obtained by [open_box 0]);
--   use simple break hints (as obtained by [print_cut ()] that outputs a
+ - use simple boxes (as obtained by [open_box 0]);
+ - use simple break hints (as obtained by [print_cut ()] that outputs a
    simple break hint, or by [print_space ()] that outputs a space
    indicating a break hint);
--   once a box is opened, display its material with basic printing
+ - once a box is opened, display its material with basic printing
    functions (e. g. [print_int] and [print_string]);
--   when the material for a box has been printed, call [close_box ()] to
+ - when the material for a box has been printed, call [close_box ()] to
    close the box;
--   at the end of your routine, evaluate [print_newline ()] to close
+ - at the end of your routine, evaluate [print_newline ()] to close
    all remaining boxes and flush the pretty-printer.
 
    The behaviour of pretty-printing commands is unspecified
@@ -384,7 +384,7 @@ val set_formatter_tag_functions :
 
    When opening a tag name [t], the string [t] is passed to the
    opening tag marking function (the [mark_open_tag] field of the
-   record [tag_funs]), that must return the opening tag marker for to
+   record [tag_funs]), that must return the opening tag marker for
    that name. When the next call to [close_tag ()] happens, the tag
    name [t] is sent back to the closing tag marking function (the
    [mark_close_tag] field of record [tag_funs]), that must return a
