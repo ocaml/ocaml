@@ -90,14 +90,15 @@ type 'a option = None | Some of 'a
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
-type ('a, 'b, 'c) format
+type ('a, 'b, 'c, 'd) format
 \end{ocamldoccode}
 \index{format@\verb`format`}
 \begin{ocamldocdescription}
   The type of format strings. "'a" is the type of the parameters
-  of the format, "'c" is the result type for the "printf"-style
-  function, and "'b" is the type of the first argument given to
-  "\%a" and "\%t" printing functions (see module "Printf"[\moduleref{Printf}]).
+  of the format, "'d" is the result type for the "printf"-style
+  function, "'b" is the type of the first argument given to
+  "\%a" and "\%t" printing functions (see module "Printf"[\moduleref{Printf}]),
+  and "'c" is the result type of these functions.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
@@ -119,9 +120,8 @@ exception Match_failure of (string * int * int)
 \index{Matchfailure@\verb`Match_failure`}
 \begin{ocamldocdescription}
    Exception raised when none of the cases of a pattern-matching
-   apply. The arguments are the location of the pattern-matching
-   in the source code (file name, position of first character,
-   position of last character).
+   apply. The arguments are the location of the "match" keyword
+   in the source code (file name, line number, column number).
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
@@ -130,9 +130,8 @@ exception Assert_failure of (string * int * int)
 \index{Assertfailure@\verb`Assert_failure`}
 \begin{ocamldocdescription}
    Exception raised when an assertion fails.  The arguments are
-   the location of the assertion in the source code
-   (file name, position of first character, position of last
-   character).
+   the location of the "assert" keyword in the source code
+   (file name, line number, column number).
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
