@@ -86,21 +86,23 @@ let balance l d r =
   let hl = match l with Empty -> 0 | Node(_,_,_,h) -> h
   and hr = match r with Empty -> 0 | Node(_,_,_,h) -> h in
   if hl > hr + 1 then
-    let (Node(ll, ld, lr, _)) = l in
-    if (match ll with Empty -> 0 | Node(_,_,_,h) -> h) >=
-       (match lr with Empty -> 0 | Node(_,_,_,h) -> h) then
-      mknode ll ld (mknode lr d r)
-    else
-      let (Node(lrl, lrd, lrr, _)) = lr in
-      mknode (mknode ll ld lrl) lrd (mknode lrr d r)
+    match l with
+    | Node (ll, ld, lr, _)
+      when (match ll with Empty -> 0 | Node(_,_,_,h) -> h) >=
+           (match lr with Empty -> 0 | Node(_,_,_,h) -> h) ->
+        mknode ll ld (mknode lr d r)
+    | Node (ll, ld, Node(lrl, lrd, lrr, _), _) ->
+        mknode (mknode ll ld lrl) lrd (mknode lrr d r)
+    | _ -> assert false
   else if hr > hl + 1 then
-    let (Node(rl, rd, rr, _)) = r in
-    if (match rr with Empty -> 0 | Node(_,_,_,h) -> h) >=
-       (match rl with Empty -> 0 | Node(_,_,_,h) -> h) then
-      mknode (mknode l d rl) rd rr
-    else
-      let (Node(rll, rld, rlr, _)) = rl in
-      mknode (mknode l d rll) rld (mknode rlr rd rr)
+    match r with
+    | Node (rl, rd, rr, _)
+      when (match rr with Empty -> 0 | Node(_,_,_,h) -> h) >=
+           (match rl with Empty -> 0 | Node(_,_,_,h) -> h) ->
+        mknode (mknode l d rl) rd rr
+    | Node (Node (rll, rld, rlr, _), rd, rr, _) ->
+        mknode (mknode l d rll) rld (mknode rlr rd rr)
+    | _ -> assert false
   else
     mknode l d r
 

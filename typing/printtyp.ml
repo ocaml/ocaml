@@ -311,7 +311,7 @@ let rec type_declaration id decl =
 
   aliased := params @ !aliased;
   List.iter mark_loops params;
-  List.iter name_of_type params;
+  List.iter (fun x -> name_of_type x; ()) params;
   begin match decl.type_manifest with
     None    -> ()
   | Some ty -> mark_loops ty
@@ -452,7 +452,7 @@ let class_type id cl_ty =
   List.iter mark_loops args;
   Vars.iter (fun _ (_, ty) -> mark_loops ty) vars;
   Meths.iter (fun _ ty -> mark_loops ty) cl_ty.cty_meths;
-  List.iter name_of_type params;
+  List.iter (fun x -> name_of_type x; ()) params;
   open_hvbox 2;
   open_box 0;
   print_string "class ";
