@@ -21,12 +21,23 @@
 #include "mlvalues.h"
 #include "sys.h"
 
-header_t first_atoms[256];
+header_t atom_table[256];
+char * static_data_start, * static_data_end;
 
 static void init_atoms()
 {
   int i;
-  for(i = 0; i < 256; i++) first_atoms[i] = Make_header(0, i, White);
+  extern struct { char * begin; char * end; } caml_data_segments[];
+
+  for (i = 0; i < 256; i++) atom_table[i] = Make_header(0, i, White);
+  static_data_start = caml_data_segments[0].begin;
+  static_data_end = caml_data_segments[0].end;
+  for (i = 1; caml_data_segments[i].begin != 0; i++) {
+    if (caml_data_segments[i].begin < static_data_start)
+      static_data_start = caml_data_segments[i].begin;
+    if (caml_data_segments[i].end > static_data_end)
+      static_data_end = caml_data_segments[i].end;
+  }
 }
 
 extern value caml_start_program P((void));
