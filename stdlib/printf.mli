@@ -55,8 +55,15 @@ val fprintf: out_channel -> ('a, out_channel, unit) format -> 'a
 -          Refer to the C library [printf] function for the meaning of
            flags and field width specifiers.
 
-           If too few arguments are provided, printing stops just
-           before converting the first missing argument. *)
+           Warning: if too few arguments are provided,
+           for instance because the [printf] function is partially
+           applied, the format is immediately printed up to
+           the conversion of the first missing argument; printing
+           will then resume when the missing arguments are provided.
+           For example, [List.iter (printf "x=%d y=%d " 1) [2;3]]
+           prints [x=1 y=2 3] instead of the expected
+           [x=1 y=2 x=1 y=3].  To get the expected behavior, do
+           [List.iter (fun y -> printf "x=%d y=%d " 1 y) [2;3]]. *)
 
 val printf: ('a, out_channel, unit) format -> 'a
         (* Same as [fprintf], but output on [stdout]. *)
