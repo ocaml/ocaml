@@ -1004,26 +1004,6 @@ let apply env params body args =
                               (*  Abbreviation expansion  *)
                               (****************************)
 
-
-(* Search whether the expansion has been memorized. *)
-let rec find_expans p1 =
-  function
-    Mnil ->
-      None
-  | Mcons (p2, ty0, ty, _) when Path.same p1 p2 ->
-      (* assert
-        begin match (repr ty).desc with
-          Tconstr (p3, _, _) when Path.same p2 p3-> false
-        | _ -> true
-        end;
-      assert (repr ty0 != repr ty); *)
-      Some ty
-  | Mcons (_, _, _, rem) ->
-      find_expans p1 rem
-  | Mlink {contents = rem} ->
-      find_expans p1 rem
-
-
 (* 
    If the environnement has changed, memorized expansions might not
    be correct anymore, and so we flush the cache. This is safe but
@@ -1404,14 +1384,18 @@ let rec unify env t1 t2 =
 
 and unify2 env t1 t2 =
   (* Second step: expansion of abbreviations *)
-  let t1' = expand_head env t1 in
-  let t2' = expand_head env t2 in
-  (* Expansion may have changed the representative of the types... *)
-  let t1' = expand_head env t1' in
-  let t2' = expand_head env t2' in
-  if t1' == t2' then () else
-
+  let rec expand_both t1 t2 =
+    let t1' = expand_head env t1 in
+    let t2' = expand_head env t2 in
+    (* Expansion may have changed the representative of the types... *)
+    if t1' == t1 && t2' == t2 then (t1,t2) else
+    expand_both t1' t2'
+  in
+  let t1', t2' = expand_both t1 t2 in
   let t1 = repr t1 and t2 = repr t2 in
+  (* Expansion may have changed the original types too... *)
+  if t1 == t2 || t1' == t2' then () else
+
   if (t1 == t1') || (t2 != t2') then
     unify3 env t1 t1' t2 t2'
   else
