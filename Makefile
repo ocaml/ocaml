@@ -217,7 +217,7 @@ opt-core:runtimeopt ocamlopt libraryopt
 opt: runtimeopt ocamlopt libraryopt otherlibrariesopt camlp4opt
 
 # Native-code versions of the tools
-opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt camlp4optopt
+opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt camlp4optopt ocamltoolsopt.opt
 
 # Installation
 install: FORCE
@@ -524,6 +524,8 @@ clean::
 
 ocamltools: ocamlc ocamlyacc ocamllex
 	cd tools; $(MAKE) all
+ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex
+	cd tools; $(MAKE) opt.opt
 partialclean::
 	cd tools; $(MAKE) clean
 alldepend::

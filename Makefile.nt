@@ -207,7 +207,7 @@ cleanboot:
 opt: runtimeopt ocamlopt libraryopt otherlibrariesopt camlp4opt
 
 # Native-code versions of the tools
-opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt
+opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt ocamltoolsopt.opt
 
 # Installation
 install: installbyt installopt
@@ -509,6 +509,8 @@ clean::
 
 ocamltools:
 	cd tools & $(MAKEREC) all
+ocamltoolsopt.opt:
+	cd tools & $(MAKEREC) opt.opt
 partialclean::
 	cd tools & $(MAKEREC) clean
 alldepend::
