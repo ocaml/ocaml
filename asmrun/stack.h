@@ -27,9 +27,9 @@
 #endif
 
 #ifdef TARGET_sparc
-#define NUM_GC_REGS 32
-#define Saved_return_address(sp) *((long *)(sp + 92))
-#define Callback_link(sp) (*(struct caml_context **)(sp + 104))
+#define NUM_GC_REGS 25
+#define Saved_return_address(sp) *((long *)(sp - 4))
+#define Callback_link(sp) (*(struct caml_context **)(sp + 8))
 #endif
 
 #ifdef TARGET_i386
