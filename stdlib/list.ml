@@ -208,7 +208,7 @@ let array_to_list_in_place a =
       end
     end
   in
-  loop [] l l
+  loop [] (l-1000) l
 ;;
 
 let stable_sort cmp l =
