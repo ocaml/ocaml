@@ -21,11 +21,12 @@ typexpr:
       | typexpr '#' class-path
       | '(' typexpr { ',' typexpr } ) '#' class-path
 ;
-method-type:
-    method-name ':' typexpr
+poly-typexpr:
+        typexpr
+      | {{ "'" ident }} '.' typexpr
 ;
-tag-list:
-    '[>' {{'`'tag-name}} ']'
+method-type:
+    method-name ':' poly-typexpr
 \end{syntax}
 
 The table below shows the relative precedences and associativity of
@@ -49,7 +50,9 @@ The type expression @"'" ident@ stands for the type variable named
 In data type definitions, type variables are names for the
 data type parameters. In type constraints, they represent unspecified
 types that can be instantiated by any type to satisfy the type
-constraint.
+constraint.  In general the scope of a named type variable is the
+whole enclosing definition; they can only be generalized when leaving
+this scope.  Anonymous variables have no such restriction.
 
 \subsubsection*{Parenthesized types}
 
@@ -90,7 +93,7 @@ The type expression @(typexpr_1,\ldots,typexpr_n) typeconstr@, where
 application of the $n$-ary type constructor @typeconstr@ to the types
 @typexpr_1@ through @typexpr_n@.
 
-\subsubsection*{Recursive types}
+\subsubsection*{Aliased and recursive types}
 
 \ikwd{as\@\texttt{as}}
 
@@ -99,7 +102,12 @@ The type expression @typexpr 'as' "'" ident@ denotes the same type as
 in @typexpr@ and in the remaining part of the type.  If the type variable
 @ident@ actually occurs in @typexpr@, a recursive type is created. Recursive
 types for which  there exists a recursive path that does not contain
-an object type constructor are rejected. 
+an object or variant type constructor are rejected, except when the
+"-rectypes" mode is selected.
+
+If @"'" ident@ denotes an explicit polymorphic variable, and @typexpr@
+denotes either an object or variant type, the row variable of @typexpr@
+is captured by @"'" ident@, and quantified upon.
 
 \subsubsection*{Variant types}
 
@@ -159,6 +167,11 @@ other available tags.
 An object type
 @'<' method-type { ';' method-type } '>'@
 is a record of method types.
+
+Each method may have an explicit polymorphic type: @{ "'" ident }
+'.' typexpr@. Explicit polymorphic variables have a local scope, and
+an explicit polymorphic type can only be unified to an
+equivalent one, with polymorphic variables at the same positions.
 
 The type @'<' method-type { ';' method-type } ';' '..'  '>'@ is the
 type of an object with methods and their associated types are described by

@@ -255,6 +255,17 @@ file is built from the basename of the source file with the extension
 ".ppi" for an interface (".mli") file and ".ppo" for an implementation
 (".ml") file.
 
+\item["-principal"]
+Check information path during type-checking, to make sure that all
+types are derived in a principal way.  When using labelled arguments
+and/or polymorphic methods, this flag is required to ensure future
+versions of the compiler will be able to infer types correctly, even
+if internal algorithms change.
+All programs accepted in "-principal" mode are also accepted in
+default mode with equivalent types, but different binary signatures,
+and this may slow down type checking; yet this is a good idea to
+use it once before publishing source code.
+
 \item["-rectypes"]
 Allow arbitrary recursive types during type-checking.  By default,
 only recursive types where the recursion goes through an object type

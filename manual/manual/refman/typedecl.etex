@@ -42,8 +42,8 @@ constr-decl:
         | ncconstr-name 'of' typexpr
 ;
 field-decl:
-          field-name ':' typexpr
-        | 'mutable' field-name ':' typexpr
+          field-name ':' poly-typexpr
+        | 'mutable' field-name ':' poly-typexpr
 ;
 type-constraint:
     'constraint' "'" ident '=' typexpr
@@ -102,14 +102,18 @@ constructor. Constructor names must be capitalized.
 The type representation @'=' '{' field-decl { ';' field-decl } '}'@
 describes a record type. The field declarations @field-decl_1, \ldots,
 field-decl_n@ describe the fields associated to this record type.
-The field declaration @field-name ':' typexpr@ declares @field-name@
-as a field whose argument has type @typexpr@.
-The field declaration @'mutable' field-name ':' typexpr@
+The field declaration @field-name ':' poly-typexpr@ declares
+@field-name@ as a field whose argument has type @poly-typexpr@.
+The field declaration @'mutable' field-name ':' poly-typexpr@
 \ikwd{mutable\@\texttt{mutable}}
 behaves similarly; in addition, it allows physical modification over
 the argument to this field.
 Immutable fields are covariant, but mutable fields are neither
 covariant nor contravariant.
+Both mutable and immutable field may have an explicitly polymorphic
+type.  The polymorphism of the contents is statically checked whenever
+a record value is created or modified.  Extracted values may have their
+types instanciated.
 
 The two components of a type definition, the optional equation and the
 optional representation, can be combined independently, giving

@@ -157,6 +157,12 @@ the toplevel is running with the "#directory" directive
 Ignore non-optional labels in types. Labels cannot be used in
 applications, and parameter order becomes strict.
 
+\item["-principal"]
+Check information path during type-checking, to make sure that all
+types are derived in a principal way. All programs accepted in
+"-principal" mode are also accepted in default mode with equivalent
+types.
+
 \item["-rectypes"]
 Allow arbitrary recursive types during type-checking.  By default,
 only recursive types where the recursion goes through an object type

@@ -226,6 +226,12 @@ file is built from the basename of the source file with the extension
 ".ppi" for an interface (".mli") file and ".ppo" for an implementation
 (".ml") file.
 
+\item["-principal"]
+Check information path during type-checking, to make sure that all
+types are derived in a principal way. All programs accepted in
+"-principal" mode are also accepted in default mode with equivalent
+types, but different binary signatures.
+
 \item["-rectypes"]
 Allow arbitrary recursive types during type-checking.  By default,
 only recursive types where the recursion goes through an object type

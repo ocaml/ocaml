@@ -160,7 +160,7 @@ section~\ref{s:class-spec}.
 \ikwd{type\@\texttt{type}}
 
 A specification of one or several classe types in a signature is
-written @'class' 'type' classtype-def { 'and' classtype-def }@ and
+written @'class' 'type' classtype-def@ @{ 'and' classtype-def }@ and
 consists of a sequence of mutually recursive definitions of class type
 names. Class type specifications are described more precisely in
 section~\ref{s:classtype}.
@@ -248,12 +248,12 @@ argument (``higher-order'' functor).
 \ikwd{with\@\texttt{with}}
 
 Assuming @module-type@ denotes a signature, the expression
-@module-type 'with' mod-constraint { 'and' mod-constraint }@ denotes the same
-signature where type equations have been added to some of the type
-specifications, as described by the constraints following the "with"
-keyword. The constraint @'type' [type-parameters] typeconstr '=' typexp@ 
-adds the type equation @'=' typexp@ to the specification of the type
-component named @typeconstr@ of the constrained signature.
+@module-type 'with' mod-constraint@ @{ 'and' mod-constraint }@ denotes
+the same signature where type equations have been added to some of the
+type specifications, as described by the constraints following the
+"with" keyword. The constraint @'type' [type-parameters] typeconstr
+'=' typexp@  adds the type equation @'=' typexp@ to the specification
+of the type component named @typeconstr@ of the constrained signature.
 The constraint @'module' module-path '=' extended-module-path@ adds
 type equations to all type components of the sub-structure denoted by
 @module-path@, making them equivalent to the corresponding type

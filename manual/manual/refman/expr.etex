@@ -176,7 +176,7 @@ The order in which the expressions @expr, argument_1, \ldots,
 argument_n@ are evaluated is not specified.
 
 Arguments and parameters are matched according to their respective
-labels. Argument order is irrelevent, except among arguments with the
+labels. Argument order is irrelevant, except among arguments with the
 same label, or no label.
 
 If a parameter is specified as optional (label prefixed by "?") in the
@@ -199,6 +199,11 @@ arguments are unlabeled, and their number matches the number of
 non-optional parameters, then labels are ignored and non-optional
 parameters are matched in their definition order. Optional arguments
 are defaulted.
+
+In all cases but exact match of order and labels, without optional
+parameters, the function type should be known at the application
+point.  This can be ensured by adding a type constraint.  Principality
+of the derivation can be checked in the "-principal" mode.
 
 \subsubsection*{Function definition}
 
@@ -650,6 +655,12 @@ returning a new object of this class.
 The expression @expr '#' method-name@ invokes the method
 @method-name@ of the object denoted by @expr@.
 
+If @method-name@ is a polymorphic method, its type should be known at
+the invocation site.  This is true for instance if @expr@ is the name
+of a fresh object (@'let' ident = 'new' class-path \dots @) or if
+there is a type constraint.  Principality of the derivation can be
+checked in the "-principal" mode.
+
 \subsubsection*{Coercion}
 
 The type of an object can be coerced (weakened) to a supertype.
@@ -662,7 +673,10 @@ expression @expr@ from type @typexpr_1@ to type @typexpr_2@.
 %
 The former operator will sometimes fail to coerce an expression @expr@
 from a type @t_1@ to a type @t_2@ even if type @t_1@ is a subtype of type
-@t_2@. In this case, the latter operator should be used.
+@t_2@: in the current implementation it only expands two levels of
+type abbreviations containing objects and/or variants, keeping only
+recursion when it is explicit in the class type. In case of failure,
+the latter operator should be used.
 
 In a class definition, coercion to the type this class defines is the
 identity, as this type abbreviation is not yet completely defined.

@@ -34,7 +34,7 @@ definition:
         | class-definition
         | classtype-definition
         | 'module' module-name { '(' module-name ':' module-type ')' }
-                               [ ':' module-type ] '=' module-expr
+                   [ ':' module-type ] \\ && '=' module-expr
         | 'module' 'type' modtype-name '=' module-type
         | 'open' module-path
         | 'include' module-expr

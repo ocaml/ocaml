@@ -32,8 +32,8 @@ class-body-type:
 class-field-spec:
       'inherit' class-type
    |  'val' ['mutable'] inst-var-name ':' typexpr
-   |  'method' ['private'] method-name ':' typexpr
-   |  'method' ['private'] 'virtual' method-name ':' typexpr
+   |  'method' ['private'] method-name ':' poly-typexpr
+   |  'method' ['private'] 'virtual' method-name ':' poly-typexpr
    |  'constraint' typexpr '=' typexpr
 ;
 \end{syntax}
@@ -101,13 +101,20 @@ specification of an instance variable of the same name.
 \ikwd{method\@\texttt{method}}
 \ikwd{private\@\texttt{private}}
 
-A specification of an method is written
-@'method' ['private'] method-name ':' typexpr@, where @method-name@ is
-the name of the method and @typexpr@ its expected type. The flag
-@'private'@ indicates whether the method can be accessed from outside
-the class.
+The specification of a method is written
+@'method' ['private'] method-name ':' poly-typexpr@, where
+@method-name@ is the name of the method and @poly-typexpr@ its
+expected type, possibly polymorphic.  The flag @'private'@ indicates
+whether the method can be accessed from outside the class.
+
+The polymorphism may be left implicit in method specifications: any
+type variable which is not bound to a class parameter and does not
+appear elsewhere inside the class specification will be assumed to be
+polymorphic, and made explicit in the resulting method type.
+Writing an explicit polymorphic type will disable this behaviour.
 
 Several specification for the same method must have compatible types.
+Any non-private specification of a method forces it to be public.
 
 \subsubsection*{Virtual method specification}
 
@@ -116,8 +123,8 @@ Several specification for the same method must have compatible types.
 \ikwd{private\@\texttt{private}}
 
 Virtual method specification is written @'method' ['private']
-'virtual' method-name ':' typexpr@, where @method-name@ is the name of
-the method and @typexpr@ its expected type.
+'virtual' method-name ':' poly-typexpr@, where @method-name@ is the
+name of the method and @poly-typexpr@ its expected type.
 
 \subsubsection*{Constraints on type parameters}
 
@@ -164,9 +171,10 @@ class-expr:
 ;
 class-field:
       'inherit' class-expr ['as' value-name]
-   |  'val' ['mutable'] inst-var-name '=' expr
-   |  'method' ['private'] method-name {pattern} '=' expr
-   |  'method' ['private'] 'virtual' method-name ':' typexpr
+   |  'val' ['mutable'] inst-var-name [':' typexpr] '=' expr
+   |  'method' ['private'] method-name {pattern} [':' typexpr] '=' expr
+   |  'method' ['private'] method-name ':' poly-typexpr '=' expr
+   |  'method' ['private'] 'virtual' method-name ':' poly-typexpr
    |  'constraint' typexpr '=' typexpr
    |  'initializer' expr
 ;
@@ -292,7 +300,20 @@ current class as well as of subclasses of the current class).  This
 invocation is performed using the expression
 @value-name '#' method-name@, where @value-name@ is directly bound to
 self at the beginning of the class definition.  Private methods do
-not appear in object types.
+not appear in object types.  A method may have both public and private
+definitions, but as soon as there is a public one, all subsequent
+definitions will be made public.
+
+Methods may have an explicitly polymorphic type, allowing them to be
+used polymorphically in programs (even for the same object). The
+explicit declaration may be done in one of three ways: (1) by giving an
+explicit polymorphic type in the method definition, immediately after
+the method name, {\em i.e.}
+@'method' ['private'] method-name ':' {{"'" ident}} '.' typexpr '='
+expr@; (2) by a forward declaration of the explicit polymorphic type
+through a virtual method definition; (3) by importing such a
+declaration through inheritance and/or constraining the type of {\em
+self}.
 
 Some special expressions are available in method bodies for
 manipulating instance variables and duplicating self:
@@ -323,8 +344,9 @@ been replaced by the values of the corresponding expressions @expr_1,
 \ikwd{private\@\texttt{private}}
 
 Method specification is written @'method' ['private'] 'virtual'
-method-name ':' typexpr@.  It specifies whether the method is public
-or private, and gives its type.
+method-name ':' poly-typexpr@.  It specifies whether the method is
+public or private, and gives its type. If the method is intended to be
+polymorphic, the type should be explicit.
 
 \subsubsection*{Constraints on type parameters}
 
