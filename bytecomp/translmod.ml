@@ -378,8 +378,9 @@ let toploop_setvalue_pos = 1 (* position of setvalue in module Toploop *)
 
 let aliased_idents = ref Ident.empty
 
-let set_toplevel_name id name =
-  aliased_idents := Ident.add id name !aliased_idents
+let set_toplevel_unique_name id =
+  aliased_idents :=
+    Ident.add id (Ident.unique_toplevel_name id) !aliased_idents
 
 let toplevel_name id =
   try Ident.find_same id !aliased_idents
@@ -417,6 +418,9 @@ let transl_toplevel_item = function
   | Tstr_exn_rebind(id, path) ->
       toploop_setvalue id (transl_path path)
   | Tstr_module(id, modl) ->
+      (* we need to use the unique name for the module because of issues
+         with "open" (PR#1672) *)
+      set_toplevel_unique_name id;
       toploop_setvalue id
                         (transl_module Tcoerce_none (Some(Pident id)) modl)
   | Tstr_modtype(id, decl) ->
@@ -424,10 +428,10 @@ let transl_toplevel_item = function
   | Tstr_open path ->
       lambda_unit
   | Tstr_class cl_list ->
+      (* we need to use unique names for the classes because there might
+         be a value named identically *)
       let ids = List.map (fun (i, _, _, _) -> i) cl_list in
-      List.iter
-        (fun id -> set_toplevel_name id (Ident.name id ^ "(c)"))
-        ids;
+      List.iter set_toplevel_unique_name ids;
       Lletrec(List.map
                 (fun (id, arity, meths, cl) ->
                    (id, transl_class ids id arity meths cl))
