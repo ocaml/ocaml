@@ -61,10 +61,8 @@ static value alloc_host_entry(entry)
 value unix_gethostbyaddr(a)   /* ML */
      value a;
 {
-  struct in_addr in_addr;
   struct hostent * entry;
-  in_addr.s_addr = GET_INET_ADDR(a);
-  entry = gethostbyaddr((char *) &in_addr, sizeof(in_addr), 0);
+  entry = gethostbyaddr((char *) &GET_INET_ADDR(a), 4, AF_INET);
   if (entry == (struct hostent *) NULL) raise_not_found();
   return alloc_host_entry(entry);
 }
