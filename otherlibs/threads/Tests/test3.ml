@@ -1,8 +1,8 @@
 let print_message delay c =
   while true do
-    print_char c; flush stdout; Unix.sleep delay
+    print_char c; flush stdout; Thread.delay delay
   done
 
 let _ =
-  Thread.new (print_message 2) 'a';
-  print_message 3 'b'
+  Thread.new (print_message 0.6666666666) 'a';
+  print_message 1.0 'b'

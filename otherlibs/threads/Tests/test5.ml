@@ -15,8 +15,7 @@ let _ =
   Thread.new sender "hello";
   Thread.new sender "world";
   Thread.new receiver "A";
-  Thread.new receiver "B";
-  read_line();
+  receiver "B";
   exit 0
 
 

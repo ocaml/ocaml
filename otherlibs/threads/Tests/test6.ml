@@ -11,8 +11,7 @@ let rec f tag msg =
 
 let _ =
   Thread.new (f "A") "hello";
-  Thread.new (f "B") "world";
-  read_line();
+  f "B" "world";
   exit 0
 
 

@@ -1,4 +1,4 @@
-PROGS=test1.byt test2.byt test3.byt test4.byt test5.byt test6.byt test7.byt test8.byt test9.byt testA.byt torture.byt
+PROGS=test1.byt test2.byt test3.byt test4.byt test5.byt test6.byt test7.byt test8.byt test9.byt testA.byt sieve.byt
 
 include ../../../config/Makefile
 
@@ -8,11 +8,11 @@ clean:
 	rm -f *.cm* *.byt
 
 sorts.byt: sorts.ml
-	cslc -custom -o sorts.byt -I .. -I ../../graph threads.cma graphics.cma sorts.ml ../libthreads.a ../../graph/libgraphics.a $(X11_LINK) $(PTHREADS_LINK)
+	cslc -custom -o sorts.byt -I .. -I ../../graph threads.cma graphics.cma sorts.ml ../libthreads.a ../../graph/libgraphics.a $(X11_LINK)
 
 .SUFFIXES: .ml .byt
 
 .ml.byt:
-	cslc -custom -o $*.byt -I .. -I ../../unix unix.cma threads.cma $*.ml ../libthreads.a ../../unix/libunix.a $(PTHREADS_LINK)
+	cslc -custom -o $*.byt -I .. threads.cma $*.ml ../libthreads.a
 
 $(PROGS): ../threads.cma ../libthreads.a
