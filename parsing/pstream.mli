@@ -16,7 +16,7 @@
 open Parsetree
 
 type stream_pattern_component =
-    Spat_term of pattern
+    Spat_term of pattern * expression option
   | Spat_nterm of pattern * expression
   | Spat_sterm of pattern
 type stream_expr_component =

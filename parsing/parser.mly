@@ -337,16 +337,16 @@ expr:
       { mkexp(Pexp_apply($1, List.rev $2)) }
   | LET rec_flag let_bindings IN expr %prec prec_let
       { mkexp(Pexp_let($2, List.rev $3, $5)) }
-  | PARSER bp_parser_cases %prec prec_fun
-      { Pstream.cparser $2 }
-  | PARSER MATCH expr WITH bp_parser_cases %prec prec_match
-      { mkexp(Pexp_apply(Pstream.cparser $5, [$3])) }
+  | PARSER opt_pat parser_cases %prec prec_fun
+      { Pstream.cparser ($2, List.rev $3) }
   | FUNCTION opt_bar match_cases %prec prec_fun
       { mkexp(Pexp_function(List.rev $3)) }
   | FUN simple_pattern fun_def %prec prec_fun
       { mkexp(Pexp_function([$2, $3])) }
   | MATCH expr WITH opt_bar match_cases %prec prec_match
       { mkexp(Pexp_match($2, List.rev $5)) }
+  | MATCH expr WITH PARSER opt_pat parser_cases %prec prec_match
+      { mkexp(Pexp_apply(Pstream.cparser ($5, List.rev $6), [$2])) }
   | TRY expr WITH opt_bar match_cases %prec prec_try
       { mkexp(Pexp_try($2, List.rev $5)) }
   | expr_comma_list
@@ -456,44 +456,45 @@ fun_binding:
   | simple_pattern fun_binding
       { mkexp(Pexp_function[$1,$2]) }
 ;
-bp_parser_cases:
-    pattern parser_cases { (Some $1, List.rev $2) }
-  | parser_cases         { (None, List.rev $1) }
-;
 parser_cases:
-    parser_case                  { [$1] }
-  | parser_cases BAR parser_case { $3 :: $1 }
+    parser_case                                 { [$1] }
+  | parser_cases BAR parser_case                { $3 :: $1 }
 ;
 parser_case:
-    LBRACKETCOLON stream_pattern COLONRBRACKET MINUSGREATER expr
-      { (List.rev $2, None, $5) }
-  | LBRACKETCOLON stream_pattern COLONRBRACKET pattern MINUSGREATER expr
-      { (List.rev $2, Some $4, $6) }
+    LBRACKETCOLON stream_pattern COLONRBRACKET opt_pat MINUSGREATER expr
+      { (List.rev $2, $4, $6) }
+  | LBRACKETCOLON COLONRBRACKET opt_pat MINUSGREATER expr
+      { ([], $3, $5) }
 ;
 stream_pattern:
-    /*empty*/           { [] }
-  | ne_stream_pattern   { $1 }
-;
-ne_stream_pattern:
-    stream_pattern_component_err                        { [$1] }
-  | ne_stream_pattern SEMI stream_pattern_component_err { $3 :: $1 }
-;
-stream_pattern_component_err:
-    stream_pattern_component                   { ($1, None) }
-  | stream_pattern_component COLON simple_expr { ($1, Some $3) }
+    stream_pattern_component opt_err                     { [($1, $2)] }
+  | stream_pattern SEMI stream_pattern_component opt_err { ($3, $4) :: $1 }
 ;
 stream_pattern_component:
-    QUOTE pattern      { Pstream.Spat_term $2 }
-  | pattern EQUAL expr { Pstream.Spat_nterm ($1, $3) }
-  | pattern            { Pstream.Spat_sterm $1 }
+    QUOTE pattern
+      { Pstream.Spat_term ($2, None) }
+  | QUOTE pattern WHEN expr %prec prec_list
+      { Pstream.Spat_term ($2, Some $4) }
+  | pattern EQUAL expr
+      { Pstream.Spat_nterm ($1, $3) }
+  | pattern
+      { Pstream.Spat_sterm $1 }
+;
+opt_pat:
+    /* empty */                                 { None }
+  | pattern                                     { Some $1 }
+;
+opt_err:
+    /* empty */                                 { None }
+  | COLON expr %prec prec_list                  { Some $2 }
 ;
 stream_expr:
-    stream_expr_component                  { [$1] }
-  | stream_expr SEMI stream_expr_component { $3 :: $1 }
+    stream_expr_component                       { [$1] }
+  | stream_expr SEMI stream_expr_component      { $3 :: $1 }
 ;
 stream_expr_component:
-    QUOTE expr %prec prec_list            { Pstream.Sexp_term $2 }
-  | expr %prec prec_list                  { Pstream.Sexp_nterm $1 }
+    QUOTE expr %prec prec_list                  { Pstream.Sexp_term $2 }
+  | expr %prec prec_list                        { Pstream.Sexp_nterm $1 }
 ;
 match_cases:
     pattern match_action                        { [$1, $2] }

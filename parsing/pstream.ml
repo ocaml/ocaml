@@ -17,7 +17,7 @@ open Longident
 open Location
 
 type stream_pattern_component =
-    Spat_term of pattern
+    Spat_term of pattern * expression option
   | Spat_nterm of pattern * expression
   | Spat_sterm of pattern
 type stream_expr_component =
@@ -45,9 +45,15 @@ let esome x = mkexp (Pexp_construct (Lident "Some", Some x))
 
 let stream_pattern_component skont =
   function
-    Spat_term p ->
+    Spat_term (p, None) ->
       (afun "peek" [mkexp sexp],
        p, mkexp (Pexp_sequence (afun "junk" [mkexp sexp], skont)))
+  | Spat_term (p, Some e) ->
+      (afun "peek" [mkexp sexp],
+       p,
+       mkexp
+         (Pexp_when
+            (e, mkexp(Pexp_sequence (afun "junk" [mkexp sexp], skont)))))
   | Spat_nterm (p, e) ->
       (mkexp
          (Pexp_try
