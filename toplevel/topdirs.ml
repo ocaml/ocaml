@@ -64,7 +64,7 @@ let dir_load name =
       let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
       seek_in ic compunit_pos;
       let compunit = (input_value ic : compilation_unit) in
-      Linker.check_consistency filename compunit;
+      Bytelink.check_consistency filename compunit;
       seek_in ic compunit.cu_pos;
       let code_size = compunit.cu_codesize + 4 in
       let code = Meta.static_alloc code_size in

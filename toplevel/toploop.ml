@@ -21,7 +21,7 @@ let load_lambda lam =
   if !Clflags.dump_lambda then begin
     Printlambda.lambda lam; print_newline()
   end;
-  let (init_code, fun_code) = Codegen.compile_phrase lam in
+  let (init_code, fun_code) = Bytegen.compile_phrase lam in
   if !Clflags.dump_instr then begin
     Printinstr.instrlist init_code;
     Printinstr.instrlist fun_code;

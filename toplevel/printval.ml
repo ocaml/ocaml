@@ -138,10 +138,10 @@ let print_value env obj ty =
           close_box()
       | Tconstr(path, [ty_arg]) when Path.same path Predef.path_list ->
           let rec print_conses depth cons =
-            if Obj.tag cons != 0 then begin
+            if Obj.is_block cons then begin
               print_val 0 (depth - 1) (Obj.field cons 0) ty_arg;
               let next_obj = Obj.field cons 1 in
-              if Obj.tag next_obj != 0 then begin
+              if Obj.is_block next_obj then begin
                 print_string ";"; print_space();
                 print_conses (depth - 1) next_obj
               end
