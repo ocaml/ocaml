@@ -48,6 +48,9 @@ type specific_operation =
                                         (* bool: true=64 bits, false=32 *)
   | Ifloatspecial of string
 
+and 'a specific_test =
+    Iinttests of 'a * bool * addressing_mode
+
 and float_operation =
     Ifloatadd | Ifloatsub | Ifloatsubrev | Ifloatmul | Ifloatdiv | Ifloatdivrev
 
@@ -77,6 +80,10 @@ let num_args_addressing = function
   | Iindexed2 n -> 2
   | Iscaled(scale, n) -> 1
   | Iindexed2scaled(scale, n) -> 2
+
+let invert_specific_test negate = function
+    Iinttests (cmp, sgn, addr) ->
+      Iinttests (negate cmp, sgn, addr)
 
 (* Printing operations and addressing modes *)
 
@@ -145,3 +152,12 @@ let print_specific_operation printreg op ppf arg =
         printreg ppf arg.(i)
       done
       
+let print_specific_test printreg printcmp tst ppf arg =
+  match tst with
+    Iinttests (cmp, sgn, addr) ->
+      fprintf ppf "%a %s%c %a"
+        printreg (arg.(0))
+        (printcmp cmp)
+        (if sgn then 'c' else 'u')
+        (print_addressing printreg addr)
+        (Array.sub arg 1 (Array.length arg - 1))

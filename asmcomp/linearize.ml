@@ -69,6 +69,8 @@ let invert_test = function
   | Ifloattest(cmp, neg) -> Ifloattest(cmp, not neg)
   | Ieventest -> Ioddtest
   | Ioddtest -> Ieventest
+  | Ispectest tst ->
+      Ispectest (Arch.invert_specific_test Cmm.negate_comparison tst)
 
 (* The "end" instruction *)
 

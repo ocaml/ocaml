@@ -32,6 +32,7 @@ type test =
   | Ifloattest of Cmm.comparison * bool
   | Ioddtest
   | Ieventest
+  | Ispectest of Cmm.comparison Arch.specific_test
 
 type operation =
     Imove

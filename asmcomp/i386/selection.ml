@@ -260,6 +260,32 @@ method select_floatarith regular_op reversed_op mem_op mem_rev_op args =
   | _ ->
       fatal_error "Proc_i386: select_floatarith"
 
+(* Recognize direct addressing in comparisons *)
+method select_condition = function
+    Cop ((Ccmpi cmp | Ccmpa cmp as op), [arg1; arg2]) as exp ->
+      (* Format.printf "%a@." Printcmm.expression exp; *)
+      let sgn = (op = Ccmpi cmp) in
+      let make_test cmp addr arg arg1 =
+        match arg1 with
+          Cconst_int _ | Cconst_pointer _ -> super#select_condition exp
+        | _ -> (Ispectest(Iinttests(cmp, sgn, addr)), Ctuple [arg1; arg])
+      in
+      let get_addressing = function
+          Cop (Cload Word, [arg]) -> self#select_addressing arg
+        | _ -> (Iindexed 0, Ctuple[])
+      in
+      begin match get_addressing arg1 with
+        (Iindexed 0, _) ->
+          begin match get_addressing arg2 with
+            (Iindexed 0, _) -> super#select_condition exp
+          | (addr, arg)     -> make_test cmp addr arg arg1
+          end
+      | (addr, arg) ->
+          make_test (Cmm.swap_comparison cmp) addr arg arg2
+      end
+  | exp ->
+      super#select_condition exp
+
 (* Deal with register constraints *)
 
 method insert_op op rs rd =

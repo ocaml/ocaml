@@ -695,6 +695,12 @@ let emit_instr fallthrough i =
             `	cmpl	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`;
             let b = name_for_cond_branch cmp in
             `	j{emit_string b}	{emit_label lbl}\n`
+        | Ispectest (Iinttests (cmp, sgn, addr)) ->
+            `	cmpl	{emit_addressing addr i.arg 1}, {emit_reg i.arg.(0)}\n`;
+            let cmp = if sgn then Isigned cmp else Iunsigned cmp in
+            let b = name_for_cond_branch cmp in
+            `	j{emit_string b}	{emit_label lbl}\n`
+            
         | Iinttest_imm((Isigned Ceq | Isigned Cne | 
                         Iunsigned Ceq | Iunsigned Cne) as cmp, 0) ->
             output_test_zero i.arg.(0);

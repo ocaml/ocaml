@@ -95,6 +95,8 @@ let test tst ppf arg =
        reg arg.(0) (floatcomp cmp) reg arg.(1)
   | Ieventest -> fprintf ppf "%a & 1 == 0" reg arg.(0)
   | Ioddtest -> fprintf ppf "%a & 1 == 1" reg arg.(0)
+  | Ispectest tst ->
+      Arch.print_specific_test reg Printcmm.comparison tst ppf arg
 
 let print_live = ref false
 
