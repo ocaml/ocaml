@@ -276,7 +276,7 @@ value input_value_from_string(str, ofs) /* ML */
   value res;
   Push_roots(r, 1);
 
-  intern_input = &Byte_u(str, Long_val(ofs));
+  intern_src = &Byte_u(str, Long_val(ofs));
   intern_input_malloced = 0;
   magic = read32u();
   if (magic != Intext_magic_number) failwith("input_value: bad object");
@@ -293,7 +293,7 @@ value input_value_from_string(str, ofs) /* ML */
   r[0] = str;
   intern_alloc(whsize, num_objects);
   str = r[0];
-  intern_input = &Byte_u(str, Long_val(ofs) + 5*4); /* If a GC occurred */
+  intern_src = &Byte_u(str, Long_val(ofs) + 5*4); /* If a GC occurred */
   /* Fill it in */
   intern_rec(&res);
   /* Free everything */
