@@ -1016,8 +1016,8 @@ let out_column rs = List.map out_element rs
 
 (* Standard union on answers *)
 let union_res r1 r2 = match r1, r2 with
-| Unused,_  -> Unused
-| _, Unused -> Unused
+| (Unused,_)
+| (_, Unused) -> assert false ; Unused (* cannot happen by optimization *)
 | Used,_    -> r2
 | _, Used   -> r1
 | Upartial u1, Upartial u2 -> Upartial (u1@u2)
@@ -1061,9 +1061,13 @@ let rec every_satisfiables pss qs = match qs.right with
           every_satisfiables (push_column pss) (push qs)
         else 
 (* check usefulness of a or-pattern *) 
-          let r1 = every_both pss qs q1 q2
-          and r2 = every_satisfiables (push_column pss) (push qs) in
-          union_res r1 r2
+          let r1 = every_satisfiables (push_column pss) (push qs) in
+          begin match r1 with 
+          | Unused -> Unused
+          | _  ->
+              let r2 = every_both pss qs q1 q2 in
+              union_res r1 r2
+          end
     | Tpat_variant (l,_,r) when is_absent l r ->
         Unused
     | _ ->
@@ -1075,21 +1079,21 @@ let rec every_satisfiables pss qs = match qs.right with
     end
 
 (*
- This function ``every_both'' performs the usefulness check
- of or-pat q1|q2.
-   The trick is to call every_satisfied twice with
-   current active columns restricted to q1 and q2,
-   That way,
-     - others orpats in qs.right will not get expanded.
-     - all matching work performed on qs.left is not performed again.
-*)
+  This function ``every_both'' performs the usefulness check
+  of or-pat q1|q2.
+  The trick is to call every_satisfied twice with
+  current active columns restricted to q1 and q2,
+  That way,
+  - others orpats in qs.right will not get expanded.
+  - all matching work performed on qs.left is not performed again.
+  *)
 and every_both pss qs q1 q2 =
   let pss = out_column pss
   and qs = out_element qs in
   let qs1 = {qs with right=[q1]}
   and qs2 =  {qs with right=[q2]} in
   let r1 = every_satisfiables pss qs1
-  and r2 = every_satisfiables (if compat q1 q2 then qs1::pss else pss) qs2 in
+  and r2 =  every_satisfiables (if compat q1 q2 then qs1::pss else pss) qs2 in
   match r1 with
   | Unused ->
       begin match r2 with
