@@ -12,8 +12,10 @@ for the specifications expressed in module types.
 \ikwd{external\@\texttt{external}}
 \ikwd{type\@\texttt{type}}
 \ikwd{exception\@\texttt{exception}}
+\ikwd{class\@\texttt{class}}
 \ikwd{module\@\texttt{module}}
 \ikwd{open\@\texttt{open}}
+\ikwd{include\@\texttt{include}}
 
 \begin{syntax}
 module-expr:
@@ -108,12 +110,17 @@ or @'exception' constr-name '=' constr@.
 
 \subsubsection*{Class definitions}
 
+\ikwd{class\@\texttt{class}}
+
 A definition of one or several classes is written @'class'
 class-binding { 'and' class-binding }@ and consists of a sequence of
 mutually recursive definitions of class names. Class definitions are
 described more precisely in section~\ref{s:classdef}.
 
 \subsubsection*{Class type definitions}
+
+\ikwd{class\@\texttt{class}}
+\ikwd{type\@\texttt{type}}
 
 A definition of one or several classes is written
 @'class' 'type' classtype-def { 'and' classtype-def }@ and consists of

@@ -74,8 +74,10 @@ fully implemented and behave as described previously in this chapter.
 
 \newpage
 \begin{windows}
+The Cygwin port of Objective Caml fully implements all functions from
+the Unix module.  The native Win32 port implements a subset of them.
 Below is a list of the functions that are not implemented, or only
-partially implemented, under Windows. Functions not mentioned are
+partially implemented, by the Win32 port. Functions not mentioned are
 fully implemented and behave as described previously in this chapter.
 
 \begin{tableau}{|l|p{8cm}|}{Functions}{Comment}
@@ -84,6 +86,9 @@ fully implemented and behave as described previously in this chapter.
 \entree{"waitpid"}{can only wait for a given PID, not any child process}
 \entree{"getppid"}{not implemented (meaningless under Windows)}
 \entree{"nice"}{not implemented}
+\entree{"in_channel_of_descr"}{does not work on sockets under Windows
+95, 98, ME; works fine under NT and 2000}
+\entree{"out_channel_of_descr"}{ditto}
 \entree{"truncate", "ftruncate"}{not implemented}
 \entree{"lstat", "fstat"}{not implemented}
 \entree{"link", "symlink", "readlink"}{not implemented (no links under

@@ -23,11 +23,10 @@ arguments are passed to the Caml Light program, in the string array
 bytecode executable file; elements 1 to \var{n} are the remaining
 arguments \nth{arg}{1} to \nth{arg}{n}.
 
-As mentioned in chapter~\ref{c:camlc}, in most cases, the bytecode
-executable files produced by the "ocamlc" command are self-executable,
-and manage to launch the "ocamlrun" command on themselves
-automatically. That is, assuming "caml.out" is a bytecode executable
-file,
+As mentioned in chapter~\ref{c:camlc}, the bytecode executable files
+produced by the "ocamlc" command are self-executable, and manage to
+launch the "ocamlrun" command on themselves automatically. That is,
+assuming "caml.out" is a bytecode executable file,
 \begin{alltt}
         caml.out \nth{arg}{1} ... \nth{arg}{n}
 \end{alltt}
@@ -38,15 +37,31 @@ works exactly as
 Notice that it is not possible to pass options to "ocamlrun" when
 invoking "caml.out" directly.
 
+\begin{windows}
+Under several versions of Windows, bytecode executable files are
+self-executable only if their name ends in ".exe".  It is recommended
+to always give ".exe" names to bytecode executables, e.g. compile
+with "ocamlc -o myprog.exe ..." rather than "ocamlc -o myprog ...".
+\end{windows}
+
 \section{Options}
 
-The following command-line option is recognized by "ocamlrun".
+The following command-line options are recognized by "ocamlrun".
 
 \begin{options}
 
+\item["-b"]
+When the program aborts due to an uncaught exception, print a detailed
+``back trace'' of the execution, showing where the exception was
+raised and which function calls were outstanding at this point.  The
+back trace is printed only if the bytecode executable contains
+debugging information, i.e. was compiled and linked with the "-g"
+option to "ocamlc" set.  This is equivalent to setting "b=1"
+in the "OCAMLRUNPARAM" environment variable (see below).
 \item["-v"] 
-When set, the memory manager prints some verbose messages on
-standard error.
+Direct the memory manager to print some progress messages on
+standard error.  This is equivalent to setting "v=63" in the
+"OCAMLRUNPARAM" environment variable (see below).
 
 \end{options}
 
@@ -54,14 +69,19 @@ standard error.
 The following environment variables are also consulted:
 
 \begin{options}
-\item["OCAMLRUNPARAM"] Set the garbage collection parameters.
+\item["OCAMLRUNPARAM"] Set the runtime system options 
+  and garbage collection parameters.
   (If "OCAMLRUNPARAM" is not set, "CAMLRUNPARAM" will be used instead.)
   This variable must be a sequence of parameter specifications.
   A parameter specification is an option letter followed by an "="
   sign, a decimal number, and an optional multiplier.  There are
-  seven options, the first six correspond to the fields of the
-  "control" record documented in section~\ref{s:Gc}:
+  eight options, six of which correspond to the fields of the
+  "control" record documented in section~\ref{s:Gc}.
   \begin{options}
+  \item[b] (backtrace) Control the printing of a stack backtrace 
+        when an uncaught exception aborts the program.  A non-zero
+        argument turn the backtrace facility on; a zero argument turn
+        it off.
   \item[s] ("minor_heap_size")  Size of the minor heap.
   \item[i] ("major_heap_increment")  Minimum size increment for the
   major heap.
@@ -77,6 +97,8 @@ The following environment variables are also consulted:
         \item[16] Heap compaction.
         \item[32] Change of GC parameters.
         \item[64] Computation of major GC slice size.
+        \item[128] Calling of finalization functions
+        \item[256] Startup messages (loading the bytecode executable file).
   \end{options}
   \item[l] ("stack_limit") The limit (in words) of the stack size.
   \item[h] The initial size of the major heap (in words).
@@ -85,10 +107,11 @@ The following environment variables are also consulted:
   $2^{20}$, and $2^{30}$ respectively.
   For example, on a 32-bit machine, under "bash" the command
 \begin{alltt}
-        export OCAMLRUNPARAM='s=256k,v=1'
+        export OCAMLRUNPARAM='b=1,s=256k,v=1'
 \end{alltt}
-  tells a subsequent "ocamlrun" to set its initial minor heap size to
-  1~megabyte and to print a message at the start of each major GC cycle.
+  tells a subsequent "ocamlrun" to print backtraces for uncaught exceptions,
+  set its initial minor heap size to 1~megabyte and
+  print a message at the start of each major GC cycle.
 
 \item["PATH"] List of directories searched to find the bytecode
 executable file.
@@ -127,7 +150,12 @@ created. Erase and rebuild it.
 The program being executed contains a ``stray'' exception. That is,
 it raises an exception at some point, and this exception is never
 caught. This causes immediate termination of the program. The name of
-the exception is printed, but not its arguments.
+the exception is printed, along with its string and integer arguments
+(arguments of more complex types are not correctly printed).
+To locate the context of the uncaught exception, compile the program
+with the "-g" option and either run it again under the "ocamldebug"
+debugger (see chapter~\ref{c:debugger}), or run it with "ocamlrun -b"
+or with the "OCAMLRUNPARAM" environment variable set to "b=1".
 
 \item["Out of memory"]
 The program being executed requires more memory than available. Either
@@ -141,7 +169,8 @@ string, attempts to build an infinite list or other data structure,
 \ldots
 
 To help you diagnose this error, run your program with the "-v" option
-to "ocamlrun". If it displays lots of ``"Growing stack"\ldots''
+to "ocamlrun", or with the "OCAMLRUNPARAM" environment variable set to
+"v=63". If it displays lots of ``"Growing stack"\ldots''
 messages, this is probably a looping recursive function. If it
 displays lots of ``"Growing heap"\ldots'' messages, with the heap size
 growing slowly, this is probably an attempt to construct a data

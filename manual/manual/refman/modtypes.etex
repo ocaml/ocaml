@@ -12,8 +12,10 @@ specify the general shape and type properties of modules.
 \ikwd{external\@\texttt{external}}
 \ikwd{type\@\texttt{type}}
 \ikwd{exception\@\texttt{exception}}
+\ikwd{class\@\texttt{class}}
 \ikwd{module\@\texttt{module}}
 \ikwd{open\@\texttt{open}}
+\ikwd{include\@\texttt{include}}
 
 \begin{syntax}
 module-type:
@@ -143,6 +145,8 @@ users of the structure.
 
 \subsubsection*{Class specifications}
 
+\ikwd{class\@\texttt{class}}
+
 A specification of one or several classes in a signature is written
 @'class' class-spec { 'and' class-spec }@ and consists of a sequence
 of mutually recursive definitions of class names.
@@ -151,6 +155,9 @@ Class specifications are described more precisely in
 section~\ref{s:class-spec}.
 
 \subsubsection*{Class type specifications}
+
+\ikwd{class\@\texttt{class}}
+\ikwd{type\@\texttt{type}}
 
 A specification of one or several classe types in a signature is
 written @'class' 'type' classtype-def { 'and' classtype-def }@ and

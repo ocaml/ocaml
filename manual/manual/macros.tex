@@ -175,19 +175,19 @@
 \def\l@section{\@dottedtocline{1}{1.5em}{2.8em}}  % D'origine: 2.3
 \fi
 
-% Produit un index en deux colonnes equilibrees...
-
-\def\theindex{\bgroup\parindent0pt\parskip\z@ plus .3\p@\relax\let\item\@idxitem}
-\def\endtheindex{\egroup}
-
-\def\myprintindex#1{
-  \begin{multicols}{2}\raggedright
-  \@input{#1}
-  \end{multicols}}
-
 % Pour alltt
 
 \def\rminalltt#1{{\rm #1}}
+
+% Index stuff -- cf multind.sty
+
+\def\printindex#1#2{\@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+  \columnseprule \z@ \columnsep 35pt
+  \newpage \twocolumn[{\Large\bf #2 \vskip4ex}]
+  \markright{\uppercase{#2}}
+  \addcontentsline{toc}{section}{#2}
+  \pdfsection{#2}
+  \@input{#1.ind}}
 
 % PDF stuff
 

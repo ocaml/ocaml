@@ -8,7 +8,9 @@ This chapter describes the Objective Caml source-level replay debugger
 BSD sockets.
 \end{unix}
 
-\begin{windows} The debugger is not available. \end{windows}
+\begin{windows} The debugger is available under the Cygwin port of
+Objective Caml, but not under the native Win32 port.
+\end{windows}
 
 \begin{macos} The debugger is not available. \end{macos}
 

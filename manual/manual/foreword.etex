@@ -25,51 +25,45 @@ Objective Caml runs on several operating systems. The parts of
 this manual that are specific to one operating system are presented as
 shown below:
 
-\begin{macos} This is material specific to MacOS 7, 8, 9.  MacOS X
-is a version of Unix as far as Objective Caml is concerned.
+\begin{macos} This is material specific to MacOS 7, 8, 9.  (For MacOS
+X, see ``Unix''.)
 \end{macos}
 
-\begin{unix} This is material specific to Unix.
+\begin{unix} This is material specific to the Unix family of operating
+systems, including Linux and MacOS~X.
 \end{unix}
 
-\begin{windows} This is material specific to MS Windows (NT and 95).
+\begin{windows} This is material specific to Microsoft Windows (95, 98, ME,
+NT, 2000).
 \end{windows}
 
 \section*{License}
 
-The Objective Caml system is copyright \copyright\ 1996, 1997, 1998
-Institut National de Recherche en Informatique et en Automatique (INRIA).
-INRIA holds all ownership rights to the Objective Caml system. See
-the file "LICENSE" in the distribution for licensing information.
+The Objective Caml system is copyright \copyright\ 1996, 1997, 1998,
+1999, 2000, 2001 Institut National de Recherche en Informatique et en
+Automatique (INRIA).
+INRIA holds all ownership rights to the Objective Caml system. 
 
-The Objective Caml system can be freely redistributed.
-More precisely, INRIA grants any user of the Objective Caml system the
-right to reproduce it, provided that the copies are distributed under
-the conditions given in the "LICENSE" file. The present documentation
+The Objective Caml system is open source and can be freely
+redistributed.  See the file "LICENSE" in the distribution for
+licensing information.  The present documentation
 is distributed under the same conditions.
 
 \section*{Availability}
 
-The complete Objective Caml distribution resides on the machine
-"ftp.inria.fr".
 \begin{latexonly}
-The distribution files can be transferred by anonymous FTP:
-\begin{center}
-\begin{tabular}{ll}
-Host:       & "ftp.inria.fr" (Internet address "192.93.2.54") \\
-Login name: & "anonymous" \\
-Password:   & your e-mail address \\
-Directory:  & "lang/caml-light" \\
-Files:      & see the index in file "README"
-\end{tabular}
-\end{center}
-More information on the Caml family of languages is also available on
-the World Wide Web, "http://caml.inria.fr/".
+The complete Objective Caml distribution can be accessed via the Web
+site "http://caml.inria.fr/", or directly via anonymous FTP at
+"ftp://ftp.inria.fr/lang/caml-light/".  The Web site
+"http://caml.inria.fr/" contains a lot of additional information on
+the Caml family of languages.
 \end{latexonly}
-\begin{htmlonly}
-Follow \url{ftp://ftp.inria.fr/lang/caml-light/}{this link}
-to access the distribution.
-More information on the Caml family of languages is also available
-\url{http://caml.inria.fr/}{here}.
-\end{htmlonly}
 
+\begin{htmlonly}
+The complete Objective Caml distribution can be accessed via the 
+\url{http://caml.inria.fr/}{Caml Web site}, or directly on the
+\url{ftp://ftp.inria.fr/lang/caml-light/}{anonymous FTP archive}.
+The \url{http://caml.inria.fr/}{Caml Web site}
+contains a lot of additional information on the Caml family of
+languages.
+\end{htmlonly}
