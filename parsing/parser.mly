@@ -209,10 +209,10 @@ let unclosed opening_name opening_num closing_name closing_num =
 %token <string> LABELID
 %token LAZY
 %token LBRACE
-%token LBRACEEQUAL
 %token LBRACELESS
 %token LBRACKET
 %token LBRACKETBAR
+%token LBRACKETEQUAL
 %token LBRACKETLESS
 %token LESS
 %token LESSMINUS
@@ -665,7 +665,7 @@ seq_expr:
   | expr SEMI seq_expr            { mkexp(Pexp_sequence($1, $3)) }
 ;
 labeled_simple_pattern:
-    QUESTION label_pattern LBRACEEQUAL seq_expr RBRACE
+    QUESTION label_pattern LBRACKETEQUAL seq_expr RBRACKET
       { ("?" ^ fst $2, Some $4, snd $2) }
   | QUESTION label_pattern
       { ("?" ^ fst $2, None, snd $2) }
