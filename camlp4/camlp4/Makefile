@@ -40,13 +40,13 @@ $(OTOP)/utils/config.p.cmx: $(OTOP)/utils/config.ml
 	$(OCAMLOPT) -I $(OTOP)/utils -p -c -o $@ $(OTOP)/utils/config.ml
 
 camlp4.cma: $(CAMLP4_OBJS)
-	$(OCAMLC) $(LINKFLAGS) -a -linkall -o $@ $(CAMLP4_OBJS)
+	$(OCAMLC) $(LINKFLAGS) -a -o $@ $(CAMLP4_OBJS)
 
 camlp4.cmxa: $(CAMLP4_XOBJS)
-	$(OCAMLOPT) $(LINKFLAGS) -a -linkall -o $@ $(CAMLP4_XOBJS)
+	$(OCAMLOPT) $(LINKFLAGS) -a  -o $@ $(CAMLP4_XOBJS)
 
 camlp4.p.cmxa: $(CAMLP4_XOBJS:.cmx=.p.cmx)
-	$(OCAMLOPT) $(LINKFLAGS) -a -linkall -o $@ $(CAMLP4_XOBJS:.cmx=.p.cmx)
+	$(OCAMLOPT) $(LINKFLAGS) -a  -o $@ $(CAMLP4_XOBJS:.cmx=.p.cmx)
 
 clean::
 	rm -f *.cm* *.pp[io] *.$(O) *.$(A) *.bak .*.bak *.out *.opt
