@@ -1738,11 +1738,15 @@ and type_cases ?in_function ?(multi=false)
             let ty_res' =
               match row_field_repr fi with
                 Reither (c, _, m, _, e) ->
-                  let ty_res' = Btype.newty2 (row_more row).level Tvar in
-                  let tv = Btype.newty2 ty_res'.level Tvar in
-                  set_row_field e
-                    (Reither (c, [], m, [ty_res, ty_res'], ref None));
-                  unify_pat ext_env {pat with pat_type=tv} ty_res;
+                  let ty_res' = newvar () in
+                  let row' =
+                    { row_fields =
+                        [lab, Reither(c,[],false,[ty_res,ty_res'], ref None)];
+                      row_more = newvar (); row_bound = [ty_res; ty_res'];
+                      row_closed = false; row_fixed = false; row_name = None }
+                  in
+                  unify_pat ext_env {pat with pat_type= newty (Tvariant row)}
+                    (newty (Tvariant row'));
                   ty_res'
               | _ -> ty_res
             in
@@ -1771,10 +1775,14 @@ and type_cases ?in_function ?(multi=false)
                 let fi = List.assoc lab (row_repr row).row_fields in
                 begin match row_field_repr fi with
                   Reither (c, _, m, _, e) ->
-                    set_row_field e
-                      (Reither (c, [], m, [ty_res, ty'], ref None));
-                    let tv = Btype.newty2 (row_more row).level Tvar in
-                    unify_exp ext_env {exp with exp_type=ty'} tv
+                    let row' =
+                      { row_fields =
+                        [lab, Reither(c,[],false,[ty_res,ty'], ref None)];
+                        row_more = newvar (); row_bound = [ty_res; ty'];
+                        row_closed = false; row_fixed = false; row_name = None}
+                    in
+                    unify_pat ext_env {pat with pat_type= newty (Tvariant row)}
+                      (newty (Tvariant row'))
                 | _ ->
                     unify_exp ext_env {exp with exp_type=ty'} ty_res
                 end

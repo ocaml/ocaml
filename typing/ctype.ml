@@ -265,7 +265,7 @@ let set_object_name id rv params ty =
 
 let remove_object_name ty =
   match (repr ty).desc with
-    Tobject (_, nm)   -> log_name nm; nm := None
+    Tobject (_, nm)   -> unset_name nm
   | Tconstr (_, _, _) -> ()
   | _                 -> fatal_error "Ctype.remove_object_name"
 
@@ -277,7 +277,7 @@ let hide_private_methods ty =
     (function (_, k, _) ->
        let k = field_kind_repr k in
        match k with
-         Fvar r -> log_kind r; r := Some Fabsent
+         Fvar r -> set_kind r Fabsent
        | _      -> ())
     fl
 
@@ -592,7 +592,7 @@ let rec update_level env level ty =
         end
     | Tobject(_, ({contents=Some(p, tl)} as nm))
       when level < Path.binding_time p ->
-        log_name nm; nm := None;
+        unset_name nm;
         update_level env level ty
     | Tvariant row ->
         let row = row_repr row in
@@ -1419,8 +1419,8 @@ and unify3 env t1 t1' t2 t2' =
       || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
         unify env t1 t2; unify env u1 u2;
         begin match commu_repr c1, commu_repr c2 with
-          Clink r, c2 -> log_commu r; r := c2
-        | c1, Clink r -> log_commu r; r := c1
+          Clink r, c2 -> set_commu r c2
+        | c1, Clink r -> set_commu r c1
         | _ -> ()
         end
     | (Ttuple tl1, Ttuple tl2) ->
@@ -1549,10 +1549,13 @@ and unify_kind k1 k2 =
   let k2 = field_kind_repr k2 in
   if k1 == k2 then () else
   match k1, k2 with
-    (Fvar r, (Fvar _ | Fpresent)) -> log_kind r; r := Some k2
-  | (Fpresent, Fvar r)            -> log_kind r; r := Some k1
+    (Fvar r, (Fvar _ | Fpresent)) -> set_kind r k2
+  | (Fpresent, Fvar r)            -> set_kind r k1
   | (Fpresent, Fpresent)          -> ()
   | _                             -> assert false
+
+and unify_pairs env tpl =
+  List.iter (fun (t1, t2) -> unify env t1 t2) tpl
 
 and unify_row env row1 row2 =
   let row1 = row_repr row1 and row2 = row_repr row2 in
@@ -1643,11 +1646,11 @@ and unify_row env row1 row2 =
             set_row_field e (Rpresent (Some t1));
             (try
               List.iter (unify env t1) tl;
-              List.iter (fun (t1,t2) -> unify env t1 t2) tl2
+              unify_pairs env tl2
             with exn -> e := None; raise exn)
         | Reither(true, [], _, tl2, e) ->
             set_row_field e (Rpresent None);
-            (try List.iter (fun (t1,t2) -> unify env t1 t2) tl2
+            (try unify_pairs env tl2
             with exn -> e := None; raise exn)
         | _ -> ()
         end
@@ -1667,11 +1670,23 @@ and unify_row_field env fixed1 fixed2 f1 f2 =
       if e1 == e2 then () else
       let redo =
         (m1 || m2) &&
-        match tl1 @ tl2 with [] -> false
+        begin match tl1 @ tl2 with [] -> false
         | t1 :: tl ->
             if c1 || c2 then raise (Unify []);
             List.iter (unify env t1) tl;
             !e1 <> None || !e2 <> None
+        end in
+      let redo =
+        redo || (fixed1 || fixed2) &&
+        (begin match tp1, tp2 with
+        | _, [] when fixed2 -> unify_pairs env tp1
+        | [], _ when fixed1 -> unify_pairs env tp2
+        | (t1,t1')::tp1', (t2, t2')::tp2' ->
+            unify env t1 t2; unify env t1' t2';
+            if fixed2 then unify_pairs env tp1';
+            if fixed1 then unify_pairs env tp2'
+        | _ -> ()
+        end; !e1 <> None || !e2 <> None)
       in
       if redo then unify_row_field env fixed1 fixed2 f1 f2 else
       let tl1 = List.map repr tl1 and tl2 = List.map repr tl2 in
@@ -1680,6 +1695,15 @@ and unify_row_field env fixed1 fixed2 f1 f2 =
             if List.memq ty tl then remq tl tl' else ty :: remq tl tl'
       in
       let tl2' = remq tl2 tl1 and tl1' = remq tl1 tl2 in
+      let repr_pairs = List.map (fun (t1,t2) -> repr t1, repr t2) in
+      let tp1 = repr_pairs tp1 and tp2 = repr_pairs tp2 in
+      let rec rempq tp = function [] -> []
+        | (t1,t2 as p) :: tp' ->
+            if List.exists (fun (t1',t2') -> t1==t1' && t2==t2') (tp@tp') then
+              rempq tp tp'
+            else p :: rempq tp tp'
+      in
+      let tp1' = rempq tp2 tp1 and tp2' = rempq tp1 tp2 in
       let e = ref None in
       let f1 = Reither(c1 || c2, tl1', m1 || m2, tp2, e)
       and f2 = Reither(c1 || c2, tl2', m1 || m2, tp1, e) in
@@ -1944,7 +1968,7 @@ and moregen_kind k1 k2 =
   let k2 = field_kind_repr k2 in
   if k1 == k2 then () else
   match k1, k2 with
-    (Fvar r, (Fvar _ | Fpresent))  -> log_kind r; r := Some k2
+    (Fvar r, (Fvar _ | Fpresent))  -> set_kind r k2
   | (Fpresent, Fpresent)           -> ()
   | _                              -> raise (Unify [])
 
@@ -2298,7 +2322,7 @@ let match_class_types env pat_sch subj_sch =
            let err =
              let k = field_kind_repr k in
              begin match k with
-               Fvar r -> log_kind r; r := Some Fabsent; err
+               Fvar r -> set_kind r Fabsent; err
              | _      -> CM_Hide_public lab::err
              end
            in
@@ -2908,23 +2932,25 @@ let rec normalize_type_rec env ty =
           (fun (l,f) ->
             let f = row_field_repr f in l,
             match f with Reither(b, tyl, m, tp, e) ->
-              let tyl' =
-                match tyl with
-                  ty :: (_ :: _ as tyl) ->
-                    List.fold_left
-                      (fun tyl ty ->
-                        if List.exists
-                            (fun ty' -> equal env false [ty] [ty']) tyl
-                        then tyl else ty::tyl)
-                      [ty] tyl
-                | _ -> tyl
-              and tp' =
-                List.filter
-                  (fun (ty1,ty2) -> not (equal env false [ty1] [ty2])) tp
+              let rem_dbl eq l =
+                List.rev
+                  (List.fold_left
+                     (fun xs x -> if List.exists (eq x) xs then xs else x::xs)
+                     [] l)
               in
-              if List.length tyl' < List.length tyl + 1
+              let tyl' = rem_dbl (fun t1 t2 -> equal env false [t1] [t2]) tyl
+              and tp' =
+                  List.filter
+                    (fun (ty1,ty2) -> not (equal env false [ty1] [ty2])) tp
+              in
+              let tp' =
+                rem_dbl
+                  (fun (t1,t2) (t1',t2') -> equal env false [t1;t2] [t1';t2'])
+                  tp'
+              in
+              if List.length tyl' < List.length tyl
               || List.length tp' < List.length tp then
-                let f = Reither(b, List.rev tyl', m, tp', ref None) in
+                let f = Reither(b, tyl', m, tp', ref None) in
                 set_row_field e f;
                 f
               else f
@@ -2948,7 +2974,7 @@ let rec normalize_type_rec env ty =
             | Tvar|Tunivar ->
                 if v' != v then (log_name nm;  nm := Some (n, v' :: l))
             | Tnil -> log_type ty; ty.desc <- Tconstr (n, l, ref Mnil)
-            | _ -> log_name nm; nm := None
+            | _ -> unset_name nm
             end
         | _ ->
             fatal_error "Ctype.normalize_type_rec"

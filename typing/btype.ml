@@ -379,15 +379,19 @@ let log_change ch =
 let log_type ty =
   if ty.id <= !last_snapshot then log_change (Ctype (ty, ty.desc))
 let link_type ty ty' = log_type ty; ty.desc <- Tlink ty'
-let log_level ty =
-  if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level))
-let set_level ty level = log_level ty; ty.level <- level
-let set_univar rty ty = log_change (Cuniv (rty, !rty)); rty := Some ty
-let log_name rf = log_change (Cname (rf, !rf))
-let log_row rf = log_change (Crow (rf, !rf))
-let set_row_field f v = log_row f; f := Some v
-let log_kind rf = log_change (Ckind (rf, !rf))
-let log_commu rf = log_change (Ccommu (rf, !rf))
+let set_level ty level =
+  if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));
+  ty.level <- level
+let set_univar rty ty =
+  log_change (Cuniv (rty, !rty)); rty := Some ty
+let log_name nm = log_change (Cname (nm, !nm))
+let unset_name nm = log_name nm; nm := None
+let set_row_field e v =
+  log_change (Crow (e, !e)); e := Some v
+let set_kind rk k =
+  log_change (Ckind (rk, !rk)); rk := Some k
+let set_commu rc c =
+  log_change (Ccommu (rc, !rc)); rc := c
 
 let snapshot () =
   last_snapshot := !new_id;

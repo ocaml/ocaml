@@ -117,25 +117,23 @@ val extract_label :
 
 type snapshot
         (* A snapshot for backtracking *)
-val log_type: type_expr -> unit
-        (* Call this before modifying the desc field in every type_expr.
-           Does nothing when no snapshot is live *)
-val log_level: type_expr -> unit
-val log_name: (Path.t * type_expr list) option ref -> unit
-val log_row: row_field option ref -> unit
-val log_kind: field_kind option ref -> unit
-val log_commu: commutable ref -> unit
-        (* Call these before modifying every level/row_field/field_kind
-           /abbrev_memo/commutable *)
-val link_type: type_expr -> type_expr -> unit
-        (* Set the desc field of [t1] to [Tlink t2], logging it *)
-val set_level: type_expr -> int -> unit
-        (* Set the desc field of a type, logging it *)
-val set_row_field: row_field option ref -> row_field -> unit
-val set_univar: type_expr option ref -> type_expr -> unit
 val snapshot: unit -> snapshot
         (* Make a snapshot for later backtracking. Costs nothing *)
 val backtrack: snapshot -> unit
         (* Backtrack to a given snapshot. Only possible you have
            not already backtracked to a previous snapshot.
            Calls [cleanup_abbrev] internally *)
+
+(* Functions to use when modifying a type (only Ctype?) *)
+val link_type: type_expr -> type_expr -> unit
+        (* Set the desc field of [t1] to [Tlink t2], logging the old value *)
+val set_level: type_expr -> int -> unit
+val unset_name: (Path.t * type_expr list) option ref -> unit
+val set_row_field: row_field option ref -> row_field -> unit
+val set_univar: type_expr option ref -> type_expr -> unit
+val set_kind: field_kind option ref -> field_kind -> unit
+val set_commu: commutable ref -> commutable -> unit
+        (* Set or unset references, logging the old value *)
+val log_type: type_expr -> unit
+val log_name: (Path.t * type_expr list) option ref -> unit
+        (* Log the old value of a type, before modifying it by hand *)
