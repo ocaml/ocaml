@@ -653,8 +653,8 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (ipatt : 'ipatt Grammar.Entry.e));
        Gramext.Stoken ("", "->"); Gramext.Sself],
       Gramext.action
-        (fun (e : 'expr) _ (p : 'ipatt) _ (x : 'expr) _ (loc : int * int) ->
-           (MLast.ExTry (loc, x, [p, None, e]) : 'expr));
+        (fun (e1 : 'expr) _ (p1 : 'ipatt) _ (e : 'expr) _ (loc : int * int) ->
+           (MLast.ExTry (loc, e, [p1, None, e1]) : 'expr));
       [Gramext.Stoken ("", "try"); Gramext.Sself; Gramext.Stoken ("", "with");
        Gramext.Stoken ("", "[");
        Gramext.Slist0sep
@@ -663,15 +663,15 @@ Grammar.extend
           Gramext.Stoken ("", "|"));
        Gramext.Stoken ("", "]")],
       Gramext.action
-        (fun _ (l : 'match_case list) _ _ (x : 'expr) _ (loc : int * int) ->
-           (MLast.ExTry (loc, x, l) : 'expr));
+        (fun _ (l : 'match_case list) _ _ (e : 'expr) _ (loc : int * int) ->
+           (MLast.ExTry (loc, e, l) : 'expr));
       [Gramext.Stoken ("", "match"); Gramext.Sself;
        Gramext.Stoken ("", "with");
        Gramext.Snterm (Grammar.Entry.obj (ipatt : 'ipatt Grammar.Entry.e));
        Gramext.Stoken ("", "->"); Gramext.Sself],
       Gramext.action
-        (fun (e : 'expr) _ (p : 'ipatt) _ (x : 'expr) _ (loc : int * int) ->
-           (MLast.ExMat (loc, x, [p, None, e]) : 'expr));
+        (fun (e1 : 'expr) _ (p1 : 'ipatt) _ (e : 'expr) _ (loc : int * int) ->
+           (MLast.ExMat (loc, e, [p1, None, e1]) : 'expr));
       [Gramext.Stoken ("", "match"); Gramext.Sself;
        Gramext.Stoken ("", "with"); Gramext.Stoken ("", "[");
        Gramext.Slist0sep
@@ -680,8 +680,8 @@ Grammar.extend
           Gramext.Stoken ("", "|"));
        Gramext.Stoken ("", "]")],
       Gramext.action
-        (fun _ (l : 'match_case list) _ _ (x : 'expr) _ (loc : int * int) ->
-           (MLast.ExMat (loc, x, l) : 'expr));
+        (fun _ (l : 'match_case list) _ _ (e : 'expr) _ (loc : int * int) ->
+           (MLast.ExMat (loc, e, l) : 'expr));
       [Gramext.Stoken ("", "fun");
        Gramext.Snterm (Grammar.Entry.obj (ipatt : 'ipatt Grammar.Entry.e));
        Gramext.Snterm
