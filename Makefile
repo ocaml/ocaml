@@ -37,7 +37,7 @@ UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
 OPTUTILS=$(UTILS)
 
 PARSING=parsing/linenum.cmo parsing/location.cmo parsing/longident.cmo \
-  parsing/syntaxerr.cmo parsing/pstream.cmo parsing/parser.cmo \
+  parsing/syntaxerr.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo
 
 TYPING=typing/ident.cmo typing/path.cmo \

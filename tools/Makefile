@@ -28,7 +28,7 @@ all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib
 
 CAMLDEP_OBJ=ocamldep.cmo
 CAMLDEP_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
-  linenum.cmo warnings.cmo location.cmo longident.cmo pstream.cmo \
+  linenum.cmo warnings.cmo location.cmo longident.cmo \
   syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
 
 ocamldep: $(CAMLDEP_OBJ)
@@ -44,7 +44,7 @@ install::
 
 CSLPROF=ocamlprof.cmo
 CSLPROF_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
-  linenum.cmo warnings.cmo location.cmo longident.cmo pstream.cmo \
+  linenum.cmo warnings.cmo location.cmo longident.cmo \
   syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
 
 ocamlprof: $(CSLPROF) profiling.cmo

@@ -21,7 +21,6 @@ parsing/parser.cmi: parsing/parsetree.cmi
 parsing/parsetree.cmi: parsing/asttypes.cmi parsing/location.cmi \
     parsing/longident.cmi 
 parsing/printast.cmi: parsing/parsetree.cmi 
-parsing/pstream.cmi: parsing/parsetree.cmi 
 parsing/syntaxerr.cmi: parsing/location.cmi 
 parsing/lexer.cmo: parsing/location.cmi utils/misc.cmi parsing/parser.cmi \
     utils/warnings.cmi parsing/lexer.cmi 
@@ -41,18 +40,14 @@ parsing/parse.cmx: parsing/lexer.cmx parsing/location.cmx parsing/parser.cmx \
     parsing/syntaxerr.cmx parsing/parse.cmi 
 parsing/parser.cmo: parsing/asttypes.cmi utils/clflags.cmo \
     parsing/location.cmi parsing/longident.cmi parsing/parsetree.cmi \
-    parsing/pstream.cmi parsing/syntaxerr.cmi parsing/parser.cmi 
+    parsing/syntaxerr.cmi parsing/parser.cmi 
 parsing/parser.cmx: parsing/asttypes.cmi utils/clflags.cmx \
     parsing/location.cmx parsing/longident.cmx parsing/parsetree.cmi \
-    parsing/pstream.cmx parsing/syntaxerr.cmx parsing/parser.cmi 
+    parsing/syntaxerr.cmx parsing/parser.cmi 
 parsing/printast.cmo: parsing/asttypes.cmi parsing/location.cmi \
     parsing/longident.cmi parsing/parsetree.cmi parsing/printast.cmi 
 parsing/printast.cmx: parsing/asttypes.cmi parsing/location.cmx \
     parsing/longident.cmx parsing/parsetree.cmi parsing/printast.cmi 
-parsing/pstream.cmo: parsing/asttypes.cmi parsing/location.cmi \
-    parsing/longident.cmi parsing/parsetree.cmi parsing/pstream.cmi 
-parsing/pstream.cmx: parsing/asttypes.cmi parsing/location.cmx \
-    parsing/longident.cmx parsing/parsetree.cmi parsing/pstream.cmi 
 parsing/syntaxerr.cmo: parsing/location.cmi parsing/syntaxerr.cmi 
 parsing/syntaxerr.cmx: parsing/location.cmx parsing/syntaxerr.cmi 
 typing/btype.cmi: parsing/asttypes.cmi typing/path.cmi typing/types.cmi 

@@ -66,7 +66,6 @@ let keyword_table =
     "of", OF;
     "open", OPEN;
     "or", OR;
-    "parser", PARSER;
     "private", PRIVATE;
     "rec", REC;
     "sig", SIG;
@@ -265,7 +264,6 @@ rule token = parse
   | ")"  { RPAREN }
   | "*"  { STAR }
   | ","  { COMMA }
-  | "??" { QUESTION2 }
   | "->" { MINUSGREATER }
   | "."  { DOT }
   | ".." { DOTDOT }

@@ -85,7 +85,6 @@ let tag ?(start=tstart) ?(stop=tend) tw =
       | MUTABLE
       | NEW
       | OF
-      | PARSER
       | PRIVATE
       | REC
       | TYPE
@@ -109,7 +108,6 @@ let tag ?(start=tstart) ?(stop=tend) tw =
       | INFIXOP3 _
       | INFIXOP4 _
       | PREFIXOP _
-      | QUESTION2
       | SHARP
           -> "infix"
       | LABEL _
