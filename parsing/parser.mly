@@ -840,9 +840,12 @@ expr:
 /* DYN */
  | DYNAMIC expr
       { mkexp(Pexp_dynamic($2)) }
+/* coerce is simple_expr */
+/* /DYN */
+/* GENERIC
  | COERCE seq_expr WITH opt_bar coerce_cases %prec prec_match
       { mkexp(Pexp_coerce($2, List.rev $5)) }
-/* /DYN */
+/GENERIC */
 ;
 simple_expr:
     val_longident
@@ -907,6 +910,9 @@ simple_expr:
       { mkexp(Pexp_override []) }
   | simple_expr SHARP label
       { mkexp(Pexp_send($1, $3)) }
+/* DYN */
+ | COERCE simple_expr { mkexp(Pexp_coerce($2)) }
+/* /DYN */
 ;
 simple_labeled_expr_list:
     labeled_simple_expr
@@ -951,7 +957,7 @@ let_binding:
   | pattern EQUAL seq_expr %prec prec_let
       { ($1, $3) }
 ;
-/* DYN */
+/* GENERIC
 coerce_cases:
     pattern coerce_action                         { [$1, $2] }
   | coerce_cases BAR pattern coerce_action        { ($3, $4) :: $1 }
@@ -959,7 +965,7 @@ coerce_cases:
 coerce_action:
     EQUALGREATER seq_expr                       { $2 }
 ;
-/* /DYN */
+/GENERIC */
 fun_binding:
     EQUAL seq_expr %prec prec_let
       { $2 }
@@ -1059,6 +1065,10 @@ simple_pattern:
       { mkpat(Ppat_array(List.rev $2)) }
   | LBRACKETBAR BARRBRACKET
       { mkpat(Ppat_array []) }
+/* GENERIC
+  | DYNAMIC LPAREN pattern COLON core_type RPAREN 
+      { mkpat (Ppat_dynamic ($3, $5)) }
+/GENERIC */
   | LBRACKETBAR pattern_semi_list opt_semi error
       { unclosed "[|" 1 "|]" 4 }
   | LPAREN pattern RPAREN
@@ -1225,6 +1235,10 @@ simple_core_type2:
       { mktyp(Ptyp_any) }
   | type_longident
       { mktyp(Ptyp_constr($1, [])) }
+/* DYN */
+  | DYNAMIC
+      { mktyp(Ptyp_constr(Lident "dyn", [])) }
+/* /DYN */
   | simple_core_type2 type_longident %prec prec_constr_appl
       { mktyp(Ptyp_constr($2, [$1])) }
   | LPAREN core_type_comma_list RPAREN type_longident %prec prec_constr_appl
