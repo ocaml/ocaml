@@ -77,18 +77,22 @@ exception Load_failed
 let load_compunit ic filename compunit =
   Bytelink.check_consistency filename compunit;
   seek_in ic compunit.cu_pos;
-  let code_size = compunit.cu_codesize + 4 in
+  let code_size = compunit.cu_codesize + 8 in
   let code = Meta.static_alloc code_size in
   unsafe_really_input ic code 0 compunit.cu_codesize;
-  String.unsafe_set code compunit.cu_codesize (Char.chr Opcodes.opSTOP);
+  String.unsafe_set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
   String.unsafe_set code (compunit.cu_codesize + 1) '\000';
   String.unsafe_set code (compunit.cu_codesize + 2) '\000';
   String.unsafe_set code (compunit.cu_codesize + 3) '\000';
+  String.unsafe_set code (compunit.cu_codesize + 4) '\001';
+  String.unsafe_set code (compunit.cu_codesize + 5) '\000';
+  String.unsafe_set code (compunit.cu_codesize + 6) '\000';
+  String.unsafe_set code (compunit.cu_codesize + 7) '\000';
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code compunit.cu_reloc;
   Symtable.update_global_table();
   begin try
-    Meta.execute_bytecode code code_size; ()
+    (Meta.reify_bytecode code code_size) (); ()
   with exn ->
     Symtable.restore_state initial_symtable;
     print_exception_outcome exn;

@@ -51,7 +51,7 @@ let load_lambda lam =
   Symtable.patch_object code reloc;
   Symtable.update_global_table();
   try
-    let retval = Meta.execute_bytecode code code_size in
+    let retval = (Meta.reify_bytecode code code_size) () in
     if can_free then Meta.static_free code;
     Result retval
   with x ->
