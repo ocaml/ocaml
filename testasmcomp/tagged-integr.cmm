@@ -20,26 +20,26 @@
 
 (function "square" (x: addr)
    (let r "res_square"
-        (store r ( *f (load x float) (load x float)))
+        (store float r ( *f (load float x) (load float x)))
         r))
 
 (function "integr" (f: addr low: addr high: addr n: int)
   (let (h "h" x "x" s "s" i n)
-    (store h (/f (-f (load high float) (load low float)) (floatofint n)))
-    (store x (load low float))
-    (store s 0.0)
+    (store float h (/f (-f (load float high) (load float low)) (floatofint n)))
+    (store float x (load float low))
+    (store float s 0.0)
     (while (> i 0)
-      (store s (+f (load s float) (load (app f x addr) float)))
-      (store x (+f (load x float) (load h float)))
+      (store float s (+f (load float s) (load float (app f x addr))))
+      (store float x (+f (load float x) (load float h)))
       (assign i (- i 1)))
-    (store "res_integr" ( *f (load s float) (load h float)))
+    (store float "res_integr" ( *f (load float s) (load float h)))
     "res_integr"))
 
 ("low": skip 8)
 ("hi": skip 8)
 
 (function "test" (n: int)
-  (store "low" 0.0)
-  (store "hi" 1.0)
-  (load (app "integr" ["square" "low" "hi" n] addr) float))
+  (store float "low" 0.0)
+  (store float "hi" 1.0)
+  (load float (app "integr" "square" "low" "hi" n addr)))
 

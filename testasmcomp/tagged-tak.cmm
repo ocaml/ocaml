@@ -16,7 +16,7 @@
   (if (> x y)
       (app "tak" (app "tak" (- x 2) y z int)
                  (app "tak" (- y 2) z x int)
-                 (app "tak" (- z 2) x y int)] int)
+                 (app "tak" (- z 2) x y int) int)
       z))
 
 (function "takmain" (dummy: int)

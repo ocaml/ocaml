@@ -56,5 +56,5 @@ let main() =
      "-dlinear", Arg.Set dump_linear, ""
     ] compile_file usage
 
-let _ = Printexc.catch main (); exit 0
+let _ = (*Printexc.catch*) main (); exit 0
 
