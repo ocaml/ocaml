@@ -11,21 +11,20 @@ Objective Caml 3: labels, and polymorphic variants.
 \section{Labels}
 \pdfsection{Labels}
 
-If you have a look at the standard library, you will see that function
-types have annotations you did not see in the functions you defined
-yourself.
+If you have a look at modules ending in "Labels" in the standard
+library, you will see that function types have annotations you did not
+have in the functions you defined yourself.
 
 \begin{caml_example}
-List.map;;
-String.sub;;
+ListLabels.map;;
+StringLabels.sub;;
 \end{caml_example}
 
 Such annotations of the form "name:" are called {\em labels}. They are
-meant to document the code, and allow more checking where needed.
-You can simply add them in interfaces, just like they appear in the
-above types;
-but you can also give names to arguments in your programs, by
-prefixing them with a tilde "~".
+meant to document the code, allow more checking, and give more
+flexibility to function application.
+You can give such names to arguments in your programs, by prefixing them
+with a tilde "~".
 
 \begin{caml_example}
 let f ~x ~y = x - y;;
@@ -44,39 +43,54 @@ f ~x:3 ~y:2;;
 Labels obey the same rules as other identifiers in Caml, that is you
 cannot use a reserved keyword (like "in" or "to") as label.
 
-\subsection{Classic mode}
+Formal parameters and arguments are matched according to their
+respective labels\footnote{This correspond to the commuting label mode
+of Objective Caml 3.00 through 3.02, with some additional flexibility
+on total applications. The so-called classic mode ("-nolabels"
+options) is now deprecated for normal use.}, the absence of label
+being interpreted as the empty label.
+%
+This allows commuting arguments in applications. One can also
+partially apply a function on any argument, creating a new function of
+the remaining parameters.
 
-In Objective Caml, there are two ways of using labels, either the
-default {\em classic} mode, or the {\em commuting label} mode.
+\begin{caml_example}
+let f ~x ~y = x - y;;
+f ~y:2 ~x:3;;
+ListLabels.fold_left;;
+ListLabels.fold_left [1;2;3] ~init:0 ~f:(+);;
+ListLabels.fold_left ~init:0;;
+\end{caml_example}
 
-You need do nothing special to be in classic mode, and legacy programs
-written for previous versions of Objective Caml will work with no
-modifications in this mode. Indeed, all the first chapter was written
-in this mode.
+If in a function several arguments bear the same label (or no label),
+they will not commute among themselves, and order matters. But they
+can still commute with other arguments.
 
-In the classic mode, labels need not be explicitly written in
-function applications, but whenever they are given they are checked
-against the labels in the function type.
+\begin{caml_example}
+let hline ~x:x1 ~x:x2 ~y = (x1, x2, y);;
+hline ~x:3 ~y:2 ~x:5;;
+\end{caml_example}
 
-\def\myerror{3}
+As an exception to the above parameter matching rules, if an
+application is total, labels may be omitted. In practice, most
+applications are total, so that labels can be omitted in applications.
 \begin{caml_example}
 f 3 2;;
-f ~x:3 ~z:2;;
+ListLabels.map succ [1;2;3];;
 \end{caml_example}
-The above error message gives the the type of the function applied to
-its previous arguments (here "x"), and the position of the unexpected
-argument.
-
-Similar processing is done for functions defined inside an application.
-If you define inline a function with labels, they are checked against the
-labels expected by the enclosing function.
-
+But beware that functions like "ListLabels.fold_left" whose result
+type is a type variable will never be considered as totally applied.
 \begin{caml_example}
-Hashtbl.iter;;
-let print_all tbl =
-  Hashtbl.iter ~f:(fun ~key ~data -> Printf.printf "%s: %s\n" key data) tbl;;
-let print_all tbl =
-  Hashtbl.iter ~f:(fun ~data ~key -> Printf.printf "%s: %s\n" key data) tbl;;
+ListLabels.fold_left (+) 0 [1;2;3];;
+\end{caml_example}
+
+When a function is passed as an argument to an higher-order function,
+labels must match in both types. Neither adding nor removing labels
+are allowed.
+\begin{caml_example}
+let h g = g ~x:3 ~y:2;;
+h f;;
+h (+);;
 \end{caml_example}
 
 \subsection{Optional arguments}
@@ -105,14 +119,17 @@ test ();;
 test ~x:2 () ~z:3 ();;
 \end{caml_example}
 
-Optional arguments behave similarly in classic and commuting label
-mode. Omitting the label of an optional argument is not allowed,
-and in both cases commutation between differently labeled optional
-arguments may occur.
-
+Optional parameters may also commute with non-optional or unlabelled
+ones, as long as they are applied simultaneously. By nature, optional
+arguments do not commute with unlabeled arguments applied
+independently.
 \begin{caml_example}
 test ~y:2 ~x:3 () ();;
+test () () ~z:1 ~y:2 ~x:3;;
+(test () ()) ~z:1;;
 \end{caml_example}
+Here "(test () ())" is already "(0,0,0)" and cannot be further
+applied.
 
 Optional arguments are actually implemented as option types. If
 you do not give a default value, you have access to their internal
@@ -144,30 +161,39 @@ While they provide an increased comfort for writing function
 applications, labels and optional arguments have the pitfall that they
 cannot be inferred as completely as the rest of the language.
 
-You can see it in the following example.
+You can see it in the following two examples.
 \begin{caml_example}
+let h' g = g ~y:2 ~x:3;;
+h' f;;
 let bump_it bump x =
   bump ~step:2 x;;
 bump_it bump 1;;
 \end{caml_example}
-While we intended the argument "bump" to be of type "?step:int -> int
--> int", it is inferred as "step:int -> 'a -> 'b". These two types
-being incompatible (internally normal and optional arguments are
-different), a type error occurs when applying "bump_it" to the real
-"bump".
+The first case is simple: "g"  is passed "~y" and then "~x", but "f"
+expects "~x" and then "~y". This is correctly handled if we know the
+type of "g" to be "x:int -> y:int -> int" in advance, but otherwise
+this causes the above type clash. The simplest workaround is to apply
+formal parameters in a standard order.
+
+The second example is more subtle: while we intended the argument
+"bump" to be of type "?step:int -> int -> int", it is inferred as
+"step:int -> int -> 'a".
+%
+These two types being incompatible (internally normal and optional
+arguments are different), a type error occurs when applying "bump_it"
+to the real "bump".
 
 We will not try here to explain in detail how type inference works.
-One must just understand that there is not enough
-information in the above program to deduce the correct type of
-"bump". That is, there is no way to know whether an argument is
-optional or not, or which is the correct order (for commuting label
-mode), by looking only at how a function is applied. The strategy used
-by the compiler is to assume that there are no optional arguments, and
-that applications are done
-in the right order.
+One must just understand that there is not enough information in the
+above program to deduce the correct type of "g" or "bump". That is,
+there is no way to know whether an argument is optional or not, or
+which is the correct order, by looking only at how a function is
+applied. The strategy used by the compiler is to assume that there are
+no optional arguments, and that applications are done in the right
+order.
 
-The right way to solve this problem is to add a type annotation to
-the argument "bump".
+The right way to solve this problem for optional parameters is to add
+a type annotation to the argument "bump".
 \begin{caml_example}
 let bump_it (bump : ?step:int -> int -> int) x =
   bump ~step:2 x;;
@@ -195,6 +221,7 @@ including side-effects. That is, if the application of optional
 parameters shall produce side-effects, these are delayed until the
 received function is really applied to an argument.
 
+\iffalse
 \subsection{Commuting label mode} \label{s:commuting-mode}
 
 The {\em commuting label} mode allows a freer syntax, at the
@@ -256,7 +283,7 @@ can still commute with other arguments.
 let hline ~x:x1 ~x:x2 ~y = (x1, x2, y);;
 hline ~x:3 ~y:2 ~x:5;;
 \end{caml_example} 
-
+\fi
 
 \subsection{Suggestions for labeling}
 
@@ -283,30 +310,31 @@ role. When this is not possible the role is to prefer, since the nature will
 often be given by the type itself. Obscure abbreviations should be
 avoided.
 \caml
-\:List.map : f:('a -> 'b) -> 'a list -> 'b list
-\:output : out_channel -> buf:string -> pos:int -> len:int -> unit
+\:ListLabels.map : f:('a -> 'b) -> 'a list -> 'b list
+\:UnixLabels.write : file_descr -> buf:string -> pos:int -> len:int -> unit
 \endcaml
 
 When there are several objects of same nature and role, they are all
 left unlabeled.
 \caml
-\:List.iter2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> unit
+\:ListLabels.iter2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> unit
 \endcaml
 
 When there is no preferable object, all arguments are labeled.
 \caml
-\:Sys.rename : src:string -> dst:string -> unit
-\:String.blit :
+\:StringLabels.blit :
 \:  src:string -> src_pos:int -> dst:string -> dst_pos:int -> len:int -> unit
 \endcaml
 
 However, when there is only one argument, it is often left unlabeled.
 \caml
-\:Format.open_hvbox : int -> unit
+\:StringLabels.create : int -> string
 \endcaml
-In the standard library, this principle also applies to functions of
-two or three arguments, as long as their role is clear from the
-function's name.
+This principle also applies to functions of several arguments whose
+return type is a type variable, as long as the role of each argument
+is not ambiguous. Labeling such functions may lead to awkward error
+messages when one attempts to omit labels in an application, as we
+have seen with "ListLabels.fold_left".
 
 Here are some of the label names you will find throughout the
 libraries.
@@ -318,12 +346,9 @@ libraries.
 \entree{"buf:"}{a string used as buffer}
 \entree{"src:"}{the source of an operation}
 \entree{"dst:"}{the destination of an operation}
+\entree{"init:"}{the initial value for an iterator}
 \entree{"cmp:"}{a comparison function, {\it e.g.} "Pervasives.compare"}
-\entree{"key:"}{a value used as index}
-\entree{"data:"}{a value associated to an index}
 \entree{"mode:"}{an operation mode or a flag list}
-\entree{"perm:"}{file permissions}
-\entree{"ms:"}{a duration in milliseconds}
 \end{tableau}
 
 All these are only suggestions, but one shall keep in mind that the
