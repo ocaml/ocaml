@@ -11,8 +11,6 @@
 
 # $Id$
 
-        .comm   young_start, 4
-        .comm   young_ptr, 4
         .comm   caml_bottom_of_stack, 4
         .comm   caml_top_of_stack, 4
         .comm   caml_last_return_address, 4
@@ -202,11 +200,11 @@
     # The C function will preserve them, and the Caml code does not
     # expect them to be preserved
     # Return address is in 25, RTOC is in 26, pointer to young_ptr in 27
-        mr      26, 2
     # Call the function (descriptor in 11)
         lwz     0, 0(11)
-        lwz     2, 4(11)
+        mr      26, 2
         mtlr    0
+        lwz     2, 4(11)
         lwz     11, 8(11)
         blrl
     # Restore return address
