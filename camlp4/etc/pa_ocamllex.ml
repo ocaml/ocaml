@@ -132,19 +132,17 @@ let rec subtract l1 l2 =
     [] -> []
   | a::r -> if List.mem a l2 then subtract r l2 else a :: subtract r l2
 
+let () =
+  Hashtbl.add named_regexps "eof" (Characters [256])
+
 (* The parser *)
 
-let ocamllex = Grammar.Entry.create Pcaml.gram "ocamllex"
+let let_regexp = Grammar.Entry.create Pcaml.gram "pa_ocamllex let"
+let header = Grammar.Entry.create Pcaml.gram "pa_ocamllex header"
+let lexer_def = Grammar.Entry.create Pcaml.gram "pa_ocaml lexerdef"
 
 EXTEND
- GLOBAL: Pcaml.str_item ocamllex;
-
- ocamllex: [
-   [ h = header;
-        l  = [LIST0 ["let"; let_regexp]; "rule"; d = lexer_def -> (d,loc)];
-     t = header; EOI -> h @ (l :: t) ,false
-   ]
- ];
+ GLOBAL: Pcaml.str_item let_regexp header lexer_def;
 
  let_regexp: [
    [ x = LIDENT; "="; r = regexp ->
@@ -170,13 +168,14 @@ EXTEND
 
 
  Pcaml.str_item: [
-   [ "rule"; d = lexer_def -> d
-   | "let_regexp"; let_regexp -> <:str_item< declare $list: []$ end >>
+   [ "pa_ocamllex"; LIDENT "rule"; d = lexer_def -> d
+   | "pa_ocamllex"; "let"; let_regexp -> 
+       <:str_item< declare $list: []$ end >>
    ]
  ];
  
  definition: [
-   [ x=LIDENT; pl = LIST0 Pcaml.patt; "="; "parse"; 
+   [ x=LIDENT; pl = LIST0 Pcaml.patt; "="; LIDENT "parse"; 
      OPT "|"; l = LIST0 [ r=regexp; a=action -> (r,a) ] SEP "|" -> ((x,pl),l) ]
  ];
 
@@ -204,7 +203,6 @@ EXTEND
    | r = regexp; "?" -> Alternative(r, Epsilon)
    | "("; r = regexp; ")" -> r
    | "_" -> Characters all_chars
-   | "eof" -> Characters [256]
    | c = CHAR -> Characters [char c]
    | s = STRING -> regexp_for_string (Token.eval_string s)
    | "["; cc = ch_class; "]" ->  Characters cc
@@ -225,10 +223,36 @@ EXTEND
  ];
 END
 
+(* We have to be careful about "rule"; in standalone mode,
+   it is used as a keyword (otherwise, there is a conflict
+   with named regexp); in normal mode, it is used as LIDENT
+   (we do not want to reserve such an useful identifier).
 
-let standalone () = 
-  Printf.eprintf "pa_ocamllex: stand-alone mode\n";
-  Pcaml.parse_implem := Grammar.Entry.parse ocamllex
+   Plexer does not like identifiers used as keyword _and_
+   as LIDENT ...
+*)
+
+let standalone =
+  let already = ref false in
+  fun () ->
+    if not (!already) then
+    begin
+      already := true;
+      Printf.eprintf "pa_ocamllex: stand-alone mode\n";
+
+      DELETE_RULE Pcaml.str_item: "pa_ocamllex"; LIDENT "rule";lexer_def END;
+      DELETE_RULE Pcaml.str_item: "pa_ocamllex"; "let"; let_regexp END;
+      let ocamllex = Grammar.Entry.create Pcaml.gram "pa_ocamllex" in
+      EXTEND GLOBAL: ocamllex let_regexp header lexer_def;
+      ocamllex: [
+        [ h = header;
+          l  = [LIST0 ["let"; let_regexp]; "rule"; d = lexer_def -> (d,loc)];
+          t = header; EOI -> h @ (l :: t) ,false
+        ]
+      ];
+      END;
+      Pcaml.parse_implem := Grammar.Entry.parse ocamllex
+    end
 
 let () =
   Pcaml.add_option "-ocamllex" (Arg.Unit standalone)
