@@ -25,7 +25,10 @@
 #define IO_BUFFER_SIZE 4096
 #endif
 
-#ifdef HAS_OFF_T
+#if defined(_WIN32)
+typedef __int64 file_offset;
+#define lseek(fd,d,m) _lseeki64(fd,d,m)
+#elif defined(HAS_OFF_T)
 #include <sys/types.h>
 typedef off_t file_offset;
 #else
