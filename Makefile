@@ -81,9 +81,9 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   bytecomp/runtimedef.cmo bytecomp/symtable.cmo \
   toplevel/expunge.cmo
 
-PERVASIVES=arg array char digest filename format gc hashtbl lexing list map \
-  obj parsing pervasives printexc printf queue random set sort \
-  stack string stream sys oo genlex topdirs weak
+PERVASIVES=arg array callback char digest filename format gc hashtbl \
+  lexing list map obj parsing pervasives printexc printf queue random \
+  set sort stack string stream sys oo genlex topdirs weak
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
