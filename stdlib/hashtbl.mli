@@ -24,7 +24,8 @@ val create : int -> ('a,'b) t
         (* [Hashtbl.create n] creates a new, empty hash table, with
            initial size [n].  The table grows as needed, so [n] is
            just an initial guess.  Better results are said to be
-           achieved when [n] is a prime number. *)
+           achieved when [n] is a prime number.
+           Raise [Invalid_argument "hashtbl__new"] if [n] is less than 1. *)
 
 val clear : ('a, 'b) t -> unit
         (* Empty a hash table. *)

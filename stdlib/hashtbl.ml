@@ -29,6 +29,7 @@ and ('a, 'b) bucketlist =
   | Cons of 'a * 'b * ('a, 'b) bucketlist
 
 let create initial_size =
+  if initial_size <= 0 then invalid_arg "hashtbl__new" else
   { max_len = 3; data = Array.create initial_size Empty }
 
 let clear h =
