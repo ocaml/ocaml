@@ -32,7 +32,7 @@ typedef value caml_generated_constant[1];
 
 extern caml_generated_constant Out_of_memory, Sys_error, Failure,
   Invalid_argument, End_of_file, Division_by_zero, Not_found,
-  Match_failure, Sys_blocked_io;
+  Match_failure, Sys_blocked_io, Stack_overflow;
 
 /* Exception raising */
 
@@ -99,18 +99,26 @@ void invalid_argument (char *msg)
    because it allocates and we're out of memory...
    We therefore build the bucket by hand.
    This works OK because the exception value for Out_of_memory is also
-   statically allocated out of the heap. */
+   statically allocated out of the heap.
+   The same applies to Stack_overflow. */
 
 static struct {
   header_t hdr;
   value exn;
-} out_of_memory_bucket;
+} out_of_memory_bucket, stack_overflow_bucket;
 
 void raise_out_of_memory(void)
 {
   out_of_memory_bucket.hdr = Make_header(1, 0, Caml_white);
   out_of_memory_bucket.exn = (value) Out_of_memory;
   mlraise((value) &(out_of_memory_bucket.exn));
+}
+
+void raise_stack_overflow(void)
+{
+  stack_overflow_bucket.hdr = Make_header(1, 0, Caml_white);
+  stack_overflow_bucket.exn = (value) Stack_overflow;
+  mlraise((value) &(stack_overflow_bucket.exn));
 }
 
 void raise_sys_error(value msg)

@@ -27,6 +27,9 @@
 #include "signals.h"
 #include "stack.h"
 #include "sys.h"
+#ifdef HAS_STACK_OVERFLOW_DETECTION
+#include <sys/resource.h>
+#endif
 
 #if defined(TARGET_power) && defined(SYS_rhapsody)
 /* Confer machdep/ppc/unix_signal.c and mach/ppc/thread_status.h
@@ -433,34 +436,126 @@ static void trap_handler(int sig, int code, struct sigcontext * context)
 }
 #endif
 
+/* Machine- and OS-dependent handling of stack overflow */
+
+#ifdef HAS_STACK_OVERFLOW_DETECTION
+
+static char * system_stack_top;
+static char sig_alt_stack[SIGSTKSZ];
+
+static int is_stack_overflow(char * fault_addr, unsigned long in_c_code)
+{
+  struct rlimit limit;
+  struct sigaction act;
+
+  /* Sanity checks:
+     - faulting address is word-aligned
+     - faulting address is within the stack
+     - we are not inside C code */
+  if (in_c_code == 0 &&
+      ((long) fault_addr & (sizeof(long) - 1)) == 0 &&
+      getrlimit(RLIMIT_STACK, &limit) == 0 &&
+      fault_addr < system_stack_top &&
+      fault_addr >= system_stack_top - limit.rlim_cur - 0x2000) {
+    /* OK, caller can turn this into a Stack_overflow exception */
+    return 1;
+  } else {
+    /* Otherwise, deactivate our exception handler.  Caller will
+       return, causing fatal signal to be generated at point of error. */
+    act.sa_handler = SIG_DFL;
+    act.sa_flags = 0;
+    sigemptyset(&act.sa_mask);
+    sigaction(SIGSEGV, &act, NULL);
+    return 0;
+  }
+}
+
+#if defined(TARGET_i386) && defined(SYS_linux_elf)
+static void segv_handler(int signo, struct sigcontext sc)
+{
+  if (is_stack_overflow((char *) sc.cr2, 0))
+    raise_stack_overflow();
+}
+#endif
+
+#if defined(TARGET_i386) && !defined(SYS_linux_elf)
+static void segv_handler(int signo, siginfo_t * info, void * arg)
+{
+  if (is_stack_overflow((char *) info->si_addr, 0))
+    raise_stack_overflow();
+}
+#endif
+
+#if defined(TARGET_alpha) && defined(SYS_digital)
+static void segv_handler(int signo, siginfo_t * info, void * arg)
+{
+  ucontext_t * context = (ucontext_t *) arg;
+  if (is_stack_overflow((char *) info->si_addr, caml_last_return_address)) {
+    /* Recover young_ptr and caml_exception_pointer from regs $13 and $15 */
+    young_ptr = (char *) (context->uc_mcontext.sc_regs[13]);
+    caml_exception_pointer = (char *) (context->uc_mcontext.sc_regs[15]);
+    raise_stack_overflow();
+  }
+}
+#endif
+
+#endif
+
 /* Initialization of signal stuff */
 
 void init_signals(void)
 {
+  /* Bound-check trap handling */
 #if defined(TARGET_sparc) && \
       (defined(SYS_sunos) || defined(SYS_bsd) || defined(SYS_linux))
-  struct sigaction act;
-  act.sa_handler = (void (*)(int)) trap_handler;
-  sigemptyset(&act.sa_mask);
-  act.sa_flags = 0;
-  sigaction(SIGILL, &act, NULL);
+  {
+    struct sigaction act;
+    act.sa_handler = (void (*)(int)) trap_handler;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    sigaction(SIGILL, &act, NULL);
+  }
 #endif
 #if defined(TARGET_sparc) && defined(SYS_solaris)
-  struct sigaction act;
-  act.sa_sigaction = trap_handler;
-  sigemptyset(&act.sa_mask);
-  act.sa_flags = SA_SIGINFO | SA_NODEFER;
-  sigaction(SIGILL, &act, NULL);
+  {
+    struct sigaction act;
+    act.sa_sigaction = trap_handler;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = SA_SIGINFO | SA_NODEFER;
+    sigaction(SIGILL, &act, NULL);
+  }
 #endif
 #if defined(TARGET_power)
-  struct sigaction act;
-  act.sa_handler = (void (*)(int)) trap_handler;
-  sigemptyset(&act.sa_mask);
+  {
+    struct sigaction act;
+    act.sa_handler = (void (*)(int)) trap_handler;
+    sigemptyset(&act.sa_mask);
 #if defined(SYS_rhapsody) || defined(SYS_aix)
-  act.sa_flags = 0;
+    act.sa_flags = 0;
 #else
-  act.sa_flags = SA_NODEFER;
+    act.sa_flags = SA_NODEFER;
 #endif
-  sigaction(SIGTRAP, &act, NULL);
+    sigaction(SIGTRAP, &act, NULL);
+  }
+#endif
+  /* Stack overflow handling */
+#ifdef HAS_STACK_OVERFLOW_DETECTION
+  {
+    struct sigaltstack stk;
+    struct sigaction act;
+    stk.ss_sp = sig_alt_stack;
+    stk.ss_size = SIGSTKSZ;
+    stk.ss_flags = 0;
+#if defined(TARGET_i386) && defined(SYS_linux_elf)
+    act.sa_handler = (void (*)(int)) segv_handler;
+    act.sa_flags = SA_ONSTACK | SA_NODEFER;
+#else
+    act.sa_sigaction = segv_handler;
+    act.sa_flags = SA_SIGINFO | SA_ONSTACK | SA_NODEFER;
+#endif
+    sigemptyset(&act.sa_mask);
+    system_stack_top = (char *) &act;
+    if (sigaltstack(&stk, NULL) == 0) { sigaction(SIGSEGV, &act, NULL); }
+  }
 #endif
 }
