@@ -16,6 +16,7 @@
 (* $Id$ *)
 
 open StdLabels
+open Support
 
 (* Internal compiler errors *)
 
@@ -155,7 +156,7 @@ let new_type typname arity =
                 subtypes = []; 
                 requires_widget_context = false;
                 variant = false} in
-    Hashtbl.add' types_table ~key:typname ~data:typdef;
+    Hashtbl'.add types_table ~key:typname ~data:typdef;
     typdef
 
 
@@ -180,7 +181,7 @@ let declared_type_parser_arity s =
     (Hashtbl.find types_table s).parser_arity
   with
     Not_found -> 
-      try List.assoc s !types_external
+      try List.assoc s ~map:!types_external
       with
         Not_found ->
            prerr_string "Type "; prerr_string s;
@@ -387,13 +388,13 @@ let enter_widget name components =
     | External, _ -> ()
     end;
   let commands = 
-      try List.assoc Command sorted_components
+      try List.assoc Command ~map:sorted_components
       with Not_found -> [] 
   and externals = 
-      try List.assoc External sorted_components
+      try List.assoc External ~map:sorted_components
       with Not_found -> []
   in
-  Hashtbl.add' module_table ~key:name 
+  Hashtbl'.add module_table ~key:name 
     ~data:{module_type = Widget; commands = commands; externals = externals}
   
 (******************** Functions ********************)
@@ -414,12 +415,11 @@ let enter_module name components =
     | External, _ -> ()
     end;
   let commands = 
-      try List.assoc Command sorted_components
+      try List.assoc Command ~map:sorted_components
       with Not_found -> [] 
   and externals = 
-      try List.assoc External sorted_components
+      try List.assoc External ~map:sorted_components
       with Not_found -> []
   in
-    Hashtbl.add' module_table ~key:name 
+    Hashtbl'.add module_table ~key:name 
       ~data:{module_type = Family; commands = commands; externals = externals}
-

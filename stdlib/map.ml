@@ -24,7 +24,6 @@ module type S =
     type +'a t
     val empty: 'a t
     val add: key -> 'a -> 'a t -> 'a t
-    val add': key:key -> data:'a -> 'a t -> 'a t
     val find: key -> 'a t -> 'a
     val remove: key -> 'a t -> 'a t
     val mem:  key -> 'a t -> bool
@@ -93,8 +92,6 @@ module Make(Ord: OrderedType) = struct
             bal (add x data l) v d r
           else
             bal l v d (add x data r)
-
-    let add' ~key ~data t = add key data t
 
     let rec find x = function
         Empty ->

@@ -19,6 +19,7 @@
 open StdLabels
 open Lexing
 open Parser
+open Support
 
 exception Lexical_error of string
 let current_line = ref 1
@@ -29,7 +30,7 @@ let current_line = ref 1
 let keyword_table = (Hashtbl.create 149 : (string, token) Hashtbl.t)
 
 let _ = List.iter
-  ~f:(fun (str,tok) -> Hashtbl.add' keyword_table ~key:str ~data:tok)
+  ~f:(fun (str,tok) -> Hashtbl'.add keyword_table ~key:str ~data:tok)
   [
   "int", TYINT;
   "float", TYFLOAT;

@@ -45,7 +45,6 @@ module type S =
     val empty: 'a t
           (* The empty map. *)
     val add: key -> 'a -> 'a t -> 'a t
-    val add': key:key -> data:'a -> 'a t -> 'a t
         (* [add x y m] returns a map containing the same bindings as
            [m], plus a binding of [x] to [y]. If [x] was already bound
            in [m], its previous binding disappears. *)

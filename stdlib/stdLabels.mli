@@ -72,18 +72,18 @@ module List : sig
   val exists : f:('a -> bool) -> 'a list -> bool
   val for_all2 : f:('a -> 'b -> bool) -> 'a list -> 'b list -> bool
   val exists2 : f:('a -> 'b -> bool) -> 'a list -> 'b list -> bool
-  val mem : 'a -> 'a list -> bool
-  val memq : 'a -> 'a list -> bool
+  val mem : 'a -> set:'a list -> bool
+  val memq : 'a -> set:'a list -> bool
   val find : f:('a -> bool) -> 'a list -> 'a
   val filter : f:('a -> bool) -> 'a list -> 'a list
   val find_all : f:('a -> bool) -> 'a list -> 'a list
   val partition : f:('a -> bool) -> 'a list -> 'a list * 'a list
-  val assoc : 'a -> ('a * 'b) list -> 'b
-  val assq : 'a -> ('a * 'b) list -> 'b
-  val mem_assoc : 'a -> ('a * 'b) list -> bool
-  val mem_assq : 'a -> ('a * 'b) list -> bool
-  val remove_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
-  val remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
+  val assoc : 'a -> map:('a * 'b) list -> 'b
+  val assq : 'a -> map:('a * 'b) list -> 'b
+  val mem_assoc : 'a -> map:('a * 'b) list -> bool
+  val mem_assq : 'a -> map:('a * 'b) list -> bool
+  val remove_assoc : 'a -> map:('a * 'b) list -> ('a * 'b) list
+  val remove_assq : 'a -> map:('a * 'b) list -> ('a * 'b) list
   val split : ('a * 'b) list -> 'a list * 'b list
   val combine : 'a list -> 'b list -> ('a * 'b) list
   val sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list

@@ -85,8 +85,6 @@ external to_string: 'a -> extern_flags list -> string
            [Marshal.to_channel]. *)
 
 val to_buffer: string -> int -> int -> 'a -> extern_flags list -> int
-val to_buffer':
-        buf:string -> pos:int -> len:int -> 'a -> mode:extern_flags list -> int
         (* [Marshal.to_buffer buff ofs len v flags] marshals the value [v],
            storing its byte representation in the string [buff],
            starting at character number [ofs], and writing at most

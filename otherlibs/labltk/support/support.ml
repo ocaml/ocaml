@@ -47,3 +47,7 @@ let maycons f x l =
   match x with
     Some x -> f x :: l
   | None -> l
+
+(* Get some labels on Hashtbl.add *)
+module Hashtbl' =
+  struct let add tbl ~key ~data = Hashtbl.add tbl key data end

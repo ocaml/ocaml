@@ -113,7 +113,7 @@ let select_shell txt =
       begin fun () ->
         try
           let name = Listbox.get box ~index:`Active in
-          txt.shell <- Some (name, List.assoc name shells);
+          txt.shell <- Some (name, List.assoc name ~map:shells);
           destroy tl
         with Not_found -> txt.shell <- None; destroy tl
       end
@@ -392,7 +392,7 @@ class editor ~top ~menus = object (self)
     try
       if Sys.file_exists name then
         if txt.name = name then
-          Sys.rename' ~src:name ~dst:(name ^ "~")
+          Sys.rename name (name ^ "~")
         else begin match
           Jg_message.ask ~master:top ~title:"Save"
             ("File `" ^ name ^ "' exists. Overwrite it?")
@@ -434,7 +434,7 @@ class editor ~top ~menus = object (self)
       and buf = String.create 4096 in
       Text.delete tw ~start:tstart ~stop:tend;
       while
-        len := input' file ~buf ~pos:0 ~len:4096;
+        len := input file buf 0 4096;
         !len > 0
       do
         Jg_text.output tw ~buf ~pos:0 ~len:!len

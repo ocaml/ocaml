@@ -16,6 +16,7 @@
 (* $Id$ *)
 
 open StdLabels
+open Support
 open Widget
 
 type callback_buffer = string list
@@ -108,9 +109,9 @@ let string_of_cbid = string_of_int
 (* The callback should be cleared when w is destroyed *)
 let register_callback w ~callback:f =
   let id = new_function_id () in
-    Hashtbl.add' callback_naming_table ~key:id ~data:f;
+    Hashtbl'.add callback_naming_table ~key:id ~data:f;
     if (forget_type w) <> (forget_type Widget.dummy) then 
-      Hashtbl.add' callback_memo_table ~key:(forget_type w) ~data:id;
+      Hashtbl'.add callback_memo_table ~key:(forget_type w) ~data:id;
     (string_of_cbid id)
 
 let clear_callback id =
@@ -144,7 +145,7 @@ let install_cleanup () =
          List.iter ~f:(fun f -> f w) !destroy_hooks
     | _ -> raise (TkError "bad cleanup callback") in
   let fid = new_function_id () in
-  Hashtbl.add' callback_naming_table ~key:fid ~data:call_destroy_hooks;
+  Hashtbl'.add callback_naming_table ~key:fid ~data:call_destroy_hooks;
   (* setup general destroy callback *)
   tcl_command ("bind all <Destroy> {camlcb " ^ (string_of_cbid fid) ^" %W}")
 

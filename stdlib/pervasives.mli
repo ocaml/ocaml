@@ -487,7 +487,6 @@ val output_char : out_channel -> char -> unit
 val output_string : out_channel -> string -> unit
         (* Write the string on the given output channel. *)
 val output : out_channel -> string -> int -> int -> unit
-val output' : out_channel -> buf:string -> pos:int -> len:int -> unit
         (* Write [len] characters from string [buf], starting at offset
            [pos], to the given output channel.
            Raise [Invalid_argument "output"] if [pos] and [len] do not
@@ -558,7 +557,6 @@ val input_line : in_channel -> string
            Raise [End_of_file] if the end of the file is reached
            at the beginning of line. *)
 val input : in_channel -> string -> int -> int -> int
-val input' : in_channel -> buf:string -> pos:int -> len:int -> int
         (* Read up to [len] characters from the given channel,
            storing them in string [buf], starting at character number [pos].
            It returns the actual number of characters read, between 0 and

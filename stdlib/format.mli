@@ -242,11 +242,8 @@ val get_formatter_output_functions :
 
 (*** Changing the meaning of pretty printing (indentation, line breaking, and printing material) *)
 val set_all_formatter_output_functions :
-      (string -> int -> int -> unit) -> (unit -> unit) ->
-      (unit -> unit) -> (int -> unit) -> unit;;
-val set_all_formatter_output_functions' :
       out:(string -> int -> int -> unit) -> flush:(unit -> unit) ->
-      newline:(unit -> unit) -> space:(int -> unit) -> unit;;
+      newline:(unit -> unit) -> spaces:(int -> unit) -> unit;;
         (* [set_all_formatter_output_functions out flush outnewline outspace]
            redirects the pretty-printer output to the functions
            [out] and [flush] as described in
@@ -362,11 +359,8 @@ val pp_set_formatter_output_functions : formatter ->
 val pp_get_formatter_output_functions : formatter -> unit ->
       (string -> int -> int -> unit) * (unit -> unit);;
 val pp_set_all_formatter_output_functions : formatter ->
-      (string -> int -> int -> unit) -> (unit -> unit) ->
-      (unit -> unit) -> (int -> unit) -> unit;;
-val pp_set_all_formatter_output_functions' : formatter ->
       out:(string -> int -> int -> unit) -> flush:(unit -> unit) ->
-      newline:(unit -> unit) -> space:(int -> unit) -> unit;;
+      newline:(unit -> unit) -> spaces:(int -> unit) -> unit;;
 val pp_get_all_formatter_output_functions : formatter -> unit ->
       (string -> int -> int -> unit) * (unit -> unit) *
       (unit -> unit) * (int -> unit);;

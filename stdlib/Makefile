@@ -30,10 +30,10 @@ BASIC=pervasives.cmo array.cmo list.cmo char.cmo string.cmo sys.cmo \
   buffer.cmo printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo \
   digest.cmo random.cmo oo.cmo genlex.cmo callback.cmo weak.cmo \
   lazy.cmo filename.cmo int32.cmo int64.cmo nativeint.cmo
-LABELLED=arrayLabels.ml listLabels.ml stringLabels.ml stdLabels.ml
+LABELLED=arrayLabels.ml listLabels.ml stringLabels.ml
 
-OBJS=$(BASIC) labelled.cmo
-ALLOBJS=$(BASIC) $(LABELLED:.ml=.cmo)
+OBJS=$(BASIC) labelled.cmo stdLabels.cmo
+ALLOBJS=$(BASIC) $(LABELLED:.ml=.cmo) stdLabels.cmo
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 

@@ -16,6 +16,7 @@
 (* $Id$ *)
 
 open StdLabels
+open Support
 open Tables
 open Printer
 open Compile
@@ -118,7 +119,7 @@ let uniq_clauses = function
        let c = constr.var_name in
        if Hashtbl.mem t c
        then (check_constr constr (Hashtbl.find t c))
-       else Hashtbl.add' t ~key:c ~data:constr);
+       else Hashtbl'.add t ~key:c ~data:constr);
      elements t;;
 
 let option_hack oc =
@@ -268,11 +269,11 @@ let main () =
     (fun filename -> input_name := filename)
     "Usage: tkcompiler <source file>" ;
   try
-    verbose_string "Parsing... ";
+    verbose_endline "Parsing...";
     parse_file !input_name;
-    verbose_string "Compiling... ";
+    verbose_endline "Compiling...";
     compile ();
-    verbose_string "Finished";
+    verbose_endline "Finished";
     exit 0
   with
   | Lexer.Lexical_error s ->

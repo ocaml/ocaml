@@ -228,11 +228,6 @@ let output oc s ofs len =
   then invalid_arg "output"
   else unsafe_output oc s ofs len
 
-let output' oc ~buf:s ~pos:ofs ~len =
-  if ofs < 0 || len < 0 || ofs + len > string_length s
-  then invalid_arg "output"
-  else unsafe_output oc s ofs len
-
 external output_byte : out_channel -> int -> unit = "caml_output_char"
 external output_binary_int : out_channel -> int -> unit = "caml_output_int"
 
@@ -265,11 +260,6 @@ external unsafe_input : in_channel -> string -> int -> int -> int
                       = "caml_input"
 
 let input ic s ofs len =
-  if ofs < 0 || len < 0 || ofs + len > string_length s
-  then invalid_arg "input"
-  else unsafe_input ic s ofs len
-
-let input' ic ~buf:s ~pos:ofs ~len =
   if ofs < 0 || len < 0 || ofs + len > string_length s
   then invalid_arg "input"
   else unsafe_input ic s ofs len

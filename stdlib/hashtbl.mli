@@ -32,7 +32,6 @@ val clear : ('a, 'b) t -> unit
         (* Empty a hash table. *)
 
 val add : ('a, 'b) t -> 'a -> 'b -> unit
-val add' : ('a, 'b) t -> key:'a -> data:'b -> unit
         (* [Hashtbl.add tbl x y] adds a binding of [x] to [y] in table [tbl].
            Previous bindings for [x] are not removed, but simply
            hidden. That is, after performing [Hashtbl.remove tbl x],
@@ -99,7 +98,6 @@ module type S =
     val create: int -> 'a t
     val clear: 'a t -> unit
     val add: 'a t -> key -> 'a -> unit
-    val add': 'a t -> key:key -> data:'a -> unit
     val remove: 'a t -> key -> unit
     val find: 'a t -> key -> 'a
     val find_all: 'a t -> key -> 'a list
