@@ -608,6 +608,7 @@ let open_process cmd =
   let inchan = in_channel_of_descr in_read in
   let outchan = out_channel_of_descr out_write in
   open_proc cmd (Process(inchan, outchan)) out_read in_write;
+  close out_read; close in_write;
   (inchan, outchan)
 
 let find_proc_id fun_name proc =
