@@ -39,6 +39,11 @@ let resize b more =
   let len = b.length in
   let new_len = ref len in
   while b.position + more > !new_len do new_len := 2 * !new_len done;
+  if !new_len > Sys.max_string_length then begin
+    if b.position + more <= Sys.max_string_length
+    then new_len := Sys.max_string_length
+    else failwith "Buffer.add: cannot grow buffer"
+  end;
   let new_buffer = String.create !new_len in
   String.blit b.buffer 0 new_buffer 0 b.position;
   b.buffer <- new_buffer;

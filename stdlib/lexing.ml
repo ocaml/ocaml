@@ -60,8 +60,13 @@ let lex_refill read_fun aux_buffer lexbuf =
                   (lexbuf.lex_buffer_len - lexbuf.lex_start_pos)
     end else begin
       (* We must grow the buffer.  Doubling its size will provide enough
-         space since n <= String.length aux_buffer <= String.length buffer *)
-      let newbuf = String.create (2 * String.length lexbuf.lex_buffer) in
+         space since n <= String.length aux_buffer <= String.length buffer.
+         Watch out for string length overflow, though. *)
+      let newlen =
+        min (2 * String.length lexbuf.lex_buffer) Sys.max_string_length in
+      if lexbuf.lex_buffer_len - lexbuf.lex_start_pos + n > newlen
+      then failwith "Lexing.lex_refill: cannot grow buffer";
+      let newbuf = String.create newlen in
       (* Copy the valid data to the beginning of the new buffer *)
       String.blit lexbuf.lex_buffer lexbuf.lex_start_pos
                   newbuf 0
