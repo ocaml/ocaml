@@ -302,7 +302,13 @@ void debugger(enum event_kind event)
     case REQ_GET_FIELD:
       val = getval(dbg_in);
       i = getword(dbg_in);
-      putval(dbg_out, Field(val, i));
+      if (Tag_val(val) != Double_array_tag) {
+        putch(dbg_out, 0);
+        putval(dbg_out, Field(val, i));
+      } else {
+        putch(dbg_out, 1);
+        really_putblock(dbg_out, (char *) &Double_field(val, i), 8);
+      }
       flush(dbg_out);
       break;
     case REQ_MARSHAL_OBJ:
