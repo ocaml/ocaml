@@ -29,7 +29,7 @@ val any_event_at_pc : int -> Instruct.debug_event
 val event_at_pc : int -> Instruct.debug_event
 
 (* List the events in `module'. *)
-val events_in_module : string -> Instruct.debug_event array
+val events_in_module : string -> Instruct.debug_event list
 
 (* First event after the given position. *)
 (* --- Raise `Not_found' if no such event. *)

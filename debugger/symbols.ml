@@ -28,6 +28,8 @@ let events_by_pc =
   (Hashtbl.create 257 : (int, debug_event) Hashtbl.t)
 let events_by_module =
   (Hashtbl.create 17 : (string, debug_event array) Hashtbl.t)
+let all_events_by_module =
+  (Hashtbl.create 17 : (string, debug_event list) Hashtbl.t)
 
 let read_symbols' bytecode_file =
   let ic = open_in_bin bytecode_file in
@@ -69,11 +71,19 @@ let read_symbols bytecode_file =
     (function
         [] -> ()
       | ev :: _ as evl ->
-      	  let md = ev.ev_module
-          and sorted_evl =
+      	  let md = ev.ev_module in
+          let sorted_evl =
             Sort.list (fun ev1 ev2 -> ev1.ev_char <= ev2.ev_char) evl in
 	  modules := md :: !modules;
-          Hashtbl.add events_by_module md (Array.of_list sorted_evl))
+          Hashtbl.add all_events_by_module md sorted_evl;
+          let real_evl =
+            Primitives.filter
+              (function
+                 {ev_kind = Event_function | Event_return _} -> false
+               | _                                           -> true)
+              sorted_evl
+          in
+          Hashtbl.add events_by_module md (Array.of_list real_evl))
     all_events
 
 let any_event_at_pc pc =
@@ -81,15 +91,16 @@ let any_event_at_pc pc =
 
 let event_at_pc pc =
   let ev = any_event_at_pc pc in
-  if ev.ev_kind = Event_function then raise Not_found;
-  ev
+  match ev.ev_kind with
+    Event_function | Event_return _ -> raise Not_found
+  | _                               -> ev
 
 (* List all events in module *)
 let events_in_module mdle =
   try
-    Hashtbl.find events_by_module mdle
+    Hashtbl.find all_events_by_module mdle
   with Not_found ->
-    [||]
+    []
 
 (* Binary search of event at or just after char *)
 let find_event ev char =
@@ -132,6 +143,7 @@ let event_near_pos md char =
 let set_all_events () =
   Hashtbl.iter
     (fun pc ev ->
-       if ev.ev_kind <> Event_function then
-         Debugcom.set_event ev.ev_pos)
+       match ev.ev_kind with
+         Event_function | Event_return _ -> ()
+       | _                               -> Debugcom.set_event ev.ev_pos)
     events_by_pc
