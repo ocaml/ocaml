@@ -138,6 +138,10 @@ promote-cross Ä
 promote Ä promote-cross
     duplicate -y :byterun:ocamlrun :boot:ocamlrun
 
+realclean ÄÄ
+    delete -i :boot:Å.cm[aio] || set status 0
+    delete -i :boot:camlheader :boot:ocamlrun :boot:ocamlyacc
+
 # Restore the saved bootstrap compiler if a problem arises
 restore Ä
     move -y :boot:Saved:Å :boot:

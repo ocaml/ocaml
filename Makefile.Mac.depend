@@ -2,6 +2,8 @@
     :utils:ccomp.cmi 
 :utils:ccomp.cmxÄ :utils:clflags.cmx :utils:config.cmx :utils:misc.cmx ¶
     :utils:ccomp.cmi 
+:utils:clflags.cmoÄ :utils:config.cmi 
+:utils:clflags.cmxÄ :utils:config.cmx 
 :utils:config.cmoÄ :utils:config.cmi 
 :utils:config.cmxÄ :utils:config.cmi 
 :utils:misc.cmoÄ :utils:misc.cmi 
@@ -160,13 +162,13 @@
 :typing:typedecl.cmoÄ :utils:config.cmi :typing:ctype.cmi :typing:env.cmi ¶
     :typing:ident.cmi :typing:includecore.cmi :parsing:location.cmi ¶
     :parsing:parsetree.cmi :typing:primitive.cmi :typing:printtyp.cmi ¶
-    :typing:typedtree.cmi :typing:types.cmi :typing:typetexp.cmi ¶
-    :typing:typedecl.cmi 
+    :typing:subst.cmi :typing:typedtree.cmi :typing:types.cmi ¶
+    :typing:typetexp.cmi :typing:typedecl.cmi 
 :typing:typedecl.cmxÄ :utils:config.cmx :typing:ctype.cmx :typing:env.cmx ¶
     :typing:ident.cmx :typing:includecore.cmx :parsing:location.cmx ¶
     :parsing:parsetree.cmi :typing:primitive.cmx :typing:printtyp.cmx ¶
-    :typing:typedtree.cmx :typing:types.cmx :typing:typetexp.cmx ¶
-    :typing:typedecl.cmi 
+    :typing:subst.cmx :typing:typedtree.cmx :typing:types.cmx ¶
+    :typing:typetexp.cmx :typing:typedecl.cmi 
 :typing:typedtree.cmoÄ :parsing:asttypes.cmi :typing:env.cmi ¶
     :typing:ident.cmi :parsing:location.cmi :utils:misc.cmi :typing:path.cmi ¶
     :typing:primitive.cmi :typing:types.cmi :typing:typedtree.cmi 
@@ -204,8 +206,8 @@
 :bytecomp:instruct.cmiÄ :typing:ident.cmi :bytecomp:lambda.cmi 
 :bytecomp:lambda.cmiÄ :parsing:asttypes.cmi :typing:ident.cmi ¶
     :typing:path.cmi :typing:primitive.cmi 
-:bytecomp:matching.cmiÄ :bytecomp:lambda.cmi :parsing:location.cmi ¶
-    :typing:typedtree.cmi 
+:bytecomp:matching.cmiÄ :typing:ident.cmi :bytecomp:lambda.cmi ¶
+    :parsing:location.cmi :typing:typedtree.cmi 
 :bytecomp:printinstr.cmiÄ :bytecomp:instruct.cmi 
 :bytecomp:printlambda.cmiÄ :bytecomp:lambda.cmi 
 :bytecomp:simplif.cmiÄ :bytecomp:lambda.cmi 
@@ -227,10 +229,10 @@
     :bytecomp:emitcode.cmi :utils:misc.cmi :bytecomp:bytelibrarian.cmi 
 :bytecomp:bytelibrarian.cmxÄ :utils:clflags.cmx :utils:config.cmx ¶
     :bytecomp:emitcode.cmx :utils:misc.cmx :bytecomp:bytelibrarian.cmi 
-:bytecomp:bytelink.cmoÄ :utils:clflags.cmo :utils:config.cmi ¶
+:bytecomp:bytelink.cmoÄ :utils:ccomp.cmi :utils:clflags.cmo :utils:config.cmi ¶
     :bytecomp:emitcode.cmi :typing:ident.cmi :utils:misc.cmi ¶
     :bytecomp:opcodes.cmo :bytecomp:symtable.cmi :bytecomp:bytelink.cmi 
-:bytecomp:bytelink.cmxÄ :utils:clflags.cmx :utils:config.cmx ¶
+:bytecomp:bytelink.cmxÄ :utils:ccomp.cmx :utils:clflags.cmx :utils:config.cmx ¶
     :bytecomp:emitcode.cmx :typing:ident.cmx :utils:misc.cmx ¶
     :bytecomp:opcodes.cmx :bytecomp:symtable.cmx :bytecomp:bytelink.cmi 
 :bytecomp:emitcode.cmoÄ :parsing:asttypes.cmi :utils:config.cmi ¶
@@ -293,16 +295,16 @@
     :bytecomp:lambda.cmx :bytecomp:matching.cmx :utils:misc.cmx ¶
     :bytecomp:translcore.cmx :bytecomp:translobj.cmx :typing:typedtree.cmx ¶
     :typing:types.cmx :bytecomp:translclass.cmi 
-:bytecomp:translcore.cmoÄ :parsing:asttypes.cmi :utils:config.cmi ¶
-    :typing:ctype.cmi :typing:env.cmi :typing:ident.cmi :bytecomp:lambda.cmi ¶
-    :parsing:location.cmi :bytecomp:matching.cmi :utils:misc.cmi ¶
-    :typing:path.cmi :typing:predef.cmi :typing:primitive.cmi ¶
+:bytecomp:translcore.cmoÄ :parsing:asttypes.cmi :utils:clflags.cmo ¶
+    :utils:config.cmi :typing:ctype.cmi :typing:env.cmi :typing:ident.cmi ¶
+    :bytecomp:lambda.cmi :parsing:location.cmi :bytecomp:matching.cmi ¶
+    :utils:misc.cmi :typing:path.cmi :typing:predef.cmi :typing:primitive.cmi ¶
     :bytecomp:translobj.cmi :typing:typedtree.cmi :typing:types.cmi ¶
     :bytecomp:translcore.cmi 
-:bytecomp:translcore.cmxÄ :parsing:asttypes.cmi :utils:config.cmx ¶
-    :typing:ctype.cmx :typing:env.cmx :typing:ident.cmx :bytecomp:lambda.cmx ¶
-    :parsing:location.cmx :bytecomp:matching.cmx :utils:misc.cmx ¶
-    :typing:path.cmx :typing:predef.cmx :typing:primitive.cmx ¶
+:bytecomp:translcore.cmxÄ :parsing:asttypes.cmi :utils:clflags.cmx ¶
+    :utils:config.cmx :typing:ctype.cmx :typing:env.cmx :typing:ident.cmx ¶
+    :bytecomp:lambda.cmx :parsing:location.cmx :bytecomp:matching.cmx ¶
+    :utils:misc.cmx :typing:path.cmx :typing:predef.cmx :typing:primitive.cmx ¶
     :bytecomp:translobj.cmx :typing:typedtree.cmx :typing:types.cmx ¶
     :bytecomp:translcore.cmi 
 :bytecomp:translmod.cmoÄ :parsing:asttypes.cmi :typing:ident.cmi ¶
@@ -321,205 +323,22 @@
 :bytecomp:translobj.cmxÄ :parsing:asttypes.cmi :typing:env.cmx ¶
     :typing:ident.cmx :bytecomp:lambda.cmx :parsing:longident.cmx ¶
     :utils:misc.cmx :bytecomp:translobj.cmi 
-:asmcomp:asmgen.cmiÄ :asmcomp:cmm.cmi :bytecomp:lambda.cmi 
-:asmcomp:clambda.cmiÄ :parsing:asttypes.cmi :typing:ident.cmi ¶
-    :bytecomp:lambda.cmi 
-:asmcomp:closure.cmiÄ :asmcomp:clambda.cmi :bytecomp:lambda.cmi 
-:asmcomp:cmm.cmiÄ :typing:ident.cmi 
-:asmcomp:cmmgen.cmiÄ :asmcomp:clambda.cmi :asmcomp:cmm.cmi 
-:asmcomp:codegen.cmiÄ :asmcomp:cmm.cmi 
-:asmcomp:compilenv.cmiÄ :asmcomp:clambda.cmi :typing:ident.cmi 
-:asmcomp:emit.cmiÄ :asmcomp:cmm.cmi :asmcomp:linearize.cmi 
-:asmcomp:interf.cmiÄ :asmcomp:mach.cmi 
-:asmcomp:linearize.cmiÄ :asmcomp:mach.cmi :asmcomp:reg.cmi 
-:asmcomp:liveness.cmiÄ :asmcomp:mach.cmi 
-:asmcomp:mach.cmiÄ :asmcomp:cmm.cmi :asmcomp:reg.cmi 
-:asmcomp:printcmm.cmiÄ :asmcomp:cmm.cmi 
-:asmcomp:printlinear.cmiÄ :asmcomp:linearize.cmi 
-:asmcomp:printmach.cmiÄ :asmcomp:mach.cmi :asmcomp:reg.cmi 
-:asmcomp:proc.cmiÄ :asmcomp:cmm.cmi :asmcomp:mach.cmi :asmcomp:reg.cmi 
-:asmcomp:reg.cmiÄ :asmcomp:cmm.cmi 
-:asmcomp:reload.cmiÄ :asmcomp:mach.cmi :asmcomp:reg.cmi 
-:asmcomp:scheduling.cmiÄ :asmcomp:linearize.cmi 
-:asmcomp:selection.cmiÄ :asmcomp:cmm.cmi :asmcomp:mach.cmi 
-:asmcomp:spill.cmiÄ :asmcomp:mach.cmi 
-:asmcomp:split.cmiÄ :asmcomp:mach.cmi 
-:asmcomp:arch_mips.cmoÄ :utils:misc.cmi 
-:asmcomp:arch_mips.cmxÄ :utils:misc.cmx 
-:asmcomp:arch_power.cmoÄ :utils:misc.cmi 
-:asmcomp:arch_power.cmxÄ :utils:misc.cmx 
-:asmcomp:arch_sparc.cmoÄ :utils:misc.cmi 
-:asmcomp:arch_sparc.cmxÄ :utils:misc.cmx 
-:asmcomp:asmgen.cmoÄ :utils:clflags.cmo :asmcomp:closure.cmi :asmcomp:cmm.cmi ¶
-    :asmcomp:cmmgen.cmi :asmcomp:coloring.cmi :utils:config.cmi ¶
-    :asmcomp:emit.cmi :asmcomp:emitaux.cmi :asmcomp:interf.cmi ¶
-    :asmcomp:linearize.cmi :asmcomp:liveness.cmi :asmcomp:mach.cmi ¶
-    :utils:misc.cmi :asmcomp:printcmm.cmi :asmcomp:printlinear.cmi ¶
-    :asmcomp:printmach.cmi :asmcomp:proc.cmi :asmcomp:reg.cmi ¶
-    :asmcomp:reload.cmi :asmcomp:scheduling.cmi :asmcomp:selection.cmi ¶
-    :asmcomp:spill.cmi :asmcomp:split.cmi :asmcomp:asmgen.cmi 
-:asmcomp:asmgen.cmxÄ :utils:clflags.cmx :asmcomp:closure.cmx :asmcomp:cmm.cmx ¶
-    :asmcomp:cmmgen.cmx :asmcomp:coloring.cmx :utils:config.cmx ¶
-    :asmcomp:emit.cmi :asmcomp:emitaux.cmx :asmcomp:interf.cmx ¶
-    :asmcomp:linearize.cmx :asmcomp:liveness.cmx :asmcomp:mach.cmx ¶
-    :utils:misc.cmx :asmcomp:printcmm.cmx :asmcomp:printlinear.cmx ¶
-    :asmcomp:printmach.cmx :asmcomp:proc.cmi :asmcomp:reg.cmx ¶
-    :asmcomp:reload.cmx :asmcomp:scheduling.cmx :asmcomp:selection.cmx ¶
-    :asmcomp:spill.cmx :asmcomp:split.cmx :asmcomp:asmgen.cmi 
-:asmcomp:asmlibrarian.cmoÄ :asmcomp:clambda.cmi :utils:clflags.cmo ¶
-    :asmcomp:compilenv.cmi :utils:config.cmi :utils:misc.cmi ¶
-    :asmcomp:proc.cmi :asmcomp:asmlibrarian.cmi 
-:asmcomp:asmlibrarian.cmxÄ :asmcomp:clambda.cmx :utils:clflags.cmx ¶
-    :asmcomp:compilenv.cmx :utils:config.cmx :utils:misc.cmx ¶
-    :asmcomp:proc.cmi :asmcomp:asmlibrarian.cmi 
-:asmcomp:asmlink.cmoÄ :asmcomp:asmgen.cmi :utils:clflags.cmo ¶
-    :asmcomp:cmmgen.cmi :asmcomp:compilenv.cmi :utils:config.cmi ¶
-    :asmcomp:emit.cmi :asmcomp:emitaux.cmi :parsing:location.cmi ¶
-    :utils:misc.cmi :asmcomp:proc.cmi :bytecomp:runtimedef.cmi ¶
-    :asmcomp:asmlink.cmi 
-:asmcomp:asmlink.cmxÄ :asmcomp:asmgen.cmx :utils:clflags.cmx ¶
-    :asmcomp:cmmgen.cmx :asmcomp:compilenv.cmx :utils:config.cmx ¶
-    :asmcomp:emit.cmi :asmcomp:emitaux.cmx :parsing:location.cmx ¶
-    :utils:misc.cmx :asmcomp:proc.cmi :bytecomp:runtimedef.cmx ¶
-    :asmcomp:asmlink.cmi 
-:asmcomp:clambda.cmoÄ :parsing:asttypes.cmi :typing:ident.cmi ¶
-    :bytecomp:lambda.cmi :asmcomp:clambda.cmi 
-:asmcomp:clambda.cmxÄ :parsing:asttypes.cmi :typing:ident.cmx ¶
-    :bytecomp:lambda.cmx :asmcomp:clambda.cmi 
-:asmcomp:closure.cmoÄ :parsing:asttypes.cmi :asmcomp:clambda.cmi ¶
-    :asmcomp:compilenv.cmi :typing:ident.cmi :bytecomp:lambda.cmi ¶
-    :utils:misc.cmi :utils:tbl.cmi :asmcomp:closure.cmi 
-:asmcomp:closure.cmxÄ :parsing:asttypes.cmi :asmcomp:clambda.cmx ¶
-    :asmcomp:compilenv.cmx :typing:ident.cmx :bytecomp:lambda.cmx ¶
-    :utils:misc.cmx :utils:tbl.cmx :asmcomp:closure.cmi 
-:asmcomp:cmm.cmoÄ :typing:ident.cmi :asmcomp:cmm.cmi 
-:asmcomp:cmm.cmxÄ :typing:ident.cmx :asmcomp:cmm.cmi 
-:asmcomp:cmmgen.cmoÄ :parsing:asttypes.cmi :asmcomp:clambda.cmi ¶
-    :utils:clflags.cmo :asmcomp:cmm.cmi :asmcomp:compilenv.cmi ¶
-    :typing:ident.cmi :bytecomp:lambda.cmi :utils:misc.cmi ¶
-    :typing:primitive.cmi :asmcomp:proc.cmi :typing:types.cmi ¶
-    :asmcomp:cmmgen.cmi 
-:asmcomp:cmmgen.cmxÄ :parsing:asttypes.cmi :asmcomp:clambda.cmx ¶
-    :utils:clflags.cmx :asmcomp:cmm.cmx :asmcomp:compilenv.cmx ¶
-    :typing:ident.cmx :bytecomp:lambda.cmx :utils:misc.cmx ¶
-    :typing:primitive.cmx :asmcomp:proc.cmi :typing:types.cmx ¶
-    :asmcomp:cmmgen.cmi 
-:asmcomp:codegen.cmoÄ :asmcomp:cmm.cmi :asmcomp:coloring.cmi ¶
-    :asmcomp:emit.cmi :asmcomp:interf.cmi :asmcomp:linearize.cmi ¶
-    :asmcomp:liveness.cmi :asmcomp:printcmm.cmi :asmcomp:printlinear.cmi ¶
-    :asmcomp:printmach.cmi :asmcomp:reg.cmi :asmcomp:reload.cmi ¶
-    :asmcomp:spill.cmi :asmcomp:split.cmi :asmcomp:codegen.cmi 
-:asmcomp:codegen.cmxÄ :asmcomp:cmm.cmx :asmcomp:coloring.cmx ¶
-    :asmcomp:emit.cmi :asmcomp:interf.cmx :asmcomp:linearize.cmx ¶
-    :asmcomp:liveness.cmx :asmcomp:printcmm.cmx :asmcomp:printlinear.cmx ¶
-    :asmcomp:printmach.cmx :asmcomp:reg.cmx :asmcomp:reload.cmx ¶
-    :asmcomp:spill.cmx :asmcomp:split.cmx :asmcomp:codegen.cmi 
-:asmcomp:coloring.cmoÄ :asmcomp:proc.cmi :asmcomp:reg.cmi ¶
-    :asmcomp:coloring.cmi 
-:asmcomp:coloring.cmxÄ :asmcomp:proc.cmi :asmcomp:reg.cmx ¶
-    :asmcomp:coloring.cmi 
-:asmcomp:compilenv.cmoÄ :asmcomp:clambda.cmi :utils:config.cmi ¶
-    :typing:env.cmi :typing:ident.cmi :utils:misc.cmi :asmcomp:compilenv.cmi 
-:asmcomp:compilenv.cmxÄ :asmcomp:clambda.cmx :utils:config.cmx ¶
-    :typing:env.cmx :typing:ident.cmx :utils:misc.cmx :asmcomp:compilenv.cmi 
-:asmcomp:emitaux.cmoÄ :asmcomp:emitaux.cmi 
-:asmcomp:emitaux.cmxÄ :asmcomp:emitaux.cmi 
-:asmcomp:interf.cmoÄ :asmcomp:mach.cmi :asmcomp:proc.cmi :asmcomp:reg.cmi ¶
-    :asmcomp:interf.cmi 
-:asmcomp:interf.cmxÄ :asmcomp:mach.cmx :asmcomp:proc.cmi :asmcomp:reg.cmx ¶
-    :asmcomp:interf.cmi 
-:asmcomp:linearize.cmoÄ :asmcomp:cmm.cmi :asmcomp:mach.cmi :asmcomp:proc.cmi ¶
-    :asmcomp:reg.cmi :asmcomp:linearize.cmi 
-:asmcomp:linearize.cmxÄ :asmcomp:cmm.cmx :asmcomp:mach.cmx :asmcomp:proc.cmi ¶
-    :asmcomp:reg.cmx :asmcomp:linearize.cmi 
-:asmcomp:liveness.cmoÄ :asmcomp:mach.cmi :utils:misc.cmi ¶
-    :asmcomp:printmach.cmi :asmcomp:proc.cmi :asmcomp:reg.cmi ¶
-    :asmcomp:liveness.cmi 
-:asmcomp:liveness.cmxÄ :asmcomp:mach.cmx :utils:misc.cmx ¶
-    :asmcomp:printmach.cmx :asmcomp:proc.cmi :asmcomp:reg.cmx ¶
-    :asmcomp:liveness.cmi 
-:asmcomp:mach.cmoÄ :asmcomp:cmm.cmi :asmcomp:reg.cmi :asmcomp:mach.cmi 
-:asmcomp:mach.cmxÄ :asmcomp:cmm.cmx :asmcomp:reg.cmx :asmcomp:mach.cmi 
-:asmcomp:printcmm.cmoÄ :asmcomp:cmm.cmi :typing:ident.cmi ¶
-    :asmcomp:printcmm.cmi 
-:asmcomp:printcmm.cmxÄ :asmcomp:cmm.cmx :typing:ident.cmx ¶
-    :asmcomp:printcmm.cmi 
-:asmcomp:printlinear.cmoÄ :asmcomp:linearize.cmi :asmcomp:mach.cmi ¶
-    :asmcomp:printmach.cmi :asmcomp:printlinear.cmi 
-:asmcomp:printlinear.cmxÄ :asmcomp:linearize.cmx :asmcomp:mach.cmx ¶
-    :asmcomp:printmach.cmx :asmcomp:printlinear.cmi 
-:asmcomp:printmach.cmoÄ :asmcomp:cmm.cmi :asmcomp:mach.cmi ¶
-    :asmcomp:printcmm.cmi :asmcomp:proc.cmi :asmcomp:reg.cmi ¶
-    :asmcomp:printmach.cmi 
-:asmcomp:printmach.cmxÄ :asmcomp:cmm.cmx :asmcomp:mach.cmx ¶
-    :asmcomp:printcmm.cmx :asmcomp:proc.cmi :asmcomp:reg.cmx ¶
-    :asmcomp:printmach.cmi 
-:asmcomp:proc_alpha.cmoÄ :asmcomp:cmm.cmi :asmcomp:mach.cmi :utils:misc.cmi ¶
-    :asmcomp:reg.cmi 
-:asmcomp:proc_alpha.cmxÄ :asmcomp:cmm.cmx :asmcomp:mach.cmx :utils:misc.cmx ¶
-    :asmcomp:reg.cmx 
-:asmcomp:proc_hppa.cmoÄ :asmcomp:cmm.cmi :utils:config.cmi :asmcomp:mach.cmi ¶
-    :utils:misc.cmi :asmcomp:reg.cmi 
-:asmcomp:proc_hppa.cmxÄ :asmcomp:cmm.cmx :utils:config.cmx :asmcomp:mach.cmx ¶
-    :utils:misc.cmx :asmcomp:reg.cmx 
-:asmcomp:proc_i386.cmoÄ :asmcomp:cmm.cmi :asmcomp:mach.cmi :utils:misc.cmi ¶
-    :asmcomp:reg.cmi 
-:asmcomp:proc_i386.cmxÄ :asmcomp:cmm.cmx :asmcomp:mach.cmx :utils:misc.cmx ¶
-    :asmcomp:reg.cmx 
-:asmcomp:proc_i386nt.cmoÄ :asmcomp:cmm.cmi :asmcomp:mach.cmi :utils:misc.cmi ¶
-    :asmcomp:reg.cmi 
-:asmcomp:proc_i386nt.cmxÄ :asmcomp:cmm.cmx :asmcomp:mach.cmx :utils:misc.cmx ¶
-    :asmcomp:reg.cmx 
-:asmcomp:proc_mips.cmoÄ :asmcomp:cmm.cmi :asmcomp:mach.cmi :utils:misc.cmi ¶
-    :asmcomp:reg.cmi 
-:asmcomp:proc_mips.cmxÄ :asmcomp:cmm.cmx :asmcomp:mach.cmx :utils:misc.cmx ¶
-    :asmcomp:reg.cmx 
-:asmcomp:proc_power.cmoÄ :asmcomp:cmm.cmi :utils:config.cmi :asmcomp:mach.cmi ¶
-    :utils:misc.cmi :asmcomp:reg.cmi 
-:asmcomp:proc_power.cmxÄ :asmcomp:cmm.cmx :utils:config.cmx :asmcomp:mach.cmx ¶
-    :utils:misc.cmx :asmcomp:reg.cmx 
-:asmcomp:proc_sparc.cmoÄ :asmcomp:cmm.cmi :utils:config.cmi :asmcomp:mach.cmi ¶
-    :utils:misc.cmi :asmcomp:reg.cmi 
-:asmcomp:proc_sparc.cmxÄ :asmcomp:cmm.cmx :utils:config.cmx :asmcomp:mach.cmx ¶
-    :utils:misc.cmx :asmcomp:reg.cmx 
-:asmcomp:reg.cmoÄ :asmcomp:cmm.cmi :asmcomp:reg.cmi 
-:asmcomp:reg.cmxÄ :asmcomp:cmm.cmx :asmcomp:reg.cmi 
-:asmcomp:reload.cmoÄ :asmcomp:mach.cmi :utils:misc.cmi :asmcomp:proc.cmi ¶
-    :asmcomp:reg.cmi :asmcomp:reload.cmi 
-:asmcomp:reload.cmxÄ :asmcomp:mach.cmx :utils:misc.cmx :asmcomp:proc.cmi ¶
-    :asmcomp:reg.cmx :asmcomp:reload.cmi 
-:asmcomp:scheduling.cmoÄ :asmcomp:cmm.cmi :asmcomp:linearize.cmi ¶
-    :asmcomp:mach.cmi :utils:misc.cmi :asmcomp:proc.cmi :asmcomp:reg.cmi ¶
-    :asmcomp:scheduling.cmi 
-:asmcomp:scheduling.cmxÄ :asmcomp:cmm.cmx :asmcomp:linearize.cmx ¶
-    :asmcomp:mach.cmx :utils:misc.cmx :asmcomp:proc.cmi :asmcomp:reg.cmx ¶
-    :asmcomp:scheduling.cmi 
-:asmcomp:selection.cmoÄ :asmcomp:cmm.cmi :typing:ident.cmi :asmcomp:mach.cmi ¶
-    :utils:misc.cmi :asmcomp:proc.cmi :asmcomp:reg.cmi :utils:tbl.cmi ¶
-    :asmcomp:selection.cmi 
-:asmcomp:selection.cmxÄ :asmcomp:cmm.cmx :typing:ident.cmx :asmcomp:mach.cmx ¶
-    :utils:misc.cmx :asmcomp:proc.cmi :asmcomp:reg.cmx :utils:tbl.cmx ¶
-    :asmcomp:selection.cmi 
-:asmcomp:spill.cmoÄ :asmcomp:mach.cmi :asmcomp:proc.cmi :asmcomp:reg.cmi ¶
-    :asmcomp:spill.cmi 
-:asmcomp:spill.cmxÄ :asmcomp:mach.cmx :asmcomp:proc.cmi :asmcomp:reg.cmx ¶
-    :asmcomp:spill.cmi 
-:asmcomp:split.cmoÄ :asmcomp:mach.cmi :asmcomp:reg.cmi :asmcomp:split.cmi 
-:asmcomp:split.cmxÄ :asmcomp:mach.cmx :asmcomp:reg.cmx :asmcomp:split.cmi 
 :driver:compile.cmiÄ :typing:env.cmi 
 :driver:optcompile.cmiÄ :typing:env.cmi 
-:driver:compile.cmoÄ :bytecomp:bytegen.cmi :utils:clflags.cmo ¶
-    :utils:config.cmi :bytecomp:emitcode.cmi :typing:env.cmi ¶
-    :typing:includemod.cmi :parsing:location.cmi :utils:misc.cmi ¶
-    :parsing:parse.cmi :bytecomp:printinstr.cmi :bytecomp:printlambda.cmi ¶
-    :typing:printtyp.cmi :bytecomp:simplif.cmi :bytecomp:translmod.cmi ¶
-    :typing:typedtree.cmi :typing:typemod.cmi :driver:compile.cmi 
-:driver:compile.cmxÄ :bytecomp:bytegen.cmx :utils:clflags.cmx ¶
-    :utils:config.cmx :bytecomp:emitcode.cmx :typing:env.cmx ¶
-    :typing:includemod.cmx :parsing:location.cmx :utils:misc.cmx ¶
-    :parsing:parse.cmx :bytecomp:printinstr.cmx :bytecomp:printlambda.cmx ¶
-    :typing:printtyp.cmx :bytecomp:simplif.cmx :bytecomp:translmod.cmx ¶
-    :typing:typedtree.cmx :typing:typemod.cmx :driver:compile.cmi 
+:driver:compile.cmoÄ :bytecomp:bytegen.cmi :utils:ccomp.cmi ¶
+    :utils:clflags.cmo :utils:config.cmi :bytecomp:emitcode.cmi ¶
+    :typing:env.cmi :typing:includemod.cmi :parsing:location.cmi ¶
+    :utils:misc.cmi :parsing:parse.cmi :bytecomp:printinstr.cmi ¶
+    :bytecomp:printlambda.cmi :typing:printtyp.cmi :bytecomp:simplif.cmi ¶
+    :bytecomp:translmod.cmi :typing:typedtree.cmi :typing:typemod.cmi ¶
+    :driver:compile.cmi 
+:driver:compile.cmxÄ :bytecomp:bytegen.cmx :utils:ccomp.cmx ¶
+    :utils:clflags.cmx :utils:config.cmx :bytecomp:emitcode.cmx ¶
+    :typing:env.cmx :typing:includemod.cmx :parsing:location.cmx ¶
+    :utils:misc.cmx :parsing:parse.cmx :bytecomp:printinstr.cmx ¶
+    :bytecomp:printlambda.cmx :typing:printtyp.cmx :bytecomp:simplif.cmx ¶
+    :bytecomp:translmod.cmx :typing:typedtree.cmx :typing:typemod.cmx ¶
+    :driver:compile.cmi 
 :driver:errors.cmoÄ :bytecomp:bytelibrarian.cmi :bytecomp:bytelink.cmi ¶
     :typing:env.cmi :typing:includemod.cmi :parsing:lexer.cmi ¶
     :parsing:location.cmi :parsing:parse.cmi :bytecomp:symtable.cmi ¶
@@ -538,36 +357,30 @@
 :driver:main.cmxÄ :bytecomp:bytelibrarian.cmx :bytecomp:bytelink.cmx ¶
     :utils:clflags.cmx :driver:compile.cmx :utils:config.cmx ¶
     :driver:errors.cmx 
-:driver:optcompile.cmoÄ :asmcomp:asmgen.cmi :utils:clflags.cmo ¶
-    :asmcomp:compilenv.cmi :utils:config.cmi :typing:env.cmi ¶
-    :typing:includemod.cmi :parsing:location.cmi :utils:misc.cmi ¶
-    :parsing:parse.cmi :bytecomp:printlambda.cmi :typing:printtyp.cmi ¶
-    :bytecomp:simplif.cmi :bytecomp:translmod.cmi :typing:typedtree.cmi ¶
-    :typing:typemod.cmi :driver:optcompile.cmi 
-:driver:optcompile.cmxÄ :asmcomp:asmgen.cmx :utils:clflags.cmx ¶
-    :asmcomp:compilenv.cmx :utils:config.cmx :typing:env.cmx ¶
-    :typing:includemod.cmx :parsing:location.cmx :utils:misc.cmx ¶
-    :parsing:parse.cmx :bytecomp:printlambda.cmx :typing:printtyp.cmx ¶
-    :bytecomp:simplif.cmx :bytecomp:translmod.cmx :typing:typedtree.cmx ¶
-    :typing:typemod.cmx :driver:optcompile.cmi 
-:driver:opterrors.cmoÄ :asmcomp:asmgen.cmi :asmcomp:asmlibrarian.cmi ¶
-    :asmcomp:asmlink.cmi :asmcomp:compilenv.cmi :typing:env.cmi ¶
-    :typing:includemod.cmi :parsing:lexer.cmi :parsing:location.cmi ¶
-    :parsing:parse.cmi :bytecomp:translcore.cmi :typing:typeclass.cmi ¶
-    :typing:typecore.cmi :typing:typedecl.cmi :typing:typemod.cmi ¶
-    :typing:typetexp.cmi :driver:opterrors.cmi 
-:driver:opterrors.cmxÄ :asmcomp:asmgen.cmx :asmcomp:asmlibrarian.cmx ¶
-    :asmcomp:asmlink.cmx :asmcomp:compilenv.cmx :typing:env.cmx ¶
-    :typing:includemod.cmx :parsing:lexer.cmx :parsing:location.cmx ¶
-    :parsing:parse.cmx :bytecomp:translcore.cmx :typing:typeclass.cmx ¶
-    :typing:typecore.cmx :typing:typedecl.cmx :typing:typemod.cmx ¶
-    :typing:typetexp.cmx :driver:opterrors.cmi 
-:driver:optmain.cmoÄ :asmcomp:asmlibrarian.cmi :asmcomp:asmlink.cmi ¶
-    :utils:clflags.cmo :utils:config.cmi :driver:optcompile.cmi ¶
-    :driver:opterrors.cmi :asmcomp:printmach.cmi 
-:driver:optmain.cmxÄ :asmcomp:asmlibrarian.cmx :asmcomp:asmlink.cmx ¶
-    :utils:clflags.cmx :utils:config.cmx :driver:optcompile.cmx ¶
-    :driver:opterrors.cmx :asmcomp:printmach.cmx 
+:driver:optcompile.cmoÄ :utils:ccomp.cmi :utils:clflags.cmo :utils:config.cmi ¶
+    :typing:env.cmi :typing:includemod.cmi :parsing:location.cmi ¶
+    :utils:misc.cmi :parsing:parse.cmi :bytecomp:printlambda.cmi ¶
+    :typing:printtyp.cmi :bytecomp:simplif.cmi :bytecomp:translmod.cmi ¶
+    :typing:typedtree.cmi :typing:typemod.cmi :driver:optcompile.cmi 
+:driver:optcompile.cmxÄ :utils:ccomp.cmx :utils:clflags.cmx :utils:config.cmx ¶
+    :typing:env.cmx :typing:includemod.cmx :parsing:location.cmx ¶
+    :utils:misc.cmx :parsing:parse.cmx :bytecomp:printlambda.cmx ¶
+    :typing:printtyp.cmx :bytecomp:simplif.cmx :bytecomp:translmod.cmx ¶
+    :typing:typedtree.cmx :typing:typemod.cmx :driver:optcompile.cmi 
+:driver:opterrors.cmoÄ :typing:env.cmi :typing:includemod.cmi ¶
+    :parsing:lexer.cmi :parsing:location.cmi :parsing:parse.cmi ¶
+    :bytecomp:translcore.cmi :typing:typeclass.cmi :typing:typecore.cmi ¶
+    :typing:typedecl.cmi :typing:typemod.cmi :typing:typetexp.cmi ¶
+    :driver:opterrors.cmi 
+:driver:opterrors.cmxÄ :typing:env.cmx :typing:includemod.cmx ¶
+    :parsing:lexer.cmx :parsing:location.cmx :parsing:parse.cmx ¶
+    :bytecomp:translcore.cmx :typing:typeclass.cmx :typing:typecore.cmx ¶
+    :typing:typedecl.cmx :typing:typemod.cmx :typing:typetexp.cmx ¶
+    :driver:opterrors.cmi 
+:driver:optmain.cmoÄ :utils:clflags.cmo :utils:config.cmi ¶
+    :driver:optcompile.cmi :driver:opterrors.cmi 
+:driver:optmain.cmxÄ :utils:clflags.cmx :utils:config.cmx ¶
+    :driver:optcompile.cmx :driver:opterrors.cmx 
 :toplevel:printval.cmiÄ :typing:env.cmi :typing:path.cmi :typing:types.cmi 
 :toplevel:topdirs.cmiÄ :parsing:location.cmi :parsing:longident.cmi ¶
     :parsing:parsetree.cmi 
