@@ -279,7 +279,8 @@
                            freelist.h ¶
                            minor_gc.h
 
-"macintosh.c.x" Ä  macintosh.c
+"macintosh.c.x" Ä  macintosh.c ¶
+                              rotatecursor.h
 
 "main.c.x" Ä  main.c ¶
                          misc.h ¶
@@ -812,7 +813,8 @@
                            freelist.h ¶
                            minor_gc.h
 
-"macintosh.c.o" Ä  macintosh.c
+"macintosh.c.o" Ä  macintosh.c ¶
+                              rotatecursor.h
 
 "main.c.o" Ä  main.c ¶
                          misc.h ¶

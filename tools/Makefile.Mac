@@ -5,7 +5,7 @@ INCLUDES = -I ::utils: -I ::parsing: -I ::typing: -I ::bytecomp: -I ::asmcomp:
 COMPFLAGS = {INCLUDES}
 LINKFLAGS = {INCLUDES}
 
-all Ä ocamldep
+all Ä ocamldep ocamldumpobj
 
 # The dependency generator
 
@@ -22,7 +22,7 @@ clean ÄÄ
     delete -i ocamldep
 
 install ÄÄ
-    duplicate -y ocamldep "{BINDIR}ocamldep"
+    duplicate -y OCamlDep "{BINDIR}OCamlDep"
 
 # The profiler  (not available on MacOS for the moment)
 #
@@ -52,8 +52,8 @@ install ÄÄ
 
 DUMPOBJ = opnames.cmo dumpobj.cmo
 
-OCamlDumpObj Ä {DUMPOBJ}
-    {CAMLC} {LINKFLAGS} -o OCamlDumpObj ¶
+ocamldumpobj Ä {DUMPOBJ}
+    {CAMLC} {LINKFLAGS} -o ocamldumpobj ¶
             misc.cmo formatmsg.cmo tbl.cmo config.cmo ident.cmo opcodes.cmo ¶
             {DUMPOBJ}
 

@@ -9,4 +9,4 @@ cvt_emit.ml
 ocamlcp
 ocamlmktop
 primreq
-OCamlDumpObj
+ocamldumpobj
