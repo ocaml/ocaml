@@ -179,3 +179,10 @@ let builtin_values =
        ident_failure; ident_not_found; ident_sys_error; ident_end_of_file;
        ident_division_by_zero; ident_sys_blocked_io;
        ident_assert_failure ]
+
+(* DYN *)
+let builtin_abstract_types =
+  [ path_int; path_char; path_string; path_float; path_array; path_format;
+    path_nativeint; path_int32; path_int64; path_dyn ]
+;;
+(* /DYN *)
