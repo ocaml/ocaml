@@ -137,6 +137,8 @@ let op_SIMPLESTAR = 13
 let op_SIMPLEPLUS = 14
 let op_GOTO = 15
 let op_PUSHBACK = 16
+let op_GOTO_STAR = 17
+let op_GOTO_PLUS = 18
 
 (* Encoding of bytecode instructions *)
 
@@ -279,25 +281,25 @@ let compile fold_case re =
       (* Implement longest match semantics for compatibility with old Str *)
       (* lbl1: PUSHBACK lbl2
                <match r>
-               GOTO lbl1
+               GOTO_STAR lbl1
          lbl2:
       *)
       let lbl1 = emit_hole() in
       emit_code r;
-      emit_instr op_GOTO (displ lbl1 !progpos);
+      emit_instr op_GOTO_STAR (displ lbl1 !progpos);
       let lbl2 = !progpos in
       patch_instr lbl1 op_PUSHBACK lbl2
   | Plus r ->
       (* Implement longest match semantics for compatibility with old Str *)
       (* lbl1: <match r>
                PUSHBACK lbl2
-               GOTO lbl1
+               GOTO_PLUS lbl1
          lbl2:
       *)
       let lbl1 = !progpos in
       emit_code r;
       let pos_pushback = emit_hole() in
-      emit_instr op_GOTO (displ lbl1 !progpos);
+      emit_instr op_GOTO_PLUS (displ lbl1 !progpos);
       let lbl2 = !progpos in
       patch_instr pos_pushback op_PUSHBACK lbl2
   | Option r ->

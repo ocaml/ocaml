@@ -24,7 +24,7 @@
 /* The backtracking NFA interpreter */
 
 struct backtrack_point {
-  char * txt;
+  unsigned char * txt;
   value * pc;
   int mask;
 };
@@ -57,8 +57,12 @@ enum {
   SIMPLESTAR, /* match a character class 0, 1 or several times */
   SIMPLEPLUS, /* match a character class 1 or several times */
   GOTO,       /* unconditional branch */
-  PUSHBACK    /* record a backtrack point -- 
+  PUSHBACK,   /* record a backtrack point -- 
                  where to jump in case of failure */
+  GOTO_STAR,  /* like goto, except that we backtrack if no
+                 characters were consumed since last PUSHBACK */
+  GOTO_PLUS,  /* like goto, except that we backtrack if no
+                 characters were consumed since penultimate PUSHBACK */
 };
 
 /* Accessors in a compiled regexp */
@@ -102,8 +106,20 @@ static unsigned char re_word_letters[32] = {
 };
 #define Is_word_letter(c) ((re_word_letters[(c) >> 3] >> ((c) & 7)) & 1)
 
-/* The bytecode interpreter for the NFA */
+/* Return the n-th previous backtrack point.
+   Must have  n < BACKTRACK_STACK_BLOCK_SIZE. */
+static struct backtrack_point *
+re_previous_backtrack_point(struct backtrack_point * sp,
+                            struct backtrack_stack * stack,
+                            int n)
+{
+  if (sp >= stack->point + n) return sp - n;
+  stack = stack->previous;
+  if (stack == NULL) return NULL;
+  return stack->point + BACKTRACK_STACK_BLOCK_SIZE - n;
+}
 
+/* The bytecode interpreter for the NFA */
 static int re_match(value re, 
                     unsigned char * starttxt,
                     register unsigned char * txt,
@@ -251,6 +267,18 @@ static int re_match(value re,
       sp->mask = re_mask;
       sp++;
       break;
+    case GOTO_STAR: {
+      struct backtrack_point * p = re_previous_backtrack_point(sp, stack, 1);
+      if (p != NULL && txt == p->txt) goto backtrack;
+      pc = pc + SignedArg(instr);
+      break;
+    }
+    case GOTO_PLUS: {
+      struct backtrack_point * p = re_previous_backtrack_point(sp, stack, 2);
+      if (p != NULL && txt == p->txt) goto backtrack;
+      pc = pc + SignedArg(instr);
+      break;
+    }
     default:
       assert(0);
     }
