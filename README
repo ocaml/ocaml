@@ -20,11 +20,11 @@ Standard ML of New Jersey 1.08 on our tests), while retaining the
 moderate memory requirements of the bytecode compiler. The native-code
 compiler currently runs on the following platforms:
 
-    Alpha processors: DecStation 3000 under OSF1 (a.k.a. Digital Unix)
+    Alpha processors: AlphaStation and DecStation 3000 under Digital Unix
     Sparc processors: Sun Sparcstation under SunOS 4.1, Solaris 2, NetBSD
     Intel 486 and Pentium processors: PCs under Linux, NextStep,
                                       FreeBSD, Solaris 2
-    Mips processors: SGI workstations and mainframes under IRIX 5 and 6,
+    Mips processors: SGI workstations and mainframes under IRIX 6,
                      DecStation 3100 and 5000 under Ultrix 4
     HP PA-RISC processors: HP 9000/700 under HPUX 9 and NextStep
     PowerPC processors: IBM RS6000 and PowerPC workstations under AIX 3.2,
