@@ -844,7 +844,7 @@ module Grab {
 
 subtype option(rowcolumnconfigure) {
   Minsize ["-minsize"; Units/int]
-  Weight  ["-weight"; float]
+  Weight  ["-weight"; int]
   Pad ["-pad"; Units/int]       
 }
 
