@@ -16,6 +16,7 @@
 type t
 
 external repr : 'a -> t = "%identity"
+external obj : t -> 'a = "%identity"
 external magic : 'a -> 'b = "%identity"
 external is_block : t -> bool = "obj_is_block"
 external tag : t -> int = "obj_tag"
