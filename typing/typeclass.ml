@@ -428,9 +428,11 @@ let rec class_field cl_num self_type meths vars
         raise(Typecore.Error(expr.pexp_loc, Expr_type_clash(trace)))
       end;
       Ctype.end_def ();
+      let vars_local = !vars in
       let field =
         lazy begin
           Ctype.raise_nongen_level ();
+          vars := vars_local;
           let texp = type_expect met_env meth_expr meth_type in
           Ctype.end_def ();
           Cf_meth (lab, texp)
@@ -474,6 +476,7 @@ let rec class_field cl_num self_type meths vars
 
   | Pcf_init expr ->
       let expr = make_method cl_num expr in
+      let vars_local = !vars in
       let field =
         lazy begin
           Ctype.raise_nongen_level ();
@@ -481,6 +484,7 @@ let rec class_field cl_num self_type meths vars
           let (obj_ty, res_ty) = Ctype.filter_arrow val_env meth_type "" in
           Ctype.unify val_env obj_ty self_type;
           Ctype.unify val_env res_ty (Ctype.instance Predef.type_unit);
+          vars := vars_local;
           let texp = type_expect met_env expr meth_type in
           Ctype.end_def ();
           Cf_init texp
@@ -514,7 +518,9 @@ and class_structure cl_num val_env met_env (spat, str) =
       (val_env, meth_env, par_env, [], Concr.empty, StringSet.empty)
       str
   in
+  let vars_final = !vars in
   let fields = List.map Lazy.force (List.rev fields) in
+  vars := vars_final;
 
   {cl_field = fields;
    cl_meths = Meths.map (function (id, ty) -> id) !meths},
