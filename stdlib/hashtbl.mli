@@ -31,6 +31,9 @@ val create : int -> ('a,'b) t
 val clear : ('a, 'b) t -> unit
         (* Empty a hash table. *)
 
+val copy : ('a, 'b) t -> ('a, 'b) t
+        (* Return a copy of the given hashtable. *)
+
 val add : ('a, 'b) t -> 'a -> 'b -> unit
         (* [Hashtbl.add tbl x y] adds a binding of [x] to [y] in table [tbl].
            Previous bindings for [x] are not removed, but simply
@@ -106,6 +109,7 @@ module type S =
     type 'a t
     val create: int -> 'a t
     val clear: 'a t -> unit
+    val copy: 'a t -> 'a t
     val add: 'a t -> key -> 'a -> unit
     val remove: 'a t -> key -> unit
     val find: 'a t -> key -> 'a

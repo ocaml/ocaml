@@ -43,6 +43,7 @@ module Hashtbl : sig
       and 'a t
       val create : int -> 'a t
       val clear : 'a t -> unit
+      val copy: 'a t -> 'a t
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
       val find : 'a t -> key -> 'a
