@@ -1,18 +1,18 @@
-/*************************************************************************/
-/*                                                                       */
-/*                Objective Caml LablTk library                          */
-/*                                                                       */
-/*         Francois Rouaix, Francois Pessaux and Jun Furuse              */
-/*               projet Cristal, INRIA Rocquencourt                      */
-/*            Jacques Garrigue, Kyoto University RIMS                    */
-/*                                                                       */
-/*   Copyright 1999 Institut National de Recherche en Informatique et    */
-/*   en Automatique and Kyoto University.  All rights reserved.          */
-/*   This file is distributed under the terms of the GNU Library         */
-/*   General Public License, with the special exception on linking       */
-/*   described in file ../../../LICENSE.                                 */
-/*                                                                       */
-/*************************************************************************/
+/***********************************************************************/
+/*                                                                     */
+/*                 MLTk, Tcl/Tk interface of Objective Caml            */
+/*                                                                     */
+/*    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    */
+/*               projet Cristal, INRIA Rocquencourt                    */
+/*            Jacques Garrigue, Kyoto University RIMS                  */
+/*                                                                     */
+/*  Copyright 2002 Institut National de Recherche en Informatique et   */
+/*  en Automatique and Kyoto University.  All rights reserved.         */
+/*  This file is distributed under the terms of the GNU Library        */
+/*  General Public License, with the special exception on linking      */
+/*  described in file LICENSE found in the Objective Caml source tree. */
+/*                                                                     */
+/***********************************************************************/
 
 /* $Id$ */
 
@@ -27,6 +27,13 @@
 #include <unistd.h>
 #endif
 #include "camltk.h"
+
+/* UTF
+#if (TCL_MAJOR_VERSION > 8 || \
+    (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION >= 1)) /-* 8.1 *-/
+# define UTFCONVERSION
+#endif
+*/
 
 /* The Tcl interpretor */
 Tcl_Interp *cltclinterp = NULL;
@@ -69,8 +76,31 @@ CAMLprim value camltk_tcl_eval(value str)
    */
   Tcl_ResetResult(cltclinterp);
   cmd = string_to_c(str);
+
+/* UTF
+#ifdef UTFCONVERSION
+  {
+    char *utfcmd = NULL;
+    Tcl_DString utf;
+    int length;
+
+    Tcl_ExternalToUtfDString(NULL, cmd, strlen(cmd), &utf);
+    length = Tcl_DStringLength(&utf);
+    utfcmd = stat_alloc(length + 1);
+    memmove( utfcmd, Tcl_DStringValue(&utf), length+1);
+    Tcl_DStringFree(&utf);
+//fprintf(stderr,"UTF [%s] -> [%s]\n", cmd, utfcmd);
+    code = Tcl_Eval(cltclinterp, utfcmd);
+    stat_free(utfcmd);
+    stat_free(cmd);
+  }
+#else
+*/
   code = Tcl_Eval(cltclinterp, cmd);
   stat_free(cmd);
+/* UTF
+#endif
+*/
 
   switch (code) {
   case TCL_OK:
@@ -112,9 +142,8 @@ int argv_size(value v)
     }
   case 2:                       /* TkQuote */
     return 1;
-  default:                      /* should not happen */
-    Assert(0);
-    return 0;
+  default:
+    tk_error("argv_size: illegal tag");
   }
 }
 
@@ -134,11 +163,34 @@ static char *quotedargv[16];
  *  not tamper with our strings
  *  make copies if strings are "persistent"
  */
+/* UTF
+ * We also UTF convert the strings (if tk8.1 or higher )
+ */
 int fill_args (char **argv, int where, value v)
 {
   switch (Tag_val(v)) {
   case 0:
-    argv[where] = String_val(Field(v,0));
+/* UTF
+#ifdef UTFCONVERSION    
+    {
+      Tcl_DString utf;
+      int length;
+      Tcl_ExternalToUtfDString(NULL, 
+			       (char *)Field(v,0), string_length(Field(v,0)), 
+			       &utf);
+fprintf(stderr,"UTF %s\n", Tcl_DStringValue(&utf));
+      length = Tcl_DStringLength(&utf);
+      /-* must freed by stat_free *-/
+      argv[where] = (char *)stat_alloc(length * sizeof(char) + 1);
+      memmove(argv[where], Tcl_DStringValue(&utf), Tcl_DStringLength(&utf)+1);
+      Tcl_DStringFree(&utf);
+    }
+#else
+*/
+    argv[where] = string_to_c(Field(v,0)); /* must free by stat_free */
+/* UTF
+#endif
+*/
     return (where + 1);
   case 1:
     { value l;
@@ -149,21 +201,21 @@ int fill_args (char **argv, int where, value v)
   case 2:
     { char **tmpargv;
       int size = argv_size(Field(v,0));
+/* WRONG CODE (for complex cases, this can overwrite previous args)
       if (size < 16)
         tmpargv = &quotedargv[0];
       else
-        tmpargv = (char **)stat_alloc((size + 1) * sizeof(char *));
+*/
+      tmpargv = (char **)stat_alloc((size + 1) * sizeof(char *));
       fill_args(tmpargv,0,Field(v,0));
       tmpargv[size] = NULL;
       argv[where] = Tcl_Merge(size,tmpargv);
-      tcllists[startfree++] = argv[where]; /* so we can free it later */
-      if (size >= 16) 
-        stat_free((char *)tmpargv);
+      tcllists[startfree++] = argv[where]; /* so we can free it by Tcl_Free*/
+      stat_free((char *)tmpargv);
       return (where + 1);
     }
-  default:                      /* should not happen */
-    Assert(0);
-    return 0;
+  default:
+    tk_error("fill_args: illegal tag");
   }
 }
 
@@ -176,6 +228,9 @@ CAMLprim value camltk_tcl_direct_eval(value v)
   int result;
   Tcl_CmdInfo info;
   int wherewasi,whereami;       /* positions in tcllists array */
+/* UTF
+  char **utfargv;
+*/
 
   CheckInit();
 
@@ -199,7 +254,9 @@ CAMLprim value camltk_tcl_direct_eval(value v)
     argv[size + 1] = NULL;
   }
 
+/* needless
   Begin_roots_block ((value *) argv, size + 2);
+*/
 
   whereami = startfree;
 
@@ -223,6 +280,13 @@ CAMLprim value camltk_tcl_direct_eval(value v)
         /* fprintf(stderr,"80 compat: %s\n", argv[0]); */
         result = Tcl_Eval(cltclinterp, Tcl_DStringValue(&buf));
         Tcl_DStringFree(&buf);
+/* UTF
+#ifdef UTFCONVERSION
+  for(i=0; i< size; i ++){
+    stat_free((char *) argv[i]);
+  }
+#endif
+*/
       }
       else
         result = (*info.proc)(info.clientData,cltclinterp,size,argv);
@@ -235,18 +299,25 @@ CAMLprim value camltk_tcl_direct_eval(value v)
           argv[i+1] = argv[i];
         argv[0] = "unknown";
         result = (*info.proc)(info.clientData,cltclinterp,size+1,argv);
+/* UTF
+#ifdef UTFCONVERSION
+  for(i=1; i< size+1; i ++){
+    stat_free((char *) argv[i]);
+  }
+#endif
+*/
       } else { /* ah, it isn't there at all */
         result = TCL_ERROR;
         Tcl_AppendResult(cltclinterp, "Unknown command \"", 
                          argv[0], "\"", NULL);
       }
     }
-  End_roots ();
+/* needless End_roots (); */
 
   /* Free the various things we allocated */
   stat_free((char *)argv);
   for (i=wherewasi; i<whereami; i++)
-    free(tcllists[i]);
+    Tcl_Free(tcllists[i]);
   startfree = wherewasi;
   
   switch (result) {
