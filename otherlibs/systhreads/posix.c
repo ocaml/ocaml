@@ -396,7 +396,9 @@ static void * caml_thread_start(void * arg)
 {
   caml_thread_t th = (caml_thread_t) arg;
   value clos;
+#ifdef NATIVE_CODE
   struct longjmp_buffer termination_buf;
+#endif
 
   /* Associate the thread descriptor with the thread */
   pthread_setspecific(thread_descriptor_key, (void *) th);

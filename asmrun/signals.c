@@ -224,24 +224,6 @@ void caml_leave_blocking_section(void)
   caml_async_signal_mode = 0;
 }
 
-#ifdef POSIX_SIGNALS
-static void reraise(int sig, int now)
-{
-  struct sigaction sa;
-  sa.sa_handler = 0;
-  sa.sa_flags = 0;
-  sigemptyset(&sa.sa_mask);
-  sigaction(sig, &sa, 0);
-  /* If the signal was sent using kill() (si_code == 0) or will
-     not recur then raise it here.  Otherwise return.  The
-     offending instruction will be reexecuted and the signal
-     will recur.  */
-  if (now == 1)
-    raise(sig);
-  return;
-}
-#endif
-
 #if defined(TARGET_alpha) || defined(TARGET_mips)
 static void handle_signal(int sig, int code, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(SYS_aix)
