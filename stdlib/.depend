@@ -1,4 +1,3 @@
-lexing.cmi: obj.cmi 
 parsing.cmi: lexing.cmi obj.cmi 
 arg.cmo: array.cmi list.cmi printf.cmi string.cmi sys.cmi arg.cmi 
 arg.cmx: array.cmx list.cmx printf.cmx string.cmx sys.cmx arg.cmi 
@@ -16,8 +15,8 @@ gc.cmo: printf.cmi gc.cmi
 gc.cmx: printf.cmx gc.cmi 
 hashtbl.cmo: array.cmi hashtbl.cmi 
 hashtbl.cmx: array.cmx hashtbl.cmi 
-lexing.cmo: obj.cmi string.cmi lexing.cmi 
-lexing.cmx: obj.cmx string.cmx lexing.cmi 
+lexing.cmo: string.cmi lexing.cmi 
+lexing.cmx: string.cmx lexing.cmi 
 list.cmo: list.cmi 
 list.cmx: list.cmi 
 map.cmo: map.cmi 
