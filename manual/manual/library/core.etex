@@ -1,8 +1,10 @@
 \chapter{The core library} \label{c:corelib}
 \pdfchapterfold{-1}{The core library}
 
-This chapter describes the functions provided by the Objective Caml
-core library module: module "Pervasives". This module is special in two
+This chapter describes the Objective Caml core library, which is
+ composed of declarations for built-in types and exceptions, plus
+the module "Pervasives" that provides basic operations on these
+ built-in types.  The "Pervasives" module is special in two
 ways:
 \begin{itemize}
 \item It is automatically linked with the user's object code files by
@@ -16,10 +18,12 @@ unqualified identifiers to refer to the functions provided by the
 
 \section*{Conventions}
 
-The declarations from the signature of the "Pervasives" module are
-printed one by one in typewriter font, followed by a short comment.
-All modules and the identifiers they export are indexed at the end of
-this report.
+The declarations of the built-in types and the components of module
+"Pervasives" are printed one by one in typewriter font, followed by a
+short comment.  All library modules and the components they provide are
+indexed at the end of this report.
+
+\input{builtin.tex}
 
 \ifouthtml
 \begin{rawhtml}

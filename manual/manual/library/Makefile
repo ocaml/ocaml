@@ -31,7 +31,8 @@ MLIS=$(CSLDIR)/stdlib/*.mli \
 	$(CSLDIR)/otherlibs/unix/*.mli\
 	tk.mli
 
-BLURB=core.tex stdlib.tex libunix.tex libstr.tex libnum.tex libgraph.tex \
+BLURB=core.tex builtin.tex stdlib.tex \
+  libunix.tex libstr.tex libnum.tex libgraph.tex \
   libthreads.tex libdbm.tex libdynlink.tex liblabltk.tex libbigarray.tex
 
 FILES=$(BLURB) $(INTF)
