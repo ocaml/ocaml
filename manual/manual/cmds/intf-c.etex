@@ -371,9 +371,8 @@ block tagged "Double_array_tag").
 in the $n\th$ element of the array of floating-point numbers \var{v}.
 \end{itemize}
 The expressions "Field("\var{v}", "\var{n}")",
-"Byte("\var{v}", "\var{n}")",
-"Byte_u("\var{v}", "\var{n}")",
-and "Double_val("\var{v}")"
+"Byte("\var{v}", "\var{n}")" and
+"Byte_u("\var{v}", "\var{n}")"
 are valid l-values. Hence, they can be assigned to, resulting in an
 in-place modification of value \var{v}.
 Assigning directly to "Field("\var{v}", "\var{n}")" must
