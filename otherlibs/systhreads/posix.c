@@ -16,6 +16,8 @@
 
 #include <errno.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <pthread.h>
 #ifdef __sun
 #define _POSIX_PTHREAD_SEMANTICS
@@ -23,6 +25,7 @@
 #include <signal.h>
 #include <sys/time.h>
 #include "alloc.h"
+#include "backtrace.h"
 #include "callback.h"
 #include "custom.h"
 #include "fail.h"
@@ -30,6 +33,7 @@
 #include "memory.h"
 #include "misc.h"
 #include "mlvalues.h"
+#include "printexc.h"
 #include "roots.h"
 #include "signals.h"
 #ifdef NATIVE_CODE
@@ -78,6 +82,8 @@ struct caml_thread_struct {
   value * trapsp;               /* Saved value of trapsp for this thread */
   struct caml__roots_block * local_roots; /* Saved value of local_roots */
   struct longjmp_buffer * external_raise; /* Saved external_raise */
+  int backtrace_pos;            /* Saved backtrace_pos */
+  code_t * backtrace_buffer;    /* Saved backtrace_buffer */
 #endif
 };
 
@@ -160,6 +166,8 @@ static void caml_thread_enter_blocking_section(void)
   curr_thread->trapsp = trapsp;
   curr_thread->local_roots = local_roots;
   curr_thread->external_raise = external_raise;
+  curr_thread->backtrace_pos = backtrace_pos;
+  curr_thread->backtrace_buffer = backtrace_buffer;
 #endif
   /* Release the global mutex */
   pthread_mutex_unlock(&caml_mutex);
@@ -187,6 +195,8 @@ static void caml_thread_leave_blocking_section(void)
   trapsp = curr_thread->trapsp;
   local_roots = curr_thread->local_roots;
   external_raise = curr_thread->external_raise;
+  backtrace_pos = curr_thread->backtrace_pos;
+  backtrace_buffer = curr_thread->backtrace_buffer;
 #endif
   if (prev_leave_blocking_section_hook != NULL)
     (*prev_leave_blocking_section_hook)();
@@ -344,6 +354,7 @@ static void * caml_thread_start(void * arg)
 #ifndef NATIVE_CODE
   /* Free the memory resources */
   stat_free(th->stack_low);
+  if (th->backtrace_buffer != NULL) free(th->backtrace_buffer);
 #endif
   /* Free the thread descriptor */
   stat_free(th);
@@ -384,6 +395,8 @@ value caml_thread_new(value clos)          /* ML */
     th->trapsp = th->stack_high;
     th->local_roots = NULL;
     th->external_raise = NULL;
+    th->backtrace_pos = 0;
+    th->backtrace_buffer = NULL;
 #endif
     /* Add thread info block to the list of threads */
     th->next = curr_thread->next;
@@ -421,6 +434,19 @@ value caml_thread_self(value unit)         /* ML */
 value caml_thread_id(value th)          /* ML */
 {
   return Ident(th);
+}
+
+/* Print uncaught exception and backtrace */
+
+value caml_thread_uncaught_exception(value exn)  /* ML */
+{
+  char * msg = format_caml_exception(exn);
+  fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
+          Int_val(Ident(curr_thread->descr)), msg);
+  free(msg);
+  if (backtrace_active) print_exception_backtrace();
+  fflush(stderr);
+  return Val_unit;
 }
 
 /* Allow re-scheduling */

@@ -60,6 +60,7 @@ external thread_wait_pid : int -> resumption_status = "thread_wait_pid"
 external thread_wakeup : t -> unit = "thread_wakeup"
 external thread_self : unit -> t = "thread_self"
 external thread_kill : t -> unit = "thread_kill"
+external thread_uncaught_exception : exn -> unit = "thread_uncaught_exception"
 
 external id : t -> int = "thread_id"
 
@@ -119,9 +120,11 @@ let create fn arg =
   thread_new
     (fun () ->
       try
-        Printexc.print fn arg; exit()
+        fn arg; exit()
       with x ->
-        flush stdout; flush stderr; exit())
+        flush stdout; flush stderr;
+        thread_uncaught_exception x;
+        exit())
 
 (* Preemption *)
 

@@ -15,7 +15,7 @@
 include ../../config/Makefile
 
 CC=$(BYTECC)
-CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) -g
+CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../unix
 
 C_OBJS=scheduler.o
@@ -92,7 +92,7 @@ installopt:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmo:
-	$(CAMLC) -c $(COMPFLAGS) $<
+	$(CAMLC) -c -g $(COMPFLAGS) $<
 
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<

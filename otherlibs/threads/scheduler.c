@@ -15,18 +15,22 @@
 /* The thread scheduler */
 
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
+#include "alloc.h"
+#include "backtrace.h"
 #include "callback.h"
 #include "config.h"
-#include "misc.h"
-#include "mlvalues.h"
-#include "stacks.h"
 #include "fail.h"
 #include "io.h"
-#include "roots.h"
-#include "alloc.h"
 #include "memory.h"
+#include "misc.h"
+#include "mlvalues.h"
+#include "printexc.h"
+#include "roots.h"
 #include "signals.h"
+#include "stacks.h"
 #include "sys.h"
 
 #if ! (defined(HAS_SELECT) && \
@@ -76,6 +80,8 @@ struct thread_struct {
   value * stack_threshold;
   value * sp;
   value * trapsp;
+  value backtrace_pos;          /* The backtrace buffer for this thread */
+  code_t * backtrace_buffer;
   value status;                 /* RUNNABLE, KILLED. etc (see below) */
   value fd;     /* File descriptor on which we're doing read or write */
   value readfds, writefds, exceptfds;
@@ -162,6 +168,8 @@ value thread_initialize(value unit)       /* ML */
   curr_thread->stack_threshold = stack_threshold;
   curr_thread->sp = extern_sp;
   curr_thread->trapsp = trapsp;
+  curr_thread->backtrace_pos = Val_int(backtrace_pos);
+  curr_thread->backtrace_buffer = backtrace_buffer;
   curr_thread->status = RUNNABLE;
   curr_thread->fd = Val_int(0);
   curr_thread->readfds = NO_FDS;
@@ -221,6 +229,9 @@ value thread_new(value clos)          /* ML */
   /* Fake a C call frame */
   th->sp--;
   th->sp[0] = Val_unit;         /* a dummy environment */
+  /* Finish initialization of th */
+  th->backtrace_pos = Val_int(0);
+  th->backtrace_buffer = NULL;
   /* The thread is initially runnable */
   th->status = RUNNABLE;
   th->fd = Val_int(0);
@@ -283,6 +294,8 @@ static value schedule_thread(void)
   curr_thread->stack_threshold = stack_threshold;
   curr_thread->sp = extern_sp;
   curr_thread->trapsp = trapsp;
+  curr_thread->backtrace_pos = Val_int(backtrace_pos);
+  curr_thread->backtrace_buffer = backtrace_buffer;
 
 try_again:
   /* Find if a thread is runnable.
@@ -473,6 +486,8 @@ try_again:
   stack_threshold = curr_thread->stack_threshold;
   extern_sp = curr_thread->sp;
   trapsp = curr_thread->trapsp;
+  backtrace_pos = Int_val(curr_thread->backtrace_pos);
+  backtrace_buffer = curr_thread->backtrace_buffer;
   return curr_thread->retval;
 }
 
@@ -723,7 +738,24 @@ value thread_kill(value thread)       /* ML */
   th->stack_threshold = NULL;
   th->sp = NULL;
   th->trapsp = NULL;
+  if (th->backtrace_buffer != NULL) {
+    free(th->backtrace_buffer);
+    th->backtrace_buffer = NULL;
+  }
   return retval;
+}
+
+/* Print uncaught exception and backtrace */
+
+value thread_uncaught_exception(value exn)  /* ML */
+{
+  char * msg = format_caml_exception(exn);
+  fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
+          Int_val(curr_thread->ident), msg);
+  free(msg);
+  if (backtrace_active) print_exception_backtrace();
+  fflush(stderr);
+  return Val_unit;
 }
 
 /* Set a list of file descriptors in a fdset */

@@ -23,6 +23,8 @@ external yield : unit -> unit = "caml_thread_yield"
 external self : unit -> t = "caml_thread_self"
 external id : t -> int = "caml_thread_id"
 external join : t -> unit = "caml_thread_join"
+external thread_uncaught_exception : exn -> unit = 
+            "caml_thread_uncaught_exception"
 
 (* For new, make sure the function passed to thread_new never
    raises an exception. *)
@@ -36,9 +38,8 @@ let create fn arg =
         fn arg; ()
       with Thread_exit -> ()
          | exn ->
-             Printf.eprintf "Uncaught exception in thread %d: %s\n"
-                            (id(self())) (Printexc.to_string exn);
-             flush stderr)
+             flush stdout; flush stderr;
+             thread_uncaught_exception exn)
 
 let exit () = raise Thread_exit
 
