@@ -116,29 +116,43 @@ let enter_variable loc name ty =
   pattern_variables := (id, ty) :: !pattern_variables;
   id
 
-let rec extract_row_fields p =
+let rec build_as_type env p =
   match p.pat_desc with
-    Tpat_or(p1, p2) ->
-      extract_row_fields p1 @ extract_row_fields p2
-  | Tpat_variant(l, None, _) ->
-      [l, Rpresent None]
-  | Tpat_variant(l, Some{pat_type = ty}, _) ->
-      [l, Rpresent(Some ty)]
-  | _ ->
-      raise Not_found
-
-let rec extract_sum_type env p =
-  match p.pat_desc with
-    Tpat_or(p1, p2) ->
-      let ty1 = extract_sum_type env p1 and ty2 = extract_sum_type env p2 in
-      unify_pat env {p1 with pat_type = ty1} ty2;
-      ty1
-  | Tpat_construct(constr, args) ->
-      let ty_args, ty_res = instance_constructor constr in
-      List.iter2 (unify_pat env) args ty_args;
+    Tpat_alias(p1, _) -> build_as_type env p1
+  | Tpat_tuple pl ->
+      let tyl = List.map (build_as_type env) pl in
+      newty (Ttuple tyl)
+  | Tpat_construct(cstr, pl) ->
+      let tyl = List.map (build_as_type env) pl in
+      let ty_args, ty_res = instance_constructor cstr in
+      List.iter2 (fun (p,ty) -> unify_pat env {p with pat_type = ty})
+        (List.combine pl tyl) ty_args;
       ty_res
-  | _ ->
-      raise Not_found
+  | Tpat_variant(l, p, _) ->
+      let ty = may_map (build_as_type env) p in
+      newty (Tvariant {row_fields = [l, Rpresent ty]; row_more = newvar();
+                       row_bound = []; row_name = None; row_closed = false})
+  | Tpat_record lpl ->
+      let lbl = fst(List.hd lpl) in
+      let ty = newvar () in
+      let do_label lbl =
+        let ty_arg, ty_res = instance_label lbl in
+        unify_pat env {p with pat_type = ty} ty_res;
+        if lbl.lbl_mut = Immutable && List.mem_assoc lbl lpl then begin
+          let arg = List.assoc lbl lpl in
+          unify_pat env {arg with pat_type = build_as_type env arg} ty_arg
+        end else begin
+          let ty_arg', ty_res' = instance_label lbl in
+          unify_strict env ty_arg ty_arg';
+          unify_pat env p ty_res'
+        end in
+      Array.iter do_label lbl.lbl_all;
+      ty
+  | Tpat_or(p1, p2) ->
+      let ty1 = build_as_type env p1 and ty2 = build_as_type env p2 in
+      unify_pat env {p2 with pat_type = ty2} ty1;
+      ty1
+  | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_array _ -> p.pat_type
 
 let build_or_pat env loc lid =
   let path, decl =
@@ -204,18 +218,10 @@ let rec type_pat env sp =
         pat_env = env }
   | Ppat_alias(sp, name) ->
       let p = type_pat env sp in
-      let ty_var =
-        try
-          let fields = extract_row_fields p in
-          newgenty
-            (Tvariant { row_fields = fields; row_more = newgenvar();
-                        row_closed = false; row_name = None;
-                        row_bound = [] })
-        with Not_found -> try
-          extract_sum_type env p
-        with Not_found ->
-          p.pat_type
-      in
+      begin_def ();
+      let ty_var = build_as_type env p in
+      end_def ();
+      generalize ty_var;
       let id = enter_variable sp.ppat_loc name ty_var in
       { pat_desc = Tpat_alias(p, id);
         pat_loc = sp.ppat_loc;
