@@ -51,6 +51,9 @@ let dump_handle (h : Unix.file_descr) =
 
 let protect f x = try f x with _ -> ()
 
+let use_threads = Sys.os_type = "Win32"
+let use_sigpipe = Sys.os_type = "Win32"
+
 class shell ~textw ~prog ~args ~env ~history =
   let (in2,out1) = Unix.pipe ()
   and (in1,out2) = Unix.pipe ()
@@ -59,7 +62,7 @@ class shell ~textw ~prog ~args ~env ~history =
 object (self)
   val pid =
     let env =
-      if Sys.os_type = "Win32" then
+      if use_sigpipe then
         let sigdef = "CAMLSIGPIPE=" ^ dump_handle sig2 in
         Array.append env [|sigdef|]
       else env
@@ -80,13 +83,13 @@ object (self)
       alive <- false;
       protect close_out out;
       try
-        if Sys.os_type = "Win32" then begin
-          ignore (Unix.write sig1 ~buf:"T" ~pos:0 ~len:1);
-          List.iter ~f:(protect Unix.close) [sig1; sig2]
-        end else begin
-          List.iter ~f:(protect Unix.close) [in1; err1; sig1; sig2];
+        if use_sigpipe then ignore (Unix.write sig1 ~buf:"T" ~pos:0 ~len:1);
+        List.iter ~f:(protect Unix.close) [in1; err1; sig1; sig2];
+        if not use_threads then begin
           Fileevent.remove_fileinput ~fd:in1;
           Fileevent.remove_fileinput ~fd:err1;
+        end;
+        if not use_sigpipe then begin
           Unix.kill ~pid ~signal:Sys.sigkill;
           ignore (Unix.waitpid ~mode:[] pid)
         end
@@ -95,7 +98,7 @@ object (self)
   method interrupt =
     if alive then try
       reading <- false;
-      if Sys.os_type = "Win32" then begin
+      if use_sigpipe then begin
         ignore (Unix.write sig1 ~buf:"C" ~pos:0 ~len:1);
         self#send " "
       end else
@@ -108,8 +111,10 @@ object (self)
     with Sys_error _ -> ()
   method private read ~fd ~len =
     begin try
+      prerr_endline "reading...";
       let buf = String.create len in
       let len = Unix.read fd ~buf ~pos:0 ~len in
+      prerr_endline "read";
       if len > 0 then begin
         self#insert (String.sub buf ~pos:0 ~len);
         Text.mark_set textw ~mark:"input" ~index:(`Mark"insert",[`Char(-1)])
@@ -186,7 +191,7 @@ object (self)
     bind textw ~events:[`KeyPressDetail"Return"] ~breakable:true
       ~action:(fun _ -> self#return; break());
     List.iter ~f:Unix.close [in2;out2;err2];
-    if Sys.os_type = "Win32" then begin
+    if use_threads then begin
       let fileinput_thread fd =
         let buf = String.create 1024 in
         let len = ref 0 in
@@ -210,12 +215,16 @@ object (self)
       in
       read_buffer ()
     end else begin
-      try
+      try ()
+(*
+        prerr_endline "add inputs...";
         List.iter [in1;err1] ~f:
           begin fun fd ->
             Fileevent.add_fileinput ~fd
               ~callback:(fun () -> ignore (self#read ~fd ~len:1024))
-          end
+          end;
+        prerr_endline "added"
+*)
       with _ -> ()
     end
 end
@@ -239,7 +248,7 @@ let may_exec_unix prog =
   with Unix.Unix_error _ -> false
 
 let may_exec_win prog =
-  List.exists ~f:may_exec_unix [prog; prog^".exe"; prog^".cmo"; prog^".bat"]
+  List.exists ~f:may_exec_unix [prog; prog^".exe"; prog^".com"; prog^".bat"]
 
 let may_exec =
   if Sys.os_type = "Win32" then may_exec_win else may_exec_unix
@@ -319,7 +328,7 @@ let f ~prog ~title =
         ~sync:true ~dir:!current_dir ()
         ~action:(fun l ->
           if l = [] then () else
-          let name = List.hd l in
+          let name = Fileselect.caml_dir (List.hd l) in
           current_dir := Filename.dirname name;
           if Filename.check_suffix name ".ml"
           then
@@ -332,7 +341,7 @@ let f ~prog ~title =
         ~dir:!current_dir
         ~action:(fun l ->
           if l = [] then () else
-          let name = List.hd l in
+          let name = Fileselect.caml_dir (List.hd l) in
           current_dir := Filename.dirname name;
           if Filename.check_suffix name ".cmo" ||
             Filename.check_suffix name ".cma"

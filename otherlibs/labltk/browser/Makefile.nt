@@ -29,13 +29,15 @@ JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
 .c.obj:
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CCFLAGS) -c $<
 
-all: ocamlbrowser
+all: ocamlbrowser.exe
 
-ocamlbrowser: $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ) winmain.obj
-	$(LABLC) -o ocamlbrowser -custom $(INCLUDES) \
+ocamlbrowser.exe: $(TOPDIR)/toplevel/toplevellib.cma \
+  ..\support\liblabltk41.lib
+ocamlbrowser.exe: jglib.cma $(OBJ) winmain.obj
+	$(LABLC) -o ocamlbrowser.exe -custom $(INCLUDES) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
 		unix.cma threads.cma str.cma labltk.cma jglib.cma $(OBJ) \
-		$(TK_LINK) winmain.obj
+		winmain.obj -cclib "/subsystem:windows"
 
 jglib.cma: $(JG)
 	$(LABLCOMP) -a -o jglib.cma $(JG) 
