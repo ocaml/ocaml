@@ -117,7 +117,7 @@ coldstart:
 
 # Save the current bootstrap compiler
 backup:
-	test -d boot/Saved || mkdir boot/Saved
+	if test -d boot/Saved; then : ; else mkdir boot/Saved; fi
 	mv boot/Saved boot/Saved.prev
 	mkdir boot/Saved
 	mv boot/Saved.prev boot/Saved/Saved.prev
@@ -160,9 +160,9 @@ opt: runtimeopt camlopt libraryopt
 
 # Installation
 install:
-	test -d $(BINDIR) || mkdir $(BINDIR)
-	test -d $(LIBDIR) || mkdir $(LIBDIR)
-	test -d $(MANDIR) || mkdir $(MANDIR)
+	if test -d $(BINDIR); then : ; else mkdir $(BINDIR); fi
+	if test -d $(LIBDIR); then : ; else mkdir $(LIBDIR); fi
+	if test -d $(MANDIR); then : ; else mkdir $(MANDIR); fi
 	cd byterun; $(MAKE) install
 	cp camlc $(BINDIR)/cslc
 	cp camltop $(BINDIR)/csltop

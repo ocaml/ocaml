@@ -65,7 +65,7 @@ following commands (in the directory set to BINDIR in Makefile.config):
         csllex         the lexer generator
         csltop         the interactive, toplevel-based system
         cslmktop       a tool to make toplevel systems that integrate
-                        user-defined C primitives
+                       user-defined C primitives and Caml code
         csldep         output "make" dependencies for Caml sources
 
 From the top directory, become superuser and do "make install".
