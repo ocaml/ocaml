@@ -358,8 +358,9 @@ let rec emit_instr i dslot =
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
           let lbl_cont = new_label() in
+          `     ld      [%g7], %g1\n`;
           `	sub	%g6, {emit_int n}, %g6\n`;
-          `	cmp	%g6, %g7\n`;
+          `	cmp	%g6, %g1\n`;
           `	bgeu	{emit_label lbl_cont}\n`;
           `	add	%g6, 4, {emit_reg i.res.(0)}\n`; (* in delay slot *)
           `{record_frame i.live}	call	{emit_symbol "caml_call_gc"}\n`;
