@@ -113,7 +113,6 @@ val bscanf :
    - [u]: reads an unsigned decimal integer.
    - [x] or [X]: reads an unsigned hexadecimal integer.
    - [o]: reads an unsigned octal integer.
-   - [b]: reads an unsigned binary integer.
    - [s]: reads a string argument (by default strings end with a space).
    - [S]: reads a delimited string argument (delimiters and special
      escaped characters follow the lexical conventions of Caml).
@@ -126,11 +125,13 @@ val bscanf :
      floating-point number in decimal notation, in the style [dddd.ddd
      e/E+-dd].
    - [B]: reads a boolean argument ([true] or [false]).
-   - [ld], [li], [lu], [lx], [lX], [lo], [lb]: reads an [int32] argument to
+   - [b]: reads a boolean argument (for backward compatibility; do not use
+     in new programs).
+   - [ld], [li], [lu], [lx], [lX], [lo]: reads an [int32] argument to
      the format specified by the second letter (decimal, hexadecimal, etc).
-   - [nd], [ni], [nu], [nx], [nX], [no], [nb]: reads a [nativeint] argument to
+   - [nd], [ni], [nu], [nx], [nX], [no]: reads a [nativeint] argument to
      the format specified by the second letter.
-   - [Ld], [Li], [Lu], [Lx], [LX], [Lo], [Lb]: reads an [int64] argument to
+   - [Ld], [Li], [Lu], [Lx], [LX], [Lo]: reads an [int64] argument to
      the format specified by the second letter.
    - [\[ range \]]: reads characters that matches one of the characters
      mentioned in the range of characters [range] (or not mentioned in

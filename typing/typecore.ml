@@ -685,10 +685,10 @@ let type_format loc fmt =
       | '%' | '!' -> scan_format (j + 1)
       | 's' | 'S' | '[' -> conversion j Predef.type_string
       | 'c' | 'C' -> conversion j Predef.type_char
-      | 'b' | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' ->
+      | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' ->
           conversion j Predef.type_int
       | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> conversion j Predef.type_float
-      | 'B' -> conversion j Predef.type_bool
+      | 'B' | 'b' -> conversion j Predef.type_bool
       | 'a' ->
           let ty_arg = newvar () in
           let ty_a = ty_arrow ty_input (ty_arrow ty_arg ty_aresult) in 
@@ -705,7 +705,7 @@ let type_format loc fmt =
           let j = j + 1 in
           if j >= len then incomplete i else begin
             match fmt.[j] with
-            | 'b' | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
+            | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
                 let ty_arg =
                  match conv with
                  | 'l' -> Predef.type_int32

@@ -164,7 +164,7 @@ let scan_format fmt pos cont_s cont_a cont_t cont_f =
           if conv = 'c'
           then cont_s (String.make 1 c) (succ i)
           else cont_s ("'" ^ Char.escaped c ^ "'") (succ i))
-    | 'b' | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' as conv ->
+    | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' as conv ->
         Obj.magic(fun (n: int) ->
           cont_s (format_int_with_conv conv
                     (extract_format fmt pos i widths) n)
@@ -175,7 +175,7 @@ let scan_format fmt pos cont_s cont_a cont_t cont_f =
             if conv = 'F' then string_of_float f else
             format_float (extract_format fmt pos i widths) f in
           cont_s s (succ i))
-    | 'B' ->
+    | 'B' | 'b' ->
         Obj.magic(fun (b: bool) ->
           cont_s (string_of_bool b) (succ i))
     | 'a' ->

@@ -659,7 +659,7 @@ let kscanf ib ef fmt f =
         let x =
           if conv = 'c' then scan_char max ib else scan_Char max ib in        
         scan_fmt (stack f (token_char ib)) (i + 1)
-    | 'b' | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
+    | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
         let x = scan_int conv max ib in
         scan_fmt (stack f (token_int conv ib)) (i + 1)
     | 'f' | 'g' | 'G' | 'e' | 'E' | 'F' ->
@@ -677,7 +677,7 @@ let kscanf ib ef fmt f =
     | 'S' ->
         let x = scan_String max ib in
         scan_fmt (stack f (token_string ib)) (i + 1)
-    | 'B' ->
+    | 'B' | 'b' ->
         let x = scan_bool max ib in
         scan_fmt (stack f (token_bool ib)) (i + 1)
     | 'l' | 'n' | 'L' as t ->
@@ -686,7 +686,7 @@ let kscanf ib ef fmt f =
           let x = Scanning.char_count ib in
           scan_fmt (stack f x) i else begin
         match fmt.[i] with
-        | 'b' | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
+        | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
             let x = scan_int conv max ib in
             begin match t with
             | 'l' -> scan_fmt (stack f (token_int32 conv ib)) (i + 1)
