@@ -191,6 +191,13 @@ let ctx_matcher p =
           let l' = all_record_args l' in
           p, List.fold_right (fun (_,p) r -> p::r) l' rem
       | _ -> p,List.fold_right (fun (_,p) r -> p::r) l rem)
+(* GENERIC
+  | Tpat_dynamic (omega, scm) ->
+      (fun q rem -> match q.pat_desc with
+      | Tpat_dynamic(arg, scm') ->
+          p,[arg] @ rem
+      | _ (* ?Tpat_any? *) -> p,[omega] @ rem)
+/GENERIC *)
   | _ -> fatal_error "Matching.ctx_matcher"
 
 
@@ -551,6 +558,9 @@ let simplify_matching m = match m.args with
               | _ ->
                   simplify ((pat_simple::patl,action) :: rem)
               end
+(* GENERIC
+(* ??? *)
+/GENERIC *)
           | _ ->
               record_ex_pat pat ;
               patl_action :: simplify rem
@@ -613,6 +623,9 @@ let rec extract_vars r p = match p.pat_desc with
 | Tpat_variant (_,Some p, _) -> extract_vars r p
 | Tpat_or (p,_,_) -> extract_vars r p
 | Tpat_constant _|Tpat_any|Tpat_variant (_,None,_) -> r
+(* GENERIC
+| Tpat_dynamic (p,_) -> extract_vars r p (* ??? *)
+/GENERIC *)
 
 exception Cannot_flatten
 
@@ -738,6 +751,12 @@ and group_array = function
   | {pat_desc=Tpat_array _} -> true
   | _ -> false
 
+(* GENERIC
+and group_dynamic = function (* ??? *)
+  | {pat_desc=Tpat_dynamic (_,_)|Tpat_any} -> true
+  | _ -> false
+/GENERIC *)
+
 let get_group p = match p.pat_desc with
 | Tpat_any -> group_var
 | Tpat_constant _ -> group_constant
@@ -746,6 +765,9 @@ let get_group p = match p.pat_desc with
 | Tpat_record _ -> group_record
 | Tpat_array _ -> group_array
 | Tpat_variant (_,_,_) -> group_variant
+(* GENERIC
+| Tpat_dynamic (_,_) -> group_dynamic
+/GENERIC *)
 |  _ -> fatal_error "Matching.get_group"
 
 
@@ -1216,6 +1238,60 @@ let divide_array kind ctx pm =
     (make_array_matching kind)
     get_key_array get_args_array ctx pm
   
+(* GENERIC
+(* Matching against a dynamic pattern *)
+
+let make_field_args binding_kind arg first_pos last_pos argl =
+  let rec make_args pos =
+    if pos > last_pos
+    then argl
+    else (Lprim(Pfield pos, [arg]), binding_kind) :: make_args (pos + 1)
+  in make_args first_pos
+
+let get_key_dynamic = function
+  | {pat_desc=Tpat_dynamic (_,scm)} -> cstr.cstr_tag
+  | _ -> assert false
+
+let get_args_constr p rem = match p with
+  | {pat_desc=Tpat_construct (_,args)} -> args @ rem
+  | _ -> assert false
+
+let pat_as_constr = function
+  | {pat_desc=Tpat_construct (cstr,_)} -> cstr
+  | _ -> fatal_error "Matching.pat_as_constr"
+
+
+let matcher_constr cstr q rem = match q.pat_desc with
+| Tpat_construct (cstr1, args)
+    when cstr.cstr_tag = cstr1.cstr_tag ->
+      args @ rem
+| Tpat_any -> Parmatch.omegas cstr.cstr_arity @ rem
+| _        -> raise NoMatch
+
+let make_constr_matching p def ctx = function
+    [] -> fatal_error "Matching.make_constr_matching"
+  | ((arg, mut) :: argl) ->
+      let cstr = pat_as_constr p in
+      let newargs =
+        match cstr.cstr_tag with
+          Cstr_constant _ | Cstr_block _ ->
+            make_field_args Alias arg 0 (cstr.cstr_arity - 1) argl
+        | Cstr_exception _ ->
+            make_field_args Alias arg 1 cstr.cstr_arity argl in
+      {pm=
+        {cases = []; args = newargs;
+          default = make_default (matcher_constr cstr) def} ;
+      ctx =  filter_ctx p ctx ;
+      pat=normalize_pat p}
+
+
+let divide_constructor ctx pm =
+  divide
+    make_constr_matching
+    get_key_constr get_args_constr
+    ctx pm
+/GENERIC *)
+
 (* To combine sub-matchings together *)
 
 let sort_lambda_list l =
@@ -1906,6 +1982,7 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
   do_rec lambda1 total1 to_catch
 
 
+(* JPF : Checks it is unused or not *)
 let compile_test compile_fun divide combine ctx to_match to_catch =
   let division = divide ctx to_match in
   let c_div = compile_list compile_fun division in
@@ -2093,6 +2170,12 @@ and do_compile_matching repr partial ctx arg
         (divide_variant row)
         (combine_variant row arg partial)
         ctx to_match to_catch
+(* GENERIC
+(*
+  | Tpat_dynamic(p, scm) ->
+      compile_no_test 
+*)
+/GENERIC *)
   | _ ->
       fatal_error "Matching.do_compile_matching"
 
