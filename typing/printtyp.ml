@@ -144,7 +144,7 @@ and label (name, mut, arg) =
 let exception_declaration id decl =
   print_string "exception "; constructor (Ident.name id, decl)
 
-(* Print a val declaration *)
+(* Print a value declaration *)
 
 let value_description id decl =
   open_hovbox 2;

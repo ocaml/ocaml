@@ -186,7 +186,7 @@ let init_toplevel () =
   (* Enter the known C primitives *)
   Array.iter (enter_numtable c_prim_table) (Meta.available_primitives())
 
-(* Find the val of a global identifier *)
+(* Find the value of a global identifier *)
 
 let get_global_value id =
   (Meta.global_data()).(slot_for_getglobal id)

@@ -149,7 +149,8 @@ let link_bytecode objfiles exec_name copy_header =
   let tolink =
     List.fold_left scan_file [] (List.rev objfiles) in
   let outchan =
-    open_out_gen [Open_wronly; Open_trunc; Open_creat; Open_binary] 0o777 exec_name in
+    open_out_gen [Open_wronly; Open_trunc; Open_creat; Open_binary] 0o777
+                 exec_name in
   try
     (* Copy the header *)
     if copy_header then begin
@@ -198,21 +199,22 @@ let link objfiles =
       link_bytecode objfiles bytecode_name false;
       Symtable.output_primitives prim_name;
       if Sys.command
-          (concat_strings " " (
-            Config.c_compiler ::
-            ("-I" ^ Config.standard_library) ::
-            "-o" :: !Clflags.exec_name ::
-            List.rev !Clflags.ccopts @
-            prim_name ::
-            ("-L" ^ Config.standard_library) ::
-            List.rev !Clflags.ccobjs @
-            "-lcamlrun" ::
-            Config.c_libraries ::
-            [])) <> 0 
+          (Printf.sprintf
+           "%s -I%s -o %s %s %s -L%s %s -lcamlrun %s"
+           Config.c_compiler
+           Config.standard_library
+           !Clflags.exec_name
+           (String.concat " " (List.rev !Clflags.ccopts))
+           prim_name
+           Config.standard_library
+           (String.concat " " (List.rev !Clflags.ccobjs))
+           Config.c_libraries)
+         <> 0
       or Sys.command ("strip " ^ !Clflags.exec_name) <> 0
       then raise(Error Custom_runtime);
       let oc =
-        open_out_gen [Open_wronly; Open_append; Open_binary] 0 !Clflags.exec_name in
+        open_out_gen [Open_wronly; Open_append; Open_binary] 0
+                     !Clflags.exec_name in
       let ic = open_in_bin bytecode_name in
       copy_file ic oc;
       close_in ic;

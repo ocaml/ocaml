@@ -213,7 +213,7 @@ structure:
 ;
 structure_item:
     LET UNDERSCORE EQUAL expr
-      { Pstr_eval($4) }
+      { Pstr_eval $4 }
   | LET rec_flag let_bindings
       { Pstr_value($2, List.rev $3) }
   | EXTERNAL val_ident COLON core_type EQUAL STRING
@@ -260,7 +260,7 @@ signature:
 signature_item:
     VAL val_ident COLON core_type
       { Psig_value($2, {pval_type = $4; pval_prim = None}) }
-  | VAL val_ident COLON core_type EQUAL STRING
+  | EXTERNAL val_ident COLON core_type EQUAL STRING
       { Psig_value($2, {pval_type = $4; pval_prim = Some $6}) }
   | TYPE type_declarations
       { Psig_type(List.rev $2) }
@@ -394,8 +394,8 @@ let_bindings:
 let_binding:
     val_ident fun_binding
       { ({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1}, $2) }
-  | LPAREN pattern RPAREN EQUAL expr
-      { ($2, $5) }
+  | let_pattern EQUAL expr
+      { ($1, $3) }
 ;
 fun_binding:
     EQUAL expr %prec prec_let
@@ -475,6 +475,20 @@ pattern_semi_list:
 lbl_pattern_list:
     label_longident EQUAL pattern               { [($1, $3)] }
   | lbl_pattern_list SEMI label_longident EQUAL pattern { ($3, $5) :: $1 }
+;
+let_pattern:
+    constr_longident
+      { mkpat(Ppat_construct($1, None)) }
+  | constr_longident pattern %prec prec_constr_appl
+      { mkpat(Ppat_construct($1, Some $2)) }
+  | LBRACE lbl_pattern_list RBRACE
+      { mkpat(Ppat_record(List.rev $2)) }
+  | LBRACKET pattern_semi_list RBRACKET
+      { mklistpat(List.rev $2) }
+  | LPAREN pattern RPAREN
+      { $2 }
+  | LPAREN pattern COLON core_type RPAREN
+      { mkpat(Ppat_constraint($2, $4)) }
 ;
 
 /* Type declarations */

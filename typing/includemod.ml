@@ -20,7 +20,7 @@ exception Error of error list
    i.e. that x1 is the type of an implementation that fulfills the
    specification x2. If not, Error is raised with a backtrace of the error. *)
 
-(* Inclusion between val descriptions *)
+(* Inclusion between value descriptions *)
 
 let value_descriptions env id vd1 vd2 =
   if Includecore.value_descriptions env vd1 vd2
@@ -81,8 +81,8 @@ let simplify_structure_coercion cc =
     Tcoerce_structure cc
 
 (* Inclusion between module types. 
-   Return the restriction that transforms a val of the smaller type
-   into a val of the bigger type. *)
+   Return the restriction that transforms a value of the smaller type
+   into a value of the bigger type. *)
 
 let rec modtypes env mty1 mty2 =
   try

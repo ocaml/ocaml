@@ -18,7 +18,7 @@ and type_variable =
 (* Value descriptions *)
 
 type value_description =
-  { val_type: type_expr;                (* Type of the val *)
+  { val_type: type_expr;                (* Type of the value *)
     val_prim: primitive_description }   (* Is this a primitive? *)
 and primitive_description =
     Not_prim

@@ -15,7 +15,7 @@ PRIMS=array.c compare.c crc.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c meta.c parsing.c \
   signals.c str.c sys.c terminfo.c
 
-all: camlrun camlrund libcaml.a
+all: camlrun camlrund
 
 camlrun: $(OBJS) prims.o
 	$(CC) $(CCCOMPOPTS) $(CCLINKOPTS) $(LOWADDRESSES) -o camlrun prims.o $(OBJS) $(CCLIBS)
@@ -23,15 +23,10 @@ camlrun: $(OBJS) prims.o
 camlrund: $(DOBJS) prims.o
 	$(CC) -g $(CCCOMPOPTS) $(CCLINKOPTS) $(LOWADDRESSES) -o camlrund prims.o $(DOBJS) $(CCLIBS)
 
-libcaml.a: $(OBJS)
-	rm -f libcaml.a
-	ar rc libcaml.a $(OBJS)
-	$(RANLIB) libcaml.a
-
 install:
 	cp camlrun $(BINDIR)/cslrun
-	cp libcaml.a $(LIBDIR)
-	$(RANLIB) $(LIBDIR)/libcaml.a
+	ar rc $(LIBDIR)/libcamlrun.a $(OBJS)
+	$(RANLIB) $(LIBDIR)/libcamlrun.a
 	test -d $(LIBDIR)/caml || mkdir $(LIBDIR)/caml
 	cp mlvalues.h alloc.h misc.h $(LIBDIR)/caml
 	sed -e '/#include ".*\/m.h/r ../config/m.h' \

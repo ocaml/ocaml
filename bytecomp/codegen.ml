@@ -103,7 +103,7 @@ let functions_to_compile  =
   (Stack.new () : (Ident.t * lambda * label * Ident.t list) Stack.t)
 
 (* Compile an expression.
-   The val of the expression is left in the accumulator.
+   The value of the expression is left in the accumulator.
    env = compilation environment
    exp = the lambda expression to compile
    sz = current size of the stack frame
@@ -325,7 +325,7 @@ let rec comp_expr env exp sz cont =
 
 (* Compile a list of arguments [e1; ...; eN] to a primitive operation.
    The values of eN ... e2 are pushed on the stack, e2 at top of stack,
-   then e3, then ... The val of e1 is left in the accumulator. *)
+   then e3, then ... The value of e1 is left in the accumulator. *)
 
 and comp_args env argl sz cont =
   comp_expr_list env (List.rev argl) sz cont

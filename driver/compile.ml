@@ -89,11 +89,14 @@ let implementation sourcefile =
     raise x
 
 let c_file name =
-  if Sys.command (concat_strings " " (
-    Config.c_compiler ::
-    "-c" ::
-    List.map (fun dir -> "-I" ^ dir) (List.rev !Clflags.include_dirs) @
-    ("-I" ^ Config.standard_library) ::
-    name ::
-    [])) <> 0
+  if Sys.command
+     (Printf.sprintf
+       "%s -c %s -I%s %s"
+       Config.c_compiler
+       (String.concat " "
+         (List.map (fun dir -> "-I" ^ dir) 
+                   (List.rev !Clflags.include_dirs)))
+       Config.standard_library
+       name)
+     <> 0
   then exit 2

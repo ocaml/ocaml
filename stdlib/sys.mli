@@ -1,18 +1,18 @@
 (* System interface *)
 
 val argv: string array
-val file_exists: string -> bool = "sys_file_exists"
-val remove: string -> unit = "sys_remove"
-val getenv: string -> string = "sys_getenv"
-val command: string -> int = "sys_system_command"
-val chdir: string -> unit = "sys_chdir"
+external file_exists: string -> bool = "sys_file_exists"
+external remove: string -> unit = "sys_remove"
+external getenv: string -> string = "sys_getenv"
+external command: string -> int = "sys_system_command"
+external chdir: string -> unit = "sys_chdir"
 
 type signal_behavior =
     Signal_default
   | Signal_ignore
   | Signal_handle of (int -> unit)
 
-val signal: int -> signal_behavior -> unit = "install_signal_handler"
+external signal: int -> signal_behavior -> unit = "install_signal_handler"
 
 val sigabrt: int
 val sigalrm: int

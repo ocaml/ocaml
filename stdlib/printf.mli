@@ -43,3 +43,6 @@ val printf: ('a, out_channel, unit) format -> 'a
 val eprintf: ('a, out_channel, unit) format -> 'a
         (* Same as [fprintf], but output on [std_err]. *)
 
+val sprintf: ('a, unit, string) format -> 'a
+        (* Same as [printf], but return the result of formatting in a
+           string. *)

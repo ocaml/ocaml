@@ -38,7 +38,6 @@ let sub s ofs len =
     r
   end
 
-
 let fill s ofs len c =
   if ofs < 0 or len < 0 or ofs + len > length s
   then invalid_arg "String.fill"
@@ -50,6 +49,23 @@ let blit s1 ofs1 s2 ofs2 len =
   then invalid_arg "String.blit"
   else unsafe_blit s1 ofs1 s2 ofs2 len
 
+let concat sep l =
+  match l with
+    [] -> ""
+  | hd :: tl ->
+      let num = ref 0 and len = ref 0 in
+      List.iter (fun s -> incr num; len := !len + length s) l;
+      let r = create (!len + length sep * (!num - 1)) in
+      unsafe_blit hd 0 r 0 (length hd);
+      let pos = ref(length hd) in
+      List.iter
+        (fun s ->
+          unsafe_blit sep 0 r !pos (length sep);
+          pos := !pos + length sep;
+          unsafe_blit s 0 r !pos (length s);
+          pos := !pos + length s)
+        tl;
+      r
 
 external is_printable: char -> bool = "is_printable"
 

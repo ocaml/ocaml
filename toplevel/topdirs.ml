@@ -22,7 +22,7 @@ let protect r newval body =
     r := oldval;
     raise x
 
-(* Return the val referred to by a path *)
+(* Return the value referred to by a path *)
 
 let rec eval_path = function
     Pident id -> Symtable.get_global_value id
@@ -121,7 +121,7 @@ let find_printer_type lid =
     (ty_arg, path)
   with 
     Not_found ->
-      print_string "Unbound val "; Printtyp.longident lid;
+      print_string "Unbound value "; Printtyp.longident lid;
       print_newline(); raise Exit
   | Ctype.Unify ->
       Printtyp.longident lid;
@@ -218,7 +218,7 @@ let dir_trace lid =
       print_newline()
     end      
   with Not_found ->
-    print_string "Unbound val "; Printtyp.longident lid;
+    print_string "Unbound value "; Printtyp.longident lid;
     print_newline()
 
 let dir_untrace lid =
@@ -238,7 +238,7 @@ let dir_untrace lid =
         end else remove rem in
     trace_env := remove !trace_env
   with Not_found ->
-    print_string "Unbound val "; Printtyp.longident lid;
+    print_string "Unbound value "; Printtyp.longident lid;
     print_newline()
 
 let dir_untrace_all () =

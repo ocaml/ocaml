@@ -5,7 +5,7 @@ open Path
 open Typedtree
 
 
-(* Inclusion between val descriptions *)
+(* Inclusion between value descriptions *)
 
 let value_descriptions env vd1 vd2 =
   Ctype.moregeneral env vd1.val_type vd2.val_type &

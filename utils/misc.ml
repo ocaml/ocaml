@@ -69,24 +69,6 @@ let lowercase s =
   if c >= 'A' & c <= 'Z' then r.[0] <- Char.chr(Char.code c + 32);
   r
 
-let concat_strings sep l =
-  match l with
-    [] -> ""
-  | hd :: tl ->
-      let num = ref 0 and len = ref 0 in
-      List.iter (fun s -> incr num; len := !len + String.length s) l;
-      let r = String.create (!len + String.length sep * (!num - 1)) in
-      String.blit hd 0 r 0 (String.length hd);
-      let pos = ref(String.length hd) in
-      List.iter
-        (fun s ->
-          String.blit sep 0 r !pos (String.length sep);
-          pos := !pos + String.length sep;
-          String.blit s 0 r !pos (String.length s);
-          pos := !pos + String.length s)
-        tl;
-      r
-
 (* File copy *)
 
 let copy_file ic oc =

@@ -64,5 +64,5 @@ val lexeme_end : lexbuf -> int
    They are not intended to be used by user programs. *)
 
 val start_lexing : lexbuf -> unit
-val get_next_char : lexbuf -> char = "get_next_char"
+external get_next_char : lexbuf -> char = "get_next_char"
 val backtrack : lexbuf -> 'a

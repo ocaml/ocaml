@@ -33,7 +33,7 @@ type pp_queue_elem =
 
 (* Scan stack
    each element is (left_total, queue element) where left_total
-   is the val of pp_left_total when the element has been enqueued *)
+   is the value of pp_left_total when the element has been enqueued *)
 type pp_scan_elem = Scan_elem of int * pp_queue_elem
 let pp_scan_stack = ref ([] : pp_scan_elem list)
 
@@ -46,23 +46,23 @@ let pp_format_stack = ref ([]:pp_format_elem list)
 
 let pp_tbox_stack = ref ([]:tblock list)
 
-(* Large val for default tokens size *)
+(* Large value for default tokens size *)
 let pp_infinity = 9999
 
 (* Global variables: default initialization is
    set_margin 78
    set_min_space_left 0 *)
-(* val of right margin *)
+(* value of right margin *)
 let pp_margin = ref 78
 
 (* Minimal space left before margin, when opening a block *)
 let pp_min_space_left = ref 10
-(* maximum val of indentation:
+(* maximum value of indentation:
    no blocks can be opened further *)
 let pp_max_indent = ref (!pp_margin - !pp_min_space_left)
 
 let pp_space_left = ref !pp_margin(* space remaining on the current line *)
-and pp_current_indent = ref 0	  (* current val of indentation *)
+and pp_current_indent = ref 0	  (* current value of indentation *)
 and pp_left_total = ref 1	  (* total width of tokens already printed *)
 and pp_right_total = ref 1	  (* total width of tokens ever put in queue *)
 and pp_curr_depth = ref 0	  (* current number of opened blocks *)
@@ -390,8 +390,8 @@ let print_if_newline () =
 
 (* Breaks: indicate where a block may be broken.
    If line is broken then offset is added to the indentation of the current
-    block else (the val of) width blanks are printed.
-   To do (?) : add a maximum width and offset val *)
+    block else (the value of) width blanks are printed.
+   To do (?) : add a maximum width and offset value *)
 let print_break (width, offset) =
     if !pp_curr_depth < !pp_max_boxes then 
       scan_push true

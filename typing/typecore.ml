@@ -538,7 +538,7 @@ open Printtyp
 
 let report_error = function
     Unbound_value lid ->
-      print_string "Unbound val "; longident lid
+      print_string "Unbound value "; longident lid
   | Unbound_constructor lid ->
       print_string "Unbound constructor "; longident lid
   | Unbound_label lid ->

@@ -142,7 +142,7 @@ and transl_modtype_info env sinfo =
   | Pmodtype_manifest smty ->
       Tmodtype_manifest(transl_modtype env smty)
 
-(* Type a module val expression *)
+(* Type a module value expression *)
 
 let rec type_module env smod =
   match smod.pmod_desc with

@@ -10,7 +10,7 @@ let size = function
     Empty -> 1
   | Node(_, _, _, s) -> s
 
-(* Creates a new node with left son l, val x and right son r.
+(* Creates a new node with left son l, value x and right son r.
    l and r must be balanced and size l / size r must be between 1/N and N.
    Inline expansion of size for better speed. *)
 

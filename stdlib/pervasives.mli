@@ -24,7 +24,7 @@ exception Division_by_zero
 
 (* Exceptions *)
 
-val raise : exn -> 'a = "%raise"
+external raise : exn -> 'a = "%raise"
 val failwith: string -> 'a
 val invalid_arg: string -> 'a
 
@@ -32,64 +32,64 @@ exception Exit
 
 (* Comparisons *)
 
-val (=) : 'a -> 'a -> bool = "%equal"
-val (<>) : 'a -> 'a -> bool = "%notequal"
-val (<) : 'a -> 'a -> bool = "%lessthan"
-val (>) : 'a -> 'a -> bool = "%greaterthan"
-val (<=) : 'a -> 'a -> bool = "%lessequal"
-val (>=) : 'a -> 'a -> bool = "%greaterequal"
-val compare: 'a -> 'a -> int = "compare"
+external (=) : 'a -> 'a -> bool = "%equal"
+external (<>) : 'a -> 'a -> bool = "%notequal"
+external (<) : 'a -> 'a -> bool = "%lessthan"
+external (>) : 'a -> 'a -> bool = "%greaterthan"
+external (<=) : 'a -> 'a -> bool = "%lessequal"
+external (>=) : 'a -> 'a -> bool = "%greaterequal"
+external compare: 'a -> 'a -> int = "compare"
 val min: 'a -> 'a -> 'a
 val max: 'a -> 'a -> 'a
-val (==) : 'a -> 'a -> bool = "%eq"
-val (!=) : 'a -> 'a -> bool = "%noteq"
+external (==) : 'a -> 'a -> bool = "%eq"
+external (!=) : 'a -> 'a -> bool = "%noteq"
 
 (* Boolean operations *)
 
-val not : bool -> bool = "%boolnot"
-val (&) : bool -> bool -> bool = "%sequand"
-val (or) : bool -> bool -> bool = "%sequor"
+external not : bool -> bool = "%boolnot"
+external (&) : bool -> bool -> bool = "%sequand"
+external (or) : bool -> bool -> bool = "%sequor"
 
 (* Integer operations *)
 
-val (~-) : int -> int = "%negint"
-val succ : int -> int = "%succint"
-val pred : int -> int = "%predint"
-val (+) : int -> int -> int = "%addint"
-val (-) : int -> int -> int = "%subint"
-val ( * ) : int -> int -> int = "%mulint"
-val (/) : int -> int -> int = "%divint"
-val (mod) : int -> int -> int = "%modint"
+external (~-) : int -> int = "%negint"
+external succ : int -> int = "%succint"
+external pred : int -> int = "%predint"
+external (+) : int -> int -> int = "%addint"
+external (-) : int -> int -> int = "%subint"
+external ( * ) : int -> int -> int = "%mulint"
+external (/) : int -> int -> int = "%divint"
+external (mod) : int -> int -> int = "%modint"
 val abs : int -> int
-val (land) : int -> int -> int = "%andint"
-val (lor) : int -> int -> int = "%orint"
-val (lxor) : int -> int -> int = "%xorint"
+external (land) : int -> int -> int = "%andint"
+external (lor) : int -> int -> int = "%orint"
+external (lxor) : int -> int -> int = "%xorint"
 val lnot: int -> int
-val (lsl) : int -> int -> int = "%lslint"
-val (lsr) : int -> int -> int = "%lsrint"
-val (asr) : int -> int -> int = "%asrint"
+external (lsl) : int -> int -> int = "%lslint"
+external (lsr) : int -> int -> int = "%lsrint"
+external (asr) : int -> int -> int = "%asrint"
 
 (* Floating-point operations *)
 
-val (~-.) : float -> float = "neg_float"
-val (+.) : float -> float -> float = "add_float"
-val (-.) : float -> float -> float = "sub_float"
-val ( *. ) : float -> float -> float = "mul_float"
-val (/.) : float -> float -> float = "div_float"
-val ( ** ) : float -> float -> float = "power_float"
-val exp : float -> float = "exp_float"
-val log : float -> float = "log_float"
-val sqrt : float -> float = "sqrt_float"
-val sin : float -> float = "sin_float"
-val cos : float -> float = "cos_float"
-val tan : float -> float = "tan_float"
-val asin : float -> float = "asin_float"
-val acos : float -> float = "acos_float"
-val atan : float -> float = "atan_float"
-val atan2 : float -> float -> float = "atan2_float"
+external (~-.) : float -> float = "neg_float"
+external (+.) : float -> float -> float = "add_float"
+external (-.) : float -> float -> float = "sub_float"
+external ( *. ) : float -> float -> float = "mul_float"
+external (/.) : float -> float -> float = "div_float"
+external ( ** ) : float -> float -> float = "power_float"
+external exp : float -> float = "exp_float"
+external log : float -> float = "log_float"
+external sqrt : float -> float = "sqrt_float"
+external sin : float -> float = "sin_float"
+external cos : float -> float = "cos_float"
+external tan : float -> float = "tan_float"
+external asin : float -> float = "asin_float"
+external acos : float -> float = "acos_float"
+external atan : float -> float = "atan_float"
+external atan2 : float -> float -> float = "atan2_float"
 val abs_float : float -> float
-val float : int -> float = "float_of_int"
-val truncate : float -> int = "int_of_float"
+external float : int -> float = "float_of_int"
+external truncate : float -> int = "int_of_float"
 
 (* String operations -- more in module String *)
 
@@ -97,16 +97,16 @@ val (^) : string -> string -> string
 
 (* Pair operations *)
 
-val fst : 'a * 'b -> 'a = "%field0"
-val snd : 'a * 'b -> 'b = "%field1"
+external fst : 'a * 'b -> 'a = "%field0"
+external snd : 'a * 'b -> 'b = "%field1"
 
 (* String conversion functions *)
 
 val string_of_bool : bool -> string
 val string_of_int : int -> string
-val int_of_string : string -> int = "int_of_string"
+external int_of_string : string -> int = "int_of_string"
 val string_of_float : float -> string
-val float_of_string : string -> float = "float_of_string"
+external float_of_string : string -> float = "float_of_string"
 
 (* List operations -- more in module List *)
 
@@ -155,43 +155,43 @@ type open_flag =
 val open_out : string -> out_channel
 val open_out_bin : string -> out_channel
 val open_out_gen : open_flag list -> int -> string -> out_channel
-val flush : out_channel -> unit = "flush"
-val output_char : out_channel -> char -> unit = "output_char"
+external flush : out_channel -> unit = "flush"
+external output_char : out_channel -> char -> unit = "output_char"
 val output_string : out_channel -> string -> unit
 val output : out_channel -> string -> int -> int -> unit
-val output_byte : out_channel -> int -> unit = "output_char"
-val output_binary_int : out_channel -> int -> unit = "output_int"
-val output_value : out_channel -> 'a -> unit = "output_value"
-val output_compact_value : out_channel -> 'a -> unit = "output_value"
-val seek_out : out_channel -> int -> unit = "seek_out"
-val pos_out : out_channel -> int = "pos_out"
-val size_out : out_channel -> int = "channel_size"
-val close_out : out_channel -> unit = "close_out"
+external output_byte : out_channel -> int -> unit = "output_char"
+external output_binary_int : out_channel -> int -> unit = "output_int"
+external output_value : out_channel -> 'a -> unit = "output_value"
+external output_compact_value : out_channel -> 'a -> unit = "output_value"
+external seek_out : out_channel -> int -> unit = "seek_out"
+external pos_out : out_channel -> int = "pos_out"
+external size_out : out_channel -> int = "channel_size"
+external close_out : out_channel -> unit = "close_out"
 
 (* General input functions *)
 val open_in : string -> in_channel
 val open_in_bin : string -> in_channel
 val open_in_gen : open_flag list -> int -> string -> in_channel
-val input_char : in_channel -> char = "input_char"
+external input_char : in_channel -> char = "input_char"
 val input_line : in_channel -> string
 val input : in_channel -> string -> int -> int -> int
 val really_input : in_channel -> string -> int -> int -> unit
-val input_byte : in_channel -> int = "input_char"
-val input_binary_int : in_channel -> int = "input_int"
-val input_value : in_channel -> 'a = "input_value"
-val seek_in : in_channel -> int -> unit = "seek_in"
-val pos_in : in_channel -> int = "pos_in"
-val in_channel_length : in_channel -> int = "channel_size"
-val close_in : in_channel -> unit = "close_in"
+external input_byte : in_channel -> int = "input_char"
+external input_binary_int : in_channel -> int = "input_int"
+external input_value : in_channel -> 'a = "input_value"
+external seek_in : in_channel -> int -> unit = "seek_in"
+external pos_in : in_channel -> int = "pos_in"
+external in_channel_length : in_channel -> int = "channel_size"
+external close_in : in_channel -> unit = "close_in"
 
 (* References *)
 
 type 'a ref = { mutable contents: 'a }
-val ref: 'a -> 'a ref = "%makeblock"
-val (!): 'a ref -> 'a = "%field0"
-val (:=): 'a ref -> 'a -> unit = "%setfield0"
-val incr: int ref -> unit = "%incr"
-val decr: int ref -> unit = "%decr"
+external ref: 'a -> 'a ref = "%makeblock"
+external (!): 'a ref -> 'a = "%field0"
+external (:=): 'a ref -> 'a -> unit = "%setfield0"
+external incr: int ref -> unit = "%incr"
+external decr: int ref -> unit = "%decr"
 
 (* Miscellaneous *)
 

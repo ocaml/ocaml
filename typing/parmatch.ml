@@ -166,7 +166,7 @@ let full_match env =
 (*
   Is the last row of pattern matrix pss + qs satisfiable ?
         That is :
-  Does there List.exists at least one val vector, es such that :
+  Does there List.exists at least one value vector, es such that :
    1/ for all ps in pss ps # es (ps and es are not compatible)
    2/ qs <= es                  (es matches qs)
 *)

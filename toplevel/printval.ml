@@ -7,7 +7,7 @@ open Path
 open Typedtree
 
 
-(* Given an exception val, we cannot recover its type,
+(* Given an exception value, we cannot recover its type,
    hence we cannot print its arguments in general.
    Here, we do a feeble attempt to print
    integer, string and float arguments... *)
