@@ -13,6 +13,7 @@
 
 /* Raising exceptions from C. */
 
+#include <signal.h>
 #include "alloc.h"
 #include "fail.h"
 #include "gc.h"
@@ -40,7 +41,10 @@ extern char * caml_exception_pointer;
 void mlraise(v)
      value v;
 {
+  sigset_t mask;
   leave_blocking_section();
+  sigemptyset(&mask);
+  sigprocmask(SIG_SETMASK, &mask, NULL);
 #ifndef Stack_grows_upwards
   while (local_roots != NULL && 
          (char *) local_roots < caml_exception_pointer) {

@@ -50,6 +50,9 @@ _caml_call_gc:
 ; Record return address
         ldil    L`_caml_last_return_address, %r1
         stw     %r2, R`_caml_last_return_address(%r1)
+; Save the exception handler (if e.g. a sighandler raises)
+        ldil    L`_caml_exception_pointer, %r1
+        stw     %r5, R`_caml_exception_pointer(%r1)
 ; Save all regs used by the code generator
         ldil	L`_gc_entry_regs, %r1
         ldo     R`_gc_entry_regs(%r1), %r1

@@ -41,6 +41,9 @@
     # Save current allocation pointer for debugging purposes
         lwz     28, L..young_ptr(2)
         stw     31, 0(28)
+    # Save exception pointer (if e.g. a sighandler raises)
+        lwz     28, L..caml_exception_pointer(2)
+        stw     29, 0(28)
     # Save all registers used by the code generator
         lwz     28, L..gc_entry_regs(2)
         addic   28, 28, -4

@@ -195,6 +195,8 @@ $103:   ldgp    $gp, 0($27)
         stq     $24, caml_bottom_of_stack
     /* Save current allocation pointer for debugging purposes */
         stq     $13, young_ptr
+    /* Save trap pointer in case an exception is raised (e.g. sighandler) */
+        stq     $15, caml_exception_pointer
     /* Save all regs used by the code generator in the arrays
     /* gc_entry_regs and gc_entry_float_regs. */
         SAVE_ALL_REGS

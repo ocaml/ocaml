@@ -78,6 +78,8 @@ caml_call_gc:
         sw      $25, 16($sp)
     /* Save current allocation pointer for debugging purposes */
         sw      $22, young_ptr
+    /* Save the exception handler (if e.g. a sighandler raises) */
+        sw      $30, caml_exception_pointer
     /* Save all regs used by the code generator in the arrays
     /* gc_entry_regs and gc_entry_float_regs. */
         SAVE(2)
