@@ -205,7 +205,7 @@ let enter_val cl_num vars lab mut ty val_env met_env par_env =
   vars := Vars.add lab (id, mut, ty) !vars;
   result
 
-let inheritance impl self_type env concr_meths loc parent =
+let inheritance self_type env concr_meths warn_meths loc parent =
   match scrape_class_type parent with
     Tcty_signature cl_sig ->
 
@@ -220,16 +220,16 @@ let inheritance impl self_type env concr_meths loc parent =
             assert false
       end;
 
-      if impl then begin
-        let overridings = Concr.inter cl_sig.cty_concr concr_meths in
-        if not (Concr.is_empty overridings) then begin
-          Location.prerr_warning loc
-            (Warnings.Method_override (Concr.elements overridings))
-        end
+      let overridings = Concr.inter cl_sig.cty_concr warn_meths in
+      if not (Concr.is_empty overridings) then begin
+        Location.prerr_warning loc
+          (Warnings.Method_override (Concr.elements overridings))
       end;
-      let concr_meths = Concr.union cl_sig.cty_concr concr_meths in
 
-      (cl_sig, concr_meths)
+      let concr_meths = Concr.union cl_sig.cty_concr concr_meths in
+      let warn_meths = Concr.union cl_sig.cty_concr warn_meths in
+
+      (cl_sig, concr_meths, warn_meths)
 
   | _ ->
       raise(Error(loc, Structure_expected parent))
@@ -276,8 +276,9 @@ let rec class_type_field env self_type meths (val_sig, concr_meths) =
   function
     Pctf_inher sparent ->
       let parent = class_type env sparent in
-      let (cl_sig, concr_meths) =
-        inheritance false self_type env concr_meths sparent.pcty_loc parent
+      let (cl_sig, concr_meths, _) =
+        inheritance self_type env concr_meths Concr.empty sparent.pcty_loc
+          parent
       in
       let val_sig =
         Vars.fold
@@ -375,12 +376,12 @@ and class_type env scty =
 module StringSet = Set.Make(struct type t = string let compare = compare end)
 
 let rec class_field cl_num self_type meths vars
-    (val_env, met_env, par_env, fields, concr_meths, inh_vals) =
+    (val_env, met_env, par_env, fields, concr_meths, warn_meths, inh_vals) =
   function
     Pcf_inher (sparent, super) ->
       let parent = class_expr cl_num val_env par_env sparent in
-      let (cl_sig, concr_meths) =
-        inheritance true self_type val_env concr_meths sparent.pcl_loc
+      let (cl_sig, concr_meths, warn_meths) =
+        inheritance self_type val_env concr_meths warn_meths sparent.pcl_loc
           parent.cl_type
       in
       (* Variables *)
@@ -416,7 +417,7 @@ let rec class_field cl_num self_type meths vars
       in
       (val_env, met_env, par_env,
        lazy(Cf_inher (parent, inh_vars, inh_meths))::fields,
-       concr_meths, inh_vals)
+       concr_meths, warn_meths, inh_vals)
 
   | Pcf_val (lab, mut, sexp, loc) ->
       if StringSet.mem lab inh_vals then
@@ -434,11 +435,12 @@ let rec class_field cl_num self_type meths vars
         enter_val cl_num vars lab mut exp.exp_type val_env met_env par_env
       in
       (val_env, met_env, par_env, lazy(Cf_val (lab, id, exp)) :: fields,
-       concr_meths, inh_vals)
+       concr_meths, warn_meths, inh_vals)
 
   | Pcf_virt (lab, priv, sty, loc) ->
       virtual_method val_env meths self_type lab priv sty loc;
-      (val_env, met_env, par_env, fields, concr_meths, inh_vals)
+      let warn_meths = Concr.remove lab warn_meths in
+      (val_env, met_env, par_env, fields, concr_meths, warn_meths, inh_vals)
 
   | Pcf_meth (lab, priv, expr, loc)  ->
       let (_, ty) =
@@ -480,11 +482,11 @@ let rec class_field cl_num self_type meths vars
           Cf_meth (lab, texp)
         end in
       (val_env, met_env, par_env, field::fields,
-       Concr.add lab concr_meths, inh_vals)
+       Concr.add lab concr_meths, Concr.add lab warn_meths, inh_vals)
 
   | Pcf_cstr (sty, sty', loc) ->
       type_constraint val_env sty sty' loc;
-      (val_env, met_env, par_env, fields, concr_meths, inh_vals)
+      (val_env, met_env, par_env, fields, concr_meths, warn_meths, inh_vals)
 
   | Pcf_let (rec_flag, sdefs, loc) ->
       let (defs, val_env) =
@@ -514,7 +516,7 @@ let rec class_field cl_num self_type meths vars
           ([], met_env, par_env)
       in
       (val_env, met_env, par_env, lazy(Cf_let(rec_flag, defs, vals))::fields,
-       concr_meths, inh_vals)
+       concr_meths, warn_meths, inh_vals)
 
   | Pcf_init expr ->
       let expr = make_method cl_num expr in
@@ -530,7 +532,8 @@ let rec class_field cl_num self_type meths vars
           Ctype.end_def ();
           Cf_init texp
         end in
-      (val_env, met_env, par_env, field::fields, concr_meths, inh_vals)
+      (val_env, met_env, par_env, field::fields,
+       concr_meths, warn_meths, inh_vals)
 
 and class_structure cl_num val_env met_env (spat, str) =
   (* Environment for substructures *)
@@ -554,9 +557,10 @@ and class_structure cl_num val_env met_env (spat, str) =
   end;
 
   (* Class fields *)
-  let (_, _, _, fields, concr_meths, _) =
+  let (_, _, _, fields, concr_meths, _, _) =
     List.fold_left (class_field cl_num self_type meths vars)
-      (val_env, meth_env, par_env, [], Concr.empty, StringSet.empty)
+      (val_env, meth_env, par_env, [], Concr.empty, Concr.empty,
+       StringSet.empty)
       str
   in
   Ctype.unify val_env self_type (Ctype.newvar ());

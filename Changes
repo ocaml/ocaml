@@ -30,6 +30,9 @@ Type-checking:
   type of any subexpression in the source file.  Works even in the case
   of a type error (all the types computed up to the error are available).
   This new feature is also supported by ocamlbrowser.
+- Disable "method is overriden" warning when the method was explicitely
+  redefined as virtual beforehand (i.e. not through inheritance). Typing
+  and semantics are unchanged.
 
 Both compilers:
 - Added option "-dtypes" to dump detailed type information to a file.
