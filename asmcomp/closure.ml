@@ -324,20 +324,26 @@ let no_effects = function
   | Uconst(Const_base(Const_string _)) -> true
   | u -> is_simple_argument u
 
-let rec bind_params subst params args body =
+let rec bind_params_rec subst params args body =
   match (params, args) with
     ([], []) -> substitute subst body
   | (p1 :: pl, a1 :: al) ->
       if is_simple_argument a1 then
-        bind_params (Tbl.add p1 a1 subst) pl al body
+        bind_params_rec (Tbl.add p1 a1 subst) pl al body
       else begin
         let p1' = Ident.rename p1 in
-        let body' = bind_params (Tbl.add p1 (Uvar p1') subst) pl al body in
+        let body' =
+          bind_params_rec (Tbl.add p1 (Uvar p1') subst) pl al body in
         if occurs_var p1 body then Ulet(p1', a1, body')
         else if no_effects a1 then body'
         else Usequence(a1, body')
       end
   | (_, _) -> assert false
+
+let bind_params params args body =
+  (* Reverse parameters and arguments to preserve right-to-left
+     evaluation order (PR#2910). *)
+  bind_params_rec Tbl.empty (List.rev params) (List.rev args) body
 
 (* Check if a lambda term is ``pure'',
    that is without side-effects *and* not containing function definitions *)
@@ -359,7 +365,7 @@ let direct_apply fundesc funct ufunct uargs =
   let app =
     match fundesc.fun_inline with
       None -> Udirect_apply(fundesc.fun_label, app_args)
-    | Some(params, body) -> bind_params Tbl.empty params app_args body in
+    | Some(params, body) -> bind_params params app_args body in
   (* If ufunct can contain side-effects or function definitions,
      we must make sure that it is evaluated exactly once.
      If the function is not closed, we evaluate ufunct as part of the
