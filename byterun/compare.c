@@ -79,6 +79,7 @@ static long compare_val(v1, v2)
     value * p1, * p2;
     long res;
     if (sz1 != sz2) return sz1 - sz2;
+    if (sz1 == 0) return 0;
     for(p1 = Op_val(v1), p2 = Op_val(v2);
         sz1 > 1;
         sz1--, p1++, p2++) {
