@@ -167,8 +167,10 @@ CVT_EMIT=cvt_emit.cmo
 cvt_emit: $(CVT_EMIT)
 	$(CAMLC) $(LINKFLAGS) -o cvt_emit $(CVT_EMIT)
 
+# cvt_emit is precious: sometimes we are stuck in the middle of a
+# bootstrap and we need to remake the dependencies
 clean::
-	rm -f cvt_emit
+	if test -f cvt_emit; then mv -f cvt_emit cvt_emit.bak; else :; fi
 
 cvt_emit.ml: cvt_emit.mll
 	$(CAMLLEX) cvt_emit.mll
