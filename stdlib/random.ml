@@ -53,7 +53,7 @@ let rec intaux n =
   let r = bits () in
   if r >= n then intaux n else r
 let int bound =
-  if bound > 0x3FFFFFFF
+  if bound > 0x3FFFFFFF || bound <= 0
   then invalid_arg "Random.int"
   else (intaux (0x3FFFFFFF / bound * bound)) mod bound
 

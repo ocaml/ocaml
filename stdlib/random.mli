@@ -22,9 +22,11 @@ val full_init : int array -> unit
 val bits : unit -> int
   (* Return 30 random bits in a nonnegative integer. *)
 val int : int -> int
-  (* [Random.int bound] returns a random number between 0 (inclusive)
-     and [bound] (exclusive).  [bound] must be positive and smaller
+  (* [Random.int bound] returns a random integer between 0 (inclusive)
+     and [bound] (exclusive).  [bound] must be more than 0 and less
      than $2^{30}$. *)
 val float : float -> float
-  (* [Random.float bound] returns a random number between 0 (inclusive)
-     and [bound] (exclusive). *)
+  (* [Random.float bound] returns a random floating-point number
+     between 0 (inclusive) and [bound] (exclusive).  If [bound] is
+     negative, the result is negative.  If [bound] is 0, the result
+     is 0. *)
