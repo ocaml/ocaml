@@ -444,7 +444,9 @@ value caml_thread_uncaught_exception(value exn)  /* ML */
   fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
           Int_val(Ident(curr_thread->descr)), msg);
   free(msg);
+#ifndef NATIVE_CODE
   if (backtrace_active) print_exception_backtrace();
+#endif
   fflush(stderr);
   return Val_unit;
 }
