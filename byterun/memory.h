@@ -41,7 +41,7 @@ char * stat_resize P((char *, asize_t));     /* Size in bytes. */
 #define Garbage_collection_function minor_collection
 #endif
 
-#define Alloc_small(result, wosize, tag) {                                  \
+#define Alloc_small(result, wosize, tag) {            Assert (wosize >= 1); \
   young_ptr -= Bhsize_wosize (wosize);                                      \
   if (young_ptr < young_limit){                                             \
     Setup_for_gc;                                                           \

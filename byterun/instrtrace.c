@@ -34,7 +34,7 @@ void disasm_instr(pc)
      code_t pc;
 {
   int instr = *pc;
-  printf("%6d  %s", pc - start_code,
+  printf("%6ld  %s", (long) (pc - start_code),
          instr < 0 || instr > STOP ? "???" : names_of_instructions[instr]);
   pc++;
   switch(instr) {

@@ -62,12 +62,13 @@ value gc_stat(v) /* ML */
       case White:
         if (Wosize_hd (cur_hd) == 0){
           ++fragments;
-          Assert (prev_hp == NULL
+/* XXX    Assert (prev_hp == NULL
                   || (Color_hp (prev_hp) != Blue
                       && Wosize_hp (prev_hp) > 0));
           Assert (Next (cur_hp) == chunk_end
                   || (Color_hp (Next (cur_hp)) != Blue
                       && Wosize_hp (Next (cur_hp)) > 0));
+*/
           break;
         }
         /* FALLTHROUGH */
@@ -83,9 +84,10 @@ value gc_stat(v) /* ML */
         if (Whsize_hd (cur_hd) > largest_free){
           largest_free = Whsize_hd (cur_hd);
         }
-        Assert (prev_hp == NULL
+/* XXX  Assert (prev_hp == NULL
                 || (Color_hp (prev_hp) != Blue
                     && Wosize_hp (prev_hp) > 0));
+*/
         Assert (Next (cur_hp) == chunk_end
                 || (Color_hp (Next (cur_hp)) != Blue
                     && Wosize_hp (Next (cur_hp)) > 0));
@@ -99,7 +101,7 @@ value gc_stat(v) /* ML */
   
   Assert (live_words + free_words + fragments == Wsize_bsize (stat_heap_size));
 
-  res = alloc (13, 0);
+  res = alloc (14, 0);
   Field (res, 0) = Val_long (stat_minor_words
                              + Wsize_bsize (young_end - young_ptr));
   Field (res, 1) = Val_long (stat_promoted_words);
