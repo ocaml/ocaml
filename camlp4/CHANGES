@@ -1,6 +1,9 @@
 Camlp4 Version 3.04
 -------------------
 
+- [15 Nov 01] In revised syntax, in let binding in sequences, the "in"
+  can be replaced by a semicolon; the revised syntax printer pr_r.cmo
+  now rather prints a semicolon there.
 - [07 Nov 01] Added the ability to use $ as token: was impossible so far,
   because of AST quotation uses it for its antiquotation. The fix is just
   a little (invisible) change in Plexer.

@@ -392,7 +392,7 @@ EXTEND
     [ [ -> () ] ]
   ;
   sequence:
-    [ [ "let"; o = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
+    [ [ "let"; o = OPT "rec"; l = LIST1 let_binding SEP "and"; [ "in" | ";" ];
         el = SELF ->
           let e =
             match el with

@@ -514,7 +514,7 @@ value rec sequence_loop =
       in
       let r = flag "rec" r in
       [: listwbws (fun b (p, e) k -> let_binding b (p, e) k)
-           [: `S LR "let"; r :] (S LR "and") pel [: `S LR "in" :];
+           [: `S LR "let"; r :] (S LR "and") pel [: `S RO ";" :];
          sequence_loop el :]
   | [(<:expr< let $rec:_$ $list:_$ in $_$ >> as e) :: el] ->
       [: `HVbox [: `S LO "("; `expr e [: `S RO ")"; `S RO ";" :] :];

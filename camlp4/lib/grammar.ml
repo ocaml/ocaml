@@ -222,7 +222,7 @@ and name_of_tree_failed entry =
           List.fold_left
             (fun s tok ->
                (if s = "" then "" else s ^ " ") ^
-               entry.egram.glexer.Token.text tok)
+                 entry.egram.glexer.Token.text tok)
             "" tokl ]
   | DeadEnd | LocAct _ _ -> "???" ]
 ;
@@ -511,9 +511,7 @@ and parser_of_token_list p1 tokl =
         let ps strm =
           match peek_nth n strm with
           [ Some (con, prm) when p_con = "ANY" || con = p_con ->
-              do {
-                for i = 1 to n do { Stream.junk strm }; Obj.repr prm
-              }
+              do { for i = 1 to n do { Stream.junk strm }; Obj.repr prm }
           | _ -> raise Stream.Failure ]
         in
         parser bp [: a = ps; act = p1 bp a :] -> app act a
@@ -522,9 +520,7 @@ and parser_of_token_list p1 tokl =
           match peek_nth n strm with
           [ Some (con, prm)
             when (p_con = "ANY" || con = p_con) && prm = p_prm ->
-              do {
-                for i = 1 to n do { Stream.junk strm }; Obj.repr prm
-              }
+              do { for i = 1 to n do { Stream.junk strm }; Obj.repr prm }
           | _ -> raise Stream.Failure ]
         in
         parser bp [: a = ps; act = p1 bp a :] -> app act a
@@ -543,7 +539,8 @@ and parser_of_token_list p1 tokl =
         let ps strm =
           match peek_nth n strm with
           [ Some (con, prm)
-            when (p_con = "ANY" || con = p_con) && prm = p_prm -> prm
+            when (p_con = "ANY" || con = p_con) && prm = p_prm ->
+              prm
           | _ -> raise Stream.Failure ]
         in
         let p1 = loop (n + 1) tokl in
