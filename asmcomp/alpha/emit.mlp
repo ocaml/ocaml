@@ -442,20 +442,30 @@ let emit_instr i =
         `	lda	$sp, {emit_int (-n)}($sp)\n`;
         stack_offset := !stack_offset + n
     | Lop(Iload(chunk, addr)) ->
+        let dest = i.res.(0) in
         let load_instr =
           match chunk with
-            Word -> if i.res.(0).typ = Float then "ldt" else "ldq"
           | Byte_unsigned -> "ldbu"
           | Byte_signed -> "ldb"
           | Sixteen_unsigned -> "ldwu"
-          | Sixteen_signed -> "ldw" in
-        `	{emit_string load_instr}	{emit_reg i.res.(0)}, {emit_addressing addr i.arg 0}\n`
+          | Sixteen_signed -> "ldw"
+          | Thirtytwo_unsigned -> "ldl"
+          | Thirtytwo_signed -> "ldl"
+          | Word -> "ldq"
+          | Single -> "lds"
+          | Double -> "ldt" in
+        `	{emit_string load_instr}	{emit_reg dest}, {emit_addressing addr i.arg 0}\n`;
+        if chunk = Thirtytwo_unsigned then
+          `	zapnot	{emit_reg dest}, 15, {emit_reg dest}\n`
     | Lop(Istore(chunk, addr)) ->
         let store_instr =
           match chunk with
-            Word -> if i.arg.(0).typ = Float then "stt" else "stq"
           | Byte_unsigned | Byte_signed -> "stb"
-          | Sixteen_unsigned | Sixteen_signed -> "stw" in
+          | Sixteen_unsigned | Sixteen_signed -> "stw"
+          | Thirtytwo_unsigned | Thirtytwo_signed -> "stl"
+          | Word -> "stq"
+          | Single -> "sts"
+          | Double -> "stt" in
         `	{emit_string store_instr}	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
@@ -562,6 +572,8 @@ let emit_instr i =
         `	ldgp	$gp, 0($26)\n`;
         if marked_r26 then
           `	bic	$gp, 1, $gp\n`
+    | Lop(Ispecific Itrunc32) ->
+        `	addl	{emit_reg i.arg.(0)}, 0, {emit_reg i.res.(0)}\n`
     | Lop(Ispecific sop) ->
         let instr = name_for_specific_operation sop in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
@@ -744,6 +756,8 @@ let emit_item = function
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
       `	.word	{emit_int n}\n`
+  | Cint32 n ->
+      `	.long	{emit_int n}\n`
   | Cint n ->
       if digital_asm then
         `	.quad	{emit_nativeint n}\n`
@@ -751,7 +765,9 @@ let emit_item = function
         (* Work around a bug in gas regarding the parsing of
            long decimal constants *)
         `	.quad	{emit_string(Nativeint.to_hexa_string n)}\n`
-  | Cfloat f ->
+  | Csingle f ->
+      `	.float	{emit_string f}\n`
+  | Cdouble f ->
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->
       `	.quad	{emit_symbol s}\n`

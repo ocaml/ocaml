@@ -27,6 +27,7 @@ type addressing_mode =
 type specific_operation =
     Iadd4 | Iadd8 | Isub4 | Isub8       (* Scaled adds and subs *)
   | Ireloadgp of bool                   (* The ldgp instruction *)
+  | Itrunc32                            (* Truncate 64-bit int to 32 bit *)
 
 (* Sizes, endianness *)
 
@@ -67,6 +68,7 @@ let print_specific_operation printreg op arg =
   | Isub4 -> printreg arg.(0); print_string " * 4 - "; printreg arg.(1)
   | Isub8 -> printreg arg.(0); print_string " * 8 - "; printreg arg.(1)
   | Ireloadgp _ -> print_string "ldgp"
+  | Itrunc32 -> print_string "truncate32 "; printreg arg.(0)
 
 (* Distinguish between the Digital assembler and other assemblers (e.g. gas) *)
 

@@ -62,6 +62,9 @@ method select_operation op args =
       (Ispecific(if shift = 2 then Isub4 else Isub8), [arg1; arg2])
   | (Csubi, [Cop(Cmuli, [Cconst_int(4|8 as mult); arg1]); arg2]) ->
       (Ispecific(if mult = 4 then Isub4 else Isub8), [arg1; arg2])
+    (* Recognize truncation/normalization of 64-bit integers to 32 bits *)
+  | (Casr, [Cop(Clsl, [arg; Cconst_int 32]); Cconst_int 32]) ->
+      (Ispecific Itrunc32, [arg])
     (* Work around various limitations of the GNU assembler *)
   | ((Caddi|Cadda), [arg1; Cconst_int n])
     when not (self#is_immediate n) && self#is_immediate (-n) ->
