@@ -28,9 +28,14 @@ let modified = ref false
 let modules =
   ref [ "Arg"; "BigArray"; "Buffer"; "Condition"; "Dbm"; "Digest"; "Dynlink";
         "Event"; "Filename"; "Format"; "Gc"; "Genlex"; "Graphics";
-        "Hashtbl"; "Lexing"; "Map"; "Marshal"; "Mutex"; "Parsing";
-        "Pervasives"; "Queue"; "Set"; "Sort"; "Stack"; "Str";
-        "Stream"; "Sys"; "Thread"; "ThreadUnix"; "Weak" ]
+        "Lexing"; "Marshal"; "Mutex"; "Parsing"; "Pervasives"; "Queue";
+        "Sort"; "Stack"; "Str"; "Stream"; "Sys";
+        "Thread"; "ThreadUnix"; "Weak" ]
+
+let stdlabels = ["Array"; "List"; "String"]
+let morelabels = ["Hashtbl"; "Map"; "Set"]
+let alllabels = ref false
+let noopen = ref false
 
 exception Closing of token
 
@@ -54,11 +59,18 @@ let convert_impl buffer =
     |  _ ->
         (token, start, stop)
   in
+  let openunix = ref None and openstd = ref None and openmore = ref None in
   let rec may_start (token, s, e) =
     match token with
       LIDENT _ -> search_start (dropext (next_token ()))
     | UIDENT m when List.mem m !modules ->
         may_discard (dropext (next_token ()))
+    | UIDENT m ->
+        List.iter ~f:
+          (fun (set,r) ->
+            if !r = None && List.mem m ~set then r := Some true)
+          [stdlabels, openstd; ["Unix"], openunix; morelabels, openmore];
+        search_start (next_token ())
     | _ -> search_start (token, s, e)
 
   and dropext (token, s, e) =
@@ -83,6 +95,8 @@ let convert_impl buffer =
       TILDE | LABEL _ ->
         modified := true;
         copy_input s; input_pos := e;
+        may_discard (next_token ())
+    | _ when !alllabels ->
         may_discard (next_token ())
     | LPAREN | LBRACKET | LBRACKETBAR | LBRACKETLESS | BEGIN
     | LBRACE | LBRACELESS | STRUCT | SIG | OBJECT->
@@ -112,6 +126,15 @@ let convert_impl buffer =
     | PLUS | MINUS | MINUSDOT | STAR | LESS | GREATER
     | OR | BARBAR | AMPERSAND | AMPERAMPER | COLONEQUAL ->
         may_start (next_token ())
+    | OPEN ->
+        begin match next_token () with
+        | UIDENT m, _, _ ->
+            List.iter
+              ~f:(fun (set,r) -> if List.mem m ~set then r := Some false)
+              [stdlabels, openstd; ["Unix"], openunix; morelabels, openmore]
+        | _ -> ()
+        end;
+        search_start (next_token ())
     | _ ->
         search_start (next_token ())
 
@@ -133,14 +156,37 @@ let convert_impl buffer =
       | LBRACELESS, GREATERRBRACE -> ()
       | _ -> raise (Closing last)
   in
+  let first = next_token () in
   try
-    may_start (next_token ());
+    if !alllabels then may_discard first else may_start first
   with End_of_file ->
-    copy_input (Buffer.length input_buffer)
+    copy_input (Buffer.length input_buffer);
+    if not !alllabels
+    && List.exists (fun r -> !r = Some true) [openstd; openunix; openmore]
+    then begin
+      modified := true;
+      let text = Buffer.contents output_buffer in
+      Buffer.clear output_buffer;
+      let (token, s, _) = first in
+      Buffer.add_substring output_buffer text 0 s;
+      List.iter ~f:
+        (fun (r, s) ->
+          if !r = Some true then Buffer.add_string output_buffer s)
+        [ openstd, "open StdLabels\n"; openmore, "open MoreLabels\n";
+          openunix, "module Unix = UnixLabels\n" ];
+      let sep =
+        if List.mem token [CLASS; EXTERNAL; EXCEPTION; FUNCTOR; LET;
+                           MODULE; FUNCTOR; TYPE; VAL]
+        then "\n"
+        else if token = OPEN then "" else ";;\n\n"
+      in
+      Buffer.add_string output_buffer sep;
+      Buffer.add_substring output_buffer text s (String.length text - s)
+    end
   | Closing _ ->
       prerr_endline ("bad closing token at position " ^
                      string_of_int (Lexing.lexeme_start buffer));
-      copy_input (Buffer.length input_buffer)
+      modified := false
 
 type state = Out | Enter | In | Escape
 
@@ -208,25 +254,34 @@ let convert_file ~intf name =
     Buffer.output_buffer oc output_buffer;
     close_out oc
   end
-  else prerr_endline ("No labels erased in " ^ name)
+  else prerr_endline ("No changes in " ^ name)
 
 let _ =
-  let files = ref [] and intf = ref false and keepstd = ref false in
+  let files = ref [] and intf = ref false
+  and keepstd = ref false and keepmore = ref false in
   Arg.parse
     [ "-intf", Arg.Set intf,
-      " remove all non-optional labels from an interface";
+      " remove all non-optional labels from an interface;\n" ^
+      "         other options are ignored";
+      "-all", Arg.Set alllabels,
+      " remove all labels, possibly including optional ones!";
       "-keepstd", Arg.Set keepstd,
       " keep labels for Array, List, String and Unix";
+      "-keepmore", Arg.Set keepmore,
+      " keep also labels for Hashtbl, Map and Set; implies -keepstd";
       "-m", Arg.String (fun s -> modules := s :: !modules),
-      "<module>  remove also labels for <module>" ]
+      "<module>  remove also labels for <module>";
+      "-noopen", Arg.Set noopen,
+      " do not insert `open' statements for -keepstd/-keepmore" ]
     (fun s -> files := s :: !files)
     ("Usage: scrapelabels <options> <source files>\n" ^
      "  Remove labels from function arguments in standard library modules.\n" ^
      "  With -intf option below, can also process interfaces.\n" ^
      "  Old files are renamed to <file>.bak if there is no backup yet.\n" ^
      "Options are:");
-  if not !keepstd then
-    modules := ["Array"; "List"; "String"; "Unix"] @ !modules;
+  if !keepmore then keepstd := true;
+  if not !keepstd then modules := "Unix" :: stdlabels @ !modules;
+  if not !keepmore then modules := morelabels @ !modules;
   List.iter (List.rev !files) ~f:
     begin fun name ->
       prerr_endline ("Processing " ^ name);
