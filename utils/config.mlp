@@ -20,10 +20,9 @@ let standard_library =
     "%%LIBDIR%%"
 
 let bytecomp_c_compiler = "%%BYTECC%%"
-
 let native_c_compiler = "%%NATIVECC%%"
-
 let c_libraries = "%%CCLIBS%%"
+let ranlib = "%%RANLIBCMD%%"
 
 let exec_magic_number = "Caml1999X001"
 and cmi_magic_number = "Caml1999I002"

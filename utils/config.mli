@@ -25,6 +25,8 @@ val native_c_compiler: string
         (* The C compiler to use for the native code compiler *)
 val c_libraries: string
         (* The C libraries to link with custom runtimes *)
+val ranlib: string
+        (* Command to randomize a library, or "" if not needed *)
 
 val load_path: string list ref
         (* Directories in the search path for .cmi and .cmo files *)
