@@ -1,2 +1,3 @@
 Makefile
 config.status
+*.c.x

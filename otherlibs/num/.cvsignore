@@ -1,3 +1,4 @@
 int_misc.ml
 nat.ml
-*.x
+libnums.x
+*.c.x
