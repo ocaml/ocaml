@@ -55,4 +55,5 @@ and as a
 \input libstr.tex
 \input libthreads.tex
 \input libgraph.tex
+\input libdbm.tex
 

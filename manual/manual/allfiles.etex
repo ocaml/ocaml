@@ -60,6 +60,7 @@
 \input libstr.tex
 \input libthreads.tex
 \input libgraph.tex
+\input libdbm.tex
 
 \part{Appendix}
 \label{p:appendix}
