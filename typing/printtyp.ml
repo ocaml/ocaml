@@ -2,7 +2,7 @@
 (*                                                                     *)
 (*                           Objective Caml                            *)
 (*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(* Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt*)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
@@ -354,17 +354,6 @@ let value_description id decl =
 
 (* Print a class type *)
 
-let list_state = ref []
-let start_list sp =
-  list_state := sp::!list_state
-let list_item () =
-  match !list_state with
-    false::l -> list_state := true::l
-  | _        -> print_space ()
-let end_list sp =
-  if sp then print_break 1 (-2);
-  list_state := List.tl !list_state
-
 let class_arg arg =
   print_space ();
   open_hovbox 1; print_string "(";
@@ -372,7 +361,7 @@ let class_arg arg =
   print_string ")"; close_box ()
 
 let constrain (v, ty) =
-  list_item ();
+  print_space ();
   open_hovbox 2;
   print_string "constraint ";
   type_sch v;
@@ -382,7 +371,7 @@ let constrain (v, ty) =
   close_box()
 
 let class_var l (m, t) =
-  list_item ();
+  print_space ();
   open_hovbox 2;
   print_string "val ";
   begin match m with
@@ -396,7 +385,7 @@ let class_var l (m, t) =
   close_box()
 
 let metho kind (l, t) =
-  list_item ();
+  print_space ();
   open_hovbox 2;
   print_string kind;
   print_string l.Label.lab_name;
@@ -447,8 +436,7 @@ let class_type id cl_ty =
     print_string "virtual ";
   if not (opened_object self) then
     print_string "closed ";
-  type_sch
-    {desc = Tconstr(Pident id, params, ref []); level = 0};
+  type_sch {desc = Tconstr(Pident id, params, ref []); level = 0};
   if List.memq self !aliased then
     (name_of_type self; ());
   List.iter class_arg args;
@@ -457,14 +445,10 @@ let class_type id cl_ty =
     print_string "'";
     print_string (name_of_type self)
   end;
-  print_space ();
-  print_string "=";
+  print_string " =";
   close_box ();
-  start_list true;
-  if cstr <> [] then
-    List.iter constrain cstr;
-  if vars <> Vars.empty then
-    Vars.iter class_var vars;
+  List.iter constrain cstr;
+  Vars.iter class_var vars;
   let meths = list_meths (methods_of_type self) in
   let (meths, virt) =
     List.fold_right
@@ -474,35 +458,21 @@ let class_type id cl_ty =
 	 else
 	   (ml, m::vl))
       meths
-      ([], [])
-  in
-  if meths <> [] then
-    List.iter (metho "method ") meths;
-  if virt <> [] then
-    List.iter (metho "virtual ") virt;
-  end_list true;
+      ([], []) in
+  List.iter (metho "method ") meths;
+  List.iter (metho "virtual ") virt;
+  print_break 1 (-2);
   print_string "end";
   close_box()
 
 (* Print a module type *)
 
-let hidden = ref 0
-
 let rec modtype = function
     Tmty_ident p ->
       path p
-  | Tmty_signature [] ->
-      print_string "sig end"
-  | Tmty_signature(item :: rem) ->
+  | Tmty_signature sg ->
       open_hvbox 2;
-      print_string "sig"; print_space(); 
-      hidden := 0;
-      signature_item item;
-      List.iter
-        (fun item ->
-           if !hidden > 0 then decr hidden
-           else begin print_space(); signature_item item end)
-        rem;
+      print_string "sig"; signature_body true sg; 
       print_break 1 (-2); print_string "end";
       close_box()
   | Tmty_functor(param, ty_arg, ty_res) ->
@@ -514,21 +484,27 @@ let rec modtype = function
       modtype ty_res;
       close_box()
 
-and signature_item = function
-    Tsig_value(id, decl) ->
-      value_description id decl
-  | Tsig_type(id, decl) ->
-      type_declaration id decl
-  | Tsig_exception(id, decl) ->
-      exception_declaration id decl
-  | Tsig_module(id, mty) ->
-      open_hovbox 2; print_string "module "; ident id; print_string " :";
-      print_space(); modtype mty; close_box()
-  | Tsig_modtype(id, decl) ->
-      modtype_declaration id decl
-  | Tsig_class(id, decl) ->
-      hidden := 2;
-      class_type id decl
+and signature_body spc = function
+    [] -> ()
+  | item :: rem ->
+      if spc then print_space();
+      let cont =
+        match item with
+          Tsig_value(id, decl) ->
+            value_description id decl; rem
+        | Tsig_type(id, decl)  ->
+            type_declaration id decl; rem
+        | Tsig_exception(id, decl)  ->
+            exception_declaration id decl; rem
+        | Tsig_module(id, mty)  ->
+            open_hovbox 2; print_string "module "; ident id; print_string " :";
+            print_space(); modtype mty; close_box(); rem
+        | Tsig_modtype(id, decl)  ->
+            modtype_declaration id decl; rem
+        | Tsig_class(id, decl) ->
+            class_type id decl;
+            match rem with tydecl1 :: tydecl2 :: rem -> rem | _ -> []
+      in signature_body true cont
 
 and modtype_declaration id decl =
   open_hovbox 2; print_string "module type "; ident id;
@@ -544,10 +520,5 @@ and modtype_declaration id decl =
 
 let signature sg =
   open_vbox 0;
-  hidden := 0;
-  List.iter
-    (fun item ->
-       if !hidden > 0 then decr hidden
-       else begin signature_item item; print_space() end)
-    sg;
+  signature_body false sg;
   close_box()

@@ -19,31 +19,46 @@ open Typedtree
 
 
 type t = 
-  { types: Path.t Ident.tbl;
-    modules: Path.t Ident.tbl;
-    modtypes: module_type Ident.tbl }
+  { types: (Ident.t, Path.t) Tbl.t;
+    modules: (Ident.t, Path.t) Tbl.t;
+    modtypes: (Ident.t, module_type) Tbl.t }
 
 let identity =
-  { types = Ident.empty; modules = Ident.empty; modtypes = Ident.empty }
+  { types = Tbl.empty; modules = Tbl.empty; modtypes = Tbl.empty }
 
 let add_type id p s =
-  { types = Ident.add id p s.types;
+  { types = Tbl.add id p s.types;
     modules = s.modules;
     modtypes = s.modtypes }
 
 let add_module id p s =
   { types = s.types;
-    modules = Ident.add id p s.modules;
+    modules = Tbl.add id p s.modules;
     modtypes = s.modtypes }
 
 let add_modtype id ty s =
   { types = s.types;
     modules = s.modules;
-    modtypes = Ident.add id ty s.modtypes }
+    modtypes = Tbl.add id ty s.modtypes }
+
+let remove_type id s =
+  { types = Tbl.remove id s.types;
+    modules = s.modules;
+    modtypes = s.modtypes }
+
+let remove_module id s =
+  { types = s.types;
+    modules = Tbl.remove id s.modules;
+    modtypes = s.modtypes }
+
+let remove_modtype id s =
+  { types = s.types;
+    modules = s.modules;
+    modtypes = Tbl.remove id s.modtypes }
 
 let rec module_path s = function
     Pident id as p ->
-      begin try Ident.find_same id s.modules with Not_found -> p end
+      begin try Tbl.find id s.modules with Not_found -> p end
   | Pdot(p, n, pos) ->
       Pdot(module_path s p, n, pos)
   | Papply(p1, p2) ->
@@ -51,7 +66,7 @@ let rec module_path s = function
 
 let type_path s = function
     Pident id as p ->
-      begin try Ident.find_same id s.types with Not_found -> p end
+      begin try Tbl.find id s.types with Not_found -> p end
   | Pdot(p, n, pos) ->
       Pdot(module_path s p, n, pos)
   | Papply(p1, p2) ->
@@ -167,11 +182,13 @@ let type_declaration s decl =
       begin match decl.type_kind with
         Type_abstract -> Type_abstract
       | Type_variant cstrs ->
-          Type_variant(List.map (fun (n, args) -> (n, List.map (type_expr s) args))
-                           cstrs)
+          Type_variant(
+            List.map (fun (n, args) -> (n, List.map (type_expr s) args))
+                     cstrs)
       | Type_record lbls ->
-          Type_record(List.map (fun (n, mut, arg) -> (n, mut, type_expr s arg))
-                          lbls)
+          Type_record(
+            List.map (fun (n, mut, arg) -> (n, mut, type_expr s arg))
+                     lbls)
       end;
     type_manifest =
       begin match decl.type_manifest with
@@ -207,7 +224,7 @@ let rec modtype s = function
     Tmty_ident p as mty ->
       begin match p with
         Pident id ->
-          begin try Ident.find_same id s.modtypes with Not_found -> mty end
+          begin try Tbl.find id s.modtypes with Not_found -> mty end
       | Pdot(p, n, pos) ->
           Tmty_ident(Pdot(module_path s p, n, pos))
       | Papply(p1, p2) ->
@@ -216,17 +233,23 @@ let rec modtype s = function
   | Tmty_signature sg ->
       Tmty_signature(signature s sg)
   | Tmty_functor(id, arg, res) ->
-      Tmty_functor(id, modtype s arg, modtype s res)
+      Tmty_functor(id, modtype s arg, modtype (remove_module id s) res)
 
-and signature s sg = List.map (signature_item s) sg
-
-and signature_item s = function
-    Tsig_value(id, d) -> Tsig_value(id, value_description s d)
-  | Tsig_type(id, d) -> Tsig_type(id, type_declaration s d)
-  | Tsig_exception(id, d) -> Tsig_exception(id, exception_declaration s d)
-  | Tsig_module(id, mty) -> Tsig_module(id, modtype s mty)
-  | Tsig_modtype(id, d) -> Tsig_modtype(id, modtype_declaration s d)
-  | Tsig_class(id, d) -> Tsig_class(id, class_type s d)
+and signature s = function
+    [] -> []
+  | Tsig_value(id, d) :: sg ->
+      Tsig_value(id, value_description s d) :: signature s sg
+  | Tsig_type(id, d) :: sg ->
+      Tsig_type(id, type_declaration s d) :: signature (remove_type id s) sg
+  | Tsig_exception(id, d) :: sg ->
+      Tsig_exception(id, exception_declaration s d) :: signature s sg
+  | Tsig_module(id, mty) :: sg ->
+      Tsig_module(id, modtype s mty) :: signature (remove_module id s) sg
+  | Tsig_modtype(id, d) :: sg ->
+      Tsig_modtype(id, modtype_declaration s d) ::
+      signature (remove_modtype id s) sg
+  | Tsig_class(id, d) :: sg ->
+      Tsig_class(id, class_type s d) :: signature s sg
 
 and modtype_declaration s = function
     Tmodtype_abstract -> Tmodtype_abstract

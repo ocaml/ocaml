@@ -27,6 +27,6 @@ val type_declaration: Ident.t -> type_declaration -> unit
 val exception_declaration: Ident.t -> exception_declaration -> unit
 val modtype: module_type -> unit
 val signature: signature -> unit
-val signature_item: signature_item -> unit
+val signature_body: bool -> signature -> unit
 val modtype_declaration: Ident.t -> modtype_declaration -> unit
 val class_type: Ident.t -> class_type -> unit
