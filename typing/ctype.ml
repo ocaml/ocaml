@@ -1697,7 +1697,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           match (t1'.desc, t2'.desc) with
             (Tvar, Tvar) when rename ->
               begin try
-                if List.assq t1' !subst == t2' then raise (Unify [])
+                if List.assq t1' !subst != t2' then raise (Unify [])
               with Not_found ->
                 subst := (t1', t2') :: !subst
               end
