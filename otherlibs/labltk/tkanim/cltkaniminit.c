@@ -17,6 +17,8 @@
 #include <mlvalues.h>
 #include "camltk.h"
 
+extern int Tkanim_Init(Tcl_Interp *);
+
 value tkanim_init (rien) /* ML */
      value rien;
 {
