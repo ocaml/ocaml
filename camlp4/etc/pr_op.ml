@@ -419,24 +419,14 @@ value parser_body e dg k =
                  [ Some p -> [: `patt p "" [: :] :]
                  | _ -> [: :] ] :];
            parser_cases [: :] [spe] dg k :]
-  | [spe] ->
-      HVbox
+  | spel ->
+      BEVbox
         [: `HVbox
               [: `S LR "parser";
                  match bp with
                  [ Some p -> [: `patt p "" [: :] :]
                  | _ -> [: :] ] :];
-           parser_cases [: :] [spe] dg k :]
-  | spel ->
-      Vbox
-        [: `HVbox [: :];
-           `HVbox
-              [: `S LR "parser";
-                 match bp with
-                 [ Some p -> [: `patt p "" [: :] :]
-                 | _ -> [: :] ] :];
-           `BEbox
-              [: `HVbox [: :]; parser_cases [: :] spel dg k :] :] ]
+           parser_cases [: :] spel dg k :] ]
 ;
 
 value pmatch e dg k =
