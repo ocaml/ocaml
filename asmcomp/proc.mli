@@ -62,10 +62,10 @@ val destroyed_at_raise: Reg.t array
 
 (* Reloading of instruction arguments, storing of instruction results *)
 val reload_test:
-      (Reg.t -> Reg.t) -> Mach.test -> Reg.t array -> Reg.t array
+      (Reg.t -> Reg.t) -> int -> Mach.test -> Reg.t array -> Reg.t array
 val reload_operation:
-      (Reg.t -> Reg.t) -> Mach.operation -> Reg.t array -> Reg.t array ->
-        Reg.t array * Reg.t array
+      (Reg.t -> Reg.t) -> int -> Mach.operation -> 
+      Reg.t array -> Reg.t array -> Reg.t array * Reg.t array
 
 (* Latency info for instruction scheduling *)
 val need_scheduling: bool

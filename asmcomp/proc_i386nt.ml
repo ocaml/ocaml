@@ -389,7 +389,7 @@ let stackp r =
     Stack _ -> true
   | _ -> false
 
-let reload_test makereg tst arg =
+let reload_test makereg round tst arg =
   match tst with
     Iinttest cmp ->
       if stackp arg.(0) & stackp arg.(1)
@@ -401,13 +401,17 @@ let reload_test makereg tst arg =
    Hence there is no need to make special cases for
    floating-point operations. *)
 
-let reload_operation makereg op arg res =
+let reload_operation makereg round op arg res =
   match op with
     Iintop(Iadd|Isub|Imul|Iand|Ior|Ixor|Icomp _|Icheckbound) ->
       (* One of the two arguments can reside in the stack *)
       if stackp arg.(0) & stackp arg.(1)
       then ([|arg.(0); makereg arg.(1)|], res)
       else (arg, res)
+  | Imove | Ireload | Ispill ->
+      (* Stack-to-stack moves are possible, but costly.
+         Don't support them on the first round. *)
+      if round <= 1 then raise Use_default else (arg, res)
   | Iintop(Ilsl|Ilsr|Iasr) | Iintop_imm(_, _) | Ifloatofint | Iintoffloat |
     Ispecific(Ipush) ->
       (* The argument(s) can be either in register or on stack *)

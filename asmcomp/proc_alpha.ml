@@ -247,8 +247,8 @@ let max_register_pressure = function
 
 (* Reloading *)
 
-let reload_test makereg tst args = raise Use_default
-let reload_operation makereg op args res = raise Use_default
+let reload_test makereg round tst args = raise Use_default
+let reload_operation makereg round op args res = raise Use_default
 
 (* No scheduling is needed, the assembler does it better than us. *)
 

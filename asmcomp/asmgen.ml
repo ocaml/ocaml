@@ -37,17 +37,20 @@ let dump_linear_if flag message phrase =
   end;
   phrase
 
-let rec regalloc fd =
+let rec regalloc round fd =
+  if round > 10 then
+    fatal_error(fd.Mach.fun_name ^
+                ": function too complex, cannot complete register allocation");
   dump_if dump_live "Liveness analysis" fd;
   Interf.build_graph fd;
   if !dump_interf then Printmach.interferences();
   if !dump_prefer then Printmach.preferences();
   Coloring.allocate_registers();
   dump_if dump_regalloc "After register allocation" fd;
-  let (newfd, redo_regalloc) = Reload.fundecl fd in
+  let (newfd, redo_regalloc) = Reload.fundecl round fd in
   dump_if dump_reload "After insertion of reloading code" newfd;
   if redo_regalloc 
-  then begin Reg.reinit(); Liveness.fundecl newfd; regalloc newfd end
+  then begin Reg.reinit(); Liveness.fundecl newfd; regalloc (round+1) newfd end
   else newfd
 
 let (++) x f = f x
@@ -65,7 +68,7 @@ let compile_fundecl fd_cmm =
   ++ Split.fundecl
   ++ dump_if dump_split "After live range splitting"
   ++ liveness
-  ++ regalloc
+  ++ regalloc 1
   ++ Linearize.fundecl
   ++ dump_linear_if dump_linear "Linearized code"
   ++ Scheduling.fundecl

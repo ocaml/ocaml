@@ -11,10 +11,9 @@
 
 (* $Id$ *)
 
-(* Insert load/stores for pseudoregs that got assigned to stack locations.
-   Insert moves to comply with calling conventions, etc. *)
+(* Insert load/stores for pseudoregs that got assigned to stack locations. *)
 
-val fundecl: Mach.fundecl -> Mach.fundecl * bool
+val fundecl: int -> Mach.fundecl -> Mach.fundecl * bool
 
 (* Auxiliary functions for use by the processor description to do its own
    reloading *)

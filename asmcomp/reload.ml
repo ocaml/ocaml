@@ -56,6 +56,8 @@ let insert_moves src dst next =
     else insert_move src.(i) dst.(i) (insmoves (i+1))
   in insmoves 0
 
+let reload_round = ref 0
+
 let rec reload i =
   match i.desc with
     Iend | Ireturn | Iop Itailcall_ind | Iop(Itailcall_imm _) | Iraise -> i
@@ -68,7 +70,7 @@ let rec reload i =
          can reside on the stack *)
       let (newarg, newres) =
         try
-          Proc.reload_operation makereg op i.arg i.res
+          Proc.reload_operation makereg !reload_round op i.arg i.res
         with Proc.Use_default ->
           (* By default, assume that arguments and results must reside
              in hardware registers. For moves, allow one arg or one
@@ -93,7 +95,7 @@ let rec reload i =
          can reside on the stack *)
       let newarg =
         try
-          Proc.reload_test makereg tst i.arg
+          Proc.reload_test makereg !reload_round tst i.arg
         with Proc.Use_default ->
           makeregs i.arg in
       insert_moves i.arg newarg      
@@ -115,8 +117,9 @@ let rec reload i =
       instr_cons (Itrywith(reload body, reload handler)) [||] [||]
         (reload i.next)
 
-let fundecl f =
+let fundecl round f =
   redo_regalloc := false;
+  reload_round := round;
   let new_body = reload f.fun_body in
   ({fun_name = f.fun_name; fun_args = f.fun_args;
     fun_body = new_body; fun_fast = f.fun_fast},
