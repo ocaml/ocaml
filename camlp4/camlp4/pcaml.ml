@@ -201,6 +201,16 @@ value handle_patt_locate loc x = handle_locate loc patt_eoi patt_anti x;
 value expr_reloc = Reloc.expr;
 value patt_reloc = Reloc.patt;
 
+value module_type_reloc = Reloc.module_type;
+value sig_item_reloc = Reloc.sig_item;
+value with_constr_reloc = Reloc.with_constr;
+value module_expr_reloc = Reloc.module_expr;
+value str_item_reloc = Reloc.str_item;
+value class_type_reloc = Reloc.class_type;
+value class_sig_item_reloc = Reloc.class_sig_item;
+value class_expr_reloc = Reloc.class_expr;
+value class_str_item_reloc = Reloc.class_str_item;
+
 value rename_id = ref (fun x -> x);
 
 value find_line (bp, ep) str =

@@ -76,7 +76,7 @@ install:
 	cp mLast.cmi quotation.cmi ast2pt.cmi pcaml.cmi spretty.cmi "$(LIBDIR)/camlp4/."
 	cp camlp4.cma $(LIBDIR)/camlp4/.
 	for f in  camlp4.$(A)  camlp4.p.$(A) camlp4.cmxa camlp4.p.cmxa; do \
-	  test -f $$f && cp $$f "$(LIBDIR)/camlp4/."; \
+	  test -f $$f && cp $$f "$(LIBDIR)/camlp4/." || true; \
 	done
 
 include .depend

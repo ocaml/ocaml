@@ -69,7 +69,7 @@ install:
 	-$(MKDIR) "$(LIBDIR)/camlp4" "$(BINDIR)"
 	cp odyl.cmo odyl.cma odyl_main.cmi $(LIBDIR)/camlp4/.
 	for f in odyl.$(A) odyl.p.$(A) odyl.cmx odyl.o odyl.p.cmx odyl.p.o odyl.cmxa odyl.p.cmxa ; do \
-	   test -f $$f && cp $$f "$(LIBDIR)/camlp4/."; \
+	   test -f $$f && cp $$f "$(LIBDIR)/camlp4/." || true; \
 	done
 
 include .depend

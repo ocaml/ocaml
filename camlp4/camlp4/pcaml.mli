@@ -88,10 +88,18 @@ value handle_expr_locate : MLast.loc -> (Lexing.position * string) -> MLast.expr
 value handle_patt_quotation : MLast.loc -> (string * string) -> MLast.patt;
 value handle_patt_locate : MLast.loc -> (Lexing.position * string) -> MLast.patt;
 
-value expr_reloc :
-  (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.expr -> MLast.expr;
-value patt_reloc :
-  (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.patt -> MLast.patt;
+(** Relocation functions for abstract syntax trees *)
+value expr_reloc :           (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.expr -> MLast.expr;
+value patt_reloc :           (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.patt -> MLast.patt;
+value module_type_reloc :    (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.module_type -> MLast.module_type;
+value sig_item_reloc :       (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.sig_item -> MLast.sig_item;
+value with_constr_reloc :    (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.with_constr -> MLast.with_constr;
+value module_expr_reloc :    (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.module_expr -> MLast.module_expr;
+value str_item_reloc :       (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.str_item -> MLast.str_item;
+value class_type_reloc :     (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.class_type -> MLast.class_type;
+value class_sig_item_reloc : (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.class_sig_item -> MLast.class_sig_item;
+value class_expr_reloc :     (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.class_expr -> MLast.class_expr;
+value class_str_item_reloc : (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.class_str_item -> MLast.class_str_item;
 
 (** To possibly rename identifiers; parsers may call this function
     when generating their identifiers; default = identity *)
