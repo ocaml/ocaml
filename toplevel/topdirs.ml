@@ -104,7 +104,7 @@ let dir_load ppf name =
         let toc_pos = input_binary_int ic in  (* Go to table of contents *)
         seek_in ic toc_pos;
         List.iter (load_compunit ic filename ppf)
-                  (input_value ic : compilation_unit list)
+                  (input_value ic : library).lib_units
       end else fprintf ppf "File %s is not a bytecode object file.@." name
     with Load_failed -> ()
     end;
