@@ -155,10 +155,10 @@ case "$bytecc,$host" in
   gcc*)
     bytecccompopts="-fno-defer-pop -Wall";;
   cc,mips-*-irix6*)
-    # Add -32 flag to ensure compatibility with native-code compiler
-    bytecccompopts="-32"
+    # Add -n32 flag to ensure compatibility with native-code compiler
+    bytecccompopts="-n32"
     # Turn off warning "unused library"
-    bytecclinkopts="-32 -Wl,-woff,84";;
+    bytecclinkopts="-n32 -Wl,-woff,84";;
   cc*,mips-*-irix6*)
     # (For those who want to force "cc -64")
     # Turn off warning "unused library"
