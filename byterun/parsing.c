@@ -138,7 +138,7 @@ value parse_engine(tables, env, cmd, arg) /* ML */
       modify(&env->lval, Field(arg, 0));
     } else {
       env->curr_char = Field(tables->transl_const, Int_val(arg));
-      env->lval = Val_long(0);
+      modify(&env->lval, Val_long(0));
     }
     Trace(printf("Token %d (0x%lx)\n", Int_val(env->curr_char), env->lval));
     
