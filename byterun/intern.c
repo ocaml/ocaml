@@ -498,7 +498,8 @@ static value input_val_from_block(void)
 
 CAMLexport value input_value_from_malloc(char * data, long ofs)
 {
-  mlsize_t magic, block_len;
+  uint32 magic;
+  mlsize_t block_len;
   value obj;
 
   intern_input = (unsigned char *) data;
@@ -516,7 +517,8 @@ CAMLexport value input_value_from_malloc(char * data, long ofs)
 
 CAMLexport value input_value_from_block(char * data, long len)
 {
-  mlsize_t magic, block_len;
+  uint32 magic;
+  mlsize_t block_len;
   value obj;
 
   intern_input = (unsigned char *) data;
