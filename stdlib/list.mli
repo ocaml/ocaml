@@ -83,6 +83,9 @@ val exists : ('a -> bool) -> 'a list -> bool
 val mem : 'a -> 'a list -> bool
         (* [mem a l] is true if and only if [a] is equal
            to an element of [l]. *)
+val memq : 'a -> 'a list -> bool
+        (* Same as [mem], but uses physical equality instead of structural
+           equality to compare list elements. *)
 
 (** Association lists *)
 
@@ -97,7 +100,7 @@ val mem_assoc : 'a -> ('a * 'b) list -> bool
         (* Same as [assoc], but simply return true if a binding exists,
            and false if no bindings exist for the given key. *)
 val assq : 'a -> ('a * 'b) list -> 'b
-        (* Same as [assoc], but use physical equality instead of structural
+        (* Same as [assoc], but uses physical equality instead of structural
            equality to compare keys. *)
 
 (** Lists of pairs *)

@@ -95,6 +95,10 @@ let rec mem x = function
     [] -> false
   | a::l -> a = x or mem x l
 
+let rec memq x = function
+    [] -> false
+  | a::l -> a == x or mem x l
+
 let rec assoc x = function
     [] -> raise Not_found
   | (a,b)::l -> if a = x then b else assoc x l
