@@ -72,7 +72,9 @@ and pattern_desc =
   | Ppat_record of (Longident.t * pattern) list
   | Ppat_array of pattern list
   | Ppat_or of pattern * pattern
-  | Ppat_constraint of pattern * core_type
+(* DYN *)
+  | Ppat_constraint of pattern * (string list * core_type)
+(* /DYN *)
   | Ppat_type of Longident.t
 (* GENERIC
   | Ppat_dynamic of pattern * core_type
@@ -101,7 +103,9 @@ and expression_desc =
   | Pexp_sequence of expression * expression
   | Pexp_while of expression * expression
   | Pexp_for of string * expression * expression * direction_flag * expression
-  | Pexp_constraint of expression * core_type option * core_type option
+(* DYN *)
+  | Pexp_constraint of expression * (string list * core_type) option * (string list * core_type) option
+(* /DYN *)
   | Pexp_when of expression * expression
   | Pexp_send of expression * string
   | Pexp_new of Longident.t
@@ -111,8 +115,8 @@ and expression_desc =
   | Pexp_assert of expression
   | Pexp_assertfalse
 (* DYN *)  
-  | Pexp_dynamic of expression * core_type option
-  | Pexp_import of expression * core_type option
+  | Pexp_dynamic of expression
+  | Pexp_import of expression
 (* /DYN *)  
 (* GENERIC
   | Pexp_coerce of expression * (pattern * expression) list

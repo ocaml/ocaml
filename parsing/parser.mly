@@ -550,7 +550,7 @@ class_structure:
 class_self_pattern:
     LPAREN pattern RPAREN
       { $2 }
-  | LPAREN pattern COLON core_type RPAREN
+  | LPAREN pattern COLON core_type_with_localvars RPAREN /* DYN */
       { mkpat(Ppat_constraint($2, $4)) }
   | /* empty */
       { mkpat(Ppat_any) }
@@ -727,7 +727,7 @@ opt_default:
 label_let_pattern:
     label_var
       { $1 }
-  | label_var COLON core_type
+  | label_var COLON core_type_with_localvars /* DYN */
       { let (lab, pat) = $1 in (lab, mkpat(Ppat_constraint(pat, $3))) }
 ;
 label_var:
@@ -736,7 +736,7 @@ label_var:
 let_pattern:
     pattern
       { $1 }
-  | pattern COLON core_type
+  | pattern COLON core_type_with_localvars /* DYN */
       { mkpat(Ppat_constraint($1, $3)) }
 ;
 expr:
@@ -839,12 +839,9 @@ expr:
   | LAZY simple_expr %prec prec_appl
       { mklazy $2 }
 /* DYN */
- | DYNAMIC seq_expr COLON core_type END
-      { mkexp(Pexp_dynamic($2,Some $4)) }
- | DYNAMIC seq_expr END
-      { mkexp(Pexp_dynamic($2,None)) }
- | IMPORT seq_expr COLONGREATER core_type END { mkexp(Pexp_import($2,Some $4)) } 
- | IMPORT simple_expr END { mkexp(Pexp_import($2,None)) } 
+ | DYNAMIC seq_expr
+      { mkexp(Pexp_dynamic($2)) }
+ | IMPORT simple_expr { mkexp(Pexp_import($2)) } 
 /* /DYN */
 /* GENERIC
  | COERCE seq_expr WITH opt_bar coerce_cases %prec prec_match
@@ -1012,13 +1009,19 @@ expr_semi_list:
     expr %prec prec_list                        { [$1] }
   | expr_semi_list SEMI expr %prec prec_list    { $3 :: $1 }
 ;
+/* DYN */
 type_constraint:
-    COLON core_type                             { (Some $2, None) }
-  | COLON core_type COLONGREATER core_type      { (Some $2, Some $4) }
-  | COLONGREATER core_type                      { (None, Some $2) }
+    COLON core_type_with_localvars              { (Some $2, None) }
+  | COLON core_type_with_localvars COLONGREATER core_type_with_localvars      { (Some $2, Some $4) }
+  | COLONGREATER core_type_with_localvars       { (None, Some $2) }
   | COLON error                                 { syntax_error() }
   | COLONGREATER error                          { syntax_error() }
 ;
+core_type_with_localvars:
+  | LBRACE type_parameter_list RBRACE DOT core_type { List.map fst $2, $5 }
+  | core_type { [], $1 }
+;
+/* /DYN */
 
 /* Patterns */
 
@@ -1076,9 +1079,9 @@ simple_pattern:
       { $2 }
   | LPAREN pattern error
       { unclosed "(" 1 ")" 3 }
-  | LPAREN pattern COLON core_type RPAREN
+  | LPAREN pattern COLON core_type_with_localvars RPAREN /* DYN */
       { mkpat(Ppat_constraint($2, $4)) }
-  | LPAREN pattern COLON core_type error
+  | LPAREN pattern COLON core_type_with_localvars error /* DYN */
       { unclosed "(" 1 ")" 5 }
 ;
 

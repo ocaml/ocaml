@@ -135,6 +135,11 @@ and core_field_type i ppf x =
       core_type i ppf ct;
   | Pfield_var -> line i ppf "Pfield_var\n";
 
+(* DYN *)
+and type_constraint i ppf (localvars,ct) =
+  list i string ppf localvars;
+  core_type i ppf ct
+
 and pattern i ppf x =
   line i ppf "pattern %a\n" fmt_location x.ppat_loc;
   let i = i+1 in
@@ -168,7 +173,7 @@ and pattern i ppf x =
   | Ppat_constraint (p, ct) ->
       line i ppf "Ppat_constraint";
       pattern i ppf p;
-      core_type i ppf ct;
+      type_constraint i ppf ct;
   | Ppat_type li ->
       line i ppf "PPat_type";
       longident i ppf li
@@ -252,8 +257,10 @@ and expression i ppf x =
   | Pexp_constraint (e, cto1, cto2) ->
       line i ppf "Pexp_constraint\n";
       expression i ppf e;
-      option i core_type ppf cto1;
-      option i core_type ppf cto2;
+(* DYN *)
+      option i type_constraint ppf cto1;
+      option i type_constraint ppf cto2
+(* /DYN *)
   | Pexp_when (e1, e2) ->
       line i ppf "Pexp_when\n";
       expression i ppf e1;
@@ -278,14 +285,12 @@ and expression i ppf x =
   | Pexp_assertfalse ->
       line i ppf "Pexp_assertfalse";
 (* DYN *)
-  | Pexp_dynamic (e,topt) ->
+  | Pexp_dynamic (e) ->
       line i ppf "Pexp_dynamic";
-      expression i ppf e;
-      option i core_type ppf topt
-  | Pexp_import (e,topt) ->
+      expression i ppf e
+  | Pexp_import (e) ->
       line i ppf "Pexp_import";
-      expression i ppf e;
-      option i core_type ppf topt
+      expression i ppf e
 (* /DYN *)
 (* GENERIC
   | Pexp_coerce (e, pexps) ->
