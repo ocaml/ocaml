@@ -25,7 +25,15 @@
 
 #include "socketaddr.h"
 #ifndef _WIN32
+#include <sys/types.h>
 #include <netdb.h>
+#endif
+
+#define NETDB_BUFFER_SIZE 10000
+
+#ifdef _WIN32
+#define GETHOSTBYADDR_IS_REENTRANT
+#define GETHOSTBYNAME_IS_REENTRANT
 #endif
 
 static int entry_h_length;
@@ -67,27 +75,103 @@ static value alloc_host_entry(struct hostent *entry)
 
 CAMLprim value unix_gethostbyaddr(value a)
 {
-  uint32 adr;
-  struct hostent * entry;
-  adr = GET_INET_ADDR(a);
+  uint32 adr = GET_INET_ADDR(a);
+  struct hostent * hp;
+#if HAS_GETHOSTBYADDR_R == 7
+  struct hostent h;
+  char buffer[NETDB_BUFFER_SIZE];
+  int h_errnop;
   enter_blocking_section();
-  entry = gethostbyaddr((char *) &adr, 4, AF_INET);
+  hp = gethostbyaddr_r((char *) &adr, 4, AF_INET,
+                       &h, buffer, sizeof(buffer), &h_errnop);
   leave_blocking_section();
-  if (entry == (struct hostent *) NULL) raise_not_found();
-  return alloc_host_entry(entry);
+#elif HAS_GETHOSTBYADDR_R == 8
+  struct hostent h;
+  char buffer[NETDB_BUFFER_SIZE];
+  int h_errnop, rc;
+  enter_blocking_section();
+  rc = gethostbyaddr_r((char *) &adr, 4, AF_INET,
+                       &h, buffer, sizeof(buffer), &hp, &h_errnop);
+  leave_blocking_section();
+  if (rc != 0) hp = NULL;
+#elif HAS_GETHOSTBYADDR_R == 5
+  struct hostent h;
+  struct hostent_data hdata;
+  int rc;
+  enter_blocking_section();
+  rc = gethostbyaddr_r((char *) &adr, 4, AF_INET, &h, &hdata);
+  leave_blocking_section();
+  hp = rc == 0 ? &h : NULL;
+#else
+#ifdef GETHOSTBYADDR_IS_REENTRANT
+  enter_blocking_section();
+#endif
+  hp = gethostbyaddr((char *) &adr, 4, AF_INET);
+#ifdef GETHOSTBYADDR_IS_REENTRANT
+  leave_blocking_section();
+#endif
+#endif
+  if (hp == (struct hostent *) NULL) raise_not_found();
+  return alloc_host_entry(hp);
 }
 
 CAMLprim value unix_gethostbyname(value name)
 {
-  char hostname[256];
-  struct hostent * entry;
-  strncpy(hostname, String_val(name), sizeof(hostname) - 1);
-  hostname[sizeof(hostname) - 1] = 0;
+  struct hostent * hp;
+  char * hostname;
+
+#if HAS_GETHOSTBYNAME_R != 0 || GETHOSTBYNAME_IS_REENTRANT
+  hostname = stat_alloc(string_length(name) + 1);
+  strcpy(hostname, String_val(name));
+#else
+  hostname = String_val(name);
+#endif
+
+#if HAS_GETHOSTBYNAME_R == 5
+  {
+    struct hostent h;
+    char buffer[NETDB_BUFFER_SIZE];
+    int h_errno;
+    enter_blocking_section();
+    hp = gethostbyname_r(hostname, &h, buffer, sizeof(buffer), &h_errno);
+    leave_blocking_section();
+  }
+#elif HAS_GETHOSTBYNAME_R == 6
+  {
+    struct hostent h;
+    char buffer[NETDB_BUFFER_SIZE];
+    int h_errno, rc;
+    enter_blocking_section();
+    rc = gethostbyname_r(hostname, &h, buffer, sizeof(buffer), &hp, &h_errno);
+    leave_blocking_section();
+    if (rc != 0) hp = NULL;
+  }
+#elif HAS_GETHOSTBYNAME_R == 3
+  {
+    struct hostent h;
+    struct hostent_data hdata;
+    int rc;
+    enter_blocking_section();
+    rc = gethostbyname_r(hostname, &h, &hdata);
+    leave_blocking_section();
+    hp = rc == 0 ? &h : NULL;
+  }
+#else
+#ifdef GETHOSTBYNAME_IS_REENTRANT
   enter_blocking_section();
-  entry = gethostbyname(hostname);
+#endif
+  hp = gethostbyname(hostname);
+#ifdef GETHOSTBYNAME_IS_REENTRANT
   leave_blocking_section();
-  if (entry == (struct hostent *) NULL) raise_not_found();
-  return alloc_host_entry(entry);
+#endif
+#endif
+
+#if HAS_GETHOSTBYNAME_R != 0 || GETHOSTBYNAME_IS_REENTRANT
+  stat_free(hostname);
+#endif
+
+  if (hp == (struct hostent *) NULL) raise_not_found();
+  return alloc_host_entry(hp);
 }
 
 #else
