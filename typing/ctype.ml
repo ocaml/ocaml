@@ -2144,9 +2144,9 @@ let rec build_subtype env visited loops posi onlyloop t =
           let ty = repr ty in
           let ty1 =
             match ty.desc with
-              Tobject(ty1,{contents=Some(p',_)}) ->
-                if Path.same p p' then ty1 else raise Not_found
-            | _ -> assert false in
+              Tobject(ty1,{contents=Some(p',_)}) when Path.same p p' -> ty1
+            | _ -> raise Not_found
+          in
           ty.desc <- Tvar;
           let t'' = newvar () in
           let visited = t' :: visited and loops = (ty, t'') :: loops in
