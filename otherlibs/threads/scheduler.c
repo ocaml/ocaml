@@ -293,13 +293,6 @@ static value schedule_thread(void)
   curr_thread->sp = extern_sp;
   curr_thread->trapsp = trapsp;
 
-#if 0
-  printf("*****\nCurrent thread is: %p\n", curr_thread);
-  FOREACH_THREAD(th)
-    printf("Thread %p status %ld\n", th, th->status);
-  END_FOREACH(th);
-#endif
-
 try_again:
   /* Find if a thread is runnable.
      Build fdsets and delay for select.
@@ -473,10 +466,6 @@ try_again:
 
   /* If we haven't something to run at that point, we're in big trouble. */
   if (run_thread == NULL) invalid_argument("Thread: deadlock");
-
-#if 0
-  printf("Switching to: %p\n", run_thread);
-#endif
 
   /* Free everything the thread was waiting on */
   Assign(run_thread->readfds, NO_FDS);
