@@ -1,0 +1,45 @@
+RUNTIME = ::boot:ocamlrun
+COMPILER = ::ocamlc
+CAMLC = {RUNTIME} {COMPILER}
+CAMLDEP = ::boot:ocamlrun ::tools:ocamldep
+
+OBJS = pervasives.cmo list.cmo string.cmo char.cmo array.cmo sys.cmo ¶
+  hashtbl.cmo sort.cmo filename.cmo obj.cmo lexing.cmo parsing.cmo ¶
+  set.cmo map.cmo stack.cmo queue.cmo stream.cmo ¶
+  printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo ¶
+  digest.cmo random.cmo oo.cmo genlex.cmo
+
+all Ä stdlib.cma std_exit.cmo camlheader
+
+install Ä
+	duplicate -y stdlib.cma std_exit.cmo Å.cmi Å.mli camlheader "{LIBDIR}"
+
+stdlib.cma Ä {OBJS}
+	{CAMLC} -a -o stdlib.cma {OBJS}
+
+camlheader Ä
+	echo "`quote "{BINDIR}ocamlrun"`" ¶
+	     '"{command}" {"Parameters"}; exit {status}' > camlheader
+
+clean ÄÄ
+	delete -i camlheader
+
+pervasives.cmi Ä pervasives.mli
+	{CAMLC} {COMPFLAGS} -nopervasives -c pervasives.mli
+
+pervasives.cmo Ä pervasives.ml
+	{CAMLC} {COMPFLAGS} -nopervasives -c pervasives.ml
+
+.cmi Ä .mli
+	{CAMLC} {COMPFLAGS} -c {default}.mli
+
+.cmo Ä .ml
+	{CAMLC} {COMPFLAGS} -c {default}.ml
+
+{OBJS} std_exit.cmo Ä pervasives.cmi
+
+clean ÄÄ
+	delete -i Å.cm[aio] || set status 0
+
+depend Ä
+	{CAMLDEP} Å.mli Å.ml > Makefile.Mac.depend

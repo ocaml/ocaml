@@ -6,7 +6,6 @@ CAMLC=$(RUNTIME) $(COMPILER)
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
-CPPFLAGS=-DUNIX
 
 OBJS=pervasives.cmo list.cmo char.cmo string.cmo array.cmo sys.cmo \
   hashtbl.cmo sort.cmo filename.cmo obj.cmo lexing.cmo parsing.cmo \
@@ -73,5 +72,5 @@ clean::
 
 include .depend
 
-depend:
+depend: beforedepend
 	$(CAMLDEP) *.mli *.ml > .depend
