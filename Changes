@@ -111,6 +111,10 @@ Tools:
 Win32 port:
 - Unix.waitpid now implements the WNOHANG option.
 
+Mac OS ports:
+- Mac OS X public beta is supported.
+- Int64.format works on Mac OS 8/9.
+
 
 Objective Caml 3.00:
 --------------------

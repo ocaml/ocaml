@@ -36,11 +36,12 @@ set -e APPLIDIR "{mpw}:OCaml-distrib:"
 #       bigarray        Statically-allocated arrays
 #       dynlink         Dynamic linking of bytecode
 #       graph           Graphics (for the standalone application only)
-#       macosunix       Unix emulation (application only)
+#       macosunix       Unix emulation (application only, needs GUSI)
 #       num             Arbitrary-precision rational arithmetic
 #       str             Regular expressions and high-level string processing
-#       systhreads      Lightweight processes
+#       systhreads      Lightweight processes (application only, needs GUSI)
 #
+# You need all of them to build the standalone application.
 set -e OTHERLIBRARIES "bigarray dynlink graph macosunix num str systhreads"
 
 
@@ -67,7 +68,7 @@ set -e NATIVECC MrC
 ############# Version numbers (do not change)
 
 set -e OCAMLMAJOR 3
-set -e OCAMLMINOR "00"
+set -e OCAMLMINOR "01"
 set -e MAJOR 1
 set -e MINOR 0
 set -e BUGFIX 0

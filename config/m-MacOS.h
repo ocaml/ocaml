@@ -21,6 +21,7 @@
 #if powerc
 #define ARCH_INT64_TYPE long long
 #define ARCH_UINT64_TYPE unsigned long long
+#define ARCH_INT64_PRINTF_FORMAT "ll"
 #endif
 
 #if powerc

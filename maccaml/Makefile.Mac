@@ -19,7 +19,7 @@
 VERSIONSTR = ¶
   "¶"{OCAMLMAJOR}.{OCAMLMINOR}/Mac{MAJOR}.{MINOR}.{BUGFIX}{STAGE}{REV}¶""
 
-COPYRIGHTSTR = "¶"Copyright 1991-2000 INRIA¶""
+COPYRIGHTSTR = "¶"Copyright 1991-2001 INRIA¶""
 
 XIncludes = -i ::byterun:,::config: ¶
             -i ":WASTE:WASTE 1.3 Distribution:WASTE C/C++ Headers:" ¶
