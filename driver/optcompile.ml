@@ -112,8 +112,8 @@ let interface ppf sourcefile =
 
 (* Compile a .ml file *)
 
-let print_if flag printer arg =
-  if !flag then begin printer arg; print_newline() end;
+let print_if ppf flag printer arg =
+  if !flag then fprintf ppf "%a@." printer arg;
   arg
 
 let (++) x f = f x
@@ -126,12 +126,12 @@ let implementation ppf sourcefile =
   let env = initial_env() in
   Compilenv.reset modulename;
   parse_file inputfile Parse.implementation ast_impl_magic_number
-  ++ print_if Clflags.dump_parsetree (Printast.implementation ppf)
+  ++ print_if ppf Clflags.dump_parsetree Printast.implementation
   ++ Typemod.type_implementation sourcefile prefixname modulename env
   ++ Translmod.transl_store_implementation modulename
-  +++ print_if Clflags.dump_rawlambda (Printlambda.lambda ppf)
+  +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
   +++ Simplif.simplify_lambda
-  +++ print_if Clflags.dump_lambda (Printlambda.lambda ppf)
+  +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
   ++ Asmgen.compile_implementation prefixname;
   Compilenv.save_unit_info (prefixname ^ ".cmx");
   remove_preprocessed inputfile
