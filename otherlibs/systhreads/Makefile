@@ -36,6 +36,8 @@ threads.cma: $(THREAD_OBJS)
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx)
 
+$(THREAD_OBJS:.cmo=.cmx): ../../ocamlopt
+
 thread.ml: thread_posix.ml
 	ln -s thread_posix.ml thread.ml
 

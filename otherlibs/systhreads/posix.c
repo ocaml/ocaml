@@ -425,8 +425,10 @@ value caml_thread_yield(value unit)        /* ML */
 
 value caml_thread_join(value th)          /* ML */
 {
-  caml_mutex_lock(Terminated(th));
-  caml_mutex_unlock(Terminated(th));
+  Begin_root(th)
+    caml_mutex_lock(Terminated(th));
+    caml_mutex_unlock(Terminated(th));
+  End_roots();
   return Val_unit;
 }
 

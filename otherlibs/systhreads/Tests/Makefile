@@ -18,10 +18,10 @@ clean:
 
 %.byt: ../../threads/Tests/%.ml
 	cp ../../threads/Tests/$*.ml $*.ml
-	$(CAMLC) -custom -o $*.byt unix.cma threads.cma $*.ml ../libthreads.a ../../unix/libunix.a -cclib -lpthread
+	$(CAMLC) -custom -o $*.byt unix.cma threads.cma $*.ml ../libthreads.a ../../unix/libunix.a -cclib -lpthread -cclib -lposix4
 
 %.out: ../../threads/Tests/%.ml
 	cp ../../threads/Tests/$*.ml $*.ml
-	$(CAMLOPT) -o $*.out unix.cmxa threads.cmxa $*.ml ../libthreadsnat.a ../../unix/libunix.a -cclib -lpthread
+	$(CAMLOPT) -o $*.out unix.cmxa threads.cmxa $*.ml ../libthreadsnat.a ../../unix/libunix.a -cclib -lpthread -cclib -lposix4
 
 $(PROGS): ../threads.cma ../libthreads.a
