@@ -73,20 +73,12 @@ value caml_gr_draw_rect(value vx, value vy, value vw, value vh)
   int h = Int_val(vh);
 
   caml_gr_check_open();
-  y = Bcvt(y) - h + 1;
-  /* Correct for XDrawRectangle irritating habit of drawing a larger
-     rectangle hanging out one pixel below and to the right of the
-     expected rectangle */
-  if (w == 0 || h == 0) return Val_unit;
-  y += 1;
-  w -= 1;
-  h -= 1;
   if(caml_gr_remember_modeflag)
     XDrawRectangle(caml_gr_display, caml_gr_bstore.win, caml_gr_bstore.gc,
-                   x, y, w, h);
+                   x, Bcvt(y) - h, w, h);
   if(caml_gr_display_modeflag) {
     XDrawRectangle(caml_gr_display, caml_gr_window.win, caml_gr_window.gc,
-                   x, y, w, h);
+                   x, Wcvt(y) - h, w, h);
     XFlush(caml_gr_display);
   }
   return Val_unit;
