@@ -385,7 +385,7 @@ let op_shapes = [
 ];;
 
 let print_event ev =
-  printf "%s, line %d, char %d:\n" ev.ev_char.Lexing.pos_fname
+  printf "File \"%s\", line %d, character %d:\n" ev.ev_char.Lexing.pos_fname
          ev.ev_char.Lexing.pos_lnum
          (ev.ev_char.Lexing.pos_cnum - ev.ev_char.Lexing.pos_bol)
 

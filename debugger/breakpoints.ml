@@ -181,7 +181,7 @@ let rec new_breakpoint =
         in
         print_string ", line ";
         print_int line;
-        print_string " column ";
+        print_string ", character ";
         print_int (event.ev_char.Lexing.pos_cnum - start + 1)
       with Not_found | Out_of_range ->
         print_string ", character ";
