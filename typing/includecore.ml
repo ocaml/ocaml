@@ -73,9 +73,11 @@ let type_declarations env id decl1 decl2 =
         Ctype.equal env true decl1.type_params decl2.type_params &&
         Ctype.equal env false [ty1] [ty2]
   end &&
+  begin decl2.type_kind <> Type_abstract || decl2.type_manifest <> None ||
   List.for_all2
     (fun (co1,cn1) (co2,cn2) -> (not co1 || co2) && (not cn1 || cn2))
     decl1.type_variance decl2.type_variance
+  end
 
 (* Inclusion between exception declarations *)
 
