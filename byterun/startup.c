@@ -38,6 +38,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 #include "prims.h"
+#include "reverse.h"
 #include "signals.h"
 #include "stacks.h"
 #include "sys.h"
