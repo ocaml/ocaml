@@ -31,7 +31,7 @@ type ulambda =
 type function_description =
   { fun_label: function_label;          (* Label of direct entry point *)
     fun_arity: int;                     (* Number of arguments *)
-    fun_closed: bool }                  (* True if environment not used *)
+    mutable fun_closed: bool }          (* True if environment not used *)
 
 (* Approximation of values *)
 

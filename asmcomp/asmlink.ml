@@ -8,6 +8,7 @@ open Compilenv
 type error =
     File_not_found of string
   | Not_an_object_file of string
+  | Missing_implementations of string list
   | Inconsistent_interface of string * string * string
   | Inconsistent_implementation of string * string * string
   | Assembler_error of string
@@ -65,40 +66,37 @@ let scan_file tolink obj_name =
       find_in_path !load_path obj_name
     with Not_found ->
       raise(Error(File_not_found obj_name)) in
-  let ic = open_in_bin file_name in
-  try
-    let buffer = String.create (String.length cmx_magic_number) in
-    really_input ic buffer 0 (String.length cmx_magic_number);
-    if buffer = cmx_magic_number then begin
-      (* This is a .cmx file. It must be linked in any case.
-         Read the infos to see which modules it
-         requires. *)
-      let info = (input_value ic : unit_infos) in
-      let crc = input_binary_int ic in
-      close_in ic;
-      check_consistency file_name info crc;
-      List.iter add_required info.ui_imports;
-      info :: tolink
-    end
-    else if buffer = cmxa_magic_number then begin
-      (* This is an archive file. Each unit contained in it will be linked
-         in only if needed. *)
-      let info_crc_list = (input_value ic : (unit_infos * int) list) in
-      close_in ic;
-      List.fold_left
-        (fun reqd (info, crc) ->
-          if is_required info.ui_name then begin
-            check_consistency file_name info crc;
-            remove_required info.ui_name;
-            List.iter add_required info.ui_imports;
-            info :: reqd
-          end else
-            reqd)
-      tolink info_crc_list
-    end
-    else raise(Error(Not_an_object_file file_name))
-  with x ->
-    close_in ic; raise x
+  if Filename.check_suffix file_name ".cmx" then begin
+    (* This is a .cmx file. It must be linked in any case.
+       Read the infos to see which modules it requires. *)
+    let (info, crc) = Compilenv.read_unit_info file_name in
+    check_consistency file_name info crc;
+    remove_required info.ui_name;
+    List.iter add_required info.ui_imports;
+    info :: tolink
+  end
+  else if Filename.check_suffix file_name ".cmxa" then begin
+    (* This is an archive file. Each unit contained in it will be linked
+       in only if needed. *)
+    let ic = open_in_bin file_name in
+    let buffer = String.create (String.length cmxa_magic_number) in
+    really_input ic buffer 0 (String.length cmxa_magic_number);
+    if buffer <> cmxa_magic_number then
+      raise(Error(Not_an_object_file file_name));
+    let info_crc_list = (input_value ic : (unit_infos * int) list) in
+    close_in ic;
+    List.fold_right
+      (fun (info, crc) reqd ->
+        if is_required info.ui_name then begin
+          check_consistency file_name info crc;
+          remove_required info.ui_name;
+          List.iter add_required info.ui_imports;
+          info :: reqd
+        end else
+          reqd)
+    info_crc_list tolink
+  end
+  else raise(Error(Not_an_object_file file_name))
 
 (* Second pass: generate the startup file and link it with everything else *)
 
@@ -138,9 +136,14 @@ let make_startup_file filename info_list =
   close_out oc
 
 let call_linker file_list startup_file =
+  let runtime_lib =
+    try
+      find_in_path !load_path "libasmrun.a"
+    with Not_found ->
+      raise(Error(File_not_found "libasmrun.a")) in
   if Sys.command
    (Printf.sprintf
-      "%s -I%s -o %s %s %s %s -L%s %s %s"
+      "%s -I%s -o %s %s %s %s -L%s %s %s %s"
       Config.c_compiler
       Config.standard_library
       !Clflags.exec_name
@@ -149,22 +152,30 @@ let call_linker file_list startup_file =
       startup_file
       Config.standard_library
       (String.concat " " (List.rev !Clflags.ccobjs))
+      runtime_lib
       Config.c_libraries) <> 0
   then raise(Error Linking_error)
 
 let object_file_name name =
-  if Filename.check_suffix name ".cmx" then
-    Filename.chop_suffix name ".cmx" ^ ".o"
-  else if Filename.check_suffix name ".cmxa" then
-    Filename.chop_suffix name ".cmxa" ^ ".a"
+  let file_name =
+    try
+      find_in_path !load_path name
+    with Not_found ->
+      fatal_error "Asmlink.object_file_name: not found" in
+  if Filename.check_suffix file_name ".cmx" then
+    Filename.chop_suffix file_name ".cmx" ^ ".o"
+  else if Filename.check_suffix file_name ".cmxa" then
+    Filename.chop_suffix file_name ".cmxa" ^ ".a"
   else
-    fatal_error "Asmlink.object_file_name"
+    fatal_error "Asmlink.object_file_name: bad ext"
 
 (* Main entry point *)
 
 let link objfiles =
-(**  let objfiles = "stdlib.cmxa" :: objfiles in **)
+  let objfiles = "stdlib.cmxa" :: objfiles in
   let units_tolink = List.fold_left scan_file [] (List.rev objfiles) in
+  if not (StringSet.is_empty !missing_globals) then
+    raise(Error(Missing_implementations(StringSet.elements !missing_globals)));
   let startup = temp_file "camlstartup" ".s" in
   make_startup_file startup units_tolink;
   let startup_obj = temp_file "camlstartup" ".o" in
@@ -188,6 +199,12 @@ let report_error = function
   | Not_an_object_file name ->
       print_string "The file "; print_string name;
       print_string " is not a compilation unit description"
+  | Missing_implementations l ->
+      open_hovbox 0;
+      print_string
+        "No implementation(s) provided for the following module(s):";
+      List.iter (fun s -> print_space(); print_string s) l;
+      close_box()
   | Inconsistent_interface(intf, file1, file2) ->
       open_hvbox 0;
       print_string "Files "; print_string file1; print_string " and ";

@@ -28,6 +28,8 @@ val need_apply_fun: int -> unit
         (* Record the need of a currying (resp. application) function
            with the given arity *)
 
+val read_unit_info: string -> unit_infos * int
+        (* Read infos and CRC from a [.cmx] file. *)
 val save_unit_info: string -> unit
         (* Save the infos for the current unit in the given file *)
 

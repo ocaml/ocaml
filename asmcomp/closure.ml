@@ -25,6 +25,40 @@ let rec build_closure_env env_param pos = function
       Tbl.add id (Uprim(Pfield pos, [Uvar env_param])) 
               (build_closure_env env_param (pos+1) rem)
 
+(* Check if a variable occurs in a [clambda] term. *)
+
+let occurs_var var u =
+  let rec occurs = function
+      Uvar v -> v = var
+    | Uconst cst -> false
+    | Udirect_apply(lbl, args) -> List.exists occurs args
+    | Ugeneric_apply(funct, args) -> occurs funct or List.exists occurs args
+    | Uclosure(fundecls, clos) -> List.exists occurs clos
+    | Uoffset(u, ofs) -> occurs u
+    | Ulet(id, def, body) -> occurs def or occurs body
+    | Uletrec(decls, body) ->
+        List.exists (fun (id, u) -> occurs u) decls or occurs body
+    | Uprim(p, args) -> List.exists occurs args
+    | Uswitch(arg, const_index, const_cases, block_index, block_cases) ->
+        occurs arg or occurs_array const_cases or occurs_array block_cases
+    | Ustaticfail -> false
+    | Ucatch(body, hdlr) -> occurs body or occurs hdlr
+    | Utrywith(body, exn, hdlr) -> occurs body or occurs hdlr
+    | Uifthenelse(cond, ifso, ifnot) ->
+        occurs cond or occurs ifso or occurs ifnot
+    | Usequence(u1, u2) -> occurs u1 or occurs u2
+    | Uwhile(cond, body) -> occurs cond or occurs body
+    | Ufor(id, lo, hi, dir, body) -> occurs lo or occurs hi or occurs body
+  and occurs_array a =
+    try
+      for i = 0 to Array.length a - 1 do
+        if occurs a.(i) then raise Exit
+      done;
+      false
+    with Exit ->
+      true
+  in occurs u
+
 (* Uncurry an expression and explicitate closures.
    Also return the approximation of the expression.
    The approximation environment [fenv] maps idents to approximations.
@@ -175,6 +209,8 @@ and close_functions fenv cenv fun_defs =
   let fv =
     IdentSet.elements (free_variables (Lletrec(fun_defs, lambda_unit))) in
   (* Uncurry the definitions and build their fundesc *)
+  (* Initially all functions are assumed not to need their environment
+     parameter. *)
   let uncurried_defs =
     List.map
       (fun (id, def) ->
@@ -185,7 +221,7 @@ and close_functions fenv cenv fun_defs =
           {fun_label = Compilenv.current_unit_name() ^ "_" ^
                        Ident.unique_name id;
            fun_arity = List.length params;
-           fun_closed = IdentSet.is_empty(free_variables def)} in
+           fun_closed = true } in
         (id, params, body, fundesc))
       fun_defs in
   (* Build an approximate fenv for compiling the functions *)
@@ -204,6 +240,9 @@ and close_functions fenv cenv fun_defs =
         pos)
       uncurried_defs in
   let fv_pos = !env_pos in
+  (* This reference will be set to false if the hypothesis that a function
+     does not use its environment parameter is invalidated. *)
+  let useless_env = ref true in
   (* Translate each function definition *)
   let clos_fundef (id, params, body, fundesc) env_pos =
     let env_param = Ident.new "env" in
@@ -215,12 +254,24 @@ and close_functions fenv cenv fun_defs =
           Tbl.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
         uncurried_defs clos_offsets cenv_fv in
     let (ubody, approx) = close fenv_rec cenv_body body in
+    if !useless_env & occurs_var env_param ubody then useless_env := false;
     ((fundesc.fun_label, fundesc.fun_arity, params @ [env_param], ubody),
      (id, env_pos, Value_closure(fundesc, approx))) in
-  (* Translate all function definitions. Return the Uclosure node and
-     the list of all identifiers defined, with offsets and approximations. *)
-  let (clos, infos) =
-    List.split (List.map2 clos_fundef uncurried_defs clos_offsets) in
+  (* Translate all function definitions. *)
+  let clos_info_list = 
+    let cl = List.map2 clos_fundef uncurried_defs clos_offsets in
+    (* If the hypothesis that the environment parameters are useless has been
+       invalidated, then set [fun_closed] to false in all descriptions and
+       recompile *)
+    if !useless_env then cl else begin
+      List.iter
+        (fun (id, params, body, fundesc) -> fundesc.fun_closed <- false)
+        uncurried_defs;
+      List.map2 clos_fundef uncurried_defs clos_offsets
+    end in
+  (* Return the Uclosure node and the list of all identifiers defined,
+     with offsets and approximations. *)
+  let (clos, infos) = List.split clos_info_list in
   (Uclosure(clos, List.map (close_var cenv) fv), infos)
 
 (* Same, for one function *)

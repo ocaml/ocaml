@@ -53,5 +53,6 @@ val reload_operation:
 val num_stack_slots: int array
 val contains_calls: bool ref
 
-(* Calling the assembler *)
+(* Calling the assembler and the archiver *)
 val assemble_file: string -> string -> int
+val create_archive: string -> string list -> int

@@ -398,7 +398,7 @@ let rec transl = function
   | Uprim(Psetstringchar, [arg1; arg2; arg3]) ->
       return_unit(Cop(Cstorechunk Byte_unsigned,
                       [add_int (transl arg1) (untag_int(transl arg2));
-                       transl arg3]))
+                       untag_int(transl arg3)]))
   | Uprim(Psafegetstringchar, [arg1; arg2]) ->
       tag_int
         (bind "str" (transl arg1) (fun str ->
@@ -413,7 +413,7 @@ let rec transl = function
             Csequence(
               Cop(Ccheckbound, [string_length str; idx]),
               Cop(Cstorechunk Byte_unsigned,
-                  [add_int str idx; transl arg3])))))
+                  [add_int str idx; untag_int(transl arg3)])))))
   | Uprim(Pvectlength, [arg]) ->
       Cop(Cor, [Cop(Clsr, [get_field (transl arg) (-1); Cconst_int 9]);
                 Cconst_int 1])

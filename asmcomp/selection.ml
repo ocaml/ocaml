@@ -316,6 +316,8 @@ let rec emit_expr env exp seq =
       insert (Iop Imove) r1 rd seq;
       insert Iraise rd [||] seq;
       [||]
+  | Cop(Ccmpf comp, args) ->
+      emit_expr env (Cifthenelse(exp, Cconst_int 1, Cconst_int 0)) seq
   | Cop(op, args) ->
       let (simple_args, env) = emit_parts_list env args seq in
       let ty = oper_result_type op in
@@ -372,6 +374,15 @@ let rec emit_expr env exp seq =
               let ra = emit_expr env arg_addr seq in
               emit_stores env args_data seq ra addr;
               [||]
+          end
+      | Istore(chunk, addr) ->
+          begin match new_args with
+            [arg_addr; arg_data] ->
+              let ra = emit_expr env arg_addr seq in
+              let rd = emit_expr env arg_data seq in
+              insert (Iop(Istore(chunk, addr))) (Array.append rd ra) [||] seq;
+              [||]
+          | _ -> fatal_error "Selection.Istorechunk"
           end
       | Ialloc _ ->
           Proc.contains_calls := true;

@@ -51,7 +51,7 @@ let reset name crc_intf =
 let current_unit_name () =
   current_unit.ui_name
 
-let read_unit_info modname filename =
+let read_unit_info filename =
   let ic = open_in_bin filename in
   try
     let buffer = String.create (String.length cmx_magic_number) in
@@ -63,10 +63,7 @@ let read_unit_info modname filename =
     let ui = (input_value ic : unit_infos) in
     let crc = input_binary_int ic in
     close_in ic;
-    if ui.ui_name <> modname then
-      raise(Error(Illegal_renaming(modname, filename)));
-    current_unit.ui_imports <- (modname, crc) :: current_unit.ui_imports;
-    ui
+    (ui, crc)
   with End_of_file | Failure _ ->
     close_in ic;
     raise(Error(Corrupted_unit_info(filename)))
@@ -80,10 +77,16 @@ let global_approx global_ident =
   with Not_found ->
     let approx =
       try
-        let ui = read_unit_info modname
-                   (find_in_path !load_path (lowercase modname ^ ".cmx")) in
+        let filename =
+          find_in_path !load_path (lowercase modname ^ ".cmx") in
+        let (ui, crc) = read_unit_info filename in
+        if ui.ui_name <> modname then
+          raise(Error(Illegal_renaming(modname, filename)));
+        current_unit.ui_imports <-
+          (modname, crc) :: current_unit.ui_imports;
         ui.ui_approx
-      with Not_found -> Value_unknown in
+      with Not_found ->
+        Value_unknown in
     Hashtbl.add global_approx_table modname approx;
     approx
 
