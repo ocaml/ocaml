@@ -62,6 +62,14 @@ val wait_timed_write : Unix.file_descr -> float -> bool
            the amount of time given as second argument (in seconds).
            Return [true] if the file descriptor is ready for input/output
            and [false] if the timeout expired. *)
+val select :
+  Unix.file_descr list -> Unix.file_descr list ->
+  Unix.file_descr list -> float ->
+    Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
+        (* Suspend the execution of the calling thead until input/output
+           becomes possible on the given Unix file descriptors.
+           The arguments and results have the same meaning as for
+           [Unix.select]. *)
 val wait_pid : int -> int * Unix.process_status
         (* [wait_pid p] suspends the execution of the calling thread
            until the Unix process specified by the process identifier [p]
@@ -70,7 +78,6 @@ val wait_pid : int -> int * Unix.process_status
            as the current process. Negative pid arguments represent
            process groups. Returns the pid of the child caught and
            its termination status, as per [Unix.wait]. *)
-
 (*--*)
 
 (* The following primitives provide the basis for implementing 

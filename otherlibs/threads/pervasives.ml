@@ -166,11 +166,11 @@ let stderr = open_descriptor_out 2
 
 (* Non-blocking stuff *)
 
-external thread_wait_read_prim : Unix.file_descr -> unit = "thread_wait_read"
-external thread_wait_write_prim : Unix.file_descr -> unit = "thread_wait_write"
+external thread_select_prim :
+  Unix.file_descr list * Unix.file_descr list *
+  Unix.file_descr list * float -> unit = "thread_select"
 
-let thread_wait_read fd = thread_wait_read_prim fd
-let thread_wait_write fd = thread_wait_write_prim fd
+let thread_select arg = thread_select_prim arg
 
 external inchan_ready : in_channel -> bool = "thread_inchan_ready"
 external outchan_ready : out_channel -> int -> bool = "thread_outchan_ready"
@@ -178,9 +178,13 @@ external descr_inchan : in_channel -> Unix.file_descr = "channel_descriptor"
 external descr_outchan : out_channel -> Unix.file_descr = "channel_descriptor"
 
 let wait_inchan ic =
-  if not (inchan_ready ic) then thread_wait_read (descr_inchan ic)
+  if not (inchan_ready ic) then begin
+    thread_select([descr_inchan ic], [], [], -1.0); ()
+  end
 let wait_outchan oc len =
-  if not (outchan_ready oc len) then thread_wait_write (descr_outchan oc)
+  if not (outchan_ready oc len) then begin
+    thread_select([], [descr_outchan oc], [], -1.0); ()
+  end
 
 (* General output functions *)
 

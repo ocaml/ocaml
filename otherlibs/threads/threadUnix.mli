@@ -42,6 +42,13 @@ val timed_write : Unix.file_descr -> string -> int -> int -> float -> int
          available for reading or ready for writing after [d] seconds.
          The delay [d] is given in the fifth argument, in seconds. *)
 
+(*** Polling *)
+
+val select :
+  Unix.file_descr list -> Unix.file_descr list ->
+  Unix.file_descr list -> float ->
+        Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
+
 (*** Interfacing with the standard input/output library *)
 
 external in_channel_of_descr : Unix.file_descr -> in_channel

@@ -19,9 +19,10 @@ let critical_section = ref false
 
 type resumption_status =
     Resumed_wakeup
-  | Resumed_io
   | Resumed_delay
   | Resumed_join
+  | Resumed_select of
+      Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
   | Resumed_wait of int * Unix.process_status
 
 (* It is mucho important that the primitives that reschedule are called 
@@ -38,14 +39,10 @@ external thread_initialize : unit -> unit = "thread_initialize"
 external thread_new : (unit -> unit) -> t = "thread_new"
 external thread_yield : unit -> unit = "thread_yield"
 external thread_sleep : unit -> unit = "thread_sleep"
-external thread_wait_read : Unix.file_descr -> unit = "thread_wait_read"
-external thread_wait_write : Unix.file_descr -> unit = "thread_wait_write"
-external thread_wait_timed_read
-            : Unix.file_descr * float -> resumption_status (* remeber: 1 arg *)
-            = "thread_wait_timed_read"
-external thread_wait_timed_write
-            : Unix.file_descr * float -> resumption_status (* remeber: 1 arg *)
-            = "thread_wait_timed_write"
+external thread_select :
+  Unix.file_descr list * Unix.file_descr list *          (* remember: 1 arg *)
+  Unix.file_descr list * float -> resumption_status
+  = "thread_select"
 external thread_join : t -> unit = "thread_join"
 external thread_delay : float -> unit = "thread_delay"
 external thread_wait_pid : int -> resumption_status = "thread_wait_pid"
@@ -60,8 +57,6 @@ external id : t -> int = "thread_id"
    making all other operations atomic. *)
 
 let sleep () = critical_section := false; thread_sleep()
-let wait_read fd = thread_wait_read fd
-let wait_write fd = thread_wait_write fd
 let delay duration = thread_delay duration
 let join th = thread_join th
 let wakeup pid = thread_wakeup pid
@@ -69,12 +64,27 @@ let self () = thread_self()
 let kill pid = thread_kill pid
 let exit () = thread_kill(thread_self())
 
-let wait_timed_read_aux arg = thread_wait_timed_read arg
-let wait_timed_write_aux arg = thread_wait_timed_write arg
+let select_aux arg = thread_select arg
+
+let select readfds writefds exceptfds delay =
+  match select_aux (readfds, writefds, exceptfds, delay) with
+    Resumed_select(r, w, e) -> (r, w, e)
+  | _ -> ([], [], [])
+
+let wait_read fd = select_aux([fd], [], [], -1.0); ()
+let wait_write fd = select_aux([], [fd], [], -1.0); ()
+  
+let wait_timed_read fd delay =
+  match select_aux([fd], [], [], delay) with
+    Resumed_select(_, _, _) -> true
+  | _ -> false
+let wait_timed_write fd delay =
+  match select_aux([], [fd], [], delay) with
+    Resumed_select(_, _, _) -> true
+  | _ -> false
+
 let wait_pid_aux pid = thread_wait_pid pid
 
-let wait_timed_read fd d = wait_timed_read_aux (fd, d) = Resumed_io
-let wait_timed_write fd d = wait_timed_write_aux (fd, d) = Resumed_io
 let wait_pid pid = 
   match wait_pid_aux pid with
     Resumed_wait(pid, status) -> (pid, status)
