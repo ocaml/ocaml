@@ -2077,16 +2077,30 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
 
 (**** Build a subtype of a given type. ****)
 
-let subtypes = ref []
+let rec filter_firsts pred = function
+    [] -> []
+  | a :: r as l -> if pred a then l else filter_firsts pred r
 
-let rec build_subtype env visited posi t =
-  (* if not posi then (t, false) else *)
+(* build_subtype:
+   [visited] traces traversed object and variant types
+   [loops] is a mapping from variables to variables, to reproduce
+     positive loops in a class type
+   [posi] true if the current variance is positive
+   [onlyloop] does not open types, only build loops
+     true on the left side of an arrow, for efficiency reasons *)
+
+let rec build_subtype env visited loops posi onlyloop t =
   let t = repr t in
+  let loops =
+    if onlyloop then filter_firsts (fun (ty, _) -> deep_occur ty t) loops
+    else loops
+  in
+  if onlyloop && loops = [] then (t, false) else
   match t.desc with
     Tvar ->
       if posi then
         try
-          (List.assq t !subtypes, true)
+          (List.assq t loops, true)
         with Not_found ->
           (t, false)
       else
@@ -2094,61 +2108,56 @@ let rec build_subtype env visited posi t =
   | Tarrow(l, t1, t2, _) ->
       if List.memq t visited then (t, false) else
       let visited = t :: visited in
-      (* let (t1', c1) = build_subtype env visited (not posi) t1 in *)
-      let (t1', c1) = (t1, false) in
-      let (t2', c2) = build_subtype env visited posi t2 in
+      let (t1', c1) = build_subtype env visited loops (not posi) true t1 in
+      (* let (t1', c1) = (t1, false) in *)
+      let (t2', c2) = build_subtype env visited loops posi onlyloop t2 in
       if c1 || c2 then (newty (Tarrow(l, t1', t2', Cok)), true)
       else (t, false)
   | Ttuple tlist ->
       if List.memq t visited then (t, false) else
       let visited = t :: visited in
-      let tlist' = List.map (build_subtype env visited posi) tlist
+      let tlist' =
+        List.map (build_subtype env visited loops posi onlyloop) tlist
       in
       if List.exists snd tlist' then
         (newty (Ttuple (List.map fst tlist')), true)
       else (t, false)
-  | Tconstr(p, tl, abbrev) when generic_abbrev env p ->
+  | Tconstr(p, tl, abbrev) when not onlyloop && generic_abbrev env p ->
       let t' = repr (expand_abbrev env t) in
-      let (t'', c) =
-        try match t'.desc with
-          Tobject _ when posi ->
-            if List.memq t' visited then (t, false) else
-            begin try
-              (List.assq t' !subtypes, true)
-            with Not_found ->
-              let rec lid_of_path sharp = function
-                  Path.Pident id ->
-                    Longident.Lident (sharp ^ Ident.name id)
-                | Path.Pdot (p1, s, _) ->
-                    Longident.Ldot (lid_of_path "" p1, sharp ^ s)
-                | Path.Papply (p1, p2) ->
-                    Longident.Lapply (lid_of_path sharp p1, lid_of_path "" p2)
-              in
-              let path, cl_abbr = Env.lookup_type (lid_of_path "#" p) env in
-              let body =
-                match cl_abbr.type_manifest with Some ty -> ty
-                | None -> assert false in
-              let ty =
-                subst env t'.level abbrev None cl_abbr.type_params tl body in
-              let ty = repr ty in
-              let ty1 =
-                match ty.desc with
-                  Tobject(ty1,{contents=Some(p',_)}) ->
-                    if Path.same p p' then ty1 else raise Not_found
-                | _ -> assert false in
-              ty.desc <- Tvar;
-              let t'' = newvar () in
-              subtypes := (ty, t'') :: !subtypes;
-              let (ty1', _) = build_subtype env (t' :: visited) posi ty1 in
-              assert (t''.desc = Tvar);
-              t''.desc <- Tobject (ty1', ref None);
-              (try unify env ty t with Unify _ -> assert false);
-              (t'', true)
-            end
-        | _ -> raise Not_found
-        with Not_found -> build_subtype env visited posi t'
-      in
-      if c then (t'', true) else (t, false)
+      begin try match t'.desc with
+        Tobject _ when posi ->
+          if List.memq t' visited then (t, false) else
+          let rec lid_of_path sharp = function
+              Path.Pident id ->
+                Longident.Lident (sharp ^ Ident.name id)
+            | Path.Pdot (p1, s, _) ->
+                Longident.Ldot (lid_of_path "" p1, sharp ^ s)
+            | Path.Papply (p1, p2) ->
+                Longident.Lapply (lid_of_path sharp p1, lid_of_path "" p2)
+          in
+          let path, cl_abbr = Env.lookup_type (lid_of_path "#" p) env in
+          let body =
+            match cl_abbr.type_manifest with Some ty -> ty
+            | None -> assert false in
+          let ty =
+            subst env t'.level abbrev None cl_abbr.type_params tl body in
+          let ty = repr ty in
+          let ty1 =
+            match ty.desc with
+              Tobject(ty1,{contents=Some(p',_)}) ->
+                if Path.same p p' then ty1 else raise Not_found
+            | _ -> assert false in
+          ty.desc <- Tvar;
+          let t'' = newvar () in
+          let visited = t' :: visited and loops = (ty, t'') :: loops in
+          let (ty1', _) = build_subtype env visited loops posi onlyloop ty1 in
+          assert (t''.desc = Tvar);
+          t''.desc <- Tobject (ty1', ref None);
+          (try unify env ty t with Unify _ -> assert false);
+          (t'', true)
+      | _ -> raise Not_found
+      with Not_found -> build_subtype env visited loops posi onlyloop t'
+      end
   | Tconstr(p, tl, abbrev) ->
       let decl = Env.find_type p env in
       let tl' =
@@ -2156,9 +2165,9 @@ let rec build_subtype env visited posi t =
           (fun (co,cn) t ->
             if cn then
               if co then (t, false)
-              else build_subtype env visited (not posi) t
+              else build_subtype env visited loops (not posi) onlyloop t
             else
-              if co then build_subtype env visited posi t
+              if co then build_subtype env visited loops posi onlyloop t
               else (newvar(), true))
           decl.type_variance tl
       in
@@ -2181,8 +2190,9 @@ let rec build_subtype env visited posi t =
               else
                 orig, false
           | Rpresent(Some t) ->
-              let (t', c) = build_subtype env visited posi t in
-              if posi then begin
+              let (t', c) =
+                build_subtype env visited loops posi onlyloop t in
+              if posi && not onlyloop then begin
                 bound := t' :: !bound;
                 (l, Reither(false, [t'], false, ref None)), c
               end else
@@ -2205,22 +2215,18 @@ let rec build_subtype env visited posi t =
       (t, false)
   | Tobject (t1, _) ->
       if List.memq t visited then (t, false) else
-      begin try
-        if not posi then raise Not_found;
-        (List.assq t !subtypes, true)
-      with Not_found ->
-        let (t1', _) = build_subtype env (t :: visited) posi t1 in
-        (newty (Tobject (t1', ref None)), true)
-      end
+      let (t1', _) =
+        build_subtype env (t :: visited) loops posi onlyloop t1 in
+      (newty (Tobject (t1', ref None)), true)
   | Tfield(s, _, t1, t2) (* Always present *) ->
-      let (t1', c1) = build_subtype env visited posi t1 in
-      let (t2', c2) = build_subtype env visited posi t2 in
+      let (t1', c1) = build_subtype env visited loops posi onlyloop t1 in
+      let (t2', c2) = build_subtype env visited loops posi onlyloop t2 in
       if c1 || c2 then
         (newty (Tfield(s, Fpresent, t1', t2')), true)
       else
         (t, false)
   | Tnil ->
-      if posi then
+      if posi && not onlyloop then
         let v = newvar () in
         (v, true)
       else
@@ -2229,9 +2235,7 @@ let rec build_subtype env visited posi t =
       assert false
 
 let enlarge_type env ty =
-  subtypes := [];
-  let (ty', _) = build_subtype env [] true ty in
-  subtypes := [];
+  let (ty', _) = build_subtype env [] [] true false ty in
   ty'
 
 (**** Check whether a type is a subtype of another type. ****)
