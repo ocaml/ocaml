@@ -30,6 +30,11 @@ type routine_flag =
   | R_PREV
   | R_SETCURSOR
 
+(* All other fields have default values *)
+type btree_flag =
+    Duplicates        (* means R_DUP *)
+  | Cachesize of int
+
 type file_perm = int
 
 exception DB_error of string
@@ -41,7 +46,7 @@ type data = string
 type t
 
 (* Raw access *)
-external dbopen : string -> open_flag list -> file_perm -> bool -> t
+external dbopen : string -> open_flag list -> file_perm -> btree_flag list -> t
     = "caml_db_open"
     (* [dbopen file flags mode] *)
 

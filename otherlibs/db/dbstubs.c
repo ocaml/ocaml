@@ -187,7 +187,7 @@ value caml_db_sync(value cdb)	/* ML */
     raise_db("sync");
 }
 
-value caml_db_open(value vfile, value vflags, value vmode, value vdup) /* ML */
+value caml_db_open(value vfile, value vflags, value vmode, value vpars) /* ML */
 {
   char *file = String_val(vfile);
   int flags = convert_flag_list(vflags, db_open_flags);
@@ -198,7 +198,27 @@ value caml_db_open(value vfile, value vflags, value vmode, value vdup) /* ML */
   /* Infos for btree structure : 0 is default everywhere */  
   info = stat_alloc(sizeof(BTREEINFO));
   bzero(info, sizeof(BTREEINFO));
-  if (Bool_val(vdup)) info->flags |= R_DUP;
+
+  while (Is_block(vpars)) {
+    value par = Field(vpars, 0);
+    if (Is_block(par)) { /* It's a non-constant constructor */
+      switch(Tag_val(par)) {
+      case 0: /* Cachesize */
+	info->cachesize = Int_val(Field(par, 0));
+      default:
+	break;
+      }
+    } else { /* It's a constant constructor */
+      switch (Int_val(par)) {
+      case 0: /* Duplicates */
+	info->flags |= R_DUP;
+	break;
+      default:
+	break;
+      }
+    }
+    vpars = Field(vpars, 1);
+  }
 
   db = dbopen(file,flags,mode,DB_BTREE,info);
   if (db == NULL) {
