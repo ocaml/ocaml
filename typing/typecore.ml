@@ -942,7 +942,8 @@ and type_application env funct sargs =
   let ignored = ref [] in
   let rec type_unknown_args args omitted ty_fun = function
       [] ->
-        (List.rev args, result_type omitted ty_fun)
+        (List.rev_map (function None -> None | Some f -> Some (f ())) args,
+         result_type omitted ty_fun)
     | (l1, sarg1) :: sargl ->
         let (ty1, ty2) =
           try
@@ -960,8 +961,11 @@ and type_application env funct sargs =
             | _ ->
                 raise(Error(funct.exp_loc,
                             Apply_non_function funct.exp_type)) in
-        let arg1 = type_expect env sarg1 ty1 in
-        if is_optional l1 then unify_exp env arg1 (type_option(newvar()));
+        let arg1 () =
+          let arg1 = type_expect env sarg1 ty1 in
+          if is_optional l1 then unify_exp env arg1 (type_option(newvar()));
+          arg1
+        in
         type_unknown_args (Some arg1 :: args) omitted ty2 sargl
   in
   let rec type_args args omitted ty_fun ty_old sargs more_sargs =
@@ -978,7 +982,8 @@ and type_application env funct sargs =
             | _, (l', sarg0) :: more_sargs ->
                 if l <> l' && l' <> "" then
                   raise(Error(sarg0.pexp_loc, Apply_wrong_label(l', ty_fun')))
-                else ([], more_sargs, Some (type_argument env sarg0 ty))
+                else
+                  ([], more_sargs, Some (fun () -> type_argument env sarg0 ty))
             | _ ->
                 assert false
           end else try
@@ -992,17 +997,17 @@ and type_application env funct sargs =
             in
             sargs, more_sargs,
             if is_optional l' || not (is_optional l) then
-              Some (type_argument env sarg0 ty)
+              Some (fun () -> type_argument env sarg0 ty)
             else
-              let arg = type_argument env sarg0 (extract_option_type env ty) in
-              Some (option_some arg)
+              Some (fun () -> option_some (type_argument env sarg0 
+                                             (extract_option_type env ty)))
           with Not_found ->
             sargs, more_sargs,
             if is_optional l &&
               (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
             then begin
               ignored := (l,ty,lv) :: !ignored;
-              Some (option_none ty Location.none)
+              Some (fun () -> option_none ty Location.none)
             end else None
         in
         let omitted = if arg = None then (l,ty,lv) :: omitted else omitted in
