@@ -413,14 +413,15 @@ let rec tree_of_type_decl id decl =
   | None -> ()
   | Some ty -> mark_loops ty
   end;
-  begin match decl.type_kind with
+  let rec mark = function
   | Type_abstract -> ()
   | Type_variant [] -> ()
   | Type_variant cstrs ->
       List.iter (fun (_, args) -> List.iter mark_loops args) cstrs
   | Type_record(l, rep) ->
       List.iter (fun (_, _, ty) -> mark_loops ty) l
-  end;
+  | Type_private tkind -> mark tkind in
+  mark decl.type_kind;
 
   let type_param =
     function
@@ -451,8 +452,7 @@ let rec tree_of_type_decl id decl =
   in
   let (name, args) = type_defined decl in
   let constraints = tree_of_constraints params in
-  let ty =
-    match decl.type_kind with
+  let rec tree_of_tkind = function
     | Type_abstract ->
         begin match decl.type_manifest with
         | None -> Otyp_abstract
@@ -462,6 +462,8 @@ let rec tree_of_type_decl id decl =
         tree_of_manifest decl (Otyp_sum (List.map tree_of_constructor cstrs))
     | Type_record(lbls, rep) ->
         tree_of_manifest decl (Otyp_record (List.map tree_of_label lbls))
+    | Type_private tkind -> Otyp_private (tree_of_tkind tkind) in
+  let ty = tree_of_tkind decl.type_kind 
   in
   (name, args, ty, constraints)
 
@@ -539,7 +541,7 @@ let tree_of_metho sch concrete csil (lab, kind, ty) =
 let rec prepare_class_type params = function
   | Tcty_constr (p, tyl, cty) ->
       let sty = Ctype.self_type cty in
-      if List.memq sty !visited_objects
+      if List.memq (proxy sty) !visited_objects
       || List.exists (fun ty -> (repr ty).desc <> Tvar) params
       || List.exists (deep_occur sty) tyl
       then prepare_class_type params cty
@@ -547,8 +549,9 @@ let rec prepare_class_type params = function
   | Tcty_signature sign ->
       let sty = repr sign.cty_self in
       (* Self may have a name *)
-      if List.memq sty !visited_objects then add_alias sty
-      else visited_objects := proxy sty :: !visited_objects;
+      let px = proxy sty in
+      if List.memq px !visited_objects then add_alias sty
+      else visited_objects := px :: !visited_objects;
       let (fields, _) =
         Ctype.flatten_fields (Ctype.object_fields sign.cty_self)
       in
@@ -562,7 +565,7 @@ let rec tree_of_class_type sch params =
   function
   | Tcty_constr (p', tyl, cty) ->
       let sty = Ctype.self_type cty in
-      if List.memq sty !visited_objects
+      if List.memq (proxy sty) !visited_objects
       || List.exists (fun ty -> (repr ty).desc <> Tvar) params
       then
         tree_of_class_type sch params cty

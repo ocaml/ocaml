@@ -27,7 +27,7 @@ val transl_simple_type_delayed:
 val transl_type_scheme:
         Env.t -> Parsetree.core_type -> Types.type_expr
 val reset_type_variables: unit -> unit
-val enter_type_variable: bool -> string -> Types.type_expr
+val enter_type_variable: bool -> Location.t -> string -> Types.type_expr
 val type_variable: Location.t -> string -> Types.type_expr
 
 type variable_context
@@ -54,6 +54,7 @@ type error =
   | Variant_tags of string * string
   | No_row_variable of string
   | Bad_alias of string
+  | Invalid_variable_name of string
 
 exception Error of Location.t * error
 

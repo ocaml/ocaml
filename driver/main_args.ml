@@ -22,6 +22,7 @@ module Make_options (F :
      val _custom : unit -> unit
      val _dllib : string -> unit
      val _dllpath : string -> unit
+     val _dtypes : unit -> unit
      val _g : unit -> unit
      val _i : unit -> unit
      val _I : string -> unit
@@ -73,6 +74,7 @@ struct
            "<lib>  Use the dynamically-loaded library <lib>";
     "-dllpath", Arg.String F._dllpath,
            "<dir>  Add <dir> to the run-time search path for shared libraries";
+    "-dtypes", Arg.Unit F._dtypes, " Save type information in <filename>.types";
     "-g", Arg.Unit F._g, " Save debugging information";
     "-i", Arg.Unit F._i, " Print the types";
     "-I", Arg.String F._I,
@@ -122,6 +124,7 @@ struct
       \032    A/a enable/disable all warnings\n\
       \032    C/c enable/disable suspicious comment\n\
       \032    D/d enable/disable deprecated features\n\
+      \032    E/e enable/disable fragile match\n\
       \032    F/f enable/disable partially applied function\n\
       \032    L/l enable/disable labels omitted in application\n\
       \032    M/m enable/disable overriden method\n\
@@ -130,7 +133,8 @@ struct
       \032    U/u enable/disable unused match case\n\
       \032    V/v enable/disable hidden instance variable\n\
       \032    X/x enable/disable all other warnings\n\
-      \032    default setting is \"Al\" (all warnings but labels enabled)";
+      \032    default setting is \"Ale\"\n\
+      \032    (all warnings but labels and fragile match enabled)";
     "-warn-error" , Arg.String F._warn_error,
       "<flags>  Treat the warnings enabled by <flags> as errors.\n\
       \032    See option -w for the list of flags.\n\

@@ -99,7 +99,7 @@ let rec typexp s ty =
           let more = repr row.row_more in
           (* We must substitute in a subtle way *)
           begin match more.desc with
-            Tsubst ({desc=Tvariant _} as ty2) ->
+            Tsubst ty2 when (repr ty2).desc <> Tunivar ->
               (* This variant type has been already copied *)
               ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
               Tlink ty2
@@ -154,8 +154,9 @@ let type_declaration s decl =
     { type_params = List.map (typexp s) decl.type_params;
       type_arity = decl.type_arity;
       type_kind =
-        begin match decl.type_kind with
-          Type_abstract -> Type_abstract
+        begin
+        let rec kind_of_tkind = function
+        | Type_abstract -> Type_abstract
         | Type_variant cstrs ->
             Type_variant(
               List.map (fun (n, args) -> (n, List.map (typexp s) args))
@@ -165,6 +166,8 @@ let type_declaration s decl =
               List.map (fun (n, mut, arg) -> (n, mut, typexp s arg))
                        lbls,
               rep)
+        | Type_private tkind -> Type_private (kind_of_tkind tkind) in
+        kind_of_tkind decl.type_kind
         end;
       type_manifest =
         begin match decl.type_manifest with

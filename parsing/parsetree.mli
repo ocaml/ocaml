@@ -132,6 +132,7 @@ and type_kind =
     Ptype_abstract
   | Ptype_variant of (string * core_type list) list
   | Ptype_record of (string * mutable_flag * core_type) list
+  | Ptype_private of type_kind
 
 and exception_declaration = core_type list
 

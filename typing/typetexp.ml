@@ -39,6 +39,7 @@ type error =
   | Variant_tags of string * string
   | No_row_variable of string
   | Bad_alias of string
+  | Invalid_variable_name of string
 
 exception Error of Location.t * error
 
@@ -49,10 +50,15 @@ type variable_context = int * (string, type_expr) Tbl.t
 let type_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
 let univars        = ref ([] : (string * (type_expr * type_expr ref)) list)
 let pre_univars    = ref ([] : type_expr list)
+let local_aliases  = ref ([] : string list)
 
 let used_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
 let bindings       = ref ([] : (Location.t * type_expr * type_expr) list)
         (* These two variables are used for the "delayed" policy. *)
+
+let reset_pre_univars () =
+  pre_univars := [];
+  local_aliases := []
 
 let reset_type_variables () =
   reset_global_level ();
@@ -65,8 +71,10 @@ let widen (gl, tv) =
   restore_global_level gl;
   type_variables := tv
 
-let enter_type_variable strict name =
+let enter_type_variable strict loc name =
   try
+    if name <> "" && name.[0] = '_' then
+      raise (Error (loc, Invalid_variable_name ("'" ^ name)));
     let v = Tbl.find name !type_variables in
     if strict then raise Already_bound;
     v
@@ -105,6 +113,8 @@ let rec transl_type env policy rowvar styp =
     Ptyp_any ->
       if policy = Univars then new_pre_univar () else newvar ()
   | Ptyp_var name ->
+      if name <> "" && name.[0] = '_' then
+        raise (Error (styp.ptyp_loc, Invalid_variable_name ("'" ^ name)));
       begin try
         instance (fst (List.assoc name !univars))
       with Not_found ->
@@ -129,6 +139,7 @@ let rec transl_type env policy rowvar styp =
             with Not_found ->
               let v = new_pre_univar () in
               type_variables := Tbl.add name v !type_variables;
+              local_aliases := name :: !local_aliases;
               v
             end
         | Delayed ->
@@ -163,16 +174,22 @@ let rec transl_type env policy rowvar styp =
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                            List.length stl)));
       let args = List.map (transl_type env policy None) stl in
-      let params = List.map (fun _ -> Ctype.newvar ()) args in
+      let params = Ctype.instance_list decl.type_params in
       let cstr = newty (Tconstr(path, params, ref Mnil)) in
       begin try
         Ctype.enforce_constraints env cstr
       with Unify trace ->
         raise (Error(styp.ptyp_loc, Type_mismatch trace))
       end;
+      let unify_param =
+        match decl.type_manifest with
+          None -> unify_var
+        | Some ty ->
+            if (repr ty).level = Btype.generic_level then unify_var else unify
+      in
       List.iter2
         (fun (sty, ty) ty' ->
-           try unify_var env ty' ty with Unify trace ->
+           try unify_param env ty' ty with Unify trace ->
              raise (Error(sty.ptyp_loc, Type_mismatch (swap_list trace))))
         (List.combine stl args) params;
       cstr
@@ -225,8 +242,8 @@ let rec transl_type env policy rowvar styp =
       in
       let params = Ctype.instance_list decl.type_params in
       List.iter2
-        (fun (sty, ty') ty ->
-           try unify_var env ty ty' with Unify trace ->
+        (fun (sty, ty) ty' ->
+           try unify_var env ty' ty with Unify trace ->
              raise (Error(sty.ptyp_loc, Type_mismatch (swap_list trace))))
         (List.combine stl args) params;
       begin match ty.desc with
@@ -315,6 +332,7 @@ let rec transl_type env policy rowvar styp =
           begin_def ();
           let t = newvar () in
           type_variables := Tbl.add alias t !type_variables;
+          if policy = Univars then local_aliases := alias :: !local_aliases;
           if policy = Delayed then
             used_variables := Tbl.add alias t !used_variables;
           let ty = transl_type env policy None st in
@@ -323,7 +341,8 @@ let rec transl_type env policy rowvar styp =
             raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
           end;
           end_def ();
-          generalize_global t;
+          if policy = Univars then generalize_structure t
+          else generalize_global t;
           instance t
       end
   | Ptyp_variant(fields, closed, present) ->
@@ -472,7 +491,7 @@ let transl_simple_type env fixed styp =
 
 let transl_simple_type_univars env styp =
   univars := [];
-  pre_univars := [];
+  reset_pre_univars ();
   begin_def ();
   let typ = transl_type env Univars None styp in
   end_def ();
@@ -481,17 +500,12 @@ let transl_simple_type_univars env styp =
     List.fold_left
       (fun acc v ->
         let v = repr v in
-        if v.desc <> Tvar || v.level <> Btype.generic_level || List.memq v acc
-        then acc
+        if v.level <> Btype.generic_level || v.desc <> Tvar then acc
         else (v.desc <- Tunivar ; v :: acc))
       [] !pre_univars
   in
-  pre_univars := [];
-  Tbl.iter
-    (fun name ty ->
-      if List.exists (fun tu -> repr ty == repr tu) univs
-      then type_variables := Tbl.remove name !type_variables)
-    !type_variables;
+  type_variables := List.fold_right Tbl.remove !local_aliases !type_variables;
+  reset_pre_univars ();
   instance (Btype.newgenty (Tpoly (typ, univs)))
 
 let transl_simple_type_delayed env styp =
@@ -583,3 +597,5 @@ let report_error ppf = function
       fprintf ppf
         "The alias %s cannot be used here. It captures universal variables."
         name
+  | Invalid_variable_name name ->
+      fprintf ppf "The type variable name %s is not allowed in programs" name

@@ -33,6 +33,9 @@ type out_value =
   | Oval_ellipsis
   | Oval_float of float
   | Oval_int of int
+  | Oval_int32 of int32
+  | Oval_int64 of int64
+  | Oval_nativeint of nativeint
   | Oval_list of out_value list
   | Oval_printer of (Format.formatter -> unit)
   | Oval_record of (out_ident * out_value) list
@@ -52,6 +55,7 @@ type out_type =
   | Otyp_record of (string * bool * out_type) list
   | Otyp_stuff of string
   | Otyp_sum of (string * out_type list) list
+  | Otyp_private of out_type
   | Otyp_tuple of out_type list
   | Otyp_var of bool * string
   | Otyp_variant of

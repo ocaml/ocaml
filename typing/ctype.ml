@@ -422,14 +422,15 @@ let closed_parameterized_type params ty =
 let closed_type_decl decl =
   try
     List.iter mark_type decl.type_params;
-    begin match decl.type_kind with
+    let rec closed_tkind = function
       Type_abstract ->
         ()
     | Type_variant v ->
         List.iter (fun (_, tyl) -> List.iter closed_type tyl) v
     | Type_record(r, rep) ->
         List.iter (fun (_, _, ty) -> closed_type ty) r
-    end;
+    | Type_private tkind -> closed_tkind tkind in
+    closed_tkind decl.type_kind;
     begin match decl.type_manifest with
       None    -> ()
     | Some ty -> closed_type ty
@@ -760,7 +761,7 @@ let rec copy ty =
           let more = repr row.row_more in
           (* We must substitute in a subtle way *)
           begin match more.desc with
-            Tsubst ({desc=Tvariant _} as ty2) ->
+            Tsubst ty2 when (repr ty2).desc <> Tunivar ->
               (* This variant type has been already copied *)
               ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
               Tlink ty2
@@ -928,7 +929,7 @@ let rec copy_sep fixed free bound visited ty =
           let bound = tl @ bound in
           let visited =
             List.map2 (fun ty t -> ty,(t,bound)) tl tl' @ visited in
-          Tpoly (copy_rec t1, tl')
+          Tpoly (copy_sep fixed free bound visited t1, tl')
       | _ -> copy_type_desc copy_rec ty.desc
       end;
     t
@@ -1022,7 +1023,19 @@ let rec find_expans p1 =
   | Mlink {contents = rem} ->
       find_expans p1 rem
 
+
+(* 
+   If the environnement has changed, memorized expansions might not
+   be correct anymore, and so we flush the cache. This is safe but
+   quite pessimistic: it would be enough to flush the cache when a
+   type or module definition is overriden in the environnement.
+*)
 let previous_env = ref Env.empty
+let check_abbrev_env env =
+  if env != !previous_env then begin
+    cleanup_abbrev ();
+    previous_env := env
+  end
 
 (* Expand an abbreviation. The expansion is memorized. *)
 (* 
@@ -1043,16 +1056,7 @@ let previous_env = ref Env.empty
       and this other expansion fails.
 *)
 let expand_abbrev env ty =
-  (* 
-     If the environnement has changed, memorized expansions might not
-     be correct anymore, and so we flush the cache. This is safe but
-     quite pessimistic: it would be enough to flush the cache when a
-     type or module definition is overriden in the environnement.
-  *)
-  if env != !previous_env then begin
-    cleanup_abbrev ();
-    previous_env := env
-  end;
+  check_abbrev_env env;
   match ty with
     {desc = Tconstr (path, args, abbrev); level = level} ->
       let lookup_abbrev = proper_abbrevs path args abbrev in
@@ -1173,6 +1177,7 @@ let rec non_recursive_abbrev env ty0 ty =
   end
 
 let correct_abbrev env ident params ty =
+  check_abbrev_env env;
   let ty0 = newgenvar () in
   visited := [];
   let abbrev = Mcons (Path.Pident ident, ty0, ty0, Mnil) in
@@ -2342,6 +2347,11 @@ let moregeneral env inst_nongen pat_sch subj_sch =
                  (*  Equivalence between parameterized types  *)
                  (*********************************************)
 
+let normalize_subst subst =
+  if List.exists
+      (function {desc=Tlink _}, _ | _, {desc=Tlink _} -> true | _ -> false)
+      !subst
+  then subst := List.map (fun (t1,t2) -> repr t1, repr t2) !subst
 
 let rec eqtype rename type_pairs subst env t1 t2 =
   if t1 == t2 then () else
@@ -2353,6 +2363,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
     match (t1.desc, t2.desc) with
       (Tvar, Tvar) when rename ->
         begin try
+          normalize_subst subst;
           if List.assq t1 !subst != t2 then raise (Unify [])
         with Not_found ->
           subst := (t1, t2) :: !subst
@@ -2372,6 +2383,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           match (t1'.desc, t2'.desc) with
             (Tvar, Tvar) when rename ->
               begin try
+                normalize_subst subst;
                 if List.assq t1' !subst != t2' then raise (Unify [])
               with Not_found ->
                 subst := (t1', t2') :: !subst
@@ -2808,7 +2820,7 @@ let rec build_subtype env visited loops posi level t =
         try
           let t' = List.assq t loops in
           warn := true;
-          (List.assq t loops, Equiv)
+          (t', Equiv)
         with Not_found ->
           (t, Unchanged)
       else
@@ -2852,7 +2864,7 @@ let rec build_subtype env visited loops posi level t =
               end
             | None -> assert false in
           let ty =
-            subst env t'.level abbrev None cl_abbr.type_params tl body in
+            subst env !current_level abbrev None cl_abbr.type_params tl body in
           let ty = repr ty in
           let ty1, tl1 =
             match ty.desc with
@@ -3354,7 +3366,7 @@ let nondep_type_decl env mid id is_covariant decl =
         type_arity = decl.type_arity;
         type_kind =
           begin try
-            match decl.type_kind with
+            let rec kind_of_tkind = function
               Type_abstract ->
                 Type_abstract
             | Type_variant cstrs ->
@@ -3367,6 +3379,8 @@ let nondep_type_decl env mid id is_covariant decl =
                     (fun (c, mut, t) -> (c, mut, nondep_type_rec env mid t))
                     lbls,
                   rep)
+            | Type_private tkind -> Type_private (kind_of_tkind tkind) in
+            kind_of_tkind decl.type_kind
           with Not_found when is_covariant ->
             Type_abstract
           end;
@@ -3384,13 +3398,14 @@ let nondep_type_decl env mid id is_covariant decl =
     in
     cleanup_types ();
     List.iter unmark_type decl.type_params;
-    begin match decl.type_kind with
+    let rec unmark_tkind = function
       Type_abstract -> ()
     | Type_variant cstrs ->
         List.iter (fun (c, tl) -> List.iter unmark_type tl) cstrs
     | Type_record(lbls, rep) ->
         List.iter (fun (c, mut, t) -> unmark_type t) lbls
-    end;
+    | Type_private tkind -> unmark_tkind tkind in
+    unmark_tkind decl.type_kind;
     begin match decl.type_manifest with
       None    -> ()
     | Some ty -> unmark_type ty

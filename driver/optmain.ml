@@ -88,6 +88,8 @@ let main () =
              "<opt>  Pass option <opt> to the C compiler and linker";
        "-compact", Arg.Clear optimize_for_speed,
              " Optimize code size rather than speed";
+       "-dtypes", Arg.Set save_types,
+             " Save type information in <filename>.types";
        "-i", Arg.Set print_types, " Print the types";
        "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
              "<dir>  Add <dir> to the list of include directories";
@@ -139,6 +141,7 @@ let main () =
          \032    A/a enable/disable all warnings\n\
          \032    C/c enable/disable suspicious comment\n\
          \032    D/d enable/disable deprecated features\n\
+         \032    E/e enable/disable fragile match\n\
          \032    F/f enable/disable partially applied function\n\
          \032    L/l enable/disable labels omitted in application\n\
          \032    M/m enable/disable overriden methods\n\
@@ -147,7 +150,8 @@ let main () =
          \032    U/u enable/disable unused match case\n\
          \032    V/v enable/disable hidden instance variables\n\
          \032    X/x enable/disable all other warnings\n\
-         \032    default setting is \"Al\" (all warnings but labels enabled)";
+         \032    default setting is \"Ale\"\n\
+         \032    (all warnings but labels and fragile match enabled)";
        "-warn-error" , Arg.String (Warnings.parse_options true),
          "<flags>  Treat the warnings enabled by <flags> as errors.\n\
          \032    See option -w for the list of flags.\n\

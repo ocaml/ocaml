@@ -59,6 +59,11 @@ let type_module_path env loc lid =
   with Not_found ->
     raise(Error(loc, Unbound_module lid))
 
+(* Record a module type *)
+let rm node =
+  Stypes.record (Stypes.Ti_mod node);
+  node
+
 (* Merge one "with" constraint in a signature *)
 
 let merge_constraint initial_env loc sg lid constr =
@@ -281,24 +286,24 @@ let rec type_module env smod =
   match smod.pmod_desc with
     Pmod_ident lid ->
       let (path, mty) = type_module_path env smod.pmod_loc lid in
-      { mod_desc = Tmod_ident path;
-        mod_type = Mtype.strengthen env mty path;
-        mod_env = env;
-        mod_loc = smod.pmod_loc }
+      rm { mod_desc = Tmod_ident path;
+           mod_type = Mtype.strengthen env mty path;
+           mod_env = env;
+           mod_loc = smod.pmod_loc }
   | Pmod_structure sstr ->
       let (str, sg, finalenv) = type_structure env sstr in
-      { mod_desc = Tmod_structure str;
-        mod_type = Tmty_signature sg;
-        mod_env = env;
-        mod_loc = smod.pmod_loc }
+      rm { mod_desc = Tmod_structure str;
+           mod_type = Tmty_signature sg;
+           mod_env = env;
+           mod_loc = smod.pmod_loc }
   | Pmod_functor(name, smty, sbody) ->
       let mty = transl_modtype env smty in
       let (id, newenv) = Env.enter_module name mty env in
       let body = type_module newenv sbody in
-      { mod_desc = Tmod_functor(id, mty, body);
-        mod_type = Tmty_functor(id, mty, body.mod_type);
-        mod_env = env;
-        mod_loc = smod.pmod_loc }
+      rm { mod_desc = Tmod_functor(id, mty, body);
+           mod_type = Tmty_functor(id, mty, body.mod_type);
+           mod_env = env;
+           mod_loc = smod.pmod_loc }
   | Pmod_apply(sfunct, sarg) ->
       let funct = type_module env sfunct in
       let arg = type_module env sarg in
@@ -321,10 +326,10 @@ let rec type_module env smod =
               with Not_found ->
                 raise(Error(smod.pmod_loc,
                             Cannot_eliminate_dependency mty_functor)) in
-          { mod_desc = Tmod_apply(funct, arg, coercion);
-            mod_type = mty_appl;
-            mod_env = env;
-            mod_loc = smod.pmod_loc }
+          rm { mod_desc = Tmod_apply(funct, arg, coercion);
+               mod_type = mty_appl;
+               mod_env = env;
+               mod_loc = smod.pmod_loc }
       | _ ->
           raise(Error(sfunct.pmod_loc, Cannot_apply funct.mod_type))
       end        
@@ -336,10 +341,10 @@ let rec type_module env smod =
           Includemod.modtypes env arg.mod_type mty
         with Includemod.Error msg ->
           raise(Error(sarg.pmod_loc, Not_included msg)) in
-      { mod_desc = Tmod_constraint(arg, mty, coercion);
-        mod_type = mty;
-        mod_env = env;
-        mod_loc = smod.pmod_loc }
+      rm { mod_desc = Tmod_constraint(arg, mty, coercion);
+           mod_type = mty;
+           mod_env = env;
+           mod_loc = smod.pmod_loc }
 
 and type_structure env sstr =
   let type_names = ref StringSet.empty
@@ -488,30 +493,6 @@ and normalize_signature_item env = function
   | Tsig_module(id, mty) -> normalize_modtype env mty
   | _ -> ()
 
-(* Typecheck an implementation file *)
-
-let type_implementation sourcefile prefixname modulename initial_env ast =
-  Typecore.reset_delayed_checks ();
-  let (str, sg, finalenv) = type_structure initial_env ast in
-  Typecore.force_delayed_checks ();
-  if !Clflags.print_types then
-    fprintf std_formatter "%a@." Printtyp.signature sg;
-  let coercion =
-    if Sys.file_exists (prefixname ^ !Config.interface_suffix) then begin
-      let intf_file =
-        try find_in_path !Config.load_path (prefixname ^ ".cmi")
-        with Not_found -> prefixname ^ ".cmi" in
-      let dclsig = Env.read_signature modulename intf_file in
-      Includemod.compunit sourcefile sg intf_file dclsig
-    end else begin
-      check_nongen_schemes finalenv str;
-      normalize_signature finalenv sg;
-      if not !Clflags.dont_write_files then
-        Env.save_signature sg modulename (prefixname ^ ".cmi");
-      Tcoerce_none
-    end in
-  (str, coercion)
-
 (* Simplify multiple specifications of a value or an exception in a signature.
    (Other signature components, e.g. types, modules, etc, are checked for
    name uniqueness.)  If multiple specifications with the same name,
@@ -536,10 +517,40 @@ and simplify_signature sg =
       simplif val_names (StringSet.add name exn_names)
               (if StringSet.mem name exn_names then res else component :: res)
               sg
+  | Tsig_module(id, mty) :: sg ->
+      simplif val_names exn_names
+              (Tsig_module(id, simplify_modtype mty) :: res) sg
   | component :: sg ->
       simplif val_names exn_names (component :: res) sg
   in
     simplif StringSet.empty StringSet.empty [] (List.rev sg)
+
+(* Typecheck an implementation file *)
+
+let type_implementation sourcefile prefixname modulename initial_env ast =
+  Typecore.reset_delayed_checks ();
+  let (str, sg, finalenv) =
+    Misc.try_finally (fun () -> type_structure initial_env ast)
+                     (fun () -> Stypes.dump (prefixname ^ ".types"))
+  in
+  Typecore.force_delayed_checks ();
+  if !Clflags.print_types then
+    fprintf std_formatter "%a@." Printtyp.signature (simplify_signature sg);
+  let coercion =
+    if Sys.file_exists (prefixname ^ !Config.interface_suffix) then begin
+      let intf_file =
+        try find_in_path !Config.load_path (prefixname ^ ".cmi")
+        with Not_found -> prefixname ^ ".cmi" in
+      let dclsig = Env.read_signature modulename intf_file in
+      Includemod.compunit sourcefile sg intf_file dclsig
+    end else begin
+      check_nongen_schemes finalenv str;
+      normalize_signature finalenv sg;
+      if not !Clflags.dont_write_files then
+        Env.save_signature sg modulename (prefixname ^ ".cmi");
+      Tcoerce_none
+    end in
+  (str, coercion)
 
 (* "Packaging" of several compilation units into one unit
    having them as sub-modules.  *)
@@ -564,14 +575,23 @@ let package_units objfiles cmifile modulename =
       objfiles in
   (* Compute signature of packaged unit *)
   let sg = package_signatures Subst.identity units in
-  (* Determine imports *)
-  let unit_names = List.map fst units in
-  let imports =
-    List.filter
-      (fun (name, crc) -> not (List.mem name unit_names))
-      (Env.imported_units()) in
-  (* Write packaged signature *)
-  Env.save_signature_with_imports sg modulename cmifile imports
+  (* See if explicit interface is provided *)
+  let mlifile =
+    chop_extension_if_any cmifile ^ !Config.interface_suffix in
+  if Sys.file_exists mlifile then begin
+    let dclsig = Env.read_signature modulename cmifile in
+    Includemod.compunit "(obtained by packing)" sg mlifile dclsig 
+  end else begin
+    (* Determine imports *)
+    let unit_names = List.map fst units in
+    let imports =
+      List.filter
+        (fun (name, crc) -> not (List.mem name unit_names))
+        (Env.imported_units()) in
+    (* Write packaged signature *)
+    Env.save_signature_with_imports sg modulename cmifile imports;
+    Tcoerce_none
+  end
 
 (* Error report *)
 

@@ -38,6 +38,8 @@ let init_path () =
 (* Return the initial environment in which compilation proceeds. *)
 
 let initial_env () =
+  init_path();
+  Ident.reinit();
   try
     if !Clflags.nopervasives
     then Env.initial
@@ -48,7 +50,6 @@ let initial_env () =
 (* Compile a .mli file *)
 
 let interface ppf sourcefile =
-  init_path();
   let prefixname = chop_extension_if_any sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
   let inputfile = Pparse.preprocess sourcefile in
@@ -76,7 +77,6 @@ let print_if ppf flag printer arg =
 let (++) x f = f x
 
 let implementation ppf sourcefile =
-  init_path();
   let prefixname = chop_extension_if_any sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
   let inputfile = Pparse.preprocess sourcefile in

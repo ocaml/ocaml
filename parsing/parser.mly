@@ -41,16 +41,28 @@ let mkclass d =
 let mkcty d =
   { pcty_desc = d; pcty_loc = symbol_rloc() }
 
+let reloc_pat x = { x with ppat_loc = symbol_rloc () };;
+let reloc_exp x = { x with pexp_loc = symbol_rloc () };;
+
 let mkoperator name pos =
   { pexp_desc = Pexp_ident(Lident name); pexp_loc = rhs_loc pos }
 
-(* Ghost expressions and patterns:
-    expressions and patterns added by the parser;
-    they have the loc_ghost flag set to true to tell the profiler
-    not to instrument them.
+(*
+  Ghost expressions and patterns:
+  expressions and patterns that do not appear explicitely in the
+  source file they have the loc_ghost flag set to true.
+  Then the profiler will not try to instrument them and the
+  -stypes option will not try to display their type.
 
-    Every grammar rule that generates an element with a location must
-    make exactly one non-ghost element, the topmost one.
+  Every grammar rule that generates an element with a location must
+  make at most one non-ghost element, the topmost one.
+
+  How to tell whether your location must be ghost:
+  A location corresponds to a range of characters in the source file.
+  If the location contains a piece of code that is syntactically
+  valid (according to the documentation), and corresponds to the
+  AST node, then the location must be real; in all other cases,
+  it must be ghost.
 *)
 let ghexp d = { pexp_desc = d; pexp_loc = symbol_gloc () };;
 let ghpat d = { ppat_desc = d; ppat_loc = symbol_gloc () };;
@@ -72,10 +84,16 @@ let neg_float_string f =
   else "-" ^ f
 
 let mkuminus name arg =
-  match arg.pexp_desc with
-    Pexp_constant(Const_int n) ->
+  match name, arg.pexp_desc with
+  | "-", Pexp_constant(Const_int n) ->
       mkexp(Pexp_constant(Const_int(-n)))
-  | Pexp_constant(Const_float f) ->
+  | "-", Pexp_constant(Const_int32 n) ->
+      mkexp(Pexp_constant(Const_int32(Int32.neg n)))
+  | "-", Pexp_constant(Const_int64 n) ->
+      mkexp(Pexp_constant(Const_int64(Int64.neg n)))
+  | "-", Pexp_constant(Const_nativeint n) ->
+      mkexp(Pexp_constant(Const_nativeint(Nativeint.neg n)))
+  | _, Pexp_constant(Const_float f) ->
       mkexp(Pexp_constant(Const_float(neg_float_string f)))
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
@@ -87,10 +105,9 @@ let rec mktailexp = function
       let exp_el = mktailexp el in
       let l = {loc_start = e1.pexp_loc.loc_start;
                loc_end = exp_el.pexp_loc.loc_end;
-               loc_ghost = false}
+               loc_ghost = true}
       in
-      let arg = {pexp_desc = Pexp_tuple [e1; exp_el];
-                 pexp_loc = {l with loc_ghost = true} } in
+      let arg = {pexp_desc = Pexp_tuple [e1; exp_el]; pexp_loc = l} in
       {pexp_desc = Pexp_construct(Lident "::", Some arg, false); pexp_loc = l}
 
 let rec mktailpat = function
@@ -100,23 +117,26 @@ let rec mktailpat = function
       let pat_pl = mktailpat pl in
       let l = {loc_start = p1.ppat_loc.loc_start;
                loc_end = pat_pl.ppat_loc.loc_end;
-               loc_ghost = false}
+               loc_ghost = true}
       in
-      let arg = {ppat_desc = Ppat_tuple [p1; pat_pl];
-                 ppat_loc = {l with loc_ghost = true} } in
+      let arg = {ppat_desc = Ppat_tuple [p1; pat_pl]; ppat_loc = l} in
       {ppat_desc = Ppat_construct(Lident "::", Some arg, false); ppat_loc = l}
 
-let mkstrexp e =
+let ghstrexp e =
   { pstr_desc = Pstr_eval e; pstr_loc = {e.pexp_loc with loc_ghost = true} }
 
 let array_function str name =
   Ldot(Lident str, (if !Clflags.fast then "unsafe_" ^ name else name))
 
-let rec mkrangepat c1 c2 =
-  if c1 > c2 then mkrangepat c2 c1 else
+let rec deep_mkrangepat c1 c2 =
   if c1 = c2 then ghpat(Ppat_constant(Const_char c1)) else
   ghpat(Ppat_or(ghpat(Ppat_constant(Const_char c1)),
-                mkrangepat (Char.chr(Char.code c1 + 1)) c2))
+                deep_mkrangepat (Char.chr(Char.code c1 + 1)) c2))
+
+let rec mkrangepat c1 c2 =
+  if c1 > c2 then mkrangepat c2 c1 else
+  if c1 = c2 then mkpat(Ppat_constant(Const_char c1)) else
+  reloc_pat (deep_mkrangepat c1 c2)
 
 let syntax_error () =
   raise Syntaxerr.Escape_error
@@ -163,6 +183,10 @@ let bigarray_set arr arg newval =
                        ["", arr; 
                         "", ghexp(Pexp_array coords);
                         "", newval]))
+
+let mktype_kind pflag kind =
+  if pflag = Private && kind != Ptype_abstract then Ptype_private kind else kind
+
 %}
 
 /* Tokens */
@@ -216,6 +240,8 @@ let bigarray_set arr arg newval =
 %token INHERIT
 %token INITIALIZER
 %token <int> INT
+%token <int32> INT32
+%token <int64> INT64
 %token <string> LABEL
 %token LAZY
 %token LBRACE
@@ -237,16 +263,19 @@ let bigarray_set arr arg newval =
 %token MULTIFUN
 %token MULTIMATCH
 %token MUTABLE
+%token <nativeint> NATIVEINT
 %token NEW
 %token OBJECT
 %token OF
 %token OPEN
 %token <string> OPTLABEL
 %token OR
+%token PARSER
 %token PLUS
 %token <string> PREFIXOP
 %token PRIVATE
 %token QUESTION
+%token QUESTIONQUESTION
 %token QUOTE
 %token RBRACE
 %token RBRACKET
@@ -328,8 +357,9 @@ The precedences must be listed from low to high.
 %nonassoc below_DOT
 %nonassoc DOT
 /* Finally, the first tokens of simple_expr are above everything else. */
-%nonassoc BACKQUOTE BEGIN CHAR FALSE FLOAT INT LBRACE LBRACELESS LBRACKET
-          LBRACKETBAR LIDENT LPAREN NEW PREFIXOP STRING TRUE UIDENT
+%nonassoc BACKQUOTE BEGIN CHAR FALSE FLOAT INT INT32 INT64
+          LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
+          NEW NATIVEINT PREFIXOP STRING TRUE UIDENT
 
 
 /* Entry points */
@@ -355,7 +385,7 @@ interface:
 ;
 toplevel_phrase:
     top_structure SEMISEMI               { Ptop_def $1 }
-  | seq_expr SEMISEMI                    { Ptop_def[mkstrexp $1] }
+  | seq_expr SEMISEMI                    { Ptop_def[ghstrexp $1] }
   | toplevel_directive SEMISEMI          { $1 }
   | EOF                                  { raise End_of_file }
 ;
@@ -365,12 +395,12 @@ top_structure:
 ;
 use_file:
     use_file_tail                        { $1 }
-  | seq_expr use_file_tail               { Ptop_def[mkstrexp $1] :: $2 }
+  | seq_expr use_file_tail               { Ptop_def[ghstrexp $1] :: $2 }
 ;
 use_file_tail:
     EOF                                         { [] }
   | SEMISEMI EOF                                { [] }
-  | SEMISEMI seq_expr use_file_tail             { Ptop_def[mkstrexp $2] :: $3 }
+  | SEMISEMI seq_expr use_file_tail             { Ptop_def[ghstrexp $2] :: $3 }
   | SEMISEMI structure_item use_file_tail       { Ptop_def[$2] :: $3 }
   | SEMISEMI toplevel_directive use_file_tail   { $2 :: $3 }
   | structure_item use_file_tail                { Ptop_def[$1] :: $2 }
@@ -403,12 +433,12 @@ module_expr:
 ;
 structure:
     structure_tail                              { $1 }
-  | seq_expr structure_tail                     { mkstrexp $1 :: $2 }
+  | seq_expr structure_tail                     { ghstrexp $1 :: $2 }
 ;
 structure_tail:
     /* empty */                                 { [] }
   | SEMISEMI                                    { [] }
-  | SEMISEMI seq_expr structure_tail            { mkstrexp $2 :: $3 }
+  | SEMISEMI seq_expr structure_tail            { ghstrexp $2 :: $3 }
   | SEMISEMI structure_item structure_tail      { $2 :: $3 }
   | structure_item structure_tail               { $1 :: $2 }
 ;
@@ -525,7 +555,7 @@ class_fun_binding:
       { let (l,o,p) = $1 in mkclass(Pcl_fun(l, o, p, $2)) }
 ;
 class_type_parameters:
-    /*empty*/                                   { [], symbol_rloc () }
+    /*empty*/                                   { [], symbol_gloc () }
   | LBRACKET type_parameter_list RBRACKET       { List.rev $2, symbol_rloc () }
 ;
 class_fun_def:
@@ -568,11 +598,11 @@ class_structure:
 ;
 class_self_pattern:
     LPAREN pattern RPAREN
-      { $2 }
+      { reloc_pat $2 }
   | LPAREN pattern COLON core_type RPAREN
       { mkpat(Ppat_constraint($2, $4)) }
   | /* empty */
-      { mkpat(Ppat_any) }
+      { ghpat(Ppat_any) }
 ;
 class_fields:
     /* empty */
@@ -719,7 +749,7 @@ class_type_declaration:
 
 seq_expr:
   | expr        %prec below_SEMI  { $1 }
-  | expr SEMI                     { $1 }
+  | expr SEMI                     { reloc_exp $1 }
   | expr SEMI seq_expr            { mkexp(Pexp_sequence($1, $3)) }
 ;
 labeled_simple_pattern:
@@ -876,11 +906,11 @@ simple_expr:
   | name_tag %prec prec_constant_constructor
       { mkexp(Pexp_variant($1, None)) }
   | LPAREN seq_expr RPAREN
-      { $2 }
+      { reloc_exp $2 }
   | LPAREN seq_expr error
       { unclosed "(" 1 ")" 3 }
   | BEGIN seq_expr END
-      { $2 }
+      { reloc_exp $2 }
   | BEGIN END
       { mkexp (Pexp_construct (Lident "()", None, false)) }
   | BEGIN seq_expr error
@@ -914,7 +944,7 @@ simple_expr:
   | LBRACKETBAR BARRBRACKET
       { mkexp(Pexp_array []) }
   | LBRACKET expr_semi_list opt_semi RBRACKET
-      { mkexp (mktailexp (List.rev $2)).pexp_desc }
+      { reloc_exp (mktailexp (List.rev $2)) }
   | LBRACKET expr_semi_list opt_semi error
       { unclosed "[" 1 "]" 4 }
   | PREFIXOP simple_expr
@@ -983,13 +1013,13 @@ fun_binding:
     strict_binding
       { $1 }
   | type_constraint EQUAL seq_expr
-      { let (t, t') = $1 in mkexp(Pexp_constraint($3, t, t')) }
+      { let (t, t') = $1 in ghexp(Pexp_constraint($3, t, t')) }
 ;
 strict_binding:
     EQUAL seq_expr
       { $2 }
   | labeled_simple_pattern fun_binding
-      { let (l, o, p) = $1 in mkexp(Pexp_function(l, o, [p, $2])) }
+      { let (l, o, p) = $1 in ghexp(Pexp_function(l, o, [p, $2])) }
 ;
 match_cases:
     pattern match_action                        { [$1, $2] }
@@ -998,7 +1028,7 @@ match_cases:
 fun_def:
     match_action                                { $1 }
   | labeled_simple_pattern fun_def
-      { let (l,o,p) = $1 in mkexp(Pexp_function(l, o, [p, $2])) }
+      { let (l,o,p) = $1 in ghexp(Pexp_function(l, o, [p, $2])) }
 ;
 match_action:
     MINUSGREATER seq_expr                       { $2 }
@@ -1075,7 +1105,7 @@ simple_pattern:
   | LBRACE lbl_pattern_list opt_semi error
       { unclosed "{" 1 "}" 4 }
   | LBRACKET pattern_semi_list opt_semi RBRACKET
-      { mkpat (mktailpat (List.rev $2)).ppat_desc }
+      { reloc_pat (mktailpat (List.rev $2)) }
   | LBRACKET pattern_semi_list opt_semi error
       { unclosed "[" 1 "]" 4 }
   | LBRACKETBAR pattern_semi_list opt_semi BARRBRACKET
@@ -1085,7 +1115,7 @@ simple_pattern:
   | LBRACKETBAR pattern_semi_list opt_semi error
       { unclosed "[|" 1 "|]" 4 }
   | LPAREN pattern RPAREN
-      { $2 }
+      { reloc_pat $2 }
   | LPAREN pattern error
       { unclosed "(" 1 ")" 3 }
   | LPAREN pattern COLON core_type RPAREN
@@ -1120,6 +1150,7 @@ type_declarations:
     type_declaration                            { [$1] }
   | type_declarations AND type_declaration      { $3 :: $1 }
 ;
+
 type_declaration:
     type_parameters LIDENT type_kind constraints
       { let (params, variance) = List.split $1 in
@@ -1138,18 +1169,18 @@ constraints:
 type_kind:
     /*empty*/
       { (Ptype_abstract, None) }
-  | EQUAL core_type
-      { (Ptype_abstract, Some $2) }
-  | EQUAL constructor_declarations
-      { (Ptype_variant(List.rev $2), None) }
-  | EQUAL BAR constructor_declarations
-      { (Ptype_variant(List.rev $3), None) }
-  | EQUAL LBRACE label_declarations opt_semi RBRACE
-      { (Ptype_record(List.rev $3), None) }
-  | EQUAL core_type EQUAL opt_bar constructor_declarations
-      { (Ptype_variant(List.rev $5), Some $2) }
-  | EQUAL core_type EQUAL LBRACE label_declarations opt_semi RBRACE
-      { (Ptype_record(List.rev $5), Some $2) }
+  | EQUAL private_flag core_type
+      { (mktype_kind $2 Ptype_abstract, Some $3) }
+  | EQUAL private_flag constructor_declarations
+      { (mktype_kind $2 (Ptype_variant(List.rev $3)), None) }
+  | EQUAL private_flag BAR constructor_declarations
+      { (mktype_kind $2 (Ptype_variant(List.rev $4)), None) }
+  | EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
+      { (mktype_kind $2 (Ptype_record(List.rev $4)), None) }
+  | EQUAL private_flag core_type EQUAL opt_bar constructor_declarations
+      { (mktype_kind $2 (Ptype_variant(List.rev $6)), Some $3) }
+  | EQUAL private_flag core_type EQUAL LBRACE label_declarations opt_semi RBRACE
+      { (mktype_kind $2 (Ptype_record(List.rev $6)), Some $3) }
 ;
 type_parameters:
     /*empty*/                                   { [] }
@@ -1277,18 +1308,16 @@ simple_core_type2:
       { mktyp(Ptyp_variant([$2], true, None)) }
   | LBRACKET BAR row_field_list RBRACKET
       { mktyp(Ptyp_variant(List.rev $3, true, None)) }
-  | LBRACKETBAR row_field_list RBRACKET
-      { mktyp(Ptyp_variant(List.rev $2, true, None)) }
   | LBRACKET row_field BAR row_field_list RBRACKET
       { mktyp(Ptyp_variant($2 :: List.rev $4, true, None)) }
   | LBRACKET GREATER opt_bar row_field_list RBRACKET
       { mktyp(Ptyp_variant(List.rev $4, false, None)) }
+  | LBRACKET GREATER RBRACKET
+      { mktyp(Ptyp_variant([], false, None)) }
   | LBRACKETLESS opt_bar row_field_list RBRACKET
       { mktyp(Ptyp_variant(List.rev $3, true, Some [])) }
   | LBRACKETLESS opt_bar row_field_list GREATER name_tag_list RBRACKET
       { mktyp(Ptyp_variant(List.rev $3, true, Some (List.rev $5))) }
-  | LBRACKET GREATER RBRACKET
-      { mktyp(Ptyp_variant([], false, None)) }
 ;
 row_field_list:
     row_field                                   { [$1] }
@@ -1357,11 +1386,17 @@ constant:
   | CHAR                                        { Const_char $1 }
   | STRING                                      { Const_string $1 }
   | FLOAT                                       { Const_float $1 }
+  | INT32                                       { Const_int32 $1 }
+  | INT64                                       { Const_int64 $1 }
+  | NATIVEINT                                   { Const_nativeint $1 }
 ;
 signed_constant:
     constant                                    { $1 }
   | MINUS INT                                   { Const_int(- $2) }
-  | subtractive FLOAT                           { Const_float("-" ^ $2) }
+  | MINUS FLOAT                                 { Const_float("-" ^ $2) }
+  | MINUS INT32                                 { Const_int32(Int32.neg $2) }
+  | MINUS INT64                                 { Const_int64(Int64.neg $2) }
+  | MINUS NATIVEINT                             { Const_nativeint(Nativeint.neg $2) }
 ;
 /* Identifiers and long identifiers */
 

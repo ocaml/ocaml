@@ -40,6 +40,12 @@ let value_ident ppf name =
 
 (* Values *)
 
+let parenthesize_if_neg ppf fmt v zero =
+  let neg = (v < zero) in
+  if neg then pp_print_char ppf '(';
+  fprintf ppf fmt v;
+  if neg then pp_print_char ppf ')'
+
 let print_out_value ppf tree =
   let rec print_tree_1 ppf =
     function
@@ -52,14 +58,18 @@ let print_out_value ppf tree =
         fprintf ppf "@[<2>`%s@ %a@]" name print_simple_tree param
     | tree -> print_simple_tree ppf tree
   and print_constr_param ppf = function
-    | Oval_int i ->
-       if i < 0 then fprintf ppf "(%i)" i else fprintf ppf "%i" i
-    | Oval_float f ->
-       if f < 0.0 then fprintf ppf "(%F)" f else fprintf ppf "%F" f
+    | Oval_int i -> parenthesize_if_neg ppf "%i" i 0
+    | Oval_int32 i -> parenthesize_if_neg ppf "%lil" i 0l
+    | Oval_int64 i -> parenthesize_if_neg ppf "%LiL" i 0L
+    | Oval_nativeint i -> parenthesize_if_neg ppf "%nin" i 0n
+    | Oval_float f -> parenthesize_if_neg ppf "%F" f 0.0
     | tree -> print_simple_tree ppf tree
   and print_simple_tree ppf =
     function
       Oval_int i -> fprintf ppf "%i" i
+    | Oval_int32 i -> fprintf ppf "%lil" i
+    | Oval_int64 i -> fprintf ppf "%LiL" i
+    | Oval_nativeint i -> fprintf ppf "%nin" i
     | Oval_float f -> fprintf ppf "%F" f
     | Oval_char c -> fprintf ppf "%C" c
     | Oval_string s ->
@@ -78,7 +88,7 @@ let print_out_value ppf tree =
     | Oval_ellipsis -> raise Ellipsis
     | Oval_printer f -> f ppf
     | Oval_tuple tree_list ->
-        fprintf ppf "@[(%a)@]" (print_tree_list print_tree_1 ",") tree_list
+        fprintf ppf "@[<1>(%a)@]" (print_tree_list print_tree_1 ",") tree_list
     | tree -> fprintf ppf "@[<1>(%a)@]" (cautious print_tree_1) tree
   and print_fields first ppf =
     function
@@ -125,7 +135,7 @@ let pr_vars =
 let rec print_out_type ppf =
   function
   | Otyp_alias (ty, s) ->
-      fprintf ppf "@[%a as '%s@]" print_out_type ty s
+      fprintf ppf "@[%a@ as '%s@]" print_out_type ty s
   | Otyp_poly (sl, ty) ->
       fprintf ppf "@[<hov 2>%a.@ %a@]"
         pr_vars sl
@@ -169,14 +179,15 @@ and print_simple_out_type ppf =
         | Ovar_name (id, tyl) ->
             fprintf ppf "@[%a%a@]" print_typargs tyl print_ident id
       in
-      fprintf ppf "%s[%s@[<hv>@[<hv>%a@]%a]@]" (if non_gen then "_" else "")
+      fprintf ppf "%s[%s@[<hv>@[<hv>%a@]%a ]@]" (if non_gen then "_" else "")
         (if closed then if tags = None then " " else "< "
          else if tags = None then "> " else "? ")
         print_fields row_fields
         print_present tags
   | Otyp_alias _ | Otyp_poly _ | Otyp_arrow _ | Otyp_tuple _ as ty ->
       fprintf ppf "@[<1>(%a)@]" print_out_type ty
-  | Otyp_abstract | Otyp_sum _ | Otyp_record _ | Otyp_manifest (_, _) -> ()
+  | Otyp_abstract | Otyp_sum _ | Otyp_record _ | Otyp_private _
+  | Otyp_manifest (_, _) -> ()
 and print_fields rest ppf =
   function
     [] ->
@@ -359,21 +370,26 @@ and print_out_type_decl kwd ppf (name, args, ty, constraints) =
       Otyp_manifest (_, ty) -> ty
     | _ -> ty
   in
-  match ty with
-    Otyp_abstract ->
+  let print_private ppf v = if v then fprintf ppf "private " in
+  let rec print_out_tkind v = function
+  | Otyp_abstract ->
       fprintf ppf "@[<2>@[<hv 2>%t@]%a@]" print_name_args print_constraints
         constraints
   | Otyp_record lbls ->
-      fprintf ppf "@[<2>@[<hv 2>%t = {%a@;<1 -2>}@]@ %a@]" print_name_args
+      fprintf ppf "@[<2>@[<hv 2>%t = %a{%a@;<1 -2>}@]%a@]" print_name_args
+        print_private v
         (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
         print_constraints constraints
   | Otyp_sum constrs ->
-      fprintf ppf "@[<2>@[<hv 2>%t =@;<1 2>%a@]%a@]" print_name_args
+      fprintf ppf "@[<2>@[<hv 2>%t =@;<1 2>%a%a@]%a@]" print_name_args
+        print_private v
         (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
         print_constraints constraints
+  | Otyp_private ty -> print_out_tkind true ty
   | ty ->
       fprintf ppf "@[<2>@[<hv 2>%t =@ %a@]%a@]" print_name_args !out_type
-        ty print_constraints constraints
+        ty print_constraints constraints in
+  print_out_tkind false ty
 and print_out_constr ppf (name, tyl) =
   match tyl with
     [] -> fprintf ppf "%s" name

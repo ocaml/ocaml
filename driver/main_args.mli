@@ -22,6 +22,7 @@ module Make_options (F :
       val _custom : unit -> unit
       val _dllib : string -> unit
       val _dllpath : string -> unit
+      val _dtypes : unit -> unit
       val _g : unit -> unit
       val _i : unit -> unit
       val _I : string -> unit

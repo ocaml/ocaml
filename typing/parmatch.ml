@@ -114,6 +114,12 @@ let get_type_descr ty tenv =
   | Tconstr (path,_,_) -> Env.find_type path tenv
   | _ -> fatal_error "Parmatch.get_type_descr"
 
+let get_type_path ty tenv =
+  let ty = Ctype.repr (Ctype.expand_head tenv ty) in
+  match ty.desc with
+  | Tconstr (path,_,_) -> path
+  | _ -> fatal_error "Parmatch.get_type_path"
+
 let get_constr tag ty tenv =
   match get_type_descr ty tenv with
   | {type_kind=Type_variant constr_list} ->
@@ -156,12 +162,12 @@ let rec pretty_val ppf v = match v.pat_desc with
   | Tpat_any -> fprintf ppf "_"
   | Tpat_var x -> Ident.print ppf x
   | Tpat_constant (Const_int i) -> fprintf ppf "%d" i
-  | Tpat_constant (Const_char c) ->
-      fprintf ppf "%C" c
-  | Tpat_constant (Const_string s) ->
-      fprintf ppf "%S" s
-  | Tpat_constant (Const_float s) ->
-      fprintf ppf "%s" s
+  | Tpat_constant (Const_char c) -> fprintf ppf "%C" c
+  | Tpat_constant (Const_string s) -> fprintf ppf "%S" s
+  | Tpat_constant (Const_float f) -> fprintf ppf "%s" f
+  | Tpat_constant (Const_int32 i) -> fprintf ppf "%ldl" i
+  | Tpat_constant (Const_int64 i) -> fprintf ppf "%LdL" i
+  | Tpat_constant (Const_nativeint i) -> fprintf ppf "%ndn" i
   | Tpat_tuple vs ->
       fprintf ppf "@[(%a)@]" (pretty_vals ",") vs
   | Tpat_construct ({cstr_tag=tag},[]) ->
@@ -578,6 +584,17 @@ let full_match tdefs force env =  match env with
 | ({pat_desc = Tpat_array(_)},_) :: _ -> false
 | _ -> fatal_error "Parmatch.full_match"
 
+let extendable_match env = match env with
+| ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _},_)},_)::_ -> false
+| ({pat_desc = Tpat_construct(c,_)} as p,_) :: _ ->
+    let path = get_type_path p.pat_type p.pat_env in
+    not
+      (Path.same path Predef.path_bool ||
+      Path.same path Predef.path_list ||
+      Path.same path Predef.path_option)
+| _ -> false
+
+
 (* complement constructor tags *)
 let complete_tags nconsts nconstrs tags =
   let seen_const = Array.create nconsts false
@@ -632,6 +649,16 @@ with
     end
 | _ -> fatal_error "Parmatch.complete_constr"
 
+
+(* Auxiliary for build_other *)
+
+let build_other_constant proj make first next p env =
+  let all = List.map (fun (p, _) -> proj p.pat_desc) env in
+  let rec try_const i =
+    if List.mem i all
+    then try_const (next i)
+    else make_pat (make i) p.pat_type p.pat_env
+  in try_const first
 
 (*
   Builds a pattern that is incompatible with all patterns in
@@ -709,47 +736,40 @@ let build_other env =  match env with
     try_chars
       [ 'a', 'z' ; 'A', 'Z' ; '0', '9' ;
         ' ', '~' ; Char.chr 0 , Char.chr 255]
+
 | ({pat_desc=(Tpat_constant (Const_int _))} as p,_) :: _ ->
-    let all_ints =
-      List.map
-        (fun (p,_) -> match p.pat_desc with
-        | Tpat_constant (Const_int i) -> i
-        | _ -> assert false)
-        env in
-    let rec try_ints i =
-      if List.mem i all_ints then try_ints (i+1)
-      else
-        make_pat
-          (Tpat_constant (Const_int i)) p.pat_type p.pat_env in
-    try_ints 0
+    build_other_constant
+      (function Tpat_constant(Const_int i) -> i | _ -> assert false)
+      (function i -> Tpat_constant(Const_int i))
+      0 succ p env
+| ({pat_desc=(Tpat_constant (Const_int32 _))} as p,_) :: _ ->
+    build_other_constant
+      (function Tpat_constant(Const_int32 i) -> i | _ -> assert false)
+      (function i -> Tpat_constant(Const_int32 i))
+      0l Int32.succ p env
+| ({pat_desc=(Tpat_constant (Const_int64 _))} as p,_) :: _ ->
+    build_other_constant
+      (function Tpat_constant(Const_int64 i) -> i | _ -> assert false)
+      (function i -> Tpat_constant(Const_int64 i))
+      0L Int64.succ p env
+| ({pat_desc=(Tpat_constant (Const_nativeint _))} as p,_) :: _ ->
+    build_other_constant
+      (function Tpat_constant(Const_nativeint i) -> i | _ -> assert false)
+      (function i -> Tpat_constant(Const_nativeint i))
+      0n Nativeint.succ p env
 | ({pat_desc=(Tpat_constant (Const_string _))} as p,_) :: _ ->
-    let all_lengths =
-      List.map
-        (fun (p,_) -> match p.pat_desc with
-        | Tpat_constant (Const_string s) -> String.length s
-        | _ -> assert false)
-        env in
-    let rec try_strings i =
-      if List.mem i all_lengths then try_strings (i+1)
-      else
-        make_pat
-          (Tpat_constant (Const_string (String.make i '*')))
-          p.pat_type p.pat_env in
-    try_strings 0
+    build_other_constant
+      (function Tpat_constant(Const_string s) -> String.length s
+              | _ -> assert false)
+      (function i -> Tpat_constant(Const_string(String.make i '*')))
+      0 succ p env
 | ({pat_desc=(Tpat_constant (Const_float _))} as p,_) :: _ ->
-    let all_floats =
-      List.map
-        (fun (p,_) -> match p.pat_desc with
-        | Tpat_constant (Const_float s) -> float_of_string s
-        | _ -> assert false)
-        env in
-    let rec try_floats f =
-      if List.mem f all_floats then try_floats (f +. 1.0)
-      else
-        make_pat
-          (Tpat_constant (Const_float (string_of_float f)))
-          p.pat_type p.pat_env in
-    try_floats 0.0
+    build_other_constant
+      (function Tpat_constant(Const_float f) -> float_of_string f
+              | _ -> assert false)
+      (function f -> Tpat_constant(Const_float (string_of_float f)))
+      0.0 (fun f -> f +. 1.0) p env
+
 | ({pat_desc = Tpat_array args} as p,_)::_ ->
     let all_lengths =
       List.map
@@ -796,28 +816,83 @@ and has_instances = function
 let rec satisfiable pss qs = match pss with
 | [] -> has_instances qs 
 | _  ->
-match qs with
-| [] -> false
-| {pat_desc = Tpat_or(q1,q2,_)}::qs -> 
-    satisfiable pss (q1::qs) || satisfiable pss (q2::qs)
-| {pat_desc = Tpat_alias(q,_)}::qs ->
-    satisfiable pss (q::qs)
-| {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
-    let q0 = discr_pat omega pss in
-    begin match filter_all q0 pss with
+    match qs with
+    | [] -> false
+    | {pat_desc = Tpat_or(q1,q2,_)}::qs -> 
+        satisfiable pss (q1::qs) || satisfiable pss (q2::qs)
+    | {pat_desc = Tpat_alias(q,_)}::qs ->
+          satisfiable pss (q::qs)
+    | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
+        let q0 = discr_pat omega pss in
+        begin match filter_all q0 pss with
           (* first column of pss is made of variables only *)
-    | [] -> satisfiable (filter_extra pss) qs
-    | constrs  ->
-        (not (full_match Env.empty false constrs) &&
-        satisfiable (filter_extra pss) qs) ||
-        List.exists
-          (fun (p,pss) -> satisfiable pss (simple_match_args p omega @ qs))
-          constrs
+        | [] -> satisfiable (filter_extra pss) qs
+        | constrs  ->
+            (not (full_match Env.empty false constrs) &&
+             satisfiable (filter_extra pss) qs) ||
+             List.exists
+               (fun (p,pss) -> satisfiable pss (simple_match_args p omega @ qs))
+               constrs
+        end
+    | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> false
+    | q::qs ->
+        let q0 = discr_pat q pss in
+        satisfiable (filter_one q0 pss) (simple_match_args q0 q @ qs)
+
+(*
+  Like satisfiable, looking for a matching value with an extra constructor.
+  That is, look for the situation where adding one constructor
+  would NOT yield a non-exhaustive matching.
+  *)
+
+let relevant_location loc r = match r with
+  | None -> None
+  | Some rloc ->
+      if rloc = Location.none then
+        Some loc
+      else
+        r
+        
+let rec satisfiable_extra some pss qs = match qs with
+| [] -> if pss = [] then some else None
+| {pat_desc = Tpat_or(q1,q2,_)}::qs ->
+    let r1 = satisfiable_extra some pss (q1::qs) in
+    begin match r1 with
+    | Some _ -> r1
+    | None -> satisfiable_extra some pss (q2::qs)
     end
-| {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> false
+| {pat_desc = Tpat_alias(q,_)}::qs ->
+    satisfiable_extra some pss (q::qs)
+| {pat_desc = (Tpat_any | Tpat_var(_))} as q::qs ->
+    let q0 = discr_pat omega pss in
+    let r =
+      match filter_all q0 pss with
+          (* first column of pss is made of variables only *)
+      | [] -> satisfiable_extra some (filter_extra pss) qs
+      | constrs ->
+          if extendable_match constrs then
+            let rloc =
+              satisfiable_extra (Some q.pat_loc) (filter_extra pss) qs in
+            match rloc with
+            | Some loc -> rloc
+            | None -> try_many_extra some qs constrs
+          else
+            try_many_extra some qs constrs in
+    relevant_location q.pat_loc r
 | q::qs ->
     let q0 = discr_pat q pss in
-    satisfiable (filter_one q0 pss) (simple_match_args q0 q @ qs)
+    relevant_location
+      q.pat_loc
+      (satisfiable_extra
+         some (filter_one q0 pss) (simple_match_args q0 q @ qs))
+
+and try_many_extra some qs = function
+  | [] -> None
+  | (p,pss)::rem ->
+      let rloc = satisfiable_extra some pss (simple_match_args p omega @ qs) in
+      match rloc with
+      | Some _ -> rloc
+      | None -> try_many_extra some qs rem
 
 
 (*
@@ -964,6 +1039,7 @@ let is_var_column rs =
     | []   -> assert false)
     rs
 
+(* Standard or-args for left-to-right matching *)
 let rec or_args p = match p.pat_desc with
 | Tpat_or (p1,p2,_) -> p1,p2
 | Tpat_alias (p,_)  -> or_args p
@@ -1095,7 +1171,10 @@ let rec every_satisfiables pss qs = match qs.active with
 (* otherwise this is direct food for satisfiable *)
           every_satisfiables (push_no_or_column pss) (push_no_or qs)
     | Tpat_or (q1,q2,_) ->
-        if uq.pat_loc.Location.loc_ghost then
+        if
+          q1.pat_loc.Location.loc_ghost &&
+          q2.pat_loc.Location.loc_ghost
+        then
 (* syntactically generated or-pats should not be expanded *)
           every_satisfiables (push_no_or_column pss) (push_no_or qs)
         else 
@@ -1427,6 +1506,24 @@ let location_of_clause = function
 
 let seen_pat q pss = [q]::pss
 
+(* Extra check
+    Will this clause match if someone adds a constructor somewhere
+*)
+
+let warn_fragile () = Warnings.is_active (Warnings.Fragile_pat "")
+
+let check_used_extra pss qs =
+  if warn_fragile () then begin
+    match satisfiable_extra None pss qs with
+    | Some location ->
+        Location.prerr_warning
+          location
+          (Warnings.Fragile_pat "")
+    | None -> ()
+  end
+
+  
+  
 let check_unused tdefs casel =
   if Warnings.is_active Warnings.Unused_match then
     let rec do_rec pref = function
@@ -1446,7 +1543,8 @@ let check_unused tdefs casel =
                       Location.prerr_warning
                         p.pat_loc Warnings.Unused_pat)
                     ps
-              | Used -> ()
+              | Used ->
+                  check_used_extra pss qs
             with e -> (* useless ? *)
               Location.prerr_warning (location_of_clause qs)
                 (Warnings.Other "Fatal Error in Parmatch.check_unused") ;

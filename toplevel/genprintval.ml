@@ -102,14 +102,11 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
       Pident(Ident.create "print_string"), Predef.type_string,
         (fun x -> Oval_string (O.obj x : string));
       Pident(Ident.create "print_int32"), Predef.type_int32,
-        (fun x -> Oval_stuff ("<int32 " ^
-                              Int32.to_string (O.obj x : int32) ^ ">"));
+        (fun x -> Oval_int32 (O.obj x : int32));
       Pident(Ident.create "print_nativeint"), Predef.type_nativeint,
-        (fun x -> Oval_stuff ("<nativeint " ^
-                             Nativeint.to_string (O.obj x : nativeint) ^ ">"));
+        (fun x -> Oval_nativeint (O.obj x : nativeint));
       Pident(Ident.create "print_int64"), Predef.type_int64,
-        (fun x -> Oval_stuff ("<int64 " ^
-                              Int64.to_string (O.obj x : int64) ^ ">"))
+        (fun x -> Oval_int64 (O.obj x : int64))
     ] : (Path.t * type_expr * (O.t -> Outcometree.out_value)) list)
 
     let install_printer path ty fn =
@@ -236,7 +233,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
           | Tconstr(path, ty_list, _) ->
               begin try
                 let decl = Env.find_type path env in
-                match decl with
+                let rec tree_decl = function
                 | {type_kind = Type_abstract; type_manifest = None} ->
                     Oval_stuff "<abstr>"
                 | {type_kind = Type_abstract; type_manifest = Some body} ->
@@ -259,7 +256,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                     tree_of_constr_with_args (tree_of_constr env path)
                                            constr_name 0 depth obj ty_args
                 | {type_kind = Type_record(lbl_list, rep)} ->
-                    match check_depth depth obj ty with
+                    begin match check_depth depth obj ty with
                       Some x -> x
                     | None ->
                         let rec tree_of_fields pos = function
@@ -279,6 +276,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                               (lid, v) :: tree_of_fields (pos + 1) remainder
                         in
                         Oval_record (tree_of_fields 0 lbl_list)
+                    end
+                | {type_kind = Type_private tkind} ->
+                    tree_decl {decl with type_kind = tkind} in
+                tree_decl decl
               with
                 Not_found ->                (* raised by Env.find_type *)
                   Oval_stuff "<abstr>"

@@ -70,6 +70,7 @@ let keyword_table =
     "of", OF;
     "open", OPEN;
     "or", OR;
+    "parser", PARSER;
     "private", PRIVATE;
     "rec", REC;
     "sig", SIG;
@@ -232,6 +233,8 @@ let oct_literal =
   '0' ['o' 'O'] ['0'-'7'] ['0'-'7' '_']*
 let bin_literal =
   '0' ['b' 'B'] ['0'-'1'] ['0'-'1' '_']*
+let int_literal =
+  decimal_literal | hex_literal | oct_literal | bin_literal
 let float_literal =
   ['0'-'9'] ['0'-'9' '_']* 
   ('.' ['0'-'9' '_']* )?
@@ -254,6 +257,7 @@ rule token = parse
           raise (Error(Keyword_as_label name, Location.curr lexbuf));
         LABEL name }
   | "?"  { QUESTION }
+  | "??" { QUESTIONQUESTION }
   | "?" lowercase identchar * ':'
       { let s = Lexing.lexeme lexbuf in
         let name = String.sub s 1 (String.length s - 2) in
@@ -268,10 +272,20 @@ rule token = parse
             LIDENT s }
   | uppercase identchar *
       { UIDENT(Lexing.lexeme lexbuf) }       (* No capitalized keywords *)
-  | decimal_literal | hex_literal | oct_literal | bin_literal
+  | int_literal
       { INT (int_of_string(Lexing.lexeme lexbuf)) }
   | float_literal
-      { FLOAT (remove_underscores (Lexing.lexeme lexbuf)) }
+      { FLOAT (remove_underscores(Lexing.lexeme lexbuf)) }
+  | int_literal "l"
+      { let s = Lexing.lexeme lexbuf in
+        INT32 (Int32.of_string(String.sub s 0 (String.length s - 1))) }
+  | int_literal "L"
+      { let s = Lexing.lexeme lexbuf in
+        INT64 (Int64.of_string(String.sub s 0 (String.length s - 1))) }
+  | int_literal "n"
+      { let s = Lexing.lexeme lexbuf in
+        NATIVEINT 
+          (Nativeint.of_string(String.sub s 0 (String.length s - 1))) }
   | "\""
       { reset_string_buffer();
         let string_start = lexbuf.lex_start_p in
@@ -284,16 +298,16 @@ rule token = parse
         CHAR (Lexing.lexeme_char lexbuf 1) }
   | "'" [^ '\\' '\'' '\010' '\013'] "'"
       { CHAR(Lexing.lexeme_char lexbuf 1) }
-  | "'" '\\' ['\\' '\'' '"' 'n' 't' 'b' 'r'] "'"
+  | "'\\" ['\\' '\'' '"' 'n' 't' 'b' 'r'] "'"
       { CHAR(char_for_backslash (Lexing.lexeme_char lexbuf 2)) }
-  | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
+  | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { CHAR(char_for_decimal_code lexbuf 2) }
-  | "'" '\\' 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "'"
+  | "'\\" 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "'"
       { CHAR(char_for_hexadecimal_code lexbuf 3) }
-  | "'" '\\' _
+  | "'\\" _
       { let l = Lexing.lexeme lexbuf in
         let esc = String.sub l 1 (String.length l - 1) in
-        raise (Error(Illegal_escape esc, Location.curr lexbuf));
+        raise (Error(Illegal_escape esc, Location.curr lexbuf))
       }
   | "(*"
       { comment_start_loc := [Location.curr lexbuf];
@@ -417,6 +431,8 @@ and comment = parse
       { comment lexbuf }
   | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { comment lexbuf }
+  | "'\\" 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "'"
+      { comment lexbuf }
   | eof
       { match !comment_start_loc with
         | [] -> assert false
@@ -481,4 +497,4 @@ and skip_sharp_bang = parse
        { update_loc lexbuf None 3 false 0 }
   | "#!" [^ '\n']* '\n'
        { update_loc lexbuf None 1 false 0 }
-  | "" {}
+  | "" { () }

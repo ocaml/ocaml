@@ -425,3 +425,13 @@ let to_memory init_code fun_code =
   and code_size = !out_position in
   init();
   (code, code_size, reloc)
+
+(* Emission to a file for a packed library *)
+
+let to_packed_file outchan code =
+  init();
+  emit code;
+  output outchan !out_buffer 0 !out_position;
+  let reloc = !reloc_info in
+  init();
+  reloc

@@ -17,7 +17,6 @@
 
 open Misc
 open Instruct
-open Opcodes
 open Emitcode
 
 type error =
@@ -130,40 +129,21 @@ let rec rename_append_bytecode_list oc mapping defined ofs = function
         oc mapping (Ident.create_persistent compunit.cu_name :: defined)
         (ofs + size) rem
 
-(* Generate the code that builds the tuple representing the package
-   module:
-     GETGLOBAL M.An
-     PUSHGETGLOBAL M.An-1
-     ...
-     PUSHGETGLOBAL M.A1
-     MAKEBLOCK tag = 0 size = n
-     SETGLOBAL M
-*)
+(* Generate the code that builds the tuple representing the package module *)
 
-let build_global_target oc target_name mapping ofs =
-  let out_word n =
-    output_byte oc n;
-    output_byte oc (n lsr 8);
-    output_byte oc (n lsr 16);
-    output_byte oc (n lsr 24) in
-  let rec build_global first pos = function
-    [] ->
-      out_word opMAKEBLOCK;             (* pos *)
-      out_word (List.length mapping);   (* pos + 4 *)
-      out_word 0;                       (* pos + 8 *)
-      out_word opSETGLOBAL;             (* pos + 12 *)
-      out_word 0;                       (* pos + 16 *)
-      relocs := (Reloc_setglobal target_name, pos + 16) :: !relocs
-  | (oldname, newname) :: rem ->
-      out_word (if first then opGETGLOBAL else opPUSHGETGLOBAL); (* pos *)
-      out_word 0;                       (* pos + 4 *)
-      relocs := (Reloc_getglobal newname, pos + 4) :: !relocs;
-      build_global false (pos + 8) rem in
-  build_global true ofs (List.rev mapping)
+let build_global_target oc target_name mapping pos coercion =
+  let lam =
+    Translmod.transl_package (List.map snd mapping)
+                             (Ident.create_persistent target_name) coercion in
+  let instrs =
+    Bytegen.compile_implementation target_name lam in
+  let rel =
+    Emitcode.to_packed_file oc instrs in
+  relocs := List.map (fun (r, ofs) -> (r, pos + ofs)) rel @ !relocs
 
 (* Build the .cmo file obtained by packaging the given .cmo files. *)
 
-let package_object_files objfiles targetfile targetname =
+let package_object_files objfiles targetfile targetname coercion =
   let units =
     List.map (fun f -> (f, read_unit_info f)) objfiles in
   let unit_names =
@@ -181,9 +161,10 @@ let package_object_files objfiles targetfile targetname =
     output_binary_int oc 0;
     let pos_code = pos_out oc in
     let ofs = rename_append_bytecode_list oc mapping [] 0 units in
-    build_global_target oc (Ident.create_persistent targetname) mapping ofs;
+    build_global_target oc targetname mapping ofs coercion;
     let pos_debug = pos_out oc in
-    if !Clflags.debug && !events <> [] then output_value oc (List.rev !events);
+    if !Clflags.debug && !events <> [] then
+      output_value oc (List.rev !events);
     let pos_final = pos_out oc in
     let imports =
       List.filter
@@ -220,10 +201,10 @@ let package_files files targetfile =
   let targetcmi = prefix ^ ".cmi" in
   let targetname = String.capitalize(Filename.basename prefix) in
   try
-    Typemod.package_units objfiles targetcmi targetname;
-    package_object_files objfiles targetfile targetname
+    let coercion = Typemod.package_units objfiles targetcmi targetname in
+    package_object_files objfiles targetfile targetname coercion
   with x ->
-    remove_file targetcmi; remove_file targetfile; raise x
+    remove_file targetfile; raise x
 
 (* Error report *)
 

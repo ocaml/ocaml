@@ -89,7 +89,7 @@ let transl_declaration env (name, sdecl) id =
   reset_type_variables();
   Ctype.begin_def ();
   let params =
-    try List.map (enter_type_variable true) sdecl.ptype_params
+    try List.map (enter_type_variable true sdecl.ptype_loc) sdecl.ptype_params
     with Already_bound ->
       raise(Error(sdecl.ptype_loc, Repeated_parameter))
   in
@@ -103,7 +103,7 @@ let transl_declaration env (name, sdecl) id =
     { type_params = params;
       type_arity = List.length params;
       type_kind =
-        begin match sdecl.ptype_kind with
+        begin let rec get_tkind = function
           Ptype_abstract ->
             Type_abstract
         | Ptype_variant cstrs ->
@@ -140,7 +140,9 @@ let transl_declaration env (name, sdecl) id =
               then Record_float
               else Record_regular in
             Type_record(lbls', rep)
-        end;
+        | Ptype_private kind -> Type_private (get_tkind kind) in
+        get_tkind sdecl.ptype_kind
+      end;
       type_manifest =
         begin match sdecl.ptype_manifest with
           None -> None
@@ -167,16 +169,18 @@ let transl_declaration env (name, sdecl) id =
 
 let generalize_decl decl =
   List.iter Ctype.generalize decl.type_params;
-  begin match decl.type_kind with
-    Type_abstract ->
+  let rec gen = function
+  | Type_abstract ->
       ()
   | Type_variant v ->
       List.iter (fun (_, tyl) -> List.iter Ctype.generalize tyl) v
   | Type_record(r, rep) ->
       List.iter (fun (_, _, ty) -> Ctype.generalize ty) r
-  end;
+  | Type_private tkind ->
+      gen tkind in
+  gen decl.type_kind;
   begin match decl.type_manifest with
-    None    -> ()
+  | None    -> ()
   | Some ty -> Ctype.generalize ty
   end
 
@@ -189,7 +193,7 @@ module TypeSet =
       let compare t1 t2 = t1.id - t2.id
     end)
 
-let rec check_constraints_rec env loc visited ty =
+let rec check_constraints_rec env newenv loc visited ty =
   let ty = Ctype.repr ty in
   if TypeSet.mem ty !visited then () else begin
   visited := TypeSet.add ty !visited;
@@ -198,7 +202,7 @@ let rec check_constraints_rec env loc visited ty =
       Ctype.begin_def ();
       let args' = List.map (fun _ -> Ctype.newvar ()) args in
       let ty' = Ctype.newconstr path args' in
-      begin try Ctype.enforce_constraints env ty'
+      begin try Ctype.enforce_constraints newenv ty'
       with Ctype.Unify _ -> assert false
       | Not_found -> raise (Error(loc, Unavailable_type_constructor path))
       end;
@@ -206,33 +210,40 @@ let rec check_constraints_rec env loc visited ty =
       Ctype.generalize ty';
       if not (List.for_all2 (Ctype.moregeneral env false) args' args) then
         raise (Error(loc, Constraint_failed (ty, ty')));
-      List.iter (check_constraints_rec env loc visited) args
+      List.iter (check_constraints_rec env newenv loc visited) args
   | Tpoly (ty, tl) ->
       let _, ty = Ctype.instance_poly false tl ty in
-      check_constraints_rec env loc visited ty
+      check_constraints_rec env newenv loc visited ty
   | _ ->
-      Btype.iter_type_expr (check_constraints_rec env loc visited) ty
+      Btype.iter_type_expr (check_constraints_rec env newenv loc visited) ty
   end
 
-let check_constraints env (_, sdecl) (_, decl) =
+let check_constraints env newenv (_, sdecl) (_, decl) =
   let visited = ref TypeSet.empty in
-  begin match decl.type_kind with
+  let rec check = function
   | Type_abstract -> ()
   | Type_variant l ->
-      let pl =
-        match sdecl.ptype_kind with Ptype_variant pl -> pl | _ -> assert false
+      let rec find_pl = function
+          Ptype_variant pl -> pl
+        | Ptype_private tkind -> find_pl tkind
+        | Ptype_record _ | Ptype_abstract -> assert false
       in
+      let pl = find_pl sdecl.ptype_kind in
       List.iter
         (fun (name, tyl) ->
           let styl = try List.assoc name pl with Not_found -> assert false in
           List.iter2
-            (fun sty ty -> check_constraints_rec env sty.ptyp_loc visited ty)
+            (fun sty ty ->
+              check_constraints_rec env newenv sty.ptyp_loc visited ty)
             styl tyl)
         l
   | Type_record (l, _) ->
-      let pl =
-        match sdecl.ptype_kind with Ptype_record pl -> pl | _ -> assert false
+      let rec find_pl = function
+          Ptype_record pl -> pl
+        | Ptype_private tkind -> find_pl tkind
+        | Ptype_variant _ | Ptype_abstract -> assert false
       in
+      let pl = find_pl sdecl.ptype_kind in
       let rec get_loc name = function
           [] -> assert false
         | (name', _, sty) :: tl ->
@@ -240,16 +251,17 @@ let check_constraints env (_, sdecl) (_, decl) =
       in
       List.iter
         (fun (name, _, ty) ->
-          check_constraints_rec env (get_loc name pl) visited ty)
+          check_constraints_rec env newenv (get_loc name pl) visited ty)
         l
-  end;
+  | Type_private tkind -> check tkind in
+  check decl.type_kind;
   begin match decl.type_manifest with
   | None -> ()
   | Some ty ->
       let sty =
         match sdecl.ptype_manifest with Some sty -> sty | _ -> assert false
       in
-      check_constraints_rec env sty.ptyp_loc visited ty
+      check_constraints_rec env newenv sty.ptyp_loc visited ty
   end
 
 (*
@@ -297,8 +309,9 @@ let check_recursive_abbrev env (name, sdecl) (id, decl) =
 let rec check_expansion_rec env id args loc id_check_list visited ty =
   let ty = Ctype.repr ty in
   if List.memq ty visited then () else
-  let visited = ty :: visited in
-  begin match ty.desc with
+  let check_rec =
+    check_expansion_rec env id args loc id_check_list (ty :: visited) in
+  match ty.desc with
   | Tconstr(Path.Pident id' as path, args', _) ->
       if Ident.same id id' then begin
         if not (Ctype.equal env false args args') then
@@ -315,14 +328,16 @@ let rec check_expansion_rec env id args loc id_check_list visited ty =
             try List.iter2 (Ctype.unify env) params args'
             with Ctype.Unify _ -> assert false
           end;
-          check_expansion_rec env id args loc id_check_list visited body
+          check_rec body
         end
       with Not_found -> ()
-      end
-  | _ -> ()
-  end;
-  Btype.iter_type_expr
-    (check_expansion_rec env id args loc id_check_list visited) ty
+      end;
+      List.iter check_rec args'
+  | Tpoly (ty, tl) ->
+      let _, ty = Ctype.instance_poly false tl ty in
+      check_rec ty
+  | _ ->
+      Btype.iter_type_expr check_rec ty
 
 let check_expansion env id_loc_list (id, decl) =
   if decl.type_params = [] then () else
@@ -405,7 +420,7 @@ let compute_variance_decl env decl (required, loc) =
   else
   let tvl = List.map (fun ty -> (Btype.repr ty, ref false, ref false))
       decl.type_params in
-  begin match decl.type_kind with
+  let rec variance_tkind = function
     Type_abstract ->
       begin match decl.type_manifest with
         None -> assert false
@@ -419,7 +434,8 @@ let compute_variance_decl env decl (required, loc) =
       List.iter
         (fun (_, mut, ty) -> compute_variance env tvl true (mut = Mutable) ty)
         ftl
-  end;
+  | Type_private tkind -> variance_tkind tkind in
+  variance_tkind decl.type_kind;
   List.map2
     (fun (_, co, cn) (c, n) ->
       if c && !cn || n && !co then raise (Error(loc, Bad_variance));
@@ -499,7 +515,7 @@ let transl_type_decl env name_sdecl_list =
   (* Check re-exportation *)
   List.iter2 (check_abbrev newenv) name_sdecl_list decls;
   (* Check that constraints are enforced *)
-  List.iter2 (check_constraints newenv) name_sdecl_list decls;
+  List.iter2 (check_constraints temp_env newenv) name_sdecl_list decls;
   (* Check that abbreviations have same parameters *)
   let id_loc_list =
     List.map2
@@ -566,7 +582,7 @@ let transl_with_constraint env sdecl =
   Ctype.begin_def();
   let params =
     try
-      List.map (enter_type_variable true) sdecl.ptype_params
+      List.map (enter_type_variable true sdecl.ptype_loc) sdecl.ptype_params
     with Already_bound ->
       raise(Error(sdecl.ptype_loc, Repeated_parameter)) in
   List.iter

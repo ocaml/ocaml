@@ -42,6 +42,7 @@ type compilation_unit =
      magic number (Config.cmo_magic_number)
      absolute offset of compilation unit descriptor
      block of relocatable bytecode
+     debugging information if any
      compilation unit descriptor *)
 
 (* Descriptor for libraries *)
@@ -75,4 +76,10 @@ val to_memory: instruction list -> instruction list ->
              block of relocatable bytecode
              size of this block
              relocation information *)
-
+val to_packed_file:
+  out_channel -> instruction list -> (reloc_info * int) list
+        (* Arguments:
+             channel on output file
+             list of instructions to emit
+           Result:
+             relocation information (reversed) *)

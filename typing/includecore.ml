@@ -38,7 +38,7 @@ let value_descriptions env vd1 vd2 =
 
 let type_declarations env id decl1 decl2 =
   decl1.type_arity = decl2.type_arity &&
-  begin match (decl1.type_kind, decl2.type_kind) with
+  let rec incl_tkinds = function
       (_, Type_abstract) -> true
     | (Type_variant cstrs1, Type_variant cstrs2) ->
         Misc.for_all2
@@ -58,8 +58,11 @@ let type_declarations env id decl1 decl2 =
             Ctype.equal env true (ty1::decl1.type_params)
                                  (ty2::decl2.type_params))
           labels1 labels2
-    | (_, _) -> false
-  end &&
+    | (Type_private tkind1, Type_private tkind2) -> incl_tkinds (tkind1, tkind2)
+    | (tkind1, Type_private tkind2) -> incl_tkinds (tkind1, tkind2)
+    | (_, _) -> false in
+  incl_tkinds (decl1.type_kind, decl2.type_kind)
+  &&
   begin match (decl1.type_manifest, decl2.type_manifest) with
       (_, None) ->
         Ctype.equal env true decl1.type_params decl2.type_params
