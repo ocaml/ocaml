@@ -15,7 +15,7 @@
 
 (** Formatted input functions. *)
 
-(** Scanning buffers *)
+(** Scanning buffers. *)
 module Scanning : sig
 
 type scanbuf;;
@@ -113,7 +113,7 @@ val bscanf :
    and [%4f] reads a float with 4 characters.
 
    The scanning indications are introduced by a [@] character, followed
-   by any character [c].  The effect of [@c] is to skip input characters
+   by any character [c].  Its effect is to skip input characters
    until a matching [c] is found.  
    If a scanning indication immediately follows a [s]
    conversion specification, it specifies the boundary of the token
