@@ -1,0 +1,51 @@
+# Id
+
+include ../../config/Makefile
+
+INCLUDES=-I ../camlp4 -I ../../boot -I $(OTOP)/utils
+OCAMLCFLAGS=$(INCLUDES)
+OBJS=q_MLast.cmo pa_r.cmo pa_rp.cmo pa_extend.cmo pa_extend_m.cmo pa_ifdef.cmo pr_dump.cmo
+CAMLP4RM=pa_r.cmo pa_rp.cmo pr_dump.cmo
+CAMLP4RMX=pa_r.cmx pa_rp.cmx pr_dump.cmx pa_extend.cmx q_MLast.cmx pa_ifdef.cmx
+SHELL=/bin/sh
+COUT=$(OBJS) camlp4r$(EXE)
+COPT=camlp4r.opt
+
+all: $(COUT)
+opt: $(COPT)
+
+camlp4r$(EXE): ../camlp4/camlp4$(EXE) $(CAMLP4RM)
+	rm -f camlp4r$(EXE)
+	cd ../camlp4; $(MAKE) OTOP=$(OTOP) CAMLP4=../meta/camlp4r$(EXE) CAMLP4M="-I ../meta $(CAMLP4RM)"
+
+camlp4r.opt: $(CAMLP4RMX)
+	rm -f camlp4r.opt
+	cd ../camlp4; $(MAKE) opt OTOP=$(OTOP) CAMLP4OPT=../meta/camlp4r.opt CAMLP4M="-I ../meta $(CAMLP4RMX)"
+
+clean::
+	rm -f *.cm* *.pp[io] *.o *.bak .*.bak $(COUT) $(COPT)
+
+depend:
+	cp .depend .depend.bak
+	> .depend
+	@for i in *.mli *.ml; do \
+	  ../tools/apply.sh pr_depend.cmo -- $(INCLUDES) $$i | \
+	  sed 's|$(OTOP)|$$(OTOP)|g' >> .depend; \
+	done
+
+promote:
+	cp $(COUT) ../../boot/.
+
+compare:
+	@for j in $(COUT); do \
+		if cmp $$j ../../boot/$$j; then :; else exit 1; fi; \
+	done
+
+install:
+	-$(MKDIR) $(LIBDIR) $(BINDIR)
+	cp $(OBJS) $(LIBDIR)/.
+	cp pa_ifdef.cmi $(LIBDIR)/.
+	cp camlp4r$(EXE) $(BINDIR)/.
+	if test -f $(COPT); then cp $(COPT) $(BINDIR)/.; fi
+
+include .depend
