@@ -80,11 +80,11 @@ type value_description =
 type type_declaration =
   { ptype_params: string list;
     ptype_kind: type_kind;
+    ptype_manifest: core_type option;
     ptype_loc: Location.t }
 
 and type_kind =
     Ptype_abstract
-  | Ptype_manifest of core_type
   | Ptype_variant of (string * core_type list) list
   | Ptype_record of (string * mutable_flag * core_type) list
 

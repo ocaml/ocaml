@@ -30,6 +30,7 @@ type error =
   | Too_many_constructors
   | Duplicate_label of string
   | Recursive_abbrev of string
+  | Definition_mismatch of type_expr
 
 exception Error of Location.t * error
 

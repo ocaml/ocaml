@@ -106,6 +106,8 @@ let print_qualified lookup_fun env ty_path name =
          with Not_found -> false
       then print_string name
       else (Printtyp.path p; print_string "."; print_string name)
+  | Papply(p1, p2) ->
+      Printtyp.path ty_path
 
 let print_constr =
   print_qualified (fun lid env -> (Env.lookup_constructor lid env).cstr_res)
@@ -178,13 +180,13 @@ let print_value env obj ty =
           close_box()
       | Tconstr(path, ty_list) ->
           let decl = Env.find_type path env in
-          match decl.type_kind with
-            Type_abstract ->
+          match (decl.type_kind, decl.type_manifest) with
+            (Type_abstract, None) ->
               print_string "<abstr>"
-          | Type_manifest body ->
+          | (Type_abstract, Some body) ->
               print_val prio depth obj
                         (Ctype.substitute decl.type_params ty_list body)
-          | Type_variant constr_list ->
+          | (Type_variant constr_list, _) ->
               begin try
                 let tag =
                   if Obj.is_block obj
@@ -224,7 +226,7 @@ let print_value env obj ty =
                 Constr_not_found ->
                   print_string "<unknown constructor>"
               end
-          | Type_record lbl_list ->
+          | (Type_record lbl_list, _) ->
               let rec print_fields depth pos = function
                 [] -> ()
               | (lbl_name, _, lbl_arg) :: remainder ->

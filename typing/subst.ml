@@ -73,15 +73,20 @@ let type_declaration s decl =
   { type_params = decl.type_params;
     type_arity = decl.type_arity;
     type_kind =
-      match decl.type_kind with
+      begin match decl.type_kind with
         Type_abstract -> Type_abstract
-      | Type_manifest ty -> Type_manifest(type_expr s ty)
       | Type_variant cstrs ->
           Type_variant(List.map (fun (n, args) -> (n, List.map (type_expr s) args))
                            cstrs)
       | Type_record lbls ->
           Type_record(List.map (fun (n, mut, arg) -> (n, mut, type_expr s arg))
                           lbls)
+      end;
+    type_manifest =
+      begin match decl.type_manifest with
+        None -> None
+      | Some ty -> Some(type_expr s ty)
+      end
   }
 
 let exception_declaration s tyl =

@@ -517,17 +517,25 @@ type_declarations:
 ;
 type_declaration:
     type_parameters LIDENT type_kind
-      { ($2, {ptype_params = $1; ptype_kind = $3; ptype_loc = symbol_loc()}) }
+      { let (kind, manifest) = $3 in
+        ($2, {ptype_params = $1; 
+              ptype_kind = kind;
+              ptype_manifest = manifest;
+              ptype_loc = symbol_loc()}) }
 ;
 type_kind:
     /*empty*/
-      { Ptype_abstract }
+      { (Ptype_abstract, None) }
   | EQUAL core_type
-      { Ptype_manifest $2 }
+      { (Ptype_abstract, Some $2) }
   | EQUAL constructor_declarations
-      { Ptype_variant(List.rev $2) }
+      { (Ptype_variant(List.rev $2), None) }
   | EQUAL LBRACE label_declarations RBRACE
-      { Ptype_record(List.rev $3) }
+      { (Ptype_record(List.rev $3), None) }
+  | EQUAL core_type EQUAL constructor_declarations
+      { (Ptype_variant(List.rev $4), Some $2) }
+  | EQUAL core_type EQUAL LBRACE label_declarations RBRACE
+      { (Ptype_record(List.rev $5), Some $2) }
 ;
 type_parameters:
     /*empty*/                                   { [] }

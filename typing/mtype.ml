@@ -42,11 +42,12 @@ and strengthen_sig env sg p =
       sigelt :: strengthen_sig env rem p
   | Tsig_type(id, decl) :: rem ->
       let newdecl =
-        match decl.type_kind with
-          Type_abstract ->
+        match decl.type_manifest with
+          None ->
             { type_params = decl.type_params;
               type_arity = decl.type_arity;
-              type_kind = Type_manifest(Tconstr(Pdot(p, Ident.name id, nopos),
+              type_kind = decl.type_kind;
+              type_manifest = Some(Tconstr(Pdot(p, Ident.name id, nopos),
                                                 decl.type_params)) }
         | _ -> decl in
       Tsig_type(id, newdecl) :: strengthen_sig env rem p
@@ -135,11 +136,9 @@ let nondep_supertype env mid mty =
     {type_params = d.type_params;
      type_arity = d.type_arity;
      type_kind =
-       match d.type_kind with
+       begin match d.type_kind with
          Type_abstract ->
            Type_abstract
-       | Type_manifest ty ->
-           Type_manifest(Ctype.nondep_type env mid ty)
        | Type_variant cstrs ->
            Type_variant(List.map
              (fun (c, tl) -> (c, List.map (Ctype.nondep_type env mid) tl))
@@ -147,12 +146,19 @@ let nondep_supertype env mid mty =
        | Type_record lbls ->
            Type_record(List.map
              (fun (c, mut, t) -> (c, mut, Ctype.nondep_type env mid t))
-             lbls)}
+             lbls)
+       end;
+     type_manifest =
+       begin match d.type_manifest with
+         None -> None
+       | Some ty -> Some(Ctype.nondep_type env mid ty)
+       end}
 
   and abstract_type_decl d =
     {type_params = d.type_params;
      type_arity = d.type_arity;
-     type_kind = Type_abstract}
+     type_kind = Type_abstract;
+     type_manifest = None}
 
   and nondep_modtype_decl = function
       Tmodtype_abstract -> Tmodtype_abstract

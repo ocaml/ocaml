@@ -114,9 +114,9 @@ exception Cannot_expand
 
 let expand_abbrev env path args =
   let decl = Env.find_type path env in
-  match decl.type_kind with
-    Type_manifest body -> substitute decl.type_params args body
-  | _ -> raise Cannot_expand
+  match decl.type_manifest with
+    Some body -> substitute decl.type_params args body
+  | None -> raise Cannot_expand
 
 let rec occur tvar ty =
   match repr ty with

@@ -24,6 +24,7 @@ type error =
   | Too_many_constructors
   | Duplicate_label of string
   | Recursive_abbrev of string
+  | Definition_mismatch of type_expr
 
 exception Error of Location.t * error
 
@@ -36,7 +37,8 @@ let rec enter_types env = function
       let decl =
         { type_params = []; (*this field is unused when kind = Type_abstract*)
           type_arity = List.length sdecl.ptype_params;
-          type_kind = Type_abstract } in
+          type_kind = Type_abstract;
+          type_manifest = None } in
       let (id, extenv) = Env.enter_type name decl env in
       let (rem_id, final_env) = enter_types extenv srem in
       (id :: rem_id, final_env)
@@ -57,49 +59,69 @@ let transl_declaration env (name, sdecl) id =
       List.map enter_type_variable sdecl.ptype_params
     with Already_bound ->
       raise(Error(sdecl.ptype_loc, Repeated_parameter)) in
-  let kind =
-    match sdecl.ptype_kind with
-      Ptype_abstract ->
-        Type_abstract
-    | Ptype_manifest sty ->
-        Type_manifest(transl_simple_type env true sty)
-    | Ptype_variant cstrs ->
-        let all_constrs = ref StringSet.empty in
-        List.iter
-          (fun (name, args) ->
-            if StringSet.mem name !all_constrs then
-              raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
-            all_constrs := StringSet.add name !all_constrs)
-          cstrs;
-        if List.length cstrs > Config.max_tag then
-          raise(Error(sdecl.ptype_loc, Too_many_constructors));
-        Type_variant(List.map
-          (fun (name, args) ->
-                  (name, List.map (transl_simple_type env true) args))
-          cstrs)
-    | Ptype_record lbls ->
-        let all_labels = ref StringSet.empty in
-        List.iter
-          (fun (name, mut, arg) ->
-            if StringSet.mem name !all_labels then
-              raise(Error(sdecl.ptype_loc, Duplicate_label name));
-            all_labels := StringSet.add name !all_labels)
-          lbls;
-        Type_record(List.map
-          (fun (name, mut, arg) ->
-                  (name, mut, transl_simple_type env true arg))
-          lbls) in
+  let decl =
+    { type_params = params;
+      type_arity = List.length params;
+      type_kind =
+        begin match sdecl.ptype_kind with
+          Ptype_abstract ->
+            Type_abstract
+        | Ptype_variant cstrs ->
+            let all_constrs = ref StringSet.empty in
+            List.iter
+              (fun (name, args) ->
+                if StringSet.mem name !all_constrs then
+                  raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
+                all_constrs := StringSet.add name !all_constrs)
+              cstrs;
+            if List.length cstrs > Config.max_tag then
+              raise(Error(sdecl.ptype_loc, Too_many_constructors));
+            Type_variant(List.map
+              (fun (name, args) ->
+                      (name, List.map (transl_simple_type env true) args))
+              cstrs)
+        | Ptype_record lbls ->
+            let all_labels = ref StringSet.empty in
+            List.iter
+              (fun (name, mut, arg) ->
+                if StringSet.mem name !all_labels then
+                  raise(Error(sdecl.ptype_loc, Duplicate_label name));
+                all_labels := StringSet.add name !all_labels)
+              lbls;
+            Type_record(List.map
+              (fun (name, mut, arg) ->
+                      (name, mut, transl_simple_type env true arg))
+              lbls)
+        end;
+      type_manifest =
+        begin match sdecl.ptype_manifest with
+          None -> None
+        | Some sty -> Some(transl_simple_type env true sty)
+        end } in
   Ctype.end_def();
   List.iter Ctype.generalize params;
-  (id, {type_params = params;
-        type_arity = List.length params;
-        type_kind = kind })
+  (* If both a variant/record definition and a type equation are given,
+     need to check that the equation refers to a type of the same kind
+     with the same constructors and labels *)
+  begin match decl with
+      {type_kind = Type_variant _ | Type_record _; type_manifest = Some ty} ->
+        if match ty with
+            Tconstr(path, args) ->
+              args = params &
+              Includecore.type_declarations
+                env id decl (Env.find_type path env)
+          | _ -> false
+        then ()
+        else raise(Error(sdecl.ptype_loc, Definition_mismatch ty))
+    | _ -> ()
+  end;
+  (id, decl)
 
 (* Check for recursive abbrevs *)
 
 let check_recursive_abbrev env (name, sdecl) (id, decl) =
-  match decl.type_kind with
-    Type_manifest ty ->
+  match decl.type_manifest with
+    Some ty ->
       if Ctype.free_type_ident env id ty
       then raise(Error(sdecl.ptype_loc, Recursive_abbrev name))
   | _ -> ()
@@ -152,4 +174,8 @@ let report_error = function
   | Recursive_abbrev s ->
       print_string "The type abbreviation "; print_string s;
       print_string " is cyclic"
+  | Definition_mismatch ty ->
+      print_string
+        "The variant or record definition does not match that of type";
+      print_space(); Printtyp.type_expr ty
 

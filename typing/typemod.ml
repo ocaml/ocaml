@@ -43,7 +43,7 @@ let merge_constraints loc env sg decls =
       [Tsig_type(id, decl)]
   | (Tsig_type(id', decl') as item) :: rem ->
       if Ident.equal id id' then begin
-        if decl'.type_kind <> Type_abstract then
+        if decl'.type_kind <> Type_abstract or decl'.type_manifest <> None then
           raise(Error(loc, With_not_abstract(Ident.name id)));
         if decl'.type_arity <> decl.type_arity then
           raise(Error(loc, With_arity_mismatch(Ident.name id)));

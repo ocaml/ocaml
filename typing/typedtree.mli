@@ -108,13 +108,13 @@ and expression_desc =
 (* Type definitions *)
 
 type type_declaration =
-  { mutable type_params: type_expr list;
+  { type_params: type_expr list;
     type_arity: int;
-    mutable type_kind: type_kind }
+    type_kind: type_kind;
+    type_manifest: type_expr option }
 
 and type_kind =
     Type_abstract
-  | Type_manifest of type_expr
   | Type_variant of (string * type_expr list) list
   | Type_record of (string * mutable_flag * type_expr) list
 

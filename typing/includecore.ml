@@ -33,10 +33,7 @@ let value_descriptions env vd1 vd2 =
 let type_declarations env id decl1 decl2 =
   decl1.type_arity = decl2.type_arity &
   begin match (decl1.type_kind, decl2.type_kind) with
-      (_, Type_abstract) ->
-        true
-    | (Type_manifest ty1, Type_manifest ty2) ->
-        Ctype.equal env decl1.type_params ty1 decl2.type_params ty2
+      (_, Type_abstract) -> true
     | (Type_variant cstrs1, Type_variant cstrs2) ->
         for_all2
           (fun (cstr1, arg1) (cstr2, arg2) ->
@@ -52,11 +49,15 @@ let type_declarations env id decl1 decl2 =
             lbl1 = lbl2 & mut1 = mut2 &
             Ctype.equal env decl1.type_params ty1 decl2.type_params ty2)
           labels1 labels2
-    | (_, Type_manifest ty2) ->
+    | (_, _) -> false
+  end &
+  begin match (decl1.type_manifest, decl2.type_manifest) with
+      (_, None) -> true
+    | (Some ty1, Some ty2) ->
+        Ctype.equal env decl1.type_params ty1 decl2.type_params ty2
+    | (None, Some ty2) ->
         let ty1 = Tconstr(Pident id, decl2.type_params) in
         Ctype.equal env [] ty1 [] ty2
-    | (_, _) ->
-        false
   end
 
 (* Inclusion between exception declarations *)

@@ -119,23 +119,27 @@ let rec type_declaration id decl =
   open_hvbox 2;
   print_string "type ";
   type_expr (Tconstr(Pident id, decl.type_params));
+  begin match decl.type_manifest with
+    None -> ()
+  | Some ty -> print_string " ="; print_space(); type_expr ty
+  end;
   begin match decl.type_kind with
     Type_abstract -> ()
-  | Type_manifest ty ->
-      print_string " ="; print_space(); type_expr ty
+  | Type_variant [] -> ()
+      (* A fatal error actually, except when printing type exn... *)
   | Type_variant (cstr1 :: cstrs) ->
       print_string " ="; print_break 1 2;
       constructor cstr1;
-      List.iter (fun cstr -> print_space(); print_string "| "; constructor cstr)
-              cstrs
+      List.iter
+        (fun cstr -> print_space(); print_string "| "; constructor cstr)
+        cstrs
   | Type_record (lbl1 :: lbls) ->
       print_string " ="; print_space();
       print_string "{ "; label lbl1;
-      List.iter (fun lbl -> print_string ";"; print_break 1 2; label lbl)
-              lbls;
+      List.iter
+        (fun lbl -> print_string ";"; print_break 1 2; label lbl)
+        lbls;
       print_string " }"
-  | _ ->
-      () (* A fatal error actually, except when printing type exn... *)
   end;
   close_box()
 
