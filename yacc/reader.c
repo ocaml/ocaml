@@ -326,6 +326,7 @@ void copy_text(void)
 	if (line == 0)
 	    unterminated_text(t_lineno, t_line, t_cptr);
     }
+    fprintf(f, "# %d \"%s\"\n", lineno, input_file_name);
 
 loop:
     c = *cptr++;
