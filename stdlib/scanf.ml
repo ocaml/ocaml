@@ -21,74 +21,78 @@ module type SCANNING = sig
 type scanbuf;;
 
 val stdib : scanbuf;;
-(** The scanning buffer reading from [stdin].
+(* The scanning buffer reading from [stdin].
     [stdib] is equivalent to [Scanning.from_channel stdin]. *)
 
 val next_char : scanbuf -> unit;;
-(** [Scanning.next_char scanbuf] advance the scanning buffer for
+(* [Scanning.next_char ib] advance the scanning buffer for
     one character.
     If no more character can be read, sets a end of file condition and
     returns '\000'. *)
 
 val peek_char : scanbuf -> char;;
-(** [Scanning.peek_char scanbuf] returns the current char available in
+(* [Scanning.peek_char ib] returns the current char available in
     the buffer. *)
 
 val cautious_peek_char : scanbuf -> char;;
-(** [Scanning.cautious_peek_char scanbuf] returns the current char
+(* [Scanning.cautious_peek_char ib] returns the current char
     available in the buffer or tries to read one if none has ever been
     read. 
     If no character can be read, sets a end of file condition and
     returns '\000'. *)
 
 val checked_peek_char : scanbuf -> char;;
-(** Same as above but always returns a valid char or fails:
+(* Same as above but always returns a valid char or fails:
     instead of returning a null char when the reading method of the
     input buffer has reached an end of file, the function raises exception
     [End_of_file]. *)
 
 val store_char : scanbuf -> char -> int -> int;;
-(** [Scanning.store_char scanbuf c lim] adds [c] to the token buffer
+(* [Scanning.store_char ib c lim] adds [c] to the token buffer
     of the scanning buffer. It also advances the scanning buffer for one
     character and returns [lim - 1], indicating the new limit
     for the length of the current token. *)
 
 val skip_char : scanbuf -> char -> int -> int;;
-(** [Scanning.skip_char scanbuf c lim] is similar to [store_char] but
+(* [Scanning.skip_char ib c lim] is similar to [store_char] but
     it ignores (does not store in the token buffer) the character [c]. *)
 
 val token : scanbuf -> string;;
-(** [Scanning.token scanbuf] returns the string stored into the token
+(* [Scanning.token ib] returns the string stored into the token
     buffer of the scanning buffer: it returns the token matched by the
     format. *)
 
 val reset_token : scanbuf -> unit;;
-(** [Scanning.reset_token scanbuf] resets the token buffer of
+(* [Scanning.reset_token ib] resets the token buffer of
     the given scanning buffer. *)
 
 val char_count : scanbuf -> int;;
-(** [Scanning.char_count scanbuf] returns the number of characters
+(* [Scanning.char_count ib] returns the number of characters
     read so far from the given buffer. *)
 
 val line_count : scanbuf -> int;;
-(** [Scanning.line_count scanbuf] returns the number of new line
+(* [Scanning.line_count ib] returns the number of new line
     characters read so far from the given buffer. *)
 
 val token_count : scanbuf -> int;;
-(** [Scanning.token_count scanbuf] returns the number of tokens read
-    so far from [scanbuf]. *)
+(* [Scanning.token_count ib] returns the number of tokens read
+    so far from [ib]. *)
 
 val eof : scanbuf -> bool;;
-(** [Scanning.eof scanbuf] returns the current value of the end of input
+(* [Scanning.eof ib] returns the current value of the end of input
     condition of the given buffer, no validity test is performed. *)
 
 val end_of_input : scanbuf -> bool;;
-(** [Scanning.end_of_input scanbuf] tests the end of input condition
+(* [Scanning.end_of_input ib] tests the end of input condition
     of the given buffer. *)
 
 val beginning_of_input : scanbuf -> bool;;
-(** [Scanning.beginning_of_input scanbuf] tests the beginning of input
+(* [Scanning.beginning_of_input ib] tests the beginning of input
     condition of the given buffer. *)
+
+val name_of_input : scanbuf -> string;;
+(* [Scanning.name_of_input ib] returns the name of the character
+    source for input buffer [ib]. *)
 
 val from_string : string -> scanbuf;;
 val from_channel : in_channel -> scanbuf;;
@@ -150,6 +154,7 @@ let beginning_of_input ib = ib.bof;;
 let end_of_input ib =
   let c = cautious_peek_char ib in
   ib.eof;;
+let name_of_input ib = ib.file_name;;
 let char_count ib = ib.char_count;;
 let line_count ib = ib.line_count;;
 let reset_token ib = Buffer.reset ib.tokbuf;;
@@ -194,9 +199,9 @@ let from_string s =
     let c = s.[!i] in
     incr i;
     c in
-  create "string" next;;
+  create "string input" next;;
 
-let from_function = create "function";;
+let from_function = create "function input";;
 
 (* Perform bufferized input to improve efficiency. *)
 let file_buffer_size = ref 1024;;
@@ -223,14 +228,14 @@ let from_input_channel fname ic =
   let next () = input_char ic in
   create fname next;;
 
-let from_channel = from_input_channel "in_channel";;
+let from_channel = from_input_channel "input channel";;
 
 let stdib = from_input_channel "stdin" stdin;;
-(** The scanning buffer reading from [stdin].*)
+(* The scanning buffer reading from [stdin].*)
 
 end;;
 
-(** Formatted input functions. *)
+(* Formatted input functions. *)
 
 (* Reporting errors. *)
 exception Scan_failure of string;;

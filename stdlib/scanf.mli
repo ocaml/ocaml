@@ -54,16 +54,19 @@ val from_function : (unit -> char) -> scanbuf;;
     an end-of-input condition by raising the exception [End_of_file]. *)
 
 val from_channel : in_channel -> scanbuf;;
-(** [Scanning.from_channel inchan] returns a scanning buffer which reads
-    one character at a time from the input channel [inchan], starting at the
+(** [Scanning.from_channel ic] returns a scanning buffer which reads
+    one character at a time from the input channel [ic], starting at the
     current reading position. *)
 
 val end_of_input : scanbuf -> bool;;
-(** [Scanning.end_of_input scanbuf] tests the end of input condition
+(** [Scanning.end_of_input ib] tests the end of input condition
     of the given buffer. *)
 val beginning_of_input : scanbuf -> bool;;
-(** [Scanning.beginning_of_input scanbuf] tests the beginning of input
+(** [Scanning.beginning_of_input ib] tests the beginning of input
     condition of the given buffer. *)
+val name_of_input : scanbuf -> string;;
+(** [Scanning.file_name_of_input ib] returns the name of the character
+    source for input buffer [ib]. *)
 
 end;;
 
