@@ -12,19 +12,19 @@ TKLINKOPT=..\support\libcamltk.lib \
 all: addition.exe helloworld.exe winskel.exe socketinput.exe
 
 addition.exe: addition.cmo
-	$(LABLC) -custom $(LINKFLAGS) $(TKLINKOPT) \
+	$(CAMLC) -custom $(LINKFLAGS) $(TKLINKOPT) \
 		-o $@ addition.cmo 
 
 helloworld.exe: helloworld.cmo
-	$(LABLC) -custom $(LINKFLAGS) $(TKLINKOPT) \
+	$(CAMLC) -custom $(LINKFLAGS) $(TKLINKOPT) \
 		-o $@ helloworld.cmo 
 
 winskel.exe: winskel.cmo
-	$(LABLC) -custom $(LINKFLAGS) $(TKLINKOPT) \
+	$(CAMLC) -custom $(LINKFLAGS) $(TKLINKOPT) \
 		-o $@ winskel.cmo
 
 socketinput.exe: socketinput.cmo
-	$(LABLC) -custom $(LINKFLAGS) unix.cma $(TKLINKOPT) -cclib -lunix \
+	$(CAMLC) -custom $(LINKFLAGS) unix.cma $(TKLINKOPT) -cclib -lunix \
 		-o $@ socketinput.cmo
 
 clean : 
@@ -34,7 +34,7 @@ clean :
 .SUFFIXES : .mli .ml .cmi .cmo
 
 .mli.cmi:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmo:
-o	$(LABLCOMP) $(COMPFLAGS) $<
+o	$(CAMLCOMP) $(COMPFLAGS) $<

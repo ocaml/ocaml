@@ -14,17 +14,17 @@ all: libfrx.cma
 opt: libfrx.cmxa
 
 libfrx.cma: $(OBJS)
-	$(LABLLIBR) -o libfrx.cma $(OBJS)
+	$(CAMLLIBR) -o libfrx.cma $(OBJS)
 
 libfrx.cmxa: $(OBJSX)
 	$(CAMLOPTLIBR) -o libfrx.cmxa $(OBJSX)
  
 
 install: libfrx.cma
-	cp *.cmi *.mli libfrx.cma $(LABLTKDIR)
+	cp *.cmi *.mli libfrx.cma $(MLTKDIR)
 
 installopt: libfrx.cmxa
-	cp libfrx.cmxa libfrx.lib $(LABLTKDIR)
+	cp libfrx.cmxa libfrx.lib $(MLTKDIR)
  
 
 clean:
@@ -34,10 +34,10 @@ clean:
 .SUFFIXES : .mli .ml .cmi .cmo .cmx
 
 .mli.cmi:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmo:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<

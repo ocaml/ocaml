@@ -18,7 +18,7 @@ include ./modules
 WIDGETOBJSX = $(WIDGETOBJS:.cmo=.cmx)
 
 labltk.cma : $(SUPPORT) $(WIDGETOBJS) tk.cmo 
-	$(LABLLIBR) -o labltk.cma $(SUPPORT) tk.cmo $(WIDGETOBJS) \
+	$(CAMLLIBR) -o labltk.cma $(SUPPORT) tk.cmo $(WIDGETOBJS) \
 	  -dllib -llabltk41 -cclib -llabltk41 $(TK_LINK)
 
 labltk.cmxa : $(SUPPORTX) $(WIDGETOBJSX) tk.cmx
@@ -26,7 +26,7 @@ labltk.cmxa : $(SUPPORTX) $(WIDGETOBJSX) tk.cmx
 	  -cclib -llabltk41 $(TK_LINK)
 
 #labltk : $(TOPDEPS) $(WIDGETOBJS) $(SUPPORT)
-#	$(LABLC) -linkall -o $@ -I ../support $(TKLINKOPT) \
+#	$(CAMLC) -linkall -o $@ -I ../support $(TKLINKOPT) \
 #	       -I $(TOPDIR)/toplevel toplevellib.cma labltk.cma \
 #	       -I $(OTHERS)/win32unix unix.cma -I $(OTHERS)/str str.cma \
 #	       topmain.cmo
@@ -36,23 +36,23 @@ clean :
 	rm -f *.cm* *.ml *.mli *.o *.a labltktop
 
 install: labltk.cma #labltk
-	@if not exist $(LABLTKDIR) mkdir $(LABLTKDIR)
-	cp *.cmi labltk.cma $(LABLTKDIR)
+	@if not exist $(MLTKDIR) mkdir $(MLTKDIR)
+	cp *.cmi labltk.cma $(MLTKDIR)
 #	@if not exist $(BINDIR) mkdir $(BINDIR)
 #	cp labltk.exe $(BINDIR)
 
 installopt: labltk.cmxa
-	@if not exist $(LABLTKDIR) mkdir $(LABLTKDIR)
-	cp labltk.cmxa labltk.lib $(LABLTKDIR)
+	@if not exist $(MLTKDIR) mkdir $(MLTKDIR)
+	cp labltk.cmxa labltk.lib $(MLTKDIR)
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmx .cmo .mlp
 
 .mli.cmi:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmo:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<

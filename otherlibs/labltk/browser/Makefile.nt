@@ -21,10 +21,10 @@ JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(LABLCOMP) $(INCLUDES) $<
+	$(CAMLCOMP) $(INCLUDES) $<
 
 .mli.cmi:
-	$(LABLCOMP) $(INCLUDES) $<
+	$(CAMLCOMP) $(INCLUDES) $<
 
 .c.obj:
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CCFLAGS) -c $<
@@ -32,13 +32,13 @@ JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
 all: ocamlbrowser
 
 ocamlbrowser: $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ) winmain.obj
-	$(LABLC) -o ocamlbrowser -custom $(INCLUDES) \
+	$(CAMLC) -o ocamlbrowser -custom $(INCLUDES) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
 		unix.cma threads.cma str.cma labltk.cma jglib.cma $(OBJ) \
 		$(TK_LINK) winmain.obj
 
 jglib.cma: $(JG)
-	$(LABLCOMP) -a -o jglib.cma $(JG) 
+	$(CAMLCOMP) -a -o jglib.cma $(JG) 
 
 install:
 	if exist ocamlbrowser.exe cp ocamlbrowser.exe $(BINDIR)
@@ -47,7 +47,7 @@ clean:
 	rm -f *.cm? ocamlbrowser dummy.mli *~ *.orig
 
 depend:
-	$(LABLDEP) *.ml *.mli > .depend
+	$(CAMLDEP) *.ml *.mli > .depend
 
 dummy.mli:
 	cp dummyWin.mli dummy.mli

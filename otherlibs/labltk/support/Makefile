@@ -26,13 +26,13 @@ PUB=fileevent.cmi fileevent.mli \
     widget.cmi widget.mli
 
 install: liblabltk41.a $(PUB)
-	if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
-	cp $(PUB) liblabltk41.a $(LABLTKDIR)
-	cd $(LABLTKDIR); $(RANLIB) liblabltk41.a
-	cd $(LABLTKDIR); chmod 644 $(PUB) liblabltk41.a
+	if test -d $(MLTKDIR); then : ; else mkdir $(MLTKDIR); fi
+	cp $(PUB) liblabltk41.a $(MLTKDIR)
+	cd $(MLTKDIR); $(RANLIB) liblabltk41.a
+	cd $(MLTKDIR); chmod 644 $(PUB) liblabltk41.a
 	if test -f dlllabltk41.so; then \
-	   cp dlllabltk41.so $(LABLTKDIR)/dlllabltk41.so; \
-	   chmod 644 $(LABLTKDIR)/dlllabltk41.so; fi
+	   cp dlllabltk41.so $(MLTKDIR)/dlllabltk41.so; \
+	   chmod 644 $(MLTKDIR)/dlllabltk41.so; fi
 
 clean : 
 	rm -f *.cm* *.o *.a *.so
@@ -41,10 +41,10 @@ clean :
 .SUFFIXES : .mli .ml .cmi .cmo .cmx .mlp .c .o
 
 .mli.cmi:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmo:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
@@ -53,7 +53,7 @@ clean :
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CCFLAGS) -c $<
 
 depend:
-	$(LABLDEP) *.mli *.ml > .depend
+	$(CAMLDEP) *.mli *.ml > .depend
 
 $(COBJS): $(TOPDIR)/config/Makefile camltk.h
 

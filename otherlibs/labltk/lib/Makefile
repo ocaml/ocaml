@@ -25,7 +25,7 @@ TOPDEPS = $(TOPDIR)/toplevel/toplevellib.cma $(TOPDIR)/toplevel/topmain.cmo
 labltk.cma: $(SUPPORT)
 	cd ../labltk; make
 	cd ../camltk; make
-	$(MKLIB) -ocamlc '$(LABLC)' -o labltk -oc labltk41 \
+	$(MKLIB) -ocamlc '$(CAMLC)' -o labltk -oc labltk41 \
           -I ../labltk -I ../camltk $(TKOBJS) \
           $(TK_LINK) $(X11_LINK)
 
@@ -37,7 +37,7 @@ labltk.cmxa: $(SUPPORT:.cmo=.cmx)
           $(TK_LINK) $(X11_LINK)
 
 labltktop$(EXE) : $(TOPDEPS) labltk.cma ../support/liblabltk41.a
-	$(LABLC) -linkall -o labltktop$(EXE) -I ../support \
+	$(CAMLC) -linkall -o labltktop$(EXE) -I ../support \
 	       -I $(TOPDIR)/toplevel toplevellib.cma \
 	       -I ../labltk -I ../camltk labltk.cma \
 	       -I $(OTHERS)/unix unix.cma \
@@ -48,22 +48,22 @@ labltktop$(EXE) : $(TOPDEPS) labltk.cma ../support/liblabltk41.a
 labltk: Makefile $(TOPDIR)/config/Makefile
 	@echo Generate $@
 	@echo "#!/bin/sh" > $@
-	@echo 'exec $(LABLTKDIR)/labltktop$(EXE) -I $(LABLTKDIR) $$*' >> $@
+	@echo 'exec $(MLTKDIR)/labltktop$(EXE) -I $(MLTKDIR) $$*' >> $@
 
 install: all
-	if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
-	if test `grep -s -c '^$(LABLTKDIR)$$' $(LIBDIR)/ld.conf || :` = 0; \
-        then echo $(LABLTKDIR) >> $(LIBDIR)/ld.conf; fi
-	cp labltk.cma labltktop$(EXE) $(LABLTKDIR)
-	chmod 644 $(LABLTKDIR)/labltk.cma
-	chmod 755 $(LABLTKDIR)/labltktop$(EXE)
+	if test -d $(MLTKDIR); then : ; else mkdir $(MLTKDIR); fi
+	if test `grep -s -c '^$(MLTKDIR)$$' $(LIBDIR)/ld.conf || :` = 0; \
+        then echo $(MLTKDIR) >> $(LIBDIR)/ld.conf; fi
+	cp labltk.cma labltktop$(EXE) $(MLTKDIR)
+	chmod 644 $(MLTKDIR)/labltk.cma
+	chmod 755 $(MLTKDIR)/labltktop$(EXE)
 	@if test -d $(BINDIR); then : ; else mkdir $(BINDIR); fi
 	cp labltk $(BINDIR)
 	chmod 755 $(BINDIR)/labltk
 
 installopt: opt
-	@if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
-	cp labltk.cmxa labltk.a $(LABLTKDIR)
-	cd $(LABLTKDIR); $(RANLIB) labltk.a
-	chmod 644 $(LABLTKDIR)/labltk.cmxa
-	chmod 644 $(LABLTKDIR)/labltk.a
+	@if test -d $(MLTKDIR); then : ; else mkdir $(MLTKDIR); fi
+	cp labltk.cmxa labltk.a $(MLTKDIR)
+	cd $(MLTKDIR); $(RANLIB) labltk.a
+	chmod 644 $(MLTKDIR)/labltk.cmxa
+	chmod 644 $(MLTKDIR)/labltk.a

@@ -15,16 +15,16 @@ test: balloontest
 testopt: balloontest.opt
 
 libjpf.cma: $(OBJS)
-	$(LABLLIBR) -o libjpf.cma $(OBJS)
+	$(CAMLLIBR) -o libjpf.cma $(OBJS)
 
 libjpf.cmxa: $(OBJSX)
 	$(CAMLOPTLIBR) -o libjpf.cmxa $(OBJSX)
 
 install: libjpf.cma
-	cp $(OBJS:.cmo=.cmi) $(OBJS:.cmo=.mli) libjpf.cma $(LABLTKDIR)
+	cp $(OBJS:.cmo=.cmi) $(OBJS:.cmo=.mli) libjpf.cma $(MLTKDIR)
 
 installopt: libjpf.cmxa
-	cp libjpf.cmxa libjpf.lib $(LABLTKDIR)
+	cp libjpf.cmxa libjpf.lib $(MLTKDIR)
 
 clean:
 	rm -f *.cm* *.o *.a *~ *test
@@ -32,7 +32,7 @@ clean:
 ### Tests
 
 balloontest: balloontest.cmo 
-	$(LABLC) -o balloontest -I ../support -I ../lib \
+	$(CAMLC) -o balloontest -I ../support -I ../lib \
 	        -custom labltk.cma libjpf.cma balloontest.cmo $(TKLINKOPT)
 
 balloontest.opt: balloontest.cmx
@@ -47,10 +47,10 @@ balloontest.cmx : balloon.cmx libjpf.cmxa
 .SUFFIXES : .mli .ml .cmi .cmx .cmo
 
 .mli.cmi:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmo:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
@@ -58,7 +58,7 @@ balloontest.cmx : balloon.cmx libjpf.cmxa
 depend: 
 	mv Makefile Makefile.bak
 	(sed -n -e '1,/^### DO NOT DELETE THIS LINE/p' Makefile.bak; \
-	 $(LABLDEP) *.mli *.ml) > Makefile
+	 $(CAMLDEP) *.mli *.ml) > Makefile
 
 
 ### EVERYTHING THAT GOES BEYOND THIS COMMENT IS GENERATED

@@ -34,7 +34,7 @@ cTk.ml camltk.ml .depend: _tkgen.ml ../builtin/report.ml ../compiler/pp #../buil
 	) > _cTk.ml
 	../../../boot/ocamlrun ../compiler/pp < _cTk.ml > cTk.ml
 	rm -f _cTk.ml
-	$(LABLDEP) -I ../support [a-z]*.mli [a-z]*.ml > .depend
+	$(CAMLDEP) -I ../support [a-z]*.mli [a-z]*.ml > .depend
 
 ../compiler/pp:
 	cd ../compiler; $(MAKE) pp 

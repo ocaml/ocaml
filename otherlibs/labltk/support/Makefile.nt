@@ -33,10 +33,10 @@ PUB=fileevent.cmi fileevent.mli \
     widget.cmi widget.mli
 
 install: dlllabltk41.dll liblabltk41.lib $(PUB)
-	@if not exist $(LABLTKDIR) mkdir $(LABLTKDIR)
-	cp $(PUB) $(LABLTKDIR)
-	cp dlllabltk41.dll liblabltk41.lib $(LABLTKDIR)
-	echo $(LABLTKDIR)>> $(LIBDIR)\ld.conf
+	@if not exist $(MLTKDIR) mkdir $(MLTKDIR)
+	cp $(PUB) $(MLTKDIR)
+	cp dlllabltk41.dll liblabltk41.lib $(MLTKDIR)
+	echo $(MLTKDIR)>> $(LIBDIR)\ld.conf
 
 clean : 
 	rm -f *.cm* *.dobj *.sobj *.dll *.lib
@@ -45,10 +45,10 @@ clean :
 .SUFFIXES : .mli .ml .cmi .cmo .cmx .mlp .c .dobj .sobj
 
 .mli.cmi:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmo:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
@@ -62,7 +62,7 @@ clean :
 	mv $*.obj $*.sobj
 
 depend:
-	$(LABLDEP) *.mli *.ml > .depend
+	$(CAMLDEP) *.mli *.ml > .depend
 
 $(COBJS): camltk.h
 

@@ -10,22 +10,22 @@ PPOBJS= pplex.cmo ppyac.cmo ppexec.cmo ppparse.cmo pp.cmo
 all: tkcompiler$(EXE) pp$(EXE)
 
 tkcompiler$(EXE) : $(OBJS)
-	$(LABLC) -g $(LINKFLAGS) -o tkcompiler$(EXE) $(OBJS)
+	$(CAMLC) -g $(LINKFLAGS) -o tkcompiler$(EXE) $(OBJS)
 
 pp$(EXE): $(PPOBJS)
-	$(LABLC) -g $(LINKFLAGS) -o pp$(EXE) $(PPOBJS)
+	$(CAMLC) -g $(LINKFLAGS) -o pp$(EXE) $(PPOBJS)
 
 lexer.ml: lexer.mll
-	$(LABLLEX) lexer.mll
+	$(CAMLLEX) lexer.mll
 
 parser.ml parser.mli: parser.mly
-	$(LABLYACC) -v parser.mly
+	$(CAMLYACC) -v parser.mly
 
 pplex.ml: pplex.mll
-	$(LABLLEX) pplex.mll
+	$(CAMLLEX) pplex.mll
 
 ppyac.ml ppyac.mli: ppyac.mly
-	$(LABLYACC) -v ppyac.mly
+	$(CAMLYACC) -v ppyac.mly
 
 copyright.ml: copyright
 	(echo "let copyright=\"\\"; \
@@ -43,19 +43,19 @@ scratch :
 	rm -f *.cm*  pplex.ml ppyac.ml ppyac.mli pp$(EXE)
 
 install: 
-	cp tkcompiler$(EXE) $(LABLTKDIR)
-	cp pp$(EXE) $(LABLTKDIR)
+	cp tkcompiler$(EXE) $(MLTKDIR)
+	cp pp$(EXE) $(MLTKDIR)
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmo .mlp
 
 .mli.cmi:
-	$(LABLCOMP) -g $(COMPFLAGS) -I ../support $<
+	$(CAMLCOMP) -g $(COMPFLAGS) -I ../support $<
 
 .ml.cmo:
-	$(LABLCOMP) -g $(COMPFLAGS) -I ../support $<
+	$(CAMLCOMP) -g $(COMPFLAGS) -I ../support $<
 
 depend: parser.ml parser.mli lexer.ml pplex.ml ppyac.ml ppyac.mli
-	$(LABLDEP) *.mli *.ml > .depend
+	$(CAMLDEP) *.mli *.ml > .depend
 
 include .depend

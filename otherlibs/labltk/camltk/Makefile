@@ -23,23 +23,23 @@ clean:
 	$(MAKE) -f Makefile.gen clean
 
 install: $(CAMLTKOBJS)
-	if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
-	cp $(CAMLTKOBJS:.cmo=.cmi) $(CWIDGETOBJS:.cmo=.mli) $(LABLTKDIR)
-	chmod 644 $(LABLTKDIR)/*.cmi
+	if test -d $(MLTKDIR); then : ; else mkdir $(MLTKDIR); fi
+	cp $(CAMLTKOBJS:.cmo=.cmi) $(CWIDGETOBJS:.cmo=.mli) $(MLTKDIR)
+	chmod 644 $(MLTKDIR)/*.cmi
 
 installopt: $(CAMLTKOBJSX)
-	@if test -d $(LABLTKDIR); then : ; else mkdir $(LABLTKDIR); fi
-	cp $(CAMLTKOBJSX) $(LABLTKDIR)
-	chmod 644 $(LABLTKDIR)/*.cmx
+	@if test -d $(MLTKDIR); then : ; else mkdir $(MLTKDIR); fi
+	cp $(CAMLTKOBJSX) $(MLTKDIR)
+	chmod 644 $(MLTKDIR)/*.cmx
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmx .cmo .mlp
 
 .mli.cmi:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmo:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<

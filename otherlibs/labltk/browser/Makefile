@@ -20,22 +20,22 @@ JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(LABLCOMP) $(INCLUDES) $<
+	$(CAMLCOMP) $(INCLUDES) $<
 
 .mli.cmi:
-	$(LABLCOMP) $(INCLUDES) $<
+	$(CAMLCOMP) $(INCLUDES) $<
 
 all: ocamlbrowser$(EXE)
 
 ocamlbrowser$(EXE): $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ) \
 			../support/liblabltk41.a
-	$(LABLC) -o ocamlbrowser$(EXE) $(INCLUDES) \
+	$(CAMLC) -o ocamlbrowser$(EXE) $(INCLUDES) \
 		$(DLLPATH) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
 		unix.cma str.cma labltk.cma jglib.cma $(OBJ)
 
 jglib.cma: $(JG)
-	$(LABLCOMP) -a -o jglib.cma $(JG)
+	$(CAMLCOMP) -a -o jglib.cma $(JG)
 
 #help.ml: help.txt
 #	printf 'let text = "' > $@
@@ -50,7 +50,7 @@ clean:
 	rm -f *.cm? ocamlbrowser$(EXE) dummy.mli *~ *.orig
 
 depend:
-	$(LABLDEP) *.ml *.mli > .depend
+	$(CAMLDEP) *.ml *.mli > .depend
 
 dummy.mli:
 	rm -f $@

@@ -21,21 +21,21 @@ clean :
 	$(MAKE) -f Makefile.gen clean
 
 install: $(LABLTKOBJS)
-	@if not exist $(LABLTKDIR) mkdir $(LABLTKDIR)
-	cp *.cmi [a-z]*.mli $(LABLTKDIR)
+	@if not exist $(MLTKDIR) mkdir $(MLTKDIR)
+	cp *.cmi [a-z]*.mli $(MLTKDIR)
 
 installopt: $(LABLTKOBJSX)
-	@if not exist $(LABLTKDIR) mkdir $(LABLTKDIR)
-	cp $(LABLTKOBJSX) $(LABLTKDIR)
+	@if not exist $(MLTKDIR) mkdir $(MLTKDIR)
+	cp $(LABLTKOBJSX) $(MLTKDIR)
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmx .cmo .mlp
 
 .mli.cmi:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmo:
-	$(LABLCOMP) $(COMPFLAGS) $<
+	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<

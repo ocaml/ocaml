@@ -37,7 +37,7 @@ open Tkintf
 	type tkfgen.ml >> _cTk.ml
 	..\..\..\boot\ocamlrun ..\compiler\pp < _cTk.ml > cTk.ml
 	rm -f _cTk.ml
-	$(LABLDEP) -I ..\support ..\support\*.mli [a-z]*.mli [a-z]*.ml > .depend
+	$(CAMLDEP) -I ..\support ..\support\*.mli [a-z]*.mli [a-z]*.ml > .depend
 
 clean:
 	rm -f modules .depend
