@@ -166,7 +166,7 @@ let compact b =
     b
 
 let compact_buckets buckets =
-  for i = 0 to Array.length buckets - 1 do
+  for i = first_bucket to Array.length buckets - 1 do
     buckets.(i) <- compact buckets.(i)
   done
 
