@@ -270,3 +270,59 @@ for the safe modules are replaced by the values thus computed.  If a
 function component of a safe module is applied during this computation
 (which corresponds to an ill-founded recursive definition), the
 "Undefined_recursive_module" exception is raised.
+
+\section{Private structural types} \label{s-recursive-modules}
+\ikwd{private\@\texttt{private}}
+
+\begin{syntax}
+type-equation:
+          ...
+        | '=' 'private' typexpr
+\end{syntax}
+Private structural types are type abbreviations where part of the
+structure of the type is left abstract. Concretely @typexpr@ in the
+above should denote either an object type or a polymorphic variant
+type, with some possibility of refinement left. If the private
+declaration is used in an interface, the corresponding implementation
+may either provide a ground instance, or a refined private type.
+\begin{verbatim}
+   module M : sig type c = private < x : int; .. > val o : c end =
+     struct
+       class c = object method x = 3 method y = 2 end
+       let o = new c
+     end
+\end{verbatim}
+This declaration does more than hiding the "y" method, it also makes
+the type "c" incompatible with any other closed object type, meaning
+that only "o" will be of type "c". In that respect it behaves
+similarly to private record types. But private structural types are
+more flexible with respect to incremental refinement. This feature can
+be used in combination with functors.
+\begin{verbatim}
+   module F(X : sig type c = private < x : int; .. > end) =
+     struct
+       let get_x (o : X.c) = o#x
+     end
+   module G(X : sig type c = private < x : int; y : int; .. > end) =
+     struct
+       include F(X)
+       let get_y (o : X.c) = o#y
+     end
+\end{verbatim}
+
+Polymorphic variant types can be refined in two ways, either to allow
+the addition of new constructors, or to allow the disparition of
+declared constructors. The second case corresponds to private variant
+types (one cannot create a value of the private type), while the first
+case requires default cases in pattern-matching to handle addition.
+\begin{verbatim}
+   type t = [ `A of int | `B of bool ]
+   type u = private [< t > `A ]
+   type v = private [> t ]
+\end{verbatim}
+With type "u", it is possible to create values of the form "(`A n)",
+but not "(`B b)". With type "v", construction is not restricted but
+pattern-matching must have a default case.
+
+Like for abstract and private types, the variance of type parameters
+is not infered, and must be given explicitly.
