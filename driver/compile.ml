@@ -151,7 +151,7 @@ let implementation ppf sourcefile =
   with x ->
     close_out oc;
     remove_file objfile;
-    remove_preprocessed;
+    remove_preprocessed inputfile;
     raise x
 
 let c_file name =
