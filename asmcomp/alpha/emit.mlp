@@ -260,13 +260,6 @@ let emit_frame fd =
     fd.fd_live_offset;
   `	.align	3\n`
 
-(* Work around a bug in gas regarding the parsing of long decimal constants *)
-
-let emit_nativeint =
-  if digital_asm
-  then Emitaux.emit_nativeint
-  else (fun n -> emit_string(Nativeint.to_hexa_string n))
-
 (* Record calls to the GC -- we've moved them out of the way *)
 
 type gc_call =
@@ -348,8 +341,10 @@ let function_name = ref ""
 let tailrec_entry_point = ref 0
 (* Label of trap for out-of-range accesses *)
 let range_check_trap = ref 0
-(* List of floating-point literals (fon non-Digital assemblers) *)
+(* List of floating-point and big integer literals
+   (fon non-Digital assemblers) *)
 let float_constants = ref ([] : (label * string) list)
+let bigint_constants = ref ([] : (label * Nativeint.t) list)
 
 let emit_instr i =
     match i.desc with
@@ -379,8 +374,17 @@ let emit_instr i =
     | Lop(Iconst_int n) ->
         if Nativeint.sign n = 0 then
           `	clr	{emit_reg i.res.(0)}\n`
-        else
+        else if digital_asm || 
+                (Nativeint.cmp n (-0x80000000) >= 0 &&
+                 Nativeint.cmp n 0x7FFFFFFF <= 0) then
           `	ldiq	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
+        else begin
+          (* Work around a bug in gas/gld concerning big integer constants *)
+          let lbl = new_label() in
+          bigint_constants := (lbl, n) :: !bigint_constants;
+          `	lda	$25, {emit_label lbl}\n`;
+          `	ldq     {emit_reg i.res.(0)}, 0($25)\n`
+        end
     | Lop(Iconst_float s) ->
         if digital_asm then
           `	ldit	{emit_reg i.res.(0)}, {emit_string s}\n`
@@ -668,6 +672,7 @@ let emit_fundecl (fundecl, needs_gp) =
   call_gc_sites := [];
   range_check_trap := 0;
   float_constants := [];
+  bigint_constants := [];
   `	.text\n`;
   `	.align	4\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
@@ -698,6 +703,13 @@ let emit_fundecl (fundecl, needs_gp) =
     (* Keep retaddr in $25 for debugging *)
   end;
   `	.end	{emit_symbol fundecl.fun_name}\n`;
+  if !bigint_constants <> [] then begin
+    `	.section .rodata\n`;
+    `	.align	3\n`;
+    List.iter
+      (fun (lbl, n) -> `{emit_label lbl}:	.quad	0x{emit_string(Nativeint.to_hexa_string n)}\n`)
+      !bigint_constants
+  end;
   if !float_constants <> [] then begin
     `	.section .rodata\n`;
     `	.align	3\n`;
@@ -722,7 +734,12 @@ let emit_item = function
   | Cint16 n ->
       `	.word	{emit_int n}\n`
   | Cint n ->
-      `	.quad	{emit_nativeint n}\n`
+      if digital_asm then
+        `	.quad	{emit_nativeint n}\n`
+      else
+        (* Work around a bug in gas regarding the parsing of
+           long decimal constants *)
+        `	.quad	0x{emit_string(Nativeint.to_hexa_string n)}\n`
   | Cfloat f ->
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->
