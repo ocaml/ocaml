@@ -19,10 +19,6 @@ open Reg
 open Arch
 open Mach
 
-(* Exceptions raised to signal cases not handled here *)
-
-exception Use_default
-
 (* Instruction selection *)
 
 let word_addressed = false
