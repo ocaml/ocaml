@@ -25,32 +25,97 @@
         .comm   remembered_ptr 8
         .comm   remembered_end 8
 
-#define SAVE(r) stq $/**/r, r * 8 ($24)
-#define LOAD(r) ldq $/**/r, r * 8 ($24)
-#define FSAVE(r) stt $f/**/r, r * 8 ($24)
-#define FLOAD(r) ldt $f/**/r, r * 8 ($24)
-
 #define SAVE_ALL_REGS \
-    lda     $24, gc_entry_regs; \
-    SAVE(0); SAVE(1); SAVE(2); SAVE(3); SAVE(4); SAVE(5); SAVE(6); SAVE(7); \
-    SAVE(8); SAVE(9); SAVE(10); SAVE(11); SAVE(12); \
-    SAVE(16); SAVE(17); SAVE(18); SAVE(19); SAVE(20); SAVE(21); \
-    lda     $24, gc_entry_float_regs; \
-    FSAVE(0); FSAVE(1); FSAVE(10); FSAVE(11); FSAVE(12); FSAVE(13); \
-    FSAVE(14); FSAVE(15); FSAVE(16); FSAVE(17); FSAVE(18); FSAVE(19); \
-    FSAVE(20); FSAVE(21); FSAVE(22); FSAVE(23); FSAVE(24); FSAVE(25); \
-    FSAVE(26); FSAVE(27); FSAVE(28)
+        lda     $24, gc_entry_regs; \
+        stq     $0, 0 * 8 ($24); \
+        stq     $1, 1 * 8 ($24); \
+        stq     $2, 2 * 8 ($24); \
+        stq     $3, 3 * 8 ($24); \
+        stq     $4, 4 * 8 ($24); \
+        stq     $5, 5 * 8 ($24); \
+        stq     $6, 6 * 8 ($24); \
+        stq     $7, 7 * 8 ($24); \
+        stq     $8, 8 * 8 ($24); \
+        stq     $9, 9 * 8 ($24); \
+        stq     $10, 10 * 8 ($24); \
+        stq     $11, 11 * 8 ($24); \
+        stq     $12, 12 * 8 ($24); \
+        stq     $16, 16 * 8 ($24); \
+        stq     $17, 17 * 8 ($24); \
+        stq     $18, 18 * 8 ($24); \
+        stq     $19, 19 * 8 ($24); \
+        stq     $20, 20 * 8 ($24); \
+        stq     $21, 21 * 8 ($24); \
+        stq     $22, 22 * 8 ($24); \
+        lda     $24, gc_entry_float_regs; \
+        stt     $f0, 0 * 8 ($24); \
+        stt     $f1, 1 * 8 ($24); \
+        stt     $f10, 10 * 8 ($24); \
+        stt     $f11, 11 * 8 ($24); \
+        stt     $f12, 12 * 8 ($24); \
+        stt     $f13, 13 * 8 ($24); \
+        stt     $f14, 14 * 8 ($24); \
+        stt     $f15, 15 * 8 ($24); \
+        stt     $f16, 16 * 8 ($24); \
+        stt     $f17, 17 * 8 ($24); \
+        stt     $f18, 18 * 8 ($24); \
+        stt     $f19, 19 * 8 ($24); \
+        stt     $f20, 20 * 8 ($24); \
+        stt     $f21, 21 * 8 ($24); \
+        stt     $f22, 22 * 8 ($24); \
+        stt     $f23, 23 * 8 ($24); \
+        stt     $f24, 24 * 8 ($24); \
+        stt     $f25, 25 * 8 ($24); \
+        stt     $f26, 26 * 8 ($24); \
+        stt     $f27, 27 * 8 ($24); \
+        stt     $f28, 28 * 8 ($24); \
+        stt     $f29, 29 * 8 ($24)
 
 #define LOAD_ALL_REGS \
-    lda     $24, gc_entry_regs; \
-    LOAD(0); LOAD(1); LOAD(2); LOAD(3); LOAD(4); LOAD(5); LOAD(6); LOAD(7); \
-    LOAD(8); LOAD(9); LOAD(10); LOAD(11); LOAD(12); \
-    LOAD(16); LOAD(17); LOAD(18); LOAD(19); LOAD(20); LOAD(21); \
-    lda     $24, gc_entry_float_regs; \
-    FLOAD(0); FLOAD(1); FLOAD(10); FLOAD(11); FLOAD(12); FLOAD(13); \
-    FLOAD(14); FLOAD(15); FLOAD(16); FLOAD(17); FLOAD(18); FLOAD(19); \
-    FLOAD(20); FLOAD(21); FLOAD(22); FLOAD(23); FLOAD(24); FLOAD(25); \
-    FLOAD(26); FLOAD(27); FLOAD(28)
+        lda     $24, gc_entry_regs; \
+        ldq     $0, 0 * 8 ($24); \
+        ldq     $1, 1 * 8 ($24); \
+        ldq     $2, 2 * 8 ($24); \
+        ldq     $3, 3 * 8 ($24); \
+        ldq     $4, 4 * 8 ($24); \
+        ldq     $5, 5 * 8 ($24); \
+        ldq     $6, 6 * 8 ($24); \
+        ldq     $7, 7 * 8 ($24); \
+        ldq     $8, 8 * 8 ($24); \
+        ldq     $9, 9 * 8 ($24); \
+        ldq     $10, 10 * 8 ($24); \
+        ldq     $11, 11 * 8 ($24); \
+        ldq     $12, 12 * 8 ($24); \
+        ldq     $16, 16 * 8 ($24); \
+        ldq     $17, 17 * 8 ($24); \
+        ldq     $18, 18 * 8 ($24); \
+        ldq     $19, 19 * 8 ($24); \
+        ldq     $20, 20 * 8 ($24); \
+        ldq     $21, 21 * 8 ($24); \
+        ldq     $22, 22 * 8 ($24); \
+        lda     $24, gc_entry_float_regs; \
+        ldt     $f0, 0 * 8 ($24); \
+        ldt     $f1, 1 * 8 ($24); \
+        ldt     $f10, 10 * 8 ($24); \
+        ldt     $f11, 11 * 8 ($24); \
+        ldt     $f12, 12 * 8 ($24); \
+        ldt     $f13, 13 * 8 ($24); \
+        ldt     $f14, 14 * 8 ($24); \
+        ldt     $f15, 15 * 8 ($24); \
+        ldt     $f16, 16 * 8 ($24); \
+        ldt     $f17, 17 * 8 ($24); \
+        ldt     $f18, 18 * 8 ($24); \
+        ldt     $f19, 19 * 8 ($24); \
+        ldt     $f20, 20 * 8 ($24); \
+        ldt     $f21, 21 * 8 ($24); \
+        ldt     $f22, 22 * 8 ($24); \
+        ldt     $f23, 23 * 8 ($24); \
+        ldt     $f24, 24 * 8 ($24); \
+        ldt     $f25, 25 * 8 ($24); \
+        ldt     $f26, 26 * 8 ($24); \
+        ldt     $f27, 27 * 8 ($24); \
+        ldt     $f28, 28 * 8 ($24); \
+        ldt     $f29, 29 * 8 ($24)
 
 /* Allocation */
 
