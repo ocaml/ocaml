@@ -56,6 +56,21 @@ directories, it is recommended to pass
 .BR ocamldep (1)
 the same -I options that are passed to the compiler.
 
+.TP
+.BI \-native
+Generate dependencies for a pure native-code program (no bytecode
+version).  When an implementation file (.ml file) has no explicit
+interface file (.mli file),
+.BR ocamldep (1)
+generates dependencies on the
+bytecode compiled file (.cmo file) to reflect interface changes.
+This can cause unnecessary bytecode recompilations for programs that
+are compiled to native-code only.  The flag
+.BR -native
+causes dependencies on native compiled files (.cmx) to be generated instead
+of on .cmo files.  (This flag makes no difference if all source files
+have explicit .mli interface files.)
+
 .SH SEE ALSO
 .BR ocamlc (1),
 .BR ocamlopt (1).
