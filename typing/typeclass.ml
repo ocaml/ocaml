@@ -80,7 +80,7 @@ let rec add_methods env self concr concr_lst t =
 
 (* Make sure taht [self] has at least the methods of [obj]. *)
 let equalize_methods env self obj =
-  match (Ctype.expand_root env obj).desc with
+  match (Ctype.expand_head env obj).desc with
     Tobject (ty, _) ->
       let rec equalize_methods_rec t =
         match (Ctype.repr t).desc with
@@ -157,7 +157,7 @@ let missing_method env ty ty' =
     | _ ->
         fatal_error "Typeclass.missing_method (1)"
   in
-  match (Ctype.expand_root env ty').desc with
+  match (Ctype.expand_head env ty').desc with
     Tobject (met, _) ->
       missing_method_rec met
   | _ ->
@@ -195,7 +195,7 @@ let make_stub env (cl, obj_id, cl_id) =
 	       with Not_found ->
 	         raise(Error(loc, Unbound_class nm))
              in
-      	       begin match (Ctype.expand_root env anc.cty_self).desc with
+      	       begin match (Ctype.expand_head env anc.cty_self).desc with
                  Tobject (ty, _) ->
                    add_methods env self concr anc.cty_concr ty;
 	           Concr.union anc.cty_concr meths
@@ -319,10 +319,10 @@ let type_class_field env var_env self cl (met_env, fields, vars_sig) =
       in
 
       (* Self type *)
-      let ty' = Ctype.expand_root var_env self' in
+      let ty' = Ctype.expand_head var_env self' in
       begin match ty'.desc with
         Tobject (fi, _) ->
-          if ty' != Ctype.expand_root var_env self then begin
+          if ty' != Ctype.expand_head var_env self then begin
             if not (Ctype.opened_object self') then
               begin try
                 Ctype.unify var_env self (Ctype.newobj (closed_scheme fi))
@@ -414,6 +414,11 @@ let transl_class temp_env env
       raise(Error(snd cl.pcl_param, Repeated_parameter))
   in
 
+  (* Translate constrained parameters *)
+  let cstr_params =
+    List.map (function (v, _, loc) -> type_variable loc v) cl.pcl_cstr
+  in
+
   (* Bind self type variable *)
   begin match cl.pcl_self_ty with
       Some v -> Ctype.unify temp_env self (enter_type_variable false v)
@@ -421,14 +426,13 @@ let transl_class temp_env env
   end;
 
   (* Add constraints *)
-  List.iter
-    (function (v, ty, loc) ->
+  List.iter2
+    (fun (v, sty, loc) ty' ->
        try
-         Ctype.unify temp_env
-           (type_variable loc v) (transl_simple_type temp_env false ty)
+         Ctype.unify temp_env (transl_simple_type temp_env false sty) ty'
        with Ctype.Unify _ ->
          raise(Error(loc, Unconsistent_constraint)))
-    cl.pcl_cstr;
+    cl.pcl_cstr cstr_params;
 
   (* Type arguments and fields *)
   let (args, var_env) = type_pattern_list temp_env cl.pcl_args in
@@ -534,7 +538,7 @@ let build_new_type temp_env env
   equalize_methods temp_env self temp_obj;
 
   (* self should not be an abbreviation (printtyp) *)
-  let exp_self = Ctype.expand_root temp_env self in
+  let exp_self = Ctype.expand_head temp_env self in
 
   (* Final class type *)
   let cl_sig =
@@ -574,7 +578,7 @@ let make_abbrev env
   Ctype.close_object obj_ty;
   Ctype.end_def ();
   List.iter Ctype.generalize obj_ty_params;
-  if not (List.for_all Ctype.closed_schema obj_ty_params) then
+  if not (List.for_all (Ctype.closed_schema false) obj_ty_params) then
     raise(Error(cl.pcl_loc,
                 Non_generalizable(obj_id, obj_ty_params)));
   begin match Ctype.closed_schema_verbose obj_ty with
@@ -635,7 +639,7 @@ let make_stub env (cl, obj_id, cl_id) =
 	       with Not_found ->
 	         raise(Error(loc, Unbound_class nm))
              in
-      	       begin match (Ctype.expand_root env anc.cty_self).desc with
+      	       begin match (Ctype.expand_head env anc.cty_self).desc with
                  Tobject (ty, _) ->
                    add_methods env self concr anc.cty_concr ty;
 	           Concr.union anc.cty_concr meths
@@ -740,7 +744,7 @@ let type_class_field env var_env self cl vars_sig =
       in
 
       (* Self type *)
-      let ty' = Ctype.expand_root var_env self' in
+      let ty' = Ctype.expand_head var_env self' in
       begin match ty'.desc with
 	Tobject (fi, _) ->
 	  if not (Ctype.opened_object self') then
@@ -805,6 +809,11 @@ let transl_class temp_env env
       raise(Error(snd cl.pcty_param, Repeated_parameter))
   in
 
+  (* Translate constrained parameters *)
+  let cstr_params =
+    List.map (function (v, _, loc) -> type_variable loc v) cl.pcty_cstr
+  in
+
   (* Bind self type variable *)
   begin match cl.pcty_self with
       Some v -> Ctype.unify temp_env self (enter_type_variable false v)
@@ -812,14 +821,13 @@ let transl_class temp_env env
   end;
 
   (* Add constraints *)
-  List.iter
-    (function (v, ty, loc) ->
+  List.iter2
+    (fun (v, sty, loc) ty' ->
        try
-         Ctype.unify temp_env
-           (type_variable loc v) (transl_simple_type temp_env false ty)
+         Ctype.unify temp_env (transl_simple_type temp_env false sty) ty'
        with Ctype.Unify _ ->
          raise(Error(loc, Unconsistent_constraint)))
-    cl.pcty_cstr;
+    cl.pcty_cstr cstr_params;
 
   (* Translate argument types *)
   let arg_sig = List.map (transl_simple_type temp_env false) cl.pcty_args in
@@ -914,7 +922,7 @@ let build_new_type temp_env env
   equalize_methods temp_env self temp_obj;
 
   (* self should not be an abbreviation (printtyp) *)
-  let exp_self = Ctype.expand_root temp_env self in
+  let exp_self = Ctype.expand_head temp_env self in
 
   let new_ty =
     if cl.pcty_kind = Concrete then
