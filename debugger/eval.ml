@@ -131,7 +131,8 @@ and find_label lbl env ty path tydesc pos = function
         let ty_res =
           Ctype.newgenty(Tconstr(path, tydesc.type_params, ref Mnil))
         in
-        (pos, Ctype.substitute env [ty_res] [ty] ty_arg)
+        (* XXX What should be done if Ctype.apply fails ? *)
+        (pos, Ctype.apply env [ty_res] ty_arg [ty])
       end else
         find_label lbl env ty path tydesc (pos + 1) rem
 
