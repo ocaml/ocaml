@@ -731,9 +731,11 @@ let report_unification_error ppf tr txt1 txt2 =
 
 let trace fst txt ppf tr =
   print_labels := not !Clflags.classic;
-  try
-    trace fst txt ppf (filter_trace tr);
-    print_labels := true
+  try match tr with
+    t1 :: t2 :: tr ->
+      trace fst txt ppf (t1 :: t2 :: filter_trace tr);
+      print_labels := true
+  | _ -> ()
   with exn ->
     print_labels := true;
     raise exn
