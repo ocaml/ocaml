@@ -60,7 +60,7 @@ let invert_test = function
   | Ifalsetest -> Itruetest
   | Iinttest(cmp) -> Iinttest(invert_integer_test cmp)
   | Iinttest_imm(cmp, n) -> Iinttest_imm(invert_integer_test cmp, n)
-  | Ifloattest cmp -> Ifloattest(Cmm.negate_comparison cmp)
+  | Ifloattest(cmp, neg) -> Ifloattest(cmp, not neg)
   | Ieventest -> Ioddtest
   | Ioddtest -> Ieventest
 

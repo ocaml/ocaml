@@ -583,8 +583,11 @@ let rec emit_instr i dslot =
         | Iinttest_imm(cmp, n) ->
             let comp = name_for_int_comparison(swap_int_comparison cmp) in
             `	comib,{emit_string comp} {emit_int n}, {emit_reg i.arg.(0)}, {emit_label lbl}\n`
-        | Ifloattest cmp ->
-            let comp = name_for_float_comparison(negate_comparison cmp) in
+        | Ifloattest(cmp, neg) ->
+            let comp =
+              if neg
+              then name_for_float_comparison cmp
+              else "!" ^ name_for_float_comparison cmp in
             `	fcmp,dbl,{emit_string comp}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
             `	ftest\n`;
             `	b	{emit_label lbl}\n`

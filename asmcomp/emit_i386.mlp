@@ -517,7 +517,7 @@ let emit_instr i =
             `	cmpl	${emit_int n}, {emit_reg i.arg.(0)}\n`;
             let b = name_for_cond_branch cmp in
             `	j{emit_string b}	{emit_label lbl}\n`
-        | Ifloattest cmp ->
+        | Ifloattest(cmp, neg) ->
             `	fldl	{emit_reg i.arg.(0)}\n`;
             let comp_instr =
               match cmp with
@@ -532,29 +532,50 @@ let emit_instr i =
             `	fnstsw	%ax\n`;
             begin match cmp with
               Ceq ->
-                `	andb	$69, %ah\n`;
-                `	cmpb	$64, %ah\n`;
-                `	je	{emit_label lbl}\n`
+                if neg then begin
+                  `	andb	$68, %ah\n`;
+                  `	xorb	$64, %ah\n`;
+                  `	jne	`
+                end else begin
+                  `	andb	$69, %ah\n`;
+                  `	cmpb	$64, %ah\n`;
+                  `	je	`
+                end
             | Cne ->
-                `	andb	$68, %ah\n`;
-                `	xorb	$64, %ah\n`;
-                `	jne	{emit_label lbl}\n`
+                if neg then begin
+                  `	andb	$69, %ah\n`;
+                  `	cmpb	$64, %ah\n`;
+                  `	je	`
+                end else begin
+                  `	andb	$68, %ah\n`;
+                  `	xorb	$64, %ah\n`;
+                  `	jne	`
+                end
             | Cle ->
                 `	andb	$69, %ah\n`;
                 `	decb	%ah\n`;
                 `	cmpb	$64, %ah\n`;
-                `	jb	{emit_label lbl}\n`
+                if neg
+                then `	jae	`
+                else `	jb	`
             | Cge ->
                 `	andb	$5, %ah\n`;
-                `	je	{emit_label lbl}\n`
+                if neg
+                then `	jne	`
+                else `	je	`
             | Clt ->
                 `	andb	$69, %ah\n`;
                 `	cmpb	$1, %ah\n`;
-                `	je	{emit_label lbl}\n`
+                if neg
+                then `	jne	`
+                else `	je	`
             | Cgt ->
                 `	andb	$69, %ah\n`;
-                `	je	{emit_label lbl}\n`
-            end
+                if neg
+                then `	jne	`
+                else `	je	`
+            end;
+            `{emit_label lbl}\n`
         | Ioddtest ->
             `	testl	$1, {emit_reg i.arg.(0)}\n`;
             `	jne	{emit_label lbl}\n`

@@ -228,10 +228,14 @@ let name_for_int_comparison = function
   | Iunsigned Cle -> "bleu"  | Iunsigned Cgt -> "bgu"
   | Iunsigned Clt -> "blu"   | Iunsigned Cge -> "bgeu"
 
-let name_for_float_comparison = function
-    Ceq -> "fbe"   | Cne -> "fbne"
-  | Cle -> "fble"  | Cgt -> "fbg"
-  | Clt -> "fbl"   | Cge -> "fbge"
+let name_for_float_comparison cmp neg =
+  match cmp with
+    Ceq -> if neg then "fbe" else "fbne"
+  | Cne -> if neg then "fbne" else "fbe"
+  | Cle -> if neg then "fbug" else "fble"
+  | Cgt -> if neg then "fbule" else "fbg"
+  | Clt -> if neg then "fbuge" else "fbl"
+  | Cge -> if neg then "fbul" else "fbge"
 
 (* Output the assembly code for an instruction *)
 
@@ -497,8 +501,8 @@ let rec emit_instr i dslot =
             let comp = name_for_int_comparison cmp in
             `	cmp	{emit_reg i.arg.(0)}, {emit_int n}\n`;
             `	{emit_string comp}	{emit_label lbl}\n`
-        | Ifloattest cmp ->
-            let comp = name_for_float_comparison cmp in
+        | Ifloattest(cmp, neg) ->
+            let comp = name_for_float_comparison cmp neg in
             `	fcmpd	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
             `	nop\n`;
             `	{emit_string comp}	{emit_label lbl}\n`

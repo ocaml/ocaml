@@ -252,10 +252,11 @@ let name_for_int_cond_branch = function
   | Iunsigned Clt -> "#"     | Iunsigned Cge -> "br"
     (* Always false *)         (* Always true *)
 
-let name_for_float_comparison = function
-    Ceq -> "cmpteq", true   | Cne -> "cmpteq", false
-  | Cle -> "cmptle", true   | Cgt -> "cmptle", false
-  | Clt -> "cmptlt", true   | Cge -> "cmptlt", false
+let name_for_float_comparison cmp neg =
+  match cmp with
+    Ceq -> ("cmpteq", false, neg)  | Cne -> ("cmpteq", false, not neg)
+  | Cle -> ("cmptle", false, neg)  | Cgt -> ("cmptlt", true, neg)
+  | Clt -> ("cmptlt", false, neg)  | Cge -> ("cmptle", true, neg)
 
 (* Output the assembly code for an instruction *)
 
@@ -481,13 +482,15 @@ let emit_instr i =
               `	bne	$25, {emit_label lbl}\n`
             else
               `	beq	$25, {emit_label lbl}\n`
-        | Ifloattest cmp ->
-            let (comp, test) = name_for_float_comparison cmp in
-            `	{emit_string comp}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, $f30\n`;
-            if test then
-              `	fbne	$f30, {emit_label lbl}\n`
-            else
-              `	fbeq	$f30, {emit_label lbl}\n`
+        | Ifloattest(cmp, neg) ->
+            let (comp, swap, test) = name_for_float_comparison cmp neg in
+            `	{emit_string comp}	`;
+            if swap
+            then `{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, $f30\n`
+            else `{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, $f30\n`;
+            if test
+            then `	fbeq	$f30, {emit_label lbl}\n`
+            else `	fbne	$f30, {emit_label lbl}\n`
         | Ioddtest ->
             `	blbs	{emit_reg i.arg.(0)}, {emit_label lbl}\n`
         | Ieventest ->

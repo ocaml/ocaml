@@ -164,10 +164,11 @@ let name_for_comparison = function
   | Iunsigned Ceq -> "eq" | Iunsigned Cne -> "ne" | Iunsigned Cle -> "leu"
   | Iunsigned Cge -> "geu" | Iunsigned Clt -> "ltu" | Iunsigned Cgt -> "gtu"
 
-let name_for_float_comparison = function
-    Ceq -> "eq", "t" | Cne -> "eq", "f"
-  | Cle -> "le", "t" | Cge -> "lt", "f"
-  | Clt -> "lt", "t" | Cgt -> "le", "f"
+let name_for_float_comparison cmp neg =
+  match cmp with
+    Ceq -> ("eq", neg) | Cne -> ("eq", not neg)
+  | Cle -> ("le", neg) | Cge -> ("ult", not neg)
+  | Clt -> ("lt", neg) | Cgt -> ("ule", not neg)
 
 let name_for_int_operation = function
     Iadd -> "addu"
@@ -379,10 +380,12 @@ let emit_instr i =
         | Iinttest_imm(cmp, n) ->
             let comp = name_for_comparison cmp in
             `	b{emit_string comp}	{emit_reg i.arg.(0)}, {emit_int n}, {emit_label lbl}\n`
-        | Ifloattest cmp ->
-            let (comp, test) = name_for_float_comparison cmp in
+        | Ifloattest(cmp, neg) ->
+            let (comp, branch) = name_for_float_comparison cmp neg in
             `	c.{emit_string comp}.d	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-            `	bc1{emit_string test}	{emit_label lbl}\n`
+            if branch
+            then `	bc1f	{emit_label lbl}\n`
+            else `	bc1t	{emit_label lbl}\n`
         | Ioddtest ->
             `	and	$25, {emit_reg i.arg.(0)}, 1\n`;
             `	bne	$25, $0, {emit_label lbl}\n`

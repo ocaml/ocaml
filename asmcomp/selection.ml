@@ -186,7 +186,7 @@ let sel_condition = function
   | Cop(Ccmpa cmp, args) ->
       (Iinttest(Iunsigned cmp), Ctuple args)
   | Cop(Ccmpf cmp, args) ->
-      (Ifloattest cmp, Ctuple args)
+      (Ifloattest(cmp, false), Ctuple args)
   | Cop(Cand, [arg; Cconst_int 1]) ->
       (Ioddtest, arg)
   | arg ->
