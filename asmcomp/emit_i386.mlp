@@ -47,6 +47,7 @@ let slot_offset loc cl =
 let symbol_prefix =
   match Config.system with
     "linux_elf" -> ""
+  | "solaris" -> ""
   | _ -> "_"
 
 let emit_symbol s =
@@ -57,10 +58,26 @@ let emit_symbol s =
 let label_prefix =
   match Config.system with
     "linux_elf" -> ".L"
+  | "solaris" -> ".L"
   | _ -> "L"
 
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl
+
+(* Name of some data directives *)
+
+let word_dir =
+  match Config.system with
+    "solaris" -> ".value"
+  | _ -> ".word"
+let skip_dir =
+  match Config.system with
+    "solaris" -> ".zero"
+  | _ -> ".space"
+let use_ascii_dir =
+  match Config.system with
+    "solaris" -> false
+  | _ -> true
 
 (* Output a .align directive.
    The numerical argument to .align is log2 of alignment size, except
@@ -68,8 +85,10 @@ let emit_label lbl =
 
 let emit_align =
   match Config.system with
-    "linux_elf" -> (fun n -> `	.align	{emit_int n}\n`)
-  | _           -> (fun n -> `	.align	{emit_int(Misc.log2 n)}\n`)
+    "linux_elf" | "solaris" ->
+      (fun n -> `	.align	{emit_int n}\n`)
+  | _ ->
+      (fun n -> `	.align	{emit_int(Misc.log2 n)}\n`)
   
 (* Output a pseudo-register *)
 
@@ -156,15 +175,15 @@ let record_frame_label live =
   lbl
 
 let record_frame live =
-  let lbl = record_frame_label live in `{emit_label lbl}:`
+  let lbl = record_frame_label live in `{emit_label lbl}:\n`
 
 let emit_frame fd =
   `	.long	{emit_label fd.fd_lbl}\n`;
-  `	.word	{emit_int fd.fd_frame_size}\n`;
-  `	.word	{emit_int (List.length fd.fd_live_offset)}\n`;
+  `	{emit_string word_dir}	{emit_int fd.fd_frame_size}\n`;
+  `	{emit_string word_dir}	{emit_int (List.length fd.fd_live_offset)}\n`;
   List.iter
     (fun n ->
-      `	.word	{emit_int n}\n`)
+      `	{emit_string word_dir}	{emit_int n}\n`)
     fd.fd_live_offset;
   emit_align 4
 
@@ -477,7 +496,7 @@ let emit_instr i =
           as floatop) ->
         if i.arg.(0) = tos && i.arg.(1) = tos then
           (* both operands on top of FP stack *)
-          `	{emit_string(instr_for_floatop_pop floatop)}	%st(0), %st(1)\n`
+          `	{emit_string(instr_for_floatop_pop floatop)}	%st, %st(1)\n`
         else if i.arg.(0) = tos then
           (* first operand on stack *)
           `	{emit_string(instr_for_floatop floatop)}	{emit_reg i.arg.(1)}\n`
@@ -726,7 +745,7 @@ let fundecl fundecl =
   let n = frame_size() - 4 in
   if n > 0 then
     `	subl	${emit_int n}, %esp\n`;
-  `{emit_label !tailrec_entry_point}:`;
+  `{emit_label !tailrec_entry_point}:\n`;
   emit_all fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   if !range_check_trap > 0 then
@@ -745,7 +764,7 @@ let emit_item = function
   | Cint8 n ->
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
-      `	.word	{emit_int n}\n`
+      `	{emit_string word_dir}	{emit_int n}\n`
   | Cint n ->
       `	.long	{emit_int n}\n`
   | Cintlit n ->
@@ -757,20 +776,33 @@ let emit_item = function
   | Clabel_address lbl ->
       `	.long	{emit_label (10000 + lbl)}\n`
   | Cstring s ->
-      let l = String.length s in
-      if l = 0 then ()
-      else if l < 80 then
-        `	.ascii	{emit_string_literal s}\n`
-      else begin
-        let i = ref 0 in
-        while !i < l do
-          let n = min (l - !i) 80 in
-          `	.ascii	{emit_string_literal(String.sub s !i n)}\n`;
-          i := !i + n
-        done
+      if use_ascii_dir then begin
+        let l = String.length s in
+        if l = 0 then ()
+        else if l < 80 then
+          `	.ascii	{emit_string_literal s}\n`
+        else begin
+          let i = ref 0 in
+          while !i < l do
+            let n = min (l - !i) 80 in
+            `	.ascii	{emit_string_literal(String.sub s !i n)}\n`;
+            i := !i + n
+          done
+        end
+      end else begin
+        let pos = ref 0 in
+        for i = 0 to String.length s - 1 do
+          if !pos = 0
+          then `	.byte	`
+          else `,`;
+          emit_int(Char.code s.[i]);
+          incr pos;
+          if !pos >= 16 then begin `\n`; pos := 0 end
+        done;
+        if !pos > 0 then `\n`
       end
   | Cskip n ->
-      if n > 0 then `	.space	{emit_int n}\n`
+      if n > 0 then `	{emit_string skip_dir}	{emit_int n}\n`
   | Calign n ->
       emit_align n
 

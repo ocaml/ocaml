@@ -17,7 +17,7 @@
 /* Linux with ELF binaries does not prefix identifiers with _.
    Linux with a.out binaries, FreeBSD, and NextStep do. */
 
-#ifdef SYS_linux_elf
+#if defined(SYS_linux_elf) || defined(SYS_solaris)
 #define G(x) x
 #define FUNCTION_ALIGN 4
 #else
@@ -27,7 +27,7 @@
 
         .comm   G(young_limit), 4
         .comm   G(young_ptr), 4
-        .comm   G(gc_entry_regs), 4 * 7
+        .comm   G(gc_entry_regs), 28
         .comm   G(caml_bottom_of_stack), 4
         .comm   G(caml_top_of_stack), 4
         .comm   G(caml_last_return_address), 4
@@ -272,5 +272,10 @@ G(callback3):
 G(system_frametable):
         .long   1               /* one descriptor */
         .long   L107            /* return address into callback */
+#ifndef SYS_solaris
         .word   -1              /* negative frame size => use callback link */
         .word   0               /* no roots here */
+#else
+        .value  -1              /* negative frame size => use callback link */
+        .value  0               /* no roots here */
+#endif
