@@ -250,7 +250,7 @@ let rec emit = function
                else (out opPUSHENVACC; out_int (n+1));
       emit c
   | Kpush :: Kgetglobal id :: Kgetfield n :: c ->
-      out opPUSHGETGLOBALFIELD; slot_for_getglobal id; out n; emit c
+      out opPUSHGETGLOBALFIELD; slot_for_getglobal id; out_int n; emit c
   | Kpush :: Kgetglobal q :: c ->
       out opPUSHGETGLOBAL; slot_for_getglobal q; emit c
   | Kpush :: Kconst sc :: c ->
@@ -268,7 +268,7 @@ let rec emit = function
       end;
       emit c
   | Kgetglobal id :: Kgetfield n :: c ->
-      out opGETGLOBALFIELD; slot_for_getglobal id; out n; emit c
+      out opGETGLOBALFIELD; slot_for_getglobal id; out_int n; emit c
   (* Default case *)
   | instr :: c ->
       emit_instr instr; emit c
