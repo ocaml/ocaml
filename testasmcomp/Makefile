@@ -15,7 +15,7 @@ CC=$(NATIVECC)
 CFLAGS=-g
 
 PROGS=fib.out tak.out quicksort.out quicksort2.out soli.out integr.out \
-      arith.out
+      arith.out checkbound.out
 
 all: codegen $(PROGS)
 
@@ -128,7 +128,7 @@ checkbound.out: main.c checkbound.o $(ARCH).o
 clean::
 	rm -f *.out *.cm[io] *.s *.o *~
 
-fib.o tak.o quicksort.o quicksort2.o integr.o soli.o: $(CODEGEN)
+$(PROGS:.out=.o): $(CODEGEN)
 
 depend: beforedepend
 	$(CAMLDEP) $(DEPFLAGS) *.mli *.ml > .depend
