@@ -62,7 +62,8 @@ type lexbuf =
    Note that the lexing engine will only manage the [pos_cnum] field
    of [lex_curr_p] by updating it with the number of characters read
    since the start of the [lexbuf].  For the other fields to be
-   accurate, they must be updated by the lexer actions.
+   accurate, they must be initialised before the first use of the
+   lexbuf, and updated by the lexer actions.
  *)
 
 val from_channel : in_channel -> lexbuf
@@ -122,6 +123,13 @@ val lexeme_start_p : lexbuf -> position
 val lexeme_end_p : lexbuf -> position
 (** Like [lexeme_end], but return a complete [position] instead
     of an offset. *)
+
+(** {6 Miscellaneous functions} *)
+
+val flush_input : lexbuf -> unit
+(** Discard the contents of the buffer and reset the current
+    position to 0.  The next use of the lexbuf will trigger a
+    refill. *)
 
 (**/**)
 

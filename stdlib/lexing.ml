@@ -218,3 +218,13 @@ let lexeme_end lexbuf = lexbuf.lex_curr_p.pos_cnum;;
 
 let lexeme_start_p lexbuf = lexbuf.lex_start_p;;
 let lexeme_end_p lexbuf = lexbuf.lex_curr_p;;
+
+
+(* Discard data left in lexer buffer. *)
+
+let flush_input lb =
+  lb.lex_curr_pos <- 0;
+  lb.lex_abs_pos <- 0;
+  lb.lex_curr_p <- {lb.lex_curr_p with pos_cnum = 0};
+  lb.lex_buffer_len <- 0;
+;;
