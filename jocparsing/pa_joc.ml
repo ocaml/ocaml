@@ -77,7 +77,7 @@ EXTEND (* join calculus *)
       ]];
 
  joinpattern:
-   [[id=joinident ; pat=topjpatt -> (loc, id, pat)]];
+   [[id=joinident ; pat=patt -> (loc, id, pat)]];
 
  joinclause:
    [[

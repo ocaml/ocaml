@@ -51,12 +51,28 @@ let lambda_create_location = mk_lambda env_jprims "create_location"
 let lambda_create_process = mk_lambda env_join "create_process"
 let lambda_create_process_location =
   mk_lambda env_jprims "create_process_location"
+(* Synchronous sends, two cases only *)
 let lambda_send_sync = mk_lambda env_join "send_sync"
-let lambda_send_async = mk_lambda env_join "send_async"
-let lambda_tail_send_async = mk_lambda env_join "tail_send_async"
-let lambda_send_sync_alone = mk_lambda env_join "send_sync_alone"
+and lambda_send_sync_alone = mk_lambda env_join "send_sync_alone"
+
+let lambda_create_async = mk_lambda env_join "create_async"
+and lambda_create_async_alone = mk_lambda env_join "create_async_alone"
+
+(* Asynchronous sends, many cases... *)
+let lambda_direct_send_async = mk_lambda env_join "direct_send_async"
+and lambda_tail_direct_send_async =
+  mk_lambda env_join "tail_direct_send_async"
+and lambda_direct_send_async_alone =
+  mk_lambda env_join "direct_send_async_alone"
+and lambda_tail_direct_send_async_alone =
+  mk_lambda env_join "tail_direct_send_async_alone"
+and lambda_send_async = mk_lambda env_join "send_async"
+and lambda_tail_send_async = mk_lambda env_join "tail_send_async"
+
+
 let lambda_send_async_alone = mk_lambda env_join "send_async_alone"
 let lambda_tail_send_async_alone = mk_lambda env_join "tail_send_async_alone"
+
 let lambda_create_automaton = mk_lambda env_join "create_automaton"
 let lambda_create_automaton_location = mk_lambda env_jprims "create_automaton_location"
 let lambda_patch_table = mk_lambda env_join "patch_table"
@@ -80,17 +96,26 @@ let create_process_location id_loc p =
 let do_send send auto num arg =
   mk_apply send [Lvar auto ; lambda_int  num ; arg]
 
-let send_async auto num alone arg = match alone with
-  | None ->
-      do_send lambda_send_async auto num  arg
-  | Some g ->
-      do_send lambda_send_async_alone auto g arg
+let create_async auto num alone = match alone with
+| None -> mk_apply lambda_create_async [Lvar auto ; lambda_int num]
+| Some g -> mk_apply lambda_create_async_alone [Lvar auto ; lambda_int g]
 
-and tail_send_async auto num alone arg = match alone with
+let direct_send_async auto num alone arg = match alone with
   | None ->
-      do_send lambda_tail_send_async auto num  arg
+      do_send lambda_direct_send_async auto num  arg
   | Some g ->
-      do_send lambda_tail_send_async_alone auto g arg
+      do_send lambda_direct_send_async_alone auto g arg
+
+and tail_direct_send_async auto num alone arg = match alone with
+  | None ->
+      do_send lambda_tail_direct_send_async auto num  arg
+  | Some g ->
+      do_send lambda_tail_direct_send_async_alone auto g arg
+
+and send_async chan arg = mk_apply lambda_send_async [chan ; arg]
+
+and tail_send_async chan arg = mk_apply lambda_tail_send_async [chan ; arg]
+
 
 and send_sync auto num alone arg = match alone with
   | None ->
@@ -518,10 +543,12 @@ let build_channels {jauto_name=name ; jauto_names=names} k =
       let jparam = Ident.create "jparam" in
       Llet
         (StrictOpt, id,
-         Lfunction
-           (Curried,[jparam],
-            (if sync then send_sync else send_async)
-              name num alone (Lvar jparam)),
+         begin if sync then
+           Lfunction
+             (Curried,[jparam], send_sync name num alone (Lvar jparam))
+         else
+           create_async name num alone
+         end,
          k))
     names k
 

@@ -25,10 +25,22 @@ type reaction
 
 val patch_table : automaton -> reaction array -> unit
 
-val send_async : automaton -> int -> Obj.t -> unit
-val send_async_alone : automaton -> int -> Obj.t -> unit
-val tail_send_async : automaton -> int -> Obj.t -> unit
-val tail_send_async_alone : automaton -> int -> Obj.t -> unit
+type async
+val create_async : automaton -> int -> async
+val create_async_alone : automaton -> int -> async
+
+(* Asynchronous sends *)
+
+val direct_send_async : automaton -> int -> Obj.t -> unit
+val direct_send_async_alone  : automaton -> int -> Obj.t -> unit
+val send_async : async -> Obj.t -> unit
+
+val tail_direct_send_async : automaton -> int -> Obj.t -> unit
+val tail_direct_send_async_alone : automaton -> int -> Obj.t -> unit
+val tail_send_async : async -> Obj.t -> unit
+
+(* Synchornous sends *)
+
 val send_sync : automaton -> int -> Obj.t -> Obj.t
 val send_sync_alone : automaton -> int -> Obj.t -> Obj.t
 

@@ -186,6 +186,7 @@ let exit_thread () =
     pool_enter ()
 
 let create_process f =
+(*DEBUG*)debug2 "CREATE_PROCESS" "" ;
   incr_active () ;
 (* Wapper around f, to be sure to call my exit_thread *)  
   let g () = 
@@ -213,11 +214,10 @@ type automaton = {
   mutable status : status ;
   mutex : Mutex.t ;
   queues : queue array ;
-  mutable matches : reaction array ;
+  mutable matches : (reaction) array ;
 } 
 
-and reaction = status * int * Obj.t
-
+and reaction = status * int * (Obj.t -> Obj.t)
 
 let put_queue auto idx a =
   auto.queues.(idx) <- a :: auto.queues.(idx)
@@ -231,8 +231,6 @@ let get_queue auto idx = match auto.queues.(idx) with
     | _  -> ()
     end ;
     a
-
-let id x = ()
 
 let create_automaton nchans nmatches =
   {
@@ -263,6 +261,17 @@ let kont_create auto =
 (* Asynchronous sends *)
 (**********************)
 
+type async =
+    Async of (automaton) * int
+  | Alone of (automaton) * int
+
+
+let create_async auto i = Async (auto, i)
+and create_async_alone auto g = Alone (auto, g)
+
+
+(* Callbacks from compiled code *)
+
 (* Transfert control to frozen principal thread *)
 let kont_go k f =
   incr_active () ;
@@ -277,27 +286,28 @@ let fire_go auto f =
   Mutex.unlock auto.mutex ;
   create_process f
 
-and just_go auto f =
-(*DEBUG*)debug3 "JUST_GO" "" ;
+(* Transfer control to current thread
+   can be called when send triggers a match in the async case
+   in thread-tail position *)
+let just_go_async auto f =
+(*DEBUG*)debug3 "JUST_GO_ASYNC" "" ;
   Mutex.unlock auto.mutex ;
   f ()
 
-
-(* Find a match *)
 let rec attempt_match tail auto reactions i =
   if i >= Obj.size reactions then Mutex.unlock auto.mutex
   else begin
     let (ipat, iprim, f) = Obj.magic (Obj.field reactions i) in
     if ipat land auto.status = ipat then
       if iprim < 0 then
-        f (if tail then just_go else fire_go) (* f will unlock auto's mutex *)
+        f (if tail then just_go_async else fire_go) (* f will unlock auto's mutex *)
       else
         f kont_go
     else
       attempt_match tail auto reactions (i+1)
   end
 
-let send_async auto idx a =
+let direct_send_async auto idx a =
 (*DEBUG*)  debug3 "SEND_ASYNC" (sprintf "channel %i" idx) ;
 (* Acknowledge new message by altering queue and status *)
   Mutex.lock auto.mutex ;
@@ -312,7 +322,19 @@ let send_async auto idx a =
     attempt_match false auto (Obj.magic auto.matches) 0
   end
 
-and tail_send_async auto idx a =
+(* Optimize forwarders *)
+and direct_send_async_alone auto g a =
+(*DEBUG*)  debug3 "SEND_ASYNC_ALONE" (sprintf "match %i" g) ;
+  let _,_,f = Obj.magic (Obj.field (Obj.magic auto.matches) g) in
+  create_process (fun () -> f a)
+
+
+let send_async chan a = match chan with
+| Async (auto, idx) -> direct_send_async auto idx a
+| Alone (auto, g)   -> direct_send_async_alone auto g a
+
+
+let tail_direct_send_async auto idx a =
 (*DEBUG*)  debug3 "TAIL_ASYNC" (sprintf "channel %i" idx) ;
 (* Acknowledge new message by altering queue and status *)
   Mutex.lock auto.mutex ;
@@ -329,15 +351,15 @@ and tail_send_async auto idx a =
 
 
 (* Optimize forwarders *)
-and send_async_alone auto g a =
-(*DEBUG*)  debug3 "SEND_ASYNC_ALONE" (sprintf "match %i" g) ;
-  let _,_,f = Obj.magic (Obj.field (Obj.magic auto.matches) g) in
-  create_process (fun () -> f a)
 
-and tail_send_async_alone auto g a =
+and tail_direct_send_async_alone auto g a =
 (*DEBUG*)  debug3 "TAIL_ASYNC_ALONE" (sprintf "match %i" g) ;
   let _,_,f = Obj.magic (Obj.field (Obj.magic auto.matches) g) in
   f a
+
+let tail_send_async chan a = match chan with
+| Async (auto, idx) -> tail_direct_send_async auto idx a
+| Alone (auto, g)   -> tail_direct_send_async_alone auto g a
 
 (*********************)
 (* Synchronous sends *)
@@ -357,7 +379,6 @@ let kont_suspend k =
   | Ret v -> v
   | Start -> assert false
 
-
 (* Suspend current thread when some match was found *)
 let suspend_for_reply k =
 (*DEBUG*)incr_locked suspended ;
@@ -368,6 +389,7 @@ let suspend_for_reply k =
   match k.kval with
   | Ret v -> v
   | Start|Go _ -> assert false
+
 
 (* Transfert control to frozen principal thread and suspend current thread *)
 let kont_go_suspend kme kpri f =
@@ -441,4 +463,3 @@ let reply_to v k =
   k.kval <- Ret v ;
   Condition.signal k.kcondition ;
   Mutex.unlock k.kmutex 
-

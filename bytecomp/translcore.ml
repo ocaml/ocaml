@@ -311,8 +311,9 @@ let transl_prim prim args =
 
 (*> JOCAML *)
 (*
-  Build a sequence if needed,
-  note that non debugging information is inserted
+  Build a sequence if needed, this function is called to put sequence
+  instead of ``&'' in some occasions.
+  No debugging information is inserted
 *)
 let make_sequence lam1 lam2 =
   if lam1 = lambda_unit then
@@ -762,114 +763,130 @@ and transl_exp0 e =
         cl_type = Tcty_signature cty;
         cl_env = e.exp_env }
 (*> JOCAML *)
-  | Texp_spawn (e) -> transl_spawn true None None e
+  | Texp_spawn (e) -> transl_spawn None e
 (*< JOCAML *)
   | _ ->
       Location.print Format.err_formatter e.exp_loc ;
       fatal_error "Translcore.transl_exp"
 
 (*> JOCAML *)
-(* sync is None of asynchronous threads and Some id where id
-   is the principal name *)
+(*
+   - die is a boolean that indicates that produced code ends by
+     the death of the current thread. As a consequence,
+     the last asynchronous send need not fork a thread in case
+     it fires a guarded process.
 
-and transl_proc tail sync p = match p.exp_desc with
+   - sync is None of asynchronous threads and Some id where id
+   is the principal name
+*)
+
+and transl_proc die sync p = match p.exp_desc with
 (* Mixed constructs *)
 | Texp_let(rec_flag, pat_expr_list, body) ->
-    transl_let rec_flag pat_expr_list (transl_proc tail sync body)
+    transl_let rec_flag pat_expr_list (transl_proc die sync body)
 | Texp_def (d,body) ->
-    do_transl_def None d (transl_proc tail sync body)
+    do_transl_def None d (transl_proc die sync body)
 | Texp_loc (d,body) ->
-    transl_loc d (transl_proc tail sync body)
+    transl_loc d (transl_proc die sync body)
 | Texp_ifthenelse(cond, ifso, Some ifnot) ->
     Lifthenelse
       (transl_exp cond,
-       transl_proc tail sync ifso,
-       transl_proc tail sync ifnot)
+       transl_proc die sync ifso,
+       transl_proc die sync ifnot)
 | Texp_ifthenelse(cond, ifso, None) ->
     assert (sync = None) ;
-    Lifthenelse(transl_exp cond, transl_proc tail sync ifso, lambda_unit)
+    Lifthenelse (transl_exp cond, transl_proc die sync ifso, lambda_unit)
 | Texp_sequence(e1, p2) ->
-    make_sequence (transl_exp e1) (transl_proc tail sync p2)
+    make_sequence (transl_exp e1) (transl_proc die sync p2)
 | Texp_when(cond, body) ->
     Lifthenelse
-       (transl_exp cond, transl_proc tail sync body, staticfail)
+       (transl_exp cond, transl_proc die sync body, staticfail)
 | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
     Matching.for_multiple_match p.exp_loc
       (transl_list argl)
-      (transl_cases no_event (transl_proc tail sync) pat_expr_list) partial
+      (transl_cases no_event (transl_proc die sync) pat_expr_list) partial
 | Texp_match(arg, pat_expr_list, partial) ->
     Matching.for_function p.exp_loc None
       (transl_exp arg)
-      (transl_cases no_event (transl_proc tail sync) pat_expr_list) partial
+      (transl_cases no_event (transl_proc die sync) pat_expr_list) partial
 (* Proc constructs *)
 | Texp_par (e1,e2) ->
       let psync, seqs, forks = Transljoin.as_procs sync p in
+(* psync is some expression to compute as a result *)
       begin match psync with
       | None ->
           begin match forks, seqs with
           | [],[] ->  lambda_unit
           | fst::rem,_ ->
-              List.fold_right transl_seq seqs
-                (List.fold_right (transl_fork None) rem
-                   (transl_proc tail None fst))
+              transl_as_seq false seqs
+                (List.fold_right
+                   (transl_fork None)
+                   rem (transl_proc die None fst))
           | [],_ ->
-              List.fold_right transl_seq seqs lambda_unit
+              transl_as_seq die seqs lambda_unit
           end
       | Some psync ->
-          List.fold_right transl_seq seqs
+          transl_as_seq false seqs
             (List.fold_right (transl_fork None) forks
-               (transl_proc tail sync psync))
+               (transl_proc false sync psync))
       end
 | Texp_asyncsend (_,_) | Texp_reply (_,_) | Texp_null | Texp_exec (_) ->
-    transl_simple_proc tail sync p
+    transl_simple_proc die sync p
 | _ ->
     Location.print Format.err_formatter p.exp_loc ;
     fatal_error "Translcore.transl_proc"
 
-and transl_simple_proc tail sync p = match p.exp_desc with
+(*
+    Simple procs are defined as follows : the code for them does
+   terminate and never fails,
+   As a consequence, ``&'' can get translated to ``;''
+*)
+and transl_simple_proc die sync p = match p.exp_desc with
 (* Mixed constructs *)
 | Texp_let(rec_flag, pat_expr_list, body) ->
-    transl_let rec_flag pat_expr_list (transl_simple_proc tail sync body)
+    transl_let rec_flag pat_expr_list (transl_simple_proc die sync body)
 | Texp_def (d,body) ->
-    do_transl_def None d (transl_simple_proc tail sync body)
+    do_transl_def None d (transl_simple_proc die sync body)
 | Texp_loc (d,body) ->
-    transl_loc d (transl_simple_proc tail sync body)
+    transl_loc d (transl_simple_proc die sync body)
 | Texp_ifthenelse(cond, ifso, Some ifnot) ->
     Lifthenelse
       (transl_exp cond,
-       transl_simple_proc tail sync ifso,
-       transl_simple_proc tail sync ifnot)
+       transl_simple_proc die sync ifso,
+       transl_simple_proc die sync ifnot)
 | Texp_ifthenelse(cond, ifso, None) ->
-    Lifthenelse
-      (transl_exp cond,
-       transl_proc tail sync ifso,
-       lambda_unit)
+    Lifthenelse (transl_exp cond,
+                 transl_simple_proc die sync ifso,
+                 lambda_unit)
 | Texp_sequence(e, p) ->
-    make_sequence (transl_exp e) (transl_simple_proc tail sync p)
+    make_sequence (transl_exp e) (transl_simple_proc die sync p)
 | Texp_when(cond, body) ->
       (Lifthenelse
-         (transl_exp cond, transl_simple_proc tail sync body,
-          staticfail))
+         (transl_exp cond, transl_simple_proc die sync body, staticfail))
 | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
     Matching.for_multiple_match p.exp_loc
       (transl_list argl)
-      (transl_cases
-         no_event (transl_simple_proc tail sync) pat_expr_list) partial
+      (transl_cases no_event
+         (transl_simple_proc die sync) pat_expr_list) partial
 | Texp_match(arg, pat_expr_list, partial) ->
     Matching.for_function p.exp_loc None
       (transl_exp arg)
-      (transl_cases no_event (transl_simple_proc tail sync) pat_expr_list) partial
+      (transl_cases no_event
+         (transl_simple_proc die sync) pat_expr_list) partial
 (* Proc constructs *)
 | Texp_exec  (e) -> transl_exp e
-| Texp_par (_,_) -> transl_spawn tail sync None p
+| Texp_par (p1,p2) -> (* We can translate this ``&'' as a sequence *)
+    make_sequence
+      (transl_simple_proc false sync p1)
+      (transl_simple_proc die sync p2)
 | Texp_asyncsend
     ({exp_desc=Texp_ident (_,{val_kind=Val_channel (auto,num,alone)})},e2) ->
-        (if tail then
-          Transljoin.tail_send_async
-        else
-          Transljoin.send_async)
+      (if die then Transljoin.tail_direct_send_async
+      else Transljoin.direct_send_async)
         auto num alone (transl_exp e2)
-| Texp_asyncsend (e1,e2) -> Lapply (transl_exp e1,[transl_exp e2])
+| Texp_asyncsend (e1,e2) ->
+    (if die then Transljoin.tail_send_async else Transljoin.send_async)
+      (transl_exp e1) (transl_exp e2)
 | Texp_reply (e, (Pident id as path)) ->
     begin match sync with
     | Some main_id when main_id = id -> transl_exp e
@@ -911,21 +928,25 @@ and guarded_proc_as_fun cl_loc sync jpats p =
   params, body
 
 (* transl_spawn separates e into a forked part and a part to execute now *)
-and transl_spawn tail sync some_loc e =
-  let psync, seqs, forks = Transljoin.as_procs sync e in
-  let lam_end = match psync with
-  | None -> lambda_unit
-  | Some p -> transl_proc tail sync p in
+and transl_spawn some_loc e =
+  let _, seqs, forks = Transljoin.as_procs None e in
   let lforks =
-    List.fold_right (transl_fork some_loc) forks lam_end in
-  List.fold_right transl_seq seqs lforks
+    List.fold_right (transl_fork some_loc) forks lambda_unit in
+  transl_as_seq false seqs lforks
 
 (* Do perform a fork *)
 and transl_fork some_loc e k = 
   make_sequence (Transljoin.do_spawn some_loc (transl_proc true None e)) k
 
 (* Sequence for processes *)    
-and transl_seq e k =  make_sequence (transl_simple_proc false None e) k
+
+and transl_as_seq die es k = match es with
+| [] -> k
+| [e] -> make_sequence (transl_simple_proc die None e) k
+| e::rem ->
+    make_sequence
+      (transl_simple_proc false None e)
+      (transl_as_seq die rem k)
 (*< JOCAML *)
 and transl_list expr_list =  List.map transl_exp expr_list
 
