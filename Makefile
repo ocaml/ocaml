@@ -224,6 +224,7 @@ utils/config.ml: utils/config.mlp Makefile.config
             -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCLINKOPTS)|' \
             -e 's|%%CCLIBS%%|$(CCLIBS)|' \
             -e 's|%%ARCH%%|$(ARCH)|' \
+            -e 's|%%MODEL%%|$(MODEL)|' \
             -e 's|%%SYSTEM%%|$(SYSTEM)|' \
             utils/config.mlp > utils/config.ml
 	@chmod -w utils/config.ml
