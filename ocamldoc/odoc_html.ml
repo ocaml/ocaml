@@ -1428,7 +1428,7 @@ class html =
           let father_name = Name.father (name e) in
           output_string chanout
             ("<tr><td><a href=\""^(target e)^"\">"^simple_name^"</a> "^
-             (if simple_name <> father_name then 
+             (if simple_name <> father_name && father_name <> "" then 
                "["^"<a href=\""^(fst (Naming.html_files father_name))^"\">"^father_name^"</a>]"
              else
                ""
