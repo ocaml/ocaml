@@ -34,11 +34,11 @@ FUNCTION(caml_call_gc)
         movq    %rax, caml_last_return_address(%rip)
         leaq    8(%rsp), %rax
         movq    %rax, caml_bottom_of_stack(%rip)
+.L105:  
     /* Save caml_young_ptr, caml_exception_pointer */
 	movq	%r15, caml_young_ptr(%rip)
 	movq	%r14, caml_exception_pointer(%rip)
     /* Build array of registers, save it into caml_gc_regs */
-.L105:  
         pushq   %r13
         pushq   %r12
         pushq   %rbp
