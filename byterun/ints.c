@@ -46,9 +46,8 @@ static char * parse_sign_and_base(char * p,
   return p;
 }
 
-static int parse_digit(char * p)
+static int parse_digit(char c)
 {
-  int c = *p;
   if (c >= '0' && c <= '9')
     return c - '0';
   else if (c >= 'A' && c <= 'F')
@@ -65,10 +64,12 @@ static long parse_long(char * p)
   int sign, base, d;
 
   p = parse_sign_and_base(p, &base, &sign);
-  d = parse_digit(p);
+  d = parse_digit(*p);
   if (d < 0 || d >= base) failwith("int_of_string");
   for (p++, res = d; /*nothing*/; p++) {
-    d = parse_digit(p);
+    char c = *p;
+    if (c == '_') continue;
+    d = parse_digit(c);
     if (d < 0 || d >= base) break;
     res = base * res + d;
   }
@@ -421,10 +422,12 @@ CAMLprim value int64_of_string(value s)
   int sign, base, d;
 
   p = parse_sign_and_base(String_val(s), &base, &sign);
-  d = parse_digit(p);
+  d = parse_digit(*p);
   if (d < 0 || d >= base) failwith("int_of_string");
   for (p++, res = d; /*nothing*/; p++) {
-    d = parse_digit(p);
+    char c = *p;
+    if (c == '_') continue;
+    d = parse_digit(c);
     if (d < 0 || d >= base) break;
     res = base * res + d;
   }

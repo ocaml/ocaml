@@ -104,10 +104,23 @@ CAMLprim value format_float(value fmt, value arg)
 
 CAMLprim value float_of_string(value vs)
 {
-  char * s = String_val(vs);
-  char * ends;
-  double d = strtod((const char *) s, &ends);
-  if (ends != s + string_length(vs)) failwith("float_of_string");
+  char parse_buffer[64];
+  char * buf, * src, * dst, * end;
+  mlsize_t len;
+  double d;
+
+  len = string_length(vs);
+  buf = len < sizeof(parse_buffer) ? parse_buffer : stat_alloc(len + 1);
+  src = String_val(vs);
+  dst = buf;
+  while (len--) {
+    char c = *src++;
+    if (c != '_') *dst++ = c;
+  }
+  *dst = 0;
+  d = strtod((const char *) buf, &end);
+  if (buf != parse_buffer) stat_free(buf);
+  if (end != dst) failwith("float_of_string");
   return copy_double(d);
 }
 
