@@ -1,36 +1,46 @@
-CAMLC=../boot/camlrun ../camlc -I ../stdlib
+CAMLC=../boot/camlrun ../camlc -I ../stdlib -I KB -I Lex
+CAMLOPT=../boot/camlrun ../camlopt -I ../stdlib -I KB -I Lex
+OPTFLAGS=-S
 CAMLYACC=../yacc/camlyacc
 CAMLLEX=../boot/camlrun ../lex/camllex
 CAMLDEP=../tools/camldep
 CAMLRUN=../byterun/camlrun
 
-EXE=fib takc taku sieve quicksort quicksort.fast fft fft.fast \
-  soli soli.fast boyer kb nucleic genlex
+BYTE_EXE=fib.byt takc.byt taku.byt sieve.byt quicksort.byt quicksort.fast.byt \
+  fft.byt fft.fast.byt soli.byt soli.fast.byt boyer.byt kb.byt \
+  nucleic.byt genlex.byt
 
-all: $(EXE)
+CODE_EXE=$(BYTE_EXE:.byt=.out)
+
+all: $(BYTE_EXE) $(CODE_EXE)
 
 # KB
 
-KBFILES=KB/terms.mli KB/terms.ml KB/equations.mli KB/equations.ml \
-  KB/kb.mli KB/kb.ml KB/orderings.mli KB/orderings.ml KB/kbmain.ml
+BYTE_KB=KB/terms.cmo KB/equations.cmo KB/kb.cmo KB/orderings.cmo KB/kbmain.cmo
+CODE_KB=$(BYTE_KB:.cmo=.cmx)
 
-kb: $(KBFILES)
-	$(CAMLC) -I KB $(KBFILES) -o kb
+kb.byt: $(BYTE_KB)
+	$(CAMLC) -I KB $(BYTE_KB) -o kb.byt
+kb.out: $(CODE_KB)
+	$(CAMLOPT) $(OPTFLAGS) -I KB $(CODE_KB) -o kb.out
 
 clean::
-	rm -f KB/*.cm[io]
+	rm -f KB/*.cm[iox] KB/*.[os]
 	rm -f KB/*~
 
 # Genlex
 
-GENLEXFILES=Lex/syntax.ml Lex/scan_aux.ml Lex/grammar.mli Lex/scanner.ml \
-  Lex/gram_aux.ml Lex/grammar.ml Lex/lexgen.ml Lex/output.ml Lex/main.ml
+BYTE_GENLEX=Lex/syntax.cmo Lex/scan_aux.cmo Lex/scanner.cmo Lex/gram_aux.cmo \
+  Lex/grammar.cmo Lex/lexgen.cmo Lex/output.cmo Lex/main.cmo
+CODE_GENLEX=$(BYTE_GENLEX:.cmo=.cmx)
 
-genlex: $(GENLEXFILES)
-	$(CAMLC) -I Lex $(GENLEXFILES) -o genlex
+genlex.byt: $(BYTE_GENLEX)
+	$(CAMLC) -I Lex $(BYTE_GENLEX) -o genlex.byt
+genlex.out: $(CODE_GENLEX)
+	$(CAMLOPT) $(OPTFLAGS) -I Lex $(CODE_GENLEX) -o genlex.out
 
 clean::
-	rm -f Lex/*.cm[io]
+	rm -f Lex/*.cm[iox] Lex/*.[os]
 	rm -f Lex/*~
 
 Lex/grammar.ml Lex/grammar.mli: Lex/grammar.mly
@@ -38,22 +48,35 @@ Lex/grammar.ml Lex/grammar.mli: Lex/grammar.mly
 
 clean::
 	rm -f Lex/grammar.ml Lex/grammar.mli
+beforedepend:: Lex/grammar.ml Lex/grammar.mli
 
 Lex/scanner.ml: Lex/scanner.mll
 	$(CAMLLEX) Lex/scanner.mll
 
 clean::
 	rm -f Lex/scanner.ml
+beforedepend:: Lex/scanner.ml
 
 # Common rules
 
-.SUFFIXES: .mli .ml .cmi .cmo .fast
+.SUFFIXES:
+.SUFFIXES: .mli .ml .cmi .cmo .cmx .byt .fast.byt .out .fast.out
 
-.ml:
-	$(CAMLC) -o $* $<
+.ml.byt:
+	$(CAMLC) -o $*.byt $<
 
-.ml.fast:
-	$(CAMLC) -fast -o $*.fast $<
+.ml.fast.byt:
+	cp $*.ml $*.fast.ml
+	$(CAMLC) -fast -o $*.fast.byt $*.fast.ml
+	rm -f $*.fast.ml
+
+.ml.out:
+	$(CAMLOPT) $(OPTFLAGS) -o $*.out $<
+
+.ml.fast.out:
+	cp $*.ml $*.fast.ml
+	$(CAMLOPT) $(OPTFLAGS) -fast -o $*.fast.out $*.fast.ml
+	rm -f $*.fast.ml
 
 .mli.cmi:
 	$(CAMLC) -c $<
@@ -61,24 +84,42 @@ clean::
 .ml.cmo:
 	$(CAMLC) -c $<
 
-$(EXE): ../camlc
+.ml.cmx:
+	$(CAMLOPT) $(OPTFLAGS) -c $<
+
+$(BYTE_EXE) $(BYTE_KB) $(BYTE_GENLEX): ../camlc
+$(BYTE_EXE): ../stdlib/stdlib.cma
+$(CODE_EXE) $(CODE_KB) $(CODE_GENLEX): ../camlopt
+$(CODE_EXE): ../stdlib/stdlib.cmxa
 
 clean::
-	rm -f $(EXE)
-	rm -f *.cm[io]
+	rm -f *.byt *.out
+	rm -f *.cm[iox] *.[os]
 	rm -f *~
 
 # Regression test
 
-test:
+test: codetest
+
+bytetest:
 	set -e; \
-        camlrun=$(CAMLRUN); export camlrun; \
-        for prog in $(EXE); do \
+        for prog in $(BYTE_EXE:.byt=); do \
           echo $$prog; \
           if test -f Results/$$prog.runtest; then \
-            sh Results/$$prog.runtest test; \
+            sh Results/$$prog.runtest test $(CAMLRUN) $$prog.byt; \
           elif test -f Results/$$prog.out; then \
-            sh Results/runtest $$prog; \
+            $(CAMLRUN) $$prog.byt | cmp - Results/$$prog.out; \
+          fi; \
+        done
+
+codetest:
+	set -e; \
+        for prog in $(CODE_EXE:.out=); do \
+          echo $$prog; \
+          if test -f Results/$$prog.runtest; then \
+            sh Results/$$prog.runtest test $$prog.out; \
+          elif test -f Results/$$prog.out; then \
+            $$prog.out | cmp - Results/$$prog.out; \
           fi; \
         done
 
@@ -87,14 +128,34 @@ clean::
 
 # Benchmark
 
-bench:
+bench: codebench
+
+bytebench:
 	set -e; \
-        camlrun=$(CAMLRUN); export camlrun; \
-        for prog in $(EXE); do \
-          echo $$prog; \
+        for prog in $(BYTE_EXE:.byt=); do \
+          echo -n "$$prog		"; \
           if test -f Results/$$prog.runtest; then \
-            sh Results/$$prog.runtest bench; \
+            sh Results/$$prog.runtest bench $$(CAMLRUN) $prog.byt; \
           else \
-            xtime -o /dev/null $(CAMLRUN) $$prog; \
+            xtime -o /dev/null -e /dev/null $(CAMLRUN) $$prog.byt; \
           fi; \
         done
+
+codebench:
+	set -e; \
+        for prog in $(CODE_EXE:.out=); do \
+          echo -n "$$prog		"; \
+          if test -f Results/$$prog.runtest; then \
+            sh Results/$$prog.runtest bench $$prog.out; \
+          else \
+            xtime -repeat 3 -o /dev/null -e /dev/null $$prog.out; \
+          fi; \
+        done
+
+# Dependencies
+
+depend: beforedepend
+	$(CAMLDEP) -I KB -I Lex *.mli *.ml KB/*.mli KB/*.ml Lex/*.mli Lex/*.ml > .depend
+
+include .depend
+

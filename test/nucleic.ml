@@ -1,9 +1,9 @@
 (* Use floating-point arithmetic *)
 
-external (+) : float -> float -> float = "add_float"
-external (-) : float -> float -> float = "sub_float"
-external ( * ) : float -> float -> float = "mul_float"
-external (/) : float -> float -> float = "div_float"
+external (+) : float -> float -> float = "%addfloat"
+external (-) : float -> float -> float = "%subfloat"
+external ( * ) : float -> float -> float = "%mulfloat"
+external (/) : float -> float -> float = "%divfloat"
 
 type intg = int
 
