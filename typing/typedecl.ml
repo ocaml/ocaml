@@ -211,9 +211,9 @@ let check_abbrev env (_, sdecl) (id, decl) =
               Ctype.equal env false args decl.type_params
                       &&
               Includecore.type_declarations env id
+                decl'
                 (Subst.type_declaration (Subst.add_type id path Subst.identity)
                                         decl)
-                decl'
             then ()
             else raise(Error(sdecl.ptype_loc, Definition_mismatch ty))
           with Not_found ->
