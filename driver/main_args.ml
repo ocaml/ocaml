@@ -43,6 +43,7 @@ module Make_options (F :
      val _verbose : unit -> unit
      val _w : string -> unit
      val _warn_error : string -> unit
+     val _where : unit -> unit
 
      val _nopervasives : unit -> unit
      val _dparsetree : unit -> unit
@@ -94,7 +95,7 @@ struct
                   "<path>  Generate bytecode for the given runtime system";
     "-use_runtime", Arg.String F._use_runtime,
                   "<path>  (deprecated) same as -use-runtime";
-    "-v", Arg.Unit F._v, " Print compiler version number";
+    "-v", Arg.Unit F._v, " Print compiler version number and exit";
     "-verbose", Arg.Unit F._verbose, " Print calls to external commands";
     "-w", Arg.String F._w,
           "<flags>  Enable or disable warnings according to <flags>:\n\
@@ -112,7 +113,8 @@ struct
       "<flags>  Treat the warnings enabled by <flags> as errors.\n\
         \032    See option -w for the list of flags.\n\
         \032    Default setting is \"a\" (warnings are not errors)";
-
+    "-where", Arg.Unit F._where,
+      " Print location of standard library and exit";
     "-nopervasives", Arg.Unit F._nopervasives, " (undocumented)";
     "-dparsetree", Arg.Unit F._dparsetree, " (undocumented)";
     "-drawlambda", Arg.Unit F._drawlambda, " (undocumented)";

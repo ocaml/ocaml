@@ -43,6 +43,7 @@ module Make_options (F :
       val _verbose : unit -> unit
       val _w : string -> unit
       val _warn_error : string -> unit
+      val _where : unit -> unit
 
       val _nopervasives : unit -> unit
       val _dparsetree : unit -> unit

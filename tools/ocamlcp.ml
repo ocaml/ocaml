@@ -62,6 +62,7 @@ module Options = Main_args.Make_options (struct
   let _verbose = option "-verbose"
   let _w = option_with_arg "-w"
   let _warn_error = option_with_arg "-warn-error"
+  let _where = option "-where"
   let _nopervasives = option "-nopervasives"
   let _dparsetree = option "-dparsetree"
   let _drawlambda = option "-drawlambda"

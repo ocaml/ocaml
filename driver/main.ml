@@ -54,6 +54,9 @@ let print_version_number () =
   print_string Config.standard_library; print_newline();
   exit 0
 
+let print_standard_library () =
+  print_string Config.standard_library; print_newline(); exit 0
+
 let usage = "Usage: ocamlc <options> <files>\nOptions are:"
 
 (* Error messages to standard error formatter *)
@@ -93,6 +96,7 @@ module Options = Main_args.Make_options (struct
   let _v = print_version_number
   let _w = (Warnings.parse_options false)
   let _warn_error = (Warnings.parse_options true)
+  let _where = print_standard_library
   let _verbose = set verbose
   let _nopervasives = set nopervasives
   let _dparsetree = set dump_parsetree

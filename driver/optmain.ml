@@ -51,6 +51,9 @@ let print_version_number () =
   print_string Config.standard_library; print_newline();
   exit 0
 
+let print_standard_library () =
+  print_string Config.standard_library; print_newline(); exit 0
+
 let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
 
 let main () =
@@ -125,6 +128,8 @@ let main () =
          "<flags>  Enable or disable fatal warnings according to <flags>\n\
            \032    (see option -w for the list of flags)\n\
            \032    default setting is a (all warnings are non-fatal)";
+    "-where", Arg.Unit print_standard_library,
+      " Print location of standard library and exit";
 
        "-nopervasives", Arg.Set nopervasives, " (undocumented)";
        "-dparsetree", Arg.Set dump_parsetree, " (undocumented)";

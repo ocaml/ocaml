@@ -19,6 +19,15 @@ open Config
 open Format
 open Typedtree
 
+(* Expand a -I option: if it starts with +, make it relative to the standard
+   library directory *)
+
+let expand_directory s =
+  if String.length s > 0 && s.[0] = '+'
+  then Filename.concat Config.standard_library
+                       (String.sub s 1 (String.length s - 1))
+  else s
+
 (* Initialize the search path.
    The current directory is always searched first,
    then the directories specified with the -I option (in command-line order),
@@ -26,11 +35,12 @@ open Typedtree
 
 let init_path () =
   let dirs =
-    if !Clflags.thread_safe then
-     Filename.concat Config.standard_library "threads" :: !Clflags.include_dirs
-    else
-     !Clflags.include_dirs in
-  load_path := "" :: List.rev (Config.standard_library :: dirs);
+    if !Clflags.thread_safe
+    then "+threads" :: !Clflags.include_dirs
+    else !Clflags.include_dirs in
+  let exp_dirs =
+    List.map expand_directory dirs in
+  load_path := "" :: List.rev (Config.standard_library :: exp_dirs);
   Env.reset_cache()
 
 (* Return the initial environment in which compilation proceeds. *)
