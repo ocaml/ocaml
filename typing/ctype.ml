@@ -1137,72 +1137,7 @@ and unify3 env t1 t1' t2 t2' =
             ()
         end
     | (Tvariant row1, Tvariant row2) ->
-	let row1 = row_repr row1 and row2 = row_repr row2 in
-	let sort = Sort.list (fun (p,_) (q,_) -> p < q) in
-	let fi1 = sort row1.row_fields and fi2 = sort row2.row_fields in
-	let rec merge r1 r2 pairs fi1 fi2 =
-	  match fi1, fi2 with
-	    (l1,f1 as p1)::fi1', (l2,f2 as p2)::fi2' ->
-	      if l1 = l2 then merge r1 r2 ((l1,f1,f2)::pairs) fi1' fi2' else
-	      if l1 < l2 then merge (p1::r1) r2 pairs fi1' fi2 else
-	      merge r1 (p2::r2) pairs fi1 fi2'
-	  | [], _ -> (List.rev r1, List.rev_append r2 fi2, pairs)
-	  | _, [] -> (List.rev_append r1 fi1, List.rev r2, pairs)
-	in
-	let r1, r2, pairs = merge [] [] [] fi1 fi2 in
-	let rm1 = row_more row1 and rm2 =row_more row2 in
-	let more = newty2 (min rm1.level rm2.level) Tvar
-	and closed = row1.row_closed || row2.row_closed in
-	let name =
-	  if r1 = [] && row2.row_name <> None then row2.row_name else
-	  if r2 = [] then row1.row_name else None
-	in
-	let row0 = {row_fields = []; row_more = more;
-		   row_closed = closed; row_name = name} in
-	let more row rm rest =
-	  if rest = [] && (row.row_closed || not closed) then more else
-	  if rest <> [] && row.row_closed then raise (Unify []) else
-	  let ty =
-	    newty2 generic_level (Tvariant {row0 with row_fields = rest}) in
-	  update_level env rm.level ty;
-	  ty
-	in
-	let md1 = rm1.desc and md2 = rm2.desc in
-	begin try
-	  rm1.desc <- Tlink (more row1 rm1 r2);
-	  rm2.desc <- Tlink (more row2 rm2 r1);
-	  List.iter
-	    (fun (_,f1,f2) ->
-	      let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
-	      match f1, f2 with
-		Rpresent(Some t1), Rpresent(Some t2) -> unify env t1 t2
-	      | Rpresent None, Rpresent None -> ()
-	      | Reither(Some tl1, e1), Reither(Some tl2, e2) ->
-		  if e1 == e2 then () else
-		  let tl = tl1 @ tl2 in
-		  let tl =
-		    List.fold_right
-		      (fun t tl ->
-			let t = repr t in if List.memq t tl then tl else t::tl)
-		      tl [] in
-		  let f = Reither(Some tl, ref None) in
-		  e1 := Some f; e2 := Some f
-	      | Reither(None, e1), Reither(None, e2) ->
-		  if e1 == e2 then () else e2 := Some f1
-	      | Reither(Some tl, e1), Rpresent(Some t) ->
-		  e1 := Some f2; List.iter (unify env t) tl
-	      | Rpresent(Some t), Reither(Some tl, e2) ->
-		  e2 := Some f1; List.iter (unify env t) tl
-	      | Reither(None,e1), Rpresent None -> e1 := Some f2
-	      | Rpresent None, Reither(None,e2) -> e2 := Some f1
-	      |	Reither(_, e1), Rabsent -> e1 := Some f2
-	      |	Rabsent, Reither(_, e2) -> e2 := Some f1
-	      |	Rabsent, Rabsent -> ()
-	      |	_ -> raise (Unify []))
-	    pairs
-	with exn ->
-	  rm1.desc <- md1; rm2.desc <- md2; raise exn
-	end
+	unify_row env row1 row2
     | (Tfield _, Tfield _) ->           (* Actually unused *)
         unify_fields env t1' t2'
     | (Tnil, Tnil) ->
@@ -1279,6 +1214,74 @@ and unify_kind k1 k2 =
   | (Fpresent, Fvar r)                        -> r := Some k1
   | (Fpresent, Fpresent)                      -> ()
   | _                                         -> assert false
+
+and unify_row env row1 row2 =
+  let row1 = row_repr row1 and row2 = row_repr row2 in
+  let sort = Sort.list (fun (p,_) (q,_) -> p < q) in
+  let fi1 = sort row1.row_fields and fi2 = sort row2.row_fields in
+  let rec merge r1 r2 pairs fi1 fi2 =
+    match fi1, fi2 with
+      (l1,f1 as p1)::fi1', (l2,f2 as p2)::fi2' ->
+	if l1 = l2 then merge r1 r2 ((l1,f1,f2)::pairs) fi1' fi2' else
+	if l1 < l2 then merge (p1::r1) r2 pairs fi1' fi2 else
+	merge r1 (p2::r2) pairs fi1 fi2'
+    | [], _ -> (List.rev r1, List.rev_append r2 fi2, pairs)
+    | _, [] -> (List.rev_append r1 fi1, List.rev r2, pairs)
+  in
+  let r1, r2, pairs = merge [] [] [] fi1 fi2 in
+  let rm1 = row_more row1 and rm2 =row_more row2 in
+  let more = newty2 (min rm1.level rm2.level) Tvar
+  and closed = row1.row_closed || row2.row_closed in
+  let name =
+    if r1 = [] && row2.row_name <> None then row2.row_name else
+    if r2 = [] then row1.row_name else None
+  in
+  let row0 = {row_fields = []; row_more = more;
+	      row_closed = closed; row_name = name} in
+  let more row rm rest =
+    if rest = [] && (row.row_closed || not closed) then more else
+    if rest <> [] && row.row_closed then raise (Unify []) else
+    let ty =
+      newty2 generic_level (Tvariant {row0 with row_fields = rest}) in
+    update_level env rm.level ty;
+    ty
+  in
+  let md1 = rm1.desc and md2 = rm2.desc in
+  begin try
+    rm1.desc <- Tlink (more row1 rm1 r2);
+    rm2.desc <- Tlink (more row2 rm2 r1);
+    List.iter
+      (fun (_,f1,f2) ->
+	let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
+	match f1, f2 with
+	  Rpresent(Some t1), Rpresent(Some t2) -> unify env t1 t2
+	| Rpresent None, Rpresent None -> ()
+	| Reither(Some tl1, e1), Reither(Some tl2, e2) ->
+	    if e1 == e2 then () else
+	    let tl = tl1 @ tl2 in
+	    let tl =
+	      List.fold_right
+		(fun t tl ->
+		  let t = repr t in if List.memq t tl then tl else t::tl)
+		tl [] in
+	    let f = Reither(Some tl, ref None) in
+	    e1 := Some f; e2 := Some f
+	| Reither(None, e1), Reither(None, e2) ->
+	    if e1 == e2 then () else e2 := Some f1
+	| Reither(Some tl, e1), Rpresent(Some t2) ->
+	    e1 := Some f2; List.iter (fun t1 -> unify env t1 t2) tl
+	| Rpresent(Some t), Reither(Some tl, e2) ->
+	    e2 := Some f1; List.iter (unify env t) tl
+	| Reither(None,e1), Rpresent None -> e1 := Some f2
+	| Rpresent None, Reither(None,e2) -> e2 := Some f1
+	| Reither(_, e1), Rabsent -> e1 := Some f2
+	| Rabsent, Reither(_, e2) -> e2 := Some f1
+	| Rabsent, Rabsent -> ()
+	| _ -> raise (Unify []))
+      pairs
+  with exn ->
+    rm1.desc <- md1; rm2.desc <- md2; raise exn
+  end
 
 let unify env ty1 ty2 =
   try
