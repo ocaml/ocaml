@@ -8,7 +8,5 @@ pa_r.cmoÄ ::camlp4:mLast.cmi ::camlp4:pcaml.cmi
 pa_r.cmxÄ ::camlp4:mLast.cmi ::camlp4:pcaml.cmx 
 pa_rp.cmoÄ ::camlp4:mLast.cmi ::camlp4:pcaml.cmi 
 pa_rp.cmxÄ ::camlp4:mLast.cmi ::camlp4:pcaml.cmx 
-pr_dump.cmoÄ ::camlp4:ast2pt.cmo ::camlp4:pcaml.cmi 
-pr_dump.cmxÄ ::camlp4:ast2pt.cmx ::camlp4:pcaml.cmx 
 q_MLast.cmoÄ ::camlp4:mLast.cmi ::camlp4:pcaml.cmi ::camlp4:quotation.cmi 
 q_MLast.cmxÄ ::camlp4:mLast.cmi ::camlp4:pcaml.cmx ::camlp4:quotation.cmx 

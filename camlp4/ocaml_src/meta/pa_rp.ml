@@ -114,7 +114,7 @@ let rec subst v e =
   | _ -> raise Not_found
 and subst_pe v (p, e) =
   match p with
-    MLast.PaLid (_, v') -> if v = v' then p, e else p, subst v e
+    MLast.PaLid (_, v') when v <> v' -> p, subst v e
   | _ -> raise Not_found
 ;;
 

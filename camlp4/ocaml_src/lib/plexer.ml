@@ -703,9 +703,7 @@ let using_token kwd_table (p_con, p_prm) =
   | _ ->
       raise
         (Token.Error
-           ("\
-the constructor \"" ^ p_con ^
-              "\" is not recognized by Plexer"))
+           ("the constructor \"" ^ p_con ^ "\" is not recognized by Plexer"))
 ;;
 
 let removing_token kwd_table (p_con, p_prm) =
