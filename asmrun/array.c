@@ -108,5 +108,5 @@ value make_array(init)
 
 void array_bound_error()
 {
-  fatal_error("out-of-bound access in array or string");
+  fatal_error("Fatal error: out-of-bound access in array or string\n");
 }

@@ -39,10 +39,10 @@ value install_signal_handler(signal_number, action) /* ML */
 #include <stdio.h>
 #include <signal.h>
 
-static void trap_handler(sig, code, scp, addr)
+static void trap_handler(sig, code, context, address)
      int sig, code;
-     struct sigcontext * scp;
-     char * addr;
+     struct sigcontext * context;
+     char * address;
 {
   if (sig == SIGILL && code == ILL_TRAP_FAULT(5)) {
     array_bound_error();
