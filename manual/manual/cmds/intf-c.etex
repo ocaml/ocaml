@@ -442,12 +442,12 @@ constructors are not numbered starting from 0, but identified by a
 hash value (a Caml integer), as computed by the C function
 "hash_variant" (declared in "<caml/mlvalues.h>"):
 the hash value for a variant constructor named, say, "VConstr"
-is "hash_value(\"VConstr\")".
+is "hash_variant(\"VConstr\")".
 
 The variant value "`VConstr" is represented by
-"hash_value(\"VConstr\")".  The variant value "`VConstr("\var{v}")" is
+"hash_variant(\"VConstr\")".  The variant value "`VConstr("\var{v}")" is
 represented by a block of size 2 and tag 0, with field number 0
-containing "hash_value(\"VConstr\")" and field number 1 containing
+containing "hash_variant(\"VConstr\")" and field number 1 containing
 \var{v}.
 
 Unlike constructed values, variant values taking several arguments are
@@ -951,32 +951,37 @@ The stub code file, "curses.o", looks like:
 
 value curses_initscr(value unit)
 {
-  return (value) initscr();     /* OK to coerce directly from WINDOW * to value
-                                   since that's a block created by malloc() */
+  CAMLparam1 (unit);
+  CAMLreturn ((value) initscr());  /* OK to coerce directly from WINDOW * to
+                              value since that's a block created by malloc() */
 }
 
 value curses_wrefresh(value win)
 {
+  CAMLparam1 (win);
   wrefresh((WINDOW *) win);
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 value curses_newwin(value nlines, value ncols, value x0, value y0)
 {
-  return (value) newwin(Int_val(nlines), Int_val(ncols),
-                        Int_val(x0), Int_val(y0));
+  CAMLparam4 (nlines, ncols, x0, y0);
+  CAMLreturn ((value) newwin(Int_val(nlines), Int_val(ncols),
+                             Int_val(x0), Int_val(y0)));
 }
 
 value curses_addch(value c)
 {
+  CAMLparam1 (c);
   addch(Int_val(c));            /* Characters are encoded like integers */
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 value curses_addstr(value s)
 {
+  CAMLparam1 (s);
   addstr(String_val(s));
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 /* This goes on for pages. */
@@ -1347,6 +1352,8 @@ when the block becomes unreachable and is about to be reclaimed.
 The block is passed as first argument to the function.
 The "finalize" field can also be "NULL" to indicate that no
 finalization function is associated with the block.
+IMPORTANT NOTE: the "v" parameter of this function is of type "value", but
+it must not be declared using the "CAMLparam" macros.
 
 \item "int (*compare)(value v1, value v2)" \\
 The "compare" field contains a pointer to a C function that is
@@ -1357,6 +1364,8 @@ the two blocks are structurally equal, a negative integer if the data
 from the first block is less than the data from the second block, and
 a positive integer if the data from the first block is greater than
 the data from the second block.
+NOTE: You must use "CAMLparam" to declare "v1" and "v2" and "CAMLreturn"
+to return the result.
 
 The "compare" field can be set to "custom_compare_default"; this
 default comparison function simply raises "Failure".
@@ -1370,6 +1379,8 @@ given custom block.  The hash value must be compatible with the
 "compare" function, in the sense that two structurally equal data
 (that is, two custom blocks for which "compare" returns 0) must have
 the same hash value.
+NOTE: You must use "CAMLparam" to declare "v" and "CAMLreturn"
+to return the result.
 
 The "hash" field can be set to "custom_hash_default", in which case
 the custom block is ignored during hash computation.
@@ -1387,6 +1398,8 @@ below.  The user-provided "serialize" function must then store in its
 "wsize_32" and "wsize_64" parameters the sizes in bytes of the data
 part of the custom block on a 32-bit architecture and on a 64-bit
 architecture, respectively.
+NOTE: You must use "CAMLparam" to declare "v" and "CAMLreturn"
+to return the result.
 
 The "serialize" field can be set to "custom_serialize_default",
 in which case the "Failure" exception is raised when attempting to

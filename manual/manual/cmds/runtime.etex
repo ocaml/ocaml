@@ -90,15 +90,17 @@ The following environment variables are also consulted:
   \item[v] ("verbose")  What GC messages to print to stderr.  This
   is a sum of values selected from the following:
   \begin{options}
-        \item[1] Start of major GC cycle.
-        \item[2] Minor collection and major GC slice.
-        \item[4] Growing and shrinking of the heap.
-        \item[8] Resizing of stacks and memory manager tables.
-        \item[16] Heap compaction.
-        \item[32] Change of GC parameters.
-        \item[64] Computation of major GC slice size.
-        \item[128] Calling of finalization functions
-        \item[256] Startup messages (loading the bytecode executable file).
+        \item[1   (= 0b0000000001)] Start of major GC cycle.
+        \item[2   (= 0b0000000010)] Minor collection and major GC slice.
+        \item[4   (= 0b0000000100)] Growing and shrinking of the heap.
+        \item[8   (= 0b0000001000)] Resizing of stacks and memory manager
+           tables.
+        \item[16  (= 0b0000010000)] Heap compaction.
+        \item[32  (= 0b0000100000)] Change of GC parameters.
+        \item[64  (= 0b0001000000)] Computation of major GC slice size.
+        \item[128 (= 0b0010000000)] Calling of finalization functions
+        \item[256 (= 0b0100000000)] Startup messages (loading the bytecode
+           executable file).
   \end{options}
   \item[l] ("stack_limit") The limit (in words) of the stack size.
   \item[h] The initial size of the major heap (in words).
