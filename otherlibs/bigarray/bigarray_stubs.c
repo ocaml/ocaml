@@ -18,7 +18,6 @@
 #include <string.h>
 #include "alloc.h"
 #include "bigarray.h"
-#include "compare.h"
 #include "custom.h"
 #include "fail.h"
 #include "intext.h"

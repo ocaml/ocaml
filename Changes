@@ -3,6 +3,7 @@ Objective Caml 3.08.3:
 
 New features:
 - support for ocamlopt -pack under Mac OS X
+- ignore unknown warning options (for forward and backward compatibility)
 
 Bug fixes:
 - typing: fix unsoundness in type declaration variance inference.
