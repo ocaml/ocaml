@@ -418,6 +418,8 @@ void compact_heap_maybe (void)
     fp = 100.0 * fw / (Wsize_bsize (stat_heap_size) - fw);
     if (fp > 1000000.0) fp = 1000000.0;
   }
+  gc_message (0x200, "FL size at phase change = %lu\n",
+              (unsigned long) fl_size_at_phase_change);
   gc_message (0x200, "Estimated overhead = %lu%%\n", (unsigned long) fp);
   if (fp >= percent_max){
     gc_message (0x200, "Automatic compaction triggered.\n", 0);
