@@ -2,10 +2,10 @@
 (*                                                                     *)
 (*                           Objective Caml                            *)
 (*                                                                     *)
-(*            Pierre Weis, projet Cristal, INRIA Rocquencourt         *)
+(*            Pierre Weis, projet Cristal, INRIA Rocquencourt          *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -28,7 +28,7 @@
 -   when the material for a box has been printed, call [close_box ()] to
    close the box;
 -   at the end of your routine, evaluate [print_newline ()] to close
-   all remaining boxes and flush the pretty-printer. *) 
+   all remaining boxes and flush the pretty-printer. *)
 
 (* You may alternatively consider this module as providing an extension to the
    [printf] facility: you can simply add pretty-printing annotations to your
@@ -321,7 +321,12 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
 -          [\]]: close the most recently opened pretty-printing box.
 -          [,]: output a good break as with [print_cut ()].
 -          [ ]: output a space, as with [print_space ()].
--          [;]: force a newline, as with [force_newline ()].
+-          [\n]: force a newline, as with [force_newline ()].
+-          [;]: output a good break as with [print_break]. The
+           [nspaces] and [offset] parameters of the break may be
+           optionally specified with the following syntax: 
+           the [<] character, followed by an integer [nspaces] value,
+           then an integer offset, and a closing [>] character. 
 -          [.]: flush the pretty printer as with [print_newline ()].
 -          [@]: a plain [@] character. *)
 
