@@ -368,6 +368,37 @@ let type_format loc fmt =
   newty
     (Tconstr(Predef.path_format, [scan_format 0; ty_input; ty_result], ref Mnil))
 
+(* Approximate the type of an expression, for better recursion *)
+
+let rec approx_type sty =
+  match sty.ptyp_desc with
+    Ptyp_arrow (p, _, sty) ->
+      let ty1 = if is_optional p then type_option (newvar ()) else newvar () in
+      newty (Tarrow (p, ty1, approx_type sty))
+  | _ -> newvar ()
+
+let rec type_approx env sexp =
+  match sexp.pexp_desc with
+    Pexp_let (_, _, e) -> type_approx env e
+  | Pexp_function (p,_,(_,e)::_) when is_optional p ->
+       newty (Tarrow(p, type_option (newvar ()), type_approx env e))
+  | Pexp_function (p,_,(_,e)::_) ->
+       newty (Tarrow(p, newvar (), type_approx env e))
+  | Pexp_match (_, (_,e)::_) -> type_approx env e
+  | Pexp_try (e, _) -> type_approx env e
+  | Pexp_tuple l -> newty (Ttuple(List.map (type_approx env) l))
+  | Pexp_ifthenelse (_,e,_) -> type_approx env e
+  | Pexp_sequence (_,e) -> type_approx env e
+  | Pexp_constraint (e, Some sty, _) ->
+      let ty = type_approx env e
+      and ty' = Typetexp.transl_simple_type env false sty in
+      (try unify env ty ty'; ty' with Unify trace ->
+       raise(Error(sexp.pexp_loc, Expr_type_clash trace)))
+  | Pexp_constraint (_, _, Some sty) ->
+      Typetexp.transl_simple_type env false sty
+  | Pexp_constraint (e, _, _) -> type_approx env e
+  | _ -> newvar ()
+
 (* Typing of expressions *)
 
 let unify_exp env exp expected_ty =
@@ -979,6 +1010,10 @@ and type_let env rec_flag spat_sexp_list =
   let (pat_list, new_env) =
     type_pattern_list env (List.map (fun (spat, sexp) -> spat) spat_sexp_list)
   in
+  if rec_flag = Recursive then
+    List.iter2
+      (fun pat (_, sexp) -> unify_pat env pat (type_approx env sexp))
+      pat_list spat_sexp_list;
   let exp_env =
     match rec_flag with Nonrecursive -> env | Recursive -> new_env in
   let exp_list =
