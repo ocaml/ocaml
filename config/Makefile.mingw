@@ -42,8 +42,7 @@ EXE=.exe
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
-# Can also use "gcc -mno-cygwin"
-BYTECC=gcc
+BYTECC=gcc -mno-cygwin
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
 BYTECCCOMPOPTS=-O -Wall -Wno-unused
@@ -108,8 +107,10 @@ OTHERLIBRARIES=win32unix systhreads str num win32graph dynlink bigarray labltk
 BIGNUM_ARCH=C
 
 ### Configuration for LablTk
-TK_DEFS=
-TK_LINK=-ltk80 -ltcl80
+# Set TK_ROOT to the directory where you installed TCL/TK 8.3
+TK_ROOT=c:/tcl
+TK_DEFS=-I$(TK_ROOT)/include
+TK_LINK=$(TK_ROOT)/lib/tk83.lib $(TK_ROOT)/lib/tcl83.lib
 
 ############# Aliases for common commands
 

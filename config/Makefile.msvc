@@ -107,7 +107,9 @@ OTHERLIBRARIES=win32unix systhreads str num win32graph dynlink bigarray labltk
 BIGNUM_ARCH=C
 
 ### Configuration for LablTk
-TK_DEFS=-Ic:/Tcl/include
+# Set TK_ROOT to the directory where you installed TCL/TK 8.3
+TK_ROOT=c:/tcl
+TK_DEFS=-I$(TK_ROOT)/include
 TK_LINK=tk83.lib tcl83.lib
 
 ############# Aliases for common commands
