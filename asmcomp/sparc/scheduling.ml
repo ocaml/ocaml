@@ -15,7 +15,7 @@ open Mach
 
 (* Instruction scheduling for the Sparc *)
 
-class scheduler = struct
+class scheduler = object
 
 inherit Schedgen.scheduler_generic
 

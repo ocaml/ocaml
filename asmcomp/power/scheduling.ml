@@ -16,7 +16,7 @@
 open Arch
 open Mach
 
-class scheduler = struct
+class scheduler = object
 
 inherit Schedgen.scheduler_generic
 

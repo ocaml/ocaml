@@ -96,7 +96,7 @@ let pseudoregs_for_operation op arg res =
 
 (* The selector *)
     
-class selector = struct (self)
+class selector = object (self)
 
 inherit Selectgen.selector_generic as super
 

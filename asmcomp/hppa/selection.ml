@@ -26,7 +26,7 @@ let shiftadd = function
   | 8 -> Ishift3add
   | _ -> fatal_error "Proc_hppa.shiftadd"
 
-class selector = struct (self)
+class selector = object (self)
 
 inherit Selectgen.selector_generic as super
 

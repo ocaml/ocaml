@@ -46,7 +46,7 @@ let rec select_addr = function
 
 (* Instruction selection *)
 
-class selector = struct (self)
+class selector = object (self)
 
 inherit Selectgen.selector_generic as super
 

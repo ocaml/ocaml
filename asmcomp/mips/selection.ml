@@ -19,7 +19,7 @@ open Reg
 open Arch
 open Mach
 
-class selector = struct
+class selector = object
 
 inherit Selectgen.selector_generic
 

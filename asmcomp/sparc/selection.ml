@@ -43,7 +43,7 @@ let rec select_addr = function
   | exp ->
       (Alinear exp, 0)
 
-class selector = struct (self)
+class selector = object (self)
 
 inherit Selectgen.selector_generic as super
 

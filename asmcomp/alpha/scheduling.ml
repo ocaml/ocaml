@@ -18,7 +18,7 @@ open Mach
    However, the Linux-Alpha assembler does not do scheduling, so we do
    a feeble attempt here. *)
 
-class scheduler = struct (self)
+class scheduler = object (self)
 
 inherit Schedgen.scheduler_generic as super
 
