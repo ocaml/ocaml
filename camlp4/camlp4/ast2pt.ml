@@ -451,10 +451,22 @@ value rec patt =
   | PaArr loc pl -> mkpat loc (Ppat_array (List.map patt pl))
   | PaChr loc s ->
       mkpat loc (Ppat_constant (Const_char (char_of_char_token loc s)))
-  | PaInt loc s -> mkpat loc (Ppat_constant (Const_int (int_of_string s)))
-  | PaInt32 loc s -> mkpat loc (Ppat_constant (Const_int32 (Int32.of_string s)))
-  | PaInt64 loc s -> mkpat loc (Ppat_constant (Const_int64 (Int64.of_string s)))
-  | PaNativeInt loc s -> mkpat loc (Ppat_constant (Const_nativeint (Nativeint.of_string s)))
+  | PaInt loc s ->
+      let i = try int_of_string s with [
+        Failure _ -> error loc "Integer literal exceeds the range of representable integers of type int"
+      ] in mkpat loc (Ppat_constant (Const_int i))
+  | PaInt32 loc s ->
+      let i32 = try Int32.of_string s with [
+        Failure _ -> error loc "Integer literal exceeds the range of representable integers of type int32"
+      ] in mkpat loc (Ppat_constant (Const_int32 i32))
+  | PaInt64 loc s ->
+      let i64 = try Int64.of_string s with [
+        Failure _ -> error loc "Integer literal exceeds the range of representable integers of type int64"
+      ] in mkpat loc (Ppat_constant (Const_int64 i64))
+  | PaNativeInt loc s ->
+      let nati = try Nativeint.of_string s with [
+        Failure _ -> error loc "Integer literal exceeds the range of representable integers of type nativeint"
+      ] in mkpat loc (Ppat_constant (Const_nativeint nati))
   | PaFlo loc s -> mkpat loc (Ppat_constant (Const_float s))
   | PaLab loc _ _ -> error loc "labeled pattern not allowed here"
   | PaLid loc s -> mkpat loc (Ppat_var s)
@@ -630,10 +642,22 @@ value rec expr =
   | ExFun loc pel -> mkexp loc (Pexp_function "" None (List.map mkpwe pel))
   | ExIfe loc e1 e2 e3 ->
       mkexp loc (Pexp_ifthenelse (expr e1) (expr e2) (Some (expr e3)))
-  | ExInt loc s -> mkexp loc (Pexp_constant (Const_int (int_of_string s)))
-  | ExInt32 loc s -> mkexp loc (Pexp_constant (Const_int32 (Int32.of_string s)))
-  | ExInt64 loc s -> mkexp loc (Pexp_constant (Const_int64 (Int64.of_string s)))
-  | ExNativeInt loc s -> mkexp loc (Pexp_constant (Const_nativeint (Nativeint.of_string s)))
+  | ExInt loc s ->
+      let i = try int_of_string s with [
+        Failure _ -> error loc "Integer literal exceeds the range of representable integers of type int"
+      ] in mkexp loc (Pexp_constant (Const_int i))
+  | ExInt32 loc s ->
+      let i32 = try Int32.of_string s with [
+        Failure _ -> error loc "Integer literal exceeds the range of representable integers of type int32"
+      ] in mkexp loc (Pexp_constant (Const_int32 i32))
+  | ExInt64 loc s ->
+      let i64 = try Int64.of_string s with [
+        Failure _ -> error loc "Integer literal exceeds the range of representable integers of type int64"
+      ] in mkexp loc (Pexp_constant (Const_int64 i64))
+  | ExNativeInt loc s ->
+      let nati = try Nativeint.of_string s with [
+        Failure _ -> error loc "Integer literal exceeds the range of representable integers of type nativeint"
+      ] in mkexp loc (Pexp_constant (Const_nativeint nati))
   | ExLab loc _ _ -> error loc "labeled expression not allowed here"
   | ExLaz loc e -> mkexp loc (Pexp_lazy (expr e))
   | ExLet loc rf pel e ->
