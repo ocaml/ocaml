@@ -266,10 +266,8 @@ let output_test_zero arg =
 (* Deallocate the stack frame before a return or tail call *)
 
 let output_epilogue () =
-  match frame_size() - 4 with
-    0 -> ()
-  | 4 -> `	popl	%esi\n` (* Faster than add, and %esi is dead here *)
-  | n -> `	addl	${emit_int n}, %esp\n`
+  let n = frame_size() - 4 in
+  if n > 0 then `	addl	${emit_int n}, %esp\n`
 
 (* Output the assembly code for an instruction *)
 
