@@ -1,4 +1,8 @@
+#if !macintosh
 #include <sys/types.h>
+#else
+#include <SizeTDef.h>
+#endif
 #include <regex.h>
 #include <mlvalues.h>
 #include <alloc.h>
@@ -54,7 +58,8 @@ value str_compile_regexp(src, fold)
   expr->re.fastmap = stat_alloc(256);
   expr->re.buffer = NULL;
   expr->re.allocated = 0;
-  msg = re_compile_pattern(String_val(src), string_length(src), &(expr->re));
+  msg = (char *) re_compile_pattern(String_val(src), string_length(src),
+                                    &(expr->re));
   if (msg != NULL) failwith(msg);
   re_compile_fastmap(&(expr->re));
   expr->re.regs_allocated = REGS_FIXED;
