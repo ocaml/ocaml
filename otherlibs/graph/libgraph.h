@@ -80,3 +80,5 @@ int gr_rgb_pixel(long unsigned int pixel);
 void gr_handle_simple_event(XEvent *e);
 void gr_enqueue_char(unsigned char c);
 void gr_init_color_cache(void);
+
+value id_of_window( Window w );

@@ -38,11 +38,12 @@ external size_y : unit -> int = "gr_size_y"
            Drawings outside of this rectangle are clipped, without causing
            an error. The origin (0,0) is at the lower left corner. *)
 
-val window_id : unit -> string
-        (* Return the unique identifier of the window allocated by the
-           window manager and where Caml graphics are drawn.
-           Under X Windows, the returned string is an unsigned 32 bits
-           integer in decimal form. *)
+type window_id = string
+val window_id : unit -> window_id
+        (* Return the unique identifier of the window allocated by
+	   the library, where Caml graphics are drawn. Under X Windows, 
+	   the returned string is an unsigned 32 bits integer 
+	   in decimal form. *)
 
 (*** Colors *)
 
@@ -292,3 +293,7 @@ external remember_mode : bool -> unit = "gr_remember_mode"
            unaffected by drawings.  This occurs independently of drawing
            onto the graphics window (see the function [display_mode] above).
            Default remember mode is on.  *)
+
+(* sub window creation *)
+val open_subwindow : x:int -> y:int -> width:int -> height:int -> window_id
+val close_subwindow : window_id -> unit

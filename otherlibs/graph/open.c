@@ -215,13 +215,18 @@ value gr_close_graph(void)
   return Val_unit;
 }
 
-value gr_window_id(void)
+value id_of_window(Window win)
 {
   char tmp[256];
 
   gr_check_open();
-  sprintf(tmp, "%lu", (unsigned long)grwindow.win);
+  sprintf(tmp, "%lu", (unsigned long)win);
   return copy_string( tmp );
+}
+
+value gr_window_id(void)
+{
+  return id_of_window(grwindow.win);
 }
 
 value gr_clear_graph(void)
