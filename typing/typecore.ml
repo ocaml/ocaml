@@ -49,7 +49,7 @@ type error =
   | Outside_class
   | Value_multiply_overridden of string
   | Coercion_failure of type_expr * type_expr * (type_expr * type_expr) list
-  | Too_many_arguments of bool
+  | Too_many_arguments of bool * type_expr
   | Abstract_wrong_label of label * type_expr
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
@@ -650,7 +650,7 @@ let rec type_approx env sexp =
   | Pexp_constraint (e, sty1, sty2) ->
       let ty = type_approx env e
       and ty1 = match sty1 with None -> newvar () | Some sty -> approx_type sty
-      and ty2 = match sty1 with None -> newvar () | Some sty -> approx_type sty
+      and ty2 = match sty2 with None -> newvar () | Some sty -> approx_type sty
       in begin
         try unify env ty ty1; unify env ty1 ty2; ty2
         with Unify trace ->
@@ -1342,7 +1342,7 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
 (* Typing of an expression with an expected type.
    Some constructs are treated specially to provide better error messages. *)
 
-and type_expect ?(in_function=false) env sexp ty_expected =
+and type_expect ?in_function env sexp ty_expected =
   match sexp.pexp_desc with
     Pexp_constant(Const_string s as cst) ->
       let exp =
@@ -1396,8 +1396,12 @@ and type_expect ?(in_function=false) env sexp ty_expected =
                                 {pexp_loc = sexp.pexp_loc; pexp_desc =
                                  Pexp_let(Default, [spat, smatch], sbody)}])}
       in
-      type_expect ~in_function env sfun ty_expected
+      type_expect ?in_function env sfun ty_expected
   | Pexp_function (l, _, caselist) ->
+      let (loc, ty_fun) =
+        match in_function with Some p -> p
+        | None -> (sexp.pexp_loc, ty_expected)
+      in
       let (ty_arg, ty_res) =
         try filter_arrow env ty_expected l
         with Unify _ ->
@@ -1405,15 +1409,16 @@ and type_expect ?(in_function=false) env sexp ty_expected =
             {desc = Tarrow _} as ty ->
               raise(Error(sexp.pexp_loc, Abstract_wrong_label(l, ty)))
           | _ ->
-              raise(Error(sexp.pexp_loc, Too_many_arguments in_function))
+              raise(Error(loc,
+                          Too_many_arguments (in_function <> None, ty_fun)))
       in
       if is_optional l then begin
         try unify env ty_arg (type_option(newvar()))
         with Unify _ -> assert false
       end;
       let cases, partial =
-        type_cases ~in_function:true env ty_arg ty_res (Some sexp.pexp_loc)
-          caselist in
+        type_cases ~in_function:(loc,ty_fun) env ty_arg ty_res
+          (Some sexp.pexp_loc) caselist in
       let rec all_labeled ty =
         match (repr ty).desc with
           Tarrow ("", _, _, _) | Tvar -> false
@@ -1448,7 +1453,7 @@ and type_statement env sexp =
 
 (* Typing of match cases *)
 
-and type_cases ?(in_function=false) env ty_arg ty_res partial_loc caselist =
+and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
   let ty_arg' = newvar () in
   let pat_env_list =
     List.map
@@ -1476,11 +1481,11 @@ and type_cases ?(in_function=false) env ty_arg ty_res partial_loc caselist =
   begin match pat_env_list with [] -> ()
   | (pat, _) :: _ -> unify_pat env pat ty_arg
   end;
-  let in_function = in_function && List.length caselist = 1 in
+  let in_function = if List.length caselist = 1 then in_function else None in
   let cases =
     List.map2
       (fun (pat, ext_env) (spat, sexp) ->
-        let exp = type_expect ~in_function ext_env sexp ty_res in
+        let exp = type_expect ?in_function ext_env sexp ty_res in
         (pat, exp))
       pat_env_list caselist in
   (* Check for impossible variant constructors, and normalize variant types *)
@@ -1636,11 +1641,17 @@ let report_error ppf = function
            (type_expansion ty) ty')
         (function ppf ->
            fprintf ppf "but is here used with type")
-  | Too_many_arguments in_function ->
-      if in_function then
-        fprintf ppf "This function expects too many arguments"
-      else
-        fprintf ppf "This expression should not be a function"
+  | Too_many_arguments (in_function, ty) ->
+      reset_and_mark_loops ty;
+      if in_function then begin
+        fprintf ppf "This function expects too many arguments,@ ";
+        fprintf ppf "it should have type@ %a"
+          type_expr ty
+      end else begin
+        fprintf ppf "This expression should not be a function,@ ";
+        fprintf ppf "the expected type is@ %a"
+          type_expr ty
+      end
   | Abstract_wrong_label (l, ty) ->
       let label_mark = function
         | "" -> "but its first argument is not labeled"
