@@ -69,17 +69,17 @@ The "configure" script accepts the following options:
         It will *not* work under Digital Unix 3.2 or earlier, SunOS 4,
         HPUX, AIX, nor Linux without LinuxThreads.
 
--tkdefs <cpp flags>		(default: none)
--tklibs <flags and libraries>	(default: determined automatically)
-	These options specify where to find the Tcl/Tk libraries for
-	LablTk. "-tkdefs" helps to find the headers, and "-tklibs"
-	the C libraries. "-tklibs" may contain either only -L/path flags,
-	in which case the library names are determined automatically,
-	or the actual libraries, which are used as given.
-	Example: for a Japanese tcl/tk whose headers are in specific
-	directories and libraries in /usr/local/lib, you can use
-	./configure -tklibs "-L/usr/local/lib -ltk8.0jp -ltcl8.0jp"
-	  -tkdefs "-I/usr/local/include/tcl8.0jp -I/usr/local/include/tk8.0jp"
+-tkdefs <cpp flags>             (default: none)
+-tklibs <flags and libraries>   (default: determined automatically)
+        These options specify where to find the Tcl/Tk libraries for
+        LablTk. "-tkdefs" helps to find the headers, and "-tklibs"
+        the C libraries. "-tklibs" may contain either only -L/path flags,
+        in which case the library names are determined automatically,
+        or the actual libraries, which are used as given.
+        Example: for a Japanese tcl/tk whose headers are in specific
+        directories and libraries in /usr/local/lib, you can use
+        ./configure -tklibs "-L/usr/local/lib -ltk8.0jp -ltcl8.0jp"
+          -tkdefs "-I/usr/local/include/tcl8.0jp -I/usr/local/include/tk8.0jp"
 
 Examples:
     ./configure -prefix /usr/bin
@@ -148,7 +148,7 @@ ocamlopt.  The ".opt" compilers should run faster than the normal
 compilers, especially on large input files, but they may take longer
 to start due to increased code size.  If compilation times are an issue on
 your programs, try the ".opt" compilers to see if they make a
-significant difference.  
+significant difference.
 
 6- You can now install the Objective Caml system. This will create the
 following commands (in the binary directory selected during autoconfiguration):
@@ -234,4 +234,3 @@ If this causes a problem, the solution is to upgrade to 2.7.2.3 or above.
 unable to compile correctly the runtime system (wrong code is
 generated for (x - y) where x is a pointer and y an integer).
 Fix: use gcc.
-

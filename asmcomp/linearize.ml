@@ -101,7 +101,7 @@ let get_label n =
   | _ -> let lbl = new_label() in (lbl, cons_instr (Llabel lbl) n)
 
 (* Discard all instructions up to the next label.
-   This function is to be called before adding a non-terminating 
+   This function is to be called before adding a non-terminating
    instruction. *)
 
 let rec discard_dead_code n =
@@ -153,15 +153,15 @@ let rec linear i n =
       | _, Iend, Lbranch lbl ->
           copy_instr (Lcondbranch(invert_test test, lbl)) i (linear ifso n1)
       | Iexit, _, _ ->
-	  let n2 = linear ifnot n1 in
-	  begin match !exit_label with None -> n2
-	  | Some lbl -> copy_instr (Lcondbranch(test, lbl)) i n2
-	  end
+          let n2 = linear ifnot n1 in
+          begin match !exit_label with None -> n2
+          | Some lbl -> copy_instr (Lcondbranch(test, lbl)) i n2
+          end
       | _,  Iexit, _ ->
-	  let n2 = linear ifso n1 in
-	  begin match !exit_label with None -> n2
-	  | Some lbl -> copy_instr (Lcondbranch(invert_test test, lbl)) i n2
-	  end
+          let n2 = linear ifso n1 in
+          begin match !exit_label with None -> n2
+          | Some lbl -> copy_instr (Lcondbranch(invert_test test, lbl)) i n2
+          end
       | Iend, _, _ ->
           let (lbl_end, n2) = get_label n1 in
           copy_instr (Lcondbranch(test, lbl_end)) i (linear ifnot n2)
@@ -214,7 +214,7 @@ let rec linear i n =
   | Iexit ->
       let n1 = linear i.Mach.next n in
       begin match !exit_label with None -> n1
-      |	Some lbl -> add_branch lbl n1
+      | Some lbl -> add_branch lbl n1
       end
   | Itrywith(body, handler) ->
       let (lbl_join, n1) = get_label (linear i.Mach.next n) in
@@ -230,4 +230,3 @@ let fundecl f =
   { fun_name = f.Mach.fun_name;
     fun_body = linear f.Mach.fun_body end_instr;
     fun_fast = f.Mach.fun_fast }
-
