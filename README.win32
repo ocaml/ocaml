@@ -27,7 +27,7 @@ contains long filenames and therefore cannot be unpacked with pkunzip.
 Use either Winzip (shareware) or the NT/95 version of unzip (freeware):
 
         ftp://ftp.winsite.com/pub/pc/winnt/misc/wznt56.exe
-        ftp://ftp.uu.net/pub/archiving/zip/WIN32/unz531xN.exe
+        ftp://ftp.uu.net/pub/archiving/zip/WIN32/unz540xN.exe
 
 Unzipping the distribution creates (among others) the following
 directories and files:
