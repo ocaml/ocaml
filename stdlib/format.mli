@@ -226,7 +226,7 @@ type formatter;;
            Parameters of the pretty-printer are local to the pretty-printer:
            margin, maximum indentation limit, maximum number of boxes
            simultaneously opened, ellipsis, and so on, are specific to
-           each pretty-printer and may be fixed independantly.
+           each pretty-printer and may be fixed independently.
            A new formatter is obtained by calling the [make_formatter]
            function. *)
 
