@@ -78,6 +78,45 @@ value get_current_environment(value unit) /* ML */
   return *extern_sp;
 }
 
+value invoke_traced_function(value codeptr, value env, value arg) /* ML */
+{
+  /* Stack layout on entry:
+       return frame into instrument_closure function
+       arg3 to call_original_code (arg)
+       arg2 to call_original_code (env)
+       arg1 to call_original_code (codeptr)
+       arg3 to call_original_code (arg)
+       arg2 to call_original_code (env)
+       saved env */
+
+  /* Stack layout on exit:
+       return frame into instrument_closure function
+       actual arg to code (arg)
+       pseudo return frame into codeptr:
+         extra_args = 0
+         environment = env
+         PC = codeptr
+       arg3 to call_original_code (arg)                   same 6 bottom words as
+       arg2 to call_original_code (env)                   on entrance, but
+       arg1 to call_original_code (codeptr)               shifted down 4 words
+       arg3 to call_original_code (arg)
+       arg2 to call_original_code (env)
+       saved env */
+
+  value * osp, * nsp;
+  int i;
+
+  osp = extern_sp;
+  extern_sp -= 4;
+  nsp = extern_sp;
+  for (i = 0; i < 6; i++) nsp[i] = osp[i];
+  nsp[6] = codeptr;
+  nsp[7] = env;
+  nsp[8] = Val_int(0);
+  nsp[9] = arg;
+  return Val_unit;
+}
+
 #else
 
 /* Dummy definitions to support compilation of ocamlc.opt */
@@ -95,6 +134,11 @@ value realloc_global(value size)
 value available_primitives(value unit)
 {
   invalid_argument("Meta.available_primitives");
+}
+
+value invoke_traced_function(value codeptr, value env, value arg)
+{
+  invalid_argument("Meta.invoke_traced_function");
 }
 
 #endif
