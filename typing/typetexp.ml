@@ -241,7 +241,9 @@ let rec transl_type env policy rowvar styp =
             present;
           let bound = ref row.row_bound in
           let fixed = rowvar <> None || policy = Univars in
+          let static = List.length row.row_fields = 1 in
           let fields =
+            if static then row.row_fields else
             List.map
               (fun (l,f) -> l,
                 if List.mem l present then f else
@@ -259,9 +261,15 @@ let rec transl_type env policy rowvar styp =
                       row_bound = !bound;
                       row_name = Some (path, args);
                       row_fixed = fixed;
-                      row_more = match rowvar with Some v -> v
+                      row_more = match rowvar with
+                        Some v ->
+                          if static then
+                            raise(Error(styp.ptyp_loc,
+                                        No_row_variable "variant "));
+                          v
                       | None ->
-	                  if policy = Univars then new_pre_univar ()
+                          if static then newty Tnil else
+                          if policy = Univars then new_pre_univar ()
                           else newvar () }
           in newty (Tvariant row)
       | Tobject (fi, _) ->
@@ -342,11 +350,13 @@ let rec transl_type env policy rowvar styp =
         with Not_found ->
           (l, f) :: fields
       in
+      (* closed and only one field: make it present anyway *)
+      let single = closed && List.length fields = 1 in
       let rec add_field fields = function
           Rtag (l, c, stl) ->
             name := None;
             let f = match present with
-              Some present when not (List.mem l present) ->
+              Some present when not (single || List.mem l present) ->
                 let tl = List.map (transl_type env policy None) stl in
                 bound := tl @ !bound;
                 Reither(c, tl, fixed, ref None)
@@ -374,10 +384,11 @@ let rec transl_type env policy rowvar styp =
             | _ ->
                 raise(Error(sty.ptyp_loc, Not_a_variant ty))
             in
+            let single = single && List.length fl = 1 in
             List.fold_left
               (fun fields (l, f) ->
                 let f = match present with
-                  Some present when not (List.mem l present) ->
+                  Some present when not (single || List.mem l present) ->
                     begin match f with
                       Rpresent(Some ty) ->
                         bound := ty :: !bound;
@@ -419,7 +430,11 @@ let rec transl_type env policy rowvar styp =
       let static = Btype.static_row row in
       let row =
         { row with row_more =
-            match rowvar with Some v -> v
+            match rowvar with
+              Some v ->
+                if static then
+                  raise(Error(styp.ptyp_loc, No_row_variable "variant "));
+                v
             | None ->
 	        if static then newty Tnil else
 	        if policy = Univars then new_pre_univar () else
