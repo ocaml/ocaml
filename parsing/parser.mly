@@ -630,19 +630,9 @@ class_fields:
       { Pcf_meth $2 :: $1 }
   | class_fields CONSTRAINT constrain
       { Pcf_cstr $3 :: $1 }
-/*
-  | class_fields LET rec_flag class_let_bindings IN
-      { let (bindings, loc) = $4 in
-        Pcf_let ($3, List.rev bindings, loc) :: $1 }
-*/
   | class_fields INITIALIZER seq_expr
       { Pcf_init $3 :: $1 }
 ;
-/*
-class_let_bindings: let_bindings
-      { $1, symbol_rloc () }
-;
-*/
 parent_binder:
     AS LIDENT
           { Some $2 }
@@ -722,11 +712,6 @@ class_sig_fields:
 value_type:
     mutable_flag label COLON core_type
       { $2, $1, Some $4, symbol_rloc () }
-/*
-XXX Should be removed
-  | mutable_flag label
-      { $2, $1, None, symbol_rloc () }
-*/
 ;
 method_type:
     METHOD private_flag label COLON poly_type
@@ -890,16 +875,6 @@ expr:
       { bigarray_set $1 $4 $7 }
   | label LESSMINUS expr
       { mkexp(Pexp_setinstvar($1, $3)) }
-/*
-  | expr SHARP label
-      { mkexp(Pexp_send($1, $3)) }
-  | expr SHARP label simple_expr_list
-      { mkexp(Pexp_apply({ pexp_desc = Pexp_send($1, $3);
-                           pexp_loc = { loc_start = Parsing.symbol_start ();
-                                        loc_end = Parsing.rhs_end 3;
-                                        loc_ghost = false } },
-                         List.rev $4)) }
-*/
   | ASSERT simple_expr %prec below_SHARP
       { mkassert $2 }
   | LAZY simple_expr %prec below_SHARP
@@ -994,14 +969,6 @@ label_expr:
 label_ident:
     LIDENT   { ($1, mkexp(Pexp_ident(Lident $1))) }
 ;
-/*
-simple_expr_list:
-    simple_expr
-      { [$1] }
-  | simple_expr_list simple_expr
-      { $2 :: $1 }
-;
-*/
 let_bindings:
     let_binding                                 { [$1] }
   | let_bindings AND let_binding                { $3 :: $1 }
@@ -1013,12 +980,6 @@ let_binding:
       { ($1, $3) }
 ;
 fun_binding:
-/*
-    EQUAL seq_expr
-      { $2 }
-  | labeled_simple_pattern fun_binding
-      { let (l, o, p) = $1 in mkexp(Pexp_function(l, o, [p, $2])) }
-*/
     strict_binding
       { $1 }
   | type_constraint EQUAL seq_expr
