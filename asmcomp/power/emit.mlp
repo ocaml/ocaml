@@ -180,7 +180,7 @@ let emit_load_store instr addressing_mode addr n arg =
   match addressing_mode with
     Ibased(s, d) ->
       (* Only relevant in the absolute model *)
-      `	addis	{emit_gpr 11}, {emit_gpr 0}, {emit_upper emit_symbol_offset (s,d)}\n`;
+      `	addis	{emit_gpr 11}, 0, {emit_upper emit_symbol_offset (s,d)}\n`;
       `	{emit_string instr}	{emit_reg arg}, {emit_lower emit_symbol_offset (s,d)}({emit_gpr 11})\n`
   | Iindexed ofs ->
       if is_immediate ofs then
@@ -203,7 +203,7 @@ let emit_set_comp cmp res =
       Ceq | Cne -> 2
     | Cgt | Cle -> 1
     | Clt | Cge -> 0 in
-  `	rlwinm	{emit_reg res}, {emit_gpr 0}, {emit_int(bitnum+1)}, 1\n`;
+`	rlwinm	{emit_reg res}, {emit_gpr 0}, {emit_int(bitnum+1)}, 31, 31\n`;
   begin match cmp with
     Cne | Cle | Cge -> `	xori	{emit_reg res}, {emit_reg res}, 1\n`
   | _ -> ()
@@ -391,7 +391,7 @@ let rec emit_instr i dslot =
         end else begin
           let lbl = new_label() in
           float_literals := (s, lbl) :: !float_literals;
-          `	addis	{emit_gpr 11}, {emit_gpr 0}, {emit_upper emit_label lbl}\n`;
+          `	addis	{emit_gpr 11}, 0, {emit_upper emit_label lbl}\n`;
           `	lfd	{emit_reg i.res.(0)}, {emit_lower emit_label lbl}({emit_gpr 11})\n`
         end
     | Lop(Iconst_symbol s) ->
@@ -399,7 +399,7 @@ let rec emit_instr i dslot =
           let lbl = label_symbol s in
           `	lwz	{emit_reg i.res.(0)}, {emit_label lbl}(2) # {emit_symbol s}\n`
         end else begin
-          `	addis	{emit_reg i.res.(0)}, {emit_gpr 0}, {emit_upper emit_symbol s}\n`;
+          `	addis	{emit_reg i.res.(0)}, 0, {emit_upper emit_symbol s}\n`;
           `	addi	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, {emit_lower emit_symbol s}\n`
         end
     | Lop(Icall_ind) ->
@@ -481,7 +481,7 @@ let rec emit_instr i dslot =
             let lbl = label_symbol s in
             `	lwz	11, {emit_label lbl}(2) # {emit_symbol s}\n`
           end else begin
-            `	addis	{emit_gpr 11}, {emit_gpr 0}, {emit_upper emit_symbol s}\n`;
+            `	addis	{emit_gpr 11}, 0, {emit_upper emit_symbol s}\n`;
             `	addi	{emit_gpr 11}, {emit_gpr 11}, {emit_lower emit_symbol s}\n`
           end;
           record_frame i.live;
@@ -586,7 +586,7 @@ let rec emit_instr i dslot =
           let lbl = new_label() in
           float_literals := ("4.503601774854144e15", lbl) :: !float_literals;
           (* That float above also represents 0x4330000080000000 *)
-          `	addis	{emit_gpr 11}, {emit_gpr 0}, {emit_upper emit_label lbl}\n`;
+          `	addis	{emit_gpr 11}, 0, {emit_upper emit_label lbl}\n`;
           `	lfd	{emit_fpr 0}, {emit_lower emit_label lbl}({emit_gpr 11})\n`
         end;
         `	lis	{emit_gpr 0}, 0x4330\n`;
@@ -643,16 +643,16 @@ let rec emit_instr i dslot =
               match cmp with
                 Ceq -> (2, neg)
               | Cne -> (2, not neg)
-              | Cle -> `	cror	{emit_ccr 3}, {emit_ccr 0}, {emit_ccr 2}\n`; (* lt or eq *)
+              | Cle -> `	cror	3, 0, 2\n`; (* lt or eq *)
                        (3, neg)
               | Cgt -> (1, neg)
-              | Cge -> `	cror	{emit_ccr 3}, {emit_ccr 1}, {emit_ccr 2}\n`; (* gt or eq *)
+              | Cge -> `	cror	3, 1, 2\n`; (* gt or eq *)
                        (3, neg)
               | Clt -> (0, neg) in
             emit_delay dslot;
             if negtst
-            then `	bf	{emit_ccr bitnum}, {emit_label lbl}\n`
-            else `	bt	{emit_ccr bitnum}, {emit_label lbl}\n`
+            then `	bf	{emit_int bitnum}, {emit_label lbl}\n`
+            else `	bt	{emit_int bitnum}, {emit_label lbl}\n`
         | Ioddtest ->
             `	andi.	{emit_gpr 0}, {emit_reg i.arg.(0)}, 1\n`;
             emit_delay dslot;
@@ -682,7 +682,7 @@ let rec emit_instr i dslot =
         if toc then begin
           `	lwz	11, {emit_label !lbl_jumptbl}(2)\n`
         end else begin
-          `	addis	{emit_gpr 11}, {emit_gpr 0}, {emit_upper emit_label !lbl_jumptbl}\n`;
+          `	addis	{emit_gpr 11}, 0, {emit_upper emit_label !lbl_jumptbl}\n`;
           `	addi	{emit_gpr 11}, {emit_gpr 11}, {emit_lower emit_label !lbl_jumptbl}\n`
         end;
         `	addi	{emit_gpr 0}, {emit_reg i.arg.(0)}, {emit_int !num_jumptbl_entries}\n`;

@@ -186,10 +186,11 @@ let poweropen_external_conventions first_int last_int
   done;
   (loc, Misc.align !ofs 8) (* Keep stack 8-aligned *)
 
-let loc_external_arguments arg =
-  if toc
-  then poweropen_external_conventions 0 7 100 112 arg
-  else calling_conventions 0 7 100 107 outgoing 8 arg
+let loc_external_arguments =
+  match Config.system with
+    "aix" | "rhapsody" -> poweropen_external_conventions 0 7 100 112
+  | "elf" -> calling_conventions 0 7 100 107 outgoing 8
+  | _ -> assert false
 
 let extcall_use_push = false
 
