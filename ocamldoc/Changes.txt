@@ -1,4 +1,5 @@
 Next release :
+ - dumps now contain a magic number, checked when dumps are loaded
  - new option -o to use with texi, latex and dot generators
  - new .code CSS class used
  - better output for classes and modules, with their type
