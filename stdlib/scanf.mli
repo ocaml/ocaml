@@ -40,7 +40,7 @@ val from_function : (unit -> char) -> scanbuf;;
     the given function as its reading method.
     When scanning needs one more character, the given function is called.
     When the function has no more character to provide, it must set
-    an end of input condition by raising the exception [End_of_file]. *)
+    an end-of-input condition by raising the exception [End_of_file]. *)
 
 end;;
 
@@ -57,6 +57,8 @@ val bscanf :
 
    Raise [Scanf.Scan_failure] if the given input does not match the format.
 
+   Raise [Failure] if a conversion to a number is not possible.
+
    Raise [End_of_file] if the end of input is encountered while scanning
    and the input matches the given format so far.
 
@@ -66,8 +68,7 @@ val bscanf :
    characters of the input,
    - conversion specifications, each of which causes reading and
    conversion of one argument for [f],
-   - scanning indications to specify boundaries of tokens and the
-   amount of space to skip between tokens.
+   - scanning indications to specify boundaries of tokens.
 
    Among plain characters the space character (ASCII code 32) has a
    special meaning: it matches ``whitespace'', that is any number of tab,
@@ -86,10 +87,10 @@ val bscanf :
    - [o]: reads an unsigned octal integer.
    - [s]: reads a string argument (by default strings end with a space).
    - [S]: reads a delimited string argument (delimiters and special
-     escaped characters follow the lexical conventions of Objective Caml).
+     escaped characters follow the lexical conventions of Caml).
    - [c]: reads a single character.
    - [C]: reads a single delimited character (delimiters and special
-     escaped characters follow the lexical conventions of Objective Caml).
+     escaped characters follow the lexical conventions of Caml).
    - [f], [e], [E], [g], [G]: reads an optionally signed floating-point number
      in decimal notation, in the style [dddd.ddd e/E+-dd].
    - [b]: reads a boolean argument ([true] or [false]).
@@ -111,17 +112,19 @@ val bscanf :
    For instance, [%6d] reads an integer, having at most 6 decimal digits;
    and [%4f] reads a float with 4 characters.
 
-   The scanning indications are introduced by a [@] character, followed
-   by any character [c].  Its effect is to skip input characters
-   until a matching [c] is found.  
-   If a scanning indication immediately follows a [s]
-   conversion specification, it specifies the boundary of the token
-   (that is the character immediately after the end of the token). For
-   instance, ["%s@\t"] reads a string up to the next tabulation
+   Scanning indications appear just after string conversions [s] and
+   [\[ range \]] to delimit the end of the token. A scanning
+   indication is introduced by a [@] character, followed by some
+   constant character [c]. It means that the string token should end
+   just before the next matching [c]. If no [c] character is
+   encountered, the string token spreads as much as possible.
+   For instance, ["%s@\t"] reads a string up to the next tabulation
+   character. If the scanning indication [\@c] does not follow a
+   string conversion, it is ignored and treated as a plain [c]
    character.
 
    Note: the [scanf] facility is not intended for heavy duty
-   lexical anaysis and parsing.  If it appears too slow or not expressive
+   lexical analysis and parsing. If it appears not expressive
    enough for your needs, several alternative exists: regular expressions
    (module [Str]), stream parsers, [ocamllex]-generated lexers,
    [ocamlyacc]-generated parsers. *)
@@ -137,8 +140,8 @@ val scanf : ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
     (the standard input channel). *)
 
 val kscanf :
-  Scanning.scanbuf -> ('a, 'b, 'c) format -> 'a ->
-  (Scanning.scanbuf -> exn -> 'c) -> 'c;;
+  Scanning.scanbuf -> (Scanning.scanbuf -> exn -> 'a) ->
+  ('b, Scanning.scanbuf, 'a) format -> 'b -> 'a;;
 (** Same as {!Scanf.bscanf}, but takes an additional function argument
   [ef] that is called in case of error: if the scanning process or
   some convertion fails, the scanning function aborts and applies the
