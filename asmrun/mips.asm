@@ -250,6 +250,6 @@ raise_caml_exception:
         lw      $30, 0($sp)
         lw      $2, 8($sp)
         addu    $sp, $sp, 8
-        jal     $2      /* Keep retaddr in $31 to help debugging */
+        j       $2
 
         .end    raise_caml_exception
