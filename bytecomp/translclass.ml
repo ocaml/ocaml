@@ -93,15 +93,14 @@ let create_object cl obj init =
   let (inh_init, obj_init) = init obj' in
   if obj_init = lambda_unit then
    (inh_init,
-    Lapply (oo_prim "create_object_and_run_initializers",
-            [Lvar obj; Lvar cl]))
+    Lapply (oo_prim "create_object_and_run_initializers", [obj; Lvar cl]))
   else begin
    (inh_init,
     Llet(Strict, obj',
-            Lapply (oo_prim "create_object_opt", [Lvar obj; Lvar cl]),
+            Lapply (oo_prim "create_object_opt", [obj; Lvar cl]),
          Lsequence(obj_init,
-                  Lapply (oo_prim "run_initializers_opt",
-                          [Lvar obj; Lvar obj'; Lvar cl]))))
+                   Lapply (oo_prim "run_initializers_opt",
+			   [obj; Lvar obj'; Lvar cl]))))
   end
 
 let rec build_object_init cl_table obj params inh_init obj_init cl =
@@ -110,7 +109,7 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
       let obj_init = Ident.create "obj_init"
       and env_init = Ident.create "env_init" in
       ((obj_init, env_init, transl_path path)::inh_init,
-       Lapply(Lvar obj_init, [Lvar obj]))
+       Lapply(Lvar obj_init, [obj]))
   | Tclass_structure str ->
       create_object cl_table obj (fun obj ->
         let (inh_init, obj_init) =
@@ -119,7 +118,7 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
                match field with
                  Cf_inher (cl, _, _) ->
                    let (inh_init, obj_init') =
-                     build_object_init cl_table obj [] inh_init
+                     build_object_init cl_table (Lvar obj) [] inh_init
                        (fun _ -> lambda_unit) cl
                    in
                    (inh_init, lsequence obj_init' obj_init)
@@ -171,19 +170,22 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
   | Tclass_constraint (cl, vals, pub_meths, concr_meths) ->
       build_object_init cl_table obj params inh_init obj_init cl
 
-let rec build_object_init_0 cl_table params cl copy_env subst_env top =
+let rec build_object_init_0 cl_table params cl copy_env subst_env top ids =
   match cl.cl_desc with
     Tclass_let (rec_flag, defs, vals, cl) ->
       let (inh_init, obj_init) =
-        build_object_init_0 cl_table (vals @ params) cl copy_env subst_env top
+        build_object_init_0 cl_table (vals @ params) cl
+	  copy_env subst_env top ids
       in
       (inh_init, Translcore.transl_let rec_flag defs obj_init)
   | _ ->
-      let obj = Ident.create "self" and env = Ident.create "env" in
+      let self = Ident.create "self" and env = Ident.create "env" in
+      let obj = if ids = [] then lambda_unit else Lvar self in
       let (inh_init, obj_init) =
         build_object_init cl_table obj params [] (copy_env env) cl in
       let obj_init = subst_env env obj_init in
-      let obj_init = lfunction [obj] obj_init in
+      let obj_init =
+	if ids = [] then obj_init else lfunction [self] obj_init in
       let obj_init =
 	if top then obj_init else
 	let i = ref 0 in
@@ -361,7 +363,7 @@ let transl_class ids cl_id arity pub_meths cl =
 
   let cla = Ident.create "class" in
   let (inh_init, obj_init) =
-    build_object_init_0 cla [] cl copy_env subst_env top in
+    build_object_init_0 cla [] cl copy_env subst_env top ids in
   if not (Translcore.check_recursive_lambda ids obj_init) then
     raise(Error(cl.cl_loc, Illegal_class_expr));
   let (inh_init', cl_init) =
@@ -378,7 +380,7 @@ let transl_class ids cl_id arity pub_meths cl =
   and ldirect obj_init =
     Llet(Strict, obj_init, cl_init,
          Lsequence(Lapply (oo_prim "init_class", [Lvar cla]),
-                   Lapply(Lvar obj_init, [lambda_unit; lambda_unit])))
+                   Lapply(Lvar obj_init, [lambda_unit])))
   in
   (* simplification when we are an object (indicated by ids=[]) *)
   if top && ids = [] then ltable cla (ldirect obj_init) else
@@ -458,7 +460,7 @@ let transl_class ids cl_id arity pub_meths cl =
                         lset_cached 2 (Lvar table))
              ))))),
   make_envs (
-  if ids = [] then lapply (lget_env_init cached) [lambda_unit] else
+  if ids = [] then lget_env_init cached else
   Lprim(Pmakeblock(0, Immutable),
         [Lapply(Lprim(Pfield 0, [Lvar cached]), [lenvs]);
          Lprim(Pfield 1, [Lvar cached]);
