@@ -1,5 +1,5 @@
-Objective Caml 3.03:
---------------------
+Objective Caml 3.03 ALPHA:
+--------------------------
 
 Language:
 - Removed built-in syntactic sugar for streams and stream patterns
@@ -34,6 +34,8 @@ Byte-code compiler:
 - Protect against VM stack overflow caused by module initialization code
   with many local variables.
 - Support for dynamic loading of the C part of mixed Caml/C libraries.
+- Removed the -use-runtime and -make-runtime flags, obsoleted by dynamic
+  loading of C libraries.
 
 Native-code compiler:
 - Attempt to recover gracefully from system stack overflow.  Currently
@@ -61,6 +63,9 @@ Run-time system:
   runs much faster when there are many global C roots.
 - Autoconfiguration script: fixed wrong detection of Mac OS X; problem
   with the Sparc, gcc 3.0, and float alignment fixed.
+
+Standard library:
+- Added Pervasives.flush_all to flush all opened output channels.
 
 Other libraries:
 - All libraries revised to allow dynamic loading of the C part.
