@@ -7,6 +7,7 @@ INCLUDES=$(OTHERSLIB) $(LABLTKLIB) $(OCAMLTOPLIB)
 
 OBJ =	list2.cmo	useunix.cmo	setpath.cmo	lexical.cmo	\
 	fileselect.cmo	searchid.cmo	searchpos.cmo	shell.cmo	\
+	help.cmo	\
 	viewer.cmo	typecheck.cmo	editor.cmo	main.cmo
 
 JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
@@ -33,7 +34,12 @@ ocamlbrowser$(EXE): $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ) \
 		unix.cma str.cma labltk.cma jglib.cma $(OBJ)
 
 jglib.cma: $(JG)
-	$(LABLCOMP) -a -o jglib.cma $(JG) 
+	$(LABLCOMP) -a -o jglib.cma $(JG)
+
+#help.ml: help.txt
+#	printf 'let text = "' > $@
+#	cat help.txt >> $@
+#	printf '";;\n' >> $@
 
 install:
 	if test -f ocamlbrowser$(EXE); then : ; \

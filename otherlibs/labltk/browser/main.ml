@@ -17,6 +17,7 @@ open Tk
 
 let _ =
   let path = ref [] in
+  let st = ref false in
   Arg.parse
     ~keywords:["-I", Arg.String (fun s -> path := s :: !path),
                "<dir>  Add <dir> to the list of include directories";
@@ -24,6 +25,7 @@ let _ =
                " Use commuting label syntax";
                "-rectypes", Arg.Set Clflags.recursive_types,
                " Allow arbitrary recursive types";
+               "-st", Arg.Set st, " Smalltalk-like one-box browsing";
                "-w", Arg.String (fun s -> Shell.warnings := s),
                "<flags>  Enable or disable warnings according to <flags>:\n\
                 \032    A/a enable/disable all warnings\n\
@@ -49,16 +51,17 @@ let _ =
   end;
   
   Searchpos.view_defined_ref := Viewer.view_defined;
-  Searchpos.editor_ref.contents <- Editor.f;
+  Searchpos.editor_ref := Editor.f;
 
   let top = openTk ~clas:"OCamlBrowser" () in
   Jg_config.init ();
 
-  bind top ~events:[`Destroy] ~action:(fun _ -> exit 0);
+  (* bind top ~events:[`Destroy] ~action:(fun _ -> exit 0); *)
   at_exit Shell.kill_all;
   
 
-  Viewer.f ~on:top ();
+  if !st then Viewer.st_viewer ~on:top ()
+  else Viewer.f ~on:top ();
 
   while true do
     try

@@ -8,6 +8,7 @@ CCFLAGS=-I..\..\..\byterun /Zi $(TK_DEFS)
 
 OBJ =	list2.cmo	useunix.cmo	setpath.cmo	lexical.cmo	\
 	fileselect.cmo	searchid.cmo	searchpos.cmo	shell.cmo	\
+        help.cmo        \
 	viewer.cmo	typecheck.cmo	editor.cmo	main.cmo
 
 JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \

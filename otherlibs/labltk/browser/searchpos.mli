@@ -26,13 +26,15 @@ type module_widgets =
 val add_shown_module : Path.t -> widgets:module_widgets -> unit
 val find_shown_module : Path.t -> module_widgets
 val is_shown_module : Path.t -> bool
+val default_frame : module_widgets option ref
 
 val view_defined_ref : (Longident.t -> env:Env.t -> unit) ref
 val editor_ref :
     (?file:string -> ?pos:int -> ?opendialog:bool -> unit -> unit) ref
 
 val view_signature :
-  ?title:string -> ?path:Path.t -> ?env:Env.t -> Types.signature -> unit
+  ?title:string ->
+  ?path:Path.t -> ?env:Env.t -> ?detach:bool -> Types.signature -> unit
 val view_signature_item :
   Types.signature -> path:Path.t -> env:Env.t -> unit
 val view_module_id : Longident.t -> env:Env.t -> unit

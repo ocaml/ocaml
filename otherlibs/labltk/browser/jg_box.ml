@@ -43,7 +43,7 @@ class timed ?wait ?nocase get_texts = object
     super#reset
 end
 
-let add_completion ?action ?wait ?nocase lb =
+let add_completion ?action ?wait ?nocase ?(double=true) lb =
   let comp =
     new timed ?wait ?nocase
       (fun () -> Listbox.get_range lb ~first:(`Num 0) ~last:`End) in
@@ -62,10 +62,19 @@ let add_completion ?action ?wait ?nocase lb =
     Some action ->
       bind lb ~events:[`KeyPressDetail "Return"]
         ~action:(fun _ -> action `Active);
-      bind lb ~events:[`Modified([`Double], `ButtonPressDetail 1)]
+      let bmod = if double then [`Double] else [] in
+      bind lb ~events:[`Modified(bmod, `ButtonPressDetail 1)]
         ~breakable:true ~fields:[`MouseY]
-        ~action:(fun ev ->
-          action (Listbox.nearest lb ~y:ev.ev_MouseY); break ())
+        ~action:
+        begin fun ev ->
+          let index = Listbox.nearest lb ~y:ev.ev_MouseY in
+          if not double then begin
+            Listbox.selection_clear lb ~first:(`Num 0) ~last:`End;
+            Listbox.selection_set lb ~first:index ~last:index;
+          end;
+          action index;
+          break ()
+        end
   | None -> ()
   end;
 

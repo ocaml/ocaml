@@ -23,6 +23,8 @@ open Env
 open Searchpos
 open Searchid
 
+(* Managing the module list *)
+
 let list_modules ~path =
   List.fold_left path ~init:[] ~f:
   begin fun modules dir ->
@@ -44,6 +46,9 @@ let reset_modules box =
       (list_modules ~path:!Config.load_path);
   Listbox.insert box ~index:`End ~texts:!module_list;
   Jg_box.recenter box ~index:(`Num 0)
+
+
+(* How to display a symbol *)
 
 let view_symbol ~kind ~env ?path id =
   let name = match id with
@@ -76,6 +81,9 @@ let view_symbol ~kind ~env ?path id =
   | Pmodtype -> view_modtype_id id ~env
   | Pclass -> view_class_id id ~env
   | Pcltype -> view_cltype_id id ~env
+
+
+(* Create a list of symbols you can choose from *)
 
 let choose_symbol ~title ~env ?signature ?path l =
   if match path with
@@ -136,8 +144,13 @@ let choose_symbol ~title ~env ?signature ?path l =
       pack [frame] ~side:`Bottom ~fill:`X;
       add_shown_module path
         ~widgets:{ mw_frame = frame; mw_detach = detach;
-                  mw_edit = edit; mw_intf = intf }
+                   mw_edit = edit; mw_intf = intf }
   end
+
+let choose_symbol_ref = ref choose_symbol
+
+
+(* Search, both by type and name *)
 
 let search_which = ref "itself"
 
@@ -185,6 +198,9 @@ let search_symbol () =
   pack [coe ew; coe choice; coe buttons]
        ~side:`Top ~fill:`X ~expand:true
 
+
+(* Display the contents of a module *)
+
 let view_defined modlid ~env =
   try match lookup_module modlid env with
     path, Tmty_signature sign ->
@@ -208,7 +224,7 @@ let view_defined modlid ~env =
           in iter_sign rem (ident_of_decl decl :: idents)
     in
     let l = iter_sign sign [] in
-    choose_symbol l ~title:(string_of_path path) ~signature:sign
+    !choose_symbol_ref l ~title:(string_of_path path) ~signature:sign
        ~env:(open_signature path sign env) ~path
   | _ -> ()
   with Not_found -> ()
@@ -217,11 +233,16 @@ let view_defined modlid ~env =
       Env.report_error Format.std_formatter err;
       finish ()
 
+
+(* Manage toplevel windows *)
+
 let close_all_views () =
     List.iter !top_widgets
       ~f:(fun tl -> try destroy tl with Protocol.TkError _ -> ());
     top_widgets := []
 
+
+(* Launch a shell *)
 
 let shell_counter = ref 1
 let default_shell = ref "ocaml"
@@ -260,6 +281,22 @@ let start_shell () =
   pack [ok;cancel] ~side:`Left ~fill:`X ~expand:true;
   pack [input;buttons] ~side:`Top ~fill:`X ~expand:true
 
+
+(* Help window *)
+
+let show_help () =
+  let tl = Jg_toplevel.titled "OCamlBrowser Help" in
+  Jg_bind.escape_destroy tl;
+  let fw, tw, sb = Jg_text.create_with_scrollbar tl in
+  let ok = Jg_button.create_destroyer ~parent:tl ~text:"Ok" tl in
+  Text.insert tw ~index:tend ~text:Help.text;
+  pack [tw] ~side:`Left ~fill:`Both ~expand:true;
+  pack [sb] ~side:`Right ~fill:`Y;
+  pack [fw] ~side:`Top ~expand:true ~fill:`Both;
+  pack [ok] ~side:`Bottom ~fill:`X
+
+(* Launch the classical viewer *)
+
 let f ?(dir=Unix.getcwd()) ?on () =
   let tl = match on with
     None ->
@@ -269,6 +306,7 @@ let f ?(dir=Unix.getcwd()) ?on () =
       Wm.title_set top "OCamlBrowser";
       Wm.iconname_set top "OCamlBrowser";
       let tl = Frame.create top in
+      bind tl ~events:[`Destroy] ~action:(fun _ -> exit 0);
       pack [tl] ~expand:true ~fill:`Both;
       coe tl
   in
@@ -337,3 +375,164 @@ let f ?(dir=Unix.getcwd()) ?on () =
   pack [mbox] ~side:`Left ~fill:`Both ~expand:true;
   pack [fmbox] ~fill:`Both ~expand:true ~side:`Top;
   reset_modules mbox
+
+(* Smalltalk-like version *)
+
+class st_viewer ?(dir=Unix.getcwd()) ?on () =
+  let tl = match on with
+    None ->
+      let tl = Jg_toplevel.titled "Module viewer" in
+      ignore (Jg_bind.escape_destroy tl); coe tl
+  | Some top ->
+      Wm.title_set top "OCamlBrowser";
+      Wm.iconname_set top "OCamlBrowser";
+      let tl = Frame.create top in
+      bind tl ~events:[`Destroy] ~action:(fun _ -> exit 0);
+      pack [tl] ~expand:true ~fill:`Both;
+      coe tl
+  in
+  let menus = Frame.create tl ~name:"menubar" in
+  let filemenu = new Jg_menu.c "File" ~parent:menus
+  and modmenu = new Jg_menu.c "Modules" ~parent:menus
+  and helpmenu = new Jg_menu.c "Help" ~parent:menus in
+  let boxes_frame = Frame.create tl ~name:"boxes" in
+  let view = Frame.create tl in
+  let buttons = Frame.create tl in
+  let all = Button.create buttons ~text:"Show all" ~padx:20
+  and close = Button.create buttons ~text:"Close all" ~command:close_all_views
+  and detach = Button.create buttons ~text:"Detach"
+  and edit = Button.create buttons ~text:"Impl"
+  and intf = Button.create buttons ~text:"Intf" in
+object (self)
+  val mutable boxes = []
+
+  method create_box =
+    let fmbox, mbox, sb = Jg_box.create_with_scrollbar boxes_frame in
+    boxes <- boxes @ [fmbox, mbox];
+    pack [sb] ~side:`Right ~fill:`Y;
+    pack [mbox] ~side:`Left ~fill:`Both ~expand:true;
+    pack [fmbox] ~side:`Left ~fill:`Both ~expand:true;
+    fmbox, mbox
+
+  initializer
+    (* Boxes *)
+    let fmbox, mbox = self#create_box in
+    Jg_box.add_completion mbox ~nocase:true ~double:false ~action:
+      begin fun index ->
+        view_defined (Lident (Listbox.get mbox ~index)) ~env:!start_env
+      end;
+    Setpath.add_update_hook (fun () -> reset_modules mbox; self#hide_after 1);
+    List.iter [1;2] ~f:(fun _ -> ignore self#create_box);
+    Searchpos.default_frame := Some
+      { mw_frame = view; mw_detach = detach; mw_edit = edit; mw_intf = intf };
+
+    (* Buttons *)
+    pack [close] ~side:`Right ~fill:`X ~expand:true;
+    bind close ~events:[`Modified([`Double], `ButtonPressDetail 1)]
+      ~action:(fun _ -> destroy tl);
+
+    (* File menu *)
+    filemenu#add_command "Open..."
+      ~command:(fun () -> !editor_ref ~opendialog:true ());
+    filemenu#add_command "Editor..." ~command:(fun () -> !editor_ref ());
+    filemenu#add_command "Shell..." ~command:start_shell;
+    filemenu#add_command "Quit" ~command:(fun () -> destroy tl);
+
+    (* modules menu *)
+    modmenu#add_command "Path editor..."
+      ~command:(fun () -> Setpath.set ~dir);
+    modmenu#add_command "Reset cache"
+      ~command:(fun () -> reset_modules mbox; Env.reset_cache ());
+    modmenu#add_command "Search symbol..." ~command:search_symbol;
+
+    (* Help menu *)
+    helpmenu#add_command "Manual..." ~command:show_help;
+
+    pack [filemenu#button; modmenu#button] ~side:`Left ~ipadx:5 ~anchor:`W;
+    pack [helpmenu#button] ~side:`Right ~anchor:`E ~ipadx:5;
+    pack [menus] ~side:`Top ~fill:`X;      
+    (* pack [close; search] ~fill:`X ~side:`Right ~expand:true; *)
+    pack [boxes_frame] ~fill:`Both ~expand:true;
+    pack [view] ~fill:`X ~expand:false;
+    pack [buttons] ~fill:`X ~side:`Bottom ~expand:false;
+    reset_modules mbox
+
+  val mutable shown_paths = []
+
+  method hide_after n =
+    for i = n to List.length boxes - 1 do
+      let fm, box = List.nth boxes i in
+      if i < 3 then Listbox.delete box ~first:(`Num 0) ~last:`End
+      else destroy fm
+    done;
+    let rec firsts n = function [] -> []
+      | a :: l -> if n > 0 then a :: firsts (pred n) l else [] in
+    shown_paths <- firsts (n-1) shown_paths;
+    boxes <- firsts (max 3 n) boxes
+
+  method get_box ~path =
+    let rec path_index p = function
+        [] -> raise Not_found
+      | a :: l -> if Path.same p a then 1 else path_index p l + 1 in
+    try
+      let n = path_index path shown_paths in
+      self#hide_after (n+1);
+      n
+    with Not_found ->
+      match path with
+        Path.Pdot (path', _, _) ->
+          let n = self#get_box ~path:path' in
+          shown_paths <- shown_paths @ [path];
+          if n + 1 >= List.length boxes then ignore self#create_box;
+          n+1
+      | _ ->
+          self#hide_after 2;
+          shown_paths <- [path];
+          1
+        
+  method choose_symbol ~title ~env ?signature ?path l =
+    let n =
+      match path with None -> 1
+      | Some path -> self#get_box ~path
+    in
+
+    let l = Sort.list l ~order:
+        (fun (li1, _) (li2,_) ->
+          string_of_longident li1 < string_of_longident li2)
+    in
+    let nl = List.map l ~f:
+        begin fun (li, k) ->
+          string_of_longident li ^ " (" ^ string_of_kind k ^ ")"
+        end in
+    let _, box = List.nth boxes n in
+    Listbox.delete box ~first:(`Num 0) ~last:`End;
+    Listbox.insert box ~index:`End ~texts:nl;
+    Jg_box.add_completion box ~double:false ~action:
+      begin fun index ->
+        let `Num pos = Listbox.index box ~index in
+        let li, k = List.nth l pos in
+        let path =
+          match path, li with
+            None, Ldot (lip, _) ->
+              begin try
+                Some (fst (lookup_module lip env))
+              with Not_found -> None
+              end
+          | _ -> path
+        in
+        view_symbol li ~kind:k ~env ?path;
+      end;
+    begin match signature with
+      None -> ()
+    | Some signature ->
+        Button.configure all ~command:
+          begin fun () ->
+            view_signature signature ~title ~env ?path
+          end;
+        pack [all] ~side:`Right ~fill:`X ~expand:true
+    end
+end
+
+let st_viewer ?dir ?on () =
+  let viewer = new st_viewer ?dir ?on () in
+  choose_symbol_ref := viewer#choose_symbol

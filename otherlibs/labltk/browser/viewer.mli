@@ -21,6 +21,8 @@ val search_symbol : unit -> unit
 
 val f : ?dir:string -> ?on:toplevel widget -> unit -> unit
         (* open then module viewer *)
+val st_viewer : ?dir:string -> ?on:toplevel widget -> unit -> unit
+        (* one-box viewer *)
 
 val view_defined : Longident.t -> env:Env.t -> unit
         (* displays a signature, found in environment *)

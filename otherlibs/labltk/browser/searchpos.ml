@@ -226,6 +226,7 @@ type module_widgets =
       mw_intf: Widget.button Widget.widget }
 
 let shown_modules = Hashtbl.create 17
+let default_frame = ref None
 let filter_modules () =
   Hashtbl.iter shown_modules ~f:
     begin fun ~key ~data ->
@@ -234,13 +235,18 @@ let filter_modules () =
     end
 let add_shown_module path ~widgets =
   Hashtbl.add shown_modules ~key:path ~data:widgets
-and find_shown_module path =
-  filter_modules ();
-  Hashtbl.find shown_modules path
+let find_shown_module path =
+  try
+    filter_modules ();
+    Hashtbl.find shown_modules path
+  with Not_found ->
+    match !default_frame with
+      None -> raise Not_found
+    | Some mw -> mw
 
 let is_shown_module path =
-  filter_modules ();
-  Hashtbl.mem shown_modules path
+  !default_frame <> None ||
+  (filter_modules (); Hashtbl.mem shown_modules path)
 
 (* Viewing a signature *)
 
@@ -280,7 +286,7 @@ let edit_source ~file ~path ~sign =
 (* List of windows to destroy by Close All *)
 let top_widgets = ref []
 
-let rec view_signature ?title ?path ?(env = !start_env) sign =
+let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
   let env =
     match path with None -> env
     | Some path -> Env.open_signature path sign env in
@@ -290,20 +296,27 @@ let rec view_signature ?title ?path ?(env = !start_env) sign =
     | None, None -> "Signature"
   in
   let tl, tw, finish =
-    try match path with
-      None -> raise Not_found
-    | Some path ->
-        let widgets =
+    try match path, !default_frame with
+      None, Some mw when not detach ->
+        Button.configure mw.mw_detach
+          ~command:(fun () -> view_signature sign ~title ~env);
+        pack [mw.mw_detach] ~side:`Left;
+        Pack.forget [mw.mw_edit; mw.mw_intf];
+        List.iter ~f:destroy (Winfo.children mw.mw_frame);
+        Jg_message.formatted ~title ~on:mw.mw_frame ~maxheight:15 ()
+    | None, _ -> raise Not_found
+    | Some path, _ ->
+        let mw =
           try find_shown_module path
           with Not_found ->
             view_module path ~env;
             find_shown_module path
         in
-        Button.configure widgets.mw_detach
-          ~command:(fun () -> view_signature sign ~title ~env);
-        pack [widgets.mw_detach] ~side:`Left;
-        Pack.forget [widgets.mw_edit; widgets.mw_intf];
-        List.iter2 [widgets.mw_edit; widgets.mw_intf] [".ml"; ".mli"] ~f:
+        Button.configure mw.mw_detach
+          ~command:(fun () -> view_signature sign ~title ~env ~detach:true);
+        pack [mw.mw_detach] ~side:`Left;
+        Pack.forget [mw.mw_edit; mw.mw_intf];
+        List.iter2 [mw.mw_edit; mw.mw_intf] [".ml"; ".mli"] ~f:
           begin fun button ext ->
             try
               let id = head_id path in
@@ -315,11 +328,11 @@ let rec view_signature ?title ?path ?(env = !start_env) sign =
               pack [button] ~side:`Left
             with Not_found -> ()
           end;
-        let top = Winfo.toplevel widgets.mw_frame in
+        let top = Winfo.toplevel mw.mw_frame in
         if not (Winfo.ismapped top) then Wm.deiconify top;
         Focus.set top;
-        List.iter ~f:destroy (Winfo.children widgets.mw_frame);
-        Jg_message.formatted ~title ~on:widgets.mw_frame ~maxheight:15 ()
+        List.iter ~f:destroy (Winfo.children mw.mw_frame);
+        Jg_message.formatted ~title ~on:mw.mw_frame ~maxheight:15 ()
     with Not_found ->
       let tl, tw, finish = Jg_message.formatted ~title ~maxheight:15 () in
       top_widgets := tl :: !top_widgets;
