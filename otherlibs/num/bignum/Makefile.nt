@@ -9,7 +9,7 @@ CFLAGS = -c -I.\h -DCAML_LIGHT $(BYTECCCOMPOPTS)
 all: $(LIB)
 
 scratch:
-	rm -f o\*.obj libbignum.lib
+	rm -f o/*.obj libbignum.lib
 
 # build the BigNum library
 $(LIB): $(OBJECT)
