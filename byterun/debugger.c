@@ -72,10 +72,8 @@ static void open_connection()
   if (dbg_socket == -1 ||
       connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1)
     fatal_error("cannot connect to debugger");
-  dbg_in = open_descr(dbg_socket);
-  if (!debugger_in_use) register_global_root((value *) &dbg_in);
-  dbg_out = open_descr(dbg_socket);
-  if (!debugger_in_use) register_global_root((value *) &dbg_out);
+  dbg_in = open_descriptor(dbg_socket);
+  dbg_out = open_descriptor(dbg_socket);
   if (!debugger_in_use) putword(dbg_out, -1); /* first connection */
   putword(dbg_out, getpid());
   flush(dbg_out);
@@ -155,11 +153,11 @@ static void safe_output_value(chan, val)
 {
   struct longjmp_buffer raise_buf, * saved_external_raise;
 
-  /* Catch exceptions raised by output_value */
+  /* Catch exceptions raised by output_val */
   saved_external_raise = external_raise;
   if (sigsetjmp(raise_buf.buf, 1) == 0) {
     external_raise = &raise_buf;
-    output_value(chan, val, Val_unit);
+    output_val(chan, val, Val_unit);
   } else {
     /* Send wrong magic number, will cause input_value to fail */
     really_putblock(chan, "\000\000\000\000", 4);

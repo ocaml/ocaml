@@ -59,8 +59,7 @@ struct caml_thread_struct {
   value * sp;                   /* Saved value of extern_sp for this thread */
   value * trapsp;               /* Saved value of trapsp for this thread */
   struct longjmp_buffer * external_raise; /* Saved value of external_raise */
-  value * local_roots;          /* Saved value of local_roots */
-  value * local_roots_new;      /* Saved value of local_roots_new */
+  struct caml__roots_block * local_roots; /* Saved value of local_roots */
   struct caml_thread_struct * next;  /* Double linking of threads */
   struct caml_thread_struct * prev;
 };
@@ -93,7 +92,7 @@ static void caml_thread_scan_roots(action)
   caml_thread_t th;
   register value * sp;
   value * block;
-  struct caml_roots_block *lr;
+  struct caml__roots_block *lr;
   long i;
 
   /* Scan all thread descriptors */
@@ -107,15 +106,12 @@ static void caml_thread_scan_roots(action)
       (*action)(*sp, sp);
     }
     /* Scan local C roots for that thread */
-    for (lr = th->local_roots_new; lr != NULL; lr = lr->next) {
-      for (i = 0; i < lr->len; i++){
-        sp = lr->roots[i];
-        (*action)(*sp, sp);
-      }
-    }
-    for (block = th->local_roots; block != NULL; block = (value *) block [1]) {
-      for (sp = block - (long) block [0]; sp < block; sp++) {
-        (*action)(*sp, sp);
+    for (lr = th->local_roots; lr != NULL; lr = lr->next) {
+      for (i = 0; i < lr->ntables; i++){
+        for (j = 0; j < lr->nitems; j++){
+          sp = &(lr->tables[i][j]);
+          f (*sp, sp);
+        }
       }
     }
   }
@@ -141,7 +137,6 @@ static void caml_thread_enter_blocking_section()
   curr_thread->trapsp = trapsp;
   curr_thread->external_raise = external_raise;
   curr_thread->local_roots = local_roots;
-  curr_thread->local_roots_new = local_roots_new;
   /* Release the global mutex */
   AssertEv(ReleaseMutex(caml_mutex));
 }
@@ -159,7 +154,6 @@ static void caml_thread_leave_blocking_section()
   trapsp = curr_thread->trapsp;
   external_raise = curr_thread->external_raise;
   local_roots = curr_thread->local_roots;
-  local_roots_new = curr_thread->local_roots_new;
   if (prev_leave_blocking_section_hook != NULL)
     (*prev_leave_blocking_section_hook)();
 }
@@ -201,7 +195,6 @@ static void caml_thread_cleanup(th)
   th->trapsp = NULL;
   th->external_raise = NULL;
   th->local_roots = NULL;
-  th->local_roots_new = NULL;
 }
 
 static void caml_thread_finalize(vfin)
@@ -262,7 +255,6 @@ value caml_thread_initialize(unit)   /* ML */
   thread_list->trapsp = trapsp;
   thread_list->external_raise = external_raise;
   thread_list->local_roots = local_roots;
-  thread_list->local_roots_new = local_roots_new;
   /* Associate the thread descriptor with the current thread */
   curr_thread = thread_list;
   /* Set up the hooks */
@@ -301,7 +293,6 @@ static void caml_thread_start(th)
   trapsp = th->trapsp;
   external_raise = th->external_raise;
   local_roots = th->local_roots;
-  local_roots_new = th->local_roots_new;
   /* Callback the closure */
   clos = *extern_sp++;
   callback(clos, Val_unit);
@@ -327,7 +318,6 @@ value caml_thread_new(clos)          /* ML */
     th->trapsp = th->stack_high;
     th->external_raise = NULL;
     th->local_roots = NULL;
-    th->local_roots_new = NULL;
     /* Add it to the list of threads */
     th->next = thread_list;
     Assign(thread_list->prev, th);

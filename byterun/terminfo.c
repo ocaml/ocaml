@@ -60,11 +60,10 @@ static int terminfo_putc(c)
   return c;
 }
 
-value terminfo_puts(chan, str, count) /* ML */
-     struct channel * chan;
-     value str, count;
+value terminfo_puts(vchan, str, count) /* ML */
+     value vchan, str, count;
 {
-  terminfo_putc_channel = chan;
+  terminfo_putc_channel = Channel(vchan);
   tputs(String_val(str), Int_val(count), terminfo_putc);
   return Val_unit;
 }
@@ -92,9 +91,8 @@ value terminfo_getnum(capa)
   return Val_unit;
 }
 
-value terminfo_puts(chan, str, count)
-     struct channel * chan;
-     value str, count;
+value terminfo_puts(vchan, str, count)
+     value vchan, str, count;
 {
   invalid_argument("Terminfo.puts");
   return Val_unit;

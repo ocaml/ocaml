@@ -25,13 +25,13 @@
 #endif
 
 struct channel {
-  value final_fun;              /* Finalization function */
   int fd;                       /* Unix file descriptor */
   long offset;                  /* Absolute position of fd in the file */
-  char * buff;                  /* Beginning of the buffer */
   char * end;                   /* Physical end of the buffer */
   char * curr;                  /* Current position in the buffer */
   char * max;                   /* Logical end of the buffer (for input) */
+  void * mutex;                 /* Placeholder for mutex (for systhreads) */
+  char buff[IO_BUFFER_SIZE];    /* The buffer itself */
 };
 
 /* For an output channel:
@@ -39,6 +39,9 @@ struct channel {
    For an input channel:
      [offset] is the absolute position of the logical end of the buffer, [max].
 */
+
+/* Functions and macros that can be called from C.  Take arguments of
+   type struct channel *.  No locking is performed. */
 
 #define putch(channel, ch)                                                  \
   { if ((channel)->curr >= (channel)->end) flush_partial(channel);          \
@@ -49,11 +52,11 @@ struct channel {
    ? refill(channel)                                                        \
    : (unsigned char) *((channel))->curr++)
 
-struct channel * open_descr P((int));
-value close_channel P((struct channel *));
+struct channel * open_descriptor P((int));
+void close_channel P((struct channel *));
 
-value flush_partial P((struct channel *));
-value flush P((struct channel *));
+int flush_partial P((struct channel *));
+void flush P((struct channel *));
 void putword P((struct channel *, uint32));
 int putblock P((struct channel *, char *, long));
 void really_putblock P((struct channel *, char *, long));
@@ -62,5 +65,23 @@ unsigned char refill P((struct channel *));
 uint32 getword P((struct channel *));
 int getblock P((struct channel *, char *, long));
 int really_getblock P((struct channel *, char *, long));
+
+/* Extract a struct channel * from the heap object representing it */
+
+#define Channel(v) ((struct channel *) Field(v, 1))
+
+/* The locking machinery */
+
+extern void (*channel_mutex_free) P((struct channel *));
+extern void (*channel_mutex_lock) P((struct channel *));
+extern void (*channel_mutex_unlock) P((struct channel *));
+extern void (*channel_mutex_unlock_exn) P((void));
+
+#define Lock(channel) \
+  if (channel_mutex_lock != NULL) (*channel_mutex_lock)(channel)
+#define Unlock(channel) \
+  if (channel_mutex_unlock != NULL) (*channel_mutex_unlock)(channel)
+#define Unlock_exn() \
+  if (channel_mutex_unlock_exn != NULL) (*channel_mutex_unlock_exn)()
 
 #endif /* _io_ */

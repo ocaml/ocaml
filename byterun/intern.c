@@ -260,7 +260,7 @@ static void intern_alloc(whsize, num_objects)
   }
 }
 
-value input_value(chan)         /* ML */
+value input_val(chan)
      struct channel * chan;
 {
   uint32 magic;
@@ -296,13 +296,26 @@ value input_value(chan)         /* ML */
   return res;
 }
 
-value input_value_from_string(str, ofs) /* ML */
-     value str, ofs;
+value input_value(vchan)        /* ML */
+     value vchan;
+{
+  struct channel * chan = Channel(vchan);
+  value res;
+
+  Lock(chan);
+  res = input_val(chan);
+  Unlock(chan);
+  return res;
+}
+
+value input_val_from_string(str, ofs)
+     value str;
+     long ofs;
 {
   mlsize_t num_objects, size_32, size_64, whsize;
   value obj;
 
-  intern_src = &Byte_u(str, Long_val(ofs) + 2*4);
+  intern_src = &Byte_u(str, ofs + 2*4);
   intern_input_malloced = 0;
   num_objects = read32u();
   size_32 = read32u();
@@ -316,12 +329,18 @@ value input_value_from_string(str, ofs) /* ML */
   Begin_root(str);
     intern_alloc(whsize, num_objects);
   End_roots();
-  intern_src = &Byte_u(str, Long_val(ofs) + 5*4); /* If a GC occurred */
+  intern_src = &Byte_u(str, ofs + 5*4); /* If a GC occurred */
   /* Fill it in */
   intern_rec(&obj);
   /* Free everything */
   if (intern_obj_table != NULL) stat_free((char *) intern_obj_table);
   return obj;
+}
+
+value input_value_from_string(str, ofs) /* ML */
+     value str, ofs;
+{
+  return input_val_from_string(str, Long_val(ofs));
 }
 
 value marshal_data_size(buff, ofs) /* ML */
@@ -371,6 +390,3 @@ unsigned char * code_checksum()
 }
 
 #endif
-
-
-

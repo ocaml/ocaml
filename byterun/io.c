@@ -45,65 +45,50 @@
 #define SEEK_END 2
 #endif
 
-/* Common functions. */
+/* Hooks for locking channels */
 
-static void finalize_channel(channel)
-     value channel;
-{
-  struct channel * ch = (struct channel *) channel;
-  stat_free(ch->buff);
-}
+void (*channel_mutex_free) P((struct channel *)) = NULL;
+void (*channel_mutex_lock) P((struct channel *)) = NULL;
+void (*channel_mutex_unlock) P((struct channel *)) = NULL;
+void (*channel_mutex_unlock_exn) P((void)) = NULL;
 
-struct channel * open_descr(fd)
+/* Basic functions over type struct channel *.
+   These functions can be called directly from C.
+   No locking is performed. */
+
+struct channel * open_descriptor(fd)
      int fd;
 {
-  char * buffer;
   struct channel * channel;
 
-  buffer = stat_alloc(IO_BUFFER_SIZE);
-  channel = (struct channel *)
-              alloc_final(sizeof(struct channel) / sizeof(value),
-                          finalize_channel,
-                          1, 32);
+  channel = (struct channel *) stat_alloc(sizeof(struct channel));
   channel->fd = fd;
   channel->offset = 0;
-  channel->buff = buffer;
-  channel->end = buffer + IO_BUFFER_SIZE;
-  channel->curr = channel->max = buffer;
+  channel->curr = channel->max = channel->buff;
+  channel->end = channel->buff + IO_BUFFER_SIZE;
+  channel->mutex = NULL;
   return channel;
 }
 
-value open_descriptor(fd)       /* ML */
-     value fd;
-{
-  return (value) open_descr(Int_val(fd));
-}
-
-value channel_descriptor(channel)   /* ML */
+void close_channel(channel)
      struct channel * channel;
 {
-  return Val_long(channel->fd);
-}
-
-value close_channel(channel)      /* ML */
-     struct channel * channel;
-{
-  /* For output channels, must have flushed before */
   close(channel->fd);
-  channel->fd = -1;
-  return Val_unit;
+  if (channel_mutex_free != NULL) (*channel_mutex_free)(channel);
+  stat_free((char *) channel);
 }  
 
-value channel_size(channel)      /* ML */
+long channel_size(channel)
      struct channel * channel;
 {
   long end;
 
   end = lseek(channel->fd, 0, SEEK_END);
-  if (end == -1) sys_error(NO_ARG);
-  if (lseek(channel->fd, channel->offset, SEEK_SET) != channel->offset) 
+  if (end == -1 ||
+      lseek(channel->fd, channel->offset, SEEK_SET) != channel->offset) {
     sys_error(NO_ARG);
-  return Val_long(end);
+  }
+  return end;
 }
 
 /* Output */
@@ -154,10 +139,12 @@ again:
    at least one character. Returns true if the buffer is empty at the
    end of the flush, or false if some data remains in the buffer. */
 
-value flush_partial(channel)            /* ML */
+int flush_partial(channel)
      struct channel * channel;
 {
   int towrite, written;
+
+  Lock(channel);
   towrite = channel->curr - channel->buff;
   if (towrite > 0) {
     written = do_write(channel->fd, channel->buff, towrite);
@@ -166,25 +153,19 @@ value flush_partial(channel)            /* ML */
       bcopy(channel->buff + written, channel->buff, towrite - written);
     channel->curr -= written;
   }
-  return Val_bool(channel->curr == channel->buff);
+  Unlock(channel);
+  return (channel->curr == channel->buff);
 }
 
 /* Flush completely the buffer. */
 
-value flush(channel)            /* ML */
+void flush(channel)
      struct channel * channel;
 {
-  while (flush_partial(channel) == Val_false) /*nothing*/;
-  return Val_unit;
+  while (! flush_partial(channel)) /*nothing*/;
 }
 
-value output_char(channel, ch)  /* ML */
-     struct channel * channel;
-     value ch;
-{
-  putch(channel, Long_val(ch));
-  return Val_unit;
-}
+/* Output data */
 
 void putword(channel, w)
      struct channel * channel;
@@ -194,14 +175,6 @@ void putword(channel, w)
   putch(channel, w >> 16);
   putch(channel, w >> 8);
   putch(channel, w);
-}
-
-value output_int(channel, w)    /* ML */
-     struct channel * channel;
-     value w;
-{
-  putword(channel, Long_val(w));
-  return Val_unit;
 }
 
 int putblock(channel, p, len)
@@ -246,46 +219,19 @@ void really_putblock(channel, p, len)
   }
 }
 
-value output_partial(channel, buff, start, length) /* ML */
-     value channel, buff, start, length;
-{
-  return Val_int(putblock((struct channel *) channel,
-                          &Byte(buff, Long_val(start)),
-                          Long_val(length)));
-}
-
-value output(channel, buff, start, length) /* ML */
-     value channel, buff, start, length;
-{
-  long pos = Long_val(start);
-  long len = Long_val(length);
-
-  Begin_root(buff);
-    while (len > 0) {
-      int written = putblock((struct channel *) channel, &Byte(buff, pos), len);
-      pos += written;
-      len -= written;
-    }
-  End_roots();
-  return Val_unit;
-}
-
-value seek_out(channel, pos)    /* ML */
+void seek_out(channel, dest)
      struct channel * channel;
-     value pos;
+     long dest;
 {
-  long dest;
-  dest = Long_val(pos);
   flush(channel);
   if (lseek(channel->fd, dest, 0) != dest) sys_error(NO_ARG);
   channel->offset = dest;
-  return Val_unit;
 }
 
-value pos_out(channel)          /* ML */
+long pos_out(channel)
      struct channel * channel;
 {
-  return Val_long(channel->offset + channel->curr - channel->buff);
+  return channel->offset + channel->curr - channel->buff;
 }
 
 /* Input */
@@ -326,14 +272,6 @@ unsigned char refill(channel)
   return (unsigned char)(channel->buff[0]);
 }
 
-value input_char(channel)       /* ML */
-     struct channel * channel;
-{
-  unsigned char c;
-  c = getch(channel);
-  return Val_long(c);
-}
-
 uint32 getword(channel)
      struct channel * channel;
 {
@@ -345,17 +283,6 @@ uint32 getword(channel)
     res = (res << 8) + getch(channel);
   }
   return res;
-}
-
-value input_int(channel)        /* ML */
-     struct channel * channel;
-{
-  long i;
-  i = getword(channel);
-#ifdef ARCH_SIXTYFOUR
-  i = (i << 32) >> 32;          /* Force sign extension */
-#endif
-  return Val_long(i);
 }
 
 int getblock(channel, p, len)
@@ -398,28 +325,17 @@ int really_getblock(chan, p, n)
   int r;
   while (n > 0) {
     r = getblock(chan, p, n);
-    if (r == 0) return 0;
+    if (r == 0) break;
     p += r;
     n -= r;
   }
-  return 1;
+  return (n == 0);
 }
 
-value input(channel, buff, start, length) /* ML */
-     value channel, buff, start, length;
-{
-  return Val_long(getblock((struct channel *) channel,
-                           &Byte(buff, Long_val(start)),
-                           Long_val(length)));
-}
-
-value seek_in(channel, pos)     /* ML */
+void seek_in(channel, dest)
      struct channel * channel;
-     value pos;
+     long dest;
 {
-  long dest;
-
-  dest = Long_val(pos);
   if (dest >= channel->offset - (channel->max - channel->buff) &&
       dest <= channel->offset) {
     channel->curr = channel->max - (channel->offset - dest);
@@ -428,16 +344,15 @@ value seek_in(channel, pos)     /* ML */
     channel->offset = dest;
     channel->curr = channel->max = channel->buff;
   }
-  return Val_unit;
 }
 
-value pos_in(channel)           /* ML */
+long pos_in(channel)
      struct channel * channel;
 {
-  return Val_long(channel->offset - (channel->max - channel->curr));
+  return channel->offset - (channel->max - channel->curr);
 }
 
-value input_scan_line(channel)       /* ML */
+long input_scan_line(channel)
      struct channel * channel;
 {
   char * p;
@@ -460,7 +375,7 @@ value input_scan_line(channel)       /* ML */
         /* Buffer is full, no room to read more characters from the input.
            Return the number of characters in the buffer, with negative
            sign to indicate that no newline was encountered. */
-        return Val_long(-(channel->max - channel->curr));
+        return -(channel->max - channel->curr);
       }
       /* Fill the buffer as much as possible */
       n = do_read(channel->fd, channel->max, channel->end - channel->max);
@@ -468,12 +383,207 @@ value input_scan_line(channel)       /* ML */
         /* End-of-file encountered. Return the number of characters in the
            buffer, with negative sign since we haven't encountered 
            a newline. */
-        return Val_long(-(channel->max - channel->curr));
+        return -(channel->max - channel->curr);
       }
       channel->offset += n;
       channel->max += n;
     }
   } while (*p++ != '\n');
   /* Found a newline. Return the length of the line, newline included. */
-  return Val_long(p - channel->curr);
+  return (p - channel->curr);
 }
+
+/* Caml entry points for the I/O functions.  Wrap struct channel *
+   objects into a heap-allocated, finalized object.  Perform locking
+   and unlocking around the I/O operations. */
+
+static void finalize_channel(vchan)
+     value vchan;
+{
+  struct channel * chan = Channel(vchan);
+  if (channel_mutex_free != NULL) (*channel_mutex_free)(chan);
+  stat_free((char *) chan);
+}
+
+static value alloc_channel(chan)
+     struct channel * chan;
+{
+  value res = alloc_final(2, finalize_channel, 1, 32);
+  Field(res, 1) = (value) chan;
+  return res;
+}
+
+value caml_open_descriptor(fd)       /* ML */
+     value fd;
+{
+  return alloc_channel(open_descriptor(Int_val(fd)));
+}
+
+value channel_descriptor(vchannel)   /* ML */
+     value vchannel;
+{
+  return Val_long(Channel(vchannel)->fd);
+}
+
+value caml_close_channel(vchannel)      /* ML */
+     value vchannel;
+{
+  /* For output channels, must have flushed before */
+  struct channel * channel = Channel(vchannel);
+  close(channel->fd);
+  channel->fd = -1;
+  return Val_unit;
+}
+
+value caml_channel_size(vchannel)      /* ML */
+     value vchannel;
+{
+  return Val_long(channel_size(Channel(vchannel)));
+}
+
+value caml_flush_partial(vchannel)            /* ML */
+     value vchannel;
+{
+  return Val_bool(flush_partial(Channel(vchannel)));
+}
+
+value caml_flush(vchannel)            /* ML */
+     value vchannel;
+{
+  flush(Channel(vchannel));
+  return Val_unit;
+}
+
+value caml_output_char(vchannel, ch)  /* ML */
+     value vchannel, ch;
+{
+  struct channel * channel = Channel(vchannel);
+  Lock(channel);
+  putch(channel, Long_val(ch));
+  Unlock(channel);
+  return Val_unit;
+}
+
+value caml_output_int(vchannel, w)    /* ML */
+     value vchannel, w;
+{
+  struct channel * channel = Channel(vchannel);
+  Lock(channel);
+  putword(channel, Long_val(w));
+  Unlock(channel);
+  return Val_unit;
+}
+
+value caml_output_partial(vchannel, buff, start, length) /* ML */
+     value vchannel, buff, start, length;
+{
+  struct channel * channel = Channel(vchannel);
+  int res;
+  Lock(channel);
+  res = putblock(channel, &Byte(buff, Long_val(start)), Long_val(length));
+  Unlock(channel);
+  return Val_int(res);
+}
+
+value caml_output(vchannel, buff, start, length) /* ML */
+     value vchannel, buff, start, length;
+{
+  struct channel * channel = Channel(vchannel);
+  long pos = Long_val(start);
+  long len = Long_val(length);
+
+  Lock(channel);
+  Begin_root(buff)
+    while (len > 0) {
+      int written = putblock(channel, &Byte(buff, pos), len);
+      pos += written;
+      len -= written;
+    }
+  End_roots();
+  Unlock(channel);
+  return Val_unit;
+}
+
+value caml_seek_out(vchannel, pos)    /* ML */
+     value vchannel, pos;
+{
+  struct channel * channel = Channel(vchannel);
+  Lock(channel);
+  seek_out(channel, Long_val(pos));
+  Unlock(channel);
+  return Val_unit;
+}
+
+value caml_pos_out(vchannel)          /* ML */
+     value vchannel;
+{
+  return Val_long(pos_out(Channel(vchannel)));
+}
+
+value caml_input_char(vchannel)       /* ML */
+     value vchannel;
+{
+  struct channel * channel = Channel(vchannel);
+  unsigned char c;
+
+  Lock(channel);
+  c = getch(channel);
+  Unlock(channel);
+  return Val_long(c);
+}
+
+value caml_input_int(vchannel)        /* ML */
+     value vchannel;
+{
+  struct channel * channel = Channel(vchannel);
+  long i;
+
+  Lock(channel);
+  i = getword(channel);
+  Unlock(channel);
+#ifdef ARCH_SIXTYFOUR
+  i = (i << 32) >> 32;          /* Force sign extension */
+#endif
+  return Val_long(i);
+}
+
+value caml_input(vchannel, buff, start, length) /* ML */
+     value vchannel, buff, start, length;
+{
+  struct channel * channel = Channel(vchannel);
+  long res;
+
+  Lock(channel);
+  res = getblock(channel, &Byte(buff, Long_val(start)), Long_val(length));
+  Unlock(channel);
+  return Val_long(res);
+}
+
+value caml_seek_in(vchannel, pos)     /* ML */
+     value vchannel, pos;
+{
+  struct channel * channel = Channel(vchannel);
+  Lock(channel);
+  seek_in(channel, Long_val(pos));
+  Unlock(channel);
+  return Val_unit;
+}
+
+value caml_pos_in(vchannel)           /* ML */
+     value vchannel;
+{
+  return Val_long(pos_in(Channel(vchannel)));
+}
+
+value caml_input_scan_line(vchannel)       /* ML */
+     value vchannel;
+{
+  struct channel * channel = Channel(vchannel);
+  long res;
+
+  Lock(channel);
+  res = input_scan_line(channel);
+  Unlock(channel);
+  return Val_long(res);
+}
+

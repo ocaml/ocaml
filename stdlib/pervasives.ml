@@ -154,8 +154,8 @@ let rec (@) l1 l2 =
 type in_channel
 type out_channel
 
-external open_descriptor_out: int -> out_channel = "open_descriptor"
-external open_descriptor_in: int -> in_channel = "open_descriptor"
+external open_descriptor_out: int -> out_channel = "caml_open_descriptor"
+external open_descriptor_in: int -> in_channel = "caml_open_descriptor"
 
 let stdin = open_descriptor_in 0
 let stdout = open_descriptor_out 1
@@ -179,11 +179,12 @@ let open_out name =
 let open_out_bin name =
   open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o666 name
 
-external flush : out_channel -> unit = "flush"
+external flush : out_channel -> unit = "caml_flush"
 
-external unsafe_output : out_channel -> string -> int -> int -> unit = "output"
+external unsafe_output : out_channel -> string -> int -> int -> unit
+                       = "caml_output"
 
-external output_char : out_channel -> char -> unit = "output_char"
+external output_char : out_channel -> char -> unit = "caml_output_char"
 
 let output_string oc s =
   unsafe_output oc s 0 (string_length s)
@@ -193,17 +194,17 @@ let output oc s ofs len =
   then invalid_arg "output"
   else unsafe_output oc s ofs len
 
-external output_byte : out_channel -> int -> unit = "output_char"
-external output_binary_int : out_channel -> int -> unit = "output_int"
+external output_byte : out_channel -> int -> unit = "caml_output_char"
+external output_binary_int : out_channel -> int -> unit = "caml_output_int"
 
 external marshal_to_channel : out_channel -> 'a -> unit list -> unit
      = "output_value"
 let output_value chan v = marshal_to_channel chan v []
 
-external seek_out : out_channel -> int -> unit = "seek_out"
-external pos_out : out_channel -> int = "pos_out"
-external out_channel_length : out_channel -> int = "channel_size"
-external close_out_channel : out_channel -> unit = "close_channel"
+external seek_out : out_channel -> int -> unit = "caml_seek_out"
+external pos_out : out_channel -> int = "caml_pos_out"
+external out_channel_length : out_channel -> int = "caml_channel_size"
+external close_out_channel : out_channel -> unit = "caml_close_channel"
 let close_out oc = flush oc; close_out_channel oc
 
 (* General input functions *)
@@ -217,9 +218,10 @@ let open_in name =
 let open_in_bin name =
   open_in_gen [Open_rdonly; Open_binary] 0 name
 
-external input_char : in_channel -> char = "input_char"
+external input_char : in_channel -> char = "caml_input_char"
 
-external unsafe_input : in_channel -> string -> int -> int -> int = "input"
+external unsafe_input : in_channel -> string -> int -> int -> int 
+                      = "caml_input"
 
 let input ic s ofs len =
   if ofs < 0 or ofs + len > string_length s
@@ -239,7 +241,7 @@ let really_input ic s ofs len =
   then invalid_arg "really_input"
   else unsafe_really_input ic s ofs len
 
-external input_scan_line : in_channel -> int = "input_scan_line"
+external input_scan_line : in_channel -> int = "caml_input_scan_line"
 
 let rec input_line chan =
   let n = input_scan_line chan in
@@ -259,13 +261,13 @@ let rec input_line chan =
       beg
   end
 
-external input_byte : in_channel -> int = "input_char"
-external input_binary_int : in_channel -> int = "input_int"
+external input_byte : in_channel -> int = "caml_input_char"
+external input_binary_int : in_channel -> int = "caml_input_int"
 external input_value : in_channel -> 'a = "input_value"
-external seek_in : in_channel -> int -> unit = "seek_in"
-external pos_in : in_channel -> int = "pos_in"
-external in_channel_length : in_channel -> int = "channel_size"
-external close_in : in_channel -> unit = "close_channel"
+external seek_in : in_channel -> int -> unit = "caml_seek_in"
+external pos_in : in_channel -> int = "caml_pos_in"
+external in_channel_length : in_channel -> int = "caml_channel_size"
+external close_in : in_channel -> unit = "caml_close_channel"
 
 (* Output functions on standard output *)
 

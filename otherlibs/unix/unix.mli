@@ -222,13 +222,16 @@ val write : file_descr -> string -> int -> int -> int
 
 (*** Interfacing with the standard input/output library. *)
 
-external in_channel_of_descr : file_descr -> in_channel = "open_descriptor"
+external in_channel_of_descr : file_descr -> in_channel 
+                             = "caml_open_descriptor"
         (* Create an input channel reading from the given descriptor. *)
-external out_channel_of_descr : file_descr -> out_channel = "open_descriptor"
+external out_channel_of_descr : file_descr -> out_channel
+                              = "caml_open_descriptor"
         (* Create an output channel writing on the given descriptor. *)
 external descr_of_in_channel : in_channel -> file_descr = "channel_descriptor"
         (* Return the descriptor corresponding to an input channel. *)
-external descr_of_out_channel : out_channel -> file_descr = "channel_descriptor"
+external descr_of_out_channel : out_channel -> file_descr
+                              = "channel_descriptor"
         (* Return the descriptor corresponding to an output channel. *)
 
 

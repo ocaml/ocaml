@@ -78,9 +78,9 @@ void enter_blocking_section()
   if (enter_blocking_section_hook != NULL) enter_blocking_section_hook();
 }
 
-/* This function may be called from outside a blocking section. */
 void leave_blocking_section()
 {
+  Assert(async_signal_mode);
   if (leave_blocking_section_hook != NULL) leave_blocking_section_hook();
   async_signal_mode = 0;
 }

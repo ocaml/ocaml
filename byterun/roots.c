@@ -100,19 +100,34 @@ void darken_all_roots ()
 void do_roots (f)
      scanning_action f;
 {
-  register value * sp;
   struct global_root * gr;
-  struct caml__roots_block *lr;
-  long i, j;
 
   /* Global variables */
   f(global_data, &global_data);
 
-  /* The stack */
-  for (sp = extern_sp; sp < stack_high; sp++) {
+  /* The stack and the local C roots */
+  do_local_roots(f, extern_sp, stack_high, local_roots);
+
+  /* Global C roots */
+  for (gr = global_roots; gr != NULL; gr = gr->next) {
+    f (*(gr->root), gr->root);
+  }
+  /* Hook */
+  if (scan_roots_hook != NULL) (*scan_roots_hook)(f);
+}
+
+void do_local_roots (f, stack_low, stack_high, local_roots)
+     scanning_action f;
+     value * stack_low, * stack_high;
+     struct caml__roots_block * local_roots;
+{
+  register value * sp;
+  struct caml__roots_block *lr;
+  int i, j;
+
+  for (sp = stack_low; sp < stack_high; sp++) {
     f (*sp, sp);
   }
-  /* Local C roots */
   for (lr = local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
@@ -121,10 +136,5 @@ void do_roots (f)
       }
     }
   }
-  /* Global C roots */
-  for (gr = global_roots; gr != NULL; gr = gr->next) {
-    f (*(gr->root), gr->root);
-  }
-  /* Hook */
-  if (scan_roots_hook != NULL) (*scan_roots_hook)(f);
 }
+

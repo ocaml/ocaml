@@ -1,10 +1,11 @@
 posix.o: posix.c ../../byterun/alloc.h ../../byterun/misc.h \
  ../../byterun/config.h ../../byterun/../config/m.h \
  ../../byterun/../config/s.h ../../byterun/mlvalues.h \
- ../../byterun/fail.h ../../byterun/memory.h ../../byterun/gc.h \
- ../../byterun/major_gc.h ../../byterun/freelist.h \
- ../../byterun/minor_gc.h ../../byterun/roots.h \
- ../../byterun/signals.h ../../byterun/stacks.h ../../byterun/sys.h
+ ../../byterun/callback.h ../../byterun/fail.h ../../byterun/io.h \
+ ../../byterun/memory.h ../../byterun/gc.h ../../byterun/major_gc.h \
+ ../../byterun/freelist.h ../../byterun/minor_gc.h \
+ ../../byterun/roots.h ../../byterun/signals.h ../../byterun/stacks.h \
+ ../../byterun/sys.h
 win32.o: win32.c ../../byterun/alloc.h ../../byterun/misc.h \
  ../../byterun/config.h ../../byterun/../config/m.h \
  ../../byterun/../config/s.h ../../byterun/mlvalues.h \
@@ -17,13 +18,9 @@ condition.cmo: mutex.cmi condition.cmi
 condition.cmx: mutex.cmx condition.cmi 
 event.cmo: condition.cmi mutex.cmi event.cmi 
 event.cmx: condition.cmx mutex.cmx event.cmi 
-iolock.cmo: iolock.cmi 
-iolock.cmx: iolock.cmi 
 mutex.cmo: mutex.cmi 
 mutex.cmx: mutex.cmi 
-pervasives.cmo: iolock.cmi pervasives.cmi 
-pervasives.cmx: iolock.cmx pervasives.cmi 
 thread.cmo: thread.cmi 
 thread.cmx: thread.cmi 
-threadUnix.cmo: iolock.cmi thread.cmi threadUnix.cmi 
-threadUnix.cmx: iolock.cmx thread.cmx threadUnix.cmi 
+threadUnix.cmo: thread.cmi threadUnix.cmi 
+threadUnix.cmx: thread.cmx threadUnix.cmi 

@@ -8,7 +8,7 @@
 #include "io.h"
 
 value md5_string P((value str, value ofs, value len));
-value md5_chan P((struct channel * chan, value len));
+value md5_chan P((value vchan, value len));
 
 struct MD5Context {
         uint32 buf[4];

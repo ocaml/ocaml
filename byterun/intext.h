@@ -79,9 +79,9 @@
 
 /* The entry points */
 
-value output_value P((struct channel * chan, value v, value flags));
-value input_value P((struct channel * chan));
-value input_value_from_string P((value str, value ofs));
+void output_val P((struct channel * chan, value v, value flags));
+value input_val P((struct channel * chan));
+value input_val_from_string P((value str, long ofs));
 
 /* Auxiliary stuff for sending code pointers */
 unsigned char * code_checksum P((void));

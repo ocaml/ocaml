@@ -242,6 +242,7 @@ void caml_main(argv)
   struct exec_trailer trail;
   int pos;
   struct longjmp_buffer raise_buf;
+  struct channel * chan;
 
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
@@ -290,12 +291,9 @@ void caml_main(argv)
     /* Check the primitives */
     check_primitives(fd, trail.prim_size);
     /* Load the globals */
-    { value chan = (value) open_descr(fd);
-      Begin_root(chan);
-        global_data = input_value((struct channel *) chan);
-	close_channel((struct channel *) chan);
-      End_roots();
-    }
+    chan = open_descriptor(fd);
+    global_data = input_val(chan);
+    close_channel(chan);
     /* Ensure that the globals are in the major heap. */
     oldify(global_data, &global_data);
     /* Record the command-line arguments */
@@ -340,7 +338,7 @@ void caml_startup_code(code, code_size, data, argv)
     thread_code(start_code, code_size);
 #endif
     /* Load the globals */
-    global_data = input_value_from_string((value)data, Val_int(0));
+    global_data = input_val_from_string((value)data, 0);
     /* Ensure that the globals are in the major heap. */
     oldify(global_data, &global_data);
     /* Run the code */

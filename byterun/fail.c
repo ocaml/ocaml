@@ -15,6 +15,7 @@
 
 #include "alloc.h"
 #include "fail.h"
+#include "io.h"
 #include "gc.h"
 #include "memory.h"
 #include "mlvalues.h"
@@ -28,6 +29,7 @@ void mlraise(v)
      value v;
 {
   Assert(! async_signal_mode);
+  Unlock_exn();
   exn_bucket = v;
   siglongjmp(external_raise->buf, 1);
 }

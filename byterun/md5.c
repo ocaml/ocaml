@@ -33,10 +33,10 @@ value md5_string(str, ofs, len) /* ML */
   return res;
 }
 
-value md5_chan(chan, len)       /* ML */
-     struct channel * chan;
-     value len;
+value md5_chan(vchan, len)       /* ML */
+     value vchan, len;
 {
+  struct channel * chan = Channel(vchan);
   struct MD5Context ctx;
   value res;
   long toread, read;

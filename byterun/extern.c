@@ -403,7 +403,7 @@ static long extern_value(v, flags)
   return res_len;
 }
 
-value output_value(chan, v, flags) /* ML */
+void output_val(chan, v, flags)
      struct channel * chan;
      value v, flags;
 {
@@ -412,6 +412,15 @@ value output_value(chan, v, flags) /* ML */
   len = extern_value(v, flags);
   really_putblock(chan, extern_block, len);
   stat_free(extern_block);
+}
+
+value output_value(vchan, v, flags) /* ML */
+     value vchan, v, flags;
+{
+  struct channel * channel = Channel(vchan);
+  Lock(channel);
+  output_val(channel, v, flags);
+  Unlock(channel);
   return Val_unit;
 }
 

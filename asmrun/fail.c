@@ -16,6 +16,7 @@
 #include <signal.h>
 #include "alloc.h"
 #include "fail.h"
+#include "io.h"
 #include "gc.h"
 #include "memory.h"
 #include "mlvalues.h"
@@ -50,7 +51,7 @@ void mlraise(v)
   sigsetmask(0);
 #endif
 #endif
-  leave_blocking_section();
+  Unlock_exn();
   if (caml_exception_pointer == NULL) fatal_uncaught_exception(v);
 
 #ifndef Stack_grows_upwards

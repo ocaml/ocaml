@@ -1,56 +1,41 @@
 include ../../config/Makefile
 
-# Compilation options
-CC=$(BYTECC)
-CFLAGS=-I../../byterun $(BYTECCCOMPOPTS)
 CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../stdlib -I ../unix
-C_OBJS=posix.o
+CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../unix
 CPP=/lib/cpp -P -traditional
 
-LIB=../../stdlib
-
-LIB_OBJS=mutex.cmo iolock.cmo pervasives.cmo \
-  $(LIB)/list.cmo $(LIB)/char.cmo $(LIB)/string.cmo \
-  $(LIB)/array.cmo $(LIB)/sys.cmo $(LIB)/hashtbl.cmo $(LIB)/sort.cmo \
-  $(LIB)/filename.cmo $(LIB)/obj.cmo $(LIB)/lexing.cmo $(LIB)/parsing.cmo \
-  $(LIB)/set.cmo $(LIB)/map.cmo $(LIB)/stack.cmo $(LIB)/queue.cmo \
-  $(LIB)/stream.cmo $(LIB)/printf.cmo $(LIB)/format.cmo $(LIB)/arg.cmo \
-  $(LIB)/printexc.cmo $(LIB)/gc.cmo $(LIB)/digest.cmo $(LIB)/random.cmo \
-  $(LIB)/oo.cmo $(LIB)/genlex.cmo $(LIB)/callback.cmo $(LIB)/weak.cmo \
-  $(LIB)/marshal.cmo
+BYTECODE_C_OBJS=posix_b.o
+NATIVECODE_C_OBJS=posix_n.o
 
 THREAD_OBJS=thread.cmo condition.cmo event.cmo threadUnix.cmo
 
 GENFILES=pervasives.mli thread.ml condition.ml
 
-all: libthreads.a threads.cma stdlib.cma
+all: libthreads.a threads.cma
 
-allopt:
+allopt: libthreadsnat.a threads.cmxa
 
-libthreads.a: $(C_OBJS)
+libthreads.a: $(BYTECODE_C_OBJS)
 	rm -f libthreads.a
-	ar rc libthreads.a $(C_OBJS)
+	ar rc libthreads.a $(BYTECODE_C_OBJS)
+
+posix_b.o: posix.c
+	$(BYTECC) -O -I../../byterun $(BYTECCCOMPOPTS) -c posix.c
+	mv posix.o posix_b.o
+
+libthreadsnat.a: $(NATIVECODE_C_OBJS)
+	rm -f libthreadsnat.a
+	ar rc libthreadsnat.a $(NATIVECODE_C_OBJS)
+
+posix_n.o: posix.c
+	$(NATIVECC) -O -I ../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) -DNATIVE_CODE -c posix.c
+	mv posix.o posix_n.o
 
 threads.cma: $(THREAD_OBJS)
 	$(CAMLC) -a -o threads.cma $(THREAD_OBJS)
 
-stdlib.cma: $(LIB_OBJS)
-	$(CAMLC) -a -o stdlib.cma $(LIB_OBJS)
-
-pervasives.cmo: pervasives.mli pervasives.cmi pervasives.ml
-	$(CAMLC) -nopervasives -c pervasives.ml
-
-pervasives.mli: $(LIB)/pervasives.mli
-	cp $(LIB)/pervasives.mli pervasives.mli
-
-pervasives.cmi: $(LIB)/pervasives.cmi
-	cp $(LIB)/pervasives.cmi pervasives.cmi
-
-iolock.cmo: iolock.ml
-	$(CAMLC) -nopervasives -c iolock.ml
-
-iolock.cmi: iolock.mli
-	$(CAMLC) -nopervasives -c iolock.mli
+threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx)
 
 partialclean:
 	rm -f *.cm*
@@ -61,7 +46,7 @@ clean: partialclean
 
 install:
 	cp libthreads.a $(LIBDIR)/libthreads.a
-	if not exist $(LIBDIR)/threads mkdir $(LIBDIR)/threads
+	if test -d $(LIBDIR)/threads; then :; else mkdir $(LIBDIR)/threads; fi
 	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi threads.cma stdlib.cma $(LIBDIR)/threads
 
 installopt:

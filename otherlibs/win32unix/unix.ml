@@ -170,10 +170,13 @@ let write fd buf ofs len =
   then invalid_arg "Unix.write"
   else unsafe_write fd buf ofs len
 
-external in_channel_of_descr : file_descr -> in_channel = "open_descriptor"
-external out_channel_of_descr : file_descr -> out_channel = "open_descriptor"
+external in_channel_of_descr : file_descr -> in_channel
+                             = "caml_open_descriptor"
+external out_channel_of_descr : file_descr -> out_channel
+                              = "caml_open_descriptor"
 external descr_of_in_channel : in_channel -> file_descr = "channel_descriptor"
-external descr_of_out_channel : out_channel -> file_descr = "channel_descriptor"
+external descr_of_out_channel : out_channel -> file_descr
+                              = "channel_descriptor"
 
 type seek_command =
     SEEK_SET

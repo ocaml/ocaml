@@ -159,7 +159,7 @@ void oldify_local_roots ()
       oldify(Field(glob, j), &Field(glob, j));
   }
 
-  /* The stack */
+  /* The stack and local roots */
   if (frame_descriptors == NULL) init_frame_descriptors();
   sp = caml_bottom_of_stack;
   retaddr = caml_last_return_address;
@@ -230,16 +230,9 @@ void darken_all_roots ()
 void do_roots (f)
      scanning_action f;
 {
-  char * sp;
-  unsigned long retaddr;
-  frame_descr * d;
-  unsigned long h;
-  int i, j, n, ofs;
-  short * p;
+  int i, j;
   value glob;
-  value * root;
   struct global_root * gr;
-  struct caml__roots_block *lr;
 
   /* The global roots */
   for (i = 0; caml_globals[i] != 0; i++) {
@@ -247,11 +240,35 @@ void do_roots (f)
     for (j = 0; j < Wosize_val(glob); j++)
       f (Field (glob, j), &Field (glob, j));
   }
-
-  /* The stack */
+  /* The stack and local roots */
   if (frame_descriptors == NULL) init_frame_descriptors();
-  sp = caml_bottom_of_stack;
-  retaddr = caml_last_return_address;
+  do_local_roots(f, caml_last_return_address,
+                 caml_bottom_of_stack, local_roots);
+  /* Global C roots */
+  for (gr = global_roots; gr != NULL; gr = gr->next) {
+    f (*(gr->root), gr->root);
+  }
+  /* Hook */
+  if (scan_roots_hook != NULL) (*scan_roots_hook)(f);
+}
+
+void do_local_roots(f, last_return_address, stack_low, local_roots)
+     scanning_action f;
+     unsigned long last_return_address;
+     char * stack_low;
+     struct caml__roots_block * local_roots;
+{
+  char * sp;
+  unsigned long retaddr;
+  frame_descr * d;
+  unsigned long h;
+  int i, j, n, ofs;
+  short * p;
+  value * root;
+  struct caml__roots_block *lr;
+
+  sp = stack_low;
+  retaddr = last_return_address;
   /* A null sp means no more ML stack chunks; stop here. */
   while (sp != NULL) {
     /* Find the descriptor corresponding to the return address */
@@ -266,10 +283,11 @@ void do_roots (f)
       for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
         ofs = *p;
         if (ofs & 1) {
-          f (gc_entry_regs[ofs >> 1], &gc_entry_regs[ofs >> 1]);
+          root = &gc_entry_regs[ofs >> 1];
         } else {
-          f (*(value *)(sp + ofs), (value *)(sp + ofs));
+          root = (value *)(sp + ofs);
         }
+        f (*root, root);
       }
       /* Move to next frame */
 #ifndef Stack_grows_upwards
@@ -297,10 +315,4 @@ void do_roots (f)
       }
     }
   }
-  /* Global C roots */
-  for (gr = global_roots; gr != NULL; gr = gr->next) {
-    f (*(gr->root), gr->root);
-  }
-  /* Hook */
-  if (scan_roots_hook != NULL) (*scan_roots_hook)(f);
 }
