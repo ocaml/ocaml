@@ -39,7 +39,7 @@ kb.exe: $(CODE_KB)
 	$(CAMLOPT) $(OPTFLAGS) -I KB $(CODE_KB) -o kb.exe
 
 clean::
-	rm -f KB\*.cm* KB\*.obj KB\*.asm
+	rm -f KB/*.cm* KB/*.obj KB/*.asm
 
 # Genlex
 
@@ -53,7 +53,7 @@ genlex.exe: $(CODE_GENLEX)
 	$(CAMLOPT) $(OPTFLAGS) -I Lex $(CODE_GENLEX) -o genlex.exe
 
 clean::
-	rm -f Lex\*.cm* Lex\*.obj Lex\*.asm
+	rm -f Lex/*.cm* Lex/*.obj Lex/*.asm
 
 Lex\grammar.ml Lex\grammar.mli: Lex\grammar.mly ..\yacc\ocamlyacc.exe
 	$(CAMLYACC) $(YACCFLAGS) Lex\grammar.mly
@@ -169,7 +169,7 @@ clean::
 # Dependencies
 
 depend: beforedepend
-	$(CAMLDEP) -I KB -I Lex *.mli *.ml KB\*.mli KB\*.ml Lex\*.mli Lex\*.ml > .depend
+	$(CAMLDEP) -I KB -I Lex *.mli *.ml KB/*.mli KB/*.ml Lex/*.mli Lex/*.ml > .depend
 
 !include .depend
 
