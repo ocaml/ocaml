@@ -152,21 +152,20 @@ let transl_prim prim arity args =
 
 exception Unknown
 
-let rec size_of_lambda = function
-    Lfunction(param, body) -> 2
-  | Lprim(Pmakeblock tag, args) ->
-      List.iter check_rec_lambda args; List.length args
-  | Llet(id, arg, body) ->
-      check_rec_lambda arg; size_of_lambda body
-  | _ -> raise Unknown
-
-and check_rec_lambda = function
-    Lvar id -> ()
-  | Lconst cst -> ()
-  | Lfunction(param, body) -> ()
-  | Llet(id, arg, body) -> check_rec_lambda arg; check_rec_lambda body
-  | Lprim(Pmakeblock tag, args) -> List.iter check_rec_lambda args
-  | _ -> raise Unknown
+let size_of_lambda id lam =
+  let rec size = function
+      Lfunction(param, body) -> 2
+    | Lprim(Pmakeblock tag, args) -> List.iter check args; List.length args
+    | Llet(id, arg, body) -> check arg; size body
+    | _ -> raise Unknown
+  and check = function
+      Lvar _ -> ()
+    | Lconst cst -> ()
+    | Lfunction(param, body) -> ()
+    | Llet(_, arg, body) -> check arg; check body
+    | Lprim(Pmakeblock tag, args) -> List.iter check args
+    | lam -> if List.mem id (free_variables lam) then raise Unknown
+  in size lam
 
 (* To propagate structured constants *)
 
@@ -296,7 +295,7 @@ and transl_let env rec_flag pat_expr_list =
           | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)) in
         let lam = transl_exp env expr in
         let size =
-          try size_of_lambda lam
+          try size_of_lambda id lam
           with Unknown -> raise(Error(expr.exp_loc, Illegal_letrec_expr)) in
         (id, lam, size) in
       let decls =
