@@ -45,7 +45,7 @@
 ;labels (and open)
    '("\\([?]?\\<[A-Za-z][A-Za-z0-9_']*:\\)\\([^:=]\\|\\'\\|$\\)" 1
      font-lock-variable-name-face)
-   '("\\<\\(open\\|include\\)\\>\\|[?]?\\<:[A-Za-z][A-Za-z0-9_']*\\>"
+   '("\\<\\(assert\\|open\\|include\\)\\>\\|[?]?\\<:[A-Za-z][A-Za-z0-9_']*\\>"
      . font-lock-variable-name-face)
 ;modules and constructors
    '("\\(\\<\\|:\\)\\([A-Z][A-Za-z0-9_']*\\)\\>"
@@ -53,19 +53,20 @@
    '("`[A-Za-z][A-Za-z0-9_']*\\>" . font-lock-function-name-face)
 ;definition
    (cons (concat
-	  "\\<\\(and\\|as\\|c\\(onstraint\\|losed\\)"
+	  "\\<\\(a\\(nd\\|s\\)\\|c\\(onstraint\\|lass\\)"
 	  "\\|ex\\(ception\\|ternal\\)\\|fun\\(ct\\(ion\\|or\\)\\)?"
-	  "\\|in\\(herit\\)?\\|let\\|m\\(ethod\\|utable\\|odule\\)"
+	  "\\|in\\(herit\\|itializer\\)?\\|let"
+	  "\\|m\\(ethod\\|utable\\|odule\\)"
 	  "\\|of\\|p\\(arser\\|rivate\\)\\|rec\\|type"
 	  "\\|v\\(al\\(ue\\)?\\|irtual\\)\\)\\>")
 	 'font-lock-type-face)
 ;blocking
-   '("\\(\\<\\|:\\)\\(begin\\|class\\|end\\|s\\(ig\\|truct\\)\\)\\>"
+   '("\\(\\<\\|:\\)\\(begin\\|end\\|object\\|s\\(ig\\|truct\\)\\)\\>"
      2 font-lock-keyword-face)
 ;control
    (cons (concat
 	  "\\<\\(do\\(ne\\|wnto\\)?\\|else\\|for\\|if"
-	  "\\|match\\|new\\|or\\|t\\(hen\\|o\\|ry\\)"
+	  "\\|lazy\\|match\\|new\\|or\\|t\\(hen\\|o\\|ry\\)"
 	  "\\|w\\(h\\(en\\|ile\\)\\|ith\\)\\)\\>"
 	  "\\|\|\\|->\\|&\\|#")
 	 'font-lock-reference-face) 
@@ -90,7 +91,7 @@
 		 '(caml-font-lock-keywords nil nil ((?' . "w") (?_ . "w")))))
 	  (t
 	   (setq font-lock-keywords caml-font-lock-keywords)))
-	 (setq font-lock-no-comments t)
+	 (setq font-lock-keywords-only t)
 	 (font-lock-mode 1)))
 
 (setq inferior-caml-mode-hooks
@@ -103,7 +104,7 @@
 		   nil nil ((?' . "w") (?_ . "w")))))
 	  (t
 	   (setq font-lock-keywords inferior-caml-font-lock-keywords)))
-	 (setq font-lock-no-comments t)
+	 (setq font-lock-keywords-only t)
 	 (font-lock-mode 1)))
 
 (provide 'caml-font)

@@ -12,8 +12,8 @@
 (defvar caml-quote-char "'"
   "*Quote for character constants. \"'\" for Objective Caml, \"`\" for Caml-Light.")
 
-(defvar caml-imenu-disable nil
-  "*Disable Imenu support.")
+(defvar caml-imenu-enable nil
+  "*Enable Imenu support.")
 
 (defvar caml-olabl-disable nil
   "*Disable O'Labl support")
@@ -21,7 +21,7 @@
 (defvar caml-mode-indentation 2
   "*Used for \\[caml-unindent-command].")
 
-(defvar caml-lookback-limit 2000
+(defvar caml-lookback-limit 5000
   "*How far to look back for syntax things in caml mode.")
 
 (defvar caml-max-indent-priority 8
@@ -79,6 +79,10 @@ Priorities are assigned to `interesting' caml operators as follows:
   "*How many spaces to indent from a inherit keyword in caml mode.")
 (make-variable-buffer-local 'caml-inherit-indent)
 
+(defvar caml-initializer-indent 2
+  "*How many spaces to indent from a initializer keyword in caml mode.")
+(make-variable-buffer-local 'caml-initializer-indent)
+
 (defvar caml-include-indent 2
   "*How many spaces to indent from a include keyword in caml mode.")
 (make-variable-buffer-local 'caml-include-indent)
@@ -102,6 +106,10 @@ Priorities are assigned to `interesting' caml operators as follows:
 (defvar caml-module-indent 2
   "*How many spaces to indent from a module keyword in caml mode.")
 (make-variable-buffer-local 'caml-module-indent)
+
+(defvar caml-object-indent 2
+  "*How many spaces to indent from a object keyword in caml mode.")
+(make-variable-buffer-local 'caml-object-indent)
 
 (defvar caml-of-indent 2
   "*How many spaces to indent from a of keyword in caml mode.")
@@ -135,7 +143,7 @@ Priorities are assigned to `interesting' caml operators as follows:
   "*How many spaces to indent from a while keyword in caml mode.")
 (make-variable-buffer-local 'caml-while-indent)
 
-(defvar caml-::-indent	3
+(defvar caml-::-indent	2
   "*How many spaces to indent from a :: operator in caml mode.")
 (make-variable-buffer-local 'caml-::-indent)
 
@@ -143,11 +151,11 @@ Priorities are assigned to `interesting' caml operators as follows:
   "*How many spaces to indent from a @ operator in caml mode.")
 (make-variable-buffer-local 'caml-@-indent)
 
-(defvar caml-:=-indent  3
+(defvar caml-:=-indent  2
   "*How many spaces to indent from a := operator in caml mode.")
 (make-variable-buffer-local 'caml-:=-indent)
 
-(defvar caml-<--indent	3
+(defvar caml-<--indent	2
   "*How many spaces to indent from a <- operator in caml mode.")
 (make-variable-buffer-local 'caml-<--indent)
 
@@ -212,6 +220,10 @@ Usually negative. nil is align on master.")
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-with-extra-indent)
 
+(defvar caml-comment-indent 3
+  "*Indent inside comments.")
+(make-variable-buffer-local 'caml-comment-indent)
+
 (defvar caml-|-extra-indent -2
   "*Extra indent for caml lines starting with the | operator.
 Usually negative. nil is align on master.")
@@ -272,6 +284,7 @@ have caml-electric-indent on, which see.")
   (define-key caml-mode-map "\C-cm" 'caml-insert-match-form)
   (define-key caml-mode-map "\C-ct" 'caml-insert-try-form)
   (define-key caml-mode-map "\C-cw" 'caml-insert-while-form)
+  (define-key caml-mode-map "\C-c`" 'caml-goto-phrase-error)
   (define-key caml-mode-map "\C-c\C-a" 'caml-find-alternate-file)
   (define-key caml-mode-map "\C-c\C-c" 'compile)
   (define-key caml-mode-map "\C-c\C-e" 'caml-eval-phrase)
@@ -286,6 +299,7 @@ have caml-electric-indent on, which see.")
   (if running-xemacs nil ; if not running xemacs
     (let ((map (make-sparse-keymap "Caml"))
 	  (forms (make-sparse-keymap "Forms")))
+      (define-key caml-mode-map "\C-c\C-d" 'caml-show-imenu)
       (define-key caml-mode-map [menu-bar] (make-sparse-keymap))
       (define-key caml-mode-map [menu-bar caml] (cons "Caml" map))
       (define-key map [run-caml] '("Start subshell..." . run-caml))
@@ -294,6 +308,8 @@ have caml-electric-indent on, which see.")
 	'("Switch view" . caml-find-alternate-file))
       (define-key map [separator-format] '("--"))
       (define-key map [forms] (cons "Forms" forms))
+      (define-key map [show-imenu] '("Show index" . caml-show-imenu))
+      (put 'caml-show-imenu 'menu-enable '(not caml-imenu-shown))
       (define-key map [show-subshell] '("Show subshell" . caml-show-subshell))
       (put 'caml-show-subshell 'menu-enable 'caml-shell-active)
       (define-key map [eval-phrase] '("Eval phrase" . caml-eval-phrase))
@@ -324,7 +340,7 @@ have caml-electric-indent on, which see.")
 	 [ "for .. do .. done" caml-insert-for-form t ]
 	 [ "begin .. end" caml-insert-begin-form t ])
 	"---"
-	[ "Switch view" caml-find-alternate t ]
+	[ "Switch view" caml-find-alternate-file t ]
 	[ "Compile..." compile t ]
 	[ "Start subshell..." run-caml t ]))
   "Menu to add to the menubar when running Xemacs")
@@ -371,6 +387,9 @@ have caml-electric-indent on, which see.")
   (define-abbrev caml-mode-abbrev-table "with" "with" 'caml-abbrev-hook))
 
 ;;; The major mode
+(eval-when-compile
+  (if (and (boundp 'running-xemacs) running-xemacs) nil
+    (require 'imenu)))
 
 (defun caml-mode ()
   "Major mode for editing Caml code.
@@ -404,6 +423,9 @@ have caml-electric-indent on, which see.")
   (setq parse-sexp-ignore-comments nil)
   (make-local-variable 'indent-line-function)
   (setq indent-line-function 'caml-indent-command)
+  ;itz Fri Sep 25 13:23:49 PDT 1998
+  (make-local-variable 'add-log-current-defun-function)
+  (setq add-log-current-defun-function 'caml-current-defun)
   ;itz 03-25-96
   (setq before-change-function 'caml-before-change-function)
   (setq caml-last-noncomment-pos nil)
@@ -423,9 +445,12 @@ have caml-electric-indent on, which see.")
     ;imenu support (not for Xemacs)
     (make-local-variable 'imenu-create-index-function)
     (setq imenu-create-index-function 'caml-create-index-function)
-    (if caml-imenu-disable nil
-      (require 'imenu)
-      (imenu-add-to-menubar "Defs")))
+    (make-local-variable 'imenu-generic-expression)
+    (setq imenu-generic-expression caml-imenu-search-regexp)
+    (make-local-variable 'caml-imenu-shown)
+    (setq caml-imenu-shown nil)
+    (if (and caml-imenu-enable (< (buffer-size) 10000))
+	(caml-show-imenu)))
   (run-hooks 'caml-mode-hook))
 
 ;;; Auxiliary function. Garrigue 96-11-01.
@@ -441,6 +466,11 @@ have caml-electric-indent on, which see.")
 
 ;;; subshell support
 
+(defun caml-eval-region (start end)
+  "Send the current region to the inferior Caml process."
+  (interactive"r")
+  (inferior-caml-eval-region start end))
+
 (defun caml-eval-phrase ()
   "Send the current Caml phrase to the inferior Caml process."
   (interactive)
@@ -448,9 +478,18 @@ have caml-electric-indent on, which see.")
     (let ((bounds (caml-mark-phrase)))
     (inferior-caml-eval-region (car bounds) (cdr bounds)))))
 
-(defun caml-show-subshell () (inferior-caml-show-subshell))
+(defun caml-show-subshell ()
+  (interactive)
+  (inferior-caml-show-subshell))
 
 ;;; Imenu support
+(defun caml-show-imenu ()
+  (interactive)
+  (require 'imenu)
+  (switch-to-buffer (current-buffer))
+  (imenu-add-to-menubar "Defs")
+  (setq caml-imenu-shown t))
+
 (defconst caml-imenu-search-regexp
   (concat "\\<in\\>\\|"
 	  "^[ \t]*\\(let\\|class\\|type\\|m\\(odule\\|ethod\\)"
@@ -477,9 +516,9 @@ have caml-electric-indent on, which see.")
 	and-alist
 	all-alist
 	menu-alist
-	prev-pos
+	(prev-pos (point-max))
 	index)
-    (goto-char (point-max))
+    (goto-char prev-pos)
     (imenu-progress-message prev-pos 0 t)
     ;; collect definitions
     (while (caml-prev-index-position-function)
@@ -517,8 +556,8 @@ have caml-electric-indent on, which see.")
        ("Types" . type-alist)
        ("Modules" . module-alist)
        ("Methods" . method-alist)
-       ("Classes" . class-alist)
-       ("Index" . all-alist)))
+       ("Classes" . class-alist)))
+    (if all-alist (setq menu-alist (cons (cons "Index" all-alist) menu-alist)))
     (imenu-progress-message prev-pos 100 t)
     menu-alist))
 
@@ -663,6 +702,14 @@ whole string."
     (if string (substring string begin end)
       (buffer-substring-no-properties begin end))))
 
+;; itz Thu Sep 24 19:02:42 PDT 1998 this is to have some level of
+;; comfort when sending phrases to the toplevel and getting errors.
+(defun caml-goto-phrase-error ()
+  "Find the error location in current Caml phrase."
+  (interactive)
+  (let ((bounds (save-excursion (caml-mark-phrase))))
+    (inferior-caml-goto-error (car bounds) (cdr bounds))))
+
 ;;; Phrases
 
 ;itz the heuristics used to see if we're `between two phrases'
@@ -702,8 +749,8 @@ eventually added when sending to the subprocess."
     (setq use-semi (looking-at ";;"))
     (skip-chars-backward " \n\t")
     (while (and (eq (preceding-char) ?\)) (eq (char-after (- (point) 2)) ?*))
-      (backward-char 2)
-      (while (caml-in-comment-p) (up-list -1))
+      (backward-char)
+      (while (caml-in-comment-p) (search-backward comment-start))
       (skip-chars-backward " \n\t"))
     (push-mark)
     (setq end (point))
@@ -713,7 +760,8 @@ eventually added when sending to the subprocess."
 	(goto-char (point-min)))
       (skip-chars-forward " \n\t")
       (while (or (looking-at comment-start-skip) (caml-in-comment-p))
-	(forward-list 1)
+	(if (= (following-char) ?\)) (forward-char)
+	  (search-forward comment-end))
 	(skip-chars-forward " \n\t")))
      (t
       (if (not (caml-find-kwop caml-phrase-start-keywords))
@@ -723,6 +771,25 @@ eventually added when sending to the subprocess."
 		      (caml-in-literal-p))
 		  (caml-find-kwop caml-phrase-start-keywords)))))
     (cons (point) end)))
+
+;;itz Fri Sep 25 12:58:13 PDT 1998 support for adding change-log entries
+(defun caml-current-defun ()
+  (save-excursion
+    (caml-mark-phrase)
+    (if (not (looking-at caml-phrase-start-keywords)) nil
+      (re-search-forward caml-phrase-start-keywords)
+      (let ((done nil))
+        (while (not done)
+          (cond
+           ((looking-at "\\s ")
+            (skip-syntax-forward " "))
+           ((char-equal (following-char) ?\( )
+            (forward-sexp 1))
+           ((char-equal (following-char) ?')
+            (skip-syntax-forward "w_"))
+           (t (setq done t)))))
+      (re-search-forward "\\(\\sw\\|\\s_\\)+")
+      (match-string 0))))
 
 (defvar caml-last-noncomment-pos nil
   "Caches last buffer position determined not inside a caml comment.")
@@ -790,15 +857,41 @@ eventually added when sending to the subprocess."
     (goto-char pos)
     state))
 
-(defun caml-forward-list-safe ()
-  (condition-case nil
-      (forward-list 1)
-    (error (goto-char (point-max)))))
+(defun caml-forward-comment ()
+  "Skip one (eventually nested) comment."
+  (let ((count 1) match)
+    (while (> count 0)
+      (if (not (re-search-forward "(\\*\\|\\*)" nil 'move))
+	  (setq count -1)
+	(setq match (caml-match-string 0))
+	(cond
+	 ((caml-in-literal-p)
+	  nil)
+	 ((string= match comment-start)
+	  (setq count (1+ count)))
+	 (t
+	  (setq count (1- count))))))
+    (= count 0)))
 
-
+(defun caml-backward-comment ()
+  "Skip one (eventually nested) comment."
+  (let ((count 1) match)
+    (while (> count 0)
+      (if (not (re-search-backward "(\\*\\|\\*)" nil 'move))
+	  (setq count -1)
+	(setq match (caml-match-string 0))
+	(cond
+	 ((caml-in-literal-p)
+	  nil)
+	 ((string= match comment-start)
+	  (setq count (1- count)))
+	 (t
+	  (setq count (1+ count))))))
+    (= count 0)))
 
 (defun caml-in-comment-p ()
-  "Returns non-nil if point is inside a caml comment."
+  "Returns non-nil if point is inside a caml comment.
+Returns nil for the parenthesis openning a comment."
   ;;we look for comments differently than literals. there are two
   ;;reasons for this. first, caml has nested comments and it is not so
   ;;clear that parse-partial-sexp supports them; second, if proper
@@ -813,58 +906,46 @@ eventually added when sending to the subprocess."
        ((and cached-begin cached-end
 	     (< cached-begin (point)) (< (point) cached-end)) t)
        ((and cached-pos (= cached-pos (point))) nil)
-       ((and cached-pos (< cached-pos (point)))
-	(let ((inside) (done nil) (here (point)))
+       ((and cached-pos (> cached-pos (point))
+	     (< (abs (- cached-pos (point))) caml-lookback-limit))
+	(let (end found (here (point)))
+	  ; go back to somewhere sure
 	  (goto-char cached-pos)
-	  (while (not done)
-	    (setq inside nil)
-	    (if (not (search-forward "(*" (1+ here) 'move))
-		(setq here 0)
-	      (goto-char (match-beginning 0))
-	      (setq inside (point))
-	      (caml-forward-list-safe))
-	    (setq done (< here (point))))
-	  (if (not inside)
-	      (setq caml-last-noncomment-pos here)
-	    (set-marker caml-last-comment-start inside)
-	    (set-marker caml-last-comment-end (point)))
-	  inside))
-       (cached-pos
-	(let ((inside) (done nil) (here (point)))
-	  (goto-char cached-pos)
-	  (while (not done)
-	    (setq inside nil)
-	    (if (not (search-backward "*)" (1- here) 'move))
-		(setq here (point-max))
-	      (goto-char (match-end 0))
-	      (setq inside (point))
-	      (backward-list 1))
-	    (setq done (> here (point))))
-	  (if (not inside)
+	  (while (> (point) here)
+	    ; look for the end of a comment
+	    (while (and (if (search-backward comment-end (1- here) 'move)
+			    (setq end (match-end 0))
+			  (setq end nil))
+			(caml-in-literal-p)))
+	    (if end (setq found (caml-backward-comment))))
+	  (if (and found (= (point) here)) (setq end nil))
+	  (if (not end)
 	      (setq caml-last-noncomment-pos here)
 	    (set-marker caml-last-comment-start (point))
-	    (set-marker caml-last-comment-end inside))
-	  inside))	    
-       (t   
-	(let* ((here (point)) (done nil)
-	       (limit (- (point) caml-lookback-limit))
-	       (begin (condition-case nil
-			  (prog2
-			      (while (and (not done) (< limit (point)))
-				(up-list -1)
-				(setq done (looking-at comment-start-skip)))
-			      (if done (point)))
-			(error nil))))
-	  (if (not begin) (setq caml-last-noncomment-pos here) 
-	    (goto-char begin)
-	    (caml-forward-list-safe)
+	    (set-marker caml-last-comment-end end))
+	  end))	    
+       (t
+	(let (begin found (here (point)))
+	  ; go back to somewhere sure (or far enough)
+	  (goto-char
+	   (if cached-pos cached-pos (- (point) caml-lookback-limit)))
+	  (while (< (point) here)
+	    ; look for the beginning of a comment
+	    (while (and (if (search-forward comment-start (1+ here) 'move)
+			    (setq begin (match-beginning 0))
+			  (setq begin nil))
+			(caml-in-literal-p)))
+	    (if begin (setq found (caml-forward-comment))))
+	  (if (and found (= (point) here)) (setq begin nil))
+	  (if (not begin)
+	      (setq caml-last-noncomment-pos here)
 	    (set-marker caml-last-comment-start begin)
 	    (set-marker caml-last-comment-end (point)))
 	  begin))))))
 
 (defconst caml-before-expr-prefix
   (concat "\\<\\(asr\\|begin\\|class\\|do\\(wnto\\)?\\|else"
-	  "\\|i\\(f\\|n\\(herit\\)?\\)"
+	  "\\|i\\(f\\|n\\(herit\\|itializer\\)?\\)"
 	  "\\|f\\(or\\|un\\(ct\\(ion\\|or\\)\\)?\\)"
 	  "\\|l\\(and\\|or\\|s[lr]\\|xor\\)\\|m\\(atch\\|od\\)"
 	  "\\|o[fr]\\|parser\\|s\\(ig\\|truct\\)\\|t\\(hen\\|o\\|ry\\)"
@@ -887,17 +968,12 @@ Used to distinguish it from toplevel let construct.")
       (goto-char (match-end 0))
       (skip-chars-forward " \t\n")
       (while (looking-at "(\\*")
-	(forward-sexp 1)
+	(forward-char)
+	(caml-forward-comment)
 	(skip-chars-forward " \t\n"))
       (if (<= pos (point)) (setq in-expr nil))))
     (goto-char pos)
     in-expr))
-
-(defun caml-at-top-let-p ()
-  (and (looking-at "\\<let\\>")
-       (or (bolp)
-	   (caml-in-expr-p))))
-
 
 (defun caml-at-sexp-close-p ()
   (or (char-equal ?\) (following-char))
@@ -920,10 +996,10 @@ keywords."
 		  (re-search-backward kwop-regexp nil t))
 	(setq kwop (caml-match-string 0))
 	(cond
-	 ((caml-in-comment-p)
-	  (up-list -1))
 	 ((looking-at "(\\*")
 	  (backward-char))
+	 ((caml-in-comment-p)
+	  (search-backward "(" nil 'move))
 	 ((looking-at start-literal))
 	 ((caml-in-literal-p)
 	  (re-search-backward start-literal))  ;ugly hack
@@ -958,18 +1034,20 @@ keywords."
     ("if-else"		nil	6	caml-if-else-indent)
     ("include"		nil	0	caml-include-indent)
     ("inherit"		nil	0	caml-inherit-indent)
+    ("initializer"	nil	0	caml-initializer-indent)
     ("let"		nil	6	caml-let-indent)
     ("let-in"		nil	6	caml-let-in-indent)
     ("match"		nil	6	caml-match-indent)
     ("method"		nil	0	caml-method-indent)
     ("module"		nil	0	caml-module-indent)
+    ("object" 		nil	6	caml-object-indent)
     ("of"		nil	7	caml-of-indent)
     ("open"		nil	0	caml-no-indent)
     ("parser"		nil	3	caml-parser-indent)
     ("try"		nil	6	caml-try-indent)
     ("type"		nil	0	caml-type-indent)
     ("val"		nil	0	caml-val-indent)
-    ("virtual"		nil	0	caml-val-indent)
+    ("when"		nil	2	caml-if-indent)
     ("while"		nil	6	caml-while-indent)
     ("::"		t	5	caml-::-indent)
     ("@"		t	4	caml-@-indent)
@@ -1002,17 +1080,17 @@ the line where the governing keyword occurs.")
 
 (aset caml-kwop-regexps 0
       (concat 
-       "\\<\\(begin\\|class\\|for\\|s\\(ig\\|truct\\)\\|while\\)\\>"
+       "\\<\\(begin\\|object\\|for\\|s\\(ig\\|truct\\)\\|while\\)\\>"
        "\\|:begin\\>\\|[[({]"))
 (aset caml-kwop-regexps 1
-      (concat (aref caml-kwop-regexps 0) "\\|\\<module\\>"))
+      (concat (aref caml-kwop-regexps 0) "\\|\\<\\(class\\|module\\)\\>"))
 (aset caml-kwop-regexps 2
       (concat
        (aref caml-kwop-regexps 1)
-       "\\|\\<\\(fun\\(ction\\)?\\|let\\|m\\(atch\\|ethod\\)"
+       "\\|\\<\\(fun\\(ction\\)?\\|initializer\\|let\\|m\\(atch\\|ethod\\)"
        "\\|parser\\|try\\|val\\)\\>\\|->"))
 (aset caml-kwop-regexps 3
-      (concat (aref caml-kwop-regexps 2) "\\|\\<if\\>"))
+      (concat (aref caml-kwop-regexps 2) "\\|\\<if\\|when\\>"))
 (aset caml-kwop-regexps 4
       (concat (aref caml-kwop-regexps 3) "\\|:=\\|<-"))
 (aset caml-kwop-regexps 5
@@ -1023,11 +1101,11 @@ the line where the governing keyword occurs.")
       (concat
        (aref caml-kwop-regexps 0)
        "\\|\\<\\(constraint\\|exception\\|in\\(herit\\|clude\\)"
-       "\\|o\\(f\\|pen\\)\\|type\\|v\\(al\\|irtual\\)\\)\\>"))
+       "\\|o\\(f\\|pen\\)\\|type\\|val\\)\\>"))
 (aset caml-kwop-regexps 8
       (concat (aref caml-kwop-regexps 6)
        "\\|\\<\\(constraint\\|exception\\|in\\(herit\\|clude\\)"
-       "\\|o\\(f\\|pen\\)\\|type\\|virtual\\)\\>"))
+       "\\|o\\(f\\|pen\\)\\|type\\)\\>"))
 
 (defun caml-find-done-match ()
   (let ((unbalanced 1) (kwop t))
@@ -1044,7 +1122,7 @@ the line where the governing keyword occurs.")
     (while (and (not (= 0 unbalanced)) kwop)
       (setq kwop
 	    (caml-find-kwop
-	     "\\<\\(end\\|begin\\|class\\|s\\(ig\\|truct\\)\\)\\>\\|:begin\\>\\|;;"))
+	     "\\<\\(end\\|begin\\|object\\|s\\(ig\\|truct\\)\\)\\>\\|:begin\\>\\|;;"))
       (cond
        ((not kwop))
        ((string= kwop ";;") (setq kwop nil) (forward-line 1))
@@ -1066,8 +1144,9 @@ the line where the governing keyword occurs.")
 (defun caml-find-with-match ()
   (let ((unbalanced 1) (kwop t))
     (while (and (not (= 0 unbalanced)) kwop)
-      (setq kwop (caml-find-kwop
-		  "\\<\\(with\\|try\\|m\\(atch\\|odule\\)\\|functor\\)\\>"))
+      (setq kwop
+	    (caml-find-kwop
+	     "\\<\\(with\\|try\\|m\\(atch\\|odule\\)\\|functor\\)\\>\\|{"))
       (cond
        ((not kwop))
        ((or (string= kwop "module") (string= kwop "functor"))
@@ -1075,6 +1154,17 @@ the line where the governing keyword occurs.")
        ((string= kwop "with") (setq unbalanced (1+ unbalanced)))
        ( t (setq unbalanced (1- unbalanced)))))
     kwop))
+
+(defun caml-find-paren-match (close)
+  (let ((unbalanced 1)
+	(regexp (cond ((= close ?\)) "[()]")
+		      ((= close ?\]) "[][]")
+		      ((= close ?\}) "[{}]"))))
+    (while (and (> unbalanced 0)
+		(caml-find-kwop regexp))
+      (if (= close (following-char))
+	  (setq unbalanced (1+ unbalanced))
+	(setq unbalanced (1- unbalanced))))))
 
 (defun caml-find-then-match (&optional from-else)
   (let ((bol (if from-else
@@ -1087,8 +1177,7 @@ the line where the governing keyword occurs.")
       (cond
        ((not kwop) (setq done t))
        ((caml-at-sexp-close-p)
-	(forward-char 1)
-	(backward-list 1))
+	(caml-find-paren-match (following-char)))
        ((string= kwop "if") (setq done t))
        ((string= kwop "then")
 	(if (not from-else) (setq kwop (caml-find-then-match))))
@@ -1115,10 +1204,13 @@ the line where the governing keyword occurs.")
 	(setq kwop "|")
 	(setq done t))
        ((caml-at-sexp-close-p)
-	(forward-char 1)
-	(backward-list 1))
+	(caml-find-paren-match (following-char)))
        ((string= kwop "with")
 	(setq kwop (caml-find-with-match))
+	(setq done t))
+       ((string= kwop "parser")
+	(if (re-search-backward "\\<with\\>" (- (point) 5) t)
+	    (setq kwop (caml-find-with-match)))
 	(setq done t))
        ((string= kwop "done") (caml-find-done-match))
        ((string= kwop "end") (caml-find-end-match))
@@ -1132,7 +1224,7 @@ the line where the governing keyword occurs.")
   (let ((done nil) (kwop))
     (while (not done)
       (setq kwop (caml-find-kwop
-		  "\\<\\(class\\|exception\\|let\\|type\\|end\\|in\\)\\>"))
+		  "\\<\\(object\\|exception\\|let\\|type\\|end\\|in\\)\\>"))
       (cond
        ((not kwop) (setq done t))
        ((string= kwop "end") (caml-find-end-match))
@@ -1188,8 +1280,7 @@ the line where the governing keyword occurs.")
       (cond
        ((not kwop) (setq done t))
        ((caml-at-sexp-close-p)
-	(forward-char 1)
-	(backward-list 1))
+	(caml-find-paren-match (following-char)))
        ((and (>= prio 2) (string= kwop "|")) (setq done t))
        ((string= kwop "end") (caml-find-end-match))
        ((string= kwop "done") (caml-find-done-match))
@@ -1197,6 +1288,10 @@ the line where the governing keyword occurs.")
 	(cond ((and (caml-find-in-match) (>= prio 2))
 	       (setq kwop "let-in")
 	       (setq done t))))
+       ((and (string= kwop "parser") (>= prio 2)
+	     (re-search-backward "\\<with\\>" (- (point) 5) t))
+	(setq kwop (caml-find-with-match))
+	(setq done t))
        ((setq matching-fun (cdr-safe (assoc kwop caml-matching-kw-alist)))
 	(setq kwop (funcall matching-fun))
 	(if (looking-at kwop-list) (setq done t)))
@@ -1225,8 +1320,6 @@ Does not preserve point."
 		((and (looking-at caml-phrase-start-keywords)
 		      (caml-in-expr-p))
 		 (caml-find-end-match))
-;		((caml-at-top-let-p)
-;		 (caml-find-kwop-skipping-blocks 0))
 		((and (looking-at caml-matching-kw-regexp)
 		      (assoc (caml-match-string 0) caml-matching-kw-alist))
 		 (funcall (cdr-safe (assoc (caml-match-string 0)
@@ -1239,7 +1332,7 @@ Does not preserve point."
 			(prio (if kwop-info (nth 2 kwop-info)
 				caml-max-indent-priority)))
 		   (if (and (looking-at (aref caml-kwop-regexps 0))
-			    (not (looking-at "class"))
+			    (not (looking-at "object"))
 			    (caml-in-expr-p))
 		       (setq in-expr t))
 		   (caml-find-kwop-skipping-blocks prio)))
@@ -1252,7 +1345,10 @@ Does not preserve point."
 	  (cond
 	   ((not kwop-info) (beginning-of-line 1) 0)
 	   ((nth 1 kwop-info) (symbol-value (nth 3 kwop-info)))
-	   (t (back-to-indentation)
+	   (t 
+	    (let ((pos (point)))
+	      (back-to-indentation)
+;	      (if (looking-at "\\<let\\>") (goto-char pos))
 	      (let* ((indent (symbol-value (nth 3 kwop-info)))
 		     (kwop-extra
 		      (if (looking-at "|")
@@ -1260,7 +1356,7 @@ Does not preserve point."
 				 caml-leading-kwops-alist))))
 		(if kwop-extra
 		    (- indent (symbol-value (nth 1 kwop-extra)))
-		  indent)))))
+		  indent))))))
 	 (extra (if in-expr caml-apply-extra-indent 0)))
 	 (+ indent-diff extra (current-column))))
 
@@ -1299,14 +1395,11 @@ matching nodes to determine KEYWORD's final indentation.")
      ((looking-at comment-start-skip)
       (current-column))
      ((caml-in-comment-p)
-      (let ((done nil))
-	(while (not done)
-	  (up-list -1)
-	  (setq done (not (caml-in-comment-p))))
+      (let ((closing (looking-at "\\*)")))
+	(caml-backward-comment)
 	(looking-at comment-start-skip)
-	(goto-char (match-end 0))
-	(current-column)))
-;     ((caml-at-phrase-start-p) 0)
+	(+ (current-column)
+	   (if closing 0 caml-comment-indent))))
      (t (let* ((leading (looking-at caml-leading-kwops-regexp))
 	       (assoc-val (if leading (assoc (caml-match-string 0)
 					     caml-leading-kwops-alist)))

@@ -19,25 +19,25 @@
    '("[?]?\\<[A-Za-z][A-Za-z0-9_\']*:" nil brown)
    '("[?]?\\<:[A-Za-z][A-Za-z0-9_\']*\\>" nil brown)
 ;modules
-   '("\\<open\\>" nil brown)
+   '("\\<\\(assert\\|open\\|include\\)\\>" nil brown)
    '("\\<[A-Z][A-Za-z0-9_\']*\\>" nil MidnightBlue)
    '("`[A-Za-z][A-Za-z0-9_\']*\\>" nil MidnightBlue)
 ;definition
    (list (concat
-	  "\\<\\(let\\|rec\\|in\\|type\\|of\\|and"
-	  "\\|exception\\|val\\|and\\|function\\|fun"
-	  "\\|parser\\|mutable\\|module\\|inherit"
-	  "\\|external\\|method\\|virtual\\|private"
-	  "\\|constraint\\|as\\|closed\\)\\>")
+	  "\\<\\(a\\(nd\\|s\\)\\|c\\(onstraint\\|lass\\)"
+	  "\\|ex\\(ception\\|ternal\\)\\|fun\\(ct\\(ion\\|or\\)\\)?"
+	  "\\|in\\(herit\\)?\\|let\\|m\\(ethod\\|utable\\|odule\\)"
+	  "\\|of\\|p\\(arser\\|rivate\\)\\|rec\\|type"
+	  "\\|v\\(al\\(ue\\)?\\|irtual\\)\\)\\>")
 	 nil 'ForestGreen)
 ;blocking
-   '("\\(\\<\\|:\\)\\(class\\|struct\\|sig\\|begin\\|end\\)\\>"
+   '("\\(\\<\\|:\\)\\(object\\|struct\\|sig\\|begin\\|end\\)\\>"
      2 include)
 ;control
    (list (concat
-	  "\\<\\(if\\|then\\|else\\|match\\|when"
-	  "\\|with\\|try\\|for\\|do\\|while\\|done"
-	  "\\|downto\\|to\\|or\\|new\\)\\>"
+	  "\\<\\(do\\(ne\\|wnto\\)?\\|else\\|for\\|if"
+	  "\\|lazy\\|match\\|new\\|or\\|t\\(hen\\|o\\|ry\\)"
+	  "\\|w\\(h\\(en\\|ile\\)\\|ith\\)\\)\\>"
 	  "\\|\|\\|->\\|&\\|#")
 	 nil 'keyword)
    '(";" nil struct))

@@ -62,7 +62,7 @@ Input and output via buffer `*inferior-caml*'."
 			   "inferior-caml" (car cmdlist) nil (cdr cmdlist)))
 	(inferior-caml-mode)))
   (setq caml-shell-active t)
-  (switch-to-buffer "*inferior-caml*"))
+  (inferior-caml-show-subshell))
 
 (defun inferior-caml-args-to-list (string)
   (let ((where (string-match "[ \t]" string)))
@@ -84,10 +84,26 @@ Input and output via buffer `*inferior-caml*'."
 (defun inferior-caml-eval-region (start end)
   "Send the current region to the inferior Caml process."
   (interactive"r")
+  (save-window-excursion
+    (if (not (bufferp (get-buffer "*inferior-caml*")))
+        (call-interactively 'run-caml)))
   (comint-send-region "*inferior-caml*" start end)
   (comint-send-string "*inferior-caml*" ";;\n")
   (if (not (get-buffer-window "*inferior-caml*" t))
       (display-buffer "*inferior-caml*")))
+
+(defun inferior-caml-goto-error (start end)
+  "Jump to the location of the last error as indicated by inferior toplevel."
+  (interactive "r")
+  (let ((loc (+ start
+                (save-excursion
+                  (set-buffer (get-buffer "*inferior-caml*"))
+                  (re-search-backward
+                   (concat comint-prompt-regexp
+                           "[ \t]*Characters[ \t]+\\([0-9]+\\)-[0-9]+:$"))
+                  (string-to-int (match-string 1))))))
+    (goto-char loc)))
+         
 
 ;;; inf-caml.el ends here
 

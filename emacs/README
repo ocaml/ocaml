@@ -1,12 +1,12 @@
-	    O'Caml emacs mode, version 1.05 of 1997/07/14
+	    O'Caml emacs mode, version 2.01 of 1998/10/14
 
 The files in this archive define a caml-mode for emacs, for editing
 Objective Caml and Objective Label programs, as well as an
 inferior-caml-mode, to run a toplevel.
 
-caml-mode supports indentation, compilation and error retrieving,
-sending phrases to the toplevel. Moreover, support for hilite and font 
-lock was added.
+Caml-mode supports indentation, compilation and error retrieving,
+sending phrases to the toplevel. Moreover support for hilit,
+font-lock and imenu was added.
 
 This package is based on the original caml-mode for caml-light by
 Xavier Leroy, extended with indentation by Ian Zimmerman. For details
@@ -48,11 +48,38 @@ Once you have started caml by M-x run-caml:
 M-C-x	send phrase to inferior caml process
 C-c C-r	send region to inferior caml process
 C-c C-s show inferior caml process
+C-c`	goto error in expression sent by M-C-x
 
 For other bindings, see C-h b.
 
 Changes log:
 -----------
+Version 2.01:
+------------
+* abbreviation code corrected by ITZ
+
+* code for interactive errors added by ITZ
+
+Version 2.00:
+------------
+* changed the algorithm to skip comments
+
+* adapted for the new object syntax
+
+Version 1.07:
+------------
+* next-error bug fix by John Malecki
+
+* camldebug.el modified by Xavier Leroy
+
+Version 1.06:
+------------
+* new keywords in O'Caml 1.06
+
+* compatibility with GNU Emacs 20
+
+* changed from caml-imenu-disable to caml-imenu-enable (off by default)
+
 Version 1.05:
 ------------
 * a few indentation bugs corrected. let, val ... are now indented
