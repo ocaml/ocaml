@@ -251,7 +251,7 @@ let make_setp stp char_set =
       if i <= lim then
       match set.[i] with
       | '-' when b ->
-         (* if i = 0 then b is false (the initial call is loop false 0)
+         (* if i = 0 then b is false (since the initial call is loop false 0)
           hence i >= 1 and the following is safe. *) 
           let c1 = set.[i - 1] in
           let i = i + 1 in
@@ -310,11 +310,11 @@ let scanf_fun ib (fmt : ('a, 'b, 'c) format) f =
         | fc when Scanning.end_of_input ib -> bad_input_buff ib
         | '@' as fc when Scanning.peek_char ib = fc ->
            Scanning.next_char ib; scan spc f (i + 1)
-        | c as fc when Scanning.peek_char ib = fc ->
+        | fc when Scanning.peek_char ib = fc ->
            Scanning.next_char ib; scan false f (i + 1)
-        | c as fc -> bad_input_buff ib end
+        | fc -> bad_input_buff ib end
     | ' ' | '\r' | '\t' | '\n' -> skip_whites ib; scan spc f (i + 1)
-    | fc when Scanning.end_of_input ib -> bad_format fmt i fc
+    | fc when Scanning.end_of_input ib -> bad_input_buff ib
     | fc when Scanning.peek_char ib = fc ->
         Scanning.next_char ib; scan spc f (i + 1)
     | fc -> bad_input_buff ib
@@ -375,7 +375,7 @@ let scanf_fun ib (fmt : ('a, 'b, 'c) format) f =
               | 'l' -> scan true (stack f (token_int32 ib)) (i + 1)
               | 'L' -> scan true (stack f (token_int64 ib)) (i + 1)
               | _ -> scan true (stack f (token_nativeint ib)) (i + 1) end
-           | _ -> bad_format fmt i end
+           | fc -> bad_format fmt i fc end
        | 'N' ->
            let x = Scanning.char_count ib in
            scan true (stack f x) (i + 1)
