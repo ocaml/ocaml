@@ -1311,7 +1311,7 @@ the line where the governing keyword occurs.")
        ((caml-at-sexp-close-p)
         (caml-find-paren-match (following-char)))
        ((and (string= kwop ";") (= (preceding-char) ?\;))
-        (backward-char)
+        (goto-char 0)
         (setq kwop ";;")
         (setq done t))
        ((and (>= prio 2) (string= kwop "|")) (setq done t))
@@ -1354,6 +1354,8 @@ Does not preserve point."
 
   (let* (in-expr
          (kwop (cond
+                ((looking-at ";;")
+                 (beginning-of-line 1))
                 ((looking-at "|\\([^]|]\\|\\'\\)")
                  (caml-find-pipe-match))
                 ((and (looking-at caml-phrase-start-keywords)
@@ -1392,7 +1394,7 @@ Does not preserve point."
               (- (symbol-value (nth 3 kwop-info))
                  (if (looking-at "|") caml-|-extra-indent 0))))))
          (extra (if in-expr caml-apply-extra-indent 0)))
-         (+ indent-diff extra (if (string= kwop ";;") 0 (current-column)))))
+         (+ indent-diff extra (current-column))))
 
 (defconst caml-leading-kwops-regexp
   (concat
@@ -1427,7 +1429,6 @@ matching nodes to determine KEYWORD's final indentation.")
   (save-excursion
     (back-to-indentation)
     (cond
-     ((looking-at ";;") 0)
      ((looking-at comment-start-skip) (current-column))
      ((caml-in-comment-p)
       (let ((closing (looking-at "\\*)"))
