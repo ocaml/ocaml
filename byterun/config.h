@@ -58,14 +58,14 @@ typedef char schar;
 #define Page_log 12             /* A page is 4 kilobytes. */
 
 /* Initial size of stack (bytes). */
-#define Stack_size 16384
+#define Stack_size (4096 * sizeof(value))
 
 /* Minimum free size of stack (bytes); below that, it is reallocated. */
-#define Stack_threshold 1024
+#define Stack_threshold (256 * sizeof(value))
 
 /* Maximum sizes for the stack (bytes). */
    
-#define Max_stack_size 524288
+#define Max_stack_size (131072 * sizeof(value))
 
 
 /* Maximum size of a block allocated in the young generation (words). */
