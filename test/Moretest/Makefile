@@ -50,18 +50,14 @@ bigarrays.byt: ../../otherlibs/bigarray/bigarray.cma \
 	$(CAMLC) -o bigarrays.byt \
                 -I ../../otherlibs/bigarray \
                 -I ../../otherlibs/unix \
-                unix.cma bigarray.cma bigarrays.ml \
-                -ccopt -L../../otherlibs/bigarray \
-                -ccopt -L../../otherlibs/unix
+                unix.cma bigarray.cma bigarrays.ml
 
 bigarrays.out: ../../otherlibs/bigarray/bigarray.cmxa \
                ../../otherlibs/bigarray/libbigarray.a bigarrays.ml
 	$(CAMLOPT) $(OPTFLAGS) -o bigarrays.out \
                 -I ../../otherlibs/bigarray \
                 -I ../../otherlibs/unix \
-                unix.cmxa bigarray.cmxa bigarrays.ml \
-                -ccopt -L../../otherlibs/bigarray \
-                -ccopt -L../../otherlibs/unix
+                unix.cmxa bigarray.cmxa bigarrays.ml
 
 bigarrf.byt: bigarrf.o bigarrfstub.o \
                ../../otherlibs/bigarray/bigarray.cma \
@@ -71,8 +67,6 @@ bigarrf.byt: bigarrf.o bigarrfstub.o \
                 -I ../../otherlibs/unix \
                 unix.cma bigarray.cma bigarrf.ml \
                 bigarrf.o bigarrfstub.o \
-                -ccopt -L../../otherlibs/bigarray \
-                -ccopt -L../../otherlibs/unix \
                 ../../byterun/libcamlrun.a -cclib -lg2c
 
 bigarrf.out: bigarrf.o bigarrfstub.o \
@@ -83,8 +77,6 @@ bigarrf.out: bigarrf.o bigarrfstub.o \
                 -I ../../otherlibs/unix \
                 unix.cma bigarray.cma bigarrf.ml \
                 bigarrf.o bigarrfstub.o \
-                -ccopt -L../../otherlibs/bigarray \
-                -ccopt -L../../otherlibs/unix \
                 ../../byterun/libcamlrun.a -cclib -lg2c
 
 bigarrf.o: bigarrf.f
@@ -95,13 +87,11 @@ bigarrfstub.o: bigarrfstub.c
 
 fftba.byt: fftba.ml
 	$(CAMLC) -o fftba.byt -I ../../otherlibs/bigarray \
-          bigarray.cma fftba.ml \
-          -ccopt -L../../otherlibs/bigarray
+          bigarray.cma fftba.ml
 
 fftba.out: fftba.ml
 	$(CAMLOPT) $(OPTFLAGS) -o fftba.out -I ../../otherlibs/bigarray \
-          bigarray.cmxa fftba.ml \
-          -ccopt -L../../otherlibs/bigarray
+          bigarray.cmxa fftba.ml
 
 # Common rules
 

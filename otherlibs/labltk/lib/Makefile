@@ -28,8 +28,8 @@ labltk.cmxa : $(SUPPORTX) $(WIDGETOBJSX) tk.cmx
 labltktop : $(TOPDEPS) $(WIDGETOBJS) $(SUPPORT)
 	$(LABLC) -custom -linkall -o labltktop -I ../support $(TKLINKOPT) \
 	       -I $(TOPDIR)/toplevel toplevellib.cma labltk.cma \
-	       -I $(OTHERS)/unix -ccopt -L$(OTHERS)/unix unix.cma \
-	       -I $(OTHERS)/str -ccopt -L$(OTHERS)/str str.cma \
+	       -I $(OTHERS)/unix unix.cma \
+	       -I $(OTHERS)/str str.cma \
 	       topmain.cmo
 
 labltk: Makefile $(TOPDIR)/config/Makefile
