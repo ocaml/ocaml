@@ -355,7 +355,7 @@ and close_functions fenv cenv fun_defs =
       (function
           (id, (Lfunction(kind, params, body) as def)) ->
             let label =
-              Compilenv.current_unit_name() ^ "." ^ Ident.unique_name id in
+              Compilenv.current_unit_name() ^ "_" ^ Ident.unique_name id in
             let arity = List.length params in
             let fundesc =
               {fun_label = label;
