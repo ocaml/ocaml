@@ -221,14 +221,14 @@ CAMLexport int putblock(struct channel *channel, char *p, long int len)
 
   n = len >= INT_MAX ? INT_MAX : (int) len;
   free = channel->end - channel->curr;
-  if (n <= free) {
+  if (n < free) {
     /* Write request small enough to fit in buffer: transfer to buffer. */
     memmove(channel->curr, p, n);
     channel->curr += n;
     return n;
   } else {
-    /* Write request overflows buffer: transfer whatever fits to buffer
-       and write the buffer */
+    /* Write request overflows buffer (or just fills it up): transfer whatever
+       fits to buffer and write the buffer */
     memmove(channel->curr, p, free);
     towrite = channel->end - channel->buff;
     written = do_write(channel->fd, channel->buff, towrite);
@@ -288,7 +288,7 @@ CAMLexport unsigned char refill(struct channel *channel)
 {
   int n;
 
-  n = do_read(channel->fd, channel->buff, IO_BUFFER_SIZE);
+  n = do_read(channel->fd, channel->buff, channel->end - channel->buff);
   if (n == 0) raise_end_of_file();
   channel->offset += n;
   channel->max = channel->buff + n;
@@ -325,7 +325,7 @@ CAMLexport int getblock(struct channel *channel, char *p, long int len)
     channel->curr += avail;
     return avail;
   } else {
-    nread = do_read(channel->fd, channel->buff, IO_BUFFER_SIZE);
+    nread = do_read(channel->fd, channel->buff, channel->end - channel->buff);
     channel->offset += nread;
     channel->max = channel->buff + nread;
     if (n > nread) n = nread;
@@ -671,7 +671,7 @@ CAMLprim value caml_input(value vchannel,value buff,value vstart,value vlength)
     channel->curr += avail;
     n = avail;
   } else {
-    nread = do_read(channel->fd, channel->buff, IO_BUFFER_SIZE);
+    nread = do_read(channel->fd, channel->buff, channel->end - channel->buff);
     channel->offset += nread;
     channel->max = channel->buff + nread;
     if (n > nread) n = nread;
