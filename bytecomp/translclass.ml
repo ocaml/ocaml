@@ -71,35 +71,26 @@ let transl_val tbl create name =
   Lapply (oo_prim (if create then "new_variable" else "get_variable"),
           [Lvar tbl; transl_label name])
 
-let transl_vals tbl create sure vals rem =
-  if create && sure && List.length vals > 1 then
-    let (_,id0) = List.hd vals in
-    let call =
-      Lapply(oo_prim "new_variables",
-	     [Lvar tbl; transl_meth_list (List.map fst vals)]) in
-    let i = ref (List.length vals) in
-    Llet(Strict, id0, call,
-	 List.fold_right
-	   (fun (name,id) rem ->
-	     decr i; Llet(Alias, id, Lprim(Poffsetint !i, [Lvar id0]), rem))
-	   (List.tl vals) rem)
-  else
+let transl_vals tbl create vals rem =
   List.fold_right
     (fun (name, id) rem ->
       Llet(StrictOpt, id, transl_val tbl create name, rem))
     vals rem
 
-let transl_super tbl meths inh_methods rem =
+let meths_super tbl meths inh_meths =
   List.fold_right
     (fun (nm, id) rem ->
-       begin try
-         Llet(StrictOpt, id, Lapply (oo_prim "get_method",
-                                     [Lvar tbl; Lvar (Meths.find nm meths)]),
-              rem)
-       with Not_found ->
-         rem
-       end)
-    inh_methods rem
+       try
+         (nm, id,
+          Lapply(oo_prim "get_method", [Lvar tbl; Lvar (Meths.find nm meths)]))
+         :: rem
+       with Not_found -> rem)
+    inh_meths []
+
+let bind_super tbl (vals, meths) cl_init =
+  transl_vals tbl false vals
+    (List.fold_right (fun (nm, id, def) rem -> Llet(StrictOpt, id, def, rem))
+       meths cl_init)
 
 let create_object cl obj init =
   let obj' = Ident.create "self" in
@@ -216,32 +207,43 @@ let bind_method tbl lab id cl_init =
                               [Lvar tbl; transl_label lab]),
        cl_init)
 
-let bind_methods tbl meths cl_init =
+let bind_methods tbl meths vals cl_init =
   let methl = Meths.fold (fun lab id tl -> (lab,id) :: tl) meths [] in
-  let len = List.length methl in
-  if len < 2 then Meths.fold (bind_method tbl) meths cl_init else
+  let len = List.length methl and nvals = List.length vals in
+  if len < 2 && nvals = 0 then Meths.fold (bind_method tbl) meths cl_init else
+  if len = 0 && nvals < 2 then transl_vals tbl true vals cl_init else
   let ids = Ident.create "ids" in
   let i = ref len in
+  let getter, names, cl_init =
+    match vals with [] -> "get_method_labels", [], cl_init
+    | (_,id0)::vals' ->
+        incr i;
+        let i = ref (List.length vals) in
+        "new_methods_variables",
+        [transl_meth_list (List.map fst vals)],
+        Llet(Strict, id0, lfield ids 0,
+	     List.fold_right
+	       (fun (name,id) rem ->
+	         decr i;
+                 Llet(Alias, id, Lprim(Poffsetint !i, [Lvar id0]), rem))
+	       vals' cl_init)
+  in
   Llet(StrictOpt, ids,
-       Lapply (oo_prim "get_method_labels",
-               [Lvar tbl; transl_meth_list (List.map fst methl)]),
+       Lapply (oo_prim getter,
+               [Lvar tbl; transl_meth_list (List.map fst methl)] @ names),
        List.fold_right
-         (fun (lab,id) lam ->
-           decr i; Llet(StrictOpt, id, Lprim(Pfield !i, [Lvar ids]), lam))
+         (fun (lab,id) lam -> decr i; Llet(StrictOpt, id, lfield ids !i, lam))
          methl cl_init)
 
-let output_methods tbl vals methods lam =
-  let lam =
-    match methods with
-      [] -> lam
-    | [lab; code] ->
-        lsequence (Lapply(oo_prim "set_method", [Lvar tbl; lab; code])) lam
-    | _ ->
-        lsequence (Lapply(oo_prim "set_methods",
-                         [Lvar tbl; Lprim(Pmakeblock(0,Immutable), methods)]))
-          lam
-  in
-  transl_vals tbl true true vals lam
+let output_methods tbl methods lam =
+  match methods with
+    [] -> lam
+  | [lab; code] ->
+      lsequence (Lapply(oo_prim "set_method", [Lvar tbl; lab; code])) lam
+  | _ ->
+      lsequence (Lapply(oo_prim "set_methods",
+                        [Lvar tbl; Lprim(Pmakeblock(0,Immutable), methods)]))
+        lam
 
 let rec ignore_cstrs cl =
   match cl.cl_desc with
@@ -249,7 +251,12 @@ let rec ignore_cstrs cl =
   | Tclass_apply (cl, _) -> ignore_cstrs cl
   | _ -> cl
 
-let rec build_class_init cla cstr inh_init cl_init msubst top cl =
+let rec index a = function
+    [] -> raise Not_found
+  | b :: l ->
+      if b = a then 0 else 1 + index a l
+
+let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
   match cl.cl_desc with
     Tclass_ident path ->
       begin match inh_init with
@@ -259,23 +266,23 @@ let rec build_class_init cla cstr inh_init cl_init msubst top cl =
            Llet (Strict, obj_init, 
                  Lapply(Lprim(Pfield 1, [lpath]), Lvar cla ::
 			if top then [Lprim(Pfield 3, [lpath])] else []),
-                 cl_init))
+                 bind_super cla super cl_init))
       | _ ->
           assert false
       end
   | Tclass_structure str ->
+      let cl_init = bind_super cla super cl_init in
       let (inh_init, cl_init, methods, values) =
         List.fold_right
           (fun field (inh_init, cl_init, methods, values) ->
             match field with
               Cf_inher (cl, vals, meths) ->
-                let cl_init = output_methods cla values methods cl_init in
+                let cl_init = output_methods cla methods cl_init in
                 let inh_init, cl_init =
-                  build_class_init cla false inh_init
-                    (transl_vals cla false false vals
-                       (transl_super cla str.cl_meths meths cl_init))
-                    msubst top cl in
-                (inh_init, cl_init, [], [])
+                  build_class_init cla false
+                    (vals, meths_super cla str.cl_meths meths)
+                    inh_init cl_init msubst top cl in
+                (inh_init, cl_init, [], values)
             | Cf_val (name, id, exp) ->
                 (inh_init, cl_init, methods, (name, id)::values)
             | Cf_meth (name, exp) ->
@@ -290,13 +297,6 @@ let rec build_class_init cla cstr inh_init cl_init msubst top cl =
                 (inh_init, cl_init,
                  Lvar (Meths.find name str.cl_meths) :: met_code @ methods,
                  values)
-                 (*
-                 Lsequence(Lapply (oo_prim ("set_method" ^ builtin),
-                                   Lvar cla ::
-                                   Lvar (Meths.find name str.cl_meths) ::
-                                   met_code),
-                           cl_init))
-                  *)
             | Cf_let (rec_flag, defs, vals) ->
                 let vals =
                   List.map (function (id, _) -> (Ident.name id, id)) vals
@@ -311,43 +311,61 @@ let rec build_class_init cla cstr inh_init cl_init msubst top cl =
           str.cl_field
           (inh_init, cl_init, [], [])
       in
-      let cl_init = output_methods cla values methods cl_init in
-      (inh_init, bind_methods cla str.cl_meths cl_init)
+      let cl_init = output_methods cla methods cl_init in
+      (inh_init, bind_methods cla str.cl_meths values cl_init)
   | Tclass_fun (pat, vals, cl, _) ->
       let (inh_init, cl_init) =
-        build_class_init cla cstr inh_init cl_init msubst top cl
+        build_class_init cla cstr super inh_init cl_init msubst top cl
       in
       let vals = List.map (function (id, _) -> (Ident.name id, id)) vals in
-      (inh_init, transl_vals cla true false vals cl_init)
+      (inh_init, transl_vals cla true vals cl_init)
   | Tclass_apply (cl, exprs) ->
-      build_class_init cla cstr inh_init cl_init msubst top cl
+      build_class_init cla cstr super inh_init cl_init msubst top cl
   | Tclass_let (rec_flag, defs, vals, cl) ->
       let (inh_init, cl_init) =
-        build_class_init cla cstr inh_init cl_init msubst top cl
+        build_class_init cla cstr super inh_init cl_init msubst top cl
       in
       let vals = List.map (function (id, _) -> (Ident.name id, id)) vals in
-      (inh_init, transl_vals cla true false vals cl_init)
+      (inh_init, transl_vals cla true vals cl_init)
   | Tclass_constraint (cl, vals, meths, concr_meths) ->
       let virt_meths =
         List.filter (fun lab -> not (Concr.mem lab concr_meths)) meths in
+      let concr_meths = Concr.elements concr_meths in
       let narrow_args =
 	[Lvar cla;
          transl_meth_list vals;
          transl_meth_list virt_meths;
-         transl_meth_list (Concr.elements concr_meths)] in
+         transl_meth_list concr_meths] in
       let cl = ignore_cstrs cl in
       begin match cl.cl_desc, inh_init with
 	Tclass_ident path, (obj_init, path')::inh_init ->
 	  assert (Path.same path path');
 	  let lpath = transl_path path in
+          let inh = Ident.create "inh"
+          and inh_vals = Ident.create "vals"
+          and inh_meths = Ident.create "meths"
+          and valids, methids = super in
+          let cl_init =
+            List.fold_left
+              (fun init (nm, id, _) ->
+                Llet(StrictOpt, id, lfield inh_meths (index nm concr_meths),
+                     init))
+              cl_init methids in
+          let cl_init =
+            List.fold_left
+              (fun init (nm, id) ->
+                Llet(StrictOpt, id, lfield inh_vals (index nm vals), init))
+              cl_init valids in
           (inh_init,
-           Llet (Strict, obj_init, 
+           Llet (Strict, inh, 
 		 Lapply(oo_prim "inherits", narrow_args @
 			[lpath; Lconst(Const_pointer(if top then 1 else 0))]),
-                 cl_init))
+                 Llet(StrictOpt, obj_init, lfield inh 0,
+                 Llet(Alias, inh_vals, lfield inh 1,
+                 Llet(Alias, inh_meths, lfield inh 2, cl_init)))))
       | _ ->
 	  let core cl_init =
-            build_class_init cla true inh_init cl_init msubst top cl
+            build_class_init cla true super inh_init cl_init msubst top cl
 	  in
 	  if cstr then core cl_init else
           let (inh_init, cl_init) =
@@ -630,8 +648,9 @@ let transl_class ids cl_id arity pub_meths cl =
     build_object_init_0 cla [] cl copy_env subst_env top ids in
   if not (Translcore.check_recursive_lambda ids obj_init) then
     raise(Error(cl.cl_loc, Illegal_class_expr));
+  let inh_init' = List.rev inh_init in
   let (inh_init', cl_init) =
-    build_class_init cla true (List.rev inh_init) obj_init msubst top cl
+    build_class_init cla true ([],[]) inh_init' obj_init msubst top cl
   in
   assert (inh_init' = []);
   let table = Ident.create "table"

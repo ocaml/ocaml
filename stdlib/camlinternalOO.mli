@@ -29,7 +29,8 @@ type closure
 val public_method_label : string -> tag
 val new_method : table -> label
 val new_variable : table -> string -> int
-val new_variables : table -> string array -> int
+val new_methods_variables :
+    table -> string array -> string array -> label array
 val get_variable : table -> string -> int
 val get_variables : table -> string array -> int array
 val get_method_label : table -> string -> label
@@ -45,7 +46,8 @@ val create_table : string array -> table
 val init_class : table -> unit
 val inherits :
     table -> string array -> string array -> string array ->
-    (t * (table -> obj -> Obj.t) * t * obj) -> bool -> Obj.t
+    (t * (table -> obj -> Obj.t) * t * obj) -> bool ->
+    (Obj.t * int array * closure array)
 val make_class :
     string array -> (table -> Obj.t -> t) ->
     (t * (table -> Obj.t -> t) * (Obj.t -> t) * Obj.t)

@@ -256,12 +256,19 @@ let new_variable table name =
   table.vars <- Vars.add name index table.vars;
   index
 
-let new_variables table names =
-  let index = new_variable table names.(0) in
-  for i = 1 to Array.length names - 1 do
-    ignore (new_variable table names.(i))
+let to_array arr =
+  if arr = Obj.magic 0 then [||] else arr
+
+let new_methods_variables table meths vals =
+  let meths = to_array meths in
+  let nmeths = Array.length meths and nvals = Array.length vals in
+  let index = new_variable table vals.(0) in
+  let res = Array.create (nmeths + 1) index in
+  for i = 1 to nvals - 1 do ignore (new_variable table vals.(i)) done;
+  for i = 0 to nmeths - 1 do
+    res.(i+1) <- get_method_label table meths.(i)
   done;
-  index
+  res
 
 let get_variable table name =
   Vars.find name table.vars
@@ -305,7 +312,9 @@ let inherits cla vals virt_meths concr_meths (_, super, _, env) top =
   let init =
     if top then super cla env else Obj.repr (super cla) in
   widen cla;
-  init
+  (init, Array.map (get_variable cla) (to_array vals),
+   Array.map (fun nm -> get_method cla (get_method_label cla nm))
+     (to_array concr_meths))
 
 let make_class pub_meths class_init =
   let table = create_table pub_meths in
@@ -441,14 +450,14 @@ let app_const_env f x e n =
 let app_env_const f e n x =
   ret (fun obj ->
     f (Array.unsafe_get (Obj.magic (Array.unsafe_get obj e) : obj) n) x)
-let meth_app_const n x = ret (fun obj -> (sendself obj n) x)
+let meth_app_const n x = ret (fun obj -> (sendself obj n : _ -> _) x)
 let meth_app_var n m =
-  ret (fun obj -> (sendself obj n) (Array.unsafe_get obj m))
+  ret (fun obj -> (sendself obj n : _ -> _) (Array.unsafe_get obj m))
 let meth_app_env n e m =
-  ret (fun obj -> (sendself obj n)
+  ret (fun obj -> (sendself obj n : _ -> _)
       (Array.unsafe_get (Obj.magic (Array.unsafe_get obj e) : obj) m))
 let meth_app_meth n m =
-  ret (fun obj -> (sendself obj n) (sendself obj m))
+  ret (fun obj -> (sendself obj n : _ -> _) (sendself obj m))
 let send_const m x c =
   ret (fun obj -> sendcache x m (Array.unsafe_get obj 0) c)
 let send_var m n c =
