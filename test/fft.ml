@@ -170,5 +170,5 @@ let test np =
 
 
 let _ =
-  let np = ref 16 in for i = 1 to 12 do test !np; np := !np*2 done
+  let np = ref 16 in for i = 1 to 13 do test !np; np := !np*2 done
 

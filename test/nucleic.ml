@@ -88,6 +88,9 @@ tfo_apply t p
 
 let
 tfo_combine a b =
+  (* Hand elimination of common subexpressions.
+     Assumes lots of float registers (32 is perfect, 16 still OK).
+     Loses on the I386, of course. *)
   let a_a = a.a  and a_b = a.b  and a_c = a.c  and a_d = a.d
   and a_e = a.e  and a_f = a.f  and a_g = a.g  and a_h = a.h
   and a_i = a.i  and a_tx = a.tx  and a_ty = a.ty  and a_tz = a.tz
@@ -107,6 +110,22 @@ tfo_combine a b =
       ty = ((a_tx * b_b) + (a_ty * b_e) + (a_tz * b_h) + b_ty);
       tz = ((a_tx * b_c) + (a_ty * b_f) + (a_tz * b_i) + b_tz)
     }
+(*** Original without CSE:
+    { a = ((a.a * b.a) + (a.b * b.d) + (a.c * b.g));
+      b = ((a.a * b.b) + (a.b * b.e) + (a.c * b.h));
+      c = ((a.a * b.c) + (a.b * b.f) + (a.c * b.i));
+      d = ((a.d * b.a) + (a.e * b.d) + (a.f * b.g));
+      e = ((a.d * b.b) + (a.e * b.e) + (a.f * b.h));
+      f = ((a.d * b.c) + (a.e * b.f) + (a.f * b.i));
+      g = ((a.g * b.a) + (a.h * b.d) + (a.i * b.g));
+      h = ((a.g * b.b) + (a.h * b.e) + (a.i * b.h));
+      i = ((a.g * b.c) + (a.h * b.f) + (a.i * b.i));
+      tx = ((a.tx * b.a) + (a.ty * b.d) + (a.tz * b.g) + b.tx);
+      ty = ((a.tx * b.b) + (a.ty * b.e) + (a.tz * b.h) + b.ty);
+      tz = ((a.tx * b.c) + (a.ty * b.f) + (a.tz * b.i) + b.tz)
+    }
+****)
+
 (*
    The function "tfo-inv-ortho" computes the inverse of a homogeneous
    transformation matrix.
