@@ -149,7 +149,7 @@ val fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
    where [n] is the length of the array [a]. *)
 
 
-(** {2 Sorting} *)
+(** {6 Sorting} *)
 
 
 val sort : ('a -> 'a -> int) -> 'a array -> unit
@@ -176,7 +176,7 @@ val stable_sort : ('a -> 'a -> int) -> 'a array -> unit
 *)
 
 (**/**)
-(** {2 Undocumented functions} *)
+(** {6 Undocumented functions} *)
 
 external unsafe_get : 'a array -> int -> 'a = "%array_unsafe_get"
 external unsafe_set : 'a array -> int -> 'a -> unit = "%array_unsafe_set"
