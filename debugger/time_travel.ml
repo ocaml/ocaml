@@ -41,11 +41,6 @@ let debug_time_travel = ref false
 
 (*** Internal utilities. ***)
 
-(* Select a checkpoint at current. *)
-let set_current_checkpoint checkpoint =
-  current_checkpoint := checkpoint;
-  set_current_connection checkpoint.c_fd
-
 (* Insert a checkpoint in the checkpoint list.
  * Raise `Exit' if there is already a checkpoint at the same time.
  *)
@@ -91,6 +86,15 @@ let wait_for_connection checkpoint =
       remove_checkpoint checkpoint;
       checkpoint.c_pid <- -1;
       raise Sys.Break
+
+(* Select a checkpoint as current. *)
+let set_current_checkpoint checkpoint =
+  if !debug_time_travel then
+    prerr_endline ("Select : " ^ (string_of_int checkpoint.c_pid));
+  if not checkpoint.c_valid then
+    wait_for_connection checkpoint;
+  current_checkpoint := checkpoint;
+  set_current_connection checkpoint.c_fd
 
 (* Kill `checkpoint'. *)
 let kill_checkpoint checkpoint =
@@ -359,7 +363,7 @@ let set_file_descriptor pid fd =
 	   true)
   in
     if !debug_time_travel then
-      prerr_endline ("Nouvelle connection : " ^(string_of_int pid));
+      prerr_endline ("New connection : " ^(string_of_int pid));
     find (!current_checkpoint::!checkpoints)
 
 (* Kill all the checkpoints. *)
