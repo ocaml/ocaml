@@ -526,7 +526,7 @@ fi
 # For the terminfo module
 
 if test "$withcurses" = "yes"; then
-  for libs in "" "-lcurses" "-ltermcap" "-lcurses -ltermcap"; do
+  for libs in "" "-lcurses" "-ltermcap" "-lcurses -ltermcap" "-lncurses"; do
     if sh ./hasgot $libs tgetent tgetstr tgetnum tputs; then
       echo "termcap functions found (with libraries '$libs')"
       echo "#define HAS_TERMCAP" >> s.h
