@@ -50,10 +50,15 @@ type variable_context = int * (string, type_expr) Tbl.t
 let type_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
 let univars        = ref ([] : (string * (type_expr * type_expr ref)) list)
 let pre_univars    = ref ([] : type_expr list)
+let local_aliases  = ref ([] : string list)
 
 let used_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
 let bindings       = ref ([] : (Location.t * type_expr * type_expr) list)
         (* These two variables are used for the "delayed" policy. *)
+
+let reset_pre_univars () =
+  pre_univars := [];
+  local_aliases := []
 
 let reset_type_variables () =
   reset_global_level ();
@@ -134,6 +139,7 @@ let rec transl_type env policy rowvar styp =
             with Not_found ->
               let v = new_pre_univar () in
               type_variables := Tbl.add name v !type_variables;
+              local_aliases := name :: !local_aliases;
               v
             end
         | Delayed ->
@@ -320,6 +326,7 @@ let rec transl_type env policy rowvar styp =
           begin_def ();
           let t = newvar () in
           type_variables := Tbl.add alias t !type_variables;
+          if policy = Univars then local_aliases := alias :: !local_aliases;
           if policy = Delayed then
             used_variables := Tbl.add alias t !used_variables;
           let ty = transl_type env policy None st in
@@ -328,7 +335,8 @@ let rec transl_type env policy rowvar styp =
             raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
           end;
           end_def ();
-          generalize_global t;
+          if policy = Univars then generalize_structure t
+          else generalize_global t;
           instance t
       end
   | Ptyp_variant(fields, closed, present) ->
@@ -474,7 +482,7 @@ let transl_simple_type env fixed styp =
 
 let transl_simple_type_univars env styp =
   univars := [];
-  pre_univars := [];
+  reset_pre_univars ();
   begin_def ();
   let typ = transl_type env Univars None styp in
   end_def ();
@@ -483,17 +491,12 @@ let transl_simple_type_univars env styp =
     List.fold_left
       (fun acc v ->
         let v = repr v in
-        if v.desc <> Tvar || v.level <> Btype.generic_level || List.memq v acc
-        then acc
+        if v.level <> Btype.generic_level || v.desc <> Tvar then acc
         else (v.desc <- Tunivar ; v :: acc))
       [] !pre_univars
   in
-  pre_univars := [];
-  Tbl.iter
-    (fun name ty ->
-      if List.exists (fun tu -> repr ty == repr tu) univs
-      then type_variables := Tbl.remove name !type_variables)
-    !type_variables;
+  type_variables := List.fold_right Tbl.remove !local_aliases !type_variables;
+  reset_pre_univars ();
   instance (Btype.newgenty (Tpoly (typ, univs)))
 
 let transl_simple_type_delayed env styp =
