@@ -3,8 +3,8 @@ include ../../config/Makefile.nt
 # Compilation options
 CC=$(BYTECC)
 CFLAGS=-I..\..\byterun $(BYTECCCOMPOPTS)
-CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc -I ..\..\boot -I ..\win32unix
-
+CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc -I ..\..\stdlib -I ..\win32unix
+CPPFLAGS=/DWIN32
 C_OBJS=win32.obj
 
 LIB=..\..\stdlib

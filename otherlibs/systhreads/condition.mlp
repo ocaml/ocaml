@@ -24,7 +24,7 @@ let create () =
   { mut = m; waiting = [] }
 
 external sleep : unit -> unit = "caml_thread_sleep"
-external wakeup : t -> unit = "caml_thread_wakeup"
+external wakeup : Thread.t -> unit = "caml_thread_wakeup"
 
 let wait cond mut =
   Mutex.lock cond.mut;
