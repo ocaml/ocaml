@@ -15,66 +15,93 @@
 #include <stdio.h>
 #include <string.h>
 #include "alloc.h"
+#include "custom.h"
 #include "fail.h"
+#include "intext.h"
 #include "memory.h"
 #include "misc.h"
 #include "mlvalues.h"
 
-value int_of_string(value s)          /* ML */
+static char * parse_sign_and_base(char * p,
+                                  /*out*/ int * base,
+                                  /*out*/ int * sign)
 {
-  long res;
-  int sign;
-  int base;
-  char * p;
-  int c, d;
-
-  p = String_val(s);
-  if (*p == 0) failwith("int_of_string");
-  sign = 1;
+  *sign = 1;
   if (*p == '-') {
-    sign = -1;
+    *sign = -1;
     p++;
   }
-  base = 10;
+  *base = 10;
   if (*p == '0') {
     switch (p[1]) {
     case 'x': case 'X':
-      base = 16; p += 2; break;
+      *base = 16; p += 2; break;
     case 'o': case 'O':
-      base = 8; p += 2; break;
+      *base = 8; p += 2; break;
     case 'b': case 'B':
-      base = 2; p += 2; break;
+      *base = 2; p += 2; break;
     }
   }
-  res = 0;
-  while (1) {
-    c = *p;
-    if (c >= '0' && c <= '9')
-      d = c - '0';
-    else if (c >= 'A' && c <= 'F')
-      d = c - 'A' + 10;
-    else if (c >= 'a' && c <= 'f')
-      d = c - 'a' + 10;
-    else
-      break;
-    if (d >= base) break;
-    res = base * res + d;
-    p++;
-  }
-  if (*p != 0)
-    failwith("int_of_string");
-  return Val_long(sign < 0 ? -res : res);
+  return p;
 }
 
-value format_int(value fmt, value arg)      /* ML */
+static int parse_digit(char * p)
 {
-  char format_string[32], format_buffer[32];
-  int prec;
-  char * p;
-  char * dest;
-  mlsize_t len;
-  value res;
+  int c = *p;
+  if (c >= '0' && c <= '9')
+    return c - '0';
+  else if (c >= 'A' && c <= 'F')
+    return c - 'A' + 10;
+  else if (c >= 'a' && c <= 'f')
+    return c - 'a' + 10;
+  else
+    return -1;
+}
 
+static long parse_long(char * p)
+{
+  unsigned long res;
+  int sign, base, d;
+
+  p = parse_sign_and_base(p, &base, &sign);
+  for (res = 0; /*nothing*/; p++) {
+    d = parse_digit(p);
+    if (d < 0) break;
+    res = base * res + d;
+  }
+  if (*p != 0) failwith("int_of_string");
+  return sign < 0 ? -((long) res) : (long) res;
+}
+
+value int_of_string(value s)          /* ML */
+{
+  return Val_long(parse_long(String_val(s)));
+}
+
+#define FORMAT_BUFFER_SIZE 32
+
+static char * parse_format(value fmt,
+                           char * suffix,
+                           char format_string[],
+                           char default_format_buffer[])
+{
+  int prec, lastletter;
+  char * p;
+  mlsize_t len, len_suffix;
+
+  /* Copy Caml format fmt to format_string,
+     adding the suffix before the last letter of the format */
+  len = string_length(fmt);
+  len_suffix = strlen(suffix);
+  if (len + len_suffix + 1 >= FORMAT_BUFFER_SIZE)
+    invalid_argument("format_int: format too long");
+  bcopy(String_val(fmt), format_string, len);
+  p = format_string + len - 1;
+  lastletter = *p;
+  bcopy(suffix, p, len_suffix);  p += len_suffix;
+  *p++ = lastletter;
+  *p = 0;
+  /* Determine space needed for result and allocate it dynamically if needed */
   prec = 32;
   for (p = String_val(fmt); *p != 0; p++) {
     if (*p >= '0' && *p <= '9') {
@@ -82,22 +109,332 @@ value format_int(value fmt, value arg)      /* ML */
       break;
     }
   }
-  if (prec <= sizeof(format_buffer)) {
-    dest = format_buffer;
-  } else {
-    dest = stat_alloc(prec);
-  }
-  len = string_length(fmt);
-  if (len >= sizeof(format_string) - 1)
-    invalid_argument("format_int: format too long");
-  bcopy(String_val(fmt), format_string, len);
-  format_string[len + 1] = 0;
-  format_string[len] = format_string[len - 1];
-  format_string[len - 1] = 'l';
-  sprintf(dest, format_string, Long_val(arg));
-  res = copy_string(dest);
-  if (dest != format_buffer) {
-    stat_free(dest);
-  }
+  if (prec < FORMAT_BUFFER_SIZE)
+    return default_format_buffer;
+  else
+    return stat_alloc(prec + 1);
+}
+
+value format_int(value fmt, value arg)      /* ML */
+{
+  char format_string[32], default_format_buffer[32];
+  char * buffer;
+  value res;
+
+  buffer = parse_format(fmt, "l", format_string, default_format_buffer);
+  sprintf(buffer, format_string, Long_val(arg));
+  res = copy_string(buffer);
+  if (buffer != default_format_buffer) stat_free(buffer);
   return res;
 }
+
+/* 32-bit integers */
+
+static int int32_compare(value v1, value v2)
+{
+  int32 i1 = Int32_val(v1);
+  int32 i2 = Int32_val(v2);
+  return i1 == i2 ? 0 : i1 < i2 ? -1 : 1;
+}
+
+static long int32_hash(value v)
+{
+  return Int32_val(v);
+}
+
+static void int32_serialize(value v, unsigned long * wsize_32,
+                            unsigned long * wsize_64)
+{
+  serialize_int_4(Int32_val(v));
+  *wsize_32 = *wsize_64 = 4;
+}
+
+static unsigned long int32_deserialize(void * dst)
+{
+  *((int32 *) dst) = deserialize_sint_4();
+  return 4;
+}
+
+static struct custom_operations int32_ops = {
+  "_i",
+  custom_finalize_default,
+  int32_compare,
+  int32_hash,
+  int32_serialize,
+  int32_deserialize
+};
+
+value copy_int32(int32 i)
+{
+  value res = alloc_custom(&int32_ops, 4, 0, 1);
+  Int32_val(res) = i;
+  return res;
+}
+
+value int32_neg(value v)        /* ML */
+{ return copy_int32(- Int32_val(v)); }
+
+value int32_add(value v1, value v2)  /* ML */
+{ return copy_int32(Int32_val(v1) + Int32_val(v2)); }
+
+value int32_sub(value v1, value v2)  /* ML */
+{ return copy_int32(Int32_val(v1) - Int32_val(v2)); }
+
+value int32_mul(value v1, value v2)  /* ML */
+{ return copy_int32(Int32_val(v1) * Int32_val(v2)); }
+
+value int32_div(value v1, value v2)  /* ML */
+{
+  int32 divisor = Int32_val(v2);
+  if (divisor == 0) raise_zero_divide();
+  return copy_int32(Int32_val(v1) / divisor);
+}
+
+value int32_mod(value v1, value v2)  /* ML */
+{
+  int32 divisor = Int32_val(v2);
+  if (divisor == 0) raise_zero_divide();
+  return copy_int32(Int32_val(v1) % divisor);
+}
+
+value int32_and(value v1, value v2)  /* ML */
+{ return copy_int32(Int32_val(v1) & Int32_val(v2)); }
+
+value int32_or(value v1, value v2)  /* ML */
+{ return copy_int32(Int32_val(v1) | Int32_val(v2)); }
+
+value int32_xor(value v1, value v2)  /* ML */
+{ return copy_int32(Int32_val(v1) ^ Int32_val(v2)); }
+
+value int32_shift_left(value v1, value v2)  /* ML */
+{ return copy_int32(Int32_val(v1) << Int_val(v2)); }
+
+value int32_shift_right(value v1, value v2)  /* ML */
+{ return copy_int32(Int32_val(v1) >> Int_val(v2)); }
+
+value int32_shift_right_unsigned(value v1, value v2)  /* ML */
+{ return copy_int32((uint32)Int32_val(v1) >> Int_val(v2)); }
+
+value int32_of_int(value v) /* ML */
+{ return copy_int32(Long_val(v)); }
+
+value int32_to_int(value v) /* ML */
+{ return Val_long(Int32_val(v)); }
+
+value format_int32(value fmt, value arg)      /* ML */
+{
+  char format_string[32], default_format_buffer[32];
+  char * buffer;
+  value res;
+
+  buffer = parse_format(fmt, "l", format_string, default_format_buffer);
+  sprintf(buffer, format_string, (long) Int32_val(arg));
+  res = copy_string(buffer);
+  if (buffer != default_format_buffer) stat_free(buffer);
+  return res;
+}
+
+value int32_of_string(value s)          /* ML */
+{
+  return copy_int32(parse_long(String_val(s)));
+}
+
+/* 64-bit integers */
+
+#if SIZEOF_LONG == 8 || SIZEOF_LONG_LONG == 8
+
+static int int64_compare(value v1, value v2)
+{
+  int64 i1 = Int64_val(v1);
+  int64 i2 = Int64_val(v2);
+  return i1 == i2 ? 0 : i1 < i2 ? -1 : 1;
+}
+
+static long int64_hash(value v)
+{
+  return (long) Int64_val(v);
+}
+
+static void int64_serialize(value v, unsigned long * wsize_32,
+                            unsigned long * wsize_64)
+{
+  serialize_int_8(Int64_val(v));
+  *wsize_64 = *wsize_64 = 8;
+}
+
+static unsigned long int64_deserialize(void * dst)
+{
+  *((int64 *) dst) = deserialize_sint_8();
+  return 8;
+}
+
+static struct custom_operations int64_ops = {
+  "_i",
+  custom_finalize_default,
+  int64_compare,
+  int64_hash,
+  int64_serialize,
+  int64_deserialize
+};
+
+value copy_int64(int64 i)
+{
+  value res = alloc_custom(&int64_ops, 4, 0, 1);
+  Int64_val(res) = i;
+  return res;
+}
+
+value int64_neg(value v)        /* ML */
+{ return copy_int64(- Int64_val(v)); }
+
+value int64_add(value v1, value v2)  /* ML */
+{ return copy_int64(Int64_val(v1) + Int64_val(v2)); }
+
+value int64_sub(value v1, value v2)  /* ML */
+{ return copy_int64(Int64_val(v1) - Int64_val(v2)); }
+
+value int64_mul(value v1, value v2)  /* ML */
+{ return copy_int64(Int64_val(v1) * Int64_val(v2)); }
+
+value int64_div(value v1, value v2)  /* ML */
+{
+  int64 divisor = Int64_val(v2);
+  if (divisor == 0) raise_zero_divide();
+  return copy_int64(Int64_val(v1) / divisor);
+}
+
+value int64_mod(value v1, value v2)  /* ML */
+{
+  int64 divisor = Int64_val(v2);
+  if (divisor == 0) raise_zero_divide();
+  return copy_int64(Int64_val(v1) % divisor);
+}
+
+value int64_and(value v1, value v2)  /* ML */
+{ return copy_int64(Int64_val(v1) & Int64_val(v2)); }
+
+value int64_or(value v1, value v2)  /* ML */
+{ return copy_int64(Int64_val(v1) | Int64_val(v2)); }
+
+value int64_xor(value v1, value v2)  /* ML */
+{ return copy_int64(Int64_val(v1) ^ Int64_val(v2)); }
+
+value int64_shift_left(value v1, value v2)  /* ML */
+{ return copy_int64(Int64_val(v1) << Int_val(v2)); }
+
+value int64_shift_right(value v1, value v2)  /* ML */
+{ return copy_int64(Int64_val(v1) >> Int_val(v2)); }
+
+value int64_shift_right_unsigned(value v1, value v2)  /* ML */
+{ return copy_int64((uint64)Int64_val(v1) >> Int_val(v2)); }
+
+value int64_of_int(value v) /* ML */
+{ return copy_int64(Long_val(v)); }
+
+value int64_to_int(value v) /* ML */
+{ return Val_long((long) Int64_val(v)); }
+
+value int64_of_int32(value v) /* ML */
+{ return copy_int64(Int32_val(v)); }
+
+value int64_to_int32(value v) /* ML */
+{ return copy_int32((int32) Int64_val(v)); }
+
+value format_int64(value fmt, value arg)      /* ML */
+{
+  char format_string[64], default_format_buffer[64];
+  char * buffer;
+  value res;
+
+  buffer = parse_format(fmt,
+#if SIZEOF_LONG == 8
+                        "l",
+#else
+                        "ll",
+#endif
+                        format_string, default_format_buffer);
+  sprintf(buffer, format_string, Int64_val(arg));
+  res = copy_string(buffer);
+  if (buffer != default_format_buffer) stat_free(buffer);
+  return res;
+}
+
+value int64_of_string(value s)          /* ML */
+{
+  char * p;
+  uint64 res;
+  int sign, base, d;
+
+  p = parse_sign_and_base(String_val(s), &base, &sign);
+  for (res = 0; /*nothing*/; p++) {
+    d = parse_digit(p);
+    if (d < 0) break;
+    res = base * res + d;
+  }
+  if (*p != 0) failwith("Int64.of_string");
+  return copy_int64(sign < 0 ? -((int64) res) : (int64) res);
+}
+
+#else
+
+static char int64_error[] =
+  "The type Int64.t is not supported on this platform";
+
+value copy_int64(int64 i)
+{ invalid_arg(int64_error); }
+
+value int64_neg(value v)
+{ invalid_arg(int64_error); }
+
+value int64_add(value v1, value v2)
+{ invalid_arg(int64_error); }
+
+value int64_sub(value v1, value v2)
+{ invalid_arg(int64_error); }
+
+value int64_mul(value v1, value v2)
+{ invalid_arg(int64_error); }
+
+value int64_div(value v1, value v2)
+{ invalid_arg(int64_error); }
+
+value int64_mod(value v1, value v2)
+{ invalid_arg(int64_error); }
+
+value int64_and(value v1, value v2)
+{ invalid_arg(int64_error); }
+
+value int64_or(value v1, value v2)
+{ invalid_arg(int64_error); }
+
+value int64_xor(value v1, value v2)
+{ invalid_arg(int64_error); }
+
+value int64_shift_left(value v1, value v2)
+{ invalid_arg(int64_error); }
+
+value int64_shift_right(value v1, value v2)
+{ invalid_arg(int64_error); }
+
+value int64_shift_right_unsigned(value v1, value v2)
+{ invalid_arg(int64_error); }
+
+value int64_of_int(value v)
+{ invalid_arg(int64_error); }
+
+value int64_to_int(value v)
+{ invalid_arg(int64_error); }
+
+value int64_of_int32(value v)
+{ invalid_arg(int64_error); }
+
+value int64_to_int32(value v)
+{ invalid_arg(int64_error); }
+
+value format_int64(value fmt, value arg)
+{ invalid_arg(int64_error); }
+
+value int64_of_string(value s)
+{ invalid_arg(int64_error); }
+
+#endif

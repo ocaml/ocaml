@@ -261,6 +261,16 @@ echo "#define SIZEOF_INT $1" >> m.h
 echo "#define SIZEOF_LONG $2" >> m.h
 echo "#define SIZEOF_SHORT $4" >> m.h
 
+if test $1 != 8; then
+  sh ./runtest longlong.c
+  case $? in
+  0) echo "64-bit \"long long\" integer type found."
+     echo "#define SIZEOF_LONG_LONG 8" >> m.h;;
+  *) echo "No suitable 64-bit integer type found, Int64.t will not be supported."
+     echo "#define SIZEOF_LONG_LONG 0" >> m.h;;
+  esac
+fi
+
 # Determine endianness
 
 sh ./runtest endian.c

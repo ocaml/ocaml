@@ -38,7 +38,13 @@ extern void custom_serialize_default(value v, unsigned long * wsize_32,
 
 #define Custom_ops_val(v) (*((struct custom_operations **) (v)))
 
-extern void register_custom_operations(struct custom_operations * ops);
-extern struct custom_operations * find_custom_operations(char * ident);
+value alloc_custom(struct custom_operations * ops,
+                   unsigned long size, /*size in bytes*/
+                   mlsize_t mem, /*resources consumed*/
+                   mlsize_t max  /*max resources*/);
+
+void register_custom_operations(struct custom_operations * ops);
+struct custom_operations * find_custom_operations(char * ident);
+struct custom_operations * final_custom_operations(void (*fn)(value));
 
 #endif

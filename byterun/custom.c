@@ -18,6 +18,27 @@
 #include "memory.h"
 #include "mlvalues.h"
 
+value alloc_custom(struct custom_operations * ops,
+                   unsigned long size,
+                   mlsize_t mem,
+                   mlsize_t max)
+{
+  mlsize_t wosize;
+  value result;
+
+  wosize = 1 + (size + sizeof(value) - 1) / sizeof(value);
+  if (ops->finalize == NULL && wosize <= Max_young_wosize) {
+    result = alloc_small(wosize, Custom_tag);
+    Custom_ops_val(result) = ops;
+  } else {
+    result = alloc_shr(wosize, Custom_tag);
+    Custom_ops_val(result) = ops;
+    adjust_gc_speed(mem, max);
+    result = check_urgent_gc(result);
+  }
+  return result;
+}
+
 int custom_compare_default(value v1, value v2)
 {
   failwith("equal: abstract value");

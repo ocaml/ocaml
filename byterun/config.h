@@ -23,6 +23,35 @@
 #include "::config:sm-Mac.h"
 #endif
 
+/* Types for signed chars, 32-bit integers, 64-bit integers */
+
+typedef signed char schar;
+
+#if SIZEOF_INT == 4
+typedef int int32;
+typedef unsigned int uint32;
+#elif SIZEOF_LONG == 4
+typedef long int32;
+typedef unsigned long uint32;
+#elif SIZEOF_SHORT == 4
+typedef short int32;
+typedef unsigned short uint32;
+#endif
+
+#if SIZEOF_LONG == 8
+typedef long int64;
+typedef unsigned long uint64;
+#elif SIZEOF_LONG_LONG == 8
+typedef long long int64;
+typedef unsigned long long uint64;
+#else
+/* Int64.t will not be supported, and operations over it are not defined,
+   but we must define the types int64 and uint64 as 64-bit placeholders. */
+typedef struct { uint32 a, b; } uint64;
+typedef uint64 int64;
+#endif
+
+
 /* Library dependencies */
 
 #ifdef HAS_MEMMOVE
@@ -48,9 +77,6 @@
 #define THREADED_CODE
 #endif
 
-/* Signed char type */
-
-typedef signed char schar;
 
 /* Do not change this definition. */
 #define Page_size (1 << Page_log)

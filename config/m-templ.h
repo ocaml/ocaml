@@ -47,3 +47,8 @@
 
 /* Define SIZEOF_INT, SIZEOF_LONG and SIZEOF_SHORT to the sizes in byte
    of the C types "int", "long" and "short", respectively. */
+
+#define SIZEOF_LONG_LONG 8
+
+/* Define SIZEOF_LONG_LONG to the size in byte of the C type "long long",
+   if supported by the C compiler.  Otherwise, define SIZEOF_LONG_LONG as 0. */

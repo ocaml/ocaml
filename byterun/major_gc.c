@@ -228,7 +228,7 @@ static void sweep_slice (long int work)
       switch (Color_hd (hd)){
       case Caml_white:
         if (Tag_hd (hd) == Custom_tag){
-          void (*final_fun)(value) = Custom_ops_val(Val_hp(hp));
+          void (*final_fun)(value) = Custom_ops_val(Val_hp(hp))->finalize;
           if (final_fun != NULL) final_fun(Val_hp(hp));
         }
         gc_sweep_hp = fl_merge_block (Bp_hp (hp));

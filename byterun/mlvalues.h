@@ -57,20 +57,6 @@ typedef unsigned int tag_t;             /* Actually, an unsigned char */
 typedef unsigned long color_t;
 typedef unsigned long mark_t;
 
-#if SIZEOF_INT == 4
-typedef int int32;
-typedef unsigned int uint32;
-#elif SIZEOF_LONG == 4
-typedef long int32;
-typedef unsigned long uint32;
-#elif SIZEOF_SHORT == 4
-typedef short int32;
-typedef unsigned short uint32;
-#endif
-
-typedef long int64;             /* FIXME */
-typedef unsigned long uint64;   /* FIXME */
-
 /* Longs vs blocks. */
 #define Is_long(x)   (((x) & 1) != 0)
 #define Is_block(x)  (((x) & 1) == 0)
@@ -235,6 +221,10 @@ void Store_double_val (value,double);
 #define Data_custom_val(v) ((void *) &Field(v, 1))
 struct custom_operations;       /* defined in [custom.h] */
 
+/* Int32.t and Int64.t are represented as custom blocks. */
+
+#define Int32_val(v) (*((int32 *) Data_custom_val(v)))
+#define Int64_val(v) (*((int64 *) Data_custom_val(v)))
 
 /* 3- Atoms are 0-tuples.  They are statically allocated once and for all. */
 
