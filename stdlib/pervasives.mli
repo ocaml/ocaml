@@ -407,9 +407,9 @@ val seek_out : out_channel -> int -> unit
            for channel [chan]. This works only for regular files. On
            files of other kinds (such as terminals, pipes and sockets),
 	   the behavior is unspecified. *)
-external pos_out : out_channel -> int = "pos_out"
+val pos_out : out_channel -> int
         (* Return the current writing position for the given channel. *)
-external out_channel_length : out_channel -> int = "channel_size"
+val out_channel_length : out_channel -> int
         (* Return the total length (number of characters) of the
            given channel.  This works only for regular files. On files of
            other kinds, the result is meaningless. *)
@@ -482,13 +482,13 @@ val input_value : in_channel -> 'a
                      [(input_value chan : type)].
 	   The behavior is unspecified if the object in the file does not
 	   belong to the given type. *)
-external seek_in : in_channel -> int -> unit = "seek_in"
+val seek_in : in_channel -> int -> unit
         (* [seek_in chan pos] sets the current reading position to [pos]
            for channel [chan]. This works only for regular files. On
            files of other kinds, the behavior is unspecified. *)
-external pos_in : in_channel -> int = "pos_in"
+val pos_in : in_channel -> int
         (* Return the current reading position for the given channel. *)
-external in_channel_length : in_channel -> int = "channel_size"
+val in_channel_length : in_channel -> int
         (* Return the total length (number of characters) of the
            given channel. This works only for regular files. On files of
            other kinds, the result is meaningless. *)
