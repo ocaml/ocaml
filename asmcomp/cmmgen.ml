@@ -671,37 +671,42 @@ let rec transl = function
                         float_array_set arr idx (transl_unbox_float arg3))))
       end)
 
-  (* Compaction of sparse switches *)
-  | Uprim(Ptranslate tbl, [arg]) ->
-      bind "transl" (transl arg) (fun arg ->
-        let rec transl_tests lo hi =
-          if lo > hi then int_const 0 else begin
-            let i = (lo + hi) / 2 in
-            let (first_val, last_val, ofs) = tbl.(i) in
-            Cifthenelse(
-              Cop(Ccmpi Clt, [arg; int_const first_val]),
-              transl_tests lo (i-1),
-              Cifthenelse(
-                Cop(Ccmpi Cgt, [arg; int_const last_val]),
-                transl_tests (i+1) hi,
-                add_const arg ((ofs - first_val) * 2)))
-          end in
-        transl_tests 0 (Array.length tbl - 1))
+  (* Operations on bitvects *)
+  | Uprim(Pbittest, [arg1; arg2]) ->
+      bind "index" (untag_int(transl arg2)) (fun idx ->
+        tag_int(
+          Cop(Cand, [Cop(Clsr, [Cop(Cloadchunk Byte_unsigned,
+                                    [add_int (transl arg1)
+                                      (Cop(Clsr, [idx; Cconst_int 3]))]);
+                                Cop(Cand, [idx; Cconst_int 7])]);
+                     Cconst_int 1])))
 
   | Uprim(_, _) ->
       fatal_error "Cmmgen.transl"
 
-  | Uswitch(arg, const_index, const_cases, block_index, block_cases) ->
-      if Array.length block_index = 0 then
-        transl_switch (untag_int (transl arg)) const_index const_cases
-      else if Array.length const_index = 0 then
-        transl_switch (get_tag (transl arg)) block_index block_cases
+  | Uswitch(arg, s) ->
+      (* As in the bytecode interpreter, only matching against constants
+         can be checked *)
+      if Array.length s.us_index_blocks = 0 then
+        if s.us_checked then
+          bind "switch" (untag_int (transl arg)) (fun idx ->
+            Cifthenelse(
+              Cop(Ccmpa Cge,
+                  [idx; Cconst_pointer(Array.length s.us_index_consts)]),
+              Cexit,
+              transl_switch idx s.us_index_consts s.us_cases_consts))
+        else
+          transl_switch (untag_int (transl arg))
+                        s.us_index_consts s.us_cases_consts
+      else if Array.length s.us_index_consts = 0 then
+        transl_switch (get_tag (transl arg))
+                      s.us_index_blocks s.us_cases_blocks
       else
         bind "switch" (transl arg) (fun arg ->
           Cifthenelse(
             Cop(Cand, [arg; Cconst_int 1]),
-            transl_switch (untag_int arg) const_index const_cases,
-            transl_switch (get_tag arg) block_index block_cases))
+            transl_switch (untag_int arg) s.us_index_consts s.us_cases_consts,
+            transl_switch (get_tag arg) s.us_index_blocks s.us_cases_blocks))
   | Ustaticfail ->
       Cexit
   | Ucatch(body, handler) ->

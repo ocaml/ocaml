@@ -30,7 +30,7 @@ type ulambda =
   | Ulet of Ident.t * ulambda * ulambda
   | Uletrec of (Ident.t * ulambda) list * ulambda
   | Uprim of primitive * ulambda list
-  | Uswitch of ulambda * int array * ulambda array * int array * ulambda array
+  | Uswitch of ulambda * ulambda_switch
   | Ustaticfail
   | Ucatch of ulambda * ulambda
   | Utrywith of ulambda * Ident.t * ulambda
@@ -39,6 +39,13 @@ type ulambda =
   | Uwhile of ulambda * ulambda
   | Ufor of Ident.t * ulambda * ulambda * direction_flag * ulambda
   | Uassign of Ident.t * ulambda
+
+and ulambda_switch =
+  { us_index_consts: int array;
+    us_cases_consts: ulambda array;
+    us_index_blocks: int array;
+    us_cases_blocks: ulambda array;
+    us_checked: bool }
 
 (* Description of known functions *)
 

@@ -47,8 +47,9 @@ let occurs_var var u =
     | Uletrec(decls, body) ->
         List.exists (fun (id, u) -> occurs u) decls or occurs body
     | Uprim(p, args) -> List.exists occurs args
-    | Uswitch(arg, const_index, const_cases, block_index, block_cases) ->
-        occurs arg or occurs_array const_cases or occurs_array block_cases
+    | Uswitch(arg, s) ->
+        occurs arg or occurs_array s.us_cases_consts
+                   or occurs_array s.us_cases_blocks
     | Ustaticfail -> false
     | Ucatch(body, hdlr) -> occurs body or occurs hdlr
     | Utrywith(body, exn, hdlr) -> occurs body or occurs hdlr
@@ -183,11 +184,18 @@ let rec close fenv cenv = function
        Value_unknown)
   | Lprim(p, args) ->
       (Uprim(p, close_list fenv cenv args), Value_unknown)
-  | Lswitch(arg, nconst, consts, nblock, blocks) ->
+  | Lswitch(arg, sw) ->
       let (uarg, _) = close fenv cenv arg in
-      let (const_index, const_cases) = close_switch fenv cenv nconst consts in
-      let (block_index, block_cases) = close_switch fenv cenv nblock blocks in
-      (Uswitch(uarg, const_index, const_cases, block_index, block_cases),
+      let (const_index, const_cases) =
+        close_switch fenv cenv sw.sw_numconsts sw.sw_consts in
+      let (block_index, block_cases) =
+        close_switch fenv cenv sw.sw_numblocks sw.sw_blocks in
+      (Uswitch(uarg, 
+               {us_index_consts = const_index;
+                us_cases_consts = const_cases;
+                us_index_blocks = block_index;
+                us_cases_blocks = block_cases;
+                us_checked = sw.sw_checked}),
        Value_unknown)
   | Lstaticfail ->
       (Ustaticfail, Value_unknown)
@@ -217,8 +225,6 @@ let rec close fenv cenv = function
       let (uhi, _) = close fenv cenv hi in
       let (ubody, _) = close fenv cenv body in
       (Ufor(id, ulo, uhi, dir, ubody), Value_unknown)
-  | Lshared(lam, _) ->
-      close fenv cenv lam
   | Lassign(id, lam) ->
       let (ulam, _) = close fenv cenv lam in
       (Uassign(id, ulam), Value_unknown)
@@ -315,26 +321,21 @@ and close_one_function fenv cenv id funct =
       (clos, (id, pos, approx) :: _) -> (clos, approx)
     | _ -> fatal_error "Closure.close_one_function"
 
-(* Close a switch, preserving sharing between cases. *)
+(* Close a switch *)
 
 and close_switch fenv cenv num_keys cases =
   let index = Array.new num_keys 0 in
   let ucases = ref []
-  and num_cases = ref 0
-  and cases_processed = ref [] in
+  and num_cases = ref 0 in
   if List.length cases < num_keys then begin
     num_cases := 1;
     ucases := [Ustaticfail]
   end;
   List.iter
     (function (key, lam) ->
-      try
-        index.(key) <- List.assq lam !cases_processed
-      with Not_found ->
         let (ulam, _) = close fenv cenv lam in
         ucases := ulam :: !ucases;
         index.(key) <- !num_cases;
-        cases_processed := (lam, !num_cases) :: !cases_processed;
         incr num_cases)
     cases;
   (index, Array.of_list(List.rev !ucases))
