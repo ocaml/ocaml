@@ -1,0 +1,70 @@
+# Makefile for the parser generator.
+
+C = sc
+COptions = -opt speed -d NDEBUG -model far -w 2
+LinkOptions = -model far -msg nodup -compact -state nouse
+Libs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
+       "{clibraries}StdCLib.far.o" "{libraries}MathLib.far.o" ¶
+       "{libraries}ToolLibs.o" "{libraries}Interface.o"
+
+PPCC = mrc
+PPCCOptions = -d NDEBUG -w 2 -w 35
+PPCLinkOptions = -d
+PPCLibs = "{sharedlibraries}MathLib" "{ppclibraries}PPCCRuntime.o" ¶
+          "{ppclibraries}PPCToolLibs.o" "{sharedlibraries}StdCLib" ¶
+		  "{ppclibraries}StdCRuntime.o" "{sharedlibraries}InterfaceLib"
+
+OBJS = closure.c.o error.c.o lalr.c.o lr0.c.o main.c.o mkpar.c.o output.c.o ¶
+       reader.c.o skeleton.c.o symtab.c.o verbose.c.o warshall.c.o ¶
+	   ::byterun:rotatecursor.c.o
+
+PPCOBJS = closure.c.x error.c.x lalr.c.x lr0.c.x main.c.x mkpar.c.x ¶
+       output.c.x ¶
+       reader.c.x skeleton.c.x symtab.c.x verbose.c.x warshall.c.x ¶
+	   ::byterun:rotatecursor.c.x
+
+all Ä ocamlyacc
+
+ocamlyacc ÄÄ {OBJS}
+	ilink -c 'MPS ' -t MPST {LinkOptions} -o ocamlyacc {OBJS} {Libs}
+
+ocamlyacc ÄÄ {PPCOBJS}
+	ppclink -c 'MPS ' -t MPST {PPCLinkOptions} -o ocamlyacc {PPCOBJS} {PPCLibs}
+
+clean Ä
+	delete -i Å.c.[ox] || set status 0
+	delete -i ocamlyacc
+
+::byterun:rotatecursor.c.o Ä ::byterun:rotatecursor.c ::byterun:rotatecursor.h
+	directory ::byterun; domake rotatecursor.c.o; directory ::yacc
+
+::byterun:rotatecursor.c.x Ä ::byterun:rotatecursor.c ::byterun:rotatecursor.h
+	directory ::byterun; domake rotatecursor.c.x; directory ::yacc
+
+depend Ä
+
+closure.c.o Ä defs.h ::byterun:rotatecursor.h
+error.c.o Ä defs.h ::byterun:rotatecursor.h
+lalr.c.o Ä defs.h ::byterun:rotatecursor.h
+lr0.c.o Ä defs.h ::byterun:rotatecursor.h
+main.c.o Ä defs.h ::byterun:rotatecursor.h
+mkpar.c.o Ä defs.h ::byterun:rotatecursor.h
+output.c.o Ä defs.h ::byterun:rotatecursor.h
+reader.c.o Ä defs.h ::byterun:rotatecursor.h
+skeleton.c.o Ä defs.h ::byterun:rotatecursor.h
+symtab.c.o Ä defs.h ::byterun:rotatecursor.h
+verbose.c.o Ä defs.h ::byterun:rotatecursor.h
+warshall.c.o Ä defs.h ::byterun:rotatecursor.h
+
+closure.c.x Ä defs.h ::byterun:rotatecursor.h
+error.c.x Ä defs.h ::byterun:rotatecursor.h
+lalr.c.x Ä defs.h ::byterun:rotatecursor.h
+lr0.c.x Ä defs.h ::byterun:rotatecursor.h
+main.c.x Ä defs.h ::byterun:rotatecursor.h
+mkpar.c.x Ä defs.h ::byterun:rotatecursor.h
+output.c.x Ä defs.h ::byterun:rotatecursor.h
+reader.c.x Ä defs.h ::byterun:rotatecursor.h
+skeleton.c.x Ä defs.h ::byterun:rotatecursor.h
+symtab.c.x Ä defs.h ::byterun:rotatecursor.h
+verbose.c.x Ä defs.h ::byterun:rotatecursor.h
+warshall.c.x Ä defs.h ::byterun:rotatecursor.h
