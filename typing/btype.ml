@@ -128,7 +128,7 @@ let iter_type_expr f ty =
   | Tfield (_, _, ty1, ty2) -> f ty1; f ty2
   | Tnil                -> ()
   | Tlink ty            -> f ty
-  | Tsubst ty           -> assert false; f ty
+  | Tsubst ty           -> assert false
 
 let saved_desc = ref []
   (* Saved association of generic nodes with their description. *)
