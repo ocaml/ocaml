@@ -151,7 +151,8 @@ let simplify_lambda lam =
   | Llet(str, v, Lvar w, l2) ->
       Hashtbl.add subst v (simplif (Lvar w));
       simplif l2
-  | Llet(Strict, v, Lprim(Pmakeblock(0, Mutable), [linit]), lbody) ->
+  | Llet(Strict, v, Lprim(Pmakeblock(0, Mutable), [linit]), lbody)
+    when not !Clflags.debug ->
       let slinit = simplif linit in
       let slbody = simplif lbody in
       begin try
