@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include "../byterun/mlvalues.h"
 #include "../byterun/exec.h"
 
 char * default_runtime_path = RUNTIME_NAME;
@@ -77,22 +78,28 @@ static char * read_runtime_path(int fd)
 {
   char buffer[TRAILER_SIZE];
   static char runtime_path[MAXPATHLEN];
-  unsigned path_size, code_size, prim_size, data_size;
-  unsigned symbol_size, debug_size, size;
+  int num_sections, i;
+  uint32 path_size;
+  long ofs;
 
   lseek(fd, (long) -TRAILER_SIZE, SEEK_END);
   if (read(fd, buffer, TRAILER_SIZE) < TRAILER_SIZE) return NULL;
-  path_size = read_size(buffer);
-  code_size = read_size(buffer + 4);
-  prim_size = read_size(buffer + 8);
-  data_size = read_size(buffer + 12);
-  symbol_size = read_size(buffer + 16);
-  debug_size = read_size(buffer + 20);
-  if (path_size > MAXPATHLEN) return NULL;
+  num_sections = read_size(buffer);
+  ofs = TRAILER_SIZE + num_sections * 8;
+  lseek(fd, -ofs, SEEK_END);
+  path_size = 0;
+  for (i = 0; i < num_sections; i++) {
+    if (read(fd, buffer, 8) < 8) return NULL;
+    if (buffer[0] == 'R' && buffer[1] == 'N' &&
+        buffer[2] == 'T' && buffer[3] == 'M') {
+      path_size = read_size(buffer + 4);
+      ofs += path_size;
+    } else if (path_size > 0)
+      ofs += read_size(buffer + 4);
+  }
   if (path_size == 0) return default_runtime_path;
-  size = path_size + code_size + prim_size +
-         data_size + symbol_size + debug_size + TRAILER_SIZE;
-  lseek(fd, -size, SEEK_END);
+  if (path_size >= MAXPATHLEN) return NULL;
+  lseek(fd, -ofs, SEEK_END);
   if (read(fd, runtime_path, path_size) != path_size) return NULL;
   runtime_path[path_size - 1] = 0;
   return runtime_path;
