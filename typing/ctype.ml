@@ -1023,7 +1023,19 @@ let rec find_expans p1 =
   | Mlink {contents = rem} ->
       find_expans p1 rem
 
+
+(* 
+   If the environnement has changed, memorized expansions might not
+   be correct anymore, and so we flush the cache. This is safe but
+   quite pessimistic: it would be enough to flush the cache when a
+   type or module definition is overriden in the environnement.
+*)
 let previous_env = ref Env.empty
+let check_abbrev_env env =
+  if env != !previous_env then begin
+    cleanup_abbrev ();
+    previous_env := env
+  end
 
 (* Expand an abbreviation. The expansion is memorized. *)
 (* 
@@ -1044,16 +1056,7 @@ let previous_env = ref Env.empty
       and this other expansion fails.
 *)
 let expand_abbrev env ty =
-  (* 
-     If the environnement has changed, memorized expansions might not
-     be correct anymore, and so we flush the cache. This is safe but
-     quite pessimistic: it would be enough to flush the cache when a
-     type or module definition is overriden in the environnement.
-  *)
-  if env != !previous_env then begin
-    cleanup_abbrev ();
-    previous_env := env
-  end;
+  check_abbrev_env env;
   match ty with
     {desc = Tconstr (path, args, abbrev); level = level} ->
       let lookup_abbrev = proper_abbrevs path args abbrev in
@@ -1174,6 +1177,7 @@ let rec non_recursive_abbrev env ty0 ty =
   end
 
 let correct_abbrev env ident params ty =
+  check_abbrev_env env;
   let ty0 = newgenvar () in
   visited := [];
   let abbrev = Mcons (Path.Pident ident, ty0, ty0, Mnil) in
@@ -2566,9 +2570,8 @@ let rec build_subtype env visited loops posi level t =
               | _ -> raise Not_found
               end
             | None -> assert false in
-          let t'_level = if tl = [] then !current_level else t'.level in
           let ty =
-            subst env t'_level abbrev None cl_abbr.type_params tl body in
+            subst env !current_level abbrev None cl_abbr.type_params tl body in
           let ty = repr ty in
           let ty1, tl1 =
             match ty.desc with
