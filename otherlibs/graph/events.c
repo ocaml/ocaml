@@ -48,6 +48,7 @@ value gr_wait_event(eventlist)
 #endif
   XEvent event;
 
+  gr_check_open();
   mask = 0;
   poll = False;
   while (eventlist != Val_int(0)) {

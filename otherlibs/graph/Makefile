@@ -13,7 +13,7 @@ OBJS=open.o draw.o fill.o color.o text.o \
 
 all: libgraphics.a graphics.cmi graphics.cma
 
-allopt:
+allopt: libgraphics.a graphics.cmi graphics.cmxa
 
 libgraphics.a: $(OBJS)
 	rm -f libgraphics.a
@@ -22,6 +22,9 @@ libgraphics.a: $(OBJS)
 
 graphics.cma: graphics.cmo
 	$(CAMLC) -a -o graphics.cma graphics.cmo
+
+graphics.cmxa: graphics.cmx
+	$(CAMLOPT) -a -o graphics.cmxa graphics.cmx
 
 partialclean:
 	rm -f *.cm*
@@ -35,6 +38,8 @@ install:
 	cp graphics.cm[ia] $(LIBDIR)
 
 installopt:
+	cp graphics.cmxa graphics.a $(LIBDIR)
+	cd $(LIBDIR); $(RANLIB) graphics.a
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
