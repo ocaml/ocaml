@@ -632,11 +632,25 @@ val lockf : file_descr -> lock_command -> int -> unit
    [fd] (as set by {!Unix.lseek}), and extends [size] bytes forward if
    [size] is positive, [size] bytes backwards if [size] is negative,
    or to the end of the file if [size] is zero.
-   A write lock (set with [F_LOCK] or [F_TLOCK]) prevents any other
+   A write lock prevents any other
    process from acquiring a read or write lock on the region.
-   A read lock (set with [F_RLOCK] or [F_TRLOCK]) prevents any other
+   A read lock prevents any other
    process from acquiring a write lock on the region, but lets
-   other processes acquire read locks on it. *)
+   other processes acquire read locks on it.
+
+   The [F_LOCK] and [F_TLOCK] commands attempts to put a write lock
+   on the specified region.
+   The [F_RLOCK] and [F_TRLOCK] commands attempts to put a read lock
+   on the specified region.
+   If one or several locks put by another process prevent the current process
+   from acquiring the lock, [F_LOCK] and [F_RLOCK] block until these locks
+   are removed, while [F_TLOCK] and [F_TRLOCK] fail immediately with an
+   exception.
+   The [F_ULOCK] removes whatever locks the current process has on
+   the specified region.
+   Finally, the [F_TEST] command tests whether a write lock can be
+   acquired on the specified region, without actually putting a lock.
+   It returns immediately if successful, or fails otherwise. *)
 
 
 (** {6 Signals}
