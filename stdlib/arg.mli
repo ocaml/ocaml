@@ -94,12 +94,13 @@ val parse :
     own [-help] and [--help] options in [speclist].
 *)
 
-val parse_argv : string array ->
+val parse_argv : ?current: int ref -> string array ->
   (key * spec * doc) list -> anon_fun -> usage_msg -> unit
-(** [Arg.parse_argv args speclist anon_fun usage_msg] parses the array
-  [args] as if it were the command line.  It uses and updates the
-  value of [Arg.current].  You must set [Arg.current] before calling
-  [parse_argv], and restore it afterward if needed.
+(** [Arg.parse_argv ~current args speclist anon_fun usage_msg] parses
+  the array [args] as if it were the command line.  It uses and updates
+  the value of [~current] (if given), or [Arg.current].  You must set
+  it before calling [parse_argv].  The initial value of [current]
+  is the index of the program name (argument 0) in the array.
   If an error occurs, [Arg.parse_argv] raises [Arg.Bad] with
   the error message as argument.  If option [-help] or [--help] is
   given, [Arg.parse_argv] raises [Arg.Help] with the help message
@@ -122,4 +123,7 @@ val usage : (key * spec * doc) list -> usage_msg -> unit
 
 val current : int ref
 (** Position (in {!Sys.argv}) of the argument being processed.  You can
-    change this value, e.g. to force {!Arg.parse} to skip some arguments.*)
+    change this value, e.g. to force {!Arg.parse} to skip some arguments.
+    {!Arg.parse} uses the initial value of {!Arg.current} as the index of
+    argument 0 (the program name) and starts parsing arguments
+    at the next element. *)

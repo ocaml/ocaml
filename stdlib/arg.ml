@@ -85,10 +85,12 @@ let usage speclist errmsg =
 
 let current = ref 0;;
 
-let parse_argv argv speclist anonfun errmsg =
+let parse_argv ?(current=current) argv speclist anonfun errmsg =
+  let l = Array.length argv in
   let b = Buffer.create 200 in
+  let initpos = !current in
   let stop error =
-    let progname = if Array.length argv > 0 then argv.(0) else "(?)" in
+    let progname = if initpos < l then argv.(initpos) else "(?)" in
     begin match error with
       | Unknown "-help" -> ()
       | Unknown "--help" -> ()
@@ -107,7 +109,6 @@ let parse_argv argv speclist anonfun errmsg =
     then raise (Help (Buffer.contents b))
     else raise (Bad (Buffer.contents b))
   in
-  let l = Array.length argv in
   incr current;
   while !current < l do
     let s = argv.(!current) in
@@ -186,7 +187,6 @@ let parse_argv argv speclist anonfun errmsg =
 ;;
 
 let parse l f msg =
-  current := 0;
   try
     parse_argv Sys.argv l f msg;
   with
