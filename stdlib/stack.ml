@@ -27,6 +27,11 @@ let pop s =
     hd::tl -> s.c <- tl; hd
   | []     -> raise Empty
 
+let top s =
+  match s.c with
+    hd::_ -> hd
+  | []     -> raise Empty
+
 let length s = List.length s.c
 
 let iter f s = List.iter f s.c
