@@ -442,7 +442,8 @@ static int bigarray_compare(value v1, value v2)
   { type * p1 = b1->data; type * p2 = b2->data; \
     for (n = 0; n < num_elts; n++) { \
       type e1 = *p1++; type e2 = *p2++; \
-      if (e1 != e2) return e1 < e2 ? -1 : 1; \
+      if (e1 < e2) return -1; \
+      if (e1 > e2) return 1; \
     } \
     return 0; \
   }
