@@ -24,16 +24,25 @@ type lexbuf =
     mutable lex_curr_pos : int;
     mutable lex_last_pos : int;
     mutable lex_last_action : int;
-    mutable lex_eof_reached : bool }
+    mutable lex_eof_reached : bool;
+    mutable lex_mem : int array}
 
 type lex_tables =
   { lex_base: string;
     lex_backtrk: string;
     lex_default: string;
     lex_trans: string;
-    lex_check: string }
+    lex_check: string;
+    lex_base_code : string;
+    lex_backtrk_code : string;
+    lex_default_code : string;
+    lex_trans_code : string;  
+    lex_check_code : string;
+    lex_code: string;}
 
 external engine: lex_tables -> int -> lexbuf -> int = "lex_engine"
+external new_engine: lex_tables -> int -> lexbuf -> int = "new_lex_engine"
+
 
 let lex_refill read_fun aux_buffer lexbuf =
   let read =
@@ -80,7 +89,13 @@ let lex_refill read_fun aux_buffer lexbuf =
     lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos - s;
     lexbuf.lex_start_pos <- 0;
     lexbuf.lex_last_pos <- lexbuf.lex_last_pos - s;
-    lexbuf.lex_buffer_len <- lexbuf.lex_buffer_len - s
+    lexbuf.lex_buffer_len <- lexbuf.lex_buffer_len - s ;
+    let t = lexbuf.lex_mem in
+    for i = 0 to Array.length t-1 do
+      let v = t.(i) in
+      if v >= 0 then
+        t.(i) <- v-s
+    done
   end;
   (* There is now enough space at the end of the buffer *)
   String.blit aux_buffer 0
@@ -97,6 +112,7 @@ let from_function f =
     lex_curr_pos = 0;
     lex_last_pos = 0;
     lex_last_action = 0;
+    lex_mem = [||] ;
     lex_eof_reached = false }
 
 let from_channel ic =
@@ -111,6 +127,7 @@ let from_string s =
     lex_curr_pos = 0;
     lex_last_pos = 0;
     lex_last_action = 0;
+    lex_mem = [||] ;
     lex_eof_reached = true }
 
 let lexeme lexbuf =
@@ -118,6 +135,30 @@ let lexeme lexbuf =
   let s = String.create len in
   String.unsafe_blit lexbuf.lex_buffer lexbuf.lex_start_pos s 0 len;
   s
+
+let sub_lexeme lexbuf i1 i2 =
+  let len = i2-i1 in
+  let s = String.create len in
+  String.unsafe_blit lexbuf.lex_buffer i1 s 0 len;
+  s
+
+let sub_lexeme_opt lexbuf i1 i2 =
+  if i1 >= 0 then begin
+    let len = i2-i1 in
+    let s = String.create len in
+    Some s
+  end else begin
+    None
+  end
+
+let sub_lexeme_char lexbuf i = lexbuf.lex_buffer.[i]
+
+let sub_lexeme_char_opt lexbuf i =
+  if i >= 0 then
+    Some lexbuf.lex_buffer.[i]
+  else
+    None
+
 
 let lexeme_char lexbuf i =
   String.get lexbuf.lex_buffer (lexbuf.lex_start_pos + i)

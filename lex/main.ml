@@ -16,14 +16,22 @@
 
 open Syntax
 open Lexgen
-open Output
 
+let ml_automata = ref false
+let source_name = ref ""
+
+let usage = "ocamlex [-option]* sourcefile"
+
+let _ =
+  Arg.parse
+    ["-ml", Arg.Set ml_automata, " outputed automaton is a caml program" ;
+    ] 
+    (fun name -> source_name := name)
+    usage
+
+  
 let main () =
-  if Array.length Sys.argv != 2 then begin
-    prerr_endline "Usage: ocamllex <input file>";
-    exit 2
-  end;
-  let source_name = Sys.argv.(1) in
+  let source_name = !source_name in
   let dest_name =
     if Filename.check_suffix source_name ".mll" then
       Filename.chop_suffix source_name ".mll" ^ ".ml"
@@ -34,11 +42,23 @@ let main () =
   let lexbuf = Lexing.from_channel ic in
   try
     let def = Parser.lexer_definition Lexer.main lexbuf in
-    let (entries, transitions) = Lexgen.make_dfa def.entrypoints in
+    let (entries, transitions) = Lexgen.make_dfa  def.entrypoints in
+(*
+    let (entries, transitions) = Lexmin.zyva (entries,transitions) in
     let tables = Compact.compact_tables transitions in
     Output.output_lexdef source_name ic oc
                          def.header tables entries def.trailer;
-    close_in ic;
+*)
+    if !ml_automata then begin
+      Outputbis.output_lexdef
+        source_name ic oc
+        def.header entries transitions def.trailer
+    end else begin
+       let tables = Compact.compact_tables transitions in
+       Output.output_lexdef source_name ic oc
+         def.header tables entries def.trailer
+    end ;
+   close_in ic;
     close_out oc
   with exn ->
     close_in ic;
@@ -54,6 +74,10 @@ let main () =
         Printf.fprintf stderr
           "File \"%s\", line %d, character %d: %s.\n"
           source_name line col msg
+    | Lexgen.Memory_overflow ->
+        Printf.fprintf stderr
+          "File \"%s\":\n Position memory overflow, too many bindings\n"
+          source_name        
     | Output.Table_overflow ->
         Printf.fprintf stderr
           "File \"%s\":\ntransition table overflow, automaton is too big\n"
@@ -63,5 +87,5 @@ let main () =
     end;
     exit 3
 
-let _ = Printexc.catch main (); exit 0
+let _ = (* Printexc.catch *) main (); exit 0
 

@@ -56,14 +56,19 @@ let abstraction =
 let application =
   List.fold_left (fun f (_,a) -> <:expr< $f$ $lid:a$ >>)
 
+let get_num (num,code) =
+  assert (code=[]) ;
+  num
+
 let output_entry e =
   let args = make_alias 0 (<:patt< lexbuf >> :: e.auto_args) in
   let f = "__ocaml_lex_rec_" ^ e.auto_name ^ "_rec" in
   let call_f = application <:expr< $lid:f$ >> args in
-  let inistate = <:expr< $int:string_of_int e.auto_initial_state$ >> in
+  let inistate = <:expr< $int:string_of_int (get_num e.auto_initial_state)$ >> in
   let cases = 
     List.map
-      (fun (num, (loc,e)) ->
+      (fun (num, t_env, (loc,e)) ->
+         assert (t_env=[]) ;
          <:patt< $int:string_of_int num$ >>,
          None, (* when ... *)
          e
@@ -116,24 +121,20 @@ let named_regexps =
 let regexp_for_string s =
   let rec re_string n =
     if n >= String.length s then Epsilon
-    else if succ n = String.length s then Characters([Char.code (s.[n])])
-    else Sequence(Characters([Char.code (s.[n])]), re_string (succ n))
+    else if succ n = String.length s then
+      Characters (Cset.singleton (Char.code s.[n]))
+    else
+      Sequence
+        (Characters(Cset.singleton (Char.code s.[n])),
+         re_string (succ n))
   in re_string 0
 
-let char_class c1 c2 =
-  let rec cl n =
-    if n > c2 then [] else n :: cl(succ n)
-  in cl c1
+let char_class c1 c2 = Cset.interval c1 c2
 
-let all_chars = char_class 0 255
-
-let rec subtract l1 l2 =
-  match l1 with
-    [] -> []
-  | a::r -> if List.mem a l2 then subtract r l2 else a :: subtract r l2
+let all_chars = Cset.all_chars
 
 let () =
-  Hashtbl.add named_regexps "eof" (Characters [256])
+  Hashtbl.add named_regexps "eof" (Characters Cset.eof)
 
 (* The parser *)
 
@@ -176,7 +177,8 @@ EXTEND
  
  definition: [
    [ x=LIDENT; pl = LIST0 Pcaml.patt; "="; LIDENT "parse"; 
-     OPT "|"; l = LIST0 [ r=regexp; a=action -> (r,a) ] SEP "|" -> ((x,pl),l) ]
+     OPT "|"; l = LIST0 [ r=regexp; a=action -> (r,a) ] SEP "|" ->
+     {name=x ; shortest=false ; args=pl ; clauses = l} ]
  ];
 
  action: [
@@ -203,7 +205,7 @@ EXTEND
    | r = regexp; "?" -> Alternative(r, Epsilon)
    | "("; r = regexp; ")" -> r
    | "_" -> Characters all_chars
-   | c = CHAR -> Characters [char c]
+   | c = CHAR -> Characters (Cset.singleton (char c))
    | s = STRING -> regexp_for_string (Token.eval_string s)
    | "["; cc = ch_class; "]" ->  Characters cc
    | x = LIDENT ->
@@ -215,10 +217,10 @@ EXTEND
  ];
 
  ch_class: [
-   [ "^"; cc = ch_class -> subtract all_chars cc]
- | [ c1 = CHAR; "-"; c2 = CHAR -> char_class (char c1) (char c2)
-   | c = CHAR -> [char c]
-   | cc1 = ch_class; cc2 = ch_class -> cc1 @ cc2
+   [ "^"; cc = ch_class -> Cset.complement cc]
+ | [ c1 = CHAR; "-"; c2 = CHAR -> Cset.interval (char c1) (char c2)
+   | c = CHAR -> Cset.singleton (char c)
+   | cc1 = ch_class; cc2 = ch_class -> Cset.union cc1 cc2
    ]
  ];
 END

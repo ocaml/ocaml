@@ -27,7 +27,8 @@ type lexbuf =
     mutable lex_curr_pos : int;
     mutable lex_last_pos : int;
     mutable lex_last_action : int;
-    mutable lex_eof_reached : bool }
+    mutable lex_eof_reached : bool ;
+    mutable lex_mem : int array }
 (** The type of lexer buffers. A lexer buffer is the argument passed
    to the scanning functions defined by the generated scanners.
    The lexer buffer holds the current state of the scanner, plus
@@ -90,11 +91,24 @@ val lexeme_end : lexbuf -> int
 (** The following definitions are used by the generated scanners only.
    They are not intended to be used by user programs. *)
 
+val sub_lexeme : lexbuf -> int -> int -> string
+val sub_lexeme_opt : lexbuf -> int -> int -> string option
+val sub_lexeme_char : lexbuf -> int -> char
+val sub_lexeme_char_opt : lexbuf -> int -> char option
+
 type lex_tables =
   { lex_base : string;
     lex_backtrk : string;
     lex_default : string;
     lex_trans : string;
-    lex_check : string }
+    lex_check : string;
+    lex_base_code : string;
+    lex_backtrk_code : string;
+    lex_default_code : string;
+    lex_trans_code : string;  
+    lex_check_code : string;
+    lex_code: string;}
 
 external engine : lex_tables -> int -> lexbuf -> int = "lex_engine"
+external new_engine : lex_tables -> int -> lexbuf -> int = "new_lex_engine"
+

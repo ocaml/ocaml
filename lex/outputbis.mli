@@ -2,7 +2,7 @@
 (*                                                                     *)
 (*                           Objective Caml                            *)
 (*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*            Luc Maranget projet Moscova INRIA Rocquencourt           *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
@@ -11,23 +11,10 @@
 (***********************************************************************)
 
 (* $Id$ *)
-
-(* The shallow abstract syntax *)
-
-type location =
-    { start_pos: int;
-      end_pos: int;
-      start_line: int;
-      start_col: int }
-
-type regular_expression =
-    Epsilon
-  | Characters of int list
-  | Sequence of regular_expression * regular_expression
-  | Alternative of regular_expression * regular_expression
-  | Repetition of regular_expression
-
-type lexer_definition =
-    { header: location;
-      entrypoints: ((string * unit) * (regular_expression * location) list) list;
-      trailer: location }
+val output_lexdef :
+  string ->
+  in_channel ->
+  out_channel ->
+  Syntax.location ->
+  ('a, Syntax.location) Lexgen.automata_entry list ->
+  Lexgen.automata array -> Syntax.location -> unit

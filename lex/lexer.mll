@@ -67,22 +67,7 @@ let handle_lexical_error fn lexbuf =
     fn lexbuf
   with Lexical_error(msg, _, _) ->
     raise(Lexical_error(msg, line, column))
-
-let warning lexbuf msg =
-  Printf.eprintf "ocamllex warning:\nFile \"%s\", line %d, character %d: %s.\n"
-                  Sys.argv.(1) !line_num
-                  (Lexing.lexeme_start lexbuf - !line_start_pos) msg;
-  flush stderr;
-;;
-
 }
-
-let identstart = 
-  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255']
-let identbody = 
-  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
-let backslash_escapes =
-  ['\\' '"' '\'' 'n' 't' 'b' 'r']
 
 rule main = parse
     [' ' '\013' '\009' '\012' ] + 
@@ -95,14 +80,15 @@ rule main = parse
     { comment_depth := 1;
       handle_lexical_error comment lexbuf;
       main lexbuf }
-  | '_'  { Tunderscore }
-  | identstart identbody *
+  | ['A'-'Z' 'a'-'z'] ['A'-'Z' 'a'-'z' '\'' '_' '0'-'9'] *
     { match Lexing.lexeme lexbuf with
         "rule" -> Trule
       | "parse" -> Tparse
+      | "shortest" -> Tparse_shortest
       | "and" -> Tand
       | "eof" -> Teof
       | "let" -> Tlet
+      | "as"  -> Tas
       | s -> Tident s }
   | '"' 
     { reset_string_buffer();
@@ -110,7 +96,7 @@ rule main = parse
       Tstring(get_stored_string()) }
   | "'" [^ '\\'] "'" 
     { Tchar(Char.code(Lexing.lexeme_char lexbuf 1)) }
-  | "'" '\\' backslash_escapes "'" 
+  | "'" '\\' ['\\' '\'' 'n' 't' 'b' 'r'] "'" 
     { Tchar(Char.code(char_for_backslash (Lexing.lexeme_char lexbuf 2))) }
   | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'" 
     { Tchar(Char.code(char_for_decimal_code lexbuf 2)) }
@@ -124,6 +110,7 @@ rule main = parse
                start_line = l1; start_col = n1 - s1}) }
   | '='  { Tequal }
   | '|'  { Tor }
+  | '_'  { Tunderscore }
   | '['  { Tlbracket }
   | ']'  { Trbracket }
   | '*'  { Tstar }
@@ -151,9 +138,9 @@ and action = parse
       string lexbuf;
       reset_string_buffer();
       action lexbuf }
-  | "'" [^ '\\' '\''] "'" 
+  | "'" [^ '\\'] "'" 
     { action lexbuf }
-  | "'" '\\' backslash_escapes "'" 
+  | "'" '\\' ['\\' '\'' 'n' 't' 'b' 'r'] "'" 
     { action lexbuf }
   | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'" 
     { action lexbuf }
@@ -177,7 +164,7 @@ and string = parse
     { line_start_pos := Lexing.lexeme_end lexbuf;
       incr line_num;
       string lexbuf }
-  | '\\' backslash_escapes
+  | '\\' ['\\' '"' 'n' 't' 'b' 'r'] 
     { store_string_char(char_for_backslash(Lexing.lexeme_char lexbuf 1));
       string lexbuf }
   | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] 
@@ -189,13 +176,6 @@ and string = parse
     { store_string_char '\010';
       line_start_pos := Lexing.lexeme_end lexbuf;
       incr line_num;
-      string lexbuf }
-  | '\\' _
-    { warning lexbuf
-              (Printf.sprintf "illegal backslash escape in string: `\\%c'"
-                              (Lexing.lexeme_char lexbuf 1));
-      store_string_char(Lexing.lexeme_char lexbuf 0);
-      store_string_char(Lexing.lexeme_char lexbuf 1);
       string lexbuf }
   | _ 
     { store_string_char(Lexing.lexeme_char lexbuf 0);
@@ -216,7 +196,7 @@ and comment = parse
       { comment lexbuf }
   | "'" [^ '\\' '\''] "'"
       { comment lexbuf }
-  | "'\\" backslash_escapes "'"
+  | "'\\" ['\\' '\'' 'n' 't' 'b' 'r'] "'"
       { comment lexbuf }
   | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { comment lexbuf }

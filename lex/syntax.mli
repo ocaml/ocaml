@@ -22,12 +22,20 @@ type location =
 
 type regular_expression =
     Epsilon
-  | Characters of int list
+  | Characters of Cset.t
+  | Eof
   | Sequence of regular_expression * regular_expression
   | Alternative of regular_expression * regular_expression
   | Repetition of regular_expression
+  | Bind of regular_expression * string
 
-type lexer_definition =
+type ('arg,'action) entry =
+  {name:string ;
+   shortest : bool ;
+   args : 'arg ;
+   clauses : (regular_expression * 'action) list}
+
+type  lexer_definition =
     { header: location;
-      entrypoints: ((string * unit) * (regular_expression * location) list) list;
+      entrypoints: ((unit, location) entry) list;
       trailer: location }
