@@ -262,7 +262,7 @@ let type_format loc fmt =
             newty (Tarrow(newty (Tarrow(ty_input, ty_result)),
                           scan_format (j+1)))
         | c ->
-            raise(Error(loc, Bad_format(String.sub fmt i (j-i))))
+            raise(Error(loc, Bad_format(String.sub fmt i (j-i+1))))
         end
     | _ -> scan_format (i+1) in
   newty
