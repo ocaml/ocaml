@@ -128,7 +128,7 @@ let rec close fenv cenv = function
       | (ufunct, _) ->
           (Ugeneric_apply(ufunct, close_list fenv cenv args), Value_unknown)
       end
-  | Llet(id, lam, body) ->
+  | Llet(str, id, lam, body) ->
       let (ulam, alam) = close_named fenv cenv id lam in
       let (ubody, abody) = close (Tbl.add id alam fenv) cenv body in
       (Ulet(id, ulam, ubody), abody)
