@@ -132,8 +132,9 @@ See `caml-types-location-re' for annotation file format.
       (delete-overlay caml-types-expr-ovl))))
 
 (defun caml-types-preprocess (type-file type-buf)
-  (let ((type-date (nth 5 (file-attributes type-file)))
-        (target-date (nth 5 (file-attributes (buffer-file-name)))))
+  (let* ((type-date (nth 5 (file-attributes type-file)))
+         (target-file (file-name-nondirectory (buffer-file-name)))
+         (target-date (nth 5 (file-attributes target-file))))
     (unless (and caml-types-annotation-tree
                  (not (caml-types-date< caml-types-annotation-date type-date)))
       (if (caml-types-date< type-date target-date)
@@ -142,7 +143,7 @@ See `caml-types-location-re' for annotation file format.
       (let ((tree (with-current-buffer type-buf
                     (widen)
                     (goto-char (point-min))
-                    (caml-types-build-tree))))
+                    (caml-types-build-tree target-file))))
         (setq caml-types-annotation-tree tree
               caml-types-annotation-date type-date)
         (message "")))))
@@ -159,7 +160,7 @@ See `caml-types-location-re' for annotation file format.
 ;  () if this node does not correspond to an annotated interval
 ;  (type-start . type-end)  address of the annotation in the .annot file
 
-(defun caml-types-build-tree ()
+(defun caml-types-build-tree (target-file)
   (let ((stack ())
         (accu ())
         (type-info ()))
@@ -172,24 +173,29 @@ See `caml-types-location-re' for annotation file format.
             (r-line (string-to-int (match-string 8)))
             (r-bol (string-to-int (match-string 9)))
             (r-cnum (string-to-int (match-string 10))))
-        (while (and (re-search-forward "^" () t)
-                    (not (looking-at "type"))
-                    (not (looking-at "\\\"")))
-          (forward-char 1))
-        (setq type-info
-              (if (looking-at "^type(\n\\(  \\([^\n)]\\|.)\\|\n[^)]\\)*\n\\))")
-                  (cons (match-beginning 1) (match-end 1))))
-        (setq accu ())
-        (while (and stack
-                    (caml-types-pos-contains l-cnum r-cnum (car stack)))
-          (setq accu (cons (car stack) accu))
-          (setq stack (cdr stack)))
-        (let* ((left-pos (vector l-file l-line l-bol l-cnum))
-               (right-pos (vector r-file r-line r-bol r-cnum))
-               (node (caml-types-make-node left-pos right-pos type-info accu)))
-          (setq stack (cons node stack)))))
+        (unless (not (and (string= l-file target-file)
+                          (string= r-file target-file)))
+          (while (and (re-search-forward "^" () t)
+                      (not (looking-at "type"))
+                      (not (looking-at "\\\"")))
+            (forward-char 1))
+          (setq type-info
+                (if (looking-at
+                            "^type(\n\\(  \\([^\n)]\\|.)\\|\n[^)]\\)*\n\\))")
+                    (cons (match-beginning 1) (match-end 1))))
+          (setq accu ())
+          (while (and stack
+                      (caml-types-pos-contains l-cnum r-cnum (car stack)))
+            (setq accu (cons (car stack) accu))
+            (setq stack (cdr stack)))
+          (let* ((left-pos (vector l-file l-line l-bol l-cnum))
+                 (right-pos (vector r-file r-line r-bol r-cnum))
+                 (node (caml-types-make-node left-pos right-pos type-info
+                                             accu)))
+            (setq stack (cons node stack))))))
     (if (null stack)
-        (vector)
+        (let ((dummy-pos (vector "" 0 0 0)))
+          (vector dummy-pos dummy-pos ()))
       (let* ((left-pos (elt (car (last stack)) 0))
              (right-pos (elt (car stack) 1)))
         (if (null (cdr stack))
@@ -213,17 +219,36 @@ See `caml-types-location-re' for annotation file format.
        (>= r-cnum (elt (elt node 1) 3))))
 
 (defun caml-types-find-location (targ-pos curr node)
-  (let ((i 3))
-    (if (not (caml-types-pos-inside targ-pos node))
-        curr
-      (while (and (< i (length node))
-                  (not (caml-types-pos-inside targ-pos (elt node i))))
-        (setq i (1+ i)))
-      (if (elt node 2)
-          (setq curr node))
-      (if (< i (length node))
-          (caml-types-find-location targ-pos curr (elt node i))
+  (if (not (caml-types-pos-inside targ-pos node))
+      curr
+    (if (elt node 2)
+        (setq curr node))
+    (let ((i (caml-types-search node targ-pos)))
+      (if (and (> i 3)
+               (caml-types-pos-inside targ-pos (elt node (1- i))))
+          (caml-types-find-location targ-pos curr (elt node (1- i)))
         curr))))
+
+; trouve le premier fils qui commence apres la position
+; ou (length node) si tous commencent avant
+;(defun caml-types-search (node pos)
+;  (let ((min 3)
+;        (max (length node))
+;        med)
+;    (while (< min max)
+;      (setq med (/ (+ min max) 2))
+;      (if (caml-types-pos<= (elt (elt node med) 0) pos)
+;          (setq min (1+ med))
+;        (setq max med)))
+;    min))
+
+; a remplacer par une dichotomie
+(defun caml-types-search (node pos)
+  (let ((i 3))
+    (while (and (< i (length node))
+                (caml-types-pos<= (elt (elt node i) 0) targ-pos))
+      (setq i (1+ i)))
+    i))
 
 (defun caml-types-pos-inside (pos node)
   (let ((left-pos (elt node 0))
@@ -246,9 +271,7 @@ See `caml-types-location-re' for annotation file format.
      (t
       (setq left nleft
             right nright)
-      (while (and (< i (length node))
-                  (caml-types-pos<= (elt (elt node i) 0) targ-pos))
-        (setq i (1+ i)))
+      (setq i (caml-types-search node targ-pos))
       (if (< i (length node))
           (setq right (elt (elt node i) 0)))
       (if (> i 3)
