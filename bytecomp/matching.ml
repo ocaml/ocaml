@@ -411,7 +411,8 @@ let for_let loc param pat body =
 exception Cannot_flatten
 
 let rec flatten_patterns size = function
-    ({pat_desc = Tpat_tuple args} :: _, action) :: rem ->
+    [] -> []
+  | ({pat_desc = Tpat_tuple args} :: _, action) :: rem ->
       (args, action) :: flatten_patterns size rem
   | ({pat_desc = Tpat_any} :: patl, action) :: rem ->
       (replicate_list any_pat size, action) :: flatten_patterns size rem
