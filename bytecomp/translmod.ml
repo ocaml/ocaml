@@ -215,13 +215,18 @@ let transl_store_structure glob map prims str =
   | Tstr_exception(id, decl) :: rem ->
       let lam = transl_exception id (field_path (global_path glob) id) decl in
       Lsequence(Llet(Strict, id, lam, store_ident id),
-                transl_store (add_ident id subst) rem)
+                transl_store (add_ident false id subst) rem)
   | Tstr_module(id, modl) :: rem ->
       let lam =
         transl_module Tcoerce_none (field_path (global_path glob) id) modl in
-      Lsequence(Llet(Strict, id,
-                     subst_lambda subst lam, store_ident id),
-                transl_store (add_ident id subst) rem)
+      (* Careful: the module value stored in the global may be different
+         from the local module value, in case a coercion is applied.
+         If so, keep using the local module value (id) in the remainder of
+         the compilation unit (add_ident true returns subst unchanged).
+         If not, we can use the value from the global
+         (add_ident true adds id -> Pgetglobal... to subst). *)
+      Llet(Strict, id, subst_lambda subst lam,
+        Lsequence(store_ident id, transl_store(add_ident true id subst) rem))
   | Tstr_modtype(id, decl) :: rem ->
       transl_store subst rem
   | Tstr_open path :: rem ->
@@ -245,20 +250,24 @@ let transl_store_structure glob map prims str =
       let init_val = apply_coercion cc (Lvar id) in
       Lprim(Psetfield(pos, false), [Lprim(Pgetglobal glob, []); init_val])
     with Not_found ->
-      fatal_error("Translmod.transl_store_structure: " ^ Ident.unique_name id)
+      fatal_error("Translmod.store_ident: " ^ Ident.unique_name id)
 
   and store_idents idlist =
     make_sequence store_ident idlist
 
-  and add_ident id subst =
+  and add_ident may_coerce id subst =
     try
       let (pos, cc) = Ident.find_same id map in
-      Ident.add id (Lprim(Pfield pos, [Lprim(Pgetglobal glob, [])])) subst
+      match cc with
+        Tcoerce_none ->
+          Ident.add id (Lprim(Pfield pos, [Lprim(Pgetglobal glob, [])])) subst
+      | _ ->
+          if may_coerce then subst else assert false
     with Not_found ->
-      fatal_error("Translmod.transl_store_structure: " ^ Ident.unique_name id)
+      assert false
 
   and add_idents idlist subst =
-    List.fold_right add_ident idlist subst
+    List.fold_right (add_ident false) idlist subst
 
   and store_primitive (pos, prim) cont =
     Lsequence(Lprim(Psetfield(pos, false),
