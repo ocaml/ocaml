@@ -1,6 +1,5 @@
 (* Pretty-printing of C-- code *)
 
-val constant : Cmm.constant -> unit
 val machtype_component : Cmm.machtype_component -> unit
 val machtype : Cmm.machtype_component array -> unit
 val comparison : Cmm.comparison -> unit

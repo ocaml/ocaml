@@ -20,7 +20,9 @@ type operation =
     Imove
   | Ispill
   | Ireload
-  | Iconstant of Cmm.constant
+  | Iconst_int of int
+  | Iconst_float of string
+  | Iconst_symbol of string
   | Icall_ind
   | Icall_imm of string
   | Itailcall_ind
@@ -59,7 +61,8 @@ and instruction_desc =
 type fundecl =
   { fun_name: string;
     fun_args: Reg.t array;
-    fun_body: instruction }
+    fun_body: instruction;
+    fun_fast: bool }
 
 let rec dummy_instr =
   { desc = Iend; 
@@ -77,6 +80,9 @@ let end_instr () =
 
 let instr_cons d a r n =
   { desc = d; next = n; arg = a; res = r; live = Reg.Set.empty }
+
+let instr_cons_live d a r l n =
+  { desc = d; next = n; arg = a; res = r; live = l }
 
 let rec instr_iter f i =
   match i.desc with

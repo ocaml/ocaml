@@ -30,7 +30,8 @@ and instruction_desc =
 
 type fundecl =
   { fun_name: string;
-    fun_body: instruction }
+    fun_body: instruction;
+    fun_fast: bool }
 
 (* Invert a test *)
 
@@ -137,12 +138,12 @@ let rec linear i n =
   | Iswitch(index, cases) ->
       let lbl_cases = Array.new (Array.length cases) 0 in
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in
-      let n2 = ref n1 in
+      let n2 = ref (discard_dead_code n1) in
       for i = Array.length cases - 1 downto 0 do
         let (lbl_case, ncase) =
                 get_label(linear cases.(i) (add_branch lbl_end !n2)) in
         lbl_cases.(i) <- lbl_case;
-        n2 := ncase
+        n2 := discard_dead_code ncase
       done;
       copy_instr (Lswitch(Array.map (fun n -> lbl_cases.(n)) index)) i !n2
   | Iloop body ->
@@ -172,5 +173,6 @@ let rec linear i n =
 
 let fundecl f =
   { fun_name = f.Mach.fun_name;
-    fun_body = linear f.Mach.fun_body end_instr }
+    fun_body = linear f.Mach.fun_body end_instr;
+    fun_fast = f.Mach.fun_fast }
 

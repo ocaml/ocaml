@@ -18,11 +18,11 @@ type addressing_expr =
   | Aadd of expression * expression
 
 let rec select_addr = function
-    Cconst(Const_symbol s) ->
+    Cconst_symbol s ->
       (Asymbol s, 0)
-  | Cop((Caddi | Cadda), [arg; Cconst(Const_int m)]) ->
+  | Cop((Caddi | Cadda), [arg; Cconst_int m]) ->
       let (a, n) = select_addr arg in (a, n + m)
-  | Cop((Caddi | Cadda), [Cconst(Const_int m); arg]) ->
+  | Cop((Caddi | Cadda), [Cconst_int m; arg]) ->
       let (a, n) = select_addr arg in (a, n + m)
   | Cop((Caddi | Cadda), [arg1; arg2]) ->
       begin match (select_addr arg1, select_addr arg2) with
@@ -47,7 +47,7 @@ let select_addressing exp =
 
 let select_oper op args =
   match (op, args) with
-    (Cmuli, [arg1; Cconst(Const_int n)]) ->
+    (Cmuli, [arg1; Cconst_int n]) ->
       let shift = Misc.log2 n in
       if n = 1 lsl shift
       then (Iintop_imm(Ilsl, shift), arg1)

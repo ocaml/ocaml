@@ -1,15 +1,16 @@
 (* Pseudo-registers *)
 
 type t =
-  { mutable name: string;
-    stamp: int;
-    typ: Cmm.machtype_component;
-    mutable loc: location;
-    mutable interf: t list;
-    mutable prefer: (t * int) list;
-    mutable degree: int;
-    mutable spill_cost: int;
-    mutable visited: bool }
+  { mutable name: string;               (* Name (for printing) *)
+    stamp: int;                         (* Unique stamp *)
+    typ: Cmm.machtype_component;        (* Type of contents *)
+    mutable loc: location;              (* Actual location *)
+    mutable spill: bool;                (* "true" to force stack allocation  *)
+    mutable interf: t list;             (* Other regs live simultaneously *)
+    mutable prefer: (t * int) list;     (* Preferences for other regs *)
+    mutable degree: int;                (* Number of other regs live sim. *)
+    mutable spill_cost: int;            (* Estimate of spilling cost *)
+    mutable visited: bool }             (* For graph walks *)
 
 and location =
     Unknown

@@ -75,11 +75,11 @@ let record_frame live =
 
 let emit_frame fd =
   `	.quad	{emit_label fd.fd_lbl} + 4\n`;
-  `	.half	{emit_int fd.fd_frame_size}\n`;
-  `	.half	{emit_int (List.length fd.fd_live_offset)}\n`;
+  `	.word	{emit_int fd.fd_frame_size}\n`;
+  `	.word	{emit_int (List.length fd.fd_live_offset)}\n`;
   List.iter
     (fun n ->
-      `	.half	{emit_int n}\n`)
+      `	.word	{emit_int n}\n`)
     fd.fd_live_offset;
   `	.align	3\n`
 
@@ -89,7 +89,7 @@ let int_reg_number = [|
   (* 0-8 *)    0; 1; 2; 3; 4; 5; 6; 7; 8;
   (* 9-12 *)   9; 10; 11; 12;
   (* 13-18 *)  16; 17; 18; 19; 20; 21;
-  (* 19-20 *)  22; 23
+  (* 19-21 *)  22; 23; 31
 |]
   
 let float_reg_number = [|
@@ -249,19 +249,14 @@ let emit_instr i =
         | (_, _) ->
             fatal_error "Emit_alpha: Imove"
         end
-    | Lop(Iconstant cst) ->
-        begin match cst with
-          Const_int 0 | Const_pointer 0 ->
-            `	clr	{emit_reg i.res.(0)}\n`
-        | Const_int n ->
-            `	ldiq	{emit_reg i.res.(0)}, {emit_int n}\n`
-        | Const_float s ->
-            `	ldit	{emit_reg i.res.(0)}, {emit_string s}\n`
-        | Const_symbol s ->
-            `	lda	{emit_reg i.res.(0)}, {emit_symbol s}\n`
-        | Const_pointer n ->
-            `	ldiq	{emit_reg i.res.(0)}, {emit_int n}\n`
-        end
+    | Lop(Iconst_int 0) ->
+        `	clr	{emit_reg i.res.(0)}\n`
+    | Lop(Iconst_int n) ->
+        `	ldiq	{emit_reg i.res.(0)}, {emit_int n}\n`
+    | Lop(Iconst_float s) ->
+        `	ldit	{emit_reg i.res.(0)}, {emit_string s}\n`
+    | Lop(Iconst_symbol s) ->
+        `	lda	{emit_reg i.res.(0)}, {emit_symbol s}\n`
     | Lop(Icall_ind) ->
         `	mov	{emit_reg i.arg.(0)}, $27\n`;
         liveregs i live_27;
@@ -271,7 +266,7 @@ let emit_instr i =
         begin try
           let entry_point = Hashtbl.find nogp_entry_points s in
           liveregs i 0;
-          `{record_frame i.live}	bsr	{emit_label entry_point}\n`
+          `{record_frame i.live}	bsr	{emit_label entry_point} # {emit_symbol s}\n`
         with Not_found ->
           `	lda	$27, {emit_symbol s}\n`;
           liveregs i live_27;
@@ -458,22 +453,21 @@ let emit_instr i =
               `	fbeq	$f30, {emit_label lbl}\n`
         end
     | Lswitch jumptbl ->
-        (* We're assuming that the first case follows directly the switch
-           instruction, as linearize does. *)
+        (* Switches with 1 or 2 cases have normally been eliminated before *)
+        (* Do something for 3 and 4 cases *)
         begin match Array.length jumptbl with
-          0 -> ()       (* Should not happen... *)
-        | 1 -> ()       (* Should not happen... *)
-        | 2 ->
-            `	bne	{emit_reg i.arg.(0)}, {emit_label jumptbl.(1)}\n`
-        | 3 ->
+          3 ->
+            (* Should eliminate the branches that just fall through *)
             `	subq	{emit_reg i.arg.(0)}, 1, $25\n`;
+            `	blt	$25, {emit_label jumptbl.(0)}\n`;
             `	beq	$25, {emit_label jumptbl.(1)}\n`;
-            `	bgt	$25, {emit_label jumptbl.(2)}\n`
+            `	br	{emit_label jumptbl.(2)}\n`
         | 4 ->
+            `	beq	{emit_reg i.arg.(0)}, {emit_label jumptbl.(0)}\n`;
             `	subq	{emit_reg i.arg.(0)}, 2, $25\n`;
+            `	blt	$25, {emit_label jumptbl.(1)}\n`;
             `	beq	$25, {emit_label jumptbl.(2)}\n`;
-            `	bgt	$25, {emit_label jumptbl.(3)}\n`;
-            `	bne	{emit_reg i.arg.(0)}, {emit_label jumptbl.(1)}\n`
+            `	br	{emit_label jumptbl.(3)}\n`
         | _ ->
             let lbl_jumptbl = new_label() in
             `	lda     $25, {emit_label lbl_jumptbl}\n`;
@@ -518,6 +512,7 @@ let rec emit_all i =
 
 let fundecl fundecl =
   function_name := fundecl.fun_name;
+  fastcode_flag := fundecl.fun_fast;
   let noldgp_entry_point = new_label() in
   tailrec_entry_point := new_label();
   stack_offset := 0;
@@ -591,10 +586,11 @@ let data l =
 
 let begin_assembly() = ()
 
-let end_assembly() =
+let end_assembly () =
+  let lbl = Compilenv.current_unit_name() ^ "_frametable" in
   `	.rdata\n`;
-  `	.globl	Frametable\n`;
-  `Frametable:\n`;
+  `	.globl	{emit_symbol lbl}\n`;
+  `{emit_symbol lbl}:\n`;
   List.iter emit_frame !frame_descriptors;
   frame_descriptors := [];
   `	.quad	0\n`

@@ -13,6 +13,11 @@ open Emitaux
 
 let fastcode_flag = ref true
 
+(* Symbols are prefixed with _ *)
+
+let emit_symbol s =
+  emit_string "_"; Emitaux.emit_symbol s
+
 (* Output a label *)
 
 let emit_label lbl =
@@ -47,7 +52,7 @@ let emit_shift r =
 let emit_addressing addr r n =
   match addr with
     Ibased(s, d) ->
-      `_{emit_symbol s}`;
+      `{emit_symbol s}`;
       if d <> 0 then ` + {emit_int d}`
   | Iindexed d ->
       if d <> 0 then emit_int d;
@@ -55,6 +60,9 @@ let emit_addressing addr r n =
   | Iindexed2 d ->
       if d <> 0 then emit_int d;
       `({emit_reg r.(n)}, {emit_reg r.(n+1)})`
+  | Iscaled(scale, d) ->
+      if d <> 0 then emit_int d;
+      `(, {emit_reg r.(n)}, {emit_int scale})`
   | Iindexed2scaled(scale, d) ->
       if d <> 0 then emit_int d;
       `({emit_reg r.(n)}, {emit_reg r.(n+1)}, {emit_int scale})`
@@ -87,11 +95,11 @@ let record_frame live =
 
 let emit_frame fd =
   `	.long	{emit_label fd.fd_lbl} + 4\n`;
-  `	.half	{emit_int fd.fd_frame_size}\n`;
-  `	.half	{emit_int (List.length fd.fd_live_offset)}\n`;
+  `	.word	{emit_int fd.fd_frame_size}\n`;
+  `	.word	{emit_int (List.length fd.fd_live_offset)}\n`;
   List.iter
     (fun n ->
-      `	.half	{emit_int n}\n`)
+      `	.word	{emit_int n}\n`)
     fd.fd_live_offset
 
 (* Names for instructions *)
@@ -139,37 +147,32 @@ let emit_instr i =
                 `	fstpl	{emit_shift i.res.(0)}\n`
               end
         end
-    | Lop(Iconstant cst) ->
-        begin match cst with
-          Const_int 0 | Const_pointer 0 ->
-            begin match i.res.(0).loc with
-              Reg n -> `	xorl	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
-            | _     -> `	movl	$0, {emit_reg i.res.(0)}\n`
-            end
-        | Const_int n ->
-            `	movl	${emit_int n}, {emit_reg i.res.(0)}\n`
-        | Const_float f ->
-            if float_of_string f = 0.0 then
-              `	fldz\n`
-            else begin
-              let lbl = new_label() in
-              float_constants := (lbl, f) :: !float_constants;
-              `	fldl	{emit_label lbl}\n`
-            end;
-            `	fstpl	{emit_shift i.res.(0)}\n`
-        | Const_symbol s ->
-            `	movl	$_{emit_symbol s}, {emit_reg i.res.(0)}\n`
-        | Const_pointer n ->
-            `	movl	${emit_int n}, {emit_reg i.res.(0)}\n`
+    | Lop(Iconst_int 0) ->
+        begin match i.res.(0).loc with
+          Reg n -> `	xorl	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
+        | _     -> `	movl	$0, {emit_reg i.res.(0)}\n`
         end
+    | Lop(Iconst_int n) ->
+        `	movl	${emit_int n}, {emit_reg i.res.(0)}\n`
+    | Lop(Iconst_float f) ->
+        if float_of_string f = 0.0 then
+          `	fldz\n`
+        else begin
+          let lbl = new_label() in
+          float_constants := (lbl, f) :: !float_constants;
+          `	fldl	{emit_label lbl}\n`
+        end;
+        `	fstpl	{emit_shift i.res.(0)}\n`
+    | Lop(Iconst_symbol s) ->
+        `	movl	${emit_symbol s}, {emit_reg i.res.(0)}\n`
     | Lop(Icall_ind) ->
         `{record_frame i.live}	call	*{emit_reg i.arg.(0)}\n`
     | Lop(Icall_imm s) ->
-        `{record_frame i.live}	call	_{emit_symbol s}\n`
+        `{record_frame i.live}	call	{emit_symbol s}\n`
     | Lop(Itailcall_ind) ->
         let n = frame_size() - 4 in
         if n > 0 then
-          `	addl	{emit_int n}, %esp\n`;
+          `	addl	${emit_int n}, %esp\n`;
         `	jmp	*{emit_reg i.arg.(0)}\n`
     | Lop(Itailcall_imm s) ->
         if s = !function_name then
@@ -177,16 +180,16 @@ let emit_instr i =
         else begin
           let n = frame_size() - 4 in
           if n > 0 then
-            `	addl	{emit_int n}, %esp\n`;
-          `	jmp	_{emit_symbol s}\n`
+            `	addl	${emit_int n}, %esp\n`;
+          `	jmp	{emit_symbol s}\n`
         end
     | Lop(Iextcall s) ->
-        `	movl	$_{emit_symbol s}, %eax\n`;
+        `	movl	${emit_symbol s}, %eax\n`;
         `{record_frame i.live}	call	_caml_c_call\n`
     | Lop(Istackoffset n) ->
         if n >= 0
-        then `	subl	{emit_int n}, %esp\n`
-        else `	addl	{emit_int(-n)}, %esp\n`;
+        then `	subl	${emit_int n}, %esp\n`
+        else `	addl	${emit_int(-n)}, %esp\n`;
         stack_offset := !stack_offset + n
     | Lop(Iload(chunk, addr)) ->
         begin match i.res.(0).typ with
@@ -208,8 +211,12 @@ let emit_instr i =
           Int | Addr ->
             `	movl	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
         | Float ->
-            `	fldl	{emit_reg i.arg.(0)}\n`;
-            `	fstpl	{emit_addressing addr i.arg 1}\n`
+            if i.arg.(0).loc = Reg 100 then
+              `	fstl	{emit_addressing addr i.arg 1}\n`
+            else begin
+              `	fldl	{emit_reg i.arg.(0)}\n`;
+              `	fstpl	{emit_addressing addr i.arg 1}\n`
+            end
         end
     | Lop(Istore(chunk, addr)) ->
         (* i.arg.(0) is guaranteed to be in %edx *)
@@ -223,9 +230,9 @@ let emit_instr i =
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
           `	movl	_young_ptr, %eax\n`;
-          `	subl	${emit_int n}, $eax\n`;
+          `	subl	${emit_int n}, %eax\n`;
           `	movl	%eax, _young_ptr\n`;
-          `	cmpl	_young_start, %eax`;
+          `	cmpl	_young_start, %eax\n`;
           let lbl_cont = new_label() in
           `	jae	{emit_label lbl_cont}\n`;
           `	movl	${emit_int n}, %eax\n`;
@@ -244,9 +251,9 @@ let emit_instr i =
     | Lop(Imodify) ->
         (* Argument is in eax *)
         if !fastcode_flag then begin
-          `	btsl	10, -4(%eax)\n`;
+          `	testb	$4, -3(%eax)\n`;
           let lbl_cont = new_label() in
-          `	jc	{emit_label lbl_cont}\n`;
+          `	jne	{emit_label lbl_cont}\n`;
           `	call	_caml_fast_modify\n`;
           `{emit_label lbl_cont}:\n`
         end else
@@ -324,10 +331,14 @@ let emit_instr i =
         end;
         `	addl	$8, %esp\n`;
         stack_offset := !stack_offset + 8
-    | Lop(Ispecific Ineg) ->
-        `	neg	{emit_reg i.res.(0)}\n`
     | Lop(Ispecific(Ilea addr)) ->
         `	lea	{emit_addressing addr i.arg 0}, {emit_reg i.res.(0)}\n`
+    | Lop(Ispecific(Istore_int(n, addr))) ->
+        `	movl	${emit_int n}, {emit_addressing addr i.arg 0}\n`
+    | Lop(Ispecific(Istore_symbol(s, addr))) ->
+        `	movl	${emit_symbol s}, {emit_addressing addr i.arg 0}\n`
+    | Lop(Ispecific(Ioffset_loc(n, addr))) ->
+        `	addl	${emit_int n}, {emit_addressing addr i.arg 0}\n`
     | Lreturn ->
         let n = frame_size() - 4 in
         if n > 0 then
@@ -381,16 +392,15 @@ let emit_instr i =
                 `	je	{emit_label lbl}\n`
         end
     | Lswitch jumptbl ->
+        (* Switches with 1 or 2 cases have normally been eliminated before *)
+        (* Do something for 3 cases *)
         begin match Array.length jumptbl with
-          0 -> ()
-        | 1 -> ()
-        | 2 ->
-            `	cmpl	$0, {emit_reg i.arg.(0)}\n`;
-            `	jne	{emit_label jumptbl.(1)}\n`
-        | 3 ->
+          3 ->
+            (* Should eliminate the branches that just fall through *)
             `	cmpl	$1, {emit_reg i.arg.(0)}\n`;
-            `	jg	{emit_label jumptbl.(2)}\n`;
-            `	je	{emit_label jumptbl.(1)}\n`
+            `	jb	{emit_label jumptbl.(0)}\n`;
+            `	je	{emit_label jumptbl.(1)}\n`;
+            `	jmp	{emit_label jumptbl.(2)}\n`
         | n ->
           let lbl = new_label() in
           `	jmp	*{emit_label lbl}(, {emit_reg i.arg.(0)}, 4)\n`;
@@ -430,13 +440,14 @@ let emit_float_constant (lbl, cst) =
 
 let fundecl fundecl =
   function_name := fundecl.fun_name;
+  fastcode_flag := fundecl.fun_fast;
   tailrec_entry_point := new_label();
   stack_offset := 0;
   float_constants := [];
   `	.text\n`;
   `	.align	4\n`;
-  `	.globl	_{emit_symbol fundecl.fun_name}\n`;
-  `_{emit_symbol fundecl.fun_name}:\n`;
+  `	.globl	{emit_symbol fundecl.fun_name}\n`;
+  `{emit_symbol fundecl.fun_name}:\n`;
   let n = frame_size() - 4 in
   if n > 0 then
     `	subl	${emit_int n}, %esp\n`;
@@ -448,8 +459,8 @@ let fundecl fundecl =
 
 let emit_item = function
     Cdefine_symbol s ->
-      `	.globl	_{emit_symbol s}\n`;
-      `_{emit_symbol s}:\n`
+      `	.globl	{emit_symbol s}\n`;
+      `{emit_symbol s}:\n`
   | Cdefine_label lbl ->
       `{emit_label (10000 + lbl)}:\n`
   | Cint8 n ->
@@ -461,7 +472,7 @@ let emit_item = function
   | Cfloat f ->
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->
-      `	.long	_{emit_symbol s}\n`
+      `	.long	{emit_symbol s}\n`
   | Clabel_address lbl ->
       `	.long	{emit_label (10000 + lbl)}\n`
   | Cstring s ->
@@ -491,9 +502,10 @@ let data l =
 let begin_assembly() = ()
 
 let end_assembly() =
+  let lbl = Compilenv.current_unit_name() ^ "_frametable" in
   `	.data\n`;
-  `	.globl	_Frametable\n`;
-  `_Frametable:\n`;
+  `	.globl	{emit_symbol lbl}\n`;
+  `{emit_symbol lbl}:\n`;
   List.iter emit_frame !frame_descriptors;
   frame_descriptors := [];
   `	.long	0\n`

@@ -81,23 +81,25 @@ type addressing_expr =
 
 let rec select_addr exp =
   match exp with
-    Cconst(Const_symbol s) ->
+    Cconst_symbol s ->
       (Asymbol s, 0)
-  | Cop((Caddi | Cadda), [arg; Cconst(Const_int m)]) ->
+  | Cop((Caddi | Cadda), [arg; Cconst_int m]) ->
       let (a, n) = select_addr arg in (a, n + m)
-  | Cop((Caddi | Cadda), [Cconst(Const_int m); arg]) ->
+  | Cop((Csubi | Csuba), [arg; Cconst_int m]) ->
+      let (a, n) = select_addr arg in (a, n - m)
+  | Cop((Caddi | Cadda), [Cconst_int m; arg]) ->
       let (a, n) = select_addr arg in (a, n + m)
-  | Cop(Clsl, [arg; Cconst(Const_int(1|2|3 as shift))]) ->
+  | Cop(Clsl, [arg; Cconst_int(1|2|3 as shift)]) ->
       begin match select_addr arg with
         (Alinear e, n) -> (Ascale(e, 1 lsl shift), n lsl shift)
       | _ -> (Alinear exp, 0)
       end
-  | Cop(Cmuli, [arg; Cconst(Const_int(2|4|8 as mult))]) ->
+  | Cop(Cmuli, [arg; Cconst_int(2|4|8 as mult)]) ->
       begin match select_addr arg with
         (Alinear e, n) -> (Ascale(e, mult), n * mult)
       | _ -> (Alinear exp, 0)
       end
-  | Cop(Cmuli, [Cconst(Const_int(2|4|8 as mult)); arg]) ->
+  | Cop(Cmuli, [Cconst_int(2|4|8 as mult); arg]) ->
       begin match select_addr arg with
         (Alinear e, n) -> (Ascale(e, mult), n * mult)
       | _ -> (Alinear exp, 0)
@@ -129,7 +131,7 @@ let select_addressing exp =
   | (Aadd(e1, e2), d) ->
       (Iindexed2 d, Ctuple[e1; e2])
   | (Ascale(e, scale), d) ->
-      (Iindexed 0, exp)
+      (Iscaled(scale, d), e)
   | (Ascaledadd(e1, e2, scale), d) ->
       (Iindexed2scaled(scale, d), Ctuple[e1; e2])
 
@@ -138,25 +140,42 @@ exception Use_default
 let select_oper op args =
   match op with
   (* Recognize the LEA instruction *)
-    Caddi | Cadda ->
+    Caddi | Cadda | Csubi | Csuba ->
       begin match select_addressing (Cop(op, args)) with
-        ((Iindexed2 n as addr), arg) when n <> 0 ->
-          (Ispecific(Ilea addr), arg)
-      | ((Iindexed2scaled(scale, n) as addr), arg) ->
-          (Ispecific(Ilea addr), arg)
+        (Iindexed d, _) -> raise Use_default
+      | (Iindexed2 0, _) -> raise Use_default
+      | (addr, arg) -> (Ispecific(Ilea addr), [arg])
+      end
+  (* Recognize store instructions *)
+  | Cstore ->
+      begin match args with
+        [loc; Cconst_int n] ->
+          let (addr, arg) = select_addressing loc in
+          (Ispecific(Istore_int(n, addr)), [arg])
+      | [loc; Cconst_pointer n] ->
+          let (addr, arg) = select_addressing loc in
+          (Ispecific(Istore_int(n, addr)), [arg])
+      | [loc; Cconst_symbol s] ->
+          let (addr, arg) = select_addressing loc in
+          (Ispecific(Istore_symbol(s, addr)), [arg])
+      | [loc; Cop(Caddi, [Cop(Cload _, [loc']); Cconst_int n])]
+        when loc = loc' ->
+          let (addr, arg) = select_addressing loc in
+          (Ispecific(Ioffset_loc(n, addr)), [arg])
       | _ ->
           raise Use_default
       end
-  (* Recognize the NEG instruction *)
-  | Csubi ->
-      begin match args with
-        [Cconst(Const_int 0); arg] -> (Ispecific Ineg, arg)
-      | _ -> raise Use_default
-      end
   (* Prevent the recognition of (x / cst) and (x % cst),
      which do not correspond to an addressing mode. *)
-  | Cdivi -> (Iintop Idiv, Ctuple args)
-  | Cmodi -> (Iintop Imod, Ctuple args)
+  | Cdivi -> (Iintop Idiv, args)
+  | Cmodi -> (Iintop Imod, args)
+  | _ -> raise Use_default
+
+let select_store addr exp =
+  match exp with
+    Cconst_int n -> (Ispecific(Istore_int(n, addr)), Ctuple [])
+  | Cconst_pointer n -> (Ispecific(Istore_int(n, addr)), Ctuple [])
+  | Cconst_symbol s -> (Ispecific(Istore_symbol(s, addr)), Ctuple [])
   | _ -> raise Use_default
 
 let pseudoregs_for_operation op arg res =
@@ -165,8 +184,7 @@ let pseudoregs_for_operation op arg res =
     Iintop(Iadd|Isub|Imul|Iand|Ior|Ixor) ->
       ([|res.(0); arg.(1)|], res)
     (* Two-address unary operations *)
-  | Iintop_imm((Iadd|Isub|Imul|Iand|Ior|Ixor|Ilsl|Ilsr|Iasr), _) |
-    Ispecific Ineg -> 
+  | Iintop_imm((Iadd|Isub|Imul|Iand|Ior|Ixor|Ilsl|Ilsr|Iasr), _) ->
       (res, res)
     (* For shifts with variable shift count, second arg must be in ecx *)
   | Iintop(Ilsl|Ilsr|Iasr) ->
@@ -241,7 +259,8 @@ let loc_exn_bucket = phys_reg 0         (* eax *)
 (* Registers destroyed by operations *)
 
 let destroyed_at_oper = function
-    Iop(Iintop(Idiv | Imod)) -> [| phys_reg 0; phys_reg 3 |] (* eax, edx *)
+    Iop(Icall_ind | Icall_imm _ | Iextcall _) -> all_phys_regs
+  | Iop(Iintop(Idiv | Imod)) -> [| phys_reg 0; phys_reg 3 |] (* eax, edx *)
   | Iop(Ialloc _) -> [| phys_reg 0|] (* eax *)
   | Iop(Imodify) -> [| phys_reg 0 |] (* eax *)
   | Iop(Iintop(Icomp _) | Iintop_imm(Icomp _, _)) -> [| phys_reg 0 |] (* eax *)
@@ -249,10 +268,13 @@ let destroyed_at_oper = function
   | Iifthenelse(Ifloattest _, _, _) -> [| phys_reg 0 |] (* eax *)
   | _ -> [||]
 
-let destroyed_at_call = all_phys_regs
-let destroyed_at_extcall = [| phys_reg 0; phys_reg 2; phys_reg 3 |]
-                           (* eax, ecx, edx *)
 let destroyed_at_raise = all_phys_regs
+
+(* Maximal register pressure *)
+
+let max_register_pressure = [|7; 4|]
+
+let safe_register_pressure = 4
 
 (* Reloading of instruction arguments, storing of instruction results *)
 
@@ -276,7 +298,7 @@ let reload_operation makereg op arg res =
       if stackp arg.(0) & stackp arg.(1)
       then ([|arg.(0); makereg arg.(1)|], res)
       else (arg, res)
-  | Iintop(Ilsl|Ilsr|Iasr) | Iintop_imm(_, _) | Ispecific Ineg |
+  | Iintop(Ilsl|Ilsr|Iasr) | Iintop_imm(_, _) |
     Iaddf | Isubf | Imulf | Idivf | Ifloatofint | Iintoffloat ->
       (* The argument(s) can be either in register or on stack *)
       (arg, res)
@@ -300,3 +322,8 @@ let slot_offset loc class =
       then !stack_offset + n * 4
       else !stack_offset + num_stack_slots.(0) * 4 + n * 8
   | Outgoing n -> n
+
+(* Calling the assembler *)
+
+let assemble_file infile outfile =
+  Sys.command ("as -o " ^ outfile ^ " " ^ infile)

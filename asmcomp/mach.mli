@@ -20,7 +20,9 @@ type operation =
     Imove
   | Ispill
   | Ireload
-  | Iconstant of Cmm.constant
+  | Iconst_int of int
+  | Iconst_float of string
+  | Iconst_symbol of string
   | Icall_ind
   | Icall_imm of string
   | Itailcall_ind
@@ -59,12 +61,16 @@ and instruction_desc =
 type fundecl =
   { fun_name: string;
     fun_args: Reg.t array;
-    fun_body: instruction }
+    fun_body: instruction;
+    fun_fast: bool }
 
 val dummy_instr: instruction
 val end_instr: unit -> instruction
 val instr_cons: 
       instruction_desc -> Reg.t array -> Reg.t array -> instruction ->
         instruction
+val instr_cons_live: 
+      instruction_desc -> Reg.t array -> Reg.t array -> Reg.Set.t ->
+        instruction -> instruction
 val instr_iter: (instruction -> unit) -> instruction -> unit
 

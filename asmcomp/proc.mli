@@ -9,7 +9,9 @@ val select_addressing:
       Cmm.expression -> Arch.addressing_mode * Cmm.expression
 val select_oper:
       Cmm.operation -> Cmm.expression list ->
-      Mach.operation * Cmm.expression
+        Mach.operation * Cmm.expression list
+val select_store:
+      Arch.addressing_mode -> Cmm.expression -> Mach.operation * Cmm.expression
 val pseudoregs_for_operation:
       Mach.operation -> Reg.t array -> Reg.t array ->
         Reg.t array * Reg.t array
@@ -31,14 +33,18 @@ val loc_external_arguments: Reg.t array -> Reg.t array * int
 val loc_external_results: Reg.t array -> Reg.t array
 val loc_exn_bucket: Reg.t
 
+(* Maximal register pressures for pre-spilling *)
+
+val safe_register_pressure: int
+val max_register_pressure: int array
+
 (* Registers destroyed by operations *)
 val destroyed_at_oper: Mach.instruction_desc -> Reg.t array
-val destroyed_at_call: Reg.t array
-val destroyed_at_extcall: Reg.t array
 val destroyed_at_raise: Reg.t array
 
 (* Reloading of instruction arguments, storing of instruction results *)
-val reload_test: (Reg.t -> Reg.t) -> Mach.test -> Reg.t array -> Reg.t array
+val reload_test:
+      (Reg.t -> Reg.t) -> Mach.test -> Reg.t array -> Reg.t array
 val reload_operation:
       (Reg.t -> Reg.t) -> Mach.operation -> Reg.t array -> Reg.t array ->
         Reg.t array * Reg.t array
@@ -49,3 +55,6 @@ val stack_offset: int ref
 val contains_calls: bool ref
 val frame_size: unit -> int
 val slot_offset: Reg.stack_location -> int -> int
+
+(* Calling the assembler *)
+val assemble_file: string -> string -> int

@@ -65,7 +65,7 @@ let rec reload i =
              in hardware registers *)
           (makeregs i.arg, makeregs i.res) in
       insert_moves i.arg newarg
-        (instr_cons i.desc newarg newres
+        (instr_cons_live i.desc newarg newres i.live
           (insert_moves newres i.res
             (reload i.next)))
   | Iifthenelse(tst, ifso, ifnot) ->
@@ -98,6 +98,7 @@ let rec reload i =
 let fundecl f =
   redo_regalloc := false;
   let new_body = reload f.fun_body in
-  ({fun_name = f.fun_name; fun_args = f.fun_args; fun_body = new_body},
+  ({fun_name = f.fun_name; fun_args = f.fun_args;
+    fun_body = new_body; fun_fast = f.fun_fast},
    !redo_regalloc)
 

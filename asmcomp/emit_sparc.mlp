@@ -20,6 +20,11 @@ let next_in_pair = function
   | {loc = Reg r; typ = Float} -> phys_reg (r + 15)
   | _ -> fatal_error "Emit.next_in_pair"
 
+(* Symbols are prefixed with _ *)
+
+let emit_symbol s =
+  emit_string "_"; Emitaux.emit_symbol s
+
 (* Output a label *)
 
 let emit_label lbl =
@@ -45,11 +50,11 @@ let emit_stack r =
 let emit_load instr addr arg dst =
   match addr with
     Ibased(s, 0) ->
-        `	sethi	%hi(_{emit_symbol s}), %g1\n`;
-        `	{emit_string instr}	[%g1 + %lo(_{emit_symbol s})], {emit_reg dst}\n`
+        `	sethi	%hi({emit_symbol s}), %g1\n`;
+        `	{emit_string instr}	[%g1 + %lo({emit_symbol s})], {emit_reg dst}\n`
   | Ibased(s, ofs) ->
-        `	sethi	%hi(_{emit_symbol s} + {emit_int ofs}), %g1\n`;
-        `	{emit_string instr}	[%g1 + %lo(_{emit_symbol s} + {emit_int ofs})], {emit_reg dst}\n`
+        `	sethi	%hi({emit_symbol s} + {emit_int ofs}), %g1\n`;
+        `	{emit_string instr}	[%g1 + %lo({emit_symbol s} + {emit_int ofs})], {emit_reg dst}\n`
   | Iindexed ofs ->
       if is_immediate ofs then
         `	{emit_string instr}	[{emit_reg arg.(0)} + {emit_int ofs}], {emit_reg dst}\n`
@@ -76,11 +81,11 @@ let emit_load instr addr arg dst =
 let emit_store instr addr arg src =
   match addr with
     Ibased(s, 0) ->
-        `	sethi	%hi(_{emit_symbol s}), %g1\n`;
-        `	{emit_string instr}	{emit_reg src}, [%g1 + %lo(_{emit_symbol s})]\n`
+        `	sethi	%hi({emit_symbol s}), %g1\n`;
+        `	{emit_string instr}	{emit_reg src}, [%g1 + %lo({emit_symbol s})]\n`
   | Ibased(s, ofs) ->
-        `	sethi	%hi(_{emit_symbol s} + {emit_int ofs}), %g1\n`;
-        `	{emit_string instr}	{emit_reg src}, [%g1 + %lo(_{emit_symbol s} + {emit_int ofs})]\n`
+        `	sethi	%hi({emit_symbol s} + {emit_int ofs}), %g1\n`;
+        `	{emit_string instr}	{emit_reg src}, [%g1 + %lo({emit_symbol s} + {emit_int ofs})]\n`
   | Iindexed ofs ->
       if is_immediate ofs then
         `	{emit_string instr}	{emit_reg src}, [{emit_reg arg.(1)} + {emit_int ofs}]\n`
@@ -213,36 +218,26 @@ let emit_instr i =
         | (_, _) ->
             fatal_error "Emit: Imove"
         end
-    | Lop(Iconstant cst) ->
-        begin match cst with
-          Const_int n ->
-            if is_immediate n then
-              `	mov	{emit_int n}, {emit_reg i.res.(0)}\n`
-            else begin
-              `	sethi	%hi({emit_int n}), %g1\n`;
-              `	or	%g1, %lo({emit_int n}), {emit_reg i.res.(0)}\n`
-            end
-        | Const_float s ->
-            let lbl = new_label() in
-            float_constants := (lbl, s) :: !float_constants;
-            `	sethi	%hi({emit_label lbl}), %g1\n`;
-            `	ldd	[%g1 + %lo({emit_label lbl})], {emit_reg i.res.(0)}\n`
-        | Const_symbol s ->
-            `	sethi	%hi(_{emit_symbol s}), %g1\n`;
-            `	or	%g1, %lo(_{emit_symbol s}), {emit_reg i.res.(0)}\n`
-        | Const_pointer n ->
-            if is_immediate n then
-              `	mov	{emit_int n}, {emit_reg i.res.(0)}\n`
-            else begin
-              `	sethi	%hi({emit_int n}), %g1\n`;
-              `	or	%g1, %lo({emit_int n}), {emit_reg i.res.(0)}\n`
-            end
+    | Lop(Iconst_int n) ->
+        if is_immediate n then
+          `	mov	{emit_int n}, {emit_reg i.res.(0)}\n`
+        else begin
+          `	sethi	%hi({emit_int n}), %g1\n`;
+          `	or	%g1, %lo({emit_int n}), {emit_reg i.res.(0)}\n`
         end
+    | Lop(Iconst_float s) ->
+        let lbl = new_label() in
+        float_constants := (lbl, s) :: !float_constants;
+        `	sethi	%hi({emit_label lbl}), %g1\n`;
+        `	ldd	[%g1 + %lo({emit_label lbl})], {emit_reg i.res.(0)}\n`
+    | Lop(Iconst_symbol s) ->
+        `	sethi	%hi({emit_symbol s}), %g1\n`;
+        `	or	%g1, %lo({emit_symbol s}), {emit_reg i.res.(0)}\n`
     | Lop(Icall_ind) ->
         `{record_frame i.live}	call	{emit_reg i.arg.(0)}\n`;
         `	nop\n`
     | Lop(Icall_imm s) ->
-        `{record_frame i.live}	call	_{emit_symbol s}\n`;
+        `{record_frame i.live}	call	{emit_symbol s}\n`;
         `	nop\n`
     | Lop(Itailcall_ind) ->
         let n = frame_size() in
@@ -261,17 +256,17 @@ let emit_instr i =
           let n = frame_size() in
           if !contains_calls then
             `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`;
-          `	sethi	%hi(_{emit_symbol s}), %g1\n`;
-          `	jmp	%g1 + %lo(_{emit_symbol s})\n`;
+          `	sethi	%hi({emit_symbol s}), %g1\n`;
+          `	jmp	%g1 + %lo({emit_symbol s})\n`;
           if n > 0 then
             `	add	%sp, {emit_int n}, %sp\n`
           else
             `	nop\n`
         end
     | Lop(Iextcall s) ->
-        `	sethi	%hi(_{emit_symbol s}), %g1\n`;
+        `	sethi	%hi({emit_symbol s}), %g1\n`;
         `{record_frame i.live}	call	_caml_c_call\n`;
-        `	or	%g1, %lo(_{emit_symbol s}), %g1\n`
+        `	or	%g1, %lo({emit_symbol s}), %g1\n`
     | Lop(Istackoffset n) ->
         `	add	%sp, {emit_int (-n)}, %sp\n`;
         stack_offset := !stack_offset + n
@@ -450,34 +445,17 @@ let emit_instr i =
             `	nop\n`
         end
     | Lswitch jumptbl ->
-        (* We're assuming that the first case follows directly the switch
-           instruction, as linearize does. *)
-        begin match Array.length jumptbl with
-          0 -> ()       (* Should not happen... *)
-        | 1 -> ()       (* Should not happen... *)
-        | 2 ->
-            `	tst	{emit_reg i.arg.(0)}\n`;
-            `	bne	{emit_label jumptbl.(1)}\n`;
-            `	nop\n`
-        | 3 ->
-            `	cmp	{emit_reg i.arg.(0)}, 1\n`;
-            `	beq	{emit_label jumptbl.(1)}\n`;
-            `	nop\n`;
-            `	bg	{emit_label jumptbl.(2)}\n`;
-            `	nop\n`
-        | _ ->
-            let lbl_jumptbl = new_label() in
-            `	sethi	%hi({emit_label lbl_jumptbl}), %g1\n`;
-            `	or	%g1, %lo({emit_label lbl_jumptbl}), %g1\n`;
-            `	sll	{emit_reg i.arg.(0)}, 2, %g4\n`;
-            `	ld	[%g1 + %g4], %g1\n`;
-            `	jmp	%g1\n`;
-            `	nop\n`;
-            `{emit_label lbl_jumptbl}:`;
-            for i = 0 to Array.length jumptbl - 1 do
-              `	.word	{emit_label jumptbl.(i)}\n`
-            done
-        end
+        let lbl_jumptbl = new_label() in
+        `	sethi	%hi({emit_label lbl_jumptbl}), %g1\n`;
+        `	or	%g1, %lo({emit_label lbl_jumptbl}), %g1\n`;
+        `	sll	{emit_reg i.arg.(0)}, 2, %g4\n`;
+        `	ld	[%g1 + %g4], %g1\n`;
+        `	jmp	%g1\n`;
+        `	nop\n`;
+        `{emit_label lbl_jumptbl}:`;
+        for i = 0 to Array.length jumptbl - 1 do
+          `	.word	{emit_label jumptbl.(i)}\n`
+        done
     | Lpushtrap lbl ->
         stack_offset := !stack_offset + 8;
         `	sub	%sp, 8, %sp\n`;
@@ -504,13 +482,14 @@ let rec emit_all i =
 
 let fundecl fundecl =
   function_name := fundecl.fun_name;
+  fastcode_flag := fundecl.fun_fast;
   tailrec_entry_point := new_label();
   stack_offset := 0;
   float_constants := [];
   `	.text\n`;
   `	.align	4\n`;
-  `	.global	_{emit_symbol fundecl.fun_name}\n`;
-  `_{emit_symbol fundecl.fun_name}:\n`;
+  `	.global	{emit_symbol fundecl.fun_name}\n`;
+  `{emit_symbol fundecl.fun_name}:\n`;
   let n = frame_size() in
   if n > 0 then
     `	sub	%sp, {emit_int n}, %sp\n`;
@@ -524,8 +503,8 @@ let fundecl fundecl =
 
 let emit_item = function
     Cdefine_symbol s ->
-      `	.global	_{emit_symbol s}\n`;
-      `_{emit_symbol s}:\n`
+      `	.global	{emit_symbol s}\n`;
+      `{emit_symbol s}:\n`
   | Cdefine_label lbl ->
       `{emit_label (lbl + 10000)}:\n`
   | Cint8 n ->
@@ -537,7 +516,7 @@ let emit_item = function
   | Cfloat f ->
       `	.double	0r{emit_string f}\n`
   | Csymbol_address s ->
-      `	.word	_{emit_symbol s}\n`
+      `	.word	{emit_symbol s}\n`
   | Clabel_address s ->
       `	.word	{emit_label (lbl + 10000)}\n`
   | Cstring s ->

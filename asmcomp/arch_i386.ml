@@ -4,11 +4,14 @@ type addressing_mode =
     Ibased of string * int              (* symbol + displ *)
   | Iindexed of int                     (* reg + displ *)
   | Iindexed2 of int                    (* reg + reg + displ *)
+  | Iscaled of int * int                (* reg * scale + displ *)
   | Iindexed2scaled of int * int        (* reg + reg * scale + displ *)
 
 type specific_operation =
-    Ineg                                (* Integer negate *)
-  | Ilea of addressing_mode             (* Lea gives scaled adds *)
+    Ilea of addressing_mode             (* Lea gives scaled adds *)
+  | Istore_int of int * addressing_mode (* Store an integer constant *)
+  | Istore_symbol of string * addressing_mode (* Store a symbol *)
+  | Ioffset_loc of int * addressing_mode (* Add a constant to a location *)
 
 (* Sizes, endianness *)
 
@@ -27,12 +30,14 @@ let offset_addressing addr delta =
     Ibased(s, n) -> Ibased(s, n + delta)
   | Iindexed n -> Iindexed(n + delta)
   | Iindexed2 n -> Iindexed2(n + delta)
+  | Iscaled(scale, n) -> Iscaled(scale, n + delta)
   | Iindexed2scaled(scale, n) -> Iindexed2scaled(scale, n + delta)
 
 let num_args_addressing = function
     Ibased(s, n) -> 0
   | Iindexed n -> 1
   | Iindexed2 n -> 2
+  | Iscaled(scale, n) -> 1
   | Iindexed2scaled(scale, n) -> 2
 
 (* Printing operations and addressing modes *)
@@ -51,6 +56,9 @@ let print_addressing printreg addr arg =
   | Iindexed2 n ->
       printreg arg.(0); print_string " + "; printreg arg.(1);
       if n <> 0 then begin print_string " + "; print_int n end
+  | Iscaled(scale, n) ->
+      printreg arg.(0); print_string " * "; print_int scale;
+      if n <> 0 then begin print_string " + "; print_int n end
   | Iindexed2scaled(scale, n) ->
       printreg arg.(0); print_string " + "; printreg arg.(1);
       print_string " * "; print_int scale;
@@ -58,6 +66,14 @@ let print_addressing printreg addr arg =
 
 let print_specific_operation printreg op arg =
   match op with
-    Ineg -> print_string "- "; printreg arg.(0)
-  | Ilea addr -> print_addressing printreg addr arg
+    Ilea addr -> print_addressing printreg addr arg
+  | Istore_int(n, addr) ->
+      print_string "["; print_addressing printreg addr arg;
+      print_string "] := "; print_int n
+  | Istore_symbol(lbl, addr) ->
+      print_string "["; print_addressing printreg addr arg;
+      print_string "] := \""; print_string lbl; print_string "\""
+  | Ioffset_loc(n, addr) ->
+      print_string "["; print_addressing printreg addr arg;
+      print_string "] +:= "; print_int n
 

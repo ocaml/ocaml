@@ -2,24 +2,47 @@
 
 open Reg
 
+(* Preallocation of spilled registers in the stack. *)
+
+let allocate_spilled reg =
+  if reg.spill then begin
+    let class = Proc.register_class reg in
+    let nslots = Proc.num_stack_slots.(class) in
+    let conflict = Array.new nslots false in
+    List.iter
+      (fun r ->
+        match r.loc with
+          Stack(Local n) ->
+            if Proc.register_class r = class then conflict.(n) <- true
+        | _ -> ())
+      reg.interf;
+    let slot = ref 0 in
+    while !slot < nslots & conflict.(!slot) do incr slot done;
+    reg.loc <- Stack(Local !slot);
+    if !slot >= nslots then Proc.num_stack_slots.(class) <- !slot + 1
+  end
+
 (* Compute the degree (= number of neighbours of the same type)
    of each register, and split them in two sets:
    unconstrained (degree < number of available registers)
-   and constrained (degree >= number of available registers) *)
+   and constrained (degree >= number of available registers).
+   Spilled registers are ignored in the process. *)
 
 let unconstrained = ref Reg.Set.empty
 let constrained = ref Reg.Set.empty
 
 let find_degree reg =
-  let deg = ref 0 in
-  let class = Proc.register_class reg in
-  List.iter
-    (fun r -> if Proc.register_class r = class then incr deg)
-    reg.interf;
-  reg.degree <- !deg;
-  if !deg >= Proc.num_available_registers.(class)
-  then constrained := Reg.Set.add reg !constrained
-  else unconstrained := Reg.Set.add reg !unconstrained
+  if reg.spill then () else begin
+    let deg = ref 0 in
+    let class = Proc.register_class reg in
+    List.iter
+      (fun r -> if not r.spill & Proc.register_class r = class then incr deg)
+      reg.interf;
+    reg.degree <- !deg;
+    if !deg >= Proc.num_available_registers.(class)
+    then constrained := Reg.Set.add reg !constrained
+    else unconstrained := Reg.Set.add reg !unconstrained
+  end
 
 (* Remove a register from the interference graph *)
 
@@ -223,11 +246,13 @@ let assign_location reg =
   reg.prefer <- []
 
 let allocate_registers() =
-  (* First pass: compute the degrees
-     Second pass: determine coloring order by successive removals of regs
-     Third pass: assign registers in that order *)
+  (* First pass: preallocate spill registers
+     Second pass: compute the degrees
+     Third pass: determine coloring order by successive removals of regs
+     Fourth pass: assign registers in that order *)
   for i = 0 to Proc.num_register_classes - 1 do
     Proc.num_stack_slots.(i) <- 0
   done;
+  List.iter allocate_spilled (Reg.all_registers());
   List.iter find_degree (Reg.all_registers());
   List.iter assign_location (remove_all_regs [])

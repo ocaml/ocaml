@@ -1,11 +1,5 @@
 (* Second intermediate language (machine independent) *)
 
-type constant =
-    Const_int of int
-  | Const_float of string
-  | Const_symbol of string
-  | Const_pointer of int
-
 type machtype_component =
     Addr
   | Int
@@ -60,7 +54,10 @@ type operation =
   | Craise
 
 type expression =
-    Cconst of constant
+    Cconst_int of int
+  | Cconst_float of string
+  | Cconst_symbol of string
+  | Cconst_pointer of int
   | Cvar of Ident.t
   | Clet of Ident.t * expression * expression
   | Cassign of Ident.t * expression
@@ -69,7 +66,7 @@ type expression =
   | Csequence of expression * expression
   | Cifthenelse of expression * expression * expression
   | Cswitch of expression * int array * expression array
-  | Cwhile of expression * expression
+  | Cloop of expression
   | Ccatch of expression * expression
   | Cexit
   | Ctrywith of expression * Ident.t * expression
@@ -77,7 +74,8 @@ type expression =
 type fundecl =
   { fun_name: string;
     fun_args: (Ident.t * machtype) list;
-    fun_body: expression }
+    fun_body: expression;
+    fun_fast: bool }
 
 type data_item =
     Cdefine_symbol of string

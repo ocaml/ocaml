@@ -3,12 +3,6 @@
 open Format
 open Cmm
 
-let constant = function
-    Const_int n -> print_int n
-  | Const_float s -> print_string s
-  | Const_symbol s -> print_string "\""; print_string s; print_string "\""
-  | Const_pointer n -> print_int n; print_string "a"
-
 let machtype_component = function
     Addr -> print_string "addr"
   | Int -> print_string "int"
@@ -75,7 +69,10 @@ let operation = function
   | Craise -> print_string "raise"
 
 let rec expression = function
-    Cconst cst -> constant cst
+    Cconst_int n -> print_int n
+  | Cconst_float s -> print_string s
+  | Cconst_symbol s -> print_string "\""; print_string s; print_string "\""
+  | Cconst_pointer n -> print_int n; print_string "a"
   | Cvar id -> Ident.print id
   | Clet(id, def, (Clet(_, _, _) as body)) ->
       open_hovbox 2;
@@ -102,7 +99,7 @@ let rec expression = function
       print_string "(let"; print_space();
       open_hovbox 2;
       Ident.print id; print_space(); expression def;
-      close_box();
+      close_box(); print_space();
       sequence body;
       print_string ")"; close_box()
   | Cassign(id, exp) ->
@@ -164,11 +161,10 @@ let rec expression = function
         close_box()
       done;
       close_box()
-  | Cwhile(e1, e2) ->
+  | Cloop e ->
       open_hovbox 2;
-      print_string "(while";
-      print_space(); expression e1;
-      print_space(); sequence e2;
+      print_string "(loop";
+      print_space(); sequence e;
       print_string ")"; close_box()
   | Ccatch(e1, e2) ->
       open_hovbox 2;
@@ -195,8 +191,9 @@ and sequence = function
 
 let fundecl f =
   open_hovbox 1;
-  print_string "(function "; print_string f.fun_name; print_string " (";
-  open_hovbox 0;
+  print_string "(function "; print_string f.fun_name; print_break(1,4);
+  open_hovbox 1;
+  print_string "(";
   let first = ref true in
   List.iter
     (fun (id, ty) -> 
@@ -204,17 +201,21 @@ let fundecl f =
       Ident.print id; print_string ": "; machtype ty)
     f.fun_args;
   print_string ")"; close_box(); print_space();
+  open_hovbox 0;
   sequence f.fun_body;
   print_string ")";
-  close_box()
+  close_box(); close_box(); print_newline()
 
 let data_item = function
-    Clabel lbl -> print_string "\""; print_string lbl; print_string "\":"
+    Cdefine_symbol s -> print_string "\""; print_string s; print_string "\":"
+  | Cdefine_label l -> print_string "L"; print_int l; print_string ":"
   | Cint8 n -> print_string "byte "; print_int n
   | Cint16 n -> print_string "half "; print_int n
   | Cint n -> print_string "int "; print_int n
   | Cfloat f -> print_string "float "; print_string f
-  | Caddress a -> print_string "addr \""; print_string a; print_string "\""
+  | Csymbol_address s ->
+      print_string "addr \""; print_string s; print_string "\""
+  | Clabel_address l -> print_string "addr L"; print_int l
   | Cstring s -> print_string "string \""; print_string s; print_string "\""
   | Cskip n -> print_string "skip "; print_int n
   | Calign n -> print_string "align "; print_int n

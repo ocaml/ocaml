@@ -76,7 +76,9 @@ let operation op arg res =
     Imove -> regs arg
   | Ispill -> regs arg; print_string " (spill)"
   | Ireload -> regs arg; print_string " (reload)"
-  | Iconstant cst -> Printcmm.constant cst
+  | Iconst_int n -> print_int n
+  | Iconst_float s -> print_string s
+  | Iconst_symbol s -> print_string "\""; print_string s; print_string "\""
   | Icall_ind -> print_string "call "; regs arg
   | Icall_imm lbl ->
       print_string "call \""; print_string lbl;
@@ -91,12 +93,16 @@ let operation op arg res =
   | Istackoffset n ->
       print_string "offset stack "; print_int n
   | Iload(chunk, addr) ->
-      print_string "load "; Printcmm.chunk chunk;
-      Arch.print_addressing reg addr arg
+      Printcmm.chunk chunk;
+      print_string "[";
+      Arch.print_addressing reg addr arg;
+      print_string "]"
   | Istore(chunk, addr) ->
-      print_string "store "; Printcmm.chunk chunk;
-      reg arg.(Arch.num_args_addressing addr);
-      print_string " at "; Arch.print_addressing reg addr arg
+      Printcmm.chunk chunk;
+      print_string "[";
+      Arch.print_addressing reg addr (Array.sub arg 1 (Array.length arg - 1));
+      print_string "] := ";
+      reg arg.(0)
   | Ialloc n -> print_string "alloc "; print_int n
   | Imodify -> print_string "modify "; reg arg.(0)
   | Iintop(op) -> reg arg.(0); intop op; reg arg.(1)

@@ -2,14 +2,16 @@
 
 open Format
 
-type specific_operation =
-   Iadd4 | Iadd8 | Isub4 | Isub8        (* Scaled adds and subs *)
-
 (* Addressing modes *)
 
 type addressing_mode =
     Ibased of string * int              (* symbol + displ *)
   | Iindexed of int                     (* reg + displ *)
+
+(* Specific operations *)
+
+type specific_operation =
+    Iadd4 | Iadd8 | Isub4 | Isub8       (* Scaled adds and subs *)
 
 (* Sizes, endianness *)
 
@@ -49,4 +51,3 @@ let print_specific_operation printreg op arg =
   | Iadd8 -> printreg arg.(0); print_string " * 8 + "; printreg arg.(1)
   | Isub4 -> printreg arg.(0); print_string " * 4 - "; printreg arg.(1)
   | Isub8 -> printreg arg.(0); print_string " * 8 - "; printreg arg.(1)
-

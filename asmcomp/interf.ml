@@ -37,14 +37,15 @@ let build_graph fundecl =
   let add_interf_set v s =
     for i = 0 to Array.length v - 1 do
       let r1 = v.(i) in
-      Reg.Set.iter (fun r2 -> add_interf r1 r2) s
+      Reg.Set.iter (add_interf r1) s
     done in
 
   (* Record interferences between elements of an array *)
   let add_interf_self v =
     for i = 0 to Array.length v - 2 do
+      let ri = v.(i) in
       for j = i+1 to Array.length v - 1 do
-        add_interf v.(i) v.(j)
+        add_interf ri v.(j)
       done
     done in
 
@@ -55,18 +56,17 @@ let build_graph fundecl =
   let add_interf_move src dst s =
     Reg.Set.iter (fun r -> if r.stamp <> src.stamp then add_interf dst r) s in
 
-  (* Add a preference between two regs *)
+  (* Add a preference from one reg to another *)
   let add_pref weight r1 r2 =
     if r1.stamp = r2.stamp then () else begin
-      begin match r1.loc with
+      match r1.loc with
           Unknown -> r1.prefer <- (r2, weight) :: r1.prefer
         | _ -> ()
-      end;
-      begin match r2.loc with
-          Unknown -> r2.prefer <- (r1, weight) :: r2.prefer
-        | _ -> ()
-      end
     end in
+
+  (* Add a mutual preference between two regs *)
+  let add_mutual_pref weight r1 r2 =
+    add_pref weight r1 r2; add_pref weight r2 r1 in
 
   (* Update the spill cost of the registers involved in an operation *)
 
@@ -87,24 +87,18 @@ let build_graph fundecl =
     | Ireturn -> ()
     | Iop(Imove) ->
         add_interf_move i.arg.(0) i.res.(0) i.live;
-        add_pref weight i.arg.(0) i.res.(0);
+        add_mutual_pref weight i.arg.(0) i.res.(0);
         interf weight i.next
-    | Iop(Ispill | Ireload) ->
+    | Iop(Ispill) ->
         add_interf_move i.arg.(0) i.res.(0) i.live;
-        add_pref (weight / 8) i.arg.(0) i.res.(0);
+        add_pref (weight / 4) i.arg.(0) i.res.(0);
+        interf weight i.next
+    | Iop(Ireload) ->
+        add_interf_move i.arg.(0) i.res.(0) i.live;
+        add_pref (weight / 4) i.res.(0) i.arg.(0);
         interf weight i.next
     | Iop(Itailcall_ind) -> ()
     | Iop(Itailcall_imm lbl) -> ()
-    | Iop(Icall_ind | Icall_imm _) ->
-        add_interf_set i.res i.live;
-        add_interf_self i.res;
-        add_interf_set Proc.destroyed_at_call i.live;
-        interf weight i.next
-    | Iop(Iextcall lbl) ->
-        add_interf_set i.res i.live;
-        add_interf_self i.res;
-        add_interf_set Proc.destroyed_at_extcall i.live;
-        interf weight i.next
     | Iop op ->
         add_interf_set i.res i.live;
         add_interf_self i.res;

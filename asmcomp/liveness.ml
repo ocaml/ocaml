@@ -64,7 +64,7 @@ let rec live i finally =
       let at_join = live i.next finally in
       let before_handler = live handler at_join in
       let saved_live_at_raise = !live_at_raise in
-      live_at_raise := before_handler;
+      live_at_raise := Reg.Set.remove Proc.loc_exn_bucket before_handler;
       let before_body = live body at_join in
       live_at_raise := saved_live_at_raise;
       i.live <- before_body;

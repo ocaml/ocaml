@@ -5,6 +5,7 @@ type t =
     stamp: int;
     typ: Cmm.machtype_component;
     mutable loc: location;
+    mutable spill: bool;
     mutable interf: t list;
     mutable prefer: (t * int) list;
     mutable degree: int;
@@ -24,7 +25,7 @@ and stack_location =
 type reg = t
 
 let dummy =
-  { name = ""; stamp = 0; typ = Int; loc = Unknown;
+  { name = ""; stamp = 0; typ = Int; loc = Unknown; spill = false;
     interf = []; prefer = []; degree = 0; spill_cost = 0; visited = false }
 
 let currstamp = ref 0
@@ -32,8 +33,8 @@ let reg_list = ref([] : t list)
 
 let new ty =
   let r = { name = ""; stamp = !currstamp; typ = ty; loc = Unknown;
-            interf = []; prefer = []; degree = 0; spill_cost = 0;
-            visited = false } in
+            spill = false; interf = []; prefer = []; degree = 0;
+            spill_cost = 0; visited = false } in
   reg_list := r :: !reg_list;
   incr currstamp;
   r
@@ -50,7 +51,7 @@ let clone r =
   nr
 
 let at_location ty loc =
-  let r = { name = ""; stamp = !currstamp; typ = ty; loc = loc;
+  let r = { name = ""; stamp = !currstamp; typ = ty; loc = loc; spill = false;
             interf = []; prefer = []; degree = 0; spill_cost = 0;
             visited = false } in
   incr currstamp;

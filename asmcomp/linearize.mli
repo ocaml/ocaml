@@ -25,7 +25,8 @@ and instruction_desc =
 
 type fundecl =
   { fun_name: string;
-    fun_body: instruction }
+    fun_body: instruction;
+    fun_fast: bool }
 
 val fundecl: Mach.fundecl -> fundecl
 

@@ -3,22 +3,6 @@
 open Reg
 open Mach
 
-(********
-open Format
-let print_subst m =
-  open_hovbox 1; print_string "{";
-  let first = ref true in
-  Reg.Map.iter
-    (fun r1 r2 ->
-      if !first then first := false else print_space();
-      Printmach.reg r1; print_string "->"; Printmach.reg r2)
-    m;
-  print_string "}"; close_box()
-let print_subst_opt = function
-    None -> print_string "None"
-  | Some s -> print_subst s
-**********)
-
 (* Substitutions are represented by register maps *)
 
 type subst = Reg.t Reg.Map.t
@@ -55,6 +39,7 @@ let repres_regs rv =
 
 (* Identify two registers.
    The second register is chosen as canonical representative. *)
+
 let identify r1 r2 =
   let repres1 = repres_reg r1 in
   let repres2 = repres_reg r2 in
@@ -83,6 +68,7 @@ let identify_sub sub1 sub2 reg =
 
 (* Identify registers so that the two substitutions agree on the
    registers live before the given instruction. *)
+
 let merge_substs sub1 sub2 i =
   match (sub1, sub2) with
     (None, None) -> None
@@ -93,6 +79,7 @@ let merge_substs sub1 sub2 i =
       sub1
 
 (* Same, for N substitutions *)
+
 let merge_subst_array subv instr =
   let rec find_one_subst i =
     if i >= Array.length subv then None else begin
@@ -199,4 +186,5 @@ let fundecl f =
   equiv_classes := Reg.Map.empty;
   { fun_name = f.fun_name;
     fun_args = new_args;
-    fun_body = new_body }
+    fun_body = new_body;
+    fun_fast = f.fun_fast }

@@ -13,11 +13,11 @@ exception Use_default
 (* Instruction selection *)
 
 let select_addressing = function
-    Cconst(Const_symbol s) ->
+    Cconst_symbol s ->
       (Ibased(s, 0), Ctuple [])
-  | Cop(Cadda, [Cconst(Const_symbol s); Cconst(Const_int n)]) ->
+  | Cop(Cadda, [Cconst_symbol s; Cconst_int n]) ->
       (Ibased(s, n), Ctuple [])
-  | Cop(Cadda, [arg; Cconst(Const_int n)]) ->
+  | Cop(Cadda, [arg; Cconst_int n]) ->
       (Iindexed n, arg)
   | arg ->
       (Iindexed 0, arg)
@@ -25,24 +25,26 @@ let select_addressing = function
 let select_oper op args =
   match (op, args) with
     ((Caddi|Cadda),
-     [arg2; Cop(Clsl, [arg1; Cconst(Const_int(2|3 as shift))])]) ->
-      (Ispecific(if shift = 2 then Iadd4 else Iadd8), Ctuple[arg1; arg2])
+     [arg2; Cop(Clsl, [arg1; Cconst_int(2|3 as shift)])]) ->
+      (Ispecific(if shift = 2 then Iadd4 else Iadd8), [arg1; arg2])
   | ((Caddi|Cadda),
-     [arg2; Cop(Cmuli, [arg1; Cconst(Const_int(4|8 as mult))])]) ->
-      (Ispecific(if mult = 4 then Iadd4 else Iadd8), Ctuple[arg1; arg2])
+     [arg2; Cop(Cmuli, [arg1; Cconst_int(4|8 as mult)])]) ->
+      (Ispecific(if mult = 4 then Iadd4 else Iadd8), [arg1; arg2])
   | ((Caddi|Cadda),
-     [arg2; Cop(Cmuli, [Cconst(Const_int(4|8 as mult)); arg1])]) ->
-      (Ispecific(if mult = 4 then Iadd4 else Iadd8), Ctuple[arg1; arg2])
-  | (Caddi, [Cop(Clsl, [arg1; Cconst(Const_int(2|3 as shift))]); arg2]) ->
-      (Ispecific(if shift = 2 then Iadd4 else Iadd8), Ctuple[arg1; arg2])
-  | (Caddi, [Cop(Cmuli, [arg1; Cconst(Const_int(4|8 as mult))]); arg2]) ->
-      (Ispecific(if mult = 4 then Iadd4 else Iadd8), Ctuple[arg1; arg2])
-  | (Caddi, [Cop(Cmuli, [Cconst(Const_int(4|8 as mult)); arg1]); arg2]) ->
-      (Ispecific(if mult = 4 then Iadd4 else Iadd8), Ctuple[arg1; arg2])
-  | (Csubi, [Cop(Clsl, [arg1; Cconst(Const_int(2|3 as shift))]); arg2]) ->
-      (Ispecific(if shift = 2 then Isub4 else Isub8), Ctuple[arg1; arg2])
+     [arg2; Cop(Cmuli, [Cconst_int(4|8 as mult); arg1])]) ->
+      (Ispecific(if mult = 4 then Iadd4 else Iadd8), [arg1; arg2])
+  | (Caddi, [Cop(Clsl, [arg1; Cconst_int(2|3 as shift)]); arg2]) ->
+      (Ispecific(if shift = 2 then Iadd4 else Iadd8), [arg1; arg2])
+  | (Caddi, [Cop(Cmuli, [arg1; Cconst_int(4|8 as mult)]); arg2]) ->
+      (Ispecific(if mult = 4 then Iadd4 else Iadd8), [arg1; arg2])
+  | (Caddi, [Cop(Cmuli, [Cconst_int(4|8 as mult); arg1]); arg2]) ->
+      (Ispecific(if mult = 4 then Iadd4 else Iadd8), [arg1; arg2])
+  | (Csubi, [Cop(Clsl, [arg1; Cconst_int(2|3 as shift)]); arg2]) ->
+      (Ispecific(if shift = 2 then Isub4 else Isub8), [arg1; arg2])
   | _ ->
       raise Use_default
+
+let select_store addr exp = raise Use_default
 
 let pseudoregs_for_operation op arg res = raise Use_default
 
@@ -61,7 +63,7 @@ let is_immediate (n:int) = true
     $22 - $23   19 - 20     more function arguments
     $24, $25                temporaries
     $26-$30                 stack ptr, global ptr, etc
-    $31                     always zero
+    $31         21          always zero
 
     $f0 - $f1   100 - 101   function results
     $f10 - $f15 102 - 107   more function results
@@ -75,7 +77,7 @@ let int_reg_name = [|
   (* 0-8 *)    "$0"; "$1"; "$2"; "$3"; "$4"; "$5"; "$6"; "$7"; "$8";
   (* 9-12 *)   "$9"; "$10"; "$11"; "$12";
   (* 13-18 *)  "$16"; "$17"; "$18"; "$19"; "$20"; "$21";
-  (* 19-20 *)  "$22"; "$23"
+  (* 19-21 *)  "$22"; "$23"; "$31"
 |]
   
 let float_reg_name = [|
@@ -196,15 +198,17 @@ let loc_exn_bucket = phys_reg 0         (* $0 *)
 
 (* Registers destroyed by operations *)
 
-let destroyed_at_call = all_phys_regs
-let destroyed_at_raise = all_phys_regs
-let destroyed_at_extcall = (* $9 -$15, $f2 - $f9 preserved *)
-  Array.of_list(List.map phys_reg
-    [0; 1; 2; 3; 4; 5; 6; 7; 8; 13; 14; 15; 16;
-     17; 18; 19; 20; 100; 101; 102; 103; 104; 105; 106; 107; 116; 117;
-     118; 119; 120; 121; 122; 123; 124; 125; 126; 127; 128; 129])
+let destroyed_at_oper = function
+    Iop(Icall_ind | Icall_imm _ | Iextcall _) -> all_phys_regs
+  | _ -> [||]
 
-let destroyed_at_oper op = [||]
+let destroyed_at_raise = all_phys_regs
+
+(* Maximal register pressure *)
+
+let max_register_pressure = [| 20; 29 |]
+
+let safe_register_pressure = 20
 
 (* Reloading *)
 
@@ -232,3 +236,8 @@ let slot_offset loc class =
       then !stack_offset + n * 8
       else !stack_offset + (num_stack_slots.(0) + n) * 8
   | Outgoing n -> n
+
+(* Calling the assembler *)
+
+let assemble_file infile outfile =
+  Sys.command ("as -O2 -o " ^ outfile ^ " " ^ infile)

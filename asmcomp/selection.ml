@@ -1,25 +1,10 @@
-(* Instruction selection and choice of evaluation order. *)
+(* Selection of pseudo-instructions, assignment of pseudo-registers,
+   sequentialization. *)
 
 open Misc
 open Cmm
+open Reg
 open Mach
-
-type expression =
-    Sconst of Cmm.constant
-  | Svar of Ident.t
-  | Slet of Ident.t * expression * expression
-  | Sassign of Ident.t * expression
-  | Stuple of expression array * int list
-  | Sop of operation * expression * Cmm.machtype
-  | Sproj of expression * int * int
-  | Ssequence of expression * expression
-  | Sifthenelse of test * expression * expression * expression
-  | Sswitch of expression * int array * expression array
-  | Sloop of expression
-  | Scatch of expression * expression
-  | Sexit
-  | Strywith of expression * Ident.t * expression
-  | Sraise of expression
 
 (* Infer the type of the result of an operation *)
 
@@ -42,43 +27,54 @@ let oper_result_type = function
   | Craise -> typ_void
   | _ -> fatal_error "Selection.oper_result_type"
 
-(* Estimate the intrinsic cost of an operation.
-   The cost reflects both the number of registers destroyed by the operation
-   and the time it will take to complete. Since subexpressions with higher
-   cost are evaluated first, this increases slightly the probability that
-   the result will be ready when needed. *)
-   
-let oper_cost = function
-    Capply ty -> 32
-  | Cextcall(s, ty) -> 16
-  | Cload ty -> 2 * Array.length ty
-  | Cloadchunk c -> 2
-  | Cmuli -> 3
-  | Cdivi | Cmodi -> 5
-  | Caddf | Csubf | Cmulf | Cdivf -> 3
-  | _ -> 1
+(* Infer the size in bytes of the result of a simple expression *)
 
-(* Common instruction selection for operations *)
+let rec size_expr env = function
+    Cconst_int _ -> Arch.size_int
+  | Cconst_symbol _ | Cconst_pointer _ -> Arch.size_addr
+  | Cconst_float _ -> Arch.size_float
+  | Cvar v ->
+      let r =
+        try
+          Tbl.find v env
+        with Not_found ->
+          fatal_error("Selection.emit_expr: unbound var " ^ Ident.name v) in
+      size_machtype (Array.map (fun r -> r.typ) r)
+  | Ctuple el ->
+      List.fold_right (fun e sz -> size_expr env e + sz) el 0
+  | Cop(op, args) ->
+      size_machtype(oper_result_type op)
+  | _ ->
+      fatal_error "Selection.size_expr"
 
-let rec sel_oper op args =
+(* Says if an operation is "safe", i.e. without side-effects *)
+
+let safe_operation = function
+    Capply _ | Cextcall(_, _) | Calloc | Cstore | Cstorechunk _ | 
+    Cmodify | Craise -> false
+  | _ -> true
+
+(* Default instruction selection for operators *)
+
+let rec sel_operation op args =
   match (op, args) with
-    (Capply ty, Cconst(Const_symbol s) :: rem) -> (Icall_imm s, Ctuple rem)
-  | (Capply ty, _) -> (Icall_ind, Ctuple args)
-  | (Cextcall(s, ty), _) -> (Iextcall s, Ctuple args)
+    (Capply ty, Cconst_symbol s :: rem) -> (Icall_imm s, rem)
+  | (Capply ty, _) -> (Icall_ind, args)
+  | (Cextcall(s, ty), _) -> (Iextcall s, args)
   | (Cload ty, [arg]) ->
       let (addr, eloc) = Proc.select_addressing arg in
-      (Iload(Word, addr), eloc)
+      (Iload(Word, addr), [eloc])
   | (Cloadchunk chunk, [arg]) ->
       let (addr, eloc) = Proc.select_addressing arg in
-      (Iload(chunk, addr), eloc)
+      (Iload(chunk, addr), [eloc])
   | (Cstore, arg1 :: rem) ->
       let (addr, eloc) = Proc.select_addressing arg1 in
-      (Istore(Word, addr), Ctuple(eloc :: rem))
+      (Istore(Word, addr), eloc :: rem)
   | (Cstorechunk chunk, arg1 :: rem) ->
       let (addr, eloc) = Proc.select_addressing arg1 in
-      (Istore(chunk, addr), Ctuple(eloc :: rem))
-  | (Calloc, _) -> (Ialloc 0, Ctuple args)
-  | (Cmodify, [arg]) -> (Imodify, arg)
+      (Istore(chunk, addr), eloc :: rem)
+  | (Calloc, _) -> (Ialloc 0, args)
+  | (Cmodify, _) -> (Imodify, args)
   | (Caddi, _) -> sel_arith_comm Iadd args
   | (Csubi, _) -> sel_arith Isub args
   | (Cmuli, _) -> sel_arith_comm Imul args
@@ -94,45 +90,45 @@ let rec sel_oper op args =
   | (Cadda, _) -> sel_arith_comm Iadd args
   | (Csuba, _) -> sel_arith Isub args
   | (Ccmpa comp, _) -> sel_arith_comp (Iunsigned comp) args
-  | (Caddf, _) -> (Iaddf, Ctuple args)
-  | (Csubf, _) -> (Isubf, Ctuple args)  
-  | (Cmulf, _) -> (Imulf, Ctuple args)  
-  | (Cdivf, _) -> (Idivf, Ctuple args)
-  | (Cfloatofint, _) -> (Ifloatofint, Ctuple args)
-  | (Cintoffloat, _) -> (Iintoffloat, Ctuple args)
+  | (Caddf, _) -> (Iaddf, args)
+  | (Csubf, _) -> (Isubf, args)  
+  | (Cmulf, _) -> (Imulf, args)  
+  | (Cdivf, _) -> (Idivf, args)
+  | (Cfloatofint, _) -> (Ifloatofint, args)
+  | (Cintoffloat, _) -> (Iintoffloat, args)
   | _ -> fatal_error "Selection.sel_oper"
 
 and sel_arith_comm op = function
-    [arg; Cconst(Const_int n)] when Proc.is_immediate n ->
-      (Iintop_imm(op, n), arg)
-  | [arg; Cconst(Const_pointer n)] when Proc.is_immediate n ->
-      (Iintop_imm(op, n), arg)
-  | [Cconst(Const_int n); arg] when Proc.is_immediate n ->
-      (Iintop_imm(op, n), arg)
-  | [Cconst(Const_pointer n); arg] when Proc.is_immediate n ->
-      (Iintop_imm(op, n), arg)
+    [arg; Cconst_int n] when Proc.is_immediate n ->
+      (Iintop_imm(op, n), [arg])
+  | [arg; Cconst_pointer n] when Proc.is_immediate n ->
+      (Iintop_imm(op, n), [arg])
+  | [Cconst_int n; arg] when Proc.is_immediate n ->
+      (Iintop_imm(op, n), [arg])
+  | [Cconst_pointer n; arg] when Proc.is_immediate n ->
+      (Iintop_imm(op, n), [arg])
   | args ->
-      (Iintop op, Ctuple args)
+      (Iintop op, args)
 
 and sel_arith op = function
-    [arg; Cconst(Const_int n)] when Proc.is_immediate n ->
-      (Iintop_imm(op, n), arg)
-  | [arg; Cconst(Const_pointer n)] when Proc.is_immediate n ->
-      (Iintop_imm(op, n), arg)
+    [arg; Cconst_int n] when Proc.is_immediate n ->
+      (Iintop_imm(op, n), [arg])
+  | [arg; Cconst_pointer n] when Proc.is_immediate n ->
+      (Iintop_imm(op, n), [arg])
   | args ->
-      (Iintop op, Ctuple args)
+      (Iintop op, args)
 
 and sel_arith_comp cmp = function
-    [arg; Cconst(Const_int n)] when Proc.is_immediate n ->
-      (Iintop_imm(Icomp cmp, n), arg)
-  | [arg; Cconst(Const_pointer n)] when Proc.is_immediate n ->
-      (Iintop_imm(Icomp cmp, n), arg)
-  | [Cconst(Const_int n); arg] when Proc.is_immediate n ->
-      (Iintop_imm(Icomp(swap_intcomp cmp), n), arg)
-  | [Cconst(Const_pointer n); arg] when Proc.is_immediate n ->
-      (Iintop_imm(Icomp(swap_intcomp cmp), n), arg)
+    [arg; Cconst_int n] when Proc.is_immediate n ->
+      (Iintop_imm(Icomp cmp, n), [arg])
+  | [arg; Cconst_pointer n] when Proc.is_immediate n ->
+      (Iintop_imm(Icomp cmp, n), [arg])
+  | [Cconst_int n; arg] when Proc.is_immediate n ->
+      (Iintop_imm(Icomp(swap_intcomp cmp), n), [arg])
+  | [Cconst_pointer n; arg] when Proc.is_immediate n ->
+      (Iintop_imm(Icomp(swap_intcomp cmp), n), [arg])
   | args ->
-      (Iintop(Icomp cmp), Ctuple args)
+      (Iintop(Icomp cmp), args)
 
 and swap_intcomp = function
     Isigned cmp -> Isigned(swap_comparison cmp)
@@ -141,15 +137,15 @@ and swap_intcomp = function
 (* Instruction selection for conditionals *)
 
 let sel_condition = function
-    Cop(Ccmpi cmp, [arg1; Cconst(Const_int n)]) ->
+    Cop(Ccmpi cmp, [arg1; Cconst_int n]) ->
       (Iinttest_imm(Isigned cmp, n), arg1)
-  | Cop(Ccmpi cmp, [Cconst(Const_int n); arg2]) ->
+  | Cop(Ccmpi cmp, [Cconst_int n; arg2]) ->
       (Iinttest_imm(Isigned(swap_comparison cmp), n), arg2)
   | Cop(Ccmpi cmp, args) ->
       (Iinttest(Isigned cmp), Ctuple args)
-  | Cop(Ccmpa cmp, [arg1; Cconst(Const_pointer n)]) ->
+  | Cop(Ccmpa cmp, [arg1; Cconst_pointer n]) ->
       (Iinttest_imm(Iunsigned cmp, n), arg1)
-  | Cop(Ccmpa cmp, [Cconst(Const_pointer n); arg2]) ->
+  | Cop(Ccmpa cmp, [Cconst_pointer n; arg2]) ->
       (Iinttest_imm(Iunsigned(swap_comparison cmp), n), arg2)
   | Cop(Ccmpa cmp, args) ->
       (Iinttest(Iunsigned cmp), Ctuple args)
@@ -158,128 +154,448 @@ let sel_condition = function
   | arg ->
       (Itruetest, arg)
 
-(* Flattening of tuples *)
+(* Naming of registers *)
 
-let rec flatten_tuples = function
-    [] -> []
-  | Ctuple el :: rem -> flatten_tuples el @ flatten_tuples rem
-  | exp :: rem -> exp :: flatten_tuples rem
+let all_regs_anonymous rv =
+  try
+    for i = 0 to Array.length rv - 1 do
+      if String.length rv.(i).name > 0 then raise Exit
+    done;
+    true
+  with Exit ->
+    false
 
-(* Enumerate integers *)
+let name_regs id rv =
+  if Array.length rv = 1 then
+    rv.(0).name <- Ident.name id
+  else
+    for i = 0 to Array.length rv - 1 do
+      rv.(i).name <- Ident.name id ^ "#" ^ string_of_int i
+    done
 
-let rec interval lo hi =
-  if lo > hi then [] else lo :: interval (lo+1) hi
+(* Buffering of instruction sequences *)
 
-(* Instruction selection and annotation for an expression *)
+type instruction_sequence = instruction ref
 
-let rec sel_expr = function
-    Cconst c ->
-      (Sconst c, 0)
-  | Cvar v ->
-      (Svar v, 0)
-  | Clet(v, e1, e2) ->
-      let (s1, n1) = sel_expr e1 in
-      let (s2, n2) = sel_expr e2 in
-      (Slet(v, s1, s2), max n1 (n2 + 1))
-  | Cassign(v, e1) ->
-      let (s1, n1) = sel_expr e1 in
-      (Sassign(v, s1), n1)
-  | Ctuple(el) ->
-      begin match flatten_tuples el with
-        [] ->
-          (Stuple([||], []), 0)
-      | [e1] ->
-          sel_expr e1
-      | [e1; e2] ->
-          let (s1, n1) = sel_expr e1 in
-          let (s2, n2) = sel_expr e2 in
-          if n1 >= n2 then
-            (Stuple([|s1;s2|], [0;1]), max n1 (n2 + 1))
-          else
-            (Stuple([|s1;s2|], [1;0]), max n2 (n1 + 1))
-      | el ->
-          let sv = Array.of_list(List.map sel_expr el) in
-          let perm =
-            Sort.list
-              (fun i j ->
-                let (_, ni) = sv.(i) and (_, nj) = sv.(j) in i >= j)
-              (interval 0 (Array.length sv - 1)) in
-          let need = ref 0 and accu = ref 0 in
-          List.iter
-            (fun i ->
-              let (_, ni) = sv.(i) in
-              need := max !need (ni + !accu);
-              incr accu)
-            perm;
-          let cases = Array.map (fun (s, n) -> s) sv in
-          (Stuple(cases, perm), !need)
+let new_sequence() = ref dummy_instr
+
+let insert desc arg res seq =
+  seq := instr_cons desc arg res !seq
+
+let extract_sequence seq =
+  let rec extract res i =
+    if i == dummy_instr
+    then res
+    else extract (instr_cons i.desc i.arg i.res res) i.next in
+  extract (end_instr()) !seq
+
+(* Insert a sequence of moves from one pseudoreg set to another. *)
+
+let insert_move src dst seq =
+  if src.stamp <> dst.stamp then
+    insert (Iop Imove) [|src|] [|dst|] seq
+
+let insert_moves src dst seq =
+  for i = 0 to Array.length src - 1 do
+    insert_move src.(i) dst.(i) seq
+  done
+
+(* Insert moves and stack offsets for function arguments and results *)
+
+let insert_move_args arg loc stacksize seq =
+  if stacksize <> 0 then insert (Iop(Istackoffset stacksize)) [||] [||] seq;
+  insert_moves arg loc seq
+
+let insert_move_results loc res stacksize seq =
+  if stacksize <> 0 then insert(Iop(Istackoffset(-stacksize))) [||] [||] seq;
+  insert_moves loc res seq
+
+(* "Join" two instruction sequences, making sure they return their results
+   in the same registers. *)
+
+let join r1 seq1 r2 seq2 =
+  let l1 = Array.length r1 and l2 = Array.length r2 in
+  if l1 = 0 then r2
+  else if l2 = 0 then r1
+  else begin
+    let r = Array.new l1 Reg.dummy in
+    for i = 0 to l1-1 do
+      if String.length r1.(i).name = 0 then begin
+        r.(i) <- r1.(i);
+        insert_move r2.(i) r1.(i) seq2
+      end else if String.length r2.(i).name = 0 then begin
+        r.(i) <- r2.(i);
+        insert_move r1.(i) r2.(i) seq1
+      end else begin
+        r.(i) <- Reg.new r1.(i).typ;
+        insert_move r1.(i) r.(i) seq1;
+        insert_move r2.(i) r.(i) seq2
       end
+    done;
+    r
+  end
+
+(* Same, for N branches *)
+
+let join_array rs =
+  let dest = ref [||] in
+  for i = 0 to Array.length rs - 1 do
+    let (r, s) = rs.(i) in
+    if Array.length r > 0 then dest := r
+  done;
+  if Array.length !dest > 0 then
+    for i = 0 to Array.length rs - 1 do
+      let (r, s) = rs.(i) in
+      if Array.length r > 0 then insert_moves r !dest s
+    done;
+  !dest
+
+(* Add the instructions for the given expression
+   at the end of the given sequence *)
+
+let rec emit_expr env exp seq =
+  match exp with
+    Cconst_int n ->
+      let r = Reg.newv typ_int in
+      insert (Iop(Iconst_int n)) [||] r seq;
+      r
+  | Cconst_float n ->
+      let r = Reg.newv typ_float in
+      insert (Iop(Iconst_float n)) [||] r seq;
+      r
+  | Cconst_symbol n ->
+      let r = Reg.newv typ_addr in
+      insert (Iop(Iconst_symbol n)) [||] r seq;
+      r
+  | Cconst_pointer n ->
+      let r = Reg.newv typ_addr in
+      insert (Iop(Iconst_int n)) [||] r seq;
+      r
+  | Cvar v ->
+      begin try
+        Tbl.find v env
+      with Not_found ->
+        fatal_error("Selection.emit_expr: unbound var " ^ Ident.name v)
+      end
+  | Clet(v, e1, e2) ->
+      emit_expr (emit_let env v e1 seq) e2 seq
+  | Cassign(v, e1) ->
+      let rv =
+        try
+          Tbl.find v env
+        with Not_found ->
+          fatal_error ("Selection.emit_expr: unbound var " ^ Ident.name v) in
+      let r1 = emit_expr env e1 seq in
+      insert_moves r1 rv seq;
+      [||]
+  | Ctuple exp_list ->
+      let (simple_list, ext_env) = emit_parts_list env exp_list seq in
+      emit_tuple ext_env simple_list seq
+  | Cop(Cproj(ofs, len), [Cop(Cload ty, [arg])]) ->
+      let byte_offset = size_machtype(Array.sub ty 0 ofs) in
+      emit_expr env
+        (Cop(Cload(Array.sub ty ofs len),
+             [Cop(Cadda, [arg; Cconst_int byte_offset])])) seq
+  | Cop(Cproj(ofs, len), [arg]) ->
+      let r = emit_expr env arg seq in
+      Array.sub r ofs len
+  | Cop(Craise, [arg]) ->
+      let r1 = emit_expr env arg seq in
+      let rd = [|Proc.loc_exn_bucket|] in
+      insert (Iop Imove) r1 rd seq;
+      insert Iraise rd [||] seq;
+      [||]
+  | Cop(op, args) ->
+      let (simple_args, env) = emit_parts_list env args seq in
+      let ty = oper_result_type op in
+      let (new_op, new_args) =
+        try
+          Proc.select_oper op simple_args
+        with Proc.Use_default ->
+          sel_operation op simple_args in
+      begin match new_op with
+        Icall_ind ->
+          Proc.contains_calls := true;
+          let r1 = emit_tuple env new_args seq in
+          let rarg = Array.sub r1 1 (Array.length r1 - 1) in
+          let rd = Reg.newv ty in
+          let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
+          let loc_res = Proc.loc_results rd in
+          insert_move_args rarg loc_arg stack_ofs seq;
+          insert (Iop Icall_ind) (Array.append [|r1.(0)|] loc_arg) loc_res seq;
+          insert_move_results loc_res rd stack_ofs seq;
+          rd
+      | Icall_imm lbl ->
+          Proc.contains_calls := true;
+          let r1 = emit_tuple env new_args seq in
+          let rd = Reg.newv ty in
+          let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
+          let loc_res = Proc.loc_results rd in
+          insert_move_args r1 loc_arg stack_ofs seq;
+          insert (Iop(Icall_imm lbl)) loc_arg loc_res seq;
+          insert_move_results loc_res rd stack_ofs seq;
+          rd
+      | Iextcall lbl ->
+          Proc.contains_calls := true;
+          let r1 = emit_tuple env new_args seq in
+          let rd = Reg.newv ty in
+          let (loc_arg, stack_ofs) = Proc.loc_external_arguments r1 in
+          let loc_res = Proc.loc_external_results rd in
+          insert_move_args r1 loc_arg stack_ofs seq;
+          insert (Iop(Iextcall lbl)) loc_arg loc_res seq;
+          insert_move_results loc_res rd stack_ofs seq;
+          rd
+      | Iload(Word, addr) ->
+          let r1 = emit_tuple env new_args seq in
+          let rd = Reg.newv ty in
+          let a = ref addr in
+          for i = 0 to Array.length ty - 1 do
+            insert(Iop(Iload(Word, !a))) r1 [|rd.(i)|] seq;
+            a := Arch.offset_addressing !a (size_component ty.(i))
+          done;
+          rd
+      | Istore(Word, addr) ->
+          begin match new_args with
+            [] -> fatal_error "Selection.Istore"
+          | arg_addr :: args_data ->
+              let ra = emit_expr env arg_addr seq in
+              emit_stores env args_data seq ra addr;
+              [||]
+          end
+      | Ialloc _ ->
+          Proc.contains_calls := true;
+          let rd = Reg.newv typ_addr in
+          let size = size_expr env (Ctuple new_args) in
+          insert (Iop(Ialloc size)) [||] rd seq;
+          emit_stores env new_args seq rd 
+            (Arch.offset_addressing Arch.identity_addressing (-Arch.size_int));
+          rd
+      | op ->
+          if op = Imodify then Proc.contains_calls := true;
+          let r1 = emit_tuple env new_args seq in
+          let rd = Reg.newv ty in
+          begin try
+            (* Offer the processor description an opportunity to insert moves
+               before and after the operation, i.e. for two-address 
+               instructions, or instructions using dedicated registers. *)
+            let (rsrc, rdst) = Proc.pseudoregs_for_operation op r1 rd in
+            insert_moves r1 rsrc seq;
+            insert (Iop op) rsrc rdst seq;
+            insert_moves rdst rd seq
+          with Proc.Use_default ->
+            (* Assume no constraints on arg and res registers *)
+            insert (Iop op) r1 rd seq
+          end;
+          rd
+      end        
   | Csequence(e1, e2) ->
-      let (s1, n1) = sel_expr e1 in
-      let (s2, n2) = sel_expr e2 in
-      (Ssequence(s1, s2), max n1 n2)
+      emit_expr env e1 seq;
+      emit_expr env e2 seq
   | Cifthenelse(econd, eif, eelse) ->
       let (cond, earg) = sel_condition econd in
-      let (sarg, narg) = sel_expr earg in
-      let (sif, nif) = sel_expr eif in
-      let (selse, nelse) = sel_expr eelse in
-      (Sifthenelse(cond, sarg, sif, selse), max narg (max nif nelse))
+      let rarg = emit_expr env earg seq in
+      let (rif, sif) = emit_sequence env eif in
+      let (relse, selse) = emit_sequence env eelse in
+      let r = join rif sif relse selse in
+      insert (Iifthenelse(cond, extract_sequence sif, extract_sequence selse))
+             rarg [||] seq;
+      r
   | Cswitch(esel, index, ecases) ->
-      let (ssel, nsel) = sel_expr esel in
-      let scases = Array.map sel_expr ecases in
-      let need = ref nsel in
-      for i = 0 to Array.length scases - 1 do
-        let (_, n) = scases.(i) in need := max !need n
-      done;
-      (Sswitch(ssel, index, Array.map (fun (s, n) -> s) scases), !need)
-  | Cwhile(Cconst(Const_int 1), ebody) ->
-      let (sbody, nbody) = sel_expr ebody in
-      (Sloop sbody, nbody)
-  | Cwhile(econd, ebody) ->
-      let (cond, earg) = sel_condition econd in
-      let (sarg, narg) = sel_expr earg in
-      let (sbody, nbody) = sel_expr ebody in
-      (Scatch(Sloop(Sifthenelse(cond, sarg, sbody, Sexit)), Stuple([||], [])),
-       max narg nbody)
+      let rsel = emit_expr env esel seq in
+      let rscases = Array.map (emit_sequence env) ecases in
+      let r = join_array rscases in
+      insert (Iswitch(index,
+                      Array.map (fun (r, s) -> extract_sequence s) rscases))
+             rsel [||] seq;
+      r
+  | Cloop(ebody) ->
+      let (rarg, sbody) = emit_sequence env ebody in
+      insert (Iloop(extract_sequence sbody)) [||] [||] seq;
+      [||]
   | Ccatch(e1, e2) ->
-      let (s1, n1) = sel_expr e1 in
-      let (s2, n2) = sel_expr e2 in
-      (Scatch(s1, s2), max n1 n2)
+      let (r1, s1) = emit_sequence env e1 in
+      let (r2, s2) = emit_sequence env e2 in
+      let r = join r1 s1 r2 s2 in
+      insert (Icatch(extract_sequence s1, extract_sequence s2)) [||] [||] seq;
+      r
   | Cexit ->
-      (Sexit, 0)
+      insert Iexit [||] [||] seq;
+      [||]
   | Ctrywith(e1, v, e2) ->
-      let (s1, n1) = sel_expr e1 in
-      let (s2, n2) = sel_expr e2 in
-      (Strywith(s1, v, s2), max n1 (n2 + 1))
-  | Cop(Cproj(ofs, len), [Cop(Cload ty, [arg])]) ->
-      sel_expr
-        (Cop(Cload (Array.sub ty ofs len),
-             [Cop(Cadda,
-                [arg; Cconst(Const_int(size_machtype(Array.sub ty 0 ofs)))])]))
-  | Cop(Cproj(ofs, len), [arg]) ->
-      let (s, n) = sel_expr arg in (Sproj(s, ofs, len), n)
-  | Cop(Craise, [arg]) ->
-      let (s, n) = sel_expr arg in (Sraise s, n)
-  | Cop(op, args) ->
-      let ty = oper_result_type op in
-      let cost = oper_cost op in
-      (* Offer the processor description a chance to do its own selection,
-         e.g. to recognize processor-specific instructions *)
-      try
-        let (newop, newarg) = Proc.select_oper op args in
-        let (sarg, narg) = sel_expr newarg in
-        (Sop(newop, sarg, ty), narg + cost)
-      with Proc.Use_default ->
-      (* Do our own selection *)
-        match op with
-          Ccmpf comp ->
-            let (sarg, narg) = sel_expr (Ctuple args) in
-            (Sifthenelse(Ifloattest comp, sarg,
-                         Sconst(Const_int 1), Sconst(Const_int 0)), narg)
-        | _ ->
-            let (newop, newarg) = sel_oper op args in
-            let (sarg, narg) = sel_expr newarg in
-            (Sop(newop, sarg, ty), narg + cost)
+      let (r1, s1) = emit_sequence env e1 in
+      let rv = Reg.newv typ_addr in
+      let (r2, s2) = emit_sequence (Tbl.add v rv env) e2 in
+      let r = join r1 s1 r2 s2 in
+      insert
+        (Itrywith(extract_sequence s1,
+                  instr_cons (Iop Imove) [|Proc.loc_exn_bucket|] rv
+                     (extract_sequence s2)))
+        [||] [||] seq;
+      r
 
-let expression e =
-  let (s, n) = sel_expr e in s
+and emit_sequence env exp =
+  let seq = new_sequence() in
+  let r = emit_expr env exp seq in
+  (r, seq)
+
+and emit_let env v e1 seq =
+  let r1 = emit_expr env e1 seq in
+  if all_regs_anonymous r1 then begin
+    name_regs v r1;
+    Tbl.add v r1 env
+  end else begin
+    let rv = Array.new (Array.length r1) Reg.dummy in
+    for i = 0 to Array.length r1 - 1 do rv.(i) <- Reg.new r1.(i).typ done;
+    name_regs v rv;
+    insert_moves r1 rv seq;
+    Tbl.add v rv env
+  end
+
+and emit_parts env exp seq =
+  match exp with
+    Cconst_int _ | Cconst_float _ | Cconst_symbol _ | Cconst_pointer _ |
+    Cvar _ ->
+      (exp, env)
+  | Ctuple el ->
+      let (explist, env) = emit_parts_list env el seq in
+      (Ctuple explist, env)
+  | Clet(id, arg, body) ->
+      emit_parts (emit_let env id arg seq) body seq
+  | Cop(op, args) when safe_operation op ->
+      let (new_args, new_env) = emit_parts_list env args seq in
+      (Cop(op, new_args), new_env)
+  | _ ->
+      let r = emit_expr env exp seq in
+      if Array.length r = 0 then
+        (Ctuple [], env)
+      else begin
+        let id = Ident.new "bind" in
+        (Cvar id, Tbl.add id r env)
+      end
+
+and emit_parts_list env exp_list seq =
+  match exp_list with
+    [] -> ([], env)
+  | exp :: rem ->
+      (* This ensures right-to-left evaluation, consistent with the
+         bytecode compiler *)
+      let (new_rem, new_env) = emit_parts_list env rem seq in
+      let (new_exp, fin_env) = emit_parts new_env exp seq in
+      (new_exp :: new_rem, fin_env)
+
+and emit_tuple env exp_list seq =
+  Array.concat(List.map (fun e -> emit_expr env e seq) exp_list)
+
+and emit_stores env data seq regs_addr addr =
+  let a = ref addr in
+  List.iter
+    (fun e ->
+      try
+        (* Offer the machine description an opportunity to optimize
+           the store, e.g. if constant -> memory or memory -> memory
+           moves are available *)
+        let (op, arg) = Proc.select_store !a e in
+        let r = emit_expr env arg seq in
+        insert (Iop op) (Array.append r regs_addr) [||] seq;
+        a := Arch.offset_addressing !a (size_expr env e)
+      with Proc.Use_default ->
+        let r = emit_expr env e seq in
+        for i = 0 to Array.length r - 1 do
+          insert (Iop(Istore(Word, !a)))
+                 (Array.append [|r.(i)|] regs_addr) [||] seq;
+          a := Arch.offset_addressing !a (size_component r.(i).typ)
+        done)
+    data
+
+(* Same, but in tail position *)
+
+let emit_return env exp seq =
+  let r = emit_expr env exp seq in
+  let loc = Proc.loc_results r in
+  insert_moves r loc seq;
+  insert Ireturn loc [||] seq
+
+let rec emit_tail env exp seq =
+  match exp with
+    Clet(v, e1, e2) ->
+      emit_tail (emit_let env v e1 seq) e2 seq
+  | Cop(Capply ty as op, args) ->
+      let (simple_args, env) = emit_parts_list env args seq in
+      let (new_op, new_args) = sel_operation op simple_args in
+      begin match new_op with
+        Icall_ind ->
+          Proc.contains_calls := true;
+          let r1 = emit_tuple env new_args seq in
+          let rarg = Array.sub r1 1 (Array.length r1 - 1) in
+          let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
+          if stack_ofs <> 0 then
+            emit_return env exp seq
+          else begin
+            insert_moves rarg loc_arg seq;
+            insert (Iop Itailcall_ind)
+                   (Array.append [|r1.(0)|] loc_arg) [||] seq
+          end
+      | Icall_imm lbl ->
+          Proc.contains_calls := true;
+          let r1 = emit_tuple env new_args seq in
+          let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
+          if stack_ofs <> 0 then
+            emit_return env exp seq
+          else begin
+            insert_moves r1 loc_arg seq;
+            insert (Iop(Itailcall_imm lbl)) loc_arg [||] seq
+          end
+      | _ -> fatal_error "Selection.emit_tail"
+      end
+  | Cop(Craise, [e1]) ->
+      let r1 = emit_expr env e1 seq in
+      let rd = [|Proc.loc_exn_bucket|] in
+      insert (Iop Imove) r1 rd seq;
+      insert Iraise rd [||] seq
+  | Csequence(e1, e2) ->
+      emit_expr env e1 seq;
+      emit_tail env e2 seq
+  | Cifthenelse(econd, eif, eelse) ->
+      let (cond, earg) = sel_condition econd in
+      let rarg = emit_expr env earg seq in
+      insert (Iifthenelse(cond, emit_tail_sequence env eif,
+                                emit_tail_sequence env eelse))
+             rarg [||] seq
+  | Cswitch(esel, index, ecases) ->
+      let rsel = emit_expr env esel seq in
+      insert (Iswitch(index, Array.map (emit_tail_sequence env) ecases))
+             rsel [||] seq
+  | Ccatch(e1, e2) ->
+      insert (Icatch(emit_tail_sequence env e1, emit_tail_sequence env e2))
+             [||] [||] seq
+  | Cexit ->
+      insert Iexit [||] [||] seq
+  | _ ->
+      emit_return env exp seq
+
+and emit_tail_sequence env exp =
+  let seq = new_sequence() in
+  emit_tail env exp seq;
+  extract_sequence seq
+
+(* Sequentialization of a function definition *)
+
+let fundecl f =
+  Proc.contains_calls := false;
+  let rargs =
+    List.map
+      (fun (id, ty) -> let r = Reg.newv ty in name_regs id r; r)
+      f.Cmm.fun_args in
+  let rarg = Array.concat rargs in
+  let loc_arg = Proc.loc_parameters rarg in
+  let env =
+    List.fold_right2
+      (fun (id, ty) r env -> Tbl.add id r env)
+      f.Cmm.fun_args rargs Tbl.empty in
+  let seq = new_sequence() in
+  insert_moves loc_arg rarg seq;
+  emit_tail env f.Cmm.fun_body seq;
+  { fun_name = f.Cmm.fun_name;
+    fun_args = loc_arg;
+    fun_body = extract_sequence seq;
+    fun_fast = f.Cmm.fun_fast }
