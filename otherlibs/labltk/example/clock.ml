@@ -82,15 +82,14 @@ class clock ~parent = object (self)
 
   (* Redraw everything *)
   method redraw =
-    Canvas.coords_set ~canvas
-      ~coords:[ 1; 1; width - 2; height - 2 ]
-      (`Tag "cadran");
+    Canvas.coords_set ~coords:[ 1; 1; width - 2; height - 2 ]
+      canvas (`Tag "cadran");
     self#draw_figures;
     self#draw_arrows (Unix.localtime (Unix.time ()))
 
   (* Delete and redraw the figures *)
   method draw_figures =
-    Canvas.delete ~canvas [`Tag "figures"];
+    Canvas.delete canvas [`Tag "figures"];
     for i = 1 to 12 do
       let angle = float (rflag * i - 3) *. pi /. 6. in
       Canvas.create_text
@@ -103,29 +102,27 @@ class clock ~parent = object (self)
 
   (* Resize and reposition the arrows *)
   method draw_arrows tm =
-    Canvas.configure_line ~canvas
-      ~width:(min width height / 40)
-      (`Tag "hours");
+    Canvas.configure_line ~width:(min width height / 40)
+      canvas (`Tag "hours");
     let hangle =
       float (rflag * (tm.Unix.tm_hour * 60 + tm.Unix.tm_min) - 180)
         *. pi /. 360. in
-    Canvas.coords_set ~canvas
+    Canvas.coords_set
       ~coords:[ self#x 0.; self#y 0.;
-               self#x (cos hangle /. 2.); self#y (sin hangle /. 2.) ]
-      (`Tag "hours");
-    Canvas.configure_line ~canvas
-      ~width:(min width height / 50)
-      (`Tag "minutes");
+                self#x (cos hangle /. 2.); self#y (sin hangle /. 2.) ]
+      canvas (`Tag "hours");
+    Canvas.configure_line ~width:(min width height / 50)
+      canvas (`Tag "minutes");
     let mangle = float (rflag * tm.Unix.tm_min - 15) *. pi /. 30. in
-    Canvas.coords_set ~canvas
+    Canvas.coords_set
       ~coords:[ self#x 0.; self#y 0.;
-               self#x (cos mangle /. 1.5); self#y (sin mangle /. 1.5) ]
-      (`Tag "minutes");
+                self#x (cos mangle /. 1.5); self#y (sin mangle /. 1.5) ]
+      canvas (`Tag "minutes");
     let sangle = float (rflag * tm.Unix.tm_sec - 15) *. pi /. 30. in
-    Canvas.coords_set ~canvas
+    Canvas.coords_set
       ~coords:[ self#x 0.; self#y 0.;
-               self#x (cos sangle /. 1.25); self#y (sin sangle /. 1.25) ]
-      (`Tag "seconds")
+                self#x (cos sangle /. 1.25); self#y (sin sangle /. 1.25) ]
+      canvas (`Tag "seconds")
 end
 
 (* Initialize the Tcl interpreter *)

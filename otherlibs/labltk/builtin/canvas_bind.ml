@@ -1,6 +1,6 @@
-let bind ~canvas:widget ~events
+let bind ~events
     ?(extend = false) ?(breakable = false) ?(fields = [])
-    ?action tag =
+    ?action widget tag =
   tkCommand
     [| cCAMLtoTKwidget widget;
        TkToken "bind";

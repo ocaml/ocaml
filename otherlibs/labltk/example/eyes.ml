@@ -48,7 +48,7 @@ let _ =
            else 
              e.ev_MouseX, e.ev_MouseY
          in
-         Canvas.move ~canvas:c ~x: (nx - !curx) ~y: (ny - !cury) o;
+         Canvas.move ~x: (nx - !curx) ~y: (ny - !cury) c o;
          curx := nx;
          cury := ny)
        c

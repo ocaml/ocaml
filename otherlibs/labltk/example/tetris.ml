@@ -213,33 +213,33 @@ class cell t1 t2 t3 ~canvas ~x ~y = object
   method set ~color:col =
     if color = col then () else
     if color <> 0 & col = 0 then begin
-      Canvas.move t1 ~canvas
+      Canvas.move canvas t1
         ~x:(- block_size * (x + 1) -10 - cell_border * 2)
         ~y:(- block_size * (y + 1) -10 - cell_border * 2);
-      Canvas.move t2 ~canvas
+      Canvas.move canvas t2
         ~x:(- block_size * (x + 1) -10 - cell_border * 2)
         ~y:(- block_size * (y + 1) -10 - cell_border * 2);
-      Canvas.move t3 ~canvas
+      Canvas.move canvas t3
         ~x:(- block_size * (x + 1) -10 - cell_border * 2)
         ~y:(- block_size * (y + 1) -10 - cell_border * 2)
     end else begin
-      Canvas.configure_rectangle t2 ~canvas
+      Canvas.configure_rectangle canvas t2
         ~fill: colors.(col - 1)
         ~outline: colors.(col - 1);
-      Canvas.configure_rectangle t1 ~canvas
+      Canvas.configure_rectangle canvas t1
         ~fill: `Black
         ~outline: `Black;
-      Canvas.configure_rectangle t3 ~canvas
+      Canvas.configure_rectangle canvas t3
         ~fill: (`Color "light gray")
         ~outline: (`Color "light gray");
       if color = 0 & col <> 0 then begin
-        Canvas.move t1 ~canvas
+        Canvas.move canvas t1
           ~x: (block_size * (x+1)+10+ cell_border*2)
           ~y: (block_size * (y+1)+10+ cell_border*2);
-        Canvas.move t2 ~canvas
+        Canvas.move canvas t2
           ~x: (block_size * (x+1)+10+ cell_border*2)
           ~y: (block_size * (y+1)+10+ cell_border*2);
-        Canvas.move t3 ~canvas
+        Canvas.move canvas t3
           ~x: (block_size * (x+1)+10+ cell_border*2)
           ~y: (block_size * (y+1)+10+ cell_border*2)
       end     
@@ -314,9 +314,9 @@ let init fw =
                ~x1:(-block_size - 12) ~y1:(-block_size - 12)
                ~x2:(-13)              ~y2:(-13)
            in
-           Canvas.raise ~canvas:c t1;
-           Canvas.raise ~canvas:c t2;
-           Canvas.lower ~canvas:c t3;
+           Canvas.raise c t1;
+           Canvas.raise c t2;
+           Canvas.lower c t3;
            new cell ~canvas:c ~x ~y t1 t2 t3
          end)
   in
@@ -338,9 +338,9 @@ let init fw =
                ~x1:(-block_size - 12) ~y1:(-block_size - 12)
                ~x2:(-13)              ~y2:(-13)
            in
-           Canvas.raise ~canvas:nc t1;
-           Canvas.raise ~canvas:nc t2;
-           Canvas.lower ~canvas:nc t3;
+           Canvas.raise nc t1;
+           Canvas.raise nc t2;
+           Canvas.lower nc t3;
            new cell ~canvas:nc ~x ~y t1 t2 t3
          end)
   in
@@ -551,12 +551,12 @@ let _ =
         ~x: (block_size * 5 + block_size / 2)
         ~y: (block_size * 10 + block_size / 2)
         ~anchor: `Center in
-    Canvas.lower ~canvas i;
+    Canvas.lower canvas i;
     let img = Imagephoto.create () in
     fun file ->
       try 
         Imagephoto.configure img ~file: file;
-        Canvas.configure_image ~canvas i ~image: img 
+        Canvas.configure_image canvas i ~image: img 
       with
         _ -> 
           begin
