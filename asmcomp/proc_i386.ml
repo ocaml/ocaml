@@ -23,7 +23,7 @@ open Mach
 (* Registers available for register allocation *)
 
 (* Register map:
-    eax         0               eax - edx: function arguments and results
+    eax         0               eax - edi: function arguments and results
     ebx         1               eax: C function results
     ecx         2               ebx, esi, edi, ebp: preserved by C
     edx         3
