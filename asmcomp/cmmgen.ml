@@ -116,8 +116,12 @@ let tag_int = function
 let untag_int = function
     Cconst_int n -> Cconst_int(n asr 1)
   | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1]); Cconst_int 1]) -> c
-  | Cop(Cor, [Cop(Casr, [c; Cconst_int n]); Cconst_int 1]) ->
+  | Cop(Cor, [Cop(Casr, [c; Cconst_int n]); Cconst_int 1])
+    when n > 0 && n < size_int * 8 ->
       Cop(Casr, [c; Cconst_int (n+1)])
+  | Cop(Cor, [Cop(Clsr, [c; Cconst_int n]); Cconst_int 1])
+    when n > 0 && n < size_int * 8 ->
+      Cop(Clsr, [c; Cconst_int (n+1)])
   | Cop(Cor, [c; Cconst_int 1]) -> Cop(Casr, [c; Cconst_int 1])
   | c -> Cop(Casr, [c; Cconst_int 1])
 
