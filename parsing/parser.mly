@@ -579,8 +579,10 @@ class_type:
 		       {ptyp_desc = Ptyp_constr(Lident "option", [$3]);
 			ptyp_loc = $3.ptyp_loc},
 		       $5)) }
-  | labeled simple_core_type_or_tuple MINUSGREATER class_type
+  | LABEL simple_core_type_or_tuple MINUSGREATER class_type
       { mkcty(Pcty_fun($1, $2, $4)) }
+  | simple_core_type_or_tuple MINUSGREATER class_type
+      { mkcty(Pcty_fun("", $1, $3)) }
 ;
 class_signature:
     LBRACKET core_type_comma_list RBRACKET clty_longident
@@ -1171,13 +1173,53 @@ simple_core_type:
       { mktyp(Ptyp_object $2) }
   | LESS GREATER
       { mktyp(Ptyp_object []) }
-  | SHARP class_longident
-      { mktyp(Ptyp_class($2, [])) }
-  | simple_core_type SHARP class_longident %prec prec_constr_appl
-      { mktyp(Ptyp_class($3, [$1])) }
-  | LPAREN core_type_comma_list RPAREN SHARP class_longident
+  | SHARP class_longident opt_present
+      { mktyp(Ptyp_class($2, [], $3)) }
+  | simple_core_type SHARP class_longident opt_present %prec prec_constr_appl
+      { mktyp(Ptyp_class($3, [$1], $4)) }
+  | LPAREN core_type_comma_list RPAREN SHARP class_longident opt_present
       %prec prec_constr_appl
-      { mktyp(Ptyp_class($5, List.rev $2)) }
+      { mktyp(Ptyp_class($5, List.rev $2, $6)) }
+  | LBRACKET row_field_list RBRACKET
+      { let l = List.rev $2 in
+        mktyp(Ptyp_variant(l, true, List.map (fun (p,_,_) -> p) l)) }
+  | LBRACKET GREATER row_field_list RBRACKET
+      { let l = List.rev $3 in
+        mktyp(Ptyp_variant(l, false, List.map (fun (p,_,_) -> p) l)) }
+  | LBRACKETLESS row_field_list opt_opened RBRACKET
+      { mktyp(Ptyp_variant(List.rev $2, not $3, [])) }
+  | LBRACKETLESS row_field_list opt_opened GREATER name_tag_list RBRACKET
+      { mktyp(Ptyp_variant(List.rev $2, not $3, List.rev $5)) }
+  | LBRACKET RBRACKET
+      { mktyp(Ptyp_variant([],true,[])) }
+;
+opt_opened:
+    BAR DOTDOT					{ true }
+  | /* empty */					{ false }
+;
+row_field_list:
+    row_field					{ [$1] }
+  | row_field_list BAR row_field		{ $3 :: $1 }
+;
+row_field:
+    name_tag opt_ampersand amper_type_list	{ ($1, $2, List.rev $3) }
+  | name_tag					{ ($1, true, []) }
+;
+opt_ampersand:
+    AMPERSAND					{ true }
+  | /* empty */					{ false }
+;
+amper_type_list:
+    core_type					{ [$1] }
+  | amper_type_list AMPERSAND core_type		{ $3 :: $1 }
+;
+opt_present:
+    LBRACKET GREATER name_tag_list RBRACKET     { List.rev $3 }
+  | /* empty */					{ [] }
+;
+name_tag_list:
+    name_tag					{ [$1] }
+  | name_tag_list name_tag			{ $2 :: $1 }
 ;
 core_type_tuple:
     simple_core_type STAR simple_core_type      { [$3; $1] }
@@ -1259,7 +1301,8 @@ operator:
 ;
 constr_ident:
     UIDENT                                      { $1 }
-  | LBRACKET RBRACKET                           { "[]" }
+/* useless, and conflicts with variants
+  | LBRACKET RBRACKET                           { "[]" } */
   | LPAREN RPAREN                               { "()" }
   | COLONCOLON                                  { "::" }
   | FALSE                                       { "false" }
@@ -1318,10 +1361,6 @@ toplevel_directive:
 
 /* Miscellaneous */
 
-labeled:
-    /* empty */					{ "" }
-  | LABEL					{ $1 }
-;
 name_tag:
     BACKQUOTE ident				{ $2 }
 ;

@@ -110,9 +110,10 @@ let rec mark_loops_rec visited ty =
           if not (List.memq px !aliased) then
             aliased := px :: !aliased
         end else begin
-          if not (static_row row) then
+          if not (static_row row) then begin
             visited_objects := px :: !visited_objects;
-	  match row.row_name with
+	    iter_row (mark_loops_rec visited) row
+	  end else match row.row_name with
 	    Some(p, tyl) -> List.iter (mark_loops_rec visited) tyl
 	  | None ->
 	      iter_row (mark_loops_rec visited) row
@@ -246,9 +247,9 @@ let rec typexp sch prio0 ty =
 	open_hovbox 0;
 	print_char '[';
 	if row.row_closed && all_present then () else
-	if row.row_closed then print_char '<' else
-	if all_present then print_char '>';
-	print_list (row_field sch) (fun () -> printf "@ |") fields;
+	if all_present then print_char '>' else print_char '<';
+	print_list (row_field sch) (fun () -> printf "@,|") fields;
+	if not (row.row_closed || all_present) then printf "@,| ..";
 	if present <> [] && not all_present then begin
 	  print_space ();
 	  open_hovbox 2;
@@ -287,9 +288,12 @@ and row_field sch (l,f) =
   print_char '`';
   print_string l;
   begin match row_field_repr f with
-    Rpresent None | Reither([], _) -> ()
+    Rpresent None | Reither(true, [], _) -> ()
   | Rpresent(Some ty) -> print_space (); typexp sch 0 ty
-  | Reither(tyl,_) -> print_space (); typlist sch 0 " &" tyl
+  | Reither(c, tyl,_) ->
+      print_space ();
+      if c then printf "&@ ";
+      typlist sch 0 " &" tyl
   | Rabsent -> print_space (); print_string "[]"
   end;
   close_box ()

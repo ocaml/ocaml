@@ -196,7 +196,7 @@ let full_match tdefs force env =
 	List.fold_left
 	  (fun bound (tag,f) ->
 	    if f = Rabsent then prerr_endline ("Hidden tag " ^ tag ^ "\n\n");
-	    match f with Reither(tl,_) -> tl @ bound | _ -> bound)
+	    match f with Reither(_,tl,_) -> tl @ bound | _ -> bound)
 	[] fields in
       if force then
 	let row = { row_fields = fields; row_more = Ctype.newvar();

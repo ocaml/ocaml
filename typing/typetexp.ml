@@ -30,6 +30,9 @@ type error =
   | Unbound_row_variable of Longident.t
   | Type_mismatch of (type_expr * type_expr) list
   | Alias_type_mismatch of (type_expr * type_expr) list
+  | Present_has_conjunction of string
+  | Present_has_no_type of string
+  | Multiple_constructor of string
 
 exception Error of Location.t * error
 
@@ -143,37 +146,74 @@ let rec transl_type env policy styp =
       cstr
   | Ptyp_object fields ->
       newobj (transl_fields env policy fields)
-  | Ptyp_class(lid, stl) ->
+  | Ptyp_class(lid, stl, present) ->
       if policy = Fixed then
         raise(Error(styp.ptyp_loc, Unbound_row_variable lid));
-      let lid2 =
-        match lid with
-          Longident.Lident s     -> Longident.Lident ("#" ^ s)
-        | Longident.Ldot(r, s)   -> Longident.Ldot (r, "#" ^ s)
-        | Longident.Lapply(_, _) -> fatal_error "Typetexp.transl_type"
-      in
-      let (path, decl) =
-        try
-          Env.lookup_type lid2 env
+      let (path, decl, is_variant) =
+	try
+	  let (path, decl) = Env.lookup_type lid env in
+	  match decl.type_manifest with
+	    None -> raise Not_found
+	  | Some ty ->
+	      match (repr ty).desc with
+		Tvariant row when Btype.static_row row -> (path, decl, true)
+	      |	_ -> raise Not_found
+        with Not_found -> try
+	  if present <> [] then raise Not_found;
+	  let lid2 =
+            match lid with
+              Longident.Lident s     -> Longident.Lident ("#" ^ s)
+            | Longident.Ldot(r, s)   -> Longident.Ldot (r, "#" ^ s)
+            | Longident.Lapply(_, _) -> fatal_error "Typetexp.transl_type"
+	  in
+          let (path, decl) = Env.lookup_type lid2 env in
+	  (path, decl, false)
         with Not_found ->
-          raise(Error(styp.ptyp_loc, Unbound_class lid)) in
+          raise(Error(styp.ptyp_loc, Unbound_class lid))
+      in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                            List.length stl)));
       let args = List.map (transl_type env policy) stl in
+      let cstr = newty (Tconstr(path, args, ref Mnil)) in
       let ty =
-        try
-          Ctype.expand_head env (newty (Tconstr(path, args, ref Mnil)))
+	try Ctype.expand_head env cstr
         with Unify trace ->
           raise (Error(styp.ptyp_loc, Type_mismatch trace))
       in
       let params = Ctype.instance_list decl.type_params in
       List.iter2
         (fun (sty, ty') ty ->
-           try unify env ty ty' with Unify trace ->
+           try unify env ty' ty with Unify trace ->
              raise (Error(sty.ptyp_loc, Type_mismatch trace)))
         (List.combine stl args) params;
-      ty
+      begin match ty.desc with
+	Tvariant row ->
+	  let row = Btype.row_repr row in
+	  List.iter
+	    (fun l -> if not (List.mem_assoc l row.row_fields) then
+	      raise(Error(styp.ptyp_loc, Present_has_no_type l)))
+	    present;
+	  let bound = ref row.row_bound in
+	  let fields =
+	    List.map
+	      (fun (l,f) -> l,
+		if List.mem l present then f else
+		match Btype.row_field_repr f with
+		| Rpresent (Some ty) ->
+		    bound := ty :: !bound;
+		    Reither(false, [ty], ref None)
+		| Rpresent None ->
+		    Reither (true, [], ref None)
+		| _ -> f)
+	      row.row_fields
+	  in
+	  let row = { row with row_fields = fields; row_bound = !bound;
+		      row_name = Some (path, args) } in
+	  newty (Tvariant row)
+      |	_ ->
+	  ty
+      end
   | Ptyp_alias(st, alias) ->
       if Tbl.mem alias !type_variables || Tbl.mem alias !aliases then
         raise(Error(styp.ptyp_loc, Bound_type_variable alias))
@@ -185,6 +225,43 @@ let rec transl_type env policy styp =
           raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
         end;
         ty
+  | Ptyp_variant(fields, closed, present) ->
+      let bound = ref [] in
+      ignore (List.fold_left
+		(fun (ll,hl) (l,_,_) ->
+		  if List.mem l ll then
+		    raise(Error(styp.ptyp_loc, Multiple_constructor l));
+		  let h = Btype.hash_variant l in
+		  if List.mem h hl then
+		    raise(Ctype.Tags(l, List.assoc h (List.combine hl ll)));
+		  (l::ll, h::hl))
+		([],[])
+		fields);
+      let fields =
+	List.map
+	  (fun (l, c, stl) ->
+	    l, if List.mem l present then begin
+	      if List.length stl > 1 || c && stl <> [] then
+		raise(Error(styp.ptyp_loc, Present_has_conjunction l));
+	      match stl with [] -> Rpresent None
+	      | st::_ -> Rpresent(Some(transl_type env policy st))
+	    end else begin
+	      let tl = List.map (transl_type env policy) stl in
+	      bound := tl @ !bound;
+	      Reither(c, tl, ref None)
+	    end)
+	  fields
+      in
+      List.iter
+	(fun l -> if not (List.mem_assoc l fields) then
+	  raise(Error(styp.ptyp_loc, Present_has_no_type l)))
+	present;
+      let row =
+	{ row_fields = fields; row_more = newvar ();
+	  row_bound = !bound; row_closed = closed; row_name = None } in
+      if policy = Fixed && not (Btype.static_row row) then
+        raise(Error(styp.ptyp_loc, Unbound_type_variable "[..]"));
+      newty (Tvariant row)
 
 and transl_fields env policy =
   function
@@ -192,7 +269,7 @@ and transl_fields env policy =
       newty Tnil
   | {pfield_desc = Pfield_var} as field::_ ->
       if policy = Fixed then
-        raise(Error(field.pfield_loc, Unbound_type_variable ".."));
+        raise(Error(field.pfield_loc, Unbound_type_variable "<..>"));
       newvar ()
   | {pfield_desc = Pfield(s, e)}::l ->
       let ty1 = transl_type env policy e in
@@ -268,3 +345,9 @@ let report_error = function
            print_string "This alias is bound to type")
         (function () ->
            print_string "but is used as an instance of type")
+  | Present_has_conjunction l ->
+      printf "The present constructor %s has a conjunctive type" l
+  | Present_has_no_type l ->
+      printf "The present constructor %s has no type" l
+  | Multiple_constructor l ->
+      printf "The variant constructor %s is multiply defined" l

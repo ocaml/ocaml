@@ -28,8 +28,9 @@ and core_type_desc =
   | Ptyp_tuple of core_type list
   | Ptyp_constr of Longident.t * core_type list
   | Ptyp_object of core_field_type list
-  | Ptyp_class of Longident.t * core_type list
+  | Ptyp_class of Longident.t * core_type list * label list
   | Ptyp_alias of core_type * string
+  | Ptyp_variant of (label * bool * core_type list) list * bool * label list
 
 and core_field_type =
   { pfield_desc: core_field_desc;
