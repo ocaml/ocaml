@@ -273,7 +273,16 @@ faster, but unsafe: anything can happen if the program accesses an
 array or string outside of its bounds.
 
 \item["-v"]
-Print the version number of the compiler.
+Print the version number of the compiler and the location of the
+standard library directory, then exit.
+
+\item["-verbose"]
+Print all external commands before they are executed, in particular
+invocations of the assembler, C compiler, and linker.
+
+\item["-version"]
+Print the version number of the compiler in short form (e.g. "3.06"),
+then exit.
 
 \item["-w" \var{warning-list}]
 Enable or disable warnings according to the argument

@@ -305,12 +305,17 @@ runtime system \var{runtime-name}, built earlier with
 See section~\ref{s:custom-runtime} for more information.
 
 \item["-v"]
-Print the version number of the compiler, then exit.
+Print the version number of the compiler and the location of the
+standard library directory, then exit.
 
 \item["-verbose"]
 Print all external commands before they are executed, in particular
 invocations of the C compiler and linker in "-custom" mode.  Useful to
 debug C library problems.
+
+\item["-version"]
+Print the version number of the compiler in short form (e.g. "3.06"),
+then exit.
 
 \item["-w" \var{warning-list}]
 Enable or disable warnings according to the argument
