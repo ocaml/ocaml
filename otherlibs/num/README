@@ -18,13 +18,13 @@ USAGE:
 
 To use the bignum library from your programs, just do
 
-    ocamlc -custom <other options> nums.cma <other .cmo and .ml files> -lnums
+    ocamlc -custom <options> nums.cma <.cmo and .ml files> -cclib -lnums
 
 for the linking phase.
 
 If you'd like to have the bignum functions available at toplevel, do
 
-    ocamlmktop -o ocamltopnum -custom <other options> nums.cma <other .cmo and .ml files> -lnums
+    ocamlmktop -o ocamltopnum -custom <options> nums.cma <.cmo and .ml files> -cclib -lnums
     ./ocamltopnum
 
 As an example, try:
