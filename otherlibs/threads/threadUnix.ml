@@ -178,6 +178,6 @@ let establish_server server_fun sockaddr =
             close_in inchan;
             close_out outchan;
             exit 0
-    | id -> close s; waitpid [] id (* Reclaim the son *); ()
+    | id -> close s; let _ = waitpid [] id (* Reclaim the son *) in ()
   done
 

@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -107,7 +107,9 @@ external frexp : float -> float * int = "frexp_float"
 external ldexp : float -> int -> float = "ldexp_float"
 external modf : float -> float * float = "modf_float" "modf"
 external float : int -> float = "%floatofint"
+external float_of_int : int -> float = "%floatofint"
 external truncate : float -> int = "%intoffloat"
+external int_of_float : float -> int = "%intoffloat"
 
 (* String operations -- more in module String *)
 
@@ -135,6 +137,10 @@ external format_float: string -> float -> string = "format_float"
 
 let string_of_bool b =
   if b then "true" else "false"
+let bool_of_string = function
+  | "true" -> true
+  | "false" -> false
+  | _ -> invalid_arg "string_of_bool"
 
 let string_of_int n =
   format_int "%d" n
