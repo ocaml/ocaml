@@ -602,7 +602,7 @@ The expression @expr '#' method-name@ invokes the method
 
 \subsubsection*{Coercion}
 
-The type of an object can be coerced (weakened) to a subtype.
+The type of an object can be coerced (weakened) to a supertype.
 %
 The expression @'(' expr ':>' typexpr ')'@ coerces the expression @expr@
 to type @typexpr@.
