@@ -349,12 +349,22 @@ and print_out_type_2 ppf =
 
 and print_simple_out_type ppf =
   function
-  | Otyp_var (ng, s) ->
-      fprintf ppf "'%s%s" (if ng then "_" else "") s
+  | Otyp_class (ng, id, tyl, tags) ->
+      let print_present ppf =
+        function
+        | [] -> ()
+        | l -> fprintf ppf "@[<hov>[>%a@]" pr_present l
+      in
+      fprintf ppf "@[%a%s#%a%a@]" print_typargs tyl
+        (if ng then "_" else "") print_ident id print_present tags
   | Otyp_constr (id, tyl) ->
       fprintf ppf "@[%a%a@]" print_typargs tyl print_ident id
+  | Otyp_object (fields, rest) ->
+      fprintf ppf "@[<2>< %a >@]" (print_fields rest) fields
   | Otyp_stuff s ->
       fprintf ppf "%s" s
+  | Otyp_var (ng, s) ->
+      fprintf ppf "'%s%s" (if ng then "_" else "") s
   | Otyp_variant (non_gen, row_fields, closed, tags) ->
       let print_present ppf =
         function
@@ -368,16 +378,6 @@ and print_simple_out_type ppf =
         (print_list print_row_field (fun ppf -> fprintf ppf "@;<1 -2>| "))
         row_fields
         print_present tags
-  | Otyp_object (fields, rest) ->
-      fprintf ppf "@[<2>< %a >@]" (print_fields rest) fields
-  | Otyp_class (ng, id, tyl, tags) ->
-      let print_present ppf =
-        function
-        | [] -> ()
-        | l -> fprintf ppf "@[<hov>[>%a@]" pr_present l
-      in
-      fprintf ppf "@[%a%s#%a%a@]" print_typargs tyl
-        (if ng then "_" else "") print_ident id print_present tags
   | Otyp_alias (_, _) | Otyp_arrow (_, _, _) | Otyp_tuple _ as ty ->
       fprintf ppf "@[<1>(%a)@]" print_out_type ty
   | Otyp_abstract | Otyp_sum _ | Otyp_record _ | Otyp_manifest (_, _) -> ()
@@ -445,16 +445,62 @@ let value_ident ppf name =
       fprintf ppf "%s" name
   | _ -> fprintf ppf "( %s )" name
 
+let print_out_class_params ppf =
+  function
+  | [] -> ()
+  | tyl ->
+      fprintf ppf "@[<1>[%a]@]@ "
+        (print_list (fun ppf x -> fprintf ppf "'%s" x)
+           (fun ppf -> fprintf ppf ","))
+        tyl
+
+let rec print_out_class_type ppf =
+  function
+  | Octy_constr (id, tyl) ->
+      let pr_tyl ppf = function
+        | [] -> ()
+        | tyl ->
+            fprintf ppf "@[<1>[%a]@]@ "
+              (print_typlist print_out_type ",") tyl
+      in
+      fprintf ppf "@[%a%a@]" pr_tyl tyl print_ident id
+  | Octy_fun (lab, ty, cty) ->
+      fprintf ppf "@[%s%a ->@ %a@]"
+        (if lab <> "" then lab ^ ":" else "")
+        print_out_type_2 ty print_out_class_type cty
+  | Octy_signature (self_ty, csil) ->
+      let pr_param ppf =
+        function
+        | Some ty -> fprintf ppf "@ @[(%a)@]" print_out_type ty
+        | None -> ()
+      in
+      fprintf ppf "@[<hv 2>@[<2>object%a@]@ %a@;<1 -2>end@]"
+        pr_param self_ty
+        (print_list print_out_class_sig_item (fun ppf -> fprintf ppf "@ "))
+        csil
+and print_out_class_sig_item ppf =
+  function
+  | Ocsg_constraint (ty1, ty2) ->
+     fprintf ppf "@[<2>constraint %a =@ %a@]" !outcome_type ty1
+       !outcome_type ty2
+  | Ocsg_method (name, priv, virt, ty) ->
+     fprintf ppf "@[<2>method %s%s%s :@ %a@]"
+       (if priv then "private " else "") (if virt then "virtual " else "")
+       name !outcome_type ty
+  | Ocsg_value (name, mut, ty) ->
+     fprintf ppf "@[<2>val %s%s :@ %a@]" (if mut then "mutable " else "") name
+       !outcome_type ty
+
 let rec print_out_module_type ppf =
   function
+  | Omty_abstract -> ()
+  | Omty_functor (name, mty_arg, mty_res) ->
+      fprintf ppf "@[<2>functor@ (%s : %a) ->@ %a@]" name
+        print_out_module_type mty_arg print_out_module_type mty_res
   | Omty_ident id ->
       fprintf ppf "%a" print_ident id
   | Omty_signature sg ->
       fprintf ppf "@[<hv 2>sig@ %a@;<1 -2>end@]" print_signature_body sg
-  | Omty_functor (name, mty_arg, mty_res) ->
-      fprintf ppf "@[<2>functor@ (%s : %a) ->@ %a@]" name
-        print_out_module_type mty_arg print_out_module_type mty_res
-  | Omty_abstract -> ()
 and print_signature_body ppf =
   function
   | [] -> ()
@@ -463,6 +509,24 @@ and print_signature_body ppf =
       fprintf ppf "%a@ %a" print_out_sig_item item print_signature_body items
 and print_out_sig_item ppf =
   function
+  | Osig_class (vir_flag, name, params, clt) ->
+      fprintf ppf "@[<2>class%s@ %a%s@ :@ %a@]"
+        (if vir_flag then "virtual " else "")
+        print_out_class_params params name print_out_class_type clt
+  | Osig_class_type (vir_flag, name, params, clt) ->
+      fprintf ppf "@[<2>class type%s@ %a%s@ =@ %a@]"
+        (if vir_flag then "virtual " else "")
+        print_out_class_params params name print_out_class_type clt
+  | Osig_exception (id, tyl) ->
+      fprintf ppf "@[<2>exception %a@]" print_out_constr (id, tyl)
+  | Osig_modtype (name, Omty_abstract) ->
+      fprintf ppf "@[<2>module type %s@]" name
+  | Osig_modtype (name, mty) ->
+      fprintf ppf "@[<2>module type %s =@ %a@]" name print_out_module_type mty
+  | Osig_module (name, mty) ->
+      fprintf ppf "@[<2>module %s :@ %a@]" name print_out_module_type mty
+  | Osig_type tdl ->
+      print_out_type_decl_list ppf tdl
   | Osig_value (name, ty, prims) ->
       let kwd = if prims = [] then "val" else "external" in
       let pr_prims ppf =
@@ -474,18 +538,6 @@ and print_out_sig_item ppf =
       in
       fprintf ppf "@[<2>%s %a :@ %a%a@]"
         kwd value_ident name !outcome_type ty pr_prims prims
-  | Osig_type tdl ->
-      print_out_type_decl_list ppf tdl
-  | Osig_exception (id, tyl) ->
-      fprintf ppf "@[<2>exception %a@]" print_out_constr (id, tyl)
-  | Osig_module (name, mty) ->
-      fprintf ppf "@[<2>module %s :@ %a@]" name print_out_module_type mty
-  | Osig_modtype (name, Omty_abstract) ->
-      fprintf ppf "@[<2>module type %s@]" name
-  | Osig_modtype (name, mty) ->
-      fprintf ppf "@[<2>module type %s =@ %a@]" name print_out_module_type mty
-  | Osig_printer f ->
-      f ppf
 and print_out_type_decl_list ppf =
   function
   | [] -> ()
@@ -494,12 +546,12 @@ and print_out_type_decl_list ppf =
       print_out_type_decl "type" ppf x;
       List.iter (fun x -> fprintf ppf "@ %a" (print_out_type_decl "and") x) l
 and print_out_type_decl kwd ppf (name, args, ty, constraints) =
-  let constrain ppf (ty, ty') =
-    fprintf ppf "@ @[<2>constraint %a =@ %a@]"
-      !outcome_type ty !outcome_type ty'
-  in
   let print_constraints ppf params =
-    List.iter (constrain ppf) params
+    List.iter
+      (fun (ty1, ty2) ->
+         fprintf ppf "@ @[<2>constraint %a =@ %a@]" !outcome_type ty1
+           !outcome_type ty2)
+      params
   in
   let type_parameter ppf (ty,(co,cn)) =
     fprintf ppf "%s'%s"
@@ -531,15 +583,15 @@ and print_out_type_decl kwd ppf (name, args, ty, constraints) =
   | Otyp_abstract ->
       fprintf ppf "@[<2>@[<hv 2>%t@]%a@]"
         print_name_args print_constraints constraints
-  | Otyp_sum constrs ->
-      fprintf ppf "@[<2>@[<hv 2>%t =@;<1 2>%a@]%a@]"
-        print_name_args
-        (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
-        print_constraints constraints
   | Otyp_record lbls ->
       fprintf ppf "@[<2>@[<hv 2>%t = {%a@;<1 -2>}@]@ %a@]"
         print_name_args
         (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
+        print_constraints constraints
+  | Otyp_sum constrs ->
+      fprintf ppf "@[<2>@[<hv 2>%t =@;<1 2>%a@]%a@]"
+        print_name_args
+        (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
         print_constraints constraints
   | ty ->
       fprintf ppf "@[<2>@[<hv 2>%t = %a@]@ %a@]"
@@ -563,6 +615,15 @@ let constrain ppf ty =
   let ty' = unalias ty in
   if ty != ty'
   then fprintf ppf "@ @[<2>constraint %a =@ %a@]" type_sch ty type_sch ty'
+
+let tree_of_constraints params =
+  List.fold_right
+    (fun ty list ->
+       let ty' = unalias ty in
+       if ty != ty' then
+         (tree_of_typexp true ty, tree_of_typexp true ty') :: list
+       else list)
+    params []
 
 let filter_params tyl =
   let params =
@@ -600,15 +661,6 @@ let rec tree_of_type_decl id decl =
       List.iter (fun (_, _, ty) -> mark_loops ty) l
   end;
 
-  let tree_of_constraints params =
-    List.fold_right
-      (fun ty list ->
-         let ty' = unalias ty in
-         if ty != ty' then
-           (tree_of_typexp true ty, tree_of_typexp true ty') :: list
-         else list)
-      params []
-  in
   let type_param =
     function
     | Otyp_var (_, id) -> id
@@ -699,6 +751,17 @@ let metho sch concrete ppf (lab, kind, ty) =
     fprintf ppf "@ @[<2>method %s%s%s :@ %a@]" priv virt lab (typexp sch 0) ty
   end
 
+let tree_of_metho sch concrete (lab, kind, ty) csil =
+  if lab <> "*dummy method*" then begin
+    let priv =
+      match field_kind_repr kind with
+      | Fvar _ (* {contents = None} *) -> true
+      | _ (* Fpresent *) -> false in
+    let virt = not (Concr.mem lab concrete) in
+    Ocsg_method (lab, priv, virt, tree_of_typexp sch ty) :: csil
+  end
+  else csil
+
 let rec prepare_class_type = function
   | Tcty_constr (p, tyl, cty) ->
       let sty = Ctype.self_type cty in
@@ -723,55 +786,61 @@ let rec prepare_class_type = function
       mark_loops ty;
       prepare_class_type cty
 
-let rec perform_class_type sch params ppf = function
+let rec tree_of_class_type sch params =
+  function
   | Tcty_constr (p', tyl, cty) ->
       let sty = Ctype.self_type cty in
       if List.memq sty !visited_objects then
-        perform_class_type sch params ppf cty
+        tree_of_class_type sch params cty
       else
-        let pr_tyl ppf = function
-          | [] -> ()
-          | tyl ->
-              let tyl = tree_of_typlist true tyl in
-              fprintf ppf "@[<1>[%a]@]@ "
-                (print_typlist print_out_type ",") tyl in
-        fprintf ppf "@[%a%a@]" pr_tyl tyl path p'
+        Octy_constr (tree_of_path p', tree_of_typlist true tyl)
   | Tcty_signature sign ->
       let sty = repr sign.cty_self in
-      let pr_param ppf sty =
-       if is_aliased sty then
-        fprintf ppf "@ @[('%a)@]" print_name_of_type sty in
-
-      fprintf ppf "@[<hv 2>@[<2>object%a@]%a"
-              pr_param sty
-              (fun ppf l -> List.iter (constrain ppf) l) params;
-      Vars.iter (class_var sch ppf) sign.cty_vars;
+      let self_ty =
+        if is_aliased sty then Some (Otyp_var (false, name_of_type sty))
+        else None
+      in
       let (fields, _) =
-        Ctype.flatten_fields (Ctype.object_fields sign.cty_self) in
-      List.iter (metho sch sign.cty_concr ppf) fields;
-      fprintf ppf "@;<1 -2>end@]"
+        Ctype.flatten_fields (Ctype.object_fields sign.cty_self)
+      in
+      let csil = [] in
+      let csil =
+        List.fold_right (tree_of_metho sch sign.cty_concr) fields csil
+      in
+      let csil =
+        Vars.fold
+          (fun l (m, t) csil ->
+             Ocsg_value (l, m = Mutable, tree_of_typexp sch t) :: csil)
+          sign.cty_vars csil
+      in
+      let csil =
+        List.fold_right
+          (fun (ty1, ty2) csil -> Ocsg_constraint (ty1, ty2) :: csil)
+          (tree_of_constraints params) csil
+      in
+      Octy_signature (self_ty, csil)
   | Tcty_fun (l, ty, cty) ->
+      let lab = if !print_labels && l <> "" || is_optional l then l else "" in
       let ty =
        if is_optional l then
          match (repr ty).desc with
          | Tconstr(path, [ty], _) when Path.same path Predef.path_option -> ty
          | _ -> newconstr (Path.Pident(Ident.create "<hidden>")) []
        else ty in
-      fprintf ppf "@[%a%a ->@ %a@]"
-       print_label l (typexp sch 2) ty (perform_class_type sch params) cty
+      Octy_fun (lab, tree_of_typexp sch ty, tree_of_class_type sch params cty)
 
 let class_type ppf cty =
   reset ();
   prepare_class_type cty;
-  perform_class_type false [] ppf cty
+  print_out_class_type ppf (tree_of_class_type false [] cty)
 
-let class_params ppf = function
-  | [] -> ()
+let tree_of_class_params = function
+  | [] -> []
   | params ->
       let tyl = tree_of_typlist true params in
-      fprintf ppf "@[<1>[%a]@]@ " (print_typlist print_out_type ",") tyl
+      List.map (function Otyp_var (_, s) -> s | _ -> "?") tyl
 
-let class_declaration id ppf cl =
+let tree_of_class_declaration id cl =
   let params = filter_params cl.cty_params in
 
   reset ();
@@ -783,11 +852,15 @@ let class_declaration id ppf cl =
   List.iter check_name_of_type (List.map proxy params);
   if is_aliased sty then check_name_of_type sty;
 
-  let vir_mark = if cl.cty_new = None then " virtual" else "" in
-  fprintf ppf "@[<2>class%s@ %a%a@ :@ %a@]" vir_mark
-    class_params params ident id (perform_class_type true params) cl.cty_type
+  let vir_flag = cl.cty_new = None in
+  Osig_class
+    (vir_flag, Ident.name id, tree_of_class_params params,
+     tree_of_class_type true params cl.cty_type)
 
-let cltype_declaration id ppf cl =
+let class_declaration id ppf cl =
+  !outcome_sig_item ppf (tree_of_class_declaration id cl)
+
+let tree_of_cltype_declaration id cl =
   let params = List.map repr cl.clty_params in
 
   reset ();
@@ -809,11 +882,12 @@ let cltype_declaration id ppf cl =
          not (lab = "*dummy method*" || Concr.mem lab sign.cty_concr))
       fields in
 
-  let vir_mark = if virt then " virtual" else "" in
-  fprintf ppf "@[<2>class type%s@ %a%a@ =@ %a@]"
-   vir_mark class_params params 
-   ident id
-   (perform_class_type true params) cl.clty_type
+  Osig_class_type
+    (virt, Ident.name id, tree_of_class_params params,
+     tree_of_class_type true params cl.clty_type)
+
+let cltype_declaration id ppf cl =
+  !outcome_sig_item ppf (tree_of_cltype_declaration id cl)
 
 (* Print a module type *)
 
@@ -857,21 +931,19 @@ and tree_of_signature = function
       | Tsig_modtype(id, decl)  ->
           tree_of_modtype_declaration id decl :: tree_of_signature rem
       | Tsig_class(id, decl) ->
-          let t = Osig_printer (fun ppf -> class_declaration id ppf decl) in
           let rem =
             match rem with
             | ctydecl :: tydecl1 :: tydecl2 :: rem -> rem
             | _ -> []
           in
-          t :: tree_of_signature rem
+          tree_of_class_declaration id decl :: tree_of_signature rem
       | Tsig_cltype(id, decl) ->
-          let t = Osig_printer (fun ppf -> cltype_declaration id ppf decl) in
           let rem =
             match rem with
             | tydecl1 :: tydecl2 :: rem -> rem
             | _ -> []
           in
-          t :: tree_of_signature rem
+          tree_of_cltype_declaration id decl :: tree_of_signature rem
 
 and tree_of_modtype_declaration id decl =
   let mty =
