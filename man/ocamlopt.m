@@ -44,7 +44,8 @@ The
 command has a command-line interface very close to that
 of 
 .BR ocamlc (1).
-It accepts the same types of arguments:
+It accepts the same types of arguments and processes them
+sequentially:
 
 Arguments ending in .mli are taken to be source files for
 compilation unit interfaces. Interfaces specify the names exported by
