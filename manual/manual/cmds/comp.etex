@@ -473,7 +473,7 @@ could have been created and generalization is therefore turned off for
 all variables occuring in contravariant or non-variant branches of the
 type. For instance, if the type of a non-value is "'a list" the
 variable is generalizable ("list" is a covariant type constructor),
-but not in "'a list -> 'a list" (the left branch "->" is
+but not in "'a list -> 'a list" (the left branch of "->" is
 contravariant) or "'a ref" ("ref" is non-variant).
 
 Non-generalized type variables in a type cause no difficulties inside
