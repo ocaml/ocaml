@@ -376,11 +376,11 @@ let pretty_cases cases =
           prerr_string " " ;
           prerr_string (Format.flush_str_formatter ()))
         ps ;
-
+(*
       prerr_string " -> " ;
       Printlambda.lambda Format.str_formatter l ;
       prerr_string (Format.flush_str_formatter ()) ;
-
+*)
       prerr_endline "")
     cases
 
@@ -1795,6 +1795,7 @@ let mk_failaction_neg partial ctx def = match partial with
     end
 | Total ->
     None, [], jumps_empty
+
       
       
 (* Conforme a l'article et plus simple qu'avant *)
@@ -1996,7 +1997,9 @@ let combine_variant row arg partial ctx def (tag_lambda_list, total1, pats) =
   let sig_complete =  List.length tag_lambda_list = !num_constr
   and one_action = same_actions tag_lambda_list in
   let fail, to_add, local_jumps =
-    if sig_complete || (match partial with Total -> true | _ -> false) then
+    if
+      sig_complete  || (match partial with Total -> true | _ -> false)
+    then
       None, [], jumps_empty
     else
       mk_failaction_neg partial ctx def in
@@ -2297,7 +2300,6 @@ and do_compile_matching_pr repr partial ctx arg x =
   pretty_jumps jumps ;    
   r
 *)
-
 and do_compile_matching repr partial ctx arg pmh = match pmh with
 | Pm pm ->
   let pat = what_is_cases pm.cases in
@@ -2354,8 +2356,18 @@ and compile_no_test divide up_ctx repr partial ctx to_match =
 
 (* The entry points *)
 
-
 (* had toplevel handler when appropriate *)
+
+let check_partial pat_act_list partial =
+  if
+    List.exists
+      (fun (_,lam) -> is_guarded lam)
+       pat_act_list
+  then begin
+    prerr_endline "CHANGE" ;
+    Partial 
+  end else
+    partial
 
 let start_ctx n = [{left=[] ; right = omegas n}]
 
@@ -2367,6 +2379,7 @@ let check_total total lambda i handler_fun =
   end
 
 let compile_matching loc repr handler_fun arg pat_act_list partial =
+  let partial = check_partial pat_act_list partial in
   match partial with
   | Partial ->
       let raise_num = next_raise_count () in
@@ -2388,6 +2401,7 @@ let compile_matching loc repr handler_fun arg pat_act_list partial =
       let (lambda, total) = compile_match repr partial (start_ctx 1) pm in
       assert (jumps_is_empty total) ;
       lambda
+
 
 let partial_function loc () =
   (* [Location.get_pos_info] is too expensive *)
@@ -2420,6 +2434,7 @@ let for_let loc param pat body =
 
 (* Easy case since variables are available *)
 let for_tupled_function loc paraml pats_act_list partial =
+  let partial = check_partial pats_act_list partial in
   let raise_num = next_raise_count () in
   let omegas = [List.map (fun _ -> omega) paraml] in
   let pm =
@@ -2497,6 +2512,7 @@ let compile_flattened repr partial ctx _ pmh = match pmh with
 
 let for_multiple_match loc paraml pat_act_list partial =
   let repr = None in
+  let partial = check_partial pat_act_list partial in
   let raise_num,pm1 =
     match partial with
     | Partial ->
@@ -2537,8 +2553,6 @@ let for_multiple_match loc paraml pat_act_list partial =
         | Total ->
             assert (jumps_is_empty total) ;
             lam)
-        
-
     with Cannot_flatten ->
       let (lambda, total) = compile_match None partial (start_ctx 1) pm1 in
       begin match partial with
