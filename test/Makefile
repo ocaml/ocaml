@@ -26,7 +26,7 @@ CODERUNPARAMS=OCAMLRUNPARAM='o=100'
 
 BYTE_EXE=fib.byt takc.byt taku.byt sieve.byt quicksort.byt quicksort.fast.byt \
   fft.byt fft.fast.byt soli.byt soli.fast.byt boyer.byt kb.byt \
-  nucleic.byt genlex.byt bdd.byt
+  nucleic.byt genlex.byt bdd.byt hamming.byt
 
 CODE_EXE=$(BYTE_EXE:.byt=.out)
 
@@ -40,9 +40,9 @@ nucleic.out: nucleic.ml
 	case $(ARCH) in \
           i386) sed -e '/<HAND_CSE>/,/<\/HAND_CSE>/d' -e '/NO_CSE>/d' \
                 nucleic.ml > nucleic.mlt; \
-	        $(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o nucleic.out nucleic.mlt; \
+	        $(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o nucleic.out nucleic.mlt;\
 	        rm -f nucleic.mlt;; \
-             *) $(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o nucleic.out nucleic.ml;; \
+             *) $(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o nucleic.out nucleic.ml; \
         esac
 
 # KB
