@@ -254,7 +254,7 @@ value install_signal_handler(value signal_number, value action) /* ML */
       register_global_root(&signal_handlers);
     }
     modify(&Field(signal_handlers, sig), Field(action, 0));
-    act = handle_signal;
+    act = (void (*)(int)) handle_signal;
     break;
   }
 #ifdef POSIX_SIGNALS
@@ -267,7 +267,7 @@ value install_signal_handler(value signal_number, value action) /* ML */
   oldact = signal(sig, act);
   if (oldact == SIG_ERR) sys_error(NO_ARG);
 #endif
-  if (oldact == handle_signal) {
+  if (oldact == (void (*)(int)) handle_signal) {
     res = alloc(1, 0);          /* Signal_handle */
     Field(res, 0) = Field(signal_handlers, sig);
   }
