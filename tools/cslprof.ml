@@ -168,7 +168,7 @@ and rewrite_exp sexp =
     rewrite_exp sarg
 
   | Pexp_record lid_sexp_list ->
-    rewrite_labelexp_list (List.rev lid_sexp_list)
+    rewrite_labelexp_list lid_sexp_list
 
   | Pexp_field(sarg, _) ->
     rewrite_exp sarg
