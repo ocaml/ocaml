@@ -17,8 +17,6 @@
 #include <process.h>
 #include "../byterun/exec.h"
 
-#define MAXPATHLEN 1024 /*check*/
-
 static unsigned long read_size(char * ptr)
 {
   unsigned char * p = (unsigned char *) ptr;
@@ -61,9 +59,9 @@ static void errwrite(char * msg)
 
 int main(int argc, char ** argv)
 {
-  char truename[MAXPATHLEN];
+  char truename[MAX_PATH];
   char * cmdline = GetCommandLine();
-  char runtime_path[MAXPATHLEN];
+  char runtime_path[MAX_PATH];
   HANDLE h;
   int retcode;
 
