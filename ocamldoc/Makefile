@@ -25,7 +25,7 @@ OCAMLLIB = $(LIBDIR)
 OCAMLBIN = $(BINDIR)
 EXTRAC_CRC = $(CAMLRUN) ../otherlibs/dynlink/extract_crc
 
-OCAMLPP=-pp 'grep -v DEBUG'
+OCAMLPP=-pp './remove_DEBUG'
 
 # For installation 
 ##############

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# usage: remove_DEBUG <file>
+# remove from <file> every line that contains the string "DEBUG",
+# respecting the cpp # line annotation conventions
+
+echo "# 1 \"$1\""
+sed -e '/DEBUG/s/.*//' "$1"
