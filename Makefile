@@ -123,7 +123,7 @@ defaultentry:
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries camlp4out $(DEBUGGER) $(JOCPARSING)
+  otherlibraries camlp4out $(DEBUGGER) $(JOCPARSING) jocaml
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -230,6 +230,7 @@ install: FORCE
 	if test -r $(LIBDIR)/ld.conf; then :; else echo "$(LIBDIR)" > $(LIBDIR)/ld.conf; fi
 	cp ocamlc $(BINDIR)/ocamlc$(EXE)
 	cp ocaml $(BINDIR)/ocaml$(EXE)
+	cp jocaml $(BINDIR)/jocaml$(EXE)
 	cd stdlib; $(MAKE) install
 	cp lex/ocamllex $(BINDIR)/ocamllex$(EXE)
 	cp yacc/ocamlyacc$(EXE) $(BINDIR)/ocamlyacc$(EXE)
@@ -246,7 +247,9 @@ install: FORCE
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
 	cd camlp4; $(MAKE) install LIBDIR=$(LIBDIR)/camlp4
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); else :; fi
-	if test -f jocparsing/jocp; then (cd jocparsing; $(MAKE) install); else :; fi
+	if test -f jocparsing/jocp; then \
+	  cd jocparsing && $(MAKE) LIBDIR=$(LIBDIR)/camlp4 install; \
+	fi
 
 # Installation of the native-code compiler
 installopt:
@@ -287,7 +290,12 @@ toplevel/toplevellib.cma: $(TOPLIB)
 	$(CAMLC) -a -o $@ $(TOPLIB)
 
 partialclean::
-	rm -f ocaml toplevel/toplevellib.cma
+	rm -f ocaml jocaml toplevel/toplevellib.cma
+
+jocaml: $(TOPOBJS) expunge jocparsing/pa_joc.cmo otherlibs/dyntypes/dynamics.cmo
+	$(CAMLC) $(LINKFLAGS) -linkall -o jocaml.tmp $(TOPLEVELLIB) camlp4/top/camlp4o.cma jocparsing/pa_joc.cmo otherlibs/dyntypes/dynamics.cmo $(TOPLEVELMAIN)
+	- $(CAMLRUN) ./expunge jocaml.tmp jocaml $(PERVASIVES) dynamics
+	rm -f jocaml.tmp
 
 # The configuration file
 
@@ -529,6 +537,8 @@ alldepend::
 
 # The extra libraries
 
+otherlibraries: jocp
+otherlibrariesopt: jocp
 otherlibraries:
 	for i in $(OTHERLIBRARIES); do \
           (cd otherlibs/$$i; $(MAKE) all) || exit $$?; \
