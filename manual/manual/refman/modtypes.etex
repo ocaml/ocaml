@@ -38,7 +38,7 @@ specification:
         | 'module' 'type' modtype-name
         | 'module' 'type' modtype-name '=' module-type
         | 'open' module-path
-        | 'include' modtype-path
+        | 'include' module-type
 ;
 mod-constraint:
           'type' [type-parameters] typeconstr '=' typexpr
@@ -223,11 +223,11 @@ stops at the end of the signature expression.
 
 \ikwd{include\@\texttt{include}}
 
-The expression @'include' modtype-path@ in a signature performs textual
-inclusion of the components of the signature denoted by @modtype-path@.
+The expression @'include' module-type@ in a signature performs textual
+inclusion of the components of the signature denoted by @module-type@.
 It behaves as if the components of the included signature were copied
-at the location of the @'include'@.  The @modtype-path@ argument must
-refer to a module type that is a signature, 
+at the location of the @'include'@.  The @module-type@ argument must
+refer to a module type that is a signature, not a functor type.
 
 \subsection{Functor types}
 
