@@ -849,13 +849,14 @@ module Dep :
     val deps_of_types : ?kernel: bool -> Type.t_type list -> (Type.t_type * (Name.t list)) list
   end
 
-(** Command line arguments. 
-   You can use this module to create custom generators.*)
+(** {2 Command line arguments} *)
+
+(**  You can use this module to create custom generators.*)
 module Args :
     sig
       (** The class type of documentation generators. *)
       class type doc_generator =
-	object method generate : Odoc_module.t_module list -> unit end
+	object method generate : Module.t_module list -> unit end
 
       (** The file used by the generators outputting only one file. *)
       val out_file : string ref
