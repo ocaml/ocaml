@@ -95,6 +95,7 @@ module Options = Main_args.Make_options (struct
   let _output_obj () = output_c_object := true; custom_runtime := true
   let _pack = set make_package
   let _pp s = preprocessor := Some s
+  let _principal = set principal
   let _rectypes = set recursive_types
   let _thread = set thread_safe
   let _unsafe = set fast

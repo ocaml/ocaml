@@ -116,10 +116,20 @@ let rec print_list pr sep ppf =
 let pr_present =
   print_list (fun ppf s -> fprintf ppf "`%s" s) (fun ppf -> fprintf ppf "@ ")
 
+let pr_vars =
+  print_list (fun ppf s -> fprintf ppf "'%s" s) (fun ppf -> fprintf ppf "@ ")
+
 let rec print_out_type ppf =
   function
-    Otyp_alias (ty, s) -> fprintf ppf "@[%a as '%s@]" print_out_type ty s
-  | ty -> print_out_type_1 ppf ty
+  | Otyp_alias (ty, s) ->
+      fprintf ppf "@[%a as '%s@]" print_out_type ty s
+  | Otyp_poly (sl, ty) ->
+      fprintf ppf "@[<hov 2>%a.@ %a@]"
+        pr_vars sl
+        print_out_type ty
+  | ty ->
+      print_out_type_1 ppf ty
+
 and print_out_type_1 ppf =
   function
     Otyp_arrow (lab, ty1, ty2) ->
@@ -158,10 +168,10 @@ and print_simple_out_type ppf =
       in
       fprintf ppf "%s[%s@[<hv>@[<hv>%a@]%a]@]" (if non_gen then "_" else "")
         (if closed then if tags = None then " " else "< "
-         else if tags = None then "> "
-         else "? ")
-        print_fields row_fields print_present tags
-  | Otyp_alias (_, _) | Otyp_arrow (_, _, _) | Otyp_tuple _ as ty ->
+         else if tags = None then "> " else "? ")
+        print_fields row_fields
+        print_present tags
+  | Otyp_alias _ | Otyp_poly _ | Otyp_arrow _ | Otyp_tuple _ as ty ->
       fprintf ppf "@[<1>(%a)@]" print_out_type ty
   | Otyp_abstract | Otyp_sum _ | Otyp_record _ | Otyp_manifest (_, _) -> ()
 and print_fields rest ppf =

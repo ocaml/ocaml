@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* typeclass.ml,v 1.57.4.6 2002/02/15 14:26:04 garrigue Exp *)
 
 open Misc
 open Parsetree
@@ -233,6 +233,19 @@ let virtual_method val_env meths self_type lab priv sty loc =
   try Ctype.unify val_env ty ty' with Ctype.Unify trace ->
     raise(Error(loc, Method_type_mismatch (lab, trace)))
 
+let declare_method val_env meths self_type lab priv sty loc =
+  let (_, ty') =
+     Ctype.filter_self_method val_env lab priv meths self_type
+  in
+  let ty =
+    match sty.ptyp_desc with
+      Ptyp_poly ([],sty) -> transl_simple_type_univars val_env sty
+    | _                  -> transl_simple_type val_env false sty
+  in
+  begin try Ctype.unify val_env ty ty' with Ctype.Unify trace ->
+    raise(Error(loc, Method_type_mismatch (lab, trace)))
+  end
+
 let type_constraint val_env sty sty' loc =
   let ty  = transl_simple_type val_env false sty in
   let ty' = transl_simple_type val_env false sty' in
@@ -279,11 +292,11 @@ let rec class_type_field env self_type meths (val_sig, concr_meths) =
       (Vars.add lab (mut, ty) val_sig, concr_meths)
 
   | Pctf_virt (lab, priv, sty, loc) ->
-      virtual_method env meths self_type lab priv sty loc;
+      declare_method env meths self_type lab priv sty loc;
       (val_sig, concr_meths)
 
   | Pctf_meth (lab, priv, sty, loc)  ->
-      virtual_method env meths self_type lab priv sty loc;
+      declare_method env meths self_type lab priv sty loc;
       (val_sig, Concr.add lab concr_meths)
 
   | Pctf_cstr (sty, sty', loc) ->
@@ -399,10 +412,15 @@ let rec class_field cl_num self_type meths vars
   | Pcf_val (lab, mut, sexp, loc) ->
       if StringSet.mem lab inh_vals then
         Location.prerr_warning loc (Warnings.Hide_instance_variable lab);
+      if !Clflags.principal then Ctype.begin_def ();
       let exp =
         try type_exp val_env sexp with Ctype.Unify [(ty, _)] ->
           raise(Error(loc, Make_nongen_seltype ty))
       in
+      if !Clflags.principal then begin
+        Ctype.end_def ();
+        Ctype.generalize_structure exp.exp_type
+      end;
       let (id, val_env, met_env, par_env) =
         enter_val cl_num vars lab mut exp.exp_type val_env met_env par_env
       in
@@ -414,23 +432,38 @@ let rec class_field cl_num self_type meths vars
       (val_env, met_env, par_env, fields, concr_meths, inh_vals)
 
   | Pcf_meth (lab, priv, expr, loc)  ->
-      let meth_expr = make_method cl_num expr in
-      Ctype.raise_nongen_level ();
       let (_, ty) =
         Ctype.filter_self_method val_env lab priv meths self_type
       in
-      let meth_type = Ctype.newvar () in
-      let (obj_ty, res_ty) = Ctype.filter_arrow val_env meth_type "" in
-      Ctype.unify val_env obj_ty self_type;
-      Ctype.unify val_env res_ty ty;
-      let ty' = type_approx met_env expr in
-      begin try Ctype.unify met_env ty' res_ty with Ctype.Unify trace ->
-        raise(Typecore.Error(expr.pexp_loc, Expr_type_clash(trace)))
+      begin try match expr.pexp_desc with
+	Pexp_poly (sbody, sty) ->
+	  begin match sty with None -> ()
+	  | Some sty ->
+	      Ctype.unify val_env
+		(Typetexp.transl_simple_type val_env false sty) ty
+	  end;
+	  begin match (Ctype.repr ty).desc with
+	    Tvar ->
+	      let ty' = Ctype.newvar () in
+	      Ctype.unify val_env (Ctype.newty (Tpoly (ty', []))) ty;
+	      Ctype.unify val_env (type_approx val_env sbody) ty'
+	  | Tpoly (ty1, tl) ->
+	      let _, ty1' = Ctype.instance_poly false tl ty1 in
+	      let ty2 = type_approx val_env sbody in
+	      Ctype.unify val_env ty2 ty1'
+	  | _ -> assert false
+	  end
+      |	_ -> assert false
+      with Ctype.Unify trace ->
+	raise(Error(loc, Method_type_mismatch (lab, trace)))
       end;
-      Ctype.end_def ();
+      let meth_expr = make_method cl_num expr in
       let vars_local = !vars in
+
       let field =
         lazy begin
+          let meth_type =
+            Ctype.newty (Tarrow("", self_type, Ctype.instance ty, Cok)) in
           Ctype.raise_nongen_level ();
           vars := vars_local;
           let texp = type_expect met_env meth_expr meth_type in
@@ -480,10 +513,9 @@ let rec class_field cl_num self_type meths vars
       let field =
         lazy begin
           Ctype.raise_nongen_level ();
-          let meth_type = Ctype.newvar () in
-          let (obj_ty, res_ty) = Ctype.filter_arrow val_env meth_type "" in
-          Ctype.unify val_env obj_ty self_type;
-          Ctype.unify val_env res_ty (Ctype.instance Predef.type_unit);
+          let meth_type =
+            Ctype.newty
+              (Tarrow ("", self_type, Ctype.instance Predef.type_unit, Cok)) in
           vars := vars_local;
           let texp = type_expect met_env expr meth_type in
           Ctype.end_def ();
@@ -518,9 +550,16 @@ and class_structure cl_num val_env met_env (spat, str) =
       (val_env, meth_env, par_env, [], Concr.empty, StringSet.empty)
       str
   in
+  Ctype.unify val_env self_type (Ctype.newvar ());
+  let methods =
+    if !Clflags.principal then
+      fst (Ctype.flatten_fields (Ctype.object_fields self_type))
+    else [] in
+  List.iter (fun (_,_,ty) -> Ctype.generalize_spine ty) methods;
   let vars_final = !vars in
   let fields = List.map Lazy.force (List.rev fields) in
   vars := vars_final;
+  List.iter (fun (_,_,ty) -> Ctype.unify val_env ty (Ctype.newvar ())) methods;
 
   {cl_field = fields;
    cl_meths = Meths.map (function (id, ty) -> id) !meths},
@@ -592,10 +631,15 @@ and class_expr cl_num val_env met_env scl =
                   Pcl_let(Default, [spat, smatch], sbody)})}
       in
       class_expr cl_num val_env met_env sfun
-  | Pcl_fun (l, _, spat, scl') ->
+  | Pcl_fun (l, None, spat, scl') ->
+      if !Clflags.principal then Ctype.begin_def ();
       let (pat, pv, val_env, met_env) =
         Typecore.type_class_arg_pattern cl_num val_env met_env l spat
       in
+      if !Clflags.principal then begin
+        Ctype.end_def ();
+        iter_pattern (fun {pat_type=ty} -> Ctype.generalize_structure ty) pat
+      end;
       let pv =
         List.map
           (function (id, id', ty) ->
@@ -625,7 +669,7 @@ and class_expr cl_num val_env met_env scl =
           (Warnings.Other "This optional argument cannot be erased");
       {cl_desc = Tclass_fun (pat, pv, cl, partial);
        cl_loc = scl.pcl_loc;
-       cl_type = Tcty_fun (l, pat.pat_type, cl.cl_type)}
+       cl_type = Tcty_fun (l, Ctype.instance pat.pat_type, cl.cl_type)}
   | Pcl_apply (scl', sargs) ->
       let cl = class_expr cl_num val_env met_env scl' in
       let rec nonopt_labels ls ty_fun =
@@ -826,6 +870,7 @@ let rec initial_env define_class approx
   
   (* Temporary type for the class constructor *)
   let constr_type = approx cl.pci_expr in
+  if !Clflags.principal then Ctype.generalize_spine constr_type;
   let dummy_cty =
     Tcty_signature
       { cty_self = Ctype.newvar ();
@@ -948,7 +993,9 @@ let class_infos define_class kind
 
   (* Type of the class constructor *)
   begin try
-    Ctype.unify env (constructor_type constr obj_type) constr_type
+    Ctype.unify env
+      (constructor_type constr obj_type)
+      (Ctype.instance constr_type)
   with Ctype.Unify trace ->
     raise(Error(cl.pci_loc,
                 Constructor_type_mismatch (cl.pci_name, trace)))
@@ -998,7 +1045,7 @@ let class_infos define_class kind
      cty_new =
        match cl.pci_virt with
          Virtual  -> None
-       | Concrete -> Some constr_type}
+       | Concrete -> Some (Ctype.instance constr_type)}
   in
   let obj_abbr =
     {type_params = obj_params;

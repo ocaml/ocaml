@@ -58,6 +58,7 @@ module Options = Main_args.Make_options (struct
   let _output_obj = option "-output-obj"
   let _pack = option "-pack"
   let _pp s = incompatible "-pp"
+  let _principal = option "-principal"
   let _rectypes = option "-rectypes"
   let _thread () = ismultithreaded := "-thread"; option "-thread" ()
   let _unsafe = option "-unsafe"

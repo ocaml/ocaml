@@ -87,10 +87,17 @@ module StringSet =
 let transl_declaration env (name, sdecl) id =
   (* Bind type parameters *)
   reset_type_variables();
+  Ctype.begin_def ();
   let params =
     try List.map (enter_type_variable true) sdecl.ptype_params
     with Already_bound ->
       raise(Error(sdecl.ptype_loc, Repeated_parameter))
+  in
+  let cstrs = List.map
+      (fun (sty, sty', loc) ->
+        transl_simple_type env false sty,
+        transl_simple_type env false sty', loc)
+      sdecl.ptype_cstrs
   in
   let decl =
     { type_params = params;
@@ -125,7 +132,8 @@ let transl_declaration env (name, sdecl) id =
             let lbls' =
               List.map
                 (fun (name, mut, arg) ->
-                         (name, mut, transl_simple_type env true arg))
+                  let ty = transl_simple_type env true arg in
+                  name, mut, match ty.desc with Tpoly(t,[]) -> t | _ -> ty)
                 lbls in
             let rep =
               if List.for_all (fun (name, mut, arg) -> is_float env arg) lbls'
@@ -147,13 +155,11 @@ let transl_declaration env (name, sdecl) id =
 
   (* Check constraints *)
   List.iter
-    (function (sty, sty', loc) ->
-       try
-         Ctype.unify env (transl_simple_type env false sty)
-                         (transl_simple_type env false sty')
-       with Ctype.Unify tr ->
-         raise(Error(loc, Unconsistent_constraint tr)))
-    sdecl.ptype_cstrs;
+    (fun (ty, ty', loc) ->
+      try Ctype.unify env ty ty' with Ctype.Unify tr ->
+        raise(Error(loc, Unconsistent_constraint tr)))
+    cstrs;
+  Ctype.end_def ();
 
   (id, decl)
 
@@ -201,6 +207,9 @@ let rec check_constraints_rec env loc visited ty =
       if not (List.for_all2 (Ctype.moregeneral env false) args' args) then
         raise (Error(loc, Constraint_failed (ty, ty')));
       List.iter (check_constraints_rec env loc visited) args
+  | Tpoly (ty, tl) ->
+      let _, ty = Ctype.instance_poly false tl ty in
+      check_constraints_rec env loc visited ty
   | _ ->
       Btype.iter_type_expr (check_constraints_rec env loc visited) ty
   end
@@ -376,7 +385,9 @@ let compute_variance env tvl nega posi ty =
                   List.iter (compute_variance_rec posi nega) tyl
               | _ -> ())
             (Btype.row_repr row).row_fields
-      | Tvar | Tnil | Tlink _ -> ()
+      | Tpoly (ty, _) ->
+          compute_variance_rec posi nega ty
+      | Tvar | Tnil | Tlink _ | Tunivar -> ()
     end
   in
   compute_variance_rec nega posi ty;

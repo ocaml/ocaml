@@ -18,6 +18,8 @@ open Format;;
 
 val transl_simple_type:
         Env.t -> bool -> Parsetree.core_type -> Types.type_expr
+val transl_simple_type_univars:
+        Env.t -> Parsetree.core_type -> Types.type_expr
 val transl_simple_type_delayed:
         Env.t -> Parsetree.core_type -> Types.type_expr * (unit -> unit)
         (* Translate a type, but leave type variables unbound. Returns
@@ -48,6 +50,8 @@ type error =
   | Constructor_mismatch of Types.type_expr * Types.type_expr
   | Not_a_variant of Types.type_expr
   | Variant_tags of string * string
+  | No_row_variable of string
+  | Bad_alias of string
 
 exception Error of Location.t * error
 

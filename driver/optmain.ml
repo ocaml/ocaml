@@ -110,6 +110,8 @@ let main () =
               " Package the given .cmo files into one .cmo";
        "-pp", Arg.String(fun s -> preprocessor := Some s),
              "<command>  Pipe sources through preprocessor <command>";
+       "-principal", Arg.Set principal,
+             " Check principality of type inference";
        "-rectypes", Arg.Set recursive_types,
              " Allow arbitrary recursive types";
        "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";

@@ -53,6 +53,7 @@ val type_argument:
 val option_some: Typedtree.expression -> Typedtree.expression
 val option_none: type_expr -> Location.t -> Typedtree.expression
 val extract_option_type: Env.t -> type_expr -> type_expr
+val iter_pattern: (Typedtree.pattern -> unit) -> Typedtree.pattern -> unit
 
 val self_coercion : (Path.t * Location.t list ref) list ref
 
@@ -88,6 +89,7 @@ type error =
   | Masked_instance_variable of Longident.t
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
+  | Less_general of string * (type_expr * type_expr) list
 
 exception Error of Location.t * error
 

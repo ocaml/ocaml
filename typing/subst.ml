@@ -58,17 +58,17 @@ let type_path s = function
 let new_id = ref (-1)
 let reset_for_saving () = new_id := -1
 
-let newpersvar () =
-  decr new_id; { desc = Tvar; level = generic_level; id = !new_id }
+let newpersty desc =
+  decr new_id; { desc = desc; level = generic_level; id = !new_id }
 
 (* Similar to [Ctype.nondep_type_rec]. *)
 let rec typexp s ty =
   let ty = repr ty in
   match ty.desc with
-    Tvar ->
+    Tvar | Tunivar ->
       if s.for_saving then
-        let ty' = newpersvar () in
-        save_desc ty Tvar; ty.desc <- Tsubst ty'; ty'
+        let ty' = newpersty ty.desc in
+        save_desc ty ty.desc; ty.desc <- Tsubst ty'; ty'
       else ty
   | Tsubst ty ->
       ty
@@ -80,7 +80,7 @@ let rec typexp s ty =
     let desc = ty.desc in
     save_desc ty desc;
     (* Make a stub *)
-    let ty' = if s.for_saving then newpersvar () else newgenvar () in
+    let ty' = if s.for_saving then newpersty Tvar else newgenvar () in
     ty.desc <- Tsubst ty';
     ty'.desc <-
       begin match desc with
@@ -97,20 +97,25 @@ let rec typexp s ty =
           let more = repr row.row_more in
           (* We must substitute in a subtle way *)
           begin match more.desc with
-            Tsubst ty2 ->
+            Tsubst ({desc=Tvariant _} as ty2) ->
               (* This variant type has been already copied *)
               ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
               Tlink ty2
           | _ ->
               let static = static_row row in
+              (* Various cases for the row variable *)
+              let more' =
+                match more.desc with Tsubst ty -> ty
+                | _ ->
+                    if s.for_saving then newpersty more.desc else
+                    if static then newgenvar () else more
+              in
               (* Register new type first for recursion *)
               save_desc more more.desc;
               more.desc <- ty.desc;
-              let more' =
-                if s.for_saving then newpersvar () else
-                if static then newgenvar () else more in
               (* Return a new copy *)
-              let row = copy_row (typexp s) row (not s.for_saving) more' in
+              let row =
+                copy_row (typexp s) true row (not s.for_saving) more' in
               let row =
                 if s.for_saving then {row with row_bound = []} else row in
               match row.row_name with

@@ -69,7 +69,6 @@ let copy_object_file oc name =
       let compunit_pos = input_binary_int ic in
       seek_in ic compunit_pos;
       let compunit = (input_value ic : compilation_unit) in
-      Bytelink.check_consistency file_name compunit;
       copy_compunit ic oc compunit;
       close_in ic;
       [compunit]
@@ -78,7 +77,6 @@ let copy_object_file oc name =
       let toc_pos = input_binary_int ic in
       seek_in ic toc_pos;
       let toc = (input_value ic : library) in
-      List.iter (Bytelink.check_consistency file_name) toc.lib_units;
       add_ccobjs toc;
       List.iter (copy_compunit ic oc) toc.lib_units;
       close_in ic;

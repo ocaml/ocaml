@@ -35,12 +35,15 @@ and type_desc =
   | Tlink of type_expr
   | Tsubst of type_expr
   | Tvariant of row_desc
+  | Tunivar
+  | Tpoly of type_expr * type_expr list
 
 and row_desc =
     { row_fields: (label * row_field) list;
       row_more: type_expr;
       row_bound: type_expr list;
       row_closed: bool;
+      row_fixed: bool;
       row_name: (Path.t * type_expr list) option }
 
 and row_field =
@@ -62,6 +65,13 @@ and commutable =
     Cok
   | Cunknown
   | Clink of commutable ref
+
+module TypeOps = struct
+  type t = type_expr
+  let compare t1 t2 = t1.id - t2.id
+  let hash t = t.id
+  let equal t1 t2 = t1 == t2
+end
 
 (* Maps of methods and instance variables *)
 

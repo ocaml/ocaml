@@ -55,6 +55,7 @@ type error =
   | Masked_instance_variable of Longident.t
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
+  | Less_general of string * (type_expr * type_expr) list
 
 exception Error of Location.t * error
 
@@ -177,18 +178,19 @@ let rec build_as_type env p =
   | Tpat_variant(l, p', _) ->
       let ty = may_map (build_as_type env) p' in
       newty (Tvariant{row_fields=[l, Rpresent ty]; row_more=newvar();
-                      row_bound=[]; row_name=None; row_closed=false})
+                      row_bound=[]; row_name=None;
+                      row_fixed=false; row_closed=false})
   | Tpat_record lpl ->
       let lbl = fst(List.hd lpl) in
       let ty = newvar () in
       let do_label lbl =
-        let ty_arg, ty_res = instance_label lbl in
+        let _, ty_arg, ty_res = instance_label false lbl in
         unify_pat env {p with pat_type = ty} ty_res;
         if lbl.lbl_mut = Immutable && List.mem_assoc lbl lpl then begin
           let arg = List.assoc lbl lpl in
           unify_pat env {arg with pat_type = build_as_type env arg} ty_arg
         end else begin
-          let ty_arg', ty_res' = instance_label lbl in
+          let _, ty_arg', ty_res' = instance_label false lbl in
           unify env ty_arg ty_arg';
           unify_pat env p ty_res'
         end in
@@ -242,7 +244,7 @@ let build_or_pat env loc lid =
       ([],[]) fields in
   let row =
     { row_fields = List.rev fields; row_more = newvar(); row_bound = !bound;
-      row_closed = false; row_name = Some (path, tyl) }
+      row_closed = false; row_fixed = false; row_name = Some (path, tyl) }
   in
   let ty = newty (Tvariant row) in
   let pats =
@@ -326,6 +328,7 @@ let rec type_pat env sp =
                   row_bound = arg_type;
                   row_closed = false;
                   row_more = newvar ();
+                  row_fixed = false;
                   row_name = None } in
       { pat_desc = Tpat_variant(l, arg, row);
         pat_loc = sp.ppat_loc;
@@ -346,7 +349,7 @@ let rec type_pat env sp =
             Env.lookup_label lid env
           with Not_found ->
             raise(Error(sp.ppat_loc, Unbound_label lid)) in
-        let (ty_arg, ty_res) = instance_label label in
+        let (_, ty_arg, ty_res) = instance_label false label in
         begin try
           unify env ty_res ty
         with Unify trace ->
@@ -470,7 +473,7 @@ let check_unused_variant pat =
           begin match opat with None -> assert false
           | Some pat -> List.iter (unify_pat pat.pat_env pat) (ty::tl)
           end
-      | Reither (c, l, true, e) ->
+      | Reither (c, l, true, e) when not row.row_fixed ->
           e := Some (Reither (c, [], false, ref None))
       | _ -> ()
       end
@@ -675,6 +678,23 @@ let rec list_labels_aux env visited ls ty_fun =
 
 let list_labels env ty = list_labels_aux env [] [] ty
 
+(* Check that all univars are safe in a type *)
+let check_univars env kind exp ty_expected vars =
+  let vars' =
+    List.filter
+      (fun t ->
+        let t = repr t in
+        generalize t;
+        if t.desc = Tvar && t.level = generic_level then
+          (t.desc <- Tunivar; true)
+        else false)
+      vars in
+  if List.length vars = List.length vars' then () else
+  let ty = newgenty (Tpoly(repr exp.exp_type, vars'))
+  and ty_expected = repr ty_expected in
+  raise (Error (exp.exp_loc,
+                Less_general(kind, [ty, ty; ty_expected, ty_expected])))
+
 (* Hack to allow coercion of self. Will clean-up later. *)
 let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
 
@@ -732,8 +752,14 @@ let rec type_exp env sexp =
   | Pexp_function _ ->     (* defined in type_expect *)
       type_expect env sexp (newvar())
   | Pexp_apply(sfunct, sargs) ->
+      if !Clflags.principal then begin_def ();
       let funct = type_exp env sfunct in
+      if !Clflags.principal then begin
+        end_def ();
+        generalize_structure funct.exp_type
+      end;
       let (args, ty_res) = type_application env funct sargs in
+      let funct = {funct with exp_type = instance funct.exp_type} in
       { exp_desc = Texp_apply(funct, args);
         exp_loc = sexp.pexp_loc;
         exp_type = ty_res;
@@ -773,6 +799,7 @@ let rec type_exp env sexp =
                                   row_more = newvar ();
                                   row_bound = [];
                                   row_closed = false;
+                                  row_fixed = false;
                                   row_name = None});
         exp_env = env }
   | Pexp_record(lid_sexp_list, opt_sexp) ->
@@ -784,13 +811,22 @@ let rec type_exp env sexp =
             Env.lookup_label lid env
           with Not_found ->
             raise(Error(sexp.pexp_loc, Unbound_label lid)) in
-        let (ty_arg, ty_res) = instance_label label in
+        begin_def ();
+        if !Clflags.principal then begin_def ();
+        let (vars, ty_arg, ty_res) = instance_label true label in
+        if !Clflags.principal then begin
+          end_def ();
+          generalize_structure ty_arg;
+          generalize_structure ty_res
+        end;
         begin try
-          unify env ty_res ty
+          unify env (instance ty_res) ty
         with Unify trace ->
           raise(Error(sexp.pexp_loc, Label_mismatch(lid, trace)))
         end;
-        let arg = type_expect env sarg ty_arg in
+        let arg = type_argument env sarg ty_arg in
+        end_def ();
+        check_univars env "field value" arg label.lbl_arg vars;
         num_fields := Array.length label.lbl_all;
         (label, arg) in
       let lbl_exp_list = List.map type_label_exp lid_sexp_list in
@@ -810,8 +846,8 @@ let rec type_exp env sexp =
               if List.for_all (fun (lbl',_) -> lbl'.lbl_pos <> lbl.lbl_pos)
                   lbl_exp_list
               then begin
-                let ty_arg1, ty_res1 = instance_label lbl
-                and ty_arg2, ty_res2 = instance_label lbl in
+                let _, ty_arg1, ty_res1 = instance_label false lbl
+                and _, ty_arg2, ty_res2 = instance_label false lbl in
                 unify env ty_exp ty_res1;
                 unify env ty ty_res2;
                 unify env ty_arg1 ty_arg2
@@ -844,7 +880,7 @@ let rec type_exp env sexp =
           Env.lookup_label lid env
         with Not_found ->
           raise(Error(sexp.pexp_loc, Unbound_label lid)) in
-      let (ty_arg, ty_res) = instance_label label in
+      let (_, ty_arg, ty_res) = instance_label false label in
       unify_exp env arg ty_res;
       { exp_desc = Texp_field(arg, label);
         exp_loc = sexp.pexp_loc;
@@ -859,9 +895,12 @@ let rec type_exp env sexp =
           raise(Error(sexp.pexp_loc, Unbound_label lid)) in
       if label.lbl_mut = Immutable then
         raise(Error(sexp.pexp_loc, Label_not_mutable lid));
-      let (ty_arg, ty_res) = instance_label label in
+      begin_def ();
+      let (vars, ty_arg, ty_res) = instance_label true label in
       unify_exp env record ty_res;
       let newval = type_expect env snewval ty_arg in
+      end_def ();
+      check_univars env "field value" newval label.lbl_arg vars;
       { exp_desc = Texp_setfield(record, label, newval);
         exp_loc = sexp.pexp_loc;
         exp_type = instance Predef.type_unit;
@@ -922,8 +961,15 @@ let rec type_exp env sexp =
             let arg = type_exp env sarg in
             (arg, arg.exp_type)
         | (Some sty, None) ->
+            if !Clflags.principal then begin_def ();
             let ty = Typetexp.transl_simple_type env false sty in
-            (type_expect env sarg ty, ty)
+            if !Clflags.principal then begin
+              end_def ();
+              generalize_structure ty;
+              let ty1 = instance ty and ty2 = instance ty in
+              (type_expect env sarg ty1, ty2)
+            end else
+              (type_expect env sarg ty, ty)
         | (None, Some sty') ->
             let (ty', force) =
               Typetexp.transl_simple_type_delayed env sty'
@@ -969,6 +1015,7 @@ let rec type_exp env sexp =
         exp_type = body.exp_type;
         exp_env = env }
   | Pexp_send (e, met) ->
+      if !Clflags.principal then begin_def ();
       let obj = type_exp env e in
       begin try
         let (exp, typ) =
@@ -996,7 +1043,7 @@ let rec type_exp env sexp =
                   let method_type = newvar () in
                   let (obj_ty, res_ty) = filter_arrow env method_type "" in
                   unify env obj_ty desc.val_type;
-                  unify env res_ty typ;
+                  unify env res_ty (instance typ);
                   (Texp_apply({exp_desc = Texp_ident(Path.Pident method_id,
                                                      {val_type = method_type;
                                                        val_kind = Val_reg});
@@ -1015,6 +1062,29 @@ let rec type_exp env sexp =
           | _ ->
               (Texp_send(obj, Tmeth_name met),
                filter_method env met Public obj.exp_type)
+        in
+        if !Clflags.principal then begin
+          end_def ();
+          generalize_structure typ;
+        end;
+        let typ =
+          match repr typ with
+            {desc = Tpoly (ty, [])} ->
+              instance ty
+          | {desc = Tpoly (ty, tl); level = l} ->
+              if !Clflags.principal && l <> generic_level then
+                Location.prerr_warning sexp.pexp_loc
+                  (Warnings.Other
+                     "This use of a polymorphic method is not principal");
+              snd (instance_poly false tl ty)
+          | {desc = Tvar} as ty ->
+              let ty' = newvar () in
+              unify env (instance ty) (newty(Tpoly(ty',[])));
+              (* if not !Clflags.nolabels then
+                 Location.prerr_warning loc (Warnings.Unknown_method met); *)
+              ty'
+          | _ ->
+              assert false
         in
           { exp_desc = exp;
             exp_loc = sexp.pexp_loc;
@@ -1042,7 +1112,7 @@ let rec type_exp env sexp =
         let (path, desc) = Env.lookup_value (Longident.Lident lab) env in
         match desc.val_kind with
           Val_ivar (Mutable, cl_num) ->
-            let newval = type_expect env snewval desc.val_type in
+            let newval = type_expect env snewval (instance desc.val_type) in
             let (path_self, _) =
               Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
             in
@@ -1080,7 +1150,7 @@ let rec type_exp env sexp =
           let type_override (lab, snewval) =
             begin try
               let (id, _, ty) = Vars.find lab !vars in
-              (Path.Pident id, type_expect env snewval ty)
+              (Path.Pident id, type_expect env snewval (instance ty))
             with
               Not_found ->
                 raise(Error(sexp.pexp_loc, Unbound_instance_variable lab))
@@ -1138,31 +1208,45 @@ let rec type_exp env sexp =
          exp_type = instance (Predef.type_lazy_t arg.exp_type);
          exp_env = env;
        }
+  | Pexp_poly _ ->
+      assert false
 
-and type_argument env sarg ty_expected =
+and type_argument env sarg ty_expected' =
+  (* ty_expected' may be generic *)
   let no_labels ty =
     let ls, tvar = list_labels env ty in
     not tvar && List.for_all ((=) "") ls
   in
-  match expand_head env ty_expected, sarg with
+  let ty_expected = instance ty_expected' in
+  match expand_head env ty_expected', sarg with
   | _, {pexp_desc = Pexp_function(l,_,_)} when not (is_optional l) ->
       type_expect env sarg ty_expected
-  | {desc = Tarrow("",ty_arg,ty_res,_)}, _ ->
+  | {desc = Tarrow("",ty_arg,ty_res,_); level = lv}, _ ->
       (* apply optional arguments when expected type is "" *)
       (* we must be very careful about not breaking the semantics *)
+      if !Clflags.principal then begin_def ();
       let texp = type_exp env sarg in
+      if !Clflags.principal then begin
+        end_def ();
+        generalize_structure texp.exp_type
+      end;
       let rec make_args args ty_fun =
         match (expand_head env ty_fun).desc with
         | Tarrow (l,ty_arg,ty_fun,_) when is_optional l ->
             make_args
-              ((Some(option_none ty_arg sarg.pexp_loc), Optional) :: args)
+              ((Some(option_none (instance ty_arg) sarg.pexp_loc), Optional)
+               :: args)
               ty_fun
         | Tarrow (l,_,ty_res',_) when l = "" || !Clflags.classic ->
             args, ty_fun, no_labels ty_res'
         | Tvar ->  args, ty_fun, false
         |  _ -> [], texp.exp_type, false
       in
-      let args, ty_fun, simple_res = make_args [] texp.exp_type in
+      let args, ty_fun', simple_res = make_args [] texp.exp_type in
+      let warn = !Clflags.principal &&
+        (lv <> generic_level || (repr ty_fun').level <> generic_level)
+      and texp = {texp with exp_type = instance texp.exp_type}
+      and ty_fun = instance ty_fun' in
       if not (simple_res || no_labels ty_res) then begin
         unify_exp env texp ty_expected;
         texp
@@ -1184,6 +1268,8 @@ and type_argument env sarg ty_expected =
                                    Texp_apply (texp, args@
                                                [Some eta_var, Required])}],
                         Total) } in
+      if warn then Location.prerr_warning texp.exp_loc
+          (Warnings.Other "Eliminated optional argument without principality");
       if is_nonexpansive texp then func texp else
       (* let-expand to have side effects *)
       let let_pat, let_var = var_pair "let" texp.exp_type in
@@ -1194,6 +1280,7 @@ and type_argument env sarg ty_expected =
       type_expect env sarg ty_expected
 
 and type_application env funct sargs =
+  (* funct.exp_type may be generic *)
   let result_type omitted ty_fun =
     List.fold_left
       (fun ty_fun (l,ty,lv) -> newty2 lv (Tarrow(l,ty,ty_fun,Cok)))
@@ -1209,7 +1296,7 @@ and type_application env funct sargs =
         (List.map
            (function None, x -> None, x | Some f, x -> Some (f ()), x)
            (List.rev args),
-         result_type omitted ty_fun)
+         instance (result_type omitted ty_fun))
     | (l1, sarg1) :: sargl ->
         let (ty1, ty2) =
           match (expand_head env ty_fun).desc with
@@ -1256,10 +1343,18 @@ and type_application env funct sargs =
        true)
     end
   in
+  let warned = ref false in
   let rec type_args args omitted ty_fun ty_old sargs more_sargs =
     match expand_head env ty_fun with
       {desc=Tarrow (l, ty, ty_fun, com); level=lv} as ty_fun'
       when (sargs <> [] || more_sargs <> []) && commu_repr com = Cok ->
+        let may_warn loc msg =
+          if not !warned && !Clflags.principal && lv <> generic_level
+          then begin
+            warned := true;
+            Location.prerr_warning loc (Warnings.Other msg)
+          end
+        in
         let name = label_name l
         and optional = if is_optional l then Optional else Required in
         let sargs, more_sargs, arg =
@@ -1278,28 +1373,45 @@ and type_application env funct sargs =
           end else try
             let (l', sarg0, sargs, more_sargs) =
               try
-                let (l', sarg0, sargs1, sargs2) = extract_label name sargs
-                in (l', sarg0, sargs1 @ sargs2, more_sargs)
+                let (l', sarg0, sargs1, sargs2) = extract_label name sargs in
+                if sargs1 <> [] then
+                  may_warn sarg0.pexp_loc
+                    "Commuting this argument is not principal";
+                (l', sarg0, sargs1 @ sargs2, more_sargs)
               with Not_found ->
-                let (l', sarg0, sargs1, sargs2) = extract_label name more_sargs
-                in (l', sarg0, sargs @ sargs1, sargs2)
+                let (l', sarg0, sargs1, sargs2) =
+                  extract_label name more_sargs in
+                if sargs1 <> [] || sargs <> [] then
+                  may_warn sarg0.pexp_loc
+                    "Commuting this argument is not principal";
+                (l', sarg0, sargs @ sargs1, sargs2)
             in
             sargs, more_sargs,
             if optional = Required || is_optional l' then
               Some (fun () -> type_argument env sarg0 ty)
-            else
+            else begin
+              may_warn sarg0.pexp_loc
+                "Using an optional argument here is not principal";
               Some (fun () -> option_some (type_argument env sarg0 
                                              (extract_option_type env ty)))
+            end
           with Not_found ->
             sargs, more_sargs,
             if optional = Optional &&
               (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
             then begin
+              may_warn funct.exp_loc
+                "Eliminated an optional argument without principality";
               ignored := (l,ty,lv) :: !ignored;
-              Some (fun () -> option_none ty Location.none)
-            end else None
+              Some (fun () -> option_none (instance ty) Location.none)
+            end else begin
+              may_warn funct.exp_loc
+                "Commuted an argument without principality";
+              None
+            end
         in
-        let omitted = if arg = None then (l,ty,lv) :: omitted else omitted in
+        let omitted =
+          if arg = None then (l,ty,lv) :: omitted else omitted in
         let ty_old = if sargs = [] then ty_fun else ty_old in
         type_args ((arg,optional)::args) omitted ty_fun ty_old sargs more_sargs
     | _ ->
@@ -1307,13 +1419,14 @@ and type_application env funct sargs =
           (l, sarg0) :: _ when ignore_labels ->
             raise(Error(sarg0.pexp_loc, Apply_wrong_label(l, ty_old)));
         | _ ->
-            type_unknown_args args omitted ty_fun (sargs @ more_sargs)
+            type_unknown_args args omitted (instance ty_fun)
+              (sargs @ more_sargs)
   in
   match funct.exp_desc, sargs with
     (* Special case for ignore: avoid discarding warning *)
     Texp_ident (_, {val_kind=Val_prim{Primitive.prim_name="%ignore"}}),
     ["", sarg] ->
-      let ty_arg, ty_res = filter_arrow env funct.exp_type "" in
+      let ty_arg, ty_res = filter_arrow env (instance funct.exp_type) "" in
       let exp = type_expect env sarg ty_arg in
       begin match expand_head env exp.exp_type with
       | {desc = Tarrow _} ->
@@ -1343,14 +1456,20 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
   if List.length sargs <> constr.cstr_arity then
     raise(Error(loc, Constructor_arity_mismatch
                   (lid, constr.cstr_arity, List.length sargs)));
+  if !Clflags.principal then begin_def ();
   let (ty_args, ty_res) = instance_constructor constr in
+  if !Clflags.principal then begin
+    end_def ();
+    List.iter generalize_structure ty_args;
+    generalize_structure ty_res
+  end;
   let texp =
     { exp_desc = Texp_construct(constr, []);
       exp_loc = loc;
-      exp_type = ty_res;
+      exp_type = instance ty_res;
       exp_env = env } in
   unify_exp env texp ty_expected;
-  let args = List.map2 (type_expect env) sargs ty_args in
+  let args = List.map2 (type_argument env) sargs ty_args in
   { texp with exp_desc = Texp_construct(constr, args) }
 
 (* Typing of an expression with an expected type.
@@ -1444,6 +1563,34 @@ and type_expect ?in_function env sexp ty_expected =
         exp_loc = sexp.pexp_loc;
         exp_type = newty (Tarrow(l, ty_arg, ty_res, Cok));
         exp_env = env }
+  | Pexp_poly(sbody, sty) ->
+      let ty =
+        match sty with None -> repr ty_expected
+        | Some sty ->
+            let ty = Typetexp.transl_simple_type env false sty in
+            repr ty
+      in            
+      let set_type ty =
+        unify_exp env
+          { exp_desc = Texp_tuple []; exp_loc = sexp.pexp_loc;
+            exp_type = ty; exp_env = env } ty_expected in
+      begin
+        match ty.desc with
+          Tpoly (ty', []) ->
+            if sty <> None then set_type ty;
+            let exp = type_expect env sbody ty' in
+            { exp with exp_type = ty }
+        | Tpoly (ty', tl) ->
+            if sty <> None then set_type ty;
+            (* One more level to generalize locally *)
+            begin_def ();
+            let vars, ty'' = instance_poly true tl ty' in
+            let exp = type_expect env sbody ty'' in
+            end_def ();
+            check_univars env "method" exp ty_expected vars;
+            { exp with exp_type = ty }
+        | _ -> assert false
+      end
   | _ ->
       let exp = type_exp env sexp in
       unify_exp env exp ty_expected;
@@ -1470,7 +1617,15 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
   let pat_env_list =
     List.map
       (fun (spat, sexp) ->
+        if !Clflags.principal then begin_def ();
         let (pat, ext_env) = type_pattern env spat in
+        let pat =
+          if !Clflags.principal then begin
+            end_def ();
+            iter_pattern (fun {pat_type=t} -> generalize_structure t) pat;
+            { pat with pat_type = instance pat.pat_type }
+          end else pat
+        in
         unify_pat env pat ty_arg';
         (pat, ext_env))
       caselist in
@@ -1509,6 +1664,7 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
 
 and type_let env rec_flag spat_sexp_list =
   begin_def();
+  if !Clflags.principal then begin_def ();
   let (pat_list, new_env) =
     type_pattern_list env (List.map (fun (spat, sexp) -> spat) spat_sexp_list)
   in
@@ -1516,6 +1672,15 @@ and type_let env rec_flag spat_sexp_list =
     List.iter2
       (fun pat (_, sexp) -> unify_pat env pat (type_approx env sexp))
       pat_list spat_sexp_list;
+  let pat_list =
+    if !Clflags.principal then begin
+      end_def ();
+      List.map
+        (fun pat ->
+          iter_pattern (fun pat -> generalize_structure pat.pat_type) pat;
+          {pat with pat_type = instance pat.pat_type})
+        pat_list
+    end else pat_list in
   let exp_env =
     match rec_flag with Nonrecursive | Default -> env | Recursive -> new_env in
   let exp_list =
@@ -1529,7 +1694,9 @@ and type_let env rec_flag spat_sexp_list =
   List.iter2
     (fun pat exp ->
        if not (is_nonexpansive exp) then
-         iter_pattern (fun pat -> make_nongen pat.pat_type) pat)
+         let f =
+           if !Clflags.principal then generalize_expansive else make_nongen in
+         iter_pattern (fun pat -> f pat.pat_type) pat)
     pat_list exp_list;
   List.iter
     (fun pat -> iter_pattern (fun pat -> generalize pat.pat_type) pat)
@@ -1550,6 +1717,7 @@ let type_expression env sexp =
   let exp = type_exp env sexp in
   end_def();
   if is_nonexpansive exp then generalize exp.exp_type
+  else if !Clflags.principal then generalize_expansive exp.exp_type
   else make_nongen exp.exp_type;
   exp
 
@@ -1690,3 +1858,7 @@ let report_error ppf = function
       fprintf ppf "This function is applied to arguments@ ";
       fprintf ppf "in an order different from other calls.@ ";
       fprintf ppf "This is only allowed when the real type is known."
+  | Less_general (kind, trace) ->
+      report_unification_error ppf trace
+        (fun ppf -> fprintf ppf "This %s has type" kind)
+        (fun ppf -> fprintf ppf "which is less general than")

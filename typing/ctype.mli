@@ -83,6 +83,15 @@ val generalize: type_expr -> unit
         (* Generalize in-place the given type *)
 val iterative_generalization: int -> type_expr list -> type_expr list
         (* Efficient repeated generalization of a type *)
+val generalize_expansive: type_expr -> unit
+        (* Generalize the structure of a type, making variables
+           non-generalizable *)
+val generalize_global: type_expr -> unit
+        (* Same, but variables are lowered to !global_level *)
+val generalize_structure: type_expr -> unit
+        (* Same, but variables are only lowered to !current_level *)
+val generalize_spine: type_expr -> unit
+        (* Special function to generalize a method during inference *)
 val make_nongen: type_expr -> unit
         (* Make non-generalizable the given type *)
 val correct_levels: type_expr -> type_expr
@@ -98,8 +107,6 @@ val instance_list: type_expr list -> type_expr list
 val instance_constructor:
         constructor_description -> type_expr list * type_expr
         (* Same, for a constructor *)
-val instance_label: label_description -> type_expr * type_expr
-        (* Same, for a label *)
 val instance_parameterized_type:
         type_expr list -> type_expr -> type_expr list * type_expr
 val instance_parameterized_type_2:
@@ -107,6 +114,12 @@ val instance_parameterized_type_2:
         type_expr list * type_expr list * type_expr
 val instance_class:
         type_expr list -> class_type -> type_expr list * class_type
+val instance_poly:
+        bool -> type_expr list -> type_expr -> type_expr list * type_expr
+        (* Take an instance of a type scheme containing free univars *)
+val instance_label:
+        bool -> label_description -> type_expr list * type_expr * type_expr
+        (* Same, for a label *)
 val apply:
         Env.t -> type_expr list -> type_expr -> type_expr list -> type_expr
         (* [apply [p1...pN] t [a1...aN]] match the arguments [ai] to
@@ -120,6 +133,9 @@ val enforce_constraints: Env.t -> type_expr -> unit
 
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
+val unify_var: Env.t -> type_expr -> type_expr -> unit
+        (* Same as [unify], but allow free univars when first type
+           is a variable. *)
 val filter_arrow: Env.t -> type_expr -> label -> type_expr * type_expr
         (* A special case of unification (with l:'a -> 'b). *)
 val filter_method: Env.t -> string -> private_flag -> type_expr -> type_expr

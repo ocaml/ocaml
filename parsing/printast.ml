@@ -125,6 +125,10 @@ let rec core_type i ppf x =
   | Ptyp_alias (ct, s) ->
       line i ppf "Ptyp_alias \"%s\"\n" s;
       core_type i ppf ct;
+  | Ptyp_poly (sl, ct) ->
+      line i ppf "Ptyp_poly%a\n"
+        (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x)) sl;
+      core_type i ppf ct;
 
 and core_field_type i ppf x =
   line i ppf "core_field_type %a\n" fmt_location x.pfield_loc;
@@ -274,6 +278,10 @@ and expression i ppf x =
   | Pexp_lazy (e) ->
       line i ppf "Pexp_lazy";
       expression i ppf e;
+  | Pexp_poly (e, cto) ->
+      line i ppf "Pexp_poly\n";
+      expression i ppf e;
+      option i core_type ppf cto;
 
 and value_description i ppf x =
   line i ppf "value_description\n";

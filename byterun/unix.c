@@ -157,10 +157,13 @@ char * search_dll_in_path(struct ext_table * path, char * name)
 #ifndef RTLD_GLOBAL
 #define RTLD_GLOBAL 0
 #endif
+#ifndef RTLD_NODELETE
+#define RTLD_NODELETE 0
+#endif
 
 void * caml_dlopen(char * libname)
 {
-  return dlopen(libname, RTLD_NOW|RTLD_GLOBAL);
+  return dlopen(libname, RTLD_NOW|RTLD_GLOBAL|RTLD_NODELETE);
 }
 
 void caml_dlclose(void * handle)

@@ -380,7 +380,7 @@ let full_match tdefs force env =  match env with
         env
     in
     let row = Btype.row_repr row in
-    if force then begin
+    if force && not row.row_fixed then begin
       (* force=true, we are called from check_partial, and must close *)
       let (ok, nm) =
         List.fold_left

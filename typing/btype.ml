@@ -121,7 +121,7 @@ let rec iter_row f row =
     row.row_fields;
   match (repr row.row_more).desc with
     Tvariant row -> iter_row f row
-  | Tvar | Tnil ->
+  | Tvar | Tnil | Tunivar ->
       Misc.may (fun (_,l) -> List.iter f l) row.row_name;
       List.iter f row.row_bound
   | _ -> assert false
@@ -140,8 +140,15 @@ let iter_type_expr f ty =
   | Tnil                -> ()
   | Tlink ty            -> f ty
   | Tsubst ty           -> f ty
+  | Tunivar             -> ()
+  | Tpoly (ty, tyl)     -> f ty; List.iter f tyl
 
-let copy_row f row keep more =
+let rec iter_abbrev f = function
+    Mnil                   -> ()
+  | Mcons(_, ty, ty', rem) -> f ty; f ty'; iter_abbrev f rem
+  | Mlink rem              -> iter_abbrev f !rem
+
+let copy_row f fixed row keep more =
   let bound = ref [] in
   let fields = List.map
       (fun (l, fi) -> l,
@@ -149,6 +156,7 @@ let copy_row f row keep more =
         | Rpresent(Some ty) -> Rpresent(Some(f ty))
         | Reither(c, tl, m, e) ->
             let e = if keep then e else ref None in
+            let m = if row.row_fixed then fixed else m in
             let tl = List.map f tl in
             bound := List.filter
                 (function {desc=Tconstr(_,[],_)} -> false | _ -> true)
@@ -160,7 +168,8 @@ let copy_row f row keep more =
   let name =
     match row.row_name with None -> None
     | Some (path, tl) -> Some (path, List.map f tl) in
-  { row_fields = fields; row_more = more; row_bound = !bound;
+  { row_fields = fields; row_more = more;
+    row_bound = !bound; row_fixed = row.row_fixed && fixed;
     row_closed = row.row_closed; row_name = name; }
 
 let rec copy_kind = function
@@ -182,56 +191,14 @@ let rec copy_type_desc f = function
   | Tobject (ty, _)     -> Tobject (f ty, ref None)
   | Tvariant row        ->
       let row = row_repr row in
-      Tvariant (copy_row f row false (f row.row_more))
+      Tvariant (copy_row f true row false (f row.row_more))
   | Tfield (p, k, ty1, ty2) -> Tfield (p, copy_kind k, f ty1, f ty2)
   | Tnil                -> Tnil
   | Tlink ty            -> copy_type_desc f ty.desc
   | Tsubst ty           -> assert false
+  | Tunivar             -> Tunivar
+  | Tpoly (ty, tyl)     -> Tpoly (f ty, List.map f tyl)
 
-(*
-let rec iter_signature f =
-  List.iter (iter_signature_item f)
-
-and iter_signature_item f = function
-    Tsig_value (_, d) ->
-      f d.val_type;
-      (match d.val_kind with Val_reg | Val_prim _ -> () | _ -> assert false)
-  | Tsig_type (_, d) ->
-      List.iter f d.type_params;
-      begin match d.type_kind with
-        Type_abstract -> ()
-      | Type_variant l -> List.iter (fun (_, tl) -> List.iter f tl) l
-      | Type_record r -> List.iter (fun (_, _, t) -> f t)
-      end;
-      may f d.type_manifest
-  | Tsig_exception (_, d) -> List.iter f d
-  | Tsig_module (_, m) -> iter_module_type f m
-  | Tsig_modtype (_, Tmodtype_manifest m) -> iter_module_type f m
-  | Tsig_modtype (_, Tmodtype_bastract) -> ()
-  | Tsig_class (_, d) ->
-      List.iter f d.cty_params;
-      iter_class_type f d.cty_type;
-      may f d.cty_new
-  | Tsig_cltype (_, d) ->
-      List.iter f d.clty_params;
-      iter_class_type f d.clty_type
-
-and iter_module_type f = function
-    Tmty_ident _ -> ()
-  | Tmty_signature sg -> iter_signature f sg
-  | Tmty_functor (_, m1, m2) -> iter_module_type f m1; iter_module_type f m2
-
-and iter_class_type f = function
-    Tcty_constr (_, tl, ct) ->
-      List.iter f tl;
-      iter_class_type f ct
-  | Tcty_fun (_, t, ct) ->
-      f t;
-      iter_class_type f ct
-  | Tcty_signature s ->
-      f s.cty_self;
-      Vars.iter (fun _ (_, t) -> f t) s.cty_vars
-*)
 
 (* Utilities for copying *)
 
