@@ -783,7 +783,8 @@ if sh ./hasgot inet_aton; then
   echo "#define HAS_INET_ATON" >> s.h
 fi
 
-if sh ./hasgot -i sys/socket.h -i netinet/in.h -t 'struct sockaddr_in6' \
+if sh ./hasgot -i sys/types.h -i sys/socket.h -i netinet/in.h \
+               -t 'struct sockaddr_in6' \
 && sh ./hasgot getaddrinfo getnameinfo inet_pton inet_ntop; then
   echo "IPv6 is supported."
   echo "#define HAS_IPV6" >> s.h
