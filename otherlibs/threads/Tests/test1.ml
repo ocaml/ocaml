@@ -44,16 +44,13 @@ let buff = create 20 0
 let rec produce n =
   print_int n; print_string "-->"; print_newline();
   put buff n;
-  produce (n+1)
+  if n < 10000 then produce (n+1)
 
 let rec consume () =
   let n = get buff in
   print_string "-->"; print_int n; print_newline();
-  consume ()
+  if n < 10000 then consume ()
 
 let _ =
   Thread.create produce 0;
-  consume()
-
-
-
+  consume ()
