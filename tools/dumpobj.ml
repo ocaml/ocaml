@@ -77,7 +77,14 @@ let rec print_struct_const = function
           printf ")"
       end
   | Const_float_array a ->
-      printf "floatarray"
+      printf "[|";
+      begin match a with
+        [] -> ()
+      | hd :: tl ->
+          printf "%s" hd;
+          List.iter (fun f -> printf ", %s" f) tl
+      end;
+      printf "|]"
 
 (* Print an obj *)
 
@@ -88,6 +95,14 @@ let rec print_obj x =
         printf "\"%s\"" (String.escaped (Obj.magic x : string))
     | 253 ->                            (* float *)
         printf "%.12g" (Obj.magic x : float)
+    | 254 ->                            (* float array *)
+        let a = (Obj.magic x : float array) in
+        printf "[|";
+        for i = 0 to Array.length a - 1 do
+          if i > 0 then printf ", ";
+          printf "%.12g" a.(i)
+        done;
+        printf "|]"
     | _ ->
         printf "<%d>" (Obj.tag x);
         begin match Obj.size x with
@@ -193,48 +208,49 @@ let print_instr ic =
      else names_of_instructions.(op));
   print_string " ";
   (* One unsigned int *)
-  if op == opATOM or op == opPUSHATOM 
-  or op == opMAKEBLOCK1 or op == opMAKEBLOCK2 or op == opMAKEBLOCK3
-  or op == opACC or op == opPUSHACC or op == opPOP or op == opASSIGN
-  or op == opENVACC or op == opPUSHENVACC
-  or op == opAPPLY or op == opAPPTERM1 or op == opAPPTERM2 or op == opAPPTERM3
-  or op == opRETURN or op == opGRAB or op == opGETFIELD or op == opSETFIELD
-  or op == opDUMMY then
+  if op = opATOM or op = opPUSHATOM 
+  or op = opMAKEBLOCK1 or op = opMAKEBLOCK2 or op = opMAKEBLOCK3
+  or op = opACC or op = opPUSHACC or op = opPOP or op = opASSIGN
+  or op = opENVACC or op = opPUSHENVACC
+  or op = opAPPLY or op = opAPPTERM1 or op = opAPPTERM2 or op = opAPPTERM3
+  or op = opRETURN or op = opGRAB or op = opGETFIELD or op = opSETFIELD
+  or op = opGETFLOATFIELD or op = opSETFLOATFIELD or op = opMAKEFLOATBLOCK
+  or op = opOFFSETCLOSURE then
     (print_int (inputu ic))
   (* One signed int *)
-  else if op == opCONSTINT or op == opPUSHCONSTINT
-  or op == opOFFSETINT or op == opOFFSETREF then
+  else if op = opCONSTINT or op = opPUSHCONSTINT
+  or op = opOFFSETINT or op = opOFFSETREF then
     (print_int (inputs ic))
   (* Two unsigned constants *)
-  else if op == opAPPTERM or op == opMAKEBLOCK then
+  else if op = opAPPTERM or op = opMAKEBLOCK then
     (print_int (inputu ic); print_string ", "; print_int(inputu ic))
   (* One displacement *)
-  else if op == opPUSH_RETADDR or op == opBRANCH or op == opBRANCHIF
-  or op == opBRANCHIFNOT or op == opPUSHTRAP then
+  else if op = opPUSH_RETADDR or op = opBRANCH or op = opBRANCHIF
+  or op = opBRANCHIFNOT or op = opPUSHTRAP then
     (let p = currpc ic in print_int (p + inputs ic))
   (* One size, one displacement *)
-  else if op == opCLOSURE or op == opCLOSUREREC then
+  else if op = opCLOSURE then
     (print_int (inputu ic); print_string ", ";
      let p = currpc ic in print_int (p + inputs ic))
   (* getglobal *)
-  else if op == opGETGLOBAL or op == opPUSHGETGLOBAL then
+  else if op = opGETGLOBAL or op = opPUSHGETGLOBAL then
     (print_getglobal_name ic)
   (* getglobal + unsigned *)
-  else if op == opGETGLOBALFIELD or op == opPUSHGETGLOBALFIELD then
+  else if op = opGETGLOBALFIELD or op = opPUSHGETGLOBALFIELD then
     (print_getglobal_name ic; print_string ", "; print_int (inputu ic))
   (* setglobal *)
-  else if op == opSETGLOBAL then
+  else if op = opSETGLOBAL then
     (print_setglobal_name ic)
   (* primitive *)
-  else if op == opC_CALL1 or op == opC_CALL2
-       or op == opC_CALL3 or op == opC_CALL4
-       or op == opC_CALL5 then
+  else if op = opC_CALL1 or op = opC_CALL2
+       or op = opC_CALL3 or op = opC_CALL4
+       or op = opC_CALL5 then
     (print_primitive ic)
   (* unsigned + primitive *)
-  else if op == opC_CALLN then
+  else if op = opC_CALLN then
     (print_int(inputu ic); print_string ", "; print_primitive ic)
   (* switch *)
-  else if op == opSWITCH then
+  else if op = opSWITCH then
     (let n = inputu ic in
      let orig = currpc ic in
      for i = 0 to (n land 0xFFFF) - 1 do
@@ -245,6 +261,16 @@ let print_instr ic =
        print_string "\n\ttag "; print_int i; print_string " -> ";
        print_int(orig + inputs ic)
      done)
+  (* closurerec *)
+  else if op = opCLOSUREREC then
+    (let nfuncs = inputu ic in
+     let nvars = inputu ic in
+     let orig = currpc ic in
+     print_int nvars;
+     for i = 0 to nfuncs - 1 do
+       print_string ", ";
+       print_int (orig + inputu ic)
+     done)     
   (* default *)
   else ();
   print_string "\n"
