@@ -128,6 +128,8 @@ let rec mark_loops_rec visited ty =
         end
     | Tfield(_, kind, ty1, ty2) when field_kind_repr kind = Fpresent ->
         mark_loops_rec visited ty1; mark_loops_rec visited ty2
+    | Tfield(_, _, _, ty2) ->
+        mark_loops_rec visited ty2
     | Tnil                -> ()
     | Tlink _             -> fatal_error "Printtyp.mark_loops_rec (2)"
     | _ -> assert false
