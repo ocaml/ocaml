@@ -70,7 +70,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
           else if O.tag arg = Obj.string_tag then
             fprintf ppf "\"%s\"" (String.escaped (O.obj arg : string))
           else if O.tag arg = Obj.double_tag then
-            fprintf ppf "%f" (O.obj arg : float)
+            fprintf ppf "%.12g" (O.obj arg : float)
           else
             fprintf ppf "_"
         done;
@@ -93,7 +93,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
       Pident(Ident.create "print_int"), Predef.type_int,
         (fun ppf x -> fprintf ppf "%i" (O.obj x : int));
       Pident(Ident.create "print_float"), Predef.type_float,
-        (fun ppf x -> fprintf ppf "%f" (O.obj x : float));
+        (fun ppf x -> fprintf ppf "%.12g" (O.obj x : float));
       Pident(Ident.create "print_char"), Predef.type_char,
         (fun ppf x ->
           fprintf ppf "'%s'" (Char.escaped (O.obj x : char)));
