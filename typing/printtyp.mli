@@ -64,7 +64,3 @@ val report_unification_error:
 val report_subtyping_error:
     formatter -> (type_expr * type_expr) list ->
     string -> (type_expr * type_expr) list -> unit
-
-val outcome_type: (formatter -> out_type -> unit) ref
-val outcome_sig_item: (formatter -> out_sig_item -> unit) ref
-val outcome_signature: (formatter -> out_sig_item list -> unit) ref

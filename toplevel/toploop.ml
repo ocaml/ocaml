@@ -77,9 +77,13 @@ module Printer = Genprintval.Make(Obj)(EvalPath)
 let max_printer_depth = ref 100
 let max_printer_steps = ref 300
 
-let print_out_value = ref Printer.print_outval
-let print_out_type = Printtyp.outcome_type
-let print_out_sig_item = Printtyp.outcome_sig_item
+let print_out_value = Oprint.out_value
+let print_out_type = Oprint.out_type
+let print_out_class_type = Oprint.out_class_type
+let print_out_module_type = Oprint.out_module_type
+let print_out_sig_item = Oprint.out_sig_item
+let print_out_signature = Oprint.out_signature
+let print_out_phrase = Oprint.out_phrase
 
 let print_untyped_exception ppf obj =
   !print_out_value ppf (Printer.outval_of_untyped_exception obj)
@@ -174,20 +178,6 @@ let rec item_list env = function
      | None -> []
      | Some (tree, valopt, items) -> (tree, valopt) :: item_list env items
 
-let rec print_items ppf =
-  function
-  | [] -> ()
-  | (tree, valopt) :: items ->
-      begin match valopt with
-      | Some v ->
-          fprintf ppf "@[<2>%a =@ %a@]" !print_out_sig_item tree
-            !print_out_value v
-      | None ->
-          fprintf ppf "@[%a@]" !print_out_sig_item tree
-      end;
-      if items <> [] then
-        fprintf ppf "@ %a" print_items items;;
-
 (* The current typing environment for the toplevel *)
 
 let toplevel_env = ref Env.empty
@@ -195,15 +185,7 @@ let toplevel_env = ref Env.empty
 (* Print an exception produced by an evaluation *)
 
 let print_out_exception ppf exn outv =
-  match exn with
-  | Sys.Break ->
-      fprintf ppf "Interrupted.@."
-  | Out_of_memory ->
-      fprintf ppf "Out of memory during evaluation.@."
-  | Stack_overflow ->
-      fprintf ppf "Stack overflow during evaluation (looping recursion?).@."
-  | _ ->
-      fprintf ppf "@[Exception:@ %a.@]@." !print_out_value outv
+  !print_out_phrase ppf (Ophr_exception (exn, outv))
 
 let print_exception_outcome ppf exn =
   if exn = Out_of_memory then Gc.full_major ();
@@ -216,17 +198,6 @@ let print_exception_outcome ppf exn =
 let directive_table = (Hashtbl.create 13 : (string, directive_fun) Hashtbl.t)
 
 (* Execute a toplevel phrase *)
-
-let print_phrase ppf =
-  function
-  | Ophr_eval (outv, ty) ->
-      fprintf ppf "@[- : %a@ =@ %a@]@."
-        !print_out_type ty !print_out_value outv
-  | Ophr_signature [] -> ()
-  | Ophr_signature items -> fprintf ppf "@[<v>%a@]@." print_items items
-  | Ophr_exception (exn, outv) -> print_out_exception ppf exn outv
-
-let print_out_phrase = ref print_phrase
 
 let execute_phrase print_outcome ppf phr =
   match phr with

@@ -50,7 +50,6 @@ module type S =
           int -> int ->
           (int -> t -> Types.type_expr -> Outcometree.out_value option) ->
           Env.t -> t -> type_expr -> Outcometree.out_value
-    val print_outval : formatter -> Outcometree.out_value -> unit
   end
 
 module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
@@ -353,79 +352,5 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
         | None -> outval_of_untyped_exception obj
 
     in tree_of_val max_depth obj ty
-
-    exception Ellipsis
-
-    let cautious f ppf arg = try f ppf arg with Ellipsis -> fprintf ppf "..."
-
-    let print_outval ppf tree =
-      let rec print_ident ppf =
-        function
-          Oide_ident s -> fprintf ppf "%s" s
-        | Oide_dot (id, s) -> fprintf ppf "%a.%s" print_ident id s
-        | Oide_apply (id1, id2) ->
-            fprintf ppf "%a(%a)" print_ident id1 print_ident id2
-      in
-      let rec print_tree ppf =
-        function
-          Oval_tuple tree_list ->
-            fprintf ppf "@[%a@]" (print_tree_list print_tree_1 ",") tree_list
-        | tree -> print_tree_1 ppf tree
-      and print_tree_1 ppf =
-        function
-          Oval_constr (name, [param]) ->
-            fprintf ppf "@[<1>%a@ %a@]" print_ident name print_simple_tree
-              param
-        | Oval_constr (name, (_ :: _ as params)) ->
-            fprintf ppf "@[<1>%a@ (%a)@]" print_ident name
-              (print_tree_list print_tree_1 ",") params
-        | Oval_variant (name, Some param) ->
-            fprintf ppf "@[<2>`%s@ %a@]" name print_simple_tree param
-        | tree -> print_simple_tree ppf tree
-      and print_simple_tree ppf =
-        function
-          Oval_int i -> fprintf ppf "%i" i
-        | Oval_float f -> fprintf ppf "%s" (string_of_float f)
-        | Oval_char c -> fprintf ppf "'%s'" (Char.escaped c)
-        | Oval_string s ->
-            (* String.escaped may raise [Invalid_argument "String.create"]
-               if the escaped string is longer than [Sys.max_string_length] *)
-            begin try
-              fprintf ppf "\"%s\"" (String.escaped s)
-            with Invalid_argument "String.create" ->
-              fprintf ppf "<huge string>"
-            end
-        | Oval_list tl ->
-            fprintf ppf "@[<1>[%a]@]" (print_tree_list print_tree_1 ";") tl
-        | Oval_array tl ->
-            fprintf ppf "@[<2>[|%a|]@]" (print_tree_list print_tree_1 ";") tl
-        | Oval_constr (name, []) -> print_ident ppf name
-        | Oval_variant (name, None) -> fprintf ppf "`%s" name
-        | Oval_stuff s -> fprintf ppf "%s" s
-        | Oval_record fel ->
-            fprintf ppf "@[<1>{%a}@]" (cautious (print_fields true)) fel
-        | Oval_ellipsis -> raise Ellipsis
-        | Oval_printer f -> f ppf
-        | tree -> fprintf ppf "@[<1>(%a)@]" (cautious print_tree) tree
-      and print_fields first ppf =
-        function
-          [] -> ()
-        | (name, tree) :: fields ->
-            if not first then fprintf ppf ";@ ";
-            fprintf ppf "@[<1>%a@ =@ %a@]" print_ident name
-              (cautious print_tree) tree;
-            print_fields false ppf fields
-      and print_tree_list print_item sep ppf tree_list =
-        let rec print_list first ppf =
-          function
-            [] -> ()
-          | tree :: tree_list ->
-              if not first then fprintf ppf "%s@ " sep;
-              print_item ppf tree;
-              print_list false ppf tree_list
-        in
-        cautious (print_list true) ppf tree_list
-      in
-      cautious print_tree ppf tree
 
 end
