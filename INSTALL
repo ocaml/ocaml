@@ -107,7 +107,7 @@ pinpoint the problem.
 COMMON PROBLEMS:
 
 * The Makefiles use the "include" directive, which is not supported by
-older versions of make. Use GNU make instead.
+all versions of make. Use GNU make instead.
 
 * The Makefiles assume that make execute commands by calling /bin/sh. They
 won't work if /bin/csh is called instead. You may have to unset the SHELL
@@ -128,17 +128,8 @@ gcc.  Be sure to add the -U__GNUC__ option in $(BYTECCCOMPOPTS).
 
 MACHINE-SPECIFIC HINTS:
 
-* On SparcStations 1, 1+, 2 (and other models with Sparc version 7
-processors) under SunOS 4.1.2: programs using integer division or
-integer modulus crash on a segmentation fault when compiled with
-cslopt. The same programs work fine under SunOS 4.1.1, 4.1.3 and
-4.1.4, so it looks very much like a kernel bug in the
-emulation of the sdiv instruction. Consider an upgrade to 4.1.3 or
-higher.
-
 * On HP 9000/700 machines under HP/UX 9.  Some versions of cc are
 unable to compile correctly the runtime system (wrong code is
 generated for (x - y) where x is a pointer and y an integer).
 Fix: use gcc.
-
 

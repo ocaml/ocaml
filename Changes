@@ -3,8 +3,8 @@ Release 1.13:
 * Pattern-matching compilation revised to factor out accesses inside
 matched structures.
 
-* Callbacks and signals now supported in cslopt (what a terrible
-hack). Signals are only detected at allocation points, though.
+* Callbacks and signals now supported in cslopt.
+Signals are only detected at allocation points, though.
 Added callback functions with 2 and 3 arguments.
 
 * More explicit error messages when a native-code program aborts due
@@ -21,7 +21,7 @@ emulation on V7 processors is abysmal.
 
 Release 1.12:
 
-* Fix an embarrassing bug with references to floats.
+* Fixed an embarrassing bug with references to floats.
 
 Release 1.11:
 

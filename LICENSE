@@ -1,6 +1,6 @@
 LEGAL NOTICE
 
-Software: Caml Special Light, version 1.10 of November 1995,
+Software: Caml Special Light, version 1.13 of January 1996,
 hereinafter referred to as "the software".
 
 The software has been designed and produced by Xavier Leroy and Damien
@@ -8,7 +8,7 @@ Doligez, research workers for the Institut National de Recherche en
 Informatique et en Automatique (INRIA) - Domaine de Voluceau -
 Rocquencourt - 78153 Le Chesnay Cedex - France.
 
-INRIA holds all ownership rights to Caml Special Light version 1.06.
+INRIA holds all ownership rights to Caml Special Light.
 
 The software has been registered at Agence pour la Protection
 des Programmes (APP).
