@@ -109,7 +109,7 @@ bytecccompopts=""
 bytecclinkopts=""
 
 case "$bytecc,$host" in
-  gcc,*-*-nextstep*)
+  cc,*-*-nextstep*)
     # GNU C extensions disabled, but __GNUC__ still defined!
     bytecccompopts="-fno-defer-pop -Wall -U__GNUC__ -posix"
     bytecclinkopts="-posix";;
