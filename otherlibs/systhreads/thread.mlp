@@ -23,7 +23,6 @@ external self : unit -> t = "caml_thread_self"
 external id : t -> int = "caml_thread_id"
 external exit : unit -> unit = "caml_thread_exit"
 external join : t -> unit = "caml_thread_join"
-external detach : t -> unit = "caml_thread_detach"
 external kill : t -> unit = "caml_thread_kill"
 
 (* For new, make sure the function passed to thread_new never

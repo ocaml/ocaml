@@ -25,9 +25,8 @@ external execv : string -> string array -> unit = "unix_execv"
 external execve : string -> string array -> string array -> unit
            = "unix_execve"
 external execvp : string -> string array -> unit = "unix_execvp"
-external wait : unit -> int * Unix.process_status = "unix_wait"
-external waitpid : Unix.wait_flag list -> int -> int * Unix.process_status
-           = "unix_waitpid"
+val wait : unit -> int * Unix.process_status
+val waitpid : Unix.wait_flag list -> int -> int * Unix.process_status
 val system : string -> Unix.process_status
 
 (*** Basic input/output *)

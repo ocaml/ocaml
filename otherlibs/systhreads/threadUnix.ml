@@ -21,9 +21,8 @@ external execv : string -> string array -> unit = "unix_execv"
 external execve : string -> string array -> string array -> unit
            = "unix_execve"
 external execvp : string -> string array -> unit = "unix_execvp"
-external wait : unit -> int * process_status = "unix_wait"
-external waitpid : wait_flag list -> int -> int * process_status
-           = "unix_waitpid"
+let wait = Unix.wait
+let waitpid = Unix.waitpid
 let system = Unix.system
 let read = Unix.read
 let write = Unix.write

@@ -112,17 +112,21 @@ static void caml_thread_scan_roots(scanning_action action)
 {
   caml_thread_t th;
 
-  /* Scan the stacks, except that of the current thread (already done). */
-  for (th = curr_thread->next; th != curr_thread; th = th->next) {
+  th = curr_thread;
+  do {
     (*action)(th->descr, &th->descr);
+    /* Don't rescan the stack of the current thread, it was done already */
+    if (th != curr_thread) {
 #ifdef NATIVE_CODE
-    if (th->bottom_of_stack == NULL) continue;
-    do_local_roots(action, th->last_return_address,
-                   th->bottom_of_stack, th->local_roots);
+      if (th->bottom_of_stack == NULL) continue;
+      do_local_roots(action, th->last_return_address,
+		     th->bottom_of_stack, th->local_roots);
 #else
-    do_local_roots(action, th->sp, th->stack_high, th->local_roots);
+      do_local_roots(action, th->sp, th->stack_high, th->local_roots);
 #endif
-  }
+    }
+    th = th->next;
+  } while (th != curr_thread);
   /* Hook */
   if (prev_scan_roots_hook != NULL) (*prev_scan_roots_hook)(action);
 }
@@ -263,10 +267,11 @@ value caml_thread_initialize(value unit)   /* ML */
     caml_mutex = CreateMutex(NULL, TRUE, NULL);
     if (caml_mutex == NULL) caml_wthread_error("Thread.init");
     /* Create a finalized value to hold thread handle */
-    vthread = alloc_final(2, caml_thread_finalize, 1, 1000);
+    vthread = alloc_final(sizeof(struct caml_thread_handle) / sizeof(value),
+			  caml_thread_finalize, 1, 1000);
     ((struct caml_thread_handle *)vthread)->handle = NULL;
     /* Create a descriptor for the current thread */
-    descr = alloc_tuple(3);
+    descr = alloc_tuple(sizeof(struct caml_thread_descr) / sizeof(value));
     Ident(descr) = Val_long(thread_next_ident);
     Start_closure(descr) = Val_unit;
     Threadhandle(descr) = (struct caml_thread_handle *) vthread;
@@ -323,7 +328,7 @@ static void caml_thread_start(caml_thread_t th)
   /* Cleanup: free the thread resources */
   caml_thread_cleanup(th);
   /* Release the main mutex */
-  ReleaseMutex(caml_mutex);
+  enter_blocking_section();
 }  
 
 value caml_thread_new(value clos)          /* ML */
@@ -335,10 +340,11 @@ value caml_thread_new(value clos)          /* ML */
 
   Begin_roots2 (clos, vthread)
     /* Create a finalized value to hold thread handle */
-    vthread = alloc_final(2, caml_thread_finalize, 1, 1000);
+    vthread = alloc_final(sizeof(struct caml_thread_handle) / sizeof(value),
+			  caml_thread_finalize, 1, 1000);
     ((struct caml_thread_handle *)vthread)->handle = NULL;
     /* Create a descriptor for the new thread */
-    descr = alloc_tuple(3);
+    descr = alloc_tuple(sizeof(struct caml_thread_descr) / sizeof(value));
     Ident(descr) = Val_long(thread_next_ident);
     Start_closure(descr) = clos;
     Threadhandle(descr) = (struct caml_thread_handle *) vthread;
@@ -415,7 +421,7 @@ value caml_thread_join(value th)          /* ML */
 value caml_thread_exit(value unit)       /* ML */
 {
   caml_thread_cleanup(curr_thread);
-  ReleaseMutex(caml_mutex);
+  enter_blocking_section();
   ExitThread(0);
   return Val_unit;              /* never reached */
 }

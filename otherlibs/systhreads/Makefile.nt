@@ -48,7 +48,7 @@ clean: partialclean
 install:
 	cp libthreads.lib $(LIBDIR)/libthreads.lib
 	if not exist $(LIBDIR)\threads mkdir $(LIBDIR)\threads
-	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi threads.cma stdlib.cma $(LIBDIR)/threads
+	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi threads.cma $(LIBDIR)/threads
 
 installopt:
 
