@@ -562,6 +562,7 @@ case "$host" in
   ia64-*-linux*)                arch=ia64; system=linux;;
   ia64-*-freebsd*)              arch=ia64; system=freebsd;;
   amd64-*-freebsd*)             arch=amd64; system=freebsd;;
+  x86_64-*-freebsd*)            arch=amd64; system=freebsd;;
   x86_64-*-linux*)              arch=amd64; system=linux;;
 esac
 

@@ -78,15 +78,19 @@ val string_match : regexp -> string -> int -> bool
    The first character of a string has position [0], as usual. *)
 
 val search_forward : regexp -> string -> int -> int
-(** [search_forward r s start] searchs the string [s] for a substring
+(** [search_forward r s start] searches the string [s] for a substring
    matching the regular expression [r]. The search starts at position
    [start] and proceeds towards the end of the string.
    Return the position of the first character of the matched
    substring, or raise [Not_found] if no substring matches. *)
 
 val search_backward : regexp -> string -> int -> int
-(** Same as {!Str.search_forward}, but the search proceeds towards the
-   beginning of the string. *)
+(** [search_backward r s last] searches the string [s] for a
+  substring matching the regular expression [r]. The search first
+  considers substrings that start at position [last] and proceeds
+  towards the beginning of string. Return the position of the first
+  character of the matched substring; raise [Not_found] if no
+  substring matches. *)
 
 val string_partial_match : regexp -> string -> int -> bool
 (** Similar to {!Str.string_match}, but succeeds whenever the argument

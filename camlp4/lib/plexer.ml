@@ -88,6 +88,9 @@ and digits_under kind len =
   parser
   [ [: d = kind; s :] -> digits_under kind (store len d) s
   | [: `'_'; s :] -> digits_under kind len s
+  | [: `'l' :] -> ("INT32", get_buff len)
+  | [: `'L' :] -> ("INT64", get_buff len)
+  | [: `'n' :] -> ("NATIVEINT", get_buff len)
   | [: :] -> ("INT", get_buff len) ]
 and octal = parser [ [: `('0'..'7' as d) :] -> d ]
 and hexa = parser [ [: `('0'..'9' | 'a'..'f' | 'A'..'F' as d) :] -> d ]

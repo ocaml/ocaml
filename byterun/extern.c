@@ -332,7 +332,7 @@ static void extern_rec(value v)
       break;
     }
     case Abstract_tag:
-      extern_invalid_argument("output_value: abstract value");
+      extern_invalid_argument("output_value: abstract value (Abstract)");
       break;
     case Infix_tag:
       writecode32(CODE_INFIXPOINTER, Infix_offset_hd(hd));
@@ -348,7 +348,7 @@ static void extern_rec(value v)
                         unsigned long * wsize_64)
         = Custom_ops_val(v)->serialize;
       if (serialize == NULL) 
-        extern_invalid_argument("output_value: abstract value");
+        extern_invalid_argument("output_value: abstract value (Custom)");
       Write(CODE_CUSTOM);
       writeblock(ident, strlen(ident) + 1);
       Custom_ops_val(v)->serialize(v, &sz_32, &sz_64);
@@ -383,7 +383,7 @@ static void extern_rec(value v)
     writeblock((char *) caml_code_checksum(), 16);
     return;
   }
-  extern_invalid_argument("output_value: abstract value");
+  extern_invalid_argument("output_value: abstract value (outside heap)");
 }
 
 enum { NO_SHARING = 1, CLOSURES = 2 };
