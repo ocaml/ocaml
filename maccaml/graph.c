@@ -22,8 +22,7 @@
 #include "main.h"      /* Include main.h last or Assert will not work. */
 
 
-/* The off-screen buffer that holds the contents of the graphics
-   arena. */
+/* The off-screen buffer that holds the contents of the graphics arena. */
 static GWorldPtr gworld = NULL;
 
 /* An arbitrarily large rectangle (for clipping). */
@@ -222,8 +221,9 @@ value gr_open_graph (value vgeometry);
 value gr_close_graph (value unit);
 value gr_sigio_signal (value unit);
 value gr_sigio_handler (value unit);
+value gr_display_mode (value flag);
+value gr_remember_mode (value flag);
 value gr_synchronize (value unit);
-value gr_flush (value unit);
 value gr_clear_graph (value unit);
 value gr_size_x (value unit);
 value gr_size_y (value unit);
@@ -269,7 +269,7 @@ static short cur_width, cur_font, cur_size;
 /* Drawing off-screen and on-screen simultaneously.  The following three
    macros must always be used together and in this order.
 */
-/* 1. Begin drawing in the off-screen buffer. See also gr_point_color */
+/* 1. Begin drawing in the off-screen buffer. */
 #define BeginOff { \
   CGrafPtr _saveport_; \
   GDHandle _savegdev_; \
@@ -290,10 +290,24 @@ static short cur_width, cur_font, cur_size;
     ClipRect (&_cliprect_);
 
 /* 3. Clean up after drawing. */
-#define End \
+#define EndOffOn \
     ClipRect (&maxrect); \
     SetPort ((GrafPtr) _saveport_); \
   } \
+}
+
+/* Set up the current port to the off-screen buffer unconditionally.
+   This is for measurement functions that don't draw. */
+#define BeginSilent { \
+  CGrafPtr _saveport_; \
+  GDHandle _savegdev_; \
+  GetGWorld (&_saveport_, &_savegdev_); \
+  LockPixels (GetGWorldPixMap (gworld)); \
+  SetGWorld ((CGrafPtr) gworld, NULL);
+
+#define EndSilent \
+  SetGWorld (_saveport_, _savegdev_); \
+  UnlockPixels (GetGWorldPixMap (gworld)); \
 }
 
 /* Convert a red, green, or blue value from 8 bits to 16 bits. */
@@ -494,7 +508,7 @@ value gr_clear_graph (value unit)
     EraseRect (&maxrect);
   On
     EraseRect (&maxrect);
-  End
+  EndOffOn
   return unit;
 }
 
@@ -524,7 +538,7 @@ value gr_set_color (value vrgb)
     RGBForeColor (&fgcolor);
   On
     RGBForeColor (&fgcolor);
-  End
+  EndOffOn
   return Val_unit;
 }
 
@@ -537,7 +551,7 @@ value gr_plot (value vx, value vy)
     SetCPixel (Bx (x), By (y+1), &fgcolor);
   On
     SetCPixel (Wx (x), Wy (y+1), &fgcolor);
-  End
+  EndOffOn
   return Val_unit;
 }
 
@@ -548,18 +562,9 @@ value gr_point_color (value vx, value vy)
 
   gr_check_open ();
   if (x < 0 || x >= w0 || y < 0 || y >= h0) return Val_long (-1);
-  {
-    CGrafPtr _saveport_;
-    GDHandle _savegdev_;
-    GetGWorld (&_saveport_, &_savegdev_);
-    LockPixels (GetGWorldPixMap (gworld));
-    SetGWorld ((CGrafPtr) gworld, NULL);
-
+  BeginSilent
     GetCPixel (Bx (x), By (y+1), &c);
-
-    SetGWorld (_saveport_, _savegdev_);
-    UnlockPixels (GetGWorldPixMap (gworld));
-  }
+  EndSilent
   return Val_long (((c.red & 0xFF00) << 8)
                    | (c.green & 0xFF00)
                    | ((c.blue & 0xFF00) >> 8));
@@ -574,7 +579,7 @@ value gr_moveto (value vx, value vy)
     MoveTo (Bx (x), By (y));
   On
     MoveTo (Wx (x), Wy (y));
-  End
+  EndOffOn
   cur_x = x; cur_y = y;
   return Val_unit;
 }
@@ -599,7 +604,7 @@ value gr_lineto (value vx, value vy)
     LineTo (Bx (x), By (y));
   On
     LineTo (Wx (x), Wy (y));
-  End
+  EndOffOn
   cur_x = x; cur_y = y;
   return Val_unit;
 }
@@ -626,7 +631,7 @@ value gr_draw_arc_nat (value vx, value vy, value vrx, value vry, value va1,
   On
     SetRect (&r, Wx (x-rx), Wy (y+ry), Wx (x+rx), Wy (y-ry));
     FrameArc (&r, qda1, qda2 - qda1);
-  End
+  EndOffOn
   return Val_unit;
 }
 
@@ -640,7 +645,7 @@ value gr_set_line_width (value vwidth)
     PenSize (width, width);
   On
     PenSize (width, width);
-  End
+  EndOffOn
   cur_width = width;
   return Val_unit;
 }
@@ -658,7 +663,7 @@ value gr_fill_rect (value vx, value vy, value vw, value vh)
   On
     SetRect (&r, Wx (x), Wy (y+h), Wx (x+w), Wy (y));
     PaintRect (&r);
-  End
+  EndOffOn
   return Val_unit;
 }
 
@@ -682,7 +687,7 @@ value gr_fill_poly (value vpoints)
   On
     OffsetPoly (p, x0, y0);
     PaintPoly (p);
-  End
+  EndOffOn
   KillPoly (p);
   return Val_unit;
 }
@@ -709,23 +714,23 @@ value gr_fill_arc_nat (value vx, value vy, value vrx, value vry, value va1,
   On
     SetRect (&r, Wx (x-rx), Wy (y+ry), Wx (x+rx), Wy (y-ry));
     PaintArc (&r, qda1, qda2 - qda1);
-  End
+  EndOffOn
   return Val_unit;
 }
 
 value gr_draw_char (value vchr)
 {
   char c = Int_val (vchr);
-  Point p;
 
   gr_check_open ();
   BeginOff
     DrawChar (c);
-    GetPen (&p);
   On
     DrawChar (c);
-  End
-  cur_x = Bx (p.h); cur_y = By (p.v);
+  EndOffOn
+  BeginSilent
+    cur_x += CharWidth (c);
+  EndSilent
   return Val_unit;
 }
 
@@ -733,17 +738,17 @@ value gr_draw_string (value vstr)
 {
   mlsize_t len = string_length (vstr);
   char *str = String_val (vstr);
-  Point p;
 
   gr_check_open ();
   if (len > 32767) len = 32767;
   BeginOff
     DrawText (str, 0, len);
-    GetPen (&p);
   On
     DrawText (str, 0, len);
-  End
-  cur_x = Bx (p.h); cur_y = By (p.v);
+  EndOffOn
+  BeginSilent
+    cur_x = TextWidth (str, 0, len);
+  EndSilent
   return Val_unit;
 }
 
@@ -759,7 +764,7 @@ value gr_set_font (value vfontname)
     TextFont (fontnum);
   On
     TextFont (fontnum);
-  End
+  EndOffOn
   cur_font = fontnum;
   return Val_unit;
 }
@@ -773,7 +778,7 @@ value gr_set_text_size (value vsz)
     TextSize (sz);
   On
     TextSize (sz);
-  End
+  EndOffOn
   cur_size = sz;
   return Val_unit;
 }
@@ -786,12 +791,11 @@ value gr_text_size (value vstr)
   FontInfo info;
   long w, h;
 
-  BeginOff
+  BeginSilent
     GetFontInfo (&info);
     w = TextWidth (str, 0, len);
     h = info.ascent + info.descent;
-  On
-  End
+  EndSilent
   Field (result, 0) = Val_long (w);
   Field (result, 1) = Val_long (h);
   return result;
@@ -953,7 +957,7 @@ value gr_draw_image (value vimage, value vx, value vy)
                 &srcrect, &srcrect, &dstrect);
       RGBBackColor (&backcolor);
       RGBForeColor (&forecolor);
-    End
+    EndOffOn
     UnlockPixels (GetGWorldPixMap (im->data));
     UnlockPixels (GetGWorldPixMap (im->mask));
   }else{
@@ -979,7 +983,7 @@ value gr_draw_image (value vimage, value vx, value vy)
                 NULL);
       RGBBackColor (&backcolor);
       RGBForeColor (&forecolor);
-    End
+    EndOffOn
     UnlockPixels (GetGWorldPixMap (im->data));
   }
   return Val_unit;

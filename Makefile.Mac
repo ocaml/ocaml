@@ -59,6 +59,7 @@ COMP = :bytecomp:lambda.cmo :bytecomp:printlambda.cmo ¶
 
 BYTECOMP = :bytecomp:meta.cmo :bytecomp:instruct.cmo :bytecomp:bytegen.cmo ¶
   :bytecomp:printinstr.cmo :bytecomp:opcodes.cmo :bytecomp:emitcode.cmo ¶
+  :bytecomp:bytesections.cmo ¶
   :bytecomp:symtable.cmo :bytecomp:bytelibrarian.cmo :bytecomp:bytelink.cmo
 
 DRIVER = :driver:errors.cmo :driver:compile.cmo :driver:main_args.cmo ¶
@@ -79,7 +80,7 @@ EXPUNGEOBJS = :utils:misc.cmo :utils:formatmsg.cmo :utils:tbl.cmo ¶
   :utils:config.cmo :utils:clflags.cmo ¶
   :typing:ident.cmo :typing:path.cmo ¶
   :typing:types.cmo :typing:btype.cmo :typing:predef.cmo ¶
-  :bytecomp:runtimedef.cmo :bytecomp:symtable.cmo ¶
+  :bytecomp:runtimedef.cmo :bytecomp:bytesections.cmo :bytecomp:symtable.cmo ¶
   :toplevel:expunge.cmo
 
 PERVASIVES = arg array buffer callback char digest filename format gc hashtbl ¶

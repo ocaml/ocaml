@@ -154,7 +154,7 @@ and pattern i ppf x =
       option i pattern ppf po;
       bool i ppf b;
   | Ppat_variant (l, po) ->
-      line i ppf "Ppat_variant `%s\n" l;
+      line i ppf "Ppat_variant \"%s\"\n" l;
       option i pattern ppf po;
   | Ppat_record (l) ->
       line i ppf "Ppat_record\n";
@@ -208,7 +208,7 @@ and expression i ppf x =
       option i expression ppf eo;
       bool i ppf b;
   | Pexp_variant (l, eo) ->
-      line i ppf "Pexp_variant `%s\n" l;
+      line i ppf "Pexp_variant \"%s\"\n" l;
       option i expression ppf eo;
   | Pexp_record (l, eo) ->
       line i ppf "Pexp_record\n";
@@ -434,7 +434,7 @@ and module_type i ppf x =
   line i ppf "module_type %a\n" fmt_location x.pmty_loc;
   let i = i+1 in
   match x.pmty_desc with
-  | Pmty_ident (li) -> line i ppf "Pmty_ident (%a)\n" fmt_longident li;
+  | Pmty_ident (li) -> line i ppf "Pmty_ident %a\n" fmt_longident li;
   | Pmty_signature (s) ->
       line i ppf "Pmty_signature\n";
       signature i ppf s;
@@ -535,6 +535,8 @@ and structure_item i ppf x =
   | Pstr_exception (s, ed) ->
       line i ppf "Pstr_exception \"%s\"\n" s;
       exception_declaration i ppf ed;
+  | Pstr_exn_rebind (s, li) ->
+      line i ppf "Pstr_exn_rebind \"%s\" %a\n" s fmt_longident li;
   | Pstr_module (s, me) ->
       line i ppf "Pstr_module \"%s\"\n" s;
       module_expr i ppf me;

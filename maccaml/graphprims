@@ -2,8 +2,9 @@ gr_open_graph
 gr_close_graph
 gr_sigio_signal
 gr_sigio_handler
-gr_auto_flush
-gr_flush
+gr_display_mode
+gr_remember_mode
+gr_synchronize
 gr_clear_graph
 gr_size_x
 gr_size_y
