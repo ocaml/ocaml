@@ -489,7 +489,7 @@ and normalize_signature_item env = function
 let type_implementation sourcefile prefixname modulename initial_env ast =
   let (str, sg, finalenv) = type_structure initial_env ast in
   if !Clflags.print_types then
-    fprintf err_formatter "%a@." Printtyp.signature sg;
+    fprintf std_formatter "%a@." Printtyp.signature sg;
   let coercion =
     if Sys.file_exists (prefixname ^ !Config.interface_suffix) then begin
       let intf_file =
