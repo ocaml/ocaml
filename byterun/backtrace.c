@@ -165,8 +165,7 @@ static void print_location(value events, code_t pc)
 CAMLexport void print_exception_backtrace(void)
 {
   value events;
-  int i, nrepeat;
-  code_t pc;
+  int i;
 
   events = read_debug_info();
   if (events == Val_false) return;
