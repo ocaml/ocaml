@@ -522,15 +522,13 @@ let expand_abbrev env path args abbrev level =
         update_level env level ty;
       ty
   | None ->
-      let decl =
-        try Env.find_type path env with Not_found -> raise Cannot_expand in
-      match decl.type_manifest with
-        Some body ->
-          begin try
-            subst env level abbrev (Some path) decl.type_params args body
-          with Unify _ -> raise Cannot_expand end
-      | None ->
+      let (params, body) =
+        try Env.find_type_expansion path env with Not_found ->
           raise Cannot_expand
+      in
+      try
+        subst env level abbrev (Some path) params args body
+      with Unify _ -> raise Cannot_expand
 
 let _ = expand_abbrev' := expand_abbrev
 
@@ -564,10 +562,8 @@ let rec full_expand env ty =
 *)
 let generic_abbrev env path =
   try
-    let decl = Env.find_type path env in
-    match decl.type_manifest with
-      Some body -> (repr body).level = generic_level
-    | None      -> false
+    let (_, body) = Env.find_type_expansion path env in
+    (repr body).level = generic_level
   with
     Not_found ->
       false
@@ -919,149 +915,112 @@ let rec filter_method env name ty =
                         (***********************************)
 
 (*
-   Levels:
-       generic_level     : generic variables from the pattern
-       generic_level - 1 : generic variables from the subject
-
-   A generic variable from the subject cannot be instantiated, and its
-   level must remain unchanged.  A generic variable from the pattern
-   can be instantiated to anything.
-   Usually, the subject is given by the user, and the pattern is
-   unimportant. So, no need to propagate abbreviations.
-   A non-generic variable can occur in both types, so the occur-check
-   is required.
-*)
-
-(*
-   Update the level of [ty]. Check that the levels of generic variables
+   Update the level of [ty]. First check that the levels of variables
    from the subject are not lowered.
 *)
-let moregen_occur env level ty =
-  let rec occur_rec ty =
+let moregen_occur env level ty = 
+  let rec occur ty =
     let ty = repr ty in
-    if ty.level >= generic_level - 1 then begin
-      if (ty.desc = Tvar) && (ty.level = generic_level - 1) then
-        raise Occur;
+    if ty.level > level then begin
+      if ty.desc = Tvar then raise Occur;
       ty.level <- pivot_level - ty.level;
-      iter_type_expr occur_rec ty
+      iter_type_expr occur ty
     end
   in
-  if level < generic_level - 1 then begin
-    begin try
-      occur_rec ty; unmark_type ty
-    with Occur ->
-      unmark_type ty; raise (Unify [])
-    end;
-    update_level env level ty
-  end
+  begin try
+    occur ty; unmark_type ty
+  with Occur ->
+    unmark_type ty; raise (Unify [])
+  end;
+  update_level env level ty
 
-let rec moregen env t1 t2 =
-  if t1 == t2 then () else
-  let t1 = repr t1 in
-  let t2 = repr t2 in
-  if t1 == t2 then () else
-  let d2 = ref t2.desc in
-  moregen_occur env t2.level t1;
-  (* Ensure termination *)
-  t2.desc <- Tlink t1;
-  try
-    begin match (t1.desc, !d2) with
-      (Tvar, _) when t1.level <> generic_level - 1 ->
-        t2.desc <- !d2;
-        begin try occur env t1 t2 with Occur ->
-            raise (Unify [])
-        end;
+(*
+   Non-generic variable can be instanciated only if [inst_nongen] is
+   true. So, [inst_nongen] should be set to false if the subject might
+   contain non-generic variables.
+   Usually, the subject is given by the user, and the pattern
+   is unimportant.  So, no need to propagate abbreviations.
+*)
+let moregeneral env inst_nongen pat_sch subj_sch =
+  let type_pairs = ref [] in
+
+  let rec moregen env t1 t2 =
+    if t1 == t2 then () else
+    let t1 = repr t1 in
+    let t2 = repr t2 in
+    if t1 == t2 then () else
+
+    match (t1.desc, t2.desc) with
+      (Tvar, _) when if inst_nongen then t1.level <> generic_level - 1
+                                    else t1.level =  generic_level ->
         moregen_occur env t1.level t2;
         t1.desc <- Tlink t2
-    | (_, Tvar) when t2.level <> generic_level - 1 ->
-        begin try occur env t2 t1 with Occur ->
-          raise (Unify [])
-        end;
-        moregen_occur env t2.level t1;
-        d2 := Tlink t1
-    | (Tarrow(t1, u1), Tarrow(t2, u2)) ->
-        moregen env t1 t2; moregen env u1 u2
-    | (Ttuple tl1, Ttuple tl2) ->
-        moregen_list env tl1 tl2
-    | (Tconstr(p1, tl1, abbrev1), Tconstr(p2, tl2, abbrev2))
-          when Path.same p1 p2 ->
-        begin try
-          moregen_list env tl1 tl2
-        with Unify _ ->
-        try
-          moregen env t1 (expand_abbrev env p2 tl2 abbrev2 t2.level)
-        with Cannot_expand ->
-        t2.desc <- !d2;
-        try
-          moregen env (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
-        with Cannot_expand ->
-          raise (Unify [])
-        end
-    | (Tconstr(p1, tl1, abbrev1), Tconstr(p2, tl2, abbrev2)) ->
-        begin try
-          moregen env t1 (expand_abbrev env p2 tl2 abbrev2 t2.level)
-        with Cannot_expand ->
-        t2.desc <- !d2;
-        try
-          moregen env (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
-        with Cannot_expand ->
-          raise (Unify [])
-        end
-    | (Tobject(f1, _), Tobject(f2, _)) ->
-        moregen_fields env f1 f2
-    | (Tconstr(p1, tl1, abbrev1), _) ->
-        t2.desc <- !d2;
-        begin try
-          moregen env (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
-        with Cannot_expand ->
-          raise (Unify [])
-        end
-    | (_, Tconstr(p2, tl2, abbrev2)) ->
-        begin try
-          moregen env t1 (expand_abbrev env p2 tl2 abbrev2 t2.level)
-        with Cannot_expand ->
-          raise (Unify [])
-        end
-    | (Tfield _, Tfield _) ->           (* Actually unused *)
-        t2.desc <- !d2;
-        moregen_fields env t1 t2
-    | (Tnil, Tnil) ->
+    | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
         ()
-    | (_, _) ->
-        raise (Unify [])
-    end;
-    t2.desc <- !d2
-  with exn ->
-    t2.desc <- !d2;
-    raise exn
+    | _ ->
+        let t1' = expand_head env t1 in
+        let t2' = expand_head env t2 in
+        (* Expansion may have changed the representative of the types... *)
+        let t1' = repr t1' and t2' = repr t2' in
+        if t1' == t2' then () else
+        if
+          List.exists (function (t1, t2) -> t1 == t1' && t2 == t2') !type_pairs
+        then
+          ()
+        else begin
+          type_pairs := (t1', t2') :: !type_pairs;
 
-and moregen_list env tl1 tl2 =
-  if List.length tl1 <> List.length tl2 then
-    raise (Unify []);
-  List.iter2 (moregen env) tl1 tl2
+          match (t1'.desc, t2'.desc) with
+            (Tvar, _) when if inst_nongen then t1'.level <> generic_level - 1
+                                          else t1'.level =  generic_level ->
+              moregen_occur env t1'.level t2;
+              t1'.desc <- Tlink t2
+          | (Tarrow (t1, u1), Tarrow (t2, u2)) ->
+              moregen env t1 t2; moregen env u1 u2
+          | (Ttuple tl1, Ttuple tl2) ->
+              moregen_list env tl1 tl2
+          | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
+                when Path.same p1 p2 ->
+              moregen_list env tl1 tl2
+          | (Tobject (fi1, nm1), Tobject (fi2, nm2)) ->
+              moregen_fields env fi1 fi2
+          | (Tfield _, Tfield _) ->           (* Actually unused *)
+              moregen_fields env t1 t2
+          | (Tnil, Tnil) ->
+              ()
+          | (_, _) ->
+              raise (Unify [])
+        end
 
-and moregen_fields env ty1 ty2 =
-  let (fields1, rest1) = flatten_fields ty1
-  and (fields2, rest2) = flatten_fields ty2 in
-  let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
-  let va = newvar () in
-  moregen env (build_fields miss1 va) rest2;
-  moregen env rest1 (build_fields miss2 va);
-  List.iter (fun (t1, t2) -> moregen env t1 t2) pairs
+  and moregen_list env tl1 tl2 =
+    if List.length tl1 <> List.length tl2 then
+      raise (Unify []);
+    List.iter2 (moregen env) tl1 tl2
 
-let moregeneral env sch1 sch2 =
+  and moregen_fields env ty1 ty2 =
+    let (fields1, rest1) = flatten_fields ty1
+    and (fields2, rest2) = flatten_fields ty2 in
+    let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
+    if miss1 <> [] then raise (Unify []);
+    moregen env rest1 (build_fields miss2 rest2);
+    List.iter (fun (t1, t2) -> moregen env t1 t2) pairs
+
+  in
   let old_level = !current_level in
   current_level := generic_level - 1;
-  let ty2 = instance sch2 in
+  (*
+     Generic variables are first duplicated with [instance].  So,
+     their levels are lowered to [generic_level - 1].  The subject is
+     then copied with [correct_levels].  That way, its levels won't be
+     changed.
+  *)
+  let subj = correct_levels (instance subj_sch) in
   current_level := generic_level;
-  let ty1 = instance sch1 in
-  try
-    moregen env ty1 ty2;
-    current_level := old_level;
-    true
-  with Unify _ ->
-    current_level := old_level;
-    false
+  (* Duplicate generic variables *)
+  let patt = instance pat_sch in
+  let res = try moregen env patt subj; true with Unify _ -> false in
+  current_level := old_level;
+  res
 
 
                  (*********************************************)
@@ -1072,7 +1031,7 @@ let moregeneral env sch1 sch2 =
 (* +++ A voir... *)
 
 (* Deux modes : avec ou sans substitution *)
-(* Equalite de deux listes de types :    *)
+(* Egalite de deux listes de types :    *)
 (*   [Ctype.equal env rename tyl1 tyl2]  *)
 
 let equal env rename tyl1 tyl2 =
