@@ -340,7 +340,7 @@ alldepend::
 runtimeopt:
 	cd asmrun; $(MAKE) all
 	if test -f stdlib/libasmrun.a; then :; else \
-          ln -s ../asmrun/libasrum.a stdlib/libasmrun.a; fi
+          ln -s ../asmrun/libasmrun.a stdlib/libasmrun.a; fi
 realclean::
 	cd asmrun; $(MAKE) clean
 alldepend::
