@@ -428,7 +428,7 @@ let build_custom_runtime prim_name exec_name =
       remove_file (Filename.chop_suffix prim_name ".c" ^ ".obj");
       retcode
   | "MacOS" ->
-      and cppc = "mrc"
+      let cppc = "mrc"
       and libsppc = "\"{sharedlibraries}MathLib\" \
                      \"{ppclibraries}PPCCRuntime.o\" \
                      \"{ppclibraries}PPCToolLibs.o\" \

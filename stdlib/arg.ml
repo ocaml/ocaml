@@ -69,7 +69,7 @@ let parse speclist anonfun errmsg =
           eprintf "%s: %s.\n" progname s
     end;
     usage speclist errmsg;
-    if error = Unknow "-help" || error = Unknown "--help"
+    if error = Unknown "-help" || error = Unknown "--help"
     then exit 0
     else exit 2
   in
