@@ -13,6 +13,7 @@
 
 /* $Id$ */
 
+#include <string.h>
 #include <fcntl.h>
 #include <signal.h>
 #include "libgraph.h"
@@ -40,6 +41,7 @@ int grcolor;
 extern XFontStruct * grfont;
 long grselected_events;
 static Bool gr_initialized = False;
+static char * window_name = NULL;
 
 static int gr_error_handler(Display *display, XErrorEvent *error);
 static int gr_ioerror_handler(Display *display);
@@ -111,7 +113,9 @@ value gr_open_graph(value arg)
       XCreateSimpleWindow(grdisplay, DefaultRootWindow(grdisplay),
                           hints.x, hints.y, hints.width, hints.height,
                           BORDER_WIDTH, grblack, grbackground);
-    XSetStandardProperties(grdisplay, grwindow.win, WINDOW_NAME, ICON_NAME,
+    p = window_name;
+    if (p == NULL) p = DEFAULT_WINDOW_NAME;
+    XSetStandardProperties(grdisplay, grwindow.win, p, p,
                            None, NULL, 0, &hints);
     grwindow.gc = XCreateGC(grdisplay, grwindow.win, 0, NULL);
     XSetBackground(grdisplay, grwindow.gc, grbackground);
@@ -233,12 +237,14 @@ value gr_window_id(void)
 
 value gr_set_window_title(value n)
 {
-  char *s = String_val(n);
-  gr_check_open();
-  XStoreName(grdisplay, grwindow.win, s);
-  XSetIconName(grdisplay, grwindow.win, s);
-  
-  XFlush(grdisplay);
+  if (window_name != NULL) stat_free(window_name);
+  window_name = stat_alloc(strlen(String_val(n)));
+  strcpy(window_name, String_val(n));
+  if (gr_initialized) {
+    XStoreName(grdisplay, grwindow.win, window_name);
+    XSetIconName(grdisplay, grwindow.win, window_name);
+    XFlush(grdisplay);
+  }
   return Val_unit;
 }
 
