@@ -110,7 +110,7 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
     Tclass_ident path ->
       let obj_init = Ident.create "obj_init"
       and env_init = Ident.create "env_init" in
-      ((obj_init, env_init, transl_path path)::inh_init,
+      ((obj_init, env_init, path)::inh_init,
        Lapply(Lvar obj_init, [obj]))
   | Tclass_structure str ->
       create_object cl_table obj (fun obj ->
@@ -220,7 +220,8 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
   match cl.cl_desc with
     Tclass_ident path ->
       begin match inh_init with
-        (obj_init, env_init, lpath)::inh_init ->
+        (obj_init, env_init, path)::inh_init ->
+	  let lpath = transl_path path in
           (inh_init,
            Llet (Strict, (if top then obj_init else env_init), 
                  Lapply(Lprim(Pfield 1, [lpath]), Lvar cla ::
@@ -511,7 +512,7 @@ let transl_class ids cl_id arity pub_meths cl =
                  List.map (fun id -> Lvar id) !new_ids_meths)) ::
           List.map (fun id -> Lvar id) !new_ids_init)
   and linh_envs =
-    List.map (fun (_, _, lpath) -> Lprim(Pfield 3, [lpath])) inh_init
+    List.map (fun (_, _, p) -> Lprim(Pfield 3, [transl_path p])) inh_init
   in
   let make_envs lam =
     Llet(StrictOpt, envs,
@@ -524,8 +525,12 @@ let transl_class ids cl_id arity pub_meths cl =
   in
   let obj_init2 = Ident.create "obj_init"
   and cached = Ident.create "cached" in
+  let inh_paths =
+    List.filter
+      (fun (_,_,path) -> List.exists (Ident.same (Path.head path)) new_ids)
+      inh_init in
   let inh_keys =
-    List.map (fun (_,_,lpath) -> Lprim(Pfield 2, [lpath])) inh_init in
+    List.map (fun (_,_,p) -> Lprim(Pfield 2, [transl_path p])) inh_paths in
   let lclass lam =
     Llet(Strict, class_init,
          Lfunction(Curried, [cla], def_ids cla cl_init), lam)
