@@ -471,15 +471,13 @@ let rec class_field cl_num self_type meths vars
 
   | Pcf_init expr ->
       let expr = make_method cl_num expr in
-      Ctype.raise_nongen_level ();
-      let meth_type = Ctype.newvar () in
-      let (obj_ty, res_ty) = Ctype.filter_arrow val_env meth_type "" in
-      Ctype.unify val_env obj_ty self_type;
-      Ctype.unify val_env res_ty (Ctype.instance Predef.type_unit);
-      Ctype.end_def ();
       let field =
 	lazy begin
 	  Ctype.raise_nongen_level ();
+	  let meth_type = Ctype.newvar () in
+	  let (obj_ty, res_ty) = Ctype.filter_arrow val_env meth_type "" in
+	  Ctype.unify val_env obj_ty self_type;
+	  Ctype.unify val_env res_ty (Ctype.instance Predef.type_unit);
 	  let texp = type_expect met_env expr meth_type in
 	  Ctype.end_def ();
 	  Cf_init texp
@@ -513,8 +511,9 @@ and class_structure cl_num val_env met_env (spat, str) =
       (val_env, meth_env, par_env, [], Concr.empty, StringSet.empty)
       str
   in
+  let fields = List.map Lazy.force (List.rev fields) in
 
-  {cl_field = List.rev_map Lazy.force fields;
+  {cl_field = fields;
    cl_meths = Meths.map (function (id, ty) -> id) !meths},
 
   {cty_self = self_type;

@@ -621,7 +621,7 @@ widget entry {
 module Focus {
   unsafe function (widget) get ["focus"]
   function ()       set ["focus"; widget]
-  unsafe function (widget) displayof ["focus"; "-displayof"; displayof: widget]
+  unsafe function (widget) displayof ["focus"; "-displayof"; widget]
   function ()       force ["focus"; "-force"; widget]
   unsafe function (widget) lastfor ["focus"; "-lastfor"; widget]
   unsafe function (widget) next ["tk_focusNext"; widget]
@@ -677,10 +677,11 @@ type GrabStatus {
    GrabLocal ["local"]
    GrabGlobal ["global"]
 }
+type GrabGlobal external
 module Grab {
-   function () set ["grab"; widget]
-   function () set_global ["grab"; "-global"; widget]
-   unsafe function (widget list) current ["grab"; "current"; ?widget:[widget]]
+   function () set ["grab"; ?global:[GrabGlobal]; widget]
+#   function () set_global ["grab"; "-global"; widget]
+   unsafe function (widget list) current ["grab"; "current"; ?displayof:[widget]]
 #   unsafe function (widget list) current ["grab"; "current"; widget]
 #   unsafe function (widget list) all_current ["grab"; "current"]
    function () release ["grab"; "release"; widget]
@@ -711,11 +712,11 @@ function () grid ["grid"; widget list; option(grid) list]
 module Grid {
    function (int,int,int,int) bbox ["grid"; "bbox"; widget; int; int]
    function () column_configure 
-       ["grid"; "columnconfigure"; widget; x:int;
+       ["grid"; "columnconfigure"; widget; int;
 	 option(rowcolumnconfigure) list]
    function () configure ["grid"; "configure"; widget list; option(grid) list]
    function (string) column_configure_get ["grid"; "columnconfigure"; widget;
-                              x:int]
+                              int]
    function () forget ["grid"; "forget"; widget list]
    ## info returns only a string
     function (string) info ["grid"; "info"; widget]
@@ -724,9 +725,9 @@ module Grid {
    function (bool) propagate_get ["grid"; "propagate"; widget]
    function () propagate_set ["grid"; "propagate"; widget; to: bool]
    function () row_configure 
-       ["grid"; "rowconfigure"; widget; y:int; option(rowcolumnconfigure) list]
+       ["grid"; "rowconfigure"; widget; int; option(rowcolumnconfigure) list]
    function (string) row_configure_get 
-       ["grid"; "rowconfigure"; widget; y:int]
+       ["grid"; "rowconfigure"; widget; int]
    function (int,int) size ["grid"; "size"; widget]
 
    function (widget list) slaves ["grid"; "slaves"; widget; ?column:["-column"; int]; ?row:["-row"; int]]
@@ -1076,11 +1077,11 @@ type OptionPriority {
 
 module Option {
    unsafe function () add
-	["option"; "add"; string; value: string; ?priority:[OptionPriority]]
+	["option"; "add"; path: string; string; ?priority:[OptionPriority]]
    function () clear ["option"; "clear"]
    function (string) get ["option"; "get"; widget; name: string; class: string]
    unsafe function () readfile
-	["option"; "readfile"; name:string; ?priority:[OptionPriority]]
+	["option"; "readfile"; string; ?priority:[OptionPriority]]
    }
 
 ##### tk_optionMenu(n)
@@ -1196,7 +1197,7 @@ module Imagephoto {
   function (int, int, int) get [ImagePhoto; "get"; x: int; y: int]
 # can't express nested lists ?
 #  function () put [ImagePhoto; "put"; [[Color list] list]; photo(put) list]
-  function () read [ImagePhoto; "read"; name: string; photo(read) list]
+  function () read [ImagePhoto; "read"; file: string; photo(read) list]
   function () redither [ImagePhoto; "redither"]
   function () write [ImagePhoto; "write"; photo(write) list]
   # Functions inherited from the "image" TK class
@@ -1670,8 +1671,7 @@ type AtomId {
    }
 
 module Winfo {
-   unsafe function (AtomId) atom ["winfo"; "atom"; string]
-   unsafe function (AtomId) atom_displayof ["winfo"; "atom"; "-displayof"; displayof: widget; string]
+   unsafe function (AtomId) atom ["winfo"; "atom"; ?displayof:["-displayof"; widget]; string]
    unsafe function (string) atomname ["winfo"; "atomname"; ?displayof:["-displayof"; widget]; AtomId]
 #   unsafe function (string) atomname ["winfo"; "atomname"; AtomId]
 #   unsafe function (string) atomname_displayof ["winfo"; "atomname"; "-displayof"; displayof: widget; AtomId]

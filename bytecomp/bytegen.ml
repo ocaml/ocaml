@@ -242,7 +242,7 @@ let rec comp_expr env exp sz cont =
         Koffsetclosure(ofs) :: cont
       with Not_found ->
         Ident.print id; print_newline();
-        fatal_error "Bytegen.comp_expr: var"
+        fatal_error ("Bytegen.comp_expr: var " ^ Ident.unique_name id)
       end
   | Lconst cst ->
       Kconst cst :: cont
