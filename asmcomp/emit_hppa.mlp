@@ -713,12 +713,25 @@ let rec emit_instr i dslot =
         | Some lbl -> `	comib,= 2, {emit_reg i.arg.(0)}, {emit_label lbl}\n	nop\n`
         end
     | Lswitch jumptbl ->
-        `	blr	{emit_reg i.arg.(0)}, 0\n`;
+        let lbl = new_label() in
+        `	ldil	{emit_string high_prefix}{emit_label lbl}, %r1\n`;
+        `	ldo	{emit_string low_prefix}{emit_label lbl}(%r1), %r1\n`;
+        `	ldwx,s	{emit_reg i.arg.(0)}(0, %r1), %r1\n`;
+        `	bv	0(%r1)\n`;
         fill_delay_slot dslot;
+        if hpux then begin
+          `	.space	$TEXT$\n`;
+          `	.subspa	$LIT$\n`
+        end else
+          `	.literal4\n`;
+        emit_align 4;
+        `{emit_label lbl}:\n`;
         for i = 0 to Array.length jumptbl - 1 do
-          `	b	{emit_label jumptbl.(i)}\n`;
-          `	nop\n`
-        done
+          `	.long	{emit_label jumptbl.(i)}\n`
+        done;
+        if hpux
+        then `	.code\n`
+        else `	.text\n`
     | Lsetuptrap lbl ->
         `	bl	{emit_label lbl}, %r1\n`;
         fill_delay_slot dslot
