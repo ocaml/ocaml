@@ -270,6 +270,18 @@ let fill_arc_ellipses x y r1 r2 =
 
 fill_arc_ellipses 400 240 150 200;;
 
+
+synchronize ();;
+
+(* transparent color drawing *)
+set_color transp;;
+draw_circle 400 240 50;;
+draw_circle 400 240 40;;
+draw_circle 400 240 30;;
+(* try to go back a normal color *)
+set_color red;;
+draw_circle 400 240 20;;
+
 synchronize ();;
 
 input_line stdin;;

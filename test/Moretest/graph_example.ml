@@ -8,7 +8,7 @@
 *)
 
 open Graphics;;
-open_graph "480x270";;
+open_graph " 480x270";;
 
 let xr = size_x () / 2 - 30
 and yr = size_y () / 2 - 26
