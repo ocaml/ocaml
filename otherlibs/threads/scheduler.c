@@ -222,9 +222,8 @@ value thread_new(value clos)          /* ML */
   th->stack_threshold = th->stack_low + Stack_threshold / sizeof(value);
   th->sp = th->stack_high;
   th->trapsp = th->stack_high;
-  /* Set up a return frame that pretends we're applying clos to ().
-     This way, when this thread is activated, the RETURN will take us
-     to the entry point of the closure. */
+  /* Set up a return frame that pretends we're applying the function to ().
+     This way, the next RETURN instruction will run the function. */
   th->sp -= 5;
   th->sp[0] = Val_unit;         /* dummy local to be popped by RETURN 1 */
   th->sp[1] = (value) Code_val(clos);
@@ -296,6 +295,13 @@ static value schedule_thread(void)
   curr_thread->stack_threshold = stack_threshold;
   curr_thread->sp = extern_sp;
   curr_thread->trapsp = trapsp;
+
+#if 0
+  printf("*****\nCurrent thread is: %p\n", curr_thread);
+  FOREACH_THREAD(th)
+    printf("Thread %p status %ld\n", th, th->status);
+  END_FOREACH(th);
+#endif
 
 try_again:
   /* Find if a thread is runnable.
@@ -471,6 +477,10 @@ try_again:
   /* If we haven't something to run at that point, we're in big trouble. */
   if (run_thread == NULL) invalid_argument("Thread: deadlock");
 
+#if 0
+  printf("Switching to: %p\n", run_thread);
+#endif
+
   /* Free everything the thread was waiting on */
   Assign(run_thread->readfds, NO_FDS);
   Assign(run_thread->writefds, NO_FDS);
@@ -505,6 +515,32 @@ value thread_yield(value unit)        /* ML */
   Assert(curr_thread != NULL);
   curr_thread->retval = Val_unit;
   return schedule_thread();
+}
+
+/* Honor an asynchronous request for re-scheduling */
+
+static void thread_reschedule(void)
+{
+  value accu;
+
+  Assert(curr_thread != NULL);
+  /* Pop accu from event frame, making it look like a C_CALL frame
+     followed by a RETURN frame */
+  accu = *extern_sp++;
+  /* Reschedule */
+  curr_thread->retval = accu;
+  accu = schedule_thread();
+  /* Push accu below C_CALL frame so that it looks like an event frame */
+  *--extern_sp = accu;
+}
+
+/* Request a re-scheduling as soon as possible */
+
+value thread_request_reschedule(value unit)    /* ML */
+{
+  async_action_hook = thread_reschedule;
+  something_to_do = 1;
+  return Val_unit;
 }
 
 /* Suspend the current thread */
