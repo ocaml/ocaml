@@ -34,6 +34,11 @@ value gr_set_font(value fontname)
   return Val_unit;
 }
 
+value gr_set_text_size (value sz)
+{
+  return Val_unit;
+}
+
 static void gr_draw_text(char *txt, int len)
 {
   if (grfont == NULL) gr_font(DEFAULT_FONT);

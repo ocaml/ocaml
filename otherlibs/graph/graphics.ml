@@ -87,7 +87,7 @@ let fill_circle x y r = fill_arc x y r r 0 360
 external draw_char : char -> unit = "gr_draw_char"
 external draw_string : string -> unit = "gr_draw_string"
 external set_font : string -> unit = "gr_set_font"
-let set_text_size sz = ()
+external set_text_size : int -> unit = "gr_set_text_size"
 external text_size : string -> int * int = "gr_text_size"
 
 (* Images *)
