@@ -118,8 +118,6 @@ let main () =
     end
     else if not !compile_only && !objfiles <> [] then begin
       Compile.init_path();
-      if !thread_safe && systhreads_link <> "" then
-        ccopts := systhreads_link :: !ccopts;
       Bytelink.link (List.rev !objfiles)
     end;
     exit 0

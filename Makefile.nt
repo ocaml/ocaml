@@ -279,7 +279,6 @@ utils\config.ml: utils\config.mlp config\Makefile.nt
             -e "s|%%%%BYTERUN%%%%|ocamlrun|" \
             -e "s|%%%%BYTECC%%%%|$(BYTECC) $(BYTECCCOMPOPTS)|" \
             -e "s|%%%%BYTELINK%%%%|$(BYTECC) $(BYTECCLINKOPTS)|" \
-	    -e "s|%%%%PTHREADLINK%%%%|$(PTHREAD_LINK)|" \
             -e "s|%%%%NATIVECC%%%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|" \
             -e "s|%%%%NATIVELINK%%%%|$(NATIVECC) $(NATIVECCLINKOPTS)|" \
             -e "s|%%%%PARTIALLD%%%%|lib /nologo /debugtype:cv|" \
