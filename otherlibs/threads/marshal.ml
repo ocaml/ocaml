@@ -54,11 +54,4 @@ let from_string buff ofs =
     else from_string_unsafe buff ofs
   end  
 
-let from_channel ic =
-  let header = String.create header_size in
-  really_input ic header 0 header_size;
-  let buff_size = data_size header 0 in
-  let buff = String.create (header_size + buff_size) in
-  String.blit header 0 buff 0 header_size;
-  really_input ic buff 20 buff_size;
-  from_string_unsafe buff 0
+let from_channel = Pervasives.input_value
