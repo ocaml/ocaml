@@ -92,6 +92,18 @@ external random_seed: unit -> int = "sys_random_seed";;
 
 let self_init () = init (random_seed());;
 
+
+(* Manipulating the current state. *)
+
+type state = { state_array : int array; j : int };;
+
+let get_state () = { state_array = state; j = !j };;
+
+let set_state s =
+  Array.blit s.state_array 0 state 0 (Array.length state);
+  j := s.j;
+;;
+
 (********************
 
 (* Test functions.  Not included in the library.

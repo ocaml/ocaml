@@ -12,7 +12,7 @@
 
 (* $Id$ *)
 
-(* Module [Random]: pseudo-random number generator *)
+(* Module [Random]: pseudo-random number generator (PRNG) *)
 
 val init : int -> unit
   (* Initialize the generator, using the argument as a seed.
@@ -34,3 +34,13 @@ val float : float -> float
      between 0 (inclusive) and [bound] (exclusive).  If [bound] is
      negative, the result is negative.  If [bound] is 0, the result
      is 0. *)
+
+type state;;
+  (* Values of this type are used to store the current state of the
+     generator. *)
+val get_state : unit -> state;;
+  (* Returns the current state of the generator.  This is useful for
+     checkpointing computations that use the PRNG. *)
+val set_state : state -> unit;;
+  (* Resets the state of the generator to some previous state returned by
+     [get_state]. *)
