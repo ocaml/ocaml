@@ -1,15 +1,15 @@
 odoc.cmo: ../stdlib/array.cmi ../utils/clflags.cmo ../utils/config.cmi \
     ../otherlibs/dynlink/dynlink.cmi ../stdlib/filename.cmi \
     ../stdlib/format.cmi ../stdlib/list.cmi ../utils/misc.cmi \
-    odoc_analyse.cmi odoc_args.cmi odoc_dot.cmo odoc_global.cmi odoc_html.cmo \
-    odoc_info.cmi odoc_latex.cmo odoc_man.cmo odoc_messages.cmo odoc_texi.cmo \
-    ../stdlib/sys.cmi ../typing/typedtree.cmi 
+    odoc_analyse.cmi odoc_args.cmi odoc_crc.cmo odoc_dot.cmo odoc_global.cmi \
+    odoc_html.cmo odoc_info.cmi odoc_latex.cmo odoc_man.cmo odoc_messages.cmo \
+    odoc_texi.cmo ../stdlib/sys.cmi ../typing/typedtree.cmi 
 odoc.cmx: ../stdlib/array.cmx ../utils/clflags.cmx ../utils/config.cmx \
     ../otherlibs/dynlink/dynlink.cmx ../stdlib/filename.cmx \
     ../stdlib/format.cmx ../stdlib/list.cmx ../utils/misc.cmx \
-    odoc_analyse.cmx odoc_args.cmx odoc_dot.cmx odoc_global.cmx odoc_html.cmx \
-    odoc_info.cmx odoc_latex.cmx odoc_man.cmx odoc_messages.cmx odoc_texi.cmx \
-    ../stdlib/sys.cmx ../typing/typedtree.cmx 
+    odoc_analyse.cmx odoc_args.cmx odoc_crc.cmx odoc_dot.cmx odoc_global.cmx \
+    odoc_html.cmx odoc_info.cmx odoc_latex.cmx odoc_man.cmx odoc_messages.cmx \
+    odoc_texi.cmx ../stdlib/sys.cmx ../typing/typedtree.cmx 
 odoc_analyse.cmo: ../utils/ccomp.cmi ../utils/clflags.cmo ../utils/config.cmi \
     ../typing/ctype.cmi ../typing/env.cmi ../stdlib/filename.cmi \
     ../stdlib/format.cmi ../typing/includemod.cmi ../parsing/lexer.cmi \
@@ -286,8 +286,6 @@ odoc_value.cmo: ../stdlib/list.cmi odoc_name.cmi odoc_parameter.cmo \
 odoc_value.cmx: ../stdlib/list.cmx odoc_name.cmx odoc_parameter.cmx \
     odoc_types.cmx ../typing/printtyp.cmx ../stdlib/string.cmx \
     ../typing/types.cmx 
-t.cmo: ../stdlib/format.cmi ../stdlib/string.cmi 
-t.cmx: ../stdlib/format.cmx ../stdlib/string.cmx 
 odoc_analyse.cmi: odoc_module.cmo 
 odoc_args.cmi: ../stdlib/arg.cmi odoc_module.cmo odoc_types.cmi 
 odoc_ast.cmi: ../stdlib/hashtbl.cmi odoc_module.cmo odoc_name.cmi \
