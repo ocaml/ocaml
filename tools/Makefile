@@ -13,23 +13,18 @@ all: ocamldep ocamlprof ocamlcp ocamlmktop
 # The dependency generator
 
 CAMLDEP=ocamldep.cmo
+CAMLDEP_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
+  linenum.cmo warnings.cmo location.cmo longident.cmo pstream.cmo \
+  syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
 
 ocamldep: $(CAMLDEP)
-	$(CAMLC) $(LINKFLAGS) -o ocamldep misc.cmo $(CAMLDEP)
+	$(CAMLC) $(LINKFLAGS) -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP)
 
 clean::
 	rm -f ocamldep
 
-ocamldep.ml: ocamldep.mll
-	$(CAMLLEX) ocamldep.mll
-
-clean::
-	rm -f ocamldep.ml
-
 install::
 	cp ocamldep $(BINDIR)/ocamldep
-
-beforedepend:: ocamldep.ml
 
 # The profiler
 
