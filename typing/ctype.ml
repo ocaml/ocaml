@@ -1280,7 +1280,7 @@ and unify_kind k1 k2 =
 
 and unify_row env row1 row2 =
   let row1 = row_repr row1 and row2 = row_repr row2 in
-  let rm1 = row_more row1 and rm2 =row_more row2 in
+  let rm1 = row_more row1 and rm2 = row_more row2 in
   if rm1 == rm2 then () else
   let r1, r2, pairs = merge_row_fields row1.row_fields row2.row_fields in
   ignore (List.fold_left
@@ -1299,11 +1299,16 @@ and unify_row env row1 row2 =
         row_field_repr f1 = Rabsent || row_field_repr f2 <> Rabsent)
       pairs
   in
+  let empty fields =
+    List.for_all (fun (_,f) -> row_field_repr f = Rabsent) fields in
   let name =
-    if r1 = [] && row2.row_name <> None && keep (fun f1 f2 -> f2, f1)
-    then row2.row_name
-    else if r2 = [] && row1.row_name <> None && keep (fun f1 f2 -> f1, f2)
-    then row1.row_name else None
+    if row1.row_name <> None && (row1.row_closed || empty r2) &&
+      (not row2.row_closed || keep (fun f1 f2 -> f1, f2) && empty r1)
+    then row1.row_name
+    else if row2.row_name <> None && (row2.row_closed || empty r1) &&
+      (not row1.row_closed || keep (fun f1 f2 -> f2, f1) && empty r2)
+    then row1.row_name
+    else None
   in
   let bound = row1.row_bound @ row2.row_bound in
   let row0 = {row_fields = []; row_more = more; row_bound = bound;
@@ -2280,6 +2285,35 @@ let rec cyclic_abbrev env id ty =
   | _ ->
       false
 
+let rec normalize_type_rec env ty =
+  let ty = repr ty in
+  if ty.level >= lowest_level then begin
+    mark_type_node ty;
+    begin match ty.desc with Tvariant row ->
+      let row = row_repr row in
+      List.iter
+        (fun (_,f) ->
+          match row_field_repr f with Reither(b, ty::(_::_ as tyl), e) ->
+            let tyl' =
+              List.fold_left
+                (fun tyl ty ->
+                  if List.exists (fun ty' -> equal env false [ty] [ty']) tyl
+                  then tyl else ty::tyl)
+                [ty] tyl
+            in
+            if List.length tyl' < List.length tyl + 1 then
+              e := Some(Reither(b, List.rev tyl', ref None))
+          | _ -> ())
+        row.row_fields
+    | _ -> ()
+    end;
+    iter_type_expr (normalize_type_rec env) ty
+  end
+
+let normalize_type env ty = ()
+  normalize_type_rec env ty;
+  unmark_type ty
+      
 
                               (*************************)
                               (*  Remove dependencies  *)

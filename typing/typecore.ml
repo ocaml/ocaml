@@ -114,7 +114,7 @@ let rec extract_row_fields p =
       extract_row_fields p1 @ extract_row_fields p2
   | Tpat_variant(l, None, _) ->
       [l, Rpresent None]
-  | Tpat_variant(l, Some{pat_desc = Tpat_any; pat_type = ty}, _) ->
+  | Tpat_variant(l, Some{pat_type = ty}, _) ->
       [l, Rpresent(Some ty)]
   | _ ->
       raise Not_found
@@ -125,13 +125,10 @@ let build_or_pat env loc lid =
     with Not_found ->
       raise(Typetexp.Error(loc, Typetexp.Unbound_type_constructor lid))
   in
-  let tyl, ty =
-    match decl.type_manifest with
-      None -> raise(Error(loc, Not_a_variant_type lid))
-    | Some ty -> instance_parameterized_type decl.type_params ty
-  in
+  let tyl = List.map (fun _ -> newvar()) decl.type_params in
   let fields =
-    match (repr ty).desc with
+    let ty = expand_head env (newty(Tconstr(path, tyl, ref Mnil))) in
+    match ty.desc with
       Tvariant row when static_row row ->
         (row_repr row).row_fields
     | _ -> raise(Error(loc, Not_a_variant_type lid))
@@ -189,9 +186,10 @@ let rec type_pat env sp =
       let ty_var =
         try
           let fields = extract_row_fields p in
-          newty (Tvariant { row_fields = fields; row_more = newvar();
-                            row_closed = false; row_name = None;
-                            row_bound = [] })
+          newgenty
+            (Tvariant { row_fields = fields; row_more = newgenvar();
+                        row_closed = false; row_name = None;
+                        row_bound = [] })
         with Not_found -> p.pat_type
       in
       let id = enter_variable sp.ppat_loc name ty_var in

@@ -462,6 +462,20 @@ and type_struct env sstr =
 let _ =
   Typecore.type_module := type_module
 
+(* Normalize types in a signature *)
+
+let rec normalize_modtype env = function
+    Tmty_ident p -> ()
+  | Tmty_signature sg -> normalize_signature env sg
+  | Tmty_functor(id, param, body) -> normalize_modtype env body
+
+and normalize_signature env = List.iter (normalize_signature_item env)
+
+and normalize_signature_item env = function
+    Tsig_value(id, desc) -> Ctype.normalize_type env desc.val_type
+  | Tsig_module(id, mty) -> normalize_modtype env mty
+  | _ -> ()
+
 (* Typecheck an implementation file *)
 
 let type_implementation sourcefile prefixname modulename initial_env ast =
@@ -479,6 +493,7 @@ let type_implementation sourcefile prefixname modulename initial_env ast =
       Includemod.compunit sourcefile sg intf_file dclsig
     end else begin
       check_nongen_schemes finalenv str;
+      normalize_signature finalenv sg;
       Env.save_signature sg modulename (prefixname ^ ".cmi");
       Tcoerce_none
     end in

@@ -359,9 +359,10 @@ let full_match tdefs force env =  match env with
               else (tag, f)::acc)
             [] fields
         in
-        let closed = { row_fields = more_fields; row_more = Ctype.newvar();
-                       row_bound = row.row_bound; row_closed = true;
-                       row_name = None }
+        let closed =
+          { row_fields = more_fields; row_more = Ctype.newvar();
+            row_bound = row.row_bound; row_closed = true;
+            row_name = if more_fields = [] then row.row_name else None }
          (* Cannot fail *)
         in Ctype.unify tdefs row.row_more (Btype.newgenty (Tvariant closed))
       end;

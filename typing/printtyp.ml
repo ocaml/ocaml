@@ -94,7 +94,7 @@ let proxy ty =
   | _ -> ty
 
 let namable_row row =
-  row.row_name <> None &&
+  row.row_name <> None && row.row_closed &&
   List.for_all
     (fun (_,f) -> match row_field_repr f with
       Reither(c,l,_) -> if c then l = [] else List.length l = 1
@@ -165,7 +165,9 @@ let rec mark_loops_rec visited ty =
     | Tsubst ty           ->  mark_loops_rec visited ty
     | Tlink _             -> fatal_error "Printtyp.mark_loops_rec (2)"
 
-let mark_loops ty = mark_loops_rec [] ty
+let mark_loops ty =
+  normalize_type Env.empty ty;
+  mark_loops_rec [] ty
 
 let reset_loop_marks () =
   visited_objects := []; aliased := []
