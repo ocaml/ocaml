@@ -26,9 +26,9 @@ CamlrunLibs = ::byterun:libcamlrun.o ::otherlibs:num:libnums.o
 WELibs = :WASTE-1.2:WASTELib.o
 Libs = {camlrunlibs} {welibs} {syslibs}
 
-PPCC = mrc -proto strict -sym on            # XXX
-PPCCOptions = -I ::byterun: -w 35 -d DEBUG  # XXX
-PPCLinkOptions = -d -sym on                 # XXX
+PPCC = mrc
+PPCCOptions = -proto strict -sym on -I ::byterun: -w 35 #-d DEBUG
+PPCLinkOptions = -d -sym on
 PPCSysLibs = "{sharedlibraries}MathLib" "{ppclibraries}PPCCRuntime.o" ¶
              "{sharedlibraries}StdCLib" ¶
              "{ppclibraries}StdCRuntime.o" "{sharedlibraries}InterfaceLib" ¶
@@ -78,7 +78,7 @@ OCaml.68k Ä {OBJS}
 
 OCaml.PPC Ä {PPCOBJS}
     ppclink -o OCaml.PPC {ppclinkoptions} {PPCOBJS} {ppclibs}
-    rename -y OCaml.PPC.xcoff "Objective Caml.xcoff"  # XXX
+    rename -y OCaml.PPC.xcoff "Objective Caml.xcoff"
 
 OCaml.bytecode Ä primitives ::toplevellib.cma ::toplevel:topmain.cmo ¶
                  ::otherlibs:graph:graphics.cma ::otherlibs:num:nums.cma

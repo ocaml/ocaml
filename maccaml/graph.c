@@ -407,8 +407,14 @@ value gr_open_graph (value vgeometry)
 
     fgcolor.red = fgcolor.green = fgcolor.blue = 0;
   }
+  /* Synchronise off-screen and on-screen by initialising everything. */
   gr_clear_graph (Val_unit);
   gr_moveto (Val_long (0), Val_long (0));
+  gr_set_color (Val_long (0));
+  gr_set_line_width (Val_long (0));
+  gr_set_font ((value) "geneva");           /* XXX hack */
+  gr_set_text_size (Val_long (12));
+  
   return Val_unit;
 
   failed:

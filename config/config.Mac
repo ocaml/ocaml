@@ -12,7 +12,7 @@ set -e LIBDIR "{mpw}User Commands:ocaml-lib:"
 set -e HELPFILE "{mpw}OCaml.help"
 
 ### Where to install the application and the standard library
-set -e APPLIDIR "{mpw}::OCaml:"
+set -e APPLIDIR "{mpw}::OCaml:distrib:"
 
 
 ############# Configuration for the contributed libraries
@@ -43,4 +43,4 @@ set -e OCAMLMINOR 03
 set -e MAJOR 1
 set -e MINOR 0
 set -e STAGE a
-set -e REV 5
+set -e REV 6

@@ -104,10 +104,10 @@ void ErrorAlertGeneric (OSErr err)
 
 OSErr InitialiseErrors (void)
 {
-/* XXX CouldAlert n'existe plus ??
-  CouldAlert (kAlertErrorMsg);
-  CouldAlert (kAlertErrorNum);
-  CouldAlert (kAlertBug);
-*/
+  /* XXX CouldAlert is not in any library ?!?
+     CouldAlert (kAlertErrorMsg);
+     CouldAlert (kAlertErrorNum);
+     CouldAlert (kAlertBug);
+  */
   return noErr;
 }
