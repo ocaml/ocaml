@@ -229,8 +229,10 @@ let simplif_prim p (args, approxs as args_approxs) =
   then simplif_prim_pure p args_approxs
   else (Uprim(p, args), Value_unknown)
 
-(* Substitute variables in a [ulambda] term and perform
-   some more simplifications on integer primitives.
+(* Substitute variables in a [ulambda] term (a body of an inlined function)
+   and perform some more simplifications on integer primitives.
+   Also perform alpha-conversion on let-bound identifiers to avoid
+   clashes with locally-generated identifiers.
    The variables must not be assigned in the term.
    This is used to substitute "trivial" arguments for parameters
    during inline expansion. *)
@@ -241,43 +243,62 @@ let approx_ulam = function
   | Uconst(Const_pointer n) -> Value_constptr n
   | _ -> Value_unknown
 
-let substitute sb ulam =
-  let rec subst ulam =
-    match ulam with
-      Uvar v ->
-        begin try Tbl.find v sb with Not_found -> ulam end
-    | Uconst cst -> ulam
-    | Udirect_apply(lbl, args) -> Udirect_apply(lbl, List.map subst args)
-    | Ugeneric_apply(fn, args) -> Ugeneric_apply(subst fn, List.map subst args)
-    | Uclosure(defs, env) -> Uclosure(defs, List.map subst env)
-    | Uoffset(u, ofs) -> Uoffset(subst u, ofs)
-    | Ulet(id, u1, u2) -> Ulet(id, subst u1, subst u2)
-    | Uletrec(bindings, body) ->
-        Uletrec(List.map (fun (id, u) -> (id, subst u)) bindings, subst body)
-    | Uprim(p, args) ->
-        let sargs = List.map subst args in
-        let (res, _) = simplif_prim p (sargs, List.map approx_ulam sargs) in
-        res
-    | Uswitch(arg, sw) ->
-        Uswitch(subst arg,
-                { sw with
-                  us_cases_consts = Array.map subst sw.us_cases_consts;
-                  us_cases_blocks = Array.map subst sw.us_cases_blocks;
-                 })
-    | Ustaticfail _ as u -> u
-    | Ucatch(nfail, u1, u2) -> Ucatch(nfail, subst u1, subst u2)
-    | Utrywith(u1, id, u2) -> Utrywith(subst u1, id, subst u2)
-    | Uifthenelse(u1, u2, u3) ->
-        begin match subst u1 with
-          Uconst(Const_pointer n) -> if n <> 0 then subst u2 else subst u3
-        | su1 -> Uifthenelse(su1, subst u2, subst u3)
-        end
-    | Usequence(u1, u2) -> Usequence(subst u1, subst u2)
-    | Uwhile(u1, u2) -> Uwhile(subst u1, subst u2)
-    | Ufor(id, u1, u2, dir, u3) -> Ufor(id, subst u1, subst u2, dir, subst u3)
-    | Uassign(id, u) -> Uassign(id, subst u)
-    | Usend(u1, u2, ul) -> Usend(subst u1, subst u2, List.map subst ul)
-  in subst ulam
+let rec substitute sb ulam =
+  match ulam with
+    Uvar v ->
+      begin try Tbl.find v sb with Not_found -> ulam end
+  | Uconst cst -> ulam
+  | Udirect_apply(lbl, args) ->
+      Udirect_apply(lbl, List.map (substitute sb) args)
+  | Ugeneric_apply(fn, args) ->
+      Ugeneric_apply(substitute sb fn, List.map (substitute sb) args)
+  | Uclosure(defs, env) ->
+      (* never present in an inlined function body; painful to get right *)
+      assert false
+  | Uoffset(u, ofs) -> Uoffset(substitute sb u, ofs)
+  | Ulet(id, u1, u2) ->
+      let id' = Ident.rename id in
+      Ulet(id', substitute sb u1, substitute (Tbl.add id (Uvar id') sb) u2)
+  | Uletrec(bindings, body) ->
+      (* never present in an inlined function body; painful to get right *)
+      assert false
+  | Uprim(p, args) ->
+      let sargs = List.map (substitute sb) args in
+      let (res, _) = simplif_prim p (sargs, List.map approx_ulam sargs) in
+      res
+  | Uswitch(arg, sw) ->
+      Uswitch(substitute sb arg,
+              { sw with
+                us_cases_consts = Array.map (substitute sb) sw.us_cases_consts;
+                us_cases_blocks = Array.map (substitute sb) sw.us_cases_blocks;
+               })
+  | Ustaticfail _ -> ulam
+  | Ucatch(nfail, u1, u2) -> Ucatch(nfail, substitute sb u1, substitute sb u2)
+  | Utrywith(u1, id, u2) ->
+      let id' = Ident.rename id in
+      Utrywith(substitute sb u1, id', substitute (Tbl.add id (Uvar id') sb) u2)
+  | Uifthenelse(u1, u2, u3) ->
+      begin match substitute sb u1 with
+        Uconst(Const_pointer n) ->
+          if n <> 0 then substitute sb u2 else substitute sb u3
+      | su1 ->
+          Uifthenelse(su1, substitute sb u2, substitute sb u3)
+      end
+  | Usequence(u1, u2) -> Usequence(substitute sb u1, substitute sb u2)
+  | Uwhile(u1, u2) -> Uwhile(substitute sb u1, substitute sb u2)
+  | Ufor(id, u1, u2, dir, u3) ->
+      let id' = Ident.rename id in
+      Ufor(id', substitute sb u1, substitute sb u2, dir,
+           substitute (Tbl.add id (Uvar id') sb) u3)
+  | Uassign(id, u) ->
+      let id' =
+        try
+          match Tbl.find id sb with Uvar i -> i | _ -> assert false
+        with Not_found ->
+          id in
+      Uassign(id', substitute sb u)
+  | Usend(u1, u2, ul) ->
+      Usend(substitute sb u1, substitute sb u2, List.map (substitute sb) ul)
 
 (* Perform an inline expansion *)
 
@@ -362,6 +383,11 @@ let sequence_constant_expr lam ulam1 (ulam2, approx2 as res2) =
 (* Maintain the approximation of the global structure being defined *)
 
 let global_approx = ref([||] : value_approximation array)
+
+(* Maintain the nesting depth for functions *)
+
+let function_nesting_depth = ref 0
+let excessive_function_nesting_depth = 5
 
 (* Uncurry an expression and explicitate closures.
    Also return the approximation of the expression.
@@ -568,6 +594,10 @@ and close_named fenv cenv id = function
 (* Build a shared closure for a set of mutually recursive functions *)
 
 and close_functions fenv cenv fun_defs =
+  (* Update and check nesting depth *)
+  incr function_nesting_depth;
+  let initially_closed =
+    !function_nesting_depth < excessive_function_nesting_depth in
   (* Determine the free variables of the functions *)
   let fv =
     IdentSet.elements (free_variables (Lletrec(fun_defs, lambda_unit))) in
@@ -584,7 +614,7 @@ and close_functions fenv cenv fun_defs =
             let fundesc =
               {fun_label = label;
                fun_arity = (if kind = Tupled then -arity else arity);
-               fun_closed = true;
+               fun_closed = initially_closed;
                fun_inline = None } in
             (id, params, body, fundesc)
         | (_, _) -> fatal_error "Closure.close_functions")
@@ -607,7 +637,7 @@ and close_functions fenv cenv fun_defs =
   let fv_pos = !env_pos in
   (* This reference will be set to false if the hypothesis that a function
      does not use its environment parameter is invalidated. *)
-  let useless_env = ref true in
+  let useless_env = ref initially_closed in
   (* Translate each function definition *)
   let clos_fundef (id, params, body, fundesc) env_pos =
     let env_param = Ident.create "env" in
@@ -619,22 +649,29 @@ and close_functions fenv cenv fun_defs =
           Tbl.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
         uncurried_defs clos_offsets cenv_fv in
     let (ubody, approx) = close fenv_rec cenv_body body in
-    if !useless_env & occurs_var env_param ubody then useless_env := false;
+    if !useless_env && occurs_var env_param ubody then useless_env := false;
     let fun_params = if !useless_env then params else params @ [env_param] in
     ((fundesc.fun_label, fundesc.fun_arity, fun_params, ubody),
      (id, env_pos, Value_closure(fundesc, approx))) in
   (* Translate all function definitions. *)
-  let clos_info_list = 
-    let cl = List.map2 clos_fundef uncurried_defs clos_offsets in
-    (* If the hypothesis that the environment parameters are useless has been
-       invalidated, then set [fun_closed] to false in all descriptions and
-       recompile *)
-    if !useless_env then cl else begin
-      List.iter
-        (fun (id, params, body, fundesc) -> fundesc.fun_closed <- false)
-        uncurried_defs;
-      List.map2 clos_fundef uncurried_defs clos_offsets
-    end in
+  let clos_info_list =
+    if initially_closed then begin
+      let cl = List.map2 clos_fundef uncurried_defs clos_offsets in
+      (* If the hypothesis that the environment parameters are useless has been
+         invalidated, then set [fun_closed] to false in all descriptions and
+         recompile *)
+      if !useless_env then cl else begin
+        List.iter
+          (fun (id, params, body, fundesc) -> fundesc.fun_closed <- false)
+          uncurried_defs;
+        List.map2 clos_fundef uncurried_defs clos_offsets
+      end
+    end else
+      (* Excessive closure nesting: assume environment parameter is used *)
+        List.map2 clos_fundef uncurried_defs clos_offsets
+    in
+  (* Update nesting depth *)
+  decr function_nesting_depth;
   (* Return the Uclosure node and the list of all identifiers defined,
      with offsets and approximations. *)
   let (clos, infos) = List.split clos_info_list in
@@ -679,6 +716,7 @@ and close_switch fenv cenv nofail num_keys cases =
 (* The entry point *)
 
 let intro size lam =
+  function_nesting_depth := 0;
   global_approx := Array.create size Value_unknown;
   Compilenv.set_global_approx(Value_tuple !global_approx);
   let (ulam, approx) = close Tbl.empty Tbl.empty lam in
