@@ -122,11 +122,13 @@ again:
   if (retcode == -1) {
     if (errno == EINTR) goto again;
     if (errno == EAGAIN || errno == EWOULDBLOCK) {
-      /* POSIX says that a write on a pipe in non-blocking mode may return
-         EAGAIN if it attempts to write more than PIPE_BUF characters,
-         PIPE_BUF being at least 512. In this case, we try again with
-         strictly less than PIPE_BUF characters. */
-      if (n >= 512) { n = 256; goto again; }
+      /* We couldn't do a partial write here, probably because
+	 n <= PIPE_BUF and POSIX says that writes of less than
+	 PIPE_BUF characters must be atomic.
+	 So, we force a partial write of 1 character.
+	 This should always succeed if we've done a select
+	 on writing just before. */
+      if (n > 1) { n = 1; goto again; }
     }
   }
 #endif
