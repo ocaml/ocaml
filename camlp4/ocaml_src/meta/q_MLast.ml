@@ -183,15 +183,20 @@ let mkumin _ f arg =
     when float_of_string n > 0.0 ->
       let n = "-" ^ n in Qast.Node ("ExFlo", [Qast.Loc; Qast.Str n])
   | _ ->
-      let f = "~" ^ f in
-      Qast.Node
-        ("ExApp",
-         [Qast.Loc; Qast.Node ("ExLid", [Qast.Loc; Qast.Str f]); arg])
+      match f with
+        Qast.Str f ->
+          let f = "~" ^ f in
+          Qast.Node
+            ("ExApp",
+             [Qast.Loc; Qast.Node ("ExLid", [Qast.Loc; Qast.Str f]); arg])
+      | _ -> assert false
 ;;
 
 let mkuminpat _ f is_int s =
-  if is_int then Qast.Node ("PaInt", [Qast.Loc; s])
-  else Qast.Node ("PaFlo", [Qast.Loc; s])
+  match is_int with
+    Qast.Bool true -> Qast.Node ("PaInt", [Qast.Loc; s])
+  | Qast.Bool false -> Qast.Node ("PaFlo", [Qast.Loc; s])
+  | _ -> assert false
 ;;
 
 let mklistexp _ last =
@@ -250,14 +255,10 @@ let mkexprident loc i j =
   loop (Qast.Node ("ExUid", [Qast.Loc; i])) j
 ;;
 
-let mkassert loc e =
-  let f = Qast.Node ("ExStr", [Qast.Loc; Qast.Str !(Pcaml.input_file)]) in
-  let bp =
-    Qast.Node ("ExInt", [Qast.Loc; Qast.Str (string_of_int (fst loc))])
-  in
-  let ep =
-    Qast.Node ("ExInt", [Qast.Loc; Qast.Str (string_of_int (snd loc))])
-  in
+let mkassert _ e =
+  let f = Qast.Node ("ExStr", [Qast.Loc; Qast.Str ""]) in
+  let bp = Qast.Node ("ExInt", [Qast.Loc; Qast.Str "0"]) in
+  let ep = Qast.Node ("ExInt", [Qast.Loc; Qast.Str "0"]) in
   let raiser =
     Qast.Node
       ("ExApp",
@@ -576,7 +577,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 9701, 9717))
+                  _ -> raise (Match_failure ("q_MLast.ml", 9783, 9799))
             in
             Qast.Node ("StExc", [Qast.Loc; c; tl; b]) :
             'str_item));
@@ -807,7 +808,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 11914, 11930))
+                  _ -> raise (Match_failure ("q_MLast.ml", 11996, 12012))
             in
             Qast.Node ("SgExc", [Qast.Loc; c; tl]) :
             'sig_item));
@@ -917,7 +918,7 @@ Grammar.extend
        Gramext.Stoken ("", "}")],
       Gramext.action
         (fun _ (seq : 'sequence) _ _ (loc : int * int) ->
-           (mksequence loc seq : 'expr));
+           (mksequence Qast.Loc seq : 'expr));
       [Gramext.Stoken ("", "if"); Gramext.Sself; Gramext.Stoken ("", "then");
        Gramext.Sself; Gramext.Stoken ("", "else"); Gramext.Sself],
       Gramext.action
@@ -1404,10 +1405,12 @@ Grammar.extend
      Some "unary minus", Some Gramext.NonA,
      [[Gramext.Stoken ("", "-."); Gramext.Sself],
       Gramext.action
-        (fun (e : 'expr) _ (loc : int * int) -> (mkumin loc "-." e : 'expr));
+        (fun (e : 'expr) _ (loc : int * int) ->
+           (mkumin Qast.Loc (Qast.Str "-.") e : 'expr));
       [Gramext.Stoken ("", "-"); Gramext.Sself],
       Gramext.action
-        (fun (e : 'expr) _ (loc : int * int) -> (mkumin loc "-" e : 'expr))];
+        (fun (e : 'expr) _ (loc : int * int) ->
+           (mkumin Qast.Loc (Qast.Str "-") e : 'expr))];
      Some "apply", Some Gramext.LeftA,
      [[Gramext.Stoken ("", "lazy"); Gramext.Sself],
       Gramext.action
@@ -1415,7 +1418,8 @@ Grammar.extend
            (Qast.Node ("ExLaz", [Qast.Loc; e]) : 'expr));
       [Gramext.Stoken ("", "assert"); Gramext.Sself],
       Gramext.action
-        (fun (e : 'expr) _ (loc : int * int) -> (mkassert loc e : 'expr));
+        (fun (e : 'expr) _ (loc : int * int) ->
+           (mkassert Qast.Loc e : 'expr));
       [Gramext.Sself; Gramext.Sself],
       Gramext.action
         (fun (e2 : 'expr) (e1 : 'expr) (loc : int * int) ->
@@ -1555,7 +1559,7 @@ Grammar.extend
        Gramext.Stoken ("", "]")],
       Gramext.action
         (fun _ (last : 'cons_expr_opt) (el : 'a_list) _ (loc : int * int) ->
-           (mklistexp loc last el : 'expr));
+           (mklistexp Qast.Loc last el : 'expr));
       [Gramext.Stoken ("", "["); Gramext.Stoken ("", "]")],
       Gramext.action
         (fun _ _ (loc : int * int) ->
@@ -1593,9 +1597,7 @@ Grammar.extend
            (Qast.Option (Some e) : 'cons_expr_opt))]];
     Grammar.Entry.obj (dummy : 'dummy Grammar.Entry.e), None,
     [None, None,
-     [[],
-      Gramext.action
-        (fun (loc : int * int) -> (Qast.Node ("()", []) : 'dummy))]];
+     [[], Gramext.action (fun (loc : int * int) -> (() : 'dummy))]];
     Grammar.Entry.obj (sequence : 'sequence Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
@@ -1636,7 +1638,8 @@ Grammar.extend
         (fun (el : 'sequence) _ (l : 'a_list) (rf : 'rec_flag) _
            (loc : int * int) ->
            (Qast.List
-              [Qast.Node ("ExLet", [Qast.Loc; rf; l; mksequence loc el])] :
+              [Qast.Node
+                 ("ExLet", [Qast.Loc; rf; l; mksequence Qast.Loc el])] :
             'sequence))]];
     Grammar.Entry.obj (let_binding : 'let_binding Grammar.Entry.e), None,
     [None, None,
@@ -1679,7 +1682,7 @@ Grammar.extend
       Gramext.action
         (fun (e : 'expr) _ (w : 'when_expr_opt) (aso : 'as_patt_opt)
            (p : 'patt) (loc : int * int) ->
-           (mkmatchcase loc p aso w e : 'match_case))]];
+           (mkmatchcase Qast.Loc p aso w e : 'match_case))]];
     Grammar.Entry.obj (as_patt_opt : 'as_patt_opt Grammar.Entry.e), None,
     [None, None,
      [[],
@@ -1717,7 +1720,7 @@ Grammar.extend
        Gramext.Stoken ("", "."); Gramext.Sself],
       Gramext.action
         (fun (j : 'expr_ident) _ (i : 'a_UIDENT) (loc : int * int) ->
-           (mkexprident loc i j : 'expr_ident));
+           (mkexprident Qast.Loc i j : 'expr_ident));
       [Gramext.Snterm
          (Grammar.Entry.obj (a_UIDENT : 'a_UIDENT Grammar.Entry.e))],
       Gramext.action
@@ -1854,7 +1857,7 @@ Grammar.extend
        Gramext.Stoken ("", "]")],
       Gramext.action
         (fun _ (last : 'cons_patt_opt) (pl : 'a_list) _ (loc : int * int) ->
-           (mklistpat loc last pl : 'patt));
+           (mklistpat Qast.Loc last pl : 'patt));
       [Gramext.Stoken ("", "["); Gramext.Stoken ("", "]")],
       Gramext.action
         (fun _ _ (loc : int * int) ->
@@ -1864,12 +1867,12 @@ Grammar.extend
          (Grammar.Entry.obj (a_FLOAT : 'a_FLOAT Grammar.Entry.e))],
       Gramext.action
         (fun (s : 'a_FLOAT) _ (loc : int * int) ->
-           (mkuminpat loc "-" false s : 'patt));
+           (mkuminpat Qast.Loc (Qast.Str "-") (Qast.Bool false) s : 'patt));
       [Gramext.Stoken ("", "-");
        Gramext.Snterm (Grammar.Entry.obj (a_INT : 'a_INT Grammar.Entry.e))],
       Gramext.action
         (fun (s : 'a_INT) _ (loc : int * int) ->
-           (mkuminpat loc "-" true s : 'patt));
+           (mkuminpat Qast.Loc (Qast.Str "-") (Qast.Bool true) s : 'patt));
       [Gramext.Snterm (Grammar.Entry.obj (a_CHAR : 'a_CHAR Grammar.Entry.e))],
       Gramext.action
         (fun (s : 'a_CHAR) (loc : int * int) ->
@@ -2598,7 +2601,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 32550, 32566))
+                  _ -> raise (Match_failure ("q_MLast.ml", 32762, 32778))
             in
             Qast.Node ("CrVal", [Qast.Loc; lab; mf; e]) :
             'class_str_item));
@@ -2993,7 +2996,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2] -> xx1, xx2
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 37117, 37133))
+                  _ -> raise (Match_failure ("q_MLast.ml", 37329, 37345))
             in
             Qast.Node ("TyObj", [Qast.Loc; ml; v]) :
             'ctyp));
@@ -3028,7 +3031,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2] -> xx1, xx2
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 37464, 37480))
+                  _ -> raise (Match_failure ("q_MLast.ml", 37676, 37692))
             in
             Qast.Tuple [Qast.Cons (f, ml); v] :
             'meth_list))]];

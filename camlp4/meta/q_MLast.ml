@@ -158,14 +158,19 @@ value mkumin _ f arg =
       let n = "-" ^ n in
       Qast.Node "ExFlo" [Qast.Loc; Qast.Str n]
   | _ ->
-      let f = "~" ^ f in
-      Qast.Node "ExApp"
-        [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str f]; arg] ]
+      match f with
+      [ Qast.Str f ->
+          let f = "~" ^ f in
+          Qast.Node "ExApp"
+            [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str f]; arg]
+      | _ -> assert False ] ]
 ;
 
 value mkuminpat _ f is_int s =
-  if is_int then Qast.Node "PaInt" [Qast.Loc; s]
-  else Qast.Node "PaFlo" [Qast.Loc; s]
+  match is_int with
+  [ Qast.Bool True -> Qast.Node "PaInt" [Qast.Loc; s]
+  | Qast.Bool False -> Qast.Node "PaFlo" [Qast.Loc; s]
+  | _ -> assert False ]
 ;
 
 value mklistexp _ last =
@@ -210,10 +215,10 @@ value mkexprident loc i j =
     | e -> Qast.Node "ExAcc" [Qast.Loc; m; e] ]
 ;
 
-value mkassert loc e =
-  let f = Qast.Node "ExStr" [Qast.Loc; Qast.Str Pcaml.input_file.val] in
-  let bp = Qast.Node "ExInt" [Qast.Loc; Qast.Str (string_of_int (fst loc))] in
-  let ep = Qast.Node "ExInt" [Qast.Loc; Qast.Str (string_of_int (snd loc))] in
+value mkassert _ e =
+  let f = Qast.Node "ExStr" [Qast.Loc; Qast.Str ""] in
+  let bp = Qast.Node "ExInt" [Qast.Loc; Qast.Str "0"] in
+  let ep = Qast.Node "ExInt" [Qast.Loc; Qast.Str "0"] in
   let raiser =
     Qast.Node "ExApp"
       [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "raise"];
@@ -373,7 +378,7 @@ EXTEND
             [Qast.Loc; e; Qast.List [Qast.Tuple [p1; Qast.Option None; e1]]]
       | "if"; e1 = SELF; "then"; e2 = SELF; "else"; e3 = SELF ->
           Qast.Node "ExIfe" [Qast.Loc; e1; e2; e3]
-      | "do"; "{"; seq = sequence; "}" -> mksequence loc seq
+      | "do"; "{"; seq = sequence; "}" -> mksequence Qast.Loc seq
       | "for"; i = a_LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
         "do"; "{"; seq = sequence; "}" ->
           Qast.Node "ExFor" [Qast.Loc; i; e1; e2; df; seq]
@@ -561,11 +566,11 @@ EXTEND
                [Qast.Loc; Qast.Node "ExLid" [Qast.Loc; Qast.Str "lsr"]; e1];
              e2] ]
     | "unary minus" NONA
-      [ "-"; e = SELF -> mkumin loc "-" e
-      | "-."; e = SELF -> mkumin loc "-." e ]
+      [ "-"; e = SELF -> mkumin Qast.Loc (Qast.Str "-") e
+      | "-."; e = SELF -> mkumin Qast.Loc (Qast.Str "-.") e ]
     | "apply" LEFTA
       [ e1 = SELF; e2 = SELF -> Qast.Node "ExApp" [Qast.Loc; e1; e2]
-      | "assert"; e = SELF -> mkassert loc e
+      | "assert"; e = SELF -> mkassert Qast.Loc e
       | "lazy"; e = SELF -> Qast.Node "ExLaz" [Qast.Loc; e] ]
     | "." LEFTA
       [ e1 = SELF; "."; "("; e2 = SELF; ")" ->
@@ -588,7 +593,7 @@ EXTEND
       | i = expr_ident -> i
       | "["; "]" -> Qast.Node "ExUid" [Qast.Loc; Qast.Str "[]"]
       | "["; el = SLIST1 expr SEP ";"; last = cons_expr_opt; "]" ->
-          mklistexp loc last el
+          mklistexp Qast.Loc last el
       | "[|"; el = SLIST0 expr SEP ";"; "|]" ->
           Qast.Node "ExArr" [Qast.Loc; el]
       | "{"; lel = SLIST1 label_expr SEP ";"; "}" ->
@@ -608,12 +613,13 @@ EXTEND
       | -> Qast.Option None ] ]
   ;
   dummy:
-    [ [ -> Qast.Node "()" [] ] ]
+    [ [ -> () ] ]
   ;
   sequence:
     [ [ "let"; rf = rec_flag; l = SLIST1 let_binding SEP "and";
         [ "in" | ";" ]; el = SELF ->
-          Qast.List [Qast.Node "ExLet" [Qast.Loc; rf; l; mksequence loc el]]
+          Qast.List
+            [Qast.Node "ExLet" [Qast.Loc; rf; l; mksequence Qast.Loc el]]
       | e = expr; ";"; el = SELF -> Qast.Cons e el
       | e = expr; ";" -> Qast.List [e]
       | e = expr -> Qast.List [e] ] ]
@@ -631,7 +637,7 @@ EXTEND
   ;
   match_case:
     [ [ p = patt; aso = as_patt_opt; w = when_expr_opt; "->"; e = expr ->
-          mkmatchcase loc p aso w e ] ]
+          mkmatchcase Qast.Loc p aso w e ] ]
   ;
   as_patt_opt:
     [ [ "as"; p = patt -> Qast.Option (Some p)
@@ -648,7 +654,7 @@ EXTEND
     [ RIGHTA
       [ i = a_LIDENT -> Qast.Node "ExLid" [Qast.Loc; i]
       | i = a_UIDENT -> Qast.Node "ExUid" [Qast.Loc; i]
-      | i = a_UIDENT; "."; j = SELF -> mkexprident loc i j ] ]
+      | i = a_UIDENT; "."; j = SELF -> mkexprident Qast.Loc i j ] ]
   ;
   fun_def:
     [ RIGHTA
@@ -673,11 +679,12 @@ EXTEND
       | s = a_FLOAT -> Qast.Node "PaFlo" [Qast.Loc; s]
       | s = a_STRING -> Qast.Node "PaStr" [Qast.Loc; s]
       | s = a_CHAR -> Qast.Node "PaChr" [Qast.Loc; s]
-      | "-"; s = a_INT -> mkuminpat loc "-" True s
-      | "-"; s = a_FLOAT -> mkuminpat loc "-" False s
+      | "-"; s = a_INT -> mkuminpat Qast.Loc (Qast.Str "-") (Qast.Bool True) s
+      | "-"; s = a_FLOAT ->
+          mkuminpat Qast.Loc (Qast.Str "-") (Qast.Bool False) s
       | "["; "]" -> Qast.Node "PaUid" [Qast.Loc; Qast.Str "[]"]
       | "["; pl = SLIST1 patt SEP ";"; last = cons_patt_opt; "]" ->
-          mklistpat loc last pl
+          mklistpat Qast.Loc last pl
       | "[|"; pl = SLIST0 patt SEP ";"; "|]" ->
           Qast.Node "PaArr" [Qast.Loc; pl]
       | "{"; lpl = SLIST1 label_patt SEP ";"; "}" ->

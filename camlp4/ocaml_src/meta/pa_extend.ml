@@ -637,6 +637,7 @@ let rec quot_expr e =
          MLast.ExAcc
            (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Bool")),
          MLast.ExUid (loc, "True"))
+  | MLast.ExUid (_, "()") -> e
   | MLast.ExApp
       (_, MLast.ExAcc (_, MLast.ExUid (_, "Qast"), MLast.ExUid (_, "List")),
        _) ->
@@ -675,9 +676,9 @@ let rec quot_expr e =
          quot_expr e2)
   | MLast.ExApp (_, _, _) ->
       let (f, al) = expr_fa [] e in
-      let al = List.map quot_expr al in
       begin match f with
         MLast.ExUid (_, c) ->
+          let al = List.map quot_expr al in
           MLast.ExApp
             (loc,
              MLast.ExApp
@@ -687,6 +688,7 @@ let rec quot_expr e =
                 MLast.ExStr (loc, c)),
              mklistexp loc al)
       | MLast.ExAcc (_, _, MLast.ExUid (_, c)) ->
+          let al = List.map quot_expr al in
           MLast.ExApp
             (loc,
              MLast.ExApp
@@ -695,6 +697,10 @@ let rec quot_expr e =
                   (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Node")),
                 MLast.ExStr (loc, c)),
              mklistexp loc al)
+      | MLast.ExLid (_, f) ->
+          let al = List.map quot_expr al in
+          List.fold_left (fun f e -> MLast.ExApp (loc, f, e))
+            (MLast.ExLid (loc, f)) al
       | _ -> e
       end
   | MLast.ExRec (_, pel, None) ->

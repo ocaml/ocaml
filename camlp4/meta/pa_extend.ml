@@ -279,6 +279,7 @@ value rec quot_expr e =
   | <:expr< Some $e$ >> -> <:expr< Qast.Option (Some $quot_expr e$) >>
   | <:expr< False >> -> <:expr< Qast.Bool False >>
   | <:expr< True >> -> <:expr< Qast.Bool True >>
+  | <:expr< () >> -> e
   | <:expr< Qast.List $_$ >> -> e
   | <:expr< Qast.Option $_$ >> -> e
   | <:expr< Qast.Str $_$ >> -> e
@@ -288,11 +289,17 @@ value rec quot_expr e =
       <:expr< Qast.Cons $quot_expr e1$  $quot_expr e2$ >>
   | <:expr< $_$ $_$ >> ->
       let (f, al) = expr_fa [] e in
-      let al = List.map quot_expr al in
       match f with
-      [ <:expr< $uid:c$ >> -> <:expr< Qast.Node $str:c$ $mklistexp loc al$ >>
-      | <:expr< $_$.$uid:c$ >> ->
+      [ <:expr< $uid:c$ >> ->
+          let al = List.map quot_expr al in
           <:expr< Qast.Node $str:c$ $mklistexp loc al$ >>
+      | <:expr< $_$.$uid:c$ >> ->
+          let al = List.map quot_expr al in
+          <:expr< Qast.Node $str:c$ $mklistexp loc al$ >>
+      | <:expr< $lid:f$ >> ->
+          let al = List.map quot_expr al in
+          List.fold_left (fun f e -> <:expr< $f$ $e$ >>)
+            <:expr< $lid:f$ >> al
       | _ -> e ]
   | <:expr< {$list:pel$} >> ->
       try
