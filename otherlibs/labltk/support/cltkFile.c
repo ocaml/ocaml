@@ -106,9 +106,9 @@ CAMLprim value camltk_rem_file_output(value fd, value cbid)
 
 /* Under Win32, we go through the generic channel abstraction */
 
-/* Map Unix.file_descr values to Tcl channels */
+#define Handle_val(v) (*((HANDLE *) Data_custom_val(v)))
 
-#define Handle_val(v) (*((HANDLE *)(v)))
+/* Map Unix.file_descr values to Tcl channels */
 
 static Tcl_Channel tcl_channel(value fd, int flags)
 {

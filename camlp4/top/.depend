@@ -1,2 +1,0 @@
-camlp4_top.cmo: ../camlp4/ast2pt.cmi ../camlp4/mLast.cmi ../camlp4/pcaml.cmi 
-camlp4_top.cmx: ../camlp4/ast2pt.cmx ../camlp4/mLast.cmi ../camlp4/pcaml.cmx 

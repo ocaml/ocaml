@@ -1,4 +1,0 @@
-case $1 in
-  test)  shift; $*  | awk '$2 >= 1e-9 { exit 2; }';;
-  bench) shift; xtime -o /dev/null $*;;
-esac

@@ -1,8 +1,0 @@
-str_compile_regexp
-str_string_match
-str_string_partial_match
-str_search_forward
-str_search_backward
-str_beginning_group
-str_end_group
-str_replacement_text
