@@ -52,15 +52,15 @@ void do_test()
       INTTEST(r[10], (x + 1));
       INTTEST(r[11], (x + -1));
 
-      INTTEST(r[12], ((int) ((char *)&r + 8)));
-      INTTEST(r[13], ((int) ((char *)&r + y)));
+      INTTEST(r[12], ((long) ((char *)r + 8)));
+      INTTEST(r[13], ((long) ((char *)r + y)));
 
       INTTEST(r[14], (x - y));
       INTTEST(r[15], (x - 1));
       INTTEST(r[16], (x - -1));
 
-      INTTEST(r[17], ((int) ((char *)&r - 8)));
-      INTTEST(r[18], ((int) ((char *)&r - y)));
+      INTTEST(r[17], ((long) ((char *)r - 8)));
+      INTTEST(r[18], ((long) ((char *)r - y)));
 
       INTTEST(r[19], (x * 2));
       INTTEST(r[20], (2 * x));
