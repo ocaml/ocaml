@@ -14,6 +14,7 @@
 (* Construction of the interference graph.
    Annotate pseudoregs with interference lists and preference lists. *)
 
+open Misc
 open Reg
 open Mach
 
