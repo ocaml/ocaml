@@ -235,6 +235,11 @@ if test -f /usr/include/sys/utsname.h && sh hasgot uname; then
   echo "#define HAS_UNAME" >> s.h
 fi
 
+if sh hasgot gettimeofday; then
+  echo "gettimeofday() found."
+  echo "#define HAS_GETTIMEOFDAY" >> s.h
+fi
+
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile.h
 mv m.h s.h Makefile.h ..
