@@ -27,6 +27,9 @@
 #define EAFNOSUPPORT WSAEAFNOSUPPORT
 #endif
 
+union sock_addr_union sock_addr;
+int sock_addr_len;
+
 value alloc_inet_addr(a)
      unsigned int a;
 {

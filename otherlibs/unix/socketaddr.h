@@ -18,13 +18,14 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-union {
+union sock_addr_union {
   struct sockaddr s_gen;
   struct sockaddr_un s_unix;
   struct sockaddr_in s_inet;
-} sock_addr;
+};
 
-int sock_addr_len;
+extern union sock_addr_union sock_addr;
+extern int sock_addr_len;
 
 void get_sockaddr P((value));
 value alloc_sockaddr P((void));
