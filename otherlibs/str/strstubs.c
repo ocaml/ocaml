@@ -17,28 +17,27 @@ struct regexp_struct {
 typedef struct regexp_struct * regexp;
 
 static void free_regexp(expr)
-     regexp expr;
+     value expr;
 {
-  regfree(&(expr->re));
+  regfree(&(((regexp)expr)->re));
 }
 
 static regexp alloc_regexp()
 {
-  value res =    /* Finalized values must be alloc'd in the major heap */
-    alloc_shr(sizeof(struct regexp_struct) / sizeof(value), Final_tag);
-  Final_fun(res) = (final_fun) free_regexp;
+  value res =
+    alloc_final(sizeof(struct regexp_struct) / sizeof(value),
+                free_regexp, 1, 1000);
   return (regexp) res;
 }
 
 #define RE_SYNTAX RE_SYNTAX_EMACS
-
-static char * case_fold_table = NULL;
 
 value str_compile_regexp(src, fold) /* ML */
      value src, fold;
 {
   regexp expr;
   char * msg;
+  char * case_fold_table;
 
   Push_roots(root, 1);
   root[0] = src;
@@ -46,15 +45,17 @@ value str_compile_regexp(src, fold) /* ML */
   src = root[0];
   Pop_roots();
   re_syntax_options = RE_SYNTAX;
-  if (Bool_val(fold) && case_fold_table == NULL) {
+  if (Bool_val(fold)) {
     int i;
     case_fold_table = stat_alloc(256);
     for (i = 0; i <= 255; i++) case_fold_table[i] = i;
     for (i = 'A'; i <= 'Z'; i++) case_fold_table[i] = i + 32;
     for (i = 192; i <= 214; i++) case_fold_table[i] = i + 32;
     for (i = 216; i <= 222; i++) case_fold_table[i] = i + 32;
+  } else {
+    case_fold_table = NULL;
   }
-  expr->re.translate = Bool_val(fold) ? case_fold_table : NULL;
+  expr->re.translate = case_fold_table;
   expr->re.fastmap = stat_alloc(256);
   expr->re.buffer = NULL;
   expr->re.allocated = 0;
