@@ -47,7 +47,8 @@ allopt-noprof:
 allopt-prof: stdlib.p.cmxa std_exit.p.cmx
 
 install:
-	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader camlheader_ur $(LIBDIR)
+	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader camlheader_ur \
+           $(LIBDIR)
 
 installopt: installopt-default installopt-$(PROFILING)
 
@@ -58,7 +59,8 @@ installopt-default:
 installopt-noprof:
 	rm -f $(LIBDIR)/stdlib.p.cmxa; ln -s stdlib.cmxa $(LIBDIR)/stdlib.p.cmxa
 	rm -f $(LIBDIR)/stdlib.p.a; ln -s stdlib.a $(LIBDIR)/stdlib.p.a
-	rm -f $(LIBDIR)/std_exit.p.cmx; ln -s std_exit.cmx $(LIBDIR)/std_exit.p.cmx
+	rm -f $(LIBDIR)/std_exit.p.cmx; \
+          ln -s std_exit.cmx $(LIBDIR)/std_exit.p.cmx
 	rm -f $(LIBDIR)/std_exit.p.o; ln -s std_exit.o $(LIBDIR)/std_exit.p.o
 
 installopt-prof:
@@ -79,7 +81,9 @@ camlheader camlheader_ur: header.c ../config/Makefile
           echo '#!$(BINDIR)/ocamlrun' > camlheader && \
           echo '#!' | tr -d '\012' > camlheader_ur; \
         else \
-	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -DRUNTIME_NAME='"$(BINDIR)/ocamlrun"' header.c -o tmpheader$(EXE) && \
+	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
+                    -DRUNTIME_NAME='"$(BINDIR)/ocamlrun"' \
+                    header.c -o tmpheader$(EXE) && \
           strip tmpheader$(EXE) && \
 	  mv tmpheader$(EXE) camlheader && \
           cp camlheader camlheader_ur; \
@@ -98,13 +102,17 @@ pervasives.cmx: pervasives.ml
 	$(CAMLOPT) $(OPTCOMPFLAGS) -nopervasives -c pervasives.ml
 
 pervasives.p.cmx: pervasives.ml
-	@if test -f pervasives.cmx; then mv pervasives.cmx pervasives.n.cmx; else :; fi
-	@if test -f pervasives.o; then mv pervasives.o pervasives.n.o; else :; fi
+	@if test -f pervasives.cmx; \
+           then mv pervasives.cmx pervasives.n.cmx; else :; fi
+	@if test -f pervasives.o; \
+           then mv pervasives.o pervasives.n.o; else :; fi
 	$(CAMLOPT) $(OPTCOMPFLAGS) -p -nopervasives -c pervasives.ml
 	mv pervasives.cmx pervasives.p.cmx
 	mv pervasives.o pervasives.p.o
-	@if test -f pervasives.n.cmx; then mv pervasives.n.cmx pervasives.cmx; else :; fi
-	@if test -f pervasives.n.o; then mv pervasives.n.o pervasives.o; else :; fi
+	@if test -f pervasives.n.cmx; \
+           then mv pervasives.n.cmx pervasives.cmx; else :; fi
+	@if test -f pervasives.n.o; \
+           then mv pervasives.n.o pervasives.o; else :; fi
 
 # camlinternalOO.cmi must be compiled with -nopervasives for applets
 camlinternalOO.cmi: camlinternalOO.mli
@@ -112,7 +120,8 @@ camlinternalOO.cmi: camlinternalOO.mli
 
 # labelled modules require the -nolabels flag
 labelled.cmo:
-	$(MAKE) EXTRAFLAGS=-nolabels RUNTIME=$(RUNTIME) COMPILER=$(COMPILER) $(LABELLED:.ml=.cmo)
+	$(MAKE) EXTRAFLAGS=-nolabels RUNTIME=$(RUNTIME) \
+                COMPILER=$(COMPILER) $(LABELLED:.ml=.cmo)
 	touch $@
 labelled.cmx:
 	$(MAKE) EXTRAFLAGS=-nolabels $(LABELLED:.ml=.cmx)
