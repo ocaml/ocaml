@@ -1,9 +1,11 @@
 Objective Caml 3.08:
 --------------------
 
+(Changes that can break existing programs are marked with a "*"  )
+
 Language features:
 - Support for immediate objects, i.e. objects defined without going
-  through a class.
+  through a class.  (Syntax is "object <field and methods> end".)
 
 Both compilers:
 - More compact compilation of classes.
@@ -15,20 +17,75 @@ Both compilers:
 - Improved printing of inferred module signatures (toplevel and ocamlc -i).
   Recursion between type, class, class type and module definitions is now
   correctly printed.
+- The -pack option now accepts compiled interfaces (.cmi files) in addition
+  to compiled implementations.
+* A compile-time error is signaled if an integer literal exceeds the
+  range of representable integers.
+- Fixed code generation error for "module rec" definitions.
+
+Bytecode compiler:
+- Option -output-obj is now compatible with Dynlink and 
+  with embedded toplevels.
+
+Native-code compiler:
+- Division and modulus by zero correctly raise exception Division_by_zero
+  (instead of causing a hardware trap).
+- Improved compilation time for the register allocation phase.
+- The float constant -0.0 was incorrectly treated as +0.0 on some processors.
+- AMD64: fixed bugs in asm glue code for GC invocation and exception raising
+  from C.
+- IA64: fixed incorrect code generated for "expr mod 1".
+- PowerPC: minor performance tweaks for the G4 and G5 processors.
+
+Standard library:
+* Revised handling of NaN floats in polymorphic comparisons.
+  The polymorphic boolean-valued comparisons (=, <, >, etc) now treat
+  NaN as uncomparable, as specified by the IEEE standard.
+  The 3-valued comparison (compare) treats NaN as equal to itself
+  and smaller than all other floats.
+* String-to-integer conversions now fail if the result overflows
+  the range of integers representable in the result type.
+* All array and string access functions now raise
+  (Invalid_argument "index out of bounds") when a bounds check fails.
+  In earlier releases, different exceptions were raised
+  in bytecode and native-code.
+- Module Buffer: new functions Buffer.sub, Buffer.nth
+- Module Int32: new functions Int32.bits_of_float, Int32.float_of_bits.
+- Module Map: new functions is_empty, compare, equal.
+- Module Set: new function split.
+
+Other libraries:
+- The Num library: complete reimplementation of the C/asm lowest
+  layer to work around potential licensing problems.
+  Improved speed on the PowerPC and AMD64 architectures.
+- The Str library: fixed bug in "split" functions with nullable regexps.
+- The Unix library:
+   . Added support for IPv6.
+   . Bug fixes in Unix.closedir.
+   . Allow thread switching on Unix.lockf.
+
+Runtime System:
+- Name space depollution: all global C identifiers are now prefixed
+  with "caml" to avoid name clashes with other libraries.
+
+Ports:
+- Removed support for MacOS9.  Mac OS 9 port is obsolete and the port
+  was not updated since 3.05.
+- Native-code compilation supported for HPPA/Linux.
+  (Contributed by Guy Martin.)
+- Removed ocamlopt support for HPPA/Nextstep.
 
 Ocamllex:
 - #line directives in the input file are now accepted.
+- Added character set concatenation operator "cset1 # cset2".
 
 Ocamlyacc:
 - #line directives in the input file are now accepted.
 
-Runtime System:
-- All global C identifiers are now prefixed with "caml" to avoid name clashes
-  with other libraries.
+Camlp4:
+* Support for new-style locations (line numbers, not just character numbers).
+- See camlp4/CHANGES and camlp4/ICHANGES for more info.
 
-Mac OS 9 Port:
-- Removed all MacOS9-specific files.  The Mac OS 9 port is obsolete, it
-  was not updated since 3.05.
 
 Objective Caml 3.07:
 --------------------
