@@ -70,7 +70,16 @@ let rec expression event env = function
     E_ident lid ->
       begin try
         let (p, valdesc) = Env.lookup_value lid env in
-        (path event p, Ctype.correct_levels valdesc.val_type)
+        (begin match valdesc.val_kind with
+           Val_ivar _ ->
+             let (p0, _) = Env.lookup_value (Longident.Lident "*self*") env in
+             let v = path event p0 in
+             let i = path event p in
+             Debugcom.Remote_value.field v (Debugcom.Remote_value.obj i)
+         | _ ->
+             path event p
+         end,
+         Ctype.correct_levels valdesc.val_type)
       with Not_found ->
         raise(Error(Unbound_long_identifier lid))
       end
