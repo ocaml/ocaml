@@ -49,7 +49,7 @@ let path_match_failure = Pident ident_match_failure
 
 let build_initial_env add_type add_exception empty_env =
   let newvar() =
-    (* Cannot call Ctype.newvar here because ctype imports predef via env *)
+    (* Cannot call newvar here because ctype imports predef via env *)
     Tvar{tvar_level = -1 (*generic_level*); tvar_link = None} in
   let decl_abstr =
     {type_params = []; type_arity = 0; type_kind = Type_abstract}
