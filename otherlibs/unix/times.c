@@ -27,28 +27,7 @@
 #endif
 #endif
 
-value unix_times_bytecode(void)               /* ML */
-{
-  value res;
-  struct tms buffer;
-  value u = Val_unit, s = Val_unit, cu = Val_unit, cs = Val_unit;
-
-  Begin_roots4 (u, s, cu, cs);
-    times(&buffer);
-    u = copy_double((double) buffer.tms_utime / CLK_TCK);
-    s = copy_double((double) buffer.tms_stime / CLK_TCK);
-    cu = copy_double((double) buffer.tms_cutime / CLK_TCK);
-    cs = copy_double((double) buffer.tms_cstime / CLK_TCK);
-    res = alloc_tuple(4);
-    Field (res, 0) = u;
-    Field (res, 1) = s;
-    Field (res, 2) = cu;
-    Field (res, 3) = cs;
-  End_roots();
-  return res;
-}
-
-value unix_times_native(void)               /* ML */
+value unix_times(void)               /* ML */
 {
   value res;
   struct tms buffer;

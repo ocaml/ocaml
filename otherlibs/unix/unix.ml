@@ -289,8 +289,7 @@ external localtime : int -> tm = "unix_localtime"
 external mktime : tm -> int * tm = "unix_mktime"
 external alarm : int -> int = "unix_alarm"
 external sleep : int -> unit = "unix_sleep"
-external times : unit -> process_times =
-              "unix_times_bytecode" "unix_times_native"
+external times : unit -> process_times = "unix_times"
 external utimes : string -> int -> int -> unit = "unix_utimes"
 
 type interval_timer =
@@ -302,11 +301,10 @@ type interval_timer_status =
   { it_interval: float;                 (* Period *)
     it_value: float }                   (* Current value of the timer *)
 
-external getitimer: interval_timer -> interval_timer_status
-   = "unix_getitimer" "unix_getitimer_native"
+external getitimer: interval_timer -> interval_timer_status = "unix_getitimer"
 external setitimer:
   interval_timer -> interval_timer_status -> interval_timer_status
-  = "unix_setitimer" "unix_setitimer_native"
+  = "unix_setitimer"
 
 external getuid : unit -> int = "unix_getuid"
 external geteuid : unit -> int = "unix_geteuid"
