@@ -71,7 +71,6 @@ L105:   mov	_gc_entry_regs + 4, ebx
         mov	edi, _gc_entry_regs + 20
         mov	ebp, _gc_entry_regs + 24
     ; Return to caller 
-        push	_caml_last_return_address
         ret	
 
         ALIGN  4

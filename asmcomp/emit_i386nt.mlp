@@ -236,14 +236,14 @@ let name_for_cond_branch = function
 
 let output_test_zero arg =
   match arg.loc with
-    Reg r -> `  test   {emit_reg arg}, {emit_reg arg}\n`
-  | _     -> `  cmp    {emit_reg arg}, 0\n`
+    Reg r -> `	test   {emit_reg arg}, {emit_reg arg}\n`
+  | _     -> `	cmp    {emit_reg arg}, 0\n`
 
 (* Deallocate the stack frame before a return or tail call *)
 
 let output_epilogue () =
   let n = frame_size() - 4 in
-  if n > 0 then `      add    esp, {emit_int n}\n`
+  if n > 0 then `	add    esp, {emit_int n}\n`
 
 (* Output the assembly code for an instruction *)
 
@@ -272,7 +272,7 @@ let emit_instr i =
               `	fstp	{emit_reg dst}\n`
             end
           else
-            `	movl	{emit_reg dst}, {emit_reg src}\n`
+            `	mov	{emit_reg dst}, {emit_reg src}\n`
         end
     | Lop(Iconst_int 0) ->
         begin match i.res.(0).loc with
@@ -401,12 +401,12 @@ let emit_instr i =
     | Lop(Iintop(Icomp cmp)) ->
         `	cmp	{emit_reg i.arg.(0)},{emit_reg i.arg.(1)}\n`;
         let b = name_for_cond_branch cmp in
-        `       set{emit_string b}      al\n`;
+        `	set{emit_string b}      al\n`;
         `	movzx	{emit_reg i.res.(0)}, al\n`
     | Lop(Iintop_imm(Icomp cmp, n)) ->
         `	cmp	{emit_reg i.arg.(0)}, {emit_int n}\n`;
         let b = name_for_cond_branch cmp in
-        `       set{emit_string b}      al\n`;
+        `	set{emit_string b}      al\n`;
         `	movzx	{emit_reg i.res.(0)}, al\n`
     | Lop(Iintop Icheckbound) ->
         if !range_check_trap = 0 then range_check_trap := new_label();
@@ -449,7 +449,7 @@ let emit_instr i =
         (* We have i.arg.(0) = i.res.(0) *)
         `	{emit_string(instr_for_intop op)}	{emit_reg i.res.(0)}, {emit_int n}\n`
     | Lop(Inegf | Iabsf as floatop) ->
-        if i.arg.(0) <> tos then begin
+        if i.arg.(0) <> tos then
           `	fld	{emit_reg i.arg.(0)}\n`;
         `	{emit_string(instr_for_floatop floatop)}\n`
     | Lop(Iaddf | Isubf | Imulf | Idivf | Ispecific(Isubfrev | Idivfrev)
@@ -528,15 +528,16 @@ let emit_instr i =
         `	push	{emit_int n}\n`;
         stack_offset := !stack_offset + 4
     | Lop(Ispecific(Ipush_symbol s)) ->
-        `	push	{emit_symbol s}\n`;
+        add_used_symbol s;
+        `	push	OFFSET {emit_symbol s}\n`;
         stack_offset := !stack_offset + 4
-    | Lop(Ispecific(Ipush_load(ty, addr))) ->
-        if ty = Float then begin
-          `	push	DWORD PTR {emit_addressing (offset_addressing addr 4) i.arg 0}\n`;
-          stack_offset := !stack_offset + 4
-        end;
+    | Lop(Ispecific(Ipush_load addr)) ->
         `	push	DWORD PTR {emit_addressing addr i.arg 0}\n`;
         stack_offset := !stack_offset + 4
+    | Lop(Ispecific(Ipush_load_float addr)) ->
+        `	push	DWORD PTR {emit_addressing (offset_addressing addr 4) i.arg 0}\n`;
+        `	push	DWORD PTR {emit_addressing addr i.arg 0}\n`;
+        stack_offset := !stack_offset + 8
     | Lop(Ispecific(Ifloatarithmem(op, addr))) ->
         if i.arg.(0) <> tos then
           `	fld	{emit_reg i.arg.(0)}\n`;
@@ -545,7 +546,7 @@ let emit_instr i =
         ()
     | Lreturn ->
         output_epilogue();
-        `       ret\n`
+        `	ret\n`
     | Llabel lbl ->
         `{emit_label lbl}:\n`
     | Lbranch lbl ->
@@ -561,7 +562,7 @@ let emit_instr i =
         | Iinttest cmp ->
             `	cmp	{emit_reg i.arg.(0)},{emit_reg i.arg.(1)}\n`;
             let b = name_for_cond_branch cmp in
-            `   j{emit_string b}        {emit_label lbl}\n`
+            `	j{emit_string b}        {emit_label lbl}\n`
         | Iinttest_imm((Isigned Ceq | Isigned Cne | 
                         Iunsigned Ceq | Iunsigned Cne) as cmp, 0) ->
             output_test_zero i.arg.(0);
@@ -678,7 +679,7 @@ let emit_instr i =
     | Lraise ->
         `	mov	esp, _caml_exception_pointer\n`;
         `	pop	_caml_exception_pointer\n`;
-        `       ret\n`
+        `	ret\n`
 
 let rec emit_all i =
   match i.desc with Lend -> () | _ -> emit_instr i; emit_all i.next
@@ -737,7 +738,7 @@ let emit_item = function
   | Cintlit n ->
       `	DWORD	{emit_string n}\n`
   | Cfloat f ->
-      ` REAL8 {emit_string f}\n`
+      `	REAL8 {emit_string f}\n`
   | Csymbol_address s ->
       add_used_symbol s ;
       `	DWORD	{emit_symbol s}\n`

@@ -253,9 +253,12 @@ let select_push exp =
     Cconst_int n -> (Ispecific(Ipush_int n), Ctuple [])
   | Cconst_pointer n -> (Ispecific(Ipush_int n), Ctuple [])
   | Cconst_symbol s -> (Ispecific(Ipush_symbol s), Ctuple [])
-  | Cop(Cload ty, [loc]) when Array.length ty = 1 ->
+  | Cop(Cload ty, [loc]) when ty = typ_float ->
       let (addr, arg) = select_addressing loc in
-      (Ispecific(Ipush_load(ty.(0), addr)), arg)
+      (Ispecific(Ipush_load_float addr), arg)
+  | Cop(Cload ty, [loc]) when ty = typ_addr or ty = typ_int ->
+      let (addr, arg) = select_addressing loc in
+      (Ispecific(Ipush_load addr), arg)
   | _ -> (Ispecific(Ipush), exp)
 
 let pseudoregs_for_operation op arg res =
