@@ -28,15 +28,14 @@ let main () =
       Filename.chop_suffix source_name ".mll" ^ ".ml"
     else
       source_name ^ ".ml" in
-  ic := open_in_bin source_name;
-  oc := open_out dest_name;
-  let lexbuf =
-    Lexing.from_channel !ic in
+  let ic = open_in_bin source_name in
+  let oc = open_out dest_name in
+  let lexbuf = Lexing.from_channel ic in
   let def =
     try
       Parser.lexer_definition Lexer.main lexbuf
     with exn ->
-      close_out !oc;
+      close_out oc;
       Sys.remove dest_name;
       begin match exn with
         Parsing.Parse_error ->
@@ -52,10 +51,11 @@ let main () =
       | _ -> raise exn
       end;
       exit 2 in
-  let ((init, states, acts) as dfa) = make_dfa def in
-  output_lexdef def.header dfa def.trailer;
-  close_in !ic;
-  close_out !oc
+  let (entries, transitions) = Lexgen.make_dfa def in
+  let tables = Compact.compact_tables transitions in
+  Output.output_lexdef ic oc def.header tables entries def.trailer;
+  close_in ic;
+  close_out oc
 
 let _ = Printexc.catch main (); exit 0
 

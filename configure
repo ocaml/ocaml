@@ -11,7 +11,7 @@
 #                                                                     #
 #*********************************************************************#
 
-# $Id
+# $Id$
 
 bindir=/usr/local/bin
 libdir=/usr/local/lib/camlsl
@@ -58,14 +58,17 @@ echo "	manual pages.............. $mandir (with extension .$manext)"
 
 # Determine the system type
 
-case "$host_type" in
-  unknown)
-    if host_type=`./config.guess`; then :; else
-      echo "Cannot guess host type"
-      echo "You must specify one with the -host option"
-    fi;;
-esac
-host=`./config.sub $host_type`
+if test "$host_type" = "unknown"; then
+  if host_type=`./config.guess`; then :; else
+    echo "Cannot guess host type"
+    echo "You must specify one with the -host option"
+    exit 2
+  fi
+fi
+if host=`./config.sub $host_type`; then :; else
+  echo "Please specify the correct host type with the -host option"
+  exit 2
+fi
 echo "Configuring for a $host ..."
 
 # Do we have gcc?

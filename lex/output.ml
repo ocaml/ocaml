@@ -11,151 +11,88 @@
 
 (* $Id$ *)
 
-(* Generating a DFA as a set of mutually recursive functions *)
+(* Output the DFA tables and its entry points *)
 
+open Printf
 open Syntax
+open Lexgen
+open Compact
 
-let ic = ref stdin
-and oc = ref stdout
-
-(* 1- Generating the actions *)
+(* To copy the ML code fragments *)
 
 let copy_buffer = String.create 1024
 
-let copy_chunk (Location(start,stop)) =
-  let rec copy s =
-    if s <= 0 then () else
-      let n = if s < 1024 then s else 1024 in
-      let m = input !ic copy_buffer 0 n in
-        output !oc copy_buffer 0 m;
-        copy (s - m)
-  in
-    seek_in !ic start;
-    copy (stop - start)
+let copy_chunk ic oc (Location(start,stop)) =
+  seek_in ic start;
+  let n = ref (stop - start) in
+  while !n > 0 do
+    let m = input ic copy_buffer 0 (min !n 1024) in
+    output oc copy_buffer 0 m;
+    n := !n - m
+  done
 
-let output_action (i,act) =
-  output_string !oc ("action_" ^ string_of_int i ^ " lexbuf = (\n");
-  copy_chunk act;
-  output_string !oc ")\nand ";
-  ()
+(* To output an array of short ints, encoded as a string *)
 
-(* 2- Generating the states *)
+let output_byte oc b =
+  output_char oc '\\';
+  output_char oc (Char.chr(48 + b / 100));
+  output_char oc (Char.chr(48 + (b / 10) mod 10));
+  output_char oc (Char.chr(48 + b mod 10))
 
-let states = ref ([||] : automata array)
-
-let enumerate_vect v =
-  let rec enum env pos =
-    if pos >= Array.length v then env else
-      try
-        let pl = List.assoc v.(pos) env in
-          pl := pos :: !pl; enum env (succ pos)
-        with Not_found ->
-          enum ((v.(pos), ref [pos]) :: env) (succ pos) in
-    Sort.list
-      (fun (e1, pl1) (e2, pl2) -> List.length !pl1 >= List.length !pl2)
-      (enum [] 0)
-
-let output_move = function
-    Backtrack ->
-      output_string !oc "backtrack lexbuf"
-  | Goto dest ->
-      match !states.(dest) with
-        Perform act_num ->
-          output_string !oc ("action_" ^ string_of_int act_num ^ " lexbuf")
-      | _ ->
-          output_string !oc ("state_" ^ string_of_int dest ^ " lexbuf")
-
-let output_char_for_read oc = function
-    '\''  -> output_string oc "\\'"
-  | '\\' -> output_string oc "\\\\"
-  | '\n' -> output_string oc "\\n"
-  | '\t' -> output_string oc "\\t"
-  | c ->
-      let n = Char.code c in
-      if n >= 32 & n < 127 then
-        output_char oc c
-      else begin
-        output_char oc '\\';
-        output_char oc (Char.chr (48 + n / 100));
-        output_char oc (Char.chr (48 + (n / 10) mod 10));
-        output_char oc (Char.chr (48 + n mod 10))
-      end
-
-let rec output_chars = function
-    [] ->
-      failwith "output_chars"
-  | [c] ->
-      output_string !oc "'";
-      output_char_for_read !oc (Char.chr c);
-      output_string !oc "'"
-  | c::cl ->
-      output_string !oc "'";
-      output_char_for_read !oc (Char.chr c);
-      output_string !oc "'|";
-      output_chars cl
-
-let output_one_trans (dest, chars) =
-  output_chars !chars;
-  output_string !oc " -> ";
-  output_move dest;
-  output_string !oc "\n |  ";
-  ()
-
-let output_all_trans trans =
-  output_string !oc "  match get_next_char lexbuf with\n    ";
-  match enumerate_vect trans with
-    [] ->
-      failwith "output_all_trans"
-  | (default, _) :: rest ->
-      List.iter output_one_trans rest;
-      output_string !oc "_ -> ";
-      output_move default;
-      output_string !oc "\nand ";
-      ()
-
-let output_state state_num = function
-    Perform i ->
-      ()
-  | Shift(what_to_do, moves) ->
-      output_string !oc
-        ("state_"  ^ string_of_int state_num ^ " lexbuf =\n");
-      begin match what_to_do with
-        No_remember -> ()
-      | Remember i ->
-          output_string !oc "  lexbuf.lex_last_pos <- lexbuf.lex_curr_pos;\n";
-          output_string !oc ("  lexbuf.lex_last_action <- Obj.magic action_" ^
-                             string_of_int i ^ ";\n")
-      end;
-      output_all_trans moves
-
-(* 3- Generating the entry points *)
-          
-let rec output_entries = function
-    [] -> failwith "output_entries"
-  | (name,state_num) :: rest ->
-      output_string !oc (name ^ " lexbuf =\n");
-      output_string !oc "  start_lexing lexbuf;\n";
-      output_string !oc ("  state_" ^ string_of_int state_num ^ " lexbuf\n");
-      match rest with
-        [] -> output_string !oc "\n\n"; ()
-      | _  -> output_string !oc "\nand "; output_entries rest
-
-(* All together *)
-
-let output_lexdef header (initial_st, st, actions) trailer =
-  print_int (Array.length st); print_string " states, ";
-  print_int (List.length actions); print_string " actions.";
-  print_newline();
-  output_string !oc "open Obj\nopen Lexing\n\n";
-  copy_chunk header;
-  output_string !oc "\nlet rec ";
-  states := st;
-  List.iter output_action actions;
-  for i = 0 to Array.length st - 1 do
-    output_state i st.(i)
+let output_array oc v =
+  output_string oc "   \"";
+  for i = 0 to Array.length v - 1 do
+    output_byte oc (v.(i) land 0xFF);
+    output_byte oc ((v.(i) asr 8) land 0xFF);
+    if i land 7 = 7 then output_string oc "\\\n    "
   done;
-  output_entries initial_st;
-  copy_chunk trailer
+  output_string oc "\""
 
+(* Output the tables *)
 
+let output_tables oc tbl =
+  output_string oc "let lex_tables = {\n";
+  fprintf oc "  Lexing.lex_base = \n%a;\n" output_array tbl.tbl_base;
+  fprintf oc "  Lexing.lex_backtrk = \n%a;\n" output_array tbl.tbl_backtrk;
+  fprintf oc "  Lexing.lex_default = \n%a;\n" output_array tbl.tbl_default;
+  fprintf oc "  Lexing.lex_trans = \n%a;\n" output_array tbl.tbl_trans;
+  fprintf oc "  Lexing.lex_check = \n%a\n" output_array tbl.tbl_check;
+  output_string oc "}\n\n"
 
+(* Output the entries *)
+
+let output_entry ic oc e =
+  fprintf oc "%s lexbuf =\n" e.auto_name;
+  fprintf oc "  match Lexing.engine lex_tables %d lexbuf with\n    "
+             e.auto_initial_state;
+  let first = ref true in
+  List.iter
+    (fun (num, loc) ->
+      if !first then first := false else fprintf oc "  | ";
+      fprintf oc "%d -> (" num;
+      copy_chunk ic oc loc;
+      fprintf oc ")\n")
+    e.auto_actions;
+  fprintf oc "  | _ -> failwith \"%s: empty token\"\n\n" e.auto_name
+
+(* Main output function *)
+
+let output_lexdef ic oc header tables entry_points trailer =
+  Printf.printf "%d states, %d transitions, table size %d bytes\n"
+    (Array.length tables.tbl_base)
+    (Array.length tables.tbl_trans)
+    (2 * (Array.length tables.tbl_base + Array.length tables.tbl_backtrk +
+          Array.length tables.tbl_default + Array.length tables.tbl_trans +
+          Array.length tables.tbl_check));
+  flush stdout;
+  copy_chunk ic oc header;
+  output_tables oc tables;
+  begin match entry_points with
+    [] -> ()
+  | entry1 :: entries ->
+      output_string oc "let rec "; output_entry ic oc entry1;
+      List.iter
+        (fun e -> output_string oc "and "; output_entry ic oc e)
+        entries
+  end;
+  copy_chunk ic oc trailer

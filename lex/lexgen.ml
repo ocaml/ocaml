@@ -25,6 +25,30 @@ type regexp =
   | Alt of regexp * regexp
   | Star of regexp
 
+type lexer_entry =
+  { lex_name: string;
+    lex_regexp: regexp;
+    lex_actions: (int * location) list }
+    
+(* Representation of automata *)
+
+type automata =
+    Perform of int
+  | Shift of automata_trans * automata_move array
+and automata_trans =
+    No_remember
+  | Remember of int
+and automata_move =
+    Backtrack
+  | Goto of int
+
+(* Representation of entry points *)
+
+type automata_entry =
+  { auto_name: string;
+    auto_initial_state: int;
+    auto_actions: (int * location) list }
+    
 (* From shallow to deep syntax *)
 
 let chars = ref ([] : char list list)
@@ -46,29 +70,33 @@ let rec encode_regexp = function
   | Repetition r ->
       Star (encode_regexp r)
 
-let encode_casedef =
+let encode_casedef casedef =
   List.fold_left
-   (fun reg (expr,act) ->
+   (fun reg (expr, act) ->
      let act_num = !actions_count in
      incr actions_count;
      actions := (act_num, act) :: !actions;
      Alt(reg, Seq(encode_regexp expr, Action act_num)))
-  Empty
+   Empty
+   casedef
 
 let encode_lexdef def =
   chars := [];
   chars_count := 0;
-  actions := [];
-  actions_count := 0;
-  let name_regexp_list =
+  let entry_list =
     List.map
-      (fun (name, casedef) -> (name, encode_casedef casedef))
+      (fun (entry_name, casedef) ->
+        actions := [];
+        actions_count := 0;
+        let re = encode_casedef casedef in
+        { lex_name = entry_name;
+          lex_regexp = re;
+          lex_actions = List.rev !actions })
       def.entrypoints in
-  let chr = Array.of_list (List.rev !chars)
-  and act = !actions in
+  let chr = Array.of_list (List.rev !chars) in
   chars := [];
   actions := [];
-  (chr, name_regexp_list, act)
+  (chr, entry_list)
 
 (* To generate directly a NFA from a regular expression.
    Confer Aho-Sethi-Ullman, dragon book, chap. 3 *)
@@ -77,22 +105,8 @@ type transition =
     OnChars of int
   | ToAction of int
 
-let rec merge_trans s1 s2 =
-  match (s1, s2) with
-    ([], _) -> s2
-  | (_, []) -> s1
-  | ((OnChars n1 as t1) :: r1, (OnChars n2 as t2) :: r2) ->
-      if n1 == n2 then t1 :: merge_trans r1 r2 else
-      if n1 <  n2 then t1 :: merge_trans r1 s2 else
-                       t2 :: merge_trans s1 r2
-  | ((ToAction n1 as t1) :: r1, (ToAction n2 as t2) :: r2) ->
-      if n1 == n2 then t1 :: merge_trans r1 r2 else
-      if n1 <  n2 then t1 :: merge_trans r1 s2 else
-                       t2 :: merge_trans s1 r2
-  | ((OnChars n1 as t1) :: r1, (ToAction n2 as t2) :: r2) ->
-      t1 :: merge_trans r1 s2
-  | ((ToAction n1 as t1) :: r1, (OnChars n2 as t2) :: r2) ->
-      t2 :: merge_trans s1 r2
+module TransSet =
+  Set.Make(struct type t = transition let compare = compare end)
 
 let rec nullable = function
     Empty      -> true
@@ -103,90 +117,99 @@ let rec nullable = function
   | Star r     -> true
 
 let rec firstpos = function
-    Empty      -> []
-  | Chars pos  -> [OnChars pos]
-  | Action act -> [ToAction act]
+    Empty      -> TransSet.empty
+  | Chars pos  -> TransSet.add (OnChars pos) TransSet.empty
+  | Action act -> TransSet.add (ToAction act) TransSet.empty
   | Seq(r1,r2) -> if nullable r1
-                  then merge_trans (firstpos r1) (firstpos r2)
+                  then TransSet.union (firstpos r1) (firstpos r2)
                   else firstpos r1
-  | Alt(r1,r2) -> merge_trans (firstpos r1) (firstpos r2)
+  | Alt(r1,r2) -> TransSet.union (firstpos r1) (firstpos r2)
   | Star r     -> firstpos r
 
 let rec lastpos = function
-    Empty      -> []
-  | Chars pos  -> [OnChars pos]
-  | Action act -> [ToAction act]
+    Empty      -> TransSet.empty
+  | Chars pos  -> TransSet.add (OnChars pos) TransSet.empty
+  | Action act -> TransSet.add (ToAction act) TransSet.empty
   | Seq(r1,r2) -> if nullable r2
-                  then merge_trans (lastpos r1) (lastpos r2)
+                  then TransSet.union (lastpos r1) (lastpos r2)
                   else lastpos r2
-  | Alt(r1,r2) -> merge_trans (lastpos r1) (lastpos r2)
+  | Alt(r1,r2) -> TransSet.union (lastpos r1) (lastpos r2)
   | Star r     -> lastpos r
 
-let followpos size name_regexp_list =
-  let v = Array.new size [] in
-    let fill_pos first = function
-        OnChars pos -> v.(pos) <- merge_trans first v.(pos); ()
-      | ToAction _  -> () in
-    let rec fill = function
-        Seq(r1,r2) ->
-          fill r1; fill r2;
-          List.iter (fill_pos (firstpos r2)) (lastpos r1)
-      | Alt(r1,r2) ->
-          fill r1; fill r2
-      | Star r ->
-          fill r;
-          List.iter (fill_pos (firstpos r)) (lastpos r)
-      | _ -> () in
-    List.iter (fun (name, regexp) -> fill regexp) name_regexp_list;
-    v
+let followpos size entry_list =
+  let v = Array.new size TransSet.empty in
+  let fill_pos first = function
+      OnChars pos -> v.(pos) <- TransSet.union first v.(pos)
+    | ToAction _  -> () in
+  let rec fill = function
+      Seq(r1,r2) ->
+        fill r1; fill r2;
+        TransSet.iter (fill_pos (firstpos r2)) (lastpos r1)
+    | Alt(r1,r2) ->
+        fill r1; fill r2
+    | Star r ->
+        fill r;
+        TransSet.iter (fill_pos (firstpos r)) (lastpos r)
+    | _ -> () in
+  List.iter (fun entry -> fill entry.lex_regexp) entry_list;
+  v
 
-let no_action = 32767
+let no_action = max_int
 
-let split_trans_set = List.fold_left
-  (fun (act, pos_set as act_pos_set) ->
-     function OnChars pos   -> (act, pos :: pos_set)
-         |    ToAction act1 -> if act1 < act then (act1, pos_set)
-                                             else act_pos_set)
-  (no_action, [])
+let split_trans_set trans_set =
+  TransSet.fold
+    (fun trans (act, pos_set as act_pos_set) ->
+      match trans with
+        OnChars pos -> (act, pos :: pos_set)
+      | ToAction act1 -> if act1 < act then (act1, pos_set) else act_pos_set)
+    trans_set
+    (no_action, [])
 
-let memory  = (Hashtbl.new 131 : (transition list, int) Hashtbl.t)
-and todo    = ref ([] : (transition list * int) list)
-and next    = ref 0
+module StateMap =
+  Map.Make(struct type t = TransSet.t let compare = TransSet.compare end)
+
+let state_map = ref (StateMap.empty: int StateMap.t)
+let todo = (Stack.new() : (TransSet.t * int) Stack.t)
+let next_state_num = ref 0
 
 let reset_state_mem () =
-  Hashtbl.clear memory; todo := []; next := 0; ()
+  state_map := StateMap.empty;
+  Stack.clear todo;
+  next_state_num := 0
 
 let get_state st = 
   try
-    Hashtbl.find memory st
+    StateMap.find st !state_map
   with Not_found ->
-    let nbr = !next in
-    incr next;
-    Hashtbl.add memory st nbr;
-    todo := (st, nbr) :: !todo;
-    nbr
+    let num = !next_state_num in
+    incr next_state_num;
+    state_map := StateMap.add st num !state_map;
+    Stack.push (st, num) todo;
+    num
 
-let rec map_on_states f =
-  match !todo with
-    []  -> []
-  | (st,i)::r -> todo := r; let res = f st in (res,i) :: map_on_states f
+let map_on_all_states f =
+  let res = ref [] in
+  begin try
+    while true do
+      let (st, i) = Stack.pop todo in
+      let r = f st in
+      res := (r, i) :: !res
+    done
+  with Stack.Empty -> ()
+  end;
+  !res
 
-let number_of_states () =
-  !next
-
-let goto_state = function
-    [] -> Backtrack
-  | ps -> Goto (get_state ps)
+let goto_state st =
+  if TransSet.is_empty st then Backtrack else Goto (get_state st)
 
 let transition_from chars follow pos_set = 
-  let tr = Array.new 256 []
-  and shift = Array.new 256 Backtrack in
+  let tr = Array.new 256 TransSet.empty in
+  let shift = Array.new 256 Backtrack in
     List.iter
       (fun pos ->
         List.iter
           (fun c ->
-             tr.(Char.code c) <-
-               merge_trans tr.(Char.code c) follow.(pos))
+             tr.(Char.code c) <- TransSet.union tr.(Char.code c) follow.(pos))
           chars.(pos))
       pos_set;
     for i = 0 to 255 do
@@ -196,23 +219,23 @@ let transition_from chars follow pos_set =
 
 let translate_state chars follow state =
   match split_trans_set state with
-    n, [] -> Perform n
-  | n, ps -> Shift( (if n == no_action then No_remember else Remember n),
-                    transition_from chars follow ps)
+    (n, []) -> Perform n
+  | (n, ps) -> Shift((if n = no_action then No_remember else Remember n),
+                     transition_from chars follow ps)
 
 let make_dfa lexdef =
-  let (chars, name_regexp_list, actions) =
-    encode_lexdef lexdef in
-  let follow =
-    followpos (Array.length chars) name_regexp_list in
+  let (chars, entry_list) = encode_lexdef lexdef in
+  let follow = followpos (Array.length chars) entry_list in
   reset_state_mem();
   let initial_states =
-    List.map (fun (name, regexp) -> (name, get_state(firstpos regexp)))
-        name_regexp_list in
-  let states =
-    map_on_states (translate_state chars follow) in
-  let v =
-    Array.new (number_of_states()) (Perform 0) in
-  List.iter (fun (auto, i) -> v.(i) <- auto) states;
+    List.map
+      (fun le ->
+        { auto_name = le.lex_name;
+          auto_initial_state = get_state(firstpos le.lex_regexp);
+          auto_actions = le.lex_actions })
+      entry_list in
+  let states = map_on_all_states (translate_state chars follow) in
+  let actions = Array.new !next_state_num (Perform 0) in
+  List.iter (fun (act, i) -> actions.(i) <- act) states;
   reset_state_mem();
-  (initial_states, v, actions)
+  (initial_states, actions)

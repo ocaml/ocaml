@@ -11,31 +11,13 @@
 
 (* $Id$ *)
 
-(* The shallow abstract syntax *)
+(* Compaction of an automata *)
 
-type location =
-    Location of int * int
+type lex_tables =
+  { tbl_base: int array;                 (* Perform / Shift *)
+    tbl_backtrk: int array;              (* No_remember / Remember *)
+    tbl_default: int array;              (* Default transition *)
+    tbl_trans: int array;                (* Transitions (compacted) *)
+    tbl_check: int array }               (* Check (compacted) *)
 
-type regular_expression =
-    Epsilon
-  | Characters of char list
-  | Sequence of regular_expression * regular_expression
-  | Alternative of regular_expression * regular_expression
-  | Repetition of regular_expression
-
-type lexer_definition =
-    { header: location;
-      entrypoints: (string * (regular_expression * location) list) list;
-      trailer: location }
-
-(* Representation of automata *)
-
-type automata =
-    Perform of int
-  | Shift of automata_trans * automata_move array
-and automata_trans =
-    No_remember
-  | Remember of int
-and automata_move =
-    Backtrack
-  | Goto of int
+val compact_tables: Lexgen.automata array -> lex_tables

@@ -20,8 +20,16 @@ type lexbuf =
     mutable lex_abs_pos : int;
     mutable lex_start_pos : int;
     mutable lex_curr_pos : int;
-    mutable lex_last_pos : int;
-    mutable lex_last_action : lexbuf -> Obj.t }
+    mutable lex_last_pos : int }
+
+type lex_tables =
+  { lex_base: string;
+    lex_backtrk: string;
+    lex_default: string;
+    lex_trans: string;
+    lex_check: string }
+
+external engine: lex_tables -> int -> lexbuf -> int = "lex_engine"
 
 let lex_aux_buffer = String.create 1024
 
@@ -55,8 +63,6 @@ let lex_refill read_fun lexbuf =
   lexbuf.lex_start_pos <- lexbuf.lex_start_pos - n;
   lexbuf.lex_last_pos <- lexbuf.lex_last_pos - n
 
-let dummy_action x = failwith "lexing: empty token"
-
 let from_function f =
   { refill_buff = lex_refill f;
     lex_buffer = String.create 2048;
@@ -64,8 +70,7 @@ let from_function f =
     lex_abs_pos = - 2048;
     lex_start_pos = 2048;
     lex_curr_pos = 2048;
-    lex_last_pos = 2048;
-    lex_last_action = dummy_action }
+    lex_last_pos = 2048 }
 
 let from_channel ic =
   from_function (fun buf n -> input ic buf 0 n)
@@ -78,22 +83,7 @@ let from_string s =
     lex_abs_pos = 0;
     lex_start_pos = 0;
     lex_curr_pos = 0;
-    lex_last_pos = 0;
-    lex_last_action = dummy_action }
-
-let get_next_char lexbuf =
-  let p = lexbuf.lex_curr_pos in
-  if p < lexbuf.lex_buffer_len then begin
-    let c = String.unsafe_get lexbuf.lex_buffer p in
-    lexbuf.lex_curr_pos <- p + 1;
-    c
-  end else begin
-    lexbuf.refill_buff lexbuf;
-    let p = lexbuf.lex_curr_pos in
-    let c = String.unsafe_get lexbuf.lex_buffer p in
-    lexbuf.lex_curr_pos <- p + 1;
-    c
-  end
+    lex_last_pos = 0 }
 
 let lexeme lexbuf =
   let len = lexbuf.lex_curr_pos - lexbuf.lex_start_pos in
@@ -103,14 +93,6 @@ let lexeme lexbuf =
 
 let lexeme_char lexbuf i =
   String.get lexbuf.lex_buffer (lexbuf.lex_start_pos + i)
-
-let start_lexing lexbuf =
-  lexbuf.lex_start_pos <- lexbuf.lex_curr_pos;
-  lexbuf.lex_last_action <- dummy_action
-
-let backtrack lexbuf =
-  lexbuf.lex_curr_pos <- lexbuf.lex_last_pos;
-  Obj.magic(lexbuf.lex_last_action lexbuf)
 
 let lexeme_start lexbuf =
   lexbuf.lex_abs_pos + lexbuf.lex_start_pos

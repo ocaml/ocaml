@@ -1,12 +1,17 @@
+compact.cmi: lexgen.cmi 
 lexer.cmi: parser.cmi 
-parser.cmi: syntax.cmo 
-lexer.cmo: parser.cmi syntax.cmo lexer.cmi 
-lexer.cmx: parser.cmx syntax.cmx lexer.cmi 
-lexgen.cmo: syntax.cmo 
-lexgen.cmx: syntax.cmx 
-main.cmo: lexer.cmi lexgen.cmo output.cmo parser.cmi syntax.cmo 
-main.cmx: lexer.cmx lexgen.cmx output.cmx parser.cmx syntax.cmx 
-output.cmo: syntax.cmo 
-output.cmx: syntax.cmx 
-parser.cmo: syntax.cmo parser.cmi 
-parser.cmx: syntax.cmx parser.cmi 
+lexgen.cmi: syntax.cmi 
+output.cmi: compact.cmi lexgen.cmi syntax.cmi 
+parser.cmi: syntax.cmi 
+compact.cmo: lexgen.cmi compact.cmi 
+compact.cmx: lexgen.cmx compact.cmi 
+lexer.cmo: parser.cmi syntax.cmi lexer.cmi 
+lexer.cmx: parser.cmx syntax.cmi lexer.cmi 
+lexgen.cmo: syntax.cmi lexgen.cmi 
+lexgen.cmx: syntax.cmi lexgen.cmi 
+main.cmo: compact.cmi lexer.cmi lexgen.cmi output.cmi parser.cmi syntax.cmi 
+main.cmx: compact.cmx lexer.cmx lexgen.cmx output.cmx parser.cmx syntax.cmi 
+output.cmo: compact.cmi lexgen.cmi syntax.cmi output.cmi 
+output.cmx: compact.cmx lexgen.cmx syntax.cmi output.cmi 
+parser.cmo: syntax.cmi parser.cmi 
+parser.cmx: syntax.cmi parser.cmi 

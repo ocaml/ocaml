@@ -164,7 +164,8 @@ rule token = parse
         let string_start = Lexing.lexeme_start lexbuf in
         start_pos := string_start;
         string lexbuf;
-        lexbuf.lex_start_pos <- string_start - lexbuf.lex_abs_pos;
+        lexbuf.Lexing.lex_start_pos <-
+          string_start - lexbuf.Lexing.lex_abs_pos;
         STRING (get_stored_string()) }
   | "'" [^ '\\' '\''] "'"
       { CHAR(Lexing.lexeme_char lexbuf 1) }

@@ -406,7 +406,7 @@ realclean::
 
 csltools:
 	cd tools; $(MAKE) all
-realclean::
+clean::
 	cd tools; $(MAKE) clean
 alldepend::
 	cd tools; $(MAKE) depend
