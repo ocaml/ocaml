@@ -24,6 +24,8 @@
 #include "memory.h"
 #include "mlvalues.h"
 
+CAMLextern int compare_unordered;         /* from byterun/compare.c */
+
 extern void bigarray_unmap_file(void * addr, unsigned long len);
                                           /* from mmap_xxx.c */
 
@@ -73,6 +75,46 @@ static struct custom_operations bigarray_ops = {
   bigarray_deserialize
 };
 
+/* Multiplication of unsigned longs with overflow detection */
+
+static unsigned long
+bigarray_multov(unsigned long a, unsigned long b, int * overflow)
+{
+#define HALF_SIZE (sizeof(unsigned long) * 4)
+#define LOW_HALF(x) ((x) & ((1UL << HALF_SIZE) - 1))
+#define HIGH_HALF(x) ((x) >> HALF_SIZE)
+  /* Cut in half words */
+  unsigned long al = LOW_HALF(a);
+  unsigned long ah = HIGH_HALF(a);
+  unsigned long bl = LOW_HALF(b);
+  unsigned long bh = HIGH_HALF(b);
+  /* Exact product is:
+              al * bl
+           +  ah * bl  << HALF_SIZE
+           +  al * bh  << HALF_SIZE
+           +  ah * bh  << 2*HALF_SIZE
+     Overflow occurs if:
+        ah * bh is not 0, i.e. ah != 0 and bh != 0
+     OR ah * bl has high half != 0
+     OR ah * bl has high half != 0
+     OR the sum al * bl + LOW_HALF(ah * bl) << HALF_SIZE
+                        + LOW_HALF(al * bh) << HALF_SIZE overflows.
+     This sum is equal to p = (a * b) modulo word size. */
+  unsigned long p1 = al * bh;
+  unsigned long p2 = ah * bl;
+  unsigned long p = a * b;
+  if (ah != 0 && bh != 0) *overflow = 1;
+  if (p1 >= (1UL << HALF_SIZE) || p2 >= (1UL << HALF_SIZE)) *overflow = 1;
+  p1 <<= HALF_SIZE;
+  p2 <<= HALF_SIZE;
+  p1 += p2;
+  if (p < p1 || p1 < p2) *overflow = 1; /* overflow in sums */
+  return p;
+#undef HALF_SIZE
+#undef LOW_HALF
+#undef HIGH_HALF
+}
+
 /* Allocation of a big array */
 
 #define MAX_BIGARRAY_MEMORY 256*1024*1024
@@ -85,10 +127,11 @@ static struct custom_operations bigarray_ops = {
    [data] cannot point into the Caml heap.
    [dim] may point into an object in the Caml heap.
 */
-CAMLexport value alloc_bigarray(int flags, int num_dims, void * data, long * dim)
+CAMLexport value
+alloc_bigarray(int flags, int num_dims, void * data, long * dim)
 {
-  long num_elts, size;
-  int i;
+  unsigned long num_elts, size;
+  int overflow, i;
   value res;
   struct caml_bigarray * b;
   long dimcopy[MAX_NUM_DIMS];
@@ -98,9 +141,15 @@ CAMLexport value alloc_bigarray(int flags, int num_dims, void * data, long * dim
   for (i = 0; i < num_dims; i++) dimcopy[i] = dim[i];
   size = 0;
   if (data == NULL) {
+    overflow = 0;
     num_elts = 1;
-    for (i = 0; i < num_dims; i++) num_elts = num_elts * dim[i];
-    size = num_elts * bigarray_element_size[flags & BIGARRAY_KIND_MASK];
+    for (i = 0; i < num_dims; i++) {
+      num_elts = bigarray_multov(num_elts, dimcopy[i], &overflow);
+    }
+    size = bigarray_multov(num_elts, 
+                           bigarray_element_size[flags & BIGARRAY_KIND_MASK],
+                           &overflow);
+    if (overflow) raise_out_of_memory();
     data = malloc(size);
     if (data == NULL && size != 0) raise_out_of_memory();
     flags |= BIGARRAY_MANAGED;
@@ -169,14 +218,14 @@ static long bigarray_offset(struct caml_bigarray * b, long * index)
     /* C-style layout: row major, indices start at 0 */
     for (i = 0; i < b->num_dims; i++) {
       if ((unsigned long) index[i] >= (unsigned long) b->dim[i])
-        invalid_argument("Bigarray: out-of-bound access");
+        array_bound_error();
       offset = offset * b->dim[i] + index[i];
     }
   } else {
     /* Fortran-style layout: column major, indices start at 1 */
     for (i = b->num_dims - 1; i >= 0; i--) {
       if ((unsigned long) (index[i] - 1) >= (unsigned long) b->dim[i])
-        invalid_argument("Bigarray: out-of-bound access");
+        array_bound_error();
       offset = offset * b->dim[i] + (index[i] - 1);
     }
   }
@@ -489,7 +538,7 @@ static int bigarray_compare(value v1, value v2)
   /* Same dimensions: compare contents lexicographically */
   num_elts = bigarray_num_elts(b1);
 
-#define DO_COMPARISON(type) \
+#define DO_INTEGER_COMPARISON(type) \
   { type * p1 = b1->data; type * p2 = b2->data; \
     for (n = 0; n < num_elts; n++) { \
       type e1 = *p1++; type e2 = *p2++; \
@@ -498,40 +547,64 @@ static int bigarray_compare(value v1, value v2)
     } \
     return 0; \
   }
+#define DO_FLOAT_COMPARISON(type) \
+  { type * p1 = b1->data; type * p2 = b2->data; \
+    for (n = 0; n < num_elts; n++) { \
+      type e1 = *p1++; type e2 = *p2++; \
+      if (e1 < e2) return -1; \
+      if (e1 > e2) return 1; \
+      if (e1 != e2) { \
+        compare_unordered = 1; \
+        if (e1 == e1) return 1; \
+        if (e2 == e2) return -1; \
+      } \
+    } \
+    return 0; \
+  }
 
   switch (b1->flags & BIGARRAY_KIND_MASK) {
   case BIGARRAY_COMPLEX32:
     num_elts *= 2; /*fallthrough*/
   case BIGARRAY_FLOAT32:
-    DO_COMPARISON(float);
+    DO_FLOAT_COMPARISON(float);
   case BIGARRAY_COMPLEX64:
     num_elts *= 2; /*fallthrough*/
   case BIGARRAY_FLOAT64:
-    DO_COMPARISON(double);
+    DO_FLOAT_COMPARISON(double);
   case BIGARRAY_SINT8:
-    DO_COMPARISON(schar);
+    DO_INTEGER_COMPARISON(schar);
   case BIGARRAY_UINT8:
-    DO_COMPARISON(unsigned char);
+    DO_INTEGER_COMPARISON(unsigned char);
   case BIGARRAY_SINT16:
-    DO_COMPARISON(int16);
+    DO_INTEGER_COMPARISON(int16);
   case BIGARRAY_UINT16:
-    DO_COMPARISON(uint16);
+    DO_INTEGER_COMPARISON(uint16);
   case BIGARRAY_INT32:
-    DO_COMPARISON(int32);
+    DO_INTEGER_COMPARISON(int32);
   case BIGARRAY_INT64:
 #ifdef ARCH_INT64_TYPE
-    DO_COMPARISON(int64);
+    DO_INTEGER_COMPARISON(int64);
 #else
-    invalid_argument("Bigarray.compare: 64-bit int arrays not supported");
+    { int64 * p1 = b1->data; int64 * p2 = b2->data;
+      for (n = 0; n < num_elts; n++) {
+        int64 e1 = *p1++; int64 e2 = *p2++;
+        if ((int32)e1.h > (int32)e2.h) return 1;
+        if ((int32)e1.h < (int32)e2.h) return -1;
+        if (e1.l > e2.l) return 1;
+        if (e1.l < e2.l) return -1;
+      }
+      return 0;
+    }
 #endif
   case BIGARRAY_CAML_INT:
   case BIGARRAY_NATIVE_INT:
-    DO_COMPARISON(long);
+    DO_INTEGER_COMPARISON(long);
   default:
     Assert(0);
     return 0;                   /* should not happen */
   }
-#undef DO_COMPARISON
+#undef DO_INTEGER_COMPARISON
+#undef DO_FLOAT_COMPARISON
 }
 
 /* Hashing of a bigarray */
