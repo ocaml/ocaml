@@ -16,7 +16,7 @@ include ../config/Makefile
 
 CAMLRUN=../boot/ocamlrun
 CAMLC=$(CAMLRUN) ../boot/ocamlc -I ../boot
-CAMLOPT=../ocamlopt 
+CAMLOPT=$(CAMLRUN) ../ocamlopt 
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
          -I ../driver
@@ -38,7 +38,7 @@ ocamldep: depend.cmi $(CAMLDEP_OBJ)
 	$(CAMLC) $(LINKFLAGS) -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
 
 depend.cmx:
-	$(CAMLOPT) $(INCLUDES) depend.ml
+	$(CAMLOPT) $(INCLUDES) -I ../stdlib depend.ml
 
 clean::
 	rm -f ocamldep
