@@ -129,13 +129,13 @@ echo "MANEXT=$manext" >> Makefile
 # Determine the system type
 
 if test "$host_type" = "unknown"; then
-  if host_type=`./config.guess`; then :; else
+  if host_type=`../gnu/config.guess`; then :; else
     echo "Cannot guess host type"
     echo "You must specify one with the -host option"
     exit 2
   fi
 fi
-if host=`./config.sub $host_type`; then :; else
+if host=`../gnu/config.sub $host_type`; then :; else
   echo "Please specify the correct host type with the -host option"
   exit 2
 fi
@@ -219,7 +219,7 @@ case "$bytecc,$host" in
     # (For those who want to force "cc -64")
     # Turn off warning "unused library"
     bytecclinkopts="-Wl,-woff,84";;
-  *,alpha-*-unicos*)
+  *,alpha*-*-unicos*)
     # For the Cray T3E
     bytecccompopts="-DUMK";;
   gcc*,powerpc-*-aix4.3*)
@@ -369,7 +369,7 @@ case "$host" in
   sparc-*-sunos4.*)             arch=sparc; system=sunos;;
   sparc-*-solaris2.*)           arch=sparc; system=solaris;;
   sparc-*-*bsd*)                arch=sparc; system=bsd;;
-  sparc-*-linux)                arch=sparc; system=linux;;
+  sparc-*-linux*)               arch=sparc; system=linux;;
   i[3456]86-*-linux*)           arch=i386; system=linux_`sh ./runtest elf.c`;;
   i[3456]86-*-*bsd*)            arch=i386; system=bsd_`sh ./runtest elf.c`;;
   i[3456]86-*-nextstep*)        arch=i386; system=nextstep;;
@@ -383,8 +383,7 @@ case "$host" in
   powerpc-*-aix*)               arch=power; model=ppc; system=aix;;
   powerpc-*-linux*)             arch=power; model=ppc; system=elf;;
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
-  m68k-*-sunos*)                arch=m68k; system=sunos;;
-  arm-*-linux*)                 arch=arm; system=linux;;
+  arm*-*-linux*)                arch=arm; system=linux;;
   ia64-*-linux*)                arch=ia64; system=linux;;
 esac
 
