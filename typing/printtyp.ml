@@ -364,7 +364,7 @@ let rec type_decl kwd id ppf decl =
 
   aliased := params @ !aliased;
   List.iter mark_loops params;
-  List.iter check_name_of_type params;
+  List.iter check_name_of_type (List.map proxy params);
   begin match decl.type_manifest with
   | None -> ()
   | Some ty -> mark_loops ty
@@ -542,7 +542,7 @@ let class_declaration id ppf cl =
   let sty = self_type cl.cty_type in
   List.iter mark_loops params;
 
-  List.iter check_name_of_type params;
+  List.iter check_name_of_type (List.map proxy params);
   if is_aliased sty then check_name_of_type sty;
 
   let vir_mark = if cl.cty_new = None then " virtual" else "" in
@@ -558,7 +558,7 @@ let cltype_declaration id ppf cl =
   let sty = self_type cl.clty_type in
   List.iter mark_loops params;
 
-  List.iter check_name_of_type params;
+  List.iter check_name_of_type (List.map proxy params);
   if is_aliased sty then check_name_of_type sty;
 
   let sign = Ctype.signature_of_class_type cl.clty_type in

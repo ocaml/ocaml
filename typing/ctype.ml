@@ -2321,6 +2321,11 @@ let unalias ty =
   match ty.desc with
     Tvar ->
       ty
+  | Tvariant row ->
+      let row = row_repr row in
+      let more = row.row_more in
+      newty2 ty.level
+        (Tvariant {row with row_more = newty2 more.level more.desc})
   | _ ->
       newty2 ty.level ty.desc
 
