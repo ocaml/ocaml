@@ -1,6 +1,6 @@
 \section{Classes}
 
-\subsection{Class definitions}
+\subsection{Class definitions} \label{s:classdef}
 
 \ikwd{and\@\verb`and`}
 \ikwd{as\@\verb`as`}
@@ -197,7 +197,7 @@ Objects cannot be created from a virtual class.
 A class can be flagged as @'closed'@.  A closed class is a class
 to which subclasses cannot add methods.
 
-\subsection{Class types}
+\subsection{Class types} \label{s:classtype}
 
 \ikwd{and\@\verb`and`}
 \ikwd{as\@\verb`as`}

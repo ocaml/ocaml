@@ -102,6 +102,13 @@ of mutually recursive definitions of type names.
 
 Exceptions are defined with the syntax @'exception' constr-decl@.
 
+\subsubsection*{Class definitions}
+
+\ikwd{class\@\verb`class`}
+
+The @'class'@ keyword introduces one or several mutually recursive
+class definitions, as described in section~\ref{s:classdef}.
+
 \subsubsection*{Module definitions}
 
 \ikwd{module\@\verb`module`}

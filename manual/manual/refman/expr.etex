@@ -610,6 +610,6 @@ more general than the previous one.
 \subsubsection*{Object duplication}
 
 An object can be duplicated using the library function "Oo.copy"
-(see~\ref{s:Oo}).
+(see section~\ref{s:Oo}).
 
 %% \newpage

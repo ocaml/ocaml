@@ -8,11 +8,11 @@ objects and refer to these objects by name later:
 non-constant -- class @ncconstr-name@),
 \item type constructors (@typeconstr-name@),
 \item record labels (@label-name@),
-\item module names (@module-name@),
-\item module type names (@modtype-name@),
 \item class names (@class-name@),
 \item method names (@method-name@),
-\item instance variable names (@inst-var-name@).
+\item instance variable names (@inst-var-name@),
+\item module names (@module-name@),
+\item module type names (@modtype-name@).
 \end{itemize}
 These nine name spaces are distinguished both by the context and by the
 capitalization of the identifier: whether the first letter of the
@@ -75,6 +75,8 @@ below.
 \entree{Constructors}{uppercase}
 \entree{Type constructors}{lowercase}
 \entree{Record labels}{lowercase}
+\entree{Classes}{lowercase}
+\entree{Methods}{lowercase}
 \entree{Modules}{uppercase}
 \entree{Module types}{any}
 \end{tableau}

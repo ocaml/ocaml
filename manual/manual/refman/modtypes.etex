@@ -131,12 +131,19 @@ made visible to all users, and no fresh type is generated.
 
 \subsubsection*{Exception specification}
 
-\ikwd{external\@\verb`external`}
+\ikwd{exception\@\verb`exception`}
 
 The specification @'exception' constr-decl@ in a signature requires the
 matching structure to provide an exception with the name and arguments
 specified in the definition, and makes the exception available to all
 users of the structure.
+
+\subsubsection*{Class specifications}
+
+\ikwd{class\@\verb`class`}
+
+A class specification is composed of one or several mutually recursive
+class types, as described in section~\ref{s:classtype}.
 
 \subsubsection*{Module specifications}
 
