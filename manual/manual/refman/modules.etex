@@ -35,6 +35,7 @@ definition:
                                [ ':' module-type ] '=' module-expr
         | 'module' 'type' modtype-name '=' module-type
         | 'open' module-path
+        | 'include' module-expr
 \end{syntax}
 
 \subsection{Simple module expressions}
@@ -168,6 +169,31 @@ the following items of the structure, allowing components of the
 module denoted by @module-path@ to be referred to by their simple names
 @name@ instead of path accesses @module-path '.' name@.  The scope of
 the "open" stops at the end of the structure expression.
+
+\subsubsection*{Including the components of another structure}
+
+\ikwd{include\@\texttt{include}}
+
+The expression @'include ' module-expr@ in a structure re-exports in
+the current structure all definitions of the structure denoted by
+@module-expr@.  For instance, if the identifier "S" is bound to the
+module
+\begin{verbatim}
+        struct type t = int  let x = 2 end
+\end{verbatim}
+the module expression
+\begin{verbatim}
+        struct include S  let y = (x + 1 : t) end
+\end{verbatim}
+is equivalent to the module expression
+\begin{verbatim}
+        struct type t = int  let x = 2  let y = (x + 1 : t) end
+\end{verbatim}
+The difference between @'open'@ and @'include'@ is that @'open'@
+simply provides short names for the components of the opened
+structure, without defining any components of the current structure,
+while @'include'@ also adds definitions for the components of the
+included structure.
 
 \subsection{Functors}
 

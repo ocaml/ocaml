@@ -142,12 +142,28 @@ must agree with the representation: it must be of the same kind
 in the same order, with the same arguments. 
 \end{description}
 
-For abstract types only, the parameters of the generated type have the
-variance indicated by the constraints. In all other cases each
-parameter's variance is defined by the variances of its occurences in
-the definition, and variance constraints are only checked for
-conformance. Such variance information is used to check the validity
-of coercions (see section \ref{s:objects}).
+The type variables appearing as type parameters can optionally be
+prefixed by "+" or "-" to indicate that the type constructor is
+covariant or contravariant with respect to this parameter.  This
+variance information is used to decide subtyping relations when
+checking the validity of @">:"@ coercions (see section \ref{s:objects}).
+
+For instance, "type +'a t" declares "t" as an abstract type that is
+covariant in its parameter; this means that if the type $\tau$ is a
+subtype of the type $\sigma$, then $\tau " t"$ is a subtype of $\sigma
+" t"$.  Similarly, "type -'a t" declares that the abstract type "t" is
+contravariant in its parameter: if $\tau$ is subtype of $\sigma$, then
+$\sigma " t"$ is subtype of $\tau " t"$.  If no "+" or "-" variance
+annotation is given, the type constructor is assumed invariant in the
+corresponding parameter.  For instance, the abstract type declaration
+"type 'a t" means that $\tau " t"$ is neither a subtype nor a
+supertype of $\sigma " t"$ if $\tau$ is subtype of $\sigma$.
+
+The variance indicated by the "+" and "-" annotations on parameters
+are required only for abstract types.  For abbreviations, variant
+types or record types, the variance properties of the type constructor
+are inferred from its definition, and the variance annotations are
+only checked for conformance with the definition.
 
 \ikwd{constraint\@\texttt{constraint}}
 The construct @ 'constraint' "'" ident '=' typexpr @ allows to specify

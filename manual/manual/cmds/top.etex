@@ -145,6 +145,10 @@ with "-I" are searched after the current directory, in the order in
 which they were given on the command line, but before the standard
 library directory.
 
+If the given directory starts with "+", it is taken relative to the
+standard library directory.  For instance, "-I +labltk" adds the
+subdirectory "labltk" of the standard library to the search path.
+
 Directories can also be added to the search path once
 the toplevel is running with the "#directory" directive
 (section~\ref{s:toplevel-directives}).
@@ -191,6 +195,12 @@ and look up its capabilities in the terminal database.
 
 The following directives control the toplevel behavior, load files in
 memory, and trace program execution.
+
+{\bf Note:} all directives start with a "#" (sharp) symbol.  This "#"
+must be typed before the directive, and must not be confused with the
+"#" prompt displayed by the interactive loop.  For instance,
+typing "#quit;;" will exit the toplevel loop, but typing "quit;;"
+will result in an ``unbound value "quit"'' error.
 
 \begin{options}
 

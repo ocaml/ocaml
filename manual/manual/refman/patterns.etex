@@ -77,8 +77,12 @@ The pattern @pattern_1 "|" pattern_2@ represents the logical ``or'' of
 the two patterns @pattern_1@ and @pattern_2@. A value matches
 @pattern_1 "|" pattern_2@ either if it matches @pattern_1@ or if it
 matches @pattern_2@. The two sub-patterns @pattern_1@ and @pattern_2@
-must contain no identifiers. Hence no bindings are returned by
-matching against an ``or'' pattern.
+must bind exactly the same identifiers to values having the same types.
+The bindings performed by matching against an ``or'' pattern are
+either those performed by the matching against @pattern_1@, if it
+succeeds, or those performed by the matching against @pattern_2@, if
+it succeeds.  If both matchings succeed, it is undefined which set of
+bindings is selected.
 
 \subsubsection*{Variant patterns}
 

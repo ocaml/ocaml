@@ -143,6 +143,10 @@ standard library directory. Directories added with "-I" are searched
 after the current directory, in the order in which they were given on
 the command line, but before the standard library directory.
 
+If the given directory starts with "+", it is taken relative to the
+standard library directory.  For instance, "-I +labltk" adds the
+subdirectory "labltk" of the standard library to the search path.
+
 \item["-inline" \var{n}]
 Set aggressiveness of inlining to \var{n}, where \var{n} is a positive
 integer. Specifying "-inline 0" prevents all functions from being
@@ -267,6 +271,20 @@ have type "unit").
 \item[X/x] enable/disable all other warnings.
 \end{options}
 The default setting is "-w A" (all warnings enabled).
+
+\item["-warn-error" \var{warning-list}]
+Turn the warnings indicated in the argument \var{warning-list} into
+errors.  The compiler will stop on an error as soon as one of these
+warnings is emitted, instead of going on.  The \var{warning-list}
+is a string of one or several characters, with the same meaning as for
+the "-w" option: an uppercase character turns the corresponding
+warning into an error, a lowercase character leaves it as a warning.
+The default setting is "-warn-error a" (all warnings are not treated
+as errors).
+
+\item["-where"]
+Print the location of the standard library.
+%
 \end{options}
 
 \section{Common errors}

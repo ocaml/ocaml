@@ -27,7 +27,7 @@ specification:
           'val' value-name ':' typexpr
         | 'external' value-name ':' typexpr '=' external-declaration
         | type-definition
-        | exception-definition
+        | 'exception' constr-decl
         | class-specification
         | classtype-definition
         | 'module' module-name ':' module-type
