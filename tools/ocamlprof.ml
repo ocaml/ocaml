@@ -211,6 +211,10 @@ and rw_exp iflag sexp =
   | Pexp_construct(_, Some sarg, _) ->
     rewrite_exp iflag sarg
 
+  | Pexp_variant(_, None) -> ()
+  | Pexp_variant(_, Some sarg) ->
+    rewrite_exp iflag sarg
+
   | Pexp_record(lid_sexp_list, None) ->
     rewrite_labelexp_list iflag lid_sexp_list
   | Pexp_record(lid_sexp_list, Some sexp) ->

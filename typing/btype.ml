@@ -79,7 +79,9 @@ let rec row_more row =
 let static_row row =
   let row = row_repr row in
   row.row_closed &&
-  List.for_all (function (_,Reither _) -> false | _ -> true) row.row_fields
+  List.for_all
+    (fun (_,f) -> match row_field_repr f with Reither _ -> false | _ -> true)
+    row.row_fields
 
 let hash_variant s =
   let accu = ref 0 in

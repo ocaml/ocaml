@@ -308,6 +308,8 @@ let rec is_nonexpansive exp =
       List.for_all is_nonexpansive el
   | Texp_construct(_, el) ->
       List.for_all is_nonexpansive el
+  | Texp_variant(_, Some e) -> is_nonexpansive e
+  | Texp_variant(_, None) -> true
   | Texp_record(lbl_exp_list, opt_init_exp) ->
       List.for_all
         (fun (lbl, exp) -> lbl.lbl_mut = Immutable & is_nonexpansive exp)

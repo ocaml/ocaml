@@ -42,8 +42,10 @@ let rec add_type bv ty =
   | Ptyp_tuple tl -> List.iter (add_type bv) tl
   | Ptyp_constr(c, tl) -> add bv c; List.iter (add_type bv) tl
   | Ptyp_object fl -> List.iter (add_field_type bv) fl
-  | Ptyp_class(c, tl) -> add bv c; List.iter (add_type bv) tl
+  | Ptyp_class(c, tl, _) -> add bv c; List.iter (add_type bv) tl
   | Ptyp_alias(t, s) -> add_type bv t
+  | Ptyp_variant(fl, _, _) ->
+      List.iter (fun (_,_,stl) -> List.iter (add_type bv) stl) fl
 
 and add_field_type bv ft =
   match ft.pfield_desc with
@@ -100,6 +102,7 @@ let rec add_pattern bv pat =
   | Ppat_array pl -> List.iter (add_pattern bv) pl
   | Ppat_or(p1, p2) -> add_pattern bv p1; add_pattern bv p2
   | Ppat_constraint(p, ty) -> add_pattern bv p; add_type bv ty
+  | Ppat_variant(_, op) -> add_opt add_pattern bv op
 
 let rec add_expr bv exp =
   match exp.pexp_desc with
@@ -113,6 +116,7 @@ let rec add_expr bv exp =
   | Pexp_try(e, pel) -> add_expr bv e; add_pat_expr_list bv pel
   | Pexp_tuple el -> List.iter (add_expr bv) el
   | Pexp_construct(c, opte, _) -> add bv c; add_opt add_expr bv opte
+  | Pexp_variant(_, opte) -> add_opt add_expr bv opte
   | Pexp_record(lblel, opte) ->
       List.iter (fun (lbl, e) -> add_expr bv e) lblel;
       add_opt add_expr bv opte

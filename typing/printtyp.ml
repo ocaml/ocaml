@@ -90,6 +90,14 @@ let proxy ty =
     Tvariant row -> Btype.row_more row
   | _ -> ty
 
+let namable_row row =
+  row.row_name <> None &&
+  List.for_all
+    (fun (_,f) -> match row_field_repr f with
+      Reither(c,l,_) -> if c then l = [] else List.length l = 1
+    | _ -> true)
+    row.row_fields
+
 let rec mark_loops_rec visited ty =
   let ty = repr ty in
   let px = proxy ty in
@@ -106,16 +114,17 @@ let rec mark_loops_rec visited ty =
     | Tconstr(_, tyl, _)  ->
         List.iter (mark_loops_rec visited) tyl
     | Tvariant row	  ->
+	let row = row_repr row in
         if List.memq px !visited_objects then begin
           if not (List.memq px !aliased) then
             aliased := px :: !aliased
         end else begin
-          if not (static_row row) then begin
+          if not (static_row row) then
             visited_objects := px :: !visited_objects;
-	    iter_row (mark_loops_rec visited) row
-	  end else match row.row_name with
-	    Some(p, tyl) -> List.iter (mark_loops_rec visited) tyl
-	  | None ->
+	  match row.row_name with
+	    Some(p, tyl) when namable_row row ->
+	      List.iter (mark_loops_rec visited) tyl
+	  | _ ->
 	      iter_row (mark_loops_rec visited) row
 	end
     | Tobject (fi, nm)    ->
@@ -227,8 +236,6 @@ let rec typexp sch prio0 ty =
         end;
         path p;
         close_box()
-    | Tvariant ({row_name=Some(p,tyl)} as row) when static_row row ->
-	typexp sch prio (newty(Tconstr(p, tyl, ref Mnil)))
     | Tvariant row ->
 	let row = row_repr row in
 	let fields =
@@ -244,22 +251,50 @@ let rec typexp sch prio0 ty =
 	    | _ -> false)
 	    fields in
 	let all_present = List.length present = List.length fields in
-	open_hovbox 0;
-	print_char '[';
-	if row.row_closed && all_present then () else
-	if all_present then print_char '>' else print_char '<';
-	print_list (row_field sch) (fun () -> printf "@,|") fields;
-	if not (row.row_closed || all_present) then printf "@,| ..";
-	if present <> [] && not all_present then begin
-	  print_space ();
-	  open_hovbox 2;
-	  print_string "|>";
-	  print_list (fun (s,_) -> print_char '`'; print_string s)
-	    print_space present;
-	  close_box ()
-	end;
-	print_char ']';
-	close_box ()
+	begin match row.row_name with
+	| Some(p,tyl) when namable_row row ->
+            open_box 0;
+            begin match tyl with
+              [] -> ()
+            | [ty1] ->
+		typexp sch 3 ty1; print_space()
+            | tyl ->
+		open_box 1; print_string "("; typlist sch 0 "," tyl;
+		print_string ")"; close_box(); print_space()
+            end;
+	    if not all_present then
+	      if sch && px.level <> generic_level then print_string "_#"
+	      else print_char '#';
+            path p;
+	    if not all_present && present <> [] then begin
+	      open_box 1;
+	      print_string "[>";
+	      print_list (fun (s,_) -> print_char '`'; print_string s)
+		print_space present;
+	      print_char ']';
+	      close_box ()
+	    end;
+	    close_box ()
+	| _ ->
+	    open_hovbox 0;
+	    if not (row.row_closed && all_present) && sch &&
+	      px.level <> generic_level then print_string "_["
+	    else print_char '[';
+	    if row.row_closed && all_present then () else
+	    if all_present then print_char '>' else print_char '<';
+	    print_list (row_field sch) (fun () -> printf "@,|") fields;
+	    if not (row.row_closed || all_present) then printf "@,| ..";
+	    if present <> [] && not all_present then begin
+	      print_space ();
+	      open_hovbox 2;
+	      print_string "|>";
+	      print_list (fun (s,_) -> print_char '`'; print_string s)
+		print_space present;
+	      close_box ()
+	    end;
+	    print_char ']';
+	    close_box ()
+	end
     | Tobject (fi, nm) ->
         typobject sch ty fi nm
 (*

@@ -1269,14 +1269,11 @@ and unify_row env row1 row2 =
   let more = newty2 (min rm1.level rm2.level) Tvar
   and closed = row1.row_closed || row2.row_closed in
   let keep switch =
-    let b =
     List.for_all
       (fun (_,f1,f2) ->
 	let f1, f2 = switch f1 f2 in
 	row_field_repr f1 = Rabsent || row_field_repr f2 <> Rabsent)
-      pairs in
-    if not b then prerr_endline "Forgot abbreviation";
-    b
+      pairs
   in
   let name =
     if r1 = [] && row2.row_name <> None && keep (fun f1 f2 -> f2, f1)
@@ -1284,7 +1281,6 @@ and unify_row env row1 row2 =
     else if r2 = [] && row1.row_name <> None && keep (fun f1 f2 -> f1, f2)
     then row1.row_name else None
   in
-  if name <> None then prerr_endline "With name";
   let bound = row1.row_bound @ row2.row_bound in
   let row0 = {row_fields = []; row_more = more; row_bound = bound;
 	      row_closed = closed; row_name = name} in
