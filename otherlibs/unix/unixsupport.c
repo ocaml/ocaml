@@ -298,3 +298,16 @@ void uerror(cmdname, cmdarg)
 {
   unix_error(errno, cmdname, cmdarg);
 }
+
+value unix_freeze_buffer(buf)
+     value buf;
+{
+  if (Is_young(buf)) {
+    Push_roots(r, 1);
+    r[0] = buf;
+    minor_collection();
+    buf = r[0];
+    Pop_roots();
+  }
+  return buf;
+}

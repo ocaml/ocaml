@@ -30,6 +30,7 @@ value unix_recv(sock, buff, ofs, len, flags) /* ML */
      value sock, buff, ofs, len, flags;
 {
   int ret;
+  buff = unix_freeze_buffer(buff);
   enter_blocking_section();
   ret = recv(Int_val(sock), &Byte(buff, Long_val(ofs)), Int_val(len),
              convert_flag_list(flags, msg_flag_table));
@@ -45,6 +46,7 @@ value unix_recvfrom(sock, buff, ofs, len, flags) /* ML */
   value res;
   Push_roots(a, 1);
 
+  buff = unix_freeze_buffer(buff);
   sock_addr_len = sizeof(sock_addr);
   enter_blocking_section();
   retcode = recvfrom(Int_val(sock), &Byte(buff, Long_val(ofs)), Int_val(len),
@@ -64,6 +66,7 @@ value unix_send(sock, buff, ofs, len, flags) /* ML */
      value sock, buff, ofs, len, flags;
 {
   int ret;
+  buff = unix_freeze_buffer(buff);
   enter_blocking_section();
   ret = send(Int_val(sock), &Byte(buff, Long_val(ofs)), Int_val(len),
              convert_flag_list(flags, msg_flag_table));
@@ -77,6 +80,7 @@ value unix_sendto_native(sock, buff, ofs, len, flags, dest)
 {
   int ret;
   get_sockaddr(dest);
+  buff = unix_freeze_buffer(buff);
   enter_blocking_section();
   ret = sendto(Int_val(sock), &Byte(buff, Long_val(ofs)),
                Int_val(len), convert_flag_list(flags, msg_flag_table),

@@ -61,8 +61,12 @@ static value alloc_host_entry(entry)
 value unix_gethostbyaddr(a)   /* ML */
      value a;
 {
+  uint32 addr;
   struct hostent * entry;
-  entry = gethostbyaddr((char *) &GET_INET_ADDR(a), 4, AF_INET);
+  addr = GET_INET_ADDR(a);
+  enter_blocking_section();
+  entry = gethostbyaddr((char *) &addr, 4, AF_INET);
+  leave_blocking_section();
   if (entry == (struct hostent *) NULL) raise_not_found();
   return alloc_host_entry(entry);
 }
@@ -70,8 +74,13 @@ value unix_gethostbyaddr(a)   /* ML */
 value unix_gethostbyname(name)   /* ML */
      value name;
 {
+  char hostname[256];
   struct hostent * entry;
-  entry = gethostbyname(String_val(name));
+  strncpy(hostname, String_val(name), sizeof(hostname) - 1);
+  hostname[sizeof(hostname) - 1] = 0;
+  enter_blocking_section();
+  entry = gethostbyname(hostname);
+  leave_blocking_section();
   if (entry == (struct hostent *) NULL) raise_not_found();
   return alloc_host_entry(entry);
 }

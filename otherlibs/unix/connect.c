@@ -21,9 +21,12 @@
 value unix_connect(socket, address)   /* ML */
      value socket, address;
 {
+  int retcode;
   get_sockaddr(address);
-  if (connect(Int_val(socket), &sock_addr.s_gen, sock_addr_len) == -1)
-    uerror("connect", Nothing);
+  enter_blocking_section();
+  retcode = connect(Int_val(socket), &sock_addr.s_gen, sock_addr_len);
+  leave_blocking_section();
+  if (retcode == -1) uerror("connect", Nothing);
   return Val_unit;
 }
 
