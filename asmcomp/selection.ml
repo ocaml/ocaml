@@ -516,7 +516,16 @@ and emit_parts env exp seq =
         (Ctuple [], env)
       else begin
         let id = Ident.new "bind" in
-        (Cvar id, Tbl.add id r env)
+        if all_regs_anonymous r then
+          (Cvar id, Tbl.add id r env)
+        else begin
+          let rv = Array.new (Array.length r) Reg.dummy in
+          for i = 0 to Array.length r - 1 do
+            rv.(i) <- Reg.new r.(i).typ
+          done;
+          insert_moves r rv seq;
+          (Cvar id, Tbl.add id rv env)
+        end          
       end
 
 and emit_parts_list env exp_list seq =
