@@ -19,7 +19,9 @@
 CAMLprim value unix_listen(sock, backlog)
      value sock, backlog;
 {
-  if (listen((SOCKET) Handle_val(sock), Int_val(backlog)) == -1)
-    unix_error(WSAGetLastError(), "listen", Nothing);
+  if (listen((SOCKET) Handle_val(sock), Int_val(backlog)) == -1) {
+    win32_maperr(WSAGetLastError());
+    uerror("listen", Nothing);
+  }
   return Val_unit;
 }

@@ -71,7 +71,10 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
     enter_blocking_section();
     retcode = select(FD_SETSIZE, &read, &write, &except, tvp);
     leave_blocking_section();
-    if (retcode == -1) unix_error(WSAGetLastError(), "select", Nothing);
+    if (retcode == -1) {
+      win32_maperr(WSAGetLastError());
+      uerror("select", Nothing);
+    }
     read_list = fdset_to_fdlist(readfds, &read);
     write_list = fdset_to_fdlist(writefds, &write);
     except_list = fdset_to_fdlist(exceptfds, &except);

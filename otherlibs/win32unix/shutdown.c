@@ -24,7 +24,9 @@ CAMLprim value unix_shutdown(sock, cmd)
      value sock, cmd;
 {
   if (shutdown((SOCKET) Handle_val(sock),
-               shutdown_command_table[Int_val(cmd)]) == -1)
-    unix_error(WSAGetLastError(), "shutdown", Nothing);
+               shutdown_command_table[Int_val(cmd)]) == -1) {
+    win32_maperr(WSAGetLastError());
+    uerror("shutdown", Nothing);
+  }
   return Val_unit;
 }

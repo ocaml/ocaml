@@ -46,8 +46,10 @@ CAMLprim value unix_accept(sock)
     setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, 
                (char *) &oldvalue, oldvaluelen);
   }
-  if (snew == INVALID_SOCKET)
-    unix_error(WSAGetLastError(), "accept", Nothing);
+  if (snew == INVALID_SOCKET) {
+    win32_maperr(WSAGetLastError());
+    uerror("accept", Nothing);
+  }
   Begin_roots2 (fd, adr)
     fd = win_alloc_handle((HANDLE) snew);
     adr = alloc_sockaddr(&addr, addr_len);

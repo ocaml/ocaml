@@ -28,6 +28,9 @@ CAMLprim value unix_connect(socket, address)
   enter_blocking_section();
   retcode = connect(s, &addr.s_gen, addr_len);
   leave_blocking_section();
-  if (retcode == -1) unix_error(WSAGetLastError(), "connect", Nothing);
+  if (retcode == -1) {
+    win32_maperr(WSAGetLastError());
+    uerror("connect", Nothing);
+  }
   return Val_unit;
 }

@@ -48,6 +48,9 @@ CAMLprim value unix_socket(domain, type, proto)
     setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, 
                (char *) &oldvalue, oldvaluelen);
   }
-  if (s == INVALID_SOCKET) unix_error(WSAGetLastError(), "socket", Nothing);
+  if (s == INVALID_SOCKET) {
+    win32_maperr(WSAGetLastError());
+    uerror("socket", Nothing);
+  }
   return win_alloc_handle((HANDLE) s);
 }
