@@ -556,7 +556,8 @@ let rec transl_exp e =
       end
   | Texp_record ((lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
       transl_record lbl1.lbl_all lbl1.lbl_repres lbl_expr_list opt_init_expr
-  | Texp_record ([], _) -> fatal_error "Translcore.transl_exp: bad Texp_record"
+  | Texp_record ([], _) ->
+      fatal_error "Translcore.transl_exp: bad Texp_record"
   | Texp_field(arg, lbl) ->
       let access =
         match lbl.lbl_repres with
@@ -570,27 +571,7 @@ let rec transl_exp e =
         | Record_float -> Psetfloatfield lbl.lbl_pos in
       Lprim(access, [transl_exp arg; transl_exp newval])
   | Texp_array expr_list ->
-      let kind = array_kind e in
-      let len = List.length expr_list in
-      if len <= Config.max_young_wosize then
-        Lprim(Pmakearray kind, transl_list expr_list)
-      else begin
-        let v = Ident.create "makearray" in
-        let rec fill_fields pos = function
-          [] ->
-            Lvar v
-        | arg :: rem ->
-            Lsequence(Lprim(Parraysetu kind,
-                            [Lvar v;
-                             Lconst(Const_base(Const_int pos));
-                             transl_exp arg]),
-                      fill_fields (pos+1) rem) in
-        Llet(Strict, v,
-             Lprim(Pccall prim_makearray,
-                   [Lconst(Const_base(Const_int len));
-                    transl_exp (List.hd expr_list)]),
-             fill_fields 1 (List.tl expr_list))
-      end
+      Lprim(Pmakearray (array_kind e), transl_list expr_list)
   | Texp_ifthenelse(cond, ifso, Some ifnot) ->
       Lifthenelse(transl_exp cond,
                   event_before ifso (transl_exp ifso),
