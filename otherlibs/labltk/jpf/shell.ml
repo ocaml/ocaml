@@ -32,5 +32,5 @@ let subshell cmd =
         in 
           let answer = it() in
           close_in rc;  (* because of finalize_channel *)
-          let p, st = waitpid [] id in answer
+          let _ = waitpid [] id in answer
 

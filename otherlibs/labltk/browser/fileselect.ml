@@ -214,7 +214,7 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
       in
       let files = if files = [] then [Textvariable.get selection_var] 
                                 else files in
-      activate [Textvariable.get selection_var]
+      activate files
     end
   and flb = Button.create cfrm ~text:"Filter"
       ~command:(fun () -> configure ~filter:(Textvariable.get filter_var))

@@ -69,7 +69,7 @@ let subshell cmd =
         in 
         let answer = it [] in
         close_in rc;  (* because of finalize_channel *)
-        let p, st = waitpid ~mode:[] id in answer
+        let _ = waitpid ~mode:[] id in answer
 
 (***************************************************************** Path name *)
 
