@@ -20,7 +20,7 @@
 
 ; These constants must be kept in sync with the C code:
 
-Black equ $300
+Caml_black equ $300
 Double_array_tag equ 254
 Double_tag equ 253
 Closure_tag equ 250
@@ -203,7 +203,7 @@ initial_local_roots_     equ      $04
 ; The Alloc_small macro from memory.h
 ; Alloc_small [#],bhsize, [#],tag_col, result
 ; input: bhsize = size in bytes including header
-;        tag_col = Black + (value of the tag)
+;        tag_col = Caml_black + (value of the tag)
 ;        result = address register for the result
 ; '#' specifies a constant, (emtpy) specifies a register
 
@@ -559,7 +559,7 @@ i_42:     ; GRAB
 i_42a:    MOVE.L     extra_args_, D4              ; extra_args_ = num_args - 1
           ADDQ.L     #4, D4                       ; num_args + 2 + 1(hd)
           LSL.L      #2, D4
-          Alloc_small ,D4, #,Black+Closure_tag, accu_
+          Alloc_small ,D4, #,Caml_black+Closure_tag, accu_
           MOVE.L     env_, 4(accu_)
           LEA.L      8(accu_), A0
 i_42b:    MOVE.L     (sp_)+, (A0)+
@@ -580,7 +580,7 @@ i_43:     ; CLOSURE
 i_43a:    MOVE.L     D5, D0
           ADDQ.L     #2, D0                       ; D0 = 1 + nvars + 1(hd)
           ASL.L      #2, D0
-          Alloc_small ,D0, #,Black+Closure_tag, accu_
+          Alloc_small ,D0, #,Caml_black+Closure_tag, accu_
           MOVE.L     (pc_), D0
           ASL.L      #2, D0
           ADD.L      pc_, D0
@@ -602,7 +602,7 @@ i_44a:    MOVE.L     D4, D0
           ASL.L      #1, D0
           ADD.L      D5, D0
           ASL.L      #2, D0
-          Alloc_small ,D0, #,Black+Closure_tag, accu_
+          Alloc_small ,D0, #,Caml_black+Closure_tag, accu_
           MOVEA.L    accu_, A0
           MOVE.L     D4, D0
           ASL.L      #3, D0
@@ -624,7 +624,7 @@ i_44c:    SUBQ.L     #1, D0
 i_44d:    MOVE.L     D0, D1
           ASL.L      #8, D1
           ASL.L      #3, D1
-          ADD.W      #Black+Infix_tag, D1
+          ADD.W      #Caml_black+Infix_tag, D1
           MOVE.L     D1, (A0)+
           MOVE.L     A0, -(sp_)
           MOVE.L     D0, D1
@@ -737,7 +737,7 @@ i_59:     ; ATOM
 i_62:     ; MAKEBLOCK
           MOVE.L     (pc_)+, D4         ; D4 = wosize
           MOVE.L     (pc_)+, D1         ; D1 = tag
-          ORI.W      #Black, D1         ; D1 = tag + Black
+          ORI.W      #Caml_black, D1    ; D1 = tag + Caml_black
           MOVE.L     D4, D0
           ADDQ.L     #1, D0             ; D0 = whsize
           LSL.L      #2, D0             ; D0 = bhsize
@@ -808,7 +808,7 @@ i_71:     ; GETFIELD
           Next
 
 i_72:     ; GETFLOATFIELD
-          Alloc_small #,$C, #,Black+Double_tag, A0
+          Alloc_small #,$C, #,Caml_black+Double_tag, A0
           MOVE.L     (pc_)+, D0
           ASL.L      #3, D0
           MOVE.L     (accu_, D0), (A0)
@@ -1012,34 +1012,26 @@ i_92:     ; CHECK_SIGNALS
           BNE.S      process_signals
           Next
 process_signals:
-          CLR.L      (something_to_do).L
-          TST.L      (force_major_slice).L
-          BEQ.S      i_92a
-          Setup_for_gc
+          ASL.L      extra_args_               ; begin Setup_for_event
+          ADDQ.L     #1, extra_args_
+          MOVE.L     extra_args_, -(sp_)
+          MOVE.L     env_, -(sp_)
+          MOVE.L     pc_, -(sp_)
+          MOVE.L     #Val_unit, -(sp_)
+          MOVE.L     #Val_unit, -(sp_)
+          MOVE.L     accu_, -(sp_)
+          MOVE.L     sp_, (extern_sp).L        ; end Setup_for_event
           Call_setup
-          JSR        (minor_collection).L
+          JSR        (process_event).L
           Call_restore
-          Restore_after_gc
-i_92a:    MOVE.L     (pending_signal).L, D5
-          CLR.L      (pending_signal).L
-          TST.L      D5
-          BEQ.S      i_92b
-          CLR.L      -(A7)
-          MOVE.L     D5, -(A7)
-          Setup_for_gc
-          Call_setup
-          JSR        (execute_signal).L
-          Call_restore
-          Restore_after_gc
-          ADDQ.L     #8, A7
-i_92b:    TST.L      (rotatecursor_flag).L
-          BEQ.S      i_92c
-          CLR.L      -(A7)
-          Call_setup
-          JSR        (rotatecursor_action).L
-          Call_restore
-          ADDQ.L     #4, A7
-i_92c:    Next
+          MOVE.L     (extern_sp).L, sp_        ; begin Restore_after_event
+          MOVE.L     (sp_)+, accu_
+          ADDQ.L     #8, sp_
+          MOVE.L     (sp_)+, pc_
+          MOVE.L     (sp_)+, env_
+          MOVE.L     (sp_)+, extra_args_
+          ASR.L      #1, extra_args_           ; end Restore_after_event
+          Next
 
  macro
    C_CALL &n
