@@ -270,8 +270,8 @@ CAMLprim value gc_get(value v)
   CAMLlocal1 (res);
 
   res = alloc_tuple (6);
-  Store_field (res, 0, Wsize_bsize (Val_long (minor_heap_size)));       /* s */
-  Store_field (res, 1, Wsize_bsize (Val_long (major_heap_increment)));  /* i */
+  Store_field (res, 0, Val_long (Wsize_bsize (minor_heap_size)));       /* s */
+  Store_field (res, 1, Val_long (Wsize_bsize (major_heap_increment)));  /* i */
   Store_field (res, 2, Val_long (percent_free));                        /* o */
   Store_field (res, 3, Val_long (verb_gc));                             /* v */
   Store_field (res, 4, Val_long (percent_max));                         /* O */
