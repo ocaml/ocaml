@@ -88,7 +88,8 @@ Other libraries:
 - System threads: several GC / reentrancy bugs fixed in buffered I/O
   and Unix I/O; revised Thread.join implementation for strict POSIX
   conformance; exported Thread.yield.
-- Graphics: added support for double buffering; added rmoveto, rlineto.
+- Graphics: added support for double buffering; added, current_x, current_y,
+  rmoveto, rlineto, and draw_rect.
 - Num: fixed bug in Num.float_of_num.
 - Str: worked around potential symbol conflicts with C standard library.
 - Dbm: fixed bug with Dbm.iter on empty database.
