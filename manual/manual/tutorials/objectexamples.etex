@@ -12,9 +12,9 @@ Objective Caml.
 \subsection*{Classes and objects}
 
 The class "point" has one instance variable "x" and two methods
-"get_x" and "move". The initial value of the instance variable is
-"0".  The variable "x" is
-declared mutable, so the method "move" can change its value.
+"get_x" and "move". The initial value of the instance variable is "0".
+The variable "x" is declared mutable, so the method "move" can change
+its value.
 \begin{caml_example} 
 class point =
   object 
@@ -28,10 +28,10 @@ We now create a new point "p".
 \begin{caml_example}
 let p = new point;;
 \end{caml_example}
-Note that the type of "p" is "point". This is an
-abbreviation automatically defined by the class definition above. It
-stands for the object type "<get_x : int; move : int -> unit>",
-listing the methods of class "point" along with their types.
+Note that the type of "p" is "point". This is an abbreviation
+automatically defined by the class definition above. It stands for the
+object type "<get_x : int; move : int -> unit>", listing the methods
+of class "point" along with their types.
 
 Let us apply some methods to "p":
 \begin{caml_example}
@@ -40,7 +40,8 @@ p#move 3;;
 p#get_x;;
 \end{caml_example}
 
-The class "point" can also be abstracted over the initial values of points. 
+The class "point" can also be abstracted over the initial values of
+points.
 \begin{caml_example} 
 class point = fun x_init -> 
   object 
@@ -49,7 +50,8 @@ class point = fun x_init ->
     method move d = x <- x + d
   end;;
 \end{caml_example}
-As for declaration of functions, the above definition can be abbreviated as:
+As for declaration of functions, the above definition can be
+abbreviated as:
 \begin{caml_example}
 class point x_init =
   object 
@@ -58,15 +60,15 @@ class point x_init =
     method move d = x <- x + d
   end;;
 \end{caml_example}
-An instance of the class point is now a function that expects an initial
-parameter to create a point object:
+An instance of the class point is now a function that expects an
+initial parameter to create a point object:
 \begin{caml_example}
 new point;;
 let p = new point 7;;
 \end{caml_example}
 The parameter "x_init" is, of course, visible in the whole body of the
-definition, including methods. For instance, the method "get_offset" in the
-class below returns the position of the object to the origin.
+definition, including methods. For instance, the method "get_offset"
+in the class below returns the position of the object to the origin.
 \begin{caml_example}
 class point x_init =
   object 
@@ -87,9 +89,9 @@ class point x_init =
 %    method move d = x <- x + d
 %  end;;
 %\end{caml_example}
-Expressions can be evaluated and bound before defining the object body of
-the class. This is useful to enforce invariants. For instance, 
-points to be automatically adjusted to grid as follows:
+Expressions can be evaluated and bound before defining the object body
+of the class. This is useful to enforce invariants. For instance,
+points can be automatically adjusted to grid as follows:
 \begin{caml_example}
 class adjusted_point x_init =
   let origin = (x_init / 10) * 10 in
@@ -100,9 +102,10 @@ class adjusted_point x_init =
     method move d = x <- x + d
   end;;
 \end{caml_example}
-One could also raise an exception if the "x_init" coordinate is not on the
-grid.  In fact, the same effect could here be obtained by calling the
-definition of class "point" with the value of the "origin". 
+(One could also raise an exception if the "x_init" coordinate is not
+on the grid.) In fact, the same effect could here be obtained by
+calling the definition of class "point" with the value of the
+"origin".
 \begin{caml_example}
 class adjusted_point x_init =  point ((x_init / 10) * 10);;
 \end{caml_example}
@@ -115,16 +118,14 @@ However, the former pattern is generally more appropriate, since
 the initialization code is part of the definition of the class and will
 remain in subclasses.
 
-This ability provides class constructors that can be found in other
-languages. Several constructors can be defined this way to build objects of
-the same class but with different initialization values.
-
+This ability provides class constructors as can be found in other
+languages. Several constructors can be defined this way to build
+objects of the same class but with different initialization values.
 
 \subsection*{Reference to self}
 
-A method can also send messages to the object that invoked the method. 
-For that, self must be explicitly bound, 
-here to the variable "s".
+A method can also send messages to self (that is, the current object).
+For that, self must be explicitly bound, here to the variable "s".
 \begin{caml_example}
 class printable_point x_init =
   object (s)
@@ -136,18 +137,17 @@ class printable_point x_init =
 let p = new printable_point 7;;
 p#print;;
 \end{caml_example}
-Dynamically, the variable "s" is bound at the invocation of a method. In
-particular, when 
-the class "printable_point" will be inherited, the variable "s" will be
-correctly bound to the object of the subclass.
+Dynamically, the variable "s" is bound at the invocation of a method.
+In particular, when the class "printable_point" will be inherited, the
+variable "s" will be correctly bound to the object of the subclass.
 
 \subsection*{Initializers}
 
-Let-bindings within class definitions are evaluated before the
-object is constructed. It is also possible to evaluate an expression
-immediately after the object has been built. Such code is written as an
-anonymous hidden method called an initializer. 
-
+Let-bindings within class definitions are evaluated before the object
+is constructed. It is also possible to evaluate an expression
+immediately after the object has been built. Such code is written as
+an anonymous hidden method called an initializer. Therefore, is can
+access self and the instance variables.
 \begin{caml_example}
 class printable_point x_init =
   let origin = (x_init / 10) * 10 in
@@ -158,15 +158,36 @@ class printable_point x_init =
     method print = print_int s#get_x
     initializer print_string "new point at "; s#print; print_newline()
   end;;
-let p = new printable_point 7;;
+let p = new printable_point 17;;
 \end{caml_example}
 
+\subsection*{Virtual methods}
+
+It is possible to declare a method without actually defining it, using
+the keyword "virtual".  This method will be provided latter in
+subclasses. A class containing virtual methods must be flagged
+virtual, and cannot be instantiated (that is, no object of this class
+can be created). It still defines abbreviations.
+\begin{caml_example}
+class virtual abstract_point x_init =
+  object (self)
+    val mutable x = x_init
+    method virtual get_x : int
+    method get_offset = self#get_x - x_init
+    method virtual move : int -> unit
+  end;;
+class point x_init =
+  object
+    inherit abstract_point x_init
+    method get_x = x
+    method move d = x <- x + d 
+  end;;
+\end{caml_example}
 
 \subsection*{Private methods}
 
-Private methods are methods that do not appear in object
-interfaces. They can only be invoked from other methods of the same
-object.
+Private methods are methods that do not appear in object interfaces.
+They can only be invoked from other methods of the same object.
 \begin{caml_example} 
 class restricted_point x_init =
   object (self)
@@ -182,12 +203,15 @@ p#bump;;
 Private methods are inherited (they will still be visible in the subclass).
 They can be hidden by signature matching, as described below.
 
+%XXX Parler de private virtual ?
+
 \subsection*{Class interfaces}
 
-Class interfaces are inferred from class definitions. 
-They may also be defined directly and used to restrict the
-type of a class. As class declarations, they also to define a new type
-constructor. 
+%XXX Differencier class type et interface de classe
+
+Class interfaces are inferred from class definitions.  They may also
+be defined directly and used to restrict the type of a class. As class
+declarations, they also define a new type constructor.
 \begin{caml_example}
 class type restricted_point_type = 
   object 
@@ -196,6 +220,11 @@ class type restricted_point_type =
     method private move : int -> unit
     method bump : unit
 end;;
+fun (x : restrict_point_type) -> x;;
+\end{caml_example}
+These class interfaces can for instance be used to constrain the type
+of a class:
+\begin{caml_example}
 class restricted_point' = (restricted_point : int -> restricted_point_type);;
 class restricted_point' x = (restricted_point x : restricted_point_type);;
 \end{caml_example}
@@ -215,8 +244,9 @@ module Point : POINT = struct
   class restricted_point' = restricted_point
 end;;
 \end{caml_example}
-Instance variables and private methods can be hidden by signature
-matching, as shown below. However, public methods cannot be hidden.
+Instance variables and concrete private methods can be hidden by
+signature matching, as shown below. However, public methods and
+virtual methods cannot be hidden.
 \begin{caml_example}
 module type ABSPOINT = sig 
   class restricted_point' : int -> 
@@ -228,15 +258,12 @@ end;;
 module Abspoint : ABSPOINT = Point;;
 \end{caml_example}
 
-
-
 \subsection*{Inheritance}
 
-We illustrate inheritance by  defining a class of colored points that
-inherits from the class of points. 
-This class has all instance variables and all
-methods of "point", plus a  new instance variable "c" and a new method
-"color".
+We illustrate inheritance by defining a class of colored points that
+inherits from the class of points.  This class has all instance
+variables and all methods of class "point", plus a new instance
+variable "c" and a new method "color".
 \begin{caml_example}
 class colored_point x (c : string) =
   object 
@@ -247,13 +274,11 @@ class colored_point x (c : string) =
 let p' = new colored_point 5 "red";;
 p'#get_x, p'#color;;
 \end{caml_example}
-
-A point and a colored point have incompatible types, since a point has no
-method "color". However, 
-the function "get_x" below is a generic function applying method
-"get_x" to any object "p" that has this method (and
-possibly some others, which are represented by an ellipsis in the
-type). Thus, it applies to both points and colored points. 
+A point and a colored point have incompatible types, since a point has
+no method "color". However, the function "get_x" below is a generic
+function applying method "get_x" to any object "p" that has this
+method (and possibly some others, which are represented by an ellipsis
+in the type). Thus, it applies to both points and colored points.
 \begin{caml_example}
 let get_succ_x p = p#get_x + 1;;
 get_succ_x p + get_succ_x p';;
@@ -264,331 +289,39 @@ let set_x p = p#set_x;;
 let incr p = set_x p (get_succ_x p);;
 \end{caml_example}
 
-
 \subsection*{Multiple inheritance}
 
 Multiple inheritance is allowed. Only the last definition of a method
-(or  of an instance variable) is kept.
-A redefinition of method in a subclass that were visible in the parent class
-overrides the definition in the parent class. 
-Previous definitions of a method can be reused by binding the
-related ancestor. Below, "super" is bound to the ancestor
-"printable_point". The name "super" is not actually a variable and
-can only be used to select a method as in "super#print".
+is kept: the redefinition in a subclass of a method that was visible in
+the parent class overrides the definition in the parent class.
+Previous definitions of a method can be reused by binding the related
+ancestor. Below, "super" is bound to the ancestor "printable_point".
+The name "super" is not actually a variable and can only be used to
+select a method as in "super#print".
 \begin{caml_example}
 class printable_colored_point y c = 
-  object (self )
-  inherit colored_point y c
-  inherit printable_point y as super
-  method print =
-    print_string "(";
-    super#print;
-    print_string ", ";
-    print_string (self#color);
-    print_string ")"
-end;;
-let p' = new printable_colored_point 7 "red";;
+  object (self)
+    val c = c
+    method color = c
+    inherit printable_point y as super
+    method print =
+      print_string "(";
+      super#print;
+      print_string ", ";
+      print_string (self#color);
+      print_string ")"
+  end;;
+let p' = new printable_colored_point 17 "red";;
 p'#print;;
 \end{caml_example}
-
-A private method has been hidden in the parent class is no more visible, and
-is thus not overriden. This also applies to initializers which are treated
-as anonymous hidden private methods.  Thus, all initializers along the class
-hierachy are evaluated. The initializers of the parent class if of course
-evaluated first.
-
-
-XXX explain binary methods first ?
-
-\subsection*{Virtual methods}
-
-The class "comparable" below is a template for classes with a binary
-method "leq" of type "'a -> bool" where the type variable
-"'a" is bound to the type of self. Since this class has a method declared
-but not defined, it must be flagged virtual and cannot be instantiated
-(that is, no object of this class can be created). It still
-defines abbreviations. In particular,
-"#comparable" expands to "< leq : 'a -> bool; .. > as 'a".
-We see here that the binder "as" also allows to write recursive
-types.
-\begin{caml_example}
-class virtual comparable = 
-  object (_ : 'a)
-    method virtual leq : 'a -> bool
-  end;;
-\end{caml_example}
-
-We then define a subclass of "comparable"  that wraps integers as
-comparable objects. There is a type constraint on the class parameter "x"
-as the primitive "<=" is a polymorphic comparison function in
-Objective Caml.  The "inherit" clause ensures that the type of objects
-of this class is an instance of "#comparable".
-\begin{caml_example}
-class int_comparable (x : int) =
-  object
-    inherit comparable
-    val mutable x = x
-    method x = x
-    method leq p = x <= p#x
-  end;;
-\end{caml_example}
-
-% pas expliqué: la mutabilite peut être cachée
-
-Objects of class "int_comparable2" below can also modify the integer
-they hold. Note that the type "int_comparable2" is not a subtype of type
-"int_comparable", as the self type appears in contravariant position
-in the type of method "leq".
-\begin{caml_example}
-class int_comparable2 x =
-  object   
-    inherit int_comparable x
-    method set_x y = x <- y
-  end;;
-\end{caml_example}
-
-The function "min" will return the minimum of any two objects
-whose type unifies with "#comparable". The type of "min" is
-not the same as "#comparable -> #comparable -> #comparable", as
-the abbreviation "#comparable" hides a type variable (an
-ellipsis). Each occurrence of this abbreviation generates a new
-variable.
-\begin{caml_example}
-let min (x : #comparable) y =
-  if x#leq y then x else y;;
-\end{caml_example}
-This function can be applied to objects of type "int_comparable"
-or "int_comparable2".
-\begin{caml_example}
-(min (new int_comparable  7) (new int_comparable 11))#x;;
-(min (new int_comparable2 5) (new int_comparable2 3))#x;;
-\end{caml_example}
-
-
-\subsection*{Using coercions}
-
-Subtyping is never implicit.  There are, however, two ways to perform
-subtyping.  The most general construction is fully explicit: both the domain
-and the codomain of the type coercion must be given.
-
-We have seen that points and colored points have incompatible types.
-For instance, they cannot be mixed in the same list. However, a
-colored point can be coerced to a point, hiding its "color" method:
-\begin{caml_example}
-let colored_point_to_point cp = (cp : colored_point :> point);;
-let p = new point 3 and q = new colored_point 4 "blue";;
-let l = [p; (colored_point_to_point q)];;
-\end{caml_example}
-An object of type "t" can be seen as an object of type "t'" 
-only if "t" is a subtype of "t'". For instance, a point cannot be
-seen as a colored point. 
-\begin{caml_example}
-(p : point :> colored_point);;
-\end{caml_example}
-Indeed, backward coercions are unsafe, and should be combined with a type case,
-possibly raising a runtime error.  However, there is not such operation
-available in the language. 
-% XXX A-t-on besoin de le dire ?
-
-Be aware that subtyping and inheritance are not related.  Inheritance is a
-syntactic relation between classes while subtyping is a semantic relation
-between types.  For instance, the class of colored points could have been
-defined directly, without inheriting from the class of points; the type of
-colored points would remain unchanged and thus still be a subtype of
-points. Conversely, the class "int_comparable" inherits from class
-"comparable", but type "int_comparable" is not a subtype of "comparable".
-\begin{caml_example}
-function x -> (x : int_comparable :> comparable);;
-\end{caml_example}
-% XXX the message above is too verbose ...
-Indeed, an object "p" of class "int_comparable" has a method "leq" that expects
-an argument of type "int_comparable" since it accesses its "x" method. 
-Considering "p" of type "comparable" would allow to call method "leq" on "p"
-with an argument that does not have a method "x", which would be an error.
-
-The domain of a coercion can usually be omitted. For instance, one can define:
-\begin{caml_example}
-let to_point cp = (cp :> point);;
-\end{caml_example}
-In this case, the function "colored_point_to_point" is an instance of the 
-function "to_point". This is not always true, however. The fully
-explicit coercion  is more precise and is sometimes  unavoidable. 
-Here is an example:
-\begin{caml_example}
-class virtual c  = object method virtual m : c end;;
-class c'  =
-  object (self)
-    inherit c 
-    method m = (self :> c)
-    method m' = 1
-end;;
-\end{caml_example}
-The  type of the coercion to type "c" can be seen here:
-\begin{caml_example}
-function x -> (x :> c);;
-\end{caml_example}
-% Note that this function does not have type "< m : c; .. > -> c" as may
-% be expected.
-% XXX Detailler... : pas de meilleur choix; pourquoi ce choix.
-% Actually, both "< m : 'a; .. > as 'a" and "< m : c; .. >"
-% are subtypes of type "c".
-% This produces the type contradiction for type "c'".  
-As class "c'"
-inherits from class "c", its method "m" must have type "c". On the
-other hand, in expression "(self :> c)"  the type of "self"
-and the domain of the coercion above must be unified. 
-That is, the type of the method "m" in "self" (i.e. "c") is
-also the type of "self". So, the type of "self" is "c". 
-This is a contradiction, as the type of "self" has a
-method "m'", whereas type "c" does not.
-
-The desired coercion of type "<m : c;..> -> c" can be obtained by using a fully
-explicit coercion:
-\begin{caml_example}
-function x -> (x : #c :> c);;
-\end{caml_example}
-Thus one can define class c' as follows:
-\begin{caml_example}
-class c'  =
-  object (self)
-    inherit c 
-    method m = (self : #c :> c)
-    method m' = 1
-  end;;
-\end{caml_example}
-An alternative is to define class "c" as follows (of course
-this definition is not equivalent to the previous one):
-\begin{caml_example}
-class virtual c = object (_ : 'a) method virtual m : 'a end;;
-\end{caml_example}
-Then, a coercion operator is not even required.
-\begin{caml_example}
-class c' = object (self) inherit c  method m = self method m' = 1 end;;
-\end{caml_example}
-Here, the simple coercion operator "(e :> c)" can be used to
-coerce an object expression "e" from type "c'" to type "c". 
-Semi implicit coercions are actually defined so
-as to work correctly with classes returning "self". 
-% without coercion.
-\begin{caml_example}
-(new c' :> c);;
-\end{caml_example}
-
-XXX expliquer les classes closes
-
-Another common problem may occur when one tries to define a coercion to a
-class "c" inside the definition of class "c". The problem is due to the type
-abbreviation not being completely defined yet, and so its subtypes are not
-clearly known.  Then, a coercion "(_ : #c :> c)" is taken to be 
-the identity function, as in
-\begin{caml_example}
-function x -> (x :> 'a);;
-\end{caml_example}
-As a consequence, if the coercion is applied to "self", as in the following example,
-the type of "self" is unified with the closed type "c". 
-This constrains the class to be closed and is thus rejected:
-\begin{caml_example}
-class c = object (self) method m = (self : #c :> c) end;;
-\end{caml_example}
-This problem can sometimes be avoided by first defining the abbreviation, 
-using a virtual class:
-\begin{caml_example}
-class virtual c0 = object method virtual m : c0 end;;
-class c = object (self) method m = (self : #c0 :> c0) end;;
-\end{caml_example}
-The class "c" may be also declared to inherit from the virtual class
-"c0",  so as to simultaneously enforce all methods of "c" to have the same
-type as the methods of "c0".
-\begin{caml_example}
-class c = object (self) inherit c0 method m = (self : #c0 :> c0) end;;
-\end{caml_example}
-One could think of defining the type abbreviation directly:
-\begin{caml_example}
-type c1 = <m : c1>;;
-\end{caml_example}
-However, the abbreviation "#c1" cannot be defined this way (the
-abbreviation "#c0" is defined from the class "c0", not from the type
-"c0"), and should be expanded:
-\begin{caml_example}
-class c = object (self)  method m = (self : <m : c1; ..> as 'a :> c1) end;;
-\end{caml_example}
-
-\subsection*{Functional objects}
-
-Instance variables do not need to be mutable. 
-It is possible to write a version of class "point" without assignments
-on the instance variables. The construct "{< ... >}" returns a copy of
-``self'' (that is, the current object), possibly changing the value of
-some instance variables.
-\begin{caml_example}
-class functional_point y =
-  object 
-    val x = y
-    method get_x = x
-    method move d = {< x = x + d >}
-  end;;
-let p = new functional_point 7;;
-p#get_x;;
-(p#move 3)#get_x;;
-p#get_x;;
-\end{caml_example}
-Note that the type abbreviation "functional_point" is recursive, which can
-be seen in the class type of "functional_point": the type of self to "'a"
-and "'a" appears inside the type of the "move" method.
-
-Note that the above definition of "functional_point" is not equivalent
-with the folllowing: 
-\begin{caml_example}
-class bad_functional_point y =
-  object 
-    val x = y
-    method get_x = x
-    method move d = new functional_point (x+d)
-  end;;
-let p = new functional_point 7;;
-p#get_x;;
-(p#move 3)#get_x;;
-p#get_x;;
-\end{caml_example}
-While objects of either class will behave the same, objects of their
-subclasses will be different. In a subclass of later, the move method will
-keep returning an object of the parent class.  On the contrary, in a
-subclass of the former, the move method will return an object of the
-subclass.
-
-
-\subsection*{Cloning objects}
-
-Objects can also be clone, whether they are functional or imperative. 
-The library function "Oo.copy" makes a shallow copy of an object. Its type is
-"< .. > as 'a -> 'a" (which is parsed as "(< .. > as 'a) -> 'a"). 
-The keyword "as" in that type 
-binds the type variable "'a" to the object type "< .. >".
-Therefore, "Oo.copy"  takes an object with any methods (represented by
-the ellipsis), and returns an object of the same type. The type of
-"Oo.copy" is different from type "< .. > -> < .. >" as each ellipsis
-represents a different set of methods. Ellipsis actually behaves as a
-type variable.
-\begin{caml_example}
-let p = new point 5;;
-let q = Oo.copy p;;
-q#move 7; (p#get_x, q#get_x);;
-\end{caml_example}
-
-Objects can be compared using the generic comparison functions ("=",
-"<", ...).  Two objects are equal if and only if they are physically
-equal. In particular, an object and its copy are not equal.
-\begin{caml_example}
-let q = Oo.copy p;;
-p = q, p = p;;
-\end{caml_example}
-In fact, "Oo.copy p" will behave as "p#copy" assuming that a public method
-"copy" with body "{< >}" has been defined in the class of "p". 
-
+A private method that has been hidden in the parent class is no more
+visible, and is thus not overriden. This also applies to initializers:
+all initializers along the class hierachy are evaluated, in the order
+they are introduced.
 
 \subsection*{Parameterized classes}
 
-Reference cells can also be implemented as objects. 
+Reference cells can also be implemented as objects.
 The naive definition fails to typecheck:
 \begin{caml_example}
 class ref x_init =
@@ -598,10 +331,11 @@ class ref x_init =
     method set y = x <- y
   end;;
 \end{caml_example}
-The reason  is that at least one
-of the methods has a polymorphic type (here, the type of the value
-stored in the reference cell), thus the class should be parametric.  A
-monomorphic instance of the class could be defined by:
+The reason is that at least one of the methods has a polymorphic type
+(here, the type of the value stored in the reference cell), thus the
+class should be parametric, or the method type should be constrained
+to a monomorphic type.  A monomorphic instance of the class could
+be defined by:
 \begin{caml_example}
 class ref (x_init:int) =
   object 
@@ -610,10 +344,10 @@ class ref (x_init:int) =
     method set y = x <- y
   end;;
 \end{caml_example}
-A class for polymorphic references must  explicitly list the
-type parameters in its declaration. Class type parameters are always listed
-between "[" and "]". The type parameters must also be
-bound somewhere in the class body by a type constraint. 
+A class for polymorphic references must explicitly list the type
+parameters in its declaration. Class type parameters are always listed
+between "[" and "]". The type parameters must also be bound somewhere
+in the class body by a type constraint.
 \begin{caml_example}
 class ['a] ref x_init = 
   object 
@@ -634,7 +368,6 @@ class ['a] ref (x_init:'a) =
     method set y = x <- y
   end;;
 \end{caml_example}
-
 Let us consider a more realistic example.  We put an additional type
 constraint in method "move", since no free variables must remain uncaptured
 by a type parameter.
@@ -647,7 +380,6 @@ class ['a] circle (c : 'a) =
     method move = (center#move : int -> unit)
   end;;
 \end{caml_example}
-
 An alternate definition of "circle", using a "constraint" clause in
 the class definition, is shown below. The type "#point" used below in
 the "constraint" clause is an abbreviation produced by the definition
@@ -667,11 +399,10 @@ class ['a] circle (c : 'a) =
     method move = center#move
   end;;
 \end{caml_example}
-
 The class "colored_circle" is a specialized version of class
 "circle" which requires the type of the center to unify with
 "#colored_point", and adds a method "color". Note that when specializing a
-parameterized class, the instance  of type parameter must always be
+parameterized class, the instance of type parameter must always be
 explicitly given. It is again written inside "[" and "]". 
 \begin{caml_example}
 class ['a] colored_circle c =
@@ -682,7 +413,216 @@ class ['a] colored_circle c =
   end;;
 \end{caml_example}
 
+\subsection*{Using coercions}
 
+Subtyping is never implicit.  There are, however, two ways to perform
+subtyping.  The most general construction is fully explicit: both the
+domain and the codomain of the type coercion must be given.
+
+We have seen that points and colored points have incompatible types.
+For instance, they cannot be mixed in the same list. However, a
+colored point can be coerced to a point, hiding its "color" method:
+\begin{caml_example}
+let colored_point_to_point cp = (cp : colored_point :> point);;
+let p = new point 3 and q = new colored_point 4 "blue";;
+let l = [p; (colored_point_to_point q)];;
+\end{caml_example}
+An object of type "t" can be seen as an object of type "t'" 
+only if "t" is a subtype of "t'". For instance, a point cannot be
+seen as a colored point. 
+\begin{caml_example}
+(p : point :> colored_point);;
+\end{caml_example}
+Indeed, backward coercions are unsafe, and should be combined with a type case,
+possibly raising a runtime error.  However, there is not such operation
+available in the language. 
+
+Be aware that subtyping and inheritance are not related.  Inheritance is a
+syntactic relation between classes while subtyping is a semantic relation
+between types.  For instance, the class of colored points could have been
+defined directly, without inheriting from the class of points; the type of
+colored points would remain unchanged and thus still be a subtype of
+points. Conversely, the class "int_comparable" inherits from class
+"comparable", but type "int_comparable" is not a subtype of "comparable".
+\begin{caml_example}
+function x -> (x : int_comparable :> comparable);;
+\end{caml_example}
+
+The domain of a coercion can usually be omitted. For instance, one can
+define:
+\begin{caml_example}
+let to_point cp = (cp :> point);;
+\end{caml_example}
+In this case, the function "colored_point_to_point" is an instance of the 
+function "to_point". This is not always true, however. The fully
+explicit coercion  is more precise and is sometimes  unavoidable. 
+Here is an example:
+\begin{caml_example}
+class virtual c  = object method virtual m : c end;;
+class c'  =
+  object (self)
+    inherit c 
+    method m = (self :> c)
+    method m' = 1
+end;;
+\end{caml_example}
+
+The  type of the coercion to type "c" can be seen here:
+\begin{caml_example}
+function x -> (x :> c);;
+\end{caml_example}
+As class "c'"
+inherits from class "c", its method "m" must have type "c". On the
+other hand, in expression "(self :> c)"  the type of "self"
+and the domain of the coercion above must be unified. 
+That is, the type of the method "m" in "self" (i.e. "c") is
+also the type of "self". So, the type of "self" is "c". 
+This is a contradiction, as the type of "self" has a
+method "m'", whereas type "c" does not.
+
+The desired coercion of type "<m : c;..> -> c" can be obtained by
+using a fully explicit coercion:
+\begin{caml_example}
+function x -> (x : #c :> c);;
+\end{caml_example}
+Thus one can define class c' as follows:
+\begin{caml_example}
+class c'  =
+  object (self)
+    inherit c 
+    method m = (self : #c :> c)
+    method m' = 1
+  end;;
+\end{caml_example}
+An alternative is to define class "c" this way (of course
+this definition is not equivalent to the previous one):
+\begin{caml_example}
+class virtual c = object (_ : 'a) method virtual m : 'a end;;
+\end{caml_example}
+Then, a coercion operator is not even required.
+\begin{caml_example}
+class c' = object (self) inherit c  method m = self method m' = 1 end;;
+\end{caml_example}
+Here, the simple coercion operator "(e :> c)" can be used to
+coerce an object expression "e" from type "c'" to type "c". 
+Semi-implicit coercions are actually defined so
+as to work correctly with classes returning "self". 
+% without coercion.
+\begin{caml_example}
+(new c' :> c);;
+\end{caml_example}
+
+Another common problem may occur when one tries to define a coercion to a
+class "c" inside the definition of class "c". The problem is due to the type
+abbreviation not being completely defined yet, and so its subtypes are not
+clearly known.  Then, a coercion "(_ : #c :> c)" is taken to be 
+the identity function, as in
+\begin{caml_example}
+function x -> (x :> 'a);;
+\end{caml_example}
+%XXX Il faudrait aussi definir "closed object type"
+As a consequence, if the coercion is applied to "self", as in the
+following example, the type of "self" is unified with the closed type
+"c".  This would constrains the type of self be closed and is thus
+rejected. Indeed, the type of self cannot be closed: this would
+prevent a further extension of the class. Therefore, a type error is
+generated when the unification of this type with another type would
+result in a closed object type.
+\begin{caml_example}
+class c = object (self) method m = (self : #c :> c) end;;
+\end{caml_example}
+This problem can sometimes be avoided by first defining the abbreviation, 
+using a class type:
+\begin{caml_example}
+class type c0 = object method m : c0 end;;
+class c : c0 = object (self) method m = (self : #c0 :> c0) end;;
+\end{caml_example}
+It is also possible to use a virtual class. Inheriting from this class
+simultaneously allows to enforce all methods of "c" to have the same
+type as the methods of "c0".
+\begin{caml_example}
+class virtual c0 = object method virtual m : c0 end;;
+class c = object (self) inherit c0 method m = (self : #c0 :> c0) end;;
+\end{caml_example}
+One could think of defining the type abbreviation directly:
+\begin{caml_example}
+type c1 = <m : c1>;;
+\end{caml_example}
+However, the abbreviation "#c1" cannot be defined this way (the
+abbreviation "#c0" is defined from the class "c0", not from the type
+"c0"), and should be expanded:
+\begin{caml_example}
+class c = object (self)  method m = (self : <m : c1; ..> as 'a :> c1) end;;
+\end{caml_example}
+
+\subsection*{Functional objects}
+
+It is possible to write a version of class "point" without assignments
+on the instance variables. The construct "{< ... >}" returns a copy of
+``self'' (that is, the current object), possibly changing the value of
+some instance variables.
+\begin{caml_example}
+class functional_point y =
+  object 
+    val x = y
+    method get_x = x
+    method move d = {< x = x + d >}
+  end;;
+let p = new functional_point 7;;
+p#get_x;;
+(p#move 3)#get_x;;
+p#get_x;;
+\end{caml_example}
+Note that the type abbreviation "functional_point" is recursive, which can
+be seen in the class type of "functional_point": the type of self to "'a"
+and "'a" appears inside the type of the "move" method.
+
+The above definition of "functional_point" is not equivalent
+with the following: 
+\begin{caml_example}
+class bad_functional_point y =
+  object 
+    val x = y
+    method get_x = x
+    method move d = new functional_point (x+d)
+  end;;
+let p = new functional_point 7;;
+p#get_x;;
+(p#move 3)#get_x;;
+p#get_x;;
+\end{caml_example}
+While objects of either class will behave the same, objects of their
+subclasses will be different. In a subclass of later, the move method will
+keep returning an object of the parent class.  On the contrary, in a
+subclass of the former, the move method will return an object of the
+subclass.
+
+\subsection*{Cloning objects}
+
+Objects can also be cloned, whether they are functional or imperative.
+The library function "Oo.copy" makes a shallow copy of an object. Its
+type is "< .. > as 'a -> 'a" (which is parsed as "(< .. > as 'a) ->
+'a").  The keyword "as" in that type binds the type variable "'a" to
+the object type "< .. >".  Therefore, "Oo.copy" takes an object with
+any methods (represented by the ellipsis), and returns an object of
+the same type. The type of "Oo.copy" is different from type "< .. > ->
+< .. >" as each ellipsis represents a different set of methods.
+Ellipsis actually behaves as a type variable.
+\begin{caml_example}
+let p = new point 5;;
+let q = Oo.copy p;;
+q#move 7; (p#get_x, q#get_x);;
+\end{caml_example}
+In fact, "Oo.copy p" will behave as "p#copy" assuming that a public
+method "copy" with body "{< >}" has been defined in the class of "p".
+
+Objects can be compared using the generic comparison functions ("=",
+"<", ...).  Two objects are equal if and only if they are physically
+equal. In particular, an object and its copy are not equal.
+\begin{caml_example}
+let q = Oo.copy p;;
+p = q, p = p;;
+\end{caml_example}
 
 \subsection*{Recursive classes}
 
@@ -703,6 +643,69 @@ and widget (w : window) =
 Although their types are mutually recursive, the classes "widget" and 
 "window" are themselves independent. 
 
+\subsection*{Binary methods}
+
+A binary method is a method which takes an argument of the same type
+as self. The class "comparable" below is a template for classes with a
+binary method "leq" of type "'a -> bool" where the type variable "'a"
+is bound to the type of self. Therefore, "#comparable" expands to "<
+leq : 'a -> bool; .. > as 'a".  We see here that the binder "as" also
+allows to write recursive types.
+\begin{caml_example}
+class virtual comparable = 
+  object (_ : 'a)
+    method virtual leq : 'a -> bool
+  end;;
+\end{caml_example}
+We then define a subclass of "comparable"  that wraps integers as
+comparable objects. There is a type constraint on the class parameter "x"
+as the primitive "<=" is a polymorphic comparison function in
+Objective Caml.  The "inherit" clause ensures that the type of objects
+of this class is an instance of "#comparable".
+\begin{caml_example}
+class int_comparable (x : int) =
+  object
+    inherit comparable
+    val mutable x = x
+    method x = x
+    method leq p = x <= p#x
+  end;;
+\end{caml_example}
+% pas expliqué: la mutabilite peut être cachée
+Objects of class "int_comparable2" below also modify the integer
+they hold. Note that the type "int_comparable2" is not a subtype of type
+"int_comparable", as the self type appears in contravariant position
+in the type of method "leq".
+Indeed, an object "p" of class "int_comparable" has a method "leq"
+that expects an argument of type "int_comparable" since it accesses
+its "x" method.  Considering "p" of type "comparable" would allow to
+call method "leq" on "p" with an argument that does not have a method
+"x", which would be an error.
+\begin{caml_example}
+class int_comparable2 x =
+  object   
+    inherit int_comparable x
+    method set_x y = x <- y
+  end;;
+\end{caml_example}
+It is however possible to define functions that manipulate objects of
+type either "int_comparable" or "int_comparable2": the function "min"
+will return the minimum of any two objects whose type unifies with
+"#comparable". The type of "min" is not the same as "#comparable ->
+#comparable -> #comparable", as the abbreviation "#comparable" hides a
+type variable (an ellipsis). Each occurrence of this abbreviation
+generates a new variable.
+\begin{caml_example}
+let min (x : #comparable) y =
+  if x#leq y then x else y;;
+\end{caml_example}
+This function can be applied to objects of type "int_comparable"
+or "int_comparable2".
+\begin{caml_example}
+(min (new int_comparable  7) (new int_comparable 11))#x;;
+(min (new int_comparable2 5) (new int_comparable2 3))#x;;
+\end{caml_example}
+
 \subsection*{Simple modules as classes}
 
 There is sometime an alternative between using modules or classes. 
@@ -719,7 +722,6 @@ class ['a] stack =
     method length = List.length l
   end;;
 \end{caml_example}
-
 However, writing a method for iterating over a stack is more
 problematic.  A method "fold" would have type
 "('b -> 'a -> 'b) -> 'b -> 'b". Here "'a" is the parameter of the stack.
@@ -745,7 +747,8 @@ s;;
 The best solution would be to make method "fold" polymorphic. 
 However Ocaml does not currently allow methods to be polymorphic. 
 
-Thus, the current solution is to leave the function "fold" outside of the class.
+Thus, the current solution is to leave the function "fold" outside of
+the class.
 \begin{caml_example}
 class ['a] stack3 =
   object
@@ -816,41 +819,37 @@ module Set : SET =
   end;;
 \end{caml_example}
 
+\subsection*{The subject/observer pattern}
 
+XXX text need to be improved here
 
-\subsection*{The subject/objerver pattern}
-
-XXX text need to be imporved here
-
-The following example known as the subject/observer pattern is often
+The following example, known as the subject/observer pattern, is often
 presented in the litterature as a difficult inheritance problem with
 inter-connected classes.
 
 The general subject/observer pattern amounts to the definition a pair of two
 classes that recusively interact with one another.  The class "subject", is
 a class of objects that have a distinguished method notify.
-
 \begin{caml_example}
 class virtual ['subject, 'event] observer =
   object
     method virtual notify : 'subject ->  'event -> unit
   end;;
 \end{caml_example}
-The class observers has a dsitinguished message oberver that remembers a
+The class observers has a distinguished message oberver that remembers a
 list of obervers to which all notify request are broadcasted.
 \begin{caml_example}
 class ['observer, 'event] subject =
-  object (self)  
+  object (self)
     val mutable observers = ([]:'observer list)
     method add_observer obs = observers <- (obs :: observers)
     method notify_observer (e : 'event) = 
         List.map (fun x -> x#notify self e) observers
-  end;; 
+  end;;
 \end{caml_example}
-
-The difficulty is in general to define instances of the above pattern 
-using inheritance. This can be done in a natural and obvious manner in Ocaml,
-as show by the following example. 
+The difficulty is in general to define instances of the above pattern
+using inheritance. This can be done in a natural and obvious manner in
+Ocaml, as show by the following example.
 \begin{caml_example}
 class ['subject] window_observer =
   object 
@@ -874,7 +873,7 @@ ws#add_observer wo;;
 
 Unsurprisingly the type of ws is recursive. This can be observed by
 \begin{caml_example}
-(ws : ('a window_observer window_subject as 'a));;
+ws;;
 \end{caml_example}
 However, the classes themselves need not be defined recursively. 
 
@@ -906,6 +905,7 @@ ss#add_observer so;;
 \end{caml_example}
 The two intances can still be combined by mutiple inheritance in 
 an obvious way.
+%XXX Pas vrai : l'un des des notify ecrase l'autre !
 \begin{caml_example}
 class ['observer] window_sensor_subject  =
   object
@@ -921,9 +921,6 @@ let ss = new sensor_subject;;
 let so = new sampler_observer;;
 ss#add_observer so;;
 \end{caml_example}
-
-
-
 
 % LocalWords:  Caml objectexamples bsection init caml val int Oo succ incr ref
 % LocalWords:  typecheck leq bool cp eval sig struct ABSPOINT Abspoint iter
