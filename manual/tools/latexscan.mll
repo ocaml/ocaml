@@ -20,6 +20,7 @@ let rindex c s =
   find (string_length s - 1);;
 
 let first_caml_line = ref true;;
+let in_caml_reply = ref false;;
 }
 
 rule main = parse
@@ -47,7 +48,8 @@ rule main = parse
                   print_string "</pre>"; main lexbuf }
 (* Caml programs *)
   | "\\caml"
-      	       	{ print_string "<pre>"; first_caml_line := true;
+      	       	{ print_string "<pre>";
+                  first_caml_line := true; in_caml_reply := false;
                   camlprog lexbuf; print_string "</pre>"; main lexbuf }
 (* Raw html, latex only *)
   | "\\begin{rawhtml}"
@@ -125,10 +127,18 @@ and camlprog = parse
                   end else
                     print_string "  ";
                   camlprog lexbuf }
-  | "\\:"       { camlprog lexbuf }
+  | "\\:"       { in_caml_reply := true;
+                  print_string "<FONT SIZE=-1>";
+                  camlprog lexbuf }
   | "\\;"       { first_caml_line := true; camlprog lexbuf }
   | "\\\\"      { print_string "\\"; camlprog lexbuf }
   | "\\endcaml" { () }
+  | "\n"        { if !in_caml_reply then begin
+                    in_caml_reply := false;
+                    print_string "</FONT>"
+                  end;
+                  print_char `\n`;
+                  camlprog lexbuf }
   | _           { print_char(get_lexeme_char lexbuf 0); camlprog lexbuf }
 
 and rawhtml = parse

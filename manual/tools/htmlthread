@@ -18,6 +18,7 @@ for ($i = 0; $i <= $#pages; $i++) {
   $_ = <SRC>;   # Title line
   print "<HEAD>\n";
   print $_;
+  do links();
   print "</HEAD>\n";
   print "<BODY>\n";
   do buttons();
@@ -34,6 +35,16 @@ for ($i = 0; $i <= $#pages; $i++) {
   close(SRC);
   close(DST);
   rename("newpage.html", $pages[$i]);
+}
+
+sub links {
+  if ($i > 0) {
+    print '<LINK REL="Prev" HREF="', $pages[$i-1], "\">\n";
+  }
+  if ($i < $#pages) {
+    print '<LINK REL="Next" HREF="', $pages[$i+1], "\">\n";
+  }
+  print "<LINK REL=\"ToC\" HREF=\"index.html\">\n";
 }
 
 sub buttons {
