@@ -44,6 +44,7 @@
     :parsing:longident.cmi :parsing:parsetree.cmi :parsing:pstream.cmi 
 :parsing:pstream.cmxÄ :parsing:asttypes.cmi :parsing:location.cmx ¶
     :parsing:longident.cmx :parsing:parsetree.cmi :parsing:pstream.cmi 
+:typing:btype.cmiÄ :typing:path.cmi :typing:types.cmi 
 :typing:ctype.cmiÄ :parsing:asttypes.cmi :typing:env.cmi :typing:ident.cmi ¶
     :typing:path.cmi :typing:types.cmi 
 :typing:datarepr.cmiÄ :parsing:asttypes.cmi :typing:path.cmi ¶
@@ -81,30 +82,34 @@
     :typing:primitive.cmi 
 :typing:typetexp.cmiÄ :typing:env.cmi :parsing:location.cmi ¶
     :parsing:longident.cmi :parsing:parsetree.cmi :typing:types.cmi 
-:typing:ctype.cmoÄ :parsing:asttypes.cmi :typing:env.cmi :utils:misc.cmi ¶
-    :typing:path.cmi :typing:subst.cmi :typing:types.cmi :typing:ctype.cmi 
-:typing:ctype.cmxÄ :parsing:asttypes.cmi :typing:env.cmx :utils:misc.cmx ¶
-    :typing:path.cmx :typing:subst.cmx :typing:types.cmx :typing:ctype.cmi 
+:typing:btype.cmoÄ :typing:types.cmi :typing:btype.cmi 
+:typing:btype.cmxÄ :typing:types.cmx :typing:btype.cmi 
+:typing:ctype.cmoÄ :parsing:asttypes.cmi :typing:btype.cmi :typing:env.cmi ¶
+    :utils:misc.cmi :typing:path.cmi :typing:subst.cmi :typing:types.cmi ¶
+    :typing:ctype.cmi 
+:typing:ctype.cmxÄ :parsing:asttypes.cmi :typing:btype.cmx :typing:env.cmx ¶
+    :utils:misc.cmx :typing:path.cmx :typing:subst.cmx :typing:types.cmx ¶
+    :typing:ctype.cmi 
 :typing:datarepr.cmoÄ :parsing:asttypes.cmi :utils:misc.cmi :typing:path.cmi ¶
     :typing:predef.cmi :typing:types.cmi :typing:datarepr.cmi 
 :typing:datarepr.cmxÄ :parsing:asttypes.cmi :utils:misc.cmx :typing:path.cmx ¶
     :typing:predef.cmx :typing:types.cmx :typing:datarepr.cmi 
-:typing:env.cmoÄ :parsing:asttypes.cmi :utils:config.cmi :typing:datarepr.cmi ¶
-    :typing:ident.cmi :parsing:longident.cmi :utils:misc.cmi :typing:path.cmi ¶
-    :typing:predef.cmi :typing:subst.cmi :utils:tbl.cmi :typing:types.cmi ¶
-    :typing:env.cmi 
-:typing:env.cmxÄ :parsing:asttypes.cmi :utils:config.cmx :typing:datarepr.cmx ¶
-    :typing:ident.cmx :parsing:longident.cmx :utils:misc.cmx :typing:path.cmx ¶
-    :typing:predef.cmx :typing:subst.cmx :utils:tbl.cmx :typing:types.cmx ¶
-    :typing:env.cmi 
+:typing:env.cmoÄ :parsing:asttypes.cmi :typing:btype.cmi :utils:config.cmi ¶
+    :typing:datarepr.cmi :typing:ident.cmi :parsing:longident.cmi ¶
+    :utils:misc.cmi :typing:path.cmi :typing:predef.cmi :typing:subst.cmi ¶
+    :utils:tbl.cmi :typing:types.cmi :typing:env.cmi 
+:typing:env.cmxÄ :parsing:asttypes.cmi :typing:btype.cmx :utils:config.cmx ¶
+    :typing:datarepr.cmx :typing:ident.cmx :parsing:longident.cmx ¶
+    :utils:misc.cmx :typing:path.cmx :typing:predef.cmx :typing:subst.cmx ¶
+    :utils:tbl.cmx :typing:types.cmx :typing:env.cmi 
 :typing:ident.cmoÄ :typing:ident.cmi 
 :typing:ident.cmxÄ :typing:ident.cmi 
-:typing:includecore.cmoÄ :parsing:asttypes.cmi :typing:ctype.cmi ¶
-    :utils:misc.cmi :typing:path.cmi :typing:predef.cmi :typing:typedtree.cmi ¶
-    :typing:types.cmi :typing:includecore.cmi 
-:typing:includecore.cmxÄ :parsing:asttypes.cmi :typing:ctype.cmx ¶
-    :utils:misc.cmx :typing:path.cmx :typing:predef.cmx :typing:typedtree.cmx ¶
-    :typing:types.cmx :typing:includecore.cmi 
+:typing:includecore.cmoÄ :parsing:asttypes.cmi :typing:btype.cmi ¶
+    :typing:ctype.cmi :utils:misc.cmi :typing:path.cmi :typing:predef.cmi ¶
+    :typing:typedtree.cmi :typing:types.cmi :typing:includecore.cmi 
+:typing:includecore.cmxÄ :parsing:asttypes.cmi :typing:btype.cmx ¶
+    :typing:ctype.cmx :utils:misc.cmx :typing:path.cmx :typing:predef.cmx ¶
+    :typing:typedtree.cmx :typing:types.cmx :typing:includecore.cmi 
 :typing:includemod.cmoÄ :typing:env.cmi :typing:ident.cmi ¶
     :typing:includecore.cmi :utils:misc.cmi :typing:path.cmi ¶
     :typing:printtyp.cmi :typing:subst.cmi :utils:tbl.cmi ¶
@@ -125,22 +130,24 @@
     :typing:types.cmx :typing:parmatch.cmi 
 :typing:path.cmoÄ :typing:ident.cmi :typing:path.cmi 
 :typing:path.cmxÄ :typing:ident.cmx :typing:path.cmi 
-:typing:predef.cmoÄ :typing:ident.cmi :typing:path.cmi :typing:types.cmi ¶
-    :typing:predef.cmi 
-:typing:predef.cmxÄ :typing:ident.cmx :typing:path.cmx :typing:types.cmx ¶
-    :typing:predef.cmi 
+:typing:predef.cmoÄ :typing:btype.cmi :typing:ident.cmi :typing:path.cmi ¶
+    :typing:types.cmi :typing:predef.cmi 
+:typing:predef.cmxÄ :typing:btype.cmx :typing:ident.cmx :typing:path.cmx ¶
+    :typing:types.cmx :typing:predef.cmi 
 :typing:primitive.cmoÄ :typing:primitive.cmi 
 :typing:primitive.cmxÄ :typing:primitive.cmi 
-:typing:printtyp.cmoÄ :parsing:asttypes.cmi :typing:ctype.cmi ¶
-    :typing:ident.cmi :parsing:longident.cmi :utils:misc.cmi :typing:path.cmi ¶
-    :typing:primitive.cmi :typing:types.cmi :typing:printtyp.cmi 
-:typing:printtyp.cmxÄ :parsing:asttypes.cmi :typing:ctype.cmx ¶
-    :typing:ident.cmx :parsing:longident.cmx :utils:misc.cmx :typing:path.cmx ¶
-    :typing:primitive.cmx :typing:types.cmx :typing:printtyp.cmi 
-:typing:subst.cmoÄ :typing:ident.cmi :utils:misc.cmi :typing:path.cmi ¶
-    :utils:tbl.cmi :typing:types.cmi :typing:subst.cmi 
-:typing:subst.cmxÄ :typing:ident.cmx :utils:misc.cmx :typing:path.cmx ¶
-    :utils:tbl.cmx :typing:types.cmx :typing:subst.cmi 
+:typing:printtyp.cmoÄ :parsing:asttypes.cmi :typing:btype.cmi ¶
+    :typing:ctype.cmi :typing:ident.cmi :parsing:longident.cmi ¶
+    :utils:misc.cmi :typing:path.cmi :typing:primitive.cmi :typing:types.cmi ¶
+    :typing:printtyp.cmi 
+:typing:printtyp.cmxÄ :parsing:asttypes.cmi :typing:btype.cmx ¶
+    :typing:ctype.cmx :typing:ident.cmx :parsing:longident.cmx ¶
+    :utils:misc.cmx :typing:path.cmx :typing:primitive.cmx :typing:types.cmx ¶
+    :typing:printtyp.cmi 
+:typing:subst.cmoÄ :typing:btype.cmi :typing:ident.cmi :utils:misc.cmi ¶
+    :typing:path.cmi :utils:tbl.cmi :typing:types.cmi :typing:subst.cmi 
+:typing:subst.cmxÄ :typing:btype.cmx :typing:ident.cmx :utils:misc.cmx ¶
+    :typing:path.cmx :utils:tbl.cmx :typing:types.cmx :typing:subst.cmi 
 :typing:typeclass.cmoÄ :parsing:asttypes.cmi :typing:ctype.cmi ¶
     :typing:env.cmi :typing:ident.cmi :parsing:location.cmi ¶
     :parsing:longident.cmi :utils:misc.cmi :parsing:parsetree.cmi ¶
@@ -153,18 +160,18 @@
     :typing:path.cmx :typing:printtyp.cmx :typing:subst.cmx ¶
     :typing:typecore.cmx :typing:typedtree.cmx :typing:types.cmx ¶
     :typing:typetexp.cmx :typing:typeclass.cmi 
-:typing:typecore.cmoÄ :parsing:asttypes.cmi :typing:ctype.cmi :typing:env.cmi ¶
-    :typing:ident.cmi :parsing:location.cmi :parsing:longident.cmi ¶
-    :utils:misc.cmi :typing:parmatch.cmi :parsing:parsetree.cmi ¶
-    :typing:path.cmi :typing:predef.cmi :typing:printtyp.cmi ¶
-    :typing:typedtree.cmi :typing:types.cmi :typing:typetexp.cmi ¶
-    :typing:typecore.cmi 
-:typing:typecore.cmxÄ :parsing:asttypes.cmi :typing:ctype.cmx :typing:env.cmx ¶
-    :typing:ident.cmx :parsing:location.cmx :parsing:longident.cmx ¶
-    :utils:misc.cmx :typing:parmatch.cmx :parsing:parsetree.cmi ¶
-    :typing:path.cmx :typing:predef.cmx :typing:printtyp.cmx ¶
-    :typing:typedtree.cmx :typing:types.cmx :typing:typetexp.cmx ¶
-    :typing:typecore.cmi 
+:typing:typecore.cmoÄ :parsing:asttypes.cmi :typing:btype.cmi ¶
+    :typing:ctype.cmi :typing:env.cmi :typing:ident.cmi :parsing:location.cmi ¶
+    :parsing:longident.cmi :utils:misc.cmi :typing:parmatch.cmi ¶
+    :parsing:parsetree.cmi :typing:path.cmi :typing:predef.cmi ¶
+    :typing:printtyp.cmi :typing:typedtree.cmi :typing:types.cmi ¶
+    :typing:typetexp.cmi :typing:typecore.cmi 
+:typing:typecore.cmxÄ :parsing:asttypes.cmi :typing:btype.cmx ¶
+    :typing:ctype.cmx :typing:env.cmx :typing:ident.cmx :parsing:location.cmx ¶
+    :parsing:longident.cmx :utils:misc.cmx :typing:parmatch.cmx ¶
+    :parsing:parsetree.cmi :typing:path.cmx :typing:predef.cmx ¶
+    :typing:printtyp.cmx :typing:typedtree.cmx :typing:types.cmx ¶
+    :typing:typetexp.cmx :typing:typecore.cmi 
 :typing:typedecl.cmoÄ :utils:config.cmi :typing:ctype.cmi :typing:env.cmi ¶
     :typing:ident.cmi :typing:includecore.cmi :parsing:location.cmi ¶
     :utils:misc.cmi :parsing:parsetree.cmi :typing:path.cmi ¶
@@ -246,16 +253,16 @@
     :bytecomp:emitcode.cmx :typing:ident.cmx :bytecomp:instruct.cmx ¶
     :utils:misc.cmx :bytecomp:opcodes.cmx :bytecomp:symtable.cmx ¶
     :bytecomp:bytelink.cmi 
-:bytecomp:emitcode.cmoÄ :parsing:asttypes.cmi :utils:clflags.cmo ¶
-    :utils:config.cmi :typing:env.cmi :typing:ident.cmi ¶
+:bytecomp:emitcode.cmoÄ :parsing:asttypes.cmi :typing:btype.cmi ¶
+    :utils:clflags.cmo :utils:config.cmi :typing:env.cmi :typing:ident.cmi ¶
     :bytecomp:instruct.cmi :bytecomp:lambda.cmi :bytecomp:meta.cmi ¶
     :utils:misc.cmi :bytecomp:opcodes.cmo :bytecomp:translmod.cmi ¶
-    :typing:types.cmi :bytecomp:emitcode.cmi 
-:bytecomp:emitcode.cmxÄ :parsing:asttypes.cmi :utils:clflags.cmx ¶
-    :utils:config.cmx :typing:env.cmx :typing:ident.cmx ¶
+    :bytecomp:emitcode.cmi 
+:bytecomp:emitcode.cmxÄ :parsing:asttypes.cmi :typing:btype.cmx ¶
+    :utils:clflags.cmx :utils:config.cmx :typing:env.cmx :typing:ident.cmx ¶
     :bytecomp:instruct.cmx :bytecomp:lambda.cmx :bytecomp:meta.cmx ¶
     :utils:misc.cmx :bytecomp:opcodes.cmx :bytecomp:translmod.cmx ¶
-    :typing:types.cmx :bytecomp:emitcode.cmi 
+    :bytecomp:emitcode.cmi 
 :bytecomp:instruct.cmoÄ :typing:env.cmi :typing:ident.cmi ¶
     :bytecomp:lambda.cmi :typing:types.cmi :bytecomp:instruct.cmi 
 :bytecomp:instruct.cmxÄ :typing:env.cmx :typing:ident.cmx ¶
@@ -396,6 +403,7 @@
     :driver:optcompile.cmi :driver:opterrors.cmi 
 :driver:optmain.cmxÄ :utils:clflags.cmx :utils:config.cmx ¶
     :driver:optcompile.cmx :driver:opterrors.cmx 
+:toplevel:genprintval.cmiÄ :typing:env.cmi :typing:path.cmi :typing:types.cmi 
 :toplevel:printval.cmiÄ :typing:env.cmi :typing:path.cmi :typing:types.cmi 
 :toplevel:topdirs.cmiÄ :parsing:location.cmi :parsing:longident.cmi ¶
     :parsing:parsetree.cmi 
@@ -407,14 +415,16 @@
     :bytecomp:runtimedef.cmi :bytecomp:symtable.cmi 
 :toplevel:expunge.cmxÄ :utils:config.cmx :typing:ident.cmx :utils:misc.cmx ¶
     :bytecomp:runtimedef.cmx :bytecomp:symtable.cmx 
-:toplevel:printval.cmoÄ :typing:ctype.cmi :typing:env.cmi :typing:ident.cmi ¶
-    :parsing:longident.cmi :utils:misc.cmi :typing:path.cmi ¶
+:toplevel:genprintval.cmoÄ :typing:ctype.cmi :typing:env.cmi ¶
+    :typing:ident.cmi :parsing:longident.cmi :utils:misc.cmi :typing:path.cmi ¶
     :typing:predef.cmi :typing:printtyp.cmi :typing:types.cmi ¶
-    :toplevel:printval.cmi 
-:toplevel:printval.cmxÄ :typing:ctype.cmx :typing:env.cmx :typing:ident.cmx ¶
-    :parsing:longident.cmx :utils:misc.cmx :typing:path.cmx ¶
+    :toplevel:genprintval.cmi 
+:toplevel:genprintval.cmxÄ :typing:ctype.cmx :typing:env.cmx ¶
+    :typing:ident.cmx :parsing:longident.cmx :utils:misc.cmx :typing:path.cmx ¶
     :typing:predef.cmx :typing:printtyp.cmx :typing:types.cmx ¶
-    :toplevel:printval.cmi 
+    :toplevel:genprintval.cmi 
+:toplevel:printval.cmoÄ :toplevel:genprintval.cmi :toplevel:printval.cmi 
+:toplevel:printval.cmxÄ :toplevel:genprintval.cmx :toplevel:printval.cmi 
 :toplevel:topdirs.cmoÄ :bytecomp:bytelink.cmi :utils:config.cmi ¶
     :typing:ctype.cmi :bytecomp:emitcode.cmi :typing:env.cmi ¶
     :driver:errors.cmi :typing:ident.cmi :parsing:location.cmi ¶
