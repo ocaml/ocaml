@@ -148,6 +148,16 @@ bootstrap_sources:
 		 done); \
 	done
 
+untouch_sources:
+	@-cd ocaml_src; \
+	for i in $(FDIRS); do \
+	  for j in $$i/*.ml* $$i/Makefile*; do \
+	    if cmp -s $$j ../ocaml_src.new/$$j 2>/dev/null; then \
+	      cp -p $$j ../ocaml_src.new/$$j; \
+	    fi; \
+	  done; \
+	done
+
 promote_sources:
 	make mv_cvs FROM=ocaml_src TO=ocaml_src.new
 	for i in $(FDIRS); do \

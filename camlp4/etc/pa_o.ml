@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -100,13 +100,6 @@ value is_operator =
       [ Not_found -> try Hashtbl.find ct x.[0] with _ -> False ]
   }
 ;
-
-(*
-value operator =
-  Grammar.Entry.of_parser gram "operator"
-    (parser [: `("", x) when is_operator x :] -> x)
-;
-*)
 
 value operator_rparen =
   Grammar.Entry.of_parser gram "operator_rparen"
@@ -365,50 +358,9 @@ and sync_semisemi cs =
 Pcaml.sync.val := sync;
 *)
 
-value type_parameter = Grammar.Entry.create gram "type_parameter";
-value fun_def = Grammar.Entry.create gram "fun_def";
-value fun_binding = Grammar.Entry.create gram "fun_binding";
-value mod_ident = Grammar.Entry.create gram "mod_ident";
-
 EXTEND
-  GLOBAL: interf implem top_phrase use_file sig_item str_item ctyp patt expr
-    module_type module_expr let_binding type_parameter fun_def fun_binding
-    mod_ident;
-  (* Main entry points *)
-  interf:
-    [ [ si = sig_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
-      | "#"; n = LIDENT; dp = OPT expr; ";;" ->
-          ([(<:sig_item< # $n$ $opt:dp$ >>, loc)], True)
-      | EOI -> ([], False) ] ]
-  ;
-  sig_item_semi:
-    [ [ si = sig_item; OPT ";;" -> (si, loc) ] ]
-  ;
-  implem:
-    [ [ si = str_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
-      | "#"; n = LIDENT; dp = OPT expr; ";;" ->
-          ([(<:str_item< # $n$ $opt:dp$ >>, loc)], True)
-      | EOI -> ([], False) ] ]
-  ;
-  str_item_semi:
-    [ [ si = str_item; OPT ";;" -> (si, loc) ] ]
-  ;
-  top_phrase:
-    [ [ ph = phrase; ";;" -> Some ph
-      | EOI -> None ] ]
-  ;
-  use_file:
-    [ [ si = str_item; OPT ";;"; (sil, stopped) = SELF ->
-          ([si :: sil], stopped)
-      | "#"; n = LIDENT; dp = OPT expr; ";;" ->
-          ([<:str_item< # $n$ $opt:dp$ >>], True)
-      | EOI -> ([], False) ] ]
-  ;
-  phrase:
-    [ [ sti = str_item -> sti
-      | "#"; n = LIDENT; dp = OPT expr -> <:str_item< # $n$ $opt:dp$ >> ] ]
-  ;
-  (* Module expressions *)
+  GLOBAL: sig_item str_item ctyp patt expr module_type module_expr class_type
+    class_expr class_sig_item class_str_item let_binding;
   module_expr:
     [ [ "functor"; "("; i = UIDENT; ":"; t = module_type; ")"; "->";
         me = SELF ->
@@ -919,15 +871,7 @@ EXTEND
     [ [ "to" -> True
       | "downto" -> False ] ]
   ;
-END;
-
-(* Objects and Classes *)
-
-value class_fun_binding = Grammar.Entry.create gram "class_fun_binding";
-
-EXTEND
-  GLOBAL: str_item sig_item expr ctyp class_sig_item class_str_item class_type
-    class_expr class_fun_binding mod_ident;
+  (* Objects and Classes *)
   str_item:
     [ [ "class"; cd = LIST1 class_declaration SEP "and" ->
           <:str_item< class $list:cd$ >>
@@ -1119,12 +1063,7 @@ EXTEND
     [ [ m = UIDENT; "."; l = SELF -> [m :: l]
       | i = LIDENT -> [i] ] ]
   ;
-END;
-
-(* Labels *)
-
-EXTEND
-  GLOBAL: ctyp expr patt fun_def fun_binding class_type class_fun_binding;
+  (* Labels *)
   ctyp: AFTER "arrow"
     [ NONA
       [ i = lident_colon; t = SELF -> <:ctyp< ~ $i$ : $t$ >>
@@ -1210,8 +1149,43 @@ EXTEND
   class_fun_binding:
     [ [ p = labeled_patt; cfb = SELF -> <:class_expr< fun $p$ -> $cfb$ >> ] ]
   ;
-  ident:
-    [ [ i = LIDENT -> i
-      | i = UIDENT -> i ] ]
+END;
+
+(* Main entry points *)
+
+EXTEND
+  GLOBAL: interf implem use_file top_phrase expr patt;
+  interf:
+    [ [ si = sig_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
+      | "#"; n = LIDENT; dp = OPT expr; ";;" ->
+          ([(<:sig_item< # $n$ $opt:dp$ >>, loc)], True)
+      | EOI -> ([], False) ] ]
+  ;
+  sig_item_semi:
+    [ [ si = sig_item; OPT ";;" -> (si, loc) ] ]
+  ;
+  implem:
+    [ [ si = str_item_semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
+      | "#"; n = LIDENT; dp = OPT expr; ";;" ->
+          ([(<:str_item< # $n$ $opt:dp$ >>, loc)], True)
+      | EOI -> ([], False) ] ]
+  ;
+  str_item_semi:
+    [ [ si = str_item; OPT ";;" -> (si, loc) ] ]
+  ;
+  top_phrase:
+    [ [ ph = phrase; ";;" -> Some ph
+      | EOI -> None ] ]
+  ;
+  use_file:
+    [ [ si = str_item; OPT ";;"; (sil, stopped) = SELF ->
+          ([si :: sil], stopped)
+      | "#"; n = LIDENT; dp = OPT expr; ";;" ->
+          ([<:str_item< # $n$ $opt:dp$ >>], True)
+      | EOI -> ([], False) ] ]
+  ;
+  phrase:
+    [ [ sti = str_item -> sti
+      | "#"; n = LIDENT; dp = OPT expr -> <:str_item< # $n$ $opt:dp$ >> ] ]
   ;
 END;
