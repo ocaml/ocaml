@@ -378,14 +378,14 @@ value parser_cases b spel dg k =
     | [(spc, Some e)] ->
         [: `HVbox
               [: `stream_patt_comp b spc "" [: :];
-                 `HVbox [: `S LR "?"; `expr e "" k :] :] :]
+                 `HVbox [: `S LR "??"; `expr e "" k :] :] :]
     | [(spc, None) :: spcl] ->
         [: `stream_patt_comp b spc ";" [: `S RO ";" :];
            stream_patt [: :] spcl k :]
     | [(spc, Some e) :: spcl] ->
         [: `HVbox
               [: `stream_patt_comp b spc "" [: :];
-                 `HVbox [: `S LR "?"; `expr e ";" [: `S RO ";" :] :] :];
+                 `HVbox [: `S LR "??"; `expr e ";" [: `S RO ";" :] :] :];
            stream_patt [: :] spcl k :] ]
   and stream_patt_comp b spc dg k =
     match spc with
