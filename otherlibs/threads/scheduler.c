@@ -613,9 +613,9 @@ static value inter_fdlist_set(fdl, set)
 #if !(defined(WIFEXITED) && defined(WEXITSTATUS) && defined(WIFSTOPPED) && \
       defined(WSTOPSIG) && defined(WTERMSIG))
 /* Assume old-style V7 status word */
-#define WIFEXITED(status) ((status) & 0xFF == 0)
+#define WIFEXITED(status) (((status) & 0xFF) == 0)
 #define WEXITSTATUS(status) (((status) >> 8) & 0xFF)
-#define WIFSTOPPED(status) ((status) & 0xFF == 0xFF)
+#define WIFSTOPPED(status) (((status) & 0xFF) == 0xFF)
 #define WSTOPSIG(status) (((status) >> 8) & 0xFF)
 #define WTERMSIG(status) ((status) & 0x3F)
 #endif
