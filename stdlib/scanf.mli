@@ -66,6 +66,9 @@ val bscanf :
    applies the function [f] to these values.
    The result of this application of [f] is the result of the whole construct.
 
+   For instance, if [p] is the function [fun s i -> i + 1], then
+   [Scanf.sscanf "x = 1" "%s = %i" p] returns [2].
+
    Raise [Scanf.Scan_failure] if the given input does not match the format.
 
    Raise [Failure] if a conversion to a number is not possible.
@@ -86,9 +89,11 @@ val bscanf :
    space, newline and carriage return characters. Hence, a space in the format
    matches any amount of whitespace in the input.
 
-   Conversion specifications consist in the [%] character, followed
-   by an optional field width, followed by one or two conversion
-   characters. The conversion characters and their meanings are:
+   Conversion specifications consist in the [%] character, followed by
+   an optional flag, an optional field width, and followed by one or
+   two conversion characters. The conversion characters and their
+   meanings are:
+
    - [d]: reads an optionally signed decimal integer.
    - [i]: reads an optionally signed integer
      (usual input formats for hexadecimal ([0x[d]+] and [0X[d]+]),
@@ -124,6 +129,10 @@ val bscanf :
    - [n]: applies [f] to the number of characters read so far.
    - [N]: applies [f] to the number of tokens read so far.
    - [%]: matches one [%] character in the input.
+
+   Following the [%] character introducing a conversion there may be
+   the special flag [_]: the conversion that follows occurs as usual,
+   but the resulting value is discarded.
 
    The field widths are composed of an optional integer literal
    indicating the maximal width of the token to read.
