@@ -11,6 +11,6 @@ ocamlmktop
 primreq
 ocamldumpobj
 keywords
-ocaml2to3.ml
-ocaml2to3
+lexer299.ml
+ocaml299to3
 

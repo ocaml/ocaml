@@ -22,7 +22,7 @@ INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: ocamldep ocamlprof ocamlcp ocamlmktop ocaml2to3
+all: ocamldep ocamlprof ocamlcp ocamlmktop ocaml299to3
 
 # The dependency generator
 
@@ -75,19 +75,20 @@ clean::
 
 # Converter ocaml 2.04 to 3
 
-OCAML2TO3=ocaml2to3.cmo
+OCAML299TO3= lexer299.cmo ocaml299to3.cmo
+LIBRARY3= misc.cmo warnings.cmo linenum.cmo location.cmo
 
-ocaml2to3: $(OCAML2TO3)
-	$(CAMLC) $(LINKFLAGS) -o ocaml2to3 $(OCAML2TO3)
+ocaml299to3: $(OCAML299TO3)
+	$(CAMLC) $(LINKFLAGS) -o ocaml299to3 $(LIBRARY3) $(OCAML299TO3)
 
-ocaml2to3.ml: ocaml2to3.mll
-	$(CAMLLEX) ocaml2to3.mll
+lexer299.ml: lexer299.mll
+	$(CAMLLEX) lexer299.mll
 
 install::
-	cp ocaml2to3 $(BINDIR)/ocaml2to3
+	cp ocaml299to3 $(BINDIR)/ocaml299to3
 
 clean::
-	rm -f ocaml2to3 ocaml2to3.ml
+	rm -f ocaml299to3 lexer299.ml
 
 # The preprocessor for asm generators
 

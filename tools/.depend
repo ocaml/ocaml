@@ -4,14 +4,18 @@ dumpapprox.cmx: ../asmcomp/clambda.cmx ../asmcomp/compilenv.cmx \
     ../utils/config.cmx 
 dumpobj.cmo: ../parsing/asttypes.cmi ../bytecomp/bytesections.cmi \
     ../utils/config.cmi ../bytecomp/emitcode.cmi ../typing/ident.cmi \
-    ../bytecomp/lambda.cmi ../bytecomp/opcodes.cmo opnames.cmo \
-    ../utils/tbl.cmi 
+    ../bytecomp/instruct.cmi ../bytecomp/lambda.cmi ../bytecomp/opcodes.cmo \
+    opnames.cmo ../utils/tbl.cmi 
 dumpobj.cmx: ../parsing/asttypes.cmi ../bytecomp/bytesections.cmx \
     ../utils/config.cmx ../bytecomp/emitcode.cmx ../typing/ident.cmx \
-    ../bytecomp/lambda.cmx ../bytecomp/opcodes.cmx opnames.cmx \
-    ../utils/tbl.cmx 
+    ../bytecomp/instruct.cmx ../bytecomp/lambda.cmx ../bytecomp/opcodes.cmx \
+    opnames.cmx ../utils/tbl.cmx 
+lexer299.cmo: ../parsing/location.cmi ../utils/misc.cmi ../utils/warnings.cmi 
+lexer299.cmx: ../parsing/location.cmx ../utils/misc.cmx ../utils/warnings.cmx 
 objinfo.cmo: ../utils/config.cmi ../bytecomp/emitcode.cmi 
 objinfo.cmx: ../utils/config.cmx ../bytecomp/emitcode.cmx 
+ocaml299to3.cmo: lexer299.cmo 
+ocaml299to3.cmx: lexer299.cmx 
 ocamlcp.cmo: ../driver/main_args.cmi 
 ocamlcp.cmx: ../driver/main_args.cmx 
 ocamldep.cmo: ../utils/clflags.cmo ../parsing/lexer.cmi \
