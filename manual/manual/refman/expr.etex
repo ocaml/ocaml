@@ -83,7 +83,6 @@ precedence come first. For infix and prefix symbols, we write
 \ikwd{match\@\verb`match`}%
 \ikwd{try\@\verb`try`}%
 \ikwd{let\@\verb`let`}%
-\ikwd{prefix\@\verb`prefix`}%
 \begin{tableau}{|l|l|}{Construction or operator}{Associativity}
 \entree{prefix-symbol}{--}
 \entree{".   .(    .["}{--}
@@ -455,7 +454,7 @@ The expression @ncconstr expr@ evaluates to the variant value whose
 constructor is @ncconstr@, and whose argument is the value of @expr@.
 
 For lists, some syntactic sugar is provided. The expression
-@expr_1 '::' expr_2@ stands for the constructor @'prefix' '::'@
+@expr_1 '::' expr_2@ stands for the constructor @'(' '::' ')' @
 applied to the argument @'(' expr_1 ',' expr_2 ')'@, and therefore
 evaluates to the list whose head is the value of @expr_1@ and whose tail
 is the value of @expr_2@. The expression @'[' expr_1 ';' \ldots ';'

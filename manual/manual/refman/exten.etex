@@ -110,3 +110,16 @@ writing parsers. A more formal presentation of streams, and a
 discussion of alternate semantics, can be found in {\em Parsers in ML}
 by Michel Mauny and Daniel de Rauglaudre, in the proceedings of the
 1992 ACM conference on Lisp and Functional Programming.
+
+\section{Range patterns}
+
+In patterns, Caml Special Light recognizes the form
+@"'" c "'" ".." "'" d "'"@
+(two character literals separated by~"..") as shorthand for the pattern
+\begin{center}
+@"'" c "'" "|" "'" c_1 "'" "|" "'" c_2 "'" "|" \ldots
+        "|" "'" c_n "'" "|" "'" d "'"@
+\end{center}
+where \nth{c}{1}, \nth{c}{2}, \ldots, \nth{c}{n} are the characters
+that occur between \var{c} and \var{d} in the ASCII character set. For
+instance, the pattern "'0'..'9'" matches all characters that are digits.

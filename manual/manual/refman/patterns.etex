@@ -15,7 +15,6 @@ pattern:
   | '{' label '=' pattern { ';' label '=' pattern } '}'
   | '[' pattern { ';' pattern } ']'
   | pattern '::' pattern
-  | char-literal '..' char-literal
 \end{syntax}
 
 The table below shows the relative precedences and associativity of
@@ -86,7 +85,7 @@ constructor is equal to @ncconstr@, and whose argument matches
 
 The pattern @pattern_1 "::" pattern_2@ matches non-empty lists whose
 heads match @pattern_1@, and whose tails match @pattern_2@. This
-pattern behaves like @"prefix" "::" "(" pattern_1 "," pattern_2 ")"@.
+pattern behaves like @"(" "::" ")" "(" pattern_1 "," pattern_2 ")"@.
 
 The pattern @"[" pattern_1 ";" \ldots ";" pattern_n "]"@ matches lists
 of length $n$ whose elements match @pattern_1@ \ldots @pattern_n@,
@@ -109,11 +108,4 @@ pattern_n "}"@ matches records that define at least the labels
 The record value can define more labels than @label_1@ \ldots
 @label_n@; the values associated to these extra labels are not taken
 into account for matching.
-
-\subsubsection*{Interval patterns}
-
-The pattern @char-literal_1 '..' char-literal_2@ matches all
-characters that belong to the character range between @char-literal_1@
-(included) and @char-literal_2@ (included). Characters are ordered by
-their code.
 
