@@ -63,7 +63,7 @@ let rec bucket_too_long n bucket =
     | Cons(_,_,rest) -> bucket_too_long (n - 1) rest
 
 let add h key info =
-  let i = (hash_param 10 100 key) mod (Array.length h.data) in
+  let i = (hash key) mod (Array.length h.data) in
   let bucket = Cons(key, info, h.data.(i)) in
   h.data.(i) <- bucket;
   if bucket_too_long h.max_len bucket then resize hash h
@@ -74,11 +74,11 @@ let remove h key =
         Empty
     | Cons(k, i, next) ->
         if k = key then next else Cons(k, i, remove_bucket next) in
-  let i = (hash_param 10 100 key) mod (Array.length h.data) in
+  let i = (hash key) mod (Array.length h.data) in
   h.data.(i) <- remove_bucket h.data.(i)
 
 let find h key =
-  match h.data.((hash_param 10 100 key) mod (Array.length h.data)) with
+  match h.data.((hash key) mod (Array.length h.data)) with
     Empty -> raise Not_found
   | Cons(k1, d1, rest1) ->
       if key = k1 then d1 else
@@ -104,7 +104,7 @@ let find_all h key =
       []
   | Cons(k, d, rest) ->
       if k = key then d :: find_in_bucket rest else find_in_bucket rest in
-  find_in_bucket h.data.((hash_param 10 100 key) mod (Array.length h.data))
+  find_in_bucket h.data.((hash key) mod (Array.length h.data))
 
 let mem h key =
   let rec mem_in_bucket = function
@@ -112,7 +112,7 @@ let mem h key =
       false
   | Cons(k, d, rest) ->
       k = key || mem_in_bucket rest in
-  mem_in_bucket h.data.((hash_param 10 100 key) mod (Array.length h.data))
+  mem_in_bucket h.data.((hash key) mod (Array.length h.data))
 
 let iter f h =
   let rec do_bucket = function
