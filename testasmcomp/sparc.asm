@@ -11,8 +11,16 @@
 
 /* $Id$ */
 
-        .global _call_gen_code
-_call_gen_code:
+#ifdef SYS_sunos
+#define Call_gen_code _call_gen_code
+#define Caml_c_call _caml_c_call
+#else
+#define Call_gen_code call_gen_code
+#define Caml_c_call caml_c_call
+#endif
+
+        .global Call_gen_code
+Call_gen_code:
         save    %sp, -96, %sp
         mov     %i0, %l0
         mov     %i1, %i0
@@ -26,7 +34,7 @@ _call_gen_code:
         ret
         restore
 
-        .global _caml_c_call
-_caml_c_call:
+        .global Caml_c_call
+Caml_c_call:
         jmp     %g4
         nop
