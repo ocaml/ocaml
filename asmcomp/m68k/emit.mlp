@@ -439,8 +439,11 @@ let emit_instr i =
             `	subql	#{emit_int(-n)}, {emit_reg dest}\n`;
             set_cc i.res.(0)
         | _ ->
-            `	addl	#{emit_int n}, {emit_reg dest}\n`;
-            set_cc i.res.(0)
+            if i.arg.(0).loc = i.res.(0).loc then begin
+              `	addl	#{emit_int n}, {emit_reg dest}\n`;
+              set_cc i.res.(0)
+            end else
+              `	lea	{emit_reg i.arg.(0)}@({emit_int n}), {emit_reg i.res.(0)}\n`
         end
     | Lop(Iintop_imm(Isub, n)) -> 
         let dest = i.res.(0) in

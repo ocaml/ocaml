@@ -434,6 +434,8 @@ let emit_instr i =
         `	incl	{emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Iadd, -1) | Iintop_imm(Isub, 1)) ->
         `	decl	{emit_reg i.res.(0)}\n`
+    | Lop(Iintop_imm(Iadd, n)) when i.arg.(0).loc <> i.res.(0).loc ->
+        `	leal	{emit_int n}({emit_reg i.arg.(0)}), {emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Idiv, n)) ->
         let l = Misc.log2 n in
         let lbl = new_label() in
