@@ -182,7 +182,7 @@ let loadfile file_name =
       seek_in ic toc_pos;
       let lib = (input_value ic : library) in
       begin try 
-        Dll.open_dlls lib.lib_dllibs
+        Dll.open_dlls (List.map Dll.extract_dll_name lib.lib_dllibs)
       with Failure reason ->
         raise(Error(Cannot_open_dll reason))
       end;
