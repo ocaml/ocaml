@@ -653,7 +653,7 @@ val output_string : out_channel -> string -> unit
 (** Write the string on the given output channel. *)
 
 val output : out_channel -> string -> int -> int -> unit
-(** [output oc buf ofs len] writes [len] characters from string [buf],
+(** [output oc buf pos len] writes [len] characters from string [buf],
    starting at offset [pos], to the given output channel [oc].
    Raise [Invalid_argument "output"] if [pos] and [len] do not
    designate a valid substring of [buf]. *)
@@ -738,7 +738,7 @@ val input_line : in_channel -> string
    at the beginning of line. *)
 
 val input : in_channel -> string -> int -> int -> int
-(** [input ic buf ofs len] reads up to [len] characters from
+(** [input ic buf pos len] reads up to [len] characters from
    the given channel [ic], storing them in string [buf], starting at
    character number [pos].
    It returns the actual number of characters read, between 0 and
@@ -755,8 +755,8 @@ val input : in_channel -> string -> int -> int -> int
    do not designate a valid substring of [buf]. *)          
 
 val really_input : in_channel -> string -> int -> int -> unit
-(** Read [len] characters from the given channel, storing them in
-   string [buf], starting at character number [pos].
+(** [really_input ic buf pos len] reads [len] characters from channel [ic],
+   storing them in string [buf], starting at character number [pos].
    Raise [End_of_file] if the end of file is reached before [len]
    characters have been read.
    Raise [Invalid_argument "really_input"] if
