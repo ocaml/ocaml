@@ -79,15 +79,23 @@ static struct custom_operations bigarray_ops = {
 /* 256 Mb -- after allocating that much, it's probably worth speeding
    up the major GC */
 
+/* [alloc_bigarray] will allocate a new bigarray object in the heap.
+   If [data] is NULL, the memory for the contents is also allocated
+   (with [malloc]) by [alloc_bigarray].
+   [data] cannot point into the Caml heap.
+   [dim] may point into an object in the Caml heap.
+*/
 value alloc_bigarray(int flags, int num_dims, void * data, long * dim)
 {
   long num_elts, size;
   int i;
   value res;
   struct caml_bigarray * b;
+  long dimcopy[MAX_NUM_DIMS];
 
   Assert(num_dims >= 1 && num_dims <= MAX_NUM_DIMS);
   Assert((flags & BIGARRAY_KIND_MASK) <= BIGARRAY_COMPLEX64);
+  for (i = 0; i < num_dims; i++) dimcopy[i] = dim[i];
   size = 0;
   if (data == NULL) {
     num_elts = 1;
@@ -106,7 +114,7 @@ value alloc_bigarray(int flags, int num_dims, void * data, long * dim)
   b->num_dims = num_dims;
   b->flags = flags;
   b->proxy = NULL;
-  for (i = 0; i < num_dims; i++) b->dim[i] = dim[i];
+  for (i = 0; i < num_dims; i++) b->dim[i] = dimcopy[i];
   return res;
 }
 
@@ -760,13 +768,14 @@ static void bigarray_update_proxy(struct caml_bigarray * b1,
 
 CAMLprim value bigarray_slice(value vb, value vind)
 {
-  struct caml_bigarray * b = Bigarray_val(vb);
+  CAMLparam2 (vb, vind);
+  #define b ((struct caml_bigarray *) Bigarray_val(vb))
+  CAMLlocal1 (res);
   long index[MAX_NUM_DIMS];
   int num_inds, i;
   long offset;
   long * sub_dims;
   char * sub_data;
-  value res;
 
   /* Check number of indices < number of dimensions of array */
   num_inds = Wosize_val(vind);
@@ -795,20 +804,23 @@ CAMLprim value bigarray_slice(value vb, value vind)
   /* Create or update proxy in case of managed bigarray */
   bigarray_update_proxy(b, Bigarray_val(res));
   /* Return result */
-  return res;
+  CAMLreturn (res);
+
+  #undef b
 }
 
 /* Extracting a sub-array of same number of dimensions */
 
 CAMLprim value bigarray_sub(value vb, value vofs, value vlen)
 {
-  struct caml_bigarray * b = Bigarray_val(vb);
+  CAMLparam3 (vb, vofs, vlen);
+  CAMLlocal1 (res);
+  #define b ((struct caml_bigarray *) Bigarray_val(vb))
   long ofs = Long_val(vofs);
   long len = Long_val(vlen);
   int i, changed_dim;
   long mul;
   char * sub_data;
-  value res;
 
   /* Compute offset and check bounds */
   if ((b->flags & BIGARRAY_LAYOUT_MASK) == BIGARRAY_C_LAYOUT) {
@@ -835,7 +847,9 @@ CAMLprim value bigarray_sub(value vb, value vofs, value vlen)
   /* Create or update proxy in case of managed bigarray */
   bigarray_update_proxy(b, Bigarray_val(res));
   /* Return result */
-  return res;
+  CAMLreturn (res);
+
+  #undef b
 }
 
 /* Copying a big array into another one */
@@ -946,12 +960,13 @@ CAMLprim value bigarray_fill(value vb, value vinit)
 
 CAMLprim value bigarray_reshape(value vb, value vdim)
 {
-  struct caml_bigarray * b = Bigarray_val(vb);
+  CAMLparam2 (vb, vdim);
+  CAMLlocal1 (res);
+  #define b ((struct caml_bigarray *) Bigarray_val(vb))
   long dim[MAX_NUM_DIMS];
   mlsize_t num_dims;
   unsigned long num_elts;
   int i;
-  value res;
 
   num_dims = Wosize_val(vdim);
   if (num_dims < 1 || num_dims > MAX_NUM_DIMS)
@@ -971,7 +986,9 @@ CAMLprim value bigarray_reshape(value vb, value vdim)
   /* Create or update proxy in case of managed bigarray */
   bigarray_update_proxy(b, Bigarray_val(res));
   /* Return result */
-  return res;
+  CAMLreturn (res);
+
+  #undef b
 }
 
 /* Initialization */
