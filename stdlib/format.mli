@@ -642,6 +642,6 @@ val bprintf : Buffer.t -> ('a, formatter, unit, unit) format -> 'a;;
    pretty-printer queue would result in unexpected and badly formatted
    output. *)
 
-val kprintf : (string -> string) -> ('a, unit, string, string) format -> 'a;;
+val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format -> 'b;;
 (** Same as [sprintf] above, but instead of returning the string,
    passes it to the first argument. *)
