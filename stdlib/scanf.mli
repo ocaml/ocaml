@@ -20,19 +20,19 @@ val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
    to the format string [format], converts these tokens to values, and
    applies these values to the function [f].
    The result of this application of [f] is the result of the whole construct.
-   
+
    The format is a character string which contains two types of
    objects:  plain  characters, which are simply matched with the
    input channel, and conversion specifications, each of which
    causes  conversion and reading of one argument for [f].
-   
+
    Conversion specifications consist in the [%] character, followed
    by optional field width, followed by one or two conversion
    characters. The conversion characters and their meanings are:
-   - [d] reads an optionally signed decimal integer.
+   - [d]: reads an optionally signed decimal integer.
    - [i]: reads an optionally signed integer
      (usual input formats for hexadecimal ([0x\[d\]+] and [0X\[d+\]]),
-      octal ([0o\[d\]+]), and binary [ob\[d\]+] notations are understood).
+      octal ([0o\[d\]+]), and binary [0b\[d\]+] notations are understood).
    - [u]: convert an integer argument to unsigned decimal.
    - [x]: convert an integer argument to unsigned hexadecimal,
      using lowercase letters.
