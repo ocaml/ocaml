@@ -25,7 +25,7 @@ LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib scrapelabels addlabels
 
-opt.opt: depend.cmx
+opt.opt: ocamldep.opt
 
 # The dependency generator
 
@@ -37,14 +37,20 @@ CAMLDEP_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
 ocamldep: depend.cmi $(CAMLDEP_OBJ)
 	$(CAMLC) $(LINKFLAGS) -o ocamldep $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)
 
-depend.cmx:
-	$(CAMLOPT) $(COMPFLAGS) -I ../stdlib -c depend.ml
+ocamldep.opt: depend.cmi $(CAMLDEP_OBJ:.cmo=.cmx)
+	$(CAMLOPT) $(LINKFLAGS) -o ocamldep.opt $(CAMLDEP_IMPORTS:.cmo=.cmx) \
+	           $(CAMLDEP_OBJ:.cmo=.cmx)
 
+# ocamldep is precious: sometimes we are stuck in the middle of a
+# bootstrap and we need to remake the dependencies
 clean::
-	rm -f ocamldep
+	mv -f ocamldep ocamldep.bak
+	rm -f ocamldep.opt
 
 install::
 	cp ocamldep $(BINDIR)/ocamldep$(EXE)
+	if test -f ocamldep.opt; \
+	  then cp ocamldep.opt $(BINDIR)/ocamldep.opt$(EXE); else :; fi
 
 # The profiler
 
@@ -228,13 +234,16 @@ clean::
 # Common stuff
 
 .SUFFIXES:
-.SUFFIXES: .ml .cmo .mli .cmi
+.SUFFIXES: .ml .cmo .mli .cmi .cmx
 
 .ml.cmo:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmx:
+	$(CAMLOPT) $(COMPFLAGS) -c $<
 
 clean::
 	rm -f *.cmo *.cmi
