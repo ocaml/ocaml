@@ -111,7 +111,9 @@ let rec typexp s ty =
                     | fi -> fi)
                   row.row_fields
               and name =
-                may_map (fun (p,l) -> p, List.map (typexp s) l) row.row_name in
+                may_map
+                  (fun (p,l) -> type_path s p, List.map (typexp s) l)
+                  row.row_name in
               let var =
                 Tvariant { row_fields = fields; row_more = newgenvar();
                            row_bound = !bound;
