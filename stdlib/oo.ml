@@ -14,3 +14,4 @@
 (* $Id$ *)
 
 let copy = CamlinternalOO.copy
+external oid : < .. > -> int = "%field1"
