@@ -103,8 +103,9 @@ LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
   weak.c compact.c meta.c
 
+# Need special compilation rule so as not to do -I..\byterun
 win32.obj: ../byterun/win32.c
-	$(CC) /c $(NATIVECCCOMPOPTS) ..\byterun\win32.c
+	$(CC) /c $(NATIVECCCOMPOPTS) -DNATIVE_CODE ..\byterun\win32.c
 
 clean::
 	rm -f $(LINKEDFILES)
