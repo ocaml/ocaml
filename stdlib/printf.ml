@@ -106,10 +106,6 @@ let sub_format conv fmt i =
     sub i in
   sub_fmt conv i;;
 
-let get_sub_format conv fmt i =
- let j = sub_format conv fmt i in
- String.sub fmt i (j - i - 1);;
-
 (* Returns a string that summarizes the typing information that a given
    format string contains.
    It also check the well-formedness of the string format.
@@ -284,6 +280,7 @@ let rec kfprintf k chan fmt =
   doprn 0
 
 let fprintf chan fmt = kfprintf (fun _ -> ()) chan fmt
+
 let printf fmt = fprintf stdout fmt
 let eprintf fmt = fprintf stderr fmt
 

@@ -931,9 +931,10 @@ let implode_rev s0 = function
    according to the format.
    Regular [fprintf]-like functions of this module are obtained via partial
    applications of [fprintf_out]. *)
-let rec fprintf_out str out ppf format =
-  let format = string_of_format format in
-  let limit = String.length format in
+let rec fprintf_out str out ppf fmt =
+
+  let fmt = string_of_format fmt in
+  let limit = String.length fmt in
 
   let print_as = ref None in
 
@@ -951,56 +952,54 @@ let rec fprintf_out str out ppf format =
          print_as := None in
 
   let rec doprn i =
-    if i >= limit then
-      Obj.magic (out ppf)
-    else
-      match format.[i] with
-      | '%' ->
-          Printf.scan_format format i cont_s cont_a cont_t cont_f cont_m
-      | '@' ->
-          let i = succ i in
-          if i >= limit then invalid_format format i else
-          begin match format.[i] with
-          | '[' ->
-              do_pp_open_box ppf (succ i)
-          | ']' ->
-              pp_close_box ppf ();
-              doprn (succ i)
-          | '{' ->
-              do_pp_open_tag ppf (succ i)
-          | '}' ->
-              pp_close_tag ppf ();
-              doprn (succ i)
-          | ' ' ->
-              pp_print_space ppf ();
-              doprn (succ i)
-          | ',' ->
-              pp_print_cut ppf ();
-              doprn (succ i)
-          | '?' ->
-              pp_print_flush ppf ();
-              doprn (succ i)
-          | '.' ->
-              pp_print_newline ppf ();
-              doprn (succ i)
-          | '\n' ->
-              pp_force_newline ppf ();
-              doprn (succ i)
-          | ';' ->
-              do_pp_break ppf (succ i)
-          | '<' ->
-              let got_size size i =
-                print_as := Some size;
-                doprn (skip_gt i) in
-              get_int (succ i) got_size
-          | '@' as c ->
-              pp_print_as_char c;
-              doprn (succ i)
-          | c -> invalid_format format i
-          end
-      | c ->
-         pp_print_as_char c;
-         doprn (succ i)
+    if i >= limit then Obj.magic (out ppf) else
+    match fmt.[i] with
+    | '%' ->
+        Printf.scan_format fmt i cont_s cont_a cont_t cont_f cont_m
+    | '@' ->
+        let i = succ i in
+        if i >= limit then invalid_format fmt i else
+        begin match fmt.[i] with
+        | '[' ->
+           do_pp_open_box ppf (succ i)
+        | ']' ->
+           pp_close_box ppf ();
+           doprn (succ i)
+        | '{' ->
+           do_pp_open_tag ppf (succ i)
+        | '}' ->
+           pp_close_tag ppf ();
+           doprn (succ i)
+        | ' ' ->
+           pp_print_space ppf ();
+           doprn (succ i)
+        | ',' ->
+           pp_print_cut ppf ();
+           doprn (succ i)
+        | '?' ->
+           pp_print_flush ppf ();
+           doprn (succ i)
+        | '.' ->
+           pp_print_newline ppf ();
+           doprn (succ i)
+        | '\n' ->
+           pp_force_newline ppf ();
+           doprn (succ i)
+        | ';' ->
+           do_pp_break ppf (succ i)
+        | '<' ->
+           let got_size size i =
+             print_as := Some size;
+             doprn (skip_gt i) in
+           get_int (succ i) got_size
+        | '@' as c ->
+           pp_print_as_char c;
+           doprn (succ i)
+        | c -> invalid_format fmt i
+        end
+    | c ->
+       pp_print_as_char c;
+       doprn (succ i)
 
   and cont_s s i =
     pp_print_as_string s; doprn i
@@ -1018,52 +1017,52 @@ let rec fprintf_out str out ppf format =
     doprn i
   and cont_f i =
     pp_print_flush ppf (); doprn i
-  and cont_m fmt i =
-    (* Mu-rule bites one more time! *)
-    (Obj.magic fprintf_out) str (fun out -> doprn i) ppf fmt 
+
+  and cont_m sfmt i =
+    fprintf_out str (fun ppf -> Obj.magic doprn i) ppf sfmt
 
   and get_int i c =
-   if i >= limit then invalid_integer format i else
-   match format.[i] with
+   if i >= limit then invalid_integer fmt i else
+   match fmt.[i] with
    | ' ' -> get_int (succ i) c
    | '%' ->
-      let cont_s s i = c (format_int_of_string format i s) i
-      and cont_a printer arg i = invalid_integer format i
-      and cont_t printer i = invalid_integer format i
-      and cont_f i = invalid_integer format i in
-      Printf.scan_format format i cont_s cont_a cont_t cont_f cont_m
+      let cont_s s i = c (format_int_of_string fmt i s) i
+      and cont_a printer arg i = invalid_integer fmt i
+      and cont_t printer i = invalid_integer fmt i
+      and cont_f i = invalid_integer fmt i in
+      Printf.scan_format fmt i cont_s cont_a cont_t cont_f cont_m
    | _ ->
       let rec get j =
-       if j >= limit then invalid_integer format j else
-       match format.[j] with
+       if j >= limit then invalid_integer fmt j else
+       match fmt.[j] with
        | '0' .. '9' | '-' -> get (succ j)
        | _ ->
          if j = i then c 0 j else
-         c (format_int_of_string format j (String.sub format i (j - i))) j in
+         c (format_int_of_string fmt j (String.sub fmt i (j - i))) j in
       get i
 
   and skip_gt i =
-   if i >= limit then invalid_format format i else
-   match format.[i] with
+   if i >= limit then invalid_format fmt i else
+   match fmt.[i] with
    | ' ' -> skip_gt (succ i)
    | '>' -> succ i
-   | _ -> invalid_format format i
+   | _ -> invalid_format fmt i
 
   and get_box_kind i =
    if i >= limit then Pp_box, i else
-   match format.[i] with
+   match fmt.[i] with
    | 'h' ->
       let i = succ i in
       if i >= limit then Pp_hbox, i else
-      begin match format.[i] with
+      begin match fmt.[i] with
       | 'o' ->
          let i = succ i in
-         if i >= limit then format_invalid_arg "bad box format" format i else
-         begin match format.[i] with
+         if i >= limit then format_invalid_arg "bad box format" fmt i else
+         begin match fmt.[i] with
          | 'v' -> Pp_hovbox, succ i
          | c ->
             format_invalid_arg
-              ("bad box name ho" ^ String.make 1 c) format i end
+              ("bad box name ho" ^ String.make 1 c) fmt i end
       | 'v' -> Pp_hvbox, succ i
       | c -> Pp_hbox, i
       end
@@ -1074,11 +1073,11 @@ let rec fprintf_out str out ppf format =
   and get_tag_name i c =
    let rec get accu i j =
     if j >= limit
-    then c (implode_rev (String.sub format i (j - i)) accu) j else
-    match format.[j] with
-    | '>' -> c (implode_rev (String.sub format i (j - i)) accu) j
+    then c (implode_rev (String.sub fmt i (j - i)) accu) j else
+    match fmt.[j] with
+    | '>' -> c (implode_rev (String.sub fmt i (j - i)) accu) j
     | '%' ->
-       let s0 = String.sub format i (j - i) in
+       let s0 = String.sub fmt i (j - i) in
        let cont_s s i = get (s :: s0 :: accu) i i
        and cont_a printer arg i =
          let s =
@@ -1090,42 +1089,42 @@ let rec fprintf_out str out ppf format =
            else exstring (fun ppf () -> printer ppf) () in
          get (s :: s0 :: accu) i i
        and cont_f i =
-         format_invalid_arg "bad tag name specification" format i in
-       Printf.scan_format format j cont_s cont_a cont_t cont_f cont_m
+         format_invalid_arg "bad tag name specification" fmt i in
+       Printf.scan_format fmt j cont_s cont_a cont_t cont_f cont_m
     | c -> get accu i (succ j) in
    get [] i i
 
   and do_pp_break ppf i =
    if i >= limit then begin pp_print_space ppf (); doprn i end else
-   match format.[i] with
+   match fmt.[i] with
    | '<' ->
-       let rec got_nspaces nspaces i =
-         get_int i (got_offset nspaces)
-       and got_offset nspaces offset i =
-         pp_print_break ppf nspaces offset;
-         doprn (skip_gt i) in
-       get_int (succ i) got_nspaces
+      let rec got_nspaces nspaces i =
+        get_int i (got_offset nspaces)
+      and got_offset nspaces offset i =
+        pp_print_break ppf nspaces offset;
+        doprn (skip_gt i) in
+      get_int (succ i) got_nspaces
    | c -> pp_print_space ppf (); doprn i
 
   and do_pp_open_box ppf i =
    if i >= limit then begin pp_open_box_gen ppf 0 Pp_box; doprn i end else
-   match format.[i] with
+   match fmt.[i] with
    | '<' ->
-     let kind, i = get_box_kind (succ i) in
-     let got_size size i =
-       pp_open_box_gen ppf size kind;
-       doprn (skip_gt i) in
-     get_int i got_size
+      let kind, i = get_box_kind (succ i) in
+      let got_size size i =
+        pp_open_box_gen ppf size kind;
+        doprn (skip_gt i) in
+      get_int i got_size
    | c -> pp_open_box_gen ppf 0 Pp_box; doprn i
 
   and do_pp_open_tag ppf i =
    if i >= limit then begin pp_open_tag ppf ""; doprn i end else
-   match format.[i] with
+   match fmt.[i] with
    | '<' ->
-     let got_name tag_name i =
-       pp_open_tag ppf tag_name;
-       doprn (skip_gt i) in
-     get_tag_name (succ i) got_name
+      let got_name tag_name i =
+        pp_open_tag ppf tag_name;
+        doprn (skip_gt i) in
+      get_tag_name (succ i) got_name
    | c -> pp_open_tag ppf ""; doprn i in
 
   doprn 0;;
