@@ -29,12 +29,13 @@ Objective Caml 2.00:
     (inspired by Aleksey Nogin's patch).
   - A case of bad spilling with high register pressure fixed.
   - Fixed GC bug when GC called from C without active Caml code.
-  - Alpha: simplified code generation for jump tables.
+  - Alpha: $gp handling revised to follow Alpha's standard conventions,
+    allow running "atom" and "pixie" on ocamlopt-generated binaries.
   - Intel x86: use movzbl and movsbl systematically to load 8-bit and 16-bit
     quantities, no more hacks with partial registers (better for the
-    Pentium Pro, worse for the Pentium)
+    Pentium Pro, worse for the Pentium).
   - PowerPC: more aggressive scheduling of return address reloading.
-  - Sparc: scheduling bug with register pairs fixed.
+  - Sparc: scheduling bug related to register pairs fixed.
 
 * Runtime system:
   - Better printing of uncaught exceptions (print a fully qualified
@@ -55,7 +56,7 @@ Objective Caml 2.00:
   - Module Filename: temp_file no longer loops if temp dir doesn't exist.
   - Module List: added rev_append (tail-rec alternative to @).
   - Oo.copy removed.
-  - Module Set: tell the truth about elements returning a sorted list;
+  - Module Set: tell the truth about "elements" returning a sorted list;
     added min_elt, max_elt, singleton.
   - Module Sys: added Sys.time for simple measuring of CPU time.
 
@@ -73,7 +74,7 @@ Objective Caml 2.00:
 * The Unix library:
   - Use float instead of int to represent Unix times (number of seconds
     from the epoch).  This fixes a year 2005 problem on 32-bit platforms.
-    Functions affected: stat, lstat, fstat, tie, gmtime, localtime,
+    Functions affected: stat, lstat, fstat, time, gmtime, localtime,
     mktime, utimes.
   - Added putenv.
   - Better handling of "unknown" error codes (EUNKNOWNERR).
@@ -85,6 +86,7 @@ Objective Caml 2.00:
 * The thread libraries:
   - Bytecode threads: bug with escaping exceptions fixed.
   - System threads (POSIX, Win32): malloc/free bug fixed; signal bug fixed.
+  - Both: added Thread.wait_signal to wait synchronously for signals.
 
 * The graph library: bigger color cache.
 
