@@ -12,14 +12,14 @@
 
 (* $Id$ *)
 
-type t =
-  | Partial_match of string          (* P *)
-  | Unused_match                     (* U *)
-  | Method_override of string list   (* M *)
-  | Hide_instance_variable of string (* V *)
-  | Partial_application              (* F *)
-  | Statement_type                   (* S *)
+type t =                             (* A is all *)
   | Comment of string                (* C *)
+  | Partial_application              (* F *)
+  | Method_override of string list   (* M *)
+  | Partial_match of string          (* P *)
+  | Statement_type                   (* S *)
+  | Unused_match                     (* U *)
+  | Hide_instance_variable of string (* V *)
   | Other of string                  (* X *)
 ;;
 

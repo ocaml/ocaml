@@ -12,60 +12,59 @@
 
 (* $Id$ *)
 
-type t =
-  | Partial_match of string          (* P *)
-  | Unused_match                     (* U *)
-  | Method_override of string list   (* M *)
-  | Hide_instance_variable of string (* V *)
-  | Partial_application              (* F *)
-  | Statement_type                   (* S *)
+(* Please keep them in alphabetical order *)
+
+type t =                             (* A is all *)
   | Comment of string                (* C *)
+  | Partial_application              (* F *)
+  | Method_override of string list   (* M *)
+  | Partial_match of string          (* P *)
+  | Statement_type                   (* S *)
+  | Unused_match                     (* U *)
+  | Hide_instance_variable of string (* V *)
   | Other of string                  (* X *)
 ;;
 
-let pflag = ref true;;
-let uflag = ref true;;
-let mflag = ref true;;
-let vflag = ref true;;
-let fflag = ref true;;
-let sflag = ref true;;
-let cflag = ref true;;
-let xflag = ref true;;
+let letter = function        (* 'a' is all *)
+  | Comment _ ->                'c'
+  | Partial_application ->      'f'
+  | Method_override _ ->        'm'
+  | Partial_match _ ->          'p'
+  | Statement_type ->           's'
+  | Unused_match ->             'u'
+  | Hide_instance_variable _ -> 'v'
+  | Other _ ->                  'x'
+;;
 
-let rec parse_options s =
+let check c =
+  try ignore (String.index "acfmpsuvxACFMPSUVX" c)
+  with _ -> raise (Arg.Bad (Printf.sprintf "unknown warning option %c" c))
+;;    
+
+let flags = Array.create 26 true;;
+
+let translate c =
+  check c;
+  if c >= 'A' && c <= 'Z' then
+    (Char.code c - Char.code 'A', true)
+  else
+    (Char.code c - Char.code 'a', false)
+;;
+
+let parse_options s =
   for i = 0 to String.length s - 1 do
-    match s.[i] with
-    | 'P' -> pflag := true
-    | 'p' -> pflag := false
-    | 'U' -> uflag := true
-    | 'u' -> uflag := false
-    | 'M' -> mflag := true
-    | 'm' -> mflag := false
-    | 'V' -> vflag := true
-    | 'v' -> vflag := false
-    | 'F' -> fflag := true
-    | 'f' -> fflag := false
-    | 'S' -> sflag := true
-    | 's' -> sflag := false
-    | 'C' -> cflag := true
-    | 'c' -> cflag := false
-    | 'X' -> xflag := true
-    | 'x' -> xflag := false
-    | 'A' -> parse_options "PUMVFSX"
-    | 'a' -> parse_options "pumvfsx"
-    | c -> raise (Arg.Bad (Printf.sprintf "unknown warning option %c" c))
+    if s.[i] = 'A' then Array.fill flags 0 (Array.length flags) true
+    else if s.[i] = 'a' then Array.fill flags 0 (Array.length flags) false
+    else begin
+      let (n, fl) = translate s.[i] in
+      flags.(n) <- fl;
+    end;
   done
 ;;
 
-let is_active = function
-  | Partial_match _ -> !pflag
-  | Unused_match -> !uflag
-  | Method_override _ -> !mflag
-  | Hide_instance_variable _ -> !vflag
-  | Partial_application -> !fflag
-  | Statement_type -> !sflag
-  | Comment _ -> !cflag
-  | Other _ -> !xflag
+let is_active x =
+  let (n, _) = translate (letter x) in
+  flags.(n)
 ;;
 
 let message = function
