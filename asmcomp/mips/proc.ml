@@ -205,5 +205,5 @@ let contains_calls = ref false
 let asm_command = "as -n32 -O2 -nocpp -g0 -o "
 
 let assemble_file infile outfile =
-  Ccomp.command (asm_command ^ outfile ^ " " ^ infile)
+  Ccomp.command (asm_command ^ Filename.quote outfile ^ " " ^ Filename.quote infile)
 

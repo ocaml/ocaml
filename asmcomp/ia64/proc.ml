@@ -210,4 +210,4 @@ let contains_calls = ref false
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
-  Ccomp.command ("as -xexplicit -o " ^ outfile ^ " " ^ infile)
+  Ccomp.command ("as -xexplicit -o " ^ Filename.quote outfile ^ " " ^ Filename.quote infile)

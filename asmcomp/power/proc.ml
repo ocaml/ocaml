@@ -236,6 +236,8 @@ let contains_calls = ref false
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
+  let infile = Filename.quote infile
+  and outfile = Filename.quote outfile in
   match Config.system with
     "aix" ->
       let proc = if powerpc then "ppc" else "pwr" in

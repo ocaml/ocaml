@@ -84,7 +84,9 @@ let rename_in_object_file units pref objfile =
   let symbolfile = Filename.temp_file "camlsymbols" "" in
   try
     let nm_cmdline =
-      sprintf "%s %s > %s" Config.binutils_nm objfile symbolfile in
+      sprintf "%s %s > %s"
+              Config.binutils_nm
+              (Filename.quote objfile) (Filename.quote symbolfile) in
     if Ccomp.command nm_cmdline <> 0 then raise(Error Linking_error);
     let symbols_to_rename =
       extract_symbols units symbolfile in
@@ -95,7 +97,7 @@ let rename_in_object_file units pref objfile =
           (List.map
             (fun s -> sprintf "--redefine-sym '%s=%s__%s'" s pref s)
             symbols_to_rename))
-        objfile in
+        (Filename.quote objfile) in
     (* FIXME: what if the command line is too long? *)
     if Ccomp.command objcopy_cmdline <> 0 then raise(Error Linking_error);
     remove_file symbolfile;
@@ -230,8 +232,10 @@ let make_package_object ppf unit_names objfiles targetobj targetname =
   remove_file asmtemp;
   let ld_cmd =
     sprintf "%s -o %s %s %s"
-            Config.native_partial_linker targetobj objtemp
-            (String.concat " " objfiles) in
+            Config.native_partial_linker 
+            (Filename.quote targetobj)
+            (Filename.quote objtemp)
+            (Ccomp.quote_files objfiles) in
   let retcode = Ccomp.command ld_cmd in
   remove_file objtemp;
   if retcode <> 0 then raise(Error Linking_error)

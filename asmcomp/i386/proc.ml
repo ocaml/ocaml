@@ -170,5 +170,5 @@ let contains_calls = ref false
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
-  Ccomp.command ("as -o " ^ outfile ^ " " ^ infile)
+  Ccomp.command ("as -o " ^ Filename.quote outfile ^ " " ^ Filename.quote infile)
 

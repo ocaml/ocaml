@@ -211,5 +211,5 @@ let assemble_file infile outfile =
     then if !Clflags.gprofile then "as -O2 -nocpp -pg -o "
                               else "as -O2 -nocpp -o "
     else "as -o " in
-  Ccomp.command (as_cmd ^ outfile ^ " " ^ infile)
+  Ccomp.command (as_cmd ^ Filename.quote outfile ^ " " ^ Filename.quote infile)
 

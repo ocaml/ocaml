@@ -227,43 +227,43 @@ let call_linker file_list startup_file =
         if not !Clflags.output_c_object then
           Printf.sprintf "%s /Fe%s %s %s %s %s %s %s %s"
             !Clflags.c_linker
-            !Clflags.exec_name
+            (Filename.quote !Clflags.exec_name)
             (Clflags.std_include_flag "-I")
             (String.concat " " (List.rev !Clflags.ccopts))
-            startup_file
-            (String.concat " " (List.rev file_list))
-            (String.concat " "
-                           (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
-            runtime_lib
+            (Filename.quote startup_file)
+            (Ccomp.quote_files (List.rev file_list))
+            (Ccomp.quote_files 
+              (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
+            (Filename.quote runtime_lib)
             c_lib
         else
           Printf.sprintf "%s /out:%s %s %s"
             Config.native_partial_linker
-            !Clflags.object_name
-            startup_file
-            (String.concat " " (List.rev file_list))
+            (Filename.quote !Clflags.object_name)
+            (Filename.quote startup_file)
+            (Ccomp.quote_files (List.rev file_list))
     | _ ->
         if not !Clflags.output_c_object then
           Printf.sprintf "%s %s -o %s %s %s %s %s %s %s %s %s"
             !Clflags.c_linker
             (if !Clflags.gprofile then "-pg" else "")
-            !Clflags.exec_name
+            (Filename.quote !Clflags.exec_name)
             (Clflags.std_include_flag "-I")
             (String.concat " " (List.rev !Clflags.ccopts))
-            startup_file
-            (String.concat " " (List.rev file_list))
-            (String.concat " "
+            (Filename.quote startup_file)
+            (Ccomp.quote_files (List.rev file_list))
+            (Ccomp.quote_files
               (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
                         !load_path))
-            (String.concat " " (List.rev !Clflags.ccobjs))
-            runtime_lib
+            (Ccomp.quote_files (List.rev !Clflags.ccobjs))
+            (Filename.quote runtime_lib)
             c_lib
         else
           Printf.sprintf "%s -o %s %s %s"
             Config.native_partial_linker
-            !Clflags.object_name
-            startup_file
-            (String.concat " " (List.rev file_list))
+            (Filename.quote !Clflags.object_name)
+            (Filename.quote startup_file)
+            (Ccomp.quote_files (List.rev file_list))
   in if Ccomp.command cmd <> 0 then raise(Error Linking_error)
 
 let object_file_name name =

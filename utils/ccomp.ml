@@ -24,6 +24,10 @@ let command cmdline =
 
 let run_command cmdline = ignore(command cmdline)
 
+let quote_files lst =
+  String.concat " "
+    (List.map (fun f -> if f = "" then f else Filename.quote f) lst)
+
 let compile_file name =
   match Sys.os_type with
   | "MacOS" ->
@@ -44,25 +48,25 @@ let compile_file name =
          "%s -c %s %s %s %s"
          !Clflags.c_compiler
          (String.concat " " (List.rev !Clflags.ccopts))
-         (String.concat " "
-           (List.rev_map (fun dir -> "-I" ^ dir) !Clflags.include_dirs))
+         (quote_files
+             (List.rev_map (fun dir -> "-I" ^ dir) !Clflags.include_dirs))
          (Clflags.std_include_flag "-I")
-         name)
-;;
+         (Filename.quote name))
 
 let create_archive archive file_list =
   Misc.remove_file archive;
+  let quoted_archive = Filename.quote archive in
   match Config.system with
     "win32" ->
       command(Printf.sprintf "lib /nologo /debugtype:cv /out:%s %s"
-                                 archive (String.concat " " file_list))
+                             quoted_archive (quote_files file_list))
   | _ ->
       let r1 =
         command(Printf.sprintf "ar rc %s %s"
-                                   archive (String.concat " " file_list)) in
+                quoted_archive (quote_files file_list)) in
       if r1 <> 0 || String.length Config.ranlib = 0
       then r1
-      else command(Config.ranlib ^ " " ^ archive)
+      else command(Config.ranlib ^ " " ^ quoted_archive)
 
 let expand_libname name =
   if String.length name < 2 || String.sub name 0 2 <> "-l"
