@@ -150,7 +150,7 @@ line of comments.
 Use \var{title} as the title for the generated documentation.
 
 \item["-intro" \var{file}]
-Use content of \var{file} as ocamldoc text to use as introduction (HTML and \LaTeX only).
+Use content of \var{file} as ocamldoc text to use as introduction (HTML, \LaTeX and TeXinfo only).
 
 \item["-v"]
 Verbose mode. Display progress information.
