@@ -120,8 +120,6 @@ let rec mkrangepat c1 c2 =
 %token DONE
 %token DOT
 %token DOTDOT
-%token DOTLBRACKET
-%token DOTLPAREN
 %token DOWNTO
 %token ELSE
 %token END
@@ -222,7 +220,7 @@ let rec mkrangepat c1 c2 =
 %left  prec_appl                        /* function application */
 %right prec_constr_appl                 /* constructor application */
 %left  SHARP                            /* method call */
-%left  DOT DOTLPAREN DOTLBRACKET        /* record access, array access */
+%left  DOT                              /* record access, array access */
 %right PREFIXOP                         /* ! */
 
 /* Entry points */
