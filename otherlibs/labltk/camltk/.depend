@@ -11,16 +11,16 @@ cFont.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi
 cFrame.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
 cGrab.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
 cGrid.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
-cImage.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
 cImagebitmap.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
+cImage.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
 cImagephoto.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
 cLabel.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
 cListbox.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
-cMenu.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
 cMenubutton.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
+cMenu.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
 cMessage.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
-cOption.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
 cOptionmenu.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
+cOption.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
 cPack.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
 cPalette.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
 cPixmap.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
@@ -36,6 +36,22 @@ cTkwait.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi
 cToplevel.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
 cWinfo.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
 cWm.cmi: cTk.cmo ../support/textvariable.cmi ../support/widget.cmi 
+camltk.cmo: cBell.cmi cButton.cmi cCanvas.cmi cCheckbutton.cmi cClipboard.cmi \
+    cDialog.cmi cEncoding.cmi cEntry.cmi cFocus.cmi cFont.cmi cFrame.cmi \
+    cGrab.cmi cGrid.cmi cImage.cmi cImagebitmap.cmi cImagephoto.cmi \
+    cLabel.cmi cListbox.cmi cMenu.cmi cMenubutton.cmi cMessage.cmi \
+    cOption.cmi cOptionmenu.cmi cPack.cmi cPalette.cmi cPixmap.cmi cPlace.cmi \
+    cRadiobutton.cmi cResource.cmi cScale.cmi cScrollbar.cmi cSelection.cmi \
+    cText.cmi cTk.cmo cTkvars.cmi cTkwait.cmi cToplevel.cmi cWinfo.cmi \
+    cWm.cmi 
+camltk.cmx: cBell.cmx cButton.cmx cCanvas.cmx cCheckbutton.cmx cClipboard.cmx \
+    cDialog.cmx cEncoding.cmx cEntry.cmx cFocus.cmx cFont.cmx cFrame.cmx \
+    cGrab.cmx cGrid.cmx cImage.cmx cImagebitmap.cmx cImagephoto.cmx \
+    cLabel.cmx cListbox.cmx cMenu.cmx cMenubutton.cmx cMessage.cmx \
+    cOption.cmx cOptionmenu.cmx cPack.cmx cPalette.cmx cPixmap.cmx cPlace.cmx \
+    cRadiobutton.cmx cResource.cmx cScale.cmx cScrollbar.cmx cSelection.cmx \
+    cText.cmx cTk.cmx cTkvars.cmx cTkwait.cmx cToplevel.cmx cWinfo.cmx \
+    cWm.cmx 
 cBell.cmo: cTk.cmo ../support/protocol.cmi ../support/textvariable.cmi \
     ../support/widget.cmi cBell.cmi 
 cBell.cmx: cTk.cmx ../support/protocol.cmx ../support/textvariable.cmx \
@@ -88,14 +104,14 @@ cGrid.cmo: cTk.cmo ../support/protocol.cmi ../support/textvariable.cmi \
     ../support/widget.cmi cGrid.cmi 
 cGrid.cmx: cTk.cmx ../support/protocol.cmx ../support/textvariable.cmx \
     ../support/widget.cmx cGrid.cmi 
-cImage.cmo: cTk.cmo ../support/protocol.cmi ../support/textvariable.cmi \
-    ../support/widget.cmi cImage.cmi 
-cImage.cmx: cTk.cmx ../support/protocol.cmx ../support/textvariable.cmx \
-    ../support/widget.cmx cImage.cmi 
 cImagebitmap.cmo: cTk.cmo ../support/protocol.cmi ../support/textvariable.cmi \
     ../support/widget.cmi cImagebitmap.cmi 
 cImagebitmap.cmx: cTk.cmx ../support/protocol.cmx ../support/textvariable.cmx \
     ../support/widget.cmx cImagebitmap.cmi 
+cImage.cmo: cTk.cmo ../support/protocol.cmi ../support/textvariable.cmi \
+    ../support/widget.cmi cImage.cmi 
+cImage.cmx: cTk.cmx ../support/protocol.cmx ../support/textvariable.cmx \
+    ../support/widget.cmx cImage.cmi 
 cImagephoto.cmo: cTk.cmo ../support/protocol.cmi ../support/textvariable.cmi \
     ../support/widget.cmi cImagephoto.cmi 
 cImagephoto.cmx: cTk.cmx ../support/protocol.cmx ../support/textvariable.cmx \
@@ -108,26 +124,26 @@ cListbox.cmo: cTk.cmo ../support/protocol.cmi ../support/textvariable.cmi \
     ../support/widget.cmi cListbox.cmi 
 cListbox.cmx: cTk.cmx ../support/protocol.cmx ../support/textvariable.cmx \
     ../support/widget.cmx cListbox.cmi 
-cMenu.cmo: cTk.cmo ../support/protocol.cmi ../support/textvariable.cmi \
-    ../support/widget.cmi cMenu.cmi 
-cMenu.cmx: cTk.cmx ../support/protocol.cmx ../support/textvariable.cmx \
-    ../support/widget.cmx cMenu.cmi 
 cMenubutton.cmo: cTk.cmo ../support/protocol.cmi ../support/textvariable.cmi \
     ../support/widget.cmi cMenubutton.cmi 
 cMenubutton.cmx: cTk.cmx ../support/protocol.cmx ../support/textvariable.cmx \
     ../support/widget.cmx cMenubutton.cmi 
+cMenu.cmo: cTk.cmo ../support/protocol.cmi ../support/textvariable.cmi \
+    ../support/widget.cmi cMenu.cmi 
+cMenu.cmx: cTk.cmx ../support/protocol.cmx ../support/textvariable.cmx \
+    ../support/widget.cmx cMenu.cmi 
 cMessage.cmo: cTk.cmo ../support/protocol.cmi ../support/textvariable.cmi \
     ../support/widget.cmi cMessage.cmi 
 cMessage.cmx: cTk.cmx ../support/protocol.cmx ../support/textvariable.cmx \
     ../support/widget.cmx cMessage.cmi 
-cOption.cmo: cTk.cmo ../support/protocol.cmi ../support/textvariable.cmi \
-    ../support/widget.cmi cOption.cmi 
-cOption.cmx: cTk.cmx ../support/protocol.cmx ../support/textvariable.cmx \
-    ../support/widget.cmx cOption.cmi 
 cOptionmenu.cmo: cTk.cmo ../support/protocol.cmi ../support/textvariable.cmi \
     ../support/widget.cmi cOptionmenu.cmi 
 cOptionmenu.cmx: cTk.cmx ../support/protocol.cmx ../support/textvariable.cmx \
     ../support/widget.cmx cOptionmenu.cmi 
+cOption.cmo: cTk.cmo ../support/protocol.cmi ../support/textvariable.cmi \
+    ../support/widget.cmi cOption.cmi 
+cOption.cmx: cTk.cmx ../support/protocol.cmx ../support/textvariable.cmx \
+    ../support/widget.cmx cOption.cmi 
 cPack.cmo: cTk.cmo ../support/protocol.cmi ../support/textvariable.cmi \
     ../support/widget.cmi cPack.cmi 
 cPack.cmx: cTk.cmx ../support/protocol.cmx ../support/textvariable.cmx \
@@ -192,19 +208,3 @@ cWm.cmo: cTk.cmo ../support/protocol.cmi ../support/textvariable.cmi \
     ../support/widget.cmi cWm.cmi 
 cWm.cmx: cTk.cmx ../support/protocol.cmx ../support/textvariable.cmx \
     ../support/widget.cmx cWm.cmi 
-camltk.cmo: cBell.cmi cButton.cmi cCanvas.cmi cCheckbutton.cmi cClipboard.cmi \
-    cDialog.cmi cEncoding.cmi cEntry.cmi cFocus.cmi cFont.cmi cFrame.cmi \
-    cGrab.cmi cGrid.cmi cImage.cmi cImagebitmap.cmi cImagephoto.cmi \
-    cLabel.cmi cListbox.cmi cMenu.cmi cMenubutton.cmi cMessage.cmi \
-    cOption.cmi cOptionmenu.cmi cPack.cmi cPalette.cmi cPixmap.cmi cPlace.cmi \
-    cRadiobutton.cmi cResource.cmi cScale.cmi cScrollbar.cmi cSelection.cmi \
-    cText.cmi cTk.cmo cTkvars.cmi cTkwait.cmi cToplevel.cmi cWinfo.cmi \
-    cWm.cmi 
-camltk.cmx: cBell.cmx cButton.cmx cCanvas.cmx cCheckbutton.cmx cClipboard.cmx \
-    cDialog.cmx cEncoding.cmx cEntry.cmx cFocus.cmx cFont.cmx cFrame.cmx \
-    cGrab.cmx cGrid.cmx cImage.cmx cImagebitmap.cmx cImagephoto.cmx \
-    cLabel.cmx cListbox.cmx cMenu.cmx cMenubutton.cmx cMessage.cmx \
-    cOption.cmx cOptionmenu.cmx cPack.cmx cPalette.cmx cPixmap.cmx cPlace.cmx \
-    cRadiobutton.cmx cResource.cmx cScale.cmx cScrollbar.cmx cSelection.cmx \
-    cText.cmx cTk.cmx cTkvars.cmx cTkwait.cmx cToplevel.cmx cWinfo.cmx \
-    cWm.cmx 
