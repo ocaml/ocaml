@@ -264,7 +264,8 @@ CAMLexport long pos_out(struct channel *channel)
 
 /* Input */
 
-static int do_read(int fd, char *p, unsigned int n)
+/* do_read is exported for Cash */
+CAMLexport int do_read(int fd, char *p, unsigned int n)
 {
   int retcode;
 
