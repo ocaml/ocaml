@@ -23,7 +23,7 @@ value highlight_locations lb loc1 loc2 =
       if pos0 < 0 then raise Exit else ();
       let pos_at_bol = ref 0 in
       print_string "Toplevel input:\n# ";
-      for pos = 0 to String.length lb.lex_buffer - pos0 - 1 do {
+      for pos = 0 to lb.lex_buffer_len - pos0 - 1 do {
         let c = lb.lex_buffer.[pos + pos0] in
         if c = '\n' then do {
           if pos_at_bol.val <= fst loc1 && snd loc1 <= pos then do {
@@ -45,7 +45,7 @@ value highlight_locations lb loc1 loc2 =
           }
           else print_char '\n';
           pos_at_bol.val := pos + 1;
-          if pos < String.length lb.lex_buffer - pos0 - 1 then
+          if pos < lb.lex_buffer_len - pos0 - 1 then
             print_string "  "
           else ()
         }
