@@ -1,4 +1,5 @@
 Current :
+OK - fix: better output of titles in html (use more the style)
 OK - add: -intro option to use a file content as ocamldoc comment to use as
 OK   introduction for LaTeX document and HTML index page
 OK - add: the HTML generator generates the code of the module if available

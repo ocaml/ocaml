@@ -282,14 +282,15 @@ class text =
       "<blockquote>\n"^(self#html_of_text t)^"</blockquote>\n"
 
     method html_of_Title n label_opt t =
-      let css_class = "title"^(string_of_int n) in
       let label1 = self#create_title_label (n, label_opt, t) in
-      "<br>\n"^
       "<a name=\""^(Naming.label_target label1)^"\"></a>\n"^
-      "<table cellpadding=5 cellspacing=5 width=\"100%\">\n"^
-      "<tr class=\""^css_class^"\"><td><div align=center>\n"^
-      "<span class=\""^css_class^"\">"^(self#html_of_text t)^"</span>\n"^
-      "</div>\n</td>\n</tr>\n</table>\n"
+      let (tag_o, tag_c) = 
+	if n > 6 then
+	  (Printf.sprintf "div class=\"h%d\"" n, "div")
+	else
+	  let t = Printf.sprintf "h%d" n in (t, t)
+      in
+      (Printf.sprintf "<%s>%s</%s>\n" tag_o (self#html_of_text t) tag_c)
 
     method html_of_Latex _ = ""
       (* don't care about LaTeX stuff in HTML. *)
@@ -501,12 +502,48 @@ class html =
         ".warning { color : Red ; font-weight : bold }" ;
         ".info { margin-left : 3em; margin-right : 3em }" ;
         ".code { color : #465F91 ; }" ;
-        ".title1 { font-size : 20pt ; background-color : #909DFF }" ;
-        ".title2 { font-size : 20pt ; background-color : #90BDFF }" ;
-        ".title3 { font-size : 20pt ; background-color : #90DDFF }" ;
-        ".title4 { font-size : 20pt ; background-color : #90EDFF }" ;
-        ".title5 { font-size : 20pt ; background-color : #90FDFF }" ;
-        ".title6 { font-size : 20pt ; background-color : #C0FFFF }" ;
+        "h1 { font-size : 20pt ; text-align: center; }" ;
+
+	"h2 { font-size : 20pt ; border: 1px solid #000000; "^
+	"margin-top: 5px; margin-bottom: 2px;"^
+	"text-align: center; background-color: #90BDFF ;"^
+	"padding: 2px; }" ;
+
+	"h3 { font-size : 20pt ; border: 1px solid #000000; "^
+	"margin-top: 5px; margin-bottom: 2px;"^
+	"text-align: center; background-color: #90DDFF ;"^
+	"padding: 2px; }" ;
+
+	"h4 { font-size : 20pt ; border: 1px solid #000000; "^
+	"margin-top: 5px; margin-bottom: 2px;"^
+	"text-align: center; background-color: #90EDFF ;"^
+	"padding: 2px; }" ;
+
+	"h5 { font-size : 20pt ; border: 1px solid #000000; "^
+	"margin-top: 5px; margin-bottom: 2px;"^
+	"text-align: center; background-color: #90FDFF ;"^
+	"padding: 2px; }" ;
+
+	"h6 { font-size : 20pt ; border: 1px solid #000000; "^
+	"margin-top: 5px; margin-bottom: 2px;"^
+	"text-align: center; background-color: #C0FFFF ; "^
+	"padding: 2px; }" ;
+
+	"div.h7 { font-size : 20pt ; border: 1px solid #000000; "^
+	"margin-top: 5px; margin-bottom: 2px;"^
+	"text-align: center; background-color: #E0FFFF ; "^
+	"padding: 2px; }" ;
+
+	"div.h8 { font-size : 20pt ; border: 1px solid #000000; "^
+	"margin-top: 5px; margin-bottom: 2px;"^
+	"text-align: center; background-color: #F0FFFF ; "^
+	"padding: 2px; }" ;
+
+	"div.h9 { font-size : 20pt ; border: 1px solid #000000; "^
+	"margin-top: 5px; margin-bottom: 2px;"^
+	"text-align: center; background-color: #FFFFFF ; "^
+	"padding: 2px; }" ;
+
 	".typetable { border-style : hidden }" ;
 	".indextable { border-style : hidden }" ;
 	".paramstable { border-style : hidden ; padding: 5pt 5pt}" ;
@@ -1350,7 +1387,7 @@ class html =
 
     (** Return html code for a module comment.*)
     method html_of_module_comment text =
-      "<br>\n"^(self#html_of_text text)^"<br><br>\n"
+      "<br>\n"^(self#html_of_text text)^"<br>\n"
 
     (** Return html code for a class comment.*)
     method html_of_class_comment text =
