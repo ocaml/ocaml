@@ -386,8 +386,8 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
 -          [@@]: print a plain [@] character.
 
            Example: [printf "@\[%s@ %i@\]" "x =" 1] is equivalent to 
-           [open_box (); print_string "x ="; print_space (); print_int
-           1; close_box ()]. It prints [x = 1] within a pretty-printing box. *)
+           [open_box (); print_string "x ="; print_space (); print_int 1; close_box ()].
+           It prints [x = 1] within a pretty-printing box. *)
 
 val printf : ('a, formatter, unit) format -> 'a;;
         (* Same as [fprintf], but output on [std_formatter]. *)
