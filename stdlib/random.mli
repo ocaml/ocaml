@@ -63,8 +63,7 @@ val bool : unit -> bool
 (** These function manipulate the current state explicitely.
     This allows you to use one or several deterministic PRNGs,
     even in a multi-threaded program, without interference from
-    other parts of the program (for example, the Filename module
-    and some object-oriented primitives use the default PRNG).
+    other parts of the program.
 *)
 
 module State : sig

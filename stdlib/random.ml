@@ -76,26 +76,28 @@ module State = struct
 
   let rec intaux s n =
     let r = bits s in
-    if r >= n then intaux s n else r
+    let v = r mod n in
+    if r - v > 0x3FFFFFFF - n + 1 then intaux s n else v
   ;;
   let int s bound =
     if bound > 0x3FFFFFFF || bound <= 0
     then invalid_arg "Random.int"
-    else (intaux s (0x3FFFFFFF / bound * bound)) mod bound
+    else intaux s bound
   ;;
 
   let rec int32aux s n =
     let b1 = Int32.of_int (bits s) in
     let b2 = Int32.shift_left (Int32.of_int (bits s land 1)) 30 in
     let r = Int32.logor b1 b2 in
-    if r >= n then int32aux s n else r
+    let v = Int32.rem r n in
+    if Int32.sub r v > Int32.add (Int32.sub Int32.max_int n) 1l
+    then int32aux s n
+    else v
   ;;
   let int32 s bound =
-    if bound <= 0l then
-      invalid_arg "Random.int32"
-    else
-      let rb = Int32.mul bound (Int32.div Int32.max_int bound) in
-      Int32.rem (int32aux s rb) bound
+    if bound <= 0l
+    then invalid_arg "Random.int32"
+    else int32aux s bound
   ;;
 
   let rec int64aux s n =
@@ -103,14 +105,15 @@ module State = struct
     let b2 = Int64.shift_left (Int64.of_int (bits s)) 30 in
     let b3 = Int64.shift_left (Int64.of_int (bits s land 7)) 60 in
     let r = Int64.logor b1 (Int64.logor b2 b3) in
-    if r >= n then int64aux s n else r
+    let v = Int64.rem r n in
+    if Int64.sub r v > Int64.add (Int64.sub Int64.max_int n) 1L
+    then int64aux s n
+    else v
   ;;
   let int64 s bound =
-    if bound <= 0L then
-      invalid_arg "Random.int64"
-    else
-      let rb = Int64.mul bound (Int64.div Int64.max_int bound) in
-      Int64.rem (int64aux s rb) bound
+    if bound <= 0L
+    then invalid_arg "Random.int64"
+    else int64aux s bound
   ;;
 
   let nativeint =
