@@ -16,12 +16,12 @@
 #include "unixsupport.h"
 #include <fcntl.h>
 
-static int open_access_flags[10] = {
-  GENERIC_READ, GENERIC_WRITE, GENERIC_READ|GENERIC_WRITE, 0, 0, 0, 0, 0, 0, 0
+static int open_access_flags[8] = {
+  GENERIC_READ, GENERIC_WRITE, GENERIC_READ|GENERIC_WRITE, 0, 0, 0, 0, 0,
 };
 
-static int open_create_flags[10] = {
-  0, 0, 0, 0, 0, O_CREAT, O_TRUNC, O_EXCL, 0, 0
+static int open_create_flags[8] = {
+  0, 0, 0, 0, 0, O_CREAT, O_TRUNC, O_EXCL
 };
 
 value unix_open(value path, value flags, value perm) /* ML */

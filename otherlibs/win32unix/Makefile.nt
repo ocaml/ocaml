@@ -41,6 +41,7 @@ libunix.lib: copy_unix_files io.h $(C_OBJS)
 copy_unix_files:
 	@- cd ..\unix & cp -p -u -v $(UNIX_FILES) ../win32unix
 # This requires GNU cp
+	@cp ../unix/unix.mli unix.mli
 
 io.h: $(SYSTEM_INCLUDES)\io.h
 	copy $(SYSTEM_INCLUDES)\io.h io.h

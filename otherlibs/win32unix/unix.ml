@@ -88,7 +88,7 @@ type error =
   | EHOSTDOWN
   | EHOSTUNREACH
   | ELOOP
-  | EUNKNOWNERR
+  | EUNKNOWNERR of int
 
 exception Unix_error of error * string * string
 
@@ -137,6 +137,10 @@ external getpid : unit -> int = "unix_getpid"
 
 let wait () = invalid_arg("Unix.wait not implemented") 
 
+let getppid () = invalid_arg("Unix.getppid not implemented")
+
+(* Basic file input/output *)
+
 type standard_handle = STD_INPUT | STD_OUTPUT | STD_ERROR
 
 external stdhandle : standard_handle -> file_descr = "win_stdhandle"
@@ -154,8 +158,6 @@ type open_flag =
   | O_CREAT
   | O_TRUNC
   | O_EXCL
-  | O_BINARY
-  | O_TEXT
 
 type file_perm = int
 
@@ -176,23 +178,34 @@ let write fd buf ofs len =
   then invalid_arg "Unix.write"
   else unsafe_write fd buf ofs len
 
+(* Interfacing with the standard input/output library *)
+
 external open_read_descriptor : int -> in_channel = "caml_open_descriptor"
 external open_write_descriptor : int -> out_channel = "caml_open_descriptor"
 external fd_of_in_channel : in_channel -> int = "channel_descriptor"
 external fd_of_out_channel : out_channel -> int = "channel_descriptor"
 
-external open_handle : file_descr -> open_flag list -> int = "win_fd_handle"
+type descr_flag =
+    D_BINARY
+  | D_TEXT
+  | D_APPEND
+
+external open_handle : file_descr -> descr_flag list -> int = "win_fd_handle"
 external filedescr_of_fd : int -> file_descr = "win_handle_fd"
 
 let in_channel_of_descr_gen flags handle =
   open_read_descriptor(open_handle handle flags)
 let in_channel_of_descr handle =
-  in_channel_of_descr_gen [O_BINARY] handle
+  in_channel_of_descr_gen [D_TEXT] handle
+let in_channel_of_descr_bin handle =
+  in_channel_of_descr_gen [D_BINARY] handle
 
 let out_channel_of_descr_gen flags handle =
   open_write_descriptor(open_handle handle flags)
 let out_channel_of_descr handle =
-  out_channel_of_descr_gen [O_BINARY] handle
+  out_channel_of_descr_gen [D_TEXT] handle
+let out_channel_of_descr_bin handle =
+  out_channel_of_descr_gen [D_BINARY] handle
 
 let descr_of_in_channel inchan =
   filedescr_of_fd(fd_of_in_channel inchan)
@@ -200,12 +213,19 @@ let descr_of_in_channel inchan =
 let descr_of_out_channel outchan =
   filedescr_of_fd(fd_of_out_channel outchan)
 
+(* Seeking and truncating *)
+
 type seek_command =
     SEEK_SET
   | SEEK_CUR
   | SEEK_END
 
 external lseek : file_descr -> int -> seek_command -> int = "unix_lseek"
+
+let truncate name len = invalid_arg "Unix.truncate not implemented"
+let ftruncate fd len = invalid_arg "Unix.ftruncate not implemented"
+
+(* File statistics *)
 
 type file_kind =
     S_REG
@@ -231,9 +251,16 @@ type stats =
     st_ctime : int }
 
 external stat : string -> stats = "unix_stat"
+let lstat = stat
+let fstat fd = invalid_arg "Unix.fstat not implemented"
+
+(* Operations on file names *)
 
 external unlink : string -> unit = "unix_unlink"
 external rename : string -> string -> unit = "unix_rename"
+let link f1 f2 = invalid_arg "Unix.link not implemented"
+
+(* File permissions and ownership *)
 
 type access_permission =
     R_OK
@@ -241,13 +268,26 @@ type access_permission =
   | X_OK
   | F_OK
 
+let chmod file perm = invalid_arg "Unix.chmod not implemented"
+let fchmod fd perm = invalid_arg "Unix.fchmod not implemented"
+let chown file perm = invalid_arg "Unix.chown not implemented"
+let fchown fd perm = invalid_arg "Unix.fchown not implemented"
+let umask msk = invalid_arg "Unix.umask not implemented"
+
 external access : string -> access_permission list -> unit = "unix_access"
+
+(* Operations on file descriptors *)
 
 external dup : file_descr -> file_descr = "unix_dup"
 external dup2 : file_descr -> file_descr -> unit = "unix_dup2"
 
+let set_nonblock fd = ()
+let clear_nonblock fd = ()
+
 external set_close_on_exec : file_descr -> unit = "win_set_close_on_exec"
 external clear_close_on_exec : file_descr -> unit = "win_clear_close_on_exec"
+
+(* Directories *)
 
 external mkdir : string -> file_perm -> unit = "unix_mkdir"
 external rmdir : string -> unit = "unix_rmdir"
@@ -259,7 +299,8 @@ type dir_entry =
   | Dir_read of string
   | Dir_toread
 
-type dir_handle = { handle: int; mutable entry_read: dir_entry }
+type dir_handle =
+  { dirname: string; mutable handle: int; mutable entry_read: dir_entry }
 
 external findfirst : string -> string * int = "win_findfirst"
 external findnext : int -> string= "win_findnext"
@@ -267,9 +308,9 @@ external findnext : int -> string= "win_findnext"
 let opendir dirname =
   try
     let (first_entry, handle) = findfirst (dirname ^ "\\*.*") in
-    { handle = handle; entry_read = Dir_read first_entry }
+    { dirname = dirname; handle = handle; entry_read = Dir_read first_entry }
   with End_of_file ->
-    { handle = 0; entry_read = Dir_empty }
+    { dirname = dirname; handle = 0; entry_read = Dir_empty }
 
 let readdir d =
   match d.entry_read with
@@ -284,7 +325,27 @@ let closedir d =
     Dir_empty -> ()
   | _ -> win_findclose d.handle
 
+let rewinddir d =
+  closedir d;
+  try
+    let (first_entry, handle) = findfirst (d.dirname ^ "\\*.*") in
+    d.handle <- handle; d.entry_read <- Dir_read first_entry }
+  with End_of_file ->
+    d.handle <- 0; d.entry_read <- Dir_empty
+
+(* Pipes and directories *)
+
 external pipe : unit -> file_descr * file_descr = "unix_pipe"
+
+let mkfifo name perm = invalid_arg "Unix.mkfifo not implemented"
+
+(* Time functions *)
+
+type process_times =
+  { tms_utime : float;
+    tms_stime : float;
+    tms_cutime : float;
+    tms_cstime : float }
 
 type tm =
   { tm_sec : int;
@@ -302,11 +363,59 @@ external gettimeofday : unit -> float = "unix_gettimeofday"
 external gmtime : int -> tm = "unix_gmtime"
 external localtime : int -> tm = "unix_localtime"
 external mktime : tm -> int * tm = "unix_mktime"
+let alarm n = invalid_arg "Unix.alarm not implemented"
 external sleep : int -> unit = "unix_sleep"
+let times () =
+  { tms_utime = Sys.time(); tms_stime = 0.0;
+    tms_cutime = 0.0; tms_cstime = 0.0 }
 external utimes : string -> int -> int -> unit = "unix_utimes"
 
-let getlogin () =
-  try Sys.getenv "USERNAME" with Not_found -> ""
+type interval_timer =
+    ITIMER_REAL
+  | ITIMER_VIRTUAL
+  | ITIMER_PROF
+
+type interval_timer_status =
+  { it_interval: float;
+    it_value: float }
+
+let getitimer it = invalid_arg "Unix.getitimer not implemented"
+let setitimer it tm = invalid_arg "Unix.setitimer not implemented"
+
+(* User id, group id *)
+
+let getuid () = 1
+let geteuid = getuid
+let setuid id = invalid_arg "Unix.setuid not implemented"
+
+let getgid () = 1
+let getegid () = getgid
+let setgid id = invalid_arg "Unix.setgid not implemented"
+
+let getgroups () = [|1|]
+
+type passwd_entry =
+  { pw_name : string;
+    pw_passwd : string;
+    pw_uid : int;
+    pw_gid : int;
+    pw_gecos : string;
+    pw_dir : string;
+    pw_shell : string }
+
+type group_entry =
+  { gr_name : string;
+    gr_passwd : string;
+    gr_gid : int;
+    gr_mem : string array }
+
+let getlogin () = try Sys.getenv "USERNAME" with Not_found -> ""
+let getpwnam x = raise Not_found
+let getgrnam = getpwnam
+let getpwuid = getpwnam
+let getgrgid = getpwnam
+
+(* Internet addresses *)
 
 type inet_addr
 
@@ -316,6 +425,8 @@ external string_of_inet_addr : inet_addr -> string
                                     = "unix_string_of_inet_addr"
 
 let inet_addr_any = inet_addr_of_string "0.0.0.0"
+
+(* Sockets *)
 
 type socket_domain =
     PF_UNIX
@@ -393,7 +504,7 @@ let sendto fd buf ofs len flags addr =
 external getsockopt : file_descr -> socket_option -> bool = "unix_getsockopt"
 external setsockopt : file_descr -> socket_option -> bool -> unit
                                                           = "unix_setsockopt"
-
+(* Host and protocol databases *)
 
 type host_entry =
   { h_name : string;
@@ -520,35 +631,66 @@ let open_connection sockaddr =
   let sock =
     socket domain SOCK_STREAM 0 in
   connect sock sockaddr;
-  (in_channel_of_descr sock, out_channel_of_descr sock)
+  (in_channel_of_descr_bin sock, out_channel_of_descr_bin sock)
 
 let shutdown_connection inchan =
   shutdown (descr_of_in_channel inchan) SHUTDOWN_SEND
 
-(* Dummy functions *)
+let establish_server server_fun sockaddr =
+  invalid_arg "Unix.establish_server not implmented"
 
-let set_nonblock fd = ()
-let clear_nonblock fd = ()
+(* Terminal interface *)
 
-type passwd_entry =
-  { pw_name : string;
-    pw_passwd : string;
-    pw_uid : int;
-    pw_gid : int;
-    pw_gecos : string;
-    pw_dir : string;
-    pw_shell : string }
+type terminal_io = {
+    mutable c_ignbrk: bool;
+    mutable c_brkint: bool;
+    mutable c_ignpar: bool;
+    mutable c_parmrk: bool;
+    mutable c_inpck: bool;
+    mutable c_istrip: bool;
+    mutable c_inlcr: bool;
+    mutable c_igncr: bool;
+    mutable c_icrnl: bool;
+    mutable c_ixon: bool;
+    mutable c_ixoff: bool;
+    mutable c_opost: bool;
+    mutable c_obaud: int;
+    mutable c_ibaud: int;
+    mutable c_csize: int;
+    mutable c_cstopb: int;
+    mutable c_cread: bool;
+    mutable c_parenb: bool;
+    mutable c_parodd: bool;
+    mutable c_hupcl: bool;
+    mutable c_clocal: bool;
+    mutable c_isig: bool;
+    mutable c_icanon: bool;
+    mutable c_noflsh: bool;
+    mutable c_echo: bool;
+    mutable c_echoe: bool;
+    mutable c_echok: bool;
+    mutable c_echonl: bool;
+    mutable c_vintr: char;
+    mutable c_vquit: char;
+    mutable c_verase: char;
+    mutable c_vkill: char;
+    mutable c_veof: char;
+    mutable c_veol: char;
+    mutable c_vmin: int;
+    mutable c_vtime: int;
+    mutable c_vstart: char;
+    mutable c_vstop: char
+  }
 
-type group_entry =
-  { gr_name : string;
-    gr_passwd : string;
-    gr_gid : int;
-    gr_mem : string array }
+type setattr_when = TCSANOW | TCSADRAIN | TCSAFLUSH
 
-let getpwnam x = raise Not_found
-let getgrnam = getpwnam
-let getpwuid = getpwnam
-let getgrgid = getpwnam
+let tcgetattr fd = invalid_arg "Unix.tcgetattr not implemented"
+let tcsetattr fd wh = invalid_arg "Unix.tcsetattr not implemented"
+let tcsendbreak fd n = invalid_arg "Unix.tcsendbreak not implemented"
+let tcdrain fd = invalid_arg "Unix.tcdrain not implemented"
 
-let getuid () = 1
-let getgid () = 1
+type flush_queue = TCIFLUSH | TCOFLUSH | TCIOFLUSH
+let tcflush fd q = invalid_arg "Unix.tcflush not implemented"
+type flow_action = TCOOFF | TCOON | TCIOFF | TCION
+let tcflow fd fl = invalid_arg "Unix.tcflow not implemented"
+let setsid () = invalid_arg "Unix.setsid not implemented"

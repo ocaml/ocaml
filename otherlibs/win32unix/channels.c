@@ -16,8 +16,8 @@
 #include "unixsupport.h"
 #include <fcntl.h>
 
-static int open_descr_flags[10] = {
-  0, 0, 0, 0, O_APPEND, 0, 0, 0, O_BINARY, O_TEXT
+static int open_descr_flags[3] = {
+  O_BINARY, O_TEXT, O_APPEND
 };
 
 value win_fd_handle(value handle, value flags) /* ML */
