@@ -13,7 +13,7 @@
 
 (* Translation from closed lambda to C-- *)
 
-val compunit: Clambda.ulambda -> Cmm.phrase list
+val compunit: int -> Clambda.ulambda -> Cmm.phrase list
 
 val apply_function: int -> Cmm.phrase
 val curry_function: int -> Cmm.phrase list

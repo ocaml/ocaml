@@ -77,6 +77,10 @@ let rec is_pure = function
   | Lprim(Pfield n, [arg]) -> is_pure arg
   | _ -> false
 
+(* Maintain the approximation of the global structure being defined *)
+
+let global_approx = ref([||] : value_approximation array)
+
 (* Uncurry an expression and explicitate closures.
    Also return the approximation of the expression.
    The approximation environment [fenv] maps idents to approximations.
@@ -159,10 +163,6 @@ let rec close fenv cenv = function
       end
   | Lprim(Pgetglobal id, []) ->
       (Uprim(Pgetglobal id, []), Compilenv.global_approx id)
-  | Lprim(Psetglobal id, [lam]) ->
-      let (ulam, approx) = close fenv cenv lam in
-      Compilenv.set_global_approx approx;
-      (Uprim(Psetglobal id, [ulam]), Value_unknown)
   | Lprim(Pmakeblock(tag, mut) as prim, lams) ->
       let (ulams, approxs) = List.split (List.map (close fenv cenv) lams) in
       (Uprim(prim, ulams),
@@ -176,6 +176,11 @@ let rec close fenv cenv = function
        match approx with
            Value_tuple a when n < Array.length a -> a.(n)
          | _ -> Value_unknown)
+  | Lprim(Psetfield(n, _), [Lprim(Pgetglobal id, []); lam]) ->
+      let (ulam, approx) = close fenv cenv lam in
+      (!global_approx).(n) <- approx;
+      (Uprim(Psetfield(n, false), [Uprim(Pgetglobal id, []); ulam]),
+       Value_unknown)
   | Lprim(p, args) ->
       (Uprim(p, close_list fenv cenv args), Value_unknown)
   | Lswitch(arg, nconst, consts, nblock, blocks) ->
@@ -336,5 +341,9 @@ and close_switch fenv cenv num_keys cases =
 
 (* The entry point *)
 
-let intro lam =
-  let (ulam, approx) = close Tbl.empty Tbl.empty lam in ulam
+let intro size lam =
+  global_approx := Array.new size Value_unknown;
+  let (ulam, approx) = close Tbl.empty Tbl.empty lam in
+  Compilenv.set_global_approx(Value_tuple !global_approx);
+  global_approx := [||];
+  ulam

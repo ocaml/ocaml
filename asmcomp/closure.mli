@@ -13,5 +13,5 @@
 
 (* Introduction of closures, uncurrying, recognition of direct calls *)
 
-val intro: Lambda.lambda -> Clambda.ulambda
+val intro: int -> Lambda.lambda -> Clambda.ulambda
 

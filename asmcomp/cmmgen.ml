@@ -811,52 +811,6 @@ let rec transl_all_functions already_translated cont =
   with Queue.Empty ->
     cont
 
-(* Translate a toplevel structure definition *)
-
-let rec transl_structure glob = function
-    Uprim(Pmakeblock(tag, mut), args) ->
-      (* Scan the args, storing those that are not identifiers and
-         returning a hashtable id -> position in block
-         for those that are idents. *)
-      let map = Hashtbl.new 17 in
-      let rec make_stores pos = function
-        [] -> Ctuple []
-      | Uvar v :: rem ->
-          Hashtbl.add map v pos;
-          make_stores (pos+1) rem
-      | ulam :: rem ->
-          Csequence(Cop(Cstore,
-                        [field_address (Cconst_symbol glob) pos; transl ulam]),
-                    make_stores (pos+1) rem) in
-      let c = make_stores 0 args in
-      (c, map, List.length args)
-  | Usequence(e1, e2) ->
-      let (c2, map, size) = transl_structure glob e2 in
-      (Csequence(remove_unit(transl e1), c2), map, size)
-  | Ulet(id, arg, body) ->
-      let (cbody, map, size) = transl_structure glob body in
-      (Clet(id, transl arg, add_store glob id map cbody), map, size)
-  | Uletrec(bindings, body) ->
-      let (cbody, map, size) = transl_structure glob body in
-      (transl_letrec bindings (add_stores glob bindings map cbody), map, size)
-  | Uprim(Psetglobal id, [arg]) ->
-      transl_structure glob arg
-  | _ ->
-      fatal_error "Cmmgen.transl_structure"
-
-and add_store glob id map code =
-  let rec store = function
-    [] -> code
-  | pos :: rem ->
-      Csequence(Cop(Cstore, [field_address (Cconst_symbol glob) pos; Cvar id]),
-                store rem) in
-  store (Hashtbl.find_all map id)
-
-and add_stores glob bindings map code =
-  match bindings with
-    [] -> code
-  | (id, def) :: rem -> add_stores glob rem map (add_store glob id map code) 
-
 (* Emit structured constants *)
 
 let rec emit_constant symb cst cont =
@@ -932,16 +886,16 @@ let rec emit_all_constants cont =
 
 (* Translate a compilation unit *)
 
-let compunit ulam =
+let compunit size ulam =
   let glob = Compilenv.current_unit_name () in
-  let (init_code, _, compunit_size) = transl_structure glob ulam in
+  let init_code = transl ulam in
   let c1 = [Cfunction {fun_name = glob ^ "_entry"; fun_args = [];
                        fun_body = init_code; fun_fast = false}] in
   let c2 = transl_all_functions StringSet.empty c1 in
   let c3 = emit_all_constants c2 in
-  Cdata [Cint(block_header 0 compunit_size);
+  Cdata [Cint(block_header 0 size);
          Cdefine_symbol glob;
-         Cskip(compunit_size * size_addr)] :: c3
+         Cskip(size * size_addr)] :: c3
 
 (* Generate an application function:
      (defun caml_applyN (a1 ... aN clos)
