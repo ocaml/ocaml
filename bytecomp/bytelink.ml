@@ -139,7 +139,14 @@ let debug_info = ref ([] : debug_event list list)
 
 let record_events orig evl =
   if evl <> [] then begin
-    List.iter (fun ev -> ev.ev_pos <- orig + ev.ev_pos) evl;
+    List.iter
+      (fun ev ->
+         ev.ev_pos <- orig + ev.ev_pos;
+         begin match ev.ev_repr with
+           Event_parent repr -> repr := ev.ev_pos
+         | _                 -> ()
+         end)
+      evl;
     debug_info := evl :: !debug_info
   end
 

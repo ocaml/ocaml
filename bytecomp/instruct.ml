@@ -24,11 +24,18 @@ type debug_event =
     ev_kind: debug_event_kind;          (* Before/after event *)
     ev_typenv: Env.summary;             (* Typing environment *)
     ev_compenv: compilation_env;        (* Compilation environment *)
-    ev_stacksize: int }                 (* Size of stack frame *)
+    ev_stacksize: int;                  (* Size of stack frame *)
+    mutable ev_repr: debug_event_repr } (* Position of the representative *)
 
 and debug_event_kind =
     Event_before
   | Event_after of Types.type_expr
+  | Event_function
+
+and debug_event_repr =
+    Event_none
+  | Event_parent of int ref
+  | Event_child of int ref
 
 type label = int                     (* Symbolic code labels *)
 

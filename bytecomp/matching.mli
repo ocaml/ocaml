@@ -17,7 +17,8 @@ open Typedtree
 open Lambda
 
 val for_function:
-        Location.t -> lambda -> (pattern * lambda) list -> lambda
+        Location.t -> int ref option -> lambda -> (pattern * lambda) list ->
+        lambda
 val for_trywith:
         lambda -> (pattern * lambda) list -> lambda
 val for_let:

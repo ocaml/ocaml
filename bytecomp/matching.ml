@@ -323,17 +323,40 @@ let combine_constructor arg cstr (tag_lambda_list, total1) (lambda2, total2) =
 let combine_orpat (lambda1, total1) (lambda2, total2) (lambda3, total3) =
   (Lcatch(Lsequence(lambda1, lambda2), lambda3), total3)
 
+(* Insertion of debugging events *)
+
+let rec event_branch repr lam =
+  begin match lam, repr with
+    (_, None) ->
+      lam
+  | (Levent(lam', ev), Some r) ->
+      incr r;
+      Levent(lam', {lev_loc = ev.lev_loc;
+                    lev_kind = ev.lev_kind;
+                    lev_repr = repr;
+                    lev_env = ev.lev_env})
+  | (Llet(str, id, lam, body), _) ->
+      Llet(str, id, lam, event_branch repr body)
+  | (_, Some r) ->
+(*      incr r;
+      Levent(lam, {lev_loc = -1;
+                   lev_kind = Lev_before;
+                   lev_repr = repr;
+                   lev_env = Env.Env_empty})
+*)      fatal_error "Matching.event_branch"
+  end
+
 (* The main compilation function.
    Input: a pattern matching.
    Output: a lambda term, a "total" flag (true if we're sure that the
      matching covers all cases; this is an approximation). *)
 
-let rec compile_match m =
+let rec compile_match repr m =
 
   let rec compile_list = function
     [] -> ([], true)
   | (key, pm) :: rem ->
-      let (lambda1, total1) = compile_match pm in
+      let (lambda1, total1) = compile_match repr pm in
       let (list2, total2) = compile_list rem in
       ((key, lambda1) :: list2, total1 & total2) in
 
@@ -342,10 +365,12 @@ let rec compile_match m =
       (Lstaticfail, false)
   | { cases = ([], action) :: rem; args = argl } ->
       if is_guarded action then begin
-        let (lambda, total) = compile_match { cases = rem; args = argl } in
-        (Lcatch(action, lambda), total)
+        let (lambda, total) =
+          compile_match None { cases = rem; args = argl }
+        in
+        (Lcatch(event_branch repr action, lambda), total)
       end else
-        (action, true)
+        (event_branch repr action, true)
   | { args = (arg, str) :: argl } ->
       let v = name_pattern "match" m.cases in
       let newarg = Lvar v in
@@ -358,27 +383,30 @@ let rec compile_match m =
             begin match pat.pat_desc with
               Tpat_any ->
                 let (vars, others) = divide_var pm in
-                combine_var (compile_match vars) (compile_match others)
+                combine_var (compile_match repr vars)
+                            (compile_match repr others)
             | Tpat_constant cst ->
                 let (constants, others) = divide_constant pm in
                 combine_constant newarg cst
-                  (compile_list constants) (compile_match others)
+                  (compile_list constants) (compile_match repr others)
             | Tpat_tuple patl ->
                 let (tuples, others) = divide_tuple (List.length patl) pm in
-                combine_var (compile_match tuples) (compile_match others)
+                combine_var (compile_match repr tuples)
+                            (compile_match repr others)
             | Tpat_construct(cstr, patl) ->
                 let (constrs, others) = divide_constructor pm in
                 combine_constructor newarg cstr
-                  (compile_list constrs) (compile_match others)
+                  (compile_list constrs) (compile_match repr others)
             | Tpat_record((lbl, _) :: _) ->
                 let (records, others) = divide_record lbl.lbl_all pm in
-                combine_var (compile_match records) (compile_match others)
+                combine_var (compile_match repr records)
+                            (compile_match repr others)
             | Tpat_or(pat1, pat2) ->
                 (* Avoid duplicating the code of the action *)
                 let (or_match, remainder_line, others) = divide_orpat pm in
-                combine_orpat (compile_match or_match)
-                              (compile_match remainder_line)
-                              (compile_match others)
+                combine_orpat (compile_match None or_match)
+                              (compile_match repr remainder_line)
+                              (compile_match repr others)
             | _ ->
                 fatal_error "Matching.compile_match1"
             end
@@ -387,11 +415,11 @@ let rec compile_match m =
 
 (* The entry points *)
 
-let compile_matching handler_fun arg pat_act_list =
+let compile_matching repr handler_fun arg pat_act_list =
   let pm =
     { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
       args = [arg, Strict] } in
-  let (lambda, total) = compile_match pm in
+  let (lambda, total) = compile_match repr pm in
   if total then lambda else Lcatch(lambda, handler_fun())
 
 let partial_function loc () =
@@ -402,14 +430,14 @@ let partial_function loc () =
                Const_base(Const_int loc.loc_start);
                Const_base(Const_int loc.loc_end)]))])])
 
-let for_function loc param pat_act_list =
-  compile_matching (partial_function loc) param pat_act_list
+let for_function loc repr param pat_act_list =
+  compile_matching repr (partial_function loc) param pat_act_list
 
 let for_trywith param pat_act_list =
-  compile_matching (fun () -> Lprim(Praise, [param])) param pat_act_list
+  compile_matching None (fun () -> Lprim(Praise, [param])) param pat_act_list
 
 let for_let loc param pat body =
-  compile_matching (partial_function loc) param [pat, body]
+  compile_matching None (partial_function loc) param [pat, body]
 
 (* Handling of tupled functions and matches *)
 
@@ -428,7 +456,7 @@ let for_tupled_function loc paraml pats_act_list =
   let pm =
     { cases = pats_act_list;
       args = List.map (fun id -> (Lvar id, Strict)) paraml } in
-  let (lambda, total) = compile_match pm in
+  let (lambda, total) = compile_match None pm in
   if total then lambda else Lcatch(lambda, partial_function loc ())
 
 let for_multiple_match loc paraml pat_act_list =
@@ -443,5 +471,5 @@ let for_multiple_match loc paraml pat_act_list =
         args = List.map (fun lam -> (lam, Strict)) paraml }
     with Cannot_flatten ->
       pm2 in
-  let (lambda, total) = compile_match pm3 in
+  let (lambda, total) = compile_match None pm3 in
   if total then lambda else Lcatch(lambda, partial_function loc ())

@@ -109,7 +109,7 @@ let transl_class cl_id cl =
       (fun pat (params, rem) ->
         let param = name_pattern "param" [pat, ()] in
         (param::params,
-         Matching.for_function pat.pat_loc (Lvar param) [pat, rem]))
+         Matching.for_function pat.pat_loc None (Lvar param) [pat, rem]))
       cl.cl_args
       ([], field_init)
   in

@@ -402,18 +402,40 @@ let rec comp_expr env exp sz cont =
           ev_module = !compunit_name;
           ev_char = lev.lev_loc;
           ev_kind = begin match lev.lev_kind with
-                      Lev_before -> Event_before
+                      Lev_before   -> Event_before
                     | Lev_after ty -> Event_after ty
+                    | Lev_function -> Event_function
                     end;
           ev_typenv = lev.lev_env;
           ev_compenv = env;
-          ev_stacksize = sz } in
+          ev_stacksize = sz;
+          ev_repr =
+            begin match lev.lev_repr with
+              None ->
+                Event_none
+            | Some ({contents = 1} as repr) when lev.lev_kind = Lev_function ->
+                Event_child repr
+            | Some ({contents = 1} as repr) ->
+                Event_parent repr
+            | Some repr when lev.lev_kind = Lev_function ->
+                Event_parent repr
+            | Some repr ->
+                Event_child repr
+            end }
+      in
       begin match lev.lev_kind with
         Lev_before ->
           let c = comp_expr env lam sz cont in
           begin match c with
             (* Keep following event, supposedly more informative *)
-            Kevent _ :: _ -> c
+            Kevent ev' :: _ -> ev'.ev_repr <- ev.ev_repr; c
+          | _               -> Kevent ev :: c
+          end
+      | Lev_function ->
+          let c = comp_expr env lam sz cont in
+          begin match c with
+            (* Only keep following event (its a real one) *)
+            Kevent ev' :: _ -> ev'.ev_repr <- Event_none; c
           | _             -> Kevent ev :: c
           end
       | Lev_after ty ->
@@ -424,7 +446,7 @@ let rec comp_expr env exp sz cont =
               match cont with
               (* Discard following events, supposedly less informative *)
                          Kevent _ :: c -> Kevent ev :: c
-              (* Keep following event, supposedly equivalent *)
+              (* Keep event following Kpush, supposedly equivalent *)
               | Kpush :: Kevent _ :: _ -> cont
               | _                      -> Kevent ev :: cont
             in

@@ -104,11 +104,13 @@ and lambda_switch =
 and lambda_event =
   { lev_loc: int;
     lev_kind: lambda_event_kind;
+    lev_repr: int ref option;
     lev_env: Env.summary }
 
 and lambda_event_kind =
     Lev_before
   | Lev_after of Types.type_expr
+  | Lev_function
 
 val const_unit: structured_constant
 val lambda_unit: lambda

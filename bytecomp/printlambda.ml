@@ -261,8 +261,9 @@ let rec lambda = function
   | Levent(lam, ev) ->
       open_box 2;
       begin match ev.lev_kind with
-        Lev_before  -> print_string "(before "
-      | Lev_after _ -> print_string "(after "
+        Lev_before   -> print_string "(before "
+      | Lev_after _  -> print_string "(after "
+      | Lev_function -> print_string "(funct-body "
       end;
       print_int ev.lev_loc;
       print_space();
