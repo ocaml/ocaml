@@ -27,7 +27,11 @@
 #include "mlvalues.h"
 #include "roots.h"
 #include "signals.h"
+#ifdef NATIVE_CODE
+#include "stack.h"
+#else
 #include "stacks.h"
+#endif
 #include "sys.h"
 
 /* Initial size of stack when a thread is created (4 Ko) */
@@ -60,6 +64,9 @@ struct caml_thread_struct {
   unsigned long last_return_address; /* Saved value of caml_last_return_a */
   char * exception_pointer;     /* Saved value of caml_exception_pointer */
   struct caml__roots_block * local_roots; /* Saved value of local_roots */
+  value gc_entry_regs[MAX_NUM_GC_REGS]; /* Saved gc_entry_regs */
+  double gc_entry_float_regs[MAX_NUM_GC_FLOAT_REGS];
+                                /* Saved gc_entry_float_regs */
 #else
   value * stack_low;            /* The execution stack for this thread */
   value * stack_high;
@@ -91,14 +98,6 @@ static pthread_key_t last_channel_locked_key;
 /* Identifier for next thread creation */
 static long thread_next_ident = 0;
 
-/* These declarations should go in some include file */
-
-#ifdef NATIVE_CODE
-extern char * caml_bottom_of_stack;
-extern unsigned long caml_last_return_address;
-extern char * caml_exception_pointer;
-#endif
-
 /* Forward declarations */
 
 value caml_mutex_new (value);
@@ -121,8 +120,8 @@ static void caml_thread_scan_roots(scanning_action action)
     if (th != curr_thread) {
 #ifdef NATIVE_CODE
       if (th->bottom_of_stack != NULL)
-        do_local_roots(action, th->last_return_address,
-                       th->bottom_of_stack, th->local_roots);
+        do_local_roots(action, th->last_return_address, th->bottom_of_stack,
+                       th->local_roots, th->gc_entry_regs);
 #else
       do_local_roots(action, th->sp, th->stack_high, th->local_roots);
 #endif
@@ -149,6 +148,9 @@ static void caml_thread_enter_blocking_section(void)
   curr_thread->last_return_address = caml_last_return_address;
   curr_thread->exception_pointer = caml_exception_pointer;
   curr_thread->local_roots = local_roots;
+  bcopy(gc_entry_regs, curr_thread->gc_entry_regs, sizeof(gc_entry_regs));
+  bcopy(gc_entry_float_regs, curr_thread->gc_entry_float_regs,
+        sizeof(gc_entry_float_regs));
 #else
   curr_thread->stack_low = stack_low;
   curr_thread->stack_high = stack_high;
@@ -175,6 +177,9 @@ static void caml_thread_leave_blocking_section(void)
   caml_last_return_address = curr_thread->last_return_address;
   caml_exception_pointer = curr_thread->exception_pointer;
   local_roots = curr_thread->local_roots;
+  bcopy(curr_thread->gc_entry_regs, gc_entry_regs, sizeof(gc_entry_regs));
+  bcopy(curr_thread->gc_entry_float_regs, gc_entry_float_regs,
+        sizeof(gc_entry_float_regs));
 #else
   stack_low = curr_thread->stack_low;
   stack_high = curr_thread->stack_high;
