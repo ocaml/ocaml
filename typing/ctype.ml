@@ -1068,7 +1068,8 @@ and unify2 env t1 t2 =
   let t1' = expand_head env t1 in
   let t2' = expand_head env t2 in
   (* Expansion may have changed the representative of the types... *)
-  let t1' = repr t1' and t2' = repr t2' in
+  let t1' = expand_head env t1' in
+  let t2' = expand_head env t2' in
   if t1' == t2' then () else
 
   let t1 = repr t1 and t2 = repr t2 in
