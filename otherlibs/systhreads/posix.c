@@ -78,6 +78,7 @@ struct caml_thread_struct {
   value * gc_regs;              /* Saved value of caml_gc_regs */
   char * exception_pointer;     /* Saved value of caml_exception_pointer */
   struct caml__roots_block * local_roots; /* Saved value of local_roots */
+  struct longjmp_buffer * exit_buf; /* For thread exit */
 #else
   value * stack_low;            /* The execution stack for this thread */
   value * stack_high;
@@ -113,11 +114,14 @@ static pthread_key_t last_channel_locked_key;
 static long thread_next_ident = 0;
 
 /* Forward declarations */
-
 value caml_threadstatus_new (void);
 void caml_threadstatus_terminate (value);
 int caml_threadstatus_wait (value);
 static void caml_pthread_check (int, char *);
+
+/* Imports for the native-code compiler */
+extern struct longjmp_buffer caml_termination_jmpbuf;
+extern void (*caml_termination_hook)(void *);
 
 /* Hook for scanning the stacks of the other threads */
 
@@ -332,6 +336,9 @@ value caml_thread_initialize(value unit)   /* ML */
     curr_thread->descr = descr;
     curr_thread->next = curr_thread;
     curr_thread->prev = curr_thread;
+#ifdef NATIVE_CODE
+    curr_thread->exit_buf = &caml_termination_jmpbuf;
+#endif
     /* The stack-related fields will be filled in at the next
        enter_blocking_section */
     /* Associate the thread descriptor with the thread */
@@ -343,6 +350,9 @@ value caml_thread_initialize(value unit)   /* ML */
     enter_blocking_section_hook = caml_thread_enter_blocking_section;
     prev_leave_blocking_section_hook = leave_blocking_section_hook;
     leave_blocking_section_hook = caml_thread_leave_blocking_section;
+#ifdef NATIVE_CODE
+    caml_termination_hook = pthread_exit;
+#endif
     channel_mutex_free = caml_io_mutex_free;
     channel_mutex_lock = caml_io_mutex_lock;
     channel_mutex_unlock = caml_io_mutex_unlock;
@@ -357,21 +367,12 @@ value caml_thread_initialize(value unit)   /* ML */
   return Val_unit;
 }
 
-/* Create a thread */
+/* Thread cleanup at termination */
 
-static void * caml_thread_start(void * arg)
+static void caml_thread_stop(void)
 {
-  caml_thread_t th = (caml_thread_t) arg;
-  value clos;
+  caml_thread_t th = curr_thread;
 
-  /* Associate the thread descriptor with the thread */
-  pthread_setspecific(thread_descriptor_key, (void *) th);
-  /* Acquire the global mutex and set up the stack variables */
-  leave_blocking_section();
-  /* Callback the closure */
-  clos = Start_closure(th->descr);
-  modify(&(Start_closure(th->descr)), Val_unit);
-  callback_exn(clos, Val_unit);
   /* Signal that the thread has terminated */
   caml_threadstatus_terminate(Terminated(th->descr));
   /* Remove th from the doubly-linked list of threads */
@@ -387,6 +388,33 @@ static void * caml_thread_start(void * arg)
 #endif
   /* Free the thread descriptor */
   stat_free(th);
+}
+
+/* Create a thread */
+
+static void * caml_thread_start(void * arg)
+{
+  caml_thread_t th = (caml_thread_t) arg;
+  value clos;
+  struct longjmp_buffer termination_buf;
+
+  /* Associate the thread descriptor with the thread */
+  pthread_setspecific(thread_descriptor_key, (void *) th);
+  /* Acquire the global mutex and set up the stack variables */
+  leave_blocking_section();
+#ifdef NATIVE_CODE
+  /* Setup termination handler (for caml_thread_exit) */
+  if (sigsetjmp(termination_buf.buf, 0) == 0) {
+    th->exit_buf = &termination_buf;
+#endif
+    /* Callback the closure */
+    clos = Start_closure(th->descr);
+    modify(&(Start_closure(th->descr)), Val_unit);
+    callback_exn(clos, Val_unit);
+    caml_thread_stop();
+#ifdef NATIVE_CODE
+  }
+#endif
   /* The thread now stops running */
   return NULL;
 }  
@@ -479,6 +507,30 @@ value caml_thread_uncaught_exception(value exn)  /* ML */
 #endif
   fflush(stderr);
   return Val_unit;
+}
+
+/* Terminate current thread */
+
+value caml_thread_exit(value unit)   /* ML */
+{
+#ifdef NATIVE_CODE
+  /* We cannot call pthread_exit here because on some systems this
+     raises a C++ exception, and ocamlopt-generated stack frames
+     cannot be unwound.  Instead, we longjmp to the thread creation
+     point (in caml_thread_start) or to the point in caml_main
+     where caml_termination_hook will be called. */
+  struct longjmp_buffer * exit_buf;
+  if (curr_thread == NULL) invalid_argument("Thread.exit: not initialized");
+  exit_buf = curr_thread->exit_buf;
+  caml_thread_stop();
+  siglongjmp(exit_buf->buf, 1);
+#else
+  /* No such problem in bytecode */
+  if (curr_thread == NULL) invalid_argument("Thread.exit: not initialized");
+  caml_thread_stop();
+  pthread_exit(NULL);
+#endif
+  return Val_unit;  /* not reached */
 }
 
 /* Allow re-scheduling */

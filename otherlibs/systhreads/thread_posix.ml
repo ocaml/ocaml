@@ -26,23 +26,19 @@ external yield : unit -> unit = "caml_thread_yield"
 external self : unit -> t = "caml_thread_self"
 external id : t -> int = "caml_thread_id"
 external join : t -> unit = "caml_thread_join"
+external exit : unit -> unit = "caml_thread_exit"
 
 (* For new, make sure the function passed to thread_new never
    raises an exception. *)
-
-exception Thread_exit
 
 let create fn arg =
   thread_new
     (fun () ->
       try
         fn arg; ()
-      with Thread_exit -> ()
-         | exn ->
+      with exn ->
              flush stdout; flush stderr;
              thread_uncaught_exception exn)
-
-let exit () = raise Thread_exit
 
 (* Thread.kill is currently not implemented due to problems with
    cleanup handlers on several platforms *)

@@ -111,6 +111,10 @@ static void parse_camlrunparam(void)
   }
 }
 
+/* These are termination hooks used by the systhreads library */
+struct longjmp_buffer caml_termination_jmpbuf;
+void (*caml_termination_hook)(void *) = NULL;
+
 extern value caml_start_program (void);
 extern void init_ieee_floats (void);
 extern void init_signals (void);
@@ -139,6 +143,10 @@ void caml_main(char **argv)
     exe_name = proc_self_exe;
 #endif
   sys_init(exe_name, argv);
+  if (sigsetjmp(caml_termination_jmpbuf.buf, 0)) {
+    if (caml_termination_hook != NULL) caml_termination_hook(NULL);
+    return;
+  }
   res = caml_start_program();
   if (Is_exception_result(res))
     fatal_uncaught_exception(Extract_exception(res));
