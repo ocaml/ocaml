@@ -34,7 +34,7 @@ value unix_getcwd()     /* ML */
 value unix_getcwd()
 {
   char buff[MAXPATHLEN];
-  if (getwd(buff) == 0) uerror("getcwd", alloc_string(buff));
+  if (getwd(buff) == 0) uerror("getcwd", copy_string(buff));
   return copy_string(buff);
 }
 
