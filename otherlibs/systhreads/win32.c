@@ -204,8 +204,13 @@ static void caml_io_mutex_lock(struct channel * chan)
   }
   enter_blocking_section();
   WaitForSingleObject((HANDLE) chan->mutex, INFINITE);
-  leave_blocking_section();
+  /* Problem: if a signal occurs at this point,
+     and the signal handler raises an exception, we will not
+     unlock the mutex.  The alternative (doing the setspecific
+     before locking the mutex is also incorrect, since we could
+     then unlock a mutex that is unlocked or locked by someone else. */
   last_channel_locked = chan;
+  leave_blocking_section();
 }
 
 static void caml_io_mutex_unlock(struct channel * chan)
@@ -314,12 +319,12 @@ static void caml_thread_start(caml_thread_t th)
   /* Callback the closure */
   clos = Start_closure(th->descr);
   Modify(&(Start_closure(th->descr)), Val_unit);
-  callback(clos, Val_unit);
+  callback_exn(clos, Val_unit);
   /* Remove th from the doubly-linked list of threads */
   th->next->prev = th->prev;
   th->prev->next = th->next;
   /* Release the main mutex (forever) */
-  enter_blocking_section();
+  ReleaseMutex(caml_mutex);
 #ifndef NATIVE_CODE
   /* Free the memory resources */
   stat_free(th->stack_low);
