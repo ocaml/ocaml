@@ -81,6 +81,11 @@ CAMLexport void invalid_argument (char *msg)
   raise_with_string(Field(global_data, INVALID_EXN), msg);
 }
 
+CAMLexport void array_bound_error(void)
+{
+  invalid_argument("index out of bounds");
+}
+
 /* Problem: we can't use raise_constant, because it allocates and
    we're out of memory... Here, we allocate statically the exn bucket
    for Out_of_memory. */
