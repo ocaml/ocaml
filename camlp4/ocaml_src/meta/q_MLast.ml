@@ -1881,7 +1881,7 @@ Grammar.extend
       Gramext.action
         (fun (cl : ast) (tk : 'ctyp) _ (tpl : ast) (n : 'lident)
            (loc : int * int) ->
-           (Tuple [n; tpl; tk; cl] : 'type_declaration))]];
+           (Tuple [Tuple [Loc; n]; tpl; tk; cl] : 'type_declaration))]];
     Grammar.Entry.obj (constrain : 'constrain Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("", "constraint");

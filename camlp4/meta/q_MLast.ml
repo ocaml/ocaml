@@ -474,7 +474,7 @@ EXTEND
   type_declaration:
     [ [ n = lident; tpl = SLIST0 type_parameter; "="; tk = ctyp;
         cl = SLIST0 constrain ->
-          Tuple [n; tpl; tk; cl] ] ]
+          Tuple [Tuple [Loc; n]; tpl; tk; cl] ] ]
   ;
   constrain:
     [ [ "constraint"; t1 = ctyp; "="; t2 = ctyp -> Tuple [t1; t2] ] ]

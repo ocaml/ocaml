@@ -1302,7 +1302,8 @@ pr_expr.pr_levels :=
       [ <:expr< $lid:op$ $x$ $y$ >> as e ->
           fun curr next dg k ->
             match op with
-            [ "=" | "<>" | "<" | "<." | "<=" | ">" | ">=" | "==" | "!=" ->
+            [ "=" | "<>" | "<" | "<." | "<=" | ">" | ">=" | ">=." | "=="
+            | "!=" ->
                 [: curr x "" [: `S LR op :]; `next y "" k :]
             | _ -> [: `next e "" k :] ]
       | e -> fun curr next dg k -> [: `next e dg k :] ]};
