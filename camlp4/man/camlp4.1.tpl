@@ -10,21 +10,21 @@ ocpp - Universal preprocessor
 .B camlp4
 [
 load-options
-] [
+] [--] [
 other-options
 ]
 .br
 .B camlp4o
 [
 load-options
-] [
+] [--] [
 other-options
 ]
 .br
 .B camlp4r
 [
 load-options
-] [
+] [--] [
 other-options
 ]
 .br
@@ -42,12 +42,12 @@ file
 .LP
 .br
 .B camlp4o.opt
-[
+[--] [
 other-options
 ]
 .br
 .B camlp4r.opt
-[
+[--] [
 other-options
 ]
 
