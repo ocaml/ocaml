@@ -218,6 +218,8 @@ int _stdcall DoStartOcaml(HWND hwndParent)
 	startInfo.hStdError = hChildStdoutWr;
 	startInfo.hStdInput = hChildStdinRd;
 	cmdline = OcamlPath;
+	// Set the OCAMLLIB environment variable
+	SetEnvironmentVariable("OCAMLLIB", LibDir);
 	// Let's go: start the ocaml interpreter
 	processStarted = CreateProcess(NULL,cmdline,lpsa,lpsa,1,
 		CREATE_NEW_PROCESS_GROUP|NORMAL_PRIORITY_CLASS,
