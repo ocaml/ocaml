@@ -19,6 +19,7 @@
 
 #include <string.h>
 #include "alloc.h"
+#include "custom.h"
 #include "major_gc.h"
 #include "memory.h"
 #include "mlvalues.h"
@@ -78,14 +79,31 @@ value alloc_string (mlsize_t len)
   return result;
 }
 
+value alloc_custom(struct custom_operations * ops,
+                   unsigned long size,
+                   mlsize_t mem,
+                   mlsize_t max)
+{
+  mlsize_t wosize;
+  value result;
+
+  wosize = 1 + (size + sizeof(value) - 1) / sizeof(value);
+  if (ops->finalize == NULL && wosize <= Max_young_wosize) {
+    result = alloc_small(wosize, Custom_tag);
+    Custom_ops_val(result) = ops;
+  } else {
+    result = alloc_shr(wosize, Custom_tag);
+    Custom_ops_val(result) = ops;
+    adjust_gc_speed(mem, max);
+    result = check_urgent_gc(result);
+  }
+  return result;
+}
+
 value alloc_final (mlsize_t len, final_fun fun, mlsize_t mem, mlsize_t max)
 {
-  value result = alloc_shr (len, Final_tag);
-
-  Field (result, 0) = (value) fun;
-  adjust_gc_speed (mem, max);
-  result = check_urgent_gc (result);
-  return result;
+  return alloc_custom(final_custom_operations(fun),
+                      len * sizeof(value), mem, max);
 }
 
 value copy_string(char *s)

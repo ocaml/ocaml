@@ -14,6 +14,8 @@
 
 #define CAML_LIGHT
 #include "alloc.h"
+#include "custom.h"
+#include "intext.h"
 #include "memory.h"
 #include "mlvalues.h"
 #include "nat.h"
@@ -23,11 +25,34 @@
 
 /* Stub code for the BigNum package. */
 
+static void serialize_nat(value, unsigned long *, unsigned long *);
+static unsigned long deserialize_nat(void * dst);
+
+static struct custom_operations nat_operations = {
+  "_nat",
+  custom_finalize_default,
+  custom_compare_default,
+  custom_hash_default,
+  serialize_nat,
+  deserialize_nat
+};
+
+value initialize_nat(value unit)
+{
+  register_custom_operations(&nat_operations);
+  return Val_unit;
+}
+
 value create_nat(value size)
 {
   mlsize_t sz = Long_val(size);
 
-  return alloc(sz, Nat_tag);
+  return alloc_custom(&nat_operations, sz * sizeof(value), 0, 1);
+}
+
+value length_nat(value nat)
+{
+  return Val_long(Wosize_val(nat) - 1);
 }
 
 value set_to_zero_nat(value nat, value ofs, value len)
@@ -249,5 +274,59 @@ value lxor_digit_nat(value nat1, value ofs1, value nat2, value ofs2)
   BnXorDigits(Bignum_val(nat1), Long_val(ofs1),
               Bignum_val(nat2), Long_val(ofs2));
   return Val_unit;
+}
+
+/* The wire format for a nat is:
+   - 32-bit word: number of 32-bit words in nat
+   - N 32-bit words (big-endian format)
+   For little-endian platforms, the memory layout between 32-bit and 64-bit
+   machines is identical, so we can write the nat using serialize_block_4.
+   For big-endian 64-bit platforms, we need to swap the two 32-bit halves
+   of 64-bit words to obtain the correct behavior. */
+
+static void serialize_nat(value nat, 
+                          unsigned long * wsize_32,
+                          unsigned long * wsize_64)
+{
+  mlsize_t len = Wosize_val(nat) - 1;
+
+#ifdef ARCH_SIXTYFOUR
+  len = len * 2; /* two 32-bit words per 64-bit digit  */
+  if (len >= (1L << 32))
+    failwith("output_value: nat too big");
+#endif
+  serialize_int_4((int32) len);
+#if defined(ARCH_SIXTYFOUR) && defined(ARCH_BIG_ENDIAN)
+  { int32 * p;
+    mlsize_t i;
+    for (i = len, p = Data_custom_val(nat); i > 0; i -= 2, p += 2) {
+      serialize_int_4(p[1]);    /* low 32 bits of 64-bit digit */
+      serialize_int_4(p[0]);    /* high 32 bits of 64-bit digit */
+    }
+  }
+#else
+  serialize_block_4(Data_custom_val(nat), len);
+#endif
+  *wsize_32 = len * 4;
+  *wsize_64 = len * 4;
+}
+
+static unsigned long deserialize_nat(void * dst)
+{
+  mlsize_t len;
+
+  len = deserialize_uint_4();
+#if defined(ARCH_SIXTYFOUR) && defined(ARCH_BIG_ENDIAN)
+  { uint32 * p;
+    mlsize_t i;
+    for (i = len, p = dst; i > 0; i -= 2, p += 2) {
+      p[1] = deserialize_uint_4();   /* low 32 bits of 64-bit digit */
+      p[0] = deserialize_uint_4();   /* high 32 bits of 64-bit digit */
+    }
+  }
+#else
+  deserialize_block_4(dst, len);
+#endif
+  return len * 4;
 }
 

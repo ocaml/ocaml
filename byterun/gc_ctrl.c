@@ -14,6 +14,7 @@
 
 #include "alloc.h"
 #include "compact.h"
+#include "custom.h"
 #include "gc.h"
 #include "gc_ctrl.h"
 #include "major_gc.h"
@@ -91,8 +92,8 @@ static void check_block (char *hp)
   case Double_array_tag:
     Assert (Wosize_val (v) % Double_wosize == 0);
     break;
-  case Final_tag:
-    Assert (!Is_in_heap (Final_fun (v)));
+  case Custom_tag:
+    Assert (!Is_in_heap (Custom_ops_val (v)));
     break;
   
   case Infix_tag:

@@ -12,10 +12,7 @@
 
 /* $Id$ */
 
-/* Nats are represented as unstructured blocks with tag Nat_tag. */
+/* Nats are represented as unstructured blocks with tag Custom_tag. */
 
-#define Nat_tag Abstract_tag    /* works OK with equal because no other
-                                   object uses that tag yet. */
-
-#define Bignum_val(nat) ((BigNum) nat)
+#define Bignum_val(nat) ((BigNum) Data_custom_val(nat))
 

@@ -24,7 +24,7 @@ COBJS=startup.o main.o fail.o roots.o signals.o \
   misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
   floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
   gc_ctrl.o terminfo.o md5.o obj.o lexing.o printexc.o callback.o weak.o \
-  compact.o finalise.o
+  compact.o finalise.o custom.o
 
 ASMOBJS=$(ARCH).o
 
@@ -128,6 +128,8 @@ compact.c: ../byterun/compact.c
 	ln -s ../byterun/compact.c compact.c
 finalise.c: ../byterun/finalise.c
 	ln -s ../byterun/finalise.c finalise.c
+custom.c: ../byterun/custom.c
+	ln -s ../byterun/custom.c custom.c
 meta.c: ../byterun/meta.c
 	ln -s ../byterun/meta.c meta.c
 

@@ -16,6 +16,7 @@
 
 #include <string.h>
 #include "alloc.h"
+#include "custom.h"
 #include "fail.h"
 #include "gc.h"
 #include "intext.h"
@@ -116,6 +117,7 @@ static void intern_rec(value *dest)
   asize_t ofs;
   header_t header;
   char cksum[16];
+  struct custom_operations * ops;
 
  tailcall:
   code = read8u();
@@ -210,7 +212,7 @@ static void intern_rec(value *dest)
         *intern_dest = Make_header(Double_wosize, Double_tag, intern_color);
         intern_dest += 1 + Double_wosize;
         readblock((char *) v, 8);
-        if (code != CODE_DOUBLE_NATIVE) Reverse_double(v);
+        if (code != CODE_DOUBLE_NATIVE) Reverse_64(v, v);
         break;
       case CODE_DOUBLE_ARRAY8_LITTLE:
       case CODE_DOUBLE_ARRAY8_BIG:
@@ -229,7 +231,8 @@ static void intern_rec(value *dest)
         if (code != CODE_DOUBLE_ARRAY8_NATIVE && 
             code != CODE_DOUBLE_ARRAY32_NATIVE) {
           mlsize_t i;
-          for (i = 0; i < len; i++) Reverse_double((value)((double *)v + i));
+          for (i = 0; i < len; i++) Reverse_64((value)((double *)v + i),
+                                               (value)((double *)v + i));
         }
         break;
       case CODE_DOUBLE_ARRAY32_LITTLE:
@@ -249,6 +252,20 @@ static void intern_rec(value *dest)
         ofs = read32u();
         intern_rec(&clos);
         v = clos + ofs;
+        break;
+      case CODE_CUSTOM:
+        ops = find_custom_operations((char *) intern_src);
+        if (ops == NULL) {
+          intern_cleanup();
+          failwith("input_value: unknown custom block identifier");
+        }
+        while (*intern_src++ != 0) /*nothing*/;  /*skip identifier*/
+        size = ops->deserialize((void *) (intern_dest + 2));
+        size = 1 + (size + sizeof(value) - 1) / sizeof(value);
+        v = Val_hp(intern_dest);
+        *intern_dest = Make_header(size, Custom_tag, intern_color);
+        Custom_ops_val(v) = ops;
+        intern_dest += 1 + size;
         break;
       default:
         intern_cleanup();
@@ -468,3 +485,108 @@ unsigned char * code_checksum(void)
 }
 
 #endif
+
+/* Functions for writing user-defined marshallers */
+
+int deserialize_uint_1(void)
+{
+  return read8u();
+}
+
+int deserialize_sint_1(void)
+{
+  return read8s();
+}
+
+int deserialize_uint_2(void)
+{
+  return read16u();
+}
+
+int deserialize_sint_2(void)
+{
+  return read16s();
+}
+
+uint32 deserialize_uint_4(void)
+{
+  return read32u();
+}
+
+int32 deserialize_sint_4(void)
+{
+  return read32s();
+}
+
+uint64 deserialize_uint_8(void)
+{
+  uint64 i;
+  deserialize_block_8(&i, 1);
+  return i;
+}
+
+int64 deserialize_sint_8(void)
+{
+  int64 i;
+  deserialize_block_8(&i, 1);
+  return i;
+}
+
+float deserialize_float_4(void)
+{
+  float f;
+  deserialize_block_4(&f, 1);
+  return f;
+}
+
+double deserialize_float_8(void)
+{
+  double f;
+  deserialize_block_8(&f, 1);
+  return f;
+}
+
+void deserialize_block_1(void * data, long len)
+{
+  bcopy(intern_src, data, len);
+  intern_src += len;
+}
+
+void deserialize_block_2(void * data, long len)
+{
+  unsigned char * p, * q;
+#ifndef ARCH_BIG_ENDIAN
+  for (p = intern_src, q = data; len > 0; len--, p += 2, q += 2)
+    Reverse_16(q, p);
+  intern_src = p;
+#else
+  bcopy(intern_src, data, len * 2);
+  intern_src += len * 2;
+#endif
+}
+
+void deserialize_block_4(void * data, long len)
+{
+  unsigned char * p, * q;
+#ifndef ARCH_BIG_ENDIAN
+  for (p = intern_src, q = data; len > 0; len--, p += 4, q += 4)
+    Reverse_32(q, p);
+  intern_src = p;
+#else
+  bcopy(intern_src, data, len * 4);
+  intern_src += len * 4;
+#endif
+}
+
+void deserialize_block_8(void * data, long len)
+{
+  unsigned char * p, * q;
+#ifndef ARCH_BIG_ENDIAN
+  for (p = intern_src, q = data; len > 0; len--, p += 8, q += 8)
+    Reverse_64(q, p);
+  intern_src = p;
+#else
+  bcopy(intern_src, data, len * 8);
+  intern_src += len * 8;
+#endif
+}

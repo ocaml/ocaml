@@ -20,7 +20,7 @@
 #include "roots.h"
 #include "signals.h"
 
-typedef struct final {
+struct final {
   value fun;
   value val;
 };

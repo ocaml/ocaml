@@ -22,7 +22,7 @@ COBJS=startup.obj main.obj fail.obj roots.obj signals.obj \
   compare.obj ints.obj floats.obj str.obj array.obj io.obj extern.obj \
   intern.obj hash.obj sys.obj parsing.obj gc_ctrl.obj terminfo.obj \
   md5.obj obj.obj lexing.obj wincmdline.obj printexc.obj callback.obj \
-  weak.obj compact.obj finalise.obj
+  weak.obj compact.obj finalise.obj custom.obj
 
 ASMOBJS=$(ARCH)nt.obj
 
@@ -93,6 +93,8 @@ compact.c: ../byterun/compact.c
 	cp ../byterun/compact.c compact.c
 finalise.c: ../byterun/finalise.c
 	cp ../byterun/finalise.c finalise.c
+custom.c: ../byterun/custom.c
+	cp ../byterun/custom.c custom.c
 meta.c: ../byterun/meta.c
 	cp ../byterun/meta.c meta.c
 

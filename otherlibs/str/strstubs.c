@@ -7,11 +7,12 @@
 #include <regex.h>
 #include <mlvalues.h>
 #include <alloc.h>
+#include <custom.h>
 #include <fail.h>
 #include <memory.h>
 
 struct regexp_struct {
-  final_fun finalization;
+  struct custom_operations * ops;
   struct re_pattern_buffer re;
 };
 
@@ -24,11 +25,19 @@ static void free_regexp(value vexpr)
   regfree(&(expr->re));
 }
 
+static struct custom_operations regexp_ops = {
+  "_regexp",
+  free_regexp,
+  custom_compare_default,
+  custom_hash_default,
+  custom_serialize_default,
+  custom_deserialize_default
+};
+
 static regexp alloc_regexp(void)
 {
   value res =
-    alloc_final(sizeof(struct regexp_struct) / sizeof(value),
-                free_regexp, 1, 10000);
+    alloc_custom(&regexp_ops, sizeof(struct regexp_struct), 1, 10000);
   return (regexp) res;
 }
 

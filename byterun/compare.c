@@ -12,6 +12,7 @@
 
 /* $Id$ */
 
+#include "custom.h"
 #include "fail.h"
 #include "memory.h"
 #include "misc.h"
@@ -74,13 +75,14 @@ static long compare_val(value v1, value v2)
     return 0;
   }
   case Abstract_tag:
-  case Final_tag:
     invalid_argument("equal: abstract value");
   case Closure_tag:
   case Infix_tag:
     invalid_argument("equal: functional value");
   case Object_tag:
     return (Oid_val(v1) - Oid_val(v2));
+  case Custom_tag:
+    return Custom_ops_val(v1)->compare(v1, v2);
   default: {
     mlsize_t sz1 = Wosize_val(v1);
     mlsize_t sz2 = Wosize_val(v2);

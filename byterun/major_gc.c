@@ -15,6 +15,7 @@
 #include <limits.h>
 
 #include "compact.h"
+#include "custom.h"
 #include "config.h"
 #include "fail.h"
 #include "finalise.h"
@@ -226,8 +227,9 @@ static void sweep_slice (long int work)
       gc_sweep_hp += Bhsize_hd (hd);
       switch (Color_hd (hd)){
       case Caml_white:
-        if (Tag_hd (hd) == Final_tag){
-          Final_fun (Val_hp (hp)) (Val_hp (hp));
+        if (Tag_hd (hd) == Custom_tag){
+          void (*final_fun)(value) = Custom_ops_val(Val_hp(hp));
+          if (final_fun != NULL) final_fun(Val_hp(hp));
         }
         gc_sweep_hp = fl_merge_block (Bp_hp (hp));
         break;

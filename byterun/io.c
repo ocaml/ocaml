@@ -23,6 +23,7 @@
 #include <unistd.h>
 #endif
 #include "alloc.h"
+#include "custom.h"
 #include "fail.h"
 #include "io.h"
 #include "memory.h"
@@ -375,10 +376,20 @@ static void finalize_channel(value vchan)
   stat_free(chan);
 }
 
+static struct custom_operations channel_operations = {
+  "_chan",
+  finalize_channel,
+  custom_compare_default,
+  custom_hash_default,
+  custom_serialize_default,
+  custom_deserialize_default
+};
+
 static value alloc_channel(struct channel *chan)
 {
-  value res = alloc_final(2, finalize_channel, 1, 1000);
-  Field(res, 1) = (value) chan;
+  value res = alloc_custom(&channel_operations, sizeof(struct channel *),
+                           1, 1000);
+  Channel(res) = chan;
   return res;
 }
 

@@ -34,6 +34,7 @@
   op: Pointer to the first field of a block.  (a value *)
   hp: Pointer to the header of a block.  (a char *)
   int32: Four bytes on all architectures.
+  int64: Eight bytes on all architectures.
 
   Remark: A block size is always a multiple of the word size, and at least
           one word plus the header.
@@ -66,6 +67,9 @@ typedef unsigned long uint32;
 typedef short int32;
 typedef unsigned short uint32;
 #endif
+
+typedef long int64;             /* FIXME */
+typedef unsigned long uint64;   /* FIXME */
 
 /* Longs vs blocks. */
 #define Is_long(x)   (((x) & 1) != 0)
@@ -222,12 +226,14 @@ void Store_double_val (value,double);
 #define Store_double_field(v,i,d) \
   Store_double_val((value)((double *)(v) + (i)),d)
 
-/* Finalized things.  Just like abstract things, but the GC will call the
-   [Final_fun] before deallocation.
-*/
-#define Final_tag 255
-typedef void (*final_fun) (value);
-#define Final_fun(val) (((final_fun *) (val)) [0]) /* Also an l-value. */
+/* Custom blocks.  They contain a pointer to a "method suite"
+   of functions (for finalization, comparison, hashing, etc)
+   followed by raw data.  The contents of custom blocks is not traced by
+   the GC; therefore, they must not contain any [value].
+   See [custom.h] for operations on method suites. */
+#define Custom_tag 255
+#define Data_custom_val(v) ((void *) &Field(v, 1))
+struct custom_operations;       /* defined in [custom.h] */
 
 
 /* 3- Atoms are 0-tuples.  They are statically allocated once and for all. */

@@ -48,6 +48,7 @@
 #define CODE_DOUBLE_ARRAY32_LITTLE 0x7
 #define CODE_CODEPOINTER 0x10
 #define CODE_INFIXPOINTER 0x11
+#define CODE_CUSTOM 0x12
 
 #ifdef ARCH_BIG_ENDIAN
 #define CODE_DOUBLE_NATIVE CODE_DOUBLE_BIG
@@ -84,6 +85,34 @@ void output_val (struct channel * chan, value v, value flags);
 value input_val (struct channel * chan);
 value input_val_from_string (value str, long ofs);
 
+/* Functions for writing user-defined marshallers */
+
+extern void serialize_int_1(int i);
+extern void serialize_int_2(int i);
+extern void serialize_int_4(int32 i);
+extern void serialize_int_8(int64 i);
+extern void serialize_float_4(float f);
+extern void serialize_float_8(double f);
+extern void serialize_block_1(void * data, long len);
+extern void serialize_block_2(void * data, long len);
+extern void serialize_block_4(void * data, long len);
+extern void serialize_block_8(void * data, long len);
+
+extern int deserialize_uint_1(void);
+extern int deserialize_sint_1(void);
+extern int deserialize_uint_2(void);
+extern int deserialize_sint_2(void);
+extern uint32 deserialize_uint_4(void);
+extern int32 deserialize_sint_4(void);
+extern uint64 deserialize_uint_8(void);
+extern int64 deserialize_sint_8(void);
+extern float deserialize_float_4(void);
+extern double deserialize_float_8(void);
+extern void deserialize_block_1(void * data, long len);
+extern void deserialize_block_2(void * data, long len);
+extern void deserialize_block_4(void * data, long len);
+extern void deserialize_block_8(void * data, long len);
+
 /* Auxiliary stuff for sending code pointers */
 unsigned char * code_checksum (void);
 
@@ -94,7 +123,6 @@ unsigned char * code_checksum (void);
 #else
 extern char * code_area_start, * code_area_end;
 #endif
-
 
 #endif
 

@@ -13,19 +13,15 @@
 /* $Id$ */
 
 struct grimage {
-  final_fun f;                  /* Finalization function */
   int width, height;            /* Dimensions of the image */
   Pixmap data;                  /* Pixels */
   Pixmap mask;                  /* Mask for transparent points, or None */
 };
 
-#define Grimage_wosize \
-  ((sizeof(struct grimage) + sizeof(value) - 1) / sizeof(value))
-
-#define Width_im(i) (((struct grimage *)(i))->width)
-#define Height_im(i) (((struct grimage *)(i))->height)
-#define Data_im(i) (((struct grimage *)(i))->data)
-#define Mask_im(i) (((struct grimage *)(i))->mask)
+#define Width_im(i) (((struct grimage *)Data_custom_val(i))->width)
+#define Height_im(i) (((struct grimage *)Data_custom_val(i))->height)
+#define Data_im(i) (((struct grimage *)Data_custom_val(i))->data)
+#define Mask_im(i) (((struct grimage *)Data_custom_val(i))->mask)
 
 #define Transparent (-1)
 

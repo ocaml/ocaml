@@ -15,6 +15,7 @@
 #include "libgraph.h"
 #include "image.h"
 #include <alloc.h>
+#include <custom.h>
 
 static void gr_free_image(value im)
 {
@@ -22,11 +23,21 @@ static void gr_free_image(value im)
   if (Mask_im(im) != None) XFreePixmap(grdisplay, Mask_im(im));
 }
 
-#define Max_image_mem 1000000
+static struct custom_operations image_ops = {
+  "_image",
+  gr_free_image,
+  custom_compare_default,
+  custom_hash_default,
+  custom_serialize_default,
+  custom_deserialize_default
+};
+
+#define Max_image_mem 2000000
 
 value gr_new_image(int w, int h)
 {
-  value res = alloc_final(Grimage_wosize, gr_free_image, w*h, Max_image_mem);
+  value res = alloc_custom(&image_ops, sizeof(struct grimage),
+                           w * h, Max_image_mem);
   Width_im(res) = w;
   Height_im(res) = h;
   Data_im(res) = XCreatePixmap(grdisplay, grwindow.win, w, h, 

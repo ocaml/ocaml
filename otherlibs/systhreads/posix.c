@@ -24,6 +24,7 @@
 #include <sys/time.h>
 #include "alloc.h"
 #include "callback.h"
+#include "custom.h"
 #include "fail.h"
 #include "io.h"
 #include "memory.h"
@@ -444,7 +445,7 @@ value caml_thread_join(value th)          /* ML */
 
 /* Mutex operations */
 
-#define Mutex_val(v) ((pthread_mutex_t *) Field(v, 1))
+#define Mutex_val(v) (* ((pthread_mutex_t **) Data_custom_val(v)))
 #define Max_mutex_number 1000
 
 static void caml_mutex_finalize(value wrapper)
@@ -454,14 +455,31 @@ static void caml_mutex_finalize(value wrapper)
   stat_free(mut);
 }
 
+static int caml_mutex_condition_compare(value wrapper1, value wrapper2)
+{
+  pthread_mutex_t * mut1 = Mutex_val(wrapper1);
+  pthread_mutex_t * mut2 = Mutex_val(wrapper2);
+  return mut1 == mut2 ? 0 : mut1 < mut2 ? -1 : 1;
+}
+
+static struct custom_operations caml_mutex_ops = {
+  "_mutex",
+  caml_mutex_finalize,
+  caml_mutex_condition_compare,
+  custom_hash_default,
+  custom_serialize_default,
+  custom_deserialize_default
+};
+
 value caml_mutex_new(value unit)        /* ML */
 {
   pthread_mutex_t * mut;
   value wrapper;
   mut = stat_alloc(sizeof(pthread_mutex_t));
   caml_pthread_check(pthread_mutex_init(mut, NULL), "Mutex.create");
-  wrapper = alloc_final(2, caml_mutex_finalize, 1, Max_mutex_number);
-  Field(wrapper, 1) = (value) mut;
+  wrapper = alloc_custom(&caml_mutex_ops, sizeof(pthread_mutex_t *),
+                         1, Max_mutex_number);
+  Mutex_val(wrapper) = mut;
   return wrapper;
 }
 
@@ -503,7 +521,7 @@ value caml_mutex_try_lock(value wrapper)           /* ML */
 
 /* Conditions operations */
 
-#define Condition_val(v) ((pthread_cond_t *) Field(v, 1))
+#define Condition_val(v) (* ((pthread_cond_t **) Data_custom_val(v)))
 #define Max_condition_number 1000
 
 static void caml_condition_finalize(value wrapper)
@@ -513,14 +531,24 @@ static void caml_condition_finalize(value wrapper)
   stat_free(cond);
 }
 
+static struct custom_operations caml_condition_ops = {
+  "_condition",
+  caml_condition_finalize,
+  caml_mutex_condition_compare,
+  custom_hash_default,
+  custom_serialize_default,
+  custom_deserialize_default
+};
+
 value caml_condition_new(value unit)        /* ML */
 {
   pthread_cond_t * cond;
   value wrapper;
   cond = stat_alloc(sizeof(pthread_cond_t));
   caml_pthread_check(pthread_cond_init(cond, NULL), "Condition.create");
-  wrapper = alloc_final(2, caml_condition_finalize, 1, Max_condition_number);
-  Field(wrapper, 1) = (value) cond;
+  wrapper = alloc_custom(&caml_condition_ops, sizeof(pthread_cond_t *),
+                         1, Max_condition_number);
+  Condition_val(wrapper) = cond;
   return wrapper;
 }
 

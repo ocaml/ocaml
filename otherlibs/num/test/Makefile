@@ -20,7 +20,8 @@ test: test.byt test.opt
 	./test.opt
 
 TESTFILES=test.cmo \
-  test_nats.cmo test_big_ints.cmo test_ratios.cmo test_nums.cmo end_test.cmo
+  test_nats.cmo test_big_ints.cmo test_ratios.cmo test_nums.cmo \
+  test_io.cmo end_test.cmo
 
 TESTOPTFILES=$(TESTFILES:.cmo=.cmx)
 

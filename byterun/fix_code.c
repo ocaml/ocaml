@@ -71,7 +71,7 @@ void fixup_endianness(code_t code, asize_t len)
   code_t p;
   len /= sizeof(opcode_t);
   for (p = code; p < code + len; p++) {
-    Reverse_int32(p);
+    Reverse_32(p, p);
   }
 }
 

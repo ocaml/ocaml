@@ -70,7 +70,7 @@ int really_getblock (struct channel *, char *, long);
 
 /* Extract a struct channel * from the heap object representing it */
 
-#define Channel(v) ((struct channel *) Field(v, 1))
+#define Channel(v) (*((struct channel **) (Data_custom_val(v))))
 
 /* The locking machinery */
 

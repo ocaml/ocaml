@@ -18,6 +18,7 @@
 #include <signal.h>
 #include "alloc.h"
 #include "callback.h"
+#include "custom.h"
 #include "fail.h"
 #include "io.h"
 #include "memory.h"
@@ -432,7 +433,7 @@ value caml_thread_join(value th)          /* ML */
 
 /* Mutex operations */
 
-#define Mutex_val(v) (*((HANDLE *)(&Field(v, 1))))
+#define Mutex_val(v) (*((HANDLE *) Data_custom_val(v)))
 #define Max_mutex_number 1000
 
 static void caml_mutex_finalize(value mut)
@@ -440,11 +441,26 @@ static void caml_mutex_finalize(value mut)
   CloseHandle(Mutex_val(mut));
 }
 
+static int caml_mutex_compare(value wrapper1, value wrapper2)
+{
+  HANDLE h1 = Mutex_val(wrapper1);
+  HANDLE h2 = Mutex_val(wrapper2);
+  return mut1 == mut2 ? 0 : mut1 < mut2 ? -1 : 1;
+}
+
+static struct custom_operations caml_mutex_ops = {
+  "_mutex",
+  caml_mutex_finalize,
+  caml_mutex_condition_compare,
+  custom_hash_default,
+  custom_serialize_default,
+  custom_deserialize_default
+};
+
 value caml_mutex_new(value unit)        /* ML */
 {
   value mut;
-  mut = alloc_final(1 + sizeof(HANDLE) / sizeof(value),
-                    caml_mutex_finalize, 1, Max_mutex_number);
+  mut = alloc_custom(&caml_mutex_ops, sizeof(HANDLE), 1, Max_mutex_number);
   Mutex_val(mut) = CreateMutex(0, FALSE, NULL);
   if (Mutex_val(mut) == NULL) caml_wthread_error("Mutex.create");
   return mut;
@@ -496,12 +512,11 @@ value caml_thread_delay(value val)        /* ML */
 /* Conditions operations */
 
 struct caml_condvar {
-  void (*final_fun)();          /* Finalization function */
   unsigned long count;          /* Number of waiting threads */
   HANDLE sem;                   /* Semaphore on which threads are waiting */
 };
 
-#define Condition_val(v) ((struct caml_condvar *)(v))
+#define Condition_val(v) ((struct caml_condvar *) Data_custom_val(v))
 #define Max_condition_number 1000
 
 static void caml_condition_finalize(value cond)
@@ -509,11 +524,27 @@ static void caml_condition_finalize(value cond)
   CloseHandle(Condition_val(cond)->sem);
 }
 
+static int caml_condition_compare(value wrapper1, value wrapper2)
+{
+  HANDLE h1 = Condition_val(wrapper1)->sem;
+  HANDLE h2 = Condition_val(wrapper2)->sem;
+  return mut1 == mut2 ? 0 : mut1 < mut2 ? -1 : 1;
+}
+
+static struct custom_operations caml_condition_ops = {
+  "_condition",
+  caml_condition_finalize,
+  caml_condition_compare,
+  custom_hash_default,
+  custom_serialize_default,
+  custom_deserialize_default
+};
+
 value caml_condition_new(value unit)        /* ML */
 {
   value cond;
-  cond = alloc_final(sizeof(struct caml_condvar) / sizeof(value),
-                     caml_condition_finalize, 1, Max_condition_number);
+  cond = alloc_custom(&caml_condition_ops, sizeof(struct caml_condvar),
+                      1, Max_condition_number);
   Condition_val(cond)->sem = CreateSemaphore(NULL, 0, 0x7FFFFFFF, NULL);
   if (Condition_val(cond)->sem == NULL)
     caml_wthread_error("Condition.create");
