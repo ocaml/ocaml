@@ -50,16 +50,18 @@ sub scan_source {
     $modl = do lowercase($modl);
     next if ($modl eq $modname);
     if ($dep = do find_path ("$modl.mli")) {
-      $dep =~ s/\.mli$/.cmi/;
-      push(@deps, $dep);
-      $dep =~ s/\.cmi$/.cmx/;
-      push(@optdeps, $dep);
+      $dep =~ s/\.mli$//;
+      push(@deps, "$dep.cmi");
+      if (-f "$dep.ml") {
+        push(@optdeps, "$dep.cmx");
+      } else {
+        push(@optdeps, "$dep.cmi");
+      }
     }
     elsif ($dep = do find_path ("$modl.ml")) {
-      $dep =~ s/\.ml$/.cmo/;
-      push(@deps, $dep);
-      $dep =~ s/\.cmo$/.cmx/;
-      push(@optdeps, $dep);
+      $dep =~ s/\.ml$//;
+      push(@deps, "$dep.cmo");
+      push(@optdeps, "$dep.cmx");
     }
   }
   if ($#deps >= 0) {
