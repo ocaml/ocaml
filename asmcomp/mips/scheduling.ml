@@ -11,7 +11,9 @@
 
 (* $Id$ *)
 
-(* Insert load/stores for pseudoregs that got assigned to stack locations. *)
+open Schedgen (* to create a dependency *)
 
-val fundecl: Mach.fundecl -> Mach.fundecl * bool
+(* No scheduling is needed for the Mips, the assembler
+   does it better than us.  *)
 
+let fundecl f = f

@@ -25,28 +25,6 @@ exception Use_default
 
 (* Instruction selection *)
 
-let select_addressing = function
-    Cconst_symbol s ->
-      (Ibased(s, 0), Ctuple [])
-  | Cop(Cadda, [Cconst_symbol s; Cconst_int n]) ->
-      (Ibased(s, n), Ctuple [])
-  | Cop(Cadda, [arg; Cconst_int n]) ->
-      (Iindexed n, arg)
-  | Cop(Cadda, [arg1; Cop(Caddi, [arg2; Cconst_int n])]) ->
-      (Iindexed n, Cop(Cadda, [arg1; arg2]))
-  | arg ->
-      (Iindexed 0, arg)
-
-let select_oper op args = raise Use_default
-
-let select_store addr exp = raise Use_default
-
-let select_push exp = fatal_error "Proc: select_push"
-
-let pseudoregs_for_operation op arg res = raise Use_default
-
-let is_immediate (n:int) = true
-
 let word_addressed = false
 
 (* Registers available for register allocation *)
@@ -186,8 +164,6 @@ let loc_external_arguments arg =
     | _ ->
          fatal_error "Proc_mips.loc_external_arguments"
 
-let extcall_use_push = false
-
 let loc_external_results res =
   let (loc, ofs) = calling_conventions 0 0 100 100 0 not_supported res in loc
 
@@ -215,17 +191,6 @@ let safe_register_pressure = function
 let max_register_pressure = function
     Iextcall(_, _) -> [| 6; 6 |]
   | _ -> [| 20; 15 |]
-
-(* Reloading *)
-
-let reload_test makereg round tst args = raise Use_default
-let reload_operation makereg round op args res = raise Use_default
-
-(* No scheduling is needed, the assembler does it better than us. *)
-
-let need_scheduling = false
-
-let oper_latency _ = 1
 
 (* Layout of the stack *)
 

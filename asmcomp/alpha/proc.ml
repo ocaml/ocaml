@@ -19,55 +19,7 @@ open Reg
 open Arch
 open Mach
 
-(* Exceptions raised to signal cases not handled here *)
-
-exception Use_default
-
 (* Instruction selection *)
-
-let select_addressing = function
-    Cconst_symbol s ->
-      (Ibased(s, 0), Ctuple [])
-  | Cop(Cadda, [Cconst_symbol s; Cconst_int n]) ->
-      (Ibased(s, n), Ctuple [])
-  | Cop(Cadda, [arg; Cconst_int n]) ->
-      (Iindexed n, arg)
-  | Cop(Cadda, [arg1; Cop(Caddi, [arg2; Cconst_int n])]) ->
-      (Iindexed n, Cop(Cadda, [arg1; arg2]))
-  | arg ->
-      (Iindexed 0, arg)
-
-let select_oper op args =
-  match (op, args) with
-    ((Caddi|Cadda),
-     [arg2; Cop(Clsl, [arg1; Cconst_int(2|3 as shift)])]) ->
-      (Ispecific(if shift = 2 then Iadd4 else Iadd8), [arg1; arg2])
-  | ((Caddi|Cadda),
-     [arg2; Cop(Cmuli, [arg1; Cconst_int(4|8 as mult)])]) ->
-      (Ispecific(if mult = 4 then Iadd4 else Iadd8), [arg1; arg2])
-  | ((Caddi|Cadda),
-     [arg2; Cop(Cmuli, [Cconst_int(4|8 as mult); arg1])]) ->
-      (Ispecific(if mult = 4 then Iadd4 else Iadd8), [arg1; arg2])
-  | (Caddi, [Cop(Clsl, [arg1; Cconst_int(2|3 as shift)]); arg2]) ->
-      (Ispecific(if shift = 2 then Iadd4 else Iadd8), [arg1; arg2])
-  | (Caddi, [Cop(Cmuli, [arg1; Cconst_int(4|8 as mult)]); arg2]) ->
-      (Ispecific(if mult = 4 then Iadd4 else Iadd8), [arg1; arg2])
-  | (Caddi, [Cop(Cmuli, [Cconst_int(4|8 as mult); arg1]); arg2]) ->
-      (Ispecific(if mult = 4 then Iadd4 else Iadd8), [arg1; arg2])
-  | (Csubi, [Cop(Clsl, [arg1; Cconst_int(2|3 as shift)]); arg2]) ->
-      (Ispecific(if shift = 2 then Isub4 else Isub8), [arg1; arg2])
-  | (Csubi, [Cop(Cmuli, [Cconst_int(4|8 as mult); arg1]); arg2]) ->
-      (Ispecific(if mult = 4 then Isub4 else Isub8), [arg1; arg2])
-  | _ ->
-      raise Use_default
-
-let select_store addr exp = raise Use_default
-
-let select_push exp = fatal_error "Proc: select_push"
-
-let pseudoregs_for_operation op arg res = raise Use_default
-
-let is_immediate (n:int) = true
 
 let word_addressed = true
 
@@ -244,17 +196,6 @@ let safe_register_pressure = function
 let max_register_pressure = function
     Iextcall(_, _) -> [| 4; 8 |]
   | _ -> [| 19; 29 |]
-
-(* Reloading *)
-
-let reload_test makereg round tst args = raise Use_default
-let reload_operation makereg round op args res = raise Use_default
-
-(* No scheduling is needed, the assembler does it better than us. *)
-
-let need_scheduling = false
-
-let oper_latency _ = 1
 
 (* Layout of the stack *)
 

@@ -70,3 +70,22 @@ let print_specific_operation printreg op arg =
   | Imultsubf ->
       printreg arg.(0); print_string " *f "; printreg arg.(1);
       print_string " -f "; printreg arg.(2)
+
+(* Distinguish between the PowerPC and the Power/RS6000 submodels *)
+
+let powerpc =
+  match Config.model with
+    "ppc" -> true
+  | "rs6000" -> false
+  | _ -> Misc.fatal_error "wrong $(MODEL)"
+
+(* Distinguish between the PowerOpen (AIX, MacOS) TOC-based,
+   relative-addressing model and the SVR4 (Solaris, MkLinux)
+   absolute-addressing model. *)
+
+let toc =
+  match Config.system with
+    "aix" -> true
+  | "elf" -> false
+  | _ -> Misc.fatal_error "wrong $(SYSTEM)"
+

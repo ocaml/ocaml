@@ -19,75 +19,7 @@ open Reg
 open Arch
 open Mach
 
-(* Exceptions raised to signal cases not handled here *)
-
-exception Use_default
-
-(* Recognition of addressing modes *)
-
-type addressing_expr =
-    Asymbol of string
-  | Alinear of expression
-  | Aadd of expression * expression
-
-let rec select_addr = function
-    Cconst_symbol s ->
-      (Asymbol s, 0)
-  | Cop((Caddi | Cadda), [arg; Cconst_int m]) ->
-      let (a, n) = select_addr arg in (a, n + m)
-  | Cop((Caddi | Cadda), [Cconst_int m; arg]) ->
-      let (a, n) = select_addr arg in (a, n + m)
-  | Cop((Caddi | Cadda), [arg1; arg2]) ->
-      begin match (select_addr arg1, select_addr arg2) with
-          ((Alinear e1, n1), (Alinear e2, n2)) ->
-              (Aadd(e1, e2), n1 + n2)
-        | _ ->
-              (Aadd(arg1, arg2), 0)
-      end
-  | exp ->
-      (Alinear exp, 0)
-
-let select_addressing exp =
-  match select_addr exp with
-    (Asymbol s, d) ->
-      (Ibased(s, d), Ctuple [])
-  | (Alinear e, d) ->
-      (Iindexed d, e)
-  | (Aadd(e1, e2), d) ->
-      (Iindexed2 d, Ctuple[e1; e2])
-
 (* Instruction selection *)
-
-let is_immediate n = (n <= 4095) & (n >= -4096)
-
-let select_oper op args =
-  match (op, args) with
-  (* Multiplication, division and modulus are turned into
-     calls to C library routines, except if the dividend is a power of 2. *)
-    (Cmuli, [arg; Cconst_int n]) when n = 1 lsl (Misc.log2 n) ->
-      (Iintop_imm(Ilsl, Misc.log2 n), [arg])
-  | (Cmuli, [Cconst_int n; arg]) when n = 1 lsl (Misc.log2 n) ->
-      (Iintop_imm(Ilsl, Misc.log2 n), [arg])
-  | (Cmuli, _) -> 
-      (Iextcall(".umul", false), args)
-  | (Cdivi, [arg; Cconst_int n])
-    when is_immediate n & n = 1 lsl (Misc.log2 n) ->
-      (Iintop_imm(Idiv, n), [arg])
-  | (Cdivi, _) -> 
-      (Iextcall(".div", false), args)
-  | (Cmodi, [arg; Cconst_int n])
-    when is_immediate n & n = 1 lsl (Misc.log2 n) ->
-      (Iintop_imm(Imod, n), [arg])
-  | (Cmodi, _) ->
-      (Iextcall(".rem", false), args)
-  | _ ->
-      raise Use_default
-
-let select_store addr exp = raise Use_default
-
-let select_push exp = fatal_error "Proc: select_push"
-
-let pseudoregs_for_operation op arg res = raise Use_default
 
 let word_addressed = false
 
@@ -227,8 +159,6 @@ let loc_external_arguments arg =
   done;
   (loc, Misc.align (!ofs + 4) 8)     (* Keep stack 8-aligned *)
 
-let extcall_use_push = false
-
 let loc_external_results res =
   let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
 
@@ -258,11 +188,6 @@ let safe_register_pressure = function
 let max_register_pressure = function
     Iextcall(_, _) -> [| 11; 0 |]
   | _ -> [| 19; 15 |]
-
-(* Reloading *)
-
-let reload_test makereg round tst args = raise Use_default
-let reload_operation makereg round op args res = raise Use_default
 
 (* Latencies (in cycles). Wild guesses. *)
 

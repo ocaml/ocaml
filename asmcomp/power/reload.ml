@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-(* Insert load/stores for pseudoregs that got assigned to stack locations. *)
+(* Reloading for the PowerPC *)
 
-val fundecl: Mach.fundecl -> Mach.fundecl * bool
-
+let fundecl f =
+  (new Reloadgen.reload_generic ())#fundecl f

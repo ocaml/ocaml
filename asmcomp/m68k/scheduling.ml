@@ -11,7 +11,8 @@
 
 (* $Id$ *)
 
-(* Insert load/stores for pseudoregs that got assigned to stack locations. *)
+open Schedgen (* to create a dependency *)
 
-val fundecl: Mach.fundecl -> Mach.fundecl * bool
+(* No scheduling is needed for the Motorola 68k. *)
 
+let fundecl f = f

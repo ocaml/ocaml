@@ -51,10 +51,12 @@ ASMCOMP=asmcomp/arch.cmo asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/compilenv.cmo \
   asmcomp/closure.cmo asmcomp/cmmgen.cmo \
-  asmcomp/printmach.cmo asmcomp/selection.cmo asmcomp/liveness.cmo \
-  asmcomp/spill.cmo asmcomp/split.cmo \
-  asmcomp/interf.cmo asmcomp/coloring.cmo asmcomp/reload.cmo \
-  asmcomp/printlinear.cmo asmcomp/linearize.cmo asmcomp/scheduling.cmo \
+  asmcomp/printmach.cmo asmcomp/selectgen.cmo asmcomp/selection.cmo \
+  asmcomp/liveness.cmo asmcomp/spill.cmo asmcomp/split.cmo \
+  asmcomp/interf.cmo asmcomp/coloring.cmo \
+  asmcomp/reloadgen.cmo asmcomp/reload.cmo \
+  asmcomp/printlinear.cmo asmcomp/linearize.cmo \
+  asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
   asmcomp/emitaux.cmo asmcomp/emit.cmo asmcomp/asmgen.cmo \
   asmcomp/asmlink.cmo asmcomp/asmlibrarian.cmo
 
@@ -132,8 +134,10 @@ coldstart:
           ln -s ../byterun/libcamlrun.a boot/libcamlrun.a; fi
 
 # Save the current bootstrap compiler
+MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
 backup:
 	if test -d boot/Saved; then : ; else mkdir boot/Saved; fi
+	if test -d $(MAXSAVED); then rm -r $(MAXSAVED); else : ; fi
 	mv boot/Saved boot/Saved.prev
 	mkdir boot/Saved
 	mv boot/Saved.prev boot/Saved/Saved.prev
@@ -334,28 +338,52 @@ partialclean::
 
 beforedepend:: bytecomp/runtimedef.ml
 
-# Choose the right arch, emit and proc files
+# Choose the right machine-dependent files
 
-asmcomp/arch.ml: asmcomp/arch_$(ARCH).ml
-	ln -s arch_$(ARCH).ml asmcomp/arch.ml
+asmcomp/arch.ml: asmcomp/$(ARCH)/arch.ml
+	ln -s $(ARCH)/arch.ml asmcomp/arch.ml
 
 partialclean::
 	rm -f asmcomp/arch.ml
 
 beforedepend:: asmcomp/arch.ml
 
-asmcomp/proc.ml: asmcomp/proc_$(ARCH).ml
-	ln -s proc_$(ARCH).ml asmcomp/proc.ml
+asmcomp/proc.ml: asmcomp/$(ARCH)/proc.ml
+	ln -s $(ARCH)/proc.ml asmcomp/proc.ml
 
 partialclean::
 	rm -f asmcomp/proc.ml
 
 beforedepend:: asmcomp/proc.ml
 
+asmcomp/selection.ml: asmcomp/$(ARCH)/selection.ml
+	ln -s $(ARCH)/selection.ml asmcomp/selection.ml
+
+partialclean::
+	rm -f asmcomp/selection.ml
+
+beforedepend:: asmcomp/selection.ml
+
+asmcomp/reload.ml: asmcomp/$(ARCH)/reload.ml
+	ln -s $(ARCH)/reload.ml asmcomp/reload.ml
+
+partialclean::
+	rm -f asmcomp/reload.ml
+
+beforedepend:: asmcomp/reload.ml
+
+asmcomp/scheduling.ml: asmcomp/$(ARCH)/scheduling.ml
+	ln -s $(ARCH)/scheduling.ml asmcomp/scheduling.ml
+
+partialclean::
+	rm -f asmcomp/scheduling.ml
+
+beforedepend:: asmcomp/scheduling.ml
+
 # Preprocess the code emitters
 
-asmcomp/emit.ml: asmcomp/emit_$(ARCH).mlp tools/cvt_emit
-	boot/ocamlrun tools/cvt_emit < asmcomp/emit_$(ARCH).mlp > asmcomp/emit.ml \
+asmcomp/emit.ml: asmcomp/$(ARCH)/emit.mlp tools/cvt_emit
+	boot/ocamlrun tools/cvt_emit < asmcomp/$(ARCH)/emit.mlp > asmcomp/emit.ml \
         || { rm -f asmcomp/emit.ml; exit 2; }
 
 partialclean::

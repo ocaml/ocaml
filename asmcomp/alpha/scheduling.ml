@@ -11,7 +11,10 @@
 
 (* $Id$ *)
 
-(* Insert load/stores for pseudoregs that got assigned to stack locations. *)
+open Schedgen (* to create a dependency *)
 
-val fundecl: Mach.fundecl -> Mach.fundecl * bool
+(* No scheduling is needed for the Alpha, the Digital Unix assembler
+   does it better than us.  Problem: the assembler for Linux-Alpha
+   does not do scheduling... *)
 
+let fundecl f = f

@@ -504,8 +504,6 @@ let emit_instr i =
     | Lop(Ispecific(Istore_symbol(s, addr))) ->
         add_used_symbol s ;
         `	mov	DWORD PTR {emit_addressing addr i.arg 0},OFFSET {emit_symbol s}\n`
-    | Lop(Ispecific(Ioffset_loc(n, addr))) ->
-        `	add	DWORD PTR {emit_addressing addr i.arg 0},{emit_int n}\n`
     | Lop(Ispecific(Ipush)) ->
         (* Push arguments in reverse order *)
         for n = Array.length i.arg - 1 downto 0 do

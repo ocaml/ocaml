@@ -13,24 +13,7 @@
 
 (* Processor descriptions *)
 
-(* The Use_default exception is raised by the selection and reloading
-   functions to signal cases they don't handle *)
-exception Use_default
-
 (* Instruction selection *)
-val select_addressing:
-      Cmm.expression -> Arch.addressing_mode * Cmm.expression
-val select_oper:
-      Cmm.operation -> Cmm.expression list ->
-        Mach.operation * Cmm.expression list
-val select_store:
-      Arch.addressing_mode -> Cmm.expression -> Mach.operation * Cmm.expression
-val select_push:
-      Cmm.expression -> Mach.operation * Cmm.expression
-val pseudoregs_for_operation:
-      Mach.operation -> Reg.t array -> Reg.t array ->
-        Reg.t array * Reg.t array * bool
-val is_immediate: int -> bool
 val word_addressed: bool
 
 (* Registers available for register allocation *)
@@ -48,28 +31,15 @@ val loc_results: Reg.t array -> Reg.t array
 val loc_parameters: Reg.t array -> Reg.t array
 val loc_external_arguments: Reg.t array -> Reg.t array * int
 val loc_external_results: Reg.t array -> Reg.t array
-val extcall_use_push : bool
 val loc_exn_bucket: Reg.t
 
 (* Maximal register pressures for pre-spilling *)
-
 val safe_register_pressure: Mach.operation -> int
 val max_register_pressure: Mach.operation -> int array
 
 (* Registers destroyed by operations *)
 val destroyed_at_oper: Mach.instruction_desc -> Reg.t array
 val destroyed_at_raise: Reg.t array
-
-(* Reloading of instruction arguments, storing of instruction results *)
-val reload_test:
-      (Reg.t -> Reg.t) -> int -> Mach.test -> Reg.t array -> Reg.t array
-val reload_operation:
-      (Reg.t -> Reg.t) -> int -> Mach.operation -> 
-      Reg.t array -> Reg.t array -> Reg.t array * Reg.t array
-
-(* Latency info for instruction scheduling *)
-val need_scheduling: bool
-val oper_latency: Mach.operation -> int
 
 (* Info for laying out the stack frame *)
 val num_stack_slots: int array

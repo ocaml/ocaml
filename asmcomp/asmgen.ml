@@ -47,7 +47,7 @@ let rec regalloc round fd =
   if !dump_prefer then Printmach.preferences();
   Coloring.allocate_registers();
   dump_if dump_regalloc "After register allocation" fd;
-  let (newfd, redo_regalloc) = Reload.fundecl round fd in
+  let (newfd, redo_regalloc) = Reload.fundecl fd in
   dump_if dump_reload "After insertion of reloading code" newfd;
   if redo_regalloc 
   then begin Reg.reinit(); Liveness.fundecl newfd; regalloc (round+1) newfd end
