@@ -1,0 +1,21 @@
+#!/usr/local/bin/perl -pi.bak
+
+# Conversion of Caml Special Light source files to Objective Caml.
+# Rename library functions that have changed names and warn
+# for identifiers that are now keywords.
+# Transforms the file(s) in place. The old source is left in a file
+# with extension .bak
+
+s/Array\.new/Array.create/g;
+s/Array\.new_matrix/Array.create_matrix/g;
+s/Hashtbl\.new/Hashtbl.create/g;
+s/Queue\.new/Queue.create/g;
+s/Stack\.new/Stack.create/g;
+s/Thread\.new/Thread.create/g;
+s/Mutex\.new/Mutex.create/g;
+s/Condition\.new/Condition.create/g;
+
+if (/\b(class|closed|constraint|inherit|method|new|private|virtual)\b/) {
+  print STDERR "$ARGV:$.: `$1' is now a keyword\n";
+}
+

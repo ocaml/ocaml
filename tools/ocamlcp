@@ -22,7 +22,7 @@ while : ; do
   shift
 done
 
-cslc $cslargs
+ocamlc $cslargs
 status=$?
 rm -f $toremove
 exit $status
