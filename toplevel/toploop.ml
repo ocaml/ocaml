@@ -292,7 +292,12 @@ let got_eof = ref false;;
 
 let refill_lexbuf buffer len =
   if !got_eof then (got_eof := false; 0) else begin
-    output_string stdout (if !first_line then "# " else "  "); flush stdout;
+    let prompt =
+      if !first_line then "# "
+      else if Lexer.in_comment () then "* "
+      else "  "
+    in
+    output_string stdout prompt; flush stdout;
     first_line := false;
     let i = ref 0 in
     try

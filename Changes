@@ -55,6 +55,7 @@ Toplevel environment:
   (E.g. "let x = <big list>;; let x = 1;;" allows <big list> to be reclaimed.)
 - Revised the tracing facility so that for standard library functions,
   only calls from user code are traced, not calls from the system.
+- Added a "*" prompt when within a comment.
 
 Runtime system:
 - Fixed portability issue on bcopy() vs memmove(), affecting Linux RedHat 7.0

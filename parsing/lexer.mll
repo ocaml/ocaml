@@ -146,6 +146,7 @@ let char_for_decimal_code lexbuf i =
 (* To store the position of the beginning of a string and comment *)
 let string_start_pos = ref 0;;
 let comment_start_pos = ref [];;
+let in_comment () = !comment_start_pos <> [];;
 
 (* Error report *)
 
@@ -323,7 +324,7 @@ and comment = parse
   | "*)"
       { match !comment_start_pos with
         | [] -> assert false
-        | [x] -> ()
+        | [x] -> comment_start_pos := [];
         | _ :: l -> comment_start_pos := l;
                     comment lexbuf;
        }

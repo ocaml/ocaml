@@ -29,3 +29,5 @@ exception Error of error * int * int
 open Format
 
 val report_error: formatter -> error -> unit
+
+val in_comment : unit -> bool;;
