@@ -17,7 +17,7 @@
 val output_channel: out_channel ref
 val emit_string: string -> unit
 val emit_int: int -> unit
-val emit_nativeint: Nativeint.t -> unit
+val emit_nativeint: nativeint -> unit
 val emit_symbol: char -> string -> unit
 val emit_printf: ('a, out_channel, unit) format -> 'a
 val emit_char: char -> unit

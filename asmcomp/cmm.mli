@@ -71,7 +71,7 @@ type operation =
 
 type expression =
     Cconst_int of int
-  | Cconst_natint of Nativeint.t
+  | Cconst_natint of nativeint
   | Cconst_float of string
   | Cconst_symbol of string
   | Cconst_pointer of int
@@ -99,8 +99,8 @@ type data_item =
   | Cdefine_label of int
   | Cint8 of int
   | Cint16 of int
-  | Cint32 of Nativeint.t
-  | Cint of Nativeint.t
+  | Cint32 of nativeint
+  | Cint of nativeint
   | Csingle of string
   | Cdouble of string
   | Csymbol_address of string

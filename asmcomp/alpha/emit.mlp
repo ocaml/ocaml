@@ -344,7 +344,7 @@ let range_check_trap = ref 0
 (* List of floating-point and big integer literals
    (fon non-Digital assemblers) *)
 let float_constants = ref ([] : (label * string) list)
-let bigint_constants = ref ([] : (label * Nativeint.t) list)
+let bigint_constants = ref ([] : (label * nativeint) list)
 
 let emit_instr i =
     match i.desc with

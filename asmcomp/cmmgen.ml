@@ -423,7 +423,7 @@ let operations_boxed_int bi =
               | Pint64 -> "int64_ops"
 
 let constant_boxed_ints =
-  ref ([] : (string * boxed_integer * Nativeint.t) list)
+  ref ([] : (string * boxed_integer * nativeint) list)
 
 let label_constant_boxed_int bi n =
   let s = new_const_symbol() in
@@ -461,6 +461,18 @@ let unbox_int bi arg =
         contents
   | _ ->
       Cop(Cload(if bi = Pint32 then Thirtytwo_signed else Word),
+          [Cop(Cadda, [arg; Cconst_int size_addr])])
+
+let unbox_unsigned_int bi arg =
+  match arg with
+    Cop(Calloc, [hdr; ops; contents]) -> 
+      if bi = Pint32 && size_int = 8 then
+        (* Force zero-extension of low-order 32 bits *)
+        Cop(Clsr, [Cop(Clsl, [contents; Cconst_int 32]); Cconst_int 32])
+      else
+        contents
+  | _ ->
+      Cop(Cload(if bi = Pint32 then Thirtytwo_unsigned else Word),
           [Cop(Cadda, [arg; Cconst_int size_addr])])
 
 (* Simplification of some primitives into C calls *)
@@ -923,7 +935,8 @@ and transl_prim_2 p arg1 arg2 =
                      [transl_unbox_int bi arg1; untag_int(transl arg2)]))
   | Plsrbint bi ->
       box_int bi (Cop(Clsr,
-                     [transl_unbox_int bi arg1; untag_int(transl arg2)]))
+                     [unbox_unsigned_int bi (transl arg1);
+                      untag_int(transl arg2)]))
   | Pasrbint bi ->
       box_int bi (Cop(Casr,
                      [transl_unbox_int bi arg1; untag_int(transl arg2)]))
