@@ -153,7 +153,7 @@ let simplify_lambda lam =
   | Lconst cst as l -> l
   | Lapply(l1, ll) -> Lapply(simplif l1, List.map simplif ll)
   | Lfunction(kind, params, l) -> Lfunction(kind, params, simplif l)
-  | Llet(str, v, Lvar w, l2) ->
+  | Llet(str, v, Lvar w, l2) when not !Clflags.debug ->
       Hashtbl.add subst v (simplif (Lvar w));
       simplif l2
   | Llet(Strict, v, Lprim(Pmakeblock(0, Mutable), [linit]), lbody)
