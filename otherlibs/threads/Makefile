@@ -2,11 +2,11 @@ include ../../config/Makefile
 
 # Compilation options
 CC=$(BYTECC)
-CFLAGS=-I$(PTHREADS_INCLUDES) -I../../byterun -O $(BYTECCCOMPOPTS)
+CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
 CAMLC=../../boot/cslrun ../../boot/cslc -I ../../boot -I ../unix
 
-C_OBJS=threadstubs.o
-CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo
+C_OBJS=scheduler.o
+CAML_OBJS=thread.cmo threadIO.cmo mutex.cmo condition.cmo event.cmo
 
 all: libthreads.a threads.cma
 

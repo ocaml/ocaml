@@ -1,18 +1,16 @@
-scheduler.o: scheduler.c ../../byterun/config.h \
+threadstubs.o: threadstubs.c ../../byterun/alloc.h \
+ ../../byterun/misc.h ../../byterun/config.h \
  ../../byterun/../config/m.h ../../byterun/../config/s.h \
- ../../byterun/misc.h ../../byterun/mlvalues.h ../../byterun/stacks.h \
- ../../byterun/memory.h ../../byterun/gc.h ../../byterun/major_gc.h \
- ../../byterun/freelist.h ../../byterun/minor_gc.h \
- ../../byterun/fail.h ../../byterun/io.h ../../byterun/roots.h \
- ../../byterun/alloc.h
+ ../../byterun/mlvalues.h ../../byterun/roots.h \
+ ../../byterun/signals.h ../../byterun/stacks.h ../../byterun/memory.h \
+ ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/freelist.h \
+ ../../byterun/minor_gc.h
 condition.cmi: mutex.cmi 
-condition.cmo: mutex.cmi thread.cmi condition.cmi 
-condition.cmx: mutex.cmx thread.cmx condition.cmi 
+condition.cmo: mutex.cmi condition.cmi 
+condition.cmx: mutex.cmx condition.cmi 
 event.cmo: condition.cmi mutex.cmi event.cmi 
 event.cmx: condition.cmx mutex.cmx event.cmi 
-mutex.cmo: thread.cmi mutex.cmi 
-mutex.cmx: thread.cmx mutex.cmi 
+mutex.cmo: mutex.cmi 
+mutex.cmx: mutex.cmi 
 thread.cmo: thread.cmi 
 thread.cmx: thread.cmi 
-threadIO.cmo: thread.cmi threadIO.cmi 
-threadIO.cmx: thread.cmx threadIO.cmi 
