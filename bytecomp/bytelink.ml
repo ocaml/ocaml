@@ -447,6 +447,17 @@ let append_bytecode_and_cleanup bytecode_name exec_name prim_name =
       remove_file bytecode_name;
       remove_file prim_name
 
+(* Fix the name of the output file, if the C compiler changes it behind
+   our back. *)
+
+let fix_exec_name name =
+  match Sys.os_type with
+    "Win32" ->
+      begin try String.rindex name '.'; name
+      with Not_found -> name ^ ".exe"
+      end
+  | _ -> name
+
 (* Main entry point (build a custom runtime if needed) *)
 
 let link objfiles =
@@ -461,9 +472,10 @@ let link objfiles =
       let poc = open_out prim_name in
       Symtable.output_primitive_table poc;
       close_out poc;
-      if build_custom_runtime prim_name !Clflags.exec_name <> 0
+      let exec_name = fix_exec_name !Clflags.exec_name in
+      if build_custom_runtime prim_name exec_name <> 0
       then raise(Error Custom_runtime);
-      append_bytecode_and_cleanup bytecode_name !Clflags.exec_name prim_name
+      append_bytecode_and_cleanup bytecode_name exec_name prim_name
     with x ->
       remove_file bytecode_name;
       remove_file prim_name;
