@@ -43,7 +43,7 @@ value win_waitpid(value vflags, value vpid_req) /* ML */
   HANDLE pid_req = (HANDLE) Long_val(vpid_req);
 
   flags = convert_flag_list(vflags, wait_flag_table);
-  if (flags & CAML_WNOHANG == 0) {
+  if ((flags & CAML_WNOHANG) == 0) {
     if (WaitForSingleObject(pid_req, INFINITE) == WAIT_FAILED) {
       _dosmaperr(GetLastError());
       uerror("waitpid", Nothing);
