@@ -36,6 +36,7 @@ double stat_minor_words = 0.0,
 long stat_minor_collections = 0,
      stat_major_collections = 0,
      stat_heap_size = 0,              /* bytes */
+     stat_top_heap_size = 0,          /* bytes */
      stat_compactions = 0;
 
 extern asize_t major_heap_increment;  /* bytes; see major_gc.c */
@@ -210,7 +211,7 @@ static value heap_stats (int returnstats)
     long heap_words = Wsize_bsize (stat_heap_size);
     long cpct = stat_compactions;
 
-    res = alloc_tuple (14);
+    res = alloc_tuple (15);
     Store_field (res, 0, copy_double (minwords));
     Store_field (res, 1, copy_double (prowords));
     Store_field (res, 2, copy_double (majwords));
@@ -225,6 +226,7 @@ static value heap_stats (int returnstats)
     Store_field (res, 11, Val_long (largest_free));
     Store_field (res, 12, Val_long (fragments));
     Store_field (res, 13, Val_long (cpct));
+    Store_field (res, 14, Val_long (Wsize_bsize (stat_top_heap_size)));
     CAMLreturn (res);
   }else{
     CAMLreturn (Val_unit);

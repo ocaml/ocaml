@@ -367,6 +367,7 @@ void init_major_heap (asize_t heap_size)
   page_table_entry *page_table_block;
 
   stat_heap_size = round_heap_chunk_size (heap_size);
+  stat_top_heap_size = stat_heap_size;
   Assert (stat_heap_size % Page_size == 0);
   heap_start = aligned_malloc (stat_heap_size + sizeof (heap_chunk_head),
                                sizeof (heap_chunk_head), &block);

@@ -136,6 +136,7 @@ int add_to_heap (header_t *mem)
   if (m + Chunk_size (m) > heap_end) heap_end = m + Chunk_size (m);
 
   stat_heap_size += Chunk_size (m);
+  if (stat_heap_size > stat_top_heap_size) stat_top_heap_size = stat_heap_size;
   return 0;
 }
 

@@ -27,7 +27,8 @@ type stat = {
   free_blocks : int;
   largest_free : int;
   fragments : int;
-  compactions : int
+  compactions : int;
+  top_heap_words : int;
 };;
 
 type control = {
@@ -36,7 +37,7 @@ type control = {
   mutable space_overhead : int;
   mutable verbose : int;
   mutable max_overhead : int;
-  mutable stack_limit : int
+  mutable stack_limit : int;
 };;
 
 external stat : unit -> stat = "gc_stat";;
@@ -59,6 +60,7 @@ let print_stat c =
   fprintf c "major_collections: %d\n" st.major_collections;
   fprintf c "heap_words: %d\n" st.heap_words;
   fprintf c "heap_chunks: %d\n" st.heap_chunks;
+  fprintf c "top_heap_words: %d\n" st.top_heap_words;
   fprintf c "live_words: %d\n" st.live_words;
   fprintf c "live_blocks: %d\n" st.live_blocks;
   fprintf c "free_words: %d\n" st.free_words;
@@ -76,9 +78,8 @@ let allocated_bytes () =
 external finalise : ('a -> unit) -> 'a -> unit = "final_register";;
 
 
-type alarm_rec = {active : alarm; f : unit -> unit}
-and alarm = bool ref
-;;
+type alarm = bool ref;;
+type alarm_rec = {active : alarm; f : unit -> unit};;
 
 let rec call_alarm arec =
   if !(arec.active) then begin

@@ -20,41 +20,57 @@ type stat =
     (** Number of words allocated in the minor heap since
        the program was started.  This number is accurate in the
        byte-code runtime, but only approximate in the native runtime. *)
+
     promoted_words : float;
     (** Number of words allocated in the minor heap that
        survived a minor collection and were moved to the major heap
        since the program was started. *)
+
     major_words : float;
     (** Number of words allocated in the major heap, including
        the promoted words, since the program was started. *)
+
     minor_collections : int;
     (** Number of minor collections since the program was started. *)
+
     major_collections : int;
     (** Number of major collection cycles, not counting
        the current cycle, since the program was started. *)
+
     heap_words : int;
     (** Total size of the major heap, in words. *)
+
     heap_chunks : int;
     (** Number of times the major heap size was increased
        since the program was started (including the initial allocation
        of the heap). *)
+
     live_words : int;
     (** Number of words of live data in the major heap, including the header
        words. *)
+
     live_blocks : int;
     (** Number of live blocks in the major heap. *)
+
     free_words : int;
     (** Number of words in the free list. *)
+
     free_blocks : int;
     (** Number of blocks in the free list. *)
+
     largest_free : int;
     (** Size (in words) of the largest block in the free list. *)
+
     fragments : int;
     (** Number of wasted words due to fragmentation.  These are
        1-words free blocks placed between two live blocks.  They
        are not available for allocation. *)
+
     compactions : int;
-    (** Number of heap compactions since the program was started. *) 
+    (** Number of heap compactions since the program was started. *)
+
+    top_heap_words : int;
+    (** Maximum size reached by the major heap, in words. *)
 }
 (** The memory management counters are returned in a [stat] record.
 
