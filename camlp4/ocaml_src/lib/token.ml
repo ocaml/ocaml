@@ -57,26 +57,35 @@ let lexer_text (con, prm) =
 ;;
 
 let locerr () = invalid_arg "Lexer: flocation function";;
-let loct_create () = ref (Array.create 1024 None), ref false;;
+
+let tsz = 256;; (* up to 2^29 entries on a 32-bit machine, 2^61 on 64-bit *)
+
+let loct_create () = ref [| |], ref false;;
+
 let loct_func (loct, ov) i =
   match
-    if i < 0 || i >= Array.length !loct then
+    if i < 0 || i / tsz >= Array.length !loct then None
+    else if !loct.(i / tsz) = [| |] then
       if !ov then Some (nowhere, nowhere) else None
-    else Array.unsafe_get !loct i
+    else Array.unsafe_get (Array.unsafe_get !loct (i / tsz)) (i mod tsz)
   with
     Some loc -> loc
   | _ -> locerr ()
 ;;
+
 let loct_add (loct, ov) i loc =
-  if i >= Array.length !loct then
-    let new_tmax = Array.length !loct * 2 in
+  while i / tsz >= Array.length !loct && not !ov do
+    let new_tmax = Array.length !loct * 2 + 1 in
     if new_tmax < Sys.max_array_length then
-      let new_loct = Array.create new_tmax None in
-      Array.blit !loct 0 new_loct 0 (Array.length !loct);
-      loct := new_loct;
-      !loct.(i) <- Some loc
+      let new_loct = Array.make new_tmax [| |] in
+      Array.blit !loct 0 new_loct 0 (Array.length !loct); loct := new_loct
     else ov := true
-  else !loct.(i) <- Some loc
+  done;
+  if not !ov then
+    begin
+      if !loct.(i / tsz) = [| |] then !loct.(i / tsz) <- Array.make tsz None;
+      !loct.(i / tsz).(i mod tsz) <- Some loc
+    end
 ;;
 
 let make_stream_and_flocation next_token_loc =
