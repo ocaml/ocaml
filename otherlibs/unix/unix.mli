@@ -342,8 +342,7 @@ val fstat : file_descr -> stats
    descriptor. *)
 
 
-(** {6 Seeking, truncating and statistics on large files} *)
-
+(** {6 File operations on large files} *)
 
 module LargeFile :
   sig
@@ -368,7 +367,8 @@ module LargeFile :
     val lstat : string -> stats
     val fstat : file_descr -> stats
   end
-(** This sub-module provides 64-bit variants of the functions
+(** File operations on large files.
+  This sub-module provides 64-bit variants of the functions
   {!Unix.lseek} (for positioning a file descriptor),
   {!Unix.truncate} and {!Unix.ftruncate} (for changing the size of a file),
   and {!Unix.stat}, {!Unix.lstat} and {!Unix.fstat} (for obtaining
