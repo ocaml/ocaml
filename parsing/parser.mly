@@ -619,11 +619,11 @@ virtual_method:
 ;
 concrete_method :
     METHOD private_flag label strict_binding
-      { $3, $2, mkexp(Pexp_poly ($4, None)), symbol_rloc () }
+      { $3, $2, ghexp(Pexp_poly ($4, None)), symbol_rloc () }
   | METHOD private_flag label COLON poly_type EQUAL seq_expr
-      { $3, $2, mkexp(Pexp_poly($7,Some $5)), symbol_rloc () }
+      { $3, $2, ghexp(Pexp_poly($7,Some $5)), symbol_rloc () }
   | METHOD private_flag LABEL poly_type EQUAL seq_expr
-      { $3, $2, mkexp(Pexp_poly($6,Some $4)), symbol_rloc () }
+      { $3, $2, ghexp(Pexp_poly($6,Some $4)), symbol_rloc () }
 ;
 
 /* Class types */
