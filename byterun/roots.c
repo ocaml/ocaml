@@ -30,7 +30,8 @@ CAMLexport struct caml__roots_block *local_roots = NULL;
 void (*scan_roots_hook) (scanning_action f) = NULL;
 
 /* FIXME rename to [oldify_young_roots] and synchronise with asmrun/roots.c */
-/* Call [oldify] on (at least) all the roots that point to the minor heap. */
+/* Call [oldify_one] on (at least) all the roots that point to the minor
+   heap. */
 void oldify_local_roots (void)
 {
   register value * sp;
@@ -40,25 +41,25 @@ void oldify_local_roots (void)
 
   /* The stack */
   for (sp = extern_sp; sp < stack_high; sp++) {
-    oldify (*sp, sp);
+    oldify_one (*sp, sp);
   }
   /* Local C roots */  /* FIXME do the old-frame trick ? */
   for (lr = local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         sp = &(lr->tables[i][j]);
-        oldify (*sp, sp);
+        oldify_one (*sp, sp);
       }
     }
   }
   /* Global C roots */
   for (gr = caml_global_roots.forward[0]; gr != NULL; gr = gr->forward[0]) {
-    oldify(*(gr->root), gr->root);
+    oldify_one(*(gr->root), gr->root);
   }
   /* Finalised values */
-  final_do_young_roots (&oldify);
+  final_do_young_roots (&oldify_one);
   /* Hook */
-  if (scan_roots_hook != NULL) (*scan_roots_hook)(&oldify);
+  if (scan_roots_hook != NULL) (*scan_roots_hook)(&oldify_one);
 }
 
 /* Call [darken] on all roots */

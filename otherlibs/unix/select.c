@@ -27,7 +27,7 @@
 #include <sys/select.h>
 #endif
 
-#ifdef __OpenBSD__
+#if defined(__OpenBSD__) || defined(__MACH__)
 #include <string.h>
 #endif
 

@@ -32,6 +32,14 @@ extern void empty_minor_heap (void);
 CAMLextern void minor_collection (void);
 CAMLextern void garbage_collection (void); /* for the native-code system */
 extern void realloc_ref_table (void);
-extern void oldify (value, value *);
+extern void oldify_one (value, value *);
+extern void oldify_mopup (void);
+
+#define Oldify(p) do{ \
+    value __oldify__v__ = *p; \
+    if (Is_block (__oldify__v__) && Is_young (__oldify__v__)){ \
+      oldify_one (__oldify__v__, (p)); \
+    } \
+  }while(0)
 
 #endif /* _minor_gc_ */

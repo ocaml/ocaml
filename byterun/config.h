@@ -124,11 +124,12 @@ typedef uint64 int64;
 
 /* Default speed setting for the major GC.  The heap will grow until
    the dead objects and the free list represent this percentage of the
-   heap size.  The rest of the heap is live objects. */
+   total size of live objects. */
 #define Percent_free_def 42
 
-/* Default setting for the compacter: off */
-#define Max_percent_free_def 1000000
+/* Default setting for the compacter: 300%
+   (i.e. trigger the compacter when 3/4 of the heap is free) */
+#define Max_percent_free_def 300
 
 
 #endif /* _config_ */

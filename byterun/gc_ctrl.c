@@ -207,7 +207,7 @@ static value heap_stats (int returnstats)
     double majwords = stat_major_words + (double) allocated_words;
     long mincoll = stat_major_collections;
     long majcoll = stat_minor_collections;
-    long heapsz = stat_heap_size;
+    long heap_words = Wsize_bsize (stat_heap_size);
     long cpct = stat_compactions;
 
     res = alloc_tuple (14);
@@ -216,7 +216,7 @@ static value heap_stats (int returnstats)
     Store_field (res, 2, copy_double (majwords));
     Store_field (res, 3, Val_long (mincoll));
     Store_field (res, 4, Val_long (majcoll));
-    Store_field (res, 5, Val_long (heapsz));
+    Store_field (res, 5, Val_long (heap_words));
     Store_field (res, 6, Val_long (heap_chunks));
     Store_field (res, 7, Val_long (live_words));
     Store_field (res, 8, Val_long (live_blocks));

@@ -67,7 +67,9 @@ void set_minor_heap_size (asize_t size)
   ref_table_end = ref_table + ref_table_size + ref_table_reserve;
 }
 
-void oldify (value v, value *p)
+static value oldify_todo_list = NULL;
+
+void oldify_one (value v, value *p)
 {
   value result, field0;
   header_t hd;
@@ -78,44 +80,72 @@ void oldify (value v, value *p)
   if (Is_block (v) && Is_young (v)){
     Assert (Hp_val (v) >= young_ptr);
     hd = Hd_val (v);
-    if (hd == 0){            /* Already forwarded ? */
-      *p = Field (v, 0);     /* Then the forward pointer is the first field. */
-    }else if ((tag = Tag_hd (hd)), (tag == Infix_tag)) {
-      mlsize_t offset = Infix_offset_hd (hd);
-      oldify(v - offset, p);
-      *p += offset;
-    }else if (tag >= No_scan_tag){
-      sz = Wosize_hd (hd);
-      result = alloc_shr (sz, tag);
-      for (i = 0; i < sz; i++) Field(result, i) = Field(v, i);
-      Hd_val (v) = 0;                         /* Put the forward flag. */
-      Field (v, 0) = result;                  /* And the forward pointer. */
-      *p = result;
+    if (hd == 0){         /* If already forwarded */
+      *p = Field (v, 0);  /*  then forward pointer is first field. */
     }else{
-      /* We can do recursive calls before all the fields are filled, because
-         we will not be calling the major GC. */
-      sz = Wosize_hd (hd);
-      result = alloc_shr (sz, tag);
-      *p = result;
-      field0 = Field (v, 0);
-      Hd_val (v) = 0;                         /* Put the forward flag. */
-      Field (v, 0) = result;                  /* And the forward pointer. */
-      if (sz == 1) {
-        p = &Field (result, 0);
-        v = field0;
-        goto tail_call;
-      } else {
-        oldify (field0, &Field (result, 0));
-        for (i = 1; i < sz - 1; i++){
-          oldify (Field(v, i), &Field (result, i));
-        }
-        p = &Field (result, i);
-        v = Field (v, i);
-        goto tail_call;
+      tag = Tag_hd (hd);
+      if (tag >= No_scan_tag){
+        sz = Wosize_hd (hd);
+        result = alloc_shr (sz, tag);
+        for (i = 0; i < sz; i++) Field (result, i) = Field (v, i);
+        Hd_val (v) = 0;            /* Set forward flag */
+        Field (v, 0) = result;     /*  and forward pointer. */
+        *p = result;
+      }else if (tag == Infix_tag){
+        mlsize_t offset = Infix_offset_hd (hd);
+        oldify_one (v - offset, p);   /* This cannot recurse deeper than 1. */
+        *p += offset;
+      }else{
+        sz = Wosize_hd (hd);
+        result = alloc_shr (sz, tag);
+        *p = result;
+        field0 = Field (v, 0);
+        Hd_val (v) = 0;            /* Set forward flag */
+        Field (v, 0) = result;     /*  and forward pointer. */
+        if (sz > 1){
+          Field (result, 0) = field0;
+          Field (result, 1) = oldify_todo_list;    /* Add this block */
+          oldify_todo_list = v;                    /*  to the "to do" list. */
+	}else{
+          Assert (sz == 1);
+          p = &Field (result, 0);
+	  v = field0;
+          goto tail_call;
+	}
       }
     }
   }else{
     *p = v;
+  }
+}
+
+/* Finish the work that was put off by oldify_one.
+   Note that oldify_one itself is called by oldify_mopup, so we
+   have to be careful to remove the first entry from the list before
+   oldifying its fields. */
+void oldify_mopup (void)
+{
+  value v, new_v, f;
+  mlsize_t i;
+
+  while (oldify_todo_list != NULL){
+    v = oldify_todo_list;                /* Get the head. */
+    Assert (Hd_val (v) == 0);            /* It must be forwarded. */
+    new_v = Field (v, 0);                /* Follow forward pointer. */
+    oldify_todo_list = Field (new_v, 1); /* Remove from list. */
+
+    f = Field (new_v, 0);
+    if (Is_block (f) && Is_young (f)){
+      oldify_one (f, &Field (new_v, 0));
+    }
+    for (i = 1; i < Wosize_val (new_v); i++){
+      f = Field (v, i);
+      if (Is_block (f) && Is_young (f)){
+        oldify_one (Field (v, i), &Field (new_v, i));
+      }else{
+        Field (new_v, i) = f;
+      }
+    }
   }
 }
 
@@ -130,7 +160,8 @@ void empty_minor_heap (void)
     in_minor_collection = 1;
     gc_message (0x02, "<", 0);
     oldify_local_roots();
-    for (r = ref_table; r < ref_table_ptr; r++) oldify (**r, *r);
+    for (r = ref_table; r < ref_table_ptr; r++) oldify_one (**r, *r);
+    oldify_mopup ();
     if (young_ptr < young_limit) young_ptr = young_limit;
     stat_minor_words += Wsize_bsize (young_end - young_ptr);
     young_ptr = young_end;

@@ -35,6 +35,7 @@ CAMLexport value alloc (mlsize_t wosize, tag_t tag)
   mlsize_t i;
 
   Assert (tag < 256);
+  Assert (tag != Infix_tag);
   if (wosize == 0){
     result = Atom (tag);
   }else if (wosize <= Max_young_wosize){

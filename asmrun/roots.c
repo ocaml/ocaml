@@ -97,7 +97,8 @@ value * caml_gc_regs;
 long caml_globals_inited = 0;
 static long caml_globals_scanned = 0;
 
-/* Call [oldify] on (at least) all the roots that point to the minor heap. */
+/* Call [oldify_one] on (at least) all the roots that point to the minor
+   heap. */
 void oldify_local_roots (void)
 {
   char * sp;
@@ -118,7 +119,7 @@ void oldify_local_roots (void)
        i++) {
     glob = caml_globals[i];
     for (j = 0; j < Wosize_val(glob); j++){
-      oldify(Field(glob, j), &Field(glob, j));
+      oldify_one (Field(glob, j), &Field(glob, j));
     }
   }
   caml_globals_scanned = caml_globals_inited;
@@ -146,7 +147,7 @@ void oldify_local_roots (void)
           } else {
             root = (value *)(sp + ofs);
           }
-          oldify(*root, root);
+          oldify_one (*root, root);
         }
         /* Move to next frame */
 #ifndef Stack_grows_upwards
@@ -178,18 +179,18 @@ void oldify_local_roots (void)
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         root = &(lr->tables[i][j]);
-        oldify (*root, root);
+        oldify_one (*root, root);
       }
     }
   }
   /* Global C roots */
   for (gr = caml_global_roots.forward[0]; gr != NULL; gr = gr->forward[0]) {
-    oldify(*(gr->root), gr->root);
+    oldify_one (*(gr->root), gr->root);
   }
   /* Finalised values */
-  final_do_young_roots (&oldify);
+  final_do_young_roots (&oldify_one);
   /* Hook */
-  if (scan_roots_hook != NULL) (*scan_roots_hook)(oldify);
+  if (scan_roots_hook != NULL) (*scan_roots_hook)(oldify_one);
 }
 
 /* Call [darken] on all roots */

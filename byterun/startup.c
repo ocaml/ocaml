@@ -376,7 +376,8 @@ CAMLexport void caml_main(char **argv)
   close_channel(chan); /* this also closes fd */
   stat_free(trail.section);
   /* Ensure that the globals are in the major heap. */
-  oldify(global_data, &global_data);
+  oldify_one (global_data, &global_data);
+  oldify_mopup ();
   /* Initialize system libraries */
   init_exceptions();
   sys_init(argv + pos);
@@ -429,7 +430,8 @@ CAMLexport void caml_startup_code(code_t code, asize_t code_size,
   /* Load the globals */
   global_data = input_val_from_string((value)data, 0);
   /* Ensure that the globals are in the major heap. */
-  oldify(global_data, &global_data);
+  oldify_one (global_data, &global_data);
+  oldify_mopup ();
   /* Run the code */
   init_exceptions();
   sys_init(argv);

@@ -39,7 +39,8 @@ type stat =
        since the program was started (including the initial allocation
        of the heap). *)
     live_words : int;
-    (** Number of words of live data in the major heap, including the header words.*)
+    (** Number of words of live data in the major heap, including the header
+       words. *)
     live_blocks : int;
     (** Number of live blocks in the major heap. *)
     free_words : int;
@@ -105,7 +106,7 @@ type control =
        compaction is triggered at the end of each major GC cycle
        (this setting is intended for testing purposes only).
        If [max_overhead >= 1000000], compaction is never triggered.
-       Default: 1000000. *)
+       Default: 300. *)
 
     mutable stack_limit : int;
     (** The maximum size of the stack (in words).  This is only

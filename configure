@@ -210,7 +210,7 @@ case "$bytecc,$host" in
     mathlib="";;
   *,*-*-darwin*)
     # Almost the same as rhapsody
-    bytecccompopts="-fno-defer-pop $gcc_warnings"
+    bytecccompopts="-fno-defer-pop -no-cpp-precomp $gcc_warnings"
     mathlib="";;
   *,*-*-beos*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
@@ -511,7 +511,7 @@ case "$arch,$nativecc,$system,$host_type" in
   *,*,nextstep,*)      nativecccompopts="$gcc_warnings -U__GNUC__ -posix"
                        nativecclinkopts="-posix";;
 # SHRINKED_GNUC is not necessary for MacOS 10.1 (don't know about 10.0)
-# (but it doesn't matter much for native code anyway)
+# (but it doesn't matter for native code anyway)
   *,*,rhapsody,*)      nativecccompopts="$gcc_warnings -DSHRINKED_GNUC";;
 #  *,*,rhapsody,*)      nativecccompopts="$gcc_warnings";;
   *,gcc*,cygwin,*)     nativecccompopts="$gcc_warnings -U_WIN32";;
