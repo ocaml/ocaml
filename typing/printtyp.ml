@@ -481,6 +481,7 @@ let rec perform_class_type sch params =
           close_box ();
           print_space ()
         end;
+        path p';
         close_box ()
       end
   | Tcty_signature sign ->
