@@ -17,19 +17,20 @@
 #include "unixsupport.h"
 #include "socketaddr.h"
 
-value unix_accept(sock)          /* ML */
-     value sock;
+value unix_accept(sock, synchronous)          /* ML */
+     value sock, synchronous;
 {
   SOCKET sconn = (SOCKET) Handle_val(sock);
   SOCKET snew;
   value fd = Val_unit, adr = Val_unit, res;
-  int oldvalue, newvalue, retcode;
+  int oldvalue, oldvaluelen, newvalue, retcode;
 
+  oldvaluelen = sizeof(oldvalue);
   retcode = getsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
-                       (char *) &oldvalue, sizeof(oldvalue));
+                       (char *) &oldvalue, &oldvaluelen);
   if (retcode == 0) {
-    /* Set sockets to synchronous mode  */
-    newvalue = SO_SYNCHRONOUS_NONALERT;
+    /* Set sockets to synchronous or asnychronous mode, as requested */
+    newvalue = Bool_val(synchronous) ? SO_SYNCHRONOUS_NONALERT : 0;
     setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, 
                (char *) &newvalue, sizeof(newvalue));
   }
@@ -40,7 +41,7 @@ value unix_accept(sock)          /* ML */
   if (retcode == 0) {
     /* Restore initial mode */
     setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, 
-               (char *) &oldvalue, sizeof(oldvalue));
+               (char *) &oldvalue, oldvaluelen);
   }
   if (snew == INVALID_SOCKET)
     unix_error(WSAGetLastError(), "accept", Nothing);

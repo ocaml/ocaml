@@ -28,10 +28,11 @@ value unix_socket(domain, type, proto, synchronous) /* ML */
      value domain, type, proto;
 {
   SOCKET s;
-  int oldvalue, newvalue, retcode;
+  int oldvalue, oldvaluelen, newvalue, retcode;
 
+  oldvaluelen = sizeof(oldvalue);
   retcode = getsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
-                       (char *) &oldvalue, sizeof(oldvalue));
+                       (char *) &oldvalue, &oldvaluelen);
   if (retcode == 0) {
     /* Set sockets to synchronous or asnychronous mode, as requested */
     newvalue = Bool_val(synchronous) ? SO_SYNCHRONOUS_NONALERT : 0;
@@ -44,7 +45,7 @@ value unix_socket(domain, type, proto, synchronous) /* ML */
   if (retcode == 0) {
     /* Restore initial mode */
     setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, 
-               (char *) &oldvalue, sizeof(oldvalue));
+               (char *) &oldvalue, oldvaluelen);
   }
   if (s == INVALID_SOCKET) unix_error(WSAGetLastError(), "socket", Nothing);
   return win_alloc_handle((HANDLE) s);

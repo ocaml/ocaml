@@ -731,6 +731,12 @@ val accept : file_descr -> file_descr * sockaddr
         (* Accept connections on the given socket. The returned descriptor
            is a socket connected to the client; the returned address is
            the address of the connecting client. *)
+val async_accept : file_descr -> file_descr * sockaddr
+        (* Same as [accept], but the returned socket is set to
+           asynchronous mode.  See [async_socket] for a discussion of
+           synchronous vs. asynchronous mode.
+           As a rule of thumb, use [async_accept] if you're going to pass
+           the socket to CamlTk, and [accept] otherwise.  *)
 val bind : file_descr -> sockaddr -> unit
         (* Bind a socket to an address. *)
 val connect : file_descr -> sockaddr -> unit
