@@ -614,12 +614,14 @@ and is_nonexpansive_opt = function
 
 let type_format loc fmt =
   let len = String.length fmt in
-  let ty_input = newvar()
-  and ty_result = newvar()
+  let ty_input = newvar ()
+  and ty_result = newvar ()
   and ty_aresult = newvar () in
-  let ty_arrow gty ty = newty (Tarrow("", instance gty, ty, Cok)) in
-  let incomplete i =
-    raise (Error (loc, Bad_format (String.sub fmt i (len - i)))) in
+  let ty_arrow gty ty = newty (Tarrow ("", instance gty, ty, Cok)) in
+  let bad_format i len =
+    raise (Error (loc, Bad_format (String.sub fmt i len))) in
+  let incomplete i = bad_format i (len - i) in
+
   let rec scan_format i =
     if i >= len then ty_aresult, ty_result else
     match fmt.[i] with
@@ -703,11 +705,11 @@ let type_format loc fmt =
                  | _ -> Predef.type_int64 in
                 conversion j ty_arg
             | c ->
-               if conv = 'n' then conversion (j - 1) Predef.type_int else
-               raise(Error(loc, Bad_format(String.sub fmt i (j - i))))
+               if conv = 'l' || conv = 'n'
+               then conversion (j - 1) Predef.type_int
+               else bad_format i (j - i)
           end
-      | c ->
-          raise(Error(loc, Bad_format(String.sub fmt i (j - i + 1)))) in
+      | c -> bad_format i (j - i + 1) in
     scan_width i j in
 
   let ty_ares, ty_res = scan_format 0 in
