@@ -5,11 +5,7 @@ PREREQUISITES
 
 * The GNU C compiler gcc is recommended, as the bytecode
   interpreter takes advantage of gcc-specific features to enhance
-  performance. Versions 2.5.8, 2.6.3, 2.7.2, 2.7.2.3, 2.95
-  as well as egcs versions 1.0 and 2.91 have all been tested at some point
-  and work well.
-  2.7.2.1 for Intel as found in Linux/RedHat 4.1 and 4.2 has known problems;
-  upgrade to something more recent.
+  performance.
 
 * Under HP/UX, the GNU C compiler gcc, the GNU assembler gas, and GNU make
   are all *required*.  The vendor-provided compiler, assembler and make
@@ -67,16 +63,6 @@ The "configure" script accepts the following options:
         Location of the X11 include directory (e.g. /usr/X11R6/include)
         and the X11 library directory (e.g. /usr/X11R6/lib).
 
--with-pthread
-        Use POSIX threads for the OCaml thread library instead of
-        the default bytecode-level threading.  POSIX threads
-        support threading with native-code programs (ocamlopt)
-        as well as bytecode (ocamlc), and also allow more flexibility
-        in interfacing with C.  However, you need a strictly
-        conformant POSIX 1003.1c implementation on your system.
-        For instance, this option works under Solaris 2.5 and later,
-        Digital Unix 4.0, and recent Linux distributions (using glibc 2).
-
 -tkdefs <cpp flags>             (default: none)
 -tklibs <flags and libraries>   (default: determined automatically)
         These options specify where to find the Tcl/Tk libraries for
@@ -98,6 +84,7 @@ The "configure" script accepts the following options:
 -verbose
         Verbose output of the configuration tests. Use it if the outcome
         of configure is not what you were expecting.
+
 Examples:
     ./configure -prefix /usr/bin
     ./configure -bindir /usr/bin -libdir /usr/lib/ocaml -mandir /usr/man/manl
@@ -159,11 +146,7 @@ test, you can try to compile the Objective Caml compilers with the
 native-code compiler (they are compiled to bytecode by default).
 Just do:
 
-        make ocamlc.opt         # to build a native-code version of ocamlc
-        make ocamlopt.opt       # to build a native-code version of ocamlopt
-        make ocamllex.opt       # to build a native-code version of ocamllex
-or
-        make opt.opt            # to build all of them
+        make opt.opt
 
 Later, you can compile your programs to bytecode using ocamlc.opt
 instead of ocamlc, and to native-code using ocamlopt.opt instead of
@@ -181,7 +164,8 @@ The result is equivalent to "make world opt opt.opt", but this may
 fail if anything goes wrong in native-code generation.
 
 6- You can now install the Objective Caml system. This will create the
-following commands (in the binary directory selected during autoconfiguration):
+following commands (in the binary directory selected during
+autoconfiguration):
 
         ocamlc           the batch bytecode compiler
         ocamlopt         the batch native-code compiler (if supported)
@@ -193,6 +177,7 @@ following commands (in the binary directory selected during autoconfiguration):
                          user-defined C primitives and Caml code
         ocamldebug       the source-level replay debugger
         ocamldep         generator of "make" dependencies for Caml sources
+        ocamldoc         documentation generator
         ocamlprof        execution count profiler
         ocamlcp          the bytecode compiler in profiling mode
 
@@ -237,7 +222,7 @@ constraints in m.h will immediately crash the bytecode interpreter.
 If you get a "segmentation violation" signal, check the limits on the
 stack size and data segment size (type "limit" under csh or
 "ulimit -a" under bash). Make sure the limit on the stack size is
-at least 2M.
+at least 4M.
 
 Try recompiling the runtime system with optimizations turned off
 (change CFLAGS in byterun/Makefile and asmrun/Makefile).
@@ -264,6 +249,10 @@ environment variable, or set it to /bin/sh.
 * gcc 2.7.2.1 generates incorrect code for the runtime system in -O mode
 on some Intel x86 platforms (e.g. Linux RedHat 4.1 and 4.2).
 If this causes a problem, the solution is to upgrade to 2.7.2.3 or above.
+
+* Some versions of gcc 2.96 for the Intel x86 (as found in RedHat 7.2,
+Mandrake 8.0 and Mandrake 8.1) generates incorrect code for the runtime
+system.  The "configure" script tries to work around this problem.
 
 * On HP 9000/700 machines under HP/UX 9.  Some versions of cc are
 unable to compile correctly the runtime system (wrong code is

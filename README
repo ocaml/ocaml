@@ -19,17 +19,18 @@ the generated programs deliver excellent performance, while retaining
 the moderate memory requirements of the bytecode compiler. The
 native-code compiler currently runs on the following platforms:
 
-    Intel Pentium processors: PCs under Linux, FreeBSD, NetBSD, OpenBSD,
-      Windows, NextStep, Solaris 2, BeOS.
-    Alpha processors: Digital/Compaq Alpha machines under
+    Intel/AMD Pentium processors: PCs under Linux, FreeBSD, NetBSD, 
+      OpenBSD, Windows, NextStep, Solaris 2, BeOS.
+    PowerPC processors: PowerMacintosh under MacOS X and LinuxPPC,
+      IBM RS6000 and PowerPC workstations under AIX 4.3
+    AMD64 (Opteron) processors: PCs under Linux.
+    Alpha processors: Digital/Compaq/HP Alpha machines under
       Digital Unix/Compaq Tru64, Linux, NetBSD and OpenBSD.
-    Sparc processors: Sun Sparc under Solaris 2, NetBSD, Linux
+    Sparc processors: Sun Sparc machines under Solaris 2, NetBSD, Linux
     Mips processors: SGI workstations and mainframes under IRIX 6
-    HP PA-RISC processors: HP 9000/700 under HPUX 10
-    PowerPC processors: PowerMacintosh under MacOS X, LinuxPPC,
-                        IBM RS6000 and PowerPC workstations under AIX 4.3
-    Strong ARM processors: Corel Netwinder under Linux
     Intel IA64 processors: HP stations under Linux
+    HP PA-RISC processors: HP 9000/700 under HPUX 10
+    Strong ARM processors: Corel Netwinder under Linux
 
 Other operating systems for the processors above have not been tested,
 but the compiler may work under other operating systems with little work.
@@ -59,6 +60,7 @@ CONTENTS:
   emacs/                Caml editing mode and debugger interface for GNU Emacs
   lex/                  lexer generator
   maccaml/              the Macintosh GUI
+  ocamldoc/             documentation generator
   otherlibs/            several external libraries
   parsing/              syntax analysis
   stdlib/               standard library
@@ -84,20 +86,18 @@ For the MacOS 7, 8, 9, see INSTALL.MPW.
 DOCUMENTATION:
 
 The Objective Caml manual is distributed in HTML, PDF, Postscript,
-DVI, and Emacs Info files.  It can be obtained by anonymous FTP from
-ftp.inria.fr as described below. It is also available on the World
-Wide Web, at
+DVI, and Emacs Info files.  It is available on the World Wide Web, at
 
         http://caml.inria.fr/
 
 AVAILABILITY:
 
-The complete Objective Caml distribution resides on ftp.inria.fr,
-and can be accessed through a Web browser at
+The complete Objective Caml distribution can be accessed through a Web
+browser at
 
         http://caml.inria.fr/
 
-or directly by anonymous FTP:
+or by anonymous FTP:
 
         host:       ftp.inria.fr
         directory:  INRIA/caml-light
