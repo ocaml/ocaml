@@ -95,38 +95,6 @@ _caml_call_gc:
         pushl   _caml_last_return_address
         ret
 
-# Modification
-
-#        .globl  _caml_modify
-#        .globl  _caml_fast_modify
-#
-#        .align  4
-#_caml_modify:
-#        testb   $4, -3(%eax)
-#        jz      _caml_fast_modify
-#        ret
-#
-#_caml_fast_modify:
-#    # Store address of object in remembered set
-#        pushl   %eax
-#        movl    _remembered_ptr, %eax
-#        popl    (%eax)
-#        addl    $4, %eax
-#        movl    %eax, _remembered_ptr
-#        cmpl    _remembered_end, %eax
-#        ja      _caml_modify_realloc
-#        ret
-#
-#_caml_modify_realloc:
-#    # Reallocate the remembered set while preserving all regs
-#        pushl   %ecx
-#        pushl   %edx
-#    # (%eax dead, %ebx, %esi, %edi, %ebp preserved by C)
-#        call    _realloc_remembered
-#        popl    %edx
-#        popl    %ecx
-#        ret
-
 # Call a C function from Caml
 
         .globl  _caml_c_call

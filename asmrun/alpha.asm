@@ -125,63 +125,6 @@ $103:   ldgp    $gp, 0($27)
 
         .end    caml_alloc1
 
-/* Modification */
-
-#if 0
-        .globl  caml_modify
-        .globl  caml_fast_modify
-        .ent    caml_modify
-
-        .align  3
-caml_modify:
-    /* Pointer to block in $25 */
-        ldq     $24, -8($25)
-        .set    noat
-        and     $24, 1024, $at
-        beq     $at, caml_fast_modify
-        .set    at
-        ret     ($26)
-
-        .align  3
-caml_fast_modify:
-    /* Pointer to block in $25, header in $24 */
-    /* Set "modified" bit in header */
-        or      $24, 1024, $24
-        stq     $24, -8($25)
-    /* Save $gp */
-        mov     $gp, $27
-    /* Rebuild $gp */
-        br      $24, $104
-$104:   ldgp    $gp, 0($24)
-    /* Store address of object in remembered set */
-        ldq     $24, remembered_ptr
-        stq     $25, 0($24)
-        addq    $24, 8, $25
-        stq     $25, remembered_ptr
-        ldq     $24, remembered_end
-        cmplt   $25, $24, $25
-        beq     $25, caml_modify_realloc
-    /* Restore $gp */
-        mov     $27, $gp
-        ret     ($26)
-        .set    at
-
-    /* Reallocate the remembered set, while preserving all regs */
-caml_modify_realloc:
-        lda     $sp, -16($sp)
-        stq     $27, 8($sp)             /* Saved $gp */
-        stq     $26, 0($sp)
-        SAVE_ALL_REGS
-        jsr     realloc_remembered
-        LOAD_ALL_REGS
-        ldq     $26, 0($sp)
-        ldq     $gp, 8($sp)
-        lda     $sp, 16($sp)
-        ret     ($26)
-
-        .end    caml_modify
-#endif
-
 /* Call a C function from Caml */
 
         .globl  caml_c_call
