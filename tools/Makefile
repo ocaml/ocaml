@@ -22,7 +22,7 @@ INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: ocamldep ocamlprof ocamlcp ocamlmktop
+all: ocamldep ocamlprof ocamlcp ocamlmktop ocaml2to3
 
 # The dependency generator
 
@@ -72,6 +72,22 @@ install::
 
 clean::
 	rm -f ocamlmktop
+
+# Converter ocaml 2.04 to 3
+
+OCAML2TO3=ocaml2to3.cmo
+
+ocaml2to3: $(OCAML2TO3)
+	$(CAMLC) $(LINKFLAGS) -o ocaml2to3 $(OCAML2TO3)
+
+ocaml2to3.ml: ocaml2to3.mll
+	$(CAMLLEX) ocaml2to3.mll
+
+install::
+	cp ocam2to3 $(BINDIR)/ocaml2to3
+
+clean::
+	rm -f ocaml2to3 ocaml2to3.ml
 
 # The preprocessor for asm generators
 

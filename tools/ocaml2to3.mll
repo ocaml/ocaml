@@ -2,10 +2,11 @@
 (*                                                                     *)
 (*                           Objective Caml                            *)
 (*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*              Jacques Garrigue, Kyoto University RIMS                *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  Distributed only by permission.                   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -209,10 +210,12 @@ let convert_file name =
   let ic = open_in name in
   Buffer.clear b;
   modified := false;
-  Printexc.catch token (Lexing.from_channel ic);
-  close_in ic;
+  begin
+    try token (Lexing.from_channel ic); close_in ic
+    with exn -> close_in ic; raise exn
+  end;
   if !modified then begin 
-    let backup = name ^ ".orig" in
+    let backup = name ^ ".bak" in
     if Sys.file_exists backup then Sys.remove backup;
     Sys.rename name backup;
     let oc = open_out name in
@@ -221,9 +224,17 @@ let convert_file name =
   end
 
 let _ =
+  if Array.length Sys.argv < 2 || Sys.argv.(1) = "-h" || Sys.argv.(1) = "-help"
+  then begin
+    print_endline "Usage: ocaml2to3 <source file> ...";
+    print_endline "  Convert Objective Caml implementation or interface files";
+    print_endline "  to a syntax compatible with version 3.";
+    print_endline "  Old files is renamed to <file>.bak.";
+    exit 0
+  end;
   for i = 1 to Array.length Sys.argv - 1 do
     let name = Sys.argv.(i) in
-    prerr_endline name;
+    prerr_endline ("Converting " ^ name);
     Printexc.catch convert_file name
   done
 
