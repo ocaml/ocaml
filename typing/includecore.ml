@@ -59,7 +59,7 @@ let type_declarations env id decl1 decl2 =
                                  (ty2::decl2.type_params))
           labels1 labels2
     | (_, _) -> false
-  end &
+  end &&
   begin match (decl1.type_manifest, decl2.type_manifest) with
       (_, None) ->
         Ctype.equal env true decl1.type_params decl2.type_params
@@ -73,7 +73,10 @@ let type_declarations env id decl1 decl2 =
         Ctype.equal env true decl1.type_params decl2.type_params
           &
         Ctype.equal env false [ty1] [ty2]
-  end
+  end &&
+  List.for_all2
+    (fun (co1,cn1) (co2,cn2) -> (not co1 || co2) && (not cn1 || cn2))
+    decl1.type_variance decl2.type_variance
 
 (* Inclusion between exception declarations *)
 

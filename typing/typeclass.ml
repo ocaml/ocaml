@@ -784,7 +784,8 @@ let temp_abbrev env id arity =
       {type_params = !params;
        type_arity = arity;
        type_kind = Type_abstract;
-       type_manifest = Some ty }
+       type_manifest = Some ty;
+       type_variance = List.map (fun _ -> true, true) !params}
       env
   in
   (!params, ty, env)
@@ -964,7 +965,8 @@ let class_infos define_class kind
     {type_params = obj_params;
      type_arity = List.length obj_params;
      type_kind = Type_abstract;
-     type_manifest = Some obj_ty }
+     type_manifest = Some obj_ty;
+     type_variance = List.map (fun _ -> true, true) obj_params}
   in
   let (cl_params, cl_ty) =
     Ctype.instance_parameterized_type params (Ctype.self_type typ)
@@ -975,16 +977,16 @@ let class_infos define_class kind
     {type_params = cl_params;
      type_arity = List.length cl_params;
      type_kind = Type_abstract;
-     type_manifest = Some cl_ty }
+     type_manifest = Some cl_ty;
+     type_variance = List.map (fun _ -> true, true) cl_params}
   in
   ((cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
     arity, pub_meths, expr) :: res,
    env)
 
-let final_env define_class
+let final_decl define_class
     (cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-     arity, pub_meths, expr)
-    (res, env) =
+     arity, pub_meths, expr) =
 
   List.iter Ctype.generalize clty.cty_params;
   generalize_class_type clty.cty_type;
@@ -1020,15 +1022,32 @@ let final_env define_class
       raise(Error(cl.pci_loc, Unbound_type_var(printer, reason)))
   end;
 
-  let env =
-    Env.add_type obj_id obj_abbr (
-    Env.add_type cl_id cl_abbr (
-    Env.add_cltype ty_id cltydef (
-    if define_class then Env.add_class id clty env else env)))
-  in
-  ((id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-    arity, pub_meths, expr)::res,
-   env)
+  (id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
+   arity, pub_meths, expr)
+
+let extract_type_decls
+    (id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
+     arity, pub_meths, expr) decls =
+  (obj_id, obj_abbr) :: (cl_id, cl_abbr) :: decls
+
+let rec compact = function
+    [] -> []
+  | a :: b :: l -> (a,b) :: compact l
+  | _ -> fatal_error "Typeclass.compact"
+
+let merge_type_decls
+    (id, clty, ty_id, cltydef, _obj_id, _obj_abbr, _cl_id, _cl_abbr,
+     arity, pub_meths, expr) ((obj_id, obj_abbr), (cl_id, cl_abbr)) =
+  (id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
+   arity, pub_meths, expr)
+
+let final_env define_class env
+    (id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
+     arity, pub_meths, expr) =
+  Env.add_type obj_id obj_abbr (
+  Env.add_type cl_id cl_abbr (
+  Env.add_cltype ty_id cltydef (
+  if define_class then Env.add_class id clty env else env)))
 
 (*******************************)
 
@@ -1050,10 +1069,12 @@ let type_classes define_class approx kind env cls =
     List.fold_right (class_infos define_class kind) res ([], env)
   in
   Ctype.end_def ();
-  let (res, env) =
-    List.fold_right (final_env define_class) res ([], env)
-  in
-  (List.rev res, env)
+  let res = List.rev_map (final_decl define_class) res in
+  let decls = List.fold_right extract_type_decls res [] in
+  let decls = Typedecl.compute_variance_decls env decls in
+  let res = List.map2 merge_type_decls res (compact decls) in
+  let env = List.fold_left (final_env define_class) env res in
+  (res, env)
 
 let class_num = ref 0
 let class_declaration env sexpr =

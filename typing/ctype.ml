@@ -2074,37 +2074,38 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
 
 let subtypes = ref []
 
-let rec build_subtype env visited t =
+let rec build_subtype env visited posi t =
+  if not posi then (t, false) else
   let t = repr t in
   match t.desc with
-    Tlink t' ->                         (* Redundant ! *)
-      build_subtype env visited t'
-  | Tvar ->
-      begin try
-        (List.assq t !subtypes, true)
-      with Not_found ->
+    Tvar ->
+      if posi then
+        try
+          (List.assq t !subtypes, true)
+        with Not_found ->
+          (t, false)
+      else
         (t, false)
-      end
   | Tarrow(l, t1, t2) ->
       if List.memq t visited then (t, false) else
-      let (t1', c1) = (t1, false) in
-      let (t2', c2) = build_subtype env (t::visited) t2 in
+      let visited = t :: visited in
+      let (t1', c1) = build_subtype env visited (not posi) t1 in
+      let (t2', c2) = build_subtype env visited posi t2 in
       if c1 or c2 then (newty (Tarrow(l, t1', t2')), true)
       else (t, false)
   | Ttuple tlist ->
       if List.memq t visited then (t, false) else
       let visited = t :: visited in
-      let (tlist', clist) =
-        List.split (List.map (build_subtype env visited) tlist)
+      let tlist' = List.map (build_subtype env visited posi) tlist
       in
-      if List.exists (function c -> c) clist then
-        (newty (Ttuple tlist'), true)
+      if List.exists snd tlist' then
+        (newty (Ttuple (List.map fst tlist')), true)
       else (t, false)
   | Tconstr(p, tl, abbrev) when generic_abbrev env p ->
       let t' = repr (expand_abbrev env t) in
       let (t'', c) =
         try match t'.desc with
-          Tobject _ ->
+          Tobject _ when posi ->
             if List.memq t' visited then (t, false) else
             begin try
               (List.assq t' !subtypes, true)
@@ -2132,18 +2133,33 @@ let rec build_subtype env visited t =
               ty.desc <- Tvar;
               let t'' = newvar () in
               subtypes := (ty, t'') :: !subtypes;
-              let (ty1', _) = build_subtype env (t' :: visited) ty1 in
+              let (ty1', _) = build_subtype env (t' :: visited) posi ty1 in
               assert (t''.desc = Tvar);
               t''.desc <- Tobject (ty1', ref None);
               (try unify env ty t with Unify _ -> assert false);
               (t'', true)
             end
         | _ -> raise Not_found
-        with Not_found -> build_subtype env visited t'
+        with Not_found -> build_subtype env visited posi t'
       in
       if c then (t'', true) else (t, false)
   | Tconstr(p, tl, abbrev) ->
-      (t, false)
+      let decl = Env.find_type p env in
+      let tl' =
+        List.map2
+          (fun (co,cn) t ->
+            if cn then
+              if co then (t, false)
+              else build_subtype env visited (not posi) t
+            else
+              if co then build_subtype env visited posi t
+              else (newvar(), true))
+          decl.type_variance tl
+      in
+      if List.exists snd tl' then
+        (newconstr p (List.map fst tl'), true)
+      else
+        (t, false)
   | Tvariant row ->
       if List.memq t visited then (t, false) else
       let visited = t :: visited in
@@ -2152,21 +2168,31 @@ let rec build_subtype env visited t =
       let bound = ref row.row_bound in
       let fields =
         List.map
-          (fun (l,f) -> match row_field_repr f with
+          (fun (l,f as orig) -> match row_field_repr f with
             Rpresent None ->
-              (l, Reither(true, [], ref None)), false
+              if posi then
+                (l, Reither(true, [], ref None)), false
+              else
+                orig, false
           | Rpresent(Some t) ->
-              let (t', c) = build_subtype env visited t in
-              bound := t' :: !bound;
-              (l, Reither(false, [t'], ref None)), c
+              let (t', c) = build_subtype env visited posi t in
+              if posi then begin
+                bound := t' :: !bound;
+                (l, Reither(false, [t'], ref None)), c
+              end else
+                (l, Rpresent(Some t')), c
           | _ -> assert false)
           (filter_row_fields false row.row_fields)
       in
-      if fields = [] then (t, false) else
+      if posi && fields = [] then (t, false) else
       let row =
-        {row with row_fields = List.map fst fields;
-         row_more = newvar(); row_bound = !bound;
-         row_name = if List.exists snd fields then None else row.row_name }
+        if posi then
+          {row_fields = List.map fst fields; row_more = newvar();
+           row_bound = !bound; row_closed = true;
+           row_name = if List.exists snd fields then None else row.row_name }
+        else
+          {row_fields = List.map fst fields; row_more = newvar ();
+           row_bound = !bound; row_closed = false; row_name = None}
       in
       (newty (Tvariant row), true)
   | Tobject (t1, _) when opened_object t1 ->
@@ -2174,24 +2200,31 @@ let rec build_subtype env visited t =
   | Tobject (t1, _) ->
       if List.memq t visited then (t, false) else
       begin try
+        if not posi then raise Not_found;
         (List.assq t !subtypes, true)
       with Not_found ->
-        let (t1', _) = build_subtype env (t :: visited) t1 in
+        let (t1', _) = build_subtype env (t :: visited) posi t1 in
         (newty (Tobject (t1', ref None)), true)
       end
   | Tfield(s, _, t1, t2) (* Always present *) ->
-      let (t1', _) = build_subtype env visited t1 in
-      let (t2', _) = build_subtype env visited t2 in
-      (newty (Tfield(s, Fpresent, t1', t2')), true)
+      let (t1', c1) = build_subtype env visited posi t1 in
+      let (t2', c2) = build_subtype env visited posi t2 in
+      if c1 || c2 then
+        (newty (Tfield(s, Fpresent, t1', t2')), true)
+      else
+        (t, false)
   | Tnil ->
-      let v = newvar () in
-      (v, true)
-  | Tsubst _ ->
+      if posi then
+        let v = newvar () in
+        (v, true)
+      else
+        (t, false)
+  | Tsubst _ | Tlink _ ->
       assert false
 
 let enlarge_type env ty =
   subtypes := [];
-  let (ty', _) = build_subtype env [] ty in
+  let (ty', _) = build_subtype env [] true ty in
   subtypes := [];
   ty'
 
@@ -2241,6 +2274,19 @@ let rec subtype_rec env trace t1 t2 cstrs =
         subtype_rec env trace (expand_abbrev env t1) t2 cstrs
     | (_, Tconstr(p2, tl2, abbrev2)) when generic_abbrev env p2 ->
         subtype_rec env trace t1 (expand_abbrev env t2) cstrs
+    | (Tconstr(p1, tl1, _), Tconstr(p2, tl2, _)) when Path.same p1 p2 ->
+        let decl = Env.find_type p1 env in
+        List.fold_left2
+          (fun cstrs (co, cn) (t1, t2) ->
+            if co then
+              if cn then
+                (trace, newty2 t1.level (Ttuple[t1]),
+                 newty2 t2.level (Ttuple[t2])) :: cstrs 
+              else subtype_rec env ((t1, t2)::trace) t1 t2 cstrs
+            else
+              if cn then subtype_rec env ((t2, t1)::trace) t2 t1 cstrs
+              else cstrs)
+          cstrs decl.type_variance (List.combine tl1 tl2)
     | (Tobject (f1, _), Tobject (f2, _))
               when opened_object f1 & opened_object f2 ->
         (* Same row variable implies same object. *)
@@ -2574,7 +2620,9 @@ let nondep_type_decl env mid id is_covariant decl =
                 Some (unroll_abbrev id params (nondep_type_rec env mid ty))
           with Not_found when is_covariant ->
             None
-          end }
+          end;
+        type_variance = decl.type_variance;
+      }
     in
     cleanup_types ();
     List.iter unmark_type decl.type_params;

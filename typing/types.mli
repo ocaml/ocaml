@@ -116,7 +116,8 @@ type type_declaration =
   { type_params: type_expr list;
     type_arity: int;
     type_kind: type_kind;
-    type_manifest: type_expr option }
+    type_manifest: type_expr option;
+    type_variance: (bool * bool) list } (* covariant, contravariant *)
 
 and type_kind =
     Type_abstract

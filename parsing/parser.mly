@@ -1157,9 +1157,11 @@ constraints:
 ;
 type_kind:
     /*empty*/
-      { (Ptype_abstract, None) }
+      { (Ptype_abstract None, None) }
+  | AS core_type
+      { (Ptype_abstract (Some $2), None) }
   | EQUAL core_type %prec prec_type_def
-      { (Ptype_abstract, Some $2) }
+      { (Ptype_abstract None, Some $2) }
   | EQUAL constructor_declarations
       { (Ptype_variant(List.rev $2), None) }
   | EQUAL BAR constructor_declarations
@@ -1213,7 +1215,7 @@ with_constraint:
     TYPE type_parameters label_longident EQUAL core_type constraints
       { ($3, Pwith_type {ptype_params = $2;
                          ptype_cstrs = List.rev $6;
-                         ptype_kind = Ptype_abstract;
+                         ptype_kind = Ptype_abstract None;
                          ptype_manifest = Some $5;
                          ptype_loc = symbol_rloc()}) }
     /* used label_longident instead of type_longident to disallow

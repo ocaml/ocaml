@@ -383,7 +383,22 @@ let rec type_decl kwd id ppf decl =
 
   let print_manifest ppf decl =
     match decl.type_manifest with
-    | None -> ()
+    | None ->
+        if decl.type_kind = Type_abstract
+        && List.exists (fun p -> p <> (true,true)) decl.type_variance then
+          let select f l1 l2 =
+            List.fold_right2 (fun x y l -> if f x then y :: l else l) l1 l2 []
+          in
+          let repres f =
+            let l = select f decl.type_variance params in
+            if l = [] then Predef.type_unit else Btype.newgenty (Ttuple l)
+          in
+          let covar = repres fst and convar = repres snd in
+          let ty =
+            if convar == Predef.type_unit then covar
+            else Btype.newgenty (Tarrow ("", convar, covar))
+          in
+          fprintf ppf " as@ %a" type_expr ty
     | Some ty -> fprintf ppf " =@ %a" type_expr ty in
 
   let print_name_args ppf decl =

@@ -168,7 +168,8 @@ let type_declaration s decl =
         begin match decl.type_manifest with
           None -> None
         | Some ty -> Some(typexp s ty)
-        end
+        end;
+      type_variance = decl.type_variance;
     }
   in
   cleanup_types ();

@@ -117,7 +117,7 @@ and type_declaration =
     ptype_loc: Location.t }
 
 and type_kind =
-    Ptype_abstract
+    Ptype_abstract of core_type option
   | Ptype_variant of (string * core_type list) list
   | Ptype_record of (string * mutable_flag * core_type) list
 

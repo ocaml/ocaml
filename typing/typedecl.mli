@@ -31,6 +31,11 @@ val transl_value_decl:
 
 val transl_with_constraint:
         Env.t -> Parsetree.type_declaration -> type_declaration
+
+(* for typeclass.ml *)
+val compute_variance_decls:
+    Env.t ->
+    (Ident.t * type_declaration) list -> (Ident.t * type_declaration) list
     
 type error =
     Repeated_parameter
@@ -48,6 +53,7 @@ type error =
   | Unbound_type_var
   | Unbound_exception of Longident.t
   | Not_an_exception of Longident.t
+  | Constructor_in_variance
 
 exception Error of Location.t * error
 
