@@ -66,16 +66,16 @@ let rec commu_repr = function
     Clink r when !r <> Cunknown -> commu_repr !r
   | c -> c
 
-let rec row_field_repr_aux tl = function
-    Reither(_, tl', _, {contents = Some fi}) ->
-      row_field_repr_aux (tl@tl') fi
-  | Reither(c, tl', m, r) ->
-      Reither(c, tl@tl', m, r)
+let rec row_field_repr_aux tl tl2 = function
+    Reither(_, tl', _, tl2', {contents = Some fi}) ->
+      row_field_repr_aux (tl@tl') (tl2@tl2') fi
+  | Reither(c, tl', m, tl2', r) ->
+      Reither(c, tl@tl', m, tl2@tl2', r)
   | Rpresent (Some _) when tl <> [] ->
       Rpresent (Some (List.hd tl))
   | fi -> fi
 
-let row_field_repr fi = row_field_repr_aux [] fi
+let row_field_repr fi = row_field_repr_aux [] [] fi
 
 let rec row_repr row =
   match (repr row.row_more).desc with
@@ -116,7 +116,8 @@ let rec iter_row f row =
     (fun (_, fi) ->
       match row_field_repr fi with
       | Rpresent(Some ty) -> f ty
-      | Reither(_, tl, _, _) -> List.iter f tl
+      | Reither(_, tl, _, tl2, _) ->
+          List.iter f tl; List.iter (fun (t1,t2) -> f t1; f t2) tl2
       | _ -> ())
     row.row_fields;
   match (repr row.row_more).desc with
@@ -154,15 +155,17 @@ let copy_row f fixed row keep more =
       (fun (l, fi) -> l,
         match row_field_repr fi with
         | Rpresent(Some ty) -> Rpresent(Some(f ty))
-        | Reither(c, tl, m, e) ->
+        | Reither(c, tl, m, tpl, e) ->
             let e = if keep then e else ref None in
             let m = if row.row_fixed then fixed else m in
             let tl = List.map f tl in
+            let tl1 = List.map (fun (t1,_) -> repr (f t1)) tpl
+            and tl2 = List.map (fun (_,t2) -> repr (f t2)) tpl in
             bound := List.filter
                 (function {desc=Tconstr(_,[],_)} -> false | _ -> true)
-                (List.map repr tl)
+                (List.map repr tl @ tl1 @ tl2)
               @ !bound;
-            Reither(c, tl, m, e)
+            Reither(c, tl, m, List.combine tl1 tl2, e)
         | _ -> fi)
       row.row_fields in
   let name =

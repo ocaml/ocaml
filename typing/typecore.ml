@@ -238,13 +238,13 @@ let build_or_pat env loc lid =
         match row_field_repr f with
           Rpresent None ->
             (l,None) :: pats,
-            (l, Reither(true,[], true, ref None)) :: fields
+            (l, Reither(true,[], true, [], ref None)) :: fields
         | Rpresent (Some ty) ->
             bound := ty :: !bound;
             (l, Some{pat_desc=Tpat_any; pat_loc=Location.none; pat_env=env;
                      pat_type=ty})
             :: pats,
-            (l, Reither(false, [ty], true, ref None)) :: fields
+            (l, Reither(false, [ty], true, [], ref None)) :: fields
         | _ -> pats, fields)
       ([],[]) fields in
   let row =
@@ -330,7 +330,7 @@ let rec type_pat env sp =
       let arg = may_map (type_pat env) sarg in
       let arg_type = match arg with None -> [] | Some arg -> [arg.pat_type]  in
       let row = { row_fields =
-                    [l, Reither(arg = None, arg_type, true, ref None)];
+                    [l, Reither(arg = None, arg_type, true, [], ref None)];
                   row_bound = arg_type;
                   row_closed = false;
                   row_more = newvar ();
@@ -483,15 +483,21 @@ let finalize_variant pat =
       in
       begin match field with
       | Rabsent -> assert false
-      | Reither (true, [], _, e) when not row.row_closed ->
+      | Reither (true, [], _, tpl, e) when not row.row_closed ->
+          List.iter
+            (fun (t1,t2) -> unify_pat pat.pat_env {pat with pat_type=t1} t2)
+            tpl;
           e := Some (Rpresent None)
-      | Reither (false, ty::tl, _, e) when not row.row_closed ->
+      | Reither (false, ty::tl, _, tpl, e) when not row.row_closed ->
+          List.iter
+            (fun (t1,t2) -> unify_pat pat.pat_env {pat with pat_type=t1} t2)
+            tpl;
           e := Some (Rpresent (Some ty));
           begin match opat with None -> assert false
           | Some pat -> List.iter (unify_pat pat.pat_env pat) (ty::tl)
           end
-      | Reither (c, l, true, e) when not row.row_fixed ->
-          e := Some (Reither (c, [], false, ref None))
+      | Reither (c, l, true, tpl, e) when not row.row_fixed ->
+          e := Some (Reither (c, [], false, [], ref None))
       | _ -> ()
       end;
       (* Force check of well-formedness *)
@@ -804,6 +810,16 @@ let rec type_exp env sexp =
       let ty_res = newvar() in
       let cases, partial =
         type_cases env arg.exp_type ty_res (Some sexp.pexp_loc) caselist in
+      { exp_desc = Texp_match(arg, cases, partial);
+        exp_loc = sexp.pexp_loc;
+        exp_type = ty_res;
+        exp_env = env }
+  | Pexp_multimatch(sarg, caselist) ->
+      let arg = type_exp env sarg in
+      let ty_res = newvar() in
+      let cases, partial =
+        type_cases ~multi:true env arg.exp_type ty_res
+          (Some sexp.pexp_loc) caselist in
       { exp_desc = Texp_match(arg, cases, partial);
         exp_loc = sexp.pexp_loc;
         exp_type = ty_res;
@@ -1656,7 +1672,8 @@ and type_statement env sexp =
 
 (* Typing of match cases *)
 
-and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
+and type_cases ?in_function ?(multi=false)
+    env ty_arg ty_res partial_loc caselist =
   let ty_arg' = newvar () in
   let pattern_force = ref [] in
   let pat_env_list =
@@ -1700,7 +1717,25 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
   let cases =
     List.map2
       (fun (pat, ext_env) (spat, sexp) ->
-        let exp = type_expect ?in_function ext_env sexp ty_res in
+        let ty_res' =
+          match pat.pat_desc with
+            Tpat_variant (lab, _, row) when multi ->
+              let fi =
+                try List.assoc lab (row_repr row).row_fields
+                with Not_found -> assert false
+              in
+              begin match row_field_repr fi with
+                Reither (c, _, m, _, e) ->
+                  let ty_res' = Btype.newty2 (row_more row).level Tvar in
+                  let tv = Btype.newty2 ty_res'.level Tvar in
+                  e := Some (Reither (c, [], m, [ty_res, ty_res'], ref None));
+                  unify_pat ext_env {pat with pat_type=tv} ty_res;
+                  ty_res'
+              | _ -> ty_res
+              end
+          | _ -> ty_res
+        in
+        let exp = type_expect ?in_function ext_env sexp ty_res' in
         (pat, exp))
       pat_env_list caselist in
   add_delayed_check (fun () -> Parmatch.check_unused env cases);

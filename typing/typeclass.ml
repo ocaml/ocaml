@@ -1321,7 +1321,8 @@ let report_error ppf = function
       fprintf ppf "Unbound instance variable %s" lab
   | Unbound_type_var (printer, reason) ->
       let print_labty real ppf ty =
-        if real then Printtyp.type_expr ppf ty else fprintf ppf ".." in
+        if real then Printtyp.type_expr ppf ty
+        else fprintf ppf "a row variable" in
       let print_reason ppf = function
       | Ctype.CC_Method (ty0, real, lab, ty) ->
           Printtyp.reset_and_mark_loops_list [ty; ty0];

@@ -199,6 +199,10 @@ and expression i ppf x =
       line i ppf "Pexp_match\n";
       expression i ppf e;
       list i pattern_x_expression_case ppf l;
+  | Pexp_multimatch (e, l) ->
+      line i ppf "Pexp_multimatch\n";
+      expression i ppf e;
+      list i pattern_x_expression_case ppf l;
   | Pexp_try (e, l) ->
       line i ppf "Pexp_try\n";
       expression i ppf e;

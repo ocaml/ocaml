@@ -127,7 +127,7 @@ let namable_row row =
   List.for_all
     (fun (_, f) ->
        match row_field_repr f with
-       | Reither(c, l, _, _) ->
+       | Reither(c, l, _, [], _) ->
            row.row_closed && if c then l = [] else List.length l = 1
        | _ -> true)
     row.row_fields
@@ -297,13 +297,16 @@ let rec tree_of_typexp sch ty =
 
 and tree_of_row_field sch (l, f) =
   match row_field_repr f with
-  | Rpresent None | Reither(true, [], _, _) -> (l, false, [])
-  | Rpresent(Some ty) -> (l, false, [tree_of_typexp sch ty])
-  | Reither(c, tyl, _, _) ->
-      if c (* contradiction: un constructeur constant qui a un argument *)
-      then (l, true, tree_of_typlist sch tyl)
-      else (l, false, tree_of_typlist sch tyl)
-  | Rabsent -> (l, false, [] (* une erreur, en fait *))
+  | Rpresent None | Reither(true, [], _, [], _) -> (l, false, [], [])
+  | Rpresent(Some ty) -> (l, false, [tree_of_typexp sch ty], [])
+  | Reither(c, tyl, _, tpl, _) ->
+      let ttpl =
+        List.map
+          (fun (t1,t2) -> tree_of_typexp sch t1, tree_of_typexp sch t2)
+          tpl
+      in
+      (l, c && tpl = [], tree_of_typlist sch tyl, ttpl)
+  | Rabsent -> (l, false, [], [] (* une erreur, en fait *))
 
 and tree_of_typlist sch = function
   | [] -> []

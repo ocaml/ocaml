@@ -247,9 +247,9 @@ let rec transl_type env policy rowvar styp =
                 match Btype.row_field_repr f with
                 | Rpresent (Some ty) ->
                     bound := ty :: !bound;
-                    Reither(false, [ty], fixed, ref None)
+                    Reither(false, [ty], fixed, [], ref None)
                 | Rpresent None ->
-                    Reither (true, [], fixed, ref None)
+                    Reither (true, [], fixed, [], ref None)
                 | _ -> f)
               row.row_fields
           in
@@ -353,7 +353,7 @@ let rec transl_type env policy rowvar styp =
               Some present when not (single || List.mem l present) ->
                 let tl = List.map (transl_type env policy None) stl in
                 bound := tl @ !bound;
-                Reither(c, tl, fixed, ref None)
+                Reither(c, tl, fixed, [], ref None)
             | _ ->
                 if List.length stl > 1 || c && stl <> [] then
                   raise(Error(styp.ptyp_loc, Present_has_conjunction l));
@@ -386,9 +386,9 @@ let rec transl_type env policy rowvar styp =
                     begin match f with
                       Rpresent(Some ty) ->
                         bound := ty :: !bound;
-                        Reither(false, [ty], fixed, ref None)
+                        Reither(false, [ty], fixed, [], ref None)
                     | Rpresent None ->
-                        Reither(true, [], fixed, ref None)
+                        Reither(true, [], fixed, [], ref None)
                     | _ ->
                         assert false
                     end

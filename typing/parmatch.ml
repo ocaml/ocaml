@@ -548,11 +548,11 @@ let full_match tdefs force env =  match env with
           (fun (ok,nm) (tag,f) ->
             match Btype.row_field_repr f with
               Rabsent -> (ok, nm)
-            | Reither(_, _, false, e) ->
+            | Reither(_, _, false, _, e) ->
                 (* m=false means that this tag is not explicitly matched *)
                 e := Some Rabsent;
                 (ok, None)
-            | Reither (_, _, true, _)
+            | Reither (_, _, true, _, _)
                 (* m=true, do not discard matched tags, rather warn *)
             | Rpresent _ ->
                 (ok && List.mem tag fields, nm))
@@ -672,7 +672,7 @@ let build_other env =  match env with
           match Btype.row_field_repr f with
             Rabsent (* | Reither _ *) -> others
           (* This one is called after erasing pattern info *)
-          | Reither (c, _, _, _) -> make_other_pat tag c :: others
+          | Reither (c, _, _, _, _) -> make_other_pat tag c :: others
           | Rpresent arg -> make_other_pat tag (arg = None) :: others)
         [] row.row_fields
     with [] -> assert false

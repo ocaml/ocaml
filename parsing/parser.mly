@@ -234,6 +234,7 @@ let bigarray_set arr arg newval =
 %token MINUSDOT
 %token MINUSGREATER
 %token MODULE
+%token MULTIMATCH
 %token MUTABLE
 %token NEW
 %token OBJECT
@@ -775,6 +776,8 @@ expr:
       { let (l,o,p) = $2 in mkexp(Pexp_function(l, o, [p, $3])) }
   | MATCH seq_expr WITH opt_bar match_cases
       { mkexp(Pexp_match($2, List.rev $5)) }
+  | MULTIMATCH seq_expr WITH opt_bar match_cases
+      { mkexp(Pexp_multimatch($2, List.rev $5)) }
   | TRY seq_expr WITH opt_bar match_cases
       { mkexp(Pexp_try($2, List.rev $5)) }
   | TRY seq_expr WITH error

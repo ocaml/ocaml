@@ -47,7 +47,9 @@ and row_desc =
 
 and row_field =
     Rpresent of type_expr option
-  | Reither of bool * type_expr list * bool * row_field option ref
+  | Reither of
+      bool * type_expr list * bool *
+      (type_expr * type_expr) list * row_field option ref
         (* 1st true denotes a constant constructor *)
         (* 2nd true denotes a tag in a pattern matching, and
            is erased later *)

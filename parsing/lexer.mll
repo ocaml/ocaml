@@ -61,6 +61,7 @@ let keyword_table =
     "match", MATCH;
     "method", METHOD;
     "module", MODULE;
+    "multimatch", MULTIMATCH;
     "mutable", MUTABLE;
     "new", NEW;
     "object", OBJECT;

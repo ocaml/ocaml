@@ -193,14 +193,18 @@ and print_fields rest ppf =
       print_fields rest ppf []
   | (s, t) :: l ->
       fprintf ppf "%s : %a;@ %a" s print_out_type t (print_fields rest) l
-and print_row_field ppf (l, opt_amp, tyl) =
+and print_row_field ppf (l, opt_amp, tyl, tpl) =
   let pr_of ppf =
     if opt_amp then fprintf ppf " of@ &@ "
     else if tyl <> [] then fprintf ppf " of@ "
-    else fprintf ppf ""
+  and pr_tp ppf (t1,t2) =
+    fprintf ppf "@[<hv 2>%a =@ %a@]"
+      print_out_type t1
+      print_out_type t2
   in
-  fprintf ppf "@[<hv 2>`%s%t%a@]" l pr_of (print_typlist print_out_type " &")
-    tyl
+  fprintf ppf "@[<hv 2>`%s%t%a%a@]" l pr_of
+    (print_typlist print_out_type " &") tyl
+    (print_list_init pr_tp (fun ppf -> fprintf ppf " &@ ")) tpl
 and print_typlist print_elem sep ppf =
   function
     [] -> ()
