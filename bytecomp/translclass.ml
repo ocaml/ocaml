@@ -190,7 +190,8 @@ let rec build_object_init_0 cl_table params cl copy_env subst_env i0 =
 	  (fun init (obj_init, env_init, _) ->
 	    incr i;
 	    Llet(Strict, obj_init,
-		 Lapply(Lvar env_init, [Lprim(Pfield !i, [Lvar env])]),
+		 Lapply(Lvar env_init,
+                        [Lprim(Pfield 3, [Lprim(Pfield !i, [Lvar env])])]),
 		 init))
 	  obj_init inh_init in
       let obj_init = lfunction [env; obj] obj_init in
