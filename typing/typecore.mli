@@ -41,6 +41,7 @@ val type_self_pattern:
         (Ident.t * Asttypes.mutable_flag * type_expr) Vars.t ref *
         Env.t * Env.t * Env.t
 val type_expect:
+        ?in_function:bool ->
         Env.t -> Parsetree.expression -> type_expr -> Typedtree.expression
 val type_exp:
         Env.t -> Parsetree.expression -> Typedtree.expression
@@ -81,7 +82,7 @@ type error =
   | Outside_class
   | Value_multiply_overridden of string
   | Coercion_failure of type_expr * type_expr * (type_expr * type_expr) list
-  | Too_many_arguments
+  | Too_many_arguments of bool
   | Abstract_wrong_label of label * type_expr
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
