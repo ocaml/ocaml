@@ -117,5 +117,6 @@ let stdlib_units = [
   "String";
   "StringLabels";
   "Sys";
-  "Weak"
+  "Weak";
+  "Unix"
 ]
