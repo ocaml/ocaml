@@ -43,9 +43,7 @@ type error =
   | Non_generalizable of type_expr
   | Non_generalizable_class of Ident.t * class_declaration
   | Non_generalizable_module of module_type
-(* DYN *)
   | Dynamic_not_closed of type_expr
-(* /DYN *)
 
 exception Error of Location.t * error
 

@@ -36,9 +36,7 @@ type error =
   | Non_generalizable of type_expr
   | Non_generalizable_class of Ident.t * class_declaration
   | Non_generalizable_module of module_type
-(* DYN *)
   | Dynamic_not_closed of type_expr
-(* /DYN *)
 
 exception Error of Location.t * error
 
@@ -589,9 +587,7 @@ let report_error ppf = function
       fprintf ppf
         "@[The type of this module,@ %a,@ \
            contains type variables that cannot be generalized@]" modtype mty
-(* DYN *)
   | Dynamic_not_closed typ ->
       reset_and_mark_loops typ;
       fprintf ppf "This expression cannot be dynamized \
 	because of its non closed type@ %a@ " type_scheme typ;
-(* /DYN *)
