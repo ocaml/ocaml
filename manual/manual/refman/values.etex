@@ -79,5 +79,5 @@ Functional values are mappings from values to values.
 
 Objects are composed of a hidden internal state which is a
 record of instance variables, and a set of methods for accessing and
-modifying these variables.  Object structures are described by
-toplevel classes.
+modifying these variables.  The structure of an object is described by
+the toplevel class that created it.
