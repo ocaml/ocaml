@@ -103,10 +103,10 @@ let transl_declaration env (name, sdecl) id =
     { type_params = params;
       type_arity = List.length params;
       type_kind =
-        begin let rec get_tkind = function
+        begin match sdecl.ptype_kind with
           Ptype_abstract ->
             Type_abstract
-        | Ptype_variant cstrs ->
+        | Ptype_variant (cstrs, priv) ->
             let all_constrs = ref StringSet.empty in
             List.iter
               (fun (name, args) ->
@@ -120,8 +120,8 @@ let transl_declaration env (name, sdecl) id =
             Type_variant(List.map
               (fun (name, args) ->
                       (name, List.map (transl_simple_type env true) args))
-              cstrs)
-        | Ptype_record lbls ->
+              cstrs, priv)
+        | Ptype_record (lbls, priv) ->
             let all_labels = ref StringSet.empty in
             List.iter
               (fun (name, mut, arg) ->
@@ -139,10 +139,8 @@ let transl_declaration env (name, sdecl) id =
               if List.for_all (fun (name, mut, arg) -> is_float env arg) lbls'
               then Record_float
               else Record_regular in
-            Type_record(lbls', rep)
-        | Ptype_private kind -> Type_private (get_tkind kind) in
-        get_tkind sdecl.ptype_kind
-      end;
+            Type_record(lbls', rep, priv)
+        end;
       type_manifest =
         begin match sdecl.ptype_manifest with
           None -> None
@@ -169,16 +167,14 @@ let transl_declaration env (name, sdecl) id =
 
 let generalize_decl decl =
   List.iter Ctype.generalize decl.type_params;
-  let rec gen = function
-  | Type_abstract ->
+  begin match decl.type_kind with
+    Type_abstract ->
       ()
-  | Type_variant v ->
+  | Type_variant (v, priv) ->
       List.iter (fun (_, tyl) -> List.iter Ctype.generalize tyl) v
-  | Type_record(r, rep) ->
+  | Type_record(r, rep, priv) ->
       List.iter (fun (_, _, ty) -> Ctype.generalize ty) r
-  | Type_private tkind ->
-      gen tkind in
-  gen decl.type_kind;
+  end;
   begin match decl.type_manifest with
   | None    -> ()
   | Some ty -> Ctype.generalize ty
@@ -217,12 +213,11 @@ let rec check_constraints_rec env loc visited ty =
 
 let check_constraints env (_, sdecl) (_, decl) =
   let visited = ref TypeSet.empty in
-  let rec check = function
+  begin match decl.type_kind with
   | Type_abstract -> ()
-  | Type_variant l ->
+  | Type_variant (l, _) ->
       let rec find_pl = function
-          Ptype_variant pl -> pl
-        | Ptype_private tkind -> find_pl tkind
+          Ptype_variant(pl, _) -> pl
         | Ptype_record _ | Ptype_abstract -> assert false
       in
       let pl = find_pl sdecl.ptype_kind in
@@ -234,10 +229,9 @@ let check_constraints env (_, sdecl) (_, decl) =
               check_constraints_rec env sty.ptyp_loc visited ty)
             styl tyl)
         l
-  | Type_record (l, _) ->
+  | Type_record (l, _, _) ->
       let rec find_pl = function
-          Ptype_record pl -> pl
-        | Ptype_private tkind -> find_pl tkind
+          Ptype_record(pl, _) -> pl
         | Ptype_variant _ | Ptype_abstract -> assert false
       in
       let pl = find_pl sdecl.ptype_kind in
@@ -250,8 +244,7 @@ let check_constraints env (_, sdecl) (_, decl) =
         (fun (name, _, ty) ->
           check_constraints_rec env (get_loc name pl) visited ty)
         l
-  | Type_private tkind -> check tkind in
-  check decl.type_kind;
+  end;
   begin match decl.type_manifest with
   | None -> ()
   | Some ty ->
@@ -425,25 +418,24 @@ let compute_variance_decl env decl (required, loc) =
   let tvl =
     List.map (fun ty -> (Btype.repr ty, ref false, ref false, ref false))
       decl.type_params in
-  let rec variance_tkind = function
+  begin match decl.type_kind with
     Type_abstract ->
       begin match decl.type_manifest with
         None -> assert false
       | Some ty -> compute_variance env tvl true false false ty
       end
-  | Type_variant tll ->
+  | Type_variant (tll, _) ->
       List.iter
         (fun (_,tl) ->
 	  List.iter (compute_variance env tvl true false false) tl)
         tll
-  | Type_record (ftl, _) ->
+  | Type_record (ftl, _, _) ->
       List.iter
         (fun (_, mut, ty) ->
 	  let cn = (mut = Mutable) in
 	  compute_variance env tvl true cn cn ty)
         ftl
-  | Type_private tkind -> variance_tkind tkind in
-  variance_tkind decl.type_kind;
+  end;
   List.map2
     (fun (_, co, cn, ct) (c, n) ->
       if c && !cn || n && !co then raise (Error(loc, Bad_variance));

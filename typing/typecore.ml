@@ -42,8 +42,8 @@ type error =
   | Undefined_inherited_method of string
   | Unbound_class of Longident.t
   | Virtual_class of Longident.t
-  | Private_type of string
-  | Private_type_setfield of Longident.t * string
+  | Private_type of type_expr
+  | Private_label of Longident.t * type_expr
   | Unbound_instance_variable of string
   | Instance_variable_not_mutable of string
   | Not_subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
@@ -121,31 +121,14 @@ let rec extract_label_names sexp env ty =
   | Tconstr (path, _, _) ->
       let td = Env.find_type path env in
       let rec extract = function
-      | Type_record (fields, _) -> List.map (fun (name, _, _) -> name) fields
+      | Type_record (fields, _, _) ->
+          List.map (fun (name, _, _) -> name) fields
       | Type_abstract when td.type_manifest <> None ->
           extract_label_names sexp env (expand_head env ty)
-      | Type_private tkind ->
-          raise (Error(sexp.pexp_loc, Private_type (Path.name path)))
       | _ -> assert false in
       extract td.type_kind
   | _ ->
       assert false
-
-let check_private get_exc loc env ty =
-  let ty = repr ty in
-  match ty.desc with
-  | Tconstr (path, _, _) ->
-      let td = Env.find_type path env in
-      begin match td.type_kind with
-      | Type_private tkind ->
-          raise (Error(loc, get_exc (Path.name path)))
-      | _ -> () end
-  | _ ->
-      assert false
-
-let check_private_type = check_private (fun s -> Private_type s)
-let check_private_type_setfield lid =
-  check_private (fun s -> Private_type_setfield (lid, s))
 
 (* Typing of patterns *)
 
@@ -939,6 +922,8 @@ let rec type_exp env sexp =
           generalize_expansive env arg.exp_type;
         check_univars env "field value" arg label.lbl_arg vars;
         num_fields := Array.length label.lbl_all;
+        if label.lbl_private = Private then
+          raise(Error(sexp.pexp_loc, Private_type ty));
         (label, {arg with exp_type = instance arg.exp_type}) in
       let lbl_exp_list = List.map type_label_exp lid_sexp_list in
       let rec check_duplicates seen_pos lid_sexp lbl_exp =
@@ -981,7 +966,6 @@ let rec type_exp env sexp =
         let missing = missing_labels 0 label_names in
         raise(Error(sexp.pexp_loc, Label_missing missing))
       end;
-      check_private_type sexp.pexp_loc env ty;
       re {
         exp_desc = Texp_record(lbl_exp_list, opt_exp);
         exp_loc = sexp.pexp_loc;
@@ -1018,7 +1002,8 @@ let rec type_exp env sexp =
       if vars <> [] && not (is_nonexpansive newval) then
         generalize_expansive env newval.exp_type;
       check_univars env "field value" newval label.lbl_arg vars;
-      check_private_type_setfield lid sexp.pexp_loc env ty_res;
+      if label.lbl_private = Private then
+        raise(Error(sexp.pexp_loc, Private_label(lid, ty_res)));
       re {
         exp_desc = Texp_setfield(record, label, newval);
         exp_loc = sexp.pexp_loc;
@@ -1607,7 +1592,8 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
       exp_env = env } in
   unify_exp env texp ty_expected;
   let args = List.map2 (type_argument env) sargs ty_args in
-  check_private_type loc env ty_res;
+  if constr.cstr_private = Private then
+    raise(Error(loc, Private_type ty_res));
   { texp with exp_desc = Texp_construct(constr, args) }
 
 (* Typing of an expression with an expected type.
@@ -2003,10 +1989,10 @@ let report_error ppf = function
          cannot be accessed from the definition of another instance variable"
         longident lid
   | Private_type ty ->
-      fprintf ppf "One cannot create values of the private type %s" ty
-  | Private_type_setfield (lid, ty) ->
-      fprintf ppf "Cannot assign field %a of the private type %s"
-        longident lid ty
+      fprintf ppf "Cannot create values of the private type %a" type_expr ty
+  | Private_label (lid, ty) ->
+      fprintf ppf "Cannot assign field %a of the private type %a"
+        longident lid type_expr ty
   | Not_a_variant_type lid ->
       fprintf ppf "The type %a@ is not a variant type" longident lid
   | Incoherent_label_order ->

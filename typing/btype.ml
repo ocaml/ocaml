@@ -265,14 +265,13 @@ let rec unmark_type ty =
 
 let unmark_type_decl decl =
   List.iter unmark_type decl.type_params;
-  let rec unmark_tkind = function
+  begin match decl.type_kind with
     Type_abstract -> ()
-  | Type_variant cstrs ->
+  | Type_variant (cstrs, priv) ->
       List.iter (fun (c, tl) -> List.iter unmark_type tl) cstrs
-  | Type_record(lbls, rep) ->
+  | Type_record(lbls, rep, priv) ->
       List.iter (fun (c, mut, t) -> unmark_type t) lbls
-  | Type_private tkind -> unmark_tkind tkind in
-  unmark_tkind decl.type_kind;
+  end;
   begin match decl.type_manifest with
     None    -> ()
   | Some ty -> unmark_type ty

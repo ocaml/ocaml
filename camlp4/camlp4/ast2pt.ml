@@ -219,14 +219,15 @@ value mkvariant (_, c, tl) = (c, List.map ctyp tl);
 value type_decl tl cl =
   fun
   [ TyMan loc t (TyRec _ ltl) ->
-      mktype loc tl cl (Ptype_record (List.map mktrecord ltl)) (Some (ctyp t))
+      mktype loc tl cl (Ptype_record (List.map mktrecord ltl) Public)
+        (Some (ctyp t))
   | TyMan loc t (TySum _ ctl) ->
-      mktype loc tl cl (Ptype_variant (List.map mkvariant ctl))
+      mktype loc tl cl (Ptype_variant (List.map mkvariant ctl) Public)
         (Some (ctyp t))
   | TyRec loc ltl ->
-      mktype loc tl cl (Ptype_record (List.map mktrecord ltl)) None
+      mktype loc tl cl (Ptype_record (List.map mktrecord ltl) Public) None
   | TySum loc ctl ->
-      mktype loc tl cl (Ptype_variant (List.map mkvariant ctl)) None
+      mktype loc tl cl (Ptype_variant (List.map mkvariant ctl) Public) None
   | t ->
       let m =
         match t with

@@ -314,15 +314,12 @@ and type_kind i ppf x =
   match x with
   | Ptype_abstract ->
       line i ppf "Ptype_abstract\n"
-  | Ptype_variant (l) ->
-      line i ppf "Ptype_variant\n";
+  | Ptype_variant (l, priv) ->
+      line i ppf "Ptype_variant %a\n" fmt_private_flag priv;
       list (i+1) string_x_core_type_list ppf l;
-  | Ptype_record (l) ->
-      line i ppf "Ptype_record\n";
+  | Ptype_record (l, priv) ->
+      line i ppf "Ptype_record %a\n" fmt_private_flag priv;
       list (i+1) string_x_mutable_flag_x_core_type ppf l;
-  | Ptype_private x ->
-      line i ppf "Ptype_private\n";
-      type_kind (i + 1) ppf x
 
 and exception_declaration i ppf x = list i core_type ppf x
 
@@ -573,7 +570,7 @@ and structure_item i ppf x =
       line i ppf "Pstr_module \"%s\"\n" s;
       module_expr i ppf me;
   | Pstr_recmodule bindings ->
-      line i ppf "Pstr_type\n";
+      line i ppf "Pstr_recmodule\n";
       list i string_x_modtype_x_module ppf bindings;
   | Pstr_modtype (s, mt) ->
       line i ppf "Pstr_modtype \"%s\"\n" s;

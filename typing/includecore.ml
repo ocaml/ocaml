@@ -15,6 +15,7 @@
 (* Inclusion checks for the core language *)
 
 open Misc
+open Asttypes
 open Path
 open Types
 open Typedtree
@@ -34,13 +35,19 @@ let value_descriptions env vd1 vd2 =
   end else
     raise Dont_match
 
+(* Inclusion between "private" annotations *)
+
+let private_flags priv1 priv2 =
+  match (priv1, priv2) with (Private, Public) -> false | (_, _) -> true
+
 (* Inclusion between type declarations *)
 
 let type_declarations env id decl1 decl2 =
   decl1.type_arity = decl2.type_arity &&
-  let rec incl_tkinds = function
+  begin match (decl1.type_kind, decl2.type_kind) with
       (_, Type_abstract) -> true
-    | (Type_variant cstrs1, Type_variant cstrs2) ->
+    | (Type_variant (cstrs1, priv1), Type_variant (cstrs2, priv2)) ->
+        private_flags priv1 priv2 &&
         Misc.for_all2
           (fun (cstr1, arg1) (cstr2, arg2) ->
             cstr1 = cstr2 &&
@@ -50,7 +57,8 @@ let type_declarations env id decl1 decl2 =
                                      (ty2::decl2.type_params))
               arg1 arg2)
           cstrs1 cstrs2
-    | (Type_record(labels1, rep1), Type_record(labels2, rep2)) ->
+    | (Type_record(labels1,rep1,priv1), Type_record(labels2,rep2,priv2)) ->
+        private_flags priv1 priv2 &&
         rep1 = rep2 &&
         Misc.for_all2
           (fun (lbl1, mut1, ty1) (lbl2, mut2, ty2) ->
@@ -58,11 +66,8 @@ let type_declarations env id decl1 decl2 =
             Ctype.equal env true (ty1::decl1.type_params)
                                  (ty2::decl2.type_params))
           labels1 labels2
-    | (Type_private tkind1, Type_private tkind2) -> incl_tkinds (tkind1, tkind2)
-    | (tkind1, Type_private tkind2) -> incl_tkinds (tkind1, tkind2)
-    | (_, _) -> false in
-  incl_tkinds (decl1.type_kind, decl2.type_kind)
-  &&
+    | (_, _) -> false
+  end &&
   begin match (decl1.type_manifest, decl2.type_manifest) with
       (_, None) ->
         Ctype.equal env true decl1.type_params decl2.type_params

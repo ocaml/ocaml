@@ -226,14 +226,13 @@ let rec search_type_in_signature t ~sign ~prefix ~mode =
             None -> false
           | Some t -> matches t
           end ||
-          let rec search_tkind = function
+          begin match td.type_kind with
             Type_abstract -> false
-          | Type_variant l ->
+          | Type_variant(l, priv) ->
             List.exists l ~f:(fun (_, l) -> List.exists l ~f:matches)
-          | Type_record(l, rep) ->
+          | Type_record(l, rep, priv) ->
             List.exists l ~f:(fun (_, _, t) -> matches t)
-          | Type_private tkind -> search_tkind tkind in
-          search_tkind td.type_kind
+          end
           then [lid_of_id id, Ptype] else []
       | Tsig_exception (id, l) ->
           if List.exists l ~f:matches

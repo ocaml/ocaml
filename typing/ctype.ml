@@ -422,15 +422,14 @@ let closed_parameterized_type params ty =
 let closed_type_decl decl =
   try
     List.iter mark_type decl.type_params;
-    let rec closed_tkind = function
+    begin match decl.type_kind with
       Type_abstract ->
         ()
-    | Type_variant v ->
+    | Type_variant(v, priv) ->
         List.iter (fun (_, tyl) -> List.iter closed_type tyl) v
-    | Type_record(r, rep) ->
+    | Type_record(r, rep, priv) ->
         List.iter (fun (_, _, ty) -> closed_type ty) r
-    | Type_private tkind -> closed_tkind tkind in
-    closed_tkind decl.type_kind;
+    end;
     begin match decl.type_manifest with
       None    -> ()
     | Some ty -> closed_type ty
@@ -3119,21 +3118,19 @@ let nondep_type_decl env mid id is_covariant decl =
         type_arity = decl.type_arity;
         type_kind =
           begin try
-            let rec kind_of_tkind = function
+            match decl.type_kind with
               Type_abstract ->
                 Type_abstract
-            | Type_variant cstrs ->
+            | Type_variant(cstrs, priv) ->
                 Type_variant(List.map
                   (fun (c, tl) -> (c, List.map (nondep_type_rec env mid) tl))
-                  cstrs)
-            | Type_record(lbls, rep) ->
+                  cstrs, priv)
+            | Type_record(lbls, rep, priv) ->
                 Type_record(
                   List.map
                     (fun (c, mut, t) -> (c, mut, nondep_type_rec env mid t))
                     lbls,
-                  rep)
-            | Type_private tkind -> Type_private (kind_of_tkind tkind) in
-            kind_of_tkind decl.type_kind
+                  rep, priv)
           with Not_found when is_covariant ->
             Type_abstract
           end;
@@ -3151,14 +3148,13 @@ let nondep_type_decl env mid id is_covariant decl =
     in
     cleanup_types ();
     List.iter unmark_type decl.type_params;
-    let rec unmark_tkind = function
+    begin match decl.type_kind with
       Type_abstract -> ()
-    | Type_variant cstrs ->
+    | Type_variant(cstrs, priv) ->
         List.iter (fun (c, tl) -> List.iter unmark_type tl) cstrs
-    | Type_record(lbls, rep) ->
+    | Type_record(lbls, rep, priv) ->
         List.iter (fun (c, mut, t) -> unmark_type t) lbls
-    | Type_private tkind -> unmark_tkind tkind in
-    unmark_tkind decl.type_kind;
+    end;
     begin match decl.type_manifest with
       None    -> ()
     | Some ty -> unmark_type ty

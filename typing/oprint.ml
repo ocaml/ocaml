@@ -186,8 +186,7 @@ and print_simple_out_type ppf =
         print_present tags
   | Otyp_alias _ | Otyp_poly _ | Otyp_arrow _ | Otyp_tuple _ as ty ->
       fprintf ppf "@[<1>(%a)@]" print_out_type ty
-  | Otyp_abstract | Otyp_sum _ | Otyp_record _ | Otyp_private _
-  | Otyp_manifest (_, _) -> ()
+  | Otyp_abstract | Otyp_sum _ | Otyp_record _ | Otyp_manifest (_, _) -> ()
 and print_fields rest ppf =
   function
     [] ->
@@ -366,26 +365,27 @@ and print_out_type_decl kwd ppf (name, args, ty, constraints) =
       Otyp_manifest (_, ty) -> ty
     | _ -> ty
   in
-  let print_private ppf v = if v then fprintf ppf "private " in
-  let rec print_out_tkind v = function
+  let print_private ppf = function
+    Asttypes.Private -> fprintf ppf "private "
+  | Asttypes.Public -> () in
+  let rec print_out_tkind = function
   | Otyp_abstract ->
       fprintf ppf "@[<2>@[<hv 2>%t@]%a@]" print_name_args print_constraints
         constraints
-  | Otyp_record lbls ->
+  | Otyp_record (lbls, priv) ->
       fprintf ppf "@[<2>@[<hv 2>%t = %a{%a@;<1 -2>}@]%a@]" print_name_args
-        print_private v
+        print_private priv
         (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
         print_constraints constraints
-  | Otyp_sum constrs ->
+  | Otyp_sum (constrs, priv) ->
       fprintf ppf "@[<2>@[<hv 2>%t =@;<1 2>%a%a@]%a@]" print_name_args
-        print_private v
+        print_private priv
         (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
         print_constraints constraints
-  | Otyp_private ty -> print_out_tkind true ty
   | ty ->
       fprintf ppf "@[<2>@[<hv 2>%t =@ %a@]%a@]" print_name_args !out_type
         ty print_constraints constraints in
-  print_out_tkind false ty
+  print_out_tkind ty
 and print_out_constr ppf (name, tyl) =
   match tyl with
     [] -> fprintf ppf "%s" name

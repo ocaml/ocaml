@@ -106,7 +106,8 @@ type constructor_description =
     cstr_arity: int;                    (* Number of arguments *)
     cstr_tag: constructor_tag;          (* Tag for heap blocks *)
     cstr_consts: int;                   (* Number of constant constructors *)
-    cstr_nonconsts: int }               (* Number of non-const constructors *)
+    cstr_nonconsts: int;                (* Number of non-const constructors *)
+    cstr_private: private_flag }        (* Read-only constructor? *)
 
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
@@ -121,7 +122,8 @@ type label_description =
     lbl_mut: mutable_flag;              (* Is this a mutable field? *)
     lbl_pos: int;                       (* Position in block *)
     lbl_all: label_description array;   (* All the labels in this type *)
-    lbl_repres: record_representation } (* Representation for this record *)
+    lbl_repres: record_representation;  (* Representation for this record *)
+    lbl_private: private_flag }         (* Read-only field? *)
 
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
@@ -139,10 +141,9 @@ type type_declaration =
 
 and type_kind =
     Type_abstract
-  | Type_variant of (string * type_expr list) list
+  | Type_variant of (string * type_expr list) list * private_flag
   | Type_record of (string * mutable_flag * type_expr) list
-                 * record_representation
-  | Type_private of type_kind
+                 * record_representation * private_flag
 
 type exception_declaration = type_expr list
 

@@ -183,10 +183,6 @@ let bigarray_set arr arg newval =
                        ["", arr; 
                         "", ghexp(Pexp_array coords);
                         "", newval]))
-
-let mktype_kind pflag kind =
-  if pflag = Private && kind != Ptype_abstract then Ptype_private kind else kind
-
 %}
 
 /* Tokens */
@@ -1185,17 +1181,17 @@ type_kind:
   | EQUAL core_type
       { (Ptype_abstract, Some $2) }
   | EQUAL constructor_declarations
-      { (Ptype_variant(List.rev $2), None) }
+      { (Ptype_variant(List.rev $2, Public), None) }
   | EQUAL PRIVATE constructor_declarations
-      { (mktype_kind Private (Ptype_variant(List.rev $3)), None) }
+      { (Ptype_variant(List.rev $3, Private), None) }
   | EQUAL private_flag BAR constructor_declarations
-      { (mktype_kind $2 (Ptype_variant(List.rev $4)), None) }
+      { (Ptype_variant(List.rev $4, $2), None) }
   | EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
-      { (mktype_kind $2 (Ptype_record(List.rev $4)), None) }
+      { (Ptype_record(List.rev $4, $2), None) }
   | EQUAL core_type EQUAL private_flag opt_bar constructor_declarations
-      { (mktype_kind $4 (Ptype_variant(List.rev $6)), Some $2) }
+      { (Ptype_variant(List.rev $6, $4), Some $2) }
   | EQUAL core_type EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
-      { (mktype_kind $4 (Ptype_record(List.rev $6)), Some $2) }
+      { (Ptype_record(List.rev $6, $4), Some $2) }
 ;
 type_parameters:
     /*empty*/                                   { [] }

@@ -52,10 +52,9 @@ type out_type =
   | Otyp_constr of out_ident * out_type list
   | Otyp_manifest of out_type * out_type
   | Otyp_object of (string * out_type) list * bool option
-  | Otyp_record of (string * bool * out_type) list
+  | Otyp_record of (string * bool * out_type) list * Asttypes.private_flag
   | Otyp_stuff of string
-  | Otyp_sum of (string * out_type list) list
-  | Otyp_private of out_type
+  | Otyp_sum of (string * out_type list) list * Asttypes.private_flag
   | Otyp_tuple of out_type list
   | Otyp_var of bool * string
   | Otyp_variant of

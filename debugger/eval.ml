@@ -135,7 +135,7 @@ let rec expression event env = function
         Tconstr(path, args, _) ->
           let tydesc = Env.find_type path env in
           begin match tydesc.type_kind with
-            Type_record(lbl_list, repr) ->
+            Type_record(lbl_list, repr, priv) ->
               let (pos, ty_res) =
                 find_label lbl env ty path tydesc 0 lbl_list in
               (Debugcom.Remote_value.field v pos, ty_res)

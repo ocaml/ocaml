@@ -413,15 +413,14 @@ let rec tree_of_type_decl id decl =
         mark_loops ty;
         Some ty
   in 
-  let rec mark = function
+  begin match decl.type_kind with
   | Type_abstract -> ()
-  | Type_variant [] -> ()
-  | Type_variant cstrs ->
+  | Type_variant ([], _) -> ()
+  | Type_variant (cstrs, priv) ->
       List.iter (fun (_, args) -> List.iter mark_loops args) cstrs
-  | Type_record(l, rep) ->
+  | Type_record(l, rep, priv) ->
       List.iter (fun (_, _, ty) -> mark_loops ty) l
-  | Type_private tkind -> mark tkind in
-  mark decl.type_kind;
+  end;
 
   let type_param =
     function
@@ -453,18 +452,17 @@ let rec tree_of_type_decl id decl =
   in
   let (name, args) = type_defined decl in
   let constraints = tree_of_constraints params in
-  let rec tree_of_tkind = function
+  let ty =
+    match decl.type_kind with
     | Type_abstract ->
         begin match ty_manifest with
         | None -> Otyp_abstract
         | Some ty -> tree_of_typexp false ty
         end
-    | Type_variant cstrs ->
-        tree_of_manifest (Otyp_sum (List.map tree_of_constructor cstrs))
-    | Type_record(lbls, rep) ->
-        tree_of_manifest (Otyp_record (List.map tree_of_label lbls))
-    | Type_private tkind -> Otyp_private (tree_of_tkind tkind) in
-  let ty = tree_of_tkind decl.type_kind 
+    | Type_variant(cstrs, priv) ->
+        tree_of_manifest (Otyp_sum (List.map tree_of_constructor cstrs, priv))
+    | Type_record(lbls, rep, priv) ->
+        tree_of_manifest (Otyp_record (List.map tree_of_label lbls, priv))
   in
   (name, args, ty, constraints)
 

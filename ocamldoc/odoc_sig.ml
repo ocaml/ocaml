@@ -170,10 +170,10 @@ module Analyser =
     let merge_infos = Odoc_merge.merge_info_opt Odoc_types.all_merge_options 
 
     let name_comment_from_type_kind pos_start pos_end pos_limit tk =
-      let rec comment_from_tkind = function
+      match tk with
         Parsetree.Ptype_abstract ->
           (0, [])
-      | Parsetree.Ptype_variant cons_core_type_list_list -> 
+      | Parsetree.Ptype_variant (cons_core_type_list_list, _) -> 
           (*of (string * core_type list) list *)
           let rec f acc last_pos cons_core_type_list_list =
             match cons_core_type_list_list with
@@ -218,7 +218,7 @@ module Analyser =
           in
           f [] pos_start cons_core_type_list_list
             
-      | Parsetree.Ptype_record name_mutable_type_list (* of (string * mutable_flag * core_type) list*) ->
+      | Parsetree.Ptype_record (name_mutable_type_list, _) (* of (string * mutable_flag * core_type) list*) ->
           let rec f = function
               [] ->
                 []
@@ -236,16 +236,12 @@ module Analyser =
           in
           (0, f name_mutable_type_list)
 
-      | Parsetree.Ptype_private tkind -> comment_from_tkind tkind in
-
-     comment_from_tkind tk
-
     let get_type_kind env name_comment_list type_kind =
-      let rec get_tkind = function
+      match type_kind with
         Types.Type_abstract ->
           Odoc_type.Type_abstract
 
-      | Types.Type_variant l ->
+      | Types.Type_variant (l, priv) ->
           let f (constructor_name, type_expr_list) =
             let comment_opt = 
               try 
@@ -262,7 +258,7 @@ module Analyser =
           in
           Odoc_type.Type_variant (List.map f l)
 
-      | Types.Type_record (l, _) ->
+      | Types.Type_record (l, _, priv) ->
           let f (field_name, mutable_flag, type_expr) =
             let comment_opt = 
               try 
@@ -279,11 +275,6 @@ module Analyser =
             } 
           in
           Odoc_type.Type_record (List.map f l)
-
-      | Types.Type_private tkind -> get_tkind tkind in
-
-     get_tkind type_kind
-
 
     (** Analysis of the elements of a class, from the information in the parsetree and in the class
        signature. @return the couple (inherited_class list, elements).*)

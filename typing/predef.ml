@@ -14,6 +14,7 @@
 
 (* Predefined type constructors (with special typing rules in typecore) *)
 
+open Asttypes
 open Path
 open Types
 open Btype
@@ -92,19 +93,19 @@ let build_initial_env add_type add_exception empty_env =
   and decl_bool =
     {type_params = [];
      type_arity = 0;
-     type_kind = Type_variant["false",[]; "true",[]];
+     type_kind = Type_variant(["false",[]; "true",[]], Public);
      type_manifest = None;
      type_variance = []}
   and decl_unit =
     {type_params = []; 
      type_arity = 0;
-     type_kind = Type_variant["()",[]];
+     type_kind = Type_variant(["()",[]], Public);
      type_manifest = None;
      type_variance = []}
   and decl_exn =
     {type_params = [];
      type_arity = 0;
-     type_kind = Type_variant [];
+     type_kind = Type_variant([], Public);
      type_manifest = None;
      type_variance = []}
   and decl_array =
@@ -118,7 +119,8 @@ let build_initial_env add_type add_exception empty_env =
     let tvar = newgenvar() in
     {type_params = [tvar];
      type_arity = 1;
-     type_kind = Type_variant["[]", []; "::", [tvar; type_list tvar]];
+     type_kind =
+       Type_variant(["[]", []; "::", [tvar; type_list tvar]], Public);
      type_manifest = None;
      type_variance = [true, false, false]}
   and decl_format =
@@ -132,7 +134,7 @@ let build_initial_env add_type add_exception empty_env =
     let tvar = newgenvar() in
     {type_params = [tvar];
      type_arity = 1;
-     type_kind = Type_variant["None", []; "Some", [tvar]];
+     type_kind = Type_variant(["None", []; "Some", [tvar]], Public);
      type_manifest = None;
      type_variance = [true, false, false]}
   and decl_lazy_t =

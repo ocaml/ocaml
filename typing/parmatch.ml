@@ -121,7 +121,7 @@ let get_type_descr ty tenv =
 
 let rec get_constr tag ty tenv =
   match get_type_descr ty tenv with
-  | {type_kind=Type_variant constr_list} ->
+  | {type_kind=Type_variant(constr_list, priv)} ->
       Datarepr.find_constr_by_tag tag constr_list
   | {type_manifest = Some _} ->
       get_constr tag (Ctype.expand_head_once tenv ty) tenv
@@ -135,7 +135,7 @@ let find_label lbl lbls =
 
 let rec get_record_labels ty tenv =
   match get_type_descr ty tenv with
-  | {type_kind = Type_record(lbls, rep)} -> lbls
+  | {type_kind = Type_record(lbls, rep, priv)} -> lbls
   | {type_manifest = Some _} ->
       get_record_labels (Ctype.expand_head_once tenv ty) tenv
   | _ -> fatal_error "Parmatch.get_record_labels"

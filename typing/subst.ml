@@ -155,20 +155,18 @@ let type_declaration s decl =
     { type_params = List.map (typexp s) decl.type_params;
       type_arity = decl.type_arity;
       type_kind =
-        begin
-        let rec kind_of_tkind = function
-        | Type_abstract -> Type_abstract
-        | Type_variant cstrs ->
+        begin match decl.type_kind with
+          Type_abstract -> Type_abstract
+        | Type_variant (cstrs, priv) ->
             Type_variant(
               List.map (fun (n, args) -> (n, List.map (typexp s) args))
-                       cstrs)
-        | Type_record(lbls, rep) ->
+                       cstrs,
+              priv)
+        | Type_record(lbls, rep, priv) ->
             Type_record(
               List.map (fun (n, mut, arg) -> (n, mut, typexp s arg))
                        lbls,
-              rep)
-        | Type_private tkind -> Type_private (kind_of_tkind tkind) in
-        kind_of_tkind decl.type_kind
+              rep, priv)
         end;
       type_manifest =
         begin match decl.type_manifest with

@@ -379,27 +379,22 @@ let rec scrape_modtype mty env =
 (* Compute constructor descriptions *)
 
 let constructors_of_type ty_path decl =
-  let rec constructors_of_tkind = function
-  | Type_variant cstrs ->
+  match decl.type_kind with
+    Type_variant(cstrs, priv) ->
       Datarepr.constructor_descrs
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
-        cstrs
-  | Type_private tkind -> constructors_of_tkind tkind
-  | Type_record _ | Type_abstract -> [] in
-  constructors_of_tkind decl.type_kind
-
+        cstrs priv
+  | Type_record _ | Type_abstract -> []
 
 (* Compute label descriptions *)
 
 let labels_of_type ty_path decl =
-  let rec labels_of_tkind = function
-  | Type_record(labels, rep) ->
+  match decl.type_kind with
+    Type_record(labels, rep, priv) ->
       Datarepr.label_descrs
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
-        labels rep
-  | Type_private tkind -> labels_of_tkind tkind
-  | Type_variant _ | Type_abstract -> [] in
-  labels_of_tkind decl.type_kind
+        labels rep priv
+  | Type_variant _ | Type_abstract -> []
 
 (* Given a signature and a root path, prefix all idents in the signature
    by the root path and build the corresponding substitution. *)
