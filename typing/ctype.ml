@@ -946,7 +946,8 @@ let rec non_recursive_abbrev env ty =
         begin try
           non_recursive_abbrev env (try_expand_head env ty)
         with Cannot_expand ->
-          iter_type_expr (non_recursive_abbrev env) ty
+          if not !Clflags.recursive_types then
+            iter_type_expr (non_recursive_abbrev env) ty
         end
     | Tobject (_, _) ->
         ()
@@ -974,7 +975,7 @@ let rec occur_rec env visited ty0 ty =
         if ty == ty0 || List.memq ty' visited then raise Occur;
         iter_type_expr (occur_rec env (ty'::visited) ty0) ty'
       with Cannot_expand ->
-        raise Occur
+        if not !Clflags.recursive_types then raise Occur
       end
   | Tobject (_, _) ->
       ()

@@ -25,7 +25,8 @@ let main () =
      "-unsafe", Arg.Set fast, " No bound checking on array and string access";
      "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";
      "-dlambda", Arg.Set dump_lambda, " (undocumented)";
-     "-dinstr", Arg.Set dump_instr, " (undocumented)"
+     "-dinstr", Arg.Set dump_instr, " (undocumented)";
+     "-rectypes", Arg.Set recursive_types, " (undocumented)"
     ] file_argument usage;
   Toploop.loop()
 

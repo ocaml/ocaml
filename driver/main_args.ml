@@ -31,6 +31,7 @@ module Make_options (F :
      val _o : string -> unit
      val _output_obj : unit -> unit
      val _pp : string -> unit
+     val _rectypes : unit -> unit
      val _thread : unit -> unit
      val _unsafe : unit -> unit
      val _use_prims : string -> unit
@@ -104,6 +105,7 @@ struct
      "-dlambda", Arg.Unit F._dlambda, " (undocumented)";
      "-dinstr", Arg.Unit F._dinstr, " (undocumented)";
      "-use-prims", Arg.String F._use_prims, "<file>  (undocumented)";
+     "-rectypes", Arg.Unit F._rectypes, " (undocumented)";
 
      "-", Arg.String F.anonymous,
            "<file>  Treat <file> as a file name (even if it starts with `-')";

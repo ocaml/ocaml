@@ -72,6 +72,7 @@ module Options = Main_args.Make_options (struct
   let _o s = exec_name := s; archive_name := s; object_name := s
   let _output_obj () = output_c_object := true; custom_runtime := true
   let _pp s = preprocessor := Some s
+  let _rectypes = set recursive_types
   let _thread = set thread_safe
   let _unsafe = set fast
   let _use_prims s = use_prims := s

@@ -130,6 +130,7 @@ let main () =
        "-dscheduling", Arg.Set dump_scheduling, " (undocumented)";
        "-dlinear", Arg.Set dump_linear, " (undocumented)";
        "-dstartup", Arg.Set keep_startup_file, " (undocumented)";
+       "-rectypes", Arg.Set recursive_types, " (undocumented)";
 
        "-", Arg.String process_file,
             "<file>  Treat <file> as a file name (even if it starts with `-')"

@@ -31,6 +31,7 @@ module Make_options (F :
       val _o : string -> unit
       val _output_obj : unit -> unit
       val _pp : string -> unit
+      val _rectypes : unit -> unit
       val _thread : unit -> unit
       val _unsafe : unit -> unit
       val _use_prims : string -> unit
