@@ -2416,6 +2416,20 @@ let rec filter_firsts pred = function
     [] -> []
   | a :: r as l -> if pred a then l else filter_firsts pred r
 
+(* Some mechanics to warn when building huge subtypes *)
+let last_warning = ref 0
+let warn_location = ref Location.none
+let newty_check desc =
+  let ty = newty desc in
+  if ty.id - !last_warning > 500000 then begin
+    Location.prerr_warning !warn_location
+      (Warnings.Other
+         "built subtype is huge; consider using a double coercion.");
+    (* Warn only once *)
+    last_warning := ty.id + max_int;
+  end;
+  ty
+
 (* build_subtype:
    [visited] traces traversed object and variant types
    [loops] is a mapping from variables to variables, to reproduce
@@ -2424,18 +2438,13 @@ let rec filter_firsts pred = function
    [onlyloop] does not open types, only build loops
      true on the left side of an arrow, for efficiency reasons *)
 
-let warn = ref false
-let pred_expand n = if n mod 2 = 0 && n > 0 then pred n else n
-let pred_enlarge n = if n mod 2 = 1 then pred n else n
-
 let rec build_subtype env visited loops posi onlyloop t =
   let t = repr t in
-  if onlyloop = 0 then warn := true;
   let loops =
-    if onlyloop <= 0 then filter_firsts (fun (ty, _) -> deep_occur ty t) loops
+    if onlyloop then filter_firsts (fun (ty, _) -> deep_occur ty t) loops
     else loops
   in
-  if onlyloop <= 0 && loops = [] then (t, false) else
+  if onlyloop && loops = [] then (t, false) else
   match t.desc with
     Tvar ->
       if posi then
@@ -2448,10 +2457,10 @@ let rec build_subtype env visited loops posi onlyloop t =
   | Tarrow(l, t1, t2, _) ->
       if List.memq t visited then (t, false) else
       let visited = t :: visited in
-      let (t1', c1) = build_subtype env visited loops (not posi) (-1) t1 in
+      let (t1', c1) = build_subtype env visited loops (not posi) true t1 in
       (* let (t1', c1) = (t1, false) in *)
       let (t2', c2) = build_subtype env visited loops posi onlyloop t2 in
-      if c1 || c2 then (newty (Tarrow(l, t1', t2', Cok)), true)
+      if c1 || c2 then (newty_check (Tarrow(l, t1', t2', Cok)), true)
       else (t, false)
   | Ttuple tlist ->
       if List.memq t visited then (t, false) else
@@ -2460,9 +2469,9 @@ let rec build_subtype env visited loops posi onlyloop t =
         List.map (build_subtype env visited loops posi onlyloop) tlist
       in
       if List.exists snd tlist' then
-        (newty (Ttuple (List.map fst tlist')), true)
+        (newty_check (Ttuple (List.map fst tlist')), true)
       else (t, false)
-  | Tconstr(p, tl, abbrev) when onlyloop > 0 && generic_abbrev env p ->
+  | Tconstr(p, tl, abbrev) when not onlyloop && generic_abbrev env p ->
       let t' = repr (expand_abbrev env t) in
       begin try match t'.desc with
         Tobject _ when posi ->
@@ -2490,16 +2499,13 @@ let rec build_subtype env visited loops posi onlyloop t =
           ty.desc <- Tvar;
           let t'' = newvar () in
           let visited = t' :: visited and loops = (ty, t'') :: loops in
-          let (ty1', _) =
-	    build_subtype env visited loops posi
-	      (pred_enlarge (pred_expand onlyloop)) ty1 in
+          let (ty1', _) = build_subtype env visited loops posi onlyloop ty1 in
           assert (t''.desc = Tvar);
           t''.desc <- Tobject (ty1', ref None);
           (try unify_var env ty t with Unify _ -> assert false);
           (t'', true)
       | _ -> raise Not_found
-      with Not_found ->
-	build_subtype env visited loops posi (pred_expand onlyloop) t'
+      with Not_found -> build_subtype env visited loops posi onlyloop t'
       end
   | Tconstr(p, tl, abbrev) ->
       begin try
@@ -2538,9 +2544,8 @@ let rec build_subtype env visited loops posi onlyloop t =
                 orig, false
           | Rpresent(Some t) ->
               let (t', c) =
-                build_subtype env visited loops posi (pred_enlarge onlyloop) t
-	      in
-              if posi && onlyloop > 0 then begin
+                build_subtype env visited loops posi onlyloop t in
+              if posi && not onlyloop then begin
                 bound := t' :: !bound;
                 (l, Reither(false, [t'], false, ref None)), c
               end else
@@ -2554,24 +2559,23 @@ let rec build_subtype env visited loops posi onlyloop t =
           row_bound = !bound; row_closed = posi; row_fixed = false;
           row_name = if List.exists snd fields then None else row.row_name }
       in
-      (newty (Tvariant row), true)
+      (newty_check (Tvariant row), true)
   | Tobject (t1, _) when opened_object t1 ->
       (t, false)
   | Tobject (t1, _) ->
       if List.memq t visited then (t, false) else
       let (t1', _) =
-        build_subtype env (t :: visited) loops posi (pred_enlarge onlyloop) t1
-      in
-      (newty (Tobject (t1', ref None)), true)
+        build_subtype env (t :: visited) loops posi onlyloop t1 in
+      (newty_check (Tobject (t1', ref None)), true)
   | Tfield(s, _, t1, t2) (* Always present *) ->
       let (t1', c1) = build_subtype env visited loops posi onlyloop t1 in
       let (t2', c2) = build_subtype env visited loops posi onlyloop t2 in
       if c1 || c2 then
-        (newty (Tfield(s, Fpresent, t1', t2')), true)
+        (newty_check (Tfield(s, Fpresent, t1', t2')), true)
       else
         (t, false)
   | Tnil ->
-      if posi && onlyloop > 0 then
+      if posi && not onlyloop then
         let v = newvar () in
         (v, true)
       else
@@ -2580,16 +2584,16 @@ let rec build_subtype env visited loops posi onlyloop t =
       assert false
   | Tpoly(t1, tl) ->
       let (t1', c) = build_subtype env visited loops posi onlyloop t1 in
-      if c then (newty (Tpoly(t1', tl)), true)
+      if c then (newty_check (Tpoly(t1', tl)), true)
       else (t, false)
   | Tunivar ->
       (t, false)
 
-let enlarge_type env ty =
-  warn := false;
-  (* onlyloop = 12 allows 6 expansions *)
-  let (ty', _) = build_subtype env [] [] true 12 ty in
-  (ty', !warn)
+let enlarge_type loc env ty =
+  warn_location := loc;
+  last_warning := (newvar()).id;
+  let (ty', _) = build_subtype env [] [] true false ty in
+  ty'
 
 (**** Check whether a type is a subtype of another type. ****)
 

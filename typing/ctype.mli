@@ -176,8 +176,8 @@ val match_class_declarations:
         class_type -> class_match_failure list
         (* Check if the first class type is more general than the second. *)
 
-val enlarge_type: Env.t -> type_expr -> type_expr * bool
-        (* Make a type larger, flag is true if some pruning had to be done *)
+val enlarge_type: Location.t -> Env.t -> type_expr -> type_expr
+        (* Make a type larger. Location is for warning when too big. *)
 val subtype : Env.t -> type_expr -> type_expr -> unit -> unit
         (* [subtype env t1 t2] checks that [t1] is a subtype of [t2].
            It accumulates the constraints the type variables must

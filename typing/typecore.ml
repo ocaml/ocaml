@@ -1006,11 +1006,7 @@ let rec type_exp env sexp =
                 r := sexp.pexp_loc :: !r;
                 force ()
             | _ ->
-                let ty, b = enlarge_type env ty' in
-		if b then Location.prerr_warning sexp.pexp_loc
-		    (Warnings.Other "Simple coercions only expand up to 6 \
-		       levels of abbreviations of\n\
-		       objects/variants. Consider using double coercions.");
+                let ty = enlarge_type sexp.pexp_loc env ty' in
                 force ();
                 begin try Ctype.unify env arg.exp_type ty with Unify trace ->
                   raise(Error(sarg.pexp_loc,
