@@ -2058,6 +2058,11 @@ let moregeneral env inst_nongen pat_sch subj_sch =
                  (*  Equivalence between parameterized types  *)
                  (*********************************************)
 
+let normalize_subst subst =
+  if List.exists
+      (function {desc=Tlink _}, _ | _, {desc=Tlink _} -> true | _ -> false)
+      !subst
+  then subst := List.map (fun (t1,t2) -> repr t1, repr t2) !subst
 
 let rec eqtype rename type_pairs subst env t1 t2 =
   if t1 == t2 then () else
@@ -2069,6 +2074,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
     match (t1.desc, t2.desc) with
       (Tvar, Tvar) when rename ->
         begin try
+          normalize_subst subst;
           if List.assq t1 !subst != t2 then raise (Unify [])
         with Not_found ->
           subst := (t1, t2) :: !subst
@@ -2088,6 +2094,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           match (t1'.desc, t2'.desc) with
             (Tvar, Tvar) when rename ->
               begin try
+                normalize_subst subst;
                 if List.assq t1' !subst != t2' then raise (Unify [])
               with Not_found ->
                 subst := (t1', t2') :: !subst
@@ -2516,7 +2523,7 @@ let rec build_subtype env visited loops posi level t =
         try
           let t' = List.assq t loops in
           warn := true;
-          (List.assq t loops, Equiv)
+          (t', Equiv)
         with Not_found ->
           (t, Unchanged)
       else
